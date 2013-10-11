@@ -1,11 +1,17 @@
 package main
 
 import (
+	"flag"
 	"log"
 	"net/http"
 	"strings"
+	"time"
 
 	"carefront/api"
+)
+
+var (
+	flagListenAddr = flag.String("listen", ":8080", "Address and port to listen on")
 )
 
 // If a handler conforms to this interface and returns true then
@@ -28,6 +34,7 @@ type AuthServeMux struct {
 	AuthApi api.Auth
 }
 
+// Parse the "Authorization: token xxx" header and check the token for validity
 func (mux *AuthServeMux) checkAuth(r *http.Request) (bool, error) {
 	auth := r.Header.Get("Authorization")
 	if auth == "" {
@@ -63,6 +70,8 @@ func (mux *AuthServeMux) ServeHTTP(w http.ResponseWriter, r *http.Request) {
 }
 
 func main() {
+	flag.Parse()
+
 	authApi := &api.MockAuth{
 		Accounts: map[string]api.MockAccount{
 			"fu": api.MockAccount{
@@ -80,10 +89,10 @@ func main() {
 	mux.Handle("/v1/ping", pingHandler)
 
 	s := &http.Server{
-		Addr:    ":8080",
-		Handler: mux,
-		// ReadTimeout:    10 * time.Second,
-		// WriteTimeout:   10 * time.Second,
+		Addr:           *flagListenAddr,
+		Handler:        mux,
+		ReadTimeout:    10 * time.Second,
+		WriteTimeout:   10 * time.Second,
 		MaxHeaderBytes: 1 << 20,
 	}
 	log.Fatal(s.ListenAndServe())
