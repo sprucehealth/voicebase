@@ -5,6 +5,7 @@ import (
 	"net/http"
 	"carefront/api"
 	"strconv"
+	"strings"
 )
 
 // FakeResponseWriter for testing purposes
@@ -54,6 +55,16 @@ func setupPingHandlerInMux() *AuthServeMux {
 	return mux
 }
 
+
+func setupAuthHandlerInMux() *AuthServeMux {
+	fakeAuthApi := createAndReturnFakeAuthApi()
+	authHandler := &AuthenticationHandler{fakeAuthApi}
+	mux := &AuthServeMux {*http.NewServeMux(), fakeAuthApi}
+	mux.Handle("/v1/authenticate", authHandler)
+
+	return mux
+
+}
 func testPing(successfulPing bool, t *testing.T) *FakeResponseWriter {
 		// SETUP
 	/* 	with a dummy test account that is simulating to be authenticated
@@ -124,6 +135,65 @@ func TestMalformedAuthorizationHeader(t *testing.T) {
 	if  (statusCode != strconv.Itoa(http.StatusForbidden)) {
 		t.Errorf("Expected status code %q, but got status code %q", http.StatusForbidden, statusCode)
 	}	
+}
+
+func TestSuccessfulLogin(t *testing.T) {
+	mux := setupAuthHandlerInMux()
+
+	req, _ := http.NewRequest("POST", "http://localhost:8080/v1/authenticate", strings.NewReader("login=kajham&password=12345"))
+    req.Header.Set("Content-Type", "application/x-www-form-urlencoded; param=value")
+	
+	responseWriter := &FakeResponseWriter { make(map[string][]string), make([]byte, 20)}
+	mux.ServeHTTP(responseWriter, req)
+
+	statusCode := responseWriter.Headers.Get("Status")
+	if statusCode != strconv.Itoa(http.StatusOK) {
+		t.Errorf("Expected status code %q, but got %q", http.StatusOK, statusCode)
+	}
+}
+
+func TestUnsuccessfulLoginDueToPassword(t *testing.T) {
+	mux := setupAuthHandlerInMux()
+
+	req, _ := http.NewRequest("POST", "http://localhost:8080/v1/authenticate", strings.NewReader("login=kajham&password=ShouldFail"))
+    req.Header.Set("Content-Type", "application/x-www-form-urlencoded; param=value")
+	
+	responseWriter := &FakeResponseWriter { make(map[string][]string), make([]byte, 20)}
+	mux.ServeHTTP(responseWriter, req)
+
+	statusCode := responseWriter.Headers.Get("Status")
+	if statusCode != strconv.Itoa(http.StatusForbidden) {
+		t.Errorf("Expected status code %q, but got %q", http.StatusForbidden, statusCode)
+	}
+}
+
+func TestUnsuccessfulLoginDueToUsername(t *testing.T) {
+	mux := setupAuthHandlerInMux()
+
+	req, _ := http.NewRequest("POST", "http://localhost:8080/v1/authenticate", strings.NewReader("login=kajaja&password=12345"))
+    req.Header.Set("Content-Type", "application/x-www-form-urlencoded; param=value")
+	
+	responseWriter := &FakeResponseWriter { make(map[string][]string), make([]byte, 20)}
+	mux.ServeHTTP(responseWriter, req)
+
+	statusCode := responseWriter.Headers.Get("Status")
+	if statusCode != strconv.Itoa(http.StatusForbidden) {
+		t.Errorf("Expected status code %q, but got %q", http.StatusForbidden, statusCode)
+	}
+}
+
+func TestUnsuccessfulLoginDueToMissingParams(t *testing.T) {
+	mux := setupAuthHandlerInMux()
+
+	req, _ := http.NewRequest("POST", "http://localhost:8080/v1/authenticate", nil)
+	
+	responseWriter := &FakeResponseWriter { make(map[string][]string), make([]byte, 20)}
+	mux.ServeHTTP(responseWriter, req)
+
+	statusCode := responseWriter.Headers.Get("Status")
+	if statusCode != strconv.Itoa(http.StatusForbidden) {
+		t.Errorf("Expected status code %q, but got %q", http.StatusForbidden, statusCode)
+	}
 }
 
 
