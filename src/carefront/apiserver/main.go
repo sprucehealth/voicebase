@@ -35,14 +35,19 @@ func main() {
 
 	authHandler := &AuthenticationHandler{authApi}
 	pingHandler := PingHandler(0)
+	photoHandler := &PhotoUploadHandler{api.PhotoService(0)}
+	getSignedUrlsHandler :=  &GetSignedUrlsHandler{api.PhotoService(0)}
+
 	mux.Handle("/v1/authenticate", authHandler)
 	mux.Handle("/v1/ping", pingHandler)
-
+	mux.Handle("/v1/upload", photoHandler)
+	mux.Handle("/v1/imagesForCase/", getSignedUrlsHandler)
+	
 	s := &http.Server{
 		Addr:           *flagListenAddr,
 		Handler:        mux,
-		ReadTimeout:    10 * time.Second,
-		WriteTimeout:   10 * time.Second,
+		ReadTimeout:    30 * time.Second,
+		WriteTimeout:   30 * time.Second,
 		MaxHeaderBytes: 1 << 20,
 	}
 	log.Fatal(s.ListenAndServeTLS(os.Getenv(CertKeyLocation), os.Getenv(PrivateKeyLocation)))
