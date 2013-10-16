@@ -3,6 +3,9 @@
 *.a
 *.so
 
+# Keys
+*.pem
+
 # Folders
 _obj
 _test

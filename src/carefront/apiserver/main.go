@@ -5,12 +5,18 @@ import (
 	"log"
 	"net/http"
 	"time"
-
+	"os"
 	"carefront/api"
 )
 
 var (
 	flagListenAddr = flag.String("listen", ":8080", "Address and port to listen on")
+)
+
+const (
+	CertKeyLocation string = "CERT_KEY"
+	PrivateKeyLocation string = "PRIVATE_KEY"
+	
 )
 
 func main() {
@@ -39,5 +45,5 @@ func main() {
 		WriteTimeout:   10 * time.Second,
 		MaxHeaderBytes: 1 << 20,
 	}
-	log.Fatal(s.ListenAndServe())
+	log.Fatal(s.ListenAndServeTLS(os.Getenv(CertKeyLocation), os.Getenv(PrivateKeyLocation)))
 }
