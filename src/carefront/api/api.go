@@ -2,7 +2,7 @@ package api
 
 import (
 	"errors"
-	"io"
+	"time"
 )
 
 var ErrLoginFailed = errors.New("api: login failed")
@@ -13,9 +13,9 @@ type Auth interface {
 	ValidateToken(token string) (valid bool, accountId int64, err error)
 }
 
-type PhotoService interface {
-	Upload(imageData io.Reader, key string, bucket string) (string, error)
-	GenerateSignedUrls(key,bucket string) (string, error)
+type Photo interface {
+	Upload(data []byte, key string, bucket string) (string, error)
+	GenerateSignedUrlsForKeysInBucket(bucket, prefix string, duration time.Time) ([]string, error)
 }
 
 type DataService interface {
