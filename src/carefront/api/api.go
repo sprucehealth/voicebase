@@ -14,7 +14,7 @@ type Auth interface {
 }
 
 type Photo interface {
-	Upload(data []byte, key string, bucket string) (string, error)
+	Upload(data []byte, key string, bucket string, duration time.Time) (string, error)
 	GenerateSignedUrlsForKeysInBucket(bucket, prefix string, duration time.Time) ([]string, error)
 }
 

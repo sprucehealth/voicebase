@@ -9,7 +9,7 @@ import (
 
 type PhotoService int
 
-func (p PhotoService) Upload(data []byte, key string, bucket string) (string, error) {
+func (p PhotoService) Upload(data []byte, key string, bucket string, duration time.Time) (string, error) {
 	auth, err := aws.EnvAuth()
 	if err != nil {
 		return "", err
@@ -27,7 +27,7 @@ func (p PhotoService) Upload(data []byte, key string, bucket string) (string, er
 		return "", err	
 	}	 
 
-	return "", nil
+	return s3Bucket.SignedURL(key, duration), nil
 }
 
 func (p PhotoService) GenerateSignedUrlsForKeysInBucket(bucket, prefix string, duration time.Time) ([]string, error) {

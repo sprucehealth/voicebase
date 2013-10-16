@@ -17,4 +17,3 @@ func (h PingHandler) ServeHTTP(w http.ResponseWriter, r *http.Request) {
     }
 }
 
-

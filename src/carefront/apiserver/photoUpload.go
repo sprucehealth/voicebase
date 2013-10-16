@@ -8,6 +8,7 @@ import (
 	"bytes"
 	"io/ioutil"
 	"os"
+	"time"
 )
 
 type PhotoUploadHandler struct {
@@ -24,7 +25,7 @@ type PhotoUploadErrorResponse struct {
 
 func (h *PhotoUploadHandler) ServeHTTP(w http.ResponseWriter, r *http.Request) {
 	r.ParseForm()
-	file,_,err := r.FormFile("photo")
+	file,handler,err := r.FormFile("photo")
 	if err != nil {
 		log.Println(err)	
 		w.WriteHeader(http.StatusBadRequest)
@@ -52,11 +53,11 @@ func (h *PhotoUploadHandler) ServeHTTP(w http.ResponseWriter, r *http.Request) {
 	var buffer bytes.Buffer
 	buffer.WriteString(caseId)
 	buffer.WriteString("/")
-	buffer.WriteString("photo")
+	buffer.WriteString(handler.Filename)
 
 	// synchronously upload the image and return a response back to the user when the
 	// upload is complete
-	_, err = h.PhotoApi.Upload(data, buffer.String(), os.Getenv("CASE_BUCKET"))
+	signedUrl, err := h.PhotoApi.Upload(data, buffer.String(), os.Getenv("CASE_BUCKET"), time.Now().Add(10*time.Minute))
 	
 	if err != nil {
 		w.WriteHeader(http.StatusInternalServerError)
@@ -66,7 +67,7 @@ func (h *PhotoUploadHandler) ServeHTTP(w http.ResponseWriter, r *http.Request) {
 	}	 
 
 	enc := json.NewEncoder(w)
-	enc.Encode(PhotoUploadResponse{"photo"})	
+	enc.Encode(PhotoUploadResponse{signedUrl})	
 }
 
 func (h *PhotoUploadHandler) NonAuthenticated() bool {
