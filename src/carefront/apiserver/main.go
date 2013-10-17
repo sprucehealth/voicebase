@@ -7,6 +7,9 @@ import (
 	"time"
 	"os"
 	"carefront/api"
+	"fmt"
+	"database/sql"
+	_ "github.com/go-sql-driver/mysql"
 )
 
 var (
@@ -22,14 +25,30 @@ const (
 func main() {
 	flag.Parse()
 
-	authApi := &api.MockAuth{
-		Accounts: map[string]api.MockAccount{
-			"fu": api.MockAccount{
-				Id:       1,
-				Password: "bar",
-			},
-		},
+	dbUsername := os.Getenv("DB_USER")
+	dbPassword := os.Getenv("DB_PASSWORD")
+	dbHost := os.Getenv("DB_HOST")
+	dbName := os.Getenv("DB_NAME")
+	
+	dsn := fmt.Sprintf("%s:%s@tcp(%s:3306)/%s", dbUsername, dbPassword, dbHost, dbName)	
+
+	// this gives us a connection pool to the sql instance
+	// without executing any statements against the sql database
+	// or checking the network connection and authentication to the database
+	db, err := sql.Open("mysql", dsn)
+	if err != nil {
+		panic(err.Error())
 	}
+
+	// test the connection to the database by running a ping against it
+	err = db.Ping()
+	if err != nil {
+		panic(err.Error())
+	}	
+
+	defer db.Close()
+
+	authApi := &api.AuthService{db}
 
 	mux := &AuthServeMux{*http.NewServeMux(), authApi}
 
@@ -39,6 +58,7 @@ func main() {
 	getSignedUrlsHandler :=  &GetSignedUrlsHandler{api.PhotoService(0)}
 
 	mux.Handle("/v1/authenticate", authHandler)
+	mux.Handle("/v1/signup", authHandler)
 	mux.Handle("/v1/ping", pingHandler)
 	mux.Handle("/v1/upload", photoHandler)
 	mux.Handle("/v1/imagesForCase/", getSignedUrlsHandler)
