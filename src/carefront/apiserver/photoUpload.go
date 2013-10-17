@@ -27,21 +27,21 @@ func (h *PhotoUploadHandler) ServeHTTP(w http.ResponseWriter, r *http.Request) {
 	r.ParseForm()
 	file,handler,err := r.FormFile("photo")
 	if err != nil {
-		log.Println(err)	
+		log.Println(err)
 		w.WriteHeader(http.StatusBadRequest)
 		enc := json.NewEncoder(w)
 		enc.Encode(PhotoUploadErrorResponse{err.Error()})
 		return
 	}
-	
+
 	caseId := r.FormValue("caseId")
 	if caseId == "" {
 		w.WriteHeader(http.StatusBadRequest)
 		enc := json.NewEncoder(w)
 		enc.Encode(PhotoUploadErrorResponse{"missing caseId!"})
-		return	
+		return
 	}
- 	
+
 	data, err := ioutil.ReadAll(file)
 	if err != nil {
 		log.Println(err)
@@ -58,19 +58,15 @@ func (h *PhotoUploadHandler) ServeHTTP(w http.ResponseWriter, r *http.Request) {
 	// synchronously upload the image and return a response back to the user when the
 	// upload is complete
 	signedUrl, err := h.PhotoApi.Upload(data, buffer.String(), os.Getenv("CASE_BUCKET"), time.Now().Add(10*time.Minute))
-	
+
 	if err != nil {
 		w.WriteHeader(http.StatusInternalServerError)
 		enc := json.NewEncoder(w)
 		enc.Encode(PhotoUploadErrorResponse{err.Error()})
 		return
-	}	 
+	}
 
 	enc := json.NewEncoder(w)
-	enc.Encode(PhotoUploadResponse{signedUrl})	
-}
-
-func (h *PhotoUploadHandler) NonAuthenticated() bool {
-	return true
+	enc.Encode(PhotoUploadResponse{signedUrl})
 }
 

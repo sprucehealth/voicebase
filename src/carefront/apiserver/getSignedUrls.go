@@ -36,7 +36,3 @@ func (h *GetSignedUrlsHandler) ServeHTTP(w http.ResponseWriter, r *http.Request)
 	enc := json.NewEncoder(w)
 	enc.Encode(GetSignedUrlsResponse{signedUrls})  
 }
-
-func (h *GetSignedUrlsHandler) NonAuthenticated() bool {
-	return true
-}
