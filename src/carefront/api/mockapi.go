@@ -16,6 +16,10 @@ type MockAuth struct {
 	Tokens   map[string]int64
 }
 
+func (m *MockAuth) Signup(email, password string) (token string, err error) {
+	return "", nil
+}
+
 func (m *MockAuth) Login(login, password string) (token string, err error) {
 	if account, ok := m.Accounts[login]; !ok || account.Password != password {
 		return "", ErrLoginFailed
