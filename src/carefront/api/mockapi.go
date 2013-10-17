@@ -48,5 +48,5 @@ func (m *MockAuth) ValidateToken(token string) (valid bool, accountId int64, err
 			return true, id, nil
 		}
 	}
-	return false, 0, nil
+return false, 0, nil
 }

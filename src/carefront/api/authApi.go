@@ -142,5 +142,17 @@ func (m *AuthService) Logout(token string) error {
 }
 
 func (m *AuthService) ValidateToken(token string) (valid bool, accountId int64, err error) {
-	return false, 0, nil
+	// lookup token in database
+	var expires *time.Time
+	err = m.DB.QueryRow("select account_id, expires from Token where token = ? ", token).Scan(&accountId, &expires)
+	if err != nil {
+		if err == sql.ErrNoRows {
+			return false, 0, nil
+		}
+		return false, 0, err
+	}
+
+	// if the token exists, check the expiration to ensure that it is valid
+	valid = time.Now().Before(*expires)
+	return valid, accountId, nil
 }
