@@ -19,7 +19,6 @@ var (
 const (
 	CertKeyLocation string = "CERT_KEY"
 	PrivateKeyLocation string = "PRIVATE_KEY"
-	
 )
 
 func main() {
@@ -29,7 +28,7 @@ func main() {
 	dbPassword := os.Getenv("DB_PASSWORD")
 	dbHost := os.Getenv("DB_HOST")
 	dbName := os.Getenv("DB_NAME")
-	
+
 	dsn := fmt.Sprintf("%s:%s@tcp(%s:3306)/%s?parseTime=true", dbUsername, dbPassword, dbHost, dbName)	
 
 	// this gives us a connection pool to the sql instance
@@ -44,17 +43,17 @@ func main() {
 	err = db.Ping()
 	if err != nil {
 		panic(err.Error())
-	}	
+	}
 
 	defer db.Close()
 
 	authApi := &api.AuthService{db}
-
+	dataApi := &api.DataService{db}
 	mux := &AuthServeMux{*http.NewServeMux(), authApi}
 
 	authHandler := &AuthenticationHandler{authApi}
 	pingHandler := PingHandler(0)
-	photoHandler := &PhotoUploadHandler{api.PhotoService(0)}
+	photoHandler := &PhotoUploadHandler{api.PhotoService(0), dataApi}
 	getSignedUrlsHandler :=  &GetSignedUrlsHandler{api.PhotoService(0)}
 
 	mux.Handle("/v1/authenticate", authHandler)
@@ -62,7 +61,7 @@ func main() {
 	mux.Handle("/v1/ping", pingHandler)
 	mux.Handle("/v1/upload", photoHandler)
 	mux.Handle("/v1/imagesForCase/", getSignedUrlsHandler)
-	
+
 	s := &http.Server{
 		Addr:           *flagListenAddr,
 		Handler:        mux,
