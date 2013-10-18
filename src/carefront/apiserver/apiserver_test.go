@@ -90,7 +90,7 @@ func TestSuccessfulPing(t *testing.T) {
 	responseBody := string(responseWriter.body)
 	if (responseBody != Pong) ||
 		(statusCode != strconv.Itoa(http.StatusOK)) {
-		t.Errorf("Expected %q with status code %q, but got %q with status code %q", Pong, http.StatusOK, responseBody, statusCode)
+		t.Errorf("Expected %q with status code %d, but got %q with status code %q", Pong, http.StatusOK, responseBody, statusCode)
 	}
 }
 
@@ -99,7 +99,7 @@ func TestUnauthorizedPing(t *testing.T) {
 	statusCode := responseWriter.Headers.Get("Status")
 
 	if statusCode != strconv.Itoa(http.StatusForbidden) {
-		t.Errorf("Expected status code %q, but got status code %q", http.StatusForbidden, statusCode)
+		t.Errorf("Expected status code %d, but got status code %q", http.StatusForbidden, statusCode)
 	}
 }
 
@@ -116,7 +116,7 @@ func TestIncorrectTokenPing(t *testing.T) {
 
 	statusCode := responseWriter.Headers.Get("Status")
 	if statusCode != strconv.Itoa(http.StatusForbidden) {
-		t.Errorf("Expected status code %q, but got status code %q", http.StatusForbidden, statusCode)
+		t.Errorf("Expected status code %d, but got status code %q", http.StatusForbidden, statusCode)
 	}
 }
 
@@ -132,7 +132,7 @@ func TestMalformedAuthorizationHeader(t *testing.T) {
 
 	statusCode := responseWriter.Headers.Get("Status")
 	if statusCode != strconv.Itoa(http.StatusForbidden) {
-		t.Errorf("Expected status code %q, but got status code %q", http.StatusForbidden, statusCode)
+		t.Errorf("Expected status code %d, but got status code %q", http.StatusForbidden, statusCode)
 	}
 }
 
@@ -147,7 +147,7 @@ func TestSuccessfulLogin(t *testing.T) {
 
 	statusCode := responseWriter.Headers.Get("Status")
 	if statusCode != strconv.Itoa(http.StatusOK) {
-		t.Errorf("Expected status code %q, but got %q", http.StatusOK, statusCode)
+		t.Errorf("Expected status code %d, but got %q", http.StatusOK, statusCode)
 	}
 }
 
@@ -162,7 +162,7 @@ func TestUnsuccessfulLoginDueToPassword(t *testing.T) {
 
 	statusCode := responseWriter.Headers.Get("Status")
 	if statusCode != strconv.Itoa(http.StatusForbidden) {
-		t.Errorf("Expected status code %q, but got %q", http.StatusForbidden, statusCode)
+		t.Errorf("Expected status code %d, but got %q", http.StatusForbidden, statusCode)
 	}
 }
 
@@ -177,7 +177,7 @@ func TestUnsuccessfulLoginDueToUsername(t *testing.T) {
 
 	statusCode := responseWriter.Headers.Get("Status")
 	if statusCode != strconv.Itoa(http.StatusForbidden) {
-		t.Errorf("Expected status code %q, but got %q", http.StatusForbidden, statusCode)
+		t.Errorf("Expected status code %d, but got %q", http.StatusForbidden, statusCode)
 	}
 }
 
@@ -191,6 +191,6 @@ func TestUnsuccessfulLoginDueToMissingParams(t *testing.T) {
 
 	statusCode := responseWriter.Headers.Get("Status")
 	if statusCode != strconv.Itoa(http.StatusForbidden) {
-		t.Errorf("Expected status code %q, but got %q", http.StatusForbidden, statusCode)
+		t.Errorf("Expected status code %d, but got %q", http.StatusForbidden, statusCode)
 	}
 }

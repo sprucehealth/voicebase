@@ -21,7 +21,9 @@ type AuthServeMux struct {
 // Parse the "Authorization: token xxx" header and check the token for validity
 func (mux *AuthServeMux) checkAuth(r *http.Request) (bool, error) {
 	token, err := GetAuthTokenFromHeader(r)
-	if err != nil {
+	if err == ErrBadAuthToken {
+		return false, nil
+	} else if err != nil {
 		return false, err
 	}
 	valid, _, err := mux.AuthApi.ValidateToken(token)
