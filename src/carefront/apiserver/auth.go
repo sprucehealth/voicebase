@@ -29,7 +29,8 @@ func (h *AuthenticationHandler) ServeHTTP(w http.ResponseWriter, r *http.Request
 	action := strings.Split(r.URL.String(), "/")[2]
 	// depending on whether we are signing up or logging in, make appropriate
 	// call to service
-	if action == "signup" {
+	switch action {
+	case "signup":
 		login, password, err := getLoginAndPassword(r)
 		if err != nil {
 			w.WriteHeader(http.StatusForbidden)
@@ -49,7 +50,7 @@ func (h *AuthenticationHandler) ServeHTTP(w http.ResponseWriter, r *http.Request
 				w.WriteHeader(http.StatusInternalServerError)
 			}
 		}
-	} else if action == "authenticate" {
+	case "authenticate":
 		login, password, err := getLoginAndPassword(r)
 		if err != nil {
 			w.WriteHeader(http.StatusForbidden)
@@ -67,7 +68,7 @@ func (h *AuthenticationHandler) ServeHTTP(w http.ResponseWriter, r *http.Request
 				w.WriteHeader(http.StatusInternalServerError)
 			}
 		}
-	} else if action == "logout" {
+	case "logout":
 		token, err := GetAuthTokenFromHeader(r)
 		if err != nil {
 			w.WriteHeader(http.StatusBadRequest)
