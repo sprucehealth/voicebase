@@ -7,13 +7,13 @@ import (
 	"time"
 )
 
-type PhotoService int
+type PhotoService struct {
+	AWSAccessKey string
+	AWSSecretKey string
+}
 
-func (p PhotoService) Upload(data []byte, key string, bucket string, duration time.Time) (string, error) {
-	auth, err := aws.EnvAuth()
-	if err != nil {
-		return "", err
-	}
+func (p *PhotoService) Upload(data []byte, key string, bucket string, duration time.Time) (string, error) {
+	auth := aws.Auth{p.AWSAccessKey, p.AWSSecretKey}
 
 	s3Access := s3.New(auth, aws.USWest)
 	s3Bucket := s3Access.Bucket(bucket)
@@ -22,14 +22,14 @@ func (p PhotoService) Upload(data []byte, key string, bucket string, duration ti
 		"x-amz-server-side-encryption": {"AES256"},
 	}
 
-	if err = s3Bucket.Put(key, data, "binary/octet-stream", s3.BucketOwnerFull, additionalHeaders); err != nil {
+	if err := s3Bucket.Put(key, data, "binary/octet-stream", s3.BucketOwnerFull, additionalHeaders); err != nil {
 		return "", err
 	}
 
 	return s3Bucket.SignedURL(key, duration), nil
 }
 
-func (p PhotoService) GenerateSignedUrlsForKeysInBucket(bucket, prefix string, duration time.Time) ([]string, error) {
+func (p *PhotoService) GenerateSignedUrlsForKeysInBucket(bucket, prefix string, duration time.Time) ([]string, error) {
 	auth, err := aws.EnvAuth()
 	if err != nil {
 		return nil, err
