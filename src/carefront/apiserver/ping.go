@@ -15,3 +15,7 @@ func (h PingHandler) ServeHTTP(w http.ResponseWriter, r *http.Request) {
 		w.WriteHeader(http.StatusInternalServerError)
 	}
 }
+
+func (h PingHandler) NonAuthenticated() bool {
+	return true
+}
