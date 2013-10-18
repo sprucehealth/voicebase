@@ -22,8 +22,7 @@ func (p *PhotoService) Upload(data []byte, key string, bucket string, duration t
 		"x-amz-server-side-encryption": {"AES256"},
 	}
 
-	err := s3Bucket.Put(key, data, "binary/octet-stream", s3.BucketOwnerFull, additionalHeaders)
-	if err != nil {
+	if err := s3Bucket.Put(key, data, "binary/octet-stream", s3.BucketOwnerFull, additionalHeaders); err != nil {
 		return "", err
 	}
 

@@ -16,24 +16,25 @@ type MockAuth struct {
 	Tokens   map[string]int64
 }
 
-func (m *MockAuth) Signup(email, password string) (token string, err error) {
-	return "", nil
+func (m *MockAuth) Signup(email, password string) (token string, accountId int64, err error) {
+	// TODO
+	return "", 0, nil
 }
 
-func (m *MockAuth) Login(login, password string) (token string, err error) {
+func (m *MockAuth) Login(login, password string) (token string, accountId int64, err error) {
 	if account, ok := m.Accounts[login]; !ok || account.Password != password {
-		return "", ErrLoginFailed
+		return "", 0, ErrLoginFailed
 	} else {
 		tokBytes := make([]byte, 16)
 		if _, err := rand.Read(tokBytes); err != nil {
-			return "", err
+			return "", 0, err
 		}
 		tok := hex.EncodeToString(tokBytes)
 		if m.Tokens == nil {
 			m.Tokens = make(map[string]int64)
 		}
 		m.Tokens[tok] = account.Id
-		return tok, nil
+		return tok, account.Id, nil
 	}
 }
 

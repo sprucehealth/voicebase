@@ -9,8 +9,8 @@ var ErrLoginFailed = errors.New("api: login failed")
 var ErrSignupFailedUserExists = errors.New("api: signup failed because user exists")
 
 type Auth interface {
-	Signup(login, password string) (token string, err error)
-	Login(login, password string) (token string, err error)
+	Signup(login, password string) (token string, accountId int64, err error)
+	Login(login, password string) (token string, accountId int64, err error)
 	Logout(token string) error
 	ValidateToken(token string) (valid bool, accountId int64, err error)
 }
