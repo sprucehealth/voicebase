@@ -1,14 +1,18 @@
 package main
 
 import (
-	"carefront/api"
 	"database/sql"
 	"flag"
 	"fmt"
-	_ "github.com/go-sql-driver/mysql"
+	"io/ioutil"
 	"log"
 	"net/http"
+	"os"
+	"strings"
 	"time"
+
+	"carefront/api"
+	_ "github.com/go-sql-driver/mysql"
 )
 
 var (
@@ -29,8 +33,35 @@ const (
 	PrivateKeyLocation string = "PRIVATE_KEY"
 )
 
-func main() {
+func parseFlags() {
+	if len(os.Args) > 1 && strings.HasPrefix(os.Args[1], "@") {
+		f, err := os.Open(os.Args[1][1:])
+		if err == nil {
+			argBytes, err := ioutil.ReadAll(f)
+			f.Close()
+			if err == nil {
+				args := strings.Split(strings.TrimSpace(string(argBytes)), "\n")
+				filteredArgs := make([]string, 0, len(args))
+				for _, a := range args {
+					if !strings.HasPrefix(a, "#") {
+						filteredArgs = append(filteredArgs, a)
+					}
+				}
+				os.Args = append(append(os.Args[:1], filteredArgs...), os.Args[2:]...)
+			}
+		}
+	}
+	flag.VisitAll(func(fl *flag.Flag) {
+		val := os.Getenv("arg_" + strings.Replace(fl.Name, ".", "_", -1))
+		if val != "" {
+			fl.Value.Set(val)
+		}
+	})
 	flag.Parse()
+}
+
+func main() {
+	parseFlags()
 
 	dsn := fmt.Sprintf("%s:%s@tcp(%s:3306)/%s?parseTime=true", *flagDBUser, *flagDBPassword, *flagDBHost, *flagDBName)
 
@@ -39,16 +70,14 @@ func main() {
 	// or checking the network connection and authentication to the database
 	db, err := sql.Open("mysql", dsn)
 	if err != nil {
-		panic(err.Error())
+		log.Fatal(err)
 	}
+	defer db.Close()
 
 	// test the connection to the database by running a ping against it
-	err = db.Ping()
-	if err != nil {
-		panic(err.Error())
+	if err := db.Ping(); err != nil {
+		log.Fatal(err)
 	}
-
-	defer db.Close()
 
 	authApi := &api.AuthService{db}
 	dataApi := &api.DataService{db}
