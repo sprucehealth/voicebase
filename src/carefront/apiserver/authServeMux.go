@@ -1,16 +1,16 @@
 package main
 
 import (
-	"net/http"
 	"carefront/api"
 	"log"
+	"net/http"
 )
 
 // If a handler conforms to this interface and returns true then
 // non-authenticated requests will be handled. Otherwise,
 // they 403 response will be returned.
 type NonAuthenticated interface {
-    NonAuthenticated() bool
+	NonAuthenticated() bool
 }
 
 type AuthServeMux struct {
@@ -21,7 +21,7 @@ type AuthServeMux struct {
 // Parse the "Authorization: token xxx" header and check the token for validity
 func (mux *AuthServeMux) checkAuth(r *http.Request) (bool, error) {
 	token, err := GetAuthTokenFromHeader(r)
-	if  err != nil {
+	if err != nil {
 		return false, err
 	}
 	valid, _, err := mux.AuthApi.ValidateToken(token)

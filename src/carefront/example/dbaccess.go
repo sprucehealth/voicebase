@@ -6,11 +6,11 @@ import (
 )
 
 func main() {
-	
-	db,err := sql.Open("mysql", "ejabberd:ejabberd@tcp(ejabberd-db-dev.c83wlsbcftxz.us-west-1.rds.amazonaws.com:3306)/hello")
+
+	db, err := sql.Open("mysql", "ejabberd:ejabberd@tcp(ejabberd-db-dev.c83wlsbcftxz.us-west-1.rds.amazonaws.com:3306)/hello")
 
 	if err != nil {
-		panic(err.Error())	
+		panic(err.Error())
 	}
 
 	err = db.Ping()

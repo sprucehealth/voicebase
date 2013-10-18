@@ -1,9 +1,9 @@
 package api
 
 import (
-	"database/sql"
 	"code.google.com/p/go.crypto/bcrypt"
 	"crypto/rand"
+	"database/sql"
 	"encoding/hex"
 	"time"
 )
@@ -13,8 +13,8 @@ const (
 )
 
 type Account struct {
-	Id int64
-	Email string
+	Id       int64
+	Email    string
 	Password string
 }
 
@@ -27,22 +27,22 @@ func (m *AuthService) Signup(email, password string) (token string, err error) {
 	account := new(Account)
 	err = m.DB.QueryRow("select * from Account where email = ?", email).Scan(&account.Id, &account.Email, &account.Password)
 	if err == nil {
-		return "",ErrSignupFailedUserExists
+		return "", ErrSignupFailedUserExists
 	}
 
-	// if its any error other than flagging the fact that no rows were returned, 
+	// if its any error other than flagging the fact that no rows were returned,
 	// inform calee
 	if err != nil && err != sql.ErrNoRows {
 		return "", err
 	}
 
-	// hash password 
+	// hash password
 	hashedPassword, err := bcrypt.GenerateFromPassword([]byte(password), 10)
 	if err != nil {
 		return "", err
 	}
 
-	// begin transaction to create an account 
+	// begin transaction to create an account
 	tx, err := m.DB.Begin()
 	if err != nil {
 		tx.Rollback()
@@ -79,7 +79,6 @@ func (m *AuthService) Signup(email, password string) (token string, err error) {
 	return tok, nil
 }
 
-
 func (m *AuthService) Login(email, password string) (token string, err error) {
 	account := new(Account)
 
@@ -102,12 +101,12 @@ func (m *AuthService) Login(email, password string) (token string, err error) {
 	}
 
 	// delete any existing token and create a new one
-	tx,err := m.DB.Begin()
+	tx, err := m.DB.Begin()
 	if err != nil {
 		tx.Rollback()
 		return "", nil
 	}
-	// delete the token that exists (if one exists)	
+	// delete the token that exists (if one exists)
 	_, err = tx.Exec("delete from Token where account_id = ?", account.Id)
 	if err != nil {
 		tx.Rollback()
@@ -140,7 +139,7 @@ func generateToken() (string, error) {
 func (m *AuthService) Logout(token string) error {
 
 	// delete the token from the database to invalidate
-	_,err := m.DB.Exec("delete from Token where token = ?",token)
+	_, err := m.DB.Exec("delete from Token where token = ?", token)
 	if err != nil {
 		return err
 	}

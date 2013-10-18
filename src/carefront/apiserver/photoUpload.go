@@ -1,12 +1,12 @@
 package main
 
 import (
+	"bytes"
+	"carefront/api"
 	"encoding/json"
+	"io/ioutil"
 	"log"
 	"net/http"
-	"carefront/api"
-	"bytes"
-	"io/ioutil"
 	"os"
 	"strconv"
 	"time"
@@ -14,7 +14,7 @@ import (
 
 type PhotoUploadHandler struct {
 	PhotoApi api.Photo
-	DataApi *api.DataService
+	DataApi  *api.DataService
 }
 
 type PhotoUploadResponse struct {
@@ -27,7 +27,7 @@ type PhotoUploadErrorResponse struct {
 
 func (h *PhotoUploadHandler) ServeHTTP(w http.ResponseWriter, r *http.Request) {
 	r.ParseForm()
-	file,_,err := r.FormFile("photo")
+	file, _, err := r.FormFile("photo")
 	if err != nil {
 		log.Println(err)
 		w.WriteHeader(http.StatusBadRequest)
@@ -68,8 +68,8 @@ func (h *PhotoUploadHandler) ServeHTTP(w http.ResponseWriter, r *http.Request) {
 		enc.Encode(PhotoUploadErrorResponse{"incorrect format for caseId!"})
 		return
 	}
-	photoId, err  := h.DataApi.CreatePhotoForCase(caseIdInt, photoType)
-	if err!= nil {
+	photoId, err := h.DataApi.CreatePhotoForCase(caseIdInt, photoType)
+	if err != nil {
 		w.WriteHeader(http.StatusInternalServerError)
 		enc := json.NewEncoder(w)
 		enc.Encode(PhotoUploadErrorResponse{err.Error()})
@@ -79,7 +79,7 @@ func (h *PhotoUploadHandler) ServeHTTP(w http.ResponseWriter, r *http.Request) {
 	var buffer bytes.Buffer
 	buffer.WriteString(caseId)
 	buffer.WriteString("/")
-	buffer.WriteString(strconv.FormatInt(photoId,10))
+	buffer.WriteString(strconv.FormatInt(photoId, 10))
 
 	// synchronously upload the image and return a response back to the user when the
 	// upload is complete
@@ -105,4 +105,3 @@ func (h *PhotoUploadHandler) ServeHTTP(w http.ResponseWriter, r *http.Request) {
 	enc := json.NewEncoder(w)
 	enc.Encode(PhotoUploadResponse{signedUrl})
 }
-

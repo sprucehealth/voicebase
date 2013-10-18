@@ -1,12 +1,12 @@
 package main
 
 import (
-	"net/http"
 	"carefront/api"
-	"strings"
-	"os"
-	"time"
 	"encoding/json"
+	"net/http"
+	"os"
+	"strings"
+	"time"
 )
 
 type GetSignedUrlsHandler struct {
@@ -18,13 +18,13 @@ type GetSignedUrlsResponse struct {
 }
 
 type GetSignedUrlsErrorResponse struct {
-	GetSignedUrlErrorString	string `json:"error"`
+	GetSignedUrlErrorString string `json:"error"`
 }
 
 func (h *GetSignedUrlsHandler) ServeHTTP(w http.ResponseWriter, r *http.Request) {
 	caseId := r.URL
 	pathPieces := strings.Split(caseId.String(), "/")
-	signedUrls, err := h.PhotoApi.GenerateSignedUrlsForKeysInBucket(os.Getenv("CASE_BUCKET"), pathPieces[3], time.Now().Add(10 * time.Minute))
+	signedUrls, err := h.PhotoApi.GenerateSignedUrlsForKeysInBucket(os.Getenv("CASE_BUCKET"), pathPieces[3], time.Now().Add(10*time.Minute))
 
 	if err != nil {
 		w.WriteHeader(http.StatusInternalServerError)
@@ -34,5 +34,5 @@ func (h *GetSignedUrlsHandler) ServeHTTP(w http.ResponseWriter, r *http.Request)
 	}
 
 	enc := json.NewEncoder(w)
-	enc.Encode(GetSignedUrlsResponse{signedUrls})  
+	enc.Encode(GetSignedUrlsResponse{signedUrls})
 }

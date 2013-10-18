@@ -1,9 +1,9 @@
 package main
 
 import (
+	"errors"
 	"net/http"
 	"strings"
-	"errors"
 )
 
 var ErrBadAuthToken = errors.New("BadAuthToken")
@@ -17,7 +17,7 @@ func GetAuthTokenFromHeader(r *http.Request) (string, error) {
 
 	parts := strings.Split(auth, " ")
 	if len(parts) != 2 || parts[0] != "token" {
-		return	"", ErrBadAuthToken 
+		return "", ErrBadAuthToken
 	}
 	return parts[1], nil
 }

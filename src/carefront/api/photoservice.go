@@ -1,10 +1,10 @@
 package api
 
 import (
-	"time"
-	"launchpad.net/goamz/s3"
-	"launchpad.net/goamz/aws"
 	"bytes"
+	"launchpad.net/goamz/aws"
+	"launchpad.net/goamz/s3"
+	"time"
 )
 
 type PhotoService int
@@ -18,8 +18,8 @@ func (p PhotoService) Upload(data []byte, key string, bucket string, duration ti
 	s3Access := s3.New(auth, aws.USWest)
 	s3Bucket := s3Access.Bucket(bucket)
 
-	additionalHeaders := map[string][]string {
-		"x-amz-server-side-encryption" : { "AES256" },
+	additionalHeaders := map[string][]string{
+		"x-amz-server-side-encryption": {"AES256"},
 	}
 
 	err = s3Bucket.Put(key, data, "binary/octet-stream", s3.BucketOwnerFull, additionalHeaders)
@@ -47,10 +47,9 @@ func (p PhotoService) GenerateSignedUrlsForKeysInBucket(bucket, prefix string, d
 	}
 
 	signedUrls := make([]string, len(listBucketResult.Contents))
-	for i,v := range listBucketResult.Contents {
+	for i, v := range listBucketResult.Contents {
 		signedUrls[i] = s3Bucket.SignedURL(v.Key, duration)
 	}
 
 	return signedUrls, nil
 }
-
