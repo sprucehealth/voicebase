@@ -7,13 +7,13 @@ import (
 	"io/ioutil"
 	"log"
 	"net/http"
-	"os"
 	"strconv"
 	"time"
 )
 
 type PhotoUploadHandler struct {
 	PhotoApi api.Photo
+	CaseBucketLocation string
 	DataApi  *api.DataService
 }
 
@@ -83,7 +83,7 @@ func (h *PhotoUploadHandler) ServeHTTP(w http.ResponseWriter, r *http.Request) {
 
 	// synchronously upload the image and return a response back to the user when the
 	// upload is complete
-	signedUrl, err := h.PhotoApi.Upload(data, buffer.String(), os.Getenv("CASE_BUCKET"), time.Now().Add(10*time.Minute))
+	signedUrl, err := h.PhotoApi.Upload(data, buffer.String(), h.CaseBucketLocation, time.Now().Add(10*time.Minute))
 
 	if err != nil {
 		w.WriteHeader(http.StatusInternalServerError)
