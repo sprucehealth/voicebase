@@ -9,7 +9,6 @@ import (
 var ErrBadAuthToken = errors.New("BadAuthToken")
 
 func GetAuthTokenFromHeader(r *http.Request) (string, error) {
-
 	auth := r.Header.Get("Authorization")
 	if auth == "" {
 		return "", ErrBadAuthToken
