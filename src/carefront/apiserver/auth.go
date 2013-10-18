@@ -5,8 +5,8 @@ import (
 	"log"
 	"net/http"
 	"carefront/api"
-	"fmt"
 	"strings"
+	"errors"
 )
 
 type AuthenticationHandler struct {
@@ -26,18 +26,15 @@ func (h *AuthenticationHandler) NonAuthenticated() bool {
 }
 
 func (h *AuthenticationHandler) ServeHTTP(w http.ResponseWriter, r *http.Request) {
-	login := r.FormValue("login")
-	password := r.FormValue("password")
-	if login == "" || password == "" {
-		w.WriteHeader(http.StatusForbidden)
-		return
-	}
-
 	action := strings.Split(r.URL.String(), "/")[2]
-	fmt.Println(action)
 	// depending on whether we are signing up or logging in, make appropriate 
 	// call to service
 	if action == "signup" {
+		login, password, err := getLoginAndPassword(r)
+		if err != nil {
+			w.WriteHeader(http.StatusForbidden)
+			return
+		}
 		if token, err :=  h.AuthApi.Signup(login, password);  err == api.ErrSignupFailedUserExists {
 			w.WriteHeader(http.StatusBadRequest)
 			enc :=	json.NewEncoder(w)
@@ -52,7 +49,12 @@ func (h *AuthenticationHandler) ServeHTTP(w http.ResponseWriter, r *http.Request
 				w.WriteHeader(http.StatusInternalServerError)
 			}
 		}
-	} else {
+	} else if action == "authenticate" {
+		login, password, err := getLoginAndPassword(r)
+		if err != nil {
+			w.WriteHeader(http.StatusForbidden)
+			return
+		}
 		if token, err := h.AuthApi.Login(login, password); err == api.ErrLoginFailed {
 			w.WriteHeader(http.StatusForbidden)
 		} else if err != nil {
@@ -65,5 +67,25 @@ func (h *AuthenticationHandler) ServeHTTP(w http.ResponseWriter, r *http.Request
 				w.WriteHeader(http.StatusInternalServerError)
 			}
 		}
+	} else if action == "logout" {
+		token, err := GetAuthTokenFromHeader(r)
+		if err != nil {
+			w.WriteHeader(http.StatusBadRequest)
+			return
+		}
+		err = h.AuthApi.Logout(token)
+		if err != nil {
+			w.WriteHeader(http.StatusInternalServerError)
+			return
+		}
 	}
+}
+
+func getLoginAndPassword(r *http.Request) (login, password string, err error) {
+	login = r.FormValue("login")
+	password = r.FormValue("password")
+	if login == "" || password == "" {
+		return "", "", errors.New("login and or password missing!")
+	}
+	return login, password, nil 
 }

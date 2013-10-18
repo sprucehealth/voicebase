@@ -138,6 +138,12 @@ func generateToken() (string, error) {
 }
 
 func (m *AuthService) Logout(token string) error {
+
+	// delete the token from the database to invalidate
+	_,err := m.DB.Exec("delete from Token where token = ?",token)
+	if err != nil {
+		return err
+	}
 	return nil
 }
 

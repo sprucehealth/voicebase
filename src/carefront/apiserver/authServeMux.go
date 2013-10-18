@@ -3,7 +3,6 @@ package main
 import (
 	"net/http"
 	"carefront/api"
-	"strings"
 	"log"
 )
 
@@ -21,15 +20,11 @@ type AuthServeMux struct {
 
 // Parse the "Authorization: token xxx" header and check the token for validity
 func (mux *AuthServeMux) checkAuth(r *http.Request) (bool, error) {
-	auth := r.Header.Get("Authorization")
-	if auth == "" {
-		return false, nil
+	token, err := GetAuthTokenFromHeader(r)
+	if  err != nil {
+		return false, err
 	}
-	parts := strings.Split(auth, " ")
-	if len(parts) != 2 || parts[0] != "token" {
-		return false, nil
-	}
-	valid, _, err := mux.AuthApi.ValidateToken(parts[1])
+	valid, _, err := mux.AuthApi.ValidateToken(token)
 	return valid, err
 }
 
