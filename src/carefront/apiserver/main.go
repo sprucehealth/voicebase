@@ -12,16 +12,16 @@ import (
 )
 
 var (
-	flagListenAddr = flag.String("listen", ":8080", "Address and port to listen on")
+	flagListenAddr   = flag.String("listen", ":8080", "Address and port to listen on")
 	flagCertLocation = flag.String("cert_key", "cert.pem", "Location of certificate for SSL")
-	flagKeyLocation = flag.String("private_key", "key.pem","Location of key for SSL")
+	flagKeyLocation  = flag.String("private_key", "key.pem", "Location of key for SSL")
 	flagS3CaseBucket = flag.String("case_bucket", "carefront-cases", "Bucket name holding case information on S3")
 	flagAWSSecretKey = flag.String("aws_secret_key", "", "AWS Secret Key for uploading files to S3")
 	flagAWSAccessKey = flag.String("aws_access_key", "", "AWS Access Key to upload files to S3")
-	flagDBUser = flag.String("db_user", "", "Username for accessing database")
-	flagDBPassword = flag.String("db_password", "", "Password for accessing database")
-	flagDBHost = flag.String("db_host", "", "Database host url")
-	flagDBName = flag.String("db_name", "", "Database name on database server") 
+	flagDBUser       = flag.String("db_user", "", "Username for accessing database")
+	flagDBPassword   = flag.String("db_password", "", "Password for accessing database")
+	flagDBHost       = flag.String("db_host", "", "Database host url")
+	flagDBName       = flag.String("db_name", "", "Database name on database server")
 )
 
 const (
@@ -56,7 +56,7 @@ func main() {
 
 	authHandler := &AuthenticationHandler{authApi}
 	pingHandler := PingHandler(0)
-	photoHandler := &PhotoUploadHandler{&api.PhotoService{*flagAWSAccessKey,*flagAWSSecretKey} , *flagS3CaseBucket, dataApi}
+	photoHandler := &PhotoUploadHandler{&api.PhotoService{*flagAWSAccessKey, *flagAWSSecretKey}, *flagS3CaseBucket, dataApi}
 	getSignedUrlsHandler := &GetSignedUrlsHandler{&api.PhotoService{*flagAWSAccessKey, *flagAWSSecretKey}}
 
 	mux.Handle("/v1/authenticate", authHandler)
