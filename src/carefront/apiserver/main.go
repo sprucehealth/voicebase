@@ -17,8 +17,8 @@ import (
 
 var (
 	flagListenAddr   = flag.String("listen", ":8080", "Address and port to listen on")
-	flagCertLocation = flag.String("cert_key", "cert.pem", "Location of certificate for SSL")
-	flagKeyLocation  = flag.String("private_key", "key.pem", "Location of key for SSL")
+	flagCertLocation = flag.String("cert_key", "", "Location of certificate for SSL")
+	flagKeyLocation  = flag.String("private_key", "", "Location of key for SSL")
 	flagS3CaseBucket = flag.String("case_bucket", "carefront-cases", "Bucket name holding case information on S3")
 	flagAWSSecretKey = flag.String("aws_secret_key", "", "AWS Secret Key for uploading files to S3")
 	flagAWSAccessKey = flag.String("aws_access_key", "", "AWS Access Key to upload files to S3")
@@ -26,11 +26,7 @@ var (
 	flagDBPassword   = flag.String("db_password", "", "Password for accessing database")
 	flagDBHost       = flag.String("db_host", "", "Database host url")
 	flagDBName       = flag.String("db_name", "", "Database name on database server")
-)
-
-const (
-	CertKeyLocation    string = "CERT_KEY"
-	PrivateKeyLocation string = "PRIVATE_KEY"
+	flagDebugMode    = flag.Bool("debug", false, "Flag to indicate whether we are running in debug or production mode")
 )
 
 func parseFlags() {
@@ -102,5 +98,10 @@ func main() {
 		WriteTimeout:   30 * time.Second,
 		MaxHeaderBytes: 1 << 20,
 	}
-	log.Fatal(s.ListenAndServeTLS(*flagCertLocation, *flagKeyLocation))
+
+	if *flagDebugMode && *flagCertLocation == "" && *flagKeyLocation == "" {
+		log.Fatal(s.ListenAndServe())
+	} else {
+		log.Fatal(s.ListenAndServeTLS(*flagCertLocation, *flagKeyLocation))
+	}
 }
