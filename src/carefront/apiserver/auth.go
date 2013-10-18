@@ -36,7 +36,7 @@ func (h *AuthenticationHandler) ServeHTTP(w http.ResponseWriter, r *http.Request
 			w.WriteHeader(http.StatusForbidden)
 			return
 		}
-		if token, err := h.AuthApi.Signup(login, password); err == api.ErrSignupFailedUserExists {
+		if token, _, err := h.AuthApi.Signup(login, password); err == api.ErrSignupFailedUserExists {
 			w.WriteHeader(http.StatusBadRequest)
 			enc := json.NewEncoder(w)
 			enc.Encode(AuthenticationErrorResponse{err.Error()})
@@ -56,7 +56,7 @@ func (h *AuthenticationHandler) ServeHTTP(w http.ResponseWriter, r *http.Request
 			w.WriteHeader(http.StatusForbidden)
 			return
 		}
-		if token, err := h.AuthApi.Login(login, password); err == api.ErrLoginFailed {
+		if token, _, err := h.AuthApi.Login(login, password); err == api.ErrLoginFailed {
 			w.WriteHeader(http.StatusForbidden)
 		} else if err != nil {
 			log.Println(err)
