@@ -49,6 +49,7 @@ func (h *PhotoUploadHandler) ServeHTTP(w http.ResponseWriter, r *http.Request) {
 		w.WriteHeader(http.StatusBadRequest)
 		enc := json.NewEncoder(w)
 		enc.Encode(PhotoUploadErrorResponse{"missing photoType!"})
+		return
 	}
 
 	data, err := ioutil.ReadAll(file)
@@ -65,6 +66,7 @@ func (h *PhotoUploadHandler) ServeHTTP(w http.ResponseWriter, r *http.Request) {
 		w.WriteHeader(http.StatusBadRequest)
 		enc := json.NewEncoder(w)
 		enc.Encode(PhotoUploadErrorResponse{"incorrect format for caseId!"})
+		return
 	}
 	photoId, err  := h.DataApi.CreatePhotoForCase(caseIdInt, photoType)
 	if err!= nil {
@@ -99,6 +101,7 @@ func (h *PhotoUploadHandler) ServeHTTP(w http.ResponseWriter, r *http.Request) {
 		return
 	}
 
+	w.Header().Set("Content-Type", "application/json")
 	enc := json.NewEncoder(w)
 	enc.Encode(PhotoUploadResponse{signedUrl})
 }
