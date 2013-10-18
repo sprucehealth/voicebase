@@ -44,7 +44,7 @@ func parseFlags() {
 				filteredArgs := make([]string, 0, len(args))
 				for _, a := range args {
 					if !strings.HasPrefix(a, "#") {
-						filteredArgs = append(filteredArgs, a)
+						filteredArgs = append(filteredArgs, strings.TrimSpace(a))
 					}
 				}
 				os.Args = append(append(os.Args[:1], filteredArgs...), os.Args[2:]...)
