@@ -31,6 +31,7 @@ func (mux *AuthServeMux) checkAuth(r *http.Request) (bool, error) {
 }
 
 func (mux *AuthServeMux) ServeHTTP(w http.ResponseWriter, r *http.Request) {
+	log.Printf("%s %s %s\n", r.RemoteAddr, r.Method, r.URL)
 	if r.RequestURI == "*" {
 		w.Header().Set("Connection", "close")
 		w.WriteHeader(http.StatusBadRequest)

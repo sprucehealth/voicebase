@@ -58,6 +58,20 @@ func parseFlags() {
 
 func main() {
 	parseFlags()
+	// check if the file exists
+	_, err := os.Stat("/var/log/carefront.log")
+	var file *os.File
+	if os.IsNotExist(err) {
+		// file doesn't exist so lets create it
+		file, err = os.Create("/var/log/carefront.log")
+	} else {
+		file, err = os.OpenFile("/var/log/carefront.log", os.O_RDWR|os.O_APPEND, 0660)
+		if err != nil {
+			log.Printf("Could not open logfile %s", err.Error())
+		}
+	}
+
+	log.SetOutput(file)
 
 	dsn := fmt.Sprintf("%s:%s@tcp(%s:3306)/%s?parseTime=true", *flagDBUser, *flagDBPassword, *flagDBHost, *flagDBName)
 
