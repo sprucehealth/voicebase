@@ -7,3 +7,4 @@
 -db_name=carefront_db
 -db_password=ejabberd
 -db_host=ejabberd-db-dev.c83wlsbcftxz.us-west-1.rds.amazonaws.com
+-log_path=/var/log/carefront.log

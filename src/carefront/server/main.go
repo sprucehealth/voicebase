@@ -28,6 +28,7 @@ var (
 	flagDBHost       = flag.String("db_host", "", "Database host url")
 	flagDBName       = flag.String("db_name", "", "Database name on database server")
 	flagDebugMode    = flag.Bool("debug", false, "Flag to indicate whether we are running in debug or production mode")
+	flagLogPath      = flag.String("log_path", "", "Path for log file. If not given then default to stderr")
 )
 
 func parseFlags() {
@@ -59,20 +60,30 @@ func parseFlags() {
 
 func main() {
 	parseFlags()
-	// check if the file exists
-	_, err := os.Stat("/var/log/carefront.log")
-	var file *os.File
-	if os.IsNotExist(err) {
-		// file doesn't exist so lets create it
-		file, err = os.Create("/var/log/carefront.log")
-	} else {
-		file, err = os.OpenFile("/var/log/carefront.log", os.O_RDWR|os.O_APPEND, 0660)
-		if err != nil {
-			log.Printf("Could not open logfile %s", err.Error())
+
+	if *flagLogPath != "" {
+		// check if the file exists
+		_, err := os.Stat(*flagLogPath)
+		var file *os.File
+		if os.IsNotExist(err) {
+			// file doesn't exist so lets create it
+			file, err = os.Create(*flagLogPath)
+			if err != nil {
+				log.Fatalf("Failed to create log: %s", err.Error())
+			}
+		} else {
+			file, err = os.OpenFile(*flagLogPath, os.O_RDWR|os.O_APPEND, 0660)
+			if err != nil {
+				log.Printf("Could not open logfile %s", err.Error())
+			}
 		}
+		log.SetOutput(file)
 	}
 
-	log.SetOutput(file)
+	if *flagDBUser == "" || *flagDBPassword == "" || *flagDBHost == "" || *flagDBName == "" {
+		fmt.Fprintf(os.Stderr, "Missing either one of user, password, host, or name for the database.\n")
+		os.Exit(1)
+	}
 
 	dsn := fmt.Sprintf("%s:%s@tcp(%s:3306)/%s?parseTime=true", *flagDBUser, *flagDBPassword, *flagDBHost, *flagDBName)
 
