@@ -1,4 +1,30 @@
-package main
+// Package apiservice is contains the PhotoUploadHandler
+//	Description:
+//		Upload photos of a particular type (face, back, chest) for a particular case. The request is synchronous and
+//		returns a successful result only if the upload and storage in the cloud succeeded.
+//
+//	Request:
+//		POST /v1/upload
+//
+//	Request-headers:
+//		{
+//			"Authorization" : "token <auth_token>"
+//		}
+//
+//	Request-body:
+//		Content-Type : multipart/form-data
+//		Parameters:
+//			photo=<photo_binary_data>
+//			caseId=<integer>
+//			photoType=[face_middle, face_right, face_left, back, chest]
+//
+//	Response:
+//		Content-Type : application/json
+//		Content:
+//			{
+//				"photoUrl" : <signed_photo_url>
+//			}
+package apiservice
 
 import (
 	"bytes"
@@ -12,9 +38,9 @@ import (
 )
 
 type PhotoUploadHandler struct {
-	PhotoApi api.Photo
+	PhotoApi           api.Photo
 	CaseBucketLocation string
-	DataApi  *api.DataService
+	DataApi            *api.DataService
 }
 
 type PhotoUploadResponse struct {

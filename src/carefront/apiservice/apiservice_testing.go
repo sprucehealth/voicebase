@@ -1,4 +1,4 @@
-package main
+package apiservice
 
 import (
 	"carefront/api"

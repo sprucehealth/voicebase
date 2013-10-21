@@ -12,6 +12,7 @@ import (
 	"time"
 
 	"carefront/api"
+	"carefront/apiservice"
 	_ "github.com/go-sql-driver/mysql"
 )
 
@@ -91,12 +92,12 @@ func main() {
 
 	authApi := &api.AuthService{db}
 	dataApi := &api.DataService{db}
-	mux := &AuthServeMux{*http.NewServeMux(), authApi}
+	mux := &apiservice.AuthServeMux{*http.NewServeMux(), authApi}
 
-	authHandler := &AuthenticationHandler{authApi}
-	pingHandler := PingHandler(0)
-	photoHandler := &PhotoUploadHandler{&api.PhotoService{*flagAWSAccessKey, *flagAWSSecretKey}, *flagS3CaseBucket, dataApi}
-	getSignedUrlsHandler := &GetSignedUrlsHandler{&api.PhotoService{*flagAWSAccessKey, *flagAWSSecretKey}}
+	authHandler := &apiservice.AuthenticationHandler{authApi}
+	pingHandler := apiservice.PingHandler(0)
+	photoHandler := &apiservice.PhotoUploadHandler{&api.PhotoService{*flagAWSAccessKey, *flagAWSSecretKey}, *flagS3CaseBucket, dataApi}
+	getSignedUrlsHandler := &apiservice.GetSignedUrlsHandler{&api.PhotoService{*flagAWSAccessKey, *flagAWSSecretKey}}
 
 	mux.Handle("/v1/authenticate", authHandler)
 	mux.Handle("/v1/signup", authHandler)

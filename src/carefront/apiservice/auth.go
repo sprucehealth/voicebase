@@ -1,4 +1,60 @@
-package main
+// Package apiservice contains the AuthenticationHandler
+//	Description:
+//		Authenticate an existing user using their email and password
+//
+//	Request:
+//		POST /v1/authenticate
+//
+//	Request-Body:
+//		Content-Type: multipart/form-data
+//		Parameters:
+//			login=<username>
+//			password=<password>
+//
+//	Response:
+//		Content-Type: application/json
+//		Content:
+//			{
+//				"token" : <auth_token>
+//			}
+// AuthenticationHandler is also responsible for signing up a new user
+//	Description:
+//		Sign up a new user with which to make authentication requests. As a result of signing up,
+//		the user will get back an authorization token with which they can perform other tasks
+//	 	that require authorization on the platform.
+//
+//	Request:
+//		POST /v1/signup
+//
+//	Request-Body:
+//		Content-Type: multipart/form-data
+//		Parameters:
+//			login=<email>
+//			password=<password>
+//
+//	Response:
+//		Content-Type: application/json
+//		Content:
+//			{
+//				"token" : <auth_token>
+//			}
+// AuthenticationHandler is also responsible for logging out an existing user
+//	Description:
+//		Logout an existing, authorized user by invalidating the auth token such that it cannot be used
+//		in future requests. The user will have to be re-authenticated to make any authorized requests
+//		on the platform.
+//
+//	Request:
+//		POST /v1/logout
+//
+//	Request-Headers:
+//		{
+//			"Authorization" : "token <auth_token>"
+//		}
+//
+//	Response:
+// 		Content-Type: text/plain
+package apiservice
 
 import (
 	"carefront/api"

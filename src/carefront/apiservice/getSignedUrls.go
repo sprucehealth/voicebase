@@ -1,4 +1,21 @@
-package main
+// Package apiservice contains the GetSignedUrlHandler
+//	Description:
+//		Return signed urls for all photographs belonigng to a particular case.
+//		The photographs will authorized for download for 10 minutes.
+//
+//	Request:
+//		GET /v1/imagesForCase
+//
+//	Request-parameters:
+//		caseId=<integer>
+//
+//	Response:
+//		Content-Type: application/json
+//		Content:
+//			{
+//				"signedUrls" : [ <signed_url_1>, <signed_url_2>, ... ]
+//			}
+package apiservice
 
 import (
 	"carefront/api"
