@@ -18,6 +18,29 @@ type AuthServeMux struct {
 	AuthApi api.Auth
 }
 
+type CustomResponseWriter struct {
+	WrappedResponseWriter http.ResponseWriter
+	StatusCode            int
+	WroteHeader           bool
+}
+
+func (c *CustomResponseWriter) WriteHeader(status int) {
+	c.StatusCode = status
+	c.WroteHeader = true
+	c.WrappedResponseWriter.WriteHeader(status)
+}
+
+func (c *CustomResponseWriter) Header() http.Header {
+	return c.WrappedResponseWriter.Header()
+}
+
+func (c *CustomResponseWriter) Write(bytes []byte) (int, error) {
+	if c.WroteHeader == false {
+		c.WriteHeader(http.StatusOK)
+	}
+	return (c.WrappedResponseWriter.Write(bytes))
+}
+
 // Parse the "Authorization: token xxx" header and check the token for validity
 func (mux *AuthServeMux) checkAuth(r *http.Request) (bool, error) {
 	token, err := GetAuthTokenFromHeader(r)
@@ -31,23 +54,24 @@ func (mux *AuthServeMux) checkAuth(r *http.Request) (bool, error) {
 }
 
 func (mux *AuthServeMux) ServeHTTP(w http.ResponseWriter, r *http.Request) {
-	log.Printf("%s %s %s\n", r.RemoteAddr, r.Method, r.URL)
+	customResponseWriter := &CustomResponseWriter{w, 0, false}
+	defer func() { log.Printf("%s %s %s %d\n", r.RemoteAddr, r.Method, r.URL, customResponseWriter.StatusCode) }()
 	if r.RequestURI == "*" {
-		w.Header().Set("Connection", "close")
-		w.WriteHeader(http.StatusBadRequest)
+		customResponseWriter.Header().Set("Connection", "close")
+		customResponseWriter.WriteHeader(http.StatusBadRequest)
 		return
 	}
 	h, _ := mux.Handler(r)
 	if nonAuth, ok := h.(NonAuthenticated); !ok || !nonAuth.NonAuthenticated() {
 		if valid, err := mux.checkAuth(r); err != nil {
 			log.Println(err)
-			w.WriteHeader(http.StatusInternalServerError)
+			customResponseWriter.WriteHeader(http.StatusInternalServerError)
 			return
 		} else if !valid {
-			w.WriteHeader(http.StatusForbidden)
+			customResponseWriter.WriteHeader(http.StatusForbidden)
 			return
 		}
 
 	}
-	h.ServeHTTP(w, r)
+	h.ServeHTTP(customResponseWriter, r)
 }
