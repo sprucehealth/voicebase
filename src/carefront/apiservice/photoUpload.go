@@ -15,8 +15,8 @@
 //		Content-Type : multipart/form-data
 //		Parameters:
 //			photo=<photo_binary_data>
-//			caseId=<integer>
-//			photoType=[face_middle, face_right, face_left, back, chest]
+//			caseid=<integer>
+//			phototype=[face_middle, face_right, face_left, back, chest]
 //
 //	Response:
 //		Content-Type : application/json
@@ -62,7 +62,7 @@ func (h *PhotoUploadHandler) ServeHTTP(w http.ResponseWriter, r *http.Request) {
 		return
 	}
 
-	caseId := r.FormValue("caseId")
+	caseId := r.FormValue("caseid")
 	if caseId == "" {
 		w.WriteHeader(http.StatusBadRequest)
 		enc := json.NewEncoder(w)
@@ -70,7 +70,7 @@ func (h *PhotoUploadHandler) ServeHTTP(w http.ResponseWriter, r *http.Request) {
 		return
 	}
 
-	photoType := r.FormValue("photoType")
+	photoType := r.FormValue("phototype")
 	if photoType == "" {
 		w.WriteHeader(http.StatusBadRequest)
 		enc := json.NewEncoder(w)

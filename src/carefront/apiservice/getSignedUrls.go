@@ -1,13 +1,10 @@
 // Package apiservice contains the GetSignedUrlHandler
 //	Description:
-//		Return signed urls for all photographs belonigng to a particular case.
+//		Return signed urls for all photos belonging to a particular case.
 //		The photographs will authorized for download for 10 minutes.
 //
 //	Request:
-//		GET /v1/imagesForCase
-//
-//	Request-parameters:
-//		caseId=<integer>
+//		GET /v1/imagesforcase/<case_id>
 //
 //	Response:
 //		Content-Type: application/json
@@ -21,13 +18,13 @@ import (
 	"carefront/api"
 	"encoding/json"
 	"net/http"
-	"os"
 	"strings"
 	"time"
 )
 
 type GetSignedUrlsHandler struct {
-	PhotoApi api.Photo
+	PhotoApi           api.Photo
+	CaseBucketLocation string
 }
 
 type GetSignedUrlsResponse struct {
@@ -41,7 +38,7 @@ type GetSignedUrlsErrorResponse struct {
 func (h *GetSignedUrlsHandler) ServeHTTP(w http.ResponseWriter, r *http.Request) {
 	caseId := r.URL
 	pathPieces := strings.Split(caseId.String(), "/")
-	signedUrls, err := h.PhotoApi.GenerateSignedUrlsForKeysInBucket(os.Getenv("CASE_BUCKET"), pathPieces[3], time.Now().Add(10*time.Minute))
+	signedUrls, err := h.PhotoApi.GenerateSignedUrlsForKeysInBucket(h.CaseBucketLocation, pathPieces[3], time.Now().Add(10*time.Minute))
 
 	if err != nil {
 		w.WriteHeader(http.StatusInternalServerError)

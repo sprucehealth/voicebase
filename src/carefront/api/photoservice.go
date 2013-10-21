@@ -30,10 +30,7 @@ func (p *PhotoService) Upload(data []byte, key string, bucket string, duration t
 }
 
 func (p *PhotoService) GenerateSignedUrlsForKeysInBucket(bucket, prefix string, duration time.Time) ([]string, error) {
-	auth, err := aws.EnvAuth()
-	if err != nil {
-		return nil, err
-	}
+	auth := aws.Auth{p.AWSAccessKey, p.AWSSecretKey}
 	s3Access := s3.New(auth, aws.USWest)
 	s3Bucket := s3Access.Bucket(bucket)
 
