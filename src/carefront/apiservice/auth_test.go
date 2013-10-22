@@ -2,7 +2,7 @@ package apiservice
 
 import (
 	"carefront/mockapi"
-	"net/http"
+"net/http"
 	"strconv"
 	"strings"
 	"testing"
@@ -13,6 +13,7 @@ const (
 	SignupPath = "/v1/signup"
 	LoginPath  = "/v1/authenticate"
 	LogoutPath = "/v1/logout"
+	ContentTypeValue = "application/x-www-form-urlencoded; param=value"
 )
 
 // TESTS
@@ -20,9 +21,9 @@ const (
 func TestSuccesfulSignup(t *testing.T) {
 	mux := setupAuthHandlerInMux(SignupPath)
 	req, _ := http.NewRequest("POST", SignupPath, strings.NewReader("login=kkjj&password=12345"))
-	req.Header.Set("Content-Type", "application/x-www-form-urlencoded; param=value")
+	req.Header.Set("Content-Type", ContentTypeValue)
 
-	responseWriter := &FakeResponseWriter{make(map[string][]string), make([]byte, 20)}
+	responseWriter := createFakeResponseWriter()
 	mux.ServeHTTP(responseWriter, req)
 
 	checkStatusCode(http.StatusOK, responseWriter, t)
@@ -31,21 +32,30 @@ func TestSuccesfulSignup(t *testing.T) {
 
 func TestExistingUserInSignup(t *testing.T) {
 	mux := setupAuthHandlerInMux(SignupPath)
-	req, _ := http.NewRequest("POST", SignupPath, strings.NewReader("login=kajham&password=12345"))
-	req.Header.Set("Content-Type", "application/x-www-form-urlencoded; param=value")
+	req, _ := http.NewRequest("POST", SignupPath, strings.NewReader("login=k1234&password=12345"))
+	req.Header.Set("Content-Type", ContentTypeValue)
 
-	responseWriter := &FakeResponseWriter{make(map[string][]string), make([]byte, 20)}
+	responseWriter := createFakeResponseWriter()
 	mux.ServeHTTP(responseWriter, req)
 
-	checkStatusCode(http.StatusBadRequest, responseWriter, t) 
+	checkStatusCode(http.StatusOK, responseWriter, t)
+	validateTokenResponse(responseWriter.body, t)
+
+	req, _ = http.NewRequest("POST", SignupPath, strings.NewReader("login=k1234&password=12345"))
+	req.Header.Set("Content-Type", ContentTypeValue)
+
+	responseWriter = createFakeResponseWriter()
+	mux.ServeHTTP(responseWriter, req)
+
+	checkStatusCode(http.StatusBadRequest, responseWriter, t)
 }
 
 func TestMissingParametersSignup(t *testing.T) {
 	mux := setupAuthHandlerInMux(SignupPath)
 	req, _ := http.NewRequest("POST", SignupPath, nil)
-	req.Header.Set("Content-Type", "application/x-www-form-urlencoded; param=value")
+	req.Header.Set("Content-Type", ContentTypeValue)
 
-	responseWriter := &FakeResponseWriter{make(map[string][]string), make([]byte, 20)}
+	responseWriter := createFakeResponseWriter()
 	mux.ServeHTTP(responseWriter, req)
 
 	checkStatusCode(http.StatusForbidden, responseWriter, t)
@@ -53,10 +63,10 @@ func TestMissingParametersSignup(t *testing.T) {
 
 func TestSignupFollowedByLogin(t *testing.T) {
 	mux := setupAuthHandlerInMux(SignupPath)
-	req, _ := http.NewRequest("POST", SignupPath, strings.NewReader("login=kjkj&password=12345"))
-	req.Header.Set("Content-Type", "application/x-www-form-urlencoded; param=value")
+	req, _ := http.NewRequest("POST", SignupPath, strings.NewReader("login=kjkj1&password=12345"))
+	req.Header.Set("Content-Type", ContentTypeValue)
 
-	responseWriter := &FakeResponseWriter{make(map[string][]string), make([]byte, 20)}
+	responseWriter := createFakeResponseWriter()
 	mux.ServeHTTP(responseWriter, req)
 
 	checkStatusCode(http.StatusOK, responseWriter, t)
@@ -64,14 +74,25 @@ func TestSignupFollowedByLogin(t *testing.T) {
 
 	anotherAuthHandler := &AuthenticationHandler{mux.AuthApi}
 	mux.Handle(LoginPath, anotherAuthHandler)
-	req, _ = http.NewRequest("POST", LoginPath, strings.NewReader("login=kjkj&password=12345"))
-	req.Header.Set("Content-Type", "application/x-www-form-urlencoded; param=value")
+	req, _ = http.NewRequest("POST", LoginPath, strings.NewReader("login=kjkj1&password=12345"))
+	req.Header.Set("Content-Type", ContentTypeValue)
 
-	responseWriter = &FakeResponseWriter{make(map[string][]string), make([]byte, 20)}
+	responseWriter = createFakeResponseWriter()
 	mux.ServeHTTP(responseWriter, req)
 
 	checkStatusCode(http.StatusOK, responseWriter, t )
 	validateTokenResponse(responseWriter.body, t)
+}
+
+func TestMalformedHeaderSignup(t *testing.T) {
+	mux := setupAuthHandlerInMux(SignupPath)
+	req, _ := http.NewRequest("POST", SignupPath, strings.NewReader("login=koko&password=12345"))
+	req.Header.Set("Content-Type", "WrongContentType")
+
+	responseWriter := createFakeResponseWriter()
+	mux.ServeHTTP(responseWriter, req)
+
+	checkStatusCode(http.StatusForbidden, responseWriter, t)
 }
 
 func TestSuccessfulLogin(t *testing.T) {
@@ -94,7 +115,7 @@ func TestUnsuccessfulLoginDueToPassword(t *testing.T) {
 	mux := setupAuthHandlerInMux(LoginPath)
 
 	req, _ := http.NewRequest("POST", LoginPath, strings.NewReader("login=kajham&password=ShouldFail"))
-	req.Header.Set("Content-Type", "application/x-www-form-urlencoded; param=value")
+	req.Header.Set("Content-Type", ContentTypeValue)
 
 	responseWriter := &FakeResponseWriter{make(map[string][]string), make([]byte, 20)}
 	mux.ServeHTTP(responseWriter, req)
@@ -109,7 +130,7 @@ func TestUnsuccessfulLoginDueToUsername(t *testing.T) {
 	mux := setupAuthHandlerInMux(LoginPath)
 
 	req, _ := http.NewRequest("POST", LoginPath, strings.NewReader("login=kajaja&password=12345"))
-	req.Header.Set("Content-Type", "application/x-www-form-urlencoded; param=value")
+	req.Header.Set("Content-Type", ContentTypeValue)
 
 	responseWriter := &FakeResponseWriter{make(map[string][]string), make([]byte, 20)}
 	mux.ServeHTTP(responseWriter, req)
@@ -135,6 +156,10 @@ func TestUnsuccessfulLoginDueToMissingParams(t *testing.T) {
 }
 
 // Private Methods
+
+func createFakeResponseWriter() *FakeResponseWriter {
+	return &FakeResponseWriter{make(map[string][]string), make([]byte, 20)}
+}
 
 func createAndReturnFakeAuthApi() *mockapi.MockAuth {
 	return &mockapi.MockAuth{
