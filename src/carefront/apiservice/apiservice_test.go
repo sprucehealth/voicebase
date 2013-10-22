@@ -2,17 +2,20 @@ package apiservice
 
 import (
 	"carefront/mockapi"
-"net/http"
+	"net/http"
 	"strconv"
 	"strings"
 	"testing"
 	"encoding/json"
+	"mime/multipart"
+	"bytes"
 )
 
 const (
 	SignupPath = "/v1/signup"
 	LoginPath  = "/v1/authenticate"
 	LogoutPath = "/v1/logout"
+	PhotoUploadPath = "/v1/upload"
 	ContentTypeValue = "application/x-www-form-urlencoded; param=value"
 )
 
@@ -101,13 +104,10 @@ func TestSuccessfulLogin(t *testing.T) {
 	req, _ := http.NewRequest("POST", LoginPath, strings.NewReader("login=kajham&password=12345"))
 	req.Header.Set("Content-Type", "application/x-www-form-urlencoded; param=value")
 
-	responseWriter := &FakeResponseWriter{make(map[string][]string), make([]byte, 20)}
+	responseWriter := createFakeResponseWriter()
 	mux.ServeHTTP(responseWriter, req)
 
-	statusCode := responseWriter.Headers.Get("Status")
-	if statusCode != strconv.Itoa(http.StatusOK) {
-		t.Errorf("Expected status code %d, but got %q", http.StatusOK, statusCode)
-	}
+	checkStatusCode(http.StatusOK, responseWriter, t)
 	validateTokenResponse(responseWriter.body, t)
 }
 
@@ -117,13 +117,10 @@ func TestUnsuccessfulLoginDueToPassword(t *testing.T) {
 	req, _ := http.NewRequest("POST", LoginPath, strings.NewReader("login=kajham&password=ShouldFail"))
 	req.Header.Set("Content-Type", ContentTypeValue)
 
-	responseWriter := &FakeResponseWriter{make(map[string][]string), make([]byte, 20)}
+	responseWriter := createFakeResponseWriter()
 	mux.ServeHTTP(responseWriter, req)
 
-	statusCode := responseWriter.Headers.Get("Status")
-	if statusCode != strconv.Itoa(http.StatusForbidden) {
-		t.Errorf("Expected status code %d, but got %q", http.StatusForbidden, statusCode)
-	}
+	checkStatusCode(http.StatusForbidden, responseWriter, t)
 }
 
 func TestUnsuccessfulLoginDueToUsername(t *testing.T) {
@@ -132,13 +129,10 @@ func TestUnsuccessfulLoginDueToUsername(t *testing.T) {
 	req, _ := http.NewRequest("POST", LoginPath, strings.NewReader("login=kajaja&password=12345"))
 	req.Header.Set("Content-Type", ContentTypeValue)
 
-	responseWriter := &FakeResponseWriter{make(map[string][]string), make([]byte, 20)}
+	responseWriter := createFakeResponseWriter()
 	mux.ServeHTTP(responseWriter, req)
 
-	statusCode := responseWriter.Headers.Get("Status")
-	if statusCode != strconv.Itoa(http.StatusForbidden) {
-		t.Errorf("Expected status code %d, but got %q", http.StatusForbidden, statusCode)
-	}
+	checkStatusCode(http.StatusForbidden, responseWriter, t)
 }
 
 func TestUnsuccessfulLoginDueToMissingParams(t *testing.T) {
@@ -146,13 +140,42 @@ func TestUnsuccessfulLoginDueToMissingParams(t *testing.T) {
 
 	req, _ := http.NewRequest("POST", LoginPath, nil)
 
-	responseWriter := &FakeResponseWriter{make(map[string][]string), make([]byte, 20)}
+	responseWriter := createFakeResponseWriter()
 	mux.ServeHTTP(responseWriter, req)
 
-	statusCode := responseWriter.Headers.Get("Status")
-	if statusCode != strconv.Itoa(http.StatusForbidden) {
-		t.Errorf("Expected status code %d, but got %q", http.StatusForbidden, statusCode)
-	}
+	checkStatusCode(http.StatusForbidden, responseWriter, t)
+}
+
+func TestMissingAuthHeaderPhotoUpload(t *testing.T) {
+	mux := setupPhotoUploadHandlerInMux()
+	req, _ := http.NewRequest("POST", PhotoUploadPath, strings.NewReader("case_id=1234&photo_type=face_middle&photo=xxx"))
+	responseWriter := createFakeResponseWriter()
+	mux.ServeHTTP(responseWriter, req)
+
+	checkStatusCode(http.StatusForbidden, responseWriter, t)
+}
+
+func TestMissingCaseIdInPhotoUpload(t *testing.T) {
+	testHelperForMissingParameter([]string{"photo", "photo_type"}, t)
+}
+
+func TestMissingPhotoTypeInPhotoUpload(t *testing.T) {
+	testHelperForMissingParameter([]string{"case_id", "photo"}, t)
+}
+
+func TestSuccessfulPhotoUpload(t *testing.T) {
+	mux := setupPhotoUploadHandlerInMux()
+
+	buf, w := createMultiPartFormDataWithParameters([]string{"photo", "photo_type", "case_id"}, t)
+
+	req, _ := http.NewRequest("POST", PhotoUploadPath, buf)
+	req.Header.Set("Content-Type", w.FormDataContentType())	
+	req.Header.Set("Authorization", "token tokenForKajham")
+
+	responseWriter := createFakeResponseWriter()
+	mux.ServeHTTP(responseWriter, req)
+
+	checkStatusCode(http.StatusOK, responseWriter, t)
 }
 
 // Private Methods
@@ -185,6 +208,17 @@ func setupAuthHandlerInMux(path string) *AuthServeMux {
 	return mux
 }
 
+func setupPhotoUploadHandlerInMux() *AuthServeMux {
+	fakeAuthApi := createAndReturnFakeAuthApi()
+	fakePhotoApi := &mockapi.MockPhotoService{false}
+	fakeDataApi := &mockapi.MockDataService{false}
+
+	photoUploadHandler := &PhotoUploadHandler{fakePhotoApi,"testing", fakeDataApi} 
+	mux := &AuthServeMux{*http.NewServeMux(), fakeAuthApi}
+	mux.Handle(PhotoUploadPath, photoUploadHandler)
+
+	return mux
+}
 
 func validateTokenResponse(data []byte, t *testing.T) {	
 	type TokenJson struct {
@@ -202,9 +236,64 @@ func validateTokenResponse(data []byte, t *testing.T) {
 	}
 }
 
+func checkForErrorInResponse(data []byte, t *testing.T) {
+	type ErrorJson struct {
+		Error string
+	}
+
+	var errorJson ErrorJson
+	err := json.Unmarshal(data, &errorJson)
+	if err != nil {
+		t.Errorf("Expected an error to be returned in the response %s", err.Error())
+	}
+}
+
 func checkStatusCode(expected int, responseWriter *FakeResponseWriter, t *testing.T) {
 	statusCode := responseWriter.Headers.Get("Status")
 	if statusCode != strconv.Itoa(expected) {
 		t.Errorf("Expected status code %d, but got %q", expected, statusCode)
 	}
+}
+
+func createMultiPartFormDataWithParameters(parameters []string, t *testing.T) (*bytes.Buffer, *multipart.Writer) {
+	buf := new(bytes.Buffer)
+	w := multipart.NewWriter(buf)
+	for _,parameter := range parameters {
+		switch parameter {
+		case "photo":
+			photo, err := w.CreateFormFile("photo", "photo.png")
+			if err != nil {
+				t.Errorf("Something went wrong in test setup %s", err.Error())
+			}
+			photo.Write(make([]byte, 100))
+		case "photo_type":
+			photoType,err := w.CreateFormField("photo_type")
+			if err != nil {
+				t.Errorf("Something went wrong in adding photo_type to form %s", err.Error())
+			}
+			photoType.Write([]byte("face_middle"))
+		case "case_id":
+			caseId, err := w.CreateFormField("case_id")
+			if err != nil {
+				t.Errorf("Something went wrong in adding case_id to form %s", err.Error())
+			}
+			caseId.Write([]byte("12345"))
+		}
+	}
+	w.Close()
+
+	return buf, w
+}
+
+func testHelperForMissingParameter(parameters []string, t *testing.T) {
+    mux := setupPhotoUploadHandlerInMux()
+	buf, w := createMultiPartFormDataWithParameters(parameters, t)
+    req, _ := http.NewRequest("POST", PhotoUploadPath, buf)
+    req.Header.Set("Content-Type", w.FormDataContentType())
+    req.Header.Set("Authorization", "token tokenForKajham")
+    responseWriter := createFakeResponseWriter()
+    mux.ServeHTTP(responseWriter, req)
+
+    checkStatusCode(http.StatusBadRequest, responseWriter, t)
+    checkForErrorInResponse(responseWriter.body, t)
 }

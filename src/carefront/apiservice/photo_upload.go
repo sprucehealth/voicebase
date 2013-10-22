@@ -40,7 +40,7 @@ import (
 type PhotoUploadHandler struct {
 	PhotoApi           api.Photo
 	CaseBucketLocation string
-	DataApi            *api.DataService
+	DataApi            api.DataAPI
 }
 
 type PhotoUploadResponse struct {
