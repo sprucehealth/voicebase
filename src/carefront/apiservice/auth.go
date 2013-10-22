@@ -122,6 +122,7 @@ func (h *AuthenticationHandler) ServeHTTP(w http.ResponseWriter, r *http.Request
 			if err := enc.Encode(AuthenticationResponse{token}); err != nil {
 				log.Println(err)
 				w.WriteHeader(http.StatusInternalServerError)
+				return
 			}
 		}
 	case "logout":
