@@ -178,6 +178,33 @@ func TestSuccessfulPhotoUpload(t *testing.T) {
 	checkStatusCode(http.StatusOK, responseWriter, t)
 }
 
+func testHelperDataOrPhotoServiceError(photoServiceError, dataServiceError bool, t *testing.T) {
+	fakeAuthApi := createAndReturnFakeAuthApi()
+	fakePhotoApi := &mockapi.MockPhotoService{photoServiceError}
+	fakeDataApi := &mockapi.MockDataService{dataServiceError}
+
+	photoUploadHandler := &PhotoUploadHandler{fakePhotoApi, "testing", fakeDataApi}
+	mux := &AuthServeMux{*http.NewServeMux(), fakeAuthApi}
+	mux.Handle(PhotoUploadPath, photoUploadHandler)
+
+	buf, w := createMultiPartFormDataWithParameters([]string{"photo", "photo_type", "case_id"}, t)
+	req, _ := http.NewRequest("POST", PhotoUploadPath, buf)
+	req.Header.Set("Content-Type", w.FormDataContentType())
+	req.Header.Set("Authorization", "token tokenForKajham")
+
+	responseWriter := createFakeResponseWriter()
+	mux.ServeHTTP(responseWriter, req)
+	checkStatusCode(http.StatusInternalServerError, responseWriter, t)
+}
+
+func TestUploadErrorPhotoUpload(t *testing.T) {
+	testHelperDataOrPhotoServiceError(true, false, t)
+}
+
+func TestDataServiceErrorPhotoUpload(t *testing.T) {
+	testHelperDataOrPhotoServiceError(false, true, t)
+}
+
 // Private Methods
 
 func createFakeResponseWriter() *FakeResponseWriter {
