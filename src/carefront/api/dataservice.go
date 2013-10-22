@@ -30,3 +30,7 @@ func (d *DataService) MarkPhotoUploadComplete(caseId, photoId int64) error {
 	}
 	return nil
 }
+
+func (d *DataService) GetPhotosForCase(caseId int64) ([]string, error) {
+	return make([]string, 1), nil
+}
