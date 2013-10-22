@@ -1,8 +1,6 @@
 package mockapi
 
 import (
-	"crypto/rand"
-	"encoding/hex"
 	"carefront/api"
 )
 
@@ -17,20 +15,35 @@ type MockAuth struct {
 	Tokens   map[string]int64
 }
 
+var (
+	IdCounter = 1
+)
+
 func (m *MockAuth) Signup(email, password string) (token string, accountId int64, err error) {
-	// 
-	return "", 0, nil
+	if _, ok := m.Accounts[email]; ok {
+		return "", 0, api.ErrSignupFailedUserExists
+	}
+	tok, err := api.GenerateToken()
+	if err != nil {
+		return "", 0, err
+	}
+	if m.Tokens == nil {
+		m.Tokens = make(map[string]int64)
+	}
+	IdCounter += 1
+	m.Accounts[email] = MockAccount{int64(IdCounter), email, password}
+	m.Tokens[tok] = int64(IdCounter)
+	return tok, int64(IdCounter), nil
 }
 
 func (m *MockAuth) Login(login, password string) (token string, accountId int64, err error) {
 	if account, ok := m.Accounts[login]; !ok || account.Password != password {
 		return "", 0, api.ErrLoginFailed
 	} else {
-		tokBytes := make([]byte, 16)
-		if _, err := rand.Read(tokBytes); err != nil {
-			return "", 0, err
+		tok, err := api.GenerateToken()
+		if err != nil {
+			return "", 0, nil
 		}
-		tok := hex.EncodeToString(tokBytes)
 		if m.Tokens == nil {
 			m.Tokens = make(map[string]int64)
 		}
