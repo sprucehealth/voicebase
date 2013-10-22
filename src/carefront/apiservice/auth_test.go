@@ -25,10 +25,7 @@ func TestSuccesfulSignup(t *testing.T) {
 	responseWriter := &FakeResponseWriter{make(map[string][]string), make([]byte, 20)}
 	mux.ServeHTTP(responseWriter, req)
 
-	statusCode := responseWriter.Headers.Get("Status")
-	if statusCode != strconv.Itoa(http.StatusOK) {
-		t.Errorf("Expected status code %d, but got %q", http.StatusOK, statusCode)
-	}
+	checkStatusCode(http.StatusOK, responseWriter, t)
 	validateTokenResponse(responseWriter.body, t)
 }
 
@@ -40,10 +37,7 @@ func TestExistingUserInSignup(t *testing.T) {
 	responseWriter := &FakeResponseWriter{make(map[string][]string), make([]byte, 20)}
 	mux.ServeHTTP(responseWriter, req)
 
-	statusCode := responseWriter.Headers.Get("Status")
-	if statusCode != strconv.Itoa(http.StatusBadRequest) {
-		t.Errorf("Expected status code %d, but got %q", http.StatusBadRequest, statusCode)
-	}
+	checkStatusCode(http.StatusBadRequest, responseWriter, t) 
 }
 
 func TestMissingParametersSignup(t *testing.T) {
@@ -54,17 +48,36 @@ func TestMissingParametersSignup(t *testing.T) {
 	responseWriter := &FakeResponseWriter{make(map[string][]string), make([]byte, 20)}
 	mux.ServeHTTP(responseWriter, req)
 
-	statusCode := responseWriter.Headers.Get("Status")
-	if statusCode != strconv.Itoa(http.StatusForbidden) {	
-		t.Error("Expected status code &d, but got %q", http.StatusForbidden, statusCode)
+	checkStatusCode(http.StatusForbidden, responseWriter, t)
+}
 
-	}
+func TestSignupFollowedByLogin(t *testing.T) {
+	mux := setupAuthHandlerInMux(SignupPath)
+	req, _ := http.NewRequest("POST", SignupPath, strings.NewReader("login=kjkj&password=12345"))
+	req.Header.Set("Content-Type", "application/x-www-form-urlencoded; param=value")
+
+	responseWriter := &FakeResponseWriter{make(map[string][]string), make([]byte, 20)}
+	mux.ServeHTTP(responseWriter, req)
+
+	checkStatusCode(http.StatusOK, responseWriter, t)
+	validateTokenResponse(responseWriter.body, t)
+
+	anotherAuthHandler := &AuthenticationHandler{mux.AuthApi}
+	mux.Handle(LoginPath, anotherAuthHandler)
+	req, _ = http.NewRequest("POST", LoginPath, strings.NewReader("login=kjkj&password=12345"))
+	req.Header.Set("Content-Type", "application/x-www-form-urlencoded; param=value")
+
+	responseWriter = &FakeResponseWriter{make(map[string][]string), make([]byte, 20)}
+	mux.ServeHTTP(responseWriter, req)
+
+	checkStatusCode(http.StatusOK, responseWriter, t )
+	validateTokenResponse(responseWriter.body, t)
 }
 
 func TestSuccessfulLogin(t *testing.T) {
 	mux := setupAuthHandlerInMux(LoginPath)
 
-	req, _ := http.NewRequest("POST", "/v1/authenticate", strings.NewReader("login=kajham&password=12345"))
+	req, _ := http.NewRequest("POST", LoginPath, strings.NewReader("login=kajham&password=12345"))
 	req.Header.Set("Content-Type", "application/x-www-form-urlencoded; param=value")
 
 	responseWriter := &FakeResponseWriter{make(map[string][]string), make([]byte, 20)}
@@ -80,7 +93,7 @@ func TestSuccessfulLogin(t *testing.T) {
 func TestUnsuccessfulLoginDueToPassword(t *testing.T) {
 	mux := setupAuthHandlerInMux(LoginPath)
 
-	req, _ := http.NewRequest("POST", "/v1/authenticate", strings.NewReader("login=kajham&password=ShouldFail"))
+	req, _ := http.NewRequest("POST", LoginPath, strings.NewReader("login=kajham&password=ShouldFail"))
 	req.Header.Set("Content-Type", "application/x-www-form-urlencoded; param=value")
 
 	responseWriter := &FakeResponseWriter{make(map[string][]string), make([]byte, 20)}
@@ -95,7 +108,7 @@ func TestUnsuccessfulLoginDueToPassword(t *testing.T) {
 func TestUnsuccessfulLoginDueToUsername(t *testing.T) {
 	mux := setupAuthHandlerInMux(LoginPath)
 
-	req, _ := http.NewRequest("POST", "/v1/authenticate", strings.NewReader("login=kajaja&password=12345"))
+	req, _ := http.NewRequest("POST", LoginPath, strings.NewReader("login=kajaja&password=12345"))
 	req.Header.Set("Content-Type", "application/x-www-form-urlencoded; param=value")
 
 	responseWriter := &FakeResponseWriter{make(map[string][]string), make([]byte, 20)}
@@ -110,7 +123,7 @@ func TestUnsuccessfulLoginDueToUsername(t *testing.T) {
 func TestUnsuccessfulLoginDueToMissingParams(t *testing.T) {
 	mux := setupAuthHandlerInMux(LoginPath)
 
-	req, _ := http.NewRequest("POST", "/v1/authenticate", nil)
+	req, _ := http.NewRequest("POST", LoginPath, nil)
 
 	responseWriter := &FakeResponseWriter{make(map[string][]string), make([]byte, 20)}
 	mux.ServeHTTP(responseWriter, req)
@@ -138,7 +151,6 @@ func createAndReturnFakeAuthApi() *mockapi.MockAuth {
 	}
 }
 
-
 func setupAuthHandlerInMux(path string) *AuthServeMux {
 	fakeAuthApi := createAndReturnFakeAuthApi()
 	authHandler := &AuthenticationHandler{fakeAuthApi}
@@ -162,5 +174,12 @@ func validateTokenResponse(data []byte, t *testing.T) {
 	}
 	if tokenJson.Token == "" {
 		t.Errorf("token not expected to be empty in return!")
+	}
+}
+
+func checkStatusCode(expected int, responseWriter *FakeResponseWriter, t *testing.T) {
+	statusCode := responseWriter.Headers.Get("Status")
+	if statusCode != strconv.Itoa(expected) {
+		t.Errorf("Expected status code %d, but got %q", expected, statusCode)
 	}
 }
