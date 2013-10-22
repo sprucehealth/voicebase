@@ -20,3 +20,4 @@ func GetAuthTokenFromHeader(r *http.Request) (string, error) {
 	}
 	return parts[1], nil
 }
+

@@ -2,9 +2,7 @@ package api
 
 import (
 	"code.google.com/p/go.crypto/bcrypt"
-	"crypto/rand"
 	"database/sql"
-	"encoding/hex"
 	"time"
 )
 
@@ -56,7 +54,7 @@ func (m *AuthService) Signup(email, password string) (token string, accountId in
 		return "", 0, err
 	}
 
-	tok, err := generateToken()
+	tok, err := GenerateToken()
 	if err != nil {
 		tx.Rollback()
 		return "", 0, err
@@ -95,7 +93,7 @@ func (m *AuthService) Login(email, password string) (token string, accountId int
 	}
 
 	// create new token
-	token, err = generateToken()
+	token, err = GenerateToken()
 	if err != nil {
 		return "", 0, err
 	}
@@ -122,18 +120,6 @@ func (m *AuthService) Login(email, password string) (token string, accountId int
 	tx.Commit()
 
 	return token, account.Id, nil
-}
-
-func generateToken() (string, error) {
-
-	// generate token for the new user and store token in database
-	tokBytes := make([]byte, 16)
-	if _, err := rand.Read(tokBytes); err != nil {
-		return "", err
-	}
-
-	tok := hex.EncodeToString(tokBytes)
-	return tok, nil
 }
 
 func (m *AuthService) Logout(token string) error {

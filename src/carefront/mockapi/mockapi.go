@@ -1,8 +1,9 @@
-package api
+package mockapi
 
 import (
 	"crypto/rand"
 	"encoding/hex"
+	"carefront/api"
 )
 
 type MockAccount struct {
@@ -17,13 +18,13 @@ type MockAuth struct {
 }
 
 func (m *MockAuth) Signup(email, password string) (token string, accountId int64, err error) {
-	// TODO
+	// 
 	return "", 0, nil
 }
 
 func (m *MockAuth) Login(login, password string) (token string, accountId int64, err error) {
 	if account, ok := m.Accounts[login]; !ok || account.Password != password {
-		return "", 0, ErrLoginFailed
+		return "", 0, api.ErrLoginFailed
 	} else {
 		tokBytes := make([]byte, 16)
 		if _, err := rand.Read(tokBytes); err != nil {

@@ -1,7 +1,7 @@
 package apiservice
 
 import (
-	"carefront/api"
+	"carefront/mockapi"
 	"net/http"
 	"strconv"
 	"strings"
@@ -71,10 +71,10 @@ func TestUnsuccessfulLoginDueToMissingParams(t *testing.T) {
 
 // Private Methods
 
-func createAndReturnFakeAuthApi() *api.MockAuth {
-	return &api.MockAuth{
-		Accounts: map[string]api.MockAccount{
-			"kajham": api.MockAccount{
+func createAndReturnFakeAuthApi() *mockapi.MockAuth {
+	return &mockapi.MockAuth{
+		Accounts: map[string]mockapi.MockAccount{
+			"kajham": mockapi.MockAccount{
 				Id:       1,
 				Login:    "kajham",
 				Password: "12345",
