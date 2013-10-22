@@ -111,6 +111,23 @@ func TestSuccessfulLogin(t *testing.T) {
 	validateTokenResponse(responseWriter.body, t)
 }
 
+func TestSuccessfulLogout(t *testing.T) {
+	mux := setupAuthHandlerInMux(LogoutPath)
+	req, _ := http.NewRequest("GET", LogoutPath, nil)
+	req.Header.Set("Authorization", "token tokenForKajham")
+	responseWriter := createFakeResponseWriter()
+	mux.ServeHTTP(responseWriter, req)
+	
+	checkStatusCode(http.StatusOK, responseWriter, t)
+}
+
+func TestUnauthorizedLogout(t *testing.T) {
+	mux := setupAuthHandlerInMux(LogoutPath)
+	req, _ := http.NewRequest("GET", LogoutPath, nil)
+	responseWriter := createFakeResponseWriter()
+	mux.ServeHTTP(responseWriter, req)
+	checkStatusCode(http.StatusForbidden, responseWriter, t)
+}
 func TestUnsuccessfulLoginDueToPassword(t *testing.T) {
 	mux := setupAuthHandlerInMux(LoginPath)
 
