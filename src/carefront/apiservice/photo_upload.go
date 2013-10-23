@@ -30,7 +30,6 @@ import (
 	"bytes"
 	"carefront/api"
 	"encoding/json"
-	"fmt"
 	"io/ioutil"
 	"log"
 	"net/http"
@@ -111,13 +110,11 @@ func (h *PhotoUploadHandler) ServeHTTP(w http.ResponseWriter, r *http.Request) {
 
 	// infer extension from filename if one exists
 	parts := strings.Split(handler.Filename, ".")
-	fmt.Println(parts)
 	if len(parts) > 1 {
 		buffer.WriteString(".")
 		buffer.WriteString(parts[1])
 	}
 
-	fmt.Println(handler.Header.Get("Content-Type"))
 	// synchronously upload the image and return a response back to the user when the
 	// upload is complete
 	signedUrl, err := h.PhotoApi.Upload(data, handler.Header.Get("Content-Type"), buffer.String(), h.CaseBucketLocation, time.Now().Add(10*time.Minute))
