@@ -12,7 +12,7 @@ type PhotoService struct {
 	AWSSecretKey string
 }
 
-func (p *PhotoService) Upload(data []byte, key string, bucket string, duration time.Time) (string, error) {
+func (p *PhotoService) Upload(data []byte, contentType string, key string, bucket string, duration time.Time) (string, error) {
 	auth := aws.Auth{p.AWSAccessKey, p.AWSSecretKey}
 
 	s3Access := s3.New(auth, aws.USWest)
@@ -22,7 +22,7 @@ func (p *PhotoService) Upload(data []byte, key string, bucket string, duration t
 		"x-amz-server-side-encryption": {"AES256"},
 	}
 
-	if err := s3Bucket.Put(key, data, "binary/octet-stream", s3.BucketOwnerFull, additionalHeaders); err != nil {
+	if err := s3Bucket.Put(key, data, contentType, s3.BucketOwnerFull, additionalHeaders); err != nil {
 		return "", err
 	}
 

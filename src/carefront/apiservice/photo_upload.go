@@ -30,10 +30,12 @@ import (
 	"bytes"
 	"carefront/api"
 	"encoding/json"
+	"fmt"
 	"io/ioutil"
 	"log"
 	"net/http"
 	"strconv"
+	"strings"
 	"time"
 )
 
@@ -53,7 +55,7 @@ type PhotoUploadErrorResponse struct {
 
 func (h *PhotoUploadHandler) ServeHTTP(w http.ResponseWriter, r *http.Request) {
 	r.ParseForm()
-	file, _, err := r.FormFile("photo")
+	file, handler, err := r.FormFile("photo")
 	if err != nil {
 		log.Println(err)
 		w.WriteHeader(http.StatusBadRequest)
@@ -107,9 +109,18 @@ func (h *PhotoUploadHandler) ServeHTTP(w http.ResponseWriter, r *http.Request) {
 	buffer.WriteString("/")
 	buffer.WriteString(strconv.FormatInt(photoId, 10))
 
+	// infer extension from filename if one exists
+	parts := strings.Split(handler.Filename, ".")
+	fmt.Println(parts)
+	if len(parts) > 1 {
+		buffer.WriteString(".")
+		buffer.WriteString(parts[1])
+	}
+
+	fmt.Println(handler.Header.Get("Content-Type"))
 	// synchronously upload the image and return a response back to the user when the
 	// upload is complete
-	signedUrl, err := h.PhotoApi.Upload(data, buffer.String(), h.CaseBucketLocation, time.Now().Add(10*time.Minute))
+	signedUrl, err := h.PhotoApi.Upload(data, handler.Header.Get("Content-Type"), buffer.String(), h.CaseBucketLocation, time.Now().Add(10*time.Minute))
 
 	if err != nil {
 		w.WriteHeader(http.StatusInternalServerError)

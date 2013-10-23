@@ -9,7 +9,7 @@ type MockPhotoService struct {
 	ToGenerateError bool
 }
 
-func (m *MockPhotoService) Upload(data []byte, key string, bucket string, duration time.Time) (string, error) {
+func (m *MockPhotoService) Upload(data []byte, contentType string, key string, bucket string, duration time.Time) (string, error) {
 	if m.ToGenerateError {
 		return "", errors.New("Fake error")
 	}
