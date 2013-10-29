@@ -27,12 +27,7 @@ CREATE TABLE IF NOT EXISTS question_type (
 // should not have cascading deletes
 // unique constraints
 // date associated with each answer
-// identify some way to persist policy information for what the layout looked like
-// think of data that is global versus case specific
 // there should be a way to specify previously selected answers.
-// how will this work to display information
-// what happens with the condition if more than 1 is selected when multiselect is true and we are using the equals condition
-// what screen tags are supported for hard-coding screen experiences on client; and what versions support that.
 CREATE TABLE IF NOT EXISTS question (
 	id int(11) NOT NULL AUTO_INCREMENT,
 	qType_id int(11) NOT NULL,
@@ -40,10 +35,10 @@ CREATE TABLE IF NOT EXISTS question (
 	subtext_app_text_id int(11) NOT NULL,
 	section_id int(11) NOT NULL,
 	question_tag varchar(250) NOT NULL,
-	FOREIGN KEY (qType_id) REFERENCES question_type(id) ON DELETE CASCADE,
-	FOREIGN KEY (subtext_app_text_id) REFERENCES app_text(id) ON DELETE CASCADE,
-	FOREIGN KEY (qtext_app_text_id) REFERENCES app_text(id) ON DELETE CASCADE,
-	FOREIGN KEY (section_id) REFERENCES section(id) ON DELETE CASCADE,
+	FOREIGN KEY (qType_id) REFERENCES question_type(id),
+	FOREIGN KEY (subtext_app_text_id) REFERENCES app_text(id),
+	FOREIGN KEY (qtext_app_text_id) REFERENCES app_text(id),
+	FOREIGN KEY (section_id) REFERENCES section(id),
 	PRIMARY KEY (id),
 	KEY (question_tag)
 ) CHARACTER SET utf8;
@@ -60,9 +55,9 @@ CREATE TABLE IF NOT EXISTS potential_outcome (
 	outcome_localized_text int(11) NOT NULL,
 	otype_id int(11),
 	potential_outcome_tag varchar(250) NOT NULL,
-	FOREIGN KEY (otype_id) REFERENCES outcome_type(id) ON DELETE CASCADE,
-	FOREIGN KEY (question_id) REFERENCES question(id) ON DELETE CASCADE,
-	FOREIGN KEY (outcome_localized_text) REFERENCES app_text(id) ON DELETE CASCADE,
+	FOREIGN KEY (otype_id) REFERENCES outcome_type(id),
+	FOREIGN KEY (question_id) REFERENCES question(id),
+	FOREIGN KEY (outcome_localized_text) REFERENCES app_text(id),
 	PRIMARY KEY (id),
 	KEY (potential_outcome_tag)
 ) CHARACTER SET utf8;
@@ -73,7 +68,7 @@ CREATE TABLE IF NOT EXISTS section (
 	comment varchar(600) NOT NULL,
 	treatment_id int(11) NOT NULL,
 	section_tag varchar(250) NOT NULL,
-	FOREIGN KEY (section_title_app_text_id) REFERENCES app_text(id) ON DELETE CASCADE,
+	FOREIGN KEY (section_title_app_text_id) REFERENCES app_text(id),
 	PRIMARY KEY (id),	
 	KEY (section_tag)
 ) CHARACTER SET utf8;
@@ -91,7 +86,7 @@ CREATE TABLE IF NOT EXISTS patient_info_intake (
 	potential_outcome_id int(11) NOT NULL,
 	outcome_text 
 	PRIMARY KEY (id),
-	FOREIGN KEY (question_id) REFERENCES question(id) ON DELETE CASCADE,
+	FOREIGN KEY (question_id) REFERENCES question(id),
 ) CHARACTER SET UTF8;
 
 
