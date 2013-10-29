@@ -5,7 +5,7 @@ CREATE TABLE IF NOT EXISTS app_text (
 	comment varchar(600),
 	app_text_tag varchar(250) NOT NULL,
 	PRIMARY KEY (id),
-	KEY (app_text_tag)
+	UNIQUE KEY (app_text_tag)
 ) CHARACTER SET utf8;
 
 CREATE TABLE IF NOT EXISTS localized_text (
@@ -23,8 +23,6 @@ CREATE TABLE IF NOT EXISTS question_type (
 	PRIMARY KEY (id)
 ) CHARACTER SET utf8;
 
-
-// should not have cascading deletes
 // unique constraints
 // date associated with each answer
 // there should be a way to specify previously selected answers.
@@ -40,7 +38,7 @@ CREATE TABLE IF NOT EXISTS question (
 	FOREIGN KEY (qtext_app_text_id) REFERENCES app_text(id),
 	FOREIGN KEY (section_id) REFERENCES section(id),
 	PRIMARY KEY (id),
-	KEY (question_tag)
+	UNIQUE KEY (question_tag)
 ) CHARACTER SET utf8;
 
 CREATE TABLE IF NOT EXISTS outcome_type (
@@ -59,7 +57,7 @@ CREATE TABLE IF NOT EXISTS potential_outcome (
 	FOREIGN KEY (question_id) REFERENCES question(id),
 	FOREIGN KEY (outcome_localized_text) REFERENCES app_text(id),
 	PRIMARY KEY (id),
-	KEY (potential_outcome_tag)
+	UNIQUE KEY (potential_outcome_tag)
 ) CHARACTER SET utf8;
 
 CREATE TABLE IF NOT EXISTS section (
@@ -70,7 +68,7 @@ CREATE TABLE IF NOT EXISTS section (
 	section_tag varchar(250) NOT NULL,
 	FOREIGN KEY (section_title_app_text_id) REFERENCES app_text(id),
 	PRIMARY KEY (id),	
-	KEY (section_tag)
+	UNIQUE KEY (section_tag)
 ) CHARACTER SET utf8;
 
 CREATE TABLE IF NOT EXISTS treatment (
