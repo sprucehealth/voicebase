@@ -53,6 +53,12 @@ func TestRegistry(t *testing.T, reg Registry) {
 		t.Fatalf("Watch created before a register didn't receive the registration")
 	}
 
+	select {
+	case _ = <-preWatch:
+		t.Fatalf("Received extra watch event")
+	default:
+	}
+
 	postWatch := make(chan []ServiceUpdate, 1)
 	if err := reg.WatchService(id, postWatch); err != nil {
 		t.Fatal(err)
@@ -71,6 +77,12 @@ func TestRegistry(t *testing.T, reg Registry) {
 		}
 	case <-time.After(time.Second * 4):
 		t.Fatalf("Watch ccreated after a register didn't receive the registration")
+	}
+
+	select {
+	case _ = <-postWatch:
+		t.Fatalf("Received extra watch event")
+	default:
 	}
 
 	if err := svc.Unregister(); err != nil {
@@ -96,5 +108,11 @@ func TestRegistry(t *testing.T, reg Registry) {
 		}
 	case <-time.After(time.Second * 4):
 		t.Fatalf("Watch channel didn't receive unregister")
+	}
+
+	select {
+	case _ = <-preWatch:
+		t.Fatalf("Received extra watch event after unregister")
+	default:
 	}
 }
