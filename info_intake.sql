@@ -1,7 +1,16 @@
 use info_intake_db;
 
+CREATE TABLE IF NOT EXISTS languages_supported (
+	id int unsigned NOT NULL AUTO_INCREMENT,
+	language varchar(5) NOT NULL,
+	appVersion varchar(10) NOT NULL,
+	UNIQUE KEY (language),
+	UNIQUE KEY (appVersion),
+	PRIMARY KEY (id)
+) CHARACTER SET UTF8;
+
 CREATE TABLE IF NOT EXISTS app_text (
-	id unsigned int NOT NULL AUTO_INCREMENT,
+	id int unsigned NOT NULL AUTO_INCREMENT,
 	comment varchar(600),
 	app_text_tag varchar(250) NOT NULL,
 	PRIMARY KEY (id),
@@ -9,22 +18,23 @@ CREATE TABLE IF NOT EXISTS app_text (
 ) CHARACTER SET utf8;
 
 CREATE TABLE IF NOT EXISTS localized_text (
-	id unsigned int NOT NULL AUTO_INCREMENT,
-	language varchar(5) NOT NULL,
+	id int unsigned NOT NULL AUTO_INCREMENT,
+	language_id int unsigned NOT NULL,
 	ltext varchar(600) NOT NULL,
 	app_text_id int unsigned NOT NULL,
 	FOREIGN KEY (app_text_id) REFERENCES app_text(id) ON DELETE CASCADE,
+	FOREIGN KEY (language_id) REFERENCES languages_supported(id),
 	PRIMARY KEY (id)
 ) CHARACTER SET utf8;
 
 CREATE TABLE IF NOT EXISTS question_type (
-	id unsigned int NOT NULL AUTO_INCREMENT,
+	id int unsigned NOT NULL AUTO_INCREMENT,
 	qType varchar(250),
 	PRIMARY KEY (id)
 ) CHARACTER SET utf8;
 
 CREATE TABLE IF NOT EXISTS question (
-	id unsigned int NOT NULL AUTO_INCREMENT,
+	id int unsigned NOT NULL AUTO_INCREMENT,
 	qType_id int unsigned NOT NULL,
 	qtext_app_text_id int unsigned NOT NULL,
 	subtext_app_text_id int unsigned NOT NULL,
@@ -80,12 +90,12 @@ CREATE TABLE IF NOT EXISTS patient_info_intake (
 	question_id int unsigned NOT NULL,
 	potential_outcome_id int unsigned NOT NULL,
 	outcome_text varchar(600),
-	layout_version_id int unsigned NOT NULL,
+	client_layout_version_id int unsigned NOT NULL,
 	answered_date timestamp NOT NULL DEFAULT CURRENT_TIMESTAMP,
 	status varchar(100) NOT NULL,
 	PRIMARY KEY (id),
 	FOREIGN KEY (question_id) REFERENCES question(id),
-	FOREIGN KEY (layout_version_id) REFERENCES layout_version(id),
+	FOREIGN KEY (client_layout_version_id) REFERENCES client_layout_version(id),
 	FOREIGN KEY (case_id) REFERENCES case(id),
 ) CHARACTER SET UTF8;
 
@@ -98,5 +108,25 @@ CREATE TABLE IF NOT EXISTS layout_version (
 	FOREIGN KEY (treatment_id) REFERENCES treatment(id),
 	PRIMARY KEY (id)
 ) CHARACTER SET utf8;
+
+CREATE TABLE IF NOT EXISTS client_layout_version (
+	id int unsigned NOT NULL AUTO_INCREMENT,
+	url varchar(250) NOT NULL,
+	language_id int unsigned NOT NULL,
+	layout_version_id int unsigned NOT NULL,
+	status varchar(250) NOT NULL, 
+	FOREIGN KEY (layout_version_id) REFERENCES layout_version(id),
+	FOREIGN KEY (language_id) REFERENCES languages_supported(id),
+	PRIMARY KEY(id)
+) CHARACTER SET utf8;
+
+CREATE TABLE IF NOT EXISTS client_hardcoded_screen (
+	id int unsigned NOT NULL AUTO_INCREMENT,
+	client_hardcoded_screen_tag varchar(100) NOT NULL,
+	appVersion varchar(10) NOT NULL,
+	UNIQUE KEY (client_hardcoded_screen_tag),
+	UNIQUE KEY (appVersion),
+	PRIMARY KEY(id)
+) CHARACTER SET UTF8;
 
 

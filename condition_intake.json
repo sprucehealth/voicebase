@@ -18,12 +18,7 @@
 						{
 							"question" 		: "q_conditions_survey",
 							"answers"		: "a_symptom_condition_survey",
-							"condition" 	: {
-								
-								"Equals"	: {
-									"q_visit_reason" : "a_something_else"	
-								}
-							}
+							"condition" 	: "EQUALS(q_visit_reason, a_something_else)"
 						}
 					]
 				},
@@ -48,11 +43,7 @@
 						{
 							"question"	: "q_changes_acne_worse",
 							"answers"	: ["a_changes_acne_worse"],
-							"condition"	: {
-								"Equals" : {
-									"q_acne_worse" : "a_yes_acne_worse"
-								}
-							}
+							"condition"	: "EQUALS(q_acne_worse, a_yes_acne_worse)"
 						}
 					]		
 				},
@@ -70,11 +61,7 @@
 					"screen_tag" 	: "screen_treatment_entry",
 					"hardcoded" 	: true,
 					"description" 	: "get treatments from user",
-					"condition"		: {
-						"Equals"	: {
-							"q_acne_previous_treatment"	: "a_prescription_prev_acne_treatment"
-						}
-					}
+					"condition"		: "EQUALS(q_acne_previous_treatment, a_prescription_prev_acne_treatment)"
 				}
 			]
 
