@@ -1,70 +1,70 @@
 {
-	"treatment" : "treatment_acne",
-	"layout_version_id" : 1,
-	"sections" : [
-		{
-			"section" 	: "section_skin_history",
-			"screens" 	: [
-				{
-					"description"	: "reason for visit",
-					"questions"		: [
-						
-						{
-							"question" 		: "q_visit_reason",
-							"potential_answers" 		: ["a_acne", "a_something_else"],
-							"multiselect"	: false,
-						},
+  "treatment" : "treatment_acne",
+  "layout_version_id" : 1,
+  "sections" : [
+    {
+      "section"   : "section_skin_history",
+      "screens"   : [
+        {
+          "description" : "reason for visit",
+          "questions"   : [
+            
+            {
+              "question"    : "q_visit_reason",
+              "potential_answers"     : ["a_acne", "a_something_else"],
+              "multiselect" : false,
+            },
 
-						{
-							"question" 		: "q_conditions_survey",
-							"potential_answers"		: "a_symptom_condition_survey",
-							"condition" 	: "EQUALS(q_visit_reason, a_something_else)"
-						}
-					]
-				},
-				{
-					"description"	: "length of acne symptoms",
-					"questions"		: [
-						{
-							"question" 		: "q_acne_length",
-							"potential_answers"		: ["a_less_six_months", "a_six_twelve_months", "a_one_two_years", "a_more_two_years"],
-							"multiselect"	: false,
-						}
+            {
+              "question"    : "q_conditions_survey",
+              "potential_answers"   : "a_symptom_condition_survey",
+              "condition"   : "ANSWER_EQUALS(q_visit_reason, a_something_else)"
+            }
+          ]
+        },
+        {
+          "description" : "length of acne symptoms",
+          "questions"   : [
+            {
+              "question"    : "q_acne_length",
+              "potential_answers"   : ["a_less_six_months", "a_six_twelve_months", "a_one_two_years", "a_more_two_years"],
+              "multiselect" : false,
+            }
 
-					]
-				},
-				{
-					"description"	: "is acne getting worse",
-					"questions"		: [
-						{
-							"question"  : "q_acne_worse",
-							"potential_answers"	:	["a_yes_acne_worse", "a_no_acne_worse"]	
-						},
-						{
-							"question"	: "q_changes_acne_worse",
-							"potential_answers"	: ["a_changes_acne_worse"],
-							"condition"	: "EQUALS(q_acne_worse, a_yes_acne_worse)"
-						}
-					]		
-				},
-				{
-					"description"	: "what previous treatments have you tried for acne",
-					"questions"		: [
-						{
-							"question" 		: "q_acne_previous_treatment",
-							"potential_answers"		: ["a_over_counter_prev_acne_treatment", "a_prescription_prev_acne_treatment", "a_none_prev_acne_treatment"],
-							"multiselect"	: true
-						}
-					]
-				},
-				{
-					"screen_tag" 	: "screen_treatment_entry",
-					"hardcoded" 	: true,
-					"description" 	: "get treatments from user",
-					"condition"		: "EQUALS(q_acne_previous_treatment, a_prescription_prev_acne_treatment)"
-				}
-			]
+          ]
+        },
+        {
+          "description" : "is acne getting worse",
+          "questions"   : [
+            {
+              "question"  : "q_acne_worse",
+              "potential_answers" : ["a_yes_acne_worse", "a_no_acne_worse"] 
+            },
+            {
+              "question"  : "q_changes_acne_worse",
+              "potential_answers" : ["a_changes_acne_worse"],
+              "condition" : "ANSWER_EQUALS(q_acne_worse, a_yes_acne_worse)"
+            }
+          ]   
+        },
+        {
+          "description" : "what previous treatments have you tried for acne",
+          "questions"   : [
+            {
+              "question"    : "q_acne_previous_treatment",
+              "potential_answers"   : ["a_over_counter_prev_acne_treatment", "a_prescription_prev_acne_treatment", "a_none_prev_acne_treatment"],
+              "multiselect" : true
+            }
+          ]
+        },
+        {
+          "screen_tag"  : "screen_treatment_entry",
+          "hardcoded"   : true,
+          "description"   : "get treatments from user",
+          "condition"   : "ANSWER_EQUALS(q_acne_previous_treatment, a_prescription_prev_acne_treatment)"
+        }
+      ]
 
-		}
-	]
+    }
+  ]
 }
