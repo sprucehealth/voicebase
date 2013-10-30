@@ -76,15 +76,17 @@ CREATE TABLE IF NOT EXISTS treatment (
 
 CREATE TABLE IF NOT EXISTS patient_info_intake (
 	id int unsigned NOT NULL AUTO_INCREMENT,
-	treatment_id int unsigned NOT NULL,
+	case_id int unsigned,
 	question_id int unsigned NOT NULL,
 	potential_outcome_id int unsigned NOT NULL,
 	outcome_text varchar(600),
 	layout_version_id int unsigned NOT NULL,
 	answered_date timestamp NOT NULL DEFAULT CURRENT_TIMESTAMP,
+	status varchar(100) NOT NULL,
 	PRIMARY KEY (id),
 	FOREIGN KEY (question_id) REFERENCES question(id),
 	FOREIGN KEY (layout_version_id) REFERENCES layout_version(id),
+	FOREIGN KEY (case_id) REFERENCES case(id),
 ) CHARACTER SET UTF8;
 
 CREATE TABLE IF NOT EXISTS layout_version (
