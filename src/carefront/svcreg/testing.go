@@ -47,7 +47,7 @@ func TestRegistry(t *testing.T, reg Registry) {
 			t.Fatalf("Expected Add got %d", up[0].Type)
 		}
 		if up[0].Member.Endpoint != member.Endpoint {
-			t.Fatalf("Expected %s got %s", member.Endpoint, up[0].Member.Endpoint)
+			t.Fatalf("Expected %v got %v", member.Endpoint, up[0].Member.Endpoint)
 		}
 	case <-time.After(time.Second * 4):
 		t.Fatalf("Watch created before a register didn't receive the registration")
@@ -73,7 +73,7 @@ func TestRegistry(t *testing.T, reg Registry) {
 			t.Fatalf("Expected Add got %d", up[0].Type)
 		}
 		if up[0].Member.Endpoint != member.Endpoint {
-			t.Fatalf("Expected %s got %s", member.Endpoint, up[0].Member.Endpoint)
+			t.Fatalf("Expected %v got %v", member.Endpoint, up[0].Member.Endpoint)
 		}
 	case <-time.After(time.Second * 4):
 		t.Fatalf("Watch ccreated after a register didn't receive the registration")
@@ -104,7 +104,7 @@ func TestRegistry(t *testing.T, reg Registry) {
 			t.Fatalf("Expected Remove got %d", up[0].Type)
 		}
 		if up[0].Member.Endpoint != member.Endpoint {
-			t.Fatalf("Expected %s got %s", member.Endpoint, up[0].Member.Endpoint)
+			t.Fatalf("Expected %v got %v", member.Endpoint, up[0].Member.Endpoint)
 		}
 	case <-time.After(time.Second * 4):
 		t.Fatalf("Watch channel didn't receive unregister")
