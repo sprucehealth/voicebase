@@ -120,6 +120,15 @@ CREATE TABLE IF NOT EXISTS client_layout_version (
 	PRIMARY KEY(id)
 ) CHARACTER SET utf8;
 
+CREATE TABLE IF NOT EXISTS dr_layout_version (
+	id int unsigned NOT NULL AUTO_INCREMENT,
+	url varchar(250) NOT NULL,
+	layout_version_id int unsigned NOT NULL,
+	status varchar(250) NOT NULL,
+	FOREIGN KEY (layout_version_id) REFERENCES layout_version(id),
+	PRIMARY KEY(id)
+) CHARACTER SET UTF8;
+
 CREATE TABLE IF NOT EXISTS client_hardcoded_screen (
 	id int unsigned NOT NULL AUTO_INCREMENT,
 	client_hardcoded_screen_tag varchar(100) NOT NULL,
