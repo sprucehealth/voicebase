@@ -1,6 +1,6 @@
 {
 	"treatment" : "treatment_acne",
-
+	"layout_version_id" : 1,
 	"sections" : [
 		{
 			"section" 	: "section_skin_history",

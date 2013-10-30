@@ -1,0 +1,16 @@
+{
+	"layout_version_id"	: 2,
+	"treatment" : "treatment_acne",
+	"sections"	: [
+		{
+			"section"	: 	"section_photos",
+		},
+		{
+			"section"	:	"section_medical_history"	
+		},
+		{
+			"section"		:	"section_skin_history",
+			"keyQuestions"	: ["q_acne_length", "q_acne_worse"]
+		},
+	] 
+}
