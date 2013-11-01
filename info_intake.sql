@@ -1,5 +1,11 @@
 use info_intake_db;
 
+CREATE TABLE IF NOT EXISTS languages_supported (
+	id int unsigned NOT NULL AUTO_INCREMENT,
+	language varhcar(10) NOT NULL,
+	PRIMARY KEY(id)
+) CHARACTER SET UTF8;
+
 CREATE TABLE IF NOT EXISTS app_text (
 	id int unsigned NOT NULL AUTO_INCREMENT,
 	comment varchar(600),
@@ -10,10 +16,11 @@ CREATE TABLE IF NOT EXISTS app_text (
 
 CREATE TABLE IF NOT EXISTS localized_text (
 	id int unsigned NOT NULL AUTO_INCREMENT,
-	language varchar(10) NOT NULL,
+	language_id int unsigned NOT NULL,
 	ltext varchar(600) NOT NULL,
 	app_text_id int unsigned NOT NULL,
 	FOREIGN KEY (app_text_id) REFERENCES app_text(id) ON DELETE CASCADE,
+	FOREIGN KEY (language_id) REFERENCES languages_supported(id),
 	PRIMARY KEY (id)
 ) CHARACTER SET utf8;
 
@@ -104,10 +111,11 @@ CREATE TABLE IF NOT EXISTS layout_version (
 CREATE TABLE IF NOT EXISTS client_layout_version (
 	id int unsigned NOT NULL AUTO_INCREMENT,
 	url varchar(250) NOT NULL,
-	language varchar(10) NOT NULL,
+	language_id int unsigned NOT NULL,
 	layout_version_id int unsigned NOT NULL,
 	status varchar(250) NOT NULL, 
 	FOREIGN KEY (layout_version_id) REFERENCES layout_version(id),
+	FOREIGN KEY (language_id) REFERENCES languages_supported(id),
 	PRIMARY KEY(id)
 ) CHARACTER SET utf8;
 
