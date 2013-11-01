@@ -55,7 +55,7 @@ CREATE TABLE IF NOT EXISTS potential_outcome (
 	id int unsigned NOT NULL AUTO_INCREMENT,
 	question_id int unsigned NOT NULL,
 	outcome_localized_text int unsigned NOT NULL,
-	otype_id int unsigned,
+	otype_id int unsigned NOT NULL,
 	potential_outcome_tag varchar(250) NOT NULL,
 	FOREIGN KEY (otype_id) REFERENCES outcome_type(id),
 	FOREIGN KEY (question_id) REFERENCES question(id),
@@ -101,6 +101,7 @@ CREATE TABLE IF NOT EXISTS patient_info_intake (
 CREATE TABLE IF NOT EXISTS layout_version (
 	id int unsigned NOT NULL AUTO_INCREMENT,
 	url varchar(250) NOT NULL,
+	syntax_version int unsigned NOT NULL,
 	treatment_id int unsigned NOT NULL,
 	comment varchar(600),
 	status varchar(250) NOT NULL, 
@@ -131,7 +132,7 @@ CREATE TABLE IF NOT EXISTS dr_layout_version (
 CREATE TABLE IF NOT EXISTS client_hardcoded_screen (
 	id int unsigned NOT NULL AUTO_INCREMENT,
 	client_hardcoded_screen_tag varchar(100) NOT NULL,
-	appVersion varchar(10) NOT NULL,
+	app_version varchar(10) NOT NULL,
 	UNIQUE KEY (client_hardcoded_screen_tag),
 	UNIQUE KEY (appVersion),
 	PRIMARY KEY(id)
