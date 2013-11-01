@@ -109,7 +109,7 @@ CREATE TABLE IF NOT EXISTS layout_version (
 	PRIMARY KEY (id)
 ) CHARACTER SET utf8;
 
-CREATE TABLE IF NOT EXISTS client_layout_version (
+CREATE TABLE IF NOT EXISTS patient_layout_version (
 	id int unsigned NOT NULL AUTO_INCREMENT,
 	object_storage_id int unsigned NOT NULL,
 	language_id int unsigned NOT NULL,
