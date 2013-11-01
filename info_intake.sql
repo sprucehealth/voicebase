@@ -145,6 +145,7 @@ CREATE TABLE IF NOT EXISTS object_storage (
 	region varchar(100) NOT NULL,
 	bucket varchar(100) NOT NULL,
 	key varchar(100) NOT NULL,
+	status varchar(100) NOT NULL,
 	PRIMARY KEY(id)
 ) CHARACTER SET UTF8;
 
