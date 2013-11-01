@@ -1,0 +1,155 @@
+{
+  "treatment_id" : "1",
+  "language" : "en",
+  "sections" : [
+    {
+      "section_id"  : "1",
+      "section_title" : "Your Skin History",
+      "screens"   : [
+        {
+          "questions"   : [
+            
+            {
+              "question_id" : "2",
+              "question_title": "What's the reason for your visit with Dr. Who today?",
+              "question_type" : "q_type_multiple_choice",
+              "potential_answers"     : [{
+                "potential_answer_id"   : "2",
+                "potential_answer"    : "Acne",
+                "potential_answer_type" : "o_type_multiple_choice"
+              },
+              {
+                "potential_answer_id"   : "3",
+                "potential_answer"    : "Something else",
+                "potential_answer_type" : "o_type_multiple_choice"
+              }],
+              "patient_answer" : {
+                "potential_answer_id" : "2"
+              },
+              "multiselect" : false,
+            },
+            { 
+              "question_id"     : "8",
+              "question_subtext"    : "We're currently only diagnosing and treating acne in the CareFront app but will be adding support for more conditions soon.\n\nHelp us inform what we add next by telling us what you are looking to be diagnosed.",
+              "question_type"     : "q_type_condition_survey",
+              "potential_answers"       : [{
+                "answer_id"   : "16",
+                "answer"    : "Type to add symptom or condition",
+                "answer_type" : "o_type_single_free_entry"
+                }],
+              "patient_answer"      : [{
+                "potential_answer_id"   : "16",
+                "answer_text"     : "Rosacia"
+                }],
+              "condition"   : {
+                "op"    : "answer_equals",
+                "question_id" : 2,
+                "potential_answer_id" : 2,
+              }
+            }
+          ]
+        },
+        {
+          "questions"   : [
+            {
+              "question_id"     : "3",
+              "question_type"   : "q_type_multiple_choice",
+              "question_title"  : "How long have you been experiencing acne symptoms?",
+              "potential_answers"   : [{
+                "potential_answer_id"   : "4",
+                "potential_answer"    : "0-6 months",
+                "potential_answer_type" : "o_type_multiple_choice"
+                },
+                {
+                "potential_answer_id"   : "5",
+                "potential_answer"    : "6-12 months",
+                "potential_answer_type" : "o_type_multiple_choice"
+                },
+                {
+                "potential_answer_id"   : "6",
+                "potential_answer"    : "1-2 years",
+                "potential_answer_type" : "o_type_multiple_choice"
+                },
+                {
+                "potential_answer_id"   : "7",
+                "potential_answer"    : "2+ years",
+                "potential_answer_type" : "o_type_multiple_choice"
+                }],
+              "multiselect" : false,
+            }
+
+          ]
+        },
+        {
+          "questions"   : [
+            {
+              "question_id" : "4",
+              "question"    : "Is your acne getting worse?",
+              "question_type" : "q_type_multiple_choice",
+              "potential_answers" : [{
+                "potential_answer_id"   : "8",
+                "potential_answer"    : "Yes",
+                "potential_answer_type" : "o_type_multiple_choice"
+              },
+              {
+                "potential_answer_id"   : "9",
+                "potential_answer"    : "No",
+                "potential_answer_type" : "o_type_multiple_choice"
+              }],
+            },
+            { 
+              "question_id" : "5",
+              "question_subtext"  : " Describe any recent changes that could be making your acne worse (ex: playingsports, warmer weather)",
+              "question_type"   : "q_type_free_text",
+              "potential_answers" : [{
+                "potential_answer_id" : "10",
+                "potential_answer_type" : "o_type_free_text",
+              }],
+              "condition"   : {
+                "op"    : "answer_equals",
+                "question_id" : "4",
+                "potential_answer_id" : "8"
+              }
+            }
+          ]   
+        },
+        {
+          "questions"   : [
+            {
+              "question_id" : "6",
+              "question_type" : "q_type_multiple_choice",
+              "question"    : "What previous treatments have you tried for your acne?",
+              "potential_answers"   : [{
+                "potential_answer_id"   : "11",
+                "potential_answer"    : "Over the counter",
+                "potential_answer_type" : "o_type_multiple_choice"
+              },
+              {
+                "potential_answer_id"   : "12",
+                "potential_answer"    : "Prescription",
+                "potential_answer_type" : "o_type_multiple_choice"
+              },
+              {
+                "potential_answer_id"   : "13",
+                "potential_answer"    : "None",
+                "potential_answer_type" : "o_type_multiple_choice"
+              }],
+              "multiselect" : true
+            }
+          ]
+        },
+        {
+          "screen_id"   : "1",
+          "screen_tag"  : "screen_treatment_entry",
+          "hardcoded"   : true,
+          "condition"   : {
+            "op"    : "answer_equals",
+            "question_id" : "6",
+            "potential_answer_id" : "12"
+          }
+        }
+      ]
+
+    }
+  ]
+}
