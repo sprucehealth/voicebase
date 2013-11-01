@@ -35,12 +35,10 @@ CREATE TABLE IF NOT EXISTS question (
 	qtype_id int unsigned NOT NULL,
 	qtext_app_text_id int unsigned NOT NULL,
 	subtext_app_text_id int unsigned NOT NULL,
-	section_id int unsigned NOT NULL,
 	question_tag varchar(250) NOT NULL,
 	FOREIGN KEY (qtype_id) REFERENCES question_type(id),
 	FOREIGN KEY (subtext_app_text_id) REFERENCES app_text(id),
 	FOREIGN KEY (qtext_app_text_id) REFERENCES app_text(id),
-	FOREIGN KEY (section_id) REFERENCES section(id),
 	PRIMARY KEY (id),
 	UNIQUE KEY (question_tag)
 ) CHARACTER SET utf8;
