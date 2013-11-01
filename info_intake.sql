@@ -26,18 +26,18 @@ CREATE TABLE IF NOT EXISTS localized_text (
 
 CREATE TABLE IF NOT EXISTS question_type (
 	id int unsigned NOT NULL AUTO_INCREMENT,
-	qType varchar(250),
+	qtype varchar(250),
 	PRIMARY KEY (id)
 ) CHARACTER SET utf8;
 
 CREATE TABLE IF NOT EXISTS question (
 	id int unsigned NOT NULL AUTO_INCREMENT,
-	qType_id int unsigned NOT NULL,
+	qtype_id int unsigned NOT NULL,
 	qtext_app_text_id int unsigned NOT NULL,
 	subtext_app_text_id int unsigned NOT NULL,
 	section_id int unsigned NOT NULL,
 	question_tag varchar(250) NOT NULL,
-	FOREIGN KEY (qType_id) REFERENCES question_type(id),
+	FOREIGN KEY (qtype_id) REFERENCES question_type(id),
 	FOREIGN KEY (subtext_app_text_id) REFERENCES app_text(id),
 	FOREIGN KEY (qtext_app_text_id) REFERENCES app_text(id),
 	FOREIGN KEY (section_id) REFERENCES section(id),
