@@ -66,9 +66,10 @@ CREATE TABLE IF NOT EXISTS section (
 	id int unsigned NOT NULL AUTO_INCREMENT,
 	section_title_app_text_id int unsigned NOT NULL,
 	comment varchar(600) NOT NULL,
-	treatment_id int unsigned,
+	treatment_id int unsigned NOT NULL,
 	section_tag varchar(250) NOT NULL,
 	FOREIGN KEY (section_title_app_text_id) REFERENCES app_text(id),
+	FOREIGN KEY (treatment_id) REFERENCES treatment(id),
 	PRIMARY KEY (id),	
 	UNIQUE KEY (section_tag)
 ) CHARACTER SET utf8;
@@ -98,32 +99,35 @@ CREATE TABLE IF NOT EXISTS patient_info_intake (
 
 CREATE TABLE IF NOT EXISTS layout_version (
 	id int unsigned NOT NULL AUTO_INCREMENT,
-	url varchar(250) NOT NULL,
+	object_storage_id int unsigned NOT NULL,
 	syntax_version int unsigned NOT NULL,
 	treatment_id int unsigned NOT NULL,
 	comment varchar(600),
 	status varchar(250) NOT NULL, 
 	FOREIGN KEY (treatment_id) REFERENCES treatment(id),
+	FOREIGN KEY (object_storage_id) REFERENCES object_storage(id),
 	PRIMARY KEY (id)
 ) CHARACTER SET utf8;
 
 CREATE TABLE IF NOT EXISTS client_layout_version (
 	id int unsigned NOT NULL AUTO_INCREMENT,
-	url varchar(250) NOT NULL,
+	object_storage_id int unsigned NOT NULL,
 	language_id int unsigned NOT NULL,
 	layout_version_id int unsigned NOT NULL,
 	status varchar(250) NOT NULL, 
 	FOREIGN KEY (layout_version_id) REFERENCES layout_version(id),
 	FOREIGN KEY (language_id) REFERENCES languages_supported(id),
+	FOREIGN KEY (object_storage_id) REFERENCES object_storage(id),
 	PRIMARY KEY(id)
 ) CHARACTER SET utf8;
 
 CREATE TABLE IF NOT EXISTS dr_layout_version (
 	id int unsigned NOT NULL AUTO_INCREMENT,
-	url varchar(250) NOT NULL,
+	object_storage_id int unsigned NOT NULL,
 	layout_version_id int unsigned NOT NULL,
 	status varchar(250) NOT NULL,
 	FOREIGN KEY (layout_version_id) REFERENCES layout_version(id),
+	FOREIGN KEY (object_storage_id) REFERENCES object_storage(id),
 	PRIMARY KEY(id)
 ) CHARACTER SET UTF8;
 
@@ -133,6 +137,14 @@ CREATE TABLE IF NOT EXISTS client_hardcoded_screen (
 	app_version varchar(10) NOT NULL,
 	UNIQUE KEY (client_hardcoded_screen_tag),
 	UNIQUE KEY (appVersion),
+	PRIMARY KEY(id)
+) CHARACTER SET UTF8;
+
+CREATE TABLE IF NOT EXISTS object_storage (
+	id int unsigned NOT NULL AUTO_INCREMENT,
+	region varchar(100) NOT NULL,
+	bucket varchar(100) NOT NULL,
+	key varchar(100) NOT NULL,
 	PRIMARY KEY(id)
 ) CHARACTER SET UTF8;
 
