@@ -17,6 +17,7 @@
 
             {
               "question"    : "q_conditions_survey",
+              "hardcoded"   : true,
               "potential_answers"   : "a_symptom_condition_survey",
               "condition"   : {
                 "op"               : "answer_equals",
@@ -67,13 +68,17 @@
         },
         {
           "screen_tag"  : "screen_treatment_entry",
-          "hardcoded"   : true,
           "description"   : "get treatments from user",
-          "condition"   : {
+          "questions" : [{
+            "hardcoded"   : true,
+            "question" : "q_prescription_list",
+            "potential_answers" : ["a_text_treatment_add", "a_photo_treatment_add"],
+            "condition"   : {
               "op"  : "answer_equals",
               "question" : "q_acne_previous_treatment",
               "potential_answers" : "a_prescription_prev_acne_treatment"
-          }
+            }
+            }]
         }
       ]
 
