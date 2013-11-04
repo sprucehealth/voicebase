@@ -17,7 +17,6 @@
 
             {
               "question"    : "q_conditions_survey",
-              "hardcoded"   : true,
               "potential_answers"   : "a_symptom_condition_survey",
               "condition"   : {
                 "op"               : "answer_equals",
@@ -70,7 +69,6 @@
           "screen_tag"  : "screen_treatment_entry",
           "description"   : "get treatments from user",
           "questions" : [{
-            "hardcoded"   : true,
             "question" : "q_prescription_list",
             "potential_answers" : ["a_text_treatment_add", "a_photo_treatment_add"],
             "condition"   : {
@@ -82,6 +80,115 @@
         }
       ]
 
+    },
+    {
+      "section" : "section_medical_history",
+      "screens" : [{
+        "description" : "planning pregnancy",
+        "serverCondition" : {
+            "op"  : "value_quals",
+            "gender"  : "female"
+        },
+        "questions" : [{
+          "question" : "q_pregnancy_planning",
+          "potential_answers" : ["a_yes_pregnancy_planning", "a_no_pregnancy_planning"]
+          }]
+        },
+        {
+          "description" : "allergies",
+          "questions"   : [{
+            "question"  : "q_allergic_medications",
+            "potential_answers" : ["a_yes_allergic_medications", "a_no_allergic_medications"]
+            },
+            {
+            "question"  : "q_medication_list",
+            "potential_answers" : ["a_medication_list_entry"],
+            "condition" : {
+              "op" : "answer_equals",
+              "question" : "q_allergic_medications",
+              "potential_answers" : "a_yes_allergic_medications"
+            }
+            }],
+        },
+        {
+          "description" : "medications currently taking",
+          "questions" : [
+            {
+              "question" : "q_list_medications",
+              "potential_answers" : ["a_medication_list_entry"],
+            }
+          ]
+        },
+        {
+          "description" : "social history",
+          "questions" : [{
+            "question" : "q_social_history",
+            "potential_answers" : ["a_smoke_social_history", "a_alcohol_social_history", "a_tanning_social_history"]
+          }]
+        },
+        {
+          "description" : "previous diagnosis of skin condition",
+          "questions"   : [{
+            "question"          : "q_previous_skin_diagnosis",
+            "potential_answers" : ["a_yes_previous_skin_diagnosis", "a_no_previous_skin_diagnosis"]
+            },
+            {
+              "question"          : "q_select_skin_condition",
+              "potential_answers" : ["a_alopecia_skin_condition", "a_acne_skin_condition", "a_eczema_skin_condition", "a_psoriasis_skin_condition", "a_rosacea_skin_condition", "a_skin_cancer_condition", "a_other_skin_condition"],
+              "condition"         : {
+                "op"  : "answer_equals",
+                "question" : "q_previous_skin_diagnosis",
+                "potential_answers" : "a_yes_previous_skin_diagnosis"
+              }
+            }],
+        },
+        {
+          "description" : "previous medical condition been treated for",
+          "questions" : [{
+            "question"              : "q_previous_medical_condition",
+            "potential_answers"     : ["a_medical_condition_entry"]
+          }],
+        }
+        ]
+    },
+    {
+      "section" : "section_skin_photo_intake",
+      "screens" : [{
+        "description" : "options for places to take skin photo of",
+        "questions" : [{
+          "question"    :   "q_skin_photo_places",
+          "potential_answers" : ["a_face_skin_photo_places", "a_chest_skin_photo_places", "a_back_skin_photo_places", "a_other_skin_photo_places"],
+        }]
+      },
+      {
+        "description" : "tips for face photo taking",
+        "tips_section" : {
+          "tips_section_tag"  : "tips_section_face",
+          "photo_tips"        : ["photo_tip_good_face_front", "photo_tip_bad_face_front", "photo_tip_good_profile_right"],
+          "tips"              : ["tip_remove_glasses", "tip_pull_hair_back", "tip_no_makeup", "tip_shave", "tip_wash_face"]
+        },
+        "condition" : {
+          "op"                : "answer_equals",
+          "question"          : "q_skin_photo_places",
+          "potential_answers" : "a_face_skin_photo_places"
+        },
+        "photo_intake" : "photo_intake_face"
+      },
+      {
+          "description" : "tips for chest photo taking experience",
+          "tips_section" : {
+            "tips_section_tag" : "tips_section_chest",
+            "photo_tips"  : ["photo_tip_good_chest", "phot_tip_bad_chest", "photo_tip_decent_chest"],
+            "tips"        : ["tip_remove_jewellery", "tip_pull_hair_back"]
+          },
+          "condition" : {
+            "op"                : "answer_equals",
+            "question"          : "q_skin_photo_places",
+            "potential_answers" : "a_chest_skin_photo_places"
+          },
+          "photo_intake" : "photo_intake_chest"
+      },
+      ]
     }
   ]
 }

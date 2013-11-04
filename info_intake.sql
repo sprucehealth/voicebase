@@ -149,4 +149,31 @@ CREATE TABLE IF NOT EXISTS object_storage (
 	PRIMARY KEY(id)
 ) CHARACTER SET UTF8;
 
+CREATE TABLE IF NOT EXISTS tips (
+	id int unsigned NOT NULL AUTO_INCREMENT,
+	tips_text_id int unsigned NOT NULL,
+	tips_tag varchar(100) NOT NULL,
+	FOREIGN KEY (tips_text_id) REFERENCES app_text(id),
+	UNIQUE KEY(tips_tag),
+	PRIMARY KEY (id)
+) CHARACTER SET UTF8;
+
+CREATE TABLE IF NOT EXISTS tips_section (
+	id int unsigned NOT NULL AUTO_INCREMENT,
+	tips_section_tag varchar(100) NOT NULL,
+	comment varchar(500),
+	potential_outcome_id int unsigned NOT NULL,
+	UNIQUE KEY (tips_section_tag),
+	FOREIGN KEY (potential_outcome_id) REFERENCES potential_outcome(id),
+	PRIMARY KEY (id)
+) CHARACTER SET UTF8;
+
+CREATE TABLE IF NOT EXISTS photo_tips (
+	id int unsigned NOT NULL AUTO_INCREMENT,
+	photo_tips_tag varchar(100) NOT NULL,
+	photo_url_id int unsigned NOT NULL,
+	UNIQUE KEY (photo_tips_tag),
+	FOREIGN KEY (photo_url_id) REFERENCES object_storage(id),
+	PRIMARY KEY(id)
+) CHARACTER SET UTF8;
 
