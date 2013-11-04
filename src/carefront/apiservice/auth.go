@@ -58,7 +58,6 @@ package apiservice
 
 import (
 	"carefront/api"
-	"encoding/json"
 	"errors"
 	"log"
 	"net/http"
@@ -94,17 +93,15 @@ func (h *AuthenticationHandler) ServeHTTP(w http.ResponseWriter, r *http.Request
 		}
 		if token, _, err := h.AuthApi.Signup(login, password); err == api.ErrSignupFailedUserExists {
 			w.WriteHeader(http.StatusBadRequest)
-			enc := json.NewEncoder(w)
-			enc.Encode(AuthenticationErrorResponse{err.Error()})
+			WriteJSONToHTTPResponseWriter(&w, AuthenticationErrorResponse{err.Error()})
 		} else if err != nil {
 			w.WriteHeader(http.StatusInternalServerError)
-			enc := json.NewEncoder(w)
-			enc.Encode(AuthenticationErrorResponse{err.Error()})
+			WriteJSONToHTTPResponseWriter(&w, AuthenticationErrorResponse{err.Error()})
 		} else {
-			enc := json.NewEncoder(w)
-			if err := enc.Encode(AuthenticationResponse{token}); err != nil {
+			if err := WriteJSONToHTTPResponseWriter(&w, AuthenticationResponse{token}); err != nil {
 				w.WriteHeader(http.StatusInternalServerError)
 			}
+
 		}
 	case "authenticate":
 		login, password, err := getLoginAndPassword(r)
@@ -118,12 +115,12 @@ func (h *AuthenticationHandler) ServeHTTP(w http.ResponseWriter, r *http.Request
 			log.Println(err)
 			w.WriteHeader(http.StatusInternalServerError)
 		} else {
-			enc := json.NewEncoder(w)
-			if err := enc.Encode(AuthenticationResponse{token}); err != nil {
+			if err := WriteJSONToHTTPResponseWriter(&w, AuthenticationResponse{token}); err != nil {
 				log.Println(err)
 				w.WriteHeader(http.StatusInternalServerError)
 				return
 			}
+
 		}
 	case "logout":
 		token, err := GetAuthTokenFromHeader(r)

@@ -55,7 +55,9 @@ func (mux *AuthServeMux) checkAuth(r *http.Request) (bool, error) {
 
 func (mux *AuthServeMux) ServeHTTP(w http.ResponseWriter, r *http.Request) {
 	customResponseWriter := &CustomResponseWriter{w, 0, false}
-	defer func() { log.Printf("%s %s %s %d\n", r.RemoteAddr, r.Method, r.URL, customResponseWriter.StatusCode) }()
+	defer func() {
+		log.Printf("%s %s %s %d %s\n", r.RemoteAddr, r.Method, r.URL, customResponseWriter.StatusCode, w.Header().Get("Content-Type"))
+	}()
 	if r.RequestURI == "*" {
 		customResponseWriter.Header().Set("Connection", "close")
 		customResponseWriter.WriteHeader(http.StatusBadRequest)

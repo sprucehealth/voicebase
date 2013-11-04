@@ -1,6 +1,7 @@
 package apiservice
 
 import (
+	"encoding/json"
 	"errors"
 	"net/http"
 	"strings"
@@ -21,3 +22,8 @@ func GetAuthTokenFromHeader(r *http.Request) (string, error) {
 	return parts[1], nil
 }
 
+func WriteJSONToHTTPResponseWriter(w *http.ResponseWriter, v interface{}) error {
+	(*w).Header().Set("Content-Type", "application/json")
+	enc := json.NewEncoder(*w)
+	return enc.Encode(v)
+}
