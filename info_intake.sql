@@ -165,10 +165,12 @@ CREATE TABLE IF NOT EXISTS tips (
 CREATE TABLE IF NOT EXISTS tips_section (
 	id int unsigned NOT NULL AUTO_INCREMENT,
 	tips_section_tag varchar(100) NOT NULL,
+	tips_title_text_id int unsigned NOT NULL,
+	tips_subtext_text_id int unsigned NOT NULL,
 	comment varchar(500),
-	potential_outcome_id int unsigned NOT NULL,
 	UNIQUE KEY (tips_section_tag),
-	FOREIGN KEY (potential_outcome_id) REFERENCES potential_outcome(id),
+	FOREIGN KEY (tips_title_text_id) REFERENCES app_text(id),
+	FOREIGN KEY (tips_subtext_text_id) REFERENCES app_text(id),
 	PRIMARY KEY (id)
 ) CHARACTER SET UTF8;
 
