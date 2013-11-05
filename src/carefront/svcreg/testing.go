@@ -8,7 +8,6 @@ import (
 func TestRegistry(t *testing.T, reg Registry) {
 	id := ServiceId{"prod", "service"}
 	member := Member{
-		Status: StatusAlive,
 		Endpoint: Endpoint{
 			Host: "127.0.0.1",
 			Port: 1234,
