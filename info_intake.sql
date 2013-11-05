@@ -28,15 +28,16 @@ CREATE TABLE IF NOT EXISTS localized_text (
 CREATE TABLE IF NOT EXISTS question_type (
 	id int unsigned NOT NULL AUTO_INCREMENT,
 	qtype varchar(250),
+	UNIQUE KEY (qtype),
 	PRIMARY KEY (id)
 ) CHARACTER SET utf8;
 
 CREATE TABLE IF NOT EXISTS question (
 	id int unsigned NOT NULL AUTO_INCREMENT,
 	qtype_id int unsigned NOT NULL,
-	qtext_app_text_id int unsigned NOT NULL,
+	qtext_app_text_id int unsigned,	
 	qtext_short_text_id int unsigned NOT NULL,
-	subtext_app_text_id int unsigned NOT NULL,
+	subtext_app_text_id int unsigned,
 	question_tag varchar(250) NOT NULL,
 	FOREIGN KEY (qtype_id) REFERENCES question_type(id),
 	FOREIGN KEY (subtext_app_text_id) REFERENCES app_text(id),
@@ -49,6 +50,7 @@ CREATE TABLE IF NOT EXISTS question (
 CREATE TABLE IF NOT EXISTS outcome_type (
 	id int unsigned NOT NULL AUTO_INCREMENT,
 	otype varchar(250),
+	UNIQUE KEY (otype),
 	PRIMARY KEY (id)
 ) CHARACTER SET utf8;
 
@@ -62,7 +64,8 @@ CREATE TABLE IF NOT EXISTS potential_outcome (
 	FOREIGN KEY (question_id) REFERENCES question(id),
 	FOREIGN KEY (outcome_localized_text) REFERENCES app_text(id),
 	PRIMARY KEY (id),
-	UNIQUE KEY (potential_outcome_tag)
+	UNIQUE KEY (potential_outcome_tag),
+	UNIQUE KEY (question_id, otype_id)
 ) CHARACTER SET utf8;
 
 CREATE TABLE IF NOT EXISTS section (
