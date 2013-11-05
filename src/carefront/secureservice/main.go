@@ -94,7 +94,6 @@ func main() {
 	}
 	svcId := svcreg.ServiceId{Environment: *flagEnvironment, Name: serviceName}
 	svcMember := svcreg.Member{
-		Status:              svcreg.StatusAlive,
 		Endpoint:            svcreg.Endpoint{Host: addr, Port: *flagPort},
 		AdditionalEndpoints: nil,
 	}
@@ -109,7 +108,7 @@ func main() {
 	go func() {
 		for {
 			select {
-			case _ = <-stopChan:
+			case <-stopChan:
 				ln.Close()
 				return
 			default:
@@ -128,5 +127,5 @@ func main() {
 	signal.Notify(signalChan, os.Interrupt, os.Kill)
 	_ = <-signalChan
 	close(stopChan)
-	time.Sleep(time.Second * 2)
+	time.Sleep(time.Second * 1)
 }

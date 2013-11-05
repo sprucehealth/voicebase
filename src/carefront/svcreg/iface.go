@@ -1,11 +1,7 @@
 package svcreg
 
-type MemberStatus string
-
-const (
-	StatusAlive        MemberStatus = "ALIVE"
-	StatusDead         MemberStatus = "DEAD"
-	StatusOutOfService MemberStatus = "OUT_OF_SERVICE"
+import (
+	"fmt"
 )
 
 type ServiceId struct {
@@ -18,8 +14,11 @@ type Endpoint struct {
 	Port int    `json:"port"`
 }
 
+func (e Endpoint) String() string {
+	return fmt.Sprintf("%s:%d", e.Host, e.Port)
+}
+
 type Member struct {
-	Status              MemberStatus        `json:"status"`
 	Endpoint            Endpoint            `json:"endpoint"`
 	AdditionalEndpoints map[string]Endpoint `json:"additionalEndpoints"`
 }
@@ -30,6 +29,16 @@ const (
 	Add    UpdateType = 0
 	Remove UpdateType = iota
 )
+
+func (ut UpdateType) String() string {
+	switch ut {
+	case Add:
+		return "Add"
+	case Remove:
+		return "Remove"
+	}
+	return "Unknown"
+}
 
 type ServiceUpdate struct {
 	Type   UpdateType

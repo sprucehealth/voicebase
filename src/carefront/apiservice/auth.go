@@ -93,12 +93,12 @@ func (h *AuthenticationHandler) ServeHTTP(w http.ResponseWriter, r *http.Request
 		}
 		if token, _, err := h.AuthApi.Signup(login, password); err == api.ErrSignupFailedUserExists {
 			w.WriteHeader(http.StatusBadRequest)
-			WriteJSONToHTTPResponseWriter(&w, AuthenticationErrorResponse{err.Error()})
+			WriteJSONToHTTPResponseWriter(w, AuthenticationErrorResponse{err.Error()})
 		} else if err != nil {
 			w.WriteHeader(http.StatusInternalServerError)
-			WriteJSONToHTTPResponseWriter(&w, AuthenticationErrorResponse{err.Error()})
+			WriteJSONToHTTPResponseWriter(w, AuthenticationErrorResponse{err.Error()})
 		} else {
-			if err := WriteJSONToHTTPResponseWriter(&w, AuthenticationResponse{token}); err != nil {
+			if err := WriteJSONToHTTPResponseWriter(w, AuthenticationResponse{token}); err != nil {
 				w.WriteHeader(http.StatusInternalServerError)
 			}
 
@@ -115,7 +115,7 @@ func (h *AuthenticationHandler) ServeHTTP(w http.ResponseWriter, r *http.Request
 			log.Println(err)
 			w.WriteHeader(http.StatusInternalServerError)
 		} else {
-			if err := WriteJSONToHTTPResponseWriter(&w, AuthenticationResponse{token}); err != nil {
+			if err := WriteJSONToHTTPResponseWriter(w, AuthenticationResponse{token}); err != nil {
 				log.Println(err)
 				w.WriteHeader(http.StatusInternalServerError)
 				return
