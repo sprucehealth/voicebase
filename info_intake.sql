@@ -1,8 +1,8 @@
-use info_intake_db;
+use carefront_db;
 
 CREATE TABLE IF NOT EXISTS languages_supported (
 	id int unsigned NOT NULL AUTO_INCREMENT,
-	language varhcar(10) NOT NULL,
+	language varcha(10) NOT NULL,
 	PRIMARY KEY(id)
 ) CHARACTER SET UTF8;
 
@@ -34,11 +34,13 @@ CREATE TABLE IF NOT EXISTS question (
 	id int unsigned NOT NULL AUTO_INCREMENT,
 	qtype_id int unsigned NOT NULL,
 	qtext_app_text_id int unsigned NOT NULL,
+	qtext_short_text_id int unsigned NOT NULL,
 	subtext_app_text_id int unsigned NOT NULL,
 	question_tag varchar(250) NOT NULL,
 	FOREIGN KEY (qtype_id) REFERENCES question_type(id),
 	FOREIGN KEY (subtext_app_text_id) REFERENCES app_text(id),
 	FOREIGN KEY (qtext_app_text_id) REFERENCES app_text(id),
+	FOREIGN KEY (qtext_short_text_id) REFERENCES app_text(id),
 	PRIMARY KEY (id),
 	UNIQUE KEY (question_tag)
 ) CHARACTER SET utf8;
@@ -92,9 +94,8 @@ CREATE TABLE IF NOT EXISTS patient_info_intake (
 	status varchar(100) NOT NULL,
 	PRIMARY KEY (id),
 	FOREIGN KEY (question_id) REFERENCES question(id),
-	FOREIGN KEY (client_layout_version_id) REFERENCES client_layout_version(id),
-	FOREIGN KEY (case_id) REFERENCES case(id),
-	FOREIGN KEY (section_id) REFERENCES section(id),
+	FOREIGN KEY (client_layout_version_id) REFERENCES patient_layout_version(id),
+	FOREIGN KEY (section_id) REFERENCES section(id)
 ) CHARACTER SET UTF8;
 
 CREATE TABLE IF NOT EXISTS layout_version (
@@ -131,20 +132,12 @@ CREATE TABLE IF NOT EXISTS dr_layout_version (
 	PRIMARY KEY(id)
 ) CHARACTER SET UTF8;
 
-CREATE TABLE IF NOT EXISTS client_hardcoded_screen (
-	id int unsigned NOT NULL AUTO_INCREMENT,
-	client_hardcoded_screen_tag varchar(100) NOT NULL,
-	app_version varchar(10) NOT NULL,
-	UNIQUE KEY (client_hardcoded_screen_tag),
-	UNIQUE KEY (appVersion),
-	PRIMARY KEY(id)
-) CHARACTER SET UTF8;
 
 CREATE TABLE IF NOT EXISTS object_storage (
 	id int unsigned NOT NULL AUTO_INCREMENT,
 	region varchar(100) NOT NULL,
 	bucket varchar(100) NOT NULL,
-	key varchar(100) NOT NULL,
+	storage_key varchar(100) NOT NULL,
 	status varchar(100) NOT NULL,
 	PRIMARY KEY(id)
 ) CHARACTER SET UTF8;
