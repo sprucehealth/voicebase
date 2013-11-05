@@ -7,7 +7,7 @@ import (
 )
 
 type ReadableCondition struct {
-	OperationTag         string   `json:"op"`
+	OperationTag         string   `json:"op",omitempty`
 	IsServerCondition    bool     `json:"server_condition,omitempty"`
 	QuestionTag          string   `json:"question,omitempty"`
 	PotentialAnswersTags []string `json:"potential_answers,omitempty"`
@@ -17,23 +17,23 @@ type ReadableCondition struct {
 
 type ReadableTipSection struct {
 	TipsSectionTag string   `json:"tips_section_tag"`
-	PhotoTipsTags  []string `json:"photo_tips"`
+	PhotoTipsTags  []string `json:"photo_tips,omitempty"`
 	TipsTags       []string `json:"tips"`
 }
 
 type ReadableQuestion struct {
-	QuestionTag      string             `json:"question"`
-	PotentialAnswers []string           `json:"potential_answers"`
-	Condition        ReadableCondition  `json:"condition,omitempty"`
-	IsMultiSelect    bool               `json:"multiselect,omitempty"`
-	Tips             ReadableTipSection `json:"tips,omitempty"`
+	QuestionTag      string              `json:"question"`
+	PotentialAnswers []string            `json:"potential_answers"`
+	Condition        *ReadableCondition  `json:"condition,omitempty"`
+	IsMultiSelect    bool                `json:"multiselect,omitempty"`
+	Tips             *ReadableTipSection `json:"tips,omitempty"`
 }
 
 type ReadableScreen struct {
 	Description string             `json:"description,omitempty"`
 	Questions   []ReadableQuestion `json:"questions"`
 	ScreenType  string             `json:"screen_type,omitempty"`
-	Condition   ReadableCondition  `json:"condition,omitempty"`
+	Condition   *ReadableCondition `json:"condition,omitempty"`
 }
 
 type ReadableSection struct {
@@ -53,5 +53,6 @@ func main() {
 	if err != nil {
 		panic(err)
 	}
-	fmt.Printf("%+v", treatmentRes.Sections[0].Screens[0].Questions[0].IsMultiSelect)
+	marshalledBytes, _ := json.MarshalIndent(treatmentRes, "", "'")
+	fmt.Println(string(marshalledBytes))
 }
