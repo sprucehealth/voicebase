@@ -8,35 +8,30 @@
           {
             "description" : "reason for visit",
             "questions"   : [
-              
               {
                 "question"              : "q_visit_reason",
                 "question_value"        : "primary_doctor_first_name",
                 "potential_answers"     : ["a_acne", "a_something_else"],
-                "multiselect" : false,
+                "multiselect"           : false
               },
-
               {
                 "question"    : "q_conditions_survey",
                 "potential_answers"   : "a_symptom_condition_survey",
-                "condition"   : {
-                  "op"               : "answer_equals",
-                  "question"         : "q_visit_reason",
-                  "potential_answer" : "a_something_else"
-                }
-              }
-            ]
+                "condition"           : {
+                    "op"                : "answer_equals",
+                    "question"          : "q_visit_reason",
+                    "potential_answer"  : "a_something_else"
+                  }
+              }]
           },
           {
             "description" : "length of acne symptoms",
             "questions"   : [
               {
-                "question"    : "q_acne_length",
+                "question"            : "q_acne_length",
                 "potential_answers"   : ["a_less_six_months", "a_six_twelve_months", "a_one_two_years", "a_more_two_years"],
-                "multiselect" : false,
-              }
-
-            ]
+                "multiselect"         : false
+              }]
           },
           {
             "description" : "is acne getting worse",
@@ -48,48 +43,43 @@
               {
                 "question"  : "q_changes_acne_worse",
                 "potential_answers" : ["a_changes_acne_worse"],
-                "condition" : {
-                  "op"               : "answer_equals",
-                  "question"         : "q_acne_worse",
-                  "potential_answer" : "a_yes_acne_worse"
+                "condition"         : {
+                  "op"                : "answer_equals",
+                  "question"          : "q_acne_worse",
+                  "potential_answer"  : "a_yes_acne_worse"
                 }
-              }
-            ]   
+              }]   
           },
           {
             "description" : "what previous treatments have you tried for acne",
             "questions"   : [
               {
-                "question"    : "q_acne_previous_treatment",
+                "question"            : "q_acne_previous_treatment",
                 "potential_answers"   : ["a_over_counter_prev_acne_treatment", "a_prescription_prev_acne_treatment", "a_none_prev_acne_treatment"],
-                "multiselect" : true
-              }
-            ]
+                "multiselect"         : true
+              }]
           },
           {
-            "screen_tag"  : "screen_treatment_entry",
             "description"   : "get treatments from user",
-            "questions" : [{
-              "question" : "q_prescription_list",
+            "questions"     : [{
+              "question"    : "q_prescription_list",
               "potential_answers" : ["a_text_treatment_add", "a_photo_treatment_add"],
               "condition"   : {
                 "op"  : "answer_equals",
                 "question" : "q_acne_previous_treatment",
                 "potential_answers" : "a_prescription_prev_acne_treatment"
-              }
-              }]
-          }
-        ]
-
+                }
+            }]
+          }]
       },
       {
         "section" : "section_medical_history",
         "screens" : [{
-          "description" : "planning pregnancy",
+          "description"     : "planning pregnancy",
           "serverCondition" : {
-              "op"  : "value_quals",
-              "gender"  : "female"
-          },
+              "op"          : "value_quals",
+              "gender"      : "female"  
+            },
           "questions" : [{
             "question" : "q_pregnancy_planning",
             "potential_answers" : ["a_yes_pregnancy_planning", "a_no_pregnancy_planning"]
@@ -102,21 +92,21 @@
               "potential_answers" : ["a_yes_allergic_medications", "a_no_allergic_medications"]
               },
               {
-              "question"  : "q_medication_list",
+              "question"          : "q_medication_list",
               "potential_answers" : ["a_medication_list_entry"],
               "condition" : {
-                "op" : "answer_equals",
-                "question" : "q_allergic_medications",
+                "op"        : "answer_equals",
+                "question"  : "q_allergic_medications",
                 "potential_answers" : "a_yes_allergic_medications"
-              }
-              }],
+                }
+              }]
           },
           {
             "description" : "medications currently taking",
             "questions" : [
               {
                 "question" : "q_list_medications",
-                "potential_answers" : ["a_medication_list_entry"],
+                "potential_answers" : ["a_medication_list_entry"]
               }
             ]
           },
@@ -141,16 +131,15 @@
                   "question" : "q_previous_skin_diagnosis",
                   "potential_answers" : "a_yes_previous_skin_diagnosis"
                 }
-              }],
+              }]
           },
           {
             "description" : "previous medical condition been treated for",
             "questions" : [{
               "question"              : "q_previous_medical_condition",
               "potential_answers"     : ["a_medical_condition_entry"]
-            }],
-          }
-          ]
+            }]
+          }]
       },
       {
         "section" : "section_skin_photo_intake",
@@ -158,8 +147,8 @@
           "description" : "options for places to take skin photo of",
           "questions" : [{
             "question"    :   "q_skin_photo_places",
-            "potential_answers" : ["a_face_skin_photo_places", "a_chest_skin_photo_places", "a_back_skin_photo_places", "a_other_skin_photo_places"],
-          }]
+            "potential_answers" : ["a_face_skin_photo_places", "a_chest_skin_photo_places", "a_back_skin_photo_places", "a_other_skin_photo_places"]
+            }]
         },
         {
           "description" : "photo taking experience",
@@ -190,9 +179,8 @@
               "tips_section_tag" : "tips_section_chest",
               "photo_tips"       : ["photo_tip_good_chest", "phot_tip_bad_chest", "photo_tip_decent_chest"],
               "tips"             : ["tip_remove_jewellery", "tip_pull_hair_back"]
-            },
+            }
           }]
         }]
-      }
-    ]
-  }
+      }]
+    }
