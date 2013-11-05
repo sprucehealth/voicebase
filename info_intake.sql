@@ -21,6 +21,7 @@ CREATE TABLE IF NOT EXISTS localized_text (
 	app_text_id int unsigned NOT NULL,
 	FOREIGN KEY (app_text_id) REFERENCES app_text(id) ON DELETE CASCADE,
 	FOREIGN KEY (language_id) REFERENCES languages_supported(id),
+	UNIQUE KEY (language_id, app_text_id),
 	PRIMARY KEY (id)
 ) CHARACTER SET utf8;
 
@@ -75,6 +76,13 @@ CREATE TABLE IF NOT EXISTS section (
 	PRIMARY KEY (id),	
 	UNIQUE KEY (section_tag)
 ) CHARACTER SET utf8;
+
+CREATE TABLE IF NOT EXISTS screen_type (
+	id int unsigned NOT NULL AUTO_INCREMENT,
+	screen_type_tag varchar(100) NOT NULL,
+	UNIQUE KEY (screen_type_tag),
+	PRIMARY KEY(id)
+) CHARACTER SET UTF8;
 
 CREATE TABLE IF NOT EXISTS treatment (
 	id int unsigned NOT NULL AUTO_INCREMENT,
