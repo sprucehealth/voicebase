@@ -1,6 +1,5 @@
   {
     "treatment" : "treatment_acne",
-    "layout_version_id" : 1,
     "sections" : [
       {
         "section"   : "section_skin_history",
@@ -16,11 +15,11 @@
               },
               {
                 "question"    : "q_conditions_survey",
-                "potential_answers"   : "a_symptom_condition_survey",
+                "potential_answers"   : ["a_symptom_condition_survey"],
                 "condition"           : {
                     "op"                : "answer_equals",
                     "question"          : "q_visit_reason",
-                    "potential_answer"  : "a_something_else"
+                    "potential_answers"  : ["a_something_else"]
                   }
               }]
           },
@@ -67,7 +66,7 @@
               "condition"   : {
                 "op"  : "answer_equals",
                 "question" : "q_acne_previous_treatment",
-                "potential_answers" : "a_prescription_prev_acne_treatment"
+                "potential_answers" : ["a_prescription_prev_acne_treatment"]
                 }
             }]
           }]
@@ -97,7 +96,7 @@
               "condition" : {
                 "op"        : "answer_equals",
                 "question"  : "q_allergic_medications",
-                "potential_answers" : "a_yes_allergic_medications"
+                "potential_answers" : ["a_yes_allergic_medications"]
                 }
               }]
           },
@@ -129,7 +128,7 @@
                 "condition"         : {
                   "op"  : "answer_equals",
                   "question" : "q_previous_skin_diagnosis",
-                  "potential_answers" : "a_yes_previous_skin_diagnosis"
+                  "potential_answers" : ["a_yes_previous_skin_diagnosis"]
                 }
               }]
           },
@@ -159,7 +158,7 @@
             "condition" : {
               "op"                : "answer_equals",
               "question"          : "q_skin_photo_places",
-              "potential_answers" : "a_face_skin_photo_places"
+              "potential_answers" : ["a_face_skin_photo_places"]
             },
             "tips" : {
               "tips_section_tag"  : "tips_section_face",
@@ -173,7 +172,7 @@
             "condition" : {
               "op"                : "answer_equals",
               "question"          : "q_skin_photo_places",
-              "potential_answers" : "a_chest_skin_photo_places"
+              "potential_answers" : ["a_chest_skin_photo_places"]
             },
             "tips_section" : {
               "tips_section_tag" : "tips_section_chest",
