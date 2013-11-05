@@ -75,9 +75,11 @@
         "section" : "section_medical_history",
         "screens" : [{
           "description"     : "planning pregnancy",
-          "serverCondition" : {
-              "op"          : "value_quals",
-              "gender"      : "female"  
+          "condition" : {
+              "server_condition"  : true,
+              "op"                : "value_equals",
+              "field"             : "gender",
+              "value"             : "female"  
             },
           "questions" : [{
             "question" : "q_pregnancy_planning",

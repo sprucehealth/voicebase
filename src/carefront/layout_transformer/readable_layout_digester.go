@@ -6,10 +6,13 @@ import (
 	"io/ioutil"
 )
 
-type ReadableAnswerEqualsCondition struct {
+type ReadableCondition struct {
 	OperationTag         string   `json:"op"`
-	QuestionTag          string   `json:"question"`
-	PotentialAnswersTags []string `json:"potential_answers"`
+	IsServerCondition    bool     `json:"server_condition,omitempty"`
+	QuestionTag          string   `json:"question,omitempty"`
+	PotentialAnswersTags []string `json:"potential_answers,omitempty"`
+	FieldTag             string   `json:"field,omitempty"`
+	ValueTag             string   `json:"value,omitempty"`
 }
 
 type ReadableTipSection struct {
@@ -19,17 +22,18 @@ type ReadableTipSection struct {
 }
 
 type ReadableQuestion struct {
-	QuestionTag      string                        `json:"question"`
-	PotentialAnswers []string                      `json:"potential_answers"`
-	Condition        ReadableAnswerEqualsCondition `json:"condition"`
-	IsMultiSelect    bool                          `json:"multiselect"`
-	Tips             ReadableTipSection            `json:"tips"`
+	QuestionTag      string             `json:"question"`
+	PotentialAnswers []string           `json:"potential_answers"`
+	Condition        ReadableCondition  `json:"condition,omitempty"`
+	IsMultiSelect    bool               `json:"multiselect,omitempty"`
+	Tips             ReadableTipSection `json:"tips,omitempty"`
 }
 
 type ReadableScreen struct {
-	Description string             `json:"description"`
+	Description string             `json:"description,omitempty"`
 	Questions   []ReadableQuestion `json:"questions"`
-	ScreenType  string             `json:"screen_type"`
+	ScreenType  string             `json:"screen_type,omitempty"`
+	Condition   ReadableCondition  `json:"condition,omitempty"`
 }
 
 type ReadableSection struct {
