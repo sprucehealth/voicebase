@@ -1,21 +1,21 @@
 package apiservice
 
 import (
+	"bytes"
 	"carefront/mockapi"
+	"encoding/json"
+	"mime/multipart"
 	"net/http"
 	"strconv"
 	"strings"
 	"testing"
-	"encoding/json"
-	"mime/multipart"
-	"bytes"
 )
 
 const (
-	SignupPath = "/v1/signup"
-	LoginPath  = "/v1/authenticate"
-	LogoutPath = "/v1/logout"
-	PhotoUploadPath = "/v1/upload"
+	SignupPath       = "/v1/signup"
+	LoginPath        = "/v1/authenticate"
+	LogoutPath       = "/v1/logout"
+	PhotoUploadPath  = "/v1/upload"
 	ContentTypeValue = "application/x-www-form-urlencoded; param=value"
 )
 
@@ -83,7 +83,7 @@ func TestSignupFollowedByLogin(t *testing.T) {
 	responseWriter = createFakeResponseWriter()
 	mux.ServeHTTP(responseWriter, req)
 
-	checkStatusCode(http.StatusOK, responseWriter, t )
+	checkStatusCode(http.StatusOK, responseWriter, t)
 	validateTokenResponse(responseWriter.body, t)
 }
 
@@ -117,7 +117,7 @@ func TestSuccessfulLogout(t *testing.T) {
 	req.Header.Set("Authorization", "token tokenForKajham")
 	responseWriter := createFakeResponseWriter()
 	mux.ServeHTTP(responseWriter, req)
-	
+
 	checkStatusCode(http.StatusOK, responseWriter, t)
 }
 
@@ -186,7 +186,7 @@ func TestSuccessfulPhotoUpload(t *testing.T) {
 	buf, w := createMultiPartFormDataWithParameters([]string{"photo", "photo_type", "case_id"}, t)
 
 	req, _ := http.NewRequest("POST", PhotoUploadPath, buf)
-	req.Header.Set("Content-Type", w.FormDataContentType())	
+	req.Header.Set("Content-Type", w.FormDataContentType())
 	req.Header.Set("Authorization", "token tokenForKajham")
 
 	responseWriter := createFakeResponseWriter()
@@ -257,14 +257,14 @@ func setupPhotoUploadHandlerInMux() *AuthServeMux {
 	fakePhotoApi := &mockapi.MockPhotoService{false}
 	fakeDataApi := &mockapi.MockDataService{false}
 
-	photoUploadHandler := &PhotoUploadHandler{fakePhotoApi,"testing", fakeDataApi} 
+	photoUploadHandler := &PhotoUploadHandler{fakePhotoApi, "testing", fakeDataApi}
 	mux := &AuthServeMux{*http.NewServeMux(), fakeAuthApi}
 	mux.Handle(PhotoUploadPath, photoUploadHandler)
 
 	return mux
 }
 
-func validateTokenResponse(data []byte, t *testing.T) {	
+func validateTokenResponse(data []byte, t *testing.T) {
 	type TokenJson struct {
 		Token string
 	}
@@ -302,7 +302,7 @@ func checkStatusCode(expected int, responseWriter *FakeResponseWriter, t *testin
 func createMultiPartFormDataWithParameters(parameters []string, t *testing.T) (*bytes.Buffer, *multipart.Writer) {
 	buf := new(bytes.Buffer)
 	w := multipart.NewWriter(buf)
-	for _,parameter := range parameters {
+	for _, parameter := range parameters {
 		switch parameter {
 		case "photo":
 			photo, err := w.CreateFormFile("photo", "photo.png")
@@ -311,7 +311,7 @@ func createMultiPartFormDataWithParameters(parameters []string, t *testing.T) (*
 			}
 			photo.Write(make([]byte, 100))
 		case "photo_type":
-			photoType,err := w.CreateFormField("photo_type")
+			photoType, err := w.CreateFormField("photo_type")
 			if err != nil {
 				t.Errorf("Something went wrong in adding photo_type to form %s", err.Error())
 			}
@@ -330,14 +330,14 @@ func createMultiPartFormDataWithParameters(parameters []string, t *testing.T) (*
 }
 
 func testHelperForMissingParameter(parameters []string, t *testing.T) {
-    mux := setupPhotoUploadHandlerInMux()
+	mux := setupPhotoUploadHandlerInMux()
 	buf, w := createMultiPartFormDataWithParameters(parameters, t)
-    req, _ := http.NewRequest("POST", PhotoUploadPath, buf)
-    req.Header.Set("Content-Type", w.FormDataContentType())
-    req.Header.Set("Authorization", "token tokenForKajham")
-    responseWriter := createFakeResponseWriter()
-    mux.ServeHTTP(responseWriter, req)
+	req, _ := http.NewRequest("POST", PhotoUploadPath, buf)
+	req.Header.Set("Content-Type", w.FormDataContentType())
+	req.Header.Set("Authorization", "token tokenForKajham")
+	responseWriter := createFakeResponseWriter()
+	mux.ServeHTTP(responseWriter, req)
 
-    checkStatusCode(http.StatusBadRequest, responseWriter, t)
-    checkForErrorInResponse(responseWriter.body, t)
+	checkStatusCode(http.StatusBadRequest, responseWriter, t)
+	checkForErrorInResponse(responseWriter.body, t)
 }

@@ -1,8 +1,8 @@
 package mockapi
 
 import (
-	"time"
 	"errors"
+	"time"
 )
 
 type MockPhotoService struct {
@@ -18,7 +18,7 @@ func (m *MockPhotoService) Upload(data []byte, contentType string, key string, b
 
 func (m *MockPhotoService) GenerateSignedUrlsForKeysInBucket(bucket, prefix string, duration time.Time) ([]string, error) {
 	if m.ToGenerateError {
-		return make([]string, 5),errors.New("Fake error")
+		return make([]string, 5), errors.New("Fake error")
 	}
 	return make([]string, 5), nil
 }

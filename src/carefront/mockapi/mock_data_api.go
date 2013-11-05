@@ -18,7 +18,7 @@ func (m *MockDataService) CreatePhotoForCase(caseId int64, photoType string) (in
 
 func (m *MockDataService) MarkPhotoUploadComplete(caseId, photoId int64) error {
 	if m.ToGenerateError {
-		return  errors.New("Fake error")
+		return errors.New("Fake error")
 	}
 
 	return nil
