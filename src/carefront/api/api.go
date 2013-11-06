@@ -48,7 +48,14 @@ type DataAPI interface {
 	GetTipSectionInfo(tipSectionTag string, languageId int64) (id int64, tipSectionTitle string, tipSectionSubtext string, err error)
 	GetTipInfo(tipTag string, languageId int64) (id int64, tip string, err error)
 
-	GetCurrentActiveLayoutInfoForTreatment(treatmentId int64) (bucket, key, region string, err error)
+	GetSupportedLanguages() (languagesSupported []string, languagesSupportedIds []int64, err error)
+	GetCurrentActiveLayoutInfoForTreatment(treatmentTag string) (bucket, key, region string, err error)
+	UploadAndMarkActiveNewLayoutForTreatment(rawLayout []byte, bucket, key, region string, err error)
+	UploadAndMarkActiveNewClientLayoutForTreatment(rawLayout []byte, bucket, key, region string, languageId int64, err error)
+}
+
+type Layout interface {
+	VerifyAndUploadIncomingLayout(rawLayout []byte, treatmentTag string) error
 }
 
 type ACLAPI interface {

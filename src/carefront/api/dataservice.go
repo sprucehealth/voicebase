@@ -137,11 +137,12 @@ func (d *DataService) GetTipSectionInfo(tipSectionTag string, languageId int64) 
 	return id, tipSectionTitle, tipSectionSubtext, nil
 }
 
-func (d *DataService) GetCurrentActiveLayoutInfoForTreatment(treatmentId int64) (bucket, key, region string, err error) {
+func (d *DataService) GetCurrentActiveLayoutInfoForTreatment(treatmentTag string) (bucket, key, region string, err error) {
 	rows, err := d.DB.Query(`select bucket, storage_key, region_tag from layout_version 
 								inner join object_storage on object_storage_id = object_storage.id 
-								inner join region on region_id=region.id  
-									where layout_version.status='ACTIVE' and treatment_id = ?`, treatmentId)
+								inner join region on region_id=region.id 
+								inner join treatment on treatment_id = treatment.id 
+									where layout_version.status='ACTIVE' and treatment.treatment_tag = ?`, treatmentTag)
 	if err != nil {
 		return "", "", "", err
 	}
