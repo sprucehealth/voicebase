@@ -2,6 +2,7 @@ package layout_transformer
 
 import (
 	"carefront/api"
+	"fmt"
 	"strconv"
 )
 
@@ -58,7 +59,26 @@ type TipSection struct {
 }
 
 func (t *TipSection) FillInDatabaseInfo(dataApi *api.DataService) error {
-	// TODO
+	_, tipSectionTitle, tipSectionSubtext, err := dataApi.GetTipSectionInfo(t.TipsSectionTag, 1)
+	if err != nil {
+		panic(err)
+		return err
+	}
+
+	t.TipsSectionTitle = tipSectionTitle
+	t.TipsSubtext = tipSectionSubtext
+
+	t.Tips = make([]string, len(t.TipsTags))
+	for i, tipTag := range t.TipsTags {
+		fmt.Println("tip tag ", tipTag)
+		_, tipText, err := dataApi.GetTipInfo(tipTag, 1)
+		if err != nil {
+			panic(err)
+			return err
+		}
+		t.Tips[i] = tipText
+	}
+
 	return nil
 }
 

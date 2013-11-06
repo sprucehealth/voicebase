@@ -165,7 +165,7 @@
             "tips" : {
               "tips_section_tag"  : "tips_section_face",
               "photo_tips"        : ["photo_tip_good_face_front", "photo_tip_bad_face_front", "photo_tip_good_profile_right"],
-              "tips"              : ["tip_remove_glasses", "tip_pull_hair_back", "tip_no_make_up", "tip_shave", "tip_wash_face"]
+              "tips"              : ["tip_remove_glasses", "tip_pull_hair_back", "tip_no_make_up"]
             }
           },
           {
