@@ -32,7 +32,6 @@ func (c *Condition) FillInDatabaseInfo(dataApi *api.DataService) error {
 	}
 	questionId, _, _, err := dataApi.GetQuestionInfo(c.QuestionTag, 1)
 	if err != nil {
-		panic(err)
 		return err
 	}
 	c.QuestionId = questionId
@@ -41,7 +40,6 @@ func (c *Condition) FillInDatabaseInfo(dataApi *api.DataService) error {
 		answerId, _, _, err := dataApi.GetOutcomeInfo(tag, 1)
 		c.PotentialAnswersId[i] = strconv.Itoa(int(answerId))
 		if err != nil {
-			panic(err)
 			return err
 		}
 	}
@@ -61,7 +59,6 @@ type TipSection struct {
 func (t *TipSection) FillInDatabaseInfo(dataApi *api.DataService) error {
 	_, tipSectionTitle, tipSectionSubtext, err := dataApi.GetTipSectionInfo(t.TipsSectionTag, 1)
 	if err != nil {
-		panic(err)
 		return err
 	}
 
@@ -73,7 +70,6 @@ func (t *TipSection) FillInDatabaseInfo(dataApi *api.DataService) error {
 		fmt.Println("tip tag ", tipTag)
 		_, tipText, err := dataApi.GetTipInfo(tipTag, 1)
 		if err != nil {
-			panic(err)
 			return err
 		}
 		t.Tips[i] = tipText
@@ -105,7 +101,6 @@ type Question struct {
 func (q *Question) FillInDatabaseInfo(dataApi *api.DataService) error {
 	questionId, questionTitle, questionType, err := dataApi.GetQuestionInfo(q.QuestionTag, 1)
 	if err != nil {
-		panic(err)
 		return err
 	}
 	q.QuestionId = questionId
@@ -117,7 +112,6 @@ func (q *Question) FillInDatabaseInfo(dataApi *api.DataService) error {
 	for i, answerTag := range q.PotentialAnswerTags {
 		outcomeId, outcome, outcomeType, err := dataApi.GetOutcomeInfo(answerTag, 1)
 		if err != nil {
-			panic(err)
 			return err
 		}
 
@@ -130,7 +124,6 @@ func (q *Question) FillInDatabaseInfo(dataApi *api.DataService) error {
 	if q.ConditionBlock != nil {
 		err := q.ConditionBlock.FillInDatabaseInfo(dataApi)
 		if err != nil {
-			panic(err)
 			return err
 		}
 	}
@@ -138,7 +131,6 @@ func (q *Question) FillInDatabaseInfo(dataApi *api.DataService) error {
 	if q.Tips != nil {
 		err := q.Tips.FillInDatabaseInfo(dataApi)
 		if err != nil {
-			panic(err)
 			return err
 		}
 	}
@@ -157,7 +149,6 @@ func (s *Screen) FillInDatabaseInfo(dataApi *api.DataService) error {
 	if s.ConditionBlock != nil {
 		err := s.ConditionBlock.FillInDatabaseInfo(dataApi)
 		if err != nil {
-			panic(err)
 			return err
 		}
 	}
@@ -166,7 +157,6 @@ func (s *Screen) FillInDatabaseInfo(dataApi *api.DataService) error {
 		for _, question := range s.Questions {
 			err := question.FillInDatabaseInfo(dataApi)
 			if err != nil {
-				panic(err)
 				return err
 			}
 		}
@@ -186,7 +176,6 @@ func (s *Section) FillInDatabaseInfo(dataApi *api.DataService) error {
 	for _, screen := range s.Screens {
 		err := screen.FillInDatabaseInfo(dataApi)
 		if err != nil {
-			panic(err)
 			return err
 		}
 	}
@@ -204,7 +193,6 @@ func (t *Treatment) FillInDatabaseInfo(dataApi *api.DataService) error {
 	for _, section := range t.Sections {
 		err := section.FillInDatabaseInfo(dataApi)
 		if err != nil {
-			panic(err)
 			return err
 		}
 	}
