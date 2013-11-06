@@ -69,24 +69,26 @@ func (d *DataService) GetSectionInfo(sectionTag string, languageId int64) (id in
 
 func (d *DataService) GetQuestionInfo(questionTag string, languageId int64) (id int64, questionTitle string, questionType string, err error) {
 	rows, err := d.DB.Query(`select question.id, ltext, qtype from question 
-								inner join app_text on qtext_app_text_id=app_text.id 
-								inner join localized_text on app_text_id=app_text.id
-	   							inner join question_type on qtype_id=question_type.id 
-	   								where question_tag = ? and language_id = ?`, questionTag, languageId)
+								left outer join localized_text on app_text_id=qtext_app_text_id
+	   							left outer join question_type on qtype_id=question_type.id 
+	   								where question_tag = ? and (ltext is NULL or language_id = ?)`, questionTag, languageId)
 	if err != nil {
 		return 0, "", "", err
 	}
 	defer rows.Close()
 	rows.Next()
-	err = rows.Scan(&id, &questionTitle, &questionType)
+	var byteQuestionTitle, byteQuestionType []byte
+	err = rows.Scan(&id, &byteQuestionTitle, &byteQuestionType)
 	if err != nil {
 		return 0, "", "", err
 	}
+	questionTitle = string(byteQuestionTitle)
+	questionType = string(byteQuestionType)
 	return id, questionTitle, questionType, nil
 }
 
 func (d *DataService) GetOutcomeInfo(outcomeTag string, languageId int64) (id int64, outcome string, outcomeType string, err error) {
-	rows, err := d.DB.Query(`select potential_outcome.id, outcome_type.otype, ltext from potential_outcome 
+	rows, err := d.DB.Query(`select potential_outcome.id, ltext, outcome_type.otype from potential_outcome 
 								inner join outcome_type on otype_id=outcome_type.id 
 								inner join localized_text on outcome_localized_text=app_text_id 
 									where potential_outcome_Tag=? and language_id=?`, outcomeTag, languageId)

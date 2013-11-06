@@ -8,18 +8,18 @@
             "description" : "reason for visit",
             "questions"   : [
               {
-                "question"              : "q_visit_reason",
+                "question"              : "q_reason_visit",
                 "question_value"        : "primary_doctor_first_name",
-                "potential_answers"     : ["a_acne", "a_something_else"],
+                "potential_answers"     : ["o_acne", "o_something_else"],
                 "multiselect"           : false
               },
               {
-                "question"    : "q_conditions_survey",
-                "potential_answers"   : ["a_symptom_condition_survey"],
+                "question"    : "q_condition_for_diagnosis",
+                "potential_answers"   : ["o_condition_entry"],
                 "condition"           : {
                     "op"                : "answer_equals",
-                    "question"          : "q_visit_reason",
-                    "potential_answers"  : ["a_something_else"]
+                    "question"          : "q_reason_visit",
+                    "potential_answers"  : ["o_something_else"]
                   }
               }]
           },
@@ -28,7 +28,7 @@
             "questions"   : [
               {
                 "question"            : "q_acne_length",
-                "potential_answers"   : ["a_less_six_months", "a_six_twelve_months", "a_one_two_years", "a_more_two_years"],
+                "potential_answers"   : ["o_less_six_months", "o_six_twelve_months", "o_one_two_years", "o_two_plus_years"],
                 "multiselect"         : false
               }]
           },
@@ -37,15 +37,15 @@
             "questions"   : [
               {
                 "question"  : "q_acne_worse",
-                "potential_answers" : ["a_yes_acne_worse", "a_no_acne_worse"] 
+                "potential_answers" : ["o_yes_acne_worse", "o_no_acne_worse"] 
               },
               {
                 "question"  : "q_changes_acne_worse",
-                "potential_answers" : ["a_changes_acne_worse"],
+                "potential_answers" : ["o_changes_acne_worse"],
                 "condition"         : {
                   "op"                : "answer_equals",
                   "question"          : "q_acne_worse",
-                  "potential_answer"  : "a_yes_acne_worse"
+                  "potential_answer"  : "o_yes_acne_worse"
                 }
               }]   
           },
@@ -53,20 +53,20 @@
             "description" : "what previous treatments have you tried for acne",
             "questions"   : [
               {
-                "question"            : "q_acne_previous_treatment",
-                "potential_answers"   : ["a_over_counter_prev_acne_treatment", "a_prescription_prev_acne_treatment", "a_none_prev_acne_treatment"],
+                "question"            : "q_acne_prev_treatment_types",
+                "potential_answers"   : ["o_otc_prev_treatment_type", "o_prescription_prev_treatment_type", "o_no_prev_treatment_type"],
                 "multiselect"         : true
               }]
           },
           {
             "description"   : "get treatments from user",
             "questions"     : [{
-              "question"    : "q_prescription_list",
-              "potential_answers" : ["a_text_treatment_add", "a_photo_treatment_add"],
+              "question"    : "q_acne_prev_treatment_list",
+              "potential_answers" : ["o_prev_treatment_list_entry", "o_prev_treatment_photo_entry"],
               "condition"   : {
                 "op"  : "answer_equals",
-                "question" : "q_acne_previous_treatment",
-                "potential_answers" : ["a_prescription_prev_acne_treatment"]
+                "question" : "q_acne_prev_treatment_types",
+                "potential_answers" : ["o_prescription_prev_treatment_type"]
                 }
             }]
           }]
@@ -83,22 +83,22 @@
             },
           "questions" : [{
             "question" : "q_pregnancy_planning",
-            "potential_answers" : ["a_yes_pregnancy_planning", "a_no_pregnancy_planning"]
+            "potential_answers" : ["o_yes_pregnancy_planning", "o_no_pregnancy_planning"]
             }]
           },
           {
             "description" : "allergies",
             "questions"   : [{
               "question"  : "q_allergic_medications",
-              "potential_answers" : ["a_yes_allergic_medications", "a_no_allergic_medications"]
+              "potential_answers" : ["o_yes_allergic_medications", "o_no_allergic_medications"]
               },
               {
-              "question"          : "q_medication_list",
-              "potential_answers" : ["a_medication_list_entry"],
+              "question"          : "q_allergic_medication_entry",
+              "potential_answers" : ["o_add_allergic_medication"],
               "condition" : {
                 "op"        : "answer_equals",
                 "question"  : "q_allergic_medications",
-                "potential_answers" : ["a_yes_allergic_medications"]
+                "potential_answers" : ["o_list_medications_entry"]
                 }
               }]
           },
@@ -106,8 +106,8 @@
             "description" : "medications currently taking",
             "questions" : [
               {
-                "question" : "q_list_medications",
-                "potential_answers" : ["a_medication_list_entry"]
+                "question" : "q_current_medications_entry",
+                "potential_answers" : ["o_list_medications_entry"]
               }
             ]
           },
@@ -115,66 +115,66 @@
             "description" : "social history",
             "questions" : [{
               "question" : "q_social_history",
-              "potential_answers" : ["a_smoke_social_history", "a_alcohol_social_history", "a_tanning_social_history"]
+              "potential_answers" : ["o_smoke_social_history", "o_alcohol_social_history", "o_tanning_social_history"]
             }]
           },
           {
             "description" : "previous diagnosis of skin condition",
             "questions"   : [{
-              "question"          : "q_previous_skin_diagnosis",
-              "potential_answers" : ["a_yes_previous_skin_diagnosis", "a_no_previous_skin_diagnosis"]
+              "question"          : "q_prev_skin_condition_diagnosis",
+              "potential_answers" : ["o_yes_prev_skin_diagnosis", "o_no_prev_skin_diagnosis"]
               },
               {
-                "question"          : "q_select_skin_condition",
-                "potential_answers" : ["a_alopecia_skin_condition", "a_acne_skin_condition", "a_eczema_skin_condition", "a_psoriasis_skin_condition", "a_rosacea_skin_condition", "a_skin_cancer_condition", "a_other_skin_condition"],
+                "question"          : "q_list_prev_skin_condition_diagnosis",
+                "potential_answers" : ["o_alopecia_skin_diagnosis", "o_acne_skin_diagnosis", "o_eczema_skin_diagnosis", "o_psoriasis_skin_diagnosis", "o_rosacea_skin_diagnosis", "o_skin_cancer_diagnosis", "o_other_skin_iagnosis"],
                 "condition"         : {
                   "op"  : "answer_equals",
-                  "question" : "q_previous_skin_diagnosis",
-                  "potential_answers" : ["a_yes_previous_skin_diagnosis"]
+                  "question" : "q_prev_skin_condition_diagnosis",
+                  "potential_answers" : ["o_yes_prev_skin_diagnosis"]
                 }
               }]
           },
           {
             "description" : "previous medical condition been treated for",
             "questions" : [{
-              "question"              : "q_previous_medical_condition",
-              "potential_answers"     : ["a_medical_condition_entry"]
+              "question"              : "q_prev_med_condition_diagnosis",
+              "potential_answers"     : ["o_list_medications_entry"]
             }]
           }]
       },
       {
-        "section" : "section_skin_photo_intake",
+        "section" : "section_photo_diagnosis",
         "screens" : [{
           "description" : "options for places to take skin photo of",
           "questions" : [{
-            "question"    :   "q_skin_photo_places",
-            "potential_answers" : ["a_face_skin_photo_places", "a_chest_skin_photo_places", "a_back_skin_photo_places", "a_other_skin_photo_places"]
+            "question"    :   "q_acne_location",
+            "potential_answers" : ["o_face_acne_location", "o_chest_acne_location", "o_back_acne_location", "o_other_acne_location"]
             }]
         },
         {
           "description" : "photo taking experience",
           "screen_type" : "screen_type_photo",
           "questions" : [{
-            "question"          : "q_photo_intake_face",
-            "potential_answers" : ["a_photo_intake_face_middle", "a_photo_intake_face_right", "a_photo_intake_face_left"],
+            "question"          : "q_face_photo_intake",
+            "potential_answers" : ["o_face_front_photo_intake", "o_face_right_photo_intake", "o_face_left_photo_intake"],
             "condition" : {
               "op"                : "answer_equals",
-              "question"          : "q_skin_photo_places",
-              "potential_answers" : ["a_face_skin_photo_places"]
+              "question"          : "q_acne_location",
+              "potential_answers" : ["o_face_acne_location"]
             },
             "tips" : {
               "tips_section_tag"  : "tips_section_face",
               "photo_tips"        : ["photo_tip_good_face_front", "photo_tip_bad_face_front", "photo_tip_good_profile_right"],
-              "tips"              : ["tip_remove_glasses", "tip_pull_hair_back", "tip_no_makeup", "tip_shave", "tip_wash_face"]
+              "tips"              : ["tip_remove_glasses", "tip_pull_hair_back", "tip_no_make_up", "tip_shave", "tip_wash_face"]
             }
           },
           {
-            "question"      : "q_photo_intake_chest",
-            "potential_answers" : ["a_photo_intake_chest"],
+            "question"      : "q_chest_photo_intake",
+            "potential_answers" : ["o_chest_photo_intake"],
             "condition" : {
               "op"                : "answer_equals",
-              "question"          : "q_skin_photo_places",
-              "potential_answers" : ["a_chest_skin_photo_places"]
+              "question"          : "q_acne_location",
+              "potential_answers" : ["o_chest_acne_location"]
             },
             "tips_section" : {
               "tips_section_tag" : "tips_section_chest",
