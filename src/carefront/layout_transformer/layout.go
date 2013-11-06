@@ -2,7 +2,6 @@ package layout_transformer
 
 import (
 	"carefront/api"
-	"fmt"
 	"strconv"
 )
 
@@ -67,7 +66,6 @@ func (t *TipSection) FillInDatabaseInfo(dataApi *api.DataService) error {
 
 	t.Tips = make([]string, len(t.TipsTags))
 	for i, tipTag := range t.TipsTags {
-		fmt.Println("tip tag ", tipTag)
 		_, tipText, err := dataApi.GetTipInfo(tipTag, 1)
 		if err != nil {
 			return err
@@ -166,13 +164,19 @@ func (s *Screen) FillInDatabaseInfo(dataApi *api.DataService) error {
 
 type Section struct {
 	ElementProcessor `json:",omitempty"`
-	SectionTag       string `json:"section"`
-	SectionId        int64  `json:"section_id,string,omitempty"`
-	string           `json:"section_title,omitempty"`
+	SectionTag       string    `json:"section"`
+	SectionId        int64     `json:"section_id,string,omitempty"`
+	SectionTitle     string    `json:"section_title,omitempty"`
 	Screens          []*Screen `json:"screens"`
 }
 
 func (s *Section) FillInDatabaseInfo(dataApi *api.DataService) error {
+	sectionId, sectionTitle, err := dataApi.GetSectionInfo(s.SectionTag, 1)
+	if err != nil {
+		return err
+	}
+	s.SectionId = sectionId
+	s.SectionTitle = sectionTitle
 	for _, screen := range s.Screens {
 		err := screen.FillInDatabaseInfo(dataApi)
 		if err != nil {
@@ -184,12 +188,17 @@ func (s *Section) FillInDatabaseInfo(dataApi *api.DataService) error {
 
 type Treatment struct {
 	ElementProcessor `json:",omitempty"`
-	TreatmentTag     string    `json:"treatment"`
-	TreatmentId      int64     `json:"treatment_id,string,omitempty"`
-	Sections         []Section `json:"sections"`
+	TreatmentTag     string     `json:"treatment"`
+	TreatmentId      int64      `json:"treatment_id,string,omitempty"`
+	Sections         []*Section `json:"sections"`
 }
 
 func (t *Treatment) FillInDatabaseInfo(dataApi *api.DataService) error {
+	treatmentId, err := dataApi.GetTreatmentInfo(t.TreatmentTag, 1)
+	if err != nil {
+		return err
+	}
+	t.TreatmentId = treatmentId
 	for _, section := range t.Sections {
 		err := section.FillInDatabaseInfo(dataApi)
 		if err != nil {
