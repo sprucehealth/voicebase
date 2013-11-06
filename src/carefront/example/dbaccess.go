@@ -35,5 +35,14 @@ func main() {
 	fmt.Printf("\n%d %s", sectionId, sectionTitle)
 
 	questionId, questionTitle, questionType, err := dataApi.GetQuestionInfo("q_reason_visit", 1)
+	if err != nil {
+		panic(err)
+	}
 	fmt.Println(questionId, questionTitle, questionType)
+
+	outcomeId, outcome, outcomeType, err := dataApi.GetOutcomeInfo("o_something_else", 1)
+	if err != nil {
+		panic(err)
+	}
+	fmt.Println(outcomeId, outcome, outcomeType)
 }

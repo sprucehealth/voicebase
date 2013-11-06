@@ -84,3 +84,20 @@ func (d *DataService) GetQuestionInfo(questionTag string, languageId int64) (id 
 	}
 	return id, questionTitle, questionType, nil
 }
+
+func (d *DataService) GetOutcomeInfo(outcomeTag string, languageId int64) (id int64, outcome string, outcomeType string, err error) {
+	rows, err := d.DB.Query(`select potential_outcome.id, outcome_type.otype, ltext from potential_outcome 
+								inner join outcome_type on otype_id=outcome_type.id 
+								inner join localized_text on outcome_localized_text=app_text_id 
+									where potential_outcome_Tag=? and language_id=?`, outcomeTag, languageId)
+	if err != nil {
+		return 0, "", "", err
+	}
+	defer rows.Close()
+	rows.Next()
+	err = rows.Scan(&id, &outcome, &outcomeType)
+	if err != nil {
+		return 0, "", "", err
+	}
+	return id, outcome, outcomeType, nil
+}

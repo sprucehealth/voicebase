@@ -41,7 +41,7 @@ type DataAPI interface {
 	GetTreatmentInfo(treatmentTag string, languageId int64) (int64, error)
 	GetSectionInfo(sectionTag string, languageId int64) (id int64, title string, err error)
 	GetQuestionInfo(questionTag string, languageId int64) (id int64, questionTitle string, questionType string, err error)
-	// GetOutcomeInfo(outcomeTag string, language_id int64) (id int64, outcome string, outcomeType string, err error)
+	GetOutcomeInfo(outcomeTag string, languageId int64) (id int64, outcome string, outcomeType string, err error)
 	// GetTipInfo(tipTag string, language_id int64) (id int64, tip string, err error)
 }
 
