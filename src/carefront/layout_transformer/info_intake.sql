@@ -118,7 +118,8 @@ CREATE TABLE IF NOT EXISTS layout_version (
 	status varchar(250) NOT NULL, 
 	FOREIGN KEY (treatment_id) REFERENCES treatment(id),
 	FOREIGN KEY (object_storage_id) REFERENCES object_storage(id),
-	PRIMARY KEY (id)
+	PRIMARY KEY (id),
+	UNIQUE KEY (object_storage_id, syntax_version, treatment_id, status)
 ) CHARACTER SET utf8;
 
 CREATE TABLE IF NOT EXISTS patient_layout_version (
@@ -146,11 +147,20 @@ CREATE TABLE IF NOT EXISTS dr_layout_version (
 
 CREATE TABLE IF NOT EXISTS object_storage (
 	id int unsigned NOT NULL AUTO_INCREMENT,
-	region varchar(100) NOT NULL,
+	region_id int unsigned NOT NULL,
 	bucket varchar(100) NOT NULL,
 	storage_key varchar(100) NOT NULL,
 	status varchar(100) NOT NULL,
-	PRIMARY KEY(id)
+	PRIMARY KEY(id),
+	FOREIGN KEY (region_id) REFERENCES region(id),
+	UNIQUE KEY (region_id, storage_key, bucket, status)
+) CHARACTER SET UTF8;
+
+CREATE TABLE IF NOT EXISTS region (
+	id int unsigned NOT NULL AUTO_INCREMENT,
+	region_tag varchar(100) NOT NULL,
+	PRIMARY KEY (id),
+	UNIQUE KEY (region_tag)
 ) CHARACTER SET UTF8;
 
 CREATE TABLE IF NOT EXISTS tips (

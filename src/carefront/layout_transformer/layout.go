@@ -9,7 +9,7 @@ const (
 	EN_LANGUAGE_ID = 1
 )
 
-type LayoutProcessor interface {
+type ClientLayoutProcessor interface {
 	TransformIntakeIntoClientLayout(treatment *Treatment) error
 }
 

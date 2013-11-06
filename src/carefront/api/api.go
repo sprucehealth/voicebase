@@ -38,12 +38,17 @@ type DataAPI interface {
 	MarkPhotoUploadComplete(caseId, photoId int64) error
 	GetPhotosForCase(caseId int64) ([]string, error)
 
+	/*
+	* Patient Information Intake APIs
+	 */
 	GetTreatmentInfo(treatmentTag string, languageId int64) (int64, error)
 	GetSectionInfo(sectionTag string, languageId int64) (id int64, title string, err error)
 	GetQuestionInfo(questionTag string, languageId int64) (id int64, questionTitle string, questionType string, err error)
 	GetOutcomeInfo(outcomeTag string, languageId int64) (id int64, outcome string, outcomeType string, err error)
 	GetTipSectionInfo(tipSectionTag string, languageId int64) (id int64, tipSectionTitle string, tipSectionSubtext string, err error)
 	GetTipInfo(tipTag string, languageId int64) (id int64, tip string, err error)
+
+	GetCurrentActiveLayoutInfoForTreatment(treatmentId int64) (bucket, key, region string, err error)
 }
 
 type ACLAPI interface {

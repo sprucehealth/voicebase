@@ -136,3 +136,23 @@ func (d *DataService) GetTipSectionInfo(tipSectionTag string, languageId int64) 
 	}
 	return id, tipSectionTitle, tipSectionSubtext, nil
 }
+
+func (d *DataService) GetCurrentActiveLayoutInfoForTreatment(treatmentId int64) (bucket, key, region string, err error) {
+	rows, err := d.DB.Query(`select bucket, storage_key, region_tag from layout_version 
+								inner join object_storage on object_storage_id = object_storage.id 
+								inner join region on region_id=region.id  
+									where layout_version.status='ACTIVE' and treatment_id = ?`, treatmentId)
+	if err != nil {
+		return "", "", "", err
+	}
+	defer rows.Close()
+	// if there are no rows to return, return empty values
+	if !rows.Next() {
+		return "", "", "", nil
+	}
+	err = rows.Scan(&bucket, &key, &region)
+	if err != nil {
+		return "", "", "", err
+	}
+	return bucket, key, region, nil
+}

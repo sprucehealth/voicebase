@@ -4,11 +4,11 @@ import (
 	"carefront/api"
 )
 
-type ClientLayoutProcessor struct {
+type TreatmentLayoutProcessor struct {
 	DataApi *api.DataService
 }
 
-func (c *ClientLayoutProcessor) TransformIntakeIntoClientLayout(treatment *Treatment) error {
+func (c *TreatmentLayoutProcessor) TransformIntakeIntoClientLayout(treatment *Treatment) error {
 	// TODO currently, calling the FillDataBaseInfo results in each section, questio, potential outcome and tip
 	// making indepedent roundtrips to the database, as opposed to batch querying the database which would save time
 	// and improve performance
