@@ -51,7 +51,10 @@ func (d *DataService) GetTreatmentInfo(treatmentTag string, languageId int64) (i
 }
 
 func (d *DataService) GetSectionInfo(sectionTag string, languageId int64) (id int64, title string, err error) {
-	rows, err := d.DB.Query("select section.id, ltext from section inner join app_text on section_title_app_text_id = app_text.id inner join localized_text on app_text_id = app_text.id where language_id = ? and section_tag = ?", languageId, sectionTag)
+	rows, err := d.DB.Query(`select section.id, ltext from section 
+								inner join app_text on section_title_app_text_id = app_text.id 
+								inner join localized_text on app_text_id = app_text.id 
+									where language_id = ? and section_tag = ?`, languageId, sectionTag)
 	if err != nil {
 		return 0, "", err
 	}
@@ -65,7 +68,11 @@ func (d *DataService) GetSectionInfo(sectionTag string, languageId int64) (id in
 }
 
 func (d *DataService) GetQuestionInfo(questionTag string, languageId int64) (id int64, questionTitle string, questionType string, err error) {
-	rows, err := d.DB.Query("select question.id, ltext, qtype from question  inner join app_text on qtext_app_text_id=app_text.id inner join localized_text on app_text_id=app_text.id  inner join question_type on qtype_id=question_type.id where question_tag = ? and language_id = ?", questionTag, languageId)
+	rows, err := d.DB.Query(`select question.id, ltext, qtype from question 
+								inner join app_text on qtext_app_text_id=app_text.id 
+								inner join localized_text on app_text_id=app_text.id
+	   							inner join question_type on qtype_id=question_type.id 
+	   								where question_tag = ? and language_id = ?`, questionTag, languageId)
 	if err != nil {
 		return 0, "", "", err
 	}
