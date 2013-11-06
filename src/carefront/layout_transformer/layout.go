@@ -5,6 +5,10 @@ import (
 	"strconv"
 )
 
+const (
+	EN_LANGUAGE_ID = 1
+)
+
 type LayoutProcessor interface {
 	TransformIntakeIntoClientLayout(treatment *Treatment) error
 }
@@ -29,14 +33,14 @@ func (c *Condition) FillInDatabaseInfo(dataApi *api.DataService) error {
 	if c.QuestionTag == "" {
 		return nil
 	}
-	questionId, _, _, err := dataApi.GetQuestionInfo(c.QuestionTag, 1)
+	questionId, _, _, err := dataApi.GetQuestionInfo(c.QuestionTag, EN_LANGUAGE_ID)
 	if err != nil {
 		return err
 	}
 	c.QuestionId = questionId
 	c.PotentialAnswersId = make([]string, len(c.PotentialAnswersTags))
 	for i, tag := range c.PotentialAnswersTags {
-		answerId, _, _, err := dataApi.GetOutcomeInfo(tag, 1)
+		answerId, _, _, err := dataApi.GetOutcomeInfo(tag, EN_LANGUAGE_ID)
 		c.PotentialAnswersId[i] = strconv.Itoa(int(answerId))
 		if err != nil {
 			return err
@@ -56,7 +60,7 @@ type TipSection struct {
 }
 
 func (t *TipSection) FillInDatabaseInfo(dataApi *api.DataService) error {
-	_, tipSectionTitle, tipSectionSubtext, err := dataApi.GetTipSectionInfo(t.TipsSectionTag, 1)
+	_, tipSectionTitle, tipSectionSubtext, err := dataApi.GetTipSectionInfo(t.TipsSectionTag, EN_LANGUAGE_ID)
 	if err != nil {
 		return err
 	}
@@ -66,7 +70,7 @@ func (t *TipSection) FillInDatabaseInfo(dataApi *api.DataService) error {
 
 	t.Tips = make([]string, len(t.TipsTags))
 	for i, tipTag := range t.TipsTags {
-		_, tipText, err := dataApi.GetTipInfo(tipTag, 1)
+		_, tipText, err := dataApi.GetTipInfo(tipTag, EN_LANGUAGE_ID)
 		if err != nil {
 			return err
 		}
@@ -97,7 +101,7 @@ type Question struct {
 }
 
 func (q *Question) FillInDatabaseInfo(dataApi *api.DataService) error {
-	questionId, questionTitle, questionType, err := dataApi.GetQuestionInfo(q.QuestionTag, 1)
+	questionId, questionTitle, questionType, err := dataApi.GetQuestionInfo(q.QuestionTag, EN_LANGUAGE_ID)
 	if err != nil {
 		return err
 	}
@@ -108,7 +112,7 @@ func (q *Question) FillInDatabaseInfo(dataApi *api.DataService) error {
 	// go over the potential ansnwer tags to create potential outcome blocks
 	q.PotentialOutcomes = make([]*PotentialOutcome, len(q.PotentialAnswerTags))
 	for i, answerTag := range q.PotentialAnswerTags {
-		outcomeId, outcome, outcomeType, err := dataApi.GetOutcomeInfo(answerTag, 1)
+		outcomeId, outcome, outcomeType, err := dataApi.GetOutcomeInfo(answerTag, EN_LANGUAGE_ID)
 		if err != nil {
 			return err
 		}
@@ -171,7 +175,7 @@ type Section struct {
 }
 
 func (s *Section) FillInDatabaseInfo(dataApi *api.DataService) error {
-	sectionId, sectionTitle, err := dataApi.GetSectionInfo(s.SectionTag, 1)
+	sectionId, sectionTitle, err := dataApi.GetSectionInfo(s.SectionTag, EN_LANGUAGE_ID)
 	if err != nil {
 		return err
 	}
@@ -194,7 +198,7 @@ type Treatment struct {
 }
 
 func (t *Treatment) FillInDatabaseInfo(dataApi *api.DataService) error {
-	treatmentId, err := dataApi.GetTreatmentInfo(t.TreatmentTag, 1)
+	treatmentId, err := dataApi.GetTreatmentInfo(t.TreatmentTag, EN_LANGUAGE_ID)
 	if err != nil {
 		return err
 	}
