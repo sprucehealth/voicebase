@@ -101,3 +101,36 @@ func (d *DataService) GetOutcomeInfo(outcomeTag string, languageId int64) (id in
 	}
 	return id, outcome, outcomeType, nil
 }
+
+func (d *DataService) GetTipInfo(tipTag string, languageId int64) (id int64, tip string, err error) {
+	rows, err := d.DB.Query(`select tips.id, ltext from tips
+								inner join localized_text on app_text_id=tips_text_id 
+									where tips_tag = ? and language_id = ?`, tipTag, languageId)
+	if err != nil {
+		return 0, "", err
+	}
+	defer rows.Close()
+	rows.Next()
+	err = rows.Scan(&id, &tip)
+	if err != nil {
+		return 0, "", err
+	}
+	return id, tip, nil
+}
+
+func (d *DataService) GetTipSectionInfo(tipSectionTag string, languageId int64) (id int64, tipSectionTitle string, tipSectionSubtext string, err error) {
+	rows, err := d.DB.Query(`select tips_section.id, ltext1.ltext, ltext2.ltext from tips_section 
+								inner join localized_text as ltext1 on tips_title_text_id=ltext1.app_text_id 
+								inner join localized_text as ltext2 on tips_subtext_text_id=ltext2.app_text_id 
+									where ltext1.language_id = ? and tips_section_tag = ?`, languageId, tipSectionTag)
+	if err != nil {
+		return 0, "", "", err
+	}
+	defer rows.Close()
+	rows.Next()
+	err = rows.Scan(&id, &tipSectionTitle, &tipSectionSubtext)
+	if err != nil {
+		return 0, "", "", err
+	}
+	return id, tipSectionTitle, tipSectionSubtext, nil
+}

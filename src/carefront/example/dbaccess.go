@@ -45,4 +45,16 @@ func main() {
 		panic(err)
 	}
 	fmt.Println(outcomeId, outcome, outcomeType)
+
+	tipSectionId, tipSectionTitle, tipSectionSubtext, err := dataApi.GetTipSectionInfo("tips_section_face", 1)
+	if err != nil {
+		panic(err)
+	}
+	fmt.Println(tipSectionId, tipSectionTitle, tipSectionSubtext)
+
+	tipId, tip, err := dataApi.GetTipInfo("tip_remove_jewellery", 1)
+	if err != nil {
+		panic(err)
+	}
+	fmt.Println(tipId, tip)
 }
