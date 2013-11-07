@@ -60,12 +60,14 @@ CREATE TABLE IF NOT EXISTS potential_outcome (
 	outcome_localized_text int unsigned NOT NULL,
 	otype_id int unsigned NOT NULL,
 	potential_outcome_tag varchar(250) NOT NULL,
+	ordering int unsigned NOT NULL,
 	FOREIGN KEY (otype_id) REFERENCES outcome_type(id),
 	FOREIGN KEY (question_id) REFERENCES question(id),
 	FOREIGN KEY (outcome_localized_text) REFERENCES app_text(id),
 	PRIMARY KEY (id),
 	UNIQUE KEY (potential_outcome_tag),
-	UNIQUE KEY (question_id, otype_id)
+	UNIQUE KEY (question_id, otype_id),
+	UNIQUE KEY (question_id, ordering)
 ) CHARACTER SET utf8;
 
 CREATE TABLE IF NOT EXISTS section (
