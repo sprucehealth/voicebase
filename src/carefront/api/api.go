@@ -49,9 +49,14 @@ type DataAPI interface {
 	GetTipInfo(tipTag string, languageId int64) (id int64, tip string, err error)
 
 	GetSupportedLanguages() (languagesSupported []string, languagesSupportedIds []int64, err error)
-	GetCurrentActiveLayoutInfoForTreatment(treatmentTag string) (bucket, key, region string, err error)
+	GetActiveLayoutInfoForTreatment(treatmentTag string) (bucket, key, region string, err error)
 	UploadAndMarkActiveNewLayoutForTreatment(rawLayout []byte, bucket, key, region string, err error)
 	UploadAndMarkActiveNewClientLayoutForTreatment(rawLayout []byte, bucket, key, region string, languageId int64, err error)
+}
+
+type CloudObjectAPI interface {
+	GetObjectAtLocation(bucket, key, region string) (rawData []byte, err error)
+	PutObjectToLocation(bucket, key, region string, rawData []byte) error
 }
 
 type Layout interface {
