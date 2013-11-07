@@ -79,7 +79,7 @@ func main() {
 		}
 		log.SetOutput(file)
 	}
-
+	log.SetFlags(log.Lshortfile | log.Ldate | log.Ltime)
 	if *flagDBUser == "" || *flagDBPassword == "" || *flagDBHost == "" || *flagDBName == "" {
 		fmt.Fprintf(os.Stderr, "Missing either one of user, password, host, or name for the database.\n")
 		os.Exit(1)
@@ -104,11 +104,12 @@ func main() {
 	authApi := &api.AuthService{db}
 	dataApi := &api.DataService{db}
 	mux := &apiservice.AuthServeMux{*http.NewServeMux(), authApi}
-
+	cloudStorageApi := api.NewCloudStorageService("AKIAINP33PBIN5GW4GKQ", "rbqPao4jDqTBTXBHk4BRnzWmYsfvSslg9mYhG45w")
 	authHandler := &apiservice.AuthenticationHandler{authApi}
 	pingHandler := apiservice.PingHandler(0)
 	photoHandler := &apiservice.PhotoUploadHandler{&api.PhotoService{*flagAWSAccessKey, *flagAWSSecretKey}, *flagS3CaseBucket, dataApi}
 	getSignedUrlsHandler := &apiservice.GetSignedUrlsHandler{&api.PhotoService{*flagAWSAccessKey, *flagAWSSecretKey}, *flagS3CaseBucket}
+	layoutHandler := &apiservice.LayoutHandler{dataApi, cloudStorageApi}
 
 	mux.Handle("/v1/authenticate", authHandler)
 	mux.Handle("/v1/signup", authHandler)
@@ -116,6 +117,7 @@ func main() {
 	mux.Handle("/v1/ping", pingHandler)
 	mux.Handle("/v1/upload", photoHandler)
 	mux.Handle("/v1/imagesforcase/", getSignedUrlsHandler)
+	mux.Handle("/v1/layout/", layoutHandler)
 
 	s := &http.Server{
 		Addr:           *flagListenAddr,
