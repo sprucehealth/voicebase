@@ -30,7 +30,8 @@ func main() {
 	defer db.Close()
 
 	dataApi := &api.DataService{db}
-	layoutService := &api.LayoutService{dataApi}
+	cloudObjectService := api.NewService("AKIAINP33PBIN5GW4GKQ", "rbqPao4jDqTBTXBHk4BRnzWmYsfvSslg9mYhG45w")
+	layoutService := &api.LayoutService{dataApi, cloudObjectService}
 
 	layoutService.VerifyAndUploadIncomingLayout(fileContents, treatment.TreatmentTag)
 }
