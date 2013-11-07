@@ -119,18 +119,20 @@ CREATE TABLE IF NOT EXISTS layout_version (
 	FOREIGN KEY (treatment_id) REFERENCES treatment(id),
 	FOREIGN KEY (object_storage_id) REFERENCES object_storage(id),
 	PRIMARY KEY (id),
-	UNIQUE KEY (object_storage_id, syntax_version, treatment_id, status)
+	UNIQUE KEY (object_storage_id, syntax_version, treatment_id, stau)
 ) CHARACTER SET utf8;
 
 CREATE TABLE IF NOT EXISTS patient_layout_version (
 	id int unsigned NOT NULL AUTO_INCREMENT,
 	object_storage_id int unsigned NOT NULL,
 	language_id int unsigned NOT NULL,
+	treatment_id int unsigned NOT NULL,
 	layout_version_id int unsigned NOT NULL,
 	status varchar(250) NOT NULL, 
 	FOREIGN KEY (layout_version_id) REFERENCES layout_version(id),
 	FOREIGN KEY (language_id) REFERENCES languages_supported(id),
 	FOREIGN KEY (object_storage_id) REFERENCES object_storage(id),
+	FOREIGN KEY (treatment_id) REFERENCES treatment(id),
 	PRIMARY KEY(id)
 ) CHARACTER SET utf8;
 

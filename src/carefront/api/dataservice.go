@@ -137,7 +137,7 @@ func (d *DataService) GetTipSectionInfo(tipSectionTag string, languageId int64) 
 	return id, tipSectionTitle, tipSectionSubtext, nil
 }
 
-func (d *DataService) GetCurrentActiveLayoutInfoForTreatment(treatmentTag string) (bucket, key, region string, err error) {
+func (d *DataService) GetActiveLayoutInfoForTreatment(treatmentTag string) (bucket, key, region string, err error) {
 	rows, err := d.DB.Query(`select bucket, storage_key, region_tag from layout_version 
 								inner join object_storage on object_storage_id = object_storage.id 
 								inner join region on region_id=region.id 
@@ -156,4 +156,114 @@ func (d *DataService) GetCurrentActiveLayoutInfoForTreatment(treatmentTag string
 		return "", "", "", err
 	}
 	return bucket, key, region, nil
+}
+
+func (d *DataService) GetSupportedLanguages() (languagesSupported []string, languagesSupportedIds []int64, err error) {
+	rows, err := d.DB.Query(`select id,language from languages_supported`)
+	if err != nil {
+		return nil, nil, err
+	}
+	defer rows.Close()
+
+	languagesSupported = make([]string, 0, 5)
+	languagesSupportedIds = make([]int64, 0, 5)
+	for rows.Next() {
+		var languageId int64
+		var language string
+		err := rows.Scan(&languageId, &language)
+		if err != nil {
+			return nil, nil, err
+		}
+		languagesSupported = append(languagesSupported, language)
+		languagesSupportedIds = append(languagesSupportedIds, languageId)
+	}
+	return languagesSupported, languagesSupportedIds, nil
+}
+
+func (d *DataService) CreateNewUploadCloudObjectRecord(bucket, key, region string) (int64, error) {
+	res, err := d.DB.Exec(`insert into object_storage (bucket, storage_key, status, region_id) 
+								values (?, ?, 'CREATING', (select id from region where region_tag = ?))`, bucket, key, region)
+	if err != nil {
+		return 0, err
+	}
+
+	lastId, err := res.LastInsertId()
+	if err != nil {
+		return 0, err
+	}
+
+	return lastId, err
+}
+
+func (d *DataService) UpdateCloudObjectRecordToSayCompleted(id int64) error {
+	_, err := d.DB.Exec("update object_storage set status='ACTIVE' where id = ?", id)
+	if err != nil {
+		return err
+	}
+
+	return nil
+}
+
+func (d *DataService) MarkNewLayoutVersionAsCreating(objectId int64, syntaxVersion int64, treatmentId int64, comment string) (int64, error) {
+	res, err := d.DB.Exec(`insert into layout_version (object_storage_id, syntax_version, treatment_id, comment, status) 
+							values (?, ?, ?, ?, 'CREATING')`, objectId, syntaxVersion, treatmentId, comment)
+	if err != nil {
+		return 0, err
+	}
+
+	lastId, err := res.LastInsertId()
+	if err != nil {
+		return 0, err
+	}
+
+	return lastId, err
+}
+
+func (d *DataService) MarkNewPatientLayoutVersionAsCreating(objectId int64, languageId int64, layoutVersionId int64, treatmentId int64) (int64, error) {
+	res, err := d.DB.Exec(`insert into patient_layout_version (object_storage_id, language_id, layout_version_id, treatment_id, status) 
+								values (?, ?, ?, ?, 'CREATING')`, objectId, languageId, layoutVersionId, treatmentId)
+	if err != nil {
+		return 0, err
+	}
+
+	lastId, err := res.LastInsertId()
+	if err != nil {
+		return 0, err
+	}
+
+	return lastId, err
+}
+
+func (d *DataService) UpdateActiveLayouts(layoutId int64, clientLayoutIds []int64, treatmentId int64) error {
+	tx, _ := d.DB.Begin()
+	// update the current active layouts to DEPRECATED
+	_, err := d.DB.Exec(`update layout_version set status='DEPCRECATED' where status='ACTIVE' and treatment_id = ?`, treatmentId)
+	if err != nil {
+		tx.Rollback()
+		return err
+	}
+
+	// update the current client active layouts to DEPRECATED
+	_, err = d.DB.Exec(`update patient_layout_version set status='DEPCRECATED' where status='ACTIVE' and treatment_id = ?`, treatmentId)
+	if err != nil {
+		tx.Rollback()
+		return err
+	}
+
+	// update the new layout as ACTIVE
+	_, err = d.DB.Exec(`update layout_version set status='ACTIVE' where id = ?`, layoutId)
+	if err != nil {
+		tx.Rollback()
+		return err
+	}
+
+	for _, clientLayoutId := range clientLayoutIds {
+		_, err := d.DB.Exec(`update patient_layout_version set status='ACTIVE' where id = ?`, clientLayoutId)
+		if err != nil {
+			tx.Rollback()
+			return err
+		}
+	}
+	tx.Commit()
+	return nil
 }
