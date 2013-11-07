@@ -5,11 +5,11 @@ import (
 )
 
 type ClientLayoutProcessor interface {
-	TransformIntakeIntoClientLayout(treatment *Treatment) error
+	TransformIntakeIntoClientLayout(treatment *Treatment, languageId int64) error
 }
 
 type ElementProcessor interface {
-	FillInDatabaseInfo(dataApi *api.DataService) error
+	FillInDatabaseInfo(dataApi api.DataAPI, languageId int64) error
 }
 
 type Condition struct {

@@ -5,22 +5,18 @@ import (
 	"strconv"
 )
 
-const (
-	EN_LANGUAGE_ID = 1
-)
-
-func (c *Condition) FillInDatabaseInfo(dataApi *api.DataService) error {
+func (c *Condition) FillInDatabaseInfo(dataApi api.DataAPI, languageId int64) error {
 	if c.QuestionTag == "" {
 		return nil
 	}
-	questionId, _, _, err := dataApi.GetQuestionInfo(c.QuestionTag, EN_LANGUAGE_ID)
+	questionId, _, _, err := dataApi.GetQuestionInfo(c.QuestionTag, languageId)
 	if err != nil {
 		return err
 	}
 	c.QuestionId = questionId
 	c.PotentialAnswersId = make([]string, len(c.PotentialAnswersTags))
 	for i, tag := range c.PotentialAnswersTags {
-		answerId, _, _, err := dataApi.GetOutcomeInfo(tag, EN_LANGUAGE_ID)
+		answerId, _, _, err := dataApi.GetOutcomeInfo(tag, languageId)
 		c.PotentialAnswersId[i] = strconv.Itoa(int(answerId))
 		if err != nil {
 			return err
@@ -29,8 +25,8 @@ func (c *Condition) FillInDatabaseInfo(dataApi *api.DataService) error {
 	return nil
 }
 
-func (t *TipSection) FillInDatabaseInfo(dataApi *api.DataService) error {
-	_, tipSectionTitle, tipSectionSubtext, err := dataApi.GetTipSectionInfo(t.TipsSectionTag, EN_LANGUAGE_ID)
+func (t *TipSection) FillInDatabaseInfo(dataApi api.DataAPI, languageId int64) error {
+	_, tipSectionTitle, tipSectionSubtext, err := dataApi.GetTipSectionInfo(t.TipsSectionTag, languageId)
 	if err != nil {
 		return err
 	}
@@ -40,7 +36,7 @@ func (t *TipSection) FillInDatabaseInfo(dataApi *api.DataService) error {
 
 	t.Tips = make([]string, len(t.TipsTags))
 	for i, tipTag := range t.TipsTags {
-		_, tipText, err := dataApi.GetTipInfo(tipTag, EN_LANGUAGE_ID)
+		_, tipText, err := dataApi.GetTipInfo(tipTag, languageId)
 		if err != nil {
 			return err
 		}
@@ -50,8 +46,8 @@ func (t *TipSection) FillInDatabaseInfo(dataApi *api.DataService) error {
 	return nil
 }
 
-func (q *Question) FillInDatabaseInfo(dataApi *api.DataService) error {
-	questionId, questionTitle, questionType, err := dataApi.GetQuestionInfo(q.QuestionTag, EN_LANGUAGE_ID)
+func (q *Question) FillInDatabaseInfo(dataApi api.DataAPI, languageId int64) error {
+	questionId, questionTitle, questionType, err := dataApi.GetQuestionInfo(q.QuestionTag, languageId)
 	if err != nil {
 		return err
 	}
@@ -62,7 +58,7 @@ func (q *Question) FillInDatabaseInfo(dataApi *api.DataService) error {
 	// go over the potential ansnwer tags to create potential outcome blocks
 	q.PotentialOutcomes = make([]*PotentialOutcome, len(q.PotentialAnswerTags))
 	for i, answerTag := range q.PotentialAnswerTags {
-		outcomeId, outcome, outcomeType, err := dataApi.GetOutcomeInfo(answerTag, EN_LANGUAGE_ID)
+		outcomeId, outcome, outcomeType, err := dataApi.GetOutcomeInfo(answerTag, languageId)
 		if err != nil {
 			return err
 		}
@@ -74,14 +70,14 @@ func (q *Question) FillInDatabaseInfo(dataApi *api.DataService) error {
 	}
 
 	if q.ConditionBlock != nil {
-		err := q.ConditionBlock.FillInDatabaseInfo(dataApi)
+		err := q.ConditionBlock.FillInDatabaseInfo(dataApi, languageId)
 		if err != nil {
 			return err
 		}
 	}
 
 	if q.Tips != nil {
-		err := q.Tips.FillInDatabaseInfo(dataApi)
+		err := q.Tips.FillInDatabaseInfo(dataApi, languageId)
 		if err != nil {
 			return err
 		}
@@ -89,9 +85,9 @@ func (q *Question) FillInDatabaseInfo(dataApi *api.DataService) error {
 	return nil
 }
 
-func (s *Screen) FillInDatabaseInfo(dataApi *api.DataService) error {
+func (s *Screen) FillInDatabaseInfo(dataApi api.DataAPI, languageId int64) error {
 	if s.ConditionBlock != nil {
-		err := s.ConditionBlock.FillInDatabaseInfo(dataApi)
+		err := s.ConditionBlock.FillInDatabaseInfo(dataApi, languageId)
 		if err != nil {
 			return err
 		}
@@ -99,7 +95,7 @@ func (s *Screen) FillInDatabaseInfo(dataApi *api.DataService) error {
 
 	if s.Questions != nil {
 		for _, question := range s.Questions {
-			err := question.FillInDatabaseInfo(dataApi)
+			err := question.FillInDatabaseInfo(dataApi, languageId)
 			if err != nil {
 				return err
 			}
@@ -108,15 +104,15 @@ func (s *Screen) FillInDatabaseInfo(dataApi *api.DataService) error {
 	return nil
 }
 
-func (s *Section) FillInDatabaseInfo(dataApi *api.DataService) error {
-	sectionId, sectionTitle, err := dataApi.GetSectionInfo(s.SectionTag, EN_LANGUAGE_ID)
+func (s *Section) FillInDatabaseInfo(dataApi api.DataAPI, languageId int64) error {
+	sectionId, sectionTitle, err := dataApi.GetSectionInfo(s.SectionTag, languageId)
 	if err != nil {
 		return err
 	}
 	s.SectionId = sectionId
 	s.SectionTitle = sectionTitle
 	for _, screen := range s.Screens {
-		err := screen.FillInDatabaseInfo(dataApi)
+		err := screen.FillInDatabaseInfo(dataApi, languageId)
 		if err != nil {
 			return err
 		}
@@ -124,14 +120,14 @@ func (s *Section) FillInDatabaseInfo(dataApi *api.DataService) error {
 	return nil
 }
 
-func (t *Treatment) FillInDatabaseInfo(dataApi *api.DataService) error {
-	treatmentId, err := dataApi.GetTreatmentInfo(t.TreatmentTag, EN_LANGUAGE_ID)
+func (t *Treatment) FillInDatabaseInfo(dataApi api.DataAPI, languageId int64) error {
+	treatmentId, err := dataApi.GetTreatmentInfo(t.TreatmentTag, languageId)
 	if err != nil {
 		return err
 	}
 	t.TreatmentId = treatmentId
 	for _, section := range t.Sections {
-		err := section.FillInDatabaseInfo(dataApi)
+		err := section.FillInDatabaseInfo(dataApi, languageId)
 		if err != nil {
 			return err
 		}
