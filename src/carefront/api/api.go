@@ -50,13 +50,18 @@ type DataAPI interface {
 
 	GetSupportedLanguages() (languagesSupported []string, languagesSupportedIds []int64, err error)
 	GetActiveLayoutInfoForTreatment(treatmentTag string) (bucket, key, region string, err error)
-	UploadAndMarkActiveNewLayoutForTreatment(rawLayout []byte, bucket, key, region string, err error)
-	UploadAndMarkActiveNewClientLayoutForTreatment(rawLayout []byte, bucket, key, region string, languageId int64, err error)
+
+	CreateNewUploadCloudObjectRecord(bucket, key, region string) (int64, error)
+	UpdateCloudObjectRecordToSayCompleted(id int64) error
+
+	MarkNewLayoutVersionAsCreating(objectId int64, syntaxVersion int64, treatmentId int64, comment string) (int64, error)
+	MarkNewPatientLayoutVersionAsCreating(objectId int64, languageId int64, layoutVersionId int64, treatmentId int64) (int64, error)
+	UpdateActiveLayouts(layoutId int64, clientLayoutIds []int64, treatmentId int64) error
 }
 
-type CloudObjectAPI interface {
+type CloudStorageAPI interface {
 	GetObjectAtLocation(bucket, key, region string) (rawData []byte, err error)
-	PutObjectToLocation(bucket, key, region string, rawData []byte) error
+	PutObjectToLocation(bucket, key, region, contentType string, rawData []byte, duration time.Time, dataApi DataAPI) (int64, string, error)
 }
 
 type Layout interface {
