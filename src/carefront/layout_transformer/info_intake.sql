@@ -74,7 +74,7 @@ CREATE TABLE IF NOT EXISTS section (
 	id int unsigned NOT NULL AUTO_INCREMENT,
 	section_title_app_text_id int unsigned NOT NULL,
 	comment varchar(600) NOT NULL,
-	treatment_id int unsigned NOT NULL,
+	treatment_id int unsigned, 
 	section_tag varchar(250) NOT NULL,
 	FOREIGN KEY (section_title_app_text_id) REFERENCES app_text(id),
 	FOREIGN KEY (treatment_id) REFERENCES treatment(id),
