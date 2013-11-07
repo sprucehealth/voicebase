@@ -35,7 +35,7 @@ func (d *DataService) GetPhotosForCase(caseId int64) ([]string, error) {
 	return make([]string, 1), nil
 }
 
-func (d *DataService) GetTreatmentInfo(treatmentTag string, languageId int64) (int64, error) {
+func (d *DataService) GetTreatmentInfo(treatmentTag string) (int64, error) {
 	rows, err := d.DB.Query("select id from treatment where comment = ? ", treatmentTag)
 	if err != nil {
 		return 0, err

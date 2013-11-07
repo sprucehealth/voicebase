@@ -41,7 +41,7 @@ type DataAPI interface {
 	/*
 	* Patient Information Intake APIs
 	 */
-	GetTreatmentInfo(treatmentTag string, languageId int64) (int64, error)
+	GetTreatmentInfo(treatmentTag string) (int64, error)
 	GetSectionInfo(sectionTag string, languageId int64) (id int64, title string, err error)
 	GetQuestionInfo(questionTag string, languageId int64) (id int64, questionTitle string, questionType string, err error)
 	GetOutcomeInfo(outcomeTag string, languageId int64) (id int64, outcome string, outcomeType string, err error)

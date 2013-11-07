@@ -121,7 +121,7 @@ func (s *Section) FillInDatabaseInfo(dataApi api.DataAPI, languageId int64) erro
 }
 
 func (t *Treatment) FillInDatabaseInfo(dataApi api.DataAPI, languageId int64) error {
-	treatmentId, err := dataApi.GetTreatmentInfo(t.TreatmentTag, languageId)
+	treatmentId, err := dataApi.GetTreatmentInfo(t.TreatmentTag)
 	if err != nil {
 		return err
 	}

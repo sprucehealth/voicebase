@@ -17,6 +17,7 @@ const (
 	CAREFRONT_LAYOUT_BUCKET        = "carefront-layout"
 	CAREFRONT_CLIENT_LAYOUT_BUCKET = "carefront-client-layout"
 	US_EAST_REGION                 = "us-east-1"
+	LAYOUT_SYNTAX_VERSION          = 1
 )
 
 type LayoutHandler struct {
@@ -98,8 +99,11 @@ func (l *LayoutHandler) ServeHTTP(w http.ResponseWriter, r *http.Request) {
 	objectId, _, err := l.CloudStorageApi.PutObjectToLocation(CAREFRONT_LAYOUT_BUCKET,
 		strconv.Itoa(int(time.Now().Unix())), US_EAST_REGION, handler.Header.Get("Content-Type"), data, time.Now().Add(10*time.Minute), l.DataApi)
 
+	// get the treatmentid
+	treatmentId, err := l.DataApi.GetTreatmentInfo(treatmentTag)
+
 	// once that is successful, create a record for the layout version and mark is as CREATING
-	layoutId, err := l.DataApi.MarkNewLayoutVersionAsCreating(objectId, 1, 1, "automatically generated")
+	layoutId, err := l.DataApi.MarkNewLayoutVersionAsCreating(objectId, LAYOUT_SYNTAX_VERSION, treatmentId, "automatically generated")
 
 	// get all the supported languages
 	_, supportedLanguageIds, err := l.DataApi.GetSupportedLanguages()
