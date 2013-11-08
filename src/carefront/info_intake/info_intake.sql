@@ -155,6 +155,8 @@ CREATE TABLE IF NOT EXISTS object_storage (
 	bucket varchar(100) NOT NULL,
 	storage_key varchar(100) NOT NULL,
 	status varchar(100) NOT NULL,
+	creation_date timestamp NOT NULL DEFAULT CURRENT_TIMESTAMP,
+	modified_date timestamp NOT NULL,
 	PRIMARY KEY(id),
 	FOREIGN KEY (region_id) REFERENCES region(id),
 	UNIQUE KEY (region_id, storage_key, bucket, status)
