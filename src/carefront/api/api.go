@@ -41,22 +41,22 @@ type DataAPI interface {
 	/*
 	* Patient Information Intake APIs
 	 */
-	GetHealthConditionInfo(treatmentTag string) (int64, error)
+	GetHealthConditionInfo(healthConditionTag string) (int64, error)
 	GetSectionInfo(sectionTag string, languageId int64) (id int64, title string, err error)
 	GetQuestionInfo(questionTag string, languageId int64) (id int64, questionTitle string, questionType string, err error)
-	GetOutcomeInfo(questionId int64, languageId int64) (ids []int64, outcomes []string, outcomeTypes []string, outcomeTags []string, orderings []int64, err error)
+	GetAnswerInfo(questionId int64, languageId int64) (ids []int64, answers []string, answerTypes []string, answerTags []string, orderings []int64, err error)
 	GetTipSectionInfo(tipSectionTag string, languageId int64) (id int64, tipSectionTitle string, tipSectionSubtext string, err error)
 	GetTipInfo(tipTag string, languageId int64) (id int64, tip string, err error)
 
 	GetSupportedLanguages() (languagesSupported []string, languagesSupportedIds []int64, err error)
-	GetActiveLayoutInfoForTreatment(treatmentTag string) (bucket, key, region string, err error)
+	GetActiveLayoutInfoForHealthCondition(healthConditionTag string) (bucket, key, region string, err error)
 
 	CreateNewUploadCloudObjectRecord(bucket, key, region string) (int64, error)
 	UpdateCloudObjectRecordToSayCompleted(id int64) error
 
-	MarkNewLayoutVersionAsCreating(objectId int64, syntaxVersion int64, treatmentId int64, comment string) (int64, error)
-	MarkNewPatientLayoutVersionAsCreating(objectId int64, languageId int64, layoutVersionId int64, treatmentId int64) (int64, error)
-	UpdateActiveLayouts(layoutId int64, clientLayoutIds []int64, treatmentId int64) error
+	MarkNewLayoutVersionAsCreating(objectId int64, syntaxVersion int64, healthConditionId int64, comment string) (int64, error)
+	MarkNewPatientLayoutVersionAsCreating(objectId int64, languageId int64, layoutVersionId int64, healthConditionId int64) (int64, error)
+	UpdateActiveLayouts(layoutId int64, clientLayoutIds []int64, healthConditionId int64) error
 }
 
 type CloudStorageAPI interface {
@@ -65,7 +65,7 @@ type CloudStorageAPI interface {
 }
 
 type Layout interface {
-	VerifyAndUploadIncomingLayout(rawLayout []byte, treatmentTag string) error
+	VerifyAndUploadIncomingLayout(rawLayout []byte, healthConditionTag string) error
 }
 
 type ACLAPI interface {

@@ -12,7 +12,7 @@
                             "condition": {
                                 "op": "answer_equals", 
                                 "potential_answers": [
-                                    "o_something_else"
+                                    "a_something_else"
                                 ], 
                                 "question": "q_reason_visit"
                             }, 
@@ -38,7 +38,7 @@
                             "condition": {
                                 "op": "answer_equals", 
                                 "potential_answers": [
-                                    "o_yes_acne_worse"
+                                    "a_yes_acne_worse"
                                 ], 
                                 "question": "q_acne_worse"
                             }, 
@@ -61,7 +61,7 @@
                             "condition": {
                                 "op": "answer_equals", 
                                 "potential_answers": [
-                                    "o_prescription_prev_treatment_type"
+                                    "a_prescription_prev_treatment_type"
                                 ], 
                                 "question": "q_acne_prev_treatment_types"
                             }, 
@@ -98,7 +98,7 @@
                             "condition": {
                                 "op": "answer_equals", 
                                 "potential_answers": [
-                                    "o_list_medications_entry"
+                                    "a_list_medications_entry"
                                 ], 
                                 "question": "q_allergic_medications"
                             }, 
@@ -132,7 +132,7 @@
                             "condition": {
                                 "op": "answer_equals", 
                                 "potential_answers": [
-                                    "o_yes_prev_skin_diagnosis"
+                                    "a_yes_prev_skin_diagnosis"
                                 ], 
                                 "question": "q_prev_skin_condition_diagnosis"
                             }, 
@@ -168,7 +168,7 @@
                             "condition": {
                                 "op": "answer_equals", 
                                 "potential_answers": [
-                                    "o_face_acne_location"
+                                    "a_face_acne_location"
                                 ], 
                                 "question": "q_acne_location"
                             }, 
@@ -191,7 +191,7 @@
                             "condition": {
                                 "op": "answer_equals", 
                                 "potential_answers": [
-                                    "o_chest_acne_location"
+                                    "a_chest_acne_location"
                                 ], 
                                 "question": "q_acne_location"
                             }, 

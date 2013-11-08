@@ -87,34 +87,34 @@ func (d *DataService) GetQuestionInfo(questionTag string, languageId int64) (id 
 	return id, questionTitle, questionType, nil
 }
 
-func (d *DataService) GetOutcomeInfo(questionId int64, languageId int64) (ids []int64, outcomes []string, outcomeTypes []string, outcomeTags []string, orderings []int64, err error) {
-	rows, err := d.DB.Query(`select potential_outcome.id, ltext, otype, potential_outcome_tag, ordering from potential_outcome 
-								inner join localized_text on outcome_localized_text=app_text_id 
-								inner join outcome_type on otype_id=outcome_type.id 
+func (d *DataService) GetAnswerInfo(questionId int64, languageId int64) (ids []int64, answers []string, answerTypes []string, answerTags []string, orderings []int64, err error) {
+	rows, err := d.DB.Query(`select potential_answer.id, ltext, atype, potential_answer_tag, ordering from potential_answer 
+								inner join localized_text on answer_localized_text=app_text_id 
+								inner join answer_type on atype_id=answer_type.id 
 									where question_id = ? and language_id = ?`, questionId, languageId)
 	if err != nil {
 		return nil, nil, nil, nil, nil, err
 	}
 	defer rows.Close()
 	ids = make([]int64, 0, 5)
-	outcomes = make([]string, 0, 5)
-	outcomeTypes = make([]string, 0, 5)
+	answers = make([]string, 0, 5)
+	answerTypes = make([]string, 0, 5)
 	orderings = make([]int64, 0, 5)
-	outcomeTags = make([]string, 0, 5)
+	answerTags = make([]string, 0, 5)
 	for rows.Next() {
 		var id, ordering int64
-		var outcome, outcomeType, outcomeTag string
-		err = rows.Scan(&id, &outcome, &outcomeType, &outcomeTag, &ordering)
+		var answer, answerType, answerTag string
+		err = rows.Scan(&id, &answer, &answerType, &answerTag, &ordering)
 		ids = append(ids, id)
-		outcomes = append(outcomes, outcome)
-		outcomeTypes = append(outcomeTypes, outcomeType)
+		answers = append(answers, answer)
+		answerTypes = append(answerTypes, answerType)
 		orderings = append(orderings, ordering)
-		outcomeTags = append(outcomeTags, outcomeTag)
+		answerTags = append(answerTags, answerTag)
 		if err != nil {
 			return nil, nil, nil, nil, nil, err
 		}
 	}
-	return ids, outcomes, outcomeTypes, outcomeTags, orderings, nil
+	return ids, answers, answerTypes, answerTags, orderings, nil
 }
 
 func (d *DataService) GetTipInfo(tipTag string, languageId int64) (id int64, tip string, err error) {
@@ -150,12 +150,12 @@ func (d *DataService) GetTipSectionInfo(tipSectionTag string, languageId int64) 
 	return id, tipSectionTitle, tipSectionSubtext, nil
 }
 
-func (d *DataService) GetActiveLayoutInfoForTreatment(treatmentTag string) (bucket, key, region string, err error) {
+func (d *DataService) GetActiveLayoutInfoForHealthCondition(healthConditionTag string) (bucket, key, region string, err error) {
 	rows, err := d.DB.Query(`select bucket, storage_key, region_tag from layout_version 
 								inner join object_storage on object_storage_id = object_storage.id 
 								inner join region on region_id=region.id 
-								inner join treatment on treatment_id = treatment.id 
-									where layout_version.status='ACTIVE' and treatment.treatment_tag = ?`, treatmentTag)
+								inner join health_condition on health_condition_id = health_condition.id 
+									where layout_version.status='ACTIVE' and health_condition.health_condition_tag = ?`, healthConditionTag)
 	if err != nil {
 		return "", "", "", err
 	}
@@ -217,9 +217,9 @@ func (d *DataService) UpdateCloudObjectRecordToSayCompleted(id int64) error {
 	return nil
 }
 
-func (d *DataService) MarkNewLayoutVersionAsCreating(objectId int64, syntaxVersion int64, treatmentId int64, comment string) (int64, error) {
-	res, err := d.DB.Exec(`insert into layout_version (object_storage_id, syntax_version, treatment_id, comment, status) 
-							values (?, ?, ?, ?, 'CREATING')`, objectId, syntaxVersion, treatmentId, comment)
+func (d *DataService) MarkNewLayoutVersionAsCreating(objectId int64, syntaxVersion int64, healthConditionId int64, comment string) (int64, error) {
+	res, err := d.DB.Exec(`insert into layout_version (object_storage_id, syntax_version, health_condition_id, comment, status) 
+							values (?, ?, ?, ?, 'CREATING')`, objectId, syntaxVersion, healthConditionId, comment)
 	if err != nil {
 		return 0, err
 	}
@@ -232,9 +232,9 @@ func (d *DataService) MarkNewLayoutVersionAsCreating(objectId int64, syntaxVersi
 	return lastId, err
 }
 
-func (d *DataService) MarkNewPatientLayoutVersionAsCreating(objectId int64, languageId int64, layoutVersionId int64, treatmentId int64) (int64, error) {
-	res, err := d.DB.Exec(`insert into patient_layout_version (object_storage_id, language_id, layout_version_id, treatment_id, status) 
-								values (?, ?, ?, ?, 'CREATING')`, objectId, languageId, layoutVersionId, treatmentId)
+func (d *DataService) MarkNewPatientLayoutVersionAsCreating(objectId int64, languageId int64, layoutVersionId int64, healthConditionId int64) (int64, error) {
+	res, err := d.DB.Exec(`insert into patient_layout_version (object_storage_id, language_id, layout_version_id, health_condition_id, status) 
+								values (?, ?, ?, ?, 'CREATING')`, objectId, languageId, layoutVersionId, healthConditionId)
 	if err != nil {
 		return 0, err
 	}
@@ -247,17 +247,17 @@ func (d *DataService) MarkNewPatientLayoutVersionAsCreating(objectId int64, lang
 	return lastId, err
 }
 
-func (d *DataService) UpdateActiveLayouts(layoutId int64, clientLayoutIds []int64, treatmentId int64) error {
+func (d *DataService) UpdateActiveLayouts(layoutId int64, clientLayoutIds []int64, healthConditionId int64) error {
 	tx, _ := d.DB.Begin()
 	// update the current active layouts to DEPRECATED
-	_, err := d.DB.Exec(`update layout_version set status='DEPCRECATED' where status='ACTIVE' and treatment_id = ?`, treatmentId)
+	_, err := d.DB.Exec(`update layout_version set status='DEPCRECATED' where status='ACTIVE' and health_condition_id = ?`, healthConditionId)
 	if err != nil {
 		tx.Rollback()
 		return err
 	}
 
 	// update the current client active layouts to DEPRECATED
-	_, err = d.DB.Exec(`update patient_layout_version set status='DEPCRECATED' where status='ACTIVE' and treatment_id = ?`, treatmentId)
+	_, err = d.DB.Exec(`update patient_layout_version set status='DEPCRECATED' where status='ACTIVE' and health_condition_id = ?`, healthConditionId)
 	if err != nil {
 		tx.Rollback()
 		return err

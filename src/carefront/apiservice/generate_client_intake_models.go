@@ -48,7 +48,7 @@ func (l *GenerateClientIntakeModelHandler) ServeHTTP(w http.ResponseWriter, r *h
 		return
 	}
 
-	// ensure that the file is a valid treatment layout, by trying to parse it
+	// ensure that the file is a valid healthCondition layout, by trying to parse it
 	// into the structure
 	healthCondition := &info_intake.HealthCondition{}
 	data, err := ioutil.ReadAll(file)
@@ -68,7 +68,7 @@ func (l *GenerateClientIntakeModelHandler) ServeHTTP(w http.ResponseWriter, r *h
 		return
 	}
 
-	// determine the treatment tag so as to identify what treatment this layout belongs to
+	// determine the healthCondition tag so as to identify what healthCondition this layout belongs to
 	healthConditionTag := healthCondition.HealthConditionTag
 	if healthConditionTag == "" {
 		log.Println(err)
@@ -78,7 +78,7 @@ func (l *GenerateClientIntakeModelHandler) ServeHTTP(w http.ResponseWriter, r *h
 	}
 
 	// check if the current active layout is the same as the layout trying to be uploaded
-	currentActiveBucket, currentActiveKey, currentActiveRegion, _ := l.DataApi.GetActiveLayoutInfoForTreatment(healthConditionTag)
+	currentActiveBucket, currentActiveKey, currentActiveRegion, _ := l.DataApi.GetActiveLayoutInfoForHealthCondition(healthConditionTag)
 	if currentActiveBucket != "" {
 		rawData, err := l.CloudStorageApi.GetObjectAtLocation(currentActiveBucket, currentActiveKey, currentActiveRegion)
 		if err != nil {
@@ -99,7 +99,7 @@ func (l *GenerateClientIntakeModelHandler) ServeHTTP(w http.ResponseWriter, r *h
 	objectId, _, err := l.CloudStorageApi.PutObjectToLocation(CAREFRONT_LAYOUT_BUCKET,
 		strconv.Itoa(int(time.Now().Unix())), US_EAST_REGION, handler.Header.Get("Content-Type"), data, time.Now().Add(10*time.Minute), l.DataApi)
 
-	// get the treatmentid
+	// get the healthConditionId
 	healthConditionId, err := l.DataApi.GetHealthConditionInfo(healthConditionTag)
 
 	// once that is successful, create a record for the layout version and mark is as CREATING
