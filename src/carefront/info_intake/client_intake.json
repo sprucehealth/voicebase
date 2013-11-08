@@ -1,4 +1,6 @@
 {
+    "health_condition": "health_condition_acne", 
+    "health_condition_id": "1", 
     "sections": [
         {
             "screens": [
@@ -18,7 +20,7 @@
                                     "outcome_type": "o_type_multiple_choice", 
                                     "potential_outcome": "Something else", 
                                     "potential_outcome_id": "2"
-                                } 
+                                }
                             ], 
                             "question": "q_reason_visit", 
                             "question_id": "1", 
@@ -708,7 +710,5 @@
             "section_id": "3", 
             "section_title": "Photos for Diagnosis"
         }
-    ], 
-    "treatment": "treatment_acne", 
-    "treatment_id": "1"
+    ]
 }

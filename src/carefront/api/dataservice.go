@@ -10,7 +10,7 @@ type DataService struct {
 
 func (d *DataService) CreatePhotoForCase(caseId int64, photoType string) (int64, error) {
 	// create a new photo for the case and mark it as pending upload
-	res, err := d.DB.Exec("insert into CaseImage(case_id, photoType, status) values (?, ?, ?)", caseId, photoType, PHOTO_STATUS_PENDING_UPLOAD)
+	res, err := d.DB.Exec("insert into case_image(case_id, photoType, status) values (?, ?, ?)", caseId, photoType, PHOTO_STATUS_PENDING_UPLOAD)
 	if err != nil {
 		return 0, err
 	}
@@ -24,7 +24,7 @@ func (d *DataService) CreatePhotoForCase(caseId int64, photoType string) (int64,
 }
 
 func (d *DataService) MarkPhotoUploadComplete(caseId, photoId int64) error {
-	_, err := d.DB.Exec("update CaseImage set status = ? where id = ? and case_id = ?", PHOTO_STATUS_PENDING_APPROVAL, photoId, caseId)
+	_, err := d.DB.Exec("update case_image set status = ? where id = ? and case_id = ?", PHOTO_STATUS_PENDING_APPROVAL, photoId, caseId)
 	if err != nil {
 		return err
 	}
@@ -35,8 +35,8 @@ func (d *DataService) GetPhotosForCase(caseId int64) ([]string, error) {
 	return make([]string, 1), nil
 }
 
-func (d *DataService) GetTreatmentInfo(treatmentTag string) (int64, error) {
-	rows, err := d.DB.Query("select id from treatment where comment = ? ", treatmentTag)
+func (d *DataService) GetHealthConditionInfo(healthConditionTag string) (int64, error) {
+	rows, err := d.DB.Query("select id from health_condition where comment = ? ", healthConditionTag)
 	if err != nil {
 		return 0, err
 	}

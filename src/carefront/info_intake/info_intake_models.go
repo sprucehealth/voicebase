@@ -65,9 +65,9 @@ type Section struct {
 	Screens               []*Screen `json:"screens"`
 }
 
-type Treatment struct {
+type HealthCondition struct {
 	InfoIntakeModelFiller `json:",omitempty"`
-	TreatmentTag          string     `json:"treatment"`
-	TreatmentId           int64      `json:"treatment_id,string,omitempty"`
+	HealthConditionTag    string     `json:"health_condition"`
+	HealthConditionId     int64      `json:"health_condition_id,string,omitempty"`
 	Sections              []*Section `json:"sections"`
 }

@@ -12,8 +12,8 @@ import (
 
 func main() {
 	fileContents, _ := ioutil.ReadFile("../info_intake/condition_intake.json")
-	treatment := &info_intake.Treatment{}
-	err := json.Unmarshal(fileContents, &treatment)
+	healthCondition := &info_intake.HealthCondition{}
+	err := json.Unmarshal(fileContents, &healthCondition)
 	if err != nil {
 		panic(err)
 	}
@@ -31,9 +31,9 @@ func main() {
 	defer db.Close()
 
 	dataApi := &api.DataService{db}
-	treatmentLayoutProcessor := &info_intake.TreatmentIntakeModelProcessor{dataApi}
-	treatmentLayoutProcessor.FillInDetailsFromDatabase(treatment, 1)
+	healthConditionLayoutProcessor := &info_intake.HealthConditionIntakeModelProcessor{dataApi}
+	healthConditionLayoutProcessor.FillInDetailsFromDatabase(healthCondition, 1)
 
-	jsonData, err := json.MarshalIndent(treatment, "", " ")
+	jsonData, err := json.MarshalIndent(healthCondition, "", " ")
 	fmt.Println(string(jsonData))
 }

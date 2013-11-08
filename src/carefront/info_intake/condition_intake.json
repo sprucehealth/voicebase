@@ -26,7 +26,7 @@
                         {
                             "question": "q_acne_length"
                         }
-                    ] 
+                    ]
                 }, 
                 {
                     "description": "is acne getting worse", 
@@ -216,5 +216,5 @@
             "section": "section_photo_diagnosis"
         }
     ], 
-    "treatment": "treatment_acne"
+    "health_condition": "health_condition_acne"
 }

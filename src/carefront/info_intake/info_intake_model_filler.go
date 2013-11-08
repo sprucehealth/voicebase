@@ -126,12 +126,12 @@ func (s *Section) FillInDatabaseInfo(dataApi api.DataAPI, languageId int64) erro
 	return nil
 }
 
-func (t *Treatment) FillInDatabaseInfo(dataApi api.DataAPI, languageId int64) error {
-	treatmentId, err := dataApi.GetTreatmentInfo(t.TreatmentTag)
+func (t *HealthCondition) FillInDatabaseInfo(dataApi api.DataAPI, languageId int64) error {
+	healthConditionId, err := dataApi.GetHealthConditionInfo(t.HealthConditionTag)
 	if err != nil {
 		return err
 	}
-	t.TreatmentId = treatmentId
+	t.HealthConditionId = healthConditionId
 	for _, section := range t.Sections {
 		err := section.FillInDatabaseInfo(dataApi, languageId)
 		if err != nil {
