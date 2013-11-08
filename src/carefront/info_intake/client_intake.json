@@ -18,7 +18,7 @@
                                     "outcome_type": "o_type_multiple_choice", 
                                     "potential_outcome": "Something else", 
                                     "potential_outcome_id": "2"
-                                }
+                                } 
                             ], 
                             "question": "q_reason_visit", 
                             "question_id": "1", 

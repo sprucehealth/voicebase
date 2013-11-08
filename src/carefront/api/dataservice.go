@@ -209,7 +209,7 @@ func (d *DataService) CreateNewUploadCloudObjectRecord(bucket, key, region strin
 }
 
 func (d *DataService) UpdateCloudObjectRecordToSayCompleted(id int64) error {
-	_, err := d.DB.Exec("update object_storage set status='ACTIVE', modified_date=now() where id = ?", id)
+	_, err := d.DB.Exec("update object_storage set status='ACTIVE' where id = ?", id)
 	if err != nil {
 		return err
 	}
