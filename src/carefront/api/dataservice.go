@@ -96,11 +96,11 @@ func (d *DataService) GetOutcomeInfo(questionId int64, languageId int64) (ids []
 		return nil, nil, nil, nil, nil, err
 	}
 	defer rows.Close()
-	ids = make([]int64, 1, 5)
-	outcomes = make([]string, 1, 5)
-	outcomeTypes = make([]string, 1, 5)
-	orderings = make([]int64, 1, 5)
-	outcomeTags = make([]string, 1, 5)
+	ids = make([]int64, 0, 5)
+	outcomes = make([]string, 0, 5)
+	outcomeTypes = make([]string, 0, 5)
+	orderings = make([]int64, 0, 5)
+	outcomeTags = make([]string, 0, 5)
 	for rows.Next() {
 		var id, ordering int64
 		var outcome, outcomeType, outcomeTag string
