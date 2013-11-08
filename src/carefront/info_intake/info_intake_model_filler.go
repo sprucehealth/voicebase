@@ -1,10 +1,11 @@
-package api
+package info_intake
 
 import (
+	"carefront/api"
 	"strconv"
 )
 
-func (c *Condition) FillInDatabaseInfo(dataApi DataAPI, languageId int64) error {
+func (c *Condition) FillInDatabaseInfo(dataApi api.DataAPI, languageId int64) error {
 	if c.QuestionTag == "" {
 		return nil
 	}
@@ -29,7 +30,7 @@ func (c *Condition) FillInDatabaseInfo(dataApi DataAPI, languageId int64) error 
 	return nil
 }
 
-func (t *TipSection) FillInDatabaseInfo(dataApi DataAPI, languageId int64) error {
+func (t *TipSection) FillInDatabaseInfo(dataApi api.DataAPI, languageId int64) error {
 	_, tipSectionTitle, tipSectionSubtext, err := dataApi.GetTipSectionInfo(t.TipsSectionTag, languageId)
 	if err != nil {
 		return err
@@ -50,7 +51,7 @@ func (t *TipSection) FillInDatabaseInfo(dataApi DataAPI, languageId int64) error
 	return nil
 }
 
-func (q *Question) FillInDatabaseInfo(dataApi DataAPI, languageId int64) error {
+func (q *Question) FillInDatabaseInfo(dataApi api.DataAPI, languageId int64) error {
 	questionId, questionTitle, questionType, err := dataApi.GetQuestionInfo(q.QuestionTag, languageId)
 	if err != nil {
 		return err
@@ -60,7 +61,7 @@ func (q *Question) FillInDatabaseInfo(dataApi DataAPI, languageId int64) error {
 	q.QuestionType = questionType
 
 	// go over the potential ansnwer tags to create potential outcome blocks
-	q.PotentialOutcomes = make([]*PotentialOutcome, 1, 5)
+	q.PotentialOutcomes = make([]*PotentialOutcome, 0, 5)
 	outcomeIds, outcomes, outcomeTypes, _, orderings, err := dataApi.GetOutcomeInfo(questionId, languageId)
 	if err != nil {
 		return err
@@ -90,7 +91,7 @@ func (q *Question) FillInDatabaseInfo(dataApi DataAPI, languageId int64) error {
 	return nil
 }
 
-func (s *Screen) FillInDatabaseInfo(dataApi DataAPI, languageId int64) error {
+func (s *Screen) FillInDatabaseInfo(dataApi api.DataAPI, languageId int64) error {
 	if s.ConditionBlock != nil {
 		err := s.ConditionBlock.FillInDatabaseInfo(dataApi, languageId)
 		if err != nil {
@@ -109,7 +110,7 @@ func (s *Screen) FillInDatabaseInfo(dataApi DataAPI, languageId int64) error {
 	return nil
 }
 
-func (s *Section) FillInDatabaseInfo(dataApi DataAPI, languageId int64) error {
+func (s *Section) FillInDatabaseInfo(dataApi api.DataAPI, languageId int64) error {
 	sectionId, sectionTitle, err := dataApi.GetSectionInfo(s.SectionTag, languageId)
 	if err != nil {
 		return err
@@ -125,7 +126,7 @@ func (s *Section) FillInDatabaseInfo(dataApi DataAPI, languageId int64) error {
 	return nil
 }
 
-func (t *Treatment) FillInDatabaseInfo(dataApi DataAPI, languageId int64) error {
+func (t *Treatment) FillInDatabaseInfo(dataApi api.DataAPI, languageId int64) error {
 	treatmentId, err := dataApi.GetTreatmentInfo(t.TreatmentTag)
 	if err != nil {
 		return err

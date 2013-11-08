@@ -109,7 +109,7 @@ func main() {
 	pingHandler := apiservice.PingHandler(0)
 	photoHandler := &apiservice.PhotoUploadHandler{&api.PhotoService{*flagAWSAccessKey, *flagAWSSecretKey}, *flagS3CaseBucket, dataApi}
 	getSignedUrlsHandler := &apiservice.GetSignedUrlsHandler{&api.PhotoService{*flagAWSAccessKey, *flagAWSSecretKey}, *flagS3CaseBucket}
-	layoutHandler := &apiservice.LayoutHandler{dataApi, cloudStorageApi}
+	generateModelIntakeHandler := &apiservice.GenerateClientIntakeModelHandler{dataApi, cloudStorageApi}
 
 	mux.Handle("/v1/authenticate", authHandler)
 	mux.Handle("/v1/signup", authHandler)
@@ -117,7 +117,7 @@ func main() {
 	mux.Handle("/v1/ping", pingHandler)
 	mux.Handle("/v1/upload", photoHandler)
 	mux.Handle("/v1/imagesforcase/", getSignedUrlsHandler)
-	mux.Handle("/v1/layout/", layoutHandler)
+	mux.Handle("/v1/generate_client_model/", generateModelIntakeHandler)
 
 	s := &http.Server{
 		Addr:           *flagListenAddr,

@@ -2,6 +2,7 @@ package main
 
 import (
 	"carefront/api"
+	"carefront/info_intake"
 	"database/sql"
 	"encoding/json"
 	"fmt"
@@ -10,8 +11,8 @@ import (
 )
 
 func main() {
-	fileContents, _ := ioutil.ReadFile("../layout_transformer/condition_intake.json")
-	treatment := &api.Treatment{}
+	fileContents, _ := ioutil.ReadFile("../info_intake/condition_intake.json")
+	treatment := &info_intake.Treatment{}
 	err := json.Unmarshal(fileContents, &treatment)
 	if err != nil {
 		panic(err)
@@ -30,8 +31,8 @@ func main() {
 	defer db.Close()
 
 	dataApi := &api.DataService{db}
-	treatmentLayoutProcessor := &api.TreatmentLayoutProcessor{dataApi}
-	treatmentLayoutProcessor.TransformIntakeIntoClientLayout(treatment, 1)
+	treatmentLayoutProcessor := &info_intake.TreatmentIntakeModelProcessor{dataApi}
+	treatmentLayoutProcessor.FillInDetailsFromDatabase(treatment, 1)
 
 	jsonData, err := json.MarshalIndent(treatment, "", " ")
 	fmt.Println(string(jsonData))

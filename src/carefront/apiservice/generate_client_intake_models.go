@@ -3,7 +3,7 @@ package apiservice
 import (
 	"bytes"
 	"carefront/api"
-	"carefront/layout_transformer"
+	"carefront/info_intake"
 	"encoding/json"
 	"fmt"
 	"io/ioutil"
@@ -20,42 +20,42 @@ const (
 	LAYOUT_SYNTAX_VERSION          = 1
 )
 
-type LayoutHandler struct {
+type GenerateClientIntakeModelHandler struct {
 	DataApi         api.DataAPI
 	CloudStorageApi api.CloudStorageAPI
 }
 
-type LayoutProcessedResponse struct {
-	ClientLayoutUrls []string `json:"clientLayoutUrls"`
+type ClientIntakeModelGeneratedResponse struct {
+	ClientLayoutUrls []string `json:"clientModelUrls"`
 }
 
-type LayoutProcessingErrorResponse struct {
+type ClientIntakeModelErrorResponse struct {
 	PhotoUploadErrorString string `json:"error"`
 }
 
-func (l *LayoutHandler) NonAuthenticated() bool {
+func (l *GenerateClientIntakeModelHandler) NonAuthenticated() bool {
 	return true
 }
 
-func (l *LayoutHandler) ServeHTTP(w http.ResponseWriter, r *http.Request) {
+func (l *GenerateClientIntakeModelHandler) ServeHTTP(w http.ResponseWriter, r *http.Request) {
 	r.ParseForm()
 
 	file, handler, err := r.FormFile("layout")
 	if err != nil {
 		log.Println(err)
 		w.WriteHeader(http.StatusBadRequest)
-		WriteJSONToHTTPResponseWriter(w, PhotoUploadErrorResponse{err.Error()})
+		WriteJSONToHTTPResponseWriter(w, ClientIntakeModelErrorResponse{err.Error()})
 		return
 	}
 
 	// ensure that the file is a valid treatment layout, by trying to parse it
 	// into the structure
-	treatment := &layout_transformer.Treatment{}
+	treatment := &info_intake.Treatment{}
 	data, err := ioutil.ReadAll(file)
 	if err != nil {
 		log.Println(err)
 		w.WriteHeader(http.StatusBadRequest)
-		WriteJSONToHTTPResponseWriter(w, LayoutProcessingErrorResponse{err.Error()})
+		WriteJSONToHTTPResponseWriter(w, ClientIntakeModelErrorResponse{err.Error()})
 		return
 	}
 
@@ -64,7 +64,7 @@ func (l *LayoutHandler) ServeHTTP(w http.ResponseWriter, r *http.Request) {
 		fmt.Println("here")
 		log.Println(err)
 		w.WriteHeader(http.StatusBadRequest)
-		WriteJSONToHTTPResponseWriter(w, LayoutProcessingErrorResponse{err.Error()})
+		WriteJSONToHTTPResponseWriter(w, ClientIntakeModelErrorResponse{err.Error()})
 		return
 	}
 
@@ -73,7 +73,7 @@ func (l *LayoutHandler) ServeHTTP(w http.ResponseWriter, r *http.Request) {
 	if treatmentTag == "" {
 		log.Println(err)
 		w.WriteHeader(http.StatusBadRequest)
-		WriteJSONToHTTPResponseWriter(w, LayoutProcessingErrorResponse{err.Error()})
+		WriteJSONToHTTPResponseWriter(w, ClientIntakeModelErrorResponse{err.Error()})
 		return
 	}
 
@@ -84,13 +84,13 @@ func (l *LayoutHandler) ServeHTTP(w http.ResponseWriter, r *http.Request) {
 		if err != nil {
 			log.Println(err)
 			w.WriteHeader(http.StatusBadRequest)
-			WriteJSONToHTTPResponseWriter(w, LayoutProcessingErrorResponse{err.Error()})
+			WriteJSONToHTTPResponseWriter(w, ClientIntakeModelErrorResponse{err.Error()})
 			return
 		}
 		res := bytes.Compare(data, rawData)
 		// nothing to do if the layouts are exactly the same
 		if res == 0 {
-			WriteJSONToHTTPResponseWriter(w, LayoutProcessedResponse{nil})
+			WriteJSONToHTTPResponseWriter(w, ClientIntakeModelGeneratedResponse{nil})
 			return
 		}
 	}
@@ -103,53 +103,53 @@ func (l *LayoutHandler) ServeHTTP(w http.ResponseWriter, r *http.Request) {
 	treatmentId, err := l.DataApi.GetTreatmentInfo(treatmentTag)
 
 	// once that is successful, create a record for the layout version and mark is as CREATING
-	layoutId, err := l.DataApi.MarkNewLayoutVersionAsCreating(objectId, LAYOUT_SYNTAX_VERSION, treatmentId, "automatically generated")
+	modelId, err := l.DataApi.MarkNewLayoutVersionAsCreating(objectId, LAYOUT_SYNTAX_VERSION, treatmentId, "automatically generated")
 
 	// get all the supported languages
 	_, supportedLanguageIds, err := l.DataApi.GetSupportedLanguages()
 
 	// generate a client layout for each language
-	clientLayouts := make(map[int64]*layout_transformer.Treatment)
-	clientLayoutProcessor := &layout_transformer.TreatmentLayoutProcessor{l.DataApi}
-	clientLayoutVersionIds := make([]int64, len(supportedLanguageIds))
-	clientLayoutUrls := make([]string, len(supportedLanguageIds))
+	clientIntakeModels := make(map[int64]*info_intake.Treatment)
+	clientModelProcessor := &info_intake.TreatmentIntakeModelProcessor{l.DataApi}
+	clientModelVersionIds := make([]int64, len(supportedLanguageIds))
+	clientModelUrls := make([]string, len(supportedLanguageIds))
 
 	for i, supportedLanguageId := range supportedLanguageIds {
-		clientLayout := *treatment
-		clientLayoutProcessor.TransformIntakeIntoClientLayout(&clientLayout, supportedLanguageId)
-		clientLayouts[supportedLanguageId] = &clientLayout
+		clientModel := *treatment
+		clientModelProcessor.FillInDetailsFromDatabase(&clientModel, supportedLanguageId)
+		clientIntakeModels[supportedLanguageId] = &clientModel
 
-		jsonData, err := json.MarshalIndent(&clientLayout, "", " ")
+		jsonData, err := json.MarshalIndent(&clientModel, "", " ")
 		if err != nil {
 			log.Println(err)
 			w.WriteHeader(http.StatusBadRequest)
-			WriteJSONToHTTPResponseWriter(w, LayoutProcessingErrorResponse{err.Error()})
+			WriteJSONToHTTPResponseWriter(w, ClientIntakeModelErrorResponse{err.Error()})
 			return
 		}
 		// put each client layout that is generated into S3
-		objectId, clientLayoutUrl, err := l.CloudStorageApi.PutObjectToLocation(CAREFRONT_CLIENT_LAYOUT_BUCKET,
+		objectId, clientModelUrl, err := l.CloudStorageApi.PutObjectToLocation(CAREFRONT_CLIENT_LAYOUT_BUCKET,
 			strconv.Itoa(int(time.Now().Unix())), US_EAST_REGION, handler.Header.Get("Content-Type"), jsonData, time.Now().Add(10*time.Minute), l.DataApi)
-		clientLayoutUrls[i] = clientLayoutUrl
+		clientModelUrls[i] = clientModelUrl
 		if err != nil {
 			log.Println(err)
 			w.WriteHeader(http.StatusBadRequest)
-			WriteJSONToHTTPResponseWriter(w, LayoutProcessingErrorResponse{err.Error()})
+			WriteJSONToHTTPResponseWriter(w, ClientIntakeModelErrorResponse{err.Error()})
 			return
 		}
 
 		// mark the client layout as creating until we have uploaded all client layouts before marking it as ACTIVE
-		clientLayoutId, err := l.DataApi.MarkNewPatientLayoutVersionAsCreating(objectId, supportedLanguageId, layoutId, clientLayout.TreatmentId)
+		clientModelId, err := l.DataApi.MarkNewPatientLayoutVersionAsCreating(objectId, supportedLanguageId, modelId, clientModel.TreatmentId)
 		if err != nil {
 			log.Println(err)
 			w.WriteHeader(http.StatusBadRequest)
-			WriteJSONToHTTPResponseWriter(w, LayoutProcessingErrorResponse{err.Error()})
+			WriteJSONToHTTPResponseWriter(w, ClientIntakeModelErrorResponse{err.Error()})
 			return
 		}
-		clientLayoutVersionIds[i] = clientLayoutId
+		clientModelVersionIds[i] = clientModelId
 	}
 
 	// update the active layouts to the new current set of layouts
-	l.DataApi.UpdateActiveLayouts(layoutId, clientLayoutVersionIds, 1)
+	l.DataApi.UpdateActiveLayouts(modelId, clientModelVersionIds, 1)
 
-	WriteJSONToHTTPResponseWriter(w, LayoutProcessedResponse{clientLayoutUrls})
+	WriteJSONToHTTPResponseWriter(w, ClientIntakeModelGeneratedResponse{clientModelUrls})
 }

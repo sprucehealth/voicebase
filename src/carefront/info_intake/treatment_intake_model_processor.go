@@ -1,10 +1,14 @@
-package api
+package info_intake
 
-type TreatmentLayoutProcessor struct {
-	DataApi DataAPI
+import (
+	"carefront/api"
+)
+
+type TreatmentIntakeModelProcessor struct {
+	DataApi api.DataAPI
 }
 
-func (c *TreatmentLayoutProcessor) TransformIntakeIntoClientLayout(treatment *Treatment, languageId int64) error {
+func (c *TreatmentIntakeModelProcessor) FillInDetailsFromDatabase(treatment *Treatment, languageId int64) error {
 	// TODO currently, calling the FillDataBaseInfo results in each section, questio, potential outcome and tip
 	// making indepedent roundtrips to the database, as opposed to batch querying the database which would save time
 	// and improve performance
