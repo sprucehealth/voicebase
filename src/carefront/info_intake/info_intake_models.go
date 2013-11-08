@@ -35,7 +35,7 @@ type PotentialAnswer struct {
 	AnswerId              int64  `json:"potential_answer_id,string,omitempty"`
 	Answer                string `json:"potential_answer,omitempty"`
 	AnswerType            string `json:"answer_type,omitempty"`
-	Ordering              int64  `json:"ordering"`
+	Ordering              int64  `json:"ordering,string"`
 }
 
 type Question struct {

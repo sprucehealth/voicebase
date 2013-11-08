@@ -1,0 +1,714 @@
+{
+    "health_condition": "health_condition_acne", 
+    "health_condition_id": "1", 
+    "sections": [
+        {
+            "screens": [
+                {
+                    "description": "reason for visit", 
+                    "questions": [
+                        {
+                            "potential_answers": [
+                                {
+                                    "answer_type": "a_type_multiple_choice", 
+                                    "ordering": 0, 
+                                    "potential_answer": "Acne", 
+                                    "potential_answer_id": "1"
+                                }, 
+                                {
+                                    "answer_type": "a_type_multiple_choice", 
+                                    "ordering": 1, 
+                                    "potential_answer": "Something else", 
+                                    "potential_answer_id": "2"
+                                }
+                            ], 
+                            "question": "q_reason_visit", 
+                            "question_id": "1", 
+                            "question_title": "What's the reason for your visit with Dr. Who today?", 
+                            "question_type": "q_type_single_select"
+                        }, 
+                        {
+                            "condition": {
+                                "op": "answer_equals", 
+                                "potential_answers": [
+                                    "a_something_else"
+                                ], 
+                                "potential_answers_id": [
+                                    "2"
+                                ], 
+                                "question": "q_reason_visit", 
+                                "question_id": "1"
+                            }, 
+                            "potential_answers": [
+                                {
+                                    "answer_type": "a_type_single_entry", 
+                                    "ordering": 0, 
+                                    "potential_answer": "Type a symptom or condition", 
+                                    "potential_answer_id": "3"
+                                }
+                            ], 
+                            "question": "q_condition_for_diagnosis", 
+                            "question_id": "2", 
+                            "question_type": "q_type_single_entry"
+                        }
+                    ]
+                }, 
+                {
+                    "description": "length of acne symptoms", 
+                    "questions": [
+                        {
+                            "potential_answers": [
+                                {
+                                    "answer_type": "a_type_multiple_choice", 
+                                    "ordering": 0, 
+                                    "potential_answer": "0-6 months", 
+                                    "potential_answer_id": "4"
+                                }, 
+                                {
+                                    "answer_type": "a_type_multiple_choice", 
+                                    "ordering": 1, 
+                                    "potential_answer": "6-123 months", 
+                                    "potential_answer_id": "5"
+                                }, 
+                                {
+                                    "answer_type": "a_type_multiple_choice", 
+                                    "ordering": 2, 
+                                    "potential_answer": "1-2 years", 
+                                    "potential_answer_id": "6"
+                                }, 
+                                {
+                                    "answer_type": "a_type_multiple_choice", 
+                                    "ordering": 3, 
+                                    "potential_answer": "2+ years", 
+                                    "potential_answer_id": "7"
+                                }
+                            ], 
+                            "question": "q_acne_length", 
+                            "question_id": "3", 
+                            "question_title": "How long have you been experiencing acne symptoms?", 
+                            "question_type": "q_type_single_select"
+                        }
+                    ]
+                }, 
+                {
+                    "description": "is acne getting worse", 
+                    "questions": [
+                        {
+                            "potential_answers": [
+                                {
+                                    "answer_type": "a_type_multiple_choice", 
+                                    "ordering": 0, 
+                                    "potential_answer": "Yes", 
+                                    "potential_answer_id": "8"
+                                }, 
+                                {
+                                    "answer_type": "a_type_multiple_choice", 
+                                    "ordering": 1, 
+                                    "potential_answer": "No", 
+                                    "potential_answer_id": "9"
+                                }
+                            ], 
+                            "question": "q_acne_worse", 
+                            "question_id": "4", 
+                            "question_title": "Is your acne getting worse?", 
+                            "question_type": "q_type_single_select"
+                        }, 
+                        {
+                            "condition": {
+                                "op": "answer_equals", 
+                                "potential_answers": [
+                                    "a_yes_acne_worse"
+                                ], 
+                                "potential_answers_id": [
+                                    "8"
+                                ], 
+                                "question": "q_acne_worse", 
+                                "question_id": "4"
+                            }, 
+                            "potential_answers": [
+                                {
+                                    "answer_type": "a_type_free_text", 
+                                    "ordering": 0, 
+                                    "potential_answer": "Describe any recent changes that could be making your acne worse:", 
+                                    "potential_answer_id": "11"
+                                }
+                            ], 
+                            "question": "q_changes_acne_worse", 
+                            "question_id": "6", 
+                            "question_title": "Describe any recent changes that could be making your acne worse:", 
+                            "question_type": "q_type_free_text"
+                        }
+                    ]
+                }, 
+                {
+                    "description": "what previous treatments have you tried for acne", 
+                    "questions": [
+                        {
+                            "potential_answers": [
+                                {
+                                    "answer_type": "a_type_multiple_choice", 
+                                    "ordering": 1, 
+                                    "potential_answer": "Over the counter", 
+                                    "potential_answer_id": "13"
+                                }, 
+                                {
+                                    "answer_type": "a_type_multiple_choice", 
+                                    "ordering": 0, 
+                                    "potential_answer": "Prescription", 
+                                    "potential_answer_id": "12"
+                                }, 
+                                {
+                                    "answer_type": "a_type_multiple_choice", 
+                                    "ordering": 2, 
+                                    "potential_answer": "No treatments tried", 
+                                    "potential_answer_id": "14"
+                                }
+                            ], 
+                            "question": "q_acne_prev_treatment_types", 
+                            "question_id": "7", 
+                            "question_title": "Select what type of treatments you've previously tried for your acne:", 
+                            "question_type": "q_type_multiple_choice"
+                        }
+                    ]
+                }, 
+                {
+                    "description": "get treatments from user", 
+                    "questions": [
+                        {
+                            "condition": {
+                                "op": "answer_equals", 
+                                "potential_answers": [
+                                    "a_prescription_prev_treatment_type"
+                                ], 
+                                "potential_answers_id": [
+                                    "12"
+                                ], 
+                                "question": "q_acne_prev_treatment_types", 
+                                "question_id": "7"
+                            }, 
+                            "potential_answers": [
+                                {
+                                    "answer_type": "a_type_autocomplete_entry", 
+                                    "ordering": 0, 
+                                    "potential_answer": "List any prescription or over the counter treatments that you've tried for acne", 
+                                    "potential_answer_id": "15"
+                                }, 
+                                {
+                                    "answer_type": "a_type_photo_to_text_entry", 
+                                    "ordering": 1, 
+                                    "potential_answer": "Or take a photo of the treatment", 
+                                    "potential_answer_id": "16"
+                                }
+                            ], 
+                            "question": "q_acne_prev_treatment_list", 
+                            "question_id": "8", 
+                            "question_title": "List any prescription or over the counter treatments that you've tried for acne", 
+                            "question_type": "q_type_compound"
+                        }
+                    ]
+                }
+            ], 
+            "section": "section_skin_history", 
+            "section_id": "1", 
+            "section_title": "Your Skin History"
+        }, 
+        {
+            "screens": [
+                {
+                    "condition": {
+                        "field": "gender", 
+                        "op": "value_equals", 
+                        "server_condition": true, 
+                        "value": "female"
+                    }, 
+                    "description": "planning pregnancy", 
+                    "questions": [
+                        {
+                            "potential_answers": [
+                                {
+                                    "answer_type": "a_type_multiple_choice", 
+                                    "ordering": 0, 
+                                    "potential_answer": "Yes", 
+                                    "potential_answer_id": "18"
+                                }, 
+                                {
+                                    "answer_type": "a_type_multiple_choice", 
+                                    "ordering": 1, 
+                                    "potential_answer": "No", 
+                                    "potential_answer_id": "19"
+                                }
+                            ], 
+                            "question": "q_pregnancy_planning", 
+                            "question_id": "10", 
+                            "question_title": "Are you pregnant, planning a pregnancy or nursing?", 
+                            "question_type": "q_type_single_select"
+                        }
+                    ]
+                }, 
+                {
+                    "description": "allergies", 
+                    "questions": [
+                        {
+                            "potential_answers": [
+                                {
+                                    "answer_type": "a_type_multiple_choice", 
+                                    "ordering": 0, 
+                                    "potential_answer": "Yes", 
+                                    "potential_answer_id": "20"
+                                }, 
+                                {
+                                    "answer_type": "a_type_multiple_choice", 
+                                    "ordering": 1, 
+                                    "potential_answer": "No", 
+                                    "potential_answer_id": "21"
+                                }
+                            ], 
+                            "question": "q_allergic_medications", 
+                            "question_id": "11", 
+                            "question_title": "Are you allergic to any medications?", 
+                            "question_type": "q_type_multiple_choice"
+                        }, 
+                        {
+                            "condition": {
+                                "op": "answer_equals", 
+                                "potential_answers": [
+                                    "a_list_medications_entry"
+                                ], 
+                                "potential_answers_id": [
+                                    ""
+                                ], 
+                                "question": "q_allergic_medications", 
+                                "question_id": "11"
+                            }, 
+                            "potential_answers": [
+                                {
+                                    "answer_type": "a_type_multiple_choice", 
+                                    "ordering": 0, 
+                                    "potential_answer": "Type to add a medication", 
+                                    "potential_answer_id": "22"
+                                }
+                            ], 
+                            "question": "q_allergic_medication_entry", 
+                            "question_id": "12", 
+                            "question_title": "Type to add a medication", 
+                            "question_type": "q_type_compound"
+                        }
+                    ]
+                }, 
+                {
+                    "description": "medications currently taking", 
+                    "questions": [
+                        {
+                            "potential_answers": [
+                                {
+                                    "answer_type": "a_type_multiple_choice", 
+                                    "ordering": 0, 
+                                    "potential_answer": "Include birth control, over the counter medications, vitamins or herbal supplements that you may be currently taking.", 
+                                    "potential_answer_id": "23"
+                                }
+                            ], 
+                            "question": "q_current_medications_entry", 
+                            "question_id": "13", 
+                            "question_title": "List any medications you are currently taking:", 
+                            "question_type": "q_type_compound"
+                        }
+                    ]
+                }, 
+                {
+                    "description": "social history", 
+                    "questions": [
+                        {
+                            "potential_answers": [
+                                {
+                                    "answer_type": "a_type_multiple_choice", 
+                                    "ordering": 0, 
+                                    "potential_answer": "Smoke tobacco", 
+                                    "potential_answer_id": "24"
+                                }, 
+                                {
+                                    "answer_type": "a_type_multiple_choice", 
+                                    "ordering": 1, 
+                                    "potential_answer": "Drink alcohol", 
+                                    "potential_answer_id": "25"
+                                }, 
+                                {
+                                    "answer_type": "a_type_multiple_choice", 
+                                    "ordering": 2, 
+                                    "potential_answer": "Use tanning beds or sunbath", 
+                                    "potential_answer_id": "26"
+                                }
+                            ], 
+                            "question": "q_social_history", 
+                            "question_id": "14", 
+                            "question_title": "Select which if any of the following activities you do regularly:", 
+                            "question_type": "q_type_multiple_choice"
+                        }
+                    ]
+                }, 
+                {
+                    "description": "previous diagnosis of skin condition", 
+                    "questions": [
+                        {
+                            "potential_answers": [
+                                {
+                                    "answer_type": "a_type_multiple_choice", 
+                                    "ordering": 0, 
+                                    "potential_answer": "Yes", 
+                                    "potential_answer_id": "27"
+                                }, 
+                                {
+                                    "answer_type": "a_type_multiple_choice", 
+                                    "ordering": 1, 
+                                    "potential_answer": "No", 
+                                    "potential_answer_id": "28"
+                                }
+                            ], 
+                            "question": "q_prev_skin_condition_diagnosis", 
+                            "question_id": "15", 
+                            "question_title": "Have you been diagnosed for a skin condition in the past?", 
+                            "question_type": "q_type_single_select"
+                        }, 
+                        {
+                            "condition": {
+                                "op": "answer_equals", 
+                                "potential_answers": [
+                                    "a_yes_prev_skin_diagnosis"
+                                ], 
+                                "potential_answers_id": [
+                                    "27"
+                                ], 
+                                "question": "q_prev_skin_condition_diagnosis", 
+                                "question_id": "15"
+                            }, 
+                            "potential_answers": [
+                                {
+                                    "answer_type": "a_type_multiple_choice", 
+                                    "ordering": 0, 
+                                    "potential_answer": "Alopecia", 
+                                    "potential_answer_id": "29"
+                                }, 
+                                {
+                                    "answer_type": "a_type_multiple_choice", 
+                                    "ordering": 1, 
+                                    "potential_answer": "Acne", 
+                                    "potential_answer_id": "30"
+                                }, 
+                                {
+                                    "answer_type": "a_type_multiple_choice", 
+                                    "ordering": 2, 
+                                    "potential_answer": "Eczema", 
+                                    "potential_answer_id": "31"
+                                }, 
+                                {
+                                    "answer_type": "a_type_multiple_choice", 
+                                    "ordering": 3, 
+                                    "potential_answer": "Psoriasis", 
+                                    "potential_answer_id": "32"
+                                }, 
+                                {
+                                    "answer_type": "a_type_multiple_choice", 
+                                    "ordering": 4, 
+                                    "potential_answer": "Rosacea", 
+                                    "potential_answer_id": "33"
+                                }, 
+                                {
+                                    "answer_type": "a_type_multiple_choice", 
+                                    "ordering": 5, 
+                                    "potential_answer": "Skin Cancer", 
+                                    "potential_answer_id": "34"
+                                }, 
+                                {
+                                    "answer_type": "a_type_multiple_choice", 
+                                    "ordering": 6, 
+                                    "potential_answer": "Other", 
+                                    "potential_answer_id": "35"
+                                }
+                            ], 
+                            "question": "q_list_prev_skin_condition_diagnosis", 
+                            "question_id": "17", 
+                            "question_type": "q_type_multiple_choice"
+                        }
+                    ]
+                }, 
+                {
+                    "description": "previous medical condition been treated for", 
+                    "questions": [
+                        {
+                            "potential_answers": [
+                                {
+                                    "answer_type": "a_type_multiple_choice", 
+                                    "ordering": 0, 
+                                    "potential_answer": "Arthritis", 
+                                    "potential_answer_id": "36"
+                                }, 
+                                {
+                                    "answer_type": "a_type_multiple_choice", 
+                                    "ordering": 1, 
+                                    "potential_answer": "Artifical Heart Valve", 
+                                    "potential_answer_id": "37"
+                                }, 
+                                {
+                                    "answer_type": "a_type_multiple_choice", 
+                                    "ordering": 2, 
+                                    "potential_answer": "Artifical Joint", 
+                                    "potential_answer_id": "38"
+                                }, 
+                                {
+                                    "answer_type": "a_type_multiple_choice", 
+                                    "ordering": 3, 
+                                    "potential_answer": "Asthma", 
+                                    "potential_answer_id": "39"
+                                }, 
+                                {
+                                    "answer_type": "a_type_multiple_choice", 
+                                    "ordering": 4, 
+                                    "potential_answer": "Blood Clots", 
+                                    "potential_answer_id": "40"
+                                }, 
+                                {
+                                    "answer_type": "a_type_multiple_choice", 
+                                    "ordering": 5, 
+                                    "potential_answer": "Diabetes", 
+                                    "potential_answer_id": "41"
+                                }, 
+                                {
+                                    "answer_type": "a_type_multiple_choice", 
+                                    "ordering": 6, 
+                                    "potential_answer": "Epilepsy or Seizures", 
+                                    "potential_answer_id": "42"
+                                }, 
+                                {
+                                    "answer_type": "a_type_multiple_choice", 
+                                    "ordering": 7, 
+                                    "potential_answer": "High Blood Pressure", 
+                                    "potential_answer_id": "43"
+                                }, 
+                                {
+                                    "answer_type": "a_type_multiple_choice", 
+                                    "ordering": 8, 
+                                    "potential_answer": "High Cholestrol", 
+                                    "potential_answer_id": "44"
+                                }, 
+                                {
+                                    "answer_type": "a_type_multiple_choice", 
+                                    "ordering": 9, 
+                                    "potential_answer": "HIV/AIDs", 
+                                    "potential_answer_id": "45"
+                                }, 
+                                {
+                                    "answer_type": "a_type_multiple_choice", 
+                                    "ordering": 10, 
+                                    "potential_answer": "Heart Attack", 
+                                    "potential_answer_id": "46"
+                                }, 
+                                {
+                                    "answer_type": "a_type_multiple_choice", 
+                                    "ordering": 11, 
+                                    "potential_answer": "Heart Murmur", 
+                                    "potential_answer_id": "47"
+                                }, 
+                                {
+                                    "answer_type": "a_type_multiple_choice", 
+                                    "ordering": 12, 
+                                    "potential_answer": "Irregular Heartbeat", 
+                                    "potential_answer_id": "48"
+                                }, 
+                                {
+                                    "answer_type": "a_type_multiple_choice", 
+                                    "ordering": 13, 
+                                    "potential_answer": "Kidney Disease", 
+                                    "potential_answer_id": "49"
+                                }, 
+                                {
+                                    "answer_type": "a_type_multiple_choice", 
+                                    "ordering": 14, 
+                                    "potential_answer": "Liver Disease", 
+                                    "potential_answer_id": "50"
+                                }, 
+                                {
+                                    "answer_type": "a_type_multiple_choice", 
+                                    "ordering": 15, 
+                                    "potential_answer": "Lung Disease", 
+                                    "potential_answer_id": "51"
+                                }, 
+                                {
+                                    "answer_type": "a_type_multiple_choice", 
+                                    "ordering": 16, 
+                                    "potential_answer": "Lupus", 
+                                    "potential_answer_id": "52"
+                                }, 
+                                {
+                                    "answer_type": "a_type_multiple_choice", 
+                                    "ordering": 17, 
+                                    "potential_answer": "Organ Transplant", 
+                                    "potential_answer_id": "53"
+                                }, 
+                                {
+                                    "answer_type": "a_type_multiple_choice", 
+                                    "ordering": 18, 
+                                    "potential_answer": "Pacemaker", 
+                                    "potential_answer_id": "55"
+                                }, 
+                                {
+                                    "answer_type": "a_type_multiple_choice", 
+                                    "ordering": 19, 
+                                    "potential_answer": "Thyroid Problems", 
+                                    "potential_answer_id": "56"
+                                }, 
+                                {
+                                    "answer_type": "a_type_multiple_choice", 
+                                    "ordering": 20, 
+                                    "potential_answer": "Other Condition Not Listed", 
+                                    "potential_answer_id": "57"
+                                }, 
+                                {
+                                    "answer_type": "a_type_multiple_choice", 
+                                    "ordering": 21, 
+                                    "potential_answer": "No past or present conditions", 
+                                    "potential_answer_id": "58"
+                                }
+                            ], 
+                            "question": "q_prev_med_condition_diagnosis", 
+                            "question_id": "16", 
+                            "question_title": "List any medical condition that you currently have or have been treated for:", 
+                            "question_type": "q_type_compound"
+                        }
+                    ]
+                }
+            ], 
+            "section": "section_medical_history", 
+            "section_id": "2", 
+            "section_title": "Your Medical History"
+        }, 
+        {
+            "screens": [
+                {
+                    "description": "options for places to take skin photo of", 
+                    "questions": [
+                        {
+                            "potential_answers": [
+                                {
+                                    "answer_type": "a_type_multiple_choice", 
+                                    "ordering": 0, 
+                                    "potential_answer": "Face", 
+                                    "potential_answer_id": "59"
+                                }, 
+                                {
+                                    "answer_type": "a_type_multiple_choice", 
+                                    "ordering": 1, 
+                                    "potential_answer": "Chest", 
+                                    "potential_answer_id": "60"
+                                }, 
+                                {
+                                    "answer_type": "a_type_multiple_choice", 
+                                    "ordering": 2, 
+                                    "potential_answer": "Back", 
+                                    "potential_answer_id": "61"
+                                }, 
+                                {
+                                    "answer_type": "a_type_multiple_choice", 
+                                    "ordering": 3, 
+                                    "potential_answer": "Other", 
+                                    "potential_answer_id": "62"
+                                }
+                            ], 
+                            "question": "q_acne_location", 
+                            "question_id": "18", 
+                            "question_title": "We need to know where you're experiencing acne so we can take the right photos.", 
+                            "question_type": "q_type_multiple_choice"
+                        }
+                    ]
+                }, 
+                {
+                    "description": "photo taking experience", 
+                    "questions": [
+                        {
+                            "condition": {
+                                "op": "answer_equals", 
+                                "potential_answers": [
+                                    "a_face_acne_location"
+                                ], 
+                                "potential_answers_id": [
+                                    "59"
+                                ], 
+                                "question": "q_acne_location", 
+                                "question_id": "18"
+                            }, 
+                            "potential_answers": [
+                                {
+                                    "answer_type": "a_type_photo_entry_face_middle", 
+                                    "ordering": 0, 
+                                    "potential_answer": "Front", 
+                                    "potential_answer_id": "63"
+                                }, 
+                                {
+                                    "answer_type": "a_type_photo_entry_face_left", 
+                                    "ordering": 2, 
+                                    "potential_answer": "Profile Left", 
+                                    "potential_answer_id": "65"
+                                }, 
+                                {
+                                    "answer_type": "a_type_photo_entry_face_right", 
+                                    "ordering": 1, 
+                                    "potential_answer": "Profile Right", 
+                                    "potential_answer_id": "64"
+                                }
+                            ], 
+                            "question": "q_face_photo_intake", 
+                            "question_id": "19", 
+                            "question_type": "q_type_photo", 
+                            "tips": {
+                                "photo_tips": [
+                                    "photo_tip_good_face_front", 
+                                    "photo_tip_bad_face_front", 
+                                    "photo_tip_good_profile_right"
+                                ], 
+                                "tips": [
+                                    "tip_remove_glasses", 
+                                    "tip_pull_hair_back", 
+                                    "tip_no_make_up"
+                                ], 
+                                "tips_section_tag": "tips_section_face", 
+                                "tips_section_title": "Up First: Face Photos", 
+                                "tips_subtext": "Remember these photos are for diagnosis purposes. The clearer your photo the easier it is for the doctor to make a diagnosis.", 
+                                "tips_text": [
+                                    "Remove glasses or hats", 
+                                    "Pull back any hair covering your face", 
+                                    "No make up"
+                                ]
+                            }
+                        }, 
+                        {
+                            "condition": {
+                                "op": "answer_equals", 
+                                "potential_answers": [
+                                    "a_chest_acne_location"
+                                ], 
+                                "potential_answers_id": [
+                                    "60"
+                                ], 
+                                "question": "q_acne_location", 
+                                "question_id": "18"
+                            }, 
+                            "potential_answers": [
+                                {
+                                    "answer_type": "a_type_photo_entry_chest", 
+                                    "ordering": 0, 
+                                    "potential_answer": "Chest", 
+                                    "potential_answer_id": "66"
+                                }
+                            ], 
+                            "question": "q_chest_photo_intake", 
+                            "question_id": "20", 
+                            "question_type": "q_type_photo"
+                        }
+                    ], 
+                    "screen_type": "screen_type_photo"
+                }
+            ], 
+            "section": "section_photo_diagnosis", 
+            "section_id": "3", 
+            "section_title": "Photos for Diagnosis"
+        }
+    ]
+}
