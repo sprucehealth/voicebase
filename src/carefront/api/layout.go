@@ -1,15 +1,11 @@
-package layout_transformer
-
-import (
-	"carefront/api"
-)
+package api
 
 type ClientLayoutProcessor interface {
 	TransformIntakeIntoClientLayout(treatment *Treatment, languageId int64) error
 }
 
 type ElementProcessor interface {
-	FillInDatabaseInfo(dataApi api.DataAPI, languageId int64) error
+	FillInDatabaseInfo(dataApi DataAPI, languageId int64) error
 }
 
 type Condition struct {
@@ -39,19 +35,18 @@ type PotentialOutcome struct {
 	OutcomeId        int64  `json:"potential_outcome_id,string,omitempty"`
 	Outcome          string `json:"potential_outcome,omitempty"`
 	OutcomeType      string `json:"outcome_type,omitempty"`
+	Ordering         int64  `json:"ordering"`
 }
 
 type Question struct {
-	ElementProcessor    `json:",omitempty"`
-	QuestionTag         string              `json:"question"`
-	QuestionId          int64               `json:"question_id,string,omitempty"`
-	QuestionTitle       string              `json:"question_title,omitempty"`
-	QuestionType        string              `json:"question_type,omitempty"`
-	PotentialAnswerTags []string            `json:"potential_answers"`
-	PotentialOutcomes   []*PotentialOutcome `json:"potential_outcomes"`
-	ConditionBlock      *Condition          `json:"condition,omitempty"`
-	IsMultiSelect       bool                `json:"multiselect,omitempty"`
-	Tips                *TipSection         `json:"tips,omitempty"`
+	ElementProcessor  `json:",omitempty"`
+	QuestionTag       string              `json:"question"`
+	QuestionId        int64               `json:"question_id,string,omitempty"`
+	QuestionTitle     string              `json:"question_title,omitempty"`
+	QuestionType      string              `json:"question_type,omitempty"`
+	PotentialOutcomes []*PotentialOutcome `json:"potential_outcomes"`
+	ConditionBlock    *Condition          `json:"condition,omitempty"`
+	Tips              *TipSection         `json:"tips,omitempty"`
 }
 
 type Screen struct {

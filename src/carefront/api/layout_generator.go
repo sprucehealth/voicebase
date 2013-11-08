@@ -1,11 +1,7 @@
-package layout_transformer
-
-import (
-	"carefront/api"
-)
+package api
 
 type TreatmentLayoutProcessor struct {
-	DataApi api.DataAPI
+	DataApi DataAPI
 }
 
 func (c *TreatmentLayoutProcessor) TransformIntakeIntoClientLayout(treatment *Treatment, languageId int64) error {

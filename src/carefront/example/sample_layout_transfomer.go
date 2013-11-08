@@ -2,16 +2,16 @@ package main
 
 import (
 	"carefront/api"
-	"carefront/layout_transformer"
 	"database/sql"
 	"encoding/json"
+	"fmt"
 	_ "github.com/go-sql-driver/mysql"
 	"io/ioutil"
 )
 
 func main() {
 	fileContents, _ := ioutil.ReadFile("../layout_transformer/condition_intake.json")
-	treatment := &layout_transformer.Treatment{}
+	treatment := &api.Treatment{}
 	err := json.Unmarshal(fileContents, &treatment)
 	if err != nil {
 		panic(err)
@@ -30,8 +30,9 @@ func main() {
 	defer db.Close()
 
 	dataApi := &api.DataService{db}
-	cloudObjectService := api.NewService("AKIAINP33PBIN5GW4GKQ", "rbqPao4jDqTBTXBHk4BRnzWmYsfvSslg9mYhG45w")
-	layoutService := &api.LayoutService{dataApi, cloudObjectService}
+	treatmentLayoutProcessor := &api.TreatmentLayoutProcessor{dataApi}
+	treatmentLayoutProcessor.TransformIntakeIntoClientLayout(treatment, 1)
 
-	layoutService.VerifyAndUploadIncomingLayout(fileContents, treatment.TreatmentTag)
+	jsonData, err := json.MarshalIndent(treatment, "", " ")
+	fmt.Println(string(jsonData))
 }
