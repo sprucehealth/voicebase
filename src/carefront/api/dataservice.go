@@ -87,21 +87,34 @@ func (d *DataService) GetQuestionInfo(questionTag string, languageId int64) (id 
 	return id, questionTitle, questionType, nil
 }
 
-func (d *DataService) GetOutcomeInfo(outcomeTag string, languageId int64) (id int64, outcome string, outcomeType string, err error) {
-	rows, err := d.DB.Query(`select potential_outcome.id, ltext, outcome_type.otype from potential_outcome 
-								inner join outcome_type on otype_id=outcome_type.id 
+func (d *DataService) GetOutcomeInfo(questionId int64, languageId int64) (ids []int64, outcomes []string, outcomeTypes []string, outcomeTags []string, orderings []int64, err error) {
+	rows, err := d.DB.Query(`select potential_outcome.id, ltext, otype, potential_outcome_tag, ordering from potential_outcome 
 								inner join localized_text on outcome_localized_text=app_text_id 
-									where potential_outcome_Tag=? and language_id=?`, outcomeTag, languageId)
+								inner join outcome_type on otype_id=outcome_type.id 
+									where question_id = ? and language_id = ?`, questionId, languageId)
 	if err != nil {
-		return 0, "", "", err
+		return nil, nil, nil, nil, nil, err
 	}
 	defer rows.Close()
-	rows.Next()
-	err = rows.Scan(&id, &outcome, &outcomeType)
-	if err != nil {
-		return 0, "", "", err
+	ids = make([]int64, 1, 5)
+	outcomes = make([]string, 1, 5)
+	outcomeTypes = make([]string, 1, 5)
+	orderings = make([]int64, 1, 5)
+	outcomeTags = make([]string, 1, 5)
+	for rows.Next() {
+		var id, ordering int64
+		var outcome, outcomeType, outcomeTag string
+		err = rows.Scan(&id, &outcome, &outcomeType, &outcomeTag, &ordering)
+		ids = append(ids, id)
+		outcomes = append(outcomes, outcome)
+		outcomeTypes = append(outcomeTypes, outcomeType)
+		orderings = append(orderings, ordering)
+		outcomeTags = append(outcomeTags, outcomeTag)
+		if err != nil {
+			return nil, nil, nil, nil, nil, err
+		}
 	}
-	return id, outcome, outcomeType, nil
+	return ids, outcomes, outcomeTypes, outcomeTags, orderings, nil
 }
 
 func (d *DataService) GetTipInfo(tipTag string, languageId int64) (id int64, tip string, err error) {
