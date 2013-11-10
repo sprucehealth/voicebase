@@ -18,12 +18,14 @@ CREATE TABLE IF NOT EXISTS auth_token (
 
 CREATE TABLE IF NOT EXISTS patient (
 	id int unsigned not null AUTO_INCREMENT,
+	account_id int unsigned not null, 
 	first_name varchar(500) not null,
 	last_name varchar(500) not null,
-	dob timestamp not null,
+	dob date not null,
 	gender varchar(500) not null,
 	zip_code varchar(500) not null,
 	status varchar (500) not null,
+	FOREIGN KEY (account_id) REFERENCES account(id),
 	PRIMARY KEY(id)
 ) CHARACTER SET utf8;
 

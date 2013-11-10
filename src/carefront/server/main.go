@@ -17,18 +17,20 @@ import (
 )
 
 var (
-	flagListenAddr   = flag.String("listen", ":8080", "Address and port to listen on")
-	flagCertLocation = flag.String("cert_key", "", "Location of certificate for SSL")
-	flagKeyLocation  = flag.String("private_key", "", "Location of key for SSL")
-	flagS3CaseBucket = flag.String("case_bucket", "carefront-cases", "Bucket name holding case information on S3")
-	flagAWSSecretKey = flag.String("aws_secret_key", "", "AWS Secret Key for uploading files to S3")
-	flagAWSAccessKey = flag.String("aws_access_key", "", "AWS Access Key to upload files to S3")
-	flagDBUser       = flag.String("db_user", "", "Username for accessing database")
-	flagDBPassword   = flag.String("db_password", "", "Password for accessing database")
-	flagDBHost       = flag.String("db_host", "", "Database host url")
-	flagDBName       = flag.String("db_name", "", "Database name on database server")
-	flagDebugMode    = flag.Bool("debug", false, "Flag to indicate whether we are running in debug or production mode")
-	flagLogPath      = flag.String("log_path", "", "Path for log file. If not given then default to stderr")
+	flagListenAddr            = flag.String("listen", ":8080", "Address and port to listen on")
+	flagCertLocation          = flag.String("cert_key", "", "Location of certificate for SSL")
+	flagKeyLocation           = flag.String("private_key", "", "Location of key for SSL")
+	flagS3CaseBucket          = flag.String("case_bucket", "carefront-cases", "Bucket name holding case information on S3")
+	flagAWSSecretKey          = flag.String("aws_secret_key", "", "AWS Secret Key for uploading files to S3")
+	flagAWSAccessKey          = flag.String("aws_access_key", "", "AWS Access Key to upload files to S3")
+	flagDBUser                = flag.String("db_user", "", "Username for accessing database")
+	flagDBPassword            = flag.String("db_password", "", "Password for accessing database")
+	flagDBHost                = flag.String("db_host", "", "Database host url")
+	flagDBName                = flag.String("db_name", "", "Database name on database server")
+	flagDebugMode             = flag.Bool("debug", false, "Flag to indicate whether we are running in debug or production mode")
+	flagLogPath               = flag.String("log_path", "", "Path for log file. If not given then default to stderr")
+	flagLayoutBucketAccessKey = flag.String("layout_bucket_access_key", "", "AWS access key for buckets where patient, client and doctor layouts are stored")
+	flagLayoutBucketSecretKey = flag.String("layout_bucket_secret_key", "", "AWS secrety key for buckets where patient, client and doctor layouts are stored")
 )
 
 func parseFlags() {
@@ -103,16 +105,19 @@ func main() {
 
 	authApi := &api.AuthService{db}
 	dataApi := &api.DataService{db}
-	mux := &apiservice.AuthServeMux{*http.NewServeMux(), authApi}
-	cloudStorageApi := api.NewCloudStorageService("AKIAINP33PBIN5GW4GKQ", "rbqPao4jDqTBTXBHk4BRnzWmYsfvSslg9mYhG45w")
+	cloudStorageApi := api.NewCloudStorageService(*flagLayoutBucketAccessKey, *flagLayoutBucketSecretKey)
+
 	authHandler := &apiservice.AuthenticationHandler{authApi}
+	signupPatientHandler := &apiservice.SignupPatientHandler{dataApi, authApi}
 	pingHandler := apiservice.PingHandler(0)
 	photoHandler := &apiservice.PhotoUploadHandler{&api.PhotoService{*flagAWSAccessKey, *flagAWSSecretKey}, *flagS3CaseBucket, dataApi}
 	getSignedUrlsHandler := &apiservice.GetSignedUrlsHandler{&api.PhotoService{*flagAWSAccessKey, *flagAWSSecretKey}, *flagS3CaseBucket}
 	generateModelIntakeHandler := &apiservice.GenerateClientIntakeModelHandler{dataApi, cloudStorageApi}
 
+	mux := &apiservice.AuthServeMux{*http.NewServeMux(), authApi}
+
 	mux.Handle("/v1/authenticate", authHandler)
-	mux.Handle("/v1/signup", authHandler)
+	mux.Handle("/v1/patient/", signupPatientHandler)
 	mux.Handle("/v1/logout", authHandler)
 	mux.Handle("/v1/ping", pingHandler)
 	mux.Handle("/v1/upload", photoHandler)

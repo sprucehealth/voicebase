@@ -2,10 +2,27 @@ package api
 
 import (
 	"database/sql"
+	"log"
+	"time"
 )
 
 type DataService struct {
 	DB *sql.DB
+}
+
+func (d *DataService) RegisterPatient(accountId int64, firstName, lastName, gender, zipCode string, dob time.Time) (int64, error) {
+	res, err := d.DB.Exec(`insert into patient (account_id, first_name, last_name, zip_code, gender, dob, status) 
+								values (?, ?, ?, ?, ?, ? , 'REGISTERED')`, accountId, firstName, lastName, zipCode, gender, dob)
+	if err != nil {
+		return 0, err
+	}
+
+	lastId, err := res.LastInsertId()
+	if err != nil {
+		log.Fatal("Unable to return id of inserted item as error was returned when trying to return id", err)
+		return 0, err
+	}
+	return lastId, err
 }
 
 func (d *DataService) CreatePhotoForCase(caseId int64, photoType string) (int64, error) {
