@@ -11,6 +11,7 @@ type PatientVisitHandler struct {
 	DataApi         api.DataAPI
 	AuthApi         api.Auth
 	CloudStorageApi api.CloudStorageAPI
+	accountId       int64
 }
 
 type PatientVisitErrorResponse struct {
@@ -22,20 +23,24 @@ type PatientVisitResponse struct {
 	ClientLayout   *info_intake.HealthCondition `json:"health_condition,omitempty"`
 }
 
+func NewPatientVisitHandler(dataApi api.DataAPI, authApi api.Auth, cloudStorageApi api.CloudStorageAPI) *PatientVisitHandler {
+	return &PatientVisitHandler{dataApi, authApi, cloudStorageApi, 0}
+}
+
+func (s *PatientVisitHandler) AccountIdFromAuthToken(accountId int64) {
+	s.accountId = accountId
+}
+
 func (s *PatientVisitHandler) ServeHTTP(w http.ResponseWriter, r *http.Request) {
-	token, err := GetAuthTokenFromHeader(r)
-	if err != nil {
-		w.WriteHeader(http.StatusInternalServerError)
-		return
+	switch r.Method {
+	case "GET":
+		s.returnNewOrOpenPatientVisit(w, r)
 	}
+}
 
-	_, accountId, err := s.AuthApi.ValidateToken(token)
-	if err != nil {
-		w.WriteHeader(http.StatusInternalServerError)
-		return
-	}
+func (s *PatientVisitHandler) returnNewOrOpenPatientVisit(w http.ResponseWriter, r *http.Request) {
 
-	patientId, err := s.DataApi.GetPatientIdFromAccountId(accountId)
+	patientId, err := s.DataApi.GetPatientIdFromAccountId(s.accountId)
 	if err != nil {
 		w.WriteHeader(http.StatusInternalServerError)
 		return
