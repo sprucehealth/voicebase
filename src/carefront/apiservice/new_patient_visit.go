@@ -41,11 +41,12 @@ func (s *NewPatientVisitHandler) ServeHTTP(w http.ResponseWriter, r *http.Reques
 		return
 	}
 
+	healthCondition, layoutVersionId, err := s.getCurrentActiveClientLayoutForHealthCondition(1, 1)
+
 	// check if there is an open patient visit for the given health condition and return
 	// that to the patient
 	patientVisitId, _ := s.DataApi.GetActivePatientVisitForHealthCondition(patientId, 1)
 	if patientVisitId != -1 {
-		healthCondition, err := s.getCurrentActiveClientLayoutForHealthCondition(1, 1)
 		if err != nil {
 			w.WriteHeader(http.StatusInternalServerError)
 			return
@@ -54,31 +55,30 @@ func (s *NewPatientVisitHandler) ServeHTTP(w http.ResponseWriter, r *http.Reques
 		return
 	}
 
-	patientVisitId, err = s.DataApi.CreateNewPatientVisit(patientId, 1)
+	patientVisitId, err = s.DataApi.CreateNewPatientVisit(patientId, 1, layoutVersionId)
 	if err != nil {
 		w.WriteHeader(http.StatusInternalServerError)
 		return
 	}
 
-	healthCondition, err := s.getCurrentActiveClientLayoutForHealthCondition(1, 1)
 	WriteJSONToHTTPResponseWriter(w, NewPatientVisitResponse{patientVisitId, healthCondition})
 }
 
-func (s *NewPatientVisitHandler) getCurrentActiveClientLayoutForHealthCondition(healthConditionId, languageId int64) (healthCondition *info_intake.HealthCondition, err error) {
-	bucket, key, region, err := s.DataApi.GetStorageInfoOfCurrentActiveClientLayout(languageId, healthConditionId)
+func (s *NewPatientVisitHandler) getCurrentActiveClientLayoutForHealthCondition(healthConditionId, languageId int64) (healthCondition *info_intake.HealthCondition, layoutVersionId int64, err error) {
+	bucket, key, region, layoutVersionId, err := s.DataApi.GetStorageInfoOfCurrentActiveClientLayout(languageId, healthConditionId)
 	if err != nil {
-		return nil, err
+		return nil, 0, err
 	}
 
 	data, err := s.CloudStorageApi.GetObjectAtLocation(bucket, key, region)
 	if err != nil {
-		return nil, err
+		return nil, 0, err
 	}
 	healthCondition = &info_intake.HealthCondition{}
 	err = json.Unmarshal(data, healthCondition)
 	if err != nil {
-		return nil, err
+		return nil, 0, err
 	}
 
-	return healthCondition, err
+	return healthCondition, layoutVersionId, err
 }

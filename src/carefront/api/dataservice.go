@@ -55,9 +55,9 @@ func (d *DataService) GetActivePatientVisitForHealthCondition(patientId, healthC
 	return patientVisitId, nil
 }
 
-func (d *DataService) CreateNewPatientVisit(patientId, healthConditionId int64) (int64, error) {
-	res, err := d.DB.Exec(`insert into patient_visit (patient_id, opened_date, health_condition_id, status) 
-								values (?, now(), ?, 'OPEN')`, patientId, healthConditionId)
+func (d *DataService) CreateNewPatientVisit(patientId, healthConditionId, layoutVersionId int64) (int64, error) {
+	res, err := d.DB.Exec(`insert into patient_visit (patient_id, opened_date, health_condition_id, layout_version_id, status) 
+								values (?, now(), ?, ?, 'OPEN')`, patientId, healthConditionId, layoutVersionId)
 	if err != nil {
 		return 0, err
 	}
@@ -70,22 +70,22 @@ func (d *DataService) CreateNewPatientVisit(patientId, healthConditionId int64) 
 	return lastId, err
 }
 
-func (d *DataService) GetStorageInfoOfCurrentActiveClientLayout(languageId, healthConditionId int64) (bucket, storage, region string, err error) {
-	rows, err := d.DB.Query(` select bucket, storage_key, region_tag from patient_layout_version 
+func (d *DataService) GetStorageInfoOfCurrentActiveClientLayout(languageId, healthConditionId int64) (bucket, storage, region string, layoutVersionId int64, err error) {
+	rows, err := d.DB.Query(` select bucket, storage_key, region_tag, layout_version_id from patient_layout_version 
 								inner join object_storage on object_storage_id=object_storage.id 
 								inner join region on region_id=region.id 
 									where patient_layout_version.status='ACTIVE' and health_condition_id = ? and language_id = ?`, healthConditionId, languageId)
 	if err != nil {
-		return "", "", "", err
+		return "", "", "", 0, err
 	}
 	defer rows.Close()
 
 	if !rows.Next() {
-		return "", "", "", nil
+		return "", "", "", 0, nil
 	}
 
-	rows.Scan(&bucket, &storage, &region)
-	return bucket, storage, region, nil
+	rows.Scan(&bucket, &storage, &region, &layoutVersionId)
+	return bucket, storage, region, layoutVersionId, nil
 }
 
 func (d *DataService) CreatePhotoForCase(caseId int64, photoType string) (int64, error) {
