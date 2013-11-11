@@ -13,6 +13,10 @@ type NonAuthenticated interface {
 	NonAuthenticated() bool
 }
 
+type Authenticated interface {
+	AccountIdFromAuthToken(accountId int64)
+}
+
 type AuthServeMux struct {
 	http.ServeMux
 	AuthApi api.Auth
@@ -42,15 +46,15 @@ func (c *CustomResponseWriter) Write(bytes []byte) (int, error) {
 }
 
 // Parse the "Authorization: token xxx" header and check the token for validity
-func (mux *AuthServeMux) checkAuth(r *http.Request) (bool, error) {
+func (mux *AuthServeMux) checkAuth(r *http.Request) (bool, int64, error) {
 	token, err := GetAuthTokenFromHeader(r)
 	if err == ErrBadAuthToken {
-		return false, nil
+		return false, 0, nil
 	} else if err != nil {
-		return false, err
+		return false, 0, err
 	}
-	valid, _, err := mux.AuthApi.ValidateToken(token)
-	return valid, err
+	valid, accountId, err := mux.AuthApi.ValidateToken(token)
+	return valid, accountId, err
 }
 
 func (mux *AuthServeMux) ServeHTTP(w http.ResponseWriter, r *http.Request) {
@@ -65,15 +69,16 @@ func (mux *AuthServeMux) ServeHTTP(w http.ResponseWriter, r *http.Request) {
 	}
 	h, _ := mux.Handler(r)
 	if nonAuth, ok := h.(NonAuthenticated); !ok || !nonAuth.NonAuthenticated() {
-		if valid, err := mux.checkAuth(r); err != nil {
+		if valid, accountId, err := mux.checkAuth(r); err != nil {
 			log.Println(err)
 			customResponseWriter.WriteHeader(http.StatusInternalServerError)
 			return
 		} else if !valid {
 			customResponseWriter.WriteHeader(http.StatusForbidden)
 			return
+		} else if auth, ok := h.(Authenticated); ok {
+			auth.AccountIdFromAuthToken(accountId)
 		}
-
 	}
 	h.ServeHTTP(customResponseWriter, r)
 }
