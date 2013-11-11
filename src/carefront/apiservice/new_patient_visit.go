@@ -2,6 +2,8 @@ package apiservice
 
 import (
 	"carefront/api"
+	"carefront/info_intake"
+	"encoding/json"
 	"net/http"
 )
 
@@ -16,8 +18,8 @@ type NewPatientVisitErrorResponse struct {
 }
 
 type NewPatientVisitResponse struct {
-	PatientVisitId int64  `json:"patient_visit_id,string"`
-	ClientLayout   string `json:"client_layout,omitempty"`
+	PatientVisitId int64                        `json:"patient_visit_id,string"`
+	ClientLayout   *info_intake.HealthCondition `json:"health_condition,omitempty"`
 }
 
 func (s *NewPatientVisitHandler) ServeHTTP(w http.ResponseWriter, r *http.Request) {
@@ -43,12 +45,12 @@ func (s *NewPatientVisitHandler) ServeHTTP(w http.ResponseWriter, r *http.Reques
 	// that to the patient
 	patientVisitId, _ := s.DataApi.GetActivePatientVisitForHealthCondition(patientId, 1)
 	if patientVisitId != -1 {
-		data, err := s.getCurrentActiveClientLayoutForHealthCondition(1, 1)
+		healthCondition, err := s.getCurrentActiveClientLayoutForHealthCondition(1, 1)
 		if err != nil {
 			w.WriteHeader(http.StatusInternalServerError)
 			return
 		}
-		WriteJSONToHTTPResponseWriter(w, NewPatientVisitResponse{patientVisitId, string(data)})
+		WriteJSONToHTTPResponseWriter(w, NewPatientVisitResponse{patientVisitId, healthCondition})
 		return
 	}
 
@@ -58,20 +60,25 @@ func (s *NewPatientVisitHandler) ServeHTTP(w http.ResponseWriter, r *http.Reques
 		return
 	}
 
-	data, err := s.getCurrentActiveClientLayoutForHealthCondition(1, 1)
-	WriteJSONToHTTPResponseWriter(w, NewPatientVisitResponse{patientVisitId, string(data)})
+	healthCondition, err := s.getCurrentActiveClientLayoutForHealthCondition(1, 1)
+	WriteJSONToHTTPResponseWriter(w, NewPatientVisitResponse{patientVisitId, healthCondition})
 }
 
-func (s *NewPatientVisitHandler) getCurrentActiveClientLayoutForHealthCondition(healthConditionId, languageId int64) (data []byte, err error) {
+func (s *NewPatientVisitHandler) getCurrentActiveClientLayoutForHealthCondition(healthConditionId, languageId int64) (healthCondition *info_intake.HealthCondition, err error) {
 	bucket, key, region, err := s.DataApi.GetStorageInfoOfCurrentActiveClientLayout(languageId, healthConditionId)
 	if err != nil {
 		return nil, err
 	}
 
-	data, err = s.CloudStorageApi.GetObjectAtLocation(bucket, key, region)
+	data, err := s.CloudStorageApi.GetObjectAtLocation(bucket, key, region)
+	if err != nil {
+		return nil, err
+	}
+	healthCondition = &info_intake.HealthCondition{}
+	err = json.Unmarshal(data, healthCondition)
 	if err != nil {
 		return nil, err
 	}
 
-	return data, err
+	return healthCondition, err
 }

@@ -5,7 +5,6 @@ import (
 	"carefront/api"
 	"carefront/info_intake"
 	"encoding/json"
-	"fmt"
 	"io/ioutil"
 	"log"
 	"net/http"
@@ -39,7 +38,6 @@ func (l *GenerateClientIntakeModelHandler) NonAuthenticated() bool {
 
 func (l *GenerateClientIntakeModelHandler) ServeHTTP(w http.ResponseWriter, r *http.Request) {
 	r.ParseForm()
-
 	file, handler, err := r.FormFile("layout")
 	if err != nil {
 		log.Println(err)
@@ -61,7 +59,6 @@ func (l *GenerateClientIntakeModelHandler) ServeHTTP(w http.ResponseWriter, r *h
 
 	err = json.Unmarshal(data, &healthCondition)
 	if err != nil {
-		fmt.Println("here")
 		log.Println(err)
 		w.WriteHeader(http.StatusBadRequest)
 		WriteJSONToHTTPResponseWriter(w, ClientIntakeModelErrorResponse{err.Error()})
@@ -119,7 +116,7 @@ func (l *GenerateClientIntakeModelHandler) ServeHTTP(w http.ResponseWriter, r *h
 		clientModelProcessor.FillInDetailsFromDatabase(&clientModel, supportedLanguageId)
 		clientIntakeModels[supportedLanguageId] = &clientModel
 
-		jsonData, err := json.MarshalIndent(&clientModel, "", " ")
+		jsonData, err := json.Marshal(&clientModel)
 		if err != nil {
 			log.Println(err)
 			w.WriteHeader(http.StatusBadRequest)
