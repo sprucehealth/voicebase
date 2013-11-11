@@ -38,7 +38,15 @@ func (s *NewPatientVisitHandler) ServeHTTP(w http.ResponseWriter, r *http.Reques
 		return
 	}
 
-	patientVisitId, err := s.DataApi.CreateNewPatientVisit(patientId, 1)
+	// check if there is an open patient visit for the given health condition and return
+	// that to the patient
+	patientVisitId, _ := s.DataApi.GetActivePatientVisitForHealthCondition(patientId, 1)
+	if patientVisitId != -1 {
+		WriteJSONToHTTPResponseWriter(w, NewPatientVisitResponse{patientVisitId, ""})
+		return
+	}
+
+	patientVisitId, err = s.DataApi.CreateNewPatientVisit(patientId, 1)
 	if err != nil {
 		w.WriteHeader(http.StatusInternalServerError)
 		return

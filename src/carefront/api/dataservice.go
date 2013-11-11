@@ -38,6 +38,23 @@ func (d *DataService) GetPatientIdFromAccountId(accountId int64) (int64, error) 
 	return patientId, nil
 }
 
+func (d *DataService) GetActivePatientVisitForHealthCondition(patientId, healthConditionId int64) (int64, error) {
+	rows, err := d.DB.Query("select id from patient_visit where patient_id = ? and health_condition_id = ? and status='OPEN'", patientId, healthConditionId)
+	if err != nil {
+		return 0, err
+	}
+	defer rows.Close()
+
+	var patientVisitId int64
+
+	if !rows.Next() {
+		return -1, nil
+	}
+
+	rows.Scan(&patientVisitId)
+	return patientVisitId, nil
+}
+
 func (d *DataService) CreateNewPatientVisit(patientId, healthConditionId int64) (int64, error) {
 	res, err := d.DB.Exec(`insert into patient_visit (patient_id, opened_date, health_condition_id, status) 
 								values (?, now(), ?, 'OPEN')`, patientId, healthConditionId)
