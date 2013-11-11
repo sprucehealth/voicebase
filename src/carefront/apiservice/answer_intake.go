@@ -2,7 +2,6 @@ package apiservice
 
 import (
 	"carefront/api"
-	"fmt"
 	"net/http"
 	"strconv"
 )
@@ -53,21 +52,18 @@ func (a *AnswerIntakeHandler) ServeHTTP(w http.ResponseWriter, r *http.Request) 
 	// get layout version id
 	layoutVersionId, err := a.DataApi.GetLayoutVersionIdForPatientVisit(patientVisitIdInt)
 	if err != nil {
-		fmt.Println("unable to get layout version id from database")
 		w.WriteHeader(http.StatusInternalServerError)
 		return
 	}
 
 	patientId, err := a.DataApi.GetPatientIdFromAccountId(a.accountId)
 	if err != nil {
-		fmt.Println("unable to get patient id from account id")
 		w.WriteHeader(http.StatusInternalServerError)
 		return
 	}
 
 	patientInfoIntakeId, err := a.DataApi.StorePatientAnswerForQuestion(patientId, questionIdInt, answerIdInt, sectionIdInt, patientVisitIdInt, layoutVersionId, answerText)
 	if err != nil {
-		fmt.Println("unable to store response to question in database", err.Error())
 		w.WriteHeader(http.StatusInternalServerError)
 		return
 	}
