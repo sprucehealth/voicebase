@@ -97,6 +97,7 @@ CREATE TABLE IF NOT EXISTS health_condition (
 
 CREATE TABLE IF NOT EXISTS patient_info_intake (
 	id int unsigned NOT NULL AUTO_INCREMENT,
+	patient_id int unsigned not null,
 	case_id int unsigned,
 	question_id int unsigned NOT NULL,
 	section_id int unsigned NOT NULL,
@@ -108,6 +109,7 @@ CREATE TABLE IF NOT EXISTS patient_info_intake (
 	PRIMARY KEY (id),
 	FOREIGN KEY (question_id) REFERENCES question(id),
 	FOREIGN KEY (client_layout_version_id) REFERENCES patient_layout_version(id),
+	FOREIGN KEY (patient_id) REFERENCES patient(id),
 	FOREIGN KEY (section_id) REFERENCES section(id)
 ) CHARACTER SET UTF8;
 
