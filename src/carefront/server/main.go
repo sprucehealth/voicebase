@@ -109,7 +109,7 @@ func main() {
 
 	authHandler := &apiservice.AuthenticationHandler{authApi}
 	signupPatientHandler := &apiservice.SignupPatientHandler{dataApi, authApi}
-	newPatientCaseHandler := &apiservice.NewPatientVisitHandler{dataApi, authApi}
+	newPatientCaseHandler := &apiservice.NewPatientVisitHandler{dataApi, authApi, cloudStorageApi}
 	pingHandler := apiservice.PingHandler(0)
 	photoHandler := &apiservice.PhotoUploadHandler{&api.PhotoService{*flagAWSAccessKey, *flagAWSSecretKey}, *flagS3CaseBucket, dataApi}
 	getSignedUrlsHandler := &apiservice.GetSignedUrlsHandler{&api.PhotoService{*flagAWSAccessKey, *flagAWSSecretKey}, *flagS3CaseBucket}

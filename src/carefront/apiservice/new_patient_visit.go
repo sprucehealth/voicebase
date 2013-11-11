@@ -6,8 +6,9 @@ import (
 )
 
 type NewPatientVisitHandler struct {
-	DataApi api.DataAPI
-	AuthApi api.Auth
+	DataApi         api.DataAPI
+	AuthApi         api.Auth
+	CloudStorageApi api.CloudStorageAPI
 }
 
 type NewPatientVisitErrorResponse struct {
@@ -42,7 +43,12 @@ func (s *NewPatientVisitHandler) ServeHTTP(w http.ResponseWriter, r *http.Reques
 	// that to the patient
 	patientVisitId, _ := s.DataApi.GetActivePatientVisitForHealthCondition(patientId, 1)
 	if patientVisitId != -1 {
-		WriteJSONToHTTPResponseWriter(w, NewPatientVisitResponse{patientVisitId, ""})
+		data, err := s.getCurrentActiveClientLayoutForHealthCondition(1, 1)
+		if err != nil {
+			w.WriteHeader(http.StatusInternalServerError)
+			return
+		}
+		WriteJSONToHTTPResponseWriter(w, NewPatientVisitResponse{patientVisitId, string(data)})
 		return
 	}
 
@@ -52,5 +58,20 @@ func (s *NewPatientVisitHandler) ServeHTTP(w http.ResponseWriter, r *http.Reques
 		return
 	}
 
-	WriteJSONToHTTPResponseWriter(w, NewPatientVisitResponse{patientVisitId, ""})
+	data, err := s.getCurrentActiveClientLayoutForHealthCondition(1, 1)
+	WriteJSONToHTTPResponseWriter(w, NewPatientVisitResponse{patientVisitId, string(data)})
+}
+
+func (s *NewPatientVisitHandler) getCurrentActiveClientLayoutForHealthCondition(healthConditionId, languageId int64) (data []byte, err error) {
+	bucket, key, region, err := s.DataApi.GetStorageInfoOfCurrentActiveClientLayout(languageId, healthConditionId)
+	if err != nil {
+		return nil, err
+	}
+
+	data, err = s.CloudStorageApi.GetObjectAtLocation(bucket, key, region)
+	if err != nil {
+		return nil, err
+	}
+
+	return data, err
 }

@@ -70,6 +70,24 @@ func (d *DataService) CreateNewPatientVisit(patientId, healthConditionId int64) 
 	return lastId, err
 }
 
+func (d *DataService) GetStorageInfoOfCurrentActiveClientLayout(languageId, healthConditionId int64) (bucket, storage, region string, err error) {
+	rows, err := d.DB.Query(` select bucket, storage_key, region_tag from patient_layout_version 
+								inner join object_storage on object_storage_id=object_storage.id 
+								inner join region on region_id=region.id 
+									where patient_layout_version.status='ACTIVE' and health_condition_id = ? and language_id = ?`, healthConditionId, languageId)
+	if err != nil {
+		return "", "", "", err
+	}
+	defer rows.Close()
+
+	if !rows.Next() {
+		return "", "", "", nil
+	}
+
+	rows.Scan(&bucket, &storage, &region)
+	return bucket, storage, region, nil
+}
+
 func (d *DataService) CreatePhotoForCase(caseId int64, photoType string) (int64, error) {
 	// create a new photo for the case and mark it as pending upload
 	res, err := d.DB.Exec("insert into case_image(case_id, photoType, status) values (?, ?, ?)", caseId, photoType, PHOTO_STATUS_PENDING_UPLOAD)
