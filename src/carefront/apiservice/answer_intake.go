@@ -33,9 +33,9 @@ func (a *AnswerIntakeHandler) ServeHTTP(w http.ResponseWriter, r *http.Request) 
 	sectionId := r.FormValue("section_id")
 	answerId := r.FormValue("potential_answer_id")
 	answerText := r.FormValue("answer_text")
+	// toUpdate := r.FormValue("to_update")
 
-	if patientVisitId == "" || questionId == "" || sectionId == "" || answerId == "" ||
-		answerText == "" {
+	if patientVisitId == "" || questionId == "" || sectionId == "" || answerId == "" {
 		w.WriteHeader(http.StatusBadRequest)
 		return
 	}
@@ -46,6 +46,28 @@ func (a *AnswerIntakeHandler) ServeHTTP(w http.ResponseWriter, r *http.Request) 
 	answerIdInt, err := strconv.ParseInt(answerId, 0, 64)
 	if err != nil {
 		w.WriteHeader(http.StatusInternalServerError)
+		return
+	}
+
+	// get the answer type to determine the structure of the answer that is to be stored
+	answerType, err := a.DataApi.GetAnswerType(answerIdInt)
+	freeTextRequired := false
+	// photoRequired := false
+	switch answerType {
+	case "a_type_free_text":
+	case "a_type_single_entry":
+		freeTextRequired = true
+		// case "a_type_photo_entry_back":
+		// case "a_type_photo_entry_chest":
+		// case "a_type_photo_entry_face_left":
+		// case "a_type_photo_entry_face_middle":
+		// case "a_type_photo_entry_face_right":
+		// case "a_type_photo_entry_other":
+		// 	photoRequired = true
+	}
+
+	if freeTextRequired && answerText == "" {
+		w.WriteHeader(http.StatusBadRequest)
 		return
 	}
 
@@ -62,7 +84,13 @@ func (a *AnswerIntakeHandler) ServeHTTP(w http.ResponseWriter, r *http.Request) 
 		return
 	}
 
-	patientInfoIntakeId, err := a.DataApi.StorePatientAnswerForQuestion(patientId, questionIdInt, answerIdInt, sectionIdInt, patientVisitIdInt, layoutVersionId, answerText)
+	var patientInfoIntakeId int64
+	if freeTextRequired {
+		patientInfoIntakeId, err = a.DataApi.StoreFreeTextAnswerForQuestion(patientId, questionIdInt, answerIdInt, sectionIdInt, patientVisitIdInt, layoutVersionId, answerText)
+	} else {
+		patientInfoIntakeId, err = a.DataApi.StoreChoiceAnswerForQuestion(patientId, questionIdInt, answerIdInt, sectionIdInt, patientVisitIdInt, layoutVersionId)
+	}
+
 	if err != nil {
 		w.WriteHeader(http.StatusInternalServerError)
 		return

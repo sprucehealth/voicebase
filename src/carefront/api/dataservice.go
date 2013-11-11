@@ -70,6 +70,23 @@ func (d *DataService) CreateNewPatientVisit(patientId, healthConditionId, layout
 	return lastId, err
 }
 
+func (d *DataService) GetAnswerType(potentialAnswerId int64) (answerType string, err error) {
+	rows, err := d.DB.Query(`select atype from potential_answer
+								inner join answer_type on answer_type.id = atype_id
+								where potential_answer.id = ?`, potentialAnswerId)
+	if err != nil {
+		return "", err
+	}
+	defer rows.Close()
+
+	if !rows.Next() {
+		return "", nil
+	}
+
+	rows.Scan(&answerType)
+	return answerType, nil
+}
+
 func (d *DataService) GetStorageInfoOfCurrentActiveClientLayout(languageId, healthConditionId int64) (bucket, storage, region string, layoutVersionId int64, err error) {
 	rows, err := d.DB.Query(` select bucket, storage_key, region_tag, layout_version_id from patient_layout_version 
 								inner join object_storage on object_storage_id=object_storage.id 
@@ -103,7 +120,7 @@ func (d *DataService) GetLayoutVersionIdForPatientVisit(patientVisitId int64) (l
 	return layoutVersionId, nil
 }
 
-func (d *DataService) StorePatientAnswerForQuestion(patientId, questionId, answerId, sectionId, patientVisitId, layoutVersionId int64, answerText string) (patientInfoIntakeId int64, err error) {
+func (d *DataService) StoreFreeTextAnswerForQuestion(patientId, questionId, answerId, sectionId, patientVisitId, layoutVersionId int64, answerText string) (patientInfoIntakeId int64, err error) {
 	// update any pre-existing answers to this question and mark it as inactive
 	tx, err := d.DB.Begin()
 	if err != nil {
@@ -119,6 +136,37 @@ func (d *DataService) StorePatientAnswerForQuestion(patientId, questionId, answe
 
 	res, err := tx.Exec(`insert into patient_info_intake (patient_id, case_id, question_id, section_id, potential_answer_id, answer_text, layout_version_id, status) 
 							values (?, ?, ?, ?, ?, ?, ?, 'ACTIVE')`, patientId, patientVisitId, questionId, sectionId, answerId, answerText, layoutVersionId)
+	if err != nil {
+		tx.Rollback()
+		return 0, err
+	}
+
+	lastId, err := res.LastInsertId()
+	if err != nil {
+		tx.Rollback()
+		return 0, err
+	}
+
+	tx.Commit()
+	return lastId, err
+}
+
+func (d *DataService) StoreChoiceAnswerForQuestion(patientId, questionId, answerId, sectionId, patientVisitId, layoutVersionId int64) (patientInfoIntakeId int64, err error) {
+	// update any pre-existing answers to this question and mark it as inactive
+	tx, err := d.DB.Begin()
+	if err != nil {
+		return 0, err
+	}
+
+	_, err = tx.Exec(`update patient_info_intake set status='INACTIVE' 
+								where patient_id = ? and case_id = ? and section_id = ? and question_id = ? and layout_version_id = ?`, patientId, patientVisitId, sectionId, questionId, layoutVersionId)
+	if err != nil {
+		tx.Rollback()
+		return 0, err
+	}
+
+	res, err := tx.Exec(`insert into patient_info_intake (patient_id, case_id, question_id, section_id, potential_answer_id, layout_version_id, status) 
+							values (?, ?, ?, ?, ?, ?, 'ACTIVE')`, patientId, patientVisitId, questionId, sectionId, answerId, layoutVersionId)
 	if err != nil {
 		tx.Rollback()
 		return 0, err
