@@ -88,6 +88,52 @@ func (d *DataService) GetStorageInfoOfCurrentActiveClientLayout(languageId, heal
 	return bucket, storage, region, layoutVersionId, nil
 }
 
+func (d *DataService) GetLayoutVersionIdForPatientVisit(patientVisitId int64) (layoutVersionId int64, err error) {
+	rows, err := d.DB.Query("select layout_version_id from patient_visit where id = ?", patientVisitId)
+	if err != nil {
+		return 0, err
+	}
+
+	if !rows.Next() {
+		return 0, nil
+	}
+
+	rows.Scan(&layoutVersionId)
+
+	return layoutVersionId, nil
+}
+
+func (d *DataService) StorePatientAnswerForQuestion(patientId, questionId, answerId, sectionId, patientVisitId, layoutVersionId int64, answerText string) (patientInfoIntakeId int64, err error) {
+	// update any pre-existing answers to this question and mark it as inactive
+	tx, err := d.DB.Begin()
+	if err != nil {
+		return 0, err
+	}
+
+	_, err = tx.Exec(`update patient_info_intake set status='INACTIVE' 
+								where patient_id = ? and case_id = ? and section_id = ? and question_id = ? and layout_version_id = ?`, patientId, patientVisitId, sectionId, questionId, layoutVersionId)
+	if err != nil {
+		tx.Rollback()
+		return 0, err
+	}
+
+	res, err := tx.Exec(`insert into patient_info_intake (patient_id, case_id, question_id, section_id, potential_answer_id, answer_text, layout_version_id, status) 
+							values (?, ?, ?, ?, ?, ?, ?, 'ACTIVE')`, patientId, patientVisitId, questionId, sectionId, answerId, answerText, layoutVersionId)
+	if err != nil {
+		tx.Rollback()
+		return 0, err
+	}
+
+	lastId, err := res.LastInsertId()
+	if err != nil {
+		tx.Rollback()
+		return 0, err
+	}
+
+	tx.Commit()
+	return lastId, err
+}
+
 func (d *DataService) CreatePhotoForCase(caseId int64, photoType string) (int64, error) {
 	// create a new photo for the case and mark it as pending upload
 	res, err := d.DB.Exec("insert into case_image(case_id, photoType, status) values (?, ?, ?)", caseId, photoType, PHOTO_STATUS_PENDING_UPLOAD)

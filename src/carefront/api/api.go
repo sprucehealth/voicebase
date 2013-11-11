@@ -40,9 +40,11 @@ const (
 type DataAPI interface {
 	RegisterPatient(accountId int64, firstName, lastName, gender, zipCode string, dob time.Time) (int64, error)
 	GetPatientIdFromAccountId(accountId int64) (int64, error)
+	CreateNewPatientVisit(patientId, healthConditionId, layoutVersionId int64) (int64, error)
 	GetActivePatientVisitForHealthCondition(patientId, healthConditionId int64) (int64, error)
 	GetStorageInfoOfCurrentActiveClientLayout(languageId, healthConditionId int64) (bucket, key, region string, layoutVersionId int64, err error)
-	CreateNewPatientVisit(patientId, healthConditionId, layoutVersionId int64) (int64, error)
+	GetLayoutVersionIdForPatientVisit(patientVisitId int64) (layoutVersionId int64, err error)
+	StorePatientAnswerForQuestion(patientId, questionId, answerId, sectionId, patientVisitId, layoutVersionId int64, answerText string) (patientInfoIntakeId int64, err error)
 
 	CreatePhotoForCase(caseId int64, photoType string) (int64, error)
 	MarkPhotoUploadComplete(caseId, photoId int64) error
