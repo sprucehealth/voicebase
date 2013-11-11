@@ -35,6 +35,9 @@ const (
 
 type DataAPI interface {
 	RegisterPatient(accountId int64, firstName, lastName, gender, zipCode string, dob time.Time) (int64, error)
+	GetPatientIdFromAccountId(accountId int64) (int64, error)
+	CreateNewPatientVisit(patientId, healthConditionId int64) (int64, error)
+
 	CreatePhotoForCase(caseId int64, photoType string) (int64, error)
 	MarkPhotoUploadComplete(caseId, photoId int64) error
 	GetPhotosForCase(caseId int64) ([]string, error)

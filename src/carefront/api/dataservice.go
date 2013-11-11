@@ -25,6 +25,34 @@ func (d *DataService) RegisterPatient(accountId int64, firstName, lastName, gend
 	return lastId, err
 }
 
+func (d *DataService) GetPatientIdFromAccountId(accountId int64) (int64, error) {
+	rows, err := d.DB.Query("select id from patient where account_id = ?", accountId)
+	if err != nil {
+		return 0, err
+	}
+	defer rows.Close()
+
+	var patientId int64
+	rows.Next()
+	rows.Scan(&patientId)
+	return patientId, nil
+}
+
+func (d *DataService) CreateNewPatientVisit(patientId, healthConditionId int64) (int64, error) {
+	res, err := d.DB.Exec(`insert into patient_visit (patient_id, opened_date, health_condition_id, status) 
+								values (?, now(), ?, 'OPEN')`, patientId, healthConditionId)
+	if err != nil {
+		return 0, err
+	}
+
+	lastId, err := res.LastInsertId()
+	if err != nil {
+		log.Fatal("Unable to return id of inserted item as error was returned when trying to return id", err)
+		return 0, err
+	}
+	return lastId, err
+}
+
 func (d *DataService) CreatePhotoForCase(caseId int64, photoType string) (int64, error) {
 	// create a new photo for the case and mark it as pending upload
 	res, err := d.DB.Exec("insert into case_image(case_id, photoType, status) values (?, ?, ?)", caseId, photoType, PHOTO_STATUS_PENDING_UPLOAD)
