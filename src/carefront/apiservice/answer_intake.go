@@ -76,9 +76,17 @@ func (a *AnswerIntakeHandler) ServeHTTP(w http.ResponseWriter, r *http.Request) 
 	}
 
 	freeTextRequired := false
-	switch questionType {
-	case "q_type_free_text", "q_type_single_entry":
+	if questionType == "q_type_free_text" || questionType == "q_type_single_entry" {
 		freeTextRequired = true
+	}
+
+	// only one response allowed for these type of questions
+	if questionType == "q_type_single_select" || questionType == "q_type_photo" || questionType == "q_type_free_text" {
+		if len(answerIntakeRequestBody.AnswerIntakes) > 1 {
+			w.WriteHeader(http.StatusBadRequest)
+			WriteJSONToHTTPResponseWriter(w, AnswerIntakeErrorResponse{"You cannot have more than 1 response for this question type"})
+			return
+		}
 	}
 
 	potentialAnswerIds := make([]int64, len(answerIntakeRequestBody.AnswerIntakes))
