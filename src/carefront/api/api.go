@@ -5,6 +5,10 @@ import (
 	"time"
 )
 
+const (
+	EN_LANGUAGE_ID = 1
+)
+
 var ErrLoginFailed = errors.New("api: login failed")
 var ErrSignupFailedUserExists = errors.New("api: signup failed because user exists")
 

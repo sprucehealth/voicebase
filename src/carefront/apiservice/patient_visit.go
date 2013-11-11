@@ -7,22 +7,22 @@ import (
 	"net/http"
 )
 
-type NewPatientVisitHandler struct {
+type PatientVisitHandler struct {
 	DataApi         api.DataAPI
 	AuthApi         api.Auth
 	CloudStorageApi api.CloudStorageAPI
 }
 
-type NewPatientVisitErrorResponse struct {
+type PatientVisitErrorResponse struct {
 	ErrorString string `json:"error"`
 }
 
-type NewPatientVisitResponse struct {
+type PatientVisitResponse struct {
 	PatientVisitId int64                        `json:"patient_visit_id,string"`
 	ClientLayout   *info_intake.HealthCondition `json:"health_condition,omitempty"`
 }
 
-func (s *NewPatientVisitHandler) ServeHTTP(w http.ResponseWriter, r *http.Request) {
+func (s *PatientVisitHandler) ServeHTTP(w http.ResponseWriter, r *http.Request) {
 	token, err := GetAuthTokenFromHeader(r)
 	if err != nil {
 		w.WriteHeader(http.StatusInternalServerError)
@@ -41,7 +41,7 @@ func (s *NewPatientVisitHandler) ServeHTTP(w http.ResponseWriter, r *http.Reques
 		return
 	}
 
-	healthCondition, layoutVersionId, err := s.getCurrentActiveClientLayoutForHealthCondition(1, 1)
+	healthCondition, layoutVersionId, err := s.getCurrentActiveClientLayoutForHealthCondition(1, api.EN_LANGUAGE_ID)
 
 	// check if there is an open patient visit for the given health condition and return
 	// that to the patient
@@ -51,7 +51,7 @@ func (s *NewPatientVisitHandler) ServeHTTP(w http.ResponseWriter, r *http.Reques
 			w.WriteHeader(http.StatusInternalServerError)
 			return
 		}
-		WriteJSONToHTTPResponseWriter(w, NewPatientVisitResponse{patientVisitId, healthCondition})
+		WriteJSONToHTTPResponseWriter(w, PatientVisitResponse{patientVisitId, healthCondition})
 		return
 	}
 
@@ -61,10 +61,10 @@ func (s *NewPatientVisitHandler) ServeHTTP(w http.ResponseWriter, r *http.Reques
 		return
 	}
 
-	WriteJSONToHTTPResponseWriter(w, NewPatientVisitResponse{patientVisitId, healthCondition})
+	WriteJSONToHTTPResponseWriter(w, PatientVisitResponse{patientVisitId, healthCondition})
 }
 
-func (s *NewPatientVisitHandler) getCurrentActiveClientLayoutForHealthCondition(healthConditionId, languageId int64) (healthCondition *info_intake.HealthCondition, layoutVersionId int64, err error) {
+func (s *PatientVisitHandler) getCurrentActiveClientLayoutForHealthCondition(healthConditionId, languageId int64) (healthCondition *info_intake.HealthCondition, layoutVersionId int64, err error) {
 	bucket, key, region, layoutVersionId, err := s.DataApi.GetStorageInfoOfCurrentActiveClientLayout(languageId, healthConditionId)
 	if err != nil {
 		return nil, 0, err

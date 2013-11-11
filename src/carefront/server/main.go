@@ -109,7 +109,7 @@ func main() {
 
 	authHandler := &apiservice.AuthenticationHandler{authApi}
 	signupPatientHandler := &apiservice.SignupPatientHandler{dataApi, authApi}
-	newPatientCaseHandler := &apiservice.NewPatientVisitHandler{dataApi, authApi, cloudStorageApi}
+	patientVisitHandler := &apiservice.PatientVisitHandler{dataApi, authApi, cloudStorageApi}
 	pingHandler := apiservice.PingHandler(0)
 	photoHandler := &apiservice.PhotoUploadHandler{&api.PhotoService{*flagAWSAccessKey, *flagAWSSecretKey}, *flagS3CaseBucket, dataApi}
 	getSignedUrlsHandler := &apiservice.GetSignedUrlsHandler{&api.PhotoService{*flagAWSAccessKey, *flagAWSSecretKey}, *flagS3CaseBucket}
@@ -119,7 +119,7 @@ func main() {
 
 	mux.Handle("/v1/authenticate", authHandler)
 	mux.Handle("/v1/patient/", signupPatientHandler)
-	mux.Handle("/v1/case/", newPatientCaseHandler)
+	mux.Handle("/v1/case/", patientVisitHandler)
 	mux.Handle("/v1/logout", authHandler)
 	mux.Handle("/v1/ping", pingHandler)
 	mux.Handle("/v1/upload", photoHandler)
