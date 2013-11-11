@@ -77,9 +77,7 @@ func (a *AnswerIntakeHandler) ServeHTTP(w http.ResponseWriter, r *http.Request) 
 
 	freeTextRequired := false
 	switch questionType {
-	case "q_type_free_text":
-		freeTextRequired = true
-	case "q_type_single_entry":
+	case "q_type_free_text", "q_type_single_entry":
 		freeTextRequired = true
 	}
 
