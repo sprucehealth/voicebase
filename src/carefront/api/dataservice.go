@@ -70,10 +70,10 @@ func (d *DataService) CreateNewPatientVisit(patientId, healthConditionId, layout
 	return lastId, err
 }
 
-func (d *DataService) GetAnswerType(potentialAnswerId int64) (answerType string, err error) {
-	rows, err := d.DB.Query(`select atype from potential_answer
-								inner join answer_type on answer_type.id = atype_id
-								where potential_answer.id = ?`, potentialAnswerId)
+func (d *DataService) GetQuestionType(questionId int64) (questionType string, err error) {
+	rows, err := d.DB.Query(`select qtype from question
+								inner join question_type on question_type.id = qtype_id
+								where question.id = ?`, questionId)
 	if err != nil {
 		return "", err
 	}
@@ -83,8 +83,8 @@ func (d *DataService) GetAnswerType(potentialAnswerId int64) (answerType string,
 		return "", nil
 	}
 
-	rows.Scan(&answerType)
-	return answerType, nil
+	rows.Scan(&questionType)
+	return questionType, nil
 }
 
 func (d *DataService) GetStorageInfoOfCurrentActiveClientLayout(languageId, healthConditionId int64) (bucket, storage, region string, layoutVersionId int64, err error) {
@@ -120,66 +120,75 @@ func (d *DataService) GetLayoutVersionIdForPatientVisit(patientVisitId int64) (l
 	return layoutVersionId, nil
 }
 
-func (d *DataService) StoreFreeTextAnswerForQuestion(patientId, questionId, answerId, sectionId, patientVisitId, layoutVersionId int64, answerText string) (patientInfoIntakeId int64, err error) {
-	// update any pre-existing answers to this question and mark it as inactive
-	tx, err := d.DB.Begin()
-	if err != nil {
-		return 0, err
-	}
-
+func (d *DataService) inactivatePreviousAnswersToQuestion(patientId, questionId, sectionId, patientVisitId, layoutVersionId int64, tx *sql.Tx) (err error) {
 	_, err = tx.Exec(`update patient_info_intake set status='INACTIVE' 
-								where patient_id = ? and case_id = ? and section_id = ? and question_id = ? and layout_version_id = ?`, patientId, patientVisitId, sectionId, questionId, layoutVersionId)
-	if err != nil {
-		tx.Rollback()
-		return 0, err
-	}
-
-	res, err := tx.Exec(`insert into patient_info_intake (patient_id, case_id, question_id, section_id, potential_answer_id, answer_text, layout_version_id, status) 
-							values (?, ?, ?, ?, ?, ?, ?, 'ACTIVE')`, patientId, patientVisitId, questionId, sectionId, answerId, answerText, layoutVersionId)
-	if err != nil {
-		tx.Rollback()
-		return 0, err
-	}
-
-	lastId, err := res.LastInsertId()
-	if err != nil {
-		tx.Rollback()
-		return 0, err
-	}
-
-	tx.Commit()
-	return lastId, err
+						where patient_id = ? and question_id = ? and section_id = ? 
+						and patient_visit_id = ? and layout_version_id = ?`, patientId, questionId, sectionId, patientVisitId, layoutVersionId)
+	return err
 }
 
-func (d *DataService) StoreChoiceAnswerForQuestion(patientId, questionId, answerId, sectionId, patientVisitId, layoutVersionId int64) (patientInfoIntakeId int64, err error) {
-	// update any pre-existing answers to this question and mark it as inactive
+func (d *DataService) StoreFreeTextAnswersForQuestion(patientId, questionId, sectionId, patientVisitId, layoutVersionId int64, answerIds []int64, answerTexts []string, toUpdate bool) (patientInfoIntakeIds []int64, err error) {
 	tx, err := d.DB.Begin()
-	if err != nil {
-		return 0, err
+
+	if toUpdate {
+		err = d.inactivatePreviousAnswersToQuestion(patientId, questionId, sectionId, patientVisitId, layoutVersionId, tx)
+		if err != nil {
+			tx.Rollback()
+			return nil, err
+		}
 	}
 
-	_, err = tx.Exec(`update patient_info_intake set status='INACTIVE' 
-								where patient_id = ? and case_id = ? and section_id = ? and question_id = ? and layout_version_id = ?`, patientId, patientVisitId, sectionId, questionId, layoutVersionId)
-	if err != nil {
-		tx.Rollback()
-		return 0, err
-	}
+	patientInfoIntakeIds = make([]int64, len(answerIds))
+	for i, answerId := range answerIds {
+		res, err := tx.Exec(`insert into patient_info_intake (patient_id, patient_visit_id, question_id, section_id, potential_answer_id, answer_text, layout_version_id, status) 
+							values (?, ?, ?, ?, ?, ?, ?, 'ACTIVE')`, patientId, patientVisitId, questionId, sectionId, answerId, answerTexts[i], layoutVersionId)
+		if err != nil {
+			tx.Rollback()
+			return nil, err
+		}
 
-	res, err := tx.Exec(`insert into patient_info_intake (patient_id, case_id, question_id, section_id, potential_answer_id, layout_version_id, status) 
-							values (?, ?, ?, ?, ?, ?, 'ACTIVE')`, patientId, patientVisitId, questionId, sectionId, answerId, layoutVersionId)
-	if err != nil {
-		tx.Rollback()
-		return 0, err
-	}
-
-	lastId, err := res.LastInsertId()
-	if err != nil {
-		tx.Rollback()
-		return 0, err
+		lastId, err := res.LastInsertId()
+		if err != nil {
+			tx.Rollback()
+			return nil, err
+		}
+		patientInfoIntakeIds[i] = lastId
 	}
 
 	tx.Commit()
-	return lastId, err
+	return patientInfoIntakeIds, nil
+}
+
+func (d *DataService) StoreChoiceAnswersForQuestion(patientId, questionId, sectionId, patientVisitId, layoutVersionId int64, answerIds []int64, toUpdate bool) (patientInfoIntakeIds []int64, err error) {
+	tx, err := d.DB.Begin()
+
+	if toUpdate {
+		err = d.inactivatePreviousAnswersToQuestion(patientId, questionId, sectionId, patientVisitId, layoutVersionId, tx)
+		if err != nil {
+			tx.Rollback()
+			return nil, err
+		}
+	}
+
+	patientInfoIntakeIds = make([]int64, len(answerIds))
+	for i, answerId := range answerIds {
+		res, err := tx.Exec(`insert into patient_info_intake (patient_id, patient_visit_id, question_id, section_id, potential_answer_id, layout_version_id, status) 
+							values (?, ?, ?, ?, ?, ?, 'ACTIVE')`, patientId, patientVisitId, questionId, sectionId, answerId, layoutVersionId)
+		if err != nil {
+			tx.Rollback()
+			return nil, err
+		}
+
+		lastId, err := res.LastInsertId()
+		if err != nil {
+			tx.Rollback()
+			return nil, err
+		}
+		patientInfoIntakeIds[i] = lastId
+	}
+
+	tx.Commit()
+	return patientInfoIntakeIds, nil
 }
 
 func (d *DataService) CreatePhotoForCase(caseId int64, photoType string) (int64, error) {

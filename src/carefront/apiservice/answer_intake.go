@@ -2,8 +2,8 @@ package apiservice
 
 import (
 	"carefront/api"
+	"encoding/json"
 	"net/http"
-	"strconv"
 )
 
 type AnswerIntakeHandler struct {
@@ -16,7 +16,20 @@ type AnswerIntakeErrorResponse struct {
 }
 
 type AnswerIntakeResponse struct {
-	AnswerId int64 `json:answer_id,string"`
+	AnswerIds []int64 `json:answer_ids"`
+}
+
+type AnswerIntake struct {
+	PotentialAnswerId int64  `json:"potential_answer_id"`
+	AnswerText        string `json:"answer_text"`
+}
+
+type AnswerIntakeRequestBody struct {
+	PatientVisitId int64           `json:"patient_visit_id"`
+	QuestionId     int64           `json:"question_id"`
+	SectionId      int64           `json:"section_id"`
+	ToUpdate       bool            `json:"to_update"`
+	AnswerIntakes  []*AnswerIntake `json:"potential_answers"`
 }
 
 func NewAnswerIntakeHandler(dataApi api.DataAPI) *AnswerIntakeHandler {
@@ -28,51 +41,23 @@ func (a *AnswerIntakeHandler) AccountIdFromAuthToken(accountId int64) {
 }
 
 func (a *AnswerIntakeHandler) ServeHTTP(w http.ResponseWriter, r *http.Request) {
-	patientVisitId := r.FormValue("patient_visit_id")
-	questionId := r.FormValue("question_id")
-	sectionId := r.FormValue("section_id")
-	answerId := r.FormValue("potential_answer_id")
-	answerText := r.FormValue("answer_text")
-	// toUpdate := r.FormValue("to_update")
+	jsonDecoder := json.NewDecoder(r.Body)
+	answerIntakeRequestBody := &AnswerIntakeRequestBody{}
 
-	if patientVisitId == "" || questionId == "" || sectionId == "" || answerId == "" {
+	err := jsonDecoder.Decode(answerIntakeRequestBody)
+	if err != nil {
 		w.WriteHeader(http.StatusBadRequest)
 		return
 	}
 
-	patientVisitIdInt, err := strconv.ParseInt(patientVisitId, 0, 64)
-	questionIdInt, err := strconv.ParseInt(questionId, 0, 64)
-	sectionIdInt, err := strconv.ParseInt(sectionId, 0, 64)
-	answerIdInt, err := strconv.ParseInt(answerId, 0, 64)
-	if err != nil {
-		w.WriteHeader(http.StatusInternalServerError)
-		return
-	}
-
-	// get the answer type to determine the structure of the answer that is to be stored
-	answerType, err := a.DataApi.GetAnswerType(answerIdInt)
-	freeTextRequired := false
-	// photoRequired := false
-	switch answerType {
-	case "a_type_free_text":
-	case "a_type_single_entry":
-		freeTextRequired = true
-		// case "a_type_photo_entry_back":
-		// case "a_type_photo_entry_chest":
-		// case "a_type_photo_entry_face_left":
-		// case "a_type_photo_entry_face_middle":
-		// case "a_type_photo_entry_face_right":
-		// case "a_type_photo_entry_other":
-		// 	photoRequired = true
-	}
-
-	if freeTextRequired && answerText == "" {
+	if answerIntakeRequestBody.PatientVisitId == 0 || answerIntakeRequestBody.QuestionId == 0 ||
+		answerIntakeRequestBody.SectionId == 0 || answerIntakeRequestBody.AnswerIntakes == nil {
 		w.WriteHeader(http.StatusBadRequest)
 		return
 	}
 
 	// get layout version id
-	layoutVersionId, err := a.DataApi.GetLayoutVersionIdForPatientVisit(patientVisitIdInt)
+	layoutVersionId, err := a.DataApi.GetLayoutVersionIdForPatientVisit(answerIntakeRequestBody.PatientVisitId)
 	if err != nil {
 		w.WriteHeader(http.StatusInternalServerError)
 		return
@@ -84,17 +69,54 @@ func (a *AnswerIntakeHandler) ServeHTTP(w http.ResponseWriter, r *http.Request) 
 		return
 	}
 
-	var patientInfoIntakeId int64
-	if freeTextRequired {
-		patientInfoIntakeId, err = a.DataApi.StoreFreeTextAnswerForQuestion(patientId, questionIdInt, answerIdInt, sectionIdInt, patientVisitIdInt, layoutVersionId, answerText)
-	} else {
-		patientInfoIntakeId, err = a.DataApi.StoreChoiceAnswerForQuestion(patientId, questionIdInt, answerIdInt, sectionIdInt, patientVisitIdInt, layoutVersionId)
-	}
-
+	questionType, err := a.DataApi.GetQuestionType(answerIntakeRequestBody.QuestionId)
 	if err != nil {
 		w.WriteHeader(http.StatusInternalServerError)
 		return
 	}
 
-	WriteJSONToHTTPResponseWriter(w, AnswerIntakeResponse{patientInfoIntakeId})
+	freeTextRequired := false
+	switch questionType {
+	case "q_type_free_text":
+	case "q_type_single_entry":
+		freeTextRequired = true
+	}
+
+	potentialAnswerIds := make([]int64, len(answerIntakeRequestBody.AnswerIntakes))
+	answerTexts := make([]string, len(answerIntakeRequestBody.AnswerIntakes))
+
+	for i, answerIntake := range answerIntakeRequestBody.AnswerIntakes {
+
+		if freeTextRequired && answerIntake.AnswerText == "" {
+			w.WriteHeader(http.StatusBadRequest)
+			return
+		}
+		potentialAnswerIds[i] = answerIntake.PotentialAnswerId
+		if freeTextRequired {
+			answerTexts[i] = answerIntake.AnswerText
+		}
+	}
+
+	var potentialInfoIntakeIds []int64
+	if freeTextRequired {
+		potentialInfoIntakeIds, err = a.DataApi.StoreFreeTextAnswersForQuestion(patientId,
+			answerIntakeRequestBody.QuestionId, answerIntakeRequestBody.SectionId,
+			answerIntakeRequestBody.PatientVisitId, layoutVersionId, potentialAnswerIds,
+			answerTexts, answerIntakeRequestBody.ToUpdate)
+		if err != nil {
+			w.WriteHeader(http.StatusInternalServerError)
+			return
+		}
+	} else {
+		potentialInfoIntakeIds, err = a.DataApi.StoreChoiceAnswersForQuestion(patientId,
+			answerIntakeRequestBody.QuestionId, answerIntakeRequestBody.SectionId,
+			answerIntakeRequestBody.PatientVisitId, layoutVersionId, potentialAnswerIds,
+			answerIntakeRequestBody.ToUpdate)
+		if err != nil {
+			w.WriteHeader(http.StatusInternalServerError)
+			return
+		}
+	}
+
+	WriteJSONToHTTPResponseWriter(w, AnswerIntakeResponse{potentialInfoIntakeIds})
 }

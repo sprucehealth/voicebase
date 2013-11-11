@@ -44,10 +44,10 @@ type DataAPI interface {
 	GetActivePatientVisitForHealthCondition(patientId, healthConditionId int64) (int64, error)
 	GetStorageInfoOfCurrentActiveClientLayout(languageId, healthConditionId int64) (bucket, key, region string, layoutVersionId int64, err error)
 	GetLayoutVersionIdForPatientVisit(patientVisitId int64) (layoutVersionId int64, err error)
-	GetAnswerType(potentialAnswerId int64) (answerType string, err error)
+	GetQuestionType(questionId int64) (questionType string, err error)
 
-	StoreFreeTextAnswerForQuestion(patientId, questionId, answerId, sectionId, patientVisitId, layoutVersionId int64, answerText string) (patientInfoIntakeId int64, err error)
-	StoreChoiceAnswerForQuestion(patientId, questionId, answerId, sectionId, patientVisitId, layoutVersionId int64) (patientInfoIntakeId int64, err error)
+	StoreFreeTextAnswersForQuestion(patientId, questionId, sectionId, patientVisitId, layoutVersionId int64, answerIds []int64, answerTexts []string, toUpdate bool) (patientInfoIntakeIds []int64, err error)
+	StoreChoiceAnswersForQuestion(patientId, questionId, sectionId, patientVisitId, layoutVersionId int64, answerIds []int64, toUpdate bool) (patientInfoIntakeIds []int64, err error)
 
 	CreatePhotoForCase(caseId int64, photoType string) (int64, error)
 	MarkPhotoUploadComplete(caseId, photoId int64) error
