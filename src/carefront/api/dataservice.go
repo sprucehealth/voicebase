@@ -240,6 +240,33 @@ func (d *DataService) StoreChoiceAnswersForQuestion(patientId, questionId, secti
 	return patientInfoIntakeIds, nil
 }
 
+func (d *DataService) CreatePhotoAnswerForQuestionRecord(patientId, questionId, sectionId, patientVisitId, potentialAnswerId, layoutVersionId int64) (patientInfoIntakeId int64, err error) {
+	res, err := d.DB.Exec(`insert into patient_info_intake (patient_id, patient_visit_id, question_id, section_id, potential_answer_id, layout_version_id, status) 
+							values (?, ?, ?, ?, ?, ?, 'PENDING_UPLOAD')`, patientId, patientVisitId, questionId, sectionId, potentialAnswerId, layoutVersionId)
+	if err != nil {
+		return 0, err
+	}
+
+	lastId, err := res.LastInsertId()
+	if err != nil {
+		return 0, err
+	}
+	return lastId, nil
+}
+
+func (d *DataService) UpdatePhotoAnswerRecordWithObjectStorageId(patientInfoIntakeId, objectStorageId int64) error {
+	res, err := d.DB.Exec(`update patient_info_intake set object_storage_id = ?, status='ACTIVE' where id = ?`, objectStorageId, patientInfoIntakeId)
+	if err != nil {
+		return err
+	}
+
+	_, err = res.LastInsertId()
+	if err != nil {
+		return err
+	}
+	return nil
+}
+
 func (d *DataService) CreatePhotoForCase(caseId int64, photoType string) (int64, error) {
 	// create a new photo for the case and mark it as pending upload
 	res, err := d.DB.Exec("insert into case_image(case_id, photoType, status) values (?, ?, ?)", caseId, photoType, PHOTO_STATUS_PENDING_UPLOAD)

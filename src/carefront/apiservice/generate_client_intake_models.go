@@ -15,7 +15,6 @@ import (
 const (
 	CAREFRONT_LAYOUT_BUCKET        = "carefront-layout"
 	CAREFRONT_CLIENT_LAYOUT_BUCKET = "carefront-client-layout"
-	US_EAST_REGION                 = "us-east-1"
 	LAYOUT_SYNTAX_VERSION          = 1
 )
 
@@ -94,7 +93,7 @@ func (l *GenerateClientIntakeModelHandler) ServeHTTP(w http.ResponseWriter, r *h
 
 	// upload the layout version to S3 and get back an object storage id
 	objectId, _, err := l.CloudStorageApi.PutObjectToLocation(CAREFRONT_LAYOUT_BUCKET,
-		strconv.Itoa(int(time.Now().Unix())), US_EAST_REGION, handler.Header.Get("Content-Type"), data, time.Now().Add(10*time.Minute), l.DataApi)
+		strconv.Itoa(int(time.Now().Unix())), api.US_EAST_1, handler.Header.Get("Content-Type"), data, time.Now().Add(10*time.Minute), l.DataApi)
 
 	// get the healthConditionId
 	healthConditionId, err := l.DataApi.GetHealthConditionInfo(healthConditionTag)
@@ -125,7 +124,7 @@ func (l *GenerateClientIntakeModelHandler) ServeHTTP(w http.ResponseWriter, r *h
 		}
 		// put each client layout that is generated into S3
 		objectId, clientModelUrl, err := l.CloudStorageApi.PutObjectToLocation(CAREFRONT_CLIENT_LAYOUT_BUCKET,
-			strconv.Itoa(int(time.Now().Unix())), US_EAST_REGION, handler.Header.Get("Content-Type"), jsonData, time.Now().Add(10*time.Minute), l.DataApi)
+			strconv.Itoa(int(time.Now().Unix())), api.US_EAST_1, handler.Header.Get("Content-Type"), jsonData, time.Now().Add(10*time.Minute), l.DataApi)
 		clientModelUrls[i] = clientModelUrl
 		if err != nil {
 			log.Println(err)

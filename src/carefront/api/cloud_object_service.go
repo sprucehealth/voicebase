@@ -14,6 +14,11 @@ type CloudStorageService struct {
 	awsSecretKey string
 }
 
+const (
+	US_EAST_1 = "us-east-1"
+	US_WEST_1 = "us-west-1"
+)
+
 func NewCloudStorageService(accessKey, secretKey string) *CloudStorageService {
 	return &CloudStorageService{accessKey, secretKey}
 }
@@ -49,9 +54,9 @@ func (c *CloudStorageService) PutObjectToLocation(bucket, key, region, contentTy
 	auth := aws.Auth{c.awsAccessKey, c.awsSecretKey}
 	var awsRegion aws.Region
 	switch region {
-	case "us-east-1":
+	case US_EAST_1:
 		awsRegion = aws.USEast
-	case "us-west-1":
+	case US_WEST_1:
 		awsRegion = aws.USWest
 	default:
 		awsRegion = aws.USEast

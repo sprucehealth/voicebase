@@ -106,11 +106,12 @@ func main() {
 	authApi := &api.AuthService{db}
 	dataApi := &api.DataService{db}
 	cloudStorageApi := api.NewCloudStorageService(*flagLayoutBucketAccessKey, *flagLayoutBucketSecretKey)
-
+	photoAnswerCloudStorageApi := api.NewCloudStorageService(*flagAWSAccessKey, *flagAWSSecretKey)
 	authHandler := &apiservice.AuthenticationHandler{authApi}
 	signupPatientHandler := &apiservice.SignupPatientHandler{dataApi, authApi}
 	patientVisitHandler := apiservice.NewPatientVisitHandler(dataApi, authApi, cloudStorageApi)
 	answerIntakeHandler := apiservice.NewAnswerIntakeHandler(dataApi)
+	photoAnswerIntakeHandler := apiservice.NewPhotoAnswerIntakeHandler(dataApi, photoAnswerCloudStorageApi, *flagS3CaseBucket)
 	pingHandler := apiservice.PingHandler(0)
 	photoHandler := &apiservice.PhotoUploadHandler{&api.PhotoService{*flagAWSAccessKey, *flagAWSSecretKey}, *flagS3CaseBucket, dataApi}
 	getSignedUrlsHandler := &apiservice.GetSignedUrlsHandler{&api.PhotoService{*flagAWSAccessKey, *flagAWSSecretKey}, *flagS3CaseBucket}
@@ -119,8 +120,9 @@ func main() {
 	mux := &apiservice.AuthServeMux{*http.NewServeMux(), authApi}
 
 	mux.Handle("/v1/patient", signupPatientHandler)
-	mux.Handle("/v1/case", patientVisitHandler)
+	mux.Handle("/v1/visit", patientVisitHandler)
 	mux.Handle("/v1/answer", answerIntakeHandler)
+	mux.Handle("/v1/answer/photo", photoAnswerIntakeHandler)
 	mux.Handle("/v1/client_model", generateModelIntakeHandler)
 
 	mux.Handle("/v1/signup", authHandler)
