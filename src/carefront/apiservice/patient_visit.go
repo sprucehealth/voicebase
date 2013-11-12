@@ -4,7 +4,6 @@ import (
 	"carefront/api"
 	"carefront/info_intake"
 	"encoding/json"
-	"fmt"
 	"net/http"
 )
 
@@ -52,8 +51,6 @@ func (s *PatientVisitHandler) returnNewOrOpenPatientVisit(w http.ResponseWriter,
 	}
 
 	healthCondition, layoutVersionId, err := s.getCurrentActiveClientLayoutForHealthCondition(HEALTH_CONDITION_ACNE_ID, api.EN_LANGUAGE_ID)
-	rawBytes, _ := json.MarshalIndent(healthCondition, "", " ")
-	fmt.Println(string(rawBytes))
 
 	// check if there is an open patient visit for the given health condition and return
 	// that to the patient
@@ -71,16 +68,18 @@ func (s *PatientVisitHandler) returnNewOrOpenPatientVisit(w http.ResponseWriter,
 		}
 	}
 
+	// get answers that the patient has previously entered for any section that is considered global
+	// and feed the answers into the layout
 	globalSectionPatientAnswers, err := s.DataApi.GetPatientAnswersFromGlobalSections(patientId)
-	fmt.Println(globalSectionPatientAnswers)
 	if err != nil {
 		w.WriteHeader(http.StatusInternalServerError)
 		return
 	}
 	PopulateHealthConditionWithPatientAnswers(healthCondition, globalSectionPatientAnswers)
 
+	// get answers that the patient has previously entered for this particular patient visit
+	// and feed the answers into the layout
 	visitPatientAnswers, err := s.DataApi.GetPatientAnswersForVisit(patientId, patientVisitId)
-	fmt.Println(visitPatientAnswers)
 	if err != nil {
 		w.WriteHeader(http.StatusInternalServerError)
 		return
@@ -102,7 +101,6 @@ func PopulateHealthConditionWithPatientAnswers(healthCondition *info_intake.Heal
 							PotentialAnswerId: patientAnswerToQuestion.PotentialAnswerId,
 							AnswerText:        patientAnswerToQuestion.AnswerText})
 					}
-					fmt.Println(question.PatientAnswers)
 				}
 			}
 		}
