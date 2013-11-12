@@ -28,7 +28,6 @@ type AnswerIntakeRequestBody struct {
 	PatientVisitId int64           `json:"patient_visit_id"`
 	QuestionId     int64           `json:"question_id"`
 	SectionId      int64           `json:"section_id"`
-	ToUpdate       bool            `json:"to_update"`
 	AnswerIntakes  []*AnswerIntake `json:"potential_answers"`
 }
 
@@ -109,7 +108,7 @@ func (a *AnswerIntakeHandler) ServeHTTP(w http.ResponseWriter, r *http.Request) 
 		potentialInfoIntakeIds, err = a.DataApi.StoreFreeTextAnswersForQuestion(patientId,
 			answerIntakeRequestBody.QuestionId, answerIntakeRequestBody.SectionId,
 			answerIntakeRequestBody.PatientVisitId, layoutVersionId, potentialAnswerIds,
-			answerTexts, answerIntakeRequestBody.ToUpdate)
+			answerTexts)
 		if err != nil {
 			w.WriteHeader(http.StatusInternalServerError)
 			return
@@ -117,8 +116,7 @@ func (a *AnswerIntakeHandler) ServeHTTP(w http.ResponseWriter, r *http.Request) 
 	} else {
 		potentialInfoIntakeIds, err = a.DataApi.StoreChoiceAnswersForQuestion(patientId,
 			answerIntakeRequestBody.QuestionId, answerIntakeRequestBody.SectionId,
-			answerIntakeRequestBody.PatientVisitId, layoutVersionId, potentialAnswerIds,
-			answerIntakeRequestBody.ToUpdate)
+			answerIntakeRequestBody.PatientVisitId, layoutVersionId, potentialAnswerIds)
 		if err != nil {
 			w.WriteHeader(http.StatusInternalServerError)
 			return

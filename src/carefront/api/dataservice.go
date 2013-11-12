@@ -180,15 +180,13 @@ func (d *DataService) inactivatePreviousAnswersToQuestion(patientId, questionId,
 	return err
 }
 
-func (d *DataService) StoreFreeTextAnswersForQuestion(patientId, questionId, sectionId, patientVisitId, layoutVersionId int64, answerIds []int64, answerTexts []string, toUpdate bool) (patientInfoIntakeIds []int64, err error) {
+func (d *DataService) StoreFreeTextAnswersForQuestion(patientId, questionId, sectionId, patientVisitId, layoutVersionId int64, answerIds []int64, answerTexts []string) (patientInfoIntakeIds []int64, err error) {
 	tx, err := d.DB.Begin()
 
-	if toUpdate {
-		err = d.inactivatePreviousAnswersToQuestion(patientId, questionId, sectionId, patientVisitId, layoutVersionId, tx)
-		if err != nil {
-			tx.Rollback()
-			return nil, err
-		}
+	err = d.inactivatePreviousAnswersToQuestion(patientId, questionId, sectionId, patientVisitId, layoutVersionId, tx)
+	if err != nil {
+		tx.Rollback()
+		return nil, err
 	}
 
 	patientInfoIntakeIds = make([]int64, len(answerIds))
@@ -212,15 +210,13 @@ func (d *DataService) StoreFreeTextAnswersForQuestion(patientId, questionId, sec
 	return patientInfoIntakeIds, nil
 }
 
-func (d *DataService) StoreChoiceAnswersForQuestion(patientId, questionId, sectionId, patientVisitId, layoutVersionId int64, answerIds []int64, toUpdate bool) (patientInfoIntakeIds []int64, err error) {
+func (d *DataService) StoreChoiceAnswersForQuestion(patientId, questionId, sectionId, patientVisitId, layoutVersionId int64, answerIds []int64) (patientInfoIntakeIds []int64, err error) {
 	tx, err := d.DB.Begin()
 
-	if toUpdate {
-		err = d.inactivatePreviousAnswersToQuestion(patientId, questionId, sectionId, patientVisitId, layoutVersionId, tx)
-		if err != nil {
-			tx.Rollback()
-			return nil, err
-		}
+	err = d.inactivatePreviousAnswersToQuestion(patientId, questionId, sectionId, patientVisitId, layoutVersionId, tx)
+	if err != nil {
+		tx.Rollback()
+		return nil, err
 	}
 
 	patientInfoIntakeIds = make([]int64, len(answerIds))
