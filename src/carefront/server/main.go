@@ -118,10 +118,10 @@ func main() {
 
 	mux := &apiservice.AuthServeMux{*http.NewServeMux(), authApi}
 
-	mux.Handle("/v1/patient/", signupPatientHandler)
-	mux.Handle("/v1/case/", patientVisitHandler)
-	mux.Handle("/v1/answer/", answerIntakeHandler)
-	mux.Handle("/v1/client_model/", generateModelIntakeHandler)
+	mux.Handle("/v1/patient", signupPatientHandler)
+	mux.Handle("/v1/case", patientVisitHandler)
+	mux.Handle("/v1/answer", answerIntakeHandler)
+	mux.Handle("/v1/client_model", generateModelIntakeHandler)
 
 	mux.Handle("/v1/signup", authHandler)
 	mux.Handle("/v1/authenticate", authHandler)
