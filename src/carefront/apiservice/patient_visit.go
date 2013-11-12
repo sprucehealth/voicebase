@@ -4,7 +4,12 @@ import (
 	"carefront/api"
 	"carefront/info_intake"
 	"encoding/json"
+	"fmt"
 	"net/http"
+)
+
+const (
+	HEALTH_CONDITION_ACNE_ID = 1
 )
 
 type PatientVisitHandler struct {
@@ -46,27 +51,62 @@ func (s *PatientVisitHandler) returnNewOrOpenPatientVisit(w http.ResponseWriter,
 		return
 	}
 
-	healthCondition, layoutVersionId, err := s.getCurrentActiveClientLayoutForHealthCondition(1, api.EN_LANGUAGE_ID)
+	healthCondition, layoutVersionId, err := s.getCurrentActiveClientLayoutForHealthCondition(HEALTH_CONDITION_ACNE_ID, api.EN_LANGUAGE_ID)
+	rawBytes, _ := json.MarshalIndent(healthCondition, "", " ")
+	fmt.Println(string(rawBytes))
 
 	// check if there is an open patient visit for the given health condition and return
 	// that to the patient
-	patientVisitId, _ := s.DataApi.GetActivePatientVisitForHealthCondition(patientId, 1)
-	if patientVisitId != -1 {
-		if err != nil {
-			w.WriteHeader(http.StatusInternalServerError)
-			return
-		}
-		WriteJSONToHTTPResponseWriter(w, PatientVisitResponse{patientVisitId, healthCondition})
-		return
-	}
-
-	patientVisitId, err = s.DataApi.CreateNewPatientVisit(patientId, 1, layoutVersionId)
+	patientVisitId, err := s.DataApi.GetActivePatientVisitForHealthCondition(patientId, HEALTH_CONDITION_ACNE_ID)
 	if err != nil {
 		w.WriteHeader(http.StatusInternalServerError)
 		return
 	}
 
+	if patientVisitId == -1 {
+		patientVisitId, err = s.DataApi.CreateNewPatientVisit(patientId, HEALTH_CONDITION_ACNE_ID, layoutVersionId)
+		if err != nil {
+			w.WriteHeader(http.StatusInternalServerError)
+			return
+		}
+	}
+
+	globalSectionPatientAnswers, err := s.DataApi.GetPatientAnswersFromGlobalSections(patientId)
+	fmt.Println(globalSectionPatientAnswers)
+	if err != nil {
+		w.WriteHeader(http.StatusInternalServerError)
+		return
+	}
+	PopulateHealthConditionWithPatientAnswers(healthCondition, globalSectionPatientAnswers)
+
+	visitPatientAnswers, err := s.DataApi.GetPatientAnswersForVisit(patientId, patientVisitId)
+	fmt.Println(visitPatientAnswers)
+	if err != nil {
+		w.WriteHeader(http.StatusInternalServerError)
+		return
+	}
+	PopulateHealthConditionWithPatientAnswers(healthCondition, visitPatientAnswers)
 	WriteJSONToHTTPResponseWriter(w, PatientVisitResponse{patientVisitId, healthCondition})
+}
+
+func PopulateHealthConditionWithPatientAnswers(healthCondition *info_intake.HealthCondition, patientAnswers map[int64][]api.PatientAnswerToQuestion) {
+	for _, section := range healthCondition.Sections {
+		for _, screen := range section.Screens {
+			for _, question := range screen.Questions {
+				// go through each question to see if there exists a patient answer for it
+				if patientAnswers[question.QuestionId] != nil {
+					question.PatientAnswers = make([]*info_intake.PatientAnswer, 0, len(patientAnswers[question.QuestionId]))
+					for _, patientAnswerToQuestion := range patientAnswers[question.QuestionId] {
+						question.PatientAnswers = append(question.PatientAnswers, &info_intake.PatientAnswer{
+							PatientAnswerId:   patientAnswerToQuestion.PatientInfoIntakeId,
+							PotentialAnswerId: patientAnswerToQuestion.PotentialAnswerId,
+							AnswerText:        patientAnswerToQuestion.AnswerText})
+					}
+					fmt.Println(question.PatientAnswers)
+				}
+			}
+		}
+	}
 }
 
 func (s *PatientVisitHandler) getCurrentActiveClientLayoutForHealthCondition(healthConditionId, languageId int64) (healthCondition *info_intake.HealthCondition, layoutVersionId int64, err error) {

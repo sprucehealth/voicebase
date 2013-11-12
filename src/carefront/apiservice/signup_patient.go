@@ -27,7 +27,7 @@ func (s *SignupPatientHandler) NonAuthenticated() bool {
 }
 
 func (s *SignupPatientHandler) ServeHTTP(w http.ResponseWriter, r *http.Request) {
-	login := r.FormValue("login")
+	email := r.FormValue("email")
 	password := r.FormValue("password")
 	firstName := r.FormValue("first_name")
 	lastName := r.FormValue("last_name")
@@ -35,7 +35,7 @@ func (s *SignupPatientHandler) ServeHTTP(w http.ResponseWriter, r *http.Request)
 	gender := r.FormValue("gender")
 	zipCode := r.FormValue("zip_code")
 
-	if login == "" || password == "" || firstName == "" || lastName == "" || dob == "" || gender == "" || zipCode == "" {
+	if email == "" || password == "" || firstName == "" || lastName == "" || dob == "" || gender == "" || zipCode == "" {
 		w.WriteHeader(http.StatusBadRequest)
 		return
 	}
@@ -63,7 +63,7 @@ func (s *SignupPatientHandler) ServeHTTP(w http.ResponseWriter, r *http.Request)
 	}
 
 	// first, create an account for the user
-	token, accountId, err := s.AuthApi.Signup(login, password)
+	token, accountId, err := s.AuthApi.Signup(email, password)
 	if err == api.ErrSignupFailedUserExists {
 		w.WriteHeader(http.StatusBadRequest)
 		WriteJSONToHTTPResponseWriter(w, PatientSignupErrorResponse{err.Error()})

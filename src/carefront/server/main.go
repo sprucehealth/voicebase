@@ -123,6 +123,7 @@ func main() {
 	mux.Handle("/v1/answer/", answerIntakeHandler)
 	mux.Handle("/v1/client_model/", generateModelIntakeHandler)
 
+	mux.Handle("/v1/signup", authHandler)
 	mux.Handle("/v1/authenticate", authHandler)
 	mux.Handle("/v1/logout", authHandler)
 	mux.Handle("/v1/ping", pingHandler)

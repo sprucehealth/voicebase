@@ -38,6 +38,59 @@ func (d *DataService) GetPatientIdFromAccountId(accountId int64) (int64, error) 
 	return patientId, nil
 }
 
+func (d *DataService) GetPatientAnswersFromGlobalSections(patientId int64) (patientAnswers map[int64][]PatientAnswerToQuestion, err error) {
+	rows, err := d.DB.Query(`select id, question_id, potential_answer_id, answer_text, 
+								layout_version_id from patient_info_intake where section_id 
+								in (select id from section where health_condition_id is null) and patient_id = ? and status='ACTIVE'`, patientId)
+	if err != nil {
+		return nil, err
+	}
+	defer rows.Close()
+
+	patientAnswers = make(map[int64][]PatientAnswerToQuestion)
+	for rows.Next() {
+		var answerId, questionId, potentialAnswerId, layoutVersionId int64
+		var answerText string
+		rows.Scan(&answerId, &questionId, &potentialAnswerId, &answerText, &layoutVersionId)
+		if patientAnswers[questionId] == nil {
+			patientAnswers[questionId] = make([]PatientAnswerToQuestion, 0, 5)
+		}
+		patientAnswers[questionId] = append(patientAnswers[questionId], PatientAnswerToQuestion{PatientInfoIntakeId: answerId,
+			QuestionId:        questionId,
+			PotentialAnswerId: potentialAnswerId,
+			LayoutVersionId:   layoutVersionId,
+			AnswerText:        answerText})
+	}
+	return patientAnswers, nil
+}
+
+func (d *DataService) GetPatientAnswersForVisit(patientId, patientVisitId int64) (patientAnswers map[int64][]PatientAnswerToQuestion, err error) {
+	rows, err := d.DB.Query(`select id, question_id, potential_answer_id, answer_text, 
+								layout_version_id from patient_info_intake where section_id 
+								in (select id from section where health_condition_id is not null) 
+								and patient_id = ? and patient_visit_id = ? and status='ACTIVE'`, patientId, patientVisitId)
+	if err != nil {
+		return nil, err
+	}
+	defer rows.Close()
+
+	patientAnswers = make(map[int64][]PatientAnswerToQuestion)
+	for rows.Next() {
+		var answerId, questionId, potentialAnswerId, layoutVersionId int64
+		var answerText string
+		rows.Scan(&answerId, &questionId, &potentialAnswerId, &answerText, &layoutVersionId)
+		if patientAnswers[questionId] == nil {
+			patientAnswers[questionId] = make([]PatientAnswerToQuestion, 0, 5)
+		}
+		patientAnswers[questionId] = append(patientAnswers[questionId], PatientAnswerToQuestion{PatientInfoIntakeId: answerId,
+			QuestionId:        questionId,
+			PotentialAnswerId: potentialAnswerId,
+			LayoutVersionId:   layoutVersionId,
+			AnswerText:        answerText})
+	}
+	return patientAnswers, nil
+}
+
 func (d *DataService) GetActivePatientVisitForHealthCondition(patientId, healthConditionId int64) (int64, error) {
 	rows, err := d.DB.Query("select id from patient_visit where patient_id = ? and health_condition_id = ? and status='OPEN'", patientId, healthConditionId)
 	if err != nil {

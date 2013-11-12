@@ -37,25 +37,32 @@ const (
 	PHOTO_STATUS_APPROVED         = "APPROVED"
 )
 
+type PatientAnswerToQuestion struct {
+	PatientInfoIntakeId int64
+	QuestionId          int64
+	PotentialAnswerId   int64
+	LayoutVersionId     int64
+	AnswerText          string
+}
+
 type DataAPI interface {
 	RegisterPatient(accountId int64, firstName, lastName, gender, zipCode string, dob time.Time) (int64, error)
-	GetPatientIdFromAccountId(accountId int64) (int64, error)
 	CreateNewPatientVisit(patientId, healthConditionId, layoutVersionId int64) (int64, error)
-	GetActivePatientVisitForHealthCondition(patientId, healthConditionId int64) (int64, error)
-	GetStorageInfoOfCurrentActiveClientLayout(languageId, healthConditionId int64) (bucket, key, region string, layoutVersionId int64, err error)
-	GetLayoutVersionIdForPatientVisit(patientVisitId int64) (layoutVersionId int64, err error)
-	GetQuestionType(questionId int64) (questionType string, err error)
-
 	StoreFreeTextAnswersForQuestion(patientId, questionId, sectionId, patientVisitId, layoutVersionId int64, answerIds []int64, answerTexts []string, toUpdate bool) (patientInfoIntakeIds []int64, err error)
 	StoreChoiceAnswersForQuestion(patientId, questionId, sectionId, patientVisitId, layoutVersionId int64, answerIds []int64, toUpdate bool) (patientInfoIntakeIds []int64, err error)
+
+	GetActivePatientVisitForHealthCondition(patientId, healthConditionId int64) (int64, error)
+	GetStorageInfoOfCurrentActiveClientLayout(languageId, healthConditionId int64) (bucket, key, region string, layoutVersionId int64, err error)
+	GetPatientIdFromAccountId(accountId int64) (int64, error)
+	GetLayoutVersionIdForPatientVisit(patientVisitId int64) (layoutVersionId int64, err error)
+	GetQuestionType(questionId int64) (questionType string, err error)
+	GetPatientAnswersFromGlobalSections(patientId int64) (patientAnswers map[int64][]PatientAnswerToQuestion, err error)
+	GetPatientAnswersForVisit(patientId, patientVisitId int64) (patientAnswers map[int64][]PatientAnswerToQuestion, err error)
 
 	CreatePhotoForCase(caseId int64, photoType string) (int64, error)
 	MarkPhotoUploadComplete(caseId, photoId int64) error
 	GetPhotosForCase(caseId int64) ([]string, error)
 
-	/*
-	* Patient Information Intake APIs
-	 */
 	GetHealthConditionInfo(healthConditionTag string) (int64, error)
 	GetSectionInfo(sectionTag string, languageId int64) (id int64, title string, err error)
 	GetQuestionInfo(questionTag string, languageId int64) (id int64, questionTitle string, questionType string, err error)
