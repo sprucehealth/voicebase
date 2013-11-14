@@ -20,13 +20,8 @@ func NewCloudStorageService(accessKey, secretKey string) *CloudStorageService {
 
 func (c *CloudStorageService) GetObjectAtLocation(bucket, key, region string) (rawData []byte, err error) {
 	auth := aws.Auth{c.awsAccessKey, c.awsSecretKey}
-	var awsRegion aws.Region
-	switch region {
-	case "us-east-1":
-		awsRegion = aws.USEast
-	case "us-west-1":
-		awsRegion = aws.USWest
-	default:
+	awsRegion, ok := aws.Regions[region]
+	if !ok {
 		awsRegion = aws.USEast
 	}
 
@@ -47,13 +42,8 @@ func (c *CloudStorageService) PutObjectToLocation(bucket, key, region, contentTy
 	}
 
 	auth := aws.Auth{c.awsAccessKey, c.awsSecretKey}
-	var awsRegion aws.Region
-	switch region {
-	case "us-east-1":
-		awsRegion = aws.USEast
-	case "us-west-1":
-		awsRegion = aws.USWest
-	default:
+	awsRegion, ok := aws.Regions[region]
+	if !ok {
 		awsRegion = aws.USEast
 	}
 
