@@ -19,10 +19,6 @@ type PhotoAnswerIntakeHandler struct {
 	accountId           int64
 }
 
-type PhotoAnswerIntakeErrorResponse struct {
-	ErrorString string `json:"error"`
-}
-
 type PhotoAnswerIntakeResponse struct {
 	AnswerId int64 `json:answer_id`
 }
@@ -45,8 +41,7 @@ func (p *PhotoAnswerIntakeHandler) AccountIdFromAuthToken(accountId int64) {
 func (p *PhotoAnswerIntakeHandler) ServeHTTP(w http.ResponseWriter, r *http.Request) {
 	err := r.ParseMultipartForm(p.MaxInMemoryForPhoto)
 	if err != nil {
-		w.WriteHeader(http.StatusBadRequest)
-		WriteJSONToHTTPResponseWriter(w, PhotoAnswerIntakeErrorResponse{"Unable to parse out the form values for the request"})
+		WriteDeveloperError(w, http.StatusBadRequest, "Unable to parse out the form values for the request")
 		return
 	}
 
@@ -54,48 +49,42 @@ func (p *PhotoAnswerIntakeHandler) ServeHTTP(w http.ResponseWriter, r *http.Requ
 	decoder := schema.NewDecoder()
 	err = decoder.Decode(requestData, r.Form)
 	if err != nil {
-		w.WriteHeader(http.StatusBadRequest)
-		WriteJSONToHTTPResponseWriter(w, PhotoAnswerIntakeErrorResponse{err.Error()})
+		WriteDeveloperError(w, http.StatusBadRequest, err.Error())
 		return
 	}
 
 	patientId, err := p.DataApi.GetPatientIdFromAccountId(p.accountId)
 	if err != nil {
-		w.WriteHeader(http.StatusInternalServerError)
+		WriteDeveloperError(w, http.StatusInternalServerError, "Unable to get patientId from the accountId retrieved from auth token: "+err.Error())
 		return
 	}
 
 	layoutVersionId, err := p.DataApi.GetLayoutVersionIdForPatientVisit(requestData.PatientVisitId)
 	if err != nil {
-		w.WriteHeader(http.StatusInternalServerError)
-		WriteJSONToHTTPResponseWriter(w, PhotoAnswerIntakeErrorResponse{"Error getting latest layout version id"})
+		WriteDeveloperError(w, http.StatusInternalServerError, "Error getting latest layout version id: "+err.Error())
 		return
 	}
 
 	questionType, err := p.DataApi.GetQuestionType(requestData.QuestionId)
 	if err != nil {
-		w.WriteHeader(http.StatusInternalServerError)
-		WriteJSONToHTTPResponseWriter(w, PhotoAnswerIntakeErrorResponse{"Error getting question type"})
+		WriteDeveloperError(w, http.StatusInternalServerError, "Error getting question type: "+err.Error())
 		return
 	}
 
 	if questionType != "q_type_photo" {
-		w.WriteHeader(http.StatusBadRequest)
-		WriteJSONToHTTPResponseWriter(w, PhotoAnswerIntakeErrorResponse{"This api is only for uploading pictures"})
+		WriteDeveloperError(w, http.StatusBadRequest, "This api is only for uploading pictures")
 		return
 	}
 
 	file, handler, err := r.FormFile("photo")
 	if err != nil {
-		w.WriteHeader(http.StatusBadRequest)
-		WriteJSONToHTTPResponseWriter(w, PhotoAnswerIntakeErrorResponse{err.Error()})
+		WriteDeveloperError(w, http.StatusBadRequest, "Missing or invalid photo in parameters: "+err.Error())
 		return
 	}
 
 	data, err := ioutil.ReadAll(file)
 	if err != nil {
-		w.WriteHeader(http.StatusBadRequest)
-		WriteJSONToHTTPResponseWriter(w, PhotoAnswerIntakeErrorResponse{err.Error()})
+		WriteDeveloperError(w, http.StatusBadRequest, "Error reading data from photo: "+err.Error())
 		return
 	}
 
@@ -115,16 +104,14 @@ func (p *PhotoAnswerIntakeHandler) ServeHTTP(w http.ResponseWriter, r *http.Requ
 	objectStorageId, _, err := p.CloudStorageApi.PutObjectToLocation(p.PatientVisitBucket, buffer.String(), api.US_WEST_1,
 		handler.Header.Get("Content-Type"), data, time.Now().Add(10*time.Minute), p.DataApi)
 	if err != nil {
-		w.WriteHeader(http.StatusInternalServerError)
-		WriteJSONToHTTPResponseWriter(w, PhotoAnswerIntakeErrorResponse{err.Error()})
+		WriteDeveloperError(w, http.StatusInternalServerError, "Error uploading image to patient-visit bucket in s3: "+err.Error())
 		return
 	}
 
 	// once the upload is complete, go ahead and mark the record as active with the object storage id linked
 	err = p.DataApi.UpdatePhotoAnswerRecordWithObjectStorageId(patientAnswerInfoIntakeId, objectStorageId)
 	if err != nil {
-		w.WriteHeader(http.StatusInternalServerError)
-		WriteJSONToHTTPResponseWriter(w, PhotoAnswerIntakeErrorResponse{err.Error()})
+		WriteDeveloperError(w, http.StatusInternalServerError, "Unable to update photo answer record with object storage id after uploading picture: "+err.Error())
 		return
 	}
 
