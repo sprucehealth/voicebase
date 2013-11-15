@@ -71,7 +71,6 @@ func (d *Decoder) checkRequiredFieldsAtTopLevel(t reflect.Type, src map[string][
 		alias := FieldAlias(field)
 		fi := d.cache.m[t].fields[alias]
 		if fi.isRequired {
-			fmt.Println(field.Name, " is required")
 			fieldInStructSet := false
 			for key, _ := range src {
 				// break up the key to get the first part before the dot
@@ -83,7 +82,6 @@ func (d *Decoder) checkRequiredFieldsAtTopLevel(t reflect.Type, src map[string][
 				}
 			}
 			if fieldInStructSet == false {
-				fmt.Println(alias, " not found when it was required")
 				if err == nil {
 					err = make([]string, 0)
 				}
