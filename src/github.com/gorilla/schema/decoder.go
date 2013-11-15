@@ -69,13 +69,12 @@ func (d *Decoder) checkRequiredFieldsAtTopLevel(t reflect.Type, src map[string][
 		// get the field info for this particular type of field within the struct based
 		// on its name or alias
 		alias := FieldAlias(field)
-		fi := d.cache.m[t].fields[alias]
+		fi := d.cache.get(t).fields[alias]
 		if fi.isRequired {
 			fieldInStructSet := false
 			for key, _ := range src {
 				// break up the key to get the first part before the dot
 				topLevelField := strings.Split(key, ".")[0]
-				fmt.Println(topLevelField)
 				if src[topLevelField] != nil && topLevelField == alias {
 					fieldInStructSet = true
 					break

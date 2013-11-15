@@ -26,7 +26,7 @@ type PhotoAnswerIntakeResponse struct {
 	AnswerId int64 `json:answer_id`
 }
 
-type PhotoAnswerIntakeRequest struct {
+type PhotoAnswerIntakeRequestData struct {
 	SectionId         int64 `schema:"section_id,required"`
 	QuestionId        int64 `schema:"question_id,required"`
 	PotentialAnswerId int64 `schema:"potential_answer_id,required"`
@@ -49,9 +49,9 @@ func (p *PhotoAnswerIntakeHandler) ServeHTTP(w http.ResponseWriter, r *http.Requ
 		return
 	}
 
-	photoAnswerIntakeRequest := new(PhotoAnswerIntakeRequest)
+	requestData := new(PhotoAnswerIntakeRequestData)
 	decoder := schema.NewDecoder()
-	err = decoder.Decode(photoAnswerIntakeRequest, r.Form)
+	err = decoder.Decode(requestData, r.Form)
 	if err != nil {
 		w.WriteHeader(http.StatusBadRequest)
 		WriteJSONToHTTPResponseWriter(w, PhotoAnswerIntakeErrorResponse{err.Error()})
@@ -64,14 +64,14 @@ func (p *PhotoAnswerIntakeHandler) ServeHTTP(w http.ResponseWriter, r *http.Requ
 		return
 	}
 
-	layoutVersionId, err := p.DataApi.GetLayoutVersionIdForPatientVisit(photoAnswerIntakeRequest.PatientVisitId)
+	layoutVersionId, err := p.DataApi.GetLayoutVersionIdForPatientVisit(requestData.PatientVisitId)
 	if err != nil {
 		w.WriteHeader(http.StatusInternalServerError)
 		WriteJSONToHTTPResponseWriter(w, PhotoAnswerIntakeErrorResponse{"Error getting latest layout version id"})
 		return
 	}
 
-	questionType, err := p.DataApi.GetQuestionType(photoAnswerIntakeRequest.QuestionId)
+	questionType, err := p.DataApi.GetQuestionType(requestData.QuestionId)
 	if err != nil {
 		w.WriteHeader(http.StatusInternalServerError)
 		WriteJSONToHTTPResponseWriter(w, PhotoAnswerIntakeErrorResponse{"Error getting question type"})
@@ -99,9 +99,9 @@ func (p *PhotoAnswerIntakeHandler) ServeHTTP(w http.ResponseWriter, r *http.Requ
 	}
 
 	// create the record for answer input and mark it as pending upload
-	patientAnswerInfoIntakeId, err := p.DataApi.CreatePhotoAnswerForQuestionRecord(patientId, photoAnswerIntakeRequest.QuestionId, photoAnswerIntakeRequest.SectionId, photoAnswerIntakeRequest.PatientVisitId, photoAnswerIntakeRequest.PotentialAnswerId, layoutVersionId)
+	patientAnswerInfoIntakeId, err := p.DataApi.CreatePhotoAnswerForQuestionRecord(patientId, requestData.QuestionId, requestData.SectionId, requestData.PatientVisitId, requestData.PotentialAnswerId, layoutVersionId)
 	var buffer bytes.Buffer
-	buffer.WriteString(strconv.Itoa(int(photoAnswerIntakeRequest.PatientVisitId)))
+	buffer.WriteString(strconv.Itoa(int(requestData.PatientVisitId)))
 	buffer.WriteString("/")
 	buffer.WriteString(strconv.FormatInt(patientAnswerInfoIntakeId, 10))
 
