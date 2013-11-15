@@ -46,7 +46,7 @@ func (s *PatientVisitHandler) returnNewOrOpenPatientVisit(w http.ResponseWriter,
 
 	patientId, err := s.DataApi.GetPatientIdFromAccountId(s.accountId)
 	if err != nil {
-		w.WriteHeader(http.StatusInternalServerError)
+		WriteDeveloperError(w, http.StatusInternalServerError, "Unable to get patientId from the accountId retreived from the auth token: "+err.Error())
 		return
 	}
 
@@ -56,14 +56,14 @@ func (s *PatientVisitHandler) returnNewOrOpenPatientVisit(w http.ResponseWriter,
 	// that to the patient
 	patientVisitId, err := s.DataApi.GetActivePatientVisitForHealthCondition(patientId, HEALTH_CONDITION_ACNE_ID)
 	if err != nil {
-		w.WriteHeader(http.StatusInternalServerError)
+		WriteDeveloperError(w, http.StatusInternalServerError, "unable to retrieve the current active patient visit for the health condition from the patient id: "+err.Error())
 		return
 	}
 
 	if patientVisitId == -1 {
 		patientVisitId, err = s.DataApi.CreateNewPatientVisit(patientId, HEALTH_CONDITION_ACNE_ID, layoutVersionId)
 		if err != nil {
-			w.WriteHeader(http.StatusInternalServerError)
+			WriteDeveloperError(w, http.StatusInternalServerError, "Unable to create new patient visit id: "+err.Error())
 			return
 		}
 	}
@@ -72,7 +72,7 @@ func (s *PatientVisitHandler) returnNewOrOpenPatientVisit(w http.ResponseWriter,
 	// and feed the answers into the layout
 	globalSectionPatientAnswers, err := s.DataApi.GetPatientAnswersFromGlobalSections(patientId)
 	if err != nil {
-		w.WriteHeader(http.StatusInternalServerError)
+		WriteDeveloperError(w, http.StatusInternalServerError, "Unable to get patient answers for global sections: "+err.Error())
 		return
 	}
 	PopulateHealthConditionWithPatientAnswers(healthCondition, globalSectionPatientAnswers)
@@ -81,7 +81,7 @@ func (s *PatientVisitHandler) returnNewOrOpenPatientVisit(w http.ResponseWriter,
 	// and feed the answers into the layout
 	visitPatientAnswers, err := s.DataApi.GetPatientAnswersForVisit(patientId, patientVisitId)
 	if err != nil {
-		w.WriteHeader(http.StatusInternalServerError)
+		WriteDeveloperError(w, http.StatusInternalServerError, "Unable to get patient answers for all sections belonging to the patient visit: "+err.Error())
 		return
 	}
 	PopulateHealthConditionWithPatientAnswers(healthCondition, visitPatientAnswers)
