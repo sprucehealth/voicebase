@@ -9,6 +9,10 @@ import (
 
 var ErrBadAuthToken = errors.New("BadAuthToken")
 
+const (
+	GENERIC_USER_ERROR = "Something went wrong on our end. Apologies for the inconvenience and please try again later!"
+)
+
 func GetAuthTokenFromHeader(r *http.Request) (string, error) {
 	auth := r.Header.Get("Authorization")
 	if auth == "" {
@@ -37,6 +41,7 @@ func WriteDeveloperError(w http.ResponseWriter, httpStatusCode int, errorString 
 	w.WriteHeader(httpStatusCode)
 	developerError := new(ErrorResponse)
 	developerError.DeveloperError = errorString
+	developerError.UserError = GENERIC_USER_ERROR
 	enc := json.NewEncoder(w)
 	return enc.Encode(developerError)
 }
