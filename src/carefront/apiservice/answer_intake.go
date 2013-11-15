@@ -3,6 +3,7 @@ package apiservice
 import (
 	"carefront/api"
 	"encoding/json"
+	"errors"
 	"net/http"
 )
 
@@ -45,32 +46,31 @@ func (a *AnswerIntakeHandler) ServeHTTP(w http.ResponseWriter, r *http.Request) 
 
 	err := jsonDecoder.Decode(answerIntakeRequestBody)
 	if err != nil {
-		w.WriteHeader(http.StatusBadRequest)
+		WriteDeveloperError(w, http.StatusBadRequest, err.Error())
 		return
 	}
 
-	if answerIntakeRequestBody.PatientVisitId == 0 || answerIntakeRequestBody.QuestionId == 0 ||
-		answerIntakeRequestBody.SectionId == 0 || answerIntakeRequestBody.AnswerIntakes == nil {
-		w.WriteHeader(http.StatusBadRequest)
+	err = validateRequestBody(answerIntakeRequestBody, w)
+	if err != nil {
 		return
 	}
 
 	// get layout version id
 	layoutVersionId, err := a.DataApi.GetLayoutVersionIdForPatientVisit(answerIntakeRequestBody.PatientVisitId)
 	if err != nil {
-		w.WriteHeader(http.StatusInternalServerError)
+		WriteDeveloperError(w, http.StatusInternalServerError, "Unable to get the layout version to use for the client layout based on the patient_visit_id")
 		return
 	}
 
 	patientId, err := a.DataApi.GetPatientIdFromAccountId(a.accountId)
 	if err != nil {
-		w.WriteHeader(http.StatusInternalServerError)
+		WriteDeveloperError(w, http.StatusInternalServerError, "Unable to get patientId from the auth token provided")
 		return
 	}
 
 	questionType, err := a.DataApi.GetQuestionType(answerIntakeRequestBody.QuestionId)
 	if err != nil {
-		w.WriteHeader(http.StatusInternalServerError)
+		WriteDeveloperError(w, http.StatusInternalServerError, "Unable to get the question_type from the question_id provided")
 		return
 	}
 
@@ -82,8 +82,7 @@ func (a *AnswerIntakeHandler) ServeHTTP(w http.ResponseWriter, r *http.Request) 
 	// only one response allowed for these type of questions
 	if questionType == "q_type_single_select" || questionType == "q_type_photo" || questionType == "q_type_free_text" {
 		if len(answerIntakeRequestBody.AnswerIntakes) > 1 {
-			w.WriteHeader(http.StatusBadRequest)
-			WriteJSONToHTTPResponseWriter(w, AnswerIntakeErrorResponse{"You cannot have more than 1 response for this question type"})
+			WriteDeveloperError(w, http.StatusBadRequest, "You cannot have more than 1 response for this question type")
 			return
 		}
 	}
@@ -94,7 +93,7 @@ func (a *AnswerIntakeHandler) ServeHTTP(w http.ResponseWriter, r *http.Request) 
 	for i, answerIntake := range answerIntakeRequestBody.AnswerIntakes {
 
 		if freeTextRequired && answerIntake.AnswerText == "" {
-			w.WriteHeader(http.StatusBadRequest)
+			WriteDeveloperError(w, http.StatusBadRequest, "The answer specified is a free text answer, but no answer_text has been specified")
 			return
 		}
 		potentialAnswerIds[i] = answerIntake.PotentialAnswerId
@@ -110,7 +109,7 @@ func (a *AnswerIntakeHandler) ServeHTTP(w http.ResponseWriter, r *http.Request) 
 			answerIntakeRequestBody.PatientVisitId, layoutVersionId, potentialAnswerIds,
 			answerTexts)
 		if err != nil {
-			w.WriteHeader(http.StatusInternalServerError)
+			WriteDeveloperError(w, http.StatusInternalServerError, "Unable to store the free text answer to the question based on the parameters provided and the internal state of the system")
 			return
 		}
 	} else {
@@ -118,10 +117,33 @@ func (a *AnswerIntakeHandler) ServeHTTP(w http.ResponseWriter, r *http.Request) 
 			answerIntakeRequestBody.QuestionId, answerIntakeRequestBody.SectionId,
 			answerIntakeRequestBody.PatientVisitId, layoutVersionId, potentialAnswerIds)
 		if err != nil {
-			w.WriteHeader(http.StatusInternalServerError)
+			WriteDeveloperError(w, http.StatusInternalServerError, "Unable to store the multiple choice answer to the question for the patient based on the parameters provided and the internal state of the system")
 			return
 		}
 	}
 
 	WriteJSONToHTTPResponseWriter(w, AnswerIntakeResponse{potentialInfoIntakeIds})
+}
+
+func validateRequestBody(answerIntakeRequestBody *AnswerIntakeRequestBody, w http.ResponseWriter) error {
+	if answerIntakeRequestBody.PatientVisitId == 0 {
+		WriteDeveloperError(w, http.StatusBadRequest, "patient_visit_id missing")
+		return errors.New("")
+	}
+
+	if answerIntakeRequestBody.QuestionId == 0 {
+		WriteDeveloperError(w, http.StatusBadRequest, "question_id missing")
+		return errors.New("")
+	}
+
+	if answerIntakeRequestBody.SectionId == 0 {
+		WriteDeveloperError(w, http.StatusBadRequest, "section_id missing")
+		return errors.New("")
+	}
+
+	if answerIntakeRequestBody.AnswerIntakes == nil {
+		WriteDeveloperError(w, http.StatusBadRequest, "potential_answers missing")
+		return errors.New("")
+	}
+	return nil
 }
