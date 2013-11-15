@@ -16,6 +16,10 @@ import (
 	_ "github.com/go-sql-driver/mysql"
 )
 
+const (
+	DEFAUL_MAX_IN_MEMORY_PHOTO = 2
+)
+
 var (
 	flagListenAddr            = flag.String("listen", ":8080", "Address and port to listen on")
 	flagCertLocation          = flag.String("cert_key", "", "Location of certificate for SSL")
@@ -31,6 +35,7 @@ var (
 	flagLogPath               = flag.String("log_path", "", "Path for log file. If not given then default to stderr")
 	flagLayoutBucketAccessKey = flag.String("layout_bucket_access_key", "", "AWS access key for buckets where patient, client and doctor layouts are stored")
 	flagLayoutBucketSecretKey = flag.String("layout_bucket_secret_key", "", "AWS secrety key for buckets where patient, client and doctor layouts are stored")
+	flagMaxInMemoryForPhotoMB = flag.Int64("max_in_memory_photo", DEFAUL_MAX_IN_MEMORY_PHOTO, "Default amount of data in MB to be held in memory when parsing multipart form data")
 )
 
 func parseFlags() {
@@ -111,7 +116,7 @@ func main() {
 	signupPatientHandler := &apiservice.SignupPatientHandler{dataApi, authApi}
 	patientVisitHandler := apiservice.NewPatientVisitHandler(dataApi, authApi, cloudStorageApi)
 	answerIntakeHandler := apiservice.NewAnswerIntakeHandler(dataApi)
-	photoAnswerIntakeHandler := apiservice.NewPhotoAnswerIntakeHandler(dataApi, photoAnswerCloudStorageApi, *flagS3CaseBucket)
+	photoAnswerIntakeHandler := apiservice.NewPhotoAnswerIntakeHandler(dataApi, photoAnswerCloudStorageApi, *flagS3CaseBucket, *flagMaxInMemoryForPhotoMB*1024*1024)
 	pingHandler := apiservice.PingHandler(0)
 	photoHandler := &apiservice.PhotoUploadHandler{&api.PhotoService{*flagAWSAccessKey, *flagAWSSecretKey}, *flagS3CaseBucket, dataApi}
 	getSignedUrlsHandler := &apiservice.GetSignedUrlsHandler{&api.PhotoService{*flagAWSAccessKey, *flagAWSSecretKey}, *flagS3CaseBucket}

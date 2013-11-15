@@ -12,10 +12,11 @@ import (
 )
 
 type PhotoAnswerIntakeHandler struct {
-	DataApi            api.DataAPI
-	CloudStorageApi    api.CloudStorageAPI
-	PatientVisitBucket string
-	accountId          int64
+	DataApi             api.DataAPI
+	CloudStorageApi     api.CloudStorageAPI
+	PatientVisitBucket  string
+	MaxInMemoryForPhoto int64
+	accountId           int64
 }
 
 type PhotoAnswerIntakeErrorResponse struct {
@@ -33,8 +34,8 @@ type PhotoAnswerIntakeRequestData struct {
 	PatientVisitId    int64 `schema:"patient_visit_id,required"`
 }
 
-func NewPhotoAnswerIntakeHandler(dataApi api.DataAPI, cloudStorageApi api.CloudStorageAPI, bucketLocation string) *PhotoAnswerIntakeHandler {
-	return &PhotoAnswerIntakeHandler{dataApi, cloudStorageApi, bucketLocation, 0}
+func NewPhotoAnswerIntakeHandler(dataApi api.DataAPI, cloudStorageApi api.CloudStorageAPI, bucketLocation string, maxMemoryForPhotoMB int64) *PhotoAnswerIntakeHandler {
+	return &PhotoAnswerIntakeHandler{dataApi, cloudStorageApi, bucketLocation, maxMemoryForPhotoMB, 0}
 }
 
 func (p *PhotoAnswerIntakeHandler) AccountIdFromAuthToken(accountId int64) {
@@ -42,7 +43,7 @@ func (p *PhotoAnswerIntakeHandler) AccountIdFromAuthToken(accountId int64) {
 }
 
 func (p *PhotoAnswerIntakeHandler) ServeHTTP(w http.ResponseWriter, r *http.Request) {
-	err := r.ParseMultipartForm(5 * 1024 * 1024)
+	err := r.ParseMultipartForm(p.MaxInMemoryForPhoto)
 	if err != nil {
 		w.WriteHeader(http.StatusBadRequest)
 		WriteJSONToHTTPResponseWriter(w, PhotoAnswerIntakeErrorResponse{"Unable to parse out the form values for the request"})
