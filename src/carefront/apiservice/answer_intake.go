@@ -12,10 +12,6 @@ type AnswerIntakeHandler struct {
 	accountId int64
 }
 
-type AnswerIntakeErrorResponse struct {
-	ErrorString string `json:"error"`
-}
-
 type AnswerIntakeResponse struct {
 	AnswerIds []int64 `json:answer_ids"`
 }

@@ -27,10 +27,6 @@ type ClientIntakeModelGeneratedResponse struct {
 	ClientLayoutUrls []string `json:"clientModelUrls"`
 }
 
-type ClientIntakeModelErrorResponse struct {
-	PhotoUploadErrorString string `json:"error"`
-}
-
 func (l *GenerateClientIntakeModelHandler) NonAuthenticated() bool {
 	return true
 }
@@ -40,8 +36,7 @@ func (l *GenerateClientIntakeModelHandler) ServeHTTP(w http.ResponseWriter, r *h
 	file, handler, err := r.FormFile("layout")
 	if err != nil {
 		log.Println(err)
-		w.WriteHeader(http.StatusBadRequest)
-		WriteJSONToHTTPResponseWriter(w, ClientIntakeModelErrorResponse{err.Error()})
+		WriteDeveloperError(w, http.StatusBadRequest, "No layout file or invalid layout file specified")
 		return
 	}
 
@@ -51,16 +46,14 @@ func (l *GenerateClientIntakeModelHandler) ServeHTTP(w http.ResponseWriter, r *h
 	data, err := ioutil.ReadAll(file)
 	if err != nil {
 		log.Println(err)
-		w.WriteHeader(http.StatusBadRequest)
-		WriteJSONToHTTPResponseWriter(w, ClientIntakeModelErrorResponse{err.Error()})
+		WriteDeveloperError(w, http.StatusBadRequest, "Unable to parse layout file specified")
 		return
 	}
 
 	err = json.Unmarshal(data, &healthCondition)
 	if err != nil {
 		log.Println(err)
-		w.WriteHeader(http.StatusBadRequest)
-		WriteJSONToHTTPResponseWriter(w, ClientIntakeModelErrorResponse{err.Error()})
+		WriteDeveloperError(w, http.StatusBadRequest, "Error parsing layout file: "+err.Error())
 		return
 	}
 
@@ -68,8 +61,7 @@ func (l *GenerateClientIntakeModelHandler) ServeHTTP(w http.ResponseWriter, r *h
 	healthConditionTag := healthCondition.HealthConditionTag
 	if healthConditionTag == "" {
 		log.Println(err)
-		w.WriteHeader(http.StatusBadRequest)
-		WriteJSONToHTTPResponseWriter(w, ClientIntakeModelErrorResponse{err.Error()})
+		WriteDeveloperError(w, http.StatusBadRequest, "health condition not specified or invalid in layout: "+err.Error())
 		return
 	}
 
@@ -79,8 +71,7 @@ func (l *GenerateClientIntakeModelHandler) ServeHTTP(w http.ResponseWriter, r *h
 		rawData, err := l.CloudStorageApi.GetObjectAtLocation(currentActiveBucket, currentActiveKey, currentActiveRegion)
 		if err != nil {
 			log.Println(err)
-			w.WriteHeader(http.StatusBadRequest)
-			WriteJSONToHTTPResponseWriter(w, ClientIntakeModelErrorResponse{err.Error()})
+			WriteDeveloperError(w, http.StatusInternalServerError, "Error getting current active layout from S3: "+err.Error())
 			return
 		}
 		res := bytes.Compare(data, rawData)
@@ -118,8 +109,7 @@ func (l *GenerateClientIntakeModelHandler) ServeHTTP(w http.ResponseWriter, r *h
 		jsonData, err := json.Marshal(&clientModel)
 		if err != nil {
 			log.Println(err)
-			w.WriteHeader(http.StatusBadRequest)
-			WriteJSONToHTTPResponseWriter(w, ClientIntakeModelErrorResponse{err.Error()})
+			WriteDeveloperError(w, http.StatusInternalServerError, "Error generating client digestable layout: "+err.Error())
 			return
 		}
 		// put each client layout that is generated into S3
@@ -128,8 +118,7 @@ func (l *GenerateClientIntakeModelHandler) ServeHTTP(w http.ResponseWriter, r *h
 		clientModelUrls[i] = clientModelUrl
 		if err != nil {
 			log.Println(err)
-			w.WriteHeader(http.StatusBadRequest)
-			WriteJSONToHTTPResponseWriter(w, ClientIntakeModelErrorResponse{err.Error()})
+			WriteDeveloperError(w, http.StatusInternalServerError, "Error uploading client digestable layout to S3: "+err.Error())
 			return
 		}
 
@@ -137,8 +126,7 @@ func (l *GenerateClientIntakeModelHandler) ServeHTTP(w http.ResponseWriter, r *h
 		clientModelId, err := l.DataApi.MarkNewPatientLayoutVersionAsCreating(objectId, supportedLanguageId, modelId, clientModel.HealthConditionId)
 		if err != nil {
 			log.Println(err)
-			w.WriteHeader(http.StatusBadRequest)
-			WriteJSONToHTTPResponseWriter(w, ClientIntakeModelErrorResponse{err.Error()})
+			WriteDeveloperError(w, http.StatusInternalServerError, "Error creating a record for the client layout:"+err.Error())
 			return
 		}
 		clientModelVersionIds[i] = clientModelId
@@ -146,6 +134,5 @@ func (l *GenerateClientIntakeModelHandler) ServeHTTP(w http.ResponseWriter, r *h
 
 	// update the active layouts to the new current set of layouts
 	l.DataApi.UpdateActiveLayouts(modelId, clientModelVersionIds, 1)
-
 	WriteJSONToHTTPResponseWriter(w, ClientIntakeModelGeneratedResponse{clientModelUrls})
 }

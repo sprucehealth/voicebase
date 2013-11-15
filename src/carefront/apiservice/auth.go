@@ -72,10 +72,6 @@ type AuthenticationResponse struct {
 	Token string `json:"token"`
 }
 
-type AuthenticationErrorResponse struct {
-	ErrorString string `json:"error"`
-}
-
 func (h *AuthenticationHandler) NonAuthenticated() bool {
 	return true
 }
@@ -96,42 +92,39 @@ func (h *AuthenticationHandler) ServeHTTP(w http.ResponseWriter, r *http.Request
 		decoder := schema.NewDecoder()
 		err := decoder.Decode(requestData, r.Form)
 		if err != nil {
-			w.WriteHeader(http.StatusBadRequest)
-			WriteJSONToHTTPResponseWriter(w, AuthenticationErrorResponse{err.Error()})
+			WriteDeveloperError(w, http.StatusBadRequest, err.Error())
 			return
 		}
 
 		if token, _, err := h.AuthApi.Signup(requestData.Login, requestData.Password); err == api.ErrSignupFailedUserExists {
-			w.WriteHeader(http.StatusBadRequest)
-			WriteJSONToHTTPResponseWriter(w, AuthenticationErrorResponse{err.Error()})
+			WriteDeveloperError(w, http.StatusBadRequest, err.Error())
+			return
 		} else if err != nil {
-			w.WriteHeader(http.StatusInternalServerError)
-			WriteJSONToHTTPResponseWriter(w, AuthenticationErrorResponse{err.Error()})
+			WriteDeveloperError(w, http.StatusInternalServerError, err.Error())
+			return
 		} else {
 			if err := WriteJSONToHTTPResponseWriter(w, AuthenticationResponse{token}); err != nil {
-				w.WriteHeader(http.StatusInternalServerError)
+				WriteDeveloperError(w, http.StatusInternalServerError, err.Error())
 			}
-
 		}
 	case "authenticate":
 		requestData := new(AuthRequestData)
 		decoder := schema.NewDecoder()
 		err := decoder.Decode(requestData, r.Form)
 		if err != nil {
-			w.WriteHeader(http.StatusBadRequest)
-			WriteJSONToHTTPResponseWriter(w, PhotoAnswerIntakeErrorResponse{err.Error()})
+			WriteDeveloperError(w, http.StatusBadRequest, err.Error())
 			return
 		}
 
 		if token, _, err := h.AuthApi.Login(requestData.Login, requestData.Password); err == api.ErrLoginFailed {
-			w.WriteHeader(http.StatusForbidden)
+			WriteUserError(w, http.StatusForbidden, "Invalid email/password combination")
 		} else if err != nil {
 			log.Println(err)
-			w.WriteHeader(http.StatusInternalServerError)
+			WriteDeveloperError(w, http.StatusInternalServerError, err.Error())
 		} else {
 			if err := WriteJSONToHTTPResponseWriter(w, AuthenticationResponse{token}); err != nil {
 				log.Println(err)
-				w.WriteHeader(http.StatusInternalServerError)
+				WriteDeveloperError(w, http.StatusInternalServerError, err.Error())
 				return
 			}
 
@@ -139,12 +132,12 @@ func (h *AuthenticationHandler) ServeHTTP(w http.ResponseWriter, r *http.Request
 	case "logout":
 		token, err := GetAuthTokenFromHeader(r)
 		if err != nil {
-			w.WriteHeader(http.StatusForbidden)
+			WriteDeveloperError(w, http.StatusBadRequest, "authorization token not correctly specified in header")
 			return
 		}
 		err = h.AuthApi.Logout(token)
 		if err != nil {
-			w.WriteHeader(http.StatusInternalServerError)
+			WriteDeveloperError(w, http.StatusInternalServerError, err.Error())
 			return
 		}
 		w.WriteHeader(http.StatusOK)
