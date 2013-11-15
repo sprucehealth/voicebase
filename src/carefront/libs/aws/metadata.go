@@ -41,8 +41,8 @@ func CredentialsForRole(role string) (*Credentials, error) {
 	}
 	defer res.Body.Close()
 	dec := json.NewDecoder(res.Body)
-	var cred Credentials
-	if err := dec.Decode(&cred); err != nil {
+	cred := &Credentials{}
+	if err := dec.Decode(cred); err != nil {
 		return nil, err
 	}
 	cred.LastUpdated, err = time.Parse(time.RFC3339, cred.LastUpdatedStr)
@@ -53,5 +53,13 @@ func CredentialsForRole(role string) (*Credentials, error) {
 	if err != nil {
 		return nil, err
 	}
-	return &cred, nil
+	return cred, nil
+}
+
+func (cred *Credentials) Keys() Keys {
+	return Keys{
+		AccessKey: cred.AccessKeyId,
+		SecretKey: cred.SecretAccessKey,
+		Token:     cred.Token,
+	}
 }

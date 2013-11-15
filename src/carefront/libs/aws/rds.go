@@ -5,8 +5,6 @@ import (
 	"net/url"
 	"strconv"
 	"time"
-
-	"github.com/bmizerany/aws4"
 )
 
 type DescribeDBLogFilesResponse struct {
@@ -30,7 +28,7 @@ type DownloadDBLogFilePortionResponse struct {
 
 type RDS struct {
 	Region
-	Client *aws4.Client
+	Client *Client
 }
 
 func (rds *RDS) Request(action string, args url.Values, response interface{}) error {

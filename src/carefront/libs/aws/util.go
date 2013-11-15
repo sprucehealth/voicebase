@@ -2,6 +2,7 @@ package aws
 
 import (
 	"bytes"
+	"encoding/xml"
 	"fmt"
 	"io"
 	"log"
@@ -20,4 +21,25 @@ func dumpResponse(res *http.Response) {
 		log.Fatal(err)
 	}
 	fmt.Printf("%s\n", buf.String())
+}
+
+type ErrorResponse struct {
+	Code       string
+	Message    string
+	RequestId  string
+	ContentMD5 string `xml:"Content-MD5"`
+	HostId     string
+}
+
+func (er *ErrorResponse) Error() string {
+	return fmt.Sprintf("%s: %s", er.Code, er.Message)
+}
+
+func ParseErrorResponse(rd io.Reader) error {
+	dec := xml.NewDecoder(rd)
+	var er ErrorResponse
+	if err := dec.Decode(&er); err != nil {
+		return err
+	}
+	return &er
 }
