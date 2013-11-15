@@ -2,6 +2,7 @@ package apiservice
 
 import (
 	"carefront/api"
+	"github.com/gorilla/schema"
 	"net/http"
 	"strconv"
 	"strings"
@@ -26,23 +27,29 @@ func (s *SignupPatientHandler) NonAuthenticated() bool {
 	return true
 }
 
-func (s *SignupPatientHandler) ServeHTTP(w http.ResponseWriter, r *http.Request) {
-	email := r.FormValue("email")
-	password := r.FormValue("password")
-	firstName := r.FormValue("first_name")
-	lastName := r.FormValue("last_name")
-	dob := r.FormValue("dob")
-	gender := r.FormValue("gender")
-	zipCode := r.FormValue("zip_code")
+type SignupPatientRequestData struct {
+	Email     string `schema:"email,required"`
+	Password  string `schema:"password,required"`
+	FirstName string `schema:"first_name,required"`
+	LastName  string `schema:"last_name,required"`
+	Dob       string `schema:"dob,required"`
+	Gender    string `schema:"gender,required"`
+	Zipcode   string `schema:"zip_code,required"`
+}
 
-	if email == "" || password == "" || firstName == "" || lastName == "" || dob == "" || gender == "" || zipCode == "" {
+func (s *SignupPatientHandler) ServeHTTP(w http.ResponseWriter, r *http.Request) {
+	r.ParseForm()
+	requestData := new(SignupPatientRequestData)
+	decoder := schema.NewDecoder()
+	err := decoder.Decode(requestData, r.Form)
+	if err != nil {
 		w.WriteHeader(http.StatusBadRequest)
+		WriteJSONToHTTPResponseWriter(w, PatientSignupErrorResponse{err.Error()})
 		return
 	}
-
 	// ensure that the date of birth can be correctly parsed
 	// Note that the date will be returned as MM/DD/YYYY
-	dobParts := strings.Split(dob, "/")
+	dobParts := strings.Split(requestData.Dob, "/")
 
 	month, err := strconv.Atoi(dobParts[0])
 	if err != nil {
@@ -63,7 +70,7 @@ func (s *SignupPatientHandler) ServeHTTP(w http.ResponseWriter, r *http.Request)
 	}
 
 	// first, create an account for the user
-	token, accountId, err := s.AuthApi.Signup(email, password)
+	token, accountId, err := s.AuthApi.Signup(requestData.Email, requestData.Password)
 	if err == api.ErrSignupFailedUserExists {
 		w.WriteHeader(http.StatusBadRequest)
 		WriteJSONToHTTPResponseWriter(w, PatientSignupErrorResponse{err.Error()})
@@ -77,7 +84,7 @@ func (s *SignupPatientHandler) ServeHTTP(w http.ResponseWriter, r *http.Request)
 	}
 
 	// then, register the signed up user as a patient
-	patientId, err := s.DataApi.RegisterPatient(accountId, firstName, lastName, gender, zipCode, time.Date(year, time.Month(month), day, 0, 0, 0, 0, time.UTC))
+	patientId, err := s.DataApi.RegisterPatient(accountId, requestData.FirstName, requestData.LastName, requestData.Gender, requestData.Zipcode, time.Date(year, time.Month(month), day, 0, 0, 0, 0, time.UTC))
 	err = WriteJSONToHTTPResponseWriter(w, PatientSignedupResponse{token, patientId})
 	if err != nil {
 		w.WriteHeader(http.StatusInternalServerError)
