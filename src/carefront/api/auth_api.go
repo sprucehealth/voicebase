@@ -1,9 +1,10 @@
 package api
 
 import (
-	"code.google.com/p/go.crypto/bcrypt"
 	"database/sql"
 	"time"
+
+	"code.google.com/p/go.crypto/bcrypt"
 )
 
 const (
