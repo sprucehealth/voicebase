@@ -22,12 +22,9 @@ func GetAuthTokenFromHeader(r *http.Request) (string, error) {
 	return parts[1], nil
 }
 
-type DeveloperErrorResponse struct {
-	DeveloperError string `json:"developer_error"`
-}
-
-type UserErrorResponse struct {
-	UserError string `json:"user_error"`
+type ErrorResponse struct {
+	DeveloperError string `json:"developer_error,omitempty"`
+	UserError      string `json:"user_error,omitempty"`
 }
 
 func WriteJSONToHTTPResponseWriter(w http.ResponseWriter, v interface{}) error {
@@ -38,7 +35,7 @@ func WriteJSONToHTTPResponseWriter(w http.ResponseWriter, v interface{}) error {
 
 func WriteDeveloperError(w http.ResponseWriter, httpStatusCode int, errorString string) error {
 	w.WriteHeader(httpStatusCode)
-	developerError := new(DeveloperErrorResponse)
+	developerError := new(ErrorResponse)
 	developerError.DeveloperError = errorString
 	enc := json.NewEncoder(w)
 	return enc.Encode(developerError)
@@ -46,7 +43,7 @@ func WriteDeveloperError(w http.ResponseWriter, httpStatusCode int, errorString 
 
 func WriteUserError(w http.ResponseWriter, httpStatusCode int, errorString string) error {
 	w.WriteHeader(httpStatusCode)
-	userError := new(UserErrorResponse)
+	userError := new(ErrorResponse)
 	userError.UserError = errorString
 	enc := json.NewEncoder(w)
 	return enc.Encode(userError)
