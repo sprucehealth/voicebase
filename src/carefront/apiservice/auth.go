@@ -58,7 +58,7 @@ package apiservice
 
 import (
 	"carefront/api"
-	"errors"
+	"github.com/gorilla/schema"
 	"log"
 	"net/http"
 	"strings"
@@ -80,18 +80,28 @@ func (h *AuthenticationHandler) NonAuthenticated() bool {
 	return true
 }
 
+type AuthRequestData struct {
+	Login    string `schema:"login,required"`
+	Password string `schema:"password,required"`
+}
+
 func (h *AuthenticationHandler) ServeHTTP(w http.ResponseWriter, r *http.Request) {
+	r.ParseForm()
 	action := strings.Split(r.URL.String(), "/")[2]
 	// depending on whether we are signing up or logging in, make appropriate
 	// call to service
 	switch action {
 	case "signup":
-		login, password, err := getLoginAndPassword(r)
+		requestData := new(AuthRequestData)
+		decoder := schema.NewDecoder()
+		err := decoder.Decode(requestData, r.Form)
 		if err != nil {
-			w.WriteHeader(http.StatusForbidden)
+			w.WriteHeader(http.StatusBadRequest)
+			WriteJSONToHTTPResponseWriter(w, AuthenticationErrorResponse{err.Error()})
 			return
 		}
-		if token, _, err := h.AuthApi.Signup(login, password); err == api.ErrSignupFailedUserExists {
+
+		if token, _, err := h.AuthApi.Signup(requestData.Login, requestData.Password); err == api.ErrSignupFailedUserExists {
 			w.WriteHeader(http.StatusBadRequest)
 			WriteJSONToHTTPResponseWriter(w, AuthenticationErrorResponse{err.Error()})
 		} else if err != nil {
@@ -104,12 +114,16 @@ func (h *AuthenticationHandler) ServeHTTP(w http.ResponseWriter, r *http.Request
 
 		}
 	case "authenticate":
-		login, password, err := getLoginAndPassword(r)
+		requestData := new(AuthRequestData)
+		decoder := schema.NewDecoder()
+		err := decoder.Decode(requestData, r.Form)
 		if err != nil {
-			w.WriteHeader(http.StatusForbidden)
+			w.WriteHeader(http.StatusBadRequest)
+			WriteJSONToHTTPResponseWriter(w, PhotoAnswerIntakeErrorResponse{err.Error()})
 			return
 		}
-		if token, _, err := h.AuthApi.Login(login, password); err == api.ErrLoginFailed {
+
+		if token, _, err := h.AuthApi.Login(requestData.Login, requestData.Password); err == api.ErrLoginFailed {
 			w.WriteHeader(http.StatusForbidden)
 		} else if err != nil {
 			log.Println(err)
@@ -135,13 +149,4 @@ func (h *AuthenticationHandler) ServeHTTP(w http.ResponseWriter, r *http.Request
 		}
 		w.WriteHeader(http.StatusOK)
 	}
-}
-
-func getLoginAndPassword(r *http.Request) (login, password string, err error) {
-	login = r.FormValue("login")
-	password = r.FormValue("password")
-	if login == "" || password == "" {
-		return "", "", errors.New("login and or password missing!")
-	}
-	return login, password, nil
 }
