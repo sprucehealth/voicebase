@@ -87,6 +87,9 @@ func (d *DataService) GetPatientAnswersForVisit(patientId, patientVisitId int64)
 func (d *DataService) GetActivePatientVisitForHealthCondition(patientId, healthConditionId int64) (int64, error) {
 	var patientVisitId int64
 	err := d.DB.QueryRow("select id from patient_visit where patient_id = ? and health_condition_id = ? and status='OPEN'", patientId, healthConditionId).Scan(&patientVisitId)
+	if err == sql.ErrNoRows {
+		return 0, nil
+	}
 	return patientVisitId, err
 }
 

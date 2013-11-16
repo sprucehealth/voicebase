@@ -60,7 +60,7 @@ func (s *PatientVisitHandler) returnNewOrOpenPatientVisit(w http.ResponseWriter,
 		return
 	}
 
-	if patientVisitId == -1 {
+	if patientVisitId == 0 {
 		patientVisitId, err = s.DataApi.CreateNewPatientVisit(patientId, HEALTH_CONDITION_ACNE_ID, layoutVersionId)
 		if err != nil {
 			WriteDeveloperError(w, http.StatusInternalServerError, "Unable to create new patient visit id: "+err.Error())
