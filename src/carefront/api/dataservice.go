@@ -49,7 +49,6 @@ func (d *DataService) getPatientAnswersForQuestionsBasedOnQuery(query string) (p
 		var answerId, questionId, potentialAnswerId, layoutVersionId int64
 		var answerText string
 		rows.Scan(&answerId, &questionId, &potentialAnswerId, &answerText, &layoutVersionId)
-		fmt.Println(strconv.FormatInt(answerId, 10))
 		if patientAnswers[questionId] == nil {
 			patientAnswers[questionId] = make([]PatientAnswerToQuestion, 0)
 		}
