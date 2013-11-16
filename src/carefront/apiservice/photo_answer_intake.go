@@ -115,5 +115,5 @@ func (p *PhotoAnswerIntakeHandler) ServeHTTP(w http.ResponseWriter, r *http.Requ
 		return
 	}
 
-	WriteJSONToHTTPResponseWriter(w, PhotoAnswerIntakeResponse{patientAnswerInfoIntakeId})
+	WriteJSONToHTTPResponseWriter(w, http.StatusOK, PhotoAnswerIntakeResponse{patientAnswerInfoIntakeId})
 }

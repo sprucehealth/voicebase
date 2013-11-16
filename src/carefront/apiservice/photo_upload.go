@@ -56,43 +56,38 @@ func (h *PhotoUploadHandler) ServeHTTP(w http.ResponseWriter, r *http.Request) {
 	file, handler, err := r.FormFile("photo")
 	if err != nil {
 		log.Println(err)
-		w.WriteHeader(http.StatusBadRequest)
-		WriteJSONToHTTPResponseWriter(w, PhotoUploadErrorResponse{err.Error()})
+		WriteJSONToHTTPResponseWriter(w, http.StatusBadRequest, PhotoUploadErrorResponse{err.Error()})
 		return
 	}
 
 	caseId := r.FormValue("case_id")
 	if caseId == "" {
-		w.WriteHeader(http.StatusBadRequest)
-		WriteJSONToHTTPResponseWriter(w, PhotoUploadErrorResponse{"missing caseId!"})
+		WriteJSONToHTTPResponseWriter(w, http.StatusBadRequest, PhotoUploadErrorResponse{"missing caseId!"})
 		return
 	}
 
 	photoType := r.FormValue("photo_type")
 	if photoType == "" {
-		w.WriteHeader(http.StatusBadRequest)
-		WriteJSONToHTTPResponseWriter(w, PhotoUploadErrorResponse{"missing photoType!"})
+		WriteJSONToHTTPResponseWriter(w, http.StatusBadRequest, PhotoUploadErrorResponse{"missing photoType!"})
 		return
 	}
 
 	data, err := ioutil.ReadAll(file)
 	if err != nil {
 		log.Println(err)
-		WriteJSONToHTTPResponseWriter(w, PhotoUploadErrorResponse{err.Error()})
+		WriteJSONToHTTPResponseWriter(w, http.StatusInternalServerError, PhotoUploadErrorResponse{err.Error()})
 		return
 	}
 
 	// create a caseImage and mark it as ready for upload
 	caseIdInt, err := strconv.ParseInt(caseId, 0, 64)
 	if err != nil {
-		w.WriteHeader(http.StatusBadRequest)
-		WriteJSONToHTTPResponseWriter(w, PhotoUploadErrorResponse{"incorrect format for caseId!"})
+		WriteJSONToHTTPResponseWriter(w, http.StatusBadRequest, PhotoUploadErrorResponse{"incorrect format for caseId!"})
 		return
 	}
 	photoId, err := h.DataApi.CreatePhotoForCase(caseIdInt, photoType)
 	if err != nil {
-		w.WriteHeader(http.StatusInternalServerError)
-		WriteJSONToHTTPResponseWriter(w, PhotoUploadErrorResponse{err.Error()})
+		WriteJSONToHTTPResponseWriter(w, http.StatusInternalServerError, PhotoUploadErrorResponse{err.Error()})
 		return
 	}
 
@@ -113,19 +108,16 @@ func (h *PhotoUploadHandler) ServeHTTP(w http.ResponseWriter, r *http.Request) {
 	signedUrl, err := h.PhotoApi.Upload(data, handler.Header.Get("Content-Type"), buffer.String(), h.CaseBucketLocation, time.Now().Add(10*time.Minute))
 
 	if err != nil {
-		w.WriteHeader(http.StatusInternalServerError)
-		WriteJSONToHTTPResponseWriter(w, PhotoUploadErrorResponse{err.Error()})
+		WriteJSONToHTTPResponseWriter(w, http.StatusInternalServerError, PhotoUploadErrorResponse{err.Error()})
 		return
 	}
 
 	// mark the photo upload as complete
 	err = h.DataApi.MarkPhotoUploadComplete(caseIdInt, photoId)
 	if err != nil {
-		w.WriteHeader(http.StatusInternalServerError)
-		WriteJSONToHTTPResponseWriter(w, PhotoUploadErrorResponse{err.Error()})
+		WriteJSONToHTTPResponseWriter(w, http.StatusInternalServerError, PhotoUploadErrorResponse{err.Error()})
 		return
 	}
 
-	w.Header().Set("Content-Type", "application/json")
-	WriteJSONToHTTPResponseWriter(w, PhotoUploadResponse{signedUrl})
+	WriteJSONToHTTPResponseWriter(w, http.StatusOK, PhotoUploadResponse{signedUrl})
 }

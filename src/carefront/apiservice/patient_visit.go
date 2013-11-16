@@ -85,7 +85,7 @@ func (s *PatientVisitHandler) returnNewOrOpenPatientVisit(w http.ResponseWriter,
 		return
 	}
 	PopulateHealthConditionWithPatientAnswers(healthCondition, visitPatientAnswers)
-	WriteJSONToHTTPResponseWriter(w, PatientVisitResponse{patientVisitId, healthCondition})
+	WriteJSONToHTTPResponseWriter(w, http.StatusOK, PatientVisitResponse{patientVisitId, healthCondition})
 }
 
 func PopulateHealthConditionWithPatientAnswers(healthCondition *info_intake.HealthCondition, patientAnswers map[int64][]api.PatientAnswerToQuestion) {

@@ -118,7 +118,7 @@ func (a *AnswerIntakeHandler) ServeHTTP(w http.ResponseWriter, r *http.Request) 
 		}
 	}
 
-	WriteJSONToHTTPResponseWriter(w, AnswerIntakeResponse{potentialInfoIntakeIds})
+	WriteJSONToHTTPResponseWriter(w, http.StatusOK, AnswerIntakeResponse{potentialInfoIntakeIds})
 }
 
 func validateRequestBody(answerIntakeRequestBody *AnswerIntakeRequestBody, w http.ResponseWriter) error {

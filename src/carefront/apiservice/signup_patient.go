@@ -43,8 +43,7 @@ func (s *SignupPatientHandler) ServeHTTP(w http.ResponseWriter, r *http.Request)
 	decoder := schema.NewDecoder()
 	err := decoder.Decode(requestData, r.Form)
 	if err != nil {
-		w.WriteHeader(http.StatusBadRequest)
-		WriteJSONToHTTPResponseWriter(w, PatientSignupErrorResponse{err.Error()})
+		WriteJSONToHTTPResponseWriter(w, http.StatusBadRequest, PatientSignupErrorResponse{err.Error()})
 		return
 	}
 	// ensure that the date of birth can be correctly parsed
@@ -72,20 +71,19 @@ func (s *SignupPatientHandler) ServeHTTP(w http.ResponseWriter, r *http.Request)
 	// first, create an account for the user
 	token, accountId, err := s.AuthApi.Signup(requestData.Email, requestData.Password)
 	if err == api.ErrSignupFailedUserExists {
-		w.WriteHeader(http.StatusBadRequest)
-		WriteJSONToHTTPResponseWriter(w, PatientSignupErrorResponse{err.Error()})
+		WriteJSONToHTTPResponseWriter(w, http.StatusBadRequest, PatientSignupErrorResponse{err.Error()})
 		return
 	}
 
 	if err != nil {
 		w.WriteHeader(http.StatusInternalServerError)
-		WriteJSONToHTTPResponseWriter(w, PatientSignupErrorResponse{err.Error()})
+		WriteJSONToHTTPResponseWriter(w, http.StatusBadRequest, PatientSignupErrorResponse{err.Error()})
 		return
 	}
 
 	// then, register the signed up user as a patient
 	patientId, err := s.DataApi.RegisterPatient(accountId, requestData.FirstName, requestData.LastName, requestData.Gender, requestData.Zipcode, time.Date(year, time.Month(month), day, 0, 0, 0, 0, time.UTC))
-	err = WriteJSONToHTTPResponseWriter(w, PatientSignedupResponse{token, patientId})
+	err = WriteJSONToHTTPResponseWriter(w, http.StatusOK, PatientSignedupResponse{token, patientId})
 	if err != nil {
 		w.WriteHeader(http.StatusInternalServerError)
 		return

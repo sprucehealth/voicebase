@@ -103,7 +103,7 @@ func (h *AuthenticationHandler) ServeHTTP(w http.ResponseWriter, r *http.Request
 			WriteDeveloperError(w, http.StatusInternalServerError, err.Error())
 			return
 		} else {
-			if err := WriteJSONToHTTPResponseWriter(w, AuthenticationResponse{token}); err != nil {
+			if err := WriteJSONToHTTPResponseWriter(w, http.StatusOK, AuthenticationResponse{token}); err != nil {
 				WriteDeveloperError(w, http.StatusInternalServerError, err.Error())
 			}
 		}
@@ -122,7 +122,7 @@ func (h *AuthenticationHandler) ServeHTTP(w http.ResponseWriter, r *http.Request
 			log.Println(err)
 			WriteDeveloperError(w, http.StatusInternalServerError, err.Error())
 		} else {
-			if err := WriteJSONToHTTPResponseWriter(w, AuthenticationResponse{token}); err != nil {
+			if err := WriteJSONToHTTPResponseWriter(w, http.StatusOK, AuthenticationResponse{token}); err != nil {
 				log.Println(err)
 				WriteDeveloperError(w, http.StatusInternalServerError, err.Error())
 				return

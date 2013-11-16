@@ -11,7 +11,6 @@ var ErrBadAuthToken = errors.New("BadAuthToken")
 
 const (
 	genericUserErrorMessage = "Something went wrong on our end. Apologies for the inconvenience and please try again later!"
-	jsonContentType         = "application/json"
 )
 
 func GetAuthTokenFromHeader(r *http.Request) (string, error) {
@@ -32,27 +31,22 @@ type ErrorResponse struct {
 	UserError      string `json:"user_error,omitempty"`
 }
 
-func WriteJSONToHTTPResponseWriter(w http.ResponseWriter, v interface{}) error {
-	w.Header().Set("Content-Type", jsonContentType)
+func WriteJSONToHTTPResponseWriter(w http.ResponseWriter, httpStatusCode int, v interface{}) error {
+	w.Header().Set("Content-Type", "application/json")
+	w.WriteHeader(httpStatusCode)
 	enc := json.NewEncoder(w)
 	return enc.Encode(v)
 }
 
 func WriteDeveloperError(w http.ResponseWriter, httpStatusCode int, errorString string) error {
-	w.Header().Set("Content-Type", jsonContentType)
-	w.WriteHeader(httpStatusCode)
 	developerError := new(ErrorResponse)
 	developerError.DeveloperError = errorString
 	developerError.UserError = genericUserErrorMessage
-	enc := json.NewEncoder(w)
-	return enc.Encode(developerError)
+	return WriteJSONToHTTPResponseWriter(w, httpStatusCode, developerError)
 }
 
 func WriteUserError(w http.ResponseWriter, httpStatusCode int, errorString string) error {
-	w.Header().Set("Content-Type", jsonContentType)
-	w.WriteHeader(httpStatusCode)
 	userError := new(ErrorResponse)
 	userError.UserError = errorString
-	enc := json.NewEncoder(w)
-	return enc.Encode(userError)
+	return WriteJSONToHTTPResponseWriter(w, httpStatusCode, userError)
 }

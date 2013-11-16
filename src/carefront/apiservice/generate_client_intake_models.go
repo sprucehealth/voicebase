@@ -77,7 +77,7 @@ func (l *GenerateClientIntakeModelHandler) ServeHTTP(w http.ResponseWriter, r *h
 		res := bytes.Compare(data, rawData)
 		// nothing to do if the layouts are exactly the same
 		if res == 0 {
-			WriteJSONToHTTPResponseWriter(w, ClientIntakeModelGeneratedResponse{nil})
+			WriteJSONToHTTPResponseWriter(w, http.StatusOK, ClientIntakeModelGeneratedResponse{nil})
 			return
 		}
 	}
@@ -134,5 +134,5 @@ func (l *GenerateClientIntakeModelHandler) ServeHTTP(w http.ResponseWriter, r *h
 
 	// update the active layouts to the new current set of layouts
 	l.DataApi.UpdateActiveLayouts(modelId, clientModelVersionIds, 1)
-	WriteJSONToHTTPResponseWriter(w, ClientIntakeModelGeneratedResponse{clientModelUrls})
+	WriteJSONToHTTPResponseWriter(w, http.StatusOK, ClientIntakeModelGeneratedResponse{clientModelUrls})
 }
