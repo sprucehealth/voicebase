@@ -30,7 +30,8 @@ type PhotoAnswerIntakeRequestData struct {
 	PatientVisitId    int64 `schema:"patient_visit_id,required"`
 }
 
-func NewPhotoAnswerIntakeHandler(dataApi api.DataAPI, cloudStorageApi api.CloudStorageAPI, bucketLocation string, maxMemoryForPhotoMB int64) *PhotoAnswerIntakeHandler {
+func NewPhotoAnswerIntakeHandler(dataApi api.DataAPI, cloudStorageApi api.CloudStorageAPI,
+	bucketLocation string, maxMemoryForPhotoMB int64) *PhotoAnswerIntakeHandler {
 	return &PhotoAnswerIntakeHandler{dataApi, cloudStorageApi, bucketLocation, maxMemoryForPhotoMB, 0}
 }
 
@@ -55,7 +56,8 @@ func (p *PhotoAnswerIntakeHandler) ServeHTTP(w http.ResponseWriter, r *http.Requ
 
 	patientId, err := p.DataApi.GetPatientIdFromAccountId(p.accountId)
 	if err != nil {
-		WriteDeveloperError(w, http.StatusInternalServerError, "Unable to get patientId from the accountId retrieved from auth token: "+err.Error())
+		WriteDeveloperError(w, http.StatusInternalServerError,
+			"Unable to get patientId from the accountId retrieved from auth token: "+err.Error())
 		return
 	}
 
@@ -71,7 +73,7 @@ func (p *PhotoAnswerIntakeHandler) ServeHTTP(w http.ResponseWriter, r *http.Requ
 		return
 	}
 
-	if questionType != "q_type_photo" {
+	if questionType != "q_type_single_photo" && questionType != "q_type_multiple_photo" {
 		WriteDeveloperError(w, http.StatusBadRequest, "This api is only for uploading pictures")
 		return
 	}
@@ -88,8 +90,21 @@ func (p *PhotoAnswerIntakeHandler) ServeHTTP(w http.ResponseWriter, r *http.Requ
 		return
 	}
 
+	// in the event that we are dealing with a question that can only have one photo set for the potential answer,
+	// mark the previously set answer to the quesiton as inactive
+	if questionType == "q_type_single_photo" {
+		err = p.DataApi.MakeCurrentPhotoAnswerInactive(patientId, requestData.QuestionId,
+			requestData.SectionId, requestData.PatientVisitId, requestData.PotentialAnswerId, layoutVersionId)
+		if err != nil {
+			WriteDeveloperError(w, http.StatusInternalServerError,
+				"Error marking the current active photo answer as inactive: "+err.Error())
+			return
+		}
+	}
+
 	// create the record for answer input and mark it as pending upload
-	patientAnswerInfoIntakeId, err := p.DataApi.CreatePhotoAnswerForQuestionRecord(patientId, requestData.QuestionId, requestData.SectionId, requestData.PatientVisitId, requestData.PotentialAnswerId, layoutVersionId)
+	patientAnswerInfoIntakeId, err := p.DataApi.CreatePhotoAnswerForQuestionRecord(patientId,
+		requestData.QuestionId, requestData.SectionId, requestData.PatientVisitId, requestData.PotentialAnswerId, layoutVersionId)
 	var buffer bytes.Buffer
 	buffer.WriteString(strconv.Itoa(int(requestData.PatientVisitId)))
 	buffer.WriteString("/")
@@ -111,7 +126,8 @@ func (p *PhotoAnswerIntakeHandler) ServeHTTP(w http.ResponseWriter, r *http.Requ
 	// once the upload is complete, go ahead and mark the record as active with the object storage id linked
 	err = p.DataApi.UpdatePhotoAnswerRecordWithObjectStorageId(patientAnswerInfoIntakeId, objectStorageId)
 	if err != nil {
-		WriteDeveloperError(w, http.StatusInternalServerError, "Unable to update photo answer record with object storage id after uploading picture: "+err.Error())
+		WriteDeveloperError(w, http.StatusInternalServerError, `Unable to update photo answer record with 
+			object storage id after uploading picture: `+err.Error())
 		return
 	}
 

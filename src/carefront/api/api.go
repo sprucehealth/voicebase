@@ -52,6 +52,7 @@ type DataAPI interface {
 	StoreChoiceAnswersForQuestion(patientId, questionId, sectionId, patientVisitId, layoutVersionId int64, answerIds []int64) (patientInfoIntakeIds []int64, err error)
 	CreatePhotoAnswerForQuestionRecord(patientId, questionId, sectionId, patientVisitId, potentialAnswerId, layoutVersionId int64) (patientInfoIntakeId int64, err error)
 	UpdatePhotoAnswerRecordWithObjectStorageId(patientInfoIntakeId, objectStorageId int64) error
+	MakeCurrentPhotoAnswerInactive(patientId, questionId, sectionId, patientVisitId, potentialAnswerId, layoutVersionId int64) (err error)
 
 	GetActivePatientVisitForHealthCondition(patientId, healthConditionId int64) (int64, error)
 	GetStorageInfoOfCurrentActiveClientLayout(languageId, healthConditionId int64) (bucket, key, region string, layoutVersionId int64, err error)

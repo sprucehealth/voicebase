@@ -209,16 +209,15 @@ func (d *DataService) CreatePhotoAnswerForQuestionRecord(patientId, questionId, 
 }
 
 func (d *DataService) UpdatePhotoAnswerRecordWithObjectStorageId(patientInfoIntakeId, objectStorageId int64) error {
-	res, err := d.DB.Exec(`update patient_info_intake set object_storage_id = ?, status='ACTIVE' where id = ?`, objectStorageId, patientInfoIntakeId)
-	if err != nil {
-		return err
-	}
+	_, err := d.DB.Exec(`update patient_info_intake set object_storage_id = ?, status='ACTIVE' where id = ?`, objectStorageId, patientInfoIntakeId)
+	return err
+}
 
-	_, err = res.LastInsertId()
-	if err != nil {
-		return err
-	}
-	return nil
+func (d *DataService) MakeCurrentPhotoAnswerInactive(patientId, questionId, sectionId, patientVisitId, potentialAnswerId, layoutVersionId int64) error {
+	_, err := d.DB.Exec(`update patient_info_intake set status='INACTIVE' where patient_id = ? and question_id = ? 
+							and section_id = ? and patient_visit_id = ? and potential_answer_id = ? 
+							and layout_version_id = ?`, patientId, questionId, sectionId, patientVisitId, potentialAnswerId, layoutVersionId)
+	return err
 }
 
 func (d *DataService) CreatePhotoForCase(caseId int64, photoType string) (int64, error) {
