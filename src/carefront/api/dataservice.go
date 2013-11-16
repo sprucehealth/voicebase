@@ -2,8 +2,13 @@ package api
 
 import (
 	"database/sql"
+	"errors"
 	"log"
 	"time"
+)
+
+var (
+	NoRowsError = errors.New("No rows exist")
 )
 
 type DataService struct {
@@ -88,7 +93,7 @@ func (d *DataService) GetActivePatientVisitForHealthCondition(patientId, healthC
 	var patientVisitId int64
 	err := d.DB.QueryRow("select id from patient_visit where patient_id = ? and health_condition_id = ? and status='OPEN'", patientId, healthConditionId).Scan(&patientVisitId)
 	if err == sql.ErrNoRows {
-		return 0, nil
+		return 0, NoRowsError
 	}
 	return patientVisitId, err
 }
