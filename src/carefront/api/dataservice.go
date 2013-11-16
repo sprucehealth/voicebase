@@ -309,11 +309,11 @@ func (d *DataService) GetAnswerInfo(questionId int64, languageId int64) (ids []i
 		return nil, nil, nil, nil, nil, err
 	}
 	defer rows.Close()
-	ids = make([]int64, 0, 5)
-	answers = make([]string, 0, 5)
-	answerTypes = make([]string, 0, 5)
-	orderings = make([]int64, 0, 5)
-	answerTags = make([]string, 0, 5)
+	ids = make([]int64, 0)
+	answers = make([]string, 0)
+	answerTypes = make([]string, 0)
+	orderings = make([]int64, 0)
+	answerTags = make([]string, 0)
 	for rows.Next() {
 		var id, ordering int64
 		var answer, answerType, answerTag string
@@ -361,8 +361,8 @@ func (d *DataService) GetSupportedLanguages() (languagesSupported []string, lang
 	}
 	defer rows.Close()
 
-	languagesSupported = make([]string, 0, 5)
-	languagesSupportedIds = make([]int64, 0, 5)
+	languagesSupported = make([]string, 0)
+	languagesSupportedIds = make([]int64, 0)
 	for rows.Next() {
 		var languageId int64
 		var language string
