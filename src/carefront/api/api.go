@@ -49,11 +49,11 @@ type DataAPI interface {
 	RegisterPatient(accountId int64, firstName, lastName, gender, zipCode string, dob time.Time) (int64, error)
 	CreateNewPatientVisit(patientId, healthConditionId, layoutVersionId int64) (int64, error)
 
-	StoreFreeTextAnswersForQuestion(patientId, questionId, sectionId, patientVisitId, layoutVersionId int64, answerIds []int64, answerTexts []string) (patientInfoIntakeIds []int64, err error)
-	StoreChoiceAnswersForQuestion(patientId, questionId, sectionId, patientVisitId, layoutVersionId int64, answerIds []int64) (patientInfoIntakeIds []int64, err error)
-	CreatePhotoAnswerForQuestionRecord(patientId, questionId, sectionId, patientVisitId, potentialAnswerId, layoutVersionId int64) (patientInfoIntakeId int64, err error)
+	StoreFreeTextAnswersForQuestion(patientId, questionId, patientVisitId, layoutVersionId int64, answerIds []int64, answerTexts []string) (patientInfoIntakeIds []int64, err error)
+	StoreChoiceAnswersForQuestion(patientId, questionId, patientVisitId, layoutVersionId int64, answerIds []int64) (patientInfoIntakeIds []int64, err error)
+	CreatePhotoAnswerForQuestionRecord(patientId, questionId, patientVisitId, potentialAnswerId, layoutVersionId int64) (patientInfoIntakeId int64, err error)
 	UpdatePhotoAnswerRecordWithObjectStorageId(patientInfoIntakeId, objectStorageId int64) error
-	MakeCurrentPhotoAnswerInactive(patientId, questionId, sectionId, patientVisitId, potentialAnswerId, layoutVersionId int64) (err error)
+	MakeCurrentPhotoAnswerInactive(patientId, questionId, patientVisitId, potentialAnswerId, layoutVersionId int64) (err error)
 
 	GetActivePatientVisitForHealthCondition(patientId, healthConditionId int64) (int64, error)
 	GetStorageInfoOfCurrentActiveClientLayout(languageId, healthConditionId int64) (bucket, key, region string, layoutVersionId int64, err error)

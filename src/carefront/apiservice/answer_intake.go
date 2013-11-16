@@ -24,7 +24,6 @@ type AnswerIntake struct {
 type AnswerIntakeRequestBody struct {
 	PatientVisitId int64           `json:"patient_visit_id"`
 	QuestionId     int64           `json:"question_id"`
-	SectionId      int64           `json:"section_id"`
 	AnswerIntakes  []*AnswerIntake `json:"potential_answers"`
 }
 
@@ -101,8 +100,7 @@ func (a *AnswerIntakeHandler) ServeHTTP(w http.ResponseWriter, r *http.Request) 
 	var potentialInfoIntakeIds []int64
 	if freeTextRequired {
 		potentialInfoIntakeIds, err = a.DataApi.StoreFreeTextAnswersForQuestion(patientId,
-			answerIntakeRequestBody.QuestionId, answerIntakeRequestBody.SectionId,
-			answerIntakeRequestBody.PatientVisitId, layoutVersionId, potentialAnswerIds,
+			answerIntakeRequestBody.QuestionId, answerIntakeRequestBody.PatientVisitId, layoutVersionId, potentialAnswerIds,
 			answerTexts)
 		if err != nil {
 			WriteDeveloperError(w, http.StatusInternalServerError, "Unable to store the free text answer to the question based on the parameters provided and the internal state of the system")
@@ -110,8 +108,7 @@ func (a *AnswerIntakeHandler) ServeHTTP(w http.ResponseWriter, r *http.Request) 
 		}
 	} else {
 		potentialInfoIntakeIds, err = a.DataApi.StoreChoiceAnswersForQuestion(patientId,
-			answerIntakeRequestBody.QuestionId, answerIntakeRequestBody.SectionId,
-			answerIntakeRequestBody.PatientVisitId, layoutVersionId, potentialAnswerIds)
+			answerIntakeRequestBody.QuestionId, answerIntakeRequestBody.PatientVisitId, layoutVersionId, potentialAnswerIds)
 		if err != nil {
 			WriteDeveloperError(w, http.StatusInternalServerError, "Unable to store the multiple choice answer to the question for the patient based on the parameters provided and the internal state of the system")
 			return
@@ -129,11 +126,6 @@ func validateRequestBody(answerIntakeRequestBody *AnswerIntakeRequestBody, w htt
 
 	if answerIntakeRequestBody.QuestionId == 0 {
 		WriteDeveloperError(w, http.StatusBadRequest, "question_id missing")
-		return errors.New("")
-	}
-
-	if answerIntakeRequestBody.SectionId == 0 {
-		WriteDeveloperError(w, http.StatusBadRequest, "section_id missing")
 		return errors.New("")
 	}
 
