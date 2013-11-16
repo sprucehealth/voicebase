@@ -3,7 +3,9 @@ package api
 import (
 	"database/sql"
 	"errors"
+	"fmt"
 	"log"
+	"strconv"
 	"time"
 )
 
@@ -36,22 +38,20 @@ func (d *DataService) GetPatientIdFromAccountId(accountId int64) (int64, error) 
 	return patientId, err
 }
 
-func (d *DataService) GetPatientAnswersFromGlobalSections(patientId int64) (patientAnswers map[int64][]PatientAnswerToQuestion, err error) {
-	rows, err := d.DB.Query(`select id, question_id, potential_answer_id, answer_text, 
-								layout_version_id from patient_info_intake where section_id 
-								in (select id from section where health_condition_id is null) and patient_id = ? and status='ACTIVE'`, patientId)
+func (d *DataService) getPatientAnswersForQuestionsBasedOnQuery(query string) (patientAnswers map[int64][]PatientAnswerToQuestion, err error) {
+	rows, err := d.DB.Query(query)
 	if err != nil {
 		return nil, err
 	}
 	defer rows.Close()
-
 	patientAnswers = make(map[int64][]PatientAnswerToQuestion)
 	for rows.Next() {
 		var answerId, questionId, potentialAnswerId, layoutVersionId int64
 		var answerText string
 		rows.Scan(&answerId, &questionId, &potentialAnswerId, &answerText, &layoutVersionId)
+		fmt.Println(strconv.FormatInt(answerId, 10))
 		if patientAnswers[questionId] == nil {
-			patientAnswers[questionId] = make([]PatientAnswerToQuestion, 0, 5)
+			patientAnswers[questionId] = make([]PatientAnswerToQuestion, 0)
 		}
 		patientAnswers[questionId] = append(patientAnswers[questionId], PatientAnswerToQuestion{PatientInfoIntakeId: answerId,
 			QuestionId:        questionId,
@@ -59,34 +59,52 @@ func (d *DataService) GetPatientAnswersFromGlobalSections(patientId int64) (pati
 			LayoutVersionId:   layoutVersionId,
 			AnswerText:        answerText})
 	}
-	return patientAnswers, nil
+	return
 }
 
-func (d *DataService) GetPatientAnswersForVisit(patientId, patientVisitId int64) (patientAnswers map[int64][]PatientAnswerToQuestion, err error) {
-	rows, err := d.DB.Query(`select id, question_id, potential_answer_id, answer_text, 
-								layout_version_id from patient_info_intake where section_id 
-								in (select id from section where health_condition_id is not null) 
-								and patient_id = ? and patient_visit_id = ? and status='ACTIVE'`, patientId, patientVisitId)
+func (d *DataService) GetPatientAnswersForQuestionsInGlobalSections(questionIds []int64, patientId int64) (patientAnswers map[int64][]PatientAnswerToQuestion, err error) {
+	buildSelectStatement := fmt.Sprintf(`select id, question_id, potential_answer_id, answer_text, 
+								layout_version_id from patient_info_intake 
+								where question_id in (%s) and patient_id = %d and status='ACTIVE'`, enumerateItemsIntoString(questionIds), patientId)
+	return d.getPatientAnswersForQuestionsBasedOnQuery(buildSelectStatement)
+
+}
+
+func (d *DataService) GetPatientAnswersForQuestionsInPatientVisit(questionIds []int64, patientId int64, patientVisitId int64) (patientAnswers map[int64][]PatientAnswerToQuestion, err error) {
+	buildSelectStatement := fmt.Sprintf(`select id, question_id, potential_answer_id, answer_text, 
+								layout_version_id from patient_info_intake 
+								where question_id in (%s) and patient_id = %d and patient_visit_id = %d and status='ACTIVE'`, enumerateItemsIntoString(questionIds), patientId, patientVisitId)
+	return d.getPatientAnswersForQuestionsBasedOnQuery(buildSelectStatement)
+}
+
+func (d *DataService) GetGlobalSectionIds() (globalSectionIds []int64, err error) {
+	rows, err := d.DB.Query(`select id from section where health_condition_id is null`)
 	if err != nil {
 		return nil, err
 	}
-	defer rows.Close()
 
-	patientAnswers = make(map[int64][]PatientAnswerToQuestion)
+	globalSectionIds = make([]int64, 0)
 	for rows.Next() {
-		var answerId, questionId, potentialAnswerId, layoutVersionId int64
-		var answerText string
-		rows.Scan(&answerId, &questionId, &potentialAnswerId, &answerText, &layoutVersionId)
-		if patientAnswers[questionId] == nil {
-			patientAnswers[questionId] = make([]PatientAnswerToQuestion, 0, 5)
-		}
-		patientAnswers[questionId] = append(patientAnswers[questionId], PatientAnswerToQuestion{PatientInfoIntakeId: answerId,
-			QuestionId:        questionId,
-			PotentialAnswerId: potentialAnswerId,
-			LayoutVersionId:   layoutVersionId,
-			AnswerText:        answerText})
+		var sectionId int64
+		rows.Scan(&sectionId)
+		globalSectionIds = append(globalSectionIds, sectionId)
 	}
-	return patientAnswers, nil
+	return
+}
+
+func (d *DataService) GetSectionIdsForHealthCondition(healthConditionId int64) (sectionIds []int64, err error) {
+	rows, err := d.DB.Query(`select id from section where health_condition_id = ?`, healthConditionId)
+	if err != nil {
+		return nil, err
+	}
+
+	sectionIds = make([]int64, 0)
+	for rows.Next() {
+		var sectionId int64
+		rows.Scan(&sectionId)
+		sectionIds = append(sectionIds, sectionId)
+	}
+	return
 }
 
 func (d *DataService) GetActivePatientVisitForHealthCondition(patientId, healthConditionId int64) (int64, error) {
@@ -444,4 +462,17 @@ func (d *DataService) UpdateActiveLayouts(layoutId int64, clientLayoutIds []int6
 	}
 	tx.Commit()
 	return nil
+}
+
+func enumerateItemsIntoString(ids []int64) string {
+	if ids == nil || len(ids) == 0 {
+		return ""
+	}
+	idsStr := strconv.FormatInt(ids[0], 10)
+	if len(ids) > 1 {
+		for _, id := range ids[1:] {
+			idsStr = idsStr + "," + strconv.FormatInt(id, 10)
+		}
+	}
+	return idsStr
 }

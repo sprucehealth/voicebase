@@ -48,6 +48,7 @@ type PatientAnswerToQuestion struct {
 type DataAPI interface {
 	RegisterPatient(accountId int64, firstName, lastName, gender, zipCode string, dob time.Time) (int64, error)
 	CreateNewPatientVisit(patientId, healthConditionId, layoutVersionId int64) (int64, error)
+
 	StoreFreeTextAnswersForQuestion(patientId, questionId, sectionId, patientVisitId, layoutVersionId int64, answerIds []int64, answerTexts []string) (patientInfoIntakeIds []int64, err error)
 	StoreChoiceAnswersForQuestion(patientId, questionId, sectionId, patientVisitId, layoutVersionId int64, answerIds []int64) (patientInfoIntakeIds []int64, err error)
 	CreatePhotoAnswerForQuestionRecord(patientId, questionId, sectionId, patientVisitId, potentialAnswerId, layoutVersionId int64) (patientInfoIntakeId int64, err error)
@@ -59,8 +60,10 @@ type DataAPI interface {
 	GetPatientIdFromAccountId(accountId int64) (int64, error)
 	GetLayoutVersionIdForPatientVisit(patientVisitId int64) (layoutVersionId int64, err error)
 	GetQuestionType(questionId int64) (questionType string, err error)
-	GetPatientAnswersFromGlobalSections(patientId int64) (patientAnswers map[int64][]PatientAnswerToQuestion, err error)
-	GetPatientAnswersForVisit(patientId, patientVisitId int64) (patientAnswers map[int64][]PatientAnswerToQuestion, err error)
+	GetPatientAnswersForQuestionsInGlobalSections(questionIds []int64, patientId int64) (patientAnswers map[int64][]PatientAnswerToQuestion, err error)
+	GetPatientAnswersForQuestionsInPatientVisit(questionIds []int64, patientId int64, patientVisitId int64) (patientAnswers map[int64][]PatientAnswerToQuestion, err error)
+	GetGlobalSectionIds() (globalSectionIds []int64, err error)
+	GetSectionIdsForHealthCondition(healthConditionId int64) (sectionIds []int64, err error)
 
 	CreatePhotoForCase(caseId int64, photoType string) (int64, error)
 	MarkPhotoUploadComplete(caseId, photoId int64) error

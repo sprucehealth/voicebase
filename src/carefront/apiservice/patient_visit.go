@@ -52,42 +52,83 @@ func (s *PatientVisitHandler) returnNewOrOpenPatientVisit(w http.ResponseWriter,
 
 	healthCondition, layoutVersionId, err := s.getCurrentActiveClientLayoutForHealthCondition(HEALTH_CONDITION_ACNE_ID, api.EN_LANGUAGE_ID)
 
+	isNewPatientVisit := false
 	// check if there is an open patient visit for the given health condition and return
 	// that to the patient
 	patientVisitId, err := s.DataApi.GetActivePatientVisitForHealthCondition(patientId, HEALTH_CONDITION_ACNE_ID)
-
 	if err == api.NoRowsError {
+		isNewPatientVisit = true
 		patientVisitId, err = s.DataApi.CreateNewPatientVisit(patientId, HEALTH_CONDITION_ACNE_ID, layoutVersionId)
 		if err != nil {
 			WriteDeveloperError(w, http.StatusInternalServerError, "Unable to create new patient visit id: "+err.Error())
 			return
 		}
 	} else if err != nil {
-		WriteDeveloperError(w, http.StatusInternalServerError, "unable to retrieve the current active patient visit for the health condition from the patient id: "+err.Error())
+		WriteDeveloperError(w, http.StatusInternalServerError, `unable to retrieve the current active patient 
+			visit for the health condition from the patient id: `+err.Error())
 		return
 	}
 
-	// get answers that the patient has previously entered for any section that is considered global
-	// and feed the answers into the layout
-	globalSectionPatientAnswers, err := s.DataApi.GetPatientAnswersFromGlobalSections(patientId)
+	// identify sections that are global
+	globalSectionIds, err := s.DataApi.GetGlobalSectionIds()
+	if err != nil {
+		WriteDeveloperError(w, http.StatusInternalServerError, "Unable to get global section ids: "+err.Error())
+		return
+	}
+
+	globalQuestionIds := make([]int64, 0)
+	for _, sectionId := range globalSectionIds {
+		questionIds := getQuestionIdsInSectionInHealthConditionLayout(healthCondition, sectionId)
+		globalQuestionIds = append(globalQuestionIds, questionIds...)
+	}
+
+	// get the answers that the patient has previously entered for all sections that are considered global
+	globalSectionPatientAnswers, err := s.DataApi.GetPatientAnswersForQuestionsInGlobalSections(globalQuestionIds, patientId)
 	if err != nil {
 		WriteDeveloperError(w, http.StatusInternalServerError, "Unable to get patient answers for global sections: "+err.Error())
 		return
 	}
-	PopulateHealthConditionWithPatientAnswers(healthCondition, globalSectionPatientAnswers)
+	populateHealthConditionWithPatientAnswers(healthCondition, globalSectionPatientAnswers)
 
-	// get answers that the patient has previously entered for this particular patient visit
-	// and feed the answers into the layout
-	visitPatientAnswers, err := s.DataApi.GetPatientAnswersForVisit(patientId, patientVisitId)
-	if err != nil {
-		WriteDeveloperError(w, http.StatusInternalServerError, "Unable to get patient answers for all sections belonging to the patient visit: "+err.Error())
-		return
+	if !isNewPatientVisit {
+		// get answers that the patient has previously entered for this particular patient visit
+		// and feed the answers into the layout
+		sectionIdsForHealthCondition, err := s.DataApi.GetSectionIdsForHealthCondition(HEALTH_CONDITION_ACNE_ID)
+		if err != nil {
+			WriteDeveloperError(w, http.StatusInternalServerError, "Unable to get section ids for health condition: "+err.Error())
+			return
+		}
+		questionIdsInAllSections := make([]int64, 0)
+		for _, sectionId := range sectionIdsForHealthCondition {
+			questionIds := getQuestionIdsInSectionInHealthConditionLayout(healthCondition, sectionId)
+			questionIdsInAllSections = append(questionIdsInAllSections, questionIds...)
+		}
+		patientAnswersForVisit, err := s.DataApi.GetPatientAnswersForQuestionsInPatientVisit(questionIdsInAllSections, patientId, patientVisitId)
+		if err != nil {
+			WriteDeveloperError(w, http.StatusInternalServerError, "Unable to get patient answers for patient visit: "+err.Error())
+			return
+		}
+		populateHealthConditionWithPatientAnswers(healthCondition, patientAnswersForVisit)
 	}
-	PopulateHealthConditionWithPatientAnswers(healthCondition, visitPatientAnswers)
+
 	WriteJSONToHTTPResponseWriter(w, http.StatusOK, PatientVisitResponse{patientVisitId, healthCondition})
 }
 
-func PopulateHealthConditionWithPatientAnswers(healthCondition *info_intake.HealthCondition, patientAnswers map[int64][]api.PatientAnswerToQuestion) {
+func getQuestionIdsInSectionInHealthConditionLayout(healthCondition *info_intake.HealthCondition, sectionId int64) (questionIds []int64) {
+	questionIds = make([]int64, 0)
+	for _, section := range healthCondition.Sections {
+		if section.SectionId == sectionId {
+			for _, screen := range section.Screens {
+				for _, question := range screen.Questions {
+					questionIds = append(questionIds, question.QuestionId)
+				}
+			}
+		}
+	}
+	return
+}
+
+func populateHealthConditionWithPatientAnswers(healthCondition *info_intake.HealthCondition, patientAnswers map[int64][]api.PatientAnswerToQuestion) {
 	for _, section := range healthCondition.Sections {
 		for _, screen := range section.Screens {
 			for _, question := range screen.Questions {
