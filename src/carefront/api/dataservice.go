@@ -26,16 +26,9 @@ func (d *DataService) RegisterPatient(accountId int64, firstName, lastName, gend
 }
 
 func (d *DataService) GetPatientIdFromAccountId(accountId int64) (int64, error) {
-	rows, err := d.DB.Query("select id from patient where account_id = ?", accountId)
-	if err != nil {
-		return 0, err
-	}
-	defer rows.Close()
-
 	var patientId int64
-	rows.Next()
-	rows.Scan(&patientId)
-	return patientId, nil
+	err := d.DB.QueryRow("select id from patient where account_id = ?", accountId).Scan(&patientId)
+	return patientId, err
 }
 
 func (d *DataService) GetPatientAnswersFromGlobalSections(patientId int64) (patientAnswers map[int64][]PatientAnswerToQuestion, err error) {
@@ -92,20 +85,9 @@ func (d *DataService) GetPatientAnswersForVisit(patientId, patientVisitId int64)
 }
 
 func (d *DataService) GetActivePatientVisitForHealthCondition(patientId, healthConditionId int64) (int64, error) {
-	rows, err := d.DB.Query("select id from patient_visit where patient_id = ? and health_condition_id = ? and status='OPEN'", patientId, healthConditionId)
-	if err != nil {
-		return 0, err
-	}
-	defer rows.Close()
-
 	var patientVisitId int64
-
-	if !rows.Next() {
-		return -1, nil
-	}
-
-	rows.Scan(&patientVisitId)
-	return patientVisitId, nil
+	err := d.DB.QueryRow("select id from patient_visit where patient_id = ? and health_condition_id = ? and status='OPEN'", patientId, healthConditionId).Scan(&patientVisitId)
+	return patientVisitId, err
 }
 
 func (d *DataService) CreateNewPatientVisit(patientId, healthConditionId, layoutVersionId int64) (int64, error) {
@@ -123,54 +105,26 @@ func (d *DataService) CreateNewPatientVisit(patientId, healthConditionId, layout
 	return lastId, err
 }
 
-func (d *DataService) GetQuestionType(questionId int64) (questionType string, err error) {
-	rows, err := d.DB.Query(`select qtype from question
-								inner join question_type on question_type.id = qtype_id
-								where question.id = ?`, questionId)
-	if err != nil {
-		return "", err
-	}
-	defer rows.Close()
-
-	if !rows.Next() {
-		return "", nil
-	}
-
-	rows.Scan(&questionType)
-	return questionType, nil
+func (d *DataService) GetQuestionType(questionId int64) (string, error) {
+	var questionType string
+	err := d.DB.QueryRow(`select qtype from question
+						inner join question_type on question_type.id = qtype_id
+						where question.id = ?`, questionId).Scan(&questionType)
+	return questionType, err
 }
 
 func (d *DataService) GetStorageInfoOfCurrentActiveClientLayout(languageId, healthConditionId int64) (bucket, storage, region string, layoutVersionId int64, err error) {
-	rows, err := d.DB.Query(` select bucket, storage_key, region_tag, layout_version_id from patient_layout_version 
-								inner join object_storage on object_storage_id=object_storage.id 
-								inner join region on region_id=region.id 
-									where patient_layout_version.status='ACTIVE' and health_condition_id = ? and language_id = ?`, healthConditionId, languageId)
-	if err != nil {
-		return "", "", "", 0, err
-	}
-	defer rows.Close()
-
-	if !rows.Next() {
-		return "", "", "", 0, nil
-	}
-
-	rows.Scan(&bucket, &storage, &region, &layoutVersionId)
-	return bucket, storage, region, layoutVersionId, nil
+	row := d.DB.QueryRow(`select bucket, storage_key, region_tag, layout_version_id from patient_layout_version 
+							inner join object_storage on object_storage_id=object_storage.id 
+							inner join region on region_id=region.id 
+								where patient_layout_version.status='ACTIVE' and health_condition_id = ? and language_id = ?`, healthConditionId, languageId)
+	err = row.Scan(&bucket, &storage, &region, &layoutVersionId)
+	return
 }
 
 func (d *DataService) GetLayoutVersionIdForPatientVisit(patientVisitId int64) (layoutVersionId int64, err error) {
-	rows, err := d.DB.Query("select layout_version_id from patient_visit where id = ?", patientVisitId)
-	if err != nil {
-		return 0, err
-	}
-
-	if !rows.Next() {
-		return 0, nil
-	}
-
-	rows.Scan(&layoutVersionId)
-
-	return layoutVersionId, nil
+	err = d.DB.QueryRow("select layout_version_id from patient_visit where id = ?", patientVisitId).Scan(&layoutVersionId)
+	return
 }
 
 func (d *DataService) inactivatePreviousAnswersToQuestion(patientId, questionId, sectionId, patientVisitId, layoutVersionId int64, tx *sql.Tx) (err error) {
@@ -295,55 +249,30 @@ func (d *DataService) GetPhotosForCase(caseId int64) ([]string, error) {
 }
 
 func (d *DataService) GetHealthConditionInfo(healthConditionTag string) (int64, error) {
-	rows, err := d.DB.Query("select id from health_condition where comment = ? ", healthConditionTag)
-	if err != nil {
-		return 0, err
-	}
-	defer rows.Close()
 	var id int64
-	rows.Next()
-	err = rows.Scan(&id)
-	if err != nil {
-		return 0, err
-	}
-	return id, nil
+	err := d.DB.QueryRow("select id from health_condition where comment = ? ", healthConditionTag).Scan(&id)
+	return id, err
 }
 
 func (d *DataService) GetSectionInfo(sectionTag string, languageId int64) (id int64, title string, err error) {
-	rows, err := d.DB.Query(`select section.id, ltext from section 
-								inner join app_text on section_title_app_text_id = app_text.id 
-								inner join localized_text on app_text_id = app_text.id 
-									where language_id = ? and section_tag = ?`, languageId, sectionTag)
-	if err != nil {
-		return 0, "", err
-	}
-	defer rows.Close()
-	rows.Next()
-	err = rows.Scan(&id, &title)
-	if err != nil {
-		return 0, "", err
-	}
-	return id, title, nil
+	err = d.DB.QueryRow(`select section.id, ltext from section 
+					inner join app_text on section_title_app_text_id = app_text.id 
+					inner join localized_text on app_text_id = app_text.id 
+						where language_id = ? and section_tag = ?`, languageId, sectionTag).Scan(&id, &title)
+	return
 }
 
 func (d *DataService) GetQuestionInfo(questionTag string, languageId int64) (id int64, questionTitle string, questionType string, err error) {
-	rows, err := d.DB.Query(`select question.id, ltext, qtype from question 
-								left outer join localized_text on app_text_id=qtext_app_text_id
-	   							left outer join question_type on qtype_id=question_type.id 
-	   								where question_tag = ? and (ltext is NULL or language_id = ?)`, questionTag, languageId)
-	if err != nil {
-		return 0, "", "", err
-	}
-	defer rows.Close()
-	rows.Next()
 	var byteQuestionTitle, byteQuestionType []byte
-	err = rows.Scan(&id, &byteQuestionTitle, &byteQuestionType)
-	if err != nil {
-		return 0, "", "", err
-	}
+	err = d.DB.QueryRow(
+		`select question.id, ltext, qtype from question 
+		 left outer join localized_text on app_text_id=qtext_app_text_id
+			left outer join question_type on qtype_id=question_type.id 
+				where question_tag = ? and (ltext is NULL or language_id = ?)`,
+		questionTag, languageId).Scan(&id, &byteQuestionTitle, &byteQuestionType)
 	questionTitle = string(byteQuestionTitle)
 	questionType = string(byteQuestionType)
-	return id, questionTitle, questionType, nil
+	return
 }
 
 func (d *DataService) GetAnswerInfo(questionId int64, languageId int64) (ids []int64, answers []string, answerTypes []string, answerTags []string, orderings []int64, err error) {
@@ -377,57 +306,27 @@ func (d *DataService) GetAnswerInfo(questionId int64, languageId int64) (ids []i
 }
 
 func (d *DataService) GetTipInfo(tipTag string, languageId int64) (id int64, tip string, err error) {
-	rows, err := d.DB.Query(`select tips.id, ltext from tips
+	err = d.DB.QueryRow(`select tips.id, ltext from tips
 								inner join localized_text on app_text_id=tips_text_id 
-									where tips_tag = ? and language_id = ?`, tipTag, languageId)
-	if err != nil {
-		return 0, "", err
-	}
-	defer rows.Close()
-	rows.Next()
-	err = rows.Scan(&id, &tip)
-	if err != nil {
-		return 0, "", err
-	}
-	return id, tip, nil
+									where tips_tag = ? and language_id = ?`, tipTag, languageId).Scan(&id, &tip)
+	return
 }
 
 func (d *DataService) GetTipSectionInfo(tipSectionTag string, languageId int64) (id int64, tipSectionTitle string, tipSectionSubtext string, err error) {
-	rows, err := d.DB.Query(`select tips_section.id, ltext1.ltext, ltext2.ltext from tips_section 
+	err = d.DB.QueryRow(`select tips_section.id, ltext1.ltext, ltext2.ltext from tips_section 
 								inner join localized_text as ltext1 on tips_title_text_id=ltext1.app_text_id 
 								inner join localized_text as ltext2 on tips_subtext_text_id=ltext2.app_text_id 
-									where ltext1.language_id = ? and tips_section_tag = ?`, languageId, tipSectionTag)
-	if err != nil {
-		return 0, "", "", err
-	}
-	defer rows.Close()
-	rows.Next()
-	err = rows.Scan(&id, &tipSectionTitle, &tipSectionSubtext)
-	if err != nil {
-		return 0, "", "", err
-	}
-	return id, tipSectionTitle, tipSectionSubtext, nil
+									where ltext1.language_id = ? and tips_section_tag = ?`, languageId, tipSectionTag).Scan(&id, &tipSectionTitle, &tipSectionSubtext)
+	return
 }
 
 func (d *DataService) GetActiveLayoutInfoForHealthCondition(healthConditionTag string) (bucket, key, region string, err error) {
-	rows, err := d.DB.Query(`select bucket, storage_key, region_tag from layout_version 
+	err = d.DB.QueryRow(`select bucket, storage_key, region_tag from layout_version 
 								inner join object_storage on object_storage_id = object_storage.id 
 								inner join region on region_id=region.id 
 								inner join health_condition on health_condition_id = health_condition.id 
-									where layout_version.status='ACTIVE' and health_condition.health_condition_tag = ?`, healthConditionTag)
-	if err != nil {
-		return "", "", "", err
-	}
-	defer rows.Close()
-	// if there are no rows to return, return empty values
-	if !rows.Next() {
-		return "", "", "", nil
-	}
-	err = rows.Scan(&bucket, &key, &region)
-	if err != nil {
-		return "", "", "", err
-	}
-	return bucket, key, region, nil
+									where layout_version.status='ACTIVE' and health_condition.health_condition_tag = ?`, healthConditionTag).Scan(&bucket, &key, &region)
+	return
 }
 
 func (d *DataService) GetSupportedLanguages() (languagesSupported []string, languagesSupportedIds []int64, err error) {
