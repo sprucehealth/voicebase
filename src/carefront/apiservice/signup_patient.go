@@ -76,16 +76,11 @@ func (s *SignupPatientHandler) ServeHTTP(w http.ResponseWriter, r *http.Request)
 	}
 
 	if err != nil {
-		w.WriteHeader(http.StatusInternalServerError)
-		WriteJSONToHTTPResponseWriter(w, http.StatusBadRequest, PatientSignupErrorResponse{err.Error()})
+		WriteJSONToHTTPResponseWriter(w, http.StatusInternalServerError, PatientSignupErrorResponse{err.Error()})
 		return
 	}
 
 	// then, register the signed up user as a patient
 	patientId, err := s.DataApi.RegisterPatient(accountId, requestData.FirstName, requestData.LastName, requestData.Gender, requestData.Zipcode, time.Date(year, time.Month(month), day, 0, 0, 0, 0, time.UTC))
-	err = WriteJSONToHTTPResponseWriter(w, http.StatusOK, PatientSignedupResponse{token, patientId})
-	if err != nil {
-		w.WriteHeader(http.StatusInternalServerError)
-		return
-	}
+	WriteJSONToHTTPResponseWriter(w, http.StatusOK, PatientSignedupResponse{token, patientId})
 }

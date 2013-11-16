@@ -3,6 +3,7 @@ package apiservice
 import (
 	"encoding/json"
 	"errors"
+	"log"
 	"net/http"
 	"strings"
 )
@@ -31,22 +32,24 @@ type ErrorResponse struct {
 	UserError      string `json:"user_error,omitempty"`
 }
 
-func WriteJSONToHTTPResponseWriter(w http.ResponseWriter, httpStatusCode int, v interface{}) error {
+func WriteJSONToHTTPResponseWriter(w http.ResponseWriter, httpStatusCode int, v interface{}) {
 	w.Header().Set("Content-Type", "application/json")
 	w.WriteHeader(httpStatusCode)
 	enc := json.NewEncoder(w)
-	return enc.Encode(v)
+	if err := enc.Encode(v); err != nil {
+		log.Printf("apiservice: failed to json encode: %+v", err)
+	}
 }
 
-func WriteDeveloperError(w http.ResponseWriter, httpStatusCode int, errorString string) error {
+func WriteDeveloperError(w http.ResponseWriter, httpStatusCode int, errorString string) {
 	developerError := new(ErrorResponse)
 	developerError.DeveloperError = errorString
 	developerError.UserError = genericUserErrorMessage
-	return WriteJSONToHTTPResponseWriter(w, httpStatusCode, developerError)
+	WriteJSONToHTTPResponseWriter(w, httpStatusCode, developerError)
 }
 
-func WriteUserError(w http.ResponseWriter, httpStatusCode int, errorString string) error {
+func WriteUserError(w http.ResponseWriter, httpStatusCode int, errorString string) {
 	userError := new(ErrorResponse)
 	userError.UserError = errorString
-	return WriteJSONToHTTPResponseWriter(w, httpStatusCode, userError)
+	WriteJSONToHTTPResponseWriter(w, httpStatusCode, userError)
 }

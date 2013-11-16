@@ -103,9 +103,7 @@ func (h *AuthenticationHandler) ServeHTTP(w http.ResponseWriter, r *http.Request
 			WriteDeveloperError(w, http.StatusInternalServerError, err.Error())
 			return
 		} else {
-			if err := WriteJSONToHTTPResponseWriter(w, http.StatusOK, AuthenticationResponse{token}); err != nil {
-				WriteDeveloperError(w, http.StatusInternalServerError, err.Error())
-			}
+			WriteJSONToHTTPResponseWriter(w, http.StatusOK, AuthenticationResponse{token})
 		}
 	case "authenticate":
 		requestData := new(AuthRequestData)
@@ -122,12 +120,7 @@ func (h *AuthenticationHandler) ServeHTTP(w http.ResponseWriter, r *http.Request
 			log.Println(err)
 			WriteDeveloperError(w, http.StatusInternalServerError, err.Error())
 		} else {
-			if err := WriteJSONToHTTPResponseWriter(w, http.StatusOK, AuthenticationResponse{token}); err != nil {
-				log.Println(err)
-				WriteDeveloperError(w, http.StatusInternalServerError, err.Error())
-				return
-			}
-
+			WriteJSONToHTTPResponseWriter(w, http.StatusOK, AuthenticationResponse{token})
 		}
 	case "logout":
 		token, err := GetAuthTokenFromHeader(r)
