@@ -118,8 +118,6 @@ func main() {
 	answerIntakeHandler := apiservice.NewAnswerIntakeHandler(dataApi)
 	photoAnswerIntakeHandler := apiservice.NewPhotoAnswerIntakeHandler(dataApi, photoAnswerCloudStorageApi, *flagS3CaseBucket, *flagMaxInMemoryForPhotoMB*1024*1024)
 	pingHandler := apiservice.PingHandler(0)
-	photoHandler := &apiservice.PhotoUploadHandler{&api.PhotoService{*flagAWSAccessKey, *flagAWSSecretKey}, *flagS3CaseBucket, dataApi}
-	getSignedUrlsHandler := &apiservice.GetSignedUrlsHandler{&api.PhotoService{*flagAWSAccessKey, *flagAWSSecretKey}, *flagS3CaseBucket}
 	generateModelIntakeHandler := &apiservice.GenerateClientIntakeModelHandler{dataApi, cloudStorageApi}
 
 	mux := &apiservice.AuthServeMux{*http.NewServeMux(), authApi}
@@ -134,8 +132,6 @@ func main() {
 	mux.Handle("/v1/authenticate", authHandler)
 	mux.Handle("/v1/logout", authHandler)
 	mux.Handle("/v1/ping", pingHandler)
-	mux.Handle("/v1/upload", photoHandler)
-	mux.Handle("/v1/imagesforcase/", getSignedUrlsHandler)
 
 	s := &http.Server{
 		Addr:           *flagListenAddr,
