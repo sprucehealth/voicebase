@@ -19,24 +19,6 @@ type Auth interface {
 	ValidateToken(token string) (valid bool, accountId int64, err error)
 }
 
-type Photo interface {
-	Upload(data []byte, contentType string, key string, bucket string, duration time.Time) (string, error)
-	GenerateSignedUrlsForKeysInBucket(bucket, prefix string, duration time.Time) ([]string, error)
-}
-
-const (
-	PHOTO_TYPE_FACE_MIDDLE = "face_middle"
-	PHOTO_TYPE_FACE_LEFT   = "face_left"
-	PHOTO_TYPE_FACE_RIGHT  = "face_right"
-	PHOTO_TYPE_BACK        = "back"
-	PHOTO_TYPE_CHEST       = "chest"
-
-	PHOTO_STATUS_PENDING_UPLOAD   = "PENDING_UPLOAD"
-	PHOTO_STATUS_PENDING_APPROVAL = "PENDING_APPROVAL"
-	PHOTO_STATUS_REJECTED         = "REJECTED"
-	PHOTO_STATUS_APPROVED         = "APPROVED"
-)
-
 type PatientAnswerToQuestion struct {
 	PatientInfoIntakeId int64
 	QuestionId          int64
