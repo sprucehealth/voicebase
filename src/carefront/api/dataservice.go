@@ -62,18 +62,18 @@ func (d *DataService) getPatientAnswersForQuestionsBasedOnQuery(query string) (p
 }
 
 func (d *DataService) GetPatientAnswersForQuestionsInGlobalSections(questionIds []int64, patientId int64) (patientAnswers map[int64][]PatientAnswerToQuestion, err error) {
-	buildSelectStatement := fmt.Sprintf(`select id, question_id, potential_answer_id, answer_text, 
+	queryStr := fmt.Sprintf(`select id, question_id, potential_answer_id, answer_text, 
 								layout_version_id from patient_info_intake 
 								where question_id in (%s) and patient_id = %d and status='ACTIVE'`, enumerateItemsIntoString(questionIds), patientId)
-	return d.getPatientAnswersForQuestionsBasedOnQuery(buildSelectStatement)
+	return d.getPatientAnswersForQuestionsBasedOnQuery(queryStr)
 
 }
 
 func (d *DataService) GetPatientAnswersForQuestionsInPatientVisit(questionIds []int64, patientId int64, patientVisitId int64) (patientAnswers map[int64][]PatientAnswerToQuestion, err error) {
-	buildSelectStatement := fmt.Sprintf(`select id, question_id, potential_answer_id, answer_text, 
+	queryStr := fmt.Sprintf(`select id, question_id, potential_answer_id, answer_text, 
 								layout_version_id from patient_info_intake 
 								where question_id in (%s) and patient_id = %d and patient_visit_id = %d and status='ACTIVE'`, enumerateItemsIntoString(questionIds), patientId, patientVisitId)
-	return d.getPatientAnswersForQuestionsBasedOnQuery(buildSelectStatement)
+	return d.getPatientAnswersForQuestionsBasedOnQuery(queryStr)
 }
 
 func (d *DataService) GetGlobalSectionIds() (globalSectionIds []int64, err error) {
