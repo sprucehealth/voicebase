@@ -67,6 +67,7 @@ type DataAPI interface {
 	GetStorageInfoOfCurrentActiveClientLayout(languageId, healthConditionId int64) (bucket, key, region string, layoutVersionId int64, err error)
 	GetPatientIdFromAccountId(accountId int64) (int64, error)
 	GetLayoutVersionIdForPatientVisit(patientVisitId int64) (layoutVersionId int64, err error)
+	GetStorageInfoForClientLayout(layoutVersionId, languageId int64) (bucket, key, region string, err error)
 	GetQuestionType(questionId int64) (questionType string, err error)
 	GetPatientAnswersForQuestionsInGlobalSections(questionIds []int64, patientId int64) (patientAnswers map[int64][]PatientAnswerToQuestion, err error)
 	GetPatientAnswersForQuestionsInPatientVisit(questionIds []int64, patientId int64, patientVisitId int64) (patientAnswers map[int64][]PatientAnswerToQuestion, err error)

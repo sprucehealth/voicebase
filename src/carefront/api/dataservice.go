@@ -138,6 +138,14 @@ func (d *DataService) GetQuestionType(questionId int64) (string, error) {
 	return questionType, err
 }
 
+func (d *DataService) GetStorageInfoForClientLayout(layoutVersionId, languageId int64) (bucket, key, region string, err error) {
+	err = d.DB.QueryRow(`select bucket, storage_key, region_tag from patient_layout_version 
+							inner join object_storage on object_storage_id=object_storage.id 
+							inner join region on region_id=region.id 
+								where layout_version_id = ? and language_id = ?`, layoutVersionId, languageId).Scan(&bucket, &key, &region)
+	return
+}
+
 func (d *DataService) GetStorageInfoOfCurrentActiveClientLayout(languageId, healthConditionId int64) (bucket, storage, region string, layoutVersionId int64, err error) {
 	row := d.DB.QueryRow(`select bucket, storage_key, region_tag, layout_version_id from patient_layout_version 
 							inner join object_storage on object_storage_id=object_storage.id 
