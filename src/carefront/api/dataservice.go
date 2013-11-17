@@ -448,13 +448,13 @@ func (d *DataService) UpdateActiveLayouts(layoutId int64, clientLayoutIds []int6
 		return err
 	}
 
-	for _, clientLayoutId := range clientLayoutIds {
-		_, err := d.DB.Exec(`update patient_layout_version set status='ACTIVE' where id = ?`, clientLayoutId)
-		if err != nil {
-			tx.Rollback()
-			return err
-		}
+	updateStr := fmt.Sprintf(`update patient_layout_version set status='ACTIVE' where id in (%s)`, enumerateItemsIntoString(clientLayoutIds))
+	_, err = d.DB.Exec(updateStr)
+	if err != nil {
+		tx.Rollback()
+		return err
 	}
+
 	tx.Commit()
 	return nil
 }
