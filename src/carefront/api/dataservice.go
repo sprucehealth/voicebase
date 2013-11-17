@@ -159,34 +159,49 @@ func (d *DataService) inactivatePreviousAnswersToQuestion(patientId, questionId,
 	return err
 }
 
+func (d *DataService) getPatientAnswersForQuestion(patientId, questionId, patientVisitId int64) (patientAnswers []int64, err error) {
+	patientAnswers = make([]int64, 0)
+	rows, err := d.DB.Query(`select id from patient_info_intake 
+								where patient_id = ? and patient_visit_id = ? and question_id = ? and status='ACTIVE'`, patientId, patientVisitId, questionId)
+	if err != nil {
+		return
+	}
+	defer rows.Close()
+	for rows.Next() {
+		var id int64
+		rows.Scan(&id)
+		patientAnswers = append(patientAnswers, id)
+	}
+	return
+}
+
 func (d *DataService) StoreFreeTextAnswersForQuestion(patientId, questionId, patientVisitId, layoutVersionId int64, answerIds []int64, answerTexts []string) (patientInfoIntakeIds []int64, err error) {
 	tx, err := d.DB.Begin()
 
 	err = d.inactivatePreviousAnswersToQuestion(patientId, questionId, patientVisitId, layoutVersionId, tx)
 	if err != nil {
 		tx.Rollback()
-		return nil, err
+		return
 	}
 
-	patientInfoIntakeIds = make([]int64, len(answerIds))
+	insertStr := "insert into patient_info_intake (patient_id, patient_visit_id, question_id, potential_answer_id, answer_text, layout_version_id, status)  values"
 	for i, answerId := range answerIds {
-		res, err := tx.Exec(`insert into patient_info_intake (patient_id, patient_visit_id, question_id, potential_answer_id, answer_text, layout_version_id, status) 
-							values (?, ?, ?, ?, ?, ?, 'ACTIVE')`, patientId, patientVisitId, questionId, answerId, answerTexts[i], layoutVersionId)
-		if err != nil {
-			tx.Rollback()
-			return nil, err
-		}
+		valueStr := fmt.Sprintf("(%d, %d, %d, %d, '%s', %d, 'ACTIVE')", patientId, patientVisitId, questionId, answerId, answerTexts[i], layoutVersionId)
+		insertStr = insertStr + valueStr
 
-		lastId, err := res.LastInsertId()
-		if err != nil {
-			tx.Rollback()
-			return nil, err
+		if i < (len(answerIds) - 1) {
+			insertStr = insertStr + ","
 		}
-		patientInfoIntakeIds[i] = lastId
 	}
 
+	_, err = tx.Exec(insertStr)
+	if err != nil {
+		tx.Rollback()
+		return
+	}
 	tx.Commit()
-	return patientInfoIntakeIds, nil
+	patientInfoIntakeIds, err = d.getPatientAnswersForQuestion(patientId, questionId, patientVisitId)
+	return
 }
 
 func (d *DataService) StoreChoiceAnswersForQuestion(patientId, questionId, patientVisitId, layoutVersionId int64, answerIds []int64) (patientInfoIntakeIds []int64, err error) {
@@ -195,28 +210,28 @@ func (d *DataService) StoreChoiceAnswersForQuestion(patientId, questionId, patie
 	err = d.inactivatePreviousAnswersToQuestion(patientId, questionId, patientVisitId, layoutVersionId, tx)
 	if err != nil {
 		tx.Rollback()
-		return nil, err
+		return
 	}
 
-	patientInfoIntakeIds = make([]int64, len(answerIds))
+	insertStr := "insert into patient_info_intake (patient_id, patient_visit_id, question_id, potential_answer_id, layout_version_id, status) values"
 	for i, answerId := range answerIds {
-		res, err := tx.Exec(`insert into patient_info_intake (patient_id, patient_visit_id, question_id, potential_answer_id, layout_version_id, status) 
-							values (?, ?, ?, ?, ?, 'ACTIVE')`, patientId, patientVisitId, questionId, answerId, layoutVersionId)
-		if err != nil {
-			tx.Rollback()
-			return nil, err
-		}
+		valueStr := fmt.Sprintf("(%d, %d, %d, %d, %d, 'ACTIVE')", patientId, patientVisitId, questionId, answerId, layoutVersionId)
+		insertStr = insertStr + valueStr
 
-		lastId, err := res.LastInsertId()
-		if err != nil {
-			tx.Rollback()
-			return nil, err
+		if i < (len(answerIds) - 1) {
+			insertStr = insertStr + ","
 		}
-		patientInfoIntakeIds[i] = lastId
 	}
 
+	_, err = tx.Exec(insertStr)
+	if err != nil {
+		tx.Rollback()
+		return
+	}
 	tx.Commit()
-	return patientInfoIntakeIds, nil
+
+	patientInfoIntakeIds, err = d.getPatientAnswersForQuestion(patientId, questionId, patientVisitId)
+	return
 }
 
 func (d *DataService) CreatePhotoAnswerForQuestionRecord(patientId, questionId, patientVisitId, potentialAnswerId, layoutVersionId int64) (patientInfoIntakeId int64, err error) {

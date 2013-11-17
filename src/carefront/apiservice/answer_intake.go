@@ -103,14 +103,14 @@ func (a *AnswerIntakeHandler) ServeHTTP(w http.ResponseWriter, r *http.Request) 
 			answerIntakeRequestBody.QuestionId, answerIntakeRequestBody.PatientVisitId, layoutVersionId, potentialAnswerIds,
 			answerTexts)
 		if err != nil {
-			WriteDeveloperError(w, http.StatusInternalServerError, "Unable to store the free text answer to the question based on the parameters provided and the internal state of the system")
+			WriteDeveloperError(w, http.StatusInternalServerError, "Unable to store the free text answer to the question based on the parameters provided and the internal state of the system: "+err.Error())
 			return
 		}
 	} else {
 		potentialInfoIntakeIds, err = a.DataApi.StoreChoiceAnswersForQuestion(patientId,
 			answerIntakeRequestBody.QuestionId, answerIntakeRequestBody.PatientVisitId, layoutVersionId, potentialAnswerIds)
 		if err != nil {
-			WriteDeveloperError(w, http.StatusInternalServerError, "Unable to store the multiple choice answer to the question for the patient based on the parameters provided and the internal state of the system")
+			WriteDeveloperError(w, http.StatusInternalServerError, "Unable to store the multiple choice answer to the question for the patient based on the parameters provided and the internal state of the system: "+err.Error())
 			return
 		}
 	}
