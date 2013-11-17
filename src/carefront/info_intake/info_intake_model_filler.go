@@ -16,13 +16,13 @@ func (c *Condition) FillInDatabaseInfo(dataApi api.DataAPI, languageId int64) er
 	c.QuestionId = questionId
 	c.PotentialAnswersId = make([]string, len(c.PotentialAnswersTags))
 	for i, tag := range c.PotentialAnswersTags {
-		answerIds, _, _, answerTags, _, err := dataApi.GetAnswerInfo(questionId, languageId)
+		answerInfos, err := dataApi.GetAnswerInfo(questionId, languageId)
 		if err != nil {
 			return err
 		}
-		for j, answerTag := range answerTags {
-			if answerTag == tag {
-				c.PotentialAnswersId[i] = strconv.Itoa(int(answerIds[j]))
+		for _, answerInfo := range answerInfos {
+			if answerInfo.AnswerTag == tag {
+				c.PotentialAnswersId[i] = strconv.Itoa(int(answerInfo.PotentialAnswerId))
 				break
 			}
 		}
@@ -62,16 +62,16 @@ func (q *Question) FillInDatabaseInfo(dataApi api.DataAPI, languageId int64) err
 
 	// go over the potential ansnwer tags to create potential outcome blocks
 	q.PotentialAnswers = make([]*PotentialAnswer, 0, 5)
-	answerIds, answers, answerTypes, _, orderings, err := dataApi.GetAnswerInfo(questionId, languageId)
+	answerInfos, err := dataApi.GetAnswerInfo(questionId, languageId)
 	if err != nil {
 		return err
 	}
 
-	for i, _ := range answerIds {
-		potentialAnswer := &PotentialAnswer{AnswerId: answerIds[i],
-			Answer:     answers[i],
-			AnswerType: answerTypes[i],
-			Ordering:   orderings[i]}
+	for _, answerInfo := range answerInfos {
+		potentialAnswer := &PotentialAnswer{AnswerId: answerInfo.PotentialAnswerId,
+			Answer:     answerInfo.Answer,
+			AnswerType: answerInfo.AnswerType,
+			Ordering:   answerInfo.Ordering}
 		q.PotentialAnswers = append(q.PotentialAnswers, potentialAnswer)
 	}
 

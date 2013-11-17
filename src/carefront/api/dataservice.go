@@ -299,34 +299,30 @@ func (d *DataService) GetQuestionInfo(questionTag string, languageId int64) (id 
 	return
 }
 
-func (d *DataService) GetAnswerInfo(questionId int64, languageId int64) (ids []int64, answers []string, answerTypes []string, answerTags []string, orderings []int64, err error) {
+func (d *DataService) GetAnswerInfo(questionId int64, languageId int64) (answerInfos []PotentialAnswerInfo, err error) {
 	rows, err := d.DB.Query(`select potential_answer.id, ltext, atype, potential_answer_tag, ordering from potential_answer 
 								inner join localized_text on answer_localized_text=app_text_id 
 								inner join answer_type on atype_id=answer_type.id 
 									where question_id = ? and language_id = ?`, questionId, languageId)
 	if err != nil {
-		return nil, nil, nil, nil, nil, err
+		return
 	}
 	defer rows.Close()
-	ids = make([]int64, 0)
-	answers = make([]string, 0)
-	answerTypes = make([]string, 0)
-	orderings = make([]int64, 0)
-	answerTags = make([]string, 0)
+	answerInfos = make([]PotentialAnswerInfo, 0)
 	for rows.Next() {
 		var id, ordering int64
 		var answer, answerType, answerTag string
 		err = rows.Scan(&id, &answer, &answerType, &answerTag, &ordering)
-		ids = append(ids, id)
-		answers = append(answers, answer)
-		answerTypes = append(answerTypes, answerType)
-		orderings = append(orderings, ordering)
-		answerTags = append(answerTags, answerTag)
+		answerInfos = append(answerInfos, PotentialAnswerInfo{PotentialAnswerId: id,
+			Answer:     answer,
+			AnswerType: answerType,
+			AnswerTag:  answerTag,
+			Ordering:   ordering})
 		if err != nil {
-			return nil, nil, nil, nil, nil, err
+			return
 		}
 	}
-	return ids, answers, answerTypes, answerTags, orderings, nil
+	return
 }
 
 func (d *DataService) GetTipInfo(tipTag string, languageId int64) (id int64, tip string, err error) {
