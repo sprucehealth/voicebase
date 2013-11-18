@@ -60,6 +60,17 @@ func (p *PhotoAnswerIntakeHandler) ServeHTTP(w http.ResponseWriter, r *http.Requ
 		return
 	}
 
+	patientIdFromPatientVisitId, err := p.DataApi.GetPatientIdFromPatientVisitId(requestData.PatientVisitId)
+	if err != nil {
+		WriteDeveloperError(w, http.StatusBadRequest, "Unable to get the patient id from the patient visit id: "+err.Error())
+		return
+	}
+
+	if patientIdFromPatientVisitId != patientId {
+		WriteDeveloperError(w, http.StatusBadRequest, "patient id retrieved from the patient_visit_id does not match patient id retrieved from auth token")
+		return
+	}
+
 	layoutVersionId, err := p.DataApi.GetLayoutVersionIdForPatientVisit(requestData.PatientVisitId)
 	if err != nil {
 		WriteDeveloperError(w, http.StatusInternalServerError, "Error getting latest layout version id: "+err.Error())

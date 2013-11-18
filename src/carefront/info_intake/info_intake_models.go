@@ -41,7 +41,8 @@ type PotentialAnswer struct {
 type PatientAnswer struct {
 	PatientAnswerId   int64  `json:"patient_answer_id,string"`
 	PotentialAnswerId int64  `json:"potential_answer_id,string"`
-	AnswerText        string `json:"answer_text"`
+	AnswerText        string `json:"answer_text,omitempty"`
+	ObjectUrl         string `json:"object_url,omitempty"`
 }
 
 type Question struct {
