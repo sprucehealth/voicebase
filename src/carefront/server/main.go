@@ -114,7 +114,7 @@ func main() {
 	photoAnswerCloudStorageApi := api.NewCloudStorageService(*flagAWSAccessKey, *flagAWSSecretKey)
 	authHandler := &apiservice.AuthenticationHandler{authApi}
 	signupPatientHandler := &apiservice.SignupPatientHandler{dataApi, authApi}
-	patientVisitHandler := apiservice.NewPatientVisitHandler(dataApi, authApi, cloudStorageApi)
+	patientVisitHandler := apiservice.NewPatientVisitHandler(dataApi, authApi, cloudStorageApi, photoAnswerCloudStorageApi)
 	answerIntakeHandler := apiservice.NewAnswerIntakeHandler(dataApi)
 	photoAnswerIntakeHandler := apiservice.NewPhotoAnswerIntakeHandler(dataApi, photoAnswerCloudStorageApi, *flagS3CaseBucket, *flagMaxInMemoryForPhotoMB*1024*1024)
 	pingHandler := apiservice.PingHandler(0)

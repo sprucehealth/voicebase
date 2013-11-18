@@ -14,10 +14,11 @@ const (
 )
 
 type PatientVisitHandler struct {
-	DataApi         api.DataAPI
-	AuthApi         api.Auth
-	CloudStorageApi api.CloudStorageAPI
-	accountId       int64
+	DataApi                    api.DataAPI
+	AuthApi                    api.Auth
+	LayoutStorageService       api.CloudStorageAPI
+	PatientPhotoStorageService api.CloudStorageAPI
+	accountId                  int64
 }
 
 type PatientVisitErrorResponse struct {
@@ -29,8 +30,8 @@ type PatientVisitResponse struct {
 	ClientLayout   *info_intake.HealthCondition `json:"health_condition,omitempty"`
 }
 
-func NewPatientVisitHandler(dataApi api.DataAPI, authApi api.Auth, cloudStorageApi api.CloudStorageAPI) *PatientVisitHandler {
-	return &PatientVisitHandler{dataApi, authApi, cloudStorageApi, 0}
+func NewPatientVisitHandler(dataApi api.DataAPI, authApi api.Auth, layoutStorageService api.CloudStorageAPI, patientPhotoStorageService api.CloudStorageAPI) *PatientVisitHandler {
+	return &PatientVisitHandler{dataApi, authApi, layoutStorageService, patientPhotoStorageService, 0}
 }
 
 func (s *PatientVisitHandler) AccountIdFromAuthToken(accountId int64) {
@@ -157,7 +158,7 @@ func (s *PatientVisitHandler) populateHealthConditionWithPatientAnswers(healthCo
 						var objectUrl string
 						var err error
 						if patientAnswerToQuestion.StorageKey != "" {
-							objectUrl, err = s.CloudStorageApi.GetSignedUrlForObjectAtLocation(patientAnswerToQuestion.StorageBucket,
+							objectUrl, err = s.PatientPhotoStorageService.GetSignedUrlForObjectAtLocation(patientAnswerToQuestion.StorageBucket,
 								patientAnswerToQuestion.StorageKey, patientAnswerToQuestion.StorageRegion, time.Now().Add(10*time.Minute))
 							if err != nil {
 								log.Fatal("Unable to get signed url for photo object: " + err.Error())
@@ -204,7 +205,7 @@ func (s *PatientVisitHandler) getClientLayoutForPatientVisit(patientVisitId, lan
 
 func (s *PatientVisitHandler) getHealthConditionObjectAtLocation(bucket, key, region string) (healthCondition *info_intake.HealthCondition, err error) {
 
-	data, err := s.CloudStorageApi.GetObjectAtLocation(bucket, key, region)
+	data, err := s.LayoutStorageService.GetObjectAtLocation(bucket, key, region)
 	if err != nil {
 		return
 	}
