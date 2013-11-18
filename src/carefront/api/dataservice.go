@@ -6,6 +6,7 @@ import (
 	"fmt"
 	"log"
 	"strconv"
+	"strings"
 	"time"
 )
 
@@ -38,8 +39,8 @@ func (d *DataService) GetPatientIdFromAccountId(accountId int64) (int64, error) 
 	return patientId, err
 }
 
-func (d *DataService) getPatientAnswersForQuestionsBasedOnQuery(query string) (patientAnswers map[int64][]PatientAnswerToQuestion, err error) {
-	rows, err := d.DB.Query(query)
+func (d *DataService) getPatientAnswersForQuestionsBasedOnQuery(query string, args ...interface{}) (patientAnswers map[int64][]PatientAnswerToQuestion, err error) {
+	rows, err := d.DB.Query(query, args...)
 	if err != nil {
 		return nil, err
 	}
@@ -64,16 +65,16 @@ func (d *DataService) getPatientAnswersForQuestionsBasedOnQuery(query string) (p
 func (d *DataService) GetPatientAnswersForQuestionsInGlobalSections(questionIds []int64, patientId int64) (patientAnswers map[int64][]PatientAnswerToQuestion, err error) {
 	queryStr := fmt.Sprintf(`select id, question_id, potential_answer_id, answer_text, 
 								layout_version_id from patient_info_intake 
-								where question_id in (%s) and patient_id = %d and status='ACTIVE'`, enumerateItemsIntoString(questionIds), patientId)
-	return d.getPatientAnswersForQuestionsBasedOnQuery(queryStr)
+								where question_id in (%s) and patient_id = ? and status='ACTIVE'`, enumerateItemsIntoString(questionIds))
+	return d.getPatientAnswersForQuestionsBasedOnQuery(queryStr, patientId)
 
 }
 
 func (d *DataService) GetPatientAnswersForQuestionsInPatientVisit(questionIds []int64, patientId int64, patientVisitId int64) (patientAnswers map[int64][]PatientAnswerToQuestion, err error) {
 	queryStr := fmt.Sprintf(`select id, question_id, potential_answer_id, answer_text, 
 								layout_version_id from patient_info_intake 
-								where question_id in (%s) and patient_id = %d and patient_visit_id = %d and status='ACTIVE'`, enumerateItemsIntoString(questionIds), patientId, patientVisitId)
-	return d.getPatientAnswersForQuestionsBasedOnQuery(queryStr)
+								where question_id in (%s) and patient_id = ? and patient_visit_id = ? and status='ACTIVE'`, enumerateItemsIntoString(questionIds))
+	return d.getPatientAnswersForQuestionsBasedOnQuery(queryStr, patientId, patientVisitId)
 }
 
 func (d *DataService) GetGlobalSectionIds() (globalSectionIds []int64, err error) {
@@ -463,11 +464,9 @@ func enumerateItemsIntoString(ids []int64) string {
 	if ids == nil || len(ids) == 0 {
 		return ""
 	}
-	idsStr := strconv.FormatInt(ids[0], 10)
-	if len(ids) > 1 {
-		for _, id := range ids[1:] {
-			idsStr = idsStr + "," + strconv.FormatInt(id, 10)
-		}
+	idsStr := make([]string, 0)
+	for _, id := range ids {
+		idsStr = append(idsStr, strconv.FormatInt(id, 10))
 	}
-	return idsStr
+	return strings.Join(idsStr, ",")
 }
