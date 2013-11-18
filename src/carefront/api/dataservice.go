@@ -38,6 +38,12 @@ func (d *DataService) GetPatientIdFromAccountId(accountId int64) (int64, error) 
 	return patientId, err
 }
 
+func (d *DataService) GetPatientIdFromPatientVisitId(patientVisitId int64) (int64, error) {
+	var patientId int64
+	err := d.DB.QueryRow("select patient_id from patient_visit where id = ?", patientVisitId).Scan(&patientId)
+	return patientId, err
+}
+
 func (d *DataService) getPatientAnswersForQuestionsBasedOnQuery(query string) (patientAnswers map[int64][]PatientAnswerToQuestion, err error) {
 	rows, err := d.DB.Query(query)
 	if err != nil {
