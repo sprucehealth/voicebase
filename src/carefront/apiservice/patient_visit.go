@@ -50,14 +50,20 @@ func (s *PatientVisitHandler) returnNewOrOpenPatientVisit(w http.ResponseWriter,
 		return
 	}
 
-	healthCondition, layoutVersionId, err := s.getCurrentActiveClientLayoutForHealthCondition(HEALTH_CONDITION_ACNE_ID, api.EN_LANGUAGE_ID)
-
 	isNewPatientVisit := false
+	var healthCondition *info_intake.HealthCondition
+	var layoutVersionId int64
 	// check if there is an open patient visit for the given health condition and return
 	// that to the patient
 	patientVisitId, err := s.DataApi.GetActivePatientVisitForHealthCondition(patientId, HEALTH_CONDITION_ACNE_ID)
 	if err == api.NoRowsError {
 		isNewPatientVisit = true
+		// if there isn't one, then pick the current active condition layout to send to the client for the patient to enter information
+		healthCondition, layoutVersionId, err = s.getCurrentActiveClientLayoutForHealthCondition(HEALTH_CONDITION_ACNE_ID, api.EN_LANGUAGE_ID)
+		if err != nil {
+			WriteDeveloperError(w, http.StatusInternalServerError, "Unable to get current active client digestable layout: "+err.Error())
+			return
+		}
 		patientVisitId, err = s.DataApi.CreateNewPatientVisit(patientId, HEALTH_CONDITION_ACNE_ID, layoutVersionId)
 		if err != nil {
 			WriteDeveloperError(w, http.StatusInternalServerError, "Unable to create new patient visit id: "+err.Error())
@@ -67,6 +73,16 @@ func (s *PatientVisitHandler) returnNewOrOpenPatientVisit(w http.ResponseWriter,
 		WriteDeveloperError(w, http.StatusInternalServerError, `unable to retrieve the current active patient 
 			visit for the health condition from the patient id: `+err.Error())
 		return
+	} else {
+		// if there is an active patient visit record, then ensure to lookup the layout to send to the patient
+		// based on what layout was shown to the patient at the time of opening of the patient visit, NOT the current
+		// based on what is the current active layout because that may have potentially changed and we want to ensure
+		// to not confuse the patient by changing the question structure under their feet for this particular patient visit
+		// in other words, want to show them what they have already seen in terms of a flow.
+		healthCondition, layoutVersionId, err = s.getClientLayoutForPatientVisit(patientVisitId, api.EN_LANGUAGE_ID)
+		if err != nil {
+			return
+		}
 	}
 
 	// identify sections that are global
@@ -150,18 +166,38 @@ func populateHealthConditionWithPatientAnswers(healthCondition *info_intake.Heal
 func (s *PatientVisitHandler) getCurrentActiveClientLayoutForHealthCondition(healthConditionId, languageId int64) (healthCondition *info_intake.HealthCondition, layoutVersionId int64, err error) {
 	bucket, key, region, layoutVersionId, err := s.DataApi.GetStorageInfoOfCurrentActiveClientLayout(languageId, healthConditionId)
 	if err != nil {
-		return nil, 0, err
+		return
 	}
+
+	healthCondition, err = s.getHealthConditionObjectAtLocation(bucket, key, region)
+	return
+}
+
+func (s *PatientVisitHandler) getClientLayoutForPatientVisit(patientVisitId, languageId int64) (healthCondition *info_intake.HealthCondition, layoutVersionId int64, err error) {
+	layoutVersionId, err = s.DataApi.GetLayoutVersionIdForPatientVisit(patientVisitId)
+	if err != nil {
+		return
+	}
+
+	bucket, key, region, err := s.DataApi.GetStorageInfoForClientLayout(layoutVersionId, languageId)
+	if err != nil {
+		return
+	}
+
+	healthCondition, err = s.getHealthConditionObjectAtLocation(bucket, key, region)
+	return
+}
+
+func (s *PatientVisitHandler) getHealthConditionObjectAtLocation(bucket, key, region string) (healthCondition *info_intake.HealthCondition, err error) {
 
 	data, err := s.CloudStorageApi.GetObjectAtLocation(bucket, key, region)
 	if err != nil {
-		return nil, 0, err
+		return
 	}
 	healthCondition = &info_intake.HealthCondition{}
 	err = json.Unmarshal(data, healthCondition)
 	if err != nil {
-		return nil, 0, err
+		return
 	}
-
-	return healthCondition, layoutVersionId, err
+	return
 }

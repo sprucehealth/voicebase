@@ -2,6 +2,7 @@ package apiservice
 
 import (
 	"bytes"
+	"carefront/apiservice"
 	"carefront/mockapi"
 	"encoding/json"
 	"mime/multipart"
@@ -61,7 +62,7 @@ func TestMissingParametersSignup(t *testing.T) {
 	responseWriter := createFakeResponseWriter()
 	mux.ServeHTTP(responseWriter, req)
 
-	checkStatusCode(http.StatusForbidden, responseWriter, t)
+	checkStatusCode(http.StatusBadRequest, responseWriter, t)
 }
 
 func TestSignupFollowedByLogin(t *testing.T) {
@@ -75,7 +76,7 @@ func TestSignupFollowedByLogin(t *testing.T) {
 	checkStatusCode(http.StatusOK, responseWriter, t)
 	validateTokenResponse(responseWriter.body, t)
 
-	anotherAuthHandler := &AuthenticationHandler{mux.AuthApi}
+	anotherAuthHandler := &apiservice.AuthenticationHandler{mux.AuthApi}
 	mux.Handle(LoginPath, anotherAuthHandler)
 	req, _ = http.NewRequest("POST", LoginPath, strings.NewReader("login=kjkj1&password=12345"))
 	req.Header.Set("Content-Type", ContentTypeValue)
@@ -95,7 +96,7 @@ func TestMalformedHeaderSignup(t *testing.T) {
 	responseWriter := createFakeResponseWriter()
 	mux.ServeHTTP(responseWriter, req)
 
-	checkStatusCode(http.StatusForbidden, responseWriter, t)
+	checkStatusCode(http.StatusBadRequest, responseWriter, t)
 }
 
 func TestSuccessfulLogin(t *testing.T) {
@@ -126,7 +127,7 @@ func TestUnauthorizedLogout(t *testing.T) {
 	req, _ := http.NewRequest("GET", LogoutPath, nil)
 	responseWriter := createFakeResponseWriter()
 	mux.ServeHTTP(responseWriter, req)
-	checkStatusCode(http.StatusForbidden, responseWriter, t)
+	checkStatusCode(http.StatusBadRequest, responseWriter, t)
 }
 func TestUnsuccessfulLoginDueToPassword(t *testing.T) {
 	mux := setupAuthHandlerInMux(LoginPath)
@@ -160,66 +161,7 @@ func TestUnsuccessfulLoginDueToMissingParams(t *testing.T) {
 	responseWriter := createFakeResponseWriter()
 	mux.ServeHTTP(responseWriter, req)
 
-	checkStatusCode(http.StatusForbidden, responseWriter, t)
-}
-
-func TestMissingAuthHeaderPhotoUpload(t *testing.T) {
-	mux := setupPhotoUploadHandlerInMux()
-	req, _ := http.NewRequest("POST", PhotoUploadPath, strings.NewReader("case_id=1234&photo_type=face_middle&photo=xxx"))
-	responseWriter := createFakeResponseWriter()
-	mux.ServeHTTP(responseWriter, req)
-
-	checkStatusCode(http.StatusForbidden, responseWriter, t)
-}
-
-func TestMissingCaseIdInPhotoUpload(t *testing.T) {
-	testHelperForMissingParameter([]string{"photo", "photo_type"}, t)
-}
-
-func TestMissingPhotoTypeInPhotoUpload(t *testing.T) {
-	testHelperForMissingParameter([]string{"case_id", "photo"}, t)
-}
-
-func TestSuccessfulPhotoUpload(t *testing.T) {
-	mux := setupPhotoUploadHandlerInMux()
-
-	buf, w := createMultiPartFormDataWithParameters([]string{"photo", "photo_type", "case_id"}, t)
-
-	req, _ := http.NewRequest("POST", PhotoUploadPath, buf)
-	req.Header.Set("Content-Type", w.FormDataContentType())
-	req.Header.Set("Authorization", "token tokenForKajham")
-
-	responseWriter := createFakeResponseWriter()
-	mux.ServeHTTP(responseWriter, req)
-
-	checkStatusCode(http.StatusOK, responseWriter, t)
-}
-
-func testHelperDataOrPhotoServiceError(photoServiceError, dataServiceError bool, t *testing.T) {
-	fakeAuthApi := createAndReturnFakeAuthApi()
-	fakePhotoApi := &mockapi.MockPhotoService{photoServiceError}
-	fakeDataApi := &mockapi.MockDataService{dataServiceError}
-
-	photoUploadHandler := &PhotoUploadHandler{fakePhotoApi, "testing", fakeDataApi}
-	mux := &AuthServeMux{*http.NewServeMux(), fakeAuthApi}
-	mux.Handle(PhotoUploadPath, photoUploadHandler)
-
-	buf, w := createMultiPartFormDataWithParameters([]string{"photo", "photo_type", "case_id"}, t)
-	req, _ := http.NewRequest("POST", PhotoUploadPath, buf)
-	req.Header.Set("Content-Type", w.FormDataContentType())
-	req.Header.Set("Authorization", "token tokenForKajham")
-
-	responseWriter := createFakeResponseWriter()
-	mux.ServeHTTP(responseWriter, req)
-	checkStatusCode(http.StatusInternalServerError, responseWriter, t)
-}
-
-func TestUploadErrorPhotoUpload(t *testing.T) {
-	testHelperDataOrPhotoServiceError(true, false, t)
-}
-
-func TestDataServiceErrorPhotoUpload(t *testing.T) {
-	testHelperDataOrPhotoServiceError(false, true, t)
+	checkStatusCode(http.StatusBadRequest, responseWriter, t)
 }
 
 // Private Methods
@@ -243,23 +185,11 @@ func createAndReturnFakeAuthApi() *mockapi.MockAuth {
 	}
 }
 
-func setupAuthHandlerInMux(path string) *AuthServeMux {
+func setupAuthHandlerInMux(path string) *apiservice.AuthServeMux {
 	fakeAuthApi := createAndReturnFakeAuthApi()
-	authHandler := &AuthenticationHandler{fakeAuthApi}
-	mux := &AuthServeMux{*http.NewServeMux(), fakeAuthApi}
+	authHandler := &apiservice.AuthenticationHandler{fakeAuthApi}
+	mux := &apiservice.AuthServeMux{*http.NewServeMux(), fakeAuthApi}
 	mux.Handle(path, authHandler)
-
-	return mux
-}
-
-func setupPhotoUploadHandlerInMux() *AuthServeMux {
-	fakeAuthApi := createAndReturnFakeAuthApi()
-	fakePhotoApi := &mockapi.MockPhotoService{false}
-	fakeDataApi := &mockapi.MockDataService{false}
-
-	photoUploadHandler := &PhotoUploadHandler{fakePhotoApi, "testing", fakeDataApi}
-	mux := &AuthServeMux{*http.NewServeMux(), fakeAuthApi}
-	mux.Handle(PhotoUploadPath, photoUploadHandler)
 
 	return mux
 }
@@ -327,17 +257,4 @@ func createMultiPartFormDataWithParameters(parameters []string, t *testing.T) (*
 	w.Close()
 
 	return buf, w
-}
-
-func testHelperForMissingParameter(parameters []string, t *testing.T) {
-	mux := setupPhotoUploadHandlerInMux()
-	buf, w := createMultiPartFormDataWithParameters(parameters, t)
-	req, _ := http.NewRequest("POST", PhotoUploadPath, buf)
-	req.Header.Set("Content-Type", w.FormDataContentType())
-	req.Header.Set("Authorization", "token tokenForKajham")
-	responseWriter := createFakeResponseWriter()
-	mux.ServeHTTP(responseWriter, req)
-
-	checkStatusCode(http.StatusBadRequest, responseWriter, t)
-	checkForErrorInResponse(responseWriter.body, t)
 }

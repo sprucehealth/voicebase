@@ -139,6 +139,14 @@ func (d *DataService) GetQuestionType(questionId int64) (string, error) {
 	return questionType, err
 }
 
+func (d *DataService) GetStorageInfoForClientLayout(layoutVersionId, languageId int64) (bucket, key, region string, err error) {
+	err = d.DB.QueryRow(`select bucket, storage_key, region_tag from patient_layout_version 
+							inner join object_storage on object_storage_id=object_storage.id 
+							inner join region on region_id=region.id 
+								where layout_version_id = ? and language_id = ?`, layoutVersionId, languageId).Scan(&bucket, &key, &region)
+	return
+}
+
 func (d *DataService) GetStorageInfoOfCurrentActiveClientLayout(languageId, healthConditionId int64) (bucket, storage, region string, layoutVersionId int64, err error) {
 	row := d.DB.QueryRow(`select bucket, storage_key, region_tag, layout_version_id from patient_layout_version 
 							inner join object_storage on object_storage_id=object_storage.id 
@@ -160,34 +168,49 @@ func (d *DataService) inactivatePreviousAnswersToQuestion(patientId, questionId,
 	return err
 }
 
+func (d *DataService) getPatientAnswersForQuestion(patientId, questionId, patientVisitId int64) (patientAnswers []int64, err error) {
+	patientAnswers = make([]int64, 0)
+	rows, err := d.DB.Query(`select id from patient_info_intake 
+								where patient_id = ? and patient_visit_id = ? and question_id = ? and status='ACTIVE'`, patientId, patientVisitId, questionId)
+	if err != nil {
+		return
+	}
+	defer rows.Close()
+	for rows.Next() {
+		var id int64
+		rows.Scan(&id)
+		patientAnswers = append(patientAnswers, id)
+	}
+	return
+}
+
 func (d *DataService) StoreFreeTextAnswersForQuestion(patientId, questionId, patientVisitId, layoutVersionId int64, answerIds []int64, answerTexts []string) (patientInfoIntakeIds []int64, err error) {
 	tx, err := d.DB.Begin()
 
 	err = d.inactivatePreviousAnswersToQuestion(patientId, questionId, patientVisitId, layoutVersionId, tx)
 	if err != nil {
 		tx.Rollback()
-		return nil, err
+		return
 	}
 
-	patientInfoIntakeIds = make([]int64, len(answerIds))
+	insertStr := "insert into patient_info_intake (patient_id, patient_visit_id, question_id, potential_answer_id, answer_text, layout_version_id, status)  values"
 	for i, answerId := range answerIds {
-		res, err := tx.Exec(`insert into patient_info_intake (patient_id, patient_visit_id, question_id, potential_answer_id, answer_text, layout_version_id, status) 
-							values (?, ?, ?, ?, ?, ?, 'ACTIVE')`, patientId, patientVisitId, questionId, answerId, answerTexts[i], layoutVersionId)
-		if err != nil {
-			tx.Rollback()
-			return nil, err
-		}
+		valueStr := fmt.Sprintf("(%d, %d, %d, %d, '%s', %d, 'ACTIVE')", patientId, patientVisitId, questionId, answerId, answerTexts[i], layoutVersionId)
+		insertStr = insertStr + valueStr
 
-		lastId, err := res.LastInsertId()
-		if err != nil {
-			tx.Rollback()
-			return nil, err
+		if i < (len(answerIds) - 1) {
+			insertStr = insertStr + ","
 		}
-		patientInfoIntakeIds[i] = lastId
 	}
 
+	_, err = tx.Exec(insertStr)
+	if err != nil {
+		tx.Rollback()
+		return
+	}
 	tx.Commit()
-	return patientInfoIntakeIds, nil
+	patientInfoIntakeIds, err = d.getPatientAnswersForQuestion(patientId, questionId, patientVisitId)
+	return
 }
 
 func (d *DataService) StoreChoiceAnswersForQuestion(patientId, questionId, patientVisitId, layoutVersionId int64, answerIds []int64) (patientInfoIntakeIds []int64, err error) {
@@ -196,28 +219,28 @@ func (d *DataService) StoreChoiceAnswersForQuestion(patientId, questionId, patie
 	err = d.inactivatePreviousAnswersToQuestion(patientId, questionId, patientVisitId, layoutVersionId, tx)
 	if err != nil {
 		tx.Rollback()
-		return nil, err
+		return
 	}
 
-	patientInfoIntakeIds = make([]int64, len(answerIds))
+	insertStr := "insert into patient_info_intake (patient_id, patient_visit_id, question_id, potential_answer_id, layout_version_id, status) values"
 	for i, answerId := range answerIds {
-		res, err := tx.Exec(`insert into patient_info_intake (patient_id, patient_visit_id, question_id, potential_answer_id, layout_version_id, status) 
-							values (?, ?, ?, ?, ?, 'ACTIVE')`, patientId, patientVisitId, questionId, answerId, layoutVersionId)
-		if err != nil {
-			tx.Rollback()
-			return nil, err
-		}
+		valueStr := fmt.Sprintf("(%d, %d, %d, %d, %d, 'ACTIVE')", patientId, patientVisitId, questionId, answerId, layoutVersionId)
+		insertStr = insertStr + valueStr
 
-		lastId, err := res.LastInsertId()
-		if err != nil {
-			tx.Rollback()
-			return nil, err
+		if i < (len(answerIds) - 1) {
+			insertStr = insertStr + ","
 		}
-		patientInfoIntakeIds[i] = lastId
 	}
 
+	_, err = tx.Exec(insertStr)
+	if err != nil {
+		tx.Rollback()
+		return
+	}
 	tx.Commit()
-	return patientInfoIntakeIds, nil
+
+	patientInfoIntakeIds, err = d.getPatientAnswersForQuestion(patientId, questionId, patientVisitId)
+	return
 }
 
 func (d *DataService) CreatePhotoAnswerForQuestionRecord(patientId, questionId, patientVisitId, potentialAnswerId, layoutVersionId int64) (patientInfoIntakeId int64, err error) {
@@ -244,33 +267,6 @@ func (d *DataService) MakeCurrentPhotoAnswerInactive(patientId, questionId, pati
 							and patient_visit_id = ? and potential_answer_id = ? 
 							and layout_version_id = ?`, patientId, questionId, patientVisitId, potentialAnswerId, layoutVersionId)
 	return err
-}
-
-func (d *DataService) CreatePhotoForCase(caseId int64, photoType string) (int64, error) {
-	// create a new photo for the case and mark it as pending upload
-	res, err := d.DB.Exec("insert into case_image(case_id, photoType, status) values (?, ?, ?)", caseId, photoType, PHOTO_STATUS_PENDING_UPLOAD)
-	if err != nil {
-		return 0, err
-	}
-
-	lastId, err := res.LastInsertId()
-	if err != nil {
-		return 0, err
-	}
-
-	return lastId, err
-}
-
-func (d *DataService) MarkPhotoUploadComplete(caseId, photoId int64) error {
-	_, err := d.DB.Exec("update case_image set status = ? where id = ? and case_id = ?", PHOTO_STATUS_PENDING_APPROVAL, photoId, caseId)
-	if err != nil {
-		return err
-	}
-	return nil
-}
-
-func (d *DataService) GetPhotosForCase(caseId int64) ([]string, error) {
-	return make([]string, 1), nil
 }
 
 func (d *DataService) GetHealthConditionInfo(healthConditionTag string) (int64, error) {
@@ -449,13 +445,13 @@ func (d *DataService) UpdateActiveLayouts(layoutId int64, clientLayoutIds []int6
 		return err
 	}
 
-	for _, clientLayoutId := range clientLayoutIds {
-		_, err := d.DB.Exec(`update patient_layout_version set status='ACTIVE' where id = ?`, clientLayoutId)
-		if err != nil {
-			tx.Rollback()
-			return err
-		}
+	updateStr := fmt.Sprintf(`update patient_layout_version set status='ACTIVE' where id in (%s)`, enumerateItemsIntoString(clientLayoutIds))
+	_, err = d.DB.Exec(updateStr)
+	if err != nil {
+		tx.Rollback()
+		return err
 	}
+
 	tx.Commit()
 	return nil
 }
