@@ -53,32 +53,52 @@ func (d *DataService) getPatientAnswersForQuestionsBasedOnQuery(query string) (p
 	patientAnswers = make(map[int64][]PatientAnswerToQuestion)
 	for rows.Next() {
 		var answerId, questionId, potentialAnswerId, layoutVersionId int64
-		var answerText string
-		rows.Scan(&answerId, &questionId, &potentialAnswerId, &answerText, &layoutVersionId)
+		var answerText, storageBucket, storageKey, storageRegion sql.NullString
+		err = rows.Scan(&answerId, &questionId, &potentialAnswerId, &answerText, &storageBucket, &storageKey, &storageRegion, &layoutVersionId)
+		if err != nil {
+			return
+		}
 		if patientAnswers[questionId] == nil {
 			patientAnswers[questionId] = make([]PatientAnswerToQuestion, 0)
 		}
-		patientAnswers[questionId] = append(patientAnswers[questionId], PatientAnswerToQuestion{PatientInfoIntakeId: answerId,
+		patientAnswerToQuestion := PatientAnswerToQuestion{PatientInfoIntakeId: answerId,
 			QuestionId:        questionId,
 			PotentialAnswerId: potentialAnswerId,
 			LayoutVersionId:   layoutVersionId,
-			AnswerText:        answerText})
+		}
+		if answerText.Valid {
+			patientAnswerToQuestion.AnswerText = answerText.String
+		}
+		if storageBucket.Valid {
+			patientAnswerToQuestion.StorageBucket = storageBucket.String
+		}
+		if storageRegion.Valid {
+			patientAnswerToQuestion.StorageRegion = storageRegion.String
+		}
+		if storageKey.Valid {
+			patientAnswerToQuestion.StorageKey = storageKey.String
+		}
+		patientAnswers[questionId] = append(patientAnswers[questionId], patientAnswerToQuestion)
 	}
 	return
 }
 
 func (d *DataService) GetPatientAnswersForQuestionsInGlobalSections(questionIds []int64, patientId int64) (patientAnswers map[int64][]PatientAnswerToQuestion, err error) {
-	queryStr := fmt.Sprintf(`select id, question_id, potential_answer_id, answer_text, 
-								layout_version_id from patient_info_intake 
-								where question_id in (%s) and patient_id = %d and status='ACTIVE'`, enumerateItemsIntoString(questionIds), patientId)
+	queryStr := fmt.Sprintf(`select patient_info_intake.id, question_id, potential_answer_id, answer_text, object_storage.bucket, object_storage.storage_key, region_tag,  
+								layout_version_id from patient_info_intake  
+								left outer join object_storage on object_storage_id = object_storage.id 
+								left outer join region on region_id=region.id 
+								where question_id in (%s) and patient_id = %d and patient_info_intake.status='ACTIVE'`, enumerateItemsIntoString(questionIds), patientId)
 	return d.getPatientAnswersForQuestionsBasedOnQuery(queryStr)
 
 }
 
 func (d *DataService) GetPatientAnswersForQuestionsInPatientVisit(questionIds []int64, patientId int64, patientVisitId int64) (patientAnswers map[int64][]PatientAnswerToQuestion, err error) {
-	queryStr := fmt.Sprintf(`select id, question_id, potential_answer_id, answer_text, 
-								layout_version_id from patient_info_intake 
-								where question_id in (%s) and patient_id = %d and patient_visit_id = %d and status='ACTIVE'`, enumerateItemsIntoString(questionIds), patientId, patientVisitId)
+	queryStr := fmt.Sprintf(`select patient_info_intake.id, question_id, potential_answer_id, answer_text, bucket, storage_key, region_tag, 
+								layout_version_id from patient_info_intake  
+								left outer join object_storage on object_storage_id = object_storage.id 
+								left outer join region on region_id=region.id 
+								where question_id in (%s) and patient_id = %d and patient_visit_id = %d and patient_info_intake.status='ACTIVE'`, enumerateItemsIntoString(questionIds), patientId, patientVisitId)
 	return d.getPatientAnswersForQuestionsBasedOnQuery(queryStr)
 }
 

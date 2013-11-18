@@ -25,6 +25,9 @@ type PatientAnswerToQuestion struct {
 	PotentialAnswerId   int64
 	LayoutVersionId     int64
 	AnswerText          string
+	StorageBucket       string
+	StorageKey          string
+	StorageRegion       string
 }
 
 type PotentialAnswerInfo struct {
@@ -92,6 +95,7 @@ type DataAPI interface {
 
 type CloudStorageAPI interface {
 	GetObjectAtLocation(bucket, key, region string) (rawData []byte, err error)
+	GetSignedUrlForObjectAtLocation(bucket, key, region string, duration time.Time) (url string, err error)
 	PutObjectToLocation(bucket, key, region, contentType string, rawData []byte, duration time.Time, dataApi DataAPI) (int64, string, error)
 }
 

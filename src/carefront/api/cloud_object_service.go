@@ -40,6 +40,19 @@ func (c *CloudStorageService) GetObjectAtLocation(bucket, key, region string) (r
 	return rawData, nil
 }
 
+func (c *CloudStorageService) GetSignedUrlForObjectAtLocation(bucket, key, region string, duration time.Time) (url string, err error) {
+	auth := aws.Auth{c.awsAccessKey, c.awsSecretKey}
+	awsRegion, ok := aws.Regions[region]
+	if !ok {
+		awsRegion = aws.USEast
+	}
+
+	s3Access := s3.New(auth, awsRegion)
+	s3Bucket := s3Access.Bucket(bucket)
+	url = s3Bucket.SignedURL(key, duration)
+	return
+}
+
 func (c *CloudStorageService) PutObjectToLocation(bucket, key, region, contentType string, rawData []byte, duration time.Time, dataApi DataAPI) (int64, string, error) {
 	objectRecordId, err := dataApi.CreateNewUploadCloudObjectRecord(bucket, key, region)
 	if err != nil {
