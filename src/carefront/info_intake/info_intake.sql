@@ -40,7 +40,7 @@ CREATE TABLE IF NOT EXISTS question (
 	subtext_app_text_id int unsigned,
 	question_tag varchar(250) NOT NULL,
 	parent_question_id int unsigned,
-	question_required bool not null,
+	required bool not null,
 	FOREIGN KEY (qtype_id) REFERENCES question_type(id),
 	FOREIGN KEY (subtext_app_text_id) REFERENCES app_text(id),
 	FOREIGN KEY (qtext_app_text_id) REFERENCES app_text(id),
