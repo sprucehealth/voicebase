@@ -5,8 +5,12 @@ import (
 	"log"
 	"net"
 	"net/http"
+	"sync"
 	"time"
 )
+
+// TODO: The locking on Credentials is pretty inefficient. The request for keys
+// should never block, and all updates should happen in the background.
 
 type Credentials struct {
 	Code            string
@@ -19,6 +23,8 @@ type Credentials struct {
 	ExpirationStr   string    `json:"Expiration"`
 	Expiration      time.Time `json:"-"`
 	Role            string
+
+	mu sync.RWMutex
 }
 
 const metadataTimeout = time.Second
@@ -39,9 +45,15 @@ func CredentialsForRole(role string) (*Credentials, error) {
 }
 
 func (c *Credentials) Update() error {
+	c.mu.RLock()
 	if c.Expiration.After(time.Now()) {
+		c.mu.RUnlock()
 		return nil
 	}
+	c.mu.RUnlock()
+
+	c.mu.Lock()
+	defer c.mu.Unlock()
 
 	res, err := metadataClient.Get("http://169.254.169.254/latest/meta-data/iam/security-credentials/" + c.Role)
 	if err != nil {
