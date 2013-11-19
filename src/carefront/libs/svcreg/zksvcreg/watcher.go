@@ -6,7 +6,7 @@ import (
 	"sync"
 	"time"
 
-	"carefront/svcreg"
+	"carefront/libs/svcreg"
 	"github.com/samuel/go-zookeeper/zk"
 )
 

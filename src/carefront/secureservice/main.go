@@ -11,8 +11,8 @@ import (
 	"strings"
 	"time"
 
-	"carefront/svcreg"
-	"carefront/svcreg/zksvcreg"
+	"carefront/libs/svcreg"
+	"carefront/libs/svcreg/zksvcreg"
 	"carefront/thriftauth"
 	"github.com/samuel/go-thrift/thrift"
 	"github.com/samuel/go-zookeeper/zk"

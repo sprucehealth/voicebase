@@ -146,7 +146,7 @@ var Regions = map[string]Region{
 }
 
 type Auth struct {
-	AccessKey, SecretKey string
+	AccessKey, SecretKey, Token string
 }
 
 var unreserved = make([]bool, 128)

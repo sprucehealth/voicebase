@@ -3,7 +3,7 @@ package zksvcreg
 import (
 	"testing"
 
-	"carefront/svcreg"
+	"carefront/libs/svcreg"
 	"github.com/samuel/go-zookeeper/zk"
 )
 
