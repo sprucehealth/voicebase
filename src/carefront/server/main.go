@@ -158,9 +158,6 @@ func parseFlagsAndConfig() (*Config, []string) {
 func main() {
 	config, args := parseFlagsAndConfig()
 
-	fmt.Printf("%+v\n", args)
-	fmt.Printf("%+v\n", config)
-
 	dsn := fmt.Sprintf("%s:%s@tcp(%s:3306)/%s?parseTime=true", config.DB.User, config.DB.Password, config.DB.Host, config.DB.Name)
 
 	// this gives us a connection pool to the sql instance
