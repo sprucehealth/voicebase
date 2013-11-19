@@ -21,10 +21,11 @@ const (
 const (
 	// Request Headers
 
-	HeaderMetaPrefix   = "x-amz-meta-"
-	HeaderMetaMFA      = "x-amz-mfa"
-	HeaderStorageClass = "x-amz-storage-class"
-	HeaderACL          = "x-amz-acl"
+	HeaderMetaPrefix    = "x-amz-meta-"
+	HeaderMetaMFA       = "x-amz-mfa"
+	HeaderSecurityToken = "x-amz-security-token"
+	HeaderStorageClass  = "x-amz-storage-class"
+	HeaderACL           = "x-amz-acl"
 	// grants: type=value pair with type one of emailAddress, id (user ID), or uri (group)
 	HeaderGrantRead        = "x-amz-grant-read"
 	HeaderGrantWrite       = "x-amz-grant-write"

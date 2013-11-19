@@ -2,84 +2,144 @@ package main
 
 import (
 	"database/sql"
-	"flag"
 	"fmt"
-	"io/ioutil"
+	"io"
 	"log"
 	"net/http"
+	"net/url"
 	"os"
 	"strings"
 	"time"
 
 	"carefront/api"
 	"carefront/apiservice"
+	"carefront/libs/aws"
+	"carefront/util"
+	"github.com/BurntSushi/toml"
 	_ "github.com/go-sql-driver/mysql"
+	flags "github.com/jessevdk/go-flags"
+	goamz "launchpad.net/goamz/aws"
+	"launchpad.net/goamz/s3"
 )
 
 const (
-	DEFAUL_MAX_IN_MEMORY_PHOTO = 2
+	defaultMaxInMemoryPhotoMB = 2
 )
 
-var (
-	flagListenAddr            = flag.String("listen", ":8080", "Address and port to listen on")
-	flagCertLocation          = flag.String("cert_key", "", "Location of certificate for SSL")
-	flagKeyLocation           = flag.String("private_key", "", "Location of key for SSL")
-	flagS3CaseBucket          = flag.String("case_bucket", "carefront-cases", "Bucket name holding case information on S3")
-	flagAWSSecretKey          = flag.String("aws_secret_key", "", "AWS Secret Key for uploading files to S3")
-	flagAWSAccessKey          = flag.String("aws_access_key", "", "AWS Access Key to upload files to S3")
-	flagDBUser                = flag.String("db_user", "", "Username for accessing database")
-	flagDBPassword            = flag.String("db_password", "", "Password for accessing database")
-	flagDBHost                = flag.String("db_host", "", "Database host url")
-	flagDBName                = flag.String("db_name", "", "Database name on database server")
-	flagDebugMode             = flag.Bool("debug", false, "Flag to indicate whether we are running in debug or production mode")
-	flagLogPath               = flag.String("log_path", "", "Path for log file. If not given then default to stderr")
-	flagLayoutBucketAccessKey = flag.String("layout_bucket_access_key", "", "AWS access key for buckets where patient, client and doctor layouts are stored")
-	flagLayoutBucketSecretKey = flag.String("layout_bucket_secret_key", "", "AWS secrety key for buckets where patient, client and doctor layouts are stored")
-	flagMaxInMemoryForPhotoMB = flag.Int64("max_in_memory_photo", DEFAUL_MAX_IN_MEMORY_PHOTO, "Default amount of data in MB to be held in memory when parsing multipart form data")
-)
-
-func parseFlags() {
-	if len(os.Args) > 1 && strings.HasPrefix(os.Args[1], "@") {
-		f, err := os.Open(os.Args[1][1:])
-		if err == nil {
-			argBytes, err := ioutil.ReadAll(f)
-			f.Close()
-			if err == nil {
-				args := strings.Split(strings.TrimSpace(string(argBytes)), "\n")
-				filteredArgs := make([]string, 0, len(args))
-				for _, a := range args {
-					if !strings.HasPrefix(a, "#") {
-						filteredArgs = append(filteredArgs, strings.TrimSpace(a))
-					}
-				}
-				os.Args = append(append(os.Args[:1], filteredArgs...), os.Args[2:]...)
-			}
-		}
-	}
-	flag.VisitAll(func(fl *flag.Flag) {
-		val := os.Getenv("arg_" + strings.Replace(fl.Name, ".", "_", -1))
-		if val != "" {
-			fl.Value.Set(val)
-		}
-	})
-	flag.Parse()
+type DBConfig struct {
+	User     string `long:"db_user" description:"Username for accessing database"`
+	Password string `long:"db_password" description:"Password for accessing database"`
+	Host     string `long:"db_host" description:"Database host"`
+	Name     string `long:"db_name" description:"Database name"`
 }
 
-func main() {
-	parseFlags()
+type Config struct {
+	ListenAddr            string   `short:"l" long:"listen" description:"Address and port on which to listen (e.g. 127.0.0.1:8080)"`
+	CertLocation          string   `long:"cert_key" description:"Path of SSL certificate"`
+	KeyLocation           string   `long:"private_key" description:"Path of SSL private key"`
+	S3CaseBucket          string   `long:"case_bucket" description:"S3 Bucket name for case information"`
+	AWSRole               string   `long:"aws_role" group:"aws" description:"AWS role for fetching temporary credentials"`
+	AWSSecretKey          string   `long:"aws_secret_key" group:"aws" description:"AWS secret key"`
+	AWSAccessKey          string   `long:"aws_access_key" group:"aws" description:"AWS access key id"`
+	DB                    DBConfig `group:"Database" toml:"database"`
+	Debug                 bool     `long:"debug" description:"Enable debugging"`
+	LogPath               string   `long:"log_path" description:"Path for log file. IF not given then default to stderr"`
+	LayoutBucketAccessKey string   `long:"layout_bucket_access_key" description:"AWS access key for buckets where patient, client and doctor layouts are stored"`
+	LayoutBucketSecretKey string   `long:"layout_bucket_secret_key" description:"AWS secrety key for buckets where patient, client and doctor layouts are stored"`
+	MaxInMemoryForPhotoMB int64    `long:"max_in_memory_photo" description:"Amount of data in MB to be held in memory when parsing multipart form data"`
+	ConfigPath            string   `short:"c" long:"config" description:"Path to config file"`
 
-	if *flagLogPath != "" {
+	awsAuth aws.Auth
+}
+
+func (c *Config) AWSAuth() (aws.Auth, error) {
+	var err error
+	if c.awsAuth == nil {
+		if c.AWSRole != "" {
+			c.awsAuth, err = aws.CredentialsForRole(c.AWSRole)
+		} else {
+			keys := aws.KeysFromEnvironment()
+			if c.AWSAccessKey != "" && c.AWSSecretKey != "" {
+				keys.AccessKey = c.AWSAccessKey
+				keys.SecretKey = c.AWSSecretKey
+			} else {
+				c.AWSAccessKey = keys.AccessKey
+				c.AWSSecretKey = keys.SecretKey
+			}
+			c.awsAuth = keys
+		}
+	}
+	if err != nil {
+		c.awsAuth = nil
+	}
+	return c.awsAuth, err
+}
+
+var DefaultConfig = Config{
+	ListenAddr:            ":8080",
+	S3CaseBucket:          "carefront-cases",
+	MaxInMemoryForPhotoMB: defaultMaxInMemoryPhotoMB,
+}
+
+func parseFlagsAndConfig() (*Config, []string) {
+	config := DefaultConfig
+	args, err := flags.ParseArgs(&config, os.Args[1:])
+	if err != nil {
+		if e, ok := err.(*flags.Error); !ok || e.Type != flags.ErrHelp {
+			log.Fatalf("Failed to parse flags: %+v", err)
+		}
+		os.Exit(1)
+	}
+
+	if config.ConfigPath != "" {
+		if strings.Contains(config.ConfigPath, "://") {
+			awsAuth, err := config.AWSAuth()
+			if err != nil {
+				log.Fatalf("Failed to get AWS auth: %+v", err)
+			}
+			ur, err := url.Parse(config.ConfigPath)
+			if err != nil {
+				log.Fatalf("Failed to parse config url %s: %+v", config.ConfigPath, err)
+			}
+			var rd io.ReadCloser
+			if ur.Scheme == "s3" {
+				s3 := s3.New(util.AWSAuthAdapter(awsAuth), goamz.USEast)
+				rd, err = s3.Bucket(ur.Host).GetReader(ur.Path)
+				if err != nil {
+					log.Fatalf("Failed to get config from s3 %s: %+v", config.ConfigPath, err)
+				}
+			} else {
+				if res, err := http.Get(config.ConfigPath); err != nil {
+					log.Fatalf("Failed to fetch config from URL %s: %+v", config.ConfigPath, err)
+				} else if res.StatusCode != 200 {
+					log.Fatalf("Failed to fetch config from URL %s: status code %d", config.ConfigPath, res.StatusCode)
+				} else {
+					rd = res.Body
+				}
+			}
+			if _, err := toml.DecodeReader(rd, &config); err != nil {
+				log.Fatalf("Failed to parse config file: %+v", err)
+			}
+			rd.Close()
+		} else if _, err := toml.DecodeFile(config.ConfigPath, &config); err != nil {
+			log.Fatalf("Failed to parse config file: %+v", err)
+		}
+		// Make sure command line overrides config
+		flags.ParseArgs(&config, os.Args[1:])
+	}
+
+	if config.LogPath != "" {
 		// check if the file exists
-		_, err := os.Stat(*flagLogPath)
+		_, err := os.Stat(config.LogPath)
 		var file *os.File
 		if os.IsNotExist(err) {
 			// file doesn't exist so lets create it
-			file, err = os.Create(*flagLogPath)
+			file, err = os.Create(config.LogPath)
 			if err != nil {
 				log.Fatalf("Failed to create log: %s", err.Error())
 			}
 		} else {
-			file, err = os.OpenFile(*flagLogPath, os.O_RDWR|os.O_APPEND, 0660)
+			file, err = os.OpenFile(config.LogPath, os.O_RDWR|os.O_APPEND, 0660)
 			if err != nil {
 				log.Printf("Could not open logfile %s", err.Error())
 			}
@@ -87,12 +147,21 @@ func main() {
 		log.SetOutput(file)
 	}
 	log.SetFlags(log.Lshortfile | log.Ldate | log.Ltime)
-	if *flagDBUser == "" || *flagDBPassword == "" || *flagDBHost == "" || *flagDBName == "" {
+	if config.DB.User == "" || config.DB.Password == "" || config.DB.Host == "" || config.DB.Name == "" {
 		fmt.Fprintf(os.Stderr, "Missing either one of user, password, host, or name for the database.\n")
 		os.Exit(1)
 	}
 
-	dsn := fmt.Sprintf("%s:%s@tcp(%s:3306)/%s?parseTime=true", *flagDBUser, *flagDBPassword, *flagDBHost, *flagDBName)
+	return &config, args
+}
+
+func main() {
+	config, args := parseFlagsAndConfig()
+
+	fmt.Printf("%+v\n", args)
+	fmt.Printf("%+v\n", config)
+
+	dsn := fmt.Sprintf("%s:%s@tcp(%s:3306)/%s?parseTime=true", config.DB.User, config.DB.Password, config.DB.Host, config.DB.Name)
 
 	// this gives us a connection pool to the sql instance
 	// without executing any statements against the sql database
@@ -108,15 +177,20 @@ func main() {
 		log.Fatal(err)
 	}
 
+	awsAuth, err := config.AWSAuth()
+	if err != nil {
+		log.Fatalf("Failed to get AWS auth: %+v", err)
+	}
+
 	authApi := &api.AuthService{db}
 	dataApi := &api.DataService{db}
-	cloudStorageApi := api.NewCloudStorageService(*flagLayoutBucketAccessKey, *flagLayoutBucketSecretKey)
-	photoAnswerCloudStorageApi := api.NewCloudStorageService(*flagAWSAccessKey, *flagAWSSecretKey)
+	cloudStorageApi := api.NewCloudStorageService(awsAuth)
+	photoAnswerCloudStorageApi := api.NewCloudStorageService(awsAuth)
 	authHandler := &apiservice.AuthenticationHandler{authApi}
 	signupPatientHandler := &apiservice.SignupPatientHandler{dataApi, authApi}
 	patientVisitHandler := apiservice.NewPatientVisitHandler(dataApi, authApi, cloudStorageApi, photoAnswerCloudStorageApi)
 	answerIntakeHandler := apiservice.NewAnswerIntakeHandler(dataApi)
-	photoAnswerIntakeHandler := apiservice.NewPhotoAnswerIntakeHandler(dataApi, photoAnswerCloudStorageApi, *flagS3CaseBucket, *flagMaxInMemoryForPhotoMB*1024*1024)
+	photoAnswerIntakeHandler := apiservice.NewPhotoAnswerIntakeHandler(dataApi, photoAnswerCloudStorageApi, config.S3CaseBucket, config.MaxInMemoryForPhotoMB*1024*1024)
 	pingHandler := apiservice.PingHandler(0)
 	generateModelIntakeHandler := &apiservice.GenerateClientIntakeModelHandler{dataApi, cloudStorageApi}
 
@@ -134,16 +208,16 @@ func main() {
 	mux.Handle("/v1/ping", pingHandler)
 
 	s := &http.Server{
-		Addr:           *flagListenAddr,
+		Addr:           config.ListenAddr,
 		Handler:        mux,
 		ReadTimeout:    30 * time.Second,
 		WriteTimeout:   30 * time.Second,
 		MaxHeaderBytes: 1 << 20,
 	}
 
-	if *flagDebugMode && *flagCertLocation == "" && *flagKeyLocation == "" {
+	if config.CertLocation == "" && config.KeyLocation == "" {
 		log.Fatal(s.ListenAndServe())
 	} else {
-		log.Fatal(s.ListenAndServeTLS(*flagCertLocation, *flagKeyLocation))
+		log.Fatal(s.ListenAndServeTLS(config.CertLocation, config.KeyLocation))
 	}
 }

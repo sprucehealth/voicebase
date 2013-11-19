@@ -31,7 +31,6 @@ import (
 	"io/ioutil"
 	"net/http"
 	"net/url"
-	"os"
 	"path/filepath"
 	"sort"
 	"strings"
@@ -42,22 +41,6 @@ const iSO8601BasicFormat = "20060102T150405Z"
 const iSO8601BasicFormatShort = "20060102"
 
 var lf = []byte{'\n'}
-
-// Keys holds a set of Amazon Security Credentials.
-type Keys struct {
-	AccessKey string
-	SecretKey string
-	Token     string
-}
-
-// Initializes and returns a Keys using the AWS_ACCESS_KEY and AWS_SECRET_KEY
-// environment variables.
-func KeysFromEnvironment() Keys {
-	return Keys{
-		AccessKey: os.Getenv("AWS_ACCESS_KEY"),
-		SecretKey: os.Getenv("AWS_SECRET_KEY"),
-	}
-}
 
 func (k Keys) sign(s *Service, t time.Time) []byte {
 	h := ghmac([]byte("AWS4"+k.SecretKey), []byte(t.Format(iSO8601BasicFormatShort)))

@@ -2,6 +2,7 @@ package aws
 
 import (
 	"encoding/json"
+	"log"
 	"net"
 	"net/http"
 	"time"
@@ -17,6 +18,7 @@ type Credentials struct {
 	Token           string
 	ExpirationStr   string    `json:"Expiration"`
 	Expiration      time.Time `json:"-"`
+	Role            string
 }
 
 const metadataTimeout = time.Second
@@ -32,34 +34,47 @@ var (
 )
 
 func CredentialsForRole(role string) (*Credentials, error) {
-	res, err := metadataClient.Get("http://169.254.169.254/latest/meta-data/iam/security-credentials/" + role)
+	cred := &Credentials{Role: role}
+	return cred, cred.Update()
+}
+
+func (c *Credentials) Update() error {
+	if c.Expiration.After(time.Now()) {
+		return nil
+	}
+
+	res, err := metadataClient.Get("http://169.254.169.254/latest/meta-data/iam/security-credentials/" + c.Role)
 	if err != nil {
-		return nil, err
+		return err
 	}
 	if res.StatusCode != 200 {
-		return nil, ErrBadStatusCode(res.StatusCode)
+		return ErrBadStatusCode(res.StatusCode)
 	}
 	defer res.Body.Close()
 	dec := json.NewDecoder(res.Body)
-	cred := &Credentials{}
-	if err := dec.Decode(cred); err != nil {
-		return nil, err
+	if err := dec.Decode(c); err != nil {
+		return err
 	}
-	cred.LastUpdated, err = time.Parse(time.RFC3339, cred.LastUpdatedStr)
+	c.LastUpdated, err = time.Parse(time.RFC3339, c.LastUpdatedStr)
 	if err != nil {
-		return nil, err
+		return err
 	}
-	cred.Expiration, err = time.Parse(time.RFC3339, cred.ExpirationStr)
+	c.Expiration, err = time.Parse(time.RFC3339, c.ExpirationStr)
 	if err != nil {
-		return nil, err
+		return err
 	}
-	return cred, nil
+	return nil
 }
 
-func (cred *Credentials) Keys() Keys {
+func (c *Credentials) Keys() Keys {
+	if c.Role != "" {
+		if err := c.Update(); err != nil {
+			log.Printf("aws: failed to refresh credentials for role %s: %s", c.Role, err.Error())
+		}
+	}
 	return Keys{
-		AccessKey: cred.AccessKeyId,
-		SecretKey: cred.SecretAccessKey,
-		Token:     cred.Token,
+		AccessKey: c.AccessKeyId,
+		SecretKey: c.SecretAccessKey,
+		Token:     c.Token,
 	}
 }

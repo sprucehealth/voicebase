@@ -35,8 +35,13 @@ var s3ParamsToSign = map[string]bool{
 }
 
 func (s3 *S3) sign(req *http.Request) {
+	keys := s3.Client.Auth.Keys()
+
 	if req.Header.Get("Date") == "" {
 		req.Header.Set("Date", time.Now().Format(time.RFC1123Z))
+	}
+	if keys.Token != "" {
+		req.Header.Set(HeaderSecurityToken, keys.Token)
 	}
 
 	var md5, ctype, date, xamz string
@@ -75,7 +80,7 @@ func (s3 *S3) sign(req *http.Request) {
 		// Query string request authentication alternative.
 		expires = true
 		date = v
-		params.Set("AWSAccessKeyId", s3.Client.Keys.AccessKey)
+		params.Set("AWSAccessKeyId", keys.AccessKey)
 	}
 
 	sarray = sarray[:0]
@@ -99,7 +104,7 @@ func (s3 *S3) sign(req *http.Request) {
 	}
 
 	payload := req.Method + "\n" + md5 + "\n" + ctype + "\n" + date + "\n" + xamz + path
-	hash := hmac.New(sha1.New, []byte(s3.Client.Keys.SecretKey))
+	hash := hmac.New(sha1.New, []byte(keys.SecretKey))
 	hash.Write([]byte(payload))
 	signature := make([]byte, base64Std.EncodedLen(hash.Size()))
 	base64Std.Encode(signature, hash.Sum(nil))
@@ -108,6 +113,6 @@ func (s3 *S3) sign(req *http.Request) {
 		params.Set("Signature", string(signature))
 		req.URL.RawQuery = params.Encode()
 	} else {
-		req.Header.Set("Authorization", "AWS "+s3.Client.Keys.AccessKey+":"+string(signature))
+		req.Header.Set("Authorization", "AWS "+keys.AccessKey+":"+string(signature))
 	}
 }

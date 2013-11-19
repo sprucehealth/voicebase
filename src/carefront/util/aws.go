@@ -5,13 +5,11 @@ import (
 	goamz "launchpad.net/goamz/aws"
 )
 
-type AWSAdapter struct {
-	*aws.Client
-}
-
-func (ad *AWSAdapter) Auth() goamz.Auth {
+func AWSAuthAdapter(auth aws.Auth) goamz.Auth {
+	keys := auth.Keys()
 	return goamz.Auth{
-		AccessKey: ad.Keys.AccessKey,
-		SecretKey: ad.Keys.SecretKey,
+		AccessKey: keys.AccessKey,
+		SecretKey: keys.SecretKey,
+		Token:     keys.Token,
 	}
 }

@@ -28,7 +28,7 @@ func (s3 *S3) buildUrl(bucket, path string) string {
 
 func (s3 *S3) Do(req *http.Request) (*http.Response, error) {
 	s3.sign(req)
-	res, err := s3.Client.httpClient.Do(req)
+	res, err := s3.Client.HttpClient.Do(req)
 	if err != nil {
 		return nil, err
 	}

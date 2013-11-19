@@ -1,17 +1,19 @@
 package api
 
 import (
-	"launchpad.net/goamz/aws"
-	"launchpad.net/goamz/s3"
 	"time"
+
+	"carefront/libs/aws"
+	"carefront/util"
+	goamz "launchpad.net/goamz/aws"
+	"launchpad.net/goamz/s3"
 )
 
 // TODO Need a better way of decentralizing access to different buckets
 // such that the cloud service does not have access to all buckets,
 // resulting in a security concern
 type CloudStorageService struct {
-	awsAccessKey string
-	awsSecretKey string
+	awsAuth aws.Auth
 }
 
 const (
@@ -19,18 +21,17 @@ const (
 	US_WEST_1 = "us-west-1"
 )
 
-func NewCloudStorageService(accessKey, secretKey string) *CloudStorageService {
-	return &CloudStorageService{accessKey, secretKey}
+func NewCloudStorageService(awsAuth aws.Auth) *CloudStorageService {
+	return &CloudStorageService{awsAuth: awsAuth}
 }
 
 func (c *CloudStorageService) GetObjectAtLocation(bucket, key, region string) (rawData []byte, err error) {
-	auth := aws.Auth{c.awsAccessKey, c.awsSecretKey}
-	awsRegion, ok := aws.Regions[region]
+	awsRegion, ok := goamz.Regions[region]
 	if !ok {
-		awsRegion = aws.USEast
+		awsRegion = goamz.USEast
 	}
 
-	s3Access := s3.New(auth, awsRegion)
+	s3Access := s3.New(util.AWSAuthAdapter(c.awsAuth), awsRegion)
 	s3Bucket := s3Access.Bucket(bucket)
 
 	rawData, err = s3Bucket.Get(key)
@@ -41,13 +42,12 @@ func (c *CloudStorageService) GetObjectAtLocation(bucket, key, region string) (r
 }
 
 func (c *CloudStorageService) GetSignedUrlForObjectAtLocation(bucket, key, region string, duration time.Time) (url string, err error) {
-	auth := aws.Auth{c.awsAccessKey, c.awsSecretKey}
-	awsRegion, ok := aws.Regions[region]
+	awsRegion, ok := goamz.Regions[region]
 	if !ok {
-		awsRegion = aws.USEast
+		awsRegion = goamz.USEast
 	}
 
-	s3Access := s3.New(auth, awsRegion)
+	s3Access := s3.New(util.AWSAuthAdapter(c.awsAuth), awsRegion)
 	s3Bucket := s3Access.Bucket(bucket)
 	url = s3Bucket.SignedURL(key, duration)
 	return
@@ -59,13 +59,12 @@ func (c *CloudStorageService) PutObjectToLocation(bucket, key, region, contentTy
 		return 0, "", err
 	}
 
-	auth := aws.Auth{c.awsAccessKey, c.awsSecretKey}
-	awsRegion, ok := aws.Regions[region]
+	awsRegion, ok := goamz.Regions[region]
 	if !ok {
-		awsRegion = aws.USEast
+		awsRegion = goamz.USEast
 	}
 
-	s3Access := s3.New(auth, awsRegion)
+	s3Access := s3.New(util.AWSAuthAdapter(c.awsAuth), awsRegion)
 	s3Bucket := s3Access.Bucket(bucket)
 	additionalHeaders := map[string][]string{
 		"x-amz-server-side-encryption": {"AES256"},
