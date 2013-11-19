@@ -197,9 +197,13 @@ func main() {
 	signupPatientHandler := &apiservice.SignupPatientHandler{dataApi, authApi}
 	patientVisitHandler := apiservice.NewPatientVisitHandler(dataApi, authApi, cloudStorageApi, photoAnswerCloudStorageApi)
 	answerIntakeHandler := apiservice.NewAnswerIntakeHandler(dataApi)
-	photoAnswerIntakeHandler := apiservice.NewPhotoAnswerIntakeHandler(dataApi, photoAnswerCloudStorageApi, config.S3CaseBucket, config.MaxInMemoryForPhotoMB*1024*1024)
+	photoAnswerIntakeHandler := apiservice.NewPhotoAnswerIntakeHandler(dataApi, photoAnswerCloudStorageApi, config.S3CaseBucket, config.AWSRegion, config.MaxInMemoryForPhotoMB*1024*1024)
 	pingHandler := apiservice.PingHandler(0)
-	generateModelIntakeHandler := &apiservice.GenerateClientIntakeModelHandler{dataApi, cloudStorageApi}
+	generateModelIntakeHandler := &apiservice.GenerateClientIntakeModelHandler{
+		DataApi:         dataApi,
+		CloudStorageApi: cloudStorageApi,
+		AWSRegion:       config.AWSRegion,
+	}
 
 	mux := &apiservice.AuthServeMux{*http.NewServeMux(), authApi}
 

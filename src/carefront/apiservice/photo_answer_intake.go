@@ -16,6 +16,7 @@ type PhotoAnswerIntakeHandler struct {
 	CloudStorageApi     api.CloudStorageAPI
 	PatientVisitBucket  string
 	MaxInMemoryForPhoto int64
+	AWSRegion           string
 	accountId           int64
 }
 
@@ -29,9 +30,15 @@ type PhotoAnswerIntakeRequestData struct {
 	PatientVisitId    int64 `schema:"patient_visit_id,required"`
 }
 
-func NewPhotoAnswerIntakeHandler(dataApi api.DataAPI, cloudStorageApi api.CloudStorageAPI,
-	bucketLocation string, maxMemoryForPhotoMB int64) *PhotoAnswerIntakeHandler {
-	return &PhotoAnswerIntakeHandler{dataApi, cloudStorageApi, bucketLocation, maxMemoryForPhotoMB, 0}
+func NewPhotoAnswerIntakeHandler(dataApi api.DataAPI, cloudStorageApi api.CloudStorageAPI, bucketLocation, region string, maxMemoryForPhotoMB int64) *PhotoAnswerIntakeHandler {
+	return &PhotoAnswerIntakeHandler{
+		DataApi:             dataApi,
+		CloudStorageApi:     cloudStorageApi,
+		PatientVisitBucket:  bucketLocation,
+		MaxInMemoryForPhoto: maxMemoryForPhotoMB,
+		AWSRegion:           region,
+		accountId:           0,
+	}
 }
 
 func (p *PhotoAnswerIntakeHandler) AccountIdFromAuthToken(accountId int64) {
@@ -125,7 +132,7 @@ func (p *PhotoAnswerIntakeHandler) ServeHTTP(w http.ResponseWriter, r *http.Requ
 		buffer.WriteString(parts[1])
 	}
 
-	objectStorageId, _, err := p.CloudStorageApi.PutObjectToLocation(p.PatientVisitBucket, buffer.String(), api.US_WEST_1,
+	objectStorageId, _, err := p.CloudStorageApi.PutObjectToLocation(p.PatientVisitBucket, buffer.String(), p.AWSRegion,
 		handler.Header.Get("Content-Type"), data, time.Now().Add(10*time.Minute), p.DataApi)
 	if err != nil {
 		WriteDeveloperError(w, http.StatusInternalServerError, "Error uploading image to patient-visit bucket in s3: "+err.Error())

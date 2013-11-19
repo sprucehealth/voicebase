@@ -16,11 +16,6 @@ type CloudStorageService struct {
 	awsAuth aws.Auth
 }
 
-const (
-	US_EAST_1 = "us-east-1"
-	US_WEST_1 = "us-west-1"
-)
-
 func NewCloudStorageService(awsAuth aws.Auth) *CloudStorageService {
 	return &CloudStorageService{awsAuth: awsAuth}
 }
