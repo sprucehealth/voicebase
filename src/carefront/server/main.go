@@ -38,9 +38,10 @@ type Config struct {
 	CertLocation          string   `long:"cert_key" description:"Path of SSL certificate"`
 	KeyLocation           string   `long:"private_key" description:"Path of SSL private key"`
 	S3CaseBucket          string   `long:"case_bucket" description:"S3 Bucket name for case information"`
-	AWSRole               string   `long:"aws_role" group:"aws" description:"AWS role for fetching temporary credentials"`
-	AWSSecretKey          string   `long:"aws_secret_key" group:"aws" description:"AWS secret key"`
-	AWSAccessKey          string   `long:"aws_access_key" group:"aws" description:"AWS access key id"`
+	AWSRegion             string   `long:"aws_region" description:"AWS region"`
+	AWSRole               string   `long:"aws_role" description:"AWS role for fetching temporary credentials"`
+	AWSSecretKey          string   `long:"aws_secret_key" description:"AWS secret key"`
+	AWSAccessKey          string   `long:"aws_access_key" description:"AWS access key id"`
 	DB                    DBConfig `group:"Database" toml:"database"`
 	Debug                 bool     `long:"debug" description:"Enable debugging"`
 	LogPath               string   `long:"log_path" description:"Path for log file. IF not given then default to stderr"`
@@ -128,6 +129,15 @@ func parseFlagsAndConfig() (*Config, []string) {
 		flags.ParseArgs(&config, os.Args[1:])
 	}
 
+	if config.AWSRegion == "" {
+		az, err := aws.GetMetadata(aws.MetadataAvailabilityZone)
+		if err != nil {
+			log.Fatalf("No region specified and failed to get from instance metadata: %+v", err)
+		}
+		config.AWSRegion = az[:len(az)-1]
+		log.Printf("Got region from metadata: %s", config.AWSRegion)
+	}
+
 	if config.LogPath != "" {
 		// check if the file exists
 		_, err := os.Stat(config.LogPath)
@@ -156,7 +166,7 @@ func parseFlagsAndConfig() (*Config, []string) {
 }
 
 func main() {
-	config, args := parseFlagsAndConfig()
+	config, _ := parseFlagsAndConfig()
 
 	dsn := fmt.Sprintf("%s:%s@tcp(%s:3306)/%s?parseTime=true", config.DB.User, config.DB.Password, config.DB.Host, config.DB.Name)
 

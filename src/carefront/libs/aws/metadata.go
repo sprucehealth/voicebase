@@ -2,11 +2,21 @@ package aws
 
 import (
 	"encoding/json"
+	"io"
+	"io/ioutil"
 	"log"
 	"net"
 	"net/http"
 	"sync"
 	"time"
+)
+
+const (
+	MetadataAvailabilityZone = "placement/availability-zone"
+	MetadataHostname         = "hostname"
+	MetadataInstanceID       = "instance-id"
+	MetadataInstanceType     = "instance-type"
+	MetadataLocalIPv4        = "local-ipv4"
 )
 
 // TODO: The locking on Credentials is pretty inefficient. The request for keys
@@ -39,6 +49,30 @@ var (
 	}
 )
 
+func GetMetadataReader(path string) (io.ReadCloser, error) {
+	res, err := metadataClient.Get("http://169.254.169.254/latest/meta-data/" + path)
+	if err != nil {
+		return nil, err
+	}
+	if res.StatusCode != 200 {
+		return nil, ErrBadStatusCode(res.StatusCode)
+	}
+	return res.Body, nil
+}
+
+func GetMetadata(path string) (string, error) {
+	rd, err := GetMetadataReader(path)
+	if err != nil {
+		return "", err
+	}
+	defer rd.Close()
+	by, err := ioutil.ReadAll(rd)
+	if err != nil {
+		return "", err
+	}
+	return string(by), nil
+}
+
 func CredentialsForRole(role string) (*Credentials, error) {
 	cred := &Credentials{Role: role}
 	return cred, cred.Update()
@@ -55,15 +89,12 @@ func (c *Credentials) Update() error {
 	c.mu.Lock()
 	defer c.mu.Unlock()
 
-	res, err := metadataClient.Get("http://169.254.169.254/latest/meta-data/iam/security-credentials/" + c.Role)
+	rd, err := GetMetadataReader("iam/security-credentials/" + c.Role)
 	if err != nil {
 		return err
 	}
-	if res.StatusCode != 200 {
-		return ErrBadStatusCode(res.StatusCode)
-	}
-	defer res.Body.Close()
-	dec := json.NewDecoder(res.Body)
+	defer rd.Close()
+	dec := json.NewDecoder(rd)
 	if err := dec.Decode(c); err != nil {
 		return err
 	}
