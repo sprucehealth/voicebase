@@ -10,7 +10,7 @@ type Auth interface {
 type Keys struct {
 	AccessKey string
 	SecretKey string
-	Token     string
+	Token     string // Security token when using temporary credentials
 }
 
 func (k Keys) Keys() Keys {

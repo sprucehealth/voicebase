@@ -38,6 +38,7 @@ var s3ParamsToSign = map[string]bool{
 }
 
 func sign(auth aws.Auth, method, canonicalPath string, params, headers map[string][]string) {
+	// The security token is required when using temporary credentials provided by IAM roles
 	if auth.Token != "" {
 		headers["x-amz-security-token"] = []string{auth.Token}
 	}

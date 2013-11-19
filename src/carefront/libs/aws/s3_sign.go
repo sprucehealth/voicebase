@@ -40,6 +40,7 @@ func (s3 *S3) sign(req *http.Request) {
 	if req.Header.Get("Date") == "" {
 		req.Header.Set("Date", time.Now().Format(time.RFC1123Z))
 	}
+	// The security token is required when using temporary credentials provided by IAM roles
 	if keys.Token != "" {
 		req.Header.Set(HeaderSecurityToken, keys.Token)
 	}
