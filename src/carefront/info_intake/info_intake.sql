@@ -60,8 +60,8 @@ CREATE TABLE IF NOT EXISTS answer_type (
 CREATE TABLE IF NOT EXISTS potential_answer (
 	id int unsigned NOT NULL AUTO_INCREMENT,
 	question_id int unsigned NOT NULL,
-	answer_localized_text int unsigned NOT NULL,
-	summary_localized_text int unisgned,
+	answer_localized_text_id int unsigned NOT NULL,
+	summary_localized_text_id int unsigned,
 	atype_id int unsigned NOT NULL,
 	potential_answer_tag varchar(250) NOT NULL,
 	ordering int unsigned NOT NULL,

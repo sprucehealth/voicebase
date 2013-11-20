@@ -88,6 +88,15 @@ func (q *Question) FillInDatabaseInfo(dataApi api.DataAPI, languageId int64) err
 			return err
 		}
 	}
+
+	if q.Questions != nil {
+		for _, question := range q.Questions {
+			err := question.FillInDatabaseInfo(dataApi, languageId)
+			if err != nil {
+				return err
+			}
+		}
+	}
 	return nil
 }
 

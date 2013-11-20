@@ -53,6 +53,7 @@ type Question struct {
 	QuestionType          string             `json:"question_type,omitempty"`
 	PotentialAnswers      []*PotentialAnswer `json:"potential_answers"`
 	PatientAnswers        []*PatientAnswer   `json:"patient_answers,omitempty"`
+	Questions             []*Question        `json:"questions,omitempty"`
 	ConditionBlock        *Condition         `json:"condition,omitempty"`
 	Tips                  *TipSection        `json:"tips,omitempty"`
 }
