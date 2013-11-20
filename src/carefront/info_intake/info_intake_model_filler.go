@@ -9,7 +9,7 @@ func (c *Condition) FillInDatabaseInfo(dataApi api.DataAPI, languageId int64) er
 	if c.QuestionTag == "" {
 		return nil
 	}
-	questionId, _, _, err := dataApi.GetQuestionInfo(c.QuestionTag, languageId)
+	questionId, _, _, _, err := dataApi.GetQuestionInfo(c.QuestionTag, languageId)
 	if err != nil {
 		return err
 	}
@@ -52,13 +52,14 @@ func (t *TipSection) FillInDatabaseInfo(dataApi api.DataAPI, languageId int64) e
 }
 
 func (q *Question) FillInDatabaseInfo(dataApi api.DataAPI, languageId int64) error {
-	questionId, questionTitle, questionType, err := dataApi.GetQuestionInfo(q.QuestionTag, languageId)
+	questionId, questionTitle, questionType, parentQuestionId, err := dataApi.GetQuestionInfo(q.QuestionTag, languageId)
 	if err != nil {
 		return err
 	}
 	q.QuestionId = questionId
 	q.QuestionTitle = questionTitle
 	q.QuestionType = questionType
+	q.ParentQuestionId = parentQuestionId
 
 	// go over the potential ansnwer tags to create potential outcome blocks
 	q.PotentialAnswers = make([]*PotentialAnswer, 0, 5)

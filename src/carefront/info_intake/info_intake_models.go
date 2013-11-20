@@ -51,6 +51,7 @@ type Question struct {
 	QuestionId            int64              `json:"question_id,string,omitempty"`
 	QuestionTitle         string             `json:"question_title,omitempty"`
 	QuestionType          string             `json:"question_type,omitempty"`
+	ParentQuestionId      int64              `json:"parent_question_id,string,omitempty"`
 	PotentialAnswers      []*PotentialAnswer `json:"potential_answers"`
 	PatientAnswers        []*PatientAnswer   `json:"patient_answers,omitempty"`
 	Questions             []*Question        `json:"questions,omitempty"`

@@ -307,14 +307,18 @@ func (d *DataService) GetSectionInfo(sectionTag string, languageId int64) (id in
 	return
 }
 
-func (d *DataService) GetQuestionInfo(questionTag string, languageId int64) (id int64, questionTitle string, questionType string, err error) {
+func (d *DataService) GetQuestionInfo(questionTag string, languageId int64) (id int64, questionTitle string, questionType string, parentQuestionId int64, err error) {
 	var byteQuestionTitle, byteQuestionType []byte
+	var nullParentQuestionId sql.NullInt64
 	err = d.DB.QueryRow(
-		`select question.id, ltext, qtype from question 
+		`select question.id, ltext, qtype, parent_question_id from question 
 		 left outer join localized_text on app_text_id=qtext_app_text_id
 			left outer join question_type on qtype_id=question_type.id 
 				where question_tag = ? and (ltext is NULL or language_id = ?)`,
-		questionTag, languageId).Scan(&id, &byteQuestionTitle, &byteQuestionType)
+		questionTag, languageId).Scan(&id, &byteQuestionTitle, &byteQuestionType, &nullParentQuestionId)
+	if nullParentQuestionId.Valid {
+		parentQuestionId = nullParentQuestionId.Int64
+	}
 	questionTitle = string(byteQuestionTitle)
 	questionType = string(byteQuestionType)
 	return
@@ -322,7 +326,7 @@ func (d *DataService) GetQuestionInfo(questionTag string, languageId int64) (id 
 
 func (d *DataService) GetAnswerInfo(questionId int64, languageId int64) (answerInfos []PotentialAnswerInfo, err error) {
 	rows, err := d.DB.Query(`select potential_answer.id, ltext, atype, potential_answer_tag, ordering from potential_answer 
-								inner join localized_text on answer_localized_text=app_text_id 
+								inner join localized_text on answer_localized_text_id=app_text_id 
 								inner join answer_type on atype_id=answer_type.id 
 									where question_id = ? and language_id = ?`, questionId, languageId)
 	if err != nil {
