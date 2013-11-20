@@ -45,8 +45,6 @@ type Config struct {
 	DB                    DBConfig `group:"Database" toml:"database"`
 	Debug                 bool     `long:"debug" description:"Enable debugging"`
 	LogPath               string   `long:"log_path" description:"Path for log file. IF not given then default to stderr"`
-	LayoutBucketAccessKey string   `long:"layout_bucket_access_key" description:"AWS access key for buckets where patient, client and doctor layouts are stored"`
-	LayoutBucketSecretKey string   `long:"layout_bucket_secret_key" description:"AWS secrety key for buckets where patient, client and doctor layouts are stored"`
 	MaxInMemoryForPhotoMB int64    `long:"max_in_memory_photo" description:"Amount of data in MB to be held in memory when parsing multipart form data"`
 	ConfigPath            string   `short:"c" long:"config" description:"Path to config file"`
 
