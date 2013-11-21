@@ -1,6 +1,7 @@
 package api
 
 import (
+	"bytes"
 	"database/sql"
 	"errors"
 	"fmt"
@@ -12,6 +13,12 @@ import (
 
 var (
 	NoRowsError = errors.New("No rows exist")
+)
+
+const (
+	status_creating = "CREATING"
+	status_active   = "ACTIVE"
+	status_inactive = "INACTIVE"
 )
 
 type DataService struct {
@@ -185,85 +192,216 @@ func (d *DataService) GetLayoutVersionIdForPatientVisit(patientVisitId int64) (l
 	return
 }
 
-func (d *DataService) inactivatePreviousAnswersToQuestion(patientId, questionId, patientVisitId, layoutVersionId int64, tx *sql.Tx) (err error) {
-	_, err = tx.Exec(`update patient_info_intake set status='INACTIVE' 
-						where patient_id = ? and question_id = ?
-						and patient_visit_id = ? and layout_version_id = ?`, patientId, questionId, patientVisitId, layoutVersionId)
+func (d *DataService) updatePatientInfoIntakesWithStatus(questionIds []int64, patientId, patientVisitId, layoutVersionId int64, status string, previousStatus string, tx *sql.Tx) (err error) {
+	updateStr := fmt.Sprintf(`update patient_info_intake set status='%s' 
+						where patient_id = ? and question_id in (%s)
+						and patient_visit_id = ? and layout_version_id = ? and status='%s'`, status, enumerateItemsIntoString(questionIds), previousStatus)
+	_, err = tx.Exec(updateStr, patientId, patientVisitId, layoutVersionId)
 	return err
 }
 
-func (d *DataService) getPatientAnswersForQuestion(patientId, questionId, patientVisitId int64) (patientAnswers []int64, err error) {
-	patientAnswers = make([]int64, 0)
-	rows, err := d.DB.Query(`select id from patient_info_intake 
-								where patient_id = ? and patient_visit_id = ? and question_id = ? and status='ACTIVE'`, patientId, patientVisitId, questionId)
+// This private helper method is to make it possible to update the status of sub answers to any
+// top level question as specified, so as to atomically update the state of the answers that are relevant
+// only in combination with the top-level answer to the question. This method makes it possible
+// to change the status of the entire set in an atomic fashion.
+func (d *DataService) updateSubAnswersToPatientInfoIntakesWithStatus(questionIds []int64, patientId, patientVisitId, layoutVersionId int64, status string, previousStatus string, tx *sql.Tx) (err error) {
+	parentInfoIntakeIds := make([]int64, 0)
+	queryStr := fmt.Sprintf(`select id from patient_info_intake where patient_id = ? and question_id in (%s)
+								and patient_visit_id = ? and layout_version_id = ? and status='%s'`, enumerateItemsIntoString(questionIds), previousStatus)
+	rows, err := tx.Query(queryStr, patientId, patientVisitId, layoutVersionId)
+	if err != nil {
+		return err
+	}
+	defer rows.Close()
+
+	for rows.Next() {
+		var id int64
+		rows.Scan(&id)
+		parentInfoIntakeIds = append(parentInfoIntakeIds, id)
+	}
+
+	updateStr := fmt.Sprintf(`update patient_info_intake set status='%s' 
+						where parent_info_intake_id in (%s)`, status, enumerateItemsIntoString(parentInfoIntakeIds))
+	_, err = tx.Exec(updateStr)
+	return err
+}
+
+func (d *DataService) getPatientAnswersForQuestions(questionIds []int64, patientId, patientVisitId int64, status string) (answerIdToInfoIntakeIdMap map[int64]int64, err error) {
+	queryStr := fmt.Sprintf(`select id, potential_answer_id from patient_info_intake
+					where patient_id = ? and patient_visit_id = ? and question_id in (%s) and status='%s'`, enumerateItemsIntoString(questionIds), status)
+	rows, err := d.DB.Query(queryStr, patientId, patientVisitId)
 	if err != nil {
 		return
 	}
 	defer rows.Close()
+
+	answerIdToInfoIntakeIdMap = make(map[int64]int64)
 	for rows.Next() {
-		var id int64
-		rows.Scan(&id)
-		patientAnswers = append(patientAnswers, id)
+		var id, potentialAnswerId int64
+		rows.Scan(&id, &potentialAnswerId)
+		answerIdToInfoIntakeIdMap[potentialAnswerId] = id
 	}
 	return
 }
 
-func (d *DataService) StoreFreeTextAnswersForQuestion(patientId, questionId, patientVisitId, layoutVersionId int64, answerIds []int64, answerTexts []string) (patientInfoIntakeIds []int64, err error) {
-	tx, err := d.DB.Begin()
-
-	err = d.inactivatePreviousAnswersToQuestion(patientId, questionId, patientVisitId, layoutVersionId, tx)
-	if err != nil {
-		tx.Rollback()
-		return
-	}
-
-	insertStr := "insert into patient_info_intake (patient_id, patient_visit_id, question_id, potential_answer_id, answer_text, layout_version_id, status)  values"
-	for i, answerId := range answerIds {
-		valueStr := fmt.Sprintf("(%d, %d, %d, %d, '%s', %d, 'ACTIVE')", patientId, patientVisitId, questionId, answerId, answerTexts[i], layoutVersionId)
-		insertStr = insertStr + valueStr
-
-		if i < (len(answerIds) - 1) {
-			insertStr = insertStr + ","
-		}
-	}
-
-	_, err = tx.Exec(insertStr)
-	if err != nil {
-		tx.Rollback()
-		return
-	}
-	tx.Commit()
-	patientInfoIntakeIds, err = d.getPatientAnswersForQuestion(patientId, questionId, patientVisitId)
-	return
+func (d *DataService) deleteAnswersWithIdInMap(answerIdToInfoIntakeIdMap map[int64]int64) error {
+	// delete all ids that were in CREATING state since they were committed in that state
+	values := createValuesArrayFromMap(answerIdToInfoIntakeIdMap)
+	query := fmt.Sprintf("delete from patient_info_intake where id in (%s)", enumerateItemsIntoString(values))
+	_, err := d.DB.Exec(query)
+	return err
 }
 
-func (d *DataService) StoreChoiceAnswersForQuestion(patientId, questionId, patientVisitId, layoutVersionId int64, answerIds []int64) (patientInfoIntakeIds []int64, err error) {
-	tx, err := d.DB.Begin()
+func prepareQueryForAnswers(answersToStore []AnswerToStore, parentInfoIntakeId string, status string) string {
+	var buffer bytes.Buffer
+	insertStr := `insert into patient_info_intake (patient_id, patient_visit_id, parent_info_intake_id, question_id, potential_answer_id, answer_text, layout_version_id, status) values`
+	buffer.WriteString(insertStr)
+	values := constructValuesToInsert(answersToStore, parentInfoIntakeId, status)
+	buffer.WriteString(strings.Join(values, ","))
+	return buffer.String()
+}
 
-	err = d.inactivatePreviousAnswersToQuestion(patientId, questionId, patientVisitId, layoutVersionId, tx)
-	if err != nil {
-		tx.Rollback()
+func constructValuesToInsert(answersToStore []AnswerToStore, parentInfoIntakeId, status string) []string {
+	values := make([]string, 0)
+	for _, answerToStore := range answersToStore {
+		valueStr := fmt.Sprintf("(%d, %d, %s, %d, %d, '%s', %d, '%s')", answerToStore.PatientId, answerToStore.PatientVisitId, parentInfoIntakeId,
+			answerToStore.QuestionId, answerToStore.PotentialAnswerId, answerToStore.AnswerText, answerToStore.LayoutVersionId, status)
+		values = append(values, valueStr)
+	}
+	return values
+}
+
+func (d *DataService) StoreAnswersForQuestion(questionId, patientId, patientVisitId, layoutVersionId int64, answersToStore []AnswerToStore) (err error) {
+
+	if len(answersToStore) == 0 {
 		return
 	}
 
-	insertStr := "insert into patient_info_intake (patient_id, patient_visit_id, question_id, potential_answer_id, layout_version_id, status) values"
-	for i, answerId := range answerIds {
-		valueStr := fmt.Sprintf("(%d, %d, %d, %d, %d, 'ACTIVE')", patientId, patientVisitId, questionId, answerId, layoutVersionId)
-		insertStr = insertStr + valueStr
-
-		if i < (len(answerIds) - 1) {
-			insertStr = insertStr + ","
+	// are there any answers to subquestions that we have to store.
+	// the reason to determine this early on is because it changes the nature of the inserts/updates
+	// to be done. If there are no subquestions, then we don't have to first commit the top level answers
+	// to get the patient info intake ids to give as the parent info intake ids for the subquestions.
+	// If there are subquestions, then we have to commit the top level answers first, get their ids, and then
+	// commit the sub questions along with the parent info intake ids to indicate that the answers don't make sense
+	// by themselve, but have to be linked to the parent answer to make them useful
+	subAnswersFound := false
+	for _, answerToStore := range answersToStore {
+		if answerToStore.SubAnswers != nil {
+			subAnswersFound = true
+			break
 		}
 	}
 
+	//keep track of all question ids for which we are storing answers. Note that while we are dealing
+	// with a single top level question support for now, there are still subquestions pertanining to the question
+	questionIds := make(map[int64]bool)
+	questionIds[questionId] = true
+
+	tx, err := d.DB.Begin()
+	if err != nil {
+		return
+	}
+
+	status := status_creating
+	// if there are no subanswers found, then we are pretty much done with the insertion of the
+	// answers into the database.
+	if !subAnswersFound {
+		// ensure to update the status of any prior subquestions linked to the responses
+		// of the top level questions that need to be inactivated, along with the answers
+		// to the top level question itself.
+		d.updateSubAnswersToPatientInfoIntakesWithStatus([]int64{questionId}, patientId,
+			patientVisitId, layoutVersionId, status_inactive, status_active, tx)
+		// if there are no subanswers to store, our job is done with just the top level answers
+		d.updatePatientInfoIntakesWithStatus([]int64{questionId}, patientId,
+			patientVisitId, layoutVersionId, status_inactive, status_active, tx)
+		status = status_active
+	}
+
+	insertStr := prepareQueryForAnswers(answersToStore, "NULL", status)
 	_, err = tx.Exec(insertStr)
 	if err != nil {
-		tx.Rollback()
 		return
 	}
 	tx.Commit()
 
-	patientInfoIntakeIds, err = d.getPatientAnswersForQuestion(patientId, questionId, patientVisitId)
+	if !subAnswersFound {
+		// nothing more to do after we have committed the top level answers
+		return
+	}
+
+	// populate a map from potentialAnswerId to the infoIntakeId for the top level answers that were just
+	// stored in the database. The reason for doing this is to be able to map each subquestion to its parent
+	// patient info intake in the database, which is only possible by getting the ids from the database
+	answerIdToInfoIntakeIdMap, err := d.getPatientAnswersForQuestions([]int64{questionId}, patientId, patientVisitId, status_creating)
+	if err != nil {
+		// clean up in the case of error given that we committed the last change
+		d.deleteAnswersWithIdInMap(answerIdToInfoIntakeIdMap)
+		return
+	}
+
+	var buffer bytes.Buffer
+	for _, answerToStore := range answersToStore {
+		if answerToStore.SubAnswers != nil {
+			if buffer.Len() == 0 {
+				buffer.WriteString(prepareQueryForAnswers(answerToStore.SubAnswers, strconv.FormatInt(answerIdToInfoIntakeIdMap[answerToStore.PotentialAnswerId], 10), status_creating))
+			} else {
+				values := constructValuesToInsert(answerToStore.SubAnswers, strconv.FormatInt(answerIdToInfoIntakeIdMap[answerToStore.PotentialAnswerId], 10), status_creating)
+				buffer.WriteString(",")
+				buffer.WriteString(strings.Join(values, ","))
+			}
+			// keep track of all questions for which we are storing answers
+			for _, subAnswer := range answerToStore.SubAnswers {
+				questionIds[subAnswer.QuestionId] = true
+			}
+		}
+	}
+
+	// start a new transaction to store the answers to the sub questions
+	tx, err = d.DB.Begin()
+	if err != nil {
+		d.deleteAnswersWithIdInMap(answerIdToInfoIntakeIdMap)
+		return
+	}
+	if subAnswersFound {
+		insertStr = buffer.String()
+		_, err = tx.Exec(insertStr)
+		if err != nil {
+			tx.Rollback()
+			d.deleteAnswersWithIdInMap(answerIdToInfoIntakeIdMap)
+			return
+		}
+	}
+
+	// deactivate all answers to top level questions as well as their sub-questions
+	// as we make new the answers the most current up-to-date patient info intake
+	// Note: first update the answers to the sub questions to be inactive since we need the
+	// answers to be able to identify which top level answers we care about
+	err = d.updateSubAnswersToPatientInfoIntakesWithStatus([]int64{questionId}, patientId,
+		patientVisitId, layoutVersionId, status_inactive, status_active, tx)
+	if err != nil {
+		tx.Rollback()
+		d.deleteAnswersWithIdInMap(answerIdToInfoIntakeIdMap)
+		return
+	}
+
+	err = d.updatePatientInfoIntakesWithStatus(createKeysArrayFromMap(questionIds), patientId,
+		patientVisitId, layoutVersionId, status_inactive, status_active, tx)
+	if err != nil {
+		tx.Rollback()
+		d.deleteAnswersWithIdInMap(answerIdToInfoIntakeIdMap)
+		return
+	}
+
+	// make all answers pertanining to the questionIds collected the new active set of answers for the
+	// questions traversed
+	err = d.updatePatientInfoIntakesWithStatus(createKeysArrayFromMap(questionIds), patientId,
+		patientVisitId, layoutVersionId, status_active, status_creating, tx)
+	if err != nil {
+		tx.Rollback()
+		d.deleteAnswersWithIdInMap(answerIdToInfoIntakeIdMap)
+		return
+	}
+	tx.Commit()
 	return
 }
 
@@ -482,6 +620,22 @@ func (d *DataService) UpdateActiveLayouts(layoutId int64, clientLayoutIds []int6
 
 	tx.Commit()
 	return nil
+}
+
+func createKeysArrayFromMap(m map[int64]bool) []int64 {
+	keys := make([]int64, 0)
+	for key, _ := range m {
+		keys = append(keys, key)
+	}
+	return keys
+}
+
+func createValuesArrayFromMap(m map[int64]int64) []int64 {
+	values := make([]int64, 0)
+	for _, value := range m {
+		values = append(values, value)
+	}
+	return values
 }
 
 func enumerateItemsIntoString(ids []int64) string {

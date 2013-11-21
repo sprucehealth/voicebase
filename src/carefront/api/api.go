@@ -38,6 +38,16 @@ type PotentialAnswerInfo struct {
 	Ordering          int64
 }
 
+type AnswerToStore struct {
+	PatientId         int64
+	QuestionId        int64
+	PatientVisitId    int64
+	LayoutVersionId   int64
+	PotentialAnswerId int64
+	AnswerText        string
+	SubAnswers        []AnswerToStore
+}
+
 type PatientAPI interface {
 	RegisterPatient(accountId int64, firstName, lastName, gender, zipCode string, dob time.Time) (int64, error)
 	CreateNewPatientVisit(patientId, healthConditionId, layoutVersionId int64) (int64, error)
@@ -50,8 +60,7 @@ type PatientVisitAPI interface {
 }
 
 type PatientIntakeAPI interface {
-	StoreFreeTextAnswersForQuestion(patientId, questionId, patientVisitId, layoutVersionId int64, answerIds []int64, answerTexts []string) (patientInfoIntakeIds []int64, err error)
-	StoreChoiceAnswersForQuestion(patientId, questionId, patientVisitId, layoutVersionId int64, answerIds []int64) (patientInfoIntakeIds []int64, err error)
+	StoreAnswersForQuestion(questionId, patientId, patientVisitId, layoutVersionId int64, answersToStore []AnswerToStore) (err error)
 	CreatePhotoAnswerForQuestionRecord(patientId, questionId, patientVisitId, potentialAnswerId, layoutVersionId int64) (patientInfoIntakeId int64, err error)
 	UpdatePhotoAnswerRecordWithObjectStorageId(patientInfoIntakeId, objectStorageId int64) error
 	MakeCurrentPhotoAnswerInactive(patientId, questionId, patientVisitId, potentialAnswerId, layoutVersionId int64) (err error)
