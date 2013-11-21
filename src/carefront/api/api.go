@@ -38,6 +38,10 @@ type PotentialAnswerInfo struct {
 	Ordering          int64
 }
 
+// this struct represents a patient answer to
+// particular question along with the responses to
+// any relevant subquestions, which is to be stored
+// on the database
 type AnswerToStore struct {
 	PatientId         int64
 	QuestionId        int64
