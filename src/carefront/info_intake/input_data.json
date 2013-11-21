@@ -1,0 +1,44 @@
+{
+    "patient_visit_id": 84, 
+    "potential_answers": [
+        {
+            "answer_text": "this is the end part 2", 
+            "answers": [
+                {
+                    "potential_answers": [
+                        {
+                            "potential_answer_id": 72,
+                            "answer_text" : "lulu_lemon"
+                        }
+                    ], 
+                    "question_id": 24
+                }, 
+                {
+                    "potential_answers": [
+                        {
+                            "potential_answer_id": 73
+                        }, 
+                        {
+                            "potential_answer_id": 75
+                        }
+                    ], 
+                    "question_id": 25
+                }, 
+                {
+                    "potential_answers": [
+                        {
+                            "potential_answer_id": 78
+                        }
+                    ], 
+                    "question_id": 26
+                }
+            ], 
+            "potential_answer_id": 15
+        }, 
+        {
+            "answer_text": "this is the end not really", 
+            "potential_answer_id": 15
+        }
+    ], 
+    "question_id": 8
+}
