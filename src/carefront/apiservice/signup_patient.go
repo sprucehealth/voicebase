@@ -19,10 +19,6 @@ type PatientSignedupResponse struct {
 	PatientId int64  `json:"patientId,string"`
 }
 
-type PatientSignupErrorResponse struct {
-	ErrorString string `json:"error"`
-}
-
 func (s *SignupPatientHandler) NonAuthenticated() bool {
 	return true
 }
@@ -43,7 +39,7 @@ func (s *SignupPatientHandler) ServeHTTP(w http.ResponseWriter, r *http.Request)
 	decoder := schema.NewDecoder()
 	err := decoder.Decode(requestData, r.Form)
 	if err != nil {
-		WriteJSONToHTTPResponseWriter(w, http.StatusBadRequest, PatientSignupErrorResponse{err.Error()})
+		WriteDeveloperError(w, http.StatusBadRequest, "Unable to parse input parameters: "+err.Error())
 		return
 	}
 	// ensure that the date of birth can be correctly parsed
@@ -71,12 +67,12 @@ func (s *SignupPatientHandler) ServeHTTP(w http.ResponseWriter, r *http.Request)
 	// first, create an account for the user
 	token, accountId, err := s.AuthApi.Signup(requestData.Email, requestData.Password)
 	if err == api.ErrSignupFailedUserExists {
-		WriteJSONToHTTPResponseWriter(w, http.StatusBadRequest, PatientSignupErrorResponse{err.Error()})
+		WriteUserError(w, http.StatusBadRequest, "An account with the specified email address already exists.")
 		return
 	}
 
 	if err != nil {
-		WriteJSONToHTTPResponseWriter(w, http.StatusInternalServerError, PatientSignupErrorResponse{err.Error()})
+		WriteDeveloperError(w, http.StatusInternalServerError, "Unable to register patient: "+err.Error())
 		return
 	}
 
