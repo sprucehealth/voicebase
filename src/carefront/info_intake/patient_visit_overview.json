@@ -1,0 +1,158 @@
+{
+    "sections": [
+        {
+            "section_title": "Medical History", 
+            "section_types": [
+                "s_type_table_info"
+            ], 
+            "sub_sections": [
+                {
+                    "data": [
+                        {
+                            "question": "q_dob"
+                        }, 
+                        {
+                            "question": "q_gender"
+                        }, 
+                        {
+                            "question": "q_location"
+                        }
+                    ], 
+                    "sub_section_title": "Basic Bio", 
+                    "sub_section_types": [
+                        "s_type_table_section"
+                    ]
+                }, 
+                {
+                    "sub_section_placeholder": "No previous visits", 
+                    "sub_section_title": "Visit History", 
+                    "sub_section_types": [
+                        "s_type_table_section"
+                    ]
+                }, 
+                {
+                    "data": [
+                        {
+                            "question": "q_allergic_medications"
+                        }, 
+                        {
+                            "question": "q_topical_allergic_medications"
+                        }, 
+                        {
+                            "question": "q_current_medications_entry"
+                        }
+                    ], 
+                    "sub_section_title": "Medication", 
+                    "sub_section_types": [
+                        [
+                            "s_type_table_section"
+                        ]
+                    ]
+                }, 
+                {
+                    "data": [
+                        {
+                            "question": "q_list_prev_skin_condition_diagnosis"
+                        }, 
+                        {
+                            "question": "q_prev_med_condition_diagnosis"
+                        }
+                    ], 
+                    "sub_section_title": "Past Medical History", 
+                    "sub_section_types": [
+                        [
+                            "s_type_table_section"
+                        ]
+                    ]
+                }, 
+                {
+                    "data": [
+                        {
+                            "question": "q_pregnancy_planning"
+                        }, 
+                        {
+                            "question": "q_social_history", 
+                            "show_potential_responses": true
+                        }
+                    ], 
+                    "sub_section_title": "Additional Information", 
+                    "sub_section_types": [
+                        "s_type_table_section"
+                    ]
+                }
+            ]
+        }, 
+        {
+            "section_title": "History of Present Illness", 
+            "section_types": [
+                "s_type_table_info"
+            ], 
+            "sub_sections": [
+                {
+                    "data": [
+                        {
+                            "question": "q_reason_visit"
+                        }, 
+                        {
+                            "question": "q_acne_length"
+                        }, 
+                        {
+                            "question": "q_acne_location"
+                        }, 
+                        {
+                            "question": "q_acne_worse"
+                        }, 
+                        {
+                            "question": "q_acne_symptoms", 
+                            "show_potential_responses": true
+                        }, 
+                        {
+                            "question": "q_menstrual_cycle"
+                        }, 
+                        {
+                            "question": "q_skin_type"
+                        }
+                    ], 
+                    "sub_section_title": "Symptoms Overview", 
+                    "sub_section_type": "s_type_table_info"
+                }, 
+                {
+                    "data": [
+                        {
+                            "question": "q_acne_prev_treatment_types"
+                        }, 
+                        {
+                            "question": "q_acne_prev_treatment_list"
+                        }
+                    ], 
+                    "sub_section_title": "Prior Treatments", 
+                    "sub_section_type": "s_type_table_info"
+                }, 
+                {
+                    "data": [
+                        {
+                            "question": "q_anything_else"
+                        }
+                    ], 
+                    "sub_section_title": "Additional Information from Patient", 
+                    "sub_section_type": "s_type_free_text"
+                }
+            ]
+        }, 
+        {
+            "data": [
+                {
+                    "question": "q_face_photo_intake"
+                }, 
+                {
+                    "question": "q_chest_photo_intake"
+                }
+            ], 
+            "section_title": "Photos", 
+            "section_types": [
+                "s_type_photo"
+            ]
+        }
+    ], 
+    "treatment_id": "1"
+}
