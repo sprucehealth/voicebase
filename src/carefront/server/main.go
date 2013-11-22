@@ -35,8 +35,8 @@ type DBConfig struct {
 
 type Config struct {
 	ListenAddr            string   `short:"l" long:"listen" description:"Address and port on which to listen (e.g. 127.0.0.1:8080)"`
-	CertLocation          string   `long:"cert_key" description:"Path of SSL certificate"`
-	KeyLocation           string   `long:"private_key" description:"Path of SSL private key"`
+	CertKeyLocation       string   `long:"cert_key" description:"Path of SSL certificate"`
+	PrivateKeyLocation    string   `long:"private_key" description:"Path of SSL private key"`
 	S3CaseBucket          string   `long:"case_bucket" description:"S3 Bucket name for case information"`
 	AWSRegion             string   `long:"aws_region" description:"AWS region"`
 	AWSRole               string   `long:"aws_role" description:"AWS role for fetching temporary credentials"`
@@ -224,9 +224,10 @@ func main() {
 		MaxHeaderBytes: 1 << 20,
 	}
 
-	if config.CertLocation == "" && config.KeyLocation == "" {
+	fmt.Println(config.S3CaseBucket)
+	if config.CertKeyLocation == "" && config.PrivateKeyLocation == "" {
 		log.Fatal(s.ListenAndServe())
 	} else {
-		log.Fatal(s.ListenAndServeTLS(config.CertLocation, config.KeyLocation))
+		log.Fatal(s.ListenAndServeTLS(config.CertKeyLocation, config.PrivateKeyLocation))
 	}
 }

@@ -84,6 +84,7 @@ func (s *PatientVisitHandler) returnNewOrOpenPatientVisit(w http.ResponseWriter,
 		// in other words, want to show them what they have already seen in terms of a flow.
 		healthCondition, layoutVersionId, err = s.getClientLayoutForPatientVisit(patientVisitId, api.EN_LANGUAGE_ID)
 		if err != nil {
+			WriteDeveloperError(w, http.StatusInternalServerError, "Unable to get client layout for existing patient visit: "+err.Error())
 			return
 		}
 	}
@@ -140,6 +141,9 @@ func getQuestionIdsInSectionInHealthConditionLayout(healthCondition *info_intake
 			for _, screen := range section.Screens {
 				for _, question := range screen.Questions {
 					questionIds = append(questionIds, question.QuestionId)
+					for _, subQuestion := range question.Questions {
+						questionIds = append(questionIds, subQuestion.QuestionId)
+					}
 				}
 			}
 		}
@@ -153,29 +157,41 @@ func (s *PatientVisitHandler) populateHealthConditionWithPatientAnswers(healthCo
 			for _, question := range screen.Questions {
 				// go through each question to see if there exists a patient answer for it
 				if patientAnswers[question.QuestionId] != nil {
-					question.PatientAnswers = make([]*info_intake.PatientAnswer, 0, len(patientAnswers[question.QuestionId]))
-					for _, patientAnswerToQuestion := range patientAnswers[question.QuestionId] {
-						var objectUrl string
-						var err error
-						if patientAnswerToQuestion.StorageKey != "" {
-							objectUrl, err = s.PatientPhotoStorageService.GetSignedUrlForObjectAtLocation(patientAnswerToQuestion.StorageBucket,
-								patientAnswerToQuestion.StorageKey, patientAnswerToQuestion.StorageRegion, time.Now().Add(10*time.Minute))
-							if err != nil {
-								log.Fatal("Unable to get signed url for photo object: " + err.Error())
-								return
-							}
-						}
+					s.populateQuestionWithPatientAnswer(question, patientAnswers[question.QuestionId])
+				}
 
-						question.PatientAnswers = append(question.PatientAnswers, &info_intake.PatientAnswer{
-							PatientAnswerId:   patientAnswerToQuestion.PatientInfoIntakeId,
-							PotentialAnswerId: patientAnswerToQuestion.PotentialAnswerId,
-							AnswerText:        patientAnswerToQuestion.AnswerText,
-							ObjectUrl:         objectUrl})
+				for _, subQuestion := range question.Questions {
+					if patientAnswers[subQuestion.QuestionId] != nil {
+						s.populateQuestionWithPatientAnswer(subQuestion, patientAnswers[subQuestion.QuestionId])
 					}
 				}
+
 			}
 		}
 	}
+}
+
+func (s *PatientVisitHandler) populateQuestionWithPatientAnswer(question *info_intake.Question, patientAnswers []api.PatientAnswerToQuestion) error {
+	question.PatientAnswers = make([]*info_intake.PatientAnswer, 0, len(patientAnswers))
+	for _, patientAnswerToQuestion := range patientAnswers {
+		var objectUrl string
+		var err error
+		if patientAnswerToQuestion.StorageKey != "" {
+			objectUrl, err = s.PatientPhotoStorageService.GetSignedUrlForObjectAtLocation(patientAnswerToQuestion.StorageBucket,
+				patientAnswerToQuestion.StorageKey, patientAnswerToQuestion.StorageRegion, time.Now().Add(10*time.Minute))
+			if err != nil {
+				log.Fatal("Unable to get signed url for photo object: " + err.Error())
+				return err
+			}
+		}
+
+		question.PatientAnswers = append(question.PatientAnswers, &info_intake.PatientAnswer{
+			PatientAnswerId:   patientAnswerToQuestion.PatientInfoIntakeId,
+			PotentialAnswerId: patientAnswerToQuestion.PotentialAnswerId,
+			AnswerText:        patientAnswerToQuestion.AnswerText,
+			ObjectUrl:         objectUrl})
+	}
+	return nil
 }
 
 func (s *PatientVisitHandler) getCurrentActiveClientLayoutForHealthCondition(healthConditionId, languageId int64) (healthCondition *info_intake.HealthCondition, layoutVersionId int64, err error) {

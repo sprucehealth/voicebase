@@ -39,10 +39,13 @@ CREATE TABLE IF NOT EXISTS question (
 	qtext_short_text_id int unsigned NOT NULL,
 	subtext_app_text_id int unsigned,
 	question_tag varchar(250) NOT NULL,
+	parent_question_id int unsigned,
+	required bool not null,
 	FOREIGN KEY (qtype_id) REFERENCES question_type(id),
 	FOREIGN KEY (subtext_app_text_id) REFERENCES app_text(id),
 	FOREIGN KEY (qtext_app_text_id) REFERENCES app_text(id),
 	FOREIGN KEY (qtext_short_text_id) REFERENCES app_text(id),
+	FOREIGN KEY (parent_question_id) REFERENCES question(id),
 	PRIMARY KEY (id),
 	UNIQUE KEY (question_tag)
 ) CHARACTER SET utf8;
@@ -57,13 +60,15 @@ CREATE TABLE IF NOT EXISTS answer_type (
 CREATE TABLE IF NOT EXISTS potential_answer (
 	id int unsigned NOT NULL AUTO_INCREMENT,
 	question_id int unsigned NOT NULL,
-	answer_localized_text int unsigned NOT NULL,
+	answer_localized_text_id int unsigned NOT NULL,
+	summary_localized_text_id int unsigned,
 	atype_id int unsigned NOT NULL,
 	potential_answer_tag varchar(250) NOT NULL,
 	ordering int unsigned NOT NULL,
 	FOREIGN KEY (atype_id) REFERENCES answer_type(id),
 	FOREIGN KEY (question_id) REFERENCES question(id),
 	FOREIGN KEY (answer_localized_text) REFERENCES app_text(id),
+	FOREIGN KEY (summary_localized_text) REFERENCES summary_localized_text(id),
 	PRIMARY KEY (id),
 	UNIQUE KEY (potential_answer_tag),
 	UNIQUE KEY (question_id, otype_id),
@@ -105,12 +110,14 @@ CREATE TABLE IF NOT EXISTS patient_info_intake (
 	answer_text varchar(600),
 	client_layout_version_id int unsigned NOT NULL,
 	answered_date timestamp NOT NULL DEFAULT CURRENT_TIMESTAMP,
+	parent_info_intake_id int unsigned,
 	status varchar(100) NOT NULL,
 	PRIMARY KEY (id),
 	FOREIGN KEY (question_id) REFERENCES question(id),
 	FOREIGN KEY (client_layout_version_id) REFERENCES patient_layout_version(id),
 	FOREIGN KEY (patient_id) REFERENCES patient(id),
-	FOREIGN KEY (section_id) REFERENCES section(id)
+	FOREIGN KEY (section_id) REFERENCES section(id),
+	FOREIGN KEY (parent_info_intake_id) REFERENCES patient_info_intake(id)
 ) CHARACTER SET UTF8;
 
 CREATE TABLE IF NOT EXISTS layout_version (

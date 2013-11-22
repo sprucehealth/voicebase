@@ -65,7 +65,16 @@
                                 ], 
                                 "question": "q_acne_prev_treatment_types"
                             }, 
-                            "question": "q_acne_prev_treatment_list"
+                            "question": "q_acne_prev_treatment_list",
+                            "questions" : [{
+                                "question" : "q_effective_treatment"
+                            },
+                            {
+                                "question" : "q_using_treatment"
+                            },
+                            {
+                                "question" : "q_length_treatment"
+                            }]
                         }
                     ]
                 }
