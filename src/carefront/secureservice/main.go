@@ -52,6 +52,32 @@ func (srv *authServiceImplementation) ValidateToken(token string) (*thriftauth.T
 	return nil, nil
 }
 
+type Server struct {
+	reg svcreg.Registry
+}
+
+func (s *Server) Init() {
+	var zoo *zk.Conn
+	var zooCh <-chan zk.Event
+	if *flagZookeeperHosts != "" {
+		var err error
+		hosts := strings.Split(*flagZookeeperHosts, ",")
+		zoo, zooCh, err = zk.Connect(hosts, time.Second*10)
+		if err != nil {
+			log.Fatal(err)
+		}
+		defer zoo.Close()
+		reg, err = zksvcreg.NewServiceRegistry(zoo, *flagZookeeperServicesPrefix)
+		if err != nil {
+			log.Fatal(err)
+		}
+		defer reg.Close()
+	} else {
+		reg = &svcreg.StaticRegistry{}
+	}
+	_ = zooCh
+}
+
 func main() {
 	flag.Parse()
 	if *flagEnvironment == "" || (*flagEnvironment != "prod" && *flagEnvironment != "staging" && *flagEnvironment != "dev") {
