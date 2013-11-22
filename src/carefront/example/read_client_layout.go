@@ -1,21 +1,21 @@
 package main
 
 import (
-	"carefront/layout_transformer"
+	"carefront/info_intake"
 	"encoding/json"
 	"fmt"
 	"io/ioutil"
 )
 
 func main() {
-	fileContents, _ := ioutil.ReadFile("../layout_transformer/client_intake.json")
-	treatmentRes := &layout_transformer.Treatment{}
-	err := json.Unmarshal(fileContents, &treatmentRes)
+	fileContents, _ := ioutil.ReadFile("../info_intake/patient_visit_layout.json")
+	patientVisitOverview := &info_intake.PatientVisitOverview{}
+	err := json.Unmarshal(fileContents, &patientVisitOverview)
 	if err != nil {
 		panic(err)
 	}
 
-	marshalledBytes, err := json.MarshalIndent(treatmentRes, "", " ")
+	marshalledBytes, err := json.MarshalIndent(patientVisitOverview, "", " ")
 	if err != nil {
 		panic(err)
 	}

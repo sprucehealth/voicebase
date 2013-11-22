@@ -44,9 +44,7 @@
                     ], 
                     "sub_section_title": "Medication", 
                     "sub_section_types": [
-                        [
-                            "s_type_table_section"
-                        ]
+                        "s_type_table_section"
                     ]
                 }, 
                 {
@@ -60,9 +58,7 @@
                     ], 
                     "sub_section_title": "Past Medical History", 
                     "sub_section_types": [
-                        [
-                            "s_type_table_section"
-                        ]
+                        "s_type_table_section"
                     ]
                 }, 
                 {
@@ -114,7 +110,9 @@
                         }
                     ], 
                     "sub_section_title": "Symptoms Overview", 
-                    "sub_section_type": "s_type_table_info"
+                    "sub_section_types": [
+                        "s_type_table_info"
+                    ]
                 }, 
                 {
                     "data": [
@@ -126,7 +124,9 @@
                         }
                     ], 
                     "sub_section_title": "Prior Treatments", 
-                    "sub_section_type": "s_type_table_info"
+                    "sub_section_types": [
+                        "s_type_table_info"
+                    ]
                 }, 
                 {
                     "data": [
@@ -135,7 +135,9 @@
                         }
                     ], 
                     "sub_section_title": "Additional Information from Patient", 
-                    "sub_section_type": "s_type_free_text"
+                    "sub_section_types": [
+                        "s_type_free_text"
+                    ]
                 }
             ]
         }, 

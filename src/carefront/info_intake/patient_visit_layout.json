@@ -1,13 +1,13 @@
-}
 {
-    "patient_visit_time": "21-11-2013T20:44:55", 
     "patient_id": "1", 
     "patient_visit_id": "2", 
     "sections": [
         {
             "section_id": "3", 
             "section_title": "Medical History", 
-            "section_types": ["s_type_table_info"],
+            "section_types": [
+                "s_type_table_info"
+            ], 
             "sub_sections": [
                 {
                     "data": [
@@ -43,7 +43,9 @@
                         }
                     ], 
                     "sub_section_title": "Basic Bio", 
-                    "sub_section_types": ["s_type_table_section"]
+                    "sub_section_types": [
+                        "s_type_table_section"
+                    ]
                 }, 
                 {
                     "sub_section_placeholder": "No previous visits", 
@@ -103,7 +105,7 @@
                     ], 
                     "sub_section_title": "Medication", 
                     "sub_section_types": [
-                        ["s_type_table_section"]
+                        "s_type_table_section"
                     ]
                 }, 
                 {
@@ -137,7 +139,7 @@
                     ], 
                     "sub_section_title": "Past Medical History", 
                     "sub_section_types": [
-                        ["s_type_table_section"]
+                        "s_type_table_section"
                     ]
                 }, 
                 {
@@ -187,14 +189,18 @@
                         }
                     ], 
                     "sub_section_title": "Additional Information", 
-                    "sub_section_types": ["s_type_table_section"]
+                    "sub_section_types": [
+                        "s_type_table_section"
+                    ]
                 }
             ]
         }, 
         {
             "section_id": "29", 
             "section_title": "History of Present Illness", 
-            "section_types": ["s_type_table_info"],
+            "section_types": [
+                "s_type_table_info"
+            ], 
             "sub_sections": [
                 {
                     "data": [
@@ -320,7 +326,9 @@
                         }
                     ], 
                     "sub_section_title": "Symptoms Overview", 
-                    "sub_section_type": "s_type_table_info"
+                    "sub_section_types": [
+                        "s_type_table_info"
+                    ]
                 }, 
                 {
                     "data": [
@@ -421,41 +429,57 @@
                         }
                     ], 
                     "sub_section_title": "Prior Treatments", 
-                    "sub_section_type": "s_type_table_info"
+                    "sub_section_types": [
+                        "s_type_table_info"
+                    ]
                 }, 
                 {
                     "data": [
-                        "Lorem Ipsum is simply dummy text of the printing and typesetting industry. Lorem Ipsum has been the industry's standard dummy text ever since the 1500s,  when an unknown printer took a galley of type and scrambled it to make a type  specimen book. It has survived not only five centuries, but also the leap into  electronic typesetting, remaining essentially unchanged. It was popularised  in the 1960s with the release of Letraset sheets containing Lorem Ipsum  passages, and more recently with desktop publishing software like Aldus  PageMaker including versions of Lorem Ipsum."
+                        {
+                            "patient_answers": [
+                                {
+                                    "answer_text": "Lorem Ipsum is simply dummy text of the printing and typesetting industry. Lorem Ipsum has been the industry's standard dummy text ever since the 1500s,  when an unknown printer took a galley of type and scrambled it to make a type  specimen book. It has survived not only five centuries, but also the leap into  electronic typesetting, remaining essentially unchanged. It was popularised  in the 1960s with the release of Letraset sheets containing Lorem Ipsum  passages, and more recently with desktop publishing software like Aldus  PageMaker including versions of Lorem Ipsum."
+                                }
+                            ]
+                        }
                     ], 
                     "sub_section_title": "Additional Information from Patient", 
-                    "sub_section_type": "s_type_free_text"
+                    "sub_section_types": [
+                        "s_type_free_text"
+                    ]
                 }
             ]
         }, 
         {
             "data": [
                 {
-                    "object_url": "http://9to5mac.files.wordpress.com/2013/01/ios-family-2013.png", 
-                    "potential_answer" : "Face Front",
-                    "patient_answer_id": "86", 
-                    "potential_answer_id": "87"
-                }, 
-                {
-                    "object_url": "http://9to5mac.files.wordpress.com/2013/01/ios-family-2013.png",
-                    "potential_answer" : "Profile Left", 
-                    "patient_answer_id": "88", 
-                    "potential_answer_id": "89"
-                },
-                { 
-                    "object_url": "http://9to5mac.files.wordpress.com/2013/01/ios-family-2013.png",
-                    "potential_answer" : "Profile Right", 
-                    "patient_answer_id": "90", 
-                    "potential_answer_id": "91"
+                    "patient_answers": [
+                        {
+                            "object_url": "http://9to5mac.files.wordpress.com/2013/01/ios-family-2013.png", 
+                            "patient_answer_id": "86", 
+                            "potential_answer": "Face Front", 
+                            "potential_answer_id": "87"
+                        }, 
+                        {
+                            "object_url": "http://9to5mac.files.wordpress.com/2013/01/ios-family-2013.png", 
+                            "patient_answer_id": "88", 
+                            "potential_answer": "Profile Left", 
+                            "potential_answer_id": "89"
+                        }, 
+                        {
+                            "object_url": "http://9to5mac.files.wordpress.com/2013/01/ios-family-2013.png", 
+                            "patient_answer_id": "90", 
+                            "potential_answer": "Profile Right", 
+                            "potential_answer_id": "91"
+                        }
+                    ]
                 }
             ], 
             "section_id": "92", 
             "section_title": "Photos", 
-            "section_types": ["s_type_photo"],
+            "section_types": [
+                "s_type_photo"
+            ]
         }
     ], 
     "treatment_id": "1"
