@@ -451,34 +451,38 @@
             ]
         }, 
         {
-            "data": [
-                {
-                    "patient_answers": [
-                        {
-                            "object_url": "http://9to5mac.files.wordpress.com/2013/01/ios-family-2013.png", 
-                            "patient_answer_id": "86", 
-                            "potential_answer": "Face Front", 
-                            "potential_answer_id": "87"
-                        }, 
-                        {
-                            "object_url": "http://9to5mac.files.wordpress.com/2013/01/ios-family-2013.png", 
-                            "patient_answer_id": "88", 
-                            "potential_answer": "Profile Left", 
-                            "potential_answer_id": "89"
-                        }, 
-                        {
-                            "object_url": "http://9to5mac.files.wordpress.com/2013/01/ios-family-2013.png", 
-                            "patient_answer_id": "90", 
-                            "potential_answer": "Profile Right", 
-                            "potential_answer_id": "91"
-                        }
-                    ]
-                }
-            ], 
             "section_id": "92", 
             "section_title": "Photos", 
             "section_types": [
                 "s_type_photo"
+            ], 
+            "sub_sections": [
+                {
+                    "data": [
+                        {
+                            "patient_answers": [
+                                {
+                                    "object_url": "http://9to5mac.files.wordpress.com/2013/01/ios-family-2013.png", 
+                                    "patient_answer_id": "86", 
+                                    "potential_answer": "Face Front", 
+                                    "potential_answer_id": "87"
+                                }, 
+                                {
+                                    "object_url": "http://9to5mac.files.wordpress.com/2013/01/ios-family-2013.png", 
+                                    "patient_answer_id": "88", 
+                                    "potential_answer": "Profile Left", 
+                                    "potential_answer_id": "89"
+                                }, 
+                                {
+                                    "object_url": "http://9to5mac.files.wordpress.com/2013/01/ios-family-2013.png", 
+                                    "patient_answer_id": "90", 
+                                    "potential_answer": "Profile Right", 
+                                    "potential_answer_id": "91"
+                                }
+                            ]
+                        }
+                    ]
+                }
             ]
         }
     ], 

@@ -45,7 +45,7 @@ type Question struct {
 	QuestionTitle         string                  `json:"question_title,omitempty"`
 	QuestionType          string                  `json:"question_type,omitempty"`
 	ParentQuestionId      int64                   `json:"parent_question_id,string,omitempty"`
-	PotentialAnswers      []*PotentialAnswer      `json:"potential_answers"`
+	PotentialAnswers      []*PotentialAnswer      `json:"potential_answers,omitempty"`
 	PatientAnswers        []*common.PatientAnswer `json:"patient_answers,omitempty"`
 	Questions             []*Question             `json:"questions,omitempty"`
 	ConditionBlock        *Condition              `json:"condition,omitempty"`
