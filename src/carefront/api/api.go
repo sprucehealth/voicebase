@@ -1,6 +1,7 @@
 package api
 
 import (
+	"carefront/model"
 	"errors"
 	"time"
 )
@@ -19,37 +20,12 @@ type Auth interface {
 	ValidateToken(token string) (valid bool, accountId int64, err error)
 }
 
-type PatientAnswerToQuestion struct {
-	PatientInfoIntakeId int64
-	QuestionId          int64
-	PotentialAnswerId   int64
-	LayoutVersionId     int64
-	AnswerText          string
-	StorageBucket       string
-	StorageKey          string
-	StorageRegion       string
-}
-
 type PotentialAnswerInfo struct {
 	PotentialAnswerId int64
 	AnswerType        string
 	Answer            string
 	AnswerTag         string
 	Ordering          int64
-}
-
-// this struct represents a patient answer to
-// particular question along with the responses to
-// any relevant subquestions, which is to be stored
-// on the database
-type AnswerToStore struct {
-	PatientId         int64
-	QuestionId        int64
-	PatientVisitId    int64
-	LayoutVersionId   int64
-	PotentialAnswerId int64
-	AnswerText        string
-	SubAnswers        []AnswerToStore
 }
 
 type PatientAPI interface {
@@ -64,14 +40,14 @@ type PatientVisitAPI interface {
 }
 
 type PatientIntakeAPI interface {
-	StoreAnswersForQuestion(questionId, patientId, patientVisitId, layoutVersionId int64, answersToStore []AnswerToStore) (err error)
+	StoreAnswersForQuestion(questionId, patientId, patientVisitId, layoutVersionId int64, answersToStore []*model.PatientAnswer) (err error)
 	CreatePhotoAnswerForQuestionRecord(patientId, questionId, patientVisitId, potentialAnswerId, layoutVersionId int64) (patientInfoIntakeId int64, err error)
 	UpdatePhotoAnswerRecordWithObjectStorageId(patientInfoIntakeId, objectStorageId int64) error
 	MakeCurrentPhotoAnswerInactive(patientId, questionId, patientVisitId, potentialAnswerId, layoutVersionId int64) (err error)
 
 	GetQuestionType(questionId int64) (questionType string, err error)
-	GetPatientAnswersForQuestionsInGlobalSections(questionIds []int64, patientId int64) (patientAnswers map[int64][]PatientAnswerToQuestion, err error)
-	GetPatientAnswersForQuestionsInPatientVisit(questionIds []int64, patientId int64, patientVisitId int64) (patientAnswers map[int64][]PatientAnswerToQuestion, err error)
+	GetPatientAnswersForQuestionsInGlobalSections(questionIds []int64, patientId int64) (patientAnswers map[int64][]*model.PatientAnswer, err error)
+	GetPatientAnswersForQuestionsInPatientVisit(questionIds []int64, patientId int64, patientVisitId int64) (patientAnswers map[int64][]*model.PatientAnswer, err error)
 	GetGlobalSectionIds() (globalSectionIds []int64, err error)
 	GetSectionIdsForHealthCondition(healthConditionId int64) (sectionIds []int64, err error)
 	GetHealthConditionInfo(healthConditionTag string) (int64, error)

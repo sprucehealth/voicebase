@@ -3,6 +3,7 @@ package apiservice
 import (
 	"carefront/api"
 	"carefront/info_intake"
+	"carefront/model"
 	"encoding/json"
 	"log"
 	"net/http"
@@ -141,9 +142,6 @@ func getQuestionIdsInSectionInHealthConditionLayout(healthCondition *info_intake
 			for _, screen := range section.Screens {
 				for _, question := range screen.Questions {
 					questionIds = append(questionIds, question.QuestionId)
-					for _, subQuestion := range question.Questions {
-						questionIds = append(questionIds, subQuestion.QuestionId)
-					}
 				}
 			}
 		}
@@ -151,7 +149,7 @@ func getQuestionIdsInSectionInHealthConditionLayout(healthCondition *info_intake
 	return
 }
 
-func (s *PatientVisitHandler) populateHealthConditionWithPatientAnswers(healthCondition *info_intake.HealthCondition, patientAnswers map[int64][]api.PatientAnswerToQuestion) {
+func (s *PatientVisitHandler) populateHealthConditionWithPatientAnswers(healthCondition *info_intake.HealthCondition, patientAnswers map[int64][]*model.PatientAnswer) {
 	for _, section := range healthCondition.Sections {
 		for _, screen := range section.Screens {
 			for _, question := range screen.Questions {
@@ -159,20 +157,13 @@ func (s *PatientVisitHandler) populateHealthConditionWithPatientAnswers(healthCo
 				if patientAnswers[question.QuestionId] != nil {
 					s.populateQuestionWithPatientAnswer(question, patientAnswers[question.QuestionId])
 				}
-
-				for _, subQuestion := range question.Questions {
-					if patientAnswers[subQuestion.QuestionId] != nil {
-						s.populateQuestionWithPatientAnswer(subQuestion, patientAnswers[subQuestion.QuestionId])
-					}
-				}
-
 			}
 		}
 	}
 }
 
-func (s *PatientVisitHandler) populateQuestionWithPatientAnswer(question *info_intake.Question, patientAnswers []api.PatientAnswerToQuestion) error {
-	question.PatientAnswers = make([]*info_intake.PatientAnswer, 0, len(patientAnswers))
+func (s *PatientVisitHandler) populateQuestionWithPatientAnswer(question *info_intake.Question, patientAnswers []*model.PatientAnswer) error {
+	question.PatientAnswers = make([]*model.PatientAnswer, 0)
 	for _, patientAnswerToQuestion := range patientAnswers {
 		var objectUrl string
 		var err error
@@ -184,12 +175,8 @@ func (s *PatientVisitHandler) populateQuestionWithPatientAnswer(question *info_i
 				return err
 			}
 		}
-
-		question.PatientAnswers = append(question.PatientAnswers, &info_intake.PatientAnswer{
-			PatientAnswerId:   patientAnswerToQuestion.PatientInfoIntakeId,
-			PotentialAnswerId: patientAnswerToQuestion.PotentialAnswerId,
-			AnswerText:        patientAnswerToQuestion.AnswerText,
-			ObjectUrl:         objectUrl})
+		patientAnswerToQuestion.ObjectUrl = objectUrl
+		question.PatientAnswers = append(question.PatientAnswers, patientAnswerToQuestion)
 	}
 	return nil
 }
