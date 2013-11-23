@@ -2,7 +2,7 @@ package info_intake
 
 import (
 	"carefront/api"
-	"carefront/model"
+	"carefront/common"
 )
 
 type InfoIntakeModelFiller interface {
@@ -41,16 +41,16 @@ type PotentialAnswer struct {
 
 type Question struct {
 	InfoIntakeModelFiller `json:",omitempty"`
-	QuestionTag           string                 `json:"question"`
-	QuestionId            int64                  `json:"question_id,string,omitempty"`
-	QuestionTitle         string                 `json:"question_title,omitempty"`
-	QuestionType          string                 `json:"question_type,omitempty"`
-	ParentQuestionId      int64                  `json:"parent_question_id,string,omitempty"`
-	PotentialAnswers      []*PotentialAnswer     `json:"potential_answers"`
-	PatientAnswers        []*model.PatientAnswer `json:"patient_answers,omitempty"`
-	Questions             []*Question            `json:"questions,omitempty"`
-	ConditionBlock        *Condition             `json:"condition,omitempty"`
-	Tips                  *TipSection            `json:"tips,omitempty"`
+	QuestionTag           string                  `json:"question"`
+	QuestionId            int64                   `json:"question_id,string,omitempty"`
+	QuestionTitle         string                  `json:"question_title,omitempty"`
+	QuestionType          string                  `json:"question_type,omitempty"`
+	ParentQuestionId      int64                   `json:"parent_question_id,string,omitempty"`
+	PotentialAnswers      []*PotentialAnswer      `json:"potential_answers"`
+	PatientAnswers        []*common.PatientAnswer `json:"patient_answers,omitempty"`
+	Questions             []*Question             `json:"questions,omitempty"`
+	ConditionBlock        *Condition              `json:"condition,omitempty"`
+	Tips                  *TipSection             `json:"tips,omitempty"`
 }
 
 type Screen struct {

@@ -2,7 +2,7 @@ package apiservice
 
 import (
 	"carefront/api"
-	"carefront/model"
+	"carefront/common"
 	"encoding/json"
 	"errors"
 	"net/http"
@@ -111,7 +111,7 @@ func (a *AnswerIntakeHandler) ServeHTTP(w http.ResponseWriter, r *http.Request) 
 	WriteJSONToHTTPResponseWriter(w, http.StatusOK, AnswerIntakeResponse{})
 }
 
-func populateAnswersToStore(answerIntakeRequestBody *AnswerIntakeRequestBody, patientId, layoutVersionId int64) (answersToStore []*model.PatientAnswer) {
+func populateAnswersToStore(answerIntakeRequestBody *AnswerIntakeRequestBody, patientId, layoutVersionId int64) (answersToStore []*common.PatientAnswer) {
 	// get a list of top level answers to store for each of the quetions
 	answersToStore = createAnswersToStore(patientId, answerIntakeRequestBody.QuestionId,
 		answerIntakeRequestBody.PatientVisitId, layoutVersionId, answerIntakeRequestBody.AnswerIntakes)
@@ -120,7 +120,7 @@ func populateAnswersToStore(answerIntakeRequestBody *AnswerIntakeRequestBody, pa
 	// embedded in them, and add that to the list of answers to store in the database
 	for i, answerIntake := range answerIntakeRequestBody.AnswerIntakes {
 		if answerIntake.SubQuestionAnswerIntakes != nil {
-			subAnswers := make([]*model.PatientAnswer, 0)
+			subAnswers := make([]*common.PatientAnswer, 0)
 			for _, subAnswer := range answerIntake.SubQuestionAnswerIntakes {
 				subAnswers = append(subAnswers, createAnswersToStore(patientId, subAnswer.QuestionId, answerIntakeRequestBody.PatientVisitId, layoutVersionId, subAnswer.AnswerIntakes)...)
 			}
@@ -130,10 +130,10 @@ func populateAnswersToStore(answerIntakeRequestBody *AnswerIntakeRequestBody, pa
 	return answersToStore
 }
 
-func createAnswersToStore(patientId, questionId, patientVisitId, layoutVersionId int64, answerIntakes []*AnswerIntake) []*model.PatientAnswer {
-	answersToStore := make([]*model.PatientAnswer, 0)
+func createAnswersToStore(patientId, questionId, patientVisitId, layoutVersionId int64, answerIntakes []*AnswerIntake) []*common.PatientAnswer {
+	answersToStore := make([]*common.PatientAnswer, 0)
 	for _, answerIntake := range answerIntakes {
-		answerToStore := new(model.PatientAnswer)
+		answerToStore := new(common.PatientAnswer)
 		answerToStore.PatientId = patientId
 		answerToStore.QuestionId = questionId
 		answerToStore.PatientVisitId = patientVisitId

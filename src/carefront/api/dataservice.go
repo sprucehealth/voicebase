@@ -2,7 +2,7 @@ package api
 
 import (
 	"bytes"
-	"carefront/model"
+	"carefront/common"
 	"database/sql"
 	"errors"
 	"fmt"
@@ -52,14 +52,14 @@ func (d *DataService) GetPatientIdFromPatientVisitId(patientVisitId int64) (int6
 	return patientId, err
 }
 
-func (d *DataService) getPatientAnswersForQuestionsBasedOnQuery(query string, args ...interface{}) (patientAnswers map[int64][]*model.PatientAnswer, err error) {
+func (d *DataService) getPatientAnswersForQuestionsBasedOnQuery(query string, args ...interface{}) (patientAnswers map[int64][]*common.PatientAnswer, err error) {
 	rows, err := d.DB.Query(query, args...)
 	if err != nil {
 		return nil, err
 	}
 	defer rows.Close()
-	patientAnswers = make(map[int64][]*model.PatientAnswer)
-	queriedAnswers := make([]*model.PatientAnswer, 0)
+	patientAnswers = make(map[int64][]*common.PatientAnswer)
+	queriedAnswers := make([]*common.PatientAnswer, 0)
 	for rows.Next() {
 		var answerId, questionId, potentialAnswerId, layoutVersionId int64
 		var answerText, storageBucket, storageKey, storageRegion sql.NullString
@@ -68,7 +68,7 @@ func (d *DataService) getPatientAnswersForQuestionsBasedOnQuery(query string, ar
 		if err != nil {
 			return
 		}
-		patientAnswerToQuestion := &model.PatientAnswer{PatientAnswerId: answerId,
+		patientAnswerToQuestion := &common.PatientAnswer{PatientAnswerId: answerId,
 			QuestionId:        questionId,
 			PotentialAnswerId: potentialAnswerId,
 			LayoutVersionId:   layoutVersionId,
@@ -95,12 +95,12 @@ func (d *DataService) getPatientAnswersForQuestionsBasedOnQuery(query string, ar
 	}
 
 	// populate all top-level answers into the map
-	patientAnswers = make(map[int64][]*model.PatientAnswer)
+	patientAnswers = make(map[int64][]*common.PatientAnswer)
 	for _, patientAnswerToQuestion := range queriedAnswers {
 		if patientAnswerToQuestion.ParentQuestionId == 0 {
 			questionId := patientAnswerToQuestion.QuestionId
 			if patientAnswers[questionId] == nil {
-				patientAnswers[questionId] = make([]*model.PatientAnswer, 0)
+				patientAnswers[questionId] = make([]*common.PatientAnswer, 0)
 			}
 			patientAnswers[questionId] = append(patientAnswers[questionId], patientAnswerToQuestion)
 		}
@@ -116,7 +116,7 @@ func (d *DataService) getPatientAnswersForQuestionsBasedOnQuery(query string, ar
 				if patientAnswer.PatientAnswerId == patientAnswerToQuestion.ParentAnswerId {
 					// this is the top level answer to
 					if patientAnswer.SubAnswers == nil {
-						patientAnswer.SubAnswers = make([]*model.PatientAnswer, 0)
+						patientAnswer.SubAnswers = make([]*common.PatientAnswer, 0)
 					}
 					patientAnswer.SubAnswers = append(patientAnswer.SubAnswers, patientAnswerToQuestion)
 				}
@@ -126,7 +126,7 @@ func (d *DataService) getPatientAnswersForQuestionsBasedOnQuery(query string, ar
 	return
 }
 
-func (d *DataService) GetPatientAnswersForQuestionsInGlobalSections(questionIds []int64, patientId int64) (patientAnswers map[int64][]*model.PatientAnswer, err error) {
+func (d *DataService) GetPatientAnswersForQuestionsInGlobalSections(questionIds []int64, patientId int64) (patientAnswers map[int64][]*common.PatientAnswer, err error) {
 	enumeratedStrings := enumerateItemsIntoString(questionIds)
 	queryStr := fmt.Sprintf(`select patient_info_intake.id, question_id, potential_answer_id, answer_text, object_storage.bucket, object_storage.storage_key, region_tag,
 								layout_version_id, parent_question_id, parent_info_intake_id from patient_info_intake  
@@ -136,7 +136,7 @@ func (d *DataService) GetPatientAnswersForQuestionsInGlobalSections(questionIds 
 	return d.getPatientAnswersForQuestionsBasedOnQuery(queryStr, patientId)
 }
 
-func (d *DataService) GetPatientAnswersForQuestionsInPatientVisit(questionIds []int64, patientId int64, patientVisitId int64) (patientAnswers map[int64][]*model.PatientAnswer, err error) {
+func (d *DataService) GetPatientAnswersForQuestionsInPatientVisit(questionIds []int64, patientId int64, patientVisitId int64) (patientAnswers map[int64][]*common.PatientAnswer, err error) {
 	enumeratedStrings := enumerateItemsIntoString(questionIds)
 	queryStr := fmt.Sprintf(`select patient_info_intake.id, question_id, potential_answer_id, answer_text, bucket, storage_key, region_tag,
 								layout_version_id, parent_question_id, parent_info_intake_id from patient_info_intake  
@@ -289,7 +289,7 @@ func (d *DataService) deleteAnswersWithId(answerIds []int64) error {
 	return err
 }
 
-func prepareQueryForAnswers(answersToStore []*model.PatientAnswer, parentInfoIntakeId string, parentQuestionId string, status string) string {
+func prepareQueryForAnswers(answersToStore []*common.PatientAnswer, parentInfoIntakeId string, parentQuestionId string, status string) string {
 	var buffer bytes.Buffer
 	insertStr := `insert into patient_info_intake (patient_id, patient_visit_id, parent_info_intake_id, parent_question_id, question_id, potential_answer_id, answer_text, layout_version_id, status) values`
 	buffer.WriteString(insertStr)
@@ -298,7 +298,7 @@ func prepareQueryForAnswers(answersToStore []*model.PatientAnswer, parentInfoInt
 	return buffer.String()
 }
 
-func constructValuesToInsert(answersToStore []*model.PatientAnswer, parentInfoIntakeId, parentQuestionId, status string) []string {
+func constructValuesToInsert(answersToStore []*common.PatientAnswer, parentInfoIntakeId, parentQuestionId, status string) []string {
 	values := make([]string, 0)
 	for _, answerToStore := range answersToStore {
 		valueStr := fmt.Sprintf("(%d, %d, %s, %s, %d, %d, '%s', %d, '%s')", answerToStore.PatientId, answerToStore.PatientVisitId, parentInfoIntakeId, parentQuestionId,
@@ -308,7 +308,7 @@ func constructValuesToInsert(answersToStore []*model.PatientAnswer, parentInfoIn
 	return values
 }
 
-func (d *DataService) StoreAnswersForQuestion(questionId, patientId, patientVisitId, layoutVersionId int64, answersToStore []*model.PatientAnswer) (err error) {
+func (d *DataService) StoreAnswersForQuestion(questionId, patientId, patientVisitId, layoutVersionId int64, answersToStore []*common.PatientAnswer) (err error) {
 
 	if len(answersToStore) == 0 {
 		return
@@ -323,10 +323,10 @@ func (d *DataService) StoreAnswersForQuestion(questionId, patientId, patientVisi
 		return
 	}
 
-	infoIdToAnswersWithSubAnswers := make(map[int64]*model.PatientAnswer)
+	infoIdToAnswersWithSubAnswers := make(map[int64]*common.PatientAnswer)
 	subAnswersFound := false
 	for _, answerToStore := range answersToStore {
-		insertStr := prepareQueryForAnswers([]*model.PatientAnswer{answerToStore}, "NULL", "NULL", status_creating)
+		insertStr := prepareQueryForAnswers([]*common.PatientAnswer{answerToStore}, "NULL", "NULL", status_creating)
 		res, err := tx.Exec(insertStr)
 		if err != nil {
 			tx.Rollback()
@@ -644,7 +644,7 @@ func (d *DataService) UpdateActiveLayouts(layoutId int64, clientLayoutIds []int6
 	return nil
 }
 
-func infoIdsFromMap(m map[int64]*model.PatientAnswer) []int64 {
+func infoIdsFromMap(m map[int64]*common.PatientAnswer) []int64 {
 	infoIds := make([]int64, 0)
 	for key, _ := range m {
 		infoIds = append(infoIds, key)
