@@ -1,4 +1,4 @@
-package model
+package common
 
 type PatientAnswer struct {
 	PatientAnswerId   int64            `json:"patient_answer_id,string"`

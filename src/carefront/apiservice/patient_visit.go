@@ -2,8 +2,8 @@ package apiservice
 
 import (
 	"carefront/api"
+	"carefront/common"
 	"carefront/info_intake"
-	"carefront/model"
 	"encoding/json"
 	"log"
 	"net/http"
@@ -149,7 +149,7 @@ func getQuestionIdsInSectionInHealthConditionLayout(healthCondition *info_intake
 	return
 }
 
-func (s *PatientVisitHandler) populateHealthConditionWithPatientAnswers(healthCondition *info_intake.HealthCondition, patientAnswers map[int64][]*model.PatientAnswer) {
+func (s *PatientVisitHandler) populateHealthConditionWithPatientAnswers(healthCondition *info_intake.HealthCondition, patientAnswers map[int64][]*common.PatientAnswer) {
 	for _, section := range healthCondition.Sections {
 		for _, screen := range section.Screens {
 			for _, question := range screen.Questions {
@@ -162,8 +162,8 @@ func (s *PatientVisitHandler) populateHealthConditionWithPatientAnswers(healthCo
 	}
 }
 
-func (s *PatientVisitHandler) populateQuestionWithPatientAnswer(question *info_intake.Question, patientAnswers []*model.PatientAnswer) error {
-	question.PatientAnswers = make([]*model.PatientAnswer, 0)
+func (s *PatientVisitHandler) populateQuestionWithPatientAnswer(question *info_intake.Question, patientAnswers []*common.PatientAnswer) error {
+	question.PatientAnswers = make([]*common.PatientAnswer, 0)
 	for _, patientAnswerToQuestion := range patientAnswers {
 		var objectUrl string
 		var err error

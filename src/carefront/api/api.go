@@ -1,7 +1,7 @@
 package api
 
 import (
-	"carefront/model"
+	"carefront/common"
 	"errors"
 	"time"
 )
@@ -40,14 +40,14 @@ type PatientVisitAPI interface {
 }
 
 type PatientIntakeAPI interface {
-	StoreAnswersForQuestion(questionId, patientId, patientVisitId, layoutVersionId int64, answersToStore []*model.PatientAnswer) (err error)
+	StoreAnswersForQuestion(questionId, patientId, patientVisitId, layoutVersionId int64, answersToStore []*common.PatientAnswer) (err error)
 	CreatePhotoAnswerForQuestionRecord(patientId, questionId, patientVisitId, potentialAnswerId, layoutVersionId int64) (patientInfoIntakeId int64, err error)
 	UpdatePhotoAnswerRecordWithObjectStorageId(patientInfoIntakeId, objectStorageId int64) error
 	MakeCurrentPhotoAnswerInactive(patientId, questionId, patientVisitId, potentialAnswerId, layoutVersionId int64) (err error)
 
 	GetQuestionType(questionId int64) (questionType string, err error)
-	GetPatientAnswersForQuestionsInGlobalSections(questionIds []int64, patientId int64) (patientAnswers map[int64][]*model.PatientAnswer, err error)
-	GetPatientAnswersForQuestionsInPatientVisit(questionIds []int64, patientId int64, patientVisitId int64) (patientAnswers map[int64][]*model.PatientAnswer, err error)
+	GetPatientAnswersForQuestionsInGlobalSections(questionIds []int64, patientId int64) (patientAnswers map[int64][]*common.PatientAnswer, err error)
+	GetPatientAnswersForQuestionsInPatientVisit(questionIds []int64, patientId int64, patientVisitId int64) (patientAnswers map[int64][]*common.PatientAnswer, err error)
 	GetGlobalSectionIds() (globalSectionIds []int64, err error)
 	GetSectionIdsForHealthCondition(healthConditionId int64) (sectionIds []int64, err error)
 	GetHealthConditionInfo(healthConditionTag string) (int64, error)
