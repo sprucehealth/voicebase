@@ -2,6 +2,7 @@ package info_intake
 
 import (
 	"carefront/api"
+	"carefront/model"
 )
 
 type InfoIntakeModelFiller interface {
@@ -39,28 +40,18 @@ type PotentialAnswer struct {
 	Ordering              int64  `json:"ordering,string"`
 }
 
-type PatientAnswer struct {
-	PatientAnswerId   int64  `json:"patient_answer_id,string"`
-	PotentialAnswerId int64  `json:"potential_answer_id,string"`
-	PotentialAnswer   string `json:"potential_answer,omitempty"`
-	AnswerType        string `json:"answer_type,omitempty"`
-	AnswerText        string `json:"answer_text,omitempty"`
-	ObjectUrl         string `json:"object_url,omitempty"`
-}
-
 type Question struct {
 	InfoIntakeModelFiller `json:",omitempty"`
-	QuestionTag           string             `json:"question"`
-	QuestionId            int64              `json:"question_id,string,omitempty"`
-	QuestionTitle         string             `json:"question_title,omitempty"`
-	QuestionSummary       string             `json:"question_summary,omitempty"`
-	QuestionType          string             `json:"question_type,omitempty"`
-	ParentQuestionId      int64              `json:"parent_question_id,string,omitempty"`
-	PotentialAnswers      []*PotentialAnswer `json:"potential_answers"`
-	PatientAnswers        []*PatientAnswer   `json:"patient_answers,omitempty"`
-	Questions             []*Question        `json:"questions,omitempty"`
-	ConditionBlock        *Condition         `json:"condition,omitempty"`
-	Tips                  *TipSection        `json:"tips,omitempty"`
+	QuestionTag           string                 `json:"question"`
+	QuestionId            int64                  `json:"question_id,string,omitempty"`
+	QuestionTitle         string                 `json:"question_title,omitempty"`
+	QuestionType          string                 `json:"question_type,omitempty"`
+	ParentQuestionId      int64                  `json:"parent_question_id,string,omitempty"`
+	PotentialAnswers      []*PotentialAnswer     `json:"potential_answers"`
+	PatientAnswers        []*model.PatientAnswer `json:"patient_answers,omitempty"`
+	Questions             []*Question            `json:"questions,omitempty"`
+	ConditionBlock        *Condition             `json:"condition,omitempty"`
+	Tips                  *TipSection            `json:"tips,omitempty"`
 }
 
 type Screen struct {
