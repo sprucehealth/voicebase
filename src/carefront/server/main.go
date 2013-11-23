@@ -43,7 +43,7 @@ var DefaultConfig = Config{
 
 func main() {
 	conf := DefaultConfig
-	_, err := config.ParseFlagsAndConfig(&conf, nil)
+	_, err := config.Parse(&conf)
 	if err != nil {
 		log.Fatal(err)
 	}

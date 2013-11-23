@@ -1,3 +1,6 @@
+/*
+	Package config implements command line argument and config file parsing.
+*/
 package config
 
 import (
@@ -24,6 +27,7 @@ type BaseConfig struct {
 	AWSSecretKey string `long:"aws_secret_key" description:"AWS secret key"`
 	AWSAccessKey string `long:"aws_access_key" description:"AWS access key id"`
 	ConfigPath   string `short:"c" long:"config" description:"Path to config file. If not set then stderr is used."`
+	Environment  string `short:"e" long:"environment" description:"Current environment (dev, stage, prod)"`
 	LogPath      string `short:"l" long:"log_path" description:"Path to log file"`
 
 	awsAuth aws.Auth
@@ -91,7 +95,11 @@ func LoadConfigFile(configUrl string, config interface{}, awsAuther func() (aws.
 	return nil
 }
 
-func ParseFlagsAndConfig(config interface{}, args []string) ([]string, error) {
+func Parse(config interface{}) ([]string, error) {
+	return ParseArgs(config, os.Args[1:])
+}
+
+func ParseArgs(config interface{}, args []string) ([]string, error) {
 	if args == nil {
 		args = os.Args[1:]
 	}
