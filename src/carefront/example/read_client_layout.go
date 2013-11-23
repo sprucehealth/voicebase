@@ -8,7 +8,7 @@ import (
 )
 
 func main() {
-	fileContents, _ := ioutil.ReadFile("../info_intake/patient_visit_layout.json")
+	fileContents, _ := ioutil.ReadFile("../info_intake/patient_visit_overview.json")
 	patientVisitOverview := &info_intake.PatientVisitOverview{}
 	err := json.Unmarshal(fileContents, &patientVisitOverview)
 

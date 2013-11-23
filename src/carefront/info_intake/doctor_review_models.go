@@ -6,7 +6,7 @@ import (
 
 type PatientVisitOverviewQuestion struct {
 	Question
-	ShowPotentialResponses bool `json:"show_potential_responses"`
+	ShowPotentialResponses bool `json:"show_potential_responses,omitempty"`
 }
 
 type PatientVisitOverviewSubSection struct {
