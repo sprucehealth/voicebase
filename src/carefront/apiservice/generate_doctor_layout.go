@@ -12,13 +12,10 @@ import (
 	"time"
 )
 
-const (
-	carefront_doctor_layout_bucket = "carefront-doctor-layout-useast"
-)
-
 type GenerateDoctorLayoutHandler struct {
 	DataApi             api.DataAPI
 	CloudStorageApi     api.CloudStorageAPI
+	DoctorLayoutBucket  string
 	MaxInMemoryForPhoto int64
 	AWSRegion           string
 }
@@ -77,7 +74,7 @@ func (d *GenerateDoctorLayoutHandler) ServeHTTP(w http.ResponseWriter, r *http.R
 		}
 	}
 
-	objectid, objectUrl, err := d.CloudStorageApi.PutObjectToLocation(carefront_doctor_layout_bucket,
+	objectid, objectUrl, err := d.CloudStorageApi.PutObjectToLocation(d.DoctorLayoutBucket,
 		strconv.Itoa(int(time.Now().Unix())), d.AWSRegion, handler.Header.Get("Content-Type"), data, time.Now().Add(10*time.Minute), d.DataApi)
 	if err != nil {
 		WriteDeveloperError(w, http.StatusInternalServerError, "Unable to upload file to cloud: "+err.Error())

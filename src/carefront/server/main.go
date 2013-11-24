@@ -37,7 +37,10 @@ type Config struct {
 	ListenAddr            string   `short:"l" long:"listen" description:"Address and port on which to listen (e.g. 127.0.0.1:8080)"`
 	CertKeyLocation       string   `long:"cert_key" description:"Path of SSL certificate"`
 	PrivateKeyLocation    string   `long:"private_key" description:"Path of SSL private key"`
-	S3CaseBucket          string   `long:"case_bucket" description:"S3 Bucket name for case information"`
+	CaseBucket            string   `long:"case_bucket" description:"S3 Bucket name for case information"`
+	PatientLayoutBucket   string   `long:"client_layout_bucket" description:"S3 Bucket name for client digestable layout for patient information intake"`
+	VisualLayoutBucket    string   `long:"patient_layout_bucket" description:"S3 Bucket name for human readable layout for patient information intake"`
+	DoctorLayoutBucket    string   `long:"doctor_layout_bucket" description:"S3 Bucket name for patient overview for doctor's viewing"`
 	AWSRegion             string   `long:"aws_region" description:"AWS region"`
 	AWSRole               string   `long:"aws_role" description:"AWS role for fetching temporary credentials"`
 	AWSSecretKey          string   `long:"aws_secret_key" description:"AWS secret key"`
@@ -76,7 +79,7 @@ func (c *Config) AWSAuth() (aws.Auth, error) {
 
 var DefaultConfig = Config{
 	ListenAddr:            ":8080",
-	S3CaseBucket:          "carefront-cases",
+	CaseBucket:            "carefront-cases",
 	MaxInMemoryForPhotoMB: defaultMaxInMemoryPhotoMB,
 }
 
@@ -195,14 +198,15 @@ func main() {
 	signupPatientHandler := &apiservice.SignupPatientHandler{dataApi, authApi}
 	patientVisitHandler := apiservice.NewPatientVisitHandler(dataApi, authApi, cloudStorageApi, photoAnswerCloudStorageApi)
 	answerIntakeHandler := apiservice.NewAnswerIntakeHandler(dataApi)
-	photoAnswerIntakeHandler := apiservice.NewPhotoAnswerIntakeHandler(dataApi, photoAnswerCloudStorageApi, config.S3CaseBucket, config.AWSRegion, config.MaxInMemoryForPhotoMB*1024*1024)
-	generateDoctorLayoutHandler := &apiservice.GenerateDoctorLayoutHandler{dataApi, cloudStorageApi, config.MaxInMemoryForPhotoMB, config.AWSRegion}
-	fmt.Println(generateDoctorLayoutHandler)
+	photoAnswerIntakeHandler := apiservice.NewPhotoAnswerIntakeHandler(dataApi, photoAnswerCloudStorageApi, config.CaseBucket, config.AWSRegion, config.MaxInMemoryForPhotoMB*1024*1024)
+	generateDoctorLayoutHandler := &apiservice.GenerateDoctorLayoutHandler{dataApi, cloudStorageApi, config.DoctorLayoutBucket, config.MaxInMemoryForPhotoMB, config.AWSRegion}
 	pingHandler := apiservice.PingHandler(0)
 	generateModelIntakeHandler := &apiservice.GenerateClientIntakeModelHandler{
-		DataApi:         dataApi,
-		CloudStorageApi: cloudStorageApi,
-		AWSRegion:       config.AWSRegion,
+		DataApi:             dataApi,
+		CloudStorageApi:     cloudStorageApi,
+		VisualLayoutBucket:  config.VisualLayoutBucket,
+		PatientLayoutBucket: config.PatientLayoutBucket,
+		AWSRegion:           config.AWSRegion,
 	}
 
 	mux := &apiservice.AuthServeMux{*http.NewServeMux(), authApi}
@@ -227,7 +231,6 @@ func main() {
 		MaxHeaderBytes: 1 << 20,
 	}
 
-	fmt.Println(config.S3CaseBucket)
 	if config.CertKeyLocation == "" && config.PrivateKeyLocation == "" {
 		log.Fatal(s.ListenAndServe())
 	} else {

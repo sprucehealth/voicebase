@@ -13,15 +13,15 @@ import (
 )
 
 const (
-	carefront_layout_bucket        = "carefront-layout"
-	carefront_client_layout_bucket = "carefront-client-layout"
-	layout_syntax_version          = 1
+	layout_syntax_version = 1
 )
 
 type GenerateClientIntakeModelHandler struct {
-	DataApi         api.DataAPI
-	CloudStorageApi api.CloudStorageAPI
-	AWSRegion       string
+	DataApi             api.DataAPI
+	CloudStorageApi     api.CloudStorageAPI
+	VisualLayoutBucket  string
+	PatientLayoutBucket string
+	AWSRegion           string
 }
 
 type ClientIntakeModelGeneratedResponse struct {
@@ -84,7 +84,7 @@ func (l *GenerateClientIntakeModelHandler) ServeHTTP(w http.ResponseWriter, r *h
 	}
 
 	// upload the layout version to S3 and get back an object storage id
-	objectId, _, err := l.CloudStorageApi.PutObjectToLocation(carefront_layout_bucket,
+	objectId, _, err := l.CloudStorageApi.PutObjectToLocation(l.VisualLayoutBucket,
 		strconv.Itoa(int(time.Now().Unix())), l.AWSRegion, handler.Header.Get("Content-Type"), data, time.Now().Add(10*time.Minute), l.DataApi)
 
 	// get the healthConditionId
@@ -114,7 +114,7 @@ func (l *GenerateClientIntakeModelHandler) ServeHTTP(w http.ResponseWriter, r *h
 			return
 		}
 		// put each client layout that is generated into S3
-		objectId, clientModelUrl, err := l.CloudStorageApi.PutObjectToLocation(carefront_client_layout_bucket,
+		objectId, clientModelUrl, err := l.CloudStorageApi.PutObjectToLocation(l.PatientLayoutBucket,
 			strconv.Itoa(int(time.Now().Unix())), l.AWSRegion, handler.Header.Get("Content-Type"), jsonData, time.Now().Add(10*time.Minute), l.DataApi)
 		clientModelUrls[i] = clientModelUrl
 		if err != nil {
