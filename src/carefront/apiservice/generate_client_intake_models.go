@@ -13,9 +13,9 @@ import (
 )
 
 const (
-	CAREFRONT_LAYOUT_BUCKET        = "carefront-layout"
-	CAREFRONT_CLIENT_LAYOUT_BUCKET = "carefront-client-layout"
-	LAYOUT_SYNTAX_VERSION          = 1
+	carefront_layout_bucket        = "carefront-layout"
+	carefront_client_layout_bucket = "carefront-client-layout"
+	layout_syntax_version          = 1
 )
 
 type GenerateClientIntakeModelHandler struct {
@@ -67,7 +67,7 @@ func (l *GenerateClientIntakeModelHandler) ServeHTTP(w http.ResponseWriter, r *h
 	}
 
 	// check if the current active layout is the same as the layout trying to be uploaded
-	currentActiveBucket, currentActiveKey, currentActiveRegion, _ := l.DataApi.GetActiveLayoutInfoForHealthCondition(healthConditionTag)
+	currentActiveBucket, currentActiveKey, currentActiveRegion, _ := l.DataApi.GetActiveLayoutInfoForHealthCondition(healthConditionTag, api.PATIENT_ROLE)
 	if currentActiveBucket != "" {
 		rawData, err := l.CloudStorageApi.GetObjectAtLocation(currentActiveBucket, currentActiveKey, currentActiveRegion)
 		if err != nil {
@@ -84,14 +84,14 @@ func (l *GenerateClientIntakeModelHandler) ServeHTTP(w http.ResponseWriter, r *h
 	}
 
 	// upload the layout version to S3 and get back an object storage id
-	objectId, _, err := l.CloudStorageApi.PutObjectToLocation(CAREFRONT_LAYOUT_BUCKET,
+	objectId, _, err := l.CloudStorageApi.PutObjectToLocation(carefront_layout_bucket,
 		strconv.Itoa(int(time.Now().Unix())), l.AWSRegion, handler.Header.Get("Content-Type"), data, time.Now().Add(10*time.Minute), l.DataApi)
 
 	// get the healthConditionId
 	healthConditionId, err := l.DataApi.GetHealthConditionInfo(healthConditionTag)
 
 	// once that is successful, create a record for the layout version and mark is as CREATING
-	modelId, err := l.DataApi.MarkNewLayoutVersionAsCreating(objectId, LAYOUT_SYNTAX_VERSION, healthConditionId, "automatically generated")
+	modelId, err := l.DataApi.MarkNewLayoutVersionAsCreating(objectId, layout_syntax_version, healthConditionId, api.PATIENT_ROLE, "automatically generated")
 
 	// get all the supported languages
 	_, supportedLanguageIds, err := l.DataApi.GetSupportedLanguages()
@@ -114,7 +114,7 @@ func (l *GenerateClientIntakeModelHandler) ServeHTTP(w http.ResponseWriter, r *h
 			return
 		}
 		// put each client layout that is generated into S3
-		objectId, clientModelUrl, err := l.CloudStorageApi.PutObjectToLocation(CAREFRONT_CLIENT_LAYOUT_BUCKET,
+		objectId, clientModelUrl, err := l.CloudStorageApi.PutObjectToLocation(carefront_client_layout_bucket,
 			strconv.Itoa(int(time.Now().Unix())), l.AWSRegion, handler.Header.Get("Content-Type"), jsonData, time.Now().Add(10*time.Minute), l.DataApi)
 		clientModelUrls[i] = clientModelUrl
 		if err != nil {
@@ -134,6 +134,6 @@ func (l *GenerateClientIntakeModelHandler) ServeHTTP(w http.ResponseWriter, r *h
 	}
 
 	// update the active layouts to the new current set of layouts
-	l.DataApi.UpdateActiveLayouts(modelId, clientModelVersionIds, 1)
+	l.DataApi.UpdatePatientActiveLayouts(modelId, clientModelVersionIds, healthConditionId)
 	WriteJSONToHTTPResponseWriter(w, http.StatusOK, ClientIntakeModelGeneratedResponse{clientModelUrls})
 }

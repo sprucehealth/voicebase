@@ -196,6 +196,8 @@ func main() {
 	patientVisitHandler := apiservice.NewPatientVisitHandler(dataApi, authApi, cloudStorageApi, photoAnswerCloudStorageApi)
 	answerIntakeHandler := apiservice.NewAnswerIntakeHandler(dataApi)
 	photoAnswerIntakeHandler := apiservice.NewPhotoAnswerIntakeHandler(dataApi, photoAnswerCloudStorageApi, config.S3CaseBucket, config.AWSRegion, config.MaxInMemoryForPhotoMB*1024*1024)
+	generateDoctorLayoutHandler := &apiservice.GenerateDoctorLayoutHandler{dataApi, cloudStorageApi, config.MaxInMemoryForPhotoMB, config.AWSRegion}
+	fmt.Println(generateDoctorLayoutHandler)
 	pingHandler := apiservice.PingHandler(0)
 	generateModelIntakeHandler := &apiservice.GenerateClientIntakeModelHandler{
 		DataApi:         dataApi,
@@ -210,6 +212,7 @@ func main() {
 	mux.Handle("/v1/answer", answerIntakeHandler)
 	mux.Handle("/v1/answer/photo", photoAnswerIntakeHandler)
 	mux.Handle("/v1/client_model", generateModelIntakeHandler)
+	mux.Handle("/v1/doctor_layout", generateDoctorLayoutHandler)
 
 	mux.Handle("/v1/signup", authHandler)
 	mux.Handle("/v1/authenticate", authHandler)

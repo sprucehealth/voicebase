@@ -22,9 +22,10 @@ type PatientVisitOverviewSection struct {
 }
 
 type PatientVisitOverview struct {
-	PatientVisitTime  time.Time                      `json:"patient_visit_time,empty"`
-	PatientId         int64                          `json:"patient_id,string,omitempty"`
-	PatientVisitId    int64                          `json:"patient_visit_id,string,omitempty"`
-	HealthConditionId int64                          `json:"health_condition_id,string,omitempty"`
-	Sections          []*PatientVisitOverviewSection `json:"sections,omitempty"`
+	PatientVisitTime   time.Time                      `json:"patient_visit_time,empty"`
+	PatientId          int64                          `json:"patient_id,string,omitempty"`
+	PatientVisitId     int64                          `json:"patient_visit_id,string,omitempty"`
+	HealthConditionId  int64                          `json:"health_condition_id,string,omitempty"`
+	HealthConditionTag string                         `json:"health_condition,omitempty"`
+	Sections           []*PatientVisitOverviewSection `json:"sections,omitempty"`
 }

@@ -14,7 +14,7 @@ type PatientAnswer struct {
 	SubAnswers        []*PatientAnswer `json:"answers,omitempty"`
 	AnswerText        string           `json:"answer_text,omitempty"`
 	ObjectUrl         string           `json:"object_url,omitempty"`
-	StorageBucket     string           `json:"-"`
+	StorageBucket     string           `json:"-"`	
 	StorageKey        string           `json:"-"`
 	StorageRegion     string           `json:"-"`
 }

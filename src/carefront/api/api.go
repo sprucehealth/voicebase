@@ -8,6 +8,8 @@ import (
 
 const (
 	EN_LANGUAGE_ID = 1
+	DOCTOR_ROLE    = "DOCTOR"
+	PATIENT_ROLE   = "PATIENT"
 )
 
 var ErrLoginFailed = errors.New("api: login failed")
@@ -57,16 +59,18 @@ type PatientIntakeAPI interface {
 	GetTipSectionInfo(tipSectionTag string, languageId int64) (id int64, tipSectionTitle string, tipSectionSubtext string, err error)
 	GetTipInfo(tipTag string, languageId int64) (id int64, tip string, err error)
 	GetSupportedLanguages() (languagesSupported []string, languagesSupportedIds []int64, err error)
-	GetActiveLayoutInfoForHealthCondition(healthConditionTag string) (bucket, key, region string, err error)
 }
 
 type PatientIntakeLayoutAPI interface {
+	GetActiveLayoutInfoForHealthCondition(healthConditionTag, role string) (bucket, key, region string, err error)
 	GetStorageInfoOfCurrentActiveClientLayout(languageId, healthConditionId int64) (bucket, key, region string, layoutVersionId int64, err error)
 	GetLayoutVersionIdForPatientVisit(patientVisitId int64) (layoutVersionId int64, err error)
 	GetStorageInfoForClientLayout(layoutVersionId, languageId int64) (bucket, key, region string, err error)
-	MarkNewLayoutVersionAsCreating(objectId int64, syntaxVersion int64, healthConditionId int64, comment string) (int64, error)
+	MarkNewLayoutVersionAsCreating(objectId int64, syntaxVersion int64, healthConditionId int64, role, comment string) (int64, error)
 	MarkNewPatientLayoutVersionAsCreating(objectId int64, languageId int64, layoutVersionId int64, healthConditionId int64) (int64, error)
-	UpdateActiveLayouts(layoutId int64, clientLayoutIds []int64, healthConditionId int64) error
+	UpdatePatientActiveLayouts(layoutId int64, clientLayoutIds []int64, healthConditionId int64) error
+	MarkNewDoctorLayoutAsCreating(objectId int64, layoutVersionId int64, healthConditionId int64) (int64, error)
+	UpdateDoctorActiveLayouts(layoutId, doctorLayoutId, healthConditionId int64) error
 }
 
 type ObjectStorageAPI interface {
