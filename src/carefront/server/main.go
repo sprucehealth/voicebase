@@ -216,11 +216,17 @@ func main() {
 		PatientLayoutBucket: config.PatientLayoutBucket,
 		AWSRegion:           config.AWSRegion,
 	}
+	doctorPatientVisitReviewHandler := &apiservice.DoctorPatientVisitReviewHandler{
+		DataApi:                    dataApi,
+		LayoutStorageService:       cloudStorageApi,
+		PatientPhotoStorageService: photoAnswerCloudStorageApi,
+	}
 
 	mux := &apiservice.AuthServeMux{*http.NewServeMux(), authApi}
 
 	mux.Handle("/v1/patient", signupPatientHandler)
 	mux.Handle("/v1/visit", patientVisitHandler)
+	mux.Handle("/v1/patient_visit_review", doctorPatientVisitReviewHandler)
 	mux.Handle("/v1/answer", answerIntakeHandler)
 	mux.Handle("/v1/answer/photo", photoAnswerIntakeHandler)
 	mux.Handle("/v1/client_model", generateModelIntakeHandler)

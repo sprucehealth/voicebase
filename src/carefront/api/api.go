@@ -37,8 +37,9 @@ type PatientAPI interface {
 }
 
 type PatientVisitAPI interface {
-	GetActivePatientVisitForHealthCondition(patientId, healthConditionId int64) (int64, error)
+	GetActivePatientVisitIdForHealthCondition(patientId, healthConditionId int64) (int64, error)
 	GetPatientIdFromPatientVisitId(patientVisitId int64) (int64, error)
+	GetPatientVisitFromId(patientVisitId int64) (patientVisit *common.PatientVisit, err error)
 }
 
 type PatientIntakeAPI interface {
@@ -63,7 +64,8 @@ type PatientIntakeAPI interface {
 
 type PatientIntakeLayoutAPI interface {
 	GetActiveLayoutInfoForHealthCondition(healthConditionTag, role string) (bucket, key, region string, err error)
-	GetStorageInfoOfCurrentActiveClientLayout(languageId, healthConditionId int64) (bucket, key, region string, layoutVersionId int64, err error)
+	GetStorageInfoOfCurrentActivePatientLayout(languageId, healthConditionId int64) (bucket, key, region string, layoutVersionId int64, err error)
+	GetStorageInfoOfCurrentActiveDoctorLayout(healthConditionId int64) (bucket, storage, region string, layoutVersionId int64, err error)
 	GetLayoutVersionIdForPatientVisit(patientVisitId int64) (layoutVersionId int64, err error)
 	GetStorageInfoForClientLayout(layoutVersionId, languageId int64) (bucket, key, region string, err error)
 	MarkNewLayoutVersionAsCreating(objectId int64, syntaxVersion int64, healthConditionId int64, role, comment string) (int64, error)

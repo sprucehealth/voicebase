@@ -6,6 +6,7 @@ import (
 	"database/sql"
 	"errors"
 	"fmt"
+	"github.com/go-sql-driver/mysql"
 	"log"
 	"strconv"
 	"strings"
@@ -62,9 +63,9 @@ func (d *DataService) getPatientAnswersForQuestionsBasedOnQuery(query string, ar
 	queriedAnswers := make([]*common.PatientAnswer, 0)
 	for rows.Next() {
 		var answerId, questionId, potentialAnswerId, layoutVersionId int64
-		var answerText, storageBucket, storageKey, storageRegion sql.NullString
+		var answerText, storageBucket, storageKey, storageRegion, potentialAnswer sql.NullString
 		var parentQuestionId, parentInfoIntakeId sql.NullInt64
-		err = rows.Scan(&answerId, &questionId, &potentialAnswerId, &answerText, &storageBucket, &storageKey, &storageRegion, &layoutVersionId, &parentQuestionId, &parentInfoIntakeId)
+		err = rows.Scan(&answerId, &questionId, &potentialAnswerId, &potentialAnswer, &answerText, &storageBucket, &storageKey, &storageRegion, &layoutVersionId, &parentQuestionId, &parentInfoIntakeId)
 		if err != nil {
 			return
 		}
@@ -72,6 +73,10 @@ func (d *DataService) getPatientAnswersForQuestionsBasedOnQuery(query string, ar
 			QuestionId:        questionId,
 			PotentialAnswerId: potentialAnswerId,
 			LayoutVersionId:   layoutVersionId,
+		}
+
+		if potentialAnswer.Valid {
+			patientAnswerToQuestion.PotentialAnswer = potentialAnswer.String
 		}
 		if answerText.Valid {
 			patientAnswerToQuestion.AnswerText = answerText.String
@@ -128,21 +133,25 @@ func (d *DataService) getPatientAnswersForQuestionsBasedOnQuery(query string, ar
 
 func (d *DataService) GetPatientAnswersForQuestionsInGlobalSections(questionIds []int64, patientId int64) (patientAnswers map[int64][]*common.PatientAnswer, err error) {
 	enumeratedStrings := enumerateItemsIntoString(questionIds)
-	queryStr := fmt.Sprintf(`select patient_info_intake.id, question_id, potential_answer_id, answer_text, object_storage.bucket, object_storage.storage_key, region_tag,
+	queryStr := fmt.Sprintf(`select patient_info_intake.id, potential_answer.question_id, potential_answer_id, ltext, answer_text, object_storage.bucket, object_storage.storage_key, region_tag,
 								layout_version_id, parent_question_id, parent_info_intake_id from patient_info_intake  
 								left outer join object_storage on object_storage_id = object_storage.id 
 								left outer join region on region_id=region.id 
-								where (question_id in (%s) or parent_question_id in (%s)) and patient_id = ? and patient_info_intake.status='ACTIVE'`, enumeratedStrings, enumeratedStrings)
+								left outer join potential_answer on potential_answer_id = potential_answer.id
+								left outer join localized_text on potential_answer.answer_localized_text_id = app_text_id
+								where (potential_answer.question_id in (%s) or parent_question_id in (%s)) and patient_id = ? and patient_info_intake.status='ACTIVE'`, enumeratedStrings, enumeratedStrings)
 	return d.getPatientAnswersForQuestionsBasedOnQuery(queryStr, patientId)
 }
 
 func (d *DataService) GetPatientAnswersForQuestionsInPatientVisit(questionIds []int64, patientId int64, patientVisitId int64) (patientAnswers map[int64][]*common.PatientAnswer, err error) {
 	enumeratedStrings := enumerateItemsIntoString(questionIds)
-	queryStr := fmt.Sprintf(`select patient_info_intake.id, question_id, potential_answer_id, answer_text, bucket, storage_key, region_tag,
+	queryStr := fmt.Sprintf(`select patient_info_intake.id, potential_answer.question_id, potential_answer_id, ltext, answer_text, bucket, storage_key, region_tag,
 								layout_version_id, parent_question_id, parent_info_intake_id from patient_info_intake  
 								left outer join object_storage on object_storage_id = object_storage.id 
 								left outer join region on region_id=region.id 
-								where (question_id in (%s) or parent_question_id in (%s)) and patient_id = ? and patient_visit_id = ? and patient_info_intake.status='ACTIVE'`, enumeratedStrings, enumeratedStrings)
+								left outer join potential_answer on potential_answer_id = potential_answer.id
+								left outer join localized_text on potential_answer.answer_localized_text_id = app_text_id
+								where (potential_answer.question_id in (%s) or parent_question_id in (%s)) and patient_id = ? and patient_visit_id = ? and patient_info_intake.status='ACTIVE'`, enumeratedStrings, enumeratedStrings)
 	fmt.Println(queryStr)
 	return d.getPatientAnswersForQuestionsBasedOnQuery(queryStr, patientId, patientVisitId)
 }
@@ -177,13 +186,44 @@ func (d *DataService) GetSectionIdsForHealthCondition(healthConditionId int64) (
 	return
 }
 
-func (d *DataService) GetActivePatientVisitForHealthCondition(patientId, healthConditionId int64) (int64, error) {
+func (d *DataService) GetActivePatientVisitIdForHealthCondition(patientId, healthConditionId int64) (int64, error) {
 	var patientVisitId int64
 	err := d.DB.QueryRow("select id from patient_visit where patient_id = ? and health_condition_id = ? and status='OPEN'", patientId, healthConditionId).Scan(&patientVisitId)
 	if err == sql.ErrNoRows {
 		return 0, NoRowsError
 	}
 	return patientVisitId, err
+}
+
+func (d *DataService) GetPatientVisitFromId(patientVisitId int64) (patientVisit *common.PatientVisit, err error) {
+	var patientId, healthConditionId, layoutVersionId int64
+	var creationDateBytes, openedDateBytes, closedDateBytes mysql.NullTime
+	var status string
+	row := d.DB.QueryRow(`select patient_id, health_condition_id, layout_version_id, 
+		creation_date, opened_date, closed_date, status from patient_visit where id = ?`, patientVisitId)
+	err = row.Scan(&patientId, &healthConditionId, &layoutVersionId, &creationDateBytes, &openedDateBytes, &closedDateBytes, &status)
+	if err != nil {
+		return nil, err
+	}
+	patientVisit = &common.PatientVisit{
+		PatientVisitId:    patientVisitId,
+		PatientId:         patientId,
+		HealthConditionId: healthConditionId,
+		Status:            status,
+		LayoutVersionId:   layoutVersionId,
+	}
+
+	if creationDateBytes.Valid {
+		patientVisit.CreationDate = creationDateBytes.Time
+	}
+	if openedDateBytes.Valid {
+		patientVisit.OpenedDate = openedDateBytes.Time
+	}
+	if closedDateBytes.Valid {
+		patientVisit.ClosedDate = closedDateBytes.Time
+	}
+
+	return patientVisit, err
 }
 
 func (d *DataService) CreateNewPatientVisit(patientId, healthConditionId, layoutVersionId int64) (int64, error) {
@@ -217,11 +257,20 @@ func (d *DataService) GetStorageInfoForClientLayout(layoutVersionId, languageId 
 	return
 }
 
-func (d *DataService) GetStorageInfoOfCurrentActiveClientLayout(languageId, healthConditionId int64) (bucket, storage, region string, layoutVersionId int64, err error) {
+func (d *DataService) GetStorageInfoOfCurrentActivePatientLayout(languageId, healthConditionId int64) (bucket, storage, region string, layoutVersionId int64, err error) {
 	row := d.DB.QueryRow(`select bucket, storage_key, region_tag, layout_version_id from patient_layout_version 
 							inner join object_storage on object_storage_id=object_storage.id 
 							inner join region on region_id=region.id 
 								where patient_layout_version.status='ACTIVE' and health_condition_id = ? and language_id = ?`, healthConditionId, languageId)
+	err = row.Scan(&bucket, &storage, &region, &layoutVersionId)
+	return
+}
+
+func (d *DataService) GetStorageInfoOfCurrentActiveDoctorLayout(healthConditionId int64) (bucket, storage, region string, layoutVersionId int64, err error) {
+	row := d.DB.QueryRow(`select bucket, storage_key, region_tag, layout_version_id from dr_layout_version 
+							inner join object_storage on object_storage_id=object_storage.id 
+							inner join region on region_id=region.id 
+								where dr_layout_version.status='ACTIVE' and health_condition_id = ?`, healthConditionId)
 	err = row.Scan(&bucket, &storage, &region, &layoutVersionId)
 	return
 }

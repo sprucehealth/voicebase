@@ -5,9 +5,7 @@ import (
 	"carefront/common"
 	"carefront/info_intake"
 	"encoding/json"
-	"log"
 	"net/http"
-	"time"
 )
 
 const (
@@ -20,10 +18,6 @@ type PatientVisitHandler struct {
 	LayoutStorageService       api.CloudStorageAPI
 	PatientPhotoStorageService api.CloudStorageAPI
 	accountId                  int64
-}
-
-type PatientVisitErrorResponse struct {
-	ErrorString string `json:"error"`
 }
 
 type PatientVisitResponse struct {
@@ -59,7 +53,7 @@ func (s *PatientVisitHandler) returnNewOrOpenPatientVisit(w http.ResponseWriter,
 	var layoutVersionId int64
 	// check if there is an open patient visit for the given health condition and return
 	// that to the patient
-	patientVisitId, err := s.DataApi.GetActivePatientVisitForHealthCondition(patientId, HEALTH_CONDITION_ACNE_ID)
+	patientVisitId, err := s.DataApi.GetActivePatientVisitIdForHealthCondition(patientId, HEALTH_CONDITION_ACNE_ID)
 	if err == api.NoRowsError {
 		isNewPatientVisit = true
 		// if there isn't one, then pick the current active condition layout to send to the client for the patient to enter information
@@ -155,34 +149,16 @@ func (s *PatientVisitHandler) populateHealthConditionWithPatientAnswers(healthCo
 			for _, question := range screen.Questions {
 				// go through each question to see if there exists a patient answer for it
 				if patientAnswers[question.QuestionId] != nil {
-					s.populateQuestionWithPatientAnswer(question, patientAnswers[question.QuestionId])
+					question.PatientAnswers = patientAnswers[question.QuestionId]
+					GetSignedUrlsForAnswersInQuestion(question, s.PatientPhotoStorageService)
 				}
 			}
 		}
 	}
 }
 
-func (s *PatientVisitHandler) populateQuestionWithPatientAnswer(question *info_intake.Question, patientAnswers []*common.PatientAnswer) error {
-	question.PatientAnswers = make([]*common.PatientAnswer, 0)
-	for _, patientAnswerToQuestion := range patientAnswers {
-		var objectUrl string
-		var err error
-		if patientAnswerToQuestion.StorageKey != "" {
-			objectUrl, err = s.PatientPhotoStorageService.GetSignedUrlForObjectAtLocation(patientAnswerToQuestion.StorageBucket,
-				patientAnswerToQuestion.StorageKey, patientAnswerToQuestion.StorageRegion, time.Now().Add(10*time.Minute))
-			if err != nil {
-				log.Fatal("Unable to get signed url for photo object: " + err.Error())
-				return err
-			}
-		}
-		patientAnswerToQuestion.ObjectUrl = objectUrl
-		question.PatientAnswers = append(question.PatientAnswers, patientAnswerToQuestion)
-	}
-	return nil
-}
-
 func (s *PatientVisitHandler) getCurrentActiveClientLayoutForHealthCondition(healthConditionId, languageId int64) (healthCondition *info_intake.HealthCondition, layoutVersionId int64, err error) {
-	bucket, key, region, layoutVersionId, err := s.DataApi.GetStorageInfoOfCurrentActiveClientLayout(languageId, healthConditionId)
+	bucket, key, region, layoutVersionId, err := s.DataApi.GetStorageInfoOfCurrentActivePatientLayout(languageId, healthConditionId)
 	if err != nil {
 		return
 	}
