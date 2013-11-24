@@ -467,20 +467,22 @@ func (d *DataService) GetSectionInfo(sectionTag string, languageId int64) (id in
 	return
 }
 
-func (d *DataService) GetQuestionInfo(questionTag string, languageId int64) (id int64, questionTitle string, questionType string, parentQuestionId int64, err error) {
-	var byteQuestionTitle, byteQuestionType []byte
+func (d *DataService) GetQuestionInfo(questionTag string, languageId int64) (id int64, questionTitle string, questionType string, questionSummary string, parentQuestionId int64, err error) {
+	var byteQuestionTitle, byteQuestionType, byteQuestionSummary []byte
 	var nullParentQuestionId sql.NullInt64
 	err = d.DB.QueryRow(
-		`select question.id, ltext, qtype, parent_question_id from question 
-		 left outer join localized_text on app_text_id=qtext_app_text_id
-			left outer join question_type on qtype_id=question_type.id 
-				where question_tag = ? and (ltext is NULL or language_id = ?)`,
-		questionTag, languageId).Scan(&id, &byteQuestionTitle, &byteQuestionType, &nullParentQuestionId)
+		`select question.id, l1.ltext, qtype, parent_question_id, l2.ltext from question 
+			left outer join localized_text as l1 on app_text_id=qtext_app_text_id
+			left outer join question_type on qtype_id=question_type.id
+			left outer join localized_text as l2 on qtext_short_text_id = l2.app_text_id
+				where question_tag = ? and (l1.ltext is NULL or l1.language_id = ?)`,
+		questionTag, languageId).Scan(&id, &byteQuestionTitle, &byteQuestionType, &nullParentQuestionId, &byteQuestionSummary)
 	if nullParentQuestionId.Valid {
 		parentQuestionId = nullParentQuestionId.Int64
 	}
 	questionTitle = string(byteQuestionTitle)
 	questionType = string(byteQuestionType)
+	questionSummary = string(byteQuestionSummary)
 	return
 }
 

@@ -9,7 +9,7 @@ func (c *Condition) FillInDatabaseInfo(dataApi api.DataAPI, languageId int64) er
 	if c.QuestionTag == "" {
 		return nil
 	}
-	questionId, _, _, _, err := dataApi.GetQuestionInfo(c.QuestionTag, languageId)
+	questionId, _, _, _, _, err := dataApi.GetQuestionInfo(c.QuestionTag, languageId)
 	if err != nil {
 		return err
 	}
@@ -52,7 +52,11 @@ func (t *TipSection) FillInDatabaseInfo(dataApi api.DataAPI, languageId int64) e
 }
 
 func (q *Question) FillInDatabaseInfo(dataApi api.DataAPI, languageId int64) error {
-	questionId, questionTitle, questionType, parentQuestionId, err := dataApi.GetQuestionInfo(q.QuestionTag, languageId)
+	return q.FillFromDatabase(dataApi, languageId, true)
+}
+
+func (q *Question) FillFromDatabase(dataApi api.DataAPI, languageId int64, showPotentialResponses bool) error {
+	questionId, questionTitle, questionType, questionSummary, parentQuestionId, err := dataApi.GetQuestionInfo(q.QuestionTag, languageId)
 	if err != nil {
 		return err
 	}
@@ -60,21 +64,7 @@ func (q *Question) FillInDatabaseInfo(dataApi api.DataAPI, languageId int64) err
 	q.QuestionTitle = questionTitle
 	q.QuestionType = questionType
 	q.ParentQuestionId = parentQuestionId
-
-	// go over the potential ansnwer tags to create potential outcome blocks
-	q.PotentialAnswers = make([]*PotentialAnswer, 0, 5)
-	answerInfos, err := dataApi.GetAnswerInfo(questionId, languageId)
-	if err != nil {
-		return err
-	}
-
-	for _, answerInfo := range answerInfos {
-		potentialAnswer := &PotentialAnswer{AnswerId: answerInfo.PotentialAnswerId,
-			Answer:     answerInfo.Answer,
-			AnswerType: answerInfo.AnswerType,
-			Ordering:   answerInfo.Ordering}
-		q.PotentialAnswers = append(q.PotentialAnswers, potentialAnswer)
-	}
+	q.QuestionSummary = questionSummary
 
 	if q.ConditionBlock != nil {
 		err := q.ConditionBlock.FillInDatabaseInfo(dataApi, languageId)
@@ -92,12 +82,32 @@ func (q *Question) FillInDatabaseInfo(dataApi api.DataAPI, languageId int64) err
 
 	if q.Questions != nil {
 		for _, question := range q.Questions {
-			err := question.FillInDatabaseInfo(dataApi, languageId)
+			err := question.FillFromDatabase(dataApi, languageId, showPotentialResponses)
 			if err != nil {
 				return err
 			}
 		}
 	}
+
+	if !showPotentialResponses {
+		return nil
+	}
+
+	// go over the potential ansnwer tags to create potential outcome blocks
+	q.PotentialAnswers = make([]*PotentialAnswer, 0, 5)
+	answerInfos, err := dataApi.GetAnswerInfo(questionId, languageId)
+	if err != nil {
+		return err
+	}
+
+	for _, answerInfo := range answerInfos {
+		potentialAnswer := &PotentialAnswer{AnswerId: answerInfo.PotentialAnswerId,
+			Answer:     answerInfo.Answer,
+			AnswerType: answerInfo.AnswerType,
+			Ordering:   answerInfo.Ordering}
+		q.PotentialAnswers = append(q.PotentialAnswers, potentialAnswer)
+	}
+
 	return nil
 }
 

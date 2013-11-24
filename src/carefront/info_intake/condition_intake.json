@@ -5,18 +5,18 @@
                 {
                     "description": "reason for visit", 
                     "questions": [
-                        {
+                        { 
                             "question": "q_reason_visit"
-                        }, 
+                        },  
                         {
                             "condition": {
                                 "op": "answer_equals", 
                                 "potential_answers": [
                                     "a_something_else"
-                                ], 
+                                ],  
                                 "question": "q_reason_visit"
                             }, 
-                            "question": "q_condition_for_diagnosis"
+                            "question": "q_condition_for_diagnosis" 
                         }
                     ]
                 }, 

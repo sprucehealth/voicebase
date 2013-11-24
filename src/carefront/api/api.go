@@ -54,7 +54,7 @@ type PatientIntakeAPI interface {
 	GetSectionIdsForHealthCondition(healthConditionId int64) (sectionIds []int64, err error)
 	GetHealthConditionInfo(healthConditionTag string) (int64, error)
 	GetSectionInfo(sectionTag string, languageId int64) (id int64, title string, err error)
-	GetQuestionInfo(questionTag string, languageId int64) (id int64, questionTitle string, questionType string, parentQuestionId int64, err error)
+	GetQuestionInfo(questionTag string, languageId int64) (id int64, questionTitle string, questionType string, questionSummary string, parentQuestionId int64, err error)
 	GetAnswerInfo(questionId int64, languageId int64) (answerInfos []PotentialAnswerInfo, err error)
 	GetTipSectionInfo(tipSectionTag string, languageId int64) (id int64, tipSectionTitle string, tipSectionSubtext string, err error)
 	GetTipInfo(tipTag string, languageId int64) (id int64, tip string, err error)
