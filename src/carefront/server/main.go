@@ -34,22 +34,23 @@ type DBConfig struct {
 }
 
 type Config struct {
-	ListenAddr            string   `short:"l" long:"listen" description:"Address and port on which to listen (e.g. 127.0.0.1:8080)"`
-	CertKeyLocation       string   `long:"cert_key" description:"Path of SSL certificate"`
-	PrivateKeyLocation    string   `long:"private_key" description:"Path of SSL private key"`
-	CaseBucket            string   `long:"case_bucket" description:"S3 Bucket name for case information"`
-	PatientLayoutBucket   string   `long:"client_layout_bucket" description:"S3 Bucket name for client digestable layout for patient information intake"`
-	VisualLayoutBucket    string   `long:"patient_layout_bucket" description:"S3 Bucket name for human readable layout for patient information intake"`
-	DoctorLayoutBucket    string   `long:"doctor_layout_bucket" description:"S3 Bucket name for patient overview for doctor's viewing"`
-	AWSRegion             string   `long:"aws_region" description:"AWS region"`
-	AWSRole               string   `long:"aws_role" description:"AWS role for fetching temporary credentials"`
-	AWSSecretKey          string   `long:"aws_secret_key" description:"AWS secret key"`
-	AWSAccessKey          string   `long:"aws_access_key" description:"AWS access key id"`
-	DB                    DBConfig `group:"Database" toml:"database"`
-	Debug                 bool     `long:"debug" description:"Enable debugging"`
-	LogPath               string   `long:"log_path" description:"Path for log file. IF not given then default to stderr"`
-	MaxInMemoryForPhotoMB int64    `long:"max_in_memory_photo" description:"Amount of data in MB to be held in memory when parsing multipart form data"`
-	ConfigPath            string   `short:"c" long:"config" description:"Path to config file"`
+	ListenAddr               string   `short:"l" long:"listen" description:"Address and port on which to listen (e.g. 127.0.0.1:8080)"`
+	CertKeyLocation          string   `long:"cert_key" description:"Path of SSL certificate"`
+	PrivateKeyLocation       string   `long:"private_key" description:"Path of SSL private key"`
+	CaseBucket               string   `long:"case_bucket" description:"S3 Bucket name for case information"`
+	PatientLayoutBucket      string   `long:"client_layout_bucket" description:"S3 Bucket name for client digestable layout for patient information intake"`
+	VisualLayoutBucket       string   `long:"patient_layout_bucket" description:"S3 Bucket name for human readable layout for patient information intake"`
+	DoctorVisualLayoutBucket string   `long:"doctor_visual_layout_bucket" description:"S3 Bucket name for patient overview for doctor's viewing"`
+	DoctorLayoutBucket       string   `long:"doctor_layout_bucket" description:"S3 Bucket name for pre-processed patient overview for doctor's viewing"`
+	AWSRegion                string   `long:"aws_region" description:"AWS region"`
+	AWSRole                  string   `long:"aws_role" description:"AWS role for fetching temporary credentials"`
+	AWSSecretKey             string   `long:"aws_secret_key" description:"AWS secret key"`
+	AWSAccessKey             string   `long:"aws_access_key" description:"AWS access key id"`
+	DB                       DBConfig `group:"Database" toml:"database"`
+	Debug                    bool     `long:"debug" description:"Enable debugging"`
+	LogPath                  string   `long:"log_path" description:"Path for log file. IF not given then default to stderr"`
+	MaxInMemoryForPhotoMB    int64    `long:"max_in_memory_photo" description:"Amount of data in MB to be held in memory when parsing multipart form data"`
+	ConfigPath               string   `short:"c" long:"config" description:"Path to config file"`
 
 	awsAuth aws.Auth
 }
@@ -199,7 +200,14 @@ func main() {
 	patientVisitHandler := apiservice.NewPatientVisitHandler(dataApi, authApi, cloudStorageApi, photoAnswerCloudStorageApi)
 	answerIntakeHandler := apiservice.NewAnswerIntakeHandler(dataApi)
 	photoAnswerIntakeHandler := apiservice.NewPhotoAnswerIntakeHandler(dataApi, photoAnswerCloudStorageApi, config.CaseBucket, config.AWSRegion, config.MaxInMemoryForPhotoMB*1024*1024)
-	generateDoctorLayoutHandler := &apiservice.GenerateDoctorLayoutHandler{dataApi, cloudStorageApi, config.DoctorLayoutBucket, config.MaxInMemoryForPhotoMB, config.AWSRegion}
+	generateDoctorLayoutHandler := &apiservice.GenerateDoctorLayoutHandler{
+		DataApi:                  dataApi,
+		CloudStorageApi:          cloudStorageApi,
+		DoctorLayoutBucket:       config.DoctorLayoutBucket,
+		DoctorVisualLayoutBucket: config.DoctorVisualLayoutBucket,
+		MaxInMemoryForPhoto:      config.MaxInMemoryForPhotoMB,
+		AWSRegion:                config.AWSRegion,
+	}
 	pingHandler := apiservice.PingHandler(0)
 	generateModelIntakeHandler := &apiservice.GenerateClientIntakeModelHandler{
 		DataApi:             dataApi,

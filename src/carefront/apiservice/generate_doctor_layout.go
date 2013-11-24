@@ -13,11 +13,12 @@ import (
 )
 
 type GenerateDoctorLayoutHandler struct {
-	DataApi             api.DataAPI
-	CloudStorageApi     api.CloudStorageAPI
-	DoctorLayoutBucket  string
-	MaxInMemoryForPhoto int64
-	AWSRegion           string
+	DataApi                  api.DataAPI
+	CloudStorageApi          api.CloudStorageAPI
+	DoctorLayoutBucket       string
+	DoctorVisualLayoutBucket string
+	MaxInMemoryForPhoto      int64
+	AWSRegion                string
 }
 
 type DoctorLayoutGeneratedResponse struct {
@@ -74,7 +75,7 @@ func (d *GenerateDoctorLayoutHandler) ServeHTTP(w http.ResponseWriter, r *http.R
 		}
 	}
 
-	objectid, objectUrl, err := d.CloudStorageApi.PutObjectToLocation(d.DoctorLayoutBucket,
+	objectId, objectUrl, err := d.CloudStorageApi.PutObjectToLocation(d.DoctorVisualLayoutBucket,
 		strconv.Itoa(int(time.Now().Unix())), d.AWSRegion, handler.Header.Get("Content-Type"), data, time.Now().Add(10*time.Minute), d.DataApi)
 	if err != nil {
 		WriteDeveloperError(w, http.StatusInternalServerError, "Unable to upload file to cloud: "+err.Error())
@@ -83,14 +84,32 @@ func (d *GenerateDoctorLayoutHandler) ServeHTTP(w http.ResponseWriter, r *http.R
 
 	healthConditionId, err := d.DataApi.GetHealthConditionInfo(healthConditionTag)
 	// once that is successful, create a record for the layout version and mark it as CREATING
-	modelId, err := d.DataApi.MarkNewLayoutVersionAsCreating(objectid, layout_syntax_version, healthConditionId, api.DOCTOR_ROLE, "automatically generated")
+	modelId, err := d.DataApi.MarkNewLayoutVersionAsCreating(objectId, layout_syntax_version, healthConditionId, api.DOCTOR_ROLE, "automatically generated")
 	if err != nil {
 		log.Println(err)
 		WriteDeveloperError(w, http.StatusInternalServerError, "Unable to create record for layout : "+err.Error())
 		return
 	}
 
-	doctorLayoutId, err := d.DataApi.MarkNewDoctorLayoutAsCreating(objectid, modelId, healthConditionId)
+	// fill in the questions from the database
+	for _, patientVisitSection := range doctorLayout.Sections {
+		for _, subSection := range patientVisitSection.SubSections {
+			for _, question := range subSection.Questions {
+				question.FillFromDatabase(d.DataApi, api.EN_LANGUAGE_ID, question.ShowPotentialResponses)
+			}
+		}
+	}
+
+	jsonData, err := json.Marshal(doctorLayout)
+	objectId, objectUrl, err = d.CloudStorageApi.PutObjectToLocation(d.DoctorLayoutBucket,
+		strconv.Itoa(int(time.Now().Unix())), d.AWSRegion, handler.Header.Get("Content-Type"), jsonData, time.Now().Add(10*time.Minute), d.DataApi)
+	if err != nil {
+		log.Println(err)
+		WriteDeveloperError(w, http.StatusInternalServerError, "Unable to upload doctor layout after filling in questions to it "+err.Error())
+		return
+	}
+
+	doctorLayoutId, err := d.DataApi.MarkNewDoctorLayoutAsCreating(objectId, modelId, healthConditionId)
 	if err != nil {
 		log.Println(err)
 		WriteDeveloperError(w, http.StatusInternalServerError, "Unable to record for doctor layout: "+err.Error())
