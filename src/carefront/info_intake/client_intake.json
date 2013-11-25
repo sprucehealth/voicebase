@@ -11,13 +11,13 @@
                             "potential_answers": [
                                 {
                                     "answer_type": "a_type_multiple_choice", 
-                                    "ordering": 0, 
+                                    "ordering": "0", 
                                     "potential_answer": "Acne", 
                                     "potential_answer_id": "1"
                                 }, 
                                 {
                                     "answer_type": "a_type_multiple_choice", 
-                                    "ordering": 1, 
+                                    "ordering": "1", 
                                     "potential_answer": "Something else", 
                                     "potential_answer_id": "2"
                                 }
@@ -42,7 +42,7 @@
                             "potential_answers": [
                                 {
                                     "answer_type": "a_type_single_entry", 
-                                    "ordering": 0, 
+                                    "ordering": "0", 
                                     "potential_answer": "Type a symptom or condition", 
                                     "potential_answer_id": "3"
                                 }
@@ -60,25 +60,25 @@
                             "potential_answers": [
                                 {
                                     "answer_type": "a_type_multiple_choice", 
-                                    "ordering": 0, 
+                                    "ordering": "0", 
                                     "potential_answer": "0-6 months", 
                                     "potential_answer_id": "4"
                                 }, 
                                 {
                                     "answer_type": "a_type_multiple_choice", 
-                                    "ordering": 1, 
+                                    "ordering": "1", 
                                     "potential_answer": "6-123 months", 
                                     "potential_answer_id": "5"
                                 }, 
                                 {
                                     "answer_type": "a_type_multiple_choice", 
-                                    "ordering": 2, 
+                                    "ordering": "2", 
                                     "potential_answer": "1-2 years", 
                                     "potential_answer_id": "6"
                                 }, 
                                 {
                                     "answer_type": "a_type_multiple_choice", 
-                                    "ordering": 3, 
+                                    "ordering": "3", 
                                     "potential_answer": "2+ years", 
                                     "potential_answer_id": "7"
                                 }
@@ -97,13 +97,13 @@
                             "potential_answers": [
                                 {
                                     "answer_type": "a_type_multiple_choice", 
-                                    "ordering": 0, 
+                                    "ordering": "0", 
                                     "potential_answer": "Yes", 
                                     "potential_answer_id": "8"
                                 }, 
                                 {
                                     "answer_type": "a_type_multiple_choice", 
-                                    "ordering": 1, 
+                                    "ordering": "1", 
                                     "potential_answer": "No", 
                                     "potential_answer_id": "9"
                                 }
@@ -128,7 +128,7 @@
                             "potential_answers": [
                                 {
                                     "answer_type": "a_type_free_text", 
-                                    "ordering": 0, 
+                                    "ordering": "0", 
                                     "potential_answer": "Describe any recent changes that could be making your acne worse:", 
                                     "potential_answer_id": "11"
                                 }
@@ -147,19 +147,19 @@
                             "potential_answers": [
                                 {
                                     "answer_type": "a_type_multiple_choice", 
-                                    "ordering": 1, 
+                                    "ordering": "1", 
                                     "potential_answer": "Over the counter", 
                                     "potential_answer_id": "13"
                                 }, 
                                 {
                                     "answer_type": "a_type_multiple_choice", 
-                                    "ordering": 0, 
+                                    "ordering": "0", 
                                     "potential_answer": "Prescription", 
                                     "potential_answer_id": "12"
                                 }, 
                                 {
                                     "answer_type": "a_type_multiple_choice", 
-                                    "ordering": 2, 
+                                    "ordering": "2", 
                                     "potential_answer": "No treatments tried", 
                                     "potential_answer_id": "14"
                                 }
@@ -189,13 +189,13 @@
                             "potential_answers": [
                                 {
                                     "answer_type": "a_type_autocomplete_entry", 
-                                    "ordering": 0, 
+                                    "ordering": "0", 
                                     "potential_answer": "List any prescription or over the counter treatments that you've tried for acne", 
                                     "potential_answer_id": "15"
                                 }, 
                                 {
                                     "answer_type": "a_type_photo_to_text_entry", 
-                                    "ordering": 1, 
+                                    "ordering": "1", 
                                     "potential_answer": "Or take a photo of the treatment", 
                                     "potential_answer_id": "16"
                                 }
@@ -203,7 +203,90 @@
                             "question": "q_acne_prev_treatment_list", 
                             "question_id": "8", 
                             "question_title": "List any prescription or over the counter treatments that you've tried for acne", 
-                            "question_type": "q_type_compound"
+                            "question_type": "q_type_compound", 
+                            "questions": [
+                                {
+                                    "parent_question_id": "8", 
+                                    "potential_answers": [
+                                        {
+                                            "answer_type": "a_type_segmented_control", 
+                                            "ordering": "0", 
+                                            "potential_answer": "Not Very", 
+                                            "potential_answer_id": "70"
+                                        }, 
+                                        {
+                                            "answer_type": "a_type_segmented_control", 
+                                            "ordering": "1", 
+                                            "potential_answer": "Somewhat", 
+                                            "potential_answer_id": "71"
+                                        }, 
+                                        {
+                                            "answer_type": "a_type_segmented_control", 
+                                            "ordering": "2", 
+                                            "potential_answer": "Very", 
+                                            "potential_answer_id": "72"
+                                        }
+                                    ], 
+                                    "question": "q_effective_treatment", 
+                                    "question_id": "24", 
+                                    "question_title": "How effective was this treatment?", 
+                                    "question_type": "q_type_segmented_control"
+                                }, 
+                                {
+                                    "parent_question_id": "8", 
+                                    "potential_answers": [
+                                        {
+                                            "answer_type": "a_type_segmented_control", 
+                                            "ordering": "0", 
+                                            "potential_answer": "Yes", 
+                                            "potential_answer_id": "73"
+                                        }, 
+                                        {
+                                            "answer_type": "a_type_segmented_control", 
+                                            "ordering": "1", 
+                                            "potential_answer": "No", 
+                                            "potential_answer_id": "75"
+                                        }
+                                    ], 
+                                    "question": "q_using_treatment", 
+                                    "question_id": "25", 
+                                    "question_title": "Are you currently using this treatment?", 
+                                    "question_type": "q_type_segmented_control"
+                                }, 
+                                {
+                                    "parent_question_id": "8", 
+                                    "potential_answers": [
+                                        {
+                                            "answer_type": "a_type_segmented_control", 
+                                            "ordering": "0", 
+                                            "potential_answer": "1 or less", 
+                                            "potential_answer_id": "76"
+                                        }, 
+                                        {
+                                            "answer_type": "a_type_segmented_control", 
+                                            "ordering": "1", 
+                                            "potential_answer": "2-5", 
+                                            "potential_answer_id": "77"
+                                        }, 
+                                        {
+                                            "answer_type": "a_type_segmented_control", 
+                                            "ordering": "2", 
+                                            "potential_answer": "6-11", 
+                                            "potential_answer_id": "78"
+                                        }, 
+                                        {
+                                            "answer_type": "a_type_segmented_control", 
+                                            "ordering": "3", 
+                                            "potential_answer": "12+", 
+                                            "potential_answer_id": "79"
+                                        }
+                                    ], 
+                                    "question": "q_length_treatment", 
+                                    "question_id": "26", 
+                                    "question_title": "Approximately how many months did you use this treatment for?", 
+                                    "question_type": "q_type_segmented_control"
+                                }
+                            ]
                         }
                     ]
                 }
@@ -227,13 +310,13 @@
                             "potential_answers": [
                                 {
                                     "answer_type": "a_type_multiple_choice", 
-                                    "ordering": 0, 
+                                    "ordering": "0", 
                                     "potential_answer": "Yes", 
                                     "potential_answer_id": "18"
                                 }, 
                                 {
                                     "answer_type": "a_type_multiple_choice", 
-                                    "ordering": 1, 
+                                    "ordering": "1", 
                                     "potential_answer": "No", 
                                     "potential_answer_id": "19"
                                 }
@@ -252,13 +335,13 @@
                             "potential_answers": [
                                 {
                                     "answer_type": "a_type_multiple_choice", 
-                                    "ordering": 0, 
+                                    "ordering": "0", 
                                     "potential_answer": "Yes", 
                                     "potential_answer_id": "20"
                                 }, 
                                 {
                                     "answer_type": "a_type_multiple_choice", 
-                                    "ordering": 1, 
+                                    "ordering": "1", 
                                     "potential_answer": "No", 
                                     "potential_answer_id": "21"
                                 }
@@ -283,7 +366,7 @@
                             "potential_answers": [
                                 {
                                     "answer_type": "a_type_multiple_choice", 
-                                    "ordering": 0, 
+                                    "ordering": "0", 
                                     "potential_answer": "Type to add a medication", 
                                     "potential_answer_id": "22"
                                 }
@@ -302,7 +385,7 @@
                             "potential_answers": [
                                 {
                                     "answer_type": "a_type_multiple_choice", 
-                                    "ordering": 0, 
+                                    "ordering": "0", 
                                     "potential_answer": "Include birth control, over the counter medications, vitamins or herbal supplements that you may be currently taking.", 
                                     "potential_answer_id": "23"
                                 }
@@ -321,19 +404,19 @@
                             "potential_answers": [
                                 {
                                     "answer_type": "a_type_multiple_choice", 
-                                    "ordering": 0, 
+                                    "ordering": "0", 
                                     "potential_answer": "Smoke tobacco", 
                                     "potential_answer_id": "24"
                                 }, 
                                 {
                                     "answer_type": "a_type_multiple_choice", 
-                                    "ordering": 1, 
+                                    "ordering": "1", 
                                     "potential_answer": "Drink alcohol", 
                                     "potential_answer_id": "25"
                                 }, 
                                 {
                                     "answer_type": "a_type_multiple_choice", 
-                                    "ordering": 2, 
+                                    "ordering": "2", 
                                     "potential_answer": "Use tanning beds or sunbath", 
                                     "potential_answer_id": "26"
                                 }
@@ -352,13 +435,13 @@
                             "potential_answers": [
                                 {
                                     "answer_type": "a_type_multiple_choice", 
-                                    "ordering": 0, 
+                                    "ordering": "0", 
                                     "potential_answer": "Yes", 
                                     "potential_answer_id": "27"
                                 }, 
                                 {
                                     "answer_type": "a_type_multiple_choice", 
-                                    "ordering": 1, 
+                                    "ordering": "1", 
                                     "potential_answer": "No", 
                                     "potential_answer_id": "28"
                                 }
@@ -383,43 +466,43 @@
                             "potential_answers": [
                                 {
                                     "answer_type": "a_type_multiple_choice", 
-                                    "ordering": 0, 
+                                    "ordering": "0", 
                                     "potential_answer": "Alopecia", 
                                     "potential_answer_id": "29"
                                 }, 
                                 {
                                     "answer_type": "a_type_multiple_choice", 
-                                    "ordering": 1, 
+                                    "ordering": "1", 
                                     "potential_answer": "Acne", 
                                     "potential_answer_id": "30"
                                 }, 
                                 {
                                     "answer_type": "a_type_multiple_choice", 
-                                    "ordering": 2, 
+                                    "ordering": "2", 
                                     "potential_answer": "Eczema", 
                                     "potential_answer_id": "31"
                                 }, 
                                 {
                                     "answer_type": "a_type_multiple_choice", 
-                                    "ordering": 3, 
+                                    "ordering": "3", 
                                     "potential_answer": "Psoriasis", 
                                     "potential_answer_id": "32"
                                 }, 
                                 {
                                     "answer_type": "a_type_multiple_choice", 
-                                    "ordering": 4, 
+                                    "ordering": "4", 
                                     "potential_answer": "Rosacea", 
                                     "potential_answer_id": "33"
                                 }, 
                                 {
                                     "answer_type": "a_type_multiple_choice", 
-                                    "ordering": 5, 
+                                    "ordering": "5", 
                                     "potential_answer": "Skin Cancer", 
                                     "potential_answer_id": "34"
                                 }, 
                                 {
                                     "answer_type": "a_type_multiple_choice", 
-                                    "ordering": 6, 
+                                    "ordering": "6", 
                                     "potential_answer": "Other", 
                                     "potential_answer_id": "35"
                                 }
@@ -437,133 +520,133 @@
                             "potential_answers": [
                                 {
                                     "answer_type": "a_type_multiple_choice", 
-                                    "ordering": 0, 
+                                    "ordering": "0", 
                                     "potential_answer": "Arthritis", 
                                     "potential_answer_id": "36"
                                 }, 
                                 {
                                     "answer_type": "a_type_multiple_choice", 
-                                    "ordering": 1, 
+                                    "ordering": "1", 
                                     "potential_answer": "Artifical Heart Valve", 
                                     "potential_answer_id": "37"
                                 }, 
                                 {
                                     "answer_type": "a_type_multiple_choice", 
-                                    "ordering": 2, 
+                                    "ordering": "2", 
                                     "potential_answer": "Artifical Joint", 
                                     "potential_answer_id": "38"
                                 }, 
                                 {
                                     "answer_type": "a_type_multiple_choice", 
-                                    "ordering": 3, 
+                                    "ordering": "3", 
                                     "potential_answer": "Asthma", 
                                     "potential_answer_id": "39"
                                 }, 
                                 {
                                     "answer_type": "a_type_multiple_choice", 
-                                    "ordering": 4, 
+                                    "ordering": "4", 
                                     "potential_answer": "Blood Clots", 
                                     "potential_answer_id": "40"
                                 }, 
                                 {
                                     "answer_type": "a_type_multiple_choice", 
-                                    "ordering": 5, 
+                                    "ordering": "5", 
                                     "potential_answer": "Diabetes", 
                                     "potential_answer_id": "41"
                                 }, 
                                 {
                                     "answer_type": "a_type_multiple_choice", 
-                                    "ordering": 6, 
+                                    "ordering": "6", 
                                     "potential_answer": "Epilepsy or Seizures", 
                                     "potential_answer_id": "42"
                                 }, 
                                 {
                                     "answer_type": "a_type_multiple_choice", 
-                                    "ordering": 7, 
+                                    "ordering": "7", 
                                     "potential_answer": "High Blood Pressure", 
                                     "potential_answer_id": "43"
                                 }, 
                                 {
                                     "answer_type": "a_type_multiple_choice", 
-                                    "ordering": 8, 
+                                    "ordering": "8", 
                                     "potential_answer": "High Cholestrol", 
                                     "potential_answer_id": "44"
                                 }, 
                                 {
                                     "answer_type": "a_type_multiple_choice", 
-                                    "ordering": 9, 
+                                    "ordering": "9", 
                                     "potential_answer": "HIV/AIDs", 
                                     "potential_answer_id": "45"
                                 }, 
                                 {
                                     "answer_type": "a_type_multiple_choice", 
-                                    "ordering": 10, 
+                                    "ordering": "10", 
                                     "potential_answer": "Heart Attack", 
                                     "potential_answer_id": "46"
                                 }, 
                                 {
                                     "answer_type": "a_type_multiple_choice", 
-                                    "ordering": 11, 
+                                    "ordering": "11", 
                                     "potential_answer": "Heart Murmur", 
                                     "potential_answer_id": "47"
                                 }, 
                                 {
                                     "answer_type": "a_type_multiple_choice", 
-                                    "ordering": 12, 
+                                    "ordering": "12", 
                                     "potential_answer": "Irregular Heartbeat", 
                                     "potential_answer_id": "48"
                                 }, 
                                 {
                                     "answer_type": "a_type_multiple_choice", 
-                                    "ordering": 13, 
+                                    "ordering": "13", 
                                     "potential_answer": "Kidney Disease", 
                                     "potential_answer_id": "49"
                                 }, 
                                 {
                                     "answer_type": "a_type_multiple_choice", 
-                                    "ordering": 14, 
+                                    "ordering": "14", 
                                     "potential_answer": "Liver Disease", 
                                     "potential_answer_id": "50"
                                 }, 
                                 {
                                     "answer_type": "a_type_multiple_choice", 
-                                    "ordering": 15, 
+                                    "ordering": "15", 
                                     "potential_answer": "Lung Disease", 
                                     "potential_answer_id": "51"
                                 }, 
                                 {
                                     "answer_type": "a_type_multiple_choice", 
-                                    "ordering": 16, 
+                                    "ordering": "16", 
                                     "potential_answer": "Lupus", 
                                     "potential_answer_id": "52"
                                 }, 
                                 {
                                     "answer_type": "a_type_multiple_choice", 
-                                    "ordering": 17, 
+                                    "ordering": "17", 
                                     "potential_answer": "Organ Transplant", 
                                     "potential_answer_id": "53"
                                 }, 
                                 {
                                     "answer_type": "a_type_multiple_choice", 
-                                    "ordering": 18, 
+                                    "ordering": "18", 
                                     "potential_answer": "Pacemaker", 
                                     "potential_answer_id": "55"
                                 }, 
                                 {
                                     "answer_type": "a_type_multiple_choice", 
-                                    "ordering": 19, 
+                                    "ordering": "19", 
                                     "potential_answer": "Thyroid Problems", 
                                     "potential_answer_id": "56"
                                 }, 
                                 {
                                     "answer_type": "a_type_multiple_choice", 
-                                    "ordering": 20, 
+                                    "ordering": "20", 
                                     "potential_answer": "Other Condition Not Listed", 
                                     "potential_answer_id": "57"
                                 }, 
                                 {
                                     "answer_type": "a_type_multiple_choice", 
-                                    "ordering": 21, 
+                                    "ordering": "21", 
                                     "potential_answer": "No past or present conditions", 
                                     "potential_answer_id": "58"
                                 }
@@ -589,25 +672,25 @@
                             "potential_answers": [
                                 {
                                     "answer_type": "a_type_multiple_choice", 
-                                    "ordering": 0, 
+                                    "ordering": "0", 
                                     "potential_answer": "Face", 
                                     "potential_answer_id": "59"
                                 }, 
                                 {
                                     "answer_type": "a_type_multiple_choice", 
-                                    "ordering": 1, 
+                                    "ordering": "1", 
                                     "potential_answer": "Chest", 
                                     "potential_answer_id": "60"
                                 }, 
                                 {
                                     "answer_type": "a_type_multiple_choice", 
-                                    "ordering": 2, 
+                                    "ordering": "2", 
                                     "potential_answer": "Back", 
                                     "potential_answer_id": "61"
                                 }, 
                                 {
                                     "answer_type": "a_type_multiple_choice", 
-                                    "ordering": 3, 
+                                    "ordering": "3", 
                                     "potential_answer": "Other", 
                                     "potential_answer_id": "62"
                                 }
@@ -637,26 +720,26 @@
                             "potential_answers": [
                                 {
                                     "answer_type": "a_type_photo_entry_face_middle", 
-                                    "ordering": 0, 
+                                    "ordering": "0", 
                                     "potential_answer": "Front", 
                                     "potential_answer_id": "63"
                                 }, 
                                 {
                                     "answer_type": "a_type_photo_entry_face_left", 
-                                    "ordering": 2, 
+                                    "ordering": "2", 
                                     "potential_answer": "Profile Left", 
                                     "potential_answer_id": "65"
                                 }, 
                                 {
                                     "answer_type": "a_type_photo_entry_face_right", 
-                                    "ordering": 1, 
+                                    "ordering": "1", 
                                     "potential_answer": "Profile Right", 
                                     "potential_answer_id": "64"
                                 }
                             ], 
                             "question": "q_face_photo_intake", 
                             "question_id": "19", 
-                            "question_type": "q_type_photo", 
+                            "question_type": "q_type_single_photo", 
                             "tips": {
                                 "photo_tips": [
                                     "photo_tip_good_face_front", 
@@ -693,14 +776,14 @@
                             "potential_answers": [
                                 {
                                     "answer_type": "a_type_photo_entry_chest", 
-                                    "ordering": 0, 
+                                    "ordering": "0", 
                                     "potential_answer": "Chest", 
                                     "potential_answer_id": "66"
                                 }
                             ], 
                             "question": "q_chest_photo_intake", 
                             "question_id": "20", 
-                            "question_type": "q_type_photo"
+                            "question_type": "q_type_single_photo"
                         }
                     ], 
                     "screen_type": "screen_type_photo"

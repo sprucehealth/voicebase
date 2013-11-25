@@ -5,18 +5,18 @@
                 {
                     "description": "reason for visit", 
                     "questions": [
-                        {
+                        { 
                             "question": "q_reason_visit"
-                        }, 
+                        },  
                         {
                             "condition": {
                                 "op": "answer_equals", 
                                 "potential_answers": [
                                     "a_something_else"
-                                ], 
+                                ],  
                                 "question": "q_reason_visit"
                             }, 
-                            "question": "q_condition_for_diagnosis"
+                            "question": "q_condition_for_diagnosis" 
                         }
                     ]
                 }, 
@@ -65,7 +65,16 @@
                                 ], 
                                 "question": "q_acne_prev_treatment_types"
                             }, 
-                            "question": "q_acne_prev_treatment_list"
+                            "question": "q_acne_prev_treatment_list",
+                            "questions" : [{
+                                "question" : "q_effective_treatment"
+                            },
+                            {
+                                "question" : "q_using_treatment"
+                            },
+                            {
+                                "question" : "q_length_treatment"
+                            }]
                         }
                     ]
                 }

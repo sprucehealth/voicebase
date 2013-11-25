@@ -2,11 +2,10 @@ package apiservice
 
 import (
 	"carefront/api"
+	"carefront/common"
 	"carefront/info_intake"
 	"encoding/json"
-	"log"
 	"net/http"
-	"time"
 )
 
 const (
@@ -19,10 +18,6 @@ type PatientVisitHandler struct {
 	LayoutStorageService       api.CloudStorageAPI
 	PatientPhotoStorageService api.CloudStorageAPI
 	accountId                  int64
-}
-
-type PatientVisitErrorResponse struct {
-	ErrorString string `json:"error"`
 }
 
 type PatientVisitResponse struct {
@@ -58,7 +53,7 @@ func (s *PatientVisitHandler) returnNewOrOpenPatientVisit(w http.ResponseWriter,
 	var layoutVersionId int64
 	// check if there is an open patient visit for the given health condition and return
 	// that to the patient
-	patientVisitId, err := s.DataApi.GetActivePatientVisitForHealthCondition(patientId, HEALTH_CONDITION_ACNE_ID)
+	patientVisitId, err := s.DataApi.GetActivePatientVisitIdForHealthCondition(patientId, HEALTH_CONDITION_ACNE_ID)
 	if err == api.NoRowsError {
 		isNewPatientVisit = true
 		// if there isn't one, then pick the current active condition layout to send to the client for the patient to enter information
@@ -84,6 +79,7 @@ func (s *PatientVisitHandler) returnNewOrOpenPatientVisit(w http.ResponseWriter,
 		// in other words, want to show them what they have already seen in terms of a flow.
 		healthCondition, layoutVersionId, err = s.getClientLayoutForPatientVisit(patientVisitId, api.EN_LANGUAGE_ID)
 		if err != nil {
+			WriteDeveloperError(w, http.StatusInternalServerError, "Unable to get client layout for existing patient visit: "+err.Error())
 			return
 		}
 	}
@@ -147,31 +143,14 @@ func getQuestionIdsInSectionInHealthConditionLayout(healthCondition *info_intake
 	return
 }
 
-func (s *PatientVisitHandler) populateHealthConditionWithPatientAnswers(healthCondition *info_intake.HealthCondition, patientAnswers map[int64][]api.PatientAnswerToQuestion) {
+func (s *PatientVisitHandler) populateHealthConditionWithPatientAnswers(healthCondition *info_intake.HealthCondition, patientAnswers map[int64][]*common.PatientAnswer) {
 	for _, section := range healthCondition.Sections {
 		for _, screen := range section.Screens {
 			for _, question := range screen.Questions {
 				// go through each question to see if there exists a patient answer for it
 				if patientAnswers[question.QuestionId] != nil {
-					question.PatientAnswers = make([]*info_intake.PatientAnswer, 0, len(patientAnswers[question.QuestionId]))
-					for _, patientAnswerToQuestion := range patientAnswers[question.QuestionId] {
-						var objectUrl string
-						var err error
-						if patientAnswerToQuestion.StorageKey != "" {
-							objectUrl, err = s.PatientPhotoStorageService.GetSignedUrlForObjectAtLocation(patientAnswerToQuestion.StorageBucket,
-								patientAnswerToQuestion.StorageKey, patientAnswerToQuestion.StorageRegion, time.Now().Add(10*time.Minute))
-							if err != nil {
-								log.Fatal("Unable to get signed url for photo object: " + err.Error())
-								return
-							}
-						}
-
-						question.PatientAnswers = append(question.PatientAnswers, &info_intake.PatientAnswer{
-							PatientAnswerId:   patientAnswerToQuestion.PatientInfoIntakeId,
-							PotentialAnswerId: patientAnswerToQuestion.PotentialAnswerId,
-							AnswerText:        patientAnswerToQuestion.AnswerText,
-							ObjectUrl:         objectUrl})
-					}
+					question.PatientAnswers = patientAnswers[question.QuestionId]
+					GetSignedUrlsForAnswersInQuestion(question, s.PatientPhotoStorageService)
 				}
 			}
 		}
@@ -179,7 +158,7 @@ func (s *PatientVisitHandler) populateHealthConditionWithPatientAnswers(healthCo
 }
 
 func (s *PatientVisitHandler) getCurrentActiveClientLayoutForHealthCondition(healthConditionId, languageId int64) (healthCondition *info_intake.HealthCondition, layoutVersionId int64, err error) {
-	bucket, key, region, layoutVersionId, err := s.DataApi.GetStorageInfoOfCurrentActiveClientLayout(languageId, healthConditionId)
+	bucket, key, region, layoutVersionId, err := s.DataApi.GetStorageInfoOfCurrentActivePatientLayout(languageId, healthConditionId)
 	if err != nil {
 		return
 	}

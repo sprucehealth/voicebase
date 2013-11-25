@@ -32,7 +32,10 @@ func main() {
 
 	dataApi := &api.DataService{db}
 	healthConditionLayoutProcessor := &info_intake.HealthConditionIntakeModelProcessor{dataApi}
-	healthConditionLayoutProcessor.FillInDetailsFromDatabase(healthCondition, 1)
+	err = healthConditionLayoutProcessor.FillInDetailsFromDatabase(healthCondition, 1)
+	if err != nil {
+		panic(err.Error())
+	}
 
 	jsonData, err := json.MarshalIndent(healthCondition, "", " ")
 	fmt.Println(string(jsonData))

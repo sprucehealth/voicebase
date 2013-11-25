@@ -27,17 +27,24 @@ type DBConfig struct {
 
 type Config struct {
 	config.BaseConfig
-	ListenAddr            string   `short:"l" long:"listen" description:"Address and port on which to listen (e.g. 127.0.0.1:8080)"`
-	CertLocation          string   `long:"cert_key" description:"Path of SSL certificate"`
-	KeyLocation           string   `long:"private_key" description:"Path of SSL private key"`
-	S3CaseBucket          string   `long:"case_bucket" description:"S3 Bucket name for case information"`
-	DB                    DBConfig `group:"Database" toml:"database"`
-	MaxInMemoryForPhotoMB int64    `long:"max_in_memory_photo" description:"Amount of data in MB to be held in memory when parsing multipart form data"`
+	ListenAddr               string   `short:"l" long:"listen" description:"Address and port on which to listen (e.g. 127.0.0.1:8080)"`
+	CertLocation             string   `long:"cert_key" description:"Path of SSL certificate"`
+	KeyLocation              string   `long:"private_key" description:"Path of SSL private key"`
+	DB                       DBConfig `group:"Database" toml:"database"`
+	MaxInMemoryForPhotoMB    int64    `long:"max_in_memory_photo" description:"Amount of data in MB to be held in memory when parsing multipart form data"`
+	CertKeyLocation          string   `long:"cert_key" description:"Path of SSL certificate"`
+	PrivateKeyLocation       string   `long:"private_key" description:"Path of SSL private key"`
+	CaseBucket               string   `long:"case_bucket" description:"S3 Bucket name for case information"`
+	PatientLayoutBucket      string   `long:"client_layout_bucket" description:"S3 Bucket name for client digestable layout for patient information intake"`
+	VisualLayoutBucket       string   `long:"patient_layout_bucket" description:"S3 Bucket name for human readable layout for patient information intake"`
+	DoctorVisualLayoutBucket string   `long:"doctor_visual_layout_bucket" description:"S3 Bucket name for patient overview for doctor's viewing"`
+	DoctorLayoutBucket       string   `long:"doctor_layout_bucket" description:"S3 Bucket name for pre-processed patient overview for doctor's viewing"`
+	Debug                    bool     `long:"debug" description:"Enable debugging"`
 }
 
 var DefaultConfig = Config{
 	ListenAddr:            ":8080",
-	S3CaseBucket:          "carefront-cases",
+	CaseBucket:            "carefront-cases",
 	MaxInMemoryForPhotoMB: defaultMaxInMemoryPhotoMB,
 }
 
@@ -82,21 +89,38 @@ func main() {
 	signupPatientHandler := &apiservice.SignupPatientHandler{dataApi, authApi}
 	patientVisitHandler := apiservice.NewPatientVisitHandler(dataApi, authApi, cloudStorageApi, photoAnswerCloudStorageApi)
 	answerIntakeHandler := apiservice.NewAnswerIntakeHandler(dataApi)
-	photoAnswerIntakeHandler := apiservice.NewPhotoAnswerIntakeHandler(dataApi, photoAnswerCloudStorageApi, conf.S3CaseBucket, conf.AWSRegion, conf.MaxInMemoryForPhotoMB*1024*1024)
+	photoAnswerIntakeHandler := apiservice.NewPhotoAnswerIntakeHandler(dataApi, photoAnswerCloudStorageApi, conf.CaseBucket, conf.AWSRegion, conf.MaxInMemoryForPhotoMB*1024*1024)
+	generateDoctorLayoutHandler := &apiservice.GenerateDoctorLayoutHandler{
+		DataApi:                  dataApi,
+		CloudStorageApi:          cloudStorageApi,
+		DoctorLayoutBucket:       conf.DoctorLayoutBucket,
+		DoctorVisualLayoutBucket: conf.DoctorVisualLayoutBucket,
+		MaxInMemoryForPhoto:      conf.MaxInMemoryForPhotoMB,
+		AWSRegion:                conf.AWSRegion,
+	}
 	pingHandler := apiservice.PingHandler(0)
 	generateModelIntakeHandler := &apiservice.GenerateClientIntakeModelHandler{
-		DataApi:         dataApi,
-		CloudStorageApi: cloudStorageApi,
-		AWSRegion:       conf.AWSRegion,
+		DataApi:             dataApi,
+		CloudStorageApi:     cloudStorageApi,
+		VisualLayoutBucket:  conf.VisualLayoutBucket,
+		PatientLayoutBucket: conf.PatientLayoutBucket,
+		AWSRegion:           conf.AWSRegion,
+	}
+	doctorPatientVisitReviewHandler := &apiservice.DoctorPatientVisitReviewHandler{
+		DataApi:                    dataApi,
+		LayoutStorageService:       cloudStorageApi,
+		PatientPhotoStorageService: photoAnswerCloudStorageApi,
 	}
 
 	mux := &apiservice.AuthServeMux{*http.NewServeMux(), authApi}
 
 	mux.Handle("/v1/patient", signupPatientHandler)
 	mux.Handle("/v1/visit", patientVisitHandler)
+	mux.Handle("/v1/patient_visit_review", doctorPatientVisitReviewHandler)
 	mux.Handle("/v1/answer", answerIntakeHandler)
 	mux.Handle("/v1/answer/photo", photoAnswerIntakeHandler)
 	mux.Handle("/v1/client_model", generateModelIntakeHandler)
+	mux.Handle("/v1/doctor_layout", generateDoctorLayoutHandler)
 
 	mux.Handle("/v1/signup", authHandler)
 	mux.Handle("/v1/authenticate", authHandler)
@@ -111,9 +135,9 @@ func main() {
 		MaxHeaderBytes: 1 << 20,
 	}
 
-	if conf.CertLocation == "" && conf.KeyLocation == "" {
+	if conf.CertKeyLocation == "" && conf.PrivateKeyLocation == "" {
 		log.Fatal(s.ListenAndServe())
 	} else {
-		log.Fatal(s.ListenAndServeTLS(conf.CertLocation, conf.KeyLocation))
+		log.Fatal(s.ListenAndServeTLS(conf.CertKeyLocation, conf.PrivateKeyLocation))
 	}
 }

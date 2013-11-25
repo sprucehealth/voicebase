@@ -1,11 +1,14 @@
 package apiservice
 
 import (
+	"carefront/api"
+	"carefront/info_intake"
 	"encoding/json"
 	"errors"
 	"log"
 	"net/http"
 	"strings"
+	"time"
 )
 
 var ErrBadAuthToken = errors.New("BadAuthToken")
@@ -25,6 +28,21 @@ func GetAuthTokenFromHeader(r *http.Request) (string, error) {
 		return "", ErrBadAuthToken
 	}
 	return parts[1], nil
+}
+
+func GetSignedUrlsForAnswersInQuestion(question *info_intake.Question, photoStorageService api.CloudStorageAPI) {
+	// go through each answer to get signed urls
+	for _, patientAnswer := range question.PatientAnswers {
+		if patientAnswer.StorageKey != "" {
+			objectUrl, err := photoStorageService.GetSignedUrlForObjectAtLocation(patientAnswer.StorageBucket,
+				patientAnswer.StorageKey, patientAnswer.StorageRegion, time.Now().Add(10*time.Minute))
+			if err != nil {
+				log.Fatal("Unable to get signed url for photo object: " + err.Error())
+			} else {
+				patientAnswer.ObjectUrl = objectUrl
+			}
+		}
+	}
 }
 
 type ErrorResponse struct {

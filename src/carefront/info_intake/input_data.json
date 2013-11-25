@@ -1,0 +1,22 @@
+{
+    "patient_visit_id": 84, 
+    "potential_answers": [
+        {
+            "answer_text": "yayayayay", 
+            "potential_answer_id": 23
+        }, 
+        {
+            "answer_text": "gag", 
+            "potential_answer_id": 23
+        }, 
+        {
+            "answer_text": "adbagahb", 
+            "potential_answer_id": 23
+        }, 
+        {
+            "answer_text": "aagagh", 
+            "potential_answer_id": 23
+        }
+    ], 
+    "question_id": 13
+}

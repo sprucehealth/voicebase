@@ -9,7 +9,7 @@ func (c *Condition) FillInDatabaseInfo(dataApi api.DataAPI, languageId int64) er
 	if c.QuestionTag == "" {
 		return nil
 	}
-	questionId, _, _, err := dataApi.GetQuestionInfo(c.QuestionTag, languageId)
+	questionId, _, _, _, _, err := dataApi.GetQuestionInfo(c.QuestionTag, languageId)
 	if err != nil {
 		return err
 	}
@@ -52,13 +52,46 @@ func (t *TipSection) FillInDatabaseInfo(dataApi api.DataAPI, languageId int64) e
 }
 
 func (q *Question) FillInDatabaseInfo(dataApi api.DataAPI, languageId int64) error {
-	questionId, questionTitle, questionType, err := dataApi.GetQuestionInfo(q.QuestionTag, languageId)
+	return q.FillFromDatabase(dataApi, languageId, true)
+}
+
+func (q *Question) FillFromDatabase(dataApi api.DataAPI, languageId int64, showPotentialResponses bool) error {
+	questionId, questionTitle, questionType, questionSummary, parentQuestionId, err := dataApi.GetQuestionInfo(q.QuestionTag, languageId)
 	if err != nil {
 		return err
 	}
 	q.QuestionId = questionId
 	q.QuestionTitle = questionTitle
 	q.QuestionType = questionType
+	q.ParentQuestionId = parentQuestionId
+	q.QuestionSummary = questionSummary
+
+	if q.ConditionBlock != nil {
+		err := q.ConditionBlock.FillInDatabaseInfo(dataApi, languageId)
+		if err != nil {
+			return err
+		}
+	}
+
+	if q.Tips != nil {
+		err := q.Tips.FillInDatabaseInfo(dataApi, languageId)
+		if err != nil {
+			return err
+		}
+	}
+
+	if q.Questions != nil {
+		for _, question := range q.Questions {
+			err := question.FillFromDatabase(dataApi, languageId, showPotentialResponses)
+			if err != nil {
+				return err
+			}
+		}
+	}
+
+	if !showPotentialResponses {
+		return nil
+	}
 
 	// go over the potential ansnwer tags to create potential outcome blocks
 	q.PotentialAnswers = make([]*PotentialAnswer, 0, 5)
@@ -75,19 +108,6 @@ func (q *Question) FillInDatabaseInfo(dataApi api.DataAPI, languageId int64) err
 		q.PotentialAnswers = append(q.PotentialAnswers, potentialAnswer)
 	}
 
-	if q.ConditionBlock != nil {
-		err := q.ConditionBlock.FillInDatabaseInfo(dataApi, languageId)
-		if err != nil {
-			return err
-		}
-	}
-
-	if q.Tips != nil {
-		err := q.Tips.FillInDatabaseInfo(dataApi, languageId)
-		if err != nil {
-			return err
-		}
-	}
 	return nil
 }
 
