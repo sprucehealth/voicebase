@@ -6,6 +6,7 @@ package config
 import (
 	"fmt"
 	"io"
+	"io/ioutil"
 	"log"
 	"net/http"
 	"net/url"
@@ -28,7 +29,7 @@ type BaseConfig struct {
 	AWSAccessKey string `long:"aws_access_key" description:"AWS access key id"`
 	ConfigPath   string `short:"c" long:"config" description:"Path to config file. If not set then stderr is used."`
 	Environment  string `short:"e" long:"environment" description:"Current environment (dev, stage, prod)"`
-	LogPath      string `short:"l" long:"log_path" description:"Path to log file"`
+	LogPath      string `long:"log_path" description:"Path to log file"`
 
 	awsAuth aws.Auth
 }
@@ -60,6 +61,8 @@ func LoadConfigFile(configUrl string, config interface{}, awsAuther func() (aws.
 	if configUrl == "" {
 		return nil
 	}
+
+	var rd io.ReadCloser
 	if strings.Contains(configUrl, "://") {
 		awsAuth, err := awsAuther()
 		if err != nil {
@@ -69,7 +72,6 @@ func LoadConfigFile(configUrl string, config interface{}, awsAuther func() (aws.
 		if err != nil {
 			return fmt.Errorf("Failed to parse config url %s: %+v", configUrl, err)
 		}
-		var rd io.ReadCloser
 		if ur.Scheme == "s3" {
 			s3 := s3.New(util.AWSAuthAdapter(awsAuth), goamz.USEast)
 			rd, err = s3.Bucket(ur.Host).GetReader(ur.Path)
@@ -85,13 +87,30 @@ func LoadConfigFile(configUrl string, config interface{}, awsAuther func() (aws.
 				rd = res.Body
 			}
 		}
-		if _, err := toml.DecodeReader(rd, config); err != nil {
-			return fmt.Errorf("Failed to parse config file: %+v", err)
+	} else {
+		fi, err := os.Open(configUrl)
+		if err != nil {
+			return fmt.Errorf("Failed to open config file: %+v", err)
 		}
-		rd.Close()
-	} else if _, err := toml.DecodeFile(configUrl, config); err != nil {
+		rd = fi
+	}
+	defer rd.Close()
+	by, err := ioutil.ReadAll(rd)
+	if err != nil {
+		return fmt.Errorf("Failed top read config file: %+v", err)
+	}
+	st := string(by)
+	if _, err := toml.Decode(st, config); err != nil {
 		return fmt.Errorf("Failed to parse config file: %+v", err)
 	}
+	v := reflect.ValueOf(config).Elem()
+	fv := v.FieldByName("BaseConfig")
+	if fv.IsValid() && fv.Kind() == reflect.Ptr {
+		if _, err := toml.Decode(st, fv.Interface()); err != nil {
+			return fmt.Errorf("Failed to parse config file: %+v", err)
+		}
+	}
+	fmt.Printf("%+v\n", config)
 	return nil
 }
 
@@ -103,7 +122,20 @@ func ParseArgs(config interface{}, args []string) ([]string, error) {
 	if args == nil {
 		args = os.Args[1:]
 	}
-	baseConfig := &BaseConfig{}
+
+	v := reflect.ValueOf(config).Elem()
+	fv := v.FieldByName("BaseConfig")
+	if !fv.IsValid() || fv.Kind() != reflect.Ptr {
+		return nil, fmt.Errorf("config: config struct must contain a pointer to BaseConfig")
+	}
+	var baseConfig *BaseConfig
+	if fv.IsNil() {
+		baseConfig = &BaseConfig{}
+		fv.Set(reflect.ValueOf(baseConfig))
+	} else {
+		baseConfig = fv.Interface().(*BaseConfig)
+	}
+
 	parser := flags.NewParser(baseConfig, flags.PrintErrors|flags.PassDoubleDash|flags.IgnoreUnknown)
 	_, err := parser.ParseArgs(args)
 	if err != nil {
@@ -154,17 +186,6 @@ func ParseArgs(config interface{}, args []string) ([]string, error) {
 		log.SetOutput(file)
 	}
 	log.SetFlags(log.Lshortfile | log.Ldate | log.Ltime)
-
-	// If the config struct includes BaseConfig then set the value
-	v := reflect.ValueOf(config).Elem()
-	fv := v.FieldByName("BaseConfig")
-	if fv.IsValid() {
-		if fv.Kind() == reflect.Ptr {
-			fv.Set(reflect.ValueOf(baseConfig))
-		} else {
-			fv.Set(reflect.ValueOf(baseConfig).Elem())
-		}
-	}
 
 	return extraArgs, nil
 }

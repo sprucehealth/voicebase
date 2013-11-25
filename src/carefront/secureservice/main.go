@@ -19,7 +19,7 @@ import (
 )
 
 type Config struct {
-	config.BaseConfig
+	*config.BaseConfig
 	Port                    int    `long:"port" description:"Port to bind to"`
 	ZookeeperHosts          string `long:"zk_hosts" description:"Zookeeper host list (e.g. 127.0.0.1:2181,192.168.1.1:2181)`
 	ZookeeperServicesPrefix string `long:"zk_svc_prefix" description:"Zookeeper svc registry prefix"`
