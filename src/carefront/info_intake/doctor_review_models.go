@@ -7,6 +7,7 @@ import (
 type PatientVisitOverviewQuestion struct {
 	Question
 	ShowPotentialResponses bool `json:"show_potential_responses,omitempty"`
+	FlagQuestionIfAnswered bool `json:"flag_question_if_answered,omitempty"`
 }
 
 type PatientVisitOverviewSubSection struct {

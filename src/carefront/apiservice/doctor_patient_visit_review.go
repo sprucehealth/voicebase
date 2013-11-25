@@ -45,6 +45,12 @@ func (p *DoctorPatientVisitReviewHandler) ServeHTTP(w http.ResponseWriter, r *ht
 		return
 	}
 
+	patient, err := p.DataApi.GetPatientFromId(patientVisit.PatientId)
+	if err != nil {
+		WriteDeveloperError(w, http.StatusBadRequest, "Unable to get patient from the patient id: "+err.Error())
+		return
+	}
+
 	bucket, key, region, _, err := p.DataApi.GetStorageInfoOfCurrentActiveDoctorLayout(patientVisit.HealthConditionId)
 	if err != nil {
 		WriteDeveloperError(w, http.StatusInternalServerError, "Unable to get the active layout version for the doctor's view of the patient visit: "+err.Error())
@@ -72,11 +78,13 @@ func (p *DoctorPatientVisitReviewHandler) ServeHTTP(w http.ResponseWriter, r *ht
 		WriteDeveloperError(w, http.StatusInternalServerError, "Unable to get patient answers for questions : "+err.Error())
 		return
 	}
-	p.populatePatientVisitOverviewWithPatientAnswers(patientAnswersForQuestions, patientVisitOverview)
+	p.populatePatientVisitOverviewWithPatientAnswers(patientAnswersForQuestions, patientVisitOverview, patient)
 	WriteJSONToHTTPResponseWriter(w, http.StatusOK, DoctorPatientVisitReviewResponse{patientVisitOverview})
 }
 
-func (p *DoctorPatientVisitReviewHandler) populatePatientVisitOverviewWithPatientAnswers(patientAnswers map[int64][]*common.PatientAnswer, patientVisitOverview *info_intake.PatientVisitOverview) {
+func (p *DoctorPatientVisitReviewHandler) populatePatientVisitOverviewWithPatientAnswers(patientAnswers map[int64][]*common.PatientAnswer,
+	patientVisitOverview *info_intake.PatientVisitOverview,
+	patient *common.Patient) {
 	// collect all question ids for which to get patient answers
 	for _, section := range patientVisitOverview.Sections {
 		for _, subSection := range section.SubSections {
@@ -85,6 +93,21 @@ func (p *DoctorPatientVisitReviewHandler) populatePatientVisitOverviewWithPatien
 					if patientAnswers[question.QuestionId] != nil {
 						question.PatientAnswers = patientAnswers[question.QuestionId]
 						GetSignedUrlsForAnswersInQuestion(&question.Question, p.PatientPhotoStorageService)
+					}
+				} else {
+					switch question.QuestionTag {
+					case "q_dob":
+						patientAnswer := &common.PatientAnswer{}
+						patientAnswer.AnswerText = patient.Dob.String()
+						question.PatientAnswers = []*common.PatientAnswer{patientAnswer}
+					case "q_gender":
+						patientAnswer := &common.PatientAnswer{}
+						patientAnswer.AnswerText = patient.Gender
+						question.PatientAnswers = []*common.PatientAnswer{patientAnswer}
+					case "q_location":
+						patientAnswer := &common.PatientAnswer{}
+						patientAnswer.AnswerText = patient.ZipCode
+						question.PatientAnswers = []*common.PatientAnswer{patientAnswer}
 					}
 				}
 			}

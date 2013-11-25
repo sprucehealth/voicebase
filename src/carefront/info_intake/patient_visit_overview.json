@@ -1,4 +1,5 @@
 {
+    "health_condition": "health_condition_acne", 
     "sections": [
         {
             "section_title": "Medical History", 
@@ -33,6 +34,7 @@
                 {
                     "data": [
                         {
+                            "flag_question_if_answered": true,  
                             "question": "q_allergic_medications"
                         }, 
                         {
@@ -142,19 +144,22 @@
             ]
         }, 
         {
-            "data": [
-                {
-                    "question": "q_face_photo_intake"
-                }, 
-                {
-                    "question": "q_chest_photo_intake"
-                }
-            ], 
             "section_title": "Photos", 
             "section_types": [
                 "s_type_photo"
+            ], 
+            "sub_sections": [
+                {
+                    "data": [
+                        {
+                            "question": "q_face_photo_intake"
+                        }, 
+                        {
+                            "question": "q_chest_photo_intake"
+                        }
+                    ]
+                }
             ]
         }
-    ], 
-    "health_condition": "health_condition_acne"
+    ]
 }

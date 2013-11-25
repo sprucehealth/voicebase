@@ -10,7 +10,7 @@ type Patient struct {
 	LastName  string    `json:"last_name,omiempty"`
 	Dob       time.Time `json:"dob,omitempty"`
 	Gender    string    `json:"gender,omitempty"`
-	Zipcode   string    `json:"zip_code,omitempty"`
+	ZipCode   string    `json:"zip_code,omitempty"`
 	Status    string    `json:"-"`
 	AccountId int64     `json:"-"`
 }

@@ -42,6 +42,29 @@ func (d *DataService) RegisterPatient(accountId int64, firstName, lastName, gend
 	return lastId, err
 }
 
+func (d *DataService) GetPatientFromId(patientId int64) (patient *common.Patient, err error) {
+	var firstName, lastName, zipCode, status, gender string
+	var dob mysql.NullTime
+	var accountId int64
+	err = d.DB.QueryRow(`select account_id, first_name, last_name, zip_code, gender, dob, status from patient where id = ?`, patientId).Scan(&accountId, &firstName, &lastName, &zipCode, &gender, &dob, &status)
+	if err != nil {
+		return
+	}
+	patient = &common.Patient{
+		FirstName: firstName,
+		LastName:  lastName,
+		ZipCode:   zipCode,
+		Status:    status,
+		Gender:    gender,
+		AccountId: accountId,
+	}
+	if dob.Valid {
+		patient.Dob = dob.Time
+	}
+	patient.PatientId = patientId
+	return
+}
+
 func (d *DataService) GetPatientIdFromAccountId(accountId int64) (int64, error) {
 	var patientId int64
 	err := d.DB.QueryRow("select id from patient where account_id = ?", accountId).Scan(&patientId)
