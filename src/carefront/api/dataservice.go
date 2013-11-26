@@ -162,7 +162,7 @@ func (d *DataService) GetPatientAnswersForQuestionsInGlobalSections(questionIds 
 								left outer join region on region_id=region.id 
 								left outer join potential_answer on potential_answer_id = potential_answer.id
 								left outer join localized_text on potential_answer.answer_localized_text_id = app_text_id
-								where (potential_answer.question_id in (%s) or parent_question_id in (%s)) and patient_id = ? and patient_info_intake.status='ACTIVE'`, enumeratedStrings, enumeratedStrings)
+								where (potential_answer.question_id in (%s) or parent_question_id in (%s) and patient_id = ? and patient_info_intake.status='ACTIVE'`, enumeratedStrings, enumeratedStrings)
 	return d.getPatientAnswersForQuestionsBasedOnQuery(queryStr, patientId)
 }
 
@@ -174,7 +174,7 @@ func (d *DataService) GetPatientAnswersForQuestionsInPatientVisit(questionIds []
 								left outer join region on region_id=region.id 
 								left outer join potential_answer on potential_answer_id = potential_answer.id
 								left outer join localized_text on potential_answer.answer_localized_text_id = app_text_id
-								where (potential_answer.question_id in (%s) or parent_question_id in (%s)) and patient_id = ? and patient_visit_id = ? and patient_info_intake.status='ACTIVE'`, enumeratedStrings, enumeratedStrings)
+								where (potential_answer.question_id in (%s) or parent_question_id in (%s) and patient_id = ? and patient_visit_id = ? and patient_info_intake.status='ACTIVE'`, enumeratedStrings, enumeratedStrings)
 	fmt.Println(queryStr)
 	return d.getPatientAnswersForQuestionsBasedOnQuery(queryStr, patientId, patientVisitId)
 }
@@ -315,9 +315,13 @@ func (d *DataService) updatePatientInfoIntakesWithStatus(questionIds []int64, pa
 // only in combination with the top-level answer to the question. This method makes it possible
 // to change the status of the entire set in an atomic fashion.
 func (d *DataService) updateSubAnswersToPatientInfoIntakesWithStatus(questionIds []int64, patientId, patientVisitId, layoutVersionId int64, status string, previousStatus string, tx *sql.Tx) (err error) {
+
+	if len(questionIds) == 0 {
+		return
+	}
+
 	parentInfoIntakeIds := make([]int64, 0)
-	queryStr := fmt.Sprintf(`select id from patient_info_intake where patient_id = ? and question_id in (%s)
-								and patient_visit_id = ? and layout_version_id = ? and status='%s'`, enumerateItemsIntoString(questionIds), previousStatus)
+	queryStr := fmt.Sprintf(`select id from patient_info_intake where patient_id = ? and question_id in (%s) and patient_visit_id = ? and layout_version_id = ? and status='%s'`, enumerateItemsIntoString(questionIds), previousStatus)
 	rows, err := tx.Query(queryStr, patientId, patientVisitId, layoutVersionId)
 	if err != nil {
 		return err
@@ -328,6 +332,10 @@ func (d *DataService) updateSubAnswersToPatientInfoIntakesWithStatus(questionIds
 		var id int64
 		rows.Scan(&id)
 		parentInfoIntakeIds = append(parentInfoIntakeIds, id)
+	}
+
+	if len(parentInfoIntakeIds) == 0 {
+		return
 	}
 
 	updateStr := fmt.Sprintf(`update patient_info_intake set status='%s' 

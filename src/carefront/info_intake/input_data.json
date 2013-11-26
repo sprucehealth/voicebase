@@ -1,22 +1,96 @@
 {
-    "patient_visit_id": 84, 
+    "patient_visit_id": 88, 
     "potential_answers": [
         {
-            "answer_text": "yayayayay", 
-            "potential_answer_id": 23
+            "answer_text": "Proactive", 
+            "answers": [
+                {
+                    "potential_answers": [
+                        {
+                            "potential_answer_id": 70
+                        }
+                    ], 
+                    "question_id": 24
+                }, 
+                {
+                    "potential_answers": [
+                        {
+                            "potential_answer_id": 75
+                        }
+                    ], 
+                    "question_id": 25
+                }, 
+                {
+                    "potential_answers": [
+                        {
+                            "potential_answer_id": 77
+                        }
+                    ], 
+                    "question_id": 26
+                }
+            ], 
+            "potential_answer_id": 15
         }, 
         {
-            "answer_text": "gag", 
-            "potential_answer_id": 23
+            "answer_text": "Benzoyl Peroxide", 
+            "answers": [
+                {
+                    "potential_answers": [
+                        {
+                            "potential_answer_id": 71
+                        }
+                    ], 
+                    "question_id": 24
+                }, 
+                {
+                    "potential_answers": [
+                        {
+                            "potential_answer_id": 73
+                        }
+                    ], 
+                    "question_id": 25
+                }, 
+                {
+                    "potential_answers": [
+                        {
+                            "potential_answer_id": 76
+                        }
+                    ], 
+                    "question_id": 26
+                }
+            ], 
+            "potential_answer_id": 15
         }, 
         {
-            "answer_text": "adbagahb", 
-            "potential_answer_id": 23
-        }, 
-        {
-            "answer_text": "aagagh", 
-            "potential_answer_id": 23
+            "answer_text": "Neutrogena", 
+                 "answers": [
+                {
+                    "potential_answers": [
+                        {
+                            "potential_answer_id": 72
+                        }
+                    ], 
+                    "question_id": 24
+                }, 
+                {
+                    "potential_answers": [
+                        {
+                            "potential_answer_id": 75
+                        }
+                    ], 
+                    "question_id": 25
+                }, 
+                {
+                    "potential_answers": [
+                        {
+                            "potential_answer_id": 79
+                        }
+                    ], 
+                    "question_id": 26
+                }
+            ], 
+            "potential_answer_id": 15
         }
     ], 
-    "question_id": 13
+    "question_id": 8
 }
