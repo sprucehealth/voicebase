@@ -90,6 +90,7 @@ func (d *DataService) getPatientAnswersForQuestionsBasedOnQuery(query string, ar
 		var parentQuestionId, parentInfoIntakeId sql.NullInt64
 		err = rows.Scan(&answerId, &questionId, &potentialAnswerId, &potentialAnswer, &answerText, &storageBucket, &storageKey, &storageRegion, &layoutVersionId, &parentQuestionId, &parentInfoIntakeId)
 		if err != nil {
+			fmt.Println("ERROR 2")
 			return
 		}
 		patientAnswerToQuestion := &common.PatientAnswer{PatientAnswerId: answerId,
@@ -162,7 +163,7 @@ func (d *DataService) GetPatientAnswersForQuestionsInGlobalSections(questionIds 
 								left outer join region on region_id=region.id 
 								left outer join potential_answer on potential_answer_id = potential_answer.id
 								left outer join localized_text on potential_answer.answer_localized_text_id = app_text_id
-								where (potential_answer.question_id in (%s) or parent_question_id in (%s) and patient_id = ? and patient_info_intake.status='ACTIVE'`, enumeratedStrings, enumeratedStrings)
+								where (potential_answer.question_id in (%s) or parent_question_id in (%s)) and patient_id = ? and patient_info_intake.status='ACTIVE'`, enumeratedStrings, enumeratedStrings)
 	return d.getPatientAnswersForQuestionsBasedOnQuery(queryStr, patientId)
 }
 
@@ -174,8 +175,7 @@ func (d *DataService) GetPatientAnswersForQuestionsInPatientVisit(questionIds []
 								left outer join region on region_id=region.id 
 								left outer join potential_answer on potential_answer_id = potential_answer.id
 								left outer join localized_text on potential_answer.answer_localized_text_id = app_text_id
-								where (potential_answer.question_id in (%s) or parent_question_id in (%s) and patient_id = ? and patient_visit_id = ? and patient_info_intake.status='ACTIVE'`, enumeratedStrings, enumeratedStrings)
-	fmt.Println(queryStr)
+								where (potential_answer.question_id in (%s) or parent_question_id in (%s)) and patient_id = ? and patient_visit_id = ? and patient_info_intake.status='ACTIVE'`, enumeratedStrings, enumeratedStrings)
 	return d.getPatientAnswersForQuestionsBasedOnQuery(queryStr, patientId, patientVisitId)
 }
 
