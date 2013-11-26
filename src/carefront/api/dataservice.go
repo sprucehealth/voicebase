@@ -90,7 +90,6 @@ func (d *DataService) getPatientAnswersForQuestionsBasedOnQuery(query string, ar
 		var parentQuestionId, parentInfoIntakeId sql.NullInt64
 		err = rows.Scan(&answerId, &questionId, &potentialAnswerId, &potentialAnswer, &answerText, &storageBucket, &storageKey, &storageRegion, &layoutVersionId, &parentQuestionId, &parentInfoIntakeId)
 		if err != nil {
-			fmt.Println("ERROR 2")
 			return
 		}
 		patientAnswerToQuestion := &common.PatientAnswer{PatientAnswerId: answerId,
@@ -433,6 +432,9 @@ func (d *DataService) StoreAnswersForQuestion(questionId, patientId, patientVisi
 		// to the top level question itself.
 		d.updateSubAnswersToPatientInfoIntakesWithStatus([]int64{questionId}, patientId,
 			patientVisitId, layoutVersionId, status_inactive, status_active, tx)
+		d.updatePatientInfoIntakesWithStatus([]int64{questionId}, patientId,
+			patientVisitId, layoutVersionId, status_inactive, status_active, tx)
+
 		// if there are no subanswers to store, our job is done with just the top level answers
 		d.updatePatientInfoIntakesWithStatus([]int64{questionId}, patientId,
 			patientVisitId, layoutVersionId, status_active, status_creating, tx)
