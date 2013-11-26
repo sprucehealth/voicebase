@@ -70,19 +70,19 @@ func LoadConfigFile(configUrl string, config interface{}, awsAuther func() (aws.
 		}
 		ur, err := url.Parse(configUrl)
 		if err != nil {
-			return fmt.Errorf("Failed to parse config url %s: %+v", configUrl, err)
+			return fmt.Errorf("config: failed to parse config url %s: %+v", configUrl, err)
 		}
 		if ur.Scheme == "s3" {
 			s3 := s3.New(util.AWSAuthAdapter(awsAuth), goamz.USEast)
 			rd, err = s3.Bucket(ur.Host).GetReader(ur.Path)
 			if err != nil {
-				return fmt.Errorf("Failed to get config from s3 %s: %+v", configUrl, err)
+				return fmt.Errorf("config: failed to get config from s3 %s: %+v", configUrl, err)
 			}
 		} else {
 			if res, err := http.Get(configUrl); err != nil {
-				return fmt.Errorf("Failed to fetch config from URL %s: %+v", configUrl, err)
+				return fmt.Errorf("config: failed to fetch config from URL %s: %+v", configUrl, err)
 			} else if res.StatusCode != 200 {
-				return fmt.Errorf("Failed to fetch config from URL %s: status code %d", configUrl, res.StatusCode)
+				return fmt.Errorf("config: failed to fetch config from URL %s: status code %d", configUrl, res.StatusCode)
 			} else {
 				rd = res.Body
 			}
@@ -90,27 +90,26 @@ func LoadConfigFile(configUrl string, config interface{}, awsAuther func() (aws.
 	} else {
 		fi, err := os.Open(configUrl)
 		if err != nil {
-			return fmt.Errorf("Failed to open config file: %+v", err)
+			return fmt.Errorf("config: failed to open config file: %+v", err)
 		}
 		rd = fi
 	}
 	defer rd.Close()
 	by, err := ioutil.ReadAll(rd)
 	if err != nil {
-		return fmt.Errorf("Failed top read config file: %+v", err)
+		return fmt.Errorf("config: failed top read config file: %+v", err)
 	}
 	st := string(by)
 	if _, err := toml.Decode(st, config); err != nil {
-		return fmt.Errorf("Failed to parse config file: %+v", err)
+		return fmt.Errorf("config: failed to parse config file: %+v", err)
 	}
 	v := reflect.ValueOf(config).Elem()
 	fv := v.FieldByName("BaseConfig")
 	if fv.IsValid() && fv.Kind() == reflect.Ptr {
 		if _, err := toml.Decode(st, fv.Interface()); err != nil {
-			return fmt.Errorf("Failed to parse config file: %+v", err)
+			return fmt.Errorf("config: failed to parse config file: %+v", err)
 		}
 	}
-	fmt.Printf("%+v\n", config)
 	return nil
 }
 
@@ -161,10 +160,10 @@ func ParseArgs(config interface{}, args []string) ([]string, error) {
 	if baseConfig.AWSRegion == "" {
 		az, err := aws.GetMetadata(aws.MetadataAvailabilityZone)
 		if err != nil {
-			return nil, fmt.Errorf("No region specified and failed to get from instance metadata: %+v", err)
+			return nil, fmt.Errorf("config: no region specified and failed to get from instance metadata: %+v", err)
 		}
 		baseConfig.AWSRegion = az[:len(az)-1]
-		return nil, fmt.Errorf("Got region from metadata: %s", baseConfig.AWSRegion)
+		return nil, fmt.Errorf("config: got region from metadata: %s", baseConfig.AWSRegion)
 	}
 
 	if baseConfig.LogPath != "" {
@@ -175,12 +174,12 @@ func ParseArgs(config interface{}, args []string) ([]string, error) {
 			// file doesn't exist so lets create it
 			file, err = os.Create(baseConfig.LogPath)
 			if err != nil {
-				return nil, fmt.Errorf("Failed to create log: %s", err.Error())
+				return nil, fmt.Errorf("config: failed to create log: %s", err.Error())
 			}
 		} else {
 			file, err = os.OpenFile(baseConfig.LogPath, os.O_RDWR|os.O_APPEND, 0660)
 			if err != nil {
-				return nil, fmt.Errorf("Could not open logfile %s", err.Error())
+				return nil, fmt.Errorf("config: could not open logfile %s", err.Error())
 			}
 		}
 		log.SetOutput(file)
