@@ -26,7 +26,7 @@ type DBConfig struct {
 }
 
 type Config struct {
-	config.BaseConfig
+	*config.BaseConfig
 	ListenAddr               string   `short:"l" long:"listen" description:"Address and port on which to listen (e.g. 127.0.0.1:8080)"`
 	CertLocation             string   `long:"cert_key" description:"Path of SSL certificate"`
 	KeyLocation              string   `long:"private_key" description:"Path of SSL private key"`

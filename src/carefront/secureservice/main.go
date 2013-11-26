@@ -1,7 +1,6 @@
 package main
 
 import (
-	"flag"
 	"fmt"
 	"log"
 	"net"
@@ -11,6 +10,7 @@ import (
 	"strings"
 	"time"
 
+	"carefront/config"
 	"carefront/libs/svcreg"
 	"carefront/libs/svcreg/zksvcreg"
 	"carefront/thriftauth"
@@ -18,12 +18,17 @@ import (
 	"github.com/samuel/go-zookeeper/zk"
 )
 
-var (
-	flagEnvironment             = flag.String("env", "", "REQUIRED: Environment (prod, staging, dev)")
-	flagPort                    = flag.Int("port", 10001, "Port to bind to")
-	flagZookeeperHosts          = flag.String("zookeeper_hosts", "", "Zookeeper host list (e.g. '127.0.0.1:2181,192.168.1.1:2181')")
-	flagZookeeperServicesPrefix = flag.String("zookeeper_services_prefix", "/services", "Zookeeper service registry prefix")
-)
+type Config struct {
+	*config.BaseConfig
+	Port                    int    `long:"port" description:"Port to bind to"`
+	ZookeeperHosts          string `long:"zk_hosts" description:"Zookeeper host list (e.g. 127.0.0.1:2181,192.168.1.1:2181)`
+	ZookeeperServicesPrefix string `long:"zk_svc_prefix" description:"Zookeeper svc registry prefix"`
+}
+
+var DefaultConfig = Config{
+	Port: 10001,
+	ZookeeperServicesPrefix: "/services",
+}
 
 const (
 	serviceName = "secure"
@@ -52,51 +57,55 @@ func (srv *authServiceImplementation) ValidateToken(token string) (*thriftauth.T
 	return nil, nil
 }
 
-type Server struct {
-	reg svcreg.Registry
-}
+// type Server struct {
+// 	reg svcreg.Registry
+// }
 
-func (s *Server) Init() {
-	var zoo *zk.Conn
-	var zooCh <-chan zk.Event
-	if *flagZookeeperHosts != "" {
-		var err error
-		hosts := strings.Split(*flagZookeeperHosts, ",")
-		zoo, zooCh, err = zk.Connect(hosts, time.Second*10)
-		if err != nil {
-			log.Fatal(err)
-		}
-		defer zoo.Close()
-		reg, err = zksvcreg.NewServiceRegistry(zoo, *flagZookeeperServicesPrefix)
-		if err != nil {
-			log.Fatal(err)
-		}
-		defer reg.Close()
-	} else {
-		reg = &svcreg.StaticRegistry{}
-	}
-	_ = zooCh
-}
+// func (s *Server) Init() {
+// 	var zoo *zk.Conn
+// 	var zooCh <-chan zk.Event
+// 	if *flagZookeeperHosts != "" {
+// 		var err error
+// 		hosts := strings.Split(*flagZookeeperHosts, ",")
+// 		zoo, zooCh, err = zk.Connect(hosts, time.Second*10)
+// 		if err != nil {
+// 			log.Fatal(err)
+// 		}
+// 		defer zoo.Close()
+// 		reg, err = zksvcreg.NewServiceRegistry(zoo, *flagZookeeperServicesPrefix)
+// 		if err != nil {
+// 			log.Fatal(err)
+// 		}
+// 		defer reg.Close()
+// 	} else {
+// 		reg = &svcreg.StaticRegistry{}
+// 	}
+// 	_ = zooCh
+// }
 
 func main() {
-	flag.Parse()
-	if *flagEnvironment == "" || (*flagEnvironment != "prod" && *flagEnvironment != "staging" && *flagEnvironment != "dev") {
-		log.Fatal("flag -env is required and must be one of prod, staging, or dev")
+	conf := DefaultConfig
+	_, err := config.Parse(&conf)
+	if err != nil {
+		log.Fatal(err)
+	}
+	if conf.Environment == "" || (conf.Environment != "prod" && conf.Environment != "staging" && conf.Environment != "dev") {
+		log.Fatal("flag --env is required and must be one of prod, staging, or dev")
 	}
 
 	var reg svcreg.Registry
 
 	var zoo *zk.Conn
 	var zooCh <-chan zk.Event
-	if *flagZookeeperHosts != "" {
+	if conf.ZookeeperHosts != "" {
 		var err error
-		hosts := strings.Split(*flagZookeeperHosts, ",")
+		hosts := strings.Split(conf.ZookeeperHosts, ",")
 		zoo, zooCh, err = zk.Connect(hosts, time.Second*10)
 		if err != nil {
 			log.Fatal(err)
 		}
 		defer zoo.Close()
-		reg, err = zksvcreg.NewServiceRegistry(zoo, *flagZookeeperServicesPrefix)
+		reg, err = zksvcreg.NewServiceRegistry(zoo, conf.ZookeeperServicesPrefix)
 		if err != nil {
 			log.Fatal(err)
 		}
@@ -109,7 +118,7 @@ func main() {
 	authService := &authServiceImplementation{}
 	rpc.RegisterName("Thrift", &thriftauth.AuthServer{authService})
 
-	ln, err := net.Listen("tcp", fmt.Sprintf(":%d", *flagPort))
+	ln, err := net.Listen("tcp", fmt.Sprintf(":%d", conf.Port))
 	if err != nil {
 		log.Fatal(err)
 	}
@@ -118,9 +127,9 @@ func main() {
 	if err != nil {
 		log.Fatalf("Failed to get system's address: %+v", err)
 	}
-	svcId := svcreg.ServiceId{Environment: *flagEnvironment, Name: serviceName}
+	svcId := svcreg.ServiceId{Environment: conf.Environment, Name: serviceName}
 	svcMember := svcreg.Member{
-		Endpoint:            svcreg.Endpoint{Host: addr, Port: *flagPort},
+		Endpoint:            svcreg.Endpoint{Host: addr, Port: conf.Port},
 		AdditionalEndpoints: nil,
 	}
 	svcReg, err := reg.Register(svcId, svcMember)
