@@ -1,0 +1,6 @@
+# registering a new patient
+curl -k -v -X POST --data "first_name=Test&last_name=Bradford&email=fsgggssggasfafaqwrartest123rqgf5wsr@example.com&password=12345&dob=11/08/1987&zip_code=94115&gender=male"  https://carefront-lb-api-398261241.us-east-1.elb.amazonaws.com/v1/patient
+
+# starting a new visit for patient
+curl -k -v -H "Authorization:token f35d54d7ce76c40b18ae04489f1877ef" https://carefront-lb-api-398261241.us-east-1.elb.amazonaws.com/v1/visit
+
