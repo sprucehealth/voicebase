@@ -1,6 +1,7 @@
 package apiservice
 
 import (
+	"carefront/apiservice"
 	"net/http"
 	"strconv"
 	"testing"
@@ -15,9 +16,9 @@ func TestSuccessfulPing(t *testing.T) {
 	mux.ServeHTTP(responseWriter, req)
 	statusCode := responseWriter.Headers.Get("Status")
 	responseBody := string(responseWriter.body)
-	if (responseBody != Pong) ||
+	if (responseBody != apiservice.Pong) ||
 		(statusCode != strconv.Itoa(http.StatusOK)) {
-		t.Errorf("Expected %q with status code %d, but got %q with status code %q", Pong, http.StatusOK, responseBody, statusCode)
+		t.Errorf("Expected %q with status code %d, but got %q with status code %q", apiservice.Pong, http.StatusOK, responseBody, statusCode)
 	}
 }
 
@@ -56,10 +57,10 @@ func TestMalformedAuthorizationHeader(t *testing.T) {
 
 // Private methods
 
-func setupPingHandlerInMux() *AuthServeMux {
+func setupPingHandlerInMux() *apiservice.AuthServeMux {
 	fakeAuthApi := createAndReturnFakeAuthApi()
-	pingHandler := PingHandler(0)
-	mux := &AuthServeMux{*http.NewServeMux(), fakeAuthApi}
+	pingHandler := apiservice.PingHandler(0)
+	mux := &apiservice.AuthServeMux{*http.NewServeMux(), fakeAuthApi}
 	mux.Handle("/v1/ping", pingHandler)
 
 	return mux

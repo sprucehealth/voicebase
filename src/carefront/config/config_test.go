@@ -3,7 +3,7 @@ package config
 import "testing"
 
 type TestConfig struct {
-	BaseConfig
+	*BaseConfig
 	TestArg int `long:"test_arg" description:"testing"`
 }
 
@@ -13,7 +13,7 @@ func TestBasic(t *testing.T) {
 		"--aws_region", "test-region",
 	}
 	config := &TestConfig{}
-	args2, err := ParseFlagsAndConfig(config, args)
+	args2, err := ParseArgs(config, args)
 	if err != nil {
 		t.Fatal(err)
 	}
