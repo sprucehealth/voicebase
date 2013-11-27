@@ -150,6 +150,7 @@
             ], 
             "sub_sections": [
                 {
+                    "sub_section_types" : ["s_type_photo"],
                     "data": [
                         {
                             "question": "q_face_photo_intake"
