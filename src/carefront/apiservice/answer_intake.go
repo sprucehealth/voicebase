@@ -14,7 +14,7 @@ type AnswerIntakeHandler struct {
 }
 
 type AnswerIntakeResponse struct {
-	AnswerIds []int64 `json:answer_ids"`
+	AnswerIds []int64 `json:"answer_ids"`
 }
 
 // this structure is present only if we are taking in answers to subquestions

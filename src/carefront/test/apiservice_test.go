@@ -76,7 +76,7 @@ func TestSignupFollowedByLogin(t *testing.T) {
 	checkStatusCode(http.StatusOK, responseWriter, t)
 	validateTokenResponse(responseWriter.body, t)
 
-	anotherAuthHandler := &apiservice.AuthenticationHandler{mux.AuthApi}
+	anotherAuthHandler := &apiservice.AuthenticationHandler{AuthApi: mux.AuthApi}
 	mux.Handle(LoginPath, anotherAuthHandler)
 	req, _ = http.NewRequest("POST", LoginPath, strings.NewReader("login=kjkj1&password=12345"))
 	req.Header.Set("Content-Type", ContentTypeValue)
@@ -187,8 +187,8 @@ func createAndReturnFakeAuthApi() *mockapi.MockAuth {
 
 func setupAuthHandlerInMux(path string) *apiservice.AuthServeMux {
 	fakeAuthApi := createAndReturnFakeAuthApi()
-	authHandler := &apiservice.AuthenticationHandler{fakeAuthApi}
-	mux := &apiservice.AuthServeMux{*http.NewServeMux(), fakeAuthApi}
+	authHandler := &apiservice.AuthenticationHandler{AuthApi: fakeAuthApi}
+	mux := &apiservice.AuthServeMux{ServeMux: *http.NewServeMux(), AuthApi: fakeAuthApi}
 	mux.Handle(path, authHandler)
 
 	return mux

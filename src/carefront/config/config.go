@@ -35,7 +35,7 @@ type BaseConfig struct {
 	ConfigPath              string `short:"c" long:"config" description:"Path to config file. If not set then stderr is used."`
 	Environment             string `short:"e" long:"env" description:"Current environment (dev, stage, prod)"`
 	LogPath                 string `long:"log_path" description:"Path to log file"`
-	ZookeeperHosts          string `long:"zk_hosts" description:"Zookeeper host list (e.g. 127.0.0.1:2181,192.168.1.1:2181)`
+	ZookeeperHosts          string `long:"zk_hosts" description:"Zookeeper host list (e.g. 127.0.0.1:2181,192.168.1.1:2181)"`
 	ZookeeperServicesPrefix string `long:"zk_svc_prefix" description:"Zookeeper svc registry prefix" default:"/services"`
 
 	awsAuth     aws.Auth

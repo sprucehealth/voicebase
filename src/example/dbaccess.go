@@ -21,7 +21,7 @@ func main() {
 	}
 	defer db.Close()
 
-	dataApi := &api.DataService{db}
+	dataApi := &api.DataService{DB: db}
 	patientVisit, err := dataApi.GetPatientVisitFromId(85)
 	if err != nil {
 		panic(err)

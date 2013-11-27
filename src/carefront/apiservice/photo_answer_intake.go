@@ -21,7 +21,7 @@ type PhotoAnswerIntakeHandler struct {
 }
 
 type PhotoAnswerIntakeResponse struct {
-	AnswerId int64 `json:answer_id`
+	AnswerId int64 `json:"answer_id"`
 }
 
 type PhotoAnswerIntakeRequestData struct {

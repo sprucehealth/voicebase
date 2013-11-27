@@ -62,7 +62,7 @@ func main() {
 
 	authService := &authServiceImplementation{}
 	serv := rpc.NewServer()
-	if err := serv.RegisterName("Thrift", &thriftauth.AuthServer{authService}); err != nil {
+	if err := serv.RegisterName("Thrift", &thriftauth.AuthServer{Implementation: authService}); err != nil {
 		log.Fatal(err)
 	}
 

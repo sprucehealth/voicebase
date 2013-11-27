@@ -60,7 +60,7 @@ func TestMalformedAuthorizationHeader(t *testing.T) {
 func setupPingHandlerInMux() *apiservice.AuthServeMux {
 	fakeAuthApi := createAndReturnFakeAuthApi()
 	pingHandler := apiservice.PingHandler(0)
-	mux := &apiservice.AuthServeMux{*http.NewServeMux(), fakeAuthApi}
+	mux := &apiservice.AuthServeMux{ServeMux: *http.NewServeMux(), AuthApi: fakeAuthApi}
 	mux.Handle("/v1/ping", pingHandler)
 
 	return mux

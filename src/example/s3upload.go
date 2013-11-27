@@ -20,5 +20,5 @@ func main() {
 		panic(err.Error())
 	}
 
-	fmt.Println("%q", listBucketResult.Contents)
+	fmt.Printf("%q", listBucketResult.Contents)
 }

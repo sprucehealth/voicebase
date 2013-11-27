@@ -1,0 +1,16 @@
+language: go
+go:
+  - 1.1
+  - 1.1.1
+  - tip
+
+branches:
+  only:
+    - master
+
+script:
+  - go build ./src/carefront/...
+  - go fmt ./src/carefront/...
+  - go vet ./src/carefront/...
+  - go test -i -race ./src/carefront/...
+  - go test -v -race ./src/carefront/...

@@ -81,12 +81,12 @@ func main() {
 		log.Fatalf("Failed to get AWS auth: %+v", err)
 	}
 
-	authApi := &api.AuthService{db}
-	dataApi := &api.DataService{db}
+	authApi := &api.AuthService{DB: db}
+	dataApi := &api.DataService{DB: db}
 	cloudStorageApi := api.NewCloudStorageService(awsAuth)
 	photoAnswerCloudStorageApi := api.NewCloudStorageService(awsAuth)
-	authHandler := &apiservice.AuthenticationHandler{authApi}
-	signupPatientHandler := &apiservice.SignupPatientHandler{dataApi, authApi}
+	authHandler := &apiservice.AuthenticationHandler{AuthApi: authApi}
+	signupPatientHandler := &apiservice.SignupPatientHandler{DataApi: dataApi, AuthApi: authApi}
 	patientVisitHandler := apiservice.NewPatientVisitHandler(dataApi, authApi, cloudStorageApi, photoAnswerCloudStorageApi)
 	answerIntakeHandler := apiservice.NewAnswerIntakeHandler(dataApi)
 	photoAnswerIntakeHandler := apiservice.NewPhotoAnswerIntakeHandler(dataApi, photoAnswerCloudStorageApi, conf.CaseBucket, conf.AWSRegion, conf.MaxInMemoryForPhotoMB*1024*1024)
@@ -112,7 +112,7 @@ func main() {
 		PatientPhotoStorageService: photoAnswerCloudStorageApi,
 	}
 
-	mux := &apiservice.AuthServeMux{*http.NewServeMux(), authApi}
+	mux := &apiservice.AuthServeMux{ServeMux: *http.NewServeMux(), AuthApi: authApi}
 
 	mux.Handle("/v1/patient", signupPatientHandler)
 	mux.Handle("/v1/visit", patientVisitHandler)

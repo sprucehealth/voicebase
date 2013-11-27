@@ -98,7 +98,7 @@ func (l *GenerateClientIntakeModelHandler) ServeHTTP(w http.ResponseWriter, r *h
 
 	// generate a client layout for each language
 	clientIntakeModels := make(map[int64]*info_intake.HealthCondition)
-	clientModelProcessor := &info_intake.HealthConditionIntakeModelProcessor{l.DataApi}
+	clientModelProcessor := &info_intake.HealthConditionIntakeModelProcessor{DataApi: l.DataApi}
 	clientModelVersionIds := make([]int64, len(supportedLanguageIds))
 	clientModelUrls := make([]string, len(supportedLanguageIds))
 
