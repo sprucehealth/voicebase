@@ -1,33 +1,26 @@
 package main
 
 import (
-	"fmt"
 	"log"
 	"net"
 	"net/rpc"
 	"os"
 	"os/signal"
-	"strings"
 	"time"
 
 	"carefront/config"
 	"carefront/libs/svcreg"
-	"carefront/libs/svcreg/zksvcreg"
 	"carefront/thriftauth"
 	"github.com/samuel/go-thrift/thrift"
-	"github.com/samuel/go-zookeeper/zk"
 )
 
 type Config struct {
 	*config.BaseConfig
-	Port                    int    `long:"port" description:"Port to bind to"`
-	ZookeeperHosts          string `long:"zk_hosts" description:"Zookeeper host list (e.g. 127.0.0.1:2181,192.168.1.1:2181)`
-	ZookeeperServicesPrefix string `long:"zk_svc_prefix" description:"Zookeeper svc registry prefix"`
+	ListenAddr string `long:"listen" description:"Address:port to listen on"`
 }
 
 var DefaultConfig = Config{
-	Port: 10001,
-	ZookeeperServicesPrefix: "/services",
+	ListenAddr: ":10001",
 }
 
 const (
@@ -57,32 +50,6 @@ func (srv *authServiceImplementation) ValidateToken(token string) (*thriftauth.T
 	return nil, nil
 }
 
-// type Server struct {
-// 	reg svcreg.Registry
-// }
-
-// func (s *Server) Init() {
-// 	var zoo *zk.Conn
-// 	var zooCh <-chan zk.Event
-// 	if *flagZookeeperHosts != "" {
-// 		var err error
-// 		hosts := strings.Split(*flagZookeeperHosts, ",")
-// 		zoo, zooCh, err = zk.Connect(hosts, time.Second*10)
-// 		if err != nil {
-// 			log.Fatal(err)
-// 		}
-// 		defer zoo.Close()
-// 		reg, err = zksvcreg.NewServiceRegistry(zoo, *flagZookeeperServicesPrefix)
-// 		if err != nil {
-// 			log.Fatal(err)
-// 		}
-// 		defer reg.Close()
-// 	} else {
-// 		reg = &svcreg.StaticRegistry{}
-// 	}
-// 	_ = zooCh
-// }
-
 func main() {
 	conf := DefaultConfig
 	_, err := config.Parse(&conf)
@@ -93,74 +60,27 @@ func main() {
 		log.Fatal("flag --env is required and must be one of prod, staging, or dev")
 	}
 
-	var reg svcreg.Registry
-
-	var zoo *zk.Conn
-	var zooCh <-chan zk.Event
-	if conf.ZookeeperHosts != "" {
-		var err error
-		hosts := strings.Split(conf.ZookeeperHosts, ",")
-		zoo, zooCh, err = zk.Connect(hosts, time.Second*10)
-		if err != nil {
-			log.Fatal(err)
-		}
-		defer zoo.Close()
-		reg, err = zksvcreg.NewServiceRegistry(zoo, conf.ZookeeperServicesPrefix)
-		if err != nil {
-			log.Fatal(err)
-		}
-		defer reg.Close()
-	} else {
-		reg = &svcreg.StaticRegistry{}
-	}
-	_ = zooCh
-
 	authService := &authServiceImplementation{}
-	rpc.RegisterName("Thrift", &thriftauth.AuthServer{authService})
-
-	ln, err := net.Listen("tcp", fmt.Sprintf(":%d", conf.Port))
-	if err != nil {
+	serv := rpc.NewServer()
+	if err := serv.RegisterName("Thrift", &thriftauth.AuthServer{authService}); err != nil {
 		log.Fatal(err)
 	}
 
-	addr, err := svcreg.Addr()
-	if err != nil {
-		log.Fatalf("Failed to get system's address: %+v", err)
+	service := &config.Server{
+		Config:     conf.BaseConfig,
+		ListenAddr: conf.ListenAddr,
+		ServiceID:  svcreg.ServiceId{Environment: conf.Environment, Name: serviceName},
+		ServFunc: func(conn net.Conn) {
+			serv.ServeCodec(thrift.NewServerCodec(thrift.NewFramedReadWriteCloser(conn, 0), thrift.NewBinaryProtocol(true, false)))
+		},
 	}
-	svcId := svcreg.ServiceId{Environment: conf.Environment, Name: serviceName}
-	svcMember := svcreg.Member{
-		Endpoint:            svcreg.Endpoint{Host: addr, Port: conf.Port},
-		AdditionalEndpoints: nil,
+	if err := service.Start(); err != nil {
+		log.Fatal(err)
 	}
-	svcReg, err := reg.Register(svcId, svcMember)
-	if err != nil {
-		log.Fatalf("Failed to register services: %+v", err)
-	}
-	defer svcReg.Unregister()
-
-	stopChan := make(chan bool)
-
-	go func() {
-		for {
-			select {
-			case <-stopChan:
-				ln.Close()
-				return
-			default:
-			}
-
-			conn, err := ln.Accept()
-			if err != nil {
-				log.Printf("Accept failed: %+v\n", err)
-				continue
-			}
-			go rpc.ServeCodec(thrift.NewServerCodec(thrift.NewFramedReadWriteCloser(conn, 0), thrift.NewBinaryProtocol(true, false)))
-		}
-	}()
 
 	signalChan := make(chan os.Signal, 1)
 	signal.Notify(signalChan, os.Interrupt, os.Kill)
 	_ = <-signalChan
-	close(stopChan)
-	time.Sleep(time.Second * 1)
+	service.Stop(time.Second * 5)
+	time.Sleep(time.Millisecond * 200)
 }

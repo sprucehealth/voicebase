@@ -13,30 +13,42 @@ import (
 	"os"
 	"reflect"
 	"strings"
+	"sync"
+	"time"
 
 	"carefront/libs/aws"
+	"carefront/libs/svcreg"
+	"carefront/libs/svcreg/zksvcreg"
 	"carefront/util"
 	"github.com/BurntSushi/toml"
 	flags "github.com/jessevdk/go-flags"
+	"github.com/samuel/go-zookeeper/zk"
 	goamz "launchpad.net/goamz/aws"
 	"launchpad.net/goamz/s3"
 )
 
 type BaseConfig struct {
-	AWSRegion    string `long:"aws_region" description:"AWS region"`
-	AWSRole      string `long:"aws_role" description:"AWS role for fetching temporary credentials"`
-	AWSSecretKey string `long:"aws_secret_key" description:"AWS secret key"`
-	AWSAccessKey string `long:"aws_access_key" description:"AWS access key id"`
-	ConfigPath   string `short:"c" long:"config" description:"Path to config file. If not set then stderr is used."`
-	Environment  string `short:"e" long:"environment" description:"Current environment (dev, stage, prod)"`
-	LogPath      string `long:"log_path" description:"Path to log file"`
+	AWSRegion               string `long:"aws_region" description:"AWS region"`
+	AWSRole                 string `long:"aws_role" description:"AWS role for fetching temporary credentials"`
+	AWSSecretKey            string `long:"aws_secret_key" description:"AWS secret key"`
+	AWSAccessKey            string `long:"aws_access_key" description:"AWS access key id"`
+	ConfigPath              string `short:"c" long:"config" description:"Path to config file. If not set then stderr is used."`
+	Environment             string `short:"e" long:"env" description:"Current environment (dev, stage, prod)"`
+	LogPath                 string `long:"log_path" description:"Path to log file"`
+	ZookeeperHosts          string `long:"zk_hosts" description:"Zookeeper host list (e.g. 127.0.0.1:2181,192.168.1.1:2181)`
+	ZookeeperServicesPrefix string `long:"zk_svc_prefix" description:"Zookeeper svc registry prefix" default:"/services"`
 
-	awsAuth aws.Auth
+	awsAuth     aws.Auth
+	awsAuthOnce sync.Once
+	zkConn      *zk.Conn
+	zkChan      <-chan zk.Event
+	zkOnce      sync.Once
+	reg         svcreg.Registry
+	regOnce     sync.Once
 }
 
-func (c *BaseConfig) AWSAuth() (aws.Auth, error) {
-	var err error
-	if c.awsAuth == nil {
+func (c *BaseConfig) AWSAuth() (auth aws.Auth, err error) {
+	c.awsAuthOnce.Do(func() {
 		if c.AWSRole != "" {
 			c.awsAuth, err = aws.CredentialsForRole(c.AWSRole)
 		} else {
@@ -50,11 +62,37 @@ func (c *BaseConfig) AWSAuth() (aws.Auth, error) {
 			}
 			c.awsAuth = keys
 		}
-	}
-	if err != nil {
-		c.awsAuth = nil
-	}
-	return c.awsAuth, err
+	})
+	auth = c.awsAuth
+	return
+}
+
+func (c *BaseConfig) ZKClient() (conn *zk.Conn, err error) {
+	c.zkOnce.Do(func() {
+		if c.ZookeeperHosts != "" {
+			hosts := strings.Split(c.ZookeeperHosts, ",")
+			c.zkConn, c.zkChan, err = zk.Connect(hosts, time.Second*10)
+		}
+	})
+	conn = c.zkConn
+	return
+}
+
+func (c *BaseConfig) ServiceRegistry() (reg svcreg.Registry, err error) {
+	c.regOnce.Do(func() {
+		zk, e := c.ZKClient()
+		if e != nil {
+			err = e
+			return
+		}
+		if zk == nil {
+			c.reg = &svcreg.StaticRegistry{}
+		} else {
+			c.reg, err = zksvcreg.NewServiceRegistry(zk, c.ZookeeperServicesPrefix)
+		}
+	})
+	reg = c.reg
+	return
 }
 
 func LoadConfigFile(configUrl string, config interface{}, awsAuther func() (aws.Auth, error)) error {
