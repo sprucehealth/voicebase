@@ -15,12 +15,12 @@ install:
   - echo "trying to avoid travis ci from attempting to get all packages from the internet" 
 
 env:
-  - RDS_INSTANCE="dev-db-3.ccvrwjdx3gvp.us-east-1.rds.amazonaws.com" RDS_USERNAME="carefront" RDS_PASSWORD="changethis"
+  - RDS_INSTANCE="dev-db-3.ccvrwjdx3gvp.us-east-1.rds.amazonaws.com" RDS_USERNAME="carefront" RDS_PASSWORD="changethis" TEST_DB=database_$TRAVIS_BUILD_ID
 
 before_script:
   - pushd src/carefront/mysql/
   - latestSnapshotNumber=`ls -r snapshot-*.sql | cut -d- -f 2  | cut -d. -f1 | sort -nr | head -1`
-  - echo "create database database_$TRAVIS_BUILD_ID; use database_$TRAVIS_BUILD_ID;"  | cat - snapshot-$latestSnapshotNumber.sql > current.sql
+  - echo "create database $TEST_DB; use $TEST_DB;"  | cat - snapshot-$latestSnapshotNumber.sql > current.sql
   - chmod u+x make_latest_snapshot_current.sh
   - ./make_latest_snapshot_current.sh
   - mysql -h $RDS_INSTANCE -u $RDS_USERNAME -p$RDS_PASSWORD < current.sql
@@ -36,5 +36,5 @@ script:
   - go test -v -race ./src/carefront/...
 
 after_script:
-  - echo "drop database database_$TRAVIS_BUILD_ID;" > drop_database.sql
+  - echo "drop database $TEST_DB;" > drop_database.sql
   - mysql -h $RDS_INSTANCE -u $RDS_USERNAME -p$RDS_PASSWORD < drop_database.sql
