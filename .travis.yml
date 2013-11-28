@@ -18,8 +18,11 @@ services:
   - mysql
 
 before_script:
-  - mysql -e 'create database carefront_test;'
-  - mysql < $(pwd)/src/carefront/mysql/snapshot-0.sql
+  - pushd src/carefront/mysql/
+  - chmod u+x make_latest_snapshot_current.sh
+  - ./make_latest_snapshot_current.sh
+  - mysql < current.sql
+  - popd 
 
 script:
   - export GOPATH=$(pwd)
