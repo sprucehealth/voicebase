@@ -17,10 +17,7 @@ install:
   - echo "trying to avoid travis ci from attempting to get all packages from the internet" 
 
 script:
-  - export XXYY=$(pwd)
-  - echo $XXYY
-  - pwd
-  - export GOPATH=$HOME/gopath/src/github.com/CareFront/backend
+  - export GOPATH=$(pwd)
   - go build ./src/carefront/...
   - go fmt ./src/carefront/...
   - go vet ./src/carefront/...
