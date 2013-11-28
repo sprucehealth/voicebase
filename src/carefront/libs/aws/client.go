@@ -13,6 +13,9 @@ type Client struct {
 }
 
 func (c *Client) Do(req *http.Request) (*http.Response, error) {
+	if c.HttpClient == nil {
+		c.HttpClient = http.DefaultClient
+	}
 	Sign(c.Auth.Keys(), req)
 	return c.HttpClient.Do(req)
 }
