@@ -5,6 +5,7 @@ import (
 	"carefront/api"
 	"carefront/apiservice"
 	"database/sql"
+	"encoding/json"
 	"fmt"
 	"github.com/BurntSushi/toml"
 	_ "github.com/go-sql-driver/mysql"
@@ -25,7 +26,7 @@ type TestConf struct {
 	DB TestDBConfig `group:"Database" toml:"database"`
 }
 
-func TestPatientRegistration(t *testing.T) {
+func getDBConfig(t *testing.T) *TestDBConfig {
 	dbConfig := TestConf{}
 	fileContents, err := ioutil.ReadFile("../server/dev.conf")
 	if err != nil {
@@ -35,9 +36,12 @@ func TestPatientRegistration(t *testing.T) {
 	if err != nil {
 		t.Fatal("Error decoding toml data :" + err.Error())
 	}
+	return &dbConfig.DB
+}
 
+func connectToDB(t *testing.T, dbConfig *TestDBConfig) *sql.DB {
 	databaseName := os.Getenv("TEST_DB")
-	dsn := fmt.Sprintf("%s:%s@tcp(%s:3306)/%s?parseTime=true", dbConfig.DB.User, dbConfig.DB.Password, dbConfig.DB.Host, databaseName)
+	dsn := fmt.Sprintf("%s:%s@tcp(%s:3306)/%s?parseTime=true", dbConfig.User, dbConfig.Password, dbConfig.Host, databaseName)
 	db, err := sql.Open("mysql", dsn)
 	if err != nil {
 		t.Fatal("Unable to connect to the database" + err.Error())
@@ -48,14 +52,15 @@ func TestPatientRegistration(t *testing.T) {
 	if err != nil {
 		t.Fatal("Unable to ping database " + err.Error())
 	}
+	return db
+}
 
-	authApi := &api.AuthService{DB: db}
-	dataApi := &api.DataService{DB: db}
+func signupRandomTestPatient(t *testing.T, dataApi api.DataAPI, authApi api.Auth) *apiservice.PatientSignedupResponse {
 	authHandler := &apiservice.SignupPatientHandler{AuthApi: authApi, DataApi: dataApi}
 	ts := httptest.NewServer(authHandler)
 	defer ts.Close()
 
-	requestBody := bytes.NewBufferString("first_name=Test&last_name=Test&email=testxxxyyyy@example.com&password=12345&dob=11/08/1987&zip_code=94115&gender=male")
+	requestBody := bytes.NewBufferString("first_name=Test&last_name=Test&email=testxxxyvavayyy@example.com&password=12345&dob=11/08/1987&zip_code=94115&gender=male")
 	res, err := http.Post(ts.URL, "application/x-www-form-urlencoded", requestBody)
 	if err != nil {
 		t.Fatal("Unable to make post request for registering patient: " + err.Error())
@@ -64,5 +69,23 @@ func TestPatientRegistration(t *testing.T) {
 	if err != nil {
 		t.Fatal("Unable to read body of response: " + err.Error())
 	}
-	fmt.Println(string(body))
+	signedupPatientResponse := &apiservice.PatientSignedupResponse{}
+	err = json.Unmarshal(body, signedupPatientResponse)
+	if err != nil {
+		t.Fatal("Unable to parse response from patient signed up")
+	}
+	return signedupPatientResponse
+}
+
+func TestPatientRegistration(t *testing.T) {
+	dbConfig := getDBConfig(t)
+	db := connectToDB(t, dbConfig)
+
+	authApi := &api.AuthService{DB: db}
+	dataApi := &api.DataService{DB: db}
+	signedupPatientResponse := signupRandomTestPatient(t, dataApi, authApi)
+	_, err := json.Marshal(signedupPatientResponse)
+	if err != nil {
+		t.Fatal("Unable to marshal response for signing up patient" + err.Error())
+	}
 }

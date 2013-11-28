@@ -21,8 +21,6 @@ before_script:
   - pushd src/carefront/mysql/
   - latestSnapshotNumber=`ls -r snapshot-*.sql | cut -d- -f 2  | cut -d. -f1 | sort -nr | head -1`
   - echo "create database $TEST_DB; use $TEST_DB;"  | cat - snapshot-$latestSnapshotNumber.sql > current.sql
-  - chmod u+x make_latest_snapshot_current.sh
-  - ./make_latest_snapshot_current.sh
   - mysql -h $RDS_INSTANCE -u $RDS_USERNAME -p$RDS_PASSWORD < current.sql
   - popd 
 
