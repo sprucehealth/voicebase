@@ -14,6 +14,13 @@ source_key: "LS0tLS1CRUdJTiBSU0EgUFJJVkFURSBLRVktLS0tLQpNSUlFcFFJQkFBS0NBUUVBcFV
 install: 
   - echo "trying to avoid travis ci from attempting to get all packages from the internet" 
 
+services:
+  - mysql
+
+before_script:
+  - mysql -e 'create database carefront_test;'
+  - mysql < $(pwd)/src/carefront/mysql/snapshot-0.sql
+
 script:
   - export GOPATH=$(pwd)
   - go build ./src/carefront/...
