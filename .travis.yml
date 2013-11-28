@@ -24,7 +24,7 @@ before_script:
   - pushd src/carefront/mysql/
   - chmod u+x make_latest_snapshot_current.sh
   - ./make_latest_snapshot_current.sh
-  - mysql -h $RDS_INSTANCE -u $RDS_USERNAME -P$RDS_PASSWORD < current.sql
+  - mysql -h $RDS_INSTANCE -u $RDS_USERNAME -p$RDS_PASSWORD < current.sql
   - popd 
 
 script:
