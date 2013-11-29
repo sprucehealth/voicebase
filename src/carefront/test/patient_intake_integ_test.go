@@ -13,7 +13,9 @@ import (
 	"net/http"
 	"net/http/httptest"
 	"os"
+	"strconv"
 	"testing"
+	"time"
 )
 
 type TestDBConfig struct {
@@ -46,7 +48,6 @@ func connectToDB(t *testing.T, dbConfig *TestDBConfig) *sql.DB {
 	if err != nil {
 		t.Fatal("Unable to connect to the database" + err.Error())
 	}
-	defer db.Close()
 
 	err = db.Ping()
 	if err != nil {
@@ -60,7 +61,9 @@ func signupRandomTestPatient(t *testing.T, dataApi api.DataAPI, authApi api.Auth
 	ts := httptest.NewServer(authHandler)
 	defer ts.Close()
 
-	requestBody := bytes.NewBufferString("first_name=Test&last_name=Test&email=testxxxyvavayyy@example.com&password=12345&dob=11/08/1987&zip_code=94115&gender=male")
+	requestBody := bytes.NewBufferString("first_name=Test&last_name=Test&email=")
+	requestBody.WriteString(strconv.FormatInt(time.Now().Unix(), 10))
+	requestBody.WriteString("@example.com&password=12345&dob=11/08/1987&zip_code=94115&gender=male")
 	res, err := http.Post(ts.URL, "application/x-www-form-urlencoded", requestBody)
 	if err != nil {
 		t.Fatal("Unable to make post request for registering patient: " + err.Error())
@@ -80,12 +83,9 @@ func signupRandomTestPatient(t *testing.T, dataApi api.DataAPI, authApi api.Auth
 func TestPatientRegistration(t *testing.T) {
 	dbConfig := getDBConfig(t)
 	db := connectToDB(t, dbConfig)
+	defer db.Close()
 
 	authApi := &api.AuthService{DB: db}
 	dataApi := &api.DataService{DB: db}
 	signedupPatientResponse := signupRandomTestPatient(t, dataApi, authApi)
-	_, err := json.Marshal(signedupPatientResponse)
-	if err != nil {
-		t.Fatal("Unable to marshal response for signing up patient" + err.Error())
-	}
 }
