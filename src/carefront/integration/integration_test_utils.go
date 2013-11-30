@@ -1,4 +1,4 @@
-package test
+package integration
 
 import (
 	"bytes"
@@ -6,6 +6,7 @@ import (
 	"carefront/apiservice"
 	"database/sql"
 	"encoding/json"
+	"errors"
 	"fmt"
 	"github.com/BurntSushi/toml"
 	_ "github.com/go-sql-driver/mysql"
@@ -18,17 +19,11 @@ import (
 	"time"
 )
 
-type TestDBConfig struct {
-	User     string
-	Password string
-	Host     string
-}
+var (
+	CannotRunTestLocally = errors.New("test: The test database is not set. Skipping test")
+)
 
-type TestConf struct {
-	DB TestDBConfig `group:"Database" toml:"database"`
-}
-
-func getDBConfig(t *testing.T) *TestDBConfig {
+func GetDBConfig(t *testing.T) *TestDBConfig {
 	dbConfig := TestConf{}
 	fileContents, err := ioutil.ReadFile("../server/dev.conf")
 	if err != nil {
@@ -41,7 +36,7 @@ func getDBConfig(t *testing.T) *TestDBConfig {
 	return &dbConfig.DB
 }
 
-func connectToDB(t *testing.T, dbConfig *TestDBConfig) *sql.DB {
+func ConnectToDB(t *testing.T, dbConfig *TestDBConfig) *sql.DB {
 	databaseName := os.Getenv("TEST_DB")
 	dsn := fmt.Sprintf("%s:%s@tcp(%s:3306)/%s?parseTime=true", dbConfig.User, dbConfig.Password, dbConfig.Host, databaseName)
 	db, err := sql.Open("mysql", dsn)
@@ -56,7 +51,18 @@ func connectToDB(t *testing.T, dbConfig *TestDBConfig) *sql.DB {
 	return db
 }
 
-func signupRandomTestPatient(t *testing.T, dataApi api.DataAPI, authApi api.Auth) *apiservice.PatientSignedupResponse {
+func CheckIfRunningLocally(t *testing.T) error {
+	// if the TEST_DB is not set in the environment, we assume
+	// that we are running these tests locally, in which case
+	// we exit the tests with a warning
+	if os.Getenv("TEST_DB") == "" {
+		t.Log("WARNING: The test database is not set. Skipping test ")
+		return CannotRunTestLocally
+	}
+	return nil
+}
+
+func SignupRandomTestPatient(t *testing.T, dataApi api.DataAPI, authApi api.Auth) *apiservice.PatientSignedupResponse {
 	authHandler := &apiservice.SignupPatientHandler{AuthApi: authApi, DataApi: dataApi}
 	ts := httptest.NewServer(authHandler)
 	defer ts.Close()
@@ -68,9 +74,13 @@ func signupRandomTestPatient(t *testing.T, dataApi api.DataAPI, authApi api.Auth
 	if err != nil {
 		t.Fatal("Unable to make post request for registering patient: " + err.Error())
 	}
+
 	body, err := ioutil.ReadAll(res.Body)
 	if err != nil {
 		t.Fatal("Unable to read body of response: " + err.Error())
+	}
+	if res.StatusCode != http.StatusOK {
+		t.Fatalf("Unable to make success request to signup patient. Here's the code returned %d and here's the body of the request %s", res.StatusCode, body)
 	}
 	signedupPatientResponse := &apiservice.PatientSignedupResponse{}
 	err = json.Unmarshal(body, signedupPatientResponse)
@@ -78,14 +88,4 @@ func signupRandomTestPatient(t *testing.T, dataApi api.DataAPI, authApi api.Auth
 		t.Fatal("Unable to parse response from patient signed up")
 	}
 	return signedupPatientResponse
-}
-
-func TestPatientRegistration(t *testing.T) {
-	dbConfig := getDBConfig(t)
-	db := connectToDB(t, dbConfig)
-	defer db.Close()
-
-	authApi := &api.AuthService{DB: db}
-	dataApi := &api.DataService{DB: db}
-	signedupPatientResponse := signupRandomTestPatient(t, dataApi, authApi)
 }
