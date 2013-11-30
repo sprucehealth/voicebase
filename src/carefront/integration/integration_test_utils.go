@@ -4,6 +4,7 @@ import (
 	"bytes"
 	"carefront/api"
 	"carefront/apiservice"
+	"carefront/config"
 	"database/sql"
 	"encoding/json"
 	"errors"
@@ -22,6 +23,24 @@ import (
 var (
 	CannotRunTestLocally = errors.New("test: The test database is not set. Skipping test")
 )
+
+type TestDBConfig struct {
+	User     string
+	Password string
+	Host     string
+}
+
+type TestConf struct {
+	DB TestDBConfig `group:"Database" toml:"database"`
+}
+
+type TestData struct {
+	DataApi             api.DataAPI
+	AuthApi             api.Auth
+	DBConfig            *TestDBConfig
+	CloudStorageService api.CloudStorageAPI
+	DB                  *sql.DB
+}
 
 func GetDBConfig(t *testing.T) *TestDBConfig {
 	dbConfig := TestConf{}
@@ -60,6 +79,30 @@ func CheckIfRunningLocally(t *testing.T) error {
 		return CannotRunTestLocally
 	}
 	return nil
+}
+
+func SetupIntegrationTest(t *testing.T) TestData {
+	dbConfig := GetDBConfig(t)
+	db := ConnectToDB(t, dbConfig)
+
+	conf := config.BaseConfig{}
+	awsAuth, err := conf.AWSAuth()
+	if err != nil {
+		t.Fatal("Error trying to get auth setup: " + err.Error())
+	}
+	cloudStorageService := api.NewCloudStorageService(awsAuth)
+
+	authApi := &api.AuthService{DB: db}
+	dataApi := &api.DataService{DB: db}
+
+	testData := TestData{DataApi: dataApi,
+		AuthApi:             authApi,
+		DBConfig:            dbConfig,
+		CloudStorageService: cloudStorageService,
+		DB:                  db,
+	}
+
+	return testData
 }
 
 func CheckSuccessfulStatusCode(resp *http.Response, errorMessage string, t *testing.T) {

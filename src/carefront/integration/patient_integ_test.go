@@ -1,9 +1,7 @@
 package integration
 
 import (
-	"carefront/api"
 	"carefront/apiservice"
-	"carefront/config"
 	"encoding/json"
 	"fmt"
 	_ "github.com/go-sql-driver/mysql"
@@ -13,47 +11,23 @@ import (
 	"testing"
 )
 
-type TestDBConfig struct {
-	User     string
-	Password string
-	Host     string
-}
-
-type TestConf struct {
-	DB TestDBConfig `group:"Database" toml:"database"`
-}
-
 func TestPatientRegistration(t *testing.T) {
 	CheckIfRunningLocally(t)
-	dbConfig := GetDBConfig(t)
-	db := ConnectToDB(t, dbConfig)
-	defer db.Close()
-
-	authApi := &api.AuthService{DB: db}
-	dataApi := &api.DataService{DB: db}
-	SignupRandomTestPatient(t, dataApi, authApi)
+	testData := SetupIntegrationTest(t)
+	defer testData.DB.Close()
+	SignupRandomTestPatient(t, testData.DataApi, testData.AuthApi)
 }
 
 func TestPatientVisitCreation(t *testing.T) {
 	if err := CheckIfRunningLocally(t); err == CannotRunTestLocally {
 		return
 	}
-	dbConfig := GetDBConfig(t)
-	db := ConnectToDB(t, dbConfig)
-	defer db.Close()
+	testData := SetupIntegrationTest(t)
+	defer testData.DB.Close()
 
-	authApi := &api.AuthService{DB: db}
-	dataApi := &api.DataService{DB: db}
-
-	conf := config.BaseConfig{}
-	awsAuth, err := conf.AWSAuth()
-	if err != nil {
-		t.Fatal("Error trying to get auth setup: " + err.Error())
-	}
-	cloudStorageService := api.NewCloudStorageService(awsAuth)
-
-	signedupPatientResponse := SignupRandomTestPatient(t, dataApi, authApi)
-	patientVisitHandler := apiservice.NewPatientVisitHandler(dataApi, authApi, cloudStorageService, cloudStorageService)
+	signedupPatientResponse := SignupRandomTestPatient(t, testData.DataApi, testData.AuthApi)
+	patientVisitHandler := apiservice.NewPatientVisitHandler(testData.DataApi, testData.AuthApi,
+		testData.CloudStorageService, testData.CloudStorageService)
 	patientVisitHandler.AccountIdFromAuthToken(signedupPatientResponse.PatientId)
 	ts := httptest.NewServer(patientVisitHandler)
 	defer ts.Close()
