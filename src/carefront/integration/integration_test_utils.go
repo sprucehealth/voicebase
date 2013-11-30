@@ -62,6 +62,12 @@ func CheckIfRunningLocally(t *testing.T) error {
 	return nil
 }
 
+func CheckSuccessfulStatusCode(resp *http.Response, errorMessage string, t *testing.T) {
+	if resp.StatusCode != http.StatusOK {
+		t.Fatal(errorMessage)
+	}
+}
+
 func SignupRandomTestPatient(t *testing.T, dataApi api.DataAPI, authApi api.Auth) *apiservice.PatientSignedupResponse {
 	authHandler := &apiservice.SignupPatientHandler{AuthApi: authApi, DataApi: dataApi}
 	ts := httptest.NewServer(authHandler)
@@ -79,9 +85,8 @@ func SignupRandomTestPatient(t *testing.T, dataApi api.DataAPI, authApi api.Auth
 	if err != nil {
 		t.Fatal("Unable to read body of response: " + err.Error())
 	}
-	if res.StatusCode != http.StatusOK {
-		t.Fatalf("Unable to make success request to signup patient. Here's the code returned %d and here's the body of the request %s", res.StatusCode, body)
-	}
+	CheckSuccessfulStatusCode(res, fmt.Sprintf("Unable to make success request to signup patient. Here's the code returned %d and here's the body of the request %s", res.StatusCode, body), t)
+
 	signedupPatientResponse := &apiservice.PatientSignedupResponse{}
 	err = json.Unmarshal(body, signedupPatientResponse)
 	if err != nil {

@@ -5,6 +5,7 @@ import (
 	"carefront/apiservice"
 	"carefront/config"
 	"encoding/json"
+	"fmt"
 	_ "github.com/go-sql-driver/mysql"
 	"io/ioutil"
 	"net/http"
@@ -64,10 +65,10 @@ func TestPatientVisitCreation(t *testing.T) {
 	if err != nil {
 		t.Fatal("Error making request to create patient visit")
 	}
+
 	body, err := ioutil.ReadAll(resp.Body)
-	if resp.StatusCode != http.StatusOK {
-		t.Fatalf("Unable to make success request to signup patient. Here's the code returned %d and here's the body of the request %s", resp.StatusCode, body)
-	}
+
+	CheckSuccessfulStatusCode(resp, fmt.Sprintf("Unable to make success request to signup patient. Here's the code returned %d and here's the body of the request %s", resp.StatusCode, body), t)
 
 	patientVisitResponse := &apiservice.PatientVisitResponse{}
 	err = json.Unmarshal(body, patientVisitResponse)
@@ -92,10 +93,7 @@ func TestPatientVisitCreation(t *testing.T) {
 	if err != nil {
 		t.Fatal("Error making subsequent patient visit request : " + err.Error())
 	}
-
-	if resp.StatusCode != http.StatusOK {
-		t.Fatal("Unable to make successful subsequent patient visit request")
-	}
+	CheckSuccessfulStatusCode(resp, "Unable to make successful subsequent patient visit request", t)
 
 	body, err = ioutil.ReadAll(resp.Body)
 	if err != nil {
