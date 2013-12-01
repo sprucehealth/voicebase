@@ -137,3 +137,33 @@ func SignupRandomTestPatient(t *testing.T, dataApi api.DataAPI, authApi api.Auth
 	}
 	return signedupPatientResponse
 }
+
+func GetPatientVisitForPatient(PatientId int64, testData TestData, t *testing.T) *apiservice.PatientVisitResponse {
+	patientVisitHandler := apiservice.NewPatientVisitHandler(testData.DataApi, testData.AuthApi,
+		testData.CloudStorageService, testData.CloudStorageService)
+	patientVisitHandler.AccountIdFromAuthToken(PatientId)
+	ts := httptest.NewServer(patientVisitHandler)
+	defer ts.Close()
+
+	// register a patient visit for this patient
+	client := &http.Client{}
+	req, _ := http.NewRequest("GET", ts.URL, nil)
+	resp, err := client.Do(req)
+	if err != nil {
+		t.Fatal("Unable to get the patient visit id")
+	}
+	CheckSuccessfulStatusCode(resp, "Unsuccessful call to register new patient visit: ", t)
+
+	body, err := ioutil.ReadAll(resp.Body)
+	if err != nil {
+		t.Fatal("Unable to read body of the response for the new patient visit call: " + err.Error())
+	}
+
+	patientVisitResponse := &apiservice.PatientVisitResponse{}
+	err = json.Unmarshal(body, patientVisitResponse)
+	if err != nil {
+		t.Fatal("Unable to unmarshall response body into patient visit response: " + err.Error())
+	}
+
+	return patientVisitResponse
+}
