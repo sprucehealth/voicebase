@@ -231,7 +231,7 @@ func TestSingleEntryIntake(t *testing.T) {
 			}
 		}
 	}
-	t.Fatal("While an answer for the expected question exists, unable to find the expected answer with id %d for single entry intake test", potentialAnswerId)
+	t.Fatalf("While an answer for the expected question exists, unable to find the expected answer with id %d for single entry intake test", potentialAnswerId)
 }
 
 func TestFreeTextEntryIntake(t *testing.T) {
