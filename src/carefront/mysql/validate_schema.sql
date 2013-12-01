@@ -20,6 +20,7 @@ function cleanup {
 	echo -e "--- Cleaning up temp files created and dropping database $DATABASE_NAME from rds instance\n"
 	rm temp-migration.sql
 	rm temp.sql
+	rm temp-data.sql
 	echo "drop database $DATABASE_NAME;" > temp-drop-database.sql
 	mysql -h $RDS_INSTANCE -u $RDS_USERNAME -p$DEV_RDS_PASSWORD < temp-drop-database.sql
 	if [ $? -ne 0 ]; then
@@ -31,14 +32,17 @@ function cleanup {
 # Identify the latest snapshot of the database that exists
 # The latest snapshot is essentially the snapshot with the largest number in the snapshot-N.sql format
 latestSnapshotNumber=`ls -r snapshot-*.sql | cut -d- -f 2  | cut -d. -f1 | sort -nr | head -1`
+latestDataSnapshotNumber=`ls -r data-snapshot-*.sql | cut -d- -f 3  | cut -d. -f1 | sort -nr | head -1`
 latestMigrationNumber=`ls -r migration-*.sql | cut -d- -f 2  | cut -d. -f1 | sort -nr | head -1`
 
 ## add the create database and use database statements before the rest of the sql statements
 echo "create database $DATABASE_NAME; use $DATABASE_NAME;"  | cat - snapshot-$latestSnapshotNumber.sql > temp.sql
+echo "use $DATABASE_NAME;" | cat - data-snapshot-$latestDataSnapshotNumber.sql > temp-data.sql
  
 # Use this snapshot as the base to create a random database on a test mysql instance
 echo -e "--- Creating database $DATABASE_NAME and restoring schema from snapshot-$latestSnapshotNumber.sql\n"
 mysql -h $RDS_INSTANCE -u $RDS_USERNAME -p$DEV_RDS_PASSWORD < temp.sql
+mysql -h $RDS_INSTANCE -u $RDS_USERNAME -p$DEV_RDS_PASSWORD < temp-data.sql
 
 # Apply the latest migration file to the database
 echo -e "--- Applying DDL in migrate-$latestMigrationNumber.sql to database\n"
@@ -52,6 +56,8 @@ fi
 
 # If migration successful, snapshotting database again to generate new schema
 newSnapshotNumber=$((latestSnapshotNumber + 1))
+newDataSnapshotNumber=$((latestDataSnapshotNumber + 1))
 echo -e "--- Creating new snapshot from database into snapshot-$newSnapshotNumber.sql\n"
 `mysqldump -h $RDS_INSTANCE -u $RDS_USERNAME --no-data $DATABASE_NAME -p$DEV_RDS_PASSWORD > snapshot-$newSnapshotNumber.sql`
+`mysqldump -h $RDS_INSTANCE -u $RDS_USERNAME -p$DEV_RDS_PASSWORD $DATABASE_NAME app_text localized_text answer_type carefront_region health_condition languages_supported tips tips_section section screen_type question_type question potential_answer photo_tips patient_layout_version object_storage layout_version dr_layout_version > data-snapshot-$newDataSnapshotNumber.sql`
 cleanup
