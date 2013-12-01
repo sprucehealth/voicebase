@@ -223,7 +223,7 @@ func TestSingleEntryIntake(t *testing.T) {
 						t.Fatalf("Expected patient answer for question with id %d, but got none", questionId)
 					}
 					for _, patientAnswer := range question.PatientAnswers {
-						if patientAnswer.PotentialAnswerId == potentialAnswerId && patientAnswer.AnswerText == "textAnswer" {
+						if patientAnswer.PotentialAnswerId == potentialAnswerId && patientAnswer.AnswerText == "testAnswer" {
 							return
 						}
 					}
