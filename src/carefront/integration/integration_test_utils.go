@@ -152,12 +152,13 @@ func GetPatientVisitForPatient(PatientId int64, testData TestData, t *testing.T)
 	if err != nil {
 		t.Fatal("Unable to get the patient visit id")
 	}
-	CheckSuccessfulStatusCode(resp, "Unsuccessful call to register new patient visit: ", t)
 
 	body, err := ioutil.ReadAll(resp.Body)
 	if err != nil {
 		t.Fatal("Unable to read body of the response for the new patient visit call: " + err.Error())
 	}
+
+	CheckSuccessfulStatusCode(resp, "Unsuccessful call to register new patient visit: "+string(body), t)
 
 	patientVisitResponse := &apiservice.PatientVisitResponse{}
 	err = json.Unmarshal(body, patientVisitResponse)
