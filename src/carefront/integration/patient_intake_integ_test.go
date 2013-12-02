@@ -1,12 +1,10 @@
 package integration
 
 import (
+	"bytes"
 	"carefront/api"
 	"carefront/apiservice"
-	// "carefront/config"
 	"encoding/json"
-	// _ "github.com/go-sql-driver/mysql"
-	"bytes"
 	"fmt"
 	"io"
 	"io/ioutil"
@@ -452,7 +450,7 @@ func TestPhotoAnswerIntake(t *testing.T) {
 	body := &bytes.Buffer{}
 	writer := multipart.NewWriter(body)
 	// uploading any file as a photo for now
-	part, err := writer.CreateFormFile("photo", ".jpg")
+	part, err := writer.CreateFormFile("photo", "example.jpg")
 	if err != nil {
 		t.Fatal("Unable to create a form file with a sample file")
 	}
@@ -476,13 +474,17 @@ func TestPhotoAnswerIntake(t *testing.T) {
 	}
 
 	photoAnswerIntakeHandler := apiservice.NewPhotoAnswerIntakeHandler(testData.DataApi, testData.CloudStorageService, "cases-bucket-integ", "us-east-1", 1*1024*1024)
-	photoAnswerIntakeHandler.AccountIdFromAuthToken(patientSignedUpResponse.PatientId)
+	patient, err := testData.DataApi.GetPatientFromId(patientSignedUpResponse.PatientId)
+	if err != nil {
+		t.Fatal("Unable to retrieve patient data given the patient id: " + err.Error())
+	}
+	photoAnswerIntakeHandler.AccountIdFromAuthToken(patient.AccountId)
 	ts := httptest.NewServer(photoAnswerIntakeHandler)
 	defer ts.Close()
 
 	client := &http.Client{}
 	req, _ := http.NewRequest("POST", ts.URL, body)
-	fmt.Println(body.String())
+	req.Header.Set("Content-Type", writer.FormDataContentType())
 	resp, err := client.Do(req)
 	if err != nil {
 		t.Fatal("Unable to submit photo answer for patient: " + err.Error())
@@ -494,4 +496,32 @@ func TestPhotoAnswerIntake(t *testing.T) {
 	}
 	CheckSuccessfulStatusCode(resp, "Unable to submit photo answer for patient: "+string(responseBody), t)
 
+	// get the patient visit again to get the patient answer in there
+	patientVisitResponse = GetPatientVisitForPatient(patientSignedUpResponse.PatientId, testData, t)
+	for _, section := range patientVisitResponse.ClientLayout.Sections {
+		for _, screen := range section.Screens {
+			for _, question := range screen.Questions {
+				if question.QuestionId == questionId {
+					if question.PatientAnswers == nil || len(question.PatientAnswers) == 0 {
+						t.Fatalf("Expected patient answer for question with id %d, but got none", questionId)
+					}
+					for _, patientAnswer := range question.PatientAnswers {
+						if patientAnswer.PotentialAnswerId == potentialAnswerId &&
+							patientAnswer.ObjectUrl != "" {
+							buffer := bytes.NewBufferString(strconv.FormatInt(patientVisitResponse.PatientVisitId, 10))
+							buffer.WriteString("/")
+							buffer.WriteString(strconv.FormatInt(patientAnswer.PatientAnswerId, 10))
+							buffer.WriteString(".jpg")
+							err = testData.CloudStorageService.DeleteObjectAtLocation("cases-bucket-integ", buffer.String(), "us-east-1")
+							if err != nil {
+								t.Fatalf("Unable to delete object at location %s : %s ", patientAnswer.ObjectUrl, err.Error())
+							}
+							return
+						}
+					}
+				}
+			}
+		}
+	}
+	t.Fatal("Photo answer submitted not found as patient answer")
 }

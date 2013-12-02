@@ -36,6 +36,18 @@ func (c *CloudStorageService) GetObjectAtLocation(bucket, key, region string) (r
 	return rawData, nil
 }
 
+func (c *CloudStorageService) DeleteObjectAtLocation(bucket, key, region string) error {
+	awsRegion, ok := goamz.Regions[region]
+	if !ok {
+		awsRegion = goamz.USEast
+	}
+
+	s3Access := s3.New(util.AWSAuthAdapter(c.awsAuth), awsRegion)
+	s3Bucket := s3Access.Bucket(bucket)
+	err := s3Bucket.Del(key)
+	return err
+}
+
 func (c *CloudStorageService) GetSignedUrlForObjectAtLocation(bucket, key, region string, duration time.Time) (url string, err error) {
 	awsRegion, ok := goamz.Regions[region]
 	if !ok {
