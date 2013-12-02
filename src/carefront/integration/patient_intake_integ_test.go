@@ -452,7 +452,7 @@ func TestPhotoAnswerIntake(t *testing.T) {
 	body := &bytes.Buffer{}
 	writer := multipart.NewWriter(body)
 	// uploading any file as a photo for now
-	part, err := writer.CreateFormFile("photo", "condition_intake.json")
+	part, err := writer.CreateFormFile("photo", ".jpg")
 	if err != nil {
 		t.Fatal("Unable to create a form file with a sample file")
 	}
@@ -469,6 +469,7 @@ func TestPhotoAnswerIntake(t *testing.T) {
 	writer.WriteField("question_id", strconv.FormatInt(questionId, 10))
 	writer.WriteField("potential_answer_id", strconv.FormatInt(potentialAnswerId, 10))
 	writer.WriteField("patient_visit_id", strconv.FormatInt(patientVisitResponse.PatientVisitId, 10))
+
 	err = writer.Close()
 	if err != nil {
 		t.Fatal("Unable to create multi-form data. Error when trying to close writer: " + err.Error())
@@ -481,6 +482,7 @@ func TestPhotoAnswerIntake(t *testing.T) {
 
 	client := &http.Client{}
 	req, _ := http.NewRequest("POST", ts.URL, body)
+	fmt.Println(body.String())
 	resp, err := client.Do(req)
 	if err != nil {
 		t.Fatal("Unable to submit photo answer for patient: " + err.Error())
@@ -491,4 +493,5 @@ func TestPhotoAnswerIntake(t *testing.T) {
 		t.Fatal("Unable to read the body of the response when trying to submit photo answer for patient: " + err.Error())
 	}
 	CheckSuccessfulStatusCode(resp, "Unable to submit photo answer for patient: "+string(responseBody), t)
+
 }

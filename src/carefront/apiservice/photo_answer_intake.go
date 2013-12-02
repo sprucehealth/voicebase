@@ -48,7 +48,7 @@ func (p *PhotoAnswerIntakeHandler) AccountIdFromAuthToken(accountId int64) {
 func (p *PhotoAnswerIntakeHandler) ServeHTTP(w http.ResponseWriter, r *http.Request) {
 	err := r.ParseMultipartForm(p.MaxInMemoryForPhoto)
 	if err != nil {
-		WriteDeveloperError(w, http.StatusBadRequest, "Unable to parse out the form values for the request")
+		WriteDeveloperError(w, http.StatusBadRequest, "Unable to parse out the form values for the request: "+err.Error())
 		return
 	}
 
