@@ -8,9 +8,12 @@ import (
 	// _ "github.com/go-sql-driver/mysql"
 	"bytes"
 	"fmt"
-	// "io/ioutil"
+	"io"
+	"io/ioutil"
+	"mime/multipart"
 	"net/http"
 	"net/http/httptest"
+	"os"
 	"strconv"
 	"testing"
 )
@@ -437,4 +440,52 @@ func TestPhotoAnswerIntake(t *testing.T) {
 		return
 	}
 
+	testData := SetupIntegrationTest(t)
+	defer testData.DB.Close()
+
+	// signup a random test patient for which to answer questions
+	patientSignedUpResponse := SignupRandomTestPatient(t, testData.DataApi, testData.AuthApi)
+	patientVisitResponse := GetPatientVisitForPatient(patientSignedUpResponse.PatientId, testData, t)
+	questionId := getQuestionWithTagAndExpectedType("q_chest_photo_intake", "q_type_single_photo", t, testData)
+	potentialAnswerId := getAnswerWithTagAndExpectedType("a_chest_phota_intake", "a_type_photo_entry_chest", questionId, testData, t)
+
+	body := &bytes.Buffer{}
+	writer := multipart.NewWriter(body)
+	// uploading any file as a photo for now
+	part, err := writer.CreateFormFile("photo", "condition_intake.json")
+	if err != nil {
+		t.Fatal("Unable to create a form file with a sample file")
+	}
+
+	file, err := os.Open("../example/condition_intake.json")
+	_, err = io.Copy(part, file)
+	if err != nil {
+		t.Fatal("Unable to copy contents of file into multipart form data")
+	}
+
+	writer.WriteField("question_id", strconv.FormatInt(questionId, 10))
+	writer.WriteField("potential_answer_id", strconv.FormatInt(potentialAnswerId, 10))
+	writer.WriteField("patient_visit_id", strconv.FormatInt(patientVisitResponse.PatientVisitId, 10))
+	err = writer.Close()
+	if err != nil {
+		t.Fatal("Unable to create multi-form data. Error when trying to close writer: " + err.Error())
+	}
+
+	photoAnswerIntakeHandler := apiservice.NewPhotoAnswerIntakeHandler(testData.DataApi, testData.CloudStorageService, "cases-bucket-integ", "us-east-1", 1*1024*1024)
+	photoAnswerIntakeHandler.AccountIdFromAuthToken(patientSignedUpResponse.PatientId)
+	ts := httptest.NewServer(photoAnswerIntakeHandler)
+	defer ts.Close()
+
+	client := &http.Client{}
+	req, _ := http.NewRequest("POST", ts.URL, body)
+	resp, err := client.Do(req)
+	if err != nil {
+		t.Fatal("Unable to submit photo answer for patient: " + err.Error())
+	}
+
+	responseBody, err := ioutil.ReadAll(resp.Body)
+	if err != nil {
+		t.Fatal("Unable to read the body of the response when trying to submit photo answer for patient: " + err.Error())
+	}
+	CheckSuccessfulStatusCode(resp, "Unable to submit photo answer for patient: "+string(responseBody), t)
 }
