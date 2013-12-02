@@ -1,9 +1,10 @@
 package apiservice
 
 import (
-	"carefront/api"
 	"log"
 	"net/http"
+
+	"carefront/thriftapi"
 )
 
 // If a handler conforms to this interface and returns true then
@@ -19,7 +20,7 @@ type Authenticated interface {
 
 type AuthServeMux struct {
 	http.ServeMux
-	AuthApi api.Auth
+	AuthApi thriftapi.Auth
 }
 
 type CustomResponseWriter struct {
@@ -53,8 +54,15 @@ func (mux *AuthServeMux) checkAuth(r *http.Request) (bool, int64, error) {
 	} else if err != nil {
 		return false, 0, err
 	}
-	valid, accountId, err := mux.AuthApi.ValidateToken(token)
-	return valid, accountId, err
+	if res, err := mux.AuthApi.ValidateToken(token); err != nil {
+		return false, 0, err
+	} else {
+		var accountId int64
+		if res.AccountId != nil {
+			accountId = *res.AccountId
+		}
+		return res.IsValid, accountId, nil
+	}
 }
 
 func (mux *AuthServeMux) ServeHTTP(w http.ResponseWriter, r *http.Request) {

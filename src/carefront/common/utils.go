@@ -1,8 +1,8 @@
-package api
+package common
 
 import (
 	"crypto/rand"
-	"encoding/hex"
+	"encoding/base64"
 )
 
 func GenerateToken() (string, error) {
@@ -11,6 +11,6 @@ func GenerateToken() (string, error) {
 		return "", err
 	}
 
-	tok := hex.EncodeToString(tokBytes)
+	tok := base64.URLEncoding.EncodeToString(tokBytes)
 	return tok, nil
 }
