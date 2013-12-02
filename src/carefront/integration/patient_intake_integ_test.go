@@ -65,7 +65,12 @@ func getAnswerWithTagAndExpectedType(answerTag, answerType string, questionId in
 
 func submitPatientAnswerForVisit(PatientId int64, testData TestData, patientIntakeRequestData string, t *testing.T) {
 	answerIntakeHandler := apiservice.NewAnswerIntakeHandler(testData.DataApi)
-	answerIntakeHandler.AccountIdFromAuthToken(PatientId)
+	patient, err := testData.DataApi.GetPatientFromId(PatientId)
+	if err != nil {
+		t.Fatal("Unable to get patient information given the patient id when trying to enter patient intake: " + err.Error())
+	}
+
+	answerIntakeHandler.AccountIdFromAuthToken(patient.AccountId)
 	ts := httptest.NewServer(answerIntakeHandler)
 	defer ts.Close()
 
