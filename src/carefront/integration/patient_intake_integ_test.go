@@ -457,10 +457,13 @@ func TestPhotoAnswerIntake(t *testing.T) {
 		t.Fatal("Unable to create a form file with a sample file")
 	}
 
-	file, err := os.Open("../example/condition_intake.json")
+	file, err := os.Open("../info_intake/condition_intake.json")
+	if err != nil {
+		t.Fatal("Unable to open file for uploading: " + err.Error())
+	}
 	_, err = io.Copy(part, file)
 	if err != nil {
-		t.Fatal("Unable to copy contents of file into multipart form data")
+		t.Fatal("Unable to copy contents of file into multipart form data: " + err.Error())
 	}
 
 	writer.WriteField("question_id", strconv.FormatInt(questionId, 10))
