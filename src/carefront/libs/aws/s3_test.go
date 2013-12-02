@@ -1,5 +1,8 @@
 package aws
 
+//TODO: Need to determine how best to do an s3 test. is the goal to test that
+// the service has access to the config bucket, or just to test the connection to s3?
+
 // import (
 // 	"testing"
 // 	"time"
