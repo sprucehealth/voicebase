@@ -243,21 +243,193 @@ func TestFreeTextEntryIntake(t *testing.T) {
 	if err := CheckIfRunningLocally(t); err == CannotRunTestLocally {
 		return
 	}
+	testData := SetupIntegrationTest(t)
+	defer testData.DB.Close()
 
+	// signup a random test patient for which to answer questions
+	patientSignedUpResponse := SignupRandomTestPatient(t, testData.DataApi, testData.AuthApi)
+	patientVisitResponse := GetPatientVisitForPatient(patientSignedUpResponse.PatientId, testData, t)
+
+	// now lets go ahead and try and answer the question about the reason for visit given that it is
+	// single select
+	questionId := getQuestionWithTagAndExpectedType("q_changes_acne_worse", "q_type_free_text", t, testData)
+	potentialAnswerId := getAnswerWithTagAndExpectedType("a_changes_acne_worse", "a_type_free_text", questionId, testData, t)
+	answerIntakeRequestBody := apiservice.AnswerIntakeRequestBody{}
+	answerIntakeRequestBody.PatientVisitId = patientVisitResponse.PatientVisitId
+	answerIntakeRequestBody.QuestionId = questionId
+	freeTextResponse := "This is a free text response that should be accepted as a response for free text."
+	answerIntakeRequestBody.AnswerIntakes = []*apiservice.AnswerIntake{&apiservice.AnswerIntake{PotentialAnswerId: potentialAnswerId, AnswerText: freeTextResponse}}
+	requestData, err := json.Marshal(&answerIntakeRequestBody)
+	if err != nil {
+		t.Fatal("Unable to marshal request body")
+	}
+	submitPatientAnswerForVisit(patientSignedUpResponse.PatientId, testData, string(requestData), t)
+	// now, get the patient visit again to ensure that a patient answer was registered for the intended question
+	patientVisitResponse = GetPatientVisitForPatient(patientSignedUpResponse.PatientId, testData, t)
+
+	// lets go through the questions to find the one for which the patient answer should be present
+	for _, section := range patientVisitResponse.ClientLayout.Sections {
+		for _, screen := range section.Screens {
+			for _, question := range screen.Questions {
+				if question.QuestionId == questionId {
+					if question.PatientAnswers == nil || len(question.PatientAnswers) == 0 {
+						t.Fatalf("Expected patient answer for question with id %d, but got none", questionId)
+					}
+					for _, patientAnswer := range question.PatientAnswers {
+						if patientAnswer.PotentialAnswerId == potentialAnswerId && patientAnswer.AnswerText == freeTextResponse {
+							return
+						}
+					}
+				}
+			}
+		}
+	}
+	t.Fatalf("While an answer for the expected question exists, unable to find the expected answer with id %d for free text intake test", potentialAnswerId)
+}
+
+func addSubAnswerToAnswerIntake(answerIntake *apiservice.AnswerIntake, subAnswerQuestionId, subAnswerPotentialAnswerId int64) {
+	subQuestionAnswerIntake := &apiservice.SubQuestionAnswerIntake{}
+	subQuestionAnswerIntake.QuestionId = subAnswerQuestionId
+	subQuestionAnswerIntake.AnswerIntakes = []*apiservice.AnswerIntake{&apiservice.AnswerIntake{PotentialAnswerId: subAnswerPotentialAnswerId}}
+	if answerIntake.SubQuestionAnswerIntakes == nil {
+		answerIntake.SubQuestionAnswerIntakes = make([]*apiservice.SubQuestionAnswerIntake, 0)
+	}
+	answerIntake.SubQuestionAnswerIntakes = append(answerIntake.SubQuestionAnswerIntakes, subQuestionAnswerIntake)
 }
 
 func TestSubQuestionEntryIntake(t *testing.T) {
 	if err := CheckIfRunningLocally(t); err == CannotRunTestLocally {
 		return
 	}
+	testData := SetupIntegrationTest(t)
+	defer testData.DB.Close()
 
-}
+	// signup a random test patient for which to answer questions
+	patientSignedUpResponse := SignupRandomTestPatient(t, testData.DataApi, testData.AuthApi)
+	patientVisitResponse := GetPatientVisitForPatient(patientSignedUpResponse.PatientId, testData, t)
 
-func TestMultipleAnswersForSamePotentialAnswerIntake(t *testing.T) {
-	if err := CheckIfRunningLocally(t); err == CannotRunTestLocally {
-		return
+	// now lets go ahead and try and answer the question about the reason for visit given that it is
+	// single select
+	questionId := getQuestionWithTagAndExpectedType("q_acne_prev_treatment_list", "q_type_compound", t, testData)
+	potentialAnswerId := getAnswerWithTagAndExpectedType("a_prev_treatment_list_entry", "a_type_autocomplete_entry", questionId, testData, t)
+
+	// lets go ahead and get the question id for the rest of the three questions that we are trying to answer for this particular entry
+	howEffectiveQuestionId := getQuestionWithTagAndExpectedType("q_effective_treatment", "q_type_segmented_control", t, testData)
+	howEffectiveAnswerId := getAnswerWithTagAndExpectedType("a_effective_treatment_not_very", "a_type_segmented_control", howEffectiveQuestionId, testData, t)
+
+	usingTreatmentQuestionId := getQuestionWithTagAndExpectedType("q_using_treatment", "q_type_segmented_control", t, testData)
+	usingTreatmentAnswerId := getAnswerWithTagAndExpectedType("a_using_treatment_yes", "a_type_segmented_control", usingTreatmentQuestionId, testData, t)
+
+	lengthTreatmentQuestionId := getQuestionWithTagAndExpectedType("q_length_treatment", "q_type_segmented_control", t, testData)
+	lengthTreatmentAnswerId := getAnswerWithTagAndExpectedType("a_length_treatment_six_eleven_months", "a_type_segmented_control", lengthTreatmentQuestionId, testData, t)
+
+	// answer the question with three drugs that the patient is using
+	proactive := "Proactive"
+	benzoylPeroxide := "Benzoyl Peroxide"
+	neutrogena := "Neutrogena"
+
+	answerIntakeRequestBody := apiservice.AnswerIntakeRequestBody{}
+	answerIntakeRequestBody.PatientVisitId = patientVisitResponse.PatientVisitId
+	answerIntakeRequestBody.QuestionId = questionId
+
+	proactiveAnswerIntake := &apiservice.AnswerIntake{}
+	proactiveAnswerIntake.PotentialAnswerId = potentialAnswerId
+	proactiveAnswerIntake.AnswerText = proactive
+	addSubAnswerToAnswerIntake(proactiveAnswerIntake, howEffectiveQuestionId, howEffectiveAnswerId)
+	addSubAnswerToAnswerIntake(proactiveAnswerIntake, usingTreatmentQuestionId, usingTreatmentAnswerId)
+	addSubAnswerToAnswerIntake(proactiveAnswerIntake, lengthTreatmentQuestionId, lengthTreatmentAnswerId)
+
+	benzoylPeroxideAnswerIntake := &apiservice.AnswerIntake{}
+	benzoylPeroxideAnswerIntake.PotentialAnswerId = potentialAnswerId
+	benzoylPeroxideAnswerIntake.AnswerText = benzoylPeroxide
+	addSubAnswerToAnswerIntake(benzoylPeroxideAnswerIntake, howEffectiveQuestionId, howEffectiveAnswerId)
+	addSubAnswerToAnswerIntake(benzoylPeroxideAnswerIntake, usingTreatmentQuestionId, usingTreatmentAnswerId)
+	addSubAnswerToAnswerIntake(benzoylPeroxideAnswerIntake, lengthTreatmentQuestionId, lengthTreatmentAnswerId)
+
+	neutrogenaAnswerIntake := &apiservice.AnswerIntake{}
+	neutrogenaAnswerIntake.PotentialAnswerId = potentialAnswerId
+	neutrogenaAnswerIntake.AnswerText = neutrogena
+	addSubAnswerToAnswerIntake(neutrogenaAnswerIntake, howEffectiveQuestionId, howEffectiveAnswerId)
+	addSubAnswerToAnswerIntake(neutrogenaAnswerIntake, usingTreatmentQuestionId, usingTreatmentAnswerId)
+	addSubAnswerToAnswerIntake(neutrogenaAnswerIntake, lengthTreatmentQuestionId, lengthTreatmentAnswerId)
+
+	answerIntakeRequestBody.AnswerIntakes = []*apiservice.AnswerIntake{proactiveAnswerIntake, benzoylPeroxideAnswerIntake, neutrogenaAnswerIntake}
+
+	requestData, err := json.Marshal(&answerIntakeRequestBody)
+	if err != nil {
+		t.Fatal("Unable to marshal request body")
+	}
+	submitPatientAnswerForVisit(patientSignedUpResponse.PatientId, testData, string(requestData), t)
+	// now, get the patient visit again to ensure that a patient answer was registered for the intended question
+	patientVisitResponse = GetPatientVisitForPatient(patientSignedUpResponse.PatientId, testData, t)
+
+	// lets go through the questions to find the one for which the patient answer should be present
+	for _, section := range patientVisitResponse.ClientLayout.Sections {
+		for _, screen := range section.Screens {
+			for _, question := range screen.Questions {
+				if question.QuestionId == questionId {
+					if question.PatientAnswers == nil || len(question.PatientAnswers) == 0 {
+						t.Fatalf("Expected patient answer for question with id %d, but got none", questionId)
+					}
+					for _, patientAnswer := range question.PatientAnswers {
+
+						if !(patientAnswer.PotentialAnswerId == potentialAnswerId &&
+							(patientAnswer.AnswerText == neutrogena || patientAnswer.AnswerText == benzoylPeroxide ||
+								patientAnswer.AnswerText == proactive)) {
+							t.Fatal("Top level patient answers is not one of the expected answers")
+						}
+
+						for _, subAnswer := range patientAnswer.SubAnswers {
+							if !(subAnswer.PotentialAnswerId == howEffectiveAnswerId ||
+								subAnswer.PotentialAnswerId == usingTreatmentAnswerId ||
+								subAnswer.PotentialAnswerId == lengthTreatmentAnswerId) &&
+								(subAnswer.QuestionId == howEffectiveQuestionId ||
+									subAnswer.QuestionId == usingTreatmentQuestionId ||
+									subAnswer.QuestionId == lengthTreatmentQuestionId) {
+								t.Fatal("Sub answers to top level answers is not one of the expected answers")
+							}
+						}
+					}
+				}
+			}
+		}
 	}
 
+	// now update the answer to this question to ensure that we can update answers no problem
+	proactiveAnswerIntake.SubQuestionAnswerIntakes = nil
+	benzoylPeroxideAnswerIntake.SubQuestionAnswerIntakes = nil
+	neutrogenaAnswerIntake.SubQuestionAnswerIntakes = nil
+	requestData, err = json.Marshal(&answerIntakeRequestBody)
+	if err != nil {
+		t.Fatal("Unable to marshal request body second time around")
+	}
+	submitPatientAnswerForVisit(patientSignedUpResponse.PatientId, testData, string(requestData), t)
+	// now, get the patient visit again to ensure that a patient answer was registered for the intended question
+	patientVisitResponse = GetPatientVisitForPatient(patientSignedUpResponse.PatientId, testData, t)
+	// lets go through the questions to find the one for which the patient answer should be present
+	for _, section := range patientVisitResponse.ClientLayout.Sections {
+		for _, screen := range section.Screens {
+			for _, question := range screen.Questions {
+				if question.QuestionId == questionId {
+					if question.PatientAnswers == nil || len(question.PatientAnswers) == 0 {
+						t.Fatalf("Expected patient answer for question with id %d, but got none", questionId)
+					}
+					for _, patientAnswer := range question.PatientAnswers {
+
+						if !(patientAnswer.PotentialAnswerId == potentialAnswerId &&
+							(patientAnswer.AnswerText == neutrogena || patientAnswer.AnswerText == benzoylPeroxide ||
+								patientAnswer.AnswerText == proactive)) {
+							t.Fatal("Top level patient answers is not one of the expected answers")
+						}
+
+						if !(patientAnswer.SubAnswers == nil || len(patientAnswer.SubAnswers) == 0) {
+							t.Fatal("Subanswers not expected but they still exist in the patient answers")
+						}
+					}
+				}
+			}
+		}
+	}
 }
 
 func TestPhotoAnswerIntake(t *testing.T) {
