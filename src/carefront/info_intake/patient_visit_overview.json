@@ -38,7 +38,7 @@
                             "question": "q_allergic_medication_entry"
                         }, 
                         {
-                            "question": "q_topical_allergic_medications"
+                            "question": "q_topical_allergies_medication_entry"
                         }, 
                         {
                             "question": "q_current_medications_entry"

@@ -1,22 +1,23 @@
 {
+    "health_condition": "health_condition_acne", 
     "sections": [
         {
             "screens": [
                 {
                     "description": "reason for visit", 
                     "questions": [
-                        { 
+                        {
                             "question": "q_reason_visit"
-                        },  
+                        }, 
                         {
                             "condition": {
                                 "op": "answer_equals", 
                                 "potential_answers": [
                                     "a_something_else"
-                                ],  
+                                ], 
                                 "question": "q_reason_visit"
                             }, 
-                            "question": "q_condition_for_diagnosis" 
+                            "question": "q_condition_for_diagnosis"
                         }
                     ]
                 }, 
@@ -24,7 +25,7 @@
                     "description": "length of acne symptoms", 
                     "questions": [
                         {
-                            "question": "q_acne_length"
+                            "question": "q_onset_acne"
                         }
                     ]
                 }, 
@@ -47,6 +48,40 @@
                     ]
                 }, 
                 {
+                    "description": "describe symtpoms of acne", 
+                    "questions": [
+                        {
+                            "question": "q_acne_symptoms"
+                        }
+                    ]
+                }, 
+                {
+                    "description": "does acne get worse with period", 
+                    "questions": [
+                        {
+                            "question": "q_acne_worse_period"
+                        }, 
+                        {
+                            "condition": {
+                                "op": "answer_equals", 
+                                "potential_answers": [
+                                    "a_acne_worse_yes"
+                                ], 
+                                "question": "q_acne_worse_period"
+                            }, 
+                            "question": "q_periods_regular"
+                        }
+                    ]
+                }, 
+                {
+                    "description": "describe your skin", 
+                    "questions": [
+                        {
+                            "question": "q_skin_description"
+                        }
+                    ]
+                }, 
+                {
                     "description": "what previous treatments have you tried for acne", 
                     "questions": [
                         {
@@ -65,16 +100,26 @@
                                 ], 
                                 "question": "q_acne_prev_treatment_types"
                             }, 
-                            "question": "q_acne_prev_treatment_list",
-                            "questions" : [{
-                                "question" : "q_effective_treatment"
-                            },
-                            {
-                                "question" : "q_using_treatment"
-                            },
-                            {
-                                "question" : "q_length_treatment"
-                            }]
+                            "question": "q_acne_prev_treatment_list", 
+                            "questions": [
+                                {
+                                    "question": "q_effective_treatment"
+                                }, 
+                                {
+                                    "question": "q_using_treatment"
+                                }, 
+                                {
+                                    "question": "q_length_treatment"
+                                }
+                            ]
+                        }
+                    ]
+                }, 
+                {
+                    "description": "anything else you'd like to share", 
+                    "questions": [
+                        {
+                            "question": "q_anything_else_acne"
                         }
                     ]
                 }
@@ -107,7 +152,7 @@
                             "condition": {
                                 "op": "answer_equals", 
                                 "potential_answers": [
-                                    "a_list_medications_entry"
+                                    "a_yes_allergic_medications"
                                 ], 
                                 "question": "q_allergic_medications"
                             }, 
@@ -150,10 +195,28 @@
                     ]
                 }, 
                 {
-                    "description": "previous medical condition been treated for", 
+                    "description": "topical medication allergies", 
                     "questions": [
                         {
-                            "question": "q_prev_med_condition_diagnosis"
+                            "question": "q_topical_allergic_medications"
+                        }, 
+                        {
+                            "condition": {
+                                "op": "answer_equals", 
+                                "potential_answers": [
+                                    "a_topical_allergic_medication_yes"
+                                ], 
+                                "question": "q_topical_allergic_medications"
+                            }, 
+                            "question": "q_topical_allergies_medication_entry"
+                        }
+                    ]
+                }, 
+                { 
+                    "description": "treated for any of the following conditions", 
+                    "questions": [ 
+                        {
+                            "question": "q_other_conditions_acne"  
                         }
                     ]
                 }
@@ -224,6 +287,5 @@
             ], 
             "section": "section_photo_diagnosis"
         }
-    ], 
-    "health_condition": "health_condition_acne"
+    ]
 }
