@@ -1,3 +1,5 @@
+-- Adding missing questions in the skin history section
+
 start transaction;
 
 set @en_language_id = (select id from languages_supported where language="en");

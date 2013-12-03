@@ -2,8 +2,11 @@
     "patient_visit_id": 108, 
     "potential_answers": [
         {
-            "potential_answer_id": 1
+            "potential_answer_id": 24
+        }, 
+        {
+        	"potential_answer_id": 25
         }
     ], 
-    "question_id": 1
+    "question_id": 14
 }

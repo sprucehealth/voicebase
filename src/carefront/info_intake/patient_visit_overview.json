@@ -34,7 +34,7 @@
                 {
                     "data": [
                         {
-                            "flag_question_if_answered": true,  
+                            "flag_question_if_answered": true, 
                             "question": "q_allergic_medications"
                         }, 
                         {
@@ -108,7 +108,7 @@
                             "question": "q_menstrual_cycle"
                         }, 
                         {
-                            "question": "q_skin_type"
+                            "question": "q_skin_description"
                         }
                     ], 
                     "sub_section_title": "Symptoms Overview", 
@@ -150,7 +150,6 @@
             ], 
             "sub_sections": [
                 {
-                    "sub_section_types" : ["s_type_photo"],
                     "data": [
                         {
                             "question": "q_face_photo_intake"
@@ -158,6 +157,9 @@
                         {
                             "question": "q_chest_photo_intake"
                         }
+                    ], 
+                    "sub_section_types": [
+                        "s_type_photo"
                     ]
                 }
             ]
