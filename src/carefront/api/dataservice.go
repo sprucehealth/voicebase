@@ -570,9 +570,9 @@ func (d *DataService) GetQuestionInfo(questionTag string, languageId int64) (id 
 
 func (d *DataService) GetAnswerInfo(questionId int64, languageId int64) (answerInfos []PotentialAnswerInfo, err error) {
 	rows, err := d.DB.Query(`select potential_answer.id, ltext, atype, potential_answer_tag, ordering from potential_answer 
-								inner join localized_text on answer_localized_text_id=app_text_id 
-								inner join answer_type on atype_id=answer_type.id 
-									where question_id = ? and language_id = ?`, questionId, languageId)
+								left outer join localized_text on answer_localized_text_id=app_text_id 
+								left outer join answer_type on atype_id=answer_type.id 
+									where question_id = ? and (language_id = ? or ltext is null)`, questionId, languageId)
 	if err != nil {
 		return
 	}
