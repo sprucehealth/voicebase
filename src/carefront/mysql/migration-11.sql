@@ -1,5 +1,3 @@
-use carefront_db;
-
 start transaction;
 
 alter table potential_answer modify answer_localized_text_id int unsigned;

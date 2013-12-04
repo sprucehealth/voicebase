@@ -580,13 +580,18 @@ func (d *DataService) GetAnswerInfo(questionId int64, languageId int64) (answerI
 	answerInfos = make([]PotentialAnswerInfo, 0)
 	for rows.Next() {
 		var id, ordering int64
-		var answer, answerType, answerTag string
+		var answerType, answerTag string
+		var answer sql.NullString
 		err = rows.Scan(&id, &answer, &answerType, &answerTag, &ordering)
-		answerInfos = append(answerInfos, PotentialAnswerInfo{PotentialAnswerId: id,
-			Answer:     answer,
-			AnswerType: answerType,
-			AnswerTag:  answerTag,
-			Ordering:   ordering})
+		potentialAnswerInfo := PotentialAnswerInfo{}
+		if answer.Valid {
+			potentialAnswerInfo.Answer = answer.String
+		}
+		potentialAnswerInfo.PotentialAnswerId = id
+		potentialAnswerInfo.AnswerTag = answerTag
+		potentialAnswerInfo.Ordering = ordering
+		potentialAnswerInfo.AnswerType = answerType
+		answerInfos = append(answerInfos, potentialAnswerInfo)
 		if err != nil {
 			return
 		}
