@@ -57,15 +57,16 @@
 package apiservice
 
 import (
-	"carefront/api"
-	"github.com/gorilla/schema"
 	"log"
 	"net/http"
 	"strings"
+
+	"carefront/thriftapi"
+	"github.com/gorilla/schema"
 )
 
 type AuthenticationHandler struct {
-	AuthApi api.Auth
+	AuthApi thriftapi.Auth
 }
 
 type AuthenticationResponse struct {
@@ -83,27 +84,32 @@ type AuthRequestData struct {
 
 func (h *AuthenticationHandler) ServeHTTP(w http.ResponseWriter, r *http.Request) {
 	r.ParseForm()
-	action := strings.Split(r.URL.String(), "/")[2]
+	action := strings.Split(r.URL.Path, "/")[2]
 	// depending on whether we are signing up or logging in, make appropriate
 	// call to service
 	switch action {
 	case "signup":
 		requestData := new(AuthRequestData)
 		decoder := schema.NewDecoder()
-		err := decoder.Decode(requestData, r.Form)
-		if err != nil {
+		if err := decoder.Decode(requestData, r.Form); err != nil {
+			log.Printf("apiservice/auth: failed to parse request data: %+v", err)
 			WriteDeveloperError(w, http.StatusBadRequest, err.Error())
 			return
 		}
 
-		if token, _, err := h.AuthApi.Signup(requestData.Login, requestData.Password); err == api.ErrSignupFailedUserExists {
-			WriteDeveloperError(w, http.StatusBadRequest, err.Error())
-			return
-		} else if err != nil {
-			WriteDeveloperError(w, http.StatusInternalServerError, err.Error())
-			return
+		if res, err := h.AuthApi.Signup(requestData.Login, requestData.Password); err != nil {
+			switch err.(type) {
+			case *thriftapi.LoginAlreadyExists:
+				WriteUserError(w, http.StatusBadRequest, "Login already exists")
+				return
+			default:
+				log.Printf("apiservice/auth: Signup RPC call failed: %+v", err)
+				// For now, treat all errors the same.
+				WriteDeveloperError(w, http.StatusInternalServerError, "Internal Server Error")
+				return
+			}
 		} else {
-			WriteJSONToHTTPResponseWriter(w, http.StatusOK, AuthenticationResponse{token})
+			WriteJSONToHTTPResponseWriter(w, http.StatusOK, AuthenticationResponse{res.Token})
 		}
 	case "authenticate":
 		requestData := new(AuthRequestData)
@@ -114,13 +120,18 @@ func (h *AuthenticationHandler) ServeHTTP(w http.ResponseWriter, r *http.Request
 			return
 		}
 
-		if token, _, err := h.AuthApi.Login(requestData.Login, requestData.Password); err == api.ErrLoginFailed {
-			WriteUserError(w, http.StatusForbidden, "Invalid email/password combination")
-		} else if err != nil {
-			log.Println(err)
-			WriteDeveloperError(w, http.StatusInternalServerError, err.Error())
+		if res, err := h.AuthApi.Login(requestData.Login, requestData.Password); err != nil {
+			switch err.(type) {
+			case *thriftapi.NoSuchLogin:
+				WriteUserError(w, http.StatusForbidden, "Invalid email/password combination")
+				return
+			default:
+				// For now, treat all errors the same.
+				WriteDeveloperError(w, http.StatusInternalServerError, "Internal Server Error")
+				return
+			}
 		} else {
-			WriteJSONToHTTPResponseWriter(w, http.StatusOK, AuthenticationResponse{token})
+			WriteJSONToHTTPResponseWriter(w, http.StatusOK, AuthenticationResponse{res.Token})
 		}
 	case "logout":
 		token, err := GetAuthTokenFromHeader(r)
@@ -128,11 +139,12 @@ func (h *AuthenticationHandler) ServeHTTP(w http.ResponseWriter, r *http.Request
 			WriteDeveloperError(w, http.StatusBadRequest, "authorization token not correctly specified in header")
 			return
 		}
-		err = h.AuthApi.Logout(token)
-		if err != nil {
-			WriteDeveloperError(w, http.StatusInternalServerError, err.Error())
+		if err := h.AuthApi.Logout(token); err != nil {
+			WriteDeveloperError(w, http.StatusInternalServerError, "Internal Server Error")
 			return
 		}
 		w.WriteHeader(http.StatusOK)
+	default:
+		w.WriteHeader(http.StatusNotFound)
 	}
 }

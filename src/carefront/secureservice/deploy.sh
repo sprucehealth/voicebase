@@ -2,12 +2,12 @@
 
 DATE=$(date +%Y%m%d%H%M)
 
-APP=restapi
+APP=securesvc
 GOOS=linux GOARCH=amd64 CGO_ENABLED=0 go build -o $APP
 rm $APP.bz2 || true
 bzip2 $APP
 
-for HOST in 10.0.43.114 10.0.95.240
+for HOST in 10.0.33.223
 do
 	scp $APP.bz2 $HOST:/usr/local/apps/$APP/$APP.$DATE.bz2
 	ssh $HOST "cd /usr/local/apps/$APP && bzip2 -d $APP.$DATE.bz2 && chmod +x $APP.$DATE && rm -f $APP && ln -s $APP.$DATE $APP && supervisorctl restart $APP"

@@ -2,15 +2,10 @@ package integration
 
 import (
 	"bytes"
-	"carefront/api"
-	"carefront/apiservice"
-	"carefront/config"
 	"database/sql"
 	"encoding/json"
 	"errors"
 	"fmt"
-	"github.com/BurntSushi/toml"
-	_ "github.com/go-sql-driver/mysql"
 	"io/ioutil"
 	"net/http"
 	"net/http/httptest"
@@ -18,6 +13,14 @@ import (
 	"strconv"
 	"testing"
 	"time"
+
+	"carefront/api"
+	"carefront/apiservice"
+	"carefront/config"
+	"carefront/services/auth"
+	"carefront/thriftapi"
+	"github.com/BurntSushi/toml"
+	_ "github.com/go-sql-driver/mysql"
 )
 
 var (
@@ -36,7 +39,7 @@ type TestConf struct {
 
 type TestData struct {
 	DataApi             api.DataAPI
-	AuthApi             api.Auth
+	AuthApi             thriftapi.Auth
 	DBConfig            *TestDBConfig
 	CloudStorageService api.CloudStorageAPI
 	DB                  *sql.DB
@@ -92,7 +95,7 @@ func SetupIntegrationTest(t *testing.T) TestData {
 	}
 	cloudStorageService := api.NewCloudStorageService(awsAuth)
 
-	authApi := &api.AuthService{DB: db}
+	authApi := &auth.AuthService{DB: db}
 	dataApi := &api.DataService{DB: db}
 
 	testData := TestData{DataApi: dataApi,
@@ -111,7 +114,7 @@ func CheckSuccessfulStatusCode(resp *http.Response, errorMessage string, t *test
 	}
 }
 
-func SignupRandomTestPatient(t *testing.T, dataApi api.DataAPI, authApi api.Auth) *apiservice.PatientSignedupResponse {
+func SignupRandomTestPatient(t *testing.T, dataApi api.DataAPI, authApi thriftapi.Auth) *apiservice.PatientSignedupResponse {
 	authHandler := &apiservice.SignupPatientHandler{AuthApi: authApi, DataApi: dataApi}
 	ts := httptest.NewServer(authHandler)
 	defer ts.Close()

@@ -1,17 +1,19 @@
 package apiservice
 
 import (
-	"carefront/api"
-	"github.com/gorilla/schema"
 	"net/http"
 	"strconv"
 	"strings"
 	"time"
+
+	"carefront/api"
+	"carefront/thriftapi"
+	"github.com/gorilla/schema"
 )
 
 type SignupPatientHandler struct {
 	DataApi api.DataAPI
-	AuthApi api.Auth
+	AuthApi thriftapi.Auth
 }
 
 type PatientSignedupResponse struct {
@@ -65,18 +67,18 @@ func (s *SignupPatientHandler) ServeHTTP(w http.ResponseWriter, r *http.Request)
 	}
 
 	// first, create an account for the user
-	token, accountId, err := s.AuthApi.Signup(requestData.Email, requestData.Password)
-	if err == api.ErrSignupFailedUserExists {
+	res, err := s.AuthApi.Signup(requestData.Email, requestData.Password)
+	if _, ok := err.(*thriftapi.LoginAlreadyExists); ok {
 		WriteUserError(w, http.StatusBadRequest, "An account with the specified email address already exists.")
 		return
 	}
 
 	if err != nil {
-		WriteDeveloperError(w, http.StatusInternalServerError, "Unable to register patient: "+err.Error())
+		WriteDeveloperError(w, http.StatusInternalServerError, "Internal Servier Error. Unable to register patient")
 		return
 	}
 
 	// then, register the signed up user as a patient
-	patientId, err := s.DataApi.RegisterPatient(accountId, requestData.FirstName, requestData.LastName, requestData.Gender, requestData.Zipcode, time.Date(year, time.Month(month), day, 0, 0, 0, 0, time.UTC))
-	WriteJSONToHTTPResponseWriter(w, http.StatusOK, PatientSignedupResponse{token, patientId})
+	patientId, err := s.DataApi.RegisterPatient(res.AccountId, requestData.FirstName, requestData.LastName, requestData.Gender, requestData.Zipcode, time.Date(year, time.Month(month), day, 0, 0, 0, 0, time.UTC))
+	WriteJSONToHTTPResponseWriter(w, http.StatusOK, PatientSignedupResponse{res.Token, patientId})
 }

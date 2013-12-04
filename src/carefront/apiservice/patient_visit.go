@@ -1,11 +1,13 @@
 package apiservice
 
 import (
+	"encoding/json"
+	"net/http"
+
 	"carefront/api"
 	"carefront/common"
 	"carefront/info_intake"
-	"encoding/json"
-	"net/http"
+	"carefront/thriftapi"
 )
 
 const (
@@ -14,7 +16,7 @@ const (
 
 type PatientVisitHandler struct {
 	DataApi                    api.DataAPI
-	AuthApi                    api.Auth
+	AuthApi                    thriftapi.Auth
 	LayoutStorageService       api.CloudStorageAPI
 	PatientPhotoStorageService api.CloudStorageAPI
 	accountId                  int64
@@ -25,7 +27,7 @@ type PatientVisitResponse struct {
 	ClientLayout   *info_intake.HealthCondition `json:"health_condition,omitempty"`
 }
 
-func NewPatientVisitHandler(dataApi api.DataAPI, authApi api.Auth, layoutStorageService api.CloudStorageAPI, patientPhotoStorageService api.CloudStorageAPI) *PatientVisitHandler {
+func NewPatientVisitHandler(dataApi api.DataAPI, authApi thriftapi.Auth, layoutStorageService api.CloudStorageAPI, patientPhotoStorageService api.CloudStorageAPI) *PatientVisitHandler {
 	return &PatientVisitHandler{dataApi, authApi, layoutStorageService, patientPhotoStorageService, 0}
 }
 

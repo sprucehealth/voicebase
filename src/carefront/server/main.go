@@ -11,7 +11,11 @@ import (
 	"carefront/api"
 	"carefront/apiservice"
 	"carefront/config"
+	"carefront/libs/svcclient"
+	"carefront/libs/svcreg"
+	"carefront/thriftapi"
 	_ "github.com/go-sql-driver/mysql"
+	"github.com/samuel/go-metrics/metrics"
 )
 
 const (
@@ -81,7 +85,19 @@ func main() {
 		log.Fatalf("Failed to get AWS auth: %+v", err)
 	}
 
-	authApi := &api.AuthService{DB: db}
+	metricsRegistry := metrics.NewRegistry()
+
+	svcReg, err := conf.ServiceRegistry()
+	if err != nil {
+		log.Fatalf("Failed to create service registry: %+v", err)
+	}
+	secureSvcClientBuilder, err := svcclient.NewThriftServiceClientBuilder(svcReg, svcreg.ServiceId{Environment: conf.Environment, Name: "secure"})
+	if err != nil {
+		log.Fatalf("Failed to create client builder for secure service: %+v", err)
+	}
+	secureSvcClient := svcclient.NewClient("restapi", 4, secureSvcClientBuilder, metricsRegistry.Scope("secureservice"))
+
+	authApi := &thriftapi.AuthClient{Client: secureSvcClient}
 	dataApi := &api.DataService{DB: db}
 	cloudStorageApi := api.NewCloudStorageService(awsAuth)
 	photoAnswerCloudStorageApi := api.NewCloudStorageService(awsAuth)
