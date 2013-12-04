@@ -13,9 +13,9 @@ type Stats struct {
 	// Stats Reporters
 	Source          string `long:"stats_source" description:"Source for stats (e.g. hostname)"`
 	GraphiteAddr    string `long:"graphite.addr" description:"Graphite addr:port"`
-	LibratoUsername string `long:"librato_username" "description":"Librato Metrics username"`
-	LibratoToken    string `long:"librato_token" "description":"Librato Metrics token"`
-	StatHatKey      string `long:"stathat_key" "description":"StatHat EZKey"`
+	LibratoUsername string `long:"librato_username" description:"Librato Metrics username"`
+	LibratoToken    string `long:"librato_token" description:"Librato Metrics token"`
+	StatHatKey      string `long:"stathat_key" description:"StatHat EZKey"`
 }
 
 var (
