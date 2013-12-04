@@ -37,6 +37,7 @@ type BaseConfig struct {
 	LogPath                 string `long:"log_path" description:"Path to log file"`
 	ZookeeperHosts          string `long:"zk_hosts" description:"Zookeeper host list (e.g. 127.0.0.1:2181,192.168.1.1:2181)"`
 	ZookeeperServicesPrefix string `long:"zk_svc_prefix" description:"Zookeeper svc registry prefix" default:"/services"`
+	Stats                   *Stats `group:"Stats" toml:"stats"`
 
 	awsAuth     aws.Auth
 	awsAuthOnce sync.Once

@@ -15,6 +15,7 @@ import (
 	"carefront/services/auth"
 	"carefront/thriftapi"
 	_ "github.com/go-sql-driver/mysql"
+	"github.com/samuel/go-metrics/metrics"
 	"github.com/samuel/go-thrift/thrift"
 )
 
@@ -53,6 +54,9 @@ func main() {
 		fmt.Fprintf(os.Stderr, "Missing either one of user, password, host, or name for the database.\n")
 		os.Exit(1)
 	}
+
+	metricsRegistry := metrics.NewRegistry().Scope("secure")
+	conf.BaseConfig.Stats.StartReporters(metricsRegistry)
 
 	dsn := fmt.Sprintf("%s:%s@tcp(%s:3306)/%s?parseTime=true", conf.DB.User, conf.DB.Password, conf.DB.Host, conf.DB.Name)
 

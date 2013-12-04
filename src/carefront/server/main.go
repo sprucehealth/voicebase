@@ -64,6 +64,9 @@ func main() {
 		os.Exit(1)
 	}
 
+	metricsRegistry := metrics.NewRegistry().Scope("restapi")
+	conf.BaseConfig.Stats.StartReporters(metricsRegistry)
+
 	dsn := fmt.Sprintf("%s:%s@tcp(%s:3306)/%s?parseTime=true", conf.DB.User, conf.DB.Password, conf.DB.Host, conf.DB.Name)
 
 	// this gives us a connection pool to the sql instance
@@ -84,8 +87,6 @@ func main() {
 	if err != nil {
 		log.Fatalf("Failed to get AWS auth: %+v", err)
 	}
-
-	metricsRegistry := metrics.NewRegistry()
 
 	svcReg, err := conf.ServiceRegistry()
 	if err != nil {
