@@ -16,7 +16,7 @@ install:
   - echo "trying to avoid travis ci from attempting to get all packages from the internet" 
 
 env:
-  - RDS_INSTANCE="dev-db-3.ccvrwjdx3gvp.us-east-1.rds.amazonaws.com" RDS_USERNAME="carefront" RDS_PASSWORD="changethis" TEST_DB=database_$TRAVIS_BUILD_ID AWS_ACCESS_KEY=AKIAJ7Q3EZR5EWJKJLMA AWS_SECRET_KEY=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
+  - RDS_INSTANCE="dev-db-3.ccvrwjdx3gvp.us-east-1.rds.amazonaws.com" RDS_USERNAME="carefront" RDS_PASSWORD="changethis" TEST_DB=database_${TRAVIS_BUILD_ID}_${RANDOM} AWS_ACCESS_KEY=AKIAJ7Q3EZR5EWJKJLMA AWS_SECRET_KEY=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
 
 before_script:
   - pushd src/carefront/mysql/
