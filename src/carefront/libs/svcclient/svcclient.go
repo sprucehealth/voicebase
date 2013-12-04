@@ -22,7 +22,7 @@ type Client struct {
 
 	statRequests               metrics.Counter
 	statEstablishedConnections metrics.Counter
-	statLiveConnections        metrics.Counter
+	statActiveConnections      metrics.IntegerGauge
 }
 
 func NewClient(clientId string, maxIdleConnections int, clientBuilder ClientBuilder, metricsRegistry metrics.Registry) *Client {
@@ -35,12 +35,12 @@ func NewClient(clientId string, maxIdleConnections int, clientBuilder ClientBuil
 
 		statRequests:               metrics.NewCounter(),
 		statEstablishedConnections: metrics.NewCounter(),
-		statLiveConnections:        metrics.NewCounter(),
+		statActiveConnections:      metrics.NewIntegerGauge(),
 	}
 
 	metricsRegistry.Add("requests", r.statRequests)
 	metricsRegistry.Add("connections.established", r.statEstablishedConnections)
-	metricsRegistry.Add("connections.inuse", r.statLiveConnections)
+	metricsRegistry.Add("connections.active", r.statActiveConnections)
 
 	return r
 }
@@ -78,10 +78,10 @@ func (r *Client) Call(serviceMethod string, args interface{}, reply interface{})
 	if err != nil {
 		return err
 	}
-	r.statLiveConnections.Inc(1)
+	r.statActiveConnections.Inc(1)
 	r.statRequests.Inc(1)
 	err = c.Call(serviceMethod, args, reply)
-	r.statLiveConnections.Dec(1)
+	r.statActiveConnections.Dec(1)
 	if err != nil {
 		c.Close()
 		return err
@@ -106,12 +106,12 @@ func (r *Client) Go(serviceMethod string, args interface{}, reply interface{}, d
 		done <- call
 		return call
 	}
-	r.statLiveConnections.Inc(1)
+	r.statActiveConnections.Inc(1)
 	d := make(chan *rpc.Call, 1)
 	go func() {
 		call := <-d
 		call.Done = done
-		r.statLiveConnections.Dec(1)
+		r.statActiveConnections.Dec(1)
 		if call.Error != nil {
 			c.Close()
 		} else {

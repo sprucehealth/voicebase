@@ -83,9 +83,10 @@ func main() {
 	}
 
 	service := &config.Server{
-		Config:     conf.BaseConfig,
-		ListenAddr: conf.ListenAddr,
-		ServiceID:  svcreg.ServiceId{Environment: conf.Environment, Name: serviceName},
+		Config:          conf.BaseConfig,
+		ListenAddr:      conf.ListenAddr,
+		MetricsRegistry: metricsRegistry.Scope("service"),
+		ServiceID:       svcreg.ServiceId{Environment: conf.Environment, Name: serviceName},
 		ServFunc: func(conn net.Conn) {
 			serv.ServeCodec(thrift.NewServerCodec(thrift.NewFramedReadWriteCloser(conn, 0), thrift.NewBinaryProtocol(true, false)))
 		},
