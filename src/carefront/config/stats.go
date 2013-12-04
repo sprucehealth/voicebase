@@ -22,8 +22,8 @@ var (
 	statsExportIncludes = []*regexp.Regexp{
 		regexp.MustCompile(`/connections`),
 		regexp.MustCompile(`/requests`),
-		regexp.MustCompile(`^runtime/(gc|heap)/`),
-		regexp.MustCompile(`^runtime/(Frees|Mallocs)$`),
+		regexp.MustCompile(`/runtime/(gc|heap)/`),
+		regexp.MustCompile(`/runtime/(Frees|Mallocs)$`),
 	}
 	statsExportExcludes []*regexp.Regexp = nil
 )
