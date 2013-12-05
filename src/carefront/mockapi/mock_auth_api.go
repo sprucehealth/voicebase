@@ -2,7 +2,7 @@ package mockapi
 
 import (
 	"carefront/common"
-	"carefront/thriftapi"
+	"carefront/thrift/api"
 )
 
 type MockAccount struct {
@@ -20,9 +20,9 @@ var (
 	IdCounter = 1
 )
 
-func (m *MockAuth) Signup(email, password string) (*thriftapi.AuthResponse, error) {
+func (m *MockAuth) Signup(email, password string) (*api.AuthResponse, error) {
 	if a, ok := m.Accounts[email]; ok {
-		return nil, &thriftapi.LoginAlreadyExists{AccountId: a.Id}
+		return nil, &api.LoginAlreadyExists{AccountId: a.Id}
 	}
 	tok, err := common.GenerateToken()
 	if err != nil {
@@ -34,12 +34,12 @@ func (m *MockAuth) Signup(email, password string) (*thriftapi.AuthResponse, erro
 	IdCounter += 1
 	m.Accounts[email] = MockAccount{int64(IdCounter), email, password}
 	m.Tokens[tok] = int64(IdCounter)
-	return &thriftapi.AuthResponse{Token: tok, AccountId: int64(IdCounter)}, nil
+	return &api.AuthResponse{Token: tok, AccountId: int64(IdCounter)}, nil
 }
 
-func (m *MockAuth) Login(login, password string) (*thriftapi.AuthResponse, error) {
+func (m *MockAuth) Login(login, password string) (*api.AuthResponse, error) {
 	if account, ok := m.Accounts[login]; !ok || account.Password != password {
-		return nil, &thriftapi.NoSuchLogin{}
+		return nil, &api.NoSuchLogin{}
 	} else {
 		tok, err := common.GenerateToken()
 		if err != nil {
@@ -49,7 +49,7 @@ func (m *MockAuth) Login(login, password string) (*thriftapi.AuthResponse, error
 			m.Tokens = make(map[string]int64)
 		}
 		m.Tokens[tok] = account.Id
-		return &thriftapi.AuthResponse{Token: tok, AccountId: account.Id}, nil
+		return &api.AuthResponse{Token: tok, AccountId: account.Id}, nil
 	}
 }
 
@@ -58,11 +58,11 @@ func (m *MockAuth) Logout(token string) error {
 	return nil
 }
 
-func (m *MockAuth) ValidateToken(token string) (*thriftapi.TokenValidationResponse, error) {
+func (m *MockAuth) ValidateToken(token string) (*api.TokenValidationResponse, error) {
 	if m.Tokens != nil {
 		if id, ok := m.Tokens[token]; ok {
-			return &thriftapi.TokenValidationResponse{IsValid: true, AccountId: &id}, nil
+			return &api.TokenValidationResponse{IsValid: true, AccountId: &id}, nil
 		}
 	}
-	return &thriftapi.TokenValidationResponse{IsValid: false}, nil
+	return &api.TokenValidationResponse{IsValid: false}, nil
 }
