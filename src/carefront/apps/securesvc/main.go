@@ -10,7 +10,7 @@ import (
 	"os/signal"
 	"time"
 
-	"carefront/config"
+	"carefront/common/config"
 	"carefront/libs/svcreg"
 	"carefront/services/auth"
 	"carefront/thrift/api"

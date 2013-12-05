@@ -10,7 +10,7 @@ import (
 
 	"carefront/api"
 	"carefront/apiservice"
-	"carefront/config"
+	"carefront/common/config"
 	"carefront/libs/svcclient"
 	"carefront/libs/svcreg"
 	thriftapi "carefront/thrift/api"
