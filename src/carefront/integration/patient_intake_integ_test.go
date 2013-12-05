@@ -23,7 +23,7 @@ type AnswerIntakeHandler struct {
 }
 
 func getQuestionWithTagAndExpectedType(questionTag, questionType string, t *testing.T, testData TestData) int64 {
-	questionId, _, questionType, _, _, err := testData.DataApi.GetQuestionInfo(questionTag, 1)
+	questionId, _, questionType, _, _, _, err := testData.DataApi.GetQuestionInfo(questionTag, 1)
 	if err != nil {
 		t.Fatal("Unable to query for question q_reason_visit from database: " + err.Error())
 	}
