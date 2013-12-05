@@ -1,15 +1,20 @@
 #!/usr/bin/env python
 
+import os
 import sys
 
-PASS = '\033[92m'
-FAIL = '\033[91m'
-END = '\033[0m'
+print "TERM:", os.getenv("TERM")
+
+PASS = "\033[0;32m"
+FAIL = "\033[1;31m"
+END = "\033[0m"
 
 def output_run(run, success):
     if success:
+        sys.stdout.write("...PASS...\n")
         sys.stdout.write(PASS)
     elif success == False:
+        sys.stdout.write("...FAIL...\n")
         sys.stdout.write(FAIL)
     for line in run:
         sys.stdout.write(line+"\n")
