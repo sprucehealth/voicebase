@@ -379,7 +379,6 @@ func TestSubQuestionEntryIntake(t *testing.T) {
 								patientAnswer.AnswerText == proactive)) {
 							t.Fatal("Top level patient answers is not one of the expected answers")
 						}
-
 						for _, subAnswer := range patientAnswer.SubAnswers {
 							if !(subAnswer.PotentialAnswerId == howEffectiveAnswerId ||
 								subAnswer.PotentialAnswerId == usingTreatmentAnswerId ||
@@ -388,6 +387,10 @@ func TestSubQuestionEntryIntake(t *testing.T) {
 									subAnswer.QuestionId == usingTreatmentQuestionId ||
 									subAnswer.QuestionId == lengthTreatmentQuestionId) {
 								t.Fatal("Sub answers to top level answers is not one of the expected answers")
+							}
+
+							if subAnswer.AnswerSummary == "" {
+								t.Fatalf("The %s potential answer id should have an answer summary", subAnswer.PotentialAnswerId)
 							}
 						}
 					}
