@@ -3,8 +3,8 @@ package api
 import (
 	"time"
 
+	"carefront/common"
 	"carefront/libs/aws"
-	"carefront/util"
 	goamz "launchpad.net/goamz/aws"
 	"launchpad.net/goamz/s3"
 )
@@ -26,7 +26,7 @@ func (c *CloudStorageService) GetObjectAtLocation(bucket, key, region string) (r
 		awsRegion = goamz.USEast
 	}
 
-	s3Access := s3.New(util.AWSAuthAdapter(c.awsAuth), awsRegion)
+	s3Access := s3.New(common.AWSAuthAdapter(c.awsAuth), awsRegion)
 	s3Bucket := s3Access.Bucket(bucket)
 
 	rawData, err = s3Bucket.Get(key)
@@ -42,7 +42,7 @@ func (c *CloudStorageService) DeleteObjectAtLocation(bucket, key, region string)
 		awsRegion = goamz.USEast
 	}
 
-	s3Access := s3.New(util.AWSAuthAdapter(c.awsAuth), awsRegion)
+	s3Access := s3.New(common.AWSAuthAdapter(c.awsAuth), awsRegion)
 	s3Bucket := s3Access.Bucket(bucket)
 	err := s3Bucket.Del(key)
 	return err
@@ -54,7 +54,7 @@ func (c *CloudStorageService) GetSignedUrlForObjectAtLocation(bucket, key, regio
 		awsRegion = goamz.USEast
 	}
 
-	s3Access := s3.New(util.AWSAuthAdapter(c.awsAuth), awsRegion)
+	s3Access := s3.New(common.AWSAuthAdapter(c.awsAuth), awsRegion)
 	s3Bucket := s3Access.Bucket(bucket)
 	url = s3Bucket.SignedURL(key, duration)
 	return
@@ -71,7 +71,7 @@ func (c *CloudStorageService) PutObjectToLocation(bucket, key, region, contentTy
 		awsRegion = goamz.USEast
 	}
 
-	s3Access := s3.New(util.AWSAuthAdapter(c.awsAuth), awsRegion)
+	s3Access := s3.New(common.AWSAuthAdapter(c.awsAuth), awsRegion)
 	s3Bucket := s3Access.Bucket(bucket)
 	additionalHeaders := map[string][]string{
 		"x-amz-server-side-encryption": {"AES256"},

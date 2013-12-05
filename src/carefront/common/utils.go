@@ -3,6 +3,9 @@ package common
 import (
 	"crypto/rand"
 	"encoding/base64"
+
+	"carefront/libs/aws"
+	goamz "launchpad.net/goamz/aws"
 )
 
 func GenerateToken() (string, error) {
@@ -13,4 +16,13 @@ func GenerateToken() (string, error) {
 
 	tok := base64.URLEncoding.EncodeToString(tokBytes)
 	return tok, nil
+}
+
+func AWSAuthAdapter(auth aws.Auth) goamz.Auth {
+	keys := auth.Keys()
+	return goamz.Auth{
+		AccessKey: keys.AccessKey,
+		SecretKey: keys.SecretKey,
+		Token:     keys.Token,
+	}
 }

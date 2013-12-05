@@ -16,10 +16,10 @@ import (
 	"sync"
 	"time"
 
+	"carefront/common"
 	"carefront/libs/aws"
 	"carefront/libs/svcreg"
 	"carefront/libs/svcreg/zksvcreg"
-	"carefront/util"
 	"github.com/BurntSushi/toml"
 	flags "github.com/jessevdk/go-flags"
 	"github.com/samuel/go-zookeeper/zk"
@@ -113,7 +113,7 @@ func LoadConfigFile(configUrl string, config interface{}, awsAuther func() (aws.
 			return fmt.Errorf("config: failed to parse config url %s: %+v", configUrl, err)
 		}
 		if ur.Scheme == "s3" {
-			s3 := s3.New(util.AWSAuthAdapter(awsAuth), goamz.USEast)
+			s3 := s3.New(common.AWSAuthAdapter(awsAuth), goamz.USEast)
 			rd, err = s3.Bucket(ur.Host).GetReader(ur.Path)
 			if err != nil {
 				return fmt.Errorf("config: failed to get config from s3 %s: %+v", configUrl, err)
