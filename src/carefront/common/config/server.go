@@ -53,8 +53,8 @@ func (ts *Server) Start() error {
 
 	ts.statEstablishedConnections = metrics.NewCounter()
 	ts.statActiveConnections = metrics.NewIntegerGauge()
-	ts.MetricsRegistry.Add("connections.established", ts.statEstablishedConnections)
-	ts.MetricsRegistry.Add("connections.active", ts.statActiveConnections)
+	ts.MetricsRegistry.Add("connections/established", ts.statEstablishedConnections)
+	ts.MetricsRegistry.Add("connections/active", ts.statActiveConnections)
 
 	// Start the service in a new Go routine
 
