@@ -67,7 +67,7 @@ func main() {
 		os.Exit(1)
 	}
 
-	metricsRegistry := metrics.NewRegistry().Scope("restapi")
+	metricsRegistry := metrics.NewRegistry()
 	conf.StartReporters(metricsRegistry)
 
 	dsn := fmt.Sprintf("%s:%s@tcp(%s:3306)/%s?parseTime=true", conf.DB.User, conf.DB.Password, conf.DB.Host, conf.DB.Name)
