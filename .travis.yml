@@ -44,6 +44,9 @@ after_script:
 notifications:
   webhooks:
     urls:
-    - https://carefront.slack.com/services/hooks/travis?token=Ca0yGyN1ZKPBFL4T6NNjegiX
+      - https://carefront.slack.com/services/hooks/travis?token=Ca0yGyN1ZKPBFL4T6NNjegiX
+    on_success: change
+    on_failure: always
+    on_start: false
   email:
-  - backend@carefront.net
+      - backend@carefront.net

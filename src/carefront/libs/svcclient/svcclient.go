@@ -39,8 +39,8 @@ func NewClient(clientId string, maxIdleConnections int, clientBuilder ClientBuil
 	}
 
 	metricsRegistry.Add("requests", r.statRequests)
-	metricsRegistry.Add("connections.established", r.statEstablishedConnections)
-	metricsRegistry.Add("connections.active", r.statActiveConnections)
+	metricsRegistry.Add("connections/established", r.statEstablishedConnections)
+	metricsRegistry.Add("connections/active", r.statActiveConnections)
 
 	return r
 }
