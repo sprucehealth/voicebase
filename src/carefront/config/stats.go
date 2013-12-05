@@ -1,6 +1,8 @@
 package config
 
 import (
+	"fmt"
+	"log"
 	"os"
 	"regexp"
 	"time"
@@ -28,38 +30,39 @@ var (
 	statsExportExcludes []*regexp.Regexp = nil
 )
 
-func (s *Stats) StartReporters(statsRegistry metrics.Registry) {
+func (s *BaseConfig) StartReporters(statsRegistry metrics.Registry) {
 	if s == nil {
 		return
 	}
 
-	if s.Source == "" {
-		name, err := os.Hostname()
+	if s.Stats.Source == "" {
+		hostname, err := os.Hostname()
 		if err == nil {
-			s.Source = name
+			s.Stats.Source = fmt.Sprintf("%s-%s-%s", s.Environment, s.AppName, hostname)
 		} else {
-			s.Source = "unknown"
+			s.Stats.Source = "unknown"
+			log.Printf("Unable to get local hostname. Using 'unknown' for stats source.")
 		}
 	}
 
 	statsRegistry.Add("runtime", metrics.RuntimeMetrics)
-	if s.GraphiteAddr != "" {
+	if s.Stats.GraphiteAddr != "" {
 		statsReporter := reporter.NewGraphiteReporter(
-			statsRegistry, time.Minute, s.GraphiteAddr, s.Source,
+			statsRegistry, time.Minute, s.Stats.GraphiteAddr, s.Stats.Source,
 			map[string]float64{"median": 0.5, "p75": 0.75, "p90": 0.9, "p99": 0.99, "p999": 0.999})
 		statsReporter.Start()
 	}
 
 	filteredRegistry := metrics.NewFilterdRegistry(statsRegistry, statsExportIncludes, statsExportExcludes)
-	if s.LibratoUsername != "" && s.LibratoToken != "" {
+	if s.Stats.LibratoUsername != "" && s.Stats.LibratoToken != "" {
 		statsReporter := reporter.NewLibratoReporter(
-			filteredRegistry, time.Minute, s.LibratoUsername, s.LibratoToken, s.Source,
+			filteredRegistry, time.Minute, s.Stats.LibratoUsername, s.Stats.LibratoToken, s.Stats.Source,
 			map[string]float64{"median": 0.5, "p90": 0.9, "p99": 0.99})
 		statsReporter.Start()
 	}
-	if s.StatHatKey != "" {
+	if s.Stats.StatHatKey != "" {
 		statsReporter := reporter.NewStatHatReporter(
-			filteredRegistry, time.Minute, s.StatHatKey, "",
+			filteredRegistry, time.Minute, s.Stats.StatHatKey, "",
 			map[string]float64{"median": 0.5, "p90": 0.9, "p99": 0.99})
 		statsReporter.Start()
 	}

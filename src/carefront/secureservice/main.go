@@ -33,6 +33,9 @@ type Config struct {
 }
 
 var DefaultConfig = Config{
+	BaseConfig: &config.BaseConfig{
+		AppName: "secure",
+	},
 	ListenAddr: ":10001",
 }
 
@@ -46,9 +49,6 @@ func main() {
 	if err != nil {
 		log.Fatal(err)
 	}
-	if conf.Environment == "" || (conf.Environment != "prod" && conf.Environment != "staging" && conf.Environment != "dev") {
-		log.Fatal("flag --env is required and must be one of prod, staging, or dev")
-	}
 
 	if conf.DB.User == "" || conf.DB.Password == "" || conf.DB.Host == "" || conf.DB.Name == "" {
 		fmt.Fprintf(os.Stderr, "Missing either one of user, password, host, or name for the database.\n")
@@ -56,7 +56,7 @@ func main() {
 	}
 
 	metricsRegistry := metrics.NewRegistry().Scope("secure")
-	conf.BaseConfig.Stats.StartReporters(metricsRegistry)
+	conf.StartReporters(metricsRegistry)
 
 	dsn := fmt.Sprintf("%s:%s@tcp(%s:3306)/%s?parseTime=true", conf.DB.User, conf.DB.Password, conf.DB.Host, conf.DB.Name)
 

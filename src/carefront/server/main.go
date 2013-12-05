@@ -47,6 +47,9 @@ type Config struct {
 }
 
 var DefaultConfig = Config{
+	BaseConfig: &config.BaseConfig{
+		AppName: "resetapi",
+	},
 	ListenAddr:            ":8080",
 	CaseBucket:            "carefront-cases",
 	MaxInMemoryForPhotoMB: defaultMaxInMemoryPhotoMB,
@@ -65,7 +68,7 @@ func main() {
 	}
 
 	metricsRegistry := metrics.NewRegistry().Scope("restapi")
-	conf.BaseConfig.Stats.StartReporters(metricsRegistry)
+	conf.StartReporters(metricsRegistry)
 
 	dsn := fmt.Sprintf("%s:%s@tcp(%s:3306)/%s?parseTime=true", conf.DB.User, conf.DB.Password, conf.DB.Host, conf.DB.Name)
 

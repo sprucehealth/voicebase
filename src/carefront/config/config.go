@@ -28,6 +28,7 @@ import (
 )
 
 type BaseConfig struct {
+	AppName                 string `long:"app_name" description:"Application name (required)"`
 	AWSRegion               string `long:"aws_region" description:"AWS region"`
 	AWSRole                 string `long:"aws_role" description:"AWS role for fetching temporary credentials"`
 	AWSSecretKey            string `long:"aws_secret_key" description:"AWS secret key"`
@@ -224,6 +225,15 @@ func ParseArgs(config interface{}, args []string) ([]string, error) {
 		log.SetOutput(file)
 	}
 	log.SetFlags(log.Lshortfile | log.Ldate | log.Ltime)
+
+	if baseConfig.AppName == "" {
+		fmt.Fprintf(os.Stderr, "Missing required app_name config value.\n")
+		os.Exit(1)
+	}
+	if baseConfig.Environment == "" || (baseConfig.Environment != "prod" && baseConfig.Environment != "staging" && baseConfig.Environment != "dev") {
+		fmt.Fprintf(os.Stderr, "flag --env is required and must be one of prod, staging, or dev")
+		os.Exit(1)
+	}
 
 	return extraArgs, nil
 }
