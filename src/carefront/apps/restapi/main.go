@@ -13,6 +13,7 @@ import (
 	"carefront/common/config"
 	"carefront/libs/svcclient"
 	"carefront/libs/svcreg"
+	"carefront/services/auth"
 	thriftapi "carefront/thrift/api"
 	_ "github.com/go-sql-driver/mysql"
 	"github.com/samuel/go-metrics/metrics"
@@ -95,13 +96,23 @@ func main() {
 	if err != nil {
 		log.Fatalf("Failed to create service registry: %+v", err)
 	}
-	secureSvcClientBuilder, err := svcclient.NewThriftServiceClientBuilder(svcReg, svcreg.ServiceId{Environment: conf.Environment, Name: "secure"})
-	if err != nil {
-		log.Fatalf("Failed to create client builder for secure service: %+v", err)
-	}
-	secureSvcClient := svcclient.NewClient("restapi", 4, secureSvcClientBuilder, metricsRegistry.Scope("securesvc-client"))
 
-	authApi := &thriftapi.AuthClient{Client: secureSvcClient}
+	var authApi thriftapi.Auth
+	if conf.BaseConfig.ZookeeperHosts == "" {
+		if conf.Debug {
+			authApi = &auth.AuthService{DB: db}
+		} else {
+			log.Fatalf("No Zookeeper hosts defined and not running under debug")
+		}
+	} else {
+		secureSvcClientBuilder, err := svcclient.NewThriftServiceClientBuilder(svcReg, svcreg.ServiceId{Environment: conf.Environment, Name: "secure"})
+		if err != nil {
+			log.Fatalf("Failed to create client builder for secure service: %+v", err)
+		}
+		secureSvcClient := svcclient.NewClient("restapi", 4, secureSvcClientBuilder, metricsRegistry.Scope("securesvc-client"))
+		authApi = &thriftapi.AuthClient{Client: secureSvcClient}
+	}
+
 	dataApi := &api.DataService{DB: db}
 	cloudStorageApi := api.NewCloudStorageService(awsAuth)
 	photoAnswerCloudStorageApi := api.NewCloudStorageService(awsAuth)
