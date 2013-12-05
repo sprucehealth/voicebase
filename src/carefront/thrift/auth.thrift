@@ -1,4 +1,4 @@
-namespace go carefront.thriftapi
+namespace go carefront.thrift.api
 
 include "common.thrift"
 

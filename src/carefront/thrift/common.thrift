@@ -1,4 +1,4 @@
-namespace go carefront.thriftapi
+namespace go carefront.thrift.api
 
 exception InternalServerError {
 	1: string message

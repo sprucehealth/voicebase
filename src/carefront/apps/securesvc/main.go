@@ -13,7 +13,7 @@ import (
 	"carefront/config"
 	"carefront/libs/svcreg"
 	"carefront/services/auth"
-	"carefront/thriftapi"
+	"carefront/thrift/api"
 	_ "github.com/go-sql-driver/mysql"
 	"github.com/samuel/go-metrics/metrics"
 	"github.com/samuel/go-thrift/thrift"
@@ -78,7 +78,7 @@ func main() {
 		DB: db,
 	}
 	serv := rpc.NewServer()
-	if err := serv.RegisterName("Thrift", &thriftapi.AuthServer{Implementation: authService}); err != nil {
+	if err := serv.RegisterName("Thrift", &api.AuthServer{Implementation: authService}); err != nil {
 		log.Fatal(err)
 	}
 

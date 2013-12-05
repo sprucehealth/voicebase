@@ -13,7 +13,7 @@ import (
 	"carefront/config"
 	"carefront/libs/svcclient"
 	"carefront/libs/svcreg"
-	"carefront/thriftapi"
+	thriftapi "carefront/thrift/api"
 	_ "github.com/go-sql-driver/mysql"
 	"github.com/samuel/go-metrics/metrics"
 )

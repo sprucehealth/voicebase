@@ -7,7 +7,7 @@ import (
 	"carefront/api"
 	"carefront/common"
 	"carefront/info_intake"
-	"carefront/thriftapi"
+	thriftapi "carefront/thrift/api"
 )
 
 const (

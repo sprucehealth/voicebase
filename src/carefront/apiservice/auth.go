@@ -61,12 +61,12 @@ import (
 	"net/http"
 	"strings"
 
-	"carefront/thriftapi"
+	"carefront/thrift/api"
 	"github.com/gorilla/schema"
 )
 
 type AuthenticationHandler struct {
-	AuthApi thriftapi.Auth
+	AuthApi api.Auth
 }
 
 type AuthenticationResponse struct {
@@ -99,7 +99,7 @@ func (h *AuthenticationHandler) ServeHTTP(w http.ResponseWriter, r *http.Request
 
 		if res, err := h.AuthApi.Signup(requestData.Login, requestData.Password); err != nil {
 			switch err.(type) {
-			case *thriftapi.LoginAlreadyExists:
+			case *api.LoginAlreadyExists:
 				WriteUserError(w, http.StatusBadRequest, "Login already exists")
 				return
 			default:
@@ -122,7 +122,7 @@ func (h *AuthenticationHandler) ServeHTTP(w http.ResponseWriter, r *http.Request
 
 		if res, err := h.AuthApi.Login(requestData.Login, requestData.Password); err != nil {
 			switch err.(type) {
-			case *thriftapi.NoSuchLogin:
+			case *api.NoSuchLogin:
 				WriteUserError(w, http.StatusForbidden, "Invalid email/password combination")
 				return
 			default:

@@ -7,7 +7,7 @@ import (
 	"time"
 
 	"carefront/api"
-	"carefront/thriftapi"
+	thriftapi "carefront/thrift/api"
 	"github.com/gorilla/schema"
 )
 
