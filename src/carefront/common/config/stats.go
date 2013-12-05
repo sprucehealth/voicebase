@@ -24,7 +24,7 @@ var (
 	statsExportIncludes    []*regexp.Regexp = nil
 	statsExportExcludes    []*regexp.Regexp = nil
 	statsCloudWatchExports                  = []*regexp.Regexp{
-		regexp.MustCompile(`^securesvc-client\.requests$`),
+		regexp.MustCompile(`^securesvc-client/requests$`),
 	}
 )
 
