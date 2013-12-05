@@ -99,7 +99,7 @@ func main() {
 	if err != nil {
 		log.Fatalf("Failed to create client builder for secure service: %+v", err)
 	}
-	secureSvcClient := svcclient.NewClient("restapi", 4, secureSvcClientBuilder, metricsRegistry.Scope("secureservice"))
+	secureSvcClient := svcclient.NewClient("restapi", 4, secureSvcClientBuilder, metricsRegistry.Scope("securesvc-client"))
 
 	authApi := &thriftapi.AuthClient{Client: secureSvcClient}
 	dataApi := &api.DataService{DB: db}

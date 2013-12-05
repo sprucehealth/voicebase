@@ -85,7 +85,7 @@ func main() {
 	service := &config.Server{
 		Config:          conf.BaseConfig,
 		ListenAddr:      conf.ListenAddr,
-		MetricsRegistry: metricsRegistry.Scope("service"),
+		MetricsRegistry: metricsRegistry.Scope("securesvc-server"),
 		ServiceID:       svcreg.ServiceId{Environment: conf.Environment, Name: serviceName},
 		ServFunc: func(conn net.Conn) {
 			serv.ServeCodec(thrift.NewServerCodec(thrift.NewFramedReadWriteCloser(conn, 0), thrift.NewBinaryProtocol(true, false)))
