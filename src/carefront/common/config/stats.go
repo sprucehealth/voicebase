@@ -65,8 +65,12 @@ func (s *BaseConfig) StartReporters(statsRegistry metrics.Registry) {
 		statsReporter.Start()
 	}
 
-	filteredRegistry = metrics.NewFilterdRegistry(statsRegistry, nil, statsCloudWatchExports)
-	statsReporter := reporter.NewCloudWatchReporter(filteredRegistry, time.Minute, s.AWSRegion, s.AWSAccessKey, s.AWSSecretKey,
-		fmt.Sprintf("%s-%s", s.Environment, s.AppName), nil, map[string]float64{"p99": 0.99, "p999": 0.999}, time.Second*10)
-	statsReporter.Start()
+	auth, err := s.AWSAuth()
+	if err == nil {
+		keys := auth.Keys()
+		filteredRegistry := metrics.NewFilterdRegistry(statsRegistry, statsCloudWatchExports, nil)
+		statsReporter := reporter.NewCloudWatchReporter(filteredRegistry, time.Minute, s.AWSRegion, keys.AccessKey, keys.SecretKey, keys.Token,
+			fmt.Sprintf("%s-%s", s.Environment, s.AppName), nil, map[string]float64{"p99": 0.99, "p999": 0.999}, time.Second*10)
+		statsReporter.Start()
+	}
 }
