@@ -11,6 +11,8 @@ func TestBasic(t *testing.T) {
 	args := []string{
 		"--test_arg", "1234",
 		"--aws_region", "test-region",
+		"--app_name", "test-name",
+		"--env", "test",
 	}
 	config := &TestConfig{}
 	args2, err := ParseArgs(config, args)
