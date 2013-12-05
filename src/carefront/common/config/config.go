@@ -49,6 +49,13 @@ type BaseConfig struct {
 	regOnce     sync.Once
 }
 
+var validEnvironments = map[string]bool{
+	"prod":    true,
+	"staging": true,
+	"dev":     true,
+	"test":    true,
+}
+
 func (c *BaseConfig) AWSAuth() (auth aws.Auth, err error) {
 	c.awsAuthOnce.Do(func() {
 		if c.AWSRole != "" {
@@ -230,7 +237,7 @@ func ParseArgs(config interface{}, args []string) ([]string, error) {
 		fmt.Fprintf(os.Stderr, "Missing required app_name config value.\n")
 		os.Exit(1)
 	}
-	if baseConfig.Environment == "" || (baseConfig.Environment != "prod" && baseConfig.Environment != "staging" && baseConfig.Environment != "dev") {
+	if !validEnvironments[baseConfig.Environment] {
 		fmt.Fprintf(os.Stderr, "flag --env is required and must be one of prod, staging, or dev")
 		os.Exit(1)
 	}
