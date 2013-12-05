@@ -1,13 +1,14 @@
 package integration
 
 import (
-	// "carefront/apiservice"
 	// "encoding/json"
 	// "fmt"
-	_ "github.com/go-sql-driver/mysql"
 	// "io/ioutil"
 	// "net/http"
 	// "net/http/httptest"
+
+	// "carefront/apiservice"
+	_ "github.com/go-sql-driver/mysql"
 	"testing"
 )
 

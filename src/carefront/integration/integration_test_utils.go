@@ -16,9 +16,9 @@ import (
 
 	"carefront/api"
 	"carefront/apiservice"
-	"carefront/config"
+	"carefront/common/config"
 	"carefront/services/auth"
-	"carefront/thriftapi"
+	thriftapi "carefront/thrift/api"
 	"github.com/BurntSushi/toml"
 	_ "github.com/go-sql-driver/mysql"
 )
@@ -47,7 +47,7 @@ type TestData struct {
 
 func GetDBConfig(t *testing.T) *TestDBConfig {
 	dbConfig := TestConf{}
-	fileContents, err := ioutil.ReadFile("../server/dev.conf")
+	fileContents, err := ioutil.ReadFile("../apps/restapi/dev.conf")
 	if err != nil {
 		t.Fatal("Unable to upload dev.conf to read database data from")
 	}

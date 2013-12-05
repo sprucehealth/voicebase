@@ -10,10 +10,10 @@ import (
 	"os/signal"
 	"time"
 
-	"carefront/config"
+	"carefront/common/config"
 	"carefront/libs/svcreg"
 	"carefront/services/auth"
-	"carefront/thriftapi"
+	"carefront/thrift/api"
 	_ "github.com/go-sql-driver/mysql"
 	"github.com/samuel/go-metrics/metrics"
 	"github.com/samuel/go-thrift/thrift"
@@ -33,6 +33,9 @@ type Config struct {
 }
 
 var DefaultConfig = Config{
+	BaseConfig: &config.BaseConfig{
+		AppName: "secure",
+	},
 	ListenAddr: ":10001",
 }
 
@@ -46,17 +49,14 @@ func main() {
 	if err != nil {
 		log.Fatal(err)
 	}
-	if conf.Environment == "" || (conf.Environment != "prod" && conf.Environment != "staging" && conf.Environment != "dev") {
-		log.Fatal("flag --env is required and must be one of prod, staging, or dev")
-	}
 
 	if conf.DB.User == "" || conf.DB.Password == "" || conf.DB.Host == "" || conf.DB.Name == "" {
 		fmt.Fprintf(os.Stderr, "Missing either one of user, password, host, or name for the database.\n")
 		os.Exit(1)
 	}
 
-	metricsRegistry := metrics.NewRegistry().Scope("secure")
-	conf.BaseConfig.Stats.StartReporters(metricsRegistry)
+	metricsRegistry := metrics.NewRegistry()
+	conf.StartReporters(metricsRegistry)
 
 	dsn := fmt.Sprintf("%s:%s@tcp(%s:3306)/%s?parseTime=true", conf.DB.User, conf.DB.Password, conf.DB.Host, conf.DB.Name)
 
@@ -78,14 +78,14 @@ func main() {
 		DB: db,
 	}
 	serv := rpc.NewServer()
-	if err := serv.RegisterName("Thrift", &thriftapi.AuthServer{Implementation: authService}); err != nil {
+	if err := serv.RegisterName("Thrift", &api.AuthServer{Implementation: authService}); err != nil {
 		log.Fatal(err)
 	}
 
 	service := &config.Server{
 		Config:          conf.BaseConfig,
 		ListenAddr:      conf.ListenAddr,
-		MetricsRegistry: metricsRegistry.Scope("service"),
+		MetricsRegistry: metricsRegistry.Scope("securesvc-server"),
 		ServiceID:       svcreg.ServiceId{Environment: conf.Environment, Name: serviceName},
 		ServFunc: func(conn net.Conn) {
 			serv.ServeCodec(thrift.NewServerCodec(thrift.NewFramedReadWriteCloser(conn, 0), thrift.NewBinaryProtocol(true, false)))

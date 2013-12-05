@@ -10,10 +10,10 @@ import (
 
 	"carefront/api"
 	"carefront/apiservice"
-	"carefront/config"
+	"carefront/common/config"
 	"carefront/libs/svcclient"
 	"carefront/libs/svcreg"
-	"carefront/thriftapi"
+	thriftapi "carefront/thrift/api"
 	_ "github.com/go-sql-driver/mysql"
 	"github.com/samuel/go-metrics/metrics"
 )
@@ -47,6 +47,9 @@ type Config struct {
 }
 
 var DefaultConfig = Config{
+	BaseConfig: &config.BaseConfig{
+		AppName: "resetapi",
+	},
 	ListenAddr:            ":8080",
 	CaseBucket:            "carefront-cases",
 	MaxInMemoryForPhotoMB: defaultMaxInMemoryPhotoMB,
@@ -64,8 +67,8 @@ func main() {
 		os.Exit(1)
 	}
 
-	metricsRegistry := metrics.NewRegistry().Scope("restapi")
-	conf.BaseConfig.Stats.StartReporters(metricsRegistry)
+	metricsRegistry := metrics.NewRegistry()
+	conf.StartReporters(metricsRegistry)
 
 	dsn := fmt.Sprintf("%s:%s@tcp(%s:3306)/%s?parseTime=true", conf.DB.User, conf.DB.Password, conf.DB.Host, conf.DB.Name)
 
@@ -96,7 +99,7 @@ func main() {
 	if err != nil {
 		log.Fatalf("Failed to create client builder for secure service: %+v", err)
 	}
-	secureSvcClient := svcclient.NewClient("restapi", 4, secureSvcClientBuilder, metricsRegistry.Scope("secureservice"))
+	secureSvcClient := svcclient.NewClient("restapi", 4, secureSvcClientBuilder, metricsRegistry.Scope("securesvc-client"))
 
 	authApi := &thriftapi.AuthClient{Client: secureSvcClient}
 	dataApi := &api.DataService{DB: db}

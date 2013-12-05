@@ -16,10 +16,10 @@ import (
 	"sync"
 	"time"
 
+	"carefront/common"
 	"carefront/libs/aws"
 	"carefront/libs/svcreg"
 	"carefront/libs/svcreg/zksvcreg"
-	"carefront/util"
 	"github.com/BurntSushi/toml"
 	flags "github.com/jessevdk/go-flags"
 	"github.com/samuel/go-zookeeper/zk"
@@ -28,6 +28,7 @@ import (
 )
 
 type BaseConfig struct {
+	AppName                 string `long:"app_name" description:"Application name (required)"`
 	AWSRegion               string `long:"aws_region" description:"AWS region"`
 	AWSRole                 string `long:"aws_role" description:"AWS role for fetching temporary credentials"`
 	AWSSecretKey            string `long:"aws_secret_key" description:"AWS secret key"`
@@ -112,7 +113,7 @@ func LoadConfigFile(configUrl string, config interface{}, awsAuther func() (aws.
 			return fmt.Errorf("config: failed to parse config url %s: %+v", configUrl, err)
 		}
 		if ur.Scheme == "s3" {
-			s3 := s3.New(util.AWSAuthAdapter(awsAuth), goamz.USEast)
+			s3 := s3.New(common.AWSAuthAdapter(awsAuth), goamz.USEast)
 			rd, err = s3.Bucket(ur.Host).GetReader(ur.Path)
 			if err != nil {
 				return fmt.Errorf("config: failed to get config from s3 %s: %+v", configUrl, err)
@@ -224,6 +225,15 @@ func ParseArgs(config interface{}, args []string) ([]string, error) {
 		log.SetOutput(file)
 	}
 	log.SetFlags(log.Lshortfile | log.Ldate | log.Ltime)
+
+	if baseConfig.AppName == "" {
+		fmt.Fprintf(os.Stderr, "Missing required app_name config value.\n")
+		os.Exit(1)
+	}
+	if baseConfig.Environment == "" || (baseConfig.Environment != "prod" && baseConfig.Environment != "staging" && baseConfig.Environment != "dev") {
+		fmt.Fprintf(os.Stderr, "flag --env is required and must be one of prod, staging, or dev")
+		os.Exit(1)
+	}
 
 	return extraArgs, nil
 }

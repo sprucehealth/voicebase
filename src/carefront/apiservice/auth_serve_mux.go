@@ -4,7 +4,7 @@ import (
 	"log"
 	"net/http"
 
-	"carefront/thriftapi"
+	"carefront/thrift/api"
 )
 
 // If a handler conforms to this interface and returns true then
@@ -20,7 +20,7 @@ type Authenticated interface {
 
 type AuthServeMux struct {
 	http.ServeMux
-	AuthApi thriftapi.Auth
+	AuthApi api.Auth
 }
 
 type CustomResponseWriter struct {
