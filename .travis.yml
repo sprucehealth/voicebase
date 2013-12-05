@@ -47,5 +47,4 @@ notifications:
     urls:
       - https://carefront.slack.com/services/hooks/travis?token=Ca0yGyN1ZKPBFL4T6NNjegiX
   email:
-    recipients:
       - backend@carefront.net
