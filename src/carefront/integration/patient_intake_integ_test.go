@@ -2,8 +2,6 @@ package integration
 
 import (
 	"bytes"
-	"carefront/api"
-	"carefront/apiservice"
 	"encoding/json"
 	"fmt"
 	"io"
@@ -14,6 +12,9 @@ import (
 	"os"
 	"strconv"
 	"testing"
+
+	"carefront/api"
+	"carefront/apiservice"
 )
 
 type AnswerIntakeHandler struct {
