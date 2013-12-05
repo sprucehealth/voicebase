@@ -1,12 +1,36 @@
 {
-    "patient_visit_id": 108, 
+    "patient_visit_id": 327, 
     "potential_answers": [
         {
-            "potential_answer_id": 24
-        }, 
-        {
-        	"potential_answer_id": 25
+            "answer_text": "just testing", 
+            "answers": [
+                {
+                    "potential_answers": [
+                        {
+                            "potential_answer_id": 70
+                        }
+                    ], 
+                    "question_id": 24
+                }, 
+                {
+                    "potential_answers": [
+                        {
+                            "potential_answer_id": 75
+                        }
+                    ], 
+                    "question_id": 25
+                }, 
+                {
+                    "potential_answers": [
+                        {
+                            "potential_answer_id": 77
+                        }
+                    ], 
+                    "question_id": 26
+                }
+            ], 
+            "potential_answer_id": 15
         }
     ], 
-    "question_id": 14
+    "question_id": 8
 }
