@@ -554,12 +554,12 @@ func (d *DataService) GetSectionInfo(sectionTag string, languageId int64) (id in
 	return
 }
 
-func (d *DataService) GetQuestionInfo(questionTag string, languageId int64) (id int64, questionTitle string, questionType string, questionSummary string, parentQuestionId int64, err error) {
+func (d *DataService) GetQuestionInfo(questionTag string, languageId int64) (id int64, questionTitle string, questionType string, questionSummary string, parentQuestionId int64, additionalFields map[string]string, err error) {
 	var byteQuestionTitle, byteQuestionType, byteQuestionSummary []byte
 	var nullParentQuestionId sql.NullInt64
 	err = d.DB.QueryRow(
 		`select question.id, l1.ltext, qtype, parent_question_id, l2.ltext from question 
-			left outer join localized_text as l1 on app_text_id=qtext_app_text_id
+			left outer join localized_text as l1 on l1.app_text_id=qtext_app_text_id
 			left outer join question_type on qtype_id=question_type.id
 			left outer join localized_text as l2 on qtext_short_text_id = l2.app_text_id
 				where question_tag = ? and (l1.ltext is NULL or l1.language_id = ?)`,
@@ -570,6 +570,26 @@ func (d *DataService) GetQuestionInfo(questionTag string, languageId int64) (id 
 	questionTitle = string(byteQuestionTitle)
 	questionType = string(byteQuestionType)
 	questionSummary = string(byteQuestionSummary)
+
+	// get any additional fields pertaining to the question from the database
+	rows, err := d.DB.Query(`select question_field, ltext from question_fields
+								inner join localized_text on question_fields.app_text_id = localized_text.app_text_id
+								where question_id = ? and language_id = ?`, id, languageId)
+	if err != nil {
+		return
+	}
+	for rows.Next() {
+		var questionField, fieldText string
+		err = rows.Scan(&questionField, &fieldText)
+		if err != nil {
+			return
+		}
+		if additionalFields == nil {
+			additionalFields = make(map[string]string)
+		}
+		additionalFields[questionField] = fieldText
+	}
+
 	return
 }
 

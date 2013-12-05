@@ -43,6 +43,7 @@ type Question struct {
 	QuestionTitle    string                  `json:"question_title,omitempty"`
 	QuestionType     string                  `json:"question_type,omitempty"`
 	QuestionSummary  string                  `json:"question_summary,omitempty"`
+	AdditionalFields map[string]string       `json:"additional_fields,omitempty"`
 	ParentQuestionId int64                   `json:"parent_question_id,string,omitempty"`
 	PotentialAnswers []*PotentialAnswer      `json:"potential_answers,omitempty"`
 	PatientAnswers   []*common.PatientAnswer `json:"patient_answers,omitempty"`
