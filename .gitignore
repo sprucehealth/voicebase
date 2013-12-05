@@ -26,3 +26,8 @@ _cgo_export.*
 _testmain.go
 
 *.exe
+*.bz2
+*.gz
+
+src/carefront/apps/restapi/restapi
+src/carefront/apps/securesvc/securesvc
