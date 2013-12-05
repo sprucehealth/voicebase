@@ -15,6 +15,7 @@ type PotentialAnswerInfo struct {
 	PotentialAnswerId int64
 	AnswerType        string
 	Answer            string
+	AnswerSummary     string
 	AnswerTag         string
 	Ordering          int64
 }

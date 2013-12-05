@@ -86,9 +86,9 @@ func (d *DataService) getPatientAnswersForQuestionsBasedOnQuery(query string, ar
 	queriedAnswers := make([]*common.PatientAnswer, 0)
 	for rows.Next() {
 		var answerId, questionId, potentialAnswerId, layoutVersionId int64
-		var answerText, storageBucket, storageKey, storageRegion, potentialAnswer sql.NullString
+		var answerText, answerSummaryText, storageBucket, storageKey, storageRegion, potentialAnswer sql.NullString
 		var parentQuestionId, parentInfoIntakeId sql.NullInt64
-		err = rows.Scan(&answerId, &questionId, &potentialAnswerId, &potentialAnswer, &answerText, &storageBucket, &storageKey, &storageRegion, &layoutVersionId, &parentQuestionId, &parentInfoIntakeId)
+		err = rows.Scan(&answerId, &questionId, &potentialAnswerId, &potentialAnswer, &answerSummaryText, &answerText, &storageBucket, &storageKey, &storageRegion, &layoutVersionId, &parentQuestionId, &parentInfoIntakeId)
 		if err != nil {
 			return
 		}
@@ -103,6 +103,9 @@ func (d *DataService) getPatientAnswersForQuestionsBasedOnQuery(query string, ar
 		}
 		if answerText.Valid {
 			patientAnswerToQuestion.AnswerText = answerText.String
+		}
+		if answerSummaryText.Valid {
+			patientAnswerToQuestion.AnswerSummary = answerSummaryText.String
 		}
 		if storageBucket.Valid {
 			patientAnswerToQuestion.StorageBucket = storageBucket.String
@@ -156,24 +159,26 @@ func (d *DataService) getPatientAnswersForQuestionsBasedOnQuery(query string, ar
 
 func (d *DataService) GetPatientAnswersForQuestionsInGlobalSections(questionIds []int64, patientId int64) (patientAnswers map[int64][]*common.PatientAnswer, err error) {
 	enumeratedStrings := enumerateItemsIntoString(questionIds)
-	queryStr := fmt.Sprintf(`select patient_info_intake.id, potential_answer.question_id, potential_answer_id, ltext, answer_text, object_storage.bucket, object_storage.storage_key, region_tag,
+	queryStr := fmt.Sprintf(`select patient_info_intake.id, potential_answer.question_id, potential_answer_id, l1.ltext, l2.ltext, answer_text, object_storage.bucket, object_storage.storage_key, region_tag,
 								layout_version_id, parent_question_id, parent_info_intake_id from patient_info_intake  
 								left outer join object_storage on object_storage_id = object_storage.id 
 								left outer join region on region_id=region.id 
 								left outer join potential_answer on potential_answer_id = potential_answer.id
-								left outer join localized_text on potential_answer.answer_localized_text_id = app_text_id
+								left outer join localized_text as l1 on potential_answer.answer_localized_text_id = l1.app_text_id
+								left outer join localized_text as l2 on potential_answer.answer_summary_text_id = l2.app_text_id
 								where (potential_answer.question_id in (%s) or parent_question_id in (%s)) and patient_id = ? and patient_info_intake.status='ACTIVE'`, enumeratedStrings, enumeratedStrings)
 	return d.getPatientAnswersForQuestionsBasedOnQuery(queryStr, patientId)
 }
 
 func (d *DataService) GetPatientAnswersForQuestionsInPatientVisit(questionIds []int64, patientId int64, patientVisitId int64) (patientAnswers map[int64][]*common.PatientAnswer, err error) {
 	enumeratedStrings := enumerateItemsIntoString(questionIds)
-	queryStr := fmt.Sprintf(`select patient_info_intake.id, potential_answer.question_id, potential_answer_id, ltext, answer_text, bucket, storage_key, region_tag,
+	queryStr := fmt.Sprintf(`select patient_info_intake.id, potential_answer.question_id, potential_answer_id, l1.ltext, l2.ltext, answer_text, bucket, storage_key, region_tag,
 								layout_version_id, parent_question_id, parent_info_intake_id from patient_info_intake  
 								left outer join object_storage on object_storage_id = object_storage.id 
 								left outer join region on region_id=region.id 
 								left outer join potential_answer on potential_answer_id = potential_answer.id
-								left outer join localized_text on potential_answer.answer_localized_text_id = app_text_id
+								left outer join localized_text as l1 on potential_answer.answer_localized_text_id = l1.app_text_id
+								left outer join localized_text as l2 on potential_answer.answer_summary_text_id = l2.app_text_id
 								where (potential_answer.question_id in (%s) or parent_question_id in (%s)) and patient_id = ? and patient_visit_id = ? and patient_info_intake.status='ACTIVE'`, enumeratedStrings, enumeratedStrings)
 	return d.getPatientAnswersForQuestionsBasedOnQuery(queryStr, patientId, patientVisitId)
 }
@@ -569,10 +574,11 @@ func (d *DataService) GetQuestionInfo(questionTag string, languageId int64) (id 
 }
 
 func (d *DataService) GetAnswerInfo(questionId int64, languageId int64) (answerInfos []PotentialAnswerInfo, err error) {
-	rows, err := d.DB.Query(`select potential_answer.id, ltext, atype, potential_answer_tag, ordering from potential_answer 
-								left outer join localized_text on answer_localized_text_id=app_text_id 
+	rows, err := d.DB.Query(`select potential_answer.id, l1.ltext, l2.ltext, atype, potential_answer_tag, ordering from potential_answer 
+								left outer join localized_text as l1 on answer_localized_text_id=l1.app_text_id 
 								left outer join answer_type on atype_id=answer_type.id 
-									where question_id = ? and (language_id = ? or ltext is null)`, questionId, languageId)
+								left outer join localized_text as l2 on answer_summary_text_id=l2.app_text_id
+									where question_id = ? and (l1.language_id = ? or l1.ltext is null) and (l2.language_id = ? or l2.ltext is null)`, questionId, languageId, languageId)
 	if err != nil {
 		return
 	}
@@ -581,11 +587,14 @@ func (d *DataService) GetAnswerInfo(questionId int64, languageId int64) (answerI
 	for rows.Next() {
 		var id, ordering int64
 		var answerType, answerTag string
-		var answer sql.NullString
-		err = rows.Scan(&id, &answer, &answerType, &answerTag, &ordering)
+		var answer, answerSummary sql.NullString
+		err = rows.Scan(&id, &answer, &answerSummary, &answerType, &answerTag, &ordering)
 		potentialAnswerInfo := PotentialAnswerInfo{}
 		if answer.Valid {
 			potentialAnswerInfo.Answer = answer.String
+		}
+		if answerSummary.Valid {
+			potentialAnswerInfo.AnswerSummary = answerSummary.String
 		}
 		potentialAnswerInfo.PotentialAnswerId = id
 		potentialAnswerInfo.AnswerTag = answerTag

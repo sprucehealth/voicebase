@@ -35,7 +35,7 @@ type PatientAnswer struct {
 	ParentAnswerId    int64            `json:"-"`
 	PotentialAnswerId int64            `json:"potential_answer_id,string,omitempty"`
 	PotentialAnswer   string           `json:"potential_answer,omitempty"`
-	AnswerSummary     string           `json:"answer_summary,omitempty"`
+	AnswerSummary     string           `json:"potential_answer_summary,omitempty"`
 	LayoutVersionId   int64            `json:"-"`
 	SubAnswers        []*PatientAnswer `json:"answers,omitempty"`
 	AnswerText        string           `json:"answer_text,omitempty"`

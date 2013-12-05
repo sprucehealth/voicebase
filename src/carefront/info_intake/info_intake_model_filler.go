@@ -102,9 +102,10 @@ func (q *Question) FillFromDatabase(dataApi api.DataAPI, languageId int64, showP
 
 	for _, answerInfo := range answerInfos {
 		potentialAnswer := &PotentialAnswer{AnswerId: answerInfo.PotentialAnswerId,
-			Answer:     answerInfo.Answer,
-			AnswerType: answerInfo.AnswerType,
-			Ordering:   answerInfo.Ordering}
+			Answer:        answerInfo.Answer,
+			AnswerSummary: answerInfo.AnswerSummary,
+			AnswerType:    answerInfo.AnswerType,
+			Ordering:      answerInfo.Ordering}
 		q.PotentialAnswers = append(q.PotentialAnswers, potentialAnswer)
 	}
 
