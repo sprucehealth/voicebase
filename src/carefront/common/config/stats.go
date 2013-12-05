@@ -21,10 +21,11 @@ type Stats struct {
 }
 
 var (
-	statsExportIncludes = []*regexp.Regexp{
-		regexp.MustCompile(`.*`),
+	statsExportIncludes    []*regexp.Regexp = nil
+	statsExportExcludes    []*regexp.Regexp = nil
+	statsCloudWatchExports                  = []*regexp.Regexp{
+		regexp.MustCompile(`^securesvc-client\.requests$`),
 	}
-	statsExportExcludes []*regexp.Regexp = nil
 )
 
 func (s *BaseConfig) StartReporters(statsRegistry metrics.Registry) {
@@ -63,4 +64,9 @@ func (s *BaseConfig) StartReporters(statsRegistry metrics.Registry) {
 			map[string]float64{"median": 0.5, "p90": 0.9, "p99": 0.99})
 		statsReporter.Start()
 	}
+
+	filteredRegistry = metrics.NewFilterdRegistry(statsRegistry, nil, statsCloudWatchExports)
+	statsReporter := reporter.NewCloudWatchReporter(filteredRegistry, time.Minute, s.AWSRegion, s.AWSAccessKey, s.AWSSecretKey,
+		fmt.Sprintf("%s-%s", s.Environment, s.AppName), nil, map[string]float64{"p99": 0.99, "p999": 0.999}, time.Second*10)
+	statsReporter.Start()
 }
