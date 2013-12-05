@@ -6,16 +6,20 @@ import (
 	"time"
 
 	"carefront/libs/svcreg"
+	"github.com/samuel/go-metrics/metrics"
 )
 
 type Server struct {
-	Config     *BaseConfig
-	ServiceID  svcreg.ServiceId
-	ListenAddr string
-	ServFunc   func(net.Conn)
+	Config          *BaseConfig
+	ServiceID       svcreg.ServiceId
+	ListenAddr      string
+	ServFunc        func(net.Conn)
+	MetricsRegistry metrics.Registry
 
-	stopChan chan chan bool
-	ln       net.Listener
+	stopChan                   chan chan bool
+	ln                         net.Listener
+	statEstablishedConnections metrics.Counter
+	statActiveConnections      metrics.IntegerGauge
 }
 
 func (ts *Server) Start() error {
@@ -45,6 +49,13 @@ func (ts *Server) Start() error {
 		return fmt.Errorf("Failed to register services: %+v", err)
 	}
 
+	// Setup metrics
+
+	ts.statEstablishedConnections = metrics.NewCounter()
+	ts.statActiveConnections = metrics.NewIntegerGauge()
+	ts.MetricsRegistry.Add("connections.established", ts.statEstablishedConnections)
+	ts.MetricsRegistry.Add("connections.active", ts.statActiveConnections)
+
 	// Start the service in a new Go routine
 
 	ts.stopChan = make(chan chan bool, 1)
@@ -67,7 +78,12 @@ func (ts *Server) Start() error {
 			if err != nil {
 				continue
 			}
-			go ts.ServFunc(conn)
+			ts.statEstablishedConnections.Inc(1)
+			go func() {
+				ts.statActiveConnections.Inc(1)
+				defer ts.statActiveConnections.Dec(1)
+				ts.ServFunc(conn)
+			}()
 		}
 	}()
 
