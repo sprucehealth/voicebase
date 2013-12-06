@@ -459,7 +459,7 @@ func TestPhotoAnswerIntake(t *testing.T) {
 		t.Fatal("Unable to create a form file with a sample file")
 	}
 
-	file, err := os.Open("../info_intake/condition_intake.json")
+	file, err := os.Open("../../info_intake/condition_intake.json")
 	if err != nil {
 		t.Fatal("Unable to open file for uploading: " + err.Error())
 	}
