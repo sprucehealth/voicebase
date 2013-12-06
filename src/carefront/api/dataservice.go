@@ -171,7 +171,6 @@ func (d *DataService) GetPatientAnswersForQuestionsInGlobalSections(questionIds 
 								left outer join localized_text as l1 on potential_answer.answer_localized_text_id = l1.app_text_id
 								left outer join localized_text as l2 on potential_answer.answer_summary_text_id = l2.app_text_id
 								where (patient_info_intake.question_id in (%s) or parent_question_id in (%s)) and patient_id = ? and patient_info_intake.status='ACTIVE'`, enumeratedStrings, enumeratedStrings)
-	fmt.Println(queryStr)
 	return d.getPatientAnswersForQuestionsBasedOnQuery(queryStr, patientId)
 }
 
@@ -185,7 +184,6 @@ func (d *DataService) GetPatientAnswersForQuestionsInPatientVisit(questionIds []
 								left outer join localized_text as l1 on potential_answer.answer_localized_text_id = l1.app_text_id
 								left outer join localized_text as l2 on potential_answer.answer_summary_text_id = l2.app_text_id
 								where (patient_info_intake.question_id in (%s) or parent_question_id in (%s)) and patient_id = ? and patient_visit_id = ? and patient_info_intake.status='ACTIVE'`, enumeratedStrings, enumeratedStrings)
-	fmt.Println(queryStr)
 	return d.getPatientAnswersForQuestionsBasedOnQuery(queryStr, patientId, patientVisitId)
 }
 
