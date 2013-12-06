@@ -1,6 +1,6 @@
 -- MySQL dump 10.13  Distrib 5.6.13, for osx10.8 (x86_64)
 --
--- Host: dev-db-3.ccvrwjdx3gvp.us-east-1.rds.amazonaws.com    Database: database_9355
+-- Host: dev-db-3.ccvrwjdx3gvp.us-east-1.rds.amazonaws.com    Database: database_3991
 -- ------------------------------------------------------
 -- Server version	5.6.13-log
 
@@ -58,7 +58,7 @@ CREATE TABLE `app_text` (
   `app_text_tag` varchar(250) NOT NULL,
   PRIMARY KEY (`id`),
   UNIQUE KEY `app_text_tag` (`app_text_tag`)
-) ENGINE=InnoDB AUTO_INCREMENT=157 DEFAULT CHARSET=utf8;
+) ENGINE=InnoDB AUTO_INCREMENT=169 DEFAULT CHARSET=utf8;
 /*!40101 SET character_set_client = @saved_cs_client */;
 
 --
@@ -176,7 +176,7 @@ CREATE TABLE `localized_text` (
   KEY `app_text_id` (`app_text_id`),
   CONSTRAINT `localized_text_ibfk_1` FOREIGN KEY (`app_text_id`) REFERENCES `app_text` (`id`) ON DELETE CASCADE,
   CONSTRAINT `localized_text_ibfk_2` FOREIGN KEY (`language_id`) REFERENCES `languages_supported` (`id`)
-) ENGINE=InnoDB AUTO_INCREMENT=163 DEFAULT CHARSET=utf8;
+) ENGINE=InnoDB AUTO_INCREMENT=175 DEFAULT CHARSET=utf8;
 /*!40101 SET character_set_client = @saved_cs_client */;
 
 --
@@ -347,18 +347,21 @@ DROP TABLE IF EXISTS `potential_answer`;
 CREATE TABLE `potential_answer` (
   `id` int(10) unsigned NOT NULL AUTO_INCREMENT,
   `question_id` int(10) unsigned NOT NULL,
-  `answer_localized_text_id` int(10) unsigned NOT NULL,
+  `answer_localized_text_id` int(10) unsigned DEFAULT NULL,
   `atype_id` int(10) unsigned NOT NULL,
   `potential_answer_tag` varchar(250) NOT NULL,
   `ordering` int(10) unsigned NOT NULL,
+  `answer_summary_text_id` int(10) unsigned DEFAULT NULL,
   PRIMARY KEY (`id`),
   UNIQUE KEY `potential_outcome_tag` (`potential_answer_tag`),
   UNIQUE KEY `question_id_2` (`question_id`,`ordering`),
   KEY `otype_id` (`atype_id`),
   KEY `outcome_localized_text` (`answer_localized_text_id`),
+  KEY `answer_summary_text_id` (`answer_summary_text_id`),
+  CONSTRAINT `potential_answer_ibfk_3` FOREIGN KEY (`answer_summary_text_id`) REFERENCES `app_text` (`id`),
   CONSTRAINT `potential_answer_ibfk_1` FOREIGN KEY (`atype_id`) REFERENCES `answer_type` (`id`),
   CONSTRAINT `potential_answer_ibfk_2` FOREIGN KEY (`question_id`) REFERENCES `question` (`id`)
-) ENGINE=InnoDB AUTO_INCREMENT=101 DEFAULT CHARSET=utf8;
+) ENGINE=InnoDB AUTO_INCREMENT=102 DEFAULT CHARSET=utf8;
 /*!40101 SET character_set_client = @saved_cs_client */;
 
 --
@@ -389,7 +392,28 @@ CREATE TABLE `question` (
   CONSTRAINT `question_ibfk_3` FOREIGN KEY (`qtext_app_text_id`) REFERENCES `app_text` (`id`),
   CONSTRAINT `question_ibfk_4` FOREIGN KEY (`qtext_short_text_id`) REFERENCES `app_text` (`id`),
   CONSTRAINT `question_ibfk_5` FOREIGN KEY (`parent_question_id`) REFERENCES `question` (`id`)
-) ENGINE=InnoDB AUTO_INCREMENT=34 DEFAULT CHARSET=utf8;
+) ENGINE=InnoDB AUTO_INCREMENT=35 DEFAULT CHARSET=utf8;
+/*!40101 SET character_set_client = @saved_cs_client */;
+
+--
+-- Table structure for table `question_fields`
+--
+
+DROP TABLE IF EXISTS `question_fields`;
+/*!40101 SET @saved_cs_client     = @@character_set_client */;
+/*!40101 SET character_set_client = utf8 */;
+CREATE TABLE `question_fields` (
+  `id` int(10) unsigned NOT NULL AUTO_INCREMENT,
+  `question_field` varchar(250) NOT NULL,
+  `question_id` int(10) unsigned NOT NULL,
+  `app_text_id` int(10) unsigned NOT NULL,
+  PRIMARY KEY (`id`),
+  KEY `question_id` (`question_id`),
+  KEY `app_text_id` (`app_text_id`),
+  KEY `question_field` (`question_field`,`question_id`),
+  CONSTRAINT `question_fields_ibfk_1` FOREIGN KEY (`question_id`) REFERENCES `question` (`id`),
+  CONSTRAINT `question_fields_ibfk_2` FOREIGN KEY (`app_text_id`) REFERENCES `app_text` (`id`)
+) ENGINE=InnoDB AUTO_INCREMENT=15 DEFAULT CHARSET=utf8;
 /*!40101 SET character_set_client = @saved_cs_client */;
 
 --
@@ -404,7 +428,7 @@ CREATE TABLE `question_type` (
   `qtype` varchar(250) DEFAULT NULL,
   PRIMARY KEY (`id`),
   UNIQUE KEY `qtype` (`qtype`)
-) ENGINE=InnoDB AUTO_INCREMENT=9 DEFAULT CHARSET=utf8;
+) ENGINE=InnoDB AUTO_INCREMENT=10 DEFAULT CHARSET=utf8;
 /*!40101 SET character_set_client = @saved_cs_client */;
 
 --
@@ -507,4 +531,4 @@ CREATE TABLE `tips_section` (
 /*!40101 SET COLLATION_CONNECTION=@OLD_COLLATION_CONNECTION */;
 /*!40111 SET SQL_NOTES=@OLD_SQL_NOTES */;
 
--- Dump completed on 2013-12-03 10:40:27
+-- Dump completed on 2013-12-05 16:32:51

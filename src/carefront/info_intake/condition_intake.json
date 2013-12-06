@@ -17,7 +17,7 @@
                                 ], 
                                 "question": "q_reason_visit"
                             }, 
-                            "question": "q_condition_for_diagnosis"
+                            "question": "q_condition_for_diagnosis" 
                         }
                     ]
                 }, 
@@ -25,7 +25,7 @@
                     "description": "length of acne symptoms", 
                     "questions": [
                         {
-                            "question": "q_onset_acne"
+                            "question": "q_onset_acne" 
                         }
                     ]
                 }, 
