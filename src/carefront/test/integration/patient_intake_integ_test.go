@@ -407,6 +407,13 @@ func TestSubQuestionEntryIntake(t *testing.T) {
 	proactiveAnswerIntake.SubQuestionAnswerIntakes = nil
 	benzoylPeroxideAnswerIntake.SubQuestionAnswerIntakes = nil
 	neutrogenaAnswerIntake.SubQuestionAnswerIntakes = nil
+	neutrogena = "UpdatedNeutrogena"
+	benzoylPeroxide = "UpdatedBenzoyl"
+	proactive = "UpdatedProactive"
+	proactiveAnswerIntake.AnswerText = proactive
+	benzoylPeroxideAnswerIntake.AnswerText = benzoylPeroxide
+	neutrogenaAnswerIntake.AnswerText = neutrogena
+
 	requestData, err = json.Marshal(&answerIntakeRequestBody)
 	if err != nil {
 		t.Fatal("Unable to marshal request body second time around")
