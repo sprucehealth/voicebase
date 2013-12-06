@@ -5,6 +5,7 @@ import sys
 COLOR_BRIGHT_WHITE = "\033[1;97m"
 COLOR_BOLD_RED = "\033[1;31m"
 COLOR_GREEN = "\033[0;32m"
+COLOR_YELLOW = "\033[0;33m"
 COLOR_NORMAL = "\033[0m"
 CHECK_MARK = "\xe2\x9c\x93"
 
@@ -18,6 +19,8 @@ for line in sys.stdin:
     elif line.startswith("--- FAIL:") or line.startswith("FAIL"):
         sys.stdout.write(COLOR_BOLD_RED)
         status = 1
+    elif line.startswith("--- SKIP:"):
+        sys.stdout.write(COLOR_YELLOW)
     sys.stdout.write(line)
     sys.stdout.write(COLOR_NORMAL)
     sys.stdout.flush()
