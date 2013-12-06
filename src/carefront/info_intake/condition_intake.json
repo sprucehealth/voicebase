@@ -17,7 +17,7 @@
                                 ], 
                                 "question": "q_reason_visit"
                             }, 
-                            "question": "q_condition_for_diagnosis"
+                            "question": "q_condition_for_diagnosis" 
                         }
                     ]
                 }, 

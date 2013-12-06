@@ -1,7 +1,6 @@
-use database_3991;
 -- MySQL dump 10.13  Distrib 5.6.13, for osx10.8 (x86_64)
 --
--- Host: dev-db-3.ccvrwjdx3gvp.us-east-1.rds.amazonaws.com    Database: database_18296
+-- Host: dev-db-3.ccvrwjdx3gvp.us-east-1.rds.amazonaws.com    Database: database_3991
 -- ------------------------------------------------------
 -- Server version	5.6.13-log
 
@@ -350,7 +349,7 @@ CREATE TABLE `question` (
 
 LOCK TABLES `question` WRITE;
 /*!40000 ALTER TABLE `question` DISABLE KEYS */;
-INSERT INTO `question` VALUES (1,6,1,88,NULL,'q_reason_visit',NULL,NULL),(2,5,NULL,90,NULL,'q_condition_for_diagnosis',NULL,NULL),(3,6,5,89,NULL,'q_acne_length',NULL,NULL),(4,6,10,91,NULL,'q_acne_worse',NULL,NULL),(6,2,13,92,14,'q_changes_acne_worse',NULL,NULL),(7,1,15,93,NULL,'q_acne_prev_treatment_types',NULL,NULL),(8,9,19,94,NULL,'q_acne_prev_treatment_list',NULL,NULL),(9,2,21,95,NULL,'q_anything_else_acne',NULL,NULL),(10,6,23,97,NULL,'q_pregnancy_planning',NULL,NULL),(11,1,26,98,NULL,'q_allergic_medications',NULL,NULL),(12,9,29,104,NULL,'q_allergic_medication_entry',NULL,NULL),(13,9,32,99,33,'q_current_medications_entry',NULL,NULL),(14,1,34,100,NULL,'q_social_history',NULL,NULL),(15,6,38,101,NULL,'q_prev_skin_condition_diagnosis',NULL,NULL),(16,3,46,102,NULL,'q_prev_med_condition_diagnosis',NULL,NULL),(17,1,NULL,101,NULL,'q_list_prev_skin_condition_diagnosis',NULL,NULL),(18,1,70,96,NULL,'q_acne_location',NULL,NULL),(19,4,NULL,105,NULL,'q_face_photo_intake',NULL,NULL),(20,4,NULL,106,NULL,'q_chest_photo_intake',NULL,NULL),(21,4,NULL,107,NULL,'q_back_photo_intake',NULL,NULL),(22,7,NULL,108,NULL,'q_other_photo_intake',NULL,NULL),(24,8,110,NULL,NULL,'q_effective_treatment',8,NULL),(25,8,114,NULL,NULL,'q_using_treatment',8,NULL),(26,8,128,NULL,NULL,'q_length_treatment',8,NULL),(27,6,129,134,NULL,'q_onset_acne',NULL,1),(28,1,135,139,NULL,'q_acne_symptoms',NULL,1),(29,6,140,142,NULL,'q_acne_worse_period',NULL,0),(30,6,141,NULL,NULL,'q_periods_regular',29,0),(31,6,143,148,NULL,'q_skin_description',NULL,1),(32,6,149,150,NULL,'q_topical_allergic_medications',NULL,1),(33,6,151,152,NULL,'q_other_conditions_acne',NULL,1),(34,9,29,150,NULL,'q_topical_allergies_medication_entry',NULL,0);
+INSERT INTO `question` VALUES (1,6,1,88,NULL,'q_reason_visit',NULL,NULL),(2,5,NULL,90,NULL,'q_condition_for_diagnosis',NULL,NULL),(3,6,5,89,NULL,'q_acne_length',NULL,NULL),(4,6,10,91,NULL,'q_acne_worse',NULL,NULL),(6,2,13,92,NULL,'q_changes_acne_worse',NULL,NULL),(7,1,15,93,NULL,'q_acne_prev_treatment_types',NULL,NULL),(8,9,19,94,NULL,'q_acne_prev_treatment_list',NULL,NULL),(9,2,21,95,NULL,'q_anything_else_acne',NULL,NULL),(10,6,23,97,NULL,'q_pregnancy_planning',NULL,NULL),(11,1,26,98,NULL,'q_allergic_medications',NULL,NULL),(12,9,29,104,NULL,'q_allergic_medication_entry',NULL,NULL),(13,9,32,99,33,'q_current_medications_entry',NULL,NULL),(14,1,34,100,NULL,'q_social_history',NULL,NULL),(15,6,38,101,NULL,'q_prev_skin_condition_diagnosis',NULL,NULL),(16,3,46,102,NULL,'q_prev_med_condition_diagnosis',NULL,NULL),(17,1,NULL,101,NULL,'q_list_prev_skin_condition_diagnosis',NULL,NULL),(18,1,70,96,NULL,'q_acne_location',NULL,NULL),(19,4,NULL,105,NULL,'q_face_photo_intake',NULL,NULL),(20,4,NULL,106,NULL,'q_chest_photo_intake',NULL,NULL),(21,4,NULL,107,NULL,'q_back_photo_intake',NULL,NULL),(22,7,NULL,108,NULL,'q_other_photo_intake',NULL,NULL),(24,8,110,NULL,NULL,'q_effective_treatment',8,NULL),(25,8,114,NULL,NULL,'q_using_treatment',8,NULL),(26,8,128,NULL,NULL,'q_length_treatment',8,NULL),(27,6,129,134,NULL,'q_onset_acne',NULL,1),(28,1,135,139,NULL,'q_acne_symptoms',NULL,1),(29,6,140,142,NULL,'q_acne_worse_period',NULL,0),(30,6,141,NULL,NULL,'q_periods_regular',29,0),(31,6,143,148,NULL,'q_skin_description',NULL,1),(32,6,149,150,NULL,'q_topical_allergic_medications',NULL,1),(33,6,151,152,NULL,'q_other_conditions_acne',NULL,1),(34,9,29,150,NULL,'q_topical_allergies_medication_entry',NULL,0);
 /*!40000 ALTER TABLE `question` ENABLE KEYS */;
 UNLOCK TABLES;
 
@@ -566,4 +565,4 @@ UNLOCK TABLES;
 /*!40101 SET COLLATION_CONNECTION=@OLD_COLLATION_CONNECTION */;
 /*!40111 SET SQL_NOTES=@OLD_SQL_NOTES */;
 
--- Dump completed on 2013-12-05 16:17:29
+-- Dump completed on 2013-12-05 16:33:11
