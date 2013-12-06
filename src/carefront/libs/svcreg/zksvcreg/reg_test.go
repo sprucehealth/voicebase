@@ -11,8 +11,7 @@ func TestReg(t *testing.T) {
 	tc, err := zk.StartTestCluster(1)
 	if err != nil {
 		if err.Error() == "zk: unable to find server jar" {
-			t.Logf("Unable to find Zookeeper jar file. Skipping zksvcreg tests.")
-			return
+			t.Skip("Unable to find Zookeeper jar file. Skipping zksvcreg tests.")
 		}
 		t.Fatal(err)
 	}

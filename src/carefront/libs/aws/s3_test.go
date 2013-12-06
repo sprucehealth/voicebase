@@ -11,8 +11,7 @@ package aws
 // func TestS3(t *testing.T) {
 // 	keys := KeysFromEnvironment()
 // 	if keys.AccessKey == "" || keys.SecretKey == "" {
-// 		t.Logf("Skipping aws.s3 tests. AWS keys not found in environment")
-// 		return
+// 		t.Skip("Skipping aws.s3 tests. AWS keys not found in environment")
 // 	}
 
 // 	bucket := "carefront-config-useast1"

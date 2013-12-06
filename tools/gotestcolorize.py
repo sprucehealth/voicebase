@@ -13,7 +13,7 @@ for line in sys.stdin:
     if line.startswith("=== RUN "):
         sys.stdout.write("\n")
         sys.stdout.write(COLOR_BRIGHT_WHITE)
-    elif line.startswith("--- PASS:"):
+    elif line.startswith("--- PASS:") or line.startswith("PASS"):
         sys.stdout.write(COLOR_GREEN)
     elif line.startswith("--- FAIL:") or line.startswith("FAIL"):
         sys.stdout.write(COLOR_BOLD_RED)
