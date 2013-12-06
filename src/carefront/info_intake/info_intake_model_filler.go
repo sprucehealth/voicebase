@@ -9,7 +9,7 @@ func (c *Condition) FillInDatabaseInfo(dataApi api.DataAPI, languageId int64) er
 	if c.QuestionTag == "" {
 		return nil
 	}
-	questionId, _, _, _, _, _, err := dataApi.GetQuestionInfo(c.QuestionTag, languageId)
+	questionId, _, _, _, _, _, _, err := dataApi.GetQuestionInfo(c.QuestionTag, languageId)
 	if err != nil {
 		return err
 	}
@@ -56,7 +56,7 @@ func (q *Question) FillInDatabaseInfo(dataApi api.DataAPI, languageId int64) err
 }
 
 func (q *Question) FillFromDatabase(dataApi api.DataAPI, languageId int64, showPotentialResponses bool) error {
-	questionId, questionTitle, questionType, questionSummary, parentQuestionId, additionalFields, err := dataApi.GetQuestionInfo(q.QuestionTag, languageId)
+	questionId, questionTitle, questionType, questionSummary, questionSubtext, parentQuestionId, additionalFields, err := dataApi.GetQuestionInfo(q.QuestionTag, languageId)
 	if err != nil {
 		return err
 	}
@@ -66,6 +66,7 @@ func (q *Question) FillFromDatabase(dataApi api.DataAPI, languageId int64, showP
 	q.ParentQuestionId = parentQuestionId
 	q.QuestionSummary = questionSummary
 	q.AdditionalFields = additionalFields
+	q.QuestionSubText = questionSubtext
 
 	if q.ConditionBlock != nil {
 		err := q.ConditionBlock.FillInDatabaseInfo(dataApi, languageId)
