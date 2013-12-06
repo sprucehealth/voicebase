@@ -85,7 +85,8 @@ func (d *DataService) getPatientAnswersForQuestionsBasedOnQuery(query string, ar
 	patientAnswers = make(map[int64][]*common.PatientAnswer)
 	queriedAnswers := make([]*common.PatientAnswer, 0)
 	for rows.Next() {
-		var answerId, questionId, potentialAnswerId, layoutVersionId int64
+		var answerId, questionId, layoutVersionId int64
+		var potentialAnswerId sql.NullInt64
 		var answerText, answerSummaryText, storageBucket, storageKey, storageRegion, potentialAnswer sql.NullString
 		var parentQuestionId, parentInfoIntakeId sql.NullInt64
 		err = rows.Scan(&answerId, &questionId, &potentialAnswerId, &potentialAnswer, &answerSummaryText, &answerText, &storageBucket, &storageKey, &storageRegion, &layoutVersionId, &parentQuestionId, &parentInfoIntakeId)
@@ -93,9 +94,12 @@ func (d *DataService) getPatientAnswersForQuestionsBasedOnQuery(query string, ar
 			return
 		}
 		patientAnswerToQuestion := &common.PatientAnswer{PatientAnswerId: answerId,
-			QuestionId:        questionId,
-			PotentialAnswerId: potentialAnswerId,
-			LayoutVersionId:   layoutVersionId,
+			QuestionId:      questionId,
+			LayoutVersionId: layoutVersionId,
+		}
+
+		if potentialAnswerId.Valid {
+			patientAnswerToQuestion.PotentialAnswerId = potentialAnswerId.Int64
 		}
 
 		if potentialAnswer.Valid {
@@ -159,27 +163,29 @@ func (d *DataService) getPatientAnswersForQuestionsBasedOnQuery(query string, ar
 
 func (d *DataService) GetPatientAnswersForQuestionsInGlobalSections(questionIds []int64, patientId int64) (patientAnswers map[int64][]*common.PatientAnswer, err error) {
 	enumeratedStrings := enumerateItemsIntoString(questionIds)
-	queryStr := fmt.Sprintf(`select patient_info_intake.id, potential_answer.question_id, potential_answer_id, l1.ltext, l2.ltext, answer_text, object_storage.bucket, object_storage.storage_key, region_tag,
+	queryStr := fmt.Sprintf(`select patient_info_intake.id, patient_info_intake.question_id, potential_answer_id, l1.ltext, l2.ltext, answer_text, object_storage.bucket, object_storage.storage_key, region_tag,
 								layout_version_id, parent_question_id, parent_info_intake_id from patient_info_intake  
 								left outer join object_storage on object_storage_id = object_storage.id 
 								left outer join region on region_id=region.id 
 								left outer join potential_answer on potential_answer_id = potential_answer.id
 								left outer join localized_text as l1 on potential_answer.answer_localized_text_id = l1.app_text_id
 								left outer join localized_text as l2 on potential_answer.answer_summary_text_id = l2.app_text_id
-								where (potential_answer.question_id in (%s) or parent_question_id in (%s)) and patient_id = ? and patient_info_intake.status='ACTIVE'`, enumeratedStrings, enumeratedStrings)
+								where (patient_info_intake.question_id in (%s) or parent_question_id in (%s)) and patient_id = ? and patient_info_intake.status='ACTIVE'`, enumeratedStrings, enumeratedStrings)
+	fmt.Println(queryStr)
 	return d.getPatientAnswersForQuestionsBasedOnQuery(queryStr, patientId)
 }
 
 func (d *DataService) GetPatientAnswersForQuestionsInPatientVisit(questionIds []int64, patientId int64, patientVisitId int64) (patientAnswers map[int64][]*common.PatientAnswer, err error) {
 	enumeratedStrings := enumerateItemsIntoString(questionIds)
-	queryStr := fmt.Sprintf(`select patient_info_intake.id, potential_answer.question_id, potential_answer_id, l1.ltext, l2.ltext, answer_text, bucket, storage_key, region_tag,
+	queryStr := fmt.Sprintf(`select patient_info_intake.id, patient_info_intake.question_id, potential_answer_id, l1.ltext, l2.ltext, answer_text, bucket, storage_key, region_tag,
 								layout_version_id, parent_question_id, parent_info_intake_id from patient_info_intake  
 								left outer join object_storage on object_storage_id = object_storage.id 
 								left outer join region on region_id=region.id 
 								left outer join potential_answer on potential_answer_id = potential_answer.id
 								left outer join localized_text as l1 on potential_answer.answer_localized_text_id = l1.app_text_id
 								left outer join localized_text as l2 on potential_answer.answer_summary_text_id = l2.app_text_id
-								where (potential_answer.question_id in (%s) or parent_question_id in (%s)) and patient_id = ? and patient_visit_id = ? and patient_info_intake.status='ACTIVE'`, enumeratedStrings, enumeratedStrings)
+								where (patient_info_intake.question_id in (%s) or parent_question_id in (%s)) and patient_id = ? and patient_visit_id = ? and patient_info_intake.status='ACTIVE'`, enumeratedStrings, enumeratedStrings)
+	fmt.Println(queryStr)
 	return d.getPatientAnswersForQuestionsBasedOnQuery(queryStr, patientId, patientVisitId)
 }
 
@@ -385,8 +391,12 @@ func prepareQueryForAnswers(answersToStore []*common.PatientAnswer, parentInfoIn
 func constructValuesToInsert(answersToStore []*common.PatientAnswer, parentInfoIntakeId, parentQuestionId, status string) []string {
 	values := make([]string, 0)
 	for _, answerToStore := range answersToStore {
-		valueStr := fmt.Sprintf("(%d, %d, %s, %s, %d, %d, '%s', %d, '%s')", answerToStore.PatientId, answerToStore.PatientVisitId, parentInfoIntakeId, parentQuestionId,
-			answerToStore.QuestionId, answerToStore.PotentialAnswerId, answerToStore.AnswerText, answerToStore.LayoutVersionId, status)
+		potentialAnswerIdString := strconv.FormatInt(answerToStore.PotentialAnswerId, 10)
+		if answerToStore.PotentialAnswerId == 0 {
+			potentialAnswerIdString = "NULL"
+		}
+		valueStr := fmt.Sprintf("(%d, %d, %s, %s, %d, %s, '%s', %d, '%s')", answerToStore.PatientId, answerToStore.PatientVisitId, parentInfoIntakeId, parentQuestionId,
+			answerToStore.QuestionId, potentialAnswerIdString, answerToStore.AnswerText, answerToStore.LayoutVersionId, status)
 		values = append(values, valueStr)
 	}
 	return values
