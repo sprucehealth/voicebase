@@ -19,7 +19,7 @@ type PatientVisit struct {
 	PatientVisitId    int64     `json:"patient_visit_id,string,omitempty"`
 	PatientId         int64     `json:"patient_id,string,omitempty"`
 	CreationDate      time.Time `json:"creation_date,omitempty"`
-	OpenedDate        time.Time `json:"opened_date,omitempty"`
+	SubmittedDate     time.Time `json:"submitted_date,omitempty"`
 	ClosedDate        time.Time `json:"closed_date,omitempty"`
 	HealthConditionId int64     `json:"health_condition_id,omitempty,string"`
 	Status            string    `json:"status,omitempty"`

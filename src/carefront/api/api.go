@@ -31,6 +31,7 @@ type PatientVisitAPI interface {
 	GetActivePatientVisitIdForHealthCondition(patientId, healthConditionId int64) (int64, error)
 	GetPatientIdFromPatientVisitId(patientVisitId int64) (int64, error)
 	GetPatientVisitFromId(patientVisitId int64) (patientVisit *common.PatientVisit, err error)
+	SubmitPatientVisitWithId(patientVisitId int64) error
 }
 
 type PatientIntakeAPI interface {

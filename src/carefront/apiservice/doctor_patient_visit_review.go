@@ -117,7 +117,7 @@ func (p *DoctorPatientVisitReviewHandler) populatePatientVisitOverviewWithPatien
 }
 
 func fillInPatientVisitInfoIntoOverview(patientVisit *common.PatientVisit, patientVisitOverview *info_intake.PatientVisitOverview) {
-	patientVisitOverview.PatientVisitTime = patientVisit.ClosedDate
+	patientVisitOverview.PatientVisitTime = patientVisit.SubmittedDate
 	patientVisitOverview.PatientId = patientVisit.PatientId
 	patientVisitOverview.PatientVisitId = patientVisit.PatientVisitId
 	patientVisitOverview.HealthConditionId = patientVisit.HealthConditionId

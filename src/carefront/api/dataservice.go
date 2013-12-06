@@ -76,6 +76,11 @@ func (d *DataService) GetPatientIdFromPatientVisitId(patientVisitId int64) (int6
 	return patientId, err
 }
 
+func (d *DataService) SubmitPatientVisitWithId(patientVisitId int64) error {
+	_, err := d.DB.Exec("update patient_visit set status='SUBMITTED', submitted_date=now() where id = ? and STATUS='OPEN'", patientVisitId)
+	return err
+}
+
 func (d *DataService) getPatientAnswersForQuestionsBasedOnQuery(query string, args ...interface{}) (patientAnswers map[int64][]*common.PatientAnswer, err error) {
 	rows, err := d.DB.Query(query, args...)
 	if err != nil {
@@ -228,11 +233,11 @@ func (d *DataService) GetActivePatientVisitIdForHealthCondition(patientId, healt
 
 func (d *DataService) GetPatientVisitFromId(patientVisitId int64) (patientVisit *common.PatientVisit, err error) {
 	var patientId, healthConditionId, layoutVersionId int64
-	var creationDateBytes, openedDateBytes, closedDateBytes mysql.NullTime
+	var creationDateBytes, submittedDateBytes, closedDateBytes mysql.NullTime
 	var status string
 	row := d.DB.QueryRow(`select patient_id, health_condition_id, layout_version_id, 
-		creation_date, opened_date, closed_date, status from patient_visit where id = ?`, patientVisitId)
-	err = row.Scan(&patientId, &healthConditionId, &layoutVersionId, &creationDateBytes, &openedDateBytes, &closedDateBytes, &status)
+		creation_date, submitted_date, closed_date, status from patient_visit where id = ?`, patientVisitId)
+	err = row.Scan(&patientId, &healthConditionId, &layoutVersionId, &creationDateBytes, &submittedDateBytes, &closedDateBytes, &status)
 	if err != nil {
 		return nil, err
 	}
@@ -247,9 +252,11 @@ func (d *DataService) GetPatientVisitFromId(patientVisitId int64) (patientVisit 
 	if creationDateBytes.Valid {
 		patientVisit.CreationDate = creationDateBytes.Time
 	}
-	if openedDateBytes.Valid {
-		patientVisit.OpenedDate = openedDateBytes.Time
+
+	if submittedDateBytes.Valid {
+		patientVisit.SubmittedDate = submittedDateBytes.Time
 	}
+
 	if closedDateBytes.Valid {
 		patientVisit.ClosedDate = closedDateBytes.Time
 	}
@@ -258,8 +265,8 @@ func (d *DataService) GetPatientVisitFromId(patientVisitId int64) (patientVisit 
 }
 
 func (d *DataService) CreateNewPatientVisit(patientId, healthConditionId, layoutVersionId int64) (int64, error) {
-	res, err := d.DB.Exec(`insert into patient_visit (patient_id, opened_date, health_condition_id, layout_version_id, status) 
-								values (?, now(), ?, ?, 'OPEN')`, patientId, healthConditionId, layoutVersionId)
+	res, err := d.DB.Exec(`insert into patient_visit (patient_id, health_condition_id, layout_version_id, status) 
+								values (?, ?, ?, 'OPEN')`, patientId, healthConditionId, layoutVersionId)
 	if err != nil {
 		return 0, err
 	}

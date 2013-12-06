@@ -8,6 +8,7 @@ import (
 	"carefront/common"
 	"carefront/info_intake"
 	thriftapi "carefront/thrift/api"
+	"github.com/gorilla/schema"
 )
 
 const (
@@ -20,6 +21,10 @@ type PatientVisitHandler struct {
 	LayoutStorageService       api.CloudStorageAPI
 	PatientPhotoStorageService api.CloudStorageAPI
 	accountId                  int64
+}
+
+type PatientVisitRequestData struct {
+	PatientVisitId int64 `schema:"patient_visit_id,required"`
 }
 
 type PatientVisitResponse struct {
@@ -39,7 +44,46 @@ func (s *PatientVisitHandler) ServeHTTP(w http.ResponseWriter, r *http.Request) 
 	switch r.Method {
 	case "GET":
 		s.returnNewOrOpenPatientVisit(w, r)
+	case "POST":
+		s.submitPatientVisit(w, r)
 	}
+
+}
+
+func (s *PatientVisitHandler) submitPatientVisit(w http.ResponseWriter, r *http.Request) {
+	r.ParseForm()
+	requestData := new(PatientVisitRequestData)
+	decoder := schema.NewDecoder()
+	err := decoder.Decode(requestData, r.Form)
+	if err != nil {
+		WriteDeveloperError(w, http.StatusBadRequest, "Unable to parse input parameters: "+err.Error())
+		return
+	}
+
+	patientId, err := s.DataApi.GetPatientIdFromAccountId(s.accountId)
+	if err != nil {
+		WriteDeveloperError(w, http.StatusInternalServerError, "Unable to get patientId from accountId retrieved from auth token: "+err.Error())
+		return
+	}
+
+	patientIdFromPatientVisitId, err := s.DataApi.GetPatientIdFromPatientVisitId(requestData.PatientVisitId)
+	if err != nil {
+		WriteDeveloperError(w, http.StatusInternalServerError, "Unable to get patientId from patientVisitId: "+err.Error())
+		return
+	}
+
+	if patientId != patientIdFromPatientVisitId {
+		WriteDeveloperError(w, http.StatusBadRequest, "PatientId from auth token and patient id from patient visit don't match")
+		return
+	}
+
+	err = s.DataApi.SubmitPatientVisitWithId(requestData.PatientVisitId)
+	if err != nil {
+		WriteDeveloperError(w, http.StatusInternalServerError, "Unable to submit patient visit to doctor for review and diagnosis: "+err.Error())
+		return
+	}
+
+	WriteJSONToHTTPResponseWriter(w, http.StatusOK, "{}")
 }
 
 func (s *PatientVisitHandler) returnNewOrOpenPatientVisit(w http.ResponseWriter, r *http.Request) {
