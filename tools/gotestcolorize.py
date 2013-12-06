@@ -1,39 +1,28 @@
 #!/usr/bin/env python
 
-import os
 import sys
 
-print "TERM:", os.getenv("TERM")
+COLOR_BRIGHT_WHITE = "\033[1;97m"
+COLOR_BOLD_RED = "\033[1;31m"
+COLOR_GREEN = "\033[0;32m"
+COLOR_YELLOW = "\033[0;33m"
+COLOR_NORMAL = "\033[0m"
+CHECK_MARK = "\xe2\x9c\x93"
 
-PASS = "\033[0;32m"
-FAIL = "\033[1;31m"
-END = "\033[0m"
-
-def output_run(run, success):
-    if success:
-        sys.stdout.write("...PASS...\n")
-        sys.stdout.write(PASS)
-    elif success == False:
-        sys.stdout.write("...FAIL...\n")
-        sys.stdout.write(FAIL)
-    for line in run:
-        sys.stdout.write(line+"\n")
-    sys.stdout.write(END)
+status = 0
+for line in sys.stdin:
+    if line.startswith("=== RUN "):
+        sys.stdout.write("\n")
+        sys.stdout.write(COLOR_BRIGHT_WHITE)
+    elif line.startswith("--- PASS:") or line.startswith("PASS"):
+        sys.stdout.write(COLOR_GREEN)
+    elif line.startswith("--- FAIL:") or line.startswith("FAIL"):
+        sys.stdout.write(COLOR_BOLD_RED)
+        status = 1
+    elif line.startswith("--- SKIP:"):
+        sys.stdout.write(COLOR_YELLOW)
+    sys.stdout.write(line)
+    sys.stdout.write(COLOR_NORMAL)
     sys.stdout.flush()
 
-run = []
-success = None
-for line in sys.stdin:
-    line = line.strip()
-    if line.startswith("=== RUN "):
-        if run:
-            output_run(run, success)
-        run = []
-        success = None
-    elif line.startswith("--- PASS:"):
-        success = True
-    elif line.startswith("--- FAIL:"):
-        success = False
-    run.append(line)
-if run:
-    output_run(run, success)
+sys.exit(status)
