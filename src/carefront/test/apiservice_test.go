@@ -2,14 +2,15 @@ package test
 
 import (
 	"bytes"
-	"carefront/apiservice"
-	"carefront/mockapi"
 	"encoding/json"
 	"mime/multipart"
 	"net/http"
 	"strconv"
 	"strings"
 	"testing"
+
+	"carefront/apiservice"
+	"carefront/test/mockapi"
 )
 
 const (
