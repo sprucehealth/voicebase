@@ -85,6 +85,9 @@ func CheckIfRunningLocally(t *testing.T) error {
 }
 
 func SetupIntegrationTest(t *testing.T) TestData {
+	// running every test that requires database setup parallelly
+	// to optimize for speed of tests
+	t.Parallel()
 	dbConfig := GetDBConfig(t)
 	db := ConnectToDB(t, dbConfig)
 
