@@ -47,7 +47,7 @@ type TestData struct {
 
 func GetDBConfig(t *testing.T) *TestDBConfig {
 	dbConfig := TestConf{}
-	fileContents, err := ioutil.ReadFile("../apps/restapi/dev.conf")
+	fileContents, err := ioutil.ReadFile("../../apps/restapi/dev.conf")
 	if err != nil {
 		t.Fatal("Unable to upload dev.conf to read database data from")
 	}
