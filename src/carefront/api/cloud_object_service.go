@@ -53,10 +53,14 @@ func (c *CloudStorageService) GetSignedUrlForObjectAtLocation(bucket, key, regio
 	if !ok {
 		awsRegion = goamz.USEast
 	}
-
+	var headers map[string][]string
+	if c.awsAuth.Keys().Token != "" {
+		headers = make(map[string][]string)
+		headers["x-amz-security-token"] = []string{c.awsAuth.Keys().Token}
+	}
 	s3Access := s3.New(common.AWSAuthAdapter(c.awsAuth), awsRegion)
 	s3Bucket := s3Access.Bucket(bucket)
-	url = s3Bucket.SignedURL(key, duration)
+	url = s3Bucket.SignedURL(key, duration, headers)
 	return
 }
 
@@ -81,8 +85,12 @@ func (c *CloudStorageService) PutObjectToLocation(bucket, key, region, contentTy
 	if err != nil {
 		return 0, "", err
 	}
-
+	var headers map[string][]string
+	if c.awsAuth.Keys().Token != "" {
+		headers = make(map[string][]string)
+		headers["x-amz-security-token"] = []string{c.awsAuth.Keys().Token}
+	}
 	dataApi.UpdateCloudObjectRecordToSayCompleted(objectRecordId)
-	signedUrl := s3Bucket.SignedURL(key, duration)
+	signedUrl := s3Bucket.SignedURL(key, duration, headers)
 	return objectRecordId, signedUrl, nil
 }

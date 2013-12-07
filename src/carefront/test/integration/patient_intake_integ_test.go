@@ -452,6 +452,8 @@ func TestPhotoAnswerIntake(t *testing.T) {
 		return
 	}
 
+	fileToUpload := "../../info_intake/condition_intake.json"
+
 	testData := SetupIntegrationTest(t)
 	defer testData.DB.Close()
 
@@ -469,7 +471,7 @@ func TestPhotoAnswerIntake(t *testing.T) {
 		t.Fatal("Unable to create a form file with a sample file")
 	}
 
-	file, err := os.Open("../../info_intake/condition_intake.json")
+	file, err := os.Open(fileToUpload)
 	if err != nil {
 		t.Fatal("Unable to open file for uploading: " + err.Error())
 	}
@@ -522,6 +524,32 @@ func TestPhotoAnswerIntake(t *testing.T) {
 					for _, patientAnswer := range question.PatientAnswers {
 						if patientAnswer.PotentialAnswerId == potentialAnswerId &&
 							patientAnswer.ObjectUrl != "" {
+
+							// make sure that we can actually download the file that was just uploaded
+							res, err := http.Get(patientAnswer.ObjectUrl)
+							if err != nil {
+								t.Fatal("Unable to get the file that was just uploaded : " + err.Error())
+							}
+							if res.StatusCode != http.StatusOK {
+								t.Fatalf("Error returned when trying to get the file that was just uplaoded. Status = %d", res.StatusCode)
+							}
+							downloadedData, err := ioutil.ReadAll(res.Body)
+
+							if err != nil {
+								t.Fatal("Error getting the body of the response: " + err.Error())
+							}
+
+							// compare the uploaded and downloaded file
+							uploadedFileData, err := ioutil.ReadFile(fileToUpload)
+							if err != nil {
+								t.Fatal("Unable to read file to upload: " + fileToUpload)
+							}
+
+							r := bytes.Compare(downloadedData, uploadedFileData)
+							if r != 0 {
+								t.Fatal("File uploaded not the same as file downloaded")
+							}
+
 							buffer := bytes.NewBufferString(strconv.FormatInt(patientVisitResponse.PatientVisitId, 10))
 							buffer.WriteString("/")
 							buffer.WriteString(strconv.FormatInt(patientAnswer.PatientAnswerId, 10))

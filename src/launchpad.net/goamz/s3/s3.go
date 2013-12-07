@@ -200,11 +200,11 @@ func (b *Bucket) PutReader(path string, r io.Reader, length int64, contType stri
 	}
 
 	if additionalHeaders != nil {
-		for k,v := range additionalHeaders {
+		for k, v := range additionalHeaders {
 			headers[k] = v
 		}
 	}
-	
+
 	req := &request{
 		method:  "PUT",
 		bucket:  b.Name,
@@ -359,11 +359,12 @@ func (b *Bucket) URL(path string) string {
 
 // SignedURL returns a signed URL that allows anyone holding the URL
 // to retrieve the object at path. The signature is valid until expires.
-func (b *Bucket) SignedURL(path string, expires time.Time) string {
+func (b *Bucket) SignedURL(path string, expires time.Time, additionalHeaders map[string][]string) string {
 	req := &request{
-		bucket: b.Name,
-		path:   path,
-		params: url.Values{"Expires": {strconv.FormatInt(expires.Unix(), 10)}},
+		bucket:  b.Name,
+		path:    path,
+		headers: additionalHeaders,
+		params:  url.Values{"Expires": {strconv.FormatInt(expires.Unix(), 10)}},
 	}
 	err := b.S3.prepare(req)
 	if err != nil {
