@@ -53,14 +53,11 @@ func (c *CloudStorageService) GetSignedUrlForObjectAtLocation(bucket, key, regio
 	if !ok {
 		awsRegion = goamz.USEast
 	}
-	var headers map[string][]string
-	if c.awsAuth.Keys().Token != "" {
-		headers = make(map[string][]string)
-		headers["x-amz-security-token"] = []string{c.awsAuth.Keys().Token}
-	}
-	s3Access := s3.New(common.AWSAuthAdapter(c.awsAuth), awsRegion)
+
+	s3Auth := common.AWSAuthAdapter(c.awsAuth)
+	s3Access := s3.New(s3Auth, awsRegion)
 	s3Bucket := s3Access.Bucket(bucket)
-	url = s3Bucket.SignedURL(key, duration, headers)
+	url = s3Bucket.SignedURL(key, duration, nil)
 	return
 }
 
