@@ -18,6 +18,7 @@ type Stats struct {
 	LibratoUsername string `long:"librato_username" description:"Librato Metrics username"`
 	LibratoToken    string `long:"librato_token" description:"Librato Metrics token"`
 	StatHatKey      string `long:"stathat_key" description:"StatHat EZKey"`
+	CloudWatch      bool   `long:"cloudwatch" description:"Enable CloudWatch stats gathering"`
 }
 
 var (
@@ -65,11 +66,18 @@ func (s *BaseConfig) StartReporters(statsRegistry metrics.Registry) {
 		statsReporter.Start()
 	}
 
-	auth, err := s.AWSAuth()
-	if err == nil {
-		keys := auth.Keys()
+	if s.Stats.CloudWatch {
+		auth := func() (string, string, string) {
+			auth, err := s.AWSAuth()
+			if err != nil {
+				log.Printf("config/stats: failed to get AWS auth: %+v", err)
+				return "", "", ""
+			}
+			keys := auth.Keys()
+			return keys.AccessKey, keys.SecretKey, keys.Token
+		}
 		filteredRegistry := metrics.NewFilterdRegistry(statsRegistry, statsCloudWatchExports, nil)
-		statsReporter := reporter.NewCloudWatchReporter(filteredRegistry, time.Minute, s.AWSRegion, keys.AccessKey, keys.SecretKey, keys.Token,
+		statsReporter := reporter.NewCloudWatchReporter(filteredRegistry, time.Minute, s.AWSRegion, auth,
 			fmt.Sprintf("%s-%s", s.Environment, s.AppName), nil, map[string]float64{"p99": 0.99, "p999": 0.999}, time.Second*10)
 		statsReporter.Start()
 	}
