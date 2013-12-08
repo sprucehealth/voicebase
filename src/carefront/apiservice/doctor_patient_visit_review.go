@@ -16,7 +16,7 @@ type DoctorPatientVisitReviewHandler struct {
 }
 
 type DoctorPatientVisitReviewRequestBody struct {
-	PatientVisitId int64 `schema:"patient_visit_id,required"`
+	PatientVisitId int64 `schema:"patient_visit_id"`
 }
 
 type DoctorPatientVisitReviewResponse struct {
@@ -39,7 +39,13 @@ func (p *DoctorPatientVisitReviewHandler) ServeHTTP(w http.ResponseWriter, r *ht
 		return
 	}
 
-	patientVisit, err := p.DataApi.GetPatientVisitFromId(requestData.PatientVisitId)
+	var patientVisit *common.PatientVisit
+	if requestData.PatientVisitId == 0 {
+		patientVisit, err = p.DataApi.GetLatestSubmittedPatientVisit()
+	} else {
+		patientVisit, err = p.DataApi.GetPatientVisitFromId(requestData.PatientVisitId)
+	}
+
 	if err != nil {
 		WriteDeveloperError(w, http.StatusBadRequest, "Unable to get patient visit information from database based on provided patient visit id : "+err.Error())
 		return

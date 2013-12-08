@@ -30,7 +30,7 @@
                     ]
                 }, 
                 {
-                    "description": "is acne getting worse", 
+                    "description": "is acne getting worse",  
                     "questions": [
                         {
                             "question": "q_acne_worse"
