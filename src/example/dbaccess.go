@@ -1,30 +1,18 @@
 package main
 
 import (
-	"carefront/api"
-	"database/sql"
+	"carefront/libs/maps"
 	"fmt"
-	_ "github.com/go-sql-driver/mysql"
 )
 
 func main() {
-
-	db, err := sql.Open("mysql", "carefront:changethis@tcp(dev-db-3.ccvrwjdx3gvp.us-east-1.rds.amazonaws.com:3306)/carefront_db?parseTime=true")
-
+	googleMapsService := maps.GoogleMapsService(0)
+	cityStateInfo, err := googleMapsService.ConvertZipcodeToCityState("90210")
 	if err != nil {
 		panic(err.Error())
 	}
 
-	err = db.Ping()
-	if err != nil {
-		panic(err.Error())
-	}
-	defer db.Close()
+	fmt.Println(cityStateInfo.LongCityName)
+	fmt.Println(cityStateInfo.LongStateName)
 
-	dataApi := &api.DataService{DB: db}
-	patientVisit, err := dataApi.GetPatientVisitFromId(85)
-	if err != nil {
-		panic(err)
-	}
-	fmt.Println(patientVisit)
 }
