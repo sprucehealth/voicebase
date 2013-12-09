@@ -27,6 +27,10 @@ type PatientAPI interface {
 	GetPatientIdFromAccountId(accountId int64) (int64, error)
 }
 
+type DoctorAPI interface {
+	RegisterDoctor(accountId int64, firstName, lastName, gender string, dob time.Time) (int64, error)
+}
+
 type PatientVisitAPI interface {
 	GetActivePatientVisitIdForHealthCondition(patientId, healthConditionId int64) (int64, error)
 	GetPatientIdFromPatientVisitId(patientVisitId int64) (int64, error)
@@ -75,6 +79,7 @@ type ObjectStorageAPI interface {
 
 type DataAPI interface {
 	PatientAPI
+	DoctorAPI
 	PatientIntakeAPI
 	PatientVisitAPI
 	PatientIntakeLayoutAPI

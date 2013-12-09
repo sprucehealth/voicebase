@@ -79,7 +79,7 @@ func (p *DoctorPatientVisitReviewHandler) ServeHTTP(w http.ResponseWriter, r *ht
 	fillInPatientVisitInfoIntoOverview(patientVisit, patientVisitOverview)
 
 	questionIds := getQuestionIdsFromPatientVisitOverview(patientVisitOverview)
-	patientAnswersForQuestions, err := p.DataApi.GetPatientAnswersForQuestionsInPatientVisit(questionIds, patientVisit.PatientId, requestData.PatientVisitId)
+	patientAnswersForQuestions, err := p.DataApi.GetPatientAnswersForQuestionsInPatientVisit(questionIds, patientVisit.PatientId, patientVisit.PatientVisitId)
 	if err != nil {
 		WriteDeveloperError(w, http.StatusInternalServerError, "Unable to get patient answers for questions : "+err.Error())
 		return
