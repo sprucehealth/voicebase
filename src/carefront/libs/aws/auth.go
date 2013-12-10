@@ -23,5 +23,6 @@ func KeysFromEnvironment() Keys {
 	return Keys{
 		AccessKey: os.Getenv("AWS_ACCESS_KEY"),
 		SecretKey: os.Getenv("AWS_SECRET_KEY"),
+		Token:     os.Getenv("AWS_SECURITY_TOKEN"),
 	}
 }
