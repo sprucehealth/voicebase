@@ -12,6 +12,7 @@ type Region struct {
 	SQSEndpoint          string
 	IAMEndpoint          string
 	RDSEndpoint          string
+	KinesisEndpoint      string
 }
 
 var USEast = Region{
@@ -24,7 +25,8 @@ var USEast = Region{
 	"https://sns.us-east-1.amazonaws.com",
 	"https://sqs.us-east-1.amazonaws.com",
 	"https://iam.amazonaws.com",
-	"https://rds.us-east-1.amazonaws.com/",
+	"https://rds.us-east-1.amazonaws.com",
+	"https://kinesis.us-east-1.amazonaws.com",
 }
 
 var Regions = map[string]Region{

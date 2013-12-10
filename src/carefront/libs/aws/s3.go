@@ -37,7 +37,7 @@ func (s3 *S3) Do(req *http.Request) (*http.Response, error) {
 	}
 	if res.StatusCode >= 400 {
 		defer res.Body.Close()
-		return res, ParseErrorResponse(res.Body)
+		return res, ParseErrorResponse(res)
 	}
 	return res, nil
 }

@@ -1,8 +1,8 @@
-package aws
+package kinesis
 
 import (
 	"bytes"
-	"encoding/xml"
+	"encoding/json"
 	"fmt"
 	"io"
 	"log"
@@ -24,22 +24,21 @@ func dumpResponse(res *http.Response) {
 }
 
 type ErrorResponse struct {
-	Code       string
-	Message    string
-	RequestId  string
-	ContentMD5 string `xml:"Content-MD5"`
-	HostId     string
+	StatusCode int    `json:"-"`
+	Type       string `json:"__type"`
 }
 
 func (er *ErrorResponse) Error() string {
-	return fmt.Sprintf("%s: %s", er.Code, er.Message)
+	return fmt.Sprintf("aws/kinesis: %d %s", er.StatusCode, er.Type)
 }
 
 func ParseErrorResponse(res *http.Response) error {
-	dec := xml.NewDecoder(res.Body)
-	var er ErrorResponse
-	if err := dec.Decode(&er); err != nil {
+	er := &ErrorResponse{
+		StatusCode: res.StatusCode,
+	}
+	dec := json.NewDecoder(res.Body)
+	if err := dec.Decode(er); err != nil {
 		return err
 	}
-	return &er
+	return er
 }

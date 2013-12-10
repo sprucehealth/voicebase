@@ -7,6 +7,8 @@ import (
 	"strings"
 )
 
+var UserAgent = "go-aws/0.1"
+
 type Client struct {
 	Auth       Auth
 	HttpClient *http.Client
@@ -15,6 +17,9 @@ type Client struct {
 func (c *Client) Do(req *http.Request) (*http.Response, error) {
 	if c.HttpClient == nil {
 		c.HttpClient = http.DefaultClient
+	}
+	if req.Header.Get("User-Agent") == "" {
+		req.Header.Set("User-Agent", UserAgent)
 	}
 	Sign(c.Auth.Keys(), req)
 	return c.HttpClient.Do(req)
