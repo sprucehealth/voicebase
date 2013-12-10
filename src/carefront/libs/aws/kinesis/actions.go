@@ -5,6 +5,7 @@ type Action string
 const (
 	CreateStream     Action = "CreateStream"
 	DeleteStream     Action = "DeleteStream"
+	DescribeStream   Action = "DescribeStream"
 	GetNextRecords   Action = "GetNextRecords"
 	GetShardIterator Action = "GetShardIterator"
 	ListStreams      Action = "ListStreams"

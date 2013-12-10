@@ -21,7 +21,6 @@ func (kin *Kinesis) Request(action Action, request, response interface{}) error 
 	if err := enc.Encode(request); err != nil {
 		return err
 	}
-	// req, err := http.NewRequest("POST", "http://127.0.0.1:1234", buf)
 	req, err := http.NewRequest("POST", kin.Region.KinesisEndpoint, buf)
 	if err != nil {
 		return err
@@ -40,6 +39,7 @@ func (kin *Kinesis) Request(action Action, request, response interface{}) error 
 	if request == nil {
 		return nil
 	}
+
 	dec := json.NewDecoder(res.Body)
 	return dec.Decode(response)
 }
