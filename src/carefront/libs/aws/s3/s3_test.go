@@ -1,13 +1,15 @@
-package aws
+package s3
 
 import (
 	"os"
 	"testing"
 	"time"
+
+	"carefront/libs/aws"
 )
 
 func TestS3(t *testing.T) {
-	keys := KeysFromEnvironment()
+	keys := aws.KeysFromEnvironment()
 	if keys.AccessKey == "" || keys.SecretKey == "" {
 		t.Skip("Skipping aws.s3 tests. AWS keys not found in environment.")
 	}
@@ -18,11 +20,11 @@ func TestS3(t *testing.T) {
 
 	key := "test-object-1"
 
-	cli := &Client{
+	cli := &aws.Client{
 		Auth: keys,
 	}
 	s3 := &S3{
-		Region: USEast,
+		Region: aws.USEast,
 		Client: cli,
 	}
 

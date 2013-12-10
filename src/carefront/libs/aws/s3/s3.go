@@ -1,4 +1,4 @@
-package aws
+package s3
 
 // TODO: retries
 
@@ -8,11 +8,13 @@ import (
 	"io"
 	"io/ioutil"
 	"net/http"
+
+	"carefront/libs/aws"
 )
 
 type S3 struct {
-	Region
-	Client *Client
+	aws.Region
+	Client *aws.Client
 }
 
 func (s3 *S3) buildPath(bucket, path string) string {
