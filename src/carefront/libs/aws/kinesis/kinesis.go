@@ -36,7 +36,7 @@ func (kin *Kinesis) Request(action Action, request, response interface{}) error 
 		return ParseErrorResponse(res)
 	}
 	// Some actions only use the StatusCode with no body
-	if request == nil {
+	if response == nil {
 		return nil
 	}
 
