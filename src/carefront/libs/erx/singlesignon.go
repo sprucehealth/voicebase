@@ -15,21 +15,21 @@ var (
 )
 
 type SingleSignOn struct {
-	SingleSignOnCode         string
-	SingleSignOnUserIdVerify string
+	Code         string
+	UserIdVerify string
 }
 
-func GenerateSingleSignOn() (singleSignOn SingleSignOn) {
+func GenerateSingleSignOn() SingleSignOn {
 	rand.Seed(time.Now().UnixNano())
 	clinicKey := os.Getenv("DOSESPOT_CLINIC_KEY")
 	userId := os.Getenv("DOSESPOT_USER_ID")
 
-	singleSignOn = SingleSignOn{}
+	singleSignOn := SingleSignOn{}
 
 	// STEP 1: Create a random phrase 32 characters long in UTF8
 	phrase := generateRandomAlphaNumString(32)
-	singleSignOn.SingleSignOnCode = createSingleSignOn(phrase, clinicKey)
-	singleSignOn.SingleSignOnUserIdVerify = createSingleSignOnUserIdVerify(phrase, clinicKey, userId)
+	singleSignOn.Code = createSingleSignOn(phrase, clinicKey)
+	singleSignOn.UserIdVerify = createSingleSignOnUserIdVerify(phrase, clinicKey, userId)
 
 	return singleSignOn
 }

@@ -7,6 +7,6 @@ import (
 
 func main() {
 	singleSignOn := erx.GenerateSingleSignOn()
-	fmt.Println("SingleSignOnCode: " + singleSignOn.SingleSignOnCode)
-	fmt.Println("SingleSignOnUserIdVerify: " + singleSignOn.SingleSignOnUserIdVerify)
+	fmt.Println("SingleSignOnCode: " + singleSignOn.Code)
+	fmt.Println("SingleSignOnUserIdVerify: " + singleSignOn.UserIdVerify)
 }
