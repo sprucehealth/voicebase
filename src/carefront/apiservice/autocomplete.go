@@ -5,6 +5,7 @@ import (
 	"github.com/gorilla/schema"
 	"net/http"
 	"strings"
+	"unicode"
 )
 
 type AutocompleteHandler struct {
@@ -52,11 +53,52 @@ func (s *AutocompleteHandler) ServeHTTP(w http.ResponseWriter, r *http.Request) 
 		// and also so that suggestions are quicker to return
 		openBracket := strings.Index(searchResult, "(")
 		if openBracket != -1 {
-			autocompleteResponse.Suggestions[i] = Suggestion{Title: searchResult[:openBracket], Subtitle: searchResult[openBracket:]}
+			subtitle := searchResult[openBracket+1 : len(searchResult)-1]
+
+			autocompleteResponse.Suggestions[i] = Suggestion{Title: searchResult[:openBracket], Subtitle: SpecialTitle(subtitle)}
 		} else {
 			autocompleteResponse.Suggestions[i] = Suggestion{Title: searchResult}
 		}
 	}
 	autocompleteResponse.Title = "Common Treatments"
 	WriteJSONToHTTPResponseWriter(w, http.StatusOK, autocompleteResponse)
+}
+
+// Content in the paranthesis of a drug name is returned as Oral - powder for reconstitution
+// This function attempts to convert the subtitle to Oral - Powder for reconstitution
+func SpecialTitle(s string) string {
+	// Use a closure here to remember state.
+	// Hackish but effective. Depends on Map scanning in order and calling
+	// the closure once per rune.
+	firstLetter := false
+	hyphenFound := false
+	spaceAfterHyphenFound := false
+	letterAfterSpaceAfterHyphenFound := false
+	return strings.Map(
+		func(r rune) rune {
+			if !firstLetter {
+				firstLetter = true
+				return unicode.ToTitle(r)
+			}
+
+			if hyphenFound {
+				if !spaceAfterHyphenFound {
+					spaceAfterHyphenFound = true
+					if r != ' ' {
+						return unicode.ToTitle(r)
+					}
+				} else if !letterAfterSpaceAfterHyphenFound {
+					letterAfterSpaceAfterHyphenFound = true
+					return unicode.ToTitle(r)
+				}
+			}
+
+			if r == '-' {
+				hyphenFound = true
+			}
+
+			return r
+
+		},
+		s)
 }
