@@ -5,7 +5,6 @@ import (
 	"crypto/sha512"
 	"encoding/base64"
 	"math/rand"
-	"os"
 	"time"
 )
 
@@ -13,23 +12,18 @@ var (
 	alphanum = []byte("0123456789ABCDEFGHIJKLMNOPQRSTUVWXYZabcdefghijklmnopqrstuvwxyz")
 )
 
-type SingleSignOn struct {
-	Code         string
-	UserIdVerify string
-}
-
-func GenerateSingleSignOn() SingleSignOn {
+func generateSingleSignOn(clinicKey, userId, clinicId string) singleSignOn {
 	rand.Seed(time.Now().UnixNano())
-	clinicKey := os.Getenv("DOSESPOT_CLINIC_KEY")
-	userId := os.Getenv("DOSESPOT_USER_ID")
 
-	singleSignOn := SingleSignOn{}
+	singleSignOn := singleSignOn{}
 
 	// STEP 1: Create a random phrase 32 characters long in UTF8
 	phrase := generateRandomAlphaNumString(32)
 	singleSignOn.Code = string(createSingleSignOn(phrase, clinicKey))
 	singleSignOn.UserIdVerify = string(createSingleSignOnUserIdVerify(phrase, clinicKey, userId))
-
+	singleSignOn.ClinicId = clinicId
+	singleSignOn.UserId = userId
+	singleSignOn.PhraseLength = 32
 	return singleSignOn
 }
 
