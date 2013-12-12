@@ -12,7 +12,7 @@ type AutocompleteHandler struct {
 }
 
 type AutocompleteRequestData struct {
-	SearchString string `schema:"search_string,required"`
+	SearchString string `schema:"query,required"`
 	QuestionId   string `schema:"question_id,required"`
 }
 
