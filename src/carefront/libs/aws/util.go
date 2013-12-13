@@ -1,45 +1,9 @@
 package aws
 
-import (
-	"bytes"
-	"encoding/xml"
-	"fmt"
-	"io"
-	"log"
-	"net/http"
-)
+import "fmt"
 
 type ErrBadStatusCode int
 
 func (e ErrBadStatusCode) Error() string {
 	return fmt.Sprintf("bad status code %d", int(e))
-}
-
-func dumpResponse(res *http.Response) {
-	buf := &bytes.Buffer{}
-	if _, err := io.Copy(buf, res.Body); err != nil {
-		log.Fatal(err)
-	}
-	fmt.Printf("%s\n", buf.String())
-}
-
-type ErrorResponse struct {
-	Code       string
-	Message    string
-	RequestId  string
-	ContentMD5 string `xml:"Content-MD5"`
-	HostId     string
-}
-
-func (er *ErrorResponse) Error() string {
-	return fmt.Sprintf("%s: %s", er.Code, er.Message)
-}
-
-func ParseErrorResponse(rd io.Reader) error {
-	dec := xml.NewDecoder(rd)
-	var er ErrorResponse
-	if err := dec.Decode(&er); err != nil {
-		return err
-	}
-	return &er
 }

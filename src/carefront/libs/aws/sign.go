@@ -83,7 +83,12 @@ func (s *Service) Sign(keys Keys, r *http.Request) error {
 			return err
 		}
 	}
-	r.Header.Set("Date", t.Format(iSO8601BasicFormat))
+	dateStr := t.Format(iSO8601BasicFormat)
+	r.Header.Set("Date", dateStr)
+	// r.Header.Set("X-Amz-Date", dateStr)
+	if keys.Token != "" {
+		r.Header.Set("X-Amz-Security-Token", keys.Token)
+	}
 
 	k := keys.sign(s, t)
 	h := hmac.New(sha256.New, k)
