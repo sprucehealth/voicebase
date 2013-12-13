@@ -11,11 +11,6 @@ const (
 	xmlContentType = "text/xml; charset=utf-8"
 )
 
-type soapAPIData interface {
-	GetSoapAction() string
-	GetSoapAPIEndPoint() string
-}
-
 type soapEnvelope struct {
 	XMLName  xml.Name `xml:"http://schemas.xmlsoap.org/soap/envelope/ Envelope"`
 	SOAPBody soapBody `xml:"Body"`
@@ -25,7 +20,12 @@ type soapBody struct {
 	RequestBody []byte `xml:",innerxml"`
 }
 
-func makeSoapRequest(requestMessage soapAPIData, result interface{}) error {
+type soapClient struct {
+	SoapAPIEndPoint string
+	APIEndpoint     string
+}
+
+func (s *soapClient) makeSoapRequest(soapAction string, requestMessage interface{}, result interface{}) error {
 	envelope := soapEnvelope{}
 	envelope.SOAPBody = soapBody{}
 	requestBody, err := xml.Marshal(requestMessage)
@@ -43,9 +43,9 @@ func makeSoapRequest(requestMessage soapAPIData, result interface{}) error {
 	buffer.WriteString(xml.Header)
 	buffer.Write(envelopBytes)
 
-	req, err := http.NewRequest("POST", requestMessage.GetSoapAPIEndPoint(), buffer)
+	req, err := http.NewRequest("POST", s.SoapAPIEndPoint, buffer)
 	req.Header.Set("Content-Type", xmlContentType)
-	req.Header.Set("SOAPAction", requestMessage.GetSoapAction())
+	req.Header.Set("SOAPAction", s.APIEndpoint+soapAction)
 
 	client := http.Client{}
 	resp, err := client.Do(req)

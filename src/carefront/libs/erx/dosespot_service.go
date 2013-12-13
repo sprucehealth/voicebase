@@ -10,6 +10,12 @@ type DoseSpotService struct {
 	UserId    string
 }
 
+const (
+	doseSpotAPIEndPoint         = "http://www.dosespot.com/API/11/"
+	doseSpotSOAPEndPoint        = "http://i.dosespot.com/api/11/apifull.asmx"
+	medicationQuickSearchAction = "MedicationQuickSearchMessage"
+)
+
 func NewDoseSpotService(clinicId, clinicKey, userId string) *DoseSpotService {
 	d := &DoseSpotService{}
 	if clinicId == "" {
@@ -25,12 +31,13 @@ func NewDoseSpotService(clinicId, clinicKey, userId string) *DoseSpotService {
 }
 
 func (d *DoseSpotService) GetDrugNames(prefix string) ([]string, error) {
-	medicationSearch := newMedicationQuickSearchMessage()
+	medicationSearch := &medicationQuickSearchMessage{}
 	medicationSearch.SSO = generateSingleSignOn(d.ClinicKey, d.UserId, d.ClinicId)
 	medicationSearch.SearchString = prefix
 
 	searchResult := &medicationQuickSearchResult{}
-	err := makeSoapRequest(medicationSearch, searchResult)
+	doseSpotClient := soapClient{SoapAPIEndPoint: doseSpotSOAPEndPoint, APIEndpoint: doseSpotAPIEndPoint}
+	err := doseSpotClient.makeSoapRequest(medicationQuickSearchAction, medicationSearch, searchResult)
 
 	if err != nil {
 		return nil, err
