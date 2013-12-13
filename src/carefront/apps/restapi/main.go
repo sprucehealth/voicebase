@@ -11,6 +11,7 @@ import (
 	"carefront/api"
 	"carefront/apiservice"
 	"carefront/common/config"
+	"carefront/libs/erx"
 	"carefront/libs/svcclient"
 	"carefront/libs/svcreg"
 	"carefront/services/auth"
@@ -45,6 +46,9 @@ type Config struct {
 	DoctorVisualLayoutBucket string   `long:"doctor_visual_layout_bucket" description:"S3 Bucket name for patient overview for doctor's viewing"`
 	DoctorLayoutBucket       string   `long:"doctor_layout_bucket" description:"S3 Bucket name for pre-processed patient overview for doctor's viewing"`
 	Debug                    bool     `long:"debug" description:"Enable debugging"`
+	DoseSpotClinicKey        string   `long:"dose_spot_clinic_key" description:"DoseSpot Clinic Key for eRX integration"`
+	DoseSpotClinicId         string   `long:"dose_spot_clinic_id" description:"DoseSpot Clinic Id for eRX integration"`
+	DoseSpotUserId           string   `long:"dose_spot_user_id" description:"DoseSpot UserId for eRx integration"`
 }
 
 var DefaultConfig = Config{
@@ -118,9 +122,11 @@ func main() {
 	photoAnswerCloudStorageApi := api.NewCloudStorageService(awsAuth)
 	authHandler := &apiservice.AuthenticationHandler{AuthApi: authApi}
 	signupPatientHandler := &apiservice.SignupPatientHandler{DataApi: dataApi, AuthApi: authApi}
+	// authenticateDoctorHandler := &apiservice.DoctorAuthenticationHandler{DataApi: dataApi, AuthApi: authApi}
 	signupDoctorHandler := &apiservice.SignupDoctorHandler{DataApi: dataApi, AuthApi: authApi}
 	patientVisitHandler := apiservice.NewPatientVisitHandler(dataApi, authApi, cloudStorageApi, photoAnswerCloudStorageApi)
 	answerIntakeHandler := apiservice.NewAnswerIntakeHandler(dataApi)
+	autocompleteHandler := &apiservice.AutocompleteHandler{ERxApi: erx.NewDoseSpotService(conf.DoseSpotClinicId, conf.DoseSpotClinicKey, conf.DoseSpotUserId)}
 	photoAnswerIntakeHandler := apiservice.NewPhotoAnswerIntakeHandler(dataApi, photoAnswerCloudStorageApi, conf.CaseBucket, conf.AWSRegion, conf.MaxInMemoryForPhotoMB*1024*1024)
 	generateDoctorLayoutHandler := &apiservice.GenerateDoctorLayoutHandler{
 		DataApi:                  dataApi,
@@ -154,10 +160,12 @@ func main() {
 	mux.Handle("/v1/client_model", generateModelIntakeHandler)
 	mux.Handle("/v1/doctor_layout", generateDoctorLayoutHandler)
 	mux.Handle("/v1/doctor/signup", signupDoctorHandler)
+	// mux.Handle("/v1/doctor/authenticate", authenticateDoctorHandler)
 	mux.Handle("/v1/signup", authHandler)
 	mux.Handle("/v1/authenticate", authHandler)
 	mux.Handle("/v1/logout", authHandler)
 	mux.Handle("/v1/ping", pingHandler)
+	mux.Handle("/v1/autocomplete", autocompleteHandler)
 
 	s := &http.Server{
 		Addr:           conf.ListenAddr,
