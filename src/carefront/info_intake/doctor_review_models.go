@@ -1,6 +1,7 @@
 package info_intake
 
 import (
+	"carefront/common"
 	"time"
 )
 
@@ -23,8 +24,8 @@ type PatientVisitOverviewSection struct {
 }
 
 type PatientVisitOverview struct {
-	PatientVisitTime   time.Time                      `json:"patient_visit_time,empty"`
-	PatientId          int64                          `json:"patient_id,string,omitempty"`
+	PatientVisitTime   time.Time                      `json:"patient_visit_time,omitempty"`
+	Patient            *common.Patient                `json:"patient,omitempty"`
 	PatientVisitId     int64                          `json:"patient_visit_id,string,omitempty"`
 	HealthConditionId  int64                          `json:"health_condition_id,string,omitempty"`
 	HealthConditionTag string                         `json:"health_condition,omitempty"`

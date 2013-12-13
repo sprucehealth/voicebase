@@ -77,6 +77,7 @@ func (p *DoctorPatientVisitReviewHandler) ServeHTTP(w http.ResponseWriter, r *ht
 	}
 
 	fillInPatientVisitInfoIntoOverview(patientVisit, patientVisitOverview)
+	patientVisitOverview.Patient = patient
 
 	questionIds := getQuestionIdsFromPatientVisitOverview(patientVisitOverview)
 	patientAnswersForQuestions, err := p.DataApi.GetPatientAnswersForQuestionsInPatientVisit(questionIds, patientVisit.PatientId, patientVisit.PatientVisitId)
@@ -100,21 +101,6 @@ func (p *DoctorPatientVisitReviewHandler) populatePatientVisitOverviewWithPatien
 						question.PatientAnswers = patientAnswers[question.QuestionId]
 						GetSignedUrlsForAnswersInQuestion(&question.Question, p.PatientPhotoStorageService)
 					}
-				} else {
-					switch question.QuestionTag {
-					case "q_dob":
-						patientAnswer := &common.PatientAnswer{}
-						patientAnswer.AnswerText = patient.Dob.String()
-						question.PatientAnswers = []*common.PatientAnswer{patientAnswer}
-					case "q_gender":
-						patientAnswer := &common.PatientAnswer{}
-						patientAnswer.AnswerText = patient.Gender
-						question.PatientAnswers = []*common.PatientAnswer{patientAnswer}
-					case "q_location":
-						patientAnswer := &common.PatientAnswer{}
-						patientAnswer.AnswerText = patient.ZipCode
-						question.PatientAnswers = []*common.PatientAnswer{patientAnswer}
-					}
 				}
 			}
 		}
@@ -124,7 +110,6 @@ func (p *DoctorPatientVisitReviewHandler) populatePatientVisitOverviewWithPatien
 
 func fillInPatientVisitInfoIntoOverview(patientVisit *common.PatientVisit, patientVisitOverview *info_intake.PatientVisitOverview) {
 	patientVisitOverview.PatientVisitTime = patientVisit.SubmittedDate
-	patientVisitOverview.PatientId = patientVisit.PatientId
 	patientVisitOverview.PatientVisitId = patientVisit.PatientVisitId
 	patientVisitOverview.HealthConditionId = patientVisit.HealthConditionId
 }

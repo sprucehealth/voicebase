@@ -10,30 +10,6 @@
                 {
                     "data": [
                         {
-                            "question": "q_dob"
-                        }, 
-                        {
-                            "question": "q_gender"
-                        }, 
-                        {
-                            "question": "q_location"
-                        }
-                    ], 
-                    "sub_section_title": "Basic Bio", 
-                    "sub_section_types": [
-                        "s_type_table_section"
-                    ]
-                }, 
-                {
-                    "sub_section_placeholder": "No previous visits", 
-                    "sub_section_title": "Visit History", 
-                    "sub_section_types": [
-                        "s_type_table_section"
-                    ]
-                }, 
-                {
-                    "data": [
-                        {
                             "flag_question_if_answered": true, 
                             "question": "q_allergic_medication_entry"
                         }, 
