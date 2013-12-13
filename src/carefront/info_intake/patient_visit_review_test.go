@@ -30,9 +30,6 @@ func TestParsingOfPatientVisitOverview(t *testing.T) {
 
 func TestInitialPatientVisitInformation(t *testing.T) {
 	visitReview := parseFileToGetPatientVisitOverview(t)
-	if visitReview.PatientId == 0 {
-		t.Fatal("Patient visit overview does not contain patient id when it should")
-	}
 	if visitReview.PatientVisitId == 0 {
 		t.Fatal("Patient visit overview does not contain patient visit id when it should")
 	}
