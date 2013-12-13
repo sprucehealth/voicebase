@@ -166,7 +166,6 @@ func main() {
 		WriteTimeout:   30 * time.Second,
 		MaxHeaderBytes: 1 << 20,
 	}
-
 	if conf.CertKeyLocation == "" && conf.PrivateKeyLocation == "" {
 		log.Fatal(s.ListenAndServe())
 	} else {
