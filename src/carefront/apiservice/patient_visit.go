@@ -32,6 +32,11 @@ type PatientVisitResponse struct {
 	ClientLayout   *info_intake.HealthCondition `json:"health_condition,omitempty"`
 }
 
+type PatientVisitSubmittedResponse struct {
+	PatientVisitId int64  `json:"patient_visit_id,string"`
+	Status         string `json:"status,omitempty"`
+}
+
 func NewPatientVisitHandler(dataApi api.DataAPI, authApi thriftapi.Auth, layoutStorageService api.CloudStorageAPI, patientPhotoStorageService api.CloudStorageAPI) *PatientVisitHandler {
 	return &PatientVisitHandler{dataApi, authApi, layoutStorageService, patientPhotoStorageService, 0}
 }
@@ -83,7 +88,12 @@ func (s *PatientVisitHandler) submitPatientVisit(w http.ResponseWriter, r *http.
 		return
 	}
 
-	WriteJSONToHTTPResponseWriter(w, http.StatusOK, "{}")
+	patientVisit, err := s.DataApi.GetPatientVisitFromId(requestData.PatientVisitId)
+	if err != nil {
+		WriteDeveloperError(w, http.StatusOK, "Unable to get the patient visit object based on id: "+err.Error())
+	}
+
+	WriteJSONToHTTPResponseWriter(w, http.StatusOK, PatientVisitSubmittedResponse{PatientVisitId: patientVisit.PatientVisitId, Status: patientVisit.Status})
 }
 
 func (s *PatientVisitHandler) returnNewOrOpenPatientVisit(w http.ResponseWriter, r *http.Request) {
