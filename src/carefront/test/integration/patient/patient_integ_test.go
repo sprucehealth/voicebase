@@ -1,10 +1,11 @@
-package integration
+package patient
 
 import (
 	// "encoding/json"
 	// "fmt"
 	"bytes"
 	"carefront/apiservice"
+	"carefront/test/integration"
 	_ "github.com/go-sql-driver/mysql"
 	"io/ioutil"
 	"net/http"
@@ -14,17 +15,16 @@ import (
 )
 
 func TestPatientRegistration(t *testing.T) {
-	CheckIfRunningLocally(t)
-	testData := SetupIntegrationTest(t)
+	testData := integration.SetupIntegrationTest(t)
 	defer testData.DB.Close()
 	SignupRandomTestPatient(t, testData.DataApi, testData.AuthApi)
 }
 
 func TestPatientVisitCreation(t *testing.T) {
-	if err := CheckIfRunningLocally(t); err == CannotRunTestLocally {
+	if err := integration.CheckIfRunningLocally(t); err == integration.CannotRunTestLocally {
 		return
 	}
-	testData := SetupIntegrationTest(t)
+	testData := integration.SetupIntegrationTest(t)
 	defer testData.DB.Close()
 
 	signedupPatientResponse := SignupRandomTestPatient(t, testData.DataApi, testData.AuthApi)
@@ -47,10 +47,10 @@ func TestPatientVisitCreation(t *testing.T) {
 }
 
 func TestPatientVisitSubmission(t *testing.T) {
-	if err := CheckIfRunningLocally(t); err == CannotRunTestLocally {
+	if err := integration.CheckIfRunningLocally(t); err == integration.CannotRunTestLocally {
 		return
 	}
-	testData := SetupIntegrationTest(t)
+	testData := integration.SetupIntegrationTest(t)
 	defer testData.DB.Close()
 
 	signedupPatientResponse := SignupRandomTestPatient(t, testData.DataApi, testData.AuthApi)
@@ -79,7 +79,7 @@ func TestPatientVisitSubmission(t *testing.T) {
 		t.Fatal("Unable to read body of the response for the new patient visit call: " + err.Error())
 	}
 
-	CheckSuccessfulStatusCode(resp, "Unsuccessful call to register new patient visit: "+string(body), t)
+	integration.CheckSuccessfulStatusCode(resp, "Unsuccessful call to register new patient visit: "+string(body), t)
 
 	// get the patient visit information to ensure that the case has been submitted
 	patientVisit, err := testData.DataApi.GetPatientVisitFromId(patientVisitResponse.PatientVisitId)

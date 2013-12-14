@@ -1,7 +1,10 @@
-package integration
+package patient
 
 import (
 	"bytes"
+	"carefront/api"
+	"carefront/apiservice"
+	"carefront/test/integration"
 	"encoding/json"
 	"fmt"
 	"io"
@@ -12,9 +15,6 @@ import (
 	"os"
 	"strconv"
 	"testing"
-
-	"carefront/api"
-	"carefront/apiservice"
 )
 
 type AnswerIntakeHandler struct {
@@ -22,7 +22,7 @@ type AnswerIntakeHandler struct {
 	accountId int64
 }
 
-func getQuestionWithTagAndExpectedType(questionTag, questionType string, t *testing.T, testData TestData) int64 {
+func getQuestionWithTagAndExpectedType(questionTag, questionType string, t *testing.T, testData integration.TestData) int64 {
 	questionId, _, questionType, _, _, _, _, err := testData.DataApi.GetQuestionInfo(questionTag, 1)
 	if err != nil {
 		t.Fatal("Unable to query for question q_reason_visit from database: " + err.Error())
@@ -37,7 +37,7 @@ func getQuestionWithTagAndExpectedType(questionTag, questionType string, t *test
 	return questionId
 }
 
-func getAnswerWithTagAndExpectedType(answerTag, answerType string, questionId int64, testData TestData, t *testing.T) int64 {
+func getAnswerWithTagAndExpectedType(answerTag, answerType string, questionId int64, testData integration.TestData, t *testing.T) int64 {
 
 	potentialAnswers, err := testData.DataApi.GetAnswerInfo(questionId, 1)
 	if err != nil {
@@ -65,7 +65,7 @@ func getAnswerWithTagAndExpectedType(answerTag, answerType string, questionId in
 	return potentialAnswerId
 }
 
-func submitPatientAnswerForVisit(PatientId int64, testData TestData, patientIntakeRequestData string, t *testing.T) {
+func submitPatientAnswerForVisit(PatientId int64, testData integration.TestData, patientIntakeRequestData string, t *testing.T) {
 	answerIntakeHandler := apiservice.NewAnswerIntakeHandler(testData.DataApi)
 	patient, err := testData.DataApi.GetPatientFromId(PatientId)
 	if err != nil {
@@ -83,15 +83,15 @@ func submitPatientAnswerForVisit(PatientId int64, testData TestData, patientInta
 	if err != nil {
 		t.Fatal("Unable to get the patient visit id")
 	}
-	CheckSuccessfulStatusCode(resp, "Unable to submit a single select answer for patient", t)
+	integration.CheckSuccessfulStatusCode(resp, "Unable to submit a single select answer for patient", t)
 }
 
 func TestSingleSelectIntake(t *testing.T) {
-	if err := CheckIfRunningLocally(t); err == CannotRunTestLocally {
+	if err := integration.CheckIfRunningLocally(t); err == integration.CannotRunTestLocally {
 		return
 	}
 
-	testData := SetupIntegrationTest(t)
+	testData := integration.SetupIntegrationTest(t)
 	defer testData.DB.Close()
 
 	// signup a random test patient for which to answer questions
@@ -134,10 +134,10 @@ func TestSingleSelectIntake(t *testing.T) {
 }
 
 func TestMultipleChoiceIntake(t *testing.T) {
-	if err := CheckIfRunningLocally(t); err == CannotRunTestLocally {
+	if err := integration.CheckIfRunningLocally(t); err == integration.CannotRunTestLocally {
 		return
 	}
-	testData := SetupIntegrationTest(t)
+	testData := integration.SetupIntegrationTest(t)
 	defer testData.DB.Close()
 
 	// signup a random test patient for which to answer questions
@@ -195,10 +195,10 @@ func TestMultipleChoiceIntake(t *testing.T) {
 }
 
 func TestSingleEntryIntake(t *testing.T) {
-	if err := CheckIfRunningLocally(t); err == CannotRunTestLocally {
+	if err := integration.CheckIfRunningLocally(t); err == integration.CannotRunTestLocally {
 		return
 	}
-	testData := SetupIntegrationTest(t)
+	testData := integration.SetupIntegrationTest(t)
 	defer testData.DB.Close()
 
 	// signup a random test patient for which to answer questions
@@ -241,7 +241,7 @@ func TestSingleEntryIntake(t *testing.T) {
 	t.Fatalf("While an answer for the expected question exists, unable to find the expected answer with id %d for single entry intake test", potentialAnswerId)
 }
 
-func submitFreeTextResponseForPatient(patientVisitResponse *apiservice.PatientVisitResponse, PatientId int64, freeTextResponse string, testData TestData, t *testing.T) {
+func submitFreeTextResponseForPatient(patientVisitResponse *apiservice.PatientVisitResponse, PatientId int64, freeTextResponse string, testData integration.TestData, t *testing.T) {
 	// now lets go ahead and try and answer the question about the reason for visit given that it is
 	// single select
 	questionId := getQuestionWithTagAndExpectedType("q_changes_acne_worse", "q_type_free_text", t, testData)
@@ -279,10 +279,10 @@ func submitFreeTextResponseForPatient(patientVisitResponse *apiservice.PatientVi
 }
 
 func TestFreeTextEntryIntake(t *testing.T) {
-	if err := CheckIfRunningLocally(t); err == CannotRunTestLocally {
+	if err := integration.CheckIfRunningLocally(t); err == integration.CannotRunTestLocally {
 		return
 	}
-	testData := SetupIntegrationTest(t)
+	testData := integration.SetupIntegrationTest(t)
 	defer testData.DB.Close()
 
 	// signup a random test patient for which to answer questions
@@ -308,10 +308,10 @@ func addSubAnswerToAnswerIntake(answerIntake *apiservice.AnswerIntake, subAnswer
 }
 
 func TestSubQuestionEntryIntake(t *testing.T) {
-	if err := CheckIfRunningLocally(t); err == CannotRunTestLocally {
+	if err := integration.CheckIfRunningLocally(t); err == integration.CannotRunTestLocally {
 		return
 	}
-	testData := SetupIntegrationTest(t)
+	testData := integration.SetupIntegrationTest(t)
 	defer testData.DB.Close()
 
 	// signup a random test patient for which to answer questions
@@ -448,13 +448,13 @@ func TestSubQuestionEntryIntake(t *testing.T) {
 }
 
 func TestPhotoAnswerIntake(t *testing.T) {
-	if err := CheckIfRunningLocally(t); err == CannotRunTestLocally {
+	if err := integration.CheckIfRunningLocally(t); err == integration.CannotRunTestLocally {
 		return
 	}
 
-	fileToUpload := "../../info_intake/condition_intake.json"
+	fileToUpload := "../../../info_intake/condition_intake.json"
 
-	testData := SetupIntegrationTest(t)
+	testData := integration.SetupIntegrationTest(t)
 	defer testData.DB.Close()
 
 	// signup a random test patient for which to answer questions
@@ -510,7 +510,7 @@ func TestPhotoAnswerIntake(t *testing.T) {
 	if err != nil {
 		t.Fatal("Unable to read the body of the response when trying to submit photo answer for patient: " + err.Error())
 	}
-	CheckSuccessfulStatusCode(resp, "Unable to submit photo answer for patient: "+string(responseBody), t)
+	integration.CheckSuccessfulStatusCode(resp, "Unable to submit photo answer for patient: "+string(responseBody), t)
 
 	// get the patient visit again to get the patient answer in there
 	patientVisitResponse = GetPatientVisitForPatient(patientSignedUpResponse.PatientId, testData, t)

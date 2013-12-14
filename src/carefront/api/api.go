@@ -29,6 +29,7 @@ type PatientAPI interface {
 
 type DoctorAPI interface {
 	RegisterDoctor(accountId int64, firstName, lastName, gender string, dob time.Time) (int64, error)
+	GetDoctorIdFromAccountId(accountId int64) (int64, error)
 }
 
 type PatientVisitAPI interface {

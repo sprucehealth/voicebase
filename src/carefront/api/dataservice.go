@@ -57,6 +57,12 @@ func (d *DataService) RegisterDoctor(accountId int64, firstName, lastName, gende
 	return lastId, err
 }
 
+func (d *DataService) GetDoctorIdFromAccountId(accountId int64) (int64, error) {
+	var doctorId int64
+	err := d.DB.QueryRow("select id from doctor where account_id = ?", accountId).Scan(&doctorId)
+	return doctorId, err
+}
+
 func (d *DataService) GetPatientFromId(patientId int64) (patient *common.Patient, err error) {
 	var firstName, lastName, zipCode, status, gender string
 	var dob mysql.NullTime

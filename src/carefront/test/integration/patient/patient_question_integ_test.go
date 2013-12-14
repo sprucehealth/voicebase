@@ -1,15 +1,16 @@
-package integration
+package patient
 
 import (
+	"carefront/test/integration"
 	"testing"
 )
 
 func TestNoPotentialAnswerForQuestionTypes(t *testing.T) {
-	if err := CheckIfRunningLocally(t); err == CannotRunTestLocally {
+	if err := integration.CheckIfRunningLocally(t); err == integration.CannotRunTestLocally {
 		return
 	}
 
-	testData := SetupIntegrationTest(t)
+	testData := integration.SetupIntegrationTest(t)
 	defer testData.DB.Close()
 
 	// no free text question type should have potential answers associated with it
@@ -41,10 +42,10 @@ func TestNoPotentialAnswerForQuestionTypes(t *testing.T) {
 // autocomplete question type, as they should be for the client to
 // be able to show additional pieces of content in the question
 func TestAdditionalFieldsInAutocompleteQuestion(t *testing.T) {
-	if err := CheckIfRunningLocally(t); err == CannotRunTestLocally {
+	if err := integration.CheckIfRunningLocally(t); err == integration.CannotRunTestLocally {
 		return
 	}
-	testData := SetupIntegrationTest(t)
+	testData := integration.SetupIntegrationTest(t)
 	defer testData.DB.Close()
 
 	// signup a random test patient for which to answer questions
