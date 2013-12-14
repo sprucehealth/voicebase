@@ -53,7 +53,7 @@ type Config struct {
 
 var DefaultConfig = Config{
 	BaseConfig: &config.BaseConfig{
-		AppName: "resetapi",
+		AppName: "restapi",
 	},
 	ListenAddr:            ":8080",
 	CaseBucket:            "carefront-cases",
