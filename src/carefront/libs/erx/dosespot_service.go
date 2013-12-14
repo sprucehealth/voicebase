@@ -11,9 +11,14 @@ type DoseSpotService struct {
 }
 
 const (
-	doseSpotAPIEndPoint         = "http://www.dosespot.com/API/11/"
-	doseSpotSOAPEndPoint        = "http://i.dosespot.com/api/11/apifull.asmx"
-	medicationQuickSearchAction = "MedicationQuickSearchMessage"
+	doseSpotAPIEndPoint                = "http://www.dosespot.com/API/11/"
+	doseSpotSOAPEndPoint               = "http://i.dosespot.com/api/11/apifull.asmx"
+	medicationQuickSearchAction        = "MedicationQuickSearchMessage"
+	selfReportedMedicationSearchAction = "SelfReportedMedicationSearch"
+)
+
+var (
+	doseSpotClient = soapClient{SoapAPIEndPoint: doseSpotSOAPEndPoint, APIEndpoint: doseSpotAPIEndPoint}
 )
 
 func NewDoseSpotService(clinicId, clinicKey, userId string) *DoseSpotService {
@@ -30,13 +35,12 @@ func NewDoseSpotService(clinicId, clinicKey, userId string) *DoseSpotService {
 	return d
 }
 
-func (d *DoseSpotService) GetDrugNames(prefix string) ([]string, error) {
-	medicationSearch := &medicationQuickSearchMessage{}
+func (d *DoseSpotService) GetDrugNamesForDoctor(prefix string) ([]string, error) {
+	medicationSearch := &medicationQuickSearchRequest{}
 	medicationSearch.SSO = generateSingleSignOn(d.ClinicKey, d.UserId, d.ClinicId)
 	medicationSearch.SearchString = prefix
 
-	searchResult := &medicationQuickSearchResult{}
-	doseSpotClient := soapClient{SoapAPIEndPoint: doseSpotSOAPEndPoint, APIEndpoint: doseSpotAPIEndPoint}
+	searchResult := &medicationQuickSearchResponse{}
 	err := doseSpotClient.makeSoapRequest(medicationQuickSearchAction, medicationSearch, searchResult)
 
 	if err != nil {
@@ -44,4 +48,24 @@ func (d *DoseSpotService) GetDrugNames(prefix string) ([]string, error) {
 	}
 
 	return searchResult.DisplayNames, nil
+}
+
+func (d *DoseSpotService) GetDrugNamesForPatient(prefix string) ([]string, error) {
+	selfReportedDrugsSearch := &selfReportedMedicationSearchRequest{}
+	selfReportedDrugsSearch.SSO = generateSingleSignOn(d.ClinicKey, d.UserId, d.ClinicId)
+	selfReportedDrugsSearch.SearchTerm = prefix
+
+	searchResult := &selfReportedMedicationSearchResponse{}
+	err := doseSpotClient.makeSoapRequest(selfReportedMedicationSearchAction, selfReportedDrugsSearch, searchResult)
+
+	if err != nil {
+		return nil, err
+	}
+
+	drugNames := make([]string, len(searchResult.SearchResults))
+	for i, searchResultItem := range searchResult.SearchResults {
+		drugNames[i] = searchResultItem.DisplayName
+	}
+
+	return drugNames, nil
 }

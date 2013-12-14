@@ -1,6 +1,7 @@
 package apiservice
 
 import (
+	"carefront/api"
 	"carefront/libs/erx"
 	"github.com/gorilla/schema"
 	"net/http"
@@ -10,11 +11,12 @@ import (
 
 type AutocompleteHandler struct {
 	ERxApi erx.ERxAPI
+	Role   string
 }
 
 type AutocompleteRequestData struct {
 	SearchString string `schema:"query,required"`
-	QuestionId   string `schema:"question_id,required"`
+	QuestionId   string `schema:"question_id"`
 }
 
 type AutocompleteResponse struct {
@@ -24,7 +26,7 @@ type AutocompleteResponse struct {
 
 type Suggestion struct {
 	Title    string `json:"title"`
-	Subtitle string `json:"subtitle"`
+	Subtitle string `json:"subtitle,omitempty"`
 }
 
 func (s *AutocompleteHandler) ServeHTTP(w http.ResponseWriter, r *http.Request) {
@@ -37,7 +39,12 @@ func (s *AutocompleteHandler) ServeHTTP(w http.ResponseWriter, r *http.Request) 
 		return
 	}
 
-	searchResults, err := s.ERxApi.GetDrugNames(requestData.SearchString)
+	var searchResults []string
+	if s.Role == api.DOCTOR_ROLE {
+		searchResults, err = s.ERxApi.GetDrugNamesForDoctor(requestData.SearchString)
+	} else {
+		searchResults, err = s.ERxApi.GetDrugNamesForPatient(requestData.SearchString)
+	}
 	if err != nil {
 		WriteDeveloperError(w, http.StatusInternalServerError, "Unable to get search results for drugs: "+err.Error())
 		return
