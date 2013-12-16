@@ -242,7 +242,7 @@
                                 "potential_answers": [
                                     "a_face_acne_location"
                                 ], 
-                                "question": "q_acne_location"
+                                "question": "q_acne_location" 
                             }, 
                             "question": "q_face_photo_intake", 
                             "tips": {
