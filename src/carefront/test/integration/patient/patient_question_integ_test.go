@@ -56,7 +56,7 @@ func TestAdditionalFieldsInAutocompleteQuestion(t *testing.T) {
 	for _, section := range patientVisitResponse.ClientLayout.Sections {
 		for _, screen := range section.Screens {
 			for _, question := range screen.Questions {
-				if question.QuestionType == "q_type_autocomplete" {
+				if question.QuestionTypes[0] == "q_type_autocomplete" {
 					if question.AdditionalFields == nil || len(question.AdditionalFields) == 0 {
 						t.Fatal("Expected additional fields to be set for the autocomplete question type")
 					}

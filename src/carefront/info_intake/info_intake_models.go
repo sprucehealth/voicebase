@@ -30,18 +30,18 @@ type TipSection struct {
 }
 
 type PotentialAnswer struct {
-	AnswerId      int64  `json:"potential_answer_id,string,omitempty"`
-	Answer        string `json:"potential_answer,omitempty"`
-	AnswerSummary string `json:"potential_answer_summary,omitempty"`
-	AnswerType    string `json:"answer_type,omitempty"`
-	Ordering      int64  `json:"ordering,string"`
+	AnswerId      int64    `json:"potential_answer_id,string,omitempty"`
+	Answer        string   `json:"potential_answer,omitempty"`
+	AnswerSummary string   `json:"potential_answer_summary,omitempty"`
+	AnswerTypes   []string `json:"answer_types,omitempty"`
+	Ordering      int64    `json:"ordering,string"`
 }
 
 type Question struct {
 	QuestionTag      string                  `json:"question"`
 	QuestionId       int64                   `json:"question_id,string,omitempty"`
 	QuestionTitle    string                  `json:"question_title,omitempty"`
-	QuestionType     string                  `json:"question_type,omitempty"`
+	QuestionTypes    []string                `json:"question_types,omitempty"`
 	QuestionSubText  string                  `json:"question_subtext,omitempty"`
 	QuestionSummary  string                  `json:"question_summary,omitempty"`
 	AdditionalFields map[string]string       `json:"additional_fields,omitempty"`
@@ -64,6 +64,7 @@ type Section struct {
 	SectionTag   string    `json:"section"`
 	SectionId    int64     `json:"section_id,string,omitempty"`
 	SectionTitle string    `json:"section_title,omitempty"`
+	Questions    string    `json:"questions,omitempty`
 	Screens      []*Screen `json:"screens"`
 }
 

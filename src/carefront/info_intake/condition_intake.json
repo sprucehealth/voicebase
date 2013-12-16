@@ -156,7 +156,7 @@
                                 ], 
                                 "question": "q_allergic_medications"
                             }, 
-                            "question": "q_allergic_medication_entry"
+                            "question": "q_allergic_medication_entry" 
                         }
                     ]
                 }, 

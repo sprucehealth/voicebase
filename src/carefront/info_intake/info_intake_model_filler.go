@@ -62,7 +62,7 @@ func (q *Question) FillFromDatabase(dataApi api.DataAPI, languageId int64, showP
 	}
 	q.QuestionId = questionId
 	q.QuestionTitle = questionTitle
-	q.QuestionType = questionType
+	q.QuestionTypes = []string{questionType}
 	q.ParentQuestionId = parentQuestionId
 	q.QuestionSummary = questionSummary
 	q.AdditionalFields = additionalFields
@@ -106,7 +106,7 @@ func (q *Question) FillFromDatabase(dataApi api.DataAPI, languageId int64, showP
 		potentialAnswer := &PotentialAnswer{AnswerId: answerInfo.PotentialAnswerId,
 			Answer:        answerInfo.Answer,
 			AnswerSummary: answerInfo.AnswerSummary,
-			AnswerType:    answerInfo.AnswerType,
+			AnswerTypes:   []string{answerInfo.AnswerType},
 			Ordering:      answerInfo.Ordering}
 		q.PotentialAnswers = append(q.PotentialAnswers, potentialAnswer)
 	}

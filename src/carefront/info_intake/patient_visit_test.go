@@ -66,7 +66,7 @@ func TestQuestionsParsing(t *testing.T) {
 					t.Fatal("No question tag present when it should be")
 				}
 
-				if question.QuestionType == "" {
+				if question.QuestionTypes == nil || len(question.QuestionTypes) == 0 {
 					t.Fatal("No question type present when it should be")
 				}
 
@@ -88,7 +88,7 @@ func TestPotentialAnswersParsing(t *testing.T) {
 						t.Fatal("There should be a potential answer id when there isnt")
 					}
 
-					if potentialAnswer.AnswerType == "" {
+					if potentialAnswer.AnswerTypes == nil || len(potentialAnswer.AnswerTypes) == 0 {
 						t.Fatalf("There should be an answer type for answer id %d when there isn't", potentialAnswer.AnswerId)
 					}
 
@@ -144,7 +144,7 @@ func TestSubQuestionsParsing(t *testing.T) {
 							t.Fatal("Question tag not set for subquestion")
 						}
 
-						if subQuestion.QuestionType == "" {
+						if subQuestion.QuestionTypes == nil || len(subQuestion.QuestionTypes) == 0 {
 							t.Fatal("Question type not set for subquestion")
 						}
 					}
