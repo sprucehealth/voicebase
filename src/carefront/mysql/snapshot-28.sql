@@ -1,6 +1,6 @@
 -- MySQL dump 10.13  Distrib 5.6.13, for osx10.8 (x86_64)
 --
--- Host: dev-db-3.ccvrwjdx3gvp.us-east-1.rds.amazonaws.com    Database: database_30881
+-- Host: dev-db-3.ccvrwjdx3gvp.us-east-1.rds.amazonaws.com    Database: database_10639
 -- ------------------------------------------------------
 -- Server version	5.6.13-log
 
@@ -716,4 +716,4 @@ CREATE TABLE `tips_section` (
 /*!40101 SET COLLATION_CONNECTION=@OLD_COLLATION_CONNECTION */;
 /*!40111 SET SQL_NOTES=@OLD_SQL_NOTES */;
 
--- Dump completed on 2013-12-09 14:35:38
+-- Dump completed on 2013-12-15 23:41:45
