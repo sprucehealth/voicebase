@@ -64,7 +64,7 @@ type Section struct {
 	SectionTag   string    `json:"section"`
 	SectionId    int64     `json:"section_id,string,omitempty"`
 	SectionTitle string    `json:"section_title,omitempty"`
-	Questions    string    `json:"questions,omitempty`
+	Questions    string    `json:"questions,omitempty"`
 	Screens      []*Screen `json:"screens"`
 }
 
