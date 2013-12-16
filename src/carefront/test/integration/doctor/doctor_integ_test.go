@@ -13,12 +13,20 @@ import (
 )
 
 func TestDoctorRegistration(t *testing.T) {
+	if err := integration.CheckIfRunningLocally(t); err == integration.CannotRunTestLocally {
+		return
+	}
+
 	testData := integration.SetupIntegrationTest(t)
 	defer testData.DB.Close()
 	SignupRandomTestDoctor(t, testData.DataApi, testData.AuthApi)
 }
 
 func TestDoctorAuthentication(t *testing.T) {
+	if err := integration.CheckIfRunningLocally(t); err == integration.CannotRunTestLocally {
+		return
+	}
+
 	testData := integration.SetupIntegrationTest(t)
 	defer testData.DB.Close()
 	_, email, password := SignupRandomTestDoctor(t, testData.DataApi, testData.AuthApi)

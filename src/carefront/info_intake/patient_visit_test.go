@@ -80,8 +80,8 @@ func TestPotentialAnswersParsing(t *testing.T) {
 	for _, section := range visit.Sections {
 		for _, screen := range section.Screens {
 			for _, question := range screen.Questions {
-				if question.PotentialAnswers == nil || len(question.PotentialAnswers) == 0 {
-					t.Fatal("No potential answers for a question when there always should be one")
+				if (question.PotentialAnswers == nil || len(question.PotentialAnswers) == 0) && !(question.QuestionTypes[0] == "q_type_free_text" || question.QuestionTypes[0] == "q_type_autocomplete") {
+					t.Fatalf("No potential answers for question with id %d when there always should be one", question.QuestionId)
 				}
 				for _, potentialAnswer := range question.PotentialAnswers {
 					if potentialAnswer.AnswerId == 0 {
