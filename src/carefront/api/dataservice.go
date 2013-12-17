@@ -557,7 +557,7 @@ func (d *DataService) StoreAnswersForQuestion(questionId, patientId, patientVisi
 	}
 
 	// deactivate all answers to top level questions as well as their sub-questions
-	// as we make the new answers the most current up-to-date patient info intake
+	// as we make the new answers the most current 	up-to-date patient info intake
 	err = d.updateSubAnswersToPatientInfoIntakesWithStatus([]int64{questionId}, patientId,
 		patientVisitId, layoutVersionId, status_inactive, status_active, tx)
 	if err != nil {
@@ -718,12 +718,12 @@ func (d *DataService) GetTipSectionInfo(tipSectionTag string, languageId int64) 
 	return
 }
 
-func (d *DataService) GetActiveLayoutInfoForHealthCondition(healthConditionTag, role string) (bucket, key, region string, err error) {
+func (d *DataService) GetActiveLayoutInfoForHealthCondition(healthConditionTag, role, purpose string) (bucket, key, region string, err error) {
 	queryStr := fmt.Sprintf(`select bucket, storage_key, region_tag from layout_version 
 								inner join object_storage on object_storage_id = object_storage.id 
 								inner join region on region_id=region.id 
 								inner join health_condition on health_condition_id = health_condition.id 
-									where layout_version.status='ACTIVE' and role = '%s' and health_condition.health_condition_tag = ?`, role)
+									where layout_version.status='ACTIVE' and role = '%s' and layout_purpose = '%s' and health_condition.health_condition_tag = ?`, role, purpose)
 	err = d.DB.QueryRow(queryStr, healthConditionTag).Scan(&bucket, &key, &region)
 	return
 }
@@ -774,9 +774,9 @@ func (d *DataService) UpdateCloudObjectRecordToSayCompleted(id int64) error {
 	return nil
 }
 
-func (d *DataService) MarkNewLayoutVersionAsCreating(objectId int64, syntaxVersion int64, healthConditionId int64, role, comment string) (int64, error) {
-	insertStr := fmt.Sprintf(`insert into layout_version (object_storage_id, syntax_version, health_condition_id,role, comment, status) 
-							values (?, ?, ?, '%s', ?, 'CREATING')`, role)
+func (d *DataService) MarkNewLayoutVersionAsCreating(objectId int64, syntaxVersion int64, healthConditionId int64, role, purpose, comment string) (int64, error) {
+	insertStr := fmt.Sprintf(`insert into layout_version (object_storage_id, syntax_version, health_condition_id,role, layout_purpose, comment, status) 
+							values (?, ?, ?, '%s', '%s', ?, 'CREATING')`, role, purpose)
 	res, err := d.DB.Exec(insertStr, objectId, syntaxVersion, healthConditionId, comment)
 	if err != nil {
 		return 0, err
@@ -854,18 +854,23 @@ func (d *DataService) UpdatePatientActiveLayouts(layoutId int64, clientLayoutIds
 	return nil
 }
 
-func (d *DataService) UpdateDoctorActiveLayouts(layoutId int64, doctorLayoutId int64, healthConditionId int64) error {
+func (d *DataService) UpdateDoctorActiveLayouts(layoutId int64, doctorLayoutId int64, healthConditionId int64, purpose string) error {
 	tx, _ := d.DB.Begin()
-	// update the current active layouts to DEPRECATED
-	_, err := tx.Exec(`update layout_version set status='DEPCRECATED' where status='ACTIVE' and role = 'DOCTOR' and health_condition_id = ?`, healthConditionId)
+
+	// update the current client active layouts to DEPRECATED
+	updateStr := fmt.Sprintf(`update dr_layout_version set status='DEPCRECATED' where status='ACTIVE' and health_condition_id = ? and layout_version_id in (select id from layout_version where role = 'DOCTOR' and layout_purpose = '%s')`, purpose)
+	_, err := tx.Exec(updateStr, healthConditionId)
 	if err != nil {
+		log.Println(err)
 		tx.Rollback()
 		return err
 	}
 
-	// update the current client active layouts to DEPRECATED
-	_, err = tx.Exec(`update dr_layout_version set status='DEPCRECATED' where status='ACTIVE' and health_condition_id = ?`, healthConditionId)
+	// update the current active layouts to DEPRECATED
+	updateStr = fmt.Sprintf(`update layout_version set status='DEPCRECATED' where status='ACTIVE' and role = 'DOCTOR' and layout_purpose = '%s' and health_condition_id = ?`, purpose)
+	_, err = tx.Exec(updateStr, healthConditionId)
 	if err != nil {
+		log.Println(err)
 		tx.Rollback()
 		return err
 	}
@@ -873,12 +878,14 @@ func (d *DataService) UpdateDoctorActiveLayouts(layoutId int64, doctorLayoutId i
 	// update the new layout as ACTIVE
 	_, err = tx.Exec(`update layout_version set status='ACTIVE' where id = ?`, layoutId)
 	if err != nil {
+		log.Println(err)
 		tx.Rollback()
 		return err
 	}
 
 	_, err = tx.Exec(`update dr_layout_version set status='ACTIVE' where id = ?`, doctorLayoutId)
 	if err != nil {
+		log.Println(err)
 		tx.Rollback()
 		return err
 	}

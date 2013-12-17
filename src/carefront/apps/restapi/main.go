@@ -136,6 +136,16 @@ func main() {
 		DoctorVisualLayoutBucket: conf.DoctorVisualLayoutBucket,
 		MaxInMemoryForPhoto:      conf.MaxInMemoryForPhotoMB,
 		AWSRegion:                conf.AWSRegion,
+		Purpose:                  api.REVIEW_PURPOSE,
+	}
+	generateDiagnoseLayoutHandler := &apiservice.GenerateDoctorLayoutHandler{
+		DataApi:                  dataApi,
+		CloudStorageApi:          cloudStorageApi,
+		DoctorLayoutBucket:       conf.DoctorLayoutBucket,
+		DoctorVisualLayoutBucket: conf.DoctorVisualLayoutBucket,
+		MaxInMemoryForPhoto:      conf.MaxInMemoryForPhotoMB,
+		AWSRegion:                conf.AWSRegion,
+		Purpose:                  api.DIAGNOSE_PURPOSE,
 	}
 	pingHandler := apiservice.PingHandler(0)
 	generateModelIntakeHandler := &apiservice.GenerateClientIntakeModelHandler{
@@ -160,6 +170,7 @@ func main() {
 	mux.Handle("/v1/answer/photo", photoAnswerIntakeHandler)
 	mux.Handle("/v1/client_model", generateModelIntakeHandler)
 	mux.Handle("/v1/doctor_layout", generateDoctorLayoutHandler)
+	mux.Handle("/v1/diagnose_layout", generateDiagnoseLayoutHandler)
 	mux.Handle("/v1/doctor/signup", signupDoctorHandler)
 	mux.Handle("/v1/doctor/authenticate", authenticateDoctorHandler)
 	mux.Handle("/v1/signup", authHandler)

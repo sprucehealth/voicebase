@@ -43,7 +43,7 @@ func (l *GenerateClientIntakeModelHandler) ServeHTTP(w http.ResponseWriter, r *h
 
 	// ensure that the file is a valid healthCondition layout, by trying to parse it
 	// into the structure
-	healthCondition := &info_intake.HealthCondition{}
+	healthCondition := &info_intake.InfoIntakeLayout{}
 	data, err := ioutil.ReadAll(file)
 	if err != nil {
 		log.Println(err)
@@ -67,7 +67,7 @@ func (l *GenerateClientIntakeModelHandler) ServeHTTP(w http.ResponseWriter, r *h
 	}
 
 	// check if the current active layout is the same as the layout trying to be uploaded
-	currentActiveBucket, currentActiveKey, currentActiveRegion, _ := l.DataApi.GetActiveLayoutInfoForHealthCondition(healthConditionTag, api.PATIENT_ROLE)
+	currentActiveBucket, currentActiveKey, currentActiveRegion, _ := l.DataApi.GetActiveLayoutInfoForHealthCondition(healthConditionTag, api.PATIENT_ROLE, api.CONDITION_INTAKE_PURPOSE)
 	if currentActiveBucket != "" {
 		rawData, err := l.CloudStorageApi.GetObjectAtLocation(currentActiveBucket, currentActiveKey, currentActiveRegion)
 		if err != nil {
@@ -91,21 +91,25 @@ func (l *GenerateClientIntakeModelHandler) ServeHTTP(w http.ResponseWriter, r *h
 	healthConditionId, err := l.DataApi.GetHealthConditionInfo(healthConditionTag)
 
 	// once that is successful, create a record for the layout version and mark is as CREATING
-	modelId, err := l.DataApi.MarkNewLayoutVersionAsCreating(objectId, layout_syntax_version, healthConditionId, api.PATIENT_ROLE, "automatically generated")
+	modelId, err := l.DataApi.MarkNewLayoutVersionAsCreating(objectId, layout_syntax_version, healthConditionId, api.PATIENT_ROLE, api.CONDITION_INTAKE_PURPOSE, "automatically generated")
+	if err != nil {
+		log.Println(err)
+		WriteDeveloperError(w, http.StatusInternalServerError, "Error in creating new layout version: "+err.Error())
+		return
+	}
 
 	// get all the supported languages
 	_, supportedLanguageIds, err := l.DataApi.GetSupportedLanguages()
 
 	// generate a client layout for each language
-	clientIntakeModels := make(map[int64]*info_intake.HealthCondition)
-	clientModelProcessor := &info_intake.HealthConditionIntakeModelProcessor{DataApi: l.DataApi}
+	clientIntakeModels := make(map[int64]*info_intake.InfoIntakeLayout)
 	clientModelVersionIds := make([]int64, len(supportedLanguageIds))
 	clientModelUrls := make([]string, len(supportedLanguageIds))
 
 	for i, supportedLanguageId := range supportedLanguageIds {
-		clientModel := *healthCondition
-		clientModelProcessor.FillInDetailsFromDatabase(&clientModel, supportedLanguageId)
-		clientIntakeModels[supportedLanguageId] = &clientModel
+		clientModel := healthCondition
+		clientModel.FillInDatabaseInfo(l.DataApi, supportedLanguageId)
+		clientIntakeModels[supportedLanguageId] = clientModel
 
 		jsonData, err := json.Marshal(&clientModel)
 		if err != nil {

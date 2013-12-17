@@ -6,9 +6,12 @@ import (
 )
 
 const (
-	EN_LANGUAGE_ID = 1
-	DOCTOR_ROLE    = "DOCTOR"
-	PATIENT_ROLE   = "PATIENT"
+	EN_LANGUAGE_ID           = 1
+	DOCTOR_ROLE              = "DOCTOR"
+	PATIENT_ROLE             = "PATIENT"
+	REVIEW_PURPOSE           = "REVIEW"
+	CONDITION_INTAKE_PURPOSE = "CONDITION_INTAKE"
+	DIAGNOSE_PURPOSE         = "DIAGNOSE"
 )
 
 type PotentialAnswerInfo struct {
@@ -61,16 +64,16 @@ type PatientIntakeAPI interface {
 }
 
 type PatientIntakeLayoutAPI interface {
-	GetActiveLayoutInfoForHealthCondition(healthConditionTag, role string) (bucket, key, region string, err error)
+	GetActiveLayoutInfoForHealthCondition(healthConditionTag, role, purpose string) (bucket, key, region string, err error)
 	GetStorageInfoOfCurrentActivePatientLayout(languageId, healthConditionId int64) (bucket, key, region string, layoutVersionId int64, err error)
 	GetStorageInfoOfCurrentActiveDoctorLayout(healthConditionId int64) (bucket, storage, region string, layoutVersionId int64, err error)
 	GetLayoutVersionIdForPatientVisit(patientVisitId int64) (layoutVersionId int64, err error)
 	GetStorageInfoForClientLayout(layoutVersionId, languageId int64) (bucket, key, region string, err error)
-	MarkNewLayoutVersionAsCreating(objectId int64, syntaxVersion int64, healthConditionId int64, role, comment string) (int64, error)
+	MarkNewLayoutVersionAsCreating(objectId int64, syntaxVersion int64, healthConditionId int64, role, purpose, comment string) (int64, error)
 	MarkNewPatientLayoutVersionAsCreating(objectId int64, languageId int64, layoutVersionId int64, healthConditionId int64) (int64, error)
 	UpdatePatientActiveLayouts(layoutId int64, clientLayoutIds []int64, healthConditionId int64) error
 	MarkNewDoctorLayoutAsCreating(objectId int64, layoutVersionId int64, healthConditionId int64) (int64, error)
-	UpdateDoctorActiveLayouts(layoutId, doctorLayoutId, healthConditionId int64) error
+	UpdateDoctorActiveLayouts(layoutId, doctorLayoutId, healthConditionId int64, purpose string) error
 }
 
 type ObjectStorageAPI interface {

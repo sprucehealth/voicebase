@@ -1,10 +1,10 @@
 {
-    "health_condition": "health_condition_acne", 
+    "health_condition": "health_condition_acne",  
     "sections": [
         {
-            "section_title": "Medical History", 
+            "section_title": "Medical History",  
             "section_types": [
-                "s_type_table_info"
+                "s_type_table_info" 
             ], 
             "sub_sections": [
                 {
