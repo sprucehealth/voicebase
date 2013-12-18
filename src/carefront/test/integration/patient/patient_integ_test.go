@@ -38,6 +38,28 @@ func TestPatientVisitCreation(t *testing.T) {
 		t.Fatal("The questions for patient intake should be returned as part of the patient visit")
 	}
 
+	// checking to ensure that the care team was created
+	careTeam, err := testData.DataApi.GetCareTeamForPatientVisitId(patientVisitResponse.PatientVisitId)
+	if err != nil {
+		t.Fatal("Unable to get care team for patient visit: " + err.Error())
+	}
+
+	if !(careTeam == nil || careTeam.PatientVisitId == patientVisitResponse.PatientVisitId) {
+		t.Fatal("Unable to get patient visit id for care team")
+	}
+
+	// ensuring that we have a primary doctor assigned to the case
+	primaryDoctorFound := false
+	for _, assignment := range careTeam.Assignments {
+		if assignment.ProviderRole == "PRIMARY_DOCTOR" {
+			primaryDoctorFound = true
+		}
+	}
+
+	if primaryDoctorFound == false {
+		t.Fatal("Primary doctor not found for patient visit")
+	}
+
 	// getting the patient visit again as we should get back the same patient visit id
 	// since this patient visit has not been completed
 	anotherPatientVisitResponse := GetPatientVisitForPatient(signedupPatientResponse.PatientId, testData, t)

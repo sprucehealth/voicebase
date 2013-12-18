@@ -253,6 +253,52 @@ func (d *DataService) GetActivePatientVisitIdForHealthCondition(patientId, healt
 	return patientVisitId, err
 }
 
+func (d *DataService) GetCareTeamForPatientVisitId(patientVisitId int64) (careTeam *common.PatientVisitProviderGroup, err error) {
+	rows, err := d.DB.Query(`select patient_visit_provider_group.id as group_id, patient_visit_provider_assignment.id as assignment_id, provider_tag, 
+								created_date, modified_date,provider_id, patient_visit_provider_group.status as group_status, 
+								patient_visit_provider_assignment.status as assignment_status from patient_visit_provider_assignment 
+									inner join patient_visit_provider_group on assignment_group_id = patient_visit_provider_group.id 
+									inner join provider_role on provider_role.id = provider_role_id 
+									where patient_visit_provider_group.patient_visit_id=?`, patientVisitId)
+
+	if err != nil {
+		return nil, err
+	}
+	defer rows.Next()
+
+	careTeam = nil
+	for rows.Next() {
+		var groupId, assignmentId, providerId int64
+		var providerTag, groupStatus, assignmentStatus string
+		var createdDate, modifiedDate mysql.NullTime
+		rows.Scan(&groupId, &assignmentId, &providerTag, &createdDate, &modifiedDate, &providerId, &groupStatus, &assignmentStatus)
+		if careTeam == nil {
+			careTeam = &common.PatientVisitProviderGroup{}
+			careTeam.Id = groupId
+			careTeam.PatientVisitId = patientVisitId
+			if createdDate.Valid {
+				careTeam.CreationDate = createdDate.Time
+			}
+			if modifiedDate.Valid {
+				careTeam.ModifiedDate = modifiedDate.Time
+			}
+			careTeam.Status = groupStatus
+			careTeam.Assignments = make([]*common.PatientVisitProviderAssignment, 0)
+		}
+
+		patientVisitProviderAssignment := &common.PatientVisitProviderAssignment{
+			Id:           assignmentId,
+			ProviderRole: providerTag,
+			ProviderId:   providerId,
+			Status:       assignmentStatus,
+		}
+
+		careTeam.Assignments = append(careTeam.Assignments, patientVisitProviderAssignment)
+	}
+
+	return careTeam, nil
+}
+
 func (d *DataService) CreateCareTeamForPatientVisit(patientVisitId int64) error {
 	// identify providers in the state required
 	rows, err := d.DB.Query(`select provider_id, provider_role_id from care_provider_state_elligibility 

@@ -42,6 +42,7 @@ type PatientVisitAPI interface {
 	GetPatientVisitFromId(patientVisitId int64) (patientVisit *common.PatientVisit, err error)
 	SubmitPatientVisitWithId(patientVisitId int64) error
 	CreateCareTeamForPatientVisit(patientVisitId int64) error
+	GetCareTeamForPatientVisitId(patientVisitId int64) (careTeam *common.PatientVisitProviderGroup, err error)
 }
 
 type PatientIntakeAPI interface {

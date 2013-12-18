@@ -44,3 +44,19 @@ type PatientAnswer struct {
 	StorageKey        string           `json:"-"`
 	StorageRegion     string           `json:"-"`
 }
+
+type PatientVisitProviderAssignment struct {
+	Id           int64
+	ProviderRole string
+	ProviderId   int64
+	Status       string
+}
+
+type PatientVisitProviderGroup struct {
+	Id             int64
+	PatientVisitId int64
+	CreationDate   time.Time
+	ModifiedDate   time.Time
+	Status         string
+	Assignments    []*PatientVisitProviderAssignment
+}
