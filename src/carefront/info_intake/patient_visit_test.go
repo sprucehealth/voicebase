@@ -7,11 +7,11 @@ import (
 )
 
 type PatientVisit struct {
-	PatientVisitId int64            `json:"patient_visit_id,string"`
-	Visit          *HealthCondition `json:"health_condition"`
+	PatientVisitId int64             `json:"patient_visit_id,string"`
+	Visit          *InfoIntakeLayout `json:"health_condition"`
 }
 
-func parseFileToGetHealthCondition(t *testing.T) (healthCondition *HealthCondition) {
+func parseFileToGetHealthCondition(t *testing.T) (healthCondition *InfoIntakeLayout) {
 	fileContents, err := ioutil.ReadFile("../api-response-examples/v1/patient/visit.json")
 	if err != nil {
 		t.Fatal("Unable to open the json representation of the patient visit for testing:" + err.Error())

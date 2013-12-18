@@ -14,7 +14,8 @@ import (
 )
 
 var (
-	NoRowsError = errors.New("No rows exist")
+	NoRowsError                 = errors.New("No rows exist")
+	NoElligibileProviderInState = errors.New("There are no providers elligible in the state the patient resides")
 )
 
 const (
@@ -250,6 +251,72 @@ func (d *DataService) GetActivePatientVisitIdForHealthCondition(patientId, healt
 		return 0, NoRowsError
 	}
 	return patientVisitId, err
+}
+
+func (d *DataService) CreateCareTeamForPatientVisit(patientVisitId int64) error {
+	// identify providers in the state required
+	rows, err := d.DB.Query(`select provider_id, provider_role_id from care_provider_state_elligibility 
+					inner join care_providing_state on care_providing_state_id = care_providing_state.id
+					where state = 'ca'`)
+
+	if err == sql.ErrNoRows {
+		return NoElligibileProviderInState
+	} else if err != nil {
+		return err
+	}
+	defer rows.Close()
+
+	providerIds := make([]int64, 0)
+	providerRoleIds := make([]int64, 0)
+	for rows.Next() {
+		var id, roleId int64
+		rows.Scan(&id, &roleId)
+		providerIds = append(providerIds, id)
+		providerRoleIds = append(providerRoleIds, roleId)
+	}
+
+	// create new group assignment for patient visit
+	tx, err := d.DB.Begin()
+	if err != nil {
+		return err
+	}
+
+	res, err := tx.Exec(`insert into patient_visit_provider_group (patient_visit_id, status) values (?, 'CREATING')`, patientVisitId)
+	if err != nil {
+		tx.Rollback()
+		return err
+	}
+
+	lastInsertId, err := res.LastInsertId()
+	if err != nil {
+		tx.Rollback()
+		return err
+	}
+
+	// create new assignments for patient visit in the group created
+	insertStr := bytes.NewBufferString("insert into patient_visit_provider_assignment (patient_visit_id, provider_role_id, provider_id, assignment_group_id, status) values ")
+	for i, providerId := range providerIds {
+		if i != 0 {
+			insertStr.WriteString(",")
+		}
+		insertStr.WriteString(fmt.Sprintf("(%d, %d, %d, %d, 'ACTIVE')", patientVisitId, providerRoleIds[i], providerId, lastInsertId))
+	}
+
+	_, err = tx.Exec(insertStr.String())
+	if err != nil {
+		tx.Rollback()
+		return err
+	}
+
+	// update group assignment to be the active group assignment for this patient visit
+	_, err = tx.Exec(`update patient_visit_provider_group set status='ACTIVE' where id=?`, lastInsertId)
+	if err != nil {
+		tx.Rollback()
+		return err
+	}
+
+	tx.Commit()
+	return nil
 }
 
 // Adding this only to link the patient and the doctor app so as to show the doctor

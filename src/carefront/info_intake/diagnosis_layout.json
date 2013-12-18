@@ -17,8 +17,7 @@
                                 "a_doctor_acne_vulgaris", 
                                 "a_doctor_acne_rosacea"
                             ],  
-                            "question": "q_acne_diagnosis", 
-                            "question_id": "1"
+                            "question": "q_acne_diagnosis"
                         }, 
                         "display_styles": [
                             "display_style_all_on_one_row" 
@@ -32,16 +31,15 @@
                                 "a_doctor_acne_vulgaris", 
                                 "a_doctor_acne_rosacea"
                             ],  
-                            "question": "q_acne_diagnosis", 
-                            "question_id": "1"
+                            "question": "q_acne_diagnosis"
                         }, 
                         "display_styles": [
-                            "display_style_two_per_row"
+                            "display_style_all_on_one_row"
                         ], 
                         "question": "q_acne_type"
                     }
                 ], 
-                "section": "section_diagnosis", 
+                "section": "section_diagnosis",
                 "section_id": "1", 
                 "section_title": "Diagnosis"
             }

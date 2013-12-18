@@ -41,6 +41,7 @@ type PatientVisitAPI interface {
 	GetLatestSubmittedPatientVisit() (*common.PatientVisit, error)
 	GetPatientVisitFromId(patientVisitId int64) (patientVisit *common.PatientVisit, err error)
 	SubmitPatientVisitWithId(patientVisitId int64) error
+	CreateCareTeamForPatientVisit(patientVisitId int64) error
 }
 
 type PatientIntakeAPI interface {

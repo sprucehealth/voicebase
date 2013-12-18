@@ -8,7 +8,7 @@ import (
 
 func TestDiagnosisParsing(t *testing.T) {
 
-	diagnosis := &Diagnosis{}
+	diagnosis := &DiagnosisIntake{}
 	data, err := ioutil.ReadFile("../api-response-examples/v1/doctor/diagnosis.json")
 	if err != nil {
 		t.Fatal("unable to parse file " + err.Error())

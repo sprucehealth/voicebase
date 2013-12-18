@@ -9,6 +9,7 @@ import (
 	"carefront/info_intake"
 	thriftapi "carefront/thrift/api"
 	"github.com/gorilla/schema"
+	"log"
 )
 
 const (
@@ -123,6 +124,13 @@ func (s *PatientVisitHandler) returnNewOrOpenPatientVisit(w http.ResponseWriter,
 			WriteDeveloperError(w, http.StatusInternalServerError, "Unable to create new patient visit id: "+err.Error())
 			return
 		}
+
+		err = s.DataApi.CreateCareTeamForPatientVisit(patientVisitId)
+		if err != nil {
+			log.Println(err)
+			WriteDeveloperError(w, http.StatusInternalServerError, "Unable to create care team for patient visit :"+err.Error())
+		}
+
 	} else if err != nil {
 		WriteDeveloperError(w, http.StatusInternalServerError, `unable to retrieve the current active patient 
 			visit for the health condition from the patient id: `+err.Error())
