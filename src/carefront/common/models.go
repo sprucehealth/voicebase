@@ -15,6 +15,16 @@ type Patient struct {
 	AccountId int64     `json:"-"`
 }
 
+type Doctor struct {
+	DoctorId  int64
+	FirstName string
+	LastName  string
+	Dob       time.Time
+	Gender    string
+	Status    string
+	AccountId int64
+}
+
 type PatientVisit struct {
 	PatientVisitId    int64     `json:"patient_visit_id,string,omitempty"`
 	PatientId         int64     `json:"patient_id,string,omitempty"`

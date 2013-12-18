@@ -58,6 +58,28 @@ func (d *DataService) RegisterDoctor(accountId int64, firstName, lastName, gende
 	return lastId, err
 }
 
+func (d *DataService) GetDoctorFromId(doctorId int64) (doctor *common.Doctor, err error) {
+	var firstName, lastName, status, gender string
+	var dob mysql.NullTime
+	var accountId int64
+	err = d.DB.QueryRow(`select account_id, first_name, last_name, gender, dob, status from doctor where id = ?`, doctorId).Scan(&accountId, &firstName, &lastName, &gender, &dob, &status)
+	if err != nil {
+		return
+	}
+	doctor = &common.Doctor{
+		FirstName: firstName,
+		LastName:  lastName,
+		Status:    status,
+		Gender:    gender,
+		AccountId: accountId,
+	}
+	if dob.Valid {
+		doctor.Dob = dob.Time
+	}
+	doctor.DoctorId = doctorId
+	return
+}
+
 func (d *DataService) GetDoctorIdFromAccountId(accountId int64) (int64, error) {
 	var doctorId int64
 	err := d.DB.QueryRow("select id from doctor where account_id = ?", accountId).Scan(&doctorId)
@@ -253,7 +275,7 @@ func (d *DataService) GetActivePatientVisitIdForHealthCondition(patientId, healt
 	return patientVisitId, err
 }
 
-func (d *DataService) GetCareTeamForPatientVisitId(patientVisitId int64) (careTeam *common.PatientVisitProviderGroup, err error) {
+func (d *DataService) GetCareTeamForPatientVisit(patientVisitId int64) (careTeam *common.PatientVisitProviderGroup, err error) {
 	rows, err := d.DB.Query(`select patient_visit_provider_group.id as group_id, patient_visit_provider_assignment.id as assignment_id, provider_tag, 
 								created_date, modified_date,provider_id, patient_visit_provider_group.status as group_status, 
 								patient_visit_provider_assignment.status as assignment_status from patient_visit_provider_assignment 
@@ -480,6 +502,17 @@ func (d *DataService) GetStorageInfoOfCurrentActiveDoctorLayout(healthConditionI
 							inner join object_storage on object_storage_id=object_storage.id 
 							inner join region on region_id=region.id 
 								where dr_layout_version.status='ACTIVE' and health_condition_id = ?`, healthConditionId)
+	err = row.Scan(&bucket, &storage, &region, &layoutVersionId)
+	return
+}
+
+func (d *DataService) GetStorageInfoOfActiveDoctorDiagnosisLayout(healthConditionId int64) (bucket, storage, region string, layoutVersionId int64, err error) {
+	row := d.DB.QueryRow(`select bucket, storage_key, region_tag, layout_version_id from dr_layout_version
+							inner join layout_version on layout_version_id=layout_version.id 
+							inner join object_storage on dr_layout_version.object_storage_id=object_storage.id 
+							inner join region on region_id=region.id 
+								where dr_layout_version.status='ACTIVE' and 
+								layout_purpose='DIAGNOSE' and role = 'DOCTOR' and dr_layout_version.health_condition_id = ?`, healthConditionId)
 	err = row.Scan(&bucket, &storage, &region, &layoutVersionId)
 	return
 }

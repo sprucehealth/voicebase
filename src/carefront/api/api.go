@@ -32,6 +32,7 @@ type PatientAPI interface {
 
 type DoctorAPI interface {
 	RegisterDoctor(accountId int64, firstName, lastName, gender string, dob time.Time) (int64, error)
+	GetDoctorFromId(doctorId int64) (doctor *common.Doctor, err error)
 	GetDoctorIdFromAccountId(accountId int64) (int64, error)
 }
 
@@ -42,7 +43,7 @@ type PatientVisitAPI interface {
 	GetPatientVisitFromId(patientVisitId int64) (patientVisit *common.PatientVisit, err error)
 	SubmitPatientVisitWithId(patientVisitId int64) error
 	CreateCareTeamForPatientVisit(patientVisitId int64) error
-	GetCareTeamForPatientVisitId(patientVisitId int64) (careTeam *common.PatientVisitProviderGroup, err error)
+	GetCareTeamForPatientVisit(patientVisitId int64) (careTeam *common.PatientVisitProviderGroup, err error)
 }
 
 type PatientIntakeAPI interface {
@@ -69,6 +70,7 @@ type PatientIntakeLayoutAPI interface {
 	GetActiveLayoutInfoForHealthCondition(healthConditionTag, role, purpose string) (bucket, key, region string, err error)
 	GetStorageInfoOfCurrentActivePatientLayout(languageId, healthConditionId int64) (bucket, key, region string, layoutVersionId int64, err error)
 	GetStorageInfoOfCurrentActiveDoctorLayout(healthConditionId int64) (bucket, storage, region string, layoutVersionId int64, err error)
+	GetStorageInfoOfActiveDoctorDiagnosisLayout(healthConditionId int64) (bucket, storage, region string, layoutVersionId int64, err error)
 	GetLayoutVersionIdForPatientVisit(patientVisitId int64) (layoutVersionId int64, err error)
 	GetStorageInfoForClientLayout(layoutVersionId, languageId int64) (bucket, key, region string, err error)
 	MarkNewLayoutVersionAsCreating(objectId int64, syntaxVersion int64, healthConditionId int64, role, purpose, comment string) (int64, error)

@@ -160,6 +160,7 @@ func main() {
 		LayoutStorageService:       cloudStorageApi,
 		PatientPhotoStorageService: photoAnswerCloudStorageApi,
 	}
+	diagnosePatientHandler := apiservice.NewDiagnosePatientHandler(dataApi, authApi, cloudStorageApi)
 
 	mux := &apiservice.AuthServeMux{ServeMux: *http.NewServeMux(), AuthApi: authApi}
 
@@ -173,6 +174,7 @@ func main() {
 	mux.Handle("/v1/diagnose_layout", generateDiagnoseLayoutHandler)
 	mux.Handle("/v1/doctor/signup", signupDoctorHandler)
 	mux.Handle("/v1/doctor/authenticate", authenticateDoctorHandler)
+	mux.Handle("/v1/doctor/diagnose", diagnosePatientHandler)
 	mux.Handle("/v1/signup", authHandler)
 	mux.Handle("/v1/authenticate", authHandler)
 	mux.Handle("/v1/logout", authHandler)

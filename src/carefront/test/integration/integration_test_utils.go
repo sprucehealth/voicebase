@@ -1,20 +1,20 @@
 package integration
 
 import (
-	"database/sql"
-	"errors"
-	"fmt"
-	"io/ioutil"
-	"net/http"
-	"os"
-	"testing"
-
 	"carefront/api"
 	"carefront/common/config"
 	"carefront/services/auth"
 	thriftapi "carefront/thrift/api"
+	"database/sql"
+	"errors"
+	"fmt"
 	"github.com/BurntSushi/toml"
 	_ "github.com/go-sql-driver/mysql"
+	"io/ioutil"
+	"net/http"
+	"os"
+	"strconv"
+	"testing"
 )
 
 var (
@@ -107,6 +107,6 @@ func SetupIntegrationTest(t *testing.T) TestData {
 
 func CheckSuccessfulStatusCode(resp *http.Response, errorMessage string, t *testing.T) {
 	if resp.StatusCode != http.StatusOK {
-		t.Fatal(errorMessage)
+		t.Fatal(errorMessage + "Response Status " + strconv.Itoa(resp.StatusCode))
 	}
 }
