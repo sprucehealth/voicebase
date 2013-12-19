@@ -1,10 +1,8 @@
-package doctor
+package integration
 
 import (
 	"bytes"
 	"carefront/apiservice"
-	"carefront/test/integration"
-	"carefront/test/integration/patient"
 	"encoding/json"
 	"fmt"
 	"io/ioutil"
@@ -15,22 +13,26 @@ import (
 )
 
 func TestDoctorRegistration(t *testing.T) {
-	if err := integration.CheckIfRunningLocally(t); err == integration.CannotRunTestLocally {
+	if err := CheckIfRunningLocally(t); err == CannotRunTestLocally {
 		return
 	}
 
-	testData := integration.SetupIntegrationTest(t)
+	testData := SetupIntegrationTest(t)
 	defer testData.DB.Close()
+	defer TearDownIntegrationTest(t, testData)
+
 	SignupRandomTestDoctor(t, testData.DataApi, testData.AuthApi)
 }
 
 func TestDoctorAuthentication(t *testing.T) {
-	if err := integration.CheckIfRunningLocally(t); err == integration.CannotRunTestLocally {
+	if err := CheckIfRunningLocally(t); err == CannotRunTestLocally {
 		return
 	}
 
-	testData := integration.SetupIntegrationTest(t)
+	testData := SetupIntegrationTest(t)
 	defer testData.DB.Close()
+	defer TearDownIntegrationTest(t, testData)
+
 	_, email, password := SignupRandomTestDoctor(t, testData.DataApi, testData.AuthApi)
 
 	doctorAuthHandler := &apiservice.DoctorAuthenticationHandler{AuthApi: testData.AuthApi, DataApi: testData.DataApi}
@@ -48,7 +50,7 @@ func TestDoctorAuthentication(t *testing.T) {
 	if err != nil {
 		t.Fatal("Unable to read body of response: " + err.Error())
 	}
-	integration.CheckSuccessfulStatusCode(res, fmt.Sprintf("Unable to make success request to authenticate doctor. Here's the code returned %d and here's the body of the request %s", res.StatusCode, body), t)
+	CheckSuccessfulStatusCode(res, fmt.Sprintf("Unable to make success request to authenticate doctor. Here's the code returned %d and here's the body of the request %s", res.StatusCode, body), t)
 
 	authenticatedDoctorResponse := &apiservice.DoctorAuthenticationResponse{}
 	err = json.Unmarshal(body, authenticatedDoctorResponse)
@@ -62,49 +64,36 @@ func TestDoctorAuthentication(t *testing.T) {
 }
 
 func TestDoctorDiagnosisOfPatientVisit(t *testing.T) {
-	if err := integration.CheckIfRunningLocally(t); err == integration.CannotRunTestLocally {
+	if err := CheckIfRunningLocally(t); err == CannotRunTestLocally {
 		t.Log("Skipping test since there is no database to run test on")
 		return
 	}
-	testData := integration.SetupIntegrationTest(t)
+	testData := SetupIntegrationTest(t)
 	defer testData.DB.Close()
-	signedupDoctorResponse, _, _ := SignupRandomTestDoctor(t, testData.DataApi, testData.AuthApi)
-	patientSignedupResponse := patient.SignupRandomTestPatient(t, testData.DataApi, testData.AuthApi)
+	defer TearDownIntegrationTest(t, testData)
 
-	doctor, err := testData.DataApi.GetDoctorFromId(signedupDoctorResponse.DoctorId)
+	patientSignedupResponse := SignupRandomTestPatient(t, testData.DataApi, testData.AuthApi)
 
-	// create the role of a primary doctor
-	_, err = testData.DB.Exec(`insert into provider_role (provider_tag) values ('PRIMARY_DOCTOR')`)
+	// get the current primary doctor
+	var doctorId int64
+	err := testData.DB.QueryRow(`select provider_id from care_provider_state_elligibility 
+							inner join provider_role on provider_role_id = provider_role.id 
+							inner join care_providing_state on care_providing_state_id = care_providing_state.id
+							where provider_tag='DOCTOR' and care_providing_state.state = 'CA'`).Scan(&doctorId)
 	if err != nil {
-		t.Fatal("Unable to create the provider role of PRIMARY_DOCTOR " + err.Error())
+		t.Fatal("Unable to query for doctor that is elligible to diagnose in CA: " + err.Error())
 	}
 
-	// clean up of data created after test is run
-	defer func() {
-		testData.DB.Exec(`delete from patient_visit_provider_assignment where patient_visit_id=?`)
-		testData.DB.Exec(`delete form patient_visit_provider_group where patient_visit_id=?`)
-		testData.DB.Exec(`delete from care_provider_state_elligibility where provider_id=?`, signedupDoctorResponse.DoctorId)
-		testData.DB.Exec(`delete from provider_role where provider_tag='PRIMARY_DOCTOR'`)
-	}()
-
-	// make this doctor the primary doctor in the state of CA
-	_, err = testData.DB.Exec(`insert into care_provider_state_elligibility (provider_role_id, provider_id, care_providing_state_id) 
-					values ((select id from provider_role where provider_tag='PRIMARY_DOCTOR'), ?, (select id from care_providing_state where state='CA'))`, signedupDoctorResponse.DoctorId)
+	doctor, err := testData.DataApi.GetDoctorFromId(doctorId)
 	if err != nil {
-		t.Fatal("Unable to make the signed up doctor the primary doctor elligible in CA to diagnose patients: " + err.Error())
+		t.Fatal("Unable to get doctor from doctor id " + err.Error())
 	}
 
 	// get patient to start a visit
-	patientVisitResponse := patient.GetPatientVisitForPatient(patientSignedupResponse.PatientId, testData, t)
-
-	// clean up of data created after test is run
-	defer func() {
-		testData.DB.Exec(`delete from patient_visit_provider_assignment where patient_visit_id=?`, patientVisitResponse.PatientVisitId)
-		testData.DB.Exec(`delete form patient_visit_provider_group where patient_visit_id=?`, patientVisitResponse.PatientVisitId)
-	}()
+	patientVisitResponse := GetPatientVisitForPatient(patientSignedupResponse.PatientId, testData, t)
 
 	// get patient to submit the visit
-	patient.SubmitPatientVisitForPatient(patientSignedupResponse.PatientId, patientVisitResponse.PatientVisitId, testData, t)
+	SubmitPatientVisitForPatient(patientSignedupResponse.PatientId, patientVisitResponse.PatientVisitId, testData, t)
 
 	// doctor now attempts to diagnose patient visit
 	diagnosePatientHandler := apiservice.NewDiagnosePatientHandler(testData.DataApi, testData.AuthApi, testData.CloudStorageService)
@@ -131,7 +120,7 @@ func TestDoctorDiagnosisOfPatientVisit(t *testing.T) {
 		t.Fatal("Unable to read body of response for getting diagnosis layout for doctor to diagnose patient: " + err.Error())
 	}
 
-	integration.CheckSuccessfulStatusCode(resp, "Unable to make successful request for doctor to get layout to diagnose patient. Reason: "+string(data), t)
+	CheckSuccessfulStatusCode(resp, "Unable to make successful request for doctor to get layout to diagnose  Reason: "+string(data), t)
 
 	diagnosisResponse := apiservice.GetDiagnosisResponse{}
 	err = json.Unmarshal(data, &diagnosisResponse)

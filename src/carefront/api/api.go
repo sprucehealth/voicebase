@@ -2,6 +2,7 @@ package api
 
 import (
 	"carefront/common"
+	"errors"
 	"time"
 )
 
@@ -12,6 +13,11 @@ const (
 	REVIEW_PURPOSE           = "REVIEW"
 	CONDITION_INTAKE_PURPOSE = "CONDITION_INTAKE"
 	DIAGNOSE_PURPOSE         = "DIAGNOSE"
+)
+
+var (
+	NoRowsError                 = errors.New("No rows exist")
+	NoElligibileProviderInState = errors.New("There are no providers elligible in the state the patient resides")
 )
 
 type PotentialAnswerInfo struct {
@@ -28,6 +34,8 @@ type PatientAPI interface {
 	RegisterPatient(accountId int64, firstName, lastName, gender, zipCode string, dob time.Time) (int64, error)
 	CreateNewPatientVisit(patientId, healthConditionId, layoutVersionId int64) (int64, error)
 	GetPatientIdFromAccountId(accountId int64) (int64, error)
+	CreateCareTeamForPatient(patientId int64) error
+	GetCareTeamForPatient(patientId int64) (careTeam *common.PatientCareProviderGroup, err error)
 }
 
 type DoctorAPI interface {
@@ -42,8 +50,6 @@ type PatientVisitAPI interface {
 	GetLatestSubmittedPatientVisit() (*common.PatientVisit, error)
 	GetPatientVisitFromId(patientVisitId int64) (patientVisit *common.PatientVisit, err error)
 	SubmitPatientVisitWithId(patientVisitId int64) error
-	CreateCareTeamForPatientVisit(patientVisitId int64) error
-	GetCareTeamForPatientVisit(patientVisitId int64) (careTeam *common.PatientVisitProviderGroup, err error)
 }
 
 type PatientIntakeAPI interface {

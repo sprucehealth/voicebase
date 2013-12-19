@@ -39,7 +39,7 @@ script:
 - go get code.google.com/p/go.tools/cmd/cover
 - go vet ./src/carefront/...
 - go test -i -race -cover  ./src/carefront/...
-- set -o pipefail ; go test -v -race -cover ./src/carefront/... | tools/gotestcolorize.py
+- set -o pipefail ; go test -v -race -cover -test.timeout=50m ./src/carefront/... | tools/gotestcolorize.py
 after_script:
 - echo "drop database $TEST_DB;" > drop_database.sql
 - mysql -h $RDS_INSTANCE -u $RDS_USERNAME -p$RDS_PASSWORD < drop_database.sql

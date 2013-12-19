@@ -1,18 +1,11 @@
 package main
 
 import (
-	"carefront/libs/maps"
 	"fmt"
+	"os"
 )
 
 func main() {
-	googleMapsService := maps.GoogleMapsService(0)
-	cityStateInfo, err := googleMapsService.ConvertZipcodeToCityState("90210")
-	if err != nil {
-		panic(err.Error())
-	}
-
-	fmt.Println(cityStateInfo.LongCityName)
-	fmt.Println(cityStateInfo.LongStateName)
-
+	currentWorkingDirectory, err := os.Getwd()
+	fmt.Println(currentWorkingDirectory)
 }

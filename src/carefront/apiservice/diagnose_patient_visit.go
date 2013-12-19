@@ -55,7 +55,13 @@ func (d *DiagnosePatientHandler) getDiagnosis(w http.ResponseWriter, r *http.Req
 		return
 	}
 
-	careTeam, err := d.DataApi.GetCareTeamForPatientVisit(requestData.PatientVisitId)
+	patientVisit, err := d.DataApi.GetPatientVisitFromId(requestData.PatientVisitId)
+	if err != nil {
+		WriteDeveloperError(w, http.StatusInternalServerError, "Unable to get patient visit from id : "+err.Error())
+		return
+	}
+
+	careTeam, err := d.DataApi.GetCareTeamForPatient(patientVisit.PatientId)
 	if err != nil {
 		WriteDeveloperError(w, http.StatusInternalServerError, "Unable to get care team for patient visit id "+err.Error())
 		return
@@ -65,9 +71,10 @@ func (d *DiagnosePatientHandler) getDiagnosis(w http.ResponseWriter, r *http.Req
 		WriteDeveloperError(w, http.StatusForbidden, "No care team assigned to patient visit so cannot diagnose patient visit")
 		return
 	}
-	// ensure that the doctor is the primary doctor on this case
+
+	// ensure that the doctor is the current primary doctor for this patient
 	for _, assignment := range careTeam.Assignments {
-		if assignment.ProviderRole == "PRIMARY_DOCTOR" && assignment.ProviderId != doctorId {
+		if assignment.ProviderRole == "DOCTOR" && assignment.ProviderId != doctorId {
 			WriteDeveloperError(w, http.StatusForbidden, "Doctor is unable to diagnose patient because he/she is not the primary doctor")
 			return
 		}

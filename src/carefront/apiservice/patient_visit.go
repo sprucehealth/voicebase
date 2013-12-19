@@ -125,10 +125,18 @@ func (s *PatientVisitHandler) returnNewOrOpenPatientVisit(w http.ResponseWriter,
 			return
 		}
 
-		err = s.DataApi.CreateCareTeamForPatientVisit(patientVisitId)
-		if err != nil {
-			log.Println(err)
-			WriteDeveloperError(w, http.StatusInternalServerError, "Unable to create care team for patient visit :"+err.Error())
+		careTeam, err := s.DataApi.GetCareTeamForPatient(patientId)
+		if careTeam == nil {
+			// create care team for patient if one doesn't already exist
+			err = s.DataApi.CreateCareTeamForPatient(patientId)
+			if err != nil {
+				log.Println(err)
+				WriteDeveloperError(w, http.StatusInternalServerError, "Unable to create care team for patient visit :"+err.Error())
+				return
+			}
+		} else if err != nil {
+			WriteDeveloperError(w, http.StatusInternalServerError, "Something went wrong when trying to get care team for patient: "+err.Error())
+			return
 		}
 
 	} else if err != nil {

@@ -4,18 +4,12 @@ import (
 	"bytes"
 	"carefront/common"
 	"database/sql"
-	"errors"
 	"fmt"
 	"github.com/go-sql-driver/mysql"
 	"log"
 	"strconv"
 	"strings"
 	"time"
-)
-
-var (
-	NoRowsError                 = errors.New("No rows exist")
-	NoElligibileProviderInState = errors.New("There are no providers elligible in the state the patient resides")
 )
 
 const (
@@ -275,18 +269,18 @@ func (d *DataService) GetActivePatientVisitIdForHealthCondition(patientId, healt
 	return patientVisitId, err
 }
 
-func (d *DataService) GetCareTeamForPatientVisit(patientVisitId int64) (careTeam *common.PatientVisitProviderGroup, err error) {
-	rows, err := d.DB.Query(`select patient_visit_provider_group.id as group_id, patient_visit_provider_assignment.id as assignment_id, provider_tag, 
-								created_date, modified_date,provider_id, patient_visit_provider_group.status as group_status, 
-								patient_visit_provider_assignment.status as assignment_status from patient_visit_provider_assignment 
-									inner join patient_visit_provider_group on assignment_group_id = patient_visit_provider_group.id 
+func (d *DataService) GetCareTeamForPatient(patientId int64) (careTeam *common.PatientCareProviderGroup, err error) {
+	rows, err := d.DB.Query(`select patient_care_provider_group.id as group_id, patient_care_provider_assignment.id as assignment_id, provider_tag, 
+								created_date, modified_date,provider_id, patient_care_provider_group.status as group_status, 
+								patient_care_provider_assignment.status as assignment_status from patient_care_provider_assignment 
+									inner join patient_care_provider_group on assignment_group_id = patient_care_provider_group.id 
 									inner join provider_role on provider_role.id = provider_role_id 
-									where patient_visit_provider_group.patient_visit_id=?`, patientVisitId)
+									where patient_care_provider_group.patient_id=?`, patientId)
 
 	if err != nil {
 		return nil, err
 	}
-	defer rows.Next()
+	defer rows.Close()
 
 	careTeam = nil
 	for rows.Next() {
@@ -295,9 +289,9 @@ func (d *DataService) GetCareTeamForPatientVisit(patientVisitId int64) (careTeam
 		var createdDate, modifiedDate mysql.NullTime
 		rows.Scan(&groupId, &assignmentId, &providerTag, &createdDate, &modifiedDate, &providerId, &groupStatus, &assignmentStatus)
 		if careTeam == nil {
-			careTeam = &common.PatientVisitProviderGroup{}
+			careTeam = &common.PatientCareProviderGroup{}
 			careTeam.Id = groupId
-			careTeam.PatientVisitId = patientVisitId
+			careTeam.PatientId = patientId
 			if createdDate.Valid {
 				careTeam.CreationDate = createdDate.Time
 			}
@@ -305,42 +299,36 @@ func (d *DataService) GetCareTeamForPatientVisit(patientVisitId int64) (careTeam
 				careTeam.ModifiedDate = modifiedDate.Time
 			}
 			careTeam.Status = groupStatus
-			careTeam.Assignments = make([]*common.PatientVisitProviderAssignment, 0)
+			careTeam.Assignments = make([]*common.PatientCareProviderAssignment, 0)
 		}
 
-		patientVisitProviderAssignment := &common.PatientVisitProviderAssignment{
+		patientCareProviderAssignment := &common.PatientCareProviderAssignment{
 			Id:           assignmentId,
 			ProviderRole: providerTag,
 			ProviderId:   providerId,
 			Status:       assignmentStatus,
 		}
 
-		careTeam.Assignments = append(careTeam.Assignments, patientVisitProviderAssignment)
+		careTeam.Assignments = append(careTeam.Assignments, patientCareProviderAssignment)
 	}
 
 	return careTeam, nil
 }
 
-func (d *DataService) CreateCareTeamForPatientVisit(patientVisitId int64) error {
-	// identify providers in the state required
-	rows, err := d.DB.Query(`select provider_id, provider_role_id from care_provider_state_elligibility 
+func (d *DataService) CreateCareTeamForPatient(patientId int64) error {
+	// identify providers in the state required. Assuming for now that we can only have one provider in the
+	// state of CA. The reason for this assumption is that we have not yet figured out how best to deal with
+	// multiple active doctors in how they will be assigned to the patient.
+	// TODO : Update care team formation when we have more than 1 doctor that we can have as active in our system
+	var providerId, providerRoleId int64
+	err := d.DB.QueryRow(`select provider_id, provider_role_id from care_provider_state_elligibility 
 					inner join care_providing_state on care_providing_state_id = care_providing_state.id
-					where state = 'ca'`)
+					where state = 'CA'`).Scan(&providerId, &providerRoleId)
 
 	if err == sql.ErrNoRows {
 		return NoElligibileProviderInState
 	} else if err != nil {
 		return err
-	}
-	defer rows.Close()
-
-	providerIds := make([]int64, 0)
-	providerRoleIds := make([]int64, 0)
-	for rows.Next() {
-		var id, roleId int64
-		rows.Scan(&id, &roleId)
-		providerIds = append(providerIds, id)
-		providerRoleIds = append(providerRoleIds, roleId)
 	}
 
 	// create new group assignment for patient visit
@@ -349,7 +337,7 @@ func (d *DataService) CreateCareTeamForPatientVisit(patientVisitId int64) error 
 		return err
 	}
 
-	res, err := tx.Exec(`insert into patient_visit_provider_group (patient_visit_id, status) values (?, 'CREATING')`, patientVisitId)
+	res, err := tx.Exec(`insert into patient_care_provider_group (patient_id, status) values (?, 'CREATING')`, patientId)
 	if err != nil {
 		tx.Rollback()
 		return err
@@ -361,23 +349,15 @@ func (d *DataService) CreateCareTeamForPatientVisit(patientVisitId int64) error 
 		return err
 	}
 
-	// create new assignments for patient visit in the group created
-	insertStr := bytes.NewBufferString("insert into patient_visit_provider_assignment (patient_visit_id, provider_role_id, provider_id, assignment_group_id, status) values ")
-	for i, providerId := range providerIds {
-		if i != 0 {
-			insertStr.WriteString(",")
-		}
-		insertStr.WriteString(fmt.Sprintf("(%d, %d, %d, %d, 'ACTIVE')", patientVisitId, providerRoleIds[i], providerId, lastInsertId))
-	}
-
-	_, err = tx.Exec(insertStr.String())
+	// create new assignment for patient
+	_, err = tx.Exec("insert into patient_care_provider_assignment (patient_id, provider_role_id, provider_id, assignment_group_id, status) values (?, ?, ?, ?, 'PRIMARY')", patientId, providerRoleId, providerId, lastInsertId)
 	if err != nil {
 		tx.Rollback()
 		return err
 	}
 
 	// update group assignment to be the active group assignment for this patient visit
-	_, err = tx.Exec(`update patient_visit_provider_group set status='ACTIVE' where id=?`, lastInsertId)
+	_, err = tx.Exec(`update patient_care_provider_group set status='ACTIVE' where id=?`, lastInsertId)
 	if err != nil {
 		tx.Rollback()
 		return err

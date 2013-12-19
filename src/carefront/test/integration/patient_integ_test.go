@@ -1,23 +1,24 @@
-package patient
+package integration
 
 import (
-	"carefront/test/integration"
 	_ "github.com/go-sql-driver/mysql"
 	"testing"
 )
 
 func TestPatientRegistration(t *testing.T) {
-	testData := integration.SetupIntegrationTest(t)
+	testData := SetupIntegrationTest(t)
 	defer testData.DB.Close()
+	defer TearDownIntegrationTest(t, testData)
 	SignupRandomTestPatient(t, testData.DataApi, testData.AuthApi)
 }
 
 func TestPatientVisitCreation(t *testing.T) {
-	if err := integration.CheckIfRunningLocally(t); err == integration.CannotRunTestLocally {
+	if err := CheckIfRunningLocally(t); err == CannotRunTestLocally {
 		return
 	}
-	testData := integration.SetupIntegrationTest(t)
+	testData := SetupIntegrationTest(t)
 	defer testData.DB.Close()
+	defer TearDownIntegrationTest(t, testData)
 
 	signedupPatientResponse := SignupRandomTestPatient(t, testData.DataApi, testData.AuthApi)
 	patientVisitResponse := GetPatientVisitForPatient(signedupPatientResponse.PatientId, testData, t)
@@ -31,19 +32,19 @@ func TestPatientVisitCreation(t *testing.T) {
 	}
 
 	// checking to ensure that the care team was created
-	careTeam, err := testData.DataApi.GetCareTeamForPatientVisit(patientVisitResponse.PatientVisitId)
+	careTeam, err := testData.DataApi.GetCareTeamForPatient(signedupPatientResponse.PatientId)
 	if err != nil {
 		t.Fatal("Unable to get care team for patient visit: " + err.Error())
 	}
 
-	if !(careTeam == nil || careTeam.PatientVisitId == patientVisitResponse.PatientVisitId) {
+	if !(careTeam == nil || careTeam.PatientId == signedupPatientResponse.PatientId) {
 		t.Fatal("Unable to get patient visit id for care team")
 	}
 
 	// ensuring that we have a primary doctor assigned to the case
 	primaryDoctorFound := false
 	for _, assignment := range careTeam.Assignments {
-		if assignment.ProviderRole == "PRIMARY_DOCTOR" {
+		if assignment.ProviderRole == "DOCTOR" {
 			primaryDoctorFound = true
 		}
 	}
@@ -61,11 +62,12 @@ func TestPatientVisitCreation(t *testing.T) {
 }
 
 func TestPatientVisitSubmission(t *testing.T) {
-	if err := integration.CheckIfRunningLocally(t); err == integration.CannotRunTestLocally {
+	if err := CheckIfRunningLocally(t); err == CannotRunTestLocally {
 		return
 	}
-	testData := integration.SetupIntegrationTest(t)
+	testData := SetupIntegrationTest(t)
 	defer testData.DB.Close()
+	defer TearDownIntegrationTest(t, testData)
 
 	signedupPatientResponse := SignupRandomTestPatient(t, testData.DataApi, testData.AuthApi)
 	patientVisitResponse := GetPatientVisitForPatient(signedupPatientResponse.PatientId, testData, t)
