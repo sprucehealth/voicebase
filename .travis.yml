@@ -12,7 +12,7 @@ install:
 - echo "trying to avoid travis ci from attempting to get all packages from the internet"
 env:
   matrix:
-  - TEST_DB=database_${TRAVIS_BUILD_ID}_${RANDOM} CAREFRONT_PROJECT_DIR=$(pwd)
+  - TEST_DB=database_${TRAVIS_BUILD_ID}_${RANDOM} CAREFRONT_PROJECT_DIR=.
   global:
   - secure: yFy4F0LMFqBHMABLkFdBUezq+JoTynk5kgcelgscgcN5PsCKES1NvbkLHTaJZMb836Lb2uSgqL0g+3Z6s+KtsWb8Vi4AIDKafQfMa4bqKBRkUA8ObXkKFWvZEw5OCvYf6iReUCNsH7mQJjp0G+YCGO0pI0DRkm+nJRQW4r3mhiQ=
   - secure: mgpF9qjjTQ0mu8PXo1rqOUyY08Ik1GqEvzUmFk/eL7RmnvssyVlEhyzzlwcdSaavwU9QMe/1LCZ5VaV5g6QvnbAiu0nUh4UDoafwXqHjB3Y+75RHMu6dWDs1E+7K08JOczDW4OZdrPRIOJrCHsqVOIcV8u/huShfxDHvrdtzfTk=
