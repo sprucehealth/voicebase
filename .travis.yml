@@ -21,7 +21,7 @@ env:
   - secure: GAHw/Z037AezGOA5v/j1MvZTdLL/RFcofSdgH2mfp+nQWvswbQRS5dxJyfJO6BcNkZrvnuru3Lnh7azKShw6XUD+RT+vq0Ata5KQ4BiZa+ssX3VnMIsvrM4VIPxh+v6ESRPYvym1GHUKc7tqJ+ObVXaTkPJH8vqbdx7JHXSNjCM=
 script:
 - export GOPATH=$(pwd)
-- export CAREFRONT_PROJECT_DIR=.
+- export CAREFRONT_PROJECT_DIR=$(pwd)
 - go build ./src/carefront/...
 - go fmt ./src/carefront/...
 - go get code.google.com/p/go.tools/cmd/vet
