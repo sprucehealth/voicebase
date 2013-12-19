@@ -12,25 +12,13 @@ install:
 - echo "trying to avoid travis ci from attempting to get all packages from the internet"
 env:
   matrix:
-  - TEST_DB=database_${TRAVIS_BUILD_ID}_${RANDOM}
+  - TEST_DB=database_${TRAVIS_BUILD_ID}_${RANDOM} CAREFRONT_PROJECT_DIR=$(pwd)
   global:
   - secure: yFy4F0LMFqBHMABLkFdBUezq+JoTynk5kgcelgscgcN5PsCKES1NvbkLHTaJZMb836Lb2uSgqL0g+3Z6s+KtsWb8Vi4AIDKafQfMa4bqKBRkUA8ObXkKFWvZEw5OCvYf6iReUCNsH7mQJjp0G+YCGO0pI0DRkm+nJRQW4r3mhiQ=
   - secure: mgpF9qjjTQ0mu8PXo1rqOUyY08Ik1GqEvzUmFk/eL7RmnvssyVlEhyzzlwcdSaavwU9QMe/1LCZ5VaV5g6QvnbAiu0nUh4UDoafwXqHjB3Y+75RHMu6dWDs1E+7K08JOczDW4OZdrPRIOJrCHsqVOIcV8u/huShfxDHvrdtzfTk=
   - secure: Ip8X+IWnKmU+523CFjPVJRYul0+ezbsI3zMh/SzT/iCJyJ4Pw/5gdsY9LhtZl+p/nLQJlehn/FwmWo8NjV3SdZ7QGtBvaUEmLPkeKGVTpcyEjFz6XKtoRXxCWhvnphXUFZaU8HjqAv78fD/G2+EcmInfCoBg7fK8FKk1TeWmqWA=
   - secure: ZjeraleiMdr/wmH74vAU5ruL+CdzbGyImwXWLz6ZsUDD0dbK+oMFe1WmNJOsO1yeW/WGXD1enemzDeBrdVqDFXClyzbHcVtZ86YZSgYjtadocEX+RslbobrfNWxW8w/KHioObC7wpyBllQQb8hqzS1rakFOjZ7t0CgpNUiuBsLE=
   - secure: GAHw/Z037AezGOA5v/j1MvZTdLL/RFcofSdgH2mfp+nQWvswbQRS5dxJyfJO6BcNkZrvnuru3Lnh7azKShw6XUD+RT+vq0Ata5KQ4BiZa+ssX3VnMIsvrM4VIPxh+v6ESRPYvym1GHUKc7tqJ+ObVXaTkPJH8vqbdx7JHXSNjCM=
-before_script:
-- pushd src/carefront/mysql/
-- latestSnapshotNumber=`ls -r snapshot-*.sql | cut -d- -f 2  | cut -d. -f1 | sort
-  -nr | head -1`
-- latestDataSnapshotNumber=`ls -r data-snapshot-*.sql | cut -d- -f 3  | cut -d. -f1
-  | sort -nr | head -1`
-- echo "create database $TEST_DB; use $TEST_DB;"  | cat - snapshot-$latestSnapshotNumber.sql
-  > current.sql
-- echo "use $TEST_DB;" | cat - data-snapshot-$latestDataSnapshotNumber.sql > current_data.sql
-- mysql -h $RDS_INSTANCE -u $RDS_USERNAME -p$RDS_PASSWORD < current.sql
-- mysql -h $RDS_INSTANCE -u $RDS_USERNAME -p$RDS_PASSWORD < current_data.sql
-- popd
 script:
 - export GOPATH=$(pwd)
 - go build ./src/carefront/...
@@ -40,9 +28,6 @@ script:
 - go vet ./src/carefront/...
 - go test -i -race -cover  ./src/carefront/...
 - set -o pipefail ; go test -v -race -cover -test.timeout=50m ./src/carefront/... | tools/gotestcolorize.py
-after_script:
-- echo "drop database $TEST_DB;" > drop_database.sql
-- mysql -h $RDS_INSTANCE -u $RDS_USERNAME -p$RDS_PASSWORD < drop_database.sql
 notifications:
   webhooks:
     urls:
