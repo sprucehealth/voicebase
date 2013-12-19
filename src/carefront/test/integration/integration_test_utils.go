@@ -115,6 +115,8 @@ func SetupIntegrationTest(t *testing.T) TestData {
 		DB:                  db,
 	}
 
+	t.Log("Created and connected to database with name: " + testData.DBConfig.DatabaseName)
+
 	// When setting up the database for each integration test, ensure to setup a doctor that is
 	// considered elligible to serve in the state of CA.
 	signedupDoctorResponse, _, _ := SignupRandomTestDoctor(t, testData.DataApi, testData.AuthApi)
@@ -145,6 +147,7 @@ func TearDownIntegrationTest(t *testing.T, testData TestData) {
 	if err != nil {
 		t.Fatal("Unable to run the teardown integration script for integration tests: " + err.Error() + " " + out.String())
 	}
+	t.Log("Tore down database with name: " + testData.DBConfig.DatabaseName)
 }
 
 func CheckSuccessfulStatusCode(resp *http.Response, errorMessage string, t *testing.T) {
