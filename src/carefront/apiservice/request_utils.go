@@ -79,20 +79,24 @@ func WriteUserError(w http.ResponseWriter, httpStatusCode int, errorString strin
 // Note that the structure has been created to be flexible enough to have any kind of
 // question type as a subquestion; although we won't have subquestions to subquestions
 type SubQuestionAnswerIntake struct {
-	QuestionId    int64                      `json:"question_id"`
-	AnswerIntakes []*AnswerIntakeRequestItem `json:"potential_answers,omitempty"`
+	QuestionId    int64         `json:"question_id"`
+	AnswerIntakes []*AnswerItem `json:"potential_answers,omitempty"`
 }
 
-type AnswerIntakeRequestItem struct {
+type AnswerItem struct {
 	PotentialAnswerId        int64                      `json:"potential_answer_id"`
 	AnswerText               string                     `json:"answer_text"`
 	SubQuestionAnswerIntakes []*SubQuestionAnswerIntake `json:"answers,omitempty"`
 }
 
+type AnswerToQuestionItem struct {
+	QuestionId    int64         `json:"question_id"`
+	AnswerIntakes []*AnswerItem `json:"potential_answers"`
+}
+
 type AnswerIntakeRequestBody struct {
-	PatientVisitId int64                      `json:"patient_visit_id"`
-	QuestionId     int64                      `json:"question_id"`
-	AnswerIntakes  []*AnswerIntakeRequestItem `json:"potential_answers"`
+	PatientVisitId int64                   `json:"patient_visit_id"`
+	Questions      []*AnswerToQuestionItem `json:"questions"`
 }
 
 type AnswerIntakeResponse struct {
@@ -104,28 +108,31 @@ func validateRequestBody(answerIntakeRequestBody *AnswerIntakeRequestBody, w htt
 		return errors.New("patient_visit_id missing")
 	}
 
-	if answerIntakeRequestBody.QuestionId == 0 {
-		return errors.New("question_id missing")
+	for _, questionItem := range answerIntakeRequestBody.Questions {
+		if questionItem.QuestionId == 0 {
+			return errors.New("question_id missing")
+		}
+
+		if questionItem.AnswerIntakes == nil {
+			return errors.New("potential_answers missing")
+		}
 	}
 
-	if answerIntakeRequestBody.AnswerIntakes == nil {
-		return errors.New("potential_answers missing")
-	}
 	return nil
 }
 
-func populateAnswersToStore(role string, answerIntakeRequestBody *AnswerIntakeRequestBody, roleId, layoutVersionId int64) (answersToStore []*common.AnswerIntake) {
+func populateAnswersToStoreForQuestion(role string, answerToQuestionItem *AnswerToQuestionItem, patientVisitId, roleId, layoutVersionId int64) (answersToStore []*common.AnswerIntake) {
 	// get a list of top level answers to store for each of the quetions
-	answersToStore = createAnswersToStore(role, roleId, answerIntakeRequestBody.QuestionId,
-		answerIntakeRequestBody.PatientVisitId, layoutVersionId, answerIntakeRequestBody.AnswerIntakes)
+	answersToStore = createAnswersToStoreForQuestion(role, roleId, answerToQuestionItem.QuestionId,
+		patientVisitId, layoutVersionId, answerToQuestionItem.AnswerIntakes)
 
 	// go through all the answers of each question intake to identify responses that have responses to subquestions
 	// embedded in them, and add that to the list of answers to store in the database
-	for i, answerIntake := range answerIntakeRequestBody.AnswerIntakes {
+	for i, answerIntake := range answerToQuestionItem.AnswerIntakes {
 		if answerIntake.SubQuestionAnswerIntakes != nil {
 			subAnswers := make([]*common.AnswerIntake, 0)
 			for _, subAnswer := range answerIntake.SubQuestionAnswerIntakes {
-				subAnswers = append(subAnswers, createAnswersToStore(role, roleId, subAnswer.QuestionId, answerIntakeRequestBody.PatientVisitId, layoutVersionId, subAnswer.AnswerIntakes)...)
+				subAnswers = append(subAnswers, createAnswersToStoreForQuestion(role, roleId, subAnswer.QuestionId, patientVisitId, layoutVersionId, subAnswer.AnswerIntakes)...)
 			}
 			answersToStore[i].SubAnswers = subAnswers
 		}
@@ -133,7 +140,7 @@ func populateAnswersToStore(role string, answerIntakeRequestBody *AnswerIntakeRe
 	return answersToStore
 }
 
-func createAnswersToStore(role string, roleId, questionId, patientVisitId, layoutVersionId int64, answerIntakes []*AnswerIntakeRequestItem) []*common.AnswerIntake {
+func createAnswersToStoreForQuestion(role string, roleId, questionId, patientVisitId, layoutVersionId int64, answerIntakes []*AnswerItem) []*common.AnswerIntake {
 	answersToStore := make([]*common.AnswerIntake, 0)
 	for _, answerIntake := range answerIntakes {
 		answerToStore := new(common.AnswerIntake)

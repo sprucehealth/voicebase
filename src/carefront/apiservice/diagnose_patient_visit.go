@@ -107,9 +107,13 @@ func (d *DiagnosePatientHandler) diagnosePatient(w http.ResponseWriter, r *http.
 		return
 	}
 
-	// enumerate the answers to store from the top level questions as well as the sub questions
-	answersToStore := populateAnswersToStore(api.DOCTOR_ROLE, answerIntakeRequestBody, doctorId, layoutVersionId)
-	err = d.DataApi.StoreAnswersForQuestion(api.DOCTOR_ROLE, answerIntakeRequestBody.QuestionId, doctorId, answerIntakeRequestBody.PatientVisitId, layoutVersionId, answersToStore)
+	answersToStorePerQuestion := make(map[int64][]*common.AnswerIntake)
+	for _, questionItem := range answerIntakeRequestBody.Questions {
+		// enumerate the answers to store from the top level questions as well as the sub questions
+		answersToStorePerQuestion[questionItem.QuestionId] = populateAnswersToStoreForQuestion(api.DOCTOR_ROLE, questionItem, answerIntakeRequestBody.PatientVisitId, doctorId, layoutVersionId)
+	}
+
+	err = d.DataApi.StoreAnswersForQuestion(api.DOCTOR_ROLE, doctorId, answerIntakeRequestBody.PatientVisitId, layoutVersionId, answersToStorePerQuestion)
 	if err != nil {
 		WriteDeveloperError(w, http.StatusInternalServerError, "Unable to store the multiple choice answer to the question for the patient based on the parameters provided and the internal state of the system: "+err.Error())
 		return

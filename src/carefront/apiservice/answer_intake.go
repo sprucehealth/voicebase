@@ -2,6 +2,7 @@ package apiservice
 
 import (
 	"carefront/api"
+	"carefront/common"
 	"encoding/json"
 	"net/http"
 )
@@ -59,24 +60,28 @@ func (a *AnswerIntakeHandler) ServeHTTP(w http.ResponseWriter, r *http.Request) 
 		return
 	}
 
-	questionType, err := a.DataApi.GetQuestionType(answerIntakeRequestBody.QuestionId)
-	if err != nil {
-		WriteDeveloperError(w, http.StatusInternalServerError, "Unable to get the question_type from the question_id provided")
-		return
-	}
+	answersToStorePerQuestion := make(map[int64][]*common.AnswerIntake)
+	for _, questionItem := range answerIntakeRequestBody.Questions {
 
-	// only one response allowed for these type of questions
-	if questionType == "q_type_single_select" || questionType == "q_type_photo" || questionType == "q_type_free_text" || questionType == "q_type_segmented_control" {
-		if len(answerIntakeRequestBody.AnswerIntakes) > 1 {
-			WriteDeveloperError(w, http.StatusBadRequest, "You cannot have more than 1 response for this question type")
+		questionType, err := a.DataApi.GetQuestionType(questionItem.QuestionId)
+		if err != nil {
+			WriteDeveloperError(w, http.StatusInternalServerError, "Unable to get the question_type from the question_id provided")
 			return
 		}
+
+		// only one response allowed for these type of questions
+		if questionType == "q_type_single_select" || questionType == "q_type_photo" || questionType == "q_type_free_text" || questionType == "q_type_segmented_control" {
+			if len(questionItem.AnswerIntakes) > 1 {
+				WriteDeveloperError(w, http.StatusBadRequest, "You cannot have more than 1 response for this question type")
+				return
+			}
+		}
+
+		// enumerate the answers to store from the top level questions as well as the sub questions
+		answersToStorePerQuestion[questionItem.QuestionId] = populateAnswersToStoreForQuestion(api.PATIENT_ROLE, questionItem, answerIntakeRequestBody.PatientVisitId, patientId, layoutVersionId)
 	}
 
-	// enumerate the answers to store from the top level questions as well as the sub questions
-	answersToStore := populateAnswersToStore(api.PATIENT_ROLE, answerIntakeRequestBody, patientId, layoutVersionId)
-
-	err = a.DataApi.StoreAnswersForQuestion(api.PATIENT_ROLE, answerIntakeRequestBody.QuestionId, patientId, answerIntakeRequestBody.PatientVisitId, layoutVersionId, answersToStore)
+	err = a.DataApi.StoreAnswersForQuestion(api.PATIENT_ROLE, patientId, answerIntakeRequestBody.PatientVisitId, layoutVersionId, answersToStorePerQuestion)
 	if err != nil {
 		WriteDeveloperError(w, http.StatusInternalServerError, "Unable to store the multiple choice answer to the question for the patient based on the parameters provided and the internal state of the system: "+err.Error())
 		return

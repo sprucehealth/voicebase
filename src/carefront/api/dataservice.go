@@ -574,128 +574,129 @@ func constructValuesToInsert(answersToStore []*common.AnswerIntake, parentInfoIn
 	return values
 }
 
-func (d *DataService) StoreAnswersForQuestion(role string, questionId, roleId, patientVisitId, layoutVersionId int64, answersToStore []*common.AnswerIntake) (err error) {
+func (d *DataService) StoreAnswersForQuestion(role string, roleId, patientVisitId, layoutVersionId int64, answersToStorePerQuestion map[int64][]*common.AnswerIntake) error {
 
-	if len(answersToStore) == 0 {
-		return
+	if len(answersToStorePerQuestion) == 0 {
+		return nil
 	}
-
-	// keep track of all question ids for which we are storing answers.
-	questionIds := make(map[int64]bool)
-	questionIds[questionId] = true
 
 	tx, err := d.DB.Begin()
 	if err != nil {
-		return
+		return err
 	}
 
-	infoIdToAnswersWithSubAnswers := make(map[int64]*common.AnswerIntake)
-	subAnswersFound := false
-	for _, answerToStore := range answersToStore {
-		insertStr := prepareQueryForAnswers([]*common.AnswerIntake{answerToStore}, "NULL", "NULL", status_creating)
-		fmt.Println(insertStr)
-		res, err := tx.Exec(insertStr)
-		if err != nil {
-			tx.Rollback()
-			return err
-		}
+	for questionId, answersToStore := range answersToStorePerQuestion {
+		// keep track of all question ids for which we are storing answers.
+		questionIds := make(map[int64]bool)
+		questionIds[questionId] = true
 
-		if answerToStore.SubAnswers != nil {
-			subAnswersFound = true
-
-			lastInsertId, err := res.LastInsertId()
+		infoIdToAnswersWithSubAnswers := make(map[int64]*common.AnswerIntake)
+		subAnswersFound := false
+		for _, answerToStore := range answersToStore {
+			insertStr := prepareQueryForAnswers([]*common.AnswerIntake{answerToStore}, "NULL", "NULL", status_creating)
+			res, err := tx.Exec(insertStr)
 			if err != nil {
 				tx.Rollback()
 				return err
 			}
-			infoIdToAnswersWithSubAnswers[lastInsertId] = answerToStore
+
+			if answerToStore.SubAnswers != nil {
+				subAnswersFound = true
+
+				lastInsertId, err := res.LastInsertId()
+				if err != nil {
+					tx.Rollback()
+					return err
+				}
+				infoIdToAnswersWithSubAnswers[lastInsertId] = answerToStore
+			}
 		}
-	}
 
-	// if there are no subanswers found, then we are pretty much done with the insertion of the
-	// answers into the database.
-	if !subAnswersFound {
-		// ensure to update the status of any prior subquestions linked to the responses
-		// of the top level questions that need to be inactivated, along with the answers
-		// to the top level question itself.
-		d.updateSubAnswersToPatientInfoIntakesWithStatus(role, []int64{questionId}, roleId,
-			patientVisitId, layoutVersionId, status_inactive, status_active, tx)
-		d.updatePatientInfoIntakesWithStatus(role, []int64{questionId}, roleId,
-			patientVisitId, layoutVersionId, status_inactive, status_active, tx)
+		// if there are no subanswers found, then we are pretty much done with the insertion of the
+		// answers into the database.
+		if !subAnswersFound {
+			// ensure to update the status of any prior subquestions linked to the responses
+			// of the top level questions that need to be inactivated, along with the answers
+			// to the top level question itself.
+			d.updateSubAnswersToPatientInfoIntakesWithStatus(role, []int64{questionId}, roleId,
+				patientVisitId, layoutVersionId, status_inactive, status_active, tx)
+			d.updatePatientInfoIntakesWithStatus(role, []int64{questionId}, roleId,
+				patientVisitId, layoutVersionId, status_inactive, status_active, tx)
 
-		// if there are no subanswers to store, our job is done with just the top level answers
-		d.updatePatientInfoIntakesWithStatus(role, []int64{questionId}, roleId,
+			// if there are no subanswers to store, our job is done with just the top level answers
+			d.updatePatientInfoIntakesWithStatus(role, []int64{questionId}, roleId,
+				patientVisitId, layoutVersionId, status_active, status_creating, tx)
+			// tx.Commit()
+			continue
+		}
+
+		// tx.Commit()
+		// create a query to batch insert all subanswers
+		var buffer bytes.Buffer
+		for infoIntakeId, answerToStore := range infoIdToAnswersWithSubAnswers {
+			if buffer.Len() == 0 {
+				buffer.WriteString(prepareQueryForAnswers(answerToStore.SubAnswers,
+					strconv.FormatInt(infoIntakeId, 10),
+					strconv.FormatInt(answerToStore.QuestionId, 10), status_creating))
+			} else {
+				values := constructValuesToInsert(answerToStore.SubAnswers,
+					strconv.FormatInt(infoIntakeId, 10),
+					strconv.FormatInt(answerToStore.QuestionId, 10), status_creating)
+				buffer.WriteString(",")
+				buffer.WriteString(strings.Join(values, ","))
+			}
+			// keep track of all questions for which we are storing answers
+			for _, subAnswer := range answerToStore.SubAnswers {
+				questionIds[subAnswer.QuestionId] = true
+			}
+		}
+
+		// // start a new transaction to store the answers to the sub questions
+		// tx, err = d.DB.Begin()
+		// if err != nil {
+		// 	d.deleteAnswersWithId(role, infoIdsFromMap(infoIdToAnswersWithSubAnswers))
+		// 	return
+		// }
+
+		insertStr := buffer.String()
+		_, err = tx.Exec(insertStr)
+		if err != nil {
+			tx.Rollback()
+			// d.deleteAnswersWithId(role, infoIdsFromMap(infoIdToAnswersWithSubAnswers))
+			return err
+		}
+
+		// deactivate all answers to top level questions as well as their sub-questions
+		// as we make the new answers the most current 	up-to-date patient info intake
+		err = d.updateSubAnswersToPatientInfoIntakesWithStatus(role, []int64{questionId}, roleId,
+			patientVisitId, layoutVersionId, status_inactive, status_active, tx)
+		if err != nil {
+			tx.Rollback()
+			// d.deleteAnswersWithId(role, infoIdsFromMap(infoIdToAnswersWithSubAnswers))
+			return err
+		}
+
+		err = d.updatePatientInfoIntakesWithStatus(role, createKeysArrayFromMap(questionIds), roleId,
+			patientVisitId, layoutVersionId, status_inactive, status_active, tx)
+		if err != nil {
+			tx.Rollback()
+			// d.deleteAnswersWithId(role, infoIdsFromMap(infoIdToAnswersWithSubAnswers))
+			return err
+		}
+
+		// make all answers pertanining to the questionIds collected the new active set of answers for the
+		// questions traversed
+		err = d.updatePatientInfoIntakesWithStatus(role, createKeysArrayFromMap(questionIds), roleId,
 			patientVisitId, layoutVersionId, status_active, status_creating, tx)
-		tx.Commit()
-		return
-	}
-
-	tx.Commit()
-	// create a query to batch insert all subanswers
-	var buffer bytes.Buffer
-	for infoIntakeId, answerToStore := range infoIdToAnswersWithSubAnswers {
-		if buffer.Len() == 0 {
-			buffer.WriteString(prepareQueryForAnswers(answerToStore.SubAnswers,
-				strconv.FormatInt(infoIntakeId, 10),
-				strconv.FormatInt(answerToStore.QuestionId, 10), status_creating))
-		} else {
-			values := constructValuesToInsert(answerToStore.SubAnswers,
-				strconv.FormatInt(infoIntakeId, 10),
-				strconv.FormatInt(answerToStore.QuestionId, 10), status_creating)
-			buffer.WriteString(",")
-			buffer.WriteString(strings.Join(values, ","))
-		}
-		// keep track of all questions for which we are storing answers
-		for _, subAnswer := range answerToStore.SubAnswers {
-			questionIds[subAnswer.QuestionId] = true
+		if err != nil {
+			tx.Rollback()
+			// d.deleteAnswersWithId(role, infoIdsFromMap(infoIdToAnswersWithSubAnswers))
+			return err
 		}
 	}
 
-	// start a new transaction to store the answers to the sub questions
-	tx, err = d.DB.Begin()
-	if err != nil {
-		d.deleteAnswersWithId(role, infoIdsFromMap(infoIdToAnswersWithSubAnswers))
-		return
-	}
-
-	insertStr := buffer.String()
-	fmt.Println(insertStr)
-	_, err = tx.Exec(insertStr)
-	if err != nil {
-		tx.Rollback()
-		d.deleteAnswersWithId(role, infoIdsFromMap(infoIdToAnswersWithSubAnswers))
-		return
-	}
-
-	// deactivate all answers to top level questions as well as their sub-questions
-	// as we make the new answers the most current 	up-to-date patient info intake
-	err = d.updateSubAnswersToPatientInfoIntakesWithStatus(role, []int64{questionId}, roleId,
-		patientVisitId, layoutVersionId, status_inactive, status_active, tx)
-	if err != nil {
-		tx.Rollback()
-		d.deleteAnswersWithId(role, infoIdsFromMap(infoIdToAnswersWithSubAnswers))
-		return
-	}
-
-	err = d.updatePatientInfoIntakesWithStatus(role, createKeysArrayFromMap(questionIds), roleId,
-		patientVisitId, layoutVersionId, status_inactive, status_active, tx)
-	if err != nil {
-		tx.Rollback()
-		d.deleteAnswersWithId(role, infoIdsFromMap(infoIdToAnswersWithSubAnswers))
-		return
-	}
-
-	// make all answers pertanining to the questionIds collected the new active set of answers for the
-	// questions traversed
-	err = d.updatePatientInfoIntakesWithStatus(role, createKeysArrayFromMap(questionIds), roleId,
-		patientVisitId, layoutVersionId, status_active, status_creating, tx)
-	if err != nil {
-		tx.Rollback()
-		d.deleteAnswersWithId(role, infoIdsFromMap(infoIdToAnswersWithSubAnswers))
-		return
-	}
 	tx.Commit()
-	return
+	return nil
 }
 
 func (d *DataService) CreatePhotoAnswerForQuestionRecord(role string, roleId, questionId, patientVisitId, potentialAnswerId, layoutVersionId int64) (patientInfoIntakeId int64, err error) {
