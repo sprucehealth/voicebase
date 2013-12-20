@@ -53,26 +53,19 @@ type PatientVisitAPI interface {
 }
 
 type PatientIntakeAPI interface {
-	StoreAnswersForQuestion(questionId, patientId, patientVisitId, layoutVersionId int64, answersToStore []*common.PatientAnswer) (err error)
-	CreatePhotoAnswerForQuestionRecord(patientId, questionId, patientVisitId, potentialAnswerId, layoutVersionId int64) (patientInfoIntakeId int64, err error)
-	UpdatePhotoAnswerRecordWithObjectStorageId(patientInfoIntakeId, objectStorageId int64) error
-	MakeCurrentPhotoAnswerInactive(patientId, questionId, patientVisitId, potentialAnswerId, layoutVersionId int64) (err error)
-
-	GetQuestionType(questionId int64) (questionType string, err error)
-	GetPatientAnswersForQuestionsInGlobalSections(questionIds []int64, patientId int64) (patientAnswers map[int64][]*common.PatientAnswer, err error)
-	GetPatientAnswersForQuestionsInPatientVisit(questionIds []int64, patientId int64, patientVisitId int64) (patientAnswers map[int64][]*common.PatientAnswer, err error)
-	GetGlobalSectionIds() (globalSectionIds []int64, err error)
-	GetSectionIdsForHealthCondition(healthConditionId int64) (sectionIds []int64, err error)
-	GetHealthConditionInfo(healthConditionTag string) (int64, error)
-	GetSectionInfo(sectionTag string, languageId int64) (id int64, title string, err error)
-	GetQuestionInfo(questionTag string, languageId int64) (id int64, questionTitle string, questionType string, questionSummary string, questionSubText string, parentQuestionId int64, additionalFields map[string]string, err error)
-	GetAnswerInfo(questionId int64, languageId int64) (answerInfos []PotentialAnswerInfo, err error)
-	GetTipSectionInfo(tipSectionTag string, languageId int64) (id int64, tipSectionTitle string, tipSectionSubtext string, err error)
-	GetTipInfo(tipTag string, languageId int64) (id int64, tip string, err error)
-	GetSupportedLanguages() (languagesSupported []string, languagesSupportedIds []int64, err error)
+	GetPatientAnswersForQuestionsInGlobalSections(questionIds []int64, patientId int64) (patientAnswers map[int64][]*common.AnswerIntake, err error)
 }
 
-type PatientIntakeLayoutAPI interface {
+type IntakeAPI interface {
+	GetAnswersForQuestionsInPatientVisit(role string, questionIds []int64, roleId int64, patientVisitId int64) (answerIntakes map[int64][]*common.AnswerIntake, err error)
+	StoreAnswersForQuestion(role string, questionId, roleId, patientVisitId, layoutVersionId int64, answersToStore []*common.AnswerIntake) (err error)
+	CreatePhotoAnswerForQuestionRecord(role string, roleId, questionId, patientVisitId, potentialAnswerId, layoutVersionId int64) (patientInfoIntakeId int64, err error)
+	UpdatePhotoAnswerRecordWithObjectStorageId(patientInfoIntakeId, objectStorageId int64) error
+	MakeCurrentPhotoAnswerInactive(role string, roleId, questionId, patientVisitId, potentialAnswerId, layoutVersionId int64) error
+}
+
+type IntakeLayoutAPI interface {
+	GetQuestionType(questionId int64) (questionType string, err error)
 	GetActiveLayoutInfoForHealthCondition(healthConditionTag, role, purpose string) (bucket, key, region string, err error)
 	GetStorageInfoOfCurrentActivePatientLayout(languageId, healthConditionId int64) (bucket, key, region string, layoutVersionId int64, err error)
 	GetStorageInfoOfCurrentActiveDoctorLayout(healthConditionId int64) (bucket, storage, region string, layoutVersionId int64, err error)
@@ -84,6 +77,15 @@ type PatientIntakeLayoutAPI interface {
 	UpdatePatientActiveLayouts(layoutId int64, clientLayoutIds []int64, healthConditionId int64) error
 	MarkNewDoctorLayoutAsCreating(objectId int64, layoutVersionId int64, healthConditionId int64) (int64, error)
 	UpdateDoctorActiveLayouts(layoutId, doctorLayoutId, healthConditionId int64, purpose string) error
+	GetGlobalSectionIds() (globalSectionIds []int64, err error)
+	GetSectionIdsForHealthCondition(healthConditionId int64) (sectionIds []int64, err error)
+	GetHealthConditionInfo(healthConditionTag string) (int64, error)
+	GetSectionInfo(sectionTag string, languageId int64) (id int64, title string, err error)
+	GetQuestionInfo(questionTag string, languageId int64) (id int64, questionTitle string, questionType string, questionSummary string, questionSubText string, parentQuestionId int64, additionalFields map[string]string, err error)
+	GetAnswerInfo(questionId int64, languageId int64) (answerInfos []PotentialAnswerInfo, err error)
+	GetTipSectionInfo(tipSectionTag string, languageId int64) (id int64, tipSectionTitle string, tipSectionSubtext string, err error)
+	GetTipInfo(tipTag string, languageId int64) (id int64, tip string, err error)
+	GetSupportedLanguages() (languagesSupported []string, languagesSupportedIds []int64, err error)
 }
 
 type ObjectStorageAPI interface {
@@ -96,8 +98,9 @@ type DataAPI interface {
 	DoctorAPI
 	PatientIntakeAPI
 	PatientVisitAPI
-	PatientIntakeLayoutAPI
+	IntakeLayoutAPI
 	ObjectStorageAPI
+	IntakeAPI
 }
 
 type CloudStorageAPI interface {

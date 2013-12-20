@@ -111,7 +111,7 @@ func TestPatientAnswerParsing(t *testing.T) {
 					continue
 				}
 				for _, patientAnswer := range question.PatientAnswers {
-					if patientAnswer.PatientAnswerId == 0 {
+					if patientAnswer.AnswerIntakeId == 0 {
 						t.Fatal("Patient answer id is not set when it should be")
 					}
 

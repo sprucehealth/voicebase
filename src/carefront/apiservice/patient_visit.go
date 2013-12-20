@@ -190,7 +190,7 @@ func (s *PatientVisitHandler) returnNewOrOpenPatientVisit(w http.ResponseWriter,
 			questionIds := getQuestionIdsInSectionInHealthConditionLayout(healthCondition, sectionId)
 			questionIdsInAllSections = append(questionIdsInAllSections, questionIds...)
 		}
-		patientAnswersForVisit, err := s.DataApi.GetPatientAnswersForQuestionsInPatientVisit(questionIdsInAllSections, patientId, patientVisitId)
+		patientAnswersForVisit, err := s.DataApi.GetAnswersForQuestionsInPatientVisit(api.PATIENT_ROLE, questionIdsInAllSections, patientId, patientVisitId)
 		if err != nil {
 			WriteDeveloperError(w, http.StatusInternalServerError, "Unable to get patient answers for patient visit: "+err.Error())
 			return
@@ -215,7 +215,7 @@ func getQuestionIdsInSectionInHealthConditionLayout(healthCondition *info_intake
 	return
 }
 
-func (s *PatientVisitHandler) populateHealthConditionWithPatientAnswers(healthCondition *info_intake.InfoIntakeLayout, patientAnswers map[int64][]*common.PatientAnswer) {
+func (s *PatientVisitHandler) populateHealthConditionWithPatientAnswers(healthCondition *info_intake.InfoIntakeLayout, patientAnswers map[int64][]*common.AnswerIntake) {
 	for _, section := range healthCondition.Sections {
 		for _, screen := range section.Screens {
 			for _, question := range screen.Questions {

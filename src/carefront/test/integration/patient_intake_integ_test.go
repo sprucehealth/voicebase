@@ -158,7 +158,7 @@ func TestMultipleChoiceIntake(t *testing.T) {
 	answerIntakeRequestBody.QuestionId = questionId
 	for _, potentialAnswer := range potentialAnswers {
 		if potentialAnswer.AnswerTag == "a_otc_prev_treatment_type" || potentialAnswer.AnswerTag == "a_prescription_prev_treatment_type" {
-			answerIntakeRequestBody.AnswerIntakes = append(answerIntakeRequestBody.AnswerIntakes, &apiservice.AnswerIntake{PotentialAnswerId: potentialAnswer.PotentialAnswerId})
+			answerIntakeRequestBody.AnswerIntakes = append(answerIntakeRequestBody.AnswerIntakes, &apiservice.AnswerIntakeRequestItem{PotentialAnswerId: potentialAnswer.PotentialAnswerId})
 		}
 	}
 
@@ -214,7 +214,7 @@ func TestSingleEntryIntake(t *testing.T) {
 	answerIntakeRequestBody := apiservice.AnswerIntakeRequestBody{}
 	answerIntakeRequestBody.PatientVisitId = patientVisitResponse.PatientVisitId
 	answerIntakeRequestBody.QuestionId = questionId
-	answerIntakeRequestBody.AnswerIntakes = []*apiservice.AnswerIntake{&apiservice.AnswerIntake{PotentialAnswerId: potentialAnswerId, AnswerText: "testAnswer"}}
+	answerIntakeRequestBody.AnswerIntakes = []*apiservice.AnswerIntakeRequestItem{&apiservice.AnswerIntakeRequestItem{PotentialAnswerId: potentialAnswerId, AnswerText: "testAnswer"}}
 	requestData, err := json.Marshal(&answerIntakeRequestBody)
 	if err != nil {
 		t.Fatal("Unable to marshal request body")
@@ -250,7 +250,7 @@ func submitFreeTextResponseForPatient(patientVisitResponse *apiservice.PatientVi
 	answerIntakeRequestBody := apiservice.AnswerIntakeRequestBody{}
 	answerIntakeRequestBody.PatientVisitId = patientVisitResponse.PatientVisitId
 	answerIntakeRequestBody.QuestionId = questionId
-	answerIntakeRequestBody.AnswerIntakes = []*apiservice.AnswerIntake{&apiservice.AnswerIntake{AnswerText: freeTextResponse}}
+	answerIntakeRequestBody.AnswerIntakes = []*apiservice.AnswerIntakeRequestItem{&apiservice.AnswerIntakeRequestItem{AnswerText: freeTextResponse}}
 	requestData, err := json.Marshal(&answerIntakeRequestBody)
 	if err != nil {
 		t.Fatal("Unable to marshal request body")
@@ -300,10 +300,10 @@ func TestFreeTextEntryIntake(t *testing.T) {
 	submitFreeTextResponseForPatient(patientVisitResponse, patientSignedUpResponse.PatientId, updatedFreeTextResponse, testData, t)
 }
 
-func addSubAnswerToAnswerIntake(answerIntake *apiservice.AnswerIntake, subAnswerQuestionId, subAnswerPotentialAnswerId int64) {
+func addSubAnswerToAnswerIntake(answerIntake *apiservice.AnswerIntakeRequestItem, subAnswerQuestionId, subAnswerPotentialAnswerId int64) {
 	subQuestionAnswerIntake := &apiservice.SubQuestionAnswerIntake{}
 	subQuestionAnswerIntake.QuestionId = subAnswerQuestionId
-	subQuestionAnswerIntake.AnswerIntakes = []*apiservice.AnswerIntake{&apiservice.AnswerIntake{PotentialAnswerId: subAnswerPotentialAnswerId}}
+	subQuestionAnswerIntake.AnswerIntakes = []*apiservice.AnswerIntakeRequestItem{&apiservice.AnswerIntakeRequestItem{PotentialAnswerId: subAnswerPotentialAnswerId}}
 	if answerIntake.SubQuestionAnswerIntakes == nil {
 		answerIntake.SubQuestionAnswerIntakes = make([]*apiservice.SubQuestionAnswerIntake, 0)
 	}
@@ -345,25 +345,25 @@ func TestSubQuestionEntryIntake(t *testing.T) {
 	answerIntakeRequestBody.PatientVisitId = patientVisitResponse.PatientVisitId
 	answerIntakeRequestBody.QuestionId = questionId
 
-	proactiveAnswerIntake := &apiservice.AnswerIntake{}
+	proactiveAnswerIntake := &apiservice.AnswerIntakeRequestItem{}
 	proactiveAnswerIntake.AnswerText = proactive
 	addSubAnswerToAnswerIntake(proactiveAnswerIntake, howEffectiveQuestionId, howEffectiveAnswerId)
 	addSubAnswerToAnswerIntake(proactiveAnswerIntake, usingTreatmentQuestionId, usingTreatmentAnswerId)
 	addSubAnswerToAnswerIntake(proactiveAnswerIntake, lengthTreatmentQuestionId, lengthTreatmentAnswerId)
 
-	benzoylPeroxideAnswerIntake := &apiservice.AnswerIntake{}
+	benzoylPeroxideAnswerIntake := &apiservice.AnswerIntakeRequestItem{}
 	benzoylPeroxideAnswerIntake.AnswerText = benzoylPeroxide
 	addSubAnswerToAnswerIntake(benzoylPeroxideAnswerIntake, howEffectiveQuestionId, howEffectiveAnswerId)
 	addSubAnswerToAnswerIntake(benzoylPeroxideAnswerIntake, usingTreatmentQuestionId, usingTreatmentAnswerId)
 	addSubAnswerToAnswerIntake(benzoylPeroxideAnswerIntake, lengthTreatmentQuestionId, lengthTreatmentAnswerId)
 
-	neutrogenaAnswerIntake := &apiservice.AnswerIntake{}
+	neutrogenaAnswerIntake := &apiservice.AnswerIntakeRequestItem{}
 	neutrogenaAnswerIntake.AnswerText = neutrogena
 	addSubAnswerToAnswerIntake(neutrogenaAnswerIntake, howEffectiveQuestionId, howEffectiveAnswerId)
 	addSubAnswerToAnswerIntake(neutrogenaAnswerIntake, usingTreatmentQuestionId, usingTreatmentAnswerId)
 	addSubAnswerToAnswerIntake(neutrogenaAnswerIntake, lengthTreatmentQuestionId, lengthTreatmentAnswerId)
 
-	answerIntakeRequestBody.AnswerIntakes = []*apiservice.AnswerIntake{proactiveAnswerIntake, benzoylPeroxideAnswerIntake, neutrogenaAnswerIntake}
+	answerIntakeRequestBody.AnswerIntakes = []*apiservice.AnswerIntakeRequestItem{proactiveAnswerIntake, benzoylPeroxideAnswerIntake, neutrogenaAnswerIntake}
 
 	requestData, err := json.Marshal(&answerIntakeRequestBody)
 	if err != nil {
@@ -557,7 +557,7 @@ func TestPhotoAnswerIntake(t *testing.T) {
 
 							buffer := bytes.NewBufferString(strconv.FormatInt(patientVisitResponse.PatientVisitId, 10))
 							buffer.WriteString("/")
-							buffer.WriteString(strconv.FormatInt(patientAnswer.PatientAnswerId, 10))
+							buffer.WriteString(strconv.FormatInt(patientAnswer.AnswerIntakeId, 10))
 							buffer.WriteString(".jpg")
 							err = testData.CloudStorageService.DeleteObjectAtLocation("cases-bucket-integ", buffer.String(), "us-east-1")
 							if err != nil {
