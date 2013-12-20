@@ -18,7 +18,6 @@ func TestDoctorRegistration(t *testing.T) {
 	}
 
 	testData := SetupIntegrationTest(t)
-	defer testData.DB.Close()
 	defer TearDownIntegrationTest(t, testData)
 
 	SignupRandomTestDoctor(t, testData.DataApi, testData.AuthApi)
@@ -30,7 +29,6 @@ func TestDoctorAuthentication(t *testing.T) {
 	}
 
 	testData := SetupIntegrationTest(t)
-	defer testData.DB.Close()
 	defer TearDownIntegrationTest(t, testData)
 
 	_, email, password := SignupRandomTestDoctor(t, testData.DataApi, testData.AuthApi)
@@ -69,7 +67,6 @@ func TestDoctorDiagnosisOfPatientVisit(t *testing.T) {
 		return
 	}
 	testData := SetupIntegrationTest(t)
-	defer testData.DB.Close()
 	defer TearDownIntegrationTest(t, testData)
 
 	patientSignedupResponse := SignupRandomTestPatient(t, testData.DataApi, testData.AuthApi)

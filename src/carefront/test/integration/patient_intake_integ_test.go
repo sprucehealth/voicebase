@@ -91,7 +91,6 @@ func TestSingleSelectIntake(t *testing.T) {
 	}
 
 	testData := SetupIntegrationTest(t)
-	defer testData.DB.Close()
 	defer TearDownIntegrationTest(t, testData)
 
 	// signup a random test patient for which to answer questions
@@ -104,7 +103,7 @@ func TestSingleSelectIntake(t *testing.T) {
 	potentialAnswerId := getAnswerWithTagAndExpectedType("a_acne", "a_type_multiple_choice", questionId, testData, t)
 
 	// lets go ahead and populate a response for the question
-	patientIntakeRequestData := fmt.Sprintf(`{"patient_visit_id": %d, "potential_answers": [{"potential_answer_id": %d } ], "question_id": %d }`, patientVisitResponse.PatientVisitId, potentialAnswerId, questionId)
+	patientIntakeRequestData := fmt.Sprintf(`{"patient_visit_id": %d, "questions": [{"potential_answers": [{"potential_answer_id": %d } ], "question_id": %d }] }`, patientVisitResponse.PatientVisitId, potentialAnswerId, questionId)
 
 	// now, lets go ahead and answer the question for the patient
 	submitPatientAnswerForVisit(patientSignedUpResponse.PatientId, testData, patientIntakeRequestData, t)
@@ -138,7 +137,6 @@ func TestMultipleChoiceIntake(t *testing.T) {
 		return
 	}
 	testData := SetupIntegrationTest(t)
-	defer testData.DB.Close()
 	defer TearDownIntegrationTest(t, testData)
 
 	// signup a random test patient for which to answer questions
@@ -155,12 +153,15 @@ func TestMultipleChoiceIntake(t *testing.T) {
 
 	answerIntakeRequestBody := apiservice.AnswerIntakeRequestBody{}
 	answerIntakeRequestBody.PatientVisitId = patientVisitResponse.PatientVisitId
-	answerIntakeRequestBody.QuestionId = questionId
+
+	answerToQuestionItem := &apiservice.AnswerToQuestionItem{}
+	answerToQuestionItem.QuestionId = questionId
 	for _, potentialAnswer := range potentialAnswers {
 		if potentialAnswer.AnswerTag == "a_otc_prev_treatment_type" || potentialAnswer.AnswerTag == "a_prescription_prev_treatment_type" {
-			answerIntakeRequestBody.AnswerIntakes = append(answerIntakeRequestBody.AnswerIntakes, &apiservice.AnswerIntakeRequestItem{PotentialAnswerId: potentialAnswer.PotentialAnswerId})
+			answerToQuestionItem.AnswerIntakes = append(answerToQuestionItem.AnswerIntakes, &apiservice.AnswerItem{PotentialAnswerId: potentialAnswer.PotentialAnswerId})
 		}
 	}
+	answerIntakeRequestBody.Questions = []*apiservice.AnswerToQuestionItem{answerToQuestionItem}
 
 	requestData, err := json.Marshal(&answerIntakeRequestBody)
 	if err != nil {
@@ -180,9 +181,11 @@ func TestMultipleChoiceIntake(t *testing.T) {
 					}
 					for _, patientAnswer := range question.PatientAnswers {
 						answerNotFound := true
-						for _, answerIntake := range answerIntakeRequestBody.AnswerIntakes {
-							if answerIntake.PotentialAnswerId == patientAnswer.PotentialAnswerId {
-								answerNotFound = false
+						for _, questionItem := range answerIntakeRequestBody.Questions {
+							for _, answerIntake := range questionItem.AnswerIntakes {
+								if answerIntake.PotentialAnswerId == patientAnswer.PotentialAnswerId {
+									answerNotFound = false
+								}
 							}
 						}
 						if answerNotFound {
@@ -200,7 +203,6 @@ func TestSingleEntryIntake(t *testing.T) {
 		return
 	}
 	testData := SetupIntegrationTest(t)
-	defer testData.DB.Close()
 	defer TearDownIntegrationTest(t, testData)
 
 	// signup a random test patient for which to answer questions
@@ -213,8 +215,11 @@ func TestSingleEntryIntake(t *testing.T) {
 	potentialAnswerId := getAnswerWithTagAndExpectedType("a_condition_entry", "a_type_single_entry", questionId, testData, t)
 	answerIntakeRequestBody := apiservice.AnswerIntakeRequestBody{}
 	answerIntakeRequestBody.PatientVisitId = patientVisitResponse.PatientVisitId
-	answerIntakeRequestBody.QuestionId = questionId
-	answerIntakeRequestBody.AnswerIntakes = []*apiservice.AnswerIntakeRequestItem{&apiservice.AnswerIntakeRequestItem{PotentialAnswerId: potentialAnswerId, AnswerText: "testAnswer"}}
+
+	answerToQuestionItem := &apiservice.AnswerToQuestionItem{}
+	answerToQuestionItem.QuestionId = questionId
+	answerToQuestionItem.AnswerIntakes = []*apiservice.AnswerItem{&apiservice.AnswerItem{PotentialAnswerId: potentialAnswerId, AnswerText: "testAnswer"}}
+	answerIntakeRequestBody.Questions = []*apiservice.AnswerToQuestionItem{answerToQuestionItem}
 	requestData, err := json.Marshal(&answerIntakeRequestBody)
 	if err != nil {
 		t.Fatal("Unable to marshal request body")
@@ -249,8 +254,12 @@ func submitFreeTextResponseForPatient(patientVisitResponse *apiservice.PatientVi
 	questionId := getQuestionWithTagAndExpectedType("q_changes_acne_worse", "q_type_free_text", t, testData)
 	answerIntakeRequestBody := apiservice.AnswerIntakeRequestBody{}
 	answerIntakeRequestBody.PatientVisitId = patientVisitResponse.PatientVisitId
-	answerIntakeRequestBody.QuestionId = questionId
-	answerIntakeRequestBody.AnswerIntakes = []*apiservice.AnswerIntakeRequestItem{&apiservice.AnswerIntakeRequestItem{AnswerText: freeTextResponse}}
+
+	answerToQuestionItem := &apiservice.AnswerToQuestionItem{}
+	answerToQuestionItem.QuestionId = questionId
+	answerToQuestionItem.AnswerIntakes = []*apiservice.AnswerItem{&apiservice.AnswerItem{AnswerText: freeTextResponse}}
+
+	answerIntakeRequestBody.Questions = []*apiservice.AnswerToQuestionItem{answerToQuestionItem}
 	requestData, err := json.Marshal(&answerIntakeRequestBody)
 	if err != nil {
 		t.Fatal("Unable to marshal request body")
@@ -285,7 +294,6 @@ func TestFreeTextEntryIntake(t *testing.T) {
 		return
 	}
 	testData := SetupIntegrationTest(t)
-	defer testData.DB.Close()
 	defer TearDownIntegrationTest(t, testData)
 
 	// signup a random test patient for which to answer questions
@@ -300,10 +308,10 @@ func TestFreeTextEntryIntake(t *testing.T) {
 	submitFreeTextResponseForPatient(patientVisitResponse, patientSignedUpResponse.PatientId, updatedFreeTextResponse, testData, t)
 }
 
-func addSubAnswerToAnswerIntake(answerIntake *apiservice.AnswerIntakeRequestItem, subAnswerQuestionId, subAnswerPotentialAnswerId int64) {
+func addSubAnswerToAnswerIntake(answerIntake *apiservice.AnswerItem, subAnswerQuestionId, subAnswerPotentialAnswerId int64) {
 	subQuestionAnswerIntake := &apiservice.SubQuestionAnswerIntake{}
 	subQuestionAnswerIntake.QuestionId = subAnswerQuestionId
-	subQuestionAnswerIntake.AnswerIntakes = []*apiservice.AnswerIntakeRequestItem{&apiservice.AnswerIntakeRequestItem{PotentialAnswerId: subAnswerPotentialAnswerId}}
+	subQuestionAnswerIntake.AnswerIntakes = []*apiservice.AnswerItem{&apiservice.AnswerItem{PotentialAnswerId: subAnswerPotentialAnswerId}}
 	if answerIntake.SubQuestionAnswerIntakes == nil {
 		answerIntake.SubQuestionAnswerIntakes = make([]*apiservice.SubQuestionAnswerIntake, 0)
 	}
@@ -315,7 +323,6 @@ func TestSubQuestionEntryIntake(t *testing.T) {
 		return
 	}
 	testData := SetupIntegrationTest(t)
-	defer testData.DB.Close()
 	defer TearDownIntegrationTest(t, testData)
 
 	// signup a random test patient for which to answer questions
@@ -343,27 +350,30 @@ func TestSubQuestionEntryIntake(t *testing.T) {
 
 	answerIntakeRequestBody := apiservice.AnswerIntakeRequestBody{}
 	answerIntakeRequestBody.PatientVisitId = patientVisitResponse.PatientVisitId
-	answerIntakeRequestBody.QuestionId = questionId
 
-	proactiveAnswerIntake := &apiservice.AnswerIntakeRequestItem{}
+	answerToQuestionItem := &apiservice.AnswerToQuestionItem{}
+	answerToQuestionItem.QuestionId = questionId
+
+	proactiveAnswerIntake := &apiservice.AnswerItem{}
 	proactiveAnswerIntake.AnswerText = proactive
 	addSubAnswerToAnswerIntake(proactiveAnswerIntake, howEffectiveQuestionId, howEffectiveAnswerId)
 	addSubAnswerToAnswerIntake(proactiveAnswerIntake, usingTreatmentQuestionId, usingTreatmentAnswerId)
 	addSubAnswerToAnswerIntake(proactiveAnswerIntake, lengthTreatmentQuestionId, lengthTreatmentAnswerId)
 
-	benzoylPeroxideAnswerIntake := &apiservice.AnswerIntakeRequestItem{}
+	benzoylPeroxideAnswerIntake := &apiservice.AnswerItem{}
 	benzoylPeroxideAnswerIntake.AnswerText = benzoylPeroxide
 	addSubAnswerToAnswerIntake(benzoylPeroxideAnswerIntake, howEffectiveQuestionId, howEffectiveAnswerId)
 	addSubAnswerToAnswerIntake(benzoylPeroxideAnswerIntake, usingTreatmentQuestionId, usingTreatmentAnswerId)
 	addSubAnswerToAnswerIntake(benzoylPeroxideAnswerIntake, lengthTreatmentQuestionId, lengthTreatmentAnswerId)
 
-	neutrogenaAnswerIntake := &apiservice.AnswerIntakeRequestItem{}
+	neutrogenaAnswerIntake := &apiservice.AnswerItem{}
 	neutrogenaAnswerIntake.AnswerText = neutrogena
 	addSubAnswerToAnswerIntake(neutrogenaAnswerIntake, howEffectiveQuestionId, howEffectiveAnswerId)
 	addSubAnswerToAnswerIntake(neutrogenaAnswerIntake, usingTreatmentQuestionId, usingTreatmentAnswerId)
 	addSubAnswerToAnswerIntake(neutrogenaAnswerIntake, lengthTreatmentQuestionId, lengthTreatmentAnswerId)
 
-	answerIntakeRequestBody.AnswerIntakes = []*apiservice.AnswerIntakeRequestItem{proactiveAnswerIntake, benzoylPeroxideAnswerIntake, neutrogenaAnswerIntake}
+	answerToQuestionItem.AnswerIntakes = []*apiservice.AnswerItem{proactiveAnswerIntake, benzoylPeroxideAnswerIntake, neutrogenaAnswerIntake}
+	answerIntakeRequestBody.Questions = []*apiservice.AnswerToQuestionItem{answerToQuestionItem}
 
 	requestData, err := json.Marshal(&answerIntakeRequestBody)
 	if err != nil {
@@ -459,7 +469,6 @@ func TestPhotoAnswerIntake(t *testing.T) {
 	fileToUpload := "../../info_intake/condition_intake.json"
 
 	testData := SetupIntegrationTest(t)
-	defer testData.DB.Close()
 	defer TearDownIntegrationTest(t, testData)
 
 	// signup a random test patient for which to answer questions

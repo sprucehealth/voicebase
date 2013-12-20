@@ -10,7 +10,6 @@ func TestNoPotentialAnswerForQuestionTypes(t *testing.T) {
 	}
 
 	testData := SetupIntegrationTest(t)
-	defer testData.DB.Close()
 	defer TearDownIntegrationTest(t, testData)
 
 	// no free text question type should have potential answers associated with it
@@ -46,7 +45,6 @@ func TestAdditionalFieldsInAutocompleteQuestion(t *testing.T) {
 		return
 	}
 	testData := SetupIntegrationTest(t)
-	defer testData.DB.Close()
 	defer TearDownIntegrationTest(t, testData)
 
 	// signup a random test patient for which to answer questions

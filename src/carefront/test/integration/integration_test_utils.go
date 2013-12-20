@@ -138,6 +138,8 @@ func SetupIntegrationTest(t *testing.T) TestData {
 }
 
 func TearDownIntegrationTest(t *testing.T, testData TestData) {
+	testData.DB.Close()
+
 	// put anything here that is global to the teardown process for integration tests
 	teardownScript := os.Getenv(carefrontProjectDirEnv) + "/src/carefront/test/integration/teardown_integration_test.sh"
 	cmd := exec.Command(teardownScript, testData.DBConfig.DatabaseName)

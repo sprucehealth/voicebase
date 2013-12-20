@@ -7,7 +7,6 @@ import (
 
 func TestPatientRegistration(t *testing.T) {
 	testData := SetupIntegrationTest(t)
-	defer testData.DB.Close()
 	defer TearDownIntegrationTest(t, testData)
 	SignupRandomTestPatient(t, testData.DataApi, testData.AuthApi)
 }
@@ -17,7 +16,6 @@ func TestPatientVisitCreation(t *testing.T) {
 		return
 	}
 	testData := SetupIntegrationTest(t)
-	defer testData.DB.Close()
 	defer TearDownIntegrationTest(t, testData)
 
 	signedupPatientResponse := SignupRandomTestPatient(t, testData.DataApi, testData.AuthApi)
@@ -66,7 +64,6 @@ func TestPatientVisitSubmission(t *testing.T) {
 		return
 	}
 	testData := SetupIntegrationTest(t)
-	defer testData.DB.Close()
 	defer TearDownIntegrationTest(t, testData)
 
 	signedupPatientResponse := SignupRandomTestPatient(t, testData.DataApi, testData.AuthApi)
