@@ -479,9 +479,10 @@ func (d *DataService) GetStorageInfoOfCurrentActivePatientLayout(languageId, hea
 
 func (d *DataService) GetStorageInfoOfCurrentActiveDoctorLayout(healthConditionId int64) (bucket, storage, region string, layoutVersionId int64, err error) {
 	row := d.DB.QueryRow(`select bucket, storage_key, region_tag, layout_version_id from dr_layout_version 
-							inner join object_storage on object_storage_id=object_storage.id 
+							inner join layout_version on layout_version_id=layout_version.id 
+							inner join object_storage on dr_layout_version.object_storage_id=object_storage.id 
 							inner join region on region_id=region.id 
-								where dr_layout_version.status='ACTIVE' and health_condition_id = ?`, healthConditionId)
+								where dr_layout_version.status='ACTIVE' and layout_purpose='REVIEW' and role='DOCTOR' and dr_layout_version.health_condition_id = ?`, healthConditionId)
 	err = row.Scan(&bucket, &storage, &region, &layoutVersionId)
 	return
 }
