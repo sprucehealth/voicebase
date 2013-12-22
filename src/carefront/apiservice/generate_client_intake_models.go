@@ -87,6 +87,11 @@ func (l *GenerateClientIntakeModelHandler) ServeHTTP(w http.ResponseWriter, r *h
 	objectId, _, err := l.CloudStorageApi.PutObjectToLocation(l.VisualLayoutBucket,
 		strconv.Itoa(int(time.Now().Unix())), l.AWSRegion, handler.Header.Get("Content-Type"), data, time.Now().Add(10*time.Minute), l.DataApi)
 
+	if err != nil {
+		WriteDeveloperError(w, http.StatusInternalServerError, "Unable to put new layout onto S3: "+err.Error())
+		return
+	}
+
 	// get the healthConditionId
 	healthConditionId, err := l.DataApi.GetHealthConditionInfo(healthConditionTag)
 
