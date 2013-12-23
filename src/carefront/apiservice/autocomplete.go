@@ -25,9 +25,9 @@ type AutocompleteResponse struct {
 }
 
 type Suggestion struct {
-	Title        string `json:"title"`
-	Subtitle     string `json:"subtitle,omitempty"`
-	InternalName string `json:"internal_id"`
+	Title      string `json:"title"`
+	Subtitle   string `json:"subtitle,omitempty"`
+	InternalId string `json:"internal_id"`
 }
 
 func (s *AutocompleteHandler) ServeHTTP(w http.ResponseWriter, r *http.Request) {
@@ -63,7 +63,7 @@ func (s *AutocompleteHandler) ServeHTTP(w http.ResponseWriter, r *http.Request) 
 		if openBracket != -1 {
 			subtitle := searchResult[openBracket+1 : len(searchResult)-1]
 
-			autocompleteResponse.Suggestions[i] = Suggestion{Title: searchResult[:openBracket], Subtitle: SpecialTitle(subtitle), InternalName: searchResult}
+			autocompleteResponse.Suggestions[i] = Suggestion{Title: searchResult[:openBracket], Subtitle: SpecialTitle(subtitle), InternalId: searchResult}
 		} else {
 			autocompleteResponse.Suggestions[i] = Suggestion{Title: searchResult}
 		}

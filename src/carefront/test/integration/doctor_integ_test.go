@@ -2,12 +2,15 @@ package integration
 
 import (
 	"bytes"
+	"carefront/api"
 	"carefront/apiservice"
+	"carefront/libs/erx"
 	"encoding/json"
 	"fmt"
 	"io/ioutil"
 	"net/http"
 	"net/http/httptest"
+	"os"
 	"strconv"
 	"testing"
 )
@@ -58,6 +61,60 @@ func TestDoctorAuthentication(t *testing.T) {
 
 	if authenticatedDoctorResponse.Token == "" || authenticatedDoctorResponse.DoctorId == 0 {
 		t.Fatal("Doctor not authenticated as expected")
+	}
+}
+
+func TestDoctorDrugSearch(t *testing.T) {
+	if err := CheckIfRunningLocally(t); err == CannotRunTestLocally {
+		return
+	}
+
+	testData := SetupIntegrationTest(t)
+	defer TearDownIntegrationTest(t, testData)
+
+	SignupRandomTestDoctor(t, testData.DataApi, testData.AuthApi)
+
+	clinicKey := os.Getenv("DOSESPOT_CLINIC_KEY")
+	userId := os.Getenv("DOSESPOT_USER_ID")
+	clinicId := os.Getenv("DOSESPOT_CLINIC_ID")
+
+	if clinicKey == "" {
+		t.Log("WARNING: skipping doctor drug search test since the dosespot ids are not present as environment variables")
+		t.SkipNow()
+	}
+
+	erx := erx.NewDoseSpotService(clinicId, clinicKey, userId)
+
+	// ensure that the autcoomplete api returns results
+	autocompleteHandler := &apiservice.AutocompleteHandler{ERxApi: erx, Role: api.DOCTOR_ROLE}
+	ts := httptest.NewServer(autocompleteHandler)
+	defer ts.Close()
+
+	resp, err := http.Get(ts.URL + "?query=pro")
+	if err != nil {
+		t.Fatal("Unable to make a successful query to the autocomplete API")
+	}
+
+	body, err := ioutil.ReadAll(resp.Body)
+	if err != nil {
+		t.Fatal("Unable to parse the body of the response: " + err.Error())
+	}
+
+	CheckSuccessfulStatusCode(resp, "Unable to make a successful query to the autocomplete api for the doctor: "+string(body), t)
+	autocompleteResponse := &apiservice.AutocompleteResponse{}
+	err = json.Unmarshal(body, autocompleteResponse)
+	if err != nil {
+		t.Fatal("Unable to unmarshal the response from the autocomplete call into a json object as expected: " + err.Error())
+	}
+
+	if autocompleteResponse.Suggestions == nil || len(autocompleteResponse.Suggestions) == 0 {
+		t.Fatal("Expected suggestions from the autocomplete api but got none")
+	}
+
+	for _, suggestion := range autocompleteResponse.Suggestions {
+		if suggestion.Title == "" || suggestion.Subtitle == "" || suggestion.InternalName == "" {
+			t.Fatalf("Suggestion structure not filled in with data as expected. %q", suggestion)
+		}
 	}
 }
 
