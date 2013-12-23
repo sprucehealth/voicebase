@@ -1,0 +1,1 @@
+rename table patient_info_intake to info_intake;

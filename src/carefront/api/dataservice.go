@@ -206,27 +206,27 @@ func (d *DataService) getPatientAnswersForQuestionsBasedOnQuery(query string, ar
 
 func (d *DataService) GetPatientAnswersForQuestionsInGlobalSections(questionIds []int64, patientId int64) (patientAnswers map[int64][]*common.AnswerIntake, err error) {
 	enumeratedStrings := enumerateItemsIntoString(questionIds)
-	queryStr := fmt.Sprintf(`select patient_info_intake.id, patient_info_intake.question_id, potential_answer_id, l1.ltext, l2.ltext, answer_text, object_storage.bucket, object_storage.storage_key, region_tag,
-								layout_version_id, parent_question_id, parent_info_intake_id from patient_info_intake  
+	queryStr := fmt.Sprintf(`select info_intake.id, info_intake.question_id, potential_answer_id, l1.ltext, l2.ltext, answer_text, object_storage.bucket, object_storage.storage_key, region_tag,
+								layout_version_id, parent_question_id, parent_info_intake_id from info_intake  
 								left outer join object_storage on object_storage_id = object_storage.id 
 								left outer join region on region_id=region.id 
 								left outer join potential_answer on potential_answer_id = potential_answer.id
 								left outer join localized_text as l1 on potential_answer.answer_localized_text_id = l1.app_text_id
 								left outer join localized_text as l2 on potential_answer.answer_summary_text_id = l2.app_text_id
-								where (patient_info_intake.question_id in (%s) or parent_question_id in (%s)) and role_id = ? and patient_info_intake.status='ACTIVE' and role='PATIENT'`, enumeratedStrings, enumeratedStrings)
+								where (info_intake.question_id in (%s) or parent_question_id in (%s)) and role_id = ? and info_intake.status='ACTIVE' and role='PATIENT'`, enumeratedStrings, enumeratedStrings)
 	return d.getPatientAnswersForQuestionsBasedOnQuery(queryStr, patientId)
 }
 
 func (d *DataService) GetAnswersForQuestionsInPatientVisit(role string, questionIds []int64, roleId int64, patientVisitId int64) (answerIntakes map[int64][]*common.AnswerIntake, err error) {
 	enumeratedStrings := enumerateItemsIntoString(questionIds)
-	queryStr := fmt.Sprintf(`select patient_info_intake.id, patient_info_intake.question_id, potential_answer_id, l1.ltext, l2.ltext, answer_text, bucket, storage_key, region_tag,
-								layout_version_id, parent_question_id, parent_info_intake_id from patient_info_intake  
+	queryStr := fmt.Sprintf(`select info_intake.id, info_intake.question_id, potential_answer_id, l1.ltext, l2.ltext, answer_text, bucket, storage_key, region_tag,
+								layout_version_id, parent_question_id, parent_info_intake_id from info_intake  
 								left outer join object_storage on object_storage_id = object_storage.id 
 								left outer join region on region_id=region.id 
 								left outer join potential_answer on potential_answer_id = potential_answer.id
 								left outer join localized_text as l1 on potential_answer.answer_localized_text_id = l1.app_text_id
 								left outer join localized_text as l2 on potential_answer.answer_summary_text_id = l2.app_text_id
-								where (patient_info_intake.question_id in (%s) or parent_question_id in (%s)) and role_id = ? and patient_visit_id = ? and patient_info_intake.status='ACTIVE' and role='%s'`, enumeratedStrings, enumeratedStrings, role)
+								where (info_intake.question_id in (%s) or parent_question_id in (%s)) and role_id = ? and patient_visit_id = ? and info_intake.status='ACTIVE' and role='%s'`, enumeratedStrings, enumeratedStrings, role)
 	return d.getPatientAnswersForQuestionsBasedOnQuery(queryStr, roleId, patientVisitId)
 }
 
@@ -504,7 +504,7 @@ func (d *DataService) GetLayoutVersionIdForPatientVisit(patientVisitId int64) (l
 }
 
 func (d *DataService) updatePatientInfoIntakesWithStatus(role string, questionIds []int64, roleId, patientVisitId, layoutVersionId int64, status string, previousStatus string, tx *sql.Tx) (err error) {
-	updateStr := fmt.Sprintf(`update patient_info_intake set status='%s' 
+	updateStr := fmt.Sprintf(`update info_intake set status='%s' 
 						where role_id = ? and question_id in (%s)
 						and patient_visit_id = ? and layout_version_id = ? and status='%s' and role='%s'`, status, enumerateItemsIntoString(questionIds), previousStatus, role)
 	_, err = tx.Exec(updateStr, roleId, patientVisitId, layoutVersionId)
@@ -521,7 +521,7 @@ func (d *DataService) updateSubAnswersToPatientInfoIntakesWithStatus(role string
 	}
 
 	parentInfoIntakeIds := make([]int64, 0)
-	queryStr := fmt.Sprintf(`select id from patient_info_intake where role_id = ? and question_id in (%s) and patient_visit_id = ? and layout_version_id = ? and status='%s' and role='%s'`, enumerateItemsIntoString(questionIds), previousStatus, role)
+	queryStr := fmt.Sprintf(`select id from info_intake where role_id = ? and question_id in (%s) and patient_visit_id = ? and layout_version_id = ? and status='%s' and role='%s'`, enumerateItemsIntoString(questionIds), previousStatus, role)
 	rows, err := tx.Query(queryStr, roleId, patientVisitId, layoutVersionId)
 	if err != nil {
 		return err
@@ -538,7 +538,7 @@ func (d *DataService) updateSubAnswersToPatientInfoIntakesWithStatus(role string
 		return
 	}
 
-	updateStr := fmt.Sprintf(`update patient_info_intake set status='%s' 
+	updateStr := fmt.Sprintf(`update info_intake set status='%s' 
 						where parent_info_intake_id in (%s) and role='%s'`, status, enumerateItemsIntoString(parentInfoIntakeIds), role)
 	_, err = tx.Exec(updateStr)
 	return err
@@ -546,14 +546,14 @@ func (d *DataService) updateSubAnswersToPatientInfoIntakesWithStatus(role string
 
 func (d *DataService) deleteAnswersWithId(role string, answerIds []int64) error {
 	// delete all ids that were in CREATING state since they were committed in that state
-	query := fmt.Sprintf("delete from patient_info_intake where id in (%s) and role='%s'", enumerateItemsIntoString(answerIds), role)
+	query := fmt.Sprintf("delete from info_intake where id in (%s) and role='%s'", enumerateItemsIntoString(answerIds), role)
 	_, err := d.DB.Exec(query)
 	return err
 }
 
 func prepareQueryForAnswers(answersToStore []*common.AnswerIntake, parentInfoIntakeId string, parentQuestionId string, status string) string {
 	var buffer bytes.Buffer
-	insertStr := `insert into patient_info_intake (role_id, patient_visit_id, parent_info_intake_id, parent_question_id, question_id, potential_answer_id, answer_text, layout_version_id, role, status) values`
+	insertStr := `insert into info_intake (role_id, patient_visit_id, parent_info_intake_id, parent_question_id, question_id, potential_answer_id, answer_text, layout_version_id, role, status) values`
 	buffer.WriteString(insertStr)
 	values := constructValuesToInsert(answersToStore, parentInfoIntakeId, parentQuestionId, status)
 	buffer.WriteString(strings.Join(values, ","))
@@ -700,7 +700,7 @@ func (d *DataService) StoreAnswersForQuestion(role string, roleId, patientVisitI
 }
 
 func (d *DataService) CreatePhotoAnswerForQuestionRecord(role string, roleId, questionId, patientVisitId, potentialAnswerId, layoutVersionId int64) (patientInfoIntakeId int64, err error) {
-	res, err := d.DB.Exec(`insert into patient_info_intake (role, role_id, patient_visit_id, question_id, potential_answer_id, layout_version_id, status) 
+	res, err := d.DB.Exec(`insert into info_intake (role, role_id, patient_visit_id, question_id, potential_answer_id, layout_version_id, status) 
 							values (?, ?, ?, ?, ?, ?, 'PENDING_UPLOAD')`, role, roleId, patientVisitId, questionId, potentialAnswerId, layoutVersionId)
 	if err != nil {
 		return 0, err
@@ -714,12 +714,12 @@ func (d *DataService) CreatePhotoAnswerForQuestionRecord(role string, roleId, qu
 }
 
 func (d *DataService) UpdatePhotoAnswerRecordWithObjectStorageId(patientInfoIntakeId, objectStorageId int64) error {
-	_, err := d.DB.Exec(`update patient_info_intake set object_storage_id = ?, status='ACTIVE' where id = ?`, objectStorageId, patientInfoIntakeId)
+	_, err := d.DB.Exec(`update info_intake set object_storage_id = ?, status='ACTIVE' where id = ?`, objectStorageId, patientInfoIntakeId)
 	return err
 }
 
 func (d *DataService) MakeCurrentPhotoAnswerInactive(role string, roleId, questionId, patientVisitId, potentialAnswerId, layoutVersionId int64) error {
-	updateStr := fmt.Sprintf(`update patient_info_intake set status='INACTIVE' where role_id = ? and question_id = ? 
+	updateStr := fmt.Sprintf(`update info_intake set status='INACTIVE' where role_id = ? and question_id = ? 
 							and patient_visit_id = ? and potential_answer_id = ? 
 							and layout_version_id = ? and role='%s'`, role)
 	_, err := d.DB.Exec(updateStr, roleId, questionId, patientVisitId, potentialAnswerId, layoutVersionId)
