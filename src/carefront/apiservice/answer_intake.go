@@ -87,5 +87,5 @@ func (a *AnswerIntakeHandler) ServeHTTP(w http.ResponseWriter, r *http.Request) 
 		return
 	}
 
-	WriteJSONToHTTPResponseWriter(w, http.StatusOK, AnswerIntakeResponse{})
+	WriteJSONToHTTPResponseWriter(w, http.StatusOK, AnswerIntakeResponse{Result: "success"})
 }

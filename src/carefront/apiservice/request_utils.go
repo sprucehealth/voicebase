@@ -100,7 +100,7 @@ type AnswerIntakeRequestBody struct {
 }
 
 type AnswerIntakeResponse struct {
-	AnswerIds []int64 `json:"answer_ids"`
+	Result string `json:"result"`
 }
 
 func validateRequestBody(answerIntakeRequestBody *AnswerIntakeRequestBody, w http.ResponseWriter) error {

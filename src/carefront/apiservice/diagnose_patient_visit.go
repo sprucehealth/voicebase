@@ -119,7 +119,7 @@ func (d *DiagnosePatientHandler) diagnosePatient(w http.ResponseWriter, r *http.
 		return
 	}
 
-	WriteJSONToHTTPResponseWriter(w, http.StatusOK, AnswerIntakeResponse{})
+	WriteJSONToHTTPResponseWriter(w, http.StatusOK, AnswerIntakeResponse{Result: "success"})
 
 }
 
