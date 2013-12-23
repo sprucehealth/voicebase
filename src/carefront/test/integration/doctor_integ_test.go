@@ -112,7 +112,7 @@ func TestDoctorDrugSearch(t *testing.T) {
 	}
 
 	for _, suggestion := range autocompleteResponse.Suggestions {
-		if suggestion.Title == "" || suggestion.Subtitle == "" || suggestion.InternalName == "" {
+		if suggestion.Title == "" || suggestion.Subtitle == "" || suggestion.InternalId == "" {
 			t.Fatalf("Suggestion structure not filled in with data as expected. %q", suggestion)
 		}
 	}
