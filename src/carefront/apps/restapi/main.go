@@ -128,6 +128,7 @@ func main() {
 	answerIntakeHandler := apiservice.NewAnswerIntakeHandler(dataApi)
 	autocompleteHandler := &apiservice.AutocompleteHandler{ERxApi: erx.NewDoseSpotService(conf.DoseSpotClinicId, conf.DoseSpotClinicKey, conf.DoseSpotUserId), Role: api.PATIENT_ROLE}
 	doctorTreatmentSuggestionHandler := &apiservice.AutocompleteHandler{ERxApi: erx.NewDoseSpotService(conf.DoseSpotClinicId, conf.DoseSpotClinicKey, conf.DoseSpotUserId), Role: api.DOCTOR_ROLE}
+	medicationStrengthSearchHandler := &apiservice.MedicationStrengthSearchHandler{ERxApi: erx.NewDoseSpotService(conf.DoseSpotClinicId, conf.DoseSpotClinicKey, conf.DoseSpotUserId)}
 	photoAnswerIntakeHandler := apiservice.NewPhotoAnswerIntakeHandler(dataApi, photoAnswerCloudStorageApi, conf.CaseBucket, conf.AWSRegion, conf.MaxInMemoryForPhotoMB*1024*1024)
 	generateDoctorLayoutHandler := &apiservice.GenerateDoctorLayoutHandler{
 		DataApi:                  dataApi,
@@ -169,18 +170,21 @@ func main() {
 	mux.Handle("/v1/patient_visit_review", doctorPatientVisitReviewHandler)
 	mux.Handle("/v1/answer", answerIntakeHandler)
 	mux.Handle("/v1/answer/photo", photoAnswerIntakeHandler)
-	mux.Handle("/v1/client_model", generateModelIntakeHandler)
-	mux.Handle("/v1/doctor_layout", generateDoctorLayoutHandler)
-	mux.Handle("/v1/diagnose_layout", generateDiagnoseLayoutHandler)
-	mux.Handle("/v1/doctor/signup", signupDoctorHandler)
-	mux.Handle("/v1/doctor/authenticate", authenticateDoctorHandler)
-	mux.Handle("/v1/doctor/diagnosis", diagnosePatientHandler)
 	mux.Handle("/v1/signup", authHandler)
 	mux.Handle("/v1/authenticate", authHandler)
 	mux.Handle("/v1/logout", authHandler)
 	mux.Handle("/v1/ping", pingHandler)
 	mux.Handle("/v1/autocomplete", autocompleteHandler)
-	mux.Handle("/v1/doctor/autocomplete", doctorTreatmentSuggestionHandler)
+
+	mux.Handle("/v1/doctor_layout", generateDoctorLayoutHandler)
+	mux.Handle("/v1/diagnose_layout", generateDiagnoseLayoutHandler)
+	mux.Handle("/v1/client_model", generateModelIntakeHandler)
+
+	mux.Handle("/v1/doctor/signup", signupDoctorHandler)
+	mux.Handle("/v1/doctor/authenticate", authenticateDoctorHandler)
+	mux.Handle("/v1/doctor/diagnosis", diagnosePatientHandler)
+	mux.Handle("/v1/doctor/treatment/medication_suggestions", doctorTreatmentSuggestionHandler)
+	mux.Handle("/v1/doctor/treatment/medication_strengths", medicationStrengthSearchHandler)
 
 	s := &http.Server{
 		Addr:           conf.ListenAddr,

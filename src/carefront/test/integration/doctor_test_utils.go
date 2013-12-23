@@ -4,12 +4,14 @@ import (
 	"bytes"
 	"carefront/api"
 	"carefront/apiservice"
+	"carefront/libs/erx"
 	thriftapi "carefront/thrift/api"
 	"encoding/json"
 	"fmt"
 	"io/ioutil"
 	"net/http"
 	"net/http/httptest"
+	"os"
 	"strconv"
 	"testing"
 	"time"
@@ -44,4 +46,18 @@ func SignupRandomTestDoctor(t *testing.T, dataApi api.DataAPI, authApi thriftapi
 		t.Fatal("Unable to parse response from patient signed up")
 	}
 	return signedupDoctorResponse, email, password
+}
+
+func setupErxAPI(t *testing.T) *erx.DoseSpotService {
+	clinicKey := os.Getenv("DOSESPOT_CLINIC_KEY")
+	userId := os.Getenv("DOSESPOT_USER_ID")
+	clinicId := os.Getenv("DOSESPOT_CLINIC_ID")
+
+	if clinicKey == "" {
+		t.Log("WARNING: skipping doctor drug search test since the dosespot ids are not present as environment variables")
+		t.SkipNow()
+	}
+
+	erx := erx.NewDoseSpotService(clinicId, clinicKey, userId)
+	return erx
 }

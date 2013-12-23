@@ -47,3 +47,15 @@ type selfReportedMedicationSearchResponse struct {
 	Result        doseSpotResult
 	SearchResults []*selfReportedMedicationSearchResultItem `xml:"SearchResults>SelfReportedMedicationSearchResult"`
 }
+
+type medicationStrengthSearchRequest struct {
+	XMLName      xml.Name     `xml:"http://www.dosespot.com/API/11/ MedicationStrengthSearchMessage"`
+	SSO          singleSignOn `xml:"SingleSignOn"`
+	SearchString string
+}
+
+type medicationStrengthSearchResponse struct {
+	XMLName          xml.Name     `xml:"MedicationStrengthSearchMessageResult"`
+	SSO              singleSignOn `xml:"SingleSignOn"`
+	DisplayStrengths []string     `xml:"DisplayStrength>string"`
+}

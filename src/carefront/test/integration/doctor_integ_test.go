@@ -4,13 +4,11 @@ import (
 	"bytes"
 	"carefront/api"
 	"carefront/apiservice"
-	"carefront/libs/erx"
 	"encoding/json"
 	"fmt"
 	"io/ioutil"
 	"net/http"
 	"net/http/httptest"
-	"os"
 	"strconv"
 	"testing"
 )
@@ -72,18 +70,7 @@ func TestDoctorDrugSearch(t *testing.T) {
 	testData := SetupIntegrationTest(t)
 	defer TearDownIntegrationTest(t, testData)
 
-	SignupRandomTestDoctor(t, testData.DataApi, testData.AuthApi)
-
-	clinicKey := os.Getenv("DOSESPOT_CLINIC_KEY")
-	userId := os.Getenv("DOSESPOT_USER_ID")
-	clinicId := os.Getenv("DOSESPOT_CLINIC_ID")
-
-	if clinicKey == "" {
-		t.Log("WARNING: skipping doctor drug search test since the dosespot ids are not present as environment variables")
-		t.SkipNow()
-	}
-
-	erx := erx.NewDoseSpotService(clinicId, clinicKey, userId)
+	erx := setupErxAPI(t)
 
 	// ensure that the autcoomplete api returns results
 	autocompleteHandler := &apiservice.AutocompleteHandler{ERxApi: erx, Role: api.DOCTOR_ROLE}

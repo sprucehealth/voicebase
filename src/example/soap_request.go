@@ -6,15 +6,11 @@ import (
 )
 
 func main() {
-	medicationSearch := erx.NewMedicationQuickSearchMessage()
-	medicationSearch.SSO = erx.GenerateSingleSignOn()
-	medicationSearch.SearchString = "pro"
-
-	searchResult := &erx.MedicationQuickSearchResult{}
-	err := erx.MakeSoapRequest(medicationSearch, searchResult)
-
+	doseSpotService := erx.NewDoseSpotService("", "", "")
+	medicationStrengths, err := doseSpotService.SearchForMedicationStrength("Benzoyl Peroxide Topical (topical - cream)")
 	if err != nil {
 		panic(err.Error())
 	}
-	fmt.Println(searchResult.DisplayNames)
+
+	fmt.Println(medicationStrengths)
 }

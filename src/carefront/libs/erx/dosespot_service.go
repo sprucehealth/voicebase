@@ -15,6 +15,7 @@ const (
 	doseSpotSOAPEndPoint               = "http://i.dosespot.com/api/11/apifull.asmx"
 	medicationQuickSearchAction        = "MedicationQuickSearchMessage"
 	selfReportedMedicationSearchAction = "SelfReportedMedicationSearch"
+	medicationStrengthSearchAction     = "MedicationStrengthSearchMessage"
 )
 
 var (
@@ -68,4 +69,19 @@ func (d *DoseSpotService) GetDrugNamesForPatient(prefix string) ([]string, error
 	}
 
 	return drugNames, nil
+}
+
+func (d *DoseSpotService) SearchForMedicationStrength(medicationName string) ([]string, error) {
+	medicationStrengthSearch := &medicationStrengthSearchRequest{}
+	medicationStrengthSearch.SSO = generateSingleSignOn(d.ClinicKey, d.UserId, d.ClinicId)
+	medicationStrengthSearch.SearchString = medicationName
+
+	searchResult := &medicationStrengthSearchResponse{}
+	err := doseSpotClient.makeSoapRequest(medicationStrengthSearchAction, medicationStrengthSearch, searchResult)
+
+	if err != nil {
+		return nil, err
+	}
+
+	return searchResult.DisplayStrengths, nil
 }
