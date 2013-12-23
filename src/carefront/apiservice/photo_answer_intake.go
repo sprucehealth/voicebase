@@ -21,7 +21,7 @@ type PhotoAnswerIntakeHandler struct {
 }
 
 type PhotoAnswerIntakeResponse struct {
-	AnswerId int64 `json:"answer_id"`
+	Result string `json:"result"`
 }
 
 type PhotoAnswerIntakeRequestData struct {
@@ -147,5 +147,5 @@ func (p *PhotoAnswerIntakeHandler) ServeHTTP(w http.ResponseWriter, r *http.Requ
 		return
 	}
 
-	WriteJSONToHTTPResponseWriter(w, http.StatusOK, PhotoAnswerIntakeResponse{patientAnswerInfoIntakeId})
+	WriteJSONToHTTPResponseWriter(w, http.StatusOK, PhotoAnswerIntakeResponse{Result: "success"})
 }
