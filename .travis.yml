@@ -22,7 +22,7 @@ env:
   - secure: Sown1iottx8PNGM8qEXH/txfPXYZr+wp+fcXueCoZns/5zmoUTGILOj04IBcuz0MDGPWpb8CddpIIbh7SjCTWLhY9kL3RJCxdi7vat9t2aat2mmpodIT8CjEAoWEW555aXUtWcUoIPsi0MNbRCL7mJnSwpFtx9oCIe4qv5fQksM=
   - secure: gzt5DC2qHXU3gsMDOnGeiQfIV6Ao+gQKQ5v2fhDYYfdKNgEFYXRL7jGqpa5+Qg/cadz9Q5R39KB5ywXrpVJTri95IZJxIsU2Q6/D84IhOIl8Jm8FQFG042yLjT1eP/xlVZyixsI7RbG95xss4I1TLy/dlUOxA1uYcI1y3YGsAwM=
   - secure: Xu2RGDZcWL3YGUto8OI2FLaFq9iVT9yMAwuge3wDrhXeNVRj0+ZNDO1dqrfjIPp7z4072INzwZKXKvTLS2CrIDmkRo1i6S62fYCoUm33tcKEoBHNFrmy5yDuJgX8yNOlBEnVoDKbE4tmPdCGkOAsW/Dj0KTZik1me7dLcTMtEUA=
- script:
+script:
 - export GOPATH=$(pwd)
 - export CAREFRONT_PROJECT_DIR=$(pwd)
 - go build ./src/carefront/...
