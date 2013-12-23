@@ -5,8 +5,9 @@ import (
 	"carefront/common"
 )
 
-type InfoIntakeModelFiller interface {
+type InfoIntakeModel interface {
 	FillInDatabaseInfo(dataApi api.DataAPI, languageId int64) error
+	GetHealthConditionTag() string
 }
 
 type Condition struct {
@@ -38,19 +39,21 @@ type PotentialAnswer struct {
 }
 
 type Question struct {
-	QuestionTag      string                  `json:"question"`
-	QuestionId       int64                   `json:"question_id,string,omitempty"`
-	QuestionTitle    string                  `json:"question_title,omitempty"`
-	QuestionTypes    []string                `json:"question_types,omitempty"`
-	QuestionSubText  string                  `json:"question_subtext,omitempty"`
-	QuestionSummary  string                  `json:"question_summary,omitempty"`
-	AdditionalFields map[string]string       `json:"additional_fields,omitempty"`
-	ParentQuestionId int64                   `json:"parent_question_id,string,omitempty"`
-	PotentialAnswers []*PotentialAnswer      `json:"potential_answers,omitempty"`
-	PatientAnswers   []*common.PatientAnswer `json:"patient_answers,omitempty"`
-	Questions        []*Question             `json:"questions,omitempty"`
-	ConditionBlock   *Condition              `json:"condition,omitempty"`
-	Tips             *TipSection             `json:"tips,omitempty"`
+	QuestionTag      string                 `json:"question"`
+	QuestionId       int64                  `json:"question_id,string,omitempty"`
+	QuestionTitle    string                 `json:"question_title,omitempty"`
+	QuestionTypes    []string               `json:"question_types,omitempty"`
+	QuestionSubText  string                 `json:"question_subtext,omitempty"`
+	QuestionSummary  string                 `json:"question_summary,omitempty"`
+	AdditionalFields map[string]string      `json:"additional_fields,omitempty"`
+	DisplayStyles    []string               `json:"display_styles,omitempty"`
+	ParentQuestionId int64                  `json:"parent_question_id,string,omitempty"`
+	PotentialAnswers []*PotentialAnswer     `json:"potential_answers,omitempty"`
+	PatientAnswers   []*common.AnswerIntake `json:"patient_answers,omitempty"`
+	DoctorAnswers    []*common.AnswerIntake `json:"doctor_answers,omitempty"`
+	Questions        []*Question            `json:"questions,omitempty"`
+	ConditionBlock   *Condition             `json:"condition,omitempty"`
+	Tips             *TipSection            `json:"tips,omitempty"`
 }
 
 type Screen struct {
@@ -61,14 +64,14 @@ type Screen struct {
 }
 
 type Section struct {
-	SectionTag   string    `json:"section"`
-	SectionId    int64     `json:"section_id,string,omitempty"`
-	SectionTitle string    `json:"section_title,omitempty"`
-	Questions    string    `json:"questions,omitempty"`
-	Screens      []*Screen `json:"screens"`
+	SectionTag   string      `json:"section"`
+	SectionId    int64       `json:"section_id,string,omitempty"`
+	SectionTitle string      `json:"section_title,omitempty"`
+	Questions    []*Question `json:"questions,omitempty"`
+	Screens      []*Screen   `json:"screens,omitempty"`
 }
 
-type HealthCondition struct {
+type InfoIntakeLayout struct {
 	HealthConditionTag string     `json:"health_condition"`
 	HealthConditionId  int64      `json:"health_condition_id,string,omitempty"`
 	Sections           []*Section `json:"sections"`

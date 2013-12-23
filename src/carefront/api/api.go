@@ -2,13 +2,22 @@ package api
 
 import (
 	"carefront/common"
+	"errors"
 	"time"
 )
 
 const (
-	EN_LANGUAGE_ID = 1
-	DOCTOR_ROLE    = "DOCTOR"
-	PATIENT_ROLE   = "PATIENT"
+	EN_LANGUAGE_ID           = 1
+	DOCTOR_ROLE              = "DOCTOR"
+	PATIENT_ROLE             = "PATIENT"
+	REVIEW_PURPOSE           = "REVIEW"
+	CONDITION_INTAKE_PURPOSE = "CONDITION_INTAKE"
+	DIAGNOSE_PURPOSE         = "DIAGNOSE"
+)
+
+var (
+	NoRowsError                 = errors.New("No rows exist")
+	NoElligibileProviderInState = errors.New("There are no providers elligible in the state the patient resides")
 )
 
 type PotentialAnswerInfo struct {
@@ -25,10 +34,13 @@ type PatientAPI interface {
 	RegisterPatient(accountId int64, firstName, lastName, gender, zipCode string, dob time.Time) (int64, error)
 	CreateNewPatientVisit(patientId, healthConditionId, layoutVersionId int64) (int64, error)
 	GetPatientIdFromAccountId(accountId int64) (int64, error)
+	CreateCareTeamForPatient(patientId int64) error
+	GetCareTeamForPatient(patientId int64) (careTeam *common.PatientCareProviderGroup, err error)
 }
 
 type DoctorAPI interface {
 	RegisterDoctor(accountId int64, firstName, lastName, gender string, dob time.Time) (int64, error)
+	GetDoctorFromId(doctorId int64) (doctor *common.Doctor, err error)
 	GetDoctorIdFromAccountId(accountId int64) (int64, error)
 }
 
@@ -41,14 +53,30 @@ type PatientVisitAPI interface {
 }
 
 type PatientIntakeAPI interface {
-	StoreAnswersForQuestion(questionId, patientId, patientVisitId, layoutVersionId int64, answersToStore []*common.PatientAnswer) (err error)
-	CreatePhotoAnswerForQuestionRecord(patientId, questionId, patientVisitId, potentialAnswerId, layoutVersionId int64) (patientInfoIntakeId int64, err error)
-	UpdatePhotoAnswerRecordWithObjectStorageId(patientInfoIntakeId, objectStorageId int64) error
-	MakeCurrentPhotoAnswerInactive(patientId, questionId, patientVisitId, potentialAnswerId, layoutVersionId int64) (err error)
+	GetPatientAnswersForQuestionsInGlobalSections(questionIds []int64, patientId int64) (patientAnswers map[int64][]*common.AnswerIntake, err error)
+}
 
+type IntakeAPI interface {
+	GetAnswersForQuestionsInPatientVisit(role string, questionIds []int64, roleId int64, patientVisitId int64) (answerIntakes map[int64][]*common.AnswerIntake, err error)
+	StoreAnswersForQuestion(role string, roleId, patientVisitId, layoutVersionId int64, answersToStorePerQuestion map[int64][]*common.AnswerIntake) (err error)
+	CreatePhotoAnswerForQuestionRecord(role string, roleId, questionId, patientVisitId, potentialAnswerId, layoutVersionId int64) (patientInfoIntakeId int64, err error)
+	UpdatePhotoAnswerRecordWithObjectStorageId(patientInfoIntakeId, objectStorageId int64) error
+	MakeCurrentPhotoAnswerInactive(role string, roleId, questionId, patientVisitId, potentialAnswerId, layoutVersionId int64) error
+}
+
+type IntakeLayoutAPI interface {
 	GetQuestionType(questionId int64) (questionType string, err error)
-	GetPatientAnswersForQuestionsInGlobalSections(questionIds []int64, patientId int64) (patientAnswers map[int64][]*common.PatientAnswer, err error)
-	GetPatientAnswersForQuestionsInPatientVisit(questionIds []int64, patientId int64, patientVisitId int64) (patientAnswers map[int64][]*common.PatientAnswer, err error)
+	GetActiveLayoutInfoForHealthCondition(healthConditionTag, role, purpose string) (bucket, key, region string, err error)
+	GetStorageInfoOfCurrentActivePatientLayout(languageId, healthConditionId int64) (bucket, key, region string, layoutVersionId int64, err error)
+	GetStorageInfoOfCurrentActiveDoctorLayout(healthConditionId int64) (bucket, storage, region string, layoutVersionId int64, err error)
+	GetStorageInfoOfActiveDoctorDiagnosisLayout(healthConditionId int64) (bucket, storage, region string, layoutVersionId int64, err error)
+	GetLayoutVersionIdForPatientVisit(patientVisitId int64) (layoutVersionId int64, err error)
+	GetStorageInfoForClientLayout(layoutVersionId, languageId int64) (bucket, key, region string, err error)
+	MarkNewLayoutVersionAsCreating(objectId int64, syntaxVersion int64, healthConditionId int64, role, purpose, comment string) (int64, error)
+	MarkNewPatientLayoutVersionAsCreating(objectId int64, languageId int64, layoutVersionId int64, healthConditionId int64) (int64, error)
+	UpdatePatientActiveLayouts(layoutId int64, clientLayoutIds []int64, healthConditionId int64) error
+	MarkNewDoctorLayoutAsCreating(objectId int64, layoutVersionId int64, healthConditionId int64) (int64, error)
+	UpdateDoctorActiveLayouts(layoutId, doctorLayoutId, healthConditionId int64, purpose string) error
 	GetGlobalSectionIds() (globalSectionIds []int64, err error)
 	GetSectionIdsForHealthCondition(healthConditionId int64) (sectionIds []int64, err error)
 	GetHealthConditionInfo(healthConditionTag string) (int64, error)
@@ -58,19 +86,6 @@ type PatientIntakeAPI interface {
 	GetTipSectionInfo(tipSectionTag string, languageId int64) (id int64, tipSectionTitle string, tipSectionSubtext string, err error)
 	GetTipInfo(tipTag string, languageId int64) (id int64, tip string, err error)
 	GetSupportedLanguages() (languagesSupported []string, languagesSupportedIds []int64, err error)
-}
-
-type PatientIntakeLayoutAPI interface {
-	GetActiveLayoutInfoForHealthCondition(healthConditionTag, role string) (bucket, key, region string, err error)
-	GetStorageInfoOfCurrentActivePatientLayout(languageId, healthConditionId int64) (bucket, key, region string, layoutVersionId int64, err error)
-	GetStorageInfoOfCurrentActiveDoctorLayout(healthConditionId int64) (bucket, storage, region string, layoutVersionId int64, err error)
-	GetLayoutVersionIdForPatientVisit(patientVisitId int64) (layoutVersionId int64, err error)
-	GetStorageInfoForClientLayout(layoutVersionId, languageId int64) (bucket, key, region string, err error)
-	MarkNewLayoutVersionAsCreating(objectId int64, syntaxVersion int64, healthConditionId int64, role, comment string) (int64, error)
-	MarkNewPatientLayoutVersionAsCreating(objectId int64, languageId int64, layoutVersionId int64, healthConditionId int64) (int64, error)
-	UpdatePatientActiveLayouts(layoutId int64, clientLayoutIds []int64, healthConditionId int64) error
-	MarkNewDoctorLayoutAsCreating(objectId int64, layoutVersionId int64, healthConditionId int64) (int64, error)
-	UpdateDoctorActiveLayouts(layoutId, doctorLayoutId, healthConditionId int64) error
 }
 
 type ObjectStorageAPI interface {
@@ -83,8 +98,9 @@ type DataAPI interface {
 	DoctorAPI
 	PatientIntakeAPI
 	PatientVisitAPI
-	PatientIntakeLayoutAPI
+	IntakeLayoutAPI
 	ObjectStorageAPI
+	IntakeAPI
 }
 
 type CloudStorageAPI interface {

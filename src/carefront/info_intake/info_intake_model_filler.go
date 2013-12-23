@@ -5,6 +5,10 @@ import (
 	"strconv"
 )
 
+type HealthConditionIntakeModelProcessor struct {
+	DataApi api.DataAPI
+}
+
 func (c *Condition) FillInDatabaseInfo(dataApi api.DataAPI, languageId int64) error {
 	if c.QuestionTag == "" {
 		return nil
@@ -52,10 +56,6 @@ func (t *TipSection) FillInDatabaseInfo(dataApi api.DataAPI, languageId int64) e
 }
 
 func (q *Question) FillInDatabaseInfo(dataApi api.DataAPI, languageId int64) error {
-	return q.FillFromDatabase(dataApi, languageId, true)
-}
-
-func (q *Question) FillFromDatabase(dataApi api.DataAPI, languageId int64, showPotentialResponses bool) error {
 	questionId, questionTitle, questionType, questionSummary, questionSubtext, parentQuestionId, additionalFields, err := dataApi.GetQuestionInfo(q.QuestionTag, languageId)
 	if err != nil {
 		return err
@@ -84,19 +84,14 @@ func (q *Question) FillFromDatabase(dataApi api.DataAPI, languageId int64, showP
 
 	if q.Questions != nil {
 		for _, question := range q.Questions {
-			err := question.FillFromDatabase(dataApi, languageId, showPotentialResponses)
+			err := question.FillInDatabaseInfo(dataApi, languageId)
 			if err != nil {
 				return err
 			}
 		}
 	}
-
-	if !showPotentialResponses {
-		return nil
-	}
-
 	// go over the potential ansnwer tags to create potential outcome blocks
-	q.PotentialAnswers = make([]*PotentialAnswer, 0, 5)
+	q.PotentialAnswers = make([]*PotentialAnswer, 0)
 	answerInfos, err := dataApi.GetAnswerInfo(questionId, languageId)
 	if err != nil {
 		return err
@@ -149,7 +144,7 @@ func (s *Section) FillInDatabaseInfo(dataApi api.DataAPI, languageId int64) erro
 	return nil
 }
 
-func (t *HealthCondition) FillInDatabaseInfo(dataApi api.DataAPI, languageId int64) error {
+func (t *InfoIntakeLayout) FillInDatabaseInfo(dataApi api.DataAPI, languageId int64) error {
 	healthConditionId, err := dataApi.GetHealthConditionInfo(t.HealthConditionTag)
 	if err != nil {
 		return err

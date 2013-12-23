@@ -9,6 +9,7 @@ import (
 	"carefront/info_intake"
 	thriftapi "carefront/thrift/api"
 	"github.com/gorilla/schema"
+	"log"
 )
 
 const (
@@ -28,8 +29,8 @@ type PatientVisitRequestData struct {
 }
 
 type PatientVisitResponse struct {
-	PatientVisitId int64                        `json:"patient_visit_id,string"`
-	ClientLayout   *info_intake.HealthCondition `json:"health_condition,omitempty"`
+	PatientVisitId int64                         `json:"patient_visit_id,string"`
+	ClientLayout   *info_intake.InfoIntakeLayout `json:"health_condition,omitempty"`
 }
 
 type PatientVisitSubmittedResponse struct {
@@ -105,7 +106,7 @@ func (s *PatientVisitHandler) returnNewOrOpenPatientVisit(w http.ResponseWriter,
 	}
 
 	isNewPatientVisit := false
-	var healthCondition *info_intake.HealthCondition
+	var healthCondition *info_intake.InfoIntakeLayout
 	var layoutVersionId int64
 	// check if there is an open patient visit for the given health condition and return
 	// that to the patient
@@ -123,6 +124,21 @@ func (s *PatientVisitHandler) returnNewOrOpenPatientVisit(w http.ResponseWriter,
 			WriteDeveloperError(w, http.StatusInternalServerError, "Unable to create new patient visit id: "+err.Error())
 			return
 		}
+
+		careTeam, err := s.DataApi.GetCareTeamForPatient(patientId)
+		if careTeam == nil {
+			// create care team for patient if one doesn't already exist
+			err = s.DataApi.CreateCareTeamForPatient(patientId)
+			if err != nil {
+				log.Println(err)
+				WriteDeveloperError(w, http.StatusInternalServerError, "Unable to create care team for patient visit :"+err.Error())
+				return
+			}
+		} else if err != nil {
+			WriteDeveloperError(w, http.StatusInternalServerError, "Something went wrong when trying to get care team for patient: "+err.Error())
+			return
+		}
+
 	} else if err != nil {
 		WriteDeveloperError(w, http.StatusInternalServerError, `unable to retrieve the current active patient 
 			visit for the health condition from the patient id: `+err.Error())
@@ -174,7 +190,7 @@ func (s *PatientVisitHandler) returnNewOrOpenPatientVisit(w http.ResponseWriter,
 			questionIds := getQuestionIdsInSectionInHealthConditionLayout(healthCondition, sectionId)
 			questionIdsInAllSections = append(questionIdsInAllSections, questionIds...)
 		}
-		patientAnswersForVisit, err := s.DataApi.GetPatientAnswersForQuestionsInPatientVisit(questionIdsInAllSections, patientId, patientVisitId)
+		patientAnswersForVisit, err := s.DataApi.GetAnswersForQuestionsInPatientVisit(api.PATIENT_ROLE, questionIdsInAllSections, patientId, patientVisitId)
 		if err != nil {
 			WriteDeveloperError(w, http.StatusInternalServerError, "Unable to get patient answers for patient visit: "+err.Error())
 			return
@@ -185,7 +201,7 @@ func (s *PatientVisitHandler) returnNewOrOpenPatientVisit(w http.ResponseWriter,
 	WriteJSONToHTTPResponseWriter(w, http.StatusOK, PatientVisitResponse{patientVisitId, healthCondition})
 }
 
-func getQuestionIdsInSectionInHealthConditionLayout(healthCondition *info_intake.HealthCondition, sectionId int64) (questionIds []int64) {
+func getQuestionIdsInSectionInHealthConditionLayout(healthCondition *info_intake.InfoIntakeLayout, sectionId int64) (questionIds []int64) {
 	questionIds = make([]int64, 0)
 	for _, section := range healthCondition.Sections {
 		if section.SectionId == sectionId {
@@ -199,7 +215,7 @@ func getQuestionIdsInSectionInHealthConditionLayout(healthCondition *info_intake
 	return
 }
 
-func (s *PatientVisitHandler) populateHealthConditionWithPatientAnswers(healthCondition *info_intake.HealthCondition, patientAnswers map[int64][]*common.PatientAnswer) {
+func (s *PatientVisitHandler) populateHealthConditionWithPatientAnswers(healthCondition *info_intake.InfoIntakeLayout, patientAnswers map[int64][]*common.AnswerIntake) {
 	for _, section := range healthCondition.Sections {
 		for _, screen := range section.Screens {
 			for _, question := range screen.Questions {
@@ -213,7 +229,7 @@ func (s *PatientVisitHandler) populateHealthConditionWithPatientAnswers(healthCo
 	}
 }
 
-func (s *PatientVisitHandler) getCurrentActiveClientLayoutForHealthCondition(healthConditionId, languageId int64) (healthCondition *info_intake.HealthCondition, layoutVersionId int64, err error) {
+func (s *PatientVisitHandler) getCurrentActiveClientLayoutForHealthCondition(healthConditionId, languageId int64) (healthCondition *info_intake.InfoIntakeLayout, layoutVersionId int64, err error) {
 	bucket, key, region, layoutVersionId, err := s.DataApi.GetStorageInfoOfCurrentActivePatientLayout(languageId, healthConditionId)
 	if err != nil {
 		return
@@ -223,7 +239,7 @@ func (s *PatientVisitHandler) getCurrentActiveClientLayoutForHealthCondition(hea
 	return
 }
 
-func (s *PatientVisitHandler) getClientLayoutForPatientVisit(patientVisitId, languageId int64) (healthCondition *info_intake.HealthCondition, layoutVersionId int64, err error) {
+func (s *PatientVisitHandler) getClientLayoutForPatientVisit(patientVisitId, languageId int64) (healthCondition *info_intake.InfoIntakeLayout, layoutVersionId int64, err error) {
 	layoutVersionId, err = s.DataApi.GetLayoutVersionIdForPatientVisit(patientVisitId)
 	if err != nil {
 		return
@@ -238,13 +254,13 @@ func (s *PatientVisitHandler) getClientLayoutForPatientVisit(patientVisitId, lan
 	return
 }
 
-func (s *PatientVisitHandler) getHealthConditionObjectAtLocation(bucket, key, region string) (healthCondition *info_intake.HealthCondition, err error) {
+func (s *PatientVisitHandler) getHealthConditionObjectAtLocation(bucket, key, region string) (healthCondition *info_intake.InfoIntakeLayout, err error) {
 
 	data, err := s.LayoutStorageService.GetObjectAtLocation(bucket, key, region)
 	if err != nil {
 		return
 	}
-	healthCondition = &info_intake.HealthCondition{}
+	healthCondition = &info_intake.InfoIntakeLayout{}
 	err = json.Unmarshal(data, healthCondition)
 	if err != nil {
 		return

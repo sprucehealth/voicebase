@@ -1,0 +1,48 @@
+{
+    "health_condition": {
+        "health_condition": "health_condition_acne",  
+        "sections": [
+            {
+                "questions": [
+                    {
+                        "display_styles": [
+                            "display_style_one_per_row"
+                        ], 
+                        "question": "q_acne_diagnosis"
+                    }, 
+                    {
+                        "condition": {
+                            "op": "answer_contains_any", 
+                            "potential_answers": [
+                                "a_doctor_acne_vulgaris", 
+                                "a_doctor_acne_rosacea"
+                            ],  
+                            "question": "q_acne_diagnosis"
+                        }, 
+                        "display_styles": [
+                            "display_style_all_on_one_row" 
+                        ], 
+                        "question": "q_acne_severity"
+                    }, 
+                    {
+                        "condition": {
+                            "op": "answer_contains_any", 
+                            "potential_answers": [
+                                "a_doctor_acne_vulgaris", 
+                                "a_doctor_acne_rosacea"
+                            ],  
+                            "question": "q_acne_diagnosis"
+                        }, 
+                        "display_styles": [
+                            "display_style_all_on_one_row"
+                        ], 
+                        "question": "q_acne_type"
+                    }
+                ], 
+                "section": "section_diagnosis",
+                "section_id": "1", 
+                "section_title": "Diagnosis"
+            }
+        ]
+    }
+}

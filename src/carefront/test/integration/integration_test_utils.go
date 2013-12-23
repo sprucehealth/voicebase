@@ -1,30 +1,35 @@
 package integration
 
 import (
-	"database/sql"
-	"errors"
-	"fmt"
-	"io/ioutil"
-	"net/http"
-	"os"
-	"testing"
-
+	"bytes"
 	"carefront/api"
 	"carefront/common/config"
 	"carefront/services/auth"
 	thriftapi "carefront/thrift/api"
+	"database/sql"
+	"errors"
+	"fmt"
 	"github.com/BurntSushi/toml"
 	_ "github.com/go-sql-driver/mysql"
+	"io/ioutil"
+	"net/http"
+	"os"
+	"os/exec"
+	"strconv"
+	"strings"
+	"testing"
 )
 
 var (
-	CannotRunTestLocally = errors.New("test: The test database is not set. Skipping test")
+	CannotRunTestLocally   = errors.New("test: The test database is not set. Skipping test")
+	carefrontProjectDirEnv = "CAREFRONT_PROJECT_DIR"
 )
 
 type TestDBConfig struct {
-	User     string
-	Password string
-	Host     string
+	User         string
+	Password     string
+	Host         string
+	DatabaseName string
 }
 
 type TestConf struct {
@@ -41,7 +46,7 @@ type TestData struct {
 
 func GetDBConfig(t *testing.T) *TestDBConfig {
 	dbConfig := TestConf{}
-	fileContents, err := ioutil.ReadFile("../../../apps/restapi/dev.conf")
+	fileContents, err := ioutil.ReadFile("../../apps/restapi/dev.conf")
 	if err != nil {
 		t.Fatal("Unable to upload dev.conf to read database data from : " + err.Error())
 	}
@@ -53,8 +58,7 @@ func GetDBConfig(t *testing.T) *TestDBConfig {
 }
 
 func ConnectToDB(t *testing.T, dbConfig *TestDBConfig) *sql.DB {
-	databaseName := os.Getenv("TEST_DB")
-	dsn := fmt.Sprintf("%s:%s@tcp(%s:3306)/%s?parseTime=true", dbConfig.User, dbConfig.Password, dbConfig.Host, databaseName)
+	dsn := fmt.Sprintf("%s:%s@tcp(%s:3306)/%s?parseTime=true", dbConfig.User, dbConfig.Password, dbConfig.Host, dbConfig.DatabaseName)
 	db, err := sql.Open("mysql", dsn)
 	if err != nil {
 		t.Fatal("Unable to connect to the database" + err.Error())
@@ -71,7 +75,7 @@ func CheckIfRunningLocally(t *testing.T) error {
 	// if the TEST_DB is not set in the environment, we assume
 	// that we are running these tests locally, in which case
 	// we exit the tests with a warning
-	if os.Getenv("TEST_DB") == "" {
+	if os.Getenv(carefrontProjectDirEnv) == "" {
 		t.Log("WARNING: The test database is not set. Skipping test ")
 		return CannotRunTestLocally
 	}
@@ -82,9 +86,18 @@ func SetupIntegrationTest(t *testing.T) TestData {
 	// running every test that requires database setup parallelly
 	// to optimize for speed of tests
 	t.Parallel()
-	dbConfig := GetDBConfig(t)
-	db := ConnectToDB(t, dbConfig)
+	setupScript := os.Getenv(carefrontProjectDirEnv) + "/src/carefront/test/integration/setup_integration_test.sh"
+	cmd := exec.Command(setupScript)
+	var out bytes.Buffer
+	cmd.Stdout = &out
+	err := cmd.Run()
+	if err != nil {
+		t.Fatal("Unable to run the setup_database.sh script for integration tests: " + err.Error() + " " + out.String())
+	}
 
+	dbConfig := GetDBConfig(t)
+	dbConfig.DatabaseName = strings.TrimSpace(out.String())
+	db := ConnectToDB(t, dbConfig)
 	conf := config.BaseConfig{}
 	awsAuth, err := conf.AWSAuth()
 	if err != nil {
@@ -102,11 +115,45 @@ func SetupIntegrationTest(t *testing.T) TestData {
 		DB:                  db,
 	}
 
+	t.Log("Created and connected to database with name: " + testData.DBConfig.DatabaseName)
+
+	// When setting up the database for each integration test, ensure to setup a doctor that is
+	// considered elligible to serve in the state of CA.
+	signedupDoctorResponse, _, _ := SignupRandomTestDoctor(t, testData.DataApi, testData.AuthApi)
+
+	// create the role of a primary doctor
+	_, err = testData.DB.Exec(`insert into provider_role (provider_tag) values ('DOCTOR')`)
+	if err != nil {
+		t.Fatal("Unable to create the provider role of DOCTOR " + err.Error())
+	}
+
+	// make this doctor the primary doctor in the state of CA
+	_, err = testData.DB.Exec(`insert into care_provider_state_elligibility (provider_role_id, provider_id, care_providing_state_id) 
+					values ((select id from provider_role where provider_tag='DOCTOR'), ?, (select id from care_providing_state where state='CA'))`, signedupDoctorResponse.DoctorId)
+	if err != nil {
+		t.Fatal("Unable to make the signed up doctor the primary doctor elligible in CA to diagnose patients: " + err.Error())
+	}
+
 	return testData
+}
+
+func TearDownIntegrationTest(t *testing.T, testData TestData) {
+	testData.DB.Close()
+
+	// put anything here that is global to the teardown process for integration tests
+	teardownScript := os.Getenv(carefrontProjectDirEnv) + "/src/carefront/test/integration/teardown_integration_test.sh"
+	cmd := exec.Command(teardownScript, testData.DBConfig.DatabaseName)
+	var out bytes.Buffer
+	cmd.Stdout = &out
+	err := cmd.Run()
+	if err != nil {
+		t.Fatal("Unable to run the teardown integration script for integration tests: " + err.Error() + " " + out.String())
+	}
+	t.Log("Tore down database with name: " + testData.DBConfig.DatabaseName)
 }
 
 func CheckSuccessfulStatusCode(resp *http.Response, errorMessage string, t *testing.T) {
 	if resp.StatusCode != http.StatusOK {
-		t.Fatal(errorMessage)
+		t.Fatal(errorMessage + "Response Status " + strconv.Itoa(resp.StatusCode))
 	}
 }

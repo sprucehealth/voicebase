@@ -1,10 +1,9 @@
-package patient
+package integration
 
 import (
 	"bytes"
 	"carefront/api"
 	"carefront/apiservice"
-	"carefront/test/integration"
 	"encoding/json"
 	"fmt"
 	"io"
@@ -22,7 +21,7 @@ type AnswerIntakeHandler struct {
 	accountId int64
 }
 
-func getQuestionWithTagAndExpectedType(questionTag, questionType string, t *testing.T, testData integration.TestData) int64 {
+func getQuestionWithTagAndExpectedType(questionTag, questionType string, t *testing.T, testData TestData) int64 {
 	questionId, _, questionType, _, _, _, _, err := testData.DataApi.GetQuestionInfo(questionTag, 1)
 	if err != nil {
 		t.Fatal("Unable to query for question q_reason_visit from database: " + err.Error())
@@ -37,7 +36,7 @@ func getQuestionWithTagAndExpectedType(questionTag, questionType string, t *test
 	return questionId
 }
 
-func getAnswerWithTagAndExpectedType(answerTag, answerType string, questionId int64, testData integration.TestData, t *testing.T) int64 {
+func getAnswerWithTagAndExpectedType(answerTag, answerType string, questionId int64, testData TestData, t *testing.T) int64 {
 
 	potentialAnswers, err := testData.DataApi.GetAnswerInfo(questionId, 1)
 	if err != nil {
@@ -65,7 +64,7 @@ func getAnswerWithTagAndExpectedType(answerTag, answerType string, questionId in
 	return potentialAnswerId
 }
 
-func submitPatientAnswerForVisit(PatientId int64, testData integration.TestData, patientIntakeRequestData string, t *testing.T) {
+func submitPatientAnswerForVisit(PatientId int64, testData TestData, patientIntakeRequestData string, t *testing.T) {
 	answerIntakeHandler := apiservice.NewAnswerIntakeHandler(testData.DataApi)
 	patient, err := testData.DataApi.GetPatientFromId(PatientId)
 	if err != nil {
@@ -83,16 +82,16 @@ func submitPatientAnswerForVisit(PatientId int64, testData integration.TestData,
 	if err != nil {
 		t.Fatal("Unable to get the patient visit id")
 	}
-	integration.CheckSuccessfulStatusCode(resp, "Unable to submit a single select answer for patient", t)
+	CheckSuccessfulStatusCode(resp, "Unable to submit a single select answer for patient", t)
 }
 
 func TestSingleSelectIntake(t *testing.T) {
-	if err := integration.CheckIfRunningLocally(t); err == integration.CannotRunTestLocally {
+	if err := CheckIfRunningLocally(t); err == CannotRunTestLocally {
 		return
 	}
 
-	testData := integration.SetupIntegrationTest(t)
-	defer testData.DB.Close()
+	testData := SetupIntegrationTest(t)
+	defer TearDownIntegrationTest(t, testData)
 
 	// signup a random test patient for which to answer questions
 	patientSignedUpResponse := SignupRandomTestPatient(t, testData.DataApi, testData.AuthApi)
@@ -104,7 +103,7 @@ func TestSingleSelectIntake(t *testing.T) {
 	potentialAnswerId := getAnswerWithTagAndExpectedType("a_acne", "a_type_multiple_choice", questionId, testData, t)
 
 	// lets go ahead and populate a response for the question
-	patientIntakeRequestData := fmt.Sprintf(`{"patient_visit_id": %d, "potential_answers": [{"potential_answer_id": %d } ], "question_id": %d }`, patientVisitResponse.PatientVisitId, potentialAnswerId, questionId)
+	patientIntakeRequestData := fmt.Sprintf(`{"patient_visit_id": %d, "questions": [{"potential_answers": [{"potential_answer_id": %d } ], "question_id": %d }] }`, patientVisitResponse.PatientVisitId, potentialAnswerId, questionId)
 
 	// now, lets go ahead and answer the question for the patient
 	submitPatientAnswerForVisit(patientSignedUpResponse.PatientId, testData, patientIntakeRequestData, t)
@@ -134,11 +133,11 @@ func TestSingleSelectIntake(t *testing.T) {
 }
 
 func TestMultipleChoiceIntake(t *testing.T) {
-	if err := integration.CheckIfRunningLocally(t); err == integration.CannotRunTestLocally {
+	if err := CheckIfRunningLocally(t); err == CannotRunTestLocally {
 		return
 	}
-	testData := integration.SetupIntegrationTest(t)
-	defer testData.DB.Close()
+	testData := SetupIntegrationTest(t)
+	defer TearDownIntegrationTest(t, testData)
 
 	// signup a random test patient for which to answer questions
 	patientSignedUpResponse := SignupRandomTestPatient(t, testData.DataApi, testData.AuthApi)
@@ -154,12 +153,15 @@ func TestMultipleChoiceIntake(t *testing.T) {
 
 	answerIntakeRequestBody := apiservice.AnswerIntakeRequestBody{}
 	answerIntakeRequestBody.PatientVisitId = patientVisitResponse.PatientVisitId
-	answerIntakeRequestBody.QuestionId = questionId
+
+	answerToQuestionItem := &apiservice.AnswerToQuestionItem{}
+	answerToQuestionItem.QuestionId = questionId
 	for _, potentialAnswer := range potentialAnswers {
 		if potentialAnswer.AnswerTag == "a_otc_prev_treatment_type" || potentialAnswer.AnswerTag == "a_prescription_prev_treatment_type" {
-			answerIntakeRequestBody.AnswerIntakes = append(answerIntakeRequestBody.AnswerIntakes, &apiservice.AnswerIntake{PotentialAnswerId: potentialAnswer.PotentialAnswerId})
+			answerToQuestionItem.AnswerIntakes = append(answerToQuestionItem.AnswerIntakes, &apiservice.AnswerItem{PotentialAnswerId: potentialAnswer.PotentialAnswerId})
 		}
 	}
+	answerIntakeRequestBody.Questions = []*apiservice.AnswerToQuestionItem{answerToQuestionItem}
 
 	requestData, err := json.Marshal(&answerIntakeRequestBody)
 	if err != nil {
@@ -179,9 +181,11 @@ func TestMultipleChoiceIntake(t *testing.T) {
 					}
 					for _, patientAnswer := range question.PatientAnswers {
 						answerNotFound := true
-						for _, answerIntake := range answerIntakeRequestBody.AnswerIntakes {
-							if answerIntake.PotentialAnswerId == patientAnswer.PotentialAnswerId {
-								answerNotFound = false
+						for _, questionItem := range answerIntakeRequestBody.Questions {
+							for _, answerIntake := range questionItem.AnswerIntakes {
+								if answerIntake.PotentialAnswerId == patientAnswer.PotentialAnswerId {
+									answerNotFound = false
+								}
 							}
 						}
 						if answerNotFound {
@@ -195,11 +199,11 @@ func TestMultipleChoiceIntake(t *testing.T) {
 }
 
 func TestSingleEntryIntake(t *testing.T) {
-	if err := integration.CheckIfRunningLocally(t); err == integration.CannotRunTestLocally {
+	if err := CheckIfRunningLocally(t); err == CannotRunTestLocally {
 		return
 	}
-	testData := integration.SetupIntegrationTest(t)
-	defer testData.DB.Close()
+	testData := SetupIntegrationTest(t)
+	defer TearDownIntegrationTest(t, testData)
 
 	// signup a random test patient for which to answer questions
 	patientSignedUpResponse := SignupRandomTestPatient(t, testData.DataApi, testData.AuthApi)
@@ -211,8 +215,11 @@ func TestSingleEntryIntake(t *testing.T) {
 	potentialAnswerId := getAnswerWithTagAndExpectedType("a_condition_entry", "a_type_single_entry", questionId, testData, t)
 	answerIntakeRequestBody := apiservice.AnswerIntakeRequestBody{}
 	answerIntakeRequestBody.PatientVisitId = patientVisitResponse.PatientVisitId
-	answerIntakeRequestBody.QuestionId = questionId
-	answerIntakeRequestBody.AnswerIntakes = []*apiservice.AnswerIntake{&apiservice.AnswerIntake{PotentialAnswerId: potentialAnswerId, AnswerText: "testAnswer"}}
+
+	answerToQuestionItem := &apiservice.AnswerToQuestionItem{}
+	answerToQuestionItem.QuestionId = questionId
+	answerToQuestionItem.AnswerIntakes = []*apiservice.AnswerItem{&apiservice.AnswerItem{PotentialAnswerId: potentialAnswerId, AnswerText: "testAnswer"}}
+	answerIntakeRequestBody.Questions = []*apiservice.AnswerToQuestionItem{answerToQuestionItem}
 	requestData, err := json.Marshal(&answerIntakeRequestBody)
 	if err != nil {
 		t.Fatal("Unable to marshal request body")
@@ -241,14 +248,18 @@ func TestSingleEntryIntake(t *testing.T) {
 	t.Fatalf("While an answer for the expected question exists, unable to find the expected answer with id %d for single entry intake test", potentialAnswerId)
 }
 
-func submitFreeTextResponseForPatient(patientVisitResponse *apiservice.PatientVisitResponse, PatientId int64, freeTextResponse string, testData integration.TestData, t *testing.T) {
+func submitFreeTextResponseForPatient(patientVisitResponse *apiservice.PatientVisitResponse, PatientId int64, freeTextResponse string, testData TestData, t *testing.T) {
 	// now lets go ahead and try and answer the question about the reason for visit given that it is
 	// single select
 	questionId := getQuestionWithTagAndExpectedType("q_changes_acne_worse", "q_type_free_text", t, testData)
 	answerIntakeRequestBody := apiservice.AnswerIntakeRequestBody{}
 	answerIntakeRequestBody.PatientVisitId = patientVisitResponse.PatientVisitId
-	answerIntakeRequestBody.QuestionId = questionId
-	answerIntakeRequestBody.AnswerIntakes = []*apiservice.AnswerIntake{&apiservice.AnswerIntake{AnswerText: freeTextResponse}}
+
+	answerToQuestionItem := &apiservice.AnswerToQuestionItem{}
+	answerToQuestionItem.QuestionId = questionId
+	answerToQuestionItem.AnswerIntakes = []*apiservice.AnswerItem{&apiservice.AnswerItem{AnswerText: freeTextResponse}}
+
+	answerIntakeRequestBody.Questions = []*apiservice.AnswerToQuestionItem{answerToQuestionItem}
 	requestData, err := json.Marshal(&answerIntakeRequestBody)
 	if err != nil {
 		t.Fatal("Unable to marshal request body")
@@ -279,11 +290,11 @@ func submitFreeTextResponseForPatient(patientVisitResponse *apiservice.PatientVi
 }
 
 func TestFreeTextEntryIntake(t *testing.T) {
-	if err := integration.CheckIfRunningLocally(t); err == integration.CannotRunTestLocally {
+	if err := CheckIfRunningLocally(t); err == CannotRunTestLocally {
 		return
 	}
-	testData := integration.SetupIntegrationTest(t)
-	defer testData.DB.Close()
+	testData := SetupIntegrationTest(t)
+	defer TearDownIntegrationTest(t, testData)
 
 	// signup a random test patient for which to answer questions
 	patientSignedUpResponse := SignupRandomTestPatient(t, testData.DataApi, testData.AuthApi)
@@ -297,10 +308,10 @@ func TestFreeTextEntryIntake(t *testing.T) {
 	submitFreeTextResponseForPatient(patientVisitResponse, patientSignedUpResponse.PatientId, updatedFreeTextResponse, testData, t)
 }
 
-func addSubAnswerToAnswerIntake(answerIntake *apiservice.AnswerIntake, subAnswerQuestionId, subAnswerPotentialAnswerId int64) {
+func addSubAnswerToAnswerIntake(answerIntake *apiservice.AnswerItem, subAnswerQuestionId, subAnswerPotentialAnswerId int64) {
 	subQuestionAnswerIntake := &apiservice.SubQuestionAnswerIntake{}
 	subQuestionAnswerIntake.QuestionId = subAnswerQuestionId
-	subQuestionAnswerIntake.AnswerIntakes = []*apiservice.AnswerIntake{&apiservice.AnswerIntake{PotentialAnswerId: subAnswerPotentialAnswerId}}
+	subQuestionAnswerIntake.AnswerIntakes = []*apiservice.AnswerItem{&apiservice.AnswerItem{PotentialAnswerId: subAnswerPotentialAnswerId}}
 	if answerIntake.SubQuestionAnswerIntakes == nil {
 		answerIntake.SubQuestionAnswerIntakes = make([]*apiservice.SubQuestionAnswerIntake, 0)
 	}
@@ -308,11 +319,11 @@ func addSubAnswerToAnswerIntake(answerIntake *apiservice.AnswerIntake, subAnswer
 }
 
 func TestSubQuestionEntryIntake(t *testing.T) {
-	if err := integration.CheckIfRunningLocally(t); err == integration.CannotRunTestLocally {
+	if err := CheckIfRunningLocally(t); err == CannotRunTestLocally {
 		return
 	}
-	testData := integration.SetupIntegrationTest(t)
-	defer testData.DB.Close()
+	testData := SetupIntegrationTest(t)
+	defer TearDownIntegrationTest(t, testData)
 
 	// signup a random test patient for which to answer questions
 	patientSignedUpResponse := SignupRandomTestPatient(t, testData.DataApi, testData.AuthApi)
@@ -339,27 +350,30 @@ func TestSubQuestionEntryIntake(t *testing.T) {
 
 	answerIntakeRequestBody := apiservice.AnswerIntakeRequestBody{}
 	answerIntakeRequestBody.PatientVisitId = patientVisitResponse.PatientVisitId
-	answerIntakeRequestBody.QuestionId = questionId
 
-	proactiveAnswerIntake := &apiservice.AnswerIntake{}
+	answerToQuestionItem := &apiservice.AnswerToQuestionItem{}
+	answerToQuestionItem.QuestionId = questionId
+
+	proactiveAnswerIntake := &apiservice.AnswerItem{}
 	proactiveAnswerIntake.AnswerText = proactive
 	addSubAnswerToAnswerIntake(proactiveAnswerIntake, howEffectiveQuestionId, howEffectiveAnswerId)
 	addSubAnswerToAnswerIntake(proactiveAnswerIntake, usingTreatmentQuestionId, usingTreatmentAnswerId)
 	addSubAnswerToAnswerIntake(proactiveAnswerIntake, lengthTreatmentQuestionId, lengthTreatmentAnswerId)
 
-	benzoylPeroxideAnswerIntake := &apiservice.AnswerIntake{}
+	benzoylPeroxideAnswerIntake := &apiservice.AnswerItem{}
 	benzoylPeroxideAnswerIntake.AnswerText = benzoylPeroxide
 	addSubAnswerToAnswerIntake(benzoylPeroxideAnswerIntake, howEffectiveQuestionId, howEffectiveAnswerId)
 	addSubAnswerToAnswerIntake(benzoylPeroxideAnswerIntake, usingTreatmentQuestionId, usingTreatmentAnswerId)
 	addSubAnswerToAnswerIntake(benzoylPeroxideAnswerIntake, lengthTreatmentQuestionId, lengthTreatmentAnswerId)
 
-	neutrogenaAnswerIntake := &apiservice.AnswerIntake{}
+	neutrogenaAnswerIntake := &apiservice.AnswerItem{}
 	neutrogenaAnswerIntake.AnswerText = neutrogena
 	addSubAnswerToAnswerIntake(neutrogenaAnswerIntake, howEffectiveQuestionId, howEffectiveAnswerId)
 	addSubAnswerToAnswerIntake(neutrogenaAnswerIntake, usingTreatmentQuestionId, usingTreatmentAnswerId)
 	addSubAnswerToAnswerIntake(neutrogenaAnswerIntake, lengthTreatmentQuestionId, lengthTreatmentAnswerId)
 
-	answerIntakeRequestBody.AnswerIntakes = []*apiservice.AnswerIntake{proactiveAnswerIntake, benzoylPeroxideAnswerIntake, neutrogenaAnswerIntake}
+	answerToQuestionItem.AnswerIntakes = []*apiservice.AnswerItem{proactiveAnswerIntake, benzoylPeroxideAnswerIntake, neutrogenaAnswerIntake}
+	answerIntakeRequestBody.Questions = []*apiservice.AnswerToQuestionItem{answerToQuestionItem}
 
 	requestData, err := json.Marshal(&answerIntakeRequestBody)
 	if err != nil {
@@ -448,14 +462,14 @@ func TestSubQuestionEntryIntake(t *testing.T) {
 }
 
 func TestPhotoAnswerIntake(t *testing.T) {
-	if err := integration.CheckIfRunningLocally(t); err == integration.CannotRunTestLocally {
+	if err := CheckIfRunningLocally(t); err == CannotRunTestLocally {
 		return
 	}
 
-	fileToUpload := "../../../info_intake/condition_intake.json"
+	fileToUpload := "../../info_intake/condition_intake.json"
 
-	testData := integration.SetupIntegrationTest(t)
-	defer testData.DB.Close()
+	testData := SetupIntegrationTest(t)
+	defer TearDownIntegrationTest(t, testData)
 
 	// signup a random test patient for which to answer questions
 	patientSignedUpResponse := SignupRandomTestPatient(t, testData.DataApi, testData.AuthApi)
@@ -510,7 +524,7 @@ func TestPhotoAnswerIntake(t *testing.T) {
 	if err != nil {
 		t.Fatal("Unable to read the body of the response when trying to submit photo answer for patient: " + err.Error())
 	}
-	integration.CheckSuccessfulStatusCode(resp, "Unable to submit photo answer for patient: "+string(responseBody), t)
+	CheckSuccessfulStatusCode(resp, "Unable to submit photo answer for patient: "+string(responseBody), t)
 
 	// get the patient visit again to get the patient answer in there
 	patientVisitResponse = GetPatientVisitForPatient(patientSignedUpResponse.PatientId, testData, t)
@@ -552,7 +566,7 @@ func TestPhotoAnswerIntake(t *testing.T) {
 
 							buffer := bytes.NewBufferString(strconv.FormatInt(patientVisitResponse.PatientVisitId, 10))
 							buffer.WriteString("/")
-							buffer.WriteString(strconv.FormatInt(patientAnswer.PatientAnswerId, 10))
+							buffer.WriteString(strconv.FormatInt(patientAnswer.AnswerIntakeId, 10))
 							buffer.WriteString(".jpg")
 							err = testData.CloudStorageService.DeleteObjectAtLocation("cases-bucket-integ", buffer.String(), "us-east-1")
 							if err != nil {

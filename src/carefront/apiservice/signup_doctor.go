@@ -72,7 +72,7 @@ func (d *SignupDoctorHandler) ServeHTTP(w http.ResponseWriter, r *http.Request) 
 	}
 
 	if err != nil {
-		WriteDeveloperError(w, http.StatusInternalServerError, "Internal Servier Error. Unable to register doctor")
+		WriteDeveloperError(w, http.StatusInternalServerError, "Internal Servier Error. Unable to register doctor: "+err.Error())
 		return
 	}
 

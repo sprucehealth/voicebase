@@ -110,7 +110,7 @@ func (p *PhotoAnswerIntakeHandler) ServeHTTP(w http.ResponseWriter, r *http.Requ
 	// in the event that we are dealing with a question that can only have one photo set for the potential answer,
 	// mark the previously set answer to the quesiton as inactive
 	if questionType == "q_type_single_photo" {
-		err = p.DataApi.MakeCurrentPhotoAnswerInactive(patientId, requestData.QuestionId, requestData.PatientVisitId, requestData.PotentialAnswerId, layoutVersionId)
+		err = p.DataApi.MakeCurrentPhotoAnswerInactive(api.PATIENT_ROLE, patientId, requestData.QuestionId, requestData.PatientVisitId, requestData.PotentialAnswerId, layoutVersionId)
 		if err != nil {
 			WriteDeveloperError(w, http.StatusInternalServerError,
 				"Error marking the current active photo answer as inactive: "+err.Error())
@@ -119,7 +119,7 @@ func (p *PhotoAnswerIntakeHandler) ServeHTTP(w http.ResponseWriter, r *http.Requ
 	}
 
 	// create the record for answer input and mark it as pending upload
-	patientAnswerInfoIntakeId, err := p.DataApi.CreatePhotoAnswerForQuestionRecord(patientId,
+	patientAnswerInfoIntakeId, err := p.DataApi.CreatePhotoAnswerForQuestionRecord(api.PATIENT_ROLE, patientId,
 		requestData.QuestionId, requestData.PatientVisitId, requestData.PotentialAnswerId, layoutVersionId)
 	var buffer bytes.Buffer
 	buffer.WriteString(strconv.Itoa(int(requestData.PatientVisitId)))

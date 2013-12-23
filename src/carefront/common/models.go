@@ -15,6 +15,16 @@ type Patient struct {
 	AccountId int64     `json:"-"`
 }
 
+type Doctor struct {
+	DoctorId  int64
+	FirstName string
+	LastName  string
+	Dob       time.Time
+	Gender    string
+	Status    string
+	AccountId int64
+}
+
 type PatientVisit struct {
 	PatientVisitId    int64     `json:"patient_visit_id,string,omitempty"`
 	PatientId         int64     `json:"patient_id,string,omitempty"`
@@ -26,21 +36,38 @@ type PatientVisit struct {
 	LayoutVersionId   int64     `json:"layout_version_id,omitempty,string"`
 }
 
-type PatientAnswer struct {
-	PatientAnswerId   int64            `json:"patient_answer_id,string,omitempty"`
-	QuestionId        int64            `json:"-"`
-	PatientId         int64            `json:"-"`
-	PatientVisitId    int64            `json:"-"`
-	ParentQuestionId  int64            `json:"-"`
-	ParentAnswerId    int64            `json:"-"`
-	PotentialAnswerId int64            `json:"potential_answer_id,string,omitempty"`
-	PotentialAnswer   string           `json:"potential_answer,omitempty"`
-	AnswerSummary     string           `json:"potential_answer_summary,omitempty"`
-	LayoutVersionId   int64            `json:"-"`
-	SubAnswers        []*PatientAnswer `json:"answers,omitempty"`
-	AnswerText        string           `json:"answer_text,omitempty"`
-	ObjectUrl         string           `json:"object_url,omitempty"`
-	StorageBucket     string           `json:"-"`
-	StorageKey        string           `json:"-"`
-	StorageRegion     string           `json:"-"`
+type AnswerIntake struct {
+	AnswerIntakeId    int64           `json:"answer_id,string,omitempty"`
+	QuestionId        int64           `json:"-"`
+	RoleId            int64           `json:"-"`
+	Role              string          `json:"-"`
+	PatientVisitId    int64           `json:"-"`
+	ParentQuestionId  int64           `json:"-"`
+	ParentAnswerId    int64           `json:"-"`
+	PotentialAnswerId int64           `json:"potential_answer_id,string,omitempty"`
+	PotentialAnswer   string          `json:"potential_answer,omitempty"`
+	AnswerSummary     string          `json:"potential_answer_summary,omitempty"`
+	LayoutVersionId   int64           `json:"-"`
+	SubAnswers        []*AnswerIntake `json:"answers,omitempty"`
+	AnswerText        string          `json:"answer_text,omitempty"`
+	ObjectUrl         string          `json:"object_url,omitempty"`
+	StorageBucket     string          `json:"-"`
+	StorageKey        string          `json:"-"`
+	StorageRegion     string          `json:"-"`
+}
+
+type PatientCareProviderAssignment struct {
+	Id           int64
+	ProviderRole string
+	ProviderId   int64
+	Status       string
+}
+
+type PatientCareProviderGroup struct {
+	Id           int64
+	PatientId    int64
+	CreationDate time.Time
+	ModifiedDate time.Time
+	Status       string
+	Assignments  []*PatientCareProviderAssignment
 }

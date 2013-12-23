@@ -80,7 +80,7 @@ func (p *DoctorPatientVisitReviewHandler) ServeHTTP(w http.ResponseWriter, r *ht
 	patientVisitOverview.Patient = patient
 
 	questionIds := getQuestionIdsFromPatientVisitOverview(patientVisitOverview)
-	patientAnswersForQuestions, err := p.DataApi.GetPatientAnswersForQuestionsInPatientVisit(questionIds, patientVisit.PatientId, patientVisit.PatientVisitId)
+	patientAnswersForQuestions, err := p.DataApi.GetAnswersForQuestionsInPatientVisit(api.PATIENT_ROLE, questionIds, patientVisit.PatientId, patientVisit.PatientVisitId)
 	if err != nil {
 		WriteDeveloperError(w, http.StatusInternalServerError, "Unable to get patient answers for questions : "+err.Error())
 		return
@@ -89,7 +89,7 @@ func (p *DoctorPatientVisitReviewHandler) ServeHTTP(w http.ResponseWriter, r *ht
 	WriteJSONToHTTPResponseWriter(w, http.StatusOK, DoctorPatientVisitReviewResponse{patientVisitOverview})
 }
 
-func (p *DoctorPatientVisitReviewHandler) populatePatientVisitOverviewWithPatientAnswers(patientAnswers map[int64][]*common.PatientAnswer,
+func (p *DoctorPatientVisitReviewHandler) populatePatientVisitOverviewWithPatientAnswers(patientAnswers map[int64][]*common.AnswerIntake,
 	patientVisitOverview *info_intake.PatientVisitOverview,
 	patient *common.Patient) {
 	// collect all question ids for which to get patient answers

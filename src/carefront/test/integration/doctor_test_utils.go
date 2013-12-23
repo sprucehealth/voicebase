@@ -1,10 +1,9 @@
-package doctor
+package integration
 
 import (
 	"bytes"
 	"carefront/api"
 	"carefront/apiservice"
-	"carefront/test/integration"
 	thriftapi "carefront/thrift/api"
 	"encoding/json"
 	"fmt"
@@ -37,7 +36,7 @@ func SignupRandomTestDoctor(t *testing.T, dataApi api.DataAPI, authApi thriftapi
 	if err != nil {
 		t.Fatal("Unable to read body of response: " + err.Error())
 	}
-	integration.CheckSuccessfulStatusCode(res, fmt.Sprintf("Unable to make success request to signup patient. Here's the code returned %d and here's the body of the request %s", res.StatusCode, body), t)
+	CheckSuccessfulStatusCode(res, fmt.Sprintf("Unable to make success request to signup patient. Here's the code returned %d and here's the body of the request %s", res.StatusCode, body), t)
 
 	signedupDoctorResponse = &apiservice.DoctorSignedupResponse{}
 	err = json.Unmarshal(body, signedupDoctorResponse)
