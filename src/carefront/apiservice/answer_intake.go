@@ -32,7 +32,7 @@ func (a *AnswerIntakeHandler) ServeHTTP(w http.ResponseWriter, r *http.Request) 
 
 	err = validateRequestBody(answerIntakeRequestBody, w)
 	if err != nil {
-		WriteDeveloperError(w, http.StatusBadGateway, "Bad request parameters for answer intake "+err.Error())
+		WriteDeveloperError(w, http.StatusBadRequest, "Bad request parameters for answer intake: "+err.Error())
 		return
 	}
 

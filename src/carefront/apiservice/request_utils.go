@@ -108,6 +108,10 @@ func validateRequestBody(answerIntakeRequestBody *AnswerIntakeRequestBody, w htt
 		return errors.New("patient_visit_id missing")
 	}
 
+	if answerIntakeRequestBody.Questions == nil || len(answerIntakeRequestBody.Questions) == 0 {
+		return errors.New("missing patient information to save for patient visit.")
+	}
+
 	for _, questionItem := range answerIntakeRequestBody.Questions {
 		if questionItem.QuestionId == 0 {
 			return errors.New("question_id missing")
