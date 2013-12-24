@@ -22,6 +22,24 @@ type DataService struct {
 	DB *sql.DB
 }
 
+func (d *DataService) GetMedicationDispenseUnits(languageId int64) (dispenseUnitIds []int64, dispenseUnits []string, err error) {
+	rows, err := d.DB.Query(`select dispense_unit.id, ltext from dispense_unit inner join localized_text on app_text_id = dispense_unit_text_id where language_id=?`, languageId)
+	if err != nil {
+		return
+	}
+	defer rows.Close()
+	dispenseUnitIds = make([]int64, 0)
+	dispenseUnits = make([]string, 0)
+	for rows.Next() {
+		var dipenseUnitId int64
+		var dispenseUnit string
+		rows.Scan(&dipenseUnitId, &dispenseUnit)
+		dispenseUnits = append(dispenseUnits, dispenseUnit)
+		dispenseUnitIds = append(dispenseUnitIds, dipenseUnitId)
+	}
+	return
+}
+
 func (d *DataService) RegisterPatient(accountId int64, firstName, lastName, gender, zipCode string, dob time.Time) (int64, error) {
 	res, err := d.DB.Exec(`insert into patient (account_id, first_name, last_name, zip_code, gender, dob, status) 
 								values (?, ?, ?, ?, ?, ? , 'REGISTERED')`, accountId, firstName, lastName, zipCode, gender, dob)

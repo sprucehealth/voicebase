@@ -88,3 +88,44 @@ func TestMedicationSelectSearch(t *testing.T) {
 		t.Fatal("Expected additional drug db ids not set (lexi_drug_syn_id and lexi_synonym_type_id")
 	}
 }
+
+func TestDispenseUnitIds(t *testing.T) {
+	if err := CheckIfRunningLocally(t); err == CannotRunTestLocally {
+		return
+	}
+
+	testData := SetupIntegrationTest(t)
+	defer TearDownIntegrationTest(t, testData)
+
+	medicationDispenseUnitsHandler := &apiservice.MedicationDispenseUnitsHandler{DataApi: testData.DataApi}
+	ts := httptest.NewServer(medicationDispenseUnitsHandler)
+	defer ts.Close()
+
+	resp, err := http.Get(ts.URL)
+	if err != nil {
+		t.Fatal("Unable to make a successful query to the medication dispense units api: " + err.Error())
+	}
+
+	body, err := ioutil.ReadAll(resp.Body)
+	if err != nil {
+		t.Fatal("Unable to parse the body of the response: " + err.Error())
+	}
+
+	CheckSuccessfulStatusCode(resp, "Unable to make a successful query to the medication dispense units api for the doctor: "+string(body), t)
+	medicationDispenseUnitsResponse := &apiservice.MedicationDispenseUnitsResponse{}
+	err = json.Unmarshal(body, medicationDispenseUnitsResponse)
+	if err != nil {
+		t.Fatal("Unable to unmarshal the response from the medication strength search api into a json object as expected: " + err.Error())
+	}
+
+	if medicationDispenseUnitsResponse.DispenseUnits == nil || len(medicationDispenseUnitsResponse.DispenseUnits) == 0 {
+		t.Fatal("Expected dispense unit ids to be returned from api but none were")
+	}
+
+	for _, dispenseUnitItem := range medicationDispenseUnitsResponse.DispenseUnits {
+		if dispenseUnitItem.Id == 0 || dispenseUnitItem.Text == "" {
+			t.Fatal("Dispense Unit item was empty when this is not expected")
+		}
+	}
+
+}

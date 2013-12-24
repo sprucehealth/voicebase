@@ -88,6 +88,10 @@ type IntakeLayoutAPI interface {
 	GetSupportedLanguages() (languagesSupported []string, languagesSupportedIds []int64, err error)
 }
 
+type ERxAPI interface {
+	GetMedicationDispenseUnits(languageId int64) (dispenseUnitIds []int64, dispenseUnits []string, err error)
+}
+
 type ObjectStorageAPI interface {
 	CreateNewUploadCloudObjectRecord(bucket, key, region string) (int64, error)
 	UpdateCloudObjectRecordToSayCompleted(id int64) error
@@ -101,6 +105,7 @@ type DataAPI interface {
 	IntakeLayoutAPI
 	ObjectStorageAPI
 	IntakeAPI
+	ERxAPI
 }
 
 type CloudStorageAPI interface {
