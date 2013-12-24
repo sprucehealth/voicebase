@@ -2,6 +2,7 @@ package aws
 
 import (
 	"encoding/json"
+	"errors"
 	"io"
 	"io/ioutil"
 	"log"
@@ -73,7 +74,25 @@ func GetMetadata(path string) (string, error) {
 	return string(by), nil
 }
 
+var (
+	defaultRole     string
+	defaultRoleOnce sync.Once
+)
+
 func CredentialsForRole(role string) (*Credentials, error) {
+	if role == "" {
+		defaultRoleOnce.Do(func() {
+			rl, err := GetMetadata("iam/security-credentials/")
+			if err != nil {
+				return
+			}
+			defaultRole = rl
+		})
+		role = defaultRole
+		if role == "" {
+			return nil, errors.New("aws: unable to get default role")
+		}
+	}
 	cred := &Credentials{Role: role}
 	return cred, cred.Update()
 }
