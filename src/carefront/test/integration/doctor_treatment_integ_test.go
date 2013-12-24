@@ -2,6 +2,7 @@ package integration
 
 import (
 	"carefront/apiservice"
+	"carefront/libs/erx"
 	"encoding/json"
 	"io/ioutil"
 	"net/http"
@@ -53,8 +54,8 @@ func TestMedicationSelectSearch(t *testing.T) {
 	testData := SetupIntegrationTest(t)
 	defer TearDownIntegrationTest(t, testData)
 
-	erx := setupErxAPI(t)
-	medicationSelectHandler := &apiservice.MedicationSelectHandler{ERxApi: erx}
+	erxApi := setupErxAPI(t)
+	medicationSelectHandler := &apiservice.MedicationSelectHandler{ERxApi: erxApi}
 	ts := httptest.NewServer(medicationSelectHandler)
 	defer ts.Close()
 
