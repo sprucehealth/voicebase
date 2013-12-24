@@ -129,6 +129,7 @@ func main() {
 	autocompleteHandler := &apiservice.AutocompleteHandler{ERxApi: erx.NewDoseSpotService(conf.DoseSpotClinicId, conf.DoseSpotClinicKey, conf.DoseSpotUserId), Role: api.PATIENT_ROLE}
 	doctorTreatmentSuggestionHandler := &apiservice.AutocompleteHandler{ERxApi: erx.NewDoseSpotService(conf.DoseSpotClinicId, conf.DoseSpotClinicKey, conf.DoseSpotUserId), Role: api.DOCTOR_ROLE}
 	medicationStrengthSearchHandler := &apiservice.MedicationStrengthSearchHandler{ERxApi: erx.NewDoseSpotService(conf.DoseSpotClinicId, conf.DoseSpotClinicKey, conf.DoseSpotUserId)}
+	medicationSelectHandler := &apiservice.MedicationSelectHandler{ERxApi: erx.NewDoseSpotService(conf.DoseSpotClinicId, conf.DoseSpotClinicKey, conf.DoseSpotUserId)}
 	photoAnswerIntakeHandler := apiservice.NewPhotoAnswerIntakeHandler(dataApi, photoAnswerCloudStorageApi, conf.CaseBucket, conf.AWSRegion, conf.MaxInMemoryForPhotoMB*1024*1024)
 	generateDoctorLayoutHandler := &apiservice.GenerateDoctorLayoutHandler{
 		DataApi:                  dataApi,
@@ -185,6 +186,7 @@ func main() {
 	mux.Handle("/v1/doctor/diagnosis", diagnosePatientHandler)
 	mux.Handle("/v1/doctor/treatment/medication_suggestions", doctorTreatmentSuggestionHandler)
 	mux.Handle("/v1/doctor/treatment/medication_strengths", medicationStrengthSearchHandler)
+	mux.Handle("/v1/doctor/treatment/medication", medicationSelectHandler)
 
 	s := &http.Server{
 		Addr:           conf.ListenAddr,

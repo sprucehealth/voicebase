@@ -11,7 +11,7 @@ type MedicationStrengthSearchHandler struct {
 }
 
 type MedicationStrengthRequestData struct {
-	MedicationName string `schema:"internal_id,required"`
+	MedicationName string `schema:"drug_internal_name,required"`
 }
 
 type MedicationStrengthSearchResponse struct {

@@ -27,7 +27,7 @@ type AutocompleteResponse struct {
 type Suggestion struct {
 	Title      string `json:"title"`
 	Subtitle   string `json:"subtitle,omitempty"`
-	InternalId string `json:"internal_id"`
+	InternalId string `json:"internal_name"`
 }
 
 func (s *AutocompleteHandler) ServeHTTP(w http.ResponseWriter, r *http.Request) {

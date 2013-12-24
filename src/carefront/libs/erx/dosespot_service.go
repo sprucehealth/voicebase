@@ -2,6 +2,7 @@ package erx
 
 import (
 	"os"
+	"strconv"
 )
 
 type DoseSpotService struct {
@@ -16,6 +17,7 @@ const (
 	medicationQuickSearchAction        = "MedicationQuickSearchMessage"
 	selfReportedMedicationSearchAction = "SelfReportedMedicationSearch"
 	medicationStrengthSearchAction     = "MedicationStrengthSearchMessage"
+	medicationSelectAction             = "MedicationSelectMessage"
 )
 
 var (
@@ -74,7 +76,7 @@ func (d *DoseSpotService) GetDrugNamesForPatient(prefix string) ([]string, error
 func (d *DoseSpotService) SearchForMedicationStrength(medicationName string) ([]string, error) {
 	medicationStrengthSearch := &medicationStrengthSearchRequest{}
 	medicationStrengthSearch.SSO = generateSingleSignOn(d.ClinicKey, d.UserId, d.ClinicId)
-	medicationStrengthSearch.SearchString = medicationName
+	medicationStrengthSearch.MedicationName = medicationName
 
 	searchResult := &medicationStrengthSearchResponse{}
 	err := doseSpotClient.makeSoapRequest(medicationStrengthSearchAction, medicationStrengthSearch, searchResult)
@@ -84,4 +86,27 @@ func (d *DoseSpotService) SearchForMedicationStrength(medicationName string) ([]
 	}
 
 	return searchResult.DisplayStrengths, nil
+}
+
+func (d *DoseSpotService) SelectMedication(medicationName, medicationStrength string) (medication *Medication, err error) {
+	medicationSelect := &medicationSelectRequest{}
+	medicationSelect.SSO = generateSingleSignOn(d.ClinicKey, d.UserId, d.ClinicId)
+	medicationSelect.MedicationName = medicationName
+	medicationSelect.MedicationStrength = medicationStrength
+
+	selectResult := &medicationSelectResponse{}
+	err = doseSpotClient.makeSoapRequest(medicationSelectAction, medicationSelect, selectResult)
+
+	if err != nil {
+		return nil, err
+	}
+
+	medication = &Medication{}
+	medication.DrugId = selectResult.LexiGenProductId
+	medication.AdditionalDrugDBIds = make(map[string]string)
+	medication.AdditionalDrugDBIds[LexiDrugSynId] = strconv.Itoa(selectResult.LexiDrugSynId)
+	medication.AdditionalDrugDBIds[LexiSynonymTypeId] = strconv.Itoa(selectResult.LexiSynonymTypeId)
+	medication.DispenseUnitId = selectResult.DispenseUnitId
+	medication.DispenseUnitDescription = selectResult.DispenseUnitDescription
+	return medication, err
 }
