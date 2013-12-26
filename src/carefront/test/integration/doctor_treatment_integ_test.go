@@ -76,15 +76,11 @@ func TestMedicationSelectSearch(t *testing.T) {
 		t.Fatal("Unable to unmarshal the response from the medication strength search api into a json object as expected: " + err.Error())
 	}
 
-	if medicationSelectResponse.DrugId == 0 {
-		t.Fatal("Expected a drug id but got none")
-	}
-
-	if medicationSelectResponse.AdditionalDrugDBIds == nil || len(medicationSelectResponse.AdditionalDrugDBIds) == 0 {
+	if medicationSelectResponse.DrugDBIds == nil || len(medicationSelectResponse.DrugDBIds) == 0 {
 		t.Fatal("Expected additional drug db ids to be returned from api but none were")
 	}
 
-	if medicationSelectResponse.AdditionalDrugDBIds[erx.LexiDrugSynId] == "0" || medicationSelectResponse.AdditionalDrugDBIds[erx.LexiSynonymTypeId] == "0" {
+	if medicationSelectResponse.DrugDBIds[erx.LexiDrugSynId] == "0" || medicationSelectResponse.DrugDBIds[erx.LexiSynonymTypeId] == "0" || medicationSelectResponse.DrugDBIds[erx.LexiGenProductId] == "0" {
 		t.Fatal("Expected additional drug db ids not set (lexi_drug_syn_id and lexi_synonym_type_id")
 	}
 }

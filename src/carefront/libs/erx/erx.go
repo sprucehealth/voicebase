@@ -8,8 +8,7 @@ type ERxAPI interface {
 }
 
 type Medication struct {
-	DrugId                  int
-	AdditionalDrugDBIds     map[string]string
+	DrugDBIds               map[string]string
 	DispenseUnitId          int
 	DispenseUnitDescription string
 }

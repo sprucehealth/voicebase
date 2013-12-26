@@ -5,6 +5,7 @@ import (
 )
 
 const (
+	LexiGenProductId  = "lexi_gen_product_id"
 	LexiDrugSynId     = "lexi_drug_syn_id"
 	LexiSynonymTypeId = "lexi_synonym_type_id"
 )

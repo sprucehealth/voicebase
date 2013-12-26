@@ -40,6 +40,96 @@ func (d *DataService) GetMedicationDispenseUnits(languageId int64) (dispenseUnit
 	return
 }
 
+func (d *DataService) AddTreatmentsForPatientVisit(treatments []*common.Treatment) error {
+	tx, err := d.DB.Begin()
+	if err != nil {
+		return err
+	}
+
+	for _, treatment := range treatments {
+		// nothing to do for now if treatment already added to DB.
+		if treatment.Id != 0 {
+			continue
+		}
+
+		// check if a treatment plan already exists
+		var treatmentPlanId int64
+		err = d.DB.QueryRow(`select id from treatment_plan where patient_visit_id = ? `, treatment.PatientVisitId).Scan(&treatmentPlanId)
+		if err != nil && err != sql.ErrNoRows {
+			tx.Rollback()
+			return err
+		}
+
+		if treatmentPlanId == 0 {
+			// if not treatment plan exists, create a treatment plan
+			res, err := tx.Exec("insert into treatment_plan (patient_visit_id, status) values (?,'CREATED')", treatment.PatientVisitId)
+			if err != nil {
+				tx.Rollback()
+				return err
+			}
+
+			treatmentPlanId, err = res.LastInsertId()
+			if err != nil {
+				tx.Rollback()
+				return err
+			}
+		}
+
+		// add treatment for patient
+		var treatmentId int64
+		if treatment.PharmacyNotes != "" {
+			insertTreatmentStr := `insert into treatment (treatment_plan_id, drug_internal_name, dispense_value, dispense_unit_id, refills, substitutions_allowed, days_supply, patient_instructions, pharmacy_notes, status) 
+									values (?,?,?,?,?,?,?,?,?,'CREATED')`
+			res, err := tx.Exec(insertTreatmentStr, treatmentPlanId, treatment.DrugInternalName, treatment.DispenseValue, treatment.DispenseUnitId, treatment.NumberRefills, treatment.SubstitutionsAllowed, treatment.DaysSupply, treatment.PatientInstructions, treatment.PharmacyNotes)
+			if err != nil {
+				tx.Rollback()
+				return err
+			}
+
+			treatmentId, err = res.LastInsertId()
+			if err != nil {
+				tx.Rollback()
+				return err
+			}
+		} else {
+			insertTreatmentStr := `insert into treatment (treatment_plan_id, drug_internal_name, dispense_value, dispense_unit_id, refills, substitutions_allowed, days_supply, patient_instructions, status) 
+									values (?,?,?,?,?,?,?,?,'CREATED')`
+			res, err := tx.Exec(insertTreatmentStr, treatmentPlanId, treatment.DrugInternalName, treatment.DispenseValue, treatment.DispenseUnitId, treatment.NumberRefills, treatment.SubstitutionsAllowed, treatment.DaysSupply, treatment.PatientInstructions)
+			if err != nil {
+				tx.Rollback()
+				return err
+			}
+
+			treatmentId, err = res.LastInsertId()
+			if err != nil {
+				tx.Rollback()
+				return err
+			}
+		}
+
+		// update the treatment object with the information
+		treatment.Id = treatmentId
+		treatment.TreatmentPlanId = treatmentPlanId
+
+		// add drug db ids to the table
+		insertStr := bytes.NewBufferString("insert into drug_db_id (drug_db_id_tag, drug_db_id, treatment_id) values")
+		insertValues := make([]string, 0)
+		for drugDbTag, drugDbId := range treatment.DrugDBIds {
+			insertValues = append(insertValues, fmt.Sprintf("('%s', %s, %d)", drugDbTag, drugDbId, treatment.Id))
+		}
+		insertStr.WriteString(strings.Join(insertValues, ","))
+
+		_, err = tx.Exec(insertStr.String())
+		if err != nil {
+			tx.Rollback()
+			return err
+		}
+	}
+
+	tx.Commit()
+	return nil
+}
+
 func (d *DataService) RegisterPatient(accountId int64, firstName, lastName, gender, zipCode string, dob time.Time) (int64, error) {
 	res, err := d.DB.Exec(`insert into patient (account_id, first_name, last_name, zip_code, gender, dob, status) 
 								values (?, ?, ?, ?, ?, ? , 'REGISTERED')`, accountId, firstName, lastName, zipCode, gender, dob)

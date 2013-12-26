@@ -6,7 +6,6 @@ import (
 	"carefront/info_intake"
 	thriftapi "carefront/thrift/api"
 	"encoding/json"
-	"errors"
 	"github.com/gorilla/schema"
 	"net/http"
 )
@@ -54,7 +53,7 @@ func (d *DiagnosePatientHandler) getDiagnosis(w http.ResponseWriter, r *http.Req
 		return
 	}
 
-	doctorId, _, _, statusCode, err := d.validateDoctorAccessToPatientVisitAndGetRelevantData(requestData.PatientVisitId)
+	doctorId, _, _, statusCode, err := ValidateDoctorAccessToPatientVisitAndGetRelevantData(requestData.PatientVisitId, d.accountId, d.DataApi)
 	if err != nil {
 		WriteDeveloperError(w, statusCode, err.Error())
 		return
@@ -95,7 +94,7 @@ func (d *DiagnosePatientHandler) diagnosePatient(w http.ResponseWriter, r *http.
 		return
 	}
 
-	doctorId, _, _, httpStatusCode, err := d.validateDoctorAccessToPatientVisitAndGetRelevantData(answerIntakeRequestBody.PatientVisitId)
+	doctorId, _, _, httpStatusCode, err := ValidateDoctorAccessToPatientVisitAndGetRelevantData(answerIntakeRequestBody.PatientVisitId, d.accountId, d.DataApi)
 	if err != nil {
 		WriteDeveloperError(w, httpStatusCode, err.Error())
 		return
@@ -170,46 +169,5 @@ func (d *DiagnosePatientHandler) getCurrentActiveDiagnoseLayoutForHealthConditio
 
 func (d *DiagnosePatientHandler) getLayoutVersionIdOfActiveDiagnosisLayout(healthConditionId int64) (layoutVersionId int64, err error) {
 	_, _, _, layoutVersionId, err = d.DataApi.GetStorageInfoOfActiveDoctorDiagnosisLayout(healthConditionId)
-	return
-}
-
-func (d *DiagnosePatientHandler) validateDoctorAccessToPatientVisitAndGetRelevantData(PatientVisitId int64) (doctorId int64, patientVisit *common.PatientVisit, careTeam *common.PatientCareProviderGroup, httpStatusCode int, err error) {
-	httpStatusCode = http.StatusOK
-	doctorId, err = d.DataApi.GetDoctorIdFromAccountId(d.accountId)
-	if err != nil {
-		httpStatusCode = http.StatusInternalServerError
-		err = errors.New("Unable to get doctor id from account id " + err.Error())
-		return
-	}
-
-	patientVisit, err = d.DataApi.GetPatientVisitFromId(PatientVisitId)
-	if err != nil {
-		httpStatusCode = http.StatusInternalServerError
-		err = errors.New("Unable to get patient visit from id : " + err.Error())
-		return
-	}
-
-	careTeam, err = d.DataApi.GetCareTeamForPatient(patientVisit.PatientId)
-	if err != nil {
-		httpStatusCode = http.StatusInternalServerError
-		err = errors.New("Unable to get care team for patient visit id " + err.Error())
-		return
-	}
-
-	if careTeam == nil {
-		httpStatusCode = http.StatusForbidden
-		err = errors.New("No care team assigned to patient visit so cannot diagnose patient visit")
-		return
-	}
-
-	// ensure that the doctor is the current primary doctor for this patient
-	for _, assignment := range careTeam.Assignments {
-		if assignment.ProviderRole == api.DOCTOR_ROLE && assignment.ProviderId != doctorId {
-			httpStatusCode = http.StatusForbidden
-			err = errors.New("Doctor is unable to diagnose patient because he/she is not the primary doctor")
-			return
-		}
-	}
-
 	return
 }

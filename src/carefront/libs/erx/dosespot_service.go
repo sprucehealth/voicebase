@@ -102,10 +102,10 @@ func (d *DoseSpotService) SelectMedication(medicationName, medicationStrength st
 	}
 
 	medication = &Medication{}
-	medication.DrugId = selectResult.LexiGenProductId
-	medication.AdditionalDrugDBIds = make(map[string]string)
-	medication.AdditionalDrugDBIds[LexiDrugSynId] = strconv.Itoa(selectResult.LexiDrugSynId)
-	medication.AdditionalDrugDBIds[LexiSynonymTypeId] = strconv.Itoa(selectResult.LexiSynonymTypeId)
+	medication.DrugDBIds = make(map[string]string)
+	medication.DrugDBIds[LexiGenProductId] = strconv.Itoa(selectResult.LexiGenProductId)
+	medication.DrugDBIds[LexiDrugSynId] = strconv.Itoa(selectResult.LexiDrugSynId)
+	medication.DrugDBIds[LexiSynonymTypeId] = strconv.Itoa(selectResult.LexiSynonymTypeId)
 	medication.DispenseUnitId = selectResult.DispenseUnitId
 	medication.DispenseUnitDescription = selectResult.DispenseUnitDescription
 	return medication, err

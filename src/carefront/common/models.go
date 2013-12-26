@@ -71,3 +71,27 @@ type PatientCareProviderGroup struct {
 	Status       string
 	Assignments  []*PatientCareProviderAssignment
 }
+
+type TreatmentPlan struct {
+	Id             int64  `json:"treatment_plan_id,string"`
+	PatientVisitId int64  `json:"patient_visit_id,string"`
+	Status         string `json:"status"`
+}
+
+type Treatment struct {
+	Id                   int64             `json:"treatment_id,string"`
+	TreatmentPlanId      int64             `json:"treatment_plan_id,string"`
+	PatientVisitId       int64             `json:"patient_visit_id,string"`
+	DrugDBIds            map[string]string `json:"drug_db_ids"`
+	DrugInternalName     string            `json:"drug_internal_name"`
+	DosageStrength       string            `json:"dosage_strength"`
+	DispenseValue        int64             `json:"dispense_value,string"`
+	DispenseUnitId       int64             `json:"dispense_unit_id,string"`
+	NumberRefills        int64             `json:"refills,string"`
+	SubstitutionsAllowed bool              `json:"substitutions_allowed,omitempty"`
+	DaysSupply           int64             `json:"days_supply,string"`
+	PharmacyNotes        string            `json:"pharmacy_notes,omitempty"`
+	PatientInstructions  string            `json:"patient_instructions,omitempty"`
+	CreationDate         time.Time         `json:"creation_date"`
+	Status               string            `json:"status"`
+}

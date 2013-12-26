@@ -16,8 +16,7 @@ type MedicationSelectRequestData struct {
 }
 
 type MedicationSelectResponse struct {
-	DrugId                  int               `json:"drug_id"`
-	AdditionalDrugDBIds     map[string]string `json:"additional_drug_db_ids"`
+	DrugDBIds               map[string]string `json:"drug_db_ids"`
 	DispenseUnitId          int               `json:"dispense_unit_id"`
 	DispenseUnitDescription string            `json:"dispense_unit_description"`
 }
@@ -39,8 +38,7 @@ func (m *MedicationSelectHandler) ServeHTTP(w http.ResponseWriter, r *http.Reque
 	}
 
 	medicationSelectResponse := &MedicationSelectResponse{}
-	medicationSelectResponse.DrugId = medication.DrugId
-	medicationSelectResponse.AdditionalDrugDBIds = medication.AdditionalDrugDBIds
+	medicationSelectResponse.DrugDBIds = medication.DrugDBIds
 	medicationSelectResponse.DispenseUnitId = medication.DispenseUnitId
 	medicationSelectResponse.DispenseUnitDescription = medication.DispenseUnitDescription
 	WriteJSONToHTTPResponseWriter(w, http.StatusOK, medicationSelectResponse)

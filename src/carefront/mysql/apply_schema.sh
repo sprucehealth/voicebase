@@ -18,6 +18,8 @@ fi
 
 echo "use $DATABASE_NAME;" | cat - migration-$latestMigrationNumber.sql > temp.sql
 mysql -h $RDS_INSTANCE -u $RDS_USERNAME -p$DEV_RDS_PASSWORD < temp.sql
+mysql -h $DEV_RDS_INSTANCE -u $RDS_USERNAME -p$DEV_RDS_PASSWORD < temp.sql
+
 scp temp.sql kunal@54.209.10.66:~
 ssh kunal@54.209.10.66 "mysql -h $PROD_RDS_INSTANCE -u $RDS_USERNAME -p$PROD_RDS_PASSWORD < temp.sql"
 rm temp.sql
