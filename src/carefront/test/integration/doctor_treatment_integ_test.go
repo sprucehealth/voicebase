@@ -49,7 +49,7 @@ func TestMedicationStrengthSearch(t *testing.T) {
 	}
 }
 
-func TestMedicationSelectSearch(t *testing.T) {
+func TestNewTreatmentSelection(t *testing.T) {
 	if err := CheckIfRunningLocally(t); err == CannotRunTestLocally {
 		return
 	}
@@ -58,8 +58,8 @@ func TestMedicationSelectSearch(t *testing.T) {
 	defer TearDownIntegrationTest(t, testData)
 
 	erxApi := setupErxAPI(t)
-	medicationSelectHandler := &apiservice.MedicationSelectHandler{ERxApi: erxApi}
-	ts := httptest.NewServer(medicationSelectHandler)
+	newTreatmentHandler := &apiservice.NewTreatmentHandler{ERxApi: erxApi}
+	ts := httptest.NewServer(newTreatmentHandler)
 	defer ts.Close()
 
 	resp, err := http.Get(ts.URL + "?drug_internal_name=" + url.QueryEscape("Lisinopril (oral - tablet)") + "&medication_strength=" + url.QueryEscape("10 mg"))
@@ -73,21 +73,21 @@ func TestMedicationSelectSearch(t *testing.T) {
 	}
 
 	CheckSuccessfulStatusCode(resp, "Unable to make a successful query to the medication strength api for the doctor: "+string(body), t)
-	medicationSelectResponse := &apiservice.MedicationSelectResponse{}
-	err = json.Unmarshal(body, medicationSelectResponse)
+	newTreatmentResponse := &apiservice.NewTreatmentResponse{}
+	err = json.Unmarshal(body, newTreatmentResponse)
 	if err != nil {
 		t.Fatal("Unable to unmarshal the response from the medication strength search api into a json object as expected: " + err.Error())
 	}
 
-	if medicationSelectResponse.Medication == nil {
+	if newTreatmentResponse.Treatment == nil {
 		t.Fatal("Expected medication object to be populated but its not")
 	}
 
-	if medicationSelectResponse.Medication.DrugDBIds == nil || len(medicationSelectResponse.Medication.DrugDBIds) == 0 {
+	if newTreatmentResponse.Treatment.DrugDBIds == nil || len(newTreatmentResponse.Treatment.DrugDBIds) == 0 {
 		t.Fatal("Expected additional drug db ids to be returned from api but none were")
 	}
 
-	if medicationSelectResponse.Medication.DrugDBIds[erx.LexiDrugSynId] == "0" || medicationSelectResponse.Medication.DrugDBIds[erx.LexiSynonymTypeId] == "0" || medicationSelectResponse.Medication.DrugDBIds[erx.LexiGenProductId] == "0" {
+	if newTreatmentResponse.Treatment.DrugDBIds[erx.LexiDrugSynId] == "0" || newTreatmentResponse.Treatment.DrugDBIds[erx.LexiSynonymTypeId] == "0" || newTreatmentResponse.Treatment.DrugDBIds[erx.LexiGenProductId] == "0" {
 		t.Fatal("Expected additional drug db ids not set (lexi_drug_syn_id and lexi_synonym_type_id")
 	}
 
@@ -103,13 +103,13 @@ func TestMedicationSelectSearch(t *testing.T) {
 	}
 
 	CheckSuccessfulStatusCode(resp, "Unable to make a successful query to the medication strength api for the doctor for an OTC product: "+string(body), t)
-	medicationSelectResponse = &apiservice.MedicationSelectResponse{}
-	err = json.Unmarshal(body, medicationSelectResponse)
+	newTreatmentResponse = &apiservice.NewTreatmentResponse{}
+	err = json.Unmarshal(body, newTreatmentResponse)
 	if err != nil {
 		t.Fatal("Unable to unmarshal the response from the medication strength search api into a json object as expected: " + err.Error())
 	}
 
-	if medicationSelectResponse.Medication == nil || medicationSelectResponse.Medication.OTC == false {
+	if newTreatmentResponse.Treatment == nil || newTreatmentResponse.Treatment.OTC == false {
 		t.Fatal("Expected the medication object to be returned and for the medication returned to be an OTC product")
 	}
 

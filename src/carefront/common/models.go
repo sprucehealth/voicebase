@@ -81,20 +81,21 @@ type TreatmentPlan struct {
 }
 
 type Treatment struct {
-	Id                   int64             `json:"treatment_id,string"`
-	TreatmentPlanId      int64             `json:"treatment_plan_id,string"`
-	PatientVisitId       int64             `json:"patient_visit_id,string"`
-	DrugDBIds            map[string]string `json:"drug_db_ids"`
-	DrugInternalName     string            `json:"drug_internal_name"`
-	DosageStrength       string            `json:"dosage_strength"`
-	DispenseValue        int64             `json:"dispense_value,string"`
-	DispenseUnitId       int64             `json:"dispense_unit_id,string"`
-	NumberRefills        int64             `json:"refills,string"`
-	SubstitutionsAllowed bool              `json:"substitutions_allowed,omitempty"`
-	DaysSupply           int64             `json:"days_supply,string"`
-	PharmacyNotes        string            `json:"pharmacy_notes,omitempty"`
-	PatientInstructions  string            `json:"patient_instructions,omitempty"`
-	CreationDate         time.Time         `json:"creation_date"`
-	Status               string            `json:"status"`
-	OTC                  bool              `json:"otc"`
+	Id                      int64             `json:"treatment_id,string,omitempty"`
+	TreatmentPlanId         int64             `json:"treatment_plan_id,string,omitempty"`
+	PatientVisitId          int64             `json:"patient_visit_id,string,omitempty"`
+	DrugDBIds               map[string]string `json:"drug_db_ids,omitempty"`
+	DrugInternalName        string            `json:"drug_internal_name,omitempty"`
+	DosageStrength          string            `json:"dosage_strength,omitempty"`
+	DispenseValue           int64             `json:"dispense_value,string,omitempty"`
+	DispenseUnitId          int64             `json:"dispense_unit_id,string,omitempty"`
+	DispenseUnitDescription string            `json:"dispense_unit_description,omitempty"`
+	NumberRefills           int64             `json:"refills,string,omitempty"`
+	SubstitutionsAllowed    bool              `json:"substitutions_allowed,omitempty"`
+	DaysSupply              int64             `json:"days_supply,string,omitempty"`
+	PharmacyNotes           string            `json:"pharmacy_notes,omitempty"`
+	PatientInstructions     string            `json:"patient_instructions,omitempty"`
+	CreationDate            time.Time         `json:"creation_date,omitempty"`
+	Status                  string            `json:"-"`
+	OTC                     bool              `json:"otc,omitempty"`
 }

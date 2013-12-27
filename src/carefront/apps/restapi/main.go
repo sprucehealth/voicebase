@@ -131,7 +131,7 @@ func main() {
 	autocompleteHandler := &apiservice.AutocompleteHandler{ERxApi: erx.NewDoseSpotService(conf.DoseSpotClinicId, conf.DoseSpotClinicKey, conf.DoseSpotUserId), Role: api.PATIENT_ROLE}
 	doctorTreatmentSuggestionHandler := &apiservice.AutocompleteHandler{ERxApi: erx.NewDoseSpotService(conf.DoseSpotClinicId, conf.DoseSpotClinicKey, conf.DoseSpotUserId), Role: api.DOCTOR_ROLE}
 	medicationStrengthSearchHandler := &apiservice.MedicationStrengthSearchHandler{ERxApi: erx.NewDoseSpotService(conf.DoseSpotClinicId, conf.DoseSpotClinicKey, conf.DoseSpotUserId)}
-	medicationSelectHandler := &apiservice.MedicationSelectHandler{ERxApi: erx.NewDoseSpotService(conf.DoseSpotClinicId, conf.DoseSpotClinicKey, conf.DoseSpotUserId)}
+	newTreatmentHandler := &apiservice.NewTreatmentHandler{ERxApi: erx.NewDoseSpotService(conf.DoseSpotClinicId, conf.DoseSpotClinicKey, conf.DoseSpotUserId)}
 	medicationDispenseUnitHandler := &apiservice.MedicationDispenseUnitsHandler{DataApi: dataApi}
 	treatmentsHandler := apiservice.NewTreatmentsHandler(dataApi)
 	photoAnswerIntakeHandler := apiservice.NewPhotoAnswerIntakeHandler(dataApi, photoAnswerCloudStorageApi, conf.CaseBucket, conf.AWSRegion, conf.MaxInMemoryForPhotoMB*1024*1024)
@@ -192,8 +192,9 @@ func main() {
 
 	mux.Handle("/v1/doctor/treatment/medication_suggestions", doctorTreatmentSuggestionHandler)
 	mux.Handle("/v1/doctor/treatment/medication_strengths", medicationStrengthSearchHandler)
-	mux.Handle("/v1/doctor/treatment/medication", medicationSelectHandler)
 	mux.Handle("/v1/doctor/treatment/medication_dispense_units", medicationDispenseUnitHandler)
+
+	mux.Handle("/v1/doctor/treatment/new", newTreatmentHandler)
 	mux.Handle("/v1/doctor/treatment/treatments", treatmentsHandler)
 	s := &http.Server{
 		Addr:           conf.ListenAddr,
