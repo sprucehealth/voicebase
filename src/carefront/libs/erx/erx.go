@@ -8,8 +8,8 @@ type ERxAPI interface {
 }
 
 type Medication struct {
-	DrugDBIds               map[string]string
-	OTC                     bool
-	DispenseUnitId          int
-	DispenseUnitDescription string
+	DrugDBIds               map[string]string `json:"drug_db_ids"`
+	OTC                     bool              `json:"otc"`
+	DispenseUnitId          int               `json:"dispense_unit_id"`
+	DispenseUnitDescription string            `json:"dispense_unit_description"`
 }
