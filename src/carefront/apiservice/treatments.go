@@ -4,6 +4,7 @@ import (
 	"carefront/api"
 	"carefront/common"
 	"encoding/json"
+	"github.com/gorilla/schema"
 	"net/http"
 	"strconv"
 )
@@ -13,12 +14,17 @@ type TreatmentsHandler struct {
 	accountId int64
 }
 
-type TreatmentsResponse struct {
+type GetTreatmentsResponse struct {
+	Treatments []*common.Treatment `json:"treatments"`
+}
+
+type AddTreatmentsResponse struct {
 	TreatmentIds []string `json:"treatment_ids"`
 }
 
 type TreatmentsRequestBody struct {
-	Treatments []*common.Treatment `json:"treatments"`
+	Treatments     []*common.Treatment `json:"treatments"`
+	PatientVisitId int64               `schema:"patient_visit_id"`
 }
 
 func NewTreatmentsHandler(dataApi api.DataAPI) *TreatmentsHandler {
@@ -30,6 +36,41 @@ func (t *TreatmentsHandler) AccountIdFromAuthToken(accountId int64) {
 }
 
 func (t *TreatmentsHandler) ServeHTTP(w http.ResponseWriter, r *http.Request) {
+	switch r.Method {
+	case "GET":
+		t.getTreatments(w, r)
+	case "POST":
+		t.addTreatment(w, r)
+	}
+}
+
+func (t *TreatmentsHandler) getTreatments(w http.ResponseWriter, r *http.Request) {
+	r.ParseForm()
+	requestData := new(TreatmentsRequestBody)
+	decoder := schema.NewDecoder()
+	err := decoder.Decode(requestData, r.Form)
+	if err != nil {
+		WriteDeveloperError(w, http.StatusBadRequest, "Unable to parse input parameters: "+err.Error())
+		return
+	}
+
+	_, _, _, httpStatusCode, err := ValidateDoctorAccessToPatientVisitAndGetRelevantData(requestData.PatientVisitId, t.accountId, t.DataApi)
+	if err != nil {
+		WriteDeveloperError(w, httpStatusCode, "Doctor not authorized to get treatments for patient visit: "+err.Error())
+		return
+	}
+
+	treatmentPlan, err := t.DataApi.GetTreatmentPlanForPatientVisit(requestData.PatientVisitId)
+	if err != nil {
+		WriteDeveloperError(w, http.StatusInternalServerError, "unable to get treatments for patient visit : "+err.Error())
+		return
+	}
+
+	WriteJSONToHTTPResponseWriter(w, http.StatusOK, &GetTreatmentsResponse{Treatments: treatmentPlan.Treatments})
+
+}
+
+func (t *TreatmentsHandler) addTreatment(w http.ResponseWriter, r *http.Request) {
 	jsonDecoder := json.NewDecoder(r.Body)
 	treatmentsRequestBody := &TreatmentsRequestBody{}
 
@@ -67,5 +108,5 @@ func (t *TreatmentsHandler) ServeHTTP(w http.ResponseWriter, r *http.Request) {
 		treatmentIds = append(treatmentIds, strconv.FormatInt(treatment.Id, 10))
 	}
 
-	WriteJSONToHTTPResponseWriter(w, http.StatusOK, &TreatmentsResponse{TreatmentIds: treatmentIds})
+	WriteJSONToHTTPResponseWriter(w, http.StatusOK, &AddTreatmentsResponse{TreatmentIds: treatmentIds})
 }

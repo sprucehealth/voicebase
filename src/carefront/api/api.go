@@ -91,6 +91,7 @@ type IntakeLayoutAPI interface {
 type ERxAPI interface {
 	GetMedicationDispenseUnits(languageId int64) (dispenseUnitIds []int64, dispenseUnits []string, err error)
 	AddTreatmentsForPatientVisit(treatments []*common.Treatment) error
+	GetTreatmentPlanForPatientVisit(patientVisitId int64) (treatmentPlan *common.TreatmentPlan, err error)
 }
 
 type ObjectStorageAPI interface {

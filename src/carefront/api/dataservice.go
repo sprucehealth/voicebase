@@ -40,6 +40,89 @@ func (d *DataService) GetMedicationDispenseUnits(languageId int64) (dispenseUnit
 	return
 }
 
+func (d *DataService) GetTreatmentPlanForPatientVisit(patientVisitId int64) (treatmentPlan *common.TreatmentPlan, err error) {
+	treatmentPlan = &common.TreatmentPlan{}
+	treatmentPlan.PatientVisitId = patientVisitId
+
+	// get treatment plan information
+	var status string
+	var treatmentPlanId int64
+	err = d.DB.QueryRow(`select id, status from treatment_plan where patient_visit_id = ?`, patientVisitId).Scan(&treatmentPlanId, &status)
+	if err != nil {
+		if err == sql.ErrNoRows {
+			return treatmentPlan, nil
+		} else {
+			return
+		}
+	}
+
+	treatmentPlan.Id = treatmentPlanId
+	treatmentPlan.Status = status
+	treatmentPlan.Treatments = make([]*common.Treatment, 0)
+	rows, err := d.DB.Query(`select treatment.id, treatment.drug_internal_name, 
+			treatment.dispense_value, treatment.dispense_unit_id, treatment.refills, treatment.substitutions_allowed, 
+			treatment.days_supply, treatment.pharmacy_notes, treatment.patient_instructions, treatment.creation_date, 
+			treatment.status from treatment inner join treatment_plan on treatment.treatment_plan_id = treatment_plan.id 
+				where patient_visit_id=?`, patientVisitId)
+
+	if err != nil {
+		if err == sql.ErrNoRows {
+			return treatmentPlan, nil
+		} else {
+			return
+		}
+	}
+
+	defer rows.Close()
+
+	for rows.Next() {
+		var treatmentId, dispenseValue, dispenseUnitId, refills, daysSupply int64
+		var drugInternalName, patientInstructions string
+		var substitutionsAllowed bool
+		var creationDate time.Time
+		var pharmacyNotes sql.NullString
+
+		rows.Scan(&treatmentId, &drugInternalName, &dispenseValue, &dispenseUnitId, &refills, &substitutionsAllowed, &daysSupply, &pharmacyNotes, &patientInstructions, &creationDate, &status)
+
+		treatment := &common.Treatment{}
+		treatment.Id = treatmentId
+		treatment.DrugInternalName = drugInternalName
+		treatment.TreatmentPlanId = treatmentPlan.Id
+		treatment.DispenseValue = dispenseValue
+		treatment.DispenseUnitId = dispenseUnitId
+		treatment.NumberRefills = refills
+		treatment.SubstitutionsAllowed = substitutionsAllowed
+		treatment.DaysSupply = daysSupply
+		if pharmacyNotes.Valid {
+			treatment.PharmacyNotes = pharmacyNotes.String
+		}
+		treatment.PatientInstructions = patientInstructions
+		treatment.CreationDate = creationDate
+		treatment.Status = status
+		treatmentPlan.Treatments = append(treatmentPlan.Treatments, treatment)
+
+		// for each of the drugs, populate the drug db ids
+		drugDbIds := make(map[string]string)
+		drugRows, anotherErr := d.DB.Query(`select drug_db_id_tag, drug_db_id from drug_db_id where treatment_id = ? `, treatmentId)
+		if anotherErr != nil {
+			err = anotherErr
+			return
+		}
+		defer drugRows.Close()
+
+		for drugRows.Next() {
+			var dbIdTag string
+			var dbId int64
+			drugRows.Scan(&dbIdTag, &dbId)
+			drugDbIds[dbIdTag] = strconv.FormatInt(dbId, 10)
+		}
+
+		treatment.DrugDBIds = drugDbIds
+	}
+
+	return
+}
+
 func (d *DataService) AddTreatmentsForPatientVisit(treatments []*common.Treatment) error {
 	tx, err := d.DB.Begin()
 	if err != nil {
