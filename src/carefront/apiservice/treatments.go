@@ -94,7 +94,43 @@ func (t *TreatmentsHandler) addTreatment(w http.ResponseWriter, r *http.Request)
 		}
 	}
 
-	// TODO  validate treatment object
+	// TODO  validate all treatments
+	for _, treatment := range treatmentsRequestBody.Treatments {
+		if treatment.DrugInternalName == "" {
+			WriteDeveloperError(w, http.StatusBadRequest, "Drug Internal name for treatment cannot be empty")
+			return
+		}
+
+		if treatment.DosageStrength == "" {
+			WriteDeveloperError(w, http.StatusBadRequest, "Dosage Strength for treatment cannot be empty")
+			return
+		}
+
+		if treatment.DispenseValue == 0 {
+			WriteDeveloperError(w, http.StatusBadRequest, "DispenseValue for treatment cannot be 0")
+			return
+		}
+
+		if treatment.DispenseUnitId == 0 {
+			WriteDeveloperError(w, http.StatusBadRequest, "DispenseUnitId for treatment cannot be 0")
+			return
+		}
+
+		if treatment.NumberRefills == 0 {
+			WriteDeveloperError(w, http.StatusBadRequest, "Number of refills for treatment cannot be 0")
+			return
+		}
+
+		if treatment.DaysSupply == 0 {
+			WriteDeveloperError(w, http.StatusBadRequest, "Days of Supply for treatment cannot be 0")
+			return
+		}
+
+		if treatment.PatientInstructions == "" {
+			WriteDeveloperError(w, http.StatusBadRequest, "Patient Instructions for treatment cannot be empty")
+			return
+		}
+	}
 
 	// Add treatments to patient
 	err = t.DataApi.AddTreatmentsForPatientVisit(treatmentsRequestBody.Treatments)

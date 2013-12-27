@@ -48,7 +48,7 @@ func (d *DataService) GetTreatmentPlanForPatientVisit(patientVisitId int64) (tre
 	var status string
 	var treatmentPlanId int64
 	var creationDate time.Time
-	err = d.DB.QueryRow(`select id, status, creation_date from treatment_plan where patient_visit_id = ?`, patientVisitId).Scan(&treatmentPlanId, &status)
+	err = d.DB.QueryRow(`select id, status, creation_date from treatment_plan where patient_visit_id = ?`, patientVisitId).Scan(&treatmentPlanId, &status, &creationDate)
 	if err != nil {
 		if err == sql.ErrNoRows {
 			return treatmentPlan, nil
@@ -61,7 +61,7 @@ func (d *DataService) GetTreatmentPlanForPatientVisit(patientVisitId int64) (tre
 	treatmentPlan.Status = status
 	treatmentPlan.CreationDate = creationDate
 	treatmentPlan.Treatments = make([]*common.Treatment, 0)
-	rows, err := d.DB.Query(`select treatment.id, treatment.drug_internal_name, 
+	rows, err := d.DB.Query(`select treatment.id, treatment.drug_internal_name, treatment.dosage_strength,
 			treatment.dispense_value, treatment.dispense_unit_id, treatment.refills, treatment.substitutions_allowed, 
 			treatment.days_supply, treatment.pharmacy_notes, treatment.patient_instructions, treatment.creation_date, 
 			treatment.status from treatment inner join treatment_plan on treatment.treatment_plan_id = treatment_plan.id 
@@ -79,16 +79,17 @@ func (d *DataService) GetTreatmentPlanForPatientVisit(patientVisitId int64) (tre
 
 	for rows.Next() {
 		var treatmentId, dispenseValue, dispenseUnitId, refills, daysSupply int64
-		var drugInternalName, patientInstructions string
+		var drugInternalName, dosageStrength, patientInstructions string
 		var substitutionsAllowed bool
 		var creationDate time.Time
 		var pharmacyNotes sql.NullString
 
-		rows.Scan(&treatmentId, &drugInternalName, &dispenseValue, &dispenseUnitId, &refills, &substitutionsAllowed, &daysSupply, &pharmacyNotes, &patientInstructions, &creationDate, &status)
+		rows.Scan(&treatmentId, &drugInternalName, &dosageStrength, &dispenseValue, &dispenseUnitId, &refills, &substitutionsAllowed, &daysSupply, &pharmacyNotes, &patientInstructions, &creationDate, &status)
 
 		treatment := &common.Treatment{}
 		treatment.Id = treatmentId
 		treatment.DrugInternalName = drugInternalName
+		treatment.DosageStrength = dosageStrength
 		treatment.TreatmentPlanId = treatmentPlan.Id
 		treatment.DispenseValue = dispenseValue
 		treatment.DispenseUnitId = dispenseUnitId
@@ -163,9 +164,9 @@ func (d *DataService) AddTreatmentsForPatientVisit(treatments []*common.Treatmen
 		// add treatment for patient
 		var treatmentId int64
 		if treatment.PharmacyNotes != "" {
-			insertTreatmentStr := `insert into treatment (treatment_plan_id, drug_internal_name, dispense_value, dispense_unit_id, refills, substitutions_allowed, days_supply, patient_instructions, pharmacy_notes, status) 
-									values (?,?,?,?,?,?,?,?,?,'CREATED')`
-			res, err := tx.Exec(insertTreatmentStr, treatmentPlanId, treatment.DrugInternalName, treatment.DispenseValue, treatment.DispenseUnitId, treatment.NumberRefills, treatment.SubstitutionsAllowed, treatment.DaysSupply, treatment.PatientInstructions, treatment.PharmacyNotes)
+			insertTreatmentStr := `insert into treatment (treatment_plan_id, drug_internal_name, dosage_strength, dispense_value, dispense_unit_id, refills, substitutions_allowed, days_supply, patient_instructions, pharmacy_notes, status) 
+									values (?,?,?,?,?,?,?,?,?,?,'CREATED')`
+			res, err := tx.Exec(insertTreatmentStr, treatmentPlanId, treatment.DrugInternalName, treatment.DosageStrength, treatment.DispenseValue, treatment.DispenseUnitId, treatment.NumberRefills, treatment.SubstitutionsAllowed, treatment.DaysSupply, treatment.PatientInstructions, treatment.PharmacyNotes)
 			if err != nil {
 				tx.Rollback()
 				return err
@@ -177,9 +178,9 @@ func (d *DataService) AddTreatmentsForPatientVisit(treatments []*common.Treatmen
 				return err
 			}
 		} else {
-			insertTreatmentStr := `insert into treatment (treatment_plan_id, drug_internal_name, dispense_value, dispense_unit_id, refills, substitutions_allowed, days_supply, patient_instructions, status) 
-									values (?,?,?,?,?,?,?,?,'CREATED')`
-			res, err := tx.Exec(insertTreatmentStr, treatmentPlanId, treatment.DrugInternalName, treatment.DispenseValue, treatment.DispenseUnitId, treatment.NumberRefills, treatment.SubstitutionsAllowed, treatment.DaysSupply, treatment.PatientInstructions)
+			insertTreatmentStr := `insert into treatment (treatment_plan_id, drug_internal_name, dosage_strength, dispense_value, dispense_unit_id, refills, substitutions_allowed, days_supply, patient_instructions, status) 
+									values (?,?,?,?,?,?,?,?,?,'CREATED')`
+			res, err := tx.Exec(insertTreatmentStr, treatmentPlanId, treatment.DrugInternalName, treatment.DosageStrength, treatment.DispenseValue, treatment.DispenseUnitId, treatment.NumberRefills, treatment.SubstitutionsAllowed, treatment.DaysSupply, treatment.PatientInstructions)
 			if err != nil {
 				tx.Rollback()
 				return err
