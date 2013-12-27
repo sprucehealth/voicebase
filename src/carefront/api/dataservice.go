@@ -222,6 +222,31 @@ func (d *DataService) AddTreatmentsForPatientVisit(treatments []*common.Treatmen
 	return nil
 }
 
+func (d *DataService) CheckCareProvidingElligibility(shortState string, healthConditionId int64) (isElligible bool, err error) {
+	queryStr := fmt.Sprintf(`select provider_id from care_provider_state_elligibility 
+								inner join care_providing_state on care_providing_state_id = care_providing_state.id 
+								inner join provider_role on provider_role_id = provider_role.id 
+									where state = '%s' and health_condition_id = ? and provider_tag='DOCTOR'`, shortState)
+	rows, err := d.DB.Query(queryStr, healthConditionId)
+	if err != nil {
+		return false, err
+	}
+	defer rows.Close()
+
+	doctorIds := make([]int64, 0)
+	for rows.Next() {
+		var doctorId int64
+		rows.Scan(&doctorId)
+		doctorIds = append(doctorIds, doctorId)
+	}
+
+	if len(doctorIds) == 0 {
+		return false, nil
+	}
+
+	return true, nil
+}
+
 func (d *DataService) RegisterPatient(accountId int64, firstName, lastName, gender, zipCode string, dob time.Time) (int64, error) {
 	res, err := d.DB.Exec(`insert into patient (account_id, first_name, last_name, zip_code, gender, dob, status) 
 								values (?, ?, ?, ?, ?, ? , 'REGISTERED')`, accountId, firstName, lastName, zipCode, gender, dob)

@@ -12,6 +12,7 @@ import (
 	"carefront/apiservice"
 	"carefront/common/config"
 	"carefront/libs/erx"
+	"carefront/libs/maps"
 	"carefront/libs/svcclient"
 	"carefront/libs/svcreg"
 	"carefront/services/auth"
@@ -121,6 +122,7 @@ func main() {
 	cloudStorageApi := api.NewCloudStorageService(awsAuth)
 	photoAnswerCloudStorageApi := api.NewCloudStorageService(awsAuth)
 	authHandler := &apiservice.AuthenticationHandler{AuthApi: authApi}
+	checkElligibilityHandler := &apiservice.CheckCareProvidingElligibilityHandler{DataApi: dataApi, MapsService: maps.GoogleMapsService(0)}
 	signupPatientHandler := &apiservice.SignupPatientHandler{DataApi: dataApi, AuthApi: authApi}
 	authenticateDoctorHandler := &apiservice.DoctorAuthenticationHandler{DataApi: dataApi, AuthApi: authApi}
 	signupDoctorHandler := &apiservice.SignupDoctorHandler{DataApi: dataApi, AuthApi: authApi}
@@ -170,6 +172,7 @@ func main() {
 
 	mux.Handle("/v1/patient", signupPatientHandler)
 	mux.Handle("/v1/visit", patientVisitHandler)
+	mux.Handle("/v1/check_elligibility", checkElligibilityHandler)
 	mux.Handle("/v1/patient_visit_review", doctorPatientVisitReviewHandler)
 	mux.Handle("/v1/answer", answerIntakeHandler)
 	mux.Handle("/v1/answer/photo", photoAnswerIntakeHandler)

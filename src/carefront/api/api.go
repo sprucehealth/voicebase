@@ -36,6 +36,7 @@ type PatientAPI interface {
 	GetPatientIdFromAccountId(accountId int64) (int64, error)
 	CreateCareTeamForPatient(patientId int64) error
 	GetCareTeamForPatient(patientId int64) (careTeam *common.PatientCareProviderGroup, err error)
+	CheckCareProvidingElligibility(shortState string, healthConditionId int64) (isElligible bool, err error)
 }
 
 type DoctorAPI interface {
