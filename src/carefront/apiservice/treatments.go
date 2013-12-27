@@ -130,6 +130,11 @@ func (t *TreatmentsHandler) addTreatment(w http.ResponseWriter, r *http.Request)
 			WriteDeveloperError(w, http.StatusBadRequest, "Patient Instructions for treatment cannot be empty")
 			return
 		}
+
+		if treatment.DrugDBIds == nil || len(treatment.DrugDBIds) == 0 {
+			WriteDeveloperError(w, http.StatusBadRequest, "Drug DB Ids for treatment cannot be empty")
+			return
+		}
 	}
 
 	// Add treatments to patient
