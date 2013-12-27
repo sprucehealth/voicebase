@@ -79,13 +79,40 @@ func TestMedicationSelectSearch(t *testing.T) {
 		t.Fatal("Unable to unmarshal the response from the medication strength search api into a json object as expected: " + err.Error())
 	}
 
-	if medicationSelectResponse.DrugDBIds == nil || len(medicationSelectResponse.DrugDBIds) == 0 {
+	if medicationSelectResponse.Medication == nil {
+		t.Fatal("Expected medication object to be populated but its not")
+	}
+
+	if medicationSelectResponse.Medication.DrugDBIds == nil || len(medicationSelectResponse.Medication.DrugDBIds) == 0 {
 		t.Fatal("Expected additional drug db ids to be returned from api but none were")
 	}
 
-	if medicationSelectResponse.DrugDBIds[erx.LexiDrugSynId] == "0" || medicationSelectResponse.DrugDBIds[erx.LexiSynonymTypeId] == "0" || medicationSelectResponse.DrugDBIds[erx.LexiGenProductId] == "0" {
+	if medicationSelectResponse.Medication.DrugDBIds[erx.LexiDrugSynId] == "0" || medicationSelectResponse.Medication.DrugDBIds[erx.LexiSynonymTypeId] == "0" || medicationSelectResponse.Medication.DrugDBIds[erx.LexiGenProductId] == "0" {
 		t.Fatal("Expected additional drug db ids not set (lexi_drug_syn_id and lexi_synonym_type_id")
 	}
+
+	// Let's run a test for an OTC product to ensure that the OTC flag is set as expected
+	resp, err = http.Get(ts.URL + "?drug_internal_name=" + url.QueryEscape("Fish Oil (oral - capsule)") + "&medication_strength=" + url.QueryEscape("500 mg"))
+	if err != nil {
+		t.Fatal("Unable to make a successful query to the medication strength api: " + err.Error())
+	}
+
+	body, err = ioutil.ReadAll(resp.Body)
+	if err != nil {
+		t.Fatal("Unable to parse the body of the response: " + err.Error())
+	}
+
+	CheckSuccessfulStatusCode(resp, "Unable to make a successful query to the medication strength api for the doctor for an OTC product: "+string(body), t)
+	medicationSelectResponse = &apiservice.MedicationSelectResponse{}
+	err = json.Unmarshal(body, medicationSelectResponse)
+	if err != nil {
+		t.Fatal("Unable to unmarshal the response from the medication strength search api into a json object as expected: " + err.Error())
+	}
+
+	if medicationSelectResponse.Medication == nil || medicationSelectResponse.Medication.OTC == false {
+		t.Fatal("Expected the medication object to be returned and for the medication returned to be an OTC product")
+	}
+
 }
 
 func TestDispenseUnitIds(t *testing.T) {

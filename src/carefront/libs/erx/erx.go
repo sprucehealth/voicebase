@@ -9,6 +9,7 @@ type ERxAPI interface {
 
 type Medication struct {
 	DrugDBIds               map[string]string
+	OTC                     bool
 	DispenseUnitId          int
 	DispenseUnitDescription string
 }

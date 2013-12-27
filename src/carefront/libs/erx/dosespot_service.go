@@ -108,5 +108,6 @@ func (d *DoseSpotService) SelectMedication(medicationName, medicationStrength st
 	medication.DrugDBIds[LexiSynonymTypeId] = strconv.Itoa(selectResult.LexiSynonymTypeId)
 	medication.DispenseUnitId = selectResult.DispenseUnitId
 	medication.DispenseUnitDescription = selectResult.DispenseUnitDescription
+	medication.OTC = selectResult.OTC
 	return medication, err
 }

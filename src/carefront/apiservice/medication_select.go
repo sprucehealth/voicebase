@@ -16,9 +16,7 @@ type MedicationSelectRequestData struct {
 }
 
 type MedicationSelectResponse struct {
-	DrugDBIds               map[string]string `json:"drug_db_ids"`
-	DispenseUnitId          int               `json:"dispense_unit_id"`
-	DispenseUnitDescription string            `json:"dispense_unit_description"`
+	Medication *erx.Medication `json:"medication"`
 }
 
 func (m *MedicationSelectHandler) ServeHTTP(w http.ResponseWriter, r *http.Request) {
@@ -38,8 +36,6 @@ func (m *MedicationSelectHandler) ServeHTTP(w http.ResponseWriter, r *http.Reque
 	}
 
 	medicationSelectResponse := &MedicationSelectResponse{}
-	medicationSelectResponse.DrugDBIds = medication.DrugDBIds
-	medicationSelectResponse.DispenseUnitId = medication.DispenseUnitId
-	medicationSelectResponse.DispenseUnitDescription = medication.DispenseUnitDescription
+	medicationSelectResponse.Medication = medication
 	WriteJSONToHTTPResponseWriter(w, http.StatusOK, medicationSelectResponse)
 }
