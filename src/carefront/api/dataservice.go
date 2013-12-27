@@ -88,6 +88,7 @@ func (d *DataService) GetTreatmentPlanForPatientVisit(patientVisitId int64) (tre
 
 		treatment := &common.Treatment{}
 		treatment.Id = treatmentId
+		treatment.PatientVisitId = patientVisitId
 		treatment.DrugInternalName = drugInternalName
 		treatment.DosageStrength = dosageStrength
 		treatment.TreatmentPlanId = treatmentPlan.Id
@@ -161,12 +162,17 @@ func (d *DataService) AddTreatmentsForPatientVisit(treatments []*common.Treatmen
 			}
 		}
 
+		substitutionsAllowedBit := 0
+		if treatment.SubstitutionsAllowed == true {
+			substitutionsAllowedBit = 1
+		}
+
 		// add treatment for patient
 		var treatmentId int64
 		if treatment.PharmacyNotes != "" {
 			insertTreatmentStr := `insert into treatment (treatment_plan_id, drug_internal_name, dosage_strength, dispense_value, dispense_unit_id, refills, substitutions_allowed, days_supply, patient_instructions, pharmacy_notes, status) 
 									values (?,?,?,?,?,?,?,?,?,?,'CREATED')`
-			res, err := tx.Exec(insertTreatmentStr, treatmentPlanId, treatment.DrugInternalName, treatment.DosageStrength, treatment.DispenseValue, treatment.DispenseUnitId, treatment.NumberRefills, treatment.SubstitutionsAllowed, treatment.DaysSupply, treatment.PatientInstructions, treatment.PharmacyNotes)
+			res, err := tx.Exec(insertTreatmentStr, treatmentPlanId, treatment.DrugInternalName, treatment.DosageStrength, treatment.DispenseValue, treatment.DispenseUnitId, treatment.NumberRefills, substitutionsAllowedBit, treatment.DaysSupply, treatment.PatientInstructions, treatment.PharmacyNotes)
 			if err != nil {
 				tx.Rollback()
 				return err
@@ -180,7 +186,7 @@ func (d *DataService) AddTreatmentsForPatientVisit(treatments []*common.Treatmen
 		} else {
 			insertTreatmentStr := `insert into treatment (treatment_plan_id, drug_internal_name, dosage_strength, dispense_value, dispense_unit_id, refills, substitutions_allowed, days_supply, patient_instructions, status) 
 									values (?,?,?,?,?,?,?,?,?,'CREATED')`
-			res, err := tx.Exec(insertTreatmentStr, treatmentPlanId, treatment.DrugInternalName, treatment.DosageStrength, treatment.DispenseValue, treatment.DispenseUnitId, treatment.NumberRefills, treatment.SubstitutionsAllowed, treatment.DaysSupply, treatment.PatientInstructions)
+			res, err := tx.Exec(insertTreatmentStr, treatmentPlanId, treatment.DrugInternalName, treatment.DosageStrength, treatment.DispenseValue, treatment.DispenseUnitId, treatment.NumberRefills, substitutionsAllowedBit, treatment.DaysSupply, treatment.PatientInstructions)
 			if err != nil {
 				tx.Rollback()
 				return err
