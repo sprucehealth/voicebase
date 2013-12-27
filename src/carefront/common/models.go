@@ -73,11 +73,11 @@ type PatientCareProviderGroup struct {
 }
 
 type TreatmentPlan struct {
-	Id             int64  `json:"treatment_plan_id,string"`
-	PatientVisitId int64  `json:"patient_visit_id,string"`
-	Status         string `json:"status"`
-	CreationDate time.Time `json:"creation_date"`
-	Treatments []*Treatment `json:"treatments"`
+	Id             int64        `json:"treatment_plan_id,string"`
+	PatientVisitId int64        `json:"patient_visit_id,string"`
+	Status         string       `json:"status"`
+	CreationDate   time.Time    `json:"creation_date"`
+	Treatments     []*Treatment `json:"treatments"`
 }
 
 type Treatment struct {
@@ -96,4 +96,5 @@ type Treatment struct {
 	PatientInstructions  string            `json:"patient_instructions,omitempty"`
 	CreationDate         time.Time         `json:"creation_date"`
 	Status               string            `json:"status"`
+	OTC                  bool              `json:"otc"`
 }

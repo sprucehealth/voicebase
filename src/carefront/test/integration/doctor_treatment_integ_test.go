@@ -197,6 +197,7 @@ func TestAddTreatments(t *testing.T) {
 	treatment1.NumberRefills = 1
 	treatment1.SubstitutionsAllowed = true
 	treatment1.DaysSupply = 1
+	treatment1.OTC = true
 	treatment1.PharmacyNotes = "testing pharmacy notes"
 	treatment1.PatientInstructions = "patient instructions"
 	drugDBIds := make(map[string]string)
@@ -213,6 +214,7 @@ func TestAddTreatments(t *testing.T) {
 	treatment2.NumberRefills = 3
 	treatment2.SubstitutionsAllowed = false
 	treatment2.DaysSupply = 12
+	treatment2.OTC = false
 	treatment2.PharmacyNotes = "testing pharmacy notes 2"
 	treatment2.PatientInstructions = "patient instructions 2"
 	drugDBIds = make(map[string]string)
@@ -297,7 +299,8 @@ func compareTreatments(treatment *common.Treatment, treatment1 *common.Treatment
 	if treatment.DosageStrength != treatment1.DosageStrength || treatment.DispenseValue != treatment1.DispenseValue ||
 		treatment.DispenseUnitId != treatment1.DispenseUnitId || treatment.PatientInstructions != treatment1.PatientInstructions ||
 		treatment.PharmacyNotes != treatment1.PharmacyNotes || treatment.NumberRefills != treatment1.NumberRefills ||
-		treatment.SubstitutionsAllowed != treatment1.SubstitutionsAllowed || treatment.DaysSupply != treatment1.DaysSupply {
+		treatment.SubstitutionsAllowed != treatment1.SubstitutionsAllowed || treatment.DaysSupply != treatment1.DaysSupply ||
+		treatment.OTC != treatment1.OTC {
 		treatmentData, _ := json.MarshalIndent(treatment, "", " ")
 		treatment1Data, _ := json.MarshalIndent(treatment1, "", " ")
 
