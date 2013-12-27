@@ -47,7 +47,8 @@ func (d *DataService) GetTreatmentPlanForPatientVisit(patientVisitId int64) (tre
 	// get treatment plan information
 	var status string
 	var treatmentPlanId int64
-	err = d.DB.QueryRow(`select id, status from treatment_plan where patient_visit_id = ?`, patientVisitId).Scan(&treatmentPlanId, &status)
+	var creationDate time.Time
+	err = d.DB.QueryRow(`select id, status, creation_date from treatment_plan where patient_visit_id = ?`, patientVisitId).Scan(&treatmentPlanId, &status)
 	if err != nil {
 		if err == sql.ErrNoRows {
 			return treatmentPlan, nil
@@ -58,6 +59,7 @@ func (d *DataService) GetTreatmentPlanForPatientVisit(patientVisitId int64) (tre
 
 	treatmentPlan.Id = treatmentPlanId
 	treatmentPlan.Status = status
+	treatmentPlan.CreationDate = creationDate
 	treatmentPlan.Treatments = make([]*common.Treatment, 0)
 	rows, err := d.DB.Query(`select treatment.id, treatment.drug_internal_name, 
 			treatment.dispense_value, treatment.dispense_unit_id, treatment.refills, treatment.substitutions_allowed, 

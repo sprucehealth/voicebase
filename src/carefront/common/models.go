@@ -76,6 +76,7 @@ type TreatmentPlan struct {
 	Id             int64  `json:"treatment_plan_id,string"`
 	PatientVisitId int64  `json:"patient_visit_id,string"`
 	Status         string `json:"status"`
+	CreationDate time.Time `json:"creation_date"`
 	Treatments []*Treatment `json:"treatments"`
 }
 

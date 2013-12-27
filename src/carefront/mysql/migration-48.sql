@@ -1,0 +1,1 @@
+alter table treatment_plan add column creation_date timestamp not null default current_timestamp;
