@@ -1,1 +1,0 @@
-alter table treatment add column type varchar(150) not null;

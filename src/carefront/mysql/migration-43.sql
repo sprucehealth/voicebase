@@ -1,1 +1,0 @@
-alter table treatment add column dosage_strength varchar(250) not null;

@@ -1,2 +1,0 @@
-rename table patient_visit_provider_assignment to patient_care_provider_assignment;
-rename table patient_visit_provider_group to patient_care_provider_group;

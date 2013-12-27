@@ -1,1 +1,0 @@
-alter table treatment modify pharmacy_notes varchar(150);

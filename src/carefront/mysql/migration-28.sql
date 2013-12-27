@@ -1,1 +1,0 @@
-alter table doctor add status varchar(250) not null;	
