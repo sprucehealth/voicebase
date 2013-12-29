@@ -93,6 +93,7 @@ type ERxAPI interface {
 	GetMedicationDispenseUnits(languageId int64) (dispenseUnitIds []int64, dispenseUnits []string, err error)
 	AddTreatmentsForPatientVisit(treatments []*common.Treatment) error
 	GetTreatmentPlanForPatientVisit(patientVisitId int64) (treatmentPlan *common.TreatmentPlan, err error)
+	GetDrugInstructionsForDoctor(drugName, drugForm, drugRoute string, doctorId int64) (drugInstructions []*common.DoctorSupplementalInstruction, err error)
 }
 
 type ObjectStorageAPI interface {

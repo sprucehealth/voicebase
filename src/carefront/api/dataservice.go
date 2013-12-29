@@ -233,6 +233,215 @@ func (d *DataService) AddTreatmentsForPatientVisit(treatments []*common.Treatmen
 	return nil
 }
 
+func (d *DataService) GetDrugInstructionsForDoctor(drugName, drugForm, drugRoute string, doctorId int64) (drugInstructions []*common.DoctorSupplementalInstruction, err error) {
+	// first, try and populate instructions belonging to the doctor based on just the drug name
+	// if non exist, then check the predefined set of instructions, create a copy for the doctor and return this copy
+	queryStr := fmt.Sprintf(`select id, text, selected from drug_supplemental_instruction 
+									inner join drug_name on drug_name_id=drug_name.id 
+										where name='%s' and drug_form_id is null and drug_route_id is null and status='ACTIVE'`, drugName)
+	drugInstructions, err = d.queryAndInsertPredefinedInstructionsForDoctor(queryStr, doctorId, getDoctorInstructionsBasedOnName, drugName)
+	if err != nil {
+		return
+	}
+
+	// second, try and populate instructions belonging to the doctor based on the drug name and the form
+	// if non exist, then check the predefined set of instructions, create a copy for the doctor and return this copy
+	queryStr = fmt.Sprintf(`select id, text, drug_name_id, drug_form_id, drug_route_id from drug_supplemental_instruction 
+									inner join drug_name on drug_name_id=drug_name.id 
+									inner join drug_form on drug_form_id=drug_form.id 
+										where drug_name.name='%s' and drug_form.name = '%s' and drug_route_id is null and status='ACTIVE'`, drugName, drugForm)
+	moreInstructions, err := d.queryAndInsertPredefinedInstructionsForDoctor(queryStr, doctorId, getDoctorInstructionsBasedOnNameAndForm, drugName, drugForm)
+	if err != nil {
+		return
+	}
+	drugInstructions = append(drugInstructions, moreInstructions...)
+
+	// third, try and populate instructions belonging to the doctor based on the drug name and route
+	// if non exist, then check the predefined set of instructions, create a copy for the doctor and return this copy
+	queryStr = fmt.Sprintf(`select id, text, drug_name_id, drug_form_id, drug_route_id from drug_supplemental_instruction 
+									inner join drug_name on drug_name_id=drug_name.id 
+									inner join drug_route on drug_route_id=drug_route.id 
+										where drug_name.name='%s' and drug_route.name = '%s' and drug_form_id is null and status='ACTIVE'`, drugName, drugRoute)
+	moreInstructions, err = d.queryAndInsertPredefinedInstructionsForDoctor(queryStr, doctorId, getDoctorInstructionsBasedOnNameAndRoute, drugName, drugRoute)
+	if err != nil {
+		return
+	}
+	drugInstructions = append(drugInstructions, moreInstructions...)
+
+	// fourth, try and populate instructions belonging to the doctor based on the drug name, form and route
+	// if non exist, then check the predefined set of instructions, create a copy for the doctor and return this copy
+	queryStr = fmt.Sprintf(`select id, text, drug_name_id, drug_form_id, drug_route_id from drug_supplemental_instruction 
+									inner join drug_name on drug_name_id=drug_name.id 
+									inner join drug_route on drug_route_id=drug_route.id
+									inner join drug_form on drug_form_id=drug_form.id
+										where drug_name.name='%s' and drug_route.name = '%s' and drug_form_id = '%s' and status='ACTIVE'`, drugName, drugRoute, drugForm)
+	moreInstructions, err = d.queryAndInsertPredefinedInstructionsForDoctor(queryStr, doctorId, getDoctorInstructionsBasedOnNameFormAndRoute, drugName, drugForm, drugRoute)
+	if err != nil {
+		return
+	}
+	drugInstructions = append(drugInstructions, moreInstructions...)
+	return
+}
+
+func (d *DataService) queryAndInsertPredefinedInstructionsForDoctor(queryStr string, doctorId int64, queryInstructionsFunc doctorInstructionQuery, drugComponents ...string) (drugInstructions []*common.DoctorSupplementalInstruction, err error) {
+	drugInstructions, err = queryInstructionsFunc(d.DB, doctorId, drugComponents...)
+	if err != nil {
+		return
+	}
+
+	// nothing to do if the doctor already has instructions for the combination of the drug components
+	if len(drugInstructions) > 0 {
+		return
+	}
+
+	rows, err := d.DB.Query(queryStr)
+	if err != nil {
+		return
+	}
+
+	predefinedInstructions, err := getPredefinedInstructionsFromRows(rows)
+	if err != nil {
+		return
+	}
+
+	// nothing to do if no predefined instructions exist
+	if len(predefinedInstructions) == 0 {
+		return
+	}
+
+	err = d.insertPredefinedInstructionsForDoctor(predefinedInstructions, doctorId)
+	if err != nil {
+		return
+	}
+
+	drugInstructions, err = queryInstructionsFunc(d.DB, doctorId, drugComponents...)
+	return
+}
+
+func (d *DataService) insertPredefinedInstructionsForDoctor(predefinedInstructions []*predefinedInstruction, doctorId int64) error {
+	insertStr := bytes.NewBufferString(`insert into dr_drug_supplemental_instruction 
+							(doctor_id, text, drug_name_id, drug_form_id, drug_route_id, selected, status, drug_supplemental_instruction_id) values `)
+	insertValues := make([]string, 0)
+	for _, instruction := range predefinedInstructions {
+		insertValue := fmt.Sprintf("(%d, %s, %d, %d, %d, false, 'ACTIVE', %d)", doctorId, instruction.text, instruction.drugNameId, instruction.drugFormId, instruction.drugRouteId, instruction.id)
+		insertValues = append(insertValues, insertValue)
+	}
+	insertStr.WriteString(strings.Join(insertValues, ","))
+
+	_, err := d.DB.Exec(insertStr.String())
+	return err
+}
+
+type doctorInstructionQuery func(db *sql.DB, doctorId int64, drugComponents ...string) (drugInstructions []*common.DoctorSupplementalInstruction, err error)
+
+func getDoctorInstructionsBasedOnName(db *sql.DB, doctorId int64, drugComponents ...string) (drugInstructions []*common.DoctorSupplementalInstruction, err error) {
+	queryStr := fmt.Sprintf(`select id, text, selected from dr_drug_supplemental_instruction 
+								inner join drug_name on drug_name_id=drug_name.id 
+									where name='%s' and drug_form_id is null and drug_route_id is null and doctor_id=? and status='ACTIVE'`, drugComponents[0])
+	rows, err := db.Query(queryStr, doctorId)
+	if err != nil {
+		return
+	}
+
+	drugInstructions, err = getInstructionsFromRows(rows)
+	return
+}
+
+func getDoctorInstructionsBasedOnNameAndForm(db *sql.DB, doctorId int64, drugComponents ...string) (drugInstructions []*common.DoctorSupplementalInstruction, err error) {
+	// then, get instructions belonging to doctor based on drug name and form
+	queryStr := fmt.Sprintf(`select id, text, selected from dr_drug_supplemental_instruction 
+									inner join drug_name on drug_name_id=drug_name.id 
+									inner join drug_form on drug_form_id=drug_form.id 
+										where drug_name.name='%s' and drug_form.name = '%s' and drug_route_id is null and doctor_id=? and status='ACTIVE'`, drugComponents[0], drugComponents[1])
+	rows, err := db.Query(queryStr, doctorId)
+	if err != nil {
+		return
+	}
+
+	drugInstructions, err = getInstructionsFromRows(rows)
+	return
+}
+
+func getDoctorInstructionsBasedOnNameAndRoute(db *sql.DB, doctorId int64, drugComponents ...string) (drugInstructions []*common.DoctorSupplementalInstruction, err error) {
+	queryStr := fmt.Sprintf(`select id,text,selected from dr_drug_supplemental_instruction 
+									inner join drug_name on drug_name_id=drug_name.id 
+									inner join drug_route on drug_route_id=drug_route.id 
+										where drug_name.name='%s' and drug_route.name = '%s' and drug_form_id is null and doctor_id=? and status='ACTIVE'`, drugComponents[0], drugComponents[1])
+	rows, err := db.Query(queryStr, doctorId)
+	if err != nil {
+		return
+	}
+
+	drugInstructions, err = getInstructionsFromRows(rows)
+	return
+}
+
+func getDoctorInstructionsBasedOnNameFormAndRoute(db *sql.DB, doctorId int64, drugComponents ...string) (drugInstructions []*common.DoctorSupplementalInstruction, err error) {
+	// then, get instructions belonging to doctor based on drug name, route and form
+	queryStr := fmt.Sprintf(`select id,text,selected from dr_drug_supplemental_instruction 
+									inner join drug_name on drug_name_id=drug_name.id 
+									inner join drug_route on drug_route_id=drug_route.id 
+									inner join drug_form on drug_form_id = drug_form.id
+										where drug_name.name='%s' and drug_route.name = '%s' and drug_form.name='%s' and doctor_id=? and status='ACTIVE'`, drugComponents[0], drugComponents[1], drugComponents[2])
+	rows, err := db.Query(queryStr, doctorId)
+	if err != nil {
+		return
+	}
+
+	drugInstructions, err = getInstructionsFromRows(rows)
+	return
+}
+
+type predefinedInstruction struct {
+	id          int64
+	drugFormId  int64
+	drugNameId  int64
+	drugRouteId int64
+	text        string
+}
+
+func getPredefinedInstructionsFromRows(rows *sql.Rows) (predefinedInstructions []*predefinedInstruction, err error) {
+	defer rows.Close()
+	predefinedInstructions = make([]*predefinedInstruction, 0)
+	for rows.Next() {
+		var id, drugFormId, drugNameId, drugRouteId int64
+		var text string
+		err = rows.Scan(&id, &text, &drugNameId, &drugFormId, &drugRouteId)
+		if err != nil {
+			return
+		}
+		instruction := &predefinedInstruction{}
+		instruction.id = id
+		instruction.drugFormId = drugFormId
+		instruction.drugNameId = drugNameId
+		instruction.drugRouteId = drugRouteId
+		instruction.text = text
+		predefinedInstructions = append(predefinedInstructions, instruction)
+	}
+	return
+}
+
+func getInstructionsFromRows(rows *sql.Rows) (drugInstructions []*common.DoctorSupplementalInstruction, err error) {
+	defer rows.Close()
+	drugInstructions = make([]*common.DoctorSupplementalInstruction, 0)
+	for rows.Next() {
+		var id, selected int64
+		var text string
+		err = rows.Scan(&id, &text, &selected)
+		if err != nil {
+			return
+		}
+		supplementalInstruction := &common.DoctorSupplementalInstruction{}
+		supplementalInstruction.Id = id
+		supplementalInstruction.Text = text
+		if selected == 1 {
+			supplementalInstruction.Selected = true
+		}
+		drugInstructions = append(drugInstructions, supplementalInstruction)
+	}
+	return
+}
+
 func (d *DataService) CheckCareProvidingElligibility(shortState string, healthConditionId int64) (isElligible bool, err error) {
 	queryStr := fmt.Sprintf(`select provider_id from care_provider_state_elligibility 
 								inner join care_providing_state on care_providing_state_id = care_providing_state.id 

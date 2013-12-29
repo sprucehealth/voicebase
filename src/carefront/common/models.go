@@ -99,3 +99,9 @@ type Treatment struct {
 	Status                  string            `json:"-"`
 	OTC                     bool              `json:"otc,omitempty"`
 }
+
+type DoctorSupplementalInstruction struct {
+	Id       int64  `json:"id,string"`
+	Text     string `json:"text"`
+	Selected bool   `json"selected"`
+}
