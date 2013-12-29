@@ -103,5 +103,5 @@ type Treatment struct {
 type DoctorSupplementalInstruction struct {
 	Id       int64  `json:"id,string"`
 	Text     string `json:"text"`
-	Selected bool   `json"selected"`
+	Selected bool   `json:"selected"`
 }
