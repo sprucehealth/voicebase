@@ -233,6 +233,86 @@ func (d *DataService) AddTreatmentsForPatientVisit(treatments []*common.Treatmen
 	return nil
 }
 
+func (d *DataService) getOrInsertNameInTable(tx *sql.Tx, tableName, drugComponentName string) (id int64, err error) {
+	var drugComponentNameNullId sql.NullInt64
+	err = tx.QueryRow(fmt.Sprintf(`select id from %s where name='%s'`, tableName, drugComponentName)).Scan(&drugComponentNameNullId)
+	if err != nil {
+		return
+	}
+
+	if !drugComponentNameNullId.Valid {
+		res, shadowedErr := tx.Exec(fmt.Sprintf(`insert into %s (name) values ('%s')`, tableName, drugComponentName))
+		if shadowedErr != nil {
+			err = shadowedErr
+			return
+		}
+
+		id, err = res.LastInsertId()
+		if err != nil {
+			return
+		}
+	} else {
+		id = drugComponentNameNullId.Int64
+	}
+	return
+}
+
+func (d *DataService) AddOrUpdateDrugInstructionForDoctor(drugName, drugForm, drugRoute string, drugInstructionToAdd *common.DoctorSupplementalInstruction, doctorId int64) (drugInstruction *common.DoctorSupplementalInstruction, err error) {
+	tx, err := d.DB.Begin()
+	if err != nil {
+		return
+	}
+
+	drugNameId, err := d.getOrInsertNameInTable(tx, "drug_name", drugName)
+	if err != nil {
+		tx.Rollback()
+		return
+	}
+
+	drugFormId, err := d.getOrInsertNameInTable(tx, "drug_form", drugForm)
+	if err != nil {
+		tx.Rollback()
+		return
+	}
+
+	drugRouteId, err := d.getOrInsertNameInTable(tx, "drug_route", drugRoute)
+	if err != nil {
+		tx.Rollback()
+		return
+	}
+
+	// check if this is an update to an existing instruction, in which case, retire the existing instruction
+	if drugInstructionToAdd.Id != 0 {
+		_, shadowedErr := tx.Exec(`update dr_drug_supplemental_instruction set status='INACTIVE' where id=? and drug_name_id = ? and drug_form_id = ? and drug_route_id = ? and doctor_id = ?`, drugInstructionToAdd.Id, drugNameId, drugFormId, drugRouteId, doctorId)
+		if shadowedErr != nil {
+			err = shadowedErr
+			tx.Rollback()
+			return
+		}
+	}
+
+	// insert instruction for doctor
+	res, err := tx.Exec(`insert into dr_drug_supplemental_instruction (drug_name_id, drug_form_id, drug_route_id, text, doctor_id,status) values (?,?,?,?,?,'ACTIVE')`, drugNameId, drugFormId, drugRouteId, drugInstructionToAdd.Text, doctorId)
+	if err != nil {
+		tx.Rollback()
+		return
+	}
+
+	instructionId, err := res.LastInsertId()
+	if err != nil {
+		tx.Rollback()
+		return
+	}
+
+	tx.Commit()
+
+	drugInstruction = &common.DoctorSupplementalInstruction{
+		Id:   instructionId,
+		Text: drugInstructionToAdd.Text,
+	}
+	return
+}
+
 func (d *DataService) GetDrugInstructionsForDoctor(drugName, drugForm, drugRoute string, doctorId int64) (drugInstructions []*common.DoctorSupplementalInstruction, err error) {
 	// first, try and populate instructions belonging to the doctor based on just the drug name
 	// if non exist, then check the predefined set of instructions, create a copy for the doctor and return this copy
