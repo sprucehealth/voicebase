@@ -233,10 +233,14 @@ func (d *DataService) AddTreatmentsForPatientVisit(treatments []*common.Treatmen
 	return nil
 }
 
+func (d *DataService) getIdForNameFromTable(tableName, drugComponentName string) (nullId sql.NullInt64, err error) {
+	err = d.DB.QueryRow(fmt.Sprintf(`select id from %s where name='%s'`, tableName, drugComponentName)).Scan(&nullId)
+	return
+}
+
 func (d *DataService) getOrInsertNameInTable(tx *sql.Tx, tableName, drugComponentName string) (id int64, err error) {
-	var drugComponentNameNullId sql.NullInt64
-	err = tx.QueryRow(fmt.Sprintf(`select id from %s where name='%s'`, tableName, drugComponentName)).Scan(&drugComponentNameNullId)
-	if err != nil {
+	drugComponentNameNullId, err := d.getIdForNameFromTable(tableName, drugComponentName)
+	if err != nil && err != sql.ErrNoRows {
 		return
 	}
 
@@ -255,6 +259,16 @@ func (d *DataService) getOrInsertNameInTable(tx *sql.Tx, tableName, drugComponen
 		id = drugComponentNameNullId.Int64
 	}
 	return
+}
+
+func (d *DataService) DeleteDrugInstructionForDoctor(drugInstructionToDelete *common.DoctorSupplementalInstruction, doctorId int64) error {
+
+	_, err := d.DB.Exec(`update dr_drug_supplemental_instruction set status='DELETED' where id = ? and doctor_id = ?`, drugInstructionToDelete.Id, doctorId)
+	if err != nil {
+		return err
+	}
+
+	return nil
 }
 
 func (d *DataService) AddOrUpdateDrugInstructionForDoctor(drugName, drugForm, drugRoute string, drugInstructionToAdd *common.DoctorSupplementalInstruction, doctorId int64) (drugInstruction *common.DoctorSupplementalInstruction, err error) {

@@ -18,6 +18,10 @@ type GetDoctorDrugInstructionsRequestData struct {
 	DrugInternalName string `schema:"drug_internal_name"`
 }
 
+type DeleteDrugInstructionsResponse struct {
+	Result string `json:"result"`
+}
+
 type DoctorDrugInstructionsRequestResponse struct {
 	SupplementalInstructions []*common.DoctorSupplementalInstruction `json:"supplemental_instructions"`
 	DrugInternalName         string                                  `json:"drug_internal_name"`
@@ -37,7 +41,37 @@ func (d *DoctorDrugInstructionsHandler) ServeHTTP(w http.ResponseWriter, r *http
 		d.getDrugInstructions(w, r)
 	case "POST":
 		d.addDrugInstructions(w, r)
+	case "DELETE":
+		d.deleteDrugInstructions(w, r)
 	}
+
+}
+
+func (d *DoctorDrugInstructionsHandler) deleteDrugInstructions(w http.ResponseWriter, r *http.Request) {
+	jsonDecoder := json.NewDecoder(r.Body)
+	deleteInstructionsRequestBody := &DoctorDrugInstructionsRequestResponse{}
+
+	err := jsonDecoder.Decode(deleteInstructionsRequestBody)
+	if err != nil {
+		WriteDeveloperError(w, http.StatusBadRequest, "Unable to parse json request body for adding instructions: "+err.Error())
+		return
+	}
+
+	doctorId, err := d.DataApi.GetDoctorIdFromAccountId(d.accountId)
+	if err != nil {
+		WriteDeveloperError(w, http.StatusInternalServerError, "Unable to get the doctor id from the account id "+err.Error())
+		return
+	}
+
+	for _, instructionItem := range deleteInstructionsRequestBody.SupplementalInstructions {
+		err := d.DataApi.DeleteDrugInstructionForDoctor(instructionItem, doctorId)
+		if err != nil {
+			WriteDeveloperError(w, http.StatusInternalServerError, "Unable to add instruction for doctor: "+err.Error())
+			return
+		}
+	}
+
+	WriteJSONToHTTPResponseWriter(w, http.StatusOK, &DeleteDrugInstructionsResponse{Result: "success"})
 }
 
 func (d *DoctorDrugInstructionsHandler) addDrugInstructions(w http.ResponseWriter, r *http.Request) {
@@ -60,6 +94,10 @@ func (d *DoctorDrugInstructionsHandler) addDrugInstructions(w http.ResponseWrite
 
 	drugInstructions := make([]*common.DoctorSupplementalInstruction, 0)
 	for _, instructionItem := range addInstructionsRequestBody.SupplementalInstructions {
+		if instructionItem.Text == "" {
+			WriteDeveloperError(w, http.StatusBadRequest, "The text for the instruction is empty so nothing to add or update: "+err.Error())
+			return
+		}
 		drugInstruction, err := d.DataApi.AddOrUpdateDrugInstructionForDoctor(drugName, drugForm, drugRoute, instructionItem, doctorId)
 		if err != nil {
 			WriteDeveloperError(w, http.StatusInternalServerError, "Unable to add instruction for doctor: "+err.Error())
