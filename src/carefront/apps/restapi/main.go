@@ -130,6 +130,7 @@ func main() {
 	answerIntakeHandler := apiservice.NewAnswerIntakeHandler(dataApi)
 	autocompleteHandler := &apiservice.AutocompleteHandler{ERxApi: erx.NewDoseSpotService(conf.DoseSpotClinicId, conf.DoseSpotClinicKey, conf.DoseSpotUserId), Role: api.PATIENT_ROLE}
 	doctorTreatmentSuggestionHandler := &apiservice.AutocompleteHandler{ERxApi: erx.NewDoseSpotService(conf.DoseSpotClinicId, conf.DoseSpotClinicKey, conf.DoseSpotUserId), Role: api.DOCTOR_ROLE}
+	doctorInstructionsHandler := apiservice.NewDoctorDrugInstructionsHandler(dataApi)
 	medicationStrengthSearchHandler := &apiservice.MedicationStrengthSearchHandler{ERxApi: erx.NewDoseSpotService(conf.DoseSpotClinicId, conf.DoseSpotClinicKey, conf.DoseSpotUserId)}
 	newTreatmentHandler := &apiservice.NewTreatmentHandler{ERxApi: erx.NewDoseSpotService(conf.DoseSpotClinicId, conf.DoseSpotClinicKey, conf.DoseSpotUserId)}
 	medicationDispenseUnitHandler := &apiservice.MedicationDispenseUnitsHandler{DataApi: dataApi}
@@ -196,6 +197,7 @@ func main() {
 
 	mux.Handle("/v1/doctor/treatment/new", newTreatmentHandler)
 	mux.Handle("/v1/doctor/treatment/treatments", treatmentsHandler)
+	mux.Handle("/v1/doctor/treatment/supplemental_instructions", doctorInstructionsHandler)
 	s := &http.Server{
 		Addr:           conf.ListenAddr,
 		Handler:        mux,
