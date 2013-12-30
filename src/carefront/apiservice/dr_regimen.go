@@ -14,7 +14,7 @@ type DoctorRegimenHandler struct {
 type GetDoctorRegimenRequestResponse struct {
 	RegimenSteps     []*common.DoctorInstructionItem `json:"regimen_steps"`
 	DrugInternalName string                          `json:"drug_internal_name"`
-	PatientVisitId   int64                           `json:"patient_visit_id,string,omitempty`
+	PatientVisitId   int64                           `json:"patient_visit_id,string,omitempty"`
 }
 
 func NewDoctorRegimenHandler(dataApi api.DataAPI) *DoctorRegimenHandler {
