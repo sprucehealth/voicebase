@@ -26,6 +26,7 @@ type DoctorDrugInstructionsRequestResponse struct {
 	SupplementalInstructions []*common.DoctorSupplementalInstruction `json:"supplemental_instructions"`
 	DrugInternalName         string                                  `json:"drug_internal_name"`
 	TreatmentId              int64                                   `json:"treatment_id,string,omitempty"`
+	PatientVisitId           int64                                   `json:"patient_visit_id,string,omitempty"`
 }
 
 func NewDoctorDrugInstructionsHandler(dataApi api.DataAPI) *DoctorDrugInstructionsHandler {
@@ -85,22 +86,33 @@ func (d *DoctorDrugInstructionsHandler) addDrugInstructions(w http.ResponseWrite
 		return
 	}
 
-	doctorId, err := d.DataApi.GetDoctorIdFromAccountId(d.accountId)
-	if err != nil {
-		WriteDeveloperError(w, http.StatusInternalServerError, "Unable to get the doctor id from the account id "+err.Error())
-		return
-	}
-
 	drugName, drugForm, drugRoute := breakDrugInternalNameIntoComponents(addInstructionsRequestBody.DrugInternalName)
 
 	// this means that the intent is to add the instructions to the treatment id specified
 	if addInstructionsRequestBody.TreatmentId != 0 {
+		if addInstructionsRequestBody.PatientVisitId == 0 {
+			WriteDeveloperError(w, http.StatusBadRequest, "Missing patient visit id. Needed to verify that the doctor is authorized to modify this patient visit")
+			return
+		}
+
+		doctorId, _, _, statusCode, err := ValidateDoctorAccessToPatientVisitAndGetRelevantData(addInstructionsRequestBody.PatientVisitId, d.accountId, d.DataApi)
+		if err != nil {
+			WriteDeveloperError(w, statusCode, err.Error())
+			return
+		}
+
 		err = d.DataApi.AddDrugInstructionsToTreatment(drugName, drugForm, drugRoute, addInstructionsRequestBody.SupplementalInstructions, addInstructionsRequestBody.TreatmentId, doctorId)
 		if err != nil {
 			WriteDeveloperError(w, http.StatusInternalServerError, "Unable to add instructions to treatment: "+err.Error())
 			return
 		}
 		WriteJSONToHTTPResponseWriter(w, http.StatusOK, nil)
+		return
+	}
+
+	doctorId, err := d.DataApi.GetDoctorIdFromAccountId(d.accountId)
+	if err != nil {
+		WriteDeveloperError(w, http.StatusInternalServerError, "Unable to get the doctor id from the account id "+err.Error())
 		return
 	}
 
