@@ -271,6 +271,84 @@ func (d *DataService) DeleteDrugInstructionForDoctor(drugInstructionToDelete *co
 	return nil
 }
 
+func (d *DataService) AddDrugInstructionsToTreatment(drugName, drugForm, drugRoute string, drugInstructions []*common.DoctorSupplementalInstruction, treatmentId int64, doctorId int64) error {
+	// nothing to do if there are no instructions to add
+	if len(drugInstructions) == 0 {
+		return nil
+	}
+
+	drugNameNullId, err := d.getIdForNameFromTable("drug_name", drugName)
+	if err != nil {
+		return err
+	}
+
+	drugFormNullId, err := d.getIdForNameFromTable("drug_form", drugForm)
+	if err != nil {
+		return err
+	}
+
+	drugRouteNullId, err := d.getIdForNameFromTable("drug_route", drugRoute)
+	if err != nil {
+		return err
+	}
+
+	// start a transaction
+	tx, err := d.DB.Begin()
+	if err != nil {
+		return err
+	}
+
+	// mark the current set of active instructions as inactive
+	_, err = tx.Exec(`update treatment_instructions set status='INACTIVE' where treatment_id = ?`, treatmentId)
+	if err != nil {
+		tx.Rollback()
+		return err
+	}
+
+	// insert the new set of instructions into the treatment instructions
+	insertStr := bytes.NewBufferString("insert into treatment_instructions (treatment_id, dr_drug_instruction_id, status) values ")
+	insertValues := make([]string, 0)
+	instructionIds := make([]string, 0)
+
+	for _, instructionItem := range drugInstructions {
+		insertValues = append(insertValues, fmt.Sprintf("(%d, %d, 'ACTIVE')", treatmentId, instructionItem.Id))
+		instructionIds = append(instructionIds, strconv.FormatInt(instructionItem.Id, 10))
+	}
+
+	insertStr.WriteString(strings.Join(insertValues, ","))
+	_, err = tx.Exec(insertStr.String())
+	if err != nil {
+		tx.Rollback()
+		return err
+	}
+
+	// remove the selected state of drug instructions for the drug
+	_, err = tx.Exec(`delete from dr_drug_supplemental_instruction_selected_state 
+						where drug_name_id = ? and drug_form_id = ? and drug_route_id = ? and doctor_id = ?`,
+		drugNameNullId.Int64, drugFormNullId.Int64, drugRouteNullId.Int64, doctorId)
+
+	if err != nil {
+		tx.Rollback()
+		return err
+	}
+
+	//  insert the selected state of drug instructions for the drug
+	insertStr = bytes.NewBufferString(`insert into dr_drug_supplemental_instruction_selected_state 
+										 (drug_name_id, drug_form_id, drug_route_id, dr_drug_supplemental_instruction_id, doctor_id) values `)
+	insertValues = make([]string, 0)
+	for _, instructionItem := range drugInstructions {
+		insertValues = append(insertValues, fmt.Sprintf("(%d, %d, %d, %d, %d)", drugNameNullId.Int64, drugFormNullId.Int64, drugRouteNullId.Int64, instructionItem.Id, doctorId))
+	}
+	insertStr.WriteString(strings.Join(insertValues, ","))
+	_, err = tx.Exec(insertStr.String())
+	if err != nil {
+		return err
+	}
+	// commit transaction
+	tx.Commit()
+	return nil
+}
+
 func (d *DataService) AddOrUpdateDrugInstructionForDoctor(drugName, drugForm, drugRoute string, drugInstructionToAdd *common.DoctorSupplementalInstruction, doctorId int64) (drugInstruction *common.DoctorSupplementalInstruction, err error) {
 	tx, err := d.DB.Begin()
 	if err != nil {
@@ -409,6 +487,32 @@ func (d *DataService) GetDrugInstructionsForDoctor(drugName, drugForm, drugRoute
 		return
 	}
 	drugInstructions = append(drugInstructions, getActiveInstructions(moreInstructions)...)
+
+	// get the selected state for this drug
+	selectedInstructionIds := make(map[int64]bool, 0)
+	rows, err := d.DB.Query(`select dr_drug_supplemental_instruction_id from dr_drug_supplemental_instruction_selected_state 
+								inner join drug_name on drug_name_id = drug_name.id
+								inner join drug_form on drug_form_id = drug_form.id
+								inner join drug_route on drug_route_id = drug_route.id
+									where drug_name.name = ? and drug_form.name = ? and drug_route.name = ? and doctor_id = ? `, drugName, drugForm, drugRoute, doctorId)
+	if err != nil {
+		return
+	}
+	defer rows.Close()
+
+	for rows.Next() {
+		var instructionId int64
+		rows.Scan(&instructionId)
+		selectedInstructionIds[instructionId] = true
+	}
+
+	// go through the drug instructions to set the selected state
+	for _, instructionItem := range drugInstructions {
+		if selectedInstructionIds[instructionItem.Id] == true {
+			instructionItem.Selected = true
+		}
+	}
+
 	return
 }
 
@@ -490,7 +594,7 @@ func (d *DataService) insertPredefinedInstructionsForDoctor(predefinedInstructio
 type doctorInstructionQuery func(db *sql.DB, doctorId int64, drugComponents ...string) (drugInstructions []*common.DoctorSupplementalInstruction, err error)
 
 func getDoctorInstructionsBasedOnName(db *sql.DB, doctorId int64, drugComponents ...string) (drugInstructions []*common.DoctorSupplementalInstruction, err error) {
-	queryStr := fmt.Sprintf(`select dr_drug_supplemental_instruction.id, text, selected,status from dr_drug_supplemental_instruction 
+	queryStr := fmt.Sprintf(`select dr_drug_supplemental_instruction.id, text,status from dr_drug_supplemental_instruction 
 								inner join drug_name on drug_name_id=drug_name.id 
 									where name='%s' and drug_form_id is null and drug_route_id is null and doctor_id=?`, drugComponents[0])
 	rows, err := db.Query(queryStr, doctorId)
@@ -504,7 +608,7 @@ func getDoctorInstructionsBasedOnName(db *sql.DB, doctorId int64, drugComponents
 
 func getDoctorInstructionsBasedOnNameAndForm(db *sql.DB, doctorId int64, drugComponents ...string) (drugInstructions []*common.DoctorSupplementalInstruction, err error) {
 	// then, get instructions belonging to doctor based on drug name and form
-	queryStr := fmt.Sprintf(`select dr_drug_supplemental_instruction.id, text, selected,status from dr_drug_supplemental_instruction 
+	queryStr := fmt.Sprintf(`select dr_drug_supplemental_instruction.id, text,status from dr_drug_supplemental_instruction 
 									inner join drug_name on drug_name_id=drug_name.id 
 									inner join drug_form on drug_form_id=drug_form.id 
 										where drug_name.name='%s' and drug_form.name = '%s' and drug_route_id is null and doctor_id=?`, drugComponents[0], drugComponents[1])
@@ -518,7 +622,7 @@ func getDoctorInstructionsBasedOnNameAndForm(db *sql.DB, doctorId int64, drugCom
 }
 
 func getDoctorInstructionsBasedOnNameAndRoute(db *sql.DB, doctorId int64, drugComponents ...string) (drugInstructions []*common.DoctorSupplementalInstruction, err error) {
-	queryStr := fmt.Sprintf(`select dr_drug_supplemental_instruction.id,text,selected,status from dr_drug_supplemental_instruction 
+	queryStr := fmt.Sprintf(`select dr_drug_supplemental_instruction.id,text,status from dr_drug_supplemental_instruction 
 									inner join drug_name on drug_name_id=drug_name.id 
 									inner join drug_route on drug_route_id=drug_route.id 
 										where drug_name.name='%s' and drug_route.name = '%s' and drug_form_id is null and doctor_id=?`, drugComponents[0], drugComponents[1])
@@ -533,7 +637,7 @@ func getDoctorInstructionsBasedOnNameAndRoute(db *sql.DB, doctorId int64, drugCo
 
 func getDoctorInstructionsBasedOnNameFormAndRoute(db *sql.DB, doctorId int64, drugComponents ...string) (drugInstructions []*common.DoctorSupplementalInstruction, err error) {
 	// then, get instructions belonging to doctor based on drug name, route and form
-	queryStr := fmt.Sprintf(`select dr_drug_supplemental_instruction.id,text,selected,status from dr_drug_supplemental_instruction 
+	queryStr := fmt.Sprintf(`select dr_drug_supplemental_instruction.id,text,status from dr_drug_supplemental_instruction 
 									inner join drug_name on drug_name_id=drug_name.id 
 									inner join drug_route on drug_route_id=drug_route.id 
 									inner join drug_form on drug_form_id = drug_form.id
@@ -590,9 +694,9 @@ func getInstructionsFromRows(rows *sql.Rows) (drugInstructions []*common.DoctorS
 	defer rows.Close()
 	drugInstructions = make([]*common.DoctorSupplementalInstruction, 0)
 	for rows.Next() {
-		var id, selected int64
+		var id int64
 		var text, status string
-		err = rows.Scan(&id, &text, &selected, &status)
+		err = rows.Scan(&id, &text, &status)
 		if err != nil {
 			return
 		}
@@ -600,9 +704,6 @@ func getInstructionsFromRows(rows *sql.Rows) (drugInstructions []*common.DoctorS
 		supplementalInstruction.Id = id
 		supplementalInstruction.Text = text
 		supplementalInstruction.Status = status
-		if selected == 1 {
-			supplementalInstruction.Selected = true
-		}
 		drugInstructions = append(drugInstructions, supplementalInstruction)
 	}
 	return

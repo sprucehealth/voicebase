@@ -25,6 +25,7 @@ type DeleteDrugInstructionsResponse struct {
 type DoctorDrugInstructionsRequestResponse struct {
 	SupplementalInstructions []*common.DoctorSupplementalInstruction `json:"supplemental_instructions"`
 	DrugInternalName         string                                  `json:"drug_internal_name"`
+	TreatmentId              int64                                   `json:"treatment_id,string"`
 }
 
 func NewDoctorDrugInstructionsHandler(dataApi api.DataAPI) *DoctorDrugInstructionsHandler {
@@ -91,6 +92,17 @@ func (d *DoctorDrugInstructionsHandler) addDrugInstructions(w http.ResponseWrite
 	}
 
 	drugName, drugForm, drugRoute := breakDrugInternalNameIntoComponents(addInstructionsRequestBody.DrugInternalName)
+
+	// this means that the intent is to add the instructions to the treatment id specified
+	if addInstructionsRequestBody.TreatmentId != 0 {
+		err = d.DataApi.AddDrugInstructionsToTreatment(drugName, drugForm, drugRoute, addInstructionsRequestBody.SupplementalInstructions, addInstructionsRequestBody.TreatmentId, doctorId)
+		if err != nil {
+			WriteDeveloperError(w, http.StatusInternalServerError, "Unable to add instructions to treatment: "+err.Error())
+			return
+		}
+		WriteJSONToHTTPResponseWriter(w, http.StatusOK, nil)
+		return
+	}
 
 	drugInstructions := make([]*common.DoctorSupplementalInstruction, 0)
 	for _, instructionItem := range addInstructionsRequestBody.SupplementalInstructions {
