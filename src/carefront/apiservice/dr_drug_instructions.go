@@ -25,7 +25,7 @@ type DeleteDrugInstructionsResponse struct {
 type DoctorDrugInstructionsRequestResponse struct {
 	SupplementalInstructions []*common.DoctorSupplementalInstruction `json:"supplemental_instructions"`
 	DrugInternalName         string                                  `json:"drug_internal_name"`
-	TreatmentId              int64                                   `json:"treatment_id,string"`
+	TreatmentId              int64                                   `json:"treatment_id,string,omitempty"`
 }
 
 func NewDoctorDrugInstructionsHandler(dataApi api.DataAPI) *DoctorDrugInstructionsHandler {

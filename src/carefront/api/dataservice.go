@@ -128,6 +128,30 @@ func (d *DataService) GetTreatmentPlanForPatientVisit(patientVisitId int64) (tre
 		}
 
 		treatment.DrugDBIds = drugDbIds
+
+		// get the supplemental instructions for this treatment
+		instructionsRows, shadowedErr := d.DB.Query(`select dr_drug_supplemental_instruction.id, dr_drug_supplemental_instruction.text from treatment_instructions 
+												inner join dr_drug_supplemental_instruction on dr_drug_instruction_id = dr_drug_supplemental_instruction.id 
+													where treatment_instructions.status='ACTIVE' and treatment_id=?`, treatmentId)
+		if shadowedErr != nil {
+			err = shadowedErr
+			return
+		}
+		defer instructionsRows.Close()
+
+		drugInstructions := make([]*common.DoctorSupplementalInstruction, 0)
+		for instructionsRows.Next() {
+			var instructionId int64
+			var text string
+			instructionsRows.Scan(&instructionId, &text)
+			drugInstruction := &common.DoctorSupplementalInstruction{
+				Id:       instructionId,
+				Text:     text,
+				Selected: true,
+			}
+			drugInstructions = append(drugInstructions, drugInstruction)
+		}
+		treatment.SupplementalInstructions = drugInstructions
 	}
 
 	return
