@@ -104,4 +104,5 @@ type DoctorSupplementalInstruction struct {
 	Id       int64  `json:"id,string"`
 	Text     string `json:"text"`
 	Selected bool   `json:"selected"`
+	Status   string `json:"-"`
 }
