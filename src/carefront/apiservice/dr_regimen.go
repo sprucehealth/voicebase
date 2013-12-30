@@ -3,6 +3,7 @@ package apiservice
 import (
 	"carefront/api"
 	"carefront/common"
+	"github.com/gorilla/schema"
 	"net/http"
 )
 
@@ -11,9 +12,13 @@ type DoctorRegimenHandler struct {
 	accountId int64
 }
 
-type GetDoctorRegimenRequestResponse struct {
+type GetDoctorRegimenRequestData struct {
+	PatientVisitId int64 `schema:"patient_visit_id"`
+}
+
+type DoctorRegimenRequestResponse struct {
 	RegimenSteps     []*common.DoctorInstructionItem `json:"regimen_steps"`
-	DrugInternalName string                          `json:"drug_internal_name"`
+	DrugInternalName string                          `json:"drug_internal_name,omitempty"`
 	PatientVisitId   int64                           `json:"patient_visit_id,string,omitempty"`
 }
 
@@ -33,9 +38,18 @@ func (d *DoctorRegimenHandler) ServeHTTP(w http.ResponseWriter, r *http.Request)
 }
 
 func (d *DoctorRegimenHandler) getRegimenSteps(w http.ResponseWriter, r *http.Request) {
-	doctorId, err := d.DataApi.GetDoctorIdFromAccountId(d.accountId)
+	r.ParseForm()
+	requestData := new(GetDoctorRegimenRequestData)
+	decoder := schema.NewDecoder()
+	err := decoder.Decode(requestData, r.Form)
 	if err != nil {
-		WriteDeveloperError(w, http.StatusInternalServerError, "Unable to get the doctor id from the account id "+err.Error())
+		WriteDeveloperError(w, http.StatusBadRequest, "Unable to parse input parameters: "+err.Error())
+		return
+	}
+
+	doctorId, _, _, statusCode, err := ValidateDoctorAccessToPatientVisitAndGetRelevantData(requestData.PatientVisitId, d.accountId, d.DataApi)
+	if err != nil {
+		WriteDeveloperError(w, statusCode, err.Error())
 		return
 	}
 
@@ -45,5 +59,5 @@ func (d *DoctorRegimenHandler) getRegimenSteps(w http.ResponseWriter, r *http.Re
 		return
 	}
 
-	WriteJSONToHTTPResponseWriter(w, http.StatusOK, &GetDoctorRegimenRequestResponse{RegimenSteps: regimenSteps})
+	WriteJSONToHTTPResponseWriter(w, http.StatusOK, &DoctorRegimenRequestResponse{RegimenSteps: regimenSteps})
 }
