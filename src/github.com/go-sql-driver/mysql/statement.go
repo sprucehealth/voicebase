@@ -1,7 +1,6 @@
 // Go MySQL Driver - A MySQL-Driver for Go's database/sql package
 //
-// Copyright 2012 Julien Schmidt. All rights reserved.
-// http://www.julienschmidt.com
+// Copyright 2012 The Go-MySQL-Driver Authors. All rights reserved.
 //
 // This Source Code Form is subject to the terms of the Mozilla Public
 // License, v. 2.0. If a copy of the MPL was not distributed with this file,
@@ -17,13 +16,18 @@ type mysqlStmt struct {
 	mc         *mysqlConn
 	id         uint32
 	paramCount int
-	params     []mysqlField
+	columns    []mysqlField // cached from the first query
 }
 
-func (stmt *mysqlStmt) Close() (err error) {
-	err = stmt.mc.writeCommandPacketUint32(comStmtClose, stmt.id)
+func (stmt *mysqlStmt) Close() error {
+	if stmt.mc == nil || stmt.mc.netConn == nil {
+		errLog.Print(errInvalidConn)
+		return driver.ErrBadConn
+	}
+
+	err := stmt.mc.writeCommandPacketUint32(comStmtClose, stmt.id)
 	stmt.mc = nil
-	return
+	return err
 }
 
 func (stmt *mysqlStmt) NumInput() int {
@@ -31,33 +35,38 @@ func (stmt *mysqlStmt) NumInput() int {
 }
 
 func (stmt *mysqlStmt) Exec(args []driver.Value) (driver.Result, error) {
-	stmt.mc.affectedRows = 0
-	stmt.mc.insertId = 0
-
+	if stmt.mc.netConn == nil {
+		errLog.Print(errInvalidConn)
+		return nil, driver.ErrBadConn
+	}
 	// Send command
 	err := stmt.writeExecutePacket(args)
 	if err != nil {
 		return nil, err
 	}
 
+	mc := stmt.mc
+
+	mc.affectedRows = 0
+	mc.insertId = 0
+
 	// Read Result
-	var resLen int
-	resLen, err = stmt.mc.readResultSetHeaderPacket()
+	resLen, err := mc.readResultSetHeaderPacket()
 	if err == nil {
 		if resLen > 0 {
 			// Columns
-			err = stmt.mc.readUntilEOF()
+			err = mc.readUntilEOF()
 			if err != nil {
 				return nil, err
 			}
 
 			// Rows
-			err = stmt.mc.readUntilEOF()
+			err = mc.readUntilEOF()
 		}
 		if err == nil {
 			return &mysqlResult{
-				affectedRows: int64(stmt.mc.affectedRows),
-				insertId:     int64(stmt.mc.insertId),
+				affectedRows: int64(mc.affectedRows),
+				insertId:     int64(mc.insertId),
 			}, nil
 		}
 	}
@@ -66,26 +75,36 @@ func (stmt *mysqlStmt) Exec(args []driver.Value) (driver.Result, error) {
 }
 
 func (stmt *mysqlStmt) Query(args []driver.Value) (driver.Rows, error) {
+	if stmt.mc.netConn == nil {
+		errLog.Print(errInvalidConn)
+		return nil, driver.ErrBadConn
+	}
 	// Send command
 	err := stmt.writeExecutePacket(args)
 	if err != nil {
 		return nil, err
 	}
 
+	mc := stmt.mc
+
 	// Read Result
-	var resLen int
-	resLen, err = stmt.mc.readResultSetHeaderPacket()
+	resLen, err := mc.readResultSetHeaderPacket()
 	if err != nil {
 		return nil, err
 	}
 
-	rows := &mysqlRows{stmt.mc, true, nil, false}
+	rows := new(binaryRows)
+	rows.mc = mc
 
 	if resLen > 0 {
 		// Columns
-		rows.columns, err = stmt.mc.readColumns(resLen)
-		if err != nil {
-			return nil, err
+		// If not cached, read them and cache them
+		if stmt.columns == nil {
+			rows.columns, err = mc.readColumns(resLen)
+			stmt.columns = rows.columns
+		} else {
+			rows.columns = stmt.columns
+			err = mc.readUntilEOF()
 		}
 	}
 

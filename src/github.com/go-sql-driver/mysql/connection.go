@@ -1,7 +1,6 @@
 // Go MySQL Driver - A MySQL-Driver for Go's database/sql package
 //
-// Copyright 2012 Julien Schmidt. All rights reserved.
-// http://www.julienschmidt.com
+// Copyright 2012 The Go-MySQL-Driver Authors. All rights reserved.
 //
 // This Source Code Form is subject to the terms of the Mozilla Public
 // License, v. 2.0. If a copy of the MPL was not distributed with this file,
@@ -10,6 +9,7 @@
 package mysql
 
 import (
+	"crypto/tls"
 	"database/sql/driver"
 	"errors"
 	"net"
@@ -18,30 +18,32 @@ import (
 )
 
 type mysqlConn struct {
-	cfg              *config
-	flags            clientFlag
-	charset          byte
-	cipher           []byte
-	netConn          net.Conn
 	buf              *buffer
-	protocol         uint8
-	sequence         uint8
+	netConn          net.Conn
 	affectedRows     uint64
 	insertId         uint64
+	cfg              *config
 	maxPacketAllowed int
 	maxWriteSize     int
+	flags            clientFlag
+	sequence         uint8
 	parseTime        bool
 	strict           bool
 }
 
 type config struct {
-	user   string
-	passwd string
-	net    string
-	addr   string
-	dbname string
-	params map[string]string
-	loc    *time.Location
+	user              string
+	passwd            string
+	net               string
+	addr              string
+	dbname            string
+	params            map[string]string
+	loc               *time.Location
+	timeout           time.Duration
+	tls               *tls.Config
+	allowAllFiles     bool
+	allowOldPasswords bool
+	clientFoundRows   bool
 }
 
 // Handles parameters set in DSN
@@ -62,26 +64,26 @@ func (mc *mysqlConn) handleParams() (err error) {
 				return
 			}
 
-		// handled elsewhere
-		case "timeout", "allowAllFiles", "loc":
-			continue
-
 		// time.Time parsing
 		case "parseTime":
-			mc.parseTime = readBool(val)
+			var isBool bool
+			mc.parseTime, isBool = readBool(val)
+			if !isBool {
+				return errors.New("Invalid Bool value: " + val)
+			}
 
 		// Strict mode
 		case "strict":
-			mc.strict = readBool(val)
-
-		// TLS-Encryption
-		case "tls":
-			err = errors.New("TLS-Encryption not implemented yet")
-			return
+			var isBool bool
+			mc.strict, isBool = readBool(val)
+			if !isBool {
+				return errors.New("Invalid Bool value: " + val)
+			}
 
 		// Compression
 		case "compress":
 			err = errors.New("Compression not implemented yet")
+			return
 
 		// System Vars
 		default:
@@ -96,6 +98,10 @@ func (mc *mysqlConn) handleParams() (err error) {
 }
 
 func (mc *mysqlConn) Begin() (driver.Tx, error) {
+	if mc.netConn == nil {
+		errLog.Print(errInvalidConn)
+		return nil, driver.ErrBadConn
+	}
 	err := mc.exec("START TRANSACTION")
 	if err == nil {
 		return &mysqlTx{mc}, err
@@ -105,15 +111,24 @@ func (mc *mysqlConn) Begin() (driver.Tx, error) {
 }
 
 func (mc *mysqlConn) Close() (err error) {
-	mc.writeCommandPacket(comQuit)
+	// Makes Close idempotent
+	if mc.netConn != nil {
+		mc.writeCommandPacket(comQuit)
+		mc.netConn.Close()
+		mc.netConn = nil
+	}
+
 	mc.cfg = nil
 	mc.buf = nil
-	mc.netConn.Close()
-	mc.netConn = nil
+
 	return
 }
 
 func (mc *mysqlConn) Prepare(query string) (driver.Stmt, error) {
+	if mc.netConn == nil {
+		errLog.Print(errInvalidConn)
+		return nil, driver.ErrBadConn
+	}
 	// Send command
 	err := mc.writeCommandPacketStr(comStmtPrepare, query)
 	if err != nil {
@@ -128,14 +143,13 @@ func (mc *mysqlConn) Prepare(query string) (driver.Stmt, error) {
 	columnCount, err := stmt.readPrepareResultPacket()
 	if err == nil {
 		if stmt.paramCount > 0 {
-			stmt.params, err = stmt.mc.readColumns(stmt.paramCount)
-			if err != nil {
+			if err = mc.readUntilEOF(); err != nil {
 				return nil, err
 			}
 		}
 
 		if columnCount > 0 {
-			err = stmt.mc.readUntilEOF()
+			err = mc.readUntilEOF()
 		}
 	}
 
@@ -143,6 +157,10 @@ func (mc *mysqlConn) Prepare(query string) (driver.Stmt, error) {
 }
 
 func (mc *mysqlConn) Exec(query string, args []driver.Value) (driver.Result, error) {
+	if mc.netConn == nil {
+		errLog.Print(errInvalidConn)
+		return nil, driver.ErrBadConn
+	}
 	if len(args) == 0 { // no args, fastpath
 		mc.affectedRows = 0
 		mc.insertId = 0
@@ -163,29 +181,31 @@ func (mc *mysqlConn) Exec(query string, args []driver.Value) (driver.Result, err
 }
 
 // Internal function to execute commands
-func (mc *mysqlConn) exec(query string) (err error) {
+func (mc *mysqlConn) exec(query string) error {
 	// Send command
-	err = mc.writeCommandPacketStr(comQuery, query)
+	err := mc.writeCommandPacketStr(comQuery, query)
 	if err != nil {
-		return
+		return err
 	}
 
 	// Read Result
-	var resLen int
-	resLen, err = mc.readResultSetHeaderPacket()
+	resLen, err := mc.readResultSetHeaderPacket()
 	if err == nil && resLen > 0 {
-		err = mc.readUntilEOF()
-		if err != nil {
-			return
+		if err = mc.readUntilEOF(); err != nil {
+			return err
 		}
 
 		err = mc.readUntilEOF()
 	}
 
-	return
+	return err
 }
 
 func (mc *mysqlConn) Query(query string, args []driver.Value) (driver.Rows, error) {
+	if mc.netConn == nil {
+		errLog.Print(errInvalidConn)
+		return nil, driver.ErrBadConn
+	}
 	if len(args) == 0 { // no args, fastpath
 		// Send command
 		err := mc.writeCommandPacketStr(comQuery, query)
@@ -194,7 +214,8 @@ func (mc *mysqlConn) Query(query string, args []driver.Value) (driver.Rows, erro
 			var resLen int
 			resLen, err = mc.readResultSetHeaderPacket()
 			if err == nil {
-				rows := &mysqlRows{mc, false, nil, false}
+				rows := new(textRows)
+				rows.mc = mc
 
 				if resLen > 0 {
 					// Columns
@@ -203,7 +224,6 @@ func (mc *mysqlConn) Query(query string, args []driver.Value) (driver.Rows, erro
 				return rows, err
 			}
 		}
-
 		return nil, err
 	}
 
@@ -213,29 +233,29 @@ func (mc *mysqlConn) Query(query string, args []driver.Value) (driver.Rows, erro
 
 // Gets the value of the given MySQL System Variable
 // The returned byte slice is only valid until the next read
-func (mc *mysqlConn) getSystemVar(name string) (val []byte, err error) {
+func (mc *mysqlConn) getSystemVar(name string) ([]byte, error) {
 	// Send command
-	err = mc.writeCommandPacketStr(comQuery, "SELECT @@"+name)
-	if err == nil {
-		// Read Result
-		var resLen int
-		resLen, err = mc.readResultSetHeaderPacket()
-		if err == nil {
-			rows := &mysqlRows{mc, false, nil, false}
-
-			if resLen > 0 {
-				// Columns
-				rows.columns, err = mc.readColumns(resLen)
-			}
-
-			dest := make([]driver.Value, resLen)
-			err = rows.readRow(dest)
-			if err == nil {
-				val = dest[0].([]byte)
-				err = mc.readUntilEOF()
-			}
-		}
+	if err := mc.writeCommandPacketStr(comQuery, "SELECT @@"+name); err != nil {
+		return nil, err
 	}
 
-	return
+	// Read Result
+	resLen, err := mc.readResultSetHeaderPacket()
+	if err == nil {
+		rows := new(textRows)
+		rows.mc = mc
+
+		if resLen > 0 {
+			// Columns
+			if err := mc.readUntilEOF(); err != nil {
+				return nil, err
+			}
+		}
+
+		dest := make([]driver.Value, resLen)
+		if err = rows.readRow(dest); err == nil {
+			return dest[0].([]byte), mc.readUntilEOF()
+		}
+	}
+	return nil, err
 }

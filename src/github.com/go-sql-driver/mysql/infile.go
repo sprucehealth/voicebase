@@ -1,7 +1,6 @@
 // Go MySQL Driver - A MySQL-Driver for Go's database/sql package
 //
-// Copyright 2013 Julien Schmidt. All rights reserved.
-// http://www.julienschmidt.com
+// Copyright 2013 The Go-MySQL-Driver Authors. All rights reserved.
 //
 // This Source Code Form is subject to the terms of the Mozilla Public
 // License, v. 2.0. If a copy of the MPL was not distributed with this file,
@@ -31,13 +30,20 @@ func init() {
 // so that it can be used by "LOAD DATA LOCAL INFILE <filepath>".
 // Alternatively you can allow the use of all local files with
 // the DSN parameter 'allowAllFiles=true'
-func RegisterLocalFile(filepath string) {
-	fileRegister[strings.Trim(filepath, `"`)] = true
+//
+//  filePath := "/home/gopher/data.csv"
+//  mysql.RegisterLocalFile(filePath)
+//  err := db.Exec("LOAD DATA LOCAL INFILE '" + filePath + "' INTO TABLE foo")
+//  if err != nil {
+//  ...
+//
+func RegisterLocalFile(filePath string) {
+	fileRegister[strings.Trim(filePath, `"`)] = true
 }
 
 // DeregisterLocalFile removes the given filepath from the whitelist.
-func DeregisterLocalFile(filepath string) {
-	delete(fileRegister, strings.Trim(filepath, `"`))
+func DeregisterLocalFile(filePath string) {
+	delete(fileRegister, strings.Trim(filePath, `"`))
 }
 
 // RegisterReaderHandler registers a handler function which is used
@@ -45,6 +51,16 @@ func DeregisterLocalFile(filepath string) {
 // The Reader can be used by "LOAD DATA LOCAL INFILE Reader::<name>".
 // If the handler returns a io.ReadCloser Close() is called when the
 // request is finished.
+//
+//  mysql.RegisterReaderHandler("data", func() io.Reader {
+//  	var csvReader io.Reader // Some Reader that returns CSV data
+//  	... // Open Reader here
+//  	return csvReader
+//  })
+//  err := db.Exec("LOAD DATA LOCAL INFILE 'Reader::data' INTO TABLE foo")
+//  if err != nil {
+//  ...
+//
 func RegisterReaderHandler(name string, handler func() io.Reader) {
 	readerRegister[name] = handler
 }
@@ -74,7 +90,7 @@ func (mc *mysqlConn) handleInFileRequest(name string) (err error) {
 		}
 	} else { // File
 		name = strings.Trim(name, `"`)
-		if fileRegister[name] || mc.cfg.params[`allowAllFiles`] == `true` {
+		if mc.cfg.allowAllFiles || fileRegister[name] {
 			rdr, err = os.Open(name)
 		} else {
 			err = fmt.Errorf("Local File '%s' is not registered. Use the DSN parameter 'allowAllFiles=true' to allow all files", name)

@@ -1,26 +1,35 @@
-// Copyright 2012 Julien Schmidt. All rights reserved.
-// http://www.julienschmidt.com
+// Copyright 2012 The Go-MySQL-Driver Authors. All rights reserved.
 //
 // This Source Code Form is subject to the terms of the Mozilla Public
 // License, v. 2.0. If a copy of the MPL was not distributed with this file,
 // You can obtain one at http://mozilla.org/MPL/2.0/.
 
 // Go MySQL Driver - A MySQL-Driver for Go's database/sql package
+//
+// The driver should be used via the database/sql package:
+//
+//  import "database/sql"
+//  import _ "github.com/go-sql-driver/mysql"
+//
+//  db, err := sql.Open("mysql", "user:password@/dbname")
+//
+// See https://github.com/go-sql-driver/mysql#usage for details
 package mysql
 
 import (
 	"database/sql"
 	"database/sql/driver"
 	"net"
-	"time"
 )
 
-type mysqlDriver struct{}
+// This struct is exported to make the driver directly accessible.
+// In general the driver is used via the database/sql package.
+type MySQLDriver struct{}
 
 // Open new Connection.
 // See https://github.com/go-sql-driver/mysql#dsn-data-source-name for how
 // the DSN string is formated
-func (d *mysqlDriver) Open(dsn string) (driver.Conn, error) {
+func (d *MySQLDriver) Open(dsn string) (driver.Conn, error) {
 	var err error
 
 	// New mysqlConn
@@ -34,41 +43,50 @@ func (d *mysqlDriver) Open(dsn string) (driver.Conn, error) {
 	}
 
 	// Connect to Server
-	if _, ok := mc.cfg.params["timeout"]; ok { // with timeout
-		var timeout time.Duration
-		timeout, err = time.ParseDuration(mc.cfg.params["timeout"])
-		if err == nil {
-			mc.netConn, err = net.DialTimeout(mc.cfg.net, mc.cfg.addr, timeout)
-		}
-	} else { // no timeout
-		mc.netConn, err = net.Dial(mc.cfg.net, mc.cfg.addr)
-	}
+	nd := net.Dialer{Timeout: mc.cfg.timeout}
+	mc.netConn, err = nd.Dial(mc.cfg.net, mc.cfg.addr)
 	if err != nil {
 		return nil, err
 	}
 	mc.buf = newBuffer(mc.netConn)
 
 	// Reading Handshake Initialization Packet
-	err = mc.readInitPacket()
+	cipher, err := mc.readInitPacket()
 	if err != nil {
+		mc.Close()
 		return nil, err
 	}
 
 	// Send Client Authentication Packet
-	err = mc.writeAuthPacket()
-	if err != nil {
+	if err = mc.writeAuthPacket(cipher); err != nil {
+		mc.Close()
 		return nil, err
 	}
 
 	// Read Result Packet
 	err = mc.readResultOK()
 	if err != nil {
-		return nil, err
+		// Retry with old authentication method, if allowed
+		if mc.cfg.allowOldPasswords && err == errOldPassword {
+			if err = mc.writeOldAuthPacket(cipher); err != nil {
+				mc.Close()
+				return nil, err
+			}
+			if err = mc.readResultOK(); err != nil {
+				mc.Close()
+				return nil, err
+			}
+		} else {
+			mc.Close()
+			return nil, err
+		}
+
 	}
 
 	// Get max allowed packet size
 	maxap, err := mc.getSystemVar("max_allowed_packet")
 	if err != nil {
+		mc.Close()
 		return nil, err
 	}
 	mc.maxPacketAllowed = stringToInt(maxap) - 1
@@ -79,12 +97,13 @@ func (d *mysqlDriver) Open(dsn string) (driver.Conn, error) {
 	// Handle DSN Params
 	err = mc.handleParams()
 	if err != nil {
+		mc.Close()
 		return nil, err
 	}
 
-	return mc, err
+	return mc, nil
 }
 
 func init() {
-	sql.Register("mysql", &mysqlDriver{})
+	sql.Register("mysql", &MySQLDriver{})
 }

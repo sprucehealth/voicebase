@@ -1,7 +1,6 @@
 // Go MySQL Driver - A MySQL-Driver for Go's database/sql package
 //
-// Copyright 2012 Julien Schmidt. All rights reserved.
-// http://www.julienschmidt.com
+// Copyright 2012 The Go-MySQL-Driver Authors. All rights reserved.
 //
 // This Source Code Form is subject to the terms of the Mozilla Public
 // License, v. 2.0. If a copy of the MPL was not distributed with this file,
@@ -130,4 +129,14 @@ const (
 	flagUnknown2
 	flagUnknown3
 	flagUnknown4
+)
+
+const (
+	collation_ascii_general_ci   byte = 11
+	collation_utf8_general_ci    byte = 33
+	collation_utf8mb4_general_ci byte = 45
+	collation_utf8mb4_bin        byte = 46
+	collation_latin1_general_ci  byte = 48
+	collation_binary             byte = 63
+	collation_utf8mb4_unicode_ci byte = 224
 )
