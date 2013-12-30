@@ -3,7 +3,7 @@ package ec2
 import (
 	"testing"
 
-	"carefront/libs/aws"
+	// "carefront/libs/aws"
 )
 
 func TestDescribeSnapshots(t *testing.T) {
