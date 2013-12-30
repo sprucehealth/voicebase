@@ -169,6 +169,8 @@ func main() {
 	}
 	diagnosePatientHandler := apiservice.NewDiagnosePatientHandler(dataApi, authApi, cloudStorageApi)
 
+	doctorRegimenHandler := apiservice.NewDoctorRegimenHandler(dataApi)
+
 	mux := &apiservice.AuthServeMux{ServeMux: *http.NewServeMux(), AuthApi: authApi}
 
 	mux.Handle("/v1/patient", signupPatientHandler)
@@ -198,6 +200,9 @@ func main() {
 	mux.Handle("/v1/doctor/treatment/new", newTreatmentHandler)
 	mux.Handle("/v1/doctor/treatment/treatments", treatmentsHandler)
 	mux.Handle("/v1/doctor/treatment/supplemental_instructions", doctorInstructionsHandler)
+
+	mux.Handle("/v1/doctor/regimen/steps", doctorRegimenHandler)
+
 	s := &http.Server{
 		Addr:           conf.ListenAddr,
 		Handler:        mux,

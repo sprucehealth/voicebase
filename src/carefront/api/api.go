@@ -93,10 +93,14 @@ type ERxAPI interface {
 	GetMedicationDispenseUnits(languageId int64) (dispenseUnitIds []int64, dispenseUnits []string, err error)
 	AddTreatmentsForPatientVisit(treatments []*common.Treatment) error
 	GetTreatmentPlanForPatientVisit(patientVisitId int64) (treatmentPlan *common.TreatmentPlan, err error)
-	GetDrugInstructionsForDoctor(drugName, drugForm, drugRoute string, doctorId int64) (drugInstructions []*common.DoctorSupplementalInstruction, err error)
-	AddOrUpdateDrugInstructionForDoctor(drugName, drugForm, drugRoute string, drugInstructionToAdd *common.DoctorSupplementalInstruction, doctorId int64) (drugInstruction *common.DoctorSupplementalInstruction, err error)
-	DeleteDrugInstructionForDoctor(drugInstructionToDelete *common.DoctorSupplementalInstruction, doctorId int64) error
-	AddDrugInstructionsToTreatment(drugName, drugForm, drugRoute string, drugInstructions []*common.DoctorSupplementalInstruction, treatmentId int64, doctorId int64) error
+	GetDrugInstructionsForDoctor(drugName, drugForm, drugRoute string, doctorId int64) (drugInstructions []*common.DoctorInstructionItem, err error)
+	AddOrUpdateDrugInstructionForDoctor(drugName, drugForm, drugRoute string, drugInstructionToAdd *common.DoctorInstructionItem, doctorId int64) (drugInstruction *common.DoctorInstructionItem, err error)
+	DeleteDrugInstructionForDoctor(drugInstructionToDelete *common.DoctorInstructionItem, doctorId int64) error
+	AddDrugInstructionsToTreatment(drugName, drugForm, drugRoute string, drugInstructions []*common.DoctorInstructionItem, treatmentId int64, doctorId int64) error
+}
+
+type RegimenAPI interface {
+	GetRegimenStepsForDoctor(doctorId int64) (regimenSteps []*common.DoctorInstructionItem, err error)
 }
 
 type ObjectStorageAPI interface {
@@ -113,6 +117,7 @@ type DataAPI interface {
 	ObjectStorageAPI
 	IntakeAPI
 	ERxAPI
+	RegimenAPI
 }
 
 type CloudStorageAPI interface {

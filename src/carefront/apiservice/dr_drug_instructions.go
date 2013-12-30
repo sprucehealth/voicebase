@@ -23,10 +23,10 @@ type DeleteDrugInstructionsResponse struct {
 }
 
 type DoctorDrugInstructionsRequestResponse struct {
-	SupplementalInstructions []*common.DoctorSupplementalInstruction `json:"supplemental_instructions"`
-	DrugInternalName         string                                  `json:"drug_internal_name"`
-	TreatmentId              int64                                   `json:"treatment_id,string,omitempty"`
-	PatientVisitId           int64                                   `json:"patient_visit_id,string,omitempty"`
+	SupplementalInstructions []*common.DoctorInstructionItem `json:"supplemental_instructions"`
+	DrugInternalName         string                          `json:"drug_internal_name"`
+	TreatmentId              int64                           `json:"treatment_id,string,omitempty"`
+	PatientVisitId           int64                           `json:"patient_visit_id,string,omitempty"`
 }
 
 func NewDoctorDrugInstructionsHandler(dataApi api.DataAPI) *DoctorDrugInstructionsHandler {
@@ -116,7 +116,7 @@ func (d *DoctorDrugInstructionsHandler) addDrugInstructions(w http.ResponseWrite
 		return
 	}
 
-	drugInstructions := make([]*common.DoctorSupplementalInstruction, 0)
+	drugInstructions := make([]*common.DoctorInstructionItem, 0)
 	for _, instructionItem := range addInstructionsRequestBody.SupplementalInstructions {
 		if instructionItem.Text == "" {
 			WriteDeveloperError(w, http.StatusBadRequest, "The text for the instruction is empty so nothing to add or update: "+err.Error())

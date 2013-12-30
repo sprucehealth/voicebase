@@ -13,11 +13,16 @@ import (
 )
 
 const (
-	status_creating = "CREATING"
-	status_active   = "ACTIVE"
-	status_inactive = "INACTIVE"
-	treatment_otc   = "OTC"
-	treatment_rx    = "RX"
+	status_creating                        = "CREATING"
+	status_active                          = "ACTIVE"
+	status_inactive                        = "INACTIVE"
+	treatment_otc                          = "OTC"
+	treatment_rx                           = "RX"
+	dr_drug_supplemental_instruction_table = "dr_drug_supplemental_instruction"
+	dr_regimen_step_table                  = "dr_regimen_step"
+	drug_name_table                        = "drug_name"
+	drug_form_table                        = "drug_form"
+	drug_route_table                       = "drug_route"
 )
 
 type DataService struct {
@@ -139,12 +144,12 @@ func (d *DataService) GetTreatmentPlanForPatientVisit(patientVisitId int64) (tre
 		}
 		defer instructionsRows.Close()
 
-		drugInstructions := make([]*common.DoctorSupplementalInstruction, 0)
+		drugInstructions := make([]*common.DoctorInstructionItem, 0)
 		for instructionsRows.Next() {
 			var instructionId int64
 			var text string
 			instructionsRows.Scan(&instructionId, &text)
-			drugInstruction := &common.DoctorSupplementalInstruction{
+			drugInstruction := &common.DoctorInstructionItem{
 				Id:       instructionId,
 				Text:     text,
 				Selected: true,
@@ -285,7 +290,7 @@ func (d *DataService) getOrInsertNameInTable(tx *sql.Tx, tableName, drugComponen
 	return
 }
 
-func (d *DataService) DeleteDrugInstructionForDoctor(drugInstructionToDelete *common.DoctorSupplementalInstruction, doctorId int64) error {
+func (d *DataService) DeleteDrugInstructionForDoctor(drugInstructionToDelete *common.DoctorInstructionItem, doctorId int64) error {
 
 	_, err := d.DB.Exec(`update dr_drug_supplemental_instruction set status='DELETED' where id = ? and doctor_id = ?`, drugInstructionToDelete.Id, doctorId)
 	if err != nil {
@@ -295,23 +300,23 @@ func (d *DataService) DeleteDrugInstructionForDoctor(drugInstructionToDelete *co
 	return nil
 }
 
-func (d *DataService) AddDrugInstructionsToTreatment(drugName, drugForm, drugRoute string, drugInstructions []*common.DoctorSupplementalInstruction, treatmentId int64, doctorId int64) error {
+func (d *DataService) AddDrugInstructionsToTreatment(drugName, drugForm, drugRoute string, drugInstructions []*common.DoctorInstructionItem, treatmentId int64, doctorId int64) error {
 	// nothing to do if there are no instructions to add
 	if len(drugInstructions) == 0 {
 		return nil
 	}
 
-	drugNameNullId, err := d.getIdForNameFromTable("drug_name", drugName)
+	drugNameNullId, err := d.getIdForNameFromTable(drug_name_table, drugName)
 	if err != nil {
 		return err
 	}
 
-	drugFormNullId, err := d.getIdForNameFromTable("drug_form", drugForm)
+	drugFormNullId, err := d.getIdForNameFromTable(drug_form_table, drugForm)
 	if err != nil {
 		return err
 	}
 
-	drugRouteNullId, err := d.getIdForNameFromTable("drug_route", drugRoute)
+	drugRouteNullId, err := d.getIdForNameFromTable(drug_route_table, drugRoute)
 	if err != nil {
 		return err
 	}
@@ -373,25 +378,25 @@ func (d *DataService) AddDrugInstructionsToTreatment(drugName, drugForm, drugRou
 	return nil
 }
 
-func (d *DataService) AddOrUpdateDrugInstructionForDoctor(drugName, drugForm, drugRoute string, drugInstructionToAdd *common.DoctorSupplementalInstruction, doctorId int64) (drugInstruction *common.DoctorSupplementalInstruction, err error) {
+func (d *DataService) AddOrUpdateDrugInstructionForDoctor(drugName, drugForm, drugRoute string, drugInstructionToAdd *common.DoctorInstructionItem, doctorId int64) (drugInstruction *common.DoctorInstructionItem, err error) {
 	tx, err := d.DB.Begin()
 	if err != nil {
 		return
 	}
 
-	drugNameId, err := d.getOrInsertNameInTable(tx, "drug_name", drugName)
+	drugNameId, err := d.getOrInsertNameInTable(tx, drug_name_table, drugName)
 	if err != nil {
 		tx.Rollback()
 		return
 	}
 
-	drugFormId, err := d.getOrInsertNameInTable(tx, "drug_form", drugForm)
+	drugFormId, err := d.getOrInsertNameInTable(tx, drug_form_table, drugForm)
 	if err != nil {
 		tx.Rollback()
 		return
 	}
 
-	drugRouteId, err := d.getOrInsertNameInTable(tx, "drug_route", drugRoute)
+	drugRouteId, err := d.getOrInsertNameInTable(tx, drug_route_table, drugRoute)
 	if err != nil {
 		tx.Rollback()
 		return
@@ -455,20 +460,20 @@ func (d *DataService) AddOrUpdateDrugInstructionForDoctor(drugName, drugForm, dr
 
 	tx.Commit()
 
-	drugInstruction = &common.DoctorSupplementalInstruction{
+	drugInstruction = &common.DoctorInstructionItem{
 		Id:   instructionId,
 		Text: drugInstructionToAdd.Text,
 	}
 	return
 }
 
-func (d *DataService) GetDrugInstructionsForDoctor(drugName, drugForm, drugRoute string, doctorId int64) (drugInstructions []*common.DoctorSupplementalInstruction, err error) {
+func (d *DataService) GetDrugInstructionsForDoctor(drugName, drugForm, drugRoute string, doctorId int64) (drugInstructions []*common.DoctorInstructionItem, err error) {
 	// first, try and populate instructions belonging to the doctor based on just the drug name
 	// if non exist, then check the predefined set of instructions, create a copy for the doctor and return this copy
 	queryStr := fmt.Sprintf(`select drug_supplemental_instruction.id, text, drug_name_id, drug_form_id, drug_route_id from drug_supplemental_instruction 
 									inner join drug_name on drug_name_id=drug_name.id 
 										where name='%s' and drug_form_id is null and drug_route_id is null and status='ACTIVE'`, drugName)
-	drugInstructions, err = d.queryAndInsertPredefinedInstructionsForDoctor(queryStr, doctorId, getDoctorInstructionsBasedOnName, drugName)
+	drugInstructions, err = d.queryAndInsertPredefinedInstructionsForDoctor(dr_drug_supplemental_instruction_table, queryStr, doctorId, getDoctorInstructionsBasedOnName, insertPredefinedInstructionsForDoctor, drugName)
 	if err != nil {
 		return
 	}
@@ -481,7 +486,7 @@ func (d *DataService) GetDrugInstructionsForDoctor(drugName, drugForm, drugRoute
 									inner join drug_name on drug_name_id=drug_name.id 
 									inner join drug_form on drug_form_id=drug_form.id 
 										where drug_name.name='%s' and drug_form.name = '%s' and drug_route_id is null and status='ACTIVE'`, drugName, drugForm)
-	moreInstructions, err := d.queryAndInsertPredefinedInstructionsForDoctor(queryStr, doctorId, getDoctorInstructionsBasedOnNameAndForm, drugName, drugForm)
+	moreInstructions, err := d.queryAndInsertPredefinedInstructionsForDoctor(dr_drug_supplemental_instruction_table, queryStr, doctorId, getDoctorInstructionsBasedOnNameAndForm, insertPredefinedInstructionsForDoctor, drugName, drugForm)
 	if err != nil {
 		return
 	}
@@ -493,7 +498,7 @@ func (d *DataService) GetDrugInstructionsForDoctor(drugName, drugForm, drugRoute
 									inner join drug_name on drug_name_id=drug_name.id 
 									inner join drug_route on drug_route_id=drug_route.id 
 										where drug_name.name='%s' and drug_route.name = '%s' and drug_form_id is null and status='ACTIVE'`, drugName, drugRoute)
-	moreInstructions, err = d.queryAndInsertPredefinedInstructionsForDoctor(queryStr, doctorId, getDoctorInstructionsBasedOnNameAndRoute, drugName, drugRoute)
+	moreInstructions, err = d.queryAndInsertPredefinedInstructionsForDoctor(dr_drug_supplemental_instruction_table, queryStr, doctorId, getDoctorInstructionsBasedOnNameAndRoute, insertPredefinedInstructionsForDoctor, drugName, drugRoute)
 	if err != nil {
 		return
 	}
@@ -506,7 +511,7 @@ func (d *DataService) GetDrugInstructionsForDoctor(drugName, drugForm, drugRoute
 									inner join drug_route on drug_route_id=drug_route.id
 									inner join drug_form on drug_form_id=drug_form.id
 										where drug_name.name='%s' and drug_route.name = '%s' and drug_form.name = '%s' and status='ACTIVE'`, drugName, drugRoute, drugForm)
-	moreInstructions, err = d.queryAndInsertPredefinedInstructionsForDoctor(queryStr, doctorId, getDoctorInstructionsBasedOnNameFormAndRoute, drugName, drugForm, drugRoute)
+	moreInstructions, err = d.queryAndInsertPredefinedInstructionsForDoctor(dr_drug_supplemental_instruction_table, queryStr, doctorId, getDoctorInstructionsBasedOnNameFormAndRoute, insertPredefinedInstructionsForDoctor, drugName, drugForm, drugRoute)
 	if err != nil {
 		return
 	}
@@ -540,8 +545,8 @@ func (d *DataService) GetDrugInstructionsForDoctor(drugName, drugForm, drugRoute
 	return
 }
 
-func getActiveInstructions(drugInstructions []*common.DoctorSupplementalInstruction) []*common.DoctorSupplementalInstruction {
-	activeInstructions := make([]*common.DoctorSupplementalInstruction, 0)
+func getActiveInstructions(drugInstructions []*common.DoctorInstructionItem) []*common.DoctorInstructionItem {
+	activeInstructions := make([]*common.DoctorInstructionItem, 0)
 	for _, instruction := range drugInstructions {
 		if instruction.Status == status_active {
 			activeInstructions = append(activeInstructions, instruction)
@@ -550,7 +555,7 @@ func getActiveInstructions(drugInstructions []*common.DoctorSupplementalInstruct
 	return activeInstructions
 }
 
-func (d *DataService) queryAndInsertPredefinedInstructionsForDoctor(queryStr string, doctorId int64, queryInstructionsFunc doctorInstructionQuery, drugComponents ...string) (drugInstructions []*common.DoctorSupplementalInstruction, err error) {
+func (d *DataService) queryAndInsertPredefinedInstructionsForDoctor(drTableName string, queryStr string, doctorId int64, queryInstructionsFunc doctorInstructionQuery, insertInstructionsFunc insertDoctorInstructionFunc, drugComponents ...string) (drugInstructions []*common.DoctorInstructionItem, err error) {
 	drugInstructions, err = queryInstructionsFunc(d.DB, doctorId, drugComponents...)
 	if err != nil {
 		return
@@ -576,7 +581,7 @@ func (d *DataService) queryAndInsertPredefinedInstructionsForDoctor(queryStr str
 		return
 	}
 
-	err = d.insertPredefinedInstructionsForDoctor(predefinedInstructions, doctorId)
+	err = insertInstructionsFunc(d.DB, predefinedInstructions, doctorId)
 	if err != nil {
 		return
 	}
@@ -585,9 +590,24 @@ func (d *DataService) queryAndInsertPredefinedInstructionsForDoctor(queryStr str
 	return
 }
 
-func (d *DataService) insertPredefinedInstructionsForDoctor(predefinedInstructions []*predefinedInstruction, doctorId int64) error {
+type insertDoctorInstructionFunc func(db *sql.DB, predefinedInstructions []*predefinedInstruction, doctorId int64) error
+
+func insertPredefinedRegimenStepsForDoctor(db *sql.DB, predefinedInstructions []*predefinedInstruction, doctorId int64) error {
+	insertStr := bytes.NewBufferString(`insert into dr_regimen_step 
+							(doctor_id, text, status) values `)
+	insertValues := make([]string, 0)
+	for _, instruction := range predefinedInstructions {
+		insertValue := fmt.Sprintf("(%d, '%s','ACTIVE')", doctorId, instruction.text)
+		insertValues = append(insertValues, insertValue)
+	}
+	insertStr.WriteString(strings.Join(insertValues, ","))
+
+	_, err := db.Exec(insertStr.String())
+	return err
+}
+func insertPredefinedInstructionsForDoctor(db *sql.DB, predefinedInstructions []*predefinedInstruction, doctorId int64) error {
 	insertStr := bytes.NewBufferString(`insert into dr_drug_supplemental_instruction 
-							(doctor_id, text, drug_name_id, drug_form_id, drug_route_id, selected, status, drug_supplemental_instruction_id) values `)
+							(doctor_id, text, drug_name_id, drug_form_id, drug_route_id, status, drug_supplemental_instruction_id) values `)
 	insertValues := make([]string, 0)
 	for _, instruction := range predefinedInstructions {
 
@@ -606,18 +626,28 @@ func (d *DataService) insertPredefinedInstructionsForDoctor(predefinedInstructio
 			drugRouteIdStr = strconv.FormatInt(instruction.drugRouteId, 10)
 		}
 
-		insertValue := fmt.Sprintf("(%d, '%s', %s, %s, %s, false, 'ACTIVE', %d)", doctorId, instruction.text, drugNameIdStr, drugFormIdStr, drugRouteIdStr, instruction.id)
+		insertValue := fmt.Sprintf("(%d, '%s', %s, %s, %s, 'ACTIVE', %d)", doctorId, instruction.text, drugNameIdStr, drugFormIdStr, drugRouteIdStr, instruction.id)
 		insertValues = append(insertValues, insertValue)
 	}
 	insertStr.WriteString(strings.Join(insertValues, ","))
 
-	_, err := d.DB.Exec(insertStr.String())
+	_, err := db.Exec(insertStr.String())
 	return err
 }
 
-type doctorInstructionQuery func(db *sql.DB, doctorId int64, drugComponents ...string) (drugInstructions []*common.DoctorSupplementalInstruction, err error)
+type doctorInstructionQuery func(db *sql.DB, doctorId int64, drugComponents ...string) (drugInstructions []*common.DoctorInstructionItem, err error)
 
-func getDoctorInstructionsBasedOnName(db *sql.DB, doctorId int64, drugComponents ...string) (drugInstructions []*common.DoctorSupplementalInstruction, err error) {
+func getRegimenStepsForDoctor(db *sql.DB, doctorId int64, drugComponents ...string) (regimenSteps []*common.DoctorInstructionItem, err error) {
+	rows, err := db.Query(`select id, text, status from dr_regimen_step where doctor_id=?`, doctorId)
+	if err != nil {
+		return
+	}
+
+	regimenSteps, err = getInstructionsFromRows(rows)
+	return
+}
+
+func getDoctorInstructionsBasedOnName(db *sql.DB, doctorId int64, drugComponents ...string) (drugInstructions []*common.DoctorInstructionItem, err error) {
 	queryStr := fmt.Sprintf(`select dr_drug_supplemental_instruction.id, text,status from dr_drug_supplemental_instruction 
 								inner join drug_name on drug_name_id=drug_name.id 
 									where name='%s' and drug_form_id is null and drug_route_id is null and doctor_id=?`, drugComponents[0])
@@ -630,7 +660,7 @@ func getDoctorInstructionsBasedOnName(db *sql.DB, doctorId int64, drugComponents
 	return
 }
 
-func getDoctorInstructionsBasedOnNameAndForm(db *sql.DB, doctorId int64, drugComponents ...string) (drugInstructions []*common.DoctorSupplementalInstruction, err error) {
+func getDoctorInstructionsBasedOnNameAndForm(db *sql.DB, doctorId int64, drugComponents ...string) (drugInstructions []*common.DoctorInstructionItem, err error) {
 	// then, get instructions belonging to doctor based on drug name and form
 	queryStr := fmt.Sprintf(`select dr_drug_supplemental_instruction.id, text,status from dr_drug_supplemental_instruction 
 									inner join drug_name on drug_name_id=drug_name.id 
@@ -645,7 +675,7 @@ func getDoctorInstructionsBasedOnNameAndForm(db *sql.DB, doctorId int64, drugCom
 	return
 }
 
-func getDoctorInstructionsBasedOnNameAndRoute(db *sql.DB, doctorId int64, drugComponents ...string) (drugInstructions []*common.DoctorSupplementalInstruction, err error) {
+func getDoctorInstructionsBasedOnNameAndRoute(db *sql.DB, doctorId int64, drugComponents ...string) (drugInstructions []*common.DoctorInstructionItem, err error) {
 	queryStr := fmt.Sprintf(`select dr_drug_supplemental_instruction.id,text,status from dr_drug_supplemental_instruction 
 									inner join drug_name on drug_name_id=drug_name.id 
 									inner join drug_route on drug_route_id=drug_route.id 
@@ -659,7 +689,7 @@ func getDoctorInstructionsBasedOnNameAndRoute(db *sql.DB, doctorId int64, drugCo
 	return
 }
 
-func getDoctorInstructionsBasedOnNameFormAndRoute(db *sql.DB, doctorId int64, drugComponents ...string) (drugInstructions []*common.DoctorSupplementalInstruction, err error) {
+func getDoctorInstructionsBasedOnNameFormAndRoute(db *sql.DB, doctorId int64, drugComponents ...string) (drugInstructions []*common.DoctorInstructionItem, err error) {
 	// then, get instructions belonging to doctor based on drug name, route and form
 	queryStr := fmt.Sprintf(`select dr_drug_supplemental_instruction.id,text,status from dr_drug_supplemental_instruction 
 									inner join drug_name on drug_name_id=drug_name.id 
@@ -714,9 +744,9 @@ func getPredefinedInstructionsFromRows(rows *sql.Rows) (predefinedInstructions [
 	return
 }
 
-func getInstructionsFromRows(rows *sql.Rows) (drugInstructions []*common.DoctorSupplementalInstruction, err error) {
+func getInstructionsFromRows(rows *sql.Rows) (drugInstructions []*common.DoctorInstructionItem, err error) {
 	defer rows.Close()
-	drugInstructions = make([]*common.DoctorSupplementalInstruction, 0)
+	drugInstructions = make([]*common.DoctorInstructionItem, 0)
 	for rows.Next() {
 		var id int64
 		var text, status string
@@ -724,12 +754,25 @@ func getInstructionsFromRows(rows *sql.Rows) (drugInstructions []*common.DoctorS
 		if err != nil {
 			return
 		}
-		supplementalInstruction := &common.DoctorSupplementalInstruction{}
+		supplementalInstruction := &common.DoctorInstructionItem{}
 		supplementalInstruction.Id = id
 		supplementalInstruction.Text = text
 		supplementalInstruction.Status = status
 		drugInstructions = append(drugInstructions, supplementalInstruction)
 	}
+	return
+}
+
+func (d *DataService) GetRegimenStepsForDoctor(doctorId int64) (regimenSteps []*common.DoctorInstructionItem, err error) {
+	// attempt to get regimen steps for doctor
+	queryStr := fmt.Sprintf(`select regimen_step.id, text, drug_name_id, drug_form_id, drug_route_id from regimen_step 
+										where status='ACTIVE'`)
+	regimenSteps, err = d.queryAndInsertPredefinedInstructionsForDoctor(dr_regimen_step_table, queryStr, doctorId, getRegimenStepsForDoctor, insertPredefinedRegimenStepsForDoctor)
+	if err != nil {
+		return
+	}
+
+	regimenSteps = getActiveInstructions(regimenSteps)
 	return
 }
 
