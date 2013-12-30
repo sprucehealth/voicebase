@@ -3,6 +3,7 @@ package apiservice
 import (
 	"carefront/api"
 	"carefront/common"
+	"encoding/json"
 	"github.com/gorilla/schema"
 	"net/http"
 )
@@ -34,6 +35,8 @@ func (d *DoctorRegimenHandler) ServeHTTP(w http.ResponseWriter, r *http.Request)
 	switch r.Method {
 	case "GET":
 		d.getRegimenSteps(w, r)
+	case "POST":
+		d.updateRegimenSteps(w, r)
 	}
 }
 
@@ -59,5 +62,74 @@ func (d *DoctorRegimenHandler) getRegimenSteps(w http.ResponseWriter, r *http.Re
 		return
 	}
 
+	// TODO Get existing regimens for the patient visit
+
 	WriteJSONToHTTPResponseWriter(w, http.StatusOK, &DoctorRegimenRequestResponse{RegimenSteps: regimenSteps})
+}
+
+func (d *DoctorRegimenHandler) updateRegimenSteps(w http.ResponseWriter, r *http.Request) {
+	jsonDecoder := json.NewDecoder(r.Body)
+	requestData := &common.RegimenPlan{}
+
+	err := jsonDecoder.Decode(requestData)
+	if err != nil {
+		WriteDeveloperError(w, http.StatusBadRequest, "Unable to parse json request body for updating regimen steps: "+err.Error())
+		return
+	}
+
+	doctorId, _, _, statusCode, err := ValidateDoctorAccessToPatientVisitAndGetRelevantData(requestData.PatientVisitId, d.accountId, d.DataApi)
+	if err != nil {
+		WriteDeveloperError(w, statusCode, err.Error())
+		return
+	}
+
+	// Go through regimen steps to add, update and delete regimen steps before creating the regimen plan
+	// for the user
+	newOrUpdatedStepToIdMapping := make(map[string]int64)
+	for _, regimenStep := range requestData.AllRegimenSteps {
+		switch regimenStep.State {
+		case common.STATE_ADDED:
+			err = d.DataApi.AddRegimenStepForDoctor(regimenStep, doctorId)
+			if err != nil {
+				WriteDeveloperError(w, http.StatusInternalServerError, "Unable to add reigmen step to doctor. Application may be left in inconsistent state. Error = "+err.Error())
+				return
+			}
+			newOrUpdatedStepToIdMapping[regimenStep.Text] = regimenStep.Id
+		case common.STATE_MODIFIED:
+			err = d.DataApi.UpdateRegimenStepForDoctor(regimenStep, doctorId)
+			if err != nil {
+				WriteDeveloperError(w, http.StatusInternalServerError, "Unable to update regimen step for doctor: "+err.Error())
+				return
+			}
+			// keep track of the new id for updated regimen steps so that we can update the regimen step in the
+			// regimen section
+			newOrUpdatedStepToIdMapping[regimenStep.Text] = regimenStep.Id
+		case common.STATE_DELETED:
+			err = d.DataApi.MarkRegimenStepToBeDeleted(regimenStep, doctorId)
+			if err != nil {
+				WriteDeveloperError(w, http.StatusInternalServerError, "Unable to delete regimen step for doctor: "+err.Error())
+				return
+			}
+		}
+		// empty out the state now that it has been taken care of
+		regimenStep.State = ""
+	}
+
+	// go through regimen steps within the regimen sections to assign ids to the new steps that dont have them
+	for _, regimenSection := range requestData.RegimenSections {
+		for _, regimenStep := range regimenSection.RegimenSteps {
+			updatedOrNewId := newOrUpdatedStepToIdMapping[regimenStep.Text]
+			if updatedOrNewId != 0 {
+				regimenStep.Id = updatedOrNewId
+			}
+		}
+	}
+
+	err = d.DataApi.CreateRegimenPlanForPatientVisit(requestData)
+	if err != nil {
+		WriteDeveloperError(w, http.StatusInternalServerError, "Unable to create regimen plan for patient visit: "+err.Error())
+		return
+	}
+
+	WriteJSONToHTTPResponseWriter(w, http.StatusOK, requestData)
 }

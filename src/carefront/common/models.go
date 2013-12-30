@@ -101,9 +101,27 @@ type Treatment struct {
 	SupplementalInstructions []*DoctorInstructionItem `json:"supplemental_instructions,omitempty"`
 }
 
+const (
+	STATE_ADDED    = "added"
+	STATE_MODIFIED = "modified"
+	STATE_DELETED  = "deleted"
+)
+
 type DoctorInstructionItem struct {
 	Id       int64  `json:"id,string"`
 	Text     string `json:"text"`
 	Selected bool   `json:"selected,omitempty"`
+	State    string `json:"state,omitempty"`
 	Status   string `json:"-"`
+}
+
+type RegimenSection struct {
+	RegimenName  string                   `json:"regimen_name"`
+	RegimenSteps []*DoctorInstructionItem `json:"regimen_steps"`
+}
+
+type RegimenPlan struct {
+	PatientVisitId  int64                    `json:"patient_visit_id,string"`
+	RegimenSections []*RegimenSection        `json:"regimen_sections"`
+	AllRegimenSteps []*DoctorInstructionItem `json:"all_regimen_steps"`
 }

@@ -101,6 +101,10 @@ type ERxAPI interface {
 
 type RegimenAPI interface {
 	GetRegimenStepsForDoctor(doctorId int64) (regimenSteps []*common.DoctorInstructionItem, err error)
+	AddRegimenStepForDoctor(regimenStep *common.DoctorInstructionItem, doctorId int64) error
+	UpdateRegimenStepForDoctor(regimenStep *common.DoctorInstructionItem, doctorId int64) error
+	MarkRegimenStepToBeDeleted(regimenStep *common.DoctorInstructionItem, doctorId int64) error
+	CreateRegimenPlanForPatientVisit(regimenPlan *common.RegimenPlan) error
 }
 
 type ObjectStorageAPI interface {

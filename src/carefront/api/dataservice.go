@@ -776,6 +776,101 @@ func (d *DataService) GetRegimenStepsForDoctor(doctorId int64) (regimenSteps []*
 	return
 }
 
+func (d *DataService) AddRegimenStepForDoctor(regimenStep *common.DoctorInstructionItem, doctorId int64) error {
+	res, err := d.DB.Exec(`insert into dr_regimen_step (text, doctor_id,status) values (?,?,'ACTIVE')`, regimenStep.Text, doctorId)
+	if err != nil {
+		return err
+	}
+	instructionId, err := res.LastInsertId()
+	if err != nil {
+		return err
+	}
+
+	// assign an id given that its a new regimen step
+	regimenStep.Id = instructionId
+	return nil
+}
+
+func (d *DataService) UpdateRegimenStepForDoctor(regimenStep *common.DoctorInstructionItem, doctorId int64) error {
+	tx, err := d.DB.Begin()
+	if err != nil {
+		return err
+	}
+
+	// update the current regimen step to be inactive
+	_, err = tx.Exec(`update dr_regimen_step set status='INACTIVE' where id = ? and doctor_id = ?`, regimenStep.Id, doctorId)
+	if err != nil {
+		tx.Rollback()
+		return err
+	}
+
+	// insert a new active regimen step in its place
+	res, err := tx.Exec(`insert into dr_regimen_step (text, doctor_id, status) values (?, ?, 'ACTIVE')`, regimenStep.Text, doctorId)
+	if err != nil {
+		tx.Rollback()
+		return err
+	}
+
+	instructionId, err := res.LastInsertId()
+	if err != nil {
+		tx.Rollback()
+		return err
+	}
+
+	// update the regimenStep Id
+	regimenStep.Id = instructionId
+	tx.Commit()
+	return nil
+}
+
+func (d *DataService) MarkRegimenStepToBeDeleted(regimenStep *common.DoctorInstructionItem, doctorId int64) error {
+	// mark the regimen step to be deleted
+	_, err := d.DB.Exec(`update dr_regimen_step set status='DELETED' where id = ? and doctor_id = ?`, regimenStep.Id, doctorId)
+	if err != nil {
+		return err
+	}
+	return nil
+}
+
+func (d *DataService) CreateRegimenPlanForPatientVisit(regimenPlan *common.RegimenPlan) error {
+	if len(regimenPlan.RegimenSections) == 0 {
+		return nil
+	}
+
+	// begin tx
+	tx, err := d.DB.Begin()
+	if err != nil {
+		return err
+	}
+
+	// mark any previous regimen steps for this patient visit and regimen type as inactive
+	_, err = tx.Exec(`update regimen set status='INACTIVE' where patient_visit_id = ?`, regimenPlan.PatientVisitId)
+	if err != nil {
+		tx.Rollback()
+		return err
+	}
+
+	// create new regimen steps within each section
+	insertStr := bytes.NewBufferString(`insert into regimen (patient_visit_id, regimen_type, dr_regimen_step_id, status) values `)
+	insertValues := make([]string, 0)
+	for _, regimenSection := range regimenPlan.RegimenSections {
+		for _, regimenStep := range regimenSection.RegimenSteps {
+			insertValues = append(insertValues, fmt.Sprintf("(%d,'%s',%d, 'ACTIVE')", regimenPlan.PatientVisitId, regimenSection.RegimenName, regimenStep.Id))
+		}
+	}
+
+	insertStr.WriteString(strings.Join(insertValues, ","))
+	_, err = tx.Exec(insertStr.String())
+	if err != nil {
+		tx.Rollback()
+		return err
+	}
+
+	// commit tx
+	tx.Commit()
+	return nil
+}
+
 func (d *DataService) CheckCareProvidingElligibility(shortState string, healthConditionId int64) (isElligible bool, err error) {
 	queryStr := fmt.Sprintf(`select provider_id from care_provider_state_elligibility 
 								inner join care_providing_state on care_providing_state_id = care_providing_state.id 
