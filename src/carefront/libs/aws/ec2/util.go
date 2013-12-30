@@ -14,7 +14,7 @@ type Error struct {
 
 type ErrorResponse struct {
 	StatusCode int
-	Errors     []Error `xml:Errors>Error`
+	Errors     []Error `xml:"Errors>Error"`
 	RequestID  string
 }
 
