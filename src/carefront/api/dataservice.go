@@ -871,6 +871,54 @@ func (d *DataService) CreateRegimenPlanForPatientVisit(regimenPlan *common.Regim
 	return nil
 }
 
+func (d *DataService) GetRegimenPlanForPatientVisit(patientVisitId int64) (regimenPlan *common.RegimenPlan, err error) {
+	regimenPlan = &common.RegimenPlan{}
+	regimenPlan.PatientVisitId = patientVisitId
+
+	rows, err := d.DB.Query(`select regimen_type, dr_regimen_step.id, dr_regimen_step.text 
+								from regimen inner join dr_regimen_step on dr_regimen_step_id = dr_regimen_step.id 
+									where patient_visit_id = ? and regimen.status = 'ACTIVE' order by regimen.id`, patientVisitId)
+	if err != nil {
+		return
+	}
+	defer rows.Close()
+
+	regimenSections := make(map[string][]*common.DoctorInstructionItem)
+	for rows.Next() {
+		var regimenType, regimenText string
+		var regimenStepId int64
+		err = rows.Scan(&regimenType, &regimenStepId, &regimenText)
+		regimenStep := &common.DoctorInstructionItem{
+			Id:   regimenStepId,
+			Text: regimenText,
+		}
+
+		regimenSteps := regimenSections[regimenType]
+		if regimenSteps == nil {
+			regimenSteps = make([]*common.DoctorInstructionItem, 0)
+		}
+		regimenSteps = append(regimenSteps, regimenStep)
+		regimenSections[regimenType] = regimenSteps
+	}
+
+	// if there are no regimen steps to return, error out indicating so
+	if len(regimenSections) == 0 {
+		return nil, NoRegimenPlanForPatientVisit
+	}
+
+	regimenSectionsArray := make([]*common.RegimenSection, 0)
+	// create the regimen sections
+	for regimenSectionName, regimenSteps := range regimenSections {
+		regimenSection := &common.RegimenSection{
+			RegimenName:  regimenSectionName,
+			RegimenSteps: regimenSteps,
+		}
+		regimenSectionsArray = append(regimenSectionsArray, regimenSection)
+	}
+	regimenPlan.RegimenSections = regimenSectionsArray
+	return
+}
+
 func (d *DataService) CheckCareProvidingElligibility(shortState string, healthConditionId int64) (isElligible bool, err error) {
 	queryStr := fmt.Sprintf(`select provider_id from care_provider_state_elligibility 
 								inner join care_providing_state on care_providing_state_id = care_providing_state.id 

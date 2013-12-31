@@ -62,9 +62,17 @@ func (d *DoctorRegimenHandler) getRegimenSteps(w http.ResponseWriter, r *http.Re
 		return
 	}
 
-	// TODO Get existing regimens for the patient visit
+	regimenPlan, err := d.DataApi.GetRegimenPlanForPatientVisit(requestData.PatientVisitId)
+	if err != nil && err != api.NoRegimenPlanForPatientVisit {
+		WriteDeveloperError(w, http.StatusInternalServerError, "Unable to lookup regimen plan for patient visit: "+err.Error())
+	}
 
-	WriteJSONToHTTPResponseWriter(w, http.StatusOK, &DoctorRegimenRequestResponse{RegimenSteps: regimenSteps})
+	if regimenPlan == nil {
+		regimenPlan = &common.RegimenPlan{}
+	}
+	regimenPlan.AllRegimenSteps = regimenSteps
+
+	WriteJSONToHTTPResponseWriter(w, http.StatusOK, regimenPlan)
 }
 
 func (d *DoctorRegimenHandler) updateRegimenSteps(w http.ResponseWriter, r *http.Request) {

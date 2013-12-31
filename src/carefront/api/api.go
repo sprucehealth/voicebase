@@ -16,8 +16,9 @@ const (
 )
 
 var (
-	NoRowsError                 = errors.New("No rows exist")
-	NoElligibileProviderInState = errors.New("There are no providers elligible in the state the patient resides")
+	NoRowsError                  = errors.New("No rows exist")
+	NoElligibileProviderInState  = errors.New("There are no providers elligible in the state the patient resides")
+	NoRegimenPlanForPatientVisit = errors.New("There is no regimen plan for patient visit")
 )
 
 type PotentialAnswerInfo struct {
@@ -105,6 +106,7 @@ type RegimenAPI interface {
 	UpdateRegimenStepForDoctor(regimenStep *common.DoctorInstructionItem, doctorId int64) error
 	MarkRegimenStepToBeDeleted(regimenStep *common.DoctorInstructionItem, doctorId int64) error
 	CreateRegimenPlanForPatientVisit(regimenPlan *common.RegimenPlan) error
+	GetRegimenPlanForPatientVisit(patientVisitId int64) (regimenPlan *common.RegimenPlan, err error)
 }
 
 type ObjectStorageAPI interface {

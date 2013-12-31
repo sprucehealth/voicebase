@@ -201,7 +201,7 @@ func main() {
 	mux.Handle("/v1/doctor/treatment/treatments", treatmentsHandler)
 	mux.Handle("/v1/doctor/treatment/supplemental_instructions", doctorInstructionsHandler)
 
-	mux.Handle("/v1/doctor/regimen/steps", doctorRegimenHandler)
+	mux.Handle("/v1/doctor/regimen/", doctorRegimenHandler)
 
 	s := &http.Server{
 		Addr:           conf.ListenAddr,
