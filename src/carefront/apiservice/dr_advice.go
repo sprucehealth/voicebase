@@ -4,7 +4,7 @@ import (
 	"carefront/api"
 	"carefront/common"
 	"encoding/json"
-	"github.comm/gorilla/schema"
+	"github.com/gorilla/schema"
 	"net/http"
 )
 
@@ -20,7 +20,7 @@ type GetDoctorAdviceRequestData struct {
 type DoctorAdviceRequestResponse struct {
 	AllAdvicePoints      []*common.DoctorInstructionItem `json:"all_advice_points"`
 	SelectedAdvicePoints []*common.DoctorInstructionItem `json:"selected_advice_points,omitempty"`
-	PatientVisitId       int64                           `json:"patient_visit_id,omitempty"`
+	PatientVisitId       int64                           `json:"patient_visit_id,string,omitempty"`
 }
 
 func NewDoctorAdviceHandler(dataApi api.DataAPI) *DoctorAdviceHandler {
@@ -35,6 +35,8 @@ func (d *DoctorAdviceHandler) ServeHTTP(w http.ResponseWriter, r *http.Request) 
 	switch r.Method {
 	case "GET":
 		d.getAdvicePoints(w, r)
+	case "POST":
+		d.updateAdvicePoints(w, r)
 	}
 }
 
@@ -90,51 +92,47 @@ func (d *DoctorAdviceHandler) updateAdvicePoints(w http.ResponseWriter, r *http.
 		return
 	}
 
-	// Go through regimen steps to add, update and delete regimen steps before creating the regimen plan
+	// Go through advice points to add, update and delete advice points before creating the advice points for this patient visit
 	// for the user
 	newOrUpdatedPointToIdMapping := make(map[string]int64)
+	updatedAdvicePoints := make([]*common.DoctorInstructionItem, 0)
 	for _, advicePoint := range requestData.AllAdvicePoints {
 		switch advicePoint.State {
-		case common.STATE_ADDED:
-			err = d.DataApi.AddRegimenStepForDoctor(regimenStep, doctorId)
+		case common.STATE_ADDED, common.STATE_MODIFIED:
+			err = d.DataApi.AddOrUpdateAdvicePointForDoctor(advicePoint, doctorId)
 			if err != nil {
-				WriteDeveloperError(w, http.StatusInternalServerError, "Unable to add reigmen step to doctor. Application may be left in inconsistent state. Error = "+err.Error())
+				WriteDeveloperError(w, http.StatusInternalServerError, "Unable to add or update advice point for doctor. Application may be left in inconsistent state. Error = "+err.Error())
 				return
 			}
-			newOrUpdatedStepToIdMapping[regimenStep.Text] = regimenStep.Id
-		case common.STATE_MODIFIED:
-			err = d.DataApi.UpdateRegimenStepForDoctor(regimenStep, doctorId)
-			if err != nil {
-				WriteDeveloperError(w, http.StatusInternalServerError, "Unable to update regimen step for doctor: "+err.Error())
-				return
-			}
-			// keep track of the new id for updated regimen steps so that we can update the regimen step in the
-			// regimen section
-			newOrUpdatedStepToIdMapping[regimenStep.Text] = regimenStep.Id
+			newOrUpdatedPointToIdMapping[advicePoint.Text] = advicePoint.Id
+			updatedAdvicePoints = append(updatedAdvicePoints, advicePoint)
 		case common.STATE_DELETED:
-			err = d.DataApi.MarkRegimenStepToBeDeleted(regimenStep, doctorId)
+			err = d.DataApi.MarkAdvicePointToBeDeleted(advicePoint, doctorId)
 			if err != nil {
-				WriteDeveloperError(w, http.StatusInternalServerError, "Unable to delete regimen step for doctor: "+err.Error())
+				WriteDeveloperError(w, http.StatusInternalServerError, "Unable to delete advice point for doctor: "+err.Error())
 				return
 			}
+		default:
+			updatedAdvicePoints = append(updatedAdvicePoints, advicePoint)
 		}
 		// empty out the state now that it has been taken care of
-		regimenStep.State = ""
+		advicePoint.State = ""
 	}
 
 	// go through regimen steps within the regimen sections to assign ids to the new steps that dont have them
-	for _, regimenSection := range requestData.RegimenSections {
-		for _, regimenStep := range regimenSection.RegimenSteps {
-			updatedOrNewId := newOrUpdatedStepToIdMapping[regimenStep.Text]
-			if updatedOrNewId != 0 {
-				regimenStep.Id = updatedOrNewId
-			}
+	for _, advicePoint := range requestData.SelectedAdvicePoints {
+		updatedOrNewId := newOrUpdatedPointToIdMapping[advicePoint.Text]
+		if updatedOrNewId != 0 {
+			advicePoint.Id = updatedOrNewId
 		}
 	}
 
-	err = d.DataApi.CreateRegimenPlanForPatientVisit(requestData)
+	err = d.DataApi.CreateAdviceForPatientVisit(requestData.SelectedAdvicePoints, requestData.PatientVisitId)
 	if err != nil {
-		WriteDeveloperError(w, http.StatusInternalServerError, "Unable to create regimen plan for patient visit: "+err.Error())
+		WriteDeveloperError(w, http.StatusInternalServerError, "Unable to add advice for patient visit: "+err.Error())
 		return
 	}
+
+	requestData.AllAdvicePoints = updatedAdvicePoints
+	WriteJSONToHTTPResponseWriter(w, http.StatusOK, requestData)
 }
