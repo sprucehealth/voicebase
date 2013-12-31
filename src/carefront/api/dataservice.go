@@ -20,6 +20,7 @@ const (
 	treatment_rx                           = "RX"
 	dr_drug_supplemental_instruction_table = "dr_drug_supplemental_instruction"
 	dr_regimen_step_table                  = "dr_regimen_step"
+	dr_advice_point_table                  = "dr_advice_point"
 	drug_name_table                        = "drug_name"
 	drug_form_table                        = "drug_form"
 	drug_route_table                       = "drug_route"
@@ -588,6 +589,20 @@ func (d *DataService) queryAndInsertPredefinedInstructionsForDoctor(drTableName 
 
 type insertDoctorInstructionFunc func(db *sql.DB, predefinedInstructions []*predefinedInstruction, doctorId int64) error
 
+func insertPredefinedAdvicePointsForDoctor(db *sql.DB, predefinedAdivcePoints []*predefinedAdvicePoints, doctorId int64) error {
+	insertStr := bytes.NewBufferString(`insert into dr_advice_point 
+							(doctor_id, text, status) values `)
+	insertValues := make([]string, 0)
+	for _, instruction := range predefinedInstructions {
+		insertValue := fmt.Sprintf("(%d, '%s','ACTIVE')", doctorId, instruction.text)
+		insertValues = append(insertValues, insertValue)
+	}
+	insertStr.WriteString(strings.Join(insertValues, ","))
+
+	_, err := db.Exec(insertStr.String())
+	return err
+}
+
 func insertPredefinedRegimenStepsForDoctor(db *sql.DB, predefinedInstructions []*predefinedInstruction, doctorId int64) error {
 	insertStr := bytes.NewBufferString(`insert into dr_regimen_step 
 							(doctor_id, text, status) values `)
@@ -632,6 +647,16 @@ func insertPredefinedInstructionsForDoctor(db *sql.DB, predefinedInstructions []
 }
 
 type doctorInstructionQuery func(db *sql.DB, doctorId int64, drugComponents ...string) (drugInstructions []*common.DoctorInstructionItem, err error)
+
+func getAdvicePointsForDoctor(db *sql.DB, doctorId int64, drugComponents ...string) (advicePoints []*common.DoctorInstructionItem, err error) {
+	rows, err := db.Query(`select id, text, status from dr_advice_point where doctor_id=?`, doctorId)
+	if err != nil {
+		return
+	}
+
+	advicePoints, err = getInstructionsFromRows(rows)
+	return
+}
 
 func getRegimenStepsForDoctor(db *sql.DB, doctorId int64, drugComponents ...string) (regimenSteps []*common.DoctorInstructionItem, err error) {
 	rows, err := db.Query(`select id, text, status from dr_regimen_step where doctor_id=?`, doctorId)
@@ -757,6 +782,99 @@ func getInstructionsFromRows(rows *sql.Rows) (drugInstructions []*common.DoctorI
 		drugInstructions = append(drugInstructions, supplementalInstruction)
 	}
 	return
+}
+
+func (d *DataService) GetAdvicePointsForPatientVisit(patientVisitId int64) (advicePoints []*common.DoctorInstructionItem, err error) {
+	rows, err := d.DB.Query(`select doctor_advice_point_id,text from advice inner join dr_advice_point on dr_advice_point_id = dr_advice_point.id where patient_visit_id = ? and doctor_id = ? and advice.status='ACTIVE'`)
+	if err != nil {
+		return
+	}
+	defer rows.Close()
+
+	advicePoints = make([]*common.DoctorInstructionItem, 0)
+	for rows.Next() {
+		var id int64
+		var text strings
+		err = rows.Scan(&id, &text)
+		if err != nil {
+			return
+		}
+
+		advicePoint := &common.DoctorInstructionItem{
+			Id:   id,
+			Text: text,
+		}
+		advicePoints = append(advicePoints, advicePoint)
+	}
+	return
+}
+
+func (d *DataService) GetAdvicePointsForDoctor(doctorId int64) (advicePoints []*common.DoctorInstructionItem, err error) {
+	queryStr := `select advice_point.id, text from regimen_step where status='ACTIVE'`
+
+	advicePoints, err = d.queryAndInsertPredefinedInstructionsForDoctor(dr_advice_point_table, queryStr, doctorId, getAdvicePointsForDoctor, insertPredefinedAdvicePointsForDoctor)
+	if err != nil {
+		return
+	}
+
+	advicePoints = getActiveInstructions(advicePoints)
+	return
+}
+
+func (d *DataService) AddAdvicePointForDoctor(advicePoint *common.DoctorInstructionItem, doctorId int64) error {
+	res, err := d.DB.Exec(`insert into dr_advice_point (text, doctor_id,status) values (?,?,'ACTIVE')`, advicePoint.Text, doctorId)
+	if err != nil {
+		return err
+	}
+	instructionId, err := res.LastInsertId()
+	if err != nil {
+		return err
+	}
+
+	// assign an id given that its a new advice point
+	advicePoint.Id = instructionId
+	return nil
+}
+
+func (d *DataService) UpdateAdvicePointForDoctor(advicePoint *common.DoctorInstructionItem, doctorId int64) error {
+	tx, err := d.DB.Begin()
+	if err != nil {
+		return err
+	}
+
+	// update the current advice point to be inactive
+	_, err = tx.Exec(`update dr_advice_point set status='INACTIVE' where id = ? and doctor_id = ?`, advicePoint.Id, doctorId)
+	if err != nil {
+		tx.Rollback()
+		return err
+	}
+
+	// insert a new active advicep point in its place
+	res, err := tx.Exec(`insert into dr_advice_point (text, doctor_id, status) values (?, ?, 'ACTIVE')`, advicePoint.Text, doctorId)
+	if err != nil {
+		tx.Rollback()
+		return err
+	}
+
+	instructionId, err := res.LastInsertId()
+	if err != nil {
+		tx.Rollback()
+		return err
+	}
+
+	// update the regimenStep Id
+	advicePoint.Id = instructionId
+	tx.Commit()
+	return nil
+}
+
+func (d *DataService) MarkAdvicePointToBeDeleted(advicePoint *common.DoctorInstructionItem, doctorId int64) error {
+	// mark the advice point to be deleted
+	_, err := d.DB.Exec(`update dr_advice_point set status='DELETED' where id = ? and doctor_id = ?`, advicePoint.Id, doctorId)
+	if err != nil {
+		return err
+	}
+	return nil
 }
 
 func (d *DataService) GetRegimenStepsForDoctor(doctorId int64) (regimenSteps []*common.DoctorInstructionItem, err error) {
