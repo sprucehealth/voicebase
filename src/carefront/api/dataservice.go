@@ -378,28 +378,28 @@ func (d *DataService) AddDrugInstructionsToTreatment(drugName, drugForm, drugRou
 	return nil
 }
 
-func (d *DataService) AddOrUpdateDrugInstructionForDoctor(drugName, drugForm, drugRoute string, drugInstructionToAdd *common.DoctorInstructionItem, doctorId int64) (drugInstruction *common.DoctorInstructionItem, err error) {
+func (d *DataService) AddOrUpdateDrugInstructionForDoctor(drugName, drugForm, drugRoute string, drugInstructionToAdd *common.DoctorInstructionItem, doctorId int64) error {
 	tx, err := d.DB.Begin()
 	if err != nil {
-		return
+		return err
 	}
 
 	drugNameId, err := d.getOrInsertNameInTable(tx, drug_name_table, drugName)
 	if err != nil {
 		tx.Rollback()
-		return
+		return err
 	}
 
 	drugFormId, err := d.getOrInsertNameInTable(tx, drug_form_table, drugForm)
 	if err != nil {
 		tx.Rollback()
-		return
+		return err
 	}
 
 	drugRouteId, err := d.getOrInsertNameInTable(tx, drug_route_table, drugRoute)
 	if err != nil {
 		tx.Rollback()
-		return
+		return err
 	}
 
 	drugNameIdStr := strconv.FormatInt(drugNameId, 10)
@@ -414,7 +414,7 @@ func (d *DataService) AddOrUpdateDrugInstructionForDoctor(drugName, drugForm, dr
 			drugInstructionToAdd.Id, doctorId).Scan(&drugNameNullId, &drugFormNullId, &drugRouteNullId)
 		if err != nil {
 			tx.Rollback()
-			return
+			return err
 		}
 
 		if drugNameNullId.Valid {
@@ -437,10 +437,8 @@ func (d *DataService) AddOrUpdateDrugInstructionForDoctor(drugName, drugForm, dr
 
 		_, shadowedErr := tx.Exec(`update dr_drug_supplemental_instruction set status='INACTIVE' where id=? and doctor_id = ?`, drugInstructionToAdd.Id, doctorId)
 		if shadowedErr != nil {
-			fmt.Println("FAILING Here on update")
-			err = shadowedErr
 			tx.Rollback()
-			return
+			return shadowedErr
 		}
 	}
 
@@ -449,22 +447,20 @@ func (d *DataService) AddOrUpdateDrugInstructionForDoctor(drugName, drugForm, dr
 	res, err := tx.Exec(insertStr, doctorId)
 	if err != nil {
 		tx.Rollback()
-		return
+		return err
 	}
 
 	instructionId, err := res.LastInsertId()
 	if err != nil {
 		tx.Rollback()
-		return
+		return err
 	}
 
 	tx.Commit()
 
-	drugInstruction = &common.DoctorInstructionItem{
-		Id:   instructionId,
-		Text: drugInstructionToAdd.Text,
-	}
-	return
+	drugInstructionToAdd.Id = instructionId
+
+	return nil
 }
 
 func (d *DataService) GetDrugInstructionsForDoctor(drugName, drugForm, drugRoute string, doctorId int64) (drugInstructions []*common.DoctorInstructionItem, err error) {
