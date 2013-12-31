@@ -47,6 +47,9 @@ func (ec2 *EC2) CreateVolume(size int, az, volumeType, snapshotId string, iops i
 	}
 	if iops > 0 {
 		params.Set("Iops", strconv.Itoa(iops))
+		if volumeType == "" {
+			params.Set("VolumeType", "io1")
+		}
 	}
 	res := &CreateVolumeResponse{}
 	err := ec2.Get("CreateVolume", params, res)

@@ -21,6 +21,7 @@ var config = struct {
 	User        string
 	StripeSize  int
 	Readahead   int
+	Iops        int
 	Cipher      string
 
 	awsAuth aws.Auth
@@ -37,6 +38,7 @@ func init() {
 	flag.StringVar(&config.Environment, "env", config.Environment, "Environment")
 	flag.StringVar(&config.User, "user", config.User, "User for SSH")
 	flag.StringVar(&config.AWSRole, "role", config.AWSRole, "AWS Role")
+	flag.IntVar(&config.Iops, "iops", config.Iops, "IOPS")
 }
 
 func main() {
@@ -195,15 +197,13 @@ func create() error {
 		}
 	}
 
-	// TODO: provisioned iops: volume_type=io1 iops=<int>
-
 	for i := 0; i < count; i++ {
 		snap := ""
 		if len(snapshots) != 0 {
 			snap = snapshots[i].SnapshotId
 		}
 
-		vol, err := config.ec2.CreateVolume(size, config.AZ, "standard", snap, 0)
+		vol, err := config.ec2.CreateVolume(size, config.AZ, "", snap, config.Iops)
 		if err != nil {
 			return err
 		}
