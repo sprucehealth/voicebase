@@ -39,6 +39,7 @@ func init() {
 	flag.StringVar(&config.User, "user", config.User, "User for SSH")
 	flag.StringVar(&config.AWSRole, "role", config.AWSRole, "AWS Role")
 	flag.IntVar(&config.Iops, "iops", config.Iops, "Provisioned IOPS (0=disable)")
+	flag.IntVar(&config.StripeSize, "stripesize", config.StripeSize, "Stripe size in KB")
 }
 
 func main() {
@@ -82,14 +83,6 @@ func main() {
 		Client: &aws.Client{Auth: config.awsAuth},
 	}
 
-	// if config.InstanceId == "" {
-	// 	var err error
-	// 	config.InstanceId, err = aws.GetMetadata(aws.MetadataInstanceID)
-	// 	if err != nil {
-	// 		log.Fatalf("Failed to get instance ID: %+v", err)
-	// 	}
-	// }
-
 	var err error
 	switch flag.Arg(0) {
 	default:
@@ -109,12 +102,6 @@ func main() {
 		fmt.Fprintf(os.Stderr, "%s\n", err.Error())
 		os.Exit(1)
 	}
-	// cs := &cryptsetup.Cryptsetup{cmr}
-	// if luks, err := cs.Status("/dev/mapper/mysql-data-encrypted"); err != nil {
-	// 	log.Print(err)
-	// } else {
-	// 	log.Printf("%+v", luks)
-	// }
 }
 
 func findGroup(name string) ([]*ec2.Volume, error) {
