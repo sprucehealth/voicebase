@@ -38,7 +38,7 @@ func init() {
 	flag.StringVar(&config.Environment, "env", config.Environment, "Environment")
 	flag.StringVar(&config.User, "user", config.User, "User for SSH")
 	flag.StringVar(&config.AWSRole, "role", config.AWSRole, "AWS Role")
-	flag.IntVar(&config.Iops, "iops", config.Iops, "IOPS")
+	flag.IntVar(&config.Iops, "iops", config.Iops, "Provisioned IOPS (0=disable)")
 }
 
 func main() {

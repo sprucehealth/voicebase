@@ -9,7 +9,6 @@ import (
 	"io/ioutil"
 	"log"
 	"os"
-	"os/exec"
 	"strconv"
 	"strings"
 	"time"
@@ -20,8 +19,14 @@ import (
 	"carefront/libs/cmd/dmsetup"
 	"carefront/libs/cmd/lvm"
 	"carefront/libs/cmd/mount"
+	"carefront/libs/cmd/xfs"
 	"github.com/go-sql-driver/mysql"
 )
+
+type FreezeCmd interface {
+	Freeze(path string) error
+	Thaw(path string) error
+}
 
 var config = struct {
 	// AWS
@@ -30,8 +35,8 @@ var config = struct {
 	Region     string
 	InstanceId string
 	// FS Freeze
-	Filesystem string
-	FreezeCmd  string
+	MountPath  string
+	FSType     string
 	Devices    []string // Used to lookup which EBS volumes to snapshot
 	EBSVolumes []string // IDs for the EBS volumes
 	// MySQL
@@ -45,16 +50,16 @@ var config = struct {
 	ClientCert string
 	ClientKey  string
 
+	freezeCmd     FreezeCmd
 	db            *sql.DB
 	awsAuth       aws.Auth
 	ec2           *ec2.EC2
 	ebsVolumeInfo []*ec2.Volume
 }{
-	FreezeCmd: "xfs_freeze",
-	Host:      "127.0.0.1",
-	Port:      3306,
-	Socket:    "/var/run/mysqld/mysqld.sock",
-	Username:  "root",
+	Host:     "127.0.0.1",
+	Port:     3306,
+	Socket:   "/var/run/mysqld/mysqld.sock",
+	Username: "root",
 }
 
 var cnfSearchPath = []string{
@@ -63,7 +68,8 @@ var cnfSearchPath = []string{
 }
 
 func init() {
-	flag.StringVar(&config.Filesystem, "fs", config.Filesystem, "Path to filesystem to freeze")
+	flag.StringVar(&config.MountPath, "fs", config.MountPath, "Path to filesystem to freeze")
+	flag.StringVar(&config.FSType, "fs.type", config.FSType, "Filesystem type (support: xfs)")
 	flag.StringVar(&config.AWSRole, "role", config.AWSRole, "AWS Role")
 	flag.StringVar(&config.Region, "region", config.Region, "EC2 Region")
 	flag.StringVar(&config.Config, "mysql.config", config.Config, "Path to my.cnf")
@@ -114,7 +120,7 @@ func readMySQLConfig(path string) error {
 		}
 	}
 
-	if config.Filesystem == "" {
+	if config.MountPath == "" {
 		if sec := cnf["mysqld"]; sec != nil {
 			if s := sec["datadir"]; s != "" {
 				mounts, err := mount.Default.GetMounts()
@@ -127,7 +133,7 @@ func readMySQLConfig(path string) error {
 							longest = path
 						}
 					}
-					config.Filesystem = longest
+					config.MountPath = longest
 				}
 			}
 		}
@@ -171,42 +177,52 @@ func main() {
 
 	mysqlConfig()
 
-	if config.Filesystem == "" {
+	if config.MountPath == "" {
 		log.Fatalf("Missing required option -fs")
+	}
+
+	mounts, err := mount.Default.GetMounts()
+	if err != nil {
+		log.Fatalf("Failed to get mounts: %+v", err)
+	}
+	mnt := mounts[config.MountPath]
+	if mnt == nil {
+		log.Fatalf("Mount not found for path %s", config.MountPath)
+	}
+
+	if config.FSType == "" {
+		switch mnt.Type {
+		default:
+			log.Fatalf("Don't know how to freeze filesystem of type %s", mnt.Type)
+		case "xfs":
+			config.freezeCmd = xfs.Default
+		}
 	}
 
 	// Resolve devices from the mount point. It may be LUKS and/or LVM.
 	if len(config.Devices) == 0 {
-		mounts, err := mount.Default.GetMounts()
-		if err != nil {
-			log.Fatalf("Failed to get mounts: %+v", err)
-		}
-		if mnt := mounts[config.Filesystem]; mnt == nil {
-			log.Fatalf("Mount not found for path %s", config.Filesystem)
-		} else {
-			device := mnt.Device
-			for {
-				dev, err := dmsetup.Default.DMInfo(device)
+		device := mnt.Device
+		for {
+			dev, err := dmsetup.Default.DMInfo(device)
+			if err != nil {
+				log.Fatalf("dmsetup info failed: %+v", err)
+			}
+			if strings.HasPrefix(dev.UUID, "CRYPT-LUKS") {
+				cs, err := cryptsetup.Default.Status(device)
 				if err != nil {
-					log.Fatalf("dmsetup info failed: %+v", err)
+					log.Fatalf("cryptsetup status filed: %+v", err)
 				}
-				if strings.HasPrefix(dev.UUID, "CRYPT-LUKS") {
-					cs, err := cryptsetup.Default.Status(device)
-					if err != nil {
-						log.Fatalf("cryptsetup status filed: %+v", err)
-					}
-					device = cs.Device
-				} else if strings.HasPrefix(dev.UUID, "LVM-") {
-					info, err := lvm.Default.LVS(device)
-					if err != nil {
-						log.Fatalf("lvs failed: %+v", err)
-					}
-					config.Devices = info.Devices
-					break
-				} else {
-					config.Devices = []string{device}
-					break
+				device = cs.Device
+			} else if strings.HasPrefix(dev.UUID, "LVM-") {
+				info, err := lvm.Default.LVS(device)
+				if err != nil {
+					log.Fatalf("lvs failed: %+v", err)
 				}
+				config.Devices = info.Devices
+				break
+			} else {
+				config.Devices = []string{device}
+				break
 			}
 		}
 	}
@@ -358,12 +374,12 @@ func doIt() (err error) {
 		}
 	}()
 
-	if err = freezeFS(); err != nil {
+	if err = config.freezeCmd.Freeze(config.MountPath); err != nil {
 		err = fmt.Errorf("Failed to freeze filesystem: %s", err.Error())
 		return
 	}
 	defer func() {
-		e := thawFS()
+		e := config.freezeCmd.Thaw(config.MountPath)
 		// Don't overwrite other errors
 		if err == nil {
 			err = e
@@ -430,28 +446,6 @@ func unlockDB() error {
 	fmt.Println("Unlocking tables...")
 	_, err := config.db.Exec("UNLOCK TABLES")
 	return err
-}
-
-func freezeFS() error {
-	fmt.Println("Freezing filesystem...")
-	cmd := exec.Command(config.FreezeCmd, "-f", config.Filesystem)
-	cmd.Stdout = os.Stdout
-	cmd.Stderr = os.Stderr
-	if err := cmd.Start(); err != nil {
-		return err
-	}
-	return cmd.Wait()
-}
-
-func thawFS() error {
-	fmt.Println("Thawing filesystem...")
-	cmd := exec.Command(config.FreezeCmd, "-u", config.Filesystem)
-	cmd.Stdout = os.Stdout
-	cmd.Stderr = os.Stderr
-	if err := cmd.Start(); err != nil {
-		return err
-	}
-	return cmd.Wait()
 }
 
 func snapshotEBS(binlogName string, binlogPos int64) error {

@@ -10,6 +10,8 @@ type XFS struct {
 	Cmd cmd.Commander
 }
 
+var Default = &XFS{Cmd: cmd.LocalCommander}
+
 func (xfs *XFS) IsXFS(device string) (isxfs bool, label string, uuid string, err error) {
 	buf := &bytes.Buffer{}
 	cm, er := xfs.Cmd.Command("sudo", "xfs_admin", "-lu", device)
@@ -47,6 +49,24 @@ func (xfs *XFS) Format(device string) error {
 
 func (xfs *XFS) SetLabel(device, label string) error {
 	cm, err := xfs.Cmd.Command("sudo", "xfs_admin", "-L", label, device)
+	if err != nil {
+		return err
+	}
+	defer cm.Close()
+	return cm.Run()
+}
+
+func (xfs *XFS) Freeze(path string) error {
+	cm, err := xfs.Cmd.Command("sudo", "xfs_freeze", "-f", path)
+	if err != nil {
+		return err
+	}
+	defer cm.Close()
+	return cm.Run()
+}
+
+func (xfs *XFS) Thaw(path string) error {
+	cm, err := xfs.Cmd.Command("sudo", "xfs_freeze", "-u", path)
 	if err != nil {
 		return err
 	}
