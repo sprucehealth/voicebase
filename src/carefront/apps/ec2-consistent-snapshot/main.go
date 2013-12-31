@@ -114,12 +114,62 @@ func readMySQLConfig(path string) error {
 		}
 	}
 
+	if config.Filesystem == "" {
+		if sec := cnf["mysqld"]; sec != nil {
+			if s := sec["datadir"]; s != "" {
+				mounts, err := mount.Default.GetMounts()
+				if err != nil {
+					log.Printf("Failed to get mounts: %+v", err)
+				} else {
+					longest := ""
+					for path := range mounts {
+						if path != "/" && strings.HasPrefix(s, path) && len(path) > len(longest) {
+							longest = path
+						}
+					}
+					config.Filesystem = longest
+				}
+			}
+		}
+	}
+
 	return nil
+}
+
+func mysqlConfig() {
+	if config.Config != "" {
+		if config.Config[0] == '~' {
+			config.Config = os.Getenv("HOME") + config.Config[1:]
+		}
+		if err := readMySQLConfig(config.Config); err != nil {
+			log.Fatal(err)
+		}
+	} else {
+		for _, path := range cnfSearchPath {
+			if path[0] == '~' {
+				path = os.Getenv("HOME") + path[1:]
+			}
+			if err := readMySQLConfig(path); err == nil {
+				break
+			}
+		}
+	}
+
+	if config.Username == "" {
+		config.Username = os.Getenv("MYSQL_USERNAME")
+	}
+	if config.Password == "" {
+		config.Password = os.Getenv("MYSQL_PASSWORD")
+	}
 }
 
 func main() {
 	log.SetFlags(0)
 	flag.Parse()
+
+	// MySQL config
+
+	mysqlConfig()
 
 	if config.Filesystem == "" {
 		log.Fatalf("Missing required option -fs")
@@ -244,33 +294,6 @@ func main() {
 			}
 			config.ebsVolumeInfo[i] = v
 		}
-	}
-
-	// MySQL config
-
-	if config.Config != "" {
-		if config.Config[0] == '~' {
-			config.Config = os.Getenv("HOME") + config.Config[1:]
-		}
-		if err := readMySQLConfig(config.Config); err != nil {
-			log.Fatal(err)
-		}
-	} else {
-		for _, path := range cnfSearchPath {
-			if path[0] == '~' {
-				path = os.Getenv("HOME") + path[1:]
-			}
-			if err := readMySQLConfig(path); err == nil {
-				break
-			}
-		}
-	}
-
-	if config.Username == "" {
-		config.Username = os.Getenv("MYSQL_USERNAME")
-	}
-	if config.Password == "" {
-		config.Password = os.Getenv("MYSQL_PASSWORD")
 	}
 
 	enableTLS := config.CACert != "" && config.ClientCert != "" && config.ClientKey != ""
