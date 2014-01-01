@@ -43,8 +43,8 @@ type Config struct {
 	*config.BaseConfig
 	ListenAddr               string    `short:"l" long:"listen" description:"Address and port on which to listen (e.g. 127.0.0.1:8080)"`
 	TLSListenAddr            string    `long:"tls_listen" description:"Address and port on which to listen (e.g. 127.0.0.1:8080)"`
-	CertLocation             string    `long:"tls_cert" description:"Path of SSL certificate"`
-	KeyLocation              string    `long:"tls_key" description:"Path of SSL private key"`
+	TLSCert                  string    `long:"tls_cert" description:"Path of SSL certificate"`
+	TLSKey                   string    `long:"tls_key" description:"Path of SSL private key"`
 	DB                       *DBConfig `group:"Database" toml:"database"`
 	MaxInMemoryForPhotoMB    int64     `long:"max_in_memory_photo" description:"Amount of data in MB to be held in memory when parsing multipart form data"`
 	CaseBucket               string    `long:"case_bucket" description:"S3 Bucket name for case information"`
@@ -252,18 +252,18 @@ func main() {
 		WriteTimeout:   30 * time.Second,
 		MaxHeaderBytes: 1 << 20,
 	}
-	if conf.CertLocation != "" && conf.KeyLocation != "" {
+	if conf.TLSCert != "" && conf.TLSKey != "" {
 		go func() {
 			s.TLSConfig = &tls.Config{}
 			if s.TLSConfig.NextProtos == nil {
 				s.TLSConfig.NextProtos = []string{"http/1.1"}
 			}
 
-			cert, err := conf.ReadURI(conf.CertLocation)
+			cert, err := conf.ReadURI(conf.TLSCert)
 			if err != nil {
 				log.Fatal(err)
 			}
-			key, err := conf.ReadURI(conf.KeyLocation)
+			key, err := conf.ReadURI(conf.TLSKey)
 			if err != nil {
 				log.Fatal(err)
 			}
