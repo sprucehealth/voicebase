@@ -6,6 +6,7 @@ import (
 	"database/sql"
 	"fmt"
 	"log"
+	"net"
 	"net/http"
 	"os"
 	"time"
@@ -41,12 +42,11 @@ type DBConfig struct {
 type Config struct {
 	*config.BaseConfig
 	ListenAddr               string    `short:"l" long:"listen" description:"Address and port on which to listen (e.g. 127.0.0.1:8080)"`
-	CertLocation             string    `long:"cert_key" description:"Path of SSL certificate"`
-	KeyLocation              string    `long:"private_key" description:"Path of SSL private key"`
+	TLSListenAddr            string    `long:"tls_listen" description:"Address and port on which to listen (e.g. 127.0.0.1:8080)"`
+	CertLocation             string    `long:"tls_cert" description:"Path of SSL certificate"`
+	KeyLocation              string    `long:"tls_key" description:"Path of SSL private key"`
 	DB                       *DBConfig `group:"Database" toml:"database"`
 	MaxInMemoryForPhotoMB    int64     `long:"max_in_memory_photo" description:"Amount of data in MB to be held in memory when parsing multipart form data"`
-	CertKeyLocation          string    `long:"cert_key" description:"Path of SSL certificate"`
-	PrivateKeyLocation       string    `long:"private_key" description:"Path of SSL private key"`
 	CaseBucket               string    `long:"case_bucket" description:"S3 Bucket name for case information"`
 	PatientLayoutBucket      string    `long:"client_layout_bucket" description:"S3 Bucket name for client digestable layout for patient information intake"`
 	VisualLayoutBucket       string    `long:"patient_layout_bucket" description:"S3 Bucket name for human readable layout for patient information intake"`
@@ -68,6 +68,7 @@ var DefaultConfig = Config{
 		Port: 3306,
 	},
 	ListenAddr:            ":8080",
+	TLSListenAddr:         ":8443",
 	CaseBucket:            "carefront-cases",
 	MaxInMemoryForPhotoMB: defaultMaxInMemoryPhotoMB,
 }
@@ -251,9 +252,35 @@ func main() {
 		WriteTimeout:   30 * time.Second,
 		MaxHeaderBytes: 1 << 20,
 	}
-	if conf.CertKeyLocation == "" && conf.PrivateKeyLocation == "" {
-		log.Fatal(s.ListenAndServe())
-	} else {
-		log.Fatal(s.ListenAndServeTLS(conf.CertKeyLocation, conf.PrivateKeyLocation))
+	if conf.CertLocation != "" && conf.KeyLocation != "" {
+		go func() {
+			s.TLSConfig = &tls.Config{}
+			if s.TLSConfig.NextProtos == nil {
+				s.TLSConfig.NextProtos = []string{"http/1.1"}
+			}
+
+			cert, err := conf.ReadURI(conf.CertLocation)
+			if err != nil {
+				log.Fatal(err)
+			}
+			key, err := conf.ReadURI(conf.KeyLocation)
+			if err != nil {
+				log.Fatal(err)
+			}
+			certs, err := tls.X509KeyPair(cert, key)
+			if err != nil {
+				log.Fatal(err)
+			}
+
+			s.TLSConfig.Certificates = []tls.Certificate{certs}
+
+			conn, err := net.Listen("tcp", conf.TLSListenAddr)
+			if err != nil {
+				log.Fatal(err)
+			}
+
+			log.Fatal(s.Serve(tls.NewListener(conn, s.TLSConfig)))
+		}()
 	}
+	log.Fatal(s.ListenAndServe())
 }
