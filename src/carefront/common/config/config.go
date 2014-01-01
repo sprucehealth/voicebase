@@ -104,6 +104,51 @@ func (c *BaseConfig) ServiceRegistry() (reg svcreg.Registry, err error) {
 	return
 }
 
+func (c *BaseConfig) OpenURI(uri string) (io.ReadCloser, error) {
+	var rd io.ReadCloser
+	if strings.Contains(uri, "://") {
+		ur, err := url.Parse(uri)
+		if err != nil {
+			return nil, err
+		}
+		if ur.Scheme == "s3" {
+			awsAuth, err := c.AWSAuth()
+			if err != nil {
+				return nil, err
+			}
+			s3 := s3.New(common.AWSAuthAdapter(awsAuth), goamz.Regions[c.AWSRegion])
+			rd, err = s3.Bucket(ur.Host).GetReader(ur.Path)
+			if err != nil {
+				return nil, err
+			}
+		} else {
+			if res, err := http.Get(uri); err != nil {
+				return nil, err
+			} else if res.StatusCode != 200 {
+				return nil, fmt.Errorf("config: failed to fetch URI %s: status code %d", uri, res.StatusCode)
+			} else {
+				rd = res.Body
+			}
+		}
+	} else {
+		fi, err := os.Open(uri)
+		if err != nil {
+			return nil, err
+		}
+		rd = fi
+	}
+	return rd, nil
+}
+
+func (c *BaseConfig) ReadURI(uri string) ([]byte, error) {
+	if rd, err := c.OpenURI(uri); err != nil {
+		return nil, err
+	} else {
+		defer rd.Close()
+		return ioutil.ReadAll(rd)
+	}
+}
+
 func LoadConfigFile(configUrl string, config interface{}, awsAuther func() (aws.Auth, error)) error {
 	if configUrl == "" {
 		return nil

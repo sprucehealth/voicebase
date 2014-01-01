@@ -1,6 +1,8 @@
 package main
 
 import (
+	"crypto/tls"
+	"crypto/x509"
 	"database/sql"
 	"fmt"
 	"log"
@@ -17,7 +19,7 @@ import (
 	"carefront/libs/svcreg"
 	"carefront/services/auth"
 	thriftapi "carefront/thrift/api"
-	_ "github.com/go-sql-driver/mysql"
+	"github.com/go-sql-driver/mysql"
 	"github.com/samuel/go-metrics/metrics"
 )
 
@@ -29,36 +31,92 @@ type DBConfig struct {
 	User     string `long:"db_user" description:"Username for accessing database"`
 	Password string `long:"db_password" description:"Password for accessing database"`
 	Host     string `long:"db_host" description:"Database host"`
+	Port     int    `long:"db_port" description:"Database port"`
 	Name     string `long:"db_name" description:"Database name"`
+	CACert   string `long:"db_cacert" description:"Database TLS CA certificate path"`
+	TLSCert  string `long:"db_cert" description:"Database TLS client certificate path"`
+	TLSKey   string `long:"db_key" description:"Database TLS client key path"`
 }
 
 type Config struct {
 	*config.BaseConfig
-	ListenAddr               string   `short:"l" long:"listen" description:"Address and port on which to listen (e.g. 127.0.0.1:8080)"`
-	CertLocation             string   `long:"cert_key" description:"Path of SSL certificate"`
-	KeyLocation              string   `long:"private_key" description:"Path of SSL private key"`
-	DB                       DBConfig `group:"Database" toml:"database"`
-	MaxInMemoryForPhotoMB    int64    `long:"max_in_memory_photo" description:"Amount of data in MB to be held in memory when parsing multipart form data"`
-	CertKeyLocation          string   `long:"cert_key" description:"Path of SSL certificate"`
-	PrivateKeyLocation       string   `long:"private_key" description:"Path of SSL private key"`
-	CaseBucket               string   `long:"case_bucket" description:"S3 Bucket name for case information"`
-	PatientLayoutBucket      string   `long:"client_layout_bucket" description:"S3 Bucket name for client digestable layout for patient information intake"`
-	VisualLayoutBucket       string   `long:"patient_layout_bucket" description:"S3 Bucket name for human readable layout for patient information intake"`
-	DoctorVisualLayoutBucket string   `long:"doctor_visual_layout_bucket" description:"S3 Bucket name for patient overview for doctor's viewing"`
-	DoctorLayoutBucket       string   `long:"doctor_layout_bucket" description:"S3 Bucket name for pre-processed patient overview for doctor's viewing"`
-	Debug                    bool     `long:"debug" description:"Enable debugging"`
-	DoseSpotClinicKey        string   `long:"dose_spot_clinic_key" description:"DoseSpot Clinic Key for eRX integration"`
-	DoseSpotClinicId         string   `long:"dose_spot_clinic_id" description:"DoseSpot Clinic Id for eRX integration"`
-	DoseSpotUserId           string   `long:"dose_spot_user_id" description:"DoseSpot UserId for eRx integration"`
+	ListenAddr               string    `short:"l" long:"listen" description:"Address and port on which to listen (e.g. 127.0.0.1:8080)"`
+	CertLocation             string    `long:"cert_key" description:"Path of SSL certificate"`
+	KeyLocation              string    `long:"private_key" description:"Path of SSL private key"`
+	DB                       *DBConfig `group:"Database" toml:"database"`
+	MaxInMemoryForPhotoMB    int64     `long:"max_in_memory_photo" description:"Amount of data in MB to be held in memory when parsing multipart form data"`
+	CertKeyLocation          string    `long:"cert_key" description:"Path of SSL certificate"`
+	PrivateKeyLocation       string    `long:"private_key" description:"Path of SSL private key"`
+	CaseBucket               string    `long:"case_bucket" description:"S3 Bucket name for case information"`
+	PatientLayoutBucket      string    `long:"client_layout_bucket" description:"S3 Bucket name for client digestable layout for patient information intake"`
+	VisualLayoutBucket       string    `long:"patient_layout_bucket" description:"S3 Bucket name for human readable layout for patient information intake"`
+	DoctorVisualLayoutBucket string    `long:"doctor_visual_layout_bucket" description:"S3 Bucket name for patient overview for doctor's viewing"`
+	DoctorLayoutBucket       string    `long:"doctor_layout_bucket" description:"S3 Bucket name for pre-processed patient overview for doctor's viewing"`
+	Debug                    bool      `long:"debug" description:"Enable debugging"`
+	DoseSpotClinicKey        string    `long:"dose_spot_clinic_key" description:"DoseSpot Clinic Key for eRX integration"`
+	DoseSpotClinicId         string    `long:"dose_spot_clinic_id" description:"DoseSpot Clinic Id for eRX integration"`
+	DoseSpotUserId           string    `long:"dose_spot_user_id" description:"DoseSpot UserId for eRx integration"`
 }
 
 var DefaultConfig = Config{
 	BaseConfig: &config.BaseConfig{
 		AppName: "restapi",
 	},
+	DB: &DBConfig{
+		Name: "carefront",
+		Host: "127.0.0.1",
+		Port: 3306,
+	},
 	ListenAddr:            ":8080",
 	CaseBucket:            "carefront-cases",
 	MaxInMemoryForPhotoMB: defaultMaxInMemoryPhotoMB,
+}
+
+func connectToDatabase(conf *Config) (*sql.DB, error) {
+	enableTLS := conf.DB.CACert != "" && conf.DB.TLSCert != "" && conf.DB.TLSKey != ""
+	if enableTLS {
+		rootCertPool := x509.NewCertPool()
+		pem, err := conf.ReadURI(conf.DB.CACert)
+		if err != nil {
+			return nil, err
+		}
+		if ok := rootCertPool.AppendCertsFromPEM(pem); !ok {
+			return nil, fmt.Errorf("Failed to append PEM.")
+		}
+		clientCert := make([]tls.Certificate, 0, 1)
+		cert, err := conf.ReadURI(conf.DB.TLSCert)
+		if err != nil {
+			return nil, err
+		}
+		key, err := conf.ReadURI(conf.DB.TLSKey)
+		if err != nil {
+			return nil, err
+		}
+		certs, err := tls.X509KeyPair(cert, key)
+		if err != nil {
+			return nil, err
+		}
+		clientCert = append(clientCert, certs)
+		mysql.RegisterTLSConfig("custom", &tls.Config{
+			RootCAs:      rootCertPool,
+			Certificates: clientCert,
+		})
+	}
+
+	tlsOpt := "?parseTime=true"
+	if enableTLS {
+		tlsOpt += "&tls=custom"
+	}
+	db, err := sql.Open("mysql", fmt.Sprintf("%s:%s@tcp(%s:%d)/%s%s", conf.DB.User, conf.DB.Password, conf.DB.Host, conf.DB.Port, conf.DB.Name, tlsOpt))
+	if err != nil {
+		return nil, err
+	}
+	// test the connection to the database by running a ping against it
+	if err := db.Ping(); err != nil {
+		db.Close()
+		return nil, err
+	}
+	return db, nil
 }
 
 func main() {
@@ -76,21 +134,11 @@ func main() {
 	metricsRegistry := metrics.NewRegistry()
 	conf.StartReporters(metricsRegistry)
 
-	dsn := fmt.Sprintf("%s:%s@tcp(%s:3306)/%s?parseTime=true", conf.DB.User, conf.DB.Password, conf.DB.Host, conf.DB.Name)
-
-	// this gives us a connection pool to the sql instance
-	// without executing any statements against the sql database
-	// or checking the network connection and authentication to the database
-	db, err := sql.Open("mysql", dsn)
+	db, err := connectToDatabase(&conf)
 	if err != nil {
 		log.Fatal(err)
 	}
 	defer db.Close()
-
-	// test the connection to the database by running a ping against it
-	if err := db.Ping(); err != nil {
-		log.Fatal(err)
-	}
 
 	awsAuth, err := conf.AWSAuth()
 	if err != nil {
