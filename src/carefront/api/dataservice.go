@@ -1259,6 +1259,49 @@ func (d *DataService) getPatientAnswersForQuestionsBasedOnQuery(query string, ar
 	return
 }
 
+func (d *DataService) GetFollowUpTimeForPatientVisit(patientVisitId int64) (followupTime time.Time, followUpValue int64, followUpUnit string, err error) {
+	err = d.DB.QueryRow(`select follow_up_date, follow_up_value, follow_up_unit 
+							from patient_visit_follow_up where patient_visit_id = ?`, patientVisitId).Scan(&followupTime, &followUpValue, &followUpUnit)
+	if err == sql.ErrNoRows {
+		err = nil
+	}
+
+	return
+}
+
+func (d *DataService) UpdateFollowUpTimeForPatientVisit(patientVisitId, doctorId, followUpValue int64, followUpUnit string) error {
+	// check if a follow up time already exists that we can update
+	var followupId int64
+	err := d.DB.QueryRow(`select id from patient_visit_follow_up where patient_visit_id = ?`, patientVisitId).Scan(&followupId)
+	if err != nil && err != sql.ErrNoRows {
+		return err
+	}
+
+	followUpTime := time.Now()
+	switch followUpUnit {
+	case FOLLOW_UP_DAY:
+		followUpTime = followUpTime.Add(time.Duration(followUpValue) * 24 * 60 * time.Minute)
+	case FOLLOW_UP_MONTH:
+		followUpTime = followUpTime.Add(time.Duration(followUpValue) * 30 * 24 * 60 * time.Minute)
+	case FOLLOW_UP_WEEK:
+		followUpTime = followUpTime.Add(time.Duration(followUpValue) * 7 * 24 * 60 * time.Minute)
+	}
+
+	if followupId == 0 {
+		_, err = d.DB.Exec(`insert into patient_visit_follow_up (patient_visit_id, doctor_id, follow_up_date, follow_up_value, follow_up_unit) 
+				values (?,?,?,?,?)`, patientVisitId, doctorId, followUpTime, followUpValue, followUpUnit)
+		if err != nil {
+			return err
+		}
+	} else {
+		_, err = d.DB.Exec(`update patient_visit_follow_up set follow_up_date=?, follow_up_value=?, follow_up_unit=?, doctor_id=? where patient_visit_id = ?`, followUpTime, followUpValue, followUpUnit, doctorId, patientVisitId)
+		if err != nil {
+			return err
+		}
+	}
+	return nil
+}
+
 func (d *DataService) GetPatientAnswersForQuestionsInGlobalSections(questionIds []int64, patientId int64) (patientAnswers map[int64][]*common.AnswerIntake, err error) {
 	enumeratedStrings := enumerateItemsIntoString(questionIds)
 	queryStr := fmt.Sprintf(`select info_intake.id, info_intake.question_id, potential_answer_id, l1.ltext, l2.ltext, answer_text, object_storage.bucket, object_storage.storage_key, region_tag,

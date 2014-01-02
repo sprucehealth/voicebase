@@ -13,6 +13,9 @@ const (
 	REVIEW_PURPOSE           = "REVIEW"
 	CONDITION_INTAKE_PURPOSE = "CONDITION_INTAKE"
 	DIAGNOSE_PURPOSE         = "DIAGNOSE"
+	FOLLOW_UP_WEEK           = "week"
+	FOLLOW_UP_DAY            = "day"
+	FOLLOW_UP_MONTH          = "month"
 )
 
 var (
@@ -64,6 +67,8 @@ type PatientVisitAPI interface {
 	GetLatestSubmittedPatientVisit() (*common.PatientVisit, error)
 	GetPatientVisitFromId(patientVisitId int64) (patientVisit *common.PatientVisit, err error)
 	SubmitPatientVisitWithId(patientVisitId int64) error
+	UpdateFollowUpTimeForPatientVisit(patientVisitId, doctorId, followUpValue int64, followUpUnit string) error
+	GetFollowUpTimeForPatientVisit(patientVisitId int64) (followupTime time.Time, followUpValue int64, followUpUnit string, err error)
 }
 
 type PatientIntakeAPI interface {
