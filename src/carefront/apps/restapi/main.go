@@ -46,6 +46,7 @@ type Config struct {
 	TLSCert                  string    `long:"tls_cert" description:"Path of SSL certificate"`
 	TLSKey                   string    `long:"tls_key" description:"Path of SSL private key"`
 	DB                       *DBConfig `group:"Database" toml:"database"`
+	PharmacyDB               *DBConfig `group:"PharmacyDatabase" toml:"pharmacy_database"`
 	MaxInMemoryForPhotoMB    int64     `long:"max_in_memory_photo" description:"Amount of data in MB to be held in memory when parsing multipart form data"`
 	CaseBucket               string    `long:"case_bucket" description:"S3 Bucket name for case information"`
 	PatientLayoutBucket      string    `long:"client_layout_bucket" description:"S3 Bucket name for client digestable layout for patient information intake"`
@@ -73,11 +74,11 @@ var DefaultConfig = Config{
 	MaxInMemoryForPhotoMB: defaultMaxInMemoryPhotoMB,
 }
 
-func connectToDatabase(conf *Config) (*sql.DB, error) {
-	enableTLS := conf.DB.CACert != "" && conf.DB.TLSCert != "" && conf.DB.TLSKey != ""
+func connectToDatabase(conf *Config, dbConf *DBConfig) (*sql.DB, error) {
+	enableTLS := dbConf.CACert != "" && dbConf.TLSCert != "" && dbConf.TLSKey != ""
 	if enableTLS {
 		rootCertPool := x509.NewCertPool()
-		pem, err := conf.ReadURI(conf.DB.CACert)
+		pem, err := conf.ReadURI(dbConf.CACert)
 		if err != nil {
 			return nil, err
 		}
@@ -85,11 +86,11 @@ func connectToDatabase(conf *Config) (*sql.DB, error) {
 			return nil, fmt.Errorf("Failed to append PEM.")
 		}
 		clientCert := make([]tls.Certificate, 0, 1)
-		cert, err := conf.ReadURI(conf.DB.TLSCert)
+		cert, err := conf.ReadURI(dbConf.TLSCert)
 		if err != nil {
 			return nil, err
 		}
-		key, err := conf.ReadURI(conf.DB.TLSKey)
+		key, err := conf.ReadURI(dbConf.TLSKey)
 		if err != nil {
 			return nil, err
 		}
@@ -108,7 +109,7 @@ func connectToDatabase(conf *Config) (*sql.DB, error) {
 	if enableTLS {
 		tlsOpt += "&tls=custom"
 	}
-	db, err := sql.Open("mysql", fmt.Sprintf("%s:%s@tcp(%s:%d)/%s%s", conf.DB.User, conf.DB.Password, conf.DB.Host, conf.DB.Port, conf.DB.Name, tlsOpt))
+	db, err := sql.Open("mysql", fmt.Sprintf("%s:%s@tcp(%s:%d)/%s%s", dbConf.User, dbConf.Password, dbConf.Host, dbConf.Port, dbConf.Name, tlsOpt))
 	if err != nil {
 		return nil, err
 	}
@@ -135,11 +136,17 @@ func main() {
 	metricsRegistry := metrics.NewRegistry()
 	conf.StartReporters(metricsRegistry)
 
-	db, err := connectToDatabase(&conf)
+	db, err := connectToDatabase(&conf, conf.DB)
 	if err != nil {
 		log.Fatal(err)
 	}
 	defer db.Close()
+
+	pharmacyDb, err := connectToDatabase(&conf, conf.PharmacyDB)
+	if err != nil {
+		log.Fatal(err)
+	}
+	defer pharmacyDb.Close()
 
 	awsAuth, err := conf.AWSAuth()
 	if err != nil {
@@ -186,6 +193,7 @@ func main() {
 	medicationDispenseUnitHandler := &apiservice.MedicationDispenseUnitsHandler{DataApi: dataApi}
 	treatmentsHandler := apiservice.NewTreatmentsHandler(dataApi)
 	photoAnswerIntakeHandler := apiservice.NewPhotoAnswerIntakeHandler(dataApi, photoAnswerCloudStorageApi, conf.CaseBucket, conf.AWSRegion, conf.MaxInMemoryForPhotoMB*1024*1024)
+	pharmacySearchHandler := &apiservice.PharmacySearchHandler{PharmacySearchService: &api.PharmacySearchService{PharmacyDB: pharmacyDb}, MapsService: maps.GoogleMapsService(0)}
 	generateDoctorLayoutHandler := &apiservice.GenerateDoctorLayoutHandler{
 		DataApi:                  dataApi,
 		CloudStorageApi:          cloudStorageApi,
@@ -235,6 +243,7 @@ func main() {
 	mux.Handle("/v1/logout", authHandler)
 	mux.Handle("/v1/ping", pingHandler)
 	mux.Handle("/v1/autocomplete", autocompleteHandler)
+	mux.Handle("/v1/pharmacy", pharmacySearchHandler)
 
 	mux.Handle("/v1/doctor_layout", generateDoctorLayoutHandler)
 	mux.Handle("/v1/diagnose_layout", generateDiagnoseLayoutHandler)

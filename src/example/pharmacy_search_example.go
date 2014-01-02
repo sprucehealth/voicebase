@@ -1,13 +1,13 @@
 package main
 
 import (
+	"carefront/api"
 	"database/sql"
 	"fmt"
 	_ "github.com/go-sql-driver/mysql"
 )
 
 func main() {
-
 	dsn := fmt.Sprintf("%s:%s@tcp(%s:3306)/%s?parseTime=true", "carefront", "changethis", "carefront-content-db.ckwporuc939i.us-east-1.rds.amazonaws.com", "pharmacy_db")
 	db, err := sql.Open("mysql", dsn)
 	if err != nil {
@@ -20,19 +20,10 @@ func main() {
 		panic(err)
 	}
 
-	rows, err := db.Query(`select id,loc_LAT_centroid, loc_LONG_centroid from dump_pharmacies where id > 5913`)
-	if err != nil {
-		panic(err.Error())
-	}
-	defer rows.Close()
+	pharmacySearchService := &api.PharmacySearchService{PharmacyDB: db}
+	_, err = pharmacySearchService.GetPharmaciesAroundSearchLocation(37.781575, -122.432654, 10.0, 10)
 
-	for rows.Next() {
-		var longitude, latitude string
-		var id int64
-		rows.Scan(&id, &latitude, &longitude)
-		_, err = db.Exec(`update dump_pharmacies set loc_pt = POINT(?,?) where id = ?`, longitude, latitude, id)
-		if err != nil {
-			panic(err.Error())
-		}
+	if err != nil {
+		panic(err)
 	}
 }

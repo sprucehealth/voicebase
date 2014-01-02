@@ -5,6 +5,7 @@ import (
 	"fmt"
 	"io/ioutil"
 	"net/http"
+	"net/url"
 )
 
 type GeocodingResult struct {
@@ -15,7 +16,12 @@ type GeocodingResult struct {
 type AddressLookup struct {
 	AddressComponents []*AddressComponent `json:"address_components"`
 	FormattedAddress  string              `json:"formatted_address"`
+	AddressGeometry   *AddressGeometry    `json:"geometry,omitempty"`
 	Types             []string            `json:"types"`
+}
+
+type AddressGeometry struct {
+	Location *LocationInfo `json:"location"`
 }
 
 type AddressComponent struct {
@@ -79,4 +85,50 @@ func (g GoogleMapsService) ConvertZipcodeToCityState(zipcode string) (cityStateI
 		}
 	}
 	return
+}
+
+func (g GoogleMapsService) GetLatLongFromSearchLocation(searchLocation string) (locationInfo LocationInfo, err error) {
+	v := url.Values{}
+	v.Set("address", searchLocation)
+	v.Set("sensor", "false")
+	queryStr := fmt.Sprintf(`https://maps.googleapis.com/maps/api/geocode/json?%s`, v.Encode())
+	resp, err := http.Get(queryStr)
+	if err != nil {
+		return
+	}
+
+	respData, err := ioutil.ReadAll(resp.Body)
+	if err != nil {
+		return
+	}
+	geocodingResult := &GeocodingResult{}
+	err = json.Unmarshal(respData, geocodingResult)
+	if err != nil {
+		return
+	}
+
+	switch geocodingResult.Status {
+	case "ZERO_RESULTS":
+		err = ZeroResultsErr
+		return
+	case "OVER_QUERY_LIMIT":
+		err = QuotaExceededErr
+		return
+	case "REQUEST_DENIED":
+		err = RequestDeniedErr
+		return
+	case "INVALID_REQUEST":
+		err = InvalidRequestErr
+		return
+	case "UNKNOWN_ERROR":
+		err = UnknownError
+		return
+	}
+
+	locationInfo = LocationInfo{}
+	locationInfo.Latitude = geocodingResult.Results[0].AddressGeometry.Location.Latitude
+	locationInfo.Longitude = geocodingResult.Results[0].AddressGeometry.Location.Longitude
+
+	return
+
 }
