@@ -324,7 +324,7 @@ func TestDoctorAddingOfFollowUpForPatientVisit(t *testing.T) {
 
 	CheckSuccessfulStatusCode(resp, "Unable to make successful call to get follow up time for patient visit: "+string(body), t)
 
-	patientVisitFollowupResponse := &apiservice.PatientVisitFollowUpRequestResponse{}
+	patientVisitFollowupResponse := &apiservice.PatientVisitFollowupResponse{}
 	err = json.Unmarshal(body, patientVisitFollowupResponse)
 	if err != nil {
 		t.Fatal("Unable to unmarshal the response into a json object: " + err.Error())

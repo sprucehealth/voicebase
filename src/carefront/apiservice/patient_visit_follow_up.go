@@ -13,15 +13,18 @@ type PatientVisitFollowUpHandler struct {
 }
 
 type PatientVisitFollowUpRequestResponse struct {
-	PatientVisitId      int64     `schema:"patient_visit_id",json:"patient_visit_id,string"`
-	CurrentTimeOnClient int64     `schema:"client_time"`
-	FollowUpValue       int64     `schema:"follow_up_value",json:"follow_up_value,string,omitempty"`
-	FollowUpUnit        string    `schema:"follow_up_unit",json:"follow_up_unit,omitempty"`
-	FollowUpTime        time.Time `json:"follow_up_time,omitempty"`
+	PatientVisitId      int64  `schema:"patient_visit_id",`
+	CurrentTimeOnClient int64  `schema:"client_time"`
+	FollowUpValue       int64  `schema:"follow_up_value"`
+	FollowUpUnit        string `schema:"follow_up_unit"`
 }
 
-type PatientVisitFollowUpResponse struct {
-	Result string `json:"result"`
+type PatientVisitFollowupResponse struct {
+	Result         string    `json:"result,omitempty"`
+	PatientVisitId int64     `json:"patient_visit_id,string,omitempty"`
+	FollowUpValue  int64     `json:"follow_up_value,string,omitempty"`
+	FollowUpUnit   string    `json:"follow_up_unit,omitempty"`
+	FollowUpTime   time.Time `json:"follow_up_time,omitempty"`
 }
 
 func NewPatientVisitFollowUpHandler(dataApi api.DataAPI) *PatientVisitFollowUpHandler {
@@ -59,11 +62,14 @@ func (p *PatientVisitFollowUpHandler) getFollowupForPatientVisit(w http.Response
 		return
 	}
 
-	response := &PatientVisitFollowUpRequestResponse{}
-	response.FollowUpTime = followupTime
-	response.FollowUpUnit = followupUnit
-	response.FollowUpValue = followupValue
-	response.PatientVisitId = requestData.PatientVisitId
+	response := &PatientVisitFollowupResponse{}
+	if followupValue != 0 && followupUnit != "" {
+		response.FollowUpTime = followupTime
+		response.FollowUpUnit = followupUnit
+		response.FollowUpValue = followupValue
+		response.PatientVisitId = requestData.PatientVisitId
+
+	}
 
 	WriteJSONToHTTPResponseWriter(w, http.StatusOK, response)
 }
@@ -97,5 +103,5 @@ func (p *PatientVisitFollowUpHandler) updatePatientVisitFollowup(w http.Response
 		return
 	}
 
-	WriteJSONToHTTPResponseWriter(w, http.StatusOK, &PatientVisitFollowUpResponse{Result: "success"})
+	WriteJSONToHTTPResponseWriter(w, http.StatusOK, &PatientVisitFollowupResponse{Result: "success"})
 }
