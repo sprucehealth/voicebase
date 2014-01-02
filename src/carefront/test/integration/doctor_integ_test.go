@@ -7,10 +7,12 @@ import (
 	"encoding/json"
 	"fmt"
 	"io/ioutil"
+	"math"
 	"net/http"
 	"net/http/httptest"
 	"strconv"
 	"testing"
+	"time"
 )
 
 func TestDoctorRegistration(t *testing.T) {
@@ -262,4 +264,77 @@ func TestDoctorDiagnosisOfPatientVisit(t *testing.T) {
 		}
 	}
 
+}
+
+func TestDoctorAddingOfFollowUpForPatientVisit(t *testing.T) {
+	if err := CheckIfRunningLocally(t); err == CannotRunTestLocally {
+		t.Log("Skipping test since there is no database to run test on")
+		return
+	}
+	testData := SetupIntegrationTest(t)
+	defer TearDownIntegrationTest(t, testData)
+
+	patientSignedupResponse := SignupRandomTestPatient(t, testData.DataApi, testData.AuthApi)
+
+	// get the current primary doctor
+	var doctorId int64
+	err := testData.DB.QueryRow(`select provider_id from care_provider_state_elligibility 
+							inner join provider_role on provider_role_id = provider_role.id 
+							inner join care_providing_state on care_providing_state_id = care_providing_state.id
+							where provider_tag='DOCTOR' and care_providing_state.state = 'CA'`).Scan(&doctorId)
+	if err != nil {
+		t.Fatal("Unable to query for doctor that is elligible to diagnose in CA: " + err.Error())
+	}
+
+	doctor, err := testData.DataApi.GetDoctorFromId(doctorId)
+	if err != nil {
+		t.Fatal("Unable to get doctor from doctor id " + err.Error())
+	}
+
+	// get patient to start a visit
+	patientVisitResponse := GetPatientVisitForPatient(patientSignedupResponse.PatientId, testData, t)
+
+	// get patient to submit the visit
+	SubmitPatientVisitForPatient(patientSignedupResponse.PatientId, patientVisitResponse.PatientVisitId, testData, t)
+
+	// lets add a follow up time for 1 week from now
+	doctorFollowupHandler := apiservice.NewPatientVisitFollowUpHandler(testData.DataApi)
+	doctorFollowupHandler.AccountIdFromAuthToken(doctor.AccountId)
+	ts := httptest.NewServer(doctorFollowupHandler)
+
+	clientTime := time.Now()
+	requestBody := fmt.Sprintf("patient_visit_id=%d&follow_up_unit=week&follow_up_value=1&client_time=%d", patientVisitResponse.PatientVisitId, clientTime.Unix())
+	resp, err := http.Post(ts.URL, "application/x-www-form-urlencoded", bytes.NewBufferString(requestBody))
+	if err != nil {
+		t.Fatal("Unable to make successful call to add follow up time for patient visit: " + err.Error())
+	}
+
+	CheckSuccessfulStatusCode(resp, "Unable to make successful call to add follow up for patient visit", t)
+
+	// lets get the follow up time back
+	resp, err = http.Get(ts.URL + "?patient_visit_id=" + strconv.FormatInt(patientVisitResponse.PatientVisitId, 10))
+	if err != nil {
+		t.Fatal("Unable to make successful call to get follow up time for patient visit: " + err.Error())
+	}
+
+	body, err := ioutil.ReadAll(resp.Body)
+	if err != nil {
+		t.Fatal("Unable to parse body of the response to get follow up time for patient visit: " + err.Error())
+	}
+
+	CheckSuccessfulStatusCode(resp, "Unable to make successful call to get follow up time for patient visit: "+string(body), t)
+
+	patientVisitFollowupResponse := &apiservice.PatientVisitFollowUpRequestResponse{}
+	err = json.Unmarshal(body, patientVisitFollowupResponse)
+	if err != nil {
+		t.Fatal("Unable to unmarshal the response into a json object: " + err.Error())
+	}
+
+	oneWeekFromNow := clientTime.Add(7 * 24 * 60 * time.Minute)
+	year, month, day := oneWeekFromNow.Date()
+	year1, month1, day1 := patientVisitFollowupResponse.FollowUpTime.Date()
+
+	if year != year1 || month1 != month || math.Abs(float64(day1-day)) > 2 {
+		t.Fatalf("Expected date to follow up time returned to be around %d/%d/%d, but got %d/%d/%d instead", year, month, day, year1, month1, day1)
+	}
 }

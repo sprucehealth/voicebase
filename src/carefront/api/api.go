@@ -67,7 +67,7 @@ type PatientVisitAPI interface {
 	GetLatestSubmittedPatientVisit() (*common.PatientVisit, error)
 	GetPatientVisitFromId(patientVisitId int64) (patientVisit *common.PatientVisit, err error)
 	SubmitPatientVisitWithId(patientVisitId int64) error
-	UpdateFollowUpTimeForPatientVisit(patientVisitId, doctorId, followUpValue int64, followUpUnit string) error
+	UpdateFollowUpTimeForPatientVisit(patientVisitId, doctorId, currentTimeOnClient, followUpValue int64, followUpUnit string) error
 	GetFollowUpTimeForPatientVisit(patientVisitId int64) (followupTime time.Time, followUpValue int64, followUpUnit string, err error)
 }
 

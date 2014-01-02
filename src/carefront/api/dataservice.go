@@ -1269,7 +1269,7 @@ func (d *DataService) GetFollowUpTimeForPatientVisit(patientVisitId int64) (foll
 	return
 }
 
-func (d *DataService) UpdateFollowUpTimeForPatientVisit(patientVisitId, doctorId, followUpValue int64, followUpUnit string) error {
+func (d *DataService) UpdateFollowUpTimeForPatientVisit(patientVisitId, currentTimeOnClient, doctorId, followUpValue int64, followUpUnit string) error {
 	// check if a follow up time already exists that we can update
 	var followupId int64
 	err := d.DB.QueryRow(`select id from patient_visit_follow_up where patient_visit_id = ?`, patientVisitId).Scan(&followupId)
@@ -1277,7 +1277,7 @@ func (d *DataService) UpdateFollowUpTimeForPatientVisit(patientVisitId, doctorId
 		return err
 	}
 
-	followUpTime := time.Now()
+	followUpTime := time.Unix(currentTimeOnClient, 0)
 	switch followUpUnit {
 	case FOLLOW_UP_DAY:
 		followUpTime = followUpTime.Add(time.Duration(followUpValue) * 24 * 60 * time.Minute)

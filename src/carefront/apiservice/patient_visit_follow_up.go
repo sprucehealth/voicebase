@@ -13,10 +13,11 @@ type PatientVisitFollowUpHandler struct {
 }
 
 type PatientVisitFollowUpRequestResponse struct {
-	PatientVisitId int64     `schema:"patient_visit_id",json:"patient_visit_id,string"`
-	FollowUpValue  int64     `schema:"follow_up_value",json:"follow_up_value,string,omitempty"`
-	FollowUpUnit   string    `schema:"follow_up_unit",json:"follow_up_unit,omitempty"`
-	FollowUpTime   time.Time `json:"follow_up_time,omitempty"`
+	PatientVisitId      int64     `schema:"patient_visit_id",json:"patient_visit_id,string"`
+	CurrentTimeOnClient int64     `schema:"client_time"`
+	FollowUpValue       int64     `schema:"follow_up_value",json:"follow_up_value,string,omitempty"`
+	FollowUpUnit        string    `schema:"follow_up_unit",json:"follow_up_unit,omitempty"`
+	FollowUpTime        time.Time `json:"follow_up_time,omitempty"`
 }
 
 type PatientVisitFollowUpResponse struct {
@@ -90,7 +91,7 @@ func (p *PatientVisitFollowUpHandler) updatePatientVisitFollowup(w http.Response
 		return
 	}
 
-	err = p.DataApi.UpdateFollowUpTimeForPatientVisit(requestData.PatientVisitId, doctorId, requestData.FollowUpValue, requestData.FollowUpUnit)
+	err = p.DataApi.UpdateFollowUpTimeForPatientVisit(requestData.PatientVisitId, requestData.CurrentTimeOnClient, doctorId, requestData.FollowUpValue, requestData.FollowUpUnit)
 	if err != nil {
 		WriteDeveloperError(w, http.StatusInternalServerError, "Unable to update followup for patient visit")
 		return
