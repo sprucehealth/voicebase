@@ -13,11 +13,17 @@ import (
 )
 
 const (
-	status_creating = "CREATING"
-	status_active   = "ACTIVE"
-	status_inactive = "INACTIVE"
-	treatment_otc   = "OTC"
-	treatment_rx    = "RX"
+	status_creating                        = "CREATING"
+	status_active                          = "ACTIVE"
+	status_inactive                        = "INACTIVE"
+	treatment_otc                          = "OTC"
+	treatment_rx                           = "RX"
+	dr_drug_supplemental_instruction_table = "dr_drug_supplemental_instruction"
+	dr_regimen_step_table                  = "dr_regimen_step"
+	dr_advice_point_table                  = "dr_advice_point"
+	drug_name_table                        = "drug_name"
+	drug_form_table                        = "drug_form"
+	drug_route_table                       = "drug_route"
 )
 
 type DataService struct {
@@ -128,6 +134,30 @@ func (d *DataService) GetTreatmentPlanForPatientVisit(patientVisitId int64) (tre
 		}
 
 		treatment.DrugDBIds = drugDbIds
+
+		// get the supplemental instructions for this treatment
+		instructionsRows, shadowedErr := d.DB.Query(`select dr_drug_supplemental_instruction.id, dr_drug_supplemental_instruction.text from treatment_instructions 
+												inner join dr_drug_supplemental_instruction on dr_drug_instruction_id = dr_drug_supplemental_instruction.id 
+													where treatment_instructions.status='ACTIVE' and treatment_id=?`, treatmentId)
+		if shadowedErr != nil {
+			err = shadowedErr
+			return
+		}
+		defer instructionsRows.Close()
+
+		drugInstructions := make([]*common.DoctorInstructionItem, 0)
+		for instructionsRows.Next() {
+			var instructionId int64
+			var text string
+			instructionsRows.Scan(&instructionId, &text)
+			drugInstruction := &common.DoctorInstructionItem{
+				Id:       instructionId,
+				Text:     text,
+				Selected: true,
+			}
+			drugInstructions = append(drugInstructions, drugInstruction)
+		}
+		treatment.SupplementalInstructions = drugInstructions
 	}
 
 	return
@@ -231,6 +261,795 @@ func (d *DataService) AddTreatmentsForPatientVisit(treatments []*common.Treatmen
 
 	tx.Commit()
 	return nil
+}
+
+func (d *DataService) getIdForNameFromTable(tableName, drugComponentName string) (nullId sql.NullInt64, err error) {
+	err = d.DB.QueryRow(fmt.Sprintf(`select id from %s where name='%s'`, tableName, drugComponentName)).Scan(&nullId)
+	return
+}
+
+func (d *DataService) getOrInsertNameInTable(tx *sql.Tx, tableName, drugComponentName string) (id int64, err error) {
+	drugComponentNameNullId, err := d.getIdForNameFromTable(tableName, drugComponentName)
+	if err != nil && err != sql.ErrNoRows {
+		return
+	}
+
+	if !drugComponentNameNullId.Valid {
+		res, shadowedErr := tx.Exec(fmt.Sprintf(`insert into %s (name) values ('%s')`, tableName, drugComponentName))
+		if shadowedErr != nil {
+			err = shadowedErr
+			return
+		}
+
+		id, err = res.LastInsertId()
+		if err != nil {
+			return
+		}
+	} else {
+		id = drugComponentNameNullId.Int64
+	}
+	return
+}
+
+func (d *DataService) DeleteDrugInstructionForDoctor(drugInstructionToDelete *common.DoctorInstructionItem, doctorId int64) error {
+
+	_, err := d.DB.Exec(`update dr_drug_supplemental_instruction set status='DELETED' where id = ? and doctor_id = ?`, drugInstructionToDelete.Id, doctorId)
+	if err != nil {
+		return err
+	}
+
+	return nil
+}
+
+func (d *DataService) AddDrugInstructionsToTreatment(drugName, drugForm, drugRoute string, drugInstructions []*common.DoctorInstructionItem, treatmentId int64, doctorId int64) error {
+	// nothing to do if there are no instructions to add
+	if len(drugInstructions) == 0 {
+		return nil
+	}
+
+	drugNameNullId, err := d.getIdForNameFromTable(drug_name_table, drugName)
+	if err != nil {
+		return err
+	}
+
+	drugFormNullId, err := d.getIdForNameFromTable(drug_form_table, drugForm)
+	if err != nil {
+		return err
+	}
+
+	drugRouteNullId, err := d.getIdForNameFromTable(drug_route_table, drugRoute)
+	if err != nil {
+		return err
+	}
+
+	// start a transaction
+	tx, err := d.DB.Begin()
+	if err != nil {
+		return err
+	}
+
+	// mark the current set of active instructions as inactive
+	_, err = tx.Exec(`update treatment_instructions set status='INACTIVE' where treatment_id = ?`, treatmentId)
+	if err != nil {
+		tx.Rollback()
+		return err
+	}
+
+	// insert the new set of instructions into the treatment instructions
+	insertStr := bytes.NewBufferString("insert into treatment_instructions (treatment_id, dr_drug_instruction_id, status) values ")
+	insertValues := make([]string, 0)
+	instructionIds := make([]string, 0)
+
+	for _, instructionItem := range drugInstructions {
+		insertValues = append(insertValues, fmt.Sprintf("(%d, %d, 'ACTIVE')", treatmentId, instructionItem.Id))
+		instructionIds = append(instructionIds, strconv.FormatInt(instructionItem.Id, 10))
+	}
+
+	insertStr.WriteString(strings.Join(insertValues, ","))
+	_, err = tx.Exec(insertStr.String())
+	if err != nil {
+		tx.Rollback()
+		return err
+	}
+
+	// remove the selected state of drug instructions for the drug
+	_, err = tx.Exec(`delete from dr_drug_supplemental_instruction_selected_state 
+						where drug_name_id = ? and drug_form_id = ? and drug_route_id = ? and doctor_id = ?`,
+		drugNameNullId.Int64, drugFormNullId.Int64, drugRouteNullId.Int64, doctorId)
+
+	if err != nil {
+		tx.Rollback()
+		return err
+	}
+
+	//  insert the selected state of drug instructions for the drug
+	insertStr = bytes.NewBufferString(`insert into dr_drug_supplemental_instruction_selected_state 
+										 (drug_name_id, drug_form_id, drug_route_id, dr_drug_supplemental_instruction_id, doctor_id) values `)
+	insertValues = make([]string, 0)
+	for _, instructionItem := range drugInstructions {
+		insertValues = append(insertValues, fmt.Sprintf("(%d, %d, %d, %d, %d)", drugNameNullId.Int64, drugFormNullId.Int64, drugRouteNullId.Int64, instructionItem.Id, doctorId))
+	}
+	insertStr.WriteString(strings.Join(insertValues, ","))
+	_, err = tx.Exec(insertStr.String())
+	if err != nil {
+		return err
+	}
+	// commit transaction
+	tx.Commit()
+	return nil
+}
+
+func (d *DataService) AddOrUpdateDrugInstructionForDoctor(drugName, drugForm, drugRoute string, drugInstructionToAdd *common.DoctorInstructionItem, doctorId int64) error {
+	tx, err := d.DB.Begin()
+	if err != nil {
+		return err
+	}
+
+	drugNameId, err := d.getOrInsertNameInTable(tx, drug_name_table, drugName)
+	if err != nil {
+		tx.Rollback()
+		return err
+	}
+
+	drugFormId, err := d.getOrInsertNameInTable(tx, drug_form_table, drugForm)
+	if err != nil {
+		tx.Rollback()
+		return err
+	}
+
+	drugRouteId, err := d.getOrInsertNameInTable(tx, drug_route_table, drugRoute)
+	if err != nil {
+		tx.Rollback()
+		return err
+	}
+
+	drugNameIdStr := strconv.FormatInt(drugNameId, 10)
+	drugFormIdStr := strconv.FormatInt(drugFormId, 10)
+	drugRouteIdStr := strconv.FormatInt(drugRouteId, 10)
+
+	// check if this is an update to an existing instruction, in which case, retire the existing instruction
+	if drugInstructionToAdd.Id != 0 {
+		// get the heirarcy at which this particular instruction exists so that it can be modified at the same level
+		var drugNameNullId, drugFormNullId, drugRouteNullId sql.NullInt64
+		err = tx.QueryRow(`select drug_name_id, drug_form_id, drug_route_id from dr_drug_supplemental_instruction where id=? and doctor_id=?`,
+			drugInstructionToAdd.Id, doctorId).Scan(&drugNameNullId, &drugFormNullId, &drugRouteNullId)
+		if err != nil {
+			tx.Rollback()
+			return err
+		}
+
+		if drugNameNullId.Valid {
+			drugNameIdStr = strconv.FormatInt(drugNameNullId.Int64, 10)
+		} else {
+			drugNameIdStr = "NULL"
+		}
+
+		if drugFormNullId.Valid {
+			drugFormIdStr = strconv.FormatInt(drugFormNullId.Int64, 10)
+		} else {
+			drugFormIdStr = "NULL"
+		}
+
+		if drugRouteNullId.Valid {
+			drugRouteIdStr = strconv.FormatInt(drugRouteNullId.Int64, 10)
+		} else {
+			drugRouteIdStr = "NULL"
+		}
+
+		_, shadowedErr := tx.Exec(`update dr_drug_supplemental_instruction set status='INACTIVE' where id=? and doctor_id = ?`, drugInstructionToAdd.Id, doctorId)
+		if shadowedErr != nil {
+			tx.Rollback()
+			return shadowedErr
+		}
+	}
+
+	// insert instruction for doctor
+	insertStr := fmt.Sprintf(`insert into dr_drug_supplemental_instruction (drug_name_id, drug_form_id, drug_route_id, text, doctor_id,status) values (%s,%s,%s,'%s',?,'ACTIVE')`, drugNameIdStr, drugFormIdStr, drugRouteIdStr, drugInstructionToAdd.Text)
+	res, err := tx.Exec(insertStr, doctorId)
+	if err != nil {
+		tx.Rollback()
+		return err
+	}
+
+	instructionId, err := res.LastInsertId()
+	if err != nil {
+		tx.Rollback()
+		return err
+	}
+
+	tx.Commit()
+
+	drugInstructionToAdd.Id = instructionId
+
+	return nil
+}
+
+func (d *DataService) GetDrugInstructionsForDoctor(drugName, drugForm, drugRoute string, doctorId int64) (drugInstructions []*common.DoctorInstructionItem, err error) {
+	// first, try and populate instructions belonging to the doctor based on just the drug name
+	// if non exist, then check the predefined set of instructions, create a copy for the doctor and return this copy
+	queryStr := fmt.Sprintf(`select drug_supplemental_instruction.id, text, drug_name_id, drug_form_id, drug_route_id from drug_supplemental_instruction 
+									inner join drug_name on drug_name_id=drug_name.id 
+										where name='%s' and drug_form_id is null and drug_route_id is null and status='ACTIVE'`, drugName)
+	drugInstructions, err = d.queryAndInsertPredefinedInstructionsForDoctor(dr_drug_supplemental_instruction_table, queryStr, doctorId, getDoctorInstructionsBasedOnName, insertPredefinedInstructionsForDoctor, drugName)
+	if err != nil {
+		return
+	}
+
+	drugInstructions = getActiveInstructions(drugInstructions)
+
+	// second, try and populate instructions belonging to the doctor based on the drug name and the form
+	// if non exist, then check the predefined set of instructions, create a copy for the doctor and return this copy
+	queryStr = fmt.Sprintf(`select drug_supplemental_instruction.id, text, drug_name_id, drug_form_id, drug_route_id from drug_supplemental_instruction 
+									inner join drug_name on drug_name_id=drug_name.id 
+									inner join drug_form on drug_form_id=drug_form.id 
+										where drug_name.name='%s' and drug_form.name = '%s' and drug_route_id is null and status='ACTIVE'`, drugName, drugForm)
+	moreInstructions, err := d.queryAndInsertPredefinedInstructionsForDoctor(dr_drug_supplemental_instruction_table, queryStr, doctorId, getDoctorInstructionsBasedOnNameAndForm, insertPredefinedInstructionsForDoctor, drugName, drugForm)
+	if err != nil {
+		return
+	}
+	drugInstructions = append(drugInstructions, getActiveInstructions(moreInstructions)...)
+
+	// third, try and populate instructions belonging to the doctor based on the drug name and route
+	// if non exist, then check the predefined set of instructions, create a copy for the doctor and return this copy
+	queryStr = fmt.Sprintf(`select drug_supplemental_instruction.id, text, drug_name_id, drug_form_id, drug_route_id from drug_supplemental_instruction 
+									inner join drug_name on drug_name_id=drug_name.id 
+									inner join drug_route on drug_route_id=drug_route.id 
+										where drug_name.name='%s' and drug_route.name = '%s' and drug_form_id is null and status='ACTIVE'`, drugName, drugRoute)
+	moreInstructions, err = d.queryAndInsertPredefinedInstructionsForDoctor(dr_drug_supplemental_instruction_table, queryStr, doctorId, getDoctorInstructionsBasedOnNameAndRoute, insertPredefinedInstructionsForDoctor, drugName, drugRoute)
+	if err != nil {
+		return
+	}
+	drugInstructions = append(drugInstructions, getActiveInstructions(moreInstructions)...)
+
+	// fourth, try and populate instructions belonging to the doctor based on the drug name, form and route
+	// if non exist, then check the predefined set of instructions, create a copy for the doctor and return this copy
+	queryStr = fmt.Sprintf(`select drug_supplemental_instruction.id, text, drug_name_id, drug_form_id, drug_route_id from drug_supplemental_instruction 
+									inner join drug_name on drug_name_id=drug_name.id 
+									inner join drug_route on drug_route_id=drug_route.id
+									inner join drug_form on drug_form_id=drug_form.id
+										where drug_name.name='%s' and drug_route.name = '%s' and drug_form.name = '%s' and status='ACTIVE'`, drugName, drugRoute, drugForm)
+	moreInstructions, err = d.queryAndInsertPredefinedInstructionsForDoctor(dr_drug_supplemental_instruction_table, queryStr, doctorId, getDoctorInstructionsBasedOnNameFormAndRoute, insertPredefinedInstructionsForDoctor, drugName, drugForm, drugRoute)
+	if err != nil {
+		return
+	}
+	drugInstructions = append(drugInstructions, getActiveInstructions(moreInstructions)...)
+
+	// get the selected state for this drug
+	selectedInstructionIds := make(map[int64]bool, 0)
+	rows, err := d.DB.Query(`select dr_drug_supplemental_instruction_id from dr_drug_supplemental_instruction_selected_state 
+								inner join drug_name on drug_name_id = drug_name.id
+								inner join drug_form on drug_form_id = drug_form.id
+								inner join drug_route on drug_route_id = drug_route.id
+									where drug_name.name = ? and drug_form.name = ? and drug_route.name = ? and doctor_id = ? `, drugName, drugForm, drugRoute, doctorId)
+	if err != nil {
+		return
+	}
+	defer rows.Close()
+
+	for rows.Next() {
+		var instructionId int64
+		rows.Scan(&instructionId)
+		selectedInstructionIds[instructionId] = true
+	}
+
+	// go through the drug instructions to set the selected state
+	for _, instructionItem := range drugInstructions {
+		if selectedInstructionIds[instructionItem.Id] == true {
+			instructionItem.Selected = true
+		}
+	}
+
+	return
+}
+
+func getActiveInstructions(drugInstructions []*common.DoctorInstructionItem) []*common.DoctorInstructionItem {
+	activeInstructions := make([]*common.DoctorInstructionItem, 0)
+	for _, instruction := range drugInstructions {
+		if instruction.Status == status_active {
+			activeInstructions = append(activeInstructions, instruction)
+		}
+	}
+	return activeInstructions
+}
+
+func (d *DataService) queryAndInsertPredefinedInstructionsForDoctor(drTableName string, queryStr string, doctorId int64, queryInstructionsFunc doctorInstructionQuery, insertInstructionsFunc insertDoctorInstructionFunc, drugComponents ...string) (drugInstructions []*common.DoctorInstructionItem, err error) {
+	drugInstructions, err = queryInstructionsFunc(d.DB, doctorId, drugComponents...)
+	if err != nil {
+		return
+	}
+
+	// nothing to do if the doctor already has instructions for the combination of the drug components
+	if len(drugInstructions) > 0 {
+		return
+	}
+
+	rows, err := d.DB.Query(queryStr)
+	if err != nil {
+		return
+	}
+
+	predefinedInstructions, err := getPredefinedInstructionsFromRows(rows)
+	if err != nil {
+		return
+	}
+
+	// nothing to do if no predefined instructions exist
+	if len(predefinedInstructions) == 0 {
+		return
+	}
+
+	err = insertInstructionsFunc(d.DB, predefinedInstructions, doctorId)
+	if err != nil {
+		return
+	}
+
+	drugInstructions, err = queryInstructionsFunc(d.DB, doctorId, drugComponents...)
+	return
+}
+
+type insertDoctorInstructionFunc func(db *sql.DB, predefinedInstructions []*predefinedInstruction, doctorId int64) error
+
+func insertPredefinedAdvicePointsForDoctor(db *sql.DB, predefinedAdvicePoints []*predefinedInstruction, doctorId int64) error {
+	insertStr := bytes.NewBufferString(`insert into dr_advice_point 
+							(doctor_id, text, status) values `)
+	insertValues := make([]string, 0)
+	for _, instruction := range predefinedAdvicePoints {
+		insertValue := fmt.Sprintf("(%d, '%s','ACTIVE')", doctorId, instruction.text)
+		insertValues = append(insertValues, insertValue)
+	}
+	insertStr.WriteString(strings.Join(insertValues, ","))
+
+	_, err := db.Exec(insertStr.String())
+	return err
+}
+
+func insertPredefinedRegimenStepsForDoctor(db *sql.DB, predefinedInstructions []*predefinedInstruction, doctorId int64) error {
+	insertStr := bytes.NewBufferString(`insert into dr_regimen_step 
+							(doctor_id, text, status) values `)
+	insertValues := make([]string, 0)
+	for _, instruction := range predefinedInstructions {
+		insertValue := fmt.Sprintf("(%d, '%s','ACTIVE')", doctorId, instruction.text)
+		insertValues = append(insertValues, insertValue)
+	}
+	insertStr.WriteString(strings.Join(insertValues, ","))
+
+	_, err := db.Exec(insertStr.String())
+	return err
+}
+func insertPredefinedInstructionsForDoctor(db *sql.DB, predefinedInstructions []*predefinedInstruction, doctorId int64) error {
+	insertStr := bytes.NewBufferString(`insert into dr_drug_supplemental_instruction 
+							(doctor_id, text, drug_name_id, drug_form_id, drug_route_id, status, drug_supplemental_instruction_id) values `)
+	insertValues := make([]string, 0)
+	for _, instruction := range predefinedInstructions {
+
+		drugNameIdStr := "NULL"
+		if instruction.drugNameId != 0 {
+			drugNameIdStr = strconv.FormatInt(instruction.drugNameId, 10)
+		}
+
+		drugFormIdStr := "NULL"
+		if instruction.drugFormId != 0 {
+			drugFormIdStr = strconv.FormatInt(instruction.drugFormId, 10)
+		}
+
+		drugRouteIdStr := "NULL"
+		if instruction.drugRouteId != 0 {
+			drugRouteIdStr = strconv.FormatInt(instruction.drugRouteId, 10)
+		}
+
+		insertValue := fmt.Sprintf("(%d, '%s', %s, %s, %s, 'ACTIVE', %d)", doctorId, instruction.text, drugNameIdStr, drugFormIdStr, drugRouteIdStr, instruction.id)
+		insertValues = append(insertValues, insertValue)
+	}
+	insertStr.WriteString(strings.Join(insertValues, ","))
+
+	_, err := db.Exec(insertStr.String())
+	return err
+}
+
+type doctorInstructionQuery func(db *sql.DB, doctorId int64, drugComponents ...string) (drugInstructions []*common.DoctorInstructionItem, err error)
+
+func getAdvicePointsForDoctor(db *sql.DB, doctorId int64, drugComponents ...string) (advicePoints []*common.DoctorInstructionItem, err error) {
+	rows, err := db.Query(`select id, text, status from dr_advice_point where doctor_id=?`, doctorId)
+	if err != nil {
+		return
+	}
+
+	advicePoints, err = getInstructionsFromRows(rows)
+	return
+}
+
+func getRegimenStepsForDoctor(db *sql.DB, doctorId int64, drugComponents ...string) (regimenSteps []*common.DoctorInstructionItem, err error) {
+	rows, err := db.Query(`select id, text, status from dr_regimen_step where doctor_id=?`, doctorId)
+	if err != nil {
+		return
+	}
+
+	regimenSteps, err = getInstructionsFromRows(rows)
+	return
+}
+
+func getDoctorInstructionsBasedOnName(db *sql.DB, doctorId int64, drugComponents ...string) (drugInstructions []*common.DoctorInstructionItem, err error) {
+	queryStr := fmt.Sprintf(`select dr_drug_supplemental_instruction.id, text,status from dr_drug_supplemental_instruction 
+								inner join drug_name on drug_name_id=drug_name.id 
+									where name='%s' and drug_form_id is null and drug_route_id is null and doctor_id=?`, drugComponents[0])
+	rows, err := db.Query(queryStr, doctorId)
+	if err != nil {
+		return
+	}
+
+	drugInstructions, err = getInstructionsFromRows(rows)
+	return
+}
+
+func getDoctorInstructionsBasedOnNameAndForm(db *sql.DB, doctorId int64, drugComponents ...string) (drugInstructions []*common.DoctorInstructionItem, err error) {
+	// then, get instructions belonging to doctor based on drug name and form
+	queryStr := fmt.Sprintf(`select dr_drug_supplemental_instruction.id, text,status from dr_drug_supplemental_instruction 
+									inner join drug_name on drug_name_id=drug_name.id 
+									inner join drug_form on drug_form_id=drug_form.id 
+										where drug_name.name='%s' and drug_form.name = '%s' and drug_route_id is null and doctor_id=?`, drugComponents[0], drugComponents[1])
+	rows, err := db.Query(queryStr, doctorId)
+	if err != nil {
+		return
+	}
+
+	drugInstructions, err = getInstructionsFromRows(rows)
+	return
+}
+
+func getDoctorInstructionsBasedOnNameAndRoute(db *sql.DB, doctorId int64, drugComponents ...string) (drugInstructions []*common.DoctorInstructionItem, err error) {
+	queryStr := fmt.Sprintf(`select dr_drug_supplemental_instruction.id,text,status from dr_drug_supplemental_instruction 
+									inner join drug_name on drug_name_id=drug_name.id 
+									inner join drug_route on drug_route_id=drug_route.id 
+										where drug_name.name='%s' and drug_route.name = '%s' and drug_form_id is null and doctor_id=?`, drugComponents[0], drugComponents[1])
+	rows, err := db.Query(queryStr, doctorId)
+	if err != nil {
+		return
+	}
+
+	drugInstructions, err = getInstructionsFromRows(rows)
+	return
+}
+
+func getDoctorInstructionsBasedOnNameFormAndRoute(db *sql.DB, doctorId int64, drugComponents ...string) (drugInstructions []*common.DoctorInstructionItem, err error) {
+	// then, get instructions belonging to doctor based on drug name, route and form
+	queryStr := fmt.Sprintf(`select dr_drug_supplemental_instruction.id,text,status from dr_drug_supplemental_instruction 
+									inner join drug_name on drug_name_id=drug_name.id 
+									inner join drug_route on drug_route_id=drug_route.id 
+									inner join drug_form on drug_form_id = drug_form.id
+										where drug_name.name='%s' and drug_form.name='%s' and drug_route.name='%s' and doctor_id=?`, drugComponents[0], drugComponents[1], drugComponents[2])
+	rows, err := db.Query(queryStr, doctorId)
+	if err != nil {
+		return
+	}
+
+	drugInstructions, err = getInstructionsFromRows(rows)
+	return
+}
+
+type predefinedInstruction struct {
+	id          int64
+	drugFormId  int64
+	drugNameId  int64
+	drugRouteId int64
+	text        string
+}
+
+func getPredefinedInstructionsFromRows(rows *sql.Rows) (predefinedInstructions []*predefinedInstruction, err error) {
+	defer rows.Close()
+	predefinedInstructions = make([]*predefinedInstruction, 0)
+	for rows.Next() {
+		var id int64
+		var drugFormId, drugNameId, drugRouteId sql.NullInt64
+		var text string
+		err = rows.Scan(&id, &text, &drugNameId, &drugFormId, &drugRouteId)
+		if err != nil {
+			return
+		}
+		instruction := &predefinedInstruction{}
+		instruction.id = id
+		if drugFormId.Valid {
+			instruction.drugFormId = drugFormId.Int64
+		}
+
+		if drugNameId.Valid {
+			instruction.drugNameId = drugNameId.Int64
+		}
+
+		if drugRouteId.Valid {
+			instruction.drugRouteId = drugRouteId.Int64
+		}
+
+		instruction.text = text
+		predefinedInstructions = append(predefinedInstructions, instruction)
+	}
+	return
+}
+
+func getInstructionsFromRows(rows *sql.Rows) (drugInstructions []*common.DoctorInstructionItem, err error) {
+	defer rows.Close()
+	drugInstructions = make([]*common.DoctorInstructionItem, 0)
+	for rows.Next() {
+		var id int64
+		var text, status string
+		err = rows.Scan(&id, &text, &status)
+		if err != nil {
+			return
+		}
+		supplementalInstruction := &common.DoctorInstructionItem{}
+		supplementalInstruction.Id = id
+		supplementalInstruction.Text = text
+		supplementalInstruction.Status = status
+		drugInstructions = append(drugInstructions, supplementalInstruction)
+	}
+	return
+}
+
+func (d *DataService) GetAdvicePointsForPatientVisit(patientVisitId int64) (advicePoints []*common.DoctorInstructionItem, err error) {
+	rows, err := d.DB.Query(`select dr_advice_point_id,text from advice inner join dr_advice_point on dr_advice_point_id = dr_advice_point.id where patient_visit_id = ?  and advice.status='ACTIVE'`, patientVisitId)
+	if err != nil {
+		return
+	}
+	defer rows.Close()
+
+	advicePoints = make([]*common.DoctorInstructionItem, 0)
+	for rows.Next() {
+		var id int64
+		var text string
+		err = rows.Scan(&id, &text)
+		if err != nil {
+			return
+		}
+
+		advicePoint := &common.DoctorInstructionItem{
+			Id:   id,
+			Text: text,
+		}
+		advicePoints = append(advicePoints, advicePoint)
+	}
+	return
+}
+
+func (d *DataService) CreateAdviceForPatientVisit(advicePoints []*common.DoctorInstructionItem, patientVisitId int64) error {
+	if len(advicePoints) == 0 {
+		return nil
+	}
+
+	// begin tx
+	tx, err := d.DB.Begin()
+	if err != nil {
+		return err
+	}
+
+	_, err = tx.Exec(`update advice set status='INACTIVE' where patient_visit_id=?`, patientVisitId)
+	if err != nil {
+		tx.Rollback()
+		return err
+	}
+
+	insertStr := bytes.NewBufferString(`insert into advice (patient_visit_id, dr_advice_point_id, status) values `)
+	insertValues := make([]string, 0)
+	for _, advicePoint := range advicePoints {
+		insertValues = append(insertValues, fmt.Sprintf("(%d, %d, 'ACTIVE')", patientVisitId, advicePoint.Id))
+	}
+
+	insertStr.WriteString(strings.Join(insertValues, ","))
+	_, err = tx.Exec(insertStr.String())
+	if err != nil {
+		tx.Rollback()
+		return err
+	}
+
+	tx.Commit()
+	return nil
+}
+
+func (d *DataService) GetAdvicePointsForDoctor(doctorId int64) (advicePoints []*common.DoctorInstructionItem, err error) {
+	queryStr := `select id, text from advice_point where status='ACTIVE'`
+
+	advicePoints, err = d.queryAndInsertPredefinedInstructionsForDoctor(dr_advice_point_table, queryStr, doctorId, getAdvicePointsForDoctor, insertPredefinedAdvicePointsForDoctor)
+	if err != nil {
+		return
+	}
+
+	advicePoints = getActiveInstructions(advicePoints)
+	return
+}
+
+func (d *DataService) AddOrUpdateAdvicePointForDoctor(advicePoint *common.DoctorInstructionItem, doctorId int64) error {
+	tx, err := d.DB.Begin()
+	if err != nil {
+		return err
+	}
+
+	if advicePoint.Id != 0 {
+		// update the current advice point to be inactive
+		_, err = tx.Exec(`update dr_advice_point set status='INACTIVE' where id = ? and doctor_id = ?`, advicePoint.Id, doctorId)
+		if err != nil {
+			tx.Rollback()
+			return err
+		}
+	}
+
+	res, err := tx.Exec(`insert into dr_advice_point (text, doctor_id,status) values (?,?,'ACTIVE')`, advicePoint.Text, doctorId)
+	if err != nil {
+		tx.Rollback()
+		return err
+	}
+	instructionId, err := res.LastInsertId()
+	if err != nil {
+		tx.Rollback()
+		return err
+	}
+
+	// assign an id given that its a new advice point
+	advicePoint.Id = instructionId
+	tx.Commit()
+	return nil
+}
+
+func (d *DataService) MarkAdvicePointToBeDeleted(advicePoint *common.DoctorInstructionItem, doctorId int64) error {
+	// mark the advice point to be deleted
+	_, err := d.DB.Exec(`update dr_advice_point set status='DELETED' where id = ? and doctor_id = ?`, advicePoint.Id, doctorId)
+	if err != nil {
+		return err
+	}
+	return nil
+}
+
+func (d *DataService) GetRegimenStepsForDoctor(doctorId int64) (regimenSteps []*common.DoctorInstructionItem, err error) {
+	// attempt to get regimen steps for doctor
+	queryStr := fmt.Sprintf(`select regimen_step.id, text, drug_name_id, drug_form_id, drug_route_id from regimen_step 
+										where status='ACTIVE'`)
+	regimenSteps, err = d.queryAndInsertPredefinedInstructionsForDoctor(dr_regimen_step_table, queryStr, doctorId, getRegimenStepsForDoctor, insertPredefinedRegimenStepsForDoctor)
+	if err != nil {
+		return
+	}
+
+	regimenSteps = getActiveInstructions(regimenSteps)
+	return
+}
+
+func (d *DataService) AddRegimenStepForDoctor(regimenStep *common.DoctorInstructionItem, doctorId int64) error {
+	res, err := d.DB.Exec(`insert into dr_regimen_step (text, doctor_id,status) values (?,?,'ACTIVE')`, regimenStep.Text, doctorId)
+	if err != nil {
+		return err
+	}
+	instructionId, err := res.LastInsertId()
+	if err != nil {
+		return err
+	}
+
+	// assign an id given that its a new regimen step
+	regimenStep.Id = instructionId
+	return nil
+}
+
+func (d *DataService) UpdateRegimenStepForDoctor(regimenStep *common.DoctorInstructionItem, doctorId int64) error {
+	tx, err := d.DB.Begin()
+	if err != nil {
+		return err
+	}
+
+	// update the current regimen step to be inactive
+	_, err = tx.Exec(`update dr_regimen_step set status='INACTIVE' where id = ? and doctor_id = ?`, regimenStep.Id, doctorId)
+	if err != nil {
+		tx.Rollback()
+		return err
+	}
+
+	// insert a new active regimen step in its place
+	res, err := tx.Exec(`insert into dr_regimen_step (text, doctor_id, status) values (?, ?, 'ACTIVE')`, regimenStep.Text, doctorId)
+	if err != nil {
+		tx.Rollback()
+		return err
+	}
+
+	instructionId, err := res.LastInsertId()
+	if err != nil {
+		tx.Rollback()
+		return err
+	}
+
+	// update the regimenStep Id
+	regimenStep.Id = instructionId
+	tx.Commit()
+	return nil
+}
+
+func (d *DataService) MarkRegimenStepToBeDeleted(regimenStep *common.DoctorInstructionItem, doctorId int64) error {
+	// mark the regimen step to be deleted
+	_, err := d.DB.Exec(`update dr_regimen_step set status='DELETED' where id = ? and doctor_id = ?`, regimenStep.Id, doctorId)
+	if err != nil {
+		return err
+	}
+	return nil
+}
+
+func (d *DataService) CreateRegimenPlanForPatientVisit(regimenPlan *common.RegimenPlan) error {
+	if len(regimenPlan.RegimenSections) == 0 {
+		return nil
+	}
+
+	// begin tx
+	tx, err := d.DB.Begin()
+	if err != nil {
+		return err
+	}
+
+	// mark any previous regimen steps for this patient visit and regimen type as inactive
+	_, err = tx.Exec(`update regimen set status='INACTIVE' where patient_visit_id = ?`, regimenPlan.PatientVisitId)
+	if err != nil {
+		tx.Rollback()
+		return err
+	}
+
+	// create new regimen steps within each section
+	insertStr := bytes.NewBufferString(`insert into regimen (patient_visit_id, regimen_type, dr_regimen_step_id, status) values `)
+	insertValues := make([]string, 0)
+	for _, regimenSection := range regimenPlan.RegimenSections {
+		for _, regimenStep := range regimenSection.RegimenSteps {
+			insertValues = append(insertValues, fmt.Sprintf("(%d,'%s',%d, 'ACTIVE')", regimenPlan.PatientVisitId, regimenSection.RegimenName, regimenStep.Id))
+		}
+	}
+
+	insertStr.WriteString(strings.Join(insertValues, ","))
+	_, err = tx.Exec(insertStr.String())
+	if err != nil {
+		tx.Rollback()
+		return err
+	}
+
+	// commit tx
+	tx.Commit()
+	return nil
+}
+
+func (d *DataService) GetRegimenPlanForPatientVisit(patientVisitId int64) (regimenPlan *common.RegimenPlan, err error) {
+	regimenPlan = &common.RegimenPlan{}
+	regimenPlan.PatientVisitId = patientVisitId
+
+	rows, err := d.DB.Query(`select regimen_type, dr_regimen_step.id, dr_regimen_step.text 
+								from regimen inner join dr_regimen_step on dr_regimen_step_id = dr_regimen_step.id 
+									where patient_visit_id = ? and regimen.status = 'ACTIVE' order by regimen.id`, patientVisitId)
+	if err != nil {
+		return
+	}
+	defer rows.Close()
+
+	regimenSections := make(map[string][]*common.DoctorInstructionItem)
+	for rows.Next() {
+		var regimenType, regimenText string
+		var regimenStepId int64
+		err = rows.Scan(&regimenType, &regimenStepId, &regimenText)
+		regimenStep := &common.DoctorInstructionItem{
+			Id:   regimenStepId,
+			Text: regimenText,
+		}
+
+		regimenSteps := regimenSections[regimenType]
+		if regimenSteps == nil {
+			regimenSteps = make([]*common.DoctorInstructionItem, 0)
+		}
+		regimenSteps = append(regimenSteps, regimenStep)
+		regimenSections[regimenType] = regimenSteps
+	}
+
+	// if there are no regimen steps to return, error out indicating so
+	if len(regimenSections) == 0 {
+		return nil, NoRegimenPlanForPatientVisit
+	}
+
+	regimenSectionsArray := make([]*common.RegimenSection, 0)
+	// create the regimen sections
+	for regimenSectionName, regimenSteps := range regimenSections {
+		regimenSection := &common.RegimenSection{
+			RegimenName:  regimenSectionName,
+			RegimenSteps: regimenSteps,
+		}
+		regimenSectionsArray = append(regimenSectionsArray, regimenSection)
+	}
+	regimenPlan.RegimenSections = regimenSectionsArray
+	return
 }
 
 func (d *DataService) CheckCareProvidingElligibility(shortState string, healthConditionId int64) (isElligible bool, err error) {

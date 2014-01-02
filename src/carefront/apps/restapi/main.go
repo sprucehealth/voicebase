@@ -179,6 +179,7 @@ func main() {
 	answerIntakeHandler := apiservice.NewAnswerIntakeHandler(dataApi)
 	autocompleteHandler := &apiservice.AutocompleteHandler{ERxApi: erx.NewDoseSpotService(conf.DoseSpotClinicId, conf.DoseSpotClinicKey, conf.DoseSpotUserId), Role: api.PATIENT_ROLE}
 	doctorTreatmentSuggestionHandler := &apiservice.AutocompleteHandler{ERxApi: erx.NewDoseSpotService(conf.DoseSpotClinicId, conf.DoseSpotClinicKey, conf.DoseSpotUserId), Role: api.DOCTOR_ROLE}
+	doctorInstructionsHandler := apiservice.NewDoctorDrugInstructionsHandler(dataApi)
 	medicationStrengthSearchHandler := &apiservice.MedicationStrengthSearchHandler{ERxApi: erx.NewDoseSpotService(conf.DoseSpotClinicId, conf.DoseSpotClinicKey, conf.DoseSpotUserId)}
 	newTreatmentHandler := &apiservice.NewTreatmentHandler{ERxApi: erx.NewDoseSpotService(conf.DoseSpotClinicId, conf.DoseSpotClinicKey, conf.DoseSpotUserId)}
 	medicationDispenseUnitHandler := &apiservice.MedicationDispenseUnitsHandler{DataApi: dataApi}
@@ -217,11 +218,14 @@ func main() {
 	}
 	diagnosePatientHandler := apiservice.NewDiagnosePatientHandler(dataApi, authApi, cloudStorageApi)
 
+	doctorRegimenHandler := apiservice.NewDoctorRegimenHandler(dataApi)
+	doctorAdviceHandler := apiservice.NewDoctorAdviceHandler(dataApi)
+
 	mux := &apiservice.AuthServeMux{ServeMux: *http.NewServeMux(), AuthApi: authApi}
 
 	mux.Handle("/v1/patient", signupPatientHandler)
 	mux.Handle("/v1/visit", patientVisitHandler)
-	mux.Handle("/v1/check_elligibility", checkElligibilityHandler)
+	mux.Handle("/v1/check_eligibility", checkElligibilityHandler)
 	mux.Handle("/v1/patient_visit_review", doctorPatientVisitReviewHandler)
 	mux.Handle("/v1/answer", answerIntakeHandler)
 	mux.Handle("/v1/answer/photo", photoAnswerIntakeHandler)
@@ -245,6 +249,11 @@ func main() {
 
 	mux.Handle("/v1/doctor/treatment/new", newTreatmentHandler)
 	mux.Handle("/v1/doctor/treatment/treatments", treatmentsHandler)
+	mux.Handle("/v1/doctor/treatment/supplemental_instructions", doctorInstructionsHandler)
+
+	mux.Handle("/v1/doctor/regimen/", doctorRegimenHandler)
+	mux.Handle("/v1/doctor/advice/", doctorAdviceHandler)
+
 	s := &http.Server{
 		Addr:           conf.ListenAddr,
 		Handler:        mux,

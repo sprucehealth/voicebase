@@ -81,21 +81,47 @@ type TreatmentPlan struct {
 }
 
 type Treatment struct {
-	Id                      int64             `json:"treatment_id,string,omitempty"`
-	TreatmentPlanId         int64             `json:"treatment_plan_id,string,omitempty"`
-	PatientVisitId          int64             `json:"patient_visit_id,string,omitempty"`
-	DrugDBIds               map[string]string `json:"drug_db_ids,omitempty"`
-	DrugInternalName        string            `json:"drug_internal_name,omitempty"`
-	DosageStrength          string            `json:"dosage_strength,omitempty"`
-	DispenseValue           int64             `json:"dispense_value,string,omitempty"`
-	DispenseUnitId          int64             `json:"dispense_unit_id,string,omitempty"`
-	DispenseUnitDescription string            `json:"dispense_unit_description,omitempty"`
-	NumberRefills           int64             `json:"refills,string,omitempty"`
-	SubstitutionsAllowed    bool              `json:"substitutions_allowed,omitempty"`
-	DaysSupply              int64             `json:"days_supply,string,omitempty"`
-	PharmacyNotes           string            `json:"pharmacy_notes,omitempty"`
-	PatientInstructions     string            `json:"patient_instructions,omitempty"`
-	CreationDate            time.Time         `json:"creation_date,omitempty"`
-	Status                  string            `json:"-"`
-	OTC                     bool              `json:"otc,omitempty"`
+	Id                       int64                    `json:"treatment_id,string,omitempty"`
+	TreatmentPlanId          int64                    `json:"treatment_plan_id,string,omitempty"`
+	PatientVisitId           int64                    `json:"patient_visit_id,string,omitempty"`
+	DrugDBIds                map[string]string        `json:"drug_db_ids,omitempty"`
+	DrugInternalName         string                   `json:"drug_internal_name,omitempty"`
+	DosageStrength           string                   `json:"dosage_strength,omitempty"`
+	DispenseValue            int64                    `json:"dispense_value,string,omitempty"`
+	DispenseUnitId           int64                    `json:"dispense_unit_id,string,omitempty"`
+	DispenseUnitDescription  string                   `json:"dispense_unit_description,omitempty"`
+	NumberRefills            int64                    `json:"refills,string,omitempty"`
+	SubstitutionsAllowed     bool                     `json:"substitutions_allowed,omitempty"`
+	DaysSupply               int64                    `json:"days_supply,string,omitempty"`
+	PharmacyNotes            string                   `json:"pharmacy_notes,omitempty"`
+	PatientInstructions      string                   `json:"patient_instructions,omitempty"`
+	CreationDate             time.Time                `json:"creation_date,omitempty"`
+	Status                   string                   `json:"-"`
+	OTC                      bool                     `json:"otc,omitempty"`
+	SupplementalInstructions []*DoctorInstructionItem `json:"supplemental_instructions,omitempty"`
+}
+
+const (
+	STATE_ADDED    = "added"
+	STATE_MODIFIED = "modified"
+	STATE_DELETED  = "deleted"
+)
+
+type DoctorInstructionItem struct {
+	Id       int64  `json:"id,string"`
+	Text     string `json:"text"`
+	Selected bool   `json:"selected,omitempty"`
+	State    string `json:"state,omitempty"`
+	Status   string `json:"-"`
+}
+
+type RegimenSection struct {
+	RegimenName  string                   `json:"regimen_name"`
+	RegimenSteps []*DoctorInstructionItem `json:"regimen_steps"`
+}
+
+type RegimenPlan struct {
+	PatientVisitId  int64                    `json:"patient_visit_id,string"`
+	RegimenSections []*RegimenSection        `json:"regimen_sections"`
+	AllRegimenSteps []*DoctorInstructionItem `json:"all_regimen_steps"`
 }

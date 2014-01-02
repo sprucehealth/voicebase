@@ -16,8 +16,9 @@ const (
 )
 
 var (
-	NoRowsError                 = errors.New("No rows exist")
-	NoElligibileProviderInState = errors.New("There are no providers elligible in the state the patient resides")
+	NoRowsError                  = errors.New("No rows exist")
+	NoElligibileProviderInState  = errors.New("There are no providers elligible in the state the patient resides")
+	NoRegimenPlanForPatientVisit = errors.New("There is no regimen plan for patient visit")
 )
 
 type PotentialAnswerInfo struct {
@@ -43,6 +44,18 @@ type DoctorAPI interface {
 	RegisterDoctor(accountId int64, firstName, lastName, gender string, dob time.Time) (int64, error)
 	GetDoctorFromId(doctorId int64) (doctor *common.Doctor, err error)
 	GetDoctorIdFromAccountId(accountId int64) (int64, error)
+	GetRegimenStepsForDoctor(doctorId int64) (regimenSteps []*common.DoctorInstructionItem, err error)
+	AddRegimenStepForDoctor(regimenStep *common.DoctorInstructionItem, doctorId int64) error
+	UpdateRegimenStepForDoctor(regimenStep *common.DoctorInstructionItem, doctorId int64) error
+	MarkRegimenStepToBeDeleted(regimenStep *common.DoctorInstructionItem, doctorId int64) error
+	CreateRegimenPlanForPatientVisit(regimenPlan *common.RegimenPlan) error
+	GetRegimenPlanForPatientVisit(patientVisitId int64) (regimenPlan *common.RegimenPlan, err error)
+
+	GetAdvicePointsForDoctor(doctorId int64) (advicePoints []*common.DoctorInstructionItem, err error)
+	GetAdvicePointsForPatientVisit(patientVisitId int64) (advicePoints []*common.DoctorInstructionItem, err error)
+	CreateAdviceForPatientVisit(advicePoints []*common.DoctorInstructionItem, patientVisitId int64) error
+	AddOrUpdateAdvicePointForDoctor(advicePoint *common.DoctorInstructionItem, doctorId int64) error
+	MarkAdvicePointToBeDeleted(advicePoint *common.DoctorInstructionItem, doctorId int64) error
 }
 
 type PatientVisitAPI interface {
@@ -93,6 +106,10 @@ type ERxAPI interface {
 	GetMedicationDispenseUnits(languageId int64) (dispenseUnitIds []int64, dispenseUnits []string, err error)
 	AddTreatmentsForPatientVisit(treatments []*common.Treatment) error
 	GetTreatmentPlanForPatientVisit(patientVisitId int64) (treatmentPlan *common.TreatmentPlan, err error)
+	GetDrugInstructionsForDoctor(drugName, drugForm, drugRoute string, doctorId int64) (drugInstructions []*common.DoctorInstructionItem, err error)
+	AddOrUpdateDrugInstructionForDoctor(drugName, drugForm, drugRoute string, drugInstructionToAdd *common.DoctorInstructionItem, doctorId int64) error
+	DeleteDrugInstructionForDoctor(drugInstructionToDelete *common.DoctorInstructionItem, doctorId int64) error
+	AddDrugInstructionsToTreatment(drugName, drugForm, drugRoute string, drugInstructions []*common.DoctorInstructionItem, treatmentId int64, doctorId int64) error
 }
 
 type ObjectStorageAPI interface {

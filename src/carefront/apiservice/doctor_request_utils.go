@@ -3,8 +3,13 @@ package apiservice
 import (
 	"carefront/api"
 	"carefront/common"
+	"database/sql"
 	"errors"
 	"net/http"
+)
+
+var (
+	NoPatientVisitFound = errors.New("No patient visit found when trying to validate that the doctor is authorized to work on this patient visit")
 )
 
 func ValidateDoctorAccessToPatientVisitAndGetRelevantData(patientVisitId, accountIdForDoctor int64, DataApi api.DataAPI) (doctorId int64, patientVisit *common.PatientVisit, careTeam *common.PatientCareProviderGroup, httpStatusCode int, err error) {
@@ -18,6 +23,11 @@ func ValidateDoctorAccessToPatientVisitAndGetRelevantData(patientVisitId, accoun
 
 	patientVisit, err = DataApi.GetPatientVisitFromId(patientVisitId)
 	if err != nil {
+		if err == sql.ErrNoRows {
+			httpStatusCode = http.StatusBadRequest
+			err = NoPatientVisitFound
+			return
+		}
 		httpStatusCode = http.StatusInternalServerError
 		err = errors.New("Unable to get patient visit from id : " + err.Error())
 		return
