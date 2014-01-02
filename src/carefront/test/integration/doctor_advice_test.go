@@ -231,7 +231,6 @@ func validateAdviceRequestAgainstResponse(doctorAdviceRequest, doctorAdviceRespo
 		}
 	}
 
-	// now go through requests to make sure that all updated advice points have different ids
 	for _, advicePoint := range doctorAdviceResponse.AllAdvicePoints {
 		if textToIdMapping[advicePoint.Text] != 0 {
 			if textToIdMapping[advicePoint.Text] == advicePoint.Id {

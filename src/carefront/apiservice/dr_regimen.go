@@ -94,6 +94,7 @@ func (d *DoctorRegimenHandler) updateRegimenSteps(w http.ResponseWriter, r *http
 	// Go through regimen steps to add, update and delete regimen steps before creating the regimen plan
 	// for the user
 	newOrUpdatedStepToIdMapping := make(map[string]int64)
+	updatedAllRegimenSteps := make([]*common.DoctorInstructionItem, 0)
 	for _, regimenStep := range requestData.AllRegimenSteps {
 		switch regimenStep.State {
 		case common.STATE_ADDED:
@@ -103,6 +104,7 @@ func (d *DoctorRegimenHandler) updateRegimenSteps(w http.ResponseWriter, r *http
 				return
 			}
 			newOrUpdatedStepToIdMapping[regimenStep.Text] = regimenStep.Id
+			updatedAllRegimenSteps = append(updatedAllRegimenSteps, regimenStep)
 		case common.STATE_MODIFIED:
 			err = d.DataApi.UpdateRegimenStepForDoctor(regimenStep, doctorId)
 			if err != nil {
@@ -112,12 +114,15 @@ func (d *DoctorRegimenHandler) updateRegimenSteps(w http.ResponseWriter, r *http
 			// keep track of the new id for updated regimen steps so that we can update the regimen step in the
 			// regimen section
 			newOrUpdatedStepToIdMapping[regimenStep.Text] = regimenStep.Id
+			updatedAllRegimenSteps = append(updatedAllRegimenSteps, regimenStep)
 		case common.STATE_DELETED:
 			err = d.DataApi.MarkRegimenStepToBeDeleted(regimenStep, doctorId)
 			if err != nil {
 				WriteDeveloperError(w, http.StatusInternalServerError, "Unable to delete regimen step for doctor: "+err.Error())
 				return
 			}
+		default:
+			updatedAllRegimenSteps = append(updatedAllRegimenSteps, regimenStep)
 		}
 		// empty out the state now that it has been taken care of
 		regimenStep.State = ""
@@ -139,5 +144,6 @@ func (d *DoctorRegimenHandler) updateRegimenSteps(w http.ResponseWriter, r *http
 		return
 	}
 
+	requestData.AllRegimenSteps = updatedAllRegimenSteps
 	WriteJSONToHTTPResponseWriter(w, http.StatusOK, requestData)
 }
