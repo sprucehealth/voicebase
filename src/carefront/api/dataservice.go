@@ -1288,13 +1288,13 @@ func (d *DataService) UpdateFollowUpTimeForPatientVisit(patientVisitId, currentT
 	}
 
 	if followupId == 0 {
-		_, err = d.DB.Exec(`insert into patient_visit_follow_up (patient_visit_id, doctor_id, follow_up_date, follow_up_value, follow_up_unit) 
-				values (?,?,?,?,?)`, patientVisitId, doctorId, followUpTime, followUpValue, followUpUnit)
+		_, err = d.DB.Exec(`insert into patient_visit_follow_up (patient_visit_id, doctor_id, follow_up_date, follow_up_value, follow_up_unit, status) 
+				values (?,?,?,?,?, 'ADDED')`, patientVisitId, doctorId, followUpTime, followUpValue, followUpUnit)
 		if err != nil {
 			return err
 		}
 	} else {
-		_, err = d.DB.Exec(`update patient_visit_follow_up set follow_up_date=?, follow_up_value=?, follow_up_unit=?, doctor_id=? where patient_visit_id = ?`, followUpTime, followUpValue, followUpUnit, doctorId, patientVisitId)
+		_, err = d.DB.Exec(`update patient_visit_follow_up set follow_up_date=?, follow_up_value=?, follow_up_unit=?, doctor_id=?, status='UPDATED' where patient_visit_id = ?`, followUpTime, followUpValue, followUpUnit, doctorId, patientVisitId)
 		if err != nil {
 			return err
 		}

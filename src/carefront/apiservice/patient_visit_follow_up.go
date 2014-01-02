@@ -13,7 +13,7 @@ type PatientVisitFollowUpHandler struct {
 }
 
 type PatientVisitFollowUpRequestResponse struct {
-	PatientVisitId      int64  `schema:"patient_visit_id",`
+	PatientVisitId      int64  `schema:"patient_visit_id"`
 	CurrentTimeOnClient int64  `schema:"client_time"`
 	FollowUpValue       int64  `schema:"follow_up_value"`
 	FollowUpUnit        string `schema:"follow_up_unit"`
