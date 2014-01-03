@@ -87,7 +87,8 @@ type Treatment struct {
 	DrugDBIds                map[string]string        `json:"drug_db_ids,omitempty"`
 	DrugInternalName         string                   `json:"drug_internal_name,omitempty"`
 	DrugName                 string                   `json:"drug_name"`
-	RouteAndForm             string                   `json:"route_and_form,omitempty"`
+	DrugRoute                string                   `json:"drug_route,omitempty"`
+	DrugForm                 string                   `json:"drug_form,omitempty"`
 	DosageStrength           string                   `json:"dosage_strength,omitempty"`
 	DispenseValue            int64                    `json:"dispense_value,string,omitempty"`
 	DispenseUnitId           int64                    `json:"dispense_unit_id,string,omitempty"`

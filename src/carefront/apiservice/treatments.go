@@ -4,7 +4,6 @@ import (
 	"carefront/api"
 	"carefront/common"
 	"encoding/json"
-	"fmt"
 	"github.com/gorilla/schema"
 	"net/http"
 	"strconv"
@@ -73,7 +72,8 @@ func (t *TreatmentsHandler) getTreatments(w http.ResponseWriter, r *http.Request
 		treatment.DrugName = drugName
 		// only break down name into route and form if the route and form are non-empty strings
 		if drugForm != "" && drugRoute != "" {
-			treatment.RouteAndForm = fmt.Sprintf("%s - %s", drugRoute, drugForm)
+			treatment.DrugForm = drugForm
+			treatment.DrugRoute = drugRoute
 		}
 	}
 
