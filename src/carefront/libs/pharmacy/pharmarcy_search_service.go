@@ -8,7 +8,6 @@ import (
 
 const (
 	distanceBetweenLongitudesInMiles = 69.0
-	earthRadiusInMiles               = 3959
 )
 
 type PharmacySearchService struct {

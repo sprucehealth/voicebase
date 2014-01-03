@@ -4,6 +4,10 @@ import (
 	"math"
 )
 
+const (
+	earthRadiusInMiles = 3963.191
+)
+
 type point struct {
 	Latitude  float64 `json:"lat"`
 	Longitude float64 `json:"lng"`
