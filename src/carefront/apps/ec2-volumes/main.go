@@ -201,6 +201,7 @@ func create() error {
 			"Environment": config.Environment,
 			"Total":       strconv.Itoa(count),
 		}
+		fmt.Printf("Created volume %s (%s)\n", tags["Name"], vol.VolumeId)
 		if snapshotGroupName != "" {
 			tags["SnapshotGroup"] = snapshotGroupName
 		}
