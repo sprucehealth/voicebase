@@ -133,24 +133,6 @@ type DataAPI interface {
 	ERxAPI
 }
 
-type PharmacyData struct {
-	Id        int64  `json:"id,string"`
-	Name      string `json:"name"`
-	Address   string `json:"address"`
-	City      string `json:"city"`
-	State     string `json:"state"`
-	Postal    string `json:"zip_code"`
-	Latitude  string `json:"lat"`
-	Longitude string `json:"lng"`
-	Phone     string `json:"phone"`
-	Fax       string `json:"fax"`
-	Url       string `json:"url"`
-}
-
-type PharmacySearchAPI interface {
-	GetPharmaciesAroundSearchLocation(searchLocationLat, searchLocationLng, searchRadius float64, numResults int64) (pharmacies []*PharmacyData, err error)
-}
-
 type CloudStorageAPI interface {
 	GetObjectAtLocation(bucket, key, region string) (rawData []byte, err error)
 	GetSignedUrlForObjectAtLocation(bucket, key, region string, duration time.Time) (url string, err error)

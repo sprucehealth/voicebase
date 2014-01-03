@@ -1,8 +1,8 @@
 package apiservice
 
 import (
-	"carefront/api"
 	"carefront/libs/maps"
+	"carefront/libs/pharmacy"
 	"github.com/gorilla/schema"
 	"net/http"
 )
@@ -13,7 +13,7 @@ const (
 )
 
 type PharmacySearchHandler struct {
-	PharmacySearchService api.PharmacySearchAPI
+	PharmacySearchService pharmacy.PharmacySearchAPI
 	MapsService           maps.MapsService
 }
 
@@ -24,7 +24,7 @@ type PharmacySearchRequestData struct {
 }
 
 type PharmacySearchResponse struct {
-	Pharmacies []*api.PharmacyData `json:"pharmacy_results"`
+	Pharmacies []*pharmacy.PharmacyData `json:"pharmacy_results"`
 }
 
 func (p *PharmacySearchHandler) ServeHTTP(w http.ResponseWriter, r *http.Request) {

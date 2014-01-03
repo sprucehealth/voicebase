@@ -1,12 +1,14 @@
-package api
+package pharmacy
 
 import (
 	"database/sql"
 	"math"
+	"strconv"
 )
 
 const (
 	distanceBetweenLongitudesInMiles = 69.0
+	earthRadiusInMiles               = 3959
 )
 
 type PharmacySearchService struct {
@@ -81,6 +83,10 @@ func (p *PharmacySearchService) GetPharmaciesAroundSearchLocation(searchLocation
 			pharmacy.Url = url.String
 		}
 
+		latFloat, _ := strconv.ParseFloat(pharmacy.Latitude, 64)
+		lngFloat, _ := strconv.ParseFloat(pharmacy.Longitude, 64)
+
+		pharmacy.DistanceInMiles = GreatCircleDistanceBetweenTwoPoints(&point{Latitude: latFloat, Longitude: lngFloat}, &point{Latitude: searchLocationLat, Longitude: searchLocationLng})
 		pharmacies = append(pharmacies, pharmacy)
 	}
 
