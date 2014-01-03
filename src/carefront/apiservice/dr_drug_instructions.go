@@ -138,6 +138,13 @@ func (d *DoctorDrugInstructionsHandler) getDrugInstructions(w http.ResponseWrite
 
 func breakDrugInternalNameIntoComponents(drugInternalName string) (drugName, drugForm, drugRoute string) {
 	indexOfParanthesis := strings.Index(drugInternalName, "(")
+	// nothing to do if the name is not in the required format.
+	// fail gracefully by returning the drug internal name for the drug name and
+	if indexOfParanthesis == -1 {
+		drugName = drugInternalName
+		return
+	}
+
 	indexOfClosingParanthesis := strings.Index(drugInternalName, ")")
 	indexOfHyphen := strings.Index(drugInternalName, "-")
 	drugName = strings.TrimSpace(drugInternalName[:indexOfParanthesis])

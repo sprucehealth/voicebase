@@ -4,6 +4,7 @@ import (
 	"carefront/api"
 	"carefront/common"
 	"encoding/json"
+	"fmt"
 	"github.com/gorilla/schema"
 	"net/http"
 	"strconv"
@@ -64,6 +65,16 @@ func (t *TreatmentsHandler) getTreatments(w http.ResponseWriter, r *http.Request
 	if err != nil {
 		WriteDeveloperError(w, http.StatusInternalServerError, "unable to get treatments for patient visit : "+err.Error())
 		return
+	}
+
+	// for each of the drugs, go ahead and fill in the drug name, route and form
+	for _, treatment := range treatmentPlan.Treatments {
+		drugName, drugForm, drugRoute := breakDrugInternalNameIntoComponents(treatment.DrugInternalName)
+		treatment.DrugName = drugName
+		// only break down name into route and form if the route and form are non-empty strings
+		if drugForm != "" && drugRoute != "" {
+			treatment.RouteAndForm = fmt.Sprintf("%s - %s", drugRoute, drugForm)
+		}
 	}
 
 	WriteJSONToHTTPResponseWriter(w, http.StatusOK, &GetTreatmentsResponse{Treatments: treatmentPlan.Treatments})
