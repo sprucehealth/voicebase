@@ -2,7 +2,7 @@
 
 DATE=$(date +%Y%m%d%H%M)
 DEV_HOSTS="54.209.125.122"
-PROD_HOSTS="10.0.43.114 10.0.95.240"
+PROD_HOSTS="10.0.43.95 10.0.95.22"
 APP=restapi
 HOSTS=$DEV_HOSTS
 deploy_env=$1
