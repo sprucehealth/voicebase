@@ -73,7 +73,7 @@ func (d *DataService) GetTreatmentPlanForPatientVisit(patientVisitId int64) (tre
 			treatment.dispense_value, treatment.dispense_unit_id, treatment.refills, treatment.substitutions_allowed, 
 			treatment.days_supply, treatment.pharmacy_notes, treatment.patient_instructions, treatment.creation_date, 
 			treatment.status from treatment inner join treatment_plan on treatment.treatment_plan_id = treatment_plan.id 
-				where patient_visit_id=?`, patientVisitId)
+				where patient_visit_id=? and treatment.status='CREATED'`, patientVisitId)
 
 	if err != nil {
 		if err == sql.ErrNoRows {
@@ -163,40 +163,43 @@ func (d *DataService) GetTreatmentPlanForPatientVisit(patientVisitId int64) (tre
 	return
 }
 
-func (d *DataService) AddTreatmentsForPatientVisit(treatments []*common.Treatment) error {
+func (d *DataService) AddTreatmentsForPatientVisit(treatments []*common.Treatment, PatientVisitId int64) error {
 	tx, err := d.DB.Begin()
 	if err != nil {
 		return err
 	}
 
-	for _, treatment := range treatments {
-		// nothing to do for now if treatment already added to DB.
-		if treatment.Id != 0 {
-			continue
-		}
+	// check if a treatment plan already exists
+	var treatmentPlanId int64
+	err = d.DB.QueryRow(`select id from treatment_plan where patient_visit_id = ? `, PatientVisitId).Scan(&treatmentPlanId)
+	if err != nil && err != sql.ErrNoRows {
+		tx.Rollback()
+		return err
+	}
 
-		// check if a treatment plan already exists
-		var treatmentPlanId int64
-		err = d.DB.QueryRow(`select id from treatment_plan where patient_visit_id = ? `, treatment.PatientVisitId).Scan(&treatmentPlanId)
-		if err != nil && err != sql.ErrNoRows {
+	if treatmentPlanId == 0 {
+		// if not treatment plan exists, create a treatment plan
+		res, err := tx.Exec("insert into treatment_plan (patient_visit_id, status) values (?,'CREATED')", PatientVisitId)
+		if err != nil {
 			tx.Rollback()
 			return err
 		}
 
-		if treatmentPlanId == 0 {
-			// if not treatment plan exists, create a treatment plan
-			res, err := tx.Exec("insert into treatment_plan (patient_visit_id, status) values (?,'CREATED')", treatment.PatientVisitId)
-			if err != nil {
-				tx.Rollback()
-				return err
-			}
-
-			treatmentPlanId, err = res.LastInsertId()
-			if err != nil {
-				tx.Rollback()
-				return err
-			}
+		treatmentPlanId, err = res.LastInsertId()
+		if err != nil {
+			tx.Rollback()
+			return err
 		}
+	} else {
+		// make sure to make inactive all previous treatments within this treatment plan given that new ones are being added
+		_, err := tx.Exec("update treatment set status='INACTIVE' where treatment_plan_id = ?", treatmentPlanId)
+		if err != nil {
+			tx.Rollback()
+			return err
+		}
+	}
+
+	for _, treatment := range treatments {
 
 		substitutionsAllowedBit := 0
 		if treatment.SubstitutionsAllowed == true {

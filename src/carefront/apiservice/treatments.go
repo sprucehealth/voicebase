@@ -22,9 +22,13 @@ type AddTreatmentsResponse struct {
 	TreatmentIds []string `json:"treatment_ids"`
 }
 
-type TreatmentsRequestBody struct {
+type AddTreatmentsRequestBody struct {
 	Treatments     []*common.Treatment `json:"treatments"`
-	PatientVisitId int64               `schema:"patient_visit_id"`
+	PatientVisitId int64               `json:"patient_visit_id,string"`
+}
+
+type GetTreatmentsRequestBody struct {
+	PatientVisitId int64 `schema:"patient_visit_id"`
 }
 
 func NewTreatmentsHandler(dataApi api.DataAPI) *TreatmentsHandler {
@@ -46,7 +50,7 @@ func (t *TreatmentsHandler) ServeHTTP(w http.ResponseWriter, r *http.Request) {
 
 func (t *TreatmentsHandler) getTreatments(w http.ResponseWriter, r *http.Request) {
 	r.ParseForm()
-	requestData := new(TreatmentsRequestBody)
+	requestData := new(GetTreatmentsRequestBody)
 	decoder := schema.NewDecoder()
 	err := decoder.Decode(requestData, r.Form)
 	if err != nil {
@@ -83,7 +87,7 @@ func (t *TreatmentsHandler) getTreatments(w http.ResponseWriter, r *http.Request
 
 func (t *TreatmentsHandler) addTreatment(w http.ResponseWriter, r *http.Request) {
 	jsonDecoder := json.NewDecoder(r.Body)
-	treatmentsRequestBody := &TreatmentsRequestBody{}
+	treatmentsRequestBody := &AddTreatmentsRequestBody{}
 
 	err := jsonDecoder.Decode(treatmentsRequestBody)
 	if err != nil {
@@ -96,6 +100,11 @@ func (t *TreatmentsHandler) addTreatment(w http.ResponseWriter, r *http.Request)
 		return
 	}
 
+	if treatmentsRequestBody.PatientVisitId == 0 {
+		WriteDeveloperError(w, http.StatusBadRequest, "Patient visit id must be specified: "+err.Error())
+		return
+	}
+
 	// just to be on the safe side, verify each of the treatments that the doctor is trying to add
 	for _, treatment := range treatmentsRequestBody.Treatments {
 		_, _, _, httpStatusCode, err := ValidateDoctorAccessToPatientVisitAndGetRelevantData(treatment.PatientVisitId, t.accountId, t.DataApi)
@@ -105,7 +114,7 @@ func (t *TreatmentsHandler) addTreatment(w http.ResponseWriter, r *http.Request)
 		}
 	}
 
-	// TODO  validate all treatments
+	//  validate all treatments
 	for _, treatment := range treatmentsRequestBody.Treatments {
 		if treatment.DrugInternalName == "" {
 			WriteDeveloperError(w, http.StatusBadRequest, "Drug Internal name for treatment cannot be empty")
@@ -149,7 +158,7 @@ func (t *TreatmentsHandler) addTreatment(w http.ResponseWriter, r *http.Request)
 	}
 
 	// Add treatments to patient
-	err = t.DataApi.AddTreatmentsForPatientVisit(treatmentsRequestBody.Treatments)
+	err = t.DataApi.AddTreatmentsForPatientVisit(treatmentsRequestBody.Treatments, treatmentsRequestBody.PatientVisitId)
 	if err != nil {
 		WriteDeveloperError(w, http.StatusInternalServerError, "Unable to add treatment to patient visit: "+err.Error())
 		return

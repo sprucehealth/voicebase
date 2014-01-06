@@ -224,9 +224,38 @@ func TestAddTreatments(t *testing.T) {
 
 	treatments := []*common.Treatment{treatment1, treatment2}
 
-	treatmentRequestBody := apiservice.TreatmentsRequestBody{Treatments: treatments}
+	getTreatmentsResponse := addAndGetTreatmentsForPatientVisit(testData, treatments, doctor.AccountId, patientVisitResponse.PatientVisitId, t)
+
+	for _, treatment := range getTreatmentsResponse.Treatments {
+		switch treatment.DrugInternalName {
+		case treatment1.DrugInternalName:
+			compareTreatments(treatment, treatment1, t)
+		case treatment2.DrugInternalName:
+			compareTreatments(treatment, treatment2, t)
+		}
+	}
+
+	// now lets go ahead and post an update where we have just one treatment for the patient visit which was updated while the other was deleted
+	treatments[0].DispenseValue = 10
+	treatments = []*common.Treatment{treatments[0]}
+	getTreatmentsResponse = addAndGetTreatmentsForPatientVisit(testData, treatments, doctor.AccountId, patientVisitResponse.PatientVisitId, t)
+
+	// there should be just one treatment and its name should be the name that we just set
+	if len(getTreatmentsResponse.Treatments) != 1 {
+		t.Fatal("Expected just 1 treatment to be returned after update")
+	}
+
+	// the dispense value should be set to 10
+	if getTreatmentsResponse.Treatments[0].DispenseValue != 10 {
+		t.Fatal("Expected the updated dispense value to be set to 10")
+	}
+
+}
+
+func addAndGetTreatmentsForPatientVisit(testData TestData, treatments []*common.Treatment, DoctorAccountId, PatientVisitId int64, t *testing.T) *apiservice.GetTreatmentsResponse {
+	treatmentRequestBody := apiservice.AddTreatmentsRequestBody{PatientVisitId: PatientVisitId, Treatments: treatments}
 	treatmentsHandler := apiservice.NewTreatmentsHandler(testData.DataApi)
-	treatmentsHandler.AccountIdFromAuthToken(doctor.AccountId)
+	treatmentsHandler.AccountIdFromAuthToken(DoctorAccountId)
 
 	ts := httptest.NewServer(treatmentsHandler)
 
@@ -263,7 +292,7 @@ func TestAddTreatments(t *testing.T) {
 	}
 
 	// get back the treatments for this patient visit to ensure that it is the same as what was passed in
-	resp, err = http.Get(ts.URL + "?patient_visit_id=" + strconv.FormatInt(patientVisitResponse.PatientVisitId, 10))
+	resp, err = http.Get(ts.URL + "?patient_visit_id=" + strconv.FormatInt(PatientVisitId, 10))
 	if err != nil {
 		t.Fatal("Unable to get treatments for patient visit " + err.Error())
 	}
@@ -285,14 +314,7 @@ func TestAddTreatments(t *testing.T) {
 		t.Fatal("Expected to get back treatments but got none")
 	}
 
-	for _, treatment := range getTreatmentsResponse.Treatments {
-		switch treatment.DrugInternalName {
-		case treatment1.DrugInternalName:
-			compareTreatments(treatment, treatment1, t)
-		case treatment2.DrugInternalName:
-			compareTreatments(treatment, treatment2, t)
-		}
-	}
+	return getTreatmentsResponse
 }
 
 func compareTreatments(treatment *common.Treatment, treatment1 *common.Treatment, t *testing.T) {

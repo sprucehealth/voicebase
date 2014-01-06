@@ -43,4 +43,6 @@ func (m *NewTreatmentHandler) ServeHTTP(w http.ResponseWriter, r *http.Request) 
 	newTreatmentResponse.Treatment.DispenseUnitDescription = medication.DispenseUnitDescription
 	newTreatmentResponse.Treatment.OTC = medication.OTC
 	WriteJSONToHTTPResponseWriter(w, http.StatusOK, newTreatmentResponse)
+
+	// TODO make sure to return the predefined additional instructions for the drug based on the drug name here.
 }

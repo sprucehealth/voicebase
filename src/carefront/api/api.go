@@ -109,7 +109,7 @@ type IntakeLayoutAPI interface {
 
 type ERxAPI interface {
 	GetMedicationDispenseUnits(languageId int64) (dispenseUnitIds []int64, dispenseUnits []string, err error)
-	AddTreatmentsForPatientVisit(treatments []*common.Treatment) error
+	AddTreatmentsForPatientVisit(treatments []*common.Treatment, PatientVisitId int64) error
 	GetTreatmentPlanForPatientVisit(patientVisitId int64) (treatmentPlan *common.TreatmentPlan, err error)
 	GetDrugInstructionsForDoctor(drugName, drugForm, drugRoute string, doctorId int64) (drugInstructions []*common.DoctorInstructionItem, err error)
 	AddOrUpdateDrugInstructionForDoctor(drugName, drugForm, drugRoute string, drugInstructionToAdd *common.DoctorInstructionItem, doctorId int64) error
