@@ -29,6 +29,7 @@ type FreezeCmd interface {
 }
 
 var config = struct {
+	Verbose bool
 	// AWS
 	AWSRole    string
 	AWSKeys    aws.Keys
@@ -77,6 +78,7 @@ func init() {
 	flag.IntVar(&config.Port, "mysql.port", config.Port, "MySQL port")
 	flag.StringVar(&config.Username, "mysql.user", config.Username, "MySQL username")
 	flag.StringVar(&config.Password, "mysql.password", config.Password, "MySQL password")
+	flag.BoolVar(&config.Verbose, "v", config.Verbose, "Verbose output")
 }
 
 func readMySQLConfig(path string) error {
@@ -143,21 +145,19 @@ func readMySQLConfig(path string) error {
 }
 
 func mysqlConfig() {
+	for _, path := range cnfSearchPath {
+		if path[0] == '~' {
+			path = os.Getenv("HOME") + path[1:]
+		}
+		readMySQLConfig(path) // Ignore error. TODO: could make sure it's "file not found"
+	}
+
 	if config.Config != "" {
 		if config.Config[0] == '~' {
 			config.Config = os.Getenv("HOME") + config.Config[1:]
 		}
 		if err := readMySQLConfig(config.Config); err != nil {
 			log.Fatal(err)
-		}
-	} else {
-		for _, path := range cnfSearchPath {
-			if path[0] == '~' {
-				path = os.Getenv("HOME") + path[1:]
-			}
-			if err := readMySQLConfig(path); err == nil {
-				break
-			}
 		}
 	}
 
@@ -167,6 +167,19 @@ func mysqlConfig() {
 	if config.Password == "" {
 		config.Password = os.Getenv("MYSQL_PASSWORD")
 	}
+}
+
+func info(st string, args ...interface{}) {
+	if config.Verbose {
+		fmt.Printf(st, args...)
+	}
+}
+
+func devMap(dev string) string {
+	if len(dev) == 8 && strings.HasPrefix(dev, "/dev/sd") {
+		return "/dev/xvd" + string(dev[len(dev)-1])
+	}
+	return dev
 }
 
 func main() {
@@ -180,6 +193,7 @@ func main() {
 	if config.MountPath == "" {
 		log.Fatalf("Missing required option -fs")
 	}
+	info("Mount path: %s\n", config.MountPath)
 
 	mounts, err := mount.Default.GetMounts()
 	if err != nil {
@@ -226,6 +240,7 @@ func main() {
 			}
 		}
 	}
+	info("Devices: %s\n", strings.Join(config.Devices, " "))
 
 	if config.AWSRole != "" {
 		if config.AWSRole == "*" {
@@ -254,6 +269,7 @@ func main() {
 			log.Fatalf("no region specified and failed to get from instance metadata: %+v", err)
 		}
 		config.Region = az[:len(az)-1]
+		info("Region: %s\n", config.Region)
 	}
 
 	config.ec2 = &ec2.EC2{
@@ -267,6 +283,7 @@ func main() {
 		if err != nil {
 			log.Fatalf("Failed to get instance ID: %+v", err)
 		}
+		info("InstanceId: %s\n", config.InstanceId)
 	}
 
 	// Lookup EBS volumes for devices
@@ -280,10 +297,12 @@ func main() {
 		config.EBSVolumes = make([]string, len(config.Devices))
 		config.ebsVolumeInfo = make([]*ec2.Volume, len(config.Devices))
 		count := len(config.Devices)
+		info("Attached volumes:\n")
 		for _, v := range vol {
 			if v.Attachment != nil {
+				info("\t%s %s %s\n", v.VolumeId, v.Attachment.Device, v.Attachment.Status)
 				for j, d := range config.Devices {
-					if d == v.Attachment.Device {
+					if d == devMap(v.Attachment.Device) {
 						config.EBSVolumes[j] = v.VolumeId
 						config.ebsVolumeInfo[j] = v
 						count--
