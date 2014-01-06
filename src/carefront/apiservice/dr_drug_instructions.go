@@ -6,7 +6,6 @@ import (
 	"encoding/json"
 	"github.com/gorilla/schema"
 	"net/http"
-	"strings"
 )
 
 type DoctorDrugInstructionsHandler struct {
@@ -134,21 +133,4 @@ func (d *DoctorDrugInstructionsHandler) getDrugInstructions(w http.ResponseWrite
 		return
 	}
 	WriteJSONToHTTPResponseWriter(w, http.StatusOK, &DoctorDrugInstructionsRequestResponse{AllSupplementalInstructions: drugInstructions, DrugInternalName: requestData.DrugInternalName})
-}
-
-func breakDrugInternalNameIntoComponents(drugInternalName string) (drugName, drugForm, drugRoute string) {
-	indexOfParanthesis := strings.Index(drugInternalName, "(")
-	// nothing to do if the name is not in the required format.
-	// fail gracefully by returning the drug internal name for the drug name and
-	if indexOfParanthesis == -1 {
-		drugName = drugInternalName
-		return
-	}
-
-	indexOfClosingParanthesis := strings.Index(drugInternalName, ")")
-	indexOfHyphen := strings.Index(drugInternalName, "-")
-	drugName = strings.TrimSpace(drugInternalName[:indexOfParanthesis])
-	drugRoute = strings.TrimSpace(drugInternalName[indexOfParanthesis+1 : indexOfHyphen])
-	drugForm = strings.TrimSpace(drugInternalName[indexOfHyphen+1 : indexOfClosingParanthesis])
-	return
 }

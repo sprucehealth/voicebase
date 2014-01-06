@@ -82,7 +82,6 @@ func (t *TreatmentsHandler) getTreatments(w http.ResponseWriter, r *http.Request
 	}
 
 	WriteJSONToHTTPResponseWriter(w, http.StatusOK, &GetTreatmentsResponse{Treatments: treatmentPlan.Treatments})
-
 }
 
 func (t *TreatmentsHandler) addTreatment(w http.ResponseWriter, r *http.Request) {
