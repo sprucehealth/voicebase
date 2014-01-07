@@ -29,14 +29,14 @@ script:
 - go get code.google.com/p/go.tools/cmd/vet
 - go get code.google.com/p/go.tools/cmd/cover
 - go vet ./src/carefront/...
-- go test -i -race -cover  ./src/carefront/...
-- go test -v -race -cover -test.timeout=50m ./src/carefront/... 
+- go test -i -race ./src/carefront/...
+- go test -v -race -test.timeout=50m ./src/carefront/...
 notifications:
-  webhooks:
-    urls:
-    - https://carefront.slack.com/services/hooks/travis?token=Ca0yGyN1ZKPBFL4T6NNjegiX
-    on_success: change
-    on_failure: always
-    on_start: false
+  # webhooks:
+  #   urls:
+  #   - https://carefront.slack.com/services/hooks/travis?token=Ca0yGyN1ZKPBFL4T6NNjegiX
+  #   on_success: change
+  #   on_failure: always
+  #   on_start: false
   email:
   - backend@carefront.net
