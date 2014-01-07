@@ -83,9 +83,6 @@ func CheckIfRunningLocally(t *testing.T) error {
 }
 
 func SetupIntegrationTest(t *testing.T) TestData {
-	// running every test that requires database setup parallelly
-	// to optimize for speed of tests
-	t.Parallel()
 	setupScript := os.Getenv(carefrontProjectDirEnv) + "/src/carefront/test/integration/setup_integration_test.sh"
 	cmd := exec.Command(setupScript)
 	var out bytes.Buffer
