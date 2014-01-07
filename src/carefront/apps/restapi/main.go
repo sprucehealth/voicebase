@@ -232,7 +232,7 @@ func main() {
 
 	doctorRegimenHandler := apiservice.NewDoctorRegimenHandler(dataApi)
 	doctorAdviceHandler := apiservice.NewDoctorAdviceHandler(dataApi)
-
+	doctorQueueHandler := &apiservice.DoctorQueueHandler{DataApi: dataApi}
 	mux := &apiservice.AuthServeMux{ServeMux: *http.NewServeMux(), AuthApi: authApi}
 
 	mux.Handle("/v1/patient", signupPatientHandler)
@@ -256,6 +256,7 @@ func main() {
 	mux.Handle("/v1/doctor/signup", signupDoctorHandler)
 	mux.Handle("/v1/doctor/authenticate", authenticateDoctorHandler)
 	mux.Handle("/v1/doctor/diagnosis", diagnosePatientHandler)
+	mux.Handle("/v1/doctor/queue", doctorQueueHandler)
 
 	mux.Handle("/v1/doctor/treatment/medication_suggestions", doctorTreatmentSuggestionHandler)
 	mux.Handle("/v1/doctor/treatment/medication_strengths", medicationStrengthSearchHandler)

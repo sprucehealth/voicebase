@@ -63,6 +63,10 @@ type DoctorAPI interface {
 	CreateAdviceForPatientVisit(advicePoints []*common.DoctorInstructionItem, patientVisitId int64) error
 	AddOrUpdateAdvicePointForDoctor(advicePoint *common.DoctorInstructionItem, doctorId int64) error
 	MarkAdvicePointToBeDeleted(advicePoint *common.DoctorInstructionItem, doctorId int64) error
+
+	AssignPatientVisitToDoctor(DoctorId, PatientVisitId int64) error
+	BeginReviewingPatientVisitInQueue(DoctorId, PatientVisitId int64) error
+	GetDoctorQueue(DoctorId int64) (doctorQueue []*DoctorQueueItem, err error)
 }
 
 type PatientVisitAPI interface {
@@ -70,6 +74,7 @@ type PatientVisitAPI interface {
 	GetPatientIdFromPatientVisitId(patientVisitId int64) (int64, error)
 	GetLatestSubmittedPatientVisit() (*common.PatientVisit, error)
 	GetPatientVisitFromId(patientVisitId int64) (patientVisit *common.PatientVisit, err error)
+	UpdatePatientVisitStatus(patientVisitId int64, status string) error
 	SubmitPatientVisitWithId(patientVisitId int64) error
 	UpdateFollowUpTimeForPatientVisit(patientVisitId, doctorId, currentTimeOnClient, followUpValue int64, followUpUnit string) error
 	GetFollowUpTimeForPatientVisit(patientVisitId int64) (followupTime time.Time, followUpValue int64, followUpUnit string, err error)
