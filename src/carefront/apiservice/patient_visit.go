@@ -106,6 +106,26 @@ func (s *PatientVisitHandler) submitPatientVisit(w http.ResponseWriter, r *http.
 		WriteDeveloperError(w, http.StatusOK, "Unable to get the patient visit object based on id: "+err.Error())
 	}
 
+	careTeam, err := s.DataApi.GetCareTeamForPatient(patientId)
+	if err != nil {
+		WriteDeveloperError(w, http.StatusInternalServerError, "Unable to get care team for patient: "+err.Error())
+		return
+	}
+
+	var doctorId int64
+	for _, assignment := range careTeam.Assignments {
+		if assignment.ProviderRole == api.DOCTOR_ROLE {
+			doctorId = assignment.ProviderId
+			break
+		}
+	}
+
+	err = s.DataApi.AssignPatientVisitToDoctor(doctorId, requestData.PatientVisitId)
+	if err != nil {
+		WriteDeveloperError(w, http.StatusInternalServerError, "Unable to assign patient visit to doctor")
+		return
+	}
+
 	WriteJSONToHTTPResponseWriter(w, http.StatusOK, PatientVisitSubmittedResponse{PatientVisitId: patientVisit.PatientVisitId, Status: patientVisit.Status})
 }
 

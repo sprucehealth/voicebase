@@ -1177,6 +1177,20 @@ func (d *DataService) SubmitPatientVisitWithId(patientVisitId int64) error {
 	return err
 }
 
+func (d *DataService) AssignPatientVisitToDoctor(DoctorId, PatientVisitId int64) error {
+	_, err := d.DB.Exec("insert into doctor_queue (doctor_id, status, event_type, item_id) values (?, 'PENDING', 'PATIENT_VISIT', ?)", DoctorId, PatientVisitId)
+	return err
+}
+
+func (d *DataService) BeginReviewingPatientVisitInQueue(DoctorId, PatientVisitId int64) error {
+	_, err := d.DB.Exec(fmt.Sprintf(`update doctor_queue set status='%s' where status='PENDING' and doctor_id = ? and event_type = 'PATIENT_VISIT' and item_id = ?`, QUEUE_ITEM_STATUS_ONGOING), DoctorId, PatientVisitId)
+	return err
+}
+
+// func (d *DataService) GetDoctorQueue(DoctorId int64) (doctorQueue []*DoctorQueueItem, err error) {
+// 	rows, err := d.DB.Query(`select id, doctor_id, event_type, enqueue_date, completed_date, , ...)
+// }
+
 func (d *DataService) getPatientAnswersForQuestionsBasedOnQuery(query string, args ...interface{}) (patientAnswers map[int64][]*common.AnswerIntake, err error) {
 	rows, err := d.DB.Query(query, args...)
 	if err != nil {
@@ -1476,7 +1490,7 @@ func (d *DataService) GetLatestSubmittedPatientVisit() (*common.PatientVisit, er
 	var status string
 
 	row := d.DB.QueryRow(`select id,patient_id, health_condition_id, layout_version_id, 
-		creation_date, submitted_date, closed_date, status from patient_visit where status='SUBMITTED' order by submitted_date desc limit 1`)
+		creation_date, submitted_date, closed_date, status from patient_visit where status in ('SUBMITTED', 'REVIEWING') order by submitted_date desc limit 1`)
 	err := row.Scan(&patientVisitId, &patientId, &healthConditionId, &layoutVersionId, &creationDateBytes, &submittedDateBytes, &closedDateBytes, &status)
 	if err != nil {
 		return nil, err
@@ -1551,6 +1565,11 @@ func (d *DataService) CreateNewPatientVisit(patientId, healthConditionId, layout
 		return 0, err
 	}
 	return lastId, err
+}
+
+func (d *DataService) UpdatePatientVisitStatus(patientVisitId int64, status string) error {
+	_, err := d.DB.Exec(fmt.Sprintf(`update patient_visit set status='%s' where id = ?`, status), patientVisitId)
+	return err
 }
 
 func (d *DataService) GetQuestionType(questionId int64) (string, error) {

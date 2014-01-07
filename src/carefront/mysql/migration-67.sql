@@ -1,0 +1,1 @@
+alter table doctor_queue add column event_message varchar(200) not null;

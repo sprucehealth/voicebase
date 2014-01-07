@@ -13,6 +13,7 @@ type DoctorPatientVisitReviewHandler struct {
 	DataApi                    api.DataAPI
 	LayoutStorageService       api.CloudStorageAPI
 	PatientPhotoStorageService api.CloudStorageAPI
+	accountId                  int64
 }
 
 type DoctorPatientVisitReviewRequestBody struct {
@@ -23,10 +24,12 @@ type DoctorPatientVisitReviewResponse struct {
 	DoctorLayout *info_intake.PatientVisitOverview `json:"patient_visit_overview,omitempty"`
 }
 
-// TODO: This API is temporarily nonauthenticated, as we try and figure out
-// how doctor authentication works
-func (p *DoctorPatientVisitReviewHandler) NonAuthenticated() bool {
-	return true
+func (p *DoctorPatientVisitReviewHandler) AccountIdFromAuthToken(accountId int64) {
+	p.accountId = accountId
+}
+
+func NewDoctorPatientVisitReviewHandler(dataApi api.DataAPI, layoutStorageService api.CloudStorageAPI, patientPhotoStorageService api.CloudStorageAPI) *DoctorPatientVisitReviewHandler {
+	return &DoctorPatientVisitReviewHandler{DataApi: dataApi, LayoutStorageService: layoutStorageService, PatientPhotoStorageService: patientPhotoStorageService, accountId: 0}
 }
 
 func (p *DoctorPatientVisitReviewHandler) ServeHTTP(w http.ResponseWriter, r *http.Request) {
@@ -45,10 +48,31 @@ func (p *DoctorPatientVisitReviewHandler) ServeHTTP(w http.ResponseWriter, r *ht
 	} else {
 		patientVisit, err = p.DataApi.GetPatientVisitFromId(requestData.PatientVisitId)
 	}
-
 	if err != nil {
 		WriteDeveloperError(w, http.StatusBadRequest, "Unable to get patient visit information from database based on provided patient visit id : "+err.Error())
 		return
+	}
+
+	// ensure that the doctor is authorized to work on this case
+	doctorId, _, _, statusCode, err := ValidateDoctorAccessToPatientVisitAndGetRelevantData(patientVisit.PatientVisitId, p.accountId, p.DataApi)
+	if err != nil {
+		WriteDeveloperError(w, statusCode, err.Error())
+		return
+	}
+
+	// udpate the status of the case and the item in the doctor's queue
+	if patientVisit.Status != api.CASE_STATUS_REVIEWING {
+		err = p.DataApi.UpdatePatientVisitStatus(patientVisit.PatientVisitId, api.CASE_STATUS_REVIEWING)
+		if err != nil {
+			WriteDeveloperError(w, http.StatusInternalServerError, "Unable to update the status of the visit to reviewing: "+err.Error())
+			return
+		}
+
+		err = p.DataApi.BeginReviewingPatientVisitInQueue(doctorId, patientVisit.PatientVisitId)
+		if err != nil {
+			WriteDeveloperError(w, http.StatusInternalServerError, "Unable to update the item in the queue for the doctor that speaks to this patient visit: "+err.Error())
+			return
+		}
 	}
 
 	patient, err := p.DataApi.GetPatientFromId(patientVisit.PatientId)
