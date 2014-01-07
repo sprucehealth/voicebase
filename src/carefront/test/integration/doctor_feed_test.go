@@ -35,6 +35,22 @@ func TestDoctorFeed(t *testing.T) {
 		t.Fatal("Unable to get doctor from doctor id " + err.Error())
 	}
 
+	doctorDisplayFeedTabs := getDoctorQueue(testData, doctor.AccountId, t)
+	// there should be no sections, but just two empty tabs
+	if doctorDisplayFeedTabs.Tabs == nil {
+		t.Fatal("Expected there to be 2 sections instead got none")
+	}
+
+	if len(doctorDisplayFeedTabs.Tabs) != 2 {
+		t.Fatalf("Expected there to be 2 sections instead got %d", len(doctorDisplayFeedTabs.Tabs))
+	}
+
+	for _, tab := range doctorDisplayFeedTabs.Tabs {
+		if tab.Sections != nil && len(tab.Sections) != 0 {
+			t.Fatalf("Expected there to be no sectioins containing items in the doctor's feed but instead got %d sections with items", len(tab.Sections))
+		}
+	}
+
 	patientSignedupResponse := SignupRandomTestPatient(t, testData.DataApi, testData.AuthApi)
 	// get patient to start a visit
 	patientVisitResponse := GetPatientVisitForPatient(patientSignedupResponse.PatientId, testData, t)
@@ -53,7 +69,7 @@ func TestDoctorFeed(t *testing.T) {
 	insertIntoDoctorQueue(testData, doctorQueueItem, t)
 
 	// lets go ahead and make a call to get the doctor feed
-	doctorDisplayFeedTabs := getDoctorQueue(testData, doctor.AccountId, t)
+	doctorDisplayFeedTabs = getDoctorQueue(testData, doctor.AccountId, t)
 
 	// ensure that there are two tabs as required
 	if len(doctorDisplayFeedTabs.Tabs) != 2 {
@@ -114,7 +130,7 @@ func TestDoctorFeed(t *testing.T) {
 				}
 
 				if len(section.Items) != 1 {
-					t.Fatal("Expected there to be 1 completed item in the section, instead there were %d", len(section.Items))
+					t.Fatalf("Expected there to be 1 completed item in the section, instead there were %d", len(section.Items))
 				}
 			}
 		}
