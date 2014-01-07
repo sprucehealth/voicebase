@@ -58,6 +58,7 @@ type Config struct {
 	DoseSpotClinicKey        string    `long:"dose_spot_clinic_key" description:"DoseSpot Clinic Key for eRX integration"`
 	DoseSpotClinicId         string    `long:"dose_spot_clinic_id" description:"DoseSpot Clinic Id for eRX integration"`
 	DoseSpotUserId           string    `long:"dose_spot_user_id" description:"DoseSpot UserId for eRx integration"`
+	NoServices               bool      `long:"noservices" description:"Disable connecting to remote services"`
 }
 
 var DefaultConfig = Config{
@@ -160,8 +161,8 @@ func main() {
 	}
 
 	var authApi thriftapi.Auth
-	if conf.BaseConfig.ZookeeperHosts == "" {
-		if conf.Debug {
+	if conf.NoServices || conf.BaseConfig.ZookeeperHosts == "" {
+		if conf.NoServices || conf.Debug {
 			authApi = &auth.AuthService{DB: db}
 		} else {
 			log.Fatalf("No Zookeeper hosts defined and not running under debug")
