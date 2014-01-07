@@ -4,12 +4,12 @@ import (
 	"carefront/api"
 )
 
-type queueSection struct {
-	Title string       `json:"title"`
-	Items []*queueItem `json:"items"`
+type DisplayFeedSection struct {
+	Title string             `json:"title"`
+	Items []*DisplayFeedItem `json:"items"`
 }
 
-type queueItem struct {
+type DisplayFeedItem struct {
 	Title        string      `json:"title"`
 	Subtitle     string      `json:"subtitle"`
 	Button       *api.Button `json:"button,omitempty"`
@@ -18,17 +18,17 @@ type queueItem struct {
 	DisplayTypes []string    `json:"display_types"`
 }
 
-type displayFeed struct {
-	Sections []*queueSection `json:"sections,omitempty"`
-	Title    string          `json:"title,omitempty"`
+type DisplayFeed struct {
+	Sections []*DisplayFeedSection `json:"sections,omitempty"`
+	Title    string                `json:"title,omitempty"`
 }
 
-type displayFeedTabs struct {
-	Tabs []*displayFeed `json:"tabs"`
+type DisplayFeedTabs struct {
+	Tabs []*DisplayFeed `json:"tabs"`
 }
 
-func converQueueItemToDisplayFeedItem(DataApi api.DataAPI, itemToDisplay api.FeedDisplayInterface) (item *queueItem, err error) {
-	item = &queueItem{}
+func converQueueItemToDisplayFeedItem(DataApi api.DataAPI, itemToDisplay api.FeedDisplayInterface) (item *DisplayFeedItem, err error) {
+	item = &DisplayFeedItem{}
 	item.Button = itemToDisplay.GetButton()
 	title, subtitle, err := itemToDisplay.GetTitleAndSubtitle(DataApi)
 	if err != nil {

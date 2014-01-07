@@ -37,13 +37,13 @@ func (d *DoctorQueueHandler) ServeHTTP(w http.ResponseWriter, r *http.Request) {
 	WriteJSONToHTTPResponseWriter(w, http.StatusOK, &doctorDisplayFeed)
 }
 
-func (d *DoctorQueueHandler) convertDoctorQueueIntoDisplayQueue(doctorQueue []*api.DoctorQueueItem) (doctorDisplayFeedTabs *displayFeedTabs, err error) {
-	doctorDisplayFeedTabs = &displayFeedTabs{}
-	pendingOrOngoingDisplayFeed := &displayFeed{}
+func (d *DoctorQueueHandler) convertDoctorQueueIntoDisplayQueue(doctorQueue []*api.DoctorQueueItem) (doctorDisplayFeedTabs *DisplayFeedTabs, err error) {
+	doctorDisplayFeedTabs = &DisplayFeedTabs{}
+	pendingOrOngoingDisplayFeed := &DisplayFeed{}
 	pendingOrOngoingDisplayFeed.Title = "Pending"
-	completedDisplayFeed := &displayFeed{}
+	completedDisplayFeed := &DisplayFeed{}
 	completedDisplayFeed.Title = "Completed"
-	doctorDisplayFeedTabs.Tabs = []*displayFeed{pendingOrOngoingDisplayFeed, completedDisplayFeed}
+	doctorDisplayFeedTabs.Tabs = []*DisplayFeed{pendingOrOngoingDisplayFeed, completedDisplayFeed}
 
 	pendingOrOngoingItems := make([]*api.DoctorQueueItem, 0)
 	completedItems := make([]*api.DoctorQueueItem, 0)
@@ -58,18 +58,18 @@ func (d *DoctorQueueHandler) convertDoctorQueueIntoDisplayQueue(doctorQueue []*a
 
 	if len(pendingOrOngoingItems) > 0 {
 		// put the first item in the queue into the first section of the display feed
-		upcomingVisitSection := &queueSection{}
+		upcomingVisitSection := &DisplayFeedSection{}
 		upcomingVisitSection.Title = "Next Visit"
 		item, shadowedErr := converQueueItemToDisplayFeedItem(d.DataApi, pendingOrOngoingItems[0])
 		if shadowedErr != nil {
 			err = shadowedErr
 			return
 		}
-		upcomingVisitSection.Items = []*queueItem{item}
+		upcomingVisitSection.Items = []*DisplayFeedItem{item}
 
-		nextVisitsSection := &queueSection{}
+		nextVisitsSection := &DisplayFeedSection{}
 		nextVisitsSection.Title = fmt.Sprintf("%d Upcoming Visits", len(pendingOrOngoingItems)-1)
-		nextVisitsSection.Items = make([]*queueItem, 0)
+		nextVisitsSection.Items = make([]*DisplayFeedItem, 0)
 		for _, doctorQueueItem := range pendingOrOngoingItems[1:] {
 			item, err = converQueueItemToDisplayFeedItem(d.DataApi, doctorQueueItem)
 			if err != nil {
@@ -78,17 +78,17 @@ func (d *DoctorQueueHandler) convertDoctorQueueIntoDisplayQueue(doctorQueue []*a
 			nextVisitsSection.Items = append(nextVisitsSection.Items, item)
 		}
 
-		pendingOrOngoingDisplayFeed.Sections = []*queueSection{upcomingVisitSection, nextVisitsSection}
+		pendingOrOngoingDisplayFeed.Sections = []*DisplayFeedSection{upcomingVisitSection, nextVisitsSection}
 	}
 
 	if len(completedItems) > 0 {
 		// cluster feed items based on day
-		itemsByDay := make(map[string][]*queueItem)
+		itemsByDay := make(map[string][]*DisplayFeedItem)
 		for _, completedItem := range completedItems {
 			day := fmt.Sprintf("%s %d %d", completedItem.EnqueueDate.Month().String(), completedItem.EnqueueDate.Day(), completedItem.EnqueueDate.Year())
 			itemsList := itemsByDay[day]
 			if itemsList == nil {
-				itemsList = make([]*queueItem, 0)
+				itemsList = make([]*DisplayFeedItem, 0)
 			}
 			displayItem, shadowedErr := converQueueItemToDisplayFeedItem(d.DataApi, completedItem)
 			if shadowedErr != nil {
@@ -99,9 +99,9 @@ func (d *DoctorQueueHandler) convertDoctorQueueIntoDisplayQueue(doctorQueue []*a
 			itemsByDay[day] = itemsList
 		}
 
-		displaySections := make([]*queueSection, 0)
+		displaySections := make([]*DisplayFeedSection, 0)
 		for sectionTitle, itemsList := range itemsByDay {
-			displaySection := &queueSection{}
+			displaySection := &DisplayFeedSection{}
 			displaySection.Title = sectionTitle
 			displaySection.Items = itemsList
 			displaySections = append(displaySections, displaySection)
