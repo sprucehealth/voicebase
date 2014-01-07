@@ -83,13 +83,25 @@ func (s *PatientVisitHandler) submitPatientVisit(w http.ResponseWriter, r *http.
 		return
 	}
 
+	patientVisit, err := s.DataApi.GetPatientVisitFromId(requestData.PatientVisitId)
+	if err != nil {
+		WriteDeveloperError(w, http.StatusBadRequest, "Unable to get patient visit from id: "+err.Error())
+		return
+	}
+
+	// do not support the submitting of a case that has already been submitted or is in another state
+	if patientVisit.Status != api.CASE_STATUS_OPEN {
+		WriteDeveloperError(w, http.StatusBadRequest, "Cannot submit a case that is not in the open state. Current status of case = "+patientVisit.Status)
+		return
+	}
+
 	err = s.DataApi.SubmitPatientVisitWithId(requestData.PatientVisitId)
 	if err != nil {
 		WriteDeveloperError(w, http.StatusInternalServerError, "Unable to submit patient visit to doctor for review and diagnosis: "+err.Error())
 		return
 	}
 
-	patientVisit, err := s.DataApi.GetPatientVisitFromId(requestData.PatientVisitId)
+	patientVisit, err = s.DataApi.GetPatientVisitFromId(requestData.PatientVisitId)
 	if err != nil {
 		WriteDeveloperError(w, http.StatusOK, "Unable to get the patient visit object based on id: "+err.Error())
 	}

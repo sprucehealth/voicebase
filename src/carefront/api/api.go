@@ -16,6 +16,10 @@ const (
 	FOLLOW_UP_WEEK           = "week"
 	FOLLOW_UP_DAY            = "day"
 	FOLLOW_UP_MONTH          = "month"
+	CASE_STATUS_OPEN         = "OPEN"
+	CASE_STATUS_SUBMITTED    = "SUBMITTED"
+	CASE_STATUS_REVIEWING    = "REVIEWING"
+	CASE_STATUS_CLOSED       = "CLOSED"
 )
 
 var (
