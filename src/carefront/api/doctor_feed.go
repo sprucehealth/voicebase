@@ -1,14 +1,17 @@
 package api
 
 import (
+	"carefront/settings"
 	"fmt"
 	"time"
 )
 
 const (
-	EVENT_TYPE_PATIENT_VISIT = "PATIENT_VISIT"
-	patientVisitImageTag     = "patient_visit_queue_icon"
-	buttonBaseActionUrl      = "spruce:///action/"
+	EVENT_TYPE_PATIENT_VISIT      = "PATIENT_VISIT"
+	patientVisitImageTag          = "patient_visit_queue_icon"
+	buttonBaseActionUrl           = "spruce:///action/"
+	imageBaseUrl                  = "spruce:///image/"
+	beginPatientVisitReviewAction = "begin_patient_visit"
 )
 
 type DoctorQueueItem struct {
@@ -40,15 +43,32 @@ func (d *DoctorQueueItem) GetTitleAndSubtitle(dataApi DataAPI) (title, subtitle 
 		switch d.Status {
 		case QUEUE_ITEM_STATUS_COMPLETED:
 			title = fmt.Sprintf("Treatment Plan completed for %s %s", patient.FirstName, patient.LastName)
+			formattedTime := d.EnqueueDate.Format("3:04pm")
+			subtitle = fmt.Sprintf("%s %d at %s", d.EnqueueDate.Month().String(), d.EnqueueDate.Day(), formattedTime)
 		case QUEUE_ITEM_STATUS_PENDING:
 			title = fmt.Sprintf("New visit with %s %s", patient.FirstName, patient.LastName)
+			subtitle = getRemainingTimeSubtitleForCaseToBeReviewed(d.EnqueueDate)
+		case QUEUE_ITEM_STATUS_ONGOING:
+			title = fmt.Sprintf("Continue reviewing visit with %s %s", patient.FirstName, patient.LastName)
+			subtitle = getRemainingTimeSubtitleForCaseToBeReviewed(d.EnqueueDate)
 		}
 	}
 	return
 }
 
-func (d *DoctorQueueItem) GetImageTag() string {
-	return patientVisitImageTag
+func getRemainingTimeSubtitleForCaseToBeReviewed(enqueueDate time.Time) string {
+	timeLeft := enqueueDate.Add(settings.SLA_TO_SERVICE_CUSTOMER).Sub(time.Now())
+	minutesLeft := int64(timeLeft.Minutes()) - (60 * int64(timeLeft.Hours()))
+	subtitle := fmt.Sprintf("%dh %dm left", int64(timeLeft.Hours()), int64(minutesLeft))
+	return subtitle
+}
+
+func (d *DoctorQueueItem) GetImageUrl() string {
+	switch d.EventType {
+	case EVENT_TYPE_PATIENT_VISIT:
+		return fmt.Sprintf("%s%s", imageBaseUrl, patientVisitImageTag)
+	}
+	return ""
 }
 
 func (d *DoctorQueueItem) GetDisplayTypes() []string {
@@ -57,7 +77,7 @@ func (d *DoctorQueueItem) GetDisplayTypes() []string {
 		switch d.Status {
 		case QUEUE_ITEM_STATUS_COMPLETED:
 			return []string{DISPLAY_TYPE_TITLE_SUBTITLE_NONACTIONABLE}
-		case QUEUE_ITEM_STATUS_PENDING:
+		case QUEUE_ITEM_STATUS_PENDING, QUEUE_ITEM_STATUS_ONGOING:
 			return []string{DISPLAY_TYPE_TITLE_SUBTITLE_BUTTON}
 		}
 	}
@@ -73,7 +93,12 @@ func (d *DoctorQueueItem) GetButton() *Button {
 		case QUEUE_ITEM_STATUS_PENDING:
 			button := &Button{}
 			button.ButtonText = "Begin"
-			button.ButtonActionUrl = fmt.Sprintf("%s%s?patient_visit_id=%d", buttonBaseActionUrl, "begin_patient_visit", d.ItemId)
+			button.ButtonActionUrl = fmt.Sprintf("%s%s?patient_visit_id=%d", buttonBaseActionUrl, beginPatientVisitReviewAction, d.ItemId)
+			return button
+		case QUEUE_ITEM_STATUS_ONGOING:
+			button := &Button{}
+			button.ButtonText = "Continue"
+			button.ButtonActionUrl = fmt.Sprintf("%s%s?patient_visit_id=%d", buttonBaseActionUrl, beginPatientVisitReviewAction, d.ItemId)
 			return button
 		}
 	}

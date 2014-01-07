@@ -14,9 +14,9 @@ type Button struct {
 	ButtonActionUrl string `json:"action_url"`
 }
 
-type DoctorFeedDisplayInterface interface {
+type FeedDisplayInterface interface {
 	GetTitleAndSubtitle(dataApi DataAPI) (title, subtitle string, err error)
-	GetImageTag() string
+	GetImageUrl() string
 	GetDisplayTypes() []string
 	GetButton() *Button
 }

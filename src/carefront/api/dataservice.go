@@ -1187,9 +1187,37 @@ func (d *DataService) BeginReviewingPatientVisitInQueue(DoctorId, PatientVisitId
 	return err
 }
 
-// func (d *DataService) GetDoctorQueue(DoctorId int64) (doctorQueue []*DoctorQueueItem, err error) {
-// 	rows, err := d.DB.Query(`select id, doctor_id, event_type, enqueue_date, completed_date, , ...)
-// }
+func (d *DataService) GetDoctorQueue(DoctorId int64) (doctorQueue []*DoctorQueueItem, err error) {
+	rows, err := d.DB.Query(`select id, event_type, item_id, enqueue_date, completed_date, status from doctor_queue where doctor_id = ? order by enqueue_date desc limit 20`, DoctorId)
+	if err != nil {
+		return
+	}
+	defer rows.Close()
+
+	doctorQueue = make([]*DoctorQueueItem, 0)
+	for rows.Next() {
+		var id, itemId int64
+		var eventType, status string
+		var completedDate mysql.NullTime
+		var enqueueDate time.Time
+		err = rows.Scan(&id, &eventType, &itemId, &enqueueDate, &completedDate, &status)
+		if err != nil {
+			return
+		}
+
+		queueItem := &DoctorQueueItem{}
+		queueItem.Id = id
+		queueItem.ItemId = itemId
+		queueItem.EventType = eventType
+		queueItem.Status = status
+		queueItem.EnqueueDate = enqueueDate
+		if completedDate.Valid {
+			queueItem.CompletedDate = completedDate.Time
+		}
+		doctorQueue = append(doctorQueue, queueItem)
+	}
+	return
+}
 
 func (d *DataService) getPatientAnswersForQuestionsBasedOnQuery(query string, args ...interface{}) (patientAnswers map[int64][]*common.AnswerIntake, err error) {
 	rows, err := d.DB.Query(query, args...)
