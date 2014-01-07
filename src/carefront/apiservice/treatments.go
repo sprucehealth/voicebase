@@ -94,8 +94,8 @@ func (t *TreatmentsHandler) addTreatment(w http.ResponseWriter, r *http.Request)
 		return
 	}
 
-	if len(treatmentsRequestBody.Treatments) == 0 {
-		WriteDeveloperError(w, http.StatusBadRequest, "Nothing to do becuase no treatments were passed to add: "+err.Error())
+	if treatmentsRequestBody.Treatments == nil {
+		WriteDeveloperError(w, http.StatusBadRequest, "Nothing to do becuase no treatments were passed to add ")
 		return
 	}
 
@@ -105,12 +105,10 @@ func (t *TreatmentsHandler) addTreatment(w http.ResponseWriter, r *http.Request)
 	}
 
 	// just to be on the safe side, verify each of the treatments that the doctor is trying to add
-	for _, treatment := range treatmentsRequestBody.Treatments {
-		_, _, _, httpStatusCode, err := ValidateDoctorAccessToPatientVisitAndGetRelevantData(treatment.PatientVisitId, t.accountId, t.DataApi)
-		if err != nil {
-			WriteDeveloperError(w, httpStatusCode, "Unable to validate doctor to add treatment to patient visit: "+err.Error())
-			return
-		}
+	_, _, _, httpStatusCode, err := ValidateDoctorAccessToPatientVisitAndGetRelevantData(treatmentsRequestBody.PatientVisitId, t.accountId, t.DataApi)
+	if err != nil {
+		WriteDeveloperError(w, httpStatusCode, "Unable to validate doctor to add treatment to patient visit: "+err.Error())
+		return
 	}
 
 	//  validate all treatments
