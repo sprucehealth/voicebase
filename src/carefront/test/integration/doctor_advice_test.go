@@ -23,14 +23,7 @@ func TestAdvicePointsForPatientVisit(t *testing.T) {
 	patientSignedupResponse := SignupRandomTestPatient(t, testData.DataApi, testData.AuthApi)
 
 	// get the current primary doctor
-	var doctorId int64
-	err := testData.DB.QueryRow(`select provider_id from care_provider_state_elligibility 
-							inner join provider_role on provider_role_id = provider_role.id 
-							inner join care_providing_state on care_providing_state_id = care_providing_state.id
-							where provider_tag='DOCTOR' and care_providing_state.state = 'CA'`).Scan(&doctorId)
-	if err != nil {
-		t.Fatal("Unable to query for doctor that is elligible to diagnose in CA: " + err.Error())
-	}
+	doctorId := getDoctorIdOfCurrentPrimaryDoctor(testData, t)
 
 	doctor, err := testData.DataApi.GetDoctorFromId(doctorId)
 	if err != nil {

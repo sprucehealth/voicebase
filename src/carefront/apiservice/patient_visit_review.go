@@ -63,15 +63,15 @@ func (p *PatientVisitReviewHandler) ServeHTTP(w http.ResponseWriter, r *http.Req
 		return
 	}
 
-	doctor, err := p.DataApi.GetDoctorAssignedToPatientVisit(requestData.PatientVisitId)
-	if err != nil {
-		WriteDeveloperError(w, http.StatusInternalServerError, "Unable to get doctor assigned to patient visit: "+err.Error())
-		return
-	}
-
 	// do not support the submitting of a case that has already been submitted or is in another state
 	if patientVisit.Status != api.CASE_STATUS_CLOSED {
 		WriteDeveloperError(w, http.StatusBadRequest, "Cannot get the review for a case that is not in the closed state "+patientVisit.Status)
+		return
+	}
+
+	doctor, err := p.DataApi.GetDoctorAssignedToPatientVisit(requestData.PatientVisitId)
+	if err != nil {
+		WriteDeveloperError(w, http.StatusInternalServerError, "Unable to get doctor assigned to patient visit: "+err.Error())
 		return
 	}
 
@@ -105,16 +105,20 @@ func (p *PatientVisitReviewHandler) ServeHTTP(w http.ResponseWriter, r *http.Req
 		WriteDeveloperError(w, http.StatusInternalServerError, "Unable to get regimen plan for this patient visit id: "+err.Error())
 		return
 	}
-	regimenPlan.Title = "Personal Regimen"
-	patientVisitReviewResponse.RegimenPlan = regimenPlan
+	if regimenPlan != nil {
+		regimenPlan.Title = "Personal Regimen"
+		patientVisitReviewResponse.RegimenPlan = regimenPlan
+	}
 
 	followUp, err := p.DataApi.GetFollowUpTimeForPatientVisit(requestData.PatientVisitId)
 	if err != nil {
 		WriteDeveloperError(w, http.StatusInternalServerError, "Unable to get follow up information for this paitent visit: "+err.Error())
 		return
 	}
-	followUp.Title = "Follow Up"
-	patientVisitReviewResponse.Followup = followUp
+	if followUp != nil {
+		followUp.Title = "Follow Up"
+		patientVisitReviewResponse.Followup = followUp
+	}
 
 	advicePoints, err := p.DataApi.GetAdvicePointsForPatientVisit(requestData.PatientVisitId)
 	if err != nil {

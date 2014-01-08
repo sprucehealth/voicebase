@@ -144,5 +144,4 @@ func TestPatientVisitSubmission(t *testing.T) {
 	if anotherPatientVisitResponse.PatientVisitId == patientVisitResponse.PatientVisitId {
 		t.Fatal("The patient visit id should be different as a new visit should start after the patient has submitted a patient visit")
 	}
-
 }
