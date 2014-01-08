@@ -77,7 +77,7 @@ type TreatmentPlan struct {
 	PatientVisitId int64        `json:"patient_visit_id,string,omitempty"`
 	Status         string       `json:"status,omitempty"`
 	CreationDate   time.Time    `json:"creation_date,omitempty"`
-	Treatments     []*Treatment `json:"treatments"`
+	Treatments     []*Treatment `json:"treatments,omitempty"`
 	Title          string       `json:"title,omitempty"`
 }
 
@@ -144,4 +144,10 @@ type Advice struct {
 	SelectedAdvicePoints []*DoctorInstructionItem `json:"selected_advice_points,omitempty"`
 	PatientVisitId       int64                    `json:"patient_visit_id,string,omitempty"`
 	Title                string                   `json:"title,omitempty"`
+}
+
+type DiagnosisSummary struct {
+	Type    string `json:"type"`
+	Summary string `json:"text"`
+	Title   string `json:"title,omitempty"`
 }

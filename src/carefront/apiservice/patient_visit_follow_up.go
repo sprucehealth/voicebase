@@ -53,19 +53,15 @@ func (p *PatientVisitFollowUpHandler) getFollowupForPatientVisit(w http.Response
 		return
 	}
 
-	followupTime, followupValue, followupUnit, err := p.DataApi.GetFollowUpTimeForPatientVisit(requestData.PatientVisitId)
+	followup, err := p.DataApi.GetFollowUpTimeForPatientVisit(requestData.PatientVisitId)
 	if err != nil {
 		WriteDeveloperError(w, http.StatusBadRequest, "Unable to get follow up for patient visit: "+err.Error())
 		return
 	}
 
 	response := &PatientVisitFollowupResponse{}
-	if followupValue != 0 && followupUnit != "" {
-		response.FollowUpTime = followupTime
-		response.FollowUpUnit = followupUnit
-		response.FollowUpValue = followupValue
-		response.PatientVisitId = requestData.PatientVisitId
-
+	if followup.FollowUpValue != 0 && followup.FollowUpUnit != "" {
+		response.FollowUp = followup
 	}
 
 	WriteJSONToHTTPResponseWriter(w, http.StatusOK, response)

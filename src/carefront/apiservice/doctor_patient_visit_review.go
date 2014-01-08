@@ -73,6 +73,12 @@ func (p *DoctorPatientVisitReviewHandler) ServeHTTP(w http.ResponseWriter, r *ht
 			WriteDeveloperError(w, http.StatusInternalServerError, "Unable to update the item in the queue for the doctor that speaks to this patient visit: "+err.Error())
 			return
 		}
+
+		err = p.DataApi.RecordDoctorAssignmentToPatientVisit(patientVisit.PatientVisitId, doctorId)
+		if err != nil {
+			WriteDeveloperError(w, http.StatusInternalServerError, "Unable to assign the patient visit to this doctor: "+err.Error())
+			return
+		}
 	}
 
 	patient, err := p.DataApi.GetPatientFromId(patientVisit.PatientId)

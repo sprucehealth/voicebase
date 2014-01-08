@@ -4,6 +4,7 @@ import (
 	"bytes"
 	"carefront/api"
 	"carefront/apiservice"
+	"carefront/common"
 	"encoding/json"
 	"fmt"
 	"io/ioutil"
@@ -281,7 +282,7 @@ func TestDoctorDiagnosisOfPatientVisit(t *testing.T) {
 
 	CheckSuccessfulStatusCode(resp, "Unable to make successful call to get diagnosis summary for patient visit "+string(respBody), t)
 
-	getDiagnosisSummaryResponse := &apiservice.DiagnosisSummaryResponse{}
+	getDiagnosisSummaryResponse := &common.DiagnosisSummary{}
 	err = json.Unmarshal(respBody, getDiagnosisSummaryResponse)
 	if err != nil {
 		t.Fatal("Unable to unmarshal response into json object : " + err.Error())

@@ -1,0 +1,2 @@
+alter table patient_visit_care_provider_assignment add foreign key (provider_role) references provider_role(id);
+alter table patient_visit_care_provider_assignment change provider_role provider_role_id int unsigned not null;
