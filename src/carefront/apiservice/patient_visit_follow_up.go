@@ -2,9 +2,9 @@ package apiservice
 
 import (
 	"carefront/api"
+	"carefront/common"
 	"github.com/gorilla/schema"
 	"net/http"
-	"time"
 )
 
 type PatientVisitFollowUpHandler struct {
@@ -20,11 +20,8 @@ type PatientVisitFollowUpRequestResponse struct {
 }
 
 type PatientVisitFollowupResponse struct {
-	Result         string    `json:"result,omitempty"`
-	PatientVisitId int64     `json:"patient_visit_id,string,omitempty"`
-	FollowUpValue  int64     `json:"follow_up_value,string,omitempty"`
-	FollowUpUnit   string    `json:"follow_up_unit,omitempty"`
-	FollowUpTime   time.Time `json:"follow_up_time,omitempty"`
+	Result string `json:"result,omitempty"`
+	*common.FollowUp
 }
 
 func NewPatientVisitFollowUpHandler(dataApi api.DataAPI) *PatientVisitFollowUpHandler {
