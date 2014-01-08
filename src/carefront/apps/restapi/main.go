@@ -228,6 +228,7 @@ func main() {
 		LayoutStorageService:       cloudStorageApi,
 		PatientPhotoStorageService: photoAnswerCloudStorageApi,
 	}
+	doctorSubmitPatientVisitHandler := &apiservice.DoctorSubmitPatientVisitReviewHandler{DataApi: dataApi}
 	diagnosePatientHandler := apiservice.NewDiagnosePatientHandler(dataApi, authApi, cloudStorageApi)
 	diagnosisSummaryHandler := &apiservice.DiagnosisSummaryHandler{DataApi: dataApi}
 	doctorRegimenHandler := apiservice.NewDoctorRegimenHandler(dataApi)
@@ -267,6 +268,7 @@ func main() {
 	mux.Handle("/v1/doctor/visit/regimen", doctorRegimenHandler)
 	mux.Handle("/v1/doctor/visit/advice", doctorAdviceHandler)
 	mux.Handle("/v1/doctor/visit/followup", doctorFollowupHandler)
+	mux.Handle("/v1/doctor/visit/submit", doctorSubmitPatientVisitHandler)
 
 	s := &http.Server{
 		Addr:           conf.ListenAddr,

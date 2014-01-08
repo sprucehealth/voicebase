@@ -66,6 +66,7 @@ type DoctorAPI interface {
 
 	AssignPatientVisitToDoctor(DoctorId, PatientVisitId int64) error
 	BeginReviewingPatientVisitInQueue(DoctorId, PatientVisitId int64) error
+	CompletePatientVisitInDoctorQueue(DoctorId, PatientVisitId int64) error
 	GetDoctorQueue(DoctorId int64) (doctorQueue []*DoctorQueueItem, err error)
 }
 

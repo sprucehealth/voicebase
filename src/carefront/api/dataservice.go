@@ -1253,6 +1253,11 @@ func (d *DataService) BeginReviewingPatientVisitInQueue(DoctorId, PatientVisitId
 	return err
 }
 
+func (d *DataService) CompletePatientVisitInDoctorQueue(DoctorId, PatientVisitId int64) error {
+	_, err := d.DB.Exec(fmt.Sprintf(`update doctor_queue set status='%s' where status='ONGOING' and doctor_id = ? and event_type = 'PATIENT_VISIT' and item_id = ?`, QUEUE_ITEM_STATUS_COMPLETED), DoctorId, PatientVisitId)
+	return err
+}
+
 func (d *DataService) GetDoctorQueue(DoctorId int64) (doctorQueue []*DoctorQueueItem, err error) {
 	rows, err := d.DB.Query(`select id, event_type, item_id, enqueue_date, completed_date, status from doctor_queue where doctor_id = ? order by enqueue_date desc limit 20`, DoctorId)
 	if err != nil {

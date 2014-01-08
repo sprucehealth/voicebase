@@ -292,6 +292,88 @@ func TestDoctorDiagnosisOfPatientVisit(t *testing.T) {
 	}
 }
 
+func TestDoctorSubmissionOfPatientVisitReview(t *testing.T) {
+	if err := CheckIfRunningLocally(t); err == CannotRunTestLocally {
+		t.Log("Skipping test since there is no database to run test on")
+		return
+	}
+	testData := SetupIntegrationTest(t)
+	defer TearDownIntegrationTest(t, testData)
+
+	patientSignedupResponse := SignupRandomTestPatient(t, testData.DataApi, testData.AuthApi)
+
+	// get the current primary doctor
+	var doctorId int64
+	err := testData.DB.QueryRow(`select provider_id from care_provider_state_elligibility 
+							inner join provider_role on provider_role_id = provider_role.id 
+							inner join care_providing_state on care_providing_state_id = care_providing_state.id
+							where provider_tag='DOCTOR' and care_providing_state.state = 'CA'`).Scan(&doctorId)
+	if err != nil {
+		t.Fatal("Unable to query for doctor that is elligible to diagnose in CA: " + err.Error())
+	}
+
+	// get patient to start a visit
+	patientVisitResponse := GetPatientVisitForPatient(patientSignedupResponse.PatientId, testData, t)
+
+	// get patient to submit the visit
+	SubmitPatientVisitForPatient(patientSignedupResponse.PatientId, patientVisitResponse.PatientVisitId, testData, t)
+
+	doctor, err := testData.DataApi.GetDoctorFromId(doctorId)
+	if err != nil {
+		t.Fatal("Unable to get doctor object from id: " + err.Error())
+	}
+
+	// attempt to submit the patient visit review here. It should fail
+	doctorSubmitPatientVisitReviewHandler := &apiservice.DoctorSubmitPatientVisitReviewHandler{DataApi: testData.DataApi}
+	ts := httptest.NewServer(doctorSubmitPatientVisitReviewHandler)
+	doctorSubmitPatientVisitReviewHandler.AccountIdFromAuthToken(doctor.AccountId)
+	defer ts.Close()
+
+	resp, err := http.Post(ts.URL, "application/x-www-form-urlencoded", bytes.NewBufferString("patient_visit_id="+strconv.FormatInt(patientVisitResponse.PatientVisitId, 10)))
+	if err != nil {
+		t.Fatal("Unable to make a call to submit the patient visit review : " + err.Error())
+	}
+
+	_, err = ioutil.ReadAll(resp.Body)
+	if err != nil {
+		t.Fatal("Unable to parse the response body for the call to submit patient visit review: " + err.Error())
+	}
+
+	if resp.StatusCode != http.StatusBadRequest {
+		t.Fatalf("Expected status code to be %d but got %d instead. The call should have failed because the patient visit is not being REVIEWED by the doctor yet. ", http.StatusBadRequest, resp.StatusCode)
+	}
+
+	// get the doctor to start reviewing the patient visit
+	doctorPatientVisitReviewHandler := &apiservice.DoctorPatientVisitReviewHandler{DataApi: testData.DataApi, LayoutStorageService: testData.CloudStorageService, PatientPhotoStorageService: testData.CloudStorageService}
+	doctorPatientVisitReviewHandler.AccountIdFromAuthToken(doctor.AccountId)
+	ts2 := httptest.NewServer(doctorPatientVisitReviewHandler)
+	defer ts2.Close()
+
+	resp, err = http.Get(ts2.URL + "?patient_visit_id=" + strconv.FormatInt(patientVisitResponse.PatientVisitId, 10))
+	if err != nil {
+		t.Fatal("Unable to get the doctor to start reviewing the patient visit: " + err.Error())
+	}
+
+	CheckSuccessfulStatusCode(resp, "Unable to make a successful call for doctor to start reviewing patient visti", t)
+
+	// attempt to submit the patient visit review here. It should work
+	resp, err = http.Post(ts.URL, "application/x-www-form-urlencoded", bytes.NewBufferString("patient_visit_id="+strconv.FormatInt(patientVisitResponse.PatientVisitId, 10)))
+	if err != nil {
+		t.Fatal("Unable to make successful call to submit patient visit review")
+	}
+
+	CheckSuccessfulStatusCode(resp, "Unable to make successful call to submit patient visit review", t)
+
+	patientVisit, err := testData.DataApi.GetPatientVisitFromId(patientVisitResponse.PatientVisitId)
+	if err != nil {
+		t.Fatal("Unable to get patient visit given id: " + err.Error())
+	}
+
+	if patientVisit.Status != api.CASE_STATUS_CLOSED {
+		t.Fatalf("Expected the status to be %s but status is %s", api.CASE_STATUS_CLOSED, patientVisit.Status)
+	}
+}
+
 func TestDoctorAddingOfFollowUpForPatientVisit(t *testing.T) {
 	if err := CheckIfRunningLocally(t); err == CannotRunTestLocally {
 		t.Log("Skipping test since there is no database to run test on")
