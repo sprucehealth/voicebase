@@ -1055,6 +1055,72 @@ func (d *DataService) GetRegimenPlanForPatientVisit(patientVisitId int64) (regim
 	return
 }
 
+func (d *DataService) GetDiagnosisResponseToQuestionWithTag(questionTag string, doctorId, patientVisitId int64) (answerIntake *common.AnswerIntake, err error) {
+	var id, questionId int64
+	var potentialAnswerId sql.NullInt64
+	var answerText, potentialAnswer sql.NullString
+	err = d.DB.QueryRow(fmt.Sprintf(`select info_intake.id, info_intake.question_id, info_intake.potential_answer_id, info_intake.answer_text, ltext
+					from info_intake inner join question on question.id = question_id 
+					inner join potential_answer on potential_answer_id = potential_answer.id
+					inner join localized_text on answer_localized_text_id = localized_text.app_text_id
+					where info_intake.status='ACTIVE' and question_tag = '%s' and role_id = ? and role = 'DOCTOR' and info_intake.patient_visit_id = ? and language_id = ?`, questionTag), doctorId, patientVisitId, EN_LANGUAGE_ID).Scan(&id, &questionId, &potentialAnswerId, &answerText, &potentialAnswer)
+	if err != nil {
+		if err == sql.ErrNoRows {
+			err = NoDiagnosisResponseErr
+		}
+		return
+	}
+
+	answerIntake = &common.AnswerIntake{}
+	answerIntake.QuestionId = questionId
+	if potentialAnswer.Valid {
+		answerIntake.PotentialAnswer = potentialAnswer.String
+	}
+	answerIntake.AnswerIntakeId = id
+	if answerText.Valid {
+		answerIntake.AnswerText = answerText.String
+	}
+	answerIntake.PatientVisitId = patientVisitId
+	if potentialAnswerId.Valid {
+		answerIntake.PotentialAnswerId = potentialAnswerId.Int64
+	}
+
+	return
+}
+
+func (d *DataService) AddDiagnosisSummaryForPatientVisit(summary string, patientVisitId, doctorId int64) error {
+	tx, err := d.DB.Begin()
+	if err != nil {
+		return err
+	}
+
+	// inactivate any previous summaries for this patient visit
+	_, err = tx.Exec(`update diagnosis_summary set status='INACTIVE' where doctor_id = ? and patient_visit_id = ? and status = 'ACTIVE'`, doctorId, patientVisitId)
+	if err != nil {
+		tx.Rollback()
+		return err
+	}
+
+	_, err = tx.Exec(fmt.Sprintf(`insert into diagnosis_summary (summary, patient_visit_id, doctor_id, status) values ("%s", ?, ?, 'ACTIVE')`, summary), patientVisitId, doctorId)
+	if err != nil {
+		tx.Rollback()
+		return err
+	}
+
+	tx.Commit()
+	return err
+}
+
+func (d *DataService) GetDiagnosisSummaryForPatientVisit(patientVisitId int64) (summary string, err error) {
+	err = d.DB.QueryRow(`select summary from diagnosis_summary where patient_visit_id = ? and status='ACTIVE'`, patientVisitId).Scan(&summary)
+	if err != nil {
+		if err == sql.ErrNoRows {
+			return "", nil
+		}
+	}
+	return
+}
+
 func (d *DataService) CheckCareProvidingElligibility(shortState string, healthConditionId int64) (isElligible bool, err error) {
 	queryStr := fmt.Sprintf(`select provider_id from care_provider_state_elligibility 
 								inner join care_providing_state on care_providing_state_id = care_providing_state.id 
@@ -1578,6 +1644,35 @@ func (d *DataService) GetPatientVisitFromId(patientVisitId int64) (patientVisit 
 	}
 
 	return patientVisit, err
+}
+
+func (d *DataService) GetPatientFromPatientVisitId(patientVisitId int64) (patient *common.Patient, err error) {
+	var patientId, accountId int64
+	var firstName, lastName, zipCode, status, gender string
+	var dob mysql.NullTime
+	err = d.DB.QueryRow(`select patient.id, account_id, first_name, last_name, zip_code, gender, dob, patient.status from patient_visit
+		inner join patient on patient_id = patient.id where patient_visit.id = ?`, patientVisitId).Scan(&patientId, &accountId, &firstName, &lastName, &zipCode, &gender, &dob, &status)
+	if err != nil {
+		if err == sql.ErrNoRows {
+			return nil, nil
+		}
+		return
+	}
+
+	patient = &common.Patient{}
+	patient.PatientId = patientId
+	patient.AccountId = accountId
+	patient.FirstName = firstName
+	patient.LastName = lastName
+	if dob.Valid {
+		patient.Dob = dob.Time
+	}
+
+	patient.Gender = gender
+	patient.Status = status
+	patient.ZipCode = zipCode
+
+	return
 }
 
 func (d *DataService) CreateNewPatientVisit(patientId, healthConditionId, layoutVersionId int64) (int64, error) {

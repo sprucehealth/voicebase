@@ -1,13 +1,13 @@
 package auth
 
 import (
-	"database/sql"
-	"log"
-	"time"
-
 	"carefront/common"
 	"carefront/thrift/api"
 	"code.google.com/p/go.crypto/bcrypt"
+	"database/sql"
+	"fmt"
+	"log"
+	"time"
 )
 
 const (
@@ -132,7 +132,7 @@ func (m *AuthService) Logout(token string) error {
 func (m *AuthService) ValidateToken(token string) (*api.TokenValidationResponse, error) {
 	var accountId int64
 	var expires *time.Time
-	if err := m.DB.QueryRow("SELECT account_id, expires FROM auth_token WHERE token = ? ", token).Scan(&accountId, &expires); err == sql.ErrNoRows {
+	if err := m.DB.QueryRow(fmt.Sprintf("SELECT account_id, expires FROM auth_token WHERE token = '%s' ", token)).Scan(&accountId, &expires); err == sql.ErrNoRows {
 		return &api.TokenValidationResponse{IsValid: false}, nil
 	} else if err != nil {
 		return nil, &api.InternalServerError{Message: err.Error()}

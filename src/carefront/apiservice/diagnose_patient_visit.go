@@ -6,8 +6,18 @@ import (
 	"carefront/info_intake"
 	thriftapi "carefront/thrift/api"
 	"encoding/json"
+	"fmt"
 	"github.com/gorilla/schema"
 	"net/http"
+	"strings"
+)
+
+const (
+	question_acne_diagnosis = "q_acne_diagnosis"
+	question_acne_severity  = "q_acne_severity"
+	question_acne_type      = "q_acne_type"
+
+	diagnoseSummaryTemplate = `Hi %s,\n\nBased on the photographs you have provided, it looks like you have %s.\n\nAcne is completely treatable but it will take some work and time to see results. I've put together the best treatment plan for your skin and with regular application you should begin to see results in 1-3 months.\n\nDr. %s`
 )
 
 type DiagnosePatientHandler struct {
@@ -117,9 +127,59 @@ func (d *DiagnosePatientHandler) diagnosePatient(w http.ResponseWriter, r *http.
 		WriteDeveloperError(w, http.StatusInternalServerError, "Unable to store the multiple choice answer to the question for the patient based on the parameters provided and the internal state of the system: "+err.Error())
 		return
 	}
+	err = d.addDiagnosisSummaryForPatientVisit(doctorId, answerIntakeRequestBody.PatientVisitId)
+	if err != nil {
+		WriteDeveloperError(w, http.StatusInternalServerError, "Something went wrong when trying to add and store the summary to the diagnosis of the patient visit: "+err.Error())
+		return
+	}
 
 	WriteJSONToHTTPResponseWriter(w, http.StatusOK, AnswerIntakeResponse{Result: "success"})
 
+}
+
+func (d *DiagnosePatientHandler) addDiagnosisSummaryForPatientVisit(doctorId int64, patientVisitId int64) error {
+	// lookup answers for the following questions
+	acneDiagnosisAnswer, err := d.DataApi.GetDiagnosisResponseToQuestionWithTag(question_acne_diagnosis, doctorId, patientVisitId)
+	if err != nil && err != api.NoDiagnosisResponseErr {
+		return err
+	}
+
+	acneSeverityAnswer, err := d.DataApi.GetDiagnosisResponseToQuestionWithTag(question_acne_severity, doctorId, patientVisitId)
+	if err != nil && err != api.NoDiagnosisResponseErr {
+		return err
+	}
+
+	acneTypeAnswer, err := d.DataApi.GetDiagnosisResponseToQuestionWithTag(question_acne_type, doctorId, patientVisitId)
+	if err != nil && err != api.NoDiagnosisResponseErr {
+		return err
+	}
+
+	diagnosisMessage := acneDiagnosisAnswer.PotentialAnswer
+	if acneDiagnosisAnswer != nil && acneSeverityAnswer != nil && acneTypeAnswer != nil {
+		diagnosisMessage = fmt.Sprintf("%s %s %s", acneSeverityAnswer.PotentialAnswer, acneTypeAnswer.PotentialAnswer, acneDiagnosisAnswer.PotentialAnswer)
+	} else if acneDiagnosisAnswer != nil && acneSeverityAnswer != nil {
+		diagnosisMessage = fmt.Sprintf("%s %s", acneSeverityAnswer.PotentialAnswer, acneDiagnosisAnswer.PotentialAnswer)
+	}
+
+	// nothing to do if the patient was not properly diagnosed by doctor so as to create a message
+	if diagnosisMessage == "" {
+		return nil
+	}
+
+	doctor, err := d.DataApi.GetDoctorFromId(doctorId)
+	if err != nil {
+		return err
+	}
+
+	patient, err := d.DataApi.GetPatientFromPatientVisitId(patientVisitId)
+	if err != nil {
+		return err
+	}
+
+	doctorFullName := fmt.Sprintf("%s %s", doctor.FirstName, doctor.LastName)
+	diagnosisSummary := fmt.Sprintf(diagnoseSummaryTemplate, strings.Title(patient.FirstName), strings.ToLower(diagnosisMessage), strings.Title(doctorFullName))
+	err = d.DataApi.AddDiagnosisSummaryForPatientVisit(diagnosisSummary, patientVisitId, doctorId)
+	return err
 }
 
 func getQuestionIdsInDiagnosisLayout(diagnosisLayout *info_intake.DiagnosisIntake) []int64 {

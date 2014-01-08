@@ -229,7 +229,7 @@ func main() {
 		PatientPhotoStorageService: photoAnswerCloudStorageApi,
 	}
 	diagnosePatientHandler := apiservice.NewDiagnosePatientHandler(dataApi, authApi, cloudStorageApi)
-
+	diagnosisSummaryHandler := &apiservice.DiagnosisSummaryHandler{DataApi: dataApi}
 	doctorRegimenHandler := apiservice.NewDoctorRegimenHandler(dataApi)
 	doctorAdviceHandler := apiservice.NewDoctorAdviceHandler(dataApi)
 	doctorQueueHandler := &apiservice.DoctorQueueHandler{DataApi: dataApi}
@@ -256,6 +256,7 @@ func main() {
 	mux.Handle("/v1/doctor/signup", signupDoctorHandler)
 	mux.Handle("/v1/doctor/authenticate", authenticateDoctorHandler)
 	mux.Handle("/v1/doctor/diagnosis", diagnosePatientHandler)
+	mux.Handle("/v1/doctor/diagnosis/summary", diagnosisSummaryHandler)
 	mux.Handle("/v1/doctor/queue", doctorQueueHandler)
 
 	mux.Handle("/v1/doctor/treatment/medication_suggestions", doctorTreatmentSuggestionHandler)

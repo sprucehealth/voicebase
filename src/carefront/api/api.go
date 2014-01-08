@@ -26,6 +26,7 @@ var (
 	NoRowsError                  = errors.New("No rows exist")
 	NoElligibileProviderInState  = errors.New("There are no providers elligible in the state the patient resides")
 	NoRegimenPlanForPatientVisit = errors.New("There is no regimen plan for patient visit")
+	NoDiagnosisResponseErr       = errors.New("No diagnosis response exists to the question queried tag queried with")
 )
 
 type PotentialAnswerInfo struct {
@@ -57,7 +58,6 @@ type DoctorAPI interface {
 	MarkRegimenStepToBeDeleted(regimenStep *common.DoctorInstructionItem, doctorId int64) error
 	CreateRegimenPlanForPatientVisit(regimenPlan *common.RegimenPlan) error
 	GetRegimenPlanForPatientVisit(patientVisitId int64) (regimenPlan *common.RegimenPlan, err error)
-
 	GetAdvicePointsForDoctor(doctorId int64) (advicePoints []*common.DoctorInstructionItem, err error)
 	GetAdvicePointsForPatientVisit(patientVisitId int64) (advicePoints []*common.DoctorInstructionItem, err error)
 	CreateAdviceForPatientVisit(advicePoints []*common.DoctorInstructionItem, patientVisitId int64) error
@@ -74,10 +74,14 @@ type PatientVisitAPI interface {
 	GetPatientIdFromPatientVisitId(patientVisitId int64) (int64, error)
 	GetLatestSubmittedPatientVisit() (*common.PatientVisit, error)
 	GetPatientVisitFromId(patientVisitId int64) (patientVisit *common.PatientVisit, err error)
+	GetPatientFromPatientVisitId(patientVisitId int64) (patient *common.Patient, err error)
 	UpdatePatientVisitStatus(patientVisitId int64, status string) error
 	SubmitPatientVisitWithId(patientVisitId int64) error
 	UpdateFollowUpTimeForPatientVisit(patientVisitId, doctorId, currentTimeOnClient, followUpValue int64, followUpUnit string) error
 	GetFollowUpTimeForPatientVisit(patientVisitId int64) (followupTime time.Time, followUpValue int64, followUpUnit string, err error)
+	GetDiagnosisResponseToQuestionWithTag(questionTag string, doctorId, patientVisitId int64) (answerIntake *common.AnswerIntake, err error)
+	AddDiagnosisSummaryForPatientVisit(summary string, patientVisitId, doctorId int64) error
+	GetDiagnosisSummaryForPatientVisit(patientVisitId int64) (summary string, err error)
 }
 
 type PatientIntakeAPI interface {

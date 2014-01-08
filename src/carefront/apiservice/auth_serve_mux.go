@@ -75,7 +75,15 @@ func (mux *AuthServeMux) ServeHTTP(w http.ResponseWriter, r *http.Request) {
 		customResponseWriter.WriteHeader(http.StatusBadRequest)
 		return
 	}
-	h, _ := mux.Handler(r)
+	h, pattern := mux.Handler(r)
+
+	// these means the page is not found, in which case serve the page as we would
+	// since we have a page not found handler returned
+	if pattern == "" {
+		h.ServeHTTP(customResponseWriter, r)
+		return
+	}
+
 	if nonAuth, ok := h.(NonAuthenticated); !ok || !nonAuth.NonAuthenticated() {
 		if valid, accountId, err := mux.checkAuth(r); err != nil {
 			log.Println(err)

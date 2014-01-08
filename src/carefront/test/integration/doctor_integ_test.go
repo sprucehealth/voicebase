@@ -264,6 +264,32 @@ func TestDoctorDiagnosisOfPatientVisit(t *testing.T) {
 		}
 	}
 
+	// check if the diagnosis summary exists for the patient visit
+	diagnosisSummaryHandler := &apiservice.DiagnosisSummaryHandler{DataApi: testData.DataApi}
+	ts = httptest.NewServer(diagnosisSummaryHandler)
+	diagnosisSummaryHandler.AccountIdFromAuthToken(doctor.AccountId)
+
+	resp, err = http.Get(ts.URL + "?patient_visit_id=" + strconv.FormatInt(patientVisitResponse.PatientVisitId, 10))
+	if err != nil {
+		t.Fatal("Unable to make call to get diagnosis summary for patient visit: " + err.Error())
+	}
+
+	respBody, err := ioutil.ReadAll(resp.Body)
+	if err != nil {
+		t.Fatal("Unable to parse body of response when trying to get diagnosis summary for patient visit")
+	}
+
+	CheckSuccessfulStatusCode(resp, "Unable to make successful call to get diagnosis summary for patient visit "+string(respBody), t)
+
+	getDiagnosisSummaryResponse := &apiservice.DiagnosisSummaryResponse{}
+	err = json.Unmarshal(respBody, getDiagnosisSummaryResponse)
+	if err != nil {
+		t.Fatal("Unable to unmarshal response into json object : " + err.Error())
+	}
+
+	if getDiagnosisSummaryResponse.Summary == "" {
+		t.Fatal("Expected summary for patient visit to exist but instead got nothing")
+	}
 }
 
 func TestDoctorAddingOfFollowUpForPatientVisit(t *testing.T) {
