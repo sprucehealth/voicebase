@@ -1679,6 +1679,44 @@ func (d *DataService) GetLatestSubmittedPatientVisit() (*common.PatientVisit, er
 	return patientVisit, err
 }
 
+func (d *DataService) GetLatestClosedPatientVisitForPatient(patientId int64) (patientVisit *common.PatientVisit, err error) {
+	var healthConditionId, layoutVersionId, patientVisitId int64
+	var creationDateBytes, submittedDateBytes, closedDateBytes mysql.NullTime
+	var status string
+
+	row := d.DB.QueryRow(`select id, health_condition_id, layout_version_id,
+		creation_date, submitted_date, closed_date, status from patient_visit where status = 'CLOSED' and patient_id = ? and closed_date is not null order by closed_date desc limit 1`, patientId)
+	err = row.Scan(&patientVisitId, &healthConditionId, &layoutVersionId, &creationDateBytes, &submittedDateBytes, &closedDateBytes, &status)
+	if err != nil {
+		if err == sql.ErrNoRows {
+			err = NoRowsError
+		}
+		return
+	}
+
+	patientVisit = &common.PatientVisit{
+		PatientVisitId:    patientVisitId,
+		PatientId:         patientId,
+		HealthConditionId: healthConditionId,
+		Status:            status,
+		LayoutVersionId:   layoutVersionId,
+	}
+
+	if creationDateBytes.Valid {
+		patientVisit.CreationDate = creationDateBytes.Time
+	}
+
+	if submittedDateBytes.Valid {
+		patientVisit.SubmittedDate = submittedDateBytes.Time
+	}
+
+	if closedDateBytes.Valid {
+		patientVisit.ClosedDate = closedDateBytes.Time
+	}
+
+	return
+}
+
 func (d *DataService) GetPatientVisitFromId(patientVisitId int64) (patientVisit *common.PatientVisit, err error) {
 	var patientId, healthConditionId, layoutVersionId int64
 	var creationDateBytes, submittedDateBytes, closedDateBytes mysql.NullTime
@@ -1758,6 +1796,11 @@ func (d *DataService) CreateNewPatientVisit(patientId, healthConditionId, layout
 
 func (d *DataService) UpdatePatientVisitStatus(patientVisitId int64, status string) error {
 	_, err := d.DB.Exec(fmt.Sprintf(`update patient_visit set status='%s' where id = ?`, status), patientVisitId)
+	return err
+}
+
+func (d *DataService) ClosePatientVisit(patientVisitId int64) error {
+	_, err := d.DB.Exec(fmt.Sprintf(`update patient_visit set status='%s', closed_date=now() where id = ?`, CASE_STATUS_CLOSED), patientVisitId)
 	return err
 }
 

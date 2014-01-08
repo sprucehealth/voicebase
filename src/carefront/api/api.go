@@ -74,9 +74,11 @@ type PatientVisitAPI interface {
 	GetActivePatientVisitIdForHealthCondition(patientId, healthConditionId int64) (int64, error)
 	GetPatientIdFromPatientVisitId(patientVisitId int64) (int64, error)
 	GetLatestSubmittedPatientVisit() (*common.PatientVisit, error)
+	GetLatestClosedPatientVisitForPatient(patientId int64) (*common.PatientVisit, error)
 	GetPatientVisitFromId(patientVisitId int64) (patientVisit *common.PatientVisit, err error)
 	GetPatientFromPatientVisitId(patientVisitId int64) (patient *common.Patient, err error)
 	UpdatePatientVisitStatus(patientVisitId int64, status string) error
+	ClosePatientVisit(patientVisitId int64) error
 	SubmitPatientVisitWithId(patientVisitId int64) error
 	UpdateFollowUpTimeForPatientVisit(patientVisitId, doctorId, currentTimeOnClient, followUpValue int64, followUpUnit string) error
 	GetFollowUpTimeForPatientVisit(patientVisitId int64) (followUp *common.FollowUp, err error)

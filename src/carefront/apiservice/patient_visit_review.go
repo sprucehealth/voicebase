@@ -19,6 +19,7 @@ type PatientVisitReviewRequest struct {
 }
 
 type PatientVisitReviewResponse struct {
+	PatientVisitId   int64                    `json:"patient_visit_id,string,omitempty"`
 	DiagnosisSummary *common.DiagnosisSummary `json:"diagnosis_summary,omitempty"`
 	TreatmentPlan    *common.TreatmentPlan    `json:"treatment_plan,omitempty"`
 	RegimenPlan      *common.RegimenPlan      `json:"regimen_plan,omitempty"`
@@ -46,21 +47,38 @@ func (p *PatientVisitReviewHandler) ServeHTTP(w http.ResponseWriter, r *http.Req
 		return
 	}
 
-	patientIdFromPatientVisitId, err := p.DataApi.GetPatientIdFromPatientVisitId(requestData.PatientVisitId)
-	if err != nil {
-		WriteDeveloperError(w, http.StatusInternalServerError, "Unable to get patientId from patientVisitId: "+err.Error())
-		return
-	}
+	var patientVisit *common.PatientVisit
 
-	if patientId != patientIdFromPatientVisitId {
-		WriteDeveloperError(w, http.StatusBadRequest, "PatientId from auth token and patient id from patient visit don't match")
-		return
-	}
+	if requestData.PatientVisitId != 0 {
+		patientIdFromPatientVisitId, err := p.DataApi.GetPatientIdFromPatientVisitId(requestData.PatientVisitId)
+		if err != nil {
+			WriteDeveloperError(w, http.StatusInternalServerError, "Unable to get patientId from patientVisitId: "+err.Error())
+			return
+		}
 
-	patientVisit, err := p.DataApi.GetPatientVisitFromId(requestData.PatientVisitId)
-	if err != nil {
-		WriteDeveloperError(w, http.StatusBadRequest, "Unable to get patient visit from id: "+err.Error())
-		return
+		if patientId != patientIdFromPatientVisitId {
+			WriteDeveloperError(w, http.StatusBadRequest, "PatientId from auth token and patient id from patient visit don't match")
+			return
+		}
+
+		patientVisit, err = p.DataApi.GetPatientVisitFromId(requestData.PatientVisitId)
+		if err != nil {
+			WriteDeveloperError(w, http.StatusBadRequest, "Unable to get patient visit from id: "+err.Error())
+			return
+		}
+	} else {
+		patientVisit, err = p.DataApi.GetLatestClosedPatientVisitForPatient(patientId)
+		if err != nil {
+
+			if err == api.NoRowsError {
+				// no patient visit review to return
+				WriteJSONToHTTPResponseWriter(w, http.StatusOK, &PatientVisitReviewResponse{})
+				return
+			}
+
+			WriteDeveloperError(w, http.StatusBadRequest, "Unable to get latest closed patient visit from id: "+err.Error())
+			return
+		}
 	}
 
 	// do not support the submitting of a case that has already been submitted or is in another state
@@ -69,15 +87,16 @@ func (p *PatientVisitReviewHandler) ServeHTTP(w http.ResponseWriter, r *http.Req
 		return
 	}
 
-	doctor, err := p.DataApi.GetDoctorAssignedToPatientVisit(requestData.PatientVisitId)
+	doctor, err := p.DataApi.GetDoctorAssignedToPatientVisit(patientVisit.PatientVisitId)
 	if err != nil {
 		WriteDeveloperError(w, http.StatusInternalServerError, "Unable to get doctor assigned to patient visit: "+err.Error())
 		return
 	}
 
 	patientVisitReviewResponse := &PatientVisitReviewResponse{}
+	patientVisitReviewResponse.PatientVisitId = patientVisit.PatientVisitId
 
-	summary, err := p.DataApi.GetDiagnosisSummaryForPatientVisit(requestData.PatientVisitId)
+	summary, err := p.DataApi.GetDiagnosisSummaryForPatientVisit(patientVisit.PatientVisitId)
 	if err != nil {
 		WriteDeveloperError(w, http.StatusInternalServerError, "Unable to get diagnosis summary for patient visit: "+err.Error())
 		return
@@ -91,16 +110,17 @@ func (p *PatientVisitReviewHandler) ServeHTTP(w http.ResponseWriter, r *http.Req
 		patientVisitReviewResponse.DiagnosisSummary = diagnosisSummary
 	}
 
-	treatmentPlan, err := p.DataApi.GetTreatmentPlanForPatientVisit(requestData.PatientVisitId)
+	treatmentPlan, err := p.DataApi.GetTreatmentPlanForPatientVisit(patientVisit.PatientVisitId)
 	if err != nil {
 		WriteDeveloperError(w, http.StatusInternalServerError, "Unable to get treatment plan for this patient visit id: "+err.Error())
 		return
 	}
+	if treatmentPlan != nil {
+		treatmentPlan.Title = "Treatments"
+		patientVisitReviewResponse.TreatmentPlan = treatmentPlan
+	}
 
-	treatmentPlan.Title = "Treatments"
-	patientVisitReviewResponse.TreatmentPlan = treatmentPlan
-
-	regimenPlan, err := p.DataApi.GetRegimenPlanForPatientVisit(requestData.PatientVisitId)
+	regimenPlan, err := p.DataApi.GetRegimenPlanForPatientVisit(patientVisit.PatientVisitId)
 	if err != nil && err != api.NoRegimenPlanForPatientVisit {
 		WriteDeveloperError(w, http.StatusInternalServerError, "Unable to get regimen plan for this patient visit id: "+err.Error())
 		return
@@ -110,7 +130,7 @@ func (p *PatientVisitReviewHandler) ServeHTTP(w http.ResponseWriter, r *http.Req
 		patientVisitReviewResponse.RegimenPlan = regimenPlan
 	}
 
-	followUp, err := p.DataApi.GetFollowUpTimeForPatientVisit(requestData.PatientVisitId)
+	followUp, err := p.DataApi.GetFollowUpTimeForPatientVisit(patientVisit.PatientVisitId)
 	if err != nil {
 		WriteDeveloperError(w, http.StatusInternalServerError, "Unable to get follow up information for this paitent visit: "+err.Error())
 		return
@@ -120,7 +140,7 @@ func (p *PatientVisitReviewHandler) ServeHTTP(w http.ResponseWriter, r *http.Req
 		patientVisitReviewResponse.Followup = followUp
 	}
 
-	advicePoints, err := p.DataApi.GetAdvicePointsForPatientVisit(requestData.PatientVisitId)
+	advicePoints, err := p.DataApi.GetAdvicePointsForPatientVisit(patientVisit.PatientVisitId)
 	if err != nil {
 		WriteDeveloperError(w, http.StatusInternalServerError, "Unable to get advice for patient visit: "+err.Error())
 		return
