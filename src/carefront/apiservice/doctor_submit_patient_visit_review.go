@@ -61,7 +61,7 @@ func (d *DoctorSubmitPatientVisitReviewHandler) submitPatientVisitReview(w http.
 	}
 
 	// update the status of the patient visit
-	err = d.DataApi.UpdatePatientVisitStatus(requestData.PatientVisitId, api.CASE_STATUS_CLOSED)
+	err = d.DataApi.ClosePatientVisit(requestData.PatientVisitId)
 	if err != nil {
 		WriteDeveloperError(w, http.StatusInternalServerError, "Unable to update the status of the visit to closed: "+err.Error())
 		return

@@ -17,12 +17,6 @@ type GetDoctorAdviceRequestData struct {
 	PatientVisitId int64 `schema:"patient_visit_id"`
 }
 
-type DoctorAdviceRequestResponse struct {
-	AllAdvicePoints      []*common.DoctorInstructionItem `json:"all_advice_points"`
-	SelectedAdvicePoints []*common.DoctorInstructionItem `json:"selected_advice_points,omitempty"`
-	PatientVisitId       int64                           `json:"patient_visit_id,string,omitempty"`
-}
-
 func NewDoctorAdviceHandler(dataApi api.DataAPI) *DoctorAdviceHandler {
 	return &DoctorAdviceHandler{DataApi: dataApi, accountId: 0}
 }
@@ -68,7 +62,7 @@ func (d *DoctorAdviceHandler) getAdvicePoints(w http.ResponseWriter, r *http.Req
 		return
 	}
 
-	responseData := &DoctorAdviceRequestResponse{}
+	responseData := &common.Advice{}
 	responseData.AllAdvicePoints = advicePoints
 	responseData.SelectedAdvicePoints = selectedAdvicePoints
 	responseData.PatientVisitId = requestData.PatientVisitId
@@ -78,7 +72,7 @@ func (d *DoctorAdviceHandler) getAdvicePoints(w http.ResponseWriter, r *http.Req
 
 func (d *DoctorAdviceHandler) updateAdvicePoints(w http.ResponseWriter, r *http.Request) {
 	jsonDecoder := json.NewDecoder(r.Body)
-	requestData := &DoctorAdviceRequestResponse{}
+	requestData := &common.Advice{}
 
 	err := jsonDecoder.Decode(requestData)
 	if err != nil {

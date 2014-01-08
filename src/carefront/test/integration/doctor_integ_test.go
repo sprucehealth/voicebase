@@ -4,6 +4,7 @@ import (
 	"bytes"
 	"carefront/api"
 	"carefront/apiservice"
+	"carefront/common"
 	"encoding/json"
 	"fmt"
 	"io/ioutil"
@@ -118,14 +119,7 @@ func TestDoctorDiagnosisOfPatientVisit(t *testing.T) {
 	patientSignedupResponse := SignupRandomTestPatient(t, testData.DataApi, testData.AuthApi)
 
 	// get the current primary doctor
-	var doctorId int64
-	err := testData.DB.QueryRow(`select provider_id from care_provider_state_elligibility 
-							inner join provider_role on provider_role_id = provider_role.id 
-							inner join care_providing_state on care_providing_state_id = care_providing_state.id
-							where provider_tag='DOCTOR' and care_providing_state.state = 'CA'`).Scan(&doctorId)
-	if err != nil {
-		t.Fatal("Unable to query for doctor that is elligible to diagnose in CA: " + err.Error())
-	}
+	doctorId := getDoctorIdOfCurrentPrimaryDoctor(testData, t)
 
 	doctor, err := testData.DataApi.GetDoctorFromId(doctorId)
 	if err != nil {
@@ -177,53 +171,11 @@ func TestDoctorDiagnosisOfPatientVisit(t *testing.T) {
 
 	// Now, actually diagnose the patient visit and check the response to ensure that the doctor diagnosis was returned in the response
 	// prepapre a response for the doctor
-	answerIntakeRequestBody := &apiservice.AnswerIntakeRequestBody{}
-	answerIntakeRequestBody.PatientVisitId = diagnosisResponse.DiagnosisLayout.PatientVisitId
-
-	diagnosisQuestionId, _, _, _, _, _, _, err := testData.DataApi.GetQuestionInfo("q_acne_diagnosis", 1)
-	severityQuestionId, _, _, _, _, _, _, err := testData.DataApi.GetQuestionInfo("q_acne_severity", 1)
-	acneTypeQuestionId, _, _, _, _, _, _, err := testData.DataApi.GetQuestionInfo("q_acne_type", 1)
-
-	if err != nil {
-		t.Fatal("Unable to get the questionIds for the question tags requested for the doctor to diagnose patient visit")
-	}
-
-	answerToQuestionItem := &apiservice.AnswerToQuestionItem{}
-	answerToQuestionItem.QuestionId = diagnosisQuestionId
-	answerToQuestionItem.AnswerIntakes = []*apiservice.AnswerItem{&apiservice.AnswerItem{PotentialAnswerId: 102}}
-
-	answerToQuestionItem2 := &apiservice.AnswerToQuestionItem{}
-	answerToQuestionItem2.QuestionId = severityQuestionId
-	answerToQuestionItem2.AnswerIntakes = []*apiservice.AnswerItem{&apiservice.AnswerItem{PotentialAnswerId: 107}}
-
-	answerToQuestionItem3 := &apiservice.AnswerToQuestionItem{}
-	answerToQuestionItem3.QuestionId = acneTypeQuestionId
-	answerToQuestionItem3.AnswerIntakes = []*apiservice.AnswerItem{&apiservice.AnswerItem{PotentialAnswerId: 109}, &apiservice.AnswerItem{PotentialAnswerId: 114}, &apiservice.AnswerItem{PotentialAnswerId: 113}}
-
-	answerIntakeRequestBody.Questions = []*apiservice.AnswerToQuestionItem{answerToQuestionItem, answerToQuestionItem2, answerToQuestionItem3}
-
-	requestData, err := json.Marshal(answerIntakeRequestBody)
-	if err != nil {
-		t.Fatal("Unable to marshal request body")
-	}
-
-	req, _ := http.NewRequest("POST", ts.URL, bytes.NewBuffer(requestData))
-	req.Header.Set("Content-Type", "application/json")
-	resp, err = client.Do(req)
-	if err != nil {
-		t.Fatal("Unable to successfully submit the diagnosis of a patient visit: " + err.Error())
-	}
-
-	body, err := ioutil.ReadAll(resp.Body)
-	if err != nil {
-		t.Fatal("Unable to read body of response on submitting diagnosis of patient visit : " + err.Error())
-	}
-
-	CheckSuccessfulStatusCode(resp, "Unable to submit diagnosis of patient visit "+string(body), t)
+	diagnosisQuestionId, severityQuestionId, acneTypeQuestionId := submitPatientVisitDiagnosis(patientVisitResponse.PatientVisitId, doctor, testData, t)
 
 	// now, get diagnosis layout again and check to ensure that the doctor successfully diagnosed the patient with the expected answers
 	resp, err = client.Do(request)
-	body, err = ioutil.ReadAll(resp.Body)
+	body, err := ioutil.ReadAll(resp.Body)
 	if err != nil {
 		t.Fatal("Unable to read body of request to get diagnosis layout after submitting diagnosis: " + err.Error())
 	}
@@ -281,7 +233,7 @@ func TestDoctorDiagnosisOfPatientVisit(t *testing.T) {
 
 	CheckSuccessfulStatusCode(resp, "Unable to make successful call to get diagnosis summary for patient visit "+string(respBody), t)
 
-	getDiagnosisSummaryResponse := &apiservice.DiagnosisSummaryResponse{}
+	getDiagnosisSummaryResponse := &common.DiagnosisSummary{}
 	err = json.Unmarshal(respBody, getDiagnosisSummaryResponse)
 	if err != nil {
 		t.Fatal("Unable to unmarshal response into json object : " + err.Error())
@@ -302,15 +254,7 @@ func TestDoctorSubmissionOfPatientVisitReview(t *testing.T) {
 
 	patientSignedupResponse := SignupRandomTestPatient(t, testData.DataApi, testData.AuthApi)
 
-	// get the current primary doctor
-	var doctorId int64
-	err := testData.DB.QueryRow(`select provider_id from care_provider_state_elligibility 
-							inner join provider_role on provider_role_id = provider_role.id 
-							inner join care_providing_state on care_providing_state_id = care_providing_state.id
-							where provider_tag='DOCTOR' and care_providing_state.state = 'CA'`).Scan(&doctorId)
-	if err != nil {
-		t.Fatal("Unable to query for doctor that is elligible to diagnose in CA: " + err.Error())
-	}
+	doctorId := getDoctorIdOfCurrentPrimaryDoctor(testData, t)
 
 	// get patient to start a visit
 	patientVisitResponse := GetPatientVisitForPatient(patientSignedupResponse.PatientId, testData, t)
@@ -385,14 +329,7 @@ func TestDoctorAddingOfFollowUpForPatientVisit(t *testing.T) {
 	patientSignedupResponse := SignupRandomTestPatient(t, testData.DataApi, testData.AuthApi)
 
 	// get the current primary doctor
-	var doctorId int64
-	err := testData.DB.QueryRow(`select provider_id from care_provider_state_elligibility 
-							inner join provider_role on provider_role_id = provider_role.id 
-							inner join care_providing_state on care_providing_state_id = care_providing_state.id
-							where provider_tag='DOCTOR' and care_providing_state.state = 'CA'`).Scan(&doctorId)
-	if err != nil {
-		t.Fatal("Unable to query for doctor that is elligible to diagnose in CA: " + err.Error())
-	}
+	doctorId := getDoctorIdOfCurrentPrimaryDoctor(testData, t)
 
 	doctor, err := testData.DataApi.GetDoctorFromId(doctorId)
 	if err != nil {

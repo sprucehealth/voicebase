@@ -82,6 +82,19 @@ func CheckIfRunningLocally(t *testing.T) error {
 	return nil
 }
 
+func getDoctorIdOfCurrentPrimaryDoctor(testData TestData, t *testing.T) int64 {
+	// get the current primary doctor
+	var doctorId int64
+	err := testData.DB.QueryRow(`select provider_id from care_provider_state_elligibility 
+							inner join provider_role on provider_role_id = provider_role.id 
+							inner join care_providing_state on care_providing_state_id = care_providing_state.id
+							where provider_tag='DOCTOR' and care_providing_state.state = 'CA'`).Scan(&doctorId)
+	if err != nil {
+		t.Fatal("Unable to query for doctor that is elligible to diagnose in CA: " + err.Error())
+	}
+	return doctorId
+}
+
 func SetupIntegrationTest(t *testing.T) TestData {
 	setupScript := os.Getenv(carefrontProjectDirEnv) + "/src/carefront/test/integration/setup_integration_test.sh"
 	cmd := exec.Command(setupScript)

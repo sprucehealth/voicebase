@@ -73,11 +73,12 @@ type PatientCareProviderGroup struct {
 }
 
 type TreatmentPlan struct {
-	Id             int64        `json:"treatment_plan_id,string"`
-	PatientVisitId int64        `json:"patient_visit_id,string"`
-	Status         string       `json:"status"`
-	CreationDate   time.Time    `json:"creation_date"`
-	Treatments     []*Treatment `json:"treatments"`
+	Id             int64        `json:"treatment_plan_id,string,omitempty"`
+	PatientVisitId int64        `json:"patient_visit_id,string,omitempty"`
+	Status         string       `json:"status,omitempty"`
+	CreationDate   time.Time    `json:"creation_date,omitempty"`
+	Treatments     []*Treatment `json:"treatments,omitempty"`
+	Title          string       `json:"title,omitempty"`
 }
 
 type Treatment struct {
@@ -124,7 +125,29 @@ type RegimenSection struct {
 }
 
 type RegimenPlan struct {
-	PatientVisitId  int64                    `json:"patient_visit_id,string"`
+	PatientVisitId  int64                    `json:"patient_visit_id,string,omitempty"`
 	RegimenSections []*RegimenSection        `json:"regimen_sections"`
-	AllRegimenSteps []*DoctorInstructionItem `json:"all_regimen_steps"`
+	AllRegimenSteps []*DoctorInstructionItem `json:"all_regimen_steps,omitempty"`
+	Title           string                   `json:"title,omitempty"`
+}
+
+type FollowUp struct {
+	PatientVisitId int64     `json:"patient_visit_id,string,omitempty"`
+	FollowUpValue  int64     `json:"follow_up_value,string,omitempty"`
+	FollowUpUnit   string    `json:"follow_up_unit,omitempty"`
+	FollowUpTime   time.Time `json:"follow_up_time,omitempty"`
+	Title          string    `json:"title,omitempty"`
+}
+
+type Advice struct {
+	AllAdvicePoints      []*DoctorInstructionItem `json:"all_advice_points,omitempty"`
+	SelectedAdvicePoints []*DoctorInstructionItem `json:"selected_advice_points,omitempty"`
+	PatientVisitId       int64                    `json:"patient_visit_id,string,omitempty"`
+	Title                string                   `json:"title,omitempty"`
+}
+
+type DiagnosisSummary struct {
+	Type    string `json:"type"`
+	Summary string `json:"text"`
+	Title   string `json:"title,omitempty"`
 }

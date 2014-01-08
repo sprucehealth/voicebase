@@ -23,14 +23,7 @@ func TestAdvicePointsForPatientVisit(t *testing.T) {
 	patientSignedupResponse := SignupRandomTestPatient(t, testData.DataApi, testData.AuthApi)
 
 	// get the current primary doctor
-	var doctorId int64
-	err := testData.DB.QueryRow(`select provider_id from care_provider_state_elligibility 
-							inner join provider_role on provider_role_id = provider_role.id 
-							inner join care_providing_state on care_providing_state_id = care_providing_state.id
-							where provider_tag='DOCTOR' and care_providing_state.state = 'CA'`).Scan(&doctorId)
-	if err != nil {
-		t.Fatal("Unable to query for doctor that is elligible to diagnose in CA: " + err.Error())
-	}
+	doctorId := getDoctorIdOfCurrentPrimaryDoctor(testData, t)
 
 	doctor, err := testData.DataApi.GetDoctorFromId(doctorId)
 	if err != nil {
@@ -56,7 +49,7 @@ func TestAdvicePointsForPatientVisit(t *testing.T) {
 	advicePoint2 := &common.DoctorInstructionItem{Text: "Advice point 2", State: common.STATE_ADDED}
 
 	// lets go ahead and create a request for this patient visit
-	doctorAdviceRequest := &apiservice.DoctorAdviceRequestResponse{}
+	doctorAdviceRequest := &common.Advice{}
 	doctorAdviceRequest.AllAdvicePoints = []*common.DoctorInstructionItem{advicePoint1, advicePoint2}
 	doctorAdviceRequest.SelectedAdvicePoints = doctorAdviceRequest.AllAdvicePoints
 	doctorAdviceRequest.PatientVisitId = patientVisitResponse.PatientVisitId
@@ -130,7 +123,7 @@ func TestAdvicePointsForPatientVisit(t *testing.T) {
 	}
 }
 
-func getAdvicePointsInPatientVisit(testData TestData, doctor *common.Doctor, patientVisitId int64, t *testing.T) *apiservice.DoctorAdviceRequestResponse {
+func getAdvicePointsInPatientVisit(testData TestData, doctor *common.Doctor, patientVisitId int64, t *testing.T) *common.Advice {
 	doctorAdviceHandler := apiservice.NewDoctorAdviceHandler(testData.DataApi)
 	doctorAdviceHandler.AccountIdFromAuthToken(doctor.AccountId)
 	ts := httptest.NewServer(doctorAdviceHandler)
@@ -147,7 +140,7 @@ func getAdvicePointsInPatientVisit(testData TestData, doctor *common.Doctor, pat
 
 	CheckSuccessfulStatusCode(resp, "Unable to make a successful call to get advice points for patient visit : "+string(body), t)
 
-	doctorAdviceResponse := &apiservice.DoctorAdviceRequestResponse{}
+	doctorAdviceResponse := &common.Advice{}
 	err = json.Unmarshal(body, doctorAdviceResponse)
 	if err != nil {
 		t.Fatal("Unable to unmarshal the response body into the advice repsonse object: " + err.Error())
@@ -156,7 +149,7 @@ func getAdvicePointsInPatientVisit(testData TestData, doctor *common.Doctor, pat
 	return doctorAdviceResponse
 }
 
-func updateAdvicePointsForPatientVisit(doctorAdviceRequest *apiservice.DoctorAdviceRequestResponse, testData TestData, doctor *common.Doctor, t *testing.T) *apiservice.DoctorAdviceRequestResponse {
+func updateAdvicePointsForPatientVisit(doctorAdviceRequest *common.Advice, testData TestData, doctor *common.Doctor, t *testing.T) *common.Advice {
 	doctorAdviceHandler := apiservice.NewDoctorAdviceHandler(testData.DataApi)
 	doctorAdviceHandler.AccountIdFromAuthToken(doctor.AccountId)
 	ts := httptest.NewServer(doctorAdviceHandler)
@@ -178,7 +171,7 @@ func updateAdvicePointsForPatientVisit(doctorAdviceRequest *apiservice.DoctorAdv
 
 	CheckSuccessfulStatusCode(resp, "Unable to make successful call to add advice points : "+string(body), t)
 
-	doctorAdviceResponse := &apiservice.DoctorAdviceRequestResponse{}
+	doctorAdviceResponse := &common.Advice{}
 	err = json.Unmarshal(body, doctorAdviceResponse)
 	if err != nil {
 		t.Fatal("Unable to unmarshal response body into json object : " + err.Error())
@@ -187,7 +180,7 @@ func updateAdvicePointsForPatientVisit(doctorAdviceRequest *apiservice.DoctorAdv
 	return doctorAdviceResponse
 }
 
-func validateAdviceRequestAgainstResponse(doctorAdviceRequest, doctorAdviceResponse *apiservice.DoctorAdviceRequestResponse, t *testing.T) {
+func validateAdviceRequestAgainstResponse(doctorAdviceRequest, doctorAdviceResponse *common.Advice, t *testing.T) {
 	if len(doctorAdviceRequest.SelectedAdvicePoints) != len(doctorAdviceResponse.SelectedAdvicePoints) {
 		t.Fatalf("Expected the same number of selected advice points in request and response. Instead request has %d while response has %d", len(doctorAdviceRequest.SelectedAdvicePoints), len(doctorAdviceResponse.SelectedAdvicePoints))
 	}

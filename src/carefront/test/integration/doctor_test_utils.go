@@ -4,6 +4,7 @@ import (
 	"bytes"
 	"carefront/api"
 	"carefront/apiservice"
+	"carefront/common"
 	"carefront/libs/erx"
 	thriftapi "carefront/thrift/api"
 	"encoding/json"
@@ -60,4 +61,58 @@ func setupErxAPI(t *testing.T) *erx.DoseSpotService {
 
 	erx := erx.NewDoseSpotService(clinicId, clinicKey, userId)
 	return erx
+}
+
+func submitPatientVisitDiagnosis(PatientVisitId int64, doctor *common.Doctor, testData TestData, t *testing.T) (diagnosisQuestionId, severityQuestionId, acneTypeQuestionId int64) {
+	answerIntakeRequestBody := &apiservice.AnswerIntakeRequestBody{}
+	answerIntakeRequestBody.PatientVisitId = PatientVisitId
+
+	diagnosisQuestionId, _, _, _, _, _, _, err := testData.DataApi.GetQuestionInfo("q_acne_diagnosis", 1)
+	severityQuestionId, _, _, _, _, _, _, err = testData.DataApi.GetQuestionInfo("q_acne_severity", 1)
+	acneTypeQuestionId, _, _, _, _, _, _, err = testData.DataApi.GetQuestionInfo("q_acne_type", 1)
+
+	diagnosePatientHandler := apiservice.NewDiagnosePatientHandler(testData.DataApi, testData.AuthApi, testData.CloudStorageService)
+	diagnosePatientHandler.AccountIdFromAuthToken(doctor.AccountId)
+	ts := httptest.NewServer(diagnosePatientHandler)
+	defer ts.Close()
+
+	if err != nil {
+		t.Fatal("Unable to get the questionIds for the question tags requested for the doctor to diagnose patient visit")
+	}
+
+	answerToQuestionItem := &apiservice.AnswerToQuestionItem{}
+	answerToQuestionItem.QuestionId = diagnosisQuestionId
+	answerToQuestionItem.AnswerIntakes = []*apiservice.AnswerItem{&apiservice.AnswerItem{PotentialAnswerId: 102}}
+
+	answerToQuestionItem2 := &apiservice.AnswerToQuestionItem{}
+	answerToQuestionItem2.QuestionId = severityQuestionId
+	answerToQuestionItem2.AnswerIntakes = []*apiservice.AnswerItem{&apiservice.AnswerItem{PotentialAnswerId: 107}}
+
+	answerToQuestionItem3 := &apiservice.AnswerToQuestionItem{}
+	answerToQuestionItem3.QuestionId = acneTypeQuestionId
+	answerToQuestionItem3.AnswerIntakes = []*apiservice.AnswerItem{&apiservice.AnswerItem{PotentialAnswerId: 109}, &apiservice.AnswerItem{PotentialAnswerId: 114}, &apiservice.AnswerItem{PotentialAnswerId: 113}}
+
+	answerIntakeRequestBody.Questions = []*apiservice.AnswerToQuestionItem{answerToQuestionItem, answerToQuestionItem2, answerToQuestionItem3}
+
+	requestData, err := json.Marshal(answerIntakeRequestBody)
+	if err != nil {
+		t.Fatal("Unable to marshal request body")
+	}
+
+	req, _ := http.NewRequest("POST", ts.URL, bytes.NewBuffer(requestData))
+	req.Header.Set("Content-Type", "application/json")
+	client := http.Client{}
+	resp, err := client.Do(req)
+	if err != nil {
+		t.Fatal("Unable to successfully submit the diagnosis of a patient visit: " + err.Error())
+	}
+
+	body, err := ioutil.ReadAll(resp.Body)
+	if err != nil {
+		t.Fatal("Unable to read body of response on submitting diagnosis of patient visit : " + err.Error())
+	}
+
+	CheckSuccessfulStatusCode(resp, "Unable to submit diagnosis of patient visit "+string(body), t)
+	return
+
 }

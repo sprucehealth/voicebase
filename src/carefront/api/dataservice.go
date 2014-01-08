@@ -59,7 +59,7 @@ func (d *DataService) GetTreatmentPlanForPatientVisit(patientVisitId int64) (tre
 	err = d.DB.QueryRow(`select id, status, creation_date from treatment_plan where patient_visit_id = ?`, patientVisitId).Scan(&treatmentPlanId, &status, &creationDate)
 	if err != nil {
 		if err == sql.ErrNoRows {
-			return treatmentPlan, nil
+			return nil, nil
 		} else {
 			return
 		}
@@ -1121,6 +1121,57 @@ func (d *DataService) GetDiagnosisSummaryForPatientVisit(patientVisitId int64) (
 	return
 }
 
+func (d *DataService) RecordDoctorAssignmentToPatientVisit(PatientVisitId, DoctorId int64) error {
+	tx, err := d.DB.Begin()
+	if err != nil {
+		return err
+	}
+
+	// update any previous assignment to be inactive
+	_, err = tx.Exec(`update patient_visit_care_provider_assignment set status='INACTIVE' where patient_visit_id=?`, PatientVisitId)
+	if err != nil {
+		tx.Rollback()
+		return err
+	}
+
+	// insert an assignment into table
+	_, err = tx.Exec(`insert into patient_visit_care_provider_assignment (provider_role_id, provider_id, patient_visit_id, status) 
+							values ((select id from provider_role where provider_tag = 'DOCTOR'), ?, ?, 'ACTIVE')`, DoctorId, PatientVisitId)
+	if err != nil {
+		tx.Rollback()
+		return err
+	}
+
+	tx.Commit()
+	return nil
+}
+
+func (d *DataService) GetDoctorAssignedToPatientVisit(PatientVisitId int64) (doctor *common.Doctor, err error) {
+	var firstName, lastName, status, gender string
+	var dob mysql.NullTime
+	var doctorId, accountId int64
+
+	err = d.DB.QueryRow(`select doctor.id,account_id, first_name, last_name, gender, dob, doctor.status from doctor 
+		inner join patient_visit_care_provider_assignment on provider_id = doctor.id
+		inner join provider_role on provider_role_id = provider_role.id
+		where provider_tag = 'DOCTOR' and patient_visit_id = ? and patient_visit_care_provider_assignment.status = 'ACTIVE'`, PatientVisitId).Scan(&doctorId, &accountId, &firstName, &lastName, &gender, &dob, &status)
+	if err != nil {
+		return
+	}
+	doctor = &common.Doctor{
+		FirstName: firstName,
+		LastName:  lastName,
+		Status:    status,
+		Gender:    gender,
+		AccountId: accountId,
+	}
+	if dob.Valid {
+		doctor.Dob = dob.Time
+	}
+	doctor.DoctorId = doctorId
+	return
+}
+
 func (d *DataService) CheckCareProvidingElligibility(shortState string, healthConditionId int64) (isElligible bool, err error) {
 	queryStr := fmt.Sprintf(`select provider_id from care_provider_state_elligibility 
 								inner join care_providing_state on care_providing_state_id = care_providing_state.id 
@@ -1375,13 +1426,23 @@ func (d *DataService) getPatientAnswersForQuestionsBasedOnQuery(query string, ar
 	return
 }
 
-func (d *DataService) GetFollowUpTimeForPatientVisit(patientVisitId int64) (followupTime time.Time, followUpValue int64, followUpUnit string, err error) {
+func (d *DataService) GetFollowUpTimeForPatientVisit(patientVisitId int64) (followUp *common.FollowUp, err error) {
+	var followupTime time.Time
+	var followupValue int64
+	var followupUnit string
+
 	err = d.DB.QueryRow(`select follow_up_date, follow_up_value, follow_up_unit 
-							from patient_visit_follow_up where patient_visit_id = ?`, patientVisitId).Scan(&followupTime, &followUpValue, &followUpUnit)
+							from patient_visit_follow_up where patient_visit_id = ?`, patientVisitId).Scan(&followupTime, &followupValue, &followupUnit)
 	if err == sql.ErrNoRows {
 		err = nil
+		return
 	}
 
+	followUp = &common.FollowUp{}
+	followUp.PatientVisitId = patientVisitId
+	followUp.FollowUpValue = followupValue
+	followUp.FollowUpUnit = followupUnit
+	followUp.FollowUpTime = followupTime
 	return
 }
 
@@ -1618,6 +1679,44 @@ func (d *DataService) GetLatestSubmittedPatientVisit() (*common.PatientVisit, er
 	return patientVisit, err
 }
 
+func (d *DataService) GetLatestClosedPatientVisitForPatient(patientId int64) (patientVisit *common.PatientVisit, err error) {
+	var healthConditionId, layoutVersionId, patientVisitId int64
+	var creationDateBytes, submittedDateBytes, closedDateBytes mysql.NullTime
+	var status string
+
+	row := d.DB.QueryRow(`select id, health_condition_id, layout_version_id,
+		creation_date, submitted_date, closed_date, status from patient_visit where status = 'CLOSED' and patient_id = ? and closed_date is not null order by closed_date desc limit 1`, patientId)
+	err = row.Scan(&patientVisitId, &healthConditionId, &layoutVersionId, &creationDateBytes, &submittedDateBytes, &closedDateBytes, &status)
+	if err != nil {
+		if err == sql.ErrNoRows {
+			err = NoRowsError
+		}
+		return
+	}
+
+	patientVisit = &common.PatientVisit{
+		PatientVisitId:    patientVisitId,
+		PatientId:         patientId,
+		HealthConditionId: healthConditionId,
+		Status:            status,
+		LayoutVersionId:   layoutVersionId,
+	}
+
+	if creationDateBytes.Valid {
+		patientVisit.CreationDate = creationDateBytes.Time
+	}
+
+	if submittedDateBytes.Valid {
+		patientVisit.SubmittedDate = submittedDateBytes.Time
+	}
+
+	if closedDateBytes.Valid {
+		patientVisit.ClosedDate = closedDateBytes.Time
+	}
+
+	return
+}
+
 func (d *DataService) GetPatientVisitFromId(patientVisitId int64) (patientVisit *common.PatientVisit, err error) {
 	var patientId, healthConditionId, layoutVersionId int64
 	var creationDateBytes, submittedDateBytes, closedDateBytes mysql.NullTime
@@ -1697,6 +1796,11 @@ func (d *DataService) CreateNewPatientVisit(patientId, healthConditionId, layout
 
 func (d *DataService) UpdatePatientVisitStatus(patientVisitId int64, status string) error {
 	_, err := d.DB.Exec(fmt.Sprintf(`update patient_visit set status='%s' where id = ?`, status), patientVisitId)
+	return err
+}
+
+func (d *DataService) ClosePatientVisit(patientVisitId int64) error {
+	_, err := d.DB.Exec(fmt.Sprintf(`update patient_visit set status='%s', closed_date=now() where id = ?`, CASE_STATUS_CLOSED), patientVisitId)
 	return err
 }
 

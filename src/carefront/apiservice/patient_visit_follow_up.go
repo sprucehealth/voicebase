@@ -2,9 +2,9 @@ package apiservice
 
 import (
 	"carefront/api"
+	"carefront/common"
 	"github.com/gorilla/schema"
 	"net/http"
-	"time"
 )
 
 type PatientVisitFollowUpHandler struct {
@@ -20,11 +20,8 @@ type PatientVisitFollowUpRequestResponse struct {
 }
 
 type PatientVisitFollowupResponse struct {
-	Result         string    `json:"result,omitempty"`
-	PatientVisitId int64     `json:"patient_visit_id,string,omitempty"`
-	FollowUpValue  int64     `json:"follow_up_value,string,omitempty"`
-	FollowUpUnit   string    `json:"follow_up_unit,omitempty"`
-	FollowUpTime   time.Time `json:"follow_up_time,omitempty"`
+	Result string `json:"result,omitempty"`
+	*common.FollowUp
 }
 
 func NewPatientVisitFollowUpHandler(dataApi api.DataAPI) *PatientVisitFollowUpHandler {
@@ -56,19 +53,15 @@ func (p *PatientVisitFollowUpHandler) getFollowupForPatientVisit(w http.Response
 		return
 	}
 
-	followupTime, followupValue, followupUnit, err := p.DataApi.GetFollowUpTimeForPatientVisit(requestData.PatientVisitId)
+	followup, err := p.DataApi.GetFollowUpTimeForPatientVisit(requestData.PatientVisitId)
 	if err != nil {
 		WriteDeveloperError(w, http.StatusBadRequest, "Unable to get follow up for patient visit: "+err.Error())
 		return
 	}
 
 	response := &PatientVisitFollowupResponse{}
-	if followupValue != 0 && followupUnit != "" {
-		response.FollowUpTime = followupTime
-		response.FollowUpUnit = followupUnit
-		response.FollowUpValue = followupValue
-		response.PatientVisitId = requestData.PatientVisitId
-
+	if followup.FollowUpValue != 0 && followup.FollowUpUnit != "" {
+		response.FollowUp = followup
 	}
 
 	WriteJSONToHTTPResponseWriter(w, http.StatusOK, response)

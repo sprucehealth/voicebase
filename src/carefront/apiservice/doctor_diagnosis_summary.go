@@ -2,6 +2,7 @@ package apiservice
 
 import (
 	"carefront/api"
+	"carefront/common"
 	"github.com/gorilla/schema"
 	"net/http"
 )
@@ -13,11 +14,6 @@ type DiagnosisSummaryHandler struct {
 
 type DiagnosisSummaryRequestData struct {
 	PatientVisitId int64 `schema:"patient_visit_id"`
-}
-
-type DiagnosisSummaryResponse struct {
-	Type    string `json:"type"`
-	Summary string `json:"summary"`
 }
 
 func (d *DiagnosisSummaryHandler) AccountIdFromAuthToken(accountId int64) {
@@ -54,5 +50,5 @@ func (d *DiagnosisSummaryHandler) getDiagnosisSummaryForPatientVisit(w http.Resp
 		WriteDeveloperError(w, http.StatusInternalServerError, "Unable to get diagnosis summary for patient visit: "+err.Error())
 		return
 	}
-	WriteJSONToHTTPResponseWriter(w, http.StatusOK, &DiagnosisSummaryResponse{Type: "text", Summary: summary})
+	WriteJSONToHTTPResponseWriter(w, http.StatusOK, &common.DiagnosisSummary{Type: "text", Summary: summary})
 }
