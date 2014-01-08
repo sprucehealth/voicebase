@@ -238,7 +238,6 @@ func main() {
 	mux.Handle("/v1/patient", signupPatientHandler)
 	mux.Handle("/v1/visit", patientVisitHandler)
 	mux.Handle("/v1/check_eligibility", checkElligibilityHandler)
-	mux.Handle("/v1/patient_visit_review", doctorPatientVisitReviewHandler)
 	mux.Handle("/v1/answer", answerIntakeHandler)
 	mux.Handle("/v1/answer/photo", photoAnswerIntakeHandler)
 	mux.Handle("/v1/signup", authHandler)
@@ -248,28 +247,26 @@ func main() {
 	mux.Handle("/v1/autocomplete", autocompleteHandler)
 	mux.Handle("/v1/pharmacy", pharmacySearchHandler)
 	mux.Handle("/v1/places/pharmacy", googlePlacesPharmacySearch)
-
 	mux.Handle("/v1/doctor_layout", generateDoctorLayoutHandler)
 	mux.Handle("/v1/diagnose_layout", generateDiagnoseLayoutHandler)
 	mux.Handle("/v1/client_model", generateModelIntakeHandler)
 
 	mux.Handle("/v1/doctor/signup", signupDoctorHandler)
 	mux.Handle("/v1/doctor/authenticate", authenticateDoctorHandler)
-	mux.Handle("/v1/doctor/diagnosis", diagnosePatientHandler)
-	mux.Handle("/v1/doctor/diagnosis/summary", diagnosisSummaryHandler)
 	mux.Handle("/v1/doctor/queue", doctorQueueHandler)
 
-	mux.Handle("/v1/doctor/treatment/medication_suggestions", doctorTreatmentSuggestionHandler)
-	mux.Handle("/v1/doctor/treatment/medication_strengths", medicationStrengthSearchHandler)
-	mux.Handle("/v1/doctor/treatment/medication_dispense_units", medicationDispenseUnitHandler)
-
-	mux.Handle("/v1/doctor/treatment/new", newTreatmentHandler)
-	mux.Handle("/v1/doctor/treatment/treatments", treatmentsHandler)
-	mux.Handle("/v1/doctor/treatment/supplemental_instructions", doctorInstructionsHandler)
-
-	mux.Handle("/v1/doctor/regimen", doctorRegimenHandler)
-	mux.Handle("/v1/doctor/advice", doctorAdviceHandler)
-	mux.Handle("/v1/doctor/followup", doctorFollowupHandler)
+	mux.Handle("/v1/doctor/visit/review", doctorPatientVisitReviewHandler)
+	mux.Handle("/v1/doctor/visit/diagnosis", diagnosePatientHandler)
+	mux.Handle("/v1/doctor/visit/diagnosis/summary", diagnosisSummaryHandler)
+	mux.Handle("/v1/doctor/visit/treatment/new", newTreatmentHandler)
+	mux.Handle("/v1/doctor/visit/treatment/treatments", treatmentsHandler)
+	mux.Handle("/v1/doctor/visit/treatment/medication_suggestions", doctorTreatmentSuggestionHandler)
+	mux.Handle("/v1/doctor/visit/treatment/medication_strengths", medicationStrengthSearchHandler)
+	mux.Handle("/v1/doctor/visit/treatment/medication_dispense_units", medicationDispenseUnitHandler)
+	mux.Handle("/v1/doctor/visit/treatment/supplemental_instructions", doctorInstructionsHandler)
+	mux.Handle("/v1/doctor/visit/regimen", doctorRegimenHandler)
+	mux.Handle("/v1/doctor/visit/advice", doctorAdviceHandler)
+	mux.Handle("/v1/doctor/visit/followup", doctorFollowupHandler)
 
 	s := &http.Server{
 		Addr:           conf.ListenAddr,
