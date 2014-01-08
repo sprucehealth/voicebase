@@ -260,6 +260,7 @@ func ParseArgs(config interface{}, args []string) ([]string, error) {
 		return nil, fmt.Errorf("config: got region from metadata: %s", baseConfig.AWSRegion)
 	}
 
+	log.SetFlags(log.Lshortfile | log.Ldate | log.Ltime)
 	if baseConfig.LogPath != "" {
 		// check if the file exists
 		_, err := os.Stat(baseConfig.LogPath)
@@ -283,8 +284,8 @@ func ParseArgs(config interface{}, args []string) ([]string, error) {
 		} else {
 			log.SetOutput(w)
 		}
+		log.SetFlags(log.Lshortfile)
 	}
-	log.SetFlags(log.Lshortfile | log.Ldate | log.Ltime)
 
 	if baseConfig.AppName == "" {
 		fmt.Fprintf(os.Stderr, "Missing required app_name config value.\n")
