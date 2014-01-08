@@ -220,3 +220,8 @@ type DescribeVolumesResponse struct {
 	RequestId string    `xml:"requestId"`
 	Volumes   []*Volume `xml:"volumeSet>item"`
 }
+
+type SimpleResponse struct {
+	RequestId string `xml:"requestId"`
+	Return    bool   `xml:"return"`
+}

@@ -23,6 +23,7 @@ var config = struct {
 	Readahead   int
 	Iops        int
 	Cipher      string
+	Verbose     bool
 
 	awsAuth aws.Auth
 	ec2     *ec2.EC2
@@ -40,6 +41,7 @@ func init() {
 	flag.StringVar(&config.AWSRole, "role", config.AWSRole, "AWS Role")
 	flag.IntVar(&config.Iops, "iops", config.Iops, "Provisioned IOPS (0=disable)")
 	flag.IntVar(&config.StripeSize, "stripesize", config.StripeSize, "Stripe size in KB")
+	flag.BoolVar(&config.Verbose, "v", config.Verbose, "Verbose output")
 }
 
 func main() {
@@ -97,6 +99,8 @@ func main() {
 		err = detach()
 	case "luksmount":
 		err = luksMount()
+	case "gcsnapshots":
+		err = gcSnapshots()
 	}
 	if err != nil {
 		fmt.Fprintf(os.Stderr, "%s\n", err.Error())
@@ -290,6 +294,65 @@ func detach() error {
 			}
 		}
 	}
+
+	return nil
+}
+
+func gcSnapshots() error {
+	if len(flag.Args()) < 3 {
+		return fmt.Errorf("usage: gcsnapshots [name] [#tokeep]")
+	}
+	name := flag.Arg(1)
+	toKeep, err := strconv.Atoi(flag.Arg(2))
+	if err != nil {
+		return err
+	}
+	if toKeep < 0 {
+		toKeep = 0
+	}
+
+	snaps, err := config.ec2.DescribeSnapshots(nil, []string{"self"}, nil,
+		map[string][]string{
+			"tag:Group":       []string{name},
+			"tag:Environment": []string{config.Environment},
+		})
+	if err != nil {
+		return fmt.Errorf("Failed to lookup snapshots: %+v", err)
+	}
+	sort.Sort(snapshotSort(snaps))
+
+	// s := snaps[0]
+	// desc := s.Description
+	// count, err = strconv.Atoi(s.Tags["Total"])
+	// if err != nil {
+	// 	return err
+	// }
+	// snapshots = make([]*ec2.Snapshot, count)
+
+	desc := ""
+	for _, s := range snaps {
+		if s.Description != desc {
+			first := desc == ""
+			desc = s.Description
+			if !first {
+				toKeep--
+			}
+			if toKeep <= 0 && config.Verbose {
+				fmt.Printf("Deleting snapshot group '%s'\n", s.Description)
+			}
+		}
+		if toKeep <= 0 {
+			if err := config.ec2.DeleteSnapshot(s.SnapshotId); err != nil {
+				return err
+			}
+		}
+	}
+	// if toKeep > 1 {
+	// 	toKeep = 1
+	// }
+	// if config.Verbose {
+	// 	fmt.Printf("Deleted %d volume group snapshots\n", -toKeep+1)
+	// }
 
 	return nil
 }

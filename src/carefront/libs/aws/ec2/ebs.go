@@ -59,6 +59,21 @@ func (ec2 *EC2) CreateVolume(size int, az, volumeType, snapshotId string, iops i
 	return res, nil
 }
 
+func (ec2 *EC2) DeleteSnapshot(id string) error {
+	params := url.Values{
+		"SnapshotId": []string{id},
+	}
+	res := &SimpleResponse{}
+	err := ec2.Get("DeleteSnapshot", params, res)
+	if err != nil {
+		return err
+	}
+	if !res.Return {
+		return fmt.Errorf("aws/ec2: operation failed")
+	}
+	return nil
+}
+
 func (ec2 *EC2) DescribeSnapshots(ids, owners, restorableBy []string, filters map[string][]string) ([]*Snapshot, error) {
 	params := url.Values{}
 	for i, id := range ids {
