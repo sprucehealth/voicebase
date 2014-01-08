@@ -8,6 +8,7 @@ import (
 	"io"
 	"io/ioutil"
 	"log"
+	"log/syslog"
 	"net/http"
 	"net/url"
 	"os"
@@ -36,6 +37,7 @@ type BaseConfig struct {
 	ConfigPath              string `short:"c" long:"config" description:"Path to config file. If not set then stderr is used."`
 	Environment             string `short:"e" long:"env" description:"Current environment (dev, stage, prod)"`
 	LogPath                 string `long:"log_path" description:"Path to log file"`
+	Syslog                  bool   `long:"syslog" description:"Log to syslog"`
 	ZookeeperHosts          string `long:"zk_hosts" description:"Zookeeper host list (e.g. 127.0.0.1:2181,192.168.1.1:2181)"`
 	ZookeeperServicesPrefix string `long:"zk_svc_prefix" description:"Zookeeper svc registry prefix" default:"/services"`
 	Stats                   *Stats `group:"Stats" toml:"stats"`
@@ -275,6 +277,12 @@ func ParseArgs(config interface{}, args []string) ([]string, error) {
 			}
 		}
 		log.SetOutput(file)
+	} else if baseConfig.Syslog {
+		if w, err := syslog.New(syslog.LOG_INFO|syslog.LOG_USER, baseConfig.AppName); err != nil {
+			return nil, fmt.Errorf("config: failed to create syslog writer: %s", err.Error())
+		} else {
+			log.SetOutput(w)
+		}
 	}
 	log.SetFlags(log.Lshortfile | log.Ldate | log.Ltime)
 
