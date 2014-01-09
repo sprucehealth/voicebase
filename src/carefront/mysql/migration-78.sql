@@ -1,0 +1,1 @@
+alter table question drop column formatted_field_tag;
