@@ -408,7 +408,7 @@ func TestSubQuestionEntryIntake(t *testing.T) {
 							}
 
 							if subAnswer.AnswerSummary == "" {
-								t.Fatalf("The %s potential answer id should have an answer summary", subAnswer.PotentialAnswerId)
+								t.Fatalf("The %d potential answer id should have an answer summary", subAnswer.PotentialAnswerId)
 							}
 						}
 					}
