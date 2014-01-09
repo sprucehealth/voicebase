@@ -1,0 +1,1 @@
+alter table question change formatted_field_tag formatted_field_tags varchar(150) not null;

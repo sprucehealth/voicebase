@@ -15,7 +15,8 @@ import (
 var ErrBadAuthToken = errors.New("BadAuthToken")
 
 const (
-	genericUserErrorMessage = "Something went wrong on our end. Apologies for the inconvenience and please try again later!"
+	genericUserErrorMessage         = "Something went wrong on our end. Apologies for the inconvenience and please try again later!"
+	DEVELOPER_ERROR_NO_VISIT_EXISTS = 10001
 )
 
 func GetAuthTokenFromHeader(r *http.Request) (string, error) {
@@ -48,6 +49,7 @@ func GetSignedUrlsForAnswersInQuestion(question *info_intake.Question, photoStor
 
 type ErrorResponse struct {
 	DeveloperError string `json:"developer_error,omitempty"`
+	DeveloperCode  int64  `json:"developer_code,string,omitempty"`
 	UserError      string `json:"user_error,omitempty"`
 }
 
@@ -64,6 +66,14 @@ func WriteDeveloperError(w http.ResponseWriter, httpStatusCode int, errorString 
 	log.Println(errorString)
 	developerError := new(ErrorResponse)
 	developerError.DeveloperError = errorString
+	developerError.UserError = genericUserErrorMessage
+	WriteJSONToHTTPResponseWriter(w, httpStatusCode, developerError)
+}
+
+func WriteDeveloperErrorWithCode(w http.ResponseWriter, developerStatusCode int64, httpStatusCode int, errorString string) {
+	developerError := new(ErrorResponse)
+	developerError.DeveloperError = errorString
+	developerError.DeveloperCode = developerStatusCode
 	developerError.UserError = genericUserErrorMessage
 	WriteJSONToHTTPResponseWriter(w, httpStatusCode, developerError)
 }

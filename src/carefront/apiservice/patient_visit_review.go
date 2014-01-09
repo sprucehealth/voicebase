@@ -18,13 +18,23 @@ type PatientVisitReviewRequest struct {
 	PatientVisitId int64 `schema:"patient_visit_id"`
 }
 
+type treatmentDisplayItem struct {
+	Name string `json:"name"`
+	OTC  bool   `json:"otc"`
+}
+
+type treatmentsDisplaySection struct {
+	Medications []*treatmentDisplayItem `json:"medications"`
+	Title       string                  `json:"title"`
+}
+
 type PatientVisitReviewResponse struct {
-	PatientVisitId   int64                    `json:"patient_visit_id,string,omitempty"`
-	DiagnosisSummary *common.DiagnosisSummary `json:"diagnosis_summary,omitempty"`
-	TreatmentPlan    *common.TreatmentPlan    `json:"treatment_plan,omitempty"`
-	RegimenPlan      *common.RegimenPlan      `json:"regimen_plan,omitempty"`
-	Advice           *common.Advice           `json:"advice,omitempty"`
-	Followup         *common.FollowUp         `json:"follow_up,omitempty"`
+	PatientVisitId   int64                     `json:"patient_visit_id,string,omitempty"`
+	DiagnosisSummary *common.DiagnosisSummary  `json:"diagnosis_summary,omitempty"`
+	Treatments       *treatmentsDisplaySection `json:"treatments,omitempty"`
+	RegimenPlan      *common.RegimenPlan       `json:"regimen,omitempty"`
+	Advice           *common.Advice            `json:"advice,omitempty"`
+	Followup         *common.FollowUp          `json:"follow_up,omitempty"`
 }
 
 func (p *PatientVisitReviewHandler) AccountIdFromAuthToken(accountId int64) {
@@ -116,8 +126,18 @@ func (p *PatientVisitReviewHandler) ServeHTTP(w http.ResponseWriter, r *http.Req
 		return
 	}
 	if treatmentPlan != nil {
-		treatmentPlan.Title = "Treatments"
-		patientVisitReviewResponse.TreatmentPlan = treatmentPlan
+		treatments := &treatmentsDisplaySection{}
+		treatments.Title = "Treatments"
+		treatments.Medications = make([]*treatmentDisplayItem, 0)
+		for _, treatment := range treatmentPlan.Treatments {
+			drugName, _, _ := breakDrugInternalNameIntoComponents(treatment.DrugInternalName)
+			treatmentItem := &treatmentDisplayItem{}
+			treatmentItem.Name = fmt.Sprintf("%s %s", drugName, treatment.DosageStrength)
+			treatmentItem.OTC = treatment.OTC
+			treatments.Medications = append(treatments.Medications, treatmentItem)
+		}
+
+		patientVisitReviewResponse.Treatments = treatments
 	}
 
 	regimenPlan, err := p.DataApi.GetRegimenPlanForPatientVisit(patientVisit.PatientVisitId)

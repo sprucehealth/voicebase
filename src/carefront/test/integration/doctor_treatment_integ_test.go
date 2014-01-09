@@ -175,7 +175,7 @@ func TestAddTreatments(t *testing.T) {
 	}
 
 	// get patient to start a visit
-	patientVisitResponse := GetPatientVisitForPatient(patientSignedupResponse.PatientId, testData, t)
+	patientVisitResponse := CreatePatientVisitForPatient(patientSignedupResponse.PatientId, testData, t)
 
 	// get patient to submit the visit
 	SubmitPatientVisitForPatient(patientSignedupResponse.PatientId, patientVisitResponse.PatientVisitId, testData, t)

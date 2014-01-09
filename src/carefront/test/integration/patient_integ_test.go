@@ -63,7 +63,7 @@ func TestPatientVisitCreation(t *testing.T) {
 	defer TearDownIntegrationTest(t, testData)
 
 	signedupPatientResponse := SignupRandomTestPatient(t, testData.DataApi, testData.AuthApi)
-	patientVisitResponse := GetPatientVisitForPatient(signedupPatientResponse.PatientId, testData, t)
+	patientVisitResponse := CreatePatientVisitForPatient(signedupPatientResponse.PatientId, testData, t)
 
 	if patientVisitResponse.PatientVisitId == 0 {
 		t.Fatal("Patient Visit Id not set when it should be.")
@@ -111,7 +111,7 @@ func TestPatientVisitSubmission(t *testing.T) {
 	defer TearDownIntegrationTest(t, testData)
 
 	signedupPatientResponse := SignupRandomTestPatient(t, testData.DataApi, testData.AuthApi)
-	patientVisitResponse := GetPatientVisitForPatient(signedupPatientResponse.PatientId, testData, t)
+	patientVisitResponse := CreatePatientVisitForPatient(signedupPatientResponse.PatientId, testData, t)
 
 	SubmitPatientVisitForPatient(signedupPatientResponse.PatientId, patientVisitResponse.PatientVisitId, testData, t)
 
@@ -129,7 +129,13 @@ func TestPatientVisitSubmission(t *testing.T) {
 	defer ts.Close()
 	buffer := bytes.NewBufferString("patient_visit_id=")
 	buffer.WriteString(strconv.FormatInt(patientVisitResponse.PatientVisitId, 10))
-	resp, err := http.Post(ts.URL, "application/x-www-form-urlencoded", buffer)
+	client := &http.Client{}
+	req, err := http.NewRequest("PUT", ts.URL, buffer)
+	if err != nil {
+		t.Fatal("Unable to create new request for submitting patient visit: " + err.Error())
+	}
+	req.Header.Set("Content-Type", "application/x-www-form-urlencoded")
+	resp, err := client.Do(req)
 
 	if err != nil {
 		t.Fatal("Unable to get the patient visit id")
@@ -137,11 +143,5 @@ func TestPatientVisitSubmission(t *testing.T) {
 
 	if resp.StatusCode != http.StatusBadRequest {
 		t.Fatalf("Expected a bad request 403 to be returned when attempting to submit an already submitted patient visit, but instead got %d", resp.StatusCode)
-	}
-
-	// now, the patient_visit returned should be diffeent than the previous one
-	anotherPatientVisitResponse := GetPatientVisitForPatient(signedupPatientResponse.PatientId, testData, t)
-	if anotherPatientVisitResponse.PatientVisitId == patientVisitResponse.PatientVisitId {
-		t.Fatal("The patient visit id should be different as a new visit should start after the patient has submitted a patient visit")
 	}
 }

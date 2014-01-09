@@ -31,7 +31,7 @@ func TestAdvicePointsForPatientVisit(t *testing.T) {
 	}
 
 	// get patient to start a visit
-	patientVisitResponse := GetPatientVisitForPatient(patientSignedupResponse.PatientId, testData, t)
+	patientVisitResponse := CreatePatientVisitForPatient(patientSignedupResponse.PatientId, testData, t)
 
 	// attempt to get the advice points for this patient visit
 	doctorAdviceResponse := getAdvicePointsInPatientVisit(testData, doctor, patientVisitResponse.PatientVisitId, t)
@@ -94,8 +94,8 @@ func TestAdvicePointsForPatientVisit(t *testing.T) {
 	validateAdviceRequestAgainstResponse(doctorAdviceRequest, doctorAdviceResponse, t)
 
 	// lets start a new patient visit and ensure that we still get back the advice points as added
-	SubmitPatientVisitForPatient(patientSignedupResponse.PatientId, patientVisitResponse.PatientVisitId, testData, t)
-	patientVisitResponse2 := GetPatientVisitForPatient(patientSignedupResponse.PatientId, testData, t)
+	patientSignedupResponse = SignupRandomTestPatient(t, testData.DataApi, testData.AuthApi)
+	patientVisitResponse2 := CreatePatientVisitForPatient(patientSignedupResponse.PatientId, testData, t)
 
 	// get the advice points for this patient visit
 	doctorAdviceResponse2 := getAdvicePointsInPatientVisit(testData, doctor, patientVisitResponse2.PatientVisitId, t)

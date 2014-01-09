@@ -80,6 +80,42 @@ func GetPatientVisitForPatient(PatientId int64, testData TestData, t *testing.T)
 	return patientVisitResponse
 }
 
+func CreatePatientVisitForPatient(PatientId int64, testData TestData, t *testing.T) *apiservice.PatientVisitResponse {
+	patientVisitHandler := apiservice.NewPatientVisitHandler(testData.DataApi, testData.AuthApi,
+		testData.CloudStorageService, testData.CloudStorageService)
+	patient, err := testData.DataApi.GetPatientFromId(PatientId)
+	if err != nil {
+		t.Fatal("Unable to get patient information given the patient id: " + err.Error())
+	}
+
+	patientVisitHandler.AccountIdFromAuthToken(patient.AccountId)
+	ts := httptest.NewServer(patientVisitHandler)
+	defer ts.Close()
+
+	// register a patient visit for this patient
+	client := &http.Client{}
+	req, _ := http.NewRequest("POST", ts.URL, nil)
+	resp, err := client.Do(req)
+	if err != nil {
+		t.Fatal("Unable to get the patient visit id")
+	}
+
+	body, err := ioutil.ReadAll(resp.Body)
+	if err != nil {
+		t.Fatal("Unable to read body of the response for the new patient visit call: " + err.Error())
+	}
+
+	CheckSuccessfulStatusCode(resp, "Unsuccessful call to register new patient visit: "+string(body), t)
+
+	patientVisitResponse := &apiservice.PatientVisitResponse{}
+	err = json.Unmarshal(body, patientVisitResponse)
+	if err != nil {
+		t.Fatal("Unable to unmarshall response body into patient visit response: " + err.Error())
+	}
+
+	return patientVisitResponse
+}
+
 func SubmitPatientVisitForPatient(PatientId, PatientVisitId int64, testData TestData, t *testing.T) {
 	patientVisitHandler := apiservice.NewPatientVisitHandler(testData.DataApi, testData.AuthApi,
 		testData.CloudStorageService, testData.CloudStorageService)
@@ -93,7 +129,14 @@ func SubmitPatientVisitForPatient(PatientId, PatientVisitId int64, testData Test
 	defer ts.Close()
 	buffer := bytes.NewBufferString("patient_visit_id=")
 	buffer.WriteString(strconv.FormatInt(PatientVisitId, 10))
-	resp, err := http.Post(ts.URL, "application/x-www-form-urlencoded", buffer)
+
+	client := &http.Client{}
+	req, err := http.NewRequest("PUT", ts.URL, buffer)
+	if err != nil {
+		t.Fatal("Unable to create request to submit patient visit")
+	}
+	req.Header.Set("Content-Type", "application/x-www-form-urlencoded")
+	resp, err := client.Do(req)
 
 	if err != nil {
 		t.Fatal("Unable to get the patient visit id")

@@ -1544,6 +1544,15 @@ func (d *DataService) GetActivePatientVisitIdForHealthCondition(patientId, healt
 	return patientVisitId, err
 }
 
+func (d *DataService) GetLastCreatedPatientVisitIdForPatient(patientId int64) (int64, error) {
+	var patientVisitId int64
+	err := d.DB.QueryRow(`select id from patient_visit where patient_id = ? and creation_date is not null order by creation_date desc limit 1`, patientId).Scan(&patientVisitId)
+	if err != nil && err == sql.ErrNoRows {
+		return 0, NoRowsError
+	}
+	return patientVisitId, nil
+}
+
 func (d *DataService) GetCareTeamForPatient(patientId int64) (careTeam *common.PatientCareProviderGroup, err error) {
 	rows, err := d.DB.Query(`select patient_care_provider_group.id as group_id, patient_care_provider_assignment.id as assignment_id, provider_tag, 
 								created_date, modified_date,provider_id, patient_care_provider_group.status as group_status, 
@@ -1590,56 +1599,57 @@ func (d *DataService) GetCareTeamForPatient(patientId int64) (careTeam *common.P
 	return careTeam, nil
 }
 
-func (d *DataService) CreateCareTeamForPatient(patientId int64) error {
+func (d *DataService) CreateCareTeamForPatient(patientId int64) (careTeam *common.PatientCareProviderGroup, err error) {
 	// identify providers in the state required. Assuming for now that we can only have one provider in the
 	// state of CA. The reason for this assumption is that we have not yet figured out how best to deal with
 	// multiple active doctors in how they will be assigned to the patient.
 	// TODO : Update care team formation when we have more than 1 doctor that we can have as active in our system
 	var providerId, providerRoleId int64
-	err := d.DB.QueryRow(`select provider_id, provider_role_id from care_provider_state_elligibility 
+	err = d.DB.QueryRow(`select provider_id, provider_role_id from care_provider_state_elligibility 
 					inner join care_providing_state on care_providing_state_id = care_providing_state.id
 					where state = 'CA'`).Scan(&providerId, &providerRoleId)
 
 	if err == sql.ErrNoRows {
-		return NoElligibileProviderInState
+		return nil, NoElligibileProviderInState
 	} else if err != nil {
-		return err
+		return
 	}
 
 	// create new group assignment for patient visit
 	tx, err := d.DB.Begin()
 	if err != nil {
-		return err
+		return
 	}
 
 	res, err := tx.Exec(`insert into patient_care_provider_group (patient_id, status) values (?, 'CREATING')`, patientId)
 	if err != nil {
 		tx.Rollback()
-		return err
+		return
 	}
 
 	lastInsertId, err := res.LastInsertId()
 	if err != nil {
 		tx.Rollback()
-		return err
+		return
 	}
 
 	// create new assignment for patient
 	_, err = tx.Exec("insert into patient_care_provider_assignment (patient_id, provider_role_id, provider_id, assignment_group_id, status) values (?, ?, ?, ?, 'PRIMARY')", patientId, providerRoleId, providerId, lastInsertId)
 	if err != nil {
 		tx.Rollback()
-		return err
+		return
 	}
 
 	// update group assignment to be the active group assignment for this patient visit
 	_, err = tx.Exec(`update patient_care_provider_group set status='ACTIVE' where id=?`, lastInsertId)
 	if err != nil {
 		tx.Rollback()
-		return err
+		return
 	}
 
 	tx.Commit()
-	return nil
+	careTeam, err = d.GetCareTeamForPatient(patientId)
+	return
 }
 
 // Adding this only to link the patient and the doctor app so as to show the doctor
@@ -2092,17 +2102,18 @@ func (d *DataService) GetSectionInfo(sectionTag string, languageId int64) (id in
 	return
 }
 
-func (d *DataService) GetQuestionInfo(questionTag string, languageId int64) (id int64, questionTitle string, questionType string, questionSummary string, questionSubText string, parentQuestionId int64, additionalFields map[string]string, err error) {
+func (d *DataService) GetQuestionInfo(questionTag string, languageId int64) (id int64, questionTitle string, questionType string, questionSummary string, questionSubText string, parentQuestionId int64, additionalFields map[string]string, formattedFieldTags string, err error) {
 	var byteQuestionTitle, byteQuestionType, byteQuestionSummary, byteQuestionSubtext []byte
+	var formattedFieldTagsNull sql.NullString
 	var nullParentQuestionId sql.NullInt64
 	err = d.DB.QueryRow(
-		`select question.id, l1.ltext, qtype, parent_question_id, l2.ltext, l3.ltext from question 
+		`select question.id, l1.ltext, qtype, parent_question_id, l2.ltext, l3.ltext, formatted_field_tags from question 
 			left outer join localized_text as l1 on l1.app_text_id=qtext_app_text_id
 			left outer join question_type on qtype_id=question_type.id
 			left outer join localized_text as l2 on qtext_short_text_id = l2.app_text_id
 			left outer join localized_text as l3 on subtext_app_text_id = l3.app_text_id
 				where question_tag = ? and (l1.ltext is NULL or l1.language_id = ?) and (l3.ltext is NULL or l3.language_id=?)`,
-		questionTag, languageId, languageId).Scan(&id, &byteQuestionTitle, &byteQuestionType, &nullParentQuestionId, &byteQuestionSummary, &byteQuestionSubtext)
+		questionTag, languageId, languageId).Scan(&id, &byteQuestionTitle, &byteQuestionType, &nullParentQuestionId, &byteQuestionSummary, &byteQuestionSubtext, &formattedFieldTagsNull)
 	if nullParentQuestionId.Valid {
 		parentQuestionId = nullParentQuestionId.Int64
 	}
@@ -2110,6 +2121,9 @@ func (d *DataService) GetQuestionInfo(questionTag string, languageId int64) (id 
 	questionType = string(byteQuestionType)
 	questionSummary = string(byteQuestionSummary)
 	questionSubText = string(byteQuestionSubtext)
+	if formattedFieldTagsNull.Valid {
+		formattedFieldTags = formattedFieldTagsNull.String
+	}
 
 	// get any additional fields pertaining to the question from the database
 	rows, err := d.DB.Query(`select question_field, ltext from question_fields

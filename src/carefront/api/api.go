@@ -9,6 +9,7 @@ import (
 const (
 	EN_LANGUAGE_ID           = 1
 	DOCTOR_ROLE              = "DOCTOR"
+	PRIMARY_DOCTOR_STATUS    = "PRIMARY"
 	PATIENT_ROLE             = "PATIENT"
 	REVIEW_PURPOSE           = "REVIEW"
 	CONDITION_INTAKE_PURPOSE = "CONDITION_INTAKE"
@@ -43,7 +44,7 @@ type PatientAPI interface {
 	RegisterPatient(accountId int64, firstName, lastName, gender, zipCode string, dob time.Time) (int64, error)
 	CreateNewPatientVisit(patientId, healthConditionId, layoutVersionId int64) (int64, error)
 	GetPatientIdFromAccountId(accountId int64) (int64, error)
-	CreateCareTeamForPatient(patientId int64) error
+	CreateCareTeamForPatient(patientId int64) (careTeam *common.PatientCareProviderGroup, err error)
 	GetCareTeamForPatient(patientId int64) (careTeam *common.PatientCareProviderGroup, err error)
 	CheckCareProvidingElligibility(shortState string, healthConditionId int64) (isElligible bool, err error)
 }
@@ -72,6 +73,7 @@ type DoctorAPI interface {
 
 type PatientVisitAPI interface {
 	GetActivePatientVisitIdForHealthCondition(patientId, healthConditionId int64) (int64, error)
+	GetLastCreatedPatientVisitIdForPatient(patientId int64) (int64, error)
 	GetPatientIdFromPatientVisitId(patientVisitId int64) (int64, error)
 	GetLatestSubmittedPatientVisit() (*common.PatientVisit, error)
 	GetLatestClosedPatientVisitForPatient(patientId int64) (*common.PatientVisit, error)
@@ -118,7 +120,7 @@ type IntakeLayoutAPI interface {
 	GetSectionIdsForHealthCondition(healthConditionId int64) (sectionIds []int64, err error)
 	GetHealthConditionInfo(healthConditionTag string) (int64, error)
 	GetSectionInfo(sectionTag string, languageId int64) (id int64, title string, err error)
-	GetQuestionInfo(questionTag string, languageId int64) (id int64, questionTitle string, questionType string, questionSummary string, questionSubText string, parentQuestionId int64, additionalFields map[string]string, err error)
+	GetQuestionInfo(questionTag string, languageId int64) (id int64, questionTitle string, questionType string, questionSummary string, questionSubText string, parentQuestionId int64, additionalFields map[string]string, formattedFieldTags string, err error)
 	GetAnswerInfo(questionId int64, languageId int64) (answerInfos []PotentialAnswerInfo, err error)
 	GetTipSectionInfo(tipSectionTag string, languageId int64) (id int64, tipSectionTitle string, tipSectionSubtext string, err error)
 	GetTipInfo(tipTag string, languageId int64) (id int64, tip string, err error)

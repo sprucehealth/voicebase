@@ -22,7 +22,7 @@ func TestPatientVisitReview(t *testing.T) {
 	defer TearDownIntegrationTest(t, testData)
 
 	signedupPatientResponse := SignupRandomTestPatient(t, testData.DataApi, testData.AuthApi)
-	patientVisitResponse := GetPatientVisitForPatient(signedupPatientResponse.PatientId, testData, t)
+	patientVisitResponse := CreatePatientVisitForPatient(signedupPatientResponse.PatientId, testData, t)
 	SubmitPatientVisitForPatient(signedupPatientResponse.PatientId, patientVisitResponse.PatientVisitId, testData, t)
 
 	patient, err := testData.DataApi.GetPatientFromId(signedupPatientResponse.PatientId)
@@ -94,13 +94,14 @@ func TestPatientVisitReview(t *testing.T) {
 		t.Fatal("Unable to unmarshal response body in to json object: " + err.Error())
 	}
 
-	if patientVisitReviewResponse.DiagnosisSummary != nil || patientVisitReviewResponse.TreatmentPlan != nil || patientVisitReviewResponse.RegimenPlan != nil ||
+	if patientVisitReviewResponse.DiagnosisSummary != nil || patientVisitReviewResponse.Treatments != nil || patientVisitReviewResponse.RegimenPlan != nil ||
 		patientVisitReviewResponse.Advice != nil || patientVisitReviewResponse.Followup != nil {
 		t.Fatal("Expected there to exist no review for this patient visit, but some parts of it do exist")
 	}
 
 	// start a new patient visit
-	patientVisitResponse = GetPatientVisitForPatient(signedupPatientResponse.PatientId, testData, t)
+	signedupPatientResponse = SignupRandomTestPatient(t, testData.DataApi, testData.AuthApi)
+	patientVisitResponse = CreatePatientVisitForPatient(signedupPatientResponse.PatientId, testData, t)
 	SubmitPatientVisitForPatient(signedupPatientResponse.PatientId, patientVisitResponse.PatientVisitId, testData, t)
 
 	// get doctor to start reviewing it
@@ -246,7 +247,11 @@ func TestPatientVisitReview(t *testing.T) {
 	// GET PATIENT VISIT REVIEW FOR PATIENT
 	//
 	//
-
+	patient, err = testData.DataApi.GetPatientFromId(signedupPatientResponse.PatientId)
+	if err != nil {
+		t.Fatal("Unable to get the patient object given the id: " + err.Error())
+	}
+	patientVisitReviewHandler.AccountIdFromAuthToken(patient.AccountId)
 	resp, err = http.Get(ts.URL + "?patient_visit_id=" + strconv.FormatInt(patientVisitResponse.PatientVisitId, 10))
 	if err != nil {
 		t.Fatal("Unable to make call to get patient visit review: " + err.Error())
@@ -265,7 +270,7 @@ func TestPatientVisitReview(t *testing.T) {
 		t.Fatal("Unable to unmarshal response body in to json object: " + err.Error())
 	}
 
-	if patientVisitReviewResponse.DiagnosisSummary == nil || patientVisitReviewResponse.TreatmentPlan == nil || patientVisitReviewResponse.RegimenPlan == nil ||
+	if patientVisitReviewResponse.DiagnosisSummary == nil || patientVisitReviewResponse.Treatments == nil || patientVisitReviewResponse.RegimenPlan == nil ||
 		patientVisitReviewResponse.Advice == nil || patientVisitReviewResponse.Followup == nil {
 		t.Fatal("Expected there to exist all sections of the review")
 	}

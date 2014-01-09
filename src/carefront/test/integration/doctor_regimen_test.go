@@ -31,7 +31,7 @@ func TestRegimenForPatientVisit(t *testing.T) {
 	}
 
 	// get patient to start a visit
-	patientVisitResponse := GetPatientVisitForPatient(patientSignedupResponse.PatientId, testData, t)
+	patientVisitResponse := CreatePatientVisitForPatient(patientSignedupResponse.PatientId, testData, t)
 
 	// attempt to get the regimen plan or a patient visit
 	regimenPlan := getRegimenPlanForPatientVisit(testData, doctor, patientVisitResponse.PatientVisitId, t)
@@ -115,7 +115,8 @@ func TestRegimenForPatientVisit(t *testing.T) {
 	SubmitPatientVisitForPatient(patientSignedupResponse.PatientId, patientVisitResponse.PatientVisitId, testData, t)
 
 	// get patient to start a visit
-	patientVisitResponse = GetPatientVisitForPatient(patientSignedupResponse.PatientId, testData, t)
+	patientSignedupResponse = SignupRandomTestPatient(t, testData.DataApi, testData.AuthApi)
+	patientVisitResponse = CreatePatientVisitForPatient(patientSignedupResponse.PatientId, testData, t)
 
 	regimenPlan = getRegimenPlanForPatientVisit(testData, doctor, patientVisitResponse.PatientVisitId, t)
 	if len(regimenPlan.RegimenSections) > 0 {

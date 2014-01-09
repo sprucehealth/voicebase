@@ -67,9 +67,9 @@ func submitPatientVisitDiagnosis(PatientVisitId int64, doctor *common.Doctor, te
 	answerIntakeRequestBody := &apiservice.AnswerIntakeRequestBody{}
 	answerIntakeRequestBody.PatientVisitId = PatientVisitId
 
-	diagnosisQuestionId, _, _, _, _, _, _, err := testData.DataApi.GetQuestionInfo("q_acne_diagnosis", 1)
-	severityQuestionId, _, _, _, _, _, _, err = testData.DataApi.GetQuestionInfo("q_acne_severity", 1)
-	acneTypeQuestionId, _, _, _, _, _, _, err = testData.DataApi.GetQuestionInfo("q_acne_type", 1)
+	diagnosisQuestionId, _, _, _, _, _, _, _, err := testData.DataApi.GetQuestionInfo("q_acne_diagnosis", 1)
+	severityQuestionId, _, _, _, _, _, _, _, err = testData.DataApi.GetQuestionInfo("q_acne_severity", 1)
+	acneTypeQuestionId, _, _, _, _, _, _, _, err = testData.DataApi.GetQuestionInfo("q_acne_type", 1)
 
 	diagnosePatientHandler := apiservice.NewDiagnosePatientHandler(testData.DataApi, testData.AuthApi, testData.CloudStorageService)
 	diagnosePatientHandler.AccountIdFromAuthToken(doctor.AccountId)

@@ -1,0 +1,1 @@
+alter table question add column formatted_field_tag varchar(150);
