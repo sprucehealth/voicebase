@@ -21,9 +21,13 @@ then
 fi
 
 GOOS=linux GOARCH=amd64 CGO_ENABLED=0 go build -o $APP
+GOVERSION=$(go version)
+REV=$(git rev-parse HEAD)
+BRANCH=$(git rev-parse --abbrev-ref HEAD)
 
 for HOST in $HOSTS
 do
+	LOGMSG="{\"env\":\"$deploy_env\",\"user\":\"$USER\",\"app\":\"$APP\",\"date\":\"$DATE\",\"host\":\"$HOST\",\"goversion\":\"$GOVERSION\",\"rev\":\"$REV\",\"branch\":\"$BRANCH\"}"
 	scp -C $APP $HOST:/usr/local/apps/$APP/$APP.$DATE
-	ssh $HOST "cd /usr/local/apps/$APP && chmod +x $APP.$DATE && rm -f $APP && ln -s $APP.$DATE $APP && supervisorctl restart $APP"
+	ssh $HOST "cd /usr/local/apps/$APP && chmod +x $APP.$DATE && rm -f $APP && ln -s $APP.$DATE $APP && supervisorctl restart $APP ; logger -p user.info -t deploy '$LOGMSG'"
 done
