@@ -24,6 +24,7 @@ GOOS=linux GOARCH=amd64 CGO_ENABLED=0 go build -o $APP
 
 for HOST in $HOSTS
 do
+	LOGMSG="{\"env\":\"$deploy_env\",\"user\":\"$USER\",\"app\":\"$APP\",\"date\":\"$DATE\",\"host\":\"$HOST\"}"
 	scp -C $APP $HOST:/usr/local/apps/$APP/$APP.$DATE
-	ssh $HOST "cd /usr/local/apps/$APP && chmod +x $APP.$DATE && rm -f $APP && ln -s $APP.$DATE $APP && supervisorctl restart $APP"
+	ssh $HOST "cd /usr/local/apps/$APP && chmod +x $APP.$DATE && rm -f $APP && ln -s $APP.$DATE $APP && supervisorctl restart $APP ; logger -p user.info -t deploy '$LOGMSG'"
 done
