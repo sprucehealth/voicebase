@@ -11,6 +11,7 @@ import (
 	"github.com/gorilla/schema"
 	"log"
 	"net/http"
+	"strings"
 )
 
 const (
@@ -298,16 +299,19 @@ func (s *PatientVisitHandler) fillInFormattedFieldsForQuestions(healthCondition 
 			for _, question := range screen.Questions {
 
 				if question.FormattedFieldTags != nil {
-					fields := make([]string, 0)
+
 					// populate the values for each of the fields in order
 					for _, fieldTag := range question.FormattedFieldTags {
-						switch fieldTag {
-						case info_intake.FORMATTED_FIELD_DOCTOR_LAST_NAME:
-							fields = append(fields, doctor.LastName)
+						fieldTagComponents := strings.Split(fieldTag, ":")
+						if fieldTagComponents[0] == info_intake.FORMATTED_TITLE_FIELD {
+							switch fieldTagComponents[1] {
+							case info_intake.FORMATTED_FIELD_DOCTOR_LAST_NAME:
+								// build the formatted string and assign it back to the question title
+								question.QuestionTitle = fmt.Sprintf(question.QuestionTitle, strings.Title(doctor.LastName))
+							}
 						}
 					}
-					// build the formatted string and assign it back to the question title
-					question.QuestionTitle = fmt.Sprintf(question.QuestionTitle, fields)
+
 				}
 			}
 		}

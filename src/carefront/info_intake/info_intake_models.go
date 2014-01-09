@@ -7,6 +7,7 @@ import (
 
 const (
 	FORMATTED_FIELD_DOCTOR_LAST_NAME = "doctor_last_name"
+	FORMATTED_TITLE_FIELD            = "title"
 )
 
 type InfoIntakeModel interface {
@@ -47,7 +48,7 @@ type Question struct {
 	QuestionId         int64                  `json:"question_id,string,omitempty"`
 	QuestionTitle      string                 `json:"question_title,omitempty"`
 	QuestionTypes      []string               `json:"question_types,omitempty"`
-	FormattedFieldTags []string               `json:"-"`
+	FormattedFieldTags []string               `json:"formatted_field_tags,omitempty"`
 	QuestionSubText    string                 `json:"question_subtext,omitempty"`
 	QuestionSummary    string                 `json:"question_summary,omitempty"`
 	AdditionalFields   map[string]string      `json:"additional_fields,omitempty"`

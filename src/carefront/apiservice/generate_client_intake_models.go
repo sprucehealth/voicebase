@@ -70,16 +70,13 @@ func (l *GenerateClientIntakeModelHandler) ServeHTTP(w http.ResponseWriter, r *h
 	currentActiveBucket, currentActiveKey, currentActiveRegion, _ := l.DataApi.GetActiveLayoutInfoForHealthCondition(healthConditionTag, api.PATIENT_ROLE, api.CONDITION_INTAKE_PURPOSE)
 	if currentActiveBucket != "" {
 		rawData, err := l.CloudStorageApi.GetObjectAtLocation(currentActiveBucket, currentActiveKey, currentActiveRegion)
-		if err != nil {
-			log.Println(err)
-			WriteDeveloperError(w, http.StatusInternalServerError, "Error getting current active layout from S3: "+err.Error())
-			return
-		}
-		res := bytes.Compare(data, rawData)
-		// nothing to do if the layouts are exactly the same
-		if res == 0 {
-			WriteJSONToHTTPResponseWriter(w, http.StatusOK, ClientIntakeModelGeneratedResponse{nil})
-			return
+		if err == nil {
+			res := bytes.Compare(data, rawData)
+			// nothing to do if the layouts are exactly the same
+			if res == 0 {
+				WriteJSONToHTTPResponseWriter(w, http.StatusOK, ClientIntakeModelGeneratedResponse{nil})
+				return
+			}
 		}
 	}
 
