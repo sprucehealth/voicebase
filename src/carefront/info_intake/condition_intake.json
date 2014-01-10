@@ -80,7 +80,7 @@
                                 "potential_answers": [
                                     "a_prescription_prev_treatment_type", 
                                     "a_otc_prev_treatment_type"
-                                ],  
+                                ], 
                                 "question": "q_acne_prev_treatment_types"
                             }, 
                             "question": "q_acne_prev_treatment_list", 
@@ -110,7 +110,24 @@
                     ]
                 }
             ], 
-            "section": "section_skin_history"
+            "section": "section_skin_history", 
+            "transition": {
+                "buttons": [
+                    {
+                        "button_text": "Continue", 
+                        "style": "filled", 
+                        "tap_url": "spruce:///action/view_next_visit_section"
+                    }, 
+                    {
+                        "button_text": "I can't take photos right now", 
+                        "style": "bordered", 
+                        "tap_url": "spruce:///action/no_photos_now"
+                    }
+                ], 
+                "image_url": "spruce:///image/tickmark", 
+                "message": "Next up we'll take photos for your diagnosis.", 
+                "title": "About your skin is complete!"
+            }
         }, 
         {
             "screens": [
@@ -150,15 +167,12 @@
                     "description": "medications currently taking", 
                     "questions": [
                         {
-                            "question": "q_current_medications_entry"
-                        }
-                    ]
-                }, 
-                {
-                    "description": "social history", 
-                    "questions": [
-                        {
-                            "question": "q_social_history"
+                            "question": "q_current_medications_entry", 
+                            "questions": [
+                                {
+                                    "question": "q_length_current_medication"
+                                }
+                            ]
                         }
                     ]
                 }, 
@@ -181,24 +195,6 @@
                     ]
                 }, 
                 {
-                    "description": "topical medication allergies", 
-                    "questions": [
-                        {
-                            "question": "q_topical_allergic_medications"
-                        }, 
-                        {
-                            "condition": {
-                                "op": "answer_equals", 
-                                "potential_answers": [
-                                    "a_topical_allergic_medication_yes"
-                                ], 
-                                "question": "q_topical_allergic_medications"
-                            }, 
-                            "question": "q_topical_allergies_medication_entry"
-                        }
-                    ]
-                }, 
-                {
                     "description": "treated for any of the following conditions", 
                     "questions": [
                         {
@@ -207,7 +203,19 @@
                     ]
                 }
             ], 
-            "section": "section_medical_history"
+            "section": "section_medical_history", 
+            "transition": {
+                "buttons": [
+                    {
+                        "button_text": "Continue", 
+                        "style": "filled", 
+                        "tap_url": "spruce:///action/checkout"
+                    }
+                ], 
+                "image_url": "spruce:///image/tickmark", 
+                "message": "Next we'll review your visit info and check out.", 
+                "title": "Medical History is complete!"
+            }
         }, 
         {
             "screens": [
@@ -232,7 +240,7 @@
                             }, 
                             "question": "q_face_photo_intake", 
                             "tips": {
-                                "photo_tips": [
+                                "photo_tips": [ 
                                     "photo_tip_good_face_front", 
                                     "photo_tip_bad_face_front", 
                                     "photo_tip_good_profile_right"
@@ -271,7 +279,24 @@
                     "screen_type": "screen_type_photo"
                 }
             ], 
-            "section": "section_photo_diagnosis"
+            "section": "section_photo_diagnosis", 
+            "transition": {
+                "buttons": [
+                    {
+                        "button_text": "Continue", 
+                        "style": "filled", 
+                        "tap_url": "spruce:///action/view_next_visit_section"
+                    }, 
+                    {
+                        "button_text": "Review Photos", 
+                        "style": "bordered", 
+                        "tap_url": "spruce:///action/review_photos"
+                    }
+                ], 
+                "image_url": "spruce:///image/tickmark", 
+                "message": "Next we'll ask you a few questions about your medical history.", 
+                "title": "Photos are done!"
+            }
         }
     ]
 }

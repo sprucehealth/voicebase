@@ -70,11 +70,25 @@ type Screen struct {
 }
 
 type Section struct {
-	SectionTag   string      `json:"section"`
-	SectionId    int64       `json:"section_id,string,omitempty"`
-	SectionTitle string      `json:"section_title,omitempty"`
-	Questions    []*Question `json:"questions,omitempty"`
-	Screens      []*Screen   `json:"screens,omitempty"`
+	SectionTag        string      `json:"section"`
+	SectionId         int64       `json:"section_id,string,omitempty"`
+	SectionTitle      string      `json:"section_title,omitempty"`
+	Questions         []*Question `json:"questions,omitempty"`
+	Screens           []*Screen   `json:"screens,omitempty"`
+	SectionTransition *Transition `json:"transition,omitempty"`
+}
+
+type Transition struct {
+	Title    string    `json:"title"`
+	Message  string    `json:"message,omitempty"`
+	ImageUrl string    `json:"image_url,omitempty"`
+	Buttons  []*Button `json:"buttons,omitempty"`
+}
+
+type Button struct {
+	Text   string `json:"button_text,omitempty"`
+	TapUrl string `json:"tap_url,omitempty"`
+	Style  string `json:"style,omitempty"`
 }
 
 type InfoIntakeLayout struct {
