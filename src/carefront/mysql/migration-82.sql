@@ -1,0 +1,3 @@
+update localized_text set ltext='When did you first begin experiencing acne symptoms?' where app_text_id = (select qtext_app_text_id from question where question_tag='q_onset_acne');
+update localized_text set ltext='0-6 months ago' where app_text_id = (select answer_localized_text_id from potential_answer where potential_answer_tag = 'a_onset_six_months');
+update potential_answer set status='INACTIVE' where potential_answer_tag='a_puberty';

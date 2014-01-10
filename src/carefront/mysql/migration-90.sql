@@ -1,0 +1,1 @@
+update localized_text set ltext = 'About Your Skin' where app_text_id = (select section_title_app_text_id from section where section_tag='section_skin_history');

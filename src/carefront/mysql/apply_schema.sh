@@ -10,7 +10,7 @@ DATABASE_NAME="carefront_db"
 argsArray=($@) 
 len=${#argsArray[@]}
 
-if [ $len != 2 ];
+if [ $len -lt 2 ];
 then
 	echo "ERROR: Usage ./apply_schema.sh [local|dev|prod] migration1 migration2 .... migrationN"
 	exit 1;

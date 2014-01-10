@@ -1,0 +1,1 @@
+update potential_answer set status='INACTIVE' where potential_answer_tag='a_combination_skin';
