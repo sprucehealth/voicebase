@@ -133,6 +133,7 @@ func (m *AuthService) ValidateToken(token string) (*api.TokenValidationResponse,
 	var accountId int64
 	var expires *time.Time
 	if err := m.DB.QueryRow(fmt.Sprintf("SELECT account_id, expires FROM auth_token WHERE token = '%s' ", token)).Scan(&accountId, &expires); err == sql.ErrNoRows {
+		log.Printf("AUTHERROR: Token %s is not present in database ", token)
 		return &api.TokenValidationResponse{IsValid: false}, nil
 	} else if err != nil {
 		return nil, &api.InternalServerError{Message: err.Error()}
@@ -140,5 +141,8 @@ func (m *AuthService) ValidateToken(token string) (*api.TokenValidationResponse,
 
 	// if the token exists, check the expiration to ensure that it is valid
 	valid := time.Now().Before(*expires)
+	if valid == false {
+		log.Printf("Current time %s is after expiration time %s", time.Now().String(), expires.String())
+	}
 	return &api.TokenValidationResponse{IsValid: valid, AccountId: &accountId}, nil
 }

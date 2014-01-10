@@ -41,6 +41,10 @@
                     "description": "does acne get worse with period", 
                     "questions": [
                         {
+                            "condition": {
+                                "op": "gender_equals", 
+                                "gender": "female"
+                            }, 
                             "question": "q_acne_worse_period"
                         }, 
                         {
@@ -129,13 +133,23 @@
                 "title": "About your skin is complete!"
             }
         }, 
-         {
+        {
             "screens": [
                 {
                     "description": "options for places to take skin photo of", 
                     "questions": [
                         {
                             "question": "q_acne_location"
+                        }, 
+                        {
+                            "condition": {
+                                "op": "answer_equals", 
+                                "potential_answers": [
+                                    "a_other_acne_location"
+                                ], 
+                                "question": "q_acne_location"
+                            }, 
+                            "question": "q_other_acne_location_entry"
                         }
                     ]
                 }, 
@@ -152,7 +166,7 @@
                             }, 
                             "question": "q_face_photo_intake", 
                             "tips": {
-                                "photo_tips": [ 
+                                "photo_tips": [
                                     "photo_tip_good_face_front", 
                                     "photo_tip_bad_face_front", 
                                     "photo_tip_good_profile_right"
@@ -164,6 +178,16 @@
                                 ], 
                                 "tips_section_tag": "tips_section_face"
                             }
+                        }, 
+                        {
+                            "condition": {
+                                "op": "answer_equals", 
+                                "potential_answers": [
+                                    "a_neck_acne_location"
+                                ], 
+                                "question": "q_acne_location"
+                            }, 
+                            "question": "q_neck_photo_intake"
                         }, 
                         {
                             "condition": {
@@ -186,6 +210,26 @@
                                 ], 
                                 "tips_section_tag": "tips_section_chest"
                             }
+                        }, 
+                        {
+                            "condition": {
+                                "op": "answer_equals", 
+                                "potential_answers": [
+                                    "a_back_acne_location"
+                                ], 
+                                "question": "q_acne_location"
+                            }, 
+                            "question": "q_back_photo_intake"
+                        }, 
+                        {
+                            "condition": {
+                                "op": "answer_equals", 
+                                "potential_answers": [
+                                    "a_other_acne_location"
+                                ], 
+                                "question": "q_acne_location"
+                            }, 
+                            "question": "q_other_photo_intake"
                         }
                     ], 
                     "screen_type": "screen_type_photo"
@@ -209,16 +253,14 @@
                 "message": "Next we'll ask you a few questions about your medical history.", 
                 "title": "Photos are done!"
             }
-        },
+        }, 
         {
             "screens": [
                 {
-                    "condition": {
-                        "field": "gender", 
-                        "op": "value_equals", 
-                        "server_condition": true, 
-                        "value": "female"
-                    }, 
+                            "condition": {
+                                "op": "gender_equals", 
+                                "gender": "female"
+                            }, 
                     "description": "planning pregnancy", 
                     "questions": [
                         {
