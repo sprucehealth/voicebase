@@ -19,6 +19,10 @@ const (
 	DEVELOPER_ERROR_NO_VISIT_EXISTS = 10001
 )
 
+type GenericJsonResponse struct {
+	Result string `json:"result"`
+}
+
 func GetAuthTokenFromHeader(r *http.Request) (string, error) {
 	auth := r.Header.Get("Authorization")
 	if auth == "" {
@@ -45,6 +49,10 @@ func GetSignedUrlsForAnswersInQuestion(question *info_intake.Question, photoStor
 			}
 		}
 	}
+}
+
+func SuccessfulGenericJSONResponse() *GenericJsonResponse {
+	return &GenericJsonResponse{Result: "success"}
 }
 
 type ErrorResponse struct {

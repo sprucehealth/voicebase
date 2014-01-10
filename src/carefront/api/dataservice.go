@@ -24,6 +24,7 @@ const (
 	drug_name_table                        = "drug_name"
 	drug_form_table                        = "drug_form"
 	drug_route_table                       = "drug_route"
+	patient_phone_type                     = "MAIN"
 )
 
 type DataService struct {
@@ -1197,18 +1198,64 @@ func (d *DataService) CheckCareProvidingElligibility(shortState string, healthCo
 	return true, nil
 }
 
-func (d *DataService) RegisterPatient(accountId int64, firstName, lastName, gender, zipCode string, dob time.Time) (int64, error) {
-	res, err := d.DB.Exec(`insert into patient (account_id, first_name, last_name, zip_code, gender, dob, status) 
-								values (?, ?, ?, ?, ?, ? , 'REGISTERED')`, accountId, firstName, lastName, zipCode, gender, dob)
+func (d *DataService) UpdatePatientAddress(patientId int64, addressLine1, addressLine2, city, state, zipCode, addressType string) error {
+	tx, err := d.DB.Begin()
 	if err != nil {
+		return err
+	}
+
+	// update any existing address for the address type as inactive
+	_, err = tx.Exec(fmt.Sprintf(`update patient_address set status='INACTIVE' where patient_id = ? and address_type = '%s'`, addressType), patientId)
+	if err != nil {
+		tx.Rollback()
+		return err
+	}
+
+	// insert new address
+	if addressLine2 != "" {
+		_, err = tx.Exec(fmt.Sprintf(`insert into patient_address (patient_id, address_line_1, address_line_2, city, state, zip_code, address_type, status) values 
+							(?, '%s', '%s', '%s', '%s', '%s', '%s', 'ACTIVE')`, addressLine1, addressLine2, city, state, zipCode, addressType), patientId)
+		if err != nil {
+			return err
+		}
+	} else {
+		_, err = tx.Exec(fmt.Sprintf(`insert into patient_address (patient_id, address_line_1, city, state, zip_code, address_type, status) values 
+							(?, '%s', '%s', '%s', '%s', '%s', 'ACTIVE')`, addressLine1, city, state, zipCode, addressType), patientId)
+		if err != nil {
+			return err
+		}
+	}
+	tx.Commit()
+	return nil
+}
+
+func (d *DataService) RegisterPatient(accountId int64, firstName, lastName, gender, zipCode, phone string, dob time.Time) (int64, error) {
+	tx, err := d.DB.Begin()
+	if err != nil {
+		return 0, err
+	}
+
+	res, err := tx.Exec(`insert into patient (account_id, first_name, last_name, gender, zip_code, dob, status) 
+								values (?, ?, ?, ?, ?, ?, 'REGISTERED')`, accountId, firstName, lastName, gender, zipCode, dob)
+	if err != nil {
+		tx.Rollback()
 		return 0, err
 	}
 
 	lastId, err := res.LastInsertId()
 	if err != nil {
+		tx.Rollback()
 		log.Fatal("Unable to return id of inserted item as error was returned when trying to return id", err)
 		return 0, err
 	}
+
+	_, err = tx.Exec(fmt.Sprintf(`insert into patient_phone (patient_id, phone, phone_type, status) values (?,?,'%s', 'ACTIVE')`, patient_phone_type), lastId, phone)
+	if err != nil {
+		tx.Rollback()
+		return 0, err
+	}
+
+	tx.Commit()
 	return lastId, err
 }
 
@@ -1256,10 +1303,12 @@ func (d *DataService) GetDoctorIdFromAccountId(accountId int64) (int64, error) {
 }
 
 func (d *DataService) GetPatientFromId(patientId int64) (patient *common.Patient, err error) {
-	var firstName, lastName, zipCode, status, gender string
+	var firstName, lastName, zipCode, status, gender, phone string
 	var dob mysql.NullTime
 	var accountId int64
-	err = d.DB.QueryRow(`select account_id, first_name, last_name, zip_code, gender, dob, status from patient where id = ?`, patientId).Scan(&accountId, &firstName, &lastName, &zipCode, &gender, &dob, &status)
+	err = d.DB.QueryRow(fmt.Sprintf(`select account_id, first_name, last_name, zip_code, phone, gender, dob, status from patient 
+							left outer join patient_phone on patient_phone.patient_id = patient.id
+							where id = ? and patient_phone.status='ACTIVE' and patient_phone.phone_type='%s'`, patient_phone_type), patientId).Scan(&accountId, &firstName, &lastName, &zipCode, &phone, &gender, &dob, &status)
 	if err != nil {
 		return
 	}
@@ -1269,6 +1318,7 @@ func (d *DataService) GetPatientFromId(patientId int64) (patient *common.Patient
 		ZipCode:   zipCode,
 		Status:    status,
 		Gender:    gender,
+		Phone:     phone,
 		AccountId: accountId,
 	}
 	if dob.Valid {
@@ -1762,10 +1812,11 @@ func (d *DataService) GetPatientVisitFromId(patientVisitId int64) (patientVisit 
 
 func (d *DataService) GetPatientFromPatientVisitId(patientVisitId int64) (patient *common.Patient, err error) {
 	var patientId, accountId int64
-	var firstName, lastName, zipCode, status, gender string
+	var firstName, lastName, zipCode, phone, status, gender string
 	var dob mysql.NullTime
-	err = d.DB.QueryRow(`select patient.id, account_id, first_name, last_name, zip_code, gender, dob, patient.status from patient_visit
-		inner join patient on patient_id = patient.id where patient_visit.id = ?`, patientVisitId).Scan(&patientId, &accountId, &firstName, &lastName, &zipCode, &gender, &dob, &status)
+	err = d.DB.QueryRow(fmt.Sprintf(`select patient.id, account_id, first_name, last_name, zip_code, phone, gender, dob, patient.status from patient_visit
+							left outer join patient_phone on patient_phone.patient_id = patient.id 
+							inner join patient on patient_id = patient.id where patient_visit.id = ? and patient_phone.status='ACTIVE' and patient_phone.phone_type='%s'`, patient_phone_type), patientVisitId).Scan(&patientId, &accountId, &firstName, &lastName, &zipCode, &phone, &gender, &dob, &status)
 	if err != nil {
 		if err == sql.ErrNoRows {
 			return nil, nil
@@ -1778,6 +1829,7 @@ func (d *DataService) GetPatientFromPatientVisitId(patientVisitId int64) (patien
 	patient.AccountId = accountId
 	patient.FirstName = firstName
 	patient.LastName = lastName
+	patient.Phone = phone
 	if dob.Valid {
 		patient.Dob = dob.Time
 	}
