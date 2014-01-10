@@ -14,7 +14,7 @@ func (c *Condition) FillInDatabaseInfo(dataApi api.DataAPI, languageId int64) er
 	if c.QuestionTag == "" {
 		return nil
 	}
-	questionId, _, _, _, _, _, _, _, err := dataApi.GetQuestionInfo(c.QuestionTag, languageId)
+	questionId, _, _, _, _, _, _, _, _, err := dataApi.GetQuestionInfo(c.QuestionTag, languageId)
 	if err != nil {
 		return err
 	}
@@ -57,7 +57,7 @@ func (t *TipSection) FillInDatabaseInfo(dataApi api.DataAPI, languageId int64) e
 }
 
 func (q *Question) FillInDatabaseInfo(dataApi api.DataAPI, languageId int64) error {
-	questionId, questionTitle, questionType, questionSummary, questionSubtext, parentQuestionId, additionalFields, formattedFieldTags, err := dataApi.GetQuestionInfo(q.QuestionTag, languageId)
+	questionId, questionTitle, questionType, questionSummary, questionSubtext, parentQuestionId, additionalFields, formattedFieldTags, required, err := dataApi.GetQuestionInfo(q.QuestionTag, languageId)
 	if err != nil {
 		return err
 	}
@@ -68,6 +68,7 @@ func (q *Question) FillInDatabaseInfo(dataApi api.DataAPI, languageId int64) err
 	q.QuestionSummary = questionSummary
 	q.AdditionalFields = additionalFields
 	q.QuestionSubText = questionSubtext
+	q.Required = required
 	if formattedFieldTags != "" {
 		q.FormattedFieldTags = strings.Split(formattedFieldTags, ",")
 	}

@@ -2102,18 +2102,18 @@ func (d *DataService) GetSectionInfo(sectionTag string, languageId int64) (id in
 	return
 }
 
-func (d *DataService) GetQuestionInfo(questionTag string, languageId int64) (id int64, questionTitle string, questionType string, questionSummary string, questionSubText string, parentQuestionId int64, additionalFields map[string]string, formattedFieldTags string, err error) {
+func (d *DataService) GetQuestionInfo(questionTag string, languageId int64) (id int64, questionTitle string, questionType string, questionSummary string, questionSubText string, parentQuestionId int64, additionalFields map[string]string, formattedFieldTags string, required bool, err error) {
 	var byteQuestionTitle, byteQuestionType, byteQuestionSummary, byteQuestionSubtext []byte
 	var formattedFieldTagsNull sql.NullString
-	var nullParentQuestionId sql.NullInt64
+	var nullParentQuestionId, requiredBit sql.NullInt64
 	err = d.DB.QueryRow(
-		`select question.id, l1.ltext, qtype, parent_question_id, l2.ltext, l3.ltext, formatted_field_tags from question 
+		`select question.id, l1.ltext, qtype, parent_question_id, l2.ltext, l3.ltext, formatted_field_tags, required from question 
 			left outer join localized_text as l1 on l1.app_text_id=qtext_app_text_id
 			left outer join question_type on qtype_id=question_type.id
 			left outer join localized_text as l2 on qtext_short_text_id = l2.app_text_id
 			left outer join localized_text as l3 on subtext_app_text_id = l3.app_text_id
 				where question_tag = ? and (l1.ltext is NULL or l1.language_id = ?) and (l3.ltext is NULL or l3.language_id=?)`,
-		questionTag, languageId, languageId).Scan(&id, &byteQuestionTitle, &byteQuestionType, &nullParentQuestionId, &byteQuestionSummary, &byteQuestionSubtext, &formattedFieldTagsNull)
+		questionTag, languageId, languageId).Scan(&id, &byteQuestionTitle, &byteQuestionType, &nullParentQuestionId, &byteQuestionSummary, &byteQuestionSubtext, &formattedFieldTagsNull, &requiredBit)
 	if nullParentQuestionId.Valid {
 		parentQuestionId = nullParentQuestionId.Int64
 	}
@@ -2123,6 +2123,9 @@ func (d *DataService) GetQuestionInfo(questionTag string, languageId int64) (id 
 	questionSubText = string(byteQuestionSubtext)
 	if formattedFieldTagsNull.Valid {
 		formattedFieldTags = formattedFieldTagsNull.String
+	}
+	if requiredBit.Valid && requiredBit.Int64 == 1 {
+		required = true
 	}
 
 	// get any additional fields pertaining to the question from the database

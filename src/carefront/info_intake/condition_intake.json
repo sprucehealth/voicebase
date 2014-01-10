@@ -21,7 +21,7 @@
                             "condition": {
                                 "op": "answer_equals", 
                                 "potential_answers": [
-                                    "a_yes_acne_worse"
+                                    "a_yes_acne_worse" 
                                 ], 
                                 "question": "q_acne_worse"
                             }, 
@@ -257,10 +257,10 @@
         {
             "screens": [
                 {
-                            "condition": {
-                                "op": "gender_equals", 
-                                "gender": "female"
-                            }, 
+                    "condition": {
+                        "gender": "female", 
+                        "op": "gender_equals"
+                    }, 
                     "description": "planning pregnancy", 
                     "questions": [
                         {

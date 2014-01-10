@@ -60,6 +60,7 @@ type Question struct {
 	Questions          []*Question            `json:"questions,omitempty"`
 	ConditionBlock     *Condition             `json:"condition,omitempty"`
 	Tips               *TipSection            `json:"tips,omitempty"`
+	Required           bool                   `json:"required"`
 }
 
 type Screen struct {
