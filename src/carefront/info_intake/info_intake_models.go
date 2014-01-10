@@ -18,6 +18,7 @@ type InfoIntakeModel interface {
 type Condition struct {
 	OperationTag         string   `json:"op,omitempty"`
 	IsServerCondition    bool     `json:"server_condition,omitempty"`
+	GenderField          string   `json:"gender,omitempty"`
 	QuestionTag          string   `json:"question,omitempty"`
 	QuestionId           int64    `json:"question_id,string,omitempty"`
 	PotentialAnswersId   []string `json:"potential_answers_id,omitempty"`

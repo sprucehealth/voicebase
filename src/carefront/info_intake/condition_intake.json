@@ -242,7 +242,7 @@
                         "button_text": "Continue", 
                         "style": "filled", 
                         "tap_url": "spruce:///action/view_next_visit_section"
-                    }, 
+                    },  
                     {
                         "button_text": "Review Photos", 
                         "style": "bordered", 
