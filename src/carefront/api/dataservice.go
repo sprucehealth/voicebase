@@ -1303,12 +1303,13 @@ func (d *DataService) GetDoctorIdFromAccountId(accountId int64) (int64, error) {
 }
 
 func (d *DataService) GetPatientFromId(patientId int64) (patient *common.Patient, err error) {
-	var firstName, lastName, zipCode, status, gender, phone string
+	var firstName, lastName, zipCode, status, gender string
 	var dob mysql.NullTime
+	var phone sql.NullString
 	var accountId int64
-	err = d.DB.QueryRow(fmt.Sprintf(`select account_id, first_name, last_name, zip_code, phone, gender, dob, status from patient 
+	err = d.DB.QueryRow(fmt.Sprintf(`select account_id, first_name, last_name, zip_code, phone, gender, dob, patient.status from patient 
 							left outer join patient_phone on patient_phone.patient_id = patient.id
-							where id = ? and patient_phone.status='ACTIVE' and patient_phone.phone_type='%s'`, patient_phone_type), patientId).Scan(&accountId, &firstName, &lastName, &zipCode, &phone, &gender, &dob, &status)
+							where patient.id = ? and (phone is null or (patient_phone.status='ACTIVE' and patient_phone.phone_type='%s'))`, patient_phone_type), patientId).Scan(&accountId, &firstName, &lastName, &zipCode, &phone, &gender, &dob, &status)
 	if err != nil {
 		return
 	}
@@ -1318,8 +1319,10 @@ func (d *DataService) GetPatientFromId(patientId int64) (patient *common.Patient
 		ZipCode:   zipCode,
 		Status:    status,
 		Gender:    gender,
-		Phone:     phone,
 		AccountId: accountId,
+	}
+	if phone.Valid {
+		patient.Phone = phone.String
 	}
 	if dob.Valid {
 		patient.Dob = dob.Time
@@ -1812,11 +1815,12 @@ func (d *DataService) GetPatientVisitFromId(patientVisitId int64) (patientVisit 
 
 func (d *DataService) GetPatientFromPatientVisitId(patientVisitId int64) (patient *common.Patient, err error) {
 	var patientId, accountId int64
-	var firstName, lastName, zipCode, phone, status, gender string
+	var firstName, lastName, zipCode, status, gender string
+	var phone sql.NullString
 	var dob mysql.NullTime
 	err = d.DB.QueryRow(fmt.Sprintf(`select patient.id, account_id, first_name, last_name, zip_code, phone, gender, dob, patient.status from patient_visit
 							left outer join patient_phone on patient_phone.patient_id = patient.id 
-							inner join patient on patient_id = patient.id where patient_visit.id = ? and patient_phone.status='ACTIVE' and patient_phone.phone_type='%s'`, patient_phone_type), patientVisitId).Scan(&patientId, &accountId, &firstName, &lastName, &zipCode, &phone, &gender, &dob, &status)
+							inner join patient on patient_id = patient.id where patient_visit.id = ? and (phone is null or (patient_phone.status='ACTIVE' and patient_phone.phone_type='%s'))`, patient_phone_type), patientVisitId).Scan(&patientId, &accountId, &firstName, &lastName, &zipCode, &phone, &gender, &dob, &status)
 	if err != nil {
 		if err == sql.ErrNoRows {
 			return nil, nil
@@ -1829,7 +1833,9 @@ func (d *DataService) GetPatientFromPatientVisitId(patientVisitId int64) (patien
 	patient.AccountId = accountId
 	patient.FirstName = firstName
 	patient.LastName = lastName
-	patient.Phone = phone
+	if phone.Valid {
+		patient.Phone = phone.String
+	}
 	if dob.Valid {
 		patient.Dob = dob.Time
 	}
