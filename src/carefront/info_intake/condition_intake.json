@@ -129,6 +129,87 @@
                 "title": "About your skin is complete!"
             }
         }, 
+         {
+            "screens": [
+                {
+                    "description": "options for places to take skin photo of", 
+                    "questions": [
+                        {
+                            "question": "q_acne_location"
+                        }
+                    ]
+                }, 
+                {
+                    "description": "photo taking experience", 
+                    "questions": [
+                        {
+                            "condition": {
+                                "op": "answer_equals", 
+                                "potential_answers": [
+                                    "a_face_acne_location"
+                                ], 
+                                "question": "q_acne_location"
+                            }, 
+                            "question": "q_face_photo_intake", 
+                            "tips": {
+                                "photo_tips": [ 
+                                    "photo_tip_good_face_front", 
+                                    "photo_tip_bad_face_front", 
+                                    "photo_tip_good_profile_right"
+                                ], 
+                                "tips": [
+                                    "tip_remove_glasses", 
+                                    "tip_pull_hair_back", 
+                                    "tip_no_make_up"
+                                ], 
+                                "tips_section_tag": "tips_section_face"
+                            }
+                        }, 
+                        {
+                            "condition": {
+                                "op": "answer_equals", 
+                                "potential_answers": [
+                                    "a_chest_acne_location"
+                                ], 
+                                "question": "q_acne_location"
+                            }, 
+                            "question": "q_chest_photo_intake", 
+                            "tips_section": {
+                                "photo_tips": [
+                                    "photo_tip_good_chest", 
+                                    "phot_tip_bad_chest", 
+                                    "photo_tip_decent_chest"
+                                ], 
+                                "tips": [
+                                    "tip_remove_jewellery", 
+                                    "tip_pull_hair_back"
+                                ], 
+                                "tips_section_tag": "tips_section_chest"
+                            }
+                        }
+                    ], 
+                    "screen_type": "screen_type_photo"
+                }
+            ], 
+            "section": "section_photo_diagnosis", 
+            "transition": {
+                "buttons": [
+                    {
+                        "button_text": "Continue", 
+                        "style": "filled", 
+                        "tap_url": "spruce:///action/view_next_visit_section"
+                    }, 
+                    {
+                        "button_text": "Review Photos", 
+                        "style": "bordered", 
+                        "tap_url": "spruce:///action/review_photos"
+                    }
+                ], 
+                "image_url": "spruce:///image/tickmark", 
+                "message": "Next we'll ask you a few questions about your medical history.", 
+                "title": "Photos are done!"
+            }
+        },
         {
             "screens": [
                 {
@@ -215,87 +296,6 @@
                 "image_url": "spruce:///image/tickmark", 
                 "message": "Next we'll review your visit info and check out.", 
                 "title": "Medical History is complete!"
-            }
-        }, 
-        {
-            "screens": [
-                {
-                    "description": "options for places to take skin photo of", 
-                    "questions": [
-                        {
-                            "question": "q_acne_location"
-                        }
-                    ]
-                }, 
-                {
-                    "description": "photo taking experience", 
-                    "questions": [
-                        {
-                            "condition": {
-                                "op": "answer_equals", 
-                                "potential_answers": [
-                                    "a_face_acne_location"
-                                ], 
-                                "question": "q_acne_location"
-                            }, 
-                            "question": "q_face_photo_intake", 
-                            "tips": {
-                                "photo_tips": [ 
-                                    "photo_tip_good_face_front", 
-                                    "photo_tip_bad_face_front", 
-                                    "photo_tip_good_profile_right"
-                                ], 
-                                "tips": [
-                                    "tip_remove_glasses", 
-                                    "tip_pull_hair_back", 
-                                    "tip_no_make_up"
-                                ], 
-                                "tips_section_tag": "tips_section_face"
-                            }
-                        }, 
-                        {
-                            "condition": {
-                                "op": "answer_equals", 
-                                "potential_answers": [
-                                    "a_chest_acne_location"
-                                ], 
-                                "question": "q_acne_location"
-                            }, 
-                            "question": "q_chest_photo_intake", 
-                            "tips_section": {
-                                "photo_tips": [
-                                    "photo_tip_good_chest", 
-                                    "phot_tip_bad_chest", 
-                                    "photo_tip_decent_chest"
-                                ], 
-                                "tips": [
-                                    "tip_remove_jewellery", 
-                                    "tip_pull_hair_back"
-                                ], 
-                                "tips_section_tag": "tips_section_chest"
-                            }
-                        }
-                    ], 
-                    "screen_type": "screen_type_photo"
-                }
-            ], 
-            "section": "section_photo_diagnosis", 
-            "transition": {
-                "buttons": [
-                    {
-                        "button_text": "Continue", 
-                        "style": "filled", 
-                        "tap_url": "spruce:///action/view_next_visit_section"
-                    }, 
-                    {
-                        "button_text": "Review Photos", 
-                        "style": "bordered", 
-                        "tap_url": "spruce:///action/review_photos"
-                    }
-                ], 
-                "image_url": "spruce:///image/tickmark", 
-                "message": "Next we'll ask you a few questions about your medical history.", 
-                "title": "Photos are done!"
             }
         }
     ]
