@@ -1229,34 +1229,35 @@ func (d *DataService) UpdatePatientAddress(patientId int64, addressLine1, addres
 	return nil
 }
 
-func (d *DataService) RegisterPatient(accountId int64, firstName, lastName, gender, zipCode, phone string, dob time.Time) (int64, error) {
+func (d *DataService) RegisterPatient(accountId int64, firstName, lastName, gender, zipCode, phone string, dob time.Time) (patient *common.Patient, err error) {
 	tx, err := d.DB.Begin()
 	if err != nil {
-		return 0, err
+		return
 	}
 
 	res, err := tx.Exec(`insert into patient (account_id, first_name, last_name, gender, zip_code, dob, status) 
 								values (?, ?, ?, ?, ?, ?, 'REGISTERED')`, accountId, firstName, lastName, gender, zipCode, dob)
 	if err != nil {
 		tx.Rollback()
-		return 0, err
+		return
 	}
 
 	lastId, err := res.LastInsertId()
 	if err != nil {
 		tx.Rollback()
 		log.Fatal("Unable to return id of inserted item as error was returned when trying to return id", err)
-		return 0, err
+		return
 	}
 
 	_, err = tx.Exec(fmt.Sprintf(`insert into patient_phone (patient_id, phone, phone_type, status) values (?,?,'%s', 'ACTIVE')`, patient_phone_type), lastId, phone)
 	if err != nil {
 		tx.Rollback()
-		return 0, err
+		return
 	}
 
 	tx.Commit()
-	return lastId, err
+	patient, err = d.GetPatientFromId(lastId)
+	return
 }
 
 func (d *DataService) RegisterDoctor(accountId int64, firstName, lastName, gender string, dob time.Time) (int64, error) {
@@ -1303,17 +1304,24 @@ func (d *DataService) GetDoctorIdFromAccountId(accountId int64) (int64, error) {
 }
 
 func (d *DataService) GetPatientFromId(patientId int64) (patient *common.Patient, err error) {
+	queryStr := fmt.Sprintf(`select patient.id, account_id, first_name, last_name, zip_code, phone, gender, dob, patient.status from patient 
+							left outer join patient_phone on patient_phone.patient_id = patient.id
+							where patient.id = ? and (phone is null or (patient_phone.status='ACTIVE' and patient_phone.phone_type='%s'))`, patient_phone_type)
+	patient, err = d.getPatientBasedOnQuery(queryStr, patientId)
+	return
+}
+
+func (d *DataService) getPatientBasedOnQuery(queryStr string, id int64) (patient *common.Patient, err error) {
 	var firstName, lastName, zipCode, status, gender string
 	var dob mysql.NullTime
 	var phone sql.NullString
-	var accountId int64
-	err = d.DB.QueryRow(fmt.Sprintf(`select account_id, first_name, last_name, zip_code, phone, gender, dob, patient.status from patient 
-							left outer join patient_phone on patient_phone.patient_id = patient.id
-							where patient.id = ? and (phone is null or (patient_phone.status='ACTIVE' and patient_phone.phone_type='%s'))`, patient_phone_type), patientId).Scan(&accountId, &firstName, &lastName, &zipCode, &phone, &gender, &dob, &status)
+	var patientId, accountId int64
+	err = d.DB.QueryRow(queryStr, id).Scan(&patientId, &accountId, &firstName, &lastName, &zipCode, &phone, &gender, &dob, &status)
 	if err != nil {
 		return
 	}
 	patient = &common.Patient{
+		PatientId: patientId,
 		FirstName: firstName,
 		LastName:  lastName,
 		ZipCode:   zipCode,
@@ -1327,7 +1335,14 @@ func (d *DataService) GetPatientFromId(patientId int64) (patient *common.Patient
 	if dob.Valid {
 		patient.Dob = dob.Time
 	}
-	patient.PatientId = patientId
+	return
+}
+
+func (d *DataService) GetPatientFromAccountId(accountId int64) (patient *common.Patient, err error) {
+	queryStr := fmt.Sprintf(`select patient.id, account_id, first_name, last_name, zip_code, phone, gender, dob, patient.status from patient 
+							left outer join patient_phone on patient_phone.patient_id = patient.id
+							where patient.account_id = ? and (phone is null or (patient_phone.status='ACTIVE' and patient_phone.phone_type='%s'))`, patient_phone_type)
+	patient, err = d.getPatientBasedOnQuery(queryStr, accountId)
 	return
 }
 

@@ -41,7 +41,8 @@ type PotentialAnswerInfo struct {
 
 type PatientAPI interface {
 	GetPatientFromId(patientId int64) (patient *common.Patient, err error)
-	RegisterPatient(accountId int64, firstName, lastName, gender, zipCode, phone string, dob time.Time) (int64, error)
+	GetPatientFromAccountId(accountId int64) (patient *common.Patient, err error)
+	RegisterPatient(accountId int64, firstName, lastName, gender, zipCode, phone string, dob time.Time) (patient *common.Patient, err error)
 	CreateNewPatientVisit(patientId, healthConditionId, layoutVersionId int64) (int64, error)
 	GetPatientIdFromAccountId(accountId int64) (int64, error)
 	CreateCareTeamForPatient(patientId int64) (careTeam *common.PatientCareProviderGroup, err error)

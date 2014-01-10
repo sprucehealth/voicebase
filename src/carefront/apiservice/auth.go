@@ -61,16 +61,20 @@ import (
 	"net/http"
 	"strings"
 
-	"carefront/thrift/api"
+	"carefront/api"
+	"carefront/common"
+	thriftapi "carefront/thrift/api"
 	"github.com/gorilla/schema"
 )
 
 type AuthenticationHandler struct {
-	AuthApi api.Auth
+	AuthApi thriftapi.Auth
+	DataApi api.DataAPI
 }
 
 type AuthenticationResponse struct {
-	Token string `json:"token"`
+	Token   string          `json:"token"`
+	Patient *common.Patient `json:"patient,omitempty"`
 }
 
 func (h *AuthenticationHandler) NonAuthenticated() bool {
@@ -99,7 +103,7 @@ func (h *AuthenticationHandler) ServeHTTP(w http.ResponseWriter, r *http.Request
 
 		if res, err := h.AuthApi.Signup(requestData.Login, requestData.Password); err != nil {
 			switch err.(type) {
-			case *api.LoginAlreadyExists:
+			case *thriftapi.LoginAlreadyExists:
 				WriteUserError(w, http.StatusBadRequest, "Login already exists")
 				return
 			default:
@@ -109,7 +113,12 @@ func (h *AuthenticationHandler) ServeHTTP(w http.ResponseWriter, r *http.Request
 				return
 			}
 		} else {
-			WriteJSONToHTTPResponseWriter(w, http.StatusOK, AuthenticationResponse{res.Token})
+			patient, err := h.DataApi.GetPatientFromAccountId(res.AccountId)
+			if err != nil {
+				WriteDeveloperError(w, http.StatusInternalServerError, "Unable to get patient from account id:  "+err.Error())
+				return
+			}
+			WriteJSONToHTTPResponseWriter(w, http.StatusOK, &AuthenticationResponse{Token: res.Token, Patient: patient})
 		}
 	case "authenticate":
 		requestData := new(AuthRequestData)
@@ -122,7 +131,7 @@ func (h *AuthenticationHandler) ServeHTTP(w http.ResponseWriter, r *http.Request
 
 		if res, err := h.AuthApi.Login(requestData.Login, requestData.Password); err != nil {
 			switch err.(type) {
-			case *api.NoSuchLogin:
+			case *thriftapi.NoSuchLogin:
 				WriteUserError(w, http.StatusForbidden, "Invalid email/password combination")
 				return
 			default:
@@ -131,7 +140,12 @@ func (h *AuthenticationHandler) ServeHTTP(w http.ResponseWriter, r *http.Request
 				return
 			}
 		} else {
-			WriteJSONToHTTPResponseWriter(w, http.StatusOK, AuthenticationResponse{res.Token})
+			patient, err := h.DataApi.GetPatientFromAccountId(res.AccountId)
+			if err != nil {
+				WriteDeveloperError(w, http.StatusInternalServerError, "Unable to get patient from account id:  "+err.Error())
+				return
+			}
+			WriteJSONToHTTPResponseWriter(w, http.StatusOK, &AuthenticationResponse{Token: res.Token, Patient: patient})
 		}
 	case "logout":
 		token, err := GetAuthTokenFromHeader(r)

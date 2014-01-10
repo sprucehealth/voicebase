@@ -7,6 +7,7 @@ import (
 	"time"
 
 	"carefront/api"
+	"carefront/common"
 	thriftapi "carefront/thrift/api"
 	"github.com/gorilla/schema"
 )
@@ -17,8 +18,8 @@ type SignupPatientHandler struct {
 }
 
 type PatientSignedupResponse struct {
-	Token     string `json:"token"`
-	PatientId int64  `json:"patientId,string"`
+	Token   string          `json:"token"`
+	Patient *common.Patient `json:"patient,omitempty"`
 }
 
 func (s *SignupPatientHandler) NonAuthenticated() bool {
@@ -80,6 +81,6 @@ func (s *SignupPatientHandler) ServeHTTP(w http.ResponseWriter, r *http.Request)
 	}
 
 	// then, register the signed up user as a patient
-	patientId, err := s.DataApi.RegisterPatient(res.AccountId, requestData.FirstName, requestData.LastName, requestData.Gender, requestData.Zipcode, requestData.Phone, time.Date(year, time.Month(month), day, 0, 0, 0, 0, time.UTC))
-	WriteJSONToHTTPResponseWriter(w, http.StatusOK, PatientSignedupResponse{res.Token, patientId})
+	patient, err := s.DataApi.RegisterPatient(res.AccountId, requestData.FirstName, requestData.LastName, requestData.Gender, requestData.Zipcode, requestData.Phone, time.Date(year, time.Month(month), day, 0, 0, 0, 0, time.UTC))
+	WriteJSONToHTTPResponseWriter(w, http.StatusOK, PatientSignedupResponse{Token: res.Token, Patient: patient})
 }
