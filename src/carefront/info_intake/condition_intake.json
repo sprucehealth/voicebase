@@ -21,7 +21,7 @@
                             "condition": {
                                 "op": "answer_equals", 
                                 "potential_answers": [
-                                    "a_yes_acne_worse" 
+                                    "a_yes_acne_worse"
                                 ], 
                                 "question": "q_acne_worse"
                             }, 
@@ -42,8 +42,8 @@
                     "questions": [
                         {
                             "condition": {
-                                "op": "gender_equals", 
-                                "gender": "female"
+                                "gender": "female", 
+                                "op": "gender_equals"
                             }, 
                             "question": "q_acne_worse_period"
                         }, 
@@ -278,7 +278,7 @@
                             "condition": {
                                 "op": "answer_equals", 
                                 "potential_answers": [
-                                    "a_yes_allergic_medications"
+                                    "a_yes_allergic_medications" 
                                 ], 
                                 "question": "q_allergic_medications"
                             }, 
@@ -314,6 +314,16 @@
                                 "question": "q_prev_skin_condition_diagnosis"
                             }, 
                             "question": "q_list_prev_skin_condition_diagnosis"
+                        }, 
+                        {
+                            "condition": {
+                                "op": "answer_contains_any", 
+                                "potential_answers": [
+                                    "a_other_skin_iagnosis"
+                                ], 
+                                "question": "q_list_prev_skin_condition_diagnosis"
+                            }, 
+                            "question": "q_other_skin_condition_entry"
                         }
                     ]
                 }, 
