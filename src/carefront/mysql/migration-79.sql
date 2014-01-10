@@ -1,1 +1,0 @@
-update question set formatted_field_tags = "title:doctor_last_name" where id=1;

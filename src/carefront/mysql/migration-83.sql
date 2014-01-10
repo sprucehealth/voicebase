@@ -1,1 +1,0 @@
-update localized_text set ltext="Has your acne been getting worse?" where app_text_id = (select qtext_app_text_id from question where question_tag='q_acne_worse');

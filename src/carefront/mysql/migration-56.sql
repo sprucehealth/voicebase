@@ -1,1 +1,0 @@
-alter table dr_drug_supplemental_instruction drop column selected;

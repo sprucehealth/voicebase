@@ -1,1 +1,0 @@
-update localized_text set ltext = 'Add Treatment' where app_text_id = (select app_text_id from question_fields where question_field='add_text' and question_id = (select id from question where question_tag='q_acne_prev_treatment_list'));

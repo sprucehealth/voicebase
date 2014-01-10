@@ -1,1 +1,0 @@
-alter table diagnosis_summary add column status varchar(100) not null;

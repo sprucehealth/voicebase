@@ -1,1 +1,0 @@
-alter table patient_visit_care_provider_assignment modify column id int unsigned not null auto_increment;

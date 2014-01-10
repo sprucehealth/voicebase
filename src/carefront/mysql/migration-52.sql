@@ -1,2 +1,0 @@
-alter table dr_drug_supplemental_instruction add column drug_supplemental_instruction_id int unsigned;
-alter table dr_drug_supplemental_instruction add foreign key (drug_supplemental_instruction_id) references drug_supplemental_instruction(id);
