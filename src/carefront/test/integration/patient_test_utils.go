@@ -24,7 +24,7 @@ func SignupRandomTestPatient(t *testing.T, dataApi api.DataAPI, authApi thriftap
 
 	requestBody := bytes.NewBufferString("first_name=Test&last_name=Test&email=")
 	requestBody.WriteString(strconv.FormatInt(time.Now().Unix(), 10))
-	requestBody.WriteString("@example.com&password=12345&dob=11/08/1987&zip_code=94115&gender=male")
+	requestBody.WriteString("@example.com&password=12345&dob=11/08/1987&zip_code=94115&phone=123455115&gender=male")
 	res, err := http.Post(ts.URL, "application/x-www-form-urlencoded", requestBody)
 	if err != nil {
 		t.Fatal("Unable to make post request for registering patient: " + err.Error())

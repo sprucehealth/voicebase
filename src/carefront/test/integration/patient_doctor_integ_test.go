@@ -22,10 +22,10 @@ func TestPatientVisitReview(t *testing.T) {
 	defer TearDownIntegrationTest(t, testData)
 
 	signedupPatientResponse := SignupRandomTestPatient(t, testData.DataApi, testData.AuthApi)
-	patientVisitResponse := CreatePatientVisitForPatient(signedupPatientResponse.PatientId, testData, t)
-	SubmitPatientVisitForPatient(signedupPatientResponse.PatientId, patientVisitResponse.PatientVisitId, testData, t)
+	patientVisitResponse := CreatePatientVisitForPatient(signedupPatientResponse.Patient.PatientId, testData, t)
+	SubmitPatientVisitForPatient(signedupPatientResponse.Patient.PatientId, patientVisitResponse.PatientVisitId, testData, t)
 
-	patient, err := testData.DataApi.GetPatientFromId(signedupPatientResponse.PatientId)
+	patient, err := testData.DataApi.GetPatientFromId(signedupPatientResponse.Patient.PatientId)
 	if err != nil {
 		t.Fatal("Unable to get patient from id: " + err.Error())
 	}
@@ -101,8 +101,8 @@ func TestPatientVisitReview(t *testing.T) {
 
 	// start a new patient visit
 	signedupPatientResponse = SignupRandomTestPatient(t, testData.DataApi, testData.AuthApi)
-	patientVisitResponse = CreatePatientVisitForPatient(signedupPatientResponse.PatientId, testData, t)
-	SubmitPatientVisitForPatient(signedupPatientResponse.PatientId, patientVisitResponse.PatientVisitId, testData, t)
+	patientVisitResponse = CreatePatientVisitForPatient(signedupPatientResponse.Patient.PatientId, testData, t)
+	SubmitPatientVisitForPatient(signedupPatientResponse.Patient.PatientId, patientVisitResponse.PatientVisitId, testData, t)
 
 	// get doctor to start reviewing it
 	resp, err = http.Get(ts2.URL + "?patient_visit_id=" + strconv.FormatInt(patientVisitResponse.PatientVisitId, 10))
@@ -247,7 +247,7 @@ func TestPatientVisitReview(t *testing.T) {
 	// GET PATIENT VISIT REVIEW FOR PATIENT
 	//
 	//
-	patient, err = testData.DataApi.GetPatientFromId(signedupPatientResponse.PatientId)
+	patient, err = testData.DataApi.GetPatientFromId(signedupPatientResponse.Patient.PatientId)
 	if err != nil {
 		t.Fatal("Unable to get the patient object given the id: " + err.Error())
 	}

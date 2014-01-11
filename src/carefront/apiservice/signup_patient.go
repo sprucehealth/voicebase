@@ -8,6 +8,7 @@ import (
 
 	"carefront/api"
 	"carefront/common"
+	"carefront/libs/maps"
 	thriftapi "carefront/thrift/api"
 	"github.com/gorilla/schema"
 )
@@ -15,6 +16,7 @@ import (
 type SignupPatientHandler struct {
 	DataApi api.DataAPI
 	AuthApi thriftapi.Auth
+	MapsApi maps.MapsService
 }
 
 type PatientSignedupResponse struct {
@@ -80,7 +82,17 @@ func (s *SignupPatientHandler) ServeHTTP(w http.ResponseWriter, r *http.Request)
 		return
 	}
 
+	cityStateInfo, err := s.MapsApi.ConvertZipcodeToCityState(requestData.Zipcode)
+	if err != nil {
+		WriteDeveloperError(w, http.StatusInternalServerError, "Unable to convert zipcode to city and state")
+		return
+	}
+
 	// then, register the signed up user as a patient
-	patient, err := s.DataApi.RegisterPatient(res.AccountId, requestData.FirstName, requestData.LastName, requestData.Gender, requestData.Zipcode, requestData.Phone, time.Date(year, time.Month(month), day, 0, 0, 0, 0, time.UTC))
+	patient, err := s.DataApi.RegisterPatient(res.AccountId, requestData.FirstName, requestData.LastName, requestData.Gender, requestData.Zipcode, cityStateInfo.LongCityName, cityStateInfo.ShortStateName, requestData.Phone, time.Date(year, time.Month(month), day, 0, 0, 0, 0, time.UTC))
+	if err != nil {
+		WriteDeveloperError(w, http.StatusInternalServerError, "Unable to register patient: "+err.Error())
+		return
+	}
 	WriteJSONToHTTPResponseWriter(w, http.StatusOK, PatientSignedupResponse{Token: res.Token, Patient: patient})
 }

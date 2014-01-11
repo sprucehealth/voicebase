@@ -31,7 +31,7 @@ func TestRegimenForPatientVisit(t *testing.T) {
 	}
 
 	// get patient to start a visit
-	patientVisitResponse := CreatePatientVisitForPatient(patientSignedupResponse.PatientId, testData, t)
+	patientVisitResponse := CreatePatientVisitForPatient(patientSignedupResponse.Patient.PatientId, testData, t)
 
 	// attempt to get the regimen plan or a patient visit
 	regimenPlan := getRegimenPlanForPatientVisit(testData, doctor, patientVisitResponse.PatientVisitId, t)
@@ -112,11 +112,11 @@ func TestRegimenForPatientVisit(t *testing.T) {
 		t.Fatal("Should only have 1 regimen step given that we just deleted one from the list")
 	}
 
-	SubmitPatientVisitForPatient(patientSignedupResponse.PatientId, patientVisitResponse.PatientVisitId, testData, t)
+	SubmitPatientVisitForPatient(patientSignedupResponse.Patient.PatientId, patientVisitResponse.PatientVisitId, testData, t)
 
 	// get patient to start a visit
 	patientSignedupResponse = SignupRandomTestPatient(t, testData.DataApi, testData.AuthApi)
-	patientVisitResponse = CreatePatientVisitForPatient(patientSignedupResponse.PatientId, testData, t)
+	patientVisitResponse = CreatePatientVisitForPatient(patientSignedupResponse.Patient.PatientId, testData, t)
 
 	regimenPlan = getRegimenPlanForPatientVisit(testData, doctor, patientVisitResponse.PatientVisitId, t)
 	if len(regimenPlan.RegimenSections) > 0 {

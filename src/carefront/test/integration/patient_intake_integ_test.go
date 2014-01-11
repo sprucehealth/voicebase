@@ -22,7 +22,7 @@ type AnswerIntakeHandler struct {
 }
 
 func getQuestionWithTagAndExpectedType(questionTag, questionType string, t *testing.T, testData TestData) int64 {
-	questionId, _, questionType, _, _, _, _, _, err := testData.DataApi.GetQuestionInfo(questionTag, 1)
+	questionId, _, questionType, _, _, _, _, _, _, err := testData.DataApi.GetQuestionInfo(questionTag, 1)
 	if err != nil {
 		t.Fatal("Unable to query for question q_reason_visit from database: " + err.Error())
 	}
@@ -95,7 +95,7 @@ func TestSingleSelectIntake(t *testing.T) {
 
 	// signup a random test patient for which to answer questions
 	patientSignedUpResponse := SignupRandomTestPatient(t, testData.DataApi, testData.AuthApi)
-	patientVisitResponse := CreatePatientVisitForPatient(patientSignedUpResponse.PatientId, testData, t)
+	patientVisitResponse := CreatePatientVisitForPatient(patientSignedUpResponse.Patient.PatientId, testData, t)
 
 	// now lets go ahead and try and answer the question about the reason for visit given that it is
 	// single select
@@ -106,10 +106,10 @@ func TestSingleSelectIntake(t *testing.T) {
 	patientIntakeRequestData := fmt.Sprintf(`{"patient_visit_id": %d, "questions": [{"potential_answers": [{"potential_answer_id": %d } ], "question_id": %d }] }`, patientVisitResponse.PatientVisitId, potentialAnswerId, questionId)
 
 	// now, lets go ahead and answer the question for the patient
-	submitPatientAnswerForVisit(patientSignedUpResponse.PatientId, testData, patientIntakeRequestData, t)
+	submitPatientAnswerForVisit(patientSignedUpResponse.Patient.PatientId, testData, patientIntakeRequestData, t)
 
 	// now, get the patient visit again to ensure that a patient answer was registered for the intended question
-	patientVisitResponse = GetPatientVisitForPatient(patientSignedUpResponse.PatientId, testData, t)
+	patientVisitResponse = GetPatientVisitForPatient(patientSignedUpResponse.Patient.PatientId, testData, t)
 
 	// lets go through the questions to find the one for which the patient answer should be present
 	for _, section := range patientVisitResponse.ClientLayout.Sections {
@@ -141,7 +141,7 @@ func TestMultipleChoiceIntake(t *testing.T) {
 
 	// signup a random test patient for which to answer questions
 	patientSignedUpResponse := SignupRandomTestPatient(t, testData.DataApi, testData.AuthApi)
-	patientVisitResponse := CreatePatientVisitForPatient(patientSignedUpResponse.PatientId, testData, t)
+	patientVisitResponse := CreatePatientVisitForPatient(patientSignedUpResponse.Patient.PatientId, testData, t)
 
 	// now lets go ahead and try and answer the question about the reason for visit given that it is
 	// single select
@@ -167,9 +167,9 @@ func TestMultipleChoiceIntake(t *testing.T) {
 	if err != nil {
 		t.Fatal("Unable to marshal request body")
 	}
-	submitPatientAnswerForVisit(patientSignedUpResponse.PatientId, testData, string(requestData), t)
+	submitPatientAnswerForVisit(patientSignedUpResponse.Patient.PatientId, testData, string(requestData), t)
 	// now, get the patient visit again to ensure that a patient answer was registered for the intended question
-	patientVisitResponse = GetPatientVisitForPatient(patientSignedUpResponse.PatientId, testData, t)
+	patientVisitResponse = GetPatientVisitForPatient(patientSignedUpResponse.Patient.PatientId, testData, t)
 
 	// lets go through the questions to find the one for which the patient answer should be present
 	for _, section := range patientVisitResponse.ClientLayout.Sections {
@@ -207,7 +207,7 @@ func TestSingleEntryIntake(t *testing.T) {
 
 	// signup a random test patient for which to answer questions
 	patientSignedUpResponse := SignupRandomTestPatient(t, testData.DataApi, testData.AuthApi)
-	patientVisitResponse := CreatePatientVisitForPatient(patientSignedUpResponse.PatientId, testData, t)
+	patientVisitResponse := CreatePatientVisitForPatient(patientSignedUpResponse.Patient.PatientId, testData, t)
 
 	// now lets go ahead and try and answer the question about the reason for visit given that it is
 	// single select
@@ -224,9 +224,9 @@ func TestSingleEntryIntake(t *testing.T) {
 	if err != nil {
 		t.Fatal("Unable to marshal request body")
 	}
-	submitPatientAnswerForVisit(patientSignedUpResponse.PatientId, testData, string(requestData), t)
+	submitPatientAnswerForVisit(patientSignedUpResponse.Patient.PatientId, testData, string(requestData), t)
 	// now, get the patient visit again to ensure that a patient answer was registered for the intended question
-	patientVisitResponse = GetPatientVisitForPatient(patientSignedUpResponse.PatientId, testData, t)
+	patientVisitResponse = GetPatientVisitForPatient(patientSignedUpResponse.Patient.PatientId, testData, t)
 
 	// lets go through the questions to find the one for which the patient answer should be present
 	for _, section := range patientVisitResponse.ClientLayout.Sections {
@@ -298,14 +298,14 @@ func TestFreeTextEntryIntake(t *testing.T) {
 
 	// signup a random test patient for which to answer questions
 	patientSignedUpResponse := SignupRandomTestPatient(t, testData.DataApi, testData.AuthApi)
-	patientVisitResponse := CreatePatientVisitForPatient(patientSignedUpResponse.PatientId, testData, t)
+	patientVisitResponse := CreatePatientVisitForPatient(patientSignedUpResponse.Patient.PatientId, testData, t)
 	freeTextResponse := "This is a free text response that should be accepted as a response for free text."
-	submitFreeTextResponseForPatient(patientVisitResponse, patientSignedUpResponse.PatientId, freeTextResponse, testData, t)
+	submitFreeTextResponseForPatient(patientVisitResponse, patientSignedUpResponse.Patient.PatientId, freeTextResponse, testData, t)
 
 	// submit another free text response to update teh response to this questiuon to ensure that what is returned is this response
 	// for this questions
 	updatedFreeTextResponse := "This is an updated free text response"
-	submitFreeTextResponseForPatient(patientVisitResponse, patientSignedUpResponse.PatientId, updatedFreeTextResponse, testData, t)
+	submitFreeTextResponseForPatient(patientVisitResponse, patientSignedUpResponse.Patient.PatientId, updatedFreeTextResponse, testData, t)
 }
 
 func addSubAnswerToAnswerIntake(answerIntake *apiservice.AnswerItem, subAnswerQuestionId, subAnswerPotentialAnswerId int64) {
@@ -327,7 +327,7 @@ func TestSubQuestionEntryIntake(t *testing.T) {
 
 	// signup a random test patient for which to answer questions
 	patientSignedUpResponse := SignupRandomTestPatient(t, testData.DataApi, testData.AuthApi)
-	patientVisitResponse := CreatePatientVisitForPatient(patientSignedUpResponse.PatientId, testData, t)
+	patientVisitResponse := CreatePatientVisitForPatient(patientSignedUpResponse.Patient.PatientId, testData, t)
 
 	// now lets go ahead and try and answer the question about the reason for visit given that it is
 	// single select
@@ -379,9 +379,9 @@ func TestSubQuestionEntryIntake(t *testing.T) {
 	if err != nil {
 		t.Fatal("Unable to marshal request body")
 	}
-	submitPatientAnswerForVisit(patientSignedUpResponse.PatientId, testData, string(requestData), t)
+	submitPatientAnswerForVisit(patientSignedUpResponse.Patient.PatientId, testData, string(requestData), t)
 	// now, get the patient visit again to ensure that a patient answer was registered for the intended question
-	patientVisitResponse = GetPatientVisitForPatient(patientSignedUpResponse.PatientId, testData, t)
+	patientVisitResponse = GetPatientVisitForPatient(patientSignedUpResponse.Patient.PatientId, testData, t)
 
 	// lets go through the questions to find the one for which the patient answer should be present
 	for _, section := range patientVisitResponse.ClientLayout.Sections {
@@ -433,9 +433,9 @@ func TestSubQuestionEntryIntake(t *testing.T) {
 		t.Fatal("Unable to marshal request body second time around")
 	}
 
-	submitPatientAnswerForVisit(patientSignedUpResponse.PatientId, testData, string(requestData), t)
+	submitPatientAnswerForVisit(patientSignedUpResponse.Patient.PatientId, testData, string(requestData), t)
 	// now, get the patient visit again to ensure that a patient answer was registered for the intended question
-	patientVisitResponse = GetPatientVisitForPatient(patientSignedUpResponse.PatientId, testData, t)
+	patientVisitResponse = GetPatientVisitForPatient(patientSignedUpResponse.Patient.PatientId, testData, t)
 	// lets go through the questions to find the one for which the patient answer should be present
 	for _, section := range patientVisitResponse.ClientLayout.Sections {
 		for _, screen := range section.Screens {
@@ -473,7 +473,7 @@ func TestPhotoAnswerIntake(t *testing.T) {
 
 	// signup a random test patient for which to answer questions
 	patientSignedUpResponse := SignupRandomTestPatient(t, testData.DataApi, testData.AuthApi)
-	patientVisitResponse := CreatePatientVisitForPatient(patientSignedUpResponse.PatientId, testData, t)
+	patientVisitResponse := CreatePatientVisitForPatient(patientSignedUpResponse.Patient.PatientId, testData, t)
 	questionId := getQuestionWithTagAndExpectedType("q_chest_photo_intake", "q_type_single_photo", t, testData)
 	potentialAnswerId := getAnswerWithTagAndExpectedType("a_chest_phota_intake", "a_type_photo_entry_chest", questionId, testData, t)
 
@@ -504,7 +504,7 @@ func TestPhotoAnswerIntake(t *testing.T) {
 	}
 
 	photoAnswerIntakeHandler := apiservice.NewPhotoAnswerIntakeHandler(testData.DataApi, testData.CloudStorageService, "cases-bucket-integ", "us-east-1", 1*1024*1024)
-	patient, err := testData.DataApi.GetPatientFromId(patientSignedUpResponse.PatientId)
+	patient, err := testData.DataApi.GetPatientFromId(patientSignedUpResponse.Patient.PatientId)
 	if err != nil {
 		t.Fatal("Unable to retrieve patient data given the patient id: " + err.Error())
 	}
@@ -527,7 +527,7 @@ func TestPhotoAnswerIntake(t *testing.T) {
 	CheckSuccessfulStatusCode(resp, "Unable to submit photo answer for patient: "+string(responseBody), t)
 
 	// get the patient visit again to get the patient answer in there
-	patientVisitResponse = GetPatientVisitForPatient(patientSignedUpResponse.PatientId, testData, t)
+	patientVisitResponse = GetPatientVisitForPatient(patientSignedUpResponse.Patient.PatientId, testData, t)
 	for _, section := range patientVisitResponse.ClientLayout.Sections {
 		for _, screen := range section.Screens {
 			for _, question := range screen.Questions {

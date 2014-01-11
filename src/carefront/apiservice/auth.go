@@ -57,7 +57,6 @@
 package apiservice
 
 import (
-	"log"
 	"net/http"
 	"strings"
 
@@ -92,34 +91,6 @@ func (h *AuthenticationHandler) ServeHTTP(w http.ResponseWriter, r *http.Request
 	// depending on whether we are signing up or logging in, make appropriate
 	// call to service
 	switch action {
-	case "signup":
-		requestData := new(AuthRequestData)
-		decoder := schema.NewDecoder()
-		if err := decoder.Decode(requestData, r.Form); err != nil {
-			log.Printf("apiservice/auth: failed to parse request data: %+v", err)
-			WriteDeveloperError(w, http.StatusBadRequest, err.Error())
-			return
-		}
-
-		if res, err := h.AuthApi.Signup(requestData.Login, requestData.Password); err != nil {
-			switch err.(type) {
-			case *thriftapi.LoginAlreadyExists:
-				WriteUserError(w, http.StatusBadRequest, "Login already exists")
-				return
-			default:
-				log.Printf("apiservice/auth: Signup RPC call failed: %+v", err)
-				// For now, treat all errors the same.
-				WriteDeveloperError(w, http.StatusInternalServerError, "Internal Server Error")
-				return
-			}
-		} else {
-			patient, err := h.DataApi.GetPatientFromAccountId(res.AccountId)
-			if err != nil {
-				WriteDeveloperError(w, http.StatusInternalServerError, "Unable to get patient from account id:  "+err.Error())
-				return
-			}
-			WriteJSONToHTTPResponseWriter(w, http.StatusOK, &AuthenticationResponse{Token: res.Token, Patient: patient})
-		}
 	case "authenticate":
 		requestData := new(AuthRequestData)
 		decoder := schema.NewDecoder()

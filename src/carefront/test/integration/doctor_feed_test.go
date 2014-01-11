@@ -46,7 +46,7 @@ func TestDoctorFeed(t *testing.T) {
 
 	patientSignedupResponse := SignupRandomTestPatient(t, testData.DataApi, testData.AuthApi)
 	// get patient to start a visit
-	patientVisitResponse := CreatePatientVisitForPatient(patientSignedupResponse.PatientId, testData, t)
+	patientVisitResponse := CreatePatientVisitForPatient(patientSignedupResponse.Patient.PatientId, testData, t)
 
 	// lets go ahead and insert several items into the doctor queue for this doctor
 	doctorQueueItem := &api.DoctorQueueItem{}

@@ -14,9 +14,6 @@
                             "question": "q_allergic_medication_entry"
                         }, 
                         {
-                            "question": "q_topical_allergies_medication_entry"
-                        }, 
-                        {
                             "question": "q_current_medications_entry"
                         }
                     ], 
@@ -31,10 +28,11 @@
                             "question": "q_list_prev_skin_condition_diagnosis"
                         }, 
                         {
-                            "question": "q_prev_med_condition_diagnosis"
+                            "question": "q_other_conditions_acne",
+                            "show_potential_responses" : true
                         }
                     ], 
-                    "sub_section_title": "Past Medical History", 
+                    "sub_section_title": "Past Medical Conditions", 
                     "sub_section_types": [
                         "s_type_table_section"
                     ]
@@ -43,10 +41,6 @@
                     "data": [
                         {
                             "question": "q_pregnancy_planning"
-                        }, 
-                        {
-                            "question": "q_social_history", 
-                            "show_potential_responses": true
                         }
                     ], 
                     "sub_section_title": "Additional Information", 
@@ -65,23 +59,28 @@
                 {
                     "data": [
                         {
-                            "question": "q_reason_visit"
-                        }, 
-                        {
                             "question": "q_acne_length"
                         }, 
                         {
                             "question": "q_acne_location"
-                        }, 
-                        {
-                            "question": "q_acne_worse"
-                        }, 
-                        {
+                        },
+                                                {
                             "question": "q_acne_symptoms", 
                             "show_potential_responses": true
-                        }, 
+                        },  
                         {
-                            "question": "q_menstrual_cycle"
+                            "question": "q_acne_worse"
+                        },
+                        {
+                            "question" : "q_changes_acne_worse"
+                        },
+                        {
+                            "question": "q_acne_worse_period",
+                            "gender" : "female"
+                        },
+                        {         
+                            "question" : "q_periods_regular",
+                            "gender" : "female"
                         }, 
                         {
                             "question": "q_skin_description"

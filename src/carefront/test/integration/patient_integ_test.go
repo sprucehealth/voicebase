@@ -63,7 +63,7 @@ func TestPatientVisitCreation(t *testing.T) {
 	defer TearDownIntegrationTest(t, testData)
 
 	signedupPatientResponse := SignupRandomTestPatient(t, testData.DataApi, testData.AuthApi)
-	patientVisitResponse := CreatePatientVisitForPatient(signedupPatientResponse.PatientId, testData, t)
+	patientVisitResponse := CreatePatientVisitForPatient(signedupPatientResponse.Patient.PatientId, testData, t)
 
 	if patientVisitResponse.PatientVisitId == 0 {
 		t.Fatal("Patient Visit Id not set when it should be.")
@@ -74,12 +74,12 @@ func TestPatientVisitCreation(t *testing.T) {
 	}
 
 	// checking to ensure that the care team was created
-	careTeam, err := testData.DataApi.GetCareTeamForPatient(signedupPatientResponse.PatientId)
+	careTeam, err := testData.DataApi.GetCareTeamForPatient(signedupPatientResponse.Patient.PatientId)
 	if err != nil {
 		t.Fatal("Unable to get care team for patient visit: " + err.Error())
 	}
 
-	if !(careTeam == nil || careTeam.PatientId == signedupPatientResponse.PatientId) {
+	if !(careTeam == nil || careTeam.PatientId == signedupPatientResponse.Patient.PatientId) {
 		t.Fatal("Unable to get patient visit id for care team")
 	}
 
@@ -97,7 +97,7 @@ func TestPatientVisitCreation(t *testing.T) {
 
 	// getting the patient visit again as we should get back the same patient visit id
 	// since this patient visit has not been completed
-	anotherPatientVisitResponse := GetPatientVisitForPatient(signedupPatientResponse.PatientId, testData, t)
+	anotherPatientVisitResponse := GetPatientVisitForPatient(signedupPatientResponse.Patient.PatientId, testData, t)
 	if anotherPatientVisitResponse.PatientVisitId != patientVisitResponse.PatientVisitId {
 		t.Fatal("The patient visit id for subsequent calls should be the same so long as we have not closed/submitted the case")
 	}
@@ -111,15 +111,15 @@ func TestPatientVisitSubmission(t *testing.T) {
 	defer TearDownIntegrationTest(t, testData)
 
 	signedupPatientResponse := SignupRandomTestPatient(t, testData.DataApi, testData.AuthApi)
-	patientVisitResponse := CreatePatientVisitForPatient(signedupPatientResponse.PatientId, testData, t)
+	patientVisitResponse := CreatePatientVisitForPatient(signedupPatientResponse.Patient.PatientId, testData, t)
 
-	SubmitPatientVisitForPatient(signedupPatientResponse.PatientId, patientVisitResponse.PatientVisitId, testData, t)
+	SubmitPatientVisitForPatient(signedupPatientResponse.Patient.PatientId, patientVisitResponse.PatientVisitId, testData, t)
 
 	// try submitting the exact same patient visit again, and it should come back with a 403 given that the case has already been submitted
 
 	patientVisitHandler := apiservice.NewPatientVisitHandler(testData.DataApi, testData.AuthApi,
 		testData.CloudStorageService, testData.CloudStorageService)
-	patient, err := testData.DataApi.GetPatientFromId(signedupPatientResponse.PatientId)
+	patient, err := testData.DataApi.GetPatientFromId(signedupPatientResponse.Patient.PatientId)
 	if err != nil {
 		t.Fatal("Unable to get patient information given the patient id: " + err.Error())
 	}

@@ -11,6 +11,8 @@ type Patient struct {
 	Dob       time.Time `json:"dob,omitempty"`
 	Gender    string    `json:"gender,omitempty"`
 	ZipCode   string    `json:"zip_code,omitempty"`
+	City      string    `json:"city,omitempty"`
+	State     string    `json:"state,omitempty"`
 	Phone     string    `json:"phone,omitempty"`
 	Status    string    `json:"-"`
 	AccountId int64     `json:"-"`
