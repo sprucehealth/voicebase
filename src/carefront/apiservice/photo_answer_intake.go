@@ -90,7 +90,7 @@ func (p *PhotoAnswerIntakeHandler) ServeHTTP(w http.ResponseWriter, r *http.Requ
 		return
 	}
 
-	if questionType != "q_type_single_photo" && questionType != "q_type_multiple_photo" {
+	if questionType != "q_type_single_photo" && questionType != "q_type_multiple_photo" && questionType != "q_type_photo" {
 		WriteDeveloperError(w, http.StatusBadRequest, "This api is only for uploading pictures")
 		return
 	}

@@ -14,7 +14,7 @@
                             "question": "q_allergic_medication_entry"
                         }, 
                         {
-                            "question": "q_current_medications_entry"
+                            "question": "q_current_medications_entry" 
                         }
                     ], 
                     "sub_section_title": "Medication", 
@@ -59,7 +59,7 @@
                 {
                     "data": [
                         {
-                            "question": "q_acne_length"
+                            "question": "q_onset_acne"
                         }, 
                         {
                             "question": "q_acne_location"

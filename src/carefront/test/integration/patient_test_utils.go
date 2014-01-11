@@ -2,6 +2,7 @@ package integration
 
 import (
 	"bytes"
+	"carefront/libs/maps"
 	thriftapi "carefront/thrift/api"
 	"encoding/json"
 	"io/ioutil"
@@ -18,7 +19,7 @@ import (
 )
 
 func SignupRandomTestPatient(t *testing.T, dataApi api.DataAPI, authApi thriftapi.Auth) *apiservice.PatientSignedupResponse {
-	authHandler := &apiservice.SignupPatientHandler{AuthApi: authApi, DataApi: dataApi}
+	authHandler := &apiservice.SignupPatientHandler{AuthApi: authApi, DataApi: dataApi, MapsApi: maps.GoogleMapsService(0)}
 	ts := httptest.NewServer(authHandler)
 	defer ts.Close()
 
