@@ -118,7 +118,7 @@ func (p *DoctorPatientVisitReviewHandler) ServeHTTP(w http.ResponseWriter, r *ht
 		return
 	}
 	p.populatePatientVisitOverviewWithPatientAnswers(patientAnswersForQuestions, patientVisitOverview, patient)
-
+	p.removeQuestionsWithNoAnswersBasedOnFlag(patientVisitOverview, patient)
 	WriteJSONToHTTPResponseWriter(w, http.StatusOK, DoctorPatientVisitReviewResponse{patientVisitOverview})
 }
 
@@ -159,6 +159,25 @@ func (p *DoctorPatientVisitReviewHandler) filterOutGenderSpecificQuestionsAndSub
 		}
 		section.SubSections = filteredSubSections
 	}
+}
+
+func (p *DoctorPatientVisitReviewHandler) removeQuestionsWithNoAnswersBasedOnFlag(patientVisitOverview *info_intake.PatientVisitOverview, patient *common.Patient) {
+	for _, section := range patientVisitOverview.Sections {
+		for _, subSection := range section.SubSections {
+			filteredQuestions := make([]*info_intake.PatientVisitOverviewQuestion, 0)
+			for _, question := range subSection.Questions {
+				if question.RemoveQuestionIfNoAnswer == true {
+					if question.PatientAnswers != nil && len(question.PatientAnswers) > 0 {
+						filteredQuestions = append(filteredQuestions, question)
+					}
+				} else {
+					filteredQuestions = append(filteredQuestions, question)
+				}
+			}
+			subSection.Questions = filteredQuestions
+		}
+	}
+
 }
 
 func fillInPatientVisitInfoIntoOverview(patientVisit *common.PatientVisit, patientVisitOverview *info_intake.PatientVisitOverview) {

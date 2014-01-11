@@ -11,10 +11,11 @@ import (
 
 type PatientVisitOverviewQuestion struct {
 	Question
-	ShowPotentialResponses bool   `json:"show_potential_responses,omitempty"`
-	FlagQuestionIfAnswered bool   `json:"flag_question_if_answered,omitempty"`
-	NoAnswerText           string `json:"no_patient_answer_text,omitempty"`
-	GenderFilter           string `json:"gender,omitempty"`
+	ShowPotentialResponses   bool   `json:"show_potential_responses,omitempty"`
+	FlagQuestionIfAnswered   bool   `json:"flag_question_if_answered,omitempty"`
+	NoAnswerText             string `json:"no_patient_answer_text,omitempty"`
+	GenderFilter             string `json:"gender,omitempty"`
+	RemoveQuestionIfNoAnswer bool   `json:"remove_question_if_no_answer,omitempty"`
 }
 
 type PatientVisitOverviewSubSection struct {

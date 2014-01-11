@@ -313,7 +313,7 @@
                             "condition": {
                                 "op": "answer_equals", 
                                 "potential_answers": [
-                                    "a_yes_prev_skin_diagnosis"
+                                    "a_yes_prev_skin_diagnosis" 
                                 ], 
                                 "question": "q_prev_skin_condition_diagnosis"
                             }, 
