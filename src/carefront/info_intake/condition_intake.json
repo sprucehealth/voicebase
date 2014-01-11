@@ -242,7 +242,7 @@
                         "button_text": "Continue", 
                         "style": "filled", 
                         "tap_url": "spruce:///action/view_next_visit_section"
-                    },  
+                    }, 
                     {
                         "button_text": "Review Photos", 
                         "style": "bordered", 
@@ -264,7 +264,11 @@
                     "description": "planning pregnancy", 
                     "questions": [
                         {
-                            "question": "q_pregnancy_planning" 
+                            "condition": {
+                                "gender": "female", 
+                                "op": "gender_equals"
+                            }, 
+                            "question": "q_pregnancy_planning"
                         }
                     ]
                 }, 
@@ -278,7 +282,7 @@
                             "condition": {
                                 "op": "answer_equals", 
                                 "potential_answers": [
-                                    "a_yes_allergic_medications" 
+                                    "a_yes_allergic_medications"
                                 ], 
                                 "question": "q_allergic_medications"
                             }, 

@@ -109,6 +109,8 @@ func (p *DoctorPatientVisitReviewHandler) ServeHTTP(w http.ResponseWriter, r *ht
 	fillInPatientVisitInfoIntoOverview(patientVisit, patientVisitOverview)
 	patientVisitOverview.Patient = patient
 
+	p.filterOutGenderSpecificQuestionsAndSubSectionsFromOverview(patientVisitOverview, patient)
+
 	questionIds := getQuestionIdsFromPatientVisitOverview(patientVisitOverview)
 	patientAnswersForQuestions, err := p.DataApi.GetAnswersForQuestionsInPatientVisit(api.PATIENT_ROLE, questionIds, patientVisit.PatientId, patientVisit.PatientVisitId)
 	if err != nil {
@@ -116,6 +118,7 @@ func (p *DoctorPatientVisitReviewHandler) ServeHTTP(w http.ResponseWriter, r *ht
 		return
 	}
 	p.populatePatientVisitOverviewWithPatientAnswers(patientAnswersForQuestions, patientVisitOverview, patient)
+
 	WriteJSONToHTTPResponseWriter(w, http.StatusOK, DoctorPatientVisitReviewResponse{patientVisitOverview})
 }
 
@@ -136,6 +139,26 @@ func (p *DoctorPatientVisitReviewHandler) populatePatientVisitOverviewWithPatien
 		}
 	}
 	return
+}
+
+func (p *DoctorPatientVisitReviewHandler) filterOutGenderSpecificQuestionsAndSubSectionsFromOverview(patientVisitOverview *info_intake.PatientVisitOverview, patient *common.Patient) {
+	for _, section := range patientVisitOverview.Sections {
+		filteredSubSections := make([]*info_intake.PatientVisitOverviewSubSection, 0)
+		for _, subSection := range section.SubSections {
+			if !(subSection.GenderFilter == "" || subSection.GenderFilter == patient.Gender) {
+				continue
+			}
+			filteredQuestions := make([]*info_intake.PatientVisitOverviewQuestion, 0)
+			for _, question := range subSection.Questions {
+				if question.GenderFilter == "" || question.GenderFilter == patient.Gender {
+					filteredQuestions = append(filteredQuestions, question)
+				}
+			}
+			subSection.Questions = filteredQuestions
+			filteredSubSections = append(filteredSubSections, subSection)
+		}
+		section.SubSections = filteredSubSections
+	}
 }
 
 func fillInPatientVisitInfoIntoOverview(patientVisit *common.PatientVisit, patientVisitOverview *info_intake.PatientVisitOverview) {

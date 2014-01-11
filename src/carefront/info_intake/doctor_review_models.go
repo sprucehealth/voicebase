@@ -11,14 +11,16 @@ import (
 
 type PatientVisitOverviewQuestion struct {
 	Question
-	ShowPotentialResponses bool `json:"show_potential_responses,omitempty"`
-	FlagQuestionIfAnswered bool `json:"flag_question_if_answered,omitempty"`
+	ShowPotentialResponses bool   `json:"show_potential_responses,omitempty"`
+	FlagQuestionIfAnswered bool   `json:"flag_question_if_answered,omitempty"`
+	GenderFilter           string `json:"gender,omitempty"`
 }
 
 type PatientVisitOverviewSubSection struct {
 	Questions       []*PatientVisitOverviewQuestion `json:"data,omitempty"`
 	SubSectionTitle string                          `json:"sub_section_title,omitempty"`
 	SubSectionTypes []string                        `json:"sub_section_types,omitempty"`
+	GenderFilter    string                          `json:"gender,omitempty"`
 }
 
 type PatientVisitOverviewSection struct {

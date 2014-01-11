@@ -10,13 +10,12 @@
                 {
                     "data": [
                         {
-                            "flag_question_if_answered": true, 
                             "question": "q_allergic_medication_entry"
                         }, 
                         {
                             "question": "q_current_medications_entry" 
                         }
-                    ], 
+                    ],  
                     "sub_section_title": "Medication", 
                     "sub_section_types": [
                         "s_type_table_section"
@@ -40,10 +39,12 @@
                 {
                     "data": [
                         {
-                            "question": "q_pregnancy_planning"
+                            "question": "q_pregnancy_planning",
+                            "gender" : "female"
                         }
                     ], 
-                    "sub_section_title": "Additional Information", 
+                    "sub_section_title": "Additional Information",
+                    "gender" : "female", 
                     "sub_section_types": [
                         "s_type_table_section"
                     ]
@@ -108,7 +109,7 @@
                 {
                     "data": [
                         {
-                            "question": "q_anything_else"
+                            "question": "q_anything_else_acne"
                         }
                     ], 
                     "sub_section_title": "Additional Information from Patient", 
