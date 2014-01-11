@@ -118,6 +118,23 @@ func (h *AuthenticationHandler) ServeHTTP(w http.ResponseWriter, r *http.Request
 			}
 			WriteJSONToHTTPResponseWriter(w, http.StatusOK, &AuthenticationResponse{Token: res.Token, Patient: patient})
 		}
+	case "isauthenticated":
+		token, err := GetAuthTokenFromHeader(r)
+		if err != nil {
+			WriteDeveloperError(w, http.StatusBadRequest, "authoriation token not correctly specified in the header: "+err.Error())
+			return
+		}
+		validTokenResponse, err := h.AuthApi.ValidateToken(token)
+		if err != nil {
+			WriteDeveloperError(w, http.StatusBadRequest, "unable to validate auth token: "+err.Error())
+			return
+		}
+
+		if validTokenResponse.IsValid == false {
+			WriteUserError(w, http.StatusForbidden, "Authentication timed out. Log in to continue")
+			return
+		}
+		WriteJSONToHTTPResponseWriter(w, http.StatusOK, SuccessfulGenericJSONResponse())
 	case "logout":
 		token, err := GetAuthTokenFromHeader(r)
 		if err != nil {

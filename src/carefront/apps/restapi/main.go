@@ -247,6 +247,7 @@ func main() {
 	mux.Handle("/v1/answer/photo", photoAnswerIntakeHandler)
 	mux.Handle("/v1/signup", authHandler)
 	mux.Handle("/v1/authenticate", authHandler)
+	mux.Handle("/v1/isauthenticated", authHandler)
 	mux.Handle("/v1/logout", authHandler)
 	mux.Handle("/v1/ping", pingHandler)
 	mux.Handle("/v1/autocomplete", autocompleteHandler)
