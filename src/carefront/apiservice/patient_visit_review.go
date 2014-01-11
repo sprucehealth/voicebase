@@ -19,8 +19,9 @@ type PatientVisitReviewRequest struct {
 }
 
 type treatmentDisplayItem struct {
-	Name string `json:"name"`
-	OTC  bool   `json:"otc"`
+	Name        string `json:"name"`
+	Description string `json:"description,omitempty"`
+	OTC         bool   `json:"otc"`
 }
 
 type treatmentsDisplaySection struct {
@@ -133,6 +134,7 @@ func (p *PatientVisitReviewHandler) ServeHTTP(w http.ResponseWriter, r *http.Req
 			drugName, _, _ := breakDrugInternalNameIntoComponents(treatment.DrugInternalName)
 			treatmentItem := &treatmentDisplayItem{}
 			treatmentItem.Name = fmt.Sprintf("%s %s", drugName, treatment.DosageStrength)
+			treatmentItem.Description = treatment.PatientInstructions
 			treatmentItem.OTC = treatment.OTC
 			treatments.Medications = append(treatments.Medications, treatmentItem)
 		}
