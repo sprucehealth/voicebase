@@ -13,6 +13,7 @@ type PatientVisitOverviewQuestion struct {
 	Question
 	ShowPotentialResponses bool   `json:"show_potential_responses,omitempty"`
 	FlagQuestionIfAnswered bool   `json:"flag_question_if_answered,omitempty"`
+	NoAnswerText           string `json:"no_patient_answer_text,omitempty"`
 	GenderFilter           string `json:"gender,omitempty"`
 }
 

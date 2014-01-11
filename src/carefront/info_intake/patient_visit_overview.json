@@ -1,21 +1,24 @@
 {
-    "health_condition": "health_condition_acne",  
+    "health_condition": "health_condition_acne", 
     "sections": [
         {
-            "section_title": "Medical History",  
+            "section_title": "Medical History", 
             "section_types": [
-                "s_type_table_info" 
+                "s_type_table_info"
             ], 
             "sub_sections": [
                 {
                     "data": [
                         {
-                            "question": "q_allergic_medication_entry"
+                            "question": "q_allergic_medication_entry",
+                            "no_patient_answer_text" : "Patient chose not to answer"
+
                         }, 
                         {
-                            "question": "q_current_medications_entry" 
+                            "question": "q_current_medications_entry",
+                            "no_patient_answer_text" : "Patient chose not to answer"
                         }
-                    ],  
+                    ], 
                     "sub_section_title": "Medication", 
                     "sub_section_types": [
                         "s_type_table_section"
@@ -24,11 +27,12 @@
                 {
                     "data": [
                         {
-                            "question": "q_list_prev_skin_condition_diagnosis"
-                        }, 
+                            "question": "q_list_prev_skin_condition_diagnosis",
+                            "no_patient_answer_text" : "Patient chose not to answer"
+                         }, 
                         {
-                            "question": "q_other_conditions_acne",
-                            "show_potential_responses" : true
+                            "question": "q_other_conditions_acne", 
+                            "show_potential_responses": true
                         }
                     ], 
                     "sub_section_title": "Past Medical Conditions", 
@@ -39,12 +43,12 @@
                 {
                     "data": [
                         {
-                            "question": "q_pregnancy_planning",
-                            "gender" : "female"
+                            "gender": "female", 
+                            "question": "q_pregnancy_planning"
                         }
                     ], 
-                    "sub_section_title": "Additional Information",
-                    "gender" : "female", 
+                    "gender": "female", 
+                    "sub_section_title": "Additional Information", 
                     "sub_section_types": [
                         "s_type_table_section"
                     ]
@@ -64,24 +68,25 @@
                         }, 
                         {
                             "question": "q_acne_location"
-                        },
-                                                {
+                        }, 
+                        {
                             "question": "q_acne_symptoms", 
                             "show_potential_responses": true
-                        },  
+                        }, 
                         {
                             "question": "q_acne_worse"
-                        },
+                        }, 
                         {
-                            "question" : "q_changes_acne_worse"
-                        },
+                            "question": "q_changes_acne_worse",
+                            "no_patient_answer_text" : "Patient chose not to answer"
+                        }, 
                         {
-                            "question": "q_acne_worse_period",
-                            "gender" : "female"
-                        },
-                        {         
-                            "question" : "q_periods_regular",
-                            "gender" : "female"
+                            "gender": "female", 
+                            "question": "q_acne_worse_period"
+                        }, 
+                        {
+                            "gender": "female", 
+                            "question": "q_periods_regular"
                         }, 
                         {
                             "question": "q_skin_description"
@@ -98,7 +103,8 @@
                             "question": "q_acne_prev_treatment_types"
                         }, 
                         {
-                            "question": "q_acne_prev_treatment_list"
+                            "question": "q_acne_prev_treatment_list",
+                            "no_patient_answer_text" : "Patient chose not to answer"
                         }
                     ], 
                     "sub_section_title": "Prior Treatments", 
