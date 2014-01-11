@@ -1849,12 +1849,15 @@ func (d *DataService) GetPatientVisitFromId(patientVisitId int64) (patientVisit 
 
 func (d *DataService) GetPatientFromPatientVisitId(patientVisitId int64) (patient *common.Patient, err error) {
 	var patientId, accountId int64
-	var firstName, lastName, zipCode, status, gender string
-	var phone sql.NullString
+	var firstName, lastName, status, gender string
+	var phone, zipCode sql.NullString
 	var dob mysql.NullTime
 	err = d.DB.QueryRow(fmt.Sprintf(`select patient.id, account_id, first_name, last_name, zip_code, phone, gender, dob, patient.status from patient_visit
-							left outer join patient_phone on patient_phone.patient_id = patient.id 
-							inner join patient on patient_id = patient.id where patient_visit.id = ? and (phone is null or (patient_phone.status='ACTIVE' and patient_phone.phone_type='%s'))`, patient_phone_type), patientVisitId).Scan(&patientId, &accountId, &firstName, &lastName, &zipCode, &phone, &gender, &dob, &status)
+							left outer join patient_phone on patient_phone.patient_id = patient_visit.patient_id
+							left outer join patient_location on patient_location.patient_id = patient_visit.patient_id
+							inner join patient on patient_visit.patient_id = patient.id where patient_visit.id = ? 
+							and (phone is null or (patient_phone.status='ACTIVE' and patient_phone.phone_type='%s'))
+							and (zip_code is null or patient_location.status = 'ACTIVE')`, patient_phone_type), patientVisitId).Scan(&patientId, &accountId, &firstName, &lastName, &zipCode, &phone, &gender, &dob, &status)
 	if err != nil {
 		if err == sql.ErrNoRows {
 			return nil, nil
@@ -1876,7 +1879,9 @@ func (d *DataService) GetPatientFromPatientVisitId(patientVisitId int64) (patien
 
 	patient.Gender = gender
 	patient.Status = status
-	patient.ZipCode = zipCode
+	if zipCode.Valid {
+		patient.ZipCode = zipCode.String
+	}
 
 	return
 }
