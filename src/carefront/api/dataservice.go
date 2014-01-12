@@ -458,9 +458,9 @@ func (d *DataService) AddOrUpdateDrugInstructionForDoctor(drugName, drugForm, dr
 func (d *DataService) GetDrugInstructionsForDoctor(drugName, drugForm, drugRoute string, doctorId int64) (drugInstructions []*common.DoctorInstructionItem, err error) {
 	// first, try and populate instructions belonging to the doctor based on just the drug name
 	// if non exist, then check the predefined set of instructions, create a copy for the doctor and return this copy
-	queryStr := fmt.Sprintf(`select drug_supplemental_instruction.id, text, drug_name_id, drug_form_id, drug_route_id from drug_supplemental_instruction 
+	queryStr := `select drug_supplemental_instruction.id, text, drug_name_id, drug_form_id, drug_route_id from drug_supplemental_instruction 
 									inner join drug_name on drug_name_id=drug_name.id 
-										where name='%s' and drug_form_id is null and drug_route_id is null and status='ACTIVE'`, drugName)
+										where name = ? and drug_form_id is null and drug_route_id is null and status='ACTIVE'`
 	drugInstructions, err = d.queryAndInsertPredefinedInstructionsForDoctor(dr_drug_supplemental_instruction_table, queryStr, doctorId, getDoctorInstructionsBasedOnName, insertPredefinedInstructionsForDoctor, drugName)
 	if err != nil {
 		return
@@ -470,10 +470,10 @@ func (d *DataService) GetDrugInstructionsForDoctor(drugName, drugForm, drugRoute
 
 	// second, try and populate instructions belonging to the doctor based on the drug name and the form
 	// if non exist, then check the predefined set of instructions, create a copy for the doctor and return this copy
-	queryStr = fmt.Sprintf(`select drug_supplemental_instruction.id, text, drug_name_id, drug_form_id, drug_route_id from drug_supplemental_instruction 
+	queryStr = `select drug_supplemental_instruction.id, text, drug_name_id, drug_form_id, drug_route_id from drug_supplemental_instruction 
 									inner join drug_name on drug_name_id=drug_name.id 
 									inner join drug_form on drug_form_id=drug_form.id 
-										where drug_name.name='%s' and drug_form.name = '%s' and drug_route_id is null and status='ACTIVE'`, drugName, drugForm)
+										where drug_name.name=? and drug_form.name =? and drug_route_id is null and status='ACTIVE'`
 	moreInstructions, err := d.queryAndInsertPredefinedInstructionsForDoctor(dr_drug_supplemental_instruction_table, queryStr, doctorId, getDoctorInstructionsBasedOnNameAndForm, insertPredefinedInstructionsForDoctor, drugName, drugForm)
 	if err != nil {
 		return
@@ -482,10 +482,10 @@ func (d *DataService) GetDrugInstructionsForDoctor(drugName, drugForm, drugRoute
 
 	// third, try and populate instructions belonging to the doctor based on the drug name and route
 	// if non exist, then check the predefined set of instructions, create a copy for the doctor and return this copy
-	queryStr = fmt.Sprintf(`select drug_supplemental_instruction.id, text, drug_name_id, drug_form_id, drug_route_id from drug_supplemental_instruction 
+	queryStr = `select drug_supplemental_instruction.id, text, drug_name_id, drug_form_id, drug_route_id from drug_supplemental_instruction 
 									inner join drug_name on drug_name_id=drug_name.id 
 									inner join drug_route on drug_route_id=drug_route.id 
-										where drug_name.name='%s' and drug_route.name = '%s' and drug_form_id is null and status='ACTIVE'`, drugName, drugRoute)
+										where drug_name.name = ? and drug_route.name = ? and drug_form_id is null and status='ACTIVE'`
 	moreInstructions, err = d.queryAndInsertPredefinedInstructionsForDoctor(dr_drug_supplemental_instruction_table, queryStr, doctorId, getDoctorInstructionsBasedOnNameAndRoute, insertPredefinedInstructionsForDoctor, drugName, drugRoute)
 	if err != nil {
 		return
@@ -494,11 +494,11 @@ func (d *DataService) GetDrugInstructionsForDoctor(drugName, drugForm, drugRoute
 
 	// fourth, try and populate instructions belonging to the doctor based on the drug name, form and route
 	// if non exist, then check the predefined set of instructions, create a copy for the doctor and return this copy
-	queryStr = fmt.Sprintf(`select drug_supplemental_instruction.id, text, drug_name_id, drug_form_id, drug_route_id from drug_supplemental_instruction 
+	queryStr = `select drug_supplemental_instruction.id, text, drug_name_id, drug_form_id, drug_route_id from drug_supplemental_instruction 
 									inner join drug_name on drug_name_id=drug_name.id 
 									inner join drug_route on drug_route_id=drug_route.id
 									inner join drug_form on drug_form_id=drug_form.id
-										where drug_name.name='%s' and drug_route.name = '%s' and drug_form.name = '%s' and status='ACTIVE'`, drugName, drugRoute, drugForm)
+										where drug_name.name=? and drug_route.name = ? and drug_form.name = ? and status='ACTIVE'`
 	moreInstructions, err = d.queryAndInsertPredefinedInstructionsForDoctor(dr_drug_supplemental_instruction_table, queryStr, doctorId, getDoctorInstructionsBasedOnNameFormAndRoute, insertPredefinedInstructionsForDoctor, drugName, drugForm, drugRoute)
 	if err != nil {
 		return
@@ -554,7 +554,11 @@ func (d *DataService) queryAndInsertPredefinedInstructionsForDoctor(drTableName 
 		return
 	}
 
-	rows, err := d.DB.Query(queryStr)
+	queryParams := make([]interface{}, 0)
+	for _, drugComponent := range drugComponents {
+		queryParams = append(queryParams, interface{}(drugComponent))
+	}
+	rows, err := d.DB.Query(queryStr, queryParams...)
 	if err != nil {
 		return
 	}
@@ -660,10 +664,9 @@ func getRegimenStepsForDoctor(db *sql.DB, doctorId int64, drugComponents ...stri
 }
 
 func getDoctorInstructionsBasedOnName(db *sql.DB, doctorId int64, drugComponents ...string) (drugInstructions []*common.DoctorInstructionItem, err error) {
-	queryStr := fmt.Sprintf(`select dr_drug_supplemental_instruction.id, text,status from dr_drug_supplemental_instruction 
+	rows, err := db.Query(`select dr_drug_supplemental_instruction.id, text,status from dr_drug_supplemental_instruction 
 								inner join drug_name on drug_name_id=drug_name.id 
-									where name='%s' and drug_form_id is null and drug_route_id is null and doctor_id=?`, drugComponents[0])
-	rows, err := db.Query(queryStr, doctorId)
+									where name=? and drug_form_id is null and drug_route_id is null and doctor_id=?`, drugComponents[0], doctorId)
 	if err != nil {
 		return
 	}
@@ -674,11 +677,10 @@ func getDoctorInstructionsBasedOnName(db *sql.DB, doctorId int64, drugComponents
 
 func getDoctorInstructionsBasedOnNameAndForm(db *sql.DB, doctorId int64, drugComponents ...string) (drugInstructions []*common.DoctorInstructionItem, err error) {
 	// then, get instructions belonging to doctor based on drug name and form
-	queryStr := fmt.Sprintf(`select dr_drug_supplemental_instruction.id, text,status from dr_drug_supplemental_instruction 
+	rows, err := db.Query(`select dr_drug_supplemental_instruction.id, text,status from dr_drug_supplemental_instruction 
 									inner join drug_name on drug_name_id=drug_name.id 
 									inner join drug_form on drug_form_id=drug_form.id 
-										where drug_name.name='%s' and drug_form.name = '%s' and drug_route_id is null and doctor_id=?`, drugComponents[0], drugComponents[1])
-	rows, err := db.Query(queryStr, doctorId)
+										where drug_name.name=? and drug_form.name = ? and drug_route_id is null and doctor_id=?`, drugComponents[0], drugComponents[1], doctorId)
 	if err != nil {
 		return
 	}
@@ -688,11 +690,10 @@ func getDoctorInstructionsBasedOnNameAndForm(db *sql.DB, doctorId int64, drugCom
 }
 
 func getDoctorInstructionsBasedOnNameAndRoute(db *sql.DB, doctorId int64, drugComponents ...string) (drugInstructions []*common.DoctorInstructionItem, err error) {
-	queryStr := fmt.Sprintf(`select dr_drug_supplemental_instruction.id,text,status from dr_drug_supplemental_instruction 
+	rows, err := db.Query(`select dr_drug_supplemental_instruction.id,text,status from dr_drug_supplemental_instruction 
 									inner join drug_name on drug_name_id=drug_name.id 
 									inner join drug_route on drug_route_id=drug_route.id 
-										where drug_name.name='%s' and drug_route.name = '%s' and drug_form_id is null and doctor_id=?`, drugComponents[0], drugComponents[1])
-	rows, err := db.Query(queryStr, doctorId)
+										where drug_name.name=? and drug_route.name = ? and drug_form_id is null and doctor_id=?`, drugComponents[0], drugComponents[1], doctorId)
 	if err != nil {
 		return
 	}
@@ -703,12 +704,11 @@ func getDoctorInstructionsBasedOnNameAndRoute(db *sql.DB, doctorId int64, drugCo
 
 func getDoctorInstructionsBasedOnNameFormAndRoute(db *sql.DB, doctorId int64, drugComponents ...string) (drugInstructions []*common.DoctorInstructionItem, err error) {
 	// then, get instructions belonging to doctor based on drug name, route and form
-	queryStr := fmt.Sprintf(`select dr_drug_supplemental_instruction.id,text,status from dr_drug_supplemental_instruction 
+	rows, err := db.Query(`select dr_drug_supplemental_instruction.id,text,status from dr_drug_supplemental_instruction 
 									inner join drug_name on drug_name_id=drug_name.id 
 									inner join drug_route on drug_route_id=drug_route.id 
 									inner join drug_form on drug_form_id = drug_form.id
-										where drug_name.name='%s' and drug_form.name='%s' and drug_route.name='%s' and doctor_id=?`, drugComponents[0], drugComponents[1], drugComponents[2])
-	rows, err := db.Query(queryStr, doctorId)
+										where drug_name.name=? and drug_form.name=? and drug_route.name=? and doctor_id=?`, drugComponents[0], drugComponents[1], drugComponents[2], doctorId)
 	if err != nil {
 		return
 	}
