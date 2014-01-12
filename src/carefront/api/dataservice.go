@@ -1163,11 +1163,10 @@ func (d *DataService) GetDoctorAssignedToPatientVisit(PatientVisitId int64) (doc
 }
 
 func (d *DataService) CheckCareProvidingElligibility(shortState string, healthConditionId int64) (isElligible bool, err error) {
-	queryStr := fmt.Sprintf(`select provider_id from care_provider_state_elligibility 
+	rows, err := d.DB.Query(`select provider_id from care_provider_state_elligibility 
 								inner join care_providing_state on care_providing_state_id = care_providing_state.id 
 								inner join provider_role on provider_role_id = provider_role.id 
-									where state = '%s' and health_condition_id = ? and provider_tag='DOCTOR'`, shortState)
-	rows, err := d.DB.Query(queryStr, healthConditionId)
+									where state = ? and health_condition_id = ? and provider_tag='DOCTOR'`, shortState, healthConditionId)
 	if err != nil {
 		return false, err
 	}
