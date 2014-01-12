@@ -60,7 +60,7 @@ func (p *PatientVisitFollowUpHandler) getFollowupForPatientVisit(w http.Response
 	}
 
 	response := &PatientVisitFollowupResponse{}
-	if followup.FollowUpValue != 0 && followup.FollowUpUnit != "" {
+	if followup != nil && followup.FollowUpValue != 0 && followup.FollowUpUnit != "" {
 		response.FollowUp = followup
 	}
 
