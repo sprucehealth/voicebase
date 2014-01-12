@@ -90,7 +90,7 @@ func (mux *AuthServeMux) ServeHTTP(w http.ResponseWriter, r *http.Request) {
 			customResponseWriter.WriteHeader(http.StatusInternalServerError)
 			return
 		} else if !valid {
-			customResponseWriter.WriteHeader(http.StatusForbidden)
+			WriteAuthTimeoutError(customResponseWriter)
 			return
 		} else if auth, ok := h.(Authenticated); ok {
 			auth.AccountIdFromAuthToken(accountId)

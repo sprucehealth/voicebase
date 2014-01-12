@@ -131,7 +131,7 @@ func (h *AuthenticationHandler) ServeHTTP(w http.ResponseWriter, r *http.Request
 		}
 
 		if validTokenResponse.IsValid == false {
-			WriteUserError(w, http.StatusForbidden, "Authentication timed out. Log in to continue")
+			WriteAuthTimeoutError(w)
 			return
 		}
 		WriteJSONToHTTPResponseWriter(w, http.StatusOK, SuccessfulGenericJSONResponse())

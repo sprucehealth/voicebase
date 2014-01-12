@@ -16,7 +16,9 @@ var ErrBadAuthToken = errors.New("BadAuthToken")
 
 const (
 	genericUserErrorMessage         = "Something went wrong on our end. Apologies for the inconvenience and please try again later!"
+	authTokenExpiredMessage         = "Authentication expired. Log in to continue."
 	DEVELOPER_ERROR_NO_VISIT_EXISTS = 10001
+	DEVELOPER_AUTH_TOKEN_EXPIRED    = 10002
 )
 
 type GenericJsonResponse struct {
@@ -90,6 +92,14 @@ func WriteUserError(w http.ResponseWriter, httpStatusCode int, errorString strin
 	userError := new(ErrorResponse)
 	userError.UserError = errorString
 	WriteJSONToHTTPResponseWriter(w, httpStatusCode, userError)
+}
+
+func WriteAuthTimeoutError(w http.ResponseWriter) {
+	userError := new(ErrorResponse)
+	userError.UserError = authTokenExpiredMessage
+	userError.DeveloperCode = DEVELOPER_AUTH_TOKEN_EXPIRED
+	userError.DeveloperError = authTokenExpiredMessage
+	WriteJSONToHTTPResponseWriter(w, http.StatusForbidden, userError)
 }
 
 // this structure is present only if we are taking in answers to subquestions
