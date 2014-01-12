@@ -1223,13 +1223,13 @@ func (d *DataService) UpdatePatientPharmacy(patientId int64, pharmacyId, pharmac
 		return err
 	}
 
-	_, err = tx.Exec(fmt.Sprintf(`update patient_pharmacy_selection set status='INACTIVE' where patient_id = ? and source = '%s'`, pharmacySourceType), patientId)
+	_, err = tx.Exec(`update patient_pharmacy_selection set status='INACTIVE' where patient_id = ? and source = ?`, patientId, pharmacySourceType)
 	if err != nil {
 		tx.Rollback()
 		return err
 	}
 
-	_, err = tx.Exec(fmt.Sprintf(`insert into patient_pharmacy_selection (patient_id, pharmacy_id, source, status) values (?,?,'%s', 'ACTIVE')`, pharmacySourceType), patientId, pharmacyId)
+	_, err = tx.Exec(`insert into patient_pharmacy_selection (patient_id, pharmacy_id, source, status) values (?,?,?, 'ACTIVE')`, patientId, pharmacyId, pharmacySourceType)
 	if err != nil {
 		tx.Rollback()
 		return err
