@@ -4,7 +4,7 @@
         {
             "section_title": "Medical History", 
             "section_types": [
-                "s_type_table_info" 
+                "s_type_table_info"
             ], 
             "sub_sections": [
                 {
@@ -89,7 +89,8 @@
                         }, 
                         {
                             "gender": "female", 
-                            "question": "q_periods_regular"
+                            "question": "q_periods_regular",
+                            "no_patient_answer_text": "Patient chose not to answer"
                         }, 
                         {
                             "question": "q_skin_description"
@@ -118,7 +119,8 @@
                 {
                     "data": [
                         {
-                            "question": "q_anything_else_acne"
+                            "question": "q_anything_else_acne",
+                            "no_patient_answer_text": "Patient did not enter any additional information."
                         }
                     ], 
                     "sub_section_title": "Additional Information from Patient", 
@@ -137,10 +139,24 @@
                 {
                     "data": [
                         {
-                            "question": "q_face_photo_intake"
+                            "question": "q_face_photo_intake",
+                            "remove_question_if_no_answer" : true
                         }, 
                         {
-                            "question": "q_chest_photo_intake"
+                            "question": "q_chest_photo_intake",
+                            "remove_question_if_no_answer" : true
+                        }, 
+                        {
+                            "question": "q_neck_photo_intake",
+                            "remove_question_if_no_answer" : true
+                        }, 
+                        {
+                            "question": "q_back_photo_intake",
+                            "remove_question_if_no_answer" : true
+                        }, 
+                        {
+                            "question": "q_other_photo_intake",
+                            "remove_question_if_no_answer" : true
                         }
                     ], 
                     "sub_section_types": [
