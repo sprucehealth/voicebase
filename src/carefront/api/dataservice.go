@@ -263,7 +263,7 @@ func (d *DataService) AddTreatmentsForPatientVisit(treatments []*common.Treatmen
 }
 
 func (d *DataService) getIdForNameFromTable(tableName, drugComponentName string) (nullId sql.NullInt64, err error) {
-	err = d.DB.QueryRow(fmt.Sprintf(`select id from %s where name='%s'`, tableName, drugComponentName)).Scan(&nullId)
+	err = d.DB.QueryRow(fmt.Sprintf(`select id from %s where name=?`, tableName), drugComponentName).Scan(&nullId)
 	return
 }
 
@@ -274,7 +274,7 @@ func (d *DataService) getOrInsertNameInTable(tx *sql.Tx, tableName, drugComponen
 	}
 
 	if !drugComponentNameNullId.Valid {
-		res, shadowedErr := tx.Exec(fmt.Sprintf(`insert into %s (name) values ('%s')`, tableName, drugComponentName))
+		res, shadowedErr := tx.Exec(fmt.Sprintf(`insert into %s (name) values (?)`, tableName), drugComponentName)
 		if shadowedErr != nil {
 			err = shadowedErr
 			return
