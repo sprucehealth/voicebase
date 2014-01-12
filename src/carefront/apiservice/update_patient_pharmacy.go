@@ -2,21 +2,14 @@ package apiservice
 
 import (
 	"carefront/api"
-	"github.com/gorilla/schema"
+	"carefront/libs/pharmacy"
+	"encoding/json"
 	"net/http"
-)
-
-const (
-	oddity_pharmacy_type = "oddity"
 )
 
 type UpdatePatientPharmacyHandler struct {
 	DataApi   api.DataAPI
 	accountId int64
-}
-
-type UpdatePatientPharmacyRequestData struct {
-	PharmacyId int64 `schema:"pharmacy_id,required"`
 }
 
 func (u *UpdatePatientPharmacyHandler) AccountIdFromAuthToken(accountId int64) {
@@ -33,12 +26,12 @@ func (u *UpdatePatientPharmacyHandler) ServeHTTP(w http.ResponseWriter, r *http.
 }
 
 func (u *UpdatePatientPharmacyHandler) updatePatientPharmacy(w http.ResponseWriter, r *http.Request) {
-	r.ParseForm()
-	requestData := new(UpdatePatientPharmacyRequestData)
-	decoder := schema.NewDecoder()
-	err := decoder.Decode(requestData, r.Form)
+	jsonDecoder := json.NewDecoder(r.Body)
+	pharmacy := &pharmacy.PharmacyData{}
+
+	err := jsonDecoder.Decode(pharmacy)
 	if err != nil {
-		WriteDeveloperError(w, http.StatusBadRequest, "Unable to parse input parameters: "+err.Error())
+		WriteDeveloperError(w, http.StatusBadRequest, err.Error())
 		return
 	}
 
@@ -48,7 +41,7 @@ func (u *UpdatePatientPharmacyHandler) updatePatientPharmacy(w http.ResponseWrit
 		return
 	}
 
-	err = u.DataApi.UpdatePatientPharmacy(patient.PatientId, requestData.PharmacyId, oddity_pharmacy_type)
+	err = u.DataApi.UpdatePatientPharmacy(patient.PatientId, pharmacy.Id, pharmacy.Source)
 	if err != nil {
 		WriteJSONToHTTPResponseWriter(w, http.StatusInternalServerError, "Unable to set the patient pharmacy: "+err.Error())
 		return

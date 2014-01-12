@@ -2,12 +2,17 @@ package pharmacy
 
 import (
 	"database/sql"
+	"errors"
 	"math"
 	"strconv"
 )
 
 const (
 	distanceBetweenLongitudesInMiles = 69.0
+)
+
+var (
+	NoPharmacyExists = errors.New("no pharmacy with that id in the database")
 )
 
 type PharmacySearchService struct {
@@ -32,61 +37,88 @@ func (p *PharmacySearchService) GetPharmaciesAroundSearchLocation(searchLocation
 
 	pharmacies = make([]*PharmacyData, 0)
 	for rows.Next() {
-		var id int64
-		var name, address, city, state, postal, lat, lng, phone, fax, url sql.NullString
-		err = rows.Scan(&id, &name, &address, &city, &state, &postal, &lat, &lng, &phone, &fax, &url)
-		if err != nil {
+		pharmacy, shadowedErr := scanPharmacyDataFromRow(rows)
+		if shadowedErr != nil {
+			shadowedErr = err
 			return
-		}
-
-		pharmacy := &PharmacyData{}
-		pharmacy.Id = id
-
-		if name.Valid {
-			pharmacy.Name = name.String
-		}
-
-		if address.Valid {
-			pharmacy.Address = address.String
-		}
-
-		if city.Valid {
-			pharmacy.City = city.String
-		}
-
-		if state.Valid {
-			pharmacy.State = state.String
-		}
-
-		if postal.Valid {
-			pharmacy.Postal = postal.String
-		}
-
-		if lat.Valid {
-			pharmacy.Latitude = lat.String
-		}
-
-		if lng.Valid {
-			pharmacy.Longitude = lng.String
-		}
-
-		if phone.Valid {
-			pharmacy.Phone = phone.String
-		}
-
-		if fax.Valid {
-			pharmacy.Fax = fax.String
-		}
-
-		if url.Valid {
-			pharmacy.Url = url.String
 		}
 
 		latFloat, _ := strconv.ParseFloat(pharmacy.Latitude, 64)
 		lngFloat, _ := strconv.ParseFloat(pharmacy.Longitude, 64)
-
 		pharmacy.DistanceInMiles = GreatCircleDistanceBetweenTwoPoints(&point{Latitude: latFloat, Longitude: lngFloat}, &point{Latitude: searchLocationLat, Longitude: searchLocationLng})
+
+		pharmacy.Source = PHARMACY_SOURCE_ODDITY
 		pharmacies = append(pharmacies, pharmacy)
+	}
+
+	return
+}
+
+func (p *PharmacySearchService) GetPharmacyBasedOnId(pharmacyId string) (pharmacy *PharmacyData, err error) {
+	id, err := strconv.Atoi(pharmacyId)
+	if err != nil {
+		return
+	}
+	rows, err := p.PharmacyDB.Query(`select id, biz_name, e_address, e_city, e_state, e_postal,loc_LAT_centroid, loc_LONG_centroid, biz_phone, biz_fax, web_url from dump_pharmacies 
+										where id = ?`, id)
+	if err != nil {
+		return
+	}
+	if rows.Next() {
+		pharmacy, err = scanPharmacyDataFromRow(rows)
+	}
+	return
+}
+
+func scanPharmacyDataFromRow(rows *sql.Rows) (pharmacy *PharmacyData, err error) {
+	var id int64
+	var name, address, city, state, postal, lat, lng, phone, fax, url sql.NullString
+	err = rows.Scan(&id, &name, &address, &city, &state, &postal, &lat, &lng, &phone, &fax, &url)
+	if err != nil {
+		return
+	}
+
+	pharmacy = &PharmacyData{}
+	pharmacy.Id = strconv.FormatInt(id, 10)
+
+	if name.Valid {
+		pharmacy.Name = name.String
+	}
+
+	if address.Valid {
+		pharmacy.Address = address.String
+	}
+
+	if city.Valid {
+		pharmacy.City = city.String
+	}
+
+	if state.Valid {
+		pharmacy.State = state.String
+	}
+
+	if postal.Valid {
+		pharmacy.Postal = postal.String
+	}
+
+	if lat.Valid {
+		pharmacy.Latitude = lat.String
+	}
+
+	if lng.Valid {
+		pharmacy.Longitude = lng.String
+	}
+
+	if phone.Valid {
+		pharmacy.Phone = phone.String
+	}
+
+	if fax.Valid {
+		pharmacy.Fax = fax.String
+	}
+
+	if url.Valid {
+		pharmacy.Url = url.String
 	}
 
 	return

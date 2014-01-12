@@ -1,7 +1,12 @@
 package pharmacy
 
+const (
+	PHARMACY_SOURCE_ODDITY = "oddity"
+)
+
 type PharmacyData struct {
-	Id              int64   `json:"id,string,omitempty"`
+	Id              string  `json:"id,omitempty"`
+	Source          string  `json:"source,omitempty"`
 	Name            string  `json:"name"`
 	Address         string  `json:"address"`
 	City            string  `json:"city,omitempty"`
@@ -17,4 +22,5 @@ type PharmacyData struct {
 
 type PharmacySearchAPI interface {
 	GetPharmaciesAroundSearchLocation(searchLocationLat, searchLocationLng, searchRadius float64, numResults int64) (pharmacies []*PharmacyData, err error)
+	GetPharmacyBasedOnId(pharmacyId string) (pharmacy *PharmacyData, err error)
 }

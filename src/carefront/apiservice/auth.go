@@ -57,18 +57,19 @@
 package apiservice
 
 import (
-	"net/http"
-	"strings"
-
 	"carefront/api"
 	"carefront/common"
+	"carefront/libs/pharmacy"
 	thriftapi "carefront/thrift/api"
 	"github.com/gorilla/schema"
+	"net/http"
+	"strings"
 )
 
 type AuthenticationHandler struct {
-	AuthApi thriftapi.Auth
-	DataApi api.DataAPI
+	AuthApi               thriftapi.Auth
+	PharmacySearchService pharmacy.PharmacySearchAPI
+	DataApi               api.DataAPI
 }
 
 type AuthenticationResponse struct {
@@ -111,9 +112,9 @@ func (h *AuthenticationHandler) ServeHTTP(w http.ResponseWriter, r *http.Request
 				return
 			}
 		} else {
-			patient, err := h.DataApi.GetPatientFromAccountId(res.AccountId)
+			patient, err := GetPatientInfo(h.DataApi, h.PharmacySearchService, res.AccountId)
 			if err != nil {
-				WriteDeveloperError(w, http.StatusInternalServerError, "Unable to get patient from account id:  "+err.Error())
+				WriteDeveloperError(w, http.StatusInternalServerError, err.Error())
 				return
 			}
 			WriteJSONToHTTPResponseWriter(w, http.StatusOK, &AuthenticationResponse{Token: res.Token, Patient: patient})

@@ -1229,7 +1229,7 @@ func (d *DataService) UpdatePatientAddress(patientId int64, addressLine1, addres
 	return nil
 }
 
-func (d *DataService) UpdatePatientPharmacy(patientId, pharmacyId int64, pharmacySourceType string) error {
+func (d *DataService) UpdatePatientPharmacy(patientId int64, pharmacyId, pharmacySourceType string) error {
 	tx, err := d.DB.Begin()
 	if err != nil {
 		return err
@@ -1249,6 +1249,15 @@ func (d *DataService) UpdatePatientPharmacy(patientId, pharmacyId int64, pharmac
 
 	tx.Commit()
 	return nil
+}
+
+func (d *DataService) GetPatientPharmacySelection(patientId int64) (pharmacyId, pharmacySourceType string, err error) {
+	err = d.DB.QueryRow(`select pharmacy_id, source from patient_pharmacy_selection where patient_id = ? and status='ACTIVE'`, patientId).Scan(&pharmacyId, &pharmacySourceType)
+	if err == sql.ErrNoRows {
+		err = NoRowsError
+		return
+	}
+	return
 }
 
 func (d *DataService) RegisterPatient(accountId int64, firstName, lastName, gender, zipCode, city, state, phone string, dob time.Time) (patient *common.Patient, err error) {

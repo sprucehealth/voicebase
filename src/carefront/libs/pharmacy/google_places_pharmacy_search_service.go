@@ -74,3 +74,7 @@ func (p GooglePlacesPharmacySearchService) GetPharmaciesAroundSearchLocation(sea
 	return
 
 }
+
+func (p GooglePlacesPharmacySearchService) GetPharmacyBasedOnId(pharmacyId string) (pharmacy *PharmacyData, err error) {
+	return nil, nil
+}

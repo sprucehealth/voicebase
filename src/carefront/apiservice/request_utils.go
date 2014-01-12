@@ -4,6 +4,7 @@ import (
 	"carefront/api"
 	"carefront/common"
 	"carefront/info_intake"
+	pharmacy_service "carefront/libs/pharmacy"
 	"encoding/json"
 	"errors"
 	"log"
@@ -51,6 +52,30 @@ func GetSignedUrlsForAnswersInQuestion(question *info_intake.Question, photoStor
 			}
 		}
 	}
+}
+
+func GetPatientInfo(dataApi api.DataAPI, pharmacySearchService pharmacy_service.PharmacySearchAPI, accountId int64) (patient *common.Patient, err error) {
+	patient, err = dataApi.GetPatientFromAccountId(accountId)
+	if err != nil {
+		err = errors.New("Unable to get patient from account id:  " + err.Error())
+		return
+	}
+	pharmacyId, _, err := dataApi.GetPatientPharmacySelection(patient.PatientId)
+	if err != nil && err != api.NoRowsError {
+		err = errors.New("Unable to get patient's pharmacy selection: " + err.Error())
+		return
+	}
+
+	if pharmacyId != "" {
+		pharmacy, shadowedErr := pharmacySearchService.GetPharmacyBasedOnId(pharmacyId)
+		if err != nil && err != pharmacy_service.NoPharmacyExists {
+			err = shadowedErr
+			err = errors.New("Unable to get pharmacy based on id: " + err.Error())
+			return
+		}
+		patient.Pharmacy = pharmacy
+	}
+	return patient, nil
 }
 
 func SuccessfulGenericJSONResponse() *GenericJsonResponse {

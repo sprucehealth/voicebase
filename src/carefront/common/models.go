@@ -1,21 +1,23 @@
 package common
 
 import (
+	"carefront/libs/pharmacy"
 	"time"
 )
 
 type Patient struct {
-	PatientId int64     `json:"id,omitempty,string"`
-	FirstName string    `json:"first_name,omitempty"`
-	LastName  string    `json:"last_name,omiempty"`
-	Dob       time.Time `json:"dob,omitempty"`
-	Gender    string    `json:"gender,omitempty"`
-	ZipCode   string    `json:"zip_code,omitempty"`
-	City      string    `json:"city,omitempty"`
-	State     string    `json:"state,omitempty"`
-	Phone     string    `json:"phone,omitempty"`
-	Status    string    `json:"-"`
-	AccountId int64     `json:"-"`
+	PatientId int64                  `json:"id,omitempty,string"`
+	FirstName string                 `json:"first_name,omitempty"`
+	LastName  string                 `json:"last_name,omiempty"`
+	Dob       time.Time              `json:"dob,omitempty"`
+	Gender    string                 `json:"gender,omitempty"`
+	ZipCode   string                 `json:"zip_code,omitempty"`
+	City      string                 `json:"city,omitempty"`
+	State     string                 `json:"state,omitempty"`
+	Phone     string                 `json:"phone,omitempty"`
+	Status    string                 `json:"-"`
+	AccountId int64                  `json:"-"`
+	Pharmacy  *pharmacy.PharmacyData `json:"pharmacy,omitempty"`
 }
 
 type Doctor struct {
