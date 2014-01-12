@@ -1,7 +1,6 @@
 package api
 
 import (
-	"bytes"
 	"carefront/common"
 	"database/sql"
 	"fmt"
@@ -1433,12 +1432,12 @@ func (d *DataService) AssignPatientVisitToDoctor(DoctorId, PatientVisitId int64)
 }
 
 func (d *DataService) BeginReviewingPatientVisitInQueue(DoctorId, PatientVisitId int64) error {
-	_, err := d.DB.Exec(fmt.Sprintf(`update doctor_queue set status='%s' where status='PENDING' and doctor_id = ? and event_type = 'PATIENT_VISIT' and item_id = ?`, QUEUE_ITEM_STATUS_ONGOING), DoctorId, PatientVisitId)
+	_, err := d.DB.Exec(`update doctor_queue set status=? where status='PENDING' and doctor_id = ? and event_type = 'PATIENT_VISIT' and item_id = ?`, QUEUE_ITEM_STATUS_ONGOING, DoctorId, PatientVisitId)
 	return err
 }
 
 func (d *DataService) CompletePatientVisitInDoctorQueue(DoctorId, PatientVisitId int64) error {
-	_, err := d.DB.Exec(fmt.Sprintf(`update doctor_queue set status='%s' where status='ONGOING' and doctor_id = ? and event_type = 'PATIENT_VISIT' and item_id = ?`, QUEUE_ITEM_STATUS_COMPLETED), DoctorId, PatientVisitId)
+	_, err := d.DB.Exec(`update doctor_queue set status=? where status='ONGOING' and doctor_id = ? and event_type = 'PATIENT_VISIT' and item_id = ?`, QUEUE_ITEM_STATUS_COMPLETED, DoctorId, PatientVisitId)
 	return err
 }
 
@@ -1898,12 +1897,12 @@ func (d *DataService) GetPatientFromPatientVisitId(patientVisitId int64) (patien
 	var firstName, lastName, status, gender string
 	var phone, zipCode sql.NullString
 	var dob mysql.NullTime
-	err = d.DB.QueryRow(fmt.Sprintf(`select patient.id, account_id, first_name, last_name, zip_code, phone, gender, dob, patient.status from patient_visit
+	err = d.DB.QueryRow(`select patient.id, account_id, first_name, last_name, zip_code, phone, gender, dob, patient.status from patient_visit
 							left outer join patient_phone on patient_phone.patient_id = patient_visit.patient_id
 							left outer join patient_location on patient_location.patient_id = patient_visit.patient_id
 							inner join patient on patient_visit.patient_id = patient.id where patient_visit.id = ? 
-							and (phone is null or (patient_phone.status='ACTIVE' and patient_phone.phone_type='%s'))
-							and (zip_code is null or patient_location.status = 'ACTIVE')`, patient_phone_type), patientVisitId).Scan(&patientId, &accountId, &firstName, &lastName, &zipCode, &phone, &gender, &dob, &status)
+							and (phone is null or (patient_phone.status='ACTIVE' and patient_phone.phone_type=?))
+							and (zip_code is null or patient_location.status = 'ACTIVE')`, patientVisitId, patient_phone_type).Scan(&patientId, &accountId, &firstName, &lastName, &zipCode, &phone, &gender, &dob, &status)
 	if err != nil {
 		if err == sql.ErrNoRows {
 			return nil, nil
@@ -1948,12 +1947,12 @@ func (d *DataService) CreateNewPatientVisit(patientId, healthConditionId, layout
 }
 
 func (d *DataService) UpdatePatientVisitStatus(patientVisitId int64, status string) error {
-	_, err := d.DB.Exec(fmt.Sprintf(`update patient_visit set status='%s' where id = ?`, status), patientVisitId)
+	_, err := d.DB.Exec(`update patient_visit set status=? where id = ?`, status, patientVisitId)
 	return err
 }
 
 func (d *DataService) ClosePatientVisit(patientVisitId int64) error {
-	_, err := d.DB.Exec(fmt.Sprintf(`update patient_visit set status='%s', closed_date=now() where id = ?`, CASE_STATUS_CLOSED), patientVisitId)
+	_, err := d.DB.Exec(`update patient_visit set status=?, closed_date=now() where id = ?`, CASE_STATUS_CLOSED, patientVisitId)
 	return err
 }
 
@@ -2009,10 +2008,10 @@ func (d *DataService) GetLayoutVersionIdForPatientVisit(patientVisitId int64) (l
 }
 
 func (d *DataService) updatePatientInfoIntakesWithStatus(role string, questionIds []int64, roleId, patientVisitId, layoutVersionId int64, status string, previousStatus string, tx *sql.Tx) (err error) {
-	updateStr := fmt.Sprintf(`update info_intake set status='%s' 
+	updateStr := fmt.Sprintf(`update info_intake set status=? 
 						where role_id = ? and question_id in (%s)
-						and patient_visit_id = ? and layout_version_id = ? and status='%s' and role='%s'`, status, enumerateItemsIntoString(questionIds), previousStatus, role)
-	_, err = tx.Exec(updateStr, roleId, patientVisitId, layoutVersionId)
+						and patient_visit_id = ? and layout_version_id = ? and status=? and role=?`, enumerateItemsIntoString(questionIds))
+	_, err = tx.Exec(updateStr, status, roleId, patientVisitId, layoutVersionId, previousStatus, role)
 	return err
 }
 
@@ -2026,8 +2025,8 @@ func (d *DataService) updateSubAnswersToPatientInfoIntakesWithStatus(role string
 	}
 
 	parentInfoIntakeIds := make([]int64, 0)
-	queryStr := fmt.Sprintf(`select id from info_intake where role_id = ? and question_id in (%s) and patient_visit_id = ? and layout_version_id = ? and status='%s' and role='%s'`, enumerateItemsIntoString(questionIds), previousStatus, role)
-	rows, err := tx.Query(queryStr, roleId, patientVisitId, layoutVersionId)
+	queryStr := fmt.Sprintf(`select id from info_intake where role_id = ? and question_id in (%s) and patient_visit_id = ? and layout_version_id = ? and status=? and role=?`, enumerateItemsIntoString(questionIds))
+	rows, err := tx.Query(queryStr, roleId, patientVisitId, layoutVersionId, previousStatus, role)
 	if err != nil {
 		return err
 	}
@@ -2043,42 +2042,66 @@ func (d *DataService) updateSubAnswersToPatientInfoIntakesWithStatus(role string
 		return
 	}
 
-	updateStr := fmt.Sprintf(`update info_intake set status='%s' 
-						where parent_info_intake_id in (%s) and role='%s'`, status, enumerateItemsIntoString(parentInfoIntakeIds), role)
-	_, err = tx.Exec(updateStr)
+	updateStr := fmt.Sprintf(`update info_intake set status=? 
+						where parent_info_intake_id in (%s) and role=?`, enumerateItemsIntoString(parentInfoIntakeIds))
+	_, err = tx.Exec(updateStr, status, role)
 	return err
 }
 
 func (d *DataService) deleteAnswersWithId(role string, answerIds []int64) error {
 	// delete all ids that were in CREATING state since they were committed in that state
-	query := fmt.Sprintf("delete from info_intake where id in (%s) and role='%s'", enumerateItemsIntoString(answerIds), role)
-	_, err := d.DB.Exec(query)
+	query := fmt.Sprintf("delete from info_intake where id in (%s) and role=?", enumerateItemsIntoString(answerIds))
+	_, err := d.DB.Exec(query, role)
 	return err
 }
 
-func prepareQueryForAnswers(answersToStore []*common.AnswerIntake, parentInfoIntakeId string, parentQuestionId string, status string) string {
-	var buffer bytes.Buffer
-	insertStr := `insert into info_intake (role_id, patient_visit_id, parent_info_intake_id, parent_question_id, question_id, potential_answer_id, answer_text, layout_version_id, role, status) values`
-	buffer.WriteString(insertStr)
-	values := constructValuesToInsert(answersToStore, parentInfoIntakeId, parentQuestionId, status)
-	buffer.WriteString(strings.Join(values, ","))
-	return buffer.String()
-}
+func insertAnswersForSubQuestions(tx *sql.Tx, answersToStore []*common.AnswerIntake, parentInfoIntakeId string, parentQuestionId string, status string) (res sql.Result, err error) {
 
-func constructValuesToInsert(answersToStore []*common.AnswerIntake, parentInfoIntakeId, parentQuestionId, status string) []string {
-	values := make([]string, 0)
 	for _, answerToStore := range answersToStore {
-		potentialAnswerIdString := strconv.FormatInt(answerToStore.PotentialAnswerId, 10)
+
 		if answerToStore.PotentialAnswerId == 0 {
-			potentialAnswerIdString = "NULL"
+			res, err = tx.Exec(`insert into info_intake (role_id, patient_visit_id, parent_info_intake_id, parent_question_id, 
+			question_id, answer_text, layout_version_id, role, status) values
+			(?, ?, ?, ?, ?, ?, ?, ?, ?)`, answerToStore.RoleId, answerToStore.PatientVisitId, parentInfoIntakeId, parentQuestionId,
+				answerToStore.QuestionId, answerToStore.AnswerText, answerToStore.LayoutVersionId, answerToStore.Role, status)
+		} else {
+			res, err = tx.Exec(`insert into info_intake (role_id, patient_visit_id, parent_info_intake_id, parent_question_id, 
+			question_id, potential_answer_id, answer_text, layout_version_id, role, status) values
+			(?, ?, ?, ?, ?, ?, ?, ?, ?, ?)`, answerToStore.RoleId, answerToStore.PatientVisitId, parentInfoIntakeId, parentQuestionId,
+				answerToStore.QuestionId, answerToStore.PotentialAnswerId, answerToStore.AnswerText, answerToStore.LayoutVersionId, answerToStore.Role, status)
 		}
-		valueStr := fmt.Sprintf("(%d, %d, %s, %s, %d, %s, '%s', %d, '%s', '%s')", answerToStore.RoleId, answerToStore.PatientVisitId, parentInfoIntakeId, parentQuestionId,
-			answerToStore.QuestionId, potentialAnswerIdString, answerToStore.AnswerText, answerToStore.LayoutVersionId, answerToStore.Role, status)
-		values = append(values, valueStr)
+
+		if err != nil {
+			return
+		}
 	}
-	return values
+
+	return
 }
 
+func insertAnswers(tx *sql.Tx, answersToStore []*common.AnswerIntake, status string) (res sql.Result, err error) {
+
+	for _, answerToStore := range answersToStore {
+
+		if answerToStore.PotentialAnswerId == 0 {
+			res, err = tx.Exec(`insert into info_intake (role_id, patient_visit_id, 
+			question_id, answer_text, layout_version_id, role, status) values
+			(?, ?, ?, ?, ?, ?, ?)`, answerToStore.RoleId, answerToStore.PatientVisitId,
+				answerToStore.QuestionId, answerToStore.AnswerText, answerToStore.LayoutVersionId, answerToStore.Role, status)
+		} else {
+			res, err = tx.Exec(`insert into info_intake (role_id, patient_visit_id,  
+			question_id, potential_answer_id, answer_text, layout_version_id, role, status) values
+			(?, ?, ?, ?, ?, ?, ?, ?)`, answerToStore.RoleId, answerToStore.PatientVisitId,
+				answerToStore.QuestionId, answerToStore.PotentialAnswerId, answerToStore.AnswerText, answerToStore.LayoutVersionId, answerToStore.Role, status)
+		}
+
+		if err != nil {
+			return
+		}
+	}
+
+	return
+}
 func (d *DataService) StoreAnswersForQuestion(role string, roleId, patientVisitId, layoutVersionId int64, answersToStorePerQuestion map[int64][]*common.AnswerIntake) error {
 
 	if len(answersToStorePerQuestion) == 0 {
@@ -2098,8 +2121,7 @@ func (d *DataService) StoreAnswersForQuestion(role string, roleId, patientVisitI
 		infoIdToAnswersWithSubAnswers := make(map[int64]*common.AnswerIntake)
 		subAnswersFound := false
 		for _, answerToStore := range answersToStore {
-			insertStr := prepareQueryForAnswers([]*common.AnswerIntake{answerToStore}, "NULL", "NULL", status_creating)
-			res, err := tx.Exec(insertStr)
+			res, err := insertAnswers(tx, []*common.AnswerIntake{answerToStore}, status_creating)
 			if err != nil {
 				tx.Rollback()
 				return err
@@ -2137,38 +2159,16 @@ func (d *DataService) StoreAnswersForQuestion(role string, roleId, patientVisitI
 
 		// tx.Commit()
 		// create a query to batch insert all subanswers
-		var buffer bytes.Buffer
 		for infoIntakeId, answerToStore := range infoIdToAnswersWithSubAnswers {
-			if buffer.Len() == 0 {
-				buffer.WriteString(prepareQueryForAnswers(answerToStore.SubAnswers,
-					strconv.FormatInt(infoIntakeId, 10),
-					strconv.FormatInt(answerToStore.QuestionId, 10), status_creating))
-			} else {
-				values := constructValuesToInsert(answerToStore.SubAnswers,
-					strconv.FormatInt(infoIntakeId, 10),
-					strconv.FormatInt(answerToStore.QuestionId, 10), status_creating)
-				buffer.WriteString(",")
-				buffer.WriteString(strings.Join(values, ","))
+			_, err = insertAnswersForSubQuestions(tx, answerToStore.SubAnswers, strconv.FormatInt(infoIntakeId, 10), strconv.FormatInt(answerToStore.QuestionId, 10), status_creating)
+			if err != nil {
+				tx.Rollback()
+				return err
 			}
 			// keep track of all questions for which we are storing answers
 			for _, subAnswer := range answerToStore.SubAnswers {
 				questionIds[subAnswer.QuestionId] = true
 			}
-		}
-
-		// // start a new transaction to store the answers to the sub questions
-		// tx, err = d.DB.Begin()
-		// if err != nil {
-		// 	d.deleteAnswersWithId(role, infoIdsFromMap(infoIdToAnswersWithSubAnswers))
-		// 	return
-		// }
-
-		insertStr := buffer.String()
-		_, err = tx.Exec(insertStr)
-		if err != nil {
-			tx.Rollback()
-			// d.deleteAnswersWithId(role, infoIdsFromMap(infoIdToAnswersWithSubAnswers))
-			return err
 		}
 
 		// deactivate all answers to top level questions as well as their sub-questions
@@ -2224,10 +2224,9 @@ func (d *DataService) UpdatePhotoAnswerRecordWithObjectStorageId(patientInfoInta
 }
 
 func (d *DataService) MakeCurrentPhotoAnswerInactive(role string, roleId, questionId, patientVisitId, potentialAnswerId, layoutVersionId int64) error {
-	updateStr := fmt.Sprintf(`update info_intake set status='INACTIVE' where role_id = ? and question_id = ? 
+	_, err := d.DB.Exec(`update info_intake set status='INACTIVE' where role_id = ? and question_id = ? 
 							and patient_visit_id = ? and potential_answer_id = ? 
-							and layout_version_id = ? and role='%s'`, role)
-	_, err := d.DB.Exec(updateStr, roleId, questionId, patientVisitId, potentialAnswerId, layoutVersionId)
+							and layout_version_id = ? and role=?`, roleId, questionId, patientVisitId, potentialAnswerId, layoutVersionId, role)
 	return err
 }
 
@@ -2344,12 +2343,11 @@ func (d *DataService) GetTipSectionInfo(tipSectionTag string, languageId int64) 
 }
 
 func (d *DataService) GetActiveLayoutInfoForHealthCondition(healthConditionTag, role, purpose string) (bucket, key, region string, err error) {
-	queryStr := fmt.Sprintf(`select bucket, storage_key, region_tag from layout_version 
+	err = d.DB.QueryRow(`select bucket, storage_key, region_tag from layout_version 
 								inner join object_storage on object_storage_id = object_storage.id 
 								inner join region on region_id=region.id 
 								inner join health_condition on health_condition_id = health_condition.id 
-									where layout_version.status='ACTIVE' and role = '%s' and layout_purpose = '%s' and health_condition.health_condition_tag = ?`, role, purpose)
-	err = d.DB.QueryRow(queryStr, healthConditionTag).Scan(&bucket, &key, &region)
+									where layout_version.status='ACTIVE' and role = ? and layout_purpose = ? and health_condition.health_condition_tag = ?`, role, purpose, healthConditionTag).Scan(&bucket, &key, &region)
 	return
 }
 
@@ -2400,9 +2398,8 @@ func (d *DataService) UpdateCloudObjectRecordToSayCompleted(id int64) error {
 }
 
 func (d *DataService) MarkNewLayoutVersionAsCreating(objectId int64, syntaxVersion int64, healthConditionId int64, role, purpose, comment string) (int64, error) {
-	insertStr := fmt.Sprintf(`insert into layout_version (object_storage_id, syntax_version, health_condition_id,role, layout_purpose, comment, status) 
-							values (?, ?, ?, '%s', '%s', ?, 'CREATING')`, role, purpose)
-	res, err := d.DB.Exec(insertStr, objectId, syntaxVersion, healthConditionId, comment)
+	res, err := d.DB.Exec(`insert into layout_version (object_storage_id, syntax_version, health_condition_id,role, layout_purpose, comment, status) 
+							values (?, ?, ?, ?, ?, ?, 'CREATING')`, objectId, syntaxVersion, healthConditionId, role, purpose, comment)
 	if err != nil {
 		return 0, err
 	}
@@ -2483,8 +2480,7 @@ func (d *DataService) UpdateDoctorActiveLayouts(layoutId int64, doctorLayoutId i
 	tx, _ := d.DB.Begin()
 
 	// update the current client active layouts to DEPRECATED
-	updateStr := fmt.Sprintf(`update dr_layout_version set status='DEPCRECATED' where status='ACTIVE' and health_condition_id = ? and layout_version_id in (select id from layout_version where role = 'DOCTOR' and layout_purpose = '%s')`, purpose)
-	_, err := tx.Exec(updateStr, healthConditionId)
+	_, err := tx.Exec(`update dr_layout_version set status='DEPCRECATED' where status='ACTIVE' and health_condition_id = ? and layout_version_id in (select id from layout_version where role = 'DOCTOR' and layout_purpose = ?)`, healthConditionId, purpose)
 	if err != nil {
 		log.Println(err)
 		tx.Rollback()
@@ -2492,8 +2488,7 @@ func (d *DataService) UpdateDoctorActiveLayouts(layoutId int64, doctorLayoutId i
 	}
 
 	// update the current active layouts to DEPRECATED
-	updateStr = fmt.Sprintf(`update layout_version set status='DEPCRECATED' where status='ACTIVE' and role = 'DOCTOR' and layout_purpose = '%s' and health_condition_id = ?`, purpose)
-	_, err = tx.Exec(updateStr, healthConditionId)
+	_, err = tx.Exec(`update layout_version set status='DEPCRECATED' where status='ACTIVE' and role = 'DOCTOR' and layout_purpose = ? and health_condition_id = ?`, purpose, healthConditionId)
 	if err != nil {
 		log.Println(err)
 		tx.Rollback()
