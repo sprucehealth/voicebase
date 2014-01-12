@@ -585,36 +585,46 @@ func (d *DataService) queryAndInsertPredefinedInstructionsForDoctor(drTableName 
 type insertDoctorInstructionFunc func(db *sql.DB, predefinedInstructions []*predefinedInstruction, doctorId int64) error
 
 func insertPredefinedAdvicePointsForDoctor(db *sql.DB, predefinedAdvicePoints []*predefinedInstruction, doctorId int64) error {
-	insertStr := bytes.NewBufferString(`insert into dr_advice_point 
-							(doctor_id, text, status) values `)
-	insertValues := make([]string, 0)
-	for _, instruction := range predefinedAdvicePoints {
-		insertValue := fmt.Sprintf("(%d, '%s','ACTIVE')", doctorId, instruction.text)
-		insertValues = append(insertValues, insertValue)
+	tx, err := db.Begin()
+	if err != nil {
+		tx.Rollback()
+		return err
 	}
-	insertStr.WriteString(strings.Join(insertValues, ","))
 
-	_, err := db.Exec(insertStr.String())
-	return err
+	for _, instruction := range predefinedAdvicePoints {
+		_, err = tx.Exec(`insert into dr_advice_point (doctor_id, text, status) values (?, ?, 'ACTIVE')`, doctorId, instruction.text)
+		if err != nil {
+			tx.Rollback()
+			return err
+		}
+	}
+	tx.Commit()
+	return nil
 }
 
 func insertPredefinedRegimenStepsForDoctor(db *sql.DB, predefinedInstructions []*predefinedInstruction, doctorId int64) error {
-	insertStr := bytes.NewBufferString(`insert into dr_regimen_step 
-							(doctor_id, text, status) values `)
-	insertValues := make([]string, 0)
-	for _, instruction := range predefinedInstructions {
-		insertValue := fmt.Sprintf("(%d, '%s','ACTIVE')", doctorId, instruction.text)
-		insertValues = append(insertValues, insertValue)
+	tx, err := db.Begin()
+	if err != nil {
+		tx.Rollback()
+		return err
 	}
-	insertStr.WriteString(strings.Join(insertValues, ","))
 
-	_, err := db.Exec(insertStr.String())
-	return err
+	for _, instruction := range predefinedInstructions {
+		_, err = tx.Exec(`insert into dr_regimen_step (doctor_id, text, status) values (?, ?, 'ACTIVE') `, doctorId, instruction.text)
+		if err != nil {
+			tx.Rollback()
+			return err
+		}
+	}
+	tx.Commit()
+	return nil
 }
 func insertPredefinedInstructionsForDoctor(db *sql.DB, predefinedInstructions []*predefinedInstruction, doctorId int64) error {
-	insertStr := bytes.NewBufferString(`insert into dr_drug_supplemental_instruction 
-							(doctor_id, text, drug_name_id, drug_form_id, drug_route_id, status, drug_supplemental_instruction_id) values `)
-	insertValues := make([]string, 0)
+	tx, err := db.Begin()
+	if err != nil {
+		tx.Rollback()
+		return err
+	}
 	for _, instruction := range predefinedInstructions {
 
 		drugNameIdStr := "NULL"
@@ -632,13 +642,15 @@ func insertPredefinedInstructionsForDoctor(db *sql.DB, predefinedInstructions []
 			drugRouteIdStr = strconv.FormatInt(instruction.drugRouteId, 10)
 		}
 
-		insertValue := fmt.Sprintf("(%d, '%s', %s, %s, %s, 'ACTIVE', %d)", doctorId, instruction.text, drugNameIdStr, drugFormIdStr, drugRouteIdStr, instruction.id)
-		insertValues = append(insertValues, insertValue)
+		_, err = tx.Exec(`insert into dr_drug_supplemental_instruction 
+							(doctor_id, text, drug_name_id, drug_form_id, drug_route_id, status, drug_supplemental_instruction_id) values (?, ?, ?, ?, ?, 'ACTIVE', ?)`, doctorId, instruction.text, drugNameIdStr, drugFormIdStr, drugRouteIdStr, instruction.id)
+		if err != nil {
+			tx.Rollback()
+			return err
+		}
 	}
-	insertStr.WriteString(strings.Join(insertValues, ","))
-
-	_, err := db.Exec(insertStr.String())
-	return err
+	tx.Commit()
+	return nil
 }
 
 type doctorInstructionQuery func(db *sql.DB, doctorId int64, drugComponents ...string) (drugInstructions []*common.DoctorInstructionItem, err error)
@@ -817,17 +829,12 @@ func (d *DataService) CreateAdviceForPatientVisit(advicePoints []*common.DoctorI
 		return err
 	}
 
-	insertStr := bytes.NewBufferString(`insert into advice (patient_visit_id, dr_advice_point_id, status) values `)
-	insertValues := make([]string, 0)
 	for _, advicePoint := range advicePoints {
-		insertValues = append(insertValues, fmt.Sprintf("(%d, %d, 'ACTIVE')", patientVisitId, advicePoint.Id))
-	}
-
-	insertStr.WriteString(strings.Join(insertValues, ","))
-	_, err = tx.Exec(insertStr.String())
-	if err != nil {
-		tx.Rollback()
-		return err
+		_, err = tx.Exec(`insert into advice (patient_visit_id, dr_advice_point_id, status) values (?, ?, 'ACTIVE')`, patientVisitId, advicePoint.Id)
+		if err != nil {
+			tx.Rollback()
+			return err
+		}
 	}
 
 	tx.Commit()
@@ -975,19 +982,14 @@ func (d *DataService) CreateRegimenPlanForPatientVisit(regimenPlan *common.Regim
 	}
 
 	// create new regimen steps within each section
-	insertStr := bytes.NewBufferString(`insert into regimen (patient_visit_id, regimen_type, dr_regimen_step_id, status) values `)
-	insertValues := make([]string, 0)
 	for _, regimenSection := range regimenPlan.RegimenSections {
 		for _, regimenStep := range regimenSection.RegimenSteps {
-			insertValues = append(insertValues, fmt.Sprintf("(%d,'%s',%d, 'ACTIVE')", regimenPlan.PatientVisitId, regimenSection.RegimenName, regimenStep.Id))
+			_, err = tx.Exec(`insert into regimen (patient_visit_id, regimen_type, dr_regimen_step_id, status) values (?,?,?, 'ACTIVE')`, regimenPlan.PatientVisitId, regimenSection.RegimenName, regimenStep.Id)
+			if err != nil {
+				tx.Rollback()
+				return err
+			}
 		}
-	}
-
-	insertStr.WriteString(strings.Join(insertValues, ","))
-	_, err = tx.Exec(insertStr.String())
-	if err != nil {
-		tx.Rollback()
-		return err
 	}
 
 	// commit tx
@@ -1051,7 +1053,7 @@ func (d *DataService) GetDiagnosisResponseToQuestionWithTag(questionTag string, 
 					from info_intake inner join question on question.id = question_id 
 					inner join potential_answer on potential_answer_id = potential_answer.id
 					inner join localized_text on answer_localized_text_id = localized_text.app_text_id
-					where info_intake.status='ACTIVE' and question_tag = '%s' and role_id = ? and role = 'DOCTOR' and info_intake.patient_visit_id = ? and language_id = ?`, questionTag), doctorId, patientVisitId, EN_LANGUAGE_ID).Scan(&id, &questionId, &potentialAnswerId, &answerText, &potentialAnswer)
+					where info_intake.status='ACTIVE' and question_tag = ? and role_id = ? and role = 'DOCTOR' and info_intake.patient_visit_id = ? and language_id = ?`, questionTag), doctorId, patientVisitId, EN_LANGUAGE_ID).Scan(&id, &questionId, &potentialAnswerId, &answerText, &potentialAnswer)
 	if err != nil {
 		if err == sql.ErrNoRows {
 			err = NoDiagnosisResponseErr
