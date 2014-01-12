@@ -436,8 +436,7 @@ func (d *DataService) AddOrUpdateDrugInstructionForDoctor(drugName, drugForm, dr
 	}
 
 	// insert instruction for doctor
-	insertStr := fmt.Sprintf(`insert into dr_drug_supplemental_instruction (drug_name_id, drug_form_id, drug_route_id, text, doctor_id,status) values (%s,%s,%s,'%s',?,'ACTIVE')`, drugNameIdStr, drugFormIdStr, drugRouteIdStr, drugInstructionToAdd.Text)
-	res, err := tx.Exec(insertStr, doctorId)
+	res, err := tx.Exec(`insert into dr_drug_supplemental_instruction (drug_name_id, drug_form_id, drug_route_id, text, doctor_id,status) values (?,?,?,?,?,'ACTIVE')`, drugNameIdStr, drugFormIdStr, drugRouteIdStr, drugInstructionToAdd.Text, doctorId)
 	if err != nil {
 		tx.Rollback()
 		return err
