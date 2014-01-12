@@ -1260,6 +1260,35 @@ func (d *DataService) GetPatientPharmacySelection(patientId int64) (pharmacyId, 
 	return
 }
 
+func (d *DataService) TrackPatientAgreements(patientId int64, agreements map[string]bool) error {
+	tx, err := d.DB.Begin()
+	if err != nil {
+		return err
+	}
+
+	for agreementType, agreed := range agreements {
+		_, err = tx.Exec(fmt.Sprintf(`update patient_agreement set status='INACTIVE' where patient_id = ? and agreement_type = '%s'`, agreementType), patientId)
+		if err != nil {
+			tx.Rollback()
+			return err
+		}
+
+		var agreedBit int64
+		if agreed == true {
+			agreedBit = 1
+		}
+
+		_, err = tx.Exec(fmt.Sprintf(`insert into patient_agreement (patient_id, agreement_type,agreed, status) values (?, '%s',?, 'ACTIVE')`, agreementType), patientId, agreedBit)
+		if err != nil {
+			tx.Rollback()
+			return err
+		}
+	}
+
+	tx.Commit()
+	return nil
+}
+
 func (d *DataService) RegisterPatient(accountId int64, firstName, lastName, gender, zipCode, city, state, phone string, dob time.Time) (patient *common.Patient, err error) {
 	tx, err := d.DB.Begin()
 	if err != nil {

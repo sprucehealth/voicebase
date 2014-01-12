@@ -21,6 +21,8 @@ const (
 	CASE_STATUS_SUBMITTED    = "SUBMITTED"
 	CASE_STATUS_REVIEWING    = "REVIEWING"
 	CASE_STATUS_CLOSED       = "CLOSED"
+	HIPAA_AUTH               = "hipaa"
+	CONSENT_AUTH             = "consent"
 )
 
 var (
@@ -51,6 +53,7 @@ type PatientAPI interface {
 	UpdatePatientAddress(patientId int64, addressLine1, addressLine2, city, state, zipCode, addressType string) error
 	UpdatePatientPharmacy(patientId int64, pharmacyId, pharmacySourceType string) error
 	GetPatientPharmacySelection(patientId int64) (pharmacyId, pharmacySourceType string, err error)
+	TrackPatientAgreements(patientId int64, agreements map[string]bool) error
 }
 
 type DoctorAPI interface {

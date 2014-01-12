@@ -1,16 +1,15 @@
 package apiservice
 
 import (
-	"net/http"
-	"strconv"
-	"strings"
-	"time"
-
 	"carefront/api"
 	"carefront/common"
 	"carefront/libs/maps"
 	thriftapi "carefront/thrift/api"
 	"github.com/gorilla/schema"
+	"net/http"
+	"strconv"
+	"strings"
+	"time"
 )
 
 type SignupPatientHandler struct {
@@ -29,14 +28,16 @@ func (s *SignupPatientHandler) NonAuthenticated() bool {
 }
 
 type SignupPatientRequestData struct {
-	Email     string `schema:"email,required"`
-	Password  string `schema:"password,required"`
-	FirstName string `schema:"first_name,required"`
-	LastName  string `schema:"last_name,required"`
-	Dob       string `schema:"dob,required"`
-	Gender    string `schema:"gender,required"`
-	Zipcode   string `schema:"zip_code,required"`
-	Phone     string `schema:"phone,required"`
+	Email                string `schema:"email,required"`
+	Password             string `schema:"password,required"`
+	FirstName            string `schema:"first_name,required"`
+	LastName             string `schema:"last_name,required"`
+	Dob                  string `schema:"dob,required"`
+	Gender               string `schema:"gender,required"`
+	Zipcode              string `schema:"zip_code,required"`
+	Phone                string `schema:"phone,required"`
+	HipaaAuth            bool   `schema:"hipaa_auth"`
+	TreatmentConsentAuth bool   `schema:"consent_auth"`
 }
 
 func (s *SignupPatientHandler) ServeHTTP(w http.ResponseWriter, r *http.Request) {
@@ -92,6 +93,17 @@ func (s *SignupPatientHandler) ServeHTTP(w http.ResponseWriter, r *http.Request)
 	patient, err := s.DataApi.RegisterPatient(res.AccountId, requestData.FirstName, requestData.LastName, requestData.Gender, requestData.Zipcode, cityStateInfo.LongCityName, cityStateInfo.ShortStateName, requestData.Phone, time.Date(year, time.Month(month), day, 0, 0, 0, 0, time.UTC))
 	if err != nil {
 		WriteDeveloperError(w, http.StatusInternalServerError, "Unable to register patient: "+err.Error())
+		return
+	}
+
+	// track patient agreements
+	patientAgreements := make(map[string]bool)
+	patientAgreements[api.HIPAA_AUTH] = requestData.HipaaAuth
+	patientAgreements[api.CONSENT_AUTH] = requestData.TreatmentConsentAuth
+
+	err = s.DataApi.TrackPatientAgreements(patient.PatientId, patientAgreements)
+	if err != nil {
+		WriteDeveloperError(w, http.StatusInternalServerError, "Unable to track patient agreements: "+err.Error())
 		return
 	}
 	WriteJSONToHTTPResponseWriter(w, http.StatusOK, PatientSignedupResponse{Token: res.Token, Patient: patient})
