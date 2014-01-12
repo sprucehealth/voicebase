@@ -1049,11 +1049,11 @@ func (d *DataService) GetDiagnosisResponseToQuestionWithTag(questionTag string, 
 	var id, questionId int64
 	var potentialAnswerId sql.NullInt64
 	var answerText, potentialAnswer sql.NullString
-	err = d.DB.QueryRow(fmt.Sprintf(`select info_intake.id, info_intake.question_id, info_intake.potential_answer_id, info_intake.answer_text, ltext
+	err = d.DB.QueryRow(`select info_intake.id, info_intake.question_id, info_intake.potential_answer_id, info_intake.answer_text, ltext
 					from info_intake inner join question on question.id = question_id 
 					inner join potential_answer on potential_answer_id = potential_answer.id
 					inner join localized_text on answer_localized_text_id = localized_text.app_text_id
-					where info_intake.status='ACTIVE' and question_tag = ? and role_id = ? and role = 'DOCTOR' and info_intake.patient_visit_id = ? and language_id = ?`, questionTag), doctorId, patientVisitId, EN_LANGUAGE_ID).Scan(&id, &questionId, &potentialAnswerId, &answerText, &potentialAnswer)
+					where info_intake.status='ACTIVE' and question_tag = ? and role_id = ? and role = 'DOCTOR' and info_intake.patient_visit_id = ? and language_id = ?`, questionTag, doctorId, patientVisitId, EN_LANGUAGE_ID).Scan(&id, &questionId, &potentialAnswerId, &answerText, &potentialAnswer)
 	if err != nil {
 		if err == sql.ErrNoRows {
 			err = NoDiagnosisResponseErr
@@ -1091,7 +1091,7 @@ func (d *DataService) AddDiagnosisSummaryForPatientVisit(summary string, patient
 		return err
 	}
 
-	_, err = tx.Exec(fmt.Sprintf(`insert into diagnosis_summary (summary, patient_visit_id, doctor_id, status) values ("%s", ?, ?, 'ACTIVE')`, summary), patientVisitId, doctorId)
+	_, err = tx.Exec(`insert into diagnosis_summary (summary, patient_visit_id, doctor_id, status) values (?, ?, ?, 'ACTIVE')`, summary, patientVisitId, doctorId)
 	if err != nil {
 		tx.Rollback()
 		return err
