@@ -229,6 +229,7 @@ func main() {
 	doctorPatientVisitReviewHandler := &apiservice.DoctorPatientVisitReviewHandler{
 		DataApi:                    dataApi,
 		LayoutStorageService:       cloudStorageApi,
+		PharmacySearchService:      &pharmacy.PharmacySearchService{PharmacyDB: pharmacyDb},
 		PatientPhotoStorageService: photoAnswerCloudStorageApi,
 	}
 	doctorSubmitPatientVisitHandler := &apiservice.DoctorSubmitPatientVisitReviewHandler{DataApi: dataApi}

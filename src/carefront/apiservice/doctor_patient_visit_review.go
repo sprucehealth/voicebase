@@ -4,6 +4,7 @@ import (
 	"carefront/api"
 	"carefront/common"
 	"carefront/info_intake"
+	"carefront/libs/pharmacy"
 	"encoding/json"
 	"github.com/gorilla/schema"
 	"net/http"
@@ -11,6 +12,7 @@ import (
 
 type DoctorPatientVisitReviewHandler struct {
 	DataApi                    api.DataAPI
+	PharmacySearchService      pharmacy.PharmacySearchAPI
 	LayoutStorageService       api.CloudStorageAPI
 	PatientPhotoStorageService api.CloudStorageAPI
 	accountId                  int64
@@ -83,8 +85,23 @@ func (p *DoctorPatientVisitReviewHandler) ServeHTTP(w http.ResponseWriter, r *ht
 
 	patient, err := p.DataApi.GetPatientFromId(patientVisit.PatientId)
 	if err != nil {
-		WriteDeveloperError(w, http.StatusBadRequest, "Unable to get patient from the patient id: "+err.Error())
+		WriteDeveloperError(w, http.StatusInternalServerError, "Unable to get patient info based on account id: "+err.Error())
 		return
+	}
+
+	pharmacyId, _, err := p.DataApi.GetPatientPharmacySelection(patient.PatientId)
+	if err != nil && err != api.NoRowsError {
+		WriteDeveloperError(w, http.StatusInternalServerError, "Unable to gte patient's pharmacy selection: "+err.Error())
+		return
+	}
+
+	if pharmacyId != "" {
+		patientPharmacy, err := p.PharmacySearchService.GetPharmacyBasedOnId(pharmacyId)
+		if err != nil && err != pharmacy.NoPharmacyExists {
+			WriteDeveloperError(w, http.StatusInternalServerError, "Unable to get pharmacy based on id: "+err.Error())
+			return
+		}
+		patient.Pharmacy = patientPharmacy
 	}
 
 	bucket, key, region, _, err := p.DataApi.GetStorageInfoOfCurrentActiveDoctorLayout(patientVisit.HealthConditionId)
