@@ -1193,7 +1193,7 @@ func (d *DataService) UpdatePatientAddress(patientId int64, addressLine1, addres
 	}
 
 	// update any existing address for the address type as inactive
-	_, err = tx.Exec(fmt.Sprintf(`update patient_address set status='INACTIVE' where patient_id = ? and address_type = '%s'`, addressType), patientId)
+	_, err = tx.Exec(`update patient_address set status='INACTIVE' where patient_id = ? and address_type = ?`, addressType, patientId)
 	if err != nil {
 		tx.Rollback()
 		return err
@@ -1201,14 +1201,14 @@ func (d *DataService) UpdatePatientAddress(patientId int64, addressLine1, addres
 
 	// insert new address
 	if addressLine2 != "" {
-		_, err = tx.Exec(fmt.Sprintf(`insert into patient_address (patient_id, address_line_1, address_line_2, city, state, zip_code, address_type, status) values 
-							(?, '%s', '%s', '%s', '%s', '%s', '%s', 'ACTIVE')`, addressLine1, addressLine2, city, state, zipCode, addressType), patientId)
+		_, err = tx.Exec(`insert into patient_address (patient_id, address_line_1, address_line_2, city, state, zip_code, address_type, status) values 
+							(?, ?, ?, ?, ?, ?, ?, 'ACTIVE')`, patientId, addressLine1, addressLine2, city, state, zipCode, addressType)
 		if err != nil {
 			return err
 		}
 	} else {
-		_, err = tx.Exec(fmt.Sprintf(`insert into patient_address (patient_id, address_line_1, city, state, zip_code, address_type, status) values 
-							(?, '%s', '%s', '%s', '%s', '%s', 'ACTIVE')`, addressLine1, city, state, zipCode, addressType), patientId)
+		_, err = tx.Exec(`insert into patient_address (patient_id, address_line_1, city, state, zip_code, address_type, status) values 
+							(?, ?, ?, ?, ?, ?, 'ACTIVE')`, patientId, addressLine1, city, state, zipCode, addressType)
 		if err != nil {
 			return err
 		}
