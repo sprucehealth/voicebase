@@ -1,0 +1,1 @@
+alter table patient_pharmacy_selection modify column pharmacy_id varchar(300) not null;

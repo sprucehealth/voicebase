@@ -49,6 +49,7 @@ type PatientAPI interface {
 	GetCareTeamForPatient(patientId int64) (careTeam *common.PatientCareProviderGroup, err error)
 	CheckCareProvidingElligibility(shortState string, healthConditionId int64) (isElligible bool, err error)
 	UpdatePatientAddress(patientId int64, addressLine1, addressLine2, city, state, zipCode, addressType string) error
+	UpdatePatientPharmacy(patientId, pharmacyId int64, pharmacySourceType string) error
 }
 
 type DoctorAPI interface {

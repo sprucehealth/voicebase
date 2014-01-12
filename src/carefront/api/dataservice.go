@@ -1229,6 +1229,28 @@ func (d *DataService) UpdatePatientAddress(patientId int64, addressLine1, addres
 	return nil
 }
 
+func (d *DataService) UpdatePatientPharmacy(patientId, pharmacyId int64, pharmacySourceType string) error {
+	tx, err := d.DB.Begin()
+	if err != nil {
+		return err
+	}
+
+	_, err = tx.Exec(fmt.Sprintf(`update patient_pharmacy_selection set status='INACTIVE' where patient_id = ? and source = '%s'`, pharmacySourceType), patientId)
+	if err != nil {
+		tx.Rollback()
+		return err
+	}
+
+	_, err = tx.Exec(fmt.Sprintf(`insert into patient_pharmacy_selection (patient_id, pharmacy_id, source, status) values (?,?,'%s', 'ACTIVE')`, pharmacySourceType), patientId, pharmacyId)
+	if err != nil {
+		tx.Rollback()
+		return err
+	}
+
+	tx.Commit()
+	return nil
+}
+
 func (d *DataService) RegisterPatient(accountId int64, firstName, lastName, gender, zipCode, city, state, phone string, dob time.Time) (patient *common.Patient, err error) {
 	tx, err := d.DB.Begin()
 	if err != nil {
@@ -1356,7 +1378,7 @@ func (d *DataService) getPatientBasedOnQuery(queryStr string, id int64) (patient
 }
 
 func (d *DataService) GetPatientFromAccountId(accountId int64) (patient *common.Patient, err error) {
-	queryStr := fmt.Sprintf(`select patient.id, account_id, first_name, last_name, zip_code,city,state phone, gender, dob, patient.status from patient 
+	queryStr := fmt.Sprintf(`select patient.id, account_id, first_name, last_name, zip_code,city,state, phone, gender, dob, patient.status from patient 
 							left outer join patient_phone on patient_phone.patient_id = patient.id
 							left outer join patient_location on patient_location.patient_id = patient.id
 							where patient.account_id = ? and (phone is null or (patient_phone.status='ACTIVE' and patient_phone.phone_type='%s'))
