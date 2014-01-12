@@ -335,20 +335,15 @@ func (d *DataService) AddDrugInstructionsToTreatment(drugName, drugForm, drugRou
 	}
 
 	// insert the new set of instructions into the treatment instructions
-	insertStr := bytes.NewBufferString("insert into treatment_instructions (treatment_id, dr_drug_instruction_id, status) values ")
-	insertValues := make([]string, 0)
 	instructionIds := make([]string, 0)
 
 	for _, instructionItem := range drugInstructions {
-		insertValues = append(insertValues, fmt.Sprintf("(%d, %d, 'ACTIVE')", treatmentId, instructionItem.Id))
+		_, err = tx.Exec(`insert into treatment_instructions (treatment_id, dr_drug_instruction_id, status) values (?, ?, 'ACTIVE')`, treatmentId, instructionItem.Id)
+		if err != nil {
+			tx.Rollback()
+			return err
+		}
 		instructionIds = append(instructionIds, strconv.FormatInt(instructionItem.Id, 10))
-	}
-
-	insertStr.WriteString(strings.Join(insertValues, ","))
-	_, err = tx.Exec(insertStr.String())
-	if err != nil {
-		tx.Rollback()
-		return err
 	}
 
 	// remove the selected state of drug instructions for the drug
@@ -362,16 +357,14 @@ func (d *DataService) AddDrugInstructionsToTreatment(drugName, drugForm, drugRou
 	}
 
 	//  insert the selected state of drug instructions for the drug
-	insertStr = bytes.NewBufferString(`insert into dr_drug_supplemental_instruction_selected_state 
-										 (drug_name_id, drug_form_id, drug_route_id, dr_drug_supplemental_instruction_id, doctor_id) values `)
-	insertValues = make([]string, 0)
 	for _, instructionItem := range drugInstructions {
-		insertValues = append(insertValues, fmt.Sprintf("(%d, %d, %d, %d, %d)", drugNameNullId.Int64, drugFormNullId.Int64, drugRouteNullId.Int64, instructionItem.Id, doctorId))
-	}
-	insertStr.WriteString(strings.Join(insertValues, ","))
-	_, err = tx.Exec(insertStr.String())
-	if err != nil {
-		return err
+		_, err := tx.Exec(`insert into dr_drug_supplemental_instruction_selected_state 
+										 (drug_name_id, drug_form_id, drug_route_id, dr_drug_supplemental_instruction_id, doctor_id) values (?, ?, ?, ?,?)`,
+			drugNameNullId.Int64, drugFormNullId.Int64, drugRouteNullId.Int64, instructionItem.Id, doctorId)
+		if err != nil {
+			tx.Rollback()
+			return err
+		}
 	}
 	// commit transaction
 	tx.Commit()
