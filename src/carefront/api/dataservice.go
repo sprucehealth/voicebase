@@ -249,17 +249,12 @@ func (d *DataService) AddTreatmentsForPatientVisit(treatments []*common.Treatmen
 		treatment.TreatmentPlanId = treatmentPlanId
 
 		// add drug db ids to the table
-		insertStr := bytes.NewBufferString("insert into drug_db_id (drug_db_id_tag, drug_db_id, treatment_id) values")
-		insertValues := make([]string, 0)
 		for drugDbTag, drugDbId := range treatment.DrugDBIds {
-			insertValues = append(insertValues, fmt.Sprintf("('%s', %s, %d)", drugDbTag, drugDbId, treatment.Id))
-		}
-		insertStr.WriteString(strings.Join(insertValues, ","))
-
-		_, err = tx.Exec(insertStr.String())
-		if err != nil {
-			tx.Rollback()
-			return err
+			_, err = tx.Exec(`insert into drug_db_id (drug_db_id_tag, drug_db_id, treatment_id) values (?, ?, ?)`, drugDbTag, drugDbId, treatment.Id)
+			if err != nil {
+				tx.Rollback()
+				return err
+			}
 		}
 	}
 
