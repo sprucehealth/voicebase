@@ -1255,7 +1255,7 @@ func (d *DataService) TrackPatientAgreements(patientId int64, agreements map[str
 	}
 
 	for agreementType, agreed := range agreements {
-		_, err = tx.Exec(fmt.Sprintf(`update patient_agreement set status='INACTIVE' where patient_id = ? and agreement_type = '%s'`, agreementType), patientId)
+		_, err = tx.Exec(`update patient_agreement set status='INACTIVE' where patient_id = ? and agreement_type = ?`, patientId, agreementType)
 		if err != nil {
 			tx.Rollback()
 			return err
@@ -1266,7 +1266,7 @@ func (d *DataService) TrackPatientAgreements(patientId int64, agreements map[str
 			agreedBit = 1
 		}
 
-		_, err = tx.Exec(fmt.Sprintf(`insert into patient_agreement (patient_id, agreement_type,agreed, status) values (?, '%s',?, 'ACTIVE')`, agreementType), patientId, agreedBit)
+		_, err = tx.Exec(`insert into patient_agreement (patient_id, agreement_type,agreed, status) values (?, ?,?, 'ACTIVE')`, patientId, agreementType, agreedBit)
 		if err != nil {
 			tx.Rollback()
 			return err
@@ -1297,14 +1297,14 @@ func (d *DataService) RegisterPatient(accountId int64, firstName, lastName, gend
 		return
 	}
 
-	_, err = tx.Exec(fmt.Sprintf(`insert into patient_phone (patient_id, phone, phone_type, status) values (?,?,'%s', 'ACTIVE')`, patient_phone_type), lastId, phone)
+	_, err = tx.Exec(`insert into patient_phone (patient_id, phone, phone_type, status) values (?,?,?, 'ACTIVE')`, lastId, phone, patient_phone_type)
 	if err != nil {
 		tx.Rollback()
 		return
 	}
 
-	_, err = tx.Exec(fmt.Sprintf(`insert into patient_location (patient_id, zip_code, city, state, status) 
-									values (?, '%s', '%s', '%s', 'ACTIVE')`, zipCode, city, state), lastId)
+	_, err = tx.Exec(`insert into patient_location (patient_id, zip_code, city, state, status) 
+									values (?, ?, ?, ?, 'ACTIVE')`, lastId, zipCode, city, state)
 	if err != nil {
 		tx.Rollback()
 		return
@@ -1359,21 +1359,20 @@ func (d *DataService) GetDoctorIdFromAccountId(accountId int64) (int64, error) {
 }
 
 func (d *DataService) GetPatientFromId(patientId int64) (patient *common.Patient, err error) {
-	queryStr := fmt.Sprintf(`select patient.id, account_id, first_name, last_name, zip_code, city, state, phone, gender, dob, patient.status from patient 
+	patient, err = d.getPatientBasedOnQuery(`select patient.id, account_id, first_name, last_name, zip_code, city, state, phone, gender, dob, patient.status from patient 
 							left outer join patient_phone on patient_phone.patient_id = patient.id
 							left outer join patient_location on patient_location.patient_id = patient.id
-							where patient.id = ? and (phone is null or (patient_phone.status='ACTIVE' and patient_phone.phone_type='%s'))
-								and (zip_code is null or patient_location.status='ACTIVE') `, patient_phone_type)
-	patient, err = d.getPatientBasedOnQuery(queryStr, patientId)
+							where patient.id = ? and (phone is null or (patient_phone.status='ACTIVE' and patient_phone.phone_type=?))
+								and (zip_code is null or patient_location.status='ACTIVE') `, patientId, patient_phone_type)
 	return
 }
 
-func (d *DataService) getPatientBasedOnQuery(queryStr string, id int64) (patient *common.Patient, err error) {
+func (d *DataService) getPatientBasedOnQuery(queryStr string, queryParams ...interface{}) (patient *common.Patient, err error) {
 	var firstName, lastName, status, gender string
 	var dob mysql.NullTime
 	var phone, zipCode, city, state sql.NullString
 	var patientId, accountId int64
-	err = d.DB.QueryRow(queryStr, id).Scan(&patientId, &accountId, &firstName, &lastName, &zipCode, &city, &state, &phone, &gender, &dob, &status)
+	err = d.DB.QueryRow(queryStr, queryParams...).Scan(&patientId, &accountId, &firstName, &lastName, &zipCode, &city, &state, &phone, &gender, &dob, &status)
 	if err != nil {
 		return
 	}
@@ -1404,12 +1403,11 @@ func (d *DataService) getPatientBasedOnQuery(queryStr string, id int64) (patient
 }
 
 func (d *DataService) GetPatientFromAccountId(accountId int64) (patient *common.Patient, err error) {
-	queryStr := fmt.Sprintf(`select patient.id, account_id, first_name, last_name, zip_code,city,state, phone, gender, dob, patient.status from patient 
+	patient, err = d.getPatientBasedOnQuery(`select patient.id, account_id, first_name, last_name, zip_code,city,state, phone, gender, dob, patient.status from patient 
 							left outer join patient_phone on patient_phone.patient_id = patient.id
 							left outer join patient_location on patient_location.patient_id = patient.id
-							where patient.account_id = ? and (phone is null or (patient_phone.status='ACTIVE' and patient_phone.phone_type='%s'))
-								and (zip_code is null or patient_location.status='ACTIVE')`, patient_phone_type)
-	patient, err = d.getPatientBasedOnQuery(queryStr, accountId)
+							where patient.account_id = ? and (phone is null or (patient_phone.status='ACTIVE' and patient_phone.phone_type=?))
+								and (zip_code is null or patient_location.status='ACTIVE')`, accountId, patient_phone_type)
 	return
 }
 
