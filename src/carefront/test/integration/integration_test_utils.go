@@ -97,7 +97,6 @@ func getDoctorIdOfCurrentPrimaryDoctor(testData TestData, t *testing.T) int64 {
 }
 
 func SetupIntegrationTest(t *testing.T) TestData {
-	t.Log("Creating new database...")
 	ts := time.Now()
 	setupScript := os.Getenv(carefrontProjectDirEnv) + "/src/carefront/test/integration/setup_integration_test.sh"
 	cmd := exec.Command(setupScript)
@@ -108,7 +107,6 @@ func SetupIntegrationTest(t *testing.T) TestData {
 	if err != nil {
 		t.Fatal("Unable to run the setup_database.sh script for integration tests: " + err.Error() + " " + out.String())
 	}
-	fmt.Printf("DEBUG: db build time: %.3f\n", float64(time.Since(ts))/float64(time.Second))
 
 	dbConfig := GetDBConfig(t)
 	dbConfig.DatabaseName = strings.TrimSpace(out.String())
@@ -130,7 +128,7 @@ func SetupIntegrationTest(t *testing.T) TestData {
 		DB:                  db,
 	}
 
-	t.Log("Created and connected to database with name: " + testData.DBConfig.DatabaseName)
+	t.Logf("Created and connected to database with name: %s (%.3f seconds)", testData.DBConfig.DatabaseName, float64(time.Since(ts))/float64(time.Second))
 
 	// When setting up the database for each integration test, ensure to setup a doctor that is
 	// considered elligible to serve in the state of CA.
@@ -165,8 +163,7 @@ func TearDownIntegrationTest(t *testing.T, testData TestData) {
 	if err != nil {
 		t.Fatal("Unable to run the teardown integration script for integration tests: " + err.Error() + " " + out.String())
 	}
-	t.Log("Tore down database with name: " + testData.DBConfig.DatabaseName)
-	fmt.Printf("DEBUG: db teardown time: %.3f\n", float64(time.Since(ts))/float64(time.Second))
+	t.Logf("Tore down database with name: %s (%.3f seconds)", testData.DBConfig.DatabaseName, float64(time.Since(ts))/float64(time.Second))
 }
 
 func CheckSuccessfulStatusCode(resp *http.Response, errorMessage string, t *testing.T) {
