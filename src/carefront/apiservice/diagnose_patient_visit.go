@@ -17,7 +17,13 @@ const (
 	question_acne_severity  = "q_acne_severity"
 	question_acne_type      = "q_acne_type"
 
-	diagnoseSummaryTemplate = `Hi %s,\n\nBased on the photographs you have provided, it looks like you have %s.\n\nAcne is completely treatable but it will take some work and time to see results. I've put together the best treatment plan for your skin and with regular application you should begin to see results in 1-3 months.\n\nDr. %s`
+	diagnoseSummaryTemplate = `Hi %s,
+
+Based on the photographs you have provided, it looks like you have %s.
+
+Acne is completely treatable but it will take some work and time to see results. I've put together the best treatment plan for your skin and with regular application you should begin to see results in 1-3 months.
+
+Dr. %s`
 )
 
 type DiagnosePatientHandler struct {
