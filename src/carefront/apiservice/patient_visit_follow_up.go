@@ -5,6 +5,7 @@ import (
 	"carefront/common"
 	"github.com/gorilla/schema"
 	"net/http"
+	"time"
 )
 
 type PatientVisitFollowUpHandler struct {
@@ -13,10 +14,9 @@ type PatientVisitFollowUpHandler struct {
 }
 
 type PatientVisitFollowUpRequestResponse struct {
-	PatientVisitId      int64  `schema:"patient_visit_id"`
-	CurrentTimeOnClient int64  `schema:"client_time"`
-	FollowUpValue       int64  `schema:"follow_up_value"`
-	FollowUpUnit        string `schema:"follow_up_unit"`
+	PatientVisitId int64  `schema:"patient_visit_id"`
+	FollowUpValue  int64  `schema:"follow_up_value"`
+	FollowUpUnit   string `schema:"follow_up_unit"`
 }
 
 type PatientVisitFollowupResponse struct {
@@ -90,7 +90,7 @@ func (p *PatientVisitFollowUpHandler) updatePatientVisitFollowup(w http.Response
 		return
 	}
 
-	err = p.DataApi.UpdateFollowUpTimeForPatientVisit(requestData.PatientVisitId, requestData.CurrentTimeOnClient, doctorId, requestData.FollowUpValue, requestData.FollowUpUnit)
+	err = p.DataApi.UpdateFollowUpTimeForPatientVisit(requestData.PatientVisitId, time.Now().Unix(), doctorId, requestData.FollowUpValue, requestData.FollowUpUnit)
 	if err != nil {
 		WriteDeveloperError(w, http.StatusInternalServerError, "Unable to update followup for patient visit")
 		return

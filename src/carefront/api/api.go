@@ -89,7 +89,7 @@ type PatientVisitAPI interface {
 	UpdatePatientVisitStatus(patientVisitId int64, status string) error
 	ClosePatientVisit(patientVisitId int64) error
 	SubmitPatientVisitWithId(patientVisitId int64) error
-	UpdateFollowUpTimeForPatientVisit(patientVisitId, doctorId, currentTimeOnClient, followUpValue int64, followUpUnit string) error
+	UpdateFollowUpTimeForPatientVisit(patientVisitId, doctorId, currentTimeSinceEpoch, followUpValue int64, followUpUnit string) error
 	GetFollowUpTimeForPatientVisit(patientVisitId int64) (followUp *common.FollowUp, err error)
 	GetDiagnosisResponseToQuestionWithTag(questionTag string, doctorId, patientVisitId int64) (answerIntake *common.AnswerIntake, err error)
 	AddDiagnosisSummaryForPatientVisit(summary string, patientVisitId, doctorId int64) error

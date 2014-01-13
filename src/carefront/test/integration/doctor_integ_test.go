@@ -347,8 +347,7 @@ func TestDoctorAddingOfFollowUpForPatientVisit(t *testing.T) {
 	doctorFollowupHandler.AccountIdFromAuthToken(doctor.AccountId)
 	ts := httptest.NewServer(doctorFollowupHandler)
 
-	clientTime := time.Now()
-	requestBody := fmt.Sprintf("patient_visit_id=%d&follow_up_unit=week&follow_up_value=1&client_time=%d", patientVisitResponse.PatientVisitId, clientTime.Unix())
+	requestBody := fmt.Sprintf("patient_visit_id=%d&follow_up_unit=week&follow_up_value=1", patientVisitResponse.PatientVisitId)
 	resp, err := http.Post(ts.URL, "application/x-www-form-urlencoded", bytes.NewBufferString(requestBody))
 	if err != nil {
 		t.Fatal("Unable to make successful call to add follow up time for patient visit: " + err.Error())
@@ -375,7 +374,7 @@ func TestDoctorAddingOfFollowUpForPatientVisit(t *testing.T) {
 		t.Fatal("Unable to unmarshal the response into a json object: " + err.Error())
 	}
 
-	oneWeekFromNow := clientTime.Add(7 * 24 * 60 * time.Minute)
+	oneWeekFromNow := time.Now().Add(7 * 24 * 60 * time.Minute)
 	year, month, day := oneWeekFromNow.Date()
 	year1, month1, day1 := patientVisitFollowupResponse.FollowUpTime.Date()
 
