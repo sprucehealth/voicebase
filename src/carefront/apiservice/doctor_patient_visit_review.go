@@ -70,7 +70,7 @@ func (p *DoctorPatientVisitReviewHandler) ServeHTTP(w http.ResponseWriter, r *ht
 			return
 		}
 
-		err = p.DataApi.BeginReviewingPatientVisitInQueue(doctorId, patientVisit.PatientVisitId)
+		err = p.DataApi.UpdateStateForPatientVisitInDoctorQueue(doctorId, patientVisit.PatientVisitId, api.QUEUE_ITEM_STATUS_PENDING, api.QUEUE_ITEM_STATUS_ONGOING)
 		if err != nil {
 			WriteDeveloperError(w, http.StatusInternalServerError, "Unable to update the item in the queue for the doctor that speaks to this patient visit: "+err.Error())
 			return

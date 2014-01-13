@@ -51,6 +51,10 @@ func (d *DoctorQueueItem) GetTitleAndSubtitle(dataApi DataAPI) (title, subtitle 
 		case QUEUE_ITEM_STATUS_ONGOING:
 			title = fmt.Sprintf("Continue reviewing visit with %s %s", patient.FirstName, patient.LastName)
 			subtitle = getRemainingTimeSubtitleForCaseToBeReviewed(d.EnqueueDate)
+		case QUEUE_ITEM_STATUS_PHOTOS_REJECTED:
+			title = fmt.Sprintf("Photos rejected for visit with %s %s", patient.FirstName, patient.LastName)
+			formattedTime := d.EnqueueDate.Format("3:04pm")
+			subtitle = fmt.Sprintf("%s %d at %s", d.EnqueueDate.Month().String(), d.EnqueueDate.Day(), formattedTime)
 		}
 	}
 	return
@@ -75,7 +79,7 @@ func (d *DoctorQueueItem) GetDisplayTypes() []string {
 	switch d.EventType {
 	case EVENT_TYPE_PATIENT_VISIT:
 		switch d.Status {
-		case QUEUE_ITEM_STATUS_COMPLETED:
+		case QUEUE_ITEM_STATUS_COMPLETED, QUEUE_ITEM_STATUS_PHOTOS_REJECTED:
 			return []string{DISPLAY_TYPE_TITLE_SUBTITLE_NONACTIONABLE}
 		case QUEUE_ITEM_STATUS_PENDING, QUEUE_ITEM_STATUS_ONGOING:
 			return []string{DISPLAY_TYPE_TITLE_SUBTITLE_BUTTON}
@@ -88,8 +92,6 @@ func (d *DoctorQueueItem) GetButton() *Button {
 	switch d.EventType {
 	case EVENT_TYPE_PATIENT_VISIT:
 		switch d.Status {
-		case QUEUE_ITEM_STATUS_COMPLETED:
-			return nil
 		case QUEUE_ITEM_STATUS_PENDING:
 			button := &Button{}
 			button.ButtonText = "Begin"

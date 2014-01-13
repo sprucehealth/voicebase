@@ -1410,7 +1410,7 @@ func (d *DataService) GetPatientIdFromPatientVisitId(patientVisitId int64) (int6
 }
 
 func (d *DataService) SubmitPatientVisitWithId(patientVisitId int64) error {
-	_, err := d.DB.Exec("update patient_visit set status='SUBMITTED', submitted_date=now() where id = ? and STATUS='OPEN'", patientVisitId)
+	_, err := d.DB.Exec("update patient_visit set status='SUBMITTED', submitted_date=now() where id = ? and STATUS in ('OPEN', 'PHOTOS_REJECTED')", patientVisitId)
 	return err
 }
 
@@ -1419,13 +1419,22 @@ func (d *DataService) AssignPatientVisitToDoctor(DoctorId, PatientVisitId int64)
 	return err
 }
 
-func (d *DataService) BeginReviewingPatientVisitInQueue(DoctorId, PatientVisitId int64) error {
-	_, err := d.DB.Exec(`update doctor_queue set status=? where status='PENDING' and doctor_id = ? and event_type = 'PATIENT_VISIT' and item_id = ?`, QUEUE_ITEM_STATUS_ONGOING, DoctorId, PatientVisitId)
-	return err
-}
-
-func (d *DataService) CompletePatientVisitInDoctorQueue(DoctorId, PatientVisitId int64) error {
-	_, err := d.DB.Exec(`update doctor_queue set status=? where status='ONGOING' and doctor_id = ? and event_type = 'PATIENT_VISIT' and item_id = ?`, QUEUE_ITEM_STATUS_COMPLETED, DoctorId, PatientVisitId)
+func (d *DataService) UpdateStateForPatientVisitInDoctorQueue(DoctorId, PatientVisitId int64, currentState, updatedState string) error {
+	tx, err := d.DB.Begin()
+	if err != nil {
+		return err
+	}
+	_, err = tx.Exec(`delete from doctor_queue where status = ? and doctor_id = ? and event_type = 'PATIENT_VISIT' and item_id = ?`, currentState, DoctorId, PatientVisitId)
+	if err != nil {
+		tx.Rollback()
+		return err
+	}
+	_, err = tx.Exec(`insert into doctor_queue (doctor_id, status, event_type, item_id) values (?, ?, 'PATIENT_VISIT', ?)`, DoctorId, updatedState, PatientVisitId)
+	if err != nil {
+		tx.Rollback()
+		return err
+	}
+	tx.Commit()
 	return err
 }
 
@@ -2215,6 +2224,15 @@ func (d *DataService) MakeCurrentPhotoAnswerInactive(role string, roleId, questi
 	_, err := d.DB.Exec(`update info_intake set status='INACTIVE' where role_id = ? and question_id = ? 
 							and patient_visit_id = ? and potential_answer_id = ? 
 							and layout_version_id = ? and role=?`, roleId, questionId, patientVisitId, potentialAnswerId, layoutVersionId, role)
+	return err
+}
+
+func (d *DataService) RejectPatientVisitPhotos(patientVisitId int64) error {
+	_, err := d.DB.Exec(`update info_intake 
+		inner join question on info_intake.question_id = question.id 
+		inner join question_type on question_type.id = question.qtype_id 
+		set info_intake.status='REJECTED' 
+			where info_intake.patient_visit_id = ? and qtype='q_type_photo' and status='ACTIVE'`, patientVisitId)
 	return err
 }
 

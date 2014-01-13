@@ -51,7 +51,7 @@ func (d *DoctorQueueHandler) convertDoctorQueueIntoDisplayQueue(doctorQueue []*a
 		switch queueItem.Status {
 		case api.QUEUE_ITEM_STATUS_PENDING, api.QUEUE_ITEM_STATUS_ONGOING:
 			pendingOrOngoingItems = append(pendingOrOngoingItems, queueItem)
-		case api.QUEUE_ITEM_STATUS_COMPLETED:
+		case api.QUEUE_ITEM_STATUS_COMPLETED, api.QUEUE_ITEM_STATUS_PHOTOS_REJECTED:
 			completedItems = append(completedItems, queueItem)
 		}
 	}

@@ -67,8 +67,8 @@ func (d *DoctorSubmitPatientVisitReviewHandler) submitPatientVisitReview(w http.
 		return
 	}
 
-	// update the item inb the doctors queue to say completed
-	err = d.DataApi.CompletePatientVisitInDoctorQueue(doctorId, requestData.PatientVisitId)
+	// update the item in the doctors queue to say completed
+	err = d.DataApi.UpdateStateForPatientVisitInDoctorQueue(doctorId, requestData.PatientVisitId, api.QUEUE_ITEM_STATUS_ONGOING, api.QUEUE_ITEM_STATUS_COMPLETED)
 	if err != nil {
 		WriteDeveloperError(w, http.StatusInternalServerError, "Unable to mark the patient visit in the doctor's queue as completed: "+err.Error())
 		return

@@ -8,22 +8,23 @@ import (
 )
 
 const (
-	EN_LANGUAGE_ID           = 1
-	DOCTOR_ROLE              = "DOCTOR"
-	PRIMARY_DOCTOR_STATUS    = "PRIMARY"
-	PATIENT_ROLE             = "PATIENT"
-	REVIEW_PURPOSE           = "REVIEW"
-	CONDITION_INTAKE_PURPOSE = "CONDITION_INTAKE"
-	DIAGNOSE_PURPOSE         = "DIAGNOSE"
-	FOLLOW_UP_WEEK           = "week"
-	FOLLOW_UP_DAY            = "day"
-	FOLLOW_UP_MONTH          = "month"
-	CASE_STATUS_OPEN         = "OPEN"
-	CASE_STATUS_SUBMITTED    = "SUBMITTED"
-	CASE_STATUS_REVIEWING    = "REVIEWING"
-	CASE_STATUS_CLOSED       = "CLOSED"
-	HIPAA_AUTH               = "hipaa"
-	CONSENT_AUTH             = "consent"
+	EN_LANGUAGE_ID              = 1
+	DOCTOR_ROLE                 = "DOCTOR"
+	PRIMARY_DOCTOR_STATUS       = "PRIMARY"
+	PATIENT_ROLE                = "PATIENT"
+	REVIEW_PURPOSE              = "REVIEW"
+	CONDITION_INTAKE_PURPOSE    = "CONDITION_INTAKE"
+	DIAGNOSE_PURPOSE            = "DIAGNOSE"
+	FOLLOW_UP_WEEK              = "week"
+	FOLLOW_UP_DAY               = "day"
+	FOLLOW_UP_MONTH             = "month"
+	CASE_STATUS_OPEN            = "OPEN"
+	CASE_STATUS_SUBMITTED       = "SUBMITTED"
+	CASE_STATUS_REVIEWING       = "REVIEWING"
+	CASE_STATUS_CLOSED          = "CLOSED"
+	CASE_STATUS_PHOTOS_REJECTED = "PHOTOS_REJECTED"
+	HIPAA_AUTH                  = "hipaa"
+	CONSENT_AUTH                = "consent"
 )
 
 var (
@@ -74,8 +75,7 @@ type DoctorAPI interface {
 	MarkAdvicePointToBeDeleted(advicePoint *common.DoctorInstructionItem, doctorId int64) error
 
 	AssignPatientVisitToDoctor(DoctorId, PatientVisitId int64) error
-	BeginReviewingPatientVisitInQueue(DoctorId, PatientVisitId int64) error
-	CompletePatientVisitInDoctorQueue(DoctorId, PatientVisitId int64) error
+	UpdateStateForPatientVisitInDoctorQueue(DoctorId, PatientVisitId int64, currentState, updatedState string) error
 	GetDoctorQueue(DoctorId int64) (doctorQueue []*DoctorQueueItem, err error)
 }
 
@@ -109,6 +109,7 @@ type IntakeAPI interface {
 	CreatePhotoAnswerForQuestionRecord(role string, roleId, questionId, patientVisitId, potentialAnswerId, layoutVersionId int64) (patientInfoIntakeId int64, err error)
 	UpdatePhotoAnswerRecordWithObjectStorageId(patientInfoIntakeId, objectStorageId int64) error
 	MakeCurrentPhotoAnswerInactive(role string, roleId, questionId, patientVisitId, potentialAnswerId, layoutVersionId int64) error
+	RejectPatientVisitPhotos(patientVisitId int64) error
 }
 
 type IntakeLayoutAPI interface {

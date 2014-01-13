@@ -4,6 +4,7 @@ const (
 	QUEUE_ITEM_STATUS_PENDING                 = "PENDING"
 	QUEUE_ITEM_STATUS_COMPLETED               = "COMPLETED"
 	QUEUE_ITEM_STATUS_ONGOING                 = "ONGOING"
+	QUEUE_ITEM_STATUS_PHOTOS_REJECTED         = "PHOTOS_REJECTED"
 	DISPLAY_TYPE_TITLE_SUBTITLE_NONACTIONABLE = "title_subtitle_nonactionable"
 	DISPLAY_TYPE_TITLE_SUBTITLE_ACTIONABLE    = "title_subtitle_actionable"
 	DISPLAY_TYPE_TITLE_SUBTITLE_BUTTON        = "title_subtitle_text_button_actionable"

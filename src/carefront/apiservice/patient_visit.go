@@ -94,7 +94,7 @@ func (s *PatientVisitHandler) submitPatientVisit(w http.ResponseWriter, r *http.
 	}
 
 	// do not support the submitting of a case that has already been submitted or is in another state
-	if patientVisit.Status != api.CASE_STATUS_OPEN {
+	if patientVisit.Status != api.CASE_STATUS_OPEN && patientVisit.Status != api.CASE_STATUS_PHOTOS_REJECTED {
 		WriteDeveloperError(w, http.StatusBadRequest, "Cannot submit a case that is not in the open state. Current status of case = "+patientVisit.Status)
 		return
 	}
