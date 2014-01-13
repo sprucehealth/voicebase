@@ -33,7 +33,7 @@ type PatientVisitRequestData struct {
 type PatientVisitResponse struct {
 	PatientVisitId int64                         `json:"patient_visit_id,string"`
 	Status         string                        `json:"status,omitempty"`
-	StatusMessage  string                        `json:"status_message",omitempty`
+	StatusMessage  string                        `json:"status_message,omitempty"`
 	ClientLayout   *info_intake.InfoIntakeLayout `json:"health_condition,omitempty"`
 }
 
