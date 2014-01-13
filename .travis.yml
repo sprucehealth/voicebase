@@ -35,7 +35,7 @@ script:
 - go test -v -race ./src/carefront/info_intake
 - go test -v -race ./src/carefront/libs/...
 - go test -v -race ./src/carefront/test/services
-- go test -v -race ./src/carefront/test/integration
+- go test -v -race -test.timeout=50m ./src/carefront/test/integration
 # - go test -v -race -test.timeout=50m ./src/carefront/...
 notifications:
   # webhooks:
