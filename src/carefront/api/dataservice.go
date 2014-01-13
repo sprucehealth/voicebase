@@ -300,10 +300,6 @@ func (d *DataService) DeleteDrugInstructionForDoctor(drugInstructionToDelete *co
 }
 
 func (d *DataService) AddDrugInstructionsToTreatment(drugName, drugForm, drugRoute string, drugInstructions []*common.DoctorInstructionItem, treatmentId int64, doctorId int64) error {
-	// nothing to do if there are no instructions to add
-	if len(drugInstructions) == 0 {
-		return nil
-	}
 
 	drugNameNullId, err := d.getIdForNameFromTable(drug_name_table, drugName)
 	if err != nil {
@@ -812,10 +808,6 @@ func (d *DataService) GetAdvicePointsForPatientVisit(patientVisitId int64) (advi
 }
 
 func (d *DataService) CreateAdviceForPatientVisit(advicePoints []*common.DoctorInstructionItem, patientVisitId int64) error {
-	if len(advicePoints) == 0 {
-		return nil
-	}
-
 	// begin tx
 	tx, err := d.DB.Begin()
 	if err != nil {
@@ -963,10 +955,6 @@ func (d *DataService) MarkRegimenStepToBeDeleted(regimenStep *common.DoctorInstr
 }
 
 func (d *DataService) CreateRegimenPlanForPatientVisit(regimenPlan *common.RegimenPlan) error {
-	if len(regimenPlan.RegimenSections) == 0 {
-		return nil
-	}
-
 	// begin tx
 	tx, err := d.DB.Begin()
 	if err != nil {
