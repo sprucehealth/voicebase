@@ -40,7 +40,7 @@ var DefaultConfig = Config{
 	},
 	ListenAddr:          ":10001",
 	AuthTokenExpiration: 60 * 60 * 24 * 2,
-	AuthTokenRenew:      60 * 60 * 6,
+	AuthTokenRenew:      60 * 60 * 36,
 }
 
 const (

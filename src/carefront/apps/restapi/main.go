@@ -78,7 +78,7 @@ var DefaultConfig = Config{
 	CaseBucket:            "carefront-cases",
 	MaxInMemoryForPhotoMB: defaultMaxInMemoryPhotoMB,
 	AuthTokenExpiration:   60 * 60 * 24 * 2,
-	AuthTokenRenew:        60 * 60 * 6,
+	AuthTokenRenew:        60 * 60 * 36,
 }
 
 func connectToDatabase(conf *Config, dbConf *DBConfig) (*sql.DB, error) {
