@@ -77,6 +77,8 @@ var DefaultConfig = Config{
 	TLSListenAddr:         ":8443",
 	CaseBucket:            "carefront-cases",
 	MaxInMemoryForPhotoMB: defaultMaxInMemoryPhotoMB,
+	AuthTokenExpiration:   60 * 60 * 24 * 2,
+	AuthTokenRenew:        60 * 60 * 6,
 }
 
 func connectToDatabase(conf *Config, dbConf *DBConfig) (*sql.DB, error) {
