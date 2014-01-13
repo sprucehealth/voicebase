@@ -11,7 +11,6 @@ import (
 	"net/http/httptest"
 	"strconv"
 	"testing"
-	"time"
 )
 
 func TestPatientVisitReview(t *testing.T) {
@@ -220,8 +219,7 @@ func TestPatientVisitReview(t *testing.T) {
 	ts4 := httptest.NewServer(doctorFollowupHandler)
 	defer ts4.Close()
 
-	clientTime := time.Now()
-	requestBody := fmt.Sprintf("patient_visit_id=%d&follow_up_unit=week&follow_up_value=1&client_time=%d", patientVisitResponse.PatientVisitId, clientTime.Unix())
+	requestBody := fmt.Sprintf("patient_visit_id=%d&follow_up_unit=week&follow_up_value=1", patientVisitResponse.PatientVisitId)
 	resp, err = http.Post(ts4.URL, "application/x-www-form-urlencoded", bytes.NewBufferString(requestBody))
 	if err != nil {
 		t.Fatal("Unable to make successful call to add follow up time for patient visit: " + err.Error())
