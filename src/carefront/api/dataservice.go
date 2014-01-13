@@ -1948,6 +1948,44 @@ func (d *DataService) UpdatePatientVisitStatus(patientVisitId int64, status stri
 	return err
 }
 
+func (d *DataService) UpdatePatientVisitStatusWithMessage(patientVisitId int64, message, event string) error {
+	tx, err := d.DB.Begin()
+	if err != nil {
+		tx.Rollback()
+		return err
+	}
+
+	// inactivate any existing message given that there is a new message for the patient
+	_, err = tx.Exec(`update patient_visit_event set status='INACTIVE' where patient_visit_id = ? and status='ACTIVE'`, patientVisitId)
+	if err != nil {
+		tx.Rollback()
+		return err
+	}
+
+	_, err = tx.Exec(`insert into patient_visit_event (patient_visit_id, status, event, message) values (?,'ACTIVE', ?, ?)`, patientVisitId, event, message)
+	if err != nil {
+		tx.Rollback()
+		return err
+	}
+
+	_, err = tx.Exec(`update patient_visit set status=? where id = ?`, event, patientVisitId)
+	if err != nil {
+		tx.Rollback()
+		return err
+	}
+
+	tx.Commit()
+	return nil
+}
+
+func (d *DataService) GetMessageForPatientVisitStatus(patientVisitId int64) (message string, err error) {
+	err = d.DB.QueryRow(`select message from patient_visit_event where patient_visit_id = ? and status = 'ACTIVE'`, patientVisitId).Scan(&message)
+	if err != nil && err == sql.ErrNoRows {
+		return "", nil
+	}
+	return
+}
+
 func (d *DataService) ClosePatientVisit(patientVisitId int64) error {
 	_, err := d.DB.Exec(`update patient_visit set status=?, closed_date=now() where id = ?`, CASE_STATUS_CLOSED, patientVisitId)
 	return err

@@ -33,6 +33,7 @@ type PatientVisitRequestData struct {
 type PatientVisitResponse struct {
 	PatientVisitId int64                         `json:"patient_visit_id,string"`
 	Status         string                        `json:"status,omitempty"`
+	StatusMessage  string                        `json:"status_message",omitempty`
 	ClientLayout   *info_intake.InfoIntakeLayout `json:"health_condition,omitempty"`
 }
 
@@ -213,7 +214,14 @@ func (s *PatientVisitHandler) returnLastCreatedPatientVisit(w http.ResponseWrite
 	}
 	s.populateHealthConditionWithPatientAnswers(healthCondition, patientAnswersForVisit)
 	s.fillInFormattedFieldsForQuestions(healthCondition, doctor)
-	WriteJSONToHTTPResponseWriter(w, http.StatusOK, PatientVisitResponse{PatientVisitId: patientVisitId, ClientLayout: healthCondition, Status: patientVisit.Status})
+
+	message, err := s.DataApi.GetMessageForPatientVisitStatus(patientVisit.PatientVisitId)
+	if err != nil {
+		WriteDeveloperError(w, http.StatusInternalServerError, "Unable to get message for patient visit: "+err.Error())
+		return
+	}
+
+	WriteJSONToHTTPResponseWriter(w, http.StatusOK, PatientVisitResponse{PatientVisitId: patientVisitId, ClientLayout: healthCondition, Status: patientVisit.Status, StatusMessage: message})
 }
 
 func (s *PatientVisitHandler) createNewPatientVisitHandler(w http.ResponseWriter, r *http.Request) {
