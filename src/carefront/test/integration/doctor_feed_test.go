@@ -174,6 +174,7 @@ func TestDoctorFeed(t *testing.T) {
 func getDoctorQueue(testData TestData, doctorAccountId int64, t *testing.T) *apiservice.DisplayFeedTabs {
 	doctorQueueHandler := &apiservice.DoctorQueueHandler{DataApi: testData.DataApi}
 	ts := httptest.NewServer(doctorQueueHandler)
+	defer ts.Close()
 	doctorQueueHandler.AccountIdFromAuthToken(doctorAccountId)
 
 	resp, err := http.Get(ts.URL)

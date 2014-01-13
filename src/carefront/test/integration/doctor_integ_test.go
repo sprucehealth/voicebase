@@ -39,6 +39,7 @@ func TestDoctorAuthentication(t *testing.T) {
 
 	doctorAuthHandler := &apiservice.DoctorAuthenticationHandler{AuthApi: testData.AuthApi, DataApi: testData.DataApi}
 	ts := httptest.NewServer(doctorAuthHandler)
+	defer ts.Close()
 	requestBody := bytes.NewBufferString("email=")
 	requestBody.WriteString(email)
 	requestBody.WriteString("&password=")
@@ -219,6 +220,7 @@ func TestDoctorDiagnosisOfPatientVisit(t *testing.T) {
 	// check if the diagnosis summary exists for the patient visit
 	diagnosisSummaryHandler := &apiservice.DiagnosisSummaryHandler{DataApi: testData.DataApi}
 	ts = httptest.NewServer(diagnosisSummaryHandler)
+	defer ts.Close()
 	diagnosisSummaryHandler.AccountIdFromAuthToken(doctor.AccountId)
 
 	resp, err = http.Get(ts.URL + "?patient_visit_id=" + strconv.FormatInt(patientVisitResponse.PatientVisitId, 10))
@@ -346,6 +348,7 @@ func TestDoctorAddingOfFollowUpForPatientVisit(t *testing.T) {
 	doctorFollowupHandler := apiservice.NewPatientVisitFollowUpHandler(testData.DataApi)
 	doctorFollowupHandler.AccountIdFromAuthToken(doctor.AccountId)
 	ts := httptest.NewServer(doctorFollowupHandler)
+	defer ts.Close()
 
 	requestBody := fmt.Sprintf("patient_visit_id=%d&follow_up_unit=week&follow_up_value=1", patientVisitResponse.PatientVisitId)
 	resp, err := http.Post(ts.URL, "application/x-www-form-urlencoded", bytes.NewBufferString(requestBody))

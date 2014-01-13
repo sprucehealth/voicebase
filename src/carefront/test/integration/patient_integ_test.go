@@ -27,6 +27,7 @@ func TestPatientCareProvidingEllgibility(t *testing.T) {
 
 	checkElligibilityHandler := &apiservice.CheckCareProvidingElligibilityHandler{DataApi: testData.DataApi, MapsService: maps.GoogleMapsService(0)}
 	ts := httptest.NewServer(checkElligibilityHandler)
+	defer ts.Close()
 	resp, err := http.Get(ts.URL + "?zip_code=94115")
 
 	if err != nil {
