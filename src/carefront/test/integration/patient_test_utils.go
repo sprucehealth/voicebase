@@ -6,11 +6,11 @@ import (
 	thriftapi "carefront/thrift/api"
 	"encoding/json"
 	"io/ioutil"
+	"math/rand"
 	"net/http"
 	"net/http/httptest"
 	"strconv"
 	"testing"
-	"time"
 
 	"fmt"
 
@@ -24,7 +24,7 @@ func SignupRandomTestPatient(t *testing.T, dataApi api.DataAPI, authApi thriftap
 	defer ts.Close()
 
 	requestBody := bytes.NewBufferString("first_name=Test&last_name=Test&email=")
-	requestBody.WriteString(strconv.FormatInt(time.Now().Unix(), 10))
+	requestBody.WriteString(strconv.FormatInt(rand.Int63(), 10))
 	requestBody.WriteString("@example.com&password=12345&dob=11/08/1987&zip_code=94115&phone=123455115&gender=male")
 	res, err := http.Post(ts.URL, "application/x-www-form-urlencoded", requestBody)
 	if err != nil {
