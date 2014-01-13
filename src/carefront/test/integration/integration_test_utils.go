@@ -97,11 +97,13 @@ func getDoctorIdOfCurrentPrimaryDoctor(testData TestData, t *testing.T) int64 {
 }
 
 func SetupIntegrationTest(t *testing.T) TestData {
+	t.Log("Creating new database...")
 	ts := time.Now()
 	setupScript := os.Getenv(carefrontProjectDirEnv) + "/src/carefront/test/integration/setup_integration_test.sh"
 	cmd := exec.Command(setupScript)
 	var out bytes.Buffer
 	cmd.Stdout = &out
+	cmd.Stderr = os.Stderr
 	err := cmd.Run()
 	if err != nil {
 		t.Fatal("Unable to run the setup_database.sh script for integration tests: " + err.Error() + " " + out.String())
