@@ -1,4 +1,4 @@
-#!/bin/bash 
+#!/bin/bash -e
 TEST_DB=database_${RANDOM}_$(date +%s)
 MYSQL_FOLDER=${CAREFRONT_PROJECT_DIR}/src/carefront/mysql
 pushd $MYSQL_FOLDER > /dev/null

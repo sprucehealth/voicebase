@@ -3,6 +3,7 @@ package auth
 import (
 	"database/sql"
 	"log"
+	"strings"
 	"time"
 
 	"carefront/common"
@@ -17,6 +18,8 @@ type AuthService struct {
 }
 
 func (m *AuthService) Signup(email, password string) (*api.AuthResponse, error) {
+	email = strings.ToLower(email)
+
 	// ensure to check that the email does not already exist in the database
 	var id int64
 	if err := m.DB.QueryRow("SELECT id FROM account WHERE email = ?", email).Scan(&id); err == nil {
@@ -75,6 +78,8 @@ func (m *AuthService) Signup(email, password string) (*api.AuthResponse, error) 
 }
 
 func (m *AuthService) Login(email, password string) (*api.AuthResponse, error) {
+	email = strings.ToLower(email)
+
 	var accountId int64
 	var hashedPassword string
 
@@ -138,7 +143,7 @@ func (m *AuthService) ValidateToken(token string) (*api.TokenValidationResponse,
 	}
 
 	// if the token exists, check the expiration to ensure that it is valid
-	left := time.Now().Sub(*expires)
+	left := (*expires).Sub(time.Now())
 	if left <= 0 {
 		log.Printf("Current time %s is after expiration time %s", time.Now().String(), expires.String())
 	} else if m.RenewDuration > 0 && left < m.RenewDuration {

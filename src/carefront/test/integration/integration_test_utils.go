@@ -18,6 +18,7 @@ import (
 	"strconv"
 	"strings"
 	"testing"
+	"time"
 )
 
 var (
@@ -96,10 +97,12 @@ func getDoctorIdOfCurrentPrimaryDoctor(testData TestData, t *testing.T) int64 {
 }
 
 func SetupIntegrationTest(t *testing.T) TestData {
+	ts := time.Now()
 	setupScript := os.Getenv(carefrontProjectDirEnv) + "/src/carefront/test/integration/setup_integration_test.sh"
 	cmd := exec.Command(setupScript)
 	var out bytes.Buffer
 	cmd.Stdout = &out
+	cmd.Stderr = os.Stderr
 	err := cmd.Run()
 	if err != nil {
 		t.Fatal("Unable to run the setup_database.sh script for integration tests: " + err.Error() + " " + out.String())
@@ -125,7 +128,7 @@ func SetupIntegrationTest(t *testing.T) TestData {
 		DB:                  db,
 	}
 
-	t.Log("Created and connected to database with name: " + testData.DBConfig.DatabaseName)
+	t.Logf("Created and connected to database with name: %s (%.3f seconds)", testData.DBConfig.DatabaseName, float64(time.Since(ts))/float64(time.Second))
 
 	// When setting up the database for each integration test, ensure to setup a doctor that is
 	// considered elligible to serve in the state of CA.
@@ -150,6 +153,7 @@ func SetupIntegrationTest(t *testing.T) TestData {
 func TearDownIntegrationTest(t *testing.T, testData TestData) {
 	testData.DB.Close()
 
+	ts := time.Now()
 	// put anything here that is global to the teardown process for integration tests
 	teardownScript := os.Getenv(carefrontProjectDirEnv) + "/src/carefront/test/integration/teardown_integration_test.sh"
 	cmd := exec.Command(teardownScript, testData.DBConfig.DatabaseName)
@@ -159,7 +163,7 @@ func TearDownIntegrationTest(t *testing.T, testData TestData) {
 	if err != nil {
 		t.Fatal("Unable to run the teardown integration script for integration tests: " + err.Error() + " " + out.String())
 	}
-	t.Log("Tore down database with name: " + testData.DBConfig.DatabaseName)
+	t.Logf("Tore down database with name: %s (%.3f seconds)", testData.DBConfig.DatabaseName, float64(time.Since(ts))/float64(time.Second))
 }
 
 func CheckSuccessfulStatusCode(resp *http.Response, errorMessage string, t *testing.T) {
