@@ -1,0 +1,1 @@
+alter table patient_visit_event modify column id int unsigned not null auto_increment;
