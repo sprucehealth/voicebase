@@ -38,7 +38,9 @@ var DefaultConfig = Config{
 	BaseConfig: &config.BaseConfig{
 		AppName: "secure",
 	},
-	ListenAddr: ":10001",
+	ListenAddr:          ":10001",
+	AuthTokenExpiration: 60 * 60 * 24 * 2,
+	AuthTokenRenew:      60 * 60 * 6,
 }
 
 const (
