@@ -28,8 +28,10 @@ type DBConfig struct {
 
 type Config struct {
 	*config.BaseConfig
-	ListenAddr string   `long:"listen" description:"Address:port to listen on"`
-	DB         DBConfig `group:"Database" toml:"database"`
+	ListenAddr          string   `long:"listen" description:"Address:port to listen on"`
+	DB                  DBConfig `group:"Database" toml:"database"`
+	AuthTokenExpiration int      `long:"auth_token_expire" description:"Expiration time in seconds for the auth token"`
+	AuthTokenRenew      int      `long:"auth_token_renew" description:"Time left below which to renew the auth token"`
 }
 
 var DefaultConfig = Config{
@@ -75,7 +77,9 @@ func main() {
 	}
 
 	authService := &auth.AuthService{
-		DB: db,
+		DB:             db,
+		ExpireDuration: time.Duration(conf.AuthTokenExpiration) * time.Second,
+		RenewDuration:  time.Duration(conf.AuthTokenRenew) * time.Second,
 	}
 	serv := rpc.NewServer()
 	if err := serv.RegisterName("Thrift", &api.AuthServer{Implementation: authService}); err != nil {
