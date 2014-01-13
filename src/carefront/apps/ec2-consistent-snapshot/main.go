@@ -30,6 +30,7 @@ type FreezeCmd interface {
 
 var config = struct {
 	Verbose bool
+	Tags    map[string]string
 	// AWS
 	AWSRole    string
 	AWSKeys    aws.Keys
@@ -68,6 +69,39 @@ var cnfSearchPath = []string{
 	"/etc/mysql/my.cnf",
 }
 
+type StringListFlag struct {
+	Values *[]string
+}
+
+func (sl StringListFlag) String() string {
+	return strings.Join(*sl.Values, ",")
+}
+
+func (sl StringListFlag) Set(s string) error {
+	*sl.Values = append(*sl.Values, s)
+	return nil
+}
+
+type MapFlag struct {
+	Values *map[string]string
+}
+
+func (mf MapFlag) String() string {
+	return fmt.Sprintf("%+v", *mf.Values)
+}
+
+func (mf MapFlag) Set(s string) error {
+	idx := strings.Index(s, "=")
+	if idx <= 0 {
+		return fmt.Errorf("Tag arguments must be name=value")
+	}
+	if *mf.Values == nil {
+		*mf.Values = make(map[string]string)
+	}
+	(*mf.Values)[s[:idx]] = s[idx+1:]
+	return nil
+}
+
 func init() {
 	flag.StringVar(&config.MountPath, "fs", config.MountPath, "Path to filesystem to freeze")
 	flag.StringVar(&config.FSType, "fs.type", config.FSType, "Filesystem type (support: xfs)")
@@ -78,6 +112,7 @@ func init() {
 	flag.IntVar(&config.Port, "mysql.port", config.Port, "MySQL port")
 	flag.StringVar(&config.Username, "mysql.user", config.Username, "MySQL username")
 	flag.StringVar(&config.Password, "mysql.password", config.Password, "MySQL password")
+	flag.Var(MapFlag{Values: &config.Tags}, "tag", "Additional tags (e.g. -tag name=value)")
 	flag.BoolVar(&config.Verbose, "v", config.Verbose, "Verbose output")
 }
 
@@ -479,6 +514,9 @@ func snapshotEBS(binlogName string, binlogPos int64) error {
 		tags := vol.Tags
 		tags["BinlogName"] = binlogName
 		tags["BinlogPos"] = strconv.FormatInt(binlogPos, 10)
+		for n, v := range config.Tags {
+			tags[n] = v
+		}
 		if err := config.ec2.CreateTags([]string{res.SnapshotId}, tags); err != nil {
 			log.Printf("Failed to tag snapshot %s: %+v", res.SnapshotId, err)
 		}
