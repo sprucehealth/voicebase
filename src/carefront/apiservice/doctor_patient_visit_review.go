@@ -110,7 +110,7 @@ func (p *DoctorPatientVisitReviewHandler) ServeHTTP(w http.ResponseWriter, r *ht
 		return
 	}
 
-	data, err := p.LayoutStorageService.GetObjectAtLocation(bucket, key, region)
+	data, _, err := p.LayoutStorageService.GetObjectAtLocation(bucket, key, region)
 	if err != nil {
 		WriteDeveloperError(w, http.StatusInternalServerError, "Unable to get doctor layout for patient visit from s3: "+err.Error())
 		return

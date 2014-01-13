@@ -219,7 +219,7 @@ func (d *DiagnosePatientHandler) getCurrentActiveDiagnoseLayoutForHealthConditio
 		return
 	}
 
-	data, err := d.LayoutStorageService.GetObjectAtLocation(bucket, key, region)
+	data, _, err := d.LayoutStorageService.GetObjectAtLocation(bucket, key, region)
 	if err != nil {
 		return
 	}

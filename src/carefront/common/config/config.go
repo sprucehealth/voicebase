@@ -119,7 +119,7 @@ func (c *BaseConfig) OpenURI(uri string) (io.ReadCloser, error) {
 				return nil, err
 			}
 			s3 := s3.New(common.AWSAuthAdapter(awsAuth), goamz.Regions[c.AWSRegion])
-			rd, err = s3.Bucket(ur.Host).GetReader(ur.Path)
+			rd, _, err = s3.Bucket(ur.Host).GetReader(ur.Path)
 			if err != nil {
 				return nil, err
 			}
@@ -168,7 +168,7 @@ func LoadConfigFile(configUrl string, config interface{}, awsAuther func() (aws.
 		}
 		if ur.Scheme == "s3" {
 			s3 := s3.New(common.AWSAuthAdapter(awsAuth), goamz.USEast)
-			rd, err = s3.Bucket(ur.Host).GetReader(ur.Path)
+			rd, _, err = s3.Bucket(ur.Host).GetReader(ur.Path)
 			if err != nil {
 				return fmt.Errorf("config: failed to get config from s3 %s: %+v", configUrl, err)
 			}

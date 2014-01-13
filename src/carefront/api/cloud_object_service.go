@@ -1,12 +1,12 @@
 package api
 
 import (
-	"time"
-
 	"carefront/common"
 	"carefront/libs/aws"
 	goamz "launchpad.net/goamz/aws"
 	"launchpad.net/goamz/s3"
+	"net/http"
+	"time"
 )
 
 // TODO Need a better way of decentralizing access to different buckets
@@ -20,7 +20,7 @@ func NewCloudStorageService(awsAuth aws.Auth) *CloudStorageService {
 	return &CloudStorageService{awsAuth: awsAuth}
 }
 
-func (c *CloudStorageService) GetObjectAtLocation(bucket, key, region string) (rawData []byte, err error) {
+func (c *CloudStorageService) GetObjectAtLocation(bucket, key, region string) (rawData []byte, responseHeader http.Header, err error) {
 	awsRegion, ok := goamz.Regions[region]
 	if !ok {
 		awsRegion = goamz.USEast
@@ -29,11 +29,11 @@ func (c *CloudStorageService) GetObjectAtLocation(bucket, key, region string) (r
 	s3Access := s3.New(common.AWSAuthAdapter(c.awsAuth), awsRegion)
 	s3Bucket := s3Access.Bucket(bucket)
 
-	rawData, err = s3Bucket.Get(key)
+	rawData, responseHeader, err = s3Bucket.Get(key)
 	if err != nil {
-		return nil, err
+		return nil, nil, err
 	}
-	return rawData, nil
+	return rawData, responseHeader, nil
 }
 
 func (c *CloudStorageService) DeleteObjectAtLocation(bucket, key, region string) error {

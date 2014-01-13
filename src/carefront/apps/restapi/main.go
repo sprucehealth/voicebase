@@ -49,6 +49,7 @@ type Config struct {
 	DB                       *DBConfig `group:"Database" toml:"database"`
 	PharmacyDB               *DBConfig `group:"PharmacyDatabase" toml:"pharmacy_database"`
 	MaxInMemoryForPhotoMB    int64     `long:"max_in_memory_photo" description:"Amount of data in MB to be held in memory when parsing multipart form data"`
+	ContentBucket            string    `long:"content_bucket" description:"S3 Bucket name for all static content"`
 	CaseBucket               string    `long:"case_bucket" description:"S3 Bucket name for case information"`
 	PatientLayoutBucket      string    `long:"client_layout_bucket" description:"S3 Bucket name for client digestable layout for patient information intake"`
 	VisualLayoutBucket       string    `long:"patient_layout_bucket" description:"S3 Bucket name for human readable layout for patient information intake"`
@@ -232,6 +233,13 @@ func main() {
 		PharmacySearchService:      &pharmacy.PharmacySearchService{PharmacyDB: pharmacyDb},
 		PatientPhotoStorageService: photoAnswerCloudStorageApi,
 	}
+	staticContentHandler := &apiservice.StaticContentHandler{
+		DataApi:               dataApi,
+		ContentStorageService: cloudStorageApi,
+		BucketLocation:        conf.ContentBucket,
+		Region:                conf.AWSRegion,
+	}
+
 	doctorSubmitPatientVisitHandler := &apiservice.DoctorSubmitPatientVisitReviewHandler{DataApi: dataApi}
 	diagnosePatientHandler := apiservice.NewDiagnosePatientHandler(dataApi, authApi, cloudStorageApi)
 	diagnosisSummaryHandler := &apiservice.DiagnosisSummaryHandler{DataApi: dataApi}
@@ -240,6 +248,7 @@ func main() {
 	doctorQueueHandler := &apiservice.DoctorQueueHandler{DataApi: dataApi}
 	mux := &apiservice.AuthServeMux{ServeMux: *http.NewServeMux(), AuthApi: authApi}
 
+	mux.Handle("/v1/content", staticContentHandler)
 	mux.Handle("/v1/patient", signupPatientHandler)
 	mux.Handle("/v1/patient/address/billing", updatePatientBillingAddress)
 	mux.Handle("/v1/patient/pharmacy", updatePatientPharmacyHandler)

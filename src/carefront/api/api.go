@@ -3,6 +3,7 @@ package api
 import (
 	"carefront/common"
 	"errors"
+	"net/http"
 	"time"
 )
 
@@ -161,7 +162,7 @@ type DataAPI interface {
 }
 
 type CloudStorageAPI interface {
-	GetObjectAtLocation(bucket, key, region string) (rawData []byte, err error)
+	GetObjectAtLocation(bucket, key, region string) (rawData []byte, responseHeader http.Header, err error)
 	GetSignedUrlForObjectAtLocation(bucket, key, region string, duration time.Time) (url string, err error)
 	DeleteObjectAtLocation(bucket, key, region string) error
 	PutObjectToLocation(bucket, key, region, contentType string, rawData []byte, duration time.Time, dataApi DataAPI) (int64, string, error)

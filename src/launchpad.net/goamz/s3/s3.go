@@ -147,27 +147,27 @@ func (b *Bucket) DelBucket() (err error) {
 // Get retrieves an object from an S3 bucket.
 //
 // See http://goo.gl/isCO7 for details.
-func (b *Bucket) Get(path string) (data []byte, err error) {
-	body, err := b.GetReader(path)
+func (b *Bucket) Get(path string) (data []byte, header http.Header, err error) {
+	body, header, err := b.GetReader(path)
 	if err != nil {
-		return nil, err
+		return nil, nil, err
 	}
 	data, err = ioutil.ReadAll(body)
 	body.Close()
-	return data, err
+	return data, header, err
 }
 
 // GetReader retrieves an object from an S3 bucket.
 // It is the caller's responsibility to call Close on rc when
 // finished reading.
-func (b *Bucket) GetReader(path string) (rc io.ReadCloser, err error) {
+func (b *Bucket) GetReader(path string) (rc io.ReadCloser, responseHeader http.Header, err error) {
 	req := &request{
 		bucket: b.Name,
 		path:   path,
 	}
 	err = b.S3.prepare(req)
 	if err != nil {
-		return nil, err
+		return nil, nil, err
 	}
 	for attempt := attempts.Start(); attempt.Next(); {
 		hresp, err := b.S3.run(req)
@@ -175,9 +175,9 @@ func (b *Bucket) GetReader(path string) (rc io.ReadCloser, err error) {
 			continue
 		}
 		if err != nil {
-			return nil, err
+			return nil, nil, err
 		}
-		return hresp.Body, nil
+		return hresp.Body, hresp.Header, nil
 	}
 	panic("unreachable")
 }

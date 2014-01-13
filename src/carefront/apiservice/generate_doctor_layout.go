@@ -66,7 +66,7 @@ func (d *GenerateDoctorLayoutHandler) ServeHTTP(w http.ResponseWriter, r *http.R
 
 	currentActiveBucket, currentActiveKey, currentActiveRegion, err := d.DataApi.GetActiveLayoutInfoForHealthCondition(healthConditionTag, api.DOCTOR_ROLE, d.Purpose)
 	if currentActiveBucket != "" {
-		rawData, err := d.CloudStorageApi.GetObjectAtLocation(currentActiveBucket, currentActiveKey, currentActiveRegion)
+		rawData, _, err := d.CloudStorageApi.GetObjectAtLocation(currentActiveBucket, currentActiveKey, currentActiveRegion)
 		if err == nil {
 			res := bytes.Compare(data, rawData)
 			// nothing to do if the layouts are exactly the same

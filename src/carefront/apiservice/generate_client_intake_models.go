@@ -69,7 +69,7 @@ func (l *GenerateClientIntakeModelHandler) ServeHTTP(w http.ResponseWriter, r *h
 	// check if the current active layout is the same as the layout trying to be uploaded
 	currentActiveBucket, currentActiveKey, currentActiveRegion, _ := l.DataApi.GetActiveLayoutInfoForHealthCondition(healthConditionTag, api.PATIENT_ROLE, api.CONDITION_INTAKE_PURPOSE)
 	if currentActiveBucket != "" {
-		rawData, err := l.CloudStorageApi.GetObjectAtLocation(currentActiveBucket, currentActiveKey, currentActiveRegion)
+		rawData, _, err := l.CloudStorageApi.GetObjectAtLocation(currentActiveBucket, currentActiveKey, currentActiveRegion)
 		if err == nil {
 			res := bytes.Compare(data, rawData)
 			// nothing to do if the layouts are exactly the same

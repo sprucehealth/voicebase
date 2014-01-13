@@ -396,7 +396,7 @@ func (s *PatientVisitHandler) getClientLayoutForPatientVisit(patientVisitId, lan
 
 func (s *PatientVisitHandler) getHealthConditionObjectAtLocation(bucket, key, region string) (healthCondition *info_intake.InfoIntakeLayout, err error) {
 
-	data, err := s.LayoutStorageService.GetObjectAtLocation(bucket, key, region)
+	data, _, err := s.LayoutStorageService.GetObjectAtLocation(bucket, key, region)
 	if err != nil {
 		return
 	}
