@@ -138,7 +138,7 @@ func (m *AuthService) ValidateToken(token string) (*api.TokenValidationResponse,
 	}
 
 	// if the token exists, check the expiration to ensure that it is valid
-	left := time.Now().Sub(*expires)
+	left := (*expires).Sub(time.Now())
 	if left <= 0 {
 		log.Printf("Current time %s is after expiration time %s", time.Now().String(), expires.String())
 	} else if m.RenewDuration > 0 && left < m.RenewDuration {
