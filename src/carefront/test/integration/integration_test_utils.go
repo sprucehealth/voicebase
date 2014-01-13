@@ -18,6 +18,7 @@ import (
 	"strconv"
 	"strings"
 	"testing"
+	"time"
 )
 
 var (
@@ -96,6 +97,7 @@ func getDoctorIdOfCurrentPrimaryDoctor(testData TestData, t *testing.T) int64 {
 }
 
 func SetupIntegrationTest(t *testing.T) TestData {
+	ts := time.Now()
 	setupScript := os.Getenv(carefrontProjectDirEnv) + "/src/carefront/test/integration/setup_integration_test.sh"
 	cmd := exec.Command(setupScript)
 	var out bytes.Buffer
@@ -104,6 +106,7 @@ func SetupIntegrationTest(t *testing.T) TestData {
 	if err != nil {
 		t.Fatal("Unable to run the setup_database.sh script for integration tests: " + err.Error() + " " + out.String())
 	}
+	fmt.Printf("DEBUG: db build time: %.3f\n", float64(time.Since(ts))/float64(time.Second))
 
 	dbConfig := GetDBConfig(t)
 	dbConfig.DatabaseName = strings.TrimSpace(out.String())
@@ -150,6 +153,7 @@ func SetupIntegrationTest(t *testing.T) TestData {
 func TearDownIntegrationTest(t *testing.T, testData TestData) {
 	testData.DB.Close()
 
+	ts := time.Now()
 	// put anything here that is global to the teardown process for integration tests
 	teardownScript := os.Getenv(carefrontProjectDirEnv) + "/src/carefront/test/integration/teardown_integration_test.sh"
 	cmd := exec.Command(teardownScript, testData.DBConfig.DatabaseName)
@@ -160,6 +164,7 @@ func TearDownIntegrationTest(t *testing.T, testData TestData) {
 		t.Fatal("Unable to run the teardown integration script for integration tests: " + err.Error() + " " + out.String())
 	}
 	t.Log("Tore down database with name: " + testData.DBConfig.DatabaseName)
+	fmt.Printf("DEBUG: db teardown time: %.3f\n", float64(time.Since(ts))/float64(time.Second))
 }
 
 func CheckSuccessfulStatusCode(resp *http.Response, errorMessage string, t *testing.T) {
