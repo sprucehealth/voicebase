@@ -89,6 +89,7 @@ func (mux *AuthServeMux) ServeHTTP(w http.ResponseWriter, r *http.Request) {
 
 	customResponseWriter := &CustomResponseWriter{w, 0, false}
 	defer func() {
+		DeleteContext(r)
 		log.Printf("%s %s %s %d %s\n", r.RemoteAddr, r.Method, r.URL, customResponseWriter.StatusCode, w.Header().Get("Content-Type"))
 	}()
 	if r.RequestURI == "*" {
@@ -116,6 +117,8 @@ func (mux *AuthServeMux) ServeHTTP(w http.ResponseWriter, r *http.Request) {
 			return
 		} else {
 			mux.statAuthSuccess.Inc(1)
+			ctx := GetContext(r)
+			ctx.AccountId = accountId
 			if auth, ok := h.(Authenticated); ok {
 				auth.AccountIdFromAuthToken(accountId)
 			}

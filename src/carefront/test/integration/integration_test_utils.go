@@ -2,15 +2,10 @@ package integration
 
 import (
 	"bytes"
-	"carefront/api"
-	"carefront/common/config"
-	"carefront/services/auth"
-	thriftapi "carefront/thrift/api"
 	"database/sql"
 	"errors"
 	"fmt"
-	"github.com/BurntSushi/toml"
-	_ "github.com/go-sql-driver/mysql"
+	"io"
 	"io/ioutil"
 	"net/http"
 	"os"
@@ -19,6 +14,14 @@ import (
 	"strings"
 	"testing"
 	"time"
+
+	"carefront/api"
+	"carefront/apiservice"
+	"carefront/common/config"
+	"carefront/services/auth"
+	thriftapi "carefront/thrift/api"
+	"github.com/BurntSushi/toml"
+	_ "github.com/go-sql-driver/mysql"
 )
 
 var (
@@ -43,6 +46,27 @@ type TestData struct {
 	DBConfig            *TestDBConfig
 	CloudStorageService api.CloudStorageAPI
 	DB                  *sql.DB
+}
+
+// TODO: Contexts are cleaned up in CheckSuccessfulStatusCode which may not always be called. Might be better to do it on body close (wrap response Body)
+
+func authGet(url string, accountId int64) (*http.Response, error) {
+	req, err := http.NewRequest("GET", url, nil)
+	if err != nil {
+		return nil, err
+	}
+	apiservice.GetContext(req).AccountId = accountId
+	return http.DefaultClient.Do(req)
+}
+
+func authPost(url, bodyType string, body io.Reader, accountId int64) (*http.Response, error) {
+	req, err := http.NewRequest("POST", url, body)
+	if err != nil {
+		return nil, err
+	}
+	req.Header.Set("Content-Type", bodyType)
+	apiservice.GetContext(req).AccountId = accountId
+	return http.DefaultClient.Do(req)
 }
 
 func GetDBConfig(t *testing.T) *TestDBConfig {
@@ -167,6 +191,7 @@ func TearDownIntegrationTest(t *testing.T, testData TestData) {
 }
 
 func CheckSuccessfulStatusCode(resp *http.Response, errorMessage string, t *testing.T) {
+	apiservice.DeleteContext(resp.Request)
 	defer resp.Body.Close()
 	if resp.StatusCode != http.StatusOK {
 		t.Fatal(errorMessage + "Response Status " + strconv.Itoa(resp.StatusCode))
