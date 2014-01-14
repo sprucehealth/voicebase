@@ -127,6 +127,7 @@ func getAdvicePointsInPatientVisit(testData TestData, doctor *common.Doctor, pat
 	doctorAdviceHandler := apiservice.NewDoctorAdviceHandler(testData.DataApi)
 	doctorAdviceHandler.AccountIdFromAuthToken(doctor.AccountId)
 	ts := httptest.NewServer(doctorAdviceHandler)
+	defer ts.Close()
 
 	resp, err := http.Get(ts.URL + "?patient_visit_id=" + strconv.FormatInt(patientVisitId, 10))
 	if err != nil {
@@ -153,6 +154,7 @@ func updateAdvicePointsForPatientVisit(doctorAdviceRequest *common.Advice, testD
 	doctorAdviceHandler := apiservice.NewDoctorAdviceHandler(testData.DataApi)
 	doctorAdviceHandler.AccountIdFromAuthToken(doctor.AccountId)
 	ts := httptest.NewServer(doctorAdviceHandler)
+	defer ts.Close()
 
 	requestBody, err := json.Marshal(doctorAdviceRequest)
 	if err != nil {

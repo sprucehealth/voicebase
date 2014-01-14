@@ -251,6 +251,7 @@ func addAndGetTreatmentsForPatientVisit(testData TestData, treatments []*common.
 	treatmentsHandler.AccountIdFromAuthToken(DoctorAccountId)
 
 	ts := httptest.NewServer(treatmentsHandler)
+	defer ts.Close()
 
 	data, err := json.Marshal(&treatmentRequestBody)
 	if err != nil {

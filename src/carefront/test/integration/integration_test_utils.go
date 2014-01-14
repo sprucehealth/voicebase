@@ -167,6 +167,7 @@ func TearDownIntegrationTest(t *testing.T, testData TestData) {
 }
 
 func CheckSuccessfulStatusCode(resp *http.Response, errorMessage string, t *testing.T) {
+	defer resp.Body.Close()
 	if resp.StatusCode != http.StatusOK {
 		t.Fatal(errorMessage + "Response Status " + strconv.Itoa(resp.StatusCode))
 	}

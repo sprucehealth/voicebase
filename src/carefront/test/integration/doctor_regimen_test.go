@@ -132,6 +132,7 @@ func getRegimenPlanForPatientVisit(testData TestData, doctor *common.Doctor, pat
 	doctorRegimenHandler := apiservice.NewDoctorRegimenHandler(testData.DataApi)
 	doctorRegimenHandler.AccountIdFromAuthToken(doctor.AccountId)
 	ts := httptest.NewServer(doctorRegimenHandler)
+	defer ts.Close()
 
 	resp, err := http.Get(ts.URL + "?patient_visit_id=" + strconv.FormatInt(patientVisitId, 10))
 	if err != nil {
@@ -158,6 +159,7 @@ func createRegimenPlanForPatientVisit(doctorRegimenRequest *common.RegimenPlan, 
 	doctorRegimenHandler := apiservice.NewDoctorRegimenHandler(testData.DataApi)
 	doctorRegimenHandler.AccountIdFromAuthToken(doctor.AccountId)
 	ts := httptest.NewServer(doctorRegimenHandler)
+	defer ts.Close()
 
 	requestBody, err := json.Marshal(doctorRegimenRequest)
 	if err != nil {
