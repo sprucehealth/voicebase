@@ -53,7 +53,7 @@ type PatientAPI interface {
 	GetPatientIdFromAccountId(accountId int64) (int64, error)
 	CreateCareTeamForPatient(patientId int64) (careTeam *common.PatientCareProviderGroup, err error)
 	GetCareTeamForPatient(patientId int64) (careTeam *common.PatientCareProviderGroup, err error)
-	CheckCareProvidingElligibility(shortState string, healthConditionId int64) (isElligible bool, err error)
+	CheckCareProvidingElligibility(shortState string, healthConditionId int64) (doctorId int64, err error)
 	UpdatePatientAddress(patientId int64, addressLine1, addressLine2, city, state, zipCode, addressType string) error
 	UpdatePatientPharmacy(patientId int64, pharmacyId, pharmacySourceType string) error
 	GetPatientPharmacySelection(patientId int64) (pharmacyId, pharmacySourceType string, err error)

@@ -313,7 +313,7 @@ func TestDoctorSubmissionOfPatientVisitReview(t *testing.T) {
 	}
 
 	if patientVisit.Status != api.CASE_STATUS_TREATED {
-		t.Fatalf("Expected the status to be %s but status is %s", api.CASE_STATUS_CLOSED, patientVisit.Status)
+		t.Fatalf("Expected the status to be %s but status is %s", api.CASE_STATUS_TREATED, patientVisit.Status)
 	}
 }
 

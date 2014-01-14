@@ -27,6 +27,8 @@ const (
 	drug_route_table                       = "drug_route"
 	patient_phone_type                     = "MAIN"
 	doctor_phone_type                      = "MAIN"
+	SpruceButtonBaseActionUrl              = "spruce:///action/"
+	SpruceImageBaseUrl                     = "spruce:///image/"
 )
 
 type DataService struct {
@@ -1157,13 +1159,13 @@ func (d *DataService) GetDoctorAssignedToPatientVisit(PatientVisitId int64) (doc
 	return
 }
 
-func (d *DataService) CheckCareProvidingElligibility(shortState string, healthConditionId int64) (isElligible bool, err error) {
+func (d *DataService) CheckCareProvidingElligibility(shortState string, healthConditionId int64) (doctorId int64, err error) {
 	rows, err := d.DB.Query(`select provider_id from care_provider_state_elligibility 
 								inner join care_providing_state on care_providing_state_id = care_providing_state.id 
 								inner join provider_role on provider_role_id = provider_role.id 
 									where state = ? and health_condition_id = ? and provider_tag='DOCTOR'`, shortState, healthConditionId)
 	if err != nil {
-		return false, err
+		return 0, err
 	}
 	defer rows.Close()
 
@@ -1175,10 +1177,10 @@ func (d *DataService) CheckCareProvidingElligibility(shortState string, healthCo
 	}
 
 	if len(doctorIds) == 0 {
-		return false, nil
+		return 0, nil
 	}
 
-	return true, nil
+	return doctorIds[0], nil
 }
 
 func (d *DataService) UpdatePatientAddress(patientId int64, addressLine1, addressLine2, city, state, zipCode, addressType string) error {

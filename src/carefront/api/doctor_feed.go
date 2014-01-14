@@ -9,8 +9,6 @@ import (
 const (
 	EVENT_TYPE_PATIENT_VISIT      = "PATIENT_VISIT"
 	patientVisitImageTag          = "patient_visit_queue_icon"
-	buttonBaseActionUrl           = "spruce:///action/"
-	imageBaseUrl                  = "spruce:///image/"
 	beginPatientVisitReviewAction = "begin_patient_visit"
 )
 
@@ -74,7 +72,7 @@ func getRemainingTimeSubtitleForCaseToBeReviewed(enqueueDate time.Time) string {
 func (d *DoctorQueueItem) GetImageUrl() string {
 	switch d.EventType {
 	case EVENT_TYPE_PATIENT_VISIT:
-		return fmt.Sprintf("%s%s", imageBaseUrl, patientVisitImageTag)
+		return fmt.Sprintf("%s%s", SpruceImageBaseUrl, patientVisitImageTag)
 	}
 	return ""
 }
@@ -99,12 +97,12 @@ func (d *DoctorQueueItem) GetButton() *Button {
 		case QUEUE_ITEM_STATUS_PENDING:
 			button := &Button{}
 			button.ButtonText = "Begin"
-			button.ButtonActionUrl = fmt.Sprintf("%s%s?patient_visit_id=%d", buttonBaseActionUrl, beginPatientVisitReviewAction, d.ItemId)
+			button.ButtonActionUrl = fmt.Sprintf("%s%s?patient_visit_id=%d", SpruceButtonBaseActionUrl, beginPatientVisitReviewAction, d.ItemId)
 			return button
 		case QUEUE_ITEM_STATUS_ONGOING:
 			button := &Button{}
 			button.ButtonText = "Continue"
-			button.ButtonActionUrl = fmt.Sprintf("%s%s?patient_visit_id=%d", buttonBaseActionUrl, beginPatientVisitReviewAction, d.ItemId)
+			button.ButtonActionUrl = fmt.Sprintf("%s%s?patient_visit_id=%d", SpruceButtonBaseActionUrl, beginPatientVisitReviewAction, d.ItemId)
 			return button
 		}
 	}
