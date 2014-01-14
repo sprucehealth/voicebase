@@ -70,6 +70,11 @@ func (t *TreatmentsHandler) getTreatments(w http.ResponseWriter, r *http.Request
 		return
 	}
 
+	if treatmentPlan == nil {
+		WriteJSONToHTTPResponseWriter(w, http.StatusOK, &GetTreatmentsResponse{Treatments: nil})
+		return
+	}
+
 	// for each of the drugs, go ahead and fill in the drug name, route and form
 	for _, treatment := range treatmentPlan.Treatments {
 		drugName, drugForm, drugRoute := breakDrugInternalNameIntoComponents(treatment.DrugInternalName)

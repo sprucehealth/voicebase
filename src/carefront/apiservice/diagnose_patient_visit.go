@@ -16,6 +16,7 @@ const (
 	question_acne_diagnosis = "q_acne_diagnosis"
 	question_acne_severity  = "q_acne_severity"
 	question_acne_type      = "q_acne_type"
+	question_rosacea_type   = "q_rosacea_type"
 
 	diagnoseSummaryTemplate = `Hi %s,
 
@@ -160,11 +161,21 @@ func (d *DiagnosePatientHandler) addDiagnosisSummaryForPatientVisit(doctorId int
 		return err
 	}
 
+	rosaceaTypeAnswer, err := d.DataApi.GetDiagnosisResponseToQuestionWithTag(question_rosacea_type, doctorId, patientVisitId)
+	if err != nil && err != api.NoDiagnosisResponseErr {
+		return err
+	}
+
 	diagnosisMessage := acneDiagnosisAnswer.PotentialAnswer
-	if acneDiagnosisAnswer != nil && acneSeverityAnswer != nil && acneTypeAnswer != nil {
-		diagnosisMessage = fmt.Sprintf("%s %s %s", acneSeverityAnswer.PotentialAnswer, acneTypeAnswer.PotentialAnswer, acneDiagnosisAnswer.PotentialAnswer)
-	} else if acneDiagnosisAnswer != nil && acneSeverityAnswer != nil {
-		diagnosisMessage = fmt.Sprintf("%s %s", acneSeverityAnswer.PotentialAnswer, acneDiagnosisAnswer.PotentialAnswer)
+
+	if acneDiagnosisAnswer != nil && acneSeverityAnswer != nil {
+		if acneTypeAnswer != nil {
+			diagnosisMessage = fmt.Sprintf("%s %s %s", acneSeverityAnswer.PotentialAnswer, acneTypeAnswer.PotentialAnswer, acneDiagnosisAnswer.PotentialAnswer)
+		} else if rosaceaTypeAnswer != nil {
+			diagnosisMessage = fmt.Sprintf("%s %s %s", acneSeverityAnswer.PotentialAnswer, acneTypeAnswer.PotentialAnswer, acneDiagnosisAnswer.PotentialAnswer)
+		} else {
+			diagnosisMessage = fmt.Sprintf("%s %s", acneSeverityAnswer.PotentialAnswer, acneDiagnosisAnswer.PotentialAnswer)
+		}
 	}
 
 	// nothing to do if the patient was not properly diagnosed by doctor so as to create a message
