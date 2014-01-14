@@ -341,12 +341,16 @@ func TestDoctorAddingOfFollowUpForPatientVisit(t *testing.T) {
 	defer ts.Close()
 
 	requestBody := fmt.Sprintf("patient_visit_id=%d&follow_up_unit=week&follow_up_value=1", patientVisitResponse.PatientVisitId)
-	resp, err := http.Post(ts.URL, "application/x-www-form-urlencoded", bytes.NewBufferString(requestBody))
+	resp, err := authPost(ts.URL, "application/x-www-form-urlencoded", bytes.NewBufferString(requestBody), doctorId)
 	if err != nil {
 		t.Fatal("Unable to make successful call to add follow up time for patient visit: " + err.Error())
 	}
+	body, err := ioutil.ReadAll(resp.Body)
+	if err != nil {
+		t.Fatal("Unable to read the response body: " + err.Error())
+	}
 
-	CheckSuccessfulStatusCode(resp, "Unable to make successful call to add follow up for patient visit", t)
+	CheckSuccessfulStatusCode(resp, "Unable to make successful call to add follow up for patient visit: "+string(body), t)
 
 	// lets get the follow up time back
 	resp, err = authGet(ts.URL+"?patient_visit_id="+strconv.FormatInt(patientVisitResponse.PatientVisitId, 10), doctor.AccountId)
@@ -354,7 +358,7 @@ func TestDoctorAddingOfFollowUpForPatientVisit(t *testing.T) {
 		t.Fatal("Unable to make successful call to get follow up time for patient visit: " + err.Error())
 	}
 
-	body, err := ioutil.ReadAll(resp.Body)
+	body, err = ioutil.ReadAll(resp.Body)
 	if err != nil {
 		t.Fatal("Unable to parse body of the response to get follow up time for patient visit: " + err.Error())
 	}

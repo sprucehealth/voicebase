@@ -221,8 +221,12 @@ func TestPatientVisitReview(t *testing.T) {
 	if err != nil {
 		t.Fatal("Unable to make successful call to add follow up time for patient visit: " + err.Error())
 	}
+	body, err := ioutil.ReadAll(resp.Body)
+	if err != nil {
+		t.Fatal("Unable to read the response body: " + err.Error())
+	}
 
-	CheckSuccessfulStatusCode(resp, "Unable to make successful call to add follow up for patient visit", t)
+	CheckSuccessfulStatusCode(resp, "Unable to make successful call to add follow up for patient visit: "+string(body), t)
 
 	//
 	//
