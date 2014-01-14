@@ -20,6 +20,7 @@ type AuthServeMux struct {
 	http.ServeMux
 	AuthApi api.Auth
 
+	statLatency     metrics.Histogram
 	statRequests    metrics.Counter
 	statAuthSuccess metrics.Counter
 	statAuthFailure metrics.Counter
@@ -52,10 +53,12 @@ func NewAuthServeMux(authApi api.Auth, statsRegistry metrics.Registry) *AuthServ
 	mux := &AuthServeMux{
 		ServeMux:        *http.NewServeMux(),
 		AuthApi:         authApi,
+		statLatency:     metrics.NewBiasedHistogram(),
 		statRequests:    metrics.NewCounter(),
 		statAuthSuccess: metrics.NewCounter(),
 		statAuthFailure: metrics.NewCounter(),
 	}
+	statsRegistry.Add("requests/latency", mux.statLatency)
 	statsRegistry.Add("requests/total", mux.statRequests)
 	statsRegistry.Add("requests/auth/success", mux.statAuthSuccess)
 	statsRegistry.Add("requests/auth/failure", mux.statAuthFailure)
@@ -91,6 +94,8 @@ func (mux *AuthServeMux) checkAuth(r *http.Request) (bool, int64, error) {
 func (mux *AuthServeMux) ServeHTTP(w http.ResponseWriter, r *http.Request) {
 	mux.statRequests.Inc(1)
 
+	ctx := GetContext(r)
+
 	customResponseWriter := &CustomResponseWriter{w, 0, false}
 	defer func() {
 		DeleteContext(r)
@@ -121,7 +126,6 @@ func (mux *AuthServeMux) ServeHTTP(w http.ResponseWriter, r *http.Request) {
 			return
 		} else {
 			mux.statAuthSuccess.Inc(1)
-			ctx := GetContext(r)
 			ctx.AccountId = accountId
 		}
 	}
