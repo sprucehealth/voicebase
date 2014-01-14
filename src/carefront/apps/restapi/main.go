@@ -216,7 +216,6 @@ func main() {
 	doctorTreatmentSuggestionHandler := &apiservice.AutocompleteHandler{ERxApi: erx.NewDoseSpotService(conf.DoseSpotClinicId, conf.DoseSpotClinicKey, conf.DoseSpotUserId), Role: api.DOCTOR_ROLE}
 	doctorInstructionsHandler := apiservice.NewDoctorDrugInstructionsHandler(dataApi)
 	doctorFollowupHandler := apiservice.NewPatientVisitFollowUpHandler(dataApi)
-	doctorPhotosRejectedHandler := &apiservice.DoctorRejectPhotosHandler{DataApi: dataApi}
 	medicationStrengthSearchHandler := &apiservice.MedicationStrengthSearchHandler{ERxApi: erx.NewDoseSpotService(conf.DoseSpotClinicId, conf.DoseSpotClinicKey, conf.DoseSpotUserId)}
 	newTreatmentHandler := &apiservice.NewTreatmentHandler{ERxApi: erx.NewDoseSpotService(conf.DoseSpotClinicId, conf.DoseSpotClinicKey, conf.DoseSpotUserId)}
 	medicationDispenseUnitHandler := &apiservice.MedicationDispenseUnitsHandler{DataApi: dataApi}
@@ -309,7 +308,6 @@ func main() {
 	mux.Handle("/v1/doctor/visit/advice", doctorAdviceHandler)
 	mux.Handle("/v1/doctor/visit/followup", doctorFollowupHandler)
 	mux.Handle("/v1/doctor/visit/submit", doctorSubmitPatientVisitHandler)
-	mux.Handle("/v1/doctor/visit/reject_photos", doctorPhotosRejectedHandler)
 
 	s := &http.Server{
 		Addr:           conf.ListenAddr,
