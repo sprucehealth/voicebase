@@ -263,7 +263,7 @@ func main() {
 		Region:                conf.AWSRegion,
 	}
 
-	doctorSubmitPatientVisitHandler := &apiservice.DoctorSubmitPatientVisitReviewHandler{DataApi: dataApi}
+	doctorSubmitPatientVisitHandler := &apiservice.DoctorSubmitPatientVisitReviewHandler{DataApi: dataApi, TwilioFromNumber: conf.Twilio.FromNumber, TwilioCli: twilioCli}
 	diagnosePatientHandler := apiservice.NewDiagnosePatientHandler(dataApi, authApi, cloudStorageApi)
 	diagnosisSummaryHandler := &apiservice.DiagnosisSummaryHandler{DataApi: dataApi}
 	doctorRegimenHandler := apiservice.NewDoctorRegimenHandler(dataApi)

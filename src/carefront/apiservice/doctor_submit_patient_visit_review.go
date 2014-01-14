@@ -4,12 +4,16 @@ import (
 	"carefront/api"
 	"fmt"
 	"github.com/gorilla/schema"
+	"github.com/subosito/twilio"
+	"log"
 	"net/http"
 )
 
 type DoctorSubmitPatientVisitReviewHandler struct {
-	DataApi   api.DataAPI
-	accountId int64
+	DataApi          api.DataAPI
+	TwilioCli        *twilio.Client
+	TwilioFromNumber string
+	accountId        int64
 }
 
 type SubmitPatientVisitReviewRequest struct {
@@ -20,6 +24,10 @@ type SubmitPatientVisitReviewRequest struct {
 type SubmitPatientVisitReviewResponse struct {
 	Result string `json:"result"`
 }
+
+const (
+	patientVisitUpdateNotification = "There is an update to your case. Tap spruce://visit.com to view."
+)
 
 func (d *DoctorSubmitPatientVisitReviewHandler) AccountIdFromAuthToken(accountId int64) {
 	d.accountId = accountId
@@ -95,7 +103,21 @@ func (d *DoctorSubmitPatientVisitReviewHandler) submitPatientVisitReview(w http.
 		return
 	}
 
-	// TODO Queue up notification to patient
+	//  Queue up notification to patient
+
+	if d.TwilioCli != nil {
+		patient, err := d.DataApi.GetPatientFromPatientVisitId(requestData.PatientVisitId)
+		if err != nil {
+			WriteDeveloperError(w, http.StatusInternalServerError, "Unable to get patient from id: "+err.Error())
+			return
+		}
+		if patient.Phone != "" {
+			_, _, err = d.TwilioCli.Messages.SendSMS(d.TwilioFromNumber, patient.Phone, patientVisitUpdateNotification)
+			if err != nil {
+				log.Println("Error sending SMS: " + err.Error())
+			}
+		}
+	}
 
 	// TODO Send prescriptions to pharmacy of patient's choice
 
