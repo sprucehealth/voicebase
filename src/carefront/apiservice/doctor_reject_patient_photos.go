@@ -7,17 +7,12 @@ import (
 )
 
 type DoctorRejectPhotosHandler struct {
-	DataApi   api.DataAPI
-	accountId int64
+	DataApi api.DataAPI
 }
 
 type DoctorRejectPhotosRequestDatas struct {
 	PatientVisitId int64  `schema:"patient_visit_id"`
 	Message        string `schema:"message"`
-}
-
-func (d *DoctorRejectPhotosHandler) AccountIdFromAuthToken(accountId int64) {
-	d.accountId = accountId
 }
 
 func (d *DoctorRejectPhotosHandler) ServeHTTP(w http.ResponseWriter, r *http.Request) {
@@ -40,7 +35,7 @@ func (d *DoctorRejectPhotosHandler) rejectPhotosForPatientVisit(w http.ResponseW
 	}
 
 	// ensure that the doctor is the one authorized to work on the case
-	doctorId, _, _, statusCode, err := ValidateDoctorAccessToPatientVisitAndGetRelevantData(requestData.PatientVisitId, d.accountId, d.DataApi)
+	doctorId, _, _, statusCode, err := ValidateDoctorAccessToPatientVisitAndGetRelevantData(requestData.PatientVisitId, GetContext(r).AccountId, d.DataApi)
 	if err != nil {
 		WriteDeveloperError(w, statusCode, err.Error())
 		return

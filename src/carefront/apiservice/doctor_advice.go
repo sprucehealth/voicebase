@@ -9,8 +9,7 @@ import (
 )
 
 type DoctorAdviceHandler struct {
-	DataApi   api.DataAPI
-	accountId int64
+	DataApi api.DataAPI
 }
 
 type GetDoctorAdviceRequestData struct {
@@ -18,11 +17,7 @@ type GetDoctorAdviceRequestData struct {
 }
 
 func NewDoctorAdviceHandler(dataApi api.DataAPI) *DoctorAdviceHandler {
-	return &DoctorAdviceHandler{DataApi: dataApi, accountId: 0}
-}
-
-func (d *DoctorAdviceHandler) AccountIdFromAuthToken(accountId int64) {
-	d.accountId = accountId
+	return &DoctorAdviceHandler{DataApi: dataApi}
 }
 
 func (d *DoctorAdviceHandler) ServeHTTP(w http.ResponseWriter, r *http.Request) {
@@ -44,7 +39,7 @@ func (d *DoctorAdviceHandler) getAdvicePoints(w http.ResponseWriter, r *http.Req
 		return
 	}
 
-	doctorId, _, _, statusCode, err := ValidateDoctorAccessToPatientVisitAndGetRelevantData(requestData.PatientVisitId, d.accountId, d.DataApi)
+	doctorId, _, _, statusCode, err := ValidateDoctorAccessToPatientVisitAndGetRelevantData(requestData.PatientVisitId, GetContext(r).AccountId, d.DataApi)
 	if err != nil {
 		WriteDeveloperError(w, statusCode, err.Error())
 		return
@@ -80,7 +75,7 @@ func (d *DoctorAdviceHandler) updateAdvicePoints(w http.ResponseWriter, r *http.
 		return
 	}
 
-	doctorId, _, _, statusCode, err := ValidateDoctorAccessToPatientVisitAndGetRelevantData(requestData.PatientVisitId, d.accountId, d.DataApi)
+	doctorId, _, _, statusCode, err := ValidateDoctorAccessToPatientVisitAndGetRelevantData(requestData.PatientVisitId, GetContext(r).AccountId, d.DataApi)
 	if err != nil {
 		WriteDeveloperError(w, statusCode, err.Error())
 		return

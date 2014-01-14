@@ -2,14 +2,14 @@ package integration
 
 import (
 	"bytes"
-	"carefront/apiservice"
-	"carefront/common"
 	"encoding/json"
 	"io/ioutil"
-	"net/http"
 	"net/http/httptest"
 	"strconv"
 	"testing"
+
+	"carefront/apiservice"
+	"carefront/common"
 )
 
 func TestAdvicePointsForPatientVisit(t *testing.T) {
@@ -125,11 +125,10 @@ func TestAdvicePointsForPatientVisit(t *testing.T) {
 
 func getAdvicePointsInPatientVisit(testData TestData, doctor *common.Doctor, patientVisitId int64, t *testing.T) *common.Advice {
 	doctorAdviceHandler := apiservice.NewDoctorAdviceHandler(testData.DataApi)
-	doctorAdviceHandler.AccountIdFromAuthToken(doctor.AccountId)
 	ts := httptest.NewServer(doctorAdviceHandler)
 	defer ts.Close()
 
-	resp, err := http.Get(ts.URL + "?patient_visit_id=" + strconv.FormatInt(patientVisitId, 10))
+	resp, err := authGet(ts.URL+"?patient_visit_id="+strconv.FormatInt(patientVisitId, 10), doctor.AccountId)
 	if err != nil {
 		t.Fatal("Unable to get advice points for patient visit: " + err.Error())
 	}
@@ -152,7 +151,6 @@ func getAdvicePointsInPatientVisit(testData TestData, doctor *common.Doctor, pat
 
 func updateAdvicePointsForPatientVisit(doctorAdviceRequest *common.Advice, testData TestData, doctor *common.Doctor, t *testing.T) *common.Advice {
 	doctorAdviceHandler := apiservice.NewDoctorAdviceHandler(testData.DataApi)
-	doctorAdviceHandler.AccountIdFromAuthToken(doctor.AccountId)
 	ts := httptest.NewServer(doctorAdviceHandler)
 	defer ts.Close()
 
@@ -161,7 +159,7 @@ func updateAdvicePointsForPatientVisit(doctorAdviceRequest *common.Advice, testD
 		t.Fatal("Unable to marshal request body for adding advice points: " + err.Error())
 	}
 
-	resp, err := http.Post(ts.URL, "application/json", bytes.NewBuffer(requestBody))
+	resp, err := authPost(ts.URL, "application/json", bytes.NewBuffer(requestBody), doctor.AccountId)
 	if err != nil {
 		t.Fatal("Unable to make successful request to add advice points to patient visit " + err.Error())
 	}

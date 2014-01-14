@@ -31,7 +31,6 @@ type DiagnosePatientHandler struct {
 	DataApi              api.DataAPI
 	AuthApi              thriftapi.Auth
 	LayoutStorageService api.CloudStorageAPI
-	accountId            int64
 }
 
 type GetDiagnosisResponse struct {
@@ -42,12 +41,8 @@ type DiagnosePatientRequestData struct {
 	PatientVisitId int64 `schema:"patient_visit_id,required"`
 }
 
-func (d *DiagnosePatientHandler) AccountIdFromAuthToken(accountId int64) {
-	d.accountId = accountId
-}
-
 func NewDiagnosePatientHandler(dataApi api.DataAPI, authApi thriftapi.Auth, cloudStorageApi api.CloudStorageAPI) *DiagnosePatientHandler {
-	return &DiagnosePatientHandler{dataApi, authApi, cloudStorageApi, 0}
+	return &DiagnosePatientHandler{dataApi, authApi, cloudStorageApi}
 }
 
 func (d *DiagnosePatientHandler) ServeHTTP(w http.ResponseWriter, r *http.Request) {
@@ -70,7 +65,7 @@ func (d *DiagnosePatientHandler) getDiagnosis(w http.ResponseWriter, r *http.Req
 		return
 	}
 
-	doctorId, _, _, statusCode, err := ValidateDoctorAccessToPatientVisitAndGetRelevantData(requestData.PatientVisitId, d.accountId, d.DataApi)
+	doctorId, _, _, statusCode, err := ValidateDoctorAccessToPatientVisitAndGetRelevantData(requestData.PatientVisitId, GetContext(r).AccountId, d.DataApi)
 	if err != nil {
 		WriteDeveloperError(w, statusCode, err.Error())
 		return
@@ -111,7 +106,7 @@ func (d *DiagnosePatientHandler) diagnosePatient(w http.ResponseWriter, r *http.
 		return
 	}
 
-	doctorId, _, _, httpStatusCode, err := ValidateDoctorAccessToPatientVisitAndGetRelevantData(answerIntakeRequestBody.PatientVisitId, d.accountId, d.DataApi)
+	doctorId, _, _, httpStatusCode, err := ValidateDoctorAccessToPatientVisitAndGetRelevantData(answerIntakeRequestBody.PatientVisitId, GetContext(r).AccountId, d.DataApi)
 	if err != nil {
 		WriteDeveloperError(w, httpStatusCode, err.Error())
 		return

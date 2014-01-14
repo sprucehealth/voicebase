@@ -2,16 +2,16 @@ package integration
 
 import (
 	"bytes"
-	"carefront/apiservice"
-	"carefront/common"
-	"carefront/libs/erx"
 	"encoding/json"
 	"io/ioutil"
-	"net/http"
 	"net/http/httptest"
 	"net/url"
 	"strconv"
 	"testing"
+
+	"carefront/apiservice"
+	"carefront/common"
+	"carefront/libs/erx"
 )
 
 func TestMedicationStrengthSearch(t *testing.T) {
@@ -27,7 +27,7 @@ func TestMedicationStrengthSearch(t *testing.T) {
 	ts := httptest.NewServer(medicationStrengthSearchHandler)
 	defer ts.Close()
 
-	resp, err := http.Get(ts.URL + "?drug_internal_name=" + url.QueryEscape("Benzoyl Peroxide Topical (topical - cream)"))
+	resp, err := authGet(ts.URL+"?drug_internal_name="+url.QueryEscape("Benzoyl Peroxide Topical (topical - cream)"), 0)
 	if err != nil {
 		t.Fatal("Unable to make a successful query to the medication strength api: " + err.Error())
 	}
@@ -62,7 +62,7 @@ func TestNewTreatmentSelection(t *testing.T) {
 	ts := httptest.NewServer(newTreatmentHandler)
 	defer ts.Close()
 
-	resp, err := http.Get(ts.URL + "?drug_internal_name=" + url.QueryEscape("Lisinopril (oral - tablet)") + "&medication_strength=" + url.QueryEscape("10 mg"))
+	resp, err := authGet(ts.URL+"?drug_internal_name="+url.QueryEscape("Lisinopril (oral - tablet)")+"&medication_strength="+url.QueryEscape("10 mg"), 0)
 	if err != nil {
 		t.Fatal("Unable to make a successful query to the medication strength api: " + err.Error())
 	}
@@ -92,7 +92,7 @@ func TestNewTreatmentSelection(t *testing.T) {
 	}
 
 	// Let's run a test for an OTC product to ensure that the OTC flag is set as expected
-	resp, err = http.Get(ts.URL + "?drug_internal_name=" + url.QueryEscape("Fish Oil (oral - capsule)") + "&medication_strength=" + url.QueryEscape("500 mg"))
+	resp, err = authGet(ts.URL+"?drug_internal_name="+url.QueryEscape("Fish Oil (oral - capsule)")+"&medication_strength="+url.QueryEscape("500 mg"), 0)
 	if err != nil {
 		t.Fatal("Unable to make a successful query to the medication strength api: " + err.Error())
 	}
@@ -127,7 +127,7 @@ func TestDispenseUnitIds(t *testing.T) {
 	ts := httptest.NewServer(medicationDispenseUnitsHandler)
 	defer ts.Close()
 
-	resp, err := http.Get(ts.URL)
+	resp, err := authGet(ts.URL, 0)
 	if err != nil {
 		t.Fatal("Unable to make a successful query to the medication dispense units api: " + err.Error())
 	}
@@ -245,10 +245,9 @@ func TestAddTreatments(t *testing.T) {
 
 }
 
-func addAndGetTreatmentsForPatientVisit(testData TestData, treatments []*common.Treatment, DoctorAccountId, PatientVisitId int64, t *testing.T) *apiservice.GetTreatmentsResponse {
+func addAndGetTreatmentsForPatientVisit(testData TestData, treatments []*common.Treatment, doctorAccountId, PatientVisitId int64, t *testing.T) *apiservice.GetTreatmentsResponse {
 	treatmentRequestBody := apiservice.AddTreatmentsRequestBody{PatientVisitId: PatientVisitId, Treatments: treatments}
 	treatmentsHandler := apiservice.NewTreatmentsHandler(testData.DataApi)
-	treatmentsHandler.AccountIdFromAuthToken(DoctorAccountId)
 
 	ts := httptest.NewServer(treatmentsHandler)
 	defer ts.Close()
@@ -258,7 +257,7 @@ func addAndGetTreatmentsForPatientVisit(testData TestData, treatments []*common.
 		t.Fatal("Unable to marshal request body for adding treatments to patient visit")
 	}
 
-	resp, err := http.Post(ts.URL, "application/json", bytes.NewBuffer(data))
+	resp, err := authPost(ts.URL, "application/json", bytes.NewBuffer(data), doctorAccountId)
 	if err != nil {
 		t.Fatal("Unable to make POST request to add treatments to patient visit " + err.Error())
 	}
@@ -286,7 +285,7 @@ func addAndGetTreatmentsForPatientVisit(testData TestData, treatments []*common.
 	}
 
 	// get back the treatments for this patient visit to ensure that it is the same as what was passed in
-	resp, err = http.Get(ts.URL + "?patient_visit_id=" + strconv.FormatInt(PatientVisitId, 10))
+	resp, err = authGet(ts.URL+"?patient_visit_id="+strconv.FormatInt(PatientVisitId, 10), doctorAccountId)
 	if err != nil {
 		t.Fatal("Unable to get treatments for patient visit " + err.Error())
 	}

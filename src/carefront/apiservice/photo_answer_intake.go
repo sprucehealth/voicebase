@@ -17,7 +17,6 @@ type PhotoAnswerIntakeHandler struct {
 	PatientVisitBucket  string
 	MaxInMemoryForPhoto int64
 	AWSRegion           string
-	accountId           int64
 }
 
 type PhotoAnswerIntakeResponse struct {
@@ -37,12 +36,7 @@ func NewPhotoAnswerIntakeHandler(dataApi api.DataAPI, cloudStorageApi api.CloudS
 		PatientVisitBucket:  bucketLocation,
 		MaxInMemoryForPhoto: maxMemoryForPhotoMB,
 		AWSRegion:           region,
-		accountId:           0,
 	}
-}
-
-func (p *PhotoAnswerIntakeHandler) AccountIdFromAuthToken(accountId int64) {
-	p.accountId = accountId
 }
 
 func (p *PhotoAnswerIntakeHandler) ServeHTTP(w http.ResponseWriter, r *http.Request) {
@@ -60,7 +54,7 @@ func (p *PhotoAnswerIntakeHandler) ServeHTTP(w http.ResponseWriter, r *http.Requ
 		return
 	}
 
-	patientId, err := p.DataApi.GetPatientIdFromAccountId(p.accountId)
+	patientId, err := p.DataApi.GetPatientIdFromAccountId(GetContext(r).AccountId)
 	if err != nil {
 		WriteDeveloperError(w, http.StatusInternalServerError,
 			"Unable to get patientId from the accountId retrieved from auth token: "+err.Error())

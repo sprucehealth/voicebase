@@ -2,20 +2,18 @@ package integration
 
 import (
 	"bytes"
-	"carefront/libs/maps"
-	thriftapi "carefront/thrift/api"
 	"encoding/json"
+	"fmt"
 	"io/ioutil"
 	"math/rand"
-	"net/http"
 	"net/http/httptest"
 	"strconv"
 	"testing"
 
-	"fmt"
-
 	"carefront/api"
 	"carefront/apiservice"
+	"carefront/libs/maps"
+	thriftapi "carefront/thrift/api"
 )
 
 func SignupRandomTestPatient(t *testing.T, dataApi api.DataAPI, authApi thriftapi.Auth) *apiservice.PatientSignedupResponse {
@@ -26,7 +24,7 @@ func SignupRandomTestPatient(t *testing.T, dataApi api.DataAPI, authApi thriftap
 	requestBody := bytes.NewBufferString("first_name=Test&last_name=Test&email=")
 	requestBody.WriteString(strconv.FormatInt(rand.Int63(), 10))
 	requestBody.WriteString("@example.com&password=12345&dob=11/08/1987&zip_code=94115&phone=123455115&gender=male")
-	res, err := http.Post(ts.URL, "application/x-www-form-urlencoded", requestBody)
+	res, err := authPost(ts.URL, "application/x-www-form-urlencoded", requestBody, 0)
 	if err != nil {
 		t.Fatal("Unable to make post request for registering patient: " + err.Error())
 	}
@@ -53,14 +51,11 @@ func GetPatientVisitForPatient(PatientId int64, testData TestData, t *testing.T)
 		t.Fatal("Unable to get patient information given the patient id: " + err.Error())
 	}
 
-	patientVisitHandler.AccountIdFromAuthToken(patient.AccountId)
 	ts := httptest.NewServer(patientVisitHandler)
 	defer ts.Close()
 
 	// register a patient visit for this patient
-	client := &http.Client{}
-	req, _ := http.NewRequest("GET", ts.URL, nil)
-	resp, err := client.Do(req)
+	resp, err := authGet(ts.URL, patient.AccountId)
 	if err != nil {
 		t.Fatal("Unable to get the patient visit id")
 	}
@@ -89,14 +84,11 @@ func CreatePatientVisitForPatient(PatientId int64, testData TestData, t *testing
 		t.Fatal("Unable to get patient information given the patient id: " + err.Error())
 	}
 
-	patientVisitHandler.AccountIdFromAuthToken(patient.AccountId)
 	ts := httptest.NewServer(patientVisitHandler)
 	defer ts.Close()
 
 	// register a patient visit for this patient
-	client := &http.Client{}
-	req, _ := http.NewRequest("POST", ts.URL, nil)
-	resp, err := client.Do(req)
+	resp, err := authPost(ts.URL, "application/x-www-form-urlencoded", nil, patient.AccountId)
 	if err != nil {
 		t.Fatal("Unable to get the patient visit id")
 	}
@@ -125,20 +117,12 @@ func SubmitPatientVisitForPatient(PatientId, PatientVisitId int64, testData Test
 		t.Fatal("Unable to get patient information given the patient id: " + err.Error())
 	}
 
-	patientVisitHandler.AccountIdFromAuthToken(patient.AccountId)
 	ts := httptest.NewServer(patientVisitHandler)
 	defer ts.Close()
 	buffer := bytes.NewBufferString("patient_visit_id=")
 	buffer.WriteString(strconv.FormatInt(PatientVisitId, 10))
 
-	client := &http.Client{}
-	req, err := http.NewRequest("PUT", ts.URL, buffer)
-	if err != nil {
-		t.Fatal("Unable to create request to submit patient visit")
-	}
-	req.Header.Set("Content-Type", "application/x-www-form-urlencoded")
-	resp, err := client.Do(req)
-
+	resp, err := authPut(ts.URL, "application/x-www-form-urlencoded", buffer, patient.AccountId)
 	if err != nil {
 		t.Fatal("Unable to get the patient visit id")
 	}

@@ -2,8 +2,6 @@ package integration
 
 import (
 	"bytes"
-	"carefront/api"
-	"carefront/apiservice"
 	"encoding/json"
 	"fmt"
 	"io"
@@ -14,6 +12,9 @@ import (
 	"os"
 	"strconv"
 	"testing"
+
+	"carefront/api"
+	"carefront/apiservice"
 )
 
 type AnswerIntakeHandler struct {
@@ -71,18 +72,19 @@ func submitPatientAnswerForVisit(PatientId int64, testData TestData, patientInta
 		t.Fatal("Unable to get patient information given the patient id when trying to enter patient intake: " + err.Error())
 	}
 
-	answerIntakeHandler.AccountIdFromAuthToken(patient.AccountId)
 	ts := httptest.NewServer(answerIntakeHandler)
 	defer ts.Close()
 
-	client := &http.Client{}
-	req, _ := http.NewRequest("POST", ts.URL, bytes.NewBufferString(patientIntakeRequestData))
-	req.Header.Set("Content-Type", "application/json")
-	resp, err := client.Do(req)
+	resp, err := authPost(ts.URL, "application/json", bytes.NewBufferString(patientIntakeRequestData), patient.AccountId)
 	if err != nil {
 		t.Fatal("Unable to get the patient visit id")
 	}
-	CheckSuccessfulStatusCode(resp, "Unable to submit a single select answer for patient", t)
+	if body, err := ioutil.ReadAll(resp.Body); err != nil {
+		t.Fatal("Failed to get body: %+v", err)
+		resp.Body.Close()
+	} else {
+		CheckSuccessfulStatusCode(resp, "Unable to submit a single select answer for patient: "+string(body), t)
+	}
 }
 
 func TestSingleSelectIntake(t *testing.T) {
@@ -506,14 +508,10 @@ func TestPhotoAnswerIntake(t *testing.T) {
 	if err != nil {
 		t.Fatal("Unable to retrieve patient data given the patient id: " + err.Error())
 	}
-	photoAnswerIntakeHandler.AccountIdFromAuthToken(patient.AccountId)
 	ts := httptest.NewServer(photoAnswerIntakeHandler)
 	defer ts.Close()
 
-	client := &http.Client{}
-	req, _ := http.NewRequest("POST", ts.URL, body)
-	req.Header.Set("Content-Type", writer.FormDataContentType())
-	resp, err := client.Do(req)
+	resp, err := authPost(ts.URL, writer.FormDataContentType(), body, patient.AccountId)
 	if err != nil {
 		t.Fatal("Unable to submit photo answer for patient: " + err.Error())
 	}
@@ -538,7 +536,7 @@ func TestPhotoAnswerIntake(t *testing.T) {
 							patientAnswer.ObjectUrl != "" {
 
 							// make sure that we can actually download the file that was just uploaded
-							res, err := http.Get(patientAnswer.ObjectUrl)
+							res, err := authGet(patientAnswer.ObjectUrl, patient.AccountId)
 							if err != nil {
 								t.Fatal("Unable to get the file that was just uploaded : " + err.Error())
 							}

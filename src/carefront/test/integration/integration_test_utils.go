@@ -48,14 +48,17 @@ type TestData struct {
 	DB                  *sql.DB
 }
 
-// TODO: Contexts are cleaned up in CheckSuccessfulStatusCode which may not always be called. Might be better to do it on body close (wrap response Body)
+func init() {
+	apiservice.Testing = true
+}
 
 func authGet(url string, accountId int64) (*http.Response, error) {
 	req, err := http.NewRequest("GET", url, nil)
 	if err != nil {
 		return nil, err
 	}
-	apiservice.GetContext(req).AccountId = accountId
+	req.Header.Set("AccountId", strconv.FormatInt(accountId, 10))
+	apiservice.TestingContext.AccountId = accountId
 	return http.DefaultClient.Do(req)
 }
 
@@ -65,7 +68,19 @@ func authPost(url, bodyType string, body io.Reader, accountId int64) (*http.Resp
 		return nil, err
 	}
 	req.Header.Set("Content-Type", bodyType)
-	apiservice.GetContext(req).AccountId = accountId
+	req.Header.Set("AccountId", strconv.FormatInt(accountId, 10))
+	apiservice.TestingContext.AccountId = accountId
+	return http.DefaultClient.Do(req)
+}
+
+func authPut(url, bodyType string, body io.Reader, accountId int64) (*http.Response, error) {
+	req, err := http.NewRequest("PUT", url, body)
+	if err != nil {
+		return nil, err
+	}
+	req.Header.Set("Content-Type", bodyType)
+	req.Header.Set("AccountId", strconv.FormatInt(accountId, 10))
+	apiservice.TestingContext.AccountId = accountId
 	return http.DefaultClient.Do(req)
 }
 
@@ -191,7 +206,6 @@ func TearDownIntegrationTest(t *testing.T, testData TestData) {
 }
 
 func CheckSuccessfulStatusCode(resp *http.Response, errorMessage string, t *testing.T) {
-	apiservice.DeleteContext(resp.Request)
 	defer resp.Body.Close()
 	if resp.StatusCode != http.StatusOK {
 		t.Fatal(errorMessage + "Response Status " + strconv.Itoa(resp.StatusCode))

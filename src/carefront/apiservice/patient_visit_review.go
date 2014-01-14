@@ -10,8 +10,7 @@ import (
 )
 
 type PatientVisitReviewHandler struct {
-	DataApi   api.DataAPI
-	accountId int64
+	DataApi api.DataAPI
 }
 
 type PatientVisitReviewRequest struct {
@@ -38,10 +37,6 @@ type PatientVisitReviewResponse struct {
 	Followup         *common.FollowUp          `json:"follow_up,omitempty"`
 }
 
-func (p *PatientVisitReviewHandler) AccountIdFromAuthToken(accountId int64) {
-	p.accountId = accountId
-}
-
 func (p *PatientVisitReviewHandler) ServeHTTP(w http.ResponseWriter, r *http.Request) {
 	r.ParseForm()
 	requestData := new(PatientVisitReviewRequest)
@@ -52,7 +47,7 @@ func (p *PatientVisitReviewHandler) ServeHTTP(w http.ResponseWriter, r *http.Req
 		return
 	}
 
-	patientId, err := p.DataApi.GetPatientIdFromAccountId(p.accountId)
+	patientId, err := p.DataApi.GetPatientIdFromAccountId(GetContext(r).AccountId)
 	if err != nil {
 		WriteDeveloperError(w, http.StatusInternalServerError, "Unable to get patientId from accountId retrieved from auth token: "+err.Error())
 		return

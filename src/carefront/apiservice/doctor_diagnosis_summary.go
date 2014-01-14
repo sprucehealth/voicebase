@@ -8,16 +8,11 @@ import (
 )
 
 type DiagnosisSummaryHandler struct {
-	DataApi   api.DataAPI
-	accountId int64
+	DataApi api.DataAPI
 }
 
 type DiagnosisSummaryRequestData struct {
 	PatientVisitId int64 `schema:"patient_visit_id"`
-}
-
-func (d *DiagnosisSummaryHandler) AccountIdFromAuthToken(accountId int64) {
-	d.accountId = accountId
 }
 
 func (d *DiagnosisSummaryHandler) ServeHTTP(w http.ResponseWriter, r *http.Request) {
@@ -39,7 +34,7 @@ func (d *DiagnosisSummaryHandler) getDiagnosisSummaryForPatientVisit(w http.Resp
 		return
 	}
 
-	_, _, _, statusCode, err := ValidateDoctorAccessToPatientVisitAndGetRelevantData(requestData.PatientVisitId, d.accountId, d.DataApi)
+	_, _, _, statusCode, err := ValidateDoctorAccessToPatientVisitAndGetRelevantData(requestData.PatientVisitId, GetContext(r).AccountId, d.DataApi)
 	if err != nil {
 		WriteDeveloperError(w, statusCode, err.Error())
 		return

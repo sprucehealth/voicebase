@@ -3,6 +3,7 @@ package apiservice
 import (
 	"log"
 	"net/http"
+	"strconv"
 
 	"carefront/thrift/api"
 	"github.com/samuel/go-metrics/metrics"
@@ -13,10 +14,6 @@ import (
 // they 403 response will be returned.
 type NonAuthenticated interface {
 	NonAuthenticated() bool
-}
-
-type Authenticated interface {
-	AccountIdFromAuthToken(accountId int64)
 }
 
 type AuthServeMux struct {
@@ -67,6 +64,13 @@ func NewAuthServeMux(authApi api.Auth, statsRegistry metrics.Registry) *AuthServ
 
 // Parse the "Authorization: token xxx" header and check the token for validity
 func (mux *AuthServeMux) checkAuth(r *http.Request) (bool, int64, error) {
+	if Testing {
+		if idStr := r.Header.Get("AccountId"); idStr != "" {
+			id, err := strconv.ParseInt(idStr, 10, 64)
+			return true, id, err
+		}
+	}
+
 	token, err := GetAuthTokenFromHeader(r)
 	if err == ErrBadAuthToken {
 		return false, 0, nil
@@ -119,9 +123,6 @@ func (mux *AuthServeMux) ServeHTTP(w http.ResponseWriter, r *http.Request) {
 			mux.statAuthSuccess.Inc(1)
 			ctx := GetContext(r)
 			ctx.AccountId = accountId
-			if auth, ok := h.(Authenticated); ok {
-				auth.AccountIdFromAuthToken(accountId)
-			}
 		}
 	}
 	h.ServeHTTP(customResponseWriter, r)

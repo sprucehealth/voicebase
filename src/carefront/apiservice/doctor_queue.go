@@ -7,16 +7,11 @@ import (
 )
 
 type DoctorQueueHandler struct {
-	DataApi   api.DataAPI
-	accountId int64
-}
-
-func (d *DoctorQueueHandler) AccountIdFromAuthToken(accountId int64) {
-	d.accountId = accountId
+	DataApi api.DataAPI
 }
 
 func (d *DoctorQueueHandler) ServeHTTP(w http.ResponseWriter, r *http.Request) {
-	doctorId, err := d.DataApi.GetDoctorIdFromAccountId(d.accountId)
+	doctorId, err := d.DataApi.GetDoctorIdFromAccountId(GetContext(r).AccountId)
 	if err != nil {
 		WriteDeveloperError(w, http.StatusInternalServerError, "Unable to get doctor id from account id "+err.Error())
 		return

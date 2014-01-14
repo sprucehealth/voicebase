@@ -10,8 +10,7 @@ import (
 )
 
 type TreatmentsHandler struct {
-	DataApi   api.DataAPI
-	accountId int64
+	DataApi api.DataAPI
 }
 
 type GetTreatmentsResponse struct {
@@ -32,11 +31,7 @@ type GetTreatmentsRequestBody struct {
 }
 
 func NewTreatmentsHandler(dataApi api.DataAPI) *TreatmentsHandler {
-	return &TreatmentsHandler{dataApi, 0}
-}
-
-func (t *TreatmentsHandler) AccountIdFromAuthToken(accountId int64) {
-	t.accountId = accountId
+	return &TreatmentsHandler{DataApi: dataApi}
 }
 
 func (t *TreatmentsHandler) ServeHTTP(w http.ResponseWriter, r *http.Request) {
@@ -58,7 +53,7 @@ func (t *TreatmentsHandler) getTreatments(w http.ResponseWriter, r *http.Request
 		return
 	}
 
-	_, _, _, httpStatusCode, err := ValidateDoctorAccessToPatientVisitAndGetRelevantData(requestData.PatientVisitId, t.accountId, t.DataApi)
+	_, _, _, httpStatusCode, err := ValidateDoctorAccessToPatientVisitAndGetRelevantData(requestData.PatientVisitId, GetContext(r).AccountId, t.DataApi)
 	if err != nil {
 		WriteDeveloperError(w, httpStatusCode, "Doctor not authorized to get treatments for patient visit: "+err.Error())
 		return
@@ -110,7 +105,7 @@ func (t *TreatmentsHandler) addTreatment(w http.ResponseWriter, r *http.Request)
 	}
 
 	// just to be on the safe side, verify each of the treatments that the doctor is trying to add
-	_, _, _, httpStatusCode, err := ValidateDoctorAccessToPatientVisitAndGetRelevantData(treatmentsRequestBody.PatientVisitId, t.accountId, t.DataApi)
+	_, _, _, httpStatusCode, err := ValidateDoctorAccessToPatientVisitAndGetRelevantData(treatmentsRequestBody.PatientVisitId, GetContext(r).AccountId, t.DataApi)
 	if err != nil {
 		WriteDeveloperError(w, httpStatusCode, "Unable to validate doctor to add treatment to patient visit: "+err.Error())
 		return

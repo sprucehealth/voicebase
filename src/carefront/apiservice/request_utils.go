@@ -15,6 +15,8 @@ import (
 
 var ErrBadAuthToken = errors.New("BadAuthToken")
 
+var Testing = false
+
 const (
 	genericUserErrorMessage         = "Something went wrong on our end. Apologies for the inconvenience and please try again later!"
 	authTokenExpiredMessage         = "Authentication expired. Log in to continue."
