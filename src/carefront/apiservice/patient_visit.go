@@ -1,22 +1,26 @@
 package apiservice
 
 import (
+	"encoding/json"
+	"errors"
+	"fmt"
+	"log"
+	"net/http"
+	"strings"
+
 	"carefront/api"
 	"carefront/common"
 	"carefront/info_intake"
 	thriftapi "carefront/thrift/api"
-	"encoding/json"
-	"errors"
-	"fmt"
 	"github.com/gorilla/schema"
-	"log"
-	"net/http"
-	"strings"
+	"github.com/subosito/twilio"
 )
 
 const (
 	HEALTH_CONDITION_ACNE_ID = 1
 )
+
+const doctorNewVisitNotification = "SPRUCE: You have a new patient visit waiting."
 
 type PatientVisitHandler struct {
 	DataApi                    api.DataAPI
@@ -24,6 +28,8 @@ type PatientVisitHandler struct {
 	LayoutStorageService       api.CloudStorageAPI
 	PatientPhotoStorageService api.CloudStorageAPI
 	accountId                  int64
+	twilioCli                  *twilio.Client
+	twilioFromNumber           string
 }
 
 type PatientVisitRequestData struct {
@@ -42,8 +48,8 @@ type PatientVisitSubmittedResponse struct {
 	Status         string `json:"status,omitempty"`
 }
 
-func NewPatientVisitHandler(dataApi api.DataAPI, authApi thriftapi.Auth, layoutStorageService api.CloudStorageAPI, patientPhotoStorageService api.CloudStorageAPI) *PatientVisitHandler {
-	return &PatientVisitHandler{dataApi, authApi, layoutStorageService, patientPhotoStorageService, 0}
+func NewPatientVisitHandler(dataApi api.DataAPI, authApi thriftapi.Auth, layoutStorageService api.CloudStorageAPI, patientPhotoStorageService api.CloudStorageAPI, twilioCli *twilio.Client, twilioFromNumber string) *PatientVisitHandler {
+	return &PatientVisitHandler{dataApi, authApi, layoutStorageService, patientPhotoStorageService, 0, twilioCli, twilioFromNumber}
 }
 
 func (s *PatientVisitHandler) AccountIdFromAuthToken(accountId int64) {
@@ -129,6 +135,17 @@ func (s *PatientVisitHandler) submitPatientVisit(w http.ResponseWriter, r *http.
 	if err != nil {
 		WriteDeveloperError(w, http.StatusInternalServerError, "Unable to assign patient visit to doctor")
 		return
+	}
+
+	if s.twilioCli != nil {
+		if doc, err := s.DataApi.GetDoctorFromId(doctorId); err != nil {
+			log.Printf("Failed to get doctor for ID %d: %s", doctorId, err.Error())
+		} else {
+			_ = doc
+			// if doc.CellNumber != "" {
+			//	s.twilioCli.Messages.SendSMS(s.twilioFromNumber, doc.CellNumber, doctorNewVisitNotification)
+			// }
+		}
 	}
 
 	WriteJSONToHTTPResponseWriter(w, http.StatusOK, PatientVisitSubmittedResponse{PatientVisitId: patientVisit.PatientVisitId, Status: patientVisit.Status})
