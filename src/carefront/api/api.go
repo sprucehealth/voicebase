@@ -49,7 +49,7 @@ type PotentialAnswerInfo struct {
 type PatientAPI interface {
 	GetPatientFromId(patientId int64) (patient *common.Patient, err error)
 	GetPatientFromAccountId(accountId int64) (patient *common.Patient, err error)
-	RegisterPatient(accountId int64, firstName, lastName, gender, zipCode, city, state, phone string, dob time.Time) (patient *common.Patient, err error)
+	RegisterPatient(accountId int64, firstName, lastName, gender, zipCode, city, state, phone string, dob time.Time) (*common.Patient, error)
 	CreateNewPatientVisit(patientId, healthConditionId, layoutVersionId int64) (int64, error)
 	GetPatientIdFromAccountId(accountId int64) (int64, error)
 	CreateCareTeamForPatient(patientId int64) (careTeam *common.PatientCareProviderGroup, err error)
@@ -96,7 +96,7 @@ type PatientVisitAPI interface {
 	SubmitPatientVisitWithId(patientVisitId int64) error
 	UpdateFollowUpTimeForPatientVisit(patientVisitId, doctorId, currentTimeSinceEpoch, followUpValue int64, followUpUnit string) error
 	GetFollowUpTimeForPatientVisit(patientVisitId int64) (followUp *common.FollowUp, err error)
-	GetDiagnosisResponseToQuestionWithTag(questionTag string, doctorId, patientVisitId int64) (answerIntake *common.AnswerIntake, err error)
+	GetDiagnosisResponseToQuestionWithTag(questionTag string, doctorId, patientVisitId int64) (*common.AnswerIntake, error)
 	AddDiagnosisSummaryForPatientVisit(summary string, patientVisitId, doctorId int64) error
 	GetDiagnosisSummaryForPatientVisit(patientVisitId int64) (summary string, err error)
 	RecordDoctorAssignmentToPatientVisit(PatientVisitId, DoctorId int64) error
@@ -104,12 +104,12 @@ type PatientVisitAPI interface {
 }
 
 type PatientIntakeAPI interface {
-	GetPatientAnswersForQuestionsInGlobalSections(questionIds []int64, patientId int64) (patientAnswers map[int64][]*common.AnswerIntake, err error)
+	GetPatientAnswersForQuestionsInGlobalSections(questionIds []int64, patientId int64) (map[int64][]*common.AnswerIntake, error)
 }
 
 type IntakeAPI interface {
-	GetAnswersForQuestionsInPatientVisit(role string, questionIds []int64, roleId int64, patientVisitId int64) (answerIntakes map[int64][]*common.AnswerIntake, err error)
-	StoreAnswersForQuestion(role string, roleId, patientVisitId, layoutVersionId int64, answersToStorePerQuestion map[int64][]*common.AnswerIntake) (err error)
+	GetAnswersForQuestionsInPatientVisit(role string, questionIds []int64, roleId int64, patientVisitId int64) (map[int64][]*common.AnswerIntake, error)
+	StoreAnswersForQuestion(role string, roleId, patientVisitId, layoutVersionId int64, answersToStorePerQuestion map[int64][]*common.AnswerIntake) error
 	CreatePhotoAnswerForQuestionRecord(role string, roleId, questionId, patientVisitId, potentialAnswerId, layoutVersionId int64) (patientInfoIntakeId int64, err error)
 	UpdatePhotoAnswerRecordWithObjectStorageId(patientInfoIntakeId, objectStorageId int64) error
 	MakeCurrentPhotoAnswerInactive(role string, roleId, questionId, patientVisitId, potentialAnswerId, layoutVersionId int64) error
@@ -130,8 +130,8 @@ type IntakeLayoutAPI interface {
 	UpdatePatientActiveLayouts(layoutId int64, clientLayoutIds []int64, healthConditionId int64) error
 	MarkNewDoctorLayoutAsCreating(objectId int64, layoutVersionId int64, healthConditionId int64) (int64, error)
 	UpdateDoctorActiveLayouts(layoutId, doctorLayoutId, healthConditionId int64, purpose string) error
-	GetGlobalSectionIds() (globalSectionIds []int64, err error)
-	GetSectionIdsForHealthCondition(healthConditionId int64) (sectionIds []int64, err error)
+	GetGlobalSectionIds() ([]int64, error)
+	GetSectionIdsForHealthCondition(healthConditionId int64) ([]int64, error)
 	GetHealthConditionInfo(healthConditionTag string) (int64, error)
 	GetSectionInfo(sectionTag string, languageId int64) (id int64, title string, err error)
 	GetQuestionInfo(questionTag string, languageId int64) (*common.QuestionInfo, error)
