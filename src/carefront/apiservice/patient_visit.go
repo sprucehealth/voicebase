@@ -378,8 +378,10 @@ func (s *PatientVisitHandler) populateHealthConditionWithPatientAnswers(healthCo
 }
 
 func (s *PatientVisitHandler) getCurrentActiveClientLayoutForHealthCondition(healthConditionId, languageId int64) (healthCondition *info_intake.InfoIntakeLayout, layoutVersionId int64, err error) {
-	bucket, key, region, layoutVersionId, err := s.DataApi.GetStorageInfoOfCurrentActivePatientLayout(languageId, healthConditionId)
-	if err != nil {
+	var e error
+	bucket, key, region, layoutVersionId, e := s.DataApi.GetStorageInfoOfCurrentActivePatientLayout(languageId, healthConditionId)
+	if e != nil {
+		err = e
 		return
 	}
 
@@ -393,8 +395,10 @@ func (s *PatientVisitHandler) getClientLayoutForPatientVisit(patientVisitId, lan
 		return
 	}
 
-	bucket, key, region, err := s.DataApi.GetStorageInfoForClientLayout(layoutVersionId, languageId)
-	if err != nil {
+	var e error
+	bucket, key, region, e := s.DataApi.GetStorageInfoForClientLayout(layoutVersionId, languageId)
+	if e != nil {
+		err = e
 		return
 	}
 
@@ -402,16 +406,14 @@ func (s *PatientVisitHandler) getClientLayoutForPatientVisit(patientVisitId, lan
 	return
 }
 
-func (s *PatientVisitHandler) getHealthConditionObjectAtLocation(bucket, key, region string) (healthCondition *info_intake.InfoIntakeLayout, err error) {
-
+func (s *PatientVisitHandler) getHealthConditionObjectAtLocation(bucket, key, region string) (*info_intake.InfoIntakeLayout, error) {
 	data, _, err := s.LayoutStorageService.GetObjectAtLocation(bucket, key, region)
 	if err != nil {
-		return
+		return nil, err
 	}
-	healthCondition = &info_intake.InfoIntakeLayout{}
-	err = json.Unmarshal(data, healthCondition)
-	if err != nil {
-		return
+	healthCondition := &info_intake.InfoIntakeLayout{}
+	if err := json.Unmarshal(data, healthCondition); err != nil {
+		return nil, err
 	}
-	return
+	return healthCondition, nil
 }

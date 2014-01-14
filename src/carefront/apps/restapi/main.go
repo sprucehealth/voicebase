@@ -40,28 +40,34 @@ type DBConfig struct {
 	TLSKey   string `long:"db_key" description:"Database TLS client key path"`
 }
 
+type TwilioConfig struct {
+	AccountSid string `long:"twilio_account_sid" description:"Twilio AccountSid"`
+	AuthToken  string `long:"twilio_auth_token" description:"Twilio AuthToken"`
+}
+
 type Config struct {
 	*config.BaseConfig
-	ListenAddr               string    `short:"l" long:"listen" description:"Address and port on which to listen (e.g. 127.0.0.1:8080)"`
-	TLSListenAddr            string    `long:"tls_listen" description:"Address and port on which to listen (e.g. 127.0.0.1:8080)"`
-	TLSCert                  string    `long:"tls_cert" description:"Path of SSL certificate"`
-	TLSKey                   string    `long:"tls_key" description:"Path of SSL private key"`
-	DB                       *DBConfig `group:"Database" toml:"database"`
-	PharmacyDB               *DBConfig `group:"PharmacyDatabase" toml:"pharmacy_database"`
-	MaxInMemoryForPhotoMB    int64     `long:"max_in_memory_photo" description:"Amount of data in MB to be held in memory when parsing multipart form data"`
-	ContentBucket            string    `long:"content_bucket" description:"S3 Bucket name for all static content"`
-	CaseBucket               string    `long:"case_bucket" description:"S3 Bucket name for case information"`
-	PatientLayoutBucket      string    `long:"client_layout_bucket" description:"S3 Bucket name for client digestable layout for patient information intake"`
-	VisualLayoutBucket       string    `long:"patient_layout_bucket" description:"S3 Bucket name for human readable layout for patient information intake"`
-	DoctorVisualLayoutBucket string    `long:"doctor_visual_layout_bucket" description:"S3 Bucket name for patient overview for doctor's viewing"`
-	DoctorLayoutBucket       string    `long:"doctor_layout_bucket" description:"S3 Bucket name for pre-processed patient overview for doctor's viewing"`
-	Debug                    bool      `long:"debug" description:"Enable debugging"`
-	DoseSpotClinicKey        string    `long:"dose_spot_clinic_key" description:"DoseSpot Clinic Key for eRX integration"`
-	DoseSpotClinicId         string    `long:"dose_spot_clinic_id" description:"DoseSpot Clinic Id for eRX integration"`
-	DoseSpotUserId           string    `long:"dose_spot_user_id" description:"DoseSpot UserId for eRx integration"`
-	NoServices               bool      `long:"noservices" description:"Disable connecting to remote services"`
-	AuthTokenExpiration      int       `long:"auth_token_expire" description:"Expiration time in seconds for the auth token"`
-	AuthTokenRenew           int       `long:"auth_token_renew" description:"Time left below which to renew the auth token"`
+	ListenAddr               string        `short:"l" long:"listen" description:"Address and port on which to listen (e.g. 127.0.0.1:8080)"`
+	TLSListenAddr            string        `long:"tls_listen" description:"Address and port on which to listen (e.g. 127.0.0.1:8080)"`
+	TLSCert                  string        `long:"tls_cert" description:"Path of SSL certificate"`
+	TLSKey                   string        `long:"tls_key" description:"Path of SSL private key"`
+	DB                       *DBConfig     `group:"Database" toml:"database"`
+	PharmacyDB               *DBConfig     `group:"PharmacyDatabase" toml:"pharmacy_database"`
+	MaxInMemoryForPhotoMB    int64         `long:"max_in_memory_photo" description:"Amount of data in MB to be held in memory when parsing multipart form data"`
+	ContentBucket            string        `long:"content_bucket" description:"S3 Bucket name for all static content"`
+	CaseBucket               string        `long:"case_bucket" description:"S3 Bucket name for case information"`
+	PatientLayoutBucket      string        `long:"client_layout_bucket" description:"S3 Bucket name for client digestable layout for patient information intake"`
+	VisualLayoutBucket       string        `long:"patient_layout_bucket" description:"S3 Bucket name for human readable layout for patient information intake"`
+	DoctorVisualLayoutBucket string        `long:"doctor_visual_layout_bucket" description:"S3 Bucket name for patient overview for doctor's viewing"`
+	DoctorLayoutBucket       string        `long:"doctor_layout_bucket" description:"S3 Bucket name for pre-processed patient overview for doctor's viewing"`
+	Debug                    bool          `long:"debug" description:"Enable debugging"`
+	DoseSpotClinicKey        string        `long:"dose_spot_clinic_key" description:"DoseSpot Clinic Key for eRX integration"`
+	DoseSpotClinicId         string        `long:"dose_spot_clinic_id" description:"DoseSpot Clinic Id for eRX integration"`
+	DoseSpotUserId           string        `long:"dose_spot_user_id" description:"DoseSpot UserId for eRx integration"`
+	NoServices               bool          `long:"noservices" description:"Disable connecting to remote services"`
+	AuthTokenExpiration      int           `long:"auth_token_expire" description:"Expiration time in seconds for the auth token"`
+	AuthTokenRenew           int           `long:"auth_token_renew" description:"Time left below which to renew the auth token"`
+	Twilio                   *TwilioConfig `group:"Twilio" toml:"twilio"`
 }
 
 var DefaultConfig = Config{
