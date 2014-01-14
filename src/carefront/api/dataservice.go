@@ -12,9 +12,10 @@ import (
 )
 
 const (
+	status_active                          = "ACTIVE"
 	status_created                         = "CREATED"
 	status_creating                        = "CREATING"
-	status_active                          = "ACTIVE"
+	status_deleted                         = "DELETED"
 	status_inactive                        = "INACTIVE"
 	treatment_otc                          = "OTC"
 	treatment_rx                           = "RX"
@@ -292,7 +293,7 @@ func (d *DataService) getOrInsertNameInTable(tx *sql.Tx, tableName, drugComponen
 
 func (d *DataService) DeleteDrugInstructionForDoctor(drugInstructionToDelete *common.DoctorInstructionItem, doctorId int64) error {
 
-	_, err := d.DB.Exec(`update dr_drug_supplemental_instruction set status='DELETED' where id = ? and doctor_id = ?`, drugInstructionToDelete.Id, doctorId)
+	_, err := d.DB.Exec(`update dr_drug_supplemental_instruction set status=? where id = ? and doctor_id = ?`, status_deleted, drugInstructionToDelete.Id, doctorId)
 	if err != nil {
 		return err
 	}
@@ -355,7 +356,7 @@ func (d *DataService) AddDrugInstructionsToTreatment(drugName, drugForm, drugRou
 	//  insert the selected state of drug instructions for the drug
 	for _, instructionItem := range drugInstructions {
 		_, err := tx.Exec(`insert into dr_drug_supplemental_instruction_selected_state 
-										 (drug_name_id, drug_form_id, drug_route_id, dr_drug_supplemental_instruction_id, doctor_id) values (?, ?, ?, ?,?)`,
+										 (drug_name_id, drug_form_id, drug_route_id, dr_drug_supplemental_instruction_id, doctor_id) values (?, ?, ?, ?, ?)`,
 			drugNameNullId.Int64, drugFormNullId.Int64, drugRouteNullId.Int64, instructionItem.Id, doctorId)
 		if err != nil {
 			tx.Rollback()
@@ -432,7 +433,7 @@ func (d *DataService) AddOrUpdateDrugInstructionForDoctor(drugName, drugForm, dr
 	}
 
 	// insert instruction for doctor
-	res, err := tx.Exec(`insert into dr_drug_supplemental_instruction (drug_name_id, drug_form_id, drug_route_id, text, doctor_id,status) values (?,?,?,?,?,'ACTIVE')`, drugNameIdStr, drugFormIdStr, drugRouteIdStr, drugInstructionToAdd.Text, doctorId)
+	res, err := tx.Exec(`insert into dr_drug_supplemental_instruction (drug_name_id, drug_form_id, drug_route_id, text, doctor_id,status) values (?,?,?,?,?,?)`, drugNameIdStr, drugFormIdStr, drugRouteIdStr, drugInstructionToAdd.Text, doctorId, status_active)
 	if err != nil {
 		tx.Rollback()
 		return err
@@ -588,7 +589,7 @@ func insertPredefinedAdvicePointsForDoctor(db *sql.DB, predefinedAdvicePoints []
 	}
 
 	for _, instruction := range predefinedAdvicePoints {
-		_, err = tx.Exec(`insert into dr_advice_point (doctor_id, text, status) values (?, ?, 'ACTIVE')`, doctorId, instruction.text)
+		_, err = tx.Exec(`insert into dr_advice_point (doctor_id, text, status) values (?, ?, ?)`, doctorId, instruction.text, status_active)
 		if err != nil {
 			tx.Rollback()
 			return err
@@ -606,7 +607,7 @@ func insertPredefinedRegimenStepsForDoctor(db *sql.DB, predefinedInstructions []
 	}
 
 	for _, instruction := range predefinedInstructions {
-		_, err = tx.Exec(`insert into dr_regimen_step (doctor_id, text, status) values (?, ?, 'ACTIVE') `, doctorId, instruction.text)
+		_, err = tx.Exec(`insert into dr_regimen_step (doctor_id, text, status) values (?, ?, ?) `, doctorId, instruction.text, status_active)
 		if err != nil {
 			tx.Rollback()
 			return err
@@ -639,7 +640,7 @@ func insertPredefinedInstructionsForDoctor(db *sql.DB, predefinedInstructions []
 		}
 
 		_, err = tx.Exec(`insert into dr_drug_supplemental_instruction 
-							(doctor_id, text, drug_name_id, drug_form_id, drug_route_id, status, drug_supplemental_instruction_id) values (?, ?, ?, ?, ?, 'ACTIVE', ?)`, doctorId, instruction.text, drugNameIdStr, drugFormIdStr, drugRouteIdStr, instruction.id)
+							(doctor_id, text, drug_name_id, drug_form_id, drug_route_id, status, drug_supplemental_instruction_id) values (?, ?, ?, ?, ?, ?, ?)`, doctorId, instruction.text, drugNameIdStr, drugFormIdStr, drugRouteIdStr, status_active, instruction.id)
 		if err != nil {
 			tx.Rollback()
 			return err
@@ -784,7 +785,7 @@ func getInstructionsFromRows(rows *sql.Rows) (drugInstructions []*common.DoctorI
 }
 
 func (d *DataService) GetAdvicePointsForPatientVisit(patientVisitId int64) (advicePoints []*common.DoctorInstructionItem, err error) {
-	rows, err := d.DB.Query(`select dr_advice_point_id,text from advice inner join dr_advice_point on dr_advice_point_id = dr_advice_point.id where patient_visit_id = ?  and advice.status='ACTIVE'`, patientVisitId)
+	rows, err := d.DB.Query(`select dr_advice_point_id,text from advice inner join dr_advice_point on dr_advice_point_id = dr_advice_point.id where patient_visit_id = ?  and advice.status = ?`, patientVisitId, status_active)
 	if err != nil {
 		return
 	}
@@ -900,7 +901,7 @@ func (d *DataService) GetRegimenStepsForDoctor(doctorId int64) (regimenSteps []*
 }
 
 func (d *DataService) AddRegimenStepForDoctor(regimenStep *common.DoctorInstructionItem, doctorId int64) error {
-	res, err := d.DB.Exec(`insert into dr_regimen_step (text, doctor_id,status) values (?,?,'ACTIVE')`, regimenStep.Text, doctorId)
+	res, err := d.DB.Exec(`insert into dr_regimen_step (text, doctor_id,status) values (?,?,?)`, regimenStep.Text, doctorId, status_active)
 	if err != nil {
 		return err
 	}
@@ -972,7 +973,7 @@ func (d *DataService) CreateRegimenPlanForPatientVisit(regimenPlan *common.Regim
 	// create new regimen steps within each section
 	for _, regimenSection := range regimenPlan.RegimenSections {
 		for _, regimenStep := range regimenSection.RegimenSteps {
-			_, err = tx.Exec(`insert into regimen (patient_visit_id, regimen_type, dr_regimen_step_id, status) values (?,?,?, 'ACTIVE')`, regimenPlan.PatientVisitId, regimenSection.RegimenName, regimenStep.Id)
+			_, err = tx.Exec(`insert into regimen (patient_visit_id, regimen_type, dr_regimen_step_id, status) values (?,?,?,?)`, regimenPlan.PatientVisitId, regimenSection.RegimenName, regimenStep.Id, status_active)
 			if err != nil {
 				tx.Rollback()
 				return err
@@ -1233,7 +1234,7 @@ func (d *DataService) UpdatePatientPharmacy(patientId int64, pharmacyId, pharmac
 }
 
 func (d *DataService) GetPatientPharmacySelection(patientId int64) (pharmacyId, pharmacySourceType string, err error) {
-	err = d.DB.QueryRow(`select pharmacy_id, source from patient_pharmacy_selection where patient_id = ? and status=?`, patientIdstatus_active).Scan(&pharmacyId, &pharmacySourceType)
+	err = d.DB.QueryRow(`select pharmacy_id, source from patient_pharmacy_selection where patient_id = ? and status=?`, patientId, status_active).Scan(&pharmacyId, &pharmacySourceType)
 	if err == sql.ErrNoRows {
 		err = NoRowsError
 		return
@@ -1756,7 +1757,7 @@ func (d *DataService) CreateCareTeamForPatient(patientId int64) (careTeam *commo
 		return
 	}
 
-	res, err := tx.Exec(`insert into patient_care_provider_group (patient_id, status) values (?, 'CREATING')`, patientId)
+	res, err := tx.Exec(`insert into patient_care_provider_group (patient_id, status) values (?, ?)`, patientId, status_creating)
 	if err != nil {
 		tx.Rollback()
 		return
