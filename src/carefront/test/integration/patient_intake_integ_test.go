@@ -80,7 +80,7 @@ func submitPatientAnswerForVisit(PatientId int64, testData TestData, patientInta
 		t.Fatal("Unable to get the patient visit id")
 	}
 	if body, err := ioutil.ReadAll(resp.Body); err != nil {
-		t.Fatal("Failed to get body: %+v", err)
+		t.Fatalf("Failed to get body: %+v", err)
 		resp.Body.Close()
 	} else {
 		CheckSuccessfulStatusCode(resp, "Unable to submit a single select answer for patient: "+string(body), t)
