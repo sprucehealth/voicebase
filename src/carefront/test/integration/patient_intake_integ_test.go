@@ -25,13 +25,13 @@ type AnswerIntakeHandler struct {
 func getQuestionWithTagAndExpectedType(questionTag, questionType string, t *testing.T, testData TestData) int64 {
 	questionInfo, err := testData.DataApi.GetQuestionInfo(questionTag, 1)
 	if err != nil {
-		t.Fatal("Unable to query for question q_reason_visit from database: " + err.Error())
+		t.Fatalf("Unable to query for question q_reason_visit from database: %s", err.Error())
 	}
 
 	// need to ensure that the question we are trying to get the information for is a single select
 	// question type
 	if questionInfo.Type != questionType {
-		t.Fatal("Expected q_reason_visit to be q_type_single_select but it's not.")
+		t.Fatalf("Expected q_reason_visit to be '%s' instead of '%s'", questionType, questionInfo.Type)
 	}
 
 	return questionInfo.Id
@@ -331,7 +331,7 @@ func TestSubQuestionEntryIntake(t *testing.T) {
 
 	// now lets go ahead and try and answer the question about the reason for visit given that it is
 	// single select
-	questionId := getQuestionWithTagAndExpectedType("q_acne_prev_treatment_list", "q_type_compound", t, testData)
+	questionId := getQuestionWithTagAndExpectedType("q_acne_prev_treatment_list", "q_type_autocomplete", t, testData)
 
 	// lets go ahead and get the question id for the rest of the three questions that we are trying to answer for this particular entry
 	howEffectiveQuestionId := getQuestionWithTagAndExpectedType("q_effective_treatment", "q_type_segmented_control", t, testData)
