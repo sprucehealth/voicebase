@@ -90,7 +90,7 @@ func submitPatientVisitDiagnosis(PatientVisitId int64, doctor *common.Doctor, te
 
 	answerToQuestionItem3 := &apiservice.AnswerToQuestionItem{}
 	answerToQuestionItem3.QuestionId = acneTypeQuestionId
-	answerToQuestionItem3.AnswerIntakes = []*apiservice.AnswerItem{&apiservice.AnswerItem{PotentialAnswerId: 109}, &apiservice.AnswerItem{PotentialAnswerId: 114}, &apiservice.AnswerItem{PotentialAnswerId: 113}}
+	answerToQuestionItem3.AnswerIntakes = []*apiservice.AnswerItem{&apiservice.AnswerItem{PotentialAnswerId: 109}}
 
 	answerIntakeRequestBody.Questions = []*apiservice.AnswerToQuestionItem{answerToQuestionItem, answerToQuestionItem2, answerToQuestionItem3}
 

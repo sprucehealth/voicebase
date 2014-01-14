@@ -9,7 +9,7 @@
                             "display_style_one_per_row"
                         ],  
                         "question": "q_acne_diagnosis"
-                    }, 
+                    },  
                     {
                         "condition": {
                             "op": "answer_contains_any", 
@@ -21,9 +21,9 @@
                             "question": "q_acne_diagnosis"
                         }, 
                         "display_styles": [
-                            "display_style_all_on_one_row" 
+                            "display_style_all_on_one_row"  
                         ], 
-                        "question": "q_acne_severity"
+                        "question": "q_acne_severity"  
                     }, 
                     {
                         "condition": {

@@ -192,10 +192,7 @@ func TestDoctorDiagnosisOfPatientVisit(t *testing.T) {
 
 	for _, section := range diagnosisResponse.DiagnosisLayout.InfoIntakeLayout.Sections {
 		for _, question := range section.Questions {
-			// each question should be answered
-			if question.DoctorAnswers == nil || len(question.DoctorAnswers) == 0 {
-				t.Fatalf("Expected a response from the doctor to question %d but not present", question.QuestionId)
-			}
+
 			for _, doctorResponse := range question.DoctorAnswers {
 				switch doctorResponse.QuestionId {
 				case diagnosisQuestionId:
