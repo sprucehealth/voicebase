@@ -47,6 +47,9 @@ func (s *StaticContentHandler) getContent(w http.ResponseWriter, r *http.Request
 	}
 
 	w.Header().Set("Content-Type", responseHeader["Content-Type"][0])
+	if responseHeader["Content-Encoding"] != nil && len(responseHeader["Content-Encoding"]) > 0 {
+		w.Header().Set("Content-Encoding", responseHeader["Content-Encoding"][0])
+	}
 	w.Write(rawData)
 	w.WriteHeader(http.StatusOK)
 }

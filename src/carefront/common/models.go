@@ -21,14 +21,15 @@ type Patient struct {
 }
 
 type Doctor struct {
-	DoctorId  int64
-	FirstName string
-	LastName  string
-	Dob       time.Time
-	Gender    string
-	Status    string
-	AccountId int64
-	CellPhone string
+	DoctorId     int64     `json:"id,string,omitempty`
+	FirstName    string    `json:"first_name,omitempty"`
+	LastName     string    `json:"last_name,omitempty"`
+	Dob          time.Time `json:"-"`
+	Gender       string    `json:"-"`
+	Status       string    `json:"-"`
+	AccountId    int64     `json:"-"`
+	CellPhone    string    `json:"phone"`
+	ThumbnailUrl string    `json:"thumbnail_url,omitempty"`
 }
 
 type PatientVisit struct {

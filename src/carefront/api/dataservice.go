@@ -26,7 +26,9 @@ const (
 	drug_form_table                        = "drug_form"
 	drug_route_table                       = "drug_route"
 	patient_phone_type                     = "MAIN"
-	doctor_phone_type 					   = "MAIN"
+	doctor_phone_type                      = "MAIN"
+	SpruceButtonBaseActionUrl              = "spruce:///action/"
+	SpruceImageBaseUrl                     = "spruce:///image/"
 )
 
 type DataService struct {
@@ -1157,13 +1159,13 @@ func (d *DataService) GetDoctorAssignedToPatientVisit(PatientVisitId int64) (doc
 	return
 }
 
-func (d *DataService) CheckCareProvidingElligibility(shortState string, healthConditionId int64) (isElligible bool, err error) {
+func (d *DataService) CheckCareProvidingElligibility(shortState string, healthConditionId int64) (doctorId int64, err error) {
 	rows, err := d.DB.Query(`select provider_id from care_provider_state_elligibility 
 								inner join care_providing_state on care_providing_state_id = care_providing_state.id 
 								inner join provider_role on provider_role_id = provider_role.id 
 									where state = ? and health_condition_id = ? and provider_tag='DOCTOR'`, shortState, healthConditionId)
 	if err != nil {
-		return false, err
+		return 0, err
 	}
 	defer rows.Close()
 
@@ -1175,10 +1177,10 @@ func (d *DataService) CheckCareProvidingElligibility(shortState string, healthCo
 	}
 
 	if len(doctorIds) == 0 {
-		return false, nil
+		return 0, nil
 	}
 
-	return true, nil
+	return doctorIds[0], nil
 }
 
 func (d *DataService) UpdatePatientAddress(patientId int64, addressLine1, addressLine2, city, state, zipCode, addressType string) error {
@@ -1957,29 +1959,26 @@ func (d *DataService) CreateNewPatientVisit(patientId, healthConditionId, layout
 	return lastId, err
 }
 
-func (d *DataService) UpdatePatientVisitStatus(patientVisitId int64, status string) error {
-	_, err := d.DB.Exec(`update patient_visit set status=? where id = ?`, status, patientVisitId)
-	return err
-}
-
-func (d *DataService) UpdatePatientVisitStatusWithMessage(patientVisitId int64, message, event string) error {
+func (d *DataService) UpdatePatientVisitStatus(patientVisitId int64, message, event string) error {
 	tx, err := d.DB.Begin()
 	if err != nil {
 		tx.Rollback()
 		return err
 	}
 
-	// inactivate any existing message given that there is a new message for the patient
-	_, err = tx.Exec(`update patient_visit_event set status=? where patient_visit_id = ? and status=?`, status_inactive, patientVisitId, status_active)
-	if err != nil {
-		tx.Rollback()
-		return err
-	}
+	if message != "" {
+		// inactivate any existing message given that there is a new message for the patient
+		_, err = tx.Exec(`update patient_visit_event set status=? where patient_visit_id = ? and status=?`, status_inactive, patientVisitId, status_active)
+		if err != nil {
+			tx.Rollback()
+			return err
+		}
 
-	_, err = tx.Exec(`insert into patient_visit_event (patient_visit_id, status, event, message) values (?,?,?,?)`, patientVisitId, status_active, event, message)
-	if err != nil {
-		tx.Rollback()
-		return err
+		_, err = tx.Exec(`insert into patient_visit_event (patient_visit_id, status, event, message) values (?,?,?,?)`, patientVisitId, status_active, event, message)
+		if err != nil {
+			tx.Rollback()
+			return err
+		}
 	}
 
 	_, err = tx.Exec(`update patient_visit set status=? where id = ?`, event, patientVisitId)
@@ -1987,7 +1986,6 @@ func (d *DataService) UpdatePatientVisitStatusWithMessage(patientVisitId int64, 
 		tx.Rollback()
 		return err
 	}
-
 	tx.Commit()
 	return nil
 }
@@ -2000,9 +1998,35 @@ func (d *DataService) GetMessageForPatientVisitStatus(patientVisitId int64) (mes
 	return
 }
 
-func (d *DataService) ClosePatientVisit(patientVisitId int64, status string) error {
-	_, err := d.DB.Exec(`update patient_visit set status=?, closed_date=now() where id = ?`, status, patientVisitId)
-	return err
+func (d *DataService) ClosePatientVisit(patientVisitId int64, event, message string) error {
+	tx, err := d.DB.Begin()
+	if err != nil {
+		tx.Rollback()
+		return err
+	}
+
+	if message != "" {
+		// inactivate any existing message given that there is a new message for the patient
+		_, err = tx.Exec(`update patient_visit_event set status=? where patient_visit_id = ? and status=?`, status_inactive, patientVisitId, status_active)
+		if err != nil {
+			tx.Rollback()
+			return err
+		}
+
+		_, err = tx.Exec(`insert into patient_visit_event (patient_visit_id, status, event, message) values (?,?,?,?)`, patientVisitId, status_active, event, message)
+		if err != nil {
+			tx.Rollback()
+			return err
+		}
+	}
+
+	_, err = tx.Exec(`update patient_visit set status=?, closed_date=now() where id = ?`, event, patientVisitId)
+	if err != nil {
+		tx.Rollback()
+		return err
+	}
+	tx.Commit()
+	return nil
 }
 
 func (d *DataService) GetQuestionType(questionId int64) (string, error) {

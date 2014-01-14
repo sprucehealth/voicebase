@@ -2,9 +2,12 @@ package apiservice
 
 import (
 	"carefront/api"
+	"carefront/common"
 	"carefront/libs/maps"
+	"fmt"
 	"github.com/gorilla/schema"
 	"net/http"
+	"strings"
 )
 
 type CheckCareProvidingElligibilityHandler struct {
@@ -17,7 +20,7 @@ type CheckCareProvidingElligibilityRequestData struct {
 }
 
 type CheckCareProvidingElligibilityResponse struct {
-	Result string `json:"result"`
+	Doctor *common.Doctor `json:"doctor"`
 }
 
 func (c *CheckCareProvidingElligibilityHandler) NonAuthenticated() bool {
@@ -41,14 +44,20 @@ func (c *CheckCareProvidingElligibilityHandler) ServeHTTP(w http.ResponseWriter,
 		return
 	}
 
-	isElligible, err := c.DataApi.CheckCareProvidingElligibility(cityStateInfo.ShortStateName, HEALTH_CONDITION_ACNE_ID)
+	doctorId, err := c.DataApi.CheckCareProvidingElligibility(cityStateInfo.ShortStateName, HEALTH_CONDITION_ACNE_ID)
 	if err != nil {
 		WriteDeveloperError(w, http.StatusInternalServerError, "Unable to check elligiblity for the patient to be seen by doctor: "+err.Error())
 		return
 	}
 
-	if isElligible == true {
-		WriteJSONToHTTPResponseWriter(w, http.StatusOK, &CheckCareProvidingElligibilityResponse{Result: "success"})
+	if doctorId != 0 {
+		doctor, err := c.DataApi.GetDoctorFromId(doctorId)
+		if err != nil {
+			WriteDeveloperError(w, http.StatusInternalServerError, "Unable to get doctor from id: "+err.Error())
+			return
+		}
+		doctor.ThumbnailUrl = strings.ToLower(fmt.Sprintf("%s%s.%s_thumbnail", api.SpruceImageBaseUrl, doctor.FirstName, doctor.LastName))
+		WriteJSONToHTTPResponseWriter(w, http.StatusOK, &CheckCareProvidingElligibilityResponse{Doctor: doctor})
 	} else {
 		WriteUserError(w, http.StatusForbidden, "Patient cannot be seen in this state.")
 	}
