@@ -26,6 +26,7 @@ const (
 	drug_form_table                        = "drug_form"
 	drug_route_table                       = "drug_route"
 	patient_phone_type                     = "MAIN"
+	doctor_phone_type 					   = "MAIN"
 )
 
 type DataService struct {
@@ -1327,8 +1328,11 @@ func (d *DataService) RegisterDoctor(accountId int64, firstName, lastName, gende
 func (d *DataService) GetDoctorFromId(doctorId int64) (doctor *common.Doctor, err error) {
 	var firstName, lastName, status, gender string
 	var dob mysql.NullTime
+	var cellPhoneNumber sql.NullString
 	var accountId int64
-	err = d.DB.QueryRow(`select account_id, first_name, last_name, gender, dob, status from doctor where id = ?`, doctorId).Scan(&accountId, &firstName, &lastName, &gender, &dob, &status)
+	err = d.DB.QueryRow(`select account_id, phone, first_name, last_name, gender, dob, status from doctor 
+							left outer join doctor_phone on doctor_phone.doctor_id = doctor.id
+								where doctor.id = ? and (doctor_phone.phone is null or doctor_phone.phone_type = ?)`, doctorId, doctor_phone_type).Scan(&accountId, &cellPhoneNumber, &firstName, &lastName, &gender, &dob, &status)
 	if err != nil {
 		return
 	}
@@ -1341,6 +1345,9 @@ func (d *DataService) GetDoctorFromId(doctorId int64) (doctor *common.Doctor, er
 	}
 	if dob.Valid {
 		doctor.Dob = dob.Time
+	}
+	if cellPhoneNumber.Valid {
+		doctor.CellPhone = cellPhoneNumber.String
 	}
 	doctor.DoctorId = doctorId
 	return

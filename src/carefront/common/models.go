@@ -28,6 +28,7 @@ type Doctor struct {
 	Gender    string
 	Status    string
 	AccountId int64
+	CellPhone string
 }
 
 type PatientVisit struct {

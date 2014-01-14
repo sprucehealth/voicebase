@@ -141,10 +141,12 @@ func (s *PatientVisitHandler) submitPatientVisit(w http.ResponseWriter, r *http.
 		if doc, err := s.DataApi.GetDoctorFromId(doctorId); err != nil {
 			log.Printf("Failed to get doctor for ID %d: %s", doctorId, err.Error())
 		} else {
-			_ = doc
-			// if doc.CellNumber != "" {
-			//	s.twilioCli.Messages.SendSMS(s.twilioFromNumber, doc.CellNumber, doctorNewVisitNotification)
-			// }
+			if doc.CellPhone != "" {
+				_, _, err = s.twilioCli.Messages.SendSMS(s.twilioFromNumber, doc.CellPhone, doctorNewVisitNotification)
+				if err != nil {
+					log.Println("Error sending SMS: " + err.Error())
+				}
+			}
 		}
 	}
 
@@ -296,7 +298,7 @@ func (s *PatientVisitHandler) createNewPatientVisitHandler(w http.ResponseWriter
 
 	doctor, err := s.DataApi.GetDoctorFromId(primaryDoctorId)
 	if err != nil {
-		WriteDeveloperError(w, http.StatusInternalServerError, "Unable to get doctor from id")
+		WriteDeveloperError(w, http.StatusInternalServerError, "Unable to get doctor from id: "+err.Error())
 		return
 	}
 
