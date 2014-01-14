@@ -4,6 +4,7 @@ import (
 	"log"
 	"net/http"
 	"strconv"
+	"time"
 
 	"carefront/thrift/api"
 	"github.com/samuel/go-metrics/metrics"
@@ -95,9 +96,11 @@ func (mux *AuthServeMux) ServeHTTP(w http.ResponseWriter, r *http.Request) {
 	mux.statRequests.Inc(1)
 
 	ctx := GetContext(r)
+	ctx.RequestStartTime = time.Now()
 
 	customResponseWriter := &CustomResponseWriter{w, 0, false}
 	defer func() {
+		mux.statLatency.Update(time.Since(ctx.RequestStartTime).Nanoseconds() / 1e3)
 		DeleteContext(r)
 		log.Printf("%s %s %s %d %s\n", r.RemoteAddr, r.Method, r.URL, customResponseWriter.StatusCode, w.Header().Get("Content-Type"))
 	}()
