@@ -21,7 +21,7 @@ type Patient struct {
 }
 
 type Doctor struct {
-	DoctorId     int64     `json:"id,string,omitempty`
+	DoctorId     int64     `json:"id,string,omitempty"`
 	FirstName    string    `json:"first_name,omitempty"`
 	LastName     string    `json:"last_name,omitempty"`
 	Dob          time.Time `json:"-"`
