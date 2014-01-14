@@ -51,7 +51,7 @@ func (d *DoctorQueueItem) GetTitleAndSubtitle(dataApi DataAPI) (title, subtitle 
 		case QUEUE_ITEM_STATUS_ONGOING:
 			title = fmt.Sprintf("Continue reviewing visit with %s %s", patient.FirstName, patient.LastName)
 			subtitle = getRemainingTimeSubtitleForCaseToBeReviewed(d.EnqueueDate)
-		case QUEUE_ITEM_STATπUS_PHOTOS_REJECTED:
+		case QUEUE_ITEM_STATUS_PHOTOS_REJECTED:
 			title = fmt.Sprintf("Photos rejected for visit with %s %s", patient.FirstName, patient.LastName)
 			formattedTime := d.EnqueueDate.Format("3:04pm")
 			subtitle = fmt.Sprintf("%s %d at %s", d.EnqueueDate.Month().String(), d.EnqueueDate.Day(), formattedTime)

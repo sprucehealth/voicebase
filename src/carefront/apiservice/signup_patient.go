@@ -82,11 +82,10 @@ func (s *SignupPatientHandler) ServeHTTP(w http.ResponseWriter, r *http.Request)
 		return
 	}
 
-	cityStateInfo, err := s.MapsApi.ConvertZipcodeToCityState(requestData.Zipcode)
-	if err != nil {
-		WriteDeveloperError(w, http.StatusInternalServerError, "Unable to convert zipcode to city and state")
-		return
-	}
+	// ignore the error case of the reverse geocoding failing because it is not detrimental to
+	// serving the patient, especially after the client has already checked to ensure that we can actually
+	// serve the patient.
+	cityStateInfo, _ := s.MapsApi.ConvertZipcodeToCityState(requestData.Zipcode)
 
 	// then, register the signed up user as a patient
 	patient, err := s.DataApi.RegisterPatient(res.AccountId, requestData.FirstName, requestData.LastName, requestData.Gender, requestData.Zipcode, cityStateInfo.LongCityName, cityStateInfo.ShortStateName, requestData.Phone, time.Date(year, time.Month(month), day, 0, 0, 0, 0, time.UTC))
