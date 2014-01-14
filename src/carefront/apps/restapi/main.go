@@ -69,6 +69,7 @@ type Config struct {
 	NoServices               bool          `long:"noservices" description:"Disable connecting to remote services"`
 	AuthTokenExpiration      int           `long:"auth_token_expire" description:"Expiration time in seconds for the auth token"`
 	AuthTokenRenew           int           `long:"auth_token_renew" description:"Time left below which to renew the auth token"`
+	StaticContentBaseUrl     string        `long:"static_content_base_url" description:"URL from which to serve static content"`
 	Twilio                   *TwilioConfig `group:"Twilio" toml:"twilio"`
 }
 
@@ -203,7 +204,7 @@ func main() {
 	cloudStorageApi := api.NewCloudStorageService(awsAuth)
 	photoAnswerCloudStorageApi := api.NewCloudStorageService(awsAuth)
 	authHandler := &apiservice.AuthenticationHandler{AuthApi: authApi, DataApi: dataApi, PharmacySearchService: &pharmacy.PharmacySearchService{PharmacyDB: pharmacyDb}}
-	checkElligibilityHandler := &apiservice.CheckCareProvidingElligibilityHandler{DataApi: dataApi, MapsService: maps.GoogleMapsService(0)}
+	checkElligibilityHandler := &apiservice.CheckCareProvidingElligibilityHandler{DataApi: dataApi, MapsService: maps.GoogleMapsService(0), StaticContentUrl: conf.StaticContentBaseUrl}
 	signupPatientHandler := &apiservice.SignupPatientHandler{DataApi: dataApi, AuthApi: authApi, MapsApi: maps.GoogleMapsService(0)}
 	updatePatientBillingAddress := &apiservice.UpdatePatientAddressHandler{DataApi: dataApi, AddressType: apiservice.BILLING_ADDRESS_TYPE}
 	updatePatientPharmacyHandler := &apiservice.UpdatePatientPharmacyHandler{DataApi: dataApi}

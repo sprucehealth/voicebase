@@ -11,8 +11,9 @@ import (
 )
 
 type CheckCareProvidingElligibilityHandler struct {
-	DataApi     api.DataAPI
-	MapsService maps.MapsService
+	DataApi          api.DataAPI
+	MapsService      maps.MapsService
+	StaticContentUrl string
 }
 
 type CheckCareProvidingElligibilityRequestData struct {
@@ -56,7 +57,7 @@ func (c *CheckCareProvidingElligibilityHandler) ServeHTTP(w http.ResponseWriter,
 			WriteDeveloperError(w, http.StatusInternalServerError, "Unable to get doctor from id: "+err.Error())
 			return
 		}
-		doctor.ThumbnailUrl = strings.ToLower(fmt.Sprintf("%s%s.%s_thumbnail", api.SpruceImageBaseUrl, doctor.FirstName, doctor.LastName))
+		doctor.ThumbnailUrl = strings.ToLower(fmt.Sprintf("%s%s.%s_thumbnail", c.StaticContentUrl, doctor.FirstName, doctor.LastName))
 		WriteJSONToHTTPResponseWriter(w, http.StatusOK, &CheckCareProvidingElligibilityResponse{Doctor: doctor})
 	} else {
 		WriteUserError(w, http.StatusForbidden, "Patient cannot be seen in this state.")
