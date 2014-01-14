@@ -99,8 +99,8 @@ func TestSingleSelectIntake(t *testing.T) {
 
 	// now lets go ahead and try and answer the question about the reason for visit given that it is
 	// single select
-	questionId := getQuestionWithTagAndExpectedType("q_reason_visit", "q_type_single_select", t, testData)
-	potentialAnswerId := getAnswerWithTagAndExpectedType("a_acne", "a_type_multiple_choice", questionId, testData, t)
+	questionId := getQuestionWithTagAndExpectedType("q_onset_acne", "q_type_single_select", t, testData)
+	potentialAnswerId := getAnswerWithTagAndExpectedType("a_onset_six_months", "a_type_multiple_choice", questionId, testData, t)
 
 	// lets go ahead and populate a response for the question
 	patientIntakeRequestData := fmt.Sprintf(`{"patient_visit_id": %d, "questions": [{"potential_answers": [{"potential_answer_id": %d } ], "question_id": %d }] }`, patientVisitResponse.PatientVisitId, potentialAnswerId, questionId)
@@ -209,10 +209,8 @@ func TestSingleEntryIntake(t *testing.T) {
 	patientSignedUpResponse := SignupRandomTestPatient(t, testData.DataApi, testData.AuthApi)
 	patientVisitResponse := CreatePatientVisitForPatient(patientSignedUpResponse.Patient.PatientId, testData, t)
 
-	// now lets go ahead and try and answer the question about the reason for visit given that it is
-	// single select
-	questionId := getQuestionWithTagAndExpectedType("q_condition_for_diagnosis", "q_type_single_entry", t, testData)
-	potentialAnswerId := getAnswerWithTagAndExpectedType("a_condition_entry", "a_type_single_entry", questionId, testData, t)
+	questionId := getQuestionWithTagAndExpectedType("q_other_acne_location_entry", "q_type_single_entry", t, testData)
+	potentialAnswerId := getAnswerWithTagAndExpectedType("a_other_acne_location_entry", "a_type_single_entry", questionId, testData, t)
 	answerIntakeRequestBody := apiservice.AnswerIntakeRequestBody{}
 	answerIntakeRequestBody.PatientVisitId = patientVisitResponse.PatientVisitId
 
@@ -503,7 +501,7 @@ func TestPhotoAnswerIntake(t *testing.T) {
 		t.Fatal("Unable to create multi-form data. Error when trying to close writer: " + err.Error())
 	}
 
-	photoAnswerIntakeHandler := apiservice.NewPhotoAnswerIntakeHandler(testData.DataApi, testData.CloudStorageService, "cases-bucket-integ", "us-east-1", 1*1024*1024)
+	photoAnswerIntakeHandler := apiservice.NewPhotoAnswerIntakeHandler(testData.DataApi, testData.CloudStorageService, "dev-cases-bucket-integ", "us-east-1", 1*1024*1024)
 	patient, err := testData.DataApi.GetPatientFromId(patientSignedUpResponse.Patient.PatientId)
 	if err != nil {
 		t.Fatal("Unable to retrieve patient data given the patient id: " + err.Error())
@@ -568,7 +566,7 @@ func TestPhotoAnswerIntake(t *testing.T) {
 							buffer.WriteString("/")
 							buffer.WriteString(strconv.FormatInt(patientAnswer.AnswerIntakeId, 10))
 							buffer.WriteString(".jpg")
-							err = testData.CloudStorageService.DeleteObjectAtLocation("cases-bucket-integ", buffer.String(), "us-east-1")
+							err = testData.CloudStorageService.DeleteObjectAtLocation("dev-cases-bucket-integ", buffer.String(), "us-east-1")
 							if err != nil {
 								t.Fatalf("Unable to delete object at location %s : %s ", patientAnswer.ObjectUrl, err.Error())
 							}
