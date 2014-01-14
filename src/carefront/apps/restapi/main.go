@@ -23,6 +23,7 @@ import (
 	thriftapi "carefront/thrift/api"
 	"github.com/go-sql-driver/mysql"
 	"github.com/samuel/go-metrics/metrics"
+	"github.com/subosito/twilio"
 )
 
 const (
@@ -43,6 +44,7 @@ type DBConfig struct {
 type TwilioConfig struct {
 	AccountSid string `long:"twilio_account_sid" description:"Twilio AccountSid"`
 	AuthToken  string `long:"twilio_auth_token" description:"Twilio AuthToken"`
+	FromNumber string `long:"twilio_from_number" description:"Twilio From Number for Messages"`
 }
 
 type Config struct {
@@ -79,6 +81,7 @@ var DefaultConfig = Config{
 		Host: "127.0.0.1",
 		Port: 3306,
 	},
+	Twilio:                &TwilioConfig{},
 	ListenAddr:            ":8080",
 	TLSListenAddr:         ":8443",
 	CaseBucket:            "carefront-cases",
@@ -191,6 +194,11 @@ func main() {
 		authApi = &thriftapi.AuthClient{Client: secureSvcClient}
 	}
 
+	var twilioCli *twilio.Client
+	if conf.Twilio != nil && conf.Twilio.AccountSid != "" && conf.Twilio.AuthToken != "" {
+		twilioCli = twilio.NewClient(conf.Twilio.AccountSid, conf.Twilio.AuthToken, nil)
+	}
+
 	dataApi := &api.DataService{DB: db}
 	cloudStorageApi := api.NewCloudStorageService(awsAuth)
 	photoAnswerCloudStorageApi := api.NewCloudStorageService(awsAuth)
@@ -201,7 +209,7 @@ func main() {
 	updatePatientPharmacyHandler := &apiservice.UpdatePatientPharmacyHandler{DataApi: dataApi}
 	authenticateDoctorHandler := &apiservice.DoctorAuthenticationHandler{DataApi: dataApi, AuthApi: authApi}
 	signupDoctorHandler := &apiservice.SignupDoctorHandler{DataApi: dataApi, AuthApi: authApi}
-	patientVisitHandler := apiservice.NewPatientVisitHandler(dataApi, authApi, cloudStorageApi, photoAnswerCloudStorageApi)
+	patientVisitHandler := apiservice.NewPatientVisitHandler(dataApi, authApi, cloudStorageApi, photoAnswerCloudStorageApi, twilioCli, conf.Twilio.FromNumber)
 	patientVisitReviewHandler := &apiservice.PatientVisitReviewHandler{DataApi: dataApi}
 	answerIntakeHandler := apiservice.NewAnswerIntakeHandler(dataApi)
 	autocompleteHandler := &apiservice.AutocompleteHandler{ERxApi: erx.NewDoseSpotService(conf.DoseSpotClinicId, conf.DoseSpotClinicKey, conf.DoseSpotUserId), Role: api.PATIENT_ROLE}
