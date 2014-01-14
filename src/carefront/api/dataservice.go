@@ -1035,12 +1035,13 @@ func (d *DataService) GetRegimenPlanForPatientVisit(patientVisitId int64) (regim
 func (d *DataService) GetDiagnosisResponseToQuestionWithTag(questionTag string, doctorId, patientVisitId int64) (answerIntake *common.AnswerIntake, err error) {
 	var id, questionId int64
 	var potentialAnswerId sql.NullInt64
-	var answerText, potentialAnswer sql.NullString
-	err = d.DB.QueryRow(`select info_intake.id, info_intake.question_id, info_intake.potential_answer_id, info_intake.answer_text, ltext
+	var answerText, potentialAnswer, answerSummary sql.NullString
+	err = d.DB.QueryRow(`select info_intake.id, info_intake.question_id, info_intake.potential_answer_id, info_intake.answer_text, l2.ltext, l1.ltext
 					from info_intake inner join question on question.id = question_id 
 					inner join potential_answer on potential_answer_id = potential_answer.id
-					inner join localized_text on answer_localized_text_id = localized_text.app_text_id
-					where info_intake.status='ACTIVE' and question_tag = ? and role_id = ? and role = 'DOCTOR' and info_intake.patient_visit_id = ? and language_id = ?`, questionTag, doctorId, patientVisitId, EN_LANGUAGE_ID).Scan(&id, &questionId, &potentialAnswerId, &answerText, &potentialAnswer)
+					inner join localized_text as l1 on answer_localized_text_id = l1.app_text_id
+					left outer join localized_text as l2 on answer_summary_text_id = l2.app_text_id
+					where info_intake.status='ACTIVE' and question_tag = ? and role_id = ? and role = 'DOCTOR' and info_intake.patient_visit_id = ? and l1.language_id = ?`, questionTag, doctorId, patientVisitId, EN_LANGUAGE_ID).Scan(&id, &questionId, &potentialAnswerId, &answerText, &answerSummary, &potentialAnswer)
 	if err != nil {
 		if err == sql.ErrNoRows {
 			err = NoDiagnosisResponseErr
@@ -1060,6 +1061,10 @@ func (d *DataService) GetDiagnosisResponseToQuestionWithTag(questionTag string, 
 	answerIntake.PatientVisitId = patientVisitId
 	if potentialAnswerId.Valid {
 		answerIntake.PotentialAnswerId = potentialAnswerId.Int64
+	}
+
+	if answerSummary.Valid {
+		answerIntake.AnswerSummary = answerSummary.String
 	}
 
 	return
@@ -2271,6 +2276,11 @@ func (d *DataService) RejectPatientVisitPhotos(patientVisitId int64) error {
 		inner join question_type on question_type.id = question.qtype_id 
 		set info_intake.status='REJECTED' 
 			where info_intake.patient_visit_id = ? and qtype='q_type_photo' and status='ACTIVE'`, patientVisitId)
+	return err
+}
+
+func (d *DataService) DeactivatePreviousDiagnosisForPatientVisit(PatientVisitId int64, DoctorId int64) error {
+	_, err := d.DB.Exec(`update info_intake set status='INACTIVE' where patient_visit_id = ? and status = 'ACTIVE' and role = 'DOCTOR' and role_id = ?`, PatientVisitId, DoctorId)
 	return err
 }
 

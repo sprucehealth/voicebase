@@ -112,6 +112,7 @@ type IntakeAPI interface {
 	UpdatePhotoAnswerRecordWithObjectStorageId(patientInfoIntakeId, objectStorageId int64) error
 	MakeCurrentPhotoAnswerInactive(role string, roleId, questionId, patientVisitId, potentialAnswerId, layoutVersionId int64) error
 	RejectPatientVisitPhotos(patientVisitId int64) error
+	DeactivatePreviousDiagnosisForPatientVisit(patientVisitId int64, doctorId int64) error
 }
 
 type IntakeLayoutAPI interface {

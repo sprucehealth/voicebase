@@ -16,7 +16,7 @@ const (
 	question_acne_diagnosis = "q_acne_diagnosis"
 	question_acne_severity  = "q_acne_severity"
 	question_acne_type      = "q_acne_type"
-	question_rosacea_type   = "q_rosacea_type"
+	question_rosacea_type   = "q_acne_rosacea_type"
 
 	diagnoseSummaryTemplate = `Hi %s,
 
@@ -129,6 +129,12 @@ func (d *DiagnosePatientHandler) diagnosePatient(w http.ResponseWriter, r *http.
 		answersToStorePerQuestion[questionItem.QuestionId] = populateAnswersToStoreForQuestion(api.DOCTOR_ROLE, questionItem, answerIntakeRequestBody.PatientVisitId, doctorId, layoutVersionId)
 	}
 
+	err = d.DataApi.DeactivatePreviousDiagnosisForPatientVisit(answerIntakeRequestBody.PatientVisitId, doctorId)
+	if err != nil {
+		WriteDeveloperError(w, http.StatusInternalServerError, "Unable to deactivate responses from previous diagnosis of this patient visit: "+err.Error())
+		return
+	}
+
 	err = d.DataApi.StoreAnswersForQuestion(api.DOCTOR_ROLE, doctorId, answerIntakeRequestBody.PatientVisitId, layoutVersionId, answersToStorePerQuestion)
 	if err != nil {
 		WriteDeveloperError(w, http.StatusInternalServerError, "Unable to store the multiple choice answer to the question for the patient based on the parameters provided and the internal state of the system: "+err.Error())
@@ -166,15 +172,16 @@ func (d *DiagnosePatientHandler) addDiagnosisSummaryForPatientVisit(doctorId int
 		return err
 	}
 
-	diagnosisMessage := acneDiagnosisAnswer.PotentialAnswer
+	diagnosisMessage := acneDiagnosisAnswer.AnswerSummary
 
+	// for acne vulgaris, we only want the diagnosis to indicate acne
 	if acneDiagnosisAnswer != nil && acneSeverityAnswer != nil {
 		if acneTypeAnswer != nil {
-			diagnosisMessage = fmt.Sprintf("%s %s %s", acneSeverityAnswer.PotentialAnswer, acneTypeAnswer.PotentialAnswer, acneDiagnosisAnswer.PotentialAnswer)
+			diagnosisMessage = fmt.Sprintf("%s %s %s", acneSeverityAnswer.AnswerSummary, acneTypeAnswer.AnswerSummary, acneDiagnosisAnswer.AnswerSummary)
 		} else if rosaceaTypeAnswer != nil {
-			diagnosisMessage = fmt.Sprintf("%s %s %s", acneSeverityAnswer.PotentialAnswer, acneTypeAnswer.PotentialAnswer, acneDiagnosisAnswer.PotentialAnswer)
+			diagnosisMessage = fmt.Sprintf("%s %s %s", acneSeverityAnswer.AnswerSummary, rosaceaTypeAnswer.AnswerSummary, acneDiagnosisAnswer.AnswerSummary)
 		} else {
-			diagnosisMessage = fmt.Sprintf("%s %s", acneSeverityAnswer.PotentialAnswer, acneDiagnosisAnswer.PotentialAnswer)
+			diagnosisMessage = fmt.Sprintf("%s %s", acneSeverityAnswer.AnswerSummary, acneDiagnosisAnswer.PotentialAnswer)
 		}
 	}
 
