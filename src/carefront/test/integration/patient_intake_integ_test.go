@@ -474,7 +474,7 @@ func TestPhotoAnswerIntake(t *testing.T) {
 	// signup a random test patient for which to answer questions
 	patientSignedUpResponse := SignupRandomTestPatient(t, testData.DataApi, testData.AuthApi)
 	patientVisitResponse := CreatePatientVisitForPatient(patientSignedUpResponse.Patient.PatientId, testData, t)
-	questionId := getQuestionWithTagAndExpectedType("q_chest_photo_intake", "q_type_single_photo", t, testData)
+	questionId := getQuestionWithTagAndExpectedType("q_chest_photo_intake", "q_type_photo", t, testData)
 	potentialAnswerId := getAnswerWithTagAndExpectedType("a_chest_phota_intake", "a_type_photo_entry_chest", questionId, testData, t)
 
 	body := &bytes.Buffer{}

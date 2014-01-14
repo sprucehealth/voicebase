@@ -1852,41 +1852,33 @@ func (d *DataService) GetLatestClosedPatientVisitForPatient(patientId int64) (*c
 }
 
 func (d *DataService) GetPatientVisitFromId(patientVisitId int64) (*common.PatientVisit, error) {
-	var patientId, healthConditionId, layoutVersionId int64
+	patientVisit := common.PatientVisit{PatientVisitId: patientVisitId}
 	var creationDateBytes, submittedDateBytes, closedDateBytes mysql.NullTime
-	var status string
-	row := d.DB.QueryRow(`select patient_id, health_condition_id, layout_version_id, 
-		creation_date, submitted_date, closed_date, status from patient_visit where id = ?`, patientVisitId)
-	err := row.Scan(&patientId, &healthConditionId, &layoutVersionId, &creationDateBytes, &submittedDateBytes, &closedDateBytes, &status)
+	err := d.DB.QueryRow(`select patient_id, health_condition_id, layout_version_id, 
+		creation_date, submitted_date, closed_date, status from patient_visit where id = ?`, patientVisitId,
+	).Scan(
+		&patientVisit.PatientId,
+		&patientVisit.HealthConditionId,
+		&patientVisit.LayoutVersionId, &creationDateBytes, &submittedDateBytes, &closedDateBytes, &patientVisit.Status)
 	if err != nil {
 		return nil, err
-	}
-	patientVisit := &common.PatientVisit{
-		PatientVisitId:    patientVisitId,
-		PatientId:         patientId,
-		HealthConditionId: healthConditionId,
-		Status:            status,
-		LayoutVersionId:   layoutVersionId,
 	}
 
 	if creationDateBytes.Valid {
 		patientVisit.CreationDate = creationDateBytes.Time
 	}
-
 	if submittedDateBytes.Valid {
 		patientVisit.SubmittedDate = submittedDateBytes.Time
 	}
-
 	if closedDateBytes.Valid {
 		patientVisit.ClosedDate = closedDateBytes.Time
 	}
 
-	return patientVisit, err
+	return &patientVisit, err
 }
 
 func (d *DataService) GetPatientFromPatientVisitId(patientVisitId int64) (*common.Patient, error) {
-	var patientId, accountId int64
-	var firstName, lastName, status, gender string
+	var patient common.Patient
 	var phone, zipCode sql.NullString
 	var dob mysql.NullTime
 	err := d.DB.QueryRow(`select patient.id, account_id, first_name, last_name, zip_code, phone, gender, dob, patient.status from patient_visit
@@ -1894,33 +1886,28 @@ func (d *DataService) GetPatientFromPatientVisitId(patientVisitId int64) (*commo
 							left outer join patient_location on patient_location.patient_id = patient_visit.patient_id
 							inner join patient on patient_visit.patient_id = patient.id where patient_visit.id = ? 
 							and (phone is null or (patient_phone.status='ACTIVE' and patient_phone.phone_type=?))
-							and (zip_code is null or patient_location.status = 'ACTIVE')`, patientVisitId, patient_phone_type).Scan(&patientId, &accountId, &firstName, &lastName, &zipCode, &phone, &gender, &dob, &status)
-	if err != nil {
-		if err == sql.ErrNoRows {
-			return nil, nil
-		}
+							and (zip_code is null or patient_location.status = 'ACTIVE')`, patientVisitId, patient_phone_type,
+	).Scan(
+		&patient.PatientId, &patient.AccountId, &patient.FirstName, &patient.LastName,
+		&zipCode, &phone, &patient.Gender, &dob, &patient.Status,
+	)
+	if err == sql.ErrNoRows {
+		return nil, nil
+	} else if err != nil {
 		return nil, err
 	}
 
-	patient := &common.Patient{}
-	patient.PatientId = patientId
-	patient.AccountId = accountId
-	patient.FirstName = firstName
-	patient.LastName = lastName
 	if phone.Valid {
 		patient.Phone = phone.String
 	}
 	if dob.Valid {
 		patient.Dob = dob.Time
 	}
-
-	patient.Gender = gender
-	patient.Status = status
 	if zipCode.Valid {
 		patient.ZipCode = zipCode.String
 	}
 
-	return patient, nil
+	return &patient, nil
 }
 
 func (d *DataService) CreateNewPatientVisit(patientId, healthConditionId, layoutVersionId int64) (int64, error) {
@@ -2263,11 +2250,7 @@ func (d *DataService) CreatePhotoAnswerForQuestionRecord(role string, roleId, qu
 		return 0, err
 	}
 
-	lastId, err := res.LastInsertId()
-	if err != nil {
-		return 0, err
-	}
-	return lastId, nil
+	return res.LastInsertId()
 }
 
 func (d *DataService) UpdatePhotoAnswerRecordWithObjectStorageId(patientInfoIntakeId, objectStorageId int64) error {
@@ -2459,21 +2442,12 @@ func (d *DataService) CreateNewUploadCloudObjectRecord(bucket, key, region strin
 		return 0, err
 	}
 
-	lastId, err := res.LastInsertId()
-	if err != nil {
-		return 0, err
-	}
-
-	return lastId, err
+	return res.LastInsertId()
 }
 
 func (d *DataService) UpdateCloudObjectRecordToSayCompleted(id int64) error {
 	_, err := d.DB.Exec("update object_storage set status='ACTIVE' where id = ?", id)
-	if err != nil {
-		return err
-	}
-
-	return nil
+	return err
 }
 
 func (d *DataService) MarkNewLayoutVersionAsCreating(objectId int64, syntaxVersion int64, healthConditionId int64, role, purpose, comment string) (int64, error) {
@@ -2483,12 +2457,7 @@ func (d *DataService) MarkNewLayoutVersionAsCreating(objectId int64, syntaxVersi
 		return 0, err
 	}
 
-	lastId, err := res.LastInsertId()
-	if err != nil {
-		return 0, err
-	}
-
-	return lastId, err
+	return res.LastInsertId()
 }
 
 func (d *DataService) MarkNewDoctorLayoutAsCreating(objectId int64, layoutVersionId int64, healthConditionId int64) (int64, error) {
@@ -2498,12 +2467,7 @@ func (d *DataService) MarkNewDoctorLayoutAsCreating(objectId int64, layoutVersio
 		return 0, err
 	}
 
-	lastId, err := res.LastInsertId()
-	if err != nil {
-		return 0, err
-	}
-
-	return lastId, err
+	return res.LastInsertId()
 }
 
 func (d *DataService) MarkNewPatientLayoutVersionAsCreating(objectId int64, languageId int64, layoutVersionId int64, healthConditionId int64) (int64, error) {
@@ -2513,12 +2477,7 @@ func (d *DataService) MarkNewPatientLayoutVersionAsCreating(objectId int64, lang
 		return 0, err
 	}
 
-	lastId, err := res.LastInsertId()
-	if err != nil {
-		return 0, err
-	}
-
-	return lastId, err
+	return res.LastInsertId()
 }
 
 func (d *DataService) UpdatePatientActiveLayouts(layoutId int64, clientLayoutIds []int64, healthConditionId int64) error {
@@ -2538,7 +2497,7 @@ func (d *DataService) UpdatePatientActiveLayouts(layoutId int64, clientLayoutIds
 	}
 
 	// update the new layout as ACTIVE
-	_, err = tx.Exec(`update layout_version set status='ACTIVE' where id = ?`, layoutId)
+	_, err = tx.Exec(`update layout_version set status=? where id = ?`, status_active, layoutId)
 	if err != nil {
 		tx.Rollback()
 		return err
@@ -2560,29 +2519,17 @@ func (d *DataService) UpdateDoctorActiveLayouts(layoutId int64, doctorLayoutId i
 
 	// update the current client active layouts to DEPRECATED
 	_, err := tx.Exec(`update dr_layout_version set status='DEPCRECATED' where status='ACTIVE' and health_condition_id = ? and layout_version_id in (select id from layout_version where role = 'DOCTOR' and layout_purpose = ?)`, healthConditionId, purpose)
-	if err != nil {
-		log.Println(err)
-		tx.Rollback()
-		return err
+	if err == nil {
+		// update the current active layouts to DEPRECATED
+		_, err = tx.Exec(`update layout_version set status='DEPCRECATED' where status='ACTIVE' and role = 'DOCTOR' and layout_purpose = ? and health_condition_id = ?`, purpose, healthConditionId)
 	}
-
-	// update the current active layouts to DEPRECATED
-	_, err = tx.Exec(`update layout_version set status='DEPCRECATED' where status='ACTIVE' and role = 'DOCTOR' and layout_purpose = ? and health_condition_id = ?`, purpose, healthConditionId)
-	if err != nil {
-		log.Println(err)
-		tx.Rollback()
-		return err
+	if err == nil {
+		// update the new layout as ACTIVE
+		_, err = tx.Exec(`update layout_version set status=? where id = ?`, status_active, layoutId)
 	}
-
-	// update the new layout as ACTIVE
-	_, err = tx.Exec(`update layout_version set status='ACTIVE' where id = ?`, layoutId)
-	if err != nil {
-		log.Println(err)
-		tx.Rollback()
-		return err
+	if err == nil {
+		_, err = tx.Exec(`update dr_layout_version set status=? where id = ?`, status_active, doctorLayoutId)
 	}
-
-	_, err = tx.Exec(`update dr_layout_version set status='ACTIVE' where id = ?`, doctorLayoutId)
 	if err != nil {
 		log.Println(err)
 		tx.Rollback()
