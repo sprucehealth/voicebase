@@ -158,3 +158,15 @@ type DiagnosisSummary struct {
 	Summary string `json:"text"`
 	Title   string `json:"title,omitempty"`
 }
+
+type QuestionInfo struct {
+	Id                 int64
+	Title              string
+	Type               string
+	Summary            string
+	SubText            string
+	ParentQuestionId   int64
+	AdditionalFields   map[string]string
+	FormattedFieldTags string
+	Required           bool
+}

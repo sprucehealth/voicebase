@@ -14,14 +14,14 @@ func (c *Condition) FillInDatabaseInfo(dataApi api.DataAPI, languageId int64) er
 	if c.QuestionTag == "" {
 		return nil
 	}
-	questionId, _, _, _, _, _, _, _, _, err := dataApi.GetQuestionInfo(c.QuestionTag, languageId)
+	questionInfo, err := dataApi.GetQuestionInfo(c.QuestionTag, languageId)
 	if err != nil {
 		return err
 	}
-	c.QuestionId = questionId
+	c.QuestionId = questionInfo.Id
 	c.PotentialAnswersId = make([]string, len(c.PotentialAnswersTags))
 	for i, tag := range c.PotentialAnswersTags {
-		answerInfos, err := dataApi.GetAnswerInfo(questionId, languageId)
+		answerInfos, err := dataApi.GetAnswerInfo(questionInfo.Id, languageId)
 		if err != nil {
 			return err
 		}
@@ -57,20 +57,20 @@ func (t *TipSection) FillInDatabaseInfo(dataApi api.DataAPI, languageId int64) e
 }
 
 func (q *Question) FillInDatabaseInfo(dataApi api.DataAPI, languageId int64) error {
-	questionId, questionTitle, questionType, questionSummary, questionSubtext, parentQuestionId, additionalFields, formattedFieldTags, required, err := dataApi.GetQuestionInfo(q.QuestionTag, languageId)
+	questionInfo, err := dataApi.GetQuestionInfo(q.QuestionTag, languageId)
 	if err != nil {
 		return err
 	}
-	q.QuestionId = questionId
-	q.QuestionTitle = questionTitle
-	q.QuestionTypes = []string{questionType}
-	q.ParentQuestionId = parentQuestionId
-	q.QuestionSummary = questionSummary
-	q.AdditionalFields = additionalFields
-	q.QuestionSubText = questionSubtext
-	q.Required = required
-	if formattedFieldTags != "" {
-		q.FormattedFieldTags = strings.Split(formattedFieldTags, ",")
+	q.QuestionId = questionInfo.Id
+	q.QuestionTitle = questionInfo.Title
+	q.QuestionTypes = []string{questionInfo.Type}
+	q.ParentQuestionId = questionInfo.ParentQuestionId
+	q.QuestionSummary = questionInfo.Summary
+	q.AdditionalFields = questionInfo.AdditionalFields
+	q.QuestionSubText = questionInfo.SubText
+	q.Required = questionInfo.Required
+	if questionInfo.FormattedFieldTags != "" {
+		q.FormattedFieldTags = strings.Split(questionInfo.FormattedFieldTags, ",")
 	}
 
 	if q.ConditionBlock != nil {
@@ -97,7 +97,7 @@ func (q *Question) FillInDatabaseInfo(dataApi api.DataAPI, languageId int64) err
 	}
 	// go over the potential ansnwer tags to create potential outcome blocks
 	q.PotentialAnswers = make([]*PotentialAnswer, 0)
-	answerInfos, err := dataApi.GetAnswerInfo(questionId, languageId)
+	answerInfos, err := dataApi.GetAnswerInfo(questionInfo.Id, languageId)
 	if err != nil {
 		return err
 	}

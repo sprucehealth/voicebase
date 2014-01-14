@@ -23,18 +23,18 @@ type AnswerIntakeHandler struct {
 }
 
 func getQuestionWithTagAndExpectedType(questionTag, questionType string, t *testing.T, testData TestData) int64 {
-	questionId, _, questionType, _, _, _, _, _, _, err := testData.DataApi.GetQuestionInfo(questionTag, 1)
+	questionInfo, err := testData.DataApi.GetQuestionInfo(questionTag, 1)
 	if err != nil {
 		t.Fatal("Unable to query for question q_reason_visit from database: " + err.Error())
 	}
 
 	// need to ensure that the question we are trying to get the information for is a single select
 	// question type
-	if questionType != questionType {
+	if questionInfo.Type != questionType {
 		t.Fatal("Expected q_reason_visit to be q_type_single_select but it's not.")
 	}
 
-	return questionId
+	return questionInfo.Id
 }
 
 func getAnswerWithTagAndExpectedType(answerTag, answerType string, questionId int64, testData TestData, t *testing.T) int64 {

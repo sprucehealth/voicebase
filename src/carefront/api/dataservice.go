@@ -2331,52 +2331,65 @@ func (d *DataService) GetSectionInfo(sectionTag string, languageId int64) (id in
 	return
 }
 
-func (d *DataService) GetQuestionInfo(questionTag string, languageId int64) (id int64, questionTitle string, questionType string, questionSummary string, questionSubText string, parentQuestionId int64, additionalFields map[string]string, formattedFieldTags string, required bool, err error) {
+func (d *DataService) GetQuestionInfo(questionTag string, languageId int64) (*common.QuestionInfo, error) {
+	var questionInfo common.QuestionInfo
 	var byteQuestionTitle, byteQuestionType, byteQuestionSummary, byteQuestionSubtext []byte
 	var formattedFieldTagsNull sql.NullString
 	var nullParentQuestionId, requiredBit sql.NullInt64
-	err = d.DB.QueryRow(
+	err := d.DB.QueryRow(
 		`select question.id, l1.ltext, qtype, parent_question_id, l2.ltext, l3.ltext, formatted_field_tags, required from question 
 			left outer join localized_text as l1 on l1.app_text_id=qtext_app_text_id
 			left outer join question_type on qtype_id=question_type.id
 			left outer join localized_text as l2 on qtext_short_text_id = l2.app_text_id
 			left outer join localized_text as l3 on subtext_app_text_id = l3.app_text_id
 				where question_tag = ? and (l1.ltext is NULL or l1.language_id = ?) and (l3.ltext is NULL or l3.language_id=?)`,
-		questionTag, languageId, languageId).Scan(&id, &byteQuestionTitle, &byteQuestionType, &nullParentQuestionId, &byteQuestionSummary, &byteQuestionSubtext, &formattedFieldTagsNull, &requiredBit)
-	if nullParentQuestionId.Valid {
-		parentQuestionId = nullParentQuestionId.Int64
+		questionTag, languageId, languageId).Scan(
+		&questionInfo.Id,
+		&byteQuestionTitle,
+		&byteQuestionType,
+		&nullParentQuestionId,
+		&byteQuestionSummary,
+		&byteQuestionSubtext,
+		&formattedFieldTagsNull,
+		&requiredBit,
+	)
+	if err != nil {
+		return nil, err
 	}
-	questionTitle = string(byteQuestionTitle)
-	questionType = string(byteQuestionType)
-	questionSummary = string(byteQuestionSummary)
-	questionSubText = string(byteQuestionSubtext)
+	if nullParentQuestionId.Valid {
+		questionInfo.ParentQuestionId = nullParentQuestionId.Int64
+	}
+	questionInfo.Title = string(byteQuestionTitle)
+	questionInfo.Type = string(byteQuestionType)
+	questionInfo.Summary = string(byteQuestionSummary)
+	questionInfo.SubText = string(byteQuestionSubtext)
 	if formattedFieldTagsNull.Valid {
-		formattedFieldTags = formattedFieldTagsNull.String
+		questionInfo.FormattedFieldTags = formattedFieldTagsNull.String
 	}
 	if requiredBit.Valid && requiredBit.Int64 == 1 {
-		required = true
+		questionInfo.Required = true
 	}
 
 	// get any additional fields pertaining to the question from the database
 	rows, err := d.DB.Query(`select question_field, ltext from question_fields
 								inner join localized_text on question_fields.app_text_id = localized_text.app_text_id
-								where question_id = ? and language_id = ?`, id, languageId)
+								where question_id = ? and language_id = ?`, questionInfo.Id, languageId)
 	if err != nil {
-		return
+		return nil, err
 	}
 	for rows.Next() {
 		var questionField, fieldText string
 		err = rows.Scan(&questionField, &fieldText)
 		if err != nil {
-			return
+			return nil, err
 		}
-		if additionalFields == nil {
-			additionalFields = make(map[string]string)
+		if questionInfo.AdditionalFields == nil {
+			questionInfo.AdditionalFields = make(map[string]string)
 		}
-		additionalFields[questionField] = fieldText
+		questionInfo.AdditionalFields[questionField] = fieldText
 	}
 
-	return
+	return &questionInfo, nil
 }
 
 func (d *DataService) GetAnswerInfo(questionId int64, languageId int64) (answerInfos []PotentialAnswerInfo, err error) {
