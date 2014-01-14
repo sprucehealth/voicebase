@@ -20,6 +20,8 @@ const (
 	HEALTH_CONDITION_ACNE_ID = 1
 )
 
+const doctorNewVisitNotification = "SPRUCE: You have a new patient visit waiting."
+
 type PatientVisitHandler struct {
 	DataApi                    api.DataAPI
 	AuthApi                    thriftapi.Auth
@@ -135,9 +137,15 @@ func (s *PatientVisitHandler) submitPatientVisit(w http.ResponseWriter, r *http.
 		return
 	}
 
-	// if s.twilioCli != nil {
-	// 	s.twilioCli.Messages.SendSMS(s.twilioFromNumber, "TODO: to number", "TODO: body")
-	// }
+	if s.twilioCli != nil {
+		if doc, err := s.DataApi.GetDoctorFromId(doctorId); err != nil {
+			log.Printf("Failed to get doctor for ID %d: %s", doctorId, err.Error())
+		} else {
+			// if doc.CellNumber != "" {
+			//	s.twilioCli.Messages.SendSMS(s.twilioFromNumber, doc.CellNumber, doctorNewVisitNotification)
+			// }
+		}
+	}
 
 	WriteJSONToHTTPResponseWriter(w, http.StatusOK, PatientVisitSubmittedResponse{PatientVisitId: patientVisit.PatientVisitId, Status: patientVisit.Status})
 }
