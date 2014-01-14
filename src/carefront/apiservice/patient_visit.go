@@ -141,6 +141,7 @@ func (s *PatientVisitHandler) submitPatientVisit(w http.ResponseWriter, r *http.
 		if doc, err := s.DataApi.GetDoctorFromId(doctorId); err != nil {
 			log.Printf("Failed to get doctor for ID %d: %s", doctorId, err.Error())
 		} else {
+			_ = doc
 			// if doc.CellNumber != "" {
 			//	s.twilioCli.Messages.SendSMS(s.twilioFromNumber, doc.CellNumber, doctorNewVisitNotification)
 			// }
