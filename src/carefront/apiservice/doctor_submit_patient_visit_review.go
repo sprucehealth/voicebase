@@ -2,6 +2,7 @@ package apiservice
 
 import (
 	"carefront/api"
+	"fmt"
 	"github.com/gorilla/schema"
 	"net/http"
 )
@@ -12,7 +13,8 @@ type DoctorSubmitPatientVisitReviewHandler struct {
 }
 
 type SubmitPatientVisitReviewRequest struct {
-	PatientVisitId int64 `schema:"patient_visit_id"`
+	PatientVisitId int64  `schema:"patient_visit_id"`
+	Status         string `schema:"status"`
 }
 
 type SubmitPatientVisitReviewResponse struct {
@@ -60,17 +62,36 @@ func (d *DoctorSubmitPatientVisitReviewHandler) submitPatientVisitReview(w http.
 		return
 	}
 
-	// update the status of the patient visit
-	err = d.DataApi.ClosePatientVisit(requestData.PatientVisitId)
-	if err != nil {
-		WriteDeveloperError(w, http.StatusInternalServerError, "Unable to update the status of the visit to closed: "+err.Error())
-		return
-	}
+	switch requestData.Status {
+	case "", api.CASE_STATUS_CLOSED, api.CASE_STATUS_TREATED:
+		// update the status of the patient visit
+		err = d.DataApi.ClosePatientVisit(requestData.PatientVisitId, api.CASE_STATUS_TREATED)
+		if err != nil {
+			WriteDeveloperError(w, http.StatusInternalServerError, "Unable to update the status of the visit to closed: "+err.Error())
+			return
+		}
+		// update the item in the doctors queue to say completed
+		err = d.DataApi.UpdateStateForPatientVisitInDoctorQueue(doctorId, requestData.PatientVisitId, api.QUEUE_ITEM_STATUS_ONGOING, api.QUEUE_ITEM_STATUS_COMPLETED)
+		if err != nil {
+			WriteDeveloperError(w, http.StatusInternalServerError, "Unable to mark the patient visit in the doctor's queue as completed: "+err.Error())
+			return
+		}
 
-	// update the item in the doctors queue to say completed
-	err = d.DataApi.UpdateStateForPatientVisitInDoctorQueue(doctorId, requestData.PatientVisitId, api.QUEUE_ITEM_STATUS_ONGOING, api.QUEUE_ITEM_STATUS_COMPLETED)
-	if err != nil {
-		WriteDeveloperError(w, http.StatusInternalServerError, "Unable to mark the patient visit in the doctor's queue as completed: "+err.Error())
+	case api.CASE_STATUS_TRIAGED:
+		// update the status of the patient visit
+		err = d.DataApi.ClosePatientVisit(requestData.PatientVisitId, api.CASE_STATUS_TRIAGED)
+		if err != nil {
+			WriteDeveloperError(w, http.StatusInternalServerError, "Unable to update the status of the visit to closed: "+err.Error())
+			return
+		}
+		// update the item in the doctors queue to say completed
+		err = d.DataApi.UpdateStateForPatientVisitInDoctorQueue(doctorId, requestData.PatientVisitId, api.QUEUE_ITEM_STATUS_ONGOING, api.QUEUE_ITEM_STATUS_TRIAGED)
+		if err != nil {
+			WriteDeveloperError(w, http.StatusInternalServerError, "Unable to mark the patient visit in the doctor's queue as completed: "+err.Error())
+			return
+		}
+	default:
+		WriteDeveloperError(w, http.StatusBadRequest, fmt.Sprintf("Status %s is not a valid status to set for the patient visit review", requestData.Status))
 		return
 	}
 

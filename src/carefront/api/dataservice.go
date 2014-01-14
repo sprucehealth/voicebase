@@ -1991,8 +1991,8 @@ func (d *DataService) GetMessageForPatientVisitStatus(patientVisitId int64) (mes
 	return
 }
 
-func (d *DataService) ClosePatientVisit(patientVisitId int64) error {
-	_, err := d.DB.Exec(`update patient_visit set status=?, closed_date=now() where id = ?`, CASE_STATUS_CLOSED, patientVisitId)
+func (d *DataService) ClosePatientVisit(patientVisitId int64, status string) error {
+	_, err := d.DB.Exec(`update patient_visit set status=?, closed_date=now() where id = ?`, status, patientVisitId)
 	return err
 }
 

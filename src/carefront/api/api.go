@@ -22,6 +22,8 @@ const (
 	CASE_STATUS_SUBMITTED       = "SUBMITTED"
 	CASE_STATUS_REVIEWING       = "REVIEWING"
 	CASE_STATUS_CLOSED          = "CLOSED"
+	CASE_STATUS_TRIAGED         = "TRIAGED"
+	CASE_STATUS_TREATED         = "TREATED"
 	CASE_STATUS_PHOTOS_REJECTED = "PHOTOS_REJECTED"
 	HIPAA_AUTH                  = "hipaa"
 	CONSENT_AUTH                = "consent"
@@ -90,7 +92,7 @@ type PatientVisitAPI interface {
 	UpdatePatientVisitStatus(patientVisitId int64, status string) error
 	UpdatePatientVisitStatusWithMessage(patientVisitId int64, message, event string) error
 	GetMessageForPatientVisitStatus(patientVisitId int64) (message string, err error)
-	ClosePatientVisit(patientVisitId int64) error
+	ClosePatientVisit(patientVisitId int64, status string) error
 	SubmitPatientVisitWithId(patientVisitId int64) error
 	UpdateFollowUpTimeForPatientVisit(patientVisitId, doctorId, currentTimeSinceEpoch, followUpValue int64, followUpUnit string) error
 	GetFollowUpTimeForPatientVisit(patientVisitId int64) (followUp *common.FollowUp, err error)

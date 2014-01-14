@@ -51,8 +51,12 @@ func (d *DoctorQueueItem) GetTitleAndSubtitle(dataApi DataAPI) (title, subtitle 
 		case QUEUE_ITEM_STATUS_ONGOING:
 			title = fmt.Sprintf("Continue reviewing visit with %s %s", patient.FirstName, patient.LastName)
 			subtitle = getRemainingTimeSubtitleForCaseToBeReviewed(d.EnqueueDate)
-		case QUEUE_ITEM_STATUS_PHOTOS_REJECTED:
+		case QUEUE_ITEM_STATπUS_PHOTOS_REJECTED:
 			title = fmt.Sprintf("Photos rejected for visit with %s %s", patient.FirstName, patient.LastName)
+			formattedTime := d.EnqueueDate.Format("3:04pm")
+			subtitle = fmt.Sprintf("%s %d at %s", d.EnqueueDate.Month().String(), d.EnqueueDate.Day(), formattedTime)
+		case QUEUE_ITEM_STATUS_TRIAGED:
+			title = fmt.Sprintf("Completed and triaged visit for %s %s", patient.FirstName, patient.LastName)
 			formattedTime := d.EnqueueDate.Format("3:04pm")
 			subtitle = fmt.Sprintf("%s %d at %s", d.EnqueueDate.Month().String(), d.EnqueueDate.Day(), formattedTime)
 		}
@@ -79,7 +83,7 @@ func (d *DoctorQueueItem) GetDisplayTypes() []string {
 	switch d.EventType {
 	case EVENT_TYPE_PATIENT_VISIT:
 		switch d.Status {
-		case QUEUE_ITEM_STATUS_COMPLETED, QUEUE_ITEM_STATUS_PHOTOS_REJECTED:
+		case QUEUE_ITEM_STATUS_COMPLETED, QUEUE_ITEM_STATUS_PHOTOS_REJECTED, QUEUE_ITEM_STATUS_TRIAGED:
 			return []string{DISPLAY_TYPE_TITLE_SUBTITLE_NONACTIONABLE}
 		case QUEUE_ITEM_STATUS_PENDING, QUEUE_ITEM_STATUS_ONGOING:
 			return []string{DISPLAY_TYPE_TITLE_SUBTITLE_BUTTON}

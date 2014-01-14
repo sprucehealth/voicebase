@@ -312,7 +312,7 @@ func TestDoctorSubmissionOfPatientVisitReview(t *testing.T) {
 		t.Fatal("Unable to get patient visit given id: " + err.Error())
 	}
 
-	if patientVisit.Status != api.CASE_STATUS_CLOSED {
+	if patientVisit.Status != api.CASE_STATUS_TREATED {
 		t.Fatalf("Expected the status to be %s but status is %s", api.CASE_STATUS_CLOSED, patientVisit.Status)
 	}
 }
