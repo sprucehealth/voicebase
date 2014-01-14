@@ -269,7 +269,7 @@ func main() {
 	doctorRegimenHandler := apiservice.NewDoctorRegimenHandler(dataApi)
 	doctorAdviceHandler := apiservice.NewDoctorAdviceHandler(dataApi)
 	doctorQueueHandler := &apiservice.DoctorQueueHandler{DataApi: dataApi}
-	mux := &apiservice.AuthServeMux{ServeMux: *http.NewServeMux(), AuthApi: authApi}
+	mux := apiservice.NewAuthServeMux(authApi, metricsRegistry.Scope("restapi"))
 
 	mux.Handle("/v1/content", staticContentHandler)
 	mux.Handle("/v1/patient", signupPatientHandler)

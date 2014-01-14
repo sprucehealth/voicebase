@@ -5,6 +5,7 @@ import (
 	"net/http"
 
 	"carefront/thrift/api"
+	"github.com/samuel/go-metrics/metrics"
 )
 
 // If a handler conforms to this interface and returns true then
@@ -21,6 +22,10 @@ type Authenticated interface {
 type AuthServeMux struct {
 	http.ServeMux
 	AuthApi api.Auth
+
+	statRequests    metrics.Counter
+	statAuthSuccess metrics.Counter
+	statAuthFailure metrics.Counter
 }
 
 type CustomResponseWriter struct {
@@ -46,6 +51,20 @@ func (c *CustomResponseWriter) Write(bytes []byte) (int, error) {
 	return (c.WrappedResponseWriter.Write(bytes))
 }
 
+func NewAuthServeMux(authApi api.Auth, statsRegistry metrics.Registry) *AuthServeMux {
+	mux := &AuthServeMux{
+		ServeMux:        *http.NewServeMux(),
+		AuthApi:         authApi,
+		statRequests:    metrics.NewCounter(),
+		statAuthSuccess: metrics.NewCounter(),
+		statAuthFailure: metrics.NewCounter(),
+	}
+	statsRegistry.Add("requests/total", mux.statRequests)
+	statsRegistry.Add("requests/auth/success", mux.statAuthSuccess)
+	statsRegistry.Add("requests/auth/failure", mux.statAuthFailure)
+	return mux
+}
+
 // Parse the "Authorization: token xxx" header and check the token for validity
 func (mux *AuthServeMux) checkAuth(r *http.Request) (bool, int64, error) {
 	token, err := GetAuthTokenFromHeader(r)
@@ -66,6 +85,8 @@ func (mux *AuthServeMux) checkAuth(r *http.Request) (bool, int64, error) {
 }
 
 func (mux *AuthServeMux) ServeHTTP(w http.ResponseWriter, r *http.Request) {
+	mux.statRequests.Inc(1)
+
 	customResponseWriter := &CustomResponseWriter{w, 0, false}
 	defer func() {
 		log.Printf("%s %s %s %d %s\n", r.RemoteAddr, r.Method, r.URL, customResponseWriter.StatusCode, w.Header().Get("Content-Type"))
@@ -90,10 +111,14 @@ func (mux *AuthServeMux) ServeHTTP(w http.ResponseWriter, r *http.Request) {
 			customResponseWriter.WriteHeader(http.StatusInternalServerError)
 			return
 		} else if !valid {
+			mux.statAuthFailure.Inc(1)
 			WriteAuthTimeoutError(customResponseWriter)
 			return
-		} else if auth, ok := h.(Authenticated); ok {
-			auth.AccountIdFromAuthToken(accountId)
+		} else {
+			mux.statAuthSuccess.Inc(1)
+			if auth, ok := h.(Authenticated); ok {
+				auth.AccountIdFromAuthToken(accountId)
+			}
 		}
 	}
 	h.ServeHTTP(customResponseWriter, r)
