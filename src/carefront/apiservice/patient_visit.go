@@ -27,7 +27,6 @@ type PatientVisitHandler struct {
 	AuthApi                    thriftapi.Auth
 	LayoutStorageService       api.CloudStorageAPI
 	PatientPhotoStorageService api.CloudStorageAPI
-	accountId                  int64
 	twilioCli                  *twilio.Client
 	twilioFromNumber           string
 }
@@ -49,11 +48,7 @@ type PatientVisitSubmittedResponse struct {
 }
 
 func NewPatientVisitHandler(dataApi api.DataAPI, authApi thriftapi.Auth, layoutStorageService api.CloudStorageAPI, patientPhotoStorageService api.CloudStorageAPI, twilioCli *twilio.Client, twilioFromNumber string) *PatientVisitHandler {
-	return &PatientVisitHandler{dataApi, authApi, layoutStorageService, patientPhotoStorageService, 0, twilioCli, twilioFromNumber}
-}
-
-func (s *PatientVisitHandler) AccountIdFromAuthToken(accountId int64) {
-	s.accountId = accountId
+	return &PatientVisitHandler{dataApi, authApi, layoutStorageService, patientPhotoStorageService, twilioCli, twilioFromNumber}
 }
 
 func (s *PatientVisitHandler) ServeHTTP(w http.ResponseWriter, r *http.Request) {
@@ -77,7 +72,7 @@ func (s *PatientVisitHandler) submitPatientVisit(w http.ResponseWriter, r *http.
 		return
 	}
 
-	patientId, err := s.DataApi.GetPatientIdFromAccountId(s.accountId)
+	patientId, err := s.DataApi.GetPatientIdFromAccountId(GetContext(r).AccountId)
 	if err != nil {
 		WriteDeveloperError(w, http.StatusInternalServerError, "Unable to get patientId from accountId retrieved from auth token: "+err.Error())
 		return
@@ -155,7 +150,7 @@ func (s *PatientVisitHandler) submitPatientVisit(w http.ResponseWriter, r *http.
 
 func (s *PatientVisitHandler) returnLastCreatedPatientVisit(w http.ResponseWriter, r *http.Request) {
 
-	patientId, err := s.DataApi.GetPatientIdFromAccountId(s.accountId)
+	patientId, err := s.DataApi.GetPatientIdFromAccountId(GetContext(r).AccountId)
 	if err != nil {
 		WriteDeveloperError(w, http.StatusInternalServerError, "Unable to get patientId from the accountId retreived from the auth token: "+err.Error())
 		return
@@ -244,7 +239,7 @@ func (s *PatientVisitHandler) returnLastCreatedPatientVisit(w http.ResponseWrite
 }
 
 func (s *PatientVisitHandler) createNewPatientVisitHandler(w http.ResponseWriter, r *http.Request) {
-	patientId, err := s.DataApi.GetPatientIdFromAccountId(s.accountId)
+	patientId, err := s.DataApi.GetPatientIdFromAccountId(GetContext(r).AccountId)
 	if err != nil {
 		WriteDeveloperError(w, http.StatusInternalServerError, "Unable to get patientId from the accountId retreived from the auth token: "+err.Error())
 		return

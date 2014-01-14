@@ -9,8 +9,7 @@ import (
 )
 
 type PatientVisitFollowUpHandler struct {
-	DataApi   api.DataAPI
-	accountId int64
+	DataApi api.DataAPI
 }
 
 type PatientVisitFollowUpRequestResponse struct {
@@ -25,11 +24,7 @@ type PatientVisitFollowupResponse struct {
 }
 
 func NewPatientVisitFollowUpHandler(dataApi api.DataAPI) *PatientVisitFollowUpHandler {
-	return &PatientVisitFollowUpHandler{DataApi: dataApi, accountId: 0}
-}
-
-func (p *PatientVisitFollowUpHandler) AccountIdFromAuthToken(accountId int64) {
-	p.accountId = accountId
+	return &PatientVisitFollowUpHandler{DataApi: dataApi}
 }
 
 func (p *PatientVisitFollowUpHandler) ServeHTTP(w http.ResponseWriter, r *http.Request) {
@@ -47,7 +42,7 @@ func (p *PatientVisitFollowUpHandler) getFollowupForPatientVisit(w http.Response
 	decoder := schema.NewDecoder()
 	err := decoder.Decode(requestData, r.Form)
 
-	_, _, _, statusCode, err := ValidateDoctorAccessToPatientVisitAndGetRelevantData(requestData.PatientVisitId, p.accountId, p.DataApi)
+	_, _, _, statusCode, err := ValidateDoctorAccessToPatientVisitAndGetRelevantData(requestData.PatientVisitId, GetContext(r).AccountId, p.DataApi)
 	if err != nil {
 		WriteDeveloperError(w, statusCode, err.Error())
 		return
@@ -84,7 +79,7 @@ func (p *PatientVisitFollowUpHandler) updatePatientVisitFollowup(w http.Response
 		return
 	}
 
-	doctorId, _, _, statusCode, err := ValidateDoctorAccessToPatientVisitAndGetRelevantData(requestData.PatientVisitId, p.accountId, p.DataApi)
+	doctorId, _, _, statusCode, err := ValidateDoctorAccessToPatientVisitAndGetRelevantData(requestData.PatientVisitId, GetContext(r).AccountId, p.DataApi)
 	if err != nil {
 		WriteDeveloperError(w, statusCode, err.Error())
 		return

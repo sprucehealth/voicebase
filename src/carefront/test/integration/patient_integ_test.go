@@ -2,14 +2,15 @@ package integration
 
 import (
 	"bytes"
-	"carefront/apiservice"
-	"carefront/libs/maps"
-	_ "github.com/go-sql-driver/mysql"
 	"io/ioutil"
 	"net/http"
 	"net/http/httptest"
 	"strconv"
 	"testing"
+
+	"carefront/apiservice"
+	"carefront/libs/maps"
+	_ "github.com/go-sql-driver/mysql"
 )
 
 func TestPatientRegistration(t *testing.T) {
@@ -41,7 +42,7 @@ func TestPatientCareProvidingEllgibility(t *testing.T) {
 
 	CheckSuccessfulStatusCode(resp, "Unable to make a successful call to check for care providing elligibility: "+string(body), t)
 
-	resp, err = http.Get(ts.URL + "?zip_code=33180")
+	resp, err = authGet(ts.URL+"?zip_code=33180", 0)
 	if err != nil {
 		t.Fatal("Unable to successfuly check care providing elligibility for patient" + err.Error())
 	}
@@ -125,19 +126,12 @@ func TestPatientVisitSubmission(t *testing.T) {
 		t.Fatal("Unable to get patient information given the patient id: " + err.Error())
 	}
 
-	patientVisitHandler.AccountIdFromAuthToken(patient.AccountId)
 	ts := httptest.NewServer(patientVisitHandler)
 	defer ts.Close()
 	buffer := bytes.NewBufferString("patient_visit_id=")
 	buffer.WriteString(strconv.FormatInt(patientVisitResponse.PatientVisitId, 10))
-	client := &http.Client{}
-	req, err := http.NewRequest("PUT", ts.URL, buffer)
-	if err != nil {
-		t.Fatal("Unable to create new request for submitting patient visit: " + err.Error())
-	}
-	req.Header.Set("Content-Type", "application/x-www-form-urlencoded")
-	resp, err := client.Do(req)
 
+	resp, err := authPut(ts.URL, "application/x-www-form-urlencoded", buffer, patient.AccountId)
 	if err != nil {
 		t.Fatal("Unable to get the patient visit id")
 	}

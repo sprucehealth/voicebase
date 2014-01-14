@@ -13,7 +13,6 @@ type DoctorSubmitPatientVisitReviewHandler struct {
 	DataApi          api.DataAPI
 	TwilioCli        *twilio.Client
 	TwilioFromNumber string
-	accountId        int64
 }
 
 type SubmitPatientVisitReviewRequest struct {
@@ -29,10 +28,6 @@ type SubmitPatientVisitReviewResponse struct {
 const (
 	patientVisitUpdateNotification = "There is an update to your case. Tap spruce://visit.com to view."
 )
-
-func (d *DoctorSubmitPatientVisitReviewHandler) AccountIdFromAuthToken(accountId int64) {
-	d.accountId = accountId
-}
 
 func (d *DoctorSubmitPatientVisitReviewHandler) ServeHTTP(w http.ResponseWriter, r *http.Request) {
 	switch r.Method {
@@ -53,7 +48,7 @@ func (d *DoctorSubmitPatientVisitReviewHandler) submitPatientVisitReview(w http.
 		return
 	}
 
-	doctorId, _, _, statusCode, err := ValidateDoctorAccessToPatientVisitAndGetRelevantData(requestData.PatientVisitId, d.accountId, d.DataApi)
+	doctorId, _, _, statusCode, err := ValidateDoctorAccessToPatientVisitAndGetRelevantData(requestData.PatientVisitId, GetContext(r).AccountId, d.DataApi)
 	if err != nil {
 		WriteDeveloperError(w, statusCode, err.Error())
 		return

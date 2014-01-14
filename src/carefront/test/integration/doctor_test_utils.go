@@ -2,20 +2,20 @@ package integration
 
 import (
 	"bytes"
-	"carefront/api"
-	"carefront/apiservice"
-	"carefront/common"
-	"carefront/libs/erx"
-	thriftapi "carefront/thrift/api"
 	"encoding/json"
 	"fmt"
 	"io/ioutil"
-	"net/http"
 	"net/http/httptest"
 	"os"
 	"strconv"
 	"testing"
 	"time"
+
+	"carefront/api"
+	"carefront/apiservice"
+	"carefront/common"
+	"carefront/libs/erx"
+	thriftapi "carefront/thrift/api"
 )
 
 func SignupRandomTestDoctor(t *testing.T, dataApi api.DataAPI, authApi thriftapi.Auth) (signedupDoctorResponse *apiservice.DoctorSignedupResponse, email, password string) {
@@ -30,7 +30,7 @@ func SignupRandomTestDoctor(t *testing.T, dataApi api.DataAPI, authApi thriftapi
 	requestBody.WriteString("&password=")
 	requestBody.WriteString(password)
 	requestBody.WriteString("&dob=11/08/1987&gender=male")
-	res, err := http.Post(ts.URL, "application/x-www-form-urlencoded", requestBody)
+	res, err := authPost(ts.URL, "application/x-www-form-urlencoded", requestBody, 0)
 	if err != nil {
 		t.Fatal("Unable to make post request for registering patient: " + err.Error())
 	}
@@ -72,7 +72,6 @@ func submitPatientVisitDiagnosis(PatientVisitId int64, doctor *common.Doctor, te
 	acneTypeQuestionId, _, _, _, _, _, _, _, _, err = testData.DataApi.GetQuestionInfo("q_acne_type", 1)
 
 	diagnosePatientHandler := apiservice.NewDiagnosePatientHandler(testData.DataApi, testData.AuthApi, testData.CloudStorageService)
-	diagnosePatientHandler.AccountIdFromAuthToken(doctor.AccountId)
 	ts := httptest.NewServer(diagnosePatientHandler)
 	defer ts.Close()
 
@@ -99,10 +98,7 @@ func submitPatientVisitDiagnosis(PatientVisitId int64, doctor *common.Doctor, te
 		t.Fatal("Unable to marshal request body")
 	}
 
-	req, _ := http.NewRequest("POST", ts.URL, bytes.NewBuffer(requestData))
-	req.Header.Set("Content-Type", "application/json")
-	client := http.Client{}
-	resp, err := client.Do(req)
+	resp, err := authPost(ts.URL, "application/json", bytes.NewBuffer(requestData), doctor.AccountId)
 	if err != nil {
 		t.Fatal("Unable to successfully submit the diagnosis of a patient visit: " + err.Error())
 	}

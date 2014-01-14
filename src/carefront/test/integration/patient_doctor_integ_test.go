@@ -2,8 +2,6 @@ package integration
 
 import (
 	"bytes"
-	"carefront/apiservice"
-	"carefront/common"
 	"encoding/json"
 	"fmt"
 	"io/ioutil"
@@ -11,6 +9,9 @@ import (
 	"net/http/httptest"
 	"strconv"
 	"testing"
+
+	"carefront/apiservice"
+	"carefront/common"
 )
 
 func TestPatientVisitReview(t *testing.T) {
@@ -31,11 +32,10 @@ func TestPatientVisitReview(t *testing.T) {
 
 	// try getting the patient visit review for this patient visit and it should fail
 	patientVisitReviewHandler := &apiservice.PatientVisitReviewHandler{DataApi: testData.DataApi}
-	patientVisitReviewHandler.AccountIdFromAuthToken(patient.AccountId)
 	ts := httptest.NewServer(patientVisitReviewHandler)
 	defer ts.Close()
 
-	resp, err := http.Get(ts.URL + "?patient_visit_id=" + strconv.FormatInt(patientVisitResponse.PatientVisitId, 10))
+	resp, err := authGet(ts.URL+"?patient_visit_id="+strconv.FormatInt(patientVisitResponse.PatientVisitId, 10), patient.AccountId)
 	if err != nil {
 		t.Fatal("Unable to make call to get the patient visit review for patient visit: " + err.Error())
 	}
@@ -52,10 +52,9 @@ func TestPatientVisitReview(t *testing.T) {
 
 	// now lets go ahead and get doctor to start reviewing the patient visit and then submit the patient visit review
 	doctorPatientVisitReviewHandler := &apiservice.DoctorPatientVisitReviewHandler{DataApi: testData.DataApi, LayoutStorageService: testData.CloudStorageService, PatientPhotoStorageService: testData.CloudStorageService}
-	doctorPatientVisitReviewHandler.AccountIdFromAuthToken(doctor.AccountId)
 	ts2 := httptest.NewServer(doctorPatientVisitReviewHandler)
 	defer ts2.Close()
-	resp, err = http.Get(ts2.URL + "?patient_visit_id=" + strconv.FormatInt(patientVisitResponse.PatientVisitId, 10))
+	resp, err = authGet(ts2.URL+"?patient_visit_id="+strconv.FormatInt(patientVisitResponse.PatientVisitId, 10), doctor.AccountId)
 	if err != nil {
 		t.Fatal("Unable to make call to get patient visit review for patient: " + err.Error())
 	}
@@ -64,18 +63,17 @@ func TestPatientVisitReview(t *testing.T) {
 
 	// once the doctor has started reviewing the case, lets go ahead and get the doctor to close the case with no diagnosis
 	doctorSubmitPatientVisitReviewHandler := &apiservice.DoctorSubmitPatientVisitReviewHandler{DataApi: testData.DataApi}
-	doctorSubmitPatientVisitReviewHandler.AccountIdFromAuthToken(doctor.AccountId)
 	ts3 := httptest.NewServer(doctorSubmitPatientVisitReviewHandler)
 	defer ts3.Close()
 
-	resp, err = http.Post(ts3.URL, "application/x-www-form-urlencoded", bytes.NewBufferString("patient_visit_id="+strconv.FormatInt(patientVisitResponse.PatientVisitId, 10)))
+	resp, err = authPost(ts3.URL, "application/x-www-form-urlencoded", bytes.NewBufferString("patient_visit_id="+strconv.FormatInt(patientVisitResponse.PatientVisitId, 10)), doctor.AccountId)
 	if err != nil {
 		t.Fatal("Unable to make call to close patient visit " + err.Error())
 	}
 	CheckSuccessfulStatusCode(resp, "Unable to make successful call to close the patient visit", t)
 
 	// now, lets try and get the patient visit review again
-	resp, err = http.Get(ts2.URL + "?patient_visit_id=" + strconv.FormatInt(patientVisitResponse.PatientVisitId, 10))
+	resp, err = authGet(ts2.URL+"?patient_visit_id="+strconv.FormatInt(patientVisitResponse.PatientVisitId, 10), doctor.AccountId)
 	if err != nil {
 		t.Fatal("Unable to make call to get patient visit review: " + err.Error())
 	}
@@ -104,7 +102,7 @@ func TestPatientVisitReview(t *testing.T) {
 	SubmitPatientVisitForPatient(signedupPatientResponse.Patient.PatientId, patientVisitResponse.PatientVisitId, testData, t)
 
 	// get doctor to start reviewing it
-	resp, err = http.Get(ts2.URL + "?patient_visit_id=" + strconv.FormatInt(patientVisitResponse.PatientVisitId, 10))
+	resp, err = authGet(ts2.URL+"?patient_visit_id="+strconv.FormatInt(patientVisitResponse.PatientVisitId, 10), doctor.AccountId)
 	if err != nil {
 		t.Fatal("Unable to make call to get patient visit review for patient: " + err.Error())
 	}
@@ -215,17 +213,20 @@ func TestPatientVisitReview(t *testing.T) {
 
 	// lets add a follow up time for 1 week from now
 	doctorFollowupHandler := apiservice.NewPatientVisitFollowUpHandler(testData.DataApi)
-	doctorFollowupHandler.AccountIdFromAuthToken(doctor.AccountId)
 	ts4 := httptest.NewServer(doctorFollowupHandler)
 	defer ts4.Close()
 
 	requestBody := fmt.Sprintf("patient_visit_id=%d&follow_up_unit=week&follow_up_value=1", patientVisitResponse.PatientVisitId)
-	resp, err = http.Post(ts4.URL, "application/x-www-form-urlencoded", bytes.NewBufferString(requestBody))
+	resp, err = authPost(ts4.URL, "application/x-www-form-urlencoded", bytes.NewBufferString(requestBody), doctor.AccountId)
 	if err != nil {
 		t.Fatal("Unable to make successful call to add follow up time for patient visit: " + err.Error())
 	}
+	body, err := ioutil.ReadAll(resp.Body)
+	if err != nil {
+		t.Fatal("Unable to read the response body: " + err.Error())
+	}
 
-	CheckSuccessfulStatusCode(resp, "Unable to make successful call to add follow up for patient visit", t)
+	CheckSuccessfulStatusCode(resp, "Unable to make successful call to add follow up for patient visit: "+string(body), t)
 
 	//
 	//
@@ -234,7 +235,7 @@ func TestPatientVisitReview(t *testing.T) {
 	//
 
 	// get doctor to submit the patient visit review
-	resp, err = http.Post(ts3.URL, "application/x-www-form-urlencoded", bytes.NewBufferString("patient_visit_id="+strconv.FormatInt(patientVisitResponse.PatientVisitId, 10)))
+	resp, err = authPost(ts3.URL, "application/x-www-form-urlencoded", bytes.NewBufferString("patient_visit_id="+strconv.FormatInt(patientVisitResponse.PatientVisitId, 10)), doctor.AccountId)
 	if err != nil {
 		t.Fatal("Unable to make call to close patient visit " + err.Error())
 	}
@@ -249,8 +250,7 @@ func TestPatientVisitReview(t *testing.T) {
 	if err != nil {
 		t.Fatal("Unable to get the patient object given the id: " + err.Error())
 	}
-	patientVisitReviewHandler.AccountIdFromAuthToken(patient.AccountId)
-	resp, err = http.Get(ts.URL + "?patient_visit_id=" + strconv.FormatInt(patientVisitResponse.PatientVisitId, 10))
+	resp, err = authGet(ts.URL+"?patient_visit_id="+strconv.FormatInt(patientVisitResponse.PatientVisitId, 10), patient.AccountId)
 	if err != nil {
 		t.Fatal("Unable to make call to get patient visit review: " + err.Error())
 	}

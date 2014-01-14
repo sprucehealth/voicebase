@@ -15,7 +15,6 @@ type DoctorPatientVisitReviewHandler struct {
 	PharmacySearchService      pharmacy.PharmacySearchAPI
 	LayoutStorageService       api.CloudStorageAPI
 	PatientPhotoStorageService api.CloudStorageAPI
-	accountId                  int64
 }
 
 type DoctorPatientVisitReviewRequestBody struct {
@@ -26,12 +25,8 @@ type DoctorPatientVisitReviewResponse struct {
 	DoctorLayout *info_intake.PatientVisitOverview `json:"patient_visit_overview,omitempty"`
 }
 
-func (p *DoctorPatientVisitReviewHandler) AccountIdFromAuthToken(accountId int64) {
-	p.accountId = accountId
-}
-
 func NewDoctorPatientVisitReviewHandler(dataApi api.DataAPI, layoutStorageService api.CloudStorageAPI, patientPhotoStorageService api.CloudStorageAPI) *DoctorPatientVisitReviewHandler {
-	return &DoctorPatientVisitReviewHandler{DataApi: dataApi, LayoutStorageService: layoutStorageService, PatientPhotoStorageService: patientPhotoStorageService, accountId: 0}
+	return &DoctorPatientVisitReviewHandler{DataApi: dataApi, LayoutStorageService: layoutStorageService, PatientPhotoStorageService: patientPhotoStorageService}
 }
 
 func (p *DoctorPatientVisitReviewHandler) ServeHTTP(w http.ResponseWriter, r *http.Request) {
@@ -56,7 +51,7 @@ func (p *DoctorPatientVisitReviewHandler) ServeHTTP(w http.ResponseWriter, r *ht
 	}
 
 	// ensure that the doctor is authorized to work on this case
-	doctorId, _, _, statusCode, err := ValidateDoctorAccessToPatientVisitAndGetRelevantData(patientVisit.PatientVisitId, p.accountId, p.DataApi)
+	doctorId, _, _, statusCode, err := ValidateDoctorAccessToPatientVisitAndGetRelevantData(patientVisit.PatientVisitId, GetContext(r).AccountId, p.DataApi)
 	if err != nil {
 		WriteDeveloperError(w, statusCode, err.Error())
 		return

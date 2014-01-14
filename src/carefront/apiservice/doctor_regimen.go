@@ -9,8 +9,7 @@ import (
 )
 
 type DoctorRegimenHandler struct {
-	DataApi   api.DataAPI
-	accountId int64
+	DataApi api.DataAPI
 }
 
 type GetDoctorRegimenRequestData struct {
@@ -24,11 +23,7 @@ type DoctorRegimenRequestResponse struct {
 }
 
 func NewDoctorRegimenHandler(dataApi api.DataAPI) *DoctorRegimenHandler {
-	return &DoctorRegimenHandler{DataApi: dataApi, accountId: 0}
-}
-
-func (d *DoctorRegimenHandler) AccountIdFromAuthToken(accountId int64) {
-	d.accountId = accountId
+	return &DoctorRegimenHandler{DataApi: dataApi}
 }
 
 func (d *DoctorRegimenHandler) ServeHTTP(w http.ResponseWriter, r *http.Request) {
@@ -50,7 +45,7 @@ func (d *DoctorRegimenHandler) getRegimenSteps(w http.ResponseWriter, r *http.Re
 		return
 	}
 
-	doctorId, _, _, statusCode, err := ValidateDoctorAccessToPatientVisitAndGetRelevantData(requestData.PatientVisitId, d.accountId, d.DataApi)
+	doctorId, _, _, statusCode, err := ValidateDoctorAccessToPatientVisitAndGetRelevantData(requestData.PatientVisitId, GetContext(r).AccountId, d.DataApi)
 	if err != nil {
 		WriteDeveloperError(w, statusCode, err.Error())
 		return
@@ -85,7 +80,7 @@ func (d *DoctorRegimenHandler) updateRegimenSteps(w http.ResponseWriter, r *http
 		return
 	}
 
-	doctorId, _, _, statusCode, err := ValidateDoctorAccessToPatientVisitAndGetRelevantData(requestData.PatientVisitId, d.accountId, d.DataApi)
+	doctorId, _, _, statusCode, err := ValidateDoctorAccessToPatientVisitAndGetRelevantData(requestData.PatientVisitId, GetContext(r).AccountId, d.DataApi)
 	if err != nil {
 		WriteDeveloperError(w, statusCode, err.Error())
 		return

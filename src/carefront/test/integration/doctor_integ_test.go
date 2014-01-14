@@ -2,9 +2,6 @@ package integration
 
 import (
 	"bytes"
-	"carefront/api"
-	"carefront/apiservice"
-	"carefront/common"
 	"encoding/json"
 	"fmt"
 	"io/ioutil"
@@ -14,6 +11,10 @@ import (
 	"strconv"
 	"testing"
 	"time"
+
+	"carefront/api"
+	"carefront/apiservice"
+	"carefront/common"
 )
 
 func TestDoctorRegistration(t *testing.T) {
@@ -44,7 +45,7 @@ func TestDoctorAuthentication(t *testing.T) {
 	requestBody.WriteString(email)
 	requestBody.WriteString("&password=")
 	requestBody.WriteString(password)
-	res, err := http.Post(ts.URL, "application/x-www-form-urlencoded", requestBody)
+	res, err := authPost(ts.URL, "application/x-www-form-urlencoded", requestBody, 0)
 	if err != nil {
 		t.Fatal("Unable to authenticate doctor " + err.Error())
 	}
@@ -81,7 +82,7 @@ func TestDoctorDrugSearch(t *testing.T) {
 	ts := httptest.NewServer(autocompleteHandler)
 	defer ts.Close()
 
-	resp, err := http.Get(ts.URL + "?query=pro")
+	resp, err := authGet(ts.URL+"?query=pro", 0)
 	if err != nil {
 		t.Fatal("Unable to make a successful query to the autocomplete API")
 	}
@@ -135,20 +136,13 @@ func TestDoctorDiagnosisOfPatientVisit(t *testing.T) {
 
 	// doctor now attempts to diagnose patient visit
 	diagnosePatientHandler := apiservice.NewDiagnosePatientHandler(testData.DataApi, testData.AuthApi, testData.CloudStorageService)
-	diagnosePatientHandler.AccountIdFromAuthToken(doctor.AccountId)
 	ts := httptest.NewServer(diagnosePatientHandler)
 	defer ts.Close()
 
 	requestParams := bytes.NewBufferString("?patient_visit_id=")
 	requestParams.WriteString(strconv.FormatInt(patientVisitResponse.PatientVisitId, 10))
-	request, err := http.NewRequest("GET", ts.URL+requestParams.String(), nil)
 
-	if err != nil {
-		t.Fatal("Something went wrong when trying to setup the GET request for diagnosis layout :" + err.Error())
-	}
-
-	client := http.Client{}
-	resp, err := client.Do(request)
+	resp, err := authGet(ts.URL+requestParams.String(), doctor.AccountId)
 	if err != nil {
 		t.Fatal("Something went wrong when trying to get diagnoses layout for doctor to diagnose patient visit: " + err.Error())
 	}
@@ -175,7 +169,10 @@ func TestDoctorDiagnosisOfPatientVisit(t *testing.T) {
 	diagnosisQuestionId, severityQuestionId, acneTypeQuestionId := submitPatientVisitDiagnosis(patientVisitResponse.PatientVisitId, doctor, testData, t)
 
 	// now, get diagnosis layout again and check to ensure that the doctor successfully diagnosed the patient with the expected answers
-	resp, err = client.Do(request)
+	resp, err = authGet(ts.URL+requestParams.String(), doctor.AccountId)
+	if err != nil {
+		t.Fatal(err)
+	}
 	body, err := ioutil.ReadAll(resp.Body)
 	if err != nil {
 		t.Fatal("Unable to read body of request to get diagnosis layout after submitting diagnosis: " + err.Error())
@@ -218,9 +215,8 @@ func TestDoctorDiagnosisOfPatientVisit(t *testing.T) {
 	diagnosisSummaryHandler := &apiservice.DiagnosisSummaryHandler{DataApi: testData.DataApi}
 	ts = httptest.NewServer(diagnosisSummaryHandler)
 	defer ts.Close()
-	diagnosisSummaryHandler.AccountIdFromAuthToken(doctor.AccountId)
 
-	resp, err = http.Get(ts.URL + "?patient_visit_id=" + strconv.FormatInt(patientVisitResponse.PatientVisitId, 10))
+	resp, err = authGet(ts.URL+"?patient_visit_id="+strconv.FormatInt(patientVisitResponse.PatientVisitId, 10), doctor.AccountId)
 	if err != nil {
 		t.Fatal("Unable to make call to get diagnosis summary for patient visit: " + err.Error())
 	}
@@ -269,10 +265,9 @@ func TestDoctorSubmissionOfPatientVisitReview(t *testing.T) {
 	// attempt to submit the patient visit review here. It should fail
 	doctorSubmitPatientVisitReviewHandler := &apiservice.DoctorSubmitPatientVisitReviewHandler{DataApi: testData.DataApi}
 	ts := httptest.NewServer(doctorSubmitPatientVisitReviewHandler)
-	doctorSubmitPatientVisitReviewHandler.AccountIdFromAuthToken(doctor.AccountId)
 	defer ts.Close()
 
-	resp, err := http.Post(ts.URL, "application/x-www-form-urlencoded", bytes.NewBufferString("patient_visit_id="+strconv.FormatInt(patientVisitResponse.PatientVisitId, 10)))
+	resp, err := authPost(ts.URL, "application/x-www-form-urlencoded", bytes.NewBufferString("patient_visit_id="+strconv.FormatInt(patientVisitResponse.PatientVisitId, 10)), doctor.AccountId)
 	if err != nil {
 		t.Fatal("Unable to make a call to submit the patient visit review : " + err.Error())
 	}
@@ -288,11 +283,10 @@ func TestDoctorSubmissionOfPatientVisitReview(t *testing.T) {
 
 	// get the doctor to start reviewing the patient visit
 	doctorPatientVisitReviewHandler := &apiservice.DoctorPatientVisitReviewHandler{DataApi: testData.DataApi, LayoutStorageService: testData.CloudStorageService, PatientPhotoStorageService: testData.CloudStorageService}
-	doctorPatientVisitReviewHandler.AccountIdFromAuthToken(doctor.AccountId)
 	ts2 := httptest.NewServer(doctorPatientVisitReviewHandler)
 	defer ts2.Close()
 
-	resp, err = http.Get(ts2.URL + "?patient_visit_id=" + strconv.FormatInt(patientVisitResponse.PatientVisitId, 10))
+	resp, err = authGet(ts2.URL+"?patient_visit_id="+strconv.FormatInt(patientVisitResponse.PatientVisitId, 10), doctor.AccountId)
 	if err != nil {
 		t.Fatal("Unable to get the doctor to start reviewing the patient visit: " + err.Error())
 	}
@@ -300,7 +294,7 @@ func TestDoctorSubmissionOfPatientVisitReview(t *testing.T) {
 	CheckSuccessfulStatusCode(resp, "Unable to make a successful call for doctor to start reviewing patient visti", t)
 
 	// attempt to submit the patient visit review here. It should work
-	resp, err = http.Post(ts.URL, "application/x-www-form-urlencoded", bytes.NewBufferString("patient_visit_id="+strconv.FormatInt(patientVisitResponse.PatientVisitId, 10)))
+	resp, err = authPost(ts.URL, "application/x-www-form-urlencoded", bytes.NewBufferString("patient_visit_id="+strconv.FormatInt(patientVisitResponse.PatientVisitId, 10)), doctor.AccountId)
 	if err != nil {
 		t.Fatal("Unable to make successful call to submit patient visit review")
 	}
@@ -343,25 +337,28 @@ func TestDoctorAddingOfFollowUpForPatientVisit(t *testing.T) {
 
 	// lets add a follow up time for 1 week from now
 	doctorFollowupHandler := apiservice.NewPatientVisitFollowUpHandler(testData.DataApi)
-	doctorFollowupHandler.AccountIdFromAuthToken(doctor.AccountId)
 	ts := httptest.NewServer(doctorFollowupHandler)
 	defer ts.Close()
 
 	requestBody := fmt.Sprintf("patient_visit_id=%d&follow_up_unit=week&follow_up_value=1", patientVisitResponse.PatientVisitId)
-	resp, err := http.Post(ts.URL, "application/x-www-form-urlencoded", bytes.NewBufferString(requestBody))
+	resp, err := authPost(ts.URL, "application/x-www-form-urlencoded", bytes.NewBufferString(requestBody), doctor.AccountId)
 	if err != nil {
 		t.Fatal("Unable to make successful call to add follow up time for patient visit: " + err.Error())
 	}
+	body, err := ioutil.ReadAll(resp.Body)
+	if err != nil {
+		t.Fatal("Unable to read the response body: " + err.Error())
+	}
 
-	CheckSuccessfulStatusCode(resp, "Unable to make successful call to add follow up for patient visit", t)
+	CheckSuccessfulStatusCode(resp, "Unable to make successful call to add follow up for patient visit: "+string(body), t)
 
 	// lets get the follow up time back
-	resp, err = http.Get(ts.URL + "?patient_visit_id=" + strconv.FormatInt(patientVisitResponse.PatientVisitId, 10))
+	resp, err = authGet(ts.URL+"?patient_visit_id="+strconv.FormatInt(patientVisitResponse.PatientVisitId, 10), doctor.AccountId)
 	if err != nil {
 		t.Fatal("Unable to make successful call to get follow up time for patient visit: " + err.Error())
 	}
 
-	body, err := ioutil.ReadAll(resp.Body)
+	body, err = ioutil.ReadAll(resp.Body)
 	if err != nil {
 		t.Fatal("Unable to parse body of the response to get follow up time for patient visit: " + err.Error())
 	}

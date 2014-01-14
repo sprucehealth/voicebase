@@ -2,15 +2,10 @@ package integration
 
 import (
 	"bytes"
-	"carefront/api"
-	"carefront/common/config"
-	"carefront/services/auth"
-	thriftapi "carefront/thrift/api"
 	"database/sql"
 	"errors"
 	"fmt"
-	"github.com/BurntSushi/toml"
-	_ "github.com/go-sql-driver/mysql"
+	"io"
 	"io/ioutil"
 	"net/http"
 	"os"
@@ -19,6 +14,14 @@ import (
 	"strings"
 	"testing"
 	"time"
+
+	"carefront/api"
+	"carefront/apiservice"
+	"carefront/common/config"
+	"carefront/services/auth"
+	thriftapi "carefront/thrift/api"
+	"github.com/BurntSushi/toml"
+	_ "github.com/go-sql-driver/mysql"
 )
 
 var (
@@ -43,6 +46,42 @@ type TestData struct {
 	DBConfig            *TestDBConfig
 	CloudStorageService api.CloudStorageAPI
 	DB                  *sql.DB
+}
+
+func init() {
+	apiservice.Testing = true
+}
+
+func authGet(url string, accountId int64) (*http.Response, error) {
+	req, err := http.NewRequest("GET", url, nil)
+	if err != nil {
+		return nil, err
+	}
+	req.Header.Set("AccountId", strconv.FormatInt(accountId, 10))
+	apiservice.TestingContext.AccountId = accountId
+	return http.DefaultClient.Do(req)
+}
+
+func authPost(url, bodyType string, body io.Reader, accountId int64) (*http.Response, error) {
+	req, err := http.NewRequest("POST", url, body)
+	if err != nil {
+		return nil, err
+	}
+	req.Header.Set("Content-Type", bodyType)
+	req.Header.Set("AccountId", strconv.FormatInt(accountId, 10))
+	apiservice.TestingContext.AccountId = accountId
+	return http.DefaultClient.Do(req)
+}
+
+func authPut(url, bodyType string, body io.Reader, accountId int64) (*http.Response, error) {
+	req, err := http.NewRequest("PUT", url, body)
+	if err != nil {
+		return nil, err
+	}
+	req.Header.Set("Content-Type", bodyType)
+	req.Header.Set("AccountId", strconv.FormatInt(accountId, 10))
+	apiservice.TestingContext.AccountId = accountId
+	return http.DefaultClient.Do(req)
 }
 
 func GetDBConfig(t *testing.T) *TestDBConfig {

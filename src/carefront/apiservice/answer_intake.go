@@ -1,23 +1,19 @@
 package apiservice
 
 import (
-	"carefront/api"
-	"carefront/common"
 	"encoding/json"
 	"net/http"
+
+	"carefront/api"
+	"carefront/common"
 )
 
 type AnswerIntakeHandler struct {
-	DataApi   api.DataAPI
-	accountId int64
+	DataApi api.DataAPI
 }
 
 func NewAnswerIntakeHandler(dataApi api.DataAPI) *AnswerIntakeHandler {
-	return &AnswerIntakeHandler{dataApi, 0}
-}
-
-func (a *AnswerIntakeHandler) AccountIdFromAuthToken(accountId int64) {
-	a.accountId = accountId
+	return &AnswerIntakeHandler{dataApi}
 }
 
 func (a *AnswerIntakeHandler) ServeHTTP(w http.ResponseWriter, r *http.Request) {
@@ -36,7 +32,7 @@ func (a *AnswerIntakeHandler) ServeHTTP(w http.ResponseWriter, r *http.Request) 
 		return
 	}
 
-	patientId, err := a.DataApi.GetPatientIdFromAccountId(a.accountId)
+	patientId, err := a.DataApi.GetPatientIdFromAccountId(GetContext(r).AccountId)
 	if err != nil {
 		WriteDeveloperError(w, http.StatusInternalServerError, "Unable to get patientId from the auth token provided")
 		return

@@ -8,12 +8,7 @@ import (
 )
 
 type UpdatePatientPharmacyHandler struct {
-	DataApi   api.DataAPI
-	accountId int64
-}
-
-func (u *UpdatePatientPharmacyHandler) AccountIdFromAuthToken(accountId int64) {
-	u.accountId = accountId
+	DataApi api.DataAPI
 }
 
 func (u *UpdatePatientPharmacyHandler) ServeHTTP(w http.ResponseWriter, r *http.Request) {
@@ -35,7 +30,7 @@ func (u *UpdatePatientPharmacyHandler) updatePatientPharmacy(w http.ResponseWrit
 		return
 	}
 
-	patient, err := u.DataApi.GetPatientFromAccountId(u.accountId)
+	patient, err := u.DataApi.GetPatientFromAccountId(GetContext(r).AccountId)
 	if err != nil {
 		WriteDeveloperError(w, http.StatusInternalServerError, "Unable to get patient from account id: "+err.Error())
 		return

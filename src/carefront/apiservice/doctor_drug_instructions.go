@@ -9,8 +9,7 @@ import (
 )
 
 type DoctorDrugInstructionsHandler struct {
-	DataApi   api.DataAPI
-	accountId int64
+	DataApi api.DataAPI
 }
 
 type GetDoctorDrugInstructionsRequestData struct {
@@ -30,11 +29,7 @@ type DoctorDrugInstructionsRequestResponse struct {
 }
 
 func NewDoctorDrugInstructionsHandler(dataApi api.DataAPI) *DoctorDrugInstructionsHandler {
-	return &DoctorDrugInstructionsHandler{DataApi: dataApi, accountId: 0}
-}
-
-func (d *DoctorDrugInstructionsHandler) AccountIdFromAuthToken(accountId int64) {
-	d.accountId = accountId
+	return &DoctorDrugInstructionsHandler{DataApi: dataApi}
 }
 
 func (d *DoctorDrugInstructionsHandler) ServeHTTP(w http.ResponseWriter, r *http.Request) {
@@ -58,7 +53,7 @@ func (d *DoctorDrugInstructionsHandler) addDrugInstructions(w http.ResponseWrite
 
 	drugName, drugForm, drugRoute := breakDrugInternalNameIntoComponents(addInstructionsRequestBody.DrugInternalName)
 
-	doctorId, _, _, statusCode, err := ValidateDoctorAccessToPatientVisitAndGetRelevantData(addInstructionsRequestBody.PatientVisitId, d.accountId, d.DataApi)
+	doctorId, _, _, statusCode, err := ValidateDoctorAccessToPatientVisitAndGetRelevantData(addInstructionsRequestBody.PatientVisitId, GetContext(r).AccountId, d.DataApi)
 	if err != nil {
 		WriteDeveloperError(w, statusCode, err.Error())
 		return
@@ -119,7 +114,7 @@ func (d *DoctorDrugInstructionsHandler) getDrugInstructions(w http.ResponseWrite
 		return
 	}
 
-	doctorId, err := d.DataApi.GetDoctorIdFromAccountId(d.accountId)
+	doctorId, err := d.DataApi.GetDoctorIdFromAccountId(GetContext(r).AccountId)
 	if err != nil {
 		WriteDeveloperError(w, http.StatusInternalServerError, "Unable to get the doctor id from the account id "+err.Error())
 		return

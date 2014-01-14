@@ -13,7 +13,6 @@ const (
 type UpdatePatientAddressHandler struct {
 	DataApi     api.DataAPI
 	AddressType string
-	accountId   int64
 }
 
 type UpdatePatientAddressRequestData struct {
@@ -22,10 +21,6 @@ type UpdatePatientAddressRequestData struct {
 	City         string `schema:"city,required"`
 	State        string `schema:"state,required"`
 	Zipcode      string `schema:"zip_code,required"`
-}
-
-func (u *UpdatePatientAddressHandler) AccountIdFromAuthToken(accountId int64) {
-	u.accountId = accountId
 }
 
 func (u *UpdatePatientAddressHandler) ServeHTTP(w http.ResponseWriter, r *http.Request) {
@@ -47,7 +42,7 @@ func (u *UpdatePatientAddressHandler) updatePatientAddress(w http.ResponseWriter
 		return
 	}
 
-	patientId, err := u.DataApi.GetPatientIdFromAccountId(u.accountId)
+	patientId, err := u.DataApi.GetPatientIdFromAccountId(GetContext(r).AccountId)
 	if err != nil {
 		WriteDeveloperError(w, http.StatusOK, "Unable to get patient id from account id: "+err.Error())
 		return

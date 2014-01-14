@@ -11,7 +11,6 @@ type StaticContentHandler struct {
 	ContentStorageService api.CloudStorageAPI
 	BucketLocation        string
 	Region                string
-	accountId             int64
 }
 
 type StaticContentRequestData struct {

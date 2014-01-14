@@ -1,16 +1,16 @@
 package integration
 
 import (
-	"carefront/api"
-	"carefront/apiservice"
-	"carefront/settings"
 	"encoding/json"
 	"fmt"
 	"io/ioutil"
-	"net/http"
 	"net/http/httptest"
 	"testing"
 	"time"
+
+	"carefront/api"
+	"carefront/apiservice"
+	"carefront/settings"
 )
 
 func TestDoctorFeed(t *testing.T) {
@@ -175,9 +175,8 @@ func getDoctorQueue(testData TestData, doctorAccountId int64, t *testing.T) *api
 	doctorQueueHandler := &apiservice.DoctorQueueHandler{DataApi: testData.DataApi}
 	ts := httptest.NewServer(doctorQueueHandler)
 	defer ts.Close()
-	doctorQueueHandler.AccountIdFromAuthToken(doctorAccountId)
 
-	resp, err := http.Get(ts.URL)
+	resp, err := authGet(ts.URL, doctorAccountId)
 	if err != nil {
 		t.Fatal("Unable to get doctor feed for doctor: " + err.Error())
 	}
