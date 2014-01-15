@@ -15,6 +15,7 @@ import (
 	"carefront/apiservice"
 	"carefront/common/config"
 	"carefront/libs/erx"
+	"carefront/libs/golog"
 	"carefront/libs/maps"
 	"carefront/libs/pharmacy"
 	"carefront/libs/svcclient"
@@ -344,8 +345,10 @@ func main() {
 				log.Fatal(err)
 			}
 
+			golog.Infof("Starting SSL server on %s...", conf.TLSListenAddr)
 			log.Fatal(s.Serve(tls.NewListener(conn, s.TLSConfig)))
 		}()
 	}
+	golog.Infof("Starting server on %s...", conf.ListenAddr)
 	log.Fatal(s.ListenAndServe())
 }

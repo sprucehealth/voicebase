@@ -1,10 +1,6 @@
 package apiservice
 
 import (
-	"carefront/api"
-	"carefront/common"
-	"carefront/info_intake"
-	pharmacy_service "carefront/libs/pharmacy"
 	"encoding/json"
 	"errors"
 	"fmt"
@@ -12,6 +8,12 @@ import (
 	"net/http"
 	"strings"
 	"time"
+
+	"carefront/api"
+	"carefront/common"
+	"carefront/info_intake"
+	"carefront/libs/golog"
+	pharmacy_service "carefront/libs/pharmacy"
 )
 
 var ErrBadAuthToken = errors.New("BadAuthToken")
@@ -131,12 +133,12 @@ func WriteJSONToHTTPResponseWriter(w http.ResponseWriter, httpStatusCode int, v 
 	w.WriteHeader(httpStatusCode)
 	enc := json.NewEncoder(w)
 	if err := enc.Encode(v); err != nil {
-		log.Printf("apiservice: failed to json encode: %+v", err)
+		golog.Errorf("apiservice: failed to json encode: %+v", err)
 	}
 }
 
 func WriteDeveloperError(w http.ResponseWriter, httpStatusCode int, errorString string) {
-	log.Println(errorString)
+	golog.Errorf(errorString)
 	developerError := new(ErrorResponse)
 	developerError.DeveloperError = errorString
 	developerError.UserError = genericUserErrorMessage
@@ -144,6 +146,7 @@ func WriteDeveloperError(w http.ResponseWriter, httpStatusCode int, errorString 
 }
 
 func WriteDeveloperErrorWithCode(w http.ResponseWriter, developerStatusCode int64, httpStatusCode int, errorString string) {
+	golog.Errorf(errorString)
 	developerError := new(ErrorResponse)
 	developerError.DeveloperError = errorString
 	developerError.DeveloperCode = developerStatusCode

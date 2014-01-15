@@ -105,7 +105,7 @@ func (h *AuthenticationHandler) ServeHTTP(w http.ResponseWriter, r *http.Request
 
 		if res, err := h.AuthApi.Login(requestData.Login, requestData.Password); err != nil {
 			switch err.(type) {
-			case *thriftapi.NoSuchLogin:
+			case *thriftapi.NoSuchLogin, *thriftapi.InvalidPassword:
 				WriteUserError(w, http.StatusForbidden, "Invalid email/password combination")
 				return
 			default:
