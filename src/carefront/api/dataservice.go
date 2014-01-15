@@ -1819,7 +1819,7 @@ func (d *DataService) GetLatestClosedPatientVisitForPatient(patientId int64) (*c
 	var status string
 
 	row := d.DB.QueryRow(`select id, health_condition_id, layout_version_id,
-		creation_date, submitted_date, closed_date, status from patient_visit where status in ('CLOSED', 'TREATED') and patient_id = ? and closed_date is not null order by closed_date desc limit 1`, patientId)
+		creation_date, submitted_date, closed_date, status from patient_visit where status in ('CLOSED','TREATED') and patient_id = ? and closed_date is not null order by closed_date desc limit 1`, patientId)
 	err := row.Scan(&patientVisitId, &healthConditionId, &layoutVersionId, &creationDateBytes, &submittedDateBytes, &closedDateBytes, &status)
 	if err != nil {
 		if err == sql.ErrNoRows {

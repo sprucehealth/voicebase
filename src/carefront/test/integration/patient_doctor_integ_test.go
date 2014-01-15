@@ -96,6 +96,8 @@ func TestPatientVisitReview(t *testing.T) {
 		t.Fatal("Expected there to exist no review for this patient visit, but some parts of it do exist")
 	}
 
+	patientVisitResponse = GetPatientVisitForPatient(patient.PatientId, testData, t)
+
 	// start a new patient visit
 	signedupPatientResponse = SignupRandomTestPatient(t, testData.DataApi, testData.AuthApi)
 	patientVisitResponse = CreatePatientVisitForPatient(signedupPatientResponse.Patient.PatientId, testData, t)
@@ -258,6 +260,7 @@ func TestPatientVisitReview(t *testing.T) {
 	respBody, err = ioutil.ReadAll(resp.Body)
 	if err != nil {
 		t.Fatal("Unable to parse body of response: " + err.Error())
+
 	}
 
 	CheckSuccessfulStatusCode(resp, "Unable to make successful call to get patient visit review: "+string(respBody), t)
@@ -267,6 +270,8 @@ func TestPatientVisitReview(t *testing.T) {
 	if err != nil {
 		t.Fatal("Unable to unmarshal response body in to json object: " + err.Error())
 	}
+
+	patientVisitResponse = GetPatientVisitForPatient(patient.PatientId, testData, t)
 
 	if patientVisitReviewResponse.DiagnosisSummary == nil || patientVisitReviewResponse.Treatments == nil || patientVisitReviewResponse.RegimenPlan == nil ||
 		patientVisitReviewResponse.Advice == nil || patientVisitReviewResponse.Followup == nil {
