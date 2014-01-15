@@ -118,8 +118,6 @@ func TestRegimenForPatientVisit(t *testing.T) {
 		t.Fatal("Should only have 1 regimen step given that we just deleted one from the list")
 	}
 
-	SubmitPatientVisitForPatient(patientSignedupResponse.Patient.PatientId, patientVisitResponse.PatientVisitId, testData, t)
-
 	// get patient to start a visit
 	patientSignedupResponse = SignupRandomTestPatient(t, testData.DataApi, testData.AuthApi)
 	patientVisitResponse = CreatePatientVisitForPatient(patientSignedupResponse.Patient.PatientId, testData, t)

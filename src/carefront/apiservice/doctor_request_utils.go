@@ -67,7 +67,7 @@ func EnsurePatientVisitInExpectedStatus(DataApi api.DataAPI, patientVisitId int6
 	}
 
 	if patientVisit.Status != expectedState {
-		return fmt.Errorf("Unable to add treatments to the patient visit since it is not in the %s state. Current status: %s", expectedState, patientVisit.Status)
+		return fmt.Errorf("Unable to take intended action on the patient visit since it is not in the %s state. Current status: %s", expectedState, patientVisit.Status)
 	}
 	return nil
 }
