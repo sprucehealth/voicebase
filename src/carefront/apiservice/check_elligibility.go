@@ -28,6 +28,10 @@ func (c *CheckCareProvidingElligibilityHandler) NonAuthenticated() bool {
 	return true
 }
 
+const (
+	patientMessage = "We're not treating patients in your state yet."
+)
+
 func (c *CheckCareProvidingElligibilityHandler) ServeHTTP(w http.ResponseWriter, r *http.Request) {
 	r.ParseForm()
 	requestData := new(CheckCareProvidingElligibilityRequestData)
@@ -60,6 +64,6 @@ func (c *CheckCareProvidingElligibilityHandler) ServeHTTP(w http.ResponseWriter,
 		doctor.ThumbnailUrl = strings.ToLower(fmt.Sprintf("%s%s.%s_thumbnail", c.StaticContentUrl, doctor.FirstName, doctor.LastName))
 		WriteJSONToHTTPResponseWriter(w, http.StatusOK, &CheckCareProvidingElligibilityResponse{Doctor: doctor})
 	} else {
-		WriteUserError(w, http.StatusForbidden, "Patient cannot be seen in this state.")
+		WriteUserError(w, http.StatusForbidden, patientMessage)
 	}
 }

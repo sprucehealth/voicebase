@@ -42,9 +42,19 @@ func (d *DoctorQueueHandler) convertDoctorQueueIntoDisplayQueue(doctorQueue []*a
 
 	pendingOrOngoingItems := make([]*api.DoctorQueueItem, 0)
 	completedItems := make([]*api.DoctorQueueItem, 0)
+
+	// first go through and populate all the ongoing items to give them priority
 	for _, queueItem := range doctorQueue {
 		switch queueItem.Status {
-		case api.QUEUE_ITEM_STATUS_PENDING, api.QUEUE_ITEM_STATUS_ONGOING:
+		case api.QUEUE_ITEM_STATUS_ONGOING:
+			pendingOrOngoingItems = append(pendingOrOngoingItems, queueItem)
+		}
+	}
+
+	// then go through and populate all the pending or completed items
+	for _, queueItem := range doctorQueue {
+		switch queueItem.Status {
+		case api.QUEUE_ITEM_STATUS_PENDING:
 			pendingOrOngoingItems = append(pendingOrOngoingItems, queueItem)
 		case api.QUEUE_ITEM_STATUS_COMPLETED, api.QUEUE_ITEM_STATUS_PHOTOS_REJECTED:
 			completedItems = append(completedItems, queueItem)
