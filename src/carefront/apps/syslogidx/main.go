@@ -178,6 +178,11 @@ func (h *handler) Handle(parts syslogparser.LogParts) {
 	fields["@severity"] = ent.Severity.String()
 	fields["@facility"] = ent.Facility.String()
 
+	// For now ignore the _ts field
+	if _, ok := fields["_ts"]; ok {
+		delete(fields, "_ts")
+	}
+
 	var idx string
 	if s, ok := fields["_index"].(string); ok {
 		idx = s
