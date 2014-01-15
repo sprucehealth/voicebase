@@ -1021,41 +1021,47 @@ func (d *DataService) GetRegimenPlanForPatientVisit(patientVisitId int64) (*comm
 	return &regimenPlan, nil
 }
 
-func (d *DataService) GetDiagnosisResponseToQuestionWithTag(questionTag string, doctorId, patientVisitId int64) (*common.AnswerIntake, error) {
-	var answerIntake common.AnswerIntake
-	var potentialAnswerId sql.NullInt64
-	var answerText, potentialAnswer, answerSummary sql.NullString
-	err := d.DB.QueryRow(`select info_intake.id, info_intake.question_id, info_intake.potential_answer_id, info_intake.answer_text, l2.ltext, l1.ltext
+func (d *DataService) GetDiagnosisResponseToQuestionWithTag(questionTag string, doctorId, patientVisitId int64) ([]*common.AnswerIntake, error) {
+	rows, err := d.DB.Query(`select info_intake.id, info_intake.question_id, info_intake.potential_answer_id, info_intake.answer_text, l2.ltext, l1.ltext
 					from info_intake inner join question on question.id = question_id 
 					inner join potential_answer on potential_answer_id = potential_answer.id
 					inner join localized_text as l1 on answer_localized_text_id = l1.app_text_id
 					left outer join localized_text as l2 on answer_summary_text_id = l2.app_text_id
-					where info_intake.status='ACTIVE' and question_tag = ? and role_id = ? and role = 'DOCTOR' and info_intake.patient_visit_id = ? and l1.language_id = ?`, questionTag, doctorId, patientVisitId, EN_LANGUAGE_ID).Scan(
-		&answerIntake.AnswerIntakeId, &answerIntake.QuestionId,
-		&potentialAnswerId, &answerText, &answerSummary, &potentialAnswer)
+					where info_intake.status='ACTIVE' and question_tag = ? and role_id = ? and role = 'DOCTOR' and info_intake.patient_visit_id = ? and l1.language_id = ?`, questionTag, doctorId, patientVisitId, EN_LANGUAGE_ID)
 	if err != nil {
-		if err == sql.ErrNoRows {
-			err = NoDiagnosisResponseErr
-		}
 		return nil, err
 	}
+	defer rows.Close()
 
-	if potentialAnswer.Valid {
-		answerIntake.PotentialAnswer = potentialAnswer.String
-	}
-	if answerText.Valid {
-		answerIntake.AnswerText = answerText.String
-	}
-	answerIntake.PatientVisitId = patientVisitId
-	if potentialAnswerId.Valid {
-		answerIntake.PotentialAnswerId = potentialAnswerId.Int64
+	answerIntakes := make([]*common.AnswerIntake, 0)
+	for rows.Next() {
+		answerIntake := new(common.AnswerIntake)
+		var potentialAnswerId sql.NullInt64
+		var answerText, potentialAnswer, answerSummary sql.NullString
+
+		rows.Scan(
+			&answerIntake.AnswerIntakeId, &answerIntake.QuestionId,
+			&potentialAnswerId, &answerText, &answerSummary, &potentialAnswer)
+
+		if potentialAnswer.Valid {
+			answerIntake.PotentialAnswer = potentialAnswer.String
+		}
+		if answerText.Valid {
+			answerIntake.AnswerText = answerText.String
+		}
+		answerIntake.PatientVisitId = patientVisitId
+		if potentialAnswerId.Valid {
+			answerIntake.PotentialAnswerId = potentialAnswerId.Int64
+		}
+
+		if answerSummary.Valid {
+			answerIntake.AnswerSummary = answerSummary.String
+		}
+
+		answerIntakes = append(answerIntakes, answerIntake)
 	}
 
-	if answerSummary.Valid {
-		answerIntake.AnswerSummary = answerSummary.String
-	}
-
-	return &answerIntake, nil
+	return answerIntakes, nil
 }
 
 func (d *DataService) AddDiagnosisSummaryForPatientVisit(summary string, patientVisitId, doctorId int64) error {

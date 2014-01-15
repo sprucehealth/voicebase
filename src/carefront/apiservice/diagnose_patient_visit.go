@@ -153,42 +153,43 @@ func (d *DiagnosePatientHandler) diagnosePatient(w http.ResponseWriter, r *http.
 
 func (d *DiagnosePatientHandler) addDiagnosisSummaryForPatientVisit(doctorId int64, patientVisitId int64) error {
 	// lookup answers for the following questions
-	acneDiagnosisAnswer, err := d.DataApi.GetDiagnosisResponseToQuestionWithTag(question_acne_diagnosis, doctorId, patientVisitId)
+	acneDiagnosisAnswers, err := d.DataApi.GetDiagnosisResponseToQuestionWithTag(question_acne_diagnosis, doctorId, patientVisitId)
 	if err != nil && err != api.NoDiagnosisResponseErr {
 		return err
 	}
 
-	acneSeverityAnswer, err := d.DataApi.GetDiagnosisResponseToQuestionWithTag(question_acne_severity, doctorId, patientVisitId)
+	acneSeverityAnswers, err := d.DataApi.GetDiagnosisResponseToQuestionWithTag(question_acne_severity, doctorId, patientVisitId)
 	if err != nil && err != api.NoDiagnosisResponseErr {
 		return err
 	}
 
-	acneTypeAnswer, err := d.DataApi.GetDiagnosisResponseToQuestionWithTag(question_acne_type, doctorId, patientVisitId)
+	acneTypeAnswers, err := d.DataApi.GetDiagnosisResponseToQuestionWithTag(question_acne_type, doctorId, patientVisitId)
 	if err != nil && err != api.NoDiagnosisResponseErr {
 		return err
 	}
 
-	rosaceaTypeAnswer, err := d.DataApi.GetDiagnosisResponseToQuestionWithTag(question_rosacea_type, doctorId, patientVisitId)
+	rosaceaTypeAnswers, err := d.DataApi.GetDiagnosisResponseToQuestionWithTag(question_rosacea_type, doctorId, patientVisitId)
 	if err != nil && err != api.NoDiagnosisResponseErr {
 		return err
 	}
 
-	diagnosisMessage := acneDiagnosisAnswer.AnswerSummary
+	diagnosisMessage := ""
+	if acneDiagnosisAnswers != nil && len(acneDiagnosisAnswers) > 0 {
+		diagnosisMessage = acneDiagnosisAnswers[0].AnswerSummary
+	} else {
+		// nothing to do if the patient was not properly diagnosed
+		return nil
+	}
 
 	// for acne vulgaris, we only want the diagnosis to indicate acne
-	if acneDiagnosisAnswer != nil && acneSeverityAnswer != nil {
-		if acneTypeAnswer != nil {
-			diagnosisMessage = fmt.Sprintf("%s %s %s", acneSeverityAnswer.AnswerSummary, acneTypeAnswer.AnswerSummary, acneDiagnosisAnswer.AnswerSummary)
-		} else if rosaceaTypeAnswer != nil {
-			diagnosisMessage = fmt.Sprintf("%s %s %s", acneSeverityAnswer.AnswerSummary, rosaceaTypeAnswer.AnswerSummary, acneDiagnosisAnswer.AnswerSummary)
+	if (acneDiagnosisAnswers != nil && len(acneDiagnosisAnswers) > 0) && (acneSeverityAnswers != nil && len(acneSeverityAnswers) > 0) {
+		if acneTypeAnswers != nil && len(acneTypeAnswers) > 0 {
+			diagnosisMessage = fmt.Sprintf("%s %s %s", acneSeverityAnswers[0].AnswerSummary, joinAcneTypesIntoString(acneTypeAnswers), acneDiagnosisAnswers[0].AnswerSummary)
+		} else if rosaceaTypeAnswers != nil && len(rosaceaTypeAnswers) > 0 {
+			diagnosisMessage = fmt.Sprintf("%s %s %s", acneSeverityAnswers[0].AnswerSummary, joinAcneTypesIntoString(rosaceaTypeAnswers), acneDiagnosisAnswers[0].AnswerSummary)
 		} else {
-			diagnosisMessage = fmt.Sprintf("%s %s", acneSeverityAnswer.AnswerSummary, acneDiagnosisAnswer.PotentialAnswer)
+			diagnosisMessage = fmt.Sprintf("%s %s", acneSeverityAnswers[0].AnswerSummary, acneDiagnosisAnswers[0].PotentialAnswer)
 		}
-	}
-
-	// nothing to do if the patient was not properly diagnosed by doctor so as to create a message
-	if diagnosisMessage == "" {
-		return nil
 	}
 
 	doctor, err := d.DataApi.GetDoctorFromId(doctorId)
@@ -205,6 +206,20 @@ func (d *DiagnosePatientHandler) addDiagnosisSummaryForPatientVisit(doctorId int
 	diagnosisSummary := fmt.Sprintf(diagnoseSummaryTemplate, strings.Title(patient.FirstName), strings.ToLower(diagnosisMessage), strings.Title(doctorFullName))
 	err = d.DataApi.AddDiagnosisSummaryForPatientVisit(diagnosisSummary, patientVisitId, doctorId)
 	return err
+}
+
+func joinAcneTypesIntoString(acneTypeAnswers []*common.AnswerIntake) string {
+	acneTypes := make([]string, 0)
+
+	for _, acneTypeAnswer := range acneTypeAnswers {
+		acneTypes = append(acneTypes, acneTypeAnswer.AnswerSummary)
+	}
+
+	if len(acneTypes) == 1 {
+		return acneTypes[0]
+	}
+
+	return strings.Join(acneTypes[:len(acneTypes)-1], ",") + " and " + acneTypes[len(acneTypes)-1]
 }
 
 func getQuestionIdsInDiagnosisLayout(diagnosisLayout *info_intake.DiagnosisIntake) []int64 {
