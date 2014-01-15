@@ -134,7 +134,7 @@ func (s snapshotSort) Swap(a, b int) {
 
 func create() error {
 	if len(flag.Args()) < 4 {
-		return fmt.Errorf("usage: create [name] [size] [stripes or snapshotgroupname]")
+		return fmt.Errorf("usage: create [name] [size] [stripes or snapshotgroupname] [snapshot-description]")
 	}
 	name := flag.Arg(1)
 	size, err := strconv.Atoi(flag.Arg(2))
@@ -147,6 +147,15 @@ func create() error {
 		snapshotGroupName = flag.Arg(3)
 	}
 
+	snapshotDescription := ""
+	if len(flag.Args()) > 4 {
+		snapshotDescription = flag.Arg(4)
+	}
+
+	if snapshotGroupName == "" && snapshotDescription != "" {
+		return fmt.Errorf("Cannot have snapshot description specified as %s when there is no snapshot group name specified.", snapshotDescription)
+	}
+
 	if vols, err := findGroup(name); err != nil {
 		return err
 	} else if len(vols) != 0 {
@@ -155,16 +164,25 @@ func create() error {
 
 	var snapshots []*ec2.Snapshot // Snapshot IDs
 	if snapshotGroupName != "" {
-		snaps, err := config.ec2.DescribeSnapshots(nil, []string{"self"}, nil,
-			map[string][]string{
-				"tag:Group":       []string{snapshotGroupName},
-				"tag:Environment": []string{config.Environment},
-			})
+
+		filters := map[string][]string{
+			"tag:Group":       []string{snapshotGroupName},
+			"tag:Environment": []string{config.Environment},
+		}
+
+		if snapshotDescription != "" {
+			filters["description"] = []string{snapshotDescription}
+		}
+
+		snaps, err := config.ec2.DescribeSnapshots(nil, []string{"self"}, nil, filters)
 		if err != nil {
 			return fmt.Errorf("Failed to lookup snapshots: %+v", err)
 		}
 		if len(snaps) == 0 {
-			return fmt.Errorf("No snapshots found for group %s", snapshotGroupName)
+			if snapshotDescription == "" {
+				return fmt.Errorf("No snapshots found for group %s", snapshotGroupName)
+			}
+			return fmt.Errorf("No snapshots found for group %s with description %s", snapshotGroupName, snapshotDescription)
 		}
 		sort.Sort(snapshotSort(snaps))
 
