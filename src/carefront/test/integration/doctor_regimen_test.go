@@ -34,7 +34,7 @@ func TestRegimenForPatientVisit(t *testing.T) {
 	patientVisitResponse := CreatePatientVisitForPatient(patientSignedupResponse.Patient.PatientId, testData, t)
 
 	// get the patient to submit the case
-	SubmitPatientVisitForPatient(patientSignedupResponse.PatientId, patientVisitResponse.PatientVisitId, testData, t)
+	SubmitPatientVisitForPatient(patientSignedupResponse.Patient.PatientId, patientVisitResponse.PatientVisitId, testData, t)
 
 	// get the patient to start reviewing the case
 	StartReviewingPatientVisit(patientVisitResponse.PatientVisitId, doctor, testData, t)
