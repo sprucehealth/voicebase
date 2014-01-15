@@ -33,6 +33,12 @@ func TestAdvicePointsForPatientVisit(t *testing.T) {
 	// get patient to start a visit
 	patientVisitResponse := CreatePatientVisitForPatient(patientSignedupResponse.Patient.PatientId, testData, t)
 
+	// get the patient to submit the case so that it can be reviewed by the doctor
+	SubmitPatientVisitForPatient(patientSignedupResponse.Patient.PatientId, patientVisitResponse.PatientVisitId, testData, t)
+
+	// get the doctor to start reviewing the case
+	StartReviewingPatientVisit(patientVisitResponse.PatientVisitId, doctor, testData, t)
+
 	// attempt to get the advice points for this patient visit
 	doctorAdviceResponse := getAdvicePointsInPatientVisit(testData, doctor, patientVisitResponse.PatientVisitId, t)
 

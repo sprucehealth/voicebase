@@ -180,6 +180,9 @@ func TestAddTreatments(t *testing.T) {
 	// get patient to submit the visit
 	SubmitPatientVisitForPatient(patientSignedupResponse.Patient.PatientId, patientVisitResponse.PatientVisitId, testData, t)
 
+	// get the doctor to start reviewing the case
+	StartReviewingPatientVisit(patientVisitResponse.PatientVisitId, doctor, testData, t)
+
 	// doctor now attempts to add a couple treatments for patient
 	treatment1 := &common.Treatment{}
 	treatment1.DrugInternalName = "Advil"

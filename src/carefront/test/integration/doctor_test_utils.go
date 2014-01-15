@@ -118,5 +118,29 @@ func submitPatientVisitDiagnosis(PatientVisitId int64, doctor *common.Doctor, te
 
 	CheckSuccessfulStatusCode(resp, "Unable to submit diagnosis of patient visit "+string(body), t)
 	return
+}
 
+func StartReviewingPatientVisit(PatientVisitId int64, doctor *common.Doctor, testData TestData, t *testing.T) *apiservice.DoctorPatientVisitReviewResponse {
+	doctorPatientVisitReviewHandler := &apiservice.DoctorPatientVisitReviewHandler{DataApi: testData.DataApi, LayoutStorageService: testData.CloudStorageService, PatientPhotoStorageService: testData.CloudStorageService}
+	ts := httptest.NewServer(doctorPatientVisitReviewHandler)
+	defer ts.Close()
+
+	resp, err := authGet(ts.URL+"?patient_visit_id="+strconv.FormatInt(PatientVisitId, 10), doctor.AccountId)
+	if err != nil {
+		t.Fatal("Unable to make call to get patient visit review for patient: " + err.Error())
+	}
+
+	respBody, err := ioutil.ReadAll(resp.Body)
+	if err != nil {
+		t.Fatal("Unable to parse body of response: " + err.Error())
+	}
+
+	CheckSuccessfulStatusCode(resp, "Unable to make successful call to get patient visit review: "+string(respBody), t)
+
+	doctorPatientVisitReviewResponse := &apiservice.DoctorPatientVisitReviewResponse{}
+	err = json.Unmarshal(respBody, doctorPatientVisitReviewResponse)
+	if err != nil {
+		t.Fatal("Unable to unmarshal response body in to json object: " + err.Error())
+	}
+	return doctorPatientVisitReviewResponse
 }

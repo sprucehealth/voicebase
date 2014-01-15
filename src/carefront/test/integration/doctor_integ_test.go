@@ -134,6 +134,9 @@ func TestDoctorDiagnosisOfPatientVisit(t *testing.T) {
 	// get patient to submit the visit
 	SubmitPatientVisitForPatient(patientSignedupResponse.Patient.PatientId, patientVisitResponse.PatientVisitId, testData, t)
 
+	// doctor should start reviewing the case before diagnosing the case
+	StartReviewingPatientVisit(patientVisitResponse.PatientVisitId, doctor, testData, t)
+
 	// doctor now attempts to diagnose patient visit
 	diagnosePatientHandler := apiservice.NewDiagnosePatientHandler(testData.DataApi, testData.AuthApi, testData.CloudStorageService)
 	ts := httptest.NewServer(diagnosePatientHandler)
@@ -334,6 +337,9 @@ func TestDoctorAddingOfFollowUpForPatientVisit(t *testing.T) {
 
 	// get patient to submit the visit
 	SubmitPatientVisitForPatient(patientSignedupResponse.Patient.PatientId, patientVisitResponse.PatientVisitId, testData, t)
+
+	// get the doctor to start reviewing the case before attempting to add follow up
+	StartReviewingPatientVisit(patientVisitResponse.PatientVisitId, doctor, testData, t)
 
 	// lets add a follow up time for 1 week from now
 	doctorFollowupHandler := apiservice.NewPatientVisitFollowUpHandler(testData.DataApi)

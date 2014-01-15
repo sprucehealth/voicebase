@@ -104,11 +104,7 @@ func TestPatientVisitReview(t *testing.T) {
 	SubmitPatientVisitForPatient(signedupPatientResponse.Patient.PatientId, patientVisitResponse.PatientVisitId, testData, t)
 
 	// get doctor to start reviewing it
-	resp, err = authGet(ts2.URL+"?patient_visit_id="+strconv.FormatInt(patientVisitResponse.PatientVisitId, 10), doctor.AccountId)
-	if err != nil {
-		t.Fatal("Unable to make call to get patient visit review for patient: " + err.Error())
-	}
-	CheckSuccessfulStatusCode(resp, "Unable to make successful call for doctor to start reviewing patient visit", t)
+	StartReviewingPatientVisit(patientVisitResponse.PatientVisitId, doctor, testData, t)
 
 	//
 	//
