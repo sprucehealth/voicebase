@@ -8,7 +8,6 @@ import (
 	"io"
 	"io/ioutil"
 	"log"
-	"log/syslog"
 	"net/http"
 	"net/url"
 	"os"
@@ -19,6 +18,7 @@ import (
 
 	"carefront/common"
 	"carefront/libs/aws"
+	"carefront/libs/golog"
 	"carefront/libs/svcreg"
 	"carefront/libs/svcreg/zksvcreg"
 	"github.com/BurntSushi/toml"
@@ -36,7 +36,6 @@ type BaseConfig struct {
 	AWSAccessKey            string `long:"aws_access_key" description:"AWS access key id"`
 	ConfigPath              string `short:"c" long:"config" description:"Path to config file. If not set then stderr is used."`
 	Environment             string `short:"e" long:"env" description:"Current environment (dev, stage, prod)"`
-	LogPath                 string `long:"log_path" description:"Path to log file"`
 	Syslog                  bool   `long:"syslog" description:"Log to syslog"`
 	ZookeeperHosts          string `long:"zk_hosts" description:"Zookeeper host list (e.g. 127.0.0.1:2181,192.168.1.1:2181)"`
 	ZookeeperServicesPrefix string `long:"zk_svc_prefix" description:"Zookeeper svc registry prefix" default:"/services"`
@@ -260,41 +259,26 @@ func ParseArgs(config interface{}, args []string) ([]string, error) {
 		return nil, fmt.Errorf("config: got region from metadata: %s", baseConfig.AWSRegion)
 	}
 
-	log.SetFlags(log.Lshortfile | log.Ldate | log.Ltime)
-	if baseConfig.LogPath != "" {
-		// check if the file exists
-		_, err := os.Stat(baseConfig.LogPath)
-		var file *os.File
-		if os.IsNotExist(err) {
-			// file doesn't exist so lets create it
-			file, err = os.Create(baseConfig.LogPath)
-			if err != nil {
-				return nil, fmt.Errorf("config: failed to create log: %s", err.Error())
-			}
-		} else {
-			file, err = os.OpenFile(baseConfig.LogPath, os.O_RDWR|os.O_APPEND, 0660)
-			if err != nil {
-				return nil, fmt.Errorf("config: could not open logfile %s", err.Error())
-			}
-		}
-		log.SetOutput(file)
-	} else if baseConfig.Syslog {
-		if w, err := syslog.New(syslog.LOG_INFO|syslog.LOG_USER, baseConfig.AppName); err != nil {
-			return nil, fmt.Errorf("config: failed to create syslog writer: %s", err.Error())
-		} else {
-			log.SetOutput(w)
-		}
-		log.SetFlags(log.Lshortfile)
-	}
-
 	if baseConfig.AppName == "" {
 		fmt.Fprintf(os.Stderr, "Missing required app_name config value.\n")
 		os.Exit(1)
 	}
 	if !validEnvironments[baseConfig.Environment] {
-		fmt.Fprintf(os.Stderr, "flag --env is required and must be one of prod, staging, or dev")
+		fmt.Fprintf(os.Stderr, "flag --env is required and must be one of prod, staging, or dev\n")
 		os.Exit(1)
 	}
+
+	if baseConfig.Syslog {
+		if out, err := golog.NewSyslogOutput(baseConfig.AppName); err != nil {
+			log.Fatal(err)
+		} else {
+			golog.SetOutput(out)
+		}
+		log.SetFlags(log.Lshortfile)
+	} else {
+		log.SetFlags(log.Lshortfile | log.Ldate | log.Ltime)
+	}
+	log.SetOutput(golog.Writer)
 
 	return extraArgs, nil
 }

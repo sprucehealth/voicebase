@@ -223,6 +223,7 @@ func main() {
 
 			"mysql-audit": true,
 			"deploy":      true,
+			"restapi":     true,
 		},
 	}
 

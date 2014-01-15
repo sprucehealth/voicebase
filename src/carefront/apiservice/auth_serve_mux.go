@@ -6,6 +6,7 @@ import (
 	"strconv"
 	"time"
 
+	"carefront/libs/golog"
 	"carefront/thrift/api"
 	"github.com/samuel/go-metrics/metrics"
 )
@@ -92,6 +93,14 @@ func (mux *AuthServeMux) checkAuth(r *http.Request) (bool, int64, error) {
 	}
 }
 
+type RequestLog struct {
+	RemoteAddr  string
+	Method      string
+	URL         string
+	StatusCode  int
+	ContentType string
+}
+
 func (mux *AuthServeMux) ServeHTTP(w http.ResponseWriter, r *http.Request) {
 	mux.statRequests.Inc(1)
 
@@ -102,7 +111,13 @@ func (mux *AuthServeMux) ServeHTTP(w http.ResponseWriter, r *http.Request) {
 	defer func() {
 		mux.statLatency.Update(time.Since(ctx.RequestStartTime).Nanoseconds() / 1e3)
 		DeleteContext(r)
-		log.Printf("%s %s %s %d %s\n", r.RemoteAddr, r.Method, r.URL, customResponseWriter.StatusCode, w.Header().Get("Content-Type"))
+		golog.Log("webrequest", golog.INFO, &RequestLog{
+			RemoteAddr:  r.RemoteAddr,
+			Method:      r.Method,
+			URL:         r.URL.String(),
+			StatusCode:  customResponseWriter.StatusCode,
+			ContentType: w.Header().Get("Content-Type"),
+		})
 	}()
 	if r.RequestURI == "*" {
 		customResponseWriter.Header().Set("Connection", "close")
