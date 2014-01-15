@@ -94,11 +94,13 @@ func (mux *AuthServeMux) checkAuth(r *http.Request) (bool, int64, error) {
 }
 
 type RequestLog struct {
-	RemoteAddr  string
-	Method      string
-	URL         string
-	StatusCode  int
-	ContentType string
+	RemoteAddr   string
+	Method       string
+	URL          string
+	StatusCode   int
+	ContentType  string
+	UserAgent    string
+	ResponseTime float64
 }
 
 func (mux *AuthServeMux) ServeHTTP(w http.ResponseWriter, r *http.Request) {
@@ -109,14 +111,17 @@ func (mux *AuthServeMux) ServeHTTP(w http.ResponseWriter, r *http.Request) {
 
 	customResponseWriter := &CustomResponseWriter{w, 0, false}
 	defer func() {
-		mux.statLatency.Update(time.Since(ctx.RequestStartTime).Nanoseconds() / 1e3)
+		responseTime := time.Since(ctx.RequestStartTime).Nanoseconds() / 1e3
+		mux.statLatency.Update(responseTime)
 		DeleteContext(r)
 		golog.Log("webrequest", golog.INFO, &RequestLog{
-			RemoteAddr:  r.RemoteAddr,
-			Method:      r.Method,
-			URL:         r.URL.String(),
-			StatusCode:  customResponseWriter.StatusCode,
-			ContentType: w.Header().Get("Content-Type"),
+			RemoteAddr:   r.RemoteAddr,
+			Method:       r.Method,
+			URL:          r.URL.String(),
+			StatusCode:   customResponseWriter.StatusCode,
+			ContentType:  w.Header().Get("Content-Type"),
+			UserAgent:    r.UserAgent(),
+			ResponseTime: float64(responseTime) / 1000.0,
 		})
 	}()
 	if r.RequestURI == "*" {
