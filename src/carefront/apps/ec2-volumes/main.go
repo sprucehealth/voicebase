@@ -134,7 +134,7 @@ func (s snapshotSort) Swap(a, b int) {
 
 func create() error {
 	if len(flag.Args()) < 4 {
-		return fmt.Errorf("usage: create [name] [size] [stripes or snapshotgroupname] [snapshot-description]")
+		return fmt.Errorf("usage: create [name] [size] [stripes or snapshotgroupname] [optional: snapshot-description]")
 	}
 	name := flag.Arg(1)
 	size, err := strconv.Atoi(flag.Arg(2))
