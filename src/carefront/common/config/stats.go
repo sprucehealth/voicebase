@@ -56,7 +56,7 @@ func (s *BaseConfig) StartReporters(statsRegistry metrics.Registry) {
 	if s.Stats.LibratoUsername != "" && s.Stats.LibratoToken != "" {
 		statsReporter := reporter.NewLibratoReporter(
 			filteredRegistry, time.Minute, s.Stats.LibratoUsername, s.Stats.LibratoToken, s.Stats.Source,
-			map[string]float64{"median": 0.5, "p90": 0.9, "p99": 0.99})
+			map[string]float64{"median": 0.5, "p90": 0.9, "p99": 0.99, "p999": 0.999})
 		statsReporter.Start()
 	}
 	if s.Stats.StatHatKey != "" {

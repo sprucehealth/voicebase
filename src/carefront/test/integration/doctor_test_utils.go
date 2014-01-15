@@ -67,17 +67,25 @@ func submitPatientVisitDiagnosis(PatientVisitId int64, doctor *common.Doctor, te
 	answerIntakeRequestBody := &apiservice.AnswerIntakeRequestBody{}
 	answerIntakeRequestBody.PatientVisitId = PatientVisitId
 
-	diagnosisQuestionId, _, _, _, _, _, _, _, _, err := testData.DataApi.GetQuestionInfo("q_acne_diagnosis", 1)
-	severityQuestionId, _, _, _, _, _, _, _, _, err = testData.DataApi.GetQuestionInfo("q_acne_severity", 1)
-	acneTypeQuestionId, _, _, _, _, _, _, _, _, err = testData.DataApi.GetQuestionInfo("q_acne_type", 1)
+	if qi, err := testData.DataApi.GetQuestionInfo("q_acne_diagnosis", 1); err != nil {
+		t.Fatalf("Unable to get the questionIds for the question tags requested for the doctor to diagnose patient visit: %s", err.Error())
+	} else {
+		diagnosisQuestionId = qi.Id
+	}
+	if qi, err := testData.DataApi.GetQuestionInfo("q_acne_severity", 1); err != nil {
+		t.Fatalf("Unable to get the questionIds for the question tags requested for the doctor to diagnose patient visit: %s", err.Error())
+	} else {
+		severityQuestionId = qi.Id
+	}
+	if qi, err := testData.DataApi.GetQuestionInfo("q_acne_type", 1); err != nil {
+		t.Fatalf("Unable to get the questionIds for the question tags requested for the doctor to diagnose patient visit: %s", err.Error())
+	} else {
+		acneTypeQuestionId = qi.Id
+	}
 
 	diagnosePatientHandler := apiservice.NewDiagnosePatientHandler(testData.DataApi, testData.AuthApi, testData.CloudStorageService)
 	ts := httptest.NewServer(diagnosePatientHandler)
 	defer ts.Close()
-
-	if err != nil {
-		t.Fatal("Unable to get the questionIds for the question tags requested for the doctor to diagnose patient visit")
-	}
 
 	answerToQuestionItem := &apiservice.AnswerToQuestionItem{}
 	answerToQuestionItem.QuestionId = diagnosisQuestionId

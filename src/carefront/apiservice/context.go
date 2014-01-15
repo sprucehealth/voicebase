@@ -3,6 +3,7 @@ package apiservice
 import (
 	"net/http"
 	"sync"
+	"time"
 )
 
 var (
@@ -11,7 +12,8 @@ var (
 )
 
 type Context struct {
-	AccountId int64
+	AccountId        int64
+	RequestStartTime time.Time
 }
 
 // TODO: During testing this is the context that's returned for any request. This is necessary because at
