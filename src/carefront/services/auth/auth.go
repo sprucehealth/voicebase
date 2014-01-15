@@ -92,7 +92,7 @@ func (m *AuthService) Login(email, password string) (*api.AuthResponse, error) {
 
 	// compare the hashed password value to that stored in the database to authenticate the user
 	if err := bcrypt.CompareHashAndPassword([]byte(hashedPassword), []byte(password)); err != nil {
-		return nil, &api.InternalServerError{Message: err.Error()}
+		return nil, &api.InvalidPassword{}
 	}
 
 	token, err := common.GenerateToken()

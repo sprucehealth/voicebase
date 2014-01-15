@@ -15,6 +15,9 @@ struct TokenValidationResponse {
 exception NoSuchLogin {
 }
 
+exception InvalidPassword {
+}
+
 exception LoginAlreadyExists {
 	1: required i64 account_id
 }
@@ -36,7 +39,8 @@ service Auth {
 		1: common.InternalServerError error,
 		2: common.AccessDenied access_denied,
 		3: common.OverCapacity over_capacity,
-		4: NoSuchLogin no_such_login)
+		4: NoSuchLogin no_such_login,
+		5: InvalidPassword invalid_password)
 
 	void logout(
 		1: required string token,

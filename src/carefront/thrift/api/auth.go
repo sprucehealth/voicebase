@@ -18,6 +18,13 @@ type TokenValidationResponse struct {
 	AccountId *int64 `thrift:"2" json:"account_id,omitempty"`
 }
 
+type InvalidPassword struct {
+}
+
+func (e *InvalidPassword) Error() string {
+	return "InvalidPassword{}"
+}
+
 type LoginAlreadyExists struct {
 	AccountId int64 `thrift:"1,required" json:"account_id"`
 }
@@ -58,6 +65,9 @@ func (s *AuthServer) Login(req *AuthLoginRequest, res *AuthLoginResponse) error 
 		err = nil
 	case *NoSuchLogin:
 		res.NoSuchLogin = e
+		err = nil
+	case *InvalidPassword:
+		res.InvalidPassword = e
 		err = nil
 	}
 	res.Value = val
@@ -123,11 +133,12 @@ type AuthLoginRequest struct {
 }
 
 type AuthLoginResponse struct {
-	Value        *AuthResponse        `thrift:"0" json:"value,omitempty"`
-	Error        *InternalServerError `thrift:"1" json:"error,omitempty"`
-	AccessDenied *AccessDenied        `thrift:"2" json:"access_denied,omitempty"`
-	OverCapacity *OverCapacity        `thrift:"3" json:"over_capacity,omitempty"`
-	NoSuchLogin  *NoSuchLogin         `thrift:"4" json:"no_such_login,omitempty"`
+	Value           *AuthResponse        `thrift:"0" json:"value,omitempty"`
+	Error           *InternalServerError `thrift:"1" json:"error,omitempty"`
+	AccessDenied    *AccessDenied        `thrift:"2" json:"access_denied,omitempty"`
+	OverCapacity    *OverCapacity        `thrift:"3" json:"over_capacity,omitempty"`
+	NoSuchLogin     *NoSuchLogin         `thrift:"4" json:"no_such_login,omitempty"`
+	InvalidPassword *InvalidPassword     `thrift:"5" json:"invalid_password,omitempty"`
 }
 
 type AuthLogoutRequest struct {
@@ -185,6 +196,8 @@ func (s *AuthClient) Login(login string, password string) (ret *AuthResponse, er
 			err = res.OverCapacity
 		case res.NoSuchLogin != nil:
 			err = res.NoSuchLogin
+		case res.InvalidPassword != nil:
+			err = res.InvalidPassword
 		}
 	}
 	if err == nil {

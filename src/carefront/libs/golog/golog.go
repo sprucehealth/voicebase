@@ -161,3 +161,36 @@ func Debugf(format string, args ...interface{}) {
 		log("log", DEBUG, fmt.Sprintf(format, args...))
 	}
 }
+
+// Output writes the output for a logging event.  The string s contains
+// the text to print after the prefix specified by the flags of the
+// Logger.  A newline is appended if the last character of s is not
+// already a newline.  Calldepth is used to recover the PC and is
+// provided for generality, although at the moment on all pre-defined
+// paths it will be 2.
+// func (l *Logger) Output(calldepth int, s string) error {
+// 	now := time.Now() // get this early.
+// 	var file string
+// 	var line int
+// 	l.mu.Lock()
+// 	defer l.mu.Unlock()
+// 	if l.flag&(Lshortfile|Llongfile) != 0 {
+// 		// release lock while getting caller info - it's expensive.
+// 		l.mu.Unlock()
+// 		var ok bool
+// 		_, file, line, ok = runtime.Caller(calldepth)
+// 		if !ok {
+// 			file = "???"
+// 			line = 0
+// 		}
+// 		l.mu.Lock()
+// 	}
+// 	l.buf = l.buf[:0]
+// 	l.formatHeader(&l.buf, now, file, line)
+// 	l.buf = append(l.buf, s...)
+// 	if len(s) > 0 && s[len(s)-1] != '\n' {
+// 		l.buf = append(l.buf, '\n')
+// 	}
+// 	_, err := l.out.Write(l.buf)
+// 	return err
+// }
