@@ -121,11 +121,6 @@
                         "button_text": "Continue", 
                         "style": "filled", 
                         "tap_url": "spruce:///action/view_next_visit_section"
-                    }, 
-                    {
-                        "button_text": "I can't take photos right now", 
-                        "style": "bordered", 
-                        "tap_url": "spruce:///action/no_photos_now"
                     }
                 ], 
                 "image_url": "spruce:///image/tickmark", 
@@ -242,11 +237,6 @@
                         "button_text": "Continue", 
                         "style": "filled", 
                         "tap_url": "spruce:///action/view_next_visit_section"
-                    }, 
-                    {
-                        "button_text": "Review Photos", 
-                        "style": "bordered", 
-                        "tap_url": "spruce:///action/review_photos"
                     }
                 ], 
                 "image_url": "spruce:///image/tickmark", 
@@ -272,10 +262,20 @@
                         }
                     ]
                 }, 
-                {
+              {
                     "description": "medications currently taking", 
                     "questions": [
                         {
+                            "question": "q_current_medications"
+                        }, 
+                        {
+                            "condition": {
+                                "op": "answer_equals", 
+                                "potential_answers": [
+                                    "a_current_medications_yes"
+                                ], 
+                                "question": "q_current_medications"
+                            }, 
                             "question": "q_current_medications_entry", 
                             "questions": [
                                 {
@@ -284,8 +284,7 @@
                             ]
                         }
                     ]
-                }, 
-                {
+                },                 {
                     "description": "allergies", 
                     "questions": [
                         {

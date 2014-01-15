@@ -1,0 +1,1 @@
+update question set required = 1 where question_tag='q_acne_prev_treatment_list';
