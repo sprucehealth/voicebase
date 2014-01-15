@@ -10,11 +10,11 @@
                 {
                     "data": [
                         {
-                            "no_patient_answer_text": "Patient chose not to answer", 
+                            "no_patient_answer_text": "None", 
                             "question": "q_allergic_medication_entry"
                         }, 
                         {
-                            "no_patient_answer_text": "Patient chose not to answer", 
+                            "no_patient_answer_text": "None", 
                             "question": "q_current_medications_entry"
                         }
                     ], 
@@ -26,7 +26,7 @@
                 {
                     "data": [
                         {
-                            "no_patient_answer_text": "Patient chose not to answer", 
+                            "no_patient_answer_text": "Patient did not answer", 
                             "question": "q_list_prev_skin_condition_diagnosis"
                         }, 
                         {
@@ -80,7 +80,7 @@
                             "question": "q_acne_worse"
                         }, 
                         {
-                            "no_patient_answer_text": "Patient chose not to answer", 
+                            "no_patient_answer_text": "Patient did not answer", 
                             "question": "q_changes_acne_worse"
                         }, 
                         {
@@ -90,7 +90,7 @@
                         {
                             "gender": "female", 
                             "question": "q_periods_regular",
-                            "no_patient_answer_text": "Patient chose not to answer"
+                            "no_patient_answer_text": "Patient did not answer"
                         }, 
                         {
                             "question": "q_skin_description"
@@ -107,7 +107,7 @@
                             "question": "q_acne_prev_treatment_types"
                         }, 
                         {
-                            "no_patient_answer_text": "Patient chose not to answer", 
+                            "no_patient_answer_text": "Patient did not answer", 
                             "question": "q_acne_prev_treatment_list"
                         }
                     ], 
@@ -120,7 +120,7 @@
                     "data": [
                         {
                             "question": "q_anything_else_acne",
-                            "no_patient_answer_text": "Patient did not enter any additional information."
+                            "no_patient_answer_text": "Patient did not answer"
                         }
                     ], 
                     "sub_section_title": "Additional Information from Patient", 
