@@ -20,7 +20,7 @@
                     ], 
                     "sub_section_title": "Medication", 
                     "sub_section_types": [
-                        "s_type_table_section"
+                        "s_type_table_section" 
                     ]
                 }, 
                 {
@@ -73,6 +73,10 @@
                             "question": "q_acne_location"
                         }, 
                         {
+                            "question": "q_other_acne_location_entry", 
+                            "remove_question_if_no_answer": true
+                        }, 
+                        {
                             "question": "q_acne_symptoms", 
                             "show_potential_responses": true
                         }, 
@@ -89,8 +93,8 @@
                         }, 
                         {
                             "gender": "female", 
-                            "question": "q_periods_regular",
-                            "no_patient_answer_text": "Patient did not answer"
+                            "no_patient_answer_text": "Patient did not answer", 
+                            "question": "q_periods_regular"
                         }, 
                         {
                             "question": "q_skin_description"
@@ -119,8 +123,8 @@
                 {
                     "data": [
                         {
-                            "question": "q_anything_else_acne",
-                            "no_patient_answer_text": "Patient did not answer"
+                            "no_patient_answer_text": "Patient did not answer", 
+                            "question": "q_anything_else_acne"
                         }
                     ], 
                     "sub_section_title": "Additional Information from Patient", 
@@ -139,24 +143,24 @@
                 {
                     "data": [
                         {
-                            "question": "q_face_photo_intake",
-                            "remove_question_if_no_answer" : true
+                            "question": "q_face_photo_intake", 
+                            "remove_question_if_no_answer": true
                         }, 
                         {
-                            "question": "q_chest_photo_intake",
-                            "remove_question_if_no_answer" : true
+                            "question": "q_chest_photo_intake", 
+                            "remove_question_if_no_answer": true
                         }, 
                         {
-                            "question": "q_neck_photo_intake",
-                            "remove_question_if_no_answer" : true
+                            "question": "q_neck_photo_intake", 
+                            "remove_question_if_no_answer": true
                         }, 
                         {
-                            "question": "q_back_photo_intake",
-                            "remove_question_if_no_answer" : true
+                            "question": "q_back_photo_intake", 
+                            "remove_question_if_no_answer": true
                         }, 
                         {
-                            "question": "q_other_photo_intake",
-                            "remove_question_if_no_answer" : true
+                            "question": "q_other_photo_intake", 
+                            "remove_question_if_no_answer": true
                         }
                     ], 
                     "sub_section_types": [
