@@ -55,14 +55,9 @@ func (d *DoctorSubmitPatientVisitReviewHandler) submitPatientVisitReview(w http.
 	}
 
 	// doctor can only update the state of a patient visit that is currently in REVIEWING state
-	patientVisit, err := d.DataApi.GetPatientVisitFromId(requestData.PatientVisitId)
+	err = EnsurePatientVisitInExpectedStatus(d.DataApi, requestData.PatientVisitId, api.CASE_STATUS_REVIEWING)
 	if err != nil {
-		WriteDeveloperError(w, http.StatusInternalServerError, "Unable to get patient visit for the patient visit id specified: "+err.Error())
-		return
-	}
-
-	if patientVisit.Status != api.CASE_STATUS_REVIEWING {
-		WriteDeveloperError(w, http.StatusBadRequest, "Unable to change the state of a patient visit to CLOSED when its not in the reviewing state")
+		WriteDeveloperError(w, http.StatusBadRequest, err.Error())
 		return
 	}
 

@@ -72,6 +72,12 @@ func (p *PatientVisitFollowUpHandler) updatePatientVisitFollowup(w http.Response
 		return
 	}
 
+	err = EnsurePatientVisitInExpectedStatus(p.DataApi, requestData.PatientVisitId, api.CASE_STATUS_REVIEWING)
+	if err != nil {
+		WriteDeveloperError(w, http.StatusBadRequest, err.Error())
+		return
+	}
+
 	switch requestData.FollowUpUnit {
 	case api.FOLLOW_UP_WEEK, api.FOLLOW_UP_DAY, api.FOLLOW_UP_MONTH:
 	default:

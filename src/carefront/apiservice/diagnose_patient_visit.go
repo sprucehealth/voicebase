@@ -112,6 +112,12 @@ func (d *DiagnosePatientHandler) diagnosePatient(w http.ResponseWriter, r *http.
 		return
 	}
 
+	err = EnsurePatientVisitInExpectedStatus(d.DataApi, answerIntakeRequestBody.PatientVisitId, api.CASE_STATUS_REVIEWING)
+	if err != nil {
+		WriteDeveloperError(w, http.StatusBadRequest, err.Error())
+		return
+	}
+
 	layoutVersionId, err := d.getLayoutVersionIdOfActiveDiagnosisLayout(HEALTH_CONDITION_ACNE_ID)
 	if err != nil {
 		WriteDeveloperError(w, http.StatusInternalServerError, "Unable to get the layout version id of the diagnosis layout "+err.Error())

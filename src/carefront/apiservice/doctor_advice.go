@@ -81,6 +81,12 @@ func (d *DoctorAdviceHandler) updateAdvicePoints(w http.ResponseWriter, r *http.
 		return
 	}
 
+	err = EnsurePatientVisitInExpectedStatus(d.DataApi, requestData.PatientVisitId, api.CASE_STATUS_REVIEWING)
+	if err != nil {
+		WriteDeveloperError(w, http.StatusBadRequest, err.Error())
+		return
+	}
+
 	// Go through advice points to add, update and delete advice points before creating the advice points for this patient visit
 	// for the user
 	newOrUpdatedPointToIdMapping := make(map[string]int64)

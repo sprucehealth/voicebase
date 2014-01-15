@@ -86,6 +86,12 @@ func (d *DoctorRegimenHandler) updateRegimenSteps(w http.ResponseWriter, r *http
 		return
 	}
 
+	err = EnsurePatientVisitInExpectedStatus(d.DataApi, requestData.PatientVisitId, api.CASE_STATUS_REVIEWING)
+	if err != nil {
+		WriteDeveloperError(w, http.StatusBadRequest, err.Error())
+		return
+	}
+
 	// Go through regimen steps to add, update and delete regimen steps before creating the regimen plan
 	// for the user
 	newOrUpdatedStepToIdMapping := make(map[string]int64)

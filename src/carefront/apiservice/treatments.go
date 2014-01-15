@@ -104,10 +104,15 @@ func (t *TreatmentsHandler) addTreatment(w http.ResponseWriter, r *http.Request)
 		return
 	}
 
-	// just to be on the safe side, verify each of the treatments that the doctor is trying to add
 	_, _, _, httpStatusCode, err := ValidateDoctorAccessToPatientVisitAndGetRelevantData(treatmentsRequestBody.PatientVisitId, GetContext(r).AccountId, t.DataApi)
 	if err != nil {
 		WriteDeveloperError(w, httpStatusCode, "Unable to validate doctor to add treatment to patient visit: "+err.Error())
+		return
+	}
+
+	err = EnsurePatientVisitInExpectedStatus(t.DataApi, treatmentsRequestBody.PatientVisitId, api.CASE_STATUS_REVIEWING)
+	if err != nil {
+		WriteDeveloperError(w, http.StatusBadRequest, err.Error())
 		return
 	}
 

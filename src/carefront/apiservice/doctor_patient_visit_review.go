@@ -58,7 +58,7 @@ func (p *DoctorPatientVisitReviewHandler) ServeHTTP(w http.ResponseWriter, r *ht
 	}
 
 	// udpate the status of the case and the item in the doctor's queue
-	if patientVisit.Status != api.CASE_STATUS_REVIEWING {
+	if patientVisit.Status == api.CASE_STATUS_SUBMITTED {
 		err = p.DataApi.UpdatePatientVisitStatus(patientVisit.PatientVisitId, "", api.CASE_STATUS_REVIEWING)
 		if err != nil {
 			WriteDeveloperError(w, http.StatusInternalServerError, "Unable to update the status of the visit to reviewing: "+err.Error())
