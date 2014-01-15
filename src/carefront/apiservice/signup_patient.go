@@ -6,6 +6,7 @@ import (
 	"carefront/libs/maps"
 	thriftapi "carefront/thrift/api"
 	"github.com/gorilla/schema"
+	"log"
 	"net/http"
 	"strconv"
 	"strings"
@@ -106,6 +107,14 @@ func (s *SignupPatientHandler) ServeHTTP(w http.ResponseWriter, r *http.Request)
 			WriteDeveloperError(w, http.StatusInternalServerError, "Unable to track patient agreements: "+err.Error())
 			return
 		}
+	}
+
+	// create care team for patient
+	_, err = s.DataApi.CreateCareTeamForPatient(patient.PatientId)
+	if err != nil {
+		log.Println(err)
+		WriteDeveloperError(w, http.StatusInternalServerError, "Unable to create care team for patient :"+err.Error())
+		return
 	}
 
 	WriteJSONToHTTPResponseWriter(w, http.StatusOK, PatientSignedupResponse{Token: res.Token, Patient: patient})

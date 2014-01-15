@@ -203,7 +203,7 @@ func main() {
 	dataApi := &api.DataService{DB: db}
 	cloudStorageApi := api.NewCloudStorageService(awsAuth)
 	photoAnswerCloudStorageApi := api.NewCloudStorageService(awsAuth)
-	authHandler := &apiservice.AuthenticationHandler{AuthApi: authApi, DataApi: dataApi, PharmacySearchService: &pharmacy.PharmacySearchService{PharmacyDB: pharmacyDb}}
+	authHandler := &apiservice.AuthenticationHandler{AuthApi: authApi, DataApi: dataApi, PharmacySearchService: &pharmacy.PharmacySearchService{PharmacyDB: pharmacyDb}, StaticContentBaseUrl: conf.StaticContentBaseUrl}
 	checkElligibilityHandler := &apiservice.CheckCareProvidingElligibilityHandler{DataApi: dataApi, MapsService: maps.GoogleMapsService(0), StaticContentUrl: conf.StaticContentBaseUrl}
 	signupPatientHandler := &apiservice.SignupPatientHandler{DataApi: dataApi, AuthApi: authApi, MapsApi: maps.GoogleMapsService(0)}
 	updatePatientBillingAddress := &apiservice.UpdatePatientAddressHandler{DataApi: dataApi, AddressType: apiservice.BILLING_ADDRESS_TYPE}

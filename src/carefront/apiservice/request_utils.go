@@ -7,6 +7,7 @@ import (
 	pharmacy_service "carefront/libs/pharmacy"
 	"encoding/json"
 	"errors"
+	"fmt"
 	"log"
 	"net/http"
 	"strings"
@@ -78,6 +79,41 @@ func GetPatientInfo(dataApi api.DataAPI, pharmacySearchService pharmacy_service.
 		patient.Pharmacy = pharmacy
 	}
 	return patient, nil
+}
+
+func GetPrimaryDoctorInfoBasedOnPatient(dataApi api.DataAPI, patient *common.Patient, staticBaseContentUrl string) (*common.Doctor, error) {
+	careTeam, err := dataApi.GetCareTeamForPatient(patient.PatientId)
+	if err != nil {
+		return nil, err
+	}
+
+	primaryDoctorId := getPrimaryDoctorIdFromCareTeam(careTeam)
+	if primaryDoctorId == 0 {
+		return nil, errors.New("Unable to get primary doctor based on patient")
+	}
+
+	doctor, err := GetDoctorInfo(dataApi, primaryDoctorId, staticBaseContentUrl)
+	return doctor, err
+}
+
+func GetDoctorInfo(dataApi api.DataAPI, doctorId int64, staticBaseContentUrl string) (*common.Doctor, error) {
+
+	doctor, err := dataApi.GetDoctorFromId(doctorId)
+	if err != nil {
+		return nil, err
+	}
+
+	doctor.ThumbnailUrl = strings.ToLower(fmt.Sprintf("%sdoctor_photo_%s_%s", staticBaseContentUrl, doctor.FirstName, doctor.LastName))
+	return doctor, err
+}
+
+func getPrimaryDoctorIdFromCareTeam(careTeam *common.PatientCareProviderGroup) int64 {
+	for _, assignment := range careTeam.Assignments {
+		if assignment.ProviderRole == api.DOCTOR_ROLE && assignment.Status == api.PRIMARY_DOCTOR_STATUS {
+			return assignment.ProviderId
+		}
+	}
+	return 0
 }
 
 func SuccessfulGenericJSONResponse() *GenericJsonResponse {

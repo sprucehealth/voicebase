@@ -4,10 +4,8 @@ import (
 	"carefront/api"
 	"carefront/common"
 	"carefront/libs/maps"
-	"fmt"
 	"github.com/gorilla/schema"
 	"net/http"
-	"strings"
 )
 
 type CheckCareProvidingElligibilityHandler struct {
@@ -56,12 +54,11 @@ func (c *CheckCareProvidingElligibilityHandler) ServeHTTP(w http.ResponseWriter,
 	}
 
 	if doctorId != 0 {
-		doctor, err := c.DataApi.GetDoctorFromId(doctorId)
+		doctor, err := GetDoctorInfo(c.DataApi, doctorId, c.StaticContentUrl)
 		if err != nil {
 			WriteDeveloperError(w, http.StatusInternalServerError, "Unable to get doctor from id: "+err.Error())
 			return
 		}
-		doctor.ThumbnailUrl = strings.ToLower(fmt.Sprintf("%sdoctor_photo_%s_%s", c.StaticContentUrl, doctor.FirstName, doctor.LastName))
 		WriteJSONToHTTPResponseWriter(w, http.StatusOK, &CheckCareProvidingElligibilityResponse{Doctor: doctor})
 	} else {
 		WriteUserError(w, http.StatusForbidden, patientMessage)

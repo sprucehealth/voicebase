@@ -239,14 +239,14 @@ func (s *PatientVisitHandler) returnLastCreatedPatientVisit(w http.ResponseWrite
 }
 
 func (s *PatientVisitHandler) createNewPatientVisitHandler(w http.ResponseWriter, r *http.Request) {
-	patientId, err := s.DataApi.GetPatientIdFromAccountId(GetContext(r).AccountId)
+	patient, err := s.DataApi.GetPatientFromAccountId(GetContext(r).AccountId)
 	if err != nil {
 		WriteDeveloperError(w, http.StatusInternalServerError, "Unable to get patientId from the accountId retreived from the auth token: "+err.Error())
 		return
 	}
 
 	// get the last created patient visit for this patient
-	patientVisitId, err := s.DataApi.GetLastCreatedPatientVisitIdForPatient(patientId)
+	patientVisitId, err := s.DataApi.GetLastCreatedPatientVisitIdForPatient(patient.PatientId)
 	if err != nil && err != api.NoRowsError {
 		WriteDeveloperError(w, http.StatusInternalServerError, `unable to retrieve the current active patient 
 			visit for the health condition from the patient id: `+err.Error())
@@ -265,54 +265,25 @@ func (s *PatientVisitHandler) createNewPatientVisitHandler(w http.ResponseWriter
 		return
 	}
 
-	patientVisitId, err = s.DataApi.CreateNewPatientVisit(patientId, HEALTH_CONDITION_ACNE_ID, layoutVersionId)
+	patientVisitId, err = s.DataApi.CreateNewPatientVisit(patient.PatientId, HEALTH_CONDITION_ACNE_ID, layoutVersionId)
 	if err != nil {
 		WriteDeveloperError(w, http.StatusInternalServerError, "Unable to create new patient visit id: "+err.Error())
 		return
 	}
 
-	careTeam, err := s.DataApi.GetCareTeamForPatient(patientId)
-	if careTeam == nil {
-		// create care team for patient if one doesn't already exist
-		careTeam, err = s.DataApi.CreateCareTeamForPatient(patientId)
-		if err != nil {
-			log.Println(err)
-			WriteDeveloperError(w, http.StatusInternalServerError, "Unable to create care team for patient visit :"+err.Error())
-			return
-		}
-	} else if err != nil {
-		WriteDeveloperError(w, http.StatusInternalServerError, "Something went wrong when trying to get care team for patient: "+err.Error())
-		return
-	}
-
-	primaryDoctorId := getPrimaryDoctorIdFromCareTeam(careTeam)
-	if primaryDoctorId == 0 {
-		WriteDeveloperError(w, http.StatusInternalServerError, "Unable to get doctor id from care team")
-		return
-	}
-
-	doctor, err := s.DataApi.GetDoctorFromId(primaryDoctorId)
+	doctor, err := GetPrimaryDoctorInfoBasedOnPatient(s.DataApi, patient, "")
 	if err != nil {
-		WriteDeveloperError(w, http.StatusInternalServerError, "Unable to get doctor from id: "+err.Error())
+		WriteDeveloperError(w, http.StatusInternalServerError, "Unable to get doctor info based on patient: "+err.Error())
 		return
 	}
 
-	err = s.populateGlobalSectionsWithPatientAnswers(healthCondition, patientId)
+	err = s.populateGlobalSectionsWithPatientAnswers(healthCondition, patient.PatientId)
 	if err != nil {
 		WriteDeveloperError(w, http.StatusInternalServerError, err.Error())
 		return
 	}
 	s.fillInFormattedFieldsForQuestions(healthCondition, doctor)
 	WriteJSONToHTTPResponseWriter(w, http.StatusOK, PatientVisitResponse{PatientVisitId: patientVisitId, ClientLayout: healthCondition})
-}
-
-func getPrimaryDoctorIdFromCareTeam(careTeam *common.PatientCareProviderGroup) int64 {
-	for _, assignment := range careTeam.Assignments {
-		if assignment.ProviderRole == api.DOCTOR_ROLE && assignment.Status == api.PRIMARY_DOCTOR_STATUS {
-			return assignment.ProviderId
-		}
-	}
-	return 0
 }
 
 func (s *PatientVisitHandler) fillInFormattedFieldsForQuestions(healthCondition *info_intake.InfoIntakeLayout, doctor *common.Doctor) {

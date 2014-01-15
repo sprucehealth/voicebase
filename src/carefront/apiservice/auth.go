@@ -70,11 +70,13 @@ type AuthenticationHandler struct {
 	AuthApi               thriftapi.Auth
 	PharmacySearchService pharmacy.PharmacySearchAPI
 	DataApi               api.DataAPI
+	StaticContentBaseUrl  string
 }
 
 type AuthenticationResponse struct {
 	Token   string          `json:"token"`
 	Patient *common.Patient `json:"patient,omitempty"`
+	Doctor  *common.Doctor  `json:"doctor,omitempty"`
 }
 
 func (h *AuthenticationHandler) NonAuthenticated() bool {
@@ -117,7 +119,12 @@ func (h *AuthenticationHandler) ServeHTTP(w http.ResponseWriter, r *http.Request
 				WriteDeveloperError(w, http.StatusInternalServerError, err.Error())
 				return
 			}
-			WriteJSONToHTTPResponseWriter(w, http.StatusOK, &AuthenticationResponse{Token: res.Token, Patient: patient})
+			doctor, err := GetPrimaryDoctorInfoBasedOnPatient(h.DataApi, patient, h.StaticContentBaseUrl)
+			if err != nil {
+				WriteDeveloperError(w, http.StatusInternalServerError, "Unable to get doctor based on patient: "+err.Error())
+				return
+			}
+			WriteJSONToHTTPResponseWriter(w, http.StatusOK, &AuthenticationResponse{Token: res.Token, Patient: patient, Doctor: doctor})
 		}
 	case "isauthenticated":
 		token, err := GetAuthTokenFromHeader(r)
