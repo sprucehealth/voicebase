@@ -1,4 +1,4 @@
-#!/bin/bash -e
+#!/bin/bash
 
 DATE=$(date +%Y%m%d%H%M)
 DEV_HOSTS="54.209.125.122"
@@ -7,8 +7,26 @@ APP=restapi
 HOSTS=$DEV_HOSTS
 deploy_env=$1
 
+GOVERSION=$(go version)
+REV=$(git rev-parse HEAD)
+BRANCH=$(git rev-parse --abbrev-ref HEAD)
+
 if [ "$deploy_env" == "prod" ]; 
 then
+	# Make sure the current branch is master and is the latest version according to origin/master
+
+	if [ "$BRANCH" != "master" ]; then
+		echo "Current branch is $BRANCH. Please only deploy from master."
+		exit 2;
+	fi
+	# Pull in latest origin
+	git fetch
+	git diff --quiet origin/master
+	if [ "$?" != "0" ]; then
+		echo "Your repo does not match origin/master. Please make sure there's no uncommited changes and you have the latest changes before deploying."
+		exit 3
+	fi
+
 	read -p "To be sure you want to deploy to production, type PROD if you wish to deploy to production: " confirmation
 	case $confirmation in
 		PROD ) HOSTS=$PROD_HOSTS;;
@@ -20,10 +38,9 @@ then
 	exit 1;
 fi
 
+set -e
+
 GOOS=linux GOARCH=amd64 CGO_ENABLED=0 go build -o $APP
-GOVERSION=$(go version)
-REV=$(git rev-parse HEAD)
-BRANCH=$(git rev-parse --abbrev-ref HEAD)
 
 for HOST in $HOSTS
 do
