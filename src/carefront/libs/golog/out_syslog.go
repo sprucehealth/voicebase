@@ -3,6 +3,7 @@ package golog
 import (
 	"fmt"
 	"log/syslog"
+	"time"
 )
 
 type SyslogOutput struct {
@@ -23,7 +24,7 @@ func (o *SyslogOutput) Log(logType string, l Level, msg []byte) error {
 	}
 	// Inject the logType and level, but first make sure it looks like JSON.
 	if msg[len(msg)-1] == '}' {
-		msg = append(msg[:len(msg)-1], fmt.Sprintf(`,"_type":"%s","@level":%d}`, logType, int(l))...)
+		msg = append(msg[:len(msg)-1], fmt.Sprintf(`,"_type":"%s","@level":%d,"_ts":"%s"}`, logType, int(l), time.Now().Format(time.RFC3339Nano))...)
 	}
 	m := string(msg)
 	switch l {
