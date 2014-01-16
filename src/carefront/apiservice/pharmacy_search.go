@@ -14,7 +14,7 @@ const (
 	defaultSearchRadiusInMiles = 10
 )
 
-var locationCache cache.Cache = cache.NewLRUCache(256)
+var locationCache cache.Cache = cache.NewLRUCache(2048)
 
 type PharmacySearchHandler struct {
 	PharmacySearchService pharmacy.PharmacySearchAPI
