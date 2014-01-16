@@ -47,10 +47,13 @@ func (c *CheckCareProvidingElligibilityHandler) ServeHTTP(w http.ResponseWriter,
 		return
 	}
 
-	doctorId, err := c.DataApi.CheckCareProvidingElligibility(cityStateInfo.ShortStateName, HEALTH_CONDITION_ACNE_ID)
-	if err != nil {
-		WriteDeveloperError(w, http.StatusInternalServerError, "Unable to check elligiblity for the patient to be seen by doctor: "+err.Error())
-		return
+	var doctorId int64
+	if cityStateInfo != nil {
+		doctorId, err = c.DataApi.CheckCareProvidingElligibility(cityStateInfo.ShortStateName, HEALTH_CONDITION_ACNE_ID)
+		if err != nil {
+			WriteDeveloperError(w, http.StatusInternalServerError, "Unable to check elligiblity for the patient to be seen by doctor: "+err.Error())
+			return
+		}
 	}
 
 	if doctorId != 0 {
