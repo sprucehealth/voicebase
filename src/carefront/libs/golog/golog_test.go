@@ -37,7 +37,7 @@ func TestFileLine(t *testing.T) {
 		t.Logf("Expected level ERR instead of %s", ent.Level)
 	}
 	// TODO: make this more robust as it will fail if the line number changes
-	if string(ent.Msg) != `{"@message":"golog_test.go:30 FOO"}` {
+	if string(ent.Msg) != `{"@message":"golog/golog_test.go:30 FOO"}` {
 		t.Logf("Invalid message: %s", ent.Msg)
 	}
 }

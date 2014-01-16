@@ -55,7 +55,8 @@ var logging = loggingT{
 }
 
 type Message struct {
-	Message string `json:"@message"`
+	Message    string `json:"@message"`
+	SourceFile string `json:"source_file"`
 }
 
 type writer struct{}
@@ -144,20 +145,25 @@ func Logf(calldepth int, l Level, format string, args ...interface{}) {
 			}
 		}
 
+		var fileLine string
 		m := fmt.Sprintf(format, args...)
 		if file != "" {
 			short := file
+			depth := 0
 			for i := len(file) - 1; i > 0; i-- {
 				if file[i] == '/' {
 					short = file[i+1:]
-					break
+					depth++
+					if depth == 2 {
+						break
+					}
 				}
 			}
 			file = short
 
-			m = fmt.Sprintf("%s:%d %s", file, line, m)
+			fileLine = fmt.Sprintf("%s:%d", file, line)
 		}
-		log(logType, l, &Message{Message: m})
+		log(logType, l, &Message{Message: m, SourceFile: fileLine})
 	}
 }
 
