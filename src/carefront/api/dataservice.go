@@ -554,6 +554,7 @@ func (d *DataService) queryAndInsertPredefinedInstructionsForDoctor(drTableName 
 	if err != nil {
 		return nil, err
 	}
+	defer rows.Close()
 
 	predefinedInstructions, err := getPredefinedInstructionsFromRows(rows)
 	if err != nil {
@@ -652,6 +653,7 @@ func getAdvicePointsForDoctor(db *sql.DB, doctorId int64, drugComponents ...stri
 	if err != nil {
 		return nil, err
 	}
+	defer rows.Close()
 
 	return getInstructionsFromRows(rows)
 }
@@ -661,6 +663,7 @@ func getRegimenStepsForDoctor(db *sql.DB, doctorId int64, drugComponents ...stri
 	if err != nil {
 		return nil, err
 	}
+	defer rows.Close()
 
 	return getInstructionsFromRows(rows)
 }
@@ -672,6 +675,7 @@ func getDoctorInstructionsBasedOnName(db *sql.DB, doctorId int64, drugComponents
 	if err != nil {
 		return nil, err
 	}
+	defer rows.Close()
 
 	return getInstructionsFromRows(rows)
 }
@@ -685,6 +689,7 @@ func getDoctorInstructionsBasedOnNameAndForm(db *sql.DB, doctorId int64, drugCom
 	if err != nil {
 		return nil, err
 	}
+	defer rows.Close()
 
 	return getInstructionsFromRows(rows)
 }
@@ -697,6 +702,7 @@ func getDoctorInstructionsBasedOnNameAndRoute(db *sql.DB, doctorId int64, drugCo
 	if err != nil {
 		return nil, err
 	}
+	defer rows.Close()
 
 	return getInstructionsFromRows(rows)
 }
@@ -711,6 +717,7 @@ func getDoctorInstructionsBasedOnNameFormAndRoute(db *sql.DB, doctorId int64, dr
 	if err != nil {
 		return nil, err
 	}
+	defer rows.Close()
 
 	return getInstructionsFromRows(rows)
 }
@@ -1641,6 +1648,7 @@ func (d *DataService) GetGlobalSectionIds() ([]int64, error) {
 	if err != nil {
 		return nil, err
 	}
+	defer rows.Close()
 
 	globalSectionIds := make([]int64, 0)
 	for rows.Next() {
@@ -1656,6 +1664,7 @@ func (d *DataService) GetSectionIdsForHealthCondition(healthConditionId int64) (
 	if err != nil {
 		return nil, err
 	}
+	defer rows.Close()
 
 	sectionIds := make([]int64, 0)
 	for rows.Next() {

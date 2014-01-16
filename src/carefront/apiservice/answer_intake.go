@@ -1,11 +1,13 @@
 package apiservice
 
 import (
-	"encoding/json"
-	"net/http"
-
 	"carefront/api"
 	"carefront/common"
+	"carefront/libs/golog"
+	"encoding/json"
+	"net/http"
+	"strings"
+	"time"
 )
 
 type AnswerIntakeHandler struct {
@@ -15,6 +17,12 @@ type AnswerIntakeHandler struct {
 func NewAnswerIntakeHandler(dataApi api.DataAPI) *AnswerIntakeHandler {
 	return &AnswerIntakeHandler{dataApi}
 }
+
+const (
+	// Error we get from mysql is: "Error 1213: Deadlock found when trying to get lock; try restarting transaction"
+	mysqlDeadlockError    = "Error 1213"
+	waitTimeBeforeTxRetry = 100
+)
 
 func (a *AnswerIntakeHandler) ServeHTTP(w http.ResponseWriter, r *http.Request) {
 	jsonDecoder := json.NewDecoder(r.Body)
@@ -79,8 +87,18 @@ func (a *AnswerIntakeHandler) ServeHTTP(w http.ResponseWriter, r *http.Request) 
 
 	err = a.DataApi.StoreAnswersForQuestion(api.PATIENT_ROLE, patientId, answerIntakeRequestBody.PatientVisitId, layoutVersionId, answersToStorePerQuestion)
 	if err != nil {
-		WriteDeveloperError(w, http.StatusInternalServerError, "Unable to store the multiple choice answer to the question for the patient based on the parameters provided and the internal state of the system: "+err.Error())
-		return
+		if strings.Contains(err.Error(), mysqlDeadlockError) {
+			golog.Warningf("MYSQL Deadlock found when trying to get lock. Retrying transaction after waiting for %d milliseconds...", waitTimeBeforeTxRetry)
+			time.Sleep(waitTimeBeforeTxRetry * time.Millisecond)
+			err = a.DataApi.StoreAnswersForQuestion(api.PATIENT_ROLE, patientId, answerIntakeRequestBody.PatientVisitId, layoutVersionId, answersToStorePerQuestion)
+			if err != nil {
+				WriteDeveloperError(w, http.StatusInternalServerError, "Second try: Unable to store the multiple choice answer to the question for the patient based on the parameters provided and the internal state of the system: "+err.Error())
+				return
+			}
+		} else {
+			WriteDeveloperError(w, http.StatusInternalServerError, "Unable to store the multiple choice answer to the question for the patient based on the parameters provided and the internal state of the system: "+err.Error())
+			return
+		}
 	}
 
 	WriteJSONToHTTPResponseWriter(w, http.StatusOK, AnswerIntakeResponse{Result: "success"})
