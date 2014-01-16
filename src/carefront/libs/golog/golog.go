@@ -56,7 +56,7 @@ var logging = loggingT{
 
 type Message struct {
 	Message    string `json:"@message"`
-	SourceFile string `json:"source_file"`
+	SourceFile string `json:"source_file,omitempty"`
 }
 
 type writer struct{}
