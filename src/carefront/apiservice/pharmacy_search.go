@@ -49,9 +49,9 @@ func (p *PharmacySearchHandler) ServeHTTP(w http.ResponseWriter, r *http.Request
 		requestData.SearchRadiusInMiles = defaultSearchRadiusInMiles
 	}
 
-	var locationInfo maps.LocationInfo
+	var locationInfo *maps.LocationInfo
 	if li, err := locationCache.Get(requestData.SearchLocation); err == nil && li != nil {
-		locationInfo = li.(maps.LocationInfo)
+		locationInfo = li.(*maps.LocationInfo)
 	} else {
 		locationInfo, err = p.MapsService.GetLatLongFromSearchLocation(requestData.SearchLocation)
 		if err != nil {
@@ -61,14 +61,21 @@ func (p *PharmacySearchHandler) ServeHTTP(w http.ResponseWriter, r *http.Request
 		locationCache.Set(requestData.SearchLocation, locationInfo)
 	}
 
-	pharmacies, err := p.PharmacySearchService.GetPharmaciesAroundSearchLocation(locationInfo.Latitude, locationInfo.Longitude, float64(requestData.SearchRadiusInMiles), requestData.NumResults)
-	if err != nil {
-		WriteDeveloperError(w, http.StatusInternalServerError, "Unable to get pharmacies based on location: "+err.Error())
-		return
+	var pharmacies []*pharmacy.PharmacyData
+
+	if locationInfo != nil {
+		pharmacies, err = p.PharmacySearchService.GetPharmaciesAroundSearchLocation(locationInfo.Latitude, locationInfo.Longitude, float64(requestData.SearchRadiusInMiles), requestData.NumResults)
+		if err != nil {
+			WriteDeveloperError(w, http.StatusInternalServerError, "Unable to get pharmacies based on location: "+err.Error())
+			return
+		}
+	} else {
+		pharmacies = make([]*pharmacy.PharmacyData, 0)
 	}
 
-	pharmacyResult := &PharmacySearchResponse{}
-	pharmacyResult.Pharmacies = pharmacies
+	pharmacyResult := &PharmacySearchResponse{
+		Pharmacies: pharmacies,
+	}
 
 	WriteJSONToHTTPResponseWriter(w, http.StatusOK, pharmacyResult)
 }

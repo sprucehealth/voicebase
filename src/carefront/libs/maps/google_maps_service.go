@@ -61,53 +61,48 @@ func NewGoogleMapsService(statsRegistry metrics.Registry) *GoogleMapsService {
 	return s
 }
 
-func (g *GoogleMapsService) ConvertZipcodeToCityState(zipcode string) (cityStateInfo CityStateInfo, err error) {
+func (g *GoogleMapsService) ConvertZipcodeToCityState(zipcode string) (*CityStateInfo, error) {
 	g.statRequests.Inc(1)
 
 	queryStr := fmt.Sprintf("https://maps.googleapis.com/maps/api/geocode/json?address=%s&sensor=false", zipcode)
 	resp, err := http.Get(queryStr)
 	if err != nil {
 		g.statFailedOther.Inc(1)
-		return
+		return nil, err
 	}
 
 	respData, err := ioutil.ReadAll(resp.Body)
 	if err != nil {
 		g.statFailedOther.Inc(1)
-		return
+		return nil, err
 	}
 
 	geocodingResult := &GeocodingResult{}
 	err = json.Unmarshal(respData, geocodingResult)
 	if err != nil {
 		g.statFailedOther.Inc(1)
-		return
+		return nil, err
 	}
 
 	switch geocodingResult.Status {
 	case "ZERO_RESULTS":
-		err = ZeroResultsErr
-		return
+		return nil, nil
 	case "OVER_QUERY_LIMIT":
-		err = QuotaExceededErr
 		g.statFailedOverQueryLimit.Inc(1)
-		return
+		return nil, QuotaExceededErr
 	case "REQUEST_DENIED":
-		err = RequestDeniedErr
 		g.statFailedRequestDenied.Inc(1)
-		return
+		return nil, RequestDeniedErr
 	case "INVALID_REQUEST":
-		err = InvalidRequestErr
 		g.statFailedInvalidRequest.Inc(1)
-		return
+		return nil, InvalidRequestErr
 	case "UNKNOWN_ERROR":
-		err = UnknownError
 		g.statFailedUnknown.Inc(1)
-		return
+		return nil, UnknownError
 	}
 
 	// look through the address components to find the ones that relate to the city level and the state level
-	cityStateInfo = CityStateInfo{}
+	var cityStateInfo CityStateInfo
 	for _, result := range geocodingResult.Results {
 		for _, addressComponent := range result.AddressComponents {
 			for _, addressComponentType := range addressComponent.Types {
@@ -122,10 +117,10 @@ func (g *GoogleMapsService) ConvertZipcodeToCityState(zipcode string) (cityState
 			}
 		}
 	}
-	return
+	return &cityStateInfo, nil
 }
 
-func (g *GoogleMapsService) GetLatLongFromSearchLocation(searchLocation string) (locationInfo LocationInfo, err error) {
+func (g *GoogleMapsService) GetLatLongFromSearchLocation(searchLocation string) (*LocationInfo, error) {
 	g.statRequests.Inc(1)
 
 	v := url.Values{}
@@ -135,47 +130,40 @@ func (g *GoogleMapsService) GetLatLongFromSearchLocation(searchLocation string) 
 	resp, err := http.Get(queryStr)
 	if err != nil {
 		g.statFailedOther.Inc(1)
-		return
+		return nil, err
 	}
 
 	respData, err := ioutil.ReadAll(resp.Body)
 	if err != nil {
 		g.statFailedOther.Inc(1)
-		return
+		return nil, err
 	}
 	geocodingResult := &GeocodingResult{}
 	err = json.Unmarshal(respData, geocodingResult)
 	if err != nil {
 		g.statFailedOther.Inc(1)
-		return
+		return nil, err
 	}
 
 	switch geocodingResult.Status {
 	case "ZERO_RESULTS":
-		err = ZeroResultsErr
-		return
+		return nil, nil
 	case "OVER_QUERY_LIMIT":
-		err = QuotaExceededErr
 		g.statFailedOverQueryLimit.Inc(1)
-		return
+		return nil, QuotaExceededErr
 	case "REQUEST_DENIED":
-		err = RequestDeniedErr
 		g.statFailedRequestDenied.Inc(1)
-		return
+		return nil, RequestDeniedErr
 	case "INVALID_REQUEST":
-		err = InvalidRequestErr
 		g.statFailedInvalidRequest.Inc(1)
-		return
+		return nil, InvalidRequestErr
 	case "UNKNOWN_ERROR":
-		err = UnknownError
 		g.statFailedUnknown.Inc(1)
-		return
+		return nil, UnknownError
 	}
 
-	locationInfo = LocationInfo{}
-	locationInfo.Latitude = geocodingResult.Results[0].AddressGeometry.Location.Latitude
-	locationInfo.Longitude = geocodingResult.Results[0].AddressGeometry.Location.Longitude
-
-	return
-
+	return &LocationInfo{
+		Latitude:  geocodingResult.Results[0].AddressGeometry.Location.Latitude,
+		Longitude: geocodingResult.Results[0].AddressGeometry.Location.Longitude,
+	}, nil
 }
