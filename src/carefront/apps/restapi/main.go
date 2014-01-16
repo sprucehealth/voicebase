@@ -64,7 +64,7 @@ type Config struct {
 	DoctorVisualLayoutBucket string        `long:"doctor_visual_layout_bucket" description:"S3 Bucket name for patient overview for doctor's viewing"`
 	DoctorLayoutBucket       string        `long:"doctor_layout_bucket" description:"S3 Bucket name for pre-processed patient overview for doctor's viewing"`
 	Debug                    bool          `long:"debug" description:"Enable debugging"`
-	IOSDeeplinkScheme        string        `long:"ios_deeplink_scheme description:"Scheme for iOS deep-links (e.g. spruce://)"`
+	IOSDeeplinkScheme        string        `long:"ios_deeplink_scheme" description:"Scheme for iOS deep-links (e.g. spruce://)"`
 	DoseSpotClinicKey        string        `long:"dose_spot_clinic_key" description:"DoseSpot Clinic Key for eRX integration"`
 	DoseSpotClinicId         string        `long:"dose_spot_clinic_id" description:"DoseSpot Clinic Id for eRX integration"`
 	DoseSpotUserId           string        `long:"dose_spot_user_id" description:"DoseSpot UserId for eRx integration"`
