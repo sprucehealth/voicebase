@@ -12,6 +12,7 @@ import (
 const (
 	defaultNumResults          = 10
 	defaultSearchRadiusInMiles = 10
+	minSearchLocationLength    = 3 // Search location must be at least this many characters to return results
 )
 
 var locationCache cache.Cache = cache.NewLFUCache(2048)
@@ -50,15 +51,18 @@ func (p *PharmacySearchHandler) ServeHTTP(w http.ResponseWriter, r *http.Request
 	}
 
 	var locationInfo *maps.LocationInfo
-	if li, err := locationCache.Get(requestData.SearchLocation); err == nil && li != nil {
-		locationInfo = li.(*maps.LocationInfo)
-	} else {
-		locationInfo, err = p.MapsService.GetLatLongFromSearchLocation(requestData.SearchLocation)
-		if err != nil {
-			WriteDeveloperError(w, http.StatusInternalServerError, "Unable to convert search location to lat,long: "+err.Error())
-			return
+
+	if len(requestData.SearchLocation) >= minSearchLocationLength {
+		if li, err := locationCache.Get(requestData.SearchLocation); err == nil && li != nil {
+			locationInfo = li.(*maps.LocationInfo)
+		} else {
+			locationInfo, err = p.MapsService.GetLatLongFromSearchLocation(requestData.SearchLocation)
+			if err != nil {
+				WriteDeveloperError(w, http.StatusInternalServerError, "Unable to convert search location to lat,long: "+err.Error())
+				return
+			}
+			locationCache.Set(requestData.SearchLocation, locationInfo)
 		}
-		locationCache.Set(requestData.SearchLocation, locationInfo)
 	}
 
 	var pharmacies []*pharmacy.PharmacyData
