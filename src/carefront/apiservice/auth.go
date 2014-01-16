@@ -57,13 +57,15 @@
 package apiservice
 
 import (
+	"net/http"
+	"strings"
+
 	"carefront/api"
 	"carefront/common"
+	"carefront/libs/golog"
 	"carefront/libs/pharmacy"
 	thriftapi "carefront/thrift/api"
 	"github.com/gorilla/schema"
-	"net/http"
-	"strings"
 )
 
 type AuthenticationHandler struct {
@@ -129,7 +131,8 @@ func (h *AuthenticationHandler) ServeHTTP(w http.ResponseWriter, r *http.Request
 	case "isauthenticated":
 		token, err := GetAuthTokenFromHeader(r)
 		if err != nil {
-			WriteDeveloperError(w, http.StatusBadRequest, "authoriation token not correctly specified in the header: "+err.Error())
+			golog.Warningf("authoriation token not correctly specified in the header: %s", err.Error())
+			WriteAuthTimeoutError(w)
 			return
 		}
 		validTokenResponse, err := h.AuthApi.ValidateToken(token)
