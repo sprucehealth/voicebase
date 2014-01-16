@@ -3,6 +3,7 @@ package apiservice
 import (
 	"log"
 	"net/http"
+	"runtime"
 	"strconv"
 	"time"
 
@@ -111,18 +112,26 @@ func (mux *AuthServeMux) ServeHTTP(w http.ResponseWriter, r *http.Request) {
 
 	customResponseWriter := &CustomResponseWriter{w, 0, false}
 	defer func() {
-		responseTime := time.Since(ctx.RequestStartTime).Nanoseconds() / 1e3
-		mux.statLatency.Update(responseTime)
-		DeleteContext(r)
-		golog.Log("webrequest", golog.INFO, &RequestLog{
-			RemoteAddr:   r.RemoteAddr,
-			Method:       r.Method,
-			URL:          r.URL.String(),
-			StatusCode:   customResponseWriter.StatusCode,
-			ContentType:  w.Header().Get("Content-Type"),
-			UserAgent:    r.UserAgent(),
-			ResponseTime: float64(responseTime) / 1000.0,
-		})
+		if err := recover(); err != nil {
+			const size = 4096
+			buf := make([]byte, size)
+			buf = buf[:runtime.Stack(buf, false)]
+			golog.Criticalf("http: panic: %v\n%s", err, buf)
+		} else {
+			responseTime := time.Since(ctx.RequestStartTime).Nanoseconds() / 1e3
+			mux.statLatency.Update(responseTime)
+			DeleteContext(r)
+
+			golog.Log("webrequest", golog.INFO, &RequestLog{
+				RemoteAddr:   r.RemoteAddr,
+				Method:       r.Method,
+				URL:          r.URL.String(),
+				StatusCode:   customResponseWriter.StatusCode,
+				ContentType:  w.Header().Get("Content-Type"),
+				UserAgent:    r.UserAgent(),
+				ResponseTime: float64(responseTime) / 1000.0,
+			})
+		}
 	}()
 	if r.RequestURI == "*" {
 		customResponseWriter.Header().Set("Connection", "close")

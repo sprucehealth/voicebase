@@ -23,6 +23,6 @@ var InvalidRequestErr = errors.New("maps_service: Invalid request possibly due t
 var UnknownError = errors.New("maps_service: Unknown error")
 
 type MapsService interface {
-	ConvertZipcodeToCityState(zipcode string) (cityStateInfo CityStateInfo, err error)
-	GetLatLongFromSearchLocation(searchLocation string) (locationInfo LocationInfo, err error)
+	ConvertZipcodeToCityState(zipcode string) (*CityStateInfo, error)
+	GetLatLongFromSearchLocation(searchLocation string) (*LocationInfo, error)
 }

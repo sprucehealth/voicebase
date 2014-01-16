@@ -1,8 +1,8 @@
 package auth
 
 import (
+	"carefront/libs/golog"
 	"database/sql"
-	"log"
 	"strings"
 	"time"
 
@@ -25,13 +25,13 @@ func (m *AuthService) Signup(email, password string) (*api.AuthResponse, error) 
 	if err := m.DB.QueryRow("SELECT id FROM account WHERE email = ?", email).Scan(&id); err == nil {
 		return nil, &api.LoginAlreadyExists{AccountId: id}
 	} else if err != nil && err != sql.ErrNoRows {
-		log.Printf("services/auth: %s", err.Error())
+		golog.Errorf("services/auth: %s", err.Error())
 		return nil, &api.InternalServerError{Message: err.Error()}
 	}
 
 	hashedPassword, err := bcrypt.GenerateFromPassword([]byte(password), 10)
 	if err != nil {
-		log.Printf("services/auth: %s", err.Error())
+		golog.Errorf("services/auth: %s", err.Error())
 		return nil, &api.InternalServerError{Message: err.Error()}
 	}
 
@@ -39,7 +39,7 @@ func (m *AuthService) Signup(email, password string) (*api.AuthResponse, error) 
 	tx, err := m.DB.Begin()
 	if err != nil {
 		tx.Rollback()
-		log.Printf("services/auth: %s", err.Error())
+		golog.Errorf("services/auth: %s", err.Error())
 		return nil, &api.InternalServerError{Message: err.Error()}
 	}
 
@@ -47,21 +47,21 @@ func (m *AuthService) Signup(email, password string) (*api.AuthResponse, error) 
 	res, err := tx.Exec("INSERT INTO account (email, password) VALUES (?, ?)", email, string(hashedPassword))
 	if err != nil {
 		tx.Rollback()
-		log.Printf("services/auth: INSERT account failed: %s", err.Error())
+		golog.Errorf("services/auth: INSERT account failed: %s", err.Error())
 		return nil, &api.InternalServerError{Message: err.Error()}
 	}
 
 	tok, err := common.GenerateToken()
 	if err != nil {
 		tx.Rollback()
-		log.Printf("services/auth: GenerateToken failed: %s", err.Error())
+		golog.Errorf("services/auth: GenerateToken failed: %s", err.Error())
 		return nil, &api.InternalServerError{Message: err.Error()}
 	}
 
 	lastId, err := res.LastInsertId()
 	if err != nil {
 		tx.Rollback()
-		log.Printf("services/auth: %s", err.Error())
+		golog.Errorf("services/auth: %s", err.Error())
 		return nil, &api.InternalServerError{Message: err.Error()}
 	}
 
@@ -69,7 +69,7 @@ func (m *AuthService) Signup(email, password string) (*api.AuthResponse, error) 
 	_, err = tx.Exec("INSERT INTO auth_token (token, account_id, created, expires) VALUES (?, ?, ?, ?)", tok, lastId, time.Now(), time.Now().Add(m.ExpireDuration))
 	if err != nil {
 		tx.Rollback()
-		log.Printf("services/auth: INSERT auth_token failed: %s", err.Error())
+		golog.Errorf("services/auth: INSERT auth_token failed: %s", err.Error())
 		return nil, &api.InternalServerError{Message: err.Error()}
 	}
 
@@ -136,7 +136,7 @@ func (m *AuthService) ValidateToken(token string) (*api.TokenValidationResponse,
 	var accountId int64
 	var expires *time.Time
 	if err := m.DB.QueryRow("SELECT account_id, expires FROM auth_token WHERE token =  ?", token).Scan(&accountId, &expires); err == sql.ErrNoRows {
-		log.Printf("AUTHERROR: Token %s is not present in database ", token)
+		golog.Infof("Token %s is not present in database ", token)
 		return &api.TokenValidationResponse{IsValid: false}, nil
 	} else if err != nil {
 		return nil, &api.InternalServerError{Message: err.Error()}
@@ -145,10 +145,10 @@ func (m *AuthService) ValidateToken(token string) (*api.TokenValidationResponse,
 	// if the token exists, check the expiration to ensure that it is valid
 	left := (*expires).Sub(time.Now())
 	if left <= 0 {
-		log.Printf("Current time %s is after expiration time %s", time.Now().String(), expires.String())
+		golog.Infof("Current time %s is after expiration time %s", time.Now().String(), expires.String())
 	} else if m.RenewDuration > 0 && left < m.RenewDuration {
 		if _, err := m.DB.Exec("UPDATE auth_token SET expires = ? WHERE token = ?", time.Now().Add(m.ExpireDuration), token); err != nil {
-			log.Printf("services/auth: failed to extend token expiration: %s", err.Error())
+			golog.Errorf("services/auth: failed to extend token expiration: %s", err.Error())
 			// Don't return an error response because this doesn't prevent anything else from working
 		}
 	}

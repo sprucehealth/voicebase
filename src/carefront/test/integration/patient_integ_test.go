@@ -26,7 +26,7 @@ func TestPatientCareProvidingEllgibility(t *testing.T) {
 	testData := SetupIntegrationTest(t)
 	defer TearDownIntegrationTest(t, testData)
 
-	checkElligibilityHandler := &apiservice.CheckCareProvidingElligibilityHandler{DataApi: testData.DataApi, MapsService: maps.GoogleMapsService(0)}
+	checkElligibilityHandler := &apiservice.CheckCareProvidingElligibilityHandler{DataApi: testData.DataApi, MapsService: maps.NewGoogleMapsService(nil)}
 	ts := httptest.NewServer(checkElligibilityHandler)
 	defer ts.Close()
 	resp, err := http.Get(ts.URL + "?zip_code=94115")

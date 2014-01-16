@@ -6,7 +6,7 @@ import (
 )
 
 func TestGoogleMapsForConvertingZipcodeToCityState(t *testing.T) {
-	googleMapsService := maps.GoogleMapsService(0)
+	googleMapsService := maps.NewGoogleMapsService(nil)
 
 	// SHOULD RETURN San Francisco, CA
 	cityStateInfo, err := googleMapsService.ConvertZipcodeToCityState("94115")

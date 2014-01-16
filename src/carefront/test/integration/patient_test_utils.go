@@ -17,7 +17,7 @@ import (
 )
 
 func SignupRandomTestPatient(t *testing.T, dataApi api.DataAPI, authApi thriftapi.Auth) *apiservice.PatientSignedupResponse {
-	authHandler := &apiservice.SignupPatientHandler{AuthApi: authApi, DataApi: dataApi, MapsApi: maps.GoogleMapsService(0)}
+	authHandler := &apiservice.SignupPatientHandler{AuthApi: authApi, DataApi: dataApi, MapsApi: maps.NewGoogleMapsService(nil)}
 	ts := httptest.NewServer(authHandler)
 	defer ts.Close()
 

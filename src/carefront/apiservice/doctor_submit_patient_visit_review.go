@@ -1,12 +1,13 @@
 package apiservice
 
 import (
-	"carefront/api"
 	"fmt"
+	"net/http"
+
+	"carefront/api"
+	"carefront/libs/golog"
 	"github.com/gorilla/schema"
 	"github.com/subosito/twilio"
-	"log"
-	"net/http"
 )
 
 type DoctorSubmitPatientVisitReviewHandler struct {
@@ -112,7 +113,7 @@ func (d *DoctorSubmitPatientVisitReviewHandler) submitPatientVisitReview(w http.
 		if patient.Phone != "" {
 			_, _, err = d.TwilioCli.Messages.SendSMS(d.TwilioFromNumber, patient.Phone, patientVisitUpdateNotification)
 			if err != nil {
-				log.Println("Error sending SMS: " + err.Error())
+				golog.Errorf("Error sending SMS: %s", err.Error())
 			}
 		}
 	}
