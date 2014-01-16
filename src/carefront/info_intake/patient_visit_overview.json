@@ -25,12 +25,12 @@
                 }, 
                 {
                     "data": [
-                        {
+                        {  
                             "no_patient_answer_text": "Patient did not answer", 
                             "question": "q_list_prev_skin_condition_diagnosis"
                         }, 
                         {
-                            "question": "q_other_skin_condition_entry", 
+                            "question": "q_other_skin_condition_entry",  
                             "remove_question_if_no_answer": true
                         }, 
                         {
