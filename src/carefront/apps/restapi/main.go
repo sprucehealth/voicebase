@@ -201,12 +201,14 @@ func main() {
 		twilioCli = twilio.NewClient(conf.Twilio.AccountSid, conf.Twilio.AuthToken, nil)
 	}
 
+	mapsService := maps.NewGoogleMapsService(metricsRegistry.Scope("google_maps_api"))
+
 	dataApi := &api.DataService{DB: db}
 	cloudStorageApi := api.NewCloudStorageService(awsAuth)
 	photoAnswerCloudStorageApi := api.NewCloudStorageService(awsAuth)
 	authHandler := &apiservice.AuthenticationHandler{AuthApi: authApi, DataApi: dataApi, PharmacySearchService: &pharmacy.PharmacySearchService{PharmacyDB: pharmacyDb}, StaticContentBaseUrl: conf.StaticContentBaseUrl}
-	checkElligibilityHandler := &apiservice.CheckCareProvidingElligibilityHandler{DataApi: dataApi, MapsService: maps.GoogleMapsService(0), StaticContentUrl: conf.StaticContentBaseUrl}
-	signupPatientHandler := &apiservice.SignupPatientHandler{DataApi: dataApi, AuthApi: authApi, MapsApi: maps.GoogleMapsService(0)}
+	checkElligibilityHandler := &apiservice.CheckCareProvidingElligibilityHandler{DataApi: dataApi, MapsService: mapsService, StaticContentUrl: conf.StaticContentBaseUrl}
+	signupPatientHandler := &apiservice.SignupPatientHandler{DataApi: dataApi, AuthApi: authApi, MapsApi: mapsService}
 	updatePatientBillingAddress := &apiservice.UpdatePatientAddressHandler{DataApi: dataApi, AddressType: apiservice.BILLING_ADDRESS_TYPE}
 	updatePatientPharmacyHandler := &apiservice.UpdatePatientPharmacyHandler{DataApi: dataApi}
 	authenticateDoctorHandler := &apiservice.DoctorAuthenticationHandler{DataApi: dataApi, AuthApi: authApi}
@@ -223,8 +225,8 @@ func main() {
 	medicationDispenseUnitHandler := &apiservice.MedicationDispenseUnitsHandler{DataApi: dataApi}
 	treatmentsHandler := apiservice.NewTreatmentsHandler(dataApi)
 	photoAnswerIntakeHandler := apiservice.NewPhotoAnswerIntakeHandler(dataApi, photoAnswerCloudStorageApi, conf.CaseBucket, conf.AWSRegion, conf.MaxInMemoryForPhotoMB*1024*1024)
-	pharmacySearchHandler := &apiservice.PharmacySearchHandler{PharmacySearchService: &pharmacy.PharmacySearchService{PharmacyDB: pharmacyDb}, MapsService: maps.GoogleMapsService(0)}
-	googlePlacesPharmacySearch := &apiservice.PharmacySearchHandler{PharmacySearchService: pharmacy.GooglePlacesPharmacySearchService(0), MapsService: maps.GoogleMapsService(0)}
+	pharmacySearchHandler := &apiservice.PharmacySearchHandler{PharmacySearchService: &pharmacy.PharmacySearchService{PharmacyDB: pharmacyDb}, MapsService: mapsService}
+	googlePlacesPharmacySearch := &apiservice.PharmacySearchHandler{PharmacySearchService: pharmacy.GooglePlacesPharmacySearchService(0), MapsService: mapsService}
 	generateDoctorLayoutHandler := &apiservice.GenerateDoctorLayoutHandler{
 		DataApi:                  dataApi,
 		CloudStorageApi:          cloudStorageApi,

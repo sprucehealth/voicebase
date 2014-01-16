@@ -114,6 +114,7 @@ func (mux *AuthServeMux) ServeHTTP(w http.ResponseWriter, r *http.Request) {
 		responseTime := time.Since(ctx.RequestStartTime).Nanoseconds() / 1e3
 		mux.statLatency.Update(responseTime)
 		DeleteContext(r)
+
 		golog.Log("webrequest", golog.INFO, &RequestLog{
 			RemoteAddr:   r.RemoteAddr,
 			Method:       r.Method,

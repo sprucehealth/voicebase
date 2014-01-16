@@ -6,6 +6,8 @@ import (
 	"io/ioutil"
 	"net/http"
 	"net/url"
+
+	"github.com/samuel/go-metrics/metrics"
 )
 
 type GeocodingResult struct {
@@ -30,23 +32,55 @@ type AddressComponent struct {
 	Types     []string `json:"types"`
 }
 
-type GoogleMapsService int
+type GoogleMapsService struct {
+	statRequests             metrics.Counter
+	statFailedOverQueryLimit metrics.Counter
+	statFailedRequestDenied  metrics.Counter
+	statFailedInvalidRequest metrics.Counter
+	statFailedUnknown        metrics.Counter
+	statFailedOther          metrics.Counter
+}
 
-func (g GoogleMapsService) ConvertZipcodeToCityState(zipcode string) (cityStateInfo CityStateInfo, err error) {
+func NewGoogleMapsService(statsRegistry metrics.Registry) *GoogleMapsService {
+	s := &GoogleMapsService{
+		statRequests:             metrics.NewCounter(),
+		statFailedOverQueryLimit: metrics.NewCounter(),
+		statFailedRequestDenied:  metrics.NewCounter(),
+		statFailedInvalidRequest: metrics.NewCounter(),
+		statFailedUnknown:        metrics.NewCounter(),
+		statFailedOther:          metrics.NewCounter(),
+	}
+	if statsRegistry != nil {
+		statsRegistry.Add("requests/total", s.statRequests)
+		statsRegistry.Add("requests/failed/over_query_limit", s.statFailedOverQueryLimit)
+		statsRegistry.Add("requests/failed/request_denied", s.statFailedRequestDenied)
+		statsRegistry.Add("requests/failed/invalid_request", s.statFailedInvalidRequest)
+		statsRegistry.Add("requests/failed/unknown_error", s.statFailedUnknown)
+		statsRegistry.Add("requests/failed/other_error", s.statFailedOther)
+	}
+	return s
+}
+
+func (g *GoogleMapsService) ConvertZipcodeToCityState(zipcode string) (cityStateInfo CityStateInfo, err error) {
+	g.statRequests.Inc(1)
+
 	queryStr := fmt.Sprintf("https://maps.googleapis.com/maps/api/geocode/json?address=%s&sensor=false", zipcode)
 	resp, err := http.Get(queryStr)
 	if err != nil {
+		g.statFailedOther.Inc(1)
 		return
 	}
 
 	respData, err := ioutil.ReadAll(resp.Body)
 	if err != nil {
+		g.statFailedOther.Inc(1)
 		return
 	}
 
 	geocodingResult := &GeocodingResult{}
 	err = json.Unmarshal(respData, geocodingResult)
 	if err != nil {
+		g.statFailedOther.Inc(1)
 		return
 	}
 
@@ -56,15 +90,19 @@ func (g GoogleMapsService) ConvertZipcodeToCityState(zipcode string) (cityStateI
 		return
 	case "OVER_QUERY_LIMIT":
 		err = QuotaExceededErr
+		g.statFailedOverQueryLimit.Inc(1)
 		return
 	case "REQUEST_DENIED":
 		err = RequestDeniedErr
+		g.statFailedRequestDenied.Inc(1)
 		return
 	case "INVALID_REQUEST":
 		err = InvalidRequestErr
+		g.statFailedInvalidRequest.Inc(1)
 		return
 	case "UNKNOWN_ERROR":
 		err = UnknownError
+		g.statFailedUnknown.Inc(1)
 		return
 	}
 
@@ -87,23 +125,28 @@ func (g GoogleMapsService) ConvertZipcodeToCityState(zipcode string) (cityStateI
 	return
 }
 
-func (g GoogleMapsService) GetLatLongFromSearchLocation(searchLocation string) (locationInfo LocationInfo, err error) {
+func (g *GoogleMapsService) GetLatLongFromSearchLocation(searchLocation string) (locationInfo LocationInfo, err error) {
+	g.statRequests.Inc(1)
+
 	v := url.Values{}
 	v.Set("address", searchLocation)
 	v.Set("sensor", "false")
 	queryStr := fmt.Sprintf(`https://maps.googleapis.com/maps/api/geocode/json?%s`, v.Encode())
 	resp, err := http.Get(queryStr)
 	if err != nil {
+		g.statFailedOther.Inc(1)
 		return
 	}
 
 	respData, err := ioutil.ReadAll(resp.Body)
 	if err != nil {
+		g.statFailedOther.Inc(1)
 		return
 	}
 	geocodingResult := &GeocodingResult{}
 	err = json.Unmarshal(respData, geocodingResult)
 	if err != nil {
+		g.statFailedOther.Inc(1)
 		return
 	}
 
@@ -113,15 +156,19 @@ func (g GoogleMapsService) GetLatLongFromSearchLocation(searchLocation string) (
 		return
 	case "OVER_QUERY_LIMIT":
 		err = QuotaExceededErr
+		g.statFailedOverQueryLimit.Inc(1)
 		return
 	case "REQUEST_DENIED":
 		err = RequestDeniedErr
+		g.statFailedRequestDenied.Inc(1)
 		return
 	case "INVALID_REQUEST":
 		err = InvalidRequestErr
+		g.statFailedInvalidRequest.Inc(1)
 		return
 	case "UNKNOWN_ERROR":
 		err = UnknownError
+		g.statFailedUnknown.Inc(1)
 		return
 	}
 
