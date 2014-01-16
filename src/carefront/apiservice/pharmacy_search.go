@@ -1,16 +1,20 @@
 package apiservice
 
 import (
+	"net/http"
+
 	"carefront/libs/maps"
 	"carefront/libs/pharmacy"
 	"github.com/gorilla/schema"
-	"net/http"
+	"github.com/samuel/go-cache/cache"
 )
 
 const (
 	defaultNumResults          = 10
 	defaultSearchRadiusInMiles = 10
 )
+
+var locationCache cache.Cache = cache.NewLRUCache(256)
 
 type PharmacySearchHandler struct {
 	PharmacySearchService pharmacy.PharmacySearchAPI
@@ -45,10 +49,16 @@ func (p *PharmacySearchHandler) ServeHTTP(w http.ResponseWriter, r *http.Request
 		requestData.SearchRadiusInMiles = defaultSearchRadiusInMiles
 	}
 
-	locationInfo, err := p.MapsService.GetLatLongFromSearchLocation(requestData.SearchLocation)
-	if err != nil {
-		WriteDeveloperError(w, http.StatusInternalServerError, "Unable to convert search location to lat,long: "+err.Error())
-		return
+	var locationInfo maps.LocationInfo
+	if li, err := locationCache.Get(requestData.SearchLocation); err == nil && li != nil {
+		locationInfo = li.(maps.LocationInfo)
+	} else {
+		locationInfo, err = p.MapsService.GetLatLongFromSearchLocation(requestData.SearchLocation)
+		if err != nil {
+			WriteDeveloperError(w, http.StatusInternalServerError, "Unable to convert search location to lat,long: "+err.Error())
+			return
+		}
+		locationCache.Set(requestData.SearchLocation, locationInfo)
 	}
 
 	pharmacies, err := p.PharmacySearchService.GetPharmaciesAroundSearchLocation(locationInfo.Latitude, locationInfo.Longitude, float64(requestData.SearchRadiusInMiles), requestData.NumResults)
