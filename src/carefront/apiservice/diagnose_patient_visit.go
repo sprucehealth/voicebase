@@ -22,7 +22,11 @@ const (
 
 Based on the photographs you have provided, it looks like you have %s.
 
-Acne is completely treatable but it will take some work and time to see results. I've put together the best treatment plan for your skin and with regular application you should begin to see results in 1-3 months.
+Acne is completely treatable but it will take consistent use of medication over time to see results. I've put together the best treatment plan for your skin and with regular application you should begin to see improvements in 1-3 months.
+
+Please keep in mind that your skin may get worse before it gets better.
+
+If you have questions or concerns, feel free to call me at (415) 202-6700.
 
 Dr. %s`
 )
