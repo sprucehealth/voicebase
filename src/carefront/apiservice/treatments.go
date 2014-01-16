@@ -149,7 +149,7 @@ func (t *TreatmentsHandler) addTreatment(w http.ResponseWriter, r *http.Request)
 		}
 
 		if treatment.PatientInstructions == "" {
-			WriteDeveloperError(w, http.StatusBadRequest, "Patient Instructions for treatment cannot be empty")
+			WriteUserError(w, http.StatusBadRequest, "Patient Instructions for treatment cannot be empty")
 			return
 		}
 
