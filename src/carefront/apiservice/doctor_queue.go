@@ -65,6 +65,7 @@ func (d *DoctorQueueHandler) convertDoctorQueueIntoDisplayQueue(doctorQueue []*a
 		// put the first item in the queue into the first section of the display feed
 		upcomingVisitSection := &DisplayFeedSection{}
 		upcomingVisitSection.Title = "Next Visit"
+		pendingOrOngoingItems[0].PositionInQueue = 0
 		item, shadowedErr := converQueueItemToDisplayFeedItem(d.DataApi, pendingOrOngoingItems[0])
 		if shadowedErr != nil {
 			err = shadowedErr
@@ -75,7 +76,8 @@ func (d *DoctorQueueHandler) convertDoctorQueueIntoDisplayQueue(doctorQueue []*a
 		nextVisitsSection := &DisplayFeedSection{}
 		nextVisitsSection.Title = fmt.Sprintf("%d Upcoming Visits", len(pendingOrOngoingItems)-1)
 		nextVisitsSection.Items = make([]*DisplayFeedItem, 0)
-		for _, doctorQueueItem := range pendingOrOngoingItems[1:] {
+		for i, doctorQueueItem := range pendingOrOngoingItems[1:] {
+			doctorQueueItem.PositionInQueue = i + 1
 			item, err = converQueueItemToDisplayFeedItem(d.DataApi, doctorQueueItem)
 			if err != nil {
 				return
@@ -89,7 +91,8 @@ func (d *DoctorQueueHandler) convertDoctorQueueIntoDisplayQueue(doctorQueue []*a
 	if len(completedItems) > 0 {
 		// cluster feed items based on day
 		itemsByDay := make(map[string][]*DisplayFeedItem)
-		for _, completedItem := range completedItems {
+		for i, completedItem := range completedItems {
+			completedItem.PositionInQueue = i
 			day := fmt.Sprintf("%s %d %d", completedItem.EnqueueDate.Month().String(), completedItem.EnqueueDate.Day(), completedItem.EnqueueDate.Year())
 			itemsList := itemsByDay[day]
 			if itemsList == nil {

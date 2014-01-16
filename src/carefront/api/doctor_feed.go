@@ -13,13 +13,14 @@ const (
 )
 
 type DoctorQueueItem struct {
-	Id            int64
-	DoctorId      int64
-	EventType     string
-	EnqueueDate   time.Time
-	CompletedDate time.Time
-	ItemId        int64
-	Status        string
+	Id              int64
+	DoctorId        int64
+	EventType       string
+	EnqueueDate     time.Time
+	CompletedDate   time.Time
+	ItemId          int64
+	Status          string
+	PositionInQueue int
 }
 
 func (d *DoctorQueueItem) GetTitleAndSubtitle(dataApi DataAPI) (title, subtitle string, err error) {
@@ -84,7 +85,11 @@ func (d *DoctorQueueItem) GetDisplayTypes() []string {
 		case QUEUE_ITEM_STATUS_COMPLETED, QUEUE_ITEM_STATUS_PHOTOS_REJECTED, QUEUE_ITEM_STATUS_TRIAGED:
 			return []string{DISPLAY_TYPE_TITLE_SUBTITLE_NONACTIONABLE}
 		case QUEUE_ITEM_STATUS_PENDING, QUEUE_ITEM_STATUS_ONGOING:
-			return []string{DISPLAY_TYPE_TITLE_SUBTITLE_BUTTON}
+			if d.PositionInQueue == 0 {
+				return []string{DISPLAY_TYPE_TITLE_SUBTITLE_BUTTON}
+			} else {
+				return []string{DISPLAY_TYPE_TITLE_SUBTITLE_NONACTIONABLE}
+			}
 		}
 	}
 	return nil
@@ -95,11 +100,17 @@ func (d *DoctorQueueItem) GetButton() *Button {
 	case EVENT_TYPE_PATIENT_VISIT:
 		switch d.Status {
 		case QUEUE_ITEM_STATUS_PENDING:
+			if d.PositionInQueue != 0 {
+				return nil
+			}
 			button := &Button{}
 			button.ButtonText = "Begin"
 			button.ButtonActionUrl = fmt.Sprintf("%s%s?patient_visit_id=%d", SpruceButtonBaseActionUrl, beginPatientVisitReviewAction, d.ItemId)
 			return button
 		case QUEUE_ITEM_STATUS_ONGOING:
+			if d.PositionInQueue != 0 {
+				return nil
+			}
 			button := &Button{}
 			button.ButtonText = "Continue"
 			button.ButtonActionUrl = fmt.Sprintf("%s%s?patient_visit_id=%d", SpruceButtonBaseActionUrl, beginPatientVisitReviewAction, d.ItemId)
