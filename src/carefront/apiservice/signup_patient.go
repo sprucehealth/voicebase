@@ -89,7 +89,7 @@ func (s *SignupPatientHandler) ServeHTTP(w http.ResponseWriter, r *http.Request)
 	cityStateInfo, _ := s.MapsApi.ConvertZipcodeToCityState(requestData.Zipcode)
 
 	// then, register the signed up user as a patient
-	patient, err := s.DataApi.RegisterPatient(res.AccountId, requestData.FirstName, requestData.LastName, strings.Title(requestData.Gender), requestData.Zipcode, cityStateInfo.LongCityName, cityStateInfo.ShortStateName, requestData.Phone, time.Date(year, time.Month(month), day, 0, 0, 0, 0, time.UTC))
+	patient, err := s.DataApi.RegisterPatient(res.AccountId, requestData.FirstName, requestData.LastName, requestData.Gender, requestData.Zipcode, cityStateInfo.LongCityName, cityStateInfo.ShortStateName, requestData.Phone, time.Date(year, time.Month(month), day, 0, 0, 0, 0, time.UTC))
 	if err != nil {
 		WriteDeveloperError(w, http.StatusInternalServerError, "Unable to register patient: "+err.Error())
 		return

@@ -8,6 +8,7 @@ import (
 	"encoding/json"
 	"github.com/gorilla/schema"
 	"net/http"
+	"strings"
 )
 
 type DoctorPatientVisitReviewHandler struct {
@@ -120,6 +121,9 @@ func (p *DoctorPatientVisitReviewHandler) ServeHTTP(w http.ResponseWriter, r *ht
 
 	fillInPatientVisitInfoIntoOverview(patientVisit, patientVisitOverview)
 	patientVisitOverview.Patient = patient
+
+	// capitalizing the gender for display purposes. TODO Make how we do this better for v1
+	patientVisitOverview.Patient.Gender = strings.Title(patient.Gender)
 
 	p.filterOutGenderSpecificQuestionsAndSubSectionsFromOverview(patientVisitOverview, patient)
 
