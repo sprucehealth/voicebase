@@ -131,7 +131,7 @@ func (h *AuthenticationHandler) ServeHTTP(w http.ResponseWriter, r *http.Request
 	case "isauthenticated":
 		token, err := GetAuthTokenFromHeader(r)
 		if err != nil {
-			golog.Warningf("authoriation token not correctly specified in the header: %s", err.Error())
+			golog.Warningf("invalid auth token: %s", err.Error())
 			WriteAuthTimeoutError(w)
 			return
 		}
