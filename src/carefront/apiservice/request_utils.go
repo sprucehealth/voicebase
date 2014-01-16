@@ -138,7 +138,7 @@ func WriteJSONToHTTPResponseWriter(w http.ResponseWriter, httpStatusCode int, v 
 }
 
 func WriteDeveloperError(w http.ResponseWriter, httpStatusCode int, errorString string) {
-	golog.Errorf(errorString)
+	golog.Logf(2, golog.ERR, errorString)
 	developerError := new(ErrorResponse)
 	developerError.DeveloperError = errorString
 	developerError.UserError = genericUserErrorMessage
@@ -146,7 +146,7 @@ func WriteDeveloperError(w http.ResponseWriter, httpStatusCode int, errorString 
 }
 
 func WriteDeveloperErrorWithCode(w http.ResponseWriter, developerStatusCode int64, httpStatusCode int, errorString string) {
-	golog.Errorf(errorString)
+	golog.Logf(2, golog.ERR, errorString)
 	developerError := new(ErrorResponse)
 	developerError.DeveloperError = errorString
 	developerError.DeveloperCode = developerStatusCode

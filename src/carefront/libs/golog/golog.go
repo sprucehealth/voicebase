@@ -5,6 +5,7 @@ import (
 	"fmt"
 	"io"
 	"os"
+	"runtime"
 	"strconv"
 	"sync"
 	"sync/atomic"
@@ -15,6 +16,8 @@ type Output interface {
 }
 
 type Level int32
+
+const defaultLogType = "log"
 
 const (
 	CRIT  Level = iota // For panics (code bugs)
@@ -74,7 +77,7 @@ func GetLevel() Level {
 }
 
 func SetEnabled(logType string, enabled bool) {
-	if logType == "log" {
+	if logType == defaultLogType {
 		return
 	}
 	logging.mu.Lock()
@@ -83,7 +86,7 @@ func SetEnabled(logType string, enabled bool) {
 }
 
 func GetEnabled(logType string) bool {
-	if logType == "log" {
+	if logType == defaultLogType {
 		return false
 	}
 	logging.mu.RLock()
@@ -127,70 +130,58 @@ func Log(logType string, l Level, v interface{}) error {
 	return nil
 }
 
+func Logf(calldepth int, l Level, format string, args ...interface{}) {
+	logType := defaultLogType
+	if L(logType, l) {
+		var file string
+		var line int
+		if calldepth > 0 {
+			var ok bool
+			_, file, line, ok = runtime.Caller(calldepth)
+			if !ok {
+				file = ""
+				line = 0
+			}
+		}
+
+		m := fmt.Sprintf(format, args...)
+		if file != "" {
+			short := file
+			for i := len(file) - 1; i > 0; i-- {
+				if file[i] == '/' {
+					short = file[i+1:]
+					break
+				}
+			}
+			file = short
+
+			m = fmt.Sprintf("%s:%d %s", file, line, m)
+		}
+		log(logType, l, &Message{Message: m})
+	}
+}
+
 func Fatalf(format string, args ...interface{}) {
-	log("log", CRIT, fmt.Sprintf(format, args...))
+	Logf(2, CRIT, format, args...)
 	os.Exit(255)
 }
 
 func Criticalf(format string, args ...interface{}) {
-	if L("log", CRIT) {
-		log("log", CRIT, fmt.Sprintf(format, args...))
-	}
+	Logf(2, CRIT, fmt.Sprintf(format, args...))
 }
 
 func Errorf(format string, args ...interface{}) {
-	if L("log", ERR) {
-		log("log", ERR, fmt.Sprintf(format, args...))
-	}
+	Logf(2, ERR, fmt.Sprintf(format, args...))
 }
 
 func Warningf(format string, args ...interface{}) {
-	if L("log", WARN) {
-		log("log", WARN, fmt.Sprintf(format, args...))
-	}
+	Logf(2, WARN, fmt.Sprintf(format, args...))
 }
 
 func Infof(format string, args ...interface{}) {
-	if L("log", INFO) {
-		log("log", INFO, fmt.Sprintf(format, args...))
-	}
+	Logf(-1, INFO, fmt.Sprintf(format, args...))
 }
 
 func Debugf(format string, args ...interface{}) {
-	if L("log", DEBUG) {
-		log("log", DEBUG, fmt.Sprintf(format, args...))
-	}
+	Logf(-1, DEBUG, fmt.Sprintf(format, args...))
 }
-
-// Output writes the output for a logging event.  The string s contains
-// the text to print after the prefix specified by the flags of the
-// Logger.  A newline is appended if the last character of s is not
-// already a newline.  Calldepth is used to recover the PC and is
-// provided for generality, although at the moment on all pre-defined
-// paths it will be 2.
-// func (l *Logger) Output(calldepth int, s string) error {
-// 	now := time.Now() // get this early.
-// 	var file string
-// 	var line int
-// 	l.mu.Lock()
-// 	defer l.mu.Unlock()
-// 	if l.flag&(Lshortfile|Llongfile) != 0 {
-// 		// release lock while getting caller info - it's expensive.
-// 		l.mu.Unlock()
-// 		var ok bool
-// 		_, file, line, ok = runtime.Caller(calldepth)
-// 		if !ok {
-// 			file = "???"
-// 			line = 0
-// 		}
-// 		l.mu.Lock()
-// 	}
-// 	l.buf = l.buf[:0]
-// 	l.formatHeader(&l.buf, now, file, line)
-// 	l.buf = append(l.buf, s...)
-// 	if len(s) > 0 && s[len(s)-1] != '\n' {
-// 		l.buf = append(l.buf, '\n')
-// 	}
-// 	_, err := l.out.Write(l.buf)
-// 	return err
-// }
