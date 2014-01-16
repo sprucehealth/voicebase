@@ -276,7 +276,7 @@ func ParseArgs(config interface{}, args []string) ([]string, error) {
 		}
 		log.SetFlags(log.Lshortfile)
 	} else {
-		log.SetFlags(log.Lshortfile | log.Ldate | log.Ltime)
+		log.SetFlags(log.Lshortfile)
 	}
 	log.SetOutput(golog.Writer)
 
