@@ -11,9 +11,10 @@ import (
 )
 
 type DoctorSubmitPatientVisitReviewHandler struct {
-	DataApi          api.DataAPI
-	TwilioCli        *twilio.Client
-	TwilioFromNumber string
+	IOSDeeplinkScheme string
+	DataApi           api.DataAPI
+	TwilioCli         *twilio.Client
+	TwilioFromNumber  string
 }
 
 type SubmitPatientVisitReviewRequest struct {
@@ -27,7 +28,7 @@ type SubmitPatientVisitReviewResponse struct {
 }
 
 const (
-	patientVisitUpdateNotification = "There is an update to your case. Tap spruce://visit.com to view."
+	patientVisitUpdateNotification = "There is an update to your case. Tap %s://visit to view."
 )
 
 func (d *DoctorSubmitPatientVisitReviewHandler) ServeHTTP(w http.ResponseWriter, r *http.Request) {
@@ -111,7 +112,7 @@ func (d *DoctorSubmitPatientVisitReviewHandler) submitPatientVisitReview(w http.
 			return
 		}
 		if patient.Phone != "" {
-			_, _, err = d.TwilioCli.Messages.SendSMS(d.TwilioFromNumber, patient.Phone, patientVisitUpdateNotification)
+			_, _, err = d.TwilioCli.Messages.SendSMS(d.TwilioFromNumber, patient.Phone, fmt.Sprintf(patientVisitUpdateNotification, d.IOSDeeplinkScheme))
 			if err != nil {
 				golog.Errorf("Error sending SMS: %s", err.Error())
 			}

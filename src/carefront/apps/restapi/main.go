@@ -64,6 +64,7 @@ type Config struct {
 	DoctorVisualLayoutBucket string        `long:"doctor_visual_layout_bucket" description:"S3 Bucket name for patient overview for doctor's viewing"`
 	DoctorLayoutBucket       string        `long:"doctor_layout_bucket" description:"S3 Bucket name for pre-processed patient overview for doctor's viewing"`
 	Debug                    bool          `long:"debug" description:"Enable debugging"`
+	IOSDeeplinkScheme        string        `long:"ios_deeplink_scheme description:"Scheme for iOS deep-links (e.g. spruce://)"`
 	DoseSpotClinicKey        string        `long:"dose_spot_clinic_key" description:"DoseSpot Clinic Key for eRX integration"`
 	DoseSpotClinicId         string        `long:"dose_spot_clinic_id" description:"DoseSpot Clinic Id for eRX integration"`
 	DoseSpotUserId           string        `long:"dose_spot_user_id" description:"DoseSpot UserId for eRx integration"`
@@ -90,6 +91,7 @@ var DefaultConfig = Config{
 	MaxInMemoryForPhotoMB: defaultMaxInMemoryPhotoMB,
 	AuthTokenExpiration:   60 * 60 * 24 * 2,
 	AuthTokenRenew:        60 * 60 * 36,
+	IOSDeeplinkScheme:     "spruce",
 }
 
 func connectToDatabase(conf *Config, dbConf *DBConfig) (*sql.DB, error) {
@@ -266,7 +268,7 @@ func main() {
 		Region:                conf.AWSRegion,
 	}
 
-	doctorSubmitPatientVisitHandler := &apiservice.DoctorSubmitPatientVisitReviewHandler{DataApi: dataApi, TwilioFromNumber: conf.Twilio.FromNumber, TwilioCli: twilioCli}
+	doctorSubmitPatientVisitHandler := &apiservice.DoctorSubmitPatientVisitReviewHandler{DataApi: dataApi, TwilioFromNumber: conf.Twilio.FromNumber, TwilioCli: twilioCli, IOSDeeplinkScheme: conf.IOSDeeplinkScheme}
 	diagnosePatientHandler := apiservice.NewDiagnosePatientHandler(dataApi, authApi, cloudStorageApi)
 	diagnosisSummaryHandler := &apiservice.DiagnosisSummaryHandler{DataApi: dataApi}
 	doctorRegimenHandler := apiservice.NewDoctorRegimenHandler(dataApi)
