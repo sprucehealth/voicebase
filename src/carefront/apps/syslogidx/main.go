@@ -136,7 +136,7 @@ func (h *handler) Handle(parts syslogparser.LogParts) {
 		Message:        parts["message"].(string),
 		Severity:       Severity(parts["severity"].(int)),
 		Facility:       Facility(parts["facility"].(int)),
-		Time:           parts["timestamp"].(time.Time),
+		Time:           parts["timestamp"].(time.Time).UTC(),
 	}
 	var fields map[string]interface{}
 
