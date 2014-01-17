@@ -2,13 +2,15 @@ package apiservice
 
 import (
 	"carefront/api"
+	"carefront/libs/golog"
 	"carefront/libs/pharmacy"
 	"encoding/json"
 	"net/http"
 )
 
 type UpdatePatientPharmacyHandler struct {
-	DataApi api.DataAPI
+	DataApi               api.DataAPI
+	PharmacySearchService pharmacy.PharmacySearchAPI
 }
 
 func (u *UpdatePatientPharmacyHandler) ServeHTTP(w http.ResponseWriter, r *http.Request) {
@@ -36,7 +38,13 @@ func (u *UpdatePatientPharmacyHandler) updatePatientPharmacy(w http.ResponseWrit
 		return
 	}
 
-	err = u.DataApi.UpdatePatientPharmacy(patient.PatientId, pharmacy.Id, pharmacy.Source)
+	pharmacyDetails, err := u.PharmacySearchService.GetPharmacyBasedOnId(pharmacy.Id)
+	pharmacyDetails.Source = pharmacy.Source
+	if err != nil {
+		golog.Warningf("Unable to get the pharmacy details when it would've been nice to be able to do so: " + err.Error())
+	}
+
+	err = u.DataApi.UpdatePatientPharmacy(patient.PatientId, pharmacyDetails)
 	if err != nil {
 		WriteJSONToHTTPResponseWriter(w, http.StatusInternalServerError, "Unable to set the patient pharmacy: "+err.Error())
 		return

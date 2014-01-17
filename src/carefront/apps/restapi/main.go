@@ -208,11 +208,11 @@ func main() {
 	dataApi := &api.DataService{DB: db}
 	cloudStorageApi := api.NewCloudStorageService(awsAuth)
 	photoAnswerCloudStorageApi := api.NewCloudStorageService(awsAuth)
-	authHandler := &apiservice.AuthenticationHandler{AuthApi: authApi, DataApi: dataApi, PharmacySearchService: &pharmacy.PharmacySearchService{PharmacyDB: pharmacyDb}, StaticContentBaseUrl: conf.StaticContentBaseUrl}
+	authHandler := &apiservice.AuthenticationHandler{AuthApi: authApi, DataApi: dataApi, PharmacySearchService: pharmacy.GooglePlacesPharmacySearchService(0), StaticContentBaseUrl: conf.StaticContentBaseUrl}
 	checkElligibilityHandler := &apiservice.CheckCareProvidingElligibilityHandler{DataApi: dataApi, MapsService: mapsService, StaticContentUrl: conf.StaticContentBaseUrl}
 	signupPatientHandler := &apiservice.SignupPatientHandler{DataApi: dataApi, AuthApi: authApi, MapsApi: mapsService}
 	updatePatientBillingAddress := &apiservice.UpdatePatientAddressHandler{DataApi: dataApi, AddressType: apiservice.BILLING_ADDRESS_TYPE}
-	updatePatientPharmacyHandler := &apiservice.UpdatePatientPharmacyHandler{DataApi: dataApi}
+	updatePatientPharmacyHandler := &apiservice.UpdatePatientPharmacyHandler{DataApi: dataApi, PharmacySearchService: pharmacy.GooglePlacesPharmacySearchService(0)}
 	authenticateDoctorHandler := &apiservice.DoctorAuthenticationHandler{DataApi: dataApi, AuthApi: authApi}
 	signupDoctorHandler := &apiservice.SignupDoctorHandler{DataApi: dataApi, AuthApi: authApi}
 	patientVisitHandler := apiservice.NewPatientVisitHandler(dataApi, authApi, cloudStorageApi, photoAnswerCloudStorageApi, twilioCli, conf.Twilio.FromNumber)
@@ -257,7 +257,7 @@ func main() {
 	doctorPatientVisitReviewHandler := &apiservice.DoctorPatientVisitReviewHandler{
 		DataApi:                    dataApi,
 		LayoutStorageService:       cloudStorageApi,
-		PharmacySearchService:      &pharmacy.PharmacySearchService{PharmacyDB: pharmacyDb},
+		PharmacySearchService:      pharmacy.GooglePlacesPharmacySearchService(0),
 		PatientPhotoStorageService: photoAnswerCloudStorageApi,
 	}
 	staticContentHandler := &apiservice.StaticContentHandler{

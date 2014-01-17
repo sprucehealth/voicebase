@@ -1,6 +1,7 @@
 package api
 
 import (
+	"carefront/libs/pharmacy"
 	"errors"
 	"net/http"
 	"time"
@@ -56,8 +57,8 @@ type PatientAPI interface {
 	GetCareTeamForPatient(patientId int64) (careTeam *common.PatientCareProviderGroup, err error)
 	CheckCareProvidingElligibility(shortState string, healthConditionId int64) (doctorId int64, err error)
 	UpdatePatientAddress(patientId int64, addressLine1, addressLine2, city, state, zipCode, addressType string) error
-	UpdatePatientPharmacy(patientId int64, pharmacyId, pharmacySourceType string) error
-	GetPatientPharmacySelection(patientId int64) (pharmacyId, pharmacySourceType string, err error)
+	UpdatePatientPharmacy(patientId int64, pharmacyDetails *pharmacy.PharmacyData) error
+	GetPatientPharmacySelection(patientId int64) (pharmacySelection *pharmacy.PharmacyData, err error)
 	TrackPatientAgreements(patientId int64, agreements map[string]bool) error
 }
 

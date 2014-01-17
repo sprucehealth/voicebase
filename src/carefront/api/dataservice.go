@@ -2,6 +2,7 @@ package api
 
 import (
 	"carefront/common"
+	"carefront/libs/pharmacy"
 	"database/sql"
 	"fmt"
 	"github.com/go-sql-driver/mysql"
@@ -1210,19 +1211,19 @@ func (d *DataService) UpdatePatientAddress(patientId int64, addressLine1, addres
 	return nil
 }
 
-func (d *DataService) UpdatePatientPharmacy(patientId int64, pharmacyId, pharmacySourceType string) error {
+func (d *DataService) UpdatePatientPharmacy(patientId int64, pharmacyDetails *pharmacy.PharmacyData) error {
 	tx, err := d.DB.Begin()
 	if err != nil {
 		return err
 	}
 
-	_, err = tx.Exec(`update patient_pharmacy_selection set status=? where patient_id = ? and source = ?`, status_inactive, patientId, pharmacySourceType)
+	_, err = tx.Exec(`update patient_pharmacy_selection set status=? where patient_id = ?`, status_inactive, patientId)
 	if err != nil {
 		tx.Rollback()
 		return err
 	}
 
-	_, err = tx.Exec(`insert into patient_pharmacy_selection (patient_id, pharmacy_id, source, status) values (?,?,?,?)`, patientId, pharmacyId, pharmacySourceType, status_active)
+	_, err = tx.Exec(`insert into patient_pharmacy_selection (patient_id, pharmacy_id, source, name, address, city, state, zip_code, phone,lat,lng, status) values (?,?,?,?,?,?,?,?,?,?,?,?)`, patientId, pharmacyDetails.Id, pharmacyDetails.Source, pharmacyDetails.Name, pharmacyDetails.Address, pharmacyDetails.City, pharmacyDetails.State, pharmacyDetails.Postal, pharmacyDetails.Phone, pharmacyDetails.Latitude, pharmacyDetails.Longitude, status_active)
 	if err != nil {
 		tx.Rollback()
 		return err
@@ -1232,11 +1233,48 @@ func (d *DataService) UpdatePatientPharmacy(patientId int64, pharmacyId, pharmac
 	return nil
 }
 
-func (d *DataService) GetPatientPharmacySelection(patientId int64) (pharmacyId, pharmacySourceType string, err error) {
-	err = d.DB.QueryRow(`select pharmacy_id, source from patient_pharmacy_selection where patient_id = ? and status=?`, patientId, status_active).Scan(&pharmacyId, &pharmacySourceType)
+func (d *DataService) GetPatientPharmacySelection(patientId int64) (pharmacySelection *pharmacy.PharmacyData, err error) {
+	var id, sourceType, name, address, phone, city, state, zipCode, lat, lng sql.NullString
+	err = d.DB.QueryRow(`select pharmacy_id, source, name, address, city, state, zip_code, phone,lat,lng from patient_pharmacy_selection where patient_id = ? and status=?`, patientId, status_active).Scan(&id, &sourceType, &name, &address, &city, &state, &zipCode, &phone, &lat, &lng)
 	if err == sql.ErrNoRows {
 		err = NoRowsError
 		return
+	}
+
+	pharmacySelection = &pharmacy.PharmacyData{}
+	pharmacySelection.Id = id.String
+	pharmacySelection.Source = sourceType.String
+
+	if address.Valid {
+		pharmacySelection.Address = address.String
+	}
+
+	if city.Valid {
+		pharmacySelection.City = city.String
+	}
+
+	if state.Valid {
+		pharmacySelection.State = state.String
+	}
+
+	if zipCode.Valid {
+		pharmacySelection.Postal = zipCode.String
+	}
+
+	if lat.Valid {
+		pharmacySelection.Latitude = lat.String
+	}
+
+	if lng.Valid {
+		pharmacySelection.Longitude = lng.String
+	}
+
+	if phone.Valid {
+		pharmacySelection.Phone = phone.String
+	}
+
+	if name.Valid {
+		pharmacySelection.Name = name.String
 	}
 	return
 }

@@ -2,7 +2,6 @@ package pharmacy
 
 import (
 	"encoding/json"
-	"fmt"
 	"io/ioutil"
 	"net/http"
 	"net/url"
@@ -21,10 +20,12 @@ type googlePlacesResultItem struct {
 }
 
 const (
-	city    = "locality"
-	state   = "administrative_area_level_1"
-	country = "country"
-	zipCode = "postal_code"
+	city         = "locality"
+	state        = "administrative_area_level_1"
+	country      = "country"
+	zipCode      = "postal_code"
+	streetName   = "route"
+	streetNumber = "street_number"
 )
 
 type googlePlacesAddressComponent struct {
@@ -136,14 +137,12 @@ func (p GooglePlacesPharmacySearchService) GetPharmaciesBasedOnTextSearch(textSe
 		pharmacies = append(pharmacies, pharmacy)
 	}
 
-	fmt.Println(textSearch)
-	fmt.Println(placesResult.Status)
-
 	return
 }
 
 func getPharmacyFromResultItem(resultItem *googlePlacesResultItem) *PharmacyData {
 	pharmacyDetails := &PharmacyData{}
+	var streetNameComponent, streetNumberComponent string
 	if resultItem.AddressComponents != nil {
 		for _, addressComponent := range resultItem.AddressComponents {
 			for _, addressType := range addressComponent.Types {
@@ -156,13 +155,15 @@ func getPharmacyFromResultItem(resultItem *googlePlacesResultItem) *PharmacyData
 					pharmacyDetails.Country = addressComponent.LongName
 				case zipCode:
 					pharmacyDetails.Postal = addressComponent.LongName
+				case streetName:
+					streetNameComponent = addressComponent.LongName
+				case streetNumber:
+					streetNumberComponent = addressComponent.LongName
 				}
-
 			}
 		}
-	}
-
-	if resultItem.Vicinity != "" {
+		pharmacyDetails.Address = streetNumberComponent + " " + streetNameComponent
+	} else if resultItem.Vicinity != "" {
 		pharmacyDetails.Address = resultItem.Vicinity
 	} else if resultItem.FormattedAddress != "" {
 		pharmacyDetails.Address = resultItem.FormattedAddress
