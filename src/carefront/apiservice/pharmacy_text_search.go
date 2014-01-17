@@ -14,7 +14,7 @@ import (
 var locationCache cache.Cache = cache.NewLFUCache(2048)
 
 const (
-	defaultSearchRadiusInMeters = "1000"
+	defaultSearchRadiusInMeters = "10000"
 )
 
 type PharmacyTextSearchHandler struct {
@@ -24,11 +24,11 @@ type PharmacyTextSearchHandler struct {
 }
 
 type PharmacyTextSearchRequestData struct {
-	SearchRadiusInMiles string `schema:"search_radius"`
-	Latitude            string `schema:"latitude"`
-	Longitude           string `schema:"longitude"`
-	TextSearch          string `schema:"text_search"`
-	PharmacyReference   string `schema:"reference"`
+	SearchRadiusInMeters string `schema:"search_radius_meters"`
+	Latitude             string `schema:"latitude"`
+	Longitude            string `schema:"longitude"`
+	TextSearch           string `schema:"text_search"`
+	PharmacyReference    string `schema:"reference"`
 }
 
 type PharmacyTextSearchResponse struct {
@@ -65,7 +65,7 @@ func (p *PharmacyTextSearchHandler) ServeHTTP(w http.ResponseWriter, r *http.Req
 
 		latitude := requestData.Latitude
 		longitude := requestData.Longitude
-		searchRadius := requestData.SearchRadiusInMiles
+		searchRadius := requestData.SearchRadiusInMeters
 		if searchRadius == "" {
 			searchRadius = defaultSearchRadiusInMeters
 		}
