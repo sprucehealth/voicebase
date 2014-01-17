@@ -227,8 +227,7 @@ func main() {
 	medicationDispenseUnitHandler := &apiservice.MedicationDispenseUnitsHandler{DataApi: dataApi}
 	treatmentsHandler := apiservice.NewTreatmentsHandler(dataApi)
 	photoAnswerIntakeHandler := apiservice.NewPhotoAnswerIntakeHandler(dataApi, photoAnswerCloudStorageApi, conf.CaseBucket, conf.AWSRegion, conf.MaxInMemoryForPhotoMB*1024*1024)
-	pharmacySearchHandler := &apiservice.PharmacySearchHandler{PharmacySearchService: &pharmacy.PharmacySearchService{PharmacyDB: pharmacyDb}, MapsService: mapsService}
-	googlePlacesPharmacySearch := &apiservice.PharmacySearchHandler{PharmacySearchService: pharmacy.GooglePlacesPharmacySearchService(0), MapsService: mapsService}
+	pharmacySearchHandler := &apiservice.PharmacyTextSearchHandler{PharmacySearchService: pharmacy.GooglePlacesPharmacySearchService(0), DataApi: dataApi, MapsService: mapsService}
 	generateDoctorLayoutHandler := &apiservice.GenerateDoctorLayoutHandler{
 		DataApi:                  dataApi,
 		CloudStorageApi:          cloudStorageApi,
@@ -292,7 +291,6 @@ func main() {
 	mux.Handle("/v1/ping", pingHandler)
 	mux.Handle("/v1/autocomplete", autocompleteHandler)
 	mux.Handle("/v1/pharmacy", pharmacySearchHandler)
-	mux.Handle("/v1/places/pharmacy", googlePlacesPharmacySearch)
 	mux.Handle("/v1/doctor_layout", generateDoctorLayoutHandler)
 	mux.Handle("/v1/diagnose_layout", generateDiagnoseLayoutHandler)
 	mux.Handle("/v1/client_model", generateModelIntakeHandler)

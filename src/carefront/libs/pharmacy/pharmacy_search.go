@@ -2,6 +2,7 @@ package pharmacy
 
 const (
 	PHARMACY_SOURCE_ODDITY = "oddity"
+	PHARMACY_SOURCE_GOOGLE = "google"
 )
 
 type PharmacyData struct {
@@ -12,6 +13,7 @@ type PharmacyData struct {
 	City            string  `json:"city,omitempty"`
 	State           string  `json:"state,omitempty"`
 	Postal          string  `json:"zip_code,omitempty"`
+	Country         string  `json:"country,omitempty"`
 	Latitude        string  `json:"lat"`
 	Longitude       string  `json:"lng"`
 	Phone           string  `json:"phone,omitempty"`
@@ -22,5 +24,6 @@ type PharmacyData struct {
 
 type PharmacySearchAPI interface {
 	GetPharmaciesAroundSearchLocation(searchLocationLat, searchLocationLng, searchRadius float64, numResults int64) (pharmacies []*PharmacyData, err error)
+	GetPharmaciesBasedOnTextSearch(textSearch, lat, lng, searchRadius string) (pharmacies []*PharmacyData, err error)
 	GetPharmacyBasedOnId(pharmacyId string) (pharmacy *PharmacyData, err error)
 }
