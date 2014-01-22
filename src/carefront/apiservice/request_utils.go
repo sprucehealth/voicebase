@@ -65,20 +65,23 @@ func GetPatientInfo(dataApi api.DataAPI, pharmacySearchService pharmacy_service.
 		err = errors.New("Unable to get patient from account id:  " + err.Error())
 		return
 	}
-	pharmacyId, _, err := dataApi.GetPatientPharmacySelection(patient.PatientId)
+	pharmacySelection, err := dataApi.GetPatientPharmacySelection(patient.PatientId)
 	if err != nil && err != api.NoRowsError {
 		err = errors.New("Unable to get patient's pharmacy selection: " + err.Error())
 		return
 	}
 
-	if pharmacyId != "" {
-		pharmacy, shadowedErr := pharmacySearchService.GetPharmacyBasedOnId(pharmacyId)
+	if pharmacySelection.Id != "" && pharmacySelection.Address == "" {
+		pharmacy, shadowedErr := pharmacySearchService.GetPharmacyBasedOnId(pharmacySelection.Id)
 		if err != nil && err != pharmacy_service.NoPharmacyExists {
 			err = shadowedErr
 			err = errors.New("Unable to get pharmacy based on id: " + err.Error())
 			return
 		}
+		pharmacy.Source = pharmacySelection.Source
 		patient.Pharmacy = pharmacy
+	} else {
+		patient.Pharmacy = pharmacySelection
 	}
 	return patient, nil
 }

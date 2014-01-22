@@ -70,6 +70,10 @@ func (p *PharmacySearchService) GetPharmacyBasedOnId(pharmacyId string) (pharmac
 	return
 }
 
+func (p *PharmacySearchService) GetPharmaciesBasedOnTextSearch(textSearch, lat, lng, searchResultInMiles string) (pharmacies []*PharmacyData, err error) {
+	return nil, nil
+}
+
 func scanPharmacyDataFromRow(rows *sql.Rows) (pharmacy *PharmacyData, err error) {
 	var id int64
 	var name, address, city, state, postal, lat, lng, phone, fax, url sql.NullString

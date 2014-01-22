@@ -208,11 +208,11 @@ func main() {
 	dataApi := &api.DataService{DB: db}
 	cloudStorageApi := api.NewCloudStorageService(awsAuth)
 	photoAnswerCloudStorageApi := api.NewCloudStorageService(awsAuth)
-	authHandler := &apiservice.AuthenticationHandler{AuthApi: authApi, DataApi: dataApi, PharmacySearchService: &pharmacy.PharmacySearchService{PharmacyDB: pharmacyDb}, StaticContentBaseUrl: conf.StaticContentBaseUrl}
+	authHandler := &apiservice.AuthenticationHandler{AuthApi: authApi, DataApi: dataApi, PharmacySearchService: pharmacy.GooglePlacesPharmacySearchService(0), StaticContentBaseUrl: conf.StaticContentBaseUrl}
 	checkElligibilityHandler := &apiservice.CheckCareProvidingElligibilityHandler{DataApi: dataApi, MapsService: mapsService, StaticContentUrl: conf.StaticContentBaseUrl}
 	signupPatientHandler := &apiservice.SignupPatientHandler{DataApi: dataApi, AuthApi: authApi, MapsApi: mapsService}
 	updatePatientBillingAddress := &apiservice.UpdatePatientAddressHandler{DataApi: dataApi, AddressType: apiservice.BILLING_ADDRESS_TYPE}
-	updatePatientPharmacyHandler := &apiservice.UpdatePatientPharmacyHandler{DataApi: dataApi}
+	updatePatientPharmacyHandler := &apiservice.UpdatePatientPharmacyHandler{DataApi: dataApi, PharmacySearchService: pharmacy.GooglePlacesPharmacySearchService(0)}
 	authenticateDoctorHandler := &apiservice.DoctorAuthenticationHandler{DataApi: dataApi, AuthApi: authApi}
 	signupDoctorHandler := &apiservice.SignupDoctorHandler{DataApi: dataApi, AuthApi: authApi}
 	patientVisitHandler := apiservice.NewPatientVisitHandler(dataApi, authApi, cloudStorageApi, photoAnswerCloudStorageApi, twilioCli, conf.Twilio.FromNumber)
@@ -227,8 +227,7 @@ func main() {
 	medicationDispenseUnitHandler := &apiservice.MedicationDispenseUnitsHandler{DataApi: dataApi}
 	treatmentsHandler := apiservice.NewTreatmentsHandler(dataApi)
 	photoAnswerIntakeHandler := apiservice.NewPhotoAnswerIntakeHandler(dataApi, photoAnswerCloudStorageApi, conf.CaseBucket, conf.AWSRegion, conf.MaxInMemoryForPhotoMB*1024*1024)
-	pharmacySearchHandler := &apiservice.PharmacySearchHandler{PharmacySearchService: &pharmacy.PharmacySearchService{PharmacyDB: pharmacyDb}, MapsService: mapsService}
-	googlePlacesPharmacySearch := &apiservice.PharmacySearchHandler{PharmacySearchService: pharmacy.GooglePlacesPharmacySearchService(0), MapsService: mapsService}
+	pharmacySearchHandler := &apiservice.PharmacyTextSearchHandler{PharmacySearchService: pharmacy.GooglePlacesPharmacySearchService(0), DataApi: dataApi, MapsService: mapsService}
 	generateDoctorLayoutHandler := &apiservice.GenerateDoctorLayoutHandler{
 		DataApi:                  dataApi,
 		CloudStorageApi:          cloudStorageApi,
@@ -258,7 +257,7 @@ func main() {
 	doctorPatientVisitReviewHandler := &apiservice.DoctorPatientVisitReviewHandler{
 		DataApi:                    dataApi,
 		LayoutStorageService:       cloudStorageApi,
-		PharmacySearchService:      &pharmacy.PharmacySearchService{PharmacyDB: pharmacyDb},
+		PharmacySearchService:      pharmacy.GooglePlacesPharmacySearchService(0),
 		PatientPhotoStorageService: photoAnswerCloudStorageApi,
 	}
 	staticContentHandler := &apiservice.StaticContentHandler{
@@ -292,7 +291,6 @@ func main() {
 	mux.Handle("/v1/ping", pingHandler)
 	mux.Handle("/v1/autocomplete", autocompleteHandler)
 	mux.Handle("/v1/pharmacy", pharmacySearchHandler)
-	mux.Handle("/v1/places/pharmacy", googlePlacesPharmacySearch)
 	mux.Handle("/v1/doctor_layout", generateDoctorLayoutHandler)
 	mux.Handle("/v1/diagnose_layout", generateDiagnoseLayoutHandler)
 	mux.Handle("/v1/client_model", generateModelIntakeHandler)

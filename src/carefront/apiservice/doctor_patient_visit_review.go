@@ -85,19 +85,21 @@ func (p *DoctorPatientVisitReviewHandler) ServeHTTP(w http.ResponseWriter, r *ht
 		return
 	}
 
-	pharmacyId, _, err := p.DataApi.GetPatientPharmacySelection(patient.PatientId)
+	pharmacySelection, err := p.DataApi.GetPatientPharmacySelection(patient.PatientId)
 	if err != nil && err != api.NoRowsError {
 		WriteDeveloperError(w, http.StatusInternalServerError, "Unable to gte patient's pharmacy selection: "+err.Error())
 		return
 	}
 
-	if pharmacyId != "" {
-		patientPharmacy, err := p.PharmacySearchService.GetPharmacyBasedOnId(pharmacyId)
+	if pharmacySelection != nil && pharmacySelection.Id != "" && pharmacySelection.Address == "" {
+		patientPharmacy, err := p.PharmacySearchService.GetPharmacyBasedOnId(pharmacySelection.Id)
 		if err != nil && err != pharmacy.NoPharmacyExists {
 			WriteDeveloperError(w, http.StatusInternalServerError, "Unable to get pharmacy based on id: "+err.Error())
 			return
 		}
 		patient.Pharmacy = patientPharmacy
+	} else {
+		patient.Pharmacy = pharmacySelection
 	}
 
 	bucket, key, region, _, err := p.DataApi.GetStorageInfoOfCurrentActiveDoctorLayout(patientVisit.HealthConditionId)
