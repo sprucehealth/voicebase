@@ -35,7 +35,7 @@ func (m *MockAuth) SignUp(email, password string) (*api.AuthResponse, error) {
 		m.Tokens = make(map[string]int64)
 	}
 	IdCounter += 1
-	m.Accounts[email] = MockAccount{Id: int64(IdCounter), Login: email, Password: password}
+	m.Accounts[email] = &MockAccount{Id: int64(IdCounter), Login: email, Password: password}
 	m.Tokens[tok] = int64(IdCounter)
 	return &api.AuthResponse{Token: tok, AccountId: int64(IdCounter)}, nil
 }
