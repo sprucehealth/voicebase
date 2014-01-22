@@ -157,7 +157,11 @@ func SetupIntegrationTest(t *testing.T) TestData {
 	}
 	cloudStorageService := api.NewCloudStorageService(awsAuth)
 
-	authApi := &auth.AuthService{DB: db}
+	authApi := &auth.AuthService{
+		ExpireDuration: time.Minute * 10,
+		RenewDuration:  time.Minute * 5,
+		DB:             db,
+	}
 	dataApi := &api.DataService{DB: db}
 
 	testData := TestData{DataApi: dataApi,

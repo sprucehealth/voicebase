@@ -1,6 +1,8 @@
 package mockapi
 
 import (
+	"strings"
+
 	"carefront/common"
 	"carefront/thrift/api"
 )
@@ -12,7 +14,7 @@ type MockAccount struct {
 }
 
 type MockAuth struct {
-	Accounts map[string]MockAccount
+	Accounts map[string]*MockAccount
 	Tokens   map[string]int64
 }
 
@@ -20,7 +22,8 @@ var (
 	IdCounter = 1
 )
 
-func (m *MockAuth) Signup(email, password string) (*api.AuthResponse, error) {
+func (m *MockAuth) SignUp(email, password string) (*api.AuthResponse, error) {
+	email = strings.ToLower(email)
 	if a, ok := m.Accounts[email]; ok {
 		return nil, &api.LoginAlreadyExists{AccountId: a.Id}
 	}
@@ -32,12 +35,13 @@ func (m *MockAuth) Signup(email, password string) (*api.AuthResponse, error) {
 		m.Tokens = make(map[string]int64)
 	}
 	IdCounter += 1
-	m.Accounts[email] = MockAccount{int64(IdCounter), email, password}
+	m.Accounts[email] = MockAccount{Id: int64(IdCounter), Login: email, Password: password}
 	m.Tokens[tok] = int64(IdCounter)
 	return &api.AuthResponse{Token: tok, AccountId: int64(IdCounter)}, nil
 }
 
-func (m *MockAuth) Login(login, password string) (*api.AuthResponse, error) {
+func (m *MockAuth) LogIn(login, password string) (*api.AuthResponse, error) {
+	login = strings.ToLower(login)
 	if account, ok := m.Accounts[login]; !ok || account.Password != password {
 		return nil, &api.NoSuchLogin{}
 	} else {
@@ -53,7 +57,7 @@ func (m *MockAuth) Login(login, password string) (*api.AuthResponse, error) {
 	}
 }
 
-func (m *MockAuth) Logout(token string) error {
+func (m *MockAuth) LogOut(token string) error {
 	delete(m.Tokens, token)
 	return nil
 }
@@ -65,4 +69,23 @@ func (m *MockAuth) ValidateToken(token string) (*api.TokenValidationResponse, er
 		}
 	}
 	return &api.TokenValidationResponse{IsValid: false}, nil
+}
+
+func (m *MockAuth) SetPassword(accountId int64, password string) error {
+	if password == "" {
+		return &api.InvalidPassword{}
+	}
+	// Log out any existing tokens
+	for tok, aid := range m.Tokens {
+		if aid == accountId {
+			delete(m.Tokens, tok)
+		}
+	}
+	for _, act := range m.Accounts {
+		if act.Id == accountId {
+			act.Password = password
+			return nil
+		}
+	}
+	return &api.NoSuchAccount{}
 }

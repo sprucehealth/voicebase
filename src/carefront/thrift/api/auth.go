@@ -19,10 +19,11 @@ type TokenValidationResponse struct {
 }
 
 type InvalidPassword struct {
+	AccountId int64 `thrift:"1,required" json:"account_id"`
 }
 
 func (e *InvalidPassword) Error() string {
-	return "InvalidPassword{}"
+	return fmt.Sprintf("InvalidPassword{AccountId: %+v}", e.AccountId)
 }
 
 type LoginAlreadyExists struct {
@@ -33,6 +34,13 @@ func (e *LoginAlreadyExists) Error() string {
 	return fmt.Sprintf("LoginAlreadyExists{AccountId: %+v}", e.AccountId)
 }
 
+type NoSuchAccount struct {
+}
+
+func (e *NoSuchAccount) Error() string {
+	return "NoSuchAccount{}"
+}
+
 type NoSuchLogin struct {
 }
 
@@ -41,9 +49,10 @@ func (e *NoSuchLogin) Error() string {
 }
 
 type Auth interface {
-	Login(login string, password string) (*AuthResponse, error)
-	Logout(token string) error
-	Signup(login string, password string) (*AuthResponse, error)
+	LogIn(login string, password string) (*AuthResponse, error)
+	LogOut(token string) error
+	SetPassword(accountId int64, password string) error
+	SignUp(login string, password string) (*AuthResponse, error)
 	ValidateToken(token string) (*TokenValidationResponse, error)
 }
 
@@ -51,8 +60,8 @@ type AuthServer struct {
 	Implementation Auth
 }
 
-func (s *AuthServer) Login(req *AuthLoginRequest, res *AuthLoginResponse) error {
-	val, err := s.Implementation.Login(req.Login, req.Password)
+func (s *AuthServer) LogIn(req *AuthLogInRequest, res *AuthLogInResponse) error {
+	val, err := s.Implementation.LogIn(req.Login, req.Password)
 	switch e := err.(type) {
 	case *InternalServerError:
 		res.Error = e
@@ -74,8 +83,8 @@ func (s *AuthServer) Login(req *AuthLoginRequest, res *AuthLoginResponse) error 
 	return err
 }
 
-func (s *AuthServer) Logout(req *AuthLogoutRequest, res *AuthLogoutResponse) error {
-	err := s.Implementation.Logout(req.Token)
+func (s *AuthServer) LogOut(req *AuthLogOutRequest, res *AuthLogOutResponse) error {
+	err := s.Implementation.LogOut(req.Token)
 	switch e := err.(type) {
 	case *InternalServerError:
 		res.Error = e
@@ -90,8 +99,30 @@ func (s *AuthServer) Logout(req *AuthLogoutRequest, res *AuthLogoutResponse) err
 	return err
 }
 
-func (s *AuthServer) Signup(req *AuthSignupRequest, res *AuthSignupResponse) error {
-	val, err := s.Implementation.Signup(req.Login, req.Password)
+func (s *AuthServer) SetPassword(req *AuthSetPasswordRequest, res *AuthSetPasswordResponse) error {
+	err := s.Implementation.SetPassword(req.AccountId, req.Password)
+	switch e := err.(type) {
+	case *InternalServerError:
+		res.Error = e
+		err = nil
+	case *AccessDenied:
+		res.AccessDenied = e
+		err = nil
+	case *OverCapacity:
+		res.OverCapacity = e
+		err = nil
+	case *NoSuchAccount:
+		res.NoSuchAccount = e
+		err = nil
+	case *InvalidPassword:
+		res.InvalidPassword = e
+		err = nil
+	}
+	return err
+}
+
+func (s *AuthServer) SignUp(req *AuthSignUpRequest, res *AuthSignUpResponse) error {
+	val, err := s.Implementation.SignUp(req.Login, req.Password)
 	switch e := err.(type) {
 	case *InternalServerError:
 		res.Error = e
@@ -104,6 +135,9 @@ func (s *AuthServer) Signup(req *AuthSignupRequest, res *AuthSignupResponse) err
 		err = nil
 	case *LoginAlreadyExists:
 		res.AlreadyExists = e
+		err = nil
+	case *InvalidPassword:
+		res.InvalidPassword = e
 		err = nil
 	}
 	res.Value = val
@@ -127,12 +161,12 @@ func (s *AuthServer) ValidateToken(req *AuthValidateTokenRequest, res *AuthValid
 	return err
 }
 
-type AuthLoginRequest struct {
+type AuthLogInRequest struct {
 	Login    string `thrift:"1,required" json:"login"`
 	Password string `thrift:"2,required" json:"password"`
 }
 
-type AuthLoginResponse struct {
+type AuthLogInResponse struct {
 	Value           *AuthResponse        `thrift:"0" json:"value,omitempty"`
 	Error           *InternalServerError `thrift:"1" json:"error,omitempty"`
 	AccessDenied    *AccessDenied        `thrift:"2" json:"access_denied,omitempty"`
@@ -141,27 +175,41 @@ type AuthLoginResponse struct {
 	InvalidPassword *InvalidPassword     `thrift:"5" json:"invalid_password,omitempty"`
 }
 
-type AuthLogoutRequest struct {
+type AuthLogOutRequest struct {
 	Token string `thrift:"1,required" json:"token"`
 }
 
-type AuthLogoutResponse struct {
+type AuthLogOutResponse struct {
 	Error        *InternalServerError `thrift:"1" json:"error,omitempty"`
 	AccessDenied *AccessDenied        `thrift:"2" json:"access_denied,omitempty"`
 	OverCapacity *OverCapacity        `thrift:"3" json:"over_capacity,omitempty"`
 }
 
-type AuthSignupRequest struct {
+type AuthSetPasswordRequest struct {
+	AccountId int64  `thrift:"1,required" json:"account_id"`
+	Password  string `thrift:"2,required" json:"password"`
+}
+
+type AuthSetPasswordResponse struct {
+	Error           *InternalServerError `thrift:"1" json:"error,omitempty"`
+	AccessDenied    *AccessDenied        `thrift:"2" json:"access_denied,omitempty"`
+	OverCapacity    *OverCapacity        `thrift:"3" json:"over_capacity,omitempty"`
+	NoSuchAccount   *NoSuchAccount       `thrift:"4" json:"no_such_account,omitempty"`
+	InvalidPassword *InvalidPassword     `thrift:"5" json:"invalid_password,omitempty"`
+}
+
+type AuthSignUpRequest struct {
 	Login    string `thrift:"1,required" json:"login"`
 	Password string `thrift:"2,required" json:"password"`
 }
 
-type AuthSignupResponse struct {
-	Value         *AuthResponse        `thrift:"0" json:"value,omitempty"`
-	Error         *InternalServerError `thrift:"1" json:"error,omitempty"`
-	AccessDenied  *AccessDenied        `thrift:"2" json:"access_denied,omitempty"`
-	OverCapacity  *OverCapacity        `thrift:"3" json:"over_capacity,omitempty"`
-	AlreadyExists *LoginAlreadyExists  `thrift:"4" json:"already_exists,omitempty"`
+type AuthSignUpResponse struct {
+	Value           *AuthResponse        `thrift:"0" json:"value,omitempty"`
+	Error           *InternalServerError `thrift:"1" json:"error,omitempty"`
+	AccessDenied    *AccessDenied        `thrift:"2" json:"access_denied,omitempty"`
+	OverCapacity    *OverCapacity        `thrift:"3" json:"over_capacity,omitempty"`
+	AlreadyExists   *LoginAlreadyExists  `thrift:"4" json:"already_exists,omitempty"`
+	InvalidPassword *InvalidPassword     `thrift:"5" json:"invalid_password,omitempty"`
 }
 
 type AuthValidateTokenRequest struct {
@@ -179,13 +227,13 @@ type AuthClient struct {
 	Client RPCClient
 }
 
-func (s *AuthClient) Login(login string, password string) (ret *AuthResponse, err error) {
-	req := &AuthLoginRequest{
+func (s *AuthClient) LogIn(login string, password string) (ret *AuthResponse, err error) {
+	req := &AuthLogInRequest{
 		Login:    login,
 		Password: password,
 	}
-	res := &AuthLoginResponse{}
-	err = s.Client.Call("login", req, res)
+	res := &AuthLogInResponse{}
+	err = s.Client.Call("log_in", req, res)
 	if err == nil {
 		switch {
 		case res.Error != nil:
@@ -206,12 +254,12 @@ func (s *AuthClient) Login(login string, password string) (ret *AuthResponse, er
 	return
 }
 
-func (s *AuthClient) Logout(token string) (err error) {
-	req := &AuthLogoutRequest{
+func (s *AuthClient) LogOut(token string) (err error) {
+	req := &AuthLogOutRequest{
 		Token: token,
 	}
-	res := &AuthLogoutResponse{}
-	err = s.Client.Call("logout", req, res)
+	res := &AuthLogOutResponse{}
+	err = s.Client.Call("log_out", req, res)
 	if err == nil {
 		switch {
 		case res.Error != nil:
@@ -225,13 +273,37 @@ func (s *AuthClient) Logout(token string) (err error) {
 	return
 }
 
-func (s *AuthClient) Signup(login string, password string) (ret *AuthResponse, err error) {
-	req := &AuthSignupRequest{
+func (s *AuthClient) SetPassword(accountId int64, password string) (err error) {
+	req := &AuthSetPasswordRequest{
+		AccountId: accountId,
+		Password:  password,
+	}
+	res := &AuthSetPasswordResponse{}
+	err = s.Client.Call("set_password", req, res)
+	if err == nil {
+		switch {
+		case res.Error != nil:
+			err = res.Error
+		case res.AccessDenied != nil:
+			err = res.AccessDenied
+		case res.OverCapacity != nil:
+			err = res.OverCapacity
+		case res.NoSuchAccount != nil:
+			err = res.NoSuchAccount
+		case res.InvalidPassword != nil:
+			err = res.InvalidPassword
+		}
+	}
+	return
+}
+
+func (s *AuthClient) SignUp(login string, password string) (ret *AuthResponse, err error) {
+	req := &AuthSignUpRequest{
 		Login:    login,
 		Password: password,
 	}
-	res := &AuthSignupResponse{}
-	err = s.Client.Call("signup", req, res)
+	res := &AuthSignUpResponse{}
+	err = s.Client.Call("sign_up", req, res)
 	if err == nil {
 		switch {
 		case res.Error != nil:
@@ -242,6 +314,8 @@ func (s *AuthClient) Signup(login string, password string) (ret *AuthResponse, e
 			err = res.OverCapacity
 		case res.AlreadyExists != nil:
 			err = res.AlreadyExists
+		case res.InvalidPassword != nil:
+			err = res.InvalidPassword
 		}
 	}
 	if err == nil {

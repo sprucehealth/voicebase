@@ -95,6 +95,7 @@ type AuthEvent string
 const (
 	AuthEventNoSuchLogin     AuthEvent = "NoSuchLogin"
 	AuthEventInvalidPassword AuthEvent = "InvalidPassword"
+	AuthEventInvalidToken    AuthEvent = "InvalidToken"
 )
 
 type AuthLog struct {
@@ -116,7 +117,7 @@ func (h *AuthenticationHandler) ServeHTTP(w http.ResponseWriter, r *http.Request
 			return
 		}
 
-		if res, err := h.AuthApi.Login(requestData.Login, requestData.Password); err != nil {
+		if res, err := h.AuthApi.LogIn(requestData.Login, requestData.Password); err != nil {
 			switch err.(type) {
 			case *thriftapi.NoSuchLogin:
 				golog.Log("auth", golog.WARN, &AuthLog{
@@ -128,6 +129,7 @@ func (h *AuthenticationHandler) ServeHTTP(w http.ResponseWriter, r *http.Request
 				golog.Log("auth", golog.WARN, &AuthLog{
 					Event: AuthEventInvalidPassword,
 				})
+				WriteUserError(w, http.StatusForbidden, "Invalid email/password combination")
 				return
 			default:
 				// For now, treat all errors the same.
@@ -171,7 +173,7 @@ func (h *AuthenticationHandler) ServeHTTP(w http.ResponseWriter, r *http.Request
 			WriteDeveloperError(w, http.StatusBadRequest, "authorization token not correctly specified in header")
 			return
 		}
-		if err := h.AuthApi.Logout(token); err != nil {
+		if err := h.AuthApi.LogOut(token); err != nil {
 			WriteDeveloperError(w, http.StatusInternalServerError, "Internal Server Error")
 			return
 		}

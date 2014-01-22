@@ -36,7 +36,7 @@ func (d *DoctorAuthenticationHandler) ServeHTTP(w http.ResponseWriter, r *http.R
 		return
 	}
 
-	if res, err := d.AuthApi.Login(requestData.Email, requestData.Password); err != nil {
+	if res, err := d.AuthApi.LogIn(requestData.Email, requestData.Password); err != nil {
 		switch err.(type) {
 		case *thriftapi.NoSuchLogin, *thriftapi.InvalidPassword:
 			WriteUserError(w, http.StatusForbidden, "Invalid email/password combination")

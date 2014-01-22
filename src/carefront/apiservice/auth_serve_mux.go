@@ -1,7 +1,6 @@
 package apiservice
 
 import (
-	"log"
 	"net/http"
 	"runtime"
 	"strconv"
@@ -149,7 +148,9 @@ func (mux *AuthServeMux) ServeHTTP(w http.ResponseWriter, r *http.Request) {
 
 	if nonAuth, ok := h.(NonAuthenticated); !ok || !nonAuth.NonAuthenticated() {
 		if valid, accountId, err := mux.checkAuth(r); err != nil {
-			log.Println(err)
+			golog.Log("auth", golog.WARN, &AuthLog{
+				Event: AuthEventInvalidToken,
+			})
 			customResponseWriter.WriteHeader(http.StatusInternalServerError)
 			return
 		} else if !valid {

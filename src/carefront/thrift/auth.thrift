@@ -15,7 +15,11 @@ struct TokenValidationResponse {
 exception NoSuchLogin {
 }
 
+exception NoSuchAccount {
+}
+
 exception InvalidPassword {
+	1: required i64 account_id
 }
 
 exception LoginAlreadyExists {
@@ -23,16 +27,17 @@ exception LoginAlreadyExists {
 }
 
 service Auth {
-	AuthResponse signup(
+	AuthResponse sign_up(
 		1: required string login,
 		2: required string password
 	) throws (
 		1: common.InternalServerError error,
 		2: common.AccessDenied access_denied,
 		3: common.OverCapacity over_capacity,
-		4: LoginAlreadyExists already_exists)
+		4: LoginAlreadyExists already_exists,
+		5: InvalidPassword invalid_password)
 
-	AuthResponse login(
+	AuthResponse log_in(
 		1: required string login,
 		2: required string password
 	) throws (
@@ -42,7 +47,7 @@ service Auth {
 		4: NoSuchLogin no_such_login,
 		5: InvalidPassword invalid_password)
 
-	void logout(
+	void log_out(
 		1: required string token,
 	) throws (
 		1: common.InternalServerError error,
@@ -55,4 +60,14 @@ service Auth {
 		1: common.InternalServerError error,
 		2: common.AccessDenied access_denied,
 		3: common.OverCapacity over_capacity)
+
+	void set_password(
+		1: required i64 account_id,
+		2: required string password
+	) throws (
+		1: common.InternalServerError error,
+		2: common.AccessDenied access_denied,
+		3: common.OverCapacity over_capacity,
+		4: NoSuchAccount no_such_account,
+		5: InvalidPassword invalid_password)
 }
