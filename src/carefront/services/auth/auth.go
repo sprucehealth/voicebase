@@ -143,7 +143,6 @@ func (m *AuthService) ValidateToken(token string) (*api.TokenValidationResponse,
 	var accountId int64
 	var expires *time.Time
 	if err := m.DB.QueryRow("SELECT account_id, expires FROM auth_token WHERE token = ?", token).Scan(&accountId, &expires); err == sql.ErrNoRows {
-		golog.Infof("Token %s is not present in database ", token)
 		return &api.TokenValidationResponse{IsValid: false}, nil
 	} else if err != nil {
 		return nil, &api.InternalServerError{Message: err.Error()}
