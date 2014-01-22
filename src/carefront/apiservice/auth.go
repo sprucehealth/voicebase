@@ -90,6 +90,17 @@ type AuthRequestData struct {
 	Password string `schema:"password,required"`
 }
 
+type AuthEvent string
+
+const (
+	AuthEventNoSuchLogin     AuthEvent = "NoSuchLogin"
+	AuthEventInvalidPassword AuthEvent = "InvalidPassword"
+)
+
+type AuthLog struct {
+	Event AuthEvent
+}
+
 func (h *AuthenticationHandler) ServeHTTP(w http.ResponseWriter, r *http.Request) {
 	r.ParseForm()
 	action := strings.Split(r.URL.Path, "/")[2]
@@ -107,8 +118,16 @@ func (h *AuthenticationHandler) ServeHTTP(w http.ResponseWriter, r *http.Request
 
 		if res, err := h.AuthApi.Login(requestData.Login, requestData.Password); err != nil {
 			switch err.(type) {
-			case *thriftapi.NoSuchLogin, *thriftapi.InvalidPassword:
+			case *thriftapi.NoSuchLogin:
+				golog.Log("auth", golog.WARN, &AuthLog{
+					Event: AuthEventNoSuchLogin,
+				})
 				WriteUserError(w, http.StatusForbidden, "Invalid email/password combination")
+				return
+			case *thriftapi.InvalidPassword:
+				golog.Log("auth", golog.WARN, &AuthLog{
+					Event: AuthEventInvalidPassword,
+				})
 				return
 			default:
 				// For now, treat all errors the same.
