@@ -71,7 +71,7 @@ func GetPatientInfo(dataApi api.DataAPI, pharmacySearchService pharmacy_service.
 		return
 	}
 
-	if pharmacySelection.Id != "" && pharmacySelection.Address == "" {
+	if pharmacySelection != nil && pharmacySelection.Id != "" && pharmacySelection.Address == "" {
 		pharmacy, shadowedErr := pharmacySearchService.GetPharmacyBasedOnId(pharmacySelection.Id)
 		if err != nil && err != pharmacy_service.NoPharmacyExists {
 			err = shadowedErr
