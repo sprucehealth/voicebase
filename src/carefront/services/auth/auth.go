@@ -11,13 +11,18 @@ import (
 	"code.google.com/p/go.crypto/bcrypt"
 )
 
+const bcryptCost = 10
+
 type AuthService struct {
 	ExpireDuration time.Duration
 	RenewDuration  time.Duration // When validation, if the time left on the token is less than this duration than the token is extended
 	DB             *sql.DB
 }
 
-func (m *AuthService) Signup(email, password string) (*api.AuthResponse, error) {
+func (m *AuthService) SignUp(email, password string) (*api.AuthResponse, error) {
+	if password == "" {
+		return nil, &api.InvalidPassword{}
+	}
 	email = strings.ToLower(email)
 
 	// ensure to check that the email does not already exist in the database
@@ -29,7 +34,7 @@ func (m *AuthService) Signup(email, password string) (*api.AuthResponse, error) 
 		return nil, &api.InternalServerError{Message: err.Error()}
 	}
 
-	hashedPassword, err := bcrypt.GenerateFromPassword([]byte(password), 10)
+	hashedPassword, err := bcrypt.GenerateFromPassword([]byte(password), bcryptCost)
 	if err != nil {
 		golog.Errorf("services/auth: %s", err.Error())
 		return nil, &api.InternalServerError{Message: err.Error()}
@@ -66,7 +71,8 @@ func (m *AuthService) Signup(email, password string) (*api.AuthResponse, error) 
 	}
 
 	// store token in Token Database
-	_, err = tx.Exec("INSERT INTO auth_token (token, account_id, created, expires) VALUES (?, ?, ?, ?)", tok, lastId, time.Now(), time.Now().Add(m.ExpireDuration))
+	now := time.Now().UTC()
+	_, err = tx.Exec("INSERT INTO auth_token (token, account_id, created, expires) VALUES (?, ?, ?, ?)", tok, lastId, now, now.Add(m.ExpireDuration))
 	if err != nil {
 		tx.Rollback()
 		golog.Errorf("services/auth: INSERT auth_token failed: %s", err.Error())
@@ -77,7 +83,7 @@ func (m *AuthService) Signup(email, password string) (*api.AuthResponse, error) 
 	return &api.AuthResponse{Token: tok, AccountId: lastId}, nil
 }
 
-func (m *AuthService) Login(email, password string) (*api.AuthResponse, error) {
+func (m *AuthService) LogIn(email, password string) (*api.AuthResponse, error) {
 	email = strings.ToLower(email)
 
 	var accountId int64
@@ -92,7 +98,7 @@ func (m *AuthService) Login(email, password string) (*api.AuthResponse, error) {
 
 	// compare the hashed password value to that stored in the database to authenticate the user
 	if err := bcrypt.CompareHashAndPassword([]byte(hashedPassword), []byte(password)); err != nil {
-		return nil, &api.InvalidPassword{}
+		return nil, &api.InvalidPassword{AccountId: accountId}
 	}
 
 	token, err := common.GenerateToken()
@@ -114,7 +120,8 @@ func (m *AuthService) Login(email, password string) (*api.AuthResponse, error) {
 	}
 
 	// insert new token
-	_, err = tx.Exec("INSERT INTO auth_token (token, account_id, created, expires) VALUES (?, ?, ?, ?)", token, accountId, time.Now(), time.Now().Add(m.ExpireDuration))
+	now := time.Now().UTC()
+	_, err = tx.Exec("INSERT INTO auth_token (token, account_id, created, expires) VALUES (?, ?, ?, ?)", token, accountId, now, now.Add(m.ExpireDuration))
 	if err != nil {
 		tx.Rollback()
 		return nil, &api.InternalServerError{Message: err.Error()}
@@ -124,7 +131,7 @@ func (m *AuthService) Login(email, password string) (*api.AuthResponse, error) {
 	return &api.AuthResponse{Token: token, AccountId: accountId}, nil
 }
 
-func (m *AuthService) Logout(token string) error {
+func (m *AuthService) LogOut(token string) error {
 	// delete the token from the database to invalidate
 	if _, err := m.DB.Exec("DELETE FROM auth_token WHERE token = ?", token); err != nil {
 		return &api.InternalServerError{Message: err.Error()}
@@ -135,22 +142,45 @@ func (m *AuthService) Logout(token string) error {
 func (m *AuthService) ValidateToken(token string) (*api.TokenValidationResponse, error) {
 	var accountId int64
 	var expires *time.Time
-	if err := m.DB.QueryRow("SELECT account_id, expires FROM auth_token WHERE token =  ?", token).Scan(&accountId, &expires); err == sql.ErrNoRows {
-		golog.Infof("Token %s is not present in database ", token)
+	if err := m.DB.QueryRow("SELECT account_id, expires FROM auth_token WHERE token = ?", token).Scan(&accountId, &expires); err == sql.ErrNoRows {
 		return &api.TokenValidationResponse{IsValid: false}, nil
 	} else if err != nil {
 		return nil, &api.InternalServerError{Message: err.Error()}
 	}
 
+	now := time.Now().UTC()
+
 	// if the token exists, check the expiration to ensure that it is valid
-	left := (*expires).Sub(time.Now())
+	left := (*expires).Sub(now)
 	if left <= 0 {
-		golog.Infof("Current time %s is after expiration time %s", time.Now().String(), expires.String())
+		golog.Infof("Current time %s is after expiration time %s", now.String(), expires.String())
 	} else if m.RenewDuration > 0 && left < m.RenewDuration {
-		if _, err := m.DB.Exec("UPDATE auth_token SET expires = ? WHERE token = ?", time.Now().Add(m.ExpireDuration), token); err != nil {
+		if _, err := m.DB.Exec("UPDATE auth_token SET expires = ? WHERE token = ?", now.Add(m.ExpireDuration), token); err != nil {
 			golog.Errorf("services/auth: failed to extend token expiration: %s", err.Error())
 			// Don't return an error response because this doesn't prevent anything else from working
 		}
 	}
 	return &api.TokenValidationResponse{IsValid: left > 0, AccountId: &accountId}, nil
+}
+
+func (m *AuthService) SetPassword(accountId int64, password string) error {
+	if password == "" {
+		return &api.InvalidPassword{}
+	}
+	hashedPassword, err := bcrypt.GenerateFromPassword([]byte(password), bcryptCost)
+	if err != nil {
+		return &api.InternalServerError{Message: err.Error()}
+	}
+	if res, err := m.DB.Exec("UPDATE account SET password = ? WHERE id = ?", string(hashedPassword), accountId); err != nil {
+		return &api.InternalServerError{Message: err.Error()}
+	} else if n, err := res.RowsAffected(); err != nil {
+		return &api.InternalServerError{Message: err.Error()}
+	} else if n == 0 {
+		return &api.NoSuchAccount{}
+	}
+	// Log out any existing tokens for the account
+	if _, err := m.DB.Exec("DELETE FROM auth_token WHERE account_id = ?", accountId); err != nil {
+		return &api.InternalServerError{Message: err.Error()}
+	}
+	return nil
 }

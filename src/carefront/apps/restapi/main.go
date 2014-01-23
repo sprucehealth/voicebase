@@ -22,6 +22,7 @@ import (
 	"carefront/libs/svcreg"
 	"carefront/services/auth"
 	thriftapi "carefront/thrift/api"
+	"github.com/SpruceHealth/go-proxy-protocol/proxyproto"
 	"github.com/go-sql-driver/mysql"
 	"github.com/samuel/go-metrics/metrics"
 	"github.com/subosito/twilio"
@@ -50,6 +51,7 @@ type TwilioConfig struct {
 
 type Config struct {
 	*config.BaseConfig
+	ProxyProtocol            bool          `long:"proxy_protocol" description:"Enable if behind a proxy that uses the PROXY protocol"`
 	ListenAddr               string        `short:"l" long:"listen" description:"Address and port on which to listen (e.g. 127.0.0.1:8080)"`
 	TLSListenAddr            string        `long:"tls_listen" description:"Address and port on which to listen (e.g. 127.0.0.1:8080)"`
 	TLSCert                  string        `long:"tls_cert" description:"Path of SSL certificate"`
@@ -347,8 +349,13 @@ func main() {
 				log.Fatal(err)
 			}
 
+			ln := tls.NewListener(conn, s.TLSConfig)
+			if conf.ProxyProtocol {
+				ln = &proxyproto.Listener{Listener: ln}
+			}
+
 			golog.Infof("Starting SSL server on %s...", conf.TLSListenAddr)
-			log.Fatal(s.Serve(tls.NewListener(conn, s.TLSConfig)))
+			log.Fatal(s.Serve(ln))
 		}()
 	}
 	golog.Infof("Starting server on %s...", conf.ListenAddr)
