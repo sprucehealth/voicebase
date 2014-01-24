@@ -1,0 +1,1 @@
+update localized_text set ltext='Have you been diagnosed with a skin condition in the past?' where app_text_id = (select id from app_text where app_text_tag='txt_diagnosed_skin_past');

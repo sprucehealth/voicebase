@@ -12,7 +12,7 @@ len=${#argsArray[@]}
 
 if [ $len -lt 2 ];
 then
-	echo "ERROR: Usage ./apply_schema.sh [local|dev|prod] migration1 migration2 .... migrationN"
+	echo "ERROR: Usage ./apply_schema.sh [local|dev|prod|staging] migration1 migration2 .... migrationN"
 	exit 1;
 fi
 
@@ -33,6 +33,16 @@ do
 			echo "use $DATABASE_NAME;" | cat - migration-$migrationNumber.sql > temp.sql
 			mysql -h $RDS_INSTANCE -u $RDS_USERNAME -p$DEV_RDS_PASSWORD < temp.sql
 			mysql -h $RDS_INSTANCE -u $RDS_USERNAME -p$DEV_RDS_PASSWORD < temp-migration.sql
+		;;	
+
+		"staging" )
+			echo "use $STAGING_DB_NAME; insert into migrations (migration_id, migration_user) values ($migrationNumber, '$USER');" > temp-migration.sql
+			LOGMSG="{\"env\":\"$env\",\"user\":\"$USER\",\"migration_id\":\"$migrationNumber\"}"
+			echo "use $STAGING_DB_NAME;" | cat - migration-$migrationNumber.sql > temp.sql
+			scp temp.sql kunal@$STAGING_BASTIAN:~
+			scp temp-migration.sql kunal@$STAGING_BASTIAN:~
+			ssh -t $USER@$STAGING_DB_INSTANCE "sudo ec2-consistent-snapshot -mysql.config /mysql-data/mysql/backup.cnf -tag migrationId=migration-$migrationNumber"
+			ssh $USER@$STAGING_BASTIAN "mysql -h $STAGING_DB_INSTANCE -u $STAGING_DB_USER_NAME -p$STAGING_DB_PASSWORD < temp.sql ; mysql -h $STAGING_DB_INSTANCE -u $STAGING_DB_USER_NAME -p$STAGING_DB_PASSWORD < temp-migration.sql; logger -p user.info -t schema '$LOGMSG'"
 		;;
 
 		"dev" )
