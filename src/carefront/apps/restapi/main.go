@@ -349,10 +349,11 @@ func main() {
 				log.Fatal(err)
 			}
 
-			ln := tls.NewListener(conn, s.TLSConfig)
 			if conf.ProxyProtocol {
-				ln = &proxyproto.Listener{Listener: ln}
+				conn = &proxyproto.Listener{Listener: conn}
 			}
+
+			ln := tls.NewListener(conn, s.TLSConfig)
 
 			golog.Infof("Starting SSL server on %s...", conf.TLSListenAddr)
 			log.Fatal(s.Serve(ln))

@@ -59,26 +59,24 @@ func GetSignedUrlsForAnswersInQuestion(question *info_intake.Question, photoStor
 	}
 }
 
-func GetPatientInfo(dataApi api.DataAPI, pharmacySearchService pharmacy_service.PharmacySearchAPI, accountId int64) (patient *common.Patient, err error) {
-	patient, err = dataApi.GetPatientFromAccountId(accountId)
+func GetPatientInfo(dataApi api.DataAPI, pharmacySearchService pharmacy_service.PharmacySearchAPI, accountId int64) (*common.Patient, error) {
+	patient, err := dataApi.GetPatientFromAccountId(accountId)
 	if err != nil {
-		err = errors.New("Unable to get patient from account id:  " + err.Error())
-		return
+		return nil, errors.New("Unable to get patient from account id:  " + err.Error())
 	}
 	pharmacySelection, err := dataApi.GetPatientPharmacySelection(patient.PatientId)
 	if err != nil && err != api.NoRowsError {
-		err = errors.New("Unable to get patient's pharmacy selection: " + err.Error())
-		return
+		return nil, errors.New("Unable to get patient's pharmacy selection: " + err.Error())
 	}
 
 	if pharmacySelection != nil && pharmacySelection.Id != "" && pharmacySelection.Address == "" {
-		pharmacy, shadowedErr := pharmacySearchService.GetPharmacyBasedOnId(pharmacySelection.Id)
+		pharmacy, err := pharmacySearchService.GetPharmacyBasedOnId(pharmacySelection.Id)
 		if err != nil && err != pharmacy_service.NoPharmacyExists {
-			err = shadowedErr
-			err = errors.New("Unable to get pharmacy based on id: " + err.Error())
-			return
+			return nil, errors.New("Unable to get pharmacy based on id: " + err.Error())
 		}
-		pharmacy.Source = pharmacySelection.Source
+		if pharmacy != nil {
+			pharmacy.Source = pharmacySelection.Source
+		}
 		patient.Pharmacy = pharmacy
 	} else {
 		patient.Pharmacy = pharmacySelection
@@ -222,9 +220,9 @@ func validateRequestBody(answerIntakeRequestBody *AnswerIntakeRequestBody, w htt
 	return nil
 }
 
-func populateAnswersToStoreForQuestion(role string, answerToQuestionItem *AnswerToQuestionItem, patientVisitId, roleId, layoutVersionId int64) (answersToStore []*common.AnswerIntake) {
+func populateAnswersToStoreForQuestion(role string, answerToQuestionItem *AnswerToQuestionItem, patientVisitId, roleId, layoutVersionId int64) []*common.AnswerIntake {
 	// get a list of top level answers to store for each of the quetions
-	answersToStore = createAnswersToStoreForQuestion(role, roleId, answerToQuestionItem.QuestionId,
+	answersToStore := createAnswersToStoreForQuestion(role, roleId, answerToQuestionItem.QuestionId,
 		patientVisitId, layoutVersionId, answerToQuestionItem.AnswerIntakes)
 
 	// go through all the answers of each question intake to identify responses that have responses to subquestions

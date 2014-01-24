@@ -4,6 +4,7 @@ import (
 	"net/http"
 	"runtime"
 	"strconv"
+	"strings"
 	"time"
 
 	"carefront/libs/golog"
@@ -121,8 +122,13 @@ func (mux *AuthServeMux) ServeHTTP(w http.ResponseWriter, r *http.Request) {
 			mux.statLatency.Update(responseTime)
 			DeleteContext(r)
 
+			remoteAddr := r.RemoteAddr
+			if idx := strings.LastIndex(remoteAddr, ":"); idx > 0 {
+				remoteAddr = remoteAddr[:idx]
+			}
+
 			golog.Log("webrequest", golog.INFO, &RequestLog{
-				RemoteAddr:   r.RemoteAddr,
+				RemoteAddr:   remoteAddr,
 				Method:       r.Method,
 				URL:          r.URL.String(),
 				StatusCode:   customResponseWriter.StatusCode,
