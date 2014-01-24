@@ -1,16 +1,66 @@
 package proxyproto
 
 import (
+	"bufio"
+	"io"
 	"net"
+	"sync"
 )
+
+// TODO: use a sync.Cache instead
+var (
+	bufioReaderCache = make(chan *bufio.Reader, 4)
+)
+
+func newBufioReader(r io.Reader) *bufio.Reader {
+	select {
+	case p := <-bufioReaderCache:
+		p.Reset(r)
+		return p
+	default:
+		return bufio.NewReader(r)
+	}
+}
+
+func putBufioReader(br *bufio.Reader) {
+	br.Reset(nil)
+	select {
+	case bufioReaderCache <- br:
+	default:
+	}
+}
 
 type Conn struct {
 	net.Conn
 	ProxyHeader *Header
+	rd          *bufio.Reader
+	mu          sync.Mutex
 }
 
 func (c *Conn) RemoteAddr() net.Addr {
 	return c.ProxyHeader.SrcAddr
+}
+
+func (c *Conn) Read(b []byte) (int, error) {
+	c.mu.Lock()
+	rd := c.rd
+	c.mu.Unlock()
+	if rd != nil {
+		return rd.Read(b)
+	} else {
+		return c.Conn.Read(b)
+	}
+}
+
+func (c *Conn) Close() error {
+	c.mu.Lock()
+	rd := c.rd
+	c.rd = nil
+	c.mu.Unlock()
+	if rd != nil {
+		putBufioReader(rd)
+	}
+	return c.Conn.Close()
 }
 
 type Listener struct {
@@ -30,9 +80,10 @@ func (l *Listener) Accept() (net.Conn, error) {
 	if err != nil {
 		return nil, err
 	}
-	head, err := ReadHeader(conn)
+	rd := newBufioReader(conn)
+	head, err := ReadHeader(rd)
 	if err != nil {
 		return nil, err
 	}
-	return &Conn{Conn: conn, ProxyHeader: head}, nil
+	return &Conn{Conn: conn, ProxyHeader: head, rd: rd}, nil
 }
