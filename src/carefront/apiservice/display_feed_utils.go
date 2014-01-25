@@ -14,7 +14,7 @@ type DisplayFeedItem struct {
 	Subtitle     string      `json:"subtitle"`
 	Button       *api.Button `json:"button,omitempty"`
 	ImageUrl     string      `json:"image_url"`
-	ItemUrl      string      `json:"item_url,omitempty"`
+	ItemUrl      string      `json:"action_url,omitempty"`
 	DisplayTypes []string    `json:"display_types"`
 }
 
@@ -38,5 +38,6 @@ func converQueueItemToDisplayFeedItem(DataApi api.DataAPI, itemToDisplay api.Fee
 	item.Subtitle = subtitle
 	item.ImageUrl = itemToDisplay.GetImageUrl()
 	item.DisplayTypes = itemToDisplay.GetDisplayTypes()
+	item.ItemUrl = itemToDisplay.GetActionUrl()
 	return
 }

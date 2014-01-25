@@ -7,9 +7,10 @@ import (
 )
 
 const (
-	EVENT_TYPE_PATIENT_VISIT      = "PATIENT_VISIT"
-	patientVisitImageTag          = "patient_visit_queue_icon"
-	beginPatientVisitReviewAction = "begin_patient_visit"
+	EVENT_TYPE_PATIENT_VISIT            = "PATIENT_VISIT"
+	patientVisitImageTag                = "patient_visit_queue_icon"
+	beginPatientVisitReviewAction       = "begin_patient_visit"
+	viewTreatedPatientVisitReviewAction = "view_treated_patient_visit"
 )
 
 type DoctorQueueItem struct {
@@ -82,8 +83,13 @@ func (d *DoctorQueueItem) GetDisplayTypes() []string {
 	switch d.EventType {
 	case EVENT_TYPE_PATIENT_VISIT:
 		switch d.Status {
-		case QUEUE_ITEM_STATUS_COMPLETED, QUEUE_ITEM_STATUS_PHOTOS_REJECTED, QUEUE_ITEM_STATUS_TRIAGED:
+
+		case QUEUE_ITEM_STATUS_PHOTOS_REJECTED:
 			return []string{DISPLAY_TYPE_TITLE_SUBTITLE_NONACTIONABLE}
+
+		case QUEUE_ITEM_STATUS_COMPLETED, QUEUE_ITEM_STATUS_TRIAGED:
+			return []string{DISPLAY_TYPE_TITLE_SUBTITLE_ACTIONABLE}
+
 		case QUEUE_ITEM_STATUS_PENDING, QUEUE_ITEM_STATUS_ONGOING:
 			if d.PositionInQueue == 0 {
 				return []string{DISPLAY_TYPE_TITLE_SUBTITLE_BUTTON}
@@ -93,6 +99,17 @@ func (d *DoctorQueueItem) GetDisplayTypes() []string {
 		}
 	}
 	return nil
+}
+
+func (d *DoctorQueueItem) GetActionUrl() string {
+	switch d.EventType {
+	case EVENT_TYPE_PATIENT_VISIT:
+		switch d.Status {
+		case QUEUE_ITEM_STATUS_COMPLETED, QUEUE_ITEM_STATUS_TRIAGED:
+			return fmt.Sprintf("%s%s?patient_visit_id=%d", SpruceButtonBaseActionUrl, viewTreatedPatientVisitReviewAction, d.ItemId)
+		}
+	}
+	return ""
 }
 
 func (d *DoctorQueueItem) GetButton() *Button {

@@ -26,7 +26,7 @@
                 {
                     "data": [
                         {  
-                            "no_patient_answer_text": "Patient did not answer", 
+                            "no_patient_answer_text": "None", 
                             "question": "q_list_prev_skin_condition_diagnosis"
                         }, 
                         {

@@ -223,7 +223,7 @@ func joinAcneTypesIntoString(acneTypeAnswers []*common.AnswerIntake) string {
 		return acneTypes[0]
 	}
 
-	return strings.Join(acneTypes[:len(acneTypes)-1], ",") + " and " + acneTypes[len(acneTypes)-1]
+	return strings.Join(acneTypes[:len(acneTypes)-1], ", ") + " and " + acneTypes[len(acneTypes)-1]
 }
 
 func getQuestionIdsInDiagnosisLayout(diagnosisLayout *info_intake.DiagnosisIntake) []int64 {

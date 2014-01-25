@@ -1,16 +1,15 @@
 package integration
 
 import (
+	"carefront/api"
+	"carefront/apiservice"
+	"carefront/settings"
 	"encoding/json"
 	"fmt"
 	"io/ioutil"
 	"net/http/httptest"
 	"testing"
 	"time"
-
-	"carefront/api"
-	"carefront/apiservice"
-	"carefront/settings"
 )
 
 func TestDoctorFeed(t *testing.T) {
@@ -52,6 +51,12 @@ func TestDoctorFeed(t *testing.T) {
 	doctorQueueItem := &api.DoctorQueueItem{}
 	doctorQueueItem.DoctorId = doctor.DoctorId
 	doctorQueueItem.ItemId = patientVisitResponse.PatientVisitId
+	doctorQueueItem.Status = api.QUEUE_ITEM_STATUS_ONGOING
+	insertIntoDoctorQueue(testData, doctorQueueItem, t)
+
+	doctorQueueItem = &api.DoctorQueueItem{}
+	doctorQueueItem.DoctorId = doctor.DoctorId
+	doctorQueueItem.ItemId = patientVisitResponse.PatientVisitId
 	doctorQueueItem.Status = api.QUEUE_ITEM_STATUS_PENDING
 	insertIntoDoctorQueue(testData, doctorQueueItem, t)
 
@@ -74,8 +79,29 @@ func TestDoctorFeed(t *testing.T) {
 		switch tab.Title {
 		case "Pending":
 			if len(tab.Sections) != 2 {
-				t.Fatal("Expect there to be 2 sections, one for upcoming visit and another for the rest of the visits")
+				t.Fatal("Expect there to be 3 sections, one for upcoming visit and another for the rest of the visits")
 			}
+
+			// ensure that the first item has the button text set to Continue to indicate an ongoing itgem
+			if tab.Sections[0].Items[0].Button.ButtonText != "Continue" {
+				t.Fatal("Expected the first item in the list to be the ongoing item. ")
+			}
+
+			// ensure that all items in the pending section have the display type set as needed
+			if tab.Sections[0].Items[0].DisplayTypes == nil || len(tab.Sections[0].Items[0].DisplayTypes) == 0 {
+				t.Fatal("Expected there to exist a list of display types for the item but there arent any")
+			} else if tab.Sections[0].Items[0].DisplayTypes[0] != api.DISPLAY_TYPE_TITLE_SUBTITLE_BUTTON {
+				t.Fatalf("Expected the display type to be %s for this item in the queue but instead it was %s.", api.DISPLAY_TYPE_TITLE_SUBTITLE_BUTTON, tab.Sections[0].Items[0].DisplayTypes[0])
+			}
+
+			for _, item := range tab.Sections[1].Items {
+				if item.DisplayTypes == nil || len(item.DisplayTypes) == 0 {
+					t.Fatal("Expected there to exist a list of display types for the item but there arent any")
+				} else if item.DisplayTypes[0] != api.DISPLAY_TYPE_TITLE_SUBTITLE_NONACTIONABLE {
+					t.Fatalf("Expected the display type to be %s for this item in the queue but instead it was %s.", api.DISPLAY_TYPE_TITLE_SUBTITLE_BUTTON, item.DisplayTypes[0])
+				}
+			}
+
 		case "Completed":
 			if tab.Sections != nil && len(tab.Sections) != 0 {
 				t.Fatal("Expected there to be no completed sections")
@@ -95,6 +121,14 @@ func TestDoctorFeed(t *testing.T) {
 		insertIntoDoctorQueueWithEnqueuedDate(testData, queueItem, t)
 	}
 
+	queueItem := &api.DoctorQueueItem{}
+	queueItem.DoctorId = doctor.DoctorId
+	queueItem.ItemId = patientVisitResponse.PatientVisitId
+	queueItem.Status = api.QUEUE_ITEM_STATUS_PHOTOS_REJECTED
+	queueItem.EnqueueDate = time.Date(2013, 1, 10, 0, 0, 0, 0, time.UTC)
+	queueItems = append(queueItems, queueItem)
+	insertIntoDoctorQueueWithEnqueuedDate(testData, queueItem, t)
+
 	doctorDisplayFeedTabs = getDoctorQueue(testData, doctor.AccountId, t)
 
 	// now there should be items in the pending and completed tabs
@@ -112,18 +146,27 @@ func TestDoctorFeed(t *testing.T) {
 				t.Fatal("Expect there to be 2 sections, one for upcoming visit and another for the rest of the visits")
 			}
 		case "Completed":
-			if len(tab.Sections) != 10 {
+			if len(tab.Sections) != 11 {
 				t.Fatalf("Expected there to be 10 completed sections. Instead there were %d", len(tab.Sections))
 			}
 
 			// in each of the sections there should be 1 item
-			for _, section := range tab.Sections {
+			for i, section := range tab.Sections {
 				if section.Items == nil {
 					t.Fatal("Expected there to be 1 completed item in the section instead there were none")
 				}
 
 				if len(section.Items) != 1 {
 					t.Fatalf("Expected there to be 1 completed item in the section, instead there were %d", len(section.Items))
+				}
+
+				// ensure that all items in the pending section have the display type set as needed
+				if section.Items[0].DisplayTypes == nil || len(section.Items[0].DisplayTypes) == 0 {
+					t.Fatal("Expected there to exist a list of display types for the item but there arent any")
+				} else if i != 0 && section.Items[0].DisplayTypes[0] != api.DISPLAY_TYPE_TITLE_SUBTITLE_ACTIONABLE {
+					t.Fatalf("Expected the display type to be %s for this item in the queue.", api.DISPLAY_TYPE_TITLE_SUBTITLE_ACTIONABLE)
+				} else if i == 0 && section.Items[0].DisplayTypes[0] != api.DISPLAY_TYPE_TITLE_SUBTITLE_NONACTIONABLE {
+					t.Fatalf("Expected the display type to be %s for this item in the queue.", api.DISPLAY_TYPE_TITLE_SUBTITLE_NONACTIONABLE)
 				}
 			}
 		}

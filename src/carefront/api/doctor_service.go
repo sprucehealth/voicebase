@@ -202,20 +202,35 @@ func (d *DataService) UpdateStateForPatientVisitInDoctorQueue(DoctorId, PatientV
 	return err
 }
 
-func (d *DataService) GetDoctorQueue(DoctorId int64) ([]*DoctorQueueItem, error) {
-	rows, err := d.DB.Query(`select id, event_type, item_id, enqueue_date, completed_date, status from doctor_queue where doctor_id = ? order by enqueue_date desc limit 20`, DoctorId)
+func (d *DataService) GetPendingItemsInDoctorQueue(DoctorId int64) ([]*DoctorQueueItem, error) {
+	rows, err := d.DB.Query(`select id, event_type, item_id, enqueue_date, completed_date, status from doctor_queue where doctor_id = ? and status in ('PENDING', 'ONGOING') order by enqueue_date`, DoctorId)
 	if err != nil {
 		return nil, err
 	}
 	defer rows.Close()
 
+	doctorQueue, err := populateDoctorQueueFromRows(rows)
+	return doctorQueue, err
+}
+
+func (d *DataService) GetCompletedItemsInDoctorQueue(DoctorId int64) ([]*DoctorQueueItem, error) {
+	rows, err := d.DB.Query(`select id, event_type, item_id, enqueue_date, completed_date, status from doctor_queue where doctor_id = ? and status not in ('PENDING', 'ONGOING') order by enqueue_date desc`, DoctorId)
+	if err != nil {
+		return nil, err
+	}
+	defer rows.Close()
+	doctorQueue, err := populateDoctorQueueFromRows(rows)
+	return doctorQueue, err
+}
+
+func populateDoctorQueueFromRows(rows *sql.Rows) ([]*DoctorQueueItem, error) {
 	doctorQueue := make([]*DoctorQueueItem, 0)
 	for rows.Next() {
 		var id, itemId int64
 		var eventType, status string
 		var completedDate mysql.NullTime
 		var enqueueDate time.Time
-		err = rows.Scan(&id, &eventType, &itemId, &enqueueDate, &completedDate, &status)
+		err := rows.Scan(&id, &eventType, &itemId, &enqueueDate, &completedDate, &status)
 		if err != nil {
 			return nil, err
 		}

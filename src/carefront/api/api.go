@@ -103,7 +103,8 @@ type DoctorAPI interface {
 	MarkAdvicePointToBeDeleted(advicePoint *common.DoctorInstructionItem, doctorId int64) error
 	AssignPatientVisitToDoctor(DoctorId, PatientVisitId int64) error
 	UpdateStateForPatientVisitInDoctorQueue(DoctorId, PatientVisitId int64, currentState, updatedState string) error
-	GetDoctorQueue(DoctorId int64) (doctorQueue []*DoctorQueueItem, err error)
+	GetPendingItemsInDoctorQueue(DoctorId int64) (doctorQueue []*DoctorQueueItem, err error)
+	GetCompletedItemsInDoctorQueue(DoctorId int64) (doctorQueue []*DoctorQueueItem, err error)
 	GetMedicationDispenseUnits(languageId int64) (dispenseUnitIds []int64, dispenseUnits []string, err error)
 	GetDrugInstructionsForDoctor(drugName, drugForm, drugRoute string, doctorId int64) (drugInstructions []*common.DoctorInstructionItem, err error)
 	AddOrUpdateDrugInstructionForDoctor(drugName, drugForm, drugRoute string, drugInstructionToAdd *common.DoctorInstructionItem, doctorId int64) error
