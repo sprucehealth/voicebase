@@ -144,3 +144,15 @@ func StartReviewingPatientVisit(PatientVisitId int64, doctor *common.Doctor, tes
 	}
 	return doctorPatientVisitReviewResponse
 }
+
+func SubmitPatientVisitBackToPatient(PatientVisitId int64, doctor *common.Doctor, testData TestData, t *testing.T) {
+	doctorSubmitPatientVisitReviewHandler := &apiservice.DoctorSubmitPatientVisitReviewHandler{DataApi: testData.DataApi}
+	ts := httptest.NewServer(doctorSubmitPatientVisitReviewHandler)
+	defer ts.Close()
+
+	resp, err := authPost(ts.URL, "application/x-www-form-urlencoded", bytes.NewBufferString("patient_visit_id="+strconv.FormatInt(PatientVisitId, 10)), doctor.AccountId)
+	if err != nil {
+		t.Fatal("Unable to make call to close patient visit " + err.Error())
+	}
+	CheckSuccessfulStatusCode(resp, "Unable to make successful call to close the patient visit", t)
+}

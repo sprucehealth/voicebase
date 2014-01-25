@@ -12,6 +12,154 @@ import (
 	"time"
 )
 
+func TestDoctorQueueWithPatientVisits(t *testing.T) {
+	if err := CheckIfRunningLocally(t); err == CannotRunTestLocally {
+		return
+	}
+	testData := SetupIntegrationTest(t)
+	defer TearDownIntegrationTest(t, testData)
+
+	// get the current primary doctor
+	doctorId := getDoctorIdOfCurrentPrimaryDoctor(testData, t)
+
+	doctor, err := testData.DataApi.GetDoctorFromId(doctorId)
+	if err != nil {
+		t.Fatal("Unable to get doctor from doctor id " + err.Error())
+	}
+
+	patientVisitResponses := make([]*apiservice.PatientVisitResponse, 0)
+	signedUpPatients := make([]*apiservice.PatientSignedupResponse, 0)
+
+	signedUpPatientResponse := SignupRandomTestPatient(t, testData.DataApi, testData.AuthApi)
+	patientVisitResponse := CreatePatientVisitForPatient(signedUpPatientResponse.Patient.PatientId, testData, t)
+	patientVisitResponses = append(patientVisitResponses, patientVisitResponse)
+	signedUpPatients = append(signedUpPatients, signedUpPatientResponse)
+	// submit this patient visit and check to ensure that there is something in the doctor's queue
+	SubmitPatientVisitForPatient(signedUpPatientResponse.Patient.PatientId, patientVisitResponse.PatientVisitId, testData, t)
+
+	doctorDisplayFeedTabs := getDoctorQueue(testData, doctor.AccountId, t)
+	doBasicCheckOfDoctorQueue(doctorDisplayFeedTabs, t)
+
+	// there should be sections under the first tab
+	if doctorDisplayFeedTabs.Tabs[0].Sections == nil || len(doctorDisplayFeedTabs.Tabs[0].Sections) == 0 {
+		t.Fatal("Expected there to be sections but there are non under the first tab")
+	}
+
+	// there should be an item in the first tab
+	if doctorDisplayFeedTabs.Tabs[0].Sections[0].Items == nil || len(doctorDisplayFeedTabs.Tabs[0].Sections[0].Items) == 0 {
+		t.Fatal("Expected there to be items under the first section of the first tab")
+	}
+
+	if doctorDisplayFeedTabs.Tabs[0].Sections[0].Items[0].Button == nil || doctorDisplayFeedTabs.Tabs[0].Sections[0].Items[0].Button.ButtonText != "Begin" {
+		t.Fatal("Expected the first item in the first section of the first tab to be actionable")
+	}
+
+	// now go ahead and start reviewing the visit and the item should change to continue visiting
+	StartReviewingPatientVisit(patientVisitResponse.PatientVisitId, doctor, testData, t)
+
+	doctorDisplayFeedTabs = getDoctorQueue(testData, doctor.AccountId, t)
+	doBasicCheckOfDoctorQueue(doctorDisplayFeedTabs, t)
+
+	// there should be sections under the first tab
+	if doctorDisplayFeedTabs.Tabs[0].Sections == nil || len(doctorDisplayFeedTabs.Tabs[0].Sections) == 0 {
+		t.Fatal("Expected there to be sections but there are non under the first tab")
+	}
+
+	// there should be an item in the first tab
+	if doctorDisplayFeedTabs.Tabs[0].Sections[0].Items == nil || len(doctorDisplayFeedTabs.Tabs[0].Sections[0].Items) == 0 {
+		t.Fatal("Expected there to be items under the first section of the first tab")
+	}
+
+	if doctorDisplayFeedTabs.Tabs[0].Sections[0].Items[0].Button == nil || doctorDisplayFeedTabs.Tabs[0].Sections[0].Items[0].Button.ButtonText != "Continue" {
+		t.Fatal("Expected the first item in the first section of the first tab to be actionable")
+	}
+
+	// and another item and it should be in the second section and not the first
+	signedUpPatientResponse = SignupRandomTestPatient(t, testData.DataApi, testData.AuthApi)
+	patientVisitResponse = CreatePatientVisitForPatient(signedUpPatientResponse.Patient.PatientId, testData, t)
+	patientVisitResponses = append(patientVisitResponses, patientVisitResponse)
+	signedUpPatients = append(signedUpPatients, signedUpPatientResponse)
+	SubmitPatientVisitForPatient(signedUpPatientResponse.Patient.PatientId, patientVisitResponse.PatientVisitId, testData, t)
+
+	doctorDisplayFeedTabs = getDoctorQueue(testData, doctor.AccountId, t)
+	doBasicCheckOfDoctorQueue(doctorDisplayFeedTabs, t)
+
+	if doctorDisplayFeedTabs.Tabs[0].Sections == nil || len(doctorDisplayFeedTabs.Tabs[0].Sections) == 0 {
+		t.Fatal("Expected there to be sections but there are non under the first tab")
+	}
+
+	if len(doctorDisplayFeedTabs.Tabs[0].Sections) != 2 {
+		t.Fatal("There should be 2 sections in this tab")
+	}
+
+	if doctorDisplayFeedTabs.Tabs[0].Sections[0].Items[0].Button == nil || doctorDisplayFeedTabs.Tabs[0].Sections[0].Items[0].Button.ButtonText != "Continue" {
+		t.Fatal("Expected the first item to be continuing a visit")
+	}
+
+	if doctorDisplayFeedTabs.Tabs[0].Sections[1].Items == nil || len(doctorDisplayFeedTabs.Tabs[0].Sections[1].Items) != 1 {
+		t.Fatal("There should be 1 item in the second section of the first tab")
+	}
+
+	for i := 0; i < 5; i++ {
+		signedUpPatientResponse = SignupRandomTestPatient(t, testData.DataApi, testData.AuthApi)
+		patientVisitResponse = CreatePatientVisitForPatient(signedUpPatientResponse.Patient.PatientId, testData, t)
+		patientVisitResponses = append(patientVisitResponses, patientVisitResponse)
+		signedUpPatients = append(signedUpPatients, signedUpPatientResponse)
+		SubmitPatientVisitForPatient(signedUpPatientResponse.Patient.PatientId, patientVisitResponse.PatientVisitId, testData, t)
+	}
+
+	doctorDisplayFeedTabs = getDoctorQueue(testData, doctor.AccountId, t)
+	doBasicCheckOfDoctorQueue(doctorDisplayFeedTabs, t)
+
+	if doctorDisplayFeedTabs.Tabs[0].Sections == nil || len(doctorDisplayFeedTabs.Tabs[0].Sections) == 0 {
+		t.Fatal("Expected there to be sections but there are non under the first tab")
+	}
+
+	if len(doctorDisplayFeedTabs.Tabs[0].Sections) != 2 {
+		t.Fatal("There should be 2 sections in this tab")
+	}
+
+	if doctorDisplayFeedTabs.Tabs[0].Sections[0].Items[0].Button == nil || doctorDisplayFeedTabs.Tabs[0].Sections[0].Items[0].Button.ButtonText != "Continue" {
+		t.Fatal("Expected the first item to be continuing a visit")
+	}
+
+	if doctorDisplayFeedTabs.Tabs[0].Sections[1].Items == nil || len(doctorDisplayFeedTabs.Tabs[0].Sections[1].Items) != 6 {
+		t.Fatal("There should be 6 items in the second section of the first tab")
+	}
+
+	// now, go ahead and submit the first diagnosis so that it clears from the queue
+	SubmitPatientVisitBackToPatient(patientVisitResponses[0].PatientVisitId, doctor, testData, t)
+	doctorDisplayFeedTabs = getDoctorQueue(testData, doctor.AccountId, t)
+	doBasicCheckOfDoctorQueue(doctorDisplayFeedTabs, t)
+
+	if doctorDisplayFeedTabs.Tabs[0].Sections == nil || len(doctorDisplayFeedTabs.Tabs[0].Sections) == 0 {
+		t.Fatal("Expected there to be sections but there are non under the first tab")
+	}
+
+	if len(doctorDisplayFeedTabs.Tabs[0].Sections) != 2 {
+		t.Fatal("There should be 2 sections in this tab")
+	}
+
+	if doctorDisplayFeedTabs.Tabs[0].Sections[0].Items[0].Button == nil || doctorDisplayFeedTabs.Tabs[0].Sections[0].Items[0].Button.ButtonText != "Begin" {
+		t.Fatal("Expected the first item to be continuing a visit")
+	}
+
+	if doctorDisplayFeedTabs.Tabs[0].Sections[1].Items == nil || len(doctorDisplayFeedTabs.Tabs[0].Sections[1].Items) != 5 {
+		t.Fatal("There should be 6 items in the second section of the first tab")
+	}
+}
+
+func doBasicCheckOfDoctorQueue(doctorDisplayFeedTabs *apiservice.DisplayFeedTabs, t *testing.T) {
+	// there should be no sections, but just two empty tabs
+	if doctorDisplayFeedTabs.Tabs == nil {
+		t.Fatal("Expected there to be 2 sections instead got none")
+	}
+
+	if len(doctorDisplayFeedTabs.Tabs) != 2 {
+		t.Fatalf("Expected there to be 2 sections instead got %d", len(doctorDisplayFeedTabs.Tabs))
+	}
+}
+
 func TestDoctorFeed(t *testing.T) {
 	if err := CheckIfRunningLocally(t); err == CannotRunTestLocally {
 		return
@@ -28,14 +176,7 @@ func TestDoctorFeed(t *testing.T) {
 	}
 
 	doctorDisplayFeedTabs := getDoctorQueue(testData, doctor.AccountId, t)
-	// there should be no sections, but just two empty tabs
-	if doctorDisplayFeedTabs.Tabs == nil {
-		t.Fatal("Expected there to be 2 sections instead got none")
-	}
-
-	if len(doctorDisplayFeedTabs.Tabs) != 2 {
-		t.Fatalf("Expected there to be 2 sections instead got %d", len(doctorDisplayFeedTabs.Tabs))
-	}
+	doBasicCheckOfDoctorQueue(doctorDisplayFeedTabs, t)
 
 	for _, tab := range doctorDisplayFeedTabs.Tabs {
 		if tab.Sections != nil && len(tab.Sections) != 0 {
