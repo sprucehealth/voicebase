@@ -102,6 +102,7 @@ type DoctorAPI interface {
 	AddOrUpdateAdvicePointForDoctor(advicePoint *common.DoctorInstructionItem, doctorId int64) error
 	MarkAdvicePointToBeDeleted(advicePoint *common.DoctorInstructionItem, doctorId int64) error
 	AssignPatientVisitToDoctor(DoctorId, PatientVisitId int64) error
+	MarkPatientVisitAsOngoingInDoctorQueue(DoctorId, PatientVisitId int64) error
 	UpdateStateForPatientVisitInDoctorQueue(DoctorId, PatientVisitId int64, currentState, updatedState string) error
 	GetPendingItemsInDoctorQueue(DoctorId int64) (doctorQueue []*DoctorQueueItem, err error)
 	GetCompletedItemsInDoctorQueue(DoctorId int64) (doctorQueue []*DoctorQueueItem, err error)

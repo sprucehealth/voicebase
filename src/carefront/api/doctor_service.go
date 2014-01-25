@@ -183,6 +183,11 @@ func (d *DataService) AssignPatientVisitToDoctor(DoctorId, PatientVisitId int64)
 	return err
 }
 
+func (d *DataService) MarkPatientVisitAsOngoingInDoctorQueue(DoctorId, PatientVisitId int64) error {
+	_, err := d.DB.Exec(`update doctor_queue set status='ONGOING' where event_type='PATIENT_VISIT' and item_id=? and doctor_id=?`, PatientVisitId, DoctorId)
+	return err
+}
+
 func (d *DataService) UpdateStateForPatientVisitInDoctorQueue(DoctorId, PatientVisitId int64, currentState, updatedState string) error {
 	tx, err := d.DB.Begin()
 	if err != nil {

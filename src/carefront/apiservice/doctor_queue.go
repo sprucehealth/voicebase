@@ -50,6 +50,7 @@ func (d *DoctorQueueHandler) convertDoctorQueueIntoDisplayQueue(pendingItems, co
 		// put the first item in the queue into the first section of the display feed
 		upcomingVisitSection := &DisplayFeedSection{}
 		upcomingVisitSection.Title = "Next Visit"
+
 		pendingItems[0].PositionInQueue = 0
 		item, shadowedErr := converQueueItemToDisplayFeedItem(d.DataApi, pendingItems[0])
 		if shadowedErr != nil {
