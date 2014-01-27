@@ -87,6 +87,54 @@ func (d *DoctorAdviceHandler) updateAdvicePoints(w http.ResponseWriter, r *http.
 		return
 	}
 
+	// first, ensure that all selected advice points are actually in the global list on the client side
+	for _, selectedAdvicePoint := range requestData.SelectedAdvicePoints {
+		advicePointFound := false
+		for _, advicePoint := range requestData.AllAdvicePoints {
+			if advicePoint.Id == 0 {
+				if advicePoint.Text == selectedAdvicePoint.Text {
+					advicePointFound = true
+					break
+				}
+			} else if advicePoint.Id == selectedAdvicePoint.Id {
+				advicePointFound = true
+				break
+			}
+		}
+		if !advicePointFound {
+			WriteDeveloperError(w, http.StatusBadRequest, "There is an advice point in the selected list that is not in the global list")
+			return
+		}
+	}
+
+	currentActiveAdvicePoints, err := d.DataApi.GetAdvicePointsForDoctor(doctorId)
+	if err != nil {
+		WriteDeveloperError(w, http.StatusInternalServerError, "Unable to get active advice points for the doctor")
+		return
+	}
+
+	advicePointsToDelete := make([]*common.DoctorInstructionItem, 0)
+	for _, currentAdvicePoint := range currentActiveAdvicePoints {
+		// now, search for whether this particular item (based on the id) is present on the list coming from the client
+		advicePointFound := false
+		for _, advicePointFromClient := range requestData.AllAdvicePoints {
+			if currentAdvicePoint.Id == advicePointFromClient.Id {
+				advicePointFound = true
+				break
+			}
+		}
+		if !advicePointFound {
+			advicePointsToDelete = append(advicePointsToDelete, currentAdvicePoint)
+		}
+	}
+
+	// mark all advice points that are not present in the list coming from the client to be deleted
+	err = d.DataApi.MarkAdvicePointsToBeDeleted(advicePointsToDelete, doctorId)
+	if err != nil {
+		WriteDeveloperError(w, http.StatusInternalServerError, "Unable to delete advice points: "+err.Error())
+		return
+	}
+
 	// Go through advice points to add, update and delete advice points before creating the advice points for this patient visit
 	// for the user
 	newOrUpdatedPointToIdMapping := make(map[string]int64)
@@ -114,12 +162,14 @@ func (d *DoctorAdviceHandler) updateAdvicePoints(w http.ResponseWriter, r *http.
 		advicePoint.State = ""
 	}
 
-	// go through regimen steps within the regimen sections to assign ids to the new steps that dont have them
+	// go through advice points to assign ids to the new points that dont have them
 	for _, advicePoint := range requestData.SelectedAdvicePoints {
 		updatedOrNewId := newOrUpdatedPointToIdMapping[advicePoint.Text]
 		if updatedOrNewId != 0 {
 			advicePoint.Id = updatedOrNewId
 		}
+		// empty out the state information given that it is taken care of
+		advicePoint.State = ""
 	}
 
 	err = d.DataApi.CreateAdviceForPatientVisit(requestData.SelectedAdvicePoints, requestData.PatientVisitId)

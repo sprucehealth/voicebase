@@ -92,6 +92,55 @@ func (d *DoctorRegimenHandler) updateRegimenSteps(w http.ResponseWriter, r *http
 		return
 	}
 
+	// first, ensure that all regimen steps in the regimen sections actually exist in the client global list
+	for _, regimenSection := range requestData.RegimenSections {
+		for _, regimenStep := range regimenSection.RegimenSteps {
+			regimenStepFound := false
+			for _, globalRegimenStep := range requestData.AllRegimenSteps {
+				if globalRegimenStep.Id == 0 {
+					if globalRegimenStep.Text == regimenStep.Text {
+						regimenStepFound = true
+						break
+					}
+				} else if globalRegimenStep.Id == regimenStep.Id {
+					regimenStepFound = true
+					break
+				}
+			}
+			if !regimenStepFound {
+				WriteDeveloperError(w, http.StatusBadRequest, "Regimen step in the section for the patient visit not found in the global list of all regimen steps")
+				return
+			}
+		}
+	}
+
+	// identify any currently existing regimen steps that need to be deleted
+	regimenStepsToDelete := make([]*common.DoctorInstructionItem, 0)
+	currentActiveRegimenSteps, err := d.DataApi.GetRegimenStepsForDoctor(doctorId)
+	if err != nil {
+		WriteDeveloperError(w, http.StatusInternalServerError, "Unable to get regimen steps for doctor: "+err.Error())
+		return
+	}
+
+	for _, currentRegimenStep := range currentActiveRegimenSteps {
+		regimenStepFound := false
+		for _, regimenStep := range requestData.AllRegimenSteps {
+			if regimenStep.Id == currentRegimenStep.Id {
+				regimenStepFound = true
+				break
+			}
+		}
+		if !regimenStepFound {
+			regimenStepsToDelete = append(regimenStepsToDelete, currentRegimenStep)
+		}
+	}
+
+	err = d.DataApi.MarkRegimenStepsToBeDeleted(regimenStepsToDelete, doctorId)
+	if err != nil {
+		WriteDeveloperError(w, http.StatusInternalServerError, "Unable to delete regimen steps that are no longer in the client list: "+err.Error())
+		return
+	}
+
 	// Go through regimen steps to add, update and delete regimen steps before creating the regimen plan
 	// for the user
 	newOrUpdatedStepToIdMapping := make(map[string]int64)
@@ -136,6 +185,8 @@ func (d *DoctorRegimenHandler) updateRegimenSteps(w http.ResponseWriter, r *http
 			if updatedOrNewId != 0 {
 				regimenStep.Id = updatedOrNewId
 			}
+			// empty out the state now that it has been taken care of
+			regimenStep.State = ""
 		}
 	}
 

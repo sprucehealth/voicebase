@@ -2,14 +2,14 @@ package integration
 
 import (
 	"bytes"
+	"carefront/apiservice"
+	"carefront/common"
 	"encoding/json"
 	"io/ioutil"
+	"net/http"
 	"net/http/httptest"
 	"strconv"
 	"testing"
-
-	"carefront/apiservice"
-	"carefront/common"
 )
 
 func TestRegimenForPatientVisit(t *testing.T) {
@@ -111,11 +111,33 @@ func TestRegimenForPatientVisit(t *testing.T) {
 
 	// lets delete a regimen step
 	regimenPlanRequest = regimenPlanResponse
-	regimenPlanRequest.AllRegimenSteps[1].State = common.STATE_DELETED
+	regimenPlanRequest.AllRegimenSteps = []*common.DoctorInstructionItem{regimenPlanRequest.AllRegimenSteps[0]}
 	regimenPlanResponse = createRegimenPlanForPatientVisit(regimenPlanRequest, testData, doctor, t)
 	validateRegimenRequestAgainstResponse(regimenPlanRequest, regimenPlanResponse, t)
 	if len(regimenPlanResponse.AllRegimenSteps) != 1 {
 		t.Fatal("Should only have 1 regimen step given that we just deleted one from the list")
+	}
+
+	// lets attempt to remove the regimen step, but keep it in the regimen section. This should fail
+	// since the regimen step in the section does not exist in the global steps
+	regimenPlanRequest = regimenPlanResponse
+	regimenPlanRequest.AllRegimenSteps = []*common.DoctorInstructionItem{}
+	doctorRegimenHandler := apiservice.NewDoctorRegimenHandler(testData.DataApi)
+	ts := httptest.NewServer(doctorRegimenHandler)
+	defer ts.Close()
+
+	requestBody, err := json.Marshal(regimenPlanRequest)
+	if err != nil {
+		t.Fatal("Unable to marshal request body for adding regimen steps: " + err.Error())
+	}
+
+	resp, err := authPost(ts.URL, "application/json", bytes.NewBuffer(requestBody), doctor.AccountId)
+	if err != nil {
+		t.Fatal("Unable to make successful request to create regimen for patient visit")
+	}
+
+	if resp.StatusCode != http.StatusBadRequest {
+		t.Fatal("Expected to get a bad request for when the regimen step does not exist in the regimen sections")
 	}
 
 	// get patient to start a visit

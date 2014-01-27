@@ -4,6 +4,7 @@ import (
 	"bytes"
 	"encoding/json"
 	"io/ioutil"
+	"net/http"
 	"net/http/httptest"
 	"strconv"
 	"testing"
@@ -94,10 +95,31 @@ func TestAdvicePointsForPatientVisit(t *testing.T) {
 
 	// lets delete one of the advice points
 	doctorAdviceRequest = doctorAdviceResponse
-	doctorAdviceRequest.AllAdvicePoints[0].State = common.STATE_DELETED
-	doctorAdviceRequest.SelectedAdvicePoints = []*common.DoctorInstructionItem{doctorAdviceRequest.AllAdvicePoints[1]}
+	doctorAdviceRequest.AllAdvicePoints = []*common.DoctorInstructionItem{doctorAdviceRequest.AllAdvicePoints[1]}
+	doctorAdviceRequest.SelectedAdvicePoints = doctorAdviceRequest.AllAdvicePoints
 	doctorAdviceResponse = updateAdvicePointsForPatientVisit(doctorAdviceRequest, testData, doctor, t)
 	validateAdviceRequestAgainstResponse(doctorAdviceRequest, doctorAdviceResponse, t)
+
+	// lets test for a bad request if an advice point that does not exist in the global list is
+	// added to the patient visit
+	doctorAdviceRequest.SelectedAdvicePoints = append(doctorAdviceRequest.SelectedAdvicePoints, advicePoint1)
+	doctorAdviceHandler := apiservice.NewDoctorAdviceHandler(testData.DataApi)
+	ts := httptest.NewServer(doctorAdviceHandler)
+	defer ts.Close()
+
+	requestBody, err := json.Marshal(doctorAdviceRequest)
+	if err != nil {
+		t.Fatal("Unable to marshal request body for adding advice points: " + err.Error())
+	}
+
+	resp, err := authPost(ts.URL, "application/json", bytes.NewBuffer(requestBody), doctor.AccountId)
+	if err != nil {
+		t.Fatal("Unable to make successful request to add advice points to patient visit " + err.Error())
+	}
+
+	if resp.StatusCode != http.StatusBadRequest {
+		t.Fatal("Expected a bad request for a request that contains advice points that don't exist in the global list")
+	}
 
 	// lets start a new patient visit and ensure that we still get back the advice points as added
 	patientSignedupResponse = SignupRandomTestPatient(t, testData.DataApi, testData.AuthApi)

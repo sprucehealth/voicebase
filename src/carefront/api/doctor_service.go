@@ -125,6 +125,23 @@ func (d *DataService) MarkRegimenStepToBeDeleted(regimenStep *common.DoctorInstr
 	return nil
 }
 
+func (d *DataService) MarkRegimenStepsToBeDeleted(regimenSteps []*common.DoctorInstructionItem, doctorId int64) error {
+	tx, err := d.DB.Begin()
+	if err != nil {
+		return err
+	}
+
+	for _, regimenStep := range regimenSteps {
+		_, err = tx.Exec(`update dr_regimen_step set status='DELETED' where id = ? and doctor_id=?`, regimenStep.Id, doctorId)
+		if err != nil {
+			tx.Rollback()
+			return err
+		}
+	}
+	tx.Commit()
+	return nil
+}
+
 func (d *DataService) GetAdvicePointsForDoctor(doctorId int64) (advicePoints []*common.DoctorInstructionItem, err error) {
 	queryStr := `select id, text from advice_point where status='ACTIVE'`
 
@@ -175,6 +192,23 @@ func (d *DataService) MarkAdvicePointToBeDeleted(advicePoint *common.DoctorInstr
 	if err != nil {
 		return err
 	}
+	return nil
+}
+
+func (d *DataService) MarkAdvicePointsToBeDeleted(advicePoints []*common.DoctorInstructionItem, doctorId int64) error {
+	tx, err := d.DB.Begin()
+	if err != nil {
+		return err
+	}
+	for _, advicePoint := range advicePoints {
+		_, err = tx.Exec(`update dr_advice_point set status='DELETED' where id = ? and doctor_id = ?`, advicePoint.Id, doctorId)
+		if err != nil {
+			tx.Rollback()
+			return err
+		}
+	}
+
+	tx.Commit()
 	return nil
 }
 
