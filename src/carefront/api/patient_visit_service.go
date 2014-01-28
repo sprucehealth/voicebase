@@ -658,10 +658,13 @@ func (d *DataService) GetTreatmentPlanForPatientVisit(patientVisitId int64) (*co
 	treatmentPlan.CreationDate = creationDate
 	treatmentPlan.Treatments = make([]*common.Treatment, 0)
 	rows, err := d.DB.Query(`select treatment.id, treatment.drug_internal_name, treatment.dosage_strength, treatment.type,
-			treatment.dispense_value, treatment.dispense_unit_id, treatment.refills, treatment.substitutions_allowed, 
+			treatment.dispense_value, treatment.dispense_unit_id, ltext, treatment.refills, treatment.substitutions_allowed, 
 			treatment.days_supply, treatment.pharmacy_notes, treatment.patient_instructions, treatment.creation_date, 
-			treatment.status from treatment inner join treatment_plan on treatment.treatment_plan_id = treatment_plan.id 
-				where patient_visit_id=? and treatment.status=?`, patientVisitId, status_created)
+			treatment.status from treatment 
+				inner join treatment_plan on treatment.treatment_plan_id = treatment_plan.id 
+				inner join dispense_unit on treatment.dispense_unit_id = dispense_unit.id
+				inner join localized_text on localized_text.app_text_id = dispense_unit.dispense_unit_text_id
+				where patient_visit_id=? and treatment.status=? and localized_text.language_id = ?`, patientVisitId, status_created, EN_LANGUAGE_ID)
 
 	if err != nil {
 		if err == sql.ErrNoRows {
@@ -675,11 +678,11 @@ func (d *DataService) GetTreatmentPlanForPatientVisit(patientVisitId int64) (*co
 
 	for rows.Next() {
 		var treatmentId, dispenseValue, dispenseUnitId, refills, daysSupply int64
-		var drugInternalName, dosageStrength, patientInstructions, treatmentType string
+		var drugInternalName, dosageStrength, patientInstructions, treatmentType, dispenseUnitDescription string
 		var substitutionsAllowed bool
 		var creationDate time.Time
 		var pharmacyNotes sql.NullString
-		rows.Scan(&treatmentId, &drugInternalName, &dosageStrength, &treatmentType, &dispenseValue, &dispenseUnitId, &refills, &substitutionsAllowed, &daysSupply, &pharmacyNotes, &patientInstructions, &creationDate, &status)
+		rows.Scan(&treatmentId, &drugInternalName, &dosageStrength, &treatmentType, &dispenseValue, &dispenseUnitId, &dispenseUnitDescription, &refills, &substitutionsAllowed, &daysSupply, &pharmacyNotes, &patientInstructions, &creationDate, &status)
 
 		treatment := &common.Treatment{}
 		treatment.Id = treatmentId
@@ -689,6 +692,7 @@ func (d *DataService) GetTreatmentPlanForPatientVisit(patientVisitId int64) (*co
 		treatment.TreatmentPlanId = treatmentPlan.Id
 		treatment.DispenseValue = dispenseValue
 		treatment.DispenseUnitId = dispenseUnitId
+		treatment.DispenseUnitDescription = dispenseUnitDescription
 		treatment.NumberRefills = refills
 		treatment.SubstitutionsAllowed = substitutionsAllowed
 		treatment.DaysSupply = daysSupply
