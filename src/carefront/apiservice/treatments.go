@@ -4,6 +4,7 @@ import (
 	"carefront/api"
 	"carefront/common"
 	"encoding/json"
+	"errors"
 	"github.com/gorilla/schema"
 	"net/http"
 	"strconv"
@@ -72,12 +73,14 @@ func (t *TreatmentsHandler) getTreatments(w http.ResponseWriter, r *http.Request
 
 	// for each of the drugs, go ahead and fill in the drug name, route and form
 	for _, treatment := range treatmentPlan.Treatments {
-		drugName, drugForm, drugRoute := breakDrugInternalNameIntoComponents(treatment.DrugInternalName)
-		treatment.DrugName = drugName
-		// only break down name into route and form if the route and form are non-empty strings
-		if drugForm != "" && drugRoute != "" {
-			treatment.DrugForm = drugForm
-			treatment.DrugRoute = drugRoute
+		if treatment.DrugForm == "" {
+			drugName, drugForm, drugRoute := breakDrugInternalNameIntoComponents(treatment.DrugInternalName)
+			treatment.DrugName = drugName
+			// only break down name into route and form if the route and form are non-empty strings
+			if drugForm != "" && drugRoute != "" {
+				treatment.DrugForm = drugForm
+				treatment.DrugRoute = drugRoute
+			}
 		}
 	}
 
@@ -118,44 +121,19 @@ func (t *TreatmentsHandler) addTreatment(w http.ResponseWriter, r *http.Request)
 
 	//  validate all treatments
 	for _, treatment := range treatmentsRequestBody.Treatments {
-		if treatment.DrugInternalName == "" {
-			WriteDeveloperError(w, http.StatusBadRequest, "Drug Internal name for treatment cannot be empty")
+		err = validateTreatment(treatment)
+		if err != nil {
+			WriteDeveloperError(w, http.StatusBadRequest, err.Error())
 			return
 		}
 
-		if treatment.DosageStrength == "" {
-			WriteDeveloperError(w, http.StatusBadRequest, "Dosage Strength for treatment cannot be empty")
-			return
-		}
-
-		if treatment.DispenseValue == 0 {
-			WriteDeveloperError(w, http.StatusBadRequest, "DispenseValue for treatment cannot be 0")
-			return
-		}
-
-		if treatment.DispenseUnitId == 0 {
-			WriteDeveloperError(w, http.StatusBadRequest, "DispenseUnitId for treatment cannot be 0")
-			return
-		}
-
-		if treatment.NumberRefills == 0 {
-			WriteDeveloperError(w, http.StatusBadRequest, "Number of refills for treatment cannot be 0")
-			return
-		}
-
-		if treatment.DaysSupply == 0 {
-			WriteDeveloperError(w, http.StatusBadRequest, "Days of Supply for treatment cannot be 0")
-			return
-		}
-
-		if treatment.PatientInstructions == "" {
-			WriteUserError(w, http.StatusBadRequest, "Patient Instructions for treatment cannot be empty")
-			return
-		}
-
-		if treatment.DrugDBIds == nil || len(treatment.DrugDBIds) == 0 {
-			WriteDeveloperError(w, http.StatusBadRequest, "Drug DB Ids for treatment cannot be empty")
-			return
+		// break up the name into its components so that it can be saved into the database as its components
+		drugName, drugForm, drugRoute := breakDrugInternalNameIntoComponents(treatment.DrugInternalName)
+		treatment.DrugName = drugName
+		// only break down name into route and form if the route and form are non-empty strings
+		if drugForm != "" && drugRoute != "" {
+			treatment.DrugForm = drugForm
+			treatment.DrugRoute = drugRoute
 		}
 	}
 
@@ -172,4 +150,39 @@ func (t *TreatmentsHandler) addTreatment(w http.ResponseWriter, r *http.Request)
 	}
 
 	WriteJSONToHTTPResponseWriter(w, http.StatusOK, &AddTreatmentsResponse{TreatmentIds: treatmentIds})
+}
+
+func validateTreatment(treatment *common.Treatment) error {
+	if treatment.DrugInternalName == "" {
+		return errors.New("Drug Internal name for treatment cannot be empty")
+	}
+
+	if treatment.DosageStrength == "" {
+		return errors.New("Dosage Strength for treatment cannot be empty")
+	}
+
+	if treatment.DispenseValue == 0 {
+		return errors.New("DispenseValue for treatment cannot be 0")
+	}
+
+	if treatment.DispenseUnitId == 0 {
+		return errors.New("DispenseUnit	 Id for treatment cannot be 0")
+	}
+
+	if treatment.NumberRefills == 0 {
+		return errors.New("Number of refills for treatment cannot be 0")
+	}
+
+	if treatment.DaysSupply == 0 {
+		return errors.New("Days of Supply for treatment cannot be 0")
+	}
+
+	if treatment.PatientInstructions == "" {
+		return errors.New("Patient Instructions for treatment cannot be empty")
+	}
+
+	if treatment.DrugDBIds == nil || len(treatment.DrugDBIds) == 0 {
+		return errors.New("Drug DB Ids for treatment cannot be empty")
+	}
+	return nil
 }

@@ -3,6 +3,7 @@ package api
 import (
 	"carefront/common"
 	"database/sql"
+	"fmt"
 	"github.com/go-sql-driver/mysql"
 	"log"
 	"strconv"
@@ -575,64 +576,111 @@ func (d *DataService) AddTreatmentsForPatientVisit(treatments []*common.Treatmen
 	}
 
 	for _, treatment := range treatments {
-
-		substitutionsAllowedBit := 0
-		if treatment.SubstitutionsAllowed == true {
-			substitutionsAllowedBit = 1
-		}
-
-		treatmentType := treatment_rx
-		if treatment.OTC == true {
-			treatmentType = treatment_otc
-		}
-
-		// add treatment for patient
-		var treatmentId int64
-		if treatment.PharmacyNotes != "" {
-			insertTreatmentStr := `insert into treatment (treatment_plan_id, drug_internal_name, dosage_strength, type, dispense_value, dispense_unit_id, refills, substitutions_allowed, days_supply, patient_instructions, pharmacy_notes, status) 
-									values (?,?,?,?,?,?,?,?,?,?,?,?)`
-			res, err := tx.Exec(insertTreatmentStr, treatmentPlanId, treatment.DrugInternalName, treatment.DosageStrength, treatmentType, treatment.DispenseValue, treatment.DispenseUnitId, treatment.NumberRefills, substitutionsAllowedBit, treatment.DaysSupply, treatment.PatientInstructions, treatment.PharmacyNotes, status_created)
-			if err != nil {
-				tx.Rollback()
-				return err
-			}
-
-			treatmentId, err = res.LastInsertId()
-			if err != nil {
-				tx.Rollback()
-				return err
-			}
-		} else {
-			insertTreatmentStr := `insert into treatment (treatment_plan_id, drug_internal_name, dosage_strength, type, dispense_value, dispense_unit_id, refills, substitutions_allowed, days_supply, patient_instructions, status) 
-									values (?,?,?,?,?,?,?,?,?,?,?)`
-			res, err := tx.Exec(insertTreatmentStr, treatmentPlanId, treatment.DrugInternalName, treatment.DosageStrength, treatmentType, treatment.DispenseValue, treatment.DispenseUnitId, treatment.NumberRefills, substitutionsAllowedBit, treatment.DaysSupply, treatment.PatientInstructions, status_created)
-			if err != nil {
-				tx.Rollback()
-				return err
-			}
-
-			treatmentId, err = res.LastInsertId()
-			if err != nil {
-				tx.Rollback()
-				return err
-			}
-		}
-
-		// update the treatment object with the information
-		treatment.Id = treatmentId
 		treatment.TreatmentPlanId = treatmentPlanId
-
-		// add drug db ids to the table
-		for drugDbTag, drugDbId := range treatment.DrugDBIds {
-			_, err = tx.Exec(`insert into drug_db_id (drug_db_id_tag, drug_db_id, treatment_id) values (?, ?, ?)`, drugDbTag, drugDbId, treatment.Id)
-			if err != nil {
-				tx.Rollback()
-				return err
-			}
+		err = d.addTreatment(treatment, tx)
+		if err != nil {
+			tx.Rollback()
+			return err
 		}
+
 	}
 
 	tx.Commit()
+	return nil
+}
+
+func (d *DataService) addTreatment(treatment *common.Treatment, tx *sql.Tx) error {
+	substitutionsAllowedBit := 0
+	if treatment.SubstitutionsAllowed == true {
+		substitutionsAllowedBit = 1
+	}
+
+	treatmentType := treatment_rx
+	if treatment.OTC == true {
+		treatmentType = treatment_otc
+	}
+
+	var drugNameId, drugRouteId, drugFormId int64
+	var err error
+
+	drugNameIdStr := "NULL"
+	if treatment.DrugName != "" {
+		drugNameId, err = d.getOrInsertNameInTable(tx, drug_name_table, treatment.DrugName)
+		if err != nil {
+			return err
+		}
+		if drugNameId != 0 {
+			drugNameIdStr = strconv.FormatInt(drugNameId, 10)
+		}
+
+	}
+
+	drugFormIdStr := "NULL"
+	if treatment.DrugForm != "" {
+		drugFormId, err = d.getOrInsertNameInTable(tx, drug_form_table, treatment.DrugForm)
+		if err != nil {
+			return err
+		}
+
+		if drugFormId != 0 {
+			drugFormIdStr = strconv.FormatInt(drugFormId, 10)
+		}
+	}
+
+	drugRouteIdStr := "NULL"
+	if treatment.DrugRoute != "" {
+		drugRouteId, err = d.getOrInsertNameInTable(tx, drug_route_table, treatment.DrugRoute)
+		if err != nil {
+			return err
+		}
+
+		if drugRouteId != 0 {
+			drugRouteIdStr = strconv.FormatInt(drugRouteId, 10)
+		}
+	}
+	// add treatment for patient
+	var treatmentId int64
+	if treatment.TreatmentPlanId != 0 {
+		insertTreatmentStr := fmt.Sprintf(`insert into treatment (treatment_plan_id, drug_internal_name, drug_name_id, drug_route_id, drug_form_id, dosage_strength, type, dispense_value, dispense_unit_id, refills, substitutions_allowed, days_supply, patient_instructions, pharmacy_notes, status) 
+									values (?,?,%s,%s,%s,?,?,?,?,?,?,?,?,?,?)`, drugNameIdStr, drugRouteIdStr, drugFormIdStr)
+		res, err := tx.Exec(insertTreatmentStr, treatment.TreatmentPlanId, treatment.DrugInternalName, treatment.DosageStrength, treatmentType, treatment.DispenseValue, treatment.DispenseUnitId, treatment.NumberRefills, substitutionsAllowedBit, treatment.DaysSupply, treatment.PatientInstructions, treatment.PharmacyNotes, status_created)
+		if err != nil {
+			tx.Rollback()
+			return err
+		}
+
+		treatmentId, err = res.LastInsertId()
+		if err != nil {
+			tx.Rollback()
+			return err
+		}
+	} else {
+		insertTreatmentStr := fmt.Sprintf(`insert into treatment (drug_internal_name,drug_name_id, drug_route_id, drug_form_id, dosage_strength, type, dispense_value, dispense_unit_id, refills, substitutions_allowed, days_supply, patient_instructions, pharmacy_notes, status) 
+									values (?,%s,%s,%s,?,?,?,?,?,?,?,?,?,?)`, drugNameIdStr, drugRouteIdStr, drugFormIdStr)
+		res, err := tx.Exec(insertTreatmentStr, treatment.DrugInternalName, treatment.DosageStrength, treatmentType, treatment.DispenseValue, treatment.DispenseUnitId, treatment.NumberRefills, substitutionsAllowedBit, treatment.DaysSupply, treatment.PatientInstructions, treatment.PharmacyNotes, status_created)
+		if err != nil {
+			tx.Rollback()
+			return err
+		}
+
+		treatmentId, err = res.LastInsertId()
+		if err != nil {
+			tx.Rollback()
+			return err
+		}
+	}
+
+	// update the treatment object with the information
+	treatment.Id = treatmentId
+
+	// add drug db ids to the table
+	for drugDbTag, drugDbId := range treatment.DrugDBIds {
+		_, err := tx.Exec(`insert into drug_db_id (drug_db_id_tag, drug_db_id, treatment_id) values (?, ?, ?)`, drugDbTag, drugDbId, treatment.Id)
+		if err != nil {
+			tx.Rollback()
+			return err
+		}
+	}
 	return nil
 }
 
@@ -660,10 +708,13 @@ func (d *DataService) GetTreatmentPlanForPatientVisit(patientVisitId int64) (*co
 	rows, err := d.DB.Query(`select treatment.id, treatment.drug_internal_name, treatment.dosage_strength, treatment.type,
 			treatment.dispense_value, treatment.dispense_unit_id, ltext, treatment.refills, treatment.substitutions_allowed, 
 			treatment.days_supply, treatment.pharmacy_notes, treatment.patient_instructions, treatment.creation_date, 
-			treatment.status from treatment 
+			treatment.status, drug_name.name, drug_route.name, drug_form.name from treatment 
 				inner join treatment_plan on treatment.treatment_plan_id = treatment_plan.id 
 				inner join dispense_unit on treatment.dispense_unit_id = dispense_unit.id
 				inner join localized_text on localized_text.app_text_id = dispense_unit.dispense_unit_text_id
+				left outer join drug_name on drug_name_id = drug_name.id
+				left outer join drug_route on drug_route_id = drug_route.id
+				left outer join drug_form on drug_form_id = drug_form.id
 				where patient_visit_id=? and treatment.status=? and localized_text.language_id = ?`, patientVisitId, status_created, EN_LANGUAGE_ID)
 
 	if err != nil {
@@ -677,78 +728,92 @@ func (d *DataService) GetTreatmentPlanForPatientVisit(patientVisitId int64) (*co
 	defer rows.Close()
 
 	for rows.Next() {
-		var treatmentId, dispenseValue, dispenseUnitId, refills, daysSupply int64
-		var drugInternalName, dosageStrength, patientInstructions, treatmentType, dispenseUnitDescription string
-		var substitutionsAllowed bool
-		var creationDate time.Time
-		var pharmacyNotes sql.NullString
-		rows.Scan(&treatmentId, &drugInternalName, &dosageStrength, &treatmentType, &dispenseValue, &dispenseUnitId, &dispenseUnitDescription, &refills, &substitutionsAllowed, &daysSupply, &pharmacyNotes, &patientInstructions, &creationDate, &status)
-
-		treatment := &common.Treatment{}
-		treatment.Id = treatmentId
-		treatment.PatientVisitId = patientVisitId
-		treatment.DrugInternalName = drugInternalName
-		treatment.DosageStrength = dosageStrength
+		treatment, err := d.getTreatmentFromCurrentRow(rows)
+		if err != nil {
+			return nil, err
+		}
 		treatment.TreatmentPlanId = treatmentPlan.Id
-		treatment.DispenseValue = dispenseValue
-		treatment.DispenseUnitId = dispenseUnitId
-		treatment.DispenseUnitDescription = dispenseUnitDescription
-		treatment.NumberRefills = refills
-		treatment.SubstitutionsAllowed = substitutionsAllowed
-		treatment.DaysSupply = daysSupply
-
-		if treatmentType == treatment_otc {
-			treatment.OTC = true
-		}
-
-		if pharmacyNotes.Valid {
-			treatment.PharmacyNotes = pharmacyNotes.String
-		}
-		treatment.PatientInstructions = patientInstructions
-		treatment.CreationDate = creationDate
-		treatment.Status = status
+		treatment.PatientVisitId = patientVisitId
 		treatmentPlan.Treatments = append(treatmentPlan.Treatments, treatment)
-
-		// for each of the drugs, populate the drug db ids
-		drugDbIds := make(map[string]string)
-		drugRows, err := d.DB.Query(`select drug_db_id_tag, drug_db_id from drug_db_id where treatment_id = ? `, treatmentId)
-		if err != nil {
-			return nil, err
-		}
-		defer drugRows.Close()
-
-		for drugRows.Next() {
-			var dbIdTag string
-			var dbId int64
-			drugRows.Scan(&dbIdTag, &dbId)
-			drugDbIds[dbIdTag] = strconv.FormatInt(dbId, 10)
-		}
-
-		treatment.DrugDBIds = drugDbIds
-
-		// get the supplemental instructions for this treatment
-		instructionsRows, err := d.DB.Query(`select dr_drug_supplemental_instruction.id, dr_drug_supplemental_instruction.text from treatment_instructions 
-												inner join dr_drug_supplemental_instruction on dr_drug_instruction_id = dr_drug_supplemental_instruction.id 
-													where treatment_instructions.status=? and treatment_id=?`, status_active, treatmentId)
-		if err != nil {
-			return nil, err
-		}
-		defer instructionsRows.Close()
-
-		drugInstructions := make([]*common.DoctorInstructionItem, 0)
-		for instructionsRows.Next() {
-			var instructionId int64
-			var text string
-			instructionsRows.Scan(&instructionId, &text)
-			drugInstruction := &common.DoctorInstructionItem{
-				Id:       instructionId,
-				Text:     text,
-				Selected: true,
-			}
-			drugInstructions = append(drugInstructions, drugInstruction)
-		}
-		treatment.SupplementalInstructions = drugInstructions
 	}
 
 	return &treatmentPlan, nil
+}
+
+func (d *DataService) getTreatmentFromCurrentRow(rows *sql.Rows) (*common.Treatment, error) {
+	var treatmentId, dispenseValue, dispenseUnitId, refills, daysSupply int64
+	var drugInternalName, dosageStrength, patientInstructions, treatmentType, dispenseUnitDescription, status string
+	var substitutionsAllowed bool
+	var creationDate time.Time
+	var pharmacyNotes, drugName, drugForm, drugRoute sql.NullString
+	err := rows.Scan(&treatmentId, &drugInternalName, &dosageStrength, &treatmentType, &dispenseValue, &dispenseUnitId, &dispenseUnitDescription, &refills, &substitutionsAllowed, &daysSupply, &pharmacyNotes, &patientInstructions, &creationDate, &status, &drugName, &drugRoute, &drugForm)
+	if err != nil {
+		return nil, err
+	}
+
+	treatment := &common.Treatment{}
+	treatment.Id = treatmentId
+	treatment.DrugInternalName = drugInternalName
+	treatment.DosageStrength = dosageStrength
+	treatment.DispenseValue = dispenseValue
+	treatment.DispenseUnitId = dispenseUnitId
+	treatment.DispenseUnitDescription = dispenseUnitDescription
+	treatment.NumberRefills = refills
+	treatment.SubstitutionsAllowed = substitutionsAllowed
+	treatment.DaysSupply = daysSupply
+	treatment.DrugName = drugName.String
+	treatment.DrugForm = drugForm.String
+	treatment.DrugRoute = drugRoute.String
+
+	if treatmentType == treatment_otc {
+		treatment.OTC = true
+	}
+
+	if pharmacyNotes.Valid {
+		treatment.PharmacyNotes = pharmacyNotes.String
+	}
+	treatment.PatientInstructions = patientInstructions
+	treatment.CreationDate = creationDate
+	treatment.Status = status
+
+	// for each of the drugs, populate the drug db ids
+	drugDbIds := make(map[string]string)
+	drugRows, err := d.DB.Query(`select drug_db_id_tag, drug_db_id from drug_db_id where treatment_id = ? `, treatmentId)
+	if err != nil {
+		return nil, err
+	}
+	defer drugRows.Close()
+
+	for drugRows.Next() {
+		var dbIdTag string
+		var dbId int64
+		drugRows.Scan(&dbIdTag, &dbId)
+		drugDbIds[dbIdTag] = strconv.FormatInt(dbId, 10)
+	}
+
+	treatment.DrugDBIds = drugDbIds
+
+	// get the supplemental instructions for this treatment
+	instructionsRows, err := d.DB.Query(`select dr_drug_supplemental_instruction.id, dr_drug_supplemental_instruction.text from treatment_instructions 
+												inner join dr_drug_supplemental_instruction on dr_drug_instruction_id = dr_drug_supplemental_instruction.id 
+													where treatment_instructions.status=? and treatment_id=?`, status_active, treatmentId)
+	if err != nil {
+		return nil, err
+	}
+	defer instructionsRows.Close()
+
+	drugInstructions := make([]*common.DoctorInstructionItem, 0)
+	for instructionsRows.Next() {
+		var instructionId int64
+		var text string
+		instructionsRows.Scan(&instructionId, &text)
+		drugInstruction := &common.DoctorInstructionItem{
+			Id:       instructionId,
+			Text:     text,
+			Selected: true,
+		}
+		drugInstructions = append(drugInstructions, drugInstruction)
+	}
+	treatment.SupplementalInstructions = drugInstructions
+	return treatment, nil
 }

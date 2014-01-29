@@ -7,6 +7,7 @@ import (
 	"github.com/go-sql-driver/mysql"
 	"log"
 	"strconv"
+	"strings"
 	"time"
 )
 
@@ -543,6 +544,87 @@ func (d *DataService) AddDrugInstructionsToTreatment(drugName, drugForm, drugRou
 	// commit transaction
 	tx.Commit()
 	return nil
+}
+
+func (d *DataService) AddFavoriteTreatment(favoriteTreatment *common.DoctorFavoriteTreatment, doctorId int64) error {
+	tx, err := d.DB.Begin()
+	if err != nil {
+		return err
+	}
+
+	err = d.addTreatment(favoriteTreatment.FavoritedTreatment, tx)
+	if err != nil {
+		tx.Rollback()
+		return err
+	}
+
+	_, err = tx.Exec(`insert into dr_favorite_treatment (doctor_id, treatment_id, name, status) values (?,?,?,?)`, doctorId, favoriteTreatment.FavoritedTreatment.Id, favoriteTreatment.Name, status_active)
+	if err != nil {
+		tx.Rollback()
+		return err
+	}
+
+	tx.Commit()
+	return nil
+}
+
+func (d *DataService) GetFavoriteTreatments(doctorId int64) ([]*common.DoctorFavoriteTreatment, error) {
+	rows, err := d.DB.Query(`select id, name, treatment_id from dr_favorite_treatment where status='ACTIVE' and doctor_id = ?`, doctorId)
+	if err != nil {
+		return nil, err
+	}
+	defer rows.Close()
+
+	treatmentIds := make([]int64, 0)
+	favoriteTreatmentMapping := make(map[int64]*common.DoctorFavoriteTreatment)
+	for rows.Next() {
+		var name string
+		var id, treatmentId int64
+		err = rows.Scan(&id, &name, &treatmentId)
+		if err != nil {
+			return nil, err
+		}
+		favoriteTreatment := &common.DoctorFavoriteTreatment{}
+		favoriteTreatment.Id = id
+		favoriteTreatment.Name = name
+		treatmentIds = append(treatmentIds, treatmentId)
+		favoriteTreatmentMapping[treatmentId] = favoriteTreatment
+	}
+
+	treatmentIdsString := make([]string, 0)
+	for _, treatmentId := range treatmentIds {
+		treatmentIdsString = append(treatmentIdsString, strconv.FormatInt(treatmentId, 10))
+	}
+
+	// get the treatments from the database
+	rows, err = d.DB.Query(fmt.Sprintf(`select treatment.id, treatment.drug_internal_name, treatment.dosage_strength, treatment.type,
+			treatment.dispense_value, treatment.dispense_unit_id, ltext, treatment.refills, treatment.substitutions_allowed, 
+			treatment.days_supply, treatment.pharmacy_notes, treatment.patient_instructions, treatment.creation_date, 
+			treatment.status, drug_name.name, drug_route.name, drug_form.name from treatment 
+				inner join dispense_unit on treatment.dispense_unit_id = dispense_unit.id
+				inner join localized_text on localized_text.app_text_id = dispense_unit.dispense_unit_text_id
+				left outer join drug_name on drug_name_id = drug_name.id
+				left outer join drug_route on drug_route_id = drug_route.id
+				left outer join drug_form on drug_form_id = drug_form.id
+				where treatment.id in (%s) and localized_text.language_id = ?`, strings.Join(treatmentIdsString, ",")), EN_LANGUAGE_ID)
+
+	if err != nil {
+		return nil, err
+	}
+	defer rows.Close()
+
+	favoritedTreatments := make([]*common.DoctorFavoriteTreatment, 0)
+	for rows.Next() {
+		treatment, err := d.getTreatmentFromCurrentRow(rows)
+		if err != nil {
+			return nil, err
+		}
+
+		favoriteTreatment := favoriteTreatmentMapping[treatment.Id]
+		favoriteTreatment.FavoritedTreatment = treatment
+		favoritedTreatments = append(favoritedTreatments, favoriteTreatment)
+	}
+	return favoritedTreatments, nil
 }
 
 func (d *DataService) getIdForNameFromTable(tableName, drugComponentName string) (nullId sql.NullInt64, err error) {

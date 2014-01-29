@@ -224,6 +224,7 @@ func main() {
 	doctorTreatmentSuggestionHandler := &apiservice.AutocompleteHandler{ERxApi: erx.NewDoseSpotService(conf.DoseSpotClinicId, conf.DoseSpotClinicKey, conf.DoseSpotUserId), Role: api.DOCTOR_ROLE}
 	doctorInstructionsHandler := apiservice.NewDoctorDrugInstructionsHandler(dataApi)
 	doctorFollowupHandler := apiservice.NewPatientVisitFollowUpHandler(dataApi)
+	doctorFavoriteTreatmentsHandler := &apiservice.DoctorFavoriteTreatmentsHandler{DataApi: dataApi}
 	medicationStrengthSearchHandler := &apiservice.MedicationStrengthSearchHandler{ERxApi: erx.NewDoseSpotService(conf.DoseSpotClinicId, conf.DoseSpotClinicKey, conf.DoseSpotUserId)}
 	newTreatmentHandler := &apiservice.NewTreatmentHandler{ERxApi: erx.NewDoseSpotService(conf.DoseSpotClinicId, conf.DoseSpotClinicKey, conf.DoseSpotUserId)}
 	medicationDispenseUnitHandler := &apiservice.MedicationDispenseUnitsHandler{DataApi: dataApi}
@@ -300,6 +301,7 @@ func main() {
 	mux.Handle("/v1/doctor/signup", signupDoctorHandler)
 	mux.Handle("/v1/doctor/authenticate", authenticateDoctorHandler)
 	mux.Handle("/v1/doctor/queue", doctorQueueHandler)
+	mux.Handle("/v1/doctor/treatment/favorite", doctorFavoriteTreatmentsHandler)
 
 	mux.Handle("/v1/doctor/visit/review", doctorPatientVisitReviewHandler)
 	mux.Handle("/v1/doctor/visit/diagnosis", diagnosePatientHandler)

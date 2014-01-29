@@ -112,6 +112,13 @@ type Treatment struct {
 	SupplementalInstructions []*DoctorInstructionItem `json:"supplemental_instructions,omitempty"`
 }
 
+type DoctorFavoriteTreatment struct {
+	Id                 int64      `json:"id,string"`
+	Name               string     `json:"name"`
+	FavoritedTreatment *Treatment `json:"treatment"`
+	Status             string     `json:"-"`
+}
+
 const (
 	STATE_ADDED    = "added"
 	STATE_MODIFIED = "modified"

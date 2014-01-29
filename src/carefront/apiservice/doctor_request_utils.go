@@ -83,6 +83,11 @@ func breakDrugInternalNameIntoComponents(drugInternalName string) (drugName, dru
 
 	indexOfClosingParanthesis := strings.Index(drugInternalName, ")")
 	indexOfHyphen := indexOfParanthesis + strings.Index(drugInternalName[indexOfParanthesis:], "-")
+	if indexOfHyphen == -1 || indexOfHyphen < indexOfParanthesis || indexOfHyphen > indexOfClosingParanthesis {
+		drugName = drugInternalName
+		return
+	}
+
 	drugName = strings.TrimSpace(drugInternalName[:indexOfParanthesis])
 	drugRoute = strings.TrimSpace(drugInternalName[indexOfParanthesis+1 : indexOfHyphen])
 	drugForm = strings.TrimSpace(drugInternalName[indexOfHyphen+1 : indexOfClosingParanthesis])
