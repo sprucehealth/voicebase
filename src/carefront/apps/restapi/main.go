@@ -329,21 +329,15 @@ func main() {
 				MinVersion:               tls.VersionTLS10,
 				PreferServerCipherSuites: true,
 				CipherSuites: []uint16{
-					// Ciphersuite order is chosen so that ECDHE comes before plain RSA
-					// and RC4 comes before AES (because of the Lucky13 attack).
+					// Do not include RC4 or 3DES
 					tls.TLS_ECDHE_RSA_WITH_AES_128_GCM_SHA256,
 					tls.TLS_ECDHE_ECDSA_WITH_AES_128_GCM_SHA256,
-					// tls.TLS_ECDHE_RSA_WITH_RC4_128_SHA,
-					// tls.TLS_ECDHE_ECDSA_WITH_RC4_128_SHA,
 					tls.TLS_ECDHE_RSA_WITH_AES_128_CBC_SHA,
 					tls.TLS_ECDHE_ECDSA_WITH_AES_128_CBC_SHA,
 					tls.TLS_ECDHE_RSA_WITH_AES_256_CBC_SHA,
 					tls.TLS_ECDHE_ECDSA_WITH_AES_256_CBC_SHA,
-					// tls.TLS_RSA_WITH_RC4_128_SHA,
 					tls.TLS_RSA_WITH_AES_128_CBC_SHA,
 					tls.TLS_RSA_WITH_AES_256_CBC_SHA,
-					// tls.TLS_ECDHE_RSA_WITH_3DES_EDE_CBC_SHA,
-					// tls.TLS_RSA_WITH_3DES_EDE_CBC_SHA,
 				},
 			}
 			if s.TLSConfig.NextProtos == nil {
