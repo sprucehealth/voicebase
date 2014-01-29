@@ -568,6 +568,11 @@ func (d *DataService) AddFavoriteTreatment(favoriteTreatment *common.DoctorFavor
 	return nil
 }
 
+func (d *DataService) DeleteFavoriteTreatment(favoriteTreatment *common.DoctorFavoriteTreatment, doctorId int64) error {
+	_, err := d.DB.Exec(`update dr_favorite_treatment set status='DELETED' where id = ? and doctor_id = ?`, favoriteTreatment.Id, doctorId)
+	return err
+}
+
 func (d *DataService) GetFavoriteTreatments(doctorId int64) ([]*common.DoctorFavoriteTreatment, error) {
 	rows, err := d.DB.Query(`select id, name, treatment_id from dr_favorite_treatment where status='ACTIVE' and doctor_id = ?`, doctorId)
 	if err != nil {
@@ -589,6 +594,11 @@ func (d *DataService) GetFavoriteTreatments(doctorId int64) ([]*common.DoctorFav
 		favoriteTreatment.Name = name
 		treatmentIds = append(treatmentIds, treatmentId)
 		favoriteTreatmentMapping[treatmentId] = favoriteTreatment
+	}
+
+	// there are no favorited items to return
+	if len(treatmentIds) == 0 {
+		return []*common.DoctorFavoriteTreatment{}, nil
 	}
 
 	treatmentIdsString := make([]string, 0)

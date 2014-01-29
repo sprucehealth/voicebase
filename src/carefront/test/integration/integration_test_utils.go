@@ -84,6 +84,17 @@ func authPut(url, bodyType string, body io.Reader, accountId int64) (*http.Respo
 	return http.DefaultClient.Do(req)
 }
 
+func authDelete(url, bodyType string, body io.Reader, accountId int64) (*http.Response, error) {
+	req, err := http.NewRequest("DELETE", url, body)
+	if err != nil {
+		return nil, err
+	}
+	req.Header.Set("Content-Type", bodyType)
+	req.Header.Set("AccountId", strconv.FormatInt(accountId, 10))
+	apiservice.TestingContext.AccountId = accountId
+	return http.DefaultClient.Do(req)
+}
+
 func GetDBConfig(t *testing.T) *TestDBConfig {
 	dbConfig := TestConf{}
 	fileContents, err := ioutil.ReadFile("../../apps/restapi/dev.conf")

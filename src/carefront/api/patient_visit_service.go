@@ -566,13 +566,6 @@ func (d *DataService) AddTreatmentsForPatientVisit(treatments []*common.Treatmen
 			tx.Rollback()
 			return err
 		}
-	} else {
-		// make sure to make inactive all previous treatments within this treatment plan given that new ones are being added
-		_, err := tx.Exec("update treatment set status=? where treatment_plan_id = ?", status_inactive, treatmentPlanId)
-		if err != nil {
-			tx.Rollback()
-			return err
-		}
 	}
 
 	for _, treatment := range treatments {

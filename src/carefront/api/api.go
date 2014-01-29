@@ -115,6 +115,7 @@ type DoctorAPI interface {
 	AddDrugInstructionsToTreatment(drugName, drugForm, drugRoute string, drugInstructions []*common.DoctorInstructionItem, treatmentId int64, doctorId int64) error
 	AddFavoriteTreatment(treatment *common.DoctorFavoriteTreatment, doctorId int64) error
 	GetFavoriteTreatments(doctorId int64) ([]*common.DoctorFavoriteTreatment, error)
+	DeleteFavoriteTreatment(favoriteTreatment *common.DoctorFavoriteTreatment, doctorId int64) error
 }
 
 type IntakeAPI interface {
