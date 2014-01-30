@@ -111,6 +111,11 @@ func (mux *AuthServeMux) ServeHTTP(w http.ResponseWriter, r *http.Request) {
 	ctx.RequestStartTime = time.Now()
 
 	customResponseWriter := &CustomResponseWriter{w, 0, false}
+
+	// Use strict transport security. Not entirely useful for a REST API, but it doesn't hurt.
+	// http://en.wikipedia.org/wiki/HTTP_Strict_Transport_Security
+	customResponseWriter.Header().Set("Strict-Transport-Security", "max-age=31536000")
+
 	defer func() {
 		if err := recover(); err != nil {
 			const size = 4096

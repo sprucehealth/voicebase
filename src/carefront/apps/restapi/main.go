@@ -324,9 +324,24 @@ func main() {
 		WriteTimeout:   30 * time.Second,
 		MaxHeaderBytes: 1 << 20,
 	}
+
 	if conf.TLSCert != "" && conf.TLSKey != "" {
 		go func() {
-			s.TLSConfig = &tls.Config{}
+			s.TLSConfig = &tls.Config{
+				MinVersion:               tls.VersionTLS10,
+				PreferServerCipherSuites: true,
+				CipherSuites: []uint16{
+					// Do not include RC4 or 3DES
+					tls.TLS_ECDHE_RSA_WITH_AES_128_GCM_SHA256,
+					tls.TLS_ECDHE_ECDSA_WITH_AES_128_GCM_SHA256,
+					tls.TLS_ECDHE_RSA_WITH_AES_128_CBC_SHA,
+					tls.TLS_ECDHE_ECDSA_WITH_AES_128_CBC_SHA,
+					tls.TLS_ECDHE_RSA_WITH_AES_256_CBC_SHA,
+					tls.TLS_ECDHE_ECDSA_WITH_AES_256_CBC_SHA,
+					tls.TLS_RSA_WITH_AES_128_CBC_SHA,
+					tls.TLS_RSA_WITH_AES_256_CBC_SHA,
+				},
+			}
 			if s.TLSConfig.NextProtos == nil {
 				s.TLSConfig.NextProtos = []string{"http/1.1"}
 			}
