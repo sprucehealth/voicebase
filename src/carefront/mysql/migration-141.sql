@@ -1,1 +1,0 @@
-update localized_text set ltext='Are you currently taking any medications (other than those already entered for acne)?' where app_text_id = (select qtext_app_text_id from question where question_tag='q_current_medications');

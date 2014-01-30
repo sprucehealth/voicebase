@@ -1,1 +1,0 @@
-alter table patient_agreement add column agreed bool not null;

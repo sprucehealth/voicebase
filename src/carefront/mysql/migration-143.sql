@@ -1,1 +1,0 @@
-update localized_text set ltext= "Are you pregnant, nursing or planning a pregnancy?" where app_text_id = (select qtext_app_text_id from question where question_tag='q_pregnancy_planning');

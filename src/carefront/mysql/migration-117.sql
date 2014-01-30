@@ -1,1 +1,0 @@
-alter table patient_visit_event add column message varchar(600) not null;

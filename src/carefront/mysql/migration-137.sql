@@ -1,1 +1,0 @@
-update question set required=1 where question_tag='q_current_medications_entry';
