@@ -11,7 +11,7 @@ type PatientVisitReview struct {
 }
 
 func parseFileToGetPatientVisitOverview(t *testing.T) (visitOverview *PatientVisitOverview) {
-	fileContents, err := ioutil.ReadFile("../api-response-examples/v1/doctor/patient_visit_review.json")
+	fileContents, err := ioutil.ReadFile("../api-response-examples/v1/doctor/visit/review.json")
 	if err != nil {
 		t.Fatal("Unable to open the json representation of the patient visit for testing:" + err.Error())
 	}
