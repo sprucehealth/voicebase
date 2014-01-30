@@ -7,7 +7,6 @@ import (
 	"errors"
 	"github.com/gorilla/schema"
 	"net/http"
-	"strconv"
 )
 
 type TreatmentsHandler struct {
@@ -144,12 +143,18 @@ func (t *TreatmentsHandler) addTreatment(w http.ResponseWriter, r *http.Request)
 		return
 	}
 
-	treatmentIds := make([]string, 0)
-	for _, treatment := range treatmentsRequestBody.Treatments {
-		treatmentIds = append(treatmentIds, strconv.FormatInt(treatment.Id, 10))
+	treatmentPlan, err := t.DataApi.GetTreatmentPlanForPatientVisit(treatmentsRequestBody.PatientVisitId)
+	if err != nil {
+		WriteDeveloperError(w, http.StatusInternalServerError, "unable to get treatments for patient visit after adding treatments : "+err.Error())
+		return
 	}
 
-	WriteJSONToHTTPResponseWriter(w, http.StatusOK, &AddTreatmentsResponse{TreatmentIds: treatmentIds})
+	if treatmentPlan == nil {
+		WriteJSONToHTTPResponseWriter(w, http.StatusOK, &GetTreatmentsResponse{Treatments: nil})
+		return
+	}
+
+	WriteJSONToHTTPResponseWriter(w, http.StatusOK, &GetTreatmentsResponse{Treatments: treatmentPlan.Treatments})
 }
 
 func validateTreatment(treatment *common.Treatment) error {

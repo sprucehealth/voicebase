@@ -566,6 +566,12 @@ func (d *DataService) AddTreatmentsForPatientVisit(treatments []*common.Treatmen
 			tx.Rollback()
 			return err
 		}
+	} else {
+		_, err := tx.Exec("update treatment set status=? where treatment_plan_id = ?", status_inactive, treatmentPlanId)
+		if err != nil {
+			tx.Rollback()
+			return err
+		}
 	}
 
 	for _, treatment := range treatments {

@@ -9,7 +9,6 @@ import (
 	"io/ioutil"
 	"net/http/httptest"
 	"net/url"
-	"strconv"
 	"testing"
 )
 
@@ -464,46 +463,17 @@ func addAndGetTreatmentsForPatientVisit(testData TestData, treatments []*common.
 	}
 
 	CheckSuccessfulStatusCode(resp, "Unsuccessful call made to add treatments for patient visit: "+string(body), t)
-	addTreatmentsResponse := &apiservice.AddTreatmentsResponse{}
+	addTreatmentsResponse := &apiservice.GetTreatmentsResponse{}
 	err = json.Unmarshal(body, addTreatmentsResponse)
 	if err != nil {
 		t.Fatal("Unable to unmarshal response into object : " + err.Error())
 	}
 
-	if addTreatmentsResponse.TreatmentIds == nil || len(addTreatmentsResponse.TreatmentIds) == 0 {
+	if addTreatmentsResponse.Treatments == nil || len(addTreatmentsResponse.Treatments) == 0 {
 		t.Fatal("Treatment ids expected to be returned for the treatments just added")
 	}
 
-	for _, treatmentId := range addTreatmentsResponse.TreatmentIds {
-		if treatmentId == "" {
-			t.Fatal("Treatment Id for the treatment added should not be empty")
-		}
-	}
-
-	// get back the treatments for this patient visit to ensure that it is the same as what was passed in
-	resp, err = authGet(ts.URL+"?patient_visit_id="+strconv.FormatInt(PatientVisitId, 10), doctorAccountId)
-	if err != nil {
-		t.Fatal("Unable to get treatments for patient visit " + err.Error())
-	}
-
-	body, err = ioutil.ReadAll(resp.Body)
-	if err != nil {
-		t.Fatal("Unable to read body of the response made to get all treatments pertaining to patient visit " + err.Error())
-	}
-
-	CheckSuccessfulStatusCode(resp, "Unsuccessful call made to get treatments for patient visit: "+string(body), t)
-
-	getTreatmentsResponse := &apiservice.GetTreatmentsResponse{}
-	err = json.Unmarshal(body, getTreatmentsResponse)
-	if err != nil {
-		t.Fatal("Unable to unmarshal the response body into the getTreatmentsResponse object " + err.Error())
-	}
-
-	if getTreatmentsResponse.Treatments == nil || len(getTreatmentsResponse.Treatments) == 0 {
-		t.Fatal("Expected to get back treatments but got none")
-	}
-
-	return getTreatmentsResponse
+	return addTreatmentsResponse
 }
 
 func compareTreatments(treatment *common.Treatment, treatment1 *common.Treatment, t *testing.T) {
