@@ -1,5 +1,9 @@
 package erx
 
+import (
+	"carefront/common"
+)
+
 type ERxAPI interface {
 	GetDrugNamesForDoctor(prefix string) ([]string, error)
 	GetDrugNamesForPatient(prefix string) ([]string, error)
