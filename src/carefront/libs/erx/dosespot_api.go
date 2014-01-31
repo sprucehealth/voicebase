@@ -2,6 +2,7 @@ package erx
 
 import (
 	"encoding/xml"
+	"time"
 )
 
 const (
@@ -93,4 +94,92 @@ type medicationSelectResponse struct {
 	OTC                     bool         `xml:"OTC"`
 	RepresentativeNDC       string       `xml:"RepresentativeNDC"`
 	Schedule                string       `xml:"Schedule"`
+}
+
+type patientStartPrescribingRequest struct {
+	XMLName               xml.Name                    `xml:"http://www.dosespot.com/API/11/ PatientStartPrescribingMessage"`
+	SSO                   singleSignOn                `xml:"SingleSignOn"`
+	Patient               *patient                    `xml:"Patient"`
+	AddFavoritePharmacies []*patientPharmacySelection `xml:"AddFavoritePharmacies>AddPatientPharmacy"`
+	AddPrescriptions      []*prescription             `xml:"AddPrescriptions>Prescription"`
+}
+
+type patientStartPrescribingResponse struct {
+	XMLName           xml.Name         `xml:"http://www.dosespot.com/API/11/ PatientStartPrescribingMessageResult"`
+	SSO               singleSignOn     `xml:"SingleSignOn"`
+	PatientUpdates    []*patientUpdate `xml:"PatientUpdates>PatientUpdate"`
+	ResultCode        string           `xml:"Result>ResultCode"`
+	ResultDescription string           `xml:"Result>ResultDescription"`
+}
+
+type patientUpdate struct {
+	Patient     *patient      `xml:"Patient"`
+	Medications []*medication `xml:"Medications>Medication"`
+}
+
+type prescription struct {
+	Medication *medication `xml:"Medication"`
+}
+
+type medication struct {
+	XMLName                xml.Name `xml:"Medication"`
+	DoseSpotPrescriptionId int      `xml:"PrescriptionId"`
+	LexiGenProductId       int      `xml:"LexiGenProductId"`
+	LexiDrugSynId          int      `xml:"LexiDrugSynId"`
+	LexiSynonymTypeId      int      `xml:"LexiSynonymTypeId"`
+	Refills                int      `xml:"Refills"`
+	DaysSupply             int      `xml:"DaysSupply"`
+	Dispense               string   `xml:"Dispense"`
+	DispenseUnitId         int      `xml:"DispenseUnitId"`
+	Instructions           string   `xml:"Instructions"`
+	PharmacyId             int      `xml:"PharmacyId"`
+	PharmacyNotes          string   `xml:"PharmacyNotes"`
+	NoSubstitutions        bool     `xml:"NoSubstitutions"`
+	RxReferenceNumber      string   `xml:"RxReferenceNumber"`
+}
+
+// Need to treat the date object for date of birth as a special case
+// because the date format returned from dosespot does not match the format
+// layout that the built in datetime object is unmarshalled into
+type DateOfBirthType struct {
+	DateOfBirth time.Time `xml:"DateOfBirth"`
+}
+
+func (c DateOfBirthType) UnmarshalXML(d *xml.Decoder, start xml.StartElement) error {
+	var dateStr string
+	err := d.DecodeElement(&dateStr, &start)
+	if err != nil {
+		return err
+	}
+	c.DateOfBirth, err = time.Parse(time.RFC3339, dateStr+"Z")
+	return err
+}
+
+func (c DateOfBirthType) MarshalXML(e *xml.Encoder, start xml.StartElement) error {
+	err := e.EncodeElement(c.DateOfBirth, start)
+	return err
+}
+
+type patient struct {
+	PatientId        int             `xml:"PatientId,omitempty"`
+	Prefix           string          `xml:"Prefix"`
+	FirstName        string          `xml:"FirstName"`
+	MiddleName       string          `xml:"MiddleName"`
+	LastName         string          `xml:"LastName"`
+	Suffix           string          `xml:"Suffix"`
+	DateOfBirth      DateOfBirthType `xml:"DateOfBirth"`
+	Gender           string          `xml:"Gender"`
+	Email            string          `xml:"Email"`
+	Address1         string          `xml:"Address1"`
+	Address2         string          `xml:"Address2"`
+	City             string          `xml:"City"`
+	State            string          `xml:"State"`
+	ZipCode          string          `xml:"ZipCode"`
+	PrimaryPhone     string          `xml:"PrimaryPhone"`
+	PrimaryPhoneType string          `xml:"PrimaryPhoneType"`
+}
+
+type patientPharmacySelection struct {
+	PharmacyId int  `xml:"PharmacyId"`
+	IsPrimary  bool `xml:"IsPrimary"`
 }

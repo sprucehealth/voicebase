@@ -38,7 +38,6 @@ func (s *soapClient) makeSoapRequest(soapAction string, requestMessage interface
 	if err != nil {
 		return err
 	}
-
 	buffer := new(bytes.Buffer)
 	buffer.WriteString(xml.Header)
 	buffer.Write(envelopBytes)

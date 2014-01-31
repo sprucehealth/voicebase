@@ -1,6 +1,8 @@
 package erx
 
 import (
+	"carefront/common"
+	"errors"
 	"os"
 	"strconv"
 )
@@ -18,6 +20,7 @@ const (
 	selfReportedMedicationSearchAction = "SelfReportedMedicationSearch"
 	medicationStrengthSearchAction     = "MedicationStrengthSearchMessage"
 	medicationSelectAction             = "MedicationSelectMessage"
+	startPrescribingPatientAction      = "PatientStartPrescribingMessage"
 )
 
 var (
@@ -86,6 +89,93 @@ func (d *DoseSpotService) SearchForMedicationStrength(medicationName string) ([]
 	}
 
 	return searchResult.DisplayStrengths, nil
+}
+
+func (d *DoseSpotService) StartPrescribingPatient(Patient *common.Patient, Treatments []*common.Treatment) error {
+
+	newPatient := &patient{}
+	newPatient.FirstName = Patient.FirstName
+	newPatient.LastName = Patient.LastName
+	newPatient.Address1 = Patient.PatientAddress.AddressLine1
+	newPatient.City = Patient.City
+	newPatient.State = Patient.State
+	newPatient.ZipCode = Patient.ZipCode
+	newPatient.DateOfBirth = DateOfBirthType{DateOfBirth: Patient.Dob}
+	newPatient.Gender = Patient.Gender
+	newPatient.PrimaryPhone = Patient.Phone
+	newPatient.PrimaryPhoneType = Patient.PhoneType
+
+	patientPreferredPharmacy := &patientPharmacySelection{}
+	patientPreferredPharmacy.IsPrimary = true
+
+	pharmacyId, _ := strconv.Atoi(Patient.Pharmacy.Id)
+	patientPreferredPharmacy.PharmacyId = pharmacyId
+
+	prescriptions := make([]*prescription, 0)
+
+	for _, treatment := range Treatments {
+		prescriptionMedication := &medication{}
+		prescriptionMedication.DaysSupply = int(treatment.DaysSupply)
+		lexiDrugSynIdInt, _ := strconv.Atoi(treatment.DrugDBIds[LexiDrugSynId])
+		prescriptionMedication.LexiDrugSynId = lexiDrugSynIdInt
+
+		lexiGenProductIdInt, _ := strconv.Atoi(treatment.DrugDBIds[LexiGenProductId])
+		prescriptionMedication.LexiGenProductId = lexiGenProductIdInt
+
+		lexiSynonymTypeIdInt, _ := strconv.Atoi(treatment.DrugDBIds[LexiSynonymTypeId])
+		prescriptionMedication.LexiSynonymTypeId = lexiSynonymTypeIdInt
+
+		prescriptionMedication.Refills = int(treatment.NumberRefills)
+		prescriptionMedication.Dispense = strconv.FormatInt(treatment.DispenseValue, 10)
+		prescriptionMedication.DispenseUnitId = int(treatment.DispenseUnitId)
+		prescriptionMedication.Instructions = treatment.PatientInstructions
+		prescriptionMedication.NoSubstitutions = treatment.SubstitutionsAllowed
+		prescriptionMedication.PharmacyNotes = treatment.PharmacyNotes
+		prescriptionMedication.PharmacyId = pharmacyId
+
+		patientPrescription := &prescription{}
+		patientPrescription.Medication = prescriptionMedication
+		prescriptions = append(prescriptions, patientPrescription)
+	}
+
+	startPrescribingRequest := &patientStartPrescribingRequest{}
+	startPrescribingRequest.AddFavoritePharmacies = []*patientPharmacySelection{patientPreferredPharmacy}
+	startPrescribingRequest.AddPrescriptions = prescriptions
+	startPrescribingRequest.Patient = newPatient
+	startPrescribingRequest.SSO = generateSingleSignOn(d.ClinicKey, d.UserId, d.ClinicId)
+
+	response := &patientStartPrescribingResponse{}
+	err := doseSpotClient.makeSoapRequest(startPrescribingPatientAction, startPrescribingRequest, response)
+
+	if err != nil {
+		return err
+	}
+
+	if response.ResultCode != "OK" {
+		return errors.New("Something went wrong when attempting to start prescriptions for patient: " + response.ResultDescription)
+	}
+
+	// populate the prescription id into the patient object
+	Patient.ERxPatientId = int64(response.PatientUpdates[0].Patient.PatientId)
+
+	// go through and assign medication ids to all prescriptions
+	for _, patientUpdate := range response.PatientUpdates {
+		for _, medication := range patientUpdate.Medications {
+			for _, treatment := range Treatments {
+				LexiDrugSynIdInt, _ := strconv.Atoi(treatment.DrugDBIds[LexiDrugSynId])
+				LexiGenProductIdInt, _ := strconv.Atoi(treatment.DrugDBIds[LexiGenProductId])
+				LexiSynonymTypeIdInt, _ := strconv.Atoi(treatment.DrugDBIds[LexiSynonymTypeId])
+				if medication.LexiDrugSynId == LexiDrugSynIdInt &&
+					medication.LexiGenProductId == LexiGenProductIdInt &&
+					medication.LexiSynonymTypeId == LexiSynonymTypeIdInt {
+					treatment.PrescriptionId = int64(medication.DoseSpotPrescriptionId)
+					break
+				}
+			}
+		}
+	}
+
+	return err
 }
 
 func (d *DoseSpotService) SelectMedication(medicationName, medicationStrength string) (medication *Medication, err error) {

@@ -539,7 +539,7 @@ func (d *DataService) GetRegimenPlanForPatientVisit(patientVisitId int64) (*comm
 	return &regimenPlan, nil
 }
 
-func (d *DataService) AddTreatmentsForPatientVisit(treatments []*common.Treatment, PatientVisitId int64) error {
+func (d *DataService) AddTreatmentsForPatientVisit(treatments []*common.Treatment, DoctorId, PatientVisitId int64) error {
 	tx, err := d.DB.Begin()
 	if err != nil {
 		return err
@@ -555,7 +555,7 @@ func (d *DataService) AddTreatmentsForPatientVisit(treatments []*common.Treatmen
 
 	if treatmentPlanId == 0 {
 		// if not treatment plan exists, create a treatment plan
-		res, err := tx.Exec("insert into treatment_plan (patient_visit_id, status) values (?, ?)", PatientVisitId, status_created)
+		res, err := tx.Exec("insert into treatment_plan (patient_visit_id, doctor_id, status) values (?, ?)", PatientVisitId, DoctorId, status_created)
 		if err != nil {
 			tx.Rollback()
 			return err
