@@ -196,10 +196,10 @@ func (d *DataService) GetPatientFromId(patientId int64) (*common.Patient, error)
 
 func (d *DataService) GetPatientFromPatientVisitId(patientVisitId int64) (*common.Patient, error) {
 	var patient common.Patient
-	var phone, zipCode sql.NullString
+	var phone, zipCode, city, state sql.NullString
 	var erxPatientId sql.NullInt64
 	var dob mysql.NullTime
-	err := d.DB.QueryRow(`select patient.id, patient.erx_patient_id, account_id, first_name, last_name, zip_code, phone, gender, dob, patient.status from patient_visit
+	err := d.DB.QueryRow(`select patient.id, patient.erx_patient_id, account_id, first_name, last_name, zip_code,city,state, phone, gender, dob, patient.status from patient_visit
 							left outer join patient_phone on patient_phone.patient_id = patient_visit.patient_id
 							left outer join patient_location on patient_location.patient_id = patient_visit.patient_id
 							inner join patient on patient_visit.patient_id = patient.id where patient_visit.id = ? 
@@ -207,7 +207,7 @@ func (d *DataService) GetPatientFromPatientVisitId(patientVisitId int64) (*commo
 							and (zip_code is null or patient_location.status = 'ACTIVE')`, patientVisitId, patient_phone_type,
 	).Scan(
 		&patient.PatientId, &erxPatientId, &patient.AccountId, &patient.FirstName, &patient.LastName,
-		&zipCode, &phone, &patient.Gender, &dob, &patient.Status,
+		&zipCode, &city, &state, &phone, &patient.Gender, &dob, &patient.Status,
 	)
 	if err == sql.ErrNoRows {
 		return nil, nil
@@ -227,6 +227,12 @@ func (d *DataService) GetPatientFromPatientVisitId(patientVisitId int64) (*commo
 	}
 	if zipCode.Valid {
 		patient.ZipCode = zipCode.String
+	}
+	if city.Valid {
+		patient.City = city.String
+	}
+	if state.Valid {
+		patient.State = state.String
 	}
 
 	return &patient, nil

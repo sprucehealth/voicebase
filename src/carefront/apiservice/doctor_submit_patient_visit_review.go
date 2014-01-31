@@ -115,10 +115,6 @@ func (d *DoctorSubmitPatientVisitReviewHandler) submitPatientVisitReview(w http.
 			return
 		}
 
-		// FIX: add City and State for patient for now
-		patient.City = "San Francisco"
-		patient.State = "CA"
-
 		// FIX: add fake address for now
 		patient.PatientAddress = &common.Address{}
 		patient.PatientAddress.AddressLine1 = "1234 Main Street"
