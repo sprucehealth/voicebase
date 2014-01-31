@@ -3,6 +3,7 @@ package erx
 import (
 	"carefront/common"
 	"errors"
+	"fmt"
 	"os"
 	"strconv"
 )
@@ -21,6 +22,7 @@ const (
 	medicationStrengthSearchAction     = "MedicationStrengthSearchMessage"
 	medicationSelectAction             = "MedicationSelectMessage"
 	startPrescribingPatientAction      = "PatientStartPrescribingMessage"
+	sendMultiplPrescriptionsAction     = "SendMultiplePrescriptions"
 )
 
 var (
@@ -91,6 +93,30 @@ func (d *DoseSpotService) SearchForMedicationStrength(medicationName string) ([]
 	return searchResult.DisplayStrengths, nil
 }
 
+func (d *DoseSpotService) SendMultiplePrescriptions(Patient *common.Patient, Treatments []*common.Treatment) error {
+	sendPrescriptionsRequest := &sendMultiplePrescriptionsRequest{}
+	sendPrescriptionsRequest.SSO = generateSingleSignOn(d.ClinicKey, d.UserId, d.ClinicId)
+	sendPrescriptionsRequest.PatientId = int(Patient.ERxPatientId)
+
+	prescriptionIds := make([]int, 0)
+	for _, treatment := range Treatments {
+		prescriptionIds = append(prescriptionIds, int(treatment.PrescriptionId))
+	}
+
+	sendPrescriptionsRequest.PrescriptionIds = prescriptionIds
+
+	response := &sendPrescriptionResult{}
+	err := doseSpotClient.makeSoapRequest(sendMultiplPrescriptionsAction, sendPrescriptionsRequest, response)
+	if err != nil {
+		return err
+	}
+
+	if response.ResultCode != "OK" {
+		return errors.New("Unable to send multiple prescriptions")
+	}
+	return nil
+}
+
 func (d *DoseSpotService) StartPrescribingPatient(Patient *common.Patient, Treatments []*common.Treatment) error {
 
 	newPatient := &patient{}
@@ -104,6 +130,11 @@ func (d *DoseSpotService) StartPrescribingPatient(Patient *common.Patient, Treat
 	newPatient.Gender = Patient.Gender
 	newPatient.PrimaryPhone = Patient.Phone
 	newPatient.PrimaryPhoneType = Patient.PhoneType
+
+	if Patient.ERxPatientId != 0 {
+		fmt.Println("Using erx patient id since it exists for patient: ")
+		newPatient.PatientId = int(Patient.ERxPatientId)
+	}
 
 	patientPreferredPharmacy := &patientPharmacySelection{}
 	patientPreferredPharmacy.IsPrimary = true

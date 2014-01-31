@@ -74,6 +74,12 @@ func (d *DataService) CheckCareProvidingElligibility(shortState string, healthCo
 
 	return doctorIds[0], nil
 }
+
+func (d *DataService) UpdatePatientWithERxPatientId(patientId, erxPatientId int64) error {
+	_, err := d.DB.Exec(`update patient set erx_patient_id = ? where id = ? `, erxPatientId, patientId)
+	return err
+}
+
 func (d *DataService) GetCareTeamForPatient(patientId int64) (*common.PatientCareProviderGroup, error) {
 	rows, err := d.DB.Query(`select patient_care_provider_group.id as group_id, patient_care_provider_assignment.id as assignment_id, provider_tag, 
 								created_date, modified_date,provider_id, patient_care_provider_group.status as group_status, 
@@ -173,7 +179,7 @@ func (d *DataService) CreateCareTeamForPatient(patientId int64) (*common.Patient
 }
 
 func (d *DataService) GetPatientFromAccountId(accountId int64) (*common.Patient, error) {
-	return d.getPatientBasedOnQuery(`select patient.id, account_id, first_name, last_name, zip_code,city,state, phone, gender, dob, patient.status from patient 
+	return d.getPatientBasedOnQuery(`select patient.id, patient.erx_patient_id, account_id, first_name, last_name, zip_code,city,state, phone, gender, dob, patient.status from patient 
 							left outer join patient_phone on patient_phone.patient_id = patient.id
 							left outer join patient_location on patient_location.patient_id = patient.id
 							where patient.account_id = ? and (phone is null or (patient_phone.status='ACTIVE' and patient_phone.phone_type=?))
@@ -181,7 +187,7 @@ func (d *DataService) GetPatientFromAccountId(accountId int64) (*common.Patient,
 }
 
 func (d *DataService) GetPatientFromId(patientId int64) (*common.Patient, error) {
-	return d.getPatientBasedOnQuery(`select patient.id, account_id, first_name, last_name, zip_code, city, state, phone, gender, dob, patient.status from patient 
+	return d.getPatientBasedOnQuery(`select patient.id, patient.erx_patient_id, account_id, first_name, last_name, zip_code, city, state, phone, gender, dob, patient.status from patient 
 							left outer join patient_phone on patient_phone.patient_id = patient.id
 							left outer join patient_location on patient_location.patient_id = patient.id
 							where patient.id = ? and (phone is null or (patient_phone.status='ACTIVE' and patient_phone.phone_type=?))
@@ -191,21 +197,26 @@ func (d *DataService) GetPatientFromId(patientId int64) (*common.Patient, error)
 func (d *DataService) GetPatientFromPatientVisitId(patientVisitId int64) (*common.Patient, error) {
 	var patient common.Patient
 	var phone, zipCode sql.NullString
+	var erxPatientId sql.NullInt64
 	var dob mysql.NullTime
-	err := d.DB.QueryRow(`select patient.id, account_id, first_name, last_name, zip_code, phone, gender, dob, patient.status from patient_visit
+	err := d.DB.QueryRow(`select patient.id, patient.erx_patient_id, account_id, first_name, last_name, zip_code, phone, gender, dob, patient.status from patient_visit
 							left outer join patient_phone on patient_phone.patient_id = patient_visit.patient_id
 							left outer join patient_location on patient_location.patient_id = patient_visit.patient_id
 							inner join patient on patient_visit.patient_id = patient.id where patient_visit.id = ? 
 							and (phone is null or (patient_phone.status='ACTIVE' and patient_phone.phone_type=?))
 							and (zip_code is null or patient_location.status = 'ACTIVE')`, patientVisitId, patient_phone_type,
 	).Scan(
-		&patient.PatientId, &patient.AccountId, &patient.FirstName, &patient.LastName,
+		&patient.PatientId, &erxPatientId, &patient.AccountId, &patient.FirstName, &patient.LastName,
 		&zipCode, &phone, &patient.Gender, &dob, &patient.Status,
 	)
 	if err == sql.ErrNoRows {
 		return nil, nil
 	} else if err != nil {
 		return nil, err
+	}
+
+	if erxPatientId.Valid {
+		patient.ERxPatientId = erxPatientId.Int64
 	}
 
 	if phone.Valid {
@@ -353,8 +364,9 @@ func (d *DataService) getPatientBasedOnQuery(queryStr string, queryParams ...int
 	var firstName, lastName, status, gender string
 	var dob mysql.NullTime
 	var phone, zipCode, city, state sql.NullString
+	var erxPatientId sql.NullInt64
 	var patientId, accountId int64
-	err := d.DB.QueryRow(queryStr, queryParams...).Scan(&patientId, &accountId, &firstName, &lastName, &zipCode, &city, &state, &phone, &gender, &dob, &status)
+	err := d.DB.QueryRow(queryStr, queryParams...).Scan(&patientId, &erxPatientId, &accountId, &firstName, &lastName, &zipCode, &city, &state, &phone, &gender, &dob, &status)
 	if err != nil {
 		return nil, err
 	}
@@ -366,6 +378,11 @@ func (d *DataService) getPatientBasedOnQuery(queryStr string, queryParams ...int
 		Gender:    gender,
 		AccountId: accountId,
 	}
+
+	if erxPatientId.Valid {
+		patient.ERxPatientId = erxPatientId.Int64
+	}
+
 	if phone.Valid {
 		patient.Phone = phone.String
 	}

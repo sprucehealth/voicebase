@@ -183,3 +183,24 @@ type patientPharmacySelection struct {
 	PharmacyId int  `xml:"PharmacyId"`
 	IsPrimary  bool `xml:"IsPrimary"`
 }
+
+type sendMultiplePrescriptionsRequest struct {
+	XMLName         xml.Name     `xml:"http://www.dosespot.com/API/11/ SendMultiplePrescriptionsRequest"`
+	SSO             singleSignOn `xml:"SingleSignOn"`
+	PatientId       int          `xml:"PatientId"`
+	PrescriptionIds []int        `xml:"PrescriptionIDs>int"`
+}
+
+type sendMultiplePrescriptionsResponse struct {
+	XMLName                 xml.Name                  `xml:"http://www.dosespot.com/API/11/ SendMultiplePrescriptionsResult"`
+	SSO                     singleSignOn              `xml:"SingleSignOn"`
+	ResultCode              string                    `xml:"Result>ResultCode"`
+	ResultDescription       string                    `xml:"Result>ResultDescription"`
+	SendPrescriptionResults []*sendPrescriptionResult `xml:"Prescriptions>SendPrescriptionResult"`
+}
+
+type sendPrescriptionResult struct {
+	PrescriptionId    int    `xml:"PrescriptionID"`
+	ResultCode        string `xml:"Result>ResultCode"`
+	ResultDescription string `xml:"Result>ResultDescription"`
+}

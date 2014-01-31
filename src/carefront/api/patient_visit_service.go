@@ -555,7 +555,7 @@ func (d *DataService) AddTreatmentsForPatientVisit(treatments []*common.Treatmen
 
 	if treatmentPlanId == 0 {
 		// if not treatment plan exists, create a treatment plan
-		res, err := tx.Exec("insert into treatment_plan (patient_visit_id, doctor_id, status) values (?, ?)", PatientVisitId, DoctorId, status_created)
+		res, err := tx.Exec("insert into treatment_plan (patient_visit_id, doctor_id, status) values (?, ?, ?)", PatientVisitId, DoctorId, status_created)
 		if err != nil {
 			tx.Rollback()
 			return err
@@ -737,6 +737,25 @@ func (d *DataService) GetTreatmentPlanForPatientVisit(patientVisitId int64) (*co
 	}
 
 	return &treatmentPlan, nil
+}
+
+func (d *DataService) UpdateTreatmentsWithPrescriptionIds(treatments []*common.Treatment, DoctorId, PatientVisitId int64) error {
+	tx, err := d.DB.Begin()
+	if err != nil {
+		return err
+	}
+
+	for _, treatment := range treatments {
+		if treatment.PrescriptionId != 0 {
+			_, err = tx.Exec(`update treatment set erx_id = ? where id = ? and treatment_plan_id = ?`, treatment.PrescriptionId, treatment.Id, treatment.TreatmentPlanId)
+			if err != nil {
+				tx.Rollback()
+				return err
+			}
+		}
+	}
+	tx.Commit()
+	return nil
 }
 
 func (d *DataService) getTreatmentFromCurrentRow(rows *sql.Rows) (*common.Treatment, error) {

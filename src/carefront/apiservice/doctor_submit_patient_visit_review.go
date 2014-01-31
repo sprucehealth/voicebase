@@ -1,13 +1,15 @@
 package apiservice
 
 import (
-	"fmt"
-	"net/http"
-
 	"carefront/api"
+	"carefront/common"
+	"carefront/libs/erx"
 	"carefront/libs/golog"
+	"carefront/libs/pharmacy"
+	"fmt"
 	"github.com/gorilla/schema"
 	"github.com/subosito/twilio"
+	"net/http"
 )
 
 type DoctorSubmitPatientVisitReviewHandler struct {
@@ -15,6 +17,7 @@ type DoctorSubmitPatientVisitReviewHandler struct {
 	DataApi           api.DataAPI
 	TwilioCli         *twilio.Client
 	TwilioFromNumber  string
+	ERxApi            erx.ERxAPI
 }
 
 type SubmitPatientVisitReviewRequest struct {
@@ -101,6 +104,67 @@ func (d *DoctorSubmitPatientVisitReviewHandler) submitPatientVisitReview(w http.
 	if err != nil {
 		WriteDeveloperError(w, http.StatusInternalServerError, "Unable to update the status of the patient visit in the doctor queue: "+err.Error())
 		return
+	}
+
+	// if doctor treated patient, check for treatments submitted for patient visit,
+	// and send to dose spot
+	if requestData.Status == api.CASE_STATUS_TREATED || requestData.Status == "" {
+		patient, err := d.DataApi.GetPatientFromPatientVisitId(requestData.PatientVisitId)
+		if err != nil {
+			WriteDeveloperError(w, http.StatusInternalServerError, "Unable to get patient data from patient visit: "+err.Error())
+			return
+		}
+
+		// FIX: add City and State for patient for now
+		patient.City = "San Francisco"
+		patient.State = "CA"
+
+		// FIX: add fake address for now
+		patient.PatientAddress = &common.Address{}
+		patient.PatientAddress.AddressLine1 = "1234 Main Street"
+		patient.PatientAddress.City = "San Francisco"
+		patient.PatientAddress.State = "CA"
+		patient.PatientAddress.ZipCode = "94103"
+
+		// FIX: add fake phone type for now
+		patient.PhoneType = "Home"
+
+		// FIX: add fake pharmacy for now
+		patient.Pharmacy = &pharmacy.PharmacyData{}
+		patient.Pharmacy.Id = "39203"
+
+		treatmentPlan, err := d.DataApi.GetTreatmentPlanForPatientVisit(requestData.PatientVisitId)
+		if err != nil {
+			WriteDeveloperError(w, http.StatusInternalServerError, "Unable to get treatment plan: "+err.Error())
+			return
+		}
+
+		err = d.ERxApi.StartPrescribingPatient(patient, treatmentPlan.Treatments)
+		if err != nil {
+			WriteDeveloperError(w, http.StatusInternalServerError, "Unable to start prescribing patient: "+err.Error())
+			return
+		}
+
+		// Save erx patient id to database
+		err = d.DataApi.UpdatePatientWithERxPatientId(patient.PatientId, patient.ERxPatientId)
+		if err != nil {
+			WriteDeveloperError(w, http.StatusInternalServerError, "Unable to save the patient id returned from dosespot for patient: "+err.Error())
+			return
+		}
+
+		// Save prescription ids for drugs to database
+		err = d.DataApi.UpdateTreatmentsWithPrescriptionIds(treatmentPlan.Treatments, doctorId, requestData.PatientVisitId)
+		if err != nil {
+			WriteDeveloperError(w, http.StatusInternalServerError, "Unable to save prescription ids for treatments: "+err.Error())
+			return
+		}
+
+		// Now, send the prescription to the doctor
+		err = d.ERxApi.SendMultiplePrescriptions(patient, treatmentPlan.Treatments)
+		if err != nil {
+			WriteDeveloperError(w, http.StatusInternalServerError, "Unable to send prescription to patient's pharmacy: "+err.Error())
+			return
+		}
 	}
 
 	//  Queue up notification to patient

@@ -51,6 +51,7 @@ type PatientAPI interface {
 	GetPatientFromId(patientId int64) (patient *common.Patient, err error)
 	GetPatientFromAccountId(accountId int64) (patient *common.Patient, err error)
 	RegisterPatient(accountId int64, firstName, lastName, gender, zipCode, city, state, phone string, dob time.Time) (*common.Patient, error)
+	UpdatePatientWithERxPatientId(patientId, erxPatientId int64) error
 	GetPatientIdFromAccountId(accountId int64) (int64, error)
 	CreateCareTeamForPatient(patientId int64) (careTeam *common.PatientCareProviderGroup, err error)
 	GetCareTeamForPatient(patientId int64) (careTeam *common.PatientCareProviderGroup, err error)
@@ -88,6 +89,7 @@ type PatientVisitAPI interface {
 	GetRegimenPlanForPatientVisit(patientVisitId int64) (regimenPlan *common.RegimenPlan, err error)
 	AddTreatmentsForPatientVisit(treatments []*common.Treatment, DoctorId, PatientVisitId int64) error
 	GetTreatmentPlanForPatientVisit(patientVisitId int64) (treatmentPlan *common.TreatmentPlan, err error)
+	UpdateTreatmentsWithPrescriptionIds(treatments []*common.Treatment, DoctorId, PatientVisitId int64) error
 }
 
 type DoctorAPI interface {

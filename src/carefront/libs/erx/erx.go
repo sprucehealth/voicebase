@@ -10,6 +10,7 @@ type ERxAPI interface {
 	SearchForMedicationStrength(medicationName string) ([]string, error)
 	SelectMedication(medicationName, medicationStrength string) (medication *Medication, err error)
 	StartPrescribingPatient(Patient *common.Patient, Treatments []*common.Treatment) error
+	SendMultiplePrescriptions(Patient *common.Patient, Treatments []*common.Treatment) error
 }
 
 type Medication struct {

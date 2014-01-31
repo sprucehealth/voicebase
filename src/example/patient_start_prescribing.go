@@ -4,7 +4,6 @@ import (
 	"carefront/common"
 	"carefront/libs/erx"
 	"carefront/libs/pharmacy"
-	"fmt"
 	"os"
 	"time"
 )
@@ -59,6 +58,12 @@ func main() {
 	doseSpotService := &erx.DoseSpotService{ClinicId: os.Getenv("DOSESPOT_CLINIC_ID"), ClinicKey: os.Getenv("DOSESPOT_CLINIC_KEY"), UserId: os.Getenv("DOSESPOT_USER_ID")}
 	err := doseSpotService.StartPrescribingPatient(patient, []*common.Treatment{treatment, treatment2})
 
+	if err != nil {
+		panic(err.Error())
+	}
+
+	// now send the prescriptions to the pharmacy
+	err = doseSpotService.SendMultiplePrescriptions(patient, []*common.Treatment{treatment, treatment2})
 	if err != nil {
 		panic(err.Error())
 	}
