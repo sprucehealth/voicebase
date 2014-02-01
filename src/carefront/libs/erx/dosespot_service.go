@@ -93,28 +93,37 @@ func (d *DoseSpotService) SearchForMedicationStrength(medicationName string) ([]
 	return searchResult.DisplayStrengths, nil
 }
 
-func (d *DoseSpotService) SendMultiplePrescriptions(Patient *common.Patient, Treatments []*common.Treatment) error {
+func (d *DoseSpotService) SendMultiplePrescriptions(Patient *common.Patient, Treatments []*common.Treatment) ([]int64, error) {
 	sendPrescriptionsRequest := &sendMultiplePrescriptionsRequest{}
 	sendPrescriptionsRequest.SSO = generateSingleSignOn(d.ClinicKey, d.UserId, d.ClinicId)
 	sendPrescriptionsRequest.PatientId = int(Patient.ERxPatientId)
 
 	prescriptionIds := make([]int, 0)
+	prescriptionIdToTreatmentIdMapping := make(map[int64]int64)
 	for _, treatment := range Treatments {
 		prescriptionIds = append(prescriptionIds, int(treatment.PrescriptionId))
+		prescriptionIdToTreatmentIdMapping[treatment.PrescriptionId] = treatment.Id
 	}
 
 	sendPrescriptionsRequest.PrescriptionIds = prescriptionIds
 
-	response := &sendPrescriptionResult{}
+	response := &sendMultiplePrescriptionsResponse{}
 	err := doseSpotClient.makeSoapRequest(sendMultiplPrescriptionsAction, sendPrescriptionsRequest, response)
 	if err != nil {
-		return err
+		return nil, err
+	}
+
+	unSuccessfulTreatmentIds := make([]int64, 0)
+	for _, prescriptionResult := range response.SendPrescriptionResults {
+		if prescriptionResult.ResultCode != "OK" {
+			unSuccessfulTreatmentIds = append(unSuccessfulTreatmentIds, prescriptionIdToTreatmentIdMapping[int64(prescriptionResult.PrescriptionId)])
+		}
 	}
 
 	if response.ResultCode != "OK" {
-		return errors.New("Unable to send multiple prescriptions")
+		return nil, errors.New("Unable to send multiple prescriptions")
 	}
-	return nil
+	return unSuccessfulTreatmentIds, nil
 }
 
 func (d *DoseSpotService) StartPrescribingPatient(Patient *common.Patient, Treatments []*common.Treatment) error {

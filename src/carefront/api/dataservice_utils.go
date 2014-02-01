@@ -16,6 +16,7 @@ const (
 	ERX_STATUS_SENDING                     = "SENDING"
 	ERX_STATUS_SENT                        = "SENT"
 	ERX_STATUS_ERROR                       = "ERROR"
+	ERX_STATUS_SEND_ERROR                  = "SEND_ERROR"
 	treatment_otc                          = "OTC"
 	treatment_rx                           = "RX"
 	dr_drug_supplemental_instruction_table = "dr_drug_supplemental_instruction"

@@ -154,17 +154,43 @@ func (d *DoctorSubmitPatientVisitReviewHandler) submitPatientVisitReview(w http.
 			}
 
 			// Now, send the prescription to the doctor
-			err = d.ERxApi.SendMultiplePrescriptions(patient, treatmentPlan.Treatments)
+			unSuccessfulTreatmentIds, err := d.ERxApi.SendMultiplePrescriptions(patient, treatmentPlan.Treatments)
 			if err != nil {
 				WriteDeveloperError(w, http.StatusInternalServerError, "Unable to send prescription to patient's pharmacy: "+err.Error())
 				return
 			}
 
-			// TODO: Add an event to indicate whether or not prescription was sent successfuly for the patient
-			err = d.DataApi.AddErxStatusEvent(treatmentPlan.Treatments, api.ERX_STATUS_SENDING)
-			if err != nil {
-				WriteDeveloperError(w, http.StatusInternalServerError, "Unable to add an erx status event: "+err.Error())
-				return
+			successfulTreatments := make([]*common.Treatment, 0)
+			unSuccessfulTreatments := make([]*common.Treatment, 0)
+			for _, treatment := range treatmentPlan.Treatments {
+				treatmentFound := false
+				for _, unSuccessfulTreatmentId := range unSuccessfulTreatmentIds {
+					if unSuccessfulTreatmentId == treatment.Id {
+						treatmentFound = true
+						break
+					}
+				}
+				if treatmentFound == false {
+					successfulTreatments = append(successfulTreatments, treatment)
+				} else {
+					unSuccessfulTreatments = append(unSuccessfulTreatments, treatment)
+				}
+			}
+
+			if len(successfulTreatments) > 0 {
+				err = d.DataApi.AddErxStatusEvent(successfulTreatments, api.ERX_STATUS_SENDING)
+				if err != nil {
+					WriteDeveloperError(w, http.StatusInternalServerError, "Unable to add an erx status event: "+err.Error())
+					return
+				}
+			}
+
+			if len(unSuccessfulTreatments) > 0 {
+				err = d.DataApi.AddErxStatusEvent(unSuccessfulTreatments, api.ERX_STATUS_SEND_ERROR)
+				if err != nil {
+					WriteDeveloperError(w, http.StatusInternalServerError, "Unable to add an erx status event: "+err.Error())
+					return
+				}
 			}
 		}
 
