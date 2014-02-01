@@ -132,7 +132,7 @@ func (d *DoctorSubmitPatientVisitReviewHandler) submitPatientVisitReview(w http.
 			return
 		}
 
-		if treatmentPlan != nil && treatmentPlan.Treatments != nil && len(treatmentPlan.Treatments) > 0 {
+		if d.ERxApi != nil && treatmentPlan != nil && treatmentPlan.Treatments != nil && len(treatmentPlan.Treatments) > 0 {
 			err = d.ERxApi.StartPrescribingPatient(patient, treatmentPlan.Treatments)
 			if err != nil {
 				WriteDeveloperError(w, http.StatusInternalServerError, "Unable to start prescribing patient: "+err.Error())
