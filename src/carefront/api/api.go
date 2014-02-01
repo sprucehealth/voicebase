@@ -93,6 +93,7 @@ type PatientVisitAPI interface {
 	AddTreatmentsForPatientVisit(treatments []*common.Treatment, DoctorId, PatientVisitId int64) error
 	GetTreatmentPlanForPatientVisit(patientVisitId int64) (treatmentPlan *common.TreatmentPlan, err error)
 	UpdateTreatmentsWithPrescriptionIds(treatments []*common.Treatment, DoctorId, PatientVisitId int64) error
+	AddErxStatusEvent(treatments []*common.Treatment, statusEvent string) error
 }
 
 type DoctorAPI interface {

@@ -132,34 +132,42 @@ func (d *DoctorSubmitPatientVisitReviewHandler) submitPatientVisitReview(w http.
 			return
 		}
 
-		err = d.ERxApi.StartPrescribingPatient(patient, treatmentPlan.Treatments)
-		if err != nil {
-			WriteDeveloperError(w, http.StatusInternalServerError, "Unable to start prescribing patient: "+err.Error())
-			return
+		if treatmentPlan != nil && treatmentPlan.Treatments != nil && len(treatmentPlan.Treatments) > 0 {
+			err = d.ERxApi.StartPrescribingPatient(patient, treatmentPlan.Treatments)
+			if err != nil {
+				WriteDeveloperError(w, http.StatusInternalServerError, "Unable to start prescribing patient: "+err.Error())
+				return
+			}
+
+			// Save erx patient id to database
+			err = d.DataApi.UpdatePatientWithERxPatientId(patient.PatientId, patient.ERxPatientId)
+			if err != nil {
+				WriteDeveloperError(w, http.StatusInternalServerError, "Unable to save the patient id returned from dosespot for patient: "+err.Error())
+				return
+			}
+
+			// Save prescription ids for drugs to database
+			err = d.DataApi.UpdateTreatmentsWithPrescriptionIds(treatmentPlan.Treatments, doctorId, requestData.PatientVisitId)
+			if err != nil {
+				WriteDeveloperError(w, http.StatusInternalServerError, "Unable to save prescription ids for treatments: "+err.Error())
+				return
+			}
+
+			// Now, send the prescription to the doctor
+			err = d.ERxApi.SendMultiplePrescriptions(patient, treatmentPlan.Treatments)
+			if err != nil {
+				WriteDeveloperError(w, http.StatusInternalServerError, "Unable to send prescription to patient's pharmacy: "+err.Error())
+				return
+			}
+
+			// TODO: Add an event to indicate whether or not prescription was sent successfuly for the patient
+			err = d.DataApi.AddErxStatusEvent(treatmentPlan.Treatments, api.ERX_STATUS_SENDING)
+			if err != nil {
+				WriteDeveloperError(w, http.StatusInternalServerError, "Unable to add an erx status event: "+err.Error())
+				return
+			}
 		}
 
-		// Save erx patient id to database
-		err = d.DataApi.UpdatePatientWithERxPatientId(patient.PatientId, patient.ERxPatientId)
-		if err != nil {
-			WriteDeveloperError(w, http.StatusInternalServerError, "Unable to save the patient id returned from dosespot for patient: "+err.Error())
-			return
-		}
-
-		// Save prescription ids for drugs to database
-		err = d.DataApi.UpdateTreatmentsWithPrescriptionIds(treatmentPlan.Treatments, doctorId, requestData.PatientVisitId)
-		if err != nil {
-			WriteDeveloperError(w, http.StatusInternalServerError, "Unable to save prescription ids for treatments: "+err.Error())
-			return
-		}
-
-		// Now, send the prescription to the doctor
-		err = d.ERxApi.SendMultiplePrescriptions(patient, treatmentPlan.Treatments)
-		if err != nil {
-			WriteDeveloperError(w, http.StatusInternalServerError, "Unable to send prescription to patient's pharmacy: "+err.Error())
-			return
-		}
-
-		// TODO: Add an event to indicate whether or not prescription was sent successfuly for the patient
 	}
 
 	//  Queue up notification to patient

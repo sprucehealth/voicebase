@@ -758,6 +758,25 @@ func (d *DataService) UpdateTreatmentsWithPrescriptionIds(treatments []*common.T
 	return nil
 }
 
+func (d *DataService) AddErxStatusEvent(treatments []*common.Treatment, statusEvent string) error {
+	tx, err := d.DB.Begin()
+	if err != nil {
+		return err
+	}
+
+	for _, treatment := range treatments {
+
+		_, err = tx.Exec(`insert into erx_status_events (treatment_id, erx_status) values (?,?)`, treatment.Id, statusEvent)
+		if err != nil {
+			tx.Rollback()
+			return err
+		}
+	}
+
+	tx.Commit()
+	return nil
+}
+
 func (d *DataService) getTreatmentFromCurrentRow(rows *sql.Rows) (*common.Treatment, error) {
 	var treatmentId, dispenseValue, dispenseUnitId, refills, daysSupply int64
 	var drugInternalName, dosageStrength, patientInstructions, treatmentType, dispenseUnitDescription, status string
