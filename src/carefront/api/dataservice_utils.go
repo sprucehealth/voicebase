@@ -21,7 +21,6 @@ const (
 	drug_name_table                        = "drug_name"
 	drug_form_table                        = "drug_form"
 	drug_route_table                       = "drug_route"
-	patient_phone_type                     = "MAIN"
 	doctor_phone_type                      = "MAIN"
 	SpruceButtonBaseActionUrl              = "spruce:///action/"
 	SpruceImageBaseUrl                     = "spruce:///image/"

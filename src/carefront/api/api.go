@@ -29,6 +29,9 @@ const (
 	CASE_STATUS_PHOTOS_REJECTED = "PHOTOS_REJECTED"
 	HIPAA_AUTH                  = "hipaa"
 	CONSENT_AUTH                = "consent"
+	PATIENT_PHONE_HOME          = "Home"
+	PATIENT_PHONE_WORK          = "Work"
+	PATIENT_PHONE_CELL          = "Cell"
 )
 
 var (
@@ -50,7 +53,7 @@ type PotentialAnswerInfo struct {
 type PatientAPI interface {
 	GetPatientFromId(patientId int64) (patient *common.Patient, err error)
 	GetPatientFromAccountId(accountId int64) (patient *common.Patient, err error)
-	RegisterPatient(accountId int64, firstName, lastName, gender, zipCode, city, state, phone string, dob time.Time) (*common.Patient, error)
+	RegisterPatient(accountId int64, firstName, lastName, gender, zipCode, city, state, phone, phoneType string, dob time.Time) (*common.Patient, error)
 	UpdatePatientWithERxPatientId(patientId, erxPatientId int64) error
 	GetPatientIdFromAccountId(accountId int64) (int64, error)
 	CreateCareTeamForPatient(patientId int64) (careTeam *common.PatientCareProviderGroup, err error)

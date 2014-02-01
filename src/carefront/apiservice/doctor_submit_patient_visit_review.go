@@ -115,15 +115,12 @@ func (d *DoctorSubmitPatientVisitReviewHandler) submitPatientVisitReview(w http.
 			return
 		}
 
-		// FIX: add fake address for now
+		// FIX: add fake address for now until we start accepting address from client
 		patient.PatientAddress = &common.Address{}
 		patient.PatientAddress.AddressLine1 = "1234 Main Street"
 		patient.PatientAddress.City = "San Francisco"
 		patient.PatientAddress.State = "CA"
 		patient.PatientAddress.ZipCode = "94103"
-
-		// FIX: add fake phone type for now
-		patient.PhoneType = "Home"
 
 		// FIX: add fake pharmacy for now
 		patient.Pharmacy = &pharmacy.PharmacyData{}
@@ -161,6 +158,8 @@ func (d *DoctorSubmitPatientVisitReviewHandler) submitPatientVisitReview(w http.
 			WriteDeveloperError(w, http.StatusInternalServerError, "Unable to send prescription to patient's pharmacy: "+err.Error())
 			return
 		}
+
+		// TODO: Add an event to indicate whether or not prescription was sent successfuly for the patient
 	}
 
 	//  Queue up notification to patient
