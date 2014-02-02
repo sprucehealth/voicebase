@@ -179,6 +179,20 @@ type patient struct {
 	PrimaryPhoneType string          `xml:"PrimaryPhoneType"`
 }
 
+type pharmacy struct {
+	PharmacyId          int64  `xml:"PharmacyId"`
+	StoreName           string `xml:"StoreName"`
+	Address1            string `xml:"Address1"`
+	Address2            string `xml:"Address2"`
+	City                string `xml:"City"`
+	State               string `xml:"State"`
+	ZipCode             string `xml:"ZipCode"`
+	PrimaryPhone        string `xml:"PrimaryPhone"`
+	PrimaryPhoneType    string `xml:"PrimaryPhoneType"`
+	PrimaryFax          string `xml:"PrimaryFax"`
+	PharmacySpecialties string `xml:"PharmacySpecialties"`
+}
+
 type patientPharmacySelection struct {
 	PharmacyId int  `xml:"PharmacyId"`
 	IsPrimary  bool `xml:"IsPrimary"`
@@ -203,4 +217,22 @@ type sendPrescriptionResult struct {
 	PrescriptionId    int    `xml:"PrescriptionID"`
 	ResultCode        string `xml:"Result>ResultCode"`
 	ResultDescription string `xml:"Result>ResultDescription"`
+}
+
+type pharmacySearchRequest struct {
+	XMLName                 xml.Name     `xml:"http://www.dosespot.com/API/11/ PharmacySearchMessageDetailed"`
+	SSO                     singleSignOn `xml:"SingleSignOn"`
+	PharmacyNameSearch      string       `xml:"PharmacyNameSearch,omitempty"`
+	PharmacyCity            string       `xml:"PharmacyCity,omitempty"`
+	PharmacyStateTwoLetters string       `xml:"PharmacyStateTwoLetters,omitempty"`
+	PharmacyZipCode         string       `xml:"PharmacyZipCode,omitempty"`
+	PharmacyTypes           []string     `xml:"PharmacySpecialties>PharmacySpecialtyTypes,omitempty"`
+}
+
+type pharmacySearchResult struct {
+	XMLName           xml.Name     `xml:"http://www.dosespot.com/API/11/ PharmacySearchMessageDetailedResult"`
+	SSO               singleSignOn `xml:"SingleSignOn"`
+	ResultCode        string       `xml:"Result>ResultCode"`
+	ResultDescription string       `xml:"Result>ResultDescription"`
+	Pharmacies        []*pharmacy  `xml:"Pharmacies>PharmacyDetailed"`
 }

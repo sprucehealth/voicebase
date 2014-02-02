@@ -2,10 +2,12 @@ package erx
 
 import (
 	"carefront/common"
+	pharmacySearch "carefront/libs/pharmacy"
 	"errors"
 	"fmt"
 	"os"
 	"strconv"
+	"strings"
 )
 
 type DoseSpotService struct {
@@ -23,6 +25,8 @@ const (
 	medicationSelectAction             = "MedicationSelectMessage"
 	startPrescribingPatientAction      = "PatientStartPrescribingMessage"
 	sendMultiplPrescriptionsAction     = "SendMultiplePrescriptions"
+	searchPharmaciesAction             = "PharmacySearchMessageDetailed"
+	resultOk                           = "OK"
 )
 
 var (
@@ -115,12 +119,12 @@ func (d *DoseSpotService) SendMultiplePrescriptions(Patient *common.Patient, Tre
 
 	unSuccessfulTreatmentIds := make([]int64, 0)
 	for _, prescriptionResult := range response.SendPrescriptionResults {
-		if prescriptionResult.ResultCode != "OK" {
+		if prescriptionResult.ResultCode != resultOk {
 			unSuccessfulTreatmentIds = append(unSuccessfulTreatmentIds, prescriptionIdToTreatmentIdMapping[int64(prescriptionResult.PrescriptionId)])
 		}
 	}
 
-	if response.ResultCode != "OK" {
+	if response.ResultCode != resultOk {
 		return nil, errors.New("Unable to send multiple prescriptions")
 	}
 	return unSuccessfulTreatmentIds, nil
@@ -191,7 +195,7 @@ func (d *DoseSpotService) StartPrescribingPatient(Patient *common.Patient, Treat
 		return err
 	}
 
-	if response.ResultCode != "OK" {
+	if response.ResultCode != resultOk {
 		return errors.New("Something went wrong when attempting to start prescriptions for patient: " + response.ResultDescription)
 	}
 
@@ -240,4 +244,57 @@ func (d *DoseSpotService) SelectMedication(medicationName, medicationStrength st
 	medication.DispenseUnitDescription = selectResult.DispenseUnitDescription
 	medication.OTC = selectResult.OTC
 	return medication, err
+}
+
+func (d *DoseSpotService) SearchForPharmacies(city, state, zipcode, name string, pharmacyTypes []string) ([]*pharmacySearch.PharmacyData, error) {
+	searchRequest := &pharmacySearchRequest{}
+	if city != "" {
+		searchRequest.PharmacyCity = city
+	}
+
+	if state != "" {
+		searchRequest.PharmacyStateTwoLetters = state
+	}
+
+	if zipcode != "" {
+		searchRequest.PharmacyZipCode = zipcode
+	}
+
+	if name != "" {
+		searchRequest.PharmacyNameSearch = name
+	}
+
+	if pharmacyTypes != nil && len(pharmacyTypes) > 0 {
+		searchRequest.PharmacyTypes = pharmacyTypes
+	}
+
+	searchRequest.SSO = generateSingleSignOn(d.ClinicKey, d.UserId, d.ClinicId)
+
+	searchResponse := &pharmacySearchResult{}
+	err := doseSpotClient.makeSoapRequest(searchPharmaciesAction, searchRequest, searchResponse)
+	if err != nil {
+		return nil, err
+	}
+
+	if searchResponse.ResultCode != resultOk {
+		return nil, errors.New("Unable to search for pharmacies: " + searchResponse.ResultDescription)
+	}
+
+	pharmacies := make([]*pharmacySearch.PharmacyData, 0)
+	for _, pharmacyResultItem := range searchResponse.Pharmacies {
+		pharmacyData := &pharmacySearch.PharmacyData{}
+		pharmacyData.Id = strconv.FormatInt(pharmacyResultItem.PharmacyId, 10)
+		pharmacyData.Address = pharmacyResultItem.Address1 + " " + pharmacyResultItem.Address2
+		pharmacyData.City = pharmacyResultItem.City
+		pharmacyData.State = pharmacyResultItem.State
+		pharmacyData.Name = pharmacyResultItem.StoreName
+		pharmacyData.Fax = pharmacyResultItem.PrimaryFax
+		pharmacyData.Phone = pharmacyResultItem.PrimaryPhone
+		pharmacyData.Postal = pharmacyResultItem.ZipCode
+		pharmacyData.Source = pharmacySearch.PHARMACY_SOURCE_SURESCRIPTS
+		pharmacyData.PharmacyTypes = strings.Split(pharmacyResultItem.PharmacySpecialties, ", ")
+		pharmacies = append(pharmacies, pharmacyData)
+	}
+
+	return pharmacies, nil
 }
