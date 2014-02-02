@@ -3,6 +3,7 @@ package erx
 import (
 	"carefront/common"
 	pharmacySearch "carefront/libs/pharmacy"
+	"time"
 )
 
 const (
@@ -21,6 +22,8 @@ type ERxAPI interface {
 	StartPrescribingPatient(Patient *common.Patient, Treatments []*common.Treatment) error
 	SendMultiplePrescriptions(Patient *common.Patient, Treatments []*common.Treatment) ([]int64, error)
 	SearchForPharmacies(city, state, zipcode, name string, pharmacyTypes []string) ([]*pharmacySearch.PharmacyData, error)
+	GetPrescriptionStatus(prescriptionId int64) ([]*PrescriptionLog, error)
+	GetMedicationList(PatientId int64) ([]*common.Treatment, error)
 }
 
 type Medication struct {
@@ -28,4 +31,9 @@ type Medication struct {
 	OTC                     bool
 	DispenseUnitId          int
 	DispenseUnitDescription string
+}
+
+type PrescriptionLog struct {
+	PrescriptionStatus string
+	LogTimeStamp       time.Time
 }

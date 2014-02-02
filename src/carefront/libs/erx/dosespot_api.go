@@ -2,6 +2,7 @@ package erx
 
 import (
 	"encoding/xml"
+	"fmt"
 	"time"
 )
 
@@ -37,11 +38,6 @@ type selfReportedMedicationSearchRequest struct {
 	SearchTerm string
 }
 
-type doseSpotResult struct {
-	ResultCode        string
-	ResultDescription string
-}
-
 type selfReportedMedicationSearchResultItem struct {
 	DisplayName       string
 	LexiCompDrugId    string
@@ -49,9 +45,9 @@ type selfReportedMedicationSearchResultItem struct {
 }
 
 type selfReportedMedicationSearchResponse struct {
-	XMLName       xml.Name     `xml:"SelfReportedMedicationSearchResult"`
-	SSO           singleSignOn `xml:"SingleSignOn"`
-	Result        doseSpotResult
+	XMLName xml.Name     `xml:"SelfReportedMedicationSearchResult"`
+	SSO     singleSignOn `xml:"SingleSignOn"`
+	Result
 	SearchResults []*selfReportedMedicationSearchResultItem `xml:"SearchResults>SelfReportedMedicationSearchResult"`
 }
 
@@ -75,25 +71,24 @@ type medicationSelectRequest struct {
 }
 
 type medicationSelectResponse struct {
-	XMLName                 xml.Name     `xml:"MedicationSelectMessageResult"`
-	SSO                     singleSignOn `xml:"SingleSignOn"`
-	ResultCode              string       `xml:"Result>ResultCode"`
-	ResultDescription       string       `xml:"Result>Description"`
-	DoseFormDescription     string       `xml:"DoseFormDescription"`
-	RouteDescription        string       `xml:"RouteDescription"`
-	StrengthDescription     string       `xml:"StrengthDescription"`
-	DispenseUnitId          int          `xml:"DispenseUnitId"`
-	DispenseUnitDescription string       `xml:"DispenseUnitDescription"`
-	GenericProductName      string       `xml:"GenericProductName"`
-	LexiGenProductId        int          `xml:"LexiGenProductId"`
-	LexiDrugSynId           int          `xml:"LexiDrugSynId"`
-	LexiSynonymTypeId       int          `xml:"LexiSynonymTypeId"`
-	MatchedDrugName         string       `xml:"MatchedDrugName"`
-	RXCUI                   string       `xml:"RXCUI"`
-	TermType                string       `xml:"TermType"`
-	OTC                     bool         `xml:"OTC"`
-	RepresentativeNDC       string       `xml:"RepresentativeNDC"`
-	Schedule                string       `xml:"Schedule"`
+	XMLName xml.Name     `xml:"MedicationSelectMessageResult"`
+	SSO     singleSignOn `xml:"SingleSignOn"`
+	Result
+	DoseFormDescription     string `xml:"DoseFormDescription"`
+	RouteDescription        string `xml:"RouteDescription"`
+	StrengthDescription     string `xml:"StrengthDescription"`
+	DispenseUnitId          int    `xml:"DispenseUnitId"`
+	DispenseUnitDescription string `xml:"DispenseUnitDescription"`
+	GenericProductName      string `xml:"GenericProductName"`
+	LexiGenProductId        int    `xml:"LexiGenProductId"`
+	LexiDrugSynId           int    `xml:"LexiDrugSynId"`
+	LexiSynonymTypeId       int    `xml:"LexiSynonymTypeId"`
+	MatchedDrugName         string `xml:"MatchedDrugName"`
+	RXCUI                   string `xml:"RXCUI"`
+	TermType                string `xml:"TermType"`
+	OTC                     bool   `xml:"OTC"`
+	RepresentativeNDC       string `xml:"RepresentativeNDC"`
+	Schedule                string `xml:"Schedule"`
 }
 
 type patientStartPrescribingRequest struct {
@@ -105,11 +100,10 @@ type patientStartPrescribingRequest struct {
 }
 
 type patientStartPrescribingResponse struct {
-	XMLName           xml.Name         `xml:"http://www.dosespot.com/API/11/ PatientStartPrescribingMessageResult"`
-	SSO               singleSignOn     `xml:"SingleSignOn"`
-	PatientUpdates    []*patientUpdate `xml:"PatientUpdates>PatientUpdate"`
-	ResultCode        string           `xml:"Result>ResultCode"`
-	ResultDescription string           `xml:"Result>ResultDescription"`
+	XMLName        xml.Name         `xml:"http://www.dosespot.com/API/11/ PatientStartPrescribingMessageResult"`
+	SSO            singleSignOn     `xml:"SingleSignOn"`
+	PatientUpdates []*patientUpdate `xml:"PatientUpdates>PatientUpdate"`
+	Result
 }
 
 type patientUpdate struct {
@@ -122,41 +116,44 @@ type prescription struct {
 }
 
 type medication struct {
-	XMLName                xml.Name `xml:"Medication"`
-	DoseSpotPrescriptionId int      `xml:"PrescriptionId"`
-	LexiGenProductId       int      `xml:"LexiGenProductId"`
-	LexiDrugSynId          int      `xml:"LexiDrugSynId"`
-	LexiSynonymTypeId      int      `xml:"LexiSynonymTypeId"`
-	Refills                int      `xml:"Refills"`
-	DaysSupply             int      `xml:"DaysSupply"`
-	Dispense               string   `xml:"Dispense"`
-	DispenseUnitId         int      `xml:"DispenseUnitId"`
-	Instructions           string   `xml:"Instructions"`
-	PharmacyId             int      `xml:"PharmacyId"`
-	PharmacyNotes          string   `xml:"PharmacyNotes"`
-	NoSubstitutions        bool     `xml:"NoSubstitutions"`
-	RxReferenceNumber      string   `xml:"RxReferenceNumber"`
+	DisplayName            string `xml:"DisplayName"`
+	Strength               string `xml:"Strength"`
+	DoseSpotPrescriptionId int    `xml:"PrescriptionId"`
+	LexiGenProductId       int    `xml:"LexiGenProductId"`
+	LexiDrugSynId          int    `xml:"LexiDrugSynId"`
+	LexiSynonymTypeId      int    `xml:"LexiSynonymTypeId"`
+	Refills                int    `xml:"Refills"`
+	DaysSupply             int    `xml:"DaysSupply"`
+	Dispense               string `xml:"Dispense"`
+	DispenseUnitId         int    `xml:"DispenseUnitId"`
+	Instructions           string `xml:"Instructions"`
+	PharmacyId             int    `xml:"PharmacyId"`
+	PharmacyNotes          string `xml:"PharmacyNotes"`
+	NoSubstitutions        bool   `xml:"NoSubstitutions"`
+	RxReferenceNumber      string `xml:"RxReferenceNumber"`
+	PrescriptionStatus     string `xml:"PrescriptionStatus,omitempty"`
 }
 
 // Need to treat the date object for date of birth as a special case
 // because the date format returned from dosespot does not match the format
 // layout that the built in datetime object is unmarshalled into
-type DateOfBirthType struct {
-	DateOfBirth time.Time `xml:"DateOfBirth"`
+type specialDateTime struct {
+	DateTime time.Time `xml:"DateOfBirth"`
 }
 
-func (c DateOfBirthType) UnmarshalXML(d *xml.Decoder, start xml.StartElement) error {
+func (c specialDateTime) UnmarshalXML(d *xml.Decoder, start xml.StartElement) error {
 	var dateStr string
 	err := d.DecodeElement(&dateStr, &start)
 	if err != nil {
 		return err
 	}
-	c.DateOfBirth, err = time.Parse(time.RFC3339, dateStr+"Z")
+	c.DateTime, err = time.Parse(time.RFC3339, dateStr+"Z")
+	fmt.Println(c.DateTime)
 	return err
 }
 
-func (c DateOfBirthType) MarshalXML(e *xml.Encoder, start xml.StartElement) error {
-	err := e.EncodeElement(c.DateOfBirth, start)
+func (c specialDateTime) MarshalXML(e *xml.Encoder, start xml.StartElement) error {
+	err := e.EncodeElement(c.DateTime, start)
 	return err
 }
 
@@ -167,7 +164,7 @@ type patient struct {
 	MiddleName       string          `xml:"MiddleName"`
 	LastName         string          `xml:"LastName"`
 	Suffix           string          `xml:"Suffix"`
-	DateOfBirth      DateOfBirthType `xml:"DateOfBirth"`
+	DateOfBirth      specialDateTime `xml:"DateOfBirth"`
 	Gender           string          `xml:"Gender"`
 	Email            string          `xml:"Email"`
 	Address1         string          `xml:"Address1"`
@@ -208,15 +205,13 @@ type sendMultiplePrescriptionsRequest struct {
 type sendMultiplePrescriptionsResponse struct {
 	XMLName                 xml.Name                  `xml:"http://www.dosespot.com/API/11/ SendMultiplePrescriptionsResult"`
 	SSO                     singleSignOn              `xml:"SingleSignOn"`
-	ResultCode              string                    `xml:"Result>ResultCode"`
-	ResultDescription       string                    `xml:"Result>ResultDescription"`
 	SendPrescriptionResults []*sendPrescriptionResult `xml:"Prescriptions>SendPrescriptionResult"`
+	Result
 }
 
 type sendPrescriptionResult struct {
-	PrescriptionId    int    `xml:"PrescriptionID"`
-	ResultCode        string `xml:"Result>ResultCode"`
-	ResultDescription string `xml:"Result>ResultDescription"`
+	PrescriptionId int `xml:"PrescriptionID"`
+	Result
 }
 
 type pharmacySearchRequest struct {
@@ -230,9 +225,69 @@ type pharmacySearchRequest struct {
 }
 
 type pharmacySearchResult struct {
-	XMLName           xml.Name     `xml:"http://www.dosespot.com/API/11/ PharmacySearchMessageDetailedResult"`
-	SSO               singleSignOn `xml:"SingleSignOn"`
-	ResultCode        string       `xml:"Result>ResultCode"`
-	ResultDescription string       `xml:"Result>ResultDescription"`
-	Pharmacies        []*pharmacy  `xml:"Pharmacies>PharmacyDetailed"`
+	XMLName    xml.Name     `xml:"http://www.dosespot.com/API/11/ PharmacySearchMessageDetailedResult"`
+	SSO        singleSignOn `xml:"SingleSignOn"`
+	Pharmacies []*pharmacy  `xml:"Pharmacies>PharmacyDetailed"`
+	Result
+}
+
+type getPrescriptionLogDetailsRequest struct {
+	XMLName        xml.Name     `xml:"http://www.dosespot.com/API/11/ GetPrescriptionLogDetailsRequest"`
+	SSO            singleSignOn `xml:"SingleSignOn"`
+	PrescriptionId int64        `xml:"PrescriptionID"`
+}
+
+type getPrescriptionLogDetailsResult struct {
+	XMLName xml.Name               `xml:"http://www.dosespot.com/API/11/ GetPrescriptionLogDetailsResult"`
+	SSO     singleSignOn           `xml:"SingleSignOn"`
+	Log     []*prescriptionLogInfo `xml:"Log>PrescriptionLogInfo"`
+	Result
+}
+
+// TODO : Find a way to collapse this and the specialDateTime
+// into one type so that we can reuse this struct for any dateTime element
+// as opposed to having to create one everytime we have a date time field
+type dateTimeStampType struct {
+	DateTime time.Time `xml:"DateTimeStamp"`
+}
+
+func (c *dateTimeStampType) UnmarshalXML(d *xml.Decoder, start xml.StartElement) error {
+	var dateStr string
+	err := d.DecodeElement(&dateStr, &start)
+	if err != nil {
+		return err
+	}
+	c.DateTime, err = time.Parse(time.RFC3339, dateStr+"Z")
+	fmt.Println(c.DateTime)
+	return err
+}
+
+func (c *dateTimeStampType) MarshalXML(e *xml.Encoder, start xml.StartElement) error {
+	err := e.EncodeElement(c.DateTime, start)
+	return err
+}
+
+type prescriptionLogInfo struct {
+	Status         string             `xml:"Status"`
+	DateTimeStamp  *dateTimeStampType `xml:"DateTimeStamp"`
+	AdditionalInfo string             `xml:"AdditionalInfo"`
+}
+
+type Result struct {
+	ResultCode        string `xml:"Result>ResultCode"`
+	ResultDescription string `xml:"Result>ResultDescription"`
+}
+
+type getMedicationListRequest struct {
+	XMLName   xml.Name     `xml:"http://www.dosespot.com/API/11/ GetMedicationListRequest"`
+	SSO       singleSignOn `xml:"SingleSignOn"`
+	PatientId int64        `xml:"PatientId"`
+	Sources   []string     `xml:"Sources>MedicationSourceType"`
+	Status    []string     `xml:"Status>MedicationStatusType"`
+}
+
+type getMedicationListResult struct {
+	XMLName xml.Name `xml:"http://www.dosespot.com/API/11/ GetMedicationListResult"`
+	Result
+	Medications []*medication `xml:"Medications>MedicationListItem"`
 }

@@ -26,12 +26,14 @@ const (
 	startPrescribingPatientAction      = "PatientStartPrescribingMessage"
 	sendMultiplPrescriptionsAction     = "SendMultiplePrescriptions"
 	searchPharmaciesAction             = "PharmacySearchMessageDetailed"
+	getPrescriptionLogDetailsAction    = "GetPrescriptionLogDetails"
+	getMedicationListAction            = "GetMedicationList"
 	resultOk                           = "OK"
 )
 
-var (
-	doseSpotClient = soapClient{SoapAPIEndPoint: doseSpotSOAPEndPoint, APIEndpoint: doseSpotAPIEndPoint}
-)
+func getDoseSpotClient() *soapClient {
+	return &soapClient{SoapAPIEndPoint: doseSpotSOAPEndPoint, APIEndpoint: doseSpotAPIEndPoint}
+}
 
 func NewDoseSpotService(clinicId, clinicKey, userId string) *DoseSpotService {
 	d := &DoseSpotService{}
@@ -53,7 +55,8 @@ func (d *DoseSpotService) GetDrugNamesForDoctor(prefix string) ([]string, error)
 	medicationSearch.SearchString = prefix
 
 	searchResult := &medicationQuickSearchResponse{}
-	err := doseSpotClient.makeSoapRequest(medicationQuickSearchAction, medicationSearch, searchResult)
+
+	err := getDoseSpotClient().makeSoapRequest(medicationQuickSearchAction, medicationSearch, searchResult)
 
 	if err != nil {
 		return nil, err
@@ -68,7 +71,7 @@ func (d *DoseSpotService) GetDrugNamesForPatient(prefix string) ([]string, error
 	selfReportedDrugsSearch.SearchTerm = prefix
 
 	searchResult := &selfReportedMedicationSearchResponse{}
-	err := doseSpotClient.makeSoapRequest(selfReportedMedicationSearchAction, selfReportedDrugsSearch, searchResult)
+	err := getDoseSpotClient().makeSoapRequest(selfReportedMedicationSearchAction, selfReportedDrugsSearch, searchResult)
 
 	if err != nil {
 		return nil, err
@@ -88,7 +91,7 @@ func (d *DoseSpotService) SearchForMedicationStrength(medicationName string) ([]
 	medicationStrengthSearch.MedicationName = medicationName
 
 	searchResult := &medicationStrengthSearchResponse{}
-	err := doseSpotClient.makeSoapRequest(medicationStrengthSearchAction, medicationStrengthSearch, searchResult)
+	err := getDoseSpotClient().makeSoapRequest(medicationStrengthSearchAction, medicationStrengthSearch, searchResult)
 
 	if err != nil {
 		return nil, err
@@ -112,7 +115,7 @@ func (d *DoseSpotService) SendMultiplePrescriptions(Patient *common.Patient, Tre
 	sendPrescriptionsRequest.PrescriptionIds = prescriptionIds
 
 	response := &sendMultiplePrescriptionsResponse{}
-	err := doseSpotClient.makeSoapRequest(sendMultiplPrescriptionsAction, sendPrescriptionsRequest, response)
+	err := getDoseSpotClient().makeSoapRequest(sendMultiplPrescriptionsAction, sendPrescriptionsRequest, response)
 	if err != nil {
 		return nil, err
 	}
@@ -139,7 +142,7 @@ func (d *DoseSpotService) StartPrescribingPatient(Patient *common.Patient, Treat
 	newPatient.City = Patient.City
 	newPatient.State = Patient.State
 	newPatient.ZipCode = Patient.ZipCode
-	newPatient.DateOfBirth = DateOfBirthType{DateOfBirth: Patient.Dob}
+	newPatient.DateOfBirth = specialDateTime{DateTime: Patient.Dob}
 	newPatient.Gender = Patient.Gender
 	newPatient.PrimaryPhone = Patient.Phone
 	newPatient.PrimaryPhoneType = Patient.PhoneType
@@ -189,7 +192,7 @@ func (d *DoseSpotService) StartPrescribingPatient(Patient *common.Patient, Treat
 	startPrescribingRequest.SSO = generateSingleSignOn(d.ClinicKey, d.UserId, d.ClinicId)
 
 	response := &patientStartPrescribingResponse{}
-	err := doseSpotClient.makeSoapRequest(startPrescribingPatientAction, startPrescribingRequest, response)
+	err := getDoseSpotClient().makeSoapRequest(startPrescribingPatientAction, startPrescribingRequest, response)
 
 	if err != nil {
 		return err
@@ -229,7 +232,7 @@ func (d *DoseSpotService) SelectMedication(medicationName, medicationStrength st
 	medicationSelect.MedicationStrength = medicationStrength
 
 	selectResult := &medicationSelectResponse{}
-	err = doseSpotClient.makeSoapRequest(medicationSelectAction, medicationSelect, selectResult)
+	err = getDoseSpotClient().makeSoapRequest(medicationSelectAction, medicationSelect, selectResult)
 
 	if err != nil {
 		return nil, err
@@ -271,7 +274,7 @@ func (d *DoseSpotService) SearchForPharmacies(city, state, zipcode, name string,
 	searchRequest.SSO = generateSingleSignOn(d.ClinicKey, d.UserId, d.ClinicId)
 
 	searchResponse := &pharmacySearchResult{}
-	err := doseSpotClient.makeSoapRequest(searchPharmaciesAction, searchRequest, searchResponse)
+	err := getDoseSpotClient().makeSoapRequest(searchPharmaciesAction, searchRequest, searchResponse)
 	if err != nil {
 		return nil, err
 	}
@@ -297,4 +300,51 @@ func (d *DoseSpotService) SearchForPharmacies(city, state, zipcode, name string,
 	}
 
 	return pharmacies, nil
+}
+
+func (d *DoseSpotService) GetPrescriptionStatus(prescriptionId int64) ([]*PrescriptionLog, error) {
+	request := &getPrescriptionLogDetailsRequest{}
+	request.SSO = generateSingleSignOn(d.ClinicKey, d.UserId, d.ClinicId)
+	request.PrescriptionId = prescriptionId
+
+	response := &getPrescriptionLogDetailsResult{}
+	err := getDoseSpotClient().makeSoapRequest(getPrescriptionLogDetailsAction, request, response)
+	if err != nil {
+		return nil, err
+	}
+
+	prescriptionLogs := make([]*PrescriptionLog, 0)
+	if response.Log != nil {
+		for _, logDetails := range response.Log {
+			prescriptionLog := &PrescriptionLog{}
+			prescriptionLog.LogTimeStamp = logDetails.DateTimeStamp.DateTime
+			prescriptionLog.PrescriptionStatus = logDetails.Status
+			prescriptionLogs = append(prescriptionLogs, prescriptionLog)
+		}
+	}
+
+	return prescriptionLogs, nil
+}
+
+func (d *DoseSpotService) GetMedicationList(PatientId int64) ([]*common.Treatment, error) {
+	request := &getMedicationListRequest{}
+	request.PatientId = PatientId
+	request.SSO = generateSingleSignOn(d.ClinicKey, d.UserId, d.ClinicId)
+	request.Sources = []string{"Prescription"}
+	request.Status = []string{"Active"}
+	response := &getMedicationListResult{}
+	err := getDoseSpotClient().makeSoapRequest(getMedicationListAction, request, response)
+	if err != nil {
+		return nil, err
+	}
+
+	treatments := make([]*common.Treatment, 0)
+	for _, medicationItem := range response.Medications {
+		treatment := &common.Treatment{}
+		treatment.DrugInternalName = medicationItem.DisplayName
+		treatment.PrescriptionId = int64(medicationItem.DoseSpotPrescriptionId)
+		treatment.PrescriptionStatus = medicationItem.PrescriptionStatus
+		treatments = append(treatments, treatment)
+	}
+	return treatments, nil
 }
