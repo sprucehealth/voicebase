@@ -2,6 +2,7 @@ package main
 
 import (
 	"encoding/json"
+	"flag"
 	"fmt"
 	"log"
 	"strconv"
@@ -13,6 +14,8 @@ import (
 )
 
 // http://tools.ietf.org/html/rfc5424
+
+var flagCloudTrail = flag.Bool("cloudtrail", false, "Enable CloudTrail log indexing")
 
 type Facility int
 
@@ -214,10 +217,22 @@ func (h *handler) Handle(parts syslogparser.LogParts) {
 }
 
 func main() {
+	flag.Parse()
+
+	es := &ElasticSearch{
+		Endpoint: "http://127.0.0.1:9200",
+	}
+
+	if *flagCloudTrail {
+		if err := startCloudTrailIndexer(es); err != nil {
+			log.Fatal(err)
+		}
+	}
+
+	select {}
+
 	hand := &handler{
-		es: &ElasticSearch{
-			Endpoint: "http://127.0.0.1:9200",
-		},
+		es:       es,
 		appTypes: map[string]string{},
 		jsonApps: map[string]bool{
 			"dhclient": false,

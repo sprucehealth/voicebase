@@ -6,7 +6,6 @@ import (
 	"fmt"
 	"net/http"
 	"net/url"
-	"strings"
 	"time"
 )
 
@@ -16,13 +15,13 @@ type ElasticSearch struct {
 	Endpoint string // e.g. http://127.0.0.1:9200
 }
 
-func (es *ElasticSearch) IndexJSON(index, doctype, js string, ts time.Time) error {
-	res, err := http.Post(fmt.Sprintf("%s/%s/%s/?timestamp=%s", es.Endpoint, index, doctype, url.QueryEscape(ts.Format(esTimeFormat))), "text/json", strings.NewReader(js))
+func (es *ElasticSearch) IndexJSON(index, doctype string, js []byte, ts time.Time) error {
+	res, err := http.Post(fmt.Sprintf("%s/%s/%s/?timestamp=%s", es.Endpoint, index, doctype, url.QueryEscape(ts.Format(esTimeFormat))), "text/json", bytes.NewReader(js))
 	if err != nil {
 		return err
 	}
 	defer res.Body.Close()
-	if res.StatusCode != 200 {
+	if res.StatusCode >= 300 {
 		return fmt.Errorf("Bad status code %d from ElasticSearch", res.StatusCode)
 	}
 	return nil

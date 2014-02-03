@@ -3,11 +3,11 @@ package sqs
 type AttributeName string
 
 const (
-	All                              AttributeName = "All"
-	SenderId                         AttributeName = "SenderId"
-	SentTimestamp                    AttributeName = "SentTimestamp"
-	ApproximateReceiveCount          AttributeName = "ApproximateReceiveCount"
-	ApproximateFirstReceiveTimestamp AttributeName = "ApproximateFirstReceiveTimestamp"
+	All                              AttributeName = "All"                              // All values
+	SenderId                         AttributeName = "SenderId"                         // the AWS account number (or the IP address, if anonymous access is allowed) of the sender
+	SentTimestamp                    AttributeName = "SentTimestamp"                    // the time when the message was sent (epoch time in milliseconds)
+	ApproximateReceiveCount          AttributeName = "ApproximateReceiveCount"          // the number of times a message has been received but not deleted
+	ApproximateFirstReceiveTimestamp AttributeName = "ApproximateFirstReceiveTimestamp" // the time when the message was first received (epoch time in milliseconds)
 )
 
 type listQueuesResponse struct {
