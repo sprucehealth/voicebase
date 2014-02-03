@@ -229,8 +229,6 @@ func main() {
 		}
 	}
 
-	select {}
-
 	hand := &handler{
 		es:       es,
 		appTypes: map[string]string{},
