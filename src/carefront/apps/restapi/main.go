@@ -164,12 +164,6 @@ func main() {
 	}
 	defer db.Close()
 
-	pharmacyDb, err := connectToDatabase(&conf, conf.PharmacyDB)
-	if err != nil {
-		log.Fatal(err)
-	}
-	defer pharmacyDb.Close()
-
 	awsAuth, err := conf.AWSAuth()
 	if err != nil {
 		log.Fatalf("Failed to get AWS auth: %+v", err)
