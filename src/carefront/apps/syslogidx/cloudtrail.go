@@ -34,23 +34,23 @@ func startCloudTrailIndexer(es *ElasticSearch) error {
 			msgs, err := sq.ReceiveMessage(queueUrl, nil, 1, visibilityTimeout, waitTimeSeconds)
 			if err != nil {
 				log.Printf("SQS ReceiveMessage failed: %+v", err)
-				time.Sleep(time.Second * 10)
+				time.Sleep(time.Minute)
+				continue
 			}
 			if len(msgs) == 0 {
 				// log.Println("No message received, sleeping")
-				time.Sleep(time.Second * 10)
+				time.Sleep(time.Minute)
+				continue
 			}
 			for _, m := range msgs {
 				var note sns.SQSMessage
 				if err := json.Unmarshal([]byte(m.Body), &note); err != nil {
 					log.Printf("Failed to unmarshal SNS notification from SQS Body: %+v", err)
-					time.Sleep(time.Second * 10)
 					continue
 				}
 				var ctNote cloudtrail.SNSNotification
 				if err := json.Unmarshal([]byte(note.Message), &ctNote); err != nil {
 					log.Printf("Failed to unmarshal CloudTrail notification from SNS message: %+v", err)
-					time.Sleep(time.Second * 10)
 					continue
 				}
 
