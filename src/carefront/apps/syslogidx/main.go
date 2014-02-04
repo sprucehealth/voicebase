@@ -15,7 +15,10 @@ import (
 
 // http://tools.ietf.org/html/rfc5424
 
-var flagCloudTrail = flag.Bool("cloudtrail", false, "Enable CloudTrail log indexing")
+var (
+	flagCloudTrail  = flag.Bool("cloudtrail", false, "Enable CloudTrail log indexing")
+	flagArchiveLogs = flag.Bool("archive", false, "Enable log archiving to S3")
+)
 
 type Facility int
 
@@ -219,6 +222,12 @@ func (h *handler) Handle(parts syslogparser.LogParts) {
 func main() {
 	flag.Parse()
 
+	if *flagCloudTrail || *flagArchiveLogs {
+		if err := setupAWS(); err != nil {
+			log.Fatal(err)
+		}
+	}
+
 	es := &ElasticSearch{
 		Endpoint: "http://127.0.0.1:9200",
 	}
@@ -228,6 +237,14 @@ func main() {
 			log.Fatal(err)
 		}
 	}
+
+	if *flagArchiveLogs {
+		if err := startLogArchiving(); err != nil {
+			log.Fatal(err)
+		}
+	}
+
+	select {}
 
 	hand := &handler{
 		es:       es,

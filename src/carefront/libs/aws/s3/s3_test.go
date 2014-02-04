@@ -40,6 +40,17 @@ func TestS3(t *testing.T) {
 	}
 	t.Log(string(data))
 
+	headers, err := s3.Head(bucket, key)
+	if err != nil {
+		t.Errorf("HEAD failed: %+v", err)
+	}
+	t.Logf("%+v", headers)
+
+	_, err = s3.Head(bucket, "non-existant")
+	if err == nil {
+		t.Errorf("HEAD should have failed")
+	}
+
 	if err := s3.Delete(bucket, key); err != nil {
 		t.Fatal(err)
 	}

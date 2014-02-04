@@ -2,79 +2,24 @@ package main
 
 import (
 	"encoding/json"
-	"errors"
 	"flag"
 	"fmt"
 	"log"
-	"os"
 	"time"
 
-	"carefront/libs/aws"
 	"carefront/libs/aws/cloudtrail"
-	"carefront/libs/aws/s3"
 	"carefront/libs/aws/sns"
 	"carefront/libs/aws/sqs"
 )
 
 var (
-	awsAccessKey       = flag.String("aws_access_key", "", "AWS Access Key ID")
-	awsSecretKey       = flag.String("aws_secret_key", "", "AWS Secret Key")
-	awsRole            = flag.String("aws_role", "", "AWS Role")
-	awsRegion          = flag.String("aws_region", "", "AWS Region")
 	cloudTrailSQSQueue = flag.String("cloudtrail_sqs_queue", "cloudtrail", "CloudTrail SQS queue name")
 )
 
 func startCloudTrailIndexer(es *ElasticSearch) error {
-	var auth aws.Auth
-
-	if *awsRole == "" {
-		*awsRole = os.Getenv("AWS_ROLE")
-	}
-	if *awsRole != "" {
-		var err error
-		auth, err = aws.CredentialsForRole(*awsRole)
-		if err != nil {
-			return err
-		}
-	} else {
-		keys := aws.Keys{
-			AccessKey: *awsAccessKey,
-			SecretKey: *awsSecretKey,
-		}
-		if keys.AccessKey == "" || keys.SecretKey == "" {
-			keys = aws.KeysFromEnvironment()
-		}
-		if keys.AccessKey == "" || keys.SecretKey == "" {
-			return errors.New("No AWS credentials or role set")
-		}
-		auth = keys
-	}
-
-	if *awsRegion == "" {
-		az, err := aws.GetMetadata(aws.MetadataAvailabilityZone)
-		if err != nil {
-			return err
-		}
-		*awsRegion = az[:len(az)-1]
-	}
-
-	region, ok := aws.Regions[*awsRegion]
-	if !ok {
-		return errors.New("Unknown region " + *awsRegion)
-	}
-
-	awsCli := &aws.Client{
-		Auth: auth,
-	}
-
-	s3c := s3.S3{
-		Region: region,
-		Client: awsCli,
-	}
-
 	sq := &sqs.SQS{
 		Region: region,
-		Client: awsCli,
+		Client: awsClient,
 	}
 
 	queueUrl, err := sq.GetQueueUrl(*cloudTrailSQSQueue, "")
@@ -111,7 +56,7 @@ func startCloudTrailIndexer(es *ElasticSearch) error {
 
 				failed := 0
 				for _, path := range ctNote.S3ObjectKey {
-					rd, err := s3c.GetReader(ctNote.S3Bucket, path)
+					rd, err := s3Client.GetReader(ctNote.S3Bucket, path)
 					if err != nil {
 						log.Printf("Failed to fetch log from S3 (%s:%s): %+v", ctNote.S3Bucket, path, err)
 						failed++

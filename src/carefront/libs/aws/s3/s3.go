@@ -67,6 +67,22 @@ func (s3 *S3) GetReader(bucket, path string) (io.ReadCloser, error) {
 	return res.Body, nil
 }
 
+// http://docs.aws.amazon.com/AmazonS3/latest/API/RESTObjectHEAD.html
+func (s3 *S3) Head(bucket, path string) (http.Header, error) {
+	req, err := http.NewRequest("HEAD", s3.buildUrl(bucket, path), nil)
+	if err != nil {
+		return nil, err
+	}
+	res, err := s3.Do(req)
+	if err != nil {
+		return nil, err
+	}
+	if res.Body != nil {
+		res.Body.Close()
+	}
+	return res.Header, nil
+}
+
 // http://docs.aws.amazon.com/AmazonS3/latest/API/RESTObjectPUT.html
 func (s3 *S3) Put(bucket, path string, data []byte, contType string, perm ACL, additionalHeaders map[string][]string) error {
 	h := md5.New()
@@ -80,6 +96,32 @@ func (s3 *S3) Put(bucket, path string, data []byte, contType string, perm ACL, a
 	}
 	req.ContentLength = int64(len(data))
 	req.Header.Set("Content-MD5", md5Sum)
+	if contType != "" {
+		req.Header.Set("Content-Type", contType)
+	}
+	if perm != "" {
+		req.Header.Set(HeaderACL, string(perm))
+	}
+	for key, values := range additionalHeaders {
+		req.Header[key] = values
+	}
+	res, err := s3.Do(req)
+	if err != nil {
+		return err
+	}
+	if res.StatusCode == http.StatusOK {
+		res.Body.Close()
+	}
+	return nil
+}
+
+// http://docs.aws.amazon.com/AmazonS3/latest/API/RESTObjectPUT.html
+func (s3 *S3) PutFrom(bucket, path string, rd io.Reader, size int64, contType string, perm ACL, additionalHeaders map[string][]string) error {
+	req, err := http.NewRequest("PUT", s3.buildUrl(bucket, path), rd)
+	if err != nil {
+		return err
+	}
+	req.ContentLength = size
 	if contType != "" {
 		req.Header.Set("Content-Type", contType)
 	}
