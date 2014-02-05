@@ -263,7 +263,7 @@ func (d *DoctorSubmitPatientVisitReviewHandler) UpdatePrescriptionStatusForPatie
 	}
 
 	if treatments == nil || len(treatments) == 0 {
-		fmt.Println("No medications returned from dosespot\n")
+		fmt.Println("No medications returned from dosespot")
 	}
 
 	// keep track of treatments that are still pending for patient so that we know whether
