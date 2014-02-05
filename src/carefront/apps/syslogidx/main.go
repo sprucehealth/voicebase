@@ -189,15 +189,10 @@ func (h *handler) Handle(parts syslogparser.LogParts) {
 		delete(fields, "_ts")
 	}
 
-	var idx string
-	if s, ok := fields["_index"].(string); ok {
-		idx = s
-	}
-	if idx != "" {
+	if _, ok := fields["_index"].(string); ok {
 		delete(fields, "_index")
-	} else {
-		idx = fmt.Sprintf("log-%s", ent.Time.Format("2006.01.02"))
 	}
+	idx := fmt.Sprintf("log-%s", ent.Time.Format("2006.01.02"))
 
 	var doctype string
 	if s, ok := fields["_type"].(string); ok {
