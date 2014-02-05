@@ -342,7 +342,7 @@ func (d *DoseSpotService) GetMedicationList(PatientId int64) ([]*common.Treatmen
 	for _, medicationItem := range response.Medications {
 		treatment := &common.Treatment{}
 		treatment.DrugInternalName = medicationItem.DisplayName
-		treatment.PrescriptionId = int64(medicationItem.DoseSpotPrescriptionId)
+		treatment.ErxMedicationId = medicationItem.MedicationId
 		treatment.PrescriptionStatus = medicationItem.PrescriptionStatus
 		treatments = append(treatments, treatment)
 	}

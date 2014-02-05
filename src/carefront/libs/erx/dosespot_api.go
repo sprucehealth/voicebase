@@ -132,6 +132,7 @@ type medication struct {
 	NoSubstitutions        bool   `xml:"NoSubstitutions"`
 	RxReferenceNumber      string `xml:"RxReferenceNumber"`
 	PrescriptionStatus     string `xml:"PrescriptionStatus,omitempty"`
+	MedicationId           int64  `xml:"MedicationId,omitempty"`
 }
 
 // Need to treat the date object for date of birth as a special case

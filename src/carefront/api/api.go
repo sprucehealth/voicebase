@@ -66,6 +66,13 @@ type PatientAPI interface {
 	GetPatientFromPatientVisitId(patientVisitId int64) (patient *common.Patient, err error)
 }
 
+type PrescriptionStatus struct {
+	TreatmentId        int64
+	PrescriptionId     int64
+	PrescriptionStatus string
+	StatusTimeStamp    time.Time
+}
+
 type PatientVisitAPI interface {
 	GetActivePatientVisitIdForHealthCondition(patientId, healthConditionId int64) (int64, error)
 	GetLastCreatedPatientVisitIdForPatient(patientId int64) (int64, error)
@@ -94,6 +101,7 @@ type PatientVisitAPI interface {
 	GetTreatmentPlanForPatientVisit(patientVisitId int64) (treatmentPlan *common.TreatmentPlan, err error)
 	UpdateTreatmentsWithPrescriptionIds(treatments []*common.Treatment, DoctorId, PatientVisitId int64) error
 	AddErxStatusEvent(treatments []*common.Treatment, statusEvent string) error
+	GetPrescriptionStatusEventsForPatient(patientId int64) ([]*PrescriptionStatus, error)
 }
 
 type DoctorAPI interface {

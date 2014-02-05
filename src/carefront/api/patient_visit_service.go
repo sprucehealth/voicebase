@@ -777,6 +777,45 @@ func (d *DataService) AddErxStatusEvent(treatments []*common.Treatment, statusEv
 	return nil
 }
 
+func (d *DataService) GetPrescriptionStatusEventsForPatient(patientId int64) ([]*PrescriptionStatus, error) {
+	rows, err := d.DB.Query(`select erx_status_events.treatment_id, treatment.erx_id, erx_status_events.erx_status, erx_status_events.creation_date from treatment 
+								inner join treatment_plan on treatment_plan_id = treatment_plan.id 
+								inner join patient_visit on treatment_plan.patient_visit_id = patient_visit.id 
+								left outer join erx_status_events on erx_status_events.treatment_id = treatment.id 
+								inner join patient on patient.id = patient_visit.patient_id 
+									where patient.erx_patient_id = ? order by erx_status_events.creation_date desc;`, patientId)
+	if err != nil {
+		return nil, err
+	}
+	defer rows.Close()
+
+	prescriptionStatuses := make([]*PrescriptionStatus, 0)
+	for rows.Next() {
+		var treatmentId int64
+		var prescriptionId sql.NullInt64
+		var status string
+		var creationDate time.Time
+		err = rows.Scan(&treatmentId, &prescriptionId, &status, &creationDate)
+		if err != nil {
+			return nil, err
+		}
+
+		prescriptionStatus := &PrescriptionStatus{
+			PrescriptionStatus: status,
+			TreatmentId:        treatmentId,
+			StatusTimeStamp:    creationDate,
+		}
+
+		if prescriptionId.Valid {
+			prescriptionStatus.PrescriptionId = prescriptionId.Int64
+		}
+
+		prescriptionStatuses = append(prescriptionStatuses, prescriptionStatus)
+	}
+
+	return prescriptionStatuses, nil
+}
+
 func (d *DataService) getTreatmentFromCurrentRow(rows *sql.Rows) (*common.Treatment, error) {
 	var treatmentId, dispenseValue, dispenseUnitId, refills, daysSupply int64
 	var drugInternalName, dosageStrength, patientInstructions, treatmentType, dispenseUnitDescription, status string

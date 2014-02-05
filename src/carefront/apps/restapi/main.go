@@ -377,5 +377,6 @@ func main() {
 		}()
 	}
 	golog.Infof("Starting server on %s...", conf.ListenAddr)
+
 	log.Fatal(s.ListenAndServe())
 }
