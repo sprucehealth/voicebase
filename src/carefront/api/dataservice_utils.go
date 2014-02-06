@@ -14,7 +14,7 @@ const (
 	status_deleted                         = "DELETED"
 	status_inactive                        = "INACTIVE"
 	ERX_STATUS_SENDING                     = "Sending"
-	ERX_STATUS_SENT                        = "Sent"
+	ERX_STATUS_SENT                        = "eRxSent"
 	ERX_STATUS_ERROR                       = "Error"
 	ERX_STATUS_SEND_ERROR                  = "Send_Error"
 	treatment_otc                          = "OTC"

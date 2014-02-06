@@ -6,6 +6,7 @@ import (
 	"carefront/libs/erx"
 	"carefront/libs/golog"
 	"carefront/libs/pharmacy"
+	"encoding/json"
 	"fmt"
 	"github.com/gorilla/schema"
 	"github.com/subosito/twilio"
@@ -18,6 +19,8 @@ type DoctorSubmitPatientVisitReviewHandler struct {
 	TwilioCli         *twilio.Client
 	TwilioFromNumber  string
 	ERxApi            erx.ERxAPI
+	ErxStatusQueue    *common.SQSQueue
+	ERxRouting        bool
 }
 
 type SubmitPatientVisitReviewRequest struct {
@@ -28,6 +31,11 @@ type SubmitPatientVisitReviewRequest struct {
 
 type SubmitPatientVisitReviewResponse struct {
 	Result string `json:"result"`
+}
+
+type PrescriptionStatusCheckMessage struct {
+	PatientId int64
+	DoctorId  int64
 }
 
 const (
@@ -80,7 +88,7 @@ func (d *DoctorSubmitPatientVisitReviewHandler) submitPatientVisitReview(w http.
 		}
 
 	case api.CASE_STATUS_PHOTOS_REJECTED:
-		// reject the patient photos
+		// reject the  patient photos
 		err = d.DataApi.RejectPatientVisitPhotos(requestData.PatientVisitId)
 		if err != nil {
 			WriteDeveloperError(w, http.StatusInternalServerError, "Unable to reject patient photos: "+err.Error())
@@ -124,7 +132,7 @@ func (d *DoctorSubmitPatientVisitReviewHandler) submitPatientVisitReview(w http.
 
 		// FIX: add fake pharmacy for now
 		patient.Pharmacy = &pharmacy.PharmacyData{}
-		patient.Pharmacy.Id = "39203"
+		patient.Pharmacy.Id = "47731"
 
 		treatmentPlan, err := d.DataApi.GetTreatmentPlanForPatientVisit(requestData.PatientVisitId)
 		if err != nil {
@@ -132,7 +140,7 @@ func (d *DoctorSubmitPatientVisitReviewHandler) submitPatientVisitReview(w http.
 			return
 		}
 
-		if d.ERxApi != nil && treatmentPlan != nil && treatmentPlan.Treatments != nil && len(treatmentPlan.Treatments) > 0 {
+		if d.ERxRouting == true && d.ERxApi != nil && treatmentPlan != nil && treatmentPlan.Treatments != nil && len(treatmentPlan.Treatments) > 0 {
 			err = d.ERxApi.StartPrescribingPatient(patient, treatmentPlan.Treatments)
 			if err != nil {
 				WriteDeveloperError(w, http.StatusInternalServerError, "Unable to start prescribing patient: "+err.Error())
@@ -192,17 +200,46 @@ func (d *DoctorSubmitPatientVisitReviewHandler) submitPatientVisitReview(w http.
 					return
 				}
 			}
-		}
 
+			//  Queue up notification to patient
+			err = d.queueUpJobForErxStatus(patient.PatientId, doctorId)
+			if err != nil {
+				WriteDeveloperError(w, http.StatusInternalServerError, "Unable to queue up job for getting prescription status: "+err.Error())
+				return
+			}
+		}
 	}
 
-	//  Queue up notification to patient
+	err = d.sendSMSToNotifyPatient(requestData.PatientVisitId)
+	if err != nil {
+		WriteDeveloperError(w, http.StatusInternalServerError, "Unable to SMS notification to patient: "+err.Error())
+		return
+	}
+
+	WriteJSONToHTTPResponseWriter(w, http.StatusOK, SuccessfulGenericJSONResponse())
+}
+
+func (d *DoctorSubmitPatientVisitReviewHandler) queueUpJobForErxStatus(PatientId, DoctorId int64) error {
+	// queue up a job to get the updated status of the prescription
+	// to know when exatly the message was sent to the pharmacy
+	erxMessage := &PrescriptionStatusCheckMessage{}
+	erxMessage.PatientId = PatientId
+	erxMessage.DoctorId = DoctorId
+	jsonData, err := json.Marshal(erxMessage)
+	if err != nil {
+		return err
+	}
+
+	// queue up a job
+	return d.ErxStatusQueue.QueueService.SendMessage(d.ErxStatusQueue.QueueUrl, 0, string(jsonData))
+}
+
+func (d *DoctorSubmitPatientVisitReviewHandler) sendSMSToNotifyPatient(PatientVisitId int64) error {
 
 	if d.TwilioCli != nil {
-		patient, err := d.DataApi.GetPatientFromPatientVisitId(requestData.PatientVisitId)
+		patient, err := d.DataApi.GetPatientFromPatientVisitId(PatientVisitId)
 		if err != nil {
-			WriteDeveloperError(w, http.StatusInternalServerError, "Unable to get patient from id: "+err.Error())
-			return
+			return err
 		}
 		if patient.Phone != "" {
 			_, _, err = d.TwilioCli.Messages.SendSMS(d.TwilioFromNumber, patient.Phone, fmt.Sprintf(patientVisitUpdateNotification, d.IOSDeeplinkScheme))
@@ -212,7 +249,5 @@ func (d *DoctorSubmitPatientVisitReviewHandler) submitPatientVisitReview(w http.
 		}
 	}
 
-	// TODO Send prescriptions to pharmacy of patient's choice
-
-	WriteJSONToHTTPResponseWriter(w, http.StatusOK, SuccessfulGenericJSONResponse())
+	return nil
 }

@@ -23,10 +23,13 @@ type ERxAPI interface {
 	SendMultiplePrescriptions(Patient *common.Patient, Treatments []*common.Treatment) ([]int64, error)
 	SearchForPharmacies(city, state, zipcode, name string, pharmacyTypes []string) ([]*pharmacySearch.PharmacyData, error)
 	GetPrescriptionStatus(prescriptionId int64) ([]*PrescriptionLog, error)
-	GetMedicationList(PatientId int64) ([]*common.Treatment, error)
+	GetMedicationList(PatientId int64) ([]*Medication, error)
+	GetTransmissionErrorDetails() error
 }
 
 type Medication struct {
+	ErxMedicationId         int64
+	PrescriptionStatus      string
 	DrugDBIds               map[string]string
 	OTC                     bool
 	DispenseUnitId          int

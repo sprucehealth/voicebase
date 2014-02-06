@@ -103,6 +103,18 @@ func (sqs *SQS) ListQueues(namePrefix string) ([]string, error) {
 	return res.QueueUrls, nil
 }
 
+func (sqs *SQS) SendMessage(queueUrl string, delaySeconds int, messageBody string) error {
+	args := url.Values{}
+
+	if delaySeconds > 0 {
+		args.Set("DelaySeconds", strconv.Itoa(delaySeconds))
+	}
+
+	args.Set("MessageBody", messageBody)
+	res := sendMessageResponse{}
+	return sqs.Request(queueUrl, "SendMessage", args, &res)
+}
+
 func (sqs *SQS) ReceiveMessage(queueUrl string, attributes []AttributeName, maxNumberOfMessages, visibilityTimeout, waitTimeSeconds int) ([]*Message, error) {
 	args := url.Values{}
 	for i, attr := range attributes {

@@ -739,6 +739,44 @@ func (d *DataService) GetTreatmentPlanForPatientVisit(patientVisitId int64) (*co
 	return &treatmentPlan, nil
 }
 
+func (d *DataService) GetTreatmentBasedOnPrescriptionId(erxId int64) (*common.Treatment, error) {
+	rows, err := d.DB.Query(`select treatment.id, treatment.drug_internal_name, treatment.dosage_strength, treatment.type,
+			treatment.dispense_value, treatment.dispense_unit_id, ltext, treatment.refills, treatment.substitutions_allowed, 
+			treatment.days_supply, treatment.pharmacy_notes, treatment.patient_instructions, treatment.creation_date, 
+			treatment.status, drug_name.name, drug_route.name, drug_form.name from treatment 
+				inner join dispense_unit on treatment.dispense_unit_id = dispense_unit.id
+				inner join localized_text on localized_text.app_text_id = dispense_unit.dispense_unit_text_id
+				left outer join drug_name on drug_name_id = drug_name.id
+				left outer join drug_route on drug_route_id = drug_route.id
+				left outer join drug_form on drug_form_id = drug_form.id
+				where erx_id=? and localized_text.language_id = ?`, erxId, EN_LANGUAGE_ID)
+	if err != nil {
+		return nil, err
+	}
+
+	defer rows.Close()
+
+	treatments := make([]*common.Treatment, 0)
+	for rows.Next() {
+		treatment, err := d.getTreatmentFromCurrentRow(rows)
+		if err != nil {
+			return nil, err
+		}
+
+		treatments = append(treatments, treatment)
+	}
+
+	if len(treatments) == 0 {
+		return nil, nil
+	}
+
+	if len(treatments) > 1 {
+		return nil, fmt.Errorf("Expected just 1 treatment to be returned based on the prescription id, instead got %d", len(treatments))
+	}
+
+	return treatments[0], nil
+}
+
 func (d *DataService) UpdateTreatmentsWithPrescriptionIds(treatments []*common.Treatment, DoctorId, PatientVisitId int64) error {
 	tx, err := d.DB.Begin()
 	if err != nil {

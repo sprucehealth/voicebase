@@ -32,6 +32,7 @@ const (
 	PATIENT_PHONE_HOME          = "Home"
 	PATIENT_PHONE_WORK          = "Work"
 	PATIENT_PHONE_CELL          = "Cell"
+	ERX_STATUS_QUEUE            = "erx"
 )
 
 var (
@@ -99,6 +100,7 @@ type PatientVisitAPI interface {
 	GetRegimenPlanForPatientVisit(patientVisitId int64) (regimenPlan *common.RegimenPlan, err error)
 	AddTreatmentsForPatientVisit(treatments []*common.Treatment, DoctorId, PatientVisitId int64) error
 	GetTreatmentPlanForPatientVisit(patientVisitId int64) (treatmentPlan *common.TreatmentPlan, err error)
+	GetTreatmentBasedOnPrescriptionId(erxId int64) (*common.Treatment, error)
 	UpdateTreatmentsWithPrescriptionIds(treatments []*common.Treatment, DoctorId, PatientVisitId int64) error
 	AddErxStatusEvent(treatments []*common.Treatment, statusEvent string) error
 	GetPrescriptionStatusEventsForPatient(patientId int64) ([]*PrescriptionStatus, error)

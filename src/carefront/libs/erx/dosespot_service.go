@@ -28,6 +28,7 @@ const (
 	searchPharmaciesAction             = "PharmacySearchMessageDetailed"
 	getPrescriptionLogDetailsAction    = "GetPrescriptionLogDetails"
 	getMedicationListAction            = "GetMedicationList"
+	getTransmissionErrorDetailsAction  = "GetTransmissionErrorsDetails"
 	resultOk                           = "OK"
 )
 
@@ -326,7 +327,7 @@ func (d *DoseSpotService) GetPrescriptionStatus(prescriptionId int64) ([]*Prescr
 	return prescriptionLogs, nil
 }
 
-func (d *DoseSpotService) GetMedicationList(PatientId int64) ([]*common.Treatment, error) {
+func (d *DoseSpotService) GetMedicationList(PatientId int64) ([]*Medication, error) {
 	request := &getMedicationListRequest{}
 	request.PatientId = PatientId
 	request.SSO = generateSingleSignOn(d.ClinicKey, d.UserId, d.ClinicId)
@@ -338,13 +339,27 @@ func (d *DoseSpotService) GetMedicationList(PatientId int64) ([]*common.Treatmen
 		return nil, err
 	}
 
-	treatments := make([]*common.Treatment, 0)
+	medications := make([]*Medication, 0)
 	for _, medicationItem := range response.Medications {
-		treatment := &common.Treatment{}
-		treatment.DrugInternalName = medicationItem.DisplayName
-		treatment.ErxMedicationId = medicationItem.MedicationId
-		treatment.PrescriptionStatus = medicationItem.PrescriptionStatus
-		treatments = append(treatments, treatment)
+		medication := &Medication{}
+		medication.ErxMedicationId = medicationItem.MedicationId
+		medication.PrescriptionStatus = medicationItem.PrescriptionStatus
+		medications = append(medications, medication)
 	}
-	return treatments, nil
+	return medications, nil
+}
+
+func (d *DoseSpotService) GetTransmissionErrorDetails() error {
+	request := &getTransmissionErrorDetailsRequest{}
+	request.SSO = generateSingleSignOn(d.ClinicKey, d.UserId, d.ClinicId)
+	response := &getTransmissionErrorDetailsResponse{}
+	err := getDoseSpotClient().makeSoapRequest(getTransmissionErrorDetailsAction, request, response)
+	if err != nil {
+		return err
+	}
+
+	for _, detailsItem := range response.TransmissionErrors {
+		fmt.Println(detailsItem.ErrorDetails)
+	}
+	return nil
 }

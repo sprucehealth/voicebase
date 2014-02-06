@@ -8,7 +8,7 @@ import (
 
 func main() {
 	doseSpotService := &erx.DoseSpotService{ClinicId: os.Getenv("DOSESPOT_CLINIC_ID"), ClinicKey: os.Getenv("DOSESPOT_CLINIC_KEY"), UserId: os.Getenv("DOSESPOT_USER_ID")}
-	treatments, err := doseSpotService.GetMedicationList(1862)
+	treatments, err := doseSpotService.GetMedicationList(1885)
 	if err != nil {
 		panic(err.Error())
 	}

@@ -245,6 +245,24 @@ type getPrescriptionLogDetailsResult struct {
 	Result
 }
 
+type getTransmissionErrorDetailsRequest struct {
+	XMLName xml.Name     `xml:"http://www.dosespot.com/API/11/ GetTransmissionErrorsRequest"`
+	SSO     singleSignOn `xml:"SingleSignOn"`
+}
+
+type transmissionErrorDetailsItem struct {
+	Medication   *medication `xml:"Medication"`
+	ErrorDetails string      `xml:"ErrorDetails"`
+}
+
+type getTransmissionErrorDetailsResponse struct {
+	XMLName xml.Name `xml:"http://www.dosespot.com/API/11/ GetTransmissionErrorsDetailsResult"`
+
+	SSO singleSignOn `xml:"SingleSignOn"`
+	Result
+	TransmissionErrors []*transmissionErrorDetailsItem `xml:"TransmissionErrors>TransmissionErrorDetails"`
+}
+
 // TODO : Find a way to collapse this and the specialDateTime
 // into one type so that we can reuse this struct for any dateTime element
 // as opposed to having to create one everytime we have a date time field

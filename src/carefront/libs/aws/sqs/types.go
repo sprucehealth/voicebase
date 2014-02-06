@@ -41,3 +41,9 @@ type receiveMessageResponse struct {
 	Messages  []*Message `xml:"ReceiveMessageResult>Message"`
 	RequestId string     `xml:"ResponseMetadata>RequestId"`
 }
+
+type sendMessageResponse struct {
+	MessageId string `xml:"SendMessageResult>MessageId"`
+	MD5OfBody string `xml:"SendMessageResult>MD5OfMessageBody"`
+	RequestId string `xml:"ResponseMetadata>RequestId"`
+}

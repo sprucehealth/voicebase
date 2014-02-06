@@ -13,7 +13,10 @@ import (
 
 	"carefront/api"
 	"carefront/apiservice"
+	"carefront/app_worker"
+	"carefront/common"
 	"carefront/common/config"
+	"carefront/libs/aws"
 	"carefront/libs/erx"
 	"carefront/libs/golog"
 	"carefront/libs/maps"
@@ -71,6 +74,7 @@ type Config struct {
 	DoseSpotClinicId         string        `long:"dose_spot_clinic_id" description:"DoseSpot Clinic Id for eRX integration"`
 	DoseSpotUserId           string        `long:"dose_spot_user_id" description:"DoseSpot UserId for eRx integration"`
 	NoServices               bool          `long:"noservices" description:"Disable connecting to remote services"`
+	ERxRouting               bool          `long:"erx_routing" description:"Disable sending of prescriptions electronically"`
 	AuthTokenExpiration      int           `long:"auth_token_expire" description:"Expiration time in seconds for the auth token"`
 	AuthTokenRenew           int           `long:"auth_token_renew" description:"Time left below which to renew the auth token"`
 	StaticContentBaseUrl     string        `long:"static_content_base_url" description:"URL from which to serve static content"`
@@ -270,7 +274,18 @@ func main() {
 		Region:                conf.AWSRegion,
 	}
 
-	doctorSubmitPatientVisitHandler := &apiservice.DoctorSubmitPatientVisitReviewHandler{DataApi: dataApi, ERxApi: erx.NewDoseSpotService(conf.DoseSpotClinicId, conf.DoseSpotClinicKey, conf.DoseSpotUserId), TwilioFromNumber: conf.Twilio.FromNumber, TwilioCli: twilioCli, IOSDeeplinkScheme: conf.IOSDeeplinkScheme}
+	erxStatusQueue, err := common.NewQueue(awsAuth, aws.Regions[conf.AWSRegion], api.ERX_STATUS_QUEUE)
+	if err != nil {
+		log.Fatal("Unable to get erx queue for sending prescriptions to: " + err.Error())
+	}
+	doctorSubmitPatientVisitHandler := &apiservice.DoctorSubmitPatientVisitReviewHandler{DataApi: dataApi,
+		ERxApi:            erx.NewDoseSpotService(conf.DoseSpotClinicId, conf.DoseSpotClinicKey, conf.DoseSpotUserId),
+		TwilioFromNumber:  conf.Twilio.FromNumber,
+		TwilioCli:         twilioCli,
+		IOSDeeplinkScheme: conf.IOSDeeplinkScheme,
+		ErxStatusQueue:    erxStatusQueue,
+		ERxRouting:        conf.ERxRouting}
+
 	diagnosePatientHandler := apiservice.NewDiagnosePatientHandler(dataApi, authApi, cloudStorageApi)
 	diagnosisSummaryHandler := &apiservice.DiagnosisSummaryHandler{DataApi: dataApi}
 	doctorRegimenHandler := apiservice.NewDoctorRegimenHandler(dataApi)
@@ -316,6 +331,8 @@ func main() {
 	mux.Handle("/v1/doctor/visit/advice", doctorAdviceHandler)
 	mux.Handle("/v1/doctor/visit/followup", doctorFollowupHandler)
 	mux.Handle("/v1/doctor/visit/submit", doctorSubmitPatientVisitHandler)
+
+	app_worker.StartWorkerToUpdatePrescriptionStatusForPatient(dataApi, erx.NewDoseSpotService(conf.DoseSpotClinicId, conf.DoseSpotClinicKey, conf.DoseSpotUserId), erxStatusQueue)
 
 	s := &http.Server{
 		Addr:           conf.ListenAddr,
