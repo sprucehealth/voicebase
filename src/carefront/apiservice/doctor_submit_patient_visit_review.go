@@ -161,7 +161,7 @@ func (d *DoctorSubmitPatientVisitReviewHandler) submitPatientVisitReview(w http.
 				return
 			}
 
-			// Now, send the prescription to the doctor
+			// Now, send the prescription to the pharmacy
 			unSuccessfulTreatmentIds, err := d.ERxApi.SendMultiplePrescriptions(patient, treatmentPlan.Treatments)
 			if err != nil {
 				WriteDeveloperError(w, http.StatusInternalServerError, "Unable to send prescription to patient's pharmacy: "+err.Error())

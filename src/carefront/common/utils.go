@@ -29,7 +29,7 @@ func AWSAuthAdapter(auth aws.Auth) goamz.Auth {
 }
 
 type SQSQueue struct {
-	QueueService *sqs.SQS
+	QueueService sqs.SQSService
 	QueueUrl     string
 }
 

@@ -821,7 +821,7 @@ func (d *DataService) GetPrescriptionStatusEventsForPatient(patientId int64) ([]
 								inner join patient_visit on treatment_plan.patient_visit_id = patient_visit.id 
 								left outer join erx_status_events on erx_status_events.treatment_id = treatment.id 
 								inner join patient on patient.id = patient_visit.patient_id 
-									where patient.erx_patient_id = ? order by erx_status_events.creation_date desc;`, patientId)
+									where patient.erx_patient_id = ? order by erx_status_events.creation_date desc`, patientId)
 	if err != nil {
 		return nil, err
 	}
