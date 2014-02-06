@@ -3,8 +3,10 @@ package erx
 import (
 	"bytes"
 	"encoding/xml"
+	"github.com/samuel/go-metrics/metrics"
 	"io/ioutil"
 	"net/http"
+	"time"
 )
 
 const (
@@ -25,7 +27,7 @@ type soapClient struct {
 	APIEndpoint     string
 }
 
-func (s *soapClient) makeSoapRequest(soapAction string, requestMessage interface{}, result interface{}) error {
+func (s *soapClient) makeSoapRequest(soapAction string, requestMessage interface{}, result interface{}, statLatency metrics.Histogram, statRequest, statFailure, statSuccess metrics.Counter) error {
 	envelope := soapEnvelope{}
 	envelope.SOAPBody = soapBody{}
 	requestBody, err := xml.Marshal(requestMessage)
@@ -42,31 +44,45 @@ func (s *soapClient) makeSoapRequest(soapAction string, requestMessage interface
 	buffer.WriteString(xml.Header)
 	buffer.Write(envelopBytes)
 
+	startTime := time.Now()
 	req, err := http.NewRequest("POST", s.SoapAPIEndPoint, buffer)
 	req.Header.Set("Content-Type", xmlContentType)
 	req.Header.Set("SOAPAction", s.APIEndpoint+soapAction)
 
+	statRequest.Inc(1)
 	client := http.Client{}
 	resp, err := client.Do(req)
 	if err != nil {
+		statFailure.Inc(1)
 		return err
 	}
+	responseTime := time.Since(startTime).Nanoseconds() / 1e3
+	statLatency.Update(responseTime)
 
 	body, err := ioutil.ReadAll(resp.Body)
 	if err != nil {
+		statFailure.Inc(1)
 		return err
 	}
 
 	responseEnvelope := &soapEnvelope{}
 	err = xml.Unmarshal(body, responseEnvelope)
 	if err != nil {
+		statFailure.Inc(1)
 		return err
 	}
 
 	err = xml.Unmarshal(responseEnvelope.SOAPBody.RequestBody, result)
 	if err != nil {
+		statFailure.Inc(1)
 		return err
 	}
 
-	return err
+	if err != nil {
+		statFailure.Inc(1)
+		return err
+	}
+
+	statSuccess.Inc(1)
+	return nil
 }

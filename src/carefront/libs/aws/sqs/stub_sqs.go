@@ -2,7 +2,6 @@ package sqs
 
 import (
 	"container/list"
-	"fmt"
 	"strconv"
 	"time"
 )
@@ -29,7 +28,6 @@ func (s *StubSQS) DeleteMessage(queueUrl, receiptHandle string) error {
 			msgQueue.Remove(e)
 		}
 	}
-	fmt.Printf("Deleted message. List now looks liks %+v", msgQueue)
 	return nil
 }
 
@@ -68,8 +66,6 @@ func (s *StubSQS) SendMessage(queueUrl string, delaySeconds int, messageBody str
 	// push the message to the back of the list
 	msgQueue.PushBack(msg)
 
-	fmt.Printf("List looks like %+v", msgQueue)
-
 	return nil
 }
 
@@ -81,6 +77,5 @@ func (s *StubSQS) ReceiveMessage(queueUrl string, attributes []AttributeName, ma
 	}
 
 	msg := msgQueue.Front().Value.(*Message)
-	msgQueue.Remove(msgQueue.Front())
 	return []*Message{msg}, nil
 }

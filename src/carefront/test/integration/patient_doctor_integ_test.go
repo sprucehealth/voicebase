@@ -174,7 +174,7 @@ func TestPatientVisitReview(t *testing.T) {
 
 	stubErxService.PrescriptionIdsToReturn = []int64{10, 20}
 	stubErxService.PrescriptionIdToPrescriptionStatus[10] = api.ERX_STATUS_SENT
-	stubErxService.PrescriptionIdToPrescriptionStatus[20] = api.ERX_STATUS_SENT
+	stubErxService.PrescriptionIdToPrescriptionStatus[20] = api.ERX_STATUS_ERROR
 
 	addAndGetTreatmentsForPatientVisit(testData, treatments, doctor.AccountId, patientVisitResponse.PatientVisitId, t)
 
@@ -296,8 +296,12 @@ func TestPatientVisitReview(t *testing.T) {
 	}
 
 	for _, status := range prescriptionStatuses {
-		if status.PrescriptionStatus != api.ERX_STATUS_SENT && status.PrescriptionStatus != api.ERX_STATUS_SENDING {
-			t.Fatal("Expected the prescription status to be either eRxSent or Sending")
+		if status.TreatmentId == 20 && (status.PrescriptionStatus != api.ERX_STATUS_ERROR || status.PrescriptionStatus != api.ERX_STATUS_SENDING) {
+			t.Fatal("Expected the prescription status to be error for 1 treatment")
+		}
+
+		if status.PrescriptionStatus != api.ERX_STATUS_SENT && status.PrescriptionStatus != api.ERX_STATUS_SENDING && status.PrescriptionStatus != api.ERX_STATUS_ERROR {
+			t.Fatal("Expected the prescription status to be either eRxSent, Sending, or Error")
 		}
 	}
 

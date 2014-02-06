@@ -5,38 +5,61 @@ import (
 	pharmacySearch "carefront/libs/pharmacy"
 	"errors"
 	"fmt"
+	"github.com/samuel/go-metrics/metrics"
 	"os"
 	"strconv"
 	"strings"
 )
 
 type DoseSpotService struct {
-	ClinicId  string
-	ClinicKey string
-	UserId    string
+	ClinicId     string
+	ClinicKey    string
+	UserId       string
+	apiLatencies map[DoseSpotApiId]metrics.Histogram
+	apiRequests  map[DoseSpotApiId]metrics.Counter
+	apiSuccess   map[DoseSpotApiId]metrics.Counter
+	apiFailure   map[DoseSpotApiId]metrics.Counter
+}
+
+type DoseSpotApiId int
+
+const (
+	medicationQuickSearchAction DoseSpotApiId = iota
+	selfReportedMedicationSearchAction
+	medicationStrengthSearchAction
+	medicationSelectAction
+	startPrescribingPatientAction
+	sendMultiplPrescriptionsAction
+	searchPharmaciesAction
+	getPrescriptionLogDetailsAction
+	getMedicationListAction
+	getTransmissionErrorDetailsAction
+)
+
+var DoseSpotApiActions = map[DoseSpotApiId]string{
+	medicationQuickSearchAction:        "MedicationQuickSearchMessage",
+	selfReportedMedicationSearchAction: "SelfReportedMedicationSearch",
+	medicationStrengthSearchAction:     "MedicationStrengthSearchMessage",
+	medicationSelectAction:             "MedicationSelectMessage",
+	startPrescribingPatientAction:      "PatientStartPrescribingMessage",
+	sendMultiplPrescriptionsAction:     "SendMultiplePrescriptions",
+	searchPharmaciesAction:             "PharmacySearchMessageDetailed",
+	getPrescriptionLogDetailsAction:    "GetPrescriptionLogDetails",
+	getMedicationListAction:            "GetMedicationList",
+	getTransmissionErrorDetailsAction:  "GetTransmissionErrorsDetails",
 }
 
 const (
-	doseSpotAPIEndPoint                = "http://www.dosespot.com/API/11/"
-	doseSpotSOAPEndPoint               = "http://i.dosespot.com/api/11/apifull.asmx"
-	medicationQuickSearchAction        = "MedicationQuickSearchMessage"
-	selfReportedMedicationSearchAction = "SelfReportedMedicationSearch"
-	medicationStrengthSearchAction     = "MedicationStrengthSearchMessage"
-	medicationSelectAction             = "MedicationSelectMessage"
-	startPrescribingPatientAction      = "PatientStartPrescribingMessage"
-	sendMultiplPrescriptionsAction     = "SendMultiplePrescriptions"
-	searchPharmaciesAction             = "PharmacySearchMessageDetailed"
-	getPrescriptionLogDetailsAction    = "GetPrescriptionLogDetails"
-	getMedicationListAction            = "GetMedicationList"
-	getTransmissionErrorDetailsAction  = "GetTransmissionErrorsDetails"
-	resultOk                           = "OK"
+	doseSpotAPIEndPoint  = "http://www.dosespot.com/API/11/"
+	doseSpotSOAPEndPoint = "http://i.dosespot.com/api/11/apifull.asmx"
+	resultOk             = "OK"
 )
 
 func getDoseSpotClient() *soapClient {
 	return &soapClient{SoapAPIEndPoint: doseSpotSOAPEndPoint, APIEndpoint: doseSpotAPIEndPoint}
 }
 
-func NewDoseSpotService(clinicId, clinicKey, userId string) *DoseSpotService {
+func NewDoseSpotService(clinicId, clinicKey, userId string, statsRegistry metrics.Registry) *DoseSpotService {
 	d := &DoseSpotService{}
 	if clinicId == "" {
 		d.ClinicKey = os.Getenv("DOSESPOT_CLINIC_KEY")
@@ -47,6 +70,24 @@ func NewDoseSpotService(clinicId, clinicKey, userId string) *DoseSpotService {
 		d.ClinicId = clinicId
 		d.UserId = userId
 	}
+
+	d.apiLatencies = make(map[DoseSpotApiId]metrics.Histogram)
+	d.apiRequests = make(map[DoseSpotApiId]metrics.Counter)
+	d.apiFailure = make(map[DoseSpotApiId]metrics.Counter)
+	d.apiSuccess = make(map[DoseSpotApiId]metrics.Counter)
+	for apiActionId, apiAction := range DoseSpotApiActions {
+		d.apiLatencies[apiActionId] = metrics.NewBiasedHistogram()
+		d.apiRequests[apiActionId] = metrics.NewCounter()
+		d.apiSuccess[apiActionId] = metrics.NewCounter()
+		d.apiFailure[apiActionId] = metrics.NewCounter()
+		if statsRegistry != nil {
+			statsRegistry.Add(fmt.Sprintf("requests/latency/%s", apiAction), d.apiLatencies[apiActionId])
+			statsRegistry.Add(fmt.Sprintf("requests/total/%s", apiAction), d.apiRequests[apiActionId])
+			statsRegistry.Add(fmt.Sprintf("requests/failed/%s", apiAction), d.apiFailure[apiActionId])
+			statsRegistry.Add(fmt.Sprintf("requests/success/%s", apiAction), d.apiSuccess[apiActionId])
+		}
+	}
+
 	return d
 }
 
@@ -57,7 +98,12 @@ func (d *DoseSpotService) GetDrugNamesForDoctor(prefix string) ([]string, error)
 
 	searchResult := &medicationQuickSearchResponse{}
 
-	err := getDoseSpotClient().makeSoapRequest(medicationQuickSearchAction, medicationSearch, searchResult)
+	err := getDoseSpotClient().makeSoapRequest(DoseSpotApiActions[medicationQuickSearchAction],
+		medicationSearch, searchResult,
+		d.apiLatencies[medicationQuickSearchAction],
+		d.apiRequests[medicationQuickSearchAction],
+		d.apiFailure[medicationQuickSearchAction],
+		d.apiSuccess[medicationQuickSearchAction])
 
 	if err != nil {
 		return nil, err
@@ -72,7 +118,12 @@ func (d *DoseSpotService) GetDrugNamesForPatient(prefix string) ([]string, error
 	selfReportedDrugsSearch.SearchTerm = prefix
 
 	searchResult := &selfReportedMedicationSearchResponse{}
-	err := getDoseSpotClient().makeSoapRequest(selfReportedMedicationSearchAction, selfReportedDrugsSearch, searchResult)
+	err := getDoseSpotClient().makeSoapRequest(DoseSpotApiActions[selfReportedMedicationSearchAction],
+		selfReportedDrugsSearch, searchResult,
+		d.apiLatencies[selfReportedMedicationSearchAction],
+		d.apiRequests[selfReportedMedicationSearchAction],
+		d.apiFailure[selfReportedMedicationSearchAction],
+		d.apiSuccess[selfReportedMedicationSearchAction])
 
 	if err != nil {
 		return nil, err
@@ -92,7 +143,12 @@ func (d *DoseSpotService) SearchForMedicationStrength(medicationName string) ([]
 	medicationStrengthSearch.MedicationName = medicationName
 
 	searchResult := &medicationStrengthSearchResponse{}
-	err := getDoseSpotClient().makeSoapRequest(medicationStrengthSearchAction, medicationStrengthSearch, searchResult)
+	err := getDoseSpotClient().makeSoapRequest(DoseSpotApiActions[medicationStrengthSearchAction],
+		medicationStrengthSearch, searchResult,
+		d.apiLatencies[medicationStrengthSearchAction],
+		d.apiRequests[medicationStrengthSearchAction],
+		d.apiFailure[medicationStrengthSearchAction],
+		d.apiSuccess[medicationStrengthSearchAction])
 
 	if err != nil {
 		return nil, err
@@ -116,7 +172,13 @@ func (d *DoseSpotService) SendMultiplePrescriptions(Patient *common.Patient, Tre
 	sendPrescriptionsRequest.PrescriptionIds = prescriptionIds
 
 	response := &sendMultiplePrescriptionsResponse{}
-	err := getDoseSpotClient().makeSoapRequest(sendMultiplPrescriptionsAction, sendPrescriptionsRequest, response)
+	err := getDoseSpotClient().makeSoapRequest(DoseSpotApiActions[sendMultiplPrescriptionsAction],
+		sendPrescriptionsRequest, response,
+		d.apiLatencies[sendMultiplPrescriptionsAction],
+		d.apiRequests[sendMultiplPrescriptionsAction],
+		d.apiFailure[sendMultiplPrescriptionsAction],
+		d.apiSuccess[sendMultiplPrescriptionsAction])
+
 	if err != nil {
 		return nil, err
 	}
@@ -193,8 +255,12 @@ func (d *DoseSpotService) StartPrescribingPatient(Patient *common.Patient, Treat
 	startPrescribingRequest.SSO = generateSingleSignOn(d.ClinicKey, d.UserId, d.ClinicId)
 
 	response := &patientStartPrescribingResponse{}
-	err := getDoseSpotClient().makeSoapRequest(startPrescribingPatientAction, startPrescribingRequest, response)
-
+	err := getDoseSpotClient().makeSoapRequest(DoseSpotApiActions[startPrescribingPatientAction],
+		startPrescribingRequest, response,
+		d.apiLatencies[startPrescribingPatientAction],
+		d.apiRequests[startPrescribingPatientAction],
+		d.apiFailure[startPrescribingPatientAction],
+		d.apiSuccess[startPrescribingPatientAction])
 	if err != nil {
 		return err
 	}
@@ -233,8 +299,12 @@ func (d *DoseSpotService) SelectMedication(medicationName, medicationStrength st
 	medicationSelect.MedicationStrength = medicationStrength
 
 	selectResult := &medicationSelectResponse{}
-	err = getDoseSpotClient().makeSoapRequest(medicationSelectAction, medicationSelect, selectResult)
-
+	err = getDoseSpotClient().makeSoapRequest(DoseSpotApiActions[medicationSelectAction],
+		medicationSelect, selectResult,
+		d.apiLatencies[medicationSelectAction],
+		d.apiRequests[medicationSelectAction],
+		d.apiFailure[medicationSelectAction],
+		d.apiSuccess[medicationSelectAction])
 	if err != nil {
 		return nil, err
 	}
@@ -275,7 +345,12 @@ func (d *DoseSpotService) SearchForPharmacies(city, state, zipcode, name string,
 	searchRequest.SSO = generateSingleSignOn(d.ClinicKey, d.UserId, d.ClinicId)
 
 	searchResponse := &pharmacySearchResult{}
-	err := getDoseSpotClient().makeSoapRequest(searchPharmaciesAction, searchRequest, searchResponse)
+	err := getDoseSpotClient().makeSoapRequest(DoseSpotApiActions[searchPharmaciesAction],
+		searchRequest, searchResponse,
+		d.apiLatencies[searchPharmaciesAction],
+		d.apiRequests[searchPharmaciesAction],
+		d.apiFailure[searchPharmaciesAction],
+		d.apiSuccess[searchPharmaciesAction])
 	if err != nil {
 		return nil, err
 	}
@@ -309,7 +384,12 @@ func (d *DoseSpotService) GetPrescriptionStatus(prescriptionId int64) ([]*Prescr
 	request.PrescriptionId = prescriptionId
 
 	response := &getPrescriptionLogDetailsResult{}
-	err := getDoseSpotClient().makeSoapRequest(getPrescriptionLogDetailsAction, request, response)
+	err := getDoseSpotClient().makeSoapRequest(DoseSpotApiActions[getPrescriptionLogDetailsAction],
+		request, response,
+		d.apiLatencies[getPrescriptionLogDetailsAction],
+		d.apiRequests[getPrescriptionLogDetailsAction],
+		d.apiFailure[getPrescriptionLogDetailsAction],
+		d.apiSuccess[getPrescriptionLogDetailsAction])
 	if err != nil {
 		return nil, err
 	}
@@ -334,7 +414,12 @@ func (d *DoseSpotService) GetMedicationList(PatientId int64) ([]*Medication, err
 	request.Sources = []string{"Prescription"}
 	request.Status = []string{"Active"}
 	response := &getMedicationListResult{}
-	err := getDoseSpotClient().makeSoapRequest(getMedicationListAction, request, response)
+	err := getDoseSpotClient().makeSoapRequest(DoseSpotApiActions[getMedicationListAction],
+		request, response,
+		d.apiLatencies[getMedicationListAction],
+		d.apiRequests[getMedicationListAction],
+		d.apiFailure[getMedicationListAction],
+		d.apiSuccess[getMedicationListAction])
 	if err != nil {
 		return nil, err
 	}
@@ -353,7 +438,12 @@ func (d *DoseSpotService) GetTransmissionErrorDetails() error {
 	request := &getTransmissionErrorDetailsRequest{}
 	request.SSO = generateSingleSignOn(d.ClinicKey, d.UserId, d.ClinicId)
 	response := &getTransmissionErrorDetailsResponse{}
-	err := getDoseSpotClient().makeSoapRequest(getTransmissionErrorDetailsAction, request, response)
+	err := getDoseSpotClient().makeSoapRequest(DoseSpotApiActions[getTransmissionErrorDetailsAction],
+		request, response,
+		d.apiLatencies[getTransmissionErrorDetailsAction],
+		d.apiRequests[getTransmissionErrorDetailsAction],
+		d.apiFailure[getTransmissionErrorDetailsAction],
+		d.apiSuccess[getTransmissionErrorDetailsAction])
 	if err != nil {
 		return err
 	}

@@ -210,6 +210,7 @@ func main() {
 	}
 
 	mapsService := maps.NewGoogleMapsService(metricsRegistry.Scope("google_maps_api"))
+	doseSpotService := erx.NewDoseSpotService(conf.DoseSpotClinicId, conf.DoseSpotClinicKey, conf.DoseSpotUserId, metricsRegistry.Scope("dosespot_api"))
 
 	dataApi := &api.DataService{DB: db}
 	cloudStorageApi := api.NewCloudStorageService(awsAuth)
@@ -224,13 +225,13 @@ func main() {
 	patientVisitHandler := apiservice.NewPatientVisitHandler(dataApi, authApi, cloudStorageApi, photoAnswerCloudStorageApi, twilioCli, conf.Twilio.FromNumber)
 	patientVisitReviewHandler := &apiservice.PatientVisitReviewHandler{DataApi: dataApi}
 	answerIntakeHandler := apiservice.NewAnswerIntakeHandler(dataApi)
-	autocompleteHandler := &apiservice.AutocompleteHandler{ERxApi: erx.NewDoseSpotService(conf.DoseSpotClinicId, conf.DoseSpotClinicKey, conf.DoseSpotUserId), Role: api.PATIENT_ROLE}
-	doctorTreatmentSuggestionHandler := &apiservice.AutocompleteHandler{ERxApi: erx.NewDoseSpotService(conf.DoseSpotClinicId, conf.DoseSpotClinicKey, conf.DoseSpotUserId), Role: api.DOCTOR_ROLE}
+	autocompleteHandler := &apiservice.AutocompleteHandler{ERxApi: doseSpotService, Role: api.PATIENT_ROLE}
+	doctorTreatmentSuggestionHandler := &apiservice.AutocompleteHandler{ERxApi: doseSpotService, Role: api.DOCTOR_ROLE}
 	doctorInstructionsHandler := apiservice.NewDoctorDrugInstructionsHandler(dataApi)
 	doctorFollowupHandler := apiservice.NewPatientVisitFollowUpHandler(dataApi)
 	doctorFavoriteTreatmentsHandler := &apiservice.DoctorFavoriteTreatmentsHandler{DataApi: dataApi}
-	medicationStrengthSearchHandler := &apiservice.MedicationStrengthSearchHandler{ERxApi: erx.NewDoseSpotService(conf.DoseSpotClinicId, conf.DoseSpotClinicKey, conf.DoseSpotUserId)}
-	newTreatmentHandler := &apiservice.NewTreatmentHandler{ERxApi: erx.NewDoseSpotService(conf.DoseSpotClinicId, conf.DoseSpotClinicKey, conf.DoseSpotUserId)}
+	medicationStrengthSearchHandler := &apiservice.MedicationStrengthSearchHandler{ERxApi: doseSpotService}
+	newTreatmentHandler := &apiservice.NewTreatmentHandler{ERxApi: doseSpotService}
 	medicationDispenseUnitHandler := &apiservice.MedicationDispenseUnitsHandler{DataApi: dataApi}
 	treatmentsHandler := apiservice.NewTreatmentsHandler(dataApi)
 	photoAnswerIntakeHandler := apiservice.NewPhotoAnswerIntakeHandler(dataApi, photoAnswerCloudStorageApi, conf.CaseBucket, conf.AWSRegion, conf.MaxInMemoryForPhotoMB*1024*1024)
@@ -279,7 +280,7 @@ func main() {
 		log.Fatal("Unable to get erx queue for sending prescriptions to: " + err.Error())
 	}
 	doctorSubmitPatientVisitHandler := &apiservice.DoctorSubmitPatientVisitReviewHandler{DataApi: dataApi,
-		ERxApi:            erx.NewDoseSpotService(conf.DoseSpotClinicId, conf.DoseSpotClinicKey, conf.DoseSpotUserId),
+		ERxApi:            doseSpotService,
 		TwilioFromNumber:  conf.Twilio.FromNumber,
 		TwilioCli:         twilioCli,
 		IOSDeeplinkScheme: conf.IOSDeeplinkScheme,
@@ -332,7 +333,7 @@ func main() {
 	mux.Handle("/v1/doctor/visit/followup", doctorFollowupHandler)
 	mux.Handle("/v1/doctor/visit/submit", doctorSubmitPatientVisitHandler)
 
-	app_worker.StartWorkerToUpdatePrescriptionStatusForPatient(dataApi, erx.NewDoseSpotService(conf.DoseSpotClinicId, conf.DoseSpotClinicKey, conf.DoseSpotUserId), erxStatusQueue)
+	app_worker.StartWorkerToUpdatePrescriptionStatusForPatient(dataApi, doseSpotService, erxStatusQueue)
 
 	s := &http.Server{
 		Addr:           conf.ListenAddr,
