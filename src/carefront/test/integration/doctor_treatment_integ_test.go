@@ -263,21 +263,22 @@ func TestFavoriteTreatments(t *testing.T) {
 	}
 
 	// doctor now attempts to favorite a treatment
-	treatment1 := &common.Treatment{}
-	treatment1.DrugInternalName = "DrugName (DrugRoute - DrugForm)"
-	treatment1.DosageStrength = "10 mg"
-	treatment1.DispenseValue = 1
-	treatment1.DispenseUnitId = 26
-	treatment1.NumberRefills = 1
-	treatment1.SubstitutionsAllowed = true
-	treatment1.DaysSupply = 1
-	treatment1.OTC = true
-	treatment1.PharmacyNotes = "testing pharmacy notes"
-	treatment1.PatientInstructions = "patient instructions"
-	drugDBIds := make(map[string]string)
-	drugDBIds["drug_db_id_1"] = "12315"
-	drugDBIds["drug_db_id_2"] = "124"
-	treatment1.DrugDBIds = drugDBIds
+	treatment1 := &common.Treatment{
+		DrugInternalName:     "DrugName (DrugRoute - DrugForm)",
+		DosageStrength:       "10 mg",
+		DispenseValue:        1,
+		DispenseUnitId:       26,
+		NumberRefills:        1,
+		SubstitutionsAllowed: true,
+		DaysSupply:           1,
+		OTC:                  true,
+		PharmacyNotes:        "testing pharmacy notes",
+		PatientInstructions:  "patient insturctions",
+		DrugDBIds: map[string]string{
+			"drug_db_id_1": "12315",
+			"drug_db_id_2": "124",
+		},
+	}
 
 	favoriteTreatment := &common.DoctorFavoriteTreatment{}
 	favoriteTreatment.Name = "Favorite Treatment #1"
@@ -287,7 +288,8 @@ func TestFavoriteTreatments(t *testing.T) {
 	ts := httptest.NewServer(doctorFavoriteTreatmentsHandler)
 	defer ts.Close()
 
-	data, err := json.Marshal(&favoriteTreatment)
+	favoriteTreatmentsRequest := &apiservice.DoctorFavoriteTreatmentsRequest{FavoriteTreatments: []*common.DoctorFavoriteTreatment{favoriteTreatment}}
+	data, err := json.Marshal(&favoriteTreatmentsRequest)
 	if err != nil {
 		t.Fatal("Unable to marshal request body for adding treatments to patient visit")
 	}
@@ -325,27 +327,29 @@ func TestFavoriteTreatments(t *testing.T) {
 			favoriteTreatmentsResponse.FavoritedTreatments[0].FavoritedTreatment.DrugRoute, favoriteTreatmentsResponse.FavoritedTreatments[0].FavoritedTreatment.DrugForm)
 	}
 
-	treatment2 := &common.Treatment{}
-	treatment2.DrugInternalName = "DrugName2"
-	treatment2.DosageStrength = "10 mg"
-	treatment2.DispenseValue = 1
-	treatment2.DispenseUnitId = 26
-	treatment2.NumberRefills = 1
-	treatment2.SubstitutionsAllowed = true
-	treatment2.DaysSupply = 1
-	treatment2.OTC = true
-	treatment2.PharmacyNotes = "testing pharmacy notes"
-	treatment2.PatientInstructions = "patient instructions"
-	drugDBIds = make(map[string]string)
-	drugDBIds["drug_db_id_1"] = "12315"
-	drugDBIds["drug_db_id_2"] = "124"
-	treatment2.DrugDBIds = drugDBIds
+	treatment2 := &common.Treatment{
+		DrugInternalName:     "DrugName2",
+		DosageStrength:       "10 mg",
+		DispenseValue:        1,
+		DispenseUnitId:       26,
+		NumberRefills:        1,
+		SubstitutionsAllowed: true,
+		DaysSupply:           1,
+		OTC:                  true,
+		PharmacyNotes:        "testing pharmacy notes",
+		PatientInstructions:  "patient instructions",
+		DrugDBIds: map[string]string{
+			"drug_db_id_1": "12315",
+			"drug_db_id_2": "124",
+		},
+	}
 
 	favoriteTreatment2 := &common.DoctorFavoriteTreatment{}
 	favoriteTreatment2.Name = "Favorite Treatment #2"
 	favoriteTreatment2.FavoritedTreatment = treatment2
 
-	data, err = json.Marshal(&favoriteTreatment2)
+	favoriteTreatmentsRequest.FavoriteTreatments[0] = favoriteTreatment2
+	data, err = json.Marshal(&favoriteTreatmentsRequest)
 	if err != nil {
 		t.Fatal("Unable to marshal request body for adding treatments to patient visit")
 	}
@@ -381,7 +385,7 @@ func TestFavoriteTreatments(t *testing.T) {
 	}
 
 	// lets go ahead and delete each of the treatments
-	data, err = json.Marshal(&favoriteTreatmentsResponse.FavoritedTreatments[0])
+	data, err = json.Marshal(&favoriteTreatmentsResponse)
 	if err != nil {
 		t.Fatal("Unable to marshal request body for adding treatments to patient visit")
 	}
@@ -404,39 +408,8 @@ func TestFavoriteTreatments(t *testing.T) {
 		t.Fatal("Unable to unmarshal response into object : " + err.Error())
 	}
 
-	if favoriteTreatmentsResponse.FavoritedTreatments == nil || len(favoriteTreatmentsResponse.FavoritedTreatments) != 1 {
+	if len(favoriteTreatmentsResponse.FavoritedTreatments) != 0 {
 		t.Fatal("Expected 1 favorited treatment after deleting the first one")
-	}
-
-	if favoriteTreatmentsResponse.FavoritedTreatments[0].Name != favoriteTreatment2.Name {
-		t.Fatal("Expected the same favorited treatment to be returned that was added")
-	}
-
-	data, err = json.Marshal(&favoriteTreatmentsResponse.FavoritedTreatments[0])
-	if err != nil {
-		t.Fatal("Unable to marshal request body for adding treatments to patient visit")
-	}
-
-	resp, err = authDelete(ts.URL, "application/json", bytes.NewBuffer(data), doctor.AccountId)
-	if err != nil {
-		t.Fatal("Unable to make POST request to add treatments to patient visit " + err.Error())
-	}
-
-	body, err = ioutil.ReadAll(resp.Body)
-	if err != nil {
-		t.Fatal("Unable to read body of the post request made to add treatments to patient visit: " + err.Error())
-	}
-
-	CheckSuccessfulStatusCode(resp, "Unsuccessful call made to add favorite treatment for doctor "+string(body), t)
-
-	favoriteTreatmentsResponse = &apiservice.DoctorFavoriteTreatmentsResponse{}
-	err = json.Unmarshal(body, favoriteTreatmentsResponse)
-	if err != nil {
-		t.Fatal("Unable to unmarshal response into object : " + err.Error())
-	}
-
-	if favoriteTreatmentsResponse.FavoritedTreatments == nil || len(favoriteTreatmentsResponse.FavoritedTreatments) != 0 {
-		t.Fatal("Expected no favorited treatments after deleting both of them")
 	}
 }
 

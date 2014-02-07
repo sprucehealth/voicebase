@@ -546,31 +546,43 @@ func (d *DataService) AddDrugInstructionsToTreatment(drugName, drugForm, drugRou
 	return nil
 }
 
-func (d *DataService) AddFavoriteTreatment(favoriteTreatment *common.DoctorFavoriteTreatment, doctorId int64) error {
+func (d *DataService) AddFavoriteTreatments(favoriteTreatments []*common.DoctorFavoriteTreatment, doctorId int64) error {
 	tx, err := d.DB.Begin()
 	if err != nil {
 		return err
 	}
 
-	err = d.addTreatment(favoriteTreatment.FavoritedTreatment, tx)
-	if err != nil {
-		tx.Rollback()
-		return err
+	for _, favoriteTreatment := range favoriteTreatments {
+		err = d.addTreatment(favoriteTreatment.FavoritedTreatment, tx)
+		if err != nil {
+			tx.Rollback()
+			return err
+		}
+
+		_, err = tx.Exec(`insert into dr_favorite_treatment (doctor_id, treatment_id, name, status) values (?,?,?,?)`, doctorId, favoriteTreatment.FavoritedTreatment.Id, favoriteTreatment.Name, status_active)
+		if err != nil {
+			tx.Rollback()
+			return err
+		}
 	}
 
-	_, err = tx.Exec(`insert into dr_favorite_treatment (doctor_id, treatment_id, name, status) values (?,?,?,?)`, doctorId, favoriteTreatment.FavoritedTreatment.Id, favoriteTreatment.Name, status_active)
-	if err != nil {
-		tx.Rollback()
-		return err
-	}
-
-	tx.Commit()
-	return nil
+	return tx.Commit()
 }
 
-func (d *DataService) DeleteFavoriteTreatment(favoriteTreatment *common.DoctorFavoriteTreatment, doctorId int64) error {
-	_, err := d.DB.Exec(`update dr_favorite_treatment set status='DELETED' where id = ? and doctor_id = ?`, favoriteTreatment.Id, doctorId)
-	return err
+func (d *DataService) DeleteFavoriteTreatments(favoriteTreatments []*common.DoctorFavoriteTreatment, doctorId int64) error {
+	tx, err := d.DB.Begin()
+	if err != nil {
+		return err
+	}
+	for _, favoriteTreatment := range favoriteTreatments {
+		_, err = tx.Exec(`update dr_favorite_treatment set status='DELETED' where id = ? and doctor_id = ?`, favoriteTreatment.Id, doctorId)
+		if err != nil {
+			tx.Rollback()
+			return err
+		}
+	}
+
+	return tx.Commit()
 }
 
 func (d *DataService) GetFavoriteTreatments(doctorId int64) ([]*common.DoctorFavoriteTreatment, error) {

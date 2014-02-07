@@ -11,6 +11,10 @@ type DoctorFavoriteTreatmentsHandler struct {
 	DataApi api.DataAPI
 }
 
+type DoctorFavoriteTreatmentsRequest struct {
+	FavoriteTreatments []*common.DoctorFavoriteTreatment `json:"favorite_treatments"`
+}
+
 type DoctorFavoriteTreatmentsResponse struct {
 	FavoritedTreatments []*common.DoctorFavoriteTreatment `json:"favorite_treatments"`
 }
@@ -22,7 +26,7 @@ func (t *DoctorFavoriteTreatmentsHandler) ServeHTTP(w http.ResponseWriter, r *ht
 	case "POST":
 		t.addFavoriteTreatments(w, r)
 	case "DELETE":
-		t.deleteFavoriteTreatment(w, r)
+		t.deleteFavoriteTreatments(w, r)
 	}
 }
 
@@ -42,9 +46,9 @@ func (t *DoctorFavoriteTreatmentsHandler) getFavoriteTreatments(w http.ResponseW
 	WriteJSONToHTTPResponseWriter(w, http.StatusOK, &DoctorFavoriteTreatmentsResponse{FavoritedTreatments: favoriteTreatments})
 }
 
-func (t *DoctorFavoriteTreatmentsHandler) deleteFavoriteTreatment(w http.ResponseWriter, r *http.Request) {
+func (t *DoctorFavoriteTreatmentsHandler) deleteFavoriteTreatments(w http.ResponseWriter, r *http.Request) {
 	jsonDecoder := json.NewDecoder(r.Body)
-	favoriteTreatment := &common.DoctorFavoriteTreatment{}
+	favoriteTreatmentRequest := &DoctorFavoriteTreatmentsRequest{}
 
 	doctorId, err := t.DataApi.GetDoctorIdFromAccountId(GetContext(r).AccountId)
 	if err != nil {
@@ -52,18 +56,20 @@ func (t *DoctorFavoriteTreatmentsHandler) deleteFavoriteTreatment(w http.Respons
 		return
 	}
 
-	err = jsonDecoder.Decode(favoriteTreatment)
+	err = jsonDecoder.Decode(favoriteTreatmentRequest)
 	if err != nil {
 		WriteDeveloperError(w, http.StatusBadRequest, "Unable to parse treatment body: "+err.Error())
 		return
 	}
 
-	if favoriteTreatment.Id == 0 {
-		WriteDeveloperError(w, http.StatusBadRequest, "Unable to delete a treatment that does not have an id associated with it")
-		return
+	for _, favoriteTreatment := range favoriteTreatmentRequest.FavoriteTreatments {
+		if favoriteTreatment.Id == 0 {
+			WriteDeveloperError(w, http.StatusBadRequest, "Unable to delete a treatment that does not have an id associated with it")
+			return
+		}
 	}
 
-	err = t.DataApi.DeleteFavoriteTreatment(favoriteTreatment, doctorId)
+	err = t.DataApi.DeleteFavoriteTreatments(favoriteTreatmentRequest.FavoriteTreatments, doctorId)
 	if err != nil {
 		WriteDeveloperError(w, http.StatusInternalServerError, "Unable to delete favorited treatment: "+err.Error())
 		return
@@ -80,17 +86,11 @@ func (t *DoctorFavoriteTreatmentsHandler) deleteFavoriteTreatment(w http.Respons
 
 func (t *DoctorFavoriteTreatmentsHandler) addFavoriteTreatments(w http.ResponseWriter, r *http.Request) {
 	jsonDecoder := json.NewDecoder(r.Body)
-	favoriteTreatment := &common.DoctorFavoriteTreatment{}
+	favoriteTreatmentRequest := &DoctorFavoriteTreatmentsRequest{}
 
-	err := jsonDecoder.Decode(favoriteTreatment)
+	err := jsonDecoder.Decode(favoriteTreatmentRequest)
 	if err != nil {
 		WriteDeveloperError(w, http.StatusBadRequest, "Unable to parse treatment body: "+err.Error())
-		return
-	}
-
-	err = validateTreatment(favoriteTreatment.FavoritedTreatment)
-	if err != nil {
-		WriteDeveloperError(w, http.StatusBadRequest, err.Error())
 		return
 	}
 
@@ -100,16 +100,24 @@ func (t *DoctorFavoriteTreatmentsHandler) addFavoriteTreatments(w http.ResponseW
 		return
 	}
 
-	// break up the name into its components so that it can be saved into the database as its components
-	drugName, drugForm, drugRoute := breakDrugInternalNameIntoComponents(favoriteTreatment.FavoritedTreatment.DrugInternalName)
-	favoriteTreatment.FavoritedTreatment.DrugName = drugName
-	// only break down name into route and form if the route and form are non-empty strings
-	if drugForm != "" && drugRoute != "" {
-		favoriteTreatment.FavoritedTreatment.DrugForm = drugForm
-		favoriteTreatment.FavoritedTreatment.DrugRoute = drugRoute
+	for _, favoriteTreatment := range favoriteTreatmentRequest.FavoriteTreatments {
+		err = validateTreatment(favoriteTreatment.FavoritedTreatment)
+		if err != nil {
+			WriteDeveloperError(w, http.StatusBadRequest, err.Error())
+			return
+		}
+
+		// break up the name into its components so that it can be saved into the database as its components
+		drugName, drugForm, drugRoute := breakDrugInternalNameIntoComponents(favoriteTreatment.FavoritedTreatment.DrugInternalName)
+		favoriteTreatment.FavoritedTreatment.DrugName = drugName
+		// only break down name into route and form if the route and form are non-empty strings
+		if drugForm != "" && drugRoute != "" {
+			favoriteTreatment.FavoritedTreatment.DrugForm = drugForm
+			favoriteTreatment.FavoritedTreatment.DrugRoute = drugRoute
+		}
 	}
 
-	err = t.DataApi.AddFavoriteTreatment(favoriteTreatment, doctorId)
+	err = t.DataApi.AddFavoriteTreatments(favoriteTreatmentRequest.FavoriteTreatments, doctorId)
 	if err != nil {
 		WriteDeveloperError(w, http.StatusInternalServerError, "Unable to favorite treatment: "+err.Error())
 		return

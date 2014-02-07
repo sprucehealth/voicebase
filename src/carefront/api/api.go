@@ -113,9 +113,9 @@ type DoctorAPI interface {
 	AddOrUpdateDrugInstructionForDoctor(drugName, drugForm, drugRoute string, drugInstructionToAdd *common.DoctorInstructionItem, doctorId int64) error
 	DeleteDrugInstructionForDoctor(drugInstructionToDelete *common.DoctorInstructionItem, doctorId int64) error
 	AddDrugInstructionsToTreatment(drugName, drugForm, drugRoute string, drugInstructions []*common.DoctorInstructionItem, treatmentId int64, doctorId int64) error
-	AddFavoriteTreatment(treatment *common.DoctorFavoriteTreatment, doctorId int64) error
+	AddFavoriteTreatments(treatments []*common.DoctorFavoriteTreatment, doctorId int64) error
 	GetFavoriteTreatments(doctorId int64) ([]*common.DoctorFavoriteTreatment, error)
-	DeleteFavoriteTreatment(favoriteTreatment *common.DoctorFavoriteTreatment, doctorId int64) error
+	DeleteFavoriteTreatments(favoriteTreatments []*common.DoctorFavoriteTreatment, doctorId int64) error
 }
 
 type IntakeAPI interface {

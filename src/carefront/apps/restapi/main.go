@@ -295,7 +295,7 @@ func main() {
 	mux.Handle("/v1/doctor/signup", signupDoctorHandler)
 	mux.Handle("/v1/doctor/authenticate", authenticateDoctorHandler)
 	mux.Handle("/v1/doctor/queue", doctorQueueHandler)
-	mux.Handle("/v1/doctor/treatment/favorite", doctorFavoriteTreatmentsHandler)
+	mux.Handle("/v1/doctor/treatment/favorites", doctorFavoriteTreatmentsHandler)
 
 	mux.Handle("/v1/doctor/visit/review", doctorPatientVisitReviewHandler)
 	mux.Handle("/v1/doctor/visit/diagnosis", diagnosePatientHandler)
