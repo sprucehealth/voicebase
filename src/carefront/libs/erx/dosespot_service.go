@@ -197,7 +197,7 @@ func (d *DoseSpotService) StartPrescribingPatient(Patient *common.Patient, Treat
 	newPatient.City = Patient.City
 	newPatient.State = Patient.State
 	newPatient.ZipCode = Patient.ZipCode
-	newPatient.DateOfBirth = specialDateTime{DateTime: Patient.Dob}
+	newPatient.DateOfBirth = specialDateTime{DateTime: Patient.Dob, DateTimeElementName: "DateOfBirth"}
 	newPatient.Gender = Patient.Gender
 	newPatient.PrimaryPhone = Patient.Phone
 	newPatient.PrimaryPhoneType = Patient.PhoneType

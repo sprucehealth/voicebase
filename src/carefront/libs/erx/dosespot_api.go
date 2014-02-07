@@ -2,7 +2,6 @@ package erx
 
 import (
 	"encoding/xml"
-	"fmt"
 	"time"
 )
 
@@ -139,7 +138,8 @@ type medication struct {
 // because the date format returned from dosespot does not match the format
 // layout that the built in datetime object is unmarshalled into
 type specialDateTime struct {
-	DateTime time.Time `xml:"DateOfBirth"`
+	DateTime            time.Time
+	DateTimeElementName string
 }
 
 func (c specialDateTime) UnmarshalXML(d *xml.Decoder, start xml.StartElement) error {
@@ -149,11 +149,11 @@ func (c specialDateTime) UnmarshalXML(d *xml.Decoder, start xml.StartElement) er
 		return err
 	}
 	c.DateTime, err = time.Parse(time.RFC3339, dateStr+"Z")
-	fmt.Println(c.DateTime)
 	return err
 }
 
 func (c specialDateTime) MarshalXML(e *xml.Encoder, start xml.StartElement) error {
+	start.Name.Local = c.DateTimeElementName
 	err := e.EncodeElement(c.DateTime, start)
 	return err
 }
@@ -256,40 +256,16 @@ type transmissionErrorDetailsItem struct {
 }
 
 type getTransmissionErrorDetailsResponse struct {
-	XMLName xml.Name `xml:"http://www.dosespot.com/API/11/ GetTransmissionErrorsDetailsResult"`
-
-	SSO singleSignOn `xml:"SingleSignOn"`
+	XMLName xml.Name     `xml:"http://www.dosespot.com/API/11/ GetTransmissionErrorsDetailsResult"`
+	SSO     singleSignOn `xml:"SingleSignOn"`
 	Result
 	TransmissionErrors []*transmissionErrorDetailsItem `xml:"TransmissionErrors>TransmissionErrorDetails"`
 }
 
-// TODO : Find a way to collapse this and the specialDateTime
-// into one type so that we can reuse this struct for any dateTime element
-// as opposed to having to create one everytime we have a date time field
-type dateTimeStampType struct {
-	DateTime time.Time `xml:"DateTimeStamp"`
-}
-
-func (c *dateTimeStampType) UnmarshalXML(d *xml.Decoder, start xml.StartElement) error {
-	var dateStr string
-	err := d.DecodeElement(&dateStr, &start)
-	if err != nil {
-		return err
-	}
-	c.DateTime, err = time.Parse(time.RFC3339, dateStr+"Z")
-	fmt.Println(c.DateTime)
-	return err
-}
-
-func (c *dateTimeStampType) MarshalXML(e *xml.Encoder, start xml.StartElement) error {
-	err := e.EncodeElement(c.DateTime, start)
-	return err
-}
-
 type prescriptionLogInfo struct {
-	Status         string             `xml:"Status"`
-	DateTimeStamp  *dateTimeStampType `xml:"DateTimeStamp"`
-	AdditionalInfo string             `xml:"AdditionalInfo"`
+	Status         string           `xml:"Status"`
+	DateTimeStamp  *specialDateTime `xml:"DateTimeStamp"`
+	AdditionalInfo string           `xml:"AdditionalInfo"`
 }
 
 type Result struct {
