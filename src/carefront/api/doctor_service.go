@@ -213,27 +213,27 @@ func (d *DataService) MarkAdvicePointsToBeDeleted(advicePoints []*common.DoctorI
 	return nil
 }
 
-func (d *DataService) AssignPatientVisitToDoctor(DoctorId, PatientVisitId int64) error {
-	_, err := d.DB.Exec("insert into doctor_queue (doctor_id, status, event_type, item_id) values (?, 'PENDING', 'PATIENT_VISIT', ?)", DoctorId, PatientVisitId)
+func (d *DataService) AssignPatientVisitToDoctor(doctorId, patientVisitId int64) error {
+	_, err := d.DB.Exec("insert into doctor_queue (doctor_id, status, event_type, item_id) values (?, 'PENDING', 'PATIENT_VISIT', ?)", doctorId, patientVisitId)
 	return err
 }
 
-func (d *DataService) MarkPatientVisitAsOngoingInDoctorQueue(DoctorId, PatientVisitId int64) error {
-	_, err := d.DB.Exec(`update doctor_queue set status='ONGOING' where event_type='PATIENT_VISIT' and item_id=? and doctor_id=?`, PatientVisitId, DoctorId)
+func (d *DataService) MarkPatientVisitAsOngoingInDoctorQueue(doctorId, patientVisitId int64) error {
+	_, err := d.DB.Exec(`update doctor_queue set status='ONGOING' where event_type='PATIENT_VISIT' and item_id=? and doctor_id=?`, patientVisitId, doctorId)
 	return err
 }
 
-func (d *DataService) UpdateStateForPatientVisitInDoctorQueue(DoctorId, PatientVisitId int64, currentState, updatedState string) error {
+func (d *DataService) UpdateStateForPatientVisitInDoctorQueue(doctorId, patientVisitId int64, currentState, updatedState string) error {
 	tx, err := d.DB.Begin()
 	if err != nil {
 		return err
 	}
-	_, err = tx.Exec(`delete from doctor_queue where status = ? and doctor_id = ? and event_type = 'PATIENT_VISIT' and item_id = ?`, currentState, DoctorId, PatientVisitId)
+	_, err = tx.Exec(`delete from doctor_queue where status = ? and doctor_id = ? and event_type = 'PATIENT_VISIT' and item_id = ?`, currentState, doctorId, patientVisitId)
 	if err != nil {
 		tx.Rollback()
 		return err
 	}
-	_, err = tx.Exec(`insert into doctor_queue (doctor_id, status, event_type, item_id) values (?, ?, 'PATIENT_VISIT', ?)`, DoctorId, updatedState, PatientVisitId)
+	_, err = tx.Exec(`insert into doctor_queue (doctor_id, status, event_type, item_id) values (?, ?, 'PATIENT_VISIT', ?)`, doctorId, updatedState, patientVisitId)
 	if err != nil {
 		tx.Rollback()
 		return err
@@ -242,8 +242,8 @@ func (d *DataService) UpdateStateForPatientVisitInDoctorQueue(DoctorId, PatientV
 	return err
 }
 
-func (d *DataService) GetPendingItemsInDoctorQueue(DoctorId int64) ([]*DoctorQueueItem, error) {
-	rows, err := d.DB.Query(`select id, event_type, item_id, enqueue_date, completed_date, status from doctor_queue where doctor_id = ? and status in ('PENDING', 'ONGOING') order by enqueue_date`, DoctorId)
+func (d *DataService) GetPendingItemsInDoctorQueue(doctorId int64) ([]*DoctorQueueItem, error) {
+	rows, err := d.DB.Query(`select id, event_type, item_id, enqueue_date, completed_date, status from doctor_queue where doctor_id = ? and status in ('PENDING', 'ONGOING') order by enqueue_date`, doctorId)
 	if err != nil {
 		return nil, err
 	}
@@ -253,8 +253,8 @@ func (d *DataService) GetPendingItemsInDoctorQueue(DoctorId int64) ([]*DoctorQue
 	return doctorQueue, err
 }
 
-func (d *DataService) GetCompletedItemsInDoctorQueue(DoctorId int64) ([]*DoctorQueueItem, error) {
-	rows, err := d.DB.Query(`select id, event_type, item_id, enqueue_date, completed_date, status from doctor_queue where doctor_id = ? and status not in ('PENDING', 'ONGOING') order by enqueue_date desc`, DoctorId)
+func (d *DataService) GetCompletedItemsInDoctorQueue(doctorId int64) ([]*DoctorQueueItem, error) {
+	rows, err := d.DB.Query(`select id, event_type, item_id, enqueue_date, completed_date, status from doctor_queue where doctor_id = ? and status not in ('PENDING', 'ONGOING') order by enqueue_date desc`, doctorId)
 	if err != nil {
 		return nil, err
 	}

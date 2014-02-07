@@ -103,6 +103,18 @@ func (sqs *SQS) ListQueues(namePrefix string) ([]string, error) {
 	return res.QueueUrls, nil
 }
 
+func (sqs *SQS) SendMessage(queueUrl string, delaySeconds int, messageBody string) error {
+	args := url.Values{}
+
+	if delaySeconds > 0 {
+		args.Set("DelaySeconds", strconv.Itoa(delaySeconds))
+	}
+
+	args.Set("MessageBody", messageBody)
+	res := sendMessageResponse{}
+	return sqs.Request(queueUrl, "SendMessage", args, &res)
+}
+
 /*
 attributes: A list of attributes that need to be returned along with each message.
 maxNumberOfMessages: The maximum number of messages to return. Amazon SQS never returns more messages than this value but may return fewer.
@@ -110,6 +122,7 @@ queueUrl: The URL of the Amazon SQS queue to take action on.
 visibilityTimeout: The duration (in seconds) that the received messages are hidden from subsequent retrieve requests after being retrieved by a ReceiveMessage request.
 waitTimeSeconds: The duration (in seconds) for which the call will wait for a message to arrive in the queue before returning. If a message is available, the call will return sooner than WaitTimeSeconds.
 */
+
 func (sqs *SQS) ReceiveMessage(queueUrl string, attributes []AttributeName, maxNumberOfMessages, visibilityTimeout, waitTimeSeconds int) ([]*Message, error) {
 	args := url.Values{}
 	for i, attr := range attributes {

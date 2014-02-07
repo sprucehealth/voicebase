@@ -136,8 +136,14 @@ func (t *TreatmentsHandler) addTreatment(w http.ResponseWriter, r *http.Request)
 		}
 	}
 
+	doctorId, err := t.DataApi.GetDoctorIdFromAccountId(GetContext(r).AccountId)
+	if err != nil {
+		WriteDeveloperError(w, http.StatusInternalServerError, "Unable to get doctor id from account id: "+err.Error())
+		return
+	}
+
 	// Add treatments to patient
-	err = t.DataApi.AddTreatmentsForPatientVisit(treatmentsRequestBody.Treatments, treatmentsRequestBody.PatientVisitId)
+	err = t.DataApi.AddTreatmentsForPatientVisit(treatmentsRequestBody.Treatments, doctorId, treatmentsRequestBody.PatientVisitId)
 	if err != nil {
 		WriteDeveloperError(w, http.StatusInternalServerError, "Unable to add treatment to patient visit: "+err.Error())
 		return

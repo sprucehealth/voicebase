@@ -1,25 +1,27 @@
 package pharmacy
 
 const (
-	PHARMACY_SOURCE_ODDITY = "oddity"
-	PHARMACY_SOURCE_GOOGLE = "google"
+	PHARMACY_SOURCE_ODDITY      = "oddity"
+	PHARMACY_SOURCE_GOOGLE      = "google"
+	PHARMACY_SOURCE_SURESCRIPTS = "surescripts"
 )
 
 type PharmacyData struct {
-	Id              string  `json:"id,omitempty"`
-	Source          string  `json:"source,omitempty"`
-	Name            string  `json:"name"`
-	Address         string  `json:"address"`
-	City            string  `json:"city,omitempty"`
-	State           string  `json:"state,omitempty"`
-	Postal          string  `json:"zip_code,omitempty"`
-	Country         string  `json:"country,omitempty"`
-	Latitude        string  `json:"lat"`
-	Longitude       string  `json:"lng"`
-	Phone           string  `json:"phone,omitempty"`
-	Fax             string  `json:"fax,omitempty"`
-	Url             string  `json:"url,omitempty"`
-	DistanceInMiles float64 `json:"distance,string,omitempty"`
+	Id              string   `json:"id,omitempty"`
+	Source          string   `json:"source,omitempty"`
+	Name            string   `json:"name"`
+	Address         string   `json:"address"`
+	City            string   `json:"city,omitempty"`
+	State           string   `json:"state,omitempty"`
+	Postal          string   `json:"zip_code,omitempty"`
+	Country         string   `json:"country,omitempty"`
+	Latitude        string   `json:"lat"`
+	Longitude       string   `json:"lng"`
+	Phone           string   `json:"phone,omitempty"`
+	Fax             string   `json:"fax,omitempty"`
+	Url             string   `json:"url,omitempty"`
+	PharmacyTypes   []string `json:"pharmacy_types,omitempty"`
+	DistanceInMiles float64  `json:"distance,string,omitempty"`
 }
 
 type PharmacySearchAPI interface {

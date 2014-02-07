@@ -41,3 +41,16 @@ type receiveMessageResponse struct {
 	Messages  []*Message `xml:"ReceiveMessageResult>Message"`
 	RequestId string     `xml:"ResponseMetadata>RequestId"`
 }
+
+type sendMessageResponse struct {
+	MessageId string `xml:"SendMessageResult>MessageId"`
+	MD5OfBody string `xml:"SendMessageResult>MD5OfMessageBody"`
+	RequestId string `xml:"ResponseMetadata>RequestId"`
+}
+
+type SQSService interface {
+	DeleteMessage(queueUrl, receiptHandle string) error
+	GetQueueUrl(queueName, queueOwnerAWSAccountId string) (string, error)
+	SendMessage(queueUrl string, delaySeconds int, messageBody string) error
+	ReceiveMessage(queueUrl string, attributes []AttributeName, maxNumberOfMessages, visibilityTimeout, waitTimeSeconds int) ([]*Message, error)
+}

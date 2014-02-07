@@ -13,7 +13,10 @@ import (
 
 	"carefront/api"
 	"carefront/apiservice"
+	"carefront/app_worker"
+	"carefront/common"
 	"carefront/common/config"
+	"carefront/libs/aws"
 	"carefront/libs/erx"
 	"carefront/libs/golog"
 	"carefront/libs/maps"
@@ -71,6 +74,7 @@ type Config struct {
 	DoseSpotClinicId         string        `long:"dose_spot_clinic_id" description:"DoseSpot Clinic Id for eRX integration"`
 	DoseSpotUserId           string        `long:"dose_spot_user_id" description:"DoseSpot UserId for eRx integration"`
 	NoServices               bool          `long:"noservices" description:"Disable connecting to remote services"`
+	ERxRouting               bool          `long:"erx_routing" description:"Disable sending of prescriptions electronically"`
 	AuthTokenExpiration      int           `long:"auth_token_expire" description:"Expiration time in seconds for the auth token"`
 	AuthTokenRenew           int           `long:"auth_token_renew" description:"Time left below which to renew the auth token"`
 	StaticContentBaseUrl     string        `long:"static_content_base_url" description:"URL from which to serve static content"`
@@ -200,6 +204,7 @@ func main() {
 	}
 
 	mapsService := maps.NewGoogleMapsService(metricsRegistry.Scope("google_maps_api"))
+	doseSpotService := erx.NewDoseSpotService(conf.DoseSpotClinicId, conf.DoseSpotClinicKey, conf.DoseSpotUserId, metricsRegistry.Scope("dosespot_api"))
 
 	dataApi := &api.DataService{DB: db}
 	cloudStorageApi := api.NewCloudStorageService(awsAuth)
@@ -214,13 +219,13 @@ func main() {
 	patientVisitHandler := apiservice.NewPatientVisitHandler(dataApi, authApi, cloudStorageApi, photoAnswerCloudStorageApi, twilioCli, conf.Twilio.FromNumber)
 	patientVisitReviewHandler := &apiservice.PatientVisitReviewHandler{DataApi: dataApi}
 	answerIntakeHandler := apiservice.NewAnswerIntakeHandler(dataApi)
-	autocompleteHandler := &apiservice.AutocompleteHandler{ERxApi: erx.NewDoseSpotService(conf.DoseSpotClinicId, conf.DoseSpotClinicKey, conf.DoseSpotUserId), Role: api.PATIENT_ROLE}
-	doctorTreatmentSuggestionHandler := &apiservice.AutocompleteHandler{ERxApi: erx.NewDoseSpotService(conf.DoseSpotClinicId, conf.DoseSpotClinicKey, conf.DoseSpotUserId), Role: api.DOCTOR_ROLE}
+	autocompleteHandler := &apiservice.AutocompleteHandler{ERxApi: doseSpotService, Role: api.PATIENT_ROLE}
+	doctorTreatmentSuggestionHandler := &apiservice.AutocompleteHandler{ERxApi: doseSpotService, Role: api.DOCTOR_ROLE}
 	doctorInstructionsHandler := apiservice.NewDoctorDrugInstructionsHandler(dataApi)
 	doctorFollowupHandler := apiservice.NewPatientVisitFollowUpHandler(dataApi)
 	doctorFavoriteTreatmentsHandler := &apiservice.DoctorFavoriteTreatmentsHandler{DataApi: dataApi}
-	medicationStrengthSearchHandler := &apiservice.MedicationStrengthSearchHandler{ERxApi: erx.NewDoseSpotService(conf.DoseSpotClinicId, conf.DoseSpotClinicKey, conf.DoseSpotUserId)}
-	newTreatmentHandler := &apiservice.NewTreatmentHandler{ERxApi: erx.NewDoseSpotService(conf.DoseSpotClinicId, conf.DoseSpotClinicKey, conf.DoseSpotUserId)}
+	medicationStrengthSearchHandler := &apiservice.MedicationStrengthSearchHandler{ERxApi: doseSpotService}
+	newTreatmentHandler := &apiservice.NewTreatmentHandler{ERxApi: doseSpotService}
 	medicationDispenseUnitHandler := &apiservice.MedicationDispenseUnitsHandler{DataApi: dataApi}
 	treatmentsHandler := apiservice.NewTreatmentsHandler(dataApi)
 	photoAnswerIntakeHandler := apiservice.NewPhotoAnswerIntakeHandler(dataApi, photoAnswerCloudStorageApi, conf.CaseBucket, conf.AWSRegion, conf.MaxInMemoryForPhotoMB*1024*1024)
@@ -264,7 +269,18 @@ func main() {
 		Region:                conf.AWSRegion,
 	}
 
-	doctorSubmitPatientVisitHandler := &apiservice.DoctorSubmitPatientVisitReviewHandler{DataApi: dataApi, TwilioFromNumber: conf.Twilio.FromNumber, TwilioCli: twilioCli, IOSDeeplinkScheme: conf.IOSDeeplinkScheme}
+	erxStatusQueue, err := common.NewQueue(awsAuth, aws.Regions[conf.AWSRegion], api.ERX_STATUS_QUEUE)
+	if err != nil {
+		log.Fatal("Unable to get erx queue for sending prescriptions to: " + err.Error())
+	}
+	doctorSubmitPatientVisitHandler := &apiservice.DoctorSubmitPatientVisitReviewHandler{DataApi: dataApi,
+		ERxApi:            doseSpotService,
+		TwilioFromNumber:  conf.Twilio.FromNumber,
+		TwilioCli:         twilioCli,
+		IOSDeeplinkScheme: conf.IOSDeeplinkScheme,
+		ErxStatusQueue:    erxStatusQueue,
+		ERxRouting:        conf.ERxRouting}
+
 	diagnosePatientHandler := apiservice.NewDiagnosePatientHandler(dataApi, authApi, cloudStorageApi)
 	diagnosisSummaryHandler := &apiservice.DiagnosisSummaryHandler{DataApi: dataApi}
 	doctorRegimenHandler := apiservice.NewDoctorRegimenHandler(dataApi)
@@ -310,6 +326,8 @@ func main() {
 	mux.Handle("/v1/doctor/visit/advice", doctorAdviceHandler)
 	mux.Handle("/v1/doctor/visit/followup", doctorFollowupHandler)
 	mux.Handle("/v1/doctor/visit/submit", doctorSubmitPatientVisitHandler)
+
+	app_worker.StartWorkerToUpdatePrescriptionStatusForPatient(dataApi, doseSpotService, erxStatusQueue, metricsRegistry.Scope("check_erx_status"))
 
 	s := &http.Server{
 		Addr:           conf.ListenAddr,
@@ -371,5 +389,6 @@ func main() {
 		}()
 	}
 	golog.Infof("Starting server on %s...", conf.ListenAddr)
+
 	log.Fatal(s.ListenAndServe())
 }

@@ -29,6 +29,10 @@ const (
 	CASE_STATUS_PHOTOS_REJECTED = "PHOTOS_REJECTED"
 	HIPAA_AUTH                  = "hipaa"
 	CONSENT_AUTH                = "consent"
+	PATIENT_PHONE_HOME          = "Home"
+	PATIENT_PHONE_WORK          = "Work"
+	PATIENT_PHONE_CELL          = "Cell"
+	ERX_STATUS_QUEUE            = "erx"
 )
 
 var (
@@ -50,7 +54,8 @@ type PotentialAnswerInfo struct {
 type PatientAPI interface {
 	GetPatientFromId(patientId int64) (patient *common.Patient, err error)
 	GetPatientFromAccountId(accountId int64) (patient *common.Patient, err error)
-	RegisterPatient(accountId int64, firstName, lastName, gender, zipCode, city, state, phone string, dob time.Time) (*common.Patient, error)
+	RegisterPatient(accountId int64, firstName, lastName, gender, zipCode, city, state, phone, phoneType string, dob time.Time) (*common.Patient, error)
+	UpdatePatientWithERxPatientId(patientId, erxPatientId int64) error
 	GetPatientIdFromAccountId(accountId int64) (int64, error)
 	CreateCareTeamForPatient(patientId int64) (careTeam *common.PatientCareProviderGroup, err error)
 	GetCareTeamForPatient(patientId int64) (careTeam *common.PatientCareProviderGroup, err error)
@@ -60,6 +65,13 @@ type PatientAPI interface {
 	GetPatientPharmacySelection(patientId int64) (pharmacySelection *pharmacy.PharmacyData, err error)
 	TrackPatientAgreements(patientId int64, agreements map[string]bool) error
 	GetPatientFromPatientVisitId(patientVisitId int64) (patient *common.Patient, err error)
+}
+
+type PrescriptionStatus struct {
+	TreatmentId        int64
+	PrescriptionId     int64
+	PrescriptionStatus string
+	StatusTimeStamp    time.Time
 }
 
 type PatientVisitAPI interface {
@@ -80,14 +92,18 @@ type PatientVisitAPI interface {
 	AddDiagnosisSummaryForPatientVisit(summary string, patientVisitId, doctorId int64) error
 	GetDiagnosisSummaryForPatientVisit(patientVisitId int64) (summary string, err error)
 	DeactivatePreviousDiagnosisForPatientVisit(patientVisitId int64, doctorId int64) error
-	RecordDoctorAssignmentToPatientVisit(PatientVisitId, DoctorId int64) error
-	GetDoctorAssignedToPatientVisit(PatientVisitId int64) (doctor *common.Doctor, err error)
+	RecordDoctorAssignmentToPatientVisit(patientVisitId, doctorId int64) error
+	GetDoctorAssignedToPatientVisit(patientVisitId int64) (doctor *common.Doctor, err error)
 	GetAdvicePointsForPatientVisit(patientVisitId int64) (advicePoints []*common.DoctorInstructionItem, err error)
 	CreateAdviceForPatientVisit(advicePoints []*common.DoctorInstructionItem, patientVisitId int64) error
 	CreateRegimenPlanForPatientVisit(regimenPlan *common.RegimenPlan) error
 	GetRegimenPlanForPatientVisit(patientVisitId int64) (regimenPlan *common.RegimenPlan, err error)
-	AddTreatmentsForPatientVisit(treatments []*common.Treatment, PatientVisitId int64) error
+	AddTreatmentsForPatientVisit(treatments []*common.Treatment, doctorId, patientVisitId int64) error
 	GetTreatmentPlanForPatientVisit(patientVisitId int64) (treatmentPlan *common.TreatmentPlan, err error)
+	GetTreatmentBasedOnPrescriptionId(erxId int64) (*common.Treatment, error)
+	UpdateTreatmentsWithPrescriptionIds(treatments []*common.Treatment, doctorId, patientVisitId int64) error
+	AddErxStatusEvent(treatments []*common.Treatment, statusEvent string) error
+	GetPrescriptionStatusEventsForPatient(patientId int64) ([]*PrescriptionStatus, error)
 }
 
 type DoctorAPI interface {
@@ -103,11 +119,11 @@ type DoctorAPI interface {
 	AddOrUpdateAdvicePointForDoctor(advicePoint *common.DoctorInstructionItem, doctorId int64) error
 	MarkAdvicePointToBeDeleted(advicePoint *common.DoctorInstructionItem, doctorId int64) error
 	MarkAdvicePointsToBeDeleted(advicePoints []*common.DoctorInstructionItem, doctorId int64) error
-	AssignPatientVisitToDoctor(DoctorId, PatientVisitId int64) error
-	MarkPatientVisitAsOngoingInDoctorQueue(DoctorId, PatientVisitId int64) error
-	UpdateStateForPatientVisitInDoctorQueue(DoctorId, PatientVisitId int64, currentState, updatedState string) error
-	GetPendingItemsInDoctorQueue(DoctorId int64) (doctorQueue []*DoctorQueueItem, err error)
-	GetCompletedItemsInDoctorQueue(DoctorId int64) (doctorQueue []*DoctorQueueItem, err error)
+	AssignPatientVisitToDoctor(doctorId, patientVisitId int64) error
+	MarkPatientVisitAsOngoingInDoctorQueue(doctorId, patientVisitId int64) error
+	UpdateStateForPatientVisitInDoctorQueue(doctorId, patientVisitId int64, currentState, updatedState string) error
+	GetPendingItemsInDoctorQueue(doctorId int64) (doctorQueue []*DoctorQueueItem, err error)
+	GetCompletedItemsInDoctorQueue(doctorId int64) (doctorQueue []*DoctorQueueItem, err error)
 	GetMedicationDispenseUnits(languageId int64) (dispenseUnitIds []int64, dispenseUnits []string, err error)
 	GetDrugInstructionsForDoctor(drugName, drugForm, drugRoute string, doctorId int64) (drugInstructions []*common.DoctorInstructionItem, err error)
 	AddOrUpdateDrugInstructionForDoctor(drugName, drugForm, drugRoute string, drugInstructionToAdd *common.DoctorInstructionItem, doctorId int64) error

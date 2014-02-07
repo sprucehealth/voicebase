@@ -1,29 +1,19 @@
 package main
 
 import (
-	"carefront/api"
-	"database/sql"
+	"carefront/libs/erx"
 	"fmt"
-	_ "github.com/go-sql-driver/mysql"
+	"os"
 )
 
 func main() {
-	dsn := fmt.Sprintf("%s:%s@tcp(%s:3306)/%s?parseTime=true", "carefront", "changethis", "carefront-content-db.ckwporuc939i.us-east-1.rds.amazonaws.com", "pharmacy_db")
-	db, err := sql.Open("mysql", dsn)
+	doseSpotService := &erx.DoseSpotService{ClinicId: os.Getenv("DOSESPOT_CLINIC_ID"), ClinicKey: os.Getenv("DOSESPOT_CLINIC_KEY"), UserId: os.Getenv("DOSESPOT_USER_ID")}
+	treatments, err := doseSpotService.GetMedicationList(1885)
 	if err != nil {
-		panic(err)
+		panic(err.Error())
 	}
-	defer db.Close()
-
-	// test the connection to the database by running a ping against it
-	if err := db.Ping(); err != nil {
-		panic(err)
+	for _, treatment := range treatments {
+		fmt.Println(treatment.PrescriptionStatus)
 	}
 
-	pharmacySearchService := &api.PharmacySearchService{PharmacyDB: db}
-	_, err = pharmacySearchService.GetPharmaciesAroundSearchLocation(37.781575, -122.432654, 10.0, 10)
-
-	if err != nil {
-		panic(err)
-	}
 }

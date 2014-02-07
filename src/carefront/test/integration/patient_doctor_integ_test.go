@@ -2,6 +2,14 @@ package integration
 
 import (
 	"bytes"
+	"carefront/api"
+	"carefront/apiservice"
+	"carefront/app_worker"
+	"carefront/common"
+	"carefront/libs/aws/sqs"
+	"carefront/libs/erx"
+	"github.com/samuel/go-metrics/metrics"
+
 	"encoding/json"
 	"fmt"
 	"io/ioutil"
@@ -9,9 +17,6 @@ import (
 	"net/http/httptest"
 	"strconv"
 	"testing"
-
-	"carefront/apiservice"
-	"carefront/common"
 )
 
 func TestPatientVisitReview(t *testing.T) {
@@ -62,7 +67,21 @@ func TestPatientVisitReview(t *testing.T) {
 	CheckSuccessfulStatusCode(resp, "Unable to make successful call for doctor to start reviewing patient visit", t)
 
 	// once the doctor has started reviewing the case, lets go ahead and get the doctor to close the case with no diagnosis
-	doctorSubmitPatientVisitReviewHandler := &apiservice.DoctorSubmitPatientVisitReviewHandler{DataApi: testData.DataApi}
+
+	stubErxService := &erx.StubErxService{}
+	stubErxService.PatientErxId = 10
+	stubErxService.PrescriptionIdsToReturn = []int64{}
+	stubErxService.PrescriptionIdToPrescriptionStatus = make(map[int64]string)
+
+	erxStatusQueue := &common.SQSQueue{}
+	erxStatusQueue.QueueService = &sqs.StubSQS{}
+	erxStatusQueue.QueueUrl = api.ERX_STATUS_QUEUE
+	doctorSubmitPatientVisitReviewHandler := &apiservice.DoctorSubmitPatientVisitReviewHandler{
+		DataApi:        testData.DataApi,
+		ERxApi:         stubErxService,
+		ErxStatusQueue: erxStatusQueue,
+		ERxRouting:     true,
+	}
 	ts3 := httptest.NewServer(doctorSubmitPatientVisitReviewHandler)
 	defer ts3.Close()
 
@@ -154,6 +173,10 @@ func TestPatientVisitReview(t *testing.T) {
 
 	treatments := []*common.Treatment{treatment1, treatment2}
 
+	stubErxService.PrescriptionIdsToReturn = []int64{10, 20}
+	stubErxService.PrescriptionIdToPrescriptionStatus[10] = api.ERX_STATUS_SENT
+	stubErxService.PrescriptionIdToPrescriptionStatus[20] = api.ERX_STATUS_ERROR
+
 	addAndGetTreatmentsForPatientVisit(testData, treatments, doctor.AccountId, patientVisitResponse.PatientVisitId, t)
 
 	//
@@ -238,6 +261,50 @@ func TestPatientVisitReview(t *testing.T) {
 		t.Fatal("Unable to make call to close patient visit " + err.Error())
 	}
 	CheckSuccessfulStatusCode(resp, "Unable to make successful call to close the patient visit", t)
+
+	// lets get the patient object from database to get an updated view of the object
+	patient, err = testData.DataApi.GetPatientFromId(signedupPatientResponse.Patient.PatientId)
+	if err != nil {
+		t.Fatal("Unable to get patient from database: " + err.Error())
+	}
+
+	prescriptionStatuses, err := testData.DataApi.GetPrescriptionStatusEventsForPatient(patient.ERxPatientId)
+	if err != nil {
+		t.Fatal("Unable to get prescription statuses for patient: " + err.Error())
+	}
+	// there should be a total of 4 prescription statuses for this patient, with 2 per treatment
+	if len(prescriptionStatuses) != 2 {
+		t.Fatalf("Expected there to be 1 status events per treatment, instead have a total of %d", len(prescriptionStatuses))
+	}
+
+	for _, status := range prescriptionStatuses {
+		if status.PrescriptionStatus != api.ERX_STATUS_SENDING {
+			t.Fatal("Expected the prescription status to be either eRxSent or Sending")
+		}
+	}
+
+	// attempt to consume the message put into the queue
+	app_worker.ConsumeMessageFromQueue(testData.DataApi, stubErxService, erxStatusQueue, metrics.NewBiasedHistogram(), metrics.NewCounter(), metrics.NewCounter())
+
+	prescriptionStatuses, err = testData.DataApi.GetPrescriptionStatusEventsForPatient(patient.ERxPatientId)
+	if err != nil {
+		t.Fatal("Unable to get prescription statuses for patient: " + err.Error())
+	}
+
+	// there should be a total of 4 prescription statuses for this patient, with 2 per treatment
+	if len(prescriptionStatuses) != 4 {
+		t.Fatalf("Expected there to be 2 status events per treatment, instead have a total of %d", len(prescriptionStatuses))
+	}
+
+	for _, status := range prescriptionStatuses {
+		if status.TreatmentId == 20 && (status.PrescriptionStatus != api.ERX_STATUS_ERROR || status.PrescriptionStatus != api.ERX_STATUS_SENDING) {
+			t.Fatal("Expected the prescription status to be error for 1 treatment")
+		}
+
+		if status.PrescriptionStatus != api.ERX_STATUS_SENT && status.PrescriptionStatus != api.ERX_STATUS_SENDING && status.PrescriptionStatus != api.ERX_STATUS_ERROR {
+			t.Fatal("Expected the prescription status to be either eRxSent, Sending, or Error")
+		}
+	}
 
 	//
 	//

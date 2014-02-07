@@ -6,18 +6,21 @@ import (
 )
 
 type Patient struct {
-	PatientId int64                  `json:"id,omitempty,string"`
-	FirstName string                 `json:"first_name,omitempty"`
-	LastName  string                 `json:"last_name,omiempty"`
-	Dob       time.Time              `json:"dob,omitempty"`
-	Gender    string                 `json:"gender,omitempty"`
-	ZipCode   string                 `json:"zip_code,omitempty"`
-	City      string                 `json:"city,omitempty"`
-	State     string                 `json:"state,omitempty"`
-	Phone     string                 `json:"phone,omitempty"`
-	Status    string                 `json:"-"`
-	AccountId int64                  `json:"-"`
-	Pharmacy  *pharmacy.PharmacyData `json:"pharmacy,omitempty"`
+	PatientId      int64                  `json:"id,omitempty,string"`
+	FirstName      string                 `json:"first_name,omitempty"`
+	LastName       string                 `json:"last_name,omiempty"`
+	Dob            time.Time              `json:"dob,omitempty"`
+	Gender         string                 `json:"gender,omitempty"`
+	ZipCode        string                 `json:"zip_code,omitempty"`
+	City           string                 `json:"city,omitempty"`
+	State          string                 `json:"state,omitempty"`
+	Phone          string                 `json:"phone,omitempty"`
+	PhoneType      string                 `json:"-"`
+	Status         string                 `json:"-"`
+	AccountId      int64                  `json:"-"`
+	ERxPatientId   int64                  `json:"-"`
+	Pharmacy       *pharmacy.PharmacyData `json:"pharmacy,omitempty"`
+	PatientAddress *Address               `json:"address,omitempty"`
 }
 
 type Doctor struct {
@@ -41,6 +44,14 @@ type PatientVisit struct {
 	HealthConditionId int64     `json:"health_condition_id,omitempty,string"`
 	Status            string    `json:"status,omitempty"`
 	LayoutVersionId   int64     `json:"layout_version_id,omitempty,string"`
+}
+
+type Address struct {
+	AddressLine1 string `json:"address_line_1"`
+	AddressLine2 string `json:"address_line_2,omitempty"`
+	City         string `json:"city,omitempty"`
+	State        string `json:"state"`
+	ZipCode      string `json:"zip_code"`
 }
 
 type AnswerIntake struct {
@@ -90,6 +101,9 @@ type TreatmentPlan struct {
 
 type Treatment struct {
 	Id                       int64                    `json:"treatment_id,string,omitempty"`
+	PrescriptionId           int64                    `json:"-"`
+	ErxMedicationId          int64                    `json:"-"`
+	PrescriptionStatus       string                   `json:"erx_status"`
 	TreatmentPlanId          int64                    `json:"treatment_plan_id,string,omitempty"`
 	PatientVisitId           int64                    `json:"patient_visit_id,string,omitempty"`
 	DrugDBIds                map[string]string        `json:"drug_db_ids,omitempty"`

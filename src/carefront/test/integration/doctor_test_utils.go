@@ -59,7 +59,7 @@ func setupErxAPI(t *testing.T) *erx.DoseSpotService {
 		t.SkipNow()
 	}
 
-	erx := erx.NewDoseSpotService(clinicId, clinicKey, userId)
+	erx := erx.NewDoseSpotService(clinicId, clinicKey, userId, nil)
 	return erx
 }
 

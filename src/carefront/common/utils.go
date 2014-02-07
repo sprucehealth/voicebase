@@ -5,6 +5,7 @@ import (
 	"encoding/base64"
 
 	"carefront/libs/aws"
+	"carefront/libs/aws/sqs"
 	goamz "launchpad.net/goamz/aws"
 )
 
@@ -25,4 +26,30 @@ func AWSAuthAdapter(auth aws.Auth) goamz.Auth {
 		SecretKey: keys.SecretKey,
 		Token:     keys.Token,
 	}
+}
+
+type SQSQueue struct {
+	QueueService sqs.SQSService
+	QueueUrl     string
+}
+
+func NewQueue(auth aws.Auth, region aws.Region, queueName string) (*SQSQueue, error) {
+	awsClient := &aws.Client{
+		Auth: auth,
+	}
+
+	sq := &sqs.SQS{
+		Region: region,
+		Client: awsClient,
+	}
+
+	queueUrl, err := sq.GetQueueUrl(queueName, "")
+	if err != nil {
+		return nil, err
+	}
+
+	return &SQSQueue{
+		QueueService: sq,
+		QueueUrl:     queueUrl,
+	}, nil
 }

@@ -177,8 +177,7 @@ func (d *DataService) UpdatePatientVisitStatus(patientVisitId int64, message, ev
 		tx.Rollback()
 		return err
 	}
-	tx.Commit()
-	return nil
+	return tx.Commit()
 }
 
 func (d *DataService) GetMessageForPatientVisitStatus(patientVisitId int64) (message string, err error) {
@@ -216,8 +215,7 @@ func (d *DataService) ClosePatientVisit(patientVisitId int64, event, message str
 		tx.Rollback()
 		return err
 	}
-	tx.Commit()
-	return nil
+	return tx.Commit()
 }
 
 func (d *DataService) SubmitPatientVisitWithId(patientVisitId int64) error {
@@ -341,8 +339,7 @@ func (d *DataService) AddDiagnosisSummaryForPatientVisit(summary string, patient
 		return err
 	}
 
-	tx.Commit()
-	return err
+	return tx.Commit()
 }
 
 func (d *DataService) GetDiagnosisSummaryForPatientVisit(patientVisitId int64) (summary string, err error) {
@@ -355,19 +352,19 @@ func (d *DataService) GetDiagnosisSummaryForPatientVisit(patientVisitId int64) (
 	return
 }
 
-func (d *DataService) DeactivatePreviousDiagnosisForPatientVisit(PatientVisitId int64, DoctorId int64) error {
-	_, err := d.DB.Exec(`update info_intake set status='INACTIVE' where patient_visit_id = ? and status = 'ACTIVE' and role = 'DOCTOR' and role_id = ?`, PatientVisitId, DoctorId)
+func (d *DataService) DeactivatePreviousDiagnosisForPatientVisit(patientVisitId int64, doctorId int64) error {
+	_, err := d.DB.Exec(`update info_intake set status='INACTIVE' where patient_visit_id = ? and status = 'ACTIVE' and role = 'DOCTOR' and role_id = ?`, patientVisitId, doctorId)
 	return err
 }
 
-func (d *DataService) RecordDoctorAssignmentToPatientVisit(PatientVisitId, DoctorId int64) error {
+func (d *DataService) RecordDoctorAssignmentToPatientVisit(patientVisitId, doctorId int64) error {
 	tx, err := d.DB.Begin()
 	if err != nil {
 		return err
 	}
 
 	// update any previous assignment to be inactive
-	_, err = tx.Exec(`update patient_visit_care_provider_assignment set status=? where patient_visit_id=?`, status_inactive, PatientVisitId)
+	_, err = tx.Exec(`update patient_visit_care_provider_assignment set status=? where patient_visit_id=?`, status_inactive, patientVisitId)
 	if err != nil {
 		tx.Rollback()
 		return err
@@ -375,17 +372,16 @@ func (d *DataService) RecordDoctorAssignmentToPatientVisit(PatientVisitId, Docto
 
 	// insert an assignment into table
 	_, err = tx.Exec(`insert into patient_visit_care_provider_assignment (provider_role_id, provider_id, patient_visit_id, status) 
-							values ((select id from provider_role where provider_tag = 'DOCTOR'), ?, ?, ?)`, DoctorId, PatientVisitId, status_active)
+							values ((select id from provider_role where provider_tag = 'DOCTOR'), ?, ?, ?)`, doctorId, patientVisitId, status_active)
 	if err != nil {
 		tx.Rollback()
 		return err
 	}
 
-	tx.Commit()
-	return nil
+	return tx.Commit()
 }
 
-func (d *DataService) GetDoctorAssignedToPatientVisit(PatientVisitId int64) (*common.Doctor, error) {
+func (d *DataService) GetDoctorAssignedToPatientVisit(patientVisitId int64) (*common.Doctor, error) {
 	var firstName, lastName, status, gender string
 	var dob mysql.NullTime
 	var doctorId, accountId int64
@@ -393,7 +389,7 @@ func (d *DataService) GetDoctorAssignedToPatientVisit(PatientVisitId int64) (*co
 	err := d.DB.QueryRow(`select doctor.id,account_id, first_name, last_name, gender, dob, doctor.status from doctor 
 		inner join patient_visit_care_provider_assignment on provider_id = doctor.id
 		inner join provider_role on provider_role_id = provider_role.id
-		where provider_tag = 'DOCTOR' and patient_visit_id = ? and patient_visit_care_provider_assignment.status = 'ACTIVE'`, PatientVisitId).Scan(&doctorId, &accountId, &firstName, &lastName, &gender, &dob, &status)
+		where provider_tag = 'DOCTOR' and patient_visit_id = ? and patient_visit_care_provider_assignment.status = 'ACTIVE'`, patientVisitId).Scan(&doctorId, &accountId, &firstName, &lastName, &gender, &dob, &status)
 	if err != nil {
 		return nil, err
 	}
@@ -456,8 +452,7 @@ func (d *DataService) CreateAdviceForPatientVisit(advicePoints []*common.DoctorI
 		}
 	}
 
-	tx.Commit()
-	return nil
+	return tx.Commit()
 }
 
 func (d *DataService) CreateRegimenPlanForPatientVisit(regimenPlan *common.RegimenPlan) error {
@@ -485,9 +480,7 @@ func (d *DataService) CreateRegimenPlanForPatientVisit(regimenPlan *common.Regim
 		}
 	}
 
-	// commit tx
-	tx.Commit()
-	return nil
+	return tx.Commit()
 }
 
 func (d *DataService) GetRegimenPlanForPatientVisit(patientVisitId int64) (*common.RegimenPlan, error) {
@@ -539,7 +532,7 @@ func (d *DataService) GetRegimenPlanForPatientVisit(patientVisitId int64) (*comm
 	return &regimenPlan, nil
 }
 
-func (d *DataService) AddTreatmentsForPatientVisit(treatments []*common.Treatment, PatientVisitId int64) error {
+func (d *DataService) AddTreatmentsForPatientVisit(treatments []*common.Treatment, doctorId, patientVisitId int64) error {
 	tx, err := d.DB.Begin()
 	if err != nil {
 		return err
@@ -547,7 +540,7 @@ func (d *DataService) AddTreatmentsForPatientVisit(treatments []*common.Treatmen
 
 	// check if a treatment plan already exists
 	var treatmentPlanId int64
-	err = d.DB.QueryRow(`select id from treatment_plan where patient_visit_id = ? `, PatientVisitId).Scan(&treatmentPlanId)
+	err = d.DB.QueryRow(`select id from treatment_plan where patient_visit_id = ? `, patientVisitId).Scan(&treatmentPlanId)
 	if err != nil && err != sql.ErrNoRows {
 		tx.Rollback()
 		return err
@@ -555,7 +548,7 @@ func (d *DataService) AddTreatmentsForPatientVisit(treatments []*common.Treatmen
 
 	if treatmentPlanId == 0 {
 		// if not treatment plan exists, create a treatment plan
-		res, err := tx.Exec("insert into treatment_plan (patient_visit_id, status) values (?, ?)", PatientVisitId, status_created)
+		res, err := tx.Exec("insert into treatment_plan (patient_visit_id, doctor_id, status) values (?, ?, ?)", patientVisitId, doctorId, status_created)
 		if err != nil {
 			tx.Rollback()
 			return err
@@ -584,8 +577,7 @@ func (d *DataService) AddTreatmentsForPatientVisit(treatments []*common.Treatmen
 
 	}
 
-	tx.Commit()
-	return nil
+	return tx.Commit()
 }
 
 func (d *DataService) addTreatment(treatment *common.Treatment, tx *sql.Tx) error {
@@ -737,6 +729,119 @@ func (d *DataService) GetTreatmentPlanForPatientVisit(patientVisitId int64) (*co
 	}
 
 	return &treatmentPlan, nil
+}
+
+func (d *DataService) GetTreatmentBasedOnPrescriptionId(erxId int64) (*common.Treatment, error) {
+	rows, err := d.DB.Query(`select treatment.id, treatment.drug_internal_name, treatment.dosage_strength, treatment.type,
+			treatment.dispense_value, treatment.dispense_unit_id, ltext, treatment.refills, treatment.substitutions_allowed, 
+			treatment.days_supply, treatment.pharmacy_notes, treatment.patient_instructions, treatment.creation_date, 
+			treatment.status, drug_name.name, drug_route.name, drug_form.name from treatment 
+				inner join dispense_unit on treatment.dispense_unit_id = dispense_unit.id
+				inner join localized_text on localized_text.app_text_id = dispense_unit.dispense_unit_text_id
+				left outer join drug_name on drug_name_id = drug_name.id
+				left outer join drug_route on drug_route_id = drug_route.id
+				left outer join drug_form on drug_form_id = drug_form.id
+				where erx_id=? and localized_text.language_id = ?`, erxId, EN_LANGUAGE_ID)
+	if err != nil {
+		return nil, err
+	}
+
+	defer rows.Close()
+
+	treatments := make([]*common.Treatment, 0)
+	for rows.Next() {
+		treatment, err := d.getTreatmentFromCurrentRow(rows)
+		if err != nil {
+			return nil, err
+		}
+
+		treatments = append(treatments, treatment)
+	}
+
+	if len(treatments) == 0 {
+		return nil, nil
+	}
+
+	if len(treatments) > 1 {
+		return nil, fmt.Errorf("Expected just 1 treatment to be returned based on the prescription id, instead got %d", len(treatments))
+	}
+
+	return treatments[0], nil
+}
+
+func (d *DataService) UpdateTreatmentsWithPrescriptionIds(treatments []*common.Treatment, DoctorId, PatientVisitId int64) error {
+	tx, err := d.DB.Begin()
+	if err != nil {
+		return err
+	}
+
+	for _, treatment := range treatments {
+		if treatment.PrescriptionId != 0 {
+			_, err = tx.Exec(`update treatment set erx_id = ? where id = ? and treatment_plan_id = ?`, treatment.PrescriptionId, treatment.Id, treatment.TreatmentPlanId)
+			if err != nil {
+				tx.Rollback()
+				return err
+			}
+		}
+	}
+	return tx.Commit()
+}
+
+func (d *DataService) AddErxStatusEvent(treatments []*common.Treatment, statusEvent string) error {
+	tx, err := d.DB.Begin()
+	if err != nil {
+		return err
+	}
+
+	for _, treatment := range treatments {
+
+		_, err = tx.Exec(`insert into erx_status_events (treatment_id, erx_status) values (?,?)`, treatment.Id, statusEvent)
+		if err != nil {
+			tx.Rollback()
+			return err
+		}
+	}
+
+	return tx.Commit()
+}
+
+func (d *DataService) GetPrescriptionStatusEventsForPatient(patientId int64) ([]*PrescriptionStatus, error) {
+	rows, err := d.DB.Query(`select erx_status_events.treatment_id, treatment.erx_id, erx_status_events.erx_status, erx_status_events.creation_date from treatment 
+								inner join treatment_plan on treatment_plan_id = treatment_plan.id 
+								inner join patient_visit on treatment_plan.patient_visit_id = patient_visit.id 
+								left outer join erx_status_events on erx_status_events.treatment_id = treatment.id 
+								inner join patient on patient.id = patient_visit.patient_id 
+									where patient.erx_patient_id = ? order by erx_status_events.creation_date desc`, patientId)
+	if err != nil {
+		return nil, err
+	}
+	defer rows.Close()
+
+	prescriptionStatuses := make([]*PrescriptionStatus, 0)
+	for rows.Next() {
+		var treatmentId int64
+		var prescriptionId sql.NullInt64
+		var status string
+		var creationDate time.Time
+		err = rows.Scan(&treatmentId, &prescriptionId, &status, &creationDate)
+		if err != nil {
+			return nil, err
+		}
+
+		prescriptionStatus := &PrescriptionStatus{
+			PrescriptionStatus: status,
+			TreatmentId:        treatmentId,
+			StatusTimeStamp:    creationDate,
+		}
+
+		if prescriptionId.Valid {
+			prescriptionStatus.PrescriptionId = prescriptionId.Int64
+		}
+
+		prescriptionStatuses = append(prescriptionStatuses, prescriptionStatus)
+	}
+
+	return prescriptionStatuses, nil
 }
 
 func (d *DataService) getTreatmentFromCurrentRow(rows *sql.Rows) (*common.Treatment, error) {
