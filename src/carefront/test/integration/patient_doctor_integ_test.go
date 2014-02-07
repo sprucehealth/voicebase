@@ -8,6 +8,7 @@ import (
 	"carefront/common"
 	"carefront/libs/aws/sqs"
 	"carefront/libs/erx"
+	"github.com/samuel/go-metrics/metrics"
 
 	"encoding/json"
 	"fmt"
@@ -283,7 +284,7 @@ func TestPatientVisitReview(t *testing.T) {
 	}
 
 	// attempt to consume the message put into the queue
-	app_worker.ConsumeMessageFromQueue(testData.DataApi, stubErxService, erxStatusQueue)
+	app_worker.ConsumeMessageFromQueue(testData.DataApi, stubErxService, erxStatusQueue, metrics.NewBiasedHistogram(), metrics.NewCounter(), metrics.NewCounter())
 
 	prescriptionStatuses, err = testData.DataApi.GetPrescriptionStatusEventsForPatient(patient.ERxPatientId)
 	if err != nil {
