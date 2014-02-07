@@ -7,6 +7,8 @@ import (
 	"carefront/libs/erx"
 	"carefront/libs/golog"
 	"encoding/json"
+	"github.com/samuel/go-metrics/metrics"
+
 	"time"
 )
 
@@ -16,32 +18,44 @@ const (
 	longPollingTimePeriod = 20
 )
 
-func StartWorkerToUpdatePrescriptionStatusForPatient(DataApi api.DataAPI, ERxApi erx.ERxAPI, ErxQueue *common.SQSQueue) {
+func StartWorkerToUpdatePrescriptionStatusForPatient(DataApi api.DataAPI, ERxApi erx.ERxAPI, ErxQueue *common.SQSQueue, statsRegistry metrics.Registry) {
+
+	statProcessTime := metrics.NewBiasedHistogram()
+	statCycles := metrics.NewCounter()
+	statFailure := metrics.NewCounter()
+
+	statsRegistry.Add("cycles/total", statCycles)
+	statsRegistry.Add("cycles/processTime", statProcessTime)
+	statsRegistry.Add("cycles/failed", statFailure)
 
 	go func() {
 
 		for {
-			ConsumeMessageFromQueue(DataApi, ERxApi, ErxQueue)
+			ConsumeMessageFromQueue(DataApi, ERxApi, ErxQueue, statProcessTime, statCycles, statFailure)
 		}
 	}()
 }
 
-func ConsumeMessageFromQueue(DataApi api.DataAPI, ERxApi erx.ERxAPI, ErxQueue *common.SQSQueue) {
+func ConsumeMessageFromQueue(DataApi api.DataAPI, ERxApi erx.ERxAPI, ErxQueue *common.SQSQueue, statProcessTime metrics.Histogram, statCycles, statFailure metrics.Counter) {
 	msgs, err := ErxQueue.QueueService.ReceiveMessage(ErxQueue.QueueUrl, nil, 1, msgVisibilityTimeout, longPollingTimePeriod)
+	statCycles.Inc(1)
 	if err != nil {
 		golog.Errorf("Unable to receieve messages from queue. Sleeping and trying again in %d minutes", waitTimeInMins)
 		time.Sleep(waitTimeInMins * time.Minute)
+		statFailure.Inc(1)
 		return
 	}
 
 	if msgs == nil || len(msgs) == 0 {
 		time.Sleep(waitTimeInMins * time.Minute)
+		statFailure.Inc(1)
 		return
 	}
 
 	// keep track of failed events so as to determine
 	// whether or not to delete a message from the queue
 	failed := 0
+	startTime := time.Now()
 	for _, msg := range msgs {
 		statusCheckMessage := &apiservice.PrescriptionStatusCheckMessage{}
 		err := json.Unmarshal([]byte(msg.Body), statusCheckMessage)
@@ -137,8 +151,13 @@ func ConsumeMessageFromQueue(DataApi api.DataAPI, ERxApi erx.ERxAPI, ErxQueue *c
 			// delete message from queue because there are no more pending treatments for this patient
 			err = ErxQueue.QueueService.DeleteMessage(ErxQueue.QueueUrl, msg.ReceiptHandle)
 			if err != nil {
-				golog.Warningf("Failed to delete message: %s", err.Error())
+				statFailure.Inc(1)
+				golog.Errorf("Failed to delete message: %s", err.Error())
 			}
+		} else if failed > 0 {
+			statFailure.Inc(1)
 		}
 	}
+	responseTime := time.Since(startTime).Nanoseconds() / 1e3
+	statProcessTime.Update(responseTime)
 }

@@ -17,7 +17,6 @@ type DoseSpotService struct {
 	UserId       string
 	apiLatencies map[DoseSpotApiId]metrics.Histogram
 	apiRequests  map[DoseSpotApiId]metrics.Counter
-	apiSuccess   map[DoseSpotApiId]metrics.Counter
 	apiFailure   map[DoseSpotApiId]metrics.Counter
 }
 
@@ -74,17 +73,14 @@ func NewDoseSpotService(clinicId, clinicKey, userId string, statsRegistry metric
 	d.apiLatencies = make(map[DoseSpotApiId]metrics.Histogram)
 	d.apiRequests = make(map[DoseSpotApiId]metrics.Counter)
 	d.apiFailure = make(map[DoseSpotApiId]metrics.Counter)
-	d.apiSuccess = make(map[DoseSpotApiId]metrics.Counter)
 	for apiActionId, apiAction := range DoseSpotApiActions {
 		d.apiLatencies[apiActionId] = metrics.NewBiasedHistogram()
 		d.apiRequests[apiActionId] = metrics.NewCounter()
-		d.apiSuccess[apiActionId] = metrics.NewCounter()
 		d.apiFailure[apiActionId] = metrics.NewCounter()
 		if statsRegistry != nil {
 			statsRegistry.Add(fmt.Sprintf("requests/latency/%s", apiAction), d.apiLatencies[apiActionId])
 			statsRegistry.Add(fmt.Sprintf("requests/total/%s", apiAction), d.apiRequests[apiActionId])
 			statsRegistry.Add(fmt.Sprintf("requests/failed/%s", apiAction), d.apiFailure[apiActionId])
-			statsRegistry.Add(fmt.Sprintf("requests/success/%s", apiAction), d.apiSuccess[apiActionId])
 		}
 	}
 
@@ -102,8 +98,7 @@ func (d *DoseSpotService) GetDrugNamesForDoctor(prefix string) ([]string, error)
 		medicationSearch, searchResult,
 		d.apiLatencies[medicationQuickSearchAction],
 		d.apiRequests[medicationQuickSearchAction],
-		d.apiFailure[medicationQuickSearchAction],
-		d.apiSuccess[medicationQuickSearchAction])
+		d.apiFailure[medicationQuickSearchAction])
 
 	if err != nil {
 		return nil, err
@@ -122,8 +117,7 @@ func (d *DoseSpotService) GetDrugNamesForPatient(prefix string) ([]string, error
 		selfReportedDrugsSearch, searchResult,
 		d.apiLatencies[selfReportedMedicationSearchAction],
 		d.apiRequests[selfReportedMedicationSearchAction],
-		d.apiFailure[selfReportedMedicationSearchAction],
-		d.apiSuccess[selfReportedMedicationSearchAction])
+		d.apiFailure[selfReportedMedicationSearchAction])
 
 	if err != nil {
 		return nil, err
@@ -147,8 +141,7 @@ func (d *DoseSpotService) SearchForMedicationStrength(medicationName string) ([]
 		medicationStrengthSearch, searchResult,
 		d.apiLatencies[medicationStrengthSearchAction],
 		d.apiRequests[medicationStrengthSearchAction],
-		d.apiFailure[medicationStrengthSearchAction],
-		d.apiSuccess[medicationStrengthSearchAction])
+		d.apiFailure[medicationStrengthSearchAction])
 
 	if err != nil {
 		return nil, err
@@ -176,8 +169,7 @@ func (d *DoseSpotService) SendMultiplePrescriptions(Patient *common.Patient, Tre
 		sendPrescriptionsRequest, response,
 		d.apiLatencies[sendMultiplPrescriptionsAction],
 		d.apiRequests[sendMultiplPrescriptionsAction],
-		d.apiFailure[sendMultiplPrescriptionsAction],
-		d.apiSuccess[sendMultiplPrescriptionsAction])
+		d.apiFailure[sendMultiplPrescriptionsAction])
 
 	if err != nil {
 		return nil, err
@@ -259,8 +251,7 @@ func (d *DoseSpotService) StartPrescribingPatient(Patient *common.Patient, Treat
 		startPrescribingRequest, response,
 		d.apiLatencies[startPrescribingPatientAction],
 		d.apiRequests[startPrescribingPatientAction],
-		d.apiFailure[startPrescribingPatientAction],
-		d.apiSuccess[startPrescribingPatientAction])
+		d.apiFailure[startPrescribingPatientAction])
 	if err != nil {
 		return err
 	}
@@ -303,8 +294,7 @@ func (d *DoseSpotService) SelectMedication(medicationName, medicationStrength st
 		medicationSelect, selectResult,
 		d.apiLatencies[medicationSelectAction],
 		d.apiRequests[medicationSelectAction],
-		d.apiFailure[medicationSelectAction],
-		d.apiSuccess[medicationSelectAction])
+		d.apiFailure[medicationSelectAction])
 	if err != nil {
 		return nil, err
 	}
@@ -349,8 +339,7 @@ func (d *DoseSpotService) SearchForPharmacies(city, state, zipcode, name string,
 		searchRequest, searchResponse,
 		d.apiLatencies[searchPharmaciesAction],
 		d.apiRequests[searchPharmaciesAction],
-		d.apiFailure[searchPharmaciesAction],
-		d.apiSuccess[searchPharmaciesAction])
+		d.apiFailure[searchPharmaciesAction])
 	if err != nil {
 		return nil, err
 	}
@@ -388,8 +377,7 @@ func (d *DoseSpotService) GetPrescriptionStatus(prescriptionId int64) ([]*Prescr
 		request, response,
 		d.apiLatencies[getPrescriptionLogDetailsAction],
 		d.apiRequests[getPrescriptionLogDetailsAction],
-		d.apiFailure[getPrescriptionLogDetailsAction],
-		d.apiSuccess[getPrescriptionLogDetailsAction])
+		d.apiFailure[getPrescriptionLogDetailsAction])
 	if err != nil {
 		return nil, err
 	}
@@ -418,8 +406,7 @@ func (d *DoseSpotService) GetMedicationList(PatientId int64) ([]*Medication, err
 		request, response,
 		d.apiLatencies[getMedicationListAction],
 		d.apiRequests[getMedicationListAction],
-		d.apiFailure[getMedicationListAction],
-		d.apiSuccess[getMedicationListAction])
+		d.apiFailure[getMedicationListAction])
 	if err != nil {
 		return nil, err
 	}
@@ -442,8 +429,7 @@ func (d *DoseSpotService) GetTransmissionErrorDetails() error {
 		request, response,
 		d.apiLatencies[getTransmissionErrorDetailsAction],
 		d.apiRequests[getTransmissionErrorDetailsAction],
-		d.apiFailure[getTransmissionErrorDetailsAction],
-		d.apiSuccess[getTransmissionErrorDetailsAction])
+		d.apiFailure[getTransmissionErrorDetailsAction])
 	if err != nil {
 		return err
 	}

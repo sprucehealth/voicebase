@@ -333,7 +333,7 @@ func main() {
 	mux.Handle("/v1/doctor/visit/followup", doctorFollowupHandler)
 	mux.Handle("/v1/doctor/visit/submit", doctorSubmitPatientVisitHandler)
 
-	app_worker.StartWorkerToUpdatePrescriptionStatusForPatient(dataApi, doseSpotService, erxStatusQueue)
+	app_worker.StartWorkerToUpdatePrescriptionStatusForPatient(dataApi, doseSpotService, erxStatusQueue, metricsRegistry.Scope("check_erx_status"))
 
 	s := &http.Server{
 		Addr:           conf.ListenAddr,
