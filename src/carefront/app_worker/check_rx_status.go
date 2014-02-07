@@ -54,21 +54,20 @@ func ConsumeMessageFromQueue(DataApi api.DataAPI, ERxApi erx.ERxAPI, ErxQueue *c
 
 	// keep track of failed events so as to determine
 	// whether or not to delete a message from the queue
-	failed := 0
 	startTime := time.Now()
 	for _, msg := range msgs {
 		statusCheckMessage := &apiservice.PrescriptionStatusCheckMessage{}
 		err := json.Unmarshal([]byte(msg.Body), statusCheckMessage)
 		if err != nil {
 			golog.Errorf("Unable to correctly parse json object for status check: %s", err.Error())
-			failed++
+			statFailure.Inc(1)
 			continue
 		}
 
 		patient, err := DataApi.GetPatientFromId(statusCheckMessage.PatientId)
 		if err != nil {
 			golog.Errorf("Unable to get patient from database based on id: %s", err.Error())
-			failed++
+			statFailure.Inc(1)
 			continue
 		}
 
@@ -76,7 +75,7 @@ func ConsumeMessageFromQueue(DataApi api.DataAPI, ERxApi erx.ERxAPI, ErxQueue *c
 		prescriptionStatuses, err := DataApi.GetPrescriptionStatusEventsForPatient(patient.ERxPatientId)
 		if err != nil {
 			golog.Errorf("Error getting prescription events for patient: %s", err.Error())
-			failed++
+			statFailure.Inc(1)
 			continue
 		}
 
@@ -103,18 +102,28 @@ func ConsumeMessageFromQueue(DataApi api.DataAPI, ERxApi erx.ERxAPI, ErxQueue *c
 		if len(latestPendingStatusPerPrescription) == 0 {
 			// nothing to do if there are no pending treatments to work with
 			golog.Infof("There are no pending prescriptions for this patient")
+			err = ErxQueue.QueueService.DeleteMessage(ErxQueue.QueueUrl, msg.ReceiptHandle)
+			if err != nil {
+				statFailure.Inc(1)
+				golog.Errorf("Failed to delete message: %s", err.Error())
+			}
 			continue
 		}
 
 		medications, err := ERxApi.GetMedicationList(patient.ERxPatientId)
 		if err != nil {
 			golog.Errorf("Unable to get medications from dosespot: %s", err.Error())
-			failed++
+			statFailure.Inc(1)
 			continue
 		}
 
 		if medications == nil || len(medications) == 0 {
 			golog.Infof("No medications returned for this patient from dosespot")
+			err = ErxQueue.QueueService.DeleteMessage(ErxQueue.QueueUrl, msg.ReceiptHandle)
+			if err != nil {
+				statFailure.Inc(1)
+				golog.Errorf("Failed to delete message: %s", err.Error())
+			}
 			continue
 		}
 
@@ -133,29 +142,27 @@ func ConsumeMessageFromQueue(DataApi api.DataAPI, ERxApi erx.ERxAPI, ErxQueue *c
 					// add an event
 					treatment, err := DataApi.GetTreatmentBasedOnPrescriptionId(medication.ErxMedicationId)
 					if err != nil {
+						statFailure.Inc(1)
 						golog.Errorf("Unable to get treatment based on prescription id: %s", err.Error())
-						failed++
 						continue
 					}
 					err = DataApi.AddErxStatusEvent([]*common.Treatment{treatment}, medication.PrescriptionStatus)
 					if err != nil {
+						statFailure.Inc(1)
 						golog.Errorf("Unable to add status event for this treatment: %s", err.Error())
-						failed++
 						continue
 					}
 				}
 			}
 		}
 
-		if pendingTreatments == 0 && failed == 0 {
+		if pendingTreatments == 0 {
 			// delete message from queue because there are no more pending treatments for this patient
 			err = ErxQueue.QueueService.DeleteMessage(ErxQueue.QueueUrl, msg.ReceiptHandle)
 			if err != nil {
 				statFailure.Inc(1)
 				golog.Errorf("Failed to delete message: %s", err.Error())
 			}
-		} else if failed > 0 {
-			statFailure.Inc(1)
 		}
 	}
 	responseTime := time.Since(startTime).Nanoseconds() / 1e3

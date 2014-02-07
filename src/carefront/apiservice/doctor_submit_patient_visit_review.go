@@ -124,11 +124,12 @@ func (d *DoctorSubmitPatientVisitReviewHandler) submitPatientVisitReview(w http.
 		}
 
 		// FIX: add fake address for now until we start accepting address from client
-		patient.PatientAddress = &common.Address{}
-		patient.PatientAddress.AddressLine1 = "1234 Main Street"
-		patient.PatientAddress.City = "San Francisco"
-		patient.PatientAddress.State = "CA"
-		patient.PatientAddress.ZipCode = "94103"
+		patient.PatientAddress = &common.Address{
+			AddressLine1: "1234 Main Street",
+			City:         "San Francisco",
+			State:        "CA",
+			ZipCode:      "94103",
+		}
 
 		// FIX: add fake pharmacy for now
 		patient.Pharmacy = &pharmacy.PharmacyData{}
@@ -178,7 +179,7 @@ func (d *DoctorSubmitPatientVisitReviewHandler) submitPatientVisitReview(w http.
 						break
 					}
 				}
-				if treatmentFound == false {
+				if !treatmentFound {
 					successfulTreatments = append(successfulTreatments, treatment)
 				} else {
 					unSuccessfulTreatments = append(unSuccessfulTreatments, treatment)
@@ -219,12 +220,13 @@ func (d *DoctorSubmitPatientVisitReviewHandler) submitPatientVisitReview(w http.
 	WriteJSONToHTTPResponseWriter(w, http.StatusOK, SuccessfulGenericJSONResponse())
 }
 
-func (d *DoctorSubmitPatientVisitReviewHandler) queueUpJobForErxStatus(PatientId, DoctorId int64) error {
+func (d *DoctorSubmitPatientVisitReviewHandler) queueUpJobForErxStatus(patientId, doctorId int64) error {
 	// queue up a job to get the updated status of the prescription
 	// to know when exatly the message was sent to the pharmacy
-	erxMessage := &PrescriptionStatusCheckMessage{}
-	erxMessage.PatientId = PatientId
-	erxMessage.DoctorId = DoctorId
+	erxMessage := &PrescriptionStatusCheckMessage{
+		PatientId: patientId,
+		DoctorId:  doctorId,
+	}
 	jsonData, err := json.Marshal(erxMessage)
 	if err != nil {
 		return err
@@ -234,10 +236,10 @@ func (d *DoctorSubmitPatientVisitReviewHandler) queueUpJobForErxStatus(PatientId
 	return d.ErxStatusQueue.QueueService.SendMessage(d.ErxStatusQueue.QueueUrl, 0, string(jsonData))
 }
 
-func (d *DoctorSubmitPatientVisitReviewHandler) sendSMSToNotifyPatient(PatientVisitId int64) error {
+func (d *DoctorSubmitPatientVisitReviewHandler) sendSMSToNotifyPatient(patientVisitId int64) error {
 
 	if d.TwilioCli != nil {
-		patient, err := d.DataApi.GetPatientFromPatientVisitId(PatientVisitId)
+		patient, err := d.DataApi.GetPatientFromPatientVisitId(patientVisitId)
 		if err != nil {
 			return err
 		}
