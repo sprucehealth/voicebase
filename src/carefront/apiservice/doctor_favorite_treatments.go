@@ -101,11 +101,18 @@ func (t *DoctorFavoriteTreatmentsHandler) addFavoriteTreatments(w http.ResponseW
 	}
 
 	for _, favoriteTreatment := range favoriteTreatmentRequest.FavoriteTreatments {
+
 		err = validateTreatment(favoriteTreatment.FavoritedTreatment)
 		if err != nil {
 			WriteDeveloperError(w, http.StatusBadRequest, err.Error())
 			return
 		}
+
+		// ensure to empty out any patient visit, treatment id or treatment plan id being set
+		// this is so that this treatment does not mistakenly get added to the treatment of a patient
+		favoriteTreatment.FavoritedTreatment.TreatmentPlanId = 0
+		favoriteTreatment.FavoritedTreatment.PatientVisitId = 0
+		favoriteTreatment.FavoritedTreatment.Id = 0
 
 		// break up the name into its components so that it can be saved into the database as its components
 		drugName, drugForm, drugRoute := breakDrugInternalNameIntoComponents(favoriteTreatment.FavoritedTreatment.DrugInternalName)
