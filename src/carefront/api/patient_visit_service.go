@@ -177,8 +177,7 @@ func (d *DataService) UpdatePatientVisitStatus(patientVisitId int64, message, ev
 		tx.Rollback()
 		return err
 	}
-	tx.Commit()
-	return nil
+	return tx.Commit()
 }
 
 func (d *DataService) GetMessageForPatientVisitStatus(patientVisitId int64) (message string, err error) {
@@ -216,8 +215,7 @@ func (d *DataService) ClosePatientVisit(patientVisitId int64, event, message str
 		tx.Rollback()
 		return err
 	}
-	tx.Commit()
-	return nil
+	return tx.Commit()
 }
 
 func (d *DataService) SubmitPatientVisitWithId(patientVisitId int64) error {
@@ -341,8 +339,7 @@ func (d *DataService) AddDiagnosisSummaryForPatientVisit(summary string, patient
 		return err
 	}
 
-	tx.Commit()
-	return err
+	return tx.Commit()
 }
 
 func (d *DataService) GetDiagnosisSummaryForPatientVisit(patientVisitId int64) (summary string, err error) {
@@ -381,8 +378,7 @@ func (d *DataService) RecordDoctorAssignmentToPatientVisit(patientVisitId, docto
 		return err
 	}
 
-	tx.Commit()
-	return nil
+	return tx.Commit()
 }
 
 func (d *DataService) GetDoctorAssignedToPatientVisit(patientVisitId int64) (*common.Doctor, error) {
@@ -456,8 +452,7 @@ func (d *DataService) CreateAdviceForPatientVisit(advicePoints []*common.DoctorI
 		}
 	}
 
-	tx.Commit()
-	return nil
+	return tx.Commit()
 }
 
 func (d *DataService) CreateRegimenPlanForPatientVisit(regimenPlan *common.RegimenPlan) error {
@@ -485,9 +480,7 @@ func (d *DataService) CreateRegimenPlanForPatientVisit(regimenPlan *common.Regim
 		}
 	}
 
-	// commit tx
-	tx.Commit()
-	return nil
+	return tx.Commit()
 }
 
 func (d *DataService) GetRegimenPlanForPatientVisit(patientVisitId int64) (*common.RegimenPlan, error) {
@@ -584,8 +577,7 @@ func (d *DataService) AddTreatmentsForPatientVisit(treatments []*common.Treatmen
 
 	}
 
-	tx.Commit()
-	return nil
+	return tx.Commit()
 }
 
 func (d *DataService) addTreatment(treatment *common.Treatment, tx *sql.Tx) error {
@@ -792,8 +784,7 @@ func (d *DataService) UpdateTreatmentsWithPrescriptionIds(treatments []*common.T
 			}
 		}
 	}
-	tx.Commit()
-	return nil
+	return tx.Commit()
 }
 
 func (d *DataService) AddErxStatusEvent(treatments []*common.Treatment, statusEvent string) error {
@@ -811,8 +802,7 @@ func (d *DataService) AddErxStatusEvent(treatments []*common.Treatment, statusEv
 		}
 	}
 
-	tx.Commit()
-	return nil
+	return tx.Commit()
 }
 
 func (d *DataService) GetPrescriptionStatusEventsForPatient(patientId int64) ([]*PrescriptionStatus, error) {
