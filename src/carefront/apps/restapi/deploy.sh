@@ -53,7 +53,8 @@ esac
 
 set -e
 
-GOOS=linux GOARCH=amd64 CGO_ENABLED=0 go build -o $APP
+TIME=$(date)
+GOOS=linux GOARCH=amd64 CGO_ENABLED=0 go build -ldflags "-X carefront/common/config.GitRevision $REV -X carefront/common/config.GitBranch $BRANCH -X carefront/common/config.BuildTime '$TIME'" -o $APP
 
 for HOST in $HOSTS
 do
