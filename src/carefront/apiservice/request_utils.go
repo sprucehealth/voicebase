@@ -69,7 +69,7 @@ func GetPatientInfo(dataApi api.DataAPI, pharmacySearchService pharmacy_service.
 		return nil, errors.New("Unable to get patient's pharmacy selection: " + err.Error())
 	}
 
-	if pharmacySelection != nil && pharmacySelection.Id != "" && pharmacySelection.Address == "" {
+	if pharmacySearchService != nil && pharmacySelection != nil && pharmacySelection.Id != "" && pharmacySelection.Address == "" {
 		pharmacy, err := pharmacySearchService.GetPharmacyBasedOnId(pharmacySelection.Id)
 		if err != nil && err != pharmacy_service.NoPharmacyExists {
 			return nil, errors.New("Unable to get pharmacy based on id: " + err.Error())

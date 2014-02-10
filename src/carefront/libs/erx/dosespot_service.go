@@ -162,6 +162,9 @@ func (d *DoseSpotService) SendMultiplePrescriptions(patient *common.Patient, tre
 	prescriptionIds := make([]int, 0)
 	prescriptionIdToTreatmentIdMapping := make(map[int64]int64)
 	for _, treatment := range treatments {
+		if treatment.PrescriptionId == 0 {
+			continue
+		}
 		prescriptionIds = append(prescriptionIds, int(treatment.PrescriptionId))
 		prescriptionIdToTreatmentIdMapping[treatment.PrescriptionId] = treatment.Id
 	}
@@ -208,10 +211,8 @@ func (d *DoseSpotService) StartPrescribingPatient(currentPatient *common.Patient
 		PrimaryPhone:     currentPatient.Phone,
 		PrimaryPhoneType: currentPatient.PhoneType,
 	}
-	fmt.Printf("%+v", newPatient)
 
 	if currentPatient.ERxPatientId != 0 {
-		fmt.Println("Using erx patient id since it exists for patient: ")
 		newPatient.PatientId = int(currentPatient.ERxPatientId)
 	}
 

@@ -890,11 +890,25 @@ func (d *DataService) getTreatmentFromCurrentRow(rows *sql.Rows) (*common.Treatm
 	treatment.CreationDate = creationDate
 	treatment.Status = status
 
-	// for each of the drugs, populate the drug db ids
-	drugDbIds := make(map[string]string)
-	drugRows, err := d.DB.Query(`select drug_db_id_tag, drug_db_id from drug_db_id where treatment_id = ? `, treatmentId)
+	err = d.fillInDrugDBIdsForTreatment(treatment)
 	if err != nil {
 		return nil, err
+	}
+
+	err = d.fillInSupplementalInstructionsForTreatment(treatment)
+	if err != nil {
+		return nil, err
+	}
+
+	return treatment, nil
+}
+
+func (d *DataService) fillInDrugDBIdsForTreatment(treatment *common.Treatment) error {
+	// for each of the drugs, populate the drug db ids
+	drugDbIds := make(map[string]string)
+	drugRows, err := d.DB.Query(`select drug_db_id_tag, drug_db_id from drug_db_id where treatment_id = ? `, treatment.Id)
+	if err != nil {
+		return err
 	}
 	defer drugRows.Close()
 
@@ -906,13 +920,16 @@ func (d *DataService) getTreatmentFromCurrentRow(rows *sql.Rows) (*common.Treatm
 	}
 
 	treatment.DrugDBIds = drugDbIds
+	return nil
+}
 
+func (d *DataService) fillInSupplementalInstructionsForTreatment(treatment *common.Treatment) error {
 	// get the supplemental instructions for this treatment
 	instructionsRows, err := d.DB.Query(`select dr_drug_supplemental_instruction.id, dr_drug_supplemental_instruction.text from treatment_instructions 
 												inner join dr_drug_supplemental_instruction on dr_drug_instruction_id = dr_drug_supplemental_instruction.id 
-													where treatment_instructions.status=? and treatment_id=?`, status_active, treatmentId)
+													where treatment_instructions.status=? and treatment_id=?`, status_active, treatment.Id)
 	if err != nil {
-		return nil, err
+		return err
 	}
 	defer instructionsRows.Close()
 
@@ -929,5 +946,5 @@ func (d *DataService) getTreatmentFromCurrentRow(rows *sql.Rows) (*common.Treatm
 		drugInstructions = append(drugInstructions, drugInstruction)
 	}
 	treatment.SupplementalInstructions = drugInstructions
-	return treatment, nil
+	return nil
 }

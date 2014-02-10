@@ -135,6 +135,7 @@ type DoctorAPI interface {
 	AddFavoriteTreatment(treatment *common.DoctorFavoriteTreatment, doctorId int64) error
 	GetFavoriteTreatments(doctorId int64) ([]*common.DoctorFavoriteTreatment, error)
 	DeleteFavoriteTreatment(favoriteTreatment *common.DoctorFavoriteTreatment, doctorId int64) error
+	GetCompletedPrescriptionsForDoctor(from, to time.Time, doctorId int64) ([]*common.TreatmentPlan, error)
 }
 
 type IntakeAPI interface {

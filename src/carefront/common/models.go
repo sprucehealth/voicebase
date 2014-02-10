@@ -92,9 +92,12 @@ type PatientCareProviderGroup struct {
 
 type TreatmentPlan struct {
 	Id               int64             `json:"treatment_plan_id,string,omitempty"`
+	PatientId        int64             `json:"patient_id,string,omitempty"`
+	PatientInfo      *Patient          `json:"patient,omitempty"`
 	PatientVisitId   int64             `json:"patient_visit_id,string,omitempty"`
 	Status           string            `json:"status,omitempty"`
 	CreationDate     time.Time         `json:"creation_date,omitempty"`
+	SentDate         time.Time         `json:"sent_date,omitempty"`
 	Treatments       []*Treatment      `json:"treatments,omitempty"`
 	Title            string            `json:"title,omitempty"`
 	DiagnosisSummary *DiagnosisSummary `json:"diagnosis_summary,omitempty"`

@@ -274,6 +274,9 @@ func main() {
 		BucketLocation:        conf.ContentBucket,
 		Region:                conf.AWSRegion,
 	}
+	doctorPrescriptionsHandler := &apiservice.DoctorPrescriptionsHandler{
+		DataApi: dataApi,
+	}
 
 	erxStatusQueue, err := common.NewQueue(awsAuth, aws.Regions[conf.AWSRegion], api.ERX_STATUS_QUEUE)
 	if err != nil {
@@ -318,6 +321,7 @@ func main() {
 	mux.Handle("/v1/doctor/authenticate", authenticateDoctorHandler)
 	mux.Handle("/v1/doctor/queue", doctorQueueHandler)
 	mux.Handle("/v1/doctor/treatment/favorite", doctorFavoriteTreatmentsHandler)
+	mux.Handle("/v1/doctor/prescriptions", doctorPrescriptionsHandler)
 
 	mux.Handle("/v1/doctor/visit/review", doctorPatientVisitReviewHandler)
 	mux.Handle("/v1/doctor/visit/diagnosis", diagnosePatientHandler)
