@@ -793,8 +793,13 @@ func (d *DataService) AddErxStatusEvent(treatments []*common.Treatment, statusEv
 	}
 
 	for _, treatment := range treatments {
+		_, err = tx.Exec(`update erx_status_events set status = ? where treatment_id = ? and status = ?`, status_inactive, treatment.Id, status_active)
+		if err != nil {
+			tx.Rollback()
+			return err
+		}
 
-		_, err = tx.Exec(`insert into erx_status_events (treatment_id, erx_status) values (?,?)`, treatment.Id, statusEvent)
+		_, err = tx.Exec(`insert into erx_status_events (treatment_id, erx_status, status) values (?,?,?)`, treatment.Id, statusEvent, status_active)
 		if err != nil {
 			tx.Rollback()
 			return err
@@ -810,7 +815,7 @@ func (d *DataService) GetPrescriptionStatusEventsForPatient(patientId int64) ([]
 								inner join patient_visit on treatment_plan.patient_visit_id = patient_visit.id 
 								left outer join erx_status_events on erx_status_events.treatment_id = treatment.id 
 								inner join patient on patient.id = patient_visit.patient_id 
-									where patient.erx_patient_id = ? order by erx_status_events.creation_date desc`, patientId)
+									where patient.erx_patient_id = ? and erx_status_events.status = ? order by erx_status_events.creation_date desc`, patientId, status_active)
 	if err != nil {
 		return nil, err
 	}

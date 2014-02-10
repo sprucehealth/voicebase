@@ -3,30 +3,55 @@ package apiservice
 import (
 	"carefront/api"
 	"fmt"
+	"github.com/gorilla/schema"
 	"net/http"
+)
+
+const (
+	state_completed = "completed"
+	state_pending   = "pending"
 )
 
 type DoctorQueueHandler struct {
 	DataApi api.DataAPI
 }
 
+type DoctorQueueRequestData struct {
+	State string `schema:"state"`
+}
+
 func (d *DoctorQueueHandler) ServeHTTP(w http.ResponseWriter, r *http.Request) {
+	r.ParseForm()
+	requestData := new(DoctorQueueRequestData)
+	decoder := schema.NewDecoder()
+	err := decoder.Decode(requestData, r.Form)
+	if err != nil {
+		WriteDeveloperError(w, http.StatusBadRequest, "Unable to parse input parameters: "+err.Error())
+		return
+	}
+
 	doctorId, err := d.DataApi.GetDoctorIdFromAccountId(GetContext(r).AccountId)
 	if err != nil {
 		WriteDeveloperError(w, http.StatusInternalServerError, "Unable to get doctor id from account id ")
 		return
 	}
 
-	pendingItemsDoctorQueue, err := d.DataApi.GetPendingItemsInDoctorQueue(doctorId)
-	if err != nil {
-		WriteDeveloperError(w, http.StatusInternalServerError, "Unable to get doctor queue for doctor ")
-		return
+	var pendingItemsDoctorQueue, completedItemsDoctorQueue []*api.DoctorQueueItem
+
+	if requestData.State == "" || requestData.State == state_pending {
+		pendingItemsDoctorQueue, err = d.DataApi.GetPendingItemsInDoctorQueue(doctorId)
+		if err != nil {
+			WriteDeveloperError(w, http.StatusInternalServerError, "Unable to get doctor queue for doctor ")
+			return
+		}
 	}
 
-	completedItemsDoctorQueue, err := d.DataApi.GetCompletedItemsInDoctorQueue(doctorId)
-	if err != nil {
-		WriteDeveloperError(w, http.StatusInternalServerError, "Unable to get doctor queue for doctor")
-		return
+	if requestData.State == "" || requestData.State == state_completed {
+		completedItemsDoctorQueue, err = d.DataApi.GetCompletedItemsInDoctorQueue(doctorId)
+		if err != nil {
+			WriteDeveloperError(w, http.StatusInternalServerError, "Unable to get doctor queue for doctor")
+			return
+		}
 	}
 
 	doctorDisplayFeed, err := d.convertDoctorQueueIntoDisplayQueue(pendingItemsDoctorQueue, completedItemsDoctorQueue)
