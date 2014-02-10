@@ -291,9 +291,9 @@ func TestPatientVisitReview(t *testing.T) {
 		t.Fatal("Unable to get prescription statuses for patient: " + err.Error())
 	}
 
-	// there should be a total of 4 prescription statuses for this patient, with 2 per treatment
-	if len(prescriptionStatuses) != 4 {
-		t.Fatalf("Expected there to be 2 status events per treatment, instead have a total of %d", len(prescriptionStatuses))
+	// there should be a total of 2 prescription statuses for this patient, with 1 per treatment
+	if len(prescriptionStatuses) != 2 {
+		t.Fatalf("Expected there to be 1 status events per treatment, instead have a total of %d", len(prescriptionStatuses))
 	}
 
 	for _, status := range prescriptionStatuses {

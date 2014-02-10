@@ -80,46 +80,6 @@ func (d *DoctorSubmitPatientVisitReviewHandler) submitPatientVisitReview(w http.
 		return
 	}
 
-	switch requestData.Status {
-	case "", api.CASE_STATUS_CLOSED, api.CASE_STATUS_TREATED, api.CASE_STATUS_TRIAGED:
-		// update the status of the patient visit
-		status := requestData.Status
-		if status == "" {
-			status = api.CASE_STATUS_TREATED
-		}
-		err = d.DataApi.ClosePatientVisit(requestData.PatientVisitId, status, requestData.Message)
-		if err != nil {
-			WriteDeveloperError(w, http.StatusInternalServerError, "Unable to update the status of the visit to closed: "+err.Error())
-			return
-		}
-
-	case api.CASE_STATUS_PHOTOS_REJECTED:
-		// reject the  patient photos
-		err = d.DataApi.RejectPatientVisitPhotos(requestData.PatientVisitId)
-		if err != nil {
-			WriteDeveloperError(w, http.StatusInternalServerError, "Unable to reject patient photos: "+err.Error())
-			return
-		}
-
-		// mark the status on the patient visit to retake photos
-		err = d.DataApi.UpdatePatientVisitStatus(requestData.PatientVisitId, requestData.Message, api.CASE_STATUS_PHOTOS_REJECTED)
-		if err != nil {
-			WriteDeveloperError(w, http.StatusInternalServerError, "Unable to mark the status of the patient visit as rejected: "+err.Error())
-			return
-		}
-	default:
-		WriteDeveloperError(w, http.StatusBadRequest, fmt.Sprintf("Status %s is not a valid status to set for the patient visit review", requestData.Status))
-		return
-	}
-
-	// mark the status on the visit in the doctor's queue to move it to the completed tab
-	// so that the visit is no longer in the hands of the doctor
-	err = d.DataApi.UpdateStateForPatientVisitInDoctorQueue(doctorId, requestData.PatientVisitId, api.QUEUE_ITEM_STATUS_ONGOING, requestData.Status)
-	if err != nil {
-		WriteDeveloperError(w, http.StatusInternalServerError, "Unable to update the status of the patient visit in the doctor queue: "+err.Error())
-		return
-	}
-
 	patient, err := d.DataApi.GetPatientFromPatientVisitId(requestData.PatientVisitId)
 	if err != nil {
 		WriteDeveloperError(w, http.StatusInternalServerError, "Unable to get patient data from patient visit: "+err.Error())
@@ -163,7 +123,7 @@ func (d *DoctorSubmitPatientVisitReviewHandler) submitPatientVisitReview(w http.
 			}
 
 			// Save prescription ids for drugs to database
-			err = d.DataApi.UpdateTreatmentsWithPrescriptionIds(treatments, doctorId, requestData.PatientVisitId)
+			err = d.DataApi.MarkTreatmentsAsPrescriptionsSent(treatments, doctorId, requestData.PatientVisitId)
 			if err != nil {
 				WriteDeveloperError(w, http.StatusInternalServerError, "Unable to save prescription ids for treatments: "+err.Error())
 				return
@@ -216,6 +176,46 @@ func (d *DoctorSubmitPatientVisitReviewHandler) submitPatientVisitReview(w http.
 				return
 			}
 		}
+	}
+
+	switch requestData.Status {
+	case "", api.CASE_STATUS_CLOSED, api.CASE_STATUS_TREATED, api.CASE_STATUS_TRIAGED:
+		// update the status of the patient visit
+		status := requestData.Status
+		if status == "" {
+			status = api.CASE_STATUS_TREATED
+		}
+		err = d.DataApi.ClosePatientVisit(requestData.PatientVisitId, treatmentPlanId, status, requestData.Message)
+		if err != nil {
+			WriteDeveloperError(w, http.StatusInternalServerError, "Unable to update the status of the visit to closed: "+err.Error())
+			return
+		}
+
+	case api.CASE_STATUS_PHOTOS_REJECTED:
+		// reject the  patient photos
+		err = d.DataApi.RejectPatientVisitPhotos(requestData.PatientVisitId)
+		if err != nil {
+			WriteDeveloperError(w, http.StatusInternalServerError, "Unable to reject patient photos: "+err.Error())
+			return
+		}
+
+		// mark the status on the patient visit to retake photos
+		err = d.DataApi.UpdatePatientVisitStatus(requestData.PatientVisitId, requestData.Message, api.CASE_STATUS_PHOTOS_REJECTED)
+		if err != nil {
+			WriteDeveloperError(w, http.StatusInternalServerError, "Unable to mark the status of the patient visit as rejected: "+err.Error())
+			return
+		}
+	default:
+		WriteDeveloperError(w, http.StatusBadRequest, fmt.Sprintf("Status %s is not a valid status to set for the patient visit review", requestData.Status))
+		return
+	}
+
+	// mark the status on the visit in the doctor's queue to move it to the completed tab
+	// so that the visit is no longer in the hands of the doctor
+	err = d.DataApi.UpdateStateForPatientVisitInDoctorQueue(doctorId, requestData.PatientVisitId, api.QUEUE_ITEM_STATUS_ONGOING, requestData.Status)
+	if err != nil {
+		WriteDeveloperError(w, http.StatusInternalServerError, "Unable to update the status of the patient visit in the doctor queue: "+err.Error())
+		return
 	}
 
 	err = d.sendSMSToNotifyPatient(patient, requestData.PatientVisitId)

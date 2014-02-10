@@ -87,7 +87,7 @@ type PatientVisitAPI interface {
 	GetActiveTreatmentPlanForPatientVisit(doctorId, patientVisitId int64) (int64, error)
 	UpdatePatientVisitStatus(patientVisitId int64, message, event string) error
 	GetMessageForPatientVisitStatus(patientVisitId int64) (message string, err error)
-	ClosePatientVisit(patientVisitId int64, event, message string) error
+	ClosePatientVisit(patientVisitId, treatmentPlanId int64, event, message string) error
 	SubmitPatientVisitWithId(patientVisitId int64) error
 	UpdateFollowUpTimeForPatientVisit(treatmentPlanId, doctorId, currentTimeSinceEpoch, followUpValue int64, followUpUnit string) error
 	GetFollowUpTimeForPatientVisit(treatmentPlanId int64) (followUp *common.FollowUp, err error)
@@ -104,7 +104,7 @@ type PatientVisitAPI interface {
 	AddTreatmentsForPatientVisit(treatments []*common.Treatment, doctorId, treatmentPlanId int64) error
 	GetTreatmentsBasedOnTreatmentPlanId(treatmentPlanId int64) ([]*common.Treatment, error)
 	GetTreatmentBasedOnPrescriptionId(erxId int64) (*common.Treatment, error)
-	UpdateTreatmentsWithPrescriptionIds(treatments []*common.Treatment, doctorId, patientVisitId int64) error
+	MarkTreatmentsAsPrescriptionsSent(treatments []*common.Treatment, doctorId, patientVisitId int64) error
 	AddErxStatusEvent(treatments []*common.Treatment, statusEvent string) error
 	GetPrescriptionStatusEventsForPatient(patientId int64) ([]*PrescriptionStatus, error)
 }

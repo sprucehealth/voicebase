@@ -233,7 +233,7 @@ func (d *DataService) GetMessageForPatientVisitStatus(patientVisitId int64) (mes
 	return
 }
 
-func (d *DataService) ClosePatientVisit(patientVisitId int64, event, message string) error {
+func (d *DataService) ClosePatientVisit(patientVisitId, treatmentPlanId int64, event, message string) error {
 	tx, err := d.DB.Begin()
 	if err != nil {
 		tx.Rollback()
@@ -253,6 +253,12 @@ func (d *DataService) ClosePatientVisit(patientVisitId int64, event, message str
 			tx.Rollback()
 			return err
 		}
+	}
+
+	_, err = tx.Exec(`update treatment_plan set sent_date=now() where id = ?`, treatmentPlanId)
+	if err != nil {
+		tx.Rollback()
+		return err
 	}
 
 	_, err = tx.Exec(`update patient_visit set status=?, closed_date=now() where id = ?`, event, patientVisitId)
@@ -768,7 +774,7 @@ func (d *DataService) GetTreatmentBasedOnPrescriptionId(erxId int64) (*common.Tr
 	return treatments[0], nil
 }
 
-func (d *DataService) UpdateTreatmentsWithPrescriptionIds(treatments []*common.Treatment, DoctorId, PatientVisitId int64) error {
+func (d *DataService) MarkTreatmentsAsPrescriptionsSent(treatments []*common.Treatment, DoctorId, PatientVisitId int64) error {
 	tx, err := d.DB.Begin()
 	if err != nil {
 		return err
@@ -776,7 +782,7 @@ func (d *DataService) UpdateTreatmentsWithPrescriptionIds(treatments []*common.T
 
 	for _, treatment := range treatments {
 		if treatment.PrescriptionId != 0 {
-			_, err = tx.Exec(`update treatment set erx_id = ? where id = ? and treatment_plan_id = ?`, treatment.PrescriptionId, treatment.Id, treatment.TreatmentPlanId)
+			_, err = tx.Exec(`update treatment set erx_id = ?, erx_sent_date=now() where id = ? and treatment_plan_id = ?`, treatment.PrescriptionId, treatment.Id, treatment.TreatmentPlanId)
 			if err != nil {
 				tx.Rollback()
 				return err
