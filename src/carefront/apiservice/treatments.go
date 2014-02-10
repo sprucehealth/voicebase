@@ -27,7 +27,8 @@ type AddTreatmentsRequestBody struct {
 }
 
 type GetTreatmentsRequestBody struct {
-	PatientVisitId int64 `schema:"patient_visit_id"`
+	PatientVisitId  int64 `schema:"patient_visit_id"`
+	TreatmentPlanId int64 `schema:"treatment_plan_id"`
 }
 
 func NewTreatmentsHandler(dataApi api.DataAPI) *TreatmentsHandler {
@@ -53,25 +54,29 @@ func (t *TreatmentsHandler) getTreatments(w http.ResponseWriter, r *http.Request
 		return
 	}
 
-	_, _, _, httpStatusCode, err := ValidateDoctorAccessToPatientVisitAndGetRelevantData(requestData.PatientVisitId, GetContext(r).AccountId, t.DataApi)
+	doctorId, _, _, httpStatusCode, err := ValidateDoctorAccessToPatientVisitAndGetRelevantData(requestData.PatientVisitId, GetContext(r).AccountId, t.DataApi)
 	if err != nil {
 		WriteDeveloperError(w, httpStatusCode, "Doctor not authorized to get treatments for patient visit: "+err.Error())
 		return
 	}
 
-	treatmentPlan, err := t.DataApi.GetTreatmentPlanForPatientVisit(requestData.PatientVisitId)
+	treatmentPlanId := requestData.TreatmentPlanId
+	if treatmentPlanId == 0 {
+		treatmentPlanId, err = t.DataApi.GetActiveTreatmentPlanForPatientVisit(doctorId, requestData.PatientVisitId)
+		if err != nil {
+			WriteDeveloperError(w, http.StatusInternalServerError, "Unable to get active treatment plan id based on patient visit id : "+err.Error())
+			return
+		}
+	}
+
+	treatments, err := t.DataApi.GetTreatmentsBasedOnTreatmentPlanId(treatmentPlanId)
 	if err != nil {
 		WriteDeveloperError(w, http.StatusInternalServerError, "unable to get treatments for patient visit : "+err.Error())
 		return
 	}
 
-	if treatmentPlan == nil {
-		WriteJSONToHTTPResponseWriter(w, http.StatusOK, &GetTreatmentsResponse{Treatments: nil})
-		return
-	}
-
 	// for each of the drugs, go ahead and fill in the drug name, route and form
-	for _, treatment := range treatmentPlan.Treatments {
+	for _, treatment := range treatments {
 		if treatment.DrugForm == "" {
 			drugName, drugForm, drugRoute := breakDrugInternalNameIntoComponents(treatment.DrugInternalName)
 			treatment.DrugName = drugName
@@ -83,7 +88,7 @@ func (t *TreatmentsHandler) getTreatments(w http.ResponseWriter, r *http.Request
 		}
 	}
 
-	WriteJSONToHTTPResponseWriter(w, http.StatusOK, &GetTreatmentsResponse{Treatments: treatmentPlan.Treatments})
+	WriteJSONToHTTPResponseWriter(w, http.StatusOK, &GetTreatmentsResponse{Treatments: treatments})
 }
 
 func (t *TreatmentsHandler) addTreatment(w http.ResponseWriter, r *http.Request) {
@@ -106,9 +111,17 @@ func (t *TreatmentsHandler) addTreatment(w http.ResponseWriter, r *http.Request)
 		return
 	}
 
-	_, _, _, httpStatusCode, err := ValidateDoctorAccessToPatientVisitAndGetRelevantData(treatmentsRequestBody.PatientVisitId, GetContext(r).AccountId, t.DataApi)
+	doctorId, _, _, httpStatusCode, err := ValidateDoctorAccessToPatientVisitAndGetRelevantData(treatmentsRequestBody.PatientVisitId, GetContext(r).AccountId, t.DataApi)
 	if err != nil {
 		WriteDeveloperError(w, httpStatusCode, "Unable to validate doctor to add treatment to patient visit: "+err.Error())
+		return
+	}
+
+	// intentionally not requiring the treatment plan id from the client when adding treatments because it should only be possible to
+	// add treatments to an active treatment plan
+	treatmentPlanId, err := t.DataApi.GetActiveTreatmentPlanForPatientVisit(doctorId, treatmentsRequestBody.PatientVisitId)
+	if err != nil {
+		WriteDeveloperError(w, http.StatusInternalServerError, "Unable to get the treatment plan from the patient visit: "+err.Error())
 		return
 	}
 
@@ -136,31 +149,20 @@ func (t *TreatmentsHandler) addTreatment(w http.ResponseWriter, r *http.Request)
 		}
 	}
 
-	doctorId, err := t.DataApi.GetDoctorIdFromAccountId(GetContext(r).AccountId)
-	if err != nil {
-		WriteDeveloperError(w, http.StatusInternalServerError, "Unable to get doctor id from account id: "+err.Error())
-		return
-	}
-
 	// Add treatments to patient
-	err = t.DataApi.AddTreatmentsForPatientVisit(treatmentsRequestBody.Treatments, doctorId, treatmentsRequestBody.PatientVisitId)
+	err = t.DataApi.AddTreatmentsForPatientVisit(treatmentsRequestBody.Treatments, doctorId, treatmentPlanId)
 	if err != nil {
 		WriteDeveloperError(w, http.StatusInternalServerError, "Unable to add treatment to patient visit: "+err.Error())
 		return
 	}
 
-	treatmentPlan, err := t.DataApi.GetTreatmentPlanForPatientVisit(treatmentsRequestBody.PatientVisitId)
+	treatments, err := t.DataApi.GetTreatmentsBasedOnTreatmentPlanId(treatmentPlanId)
 	if err != nil {
 		WriteDeveloperError(w, http.StatusInternalServerError, "unable to get treatments for patient visit after adding treatments : "+err.Error())
 		return
 	}
 
-	if treatmentPlan == nil {
-		WriteJSONToHTTPResponseWriter(w, http.StatusOK, &GetTreatmentsResponse{Treatments: nil})
-		return
-	}
-
-	WriteJSONToHTTPResponseWriter(w, http.StatusOK, &GetTreatmentsResponse{Treatments: treatmentPlan.Treatments})
+	WriteJSONToHTTPResponseWriter(w, http.StatusOK, &GetTreatmentsResponse{Treatments: treatments})
 }
 
 func validateTreatment(treatment *common.Treatment) error {

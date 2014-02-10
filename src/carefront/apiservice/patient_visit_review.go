@@ -78,7 +78,7 @@ func (p *PatientVisitReviewHandler) ServeHTTP(w http.ResponseWriter, r *http.Req
 
 			if err == api.NoRowsError {
 				// no patient visit review to return
-				WriteJSONToHTTPResponseWriter(w, http.StatusOK, &PatientVisitReviewResponse{})
+				WriteJSONToHTTPResponseWriter(w, http.StatusOK, &common.TreatmentPlan{})
 				return
 			}
 
@@ -99,10 +99,16 @@ func (p *PatientVisitReviewHandler) ServeHTTP(w http.ResponseWriter, r *http.Req
 		return
 	}
 
+	treatmentPlanId, err := p.DataApi.GetActiveTreatmentPlanForPatientVisit(doctor.DoctorId, patientVisit.PatientVisitId)
+	if err != nil {
+		WriteDeveloperError(w, http.StatusInternalServerError, "Unable to get treatment plan based on patient visit: "+err.Error())
+		return
+	}
+
 	patientVisitReviewResponse := &PatientVisitReviewResponse{}
 	patientVisitReviewResponse.PatientVisitId = patientVisit.PatientVisitId
 
-	summary, err := p.DataApi.GetDiagnosisSummaryForPatientVisit(patientVisit.PatientVisitId)
+	summary, err := p.DataApi.GetDiagnosisSummaryForPatientVisit(treatmentPlanId)
 	if err != nil {
 		WriteDeveloperError(w, http.StatusInternalServerError, "Unable to get diagnosis summary for patient visit: "+err.Error())
 		return
@@ -116,28 +122,29 @@ func (p *PatientVisitReviewHandler) ServeHTTP(w http.ResponseWriter, r *http.Req
 		patientVisitReviewResponse.DiagnosisSummary = diagnosisSummary
 	}
 
-	treatmentPlan, err := p.DataApi.GetTreatmentPlanForPatientVisit(patientVisit.PatientVisitId)
+	treatments, err := p.DataApi.GetTreatmentsBasedOnTreatmentPlanId(treatmentPlanId)
 	if err != nil {
 		WriteDeveloperError(w, http.StatusInternalServerError, "Unable to get treatment plan for this patient visit id: "+err.Error())
 		return
 	}
-	if treatmentPlan != nil {
-		treatments := &treatmentsDisplaySection{}
-		treatments.Title = "Treatments"
-		treatments.Medications = make([]*treatmentDisplayItem, 0)
-		for _, treatment := range treatmentPlan.Treatments {
+
+	if treatments != nil {
+		treatmentsSection := &treatmentsDisplaySection{}
+		treatmentsSection.Title = "Treatments"
+		treatmentsSection.Medications = make([]*treatmentDisplayItem, 0)
+		for _, treatment := range treatments {
 			drugName, _, _ := breakDrugInternalNameIntoComponents(treatment.DrugInternalName)
 			treatmentItem := &treatmentDisplayItem{}
 			treatmentItem.Name = fmt.Sprintf("%s %s", drugName, treatment.DosageStrength)
 			treatmentItem.Description = treatment.PatientInstructions
 			treatmentItem.OTC = treatment.OTC
-			treatments.Medications = append(treatments.Medications, treatmentItem)
+			treatmentsSection.Medications = append(treatmentsSection.Medications, treatmentItem)
 		}
 
-		patientVisitReviewResponse.Treatments = treatments
+		patientVisitReviewResponse.Treatments = treatmentsSection
 	}
 
-	regimenPlan, err := p.DataApi.GetRegimenPlanForPatientVisit(patientVisit.PatientVisitId)
+	regimenPlan, err := p.DataApi.GetRegimenPlanForPatientVisit(treatmentPlanId)
 	if err != nil && err != api.NoRegimenPlanForPatientVisit {
 		WriteDeveloperError(w, http.StatusInternalServerError, "Unable to get regimen plan for this patient visit id: "+err.Error())
 		return
@@ -147,7 +154,7 @@ func (p *PatientVisitReviewHandler) ServeHTTP(w http.ResponseWriter, r *http.Req
 		patientVisitReviewResponse.RegimenPlan = regimenPlan
 	}
 
-	followUp, err := p.DataApi.GetFollowUpTimeForPatientVisit(patientVisit.PatientVisitId)
+	followUp, err := p.DataApi.GetFollowUpTimeForPatientVisit(treatmentPlanId)
 	if err != nil {
 		WriteDeveloperError(w, http.StatusInternalServerError, "Unable to get follow up information for this paitent visit: "+err.Error())
 		return
@@ -157,7 +164,7 @@ func (p *PatientVisitReviewHandler) ServeHTTP(w http.ResponseWriter, r *http.Req
 		patientVisitReviewResponse.Followup = followUp
 	}
 
-	advicePoints, err := p.DataApi.GetAdvicePointsForPatientVisit(patientVisit.PatientVisitId)
+	advicePoints, err := p.DataApi.GetAdvicePointsForPatientVisit(treatmentPlanId)
 	if err != nil {
 		WriteDeveloperError(w, http.StatusInternalServerError, "Unable to get advice for patient visit: "+err.Error())
 		return

@@ -156,7 +156,7 @@ func (d *DoseSpotService) SearchForMedicationStrength(medicationName string) ([]
 func (d *DoseSpotService) SendMultiplePrescriptions(patient *common.Patient, treatments []*common.Treatment) ([]int64, error) {
 	sendPrescriptionsRequest := &sendMultiplePrescriptionsRequest{
 		SSO:       generateSingleSignOn(d.ClinicKey, d.UserId, d.ClinicId),
-		PatientId: int(patient.PatientId),
+		PatientId: int(patient.ERxPatientId),
 	}
 
 	prescriptionIds := make([]int, 0)
@@ -184,10 +184,11 @@ func (d *DoseSpotService) SendMultiplePrescriptions(patient *common.Patient, tre
 		if prescriptionResult.ResultCode != resultOk {
 			unSuccessfulTreatmentIds = append(unSuccessfulTreatmentIds, prescriptionIdToTreatmentIdMapping[int64(prescriptionResult.PrescriptionId)])
 		}
+		fmt.Println(prescriptionResult.ResultDescription)
 	}
 
 	if response.ResultCode != resultOk {
-		return nil, errors.New("Unable to send multiple prescriptions")
+		return nil, errors.New("Unable to send multiple prescriptions: " + response.ResultDescription)
 	}
 	return unSuccessfulTreatmentIds, nil
 }
@@ -195,6 +196,7 @@ func (d *DoseSpotService) SendMultiplePrescriptions(patient *common.Patient, tre
 func (d *DoseSpotService) StartPrescribingPatient(currentPatient *common.Patient, treatments []*common.Treatment) error {
 
 	newPatient := &patient{
+		PatientId:        int(currentPatient.ERxPatientId),
 		FirstName:        currentPatient.FirstName,
 		LastName:         currentPatient.LastName,
 		Address1:         currentPatient.PatientAddress.AddressLine1,
@@ -206,6 +208,7 @@ func (d *DoseSpotService) StartPrescribingPatient(currentPatient *common.Patient
 		PrimaryPhone:     currentPatient.Phone,
 		PrimaryPhoneType: currentPatient.PhoneType,
 	}
+	fmt.Printf("%+v", newPatient)
 
 	if currentPatient.ERxPatientId != 0 {
 		fmt.Println("Using erx patient id since it exists for patient: ")

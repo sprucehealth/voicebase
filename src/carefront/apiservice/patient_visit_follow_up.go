@@ -91,7 +91,13 @@ func (p *PatientVisitFollowUpHandler) updatePatientVisitFollowup(w http.Response
 		return
 	}
 
-	err = p.DataApi.UpdateFollowUpTimeForPatientVisit(requestData.PatientVisitId, time.Now().Unix(), doctorId, requestData.FollowUpValue, requestData.FollowUpUnit)
+	treatmentPlanId, err := p.DataApi.GetActiveTreatmentPlanForPatientVisit(doctorId, requestData.PatientVisitId)
+	if err != nil {
+		WriteDeveloperError(w, http.StatusInternalServerError, "Unable to get treatment plan for patient visit: "+err.Error())
+		return
+	}
+
+	err = p.DataApi.UpdateFollowUpTimeForPatientVisit(treatmentPlanId, time.Now().Unix(), doctorId, requestData.FollowUpValue, requestData.FollowUpUnit)
 	if err != nil {
 		WriteDeveloperError(w, http.StatusInternalServerError, "Unable to update followup for patient visit")
 		return

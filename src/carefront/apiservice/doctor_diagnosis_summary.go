@@ -12,7 +12,8 @@ type DiagnosisSummaryHandler struct {
 }
 
 type DiagnosisSummaryRequestData struct {
-	PatientVisitId int64 `schema:"patient_visit_id"`
+	PatientVisitId  int64 `schema:"patient_visit_id"`
+	TreatmentPlanId int64 `schema:"treatment_plan_id"`
 }
 
 func (d *DiagnosisSummaryHandler) ServeHTTP(w http.ResponseWriter, r *http.Request) {
@@ -34,16 +35,23 @@ func (d *DiagnosisSummaryHandler) getDiagnosisSummaryForPatientVisit(w http.Resp
 		return
 	}
 
-	_, _, _, statusCode, err := ValidateDoctorAccessToPatientVisitAndGetRelevantData(requestData.PatientVisitId, GetContext(r).AccountId, d.DataApi)
+	doctorId, _, _, statusCode, err := ValidateDoctorAccessToPatientVisitAndGetRelevantData(requestData.PatientVisitId, GetContext(r).AccountId, d.DataApi)
 	if err != nil {
 		WriteDeveloperError(w, statusCode, err.Error())
 		return
 	}
 
-	summary, err := d.DataApi.GetDiagnosisSummaryForPatientVisit(requestData.PatientVisitId)
+	treatmentPlanId, err := d.DataApi.GetActiveTreatmentPlanForPatientVisit(doctorId, requestData.PatientVisitId)
+	if err != nil {
+		WriteDeveloperError(w, http.StatusBadRequest, "Unable to get treatment plan for patient visit: "+err.Error())
+		return
+	}
+
+	summary, err := d.DataApi.GetDiagnosisSummaryForPatientVisit(treatmentPlanId)
 	if err != nil {
 		WriteDeveloperError(w, http.StatusInternalServerError, "Unable to get diagnosis summary for patient visit: "+err.Error())
 		return
 	}
+
 	WriteJSONToHTTPResponseWriter(w, http.StatusOK, &common.DiagnosisSummary{Type: "text", Summary: summary})
 }

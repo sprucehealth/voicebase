@@ -13,7 +13,8 @@ type DoctorRegimenHandler struct {
 }
 
 type GetDoctorRegimenRequestData struct {
-	PatientVisitId int64 `schema:"patient_visit_id"`
+	PatientVisitId  int64 `schema:"patient_visit_id"`
+	TreatmentPlanId int64 `schema:"treatment_plan_id"`
 }
 
 type DoctorRegimenRequestResponse struct {
@@ -57,7 +58,16 @@ func (d *DoctorRegimenHandler) getRegimenSteps(w http.ResponseWriter, r *http.Re
 		return
 	}
 
-	regimenPlan, err := d.DataApi.GetRegimenPlanForPatientVisit(requestData.PatientVisitId)
+	treatmentPlanId := requestData.TreatmentPlanId
+	if treatmentPlanId == 0 {
+		treatmentPlanId, err = d.DataApi.GetActiveTreatmentPlanForPatientVisit(doctorId, requestData.PatientVisitId)
+		if err != nil {
+			WriteDeveloperError(w, http.StatusInternalServerError, "Unable to get treatment plan for patient visit: "+err.Error())
+			return
+		}
+	}
+
+	regimenPlan, err := d.DataApi.GetRegimenPlanForPatientVisit(treatmentPlanId)
 	if err != nil && err != api.NoRegimenPlanForPatientVisit {
 		WriteDeveloperError(w, http.StatusInternalServerError, "Unable to lookup regimen plan for patient visit: "+err.Error())
 	}
@@ -189,6 +199,16 @@ func (d *DoctorRegimenHandler) updateRegimenSteps(w http.ResponseWriter, r *http
 			regimenStep.State = ""
 		}
 	}
+
+	treatmentPlanId := requestData.TreatmentPlanId
+	if treatmentPlanId == 0 {
+		treatmentPlanId, err = d.DataApi.GetActiveTreatmentPlanForPatientVisit(doctorId, requestData.PatientVisitId)
+		if err != nil {
+			WriteDeveloperError(w, http.StatusInternalServerError, "Unable to get treatment plan for patient visit: "+err.Error())
+			return
+		}
+	}
+	requestData.TreatmentPlanId = treatmentPlanId
 
 	err = d.DataApi.CreateRegimenPlanForPatientVisit(requestData)
 	if err != nil {

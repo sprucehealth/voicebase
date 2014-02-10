@@ -42,7 +42,8 @@ type GetDiagnosisResponse struct {
 }
 
 type DiagnosePatientRequestData struct {
-	PatientVisitId int64 `schema:"patient_visit_id,required"`
+	PatientVisitId  int64 `schema:"patient_visit_id,required"`
+	TreatmentPlanId int64 `schema:"treatment_plan_id"`
 }
 
 func NewDiagnosePatientHandler(dataApi api.DataAPI, authApi thriftapi.Auth, cloudStorageApi api.CloudStorageAPI) *DiagnosePatientHandler {
@@ -82,11 +83,21 @@ func (d *DiagnosePatientHandler) getDiagnosis(w http.ResponseWriter, r *http.Req
 	}
 	diagnosisLayout.PatientVisitId = requestData.PatientVisitId
 
+	treatmentPlanId := requestData.TreatmentPlanId
+	if treatmentPlanId == 0 {
+		treatmentPlanId, err = d.DataApi.GetActiveTreatmentPlanForPatientVisit(doctorId, requestData.PatientVisitId)
+		if err != nil {
+			WriteDeveloperError(w, http.StatusBadRequest, "Unable to get active treatment plan for patient visit: "+err.Error())
+			return
+		}
+	}
+	diagnosisLayout.TreatmentPlanId = treatmentPlanId
+
 	// get a list of question ids in ther diagnosis layout, so that we can look for answers from the doctor pertaining to this visit
 	questionIds := getQuestionIdsInDiagnosisLayout(diagnosisLayout)
 
 	// get the answers to the questions in the array
-	doctorAnswers, err := d.DataApi.GetAnswersForQuestionsInPatientVisit(api.DOCTOR_ROLE, questionIds, doctorId, requestData.PatientVisitId)
+	doctorAnswers, err := d.DataApi.GetAnswersForQuestionsInPatientVisit(api.DOCTOR_ROLE, questionIds, doctorId, treatmentPlanId)
 
 	// populate the diagnosis layout with the answers to the questions
 	populateDiagnosisLayoutWithDoctorAnswers(diagnosisLayout, doctorAnswers)
@@ -128,24 +139,30 @@ func (d *DiagnosePatientHandler) diagnosePatient(w http.ResponseWriter, r *http.
 		return
 	}
 
+	treatmentPlanId, err := d.DataApi.GetActiveTreatmentPlanForPatientVisit(doctorId, answerIntakeRequestBody.PatientVisitId)
+	if err != nil {
+		WriteDeveloperError(w, http.StatusInternalServerError, "Unable to get active treatment plan for patient visit: "+err.Error())
+		return
+	}
+
 	answersToStorePerQuestion := make(map[int64][]*common.AnswerIntake)
 	for _, questionItem := range answerIntakeRequestBody.Questions {
 		// enumerate the answers to store from the top level questions as well as the sub questions
-		answersToStorePerQuestion[questionItem.QuestionId] = populateAnswersToStoreForQuestion(api.DOCTOR_ROLE, questionItem, answerIntakeRequestBody.PatientVisitId, doctorId, layoutVersionId)
+		answersToStorePerQuestion[questionItem.QuestionId] = populateAnswersToStoreForQuestion(api.DOCTOR_ROLE, questionItem, treatmentPlanId, doctorId, layoutVersionId)
 	}
 
-	err = d.DataApi.DeactivatePreviousDiagnosisForPatientVisit(answerIntakeRequestBody.PatientVisitId, doctorId)
+	err = d.DataApi.DeactivatePreviousDiagnosisForPatientVisit(treatmentPlanId, doctorId)
 	if err != nil {
 		WriteDeveloperError(w, http.StatusInternalServerError, "Unable to deactivate responses from previous diagnosis of this patient visit: "+err.Error())
 		return
 	}
 
-	err = d.DataApi.StoreAnswersForQuestion(api.DOCTOR_ROLE, doctorId, answerIntakeRequestBody.PatientVisitId, layoutVersionId, answersToStorePerQuestion)
+	err = d.DataApi.StoreAnswersForQuestion(api.DOCTOR_ROLE, doctorId, treatmentPlanId, layoutVersionId, answersToStorePerQuestion)
 	if err != nil {
 		WriteDeveloperError(w, http.StatusInternalServerError, "Unable to store the multiple choice answer to the question for the patient based on the parameters provided and the internal state of the system: "+err.Error())
 		return
 	}
-	err = d.addDiagnosisSummaryForPatientVisit(doctorId, answerIntakeRequestBody.PatientVisitId)
+	err = d.addDiagnosisSummaryForPatientVisit(doctorId, treatmentPlanId)
 	if err != nil {
 		WriteDeveloperError(w, http.StatusInternalServerError, "Something went wrong when trying to add and store the summary to the diagnosis of the patient visit: "+err.Error())
 		return
@@ -155,24 +172,24 @@ func (d *DiagnosePatientHandler) diagnosePatient(w http.ResponseWriter, r *http.
 
 }
 
-func (d *DiagnosePatientHandler) addDiagnosisSummaryForPatientVisit(doctorId int64, patientVisitId int64) error {
+func (d *DiagnosePatientHandler) addDiagnosisSummaryForPatientVisit(doctorId, treatmentPlanId int64) error {
 	// lookup answers for the following questions
-	acneDiagnosisAnswers, err := d.DataApi.GetDiagnosisResponseToQuestionWithTag(question_acne_diagnosis, doctorId, patientVisitId)
+	acneDiagnosisAnswers, err := d.DataApi.GetDiagnosisResponseToQuestionWithTag(question_acne_diagnosis, doctorId, treatmentPlanId)
 	if err != nil && err != api.NoDiagnosisResponseErr {
 		return err
 	}
 
-	acneSeverityAnswers, err := d.DataApi.GetDiagnosisResponseToQuestionWithTag(question_acne_severity, doctorId, patientVisitId)
+	acneSeverityAnswers, err := d.DataApi.GetDiagnosisResponseToQuestionWithTag(question_acne_severity, doctorId, treatmentPlanId)
 	if err != nil && err != api.NoDiagnosisResponseErr {
 		return err
 	}
 
-	acneTypeAnswers, err := d.DataApi.GetDiagnosisResponseToQuestionWithTag(question_acne_type, doctorId, patientVisitId)
+	acneTypeAnswers, err := d.DataApi.GetDiagnosisResponseToQuestionWithTag(question_acne_type, doctorId, treatmentPlanId)
 	if err != nil && err != api.NoDiagnosisResponseErr {
 		return err
 	}
 
-	rosaceaTypeAnswers, err := d.DataApi.GetDiagnosisResponseToQuestionWithTag(question_rosacea_type, doctorId, patientVisitId)
+	rosaceaTypeAnswers, err := d.DataApi.GetDiagnosisResponseToQuestionWithTag(question_rosacea_type, doctorId, treatmentPlanId)
 	if err != nil && err != api.NoDiagnosisResponseErr {
 		return err
 	}
@@ -201,14 +218,14 @@ func (d *DiagnosePatientHandler) addDiagnosisSummaryForPatientVisit(doctorId int
 		return err
 	}
 
-	patient, err := d.DataApi.GetPatientFromPatientVisitId(patientVisitId)
+	patient, err := d.DataApi.GetPatientFromTreatmentPlanId(treatmentPlanId)
 	if err != nil {
 		return err
 	}
 
 	doctorFullName := fmt.Sprintf("%s %s", doctor.FirstName, doctor.LastName)
 	diagnosisSummary := fmt.Sprintf(diagnoseSummaryTemplate, strings.Title(patient.FirstName), strings.ToLower(diagnosisMessage), strings.Title(doctorFullName))
-	err = d.DataApi.AddDiagnosisSummaryForPatientVisit(diagnosisSummary, patientVisitId, doctorId)
+	err = d.DataApi.AddDiagnosisSummaryForPatientVisit(diagnosisSummary, treatmentPlanId, doctorId)
 	return err
 }
 
