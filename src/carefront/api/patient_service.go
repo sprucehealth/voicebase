@@ -271,7 +271,7 @@ func (d *DataService) GetPatientPharmacySelection(patientId int64) (pharmacySele
 	var id, sourceType, name, address, phone, city, state, zipCode, lat, lng sql.NullString
 	err = d.DB.QueryRow(`select pharmacy_id, source, name, address, city, state, zip_code, phone,lat,lng from patient_pharmacy_selection where patient_id = ? and status=?`, patientId, status_active).Scan(&id, &sourceType, &name, &address, &city, &state, &zipCode, &phone, &lat, &lng)
 	if err == sql.ErrNoRows {
-		err = NoRowsError
+		err = nil
 		return
 	}
 
