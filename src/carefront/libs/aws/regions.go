@@ -1,5 +1,6 @@
 package aws
 
+// Region represents an AWS region and its associated endpoints.
 // http://docs.aws.amazon.com/general/latest/gr/rande.html#rds_region
 type Region struct {
 	Name                 string

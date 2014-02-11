@@ -12,6 +12,7 @@ import (
 	"time"
 )
 
+// Metadata available for an EC2 instance.
 const (
 	MetadataAvailabilityZone = "placement/availability-zone"
 	MetadataHostname         = "hostname"
@@ -28,7 +29,7 @@ type Credentials struct {
 	LastUpdatedStr  string    `json:"LastUpdated"`
 	LastUpdated     time.Time `json:"-"`
 	Type            string
-	AccessKeyId     string
+	AccessKeyID     string
 	SecretAccessKey string
 	Token           string
 	ExpirationStr   string    `json:"Expiration"`
@@ -135,7 +136,7 @@ func (c *Credentials) Keys() Keys {
 		}
 	}
 	return Keys{
-		AccessKey: c.AccessKeyId,
+		AccessKey: c.AccessKeyID,
 		SecretKey: c.SecretAccessKey,
 		Token:     c.Token,
 	}

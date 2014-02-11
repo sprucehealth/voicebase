@@ -2,6 +2,7 @@ package aws
 
 import "fmt"
 
+// ErrBadStatusCode is the error when an API endpoint returns a non-successful status code.
 type ErrBadStatusCode int
 
 func (e ErrBadStatusCode) Error() string {
@@ -44,7 +45,7 @@ func Encode(s string) string {
 			ei += 3
 		} else {
 			e[ei] = c
-			ei += 1
+			ei++
 		}
 	}
 	return string(e[:ei])

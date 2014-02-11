@@ -8,7 +8,7 @@ import (
 )
 
 type DescribeDBLogFilesResponse struct {
-	RequestId          string                      `xml:"ResponseMetadata>RequestId"`
+	RequestID          string                      `xml:"ResponseMetadata>RequestId"`
 	Marker             string                      `xml:"DescribeDBLogFilesResult>Marker"`
 	DescribeDBLogFiles []DescribeDBLogFilesDetails `xml:"DescribeDBLogFilesResult>DescribeDBLogFiles>DescribeDBLogFilesDetails"`
 }
@@ -20,7 +20,7 @@ type DescribeDBLogFilesDetails struct {
 }
 
 type DownloadDBLogFilePortionResponse struct {
-	RequestId             string `xml:"ResponseMetadata>RequestId"`
+	RequestID             string `xml:"ResponseMetadata>RequestId"`
 	Marker                string `xml:"DownloadDBLogFilePortionResult>Marker"`
 	LogFileData           string `xml:"DownloadDBLogFilePortionResult>LogFileData"`
 	AdditionalDataPending bool   `xml:"DownloadDBLogFilePortionResult>AdditionalDataPending"`
@@ -55,7 +55,7 @@ func (rds *RDS) Request(action string, args url.Values, response interface{}) er
 }
 
 /*
-Return a list of DB log files for the DB instance, dbInstanceId.
+DescribeDBLogFiles returns a list of DB log files for the DB instance, dbInstanceID.
 
 FileLastWritten: Filters the available log files for files written since the specified date, in POSIX timestamp format.
 
@@ -67,9 +67,9 @@ Marker:	The pagination token provided in the previous request. If this parameter
 
 MaxRecords:	The maximum number of records to include in the response. If more records exist than the specified MaxRecords value, a pagination token called a marker is included in the response so that the remaining results can be retrieved.
 */
-func (rds *RDS) DescribeDBLogFiles(dbInstanceId string, fileLastWritten, fileSize int64, filenameContains, marker string, maxRecords int) (*DescribeDBLogFilesResponse, error) {
+func (rds *RDS) DescribeDBLogFiles(dbInstanceID string, fileLastWritten, fileSize int64, filenameContains, marker string, maxRecords int) (*DescribeDBLogFilesResponse, error) {
 	args := url.Values{}
-	args.Set("DBInstanceIdentifier", dbInstanceId)
+	args.Set("DBInstanceIdentifier", dbInstanceID)
 	if fileLastWritten > 0 {
 		args.Set("FileLastWritten", strconv.FormatInt(fileLastWritten, 64))
 	}
@@ -89,13 +89,13 @@ func (rds *RDS) DescribeDBLogFiles(dbInstanceId string, fileLastWritten, fileSiz
 	return res, rds.Request("DescribeDBLogFiles", args, res)
 }
 
-// Downloads the last line of the specified log file (logFileName) from the
+// DownloadDBLogFilePortion downloads the last line of the specified log file (logFileName) from the
 // database specified by dbInstanceId. Marker is the pagination token
 // provided in a previous request, and numberOfLines is the number of lines
 // remaining to be downloaded.
-func (rds *RDS) DownloadDBLogFilePortion(dbInstanceId string, logFileName, marker string, numberOfLines int) (*DownloadDBLogFilePortionResponse, error) {
+func (rds *RDS) DownloadDBLogFilePortion(dbInstanceID string, logFileName, marker string, numberOfLines int) (*DownloadDBLogFilePortionResponse, error) {
 	args := url.Values{}
-	args.Set("DBInstanceIdentifier", dbInstanceId)
+	args.Set("DBInstanceIdentifier", dbInstanceID)
 	args.Set("LogFileName", logFileName)
 	if marker != "" {
 		args.Set("Marker", marker)

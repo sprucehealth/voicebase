@@ -11,14 +11,17 @@ import (
 	"sync/atomic"
 )
 
+// Output is the interface that is used to represent the output device of a logger (e.g. syslog, stdout/err, ...)
 type Output interface {
 	Log(logType string, l Level, msg []byte) error
 }
 
+// Level represents a log level (CRIT, ERR, ...)
 type Level int32
 
 const defaultLogType = "log"
 
+// Log levels
 const (
 	CRIT  Level = iota // For panics (code bugs)
 	ERR                // General errors (e.g. errors from database, etc)
@@ -27,6 +30,7 @@ const (
 	DEBUG              // Normally turned off but can help to track down issues
 )
 
+// Levels maps log level to a string
 var Levels = map[Level]string{
 	CRIT:  "CRIT",
 	ERR:   "ERR",
@@ -102,7 +106,7 @@ func SetOutput(o Output) {
 	logging.mu.Unlock()
 }
 
-// Return true if the current level is greater than or equal to l or the logType is explicitly enable
+// L returns true if the current level is greater than or equal to 'l' or the logType is explicitly enable
 func L(logType string, l Level) bool {
 	return GetLevel() >= l || GetEnabled(logType)
 }
