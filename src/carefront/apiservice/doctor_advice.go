@@ -68,7 +68,7 @@ func (d *DoctorAdviceHandler) getAdvicePoints(w http.ResponseWriter, r *http.Req
 		}
 	}
 
-	selectedAdvicePoints, err := d.DataApi.GetAdvicePointsForPatientVisit(treatmentPlanId)
+	selectedAdvicePoints, err := d.DataApi.GetAdvicePointsForPatientVisit(patientVisitId, treatmentPlanId)
 	if err != nil {
 		WriteDeveloperError(w, http.StatusInternalServerError, "Unable to get the selected advice points for this patient visit: "+err.Error())
 		return

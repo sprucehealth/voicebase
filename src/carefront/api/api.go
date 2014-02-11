@@ -92,19 +92,19 @@ type PatientVisitAPI interface {
 	ClosePatientVisit(patientVisitId, treatmentPlanId int64, event, message string) error
 	SubmitPatientVisitWithId(patientVisitId int64) error
 	UpdateFollowUpTimeForPatientVisit(treatmentPlanId, doctorId, currentTimeSinceEpoch, followUpValue int64, followUpUnit string) error
-	GetFollowUpTimeForPatientVisit(treatmentPlanId int64) (followUp *common.FollowUp, err error)
+	GetFollowUpTimeForPatientVisit(patientVisitId, treatmentPlanId int64) (followUp *common.FollowUp, err error)
 	GetDiagnosisResponseToQuestionWithTag(questionTag string, doctorId, patientVisitId int64) ([]*common.AnswerIntake, error)
 	AddDiagnosisSummaryForPatientVisit(summary string, treatmentPlanId, doctorId int64) error
-	GetDiagnosisSummaryForPatientVisit(treatmentPlanId int64) (summary string, err error)
+	GetDiagnosisSummaryForPatientVisit(patientVisitId, treatmentPlanId int64) (summary string, err error)
 	DeactivatePreviousDiagnosisForPatientVisit(treatmentPlanId int64, doctorId int64) error
 	RecordDoctorAssignmentToPatientVisit(patientVisitId, doctorId int64) error
 	GetDoctorAssignedToPatientVisit(patientVisitId int64) (doctor *common.Doctor, err error)
-	GetAdvicePointsForPatientVisit(treatmentPlanId int64) (advicePoints []*common.DoctorInstructionItem, err error)
+	GetAdvicePointsForPatientVisit(patientVisitId, treatmentPlanId int64) (advicePoints []*common.DoctorInstructionItem, err error)
 	CreateAdviceForPatientVisit(advicePoints []*common.DoctorInstructionItem, treatmentPlanId int64) error
 	CreateRegimenPlanForPatientVisit(regimenPlan *common.RegimenPlan) error
-	GetRegimenPlanForPatientVisit(treatmentPlanId int64) (regimenPlan *common.RegimenPlan, err error)
+	GetRegimenPlanForPatientVisit(patientVisitId, treatmentPlanId int64) (regimenPlan *common.RegimenPlan, err error)
 	AddTreatmentsForPatientVisit(treatments []*common.Treatment, doctorId, treatmentPlanId int64) error
-	GetTreatmentsBasedOnTreatmentPlanId(treatmentPlanId int64) ([]*common.Treatment, error)
+	GetTreatmentsBasedOnTreatmentPlanId(patientVisitId, treatmentPlanId int64) ([]*common.Treatment, error)
 	GetTreatmentBasedOnPrescriptionId(erxId int64) (*common.Treatment, error)
 	MarkTreatmentsAsPrescriptionsSent(treatments []*common.Treatment, doctorId, patientVisitId int64) error
 	AddErxStatusEvent(treatments []*common.Treatment, statusEvent string) error

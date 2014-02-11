@@ -313,13 +313,13 @@ func (d *DataService) UpdateFollowUpTimeForPatientVisit(treatmentPlanId, current
 	return nil
 }
 
-func (d *DataService) GetFollowUpTimeForPatientVisit(treatmentPlanId int64) (*common.FollowUp, error) {
+func (d *DataService) GetFollowUpTimeForPatientVisit(patientVisitId, treatmentPlanId int64) (*common.FollowUp, error) {
 	var followupTime time.Time
 	var followupValue int64
 	var followupUnit string
 
 	err := d.DB.QueryRow(`select follow_up_date, follow_up_value, follow_up_unit 
-							from patient_visit_follow_up where treatment_plan_id = ?`, treatmentPlanId).Scan(&followupTime, &followupValue, &followupUnit)
+							from patient_visit_follow_up where (patient_visit_id = ? or treatment_plan_id = ?)`, patientVisitId, treatmentPlanId).Scan(&followupTime, &followupValue, &followupUnit)
 	if err == sql.ErrNoRows {
 		return nil, nil
 	} else if err != nil {
@@ -399,8 +399,8 @@ func (d *DataService) AddDiagnosisSummaryForPatientVisit(summary string, treatme
 	return tx.Commit()
 }
 
-func (d *DataService) GetDiagnosisSummaryForPatientVisit(treatmentPlanId int64) (summary string, err error) {
-	err = d.DB.QueryRow(`select summary from diagnosis_summary where treatment_plan_id = ? and status='ACTIVE'`, treatmentPlanId).Scan(&summary)
+func (d *DataService) GetDiagnosisSummaryForPatientVisit(patientVisitId, treatmentPlanId int64) (summary string, err error) {
+	err = d.DB.QueryRow(`select summary from diagnosis_summary where (patient_visit_id = ? or treatment_plan_id = ?) and status='ACTIVE'`, patientVisitId, treatmentPlanId).Scan(&summary)
 	if err != nil {
 		if err == sql.ErrNoRows {
 			return "", nil
@@ -464,8 +464,8 @@ func (d *DataService) GetDoctorAssignedToPatientVisit(patientVisitId int64) (*co
 	return doctor, nil
 }
 
-func (d *DataService) GetAdvicePointsForPatientVisit(treatmentPlanId int64) ([]*common.DoctorInstructionItem, error) {
-	rows, err := d.DB.Query(`select dr_advice_point_id,text from advice inner join dr_advice_point on dr_advice_point_id = dr_advice_point.id where treatment_plan_id = ?  and advice.status = ?`, treatmentPlanId, status_active)
+func (d *DataService) GetAdvicePointsForPatientVisit(patientVisitId, treatmentPlanId int64) ([]*common.DoctorInstructionItem, error) {
+	rows, err := d.DB.Query(`select dr_advice_point_id,text from advice inner join dr_advice_point on dr_advice_point_id = dr_advice_point.id where (treatment_plan_id = ? or patient_visit_id = ?)  and advice.status = ?`, treatmentPlanId, patientVisitId, status_active)
 	if err != nil {
 		return nil, err
 	}
@@ -540,13 +540,13 @@ func (d *DataService) CreateRegimenPlanForPatientVisit(regimenPlan *common.Regim
 	return tx.Commit()
 }
 
-func (d *DataService) GetRegimenPlanForPatientVisit(treatmentPlanId int64) (*common.RegimenPlan, error) {
+func (d *DataService) GetRegimenPlanForPatientVisit(patientVisitId, treatmentPlanId int64) (*common.RegimenPlan, error) {
 	var regimenPlan common.RegimenPlan
 	regimenPlan.TreatmentPlanId = treatmentPlanId
 
 	rows, err := d.DB.Query(`select regimen_type, dr_regimen_step.id, dr_regimen_step.text 
 								from regimen inner join dr_regimen_step on dr_regimen_step_id = dr_regimen_step.id 
-									where treatment_plan_id = ? and regimen.status = 'ACTIVE' order by regimen.id`, treatmentPlanId)
+									where (treatment_plan_id = ? or patient_visit_id=?) and regimen.status = 'ACTIVE' order by regimen.id`, treatmentPlanId, patientVisitId)
 	if err != nil {
 		return nil, err
 	}
@@ -709,7 +709,7 @@ func (d *DataService) addTreatment(treatment *common.Treatment, tx *sql.Tx) erro
 	return nil
 }
 
-func (d *DataService) GetTreatmentsBasedOnTreatmentPlanId(treatmentPlanId int64) ([]*common.Treatment, error) {
+func (d *DataService) GetTreatmentsBasedOnTreatmentPlanId(patientVisitId, treatmentPlanId int64) ([]*common.Treatment, error) {
 
 	// get treatment plan information
 	treatments := make([]*common.Treatment, 0)
@@ -719,10 +719,11 @@ func (d *DataService) GetTreatmentsBasedOnTreatmentPlanId(treatmentPlanId int64)
 			treatment.status, drug_name.name, drug_route.name, drug_form.name from treatment 
 				inner join dispense_unit on treatment.dispense_unit_id = dispense_unit.id
 				inner join localized_text on localized_text.app_text_id = dispense_unit.dispense_unit_text_id
+				inner join treatment_plan on treatment_plan.id = treatment.treatment_plan_id
 				left outer join drug_name on drug_name_id = drug_name.id
 				left outer join drug_route on drug_route_id = drug_route.id
 				left outer join drug_form on drug_form_id = drug_form.id
-				where treatment_plan_id=? and treatment.status=? and localized_text.language_id = ?`, treatmentPlanId, status_created, EN_LANGUAGE_ID)
+				where (treatment_plan.patient_visit_id = ? or treatment_plan_id=?) and treatment.status=? and localized_text.language_id = ?`, patientVisitId, treatmentPlanId, status_created, EN_LANGUAGE_ID)
 
 	if err != nil {
 		return nil, err

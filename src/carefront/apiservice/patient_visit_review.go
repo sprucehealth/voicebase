@@ -108,7 +108,7 @@ func (p *PatientVisitReviewHandler) ServeHTTP(w http.ResponseWriter, r *http.Req
 	patientVisitReviewResponse := &PatientVisitReviewResponse{}
 	patientVisitReviewResponse.PatientVisitId = patientVisit.PatientVisitId
 
-	summary, err := p.DataApi.GetDiagnosisSummaryForPatientVisit(treatmentPlanId)
+	summary, err := p.DataApi.GetDiagnosisSummaryForPatientVisit(patientVisit.PatientVisitId, treatmentPlanId)
 	if err != nil {
 		WriteDeveloperError(w, http.StatusInternalServerError, "Unable to get diagnosis summary for patient visit: "+err.Error())
 		return
@@ -122,7 +122,7 @@ func (p *PatientVisitReviewHandler) ServeHTTP(w http.ResponseWriter, r *http.Req
 		patientVisitReviewResponse.DiagnosisSummary = diagnosisSummary
 	}
 
-	treatments, err := p.DataApi.GetTreatmentsBasedOnTreatmentPlanId(treatmentPlanId)
+	treatments, err := p.DataApi.GetTreatmentsBasedOnTreatmentPlanId(patientVisit.PatientVisitId, treatmentPlanId)
 	if err != nil {
 		WriteDeveloperError(w, http.StatusInternalServerError, "Unable to get treatment plan for this patient visit id: "+err.Error())
 		return
@@ -144,7 +144,7 @@ func (p *PatientVisitReviewHandler) ServeHTTP(w http.ResponseWriter, r *http.Req
 		patientVisitReviewResponse.Treatments = treatmentsSection
 	}
 
-	regimenPlan, err := p.DataApi.GetRegimenPlanForPatientVisit(treatmentPlanId)
+	regimenPlan, err := p.DataApi.GetRegimenPlanForPatientVisit(patientVisit.PatientVisitId, treatmentPlanId)
 	if err != nil && err != api.NoRegimenPlanForPatientVisit {
 		WriteDeveloperError(w, http.StatusInternalServerError, "Unable to get regimen plan for this patient visit id: "+err.Error())
 		return
@@ -154,7 +154,7 @@ func (p *PatientVisitReviewHandler) ServeHTTP(w http.ResponseWriter, r *http.Req
 		patientVisitReviewResponse.RegimenPlan = regimenPlan
 	}
 
-	followUp, err := p.DataApi.GetFollowUpTimeForPatientVisit(treatmentPlanId)
+	followUp, err := p.DataApi.GetFollowUpTimeForPatientVisit(patientVisit.PatientVisitId, treatmentPlanId)
 	if err != nil {
 		WriteDeveloperError(w, http.StatusInternalServerError, "Unable to get follow up information for this paitent visit: "+err.Error())
 		return
@@ -164,7 +164,7 @@ func (p *PatientVisitReviewHandler) ServeHTTP(w http.ResponseWriter, r *http.Req
 		patientVisitReviewResponse.Followup = followUp
 	}
 
-	advicePoints, err := p.DataApi.GetAdvicePointsForPatientVisit(treatmentPlanId)
+	advicePoints, err := p.DataApi.GetAdvicePointsForPatientVisit(patientVisit.PatientVisitId, treatmentPlanId)
 	if err != nil {
 		WriteDeveloperError(w, http.StatusInternalServerError, "Unable to get advice for patient visit: "+err.Error())
 		return

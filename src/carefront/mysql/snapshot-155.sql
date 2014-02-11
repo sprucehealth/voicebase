@@ -1,6 +1,6 @@
 -- MySQL dump 10.13  Distrib 5.6.13, for osx10.8 (x86_64)
 --
--- Host: dev-db-3.ccvrwjdx3gvp.us-east-1.rds.amazonaws.com    Database: database_21591
+-- Host: dev-db-3.ccvrwjdx3gvp.us-east-1.rds.amazonaws.com    Database: database_3230
 -- ------------------------------------------------------
 -- Server version	5.6.13-log
 
@@ -39,14 +39,17 @@ DROP TABLE IF EXISTS `advice`;
 /*!40101 SET character_set_client = utf8 */;
 CREATE TABLE `advice` (
   `id` int(10) unsigned NOT NULL AUTO_INCREMENT,
+  `patient_visit_id` int(10) unsigned DEFAULT NULL,
   `dr_advice_point_id` int(10) unsigned NOT NULL,
   `status` varchar(100) NOT NULL,
   `creation_date` timestamp NOT NULL DEFAULT CURRENT_TIMESTAMP,
   `treatment_plan_id` int(10) unsigned DEFAULT NULL,
   PRIMARY KEY (`id`),
+  KEY `patient_visit_id` (`patient_visit_id`),
   KEY `dr_advice_point_id` (`dr_advice_point_id`),
   KEY `treatment_plan_id` (`treatment_plan_id`),
   CONSTRAINT `advice_ibfk_3` FOREIGN KEY (`treatment_plan_id`) REFERENCES `treatment_plan` (`id`),
+  CONSTRAINT `advice_ibfk_1` FOREIGN KEY (`patient_visit_id`) REFERENCES `patient_visit` (`id`),
   CONSTRAINT `advice_ibfk_2` FOREIGN KEY (`dr_advice_point_id`) REFERENCES `dr_advice_point` (`id`)
 ) ENGINE=InnoDB DEFAULT CHARSET=utf8;
 /*!40101 SET character_set_client = @saved_cs_client */;
@@ -186,14 +189,17 @@ DROP TABLE IF EXISTS `diagnosis_summary`;
 /*!40101 SET character_set_client = utf8 */;
 CREATE TABLE `diagnosis_summary` (
   `id` int(10) unsigned NOT NULL AUTO_INCREMENT,
+  `patient_visit_id` int(10) unsigned DEFAULT NULL,
   `doctor_id` int(10) unsigned NOT NULL,
   `summary` varchar(600) NOT NULL,
   `status` varchar(100) NOT NULL,
   `treatment_plan_id` int(10) unsigned DEFAULT NULL,
   PRIMARY KEY (`id`),
+  KEY `patient_visit_id` (`patient_visit_id`),
   KEY `doctor_id` (`doctor_id`),
   KEY `treatment_plan_id` (`treatment_plan_id`),
   CONSTRAINT `diagnosis_summary_ibfk_3` FOREIGN KEY (`treatment_plan_id`) REFERENCES `treatment_plan` (`id`),
+  CONSTRAINT `diagnosis_summary_ibfk_1` FOREIGN KEY (`patient_visit_id`) REFERENCES `patient_visit` (`id`),
   CONSTRAINT `diagnosis_summary_ibfk_2` FOREIGN KEY (`doctor_id`) REFERENCES `doctor` (`id`)
 ) ENGINE=InnoDB DEFAULT CHARSET=utf8;
 /*!40101 SET character_set_client = @saved_cs_client */;
@@ -1012,6 +1018,7 @@ DROP TABLE IF EXISTS `patient_visit_follow_up`;
 /*!40101 SET character_set_client = utf8 */;
 CREATE TABLE `patient_visit_follow_up` (
   `id` int(10) unsigned NOT NULL AUTO_INCREMENT,
+  `patient_visit_id` int(10) unsigned DEFAULT NULL,
   `doctor_id` int(10) unsigned NOT NULL,
   `follow_up_date` date NOT NULL,
   `follow_up_value` int(10) unsigned NOT NULL,
@@ -1019,9 +1026,11 @@ CREATE TABLE `patient_visit_follow_up` (
   `status` varchar(100) NOT NULL,
   `treatment_plan_id` int(10) unsigned DEFAULT NULL,
   PRIMARY KEY (`id`),
+  KEY `patient_visit_id` (`patient_visit_id`),
   KEY `doctor_id` (`doctor_id`),
   KEY `treatment_plan_id` (`treatment_plan_id`),
   CONSTRAINT `patient_visit_follow_up_ibfk_3` FOREIGN KEY (`treatment_plan_id`) REFERENCES `treatment_plan` (`id`),
+  CONSTRAINT `patient_visit_follow_up_ibfk_1` FOREIGN KEY (`patient_visit_id`) REFERENCES `patient_visit` (`id`),
   CONSTRAINT `patient_visit_follow_up_ibfk_2` FOREIGN KEY (`doctor_id`) REFERENCES `doctor` (`id`)
 ) ENGINE=InnoDB DEFAULT CHARSET=utf8;
 /*!40101 SET character_set_client = @saved_cs_client */;
@@ -1164,14 +1173,17 @@ DROP TABLE IF EXISTS `regimen`;
 CREATE TABLE `regimen` (
   `id` int(10) unsigned NOT NULL AUTO_INCREMENT,
   `regimen_type` varchar(150) NOT NULL,
+  `patient_visit_id` int(10) unsigned DEFAULT NULL,
   `dr_regimen_step_id` int(10) unsigned NOT NULL,
   `status` varchar(100) NOT NULL,
   `creation_date` timestamp NOT NULL DEFAULT CURRENT_TIMESTAMP,
   `treatment_plan_id` int(10) unsigned DEFAULT NULL,
   PRIMARY KEY (`id`),
+  KEY `patient_visit_id` (`patient_visit_id`),
   KEY `dr_regimen_step_id` (`dr_regimen_step_id`),
   KEY `treatment_plan_id` (`treatment_plan_id`),
   CONSTRAINT `regimen_ibfk_3` FOREIGN KEY (`treatment_plan_id`) REFERENCES `treatment_plan` (`id`),
+  CONSTRAINT `regimen_ibfk_1` FOREIGN KEY (`patient_visit_id`) REFERENCES `patient_visit` (`id`),
   CONSTRAINT `regimen_ibfk_2` FOREIGN KEY (`dr_regimen_step_id`) REFERENCES `dr_regimen_step` (`id`)
 ) ENGINE=InnoDB DEFAULT CHARSET=utf8;
 /*!40101 SET character_set_client = @saved_cs_client */;
@@ -1383,4 +1395,4 @@ CREATE TABLE `treatment_plan` (
 /*!40101 SET COLLATION_CONNECTION=@OLD_COLLATION_CONNECTION */;
 /*!40111 SET SQL_NOTES=@OLD_SQL_NOTES */;
 
--- Dump completed on 2014-02-10  9:47:39
+-- Dump completed on 2014-02-11 14:05:10

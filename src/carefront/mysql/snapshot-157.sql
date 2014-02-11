@@ -1,6 +1,6 @@
 -- MySQL dump 10.13  Distrib 5.6.13, for osx10.8 (x86_64)
 --
--- Host: dev-db-3.ccvrwjdx3gvp.us-east-1.rds.amazonaws.com    Database: database_9745
+-- Host: dev-db-3.ccvrwjdx3gvp.us-east-1.rds.amazonaws.com    Database: database_8102
 -- ------------------------------------------------------
 -- Server version	5.6.13-log
 
@@ -551,6 +551,8 @@ CREATE TABLE `erx_status_events` (
   `treatment_id` int(10) unsigned NOT NULL,
   `erx_status` varchar(100) NOT NULL,
   `creation_date` timestamp NOT NULL DEFAULT CURRENT_TIMESTAMP,
+  `status` varchar(100) NOT NULL,
+  `event_details` varchar(500) DEFAULT NULL,
   PRIMARY KEY (`id`),
   KEY `treatment_id` (`treatment_id`),
   CONSTRAINT `erx_status_events_ibfk_1` FOREIGN KEY (`treatment_id`) REFERENCES `treatment` (`id`)
@@ -1377,11 +1379,12 @@ CREATE TABLE `treatment_plan` (
   `patient_visit_id` int(10) unsigned NOT NULL,
   `creation_date` timestamp NOT NULL DEFAULT CURRENT_TIMESTAMP,
   `doctor_id` int(10) unsigned DEFAULT NULL,
+  `sent_date` timestamp NULL DEFAULT NULL,
   PRIMARY KEY (`id`),
   KEY `patient_visit_id` (`patient_visit_id`),
   KEY `doctor_id` (`doctor_id`),
-  CONSTRAINT `treatment_plan_ibfk_2` FOREIGN KEY (`doctor_id`) REFERENCES `doctor` (`id`),
-  CONSTRAINT `treatment_plan_ibfk_1` FOREIGN KEY (`patient_visit_id`) REFERENCES `patient_visit` (`id`)
+  CONSTRAINT `treatment_plan_ibfk_1` FOREIGN KEY (`patient_visit_id`) REFERENCES `patient_visit` (`id`),
+  CONSTRAINT `treatment_plan_ibfk_2` FOREIGN KEY (`doctor_id`) REFERENCES `doctor` (`id`)
 ) ENGINE=InnoDB DEFAULT CHARSET=utf8;
 /*!40101 SET character_set_client = @saved_cs_client */;
 /*!40103 SET TIME_ZONE=@OLD_TIME_ZONE */;
@@ -1394,4 +1397,4 @@ CREATE TABLE `treatment_plan` (
 /*!40101 SET COLLATION_CONNECTION=@OLD_COLLATION_CONNECTION */;
 /*!40111 SET SQL_NOTES=@OLD_SQL_NOTES */;
 
--- Dump completed on 2014-02-11 13:55:03
+-- Dump completed on 2014-02-11 14:13:39

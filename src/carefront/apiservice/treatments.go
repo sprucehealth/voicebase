@@ -76,7 +76,7 @@ func (t *TreatmentsHandler) getTreatments(w http.ResponseWriter, r *http.Request
 		}
 	}
 
-	treatments, err := t.DataApi.GetTreatmentsBasedOnTreatmentPlanId(treatmentPlanId)
+	treatments, err := t.DataApi.GetTreatmentsBasedOnTreatmentPlanId(patientVisitId, treatmentPlanId)
 	if err != nil {
 		WriteDeveloperError(w, http.StatusInternalServerError, "unable to get treatments for patient visit : "+err.Error())
 		return
@@ -163,7 +163,7 @@ func (t *TreatmentsHandler) addTreatment(w http.ResponseWriter, r *http.Request)
 		return
 	}
 
-	treatments, err := t.DataApi.GetTreatmentsBasedOnTreatmentPlanId(treatmentPlanId)
+	treatments, err := t.DataApi.GetTreatmentsBasedOnTreatmentPlanId(treatmentsRequestBody.PatientVisitId, treatmentPlanId)
 	if err != nil {
 		WriteDeveloperError(w, http.StatusInternalServerError, "unable to get treatments for patient visit after adding treatments : "+err.Error())
 		return
