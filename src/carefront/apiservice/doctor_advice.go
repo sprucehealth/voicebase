@@ -40,7 +40,15 @@ func (d *DoctorAdviceHandler) getAdvicePoints(w http.ResponseWriter, r *http.Req
 		return
 	}
 
-	doctorId, _, _, statusCode, err := ValidateDoctorAccessToPatientVisitAndGetRelevantData(requestData.PatientVisitId, GetContext(r).AccountId, d.DataApi)
+	patientVisitId := requestData.PatientVisitId
+	treatmentPlanId := requestData.TreatmentPlanId
+	err = ensureTreatmentPlanOrPatientVisitIdPresent(d.DataApi, &treatmentPlanId, &patientVisitId)
+	if err != nil {
+		WriteDeveloperError(w, http.StatusBadRequest, err.Error())
+		return
+	}
+
+	doctorId, _, _, statusCode, err := ValidateDoctorAccessToPatientVisitAndGetRelevantData(patientVisitId, GetContext(r).AccountId, d.DataApi)
 	if err != nil {
 		WriteDeveloperError(w, statusCode, err.Error())
 		return
@@ -52,9 +60,8 @@ func (d *DoctorAdviceHandler) getAdvicePoints(w http.ResponseWriter, r *http.Req
 		return
 	}
 
-	treatmentPlanId := requestData.TreatmentPlanId
 	if treatmentPlanId == 0 {
-		treatmentPlanId, err = d.DataApi.GetActiveTreatmentPlanForPatientVisit(doctorId, requestData.PatientVisitId)
+		treatmentPlanId, err = d.DataApi.GetActiveTreatmentPlanForPatientVisit(doctorId, patientVisitId)
 		if err != nil {
 			WriteDeveloperError(w, http.StatusInternalServerError, "Unable to get treatment plan for patient visit: "+err.Error())
 			return
@@ -70,7 +77,7 @@ func (d *DoctorAdviceHandler) getAdvicePoints(w http.ResponseWriter, r *http.Req
 	responseData := &common.Advice{}
 	responseData.AllAdvicePoints = advicePoints
 	responseData.SelectedAdvicePoints = selectedAdvicePoints
-	responseData.PatientVisitId = requestData.PatientVisitId
+	responseData.PatientVisitId = patientVisitId
 	responseData.TreatmentPlanId = requestData.TreatmentPlanId
 
 	WriteJSONToHTTPResponseWriter(w, http.StatusOK, responseData)

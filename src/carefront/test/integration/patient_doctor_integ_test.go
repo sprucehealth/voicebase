@@ -278,7 +278,7 @@ func TestPatientVisitReview(t *testing.T) {
 	}
 
 	// now, lets try again while including time
-	toTime = time.Now().Unix()
+	toTime = time.Now().Add(10 * time.Minute).Unix()
 	doctorPrescriptionsResponse = getPrescriptionsForDoctor(testData.DataApi, t, doctor, fromTime, toTime)
 	if len(doctorPrescriptionsResponse.TreatmentPlans) != 1 {
 		t.Fatalf("Expected there to be 1 treatment plan for this doctor, instead we have %d", len(doctorPrescriptionsResponse.TreatmentPlans))
@@ -411,5 +411,7 @@ func getPrescriptionsForDoctor(dataApi api.DataAPI, t *testing.T, doctor *common
 	if err != nil {
 		t.Fatal("Unable to unmarshal response body into json object: " + err.Error())
 	}
+
+	CheckSuccessfulStatusCode(resp, "Unable to get prescriptions for doctor "+string(respBody), t)
 	return doctorPrescriptionsResponse
 }

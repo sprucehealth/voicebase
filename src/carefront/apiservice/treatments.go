@@ -54,15 +54,22 @@ func (t *TreatmentsHandler) getTreatments(w http.ResponseWriter, r *http.Request
 		return
 	}
 
-	doctorId, _, _, httpStatusCode, err := ValidateDoctorAccessToPatientVisitAndGetRelevantData(requestData.PatientVisitId, GetContext(r).AccountId, t.DataApi)
+	patientVisitId := requestData.PatientVisitId
+	treatmentPlanId := requestData.TreatmentPlanId
+	err = ensureTreatmentPlanOrPatientVisitIdPresent(d.DataApi, &treatmentPlanId, &patientVisitId)
+	if err != nil {
+		WriteDeveloperError(w, http.StatusBadRequest, err.Error())
+		return
+	}
+
+	doctorId, _, _, httpStatusCode, err := ValidateDoctorAccessToPatientVisitAndGetRelevantData(patientVisitId, GetContext(r).AccountId, t.DataApi)
 	if err != nil {
 		WriteDeveloperError(w, httpStatusCode, "Doctor not authorized to get treatments for patient visit: "+err.Error())
 		return
 	}
 
-	treatmentPlanId := requestData.TreatmentPlanId
 	if treatmentPlanId == 0 {
-		treatmentPlanId, err = t.DataApi.GetActiveTreatmentPlanForPatientVisit(doctorId, requestData.PatientVisitId)
+		treatmentPlanId, err = t.DataApi.GetActiveTreatmentPlanForPatientVisit(doctorId, patientVisitId)
 		if err != nil {
 			WriteDeveloperError(w, http.StatusInternalServerError, "Unable to get active treatment plan id based on patient visit id : "+err.Error())
 			return

@@ -8,6 +8,7 @@ const (
 
 type PharmacyData struct {
 	Id              string   `json:"id,omitempty"`
+	PatientId       int64    `json:"-"`
 	Source          string   `json:"source,omitempty"`
 	Name            string   `json:"name"`
 	Address         string   `json:"address"`

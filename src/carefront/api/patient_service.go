@@ -4,6 +4,7 @@ import (
 	"carefront/common"
 	"carefront/libs/pharmacy"
 	"database/sql"
+	"fmt"
 	"github.com/go-sql-driver/mysql"
 	"log"
 	"time"
@@ -179,39 +180,72 @@ func (d *DataService) CreateCareTeamForPatient(patientId int64) (*common.Patient
 }
 
 func (d *DataService) GetPatientFromAccountId(accountId int64) (*common.Patient, error) {
-	return d.getPatientBasedOnQuery(`select patient.id, patient.erx_patient_id, account_id, first_name, last_name, zip_code,city,state, phone, phone_type, gender, dob, patient.status from patient 
+	patients, err := d.getPatientBasedOnQuery(`select patient.id, patient.erx_patient_id, account_id, first_name, last_name, zip_code,city,state, phone, phone_type, gender, dob, patient.status from patient 
 							left outer join patient_phone on patient_phone.patient_id = patient.id
 							left outer join patient_location on patient_location.patient_id = patient.id
 							where patient.account_id = ? and (phone is null or (patient_phone.status='ACTIVE'))
 								and (zip_code is null or patient_location.status='ACTIVE')`, accountId)
+	if len(patients) > 0 {
+		return patients[0], err
+	}
+
+	return nil, err
 }
 
 func (d *DataService) GetPatientFromId(patientId int64) (*common.Patient, error) {
-	return d.getPatientBasedOnQuery(`select patient.id, patient.erx_patient_id, account_id, first_name, last_name, zip_code, city, state, phone,phone_type, gender, dob, patient.status from patient 
+	patients, err := d.getPatientBasedOnQuery(`select patient.id, patient.erx_patient_id, account_id, first_name, last_name, zip_code, city, state, phone,phone_type, gender, dob, patient.status from patient 
 							left outer join patient_phone on patient_phone.patient_id = patient.id
 							left outer join patient_location on patient_location.patient_id = patient.id
 							where patient.id = ? and (phone is null or (patient_phone.status='ACTIVE'))
 								and (zip_code is null or patient_location.status='ACTIVE') `, patientId)
+
+	if len(patients) > 0 {
+		return patients[0], err
+	}
+
+	return nil, err
+}
+
+func (d *DataService) GetPatientsForIds(patientIds []int64) ([]*common.Patient, error) {
+	if len(patientIds) == 0 {
+		return nil, nil
+	}
+
+	return d.getPatientBasedOnQuery(fmt.Sprintf(`select patient.id, patient.erx_patient_id, account_id, first_name, last_name, zip_code, city, state, phone,phone_type, gender, dob, patient.status from patient 
+							left outer join patient_phone on patient_phone.patient_id = patient.id
+							left outer join patient_location on patient_location.patient_id = patient.id
+							where patient.id in (%s) and (phone is null or (patient_phone.status='ACTIVE'))
+								and (zip_code is null or patient_location.status='ACTIVE')`, enumerateItemsIntoString(patientIds)))
 }
 
 func (d *DataService) GetPatientFromTreatmentPlanId(treatmentPlanId int64) (*common.Patient, error) {
-	return d.getPatientBasedOnQuery(`select patient.id, patient.erx_patient_id, account_id, first_name, last_name, zip_code, city, state, phone,phone_type, gender, dob, patient.status from treatment_plan 
+	patients, err := d.getPatientBasedOnQuery(`select patient.id, patient.erx_patient_id, account_id, first_name, last_name, zip_code, city, state, phone,phone_type, gender, dob, patient.status from treatment_plan 
 							inner join patient_visit on patient_visit_id = patient_visit.id
 							inner join patient on patient.id = patient_visit.patient_id
 							left outer join patient_phone on patient_phone.patient_id = patient.id
 							left outer join patient_location on patient_location.patient_id = patient.id
 							where treatment_plan.id = ? and (phone is null or (patient_phone.status='ACTIVE'))
 								and (zip_code is null or patient_location.status='ACTIVE') `, treatmentPlanId)
+	if len(patients) > 0 {
+		return patients[0], err
+	}
+
+	return nil, err
 }
 
 func (d *DataService) GetPatientFromPatientVisitId(patientVisitId int64) (*common.Patient, error) {
-	return d.getPatientBasedOnQuery(`select patient.id, patient.erx_patient_id, account_id, first_name, last_name, zip_code,city,state, phone, phone_type, gender, dob, patient.status from patient_visit
+	patients, err := d.getPatientBasedOnQuery(`select patient.id, patient.erx_patient_id, account_id, first_name, last_name, zip_code,city,state, phone, phone_type, gender, dob, patient.status from patient_visit
 							inner join patient on patient_visit.patient_id = patient.id 
 							left outer join patient_phone on patient_phone.patient_id = patient_visit.patient_id
 							left outer join patient_location on patient_location.patient_id = patient_visit.patient_id
 							where patient_visit.id = ? 
 							and (phone is null or (patient_phone.status='ACTIVE'))
 							and (zip_code is null or patient_location.status = 'ACTIVE')`, patientVisitId)
+	if len(patients) > 0 {
+		return patients[0], err
+	}
+
+	return nil, err
 }
 
 func (d *DataService) UpdatePatientAddress(patientId int64, addressLine1, addressLine2, city, state, zipCode, addressType string) error {
@@ -268,49 +302,67 @@ func (d *DataService) UpdatePatientPharmacy(patientId int64, pharmacyDetails *ph
 }
 
 func (d *DataService) GetPatientPharmacySelection(patientId int64) (pharmacySelection *pharmacy.PharmacyData, err error) {
-	var id, sourceType, name, address, phone, city, state, zipCode, lat, lng sql.NullString
-	err = d.DB.QueryRow(`select pharmacy_id, source, name, address, city, state, zip_code, phone,lat,lng from patient_pharmacy_selection where patient_id = ? and status=?`, patientId, status_active).Scan(&id, &sourceType, &name, &address, &city, &state, &zipCode, &phone, &lat, &lng)
-	if err == sql.ErrNoRows {
-		err = nil
-		return
+	rows, err := d.DB.Query(`select patient_id, pharmacy_id, source, name, address, city, state, zip_code, phone,lat,lng 
+		from patient_pharmacy_selection where patient_id = ? and status=?`, patientId, status_active)
+	if err != nil {
+		return nil, err
+	}
+	defer rows.Close()
+
+	if rows.Next() {
+		pharmacySelection, err = getPharmacyFromCurrentRow(rows)
 	}
 
-	pharmacySelection = &pharmacy.PharmacyData{}
-	pharmacySelection.Id = id.String
-	pharmacySelection.Source = sourceType.String
-
-	if address.Valid {
-		pharmacySelection.Address = address.String
-	}
-
-	if city.Valid {
-		pharmacySelection.City = city.String
-	}
-
-	if state.Valid {
-		pharmacySelection.State = state.String
-	}
-
-	if zipCode.Valid {
-		pharmacySelection.Postal = zipCode.String
-	}
-
-	if lat.Valid {
-		pharmacySelection.Latitude = lat.String
-	}
-
-	if lng.Valid {
-		pharmacySelection.Longitude = lng.String
-	}
-
-	if phone.Valid {
-		pharmacySelection.Phone = phone.String
-	}
-
-	if name.Valid {
-		pharmacySelection.Name = name.String
-	}
 	return
+}
+
+func (d *DataService) GetPatientPharmacySelectionForPatients(patientIds []int64) ([]*pharmacy.PharmacyData, error) {
+	if len(patientIds) == 0 {
+		return nil, nil
+	}
+
+	rows, err := d.DB.Query(fmt.Sprintf(`select patient_id,pharmacy_id, source, name, address, city, state, zip_code, phone,lat,lng 
+			from patient_pharmacy_selection where patient_id in (%s) and status=?`, enumerateItemsIntoString(patientIds)), status_active)
+	if err != nil {
+		return nil, err
+	}
+
+	pharmacies := make([]*pharmacy.PharmacyData, 0)
+	for rows.Next() {
+		pharmacySelection, err := getPharmacyFromCurrentRow(rows)
+		if err != nil {
+			return nil, err
+		}
+
+		pharmacies = append(pharmacies, pharmacySelection)
+	}
+
+	return pharmacies, nil
+}
+
+func getPharmacyFromCurrentRow(rows *sql.Rows) (*pharmacy.PharmacyData, error) {
+	var patientId int64
+	var id, sourceType, name, address, phone, city, state, zipCode, lat, lng sql.NullString
+	err := rows.Scan(&patientId, &id, &sourceType, &name, &address, &city, &state, &zipCode, &phone, &lat, &lng)
+	if err != nil {
+		return nil, err
+	}
+
+	pharmacySelection := &pharmacy.PharmacyData{
+		PatientId: patientId,
+		Id:        id.String,
+		Source:    sourceType.String,
+		Address:   address.String,
+		City:      city.String,
+		State:     state.String,
+		Postal:    zipCode.String,
+		Latitude:  lat.String,
+		Longitude: lng.String,
+		Phone:     phone.String,
+		Name:      name.String,
+	}
+
+	return pharmacySelection, nil
 }
 
 func (d *DataService) TrackPatientAgreements(patientId int64, agreements map[string]bool) error {
@@ -342,48 +394,60 @@ func (d *DataService) TrackPatientAgreements(patientId int64, agreements map[str
 	return nil
 }
 
-func (d *DataService) getPatientBasedOnQuery(queryStr string, queryParams ...interface{}) (*common.Patient, error) {
-	var firstName, lastName, status, gender string
-	var dob mysql.NullTime
-	var phone, phoneType, zipCode, city, state sql.NullString
-	var erxPatientId sql.NullInt64
-	var patientId, accountId int64
-	err := d.DB.QueryRow(queryStr, queryParams...).Scan(&patientId, &erxPatientId, &accountId, &firstName, &lastName, &zipCode, &city, &state, &phone, &phoneType, &gender, &dob, &status)
+func (d *DataService) getPatientBasedOnQuery(queryStr string, queryParams ...interface{}) ([]*common.Patient, error) {
+	rows, err := d.DB.Query(queryStr, queryParams...)
 	if err != nil {
 		return nil, err
 	}
-	patient := &common.Patient{
-		PatientId: patientId,
-		FirstName: firstName,
-		LastName:  lastName,
-		Status:    status,
-		Gender:    gender,
-		AccountId: accountId,
+	defer rows.Close()
+
+	patients := make([]*common.Patient, 0)
+	for rows.Next() {
+		var firstName, lastName, status, gender string
+		var dob mysql.NullTime
+		var phone, phoneType, zipCode, city, state sql.NullString
+		var erxPatientId sql.NullInt64
+		var patientId, accountId int64
+		err = rows.Scan(&patientId, &erxPatientId, &accountId, &firstName, &lastName, &zipCode, &city, &state, &phone, &phoneType, &gender, &dob, &status)
+		if err != nil {
+			return nil, err
+		}
+
+		patient := &common.Patient{
+			PatientId: patientId,
+			FirstName: firstName,
+			LastName:  lastName,
+			Status:    status,
+			Gender:    gender,
+			AccountId: accountId,
+		}
+
+		if erxPatientId.Valid {
+			patient.ERxPatientId = erxPatientId.Int64
+		}
+
+		if phone.Valid {
+			patient.Phone = phone.String
+		}
+
+		if phoneType.Valid {
+			patient.PhoneType = phoneType.String
+		}
+
+		if dob.Valid {
+			patient.Dob = dob.Time
+		}
+		if zipCode.Valid {
+			patient.ZipCode = zipCode.String
+		}
+		if city.Valid {
+			patient.City = city.String
+		}
+		if state.Valid {
+			patient.State = state.String
+		}
+		patients = append(patients, patient)
 	}
 
-	if erxPatientId.Valid {
-		patient.ERxPatientId = erxPatientId.Int64
-	}
-
-	if phone.Valid {
-		patient.Phone = phone.String
-	}
-
-	if phoneType.Valid {
-		patient.PhoneType = phoneType.String
-	}
-
-	if dob.Valid {
-		patient.Dob = dob.Time
-	}
-	if zipCode.Valid {
-		patient.ZipCode = zipCode.String
-	}
-	if city.Valid {
-		patient.City = city.String
-	}
-	if state.Valid {
-		patient.State = state.String
-	}
-	return patient, nil
+	return patients, nil
 }

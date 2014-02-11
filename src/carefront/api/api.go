@@ -66,6 +66,8 @@ type PatientAPI interface {
 	TrackPatientAgreements(patientId int64, agreements map[string]bool) error
 	GetPatientFromPatientVisitId(patientVisitId int64) (patient *common.Patient, err error)
 	GetPatientFromTreatmentPlanId(treatmentPlanId int64) (patient *common.Patient, err error)
+	GetPatientsForIds(patientIds []int64) ([]*common.Patient, error)
+	GetPatientPharmacySelectionForPatients(patientIds []int64) ([]*pharmacy.PharmacyData, error)
 }
 
 type PrescriptionStatus struct {
@@ -80,6 +82,7 @@ type PatientVisitAPI interface {
 	GetLastCreatedPatientVisitIdForPatient(patientId int64) (int64, error)
 	GetPatientIdFromPatientVisitId(patientVisitId int64) (int64, error)
 	GetLatestSubmittedPatientVisit() (*common.PatientVisit, error)
+	GetPatientVisitIdFromTreatmentPlanId(treatmentPlanId int64) (int64, error)
 	GetLatestClosedPatientVisitForPatient(patientId int64) (*common.PatientVisit, error)
 	GetPatientVisitFromId(patientVisitId int64) (patientVisit *common.PatientVisit, err error)
 	CreateNewPatientVisit(patientId, healthConditionId, layoutVersionId int64) (int64, error)

@@ -43,15 +43,22 @@ func (p *PatientVisitFollowUpHandler) getFollowupForPatientVisit(w http.Response
 	decoder := schema.NewDecoder()
 	err := decoder.Decode(requestData, r.Form)
 
-	doctorId, _, _, statusCode, err := ValidateDoctorAccessToPatientVisitAndGetRelevantData(requestData.PatientVisitId, GetContext(r).AccountId, p.DataApi)
+	patientVisitId := requestData.PatientVisitId
+	treatmentPlanId := requestData.TreatmentPlanId
+	err = ensureTreatmentPlanOrPatientVisitIdPresent(d.DataApi, &treatmentPlanId, &patientVisitId)
+	if err != nil {
+		WriteDeveloperError(w, http.StatusBadRequest, err.Error())
+		return
+	}
+
+	doctorId, _, _, statusCode, err := ValidateDoctorAccessToPatientVisitAndGetRelevantData(patientVisitId, GetContext(r).AccountId, p.DataApi)
 	if err != nil {
 		WriteDeveloperError(w, statusCode, err.Error())
 		return
 	}
 
-	treatmentPlanId := requestData.TreatmentPlanId
 	if treatmentPlanId == 0 {
-		treatmentPlanId, err = p.DataApi.GetActiveTreatmentPlanForPatientVisit(doctorId, requestData.PatientVisitId)
+		treatmentPlanId, err = p.DataApi.GetActiveTreatmentPlanForPatientVisit(doctorId, patientVisitId)
 		if err != nil {
 			WriteDeveloperError(w, http.StatusInternalServerError, "Unable to get active treatment plan information from patient visit: "+err.Error())
 			return

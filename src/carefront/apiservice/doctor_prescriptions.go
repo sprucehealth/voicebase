@@ -53,27 +53,33 @@ func (d *DoctorPrescriptionsHandler) ServeHTTP(w http.ResponseWriter, r *http.Re
 	}
 
 	// find a list of unique patients for which to get information
-	uniquePatientIds := make(map[int64]bool)
+	uniquePatientIdsBookKeeping := make(map[int64]bool)
+	uniquePatientIds := make([]int64, 0)
 	for _, treatmentPlan := range treatmentPlans {
-		uniquePatientIds[treatmentPlan.PatientId] = true
+		if !uniquePatientIdsBookKeeping[treatmentPlan.PatientId] {
+			uniquePatientIds = append(uniquePatientIds, treatmentPlan.PatientId)
+			uniquePatientIdsBookKeeping[treatmentPlan.PatientId] = true
+		}
 	}
 
-	// TODO: It's better to batch these queries into a single query based on the patientId as opposed to making 2 queries per patient for
-	// patient information and pharmacy information
-	patients := make([]*common.Patient, 0)
-	for patientId, _ := range uniquePatientIds {
-		patient, err := d.DataApi.GetPatientFromId(patientId)
-		if err != nil {
-			WriteDeveloperError(w, http.StatusInternalServerError, "Unable to get patient from id: "+err.Error())
-			return
+	patients, err := d.DataApi.GetPatientsForIds(uniquePatientIds)
+	if err != nil {
+		WriteDeveloperError(w, http.StatusInternalServerError, "Unable to get the patients based on ids: "+err.Error())
+		return
+	}
+
+	pharmacies, err := d.DataApi.GetPatientPharmacySelectionForPatients(uniquePatientIds)
+	if err != nil {
+		WriteDeveloperError(w, http.StatusInternalServerError, "Unable to get pharmacies for patients based on idsL "+err.Error())
+		return
+	}
+
+	for _, pharmacySelection := range pharmacies {
+		for _, patient := range patients {
+			if patient.PatientId == pharmacySelection.PatientId {
+				patient.Pharmacy = pharmacySelection
+			}
 		}
-		pharmacySelection, err := d.DataApi.GetPatientPharmacySelection(patientId)
-		if err != nil {
-			WriteDeveloperError(w, http.StatusInternalServerError, "Unable to get patient's pharmacy selection : "+err.Error())
-			return
-		}
-		patient.Pharmacy = pharmacySelection
-		patients = append(patients, patient)
 	}
 
 	for _, treatmentPlan := range treatmentPlans {

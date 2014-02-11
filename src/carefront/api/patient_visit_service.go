@@ -71,6 +71,12 @@ func (d *DataService) GetLatestSubmittedPatientVisit() (*common.PatientVisit, er
 	return patientVisit, err
 }
 
+func (d *DataService) GetPatientVisitIdFromTreatmentPlanId(treatmentPlanId int64) (int64, error) {
+	var patientVisitId int64
+	err := d.DB.QueryRow(`select patient_visit_id from treatment_plan where id = ?`, treatmentPlanId).Scan(&patientVisitId)
+	return patientVisitId, err
+}
+
 func (d *DataService) GetLatestClosedPatientVisitForPatient(patientId int64) (*common.PatientVisit, error) {
 	var healthConditionId, layoutVersionId, patientVisitId int64
 	var creationDateBytes, submittedDateBytes, closedDateBytes mysql.NullTime
