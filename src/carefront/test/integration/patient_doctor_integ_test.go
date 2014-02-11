@@ -76,7 +76,7 @@ func TestPatientVisitReview(t *testing.T) {
 
 	erxStatusQueue := &common.SQSQueue{}
 	erxStatusQueue.QueueService = &sqs.StubSQS{}
-	erxStatusQueue.QueueUrl = api.ERX_STATUS_QUEUE
+	erxStatusQueue.QueueUrl = "local-erx"
 	doctorSubmitPatientVisitReviewHandler := &apiservice.DoctorSubmitPatientVisitReviewHandler{
 		DataApi:        testData.DataApi,
 		ERxApi:         stubErxService,
