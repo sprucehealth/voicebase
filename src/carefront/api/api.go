@@ -32,7 +32,6 @@ const (
 	PATIENT_PHONE_HOME          = "Home"
 	PATIENT_PHONE_WORK          = "Work"
 	PATIENT_PHONE_CELL          = "Cell"
-	ERX_STATUS_QUEUE            = "erx"
 )
 
 var (

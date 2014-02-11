@@ -75,6 +75,7 @@ type Config struct {
 	DoseSpotUserId           string        `long:"dose_spot_user_id" description:"DoseSpot UserId for eRx integration"`
 	NoServices               bool          `long:"noservices" description:"Disable connecting to remote services"`
 	ERxRouting               bool          `long:"erx_routing" description:"Disable sending of prescriptions electronically"`
+	ERxQueue                 string        `long:"erx_queue" description:"Erx queue name"`
 	AuthTokenExpiration      int           `long:"auth_token_expire" description:"Expiration time in seconds for the auth token"`
 	AuthTokenRenew           int           `long:"auth_token_renew" description:"Time left below which to renew the auth token"`
 	StaticContentBaseUrl     string        `long:"static_content_base_url" description:"URL from which to serve static content"`
@@ -278,7 +279,7 @@ func main() {
 		DataApi: dataApi,
 	}
 
-	erxStatusQueue, err := common.NewQueue(awsAuth, aws.Regions[conf.AWSRegion], api.ERX_STATUS_QUEUE)
+	erxStatusQueue, err := common.NewQueue(awsAuth, aws.Regions[conf.AWSRegion], conf.ERxQueue)
 	if err != nil {
 		log.Fatal("Unable to get erx queue for sending prescriptions to: " + err.Error())
 	}
