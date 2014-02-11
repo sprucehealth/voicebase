@@ -43,7 +43,7 @@ func (p *DoctorPatientVisitReviewHandler) ServeHTTP(w http.ResponseWriter, r *ht
 
 	patientVisitId := requestData.PatientVisitId
 	treatmentPlanId := requestData.TreatmentPlanId
-	err = ensureTreatmentPlanOrPatientVisitIdPresent(d.DataApi, &treatmentPlanId, &patientVisitId)
+	err = ensureTreatmentPlanOrPatientVisitIdPresent(p.DataApi, &treatmentPlanId, &patientVisitId)
 	if err != nil {
 		WriteDeveloperError(w, http.StatusBadRequest, err.Error())
 		return

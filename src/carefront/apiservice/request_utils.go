@@ -44,16 +44,17 @@ func GetAuthTokenFromHeader(r *http.Request) (string, error) {
 	return parts[1], nil
 }
 
-func ensureTreatmentPlanOrPatientVisitIdPresent(DataApi api.DataAPI, treatmentPlanId, patientVisitId *int64) error {
-	if patientVisitId == 0 && treatmentPlanId == 0 {
+func ensureTreatmentPlanOrPatientVisitIdPresent(dataApi api.DataAPI, treatmentPlanId, patientVisitId *int64) error {
+	if *patientVisitId == 0 && *treatmentPlanId == 0 {
 		return errors.New("Either patientVisitId or treatmentPlanId should be specified")
 	}
 
-	if patientVisitId == 0 {
-		patientVisitId, err = t.DataApi.GetPatientVisitIdFromTreatmentPlanId(treatmentPlanId)
+	if *patientVisitId == 0 {
+		patientVisitIdFromTreatmentPlanId, err := dataApi.GetPatientVisitIdFromTreatmentPlanId(*treatmentPlanId)
 		if err != nil {
 			return errors.New("Unable to get patient visit id from treatmentPlanId: " + err.Error())
 		}
+		*patientVisitId = patientVisitIdFromTreatmentPlanId
 	}
 
 	return nil
