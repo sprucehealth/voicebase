@@ -24,16 +24,29 @@ type ERxAPI interface {
 	SearchForPharmacies(city, state, zipcode, name string, pharmacyTypes []string) ([]*pharmacySearch.PharmacyData, error)
 	GetPrescriptionStatus(prescriptionId int64) ([]*PrescriptionLog, error)
 	GetMedicationList(patientId int64) ([]*Medication, error)
-	GetTransmissionErrorDetails() error
+	GetTransmissionErrorDetails() ([]*Medication, error)
 }
 
 type Medication struct {
 	ErxMedicationId         int64
+	DoseSpotPrescriptionId  int64
 	PrescriptionStatus      string
 	DrugDBIds               map[string]string
 	OTC                     bool
-	DispenseUnitId          int
+	DispenseUnitId          int64
 	DispenseUnitDescription string
+	ErrorTimeStamp          time.Time
+	ErrorDetails            string
+	DisplayName             string
+	Strength                string
+	Refills                 int64
+	DaysSupply              int64
+	Dispense                string
+	Instructions            string
+	PharmacyId              int64
+	PharmacyNotes           string
+	NoSubstitutions         bool
+	RxReferenceNumber       string
 }
 
 type PrescriptionLog struct {

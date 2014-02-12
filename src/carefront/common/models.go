@@ -111,6 +111,7 @@ type Treatment struct {
 	PrescriptionId           int64                    `json:"-"`
 	ErxMedicationId          int64                    `json:"-"`
 	PrescriptionStatus       string                   `json:"erx_status"`
+	StatusDetails            string                   `json:"erx_status_details"`
 	TreatmentPlanId          int64                    `json:"treatment_plan_id,string,omitempty"`
 	PatientVisitId           int64                    `json:"patient_visit_id,string,omitempty"`
 	DrugDBIds                map[string]string        `json:"drug_db_ids,omitempty"`

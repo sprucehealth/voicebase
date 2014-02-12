@@ -100,7 +100,7 @@ func (d *DoctorSubmitPatientVisitReviewHandler) submitPatientVisitReview(w http.
 
 		// FIX: add fake pharmacy for now
 		patient.Pharmacy = &pharmacy.PharmacyData{}
-		patient.Pharmacy.Id = "47731"
+		patient.Pharmacy.Id = "39203"
 
 		treatments, err := d.DataApi.GetTreatmentsBasedOnTreatmentPlanId(requestData.PatientVisitId, treatmentPlanId)
 		if err != nil {

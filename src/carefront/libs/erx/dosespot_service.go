@@ -156,16 +156,16 @@ func (d *DoseSpotService) SearchForMedicationStrength(medicationName string) ([]
 func (d *DoseSpotService) SendMultiplePrescriptions(patient *common.Patient, treatments []*common.Treatment) ([]int64, error) {
 	sendPrescriptionsRequest := &sendMultiplePrescriptionsRequest{
 		SSO:       generateSingleSignOn(d.ClinicKey, d.UserId, d.ClinicId),
-		PatientId: int(patient.ERxPatientId),
+		PatientId: patient.ERxPatientId,
 	}
 
-	prescriptionIds := make([]int, 0)
+	prescriptionIds := make([]int64, 0)
 	prescriptionIdToTreatmentIdMapping := make(map[int64]int64)
 	for _, treatment := range treatments {
 		if treatment.PrescriptionId == 0 {
 			continue
 		}
-		prescriptionIds = append(prescriptionIds, int(treatment.PrescriptionId))
+		prescriptionIds = append(prescriptionIds, treatment.PrescriptionId)
 		prescriptionIdToTreatmentIdMapping[treatment.PrescriptionId] = treatment.Id
 	}
 
@@ -199,7 +199,7 @@ func (d *DoseSpotService) SendMultiplePrescriptions(patient *common.Patient, tre
 func (d *DoseSpotService) StartPrescribingPatient(currentPatient *common.Patient, treatments []*common.Treatment) error {
 
 	newPatient := &patient{
-		PatientId:        int(currentPatient.ERxPatientId),
+		PatientId:        currentPatient.ERxPatientId,
 		FirstName:        currentPatient.FirstName,
 		LastName:         currentPatient.LastName,
 		Address1:         currentPatient.PatientAddress.AddressLine1,
@@ -213,30 +213,31 @@ func (d *DoseSpotService) StartPrescribingPatient(currentPatient *common.Patient
 	}
 
 	if currentPatient.ERxPatientId != 0 {
-		newPatient.PatientId = int(currentPatient.ERxPatientId)
+		newPatient.PatientId = currentPatient.ERxPatientId
 	}
 
 	patientPreferredPharmacy := &patientPharmacySelection{}
 	patientPreferredPharmacy.IsPrimary = true
 
-	pharmacyId, _ := strconv.Atoi(currentPatient.Pharmacy.Id)
+	pharmacyId, _ := strconv.ParseInt(currentPatient.Pharmacy.Id, 0, 64)
 	patientPreferredPharmacy.PharmacyId = pharmacyId
 
 	prescriptions := make([]*prescription, 0)
 
 	for _, treatment := range treatments {
-		lexiDrugSynIdInt, _ := strconv.Atoi(treatment.DrugDBIds[LexiDrugSynId])
-		lexiGenProductIdInt, _ := strconv.Atoi(treatment.DrugDBIds[LexiGenProductId])
-		lexiSynonymTypeIdInt, _ := strconv.Atoi(treatment.DrugDBIds[LexiSynonymTypeId])
+		lexiDrugSynIdInt, _ := strconv.ParseInt(treatment.DrugDBIds[LexiDrugSynId], 0, 64)
+		lexiGenProductIdInt, _ := strconv.ParseInt(treatment.DrugDBIds[LexiGenProductId], 0, 64)
+		lexiSynonymTypeIdInt, _ := strconv.ParseInt(treatment.DrugDBIds[LexiSynonymTypeId], 0, 64)
 
+		daysSupply := nullInt64(treatment.DaysSupply)
 		prescriptionMedication := &medication{
-			DaysSupply:        int(treatment.DaysSupply),
+			DaysSupply:        daysSupply,
 			LexiDrugSynId:     lexiDrugSynIdInt,
 			LexiGenProductId:  lexiGenProductIdInt,
 			LexiSynonymTypeId: lexiSynonymTypeIdInt,
-			Refills:           int(treatment.NumberRefills),
+			Refills:           nullInt64(treatment.NumberRefills),
 			Dispense:          strconv.FormatInt(treatment.DispenseValue, 10),
-			DispenseUnitId:    int(treatment.DispenseUnitId),
+			DispenseUnitId:    treatment.DispenseUnitId,
 			Instructions:      treatment.PatientInstructions,
 			NoSubstitutions:   treatment.SubstitutionsAllowed,
 			PharmacyNotes:     treatment.PharmacyNotes,
@@ -275,13 +276,13 @@ func (d *DoseSpotService) StartPrescribingPatient(currentPatient *common.Patient
 	for _, patientUpdate := range response.PatientUpdates {
 		for _, medication := range patientUpdate.Medications {
 			for _, treatment := range treatments {
-				LexiDrugSynIdInt, _ := strconv.Atoi(treatment.DrugDBIds[LexiDrugSynId])
-				LexiGenProductIdInt, _ := strconv.Atoi(treatment.DrugDBIds[LexiGenProductId])
-				LexiSynonymTypeIdInt, _ := strconv.Atoi(treatment.DrugDBIds[LexiSynonymTypeId])
+				LexiDrugSynIdInt, _ := strconv.ParseInt(treatment.DrugDBIds[LexiDrugSynId], 0, 64)
+				LexiGenProductIdInt, _ := strconv.ParseInt(treatment.DrugDBIds[LexiGenProductId], 0, 64)
+				LexiSynonymTypeIdInt, _ := strconv.ParseInt(treatment.DrugDBIds[LexiSynonymTypeId], 0, 64)
 				if medication.LexiDrugSynId == LexiDrugSynIdInt &&
 					medication.LexiGenProductId == LexiGenProductIdInt &&
 					medication.LexiSynonymTypeId == LexiSynonymTypeIdInt {
-					treatment.PrescriptionId = int64(medication.DoseSpotPrescriptionId)
+					treatment.PrescriptionId = medication.DoseSpotPrescriptionId
 					break
 				}
 			}
@@ -310,9 +311,9 @@ func (d *DoseSpotService) SelectMedication(medicationName, medicationStrength st
 
 	medication = &Medication{}
 	medication.DrugDBIds = make(map[string]string)
-	medication.DrugDBIds[LexiGenProductId] = strconv.Itoa(selectResult.LexiGenProductId)
-	medication.DrugDBIds[LexiDrugSynId] = strconv.Itoa(selectResult.LexiDrugSynId)
-	medication.DrugDBIds[LexiSynonymTypeId] = strconv.Itoa(selectResult.LexiSynonymTypeId)
+	medication.DrugDBIds[LexiGenProductId] = strconv.FormatInt(selectResult.LexiGenProductId, 10)
+	medication.DrugDBIds[LexiDrugSynId] = strconv.FormatInt(selectResult.LexiDrugSynId, 10)
+	medication.DrugDBIds[LexiSynonymTypeId] = strconv.FormatInt(selectResult.LexiSynonymTypeId, 10)
 	medication.DispenseUnitId = selectResult.DispenseUnitId
 	medication.DispenseUnitDescription = selectResult.DispenseUnitDescription
 	medication.OTC = selectResult.OTC
@@ -422,7 +423,7 @@ func (d *DoseSpotService) GetMedicationList(PatientId int64) ([]*Medication, err
 	return medications, nil
 }
 
-func (d *DoseSpotService) GetTransmissionErrorDetails() error {
+func (d *DoseSpotService) GetTransmissionErrorDetails() ([]*Medication, error) {
 	request := &getTransmissionErrorDetailsRequest{
 		SSO: generateSingleSignOn(d.ClinicKey, d.UserId, d.ClinicId),
 	}
@@ -433,11 +434,37 @@ func (d *DoseSpotService) GetTransmissionErrorDetails() error {
 		d.apiRequests[getTransmissionErrorDetailsAction],
 		d.apiFailure[getTransmissionErrorDetailsAction])
 	if err != nil {
-		return err
+		return nil, err
 	}
 
-	for _, detailsItem := range response.TransmissionErrors {
-		fmt.Println(detailsItem.ErrorDetails)
+	medicationsWithErrors := make([]*Medication, 0)
+	for _, transmissionError := range response.TransmissionErrors {
+		medicationWithError := &Medication{
+			ErxMedicationId:        transmissionError.Medication.MedicationId,
+			DoseSpotPrescriptionId: transmissionError.Medication.DoseSpotPrescriptionId,
+			PrescriptionStatus:     transmissionError.Medication.PrescriptionStatus,
+			DrugDBIds: map[string]string{
+				LexiGenProductId:  strconv.FormatInt(transmissionError.Medication.LexiGenProductId, 10),
+				LexiSynonymTypeId: strconv.FormatInt(transmissionError.Medication.LexiSynonymTypeId, 10),
+				LexiDrugSynId:     strconv.FormatInt(transmissionError.Medication.LexiDrugSynId, 10),
+			},
+			DispenseUnitId:    transmissionError.Medication.DispenseUnitId,
+			ErrorTimeStamp:    transmissionError.ErrorDateTimeStamp.DateTime,
+			ErrorDetails:      transmissionError.ErrorDetails,
+			DisplayName:       transmissionError.Medication.DisplayName,
+			Strength:          transmissionError.Medication.Strength,
+			Refills:           transmissionError.Medication.Refills.Int64(),
+			DaysSupply:        int64(transmissionError.Medication.DaysSupply),
+			Dispense:          transmissionError.Medication.Dispense,
+			Instructions:      transmissionError.Medication.Instructions,
+			PharmacyId:        transmissionError.Medication.PharmacyId,
+			PharmacyNotes:     transmissionError.Medication.PharmacyNotes,
+			NoSubstitutions:   transmissionError.Medication.NoSubstitutions,
+			RxReferenceNumber: transmissionError.Medication.RxReferenceNumber,
+		}
+
+		medicationsWithErrors = append(medicationsWithErrors, medicationWithError)
 	}
-	return nil
+
+	return medicationsWithErrors, nil
 }

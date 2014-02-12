@@ -108,6 +108,7 @@ type PatientVisitAPI interface {
 	GetTreatmentBasedOnPrescriptionId(erxId int64) (*common.Treatment, error)
 	MarkTreatmentsAsPrescriptionsSent(treatments []*common.Treatment, doctorId, patientVisitId int64) error
 	AddErxStatusEvent(treatments []*common.Treatment, statusEvent string) error
+	AddErxErrorEventWithMessage(treatment *common.Treatment, statusEvent, errorDetails string, errorTimeStamp time.Time) error
 	GetPrescriptionStatusEventsForPatient(patientId int64) ([]*PrescriptionStatus, error)
 }
 

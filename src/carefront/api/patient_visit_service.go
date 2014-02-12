@@ -822,6 +822,27 @@ func (d *DataService) AddErxStatusEvent(treatments []*common.Treatment, statusEv
 	return tx.Commit()
 }
 
+func (d *DataService) AddErxErrorEventWithMessage(treatment *common.Treatment, statusEvent, errorDetails string, errorTimeStamp time.Time) error {
+	tx, err := d.DB.Begin()
+	if err != nil {
+		return err
+	}
+
+	_, err = tx.Exec(`update erx_status_events set status = ? where treatment_id = ? and status = ?`, status_inactive, treatment.Id, status_active)
+	if err != nil {
+		tx.Rollback()
+		return err
+	}
+
+	_, err = tx.Exec(`insert into erx_status_events (treatment_id, erx_status, event_details, creation_date, status) values (?,?,?,?,?)`, treatment.Id, statusEvent, errorDetails, errorTimeStamp, status_active)
+	if err != nil {
+		tx.Rollback()
+		return err
+	}
+
+	return tx.Commit()
+}
+
 func (d *DataService) GetPrescriptionStatusEventsForPatient(patientId int64) ([]*PrescriptionStatus, error) {
 	rows, err := d.DB.Query(`select erx_status_events.treatment_id, treatment.erx_id, erx_status_events.erx_status, erx_status_events.creation_date from treatment 
 								inner join treatment_plan on treatment_plan_id = treatment_plan.id 

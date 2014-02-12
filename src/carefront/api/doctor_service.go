@@ -643,7 +643,7 @@ func (d *DataService) GetCompletedPrescriptionsForDoctor(from, to time.Time, doc
 	rows, err := d.DB.Query(`select treatment.id, treatment.treatment_plan_id, patient_visit.patient_id, treatment_plan.patient_visit_id, treatment_plan.creation_date, treatment.drug_internal_name, treatment.dosage_strength, treatment.type,
 			treatment.dispense_value, treatment.dispense_unit_id, ltext, treatment.refills, treatment.substitutions_allowed, 
 			treatment.days_supply, treatment.pharmacy_notes, treatment.patient_instructions, treatment.creation_date, 
-			treatment.status, drug_name.name, drug_route.name, drug_form.name, erx_status_events.erx_status, treatment_plan.sent_date from treatment 
+			treatment.status, drug_name.name, drug_route.name, drug_form.name, erx_status_events.erx_status, erx_status_events.event_details, treatment_plan.sent_date from treatment 
 				inner join dispense_unit on treatment.dispense_unit_id = dispense_unit.id
 				inner join localized_text on localized_text.app_text_id = dispense_unit.dispense_unit_text_id
 				inner join treatment_plan on treatment_plan.id = treatment.treatment_plan_id
@@ -665,11 +665,11 @@ func (d *DataService) GetCompletedPrescriptionsForDoctor(from, to time.Time, doc
 		var drugInternalName, dosageStrength, treatmentType, dispenseUnitDescription, patientInstructions, status string
 		var creationDate, sentDate, treatmentPlanCreationDate time.Time
 		var substituionsAllowed bool
-		var erxStatus, pharmacyNotes, drugName, drugForm, drugRoute sql.NullString
+		var erxStatus, pharmacyNotes, drugName, drugForm, drugRoute, eventDetails sql.NullString
 
 		err = rows.Scan(&treatmentId, &treatmentPlanId, &patientId, &patientVisitId, &treatmentPlanCreationDate, &drugInternalName, &dosageStrength, &treatmentType,
 			&dispenseValue, &dispenseUnitId, &dispenseUnitDescription, &refills, &substituionsAllowed,
-			&daysSupply, &pharmacyNotes, &patientInstructions, &creationDate, &status, &drugName, &drugRoute, &drugForm, &erxStatus, &sentDate)
+			&daysSupply, &pharmacyNotes, &patientInstructions, &creationDate, &status, &drugName, &drugRoute, &drugForm, &erxStatus, &eventDetails, &sentDate)
 		if err != nil {
 			return nil, err
 		}
@@ -707,6 +707,7 @@ func (d *DataService) GetCompletedPrescriptionsForDoctor(from, to time.Time, doc
 			Status:                  status,
 			PatientInstructions:     patientInstructions,
 			PrescriptionStatus:      erxStatus.String,
+			StatusDetails:           eventDetails.String,
 		}
 
 		if pharmacyNotes.Valid {

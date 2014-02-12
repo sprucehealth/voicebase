@@ -132,31 +132,83 @@ func ConsumeMessageFromQueue(DataApi api.DataAPI, ERxApi erx.ERxAPI, ErxQueue *c
 		pendingTreatments := 0
 
 		// go through treatments to see if the status has been updated to anything beyond sending
+		failed := 0
 		for _, medication := range medications {
 			if latestPendingStatusPerPrescription[medication.ErxMedicationId] != nil {
 				switch medication.PrescriptionStatus {
 				case api.ERX_STATUS_SENDING:
 					// nothing to do
 					pendingTreatments++
-				case api.ERX_STATUS_SENT, api.ERX_STATUS_ERROR:
-					// add an event
+				case api.ERX_STATUS_ERROR:
 					treatment, err := DataApi.GetTreatmentBasedOnPrescriptionId(medication.ErxMedicationId)
 					if err != nil {
 						statFailure.Inc(1)
 						golog.Errorf("Unable to get treatment based on prescription id: %s", err.Error())
-						continue
+						failed++
+						break
 					}
+
+					// get the error details for this medication
+					medicationsWithErrors, err := ERxApi.GetTransmissionErrorDetails()
+					if err != nil {
+						statFailure.Inc(1)
+						golog.Errorf("Unable to get transmission error details: %s", err.Error())
+						failed++
+						break
+					}
+
+					errorDetailsFound := false
+					for _, medicationWithError := range medicationsWithErrors {
+						// because of the nature of how the dosespot api is designed, getMedicationList returns the prescriptionId as the medicationId
+						// and the getTransmissionErroDetails returns the prescriptionId as PrescriptionId
+						if medicationWithError.DoseSpotPrescriptionId == medication.ErxMedicationId {
+							errorDetailsFound = true
+							golog.Infof("error found. here are the details: %s", medicationWithError.ErrorDetails)
+							err = DataApi.AddErxErrorEventWithMessage(treatment, medication.PrescriptionStatus, medicationWithError.ErrorDetails, medicationWithError.ErrorTimeStamp)
+							if err != nil {
+								statFailure.Inc(1)
+								golog.Errorf("Unable to add error event for status: %s", err.Error())
+								failed++
+								break
+							}
+							break
+						}
+					}
+					if !errorDetailsFound {
+						golog.Infof("error not found.")
+
+						err = DataApi.AddErxStatusEvent([]*common.Treatment{treatment}, medication.PrescriptionStatus)
+						if err != nil {
+							statFailure.Inc(1)
+							golog.Errorf("Unable to add error event for status: %s", err.Error())
+							failed++
+							break
+						}
+					}
+
+				case api.ERX_STATUS_SENT:
+					treatment, err := DataApi.GetTreatmentBasedOnPrescriptionId(medication.ErxMedicationId)
+					if err != nil {
+						statFailure.Inc(1)
+						golog.Errorf("Unable to get treatment based on prescription id: %s", err.Error())
+						failed++
+						break
+					}
+
+					// add an event
 					err = DataApi.AddErxStatusEvent([]*common.Treatment{treatment}, medication.PrescriptionStatus)
 					if err != nil {
 						statFailure.Inc(1)
 						golog.Errorf("Unable to add status event for this treatment: %s", err.Error())
-						continue
+						failed++
+						break
 					}
+
 				}
 			}
 		}
 
-		if pendingTreatments == 0 {
+		if pendingTreatments == 0 && failed == 0 {
 			// delete message from queue because there are no more pending treatments for this patient
 			err = ErxQueue.QueueService.DeleteMessage(ErxQueue.QueueUrl, msg.ReceiptHandle)
 			if err != nil {
@@ -164,6 +216,7 @@ func ConsumeMessageFromQueue(DataApi api.DataAPI, ERxApi erx.ERxAPI, ErxQueue *c
 				golog.Errorf("Failed to delete message: %s", err.Error())
 			}
 		}
+
 	}
 	responseTime := time.Since(startTime).Nanoseconds() / 1e3
 	statProcessTime.Update(responseTime)

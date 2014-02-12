@@ -11,6 +11,37 @@ const (
 	LexiSynonymTypeId = "lexi_synonym_type_id"
 )
 
+type nullInt64 int64
+
+// need to unmarshal any integer elements that can possibly be returned as nil values
+// from dosespot, as indicated by the attribute xsi:nil being set to true.
+// I could be doing something incorrectly, but golang seems to not handle
+// empty elements for integer types well. Using this custom unmarshaller to
+// get around the problem
+func (n *nullInt64) UnmarshalXML(d *xml.Decoder, start xml.StartElement) error {
+	var num int64
+
+	// nothing to do if the value is indicated to be nil via the attribute
+	// form of element would be: <elementName xsi:nil="true" />
+	if len(start.Attr) > 0 {
+		if start.Attr[0].Name.Local == "nil" && start.Attr[0].Value == "true" {
+			*n = nullInt64(0)
+			// still decoding to consume the element in the xml document
+			d.DecodeElement(&num, &start)
+			return nil
+		}
+	}
+
+	err := d.DecodeElement(&num, &start)
+	*n = nullInt64(num)
+
+	return err
+}
+
+func (n *nullInt64) Int64() int64 {
+	return int64(*n)
+}
+
 type singleSignOn struct {
 	ClinicId     string `xml:"SingleSignOnClinicId"`
 	Code         string `xml:"SingleSignOnCode"`
@@ -40,7 +71,7 @@ type selfReportedMedicationSearchRequest struct {
 type selfReportedMedicationSearchResultItem struct {
 	DisplayName       string
 	LexiCompDrugId    string
-	LexiCompSynonymId int
+	LexiCompSynonymId int64
 }
 
 type selfReportedMedicationSearchResponse struct {
@@ -76,12 +107,12 @@ type medicationSelectResponse struct {
 	DoseFormDescription     string `xml:"DoseFormDescription"`
 	RouteDescription        string `xml:"RouteDescription"`
 	StrengthDescription     string `xml:"StrengthDescription"`
-	DispenseUnitId          int    `xml:"DispenseUnitId"`
+	DispenseUnitId          int64  `xml:"DispenseUnitId"`
 	DispenseUnitDescription string `xml:"DispenseUnitDescription"`
 	GenericProductName      string `xml:"GenericProductName"`
-	LexiGenProductId        int    `xml:"LexiGenProductId"`
-	LexiDrugSynId           int    `xml:"LexiDrugSynId"`
-	LexiSynonymTypeId       int    `xml:"LexiSynonymTypeId"`
+	LexiGenProductId        int64  `xml:"LexiGenProductId"`
+	LexiDrugSynId           int64  `xml:"LexiDrugSynId"`
+	LexiSynonymTypeId       int64  `xml:"LexiSynonymTypeId"`
 	MatchedDrugName         string `xml:"MatchedDrugName"`
 	RXCUI                   string `xml:"RXCUI"`
 	TermType                string `xml:"TermType"`
@@ -115,23 +146,23 @@ type prescription struct {
 }
 
 type medication struct {
-	DisplayName            string `xml:"DisplayName"`
-	Strength               string `xml:"Strength"`
-	DoseSpotPrescriptionId int    `xml:"PrescriptionId"`
-	LexiGenProductId       int    `xml:"LexiGenProductId"`
-	LexiDrugSynId          int    `xml:"LexiDrugSynId"`
-	LexiSynonymTypeId      int    `xml:"LexiSynonymTypeId"`
-	Refills                int    `xml:"Refills"`
-	DaysSupply             int    `xml:"DaysSupply"`
-	Dispense               string `xml:"Dispense"`
-	DispenseUnitId         int    `xml:"DispenseUnitId"`
-	Instructions           string `xml:"Instructions"`
-	PharmacyId             int    `xml:"PharmacyId"`
-	PharmacyNotes          string `xml:"PharmacyNotes"`
-	NoSubstitutions        bool   `xml:"NoSubstitutions"`
-	RxReferenceNumber      string `xml:"RxReferenceNumber"`
-	PrescriptionStatus     string `xml:"PrescriptionStatus,omitempty"`
-	MedicationId           int64  `xml:"MedicationId,omitempty"`
+	DisplayName            string    `xml:"DisplayName"`
+	Strength               string    `xml:"Strength"`
+	DoseSpotPrescriptionId int64     `xml:"PrescriptionId"`
+	LexiGenProductId       int64     `xml:"LexiGenProductId"`
+	LexiDrugSynId          int64     `xml:"LexiDrugSynId"`
+	LexiSynonymTypeId      int64     `xml:"LexiSynonymTypeId"`
+	Refills                nullInt64 `xml:"Refills"`
+	DaysSupply             nullInt64 `xml:"DaysSupply,omitempty"`
+	Dispense               string    `xml:"Dispense"`
+	DispenseUnitId         int64     `xml:"DispenseUnitId"`
+	Instructions           string    `xml:"Instructions"`
+	PharmacyId             int64     `xml:"PharmacyId"`
+	PharmacyNotes          string    `xml:"PharmacyNotes"`
+	NoSubstitutions        bool      `xml:"NoSubstitutions"`
+	RxReferenceNumber      string    `xml:"RxReferenceNumber"`
+	PrescriptionStatus     string    `xml:"PrescriptionStatus,omitempty"`
+	MedicationId           int64     `xml:"MedicationId,omitempty"`
 }
 
 // Need to treat the date object for date of birth as a special case
@@ -142,7 +173,7 @@ type specialDateTime struct {
 	DateTimeElementName string
 }
 
-func (c specialDateTime) UnmarshalXML(d *xml.Decoder, start xml.StartElement) error {
+func (c *specialDateTime) UnmarshalXML(d *xml.Decoder, start xml.StartElement) error {
 	var dateStr string
 	err := d.DecodeElement(&dateStr, &start)
 	if err != nil {
@@ -152,14 +183,14 @@ func (c specialDateTime) UnmarshalXML(d *xml.Decoder, start xml.StartElement) er
 	return err
 }
 
-func (c specialDateTime) MarshalXML(e *xml.Encoder, start xml.StartElement) error {
+func (c *specialDateTime) MarshalXML(e *xml.Encoder, start xml.StartElement) error {
 	start.Name.Local = c.DateTimeElementName
 	err := e.EncodeElement(c.DateTime, start)
 	return err
 }
 
 type patient struct {
-	PatientId        int             `xml:"PatientId,omitempty"`
+	PatientId        int64           `xml:"PatientId,omitempty"`
 	Prefix           string          `xml:"Prefix"`
 	FirstName        string          `xml:"FirstName"`
 	MiddleName       string          `xml:"MiddleName"`
@@ -192,15 +223,15 @@ type pharmacy struct {
 }
 
 type patientPharmacySelection struct {
-	PharmacyId int  `xml:"PharmacyId"`
-	IsPrimary  bool `xml:"IsPrimary"`
+	PharmacyId int64 `xml:"PharmacyId"`
+	IsPrimary  bool  `xml:"IsPrimary"`
 }
 
 type sendMultiplePrescriptionsRequest struct {
 	XMLName         xml.Name     `xml:"http://www.dosespot.com/API/11/ SendMultiplePrescriptionsRequest"`
 	SSO             singleSignOn `xml:"SingleSignOn"`
-	PatientId       int          `xml:"PatientId"`
-	PrescriptionIds []int        `xml:"PrescriptionIDs>int"`
+	PatientId       int64        `xml:"PatientId"`
+	PrescriptionIds []int64      `xml:"PrescriptionIDs>int"`
 }
 
 type sendMultiplePrescriptionsResponse struct {
@@ -211,7 +242,7 @@ type sendMultiplePrescriptionsResponse struct {
 }
 
 type sendPrescriptionResult struct {
-	PrescriptionId int `xml:"PrescriptionID"`
+	PrescriptionId int64 `xml:"PrescriptionID"`
 	Result
 }
 
@@ -251,8 +282,10 @@ type getTransmissionErrorDetailsRequest struct {
 }
 
 type transmissionErrorDetailsItem struct {
-	Medication   *medication `xml:"Medication"`
-	ErrorDetails string      `xml:"ErrorDetails"`
+	Medication                  *medication      `xml:"Medication"`
+	ErrorDateTimeStamp          *specialDateTime `xml:"ErrorDateTimeStamp"`
+	ErrorDetails                string           `xml:"ErrorDetails"`
+	RelatedRxRequestQueueItemID int64            `xml:"RelatedRxRequestQueueItemID"`
 }
 
 type getTransmissionErrorDetailsResponse struct {
