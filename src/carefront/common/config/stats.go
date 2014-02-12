@@ -45,6 +45,7 @@ func (s *BaseConfig) StartReporters(statsRegistry metrics.Registry) {
 	}
 
 	statsRegistry.Add("runtime", metrics.RuntimeMetrics)
+
 	if s.Stats.GraphiteAddr != "" {
 		statsReporter := reporter.NewGraphiteReporter(
 			statsRegistry, time.Minute, s.Stats.GraphiteAddr, s.Stats.Source,

@@ -36,7 +36,7 @@ type DataService struct {
 
 func infoIdsFromMap(m map[int64]*common.AnswerIntake) []int64 {
 	infoIds := make([]int64, 0)
-	for key, _ := range m {
+	for key := range m {
 		infoIds = append(infoIds, key)
 	}
 	return infoIds
@@ -44,7 +44,7 @@ func infoIdsFromMap(m map[int64]*common.AnswerIntake) []int64 {
 
 func createKeysArrayFromMap(m map[int64]bool) []int64 {
 	keys := make([]int64, 0)
-	for key, _ := range m {
+	for key := range m {
 		keys = append(keys, key)
 	}
 	return keys

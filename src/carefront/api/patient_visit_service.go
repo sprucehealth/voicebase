@@ -687,9 +687,8 @@ func (d *DataService) GetTreatmentPlanForPatientVisit(patientVisitId int64) (*co
 	if err != nil {
 		if err == sql.ErrNoRows {
 			return nil, nil
-		} else {
-			return nil, err
 		}
+		return nil, err
 	}
 
 	treatmentPlan.Id = treatmentPlanId
@@ -711,9 +710,8 @@ func (d *DataService) GetTreatmentPlanForPatientVisit(patientVisitId int64) (*co
 	if err != nil {
 		if err == sql.ErrNoRows {
 			return &treatmentPlan, nil
-		} else {
-			return nil, err
 		}
+		return nil, err
 	}
 
 	defer rows.Close()
