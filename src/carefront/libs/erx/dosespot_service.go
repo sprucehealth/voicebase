@@ -33,19 +33,21 @@ const (
 	getPrescriptionLogDetailsAction
 	getMedicationListAction
 	getTransmissionErrorDetailsAction
+	getRefillRequestsTransmissionsErrorsAction
 )
 
 var DoseSpotApiActions = map[DoseSpotApiId]string{
-	medicationQuickSearchAction:        "MedicationQuickSearchMessage",
-	selfReportedMedicationSearchAction: "SelfReportedMedicationSearch",
-	medicationStrengthSearchAction:     "MedicationStrengthSearchMessage",
-	medicationSelectAction:             "MedicationSelectMessage",
-	startPrescribingPatientAction:      "PatientStartPrescribingMessage",
-	sendMultiplPrescriptionsAction:     "SendMultiplePrescriptions",
-	searchPharmaciesAction:             "PharmacySearchMessageDetailed",
-	getPrescriptionLogDetailsAction:    "GetPrescriptionLogDetails",
-	getMedicationListAction:            "GetMedicationList",
-	getTransmissionErrorDetailsAction:  "GetTransmissionErrorsDetails",
+	medicationQuickSearchAction:                "MedicationQuickSearchMessage",
+	selfReportedMedicationSearchAction:         "SelfReportedMedicationSearch",
+	medicationStrengthSearchAction:             "MedicationStrengthSearchMessage",
+	medicationSelectAction:                     "MedicationSelectMessage",
+	startPrescribingPatientAction:              "PatientStartPrescribingMessage",
+	sendMultiplPrescriptionsAction:             "SendMultiplePrescriptions",
+	searchPharmaciesAction:                     "PharmacySearchMessageDetailed",
+	getPrescriptionLogDetailsAction:            "GetPrescriptionLogDetails",
+	getMedicationListAction:                    "GetMedicationList",
+	getTransmissionErrorDetailsAction:          "GetTransmissionErrorsDetails",
+	getRefillRequestsTransmissionsErrorsAction: "GetRefillRequestsTransmissionErrors",
 }
 
 const (
@@ -467,4 +469,31 @@ func (d *DoseSpotService) GetTransmissionErrorDetails() ([]*Medication, error) {
 	}
 
 	return medicationsWithErrors, nil
+}
+
+func (d *DoseSpotService) GetTransmissionErrorRefillRequestsCount() (refillRequests int64, transactionErrors int64, err error) {
+	clinicianId, _ := strconv.ParseInt(d.UserId, 0, 64)
+	request := &getRefillRequestsTransmissionErrorsMessageRequest{
+		SSO:         generateSingleSignOn(d.ClinicKey, d.UserId, d.ClinicId),
+		ClinicianId: clinicianId,
+	}
+
+	response := &getRefillRequestsTransmissionErrorsResult{}
+	err = getDoseSpotClient().makeSoapRequest(DoseSpotApiActions[getRefillRequestsTransmissionsErrorsAction],
+		request, response,
+		d.apiLatencies[getRefillRequestsTransmissionsErrorsAction],
+		d.apiRequests[getRefillRequestsTransmissionsErrorsAction],
+		d.apiRequests[getRefillRequestsTransmissionsErrorsAction])
+
+	if err != nil {
+		return
+	}
+
+	if len(response.RefillRequestsTransmissionErrors) == 0 {
+		return
+	}
+
+	refillRequests = response.RefillRequestsTransmissionErrors[0].RefillRequestsCount
+	transactionErrors = response.RefillRequestsTransmissionErrors[0].TransactionErrorsCount
+	return
 }

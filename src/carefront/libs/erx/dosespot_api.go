@@ -295,6 +295,24 @@ type getTransmissionErrorDetailsResponse struct {
 	TransmissionErrors []*transmissionErrorDetailsItem `xml:"TransmissionErrors>TransmissionErrorDetails"`
 }
 
+type getRefillRequestsTransmissionErrorsMessageRequest struct {
+	XMLName     xml.Name     `xml:"http://www.dosespot.com/API/11/ GetRefillRequestsTransmissionErrorsMessageRequest"`
+	SSO         singleSignOn `xml:"SingleSignOn"`
+	ClinicianId int64        `xml:"ClinicianId"`
+}
+
+type getRefillRequestsTransmissionErrorsResult struct {
+	XMLName                          xml.Name                                    `xml:"http://www.dosespot.com/API/11/ GetRefillRequestsTransmissionErrorsResult"`
+	SSO                              singleSignOn                                `xml:"SingleSignOn"`
+	RefillRequestsTransmissionErrors []*refillRequestTransmissionErrorResultItem `xml:"RefillRequestsTransmissionErrors>RefillRequestsTransmissionError"`
+}
+
+type refillRequestTransmissionErrorResultItem struct {
+	ClinicianId            int64 `xml:"ClinicianId"`
+	RefillRequestsCount    int64 `xml:"RefillRequestsCount"`
+	TransactionErrorsCount int64 `xml:"TransactionErrorsCount"`
+}
+
 type prescriptionLogInfo struct {
 	Status         string           `xml:"Status"`
 	DateTimeStamp  *specialDateTime `xml:"DateTimeStamp"`
