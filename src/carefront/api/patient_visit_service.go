@@ -725,7 +725,7 @@ func (d *DataService) GetTreatmentsBasedOnTreatmentPlanId(patientVisitId, treatm
 				left outer join drug_name on drug_name_id = drug_name.id
 				left outer join drug_route on drug_route_id = drug_route.id
 				left outer join drug_form on drug_form_id = drug_form.id
-				where (treatment_plan.patient_visit_id = ? or treatment_plan_id=?) anppatd treatment.status=? and localized_text.language_id = ?`, patientVisitId, treatmentPlanId, status_created, EN_LANGUAGE_ID)
+				where (treatment_plan.patient_visit_id = ? or treatment_plan_id=?) and treatment.status=? and localized_text.language_id = ?`, patientVisitId, treatmentPlanId, status_created, EN_LANGUAGE_ID)
 
 	if err != nil {
 		return nil, err
