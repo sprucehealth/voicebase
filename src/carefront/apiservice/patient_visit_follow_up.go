@@ -45,7 +45,7 @@ func (p *PatientVisitFollowUpHandler) getFollowupForPatientVisit(w http.Response
 
 	patientVisitId := requestData.PatientVisitId
 	treatmentPlanId := requestData.TreatmentPlanId
-	err = ensureTreatmentPlanOrPatientVisitIdPresent(p.DataApi, &treatmentPlanId, &patientVisitId)
+	err = ensureTreatmentPlanOrPatientVisitIdPresent(p.DataApi, treatmentPlanId, &patientVisitId)
 	if err != nil {
 		WriteDeveloperError(w, http.StatusBadRequest, err.Error())
 		return

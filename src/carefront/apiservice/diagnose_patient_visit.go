@@ -72,7 +72,7 @@ func (d *DiagnosePatientHandler) getDiagnosis(w http.ResponseWriter, r *http.Req
 
 	patientVisitId := requestData.PatientVisitId
 	treatmentPlanId := requestData.TreatmentPlanId
-	err = ensureTreatmentPlanOrPatientVisitIdPresent(d.DataApi, &treatmentPlanId, &patientVisitId)
+	err = ensureTreatmentPlanOrPatientVisitIdPresent(d.DataApi, treatmentPlanId, &patientVisitId)
 	if err != nil {
 		WriteDeveloperError(w, http.StatusBadRequest, err.Error())
 		return

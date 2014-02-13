@@ -56,7 +56,7 @@ func (t *TreatmentsHandler) getTreatments(w http.ResponseWriter, r *http.Request
 
 	patientVisitId := requestData.PatientVisitId
 	treatmentPlanId := requestData.TreatmentPlanId
-	err = ensureTreatmentPlanOrPatientVisitIdPresent(t.DataApi, &treatmentPlanId, &patientVisitId)
+	err = ensureTreatmentPlanOrPatientVisitIdPresent(t.DataApi, treatmentPlanId, &patientVisitId)
 	if err != nil {
 		WriteDeveloperError(w, http.StatusBadRequest, err.Error())
 		return
