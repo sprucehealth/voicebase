@@ -414,38 +414,21 @@ func (d *DataService) getPatientBasedOnQuery(queryStr string, queryParams ...int
 		}
 
 		patient := &common.Patient{
-			PatientId: patientId,
-			FirstName: firstName,
-			LastName:  lastName,
-			Status:    status,
-			Gender:    gender,
-			AccountId: accountId,
+			PatientId:    patientId,
+			FirstName:    firstName,
+			LastName:     lastName,
+			Status:       status,
+			Gender:       gender,
+			AccountId:    accountId,
+			ERxPatientId: erxPatientId.Int64,
+			Phone:        phone.String,
+			PhoneType:    phoneType.String,
+			Dob:          dob.Time,
+			ZipCode:      zipCode.String,
+			City:         city.String,
+			State:        state.String,
 		}
 
-		if erxPatientId.Valid {
-			patient.ERxPatientId = erxPatientId.Int64
-		}
-
-		if phone.Valid {
-			patient.Phone = phone.String
-		}
-
-		if phoneType.Valid {
-			patient.PhoneType = phoneType.String
-		}
-
-		if dob.Valid {
-			patient.Dob = dob.Time
-		}
-		if zipCode.Valid {
-			patient.ZipCode = zipCode.String
-		}
-		if city.Valid {
-			patient.City = city.String
-		}
-		if state.Valid {
-			patient.State = state.String
-		}
 		patients = append(patients, patient)
 	}
 
