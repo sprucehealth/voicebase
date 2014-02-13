@@ -65,13 +65,24 @@ func (d *DoctorQueueHandler) ServeHTTP(w http.ResponseWriter, r *http.Request) {
 
 func (d *DoctorQueueHandler) convertDoctorQueueIntoDisplayQueue(pendingItems, completedItems []*api.DoctorQueueItem) (doctorDisplayFeedTabs *DisplayFeedTabs, err error) {
 	doctorDisplayFeedTabs = &DisplayFeedTabs{}
-	pendingOrOngoingDisplayFeed := &DisplayFeed{}
-	pendingOrOngoingDisplayFeed.Title = "Pending"
-	completedDisplayFeed := &DisplayFeed{}
-	completedDisplayFeed.Title = "Completed"
-	doctorDisplayFeedTabs.Tabs = []*DisplayFeed{pendingOrOngoingDisplayFeed, completedDisplayFeed}
+
+	var pendingOrOngoingDisplayFeed, completedDisplayFeed *DisplayFeed
+	doctorDisplayFeedTabs.Tabs = make([]*DisplayFeed, 0)
+
+	if pendingItems != nil {
+		pendingOrOngoingDisplayFeed = &DisplayFeed{}
+		pendingOrOngoingDisplayFeed.Title = "Pending"
+		doctorDisplayFeedTabs.Tabs = append(doctorDisplayFeedTabs.Tabs, pendingOrOngoingDisplayFeed)
+	}
+
+	if completedItems != nil {
+		completedDisplayFeed = &DisplayFeed{}
+		completedDisplayFeed.Title = "Completed"
+		doctorDisplayFeedTabs.Tabs = append(doctorDisplayFeedTabs.Tabs, completedDisplayFeed)
+	}
 
 	if len(pendingItems) > 0 {
+
 		// put the first item in the queue into the first section of the display feed
 		upcomingVisitSection := &DisplayFeedSection{}
 		upcomingVisitSection.Title = "Next Visit"
@@ -100,6 +111,7 @@ func (d *DoctorQueueHandler) convertDoctorQueueIntoDisplayQueue(pendingItems, co
 	}
 
 	if len(completedItems) > 0 {
+
 		// cluster feed items based on day
 		displaySections := make([]*DisplayFeedSection, 0)
 		currentDisplaySection := &DisplayFeedSection{}
