@@ -163,7 +163,6 @@ func ConsumeMessageFromQueue(DataApi api.DataAPI, ERxApi erx.ERxAPI, ErxQueue *c
 						// and the getTransmissionErroDetails returns the prescriptionId as PrescriptionId
 						if medication.PrescriptionStatus == prescriptionLog.PrescriptionStatus {
 							errorDetailsFound = true
-							golog.Infof("error found. here are the details: %s", prescriptionLog.AdditionalInfo)
 							err = DataApi.AddErxErrorEventWithMessage(treatment, medication.PrescriptionStatus, prescriptionLog.AdditionalInfo, prescriptionLog.LogTimeStamp)
 							if err != nil {
 								statFailure.Inc(1)
@@ -175,7 +174,6 @@ func ConsumeMessageFromQueue(DataApi api.DataAPI, ERxApi erx.ERxAPI, ErxQueue *c
 						}
 					}
 					if !errorDetailsFound {
-						golog.Infof("error not found.")
 
 						err = DataApi.AddErxStatusEvent([]*common.Treatment{treatment}, medication.PrescriptionStatus)
 						if err != nil {

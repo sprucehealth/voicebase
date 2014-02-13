@@ -2,6 +2,7 @@ package api
 
 import (
 	"carefront/common"
+	pharmacyService "carefront/libs/pharmacy"
 	"database/sql"
 	"fmt"
 	"github.com/go-sql-driver/mysql"
@@ -787,7 +788,7 @@ func (d *DataService) GetTreatmentBasedOnPrescriptionId(erxId int64) (*common.Tr
 	return treatments[0], nil
 }
 
-func (d *DataService) MarkTreatmentsAsPrescriptionsSent(treatments []*common.Treatment, DoctorId, PatientVisitId int64) error {
+func (d *DataService) MarkTreatmentsAsPrescriptionsSent(treatments []*common.Treatment, pharmacySentTo *pharmacyService.PharmacyData, doctorId, patientVisitId int64) error {
 	tx, err := d.DB.Begin()
 	if err != nil {
 		return err
@@ -795,7 +796,7 @@ func (d *DataService) MarkTreatmentsAsPrescriptionsSent(treatments []*common.Tre
 
 	for _, treatment := range treatments {
 		if treatment.PrescriptionId != 0 {
-			_, err = tx.Exec(`update treatment set erx_id = ?, erx_sent_date=now() where id = ? and treatment_plan_id = ?`, treatment.PrescriptionId, treatment.Id, treatment.TreatmentPlanId)
+			_, err = tx.Exec(`update treatment set erx_id = ?, pharmacy_id = ?, erx_sent_date=now() where id = ? and treatment_plan_id = ?`, treatment.PrescriptionId, pharmacySentTo.LocalId, treatment.Id, treatment.TreatmentPlanId)
 			if err != nil {
 				tx.Rollback()
 				return err

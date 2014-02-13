@@ -98,9 +98,23 @@ func (d *DoctorSubmitPatientVisitReviewHandler) submitPatientVisitReview(w http.
 			ZipCode:      "94103",
 		}
 
+		pharmacySelection, err := d.DataApi.GetPatientPharmacySelection(patient.PatientId)
+		if err != nil {
+			WriteDeveloperError(w, http.StatusInternalServerError, "Unable to get pharmacy selection for patient: "+err.Error())
+			return
+		}
+		// FIX: Undo this when we are using surescripts as our backing database for pharmacies
+		// patient.pharmacy = pharmacySelection
+
 		// FIX: add fake pharmacy for now
-		patient.Pharmacy = &pharmacy.PharmacyData{}
-		patient.Pharmacy.Id = "39203"
+		patient.Pharmacy = &pharmacy.PharmacyData{
+			Id:      "39203",
+			Source:  pharmacy.PHARMACY_SOURCE_SURESCRIPTS,
+			Address: "123 TEST TEST",
+			City:    "San Francisco",
+			State:   "CA",
+			Postal:  "94115",
+		}
 
 		treatments, err := d.DataApi.GetTreatmentsBasedOnTreatmentPlanId(requestData.PatientVisitId, treatmentPlanId)
 		if err != nil {
@@ -123,7 +137,7 @@ func (d *DoctorSubmitPatientVisitReviewHandler) submitPatientVisitReview(w http.
 			}
 
 			// Save prescription ids for drugs to database
-			err = d.DataApi.MarkTreatmentsAsPrescriptionsSent(treatments, doctorId, requestData.PatientVisitId)
+			err = d.DataApi.MarkTreatmentsAsPrescriptionsSent(treatments, pharmacySelection, doctorId, requestData.PatientVisitId)
 			if err != nil {
 				WriteDeveloperError(w, http.StatusInternalServerError, "Unable to save prescription ids for treatments: "+err.Error())
 				return

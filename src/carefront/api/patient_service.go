@@ -291,19 +291,43 @@ func (d *DataService) UpdatePatientPharmacy(patientId int64, pharmacyDetails *ph
 		return err
 	}
 
-	_, err = tx.Exec(`insert into patient_pharmacy_selection (patient_id, pharmacy_id, source, name, address, city, state, zip_code, phone,lat,lng, status) values (?,?,?,?,?,?,?,?,?,?,?,?)`, patientId, pharmacyDetails.Id, pharmacyDetails.Source, pharmacyDetails.Name, pharmacyDetails.Address, pharmacyDetails.City, pharmacyDetails.State, pharmacyDetails.Postal, pharmacyDetails.Phone, pharmacyDetails.Latitude, pharmacyDetails.Longitude, status_active)
+	// lookup pharmacy by its id to see if it already exists in the database
+	var existingPharmacyId int64
+	err = tx.QueryRow(`select id from pharmacy_selection where pharmacy_id = ?`, pharmacyDetails.Id).Scan(&existingPharmacyId)
+	if err != nil && err != sql.ErrNoRows {
+		tx.Rollback()
+		return err
+	}
+
+	if existingPharmacyId == 0 {
+		lastId, err := tx.Exec(`insert into pharmacy_selection (pharmacy_id, source, address_line_1, city, state, zip_code, phone, name) values (?,?,?,?,?,?,?,?) `,
+			pharmacyDetails.Id, pharmacyDetails.Source, pharmacyDetails.Address, pharmacyDetails.City, pharmacyDetails.State, pharmacyDetails.Postal, pharmacyDetails.Phone, pharmacyDetails.Name)
+		if err != nil {
+			tx.Rollback()
+			return err
+		}
+
+		existingPharmacyId, err = lastId.LastInsertId()
+		if err != nil {
+			tx.Rollback()
+			return err
+		}
+	}
+
+	_, err = tx.Exec(`insert into patient_pharmacy_selection (patient_id, pharmacy_selection_id, status) values (?,?,?)`, patientId, existingPharmacyId, status_active)
 	if err != nil {
 		tx.Rollback()
 		return err
 	}
 
-	tx.Commit()
-	return nil
+	return tx.Commit()
 }
 
 func (d *DataService) GetPatientPharmacySelection(patientId int64) (pharmacySelection *pharmacy.PharmacyData, err error) {
-	rows, err := d.DB.Query(`select patient_id, pharmacy_id, source, name, address, city, state, zip_code, phone,lat,lng 
-		from patient_pharmacy_selection where patient_id = ? and status=?`, patientId, status_active)
+	rows, err := d.DB.Query(`select pharmacy_selection.id, patient_id, pharmacy_selection.pharmacy_id, source, name, address_line_1, city, state, zip_code, phone,lat,lng 
+		from patient_pharmacy_selection 
+			inner join pharmacy_selection on pharmacy_selection.id = pharmacy_selection_id 
+				where patient_id = ? and status=?`, patientId, status_active)
 	if err != nil {
 		return nil, err
 	}
@@ -321,8 +345,9 @@ func (d *DataService) GetPharmacySelectionForPatients(patientIds []int64) ([]*ph
 		return nil, nil
 	}
 
-	rows, err := d.DB.Query(fmt.Sprintf(`select patient_id,pharmacy_id, source, name, address, city, state, zip_code, phone,lat,lng 
-			from patient_pharmacy_selection where patient_id in (%s) and status=?`, enumerateItemsIntoString(patientIds)), status_active)
+	rows, err := d.DB.Query(fmt.Sprintf(`select pharmacy_selection.id, patient_id,  pharmacy_selection.pharmacy_id, source, name, address_line_1, city, state, zip_code, phone,lat,lng 
+			from patient_pharmacy_selection 
+			inner join pharmacy_selection on pharmacy_selection.id = pharmacy_selection_id where patient_id in (%s) and status=?`, enumerateItemsIntoString(patientIds)), status_active)
 	if err != nil {
 		return nil, err
 	}
@@ -341,14 +366,15 @@ func (d *DataService) GetPharmacySelectionForPatients(patientIds []int64) ([]*ph
 }
 
 func getPharmacyFromCurrentRow(rows *sql.Rows) (*pharmacy.PharmacyData, error) {
-	var patientId int64
+	var localId, patientId int64
 	var id, sourceType, name, address, phone, city, state, zipCode, lat, lng sql.NullString
-	err := rows.Scan(&patientId, &id, &sourceType, &name, &address, &city, &state, &zipCode, &phone, &lat, &lng)
+	err := rows.Scan(&localId, &patientId, &id, &sourceType, &name, &address, &city, &state, &zipCode, &phone, &lat, &lng)
 	if err != nil {
 		return nil, err
 	}
 
 	pharmacySelection := &pharmacy.PharmacyData{
+		LocalId:   localId,
 		PatientId: patientId,
 		Id:        id.String,
 		Source:    sourceType.String,
