@@ -71,3 +71,7 @@ func (s *StubErxService) GetTransmissionErrorDetails() ([]*Medication, error) {
 func (s *StubErxService) GetTransmissionErrorRefillRequestsCount() (refillRequests int64, transactionErrors int64, err error) {
 	return
 }
+
+func (s *StubErxService) IgnoreAlert(prescriptionId int64) error {
+	return nil
+}
