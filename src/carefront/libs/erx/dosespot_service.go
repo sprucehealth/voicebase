@@ -223,7 +223,11 @@ func (d *DoseSpotService) StartPrescribingPatient(currentPatient *common.Patient
 	patientPreferredPharmacy := &patientPharmacySelection{}
 	patientPreferredPharmacy.IsPrimary = true
 
-	pharmacyId, _ := strconv.ParseInt(currentPatient.Pharmacy.Id, 0, 64)
+	pharmacyId, err := strconv.ParseInt(currentPatient.Pharmacy.Id, 0, 64)
+	if err != nil {
+		return fmt.Errorf("Unable to parse the pharmacy id: %s", err.Error())
+	}
+
 	patientPreferredPharmacy.PharmacyId = pharmacyId
 
 	prescriptions := make([]*prescription, 0)
@@ -260,7 +264,7 @@ func (d *DoseSpotService) StartPrescribingPatient(currentPatient *common.Patient
 	}
 
 	response := &patientStartPrescribingResponse{}
-	err := getDoseSpotClient().makeSoapRequest(DoseSpotApiActions[startPrescribingPatientAction],
+	err = getDoseSpotClient().makeSoapRequest(DoseSpotApiActions[startPrescribingPatientAction],
 		startPrescribingRequest, response,
 		d.apiLatencies[startPrescribingPatientAction],
 		d.apiRequests[startPrescribingPatientAction],
@@ -476,7 +480,10 @@ func (d *DoseSpotService) GetTransmissionErrorDetails() ([]*Medication, error) {
 }
 
 func (d *DoseSpotService) GetTransmissionErrorRefillRequestsCount() (refillRequests int64, transactionErrors int64, err error) {
-	clinicianId, _ := strconv.ParseInt(d.UserId, 0, 64)
+	clinicianId, err := strconv.ParseInt(d.UserId, 0, 64)
+	if err != nil {
+		return 0, 0, fmt.Errorf("Unable to parse clinicianId: %s", err.Error())
+	}
 	request := &getRefillRequestsTransmissionErrorsMessageRequest{
 		SSO:         generateSingleSignOn(d.ClinicKey, d.UserId, d.ClinicId),
 		ClinicianId: clinicianId,
