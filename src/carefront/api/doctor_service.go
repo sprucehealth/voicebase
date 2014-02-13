@@ -748,10 +748,7 @@ func (d *DataService) GetCompletedPrescriptionsForDoctor(from, to time.Time, doc
 			PrescriptionStatus:      erxStatus.String,
 			StatusDetails:           eventDetails.String,
 			PharmacyNotes:           pharmacyNotes.String,
-		}
-
-		if treatmentType == treatment_otc {
-			treatment.OTC = true
+			OTC:                     (treatmentType == treatment_otc),
 		}
 
 		err = d.fillInDrugDBIdsForTreatment(treatment)
