@@ -889,8 +889,9 @@ func (d *DataService) GetPrescriptionStatusEventsForPatient(patientId int64) ([]
 }
 
 func (d *DataService) getTreatmentFromCurrentRow(rows *sql.Rows) (*common.Treatment, error) {
-	var treatmentId, prescriptionId, treatmentPlanId, dispenseValue, dispenseUnitId, refills, daysSupply, patientId, patientVisitId int64
+	var treatmentId, treatmentPlanId, dispenseValue, dispenseUnitId, refills, daysSupply, patientId, patientVisitId int64
 	var drugInternalName, dosageStrength, patientInstructions, treatmentType, dispenseUnitDescription, status string
+	var prescriptionId sql.NullInt64
 	var substitutionsAllowed bool
 	var creationDate time.Time
 	var erxSentDate mysql.NullTime
@@ -903,7 +904,7 @@ func (d *DataService) getTreatmentFromCurrentRow(rows *sql.Rows) (*common.Treatm
 	treatment := &common.Treatment{
 		Id:                      treatmentId,
 		TreatmentPlanId:         treatmentPlanId,
-		PrescriptionId:          prescriptionId,
+		PrescriptionId:          prescriptionId.Int64,
 		PatientId:               patientId,
 		PatientVisitId:          patientVisitId,
 		DrugInternalName:        drugInternalName,
