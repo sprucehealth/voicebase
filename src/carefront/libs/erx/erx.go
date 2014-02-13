@@ -26,6 +26,7 @@ type ERxAPI interface {
 	GetMedicationList(patientId int64) ([]*Medication, error)
 	GetTransmissionErrorDetails() ([]*Medication, error)
 	GetTransmissionErrorRefillRequestsCount() (refillRequests int64, transactionErrors int64, err error)
+	IgnoreAlert(prescriptionId int64) error
 }
 
 type Medication struct {

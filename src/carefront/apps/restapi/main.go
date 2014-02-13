@@ -286,6 +286,10 @@ func main() {
 		DataApi: dataApi,
 		ErxApi:  doseSpotService,
 	}
+	doctorPrescriptionErrorIgnoreHandler := &apiservice.DoctorPrescriptionErrorIgnoreHandler{
+		DataApi: dataApi,
+		ErxApi:  doseSpotService,
+	}
 
 	erxStatusQueue, err := common.NewQueue(awsAuth, aws.Regions[conf.AWSRegion], conf.ERxQueue)
 	if err != nil {
@@ -333,7 +337,7 @@ func main() {
 	mux.Handle("/v1/doctor/rx", doctorPrescriptionsHandler)
 	mux.Handle("/v1/doctor/rx/notifications", doctorPrescriptionsNotificationsHandler)
 	mux.Handle("/v1/doctor/rx/errors", doctorPrescriptionErrorsHandler)
-
+	mux.Handle("/v1/doctor/rx/error/ignore", doctorPrescriptionErrorIgnoreHandler)
 	mux.Handle("/v1/doctor/visit/review", doctorPatientVisitReviewHandler)
 	mux.Handle("/v1/doctor/visit/diagnosis", diagnosePatientHandler)
 	mux.Handle("/v1/doctor/visit/diagnosis/summary", diagnosisSummaryHandler)

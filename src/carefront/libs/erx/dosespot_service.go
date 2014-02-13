@@ -34,6 +34,7 @@ const (
 	getMedicationListAction
 	getTransmissionErrorDetailsAction
 	getRefillRequestsTransmissionsErrorsAction
+	ignoreAlertAction
 )
 
 var DoseSpotApiActions = map[DoseSpotApiId]string{
@@ -48,6 +49,7 @@ var DoseSpotApiActions = map[DoseSpotApiId]string{
 	getMedicationListAction:                    "GetMedicationList",
 	getTransmissionErrorDetailsAction:          "GetTransmissionErrorsDetails",
 	getRefillRequestsTransmissionsErrorsAction: "GetRefillRequestsTransmissionErrors",
+	ignoreAlertAction:                          "IgnoreAlert",
 }
 
 const (
@@ -498,4 +500,18 @@ func (d *DoseSpotService) GetTransmissionErrorRefillRequestsCount() (refillReque
 	refillRequests = response.RefillRequestsTransmissionErrors[0].RefillRequestsCount
 	transactionErrors = response.RefillRequestsTransmissionErrors[0].TransactionErrorsCount
 	return
+}
+
+func (d *DoseSpotService) IgnoreAlert(prescriptionId int64) error {
+	request := &ignoreAlertRequest{
+		SSO:            generateSingleSignOn(d.ClinicKey, d.UserId, d.ClinicId),
+		PrescriptionId: prescriptionId,
+	}
+
+	response := &ignoreAlertResponse{}
+	err := getDoseSpotClient().makeSoapRequest(DoseSpotApiActions[ignoreAlertAction], request, response,
+		d.apiLatencies[ignoreAlertAction],
+		d.apiRequests[ignoreAlertAction],
+		d.apiRequests[ignoreAlertAction])
+	return err
 }

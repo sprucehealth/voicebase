@@ -340,3 +340,14 @@ type getMedicationListResult struct {
 	Result
 	Medications []*medication `xml:"Medications>MedicationListItem"`
 }
+
+type ignoreAlertRequest struct {
+	XMLName        xml.Name     `xml:"http://www.dosespot.com/API/11/ IgnoreAlertRequest"`
+	SSO            singleSignOn `xml:"SingleSignOn"`
+	PrescriptionId int64        `xml:"PrescriptionId"`
+}
+
+type ignoreAlertResponse struct {
+	XMLName xml.Name `xml:"http://www.dosespot.com/API/11/ IgnoreAlertResult"`
+	Result
+}
