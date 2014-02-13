@@ -9,10 +9,12 @@ import (
 
 func main() {
 	doseSpotService := erx.NewDoseSpotService(os.Getenv("DOSESPOT_CLINIC_ID"), os.Getenv("DOSESPOT_CLINIC_KEY"), os.Getenv("DOSESPOT_USER_ID"), nil)
-	refillRequests, transactionErrors, err := doseSpotService.GetTransmissionErrorRefillRequestsCount()
+	prescriptionLogs, err := doseSpotService.GetPrescriptionStatus(4874)
 	if err != nil {
 		panic(err.Error())
 	}
 
-	fmt.Println(refillRequests, transactionErrors)
+	for _, prescriptionLog := range prescriptionLogs {
+		fmt.Println(prescriptionLog.PrescriptionStatus, prescriptionLog.LogTimeStamp, prescriptionLog.AdditionalInfo)
+	}
 }

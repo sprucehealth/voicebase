@@ -149,7 +149,7 @@ func ConsumeMessageFromQueue(DataApi api.DataAPI, ERxApi erx.ERxAPI, ErxQueue *c
 					}
 
 					// get the error details for this medication
-					medicationsWithErrors, err := ERxApi.GetTransmissionErrorDetails()
+					prescriptionLogs, err := ERxApi.GetPrescriptionStatus(medication.ErxMedicationId)
 					if err != nil {
 						statFailure.Inc(1)
 						golog.Errorf("Unable to get transmission error details: %s", err.Error())
@@ -158,13 +158,13 @@ func ConsumeMessageFromQueue(DataApi api.DataAPI, ERxApi erx.ERxAPI, ErxQueue *c
 					}
 
 					errorDetailsFound := false
-					for _, medicationWithError := range medicationsWithErrors {
+					for _, prescriptionLog := range prescriptionLogs {
 						// because of the nature of how the dosespot api is designed, getMedicationList returns the prescriptionId as the medicationId
 						// and the getTransmissionErroDetails returns the prescriptionId as PrescriptionId
-						if medicationWithError.DoseSpotPrescriptionId == medication.ErxMedicationId {
+						if medication.PrescriptionStatus == prescriptionLog.PrescriptionStatus {
 							errorDetailsFound = true
-							golog.Infof("error found. here are the details: %s", medicationWithError.ErrorDetails)
-							err = DataApi.AddErxErrorEventWithMessage(treatment, medication.PrescriptionStatus, medicationWithError.ErrorDetails, *medicationWithError.ErrorTimeStamp)
+							golog.Infof("error found. here are the details: %s", prescriptionLog.AdditionalInfo)
+							err = DataApi.AddErxErrorEventWithMessage(treatment, medication.PrescriptionStatus, prescriptionLog.AdditionalInfo, prescriptionLog.LogTimeStamp)
 							if err != nil {
 								statFailure.Inc(1)
 								golog.Errorf("Unable to add error event for status: %s", err.Error())

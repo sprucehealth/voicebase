@@ -389,6 +389,7 @@ func (d *DoseSpotService) GetPrescriptionStatus(prescriptionId int64) ([]*Prescr
 			prescriptionLog := &PrescriptionLog{
 				LogTimeStamp:       logDetails.DateTimeStamp.DateTime,
 				PrescriptionStatus: logDetails.Status,
+				AdditionalInfo:     logDetails.AdditionalInfo,
 			}
 			prescriptionLogs = append(prescriptionLogs, prescriptionLog)
 		}

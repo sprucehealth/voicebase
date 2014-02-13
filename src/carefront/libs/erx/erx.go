@@ -53,5 +53,6 @@ type Medication struct {
 
 type PrescriptionLog struct {
 	PrescriptionStatus string
+	AdditionalInfo     string
 	LogTimeStamp       time.Time
 }
