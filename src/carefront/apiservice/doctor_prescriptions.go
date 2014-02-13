@@ -68,7 +68,7 @@ func (d *DoctorPrescriptionsHandler) ServeHTTP(w http.ResponseWriter, r *http.Re
 		return
 	}
 
-	pharmacies, err := d.DataApi.GetPatientPharmacySelectionForPatients(uniquePatientIds)
+	pharmacies, err := d.DataApi.GetPharmacySelectionForPatients(uniquePatientIds)
 	if err != nil {
 		WriteDeveloperError(w, http.StatusInternalServerError, "Unable to get pharmacies for patients based on idsL "+err.Error())
 		return

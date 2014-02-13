@@ -164,7 +164,7 @@ func ConsumeMessageFromQueue(DataApi api.DataAPI, ERxApi erx.ERxAPI, ErxQueue *c
 						if medicationWithError.DoseSpotPrescriptionId == medication.ErxMedicationId {
 							errorDetailsFound = true
 							golog.Infof("error found. here are the details: %s", medicationWithError.ErrorDetails)
-							err = DataApi.AddErxErrorEventWithMessage(treatment, medication.PrescriptionStatus, medicationWithError.ErrorDetails, medicationWithError.ErrorTimeStamp)
+							err = DataApi.AddErxErrorEventWithMessage(treatment, medication.PrescriptionStatus, medicationWithError.ErrorDetails, *medicationWithError.ErrorTimeStamp)
 							if err != nil {
 								statFailure.Inc(1)
 								golog.Errorf("Unable to add error event for status: %s", err.Error())

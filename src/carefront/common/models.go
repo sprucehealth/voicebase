@@ -96,8 +96,8 @@ type TreatmentPlan struct {
 	PatientInfo      *Patient          `json:"patient,omitempty"`
 	PatientVisitId   int64             `json:"patient_visit_id,string,omitempty"`
 	Status           string            `json:"status,omitempty"`
-	CreationDate     time.Time         `json:"creation_date,omitempty"`
-	SentDate         time.Time         `json:"sent_date,omitempty"`
+	CreationDate     *time.Time        `json:"creation_date,omitempty"`
+	SentDate         *time.Time        `json:"sent_date,omitempty"`
 	Treatments       []*Treatment      `json:"treatments,omitempty"`
 	Title            string            `json:"title,omitempty"`
 	DiagnosisSummary *DiagnosisSummary `json:"diagnosis_summary,omitempty"`
@@ -110,10 +110,11 @@ type Treatment struct {
 	Id                       int64                    `json:"treatment_id,string,omitempty"`
 	PrescriptionId           int64                    `json:"-"`
 	ErxMedicationId          int64                    `json:"-"`
-	PrescriptionStatus       string                   `json:"erx_status"`
-	StatusDetails            string                   `json:"erx_status_details"`
+	PrescriptionStatus       string                   `json:"erx_status,omitempty"`
+	StatusDetails            string                   `json:"erx_status_details,omitempty"`
 	TreatmentPlanId          int64                    `json:"treatment_plan_id,string,omitempty"`
 	PatientVisitId           int64                    `json:"patient_visit_id,string,omitempty"`
+	PatientId                int64                    `json:"-"`
 	DrugDBIds                map[string]string        `json:"drug_db_ids,omitempty"`
 	DrugInternalName         string                   `json:"drug_internal_name,omitempty"`
 	DrugName                 string                   `json:"drug_name"`
@@ -128,7 +129,9 @@ type Treatment struct {
 	DaysSupply               int64                    `json:"days_supply,string,omitempty"`
 	PharmacyNotes            string                   `json:"pharmacy_notes,omitempty"`
 	PatientInstructions      string                   `json:"patient_instructions,omitempty"`
-	CreationDate             time.Time                `json:"creation_date,omitempty"`
+	CreationDate             *time.Time               `json:"creation_date,omitempty"`
+	TransmissionErrorDate    *time.Time               `json:"error_date,omitempty"`
+	ErxSentDate              *time.Time               `json:"erx_sent_date,omitempty"`
 	Status                   string                   `json:"-"`
 	OTC                      bool                     `json:"otc,omitempty"`
 	SupplementalInstructions []*DoctorInstructionItem `json:"supplemental_instructions,omitempty"`

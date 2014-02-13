@@ -32,11 +32,12 @@ type Medication struct {
 	ErxMedicationId         int64
 	DoseSpotPrescriptionId  int64
 	PrescriptionStatus      string
+	PrescriptionDate        *time.Time
 	DrugDBIds               map[string]string
 	OTC                     bool
 	DispenseUnitId          int64
 	DispenseUnitDescription string
-	ErrorTimeStamp          time.Time
+	ErrorTimeStamp          *time.Time
 	ErrorDetails            string
 	DisplayName             string
 	Strength                string

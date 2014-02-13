@@ -66,7 +66,7 @@ type PatientAPI interface {
 	GetPatientFromPatientVisitId(patientVisitId int64) (patient *common.Patient, err error)
 	GetPatientFromTreatmentPlanId(treatmentPlanId int64) (patient *common.Patient, err error)
 	GetPatientsForIds(patientIds []int64) ([]*common.Patient, error)
-	GetPatientPharmacySelectionForPatients(patientIds []int64) ([]*pharmacy.PharmacyData, error)
+	GetPharmacySelectionForPatients(patientIds []int64) ([]*pharmacy.PharmacyData, error)
 }
 
 type PrescriptionStatus struct {

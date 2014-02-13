@@ -713,13 +713,15 @@ func (d *DataService) GetTreatmentsBasedOnTreatmentPlanId(patientVisitId, treatm
 
 	// get treatment plan information
 	treatments := make([]*common.Treatment, 0)
-	rows, err := d.DB.Query(`select treatment.id, treatment.drug_internal_name, treatment.dosage_strength, treatment.type,
+	rows, err := d.DB.Query(`select treatment.id, treatment.treatment_plan_id, treatment.drug_internal_name, treatment.dosage_strength, treatment.type,
 			treatment.dispense_value, treatment.dispense_unit_id, ltext, treatment.refills, treatment.substitutions_allowed, 
-			treatment.days_supply, treatment.pharmacy_notes, treatment.patient_instructions, treatment.creation_date, 
-			treatment.status, drug_name.name, drug_route.name, drug_form.name from treatment 
+			treatment.days_supply, treatment.pharmacy_notes, treatment.patient_instructions, treatment.creation_date, treatment.erx_sent_date,
+			treatment.status, drug_name.name, drug_route.name, drug_form.name,
+			patient_visit.patient_id, treatment_plan.patient_visit_id from treatment 
 				inner join dispense_unit on treatment.dispense_unit_id = dispense_unit.id
 				inner join localized_text on localized_text.app_text_id = dispense_unit.dispense_unit_text_id
 				inner join treatment_plan on treatment_plan.id = treatment.treatment_plan_id
+				inner join patient_visit on treatment_plan.patient_visit_id = patient_visit.id
 				left outer join drug_name on drug_name_id = drug_name.id
 				left outer join drug_route on drug_route_id = drug_route.id
 				left outer join drug_form on drug_form_id = drug_form.id
@@ -744,12 +746,16 @@ func (d *DataService) GetTreatmentsBasedOnTreatmentPlanId(patientVisitId, treatm
 }
 
 func (d *DataService) GetTreatmentBasedOnPrescriptionId(erxId int64) (*common.Treatment, error) {
-	rows, err := d.DB.Query(`select treatment.id, treatment.drug_internal_name, treatment.dosage_strength, treatment.type,
+	rows, err := d.DB.Query(`select treatment.id,treatment.treatment_plan_id, treatment.drug_internal_name, treatment.dosage_strength, treatment.type,
 			treatment.dispense_value, treatment.dispense_unit_id, ltext, treatment.refills, treatment.substitutions_allowed, 
-			treatment.days_supply, treatment.pharmacy_notes, treatment.patient_instructions, treatment.creation_date, 
-			treatment.status, drug_name.name, drug_route.name, drug_form.name from treatment 
+			treatment.days_supply, treatment.pharmacy_notes, treatment.patient_instructions, treatment.creation_date, treatment.erx_sent_date,
+			treatment.status, drug_name.name, drug_route.name, drug_form.name,
+			patient_visit.patient_id, treatment_plan.patient_visit_id from treatment
+
 				inner join dispense_unit on treatment.dispense_unit_id = dispense_unit.id
 				inner join localized_text on localized_text.app_text_id = dispense_unit.dispense_unit_text_id
+				inner join treatment_plan on treatment_plan.id = treatment.treatment_plan_id
+				inner join patient_visit on treatment_plan.patient_visit_id = patient_visit.id
 				left outer join drug_name on drug_name_id = drug_name.id
 				left outer join drug_route on drug_route_id = drug_route.id
 				left outer join drug_form on drug_form_id = drug_form.id
@@ -883,40 +889,46 @@ func (d *DataService) GetPrescriptionStatusEventsForPatient(patientId int64) ([]
 }
 
 func (d *DataService) getTreatmentFromCurrentRow(rows *sql.Rows) (*common.Treatment, error) {
-	var treatmentId, dispenseValue, dispenseUnitId, refills, daysSupply int64
+	var treatmentId, treatmentPlanId, dispenseValue, dispenseUnitId, refills, daysSupply, patientId, patientVisitId int64
 	var drugInternalName, dosageStrength, patientInstructions, treatmentType, dispenseUnitDescription, status string
 	var substitutionsAllowed bool
 	var creationDate time.Time
+	var erxSentDate mysql.NullTime
 	var pharmacyNotes, drugName, drugForm, drugRoute sql.NullString
-	err := rows.Scan(&treatmentId, &drugInternalName, &dosageStrength, &treatmentType, &dispenseValue, &dispenseUnitId, &dispenseUnitDescription, &refills, &substitutionsAllowed, &daysSupply, &pharmacyNotes, &patientInstructions, &creationDate, &status, &drugName, &drugRoute, &drugForm)
+	err := rows.Scan(&treatmentId, &treatmentPlanId, &drugInternalName, &dosageStrength, &treatmentType, &dispenseValue, &dispenseUnitId, &dispenseUnitDescription, &refills, &substitutionsAllowed, &daysSupply, &pharmacyNotes, &patientInstructions, &creationDate, &erxSentDate, &status, &drugName, &drugRoute, &drugForm, &patientId, &patientVisitId)
 	if err != nil {
 		return nil, err
 	}
 
-	treatment := &common.Treatment{}
-	treatment.Id = treatmentId
-	treatment.DrugInternalName = drugInternalName
-	treatment.DosageStrength = dosageStrength
-	treatment.DispenseValue = dispenseValue
-	treatment.DispenseUnitId = dispenseUnitId
-	treatment.DispenseUnitDescription = dispenseUnitDescription
-	treatment.NumberRefills = refills
-	treatment.SubstitutionsAllowed = substitutionsAllowed
-	treatment.DaysSupply = daysSupply
-	treatment.DrugName = drugName.String
-	treatment.DrugForm = drugForm.String
-	treatment.DrugRoute = drugRoute.String
+	treatment := &common.Treatment{
+		Id:                      treatmentId,
+		TreatmentPlanId:         treatmentPlanId,
+		PatientId:               patientId,
+		PatientVisitId:          patientVisitId,
+		DrugInternalName:        drugInternalName,
+		DosageStrength:          dosageStrength,
+		DispenseValue:           dispenseValue,
+		DispenseUnitId:          dispenseUnitId,
+		DispenseUnitDescription: dispenseUnitDescription,
+		NumberRefills:           refills,
+		SubstitutionsAllowed:    substitutionsAllowed,
+		DaysSupply:              daysSupply,
+		DrugName:                drugName.String,
+		DrugForm:                drugForm.String,
+		DrugRoute:               drugRoute.String,
+		PatientInstructions:     patientInstructions,
+		CreationDate:            &creationDate,
+		Status:                  status,
+		PharmacyNotes:           pharmacyNotes.String,
+	}
 
 	if treatmentType == treatment_otc {
 		treatment.OTC = true
 	}
 
-	if pharmacyNotes.Valid {
-		treatment.PharmacyNotes = pharmacyNotes.String
+	if erxSentDate.Valid {
+		treatment.ErxSentDate = &erxSentDate.Time
 	}
-	treatment.PatientInstructions = patientInstructions
-	treatment.CreationDate = creationDate
-	treatment.Status = status
 
 	err = d.fillInDrugDBIdsForTreatment(treatment)
 	if err != nil {

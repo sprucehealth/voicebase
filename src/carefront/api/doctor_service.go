@@ -607,12 +607,15 @@ func (d *DataService) GetFavoriteTreatments(doctorId int64) ([]*common.DoctorFav
 	}
 
 	// get the treatments from the database
-	rows, err = d.DB.Query(fmt.Sprintf(`select treatment.id, treatment.drug_internal_name, treatment.dosage_strength, treatment.type,
+	rows, err = d.DB.Query(fmt.Sprintf(`select treatment.id, treatment.treatment_plan_id, treatment.drug_internal_name, treatment.dosage_strength, treatment.type,
 			treatment.dispense_value, treatment.dispense_unit_id, ltext, treatment.refills, treatment.substitutions_allowed, 
-			treatment.days_supply, treatment.pharmacy_notes, treatment.patient_instructions, treatment.creation_date, 
-			treatment.status, drug_name.name, drug_route.name, drug_form.name from treatment 
+			treatment.days_supply, treatment.pharmacy_notes, treatment.patient_instructions, treatment.creation_date,  treatment.erx_sent_date,
+			treatment.status, drug_name.name, drug_route.name, drug_form.name,
+			patient_visit.patient_id, treatment_plan.patient_visit_id from treatment 
 				inner join dispense_unit on treatment.dispense_unit_id = dispense_unit.id
 				inner join localized_text on localized_text.app_text_id = dispense_unit.dispense_unit_text_id
+				inner join treatment_plan on treatment_plan.id = treatment.treatment_plan_id
+				inner join patient_visit on treatment.patient_visit_id = patient_visit.id
 				left outer join drug_name on drug_name_id = drug_name.id
 				left outer join drug_route on drug_route_id = drug_route.id
 				left outer join drug_form on drug_form_id = drug_form.id
@@ -682,8 +685,8 @@ func (d *DataService) GetCompletedPrescriptionsForDoctor(from, to time.Time, doc
 				Id:             treatmentPlanId,
 				PatientId:      patientId,
 				PatientVisitId: patientVisitId,
-				CreationDate:   creationDate,
-				SentDate:       sentDate,
+				CreationDate:   &creationDate,
+				SentDate:       &sentDate,
 			}
 			treatmentPlanIdToPlanMapping[treatmentPlanId] = treatmentPlan
 			treatmentPlans = append(treatmentPlans, treatmentPlan)
@@ -703,7 +706,7 @@ func (d *DataService) GetCompletedPrescriptionsForDoctor(from, to time.Time, doc
 			DrugName:                drugName.String,
 			DrugForm:                drugForm.String,
 			DrugRoute:               drugRoute.String,
-			CreationDate:            creationDate,
+			CreationDate:            &creationDate,
 			Status:                  status,
 			PatientInstructions:     patientInstructions,
 			PrescriptionStatus:      erxStatus.String,

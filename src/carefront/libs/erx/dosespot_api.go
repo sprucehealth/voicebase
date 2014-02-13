@@ -146,23 +146,26 @@ type prescription struct {
 }
 
 type medication struct {
-	DisplayName            string    `xml:"DisplayName"`
-	Strength               string    `xml:"Strength"`
-	DoseSpotPrescriptionId int64     `xml:"PrescriptionId"`
-	LexiGenProductId       int64     `xml:"LexiGenProductId"`
-	LexiDrugSynId          int64     `xml:"LexiDrugSynId"`
-	LexiSynonymTypeId      int64     `xml:"LexiSynonymTypeId"`
-	Refills                nullInt64 `xml:"Refills"`
-	DaysSupply             nullInt64 `xml:"DaysSupply,omitempty"`
-	Dispense               string    `xml:"Dispense"`
-	DispenseUnitId         int64     `xml:"DispenseUnitId"`
-	Instructions           string    `xml:"Instructions"`
-	PharmacyId             int64     `xml:"PharmacyId"`
-	PharmacyNotes          string    `xml:"PharmacyNotes"`
-	NoSubstitutions        bool      `xml:"NoSubstitutions"`
-	RxReferenceNumber      string    `xml:"RxReferenceNumber"`
-	PrescriptionStatus     string    `xml:"PrescriptionStatus,omitempty"`
-	MedicationId           int64     `xml:"MedicationId,omitempty"`
+	DisplayName            string           `xml:"DisplayName"`
+	DrugName               string           `xml:"DrugName,omitempty"`
+	Strength               string           `xml:"Strength"`
+	DoseSpotPrescriptionId int64            `xml:"PrescriptionId"`
+	LexiGenProductId       int64            `xml:"LexiGenProductId"`
+	LexiDrugSynId          int64            `xml:"LexiDrugSynId"`
+	LexiSynonymTypeId      int64            `xml:"LexiSynonymTypeId"`
+	Refills                nullInt64        `xml:"Refills"`
+	DaysSupply             nullInt64        `xml:"DaysSupply,omitempty"`
+	Dispense               string           `xml:"Dispense"`
+	DispenseUnitId         int64            `xml:"DispenseUnitId"`
+	Instructions           string           `xml:"Instructions"`
+	PharmacyId             int64            `xml:"PharmacyId"`
+	PharmacyNotes          string           `xml:"PharmacyNotes"`
+	NoSubstitutions        bool             `xml:"NoSubstitutions"`
+	RxReferenceNumber      string           `xml:"RxReferenceNumber"`
+	PrescriptionStatus     string           `xml:"PrescriptionStatus,omitempty"`
+	Status                 string           `xml:"Status,omitempty"`
+	DatePrescribed         *specialDateTime `xml:"DatePrescribed,omitempty"`
+	MedicationId           int64            `xml:"MedicationId,omitempty"`
 }
 
 // Need to treat the date object for date of birth as a special case

@@ -316,7 +316,7 @@ func (d *DataService) GetPatientPharmacySelection(patientId int64) (pharmacySele
 	return
 }
 
-func (d *DataService) GetPatientPharmacySelectionForPatients(patientIds []int64) ([]*pharmacy.PharmacyData, error) {
+func (d *DataService) GetPharmacySelectionForPatients(patientIds []int64) ([]*pharmacy.PharmacyData, error) {
 	if len(patientIds) == 0 {
 		return nil, nil
 	}
