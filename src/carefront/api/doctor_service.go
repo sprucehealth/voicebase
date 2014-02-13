@@ -607,15 +607,13 @@ func (d *DataService) GetFavoriteTreatments(doctorId int64) ([]*common.DoctorFav
 	}
 
 	// get the treatments from the database
-	rows, err = d.DB.Query(fmt.Sprintf(`select treatment.id, treatment.treatment_plan_id, treatment.drug_internal_name, treatment.dosage_strength, treatment.type,
+	rows, err = d.DB.Query(fmt.Sprintf(`select treatment.id, treatment.drug_internal_name, treatment.dosage_strength, treatment.type,
 			treatment.dispense_value, treatment.dispense_unit_id, ltext, treatment.refills, treatment.substitutions_allowed, 
-			treatment.days_supply, treatment.pharmacy_notes, treatment.patient_instructions, treatment.creation_date,  treatment.erx_sent_date,
-			treatment.status, drug_name.name, drug_route.name, drug_form.name,
-			patient_visit.patient_id, treatment_plan.patient_visit_id from treatment 
+			treatment.days_supply, treatment.pharmacy_notes, treatment.patient_instructions, treatment.creation_date,
+			treatment.status, drug_name.name, drug_route.name, drug_form.name from treatment 
+				
 				inner join dispense_unit on treatment.dispense_unit_id = dispense_unit.id
 				inner join localized_text on localized_text.app_text_id = dispense_unit.dispense_unit_text_id
-				inner join treatment_plan on treatment_plan.id = treatment.treatment_plan_id
-				inner join patient_visit on treatment.patient_visit_id = patient_visit.id
 				left outer join drug_name on drug_name_id = drug_name.id
 				left outer join drug_route on drug_route_id = drug_route.id
 				left outer join drug_form on drug_form_id = drug_form.id
@@ -628,7 +626,45 @@ func (d *DataService) GetFavoriteTreatments(doctorId int64) ([]*common.DoctorFav
 
 	favoritedTreatments := make([]*common.DoctorFavoriteTreatment, 0)
 	for rows.Next() {
-		treatment, err := d.getTreatmentFromCurrentRow(rows)
+		var treatmentId, dispenseValue, dispenseUnitId, refills, daysSupply int64
+		var drugInternalName, dosageStrength, patientInstructions, treatmentType, dispenseUnitDescription, status string
+		var substitutionsAllowed bool
+		var creationDate time.Time
+		var pharmacyNotes, drugName, drugForm, drugRoute sql.NullString
+		err = rows.Scan(&treatmentId, &drugInternalName, &dosageStrength, &treatmentType, &dispenseValue, &dispenseUnitId, &dispenseUnitDescription, &refills, &substitutionsAllowed, &daysSupply, &pharmacyNotes, &patientInstructions, &creationDate, &status, &drugName, &drugRoute, &drugForm)
+		if err != nil {
+			return nil, err
+		}
+
+		treatment := &common.Treatment{
+			Id:                      treatmentId,
+			DrugInternalName:        drugInternalName,
+			DosageStrength:          dosageStrength,
+			DispenseValue:           dispenseValue,
+			DispenseUnitId:          dispenseUnitId,
+			DispenseUnitDescription: dispenseUnitDescription,
+			NumberRefills:           refills,
+			SubstitutionsAllowed:    substitutionsAllowed,
+			DaysSupply:              daysSupply,
+			DrugName:                drugName.String,
+			DrugForm:                drugForm.String,
+			DrugRoute:               drugRoute.String,
+			PatientInstructions:     patientInstructions,
+			CreationDate:            &creationDate,
+			Status:                  status,
+			PharmacyNotes:           pharmacyNotes.String,
+		}
+
+		if treatmentType == treatment_otc {
+			treatment.OTC = true
+		}
+
+		err = d.fillInDrugDBIdsForTreatment(treatment)
+		if err != nil {
+			return nil, err
+		}
+
+		err = d.fillInSupplementalInstructionsForTreatment(treatment)
 		if err != nil {
 			return nil, err
 		}
@@ -711,10 +747,7 @@ func (d *DataService) GetCompletedPrescriptionsForDoctor(from, to time.Time, doc
 			PatientInstructions:     patientInstructions,
 			PrescriptionStatus:      erxStatus.String,
 			StatusDetails:           eventDetails.String,
-		}
-
-		if pharmacyNotes.Valid {
-			treatment.PharmacyNotes = pharmacyNotes.String
+			PharmacyNotes:           pharmacyNotes.String,
 		}
 
 		if treatmentType == treatment_otc {

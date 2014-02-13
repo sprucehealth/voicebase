@@ -109,6 +109,14 @@ func (d *DoctorPrescriptionsErrorsHandler) ServeHTTP(w http.ResponseWriter, r *h
 		}
 	}
 
+	for _, pharmacySelection := range pharmacies {
+		for _, patient := range patients {
+			if patient.PatientId == pharmacySelection.PatientId {
+				patient.Pharmacy = pharmacySelection
+			}
+		}
+	}
+
 	for _, transmissionError := range transmissionErrors {
 		for _, patient := range patients {
 			if patient.PatientId == transmissionError.Treatment.PatientId {
