@@ -1,6 +1,6 @@
 -- MySQL dump 10.13  Distrib 5.6.13, for osx10.8 (x86_64)
 --
--- Host: dev-db-3.ccvrwjdx3gvp.us-east-1.rds.amazonaws.com    Database: database_3830
+-- Host: dev-db-3.ccvrwjdx3gvp.us-east-1.rds.amazonaws.com    Database: database_24977
 -- ------------------------------------------------------
 -- Server version	5.6.13-log
 
@@ -908,7 +908,7 @@ CREATE TABLE `patient_pharmacy_selection` (
   `pharmacy_id` varchar(300) NOT NULL,
   `status` varchar(100) NOT NULL,
   `erx_pharmacy_id` int(10) unsigned DEFAULT NULL,
-  `pharmacy_selection_id` int(10) unsigned DEFAULT NULL,
+  `pharmacy_selection_id` int(10) unsigned NOT NULL,
   PRIMARY KEY (`id`),
   KEY `patient_id` (`patient_id`),
   KEY `pharmacy_selection_id` (`pharmacy_selection_id`),
@@ -1418,4 +1418,4 @@ CREATE TABLE `treatment_plan` (
 /*!40101 SET COLLATION_CONNECTION=@OLD_COLLATION_CONNECTION */;
 /*!40111 SET SQL_NOTES=@OLD_SQL_NOTES */;
 
--- Dump completed on 2014-02-13 12:02:56
+-- Dump completed on 2014-02-13 16:35:59
