@@ -38,6 +38,7 @@ type SignupPatientRequestData struct {
 	Zipcode    string `schema:"zip_code,required"`
 	Phone      string `schema:"phone,required"`
 	Agreements string `schema:"agreements"`
+	DoctorId   int64  `schema:"doctor_id"`
 }
 
 func (s *SignupPatientHandler) ServeHTTP(w http.ResponseWriter, r *http.Request) {
@@ -110,11 +111,19 @@ func (s *SignupPatientHandler) ServeHTTP(w http.ResponseWriter, r *http.Request)
 	}
 
 	// create care team for patient
-	_, err = s.DataApi.CreateCareTeamForPatient(patient.PatientId)
-	if err != nil {
-		log.Println(err)
-		WriteDeveloperError(w, http.StatusInternalServerError, "Unable to create care team for patient :"+err.Error())
-		return
+	if requestData.DoctorId != 0 {
+		_, err = s.DataApi.CreateCareTeamForPatientWithPrimaryDoctor(patient.PatientId, requestData.DoctorId)
+		if err != nil {
+			WriteDeveloperError(w, http.StatusInternalServerError, "Unable to create care team with specified doctor for patient: "+err.Error())
+			return
+		}
+	} else {
+		_, err = s.DataApi.CreateCareTeamForPatient(patient.PatientId)
+		if err != nil {
+			log.Println(err)
+			WriteDeveloperError(w, http.StatusInternalServerError, "Unable to create care team for patient :"+err.Error())
+			return
+		}
 	}
 
 	WriteJSONToHTTPResponseWriter(w, http.StatusOK, PatientSignedupResponse{Token: res.Token, Patient: patient})

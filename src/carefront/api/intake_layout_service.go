@@ -5,6 +5,7 @@ import (
 	"database/sql"
 	"fmt"
 	"log"
+	"strings"
 )
 
 func (d *DataService) GetQuestionType(questionId int64) (string, error) {
@@ -202,64 +203,88 @@ func (d *DataService) GetSectionInfo(sectionTag string, languageId int64) (id in
 }
 
 func (d *DataService) GetQuestionInfo(questionTag string, languageId int64) (*common.QuestionInfo, error) {
-	var questionInfo common.QuestionInfo
-	var byteQuestionTitle, byteQuestionType, byteQuestionSummary, byteQuestionSubtext []byte
-	var formattedFieldTagsNull sql.NullString
-	var nullParentQuestionId, requiredBit sql.NullInt64
-	err := d.DB.QueryRow(
-		`select question.id, l1.ltext, qtype, parent_question_id, l2.ltext, l3.ltext, formatted_field_tags, required from question 
+	questionInfos, err := d.GetQuestionInfoForTags([]string{questionTag}, languageId)
+	if len(questionInfos) > 0 {
+		return questionInfos[0], err
+	}
+	return nil, err
+}
+
+func (d *DataService) GetQuestionInfoForTags(questionTags []string, languageId int64) ([]*common.QuestionInfo, error) {
+
+	for i, questionTag := range questionTags {
+		questionTags[i] = fmt.Sprintf("'%s'", questionTag)
+	}
+
+	rows, err := d.DB.Query(fmt.Sprintf(
+		`select question.question_tag, question.id, l1.ltext, qtype, parent_question_id, l2.ltext, l3.ltext, formatted_field_tags, required from question 
 			left outer join localized_text as l1 on l1.app_text_id=qtext_app_text_id
 			left outer join question_type on qtype_id=question_type.id
 			left outer join localized_text as l2 on qtext_short_text_id = l2.app_text_id
 			left outer join localized_text as l3 on subtext_app_text_id = l3.app_text_id
-				where question_tag = ? and (l1.ltext is NULL or l1.language_id = ?) and (l3.ltext is NULL or l3.language_id=?)`,
-		questionTag, languageId, languageId).Scan(
-		&questionInfo.Id,
-		&byteQuestionTitle,
-		&byteQuestionType,
-		&nullParentQuestionId,
-		&byteQuestionSummary,
-		&byteQuestionSubtext,
-		&formattedFieldTagsNull,
-		&requiredBit,
-	)
-	if err != nil {
-		return nil, err
-	}
-	if nullParentQuestionId.Valid {
-		questionInfo.ParentQuestionId = nullParentQuestionId.Int64
-	}
-	questionInfo.Title = string(byteQuestionTitle)
-	questionInfo.Type = string(byteQuestionType)
-	questionInfo.Summary = string(byteQuestionSummary)
-	questionInfo.SubText = string(byteQuestionSubtext)
-	if formattedFieldTagsNull.Valid {
-		questionInfo.FormattedFieldTags = formattedFieldTagsNull.String
-	}
-	if requiredBit.Valid && requiredBit.Int64 == 1 {
-		questionInfo.Required = true
-	}
+				where question_tag in (%s) and (l1.ltext is NULL or l1.language_id = ?) and (l3.ltext is NULL or l3.language_id=?)`, strings.Join(questionTags, ",")), languageId, languageId)
 
-	// get any additional fields pertaining to the question from the database
-	rows, err := d.DB.Query(`select question_field, ltext from question_fields
-								inner join localized_text on question_fields.app_text_id = localized_text.app_text_id
-								where question_id = ? and language_id = ?`, questionInfo.Id, languageId)
 	if err != nil {
 		return nil, err
 	}
+	defer rows.Close()
+
+	questionInfos := make([]*common.QuestionInfo, 0)
 	for rows.Next() {
-		var questionField, fieldText string
-		err = rows.Scan(&questionField, &fieldText)
+		questionInfo := new(common.QuestionInfo)
+
+		var questionTag string
+		var byteQuestionTitle, byteQuestionType, byteQuestionSummary, byteQuestionSubtext []byte
+		var formattedFieldTagsNull sql.NullString
+		var nullParentQuestionId, requiredBit sql.NullInt64
+
+		err = rows.Scan(
+			&questionTag,
+			&questionInfo.Id,
+			&byteQuestionTitle,
+			&byteQuestionType,
+			&nullParentQuestionId,
+			&byteQuestionSummary,
+			&byteQuestionSubtext,
+			&formattedFieldTagsNull,
+			&requiredBit,
+		)
+
 		if err != nil {
 			return nil, err
 		}
-		if questionInfo.AdditionalFields == nil {
-			questionInfo.AdditionalFields = make(map[string]string)
+
+		questionInfo.ParentQuestionId = nullParentQuestionId.Int64
+		questionInfo.QuestionTag = questionTag
+		questionInfo.Title = string(byteQuestionTitle)
+		questionInfo.Type = string(byteQuestionType)
+		questionInfo.Summary = string(byteQuestionSummary)
+		questionInfo.SubText = string(byteQuestionSubtext)
+		questionInfo.FormattedFieldTags = formattedFieldTagsNull.String
+		questionInfo.Required = (requiredBit.Valid && requiredBit.Int64 == 1)
+
+		// get any additional fields pertaining to the question from the database
+		rows, err := d.DB.Query(`select question_field, ltext from question_fields
+								inner join localized_text on question_fields.app_text_id = localized_text.app_text_id
+								where question_id = ? and language_id = ?`, questionInfo.Id, languageId)
+		if err != nil {
+			return nil, err
 		}
-		questionInfo.AdditionalFields[questionField] = fieldText
+		for rows.Next() {
+			var questionField, fieldText string
+			err = rows.Scan(&questionField, &fieldText)
+			if err != nil {
+				return nil, err
+			}
+			if questionInfo.AdditionalFields == nil {
+				questionInfo.AdditionalFields = make(map[string]string)
+			}
+			questionInfo.AdditionalFields[questionField] = fieldText
+		}
+		questionInfos = append(questionInfos, questionInfo)
 	}
 
-	return &questionInfo, nil
+	return questionInfos, nil
 }
 
 func (d *DataService) GetAnswerInfo(questionId int64, languageId int64) ([]PotentialAnswerInfo, error) {
@@ -285,6 +310,41 @@ func (d *DataService) GetAnswerInfo(questionId int64, languageId int64) ([]Poten
 		if answerSummary.Valid {
 			potentialAnswerInfo.AnswerSummary = answerSummary.String
 		}
+		potentialAnswerInfo.PotentialAnswerId = id
+		potentialAnswerInfo.AnswerTag = answerTag
+		potentialAnswerInfo.Ordering = ordering
+		potentialAnswerInfo.AnswerType = answerType
+		answerInfos = append(answerInfos, potentialAnswerInfo)
+		if err != nil {
+			return answerInfos, err
+		}
+	}
+	return answerInfos, nil
+}
+
+func (d *DataService) GetAnswerInfoForTags(answerTags []string, languageId int64) ([]*PotentialAnswerInfo, error) {
+	for i, answerTag := range answerTags {
+		answerTags[i] = fmt.Sprintf("'%s'", answerTag)
+	}
+	rows, err := d.DB.Query(fmt.Sprintf(`select potential_answer.id, l1.ltext, l2.ltext, atype, potential_answer_tag, ordering from potential_answer 
+								left outer join localized_text as l1 on answer_localized_text_id=l1.app_text_id 
+								left outer join answer_type on atype_id=answer_type.id 
+								left outer join localized_text as l2 on answer_summary_text_id=l2.app_text_id
+									where potential_answer_tag in (%s)  and (l1.language_id = ? or l1.ltext is null) and (l2.language_id = ? or l2.ltext is null) and status='ACTIVE'`, strings.Join(answerTags, ",")), languageId, languageId)
+	if err != nil {
+		return nil, err
+	}
+	defer rows.Close()
+	answerInfos := make([]*PotentialAnswerInfo, 0)
+	for rows.Next() {
+		var id, ordering int64
+		var answerType, answerTag string
+		var answer, answerSummary sql.NullString
+		err = rows.Scan(&id, &answer, &answerSummary, &answerType, &answerTag, &ordering)
+		potentialAnswerInfo := &PotentialAnswerInfo{}
+
+		potentialAnswerInfo.Answer = answer.String
+		potentialAnswerInfo.AnswerSummary = answerSummary.String
 		potentialAnswerInfo.PotentialAnswerId = id
 		potentialAnswerInfo.AnswerTag = answerTag
 		potentialAnswerInfo.Ordering = ordering

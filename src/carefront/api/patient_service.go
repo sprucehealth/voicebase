@@ -127,21 +127,17 @@ func (d *DataService) GetCareTeamForPatient(patientId int64) (*common.PatientCar
 	return careTeam, nil
 }
 
-func (d *DataService) CreateCareTeamForPatient(patientId int64) (*common.PatientCareProviderGroup, error) {
-	// identify providers in the state required. Assuming for now that we can only have one provider in the
-	// state of CA. The reason for this assumption is that we have not yet figured out how best to deal with
-	// multiple active doctors in how they will be assigned to the patient.
-	// TODO : Update care team formation when we have more than 1 doctor that we can have as active in our system
-	var providerId, providerRoleId int64
-	err := d.DB.QueryRow(`select provider_id, provider_role_id from care_provider_state_elligibility 
-					inner join care_providing_state on care_providing_state_id = care_providing_state.id
-					where state = 'CA'`).Scan(&providerId, &providerRoleId)
-
-	if err == sql.ErrNoRows {
-		return nil, NoElligibileProviderInState
-	} else if err != nil {
+func (d *DataService) CreateCareTeamForPatientWithPrimaryDoctor(patientId, doctorId int64) (*common.PatientCareProviderGroup, error) {
+	var providerRoleId int64
+	err := d.DB.QueryRow(`select id from provider_role where provider_tag=?`, DOCTOR_ROLE).Scan(&providerRoleId)
+	if err != nil {
 		return nil, err
 	}
+
+	return d.createProviderAssignmentForPatient(patientId, doctorId, providerRoleId)
+}
+
+func (d *DataService) createProviderAssignmentForPatient(patientId, providerId, providerRoleId int64) (*common.PatientCareProviderGroup, error) {
 
 	// create new group assignment for patient visit
 	tx, err := d.DB.Begin()
@@ -177,6 +173,25 @@ func (d *DataService) CreateCareTeamForPatient(patientId int64) (*common.Patient
 
 	tx.Commit()
 	return d.GetCareTeamForPatient(patientId)
+}
+
+func (d *DataService) CreateCareTeamForPatient(patientId int64) (*common.PatientCareProviderGroup, error) {
+	// identify providers in the state required. Assuming for now that we can only have one provider in the
+	// state of CA. The reason for this assumption is that we have not yet figured out how best to deal with
+	// multiple active doctors in how they will be assigned to the patient.
+	// TODO : Update care team formation when we have more than 1 doctor that we can have as active in our system
+	var providerId, providerRoleId int64
+	err := d.DB.QueryRow(`select provider_id, provider_role_id from care_provider_state_elligibility 
+					inner join care_providing_state on care_providing_state_id = care_providing_state.id
+					where state = 'CA'`).Scan(&providerId, &providerRoleId)
+
+	if err == sql.ErrNoRows {
+		return nil, NoElligibileProviderInState
+	} else if err != nil {
+		return nil, err
+	}
+
+	return d.createProviderAssignmentForPatient(patientId, providerId, providerRoleId)
 }
 
 func (d *DataService) GetPatientFromAccountId(accountId int64) (*common.Patient, error) {

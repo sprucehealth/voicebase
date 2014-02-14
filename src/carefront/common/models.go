@@ -196,6 +196,7 @@ type DiagnosisSummary struct {
 
 type QuestionInfo struct {
 	Id                 int64
+	QuestionTag        string
 	Title              string
 	Type               string
 	Summary            string

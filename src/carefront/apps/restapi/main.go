@@ -302,6 +302,11 @@ func main() {
 	doctorRegimenHandler := apiservice.NewDoctorRegimenHandler(dataApi)
 	doctorAdviceHandler := apiservice.NewDoctorAdviceHandler(dataApi)
 	doctorQueueHandler := &apiservice.DoctorQueueHandler{DataApi: dataApi}
+
+	createDemoPatientVisitHandler := &apiservice.CreateDemoPatientVisitHandler{
+		DataApi:     dataApi,
+		Environment: conf.Environment,
+	}
 	mux := apiservice.NewAuthServeMux(authApi, metricsRegistry.Scope("restapi"))
 
 	mux.Handle("/v1/content", staticContentHandler)
@@ -346,6 +351,8 @@ func main() {
 	mux.Handle("/v1/doctor/visit/advice", doctorAdviceHandler)
 	mux.Handle("/v1/doctor/visit/followup", doctorFollowupHandler)
 	mux.Handle("/v1/doctor/visit/submit", doctorSubmitPatientVisitHandler)
+
+	mux.Handle("/v1/doctor/demo/patient_visit", createDemoPatientVisitHandler)
 
 	app_worker.StartWorkerToUpdatePrescriptionStatusForPatient(dataApi, doseSpotService, erxStatusQueue, metricsRegistry.Scope("check_erx_status"))
 

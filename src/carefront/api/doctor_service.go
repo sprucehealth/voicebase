@@ -782,6 +782,12 @@ func (d *DataService) GetCompletedPrescriptionsForDoctor(from, to time.Time, doc
 	return treatmentPlans, nil
 }
 
+func (d *DataService) IsDoctorOnDemoWhitelist(doctorId int64) bool {
+	var id int64
+	err := d.DB.QueryRow(`select id from dr_demo_whitelist where doctor_id = ?`, doctorId).Scan(&id)
+	return (err == nil && id != 0)
+}
+
 func (d *DataService) getIdForNameFromTable(tableName, drugComponentName string) (nullId sql.NullInt64, err error) {
 	err = d.DB.QueryRow(fmt.Sprintf(`select id from %s where name=?`, tableName), drugComponentName).Scan(&nullId)
 	return

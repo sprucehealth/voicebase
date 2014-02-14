@@ -57,6 +57,7 @@ type PatientAPI interface {
 	UpdatePatientWithERxPatientId(patientId, erxPatientId int64) error
 	GetPatientIdFromAccountId(accountId int64) (int64, error)
 	CreateCareTeamForPatient(patientId int64) (careTeam *common.PatientCareProviderGroup, err error)
+	CreateCareTeamForPatientWithPrimaryDoctor(patientId, doctorId int64) (careTeam *common.PatientCareProviderGroup, err error)
 	GetCareTeamForPatient(patientId int64) (careTeam *common.PatientCareProviderGroup, err error)
 	CheckCareProvidingElligibility(shortState string, healthConditionId int64) (doctorId int64, err error)
 	UpdatePatientAddress(patientId int64, addressLine1, addressLine2, city, state, zipCode, addressType string) error
@@ -139,6 +140,7 @@ type DoctorAPI interface {
 	GetFavoriteTreatments(doctorId int64) ([]*common.DoctorFavoriteTreatment, error)
 	DeleteFavoriteTreatments(favoriteTreatments []*common.DoctorFavoriteTreatment, doctorId int64) error
 	GetCompletedPrescriptionsForDoctor(from, to time.Time, doctorId int64) ([]*common.TreatmentPlan, error)
+	IsDoctorOnDemoWhitelist(doctorId int64) bool
 }
 
 type IntakeAPI interface {
@@ -169,7 +171,9 @@ type IntakeLayoutAPI interface {
 	GetHealthConditionInfo(healthConditionTag string) (int64, error)
 	GetSectionInfo(sectionTag string, languageId int64) (id int64, title string, err error)
 	GetQuestionInfo(questionTag string, languageId int64) (*common.QuestionInfo, error)
+	GetQuestionInfoForTags(questionTags []string, languageId int64) ([]*common.QuestionInfo, error)
 	GetAnswerInfo(questionId int64, languageId int64) (answerInfos []PotentialAnswerInfo, err error)
+	GetAnswerInfoForTags(answerTags []string, languageId int64) ([]*PotentialAnswerInfo, error)
 	GetTipSectionInfo(tipSectionTag string, languageId int64) (id int64, tipSectionTitle string, tipSectionSubtext string, err error)
 	GetTipInfo(tipTag string, languageId int64) (id int64, tip string, err error)
 	GetSupportedLanguages() (languagesSupported []string, languagesSupportedIds []int64, err error)
