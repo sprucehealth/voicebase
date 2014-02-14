@@ -3,6 +3,7 @@ package apiservice
 import (
 	"bytes"
 	"carefront/api"
+	"carefront/libs/pharmacy"
 	"encoding/json"
 	"fmt"
 	"io/ioutil"
@@ -433,11 +434,11 @@ func (c *CreateDemoPatientVisitHandler) ServeHTTP(w http.ResponseWriter, r *http
 	urlValues.Set("email", fmt.Sprintf("%d%d@example.com", time.Now().UnixNano(), doctorId))
 	urlValues.Set("doctor_id", fmt.Sprintf("%d", doctorId))
 	httpClient := http.Client{}
-	signupPatientRequest, err := http.NewRequest("POST", "http://localhost:8080/v1/patient", bytes.NewBufferString(urlValues.Encode()))
+	signupPatientRequest, err := http.NewRequest("POST", "http://127.0.0.1:8080/v1/patient", bytes.NewBufferString(urlValues.Encode()))
 	signupPatientRequest.Header.Set("Content-Type", "application/x-www-form-urlencoded")
 
 	resp, err := httpClient.Do(signupPatientRequest)
-	if err != nil {
+	if err != nil || resp.StatusCode != http.StatusOK {
 		WriteDeveloperError(w, http.StatusInternalServerError, "Unable to signup random patient: "+err.Error())
 		return
 	}
@@ -455,13 +456,39 @@ func (c *CreateDemoPatientVisitHandler) ServeHTTP(w http.ResponseWriter, r *http
 		return
 	}
 
-	// TODO Pick Pharmacy for patient
+	pharmacyDetails := &pharmacy.PharmacyData{
+		Id:      "CoQBdgAAAIU6I2DXvwyyql2HTtAdaMrZ_AEgvKsD1O_V4mePQw3NNgntSwDlCKoCdd47DZdZbPOMEXMWSPyno1qekMr0A0ghV2rWGpVbVjLeM-ehKZH1gxMtTVlon47ktbVi2uUKCyuzpZh5hI7gjQChUPkkGoxnpKoLeAcCnzEeC5m4YGRFEhALIHQkJ_E13vByzK_t9xjlGhSDLIpV9QxTHgTwoESfAKHkMIzuxQ",
+		Address: "116 New Montgomery St",
+		Name:    "Walgreens Pharmacies",
+		City:    "San Francisco",
+		State:   "CA",
+		Source:  pharmacy.PHARMACY_SOURCE_GOOGLE,
+	}
+
+	jsonData, err := json.Marshal(pharmacyDetails)
+	if err != nil {
+		WriteDeveloperError(w, http.StatusInternalServerError, "Unable to marshal pharmacy details")
+	}
+
+	updatePatientPharmacyRequest, err := http.NewRequest("POST", "http://127.0.0.1:8080/v1/patient/pharmacy", bytes.NewBuffer(jsonData))
+	updatePatientPharmacyRequest.Header.Set("Content-Type", "application/json")
+	updatePatientPharmacyRequest.Header.Set("Authorization", "token "+signupResponse.Token)
+	if err != nil {
+		WriteDeveloperError(w, http.StatusInternalServerError, "Unable to create new http request: "+err.Error())
+		return
+	}
+
+	_, err = httpClient.Do(updatePatientPharmacyRequest)
+	if err != nil {
+		WriteDeveloperError(w, http.StatusInternalServerError, "Unable to update pharmacy for patient: "+err.Error())
+		return
+	}
 
 	// create patient visit
-	createPatientVisitRequest, err := http.NewRequest("POST", "http://localhost:8080/v1/visit", nil)
+	createPatientVisitRequest, err := http.NewRequest("POST", "http://127.0.0.1:8080/v1/visit", nil)
 	createPatientVisitRequest.Header.Set("Authorization", "token "+signupResponse.Token)
 	resp, err = httpClient.Do(createPatientVisitRequest)
-	if err != nil {
+	if err != nil || resp.StatusCode != http.StatusOK {
 		WriteDeveloperError(w, http.StatusInternalServerError, "Unable to create new patient visit: "+err.Error())
 		return
 	}
@@ -480,7 +507,6 @@ func (c *CreateDemoPatientVisitHandler) ServeHTTP(w http.ResponseWriter, r *http
 
 	// answer questions
 
-	// populate questionIds for the questionTags
 	questionIds := make(map[questionTag]int64)
 	questionTagsForLookup := make([]string, 0)
 	for questionTagString, _ := range questionTags {
@@ -502,31 +528,44 @@ func (c *CreateDemoPatientVisitHandler) ServeHTTP(w http.ResponseWriter, r *http
 	for answerTagString, _ := range answerTags {
 		answerTagsForLookup = append(answerTagsForLookup, answerTagString)
 	}
-
 	answerInfos, err := c.DataApi.GetAnswerInfoForTags(answerTagsForLookup, api.EN_LANGUAGE_ID)
 	if err != nil {
 		WriteDeveloperError(w, http.StatusInternalServerError, "Unable to lookup answer infos based on tags: "+err.Error())
 		return
 	}
-
 	for _, answerInfoItem := range answerInfos {
 		answerIds[answerTags[answerInfoItem.AnswerTag]] = answerInfoItem.PotentialAnswerId
 	}
 
 	answersToQuestions := populatePatientIntake(questionIds, answerIds)
-
 	answerIntakeRequestBody := &AnswerIntakeRequestBody{
 		PatientVisitId: patientVisitResponse.PatientVisitId,
 		Questions:      answersToQuestions,
 	}
-	jsonData, err := json.Marshal(answerIntakeRequestBody)
-	answerQuestionsRequest, err := http.NewRequest("POST", "http://localhost:8080/v1/answer", bytes.NewBuffer(jsonData))
+
+	jsonData, err = json.Marshal(answerIntakeRequestBody)
+	answerQuestionsRequest, err := http.NewRequest("POST", "http://127.0.0.1:8080/v1/answer", bytes.NewBuffer(jsonData))
 	answerQuestionsRequest.Header.Set("Content-Type", "application/json")
 	answerQuestionsRequest.Header.Set("Authorization", "token "+signupResponse.Token)
 
-	_, err = httpClient.Do(answerQuestionsRequest)
-	if err != nil {
+	resp, err = httpClient.Do(answerQuestionsRequest)
+	if err != nil || resp.StatusCode != http.StatusOK {
 		WriteDeveloperError(w, http.StatusInternalServerError, "Unable to store answers for patient in patient visit: "+err.Error())
+		return
+	}
+
+	// submit case to doctor
+	submitPatientVisitRequest, err := http.NewRequest("PUT", "http://127.0.0.1:8080/v1/visit", bytes.NewBufferString(fmt.Sprintf("patient_visit_id=%d", patientVisitResponse.PatientVisitId)))
+	submitPatientVisitRequest.Header.Set("Content-Type", "application/x-www-form-urlencoded")
+	submitPatientVisitRequest.Header.Set("Authorization", "token "+signupResponse.Token)
+	if err != nil {
+		WriteDeveloperError(w, http.StatusInternalServerError, "Unable to create new request to submit patient visit: "+err.Error())
+		return
+	}
+
+	resp, err = httpClient.Do(submitPatientVisitRequest)
+	if err != nil || resp.StatusCode != http.StatusOK {
+		WriteDeveloperError(w, http.StatusInternalServerError, "Unable to make successful request to submit patient visit")
 		return
 	}
 
