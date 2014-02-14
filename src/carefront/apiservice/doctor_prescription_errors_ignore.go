@@ -13,7 +13,7 @@ type DoctorPrescriptionErrorIgnoreHandler struct {
 }
 
 type DoctorPrescriptionErrorIgnoreRequestData struct {
-	PrescriptionId int64 `schema:"prescription_id,required"`
+	PrescriptionId int64 `schema:"erx_id,required"`
 }
 
 func (d *DoctorPrescriptionErrorIgnoreHandler) ServeHTTP(w http.ResponseWriter, r *http.Request) {

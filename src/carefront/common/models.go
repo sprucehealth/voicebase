@@ -108,7 +108,7 @@ type TreatmentPlan struct {
 
 type Treatment struct {
 	Id                       int64                    `json:"treatment_id,string,omitempty"`
-	PrescriptionId           int64                    `json:"PrescriptionId,string,omitempty"`
+	PrescriptionId           int64                    `json:"erx_id,string,omitempty"`
 	ErxMedicationId          int64                    `json:"-"`
 	PrescriptionStatus       string                   `json:"erx_status,omitempty"`
 	PharmacyLocalId          int64                    `json:"-"`
