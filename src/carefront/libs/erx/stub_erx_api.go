@@ -64,6 +64,14 @@ func (s *StubErxService) GetMedicationList(PatientId int64) ([]*Medication, erro
 	return medications, nil
 }
 
-func (s *StubErxService) GetTransmissionErrorDetails() error {
+func (s *StubErxService) GetTransmissionErrorDetails() ([]*Medication, error) {
+	return nil, nil
+}
+
+func (s *StubErxService) GetTransmissionErrorRefillRequestsCount() (refillRequests int64, transactionErrors int64, err error) {
+	return
+}
+
+func (s *StubErxService) IgnoreAlert(prescriptionId int64) error {
 	return nil
 }

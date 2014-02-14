@@ -19,7 +19,8 @@ type DoctorPatientVisitReviewHandler struct {
 }
 
 type DoctorPatientVisitReviewRequestBody struct {
-	PatientVisitId int64 `schema:"patient_visit_id"`
+	PatientVisitId  int64 `schema:"patient_visit_id"`
+	TreatmentPlanId int64 `schema:"treatment_plan_id"`
 }
 
 type DoctorPatientVisitReviewResponse struct {
@@ -40,12 +41,15 @@ func (p *DoctorPatientVisitReviewHandler) ServeHTTP(w http.ResponseWriter, r *ht
 		return
 	}
 
-	var patientVisit *common.PatientVisit
-	if requestData.PatientVisitId == 0 {
-		patientVisit, err = p.DataApi.GetLatestSubmittedPatientVisit()
-	} else {
-		patientVisit, err = p.DataApi.GetPatientVisitFromId(requestData.PatientVisitId)
+	patientVisitId := requestData.PatientVisitId
+	treatmentPlanId := requestData.TreatmentPlanId
+	err = ensureTreatmentPlanOrPatientVisitIdPresent(p.DataApi, treatmentPlanId, &patientVisitId)
+	if err != nil {
+		WriteDeveloperError(w, http.StatusBadRequest, err.Error())
+		return
 	}
+
+	patientVisit, err := p.DataApi.GetPatientVisitFromId(patientVisitId)
 	if err != nil {
 		WriteDeveloperError(w, http.StatusBadRequest, "Unable to get patient visit information from database based on provided patient visit id : "+err.Error())
 		return
@@ -60,7 +64,7 @@ func (p *DoctorPatientVisitReviewHandler) ServeHTTP(w http.ResponseWriter, r *ht
 
 	// udpate the status of the case and the item in the doctor's queue
 	if patientVisit.Status == api.CASE_STATUS_SUBMITTED {
-		err = p.DataApi.UpdatePatientVisitStatus(patientVisit.PatientVisitId, "", api.CASE_STATUS_REVIEWING)
+		_, err = p.DataApi.StartNewTreatmentPlanForPatientVisit(patientVisit.PatientId, patientVisit.PatientVisitId, doctorId)
 		if err != nil {
 			WriteDeveloperError(w, http.StatusInternalServerError, "Unable to update the status of the visit to reviewing: "+err.Error())
 			return

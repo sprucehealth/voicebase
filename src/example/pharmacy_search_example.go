@@ -2,18 +2,14 @@ package main
 
 import (
 	"carefront/libs/erx"
-	"fmt"
+
 	"os"
 )
 
 func main() {
-	doseSpotService := &erx.DoseSpotService{ClinicId: os.Getenv("DOSESPOT_CLINIC_ID"), ClinicKey: os.Getenv("DOSESPOT_CLINIC_KEY"), UserId: os.Getenv("DOSESPOT_USER_ID")}
-	treatments, err := doseSpotService.GetMedicationList(1885)
+	doseSpotService := erx.NewDoseSpotService(os.Getenv("DOSESPOT_CLINIC_ID"), os.Getenv("DOSESPOT_CLINIC_KEY"), os.Getenv("DOSESPOT_USER_ID"), nil)
+	err := doseSpotService.IgnoreAlert(5033)
 	if err != nil {
 		panic(err.Error())
 	}
-	for _, treatment := range treatments {
-		fmt.Println(treatment.PrescriptionStatus)
-	}
-
 }

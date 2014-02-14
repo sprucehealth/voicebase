@@ -13,9 +13,10 @@ type PatientVisitFollowUpHandler struct {
 }
 
 type PatientVisitFollowUpRequestResponse struct {
-	PatientVisitId int64  `schema:"patient_visit_id"`
-	FollowUpValue  int64  `schema:"follow_up_value"`
-	FollowUpUnit   string `schema:"follow_up_unit"`
+	PatientVisitId  int64  `schema:"patient_visit_id"`
+	TreatmentPlanId int64  `schema:"treatment_plan_id,omitempty"`
+	FollowUpValue   int64  `schema:"follow_up_value"`
+	FollowUpUnit    string `schema:"follow_up_unit"`
 }
 
 type PatientVisitFollowupResponse struct {
@@ -42,13 +43,29 @@ func (p *PatientVisitFollowUpHandler) getFollowupForPatientVisit(w http.Response
 	decoder := schema.NewDecoder()
 	err := decoder.Decode(requestData, r.Form)
 
-	_, _, _, statusCode, err := ValidateDoctorAccessToPatientVisitAndGetRelevantData(requestData.PatientVisitId, GetContext(r).AccountId, p.DataApi)
+	patientVisitId := requestData.PatientVisitId
+	treatmentPlanId := requestData.TreatmentPlanId
+	err = ensureTreatmentPlanOrPatientVisitIdPresent(p.DataApi, treatmentPlanId, &patientVisitId)
+	if err != nil {
+		WriteDeveloperError(w, http.StatusBadRequest, err.Error())
+		return
+	}
+
+	doctorId, _, _, statusCode, err := ValidateDoctorAccessToPatientVisitAndGetRelevantData(patientVisitId, GetContext(r).AccountId, p.DataApi)
 	if err != nil {
 		WriteDeveloperError(w, statusCode, err.Error())
 		return
 	}
 
-	followup, err := p.DataApi.GetFollowUpTimeForPatientVisit(requestData.PatientVisitId)
+	if treatmentPlanId == 0 {
+		treatmentPlanId, err = p.DataApi.GetActiveTreatmentPlanForPatientVisit(doctorId, patientVisitId)
+		if err != nil {
+			WriteDeveloperError(w, http.StatusInternalServerError, "Unable to get active treatment plan information from patient visit: "+err.Error())
+			return
+		}
+	}
+
+	followup, err := p.DataApi.GetFollowUpTimeForPatientVisit(patientVisitId, treatmentPlanId)
 	if err != nil {
 		WriteDeveloperError(w, http.StatusBadRequest, "Unable to get follow up for patient visit: "+err.Error())
 		return
@@ -91,7 +108,13 @@ func (p *PatientVisitFollowUpHandler) updatePatientVisitFollowup(w http.Response
 		return
 	}
 
-	err = p.DataApi.UpdateFollowUpTimeForPatientVisit(requestData.PatientVisitId, time.Now().Unix(), doctorId, requestData.FollowUpValue, requestData.FollowUpUnit)
+	treatmentPlanId, err := p.DataApi.GetActiveTreatmentPlanForPatientVisit(doctorId, requestData.PatientVisitId)
+	if err != nil {
+		WriteDeveloperError(w, http.StatusInternalServerError, "Unable to get treatment plan for patient visit: "+err.Error())
+		return
+	}
+
+	err = p.DataApi.UpdateFollowUpTimeForPatientVisit(treatmentPlanId, time.Now().Unix(), doctorId, requestData.FollowUpValue, requestData.FollowUpUnit)
 	if err != nil {
 		WriteDeveloperError(w, http.StatusInternalServerError, "Unable to update followup for patient visit")
 		return

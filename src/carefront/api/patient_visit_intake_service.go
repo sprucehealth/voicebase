@@ -29,7 +29,7 @@ func (d *DataService) GetAnswersForQuestionsInPatientVisit(role string, question
 								left outer join potential_answer on potential_answer_id = potential_answer.id
 								left outer join localized_text as l1 on potential_answer.answer_localized_text_id = l1.app_text_id
 								left outer join localized_text as l2 on potential_answer.answer_summary_text_id = l2.app_text_id
-								where (info_intake.question_id in (%s) or parent_question_id in (%s)) and role_id = ? and patient_visit_id = ? and info_intake.status='ACTIVE' and role='%s'`, enumeratedStrings, enumeratedStrings, role)
+								where (info_intake.question_id in (%s) or parent_question_id in (%s)) and role_id = ? and context_id = ? and info_intake.status='ACTIVE' and role='%s'`, enumeratedStrings, enumeratedStrings, role)
 	return d.getPatientAnswersForQuestionsBasedOnQuery(queryStr, roleId, patientVisitId)
 }
 
@@ -136,7 +136,7 @@ func (d *DataService) StoreAnswersForQuestion(role string, roleId, patientVisitI
 }
 
 func (d *DataService) CreatePhotoAnswerForQuestionRecord(role string, roleId, questionId, patientVisitId, potentialAnswerId, layoutVersionId int64) (int64, error) {
-	res, err := d.DB.Exec(`insert into info_intake (role, role_id, patient_visit_id, question_id, potential_answer_id, layout_version_id, status) 
+	res, err := d.DB.Exec(`insert into info_intake (role, role_id, context_id, question_id, potential_answer_id, layout_version_id, status) 
 							values (?, ?, ?, ?, ?, ?, 'PENDING_UPLOAD')`, role, roleId, patientVisitId, questionId, potentialAnswerId, layoutVersionId)
 	if err != nil {
 		return 0, err
@@ -151,7 +151,7 @@ func (d *DataService) UpdatePhotoAnswerRecordWithObjectStorageId(patientInfoInta
 }
 func (d *DataService) MakeCurrentPhotoAnswerInactive(role string, roleId, questionId, patientVisitId, potentialAnswerId, layoutVersionId int64) error {
 	_, err := d.DB.Exec(`update info_intake set status='INACTIVE' where role_id = ? and question_id = ? 
-							and patient_visit_id = ? and potential_answer_id = ? 
+							and context_id = ? and potential_answer_id = ? 
 							and layout_version_id = ? and role=?`, roleId, questionId, patientVisitId, potentialAnswerId, layoutVersionId, role)
 	return err
 }
@@ -161,7 +161,7 @@ func (d *DataService) RejectPatientVisitPhotos(patientVisitId int64) error {
 		inner join question on info_intake.question_id = question.id 
 		inner join question_type on question_type.id = question.qtype_id 
 		set info_intake.status='REJECTED' 
-			where info_intake.patient_visit_id = ? and qtype='q_type_photo' and status='ACTIVE'`, patientVisitId)
+			where info_intake.context_id = ? and qtype='q_type_photo' and status='ACTIVE'`, patientVisitId)
 	return err
 }
 
@@ -170,14 +170,14 @@ func insertAnswers(tx *sql.Tx, answersToStore []*common.AnswerIntake, status str
 	for _, answerToStore := range answersToStore {
 
 		if answerToStore.PotentialAnswerId == 0 {
-			res, err = tx.Exec(`insert into info_intake (role_id, patient_visit_id, 
+			res, err = tx.Exec(`insert into info_intake (role_id, context_id, 
 			question_id, answer_text, layout_version_id, role, status) values
-			(?, ?, ?, ?, ?, ?, ?)`, answerToStore.RoleId, answerToStore.PatientVisitId,
+			(?, ?, ?, ?, ?, ?, ?)`, answerToStore.RoleId, answerToStore.ContextId,
 				answerToStore.QuestionId, answerToStore.AnswerText, answerToStore.LayoutVersionId, answerToStore.Role, status)
 		} else {
-			res, err = tx.Exec(`insert into info_intake (role_id, patient_visit_id,  
+			res, err = tx.Exec(`insert into info_intake (role_id, context_id,  
 			question_id, potential_answer_id, answer_text, layout_version_id, role, status) values
-			(?, ?, ?, ?, ?, ?, ?, ?)`, answerToStore.RoleId, answerToStore.PatientVisitId,
+			(?, ?, ?, ?, ?, ?, ?, ?)`, answerToStore.RoleId, answerToStore.ContextId,
 				answerToStore.QuestionId, answerToStore.PotentialAnswerId, answerToStore.AnswerText, answerToStore.LayoutVersionId, answerToStore.Role, status)
 		}
 
@@ -194,14 +194,14 @@ func insertAnswersForSubQuestions(tx *sql.Tx, answersToStore []*common.AnswerInt
 	for _, answerToStore := range answersToStore {
 
 		if answerToStore.PotentialAnswerId == 0 {
-			res, err = tx.Exec(`insert into info_intake (role_id, patient_visit_id, parent_info_intake_id, parent_question_id, 
+			res, err = tx.Exec(`insert into info_intake (role_id, context_id, parent_info_intake_id, parent_question_id, 
 			question_id, answer_text, layout_version_id, role, status) values
-			(?, ?, ?, ?, ?, ?, ?, ?, ?)`, answerToStore.RoleId, answerToStore.PatientVisitId, parentInfoIntakeId, parentQuestionId,
+			(?, ?, ?, ?, ?, ?, ?, ?, ?)`, answerToStore.RoleId, answerToStore.ContextId, parentInfoIntakeId, parentQuestionId,
 				answerToStore.QuestionId, answerToStore.AnswerText, answerToStore.LayoutVersionId, answerToStore.Role, status)
 		} else {
-			res, err = tx.Exec(`insert into info_intake (role_id, patient_visit_id, parent_info_intake_id, parent_question_id, 
+			res, err = tx.Exec(`insert into info_intake (role_id, context_id, parent_info_intake_id, parent_question_id, 
 			question_id, potential_answer_id, answer_text, layout_version_id, role, status) values
-			(?, ?, ?, ?, ?, ?, ?, ?, ?, ?)`, answerToStore.RoleId, answerToStore.PatientVisitId, parentInfoIntakeId, parentQuestionId,
+			(?, ?, ?, ?, ?, ?, ?, ?, ?, ?)`, answerToStore.RoleId, answerToStore.ContextId, parentInfoIntakeId, parentQuestionId,
 				answerToStore.QuestionId, answerToStore.PotentialAnswerId, answerToStore.AnswerText, answerToStore.LayoutVersionId, answerToStore.Role, status)
 		}
 
@@ -229,7 +229,7 @@ func (d *DataService) updateSubAnswersToPatientInfoIntakesWithStatus(role string
 	}
 
 	parentInfoIntakeIds := make([]int64, 0)
-	queryStr := fmt.Sprintf(`select id from info_intake where role_id = ? and question_id in (%s) and patient_visit_id = ? and layout_version_id = ? and status=? and role=?`, enumerateItemsIntoString(questionIds))
+	queryStr := fmt.Sprintf(`select id from info_intake where role_id = ? and question_id in (%s) and context_id = ? and layout_version_id = ? and status=? and role=?`, enumerateItemsIntoString(questionIds))
 	rows, err := tx.Query(queryStr, roleId, patientVisitId, layoutVersionId, previousStatus, role)
 	if err != nil {
 		return err
@@ -255,7 +255,7 @@ func (d *DataService) updateSubAnswersToPatientInfoIntakesWithStatus(role string
 func (d *DataService) updatePatientInfoIntakesWithStatus(role string, questionIds []int64, roleId, patientVisitId, layoutVersionId int64, status string, previousStatus string, tx *sql.Tx) (err error) {
 	updateStr := fmt.Sprintf(`update info_intake set status=? 
 						where role_id = ? and question_id in (%s)
-						and patient_visit_id = ? and layout_version_id = ? and status=? and role=?`, enumerateItemsIntoString(questionIds))
+						and context_id = ? and layout_version_id = ? and status=? and role=?`, enumerateItemsIntoString(questionIds))
 	_, err = tx.Exec(updateStr, status, roleId, patientVisitId, layoutVersionId, previousStatus, role)
 	return err
 }

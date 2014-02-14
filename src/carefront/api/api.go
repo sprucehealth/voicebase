@@ -32,7 +32,6 @@ const (
 	PATIENT_PHONE_HOME          = "Home"
 	PATIENT_PHONE_WORK          = "Work"
 	PATIENT_PHONE_CELL          = "Cell"
-	ERX_STATUS_QUEUE            = "erx"
 )
 
 var (
@@ -65,6 +64,9 @@ type PatientAPI interface {
 	GetPatientPharmacySelection(patientId int64) (pharmacySelection *pharmacy.PharmacyData, err error)
 	TrackPatientAgreements(patientId int64, agreements map[string]bool) error
 	GetPatientFromPatientVisitId(patientVisitId int64) (patient *common.Patient, err error)
+	GetPatientFromTreatmentPlanId(treatmentPlanId int64) (patient *common.Patient, err error)
+	GetPatientsForIds(patientIds []int64) ([]*common.Patient, error)
+	GetPharmacySelectionForPatients(patientIds []int64) ([]*pharmacy.PharmacyData, error)
 }
 
 type PrescriptionStatus struct {
@@ -79,30 +81,34 @@ type PatientVisitAPI interface {
 	GetLastCreatedPatientVisitIdForPatient(patientId int64) (int64, error)
 	GetPatientIdFromPatientVisitId(patientVisitId int64) (int64, error)
 	GetLatestSubmittedPatientVisit() (*common.PatientVisit, error)
+	GetPatientVisitIdFromTreatmentPlanId(treatmentPlanId int64) (int64, error)
 	GetLatestClosedPatientVisitForPatient(patientId int64) (*common.PatientVisit, error)
 	GetPatientVisitFromId(patientVisitId int64) (patientVisit *common.PatientVisit, err error)
 	CreateNewPatientVisit(patientId, healthConditionId, layoutVersionId int64) (int64, error)
+	StartNewTreatmentPlanForPatientVisit(patientId, patientVisitId, doctorId int64) (int64, error)
+	GetActiveTreatmentPlanForPatientVisit(doctorId, patientVisitId int64) (int64, error)
 	UpdatePatientVisitStatus(patientVisitId int64, message, event string) error
 	GetMessageForPatientVisitStatus(patientVisitId int64) (message string, err error)
-	ClosePatientVisit(patientVisitId int64, event, message string) error
+	ClosePatientVisit(patientVisitId, treatmentPlanId int64, event, message string) error
 	SubmitPatientVisitWithId(patientVisitId int64) error
-	UpdateFollowUpTimeForPatientVisit(patientVisitId, doctorId, currentTimeSinceEpoch, followUpValue int64, followUpUnit string) error
-	GetFollowUpTimeForPatientVisit(patientVisitId int64) (followUp *common.FollowUp, err error)
+	UpdateFollowUpTimeForPatientVisit(treatmentPlanId, doctorId, currentTimeSinceEpoch, followUpValue int64, followUpUnit string) error
+	GetFollowUpTimeForPatientVisit(patientVisitId, treatmentPlanId int64) (followUp *common.FollowUp, err error)
 	GetDiagnosisResponseToQuestionWithTag(questionTag string, doctorId, patientVisitId int64) ([]*common.AnswerIntake, error)
-	AddDiagnosisSummaryForPatientVisit(summary string, patientVisitId, doctorId int64) error
-	GetDiagnosisSummaryForPatientVisit(patientVisitId int64) (summary string, err error)
-	DeactivatePreviousDiagnosisForPatientVisit(patientVisitId int64, doctorId int64) error
+	AddDiagnosisSummaryForPatientVisit(summary string, treatmentPlanId, doctorId int64) error
+	GetDiagnosisSummaryForPatientVisit(patientVisitId, treatmentPlanId int64) (summary string, err error)
+	DeactivatePreviousDiagnosisForPatientVisit(treatmentPlanId int64, doctorId int64) error
 	RecordDoctorAssignmentToPatientVisit(patientVisitId, doctorId int64) error
 	GetDoctorAssignedToPatientVisit(patientVisitId int64) (doctor *common.Doctor, err error)
-	GetAdvicePointsForPatientVisit(patientVisitId int64) (advicePoints []*common.DoctorInstructionItem, err error)
-	CreateAdviceForPatientVisit(advicePoints []*common.DoctorInstructionItem, patientVisitId int64) error
+	GetAdvicePointsForPatientVisit(patientVisitId, treatmentPlanId int64) (advicePoints []*common.DoctorInstructionItem, err error)
+	CreateAdviceForPatientVisit(advicePoints []*common.DoctorInstructionItem, treatmentPlanId int64) error
 	CreateRegimenPlanForPatientVisit(regimenPlan *common.RegimenPlan) error
-	GetRegimenPlanForPatientVisit(patientVisitId int64) (regimenPlan *common.RegimenPlan, err error)
-	AddTreatmentsForPatientVisit(treatments []*common.Treatment, doctorId, patientVisitId int64) error
-	GetTreatmentPlanForPatientVisit(patientVisitId int64) (treatmentPlan *common.TreatmentPlan, err error)
+	GetRegimenPlanForPatientVisit(patientVisitId, treatmentPlanId int64) (regimenPlan *common.RegimenPlan, err error)
+	AddTreatmentsForPatientVisit(treatments []*common.Treatment, doctorId, treatmentPlanId int64) error
+	GetTreatmentsBasedOnTreatmentPlanId(patientVisitId, treatmentPlanId int64) ([]*common.Treatment, error)
 	GetTreatmentBasedOnPrescriptionId(erxId int64) (*common.Treatment, error)
-	UpdateTreatmentsWithPrescriptionIds(treatments []*common.Treatment, doctorId, patientVisitId int64) error
+	MarkTreatmentsAsPrescriptionsSent(treatments []*common.Treatment, pharmacySentTo *pharmacy.PharmacyData, doctorId, patientVisitId int64) error
 	AddErxStatusEvent(treatments []*common.Treatment, statusEvent string) error
+	AddErxErrorEventWithMessage(treatment *common.Treatment, statusEvent, errorDetails string, errorTimeStamp time.Time) error
 	GetPrescriptionStatusEventsForPatient(patientId int64) ([]*PrescriptionStatus, error)
 }
 
@@ -132,6 +138,7 @@ type DoctorAPI interface {
 	AddFavoriteTreatments(treatments []*common.DoctorFavoriteTreatment, doctorId int64) error
 	GetFavoriteTreatments(doctorId int64) ([]*common.DoctorFavoriteTreatment, error)
 	DeleteFavoriteTreatments(favoriteTreatments []*common.DoctorFavoriteTreatment, doctorId int64) error
+	GetCompletedPrescriptionsForDoctor(from, to time.Time, doctorId int64) ([]*common.TreatmentPlan, error)
 }
 
 type IntakeAPI interface {

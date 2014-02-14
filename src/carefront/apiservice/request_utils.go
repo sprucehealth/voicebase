@@ -44,6 +44,26 @@ func GetAuthTokenFromHeader(r *http.Request) (string, error) {
 	return parts[1], nil
 }
 
+func ensureTreatmentPlanOrPatientVisitIdPresent(dataApi api.DataAPI, treatmentPlanId int64, patientVisitId *int64) error {
+	if patientVisitId == nil {
+		return fmt.Errorf("PatientVisitId should not be nil!")
+	}
+
+	if *patientVisitId == 0 && treatmentPlanId == 0 {
+		return errors.New("Either patientVisitId or treatmentPlanId should be specified")
+	}
+
+	if *patientVisitId == 0 {
+		patientVisitIdFromTreatmentPlanId, err := dataApi.GetPatientVisitIdFromTreatmentPlanId(treatmentPlanId)
+		if err != nil {
+			return errors.New("Unable to get patient visit id from treatmentPlanId: " + err.Error())
+		}
+		*patientVisitId = patientVisitIdFromTreatmentPlanId
+	}
+
+	return nil
+}
+
 func GetSignedUrlsForAnswersInQuestion(question *info_intake.Question, photoStorageService api.CloudStorageAPI) {
 	// go through each answer to get signed urls
 	for _, patientAnswer := range question.PatientAnswers {
@@ -69,7 +89,7 @@ func GetPatientInfo(dataApi api.DataAPI, pharmacySearchService pharmacy_service.
 		return nil, errors.New("Unable to get patient's pharmacy selection: " + err.Error())
 	}
 
-	if pharmacySelection != nil && pharmacySelection.Id != "" && pharmacySelection.Address == "" {
+	if pharmacySearchService != nil && pharmacySelection != nil && pharmacySelection.Id != "" && pharmacySelection.Address == "" {
 		pharmacy, err := pharmacySearchService.GetPharmacyBasedOnId(pharmacySelection.Id)
 		if err != nil && err != pharmacy_service.NoPharmacyExists {
 			return nil, errors.New("Unable to get pharmacy based on id: " + err.Error())
@@ -220,10 +240,10 @@ func validateRequestBody(answerIntakeRequestBody *AnswerIntakeRequestBody, w htt
 	return nil
 }
 
-func populateAnswersToStoreForQuestion(role string, answerToQuestionItem *AnswerToQuestionItem, patientVisitId, roleId, layoutVersionId int64) []*common.AnswerIntake {
+func populateAnswersToStoreForQuestion(role string, answerToQuestionItem *AnswerToQuestionItem, contextId, roleId, layoutVersionId int64) []*common.AnswerIntake {
 	// get a list of top level answers to store for each of the quetions
 	answersToStore := createAnswersToStoreForQuestion(role, roleId, answerToQuestionItem.QuestionId,
-		patientVisitId, layoutVersionId, answerToQuestionItem.AnswerIntakes)
+		contextId, layoutVersionId, answerToQuestionItem.AnswerIntakes)
 
 	// go through all the answers of each question intake to identify responses that have responses to subquestions
 	// embedded in them, and add that to the list of answers to store in the database
@@ -231,7 +251,7 @@ func populateAnswersToStoreForQuestion(role string, answerToQuestionItem *Answer
 		if answerIntake.SubQuestionAnswerIntakes != nil {
 			subAnswers := make([]*common.AnswerIntake, 0)
 			for _, subAnswer := range answerIntake.SubQuestionAnswerIntakes {
-				subAnswers = append(subAnswers, createAnswersToStoreForQuestion(role, roleId, subAnswer.QuestionId, patientVisitId, layoutVersionId, subAnswer.AnswerIntakes)...)
+				subAnswers = append(subAnswers, createAnswersToStoreForQuestion(role, roleId, subAnswer.QuestionId, contextId, layoutVersionId, subAnswer.AnswerIntakes)...)
 			}
 			answersToStore[i].SubAnswers = subAnswers
 		}
@@ -239,14 +259,14 @@ func populateAnswersToStoreForQuestion(role string, answerToQuestionItem *Answer
 	return answersToStore
 }
 
-func createAnswersToStoreForQuestion(role string, roleId, questionId, patientVisitId, layoutVersionId int64, answerIntakes []*AnswerItem) []*common.AnswerIntake {
+func createAnswersToStoreForQuestion(role string, roleId, questionId, contextId, layoutVersionId int64, answerIntakes []*AnswerItem) []*common.AnswerIntake {
 	answersToStore := make([]*common.AnswerIntake, 0)
 	for _, answerIntake := range answerIntakes {
 		answerToStore := new(common.AnswerIntake)
 		answerToStore.RoleId = roleId
 		answerToStore.Role = role
 		answerToStore.QuestionId = questionId
-		answerToStore.PatientVisitId = patientVisitId
+		answerToStore.ContextId = contextId
 		answerToStore.LayoutVersionId = layoutVersionId
 		answerToStore.PotentialAnswerId = answerIntake.PotentialAnswerId
 		answerToStore.AnswerText = answerIntake.AnswerText

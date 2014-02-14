@@ -74,54 +74,21 @@ func (d *DoctorSubmitPatientVisitReviewHandler) submitPatientVisitReview(w http.
 		return
 	}
 
-	switch requestData.Status {
-	case "", api.CASE_STATUS_CLOSED, api.CASE_STATUS_TREATED, api.CASE_STATUS_TRIAGED:
-		// update the status of the patient visit
-		status := requestData.Status
-		if status == "" {
-			status = api.CASE_STATUS_TREATED
-		}
-		err = d.DataApi.ClosePatientVisit(requestData.PatientVisitId, status, requestData.Message)
-		if err != nil {
-			WriteDeveloperError(w, http.StatusInternalServerError, "Unable to update the status of the visit to closed: "+err.Error())
-			return
-		}
-
-	case api.CASE_STATUS_PHOTOS_REJECTED:
-		// reject the  patient photos
-		err = d.DataApi.RejectPatientVisitPhotos(requestData.PatientVisitId)
-		if err != nil {
-			WriteDeveloperError(w, http.StatusInternalServerError, "Unable to reject patient photos: "+err.Error())
-			return
-		}
-
-		// mark the status on the patient visit to retake photos
-		err = d.DataApi.UpdatePatientVisitStatus(requestData.PatientVisitId, requestData.Message, api.CASE_STATUS_PHOTOS_REJECTED)
-		if err != nil {
-			WriteDeveloperError(w, http.StatusInternalServerError, "Unable to mark the status of the patient visit as rejected: "+err.Error())
-			return
-		}
-	default:
-		WriteDeveloperError(w, http.StatusBadRequest, fmt.Sprintf("Status %s is not a valid status to set for the patient visit review", requestData.Status))
+	treatmentPlanId, err := d.DataApi.GetActiveTreatmentPlanForPatientVisit(doctorId, requestData.PatientVisitId)
+	if err != nil {
+		WriteDeveloperError(w, http.StatusInternalServerError, "Unable to get current active treatment plan for patient visit: "+err.Error())
 		return
 	}
 
-	// mark the status on the visit in the doctor's queue to move it to the completed tab
-	// so that the visit is no longer in the hands of the doctor
-	err = d.DataApi.UpdateStateForPatientVisitInDoctorQueue(doctorId, requestData.PatientVisitId, api.QUEUE_ITEM_STATUS_ONGOING, requestData.Status)
+	patient, err := d.DataApi.GetPatientFromPatientVisitId(requestData.PatientVisitId)
 	if err != nil {
-		WriteDeveloperError(w, http.StatusInternalServerError, "Unable to update the status of the patient visit in the doctor queue: "+err.Error())
+		WriteDeveloperError(w, http.StatusInternalServerError, "Unable to get patient data from patient visit: "+err.Error())
 		return
 	}
 
 	// if doctor treated patient, check for treatments submitted for patient visit,
 	// and send to dose spot
 	if requestData.Status == api.CASE_STATUS_TREATED || requestData.Status == "" {
-		patient, err := d.DataApi.GetPatientFromPatientVisitId(requestData.PatientVisitId)
-		if err != nil {
-			WriteDeveloperError(w, http.StatusInternalServerError, "Unable to get patient data from patient visit: "+err.Error())
-			return
-		}
 
 		// FIX: add fake address for now until we start accepting address from client
 		patient.PatientAddress = &common.Address{
@@ -131,18 +98,32 @@ func (d *DoctorSubmitPatientVisitReviewHandler) submitPatientVisitReview(w http.
 			ZipCode:      "94103",
 		}
 
-		// FIX: add fake pharmacy for now
-		patient.Pharmacy = &pharmacy.PharmacyData{}
-		patient.Pharmacy.Id = "47731"
-
-		treatmentPlan, err := d.DataApi.GetTreatmentPlanForPatientVisit(requestData.PatientVisitId)
+		pharmacySelection, err := d.DataApi.GetPatientPharmacySelection(patient.PatientId)
 		if err != nil {
-			WriteDeveloperError(w, http.StatusInternalServerError, "Unable to get treatment plan: "+err.Error())
+			WriteDeveloperError(w, http.StatusInternalServerError, "Unable to get pharmacy selection for patient: "+err.Error())
+			return
+		}
+		// FIX: Undo this when we are using surescripts as our backing database for pharmacies
+		// patient.pharmacy = pharmacySelection
+
+		// FIX: add fake pharmacy for now
+		patient.Pharmacy = &pharmacy.PharmacyData{
+			Id:      "39203",
+			Source:  pharmacy.PHARMACY_SOURCE_SURESCRIPTS,
+			Address: "123 TEST TEST",
+			City:    "San Francisco",
+			State:   "CA",
+			Postal:  "94115",
+		}
+
+		treatments, err := d.DataApi.GetTreatmentsBasedOnTreatmentPlanId(requestData.PatientVisitId, treatmentPlanId)
+		if err != nil {
+			WriteDeveloperError(w, http.StatusInternalServerError, "Unable to get treatments based on active treatment plan: "+err.Error())
 			return
 		}
 
-		if d.ERxRouting == true && d.ERxApi != nil && treatmentPlan != nil && treatmentPlan.Treatments != nil && len(treatmentPlan.Treatments) > 0 {
-			err = d.ERxApi.StartPrescribingPatient(patient, treatmentPlan.Treatments)
+		if d.ERxRouting == true && d.ERxApi != nil && len(treatments) > 0 {
+			err = d.ERxApi.StartPrescribingPatient(patient, treatments)
 			if err != nil {
 				WriteDeveloperError(w, http.StatusInternalServerError, "Unable to start prescribing patient: "+err.Error())
 				return
@@ -156,14 +137,14 @@ func (d *DoctorSubmitPatientVisitReviewHandler) submitPatientVisitReview(w http.
 			}
 
 			// Save prescription ids for drugs to database
-			err = d.DataApi.UpdateTreatmentsWithPrescriptionIds(treatmentPlan.Treatments, doctorId, requestData.PatientVisitId)
+			err = d.DataApi.MarkTreatmentsAsPrescriptionsSent(treatments, pharmacySelection, doctorId, requestData.PatientVisitId)
 			if err != nil {
 				WriteDeveloperError(w, http.StatusInternalServerError, "Unable to save prescription ids for treatments: "+err.Error())
 				return
 			}
 
 			// Now, send the prescription to the pharmacy
-			unSuccessfulTreatmentIds, err := d.ERxApi.SendMultiplePrescriptions(patient, treatmentPlan.Treatments)
+			unSuccessfulTreatmentIds, err := d.ERxApi.SendMultiplePrescriptions(patient, treatments)
 			if err != nil {
 				WriteDeveloperError(w, http.StatusInternalServerError, "Unable to send prescription to patient's pharmacy: "+err.Error())
 				return
@@ -171,7 +152,7 @@ func (d *DoctorSubmitPatientVisitReviewHandler) submitPatientVisitReview(w http.
 
 			successfulTreatments := make([]*common.Treatment, 0)
 			unSuccessfulTreatments := make([]*common.Treatment, 0)
-			for _, treatment := range treatmentPlan.Treatments {
+			for _, treatment := range treatments {
 				treatmentFound := false
 				for _, unSuccessfulTreatmentId := range unSuccessfulTreatmentIds {
 					if unSuccessfulTreatmentId == treatment.Id {
@@ -211,7 +192,47 @@ func (d *DoctorSubmitPatientVisitReviewHandler) submitPatientVisitReview(w http.
 		}
 	}
 
-	err = d.sendSMSToNotifyPatient(requestData.PatientVisitId)
+	switch requestData.Status {
+	case "", api.CASE_STATUS_CLOSED, api.CASE_STATUS_TREATED, api.CASE_STATUS_TRIAGED:
+		// update the status of the patient visit
+		status := requestData.Status
+		if status == "" {
+			status = api.CASE_STATUS_TREATED
+		}
+		err = d.DataApi.ClosePatientVisit(requestData.PatientVisitId, treatmentPlanId, status, requestData.Message)
+		if err != nil {
+			WriteDeveloperError(w, http.StatusInternalServerError, "Unable to update the status of the visit to closed: "+err.Error())
+			return
+		}
+
+	case api.CASE_STATUS_PHOTOS_REJECTED:
+		// reject the  patient photos
+		err = d.DataApi.RejectPatientVisitPhotos(requestData.PatientVisitId)
+		if err != nil {
+			WriteDeveloperError(w, http.StatusInternalServerError, "Unable to reject patient photos: "+err.Error())
+			return
+		}
+
+		// mark the status on the patient visit to retake photos
+		err = d.DataApi.UpdatePatientVisitStatus(requestData.PatientVisitId, requestData.Message, api.CASE_STATUS_PHOTOS_REJECTED)
+		if err != nil {
+			WriteDeveloperError(w, http.StatusInternalServerError, "Unable to mark the status of the patient visit as rejected: "+err.Error())
+			return
+		}
+	default:
+		WriteDeveloperError(w, http.StatusBadRequest, fmt.Sprintf("Status %s is not a valid status to set for the patient visit review", requestData.Status))
+		return
+	}
+
+	// mark the status on the visit in the doctor's queue to move it to the completed tab
+	// so that the visit is no longer in the hands of the doctor
+	err = d.DataApi.UpdateStateForPatientVisitInDoctorQueue(doctorId, requestData.PatientVisitId, api.QUEUE_ITEM_STATUS_ONGOING, requestData.Status)
+	if err != nil {
+		WriteDeveloperError(w, http.StatusInternalServerError, "Unable to update the status of the patient visit in the doctor queue: "+err.Error())
+		return
+	}
+
+	err = d.sendSMSToNotifyPatient(patient, requestData.PatientVisitId)
 	if err != nil {
 		WriteDeveloperError(w, http.StatusInternalServerError, "Unable to SMS notification to patient: "+err.Error())
 		return
@@ -236,15 +257,12 @@ func (d *DoctorSubmitPatientVisitReviewHandler) queueUpJobForErxStatus(patientId
 	return d.ErxStatusQueue.QueueService.SendMessage(d.ErxStatusQueue.QueueUrl, 0, string(jsonData))
 }
 
-func (d *DoctorSubmitPatientVisitReviewHandler) sendSMSToNotifyPatient(patientVisitId int64) error {
+func (d *DoctorSubmitPatientVisitReviewHandler) sendSMSToNotifyPatient(patient *common.Patient, patientVisitId int64) error {
 
 	if d.TwilioCli != nil {
-		patient, err := d.DataApi.GetPatientFromPatientVisitId(patientVisitId)
-		if err != nil {
-			return err
-		}
+
 		if patient.Phone != "" {
-			_, _, err = d.TwilioCli.Messages.SendSMS(d.TwilioFromNumber, patient.Phone, fmt.Sprintf(patientVisitUpdateNotification, d.IOSDeeplinkScheme))
+			_, _, err := d.TwilioCli.Messages.SendSMS(d.TwilioFromNumber, patient.Phone, fmt.Sprintf(patientVisitUpdateNotification, d.IOSDeeplinkScheme))
 			if err != nil {
 				golog.Errorf("Error sending SMS: %s", err.Error())
 			}
