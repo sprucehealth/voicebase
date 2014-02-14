@@ -25,6 +25,7 @@ alter table patient_pharmacy_selection add column pharmacy_selection_id int unsi
 alter table patient_pharmacy_selection add foreign key (pharmacy_selection_id) references pharmacy_selection(id);
 update patient_pharmacy_selection 
 	inner join pharmacy_selection on pharmacy_selection.pharmacy_id = patient_pharmacy_selection.pharmacy_id set pharmacy_selection_id = pharmacy_selection.id ;
+alter table patient_pharmacy_selection modify column pharmacy_selection_id int unsigned not null; 
 
 
 alter table patient_pharmacy_selection drop column source;

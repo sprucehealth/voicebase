@@ -8,6 +8,7 @@ import (
 	"carefront/common"
 	"carefront/libs/aws/sqs"
 	"carefront/libs/erx"
+	"carefront/libs/pharmacy"
 	"github.com/samuel/go-metrics/metrics"
 
 	"encoding/json"
@@ -28,12 +29,27 @@ func TestPatientVisitReview(t *testing.T) {
 	defer TearDownIntegrationTest(t, testData)
 
 	signedupPatientResponse := SignupRandomTestPatient(t, testData.DataApi, testData.AuthApi)
+
 	patientVisitResponse := CreatePatientVisitForPatient(signedupPatientResponse.Patient.PatientId, testData, t)
 	SubmitPatientVisitForPatient(signedupPatientResponse.Patient.PatientId, patientVisitResponse.PatientVisitId, testData, t)
 
 	patient, err := testData.DataApi.GetPatientFromId(signedupPatientResponse.Patient.PatientId)
 	if err != nil {
 		t.Fatal("Unable to get patient from id: " + err.Error())
+	}
+
+	pharmacySelection := &pharmacy.PharmacyData{
+		Id:      "12345",
+		Source:  pharmacy.PHARMACY_SOURCE_SURESCRIPTS,
+		Address: "12345 Marin Street",
+		City:    "San Francisco",
+		State:   "CA",
+		Phone:   "12345667",
+	}
+
+	err = testData.DataApi.UpdatePatientPharmacy(patient.PatientId, pharmacySelection)
+	if err != nil {
+		t.Fatal("Unable to update patient pharmacy")
 	}
 
 	// try getting the patient visit review for this patient visit and it should fail
@@ -128,6 +144,15 @@ func TestPatientVisitReview(t *testing.T) {
 
 	// start a new patient visit
 	signedupPatientResponse = SignupRandomTestPatient(t, testData.DataApi, testData.AuthApi)
+	// lets get the patient object from database to get an updated view of the object
+	patient, err = testData.DataApi.GetPatientFromId(signedupPatientResponse.Patient.PatientId)
+	if err != nil {
+		t.Fatal("Unable to get patient from database: " + err.Error())
+	}
+	err = testData.DataApi.UpdatePatientPharmacy(patient.PatientId, pharmacySelection)
+	if err != nil {
+		t.Fatal("Unable to update patient pharmacy: " + err.Error())
+	}
 	patientVisitResponse = CreatePatientVisitForPatient(signedupPatientResponse.Patient.PatientId, testData, t)
 	SubmitPatientVisitForPatient(signedupPatientResponse.Patient.PatientId, patientVisitResponse.PatientVisitId, testData, t)
 
@@ -271,6 +296,12 @@ func TestPatientVisitReview(t *testing.T) {
 	}
 	CheckSuccessfulStatusCode(resp, "Unable to make successful call to close the patient visit", t)
 
+	// get an updated view of the patient informatio nfrom the database again given that weve assigned a prescription id to him
+	patient, err = testData.DataApi.GetPatientFromId(signedupPatientResponse.Patient.PatientId)
+	if err != nil {
+		t.Fatal("Unable to get patient from database: " + err.Error())
+	}
+
 	// number of prescripitons returned when not including the time at which it was submitted should be 0
 	doctorPrescriptionsResponse = getPrescriptionsForDoctor(testData.DataApi, t, doctor, fromTime, toTime)
 	if len(doctorPrescriptionsResponse.TreatmentPlans) > 0 {
@@ -286,12 +317,6 @@ func TestPatientVisitReview(t *testing.T) {
 
 	if len(doctorPrescriptionsResponse.TreatmentPlans[0].Treatments) != 2 {
 		t.Fatalf("Expected there to be 2 treatments in this treatment plan for this doctor, instead we have %d", len(doctorPrescriptionsResponse.TreatmentPlans[0].Treatments))
-	}
-
-	// lets get the patient object from database to get an updated view of the object
-	patient, err = testData.DataApi.GetPatientFromId(signedupPatientResponse.Patient.PatientId)
-	if err != nil {
-		t.Fatal("Unable to get patient from database: " + err.Error())
 	}
 
 	prescriptionStatuses, err := testData.DataApi.GetPrescriptionStatusEventsForPatient(patient.ERxPatientId)
