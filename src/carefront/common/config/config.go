@@ -41,6 +41,8 @@ type BaseConfig struct {
 	ZookeeperServicesPrefix string `long:"zk_svc_prefix" description:"Zookeeper svc registry prefix" default:"/services"`
 	Stats                   *Stats `group:"Stats" toml:"stats"`
 
+	Version bool `long:"version" description:"Show version and exit" toml:"-"`
+
 	awsAuth     aws.Auth
 	awsAuthOnce sync.Once
 	zkConn      *zk.Conn
@@ -49,6 +51,12 @@ type BaseConfig struct {
 	reg         svcreg.Registry
 	regOnce     sync.Once
 }
+
+var (
+	GitBranch   string
+	GitRevision string
+	BuildTime   string
+)
 
 var validEnvironments = map[string]bool{
 	"prod":    true,
@@ -235,6 +243,13 @@ func ParseArgs(config interface{}, args []string) ([]string, error) {
 			return nil, fmt.Errorf("config: failed to parse flags: %+v", err)
 		}
 		os.Exit(1)
+	}
+
+	if baseConfig.Version {
+		fmt.Printf("Git Branch: %s\n", GitBranch)
+		fmt.Printf("Git Revision: %s\n", GitRevision)
+		fmt.Printf("Build Time: %s\n", BuildTime)
+		os.Exit(0)
 	}
 
 	if err := LoadConfigFile(baseConfig.ConfigPath, config, baseConfig.AWSAuth); err != nil {

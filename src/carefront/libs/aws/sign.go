@@ -63,7 +63,7 @@ type Service struct {
 func Sign(keys Keys, r *http.Request) error {
 	parts := strings.Split(r.Host, ".")
 	if len(parts) < 4 {
-		return fmt.Errorf("Invalid AWS Endpoint: %s", r.Host)
+		return fmt.Errorf("aws: invalid AWS Endpoint: %s", r.Host)
 	}
 	sv := new(Service)
 	sv.Name = parts[0]
@@ -147,7 +147,7 @@ func (s *Service) writeHeader(w io.Writer, r *http.Request) {
 
 func (s *Service) writeHeaderList(w io.Writer, r *http.Request) {
 	i, a := 0, make([]string, len(r.Header))
-	for k, _ := range r.Header {
+	for k := range r.Header {
 		a[i] = strings.ToLower(k)
 		i++
 	}

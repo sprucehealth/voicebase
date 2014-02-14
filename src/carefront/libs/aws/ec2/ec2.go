@@ -20,8 +20,8 @@ type EC2 struct {
 }
 
 func (ec2 *EC2) Get(action string, params url.Values, response interface{}) error {
-	if ec2.Client.HttpClient == nil {
-		ec2.Client.HttpClient = http.DefaultClient
+	if ec2.Client.HTTPClient == nil {
+		ec2.Client.HTTPClient = http.DefaultClient
 	}
 	if ec2.host == "" {
 		if u, err := url.Parse(ec2.Region.EC2Endpoint); err != nil {
@@ -38,7 +38,7 @@ func (ec2 *EC2) Get(action string, params url.Values, response interface{}) erro
 	if err != nil {
 		return err
 	}
-	res, err := ec2.Client.HttpClient.Do(req)
+	res, err := ec2.Client.HTTPClient.Do(req)
 	if err != nil {
 		return err
 	}

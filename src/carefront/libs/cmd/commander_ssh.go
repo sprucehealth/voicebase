@@ -122,19 +122,19 @@ func (sc *sshCommander) sessionFromCommand(c *Cmd) (*ssh.Session, string, error)
 }
 
 func (sc *sshCommander) run(c *Cmd) error {
-	if sess, cmdString, err := sc.sessionFromCommand(c); err != nil {
+	sess, cmdString, err := sc.sessionFromCommand(c)
+	if err != nil {
 		return err
-	} else {
-		return mapSSHExitError(sess.Run(cmdString))
 	}
+	return mapSSHExitError(sess.Run(cmdString))
 }
 
 func (sc *sshCommander) start(c *Cmd) error {
-	if sess, cmdString, err := sc.sessionFromCommand(c); err != nil {
+	sess, cmdString, err := sc.sessionFromCommand(c)
+	if err != nil {
 		return err
-	} else {
-		return sess.Start(cmdString)
 	}
+	return sess.Start(cmdString)
 }
 
 func (sc *sshCommander) wait(c *Cmd) error {
