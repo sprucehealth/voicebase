@@ -298,23 +298,24 @@ func (d *DataService) GetAnswerInfo(questionId int64, languageId int64) ([]Poten
 		return nil, err
 	}
 	defer rows.Close()
+	return createAnswerInfosFromRows(rows)
+}
+
+func createAnswerInfosFromRows(rows *sql.Rows) ([]PotentialAnswerInfo, error) {
 	answerInfos := make([]PotentialAnswerInfo, 0)
 	for rows.Next() {
 		var id, ordering int64
 		var answerType, answerTag string
 		var answer, answerSummary sql.NullString
-		err = rows.Scan(&id, &answer, &answerSummary, &answerType, &answerTag, &ordering)
-		potentialAnswerInfo := PotentialAnswerInfo{}
-		if answer.Valid {
-			potentialAnswerInfo.Answer = answer.String
+		err := rows.Scan(&id, &answer, &answerSummary, &answerType, &answerTag, &ordering)
+		potentialAnswerInfo := PotentialAnswerInfo{
+			Answer:            answer.String,
+			AnswerSummary:     answerSummary.String,
+			PotentialAnswerId: id,
+			AnswerTag:         answerTag,
+			Ordering:          ordering,
+			AnswerType:        answerType,
 		}
-		if answerSummary.Valid {
-			potentialAnswerInfo.AnswerSummary = answerSummary.String
-		}
-		potentialAnswerInfo.PotentialAnswerId = id
-		potentialAnswerInfo.AnswerTag = answerTag
-		potentialAnswerInfo.Ordering = ordering
-		potentialAnswerInfo.AnswerType = answerType
 		answerInfos = append(answerInfos, potentialAnswerInfo)
 		if err != nil {
 			return answerInfos, err
@@ -323,7 +324,7 @@ func (d *DataService) GetAnswerInfo(questionId int64, languageId int64) ([]Poten
 	return answerInfos, nil
 }
 
-func (d *DataService) GetAnswerInfoForTags(answerTags []string, languageId int64) ([]*PotentialAnswerInfo, error) {
+func (d *DataService) GetAnswerInfoForTags(answerTags []string, languageId int64) ([]PotentialAnswerInfo, error) {
 	for i, answerTag := range answerTags {
 		answerTags[i] = fmt.Sprintf("'%s'", answerTag)
 	}
@@ -336,26 +337,7 @@ func (d *DataService) GetAnswerInfoForTags(answerTags []string, languageId int64
 		return nil, err
 	}
 	defer rows.Close()
-	answerInfos := make([]*PotentialAnswerInfo, 0)
-	for rows.Next() {
-		var id, ordering int64
-		var answerType, answerTag string
-		var answer, answerSummary sql.NullString
-		err = rows.Scan(&id, &answer, &answerSummary, &answerType, &answerTag, &ordering)
-		potentialAnswerInfo := &PotentialAnswerInfo{}
-
-		potentialAnswerInfo.Answer = answer.String
-		potentialAnswerInfo.AnswerSummary = answerSummary.String
-		potentialAnswerInfo.PotentialAnswerId = id
-		potentialAnswerInfo.AnswerTag = answerTag
-		potentialAnswerInfo.Ordering = ordering
-		potentialAnswerInfo.AnswerType = answerType
-		answerInfos = append(answerInfos, potentialAnswerInfo)
-		if err != nil {
-			return answerInfos, err
-		}
-	}
-	return answerInfos, nil
+	return createAnswerInfosFromRows(rows)
 }
 
 func (d *DataService) GetTipSectionInfo(tipSectionTag string, languageId int64) (id int64, tipSectionTitle string, tipSectionSubtext string, err error) {
