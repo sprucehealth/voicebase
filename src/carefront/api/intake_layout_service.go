@@ -5,7 +5,6 @@ import (
 	"database/sql"
 	"fmt"
 	"log"
-	"strings"
 )
 
 func (d *DataService) GetQuestionType(questionId int64) (string, error) {
@@ -212,9 +211,10 @@ func (d *DataService) GetQuestionInfo(questionTag string, languageId int64) (*co
 
 func (d *DataService) GetQuestionInfoForTags(questionTags []string, languageId int64) ([]*common.QuestionInfo, error) {
 
-	for i, questionTag := range questionTags {
-		questionTags[i] = fmt.Sprintf("'%s'", questionTag)
-	}
+	params := make([]interface{}, 0)
+	params = appendStringsToInterfaceSlice(params, questionTags)
+	params = append(params, languageId)
+	params = append(params, languageId)
 
 	rows, err := d.DB.Query(fmt.Sprintf(
 		`select question.question_tag, question.id, l1.ltext, qtype, parent_question_id, l2.ltext, l3.ltext, formatted_field_tags, required from question 
@@ -222,7 +222,7 @@ func (d *DataService) GetQuestionInfoForTags(questionTags []string, languageId i
 			left outer join question_type on qtype_id=question_type.id
 			left outer join localized_text as l2 on qtext_short_text_id = l2.app_text_id
 			left outer join localized_text as l3 on subtext_app_text_id = l3.app_text_id
-				where question_tag in (%s) and (l1.ltext is NULL or l1.language_id = ?) and (l3.ltext is NULL or l3.language_id=?)`, strings.Join(questionTags, ",")), languageId, languageId)
+				where question_tag in (%s) and (l1.ltext is NULL or l1.language_id = ?) and (l3.ltext is NULL or l3.language_id=?)`, nReplacements(len(questionTags))), params...)
 
 	if err != nil {
 		return nil, err
@@ -325,14 +325,16 @@ func createAnswerInfosFromRows(rows *sql.Rows) ([]PotentialAnswerInfo, error) {
 }
 
 func (d *DataService) GetAnswerInfoForTags(answerTags []string, languageId int64) ([]PotentialAnswerInfo, error) {
-	for i, answerTag := range answerTags {
-		answerTags[i] = fmt.Sprintf("'%s'", answerTag)
-	}
+
+	params := make([]interface{}, 0)
+	params = appendStringsToInterfaceSlice(params, answerTags)
+	params = append(params, languageId)
+	params = append(params, languageId)
 	rows, err := d.DB.Query(fmt.Sprintf(`select potential_answer.id, l1.ltext, l2.ltext, atype, potential_answer_tag, ordering from potential_answer 
 								left outer join localized_text as l1 on answer_localized_text_id=l1.app_text_id 
 								left outer join answer_type on atype_id=answer_type.id 
 								left outer join localized_text as l2 on answer_summary_text_id=l2.app_text_id
-									where potential_answer_tag in (%s)  and (l1.language_id = ? or l1.ltext is null) and (l2.language_id = ? or l2.ltext is null) and status='ACTIVE'`, strings.Join(answerTags, ",")), languageId, languageId)
+									where potential_answer_tag in (%s) and (l1.language_id = ? or l1.ltext is null) and (l2.language_id = ? or l2.ltext is null) and status='ACTIVE'`, nReplacements(len(answerTags))), params...)
 	if err != nil {
 		return nil, err
 	}

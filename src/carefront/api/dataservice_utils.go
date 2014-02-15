@@ -68,3 +68,24 @@ func enumerateItemsIntoString(ids []int64) string {
 	}
 	return strings.Join(idsStr, ",")
 }
+
+func nReplacements(n int) string {
+	if n == 0 {
+		return ""
+	}
+
+	result := make([]byte, 2*n-1)
+	for i := 0; i < len(result)-1; i += 2 {
+		result[i] = '?'
+		result[i+1] = ','
+	}
+	result[len(result)-1] = '?'
+	return string(result)
+}
+
+func appendStringsToInterfaceSlice(interfaceSlice []interface{}, strSlice []string) []interface{} {
+	for _, strItem := range strSlice {
+		interfaceSlice = append(interfaceSlice, strItem)
+	}
+	return interfaceSlice
+}
