@@ -12,11 +12,14 @@ type DoctorFavoriteTreatmentsHandler struct {
 }
 
 type DoctorFavoriteTreatmentsRequest struct {
+	TreatmentPlanId    int64                             `json:"treamtent_plan_id"`
+	PatientVisitId     int64                             `json:"patient_visit_id"`
 	FavoriteTreatments []*common.DoctorFavoriteTreatment `json:"favorite_treatments"`
 }
 
 type DoctorFavoriteTreatmentsResponse struct {
 	FavoritedTreatments []*common.DoctorFavoriteTreatment `json:"favorite_treatments"`
+	Treatments          []*common.Treatment               `json:"treatments,omitempty"`
 }
 
 func (t *DoctorFavoriteTreatmentsHandler) ServeHTTP(w http.ResponseWriter, r *http.Request) {
@@ -81,7 +84,29 @@ func (t *DoctorFavoriteTreatmentsHandler) deleteFavoriteTreatments(w http.Respon
 		return
 	}
 
-	WriteJSONToHTTPResponseWriter(w, http.StatusOK, &DoctorFavoriteTreatmentsResponse{FavoritedTreatments: favoriteTreatments})
+	treatmentPlanId := favoriteTreatmentRequest.TreatmentPlanId
+	patientVisitId := favoriteTreatmentRequest.PatientVisitId
+	var treatmentsInTreatmentPlan []*common.Treatment
+	if patientVisitId != 0 {
+		if treatmentPlanId == 0 {
+			treatmentPlanId, err = t.DataApi.GetActiveTreatmentPlanForPatientVisit(doctorId, patientVisitId)
+			if err != nil {
+				WriteDeveloperError(w, http.StatusInternalServerError, "Unable to get active treatment plan from patient visit: "+err.Error())
+				return
+			}
+		}
+
+		treatmentsInTreatmentPlan, err = t.DataApi.GetTreatmentsBasedOnTreatmentPlanId(patientVisitId, treatmentPlanId)
+		if err != nil {
+			WriteDeveloperError(w, http.StatusInternalServerError, "Unable to get treatments based on treatment plan id: "+err.Error())
+			return
+		}
+	}
+
+	WriteJSONToHTTPResponseWriter(w, http.StatusOK, &DoctorFavoriteTreatmentsResponse{
+		FavoritedTreatments: favoriteTreatments,
+		Treatments:          treatmentsInTreatmentPlan,
+	})
 }
 
 func (t *DoctorFavoriteTreatmentsHandler) addFavoriteTreatments(w http.ResponseWriter, r *http.Request) {
@@ -99,7 +124,6 @@ func (t *DoctorFavoriteTreatmentsHandler) addFavoriteTreatments(w http.ResponseW
 		WriteDeveloperError(w, http.StatusInternalServerError, "Unable to get doctor from account id: "+err.Error())
 		return
 	}
-
 	for _, favoriteTreatment := range favoriteTreatmentRequest.FavoriteTreatments {
 
 		err = validateTreatment(favoriteTreatment.FavoritedTreatment)
@@ -107,12 +131,6 @@ func (t *DoctorFavoriteTreatmentsHandler) addFavoriteTreatments(w http.ResponseW
 			WriteDeveloperError(w, http.StatusBadRequest, err.Error())
 			return
 		}
-
-		// ensure to empty out any patient visit, treatment id or treatment plan id being set
-		// this is so that this treatment does not mistakenly get added to the treatment of a patient
-		favoriteTreatment.FavoritedTreatment.TreatmentPlanId = 0
-		favoriteTreatment.FavoritedTreatment.PatientVisitId = 0
-		favoriteTreatment.FavoritedTreatment.Id = 0
 
 		// break up the name into its components so that it can be saved into the database as its components
 		drugName, drugForm, drugRoute := breakDrugInternalNameIntoComponents(favoriteTreatment.FavoritedTreatment.DrugInternalName)
@@ -136,5 +154,27 @@ func (t *DoctorFavoriteTreatmentsHandler) addFavoriteTreatments(w http.ResponseW
 		return
 	}
 
-	WriteJSONToHTTPResponseWriter(w, http.StatusOK, &DoctorFavoriteTreatmentsResponse{FavoritedTreatments: favoriteTreatments})
+	treatmentPlanId := favoriteTreatmentRequest.TreatmentPlanId
+	patientVisitId := favoriteTreatmentRequest.PatientVisitId
+	var treatmentsInTreatmentPlan []*common.Treatment
+	if patientVisitId != 0 {
+		if treatmentPlanId == 0 {
+			treatmentPlanId, err = t.DataApi.GetActiveTreatmentPlanForPatientVisit(doctorId, patientVisitId)
+			if err != nil {
+				WriteDeveloperError(w, http.StatusInternalServerError, "Unable to get active treatment plan from patient visit: "+err.Error())
+				return
+			}
+		}
+
+		treatmentsInTreatmentPlan, err = t.DataApi.GetTreatmentsBasedOnTreatmentPlanId(patientVisitId, treatmentPlanId)
+		if err != nil {
+			WriteDeveloperError(w, http.StatusInternalServerError, "Unable to get treatments based on treatment plan id: "+err.Error())
+			return
+		}
+	}
+
+	WriteJSONToHTTPResponseWriter(w, http.StatusOK, &DoctorFavoriteTreatmentsResponse{
+		FavoritedTreatments: favoriteTreatments,
+		Treatments:          treatmentsInTreatmentPlan,
+	})
 }

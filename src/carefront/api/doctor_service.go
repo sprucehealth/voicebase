@@ -553,17 +553,41 @@ func (d *DataService) AddFavoriteTreatments(favoriteTreatments []*common.DoctorF
 	}
 
 	for _, favoriteTreatment := range favoriteTreatments {
-		err = d.addTreatment(favoriteTreatment.FavoritedTreatment, tx)
+
+		var treatmentIdInPatientTreatmentPlan int64
+		if favoriteTreatment.FavoritedTreatment.TreatmentPlanId != 0 {
+			treatmentIdInPatientTreatmentPlan = favoriteTreatment.FavoritedTreatment.Id
+		}
+
+		err = d.addTreatment(favoriteTreatment.FavoritedTreatment, true, tx)
 		if err != nil {
 			tx.Rollback()
 			return err
 		}
 
-		_, err = tx.Exec(`insert into dr_favorite_treatment (doctor_id, treatment_id, name, status) values (?,?,?,?)`, doctorId, favoriteTreatment.FavoritedTreatment.Id, favoriteTreatment.Name, status_active)
+		lastInsertId, err := tx.Exec(`insert into dr_favorite_treatment (doctor_id, treatment_id, name, status) values (?,?,?,?)`, doctorId, favoriteTreatment.FavoritedTreatment.Id, favoriteTreatment.Name, status_active)
 		if err != nil {
 			tx.Rollback()
 			return err
 		}
+
+		// mark the fact that the treatment was added as a favorite from a patient's treatment
+		// and so the selection needs to be maintained
+		if treatmentIdInPatientTreatmentPlan != 0 {
+
+			drFavoriteTreatmentId, err := lastInsertId.LastInsertId()
+			if err != nil {
+				tx.Rollback()
+				return err
+			}
+
+			_, err = tx.Exec(`insert into treatment_dr_favorite_selection (treatment_id, dr_favorite_treatment_id) values (?,?)`, treatmentIdInPatientTreatmentPlan, drFavoriteTreatmentId)
+			if err != nil {
+				tx.Rollback()
+				return err
+			}
+		}
+
 	}
 
 	return tx.Commit()
@@ -576,6 +600,13 @@ func (d *DataService) DeleteFavoriteTreatments(favoriteTreatments []*common.Doct
 	}
 	for _, favoriteTreatment := range favoriteTreatments {
 		_, err = tx.Exec(`update dr_favorite_treatment set status='DELETED' where id = ? and doctor_id = ?`, favoriteTreatment.Id, doctorId)
+		if err != nil {
+			tx.Rollback()
+			return err
+		}
+
+		// delete all previous selections for this favorited treatment
+		_, err = tx.Exec(`delete from treatment_dr_favorite_selection where dr_favorite_treatment_id = ?`, favoriteTreatment.Id)
 		if err != nil {
 			tx.Rollback()
 			return err

@@ -604,10 +604,18 @@ func (d *DataService) AddTreatmentsForPatientVisit(treatments []*common.Treatmen
 
 	for _, treatment := range treatments {
 		treatment.TreatmentPlanId = treatmentPlanId
-		err = d.addTreatment(treatment, tx)
+		err = d.addTreatment(treatment, false, tx)
 		if err != nil {
 			tx.Rollback()
 			return err
+		}
+
+		if treatment.DoctorFavoriteTreatmentId != 0 {
+			_, err = tx.Exec(`insert into treatment_dr_favorite_selection (treatment_id, dr_favorite_treatment_id) values (?,?)`, treatment.Id, treatment.DoctorFavoriteTreatmentId)
+			if err != nil {
+				tx.Rollback()
+				return err
+			}
 		}
 
 	}
@@ -615,7 +623,7 @@ func (d *DataService) AddTreatmentsForPatientVisit(treatments []*common.Treatmen
 	return tx.Commit()
 }
 
-func (d *DataService) addTreatment(treatment *common.Treatment, tx *sql.Tx) error {
+func (d *DataService) addTreatment(treatment *common.Treatment, asFavorite bool, tx *sql.Tx) error {
 	substitutionsAllowedBit := 0
 	if treatment.SubstitutionsAllowed == true {
 		substitutionsAllowedBit = 1
@@ -666,7 +674,7 @@ func (d *DataService) addTreatment(treatment *common.Treatment, tx *sql.Tx) erro
 	}
 	// add treatment for patient
 	var treatmentId int64
-	if treatment.TreatmentPlanId != 0 {
+	if treatment.TreatmentPlanId != 0 && !asFavorite {
 		insertTreatmentStr := fmt.Sprintf(`insert into treatment (treatment_plan_id, drug_internal_name, drug_name_id, drug_route_id, drug_form_id, dosage_strength, type, dispense_value, dispense_unit_id, refills, substitutions_allowed, days_supply, patient_instructions, pharmacy_notes, status) 
 									values (?,?,%s,%s,%s,?,?,?,?,?,?,?,?,?,?)`, drugNameIdStr, drugRouteIdStr, drugFormIdStr)
 		res, err := tx.Exec(insertTreatmentStr, treatment.TreatmentPlanId, treatment.DrugInternalName, treatment.DosageStrength, treatmentType, treatment.DispenseValue, treatment.DispenseUnitId, treatment.NumberRefills, substitutionsAllowedBit, treatment.DaysSupply, treatment.PatientInstructions, treatment.PharmacyNotes, status_created)
@@ -734,6 +742,7 @@ func (d *DataService) GetTreatmentsBasedOnTreatmentPlanId(patientVisitId, treatm
 
 	defer rows.Close()
 
+	treatmentIds := make([]int64, 0)
 	for rows.Next() {
 		treatment, err := d.getTreatmentFromCurrentRow(rows)
 		if err != nil {
@@ -741,6 +750,36 @@ func (d *DataService) GetTreatmentsBasedOnTreatmentPlanId(patientVisitId, treatm
 		}
 		treatment.TreatmentPlanId = treatmentPlanId
 		treatments = append(treatments, treatment)
+		treatmentIds = append(treatmentIds, treatment.Id)
+	}
+
+	if len(treatments) == 0 {
+		return treatments, nil
+	}
+
+	favoriteRows, err := d.DB.Query(fmt.Sprintf(`select dr_favorite_treatment_id , treatment_dr_favorite_selection.treatment_id from treatment_dr_favorite_selection 
+													inner join dr_favorite_treatment on dr_favorite_treatment.id = dr_favorite_treatment_id
+														where treatment_dr_favorite_selection.treatment_id in (%s) and dr_favorite_treatment.status = ?`, enumerateItemsIntoString(treatmentIds)), status_active)
+	treatmentIdToFavoriteIdMapping := make(map[int64]int64)
+	if err != nil {
+		return nil, err
+	}
+	defer favoriteRows.Close()
+
+	for favoriteRows.Next() {
+		var drFavoriteTreatmentId, treatmentId int64
+		err = favoriteRows.Scan(&drFavoriteTreatmentId, &treatmentId)
+		if err != nil {
+			return nil, err
+		}
+		treatmentIdToFavoriteIdMapping[treatmentId] = drFavoriteTreatmentId
+	}
+
+	// assign the treatments the doctor favorite id if one exists
+	for _, treatment := range treatments {
+		if treatmentIdToFavoriteIdMapping[treatment.Id] != 0 {
+			treatment.DoctorFavoriteTreatmentId = treatmentIdToFavoriteIdMapping[treatment.Id]
+		}
 	}
 
 	return treatments, nil

@@ -413,6 +413,223 @@ func TestFavoriteTreatments(t *testing.T) {
 	}
 }
 
+func TestFavoriteTreatmentsInContextOfPatientVisit(t *testing.T) {
+	if err := CheckIfRunningLocally(t); err == CannotRunTestLocally {
+		t.Log("Skipping test since there is no database to run test on")
+		return
+	}
+	testData := SetupIntegrationTest(t)
+	defer TearDownIntegrationTest(t, testData)
+
+	// get the current primary doctor
+	doctorId := getDoctorIdOfCurrentPrimaryDoctor(testData, t)
+
+	doctor, err := testData.DataApi.GetDoctorFromId(doctorId)
+	if err != nil {
+		t.Fatal("Unable to get doctor from doctor id " + err.Error())
+	}
+
+	// create random patient
+	patientSignedupResponse := SignupRandomTestPatient(t, testData.DataApi, testData.AuthApi)
+	patientVisitResponse := CreatePatientVisitForPatient(patientSignedupResponse.Patient.PatientId, testData, t)
+	SubmitPatientVisitForPatient(patientSignedupResponse.Patient.PatientId, patientVisitResponse.PatientVisitId, testData, t)
+	StartReviewingPatientVisit(patientVisitResponse.PatientVisitId, doctor, testData, t)
+
+	// doctor now attempts to favorite a treatment
+	treatment1 := &common.Treatment{
+		DrugInternalName:     "DrugName (DrugRoute - DrugForm)",
+		DosageStrength:       "10 mg",
+		DispenseValue:        1,
+		DispenseUnitId:       26,
+		NumberRefills:        1,
+		SubstitutionsAllowed: true,
+		DaysSupply:           1,
+		OTC:                  true,
+		PharmacyNotes:        "testing pharmacy notes",
+		PatientInstructions:  "patient insturctions",
+		DrugDBIds: map[string]string{
+			"drug_db_id_1": "12315",
+			"drug_db_id_2": "124",
+		},
+	}
+
+	favoriteTreatment := &common.DoctorFavoriteTreatment{}
+	favoriteTreatment.Name = "Favorite Treatment #1"
+	favoriteTreatment.FavoritedTreatment = treatment1
+
+	doctorFavoriteTreatmentsHandler := &apiservice.DoctorFavoriteTreatmentsHandler{DataApi: testData.DataApi}
+	ts := httptest.NewServer(doctorFavoriteTreatmentsHandler)
+	defer ts.Close()
+
+	favoriteTreatmentsRequest := &apiservice.DoctorFavoriteTreatmentsRequest{FavoriteTreatments: []*common.DoctorFavoriteTreatment{favoriteTreatment}}
+	favoriteTreatmentsRequest.PatientVisitId = patientVisitResponse.PatientVisitId
+	data, err := json.Marshal(&favoriteTreatmentsRequest)
+	if err != nil {
+		t.Fatal("Unable to marshal request body for adding treatments to patient visit")
+	}
+
+	resp, err := authPost(ts.URL, "application/json", bytes.NewBuffer(data), doctor.AccountId)
+	if err != nil {
+		t.Fatal("Unable to make POST request to add treatments to patient visit " + err.Error())
+	}
+
+	body, err := ioutil.ReadAll(resp.Body)
+	if err != nil {
+		t.Fatal("Unable to read body of the post request made to add treatments to patient visit: " + err.Error())
+	}
+
+	CheckSuccessfulStatusCode(resp, "Unsuccessful call made to add favorite treatment for doctor "+string(body), t)
+
+	favoriteTreatmentsResponse := &apiservice.DoctorFavoriteTreatmentsResponse{}
+	err = json.Unmarshal(body, favoriteTreatmentsResponse)
+	if err != nil {
+		t.Fatal("Unable to unmarshal response into object : " + err.Error())
+	}
+
+	if favoriteTreatmentsResponse.FavoritedTreatments == nil || len(favoriteTreatmentsResponse.FavoritedTreatments) != 1 {
+		t.Fatal("Expected 1 favorited treatment in response but got none")
+	}
+
+	if favoriteTreatmentsResponse.FavoritedTreatments[0].Name != favoriteTreatment.Name {
+		t.Fatal("Expected the same favorited treatment to be returned that was added")
+	}
+
+	if favoriteTreatmentsResponse.FavoritedTreatments[0].FavoritedTreatment.DrugName != "DrugName" ||
+		favoriteTreatmentsResponse.FavoritedTreatments[0].FavoritedTreatment.DrugRoute != "DrugRoute" ||
+		favoriteTreatmentsResponse.FavoritedTreatments[0].FavoritedTreatment.DrugForm != "DrugForm" {
+		t.Fatalf("Expected the drug internal name to have been broken into its components %s %s %s", favoriteTreatmentsResponse.FavoritedTreatments[0].FavoritedTreatment.DrugName,
+			favoriteTreatmentsResponse.FavoritedTreatments[0].FavoritedTreatment.DrugRoute, favoriteTreatmentsResponse.FavoritedTreatments[0].FavoritedTreatment.DrugForm)
+	}
+
+	treatment2 := &common.Treatment{
+		DrugInternalName:     "DrugName2 (DrugRoute - DrugForm)",
+		DosageStrength:       "10 mg",
+		DispenseValue:        1,
+		DispenseUnitId:       26,
+		NumberRefills:        1,
+		SubstitutionsAllowed: true,
+		DaysSupply:           1,
+		OTC:                  true,
+		PharmacyNotes:        "testing pharmacy notes",
+		PatientInstructions:  "patient instructions",
+		DrugDBIds: map[string]string{
+			"drug_db_id_1": "12315",
+			"drug_db_id_2": "124",
+		},
+	}
+
+	// lets add this as a treatment to the patient visit
+	getTreatmentsResponse := addAndGetTreatmentsForPatientVisit(testData, []*common.Treatment{treatment2}, doctor.AccountId, patientVisitResponse.PatientVisitId, t)
+
+	if len(getTreatmentsResponse.Treatments) != 1 {
+		t.Fatal("Expected patient visit to have 1 treatment")
+	}
+
+	// now, lets favorite a treatment that exists for the patient visit
+	favoriteTreatment2 := &common.DoctorFavoriteTreatment{}
+	favoriteTreatment2.Name = "Favorite Treatment #2"
+	favoriteTreatment2.FavoritedTreatment = getTreatmentsResponse.Treatments[0]
+	favoriteTreatmentsRequest.FavoriteTreatments[0] = favoriteTreatment2
+	favoriteTreatmentsRequest.PatientVisitId = patientVisitResponse.PatientVisitId
+
+	data, err = json.Marshal(&favoriteTreatmentsRequest)
+	if err != nil {
+		t.Fatal("Unable to marshal request body for adding treatments to patient visit")
+	}
+
+	resp2, err := authPost(ts.URL, "application/json", bytes.NewBuffer(data), doctor.AccountId)
+	if err != nil {
+		t.Fatal("Unable to make POST request to add treatments to patient visit " + err.Error())
+	}
+
+	body, err = ioutil.ReadAll(resp2.Body)
+	if err != nil {
+		t.Fatal("Unable to read from response body: " + err.Error())
+	}
+	CheckSuccessfulStatusCode(resp2, "Unsuccessful call made to add favorite treatment for doctor ", t)
+
+	favoriteTreatmentsResponse = &apiservice.DoctorFavoriteTreatmentsResponse{}
+	err = json.Unmarshal(body, favoriteTreatmentsResponse)
+
+	if err != nil {
+		t.Fatal("Unable to unmarshal response into object : " + err.Error())
+	}
+
+	if favoriteTreatmentsResponse.FavoritedTreatments == nil || len(favoriteTreatmentsResponse.FavoritedTreatments) != 2 {
+		t.Fatal("Expected 2 favorited treatments in response")
+	}
+
+	if favoriteTreatmentsResponse.FavoritedTreatments[0].Name != favoriteTreatment.Name {
+		t.Fatal("Expected the same favorited treatment to be returned that was added")
+	}
+
+	if favoriteTreatmentsResponse.FavoritedTreatments[1].Name != favoriteTreatment2.Name {
+		t.Fatal("Expected the same favorited treatment to be returned that was added")
+	}
+
+	if len(favoriteTreatmentsResponse.Treatments) == 0 {
+		t.Fatal("Expected there to be 1 treatment added to the visit and the doctor")
+	}
+
+	if favoriteTreatmentsResponse.Treatments[0].DoctorFavoriteTreatmentId != favoriteTreatmentsResponse.FavoritedTreatments[1].Id {
+		t.Fatal("Expected the favoriteTreatmentId to be set for the treatment and to be set to the right treatment")
+	}
+
+	// now, lets go ahead and add a treatment to the patient visit from a favorite treatment
+	treatment1.DoctorFavoriteTreatmentId = favoriteTreatmentsResponse.FavoritedTreatments[0].Id
+	treatment2.DoctorFavoriteTreatmentId = favoriteTreatmentsResponse.FavoritedTreatments[1].Id
+	getTreatmentsResponse = addAndGetTreatmentsForPatientVisit(testData, []*common.Treatment{treatment1, treatment2}, doctor.AccountId, patientVisitResponse.PatientVisitId, t)
+
+	if len(getTreatmentsResponse.Treatments) != 2 {
+		t.Fatal("There should exist 2 treatments for the patient visit")
+	}
+
+	if getTreatmentsResponse.Treatments[0].DoctorFavoriteTreatmentId == 0 || getTreatmentsResponse.Treatments[1].DoctorFavoriteTreatmentId == 0 {
+		t.Fatal("Expected the doctorFavoriteId to be set for both treatments given that they were added from favorites")
+	}
+
+	favoriteTreatment.Id = getTreatmentsResponse.Treatments[0].DoctorFavoriteTreatmentId
+	favoriteTreatment.FavoritedTreatment = getTreatmentsResponse.Treatments[0]
+	favoriteTreatmentsRequest.FavoriteTreatments = []*common.DoctorFavoriteTreatment{favoriteTreatment}
+
+	// lets delete a favorite that is also a treatment in the patient visit
+	data, err = json.Marshal(&favoriteTreatmentsRequest)
+	if err != nil {
+		t.Fatal("Unable to marshal request body for adding treatments to patient visit")
+	}
+
+	resp, err = authDelete(ts.URL, "application/json", bytes.NewBuffer(data), doctor.AccountId)
+	if err != nil {
+		t.Fatal("Unable to make POST request to add treatments to patient visit " + err.Error())
+	}
+
+	body, err = ioutil.ReadAll(resp.Body)
+	if err != nil {
+		t.Fatal("Unable to read body of the post request made to add treatments to patient visit: " + err.Error())
+	}
+
+	CheckSuccessfulStatusCode(resp, "Unsuccessful call made to add favorite treatment for doctor "+string(body), t)
+
+	favoriteTreatmentsResponse = &apiservice.DoctorFavoriteTreatmentsResponse{}
+	err = json.Unmarshal(body, favoriteTreatmentsResponse)
+	if err != nil {
+		t.Fatal("Unable to unmarshal response into object : " + err.Error())
+	}
+
+	if len(favoriteTreatmentsResponse.FavoritedTreatments) != 1 {
+		t.Fatal("Expected 1 favorited treatment after deleting the first one")
+	}
+
+	// ensure that treatments are still returned
+	if len(favoriteTreatmentsResponse.Treatments) != 2 {
+		t.Fatal("Expected there to exist 2 treatments for the patient visit even after deleting one of the treatments")
+	}
+
+	if favoriteTreatmentsResponse.Treatments[0].DoctorFavoriteTreatmentId != 0 {
+		t.Fatal("Expected the first treatment to no longer be a favorited treatment")
+	}
+}
+
 func addAndGetTreatmentsForPatientVisit(testData TestData, treatments []*common.Treatment, doctorAccountId, PatientVisitId int64, t *testing.T) *apiservice.GetTreatmentsResponse {
 	treatmentRequestBody := apiservice.AddTreatmentsRequestBody{PatientVisitId: PatientVisitId, Treatments: treatments}
 	treatmentsHandler := apiservice.NewTreatmentsHandler(testData.DataApi)
