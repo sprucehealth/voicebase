@@ -7,7 +7,6 @@ import (
 	"encoding/json"
 	"fmt"
 	"io"
-	"io/ioutil"
 	"mime/multipart"
 	"net/http"
 	"net/url"
@@ -393,12 +392,11 @@ func startPatientIntakeSubmission(answersToQuestions []*AnswerToQuestionItem, pa
 		}
 
 		jsonData, _ := json.Marshal(answerIntakeRequestBody)
-		answerQuestionsRequest, err := http.NewRequest("POST", answerQuestionsUrl, bytes.NewBuffer(jsonData))
+		answerQuestionsRequest, err := http.NewRequest("POST", answerQuestionsUrl, bytes.NewReader(jsonData))
 		answerQuestionsRequest.Header.Set("Content-Type", "application/json")
 		answerQuestionsRequest.Header.Set("Authorization", "token "+patientAuthToken)
 
-		httpClient := http.Client{}
-		resp, err := httpClient.Do(answerQuestionsRequest)
+		resp, err := http.DefaultClient.Do(answerQuestionsRequest)
 		if err != nil || resp.StatusCode != http.StatusOK {
 			signal <- failure
 			return
@@ -426,7 +424,7 @@ func (c *CreateDemoPatientVisitHandler) startPhotoSubmissionForPatient(questionI
 			return
 		}
 
-		_, err = io.Copy(part, bytes.NewBuffer(imageData))
+		_, err = io.Copy(part, bytes.NewReader(imageData))
 		if err != nil {
 			signal <- failure
 			return
@@ -445,8 +443,7 @@ func (c *CreateDemoPatientVisitHandler) startPhotoSubmissionForPatient(questionI
 		photoIntakeRequest, err := http.NewRequest("POST", photoIntakeUrl, body)
 		photoIntakeRequest.Header.Set("Content-Type", writer.FormDataContentType())
 		photoIntakeRequest.Header.Set("Authorization", "token "+patientAuthToken)
-		httpClient := http.Client{}
-		resp, err := httpClient.Do(photoIntakeRequest)
+		resp, err := http.DefaultClient.Do(photoIntakeRequest)
 		if err != nil || resp.StatusCode != http.StatusOK {
 			signal <- failure
 			return
@@ -486,24 +483,19 @@ func (c *CreateDemoPatientVisitHandler) ServeHTTP(w http.ResponseWriter, r *http
 	urlValues.Set("password", "12345")
 	urlValues.Set("email", fmt.Sprintf("%d%d@example.com", time.Now().UnixNano(), doctorId))
 	urlValues.Set("doctor_id", fmt.Sprintf("%d", doctorId))
-	httpClient := http.Client{}
 	signupPatientRequest, err := http.NewRequest("POST", signupPatientUrl, bytes.NewBufferString(urlValues.Encode()))
 	signupPatientRequest.Header.Set("Content-Type", "application/x-www-form-urlencoded")
 
-	resp, err := httpClient.Do(signupPatientRequest)
+	resp, err := http.DefaultClient.Do(signupPatientRequest)
 	if err != nil || resp.StatusCode != http.StatusOK {
 		WriteDeveloperError(w, http.StatusInternalServerError, "Unable to signup random patient: "+err.Error())
 		return
 	}
 
-	body, err := ioutil.ReadAll(resp.Body)
-	if err != nil {
-		WriteDeveloperError(w, http.StatusInternalServerError, "Unable to parse body of response: "+err.Error())
-		return
-	}
-
 	signupResponse := &PatientSignedupResponse{}
-	err = json.Unmarshal(body, signupResponse)
+	err = json.NewDecoder(resp.Body).Decode(&signupResponse)
+	defer resp.Body.Close()
+
 	if err != nil {
 		WriteDeveloperError(w, http.StatusInternalServerError, "Unable to unmarshal response body into object: "+err.Error())
 		return
@@ -525,7 +517,7 @@ func (c *CreateDemoPatientVisitHandler) ServeHTTP(w http.ResponseWriter, r *http
 		WriteDeveloperError(w, http.StatusInternalServerError, "Unable to marshal pharmacy details")
 	}
 
-	updatePatientPharmacyRequest, err := http.NewRequest("POST", updatePatientPharmacyUrl, bytes.NewBuffer(jsonData))
+	updatePatientPharmacyRequest, err := http.NewRequest("POST", updatePatientPharmacyUrl, bytes.NewReader(jsonData))
 	updatePatientPharmacyRequest.Header.Set("Content-Type", "application/json")
 	updatePatientPharmacyRequest.Header.Set("Authorization", "token "+signupResponse.Token)
 	if err != nil {
@@ -533,7 +525,7 @@ func (c *CreateDemoPatientVisitHandler) ServeHTTP(w http.ResponseWriter, r *http
 		return
 	}
 
-	_, err = httpClient.Do(updatePatientPharmacyRequest)
+	_, err = http.DefaultClient.Do(updatePatientPharmacyRequest)
 	if err != nil {
 		WriteDeveloperError(w, http.StatusInternalServerError, "Unable to update pharmacy for patient: "+err.Error())
 		return
@@ -544,19 +536,15 @@ func (c *CreateDemoPatientVisitHandler) ServeHTTP(w http.ResponseWriter, r *http
 	// create patient visit
 	createPatientVisitRequest, err := http.NewRequest("POST", patientVisitUrl, nil)
 	createPatientVisitRequest.Header.Set("Authorization", "token "+signupResponse.Token)
-	resp, err = httpClient.Do(createPatientVisitRequest)
+	resp, err = http.DefaultClient.Do(createPatientVisitRequest)
 	if err != nil || resp.StatusCode != http.StatusOK {
 		WriteDeveloperError(w, http.StatusInternalServerError, "Unable to create new patient visit: "+err.Error())
 		return
 	}
 
-	body, err = ioutil.ReadAll(resp.Body)
-	if err != nil {
-		WriteDeveloperError(w, http.StatusInternalServerError, "Unable to read response")
-	}
-
 	patientVisitResponse := &PatientVisitResponse{}
-	err = json.Unmarshal(body, patientVisitResponse)
+	err = json.NewDecoder(resp.Body).Decode(&patientVisitResponse)
+	defer resp.Body.Close()
 	if err != nil {
 		WriteDeveloperError(w, http.StatusInternalServerError, "Unable to unmarshal response into patient visit response: "+err.Error())
 		return
@@ -637,7 +625,7 @@ func (c *CreateDemoPatientVisitHandler) ServeHTTP(w http.ResponseWriter, r *http
 		return
 	}
 
-	resp, err = httpClient.Do(submitPatientVisitRequest)
+	resp, err = http.DefaultClient.Do(submitPatientVisitRequest)
 	if err != nil || resp.StatusCode != http.StatusOK {
 		WriteDeveloperError(w, http.StatusInternalServerError, "Unable to make successful request to submit patient visit")
 		return

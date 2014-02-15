@@ -120,7 +120,7 @@ func (s *SignupPatientHandler) ServeHTTP(w http.ResponseWriter, r *http.Request)
 	} else {
 		_, err = s.DataApi.CreateCareTeamForPatient(patient.PatientId)
 		if err != nil {
-			golog.Errorf(err)
+			golog.Errorf(err.Error())
 			WriteDeveloperError(w, http.StatusInternalServerError, "Unable to create care team for patient :"+err.Error())
 			return
 		}
