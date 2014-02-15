@@ -304,8 +304,9 @@ func main() {
 	doctorQueueHandler := &apiservice.DoctorQueueHandler{DataApi: dataApi}
 
 	createDemoPatientVisitHandler := &apiservice.CreateDemoPatientVisitHandler{
-		DataApi:     dataApi,
-		Environment: conf.Environment,
+		DataApi:         dataApi,
+		Environment:     conf.Environment,
+		CloudStorageApi: cloudStorageApi,
 	}
 	mux := apiservice.NewAuthServeMux(authApi, metricsRegistry.Scope("restapi"))
 

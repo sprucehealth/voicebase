@@ -6,15 +6,20 @@ import (
 	"carefront/libs/pharmacy"
 	"encoding/json"
 	"fmt"
+	"io"
 	"io/ioutil"
+	"mime/multipart"
 	"net/http"
 	"net/url"
+	"strconv"
 	"time"
 )
 
 type CreateDemoPatientVisitHandler struct {
-	Environment string
-	DataApi     api.DataAPI
+	Environment     string
+	DataApi         api.DataAPI
+	CloudStorageApi api.CloudStorageAPI
+	AWSRegion       string
 }
 
 type questionTag int
@@ -42,6 +47,9 @@ const (
 	qPrevSkinConditionDiagnosis
 	qListPrevSkinConditionDiagnosis
 	qOtherConditionsAcne
+	qFacePhotoIntake
+	qNeckPhotoIntake
+	qChestPhotoIntake
 )
 
 var (
@@ -68,6 +76,9 @@ var (
 		"q_prev_skin_condition_diagnosis":      qPrevSkinConditionDiagnosis,
 		"q_list_prev_skin_condition_diagnosis": qListPrevSkinConditionDiagnosis,
 		"q_other_conditions_acne":              qOtherConditionsAcne,
+		"q_face_photo_intake":                  qFacePhotoIntake,
+		"q_neck_photo_intake":                  qNeckPhotoIntake,
+		"q_chest_photo_intake":                 qChestPhotoIntake,
 	}
 )
 
@@ -98,6 +109,11 @@ const (
 	aListPrevSkinConditionDiagnosisAcne
 	aListPrevSkinConditionDiagnosisPsoriasis
 	aNoneOfTheAboveOtherConditions
+	aFaceFrontPhotoIntake
+	aProfileRightPhotoIntake
+	aProfileLeftPhotoIntake
+	aChestPhotoIntake
+	aNeckPhotoIntake
 )
 
 var (
@@ -126,62 +142,26 @@ var (
 		"a_acne_skin_diagnosis":                       aListPrevSkinConditionDiagnosisAcne,
 		"a_psoriasis_skin_diagnosis":                  aListPrevSkinConditionDiagnosisPsoriasis,
 		"a_other_condition_acne_none":                 aNoneOfTheAboveOtherConditions,
+		"a_face_front_phota_intake":                   aFaceFrontPhotoIntake,
+		"a_face_right_phota_intake":                   aProfileRightPhotoIntake,
+		"a_face_left_phota_intake":                    aProfileLeftPhotoIntake,
+		"a_chest_phota_intake":                        aChestPhotoIntake,
+		"a_neck_photo_intake":                         aNeckPhotoIntake,
 	}
 )
 
-var (
-// questionIds = map[questionTag]int64{
-// 	qAcneOnset:                      28,
-// 	qAcneWorse:                      4,
-// 	qAcneChangesWorse:               6,
-// 	qAcneSymptoms:                   29,
-// 	qAcneWorsePeriod:                30,
-// 	qSkinDescription:                32,
-// 	qAcnePrevTreatmentTypes:         7,
-// 	qAcnePrevTreatmentList:          8,
-// 	qUsingTreatment:                 25,
-// 	qEffectiveTreatment:             24,
-// 	qTreatmentIrritateSkin:          30,
-// 	qLengthTreatment:                26,
-// 	qAnythingElseAcne:               9,
-// 	qAcneLocation:                   18,
-// 	qPregnancyPlanning:              10,
-// 	qCurrentMedications:             46,
-// 	qCurrentMedicationsEntry:        13,
-// 	qLengthCurrentMedication:        41,
-// 	qAllergicMedications:            11,
-// 	qPrevSkinConditionDiagnosis:     15,
-// 	qListPrevSkinConditionDiagnosis: 17,
-// 	qOtherConditionsAcne:            34,
-// }
-
-// answerIds = map[answerTag]int64{
-// 	aSixToTwelveMonths:                       142,
-// 	aAcneWorseYes:                            8,
-// 	aDiscoloration:                           86,
-// 	aScarring:                                85,
-// 	aPainfulToTouch:                          84,
-// 	aCysts:                                   116,
-// 	aAcneWorsePeriodNo:                       88,
-// 	aSkinDescriptionOily:                     92,
-// 	aPrevTreatmentsTypeOTC:                   13,
-// 	aUsingTreatmentYes:                       73,
-// 	aSomewhatEffectiveTreatment:              71,
-// 	aIrritateSkinYes:                         118,
-// 	aLengthTreatmentLessThanMonth:            76,
-// 	aAcneLocationChest:                       60,
-// 	aAcneLocationFace:                        59,
-// 	aAcneLocationNeck:                        132,
-// 	aCurrentlyPregnant:                       120,
-// 	aCurrentMedicationsYes:                   143,
-// 	aTwoToFiveMonthsLength:                   125,
-// 	aAllergicMedicationsNo:                   21,
-// 	aPrevSkinConditionDiagnosisYes:           27,
-// 	aListPrevSkinConditionDiagnosisAcne:      30,
-// 	aListPrevSkinConditionDiagnosisPsoriasis: 32,
-// 	aNoneOfTheAboveOtherConditions:           130,
-// }
-
+const (
+	signupPatientUrl         = "http://127.0.0.1:8080/v1/patient"
+	updatePatientPharmacyUrl = "http://127.0.0.1:8080/v1/patient/pharmacy"
+	patientVisitUrl          = "http://127.0.0.1:8080/v1/visit"
+	answerQuestionsUrl       = "http://127.0.0.1:8080/v1/answer"
+	photoIntakeUrl           = "http://127.0.0.1:8080/v1/answer/photo"
+	DemoPhotosBucketFormat   = "%s-carefront-demo"
+	frontPhoto               = "profile_front.jpg"
+	profileRightPhoto        = "profile_right.jpg"
+	profileLeftPhoto         = "profile_left.jpg"
+	neckPhoto                = "neck.jpg"
+	chestPhoto               = "chest.jpg"
 )
 
 func populatePatientIntake(questionIds map[questionTag]int64, answerIds map[potentialAnswerTag]int64) []*AnswerToQuestionItem {
@@ -401,9 +381,85 @@ func populatePatientIntake(questionIds map[questionTag]int64, answerIds map[pote
 	}
 }
 
+func startPatientIntakeSubmission(answersToQuestions []*AnswerToQuestionItem, patientVisitId int64, patientAuthToken string, signal chan int) {
+
+	go func() {
+
+		answerIntakeRequestBody := &AnswerIntakeRequestBody{
+			PatientVisitId: patientVisitId,
+			Questions:      answersToQuestions,
+		}
+
+		jsonData, _ := json.Marshal(answerIntakeRequestBody)
+		answerQuestionsRequest, err := http.NewRequest("POST", answerQuestionsUrl, bytes.NewBuffer(jsonData))
+		answerQuestionsRequest.Header.Set("Content-Type", "application/json")
+		answerQuestionsRequest.Header.Set("Authorization", "token "+patientAuthToken)
+
+		httpClient := http.Client{}
+		resp, err := httpClient.Do(answerQuestionsRequest)
+		if err != nil || resp.StatusCode != http.StatusOK {
+			signal <- 0
+			return
+			//return fmt.Errorf("Unable to store answers for patient in patient visit: " + err.Error())
+		}
+		signal <- 1
+	}()
+}
+
+func (c *CreateDemoPatientVisitHandler) startPhotoSubmissionForPatient(questionId, answerId, patientVisitId int64, photoKey, patientAuthToken string, signal chan int) {
+
+	go func() {
+		// get the image
+		imageData, _, err := c.CloudStorageApi.GetObjectAtLocation(fmt.Sprintf(DemoPhotosBucketFormat, c.Environment), photoKey, c.AWSRegion)
+		if err != nil {
+			signal <- 0
+			return
+		}
+
+		body := &bytes.Buffer{}
+		writer := multipart.NewWriter(body)
+		// uploading any file as a photo for now
+		part, err := writer.CreateFormFile("photo", photoKey)
+		if err != nil {
+			signal <- 0
+			return
+			//return fmt.Errorf("Unable to create a form file with a sample file")
+		}
+
+		_, err = io.Copy(part, bytes.NewBuffer(imageData))
+		if err != nil {
+			signal <- 0
+			return
+			//return fmt.Errorf("Unable to copy contents of file into multipart form data: " + err.Error())
+		}
+
+		writer.WriteField("question_id", strconv.FormatInt(questionId, 10))
+		writer.WriteField("potential_answer_id", strconv.FormatInt(answerId, 10))
+		writer.WriteField("patient_visit_id", strconv.FormatInt(patientVisitId, 10))
+
+		err = writer.Close()
+		if err != nil {
+			signal <- 0
+			return
+			//return fmt.Errorf("Unable to create multi-form data. Error when trying to close writer: " + err.Error())
+		}
+
+		photoIntakeRequest, err := http.NewRequest("POST", photoIntakeUrl, body)
+		photoIntakeRequest.Header.Set("Content-Type", writer.FormDataContentType())
+		photoIntakeRequest.Header.Set("Authorization", "token "+patientAuthToken)
+		httpClient := http.Client{}
+		resp, err := httpClient.Do(photoIntakeRequest)
+		if err != nil || resp.StatusCode != http.StatusOK {
+			signal <- 0
+			return
+			//return fmt.Errorf("Unable to store photo for patient in patient visit", err.Error())
+		}
+		signal <- 1
+	}()
+}
+
 func (c *CreateDemoPatientVisitHandler) ServeHTTP(w http.ResponseWriter, r *http.Request) {
 
-	// ensure that this is the doctor that we are dealing with
 	doctorId, err := c.DataApi.GetDoctorIdFromAccountId(GetContext(r).AccountId)
 	if err != nil {
 		WriteDeveloperError(w, http.StatusBadRequest, "Unable to get doctor based on the account id: "+err.Error())
@@ -422,7 +478,7 @@ func (c *CreateDemoPatientVisitHandler) ServeHTTP(w http.ResponseWriter, r *http
 		return
 	}
 
-	// Create a demo user account
+	// ********** CREATE RANDOM PATIENT **********
 	urlValues := url.Values{}
 	urlValues.Set("first_name", "Demo")
 	urlValues.Set("last_name", "User")
@@ -434,7 +490,7 @@ func (c *CreateDemoPatientVisitHandler) ServeHTTP(w http.ResponseWriter, r *http
 	urlValues.Set("email", fmt.Sprintf("%d%d@example.com", time.Now().UnixNano(), doctorId))
 	urlValues.Set("doctor_id", fmt.Sprintf("%d", doctorId))
 	httpClient := http.Client{}
-	signupPatientRequest, err := http.NewRequest("POST", "http://127.0.0.1:8080/v1/patient", bytes.NewBufferString(urlValues.Encode()))
+	signupPatientRequest, err := http.NewRequest("POST", signupPatientUrl, bytes.NewBufferString(urlValues.Encode()))
 	signupPatientRequest.Header.Set("Content-Type", "application/x-www-form-urlencoded")
 
 	resp, err := httpClient.Do(signupPatientRequest)
@@ -456,6 +512,8 @@ func (c *CreateDemoPatientVisitHandler) ServeHTTP(w http.ResponseWriter, r *http
 		return
 	}
 
+	// ********** ASSIGN PHARMACY TO PATIENT **********
+
 	pharmacyDetails := &pharmacy.PharmacyData{
 		Id:      "CoQBdgAAAIU6I2DXvwyyql2HTtAdaMrZ_AEgvKsD1O_V4mePQw3NNgntSwDlCKoCdd47DZdZbPOMEXMWSPyno1qekMr0A0ghV2rWGpVbVjLeM-ehKZH1gxMtTVlon47ktbVi2uUKCyuzpZh5hI7gjQChUPkkGoxnpKoLeAcCnzEeC5m4YGRFEhALIHQkJ_E13vByzK_t9xjlGhSDLIpV9QxTHgTwoESfAKHkMIzuxQ",
 		Address: "116 New Montgomery St",
@@ -470,7 +528,7 @@ func (c *CreateDemoPatientVisitHandler) ServeHTTP(w http.ResponseWriter, r *http
 		WriteDeveloperError(w, http.StatusInternalServerError, "Unable to marshal pharmacy details")
 	}
 
-	updatePatientPharmacyRequest, err := http.NewRequest("POST", "http://127.0.0.1:8080/v1/patient/pharmacy", bytes.NewBuffer(jsonData))
+	updatePatientPharmacyRequest, err := http.NewRequest("POST", updatePatientPharmacyUrl, bytes.NewBuffer(jsonData))
 	updatePatientPharmacyRequest.Header.Set("Content-Type", "application/json")
 	updatePatientPharmacyRequest.Header.Set("Authorization", "token "+signupResponse.Token)
 	if err != nil {
@@ -484,8 +542,10 @@ func (c *CreateDemoPatientVisitHandler) ServeHTTP(w http.ResponseWriter, r *http
 		return
 	}
 
+	// ********** CREATE PATIENT VISIT **********
+
 	// create patient visit
-	createPatientVisitRequest, err := http.NewRequest("POST", "http://127.0.0.1:8080/v1/visit", nil)
+	createPatientVisitRequest, err := http.NewRequest("POST", patientVisitUrl, nil)
 	createPatientVisitRequest.Header.Set("Authorization", "token "+signupResponse.Token)
 	resp, err = httpClient.Do(createPatientVisitRequest)
 	if err != nil || resp.StatusCode != http.StatusOK {
@@ -505,7 +565,7 @@ func (c *CreateDemoPatientVisitHandler) ServeHTTP(w http.ResponseWriter, r *http
 		return
 	}
 
-	// answer questions
+	// ********** SIMULATE PATIENT INTAKE **********
 
 	questionIds := make(map[questionTag]int64)
 	questionTagsForLookup := make([]string, 0)
@@ -538,24 +598,41 @@ func (c *CreateDemoPatientVisitHandler) ServeHTTP(w http.ResponseWriter, r *http
 	}
 
 	answersToQuestions := populatePatientIntake(questionIds, answerIds)
-	answerIntakeRequestBody := &AnswerIntakeRequestBody{
-		PatientVisitId: patientVisitResponse.PatientVisitId,
-		Questions:      answersToQuestions,
+
+	// use a buffered channel so that the goroutines don't block
+	// until the receiver reads off the channel
+	signal := make(chan int, 6)
+	numRequestsWaitingFor := 6
+
+	startPatientIntakeSubmission(answersToQuestions, patientVisitResponse.PatientVisitId, signupResponse.Token, signal)
+
+	c.startPhotoSubmissionForPatient(questionIds[qFacePhotoIntake],
+		answerIds[aFaceFrontPhotoIntake], patientVisitResponse.PatientVisitId, frontPhoto, signupResponse.Token, signal)
+
+	c.startPhotoSubmissionForPatient(questionIds[qFacePhotoIntake],
+		answerIds[aProfileRightPhotoIntake], patientVisitResponse.PatientVisitId, profileRightPhoto, signupResponse.Token, signal)
+
+	c.startPhotoSubmissionForPatient(questionIds[qFacePhotoIntake],
+		answerIds[aProfileLeftPhotoIntake], patientVisitResponse.PatientVisitId, profileLeftPhoto, signupResponse.Token, signal)
+
+	c.startPhotoSubmissionForPatient(questionIds[qNeckPhotoIntake],
+		answerIds[aNeckPhotoIntake], patientVisitResponse.PatientVisitId, neckPhoto, signupResponse.Token, signal)
+
+	c.startPhotoSubmissionForPatient(questionIds[qChestPhotoIntake],
+		answerIds[aChestPhotoIntake], patientVisitResponse.PatientVisitId, chestPhoto, signupResponse.Token, signal)
+
+	// wait for all requests to finish
+	for numRequestsWaitingFor > 0 {
+		result := <-signal
+		if result == 0 {
+			WriteDeveloperError(w, http.StatusInternalServerError, "Something went wrong when tryign to submit patient visit intake. Patient visit not successfully submitted")
+			return
+		}
+		numRequestsWaitingFor--
 	}
 
-	jsonData, err = json.Marshal(answerIntakeRequestBody)
-	answerQuestionsRequest, err := http.NewRequest("POST", "http://127.0.0.1:8080/v1/answer", bytes.NewBuffer(jsonData))
-	answerQuestionsRequest.Header.Set("Content-Type", "application/json")
-	answerQuestionsRequest.Header.Set("Authorization", "token "+signupResponse.Token)
-
-	resp, err = httpClient.Do(answerQuestionsRequest)
-	if err != nil || resp.StatusCode != http.StatusOK {
-		WriteDeveloperError(w, http.StatusInternalServerError, "Unable to store answers for patient in patient visit: "+err.Error())
-		return
-	}
-
-	// submit case to doctor
-	submitPatientVisitRequest, err := http.NewRequest("PUT", "http://127.0.0.1:8080/v1/visit", bytes.NewBufferString(fmt.Sprintf("patient_visit_id=%d", patientVisitResponse.PatientVisitId)))
+	// ********** SUBMIT CASE TO DOCTOR **********
+	submitPatientVisitRequest, err := http.NewRequest("PUT", patientVisitUrl, bytes.NewBufferString(fmt.Sprintf("patient_visit_id=%d", patientVisitResponse.PatientVisitId)))
 	submitPatientVisitRequest.Header.Set("Content-Type", "application/x-www-form-urlencoded")
 	submitPatientVisitRequest.Header.Set("Authorization", "token "+signupResponse.Token)
 	if err != nil {
