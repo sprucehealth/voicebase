@@ -3,10 +3,10 @@ package apiservice
 import (
 	"carefront/api"
 	"carefront/common"
+	"carefront/libs/golog"
 	"carefront/libs/maps"
 	thriftapi "carefront/thrift/api"
 	"github.com/gorilla/schema"
-	"log"
 	"net/http"
 	"strconv"
 	"strings"
@@ -120,7 +120,7 @@ func (s *SignupPatientHandler) ServeHTTP(w http.ResponseWriter, r *http.Request)
 	} else {
 		_, err = s.DataApi.CreateCareTeamForPatient(patient.PatientId)
 		if err != nil {
-			log.Println(err)
+			golog.Errorf(err)
 			WriteDeveloperError(w, http.StatusInternalServerError, "Unable to create care team for patient :"+err.Error())
 			return
 		}
