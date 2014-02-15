@@ -156,12 +156,14 @@ const (
 	patientVisitUrl          = "http://127.0.0.1:8080/v1/visit"
 	answerQuestionsUrl       = "http://127.0.0.1:8080/v1/answer"
 	photoIntakeUrl           = "http://127.0.0.1:8080/v1/answer/photo"
-	DemoPhotosBucketFormat   = "%s-carefront-demo"
+	demoPhotosBucketFormat   = "%s-carefront-demo"
 	frontPhoto               = "profile_front.jpg"
 	profileRightPhoto        = "profile_right.jpg"
 	profileLeftPhoto         = "profile_left.jpg"
 	neckPhoto                = "neck.jpg"
 	chestPhoto               = "chest.jpg"
+	failure                  = 0
+	success                  = 1
 )
 
 func populatePatientIntake(questionIds map[questionTag]int64, answerIds map[potentialAnswerTag]int64) []*AnswerToQuestionItem {
@@ -398,11 +400,10 @@ func startPatientIntakeSubmission(answersToQuestions []*AnswerToQuestionItem, pa
 		httpClient := http.Client{}
 		resp, err := httpClient.Do(answerQuestionsRequest)
 		if err != nil || resp.StatusCode != http.StatusOK {
-			signal <- 0
+			signal <- failure
 			return
-			//return fmt.Errorf("Unable to store answers for patient in patient visit: " + err.Error())
 		}
-		signal <- 1
+		signal <- success
 	}()
 }
 
@@ -410,9 +411,9 @@ func (c *CreateDemoPatientVisitHandler) startPhotoSubmissionForPatient(questionI
 
 	go func() {
 		// get the image
-		imageData, _, err := c.CloudStorageApi.GetObjectAtLocation(fmt.Sprintf(DemoPhotosBucketFormat, c.Environment), photoKey, c.AWSRegion)
+		imageData, _, err := c.CloudStorageApi.GetObjectAtLocation(fmt.Sprintf(demoPhotosBucketFormat, c.Environment), photoKey, c.AWSRegion)
 		if err != nil {
-			signal <- 0
+			signal <- failure
 			return
 		}
 
@@ -421,16 +422,14 @@ func (c *CreateDemoPatientVisitHandler) startPhotoSubmissionForPatient(questionI
 		// uploading any file as a photo for now
 		part, err := writer.CreateFormFile("photo", photoKey)
 		if err != nil {
-			signal <- 0
+			signal <- failure
 			return
-			//return fmt.Errorf("Unable to create a form file with a sample file")
 		}
 
 		_, err = io.Copy(part, bytes.NewBuffer(imageData))
 		if err != nil {
-			signal <- 0
+			signal <- failure
 			return
-			//return fmt.Errorf("Unable to copy contents of file into multipart form data: " + err.Error())
 		}
 
 		writer.WriteField("question_id", strconv.FormatInt(questionId, 10))
@@ -439,9 +438,8 @@ func (c *CreateDemoPatientVisitHandler) startPhotoSubmissionForPatient(questionI
 
 		err = writer.Close()
 		if err != nil {
-			signal <- 0
+			signal <- failure
 			return
-			//return fmt.Errorf("Unable to create multi-form data. Error when trying to close writer: " + err.Error())
 		}
 
 		photoIntakeRequest, err := http.NewRequest("POST", photoIntakeUrl, body)
@@ -450,11 +448,10 @@ func (c *CreateDemoPatientVisitHandler) startPhotoSubmissionForPatient(questionI
 		httpClient := http.Client{}
 		resp, err := httpClient.Do(photoIntakeRequest)
 		if err != nil || resp.StatusCode != http.StatusOK {
-			signal <- 0
+			signal <- failure
 			return
-			//return fmt.Errorf("Unable to store photo for patient in patient visit", err.Error())
 		}
-		signal <- 1
+		signal <- success
 	}()
 }
 
@@ -624,7 +621,7 @@ func (c *CreateDemoPatientVisitHandler) ServeHTTP(w http.ResponseWriter, r *http
 	// wait for all requests to finish
 	for numRequestsWaitingFor > 0 {
 		result := <-signal
-		if result == 0 {
+		if result == failure {
 			WriteDeveloperError(w, http.StatusInternalServerError, "Something went wrong when tryign to submit patient visit intake. Patient visit not successfully submitted")
 			return
 		}
