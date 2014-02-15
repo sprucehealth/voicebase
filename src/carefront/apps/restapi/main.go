@@ -303,11 +303,6 @@ func main() {
 	doctorAdviceHandler := apiservice.NewDoctorAdviceHandler(dataApi)
 	doctorQueueHandler := &apiservice.DoctorQueueHandler{DataApi: dataApi}
 
-	createDemoPatientVisitHandler := &apiservice.CreateDemoPatientVisitHandler{
-		DataApi:         dataApi,
-		Environment:     conf.Environment,
-		CloudStorageApi: cloudStorageApi,
-	}
 	mux := apiservice.NewAuthServeMux(authApi, metricsRegistry.Scope("restapi"))
 
 	mux.Handle("/v1/content", staticContentHandler)
@@ -353,7 +348,15 @@ func main() {
 	mux.Handle("/v1/doctor/visit/followup", doctorFollowupHandler)
 	mux.Handle("/v1/doctor/visit/submit", doctorSubmitPatientVisitHandler)
 
-	mux.Handle("/v1/doctor/demo/patient_visit", createDemoPatientVisitHandler)
+	// add the api to create demo visits to every environment except production
+	if conf.Environment != "prod" {
+		createDemoPatientVisitHandler := &apiservice.CreateDemoPatientVisitHandler{
+			DataApi:         dataApi,
+			Environment:     conf.Environment,
+			CloudStorageApi: cloudStorageApi,
+		}
+		mux.Handle("/v1/doctor/demo/patient_visit", createDemoPatientVisitHandler)
+	}
 
 	app_worker.StartWorkerToUpdatePrescriptionStatusForPatient(dataApi, doseSpotService, erxStatusQueue, metricsRegistry.Scope("check_erx_status"))
 
