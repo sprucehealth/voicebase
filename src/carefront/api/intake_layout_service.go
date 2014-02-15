@@ -231,21 +231,19 @@ func (d *DataService) GetQuestionInfoForTags(questionTags []string, languageId i
 
 	questionInfos := make([]*common.QuestionInfo, 0)
 	for rows.Next() {
-		questionInfo := new(common.QuestionInfo)
-
+		var id int64
 		var questionTag string
-		var byteQuestionTitle, byteQuestionType, byteQuestionSummary, byteQuestionSubtext []byte
-		var formattedFieldTagsNull sql.NullString
+		var questionTitle, questionType, questionSummary, questionSubText, formattedFieldTagsNull sql.NullString
 		var nullParentQuestionId, requiredBit sql.NullInt64
 
 		err = rows.Scan(
 			&questionTag,
-			&questionInfo.Id,
-			&byteQuestionTitle,
-			&byteQuestionType,
+			&id,
+			&questionTitle,
+			&questionType,
 			&nullParentQuestionId,
-			&byteQuestionSummary,
-			&byteQuestionSubtext,
+			&questionSummary,
+			&questionSubText,
 			&formattedFieldTagsNull,
 			&requiredBit,
 		)
@@ -254,14 +252,17 @@ func (d *DataService) GetQuestionInfoForTags(questionTags []string, languageId i
 			return nil, err
 		}
 
-		questionInfo.ParentQuestionId = nullParentQuestionId.Int64
-		questionInfo.QuestionTag = questionTag
-		questionInfo.Title = string(byteQuestionTitle)
-		questionInfo.Type = string(byteQuestionType)
-		questionInfo.Summary = string(byteQuestionSummary)
-		questionInfo.SubText = string(byteQuestionSubtext)
-		questionInfo.FormattedFieldTags = formattedFieldTagsNull.String
-		questionInfo.Required = (requiredBit.Valid && requiredBit.Int64 == 1)
+		questionInfo := &common.QuestionInfo{
+			Id:                 id,
+			ParentQuestionId:   nullParentQuestionId.Int64,
+			QuestionTag:        questionTag,
+			Title:              questionTitle.String,
+			Type:               questionType.String,
+			Summary:            questionType.String,
+			SubText:            questionSubText.String,
+			FormattedFieldTags: formattedFieldTagsNull.String,
+			Required:           (requiredBit.Valid && requiredBit.Int64 == 1),
+		}
 
 		// get any additional fields pertaining to the question from the database
 		rows, err := d.DB.Query(`select question_field, ltext from question_fields
