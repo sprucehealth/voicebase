@@ -12,8 +12,8 @@ type DoctorFavoriteTreatmentsHandler struct {
 }
 
 type DoctorFavoriteTreatmentsRequest struct {
-	TreatmentPlanId    int64                             `json:"treamtent_plan_id"`
-	PatientVisitId     int64                             `json:"patient_visit_id"`
+	TreatmentPlanId    int64                             `json:"treamtent_plan_id,string"`
+	PatientVisitId     int64                             `json:"patient_visit_id,string"`
 	FavoriteTreatments []*common.DoctorFavoriteTreatment `json:"favorite_treatments"`
 }
 
