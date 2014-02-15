@@ -140,7 +140,6 @@ type DoctorAPI interface {
 	GetFavoriteTreatments(doctorId int64) ([]*common.DoctorFavoriteTreatment, error)
 	DeleteFavoriteTreatments(favoriteTreatments []*common.DoctorFavoriteTreatment, doctorId int64) error
 	GetCompletedPrescriptionsForDoctor(from, to time.Time, doctorId int64) ([]*common.TreatmentPlan, error)
-	IsDoctorOnDemoWhitelist(doctorId int64) bool
 }
 
 type IntakeAPI interface {

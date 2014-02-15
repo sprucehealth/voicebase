@@ -466,12 +466,6 @@ func (c *CreateDemoPatientVisitHandler) ServeHTTP(w http.ResponseWriter, r *http
 		return
 	}
 
-	// ensure that the doctor is on the demo whitelist
-	if !(c.DataApi.IsDoctorOnDemoWhitelist(doctorId)) {
-		WriteUserError(w, http.StatusBadRequest, "Cannot create demo visit for doctor that is not on demo account")
-		return
-	}
-
 	// ********** CREATE RANDOM PATIENT **********
 	urlValues := url.Values{}
 	urlValues.Set("first_name", "Demo")
