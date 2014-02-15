@@ -261,7 +261,7 @@ func (d *DataService) GetQuestionInfoForTags(questionTags []string, languageId i
 			Summary:            questionSummary.String,
 			SubText:            questionSubText.String,
 			FormattedFieldTags: formattedFieldTagsNull.String,
-			Required:           (requiredBit.Valid && requiredBit.Int64 == 1),
+			Required:           requiredBit.Valid && requiredBit.Int64 == 1,
 		}
 
 		// get any additional fields pertaining to the question from the database

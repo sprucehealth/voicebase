@@ -760,7 +760,7 @@ func (d *DataService) GetCompletedPrescriptionsForDoctor(from, to time.Time, doc
 			PrescriptionStatus:      erxStatus.String,
 			StatusDetails:           eventDetails.String,
 			PharmacyNotes:           pharmacyNotes.String,
-			OTC:                     (treatmentType == treatment_otc),
+			OTC:                     treatmentType == treatment_otc,
 		}
 
 		err = d.fillInDrugDBIdsForTreatment(treatment)
@@ -785,7 +785,7 @@ func (d *DataService) GetCompletedPrescriptionsForDoctor(from, to time.Time, doc
 func (d *DataService) IsDoctorOnDemoWhitelist(doctorId int64) bool {
 	var id int64
 	err := d.DB.QueryRow(`select id from dr_demo_whitelist where doctor_id = ?`, doctorId).Scan(&id)
-	return (err == nil && id != 0)
+	return err == nil && id != 0
 }
 
 func (d *DataService) getIdForNameFromTable(tableName, drugComponentName string) (nullId sql.NullInt64, err error) {
