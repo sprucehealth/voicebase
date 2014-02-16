@@ -29,12 +29,23 @@ Please keep in mind that your skin may get worse before it gets better.
 If you have questions or concerns, feel free to call me at (415) 202-6700.
 
 Dr. %s`
+
+	diagnosedSummaryTemplateNonProd = `Hi %s,
+
+Based on the photographs you have provided, it looks like you have %s.
+
+Acne is completely treatable but it will take consistent use of medication over time to see results. I've put together the best treatment plan for your skin and with regular application you should begin to see improvements in 1-3 months.
+
+Please keep in mind that your skin may get worse before it gets better.
+
+Dr. %s`
 )
 
 type DiagnosePatientHandler struct {
 	DataApi              api.DataAPI
 	AuthApi              thriftapi.Auth
 	LayoutStorageService api.CloudStorageAPI
+	Environment          string
 }
 
 type GetDiagnosisResponse struct {
@@ -47,7 +58,7 @@ type DiagnosePatientRequestData struct {
 }
 
 func NewDiagnosePatientHandler(dataApi api.DataAPI, authApi thriftapi.Auth, cloudStorageApi api.CloudStorageAPI) *DiagnosePatientHandler {
-	return &DiagnosePatientHandler{dataApi, authApi, cloudStorageApi}
+	return &DiagnosePatientHandler{DataApi: dataApi, AuthApi: authApi, LayoutStorageService: cloudStorageApi}
 }
 
 func (d *DiagnosePatientHandler) ServeHTTP(w http.ResponseWriter, r *http.Request) {
@@ -231,7 +242,13 @@ func (d *DiagnosePatientHandler) addDiagnosisSummaryForPatientVisit(doctorId, tr
 	}
 
 	doctorFullName := fmt.Sprintf("%s %s", doctor.FirstName, doctor.LastName)
-	diagnosisSummary := fmt.Sprintf(diagnoseSummaryTemplate, strings.Title(patient.FirstName), strings.ToLower(diagnosisMessage), strings.Title(doctorFullName))
+
+	summaryTemplate := diagnoseSummaryTemplate
+	if d.Environment != "prod" {
+		summaryTemplate = diagnosedSummaryTemplateNonProd
+	}
+
+	diagnosisSummary := fmt.Sprintf(summaryTemplate, strings.Title(patient.FirstName), strings.ToLower(diagnosisMessage), strings.Title(doctorFullName))
 	err = d.DataApi.AddDiagnosisSummaryForPatientVisit(diagnosisSummary, treatmentPlanId, doctorId)
 	return err
 }

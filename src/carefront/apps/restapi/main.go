@@ -297,7 +297,13 @@ func main() {
 		ErxStatusQueue:    erxStatusQueue,
 		ERxRouting:        conf.ERxRouting}
 
-	diagnosePatientHandler := apiservice.NewDiagnosePatientHandler(dataApi, authApi, cloudStorageApi)
+	diagnosePatientHandler := &apiservice.DiagnosePatientHandler{
+		DataApi:              dataApi,
+		AuthApi:              authApi,
+		LayoutStorageService: cloudStorageApi,
+		Environment:          conf.Environment,
+	}
+
 	diagnosisSummaryHandler := &apiservice.DiagnosisSummaryHandler{DataApi: dataApi}
 	doctorRegimenHandler := apiservice.NewDoctorRegimenHandler(dataApi)
 	doctorAdviceHandler := apiservice.NewDoctorAdviceHandler(dataApi)
