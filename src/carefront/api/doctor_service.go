@@ -581,6 +581,35 @@ func (d *DataService) AddFavoriteTreatments(favoriteTreatments []*common.DoctorF
 				return err
 			}
 
+			// delete any pre-existing favorite treatment that is already linked against this treatment in the patient visit,
+			// because that means that the client has an out-of-sync list for some reason, and we should treat
+			// what the client has as the source of truth. Otherwise, we will have two favorite treatments that are craeted
+			// both of which are mapped against the exist same treatment_id
+			// this should rarely happen; but what this will do is help ensure that a treatment within a patient visit can only be favorited
+			// once and only once.
+			var preExistingDoctorFavoriteTreatmentId int64
+			err = tx.QueryRow(`select dr_favorite_treatment_id from treatment_dr_favorite_selection where treatment_id = ? `, treatmentIdInPatientTreatmentPlan).Scan(&preExistingDoctorFavoriteTreatmentId)
+			if err != nil && err != sql.ErrNoRows {
+				tx.Rollback()
+				return err
+			}
+
+			if preExistingDoctorFavoriteTreatmentId != 0 {
+				// go ahead and delete the selection
+				_, err = tx.Exec(`delete from treatment_dr_favorite_selection where treatment_id = ?`, treatmentIdInPatientTreatmentPlan)
+				if err != nil {
+					tx.Rollback()
+					return err
+				}
+
+				// also, go ahead and mark this particular favorited treatment as deleted
+				_, err = tx.Exec(`update dr_favorite_treatment set status = ? where id = ?`, status_deleted, preExistingDoctorFavoriteTreatmentId)
+				if err != nil {
+					tx.Rollback()
+					return err
+				}
+			}
+
 			_, err = tx.Exec(`insert into treatment_dr_favorite_selection (treatment_id, dr_favorite_treatment_id) values (?,?)`, treatmentIdInPatientTreatmentPlan, drFavoriteTreatmentId)
 			if err != nil {
 				tx.Rollback()
