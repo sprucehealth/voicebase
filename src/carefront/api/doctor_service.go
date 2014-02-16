@@ -714,6 +714,10 @@ func (d *DataService) GetFavoriteTreatments(doctorId int64) ([]*common.DoctorFav
 
 		favoriteTreatment := favoriteTreatmentMapping[treatment.Id]
 		favoriteTreatment.FavoritedTreatment = treatment
+
+		// also setting the doctorFavoriteTreatmentId at the treatment level because
+		// that helps the client deal with the treatment object appropriately
+		favoriteTreatment.FavoritedTreatment.DoctorFavoriteTreatmentId = favoriteTreatment.Id
 		favoritedTreatments = append(favoritedTreatments, favoriteTreatment)
 	}
 	return favoritedTreatments, nil
