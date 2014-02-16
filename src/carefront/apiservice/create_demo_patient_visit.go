@@ -3,6 +3,7 @@ package apiservice
 import (
 	"bytes"
 	"carefront/api"
+	"carefront/libs/golog"
 	"carefront/libs/pharmacy"
 	"encoding/json"
 	"fmt"
@@ -398,6 +399,7 @@ func startPatientIntakeSubmission(answersToQuestions []*AnswerToQuestionItem, pa
 
 		resp, err := http.DefaultClient.Do(answerQuestionsRequest)
 		if err != nil || resp.StatusCode != http.StatusOK {
+			golog.Errorf("Error while submitting patient intake: %+v", err)
 			signal <- failure
 			return
 		}
@@ -411,6 +413,7 @@ func (c *CreateDemoPatientVisitHandler) startPhotoSubmissionForPatient(questionI
 		// get the image
 		imageData, _, err := c.CloudStorageApi.GetObjectAtLocation(fmt.Sprintf(demoPhotosBucketFormat, c.Environment), photoKey, c.AWSRegion)
 		if err != nil {
+			golog.Errorf("Error while getting picture at location: %+v", err)
 			signal <- failure
 			return
 		}
@@ -420,12 +423,14 @@ func (c *CreateDemoPatientVisitHandler) startPhotoSubmissionForPatient(questionI
 		// uploading any file as a photo for now
 		part, err := writer.CreateFormFile("photo", photoKey)
 		if err != nil {
+			golog.Errorf("Error while trying to create form file for photo submission: %+v", err)
 			signal <- failure
 			return
 		}
 
 		_, err = io.Copy(part, bytes.NewReader(imageData))
 		if err != nil {
+			golog.Errorf("Error while trying to copy image data: %+v", err)
 			signal <- failure
 			return
 		}
@@ -436,6 +441,7 @@ func (c *CreateDemoPatientVisitHandler) startPhotoSubmissionForPatient(questionI
 
 		err = writer.Close()
 		if err != nil {
+			golog.Errorf("Error while trying to create form data for submission: %+v", err)
 			signal <- failure
 			return
 		}
@@ -445,6 +451,7 @@ func (c *CreateDemoPatientVisitHandler) startPhotoSubmissionForPatient(questionI
 		photoIntakeRequest.Header.Set("Authorization", "token "+patientAuthToken)
 		resp, err := http.DefaultClient.Do(photoIntakeRequest)
 		if err != nil || resp.StatusCode != http.StatusOK {
+			golog.Errorf("Error while trying submit photo for intake: %+v", err)
 			signal <- failure
 			return
 		}
