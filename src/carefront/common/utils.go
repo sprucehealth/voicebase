@@ -58,24 +58,35 @@ func NewQueue(auth aws.Auth, region aws.Region, queueName string) (*SQSQueue, er
 // This is an object used for the (un)marshalling
 // of data models ids, such that null values passed from the client
 // can be treated as 0 values.
-type ObjectId struct {
-	Int64 int64
-}
+type ObjectId int64
 
 func (id *ObjectId) UnmarshalJSON(data []byte) error {
+
+	strData := string(data)
 
 	// only treating the case of an empty string or a null value
 	// as value being 0.
 	// otherwise relying on integer parser
-	if len(data) < 2 || string(data) == "null" || string(data) == `""` {
+	if len(data) < 2 || strData == "null" || strData == `""` {
 		return nil
 	}
 
-	intId, err := strconv.ParseInt(string(data[1:len(data)-1]), 10, 64)
-	id.Int64 = intId
+	intId, err := strconv.ParseInt(strData[1:len(strData)-1], 10, 64)
+	*id = ObjectId(intId)
 	return err
 }
 
 func (id *ObjectId) MarshalJSON() ([]byte, error) {
-	return []byte(fmt.Sprintf(`"%d"`, id.Int64)), nil
+	if id == nil {
+		return []byte(`null`), nil
+	}
+
+	return []byte(fmt.Sprintf(`"%d"`, id)), nil
+}
+
+func (id *ObjectId) Int64() int64 {
+	if id == nil {
+		return 0
+	}
+	return int64(*id)
 }

@@ -31,8 +31,10 @@ const (
 )
 
 func TestObjectIdMarshal(t *testing.T) {
+	objId := ObjectId(12345)
+
 	e1 := &ExampleObject{
-		Id:   &ObjectId{Int64: 12345},
+		Id:   &objId,
 		Name: "Hello",
 	}
 
@@ -62,8 +64,8 @@ func TestObjectIdUnmarshal(t *testing.T) {
 		t.Fatal("Unable to unmarshal object as expected")
 	}
 
-	if testObject.Id.Int64 != 12345 {
-		t.Fatalf("Expected the objectId to be set with 12345. Instead it was set as %d", testObject.Id.Int64)
+	if testObject.Id.Int64() != 12345 {
+		t.Fatalf("Expected the objectId to be set with 12345. Instead it was set as %d", testObject.Id.Int64())
 	}
 
 	testObject = &ExampleObject{}
@@ -74,7 +76,7 @@ func TestObjectIdUnmarshal(t *testing.T) {
 	}
 
 	if testObject.Id != nil {
-		t.Fatalf("Expected the objectId to be set as 0, Instead it was set as %d", testObject.Id.Int64)
+		t.Fatalf("Expected the objectId to be set as 0, Instead it was set as %d", testObject.Id.Int64())
 	}
 
 	testObject = &ExampleObject{}
@@ -84,8 +86,8 @@ func TestObjectIdUnmarshal(t *testing.T) {
 		t.Fatal("Unable to unmarshal object as expected: " + err.Error())
 	}
 
-	if testObject.Id.Int64 != 0 {
-		t.Fatalf("Expected the objectId to be set as 0, Instead it was set as %d", testObject.Id.Int64)
+	if testObject.Id.Int64() != 0 {
+		t.Fatalf("Expected the objectId to be set as 0, Instead it was set as %d", testObject.Id.Int64())
 	}
 
 	testObject = &ExampleObject{}
