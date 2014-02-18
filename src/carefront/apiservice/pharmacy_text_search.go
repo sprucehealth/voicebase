@@ -5,11 +5,12 @@ import (
 	"carefront/libs/golog"
 	"carefront/libs/maps"
 	"carefront/libs/pharmacy"
-	"github.com/gorilla/schema"
-	"github.com/samuel/go-cache/cache"
 	"net/http"
 	"strconv"
 	"strings"
+
+	"github.com/gorilla/schema"
+	"github.com/samuel/go-cache/cache"
 )
 
 var locationCache cache.Cache = cache.NewLFUCache(2048)

@@ -5,8 +5,9 @@ import (
 	"carefront/common"
 	"encoding/json"
 	"errors"
-	"github.com/gorilla/schema"
 	"net/http"
+
+	"github.com/gorilla/schema"
 )
 
 type TreatmentsHandler struct {

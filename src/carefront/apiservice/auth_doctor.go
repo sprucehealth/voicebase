@@ -3,8 +3,9 @@ package apiservice
 import (
 	"carefront/api"
 	thriftapi "carefront/thrift/api"
-	"github.com/gorilla/schema"
 	"net/http"
+
+	"github.com/gorilla/schema"
 )
 
 type DoctorAuthenticationHandler struct {

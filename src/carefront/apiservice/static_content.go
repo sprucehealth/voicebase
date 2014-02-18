@@ -2,8 +2,9 @@ package apiservice
 
 import (
 	"carefront/api"
-	"github.com/gorilla/schema"
 	"net/http"
+
+	"github.com/gorilla/schema"
 )
 
 type StaticContentHandler struct {

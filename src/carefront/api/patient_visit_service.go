@@ -5,10 +5,11 @@ import (
 	pharmacyService "carefront/libs/pharmacy"
 	"database/sql"
 	"fmt"
-	"github.com/go-sql-driver/mysql"
 	"log"
 	"strconv"
 	"time"
+
+	"github.com/go-sql-driver/mysql"
 )
 
 func (d *DataService) GetActivePatientVisitIdForHealthCondition(patientId, healthConditionId int64) (int64, error) {

@@ -6,11 +6,12 @@ import (
 	"carefront/libs/golog"
 	"carefront/libs/maps"
 	thriftapi "carefront/thrift/api"
-	"github.com/gorilla/schema"
 	"net/http"
 	"strconv"
 	"strings"
 	"time"
+
+	"github.com/gorilla/schema"
 )
 
 type SignupPatientHandler struct {

@@ -1,6 +1,11 @@
 package apiservice
 
 import (
+	"carefront/api"
+	"carefront/common"
+	"carefront/info_intake"
+	"carefront/libs/golog"
+	pharmacy_service "carefront/libs/pharmacy"
 	"encoding/json"
 	"errors"
 	"fmt"
@@ -8,12 +13,6 @@ import (
 	"net/http"
 	"strings"
 	"time"
-
-	"carefront/api"
-	"carefront/common"
-	"carefront/info_intake"
-	"carefront/libs/golog"
-	pharmacy_service "carefront/libs/pharmacy"
 )
 
 var ErrBadAuthToken = errors.New("BadAuthToken")

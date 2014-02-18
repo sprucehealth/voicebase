@@ -3,12 +3,13 @@ package apiservice
 import (
 	"bytes"
 	"carefront/api"
-	"github.com/gorilla/schema"
 	"io/ioutil"
 	"net/http"
 	"strconv"
 	"strings"
 	"time"
+
+	"github.com/gorilla/schema"
 )
 
 type PhotoAnswerIntakeHandler struct {

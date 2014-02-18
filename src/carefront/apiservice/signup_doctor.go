@@ -3,11 +3,12 @@ package apiservice
 import (
 	"carefront/api"
 	thriftapi "carefront/thrift/api"
-	"github.com/gorilla/schema"
 	"net/http"
 	"strconv"
 	"strings"
 	"time"
+
+	"github.com/gorilla/schema"
 )
 
 type SignupDoctorHandler struct {

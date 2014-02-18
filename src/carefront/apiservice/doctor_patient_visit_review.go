@@ -6,9 +6,10 @@ import (
 	"carefront/info_intake"
 	"carefront/libs/pharmacy"
 	"encoding/json"
-	"github.com/gorilla/schema"
 	"net/http"
 	"strings"
+
+	"github.com/gorilla/schema"
 )
 
 type DoctorPatientVisitReviewHandler struct {

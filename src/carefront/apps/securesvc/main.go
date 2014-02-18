@@ -14,6 +14,7 @@ import (
 	"carefront/libs/svcreg"
 	"carefront/services/auth"
 	"carefront/thrift/api"
+
 	_ "github.com/go-sql-driver/mysql"
 	"github.com/samuel/go-metrics/metrics"
 	"github.com/samuel/go-thrift/thrift"

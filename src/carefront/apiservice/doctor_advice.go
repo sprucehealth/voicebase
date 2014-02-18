@@ -4,8 +4,9 @@ import (
 	"carefront/api"
 	"carefront/common"
 	"encoding/json"
-	"github.com/gorilla/schema"
 	"net/http"
+
+	"github.com/gorilla/schema"
 )
 
 type DoctorAdviceHandler struct {

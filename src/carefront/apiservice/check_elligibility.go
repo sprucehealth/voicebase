@@ -4,8 +4,9 @@ import (
 	"carefront/api"
 	"carefront/common"
 	"carefront/libs/maps"
-	"github.com/gorilla/schema"
 	"net/http"
+
+	"github.com/gorilla/schema"
 )
 
 type CheckCareProvidingElligibilityHandler struct {

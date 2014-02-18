@@ -5,10 +5,11 @@ import (
 	pharmacySearch "carefront/libs/pharmacy"
 	"errors"
 	"fmt"
-	"github.com/samuel/go-metrics/metrics"
 	"os"
 	"strconv"
 	"strings"
+
+	"github.com/samuel/go-metrics/metrics"
 )
 
 type DoseSpotService struct {

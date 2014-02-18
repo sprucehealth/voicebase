@@ -1,6 +1,10 @@
 package apiservice
 
 import (
+	"carefront/api"
+	"carefront/common"
+	"carefront/info_intake"
+	thriftapi "carefront/thrift/api"
 	"encoding/json"
 	"errors"
 	"fmt"
@@ -8,10 +12,6 @@ import (
 	"net/http"
 	"strings"
 
-	"carefront/api"
-	"carefront/common"
-	"carefront/info_intake"
-	thriftapi "carefront/thrift/api"
 	"github.com/gorilla/schema"
 	"github.com/subosito/twilio"
 )

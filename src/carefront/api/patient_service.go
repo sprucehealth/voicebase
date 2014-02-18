@@ -5,9 +5,10 @@ import (
 	"carefront/libs/pharmacy"
 	"database/sql"
 	"fmt"
-	"github.com/go-sql-driver/mysql"
 	"log"
 	"time"
+
+	"github.com/go-sql-driver/mysql"
 )
 
 func (d *DataService) RegisterPatient(accountId int64, firstName, lastName, gender, zipCode, city, state, phone, phoneType string, dob time.Time) (*common.Patient, error) {

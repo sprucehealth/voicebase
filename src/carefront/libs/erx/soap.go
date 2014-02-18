@@ -3,10 +3,11 @@ package erx
 import (
 	"bytes"
 	"encoding/xml"
-	"github.com/samuel/go-metrics/metrics"
 	"io/ioutil"
 	"net/http"
 	"time"
+
+	"github.com/samuel/go-metrics/metrics"
 )
 
 const (
