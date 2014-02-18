@@ -2,6 +2,7 @@ package erx
 
 import (
 	"carefront/common"
+	"carefront/libs/golog"
 	pharmacySearch "carefront/libs/pharmacy"
 	"errors"
 	"fmt"
@@ -190,8 +191,8 @@ func (d *DoseSpotService) SendMultiplePrescriptions(patient *common.Patient, tre
 	for _, prescriptionResult := range response.SendPrescriptionResults {
 		if prescriptionResult.ResultCode != resultOk {
 			unSuccessfulTreatmentIds = append(unSuccessfulTreatmentIds, prescriptionIdToTreatmentIdMapping[int64(prescriptionResult.PrescriptionId)])
+			golog.Errorf("Error sending prescription with id %d : %s", prescriptionResult.PrescriptionId, prescriptionResult.ResultDescription)
 		}
-		fmt.Println(prescriptionResult.ResultDescription)
 	}
 
 	if response.ResultCode != resultOk {
