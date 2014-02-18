@@ -118,16 +118,21 @@ func (d *DataService) GetLatestClosedPatientVisitForPatient(patientId int64) (*c
 
 func (d *DataService) GetPatientVisitFromId(patientVisitId int64) (*common.PatientVisit, error) {
 	patientVisit := common.PatientVisit{PatientVisitId: common.NewObjectId(patientVisitId)}
+	var patientId, healthConditionId, layoutVersionId int64
 	var creationDateBytes, submittedDateBytes, closedDateBytes mysql.NullTime
 	err := d.DB.QueryRow(`select patient_id, health_condition_id, layout_version_id, 
 		creation_date, submitted_date, closed_date, status from patient_visit where id = ?`, patientVisitId,
 	).Scan(
-		&patientVisit.PatientId,
-		&patientVisit.HealthConditionId,
-		&patientVisit.LayoutVersionId, &creationDateBytes, &submittedDateBytes, &closedDateBytes, &patientVisit.Status)
+		&patientId,
+		&healthConditionId,
+		&layoutVersionId, &creationDateBytes, &submittedDateBytes, &closedDateBytes, &patientVisit.Status)
 	if err != nil {
 		return nil, err
 	}
+
+	patientVisit.PatientId = common.NewObjectId(patientId)
+	patientVisit.HealthConditionId = common.NewObjectId(healthConditionId)
+	patientVisit.LayoutVersionId = common.NewObjectId(layoutVersionId)
 
 	if creationDateBytes.Valid {
 		patientVisit.CreationDate = creationDateBytes.Time

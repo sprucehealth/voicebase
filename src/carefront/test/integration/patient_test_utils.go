@@ -35,6 +35,8 @@ func SignupRandomTestPatient(t *testing.T, dataApi api.DataAPI, authApi thriftap
 	}
 	CheckSuccessfulStatusCode(res, fmt.Sprintf("Unable to make success request to signup patient. Here's the code returned %d and here's the body of the request %s", res.StatusCode, body), t)
 
+	fmt.Println(string(body))
+
 	signedupPatientResponse := &apiservice.PatientSignedupResponse{}
 	err = json.Unmarshal(body, signedupPatientResponse)
 	if err != nil {

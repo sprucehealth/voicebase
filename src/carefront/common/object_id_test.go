@@ -38,16 +38,21 @@ func TestObjectIdMarshal(t *testing.T) {
 		Name: "Hello",
 	}
 
-	_, err := json.Marshal(e1)
+	jsonData, err := json.Marshal(e1)
 	if err != nil {
 		t.Fatal("Unable to marshal objectId as expected: " + err.Error())
+	}
+
+	expectedResult := `{"testing_id":"12345","name":"Hello"}`
+	if string(jsonData) != expectedResult {
+		t.Fatal("ObjectId object did not get marshalled as expected. Got %s when expected %s", string(jsonData), expectedResult)
 	}
 
 	e2 := &ExampleObject{
 		Name: "Hello",
 	}
 
-	jsonData, err := json.Marshal(e2)
+	jsonData, err = json.Marshal(e2)
 	if err != nil {
 		t.Fatal("Unable to marshal object with no objectId: " + err.Error())
 	}

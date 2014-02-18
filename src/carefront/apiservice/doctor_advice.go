@@ -120,7 +120,7 @@ func (d *DoctorAdviceHandler) updateAdvicePoints(w http.ResponseWriter, r *http.
 					advicePointFound = true
 					break
 				}
-			} else if advicePoint.Id == selectedAdvicePoint.Id {
+			} else if advicePoint.Id.Int64() == selectedAdvicePoint.Id.Int64() {
 				advicePointFound = true
 				break
 			}
@@ -142,7 +142,7 @@ func (d *DoctorAdviceHandler) updateAdvicePoints(w http.ResponseWriter, r *http.
 		// now, search for whether this particular item (based on the id) is present on the list coming from the client
 		advicePointFound := false
 		for _, advicePointFromClient := range requestData.AllAdvicePoints {
-			if currentAdvicePoint.Id == advicePointFromClient.Id {
+			if currentAdvicePoint.Id.Int64() == advicePointFromClient.Id.Int64() {
 				advicePointFound = true
 				break
 			}

@@ -82,7 +82,7 @@ func (id *ObjectId) MarshalJSON() ([]byte, error) {
 		return []byte(`null`), nil
 	}
 
-	return []byte(fmt.Sprintf(`"%d"`, id)), nil
+	return []byte(fmt.Sprintf(`"%d"`, *id)), nil
 }
 
 func NewObjectId(intId int64) *ObjectId {
