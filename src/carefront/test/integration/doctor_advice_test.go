@@ -32,10 +32,10 @@ func TestAdvicePointsForPatientVisit(t *testing.T) {
 	}
 
 	// get patient to start a visit
-	patientVisitResponse := CreatePatientVisitForPatient(patientSignedupResponse.Patient.PatientId, testData, t)
+	patientVisitResponse := CreatePatientVisitForPatient(patientSignedupResponse.Patient.PatientId.Int64(), testData, t)
 
 	// get the patient to submit the case so that it can be reviewed by the doctor
-	SubmitPatientVisitForPatient(patientSignedupResponse.Patient.PatientId, patientVisitResponse.PatientVisitId, testData, t)
+	SubmitPatientVisitForPatient(patientSignedupResponse.Patient.PatientId.Int64(), patientVisitResponse.PatientVisitId, testData, t)
 
 	// get the doctor to start reviewing the case
 	StartReviewingPatientVisit(patientVisitResponse.PatientVisitId, doctor, testData, t)
@@ -59,7 +59,7 @@ func TestAdvicePointsForPatientVisit(t *testing.T) {
 	doctorAdviceRequest := &common.Advice{}
 	doctorAdviceRequest.AllAdvicePoints = []*common.DoctorInstructionItem{advicePoint1, advicePoint2}
 	doctorAdviceRequest.SelectedAdvicePoints = doctorAdviceRequest.AllAdvicePoints
-	doctorAdviceRequest.PatientVisitId = patientVisitResponse.PatientVisitId
+	doctorAdviceRequest.PatientVisitId = common.NewObjectId(patientVisitResponse.PatientVisitId)
 
 	doctorAdviceResponse = updateAdvicePointsForPatientVisit(doctorAdviceRequest, testData, doctor, t)
 
@@ -112,7 +112,7 @@ func TestAdvicePointsForPatientVisit(t *testing.T) {
 		t.Fatal("Unable to marshal request body for adding advice points: " + err.Error())
 	}
 
-	resp, err := authPost(ts.URL, "application/json", bytes.NewBuffer(requestBody), doctor.AccountId)
+	resp, err := authPost(ts.URL, "application/json", bytes.NewBuffer(requestBody), doctor.AccountId.Int64())
 	if err != nil {
 		t.Fatal("Unable to make successful request to add advice points to patient visit " + err.Error())
 	}
@@ -123,7 +123,7 @@ func TestAdvicePointsForPatientVisit(t *testing.T) {
 
 	// lets start a new patient visit and ensure that we still get back the advice points as added
 	patientSignedupResponse = SignupRandomTestPatient(t, testData.DataApi, testData.AuthApi)
-	patientVisitResponse2 := CreatePatientVisitForPatient(patientSignedupResponse.Patient.PatientId, testData, t)
+	patientVisitResponse2 := CreatePatientVisitForPatient(patientSignedupResponse.Patient.PatientId.Int64(), testData, t)
 
 	// get the advice points for this patient visit
 	doctorAdviceResponse2 := getAdvicePointsInPatientVisit(testData, doctor, patientVisitResponse2.PatientVisitId, t)
@@ -156,7 +156,7 @@ func getAdvicePointsInPatientVisit(testData TestData, doctor *common.Doctor, pat
 	ts := httptest.NewServer(doctorAdviceHandler)
 	defer ts.Close()
 
-	resp, err := authGet(ts.URL+"?patient_visit_id="+strconv.FormatInt(patientVisitId, 10), doctor.AccountId)
+	resp, err := authGet(ts.URL+"?patient_visit_id="+strconv.FormatInt(patientVisitId, 10), doctor.AccountId.Int64())
 	if err != nil {
 		t.Fatal("Unable to get advice points for patient visit: " + err.Error())
 	}
@@ -187,7 +187,7 @@ func updateAdvicePointsForPatientVisit(doctorAdviceRequest *common.Advice, testD
 		t.Fatal("Unable to marshal request body for adding advice points: " + err.Error())
 	}
 
-	resp, err := authPost(ts.URL, "application/json", bytes.NewBuffer(requestBody), doctor.AccountId)
+	resp, err := authPost(ts.URL, "application/json", bytes.NewBuffer(requestBody), doctor.AccountId.Int64())
 	if err != nil {
 		t.Fatal("Unable to make successful request to add advice points to patient visit " + err.Error())
 	}
@@ -215,7 +215,7 @@ func validateAdviceRequestAgainstResponse(doctorAdviceRequest, doctorAdviceRespo
 
 	// all advice points in the global list should have ids
 	for _, advicePoint := range doctorAdviceResponse.AllAdvicePoints {
-		if advicePoint.Id == 0 {
+		if advicePoint.Id.Int64() == 0 {
 			t.Fatal("Advice point expected to have an id but it doesnt")
 		}
 		if advicePoint.Text == "" {
@@ -225,7 +225,7 @@ func validateAdviceRequestAgainstResponse(doctorAdviceRequest, doctorAdviceRespo
 
 	// all advice points in the selected list should have ids
 	for _, advicePoint := range doctorAdviceResponse.SelectedAdvicePoints {
-		if advicePoint.Id == 0 {
+		if advicePoint.Id.Int64() == 0 {
 			t.Fatal("Selected Advice point expected to have an id but it doesnt")
 		}
 		if advicePoint.Text == "" {
@@ -242,10 +242,10 @@ func validateAdviceRequestAgainstResponse(doctorAdviceRequest, doctorAdviceRespo
 	for _, advicePoint := range doctorAdviceRequest.AllAdvicePoints {
 		switch advicePoint.State {
 		case common.STATE_MODIFIED:
-			textToIdMapping[advicePoint.Text] = advicePoint.Id
+			textToIdMapping[advicePoint.Text] = advicePoint.Id.Int64()
 
 		case common.STATE_DELETED:
-			deletedAdvicePointIds[advicePoint.Id] = true
+			deletedAdvicePointIds[advicePoint.Id.Int64()] = true
 
 		case common.STATE_ADDED:
 			newAdvicePoints[advicePoint.Text] = true
@@ -254,16 +254,16 @@ func validateAdviceRequestAgainstResponse(doctorAdviceRequest, doctorAdviceRespo
 
 	for _, advicePoint := range doctorAdviceResponse.AllAdvicePoints {
 		if textToIdMapping[advicePoint.Text] != 0 {
-			if textToIdMapping[advicePoint.Text] == advicePoint.Id {
+			if textToIdMapping[advicePoint.Text] == advicePoint.Id.Int64() {
 				t.Fatal("Updated advice points should have different ids")
 			}
 
-			if deletedAdvicePointIds[advicePoint.Id] == true {
+			if deletedAdvicePointIds[advicePoint.Id.Int64()] == true {
 				t.Fatal("Deleted advice point should not exist in the response")
 			}
 
 			if newAdvicePoints[advicePoint.Text] == true {
-				if advicePoint.Id == 0 {
+				if advicePoint.Id.Int64() == 0 {
 					t.Fatal("Newly added advice point should have an id")
 				}
 			}

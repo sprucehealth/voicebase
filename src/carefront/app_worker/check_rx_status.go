@@ -72,7 +72,7 @@ func ConsumeMessageFromQueue(DataApi api.DataAPI, ERxApi erx.ERxAPI, ErxQueue *c
 		}
 
 		// check if there are any treatments for this patient that do not have a completed status
-		prescriptionStatuses, err := DataApi.GetPrescriptionStatusEventsForPatient(patient.ERxPatientId)
+		prescriptionStatuses, err := DataApi.GetPrescriptionStatusEventsForPatient(patient.ERxPatientId.Int64())
 		if err != nil {
 			golog.Errorf("Error getting prescription events for patient: %s", err.Error())
 			statFailure.Inc(1)
@@ -110,7 +110,7 @@ func ConsumeMessageFromQueue(DataApi api.DataAPI, ERxApi erx.ERxAPI, ErxQueue *c
 			continue
 		}
 
-		medications, err := ERxApi.GetMedicationList(patient.ERxPatientId)
+		medications, err := ERxApi.GetMedicationList(patient.ERxPatientId.Int64())
 		if err != nil {
 			golog.Errorf("Unable to get medications from dosespot: %s", err.Error())
 			statFailure.Inc(1)

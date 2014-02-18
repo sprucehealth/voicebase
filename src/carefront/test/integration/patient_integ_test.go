@@ -65,7 +65,7 @@ func TestPatientVisitCreation(t *testing.T) {
 	defer TearDownIntegrationTest(t, testData)
 
 	signedupPatientResponse := SignupRandomTestPatient(t, testData.DataApi, testData.AuthApi)
-	patientVisitResponse := CreatePatientVisitForPatient(signedupPatientResponse.Patient.PatientId, testData, t)
+	patientVisitResponse := CreatePatientVisitForPatient(signedupPatientResponse.Patient.PatientId.Int64(), testData, t)
 
 	if patientVisitResponse.PatientVisitId == 0 {
 		t.Fatal("Patient Visit Id not set when it should be.")
@@ -76,12 +76,12 @@ func TestPatientVisitCreation(t *testing.T) {
 	}
 
 	// checking to ensure that the care team was created
-	careTeam, err := testData.DataApi.GetCareTeamForPatient(signedupPatientResponse.Patient.PatientId)
+	careTeam, err := testData.DataApi.GetCareTeamForPatient(signedupPatientResponse.Patient.PatientId.Int64())
 	if err != nil {
 		t.Fatal("Unable to get care team for patient visit: " + err.Error())
 	}
 
-	if !(careTeam == nil || careTeam.PatientId == signedupPatientResponse.Patient.PatientId) {
+	if !(careTeam == nil || careTeam.PatientId == signedupPatientResponse.Patient.PatientId.Int64()) {
 		t.Fatal("Unable to get patient visit id for care team")
 	}
 
@@ -99,7 +99,7 @@ func TestPatientVisitCreation(t *testing.T) {
 
 	// getting the patient visit again as we should get back the same patient visit id
 	// since this patient visit has not been completed
-	anotherPatientVisitResponse := GetPatientVisitForPatient(signedupPatientResponse.Patient.PatientId, testData, t)
+	anotherPatientVisitResponse := GetPatientVisitForPatient(signedupPatientResponse.Patient.PatientId.Int64(), testData, t)
 	if anotherPatientVisitResponse.PatientVisitId != patientVisitResponse.PatientVisitId {
 		t.Fatal("The patient visit id for subsequent calls should be the same so long as we have not closed/submitted the case")
 	}
@@ -113,15 +113,15 @@ func TestPatientVisitSubmission(t *testing.T) {
 	defer TearDownIntegrationTest(t, testData)
 
 	signedupPatientResponse := SignupRandomTestPatient(t, testData.DataApi, testData.AuthApi)
-	patientVisitResponse := CreatePatientVisitForPatient(signedupPatientResponse.Patient.PatientId, testData, t)
+	patientVisitResponse := CreatePatientVisitForPatient(signedupPatientResponse.Patient.PatientId.Int64(), testData, t)
 
-	SubmitPatientVisitForPatient(signedupPatientResponse.Patient.PatientId, patientVisitResponse.PatientVisitId, testData, t)
+	SubmitPatientVisitForPatient(signedupPatientResponse.Patient.PatientId.Int64(), patientVisitResponse.PatientVisitId, testData, t)
 
 	// try submitting the exact same patient visit again, and it should come back with a 403 given that the case has already been submitted
 
 	patientVisitHandler := apiservice.NewPatientVisitHandler(testData.DataApi, testData.AuthApi,
 		testData.CloudStorageService, testData.CloudStorageService, nil, "")
-	patient, err := testData.DataApi.GetPatientFromId(signedupPatientResponse.Patient.PatientId)
+	patient, err := testData.DataApi.GetPatientFromId(signedupPatientResponse.Patient.PatientId.Int64())
 	if err != nil {
 		t.Fatal("Unable to get patient information given the patient id: " + err.Error())
 	}
@@ -131,7 +131,7 @@ func TestPatientVisitSubmission(t *testing.T) {
 	buffer := bytes.NewBufferString("patient_visit_id=")
 	buffer.WriteString(strconv.FormatInt(patientVisitResponse.PatientVisitId, 10))
 
-	resp, err := authPut(ts.URL, "application/x-www-form-urlencoded", buffer, patient.AccountId)
+	resp, err := authPut(ts.URL, "application/x-www-form-urlencoded", buffer, patient.AccountId.Int64())
 	if err != nil {
 		t.Fatal("Unable to get the patient visit id")
 	}

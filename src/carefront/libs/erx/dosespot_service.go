@@ -160,17 +160,17 @@ func (d *DoseSpotService) SearchForMedicationStrength(medicationName string) ([]
 func (d *DoseSpotService) SendMultiplePrescriptions(patient *common.Patient, treatments []*common.Treatment) ([]int64, error) {
 	sendPrescriptionsRequest := &sendMultiplePrescriptionsRequest{
 		SSO:       generateSingleSignOn(d.ClinicKey, d.UserId, d.ClinicId),
-		PatientId: patient.ERxPatientId,
+		PatientId: patient.ERxPatientId.Int64(),
 	}
 
 	prescriptionIds := make([]int64, 0)
 	prescriptionIdToTreatmentIdMapping := make(map[int64]int64)
 	for _, treatment := range treatments {
-		if treatment.PrescriptionId == 0 {
+		if treatment.PrescriptionId.Int64() == 0 {
 			continue
 		}
-		prescriptionIds = append(prescriptionIds, treatment.PrescriptionId)
-		prescriptionIdToTreatmentIdMapping[treatment.PrescriptionId] = treatment.Id
+		prescriptionIds = append(prescriptionIds, treatment.PrescriptionId.Int64())
+		prescriptionIdToTreatmentIdMapping[treatment.PrescriptionId.Int64()] = treatment.Id.Int64()
 	}
 
 	sendPrescriptionsRequest.PrescriptionIds = prescriptionIds
@@ -203,7 +203,7 @@ func (d *DoseSpotService) SendMultiplePrescriptions(patient *common.Patient, tre
 func (d *DoseSpotService) StartPrescribingPatient(currentPatient *common.Patient, treatments []*common.Treatment) error {
 
 	newPatient := &patient{
-		PatientId:        currentPatient.ERxPatientId,
+		PatientId:        currentPatient.ERxPatientId.Int64(),
 		FirstName:        currentPatient.FirstName,
 		LastName:         currentPatient.LastName,
 		Address1:         currentPatient.PatientAddress.AddressLine1,
@@ -216,8 +216,8 @@ func (d *DoseSpotService) StartPrescribingPatient(currentPatient *common.Patient
 		PrimaryPhoneType: currentPatient.PhoneType,
 	}
 
-	if currentPatient.ERxPatientId != 0 {
-		newPatient.PatientId = currentPatient.ERxPatientId
+	if currentPatient.ERxPatientId.Int64() != 0 {
+		newPatient.PatientId = currentPatient.ERxPatientId.Int64()
 	}
 
 	patientPreferredPharmacy := &patientPharmacySelection{}
@@ -245,7 +245,7 @@ func (d *DoseSpotService) StartPrescribingPatient(currentPatient *common.Patient
 			LexiSynonymTypeId: lexiSynonymTypeIdInt,
 			Refills:           nullInt64(treatment.NumberRefills),
 			Dispense:          strconv.FormatInt(treatment.DispenseValue, 10),
-			DispenseUnitId:    treatment.DispenseUnitId,
+			DispenseUnitId:    treatment.DispenseUnitId.Int64(),
 			Instructions:      treatment.PatientInstructions,
 			NoSubstitutions:   !treatment.SubstitutionsAllowed,
 			PharmacyNotes:     treatment.PharmacyNotes,
@@ -278,7 +278,7 @@ func (d *DoseSpotService) StartPrescribingPatient(currentPatient *common.Patient
 	}
 
 	// populate the prescription id into the patient object
-	currentPatient.ERxPatientId = int64(response.PatientUpdates[0].Patient.PatientId)
+	currentPatient.ERxPatientId = common.NewObjectId(response.PatientUpdates[0].Patient.PatientId)
 
 	// go through and assign medication ids to all prescriptions
 	for _, patientUpdate := range response.PatientUpdates {
@@ -290,7 +290,7 @@ func (d *DoseSpotService) StartPrescribingPatient(currentPatient *common.Patient
 				if medication.LexiDrugSynId == LexiDrugSynIdInt &&
 					medication.LexiGenProductId == LexiGenProductIdInt &&
 					medication.LexiSynonymTypeId == LexiSynonymTypeIdInt {
-					treatment.PrescriptionId = medication.DoseSpotPrescriptionId
+					treatment.PrescriptionId = common.NewObjectId(medication.DoseSpotPrescriptionId)
 					break
 				}
 			}

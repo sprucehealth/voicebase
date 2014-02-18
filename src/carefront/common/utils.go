@@ -68,6 +68,7 @@ func (id *ObjectId) UnmarshalJSON(data []byte) error {
 	// as value being 0.
 	// otherwise relying on integer parser
 	if len(data) < 2 || strData == "null" || strData == `""` {
+		*id = 0
 		return nil
 	}
 
@@ -82,6 +83,11 @@ func (id *ObjectId) MarshalJSON() ([]byte, error) {
 	}
 
 	return []byte(fmt.Sprintf(`"%d"`, id)), nil
+}
+
+func NewObjectId(intId int64) *ObjectId {
+	objectId := ObjectId(intId)
+	return &objectId
 }
 
 func (id *ObjectId) Int64() int64 {

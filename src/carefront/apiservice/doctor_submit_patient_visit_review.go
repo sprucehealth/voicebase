@@ -98,7 +98,7 @@ func (d *DoctorSubmitPatientVisitReviewHandler) submitPatientVisitReview(w http.
 			ZipCode:      "94103",
 		}
 
-		pharmacySelection, err := d.DataApi.GetPatientPharmacySelection(patient.PatientId)
+		pharmacySelection, err := d.DataApi.GetPatientPharmacySelection(patient.PatientId.Int64())
 		if err != nil {
 			WriteDeveloperError(w, http.StatusInternalServerError, "Unable to get pharmacy selection for patient: "+err.Error())
 			return
@@ -130,7 +130,7 @@ func (d *DoctorSubmitPatientVisitReviewHandler) submitPatientVisitReview(w http.
 			}
 
 			// Save erx patient id to database
-			err = d.DataApi.UpdatePatientWithERxPatientId(patient.PatientId, patient.ERxPatientId)
+			err = d.DataApi.UpdatePatientWithERxPatientId(patient.PatientId.Int64(), patient.ERxPatientId.Int64())
 			if err != nil {
 				WriteDeveloperError(w, http.StatusInternalServerError, "Unable to save the patient id returned from dosespot for patient: "+err.Error())
 				return
@@ -155,7 +155,7 @@ func (d *DoctorSubmitPatientVisitReviewHandler) submitPatientVisitReview(w http.
 			for _, treatment := range treatments {
 				treatmentFound := false
 				for _, unSuccessfulTreatmentId := range unSuccessfulTreatmentIds {
-					if unSuccessfulTreatmentId == treatment.Id {
+					if unSuccessfulTreatmentId == treatment.Id.Int64() {
 						treatmentFound = true
 						break
 					}
@@ -184,7 +184,7 @@ func (d *DoctorSubmitPatientVisitReviewHandler) submitPatientVisitReview(w http.
 			}
 
 			//  Queue up notification to patient
-			err = d.queueUpJobForErxStatus(patient.PatientId, doctorId)
+			err = d.queueUpJobForErxStatus(patient.PatientId.Int64(), doctorId)
 			if err != nil {
 				WriteDeveloperError(w, http.StatusInternalServerError, "Unable to queue up job for getting prescription status: "+err.Error())
 				return

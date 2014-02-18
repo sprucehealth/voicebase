@@ -145,7 +145,7 @@ func (s *PatientVisitHandler) submitPatientVisit(w http.ResponseWriter, r *http.
 		}
 	}
 
-	WriteJSONToHTTPResponseWriter(w, http.StatusOK, PatientVisitSubmittedResponse{PatientVisitId: patientVisit.PatientVisitId, Status: patientVisit.Status})
+	WriteJSONToHTTPResponseWriter(w, http.StatusOK, PatientVisitSubmittedResponse{PatientVisitId: patientVisit.PatientVisitId.Int64(), Status: patientVisit.Status})
 }
 
 func (s *PatientVisitHandler) returnLastCreatedPatientVisit(w http.ResponseWriter, r *http.Request) {
@@ -229,7 +229,7 @@ func (s *PatientVisitHandler) returnLastCreatedPatientVisit(w http.ResponseWrite
 	s.populateHealthConditionWithPatientAnswers(healthCondition, patientAnswersForVisit)
 	s.fillInFormattedFieldsForQuestions(healthCondition, doctor)
 
-	message, err := s.DataApi.GetMessageForPatientVisitStatus(patientVisit.PatientVisitId)
+	message, err := s.DataApi.GetMessageForPatientVisitStatus(patientVisit.PatientVisitId.Int64())
 	if err != nil {
 		WriteDeveloperError(w, http.StatusInternalServerError, "Unable to get message for patient visit: "+err.Error())
 		return
@@ -246,7 +246,7 @@ func (s *PatientVisitHandler) createNewPatientVisitHandler(w http.ResponseWriter
 	}
 
 	// get the last created patient visit for this patient
-	patientVisitId, err := s.DataApi.GetLastCreatedPatientVisitIdForPatient(patient.PatientId)
+	patientVisitId, err := s.DataApi.GetLastCreatedPatientVisitIdForPatient(patient.PatientId.Int64())
 	if err != nil && err != api.NoRowsError {
 		WriteDeveloperError(w, http.StatusInternalServerError, `unable to retrieve the current active patient 
 			visit for the health condition from the patient id: `+err.Error())
@@ -265,7 +265,7 @@ func (s *PatientVisitHandler) createNewPatientVisitHandler(w http.ResponseWriter
 		return
 	}
 
-	patientVisitId, err = s.DataApi.CreateNewPatientVisit(patient.PatientId, HEALTH_CONDITION_ACNE_ID, layoutVersionId)
+	patientVisitId, err = s.DataApi.CreateNewPatientVisit(patient.PatientId.Int64(), HEALTH_CONDITION_ACNE_ID, layoutVersionId)
 	if err != nil {
 		WriteDeveloperError(w, http.StatusInternalServerError, "Unable to create new patient visit id: "+err.Error())
 		return
@@ -277,7 +277,7 @@ func (s *PatientVisitHandler) createNewPatientVisitHandler(w http.ResponseWriter
 		return
 	}
 
-	err = s.populateGlobalSectionsWithPatientAnswers(healthCondition, patient.PatientId)
+	err = s.populateGlobalSectionsWithPatientAnswers(healthCondition, patient.PatientId.Int64())
 	if err != nil {
 		WriteDeveloperError(w, http.StatusInternalServerError, err.Error())
 		return

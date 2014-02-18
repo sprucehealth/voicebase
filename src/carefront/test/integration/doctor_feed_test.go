@@ -31,13 +31,13 @@ func TestDoctorQueueWithPatientVisits(t *testing.T) {
 	signedUpPatients := make([]*apiservice.PatientSignedupResponse, 0)
 
 	signedUpPatientResponse := SignupRandomTestPatient(t, testData.DataApi, testData.AuthApi)
-	patientVisitResponse := CreatePatientVisitForPatient(signedUpPatientResponse.Patient.PatientId, testData, t)
+	patientVisitResponse := CreatePatientVisitForPatient(signedUpPatientResponse.Patient.PatientId.Int64(), testData, t)
 	patientVisitResponses = append(patientVisitResponses, patientVisitResponse)
 	signedUpPatients = append(signedUpPatients, signedUpPatientResponse)
 	// submit this patient visit and check to ensure that there is something in the doctor's queue
-	SubmitPatientVisitForPatient(signedUpPatientResponse.Patient.PatientId, patientVisitResponse.PatientVisitId, testData, t)
+	SubmitPatientVisitForPatient(signedUpPatientResponse.Patient.PatientId.Int64(), patientVisitResponse.PatientVisitId, testData, t)
 
-	doctorDisplayFeedTabs := getDoctorQueue(testData, doctor.AccountId, t)
+	doctorDisplayFeedTabs := getDoctorQueue(testData, doctor.AccountId.Int64(), t)
 	doBasicCheckOfDoctorQueue(doctorDisplayFeedTabs, t)
 
 	// there should be sections under the first tab
@@ -57,7 +57,7 @@ func TestDoctorQueueWithPatientVisits(t *testing.T) {
 	// now go ahead and start reviewing the visit and the item should change to continue visiting
 	StartReviewingPatientVisit(patientVisitResponse.PatientVisitId, doctor, testData, t)
 
-	doctorDisplayFeedTabs = getDoctorQueue(testData, doctor.AccountId, t)
+	doctorDisplayFeedTabs = getDoctorQueue(testData, doctor.AccountId.Int64(), t)
 	doBasicCheckOfDoctorQueue(doctorDisplayFeedTabs, t)
 
 	// there should be sections under the first tab
@@ -76,12 +76,12 @@ func TestDoctorQueueWithPatientVisits(t *testing.T) {
 
 	// and another item and it should be in the second section and not the first
 	signedUpPatientResponse = SignupRandomTestPatient(t, testData.DataApi, testData.AuthApi)
-	patientVisitResponse = CreatePatientVisitForPatient(signedUpPatientResponse.Patient.PatientId, testData, t)
+	patientVisitResponse = CreatePatientVisitForPatient(signedUpPatientResponse.Patient.PatientId.Int64(), testData, t)
 	patientVisitResponses = append(patientVisitResponses, patientVisitResponse)
 	signedUpPatients = append(signedUpPatients, signedUpPatientResponse)
-	SubmitPatientVisitForPatient(signedUpPatientResponse.Patient.PatientId, patientVisitResponse.PatientVisitId, testData, t)
+	SubmitPatientVisitForPatient(signedUpPatientResponse.Patient.PatientId.Int64(), patientVisitResponse.PatientVisitId, testData, t)
 
-	doctorDisplayFeedTabs = getDoctorQueue(testData, doctor.AccountId, t)
+	doctorDisplayFeedTabs = getDoctorQueue(testData, doctor.AccountId.Int64(), t)
 	doBasicCheckOfDoctorQueue(doctorDisplayFeedTabs, t)
 
 	if doctorDisplayFeedTabs.Tabs[0].Sections == nil || len(doctorDisplayFeedTabs.Tabs[0].Sections) == 0 {
@@ -102,13 +102,13 @@ func TestDoctorQueueWithPatientVisits(t *testing.T) {
 
 	for i := 0; i < 5; i++ {
 		signedUpPatientResponse = SignupRandomTestPatient(t, testData.DataApi, testData.AuthApi)
-		patientVisitResponse = CreatePatientVisitForPatient(signedUpPatientResponse.Patient.PatientId, testData, t)
+		patientVisitResponse = CreatePatientVisitForPatient(signedUpPatientResponse.Patient.PatientId.Int64(), testData, t)
 		patientVisitResponses = append(patientVisitResponses, patientVisitResponse)
 		signedUpPatients = append(signedUpPatients, signedUpPatientResponse)
-		SubmitPatientVisitForPatient(signedUpPatientResponse.Patient.PatientId, patientVisitResponse.PatientVisitId, testData, t)
+		SubmitPatientVisitForPatient(signedUpPatientResponse.Patient.PatientId.Int64(), patientVisitResponse.PatientVisitId, testData, t)
 	}
 
-	doctorDisplayFeedTabs = getDoctorQueue(testData, doctor.AccountId, t)
+	doctorDisplayFeedTabs = getDoctorQueue(testData, doctor.AccountId.Int64(), t)
 	doBasicCheckOfDoctorQueue(doctorDisplayFeedTabs, t)
 
 	if doctorDisplayFeedTabs.Tabs[0].Sections == nil || len(doctorDisplayFeedTabs.Tabs[0].Sections) == 0 {
@@ -129,7 +129,7 @@ func TestDoctorQueueWithPatientVisits(t *testing.T) {
 
 	// now, go ahead and submit the first diagnosis so that it clears from the queue
 	SubmitPatientVisitBackToPatient(patientVisitResponses[0].PatientVisitId, doctor, testData, t)
-	doctorDisplayFeedTabs = getDoctorQueue(testData, doctor.AccountId, t)
+	doctorDisplayFeedTabs = getDoctorQueue(testData, doctor.AccountId.Int64(), t)
 	doBasicCheckOfDoctorQueue(doctorDisplayFeedTabs, t)
 
 	if doctorDisplayFeedTabs.Tabs[0].Sections == nil || len(doctorDisplayFeedTabs.Tabs[0].Sections) == 0 {
@@ -175,7 +175,7 @@ func TestDoctorFeed(t *testing.T) {
 		t.Fatal("Unable to get doctor from doctor id " + err.Error())
 	}
 
-	doctorDisplayFeedTabs := getDoctorQueue(testData, doctor.AccountId, t)
+	doctorDisplayFeedTabs := getDoctorQueue(testData, doctor.AccountId.Int64(), t)
 	doBasicCheckOfDoctorQueue(doctorDisplayFeedTabs, t)
 
 	for _, tab := range doctorDisplayFeedTabs.Tabs {
@@ -186,29 +186,29 @@ func TestDoctorFeed(t *testing.T) {
 
 	patientSignedupResponse := SignupRandomTestPatient(t, testData.DataApi, testData.AuthApi)
 	// get patient to start a visit
-	patientVisitResponse := CreatePatientVisitForPatient(patientSignedupResponse.Patient.PatientId, testData, t)
+	patientVisitResponse := CreatePatientVisitForPatient(patientSignedupResponse.Patient.PatientId.Int64(), testData, t)
 
 	// lets go ahead and insert several items into the doctor queue for this doctor
 	doctorQueueItem := &api.DoctorQueueItem{}
-	doctorQueueItem.DoctorId = doctor.DoctorId
+	doctorQueueItem.DoctorId = doctor.DoctorId.Int64()
 	doctorQueueItem.ItemId = patientVisitResponse.PatientVisitId
 	doctorQueueItem.Status = api.QUEUE_ITEM_STATUS_ONGOING
 	insertIntoDoctorQueue(testData, doctorQueueItem, t)
 
 	doctorQueueItem = &api.DoctorQueueItem{}
-	doctorQueueItem.DoctorId = doctor.DoctorId
+	doctorQueueItem.DoctorId = doctor.DoctorId.Int64()
 	doctorQueueItem.ItemId = patientVisitResponse.PatientVisitId
 	doctorQueueItem.Status = api.QUEUE_ITEM_STATUS_PENDING
 	insertIntoDoctorQueue(testData, doctorQueueItem, t)
 
 	doctorQueueItem = &api.DoctorQueueItem{}
-	doctorQueueItem.DoctorId = doctor.DoctorId
+	doctorQueueItem.DoctorId = doctor.DoctorId.Int64()
 	doctorQueueItem.ItemId = patientVisitResponse.PatientVisitId
 	doctorQueueItem.Status = api.QUEUE_ITEM_STATUS_PENDING
 	insertIntoDoctorQueue(testData, doctorQueueItem, t)
 
 	// lets go ahead and make a call to get the doctor feed
-	doctorDisplayFeedTabs = getDoctorQueue(testData, doctor.AccountId, t)
+	doctorDisplayFeedTabs = getDoctorQueue(testData, doctor.AccountId.Int64(), t)
 
 	// ensure that there are two tabs as required
 	if len(doctorDisplayFeedTabs.Tabs) != 2 {
@@ -254,7 +254,7 @@ func TestDoctorFeed(t *testing.T) {
 	queueItems := make([]*api.DoctorQueueItem, 0)
 	for i := 0; i < 10; i++ {
 		queueItem := &api.DoctorQueueItem{}
-		queueItem.DoctorId = doctor.DoctorId
+		queueItem.DoctorId = doctor.DoctorId.Int64()
 		queueItem.ItemId = patientVisitResponse.PatientVisitId
 		queueItem.Status = api.QUEUE_ITEM_STATUS_COMPLETED
 		queueItem.EnqueueDate = time.Date(2013, 1, i, 0, 0, 0, 0, time.UTC)
@@ -263,14 +263,14 @@ func TestDoctorFeed(t *testing.T) {
 	}
 
 	queueItem := &api.DoctorQueueItem{}
-	queueItem.DoctorId = doctor.DoctorId
+	queueItem.DoctorId = doctor.DoctorId.Int64()
 	queueItem.ItemId = patientVisitResponse.PatientVisitId
 	queueItem.Status = api.QUEUE_ITEM_STATUS_PHOTOS_REJECTED
 	queueItem.EnqueueDate = time.Date(2013, 1, 10, 0, 0, 0, 0, time.UTC)
 	queueItems = append(queueItems, queueItem)
 	insertIntoDoctorQueueWithEnqueuedDate(testData, queueItem, t)
 
-	doctorDisplayFeedTabs = getDoctorQueue(testData, doctor.AccountId, t)
+	doctorDisplayFeedTabs = getDoctorQueue(testData, doctor.AccountId.Int64(), t)
 
 	// now there should be items in the pending and completed tabs
 
@@ -324,7 +324,7 @@ func TestDoctorFeed(t *testing.T) {
 	differencesText := make([]string, 0)
 	for i := 0; i < 5; i++ {
 		queueItem := &api.DoctorQueueItem{}
-		queueItem.DoctorId = doctor.DoctorId
+		queueItem.DoctorId = doctor.DoctorId.Int64()
 		queueItem.ItemId = patientVisitResponse.PatientVisitId
 		queueItem.Status = api.QUEUE_ITEM_STATUS_ONGOING
 		queueItem.EnqueueDate = startingTime.Add(time.Hour)
@@ -337,7 +337,7 @@ func TestDoctorFeed(t *testing.T) {
 		differencesText = append(differencesText, differenceString)
 	}
 
-	doctorDisplayFeedTabs = getDoctorQueue(testData, doctor.AccountId, t)
+	doctorDisplayFeedTabs = getDoctorQueue(testData, doctor.AccountId.Int64(), t)
 	// lets go through the pending items and ensure that the time matches up
 	for _, tab := range doctorDisplayFeedTabs.Tabs {
 		if tab.Title == "Pending" {

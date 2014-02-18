@@ -56,9 +56,9 @@ func (d *DoctorPrescriptionsHandler) ServeHTTP(w http.ResponseWriter, r *http.Re
 	uniquePatientIdsBookKeeping := make(map[int64]bool)
 	uniquePatientIds := make([]int64, 0)
 	for _, treatmentPlan := range treatmentPlans {
-		if !uniquePatientIdsBookKeeping[treatmentPlan.PatientId] {
-			uniquePatientIds = append(uniquePatientIds, treatmentPlan.PatientId)
-			uniquePatientIdsBookKeeping[treatmentPlan.PatientId] = true
+		if !uniquePatientIdsBookKeeping[treatmentPlan.PatientId.Int64()] {
+			uniquePatientIds = append(uniquePatientIds, treatmentPlan.PatientId.Int64())
+			uniquePatientIdsBookKeeping[treatmentPlan.PatientId.Int64()] = true
 		}
 	}
 
@@ -76,7 +76,7 @@ func (d *DoctorPrescriptionsHandler) ServeHTTP(w http.ResponseWriter, r *http.Re
 
 	for _, pharmacySelection := range pharmacies {
 		for _, patient := range patients {
-			if patient.PatientId == pharmacySelection.PatientId {
+			if patient.PatientId.Int64() == pharmacySelection.PatientId {
 				patient.Pharmacy = pharmacySelection
 			}
 		}

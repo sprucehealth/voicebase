@@ -31,10 +31,10 @@ func TestRegimenForPatientVisit(t *testing.T) {
 	}
 
 	// get patient to start a visit
-	patientVisitResponse := CreatePatientVisitForPatient(patientSignedupResponse.Patient.PatientId, testData, t)
+	patientVisitResponse := CreatePatientVisitForPatient(patientSignedupResponse.Patient.PatientId.Int64(), testData, t)
 
 	// get the patient to submit the case
-	SubmitPatientVisitForPatient(patientSignedupResponse.Patient.PatientId, patientVisitResponse.PatientVisitId, testData, t)
+	SubmitPatientVisitForPatient(patientSignedupResponse.Patient.PatientId.Int64(), patientVisitResponse.PatientVisitId, testData, t)
 
 	// get the patient to start reviewing the case
 	StartReviewingPatientVisit(patientVisitResponse.PatientVisitId, doctor, testData, t)
@@ -52,7 +52,7 @@ func TestRegimenForPatientVisit(t *testing.T) {
 
 	// adding new regimen steps to the doctor but not to the patient visit
 	regimenPlanRequest := &common.RegimenPlan{}
-	regimenPlanRequest.PatientVisitId = patientVisitResponse.PatientVisitId
+	regimenPlanRequest.PatientVisitId = common.NewObjectId(patientVisitResponse.PatientVisitId)
 
 	regimenStep1 := &common.DoctorInstructionItem{}
 	regimenStep1.Text = "Regimen Step 1"
@@ -131,7 +131,7 @@ func TestRegimenForPatientVisit(t *testing.T) {
 		t.Fatal("Unable to marshal request body for adding regimen steps: " + err.Error())
 	}
 
-	resp, err := authPost(ts.URL, "application/json", bytes.NewBuffer(requestBody), doctor.AccountId)
+	resp, err := authPost(ts.URL, "application/json", bytes.NewBuffer(requestBody), doctor.AccountId.Int64())
 	if err != nil {
 		t.Fatal("Unable to make successful request to create regimen for patient visit")
 	}
@@ -142,7 +142,7 @@ func TestRegimenForPatientVisit(t *testing.T) {
 
 	// get patient to start a visit
 	patientSignedupResponse = SignupRandomTestPatient(t, testData.DataApi, testData.AuthApi)
-	patientVisitResponse = CreatePatientVisitForPatient(patientSignedupResponse.Patient.PatientId, testData, t)
+	patientVisitResponse = CreatePatientVisitForPatient(patientSignedupResponse.Patient.PatientId.Int64(), testData, t)
 
 	regimenPlan = getRegimenPlanForPatientVisit(testData, doctor, patientVisitResponse.PatientVisitId, t)
 	if len(regimenPlan.RegimenSections) > 0 {
@@ -159,7 +159,7 @@ func getRegimenPlanForPatientVisit(testData TestData, doctor *common.Doctor, pat
 	ts := httptest.NewServer(doctorRegimenHandler)
 	defer ts.Close()
 
-	resp, err := authGet(ts.URL+"?patient_visit_id="+strconv.FormatInt(patientVisitId, 10), doctor.AccountId)
+	resp, err := authGet(ts.URL+"?patient_visit_id="+strconv.FormatInt(patientVisitId, 10), doctor.AccountId.Int64())
 	if err != nil {
 		t.Fatal("Unable to get regimen for patient visit: " + err.Error())
 	}
@@ -190,7 +190,7 @@ func createRegimenPlanForPatientVisit(doctorRegimenRequest *common.RegimenPlan, 
 		t.Fatal("Unable to marshal request body for adding regimen steps: " + err.Error())
 	}
 
-	resp, err := authPost(ts.URL, "application/json", bytes.NewBuffer(requestBody), doctor.AccountId)
+	resp, err := authPost(ts.URL, "application/json", bytes.NewBuffer(requestBody), doctor.AccountId.Int64())
 	if err != nil {
 		t.Fatal("Unable to make successful request to create regimen for patient visit")
 	}
@@ -238,20 +238,20 @@ func validateRegimenRequestAgainstResponse(doctorRegimenRequest, doctorRegimenRe
 	// all regimen steps should have an id in the response
 	regimenStepsMapping := make(map[int64]bool)
 	for _, regimenStep := range doctorRegimenResponse.AllRegimenSteps {
-		if regimenStep.Id == 0 {
+		if regimenStep.Id.Int64() == 0 {
 			t.Fatal("Regimen steps in the response are expected to have an id")
 		}
-		regimenStepsMapping[regimenStep.Id] = true
+		regimenStepsMapping[regimenStep.Id.Int64()] = true
 	}
 
 	// all regimen steps in the regimen sections should have an id in the response
 	// all regimen steps in the sections should also be present in the global list
 	for _, regimenSection := range doctorRegimenResponse.RegimenSections {
 		for _, regimenStep := range regimenSection.RegimenSteps {
-			if regimenStep.Id == 0 {
+			if regimenStep.Id.Int64() == 0 {
 				t.Fatal("Regimen steps in each section are expected to have an id")
 			}
-			if regimenStepsMapping[regimenStep.Id] == false {
+			if regimenStepsMapping[regimenStep.Id.Int64()] == false {
 				t.Fatalf("There exists a regimen step in a section that is not present in the global list. Id of regimen step %d", regimenStep.Id)
 			}
 		}
@@ -265,21 +265,21 @@ func validateRegimenRequestAgainstResponse(doctorRegimenRequest, doctorRegimenRe
 	for _, regimenStep := range doctorRegimenRequest.AllRegimenSteps {
 		switch regimenStep.State {
 		case common.STATE_MODIFIED:
-			updatedRegimenSteps[regimenStep.Text] = regimenStep.Id
+			updatedRegimenSteps[regimenStep.Text] = regimenStep.Id.Int64()
 		case common.STATE_DELETED:
-			deletedRegimenStepIds[regimenStep.Id] = true
+			deletedRegimenStepIds[regimenStep.Id.Int64()] = true
 		}
 	}
 
 	for _, regimenStep := range doctorRegimenResponse.AllRegimenSteps {
 		if updatedRegimenSteps[regimenStep.Text] != 0 {
-			if regimenStep.Id == updatedRegimenSteps[regimenStep.Text] {
+			if regimenStep.Id.Int64() == updatedRegimenSteps[regimenStep.Text] {
 				t.Fatalf("Expected an updated regimen step to have a different id in the response. Id = %d", regimenStep.Id)
 			}
 		}
 
-		if deletedRegimenStepIds[regimenStep.Id] == true {
-			t.Fatalf("Expected regimen step %d to have been deleted and not in the response", regimenStep.Id)
+		if deletedRegimenStepIds[regimenStep.Id.Int64()] == true {
+			t.Fatalf("Expected regimen step %d to have been deleted and not in the response", regimenStep.Id.Int64())
 		}
 	}
 }

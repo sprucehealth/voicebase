@@ -103,7 +103,7 @@ func (s *SignupPatientHandler) ServeHTTP(w http.ResponseWriter, r *http.Request)
 			patientAgreements[strings.TrimSpace(agreement)] = true
 		}
 
-		err = s.DataApi.TrackPatientAgreements(patient.PatientId, patientAgreements)
+		err = s.DataApi.TrackPatientAgreements(patient.PatientId.Int64(), patientAgreements)
 		if err != nil {
 			WriteDeveloperError(w, http.StatusInternalServerError, "Unable to track patient agreements: "+err.Error())
 			return
@@ -112,13 +112,13 @@ func (s *SignupPatientHandler) ServeHTTP(w http.ResponseWriter, r *http.Request)
 
 	// create care team for patient
 	if requestData.DoctorId != 0 {
-		_, err = s.DataApi.CreateCareTeamForPatientWithPrimaryDoctor(patient.PatientId, requestData.DoctorId)
+		_, err = s.DataApi.CreateCareTeamForPatientWithPrimaryDoctor(patient.PatientId.Int64(), requestData.DoctorId)
 		if err != nil {
 			WriteDeveloperError(w, http.StatusInternalServerError, "Unable to create care team with specified doctor for patient: "+err.Error())
 			return
 		}
 	} else {
-		_, err = s.DataApi.CreateCareTeamForPatient(patient.PatientId)
+		_, err = s.DataApi.CreateCareTeamForPatient(patient.PatientId.Int64())
 		if err != nil {
 			golog.Errorf(err.Error())
 			WriteDeveloperError(w, http.StatusInternalServerError, "Unable to create care team for patient :"+err.Error())

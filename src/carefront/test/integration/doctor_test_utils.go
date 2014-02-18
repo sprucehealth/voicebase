@@ -106,7 +106,7 @@ func submitPatientVisitDiagnosis(PatientVisitId int64, doctor *common.Doctor, te
 		t.Fatal("Unable to marshal request body")
 	}
 
-	resp, err := authPost(ts.URL, "application/json", bytes.NewBuffer(requestData), doctor.AccountId)
+	resp, err := authPost(ts.URL, "application/json", bytes.NewBuffer(requestData), doctor.AccountId.Int64())
 	if err != nil {
 		t.Fatal("Unable to successfully submit the diagnosis of a patient visit: " + err.Error())
 	}
@@ -125,7 +125,7 @@ func StartReviewingPatientVisit(PatientVisitId int64, doctor *common.Doctor, tes
 	ts := httptest.NewServer(doctorPatientVisitReviewHandler)
 	defer ts.Close()
 
-	resp, err := authGet(ts.URL+"?patient_visit_id="+strconv.FormatInt(PatientVisitId, 10), doctor.AccountId)
+	resp, err := authGet(ts.URL+"?patient_visit_id="+strconv.FormatInt(PatientVisitId, 10), doctor.AccountId.Int64())
 	if err != nil {
 		t.Fatal("Unable to make call to get patient visit review for patient: " + err.Error())
 	}
@@ -150,7 +150,7 @@ func SubmitPatientVisitBackToPatient(PatientVisitId int64, doctor *common.Doctor
 	ts := httptest.NewServer(doctorSubmitPatientVisitReviewHandler)
 	defer ts.Close()
 
-	resp, err := authPost(ts.URL, "application/x-www-form-urlencoded", bytes.NewBufferString("patient_visit_id="+strconv.FormatInt(PatientVisitId, 10)), doctor.AccountId)
+	resp, err := authPost(ts.URL, "application/x-www-form-urlencoded", bytes.NewBufferString("patient_visit_id="+strconv.FormatInt(PatientVisitId, 10)), doctor.AccountId.Int64())
 	if err != nil {
 		t.Fatal("Unable to make call to close patient visit " + err.Error())
 	}

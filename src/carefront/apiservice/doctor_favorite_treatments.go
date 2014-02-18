@@ -12,8 +12,8 @@ type DoctorFavoriteTreatmentsHandler struct {
 }
 
 type DoctorFavoriteTreatmentsRequest struct {
-	TreatmentPlanId    int64                             `json:"treamtent_plan_id,string"`
-	PatientVisitId     int64                             `json:"patient_visit_id,string"`
+	TreatmentPlanId    *common.ObjectId                  `json:"treamtent_plan_id"`
+	PatientVisitId     *common.ObjectId                  `json:"patient_visit_id"`
 	FavoriteTreatments []*common.DoctorFavoriteTreatment `json:"favorite_treatments"`
 }
 
@@ -66,7 +66,7 @@ func (t *DoctorFavoriteTreatmentsHandler) deleteFavoriteTreatments(w http.Respon
 	}
 
 	for _, favoriteTreatment := range favoriteTreatmentRequest.FavoriteTreatments {
-		if favoriteTreatment.Id == 0 {
+		if favoriteTreatment.Id.Int64() == 0 {
 			WriteDeveloperError(w, http.StatusBadRequest, "Unable to delete a treatment that does not have an id associated with it")
 			return
 		}
@@ -84,8 +84,8 @@ func (t *DoctorFavoriteTreatmentsHandler) deleteFavoriteTreatments(w http.Respon
 		return
 	}
 
-	treatmentPlanId := favoriteTreatmentRequest.TreatmentPlanId
-	patientVisitId := favoriteTreatmentRequest.PatientVisitId
+	treatmentPlanId := favoriteTreatmentRequest.TreatmentPlanId.Int64()
+	patientVisitId := favoriteTreatmentRequest.PatientVisitId.Int64()
 	var treatmentsInTreatmentPlan []*common.Treatment
 	if patientVisitId != 0 {
 		if treatmentPlanId == 0 {
@@ -154,8 +154,8 @@ func (t *DoctorFavoriteTreatmentsHandler) addFavoriteTreatments(w http.ResponseW
 		return
 	}
 
-	treatmentPlanId := favoriteTreatmentRequest.TreatmentPlanId
-	patientVisitId := favoriteTreatmentRequest.PatientVisitId
+	treatmentPlanId := favoriteTreatmentRequest.TreatmentPlanId.Int64()
+	patientVisitId := favoriteTreatmentRequest.PatientVisitId.Int64()
 	var treatmentsInTreatmentPlan []*common.Treatment
 	if patientVisitId != 0 {
 		if treatmentPlanId == 0 {

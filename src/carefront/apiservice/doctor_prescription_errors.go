@@ -48,10 +48,10 @@ func (d *DoctorPrescriptionsErrorsHandler) ServeHTTP(w http.ResponseWriter, r *h
 		if treatment == nil {
 			dispenseValue, _ := strconv.ParseInt(medicationWithError.Dispense, 0, 64)
 			treatment = &common.Treatment{
-				PrescriptionId:          medicationWithError.DoseSpotPrescriptionId,
+				PrescriptionId:          common.NewObjectId(medicationWithError.DoseSpotPrescriptionId),
 				ErxSentDate:             medicationWithError.PrescriptionDate,
 				DrugDBIds:               medicationWithError.DrugDBIds,
-				DispenseUnitId:          medicationWithError.DispenseUnitId,
+				DispenseUnitId:          common.NewObjectId(medicationWithError.DispenseUnitId),
 				DispenseUnitDescription: medicationWithError.DispenseUnitDescription,
 				DrugName:                medicationWithError.DisplayName,
 				DosageStrength:          medicationWithError.Strength,
@@ -63,9 +63,9 @@ func (d *DoctorPrescriptionsErrorsHandler) ServeHTTP(w http.ResponseWriter, r *h
 				SubstitutionsAllowed:    !medicationWithError.NoSubstitutions,
 			}
 		} else {
-			if !uniquePatientIdsBookKeeping[treatment.PatientId] {
-				uniquePatientIdsBookKeeping[treatment.PatientId] = true
-				uniquePatientIds = append(uniquePatientIds, treatment.PatientId)
+			if !uniquePatientIdsBookKeeping[treatment.PatientId.Int64()] {
+				uniquePatientIdsBookKeeping[treatment.PatientId.Int64()] = true
+				uniquePatientIds = append(uniquePatientIds, treatment.PatientId.Int64())
 			}
 		}
 
@@ -111,7 +111,7 @@ func (d *DoctorPrescriptionsErrorsHandler) ServeHTTP(w http.ResponseWriter, r *h
 
 	for _, pharmacySelection := range pharmacies {
 		for _, patient := range patients {
-			if patient.PatientId == pharmacySelection.PatientId {
+			if patient.PatientId.Int64() == pharmacySelection.PatientId {
 				patient.Pharmacy = pharmacySelection
 			}
 		}

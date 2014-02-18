@@ -91,14 +91,14 @@ func (d *DataService) StoreAnswersForQuestion(role string, roleId, patientVisitI
 		// tx.Commit()
 		// create a query to batch insert all subanswers
 		for infoIntakeId, answerToStore := range infoIdToAnswersWithSubAnswers {
-			_, err = insertAnswersForSubQuestions(tx, answerToStore.SubAnswers, strconv.FormatInt(infoIntakeId, 10), strconv.FormatInt(answerToStore.QuestionId, 10), status_creating)
+			_, err = insertAnswersForSubQuestions(tx, answerToStore.SubAnswers, strconv.FormatInt(infoIntakeId, 10), strconv.FormatInt(answerToStore.QuestionId.Int64(), 10), status_creating)
 			if err != nil {
 				tx.Rollback()
 				return err
 			}
 			// keep track of all questions for which we are storing answers
 			for _, subAnswer := range answerToStore.SubAnswers {
-				questionIds[subAnswer.QuestionId] = true
+				questionIds[subAnswer.QuestionId.Int64()] = true
 			}
 		}
 
@@ -169,7 +169,7 @@ func insertAnswers(tx *sql.Tx, answersToStore []*common.AnswerIntake, status str
 
 	for _, answerToStore := range answersToStore {
 
-		if answerToStore.PotentialAnswerId == 0 {
+		if answerToStore.PotentialAnswerId.Int64() == 0 {
 			res, err = tx.Exec(`insert into info_intake (role_id, context_id, 
 			question_id, answer_text, layout_version_id, role, status) values
 			(?, ?, ?, ?, ?, ?, ?)`, answerToStore.RoleId, answerToStore.ContextId,
@@ -193,7 +193,7 @@ func insertAnswersForSubQuestions(tx *sql.Tx, answersToStore []*common.AnswerInt
 
 	for _, answerToStore := range answersToStore {
 
-		if answerToStore.PotentialAnswerId == 0 {
+		if answerToStore.PotentialAnswerId.Int64() == 0 {
 			res, err = tx.Exec(`insert into info_intake (role_id, context_id, parent_info_intake_id, parent_question_id, 
 			question_id, answer_text, layout_version_id, role, status) values
 			(?, ?, ?, ?, ?, ?, ?, ?, ?)`, answerToStore.RoleId, answerToStore.ContextId, parentInfoIntakeId, parentQuestionId,
@@ -276,13 +276,14 @@ func (d *DataService) getPatientAnswersForQuestionsBasedOnQuery(query string, ar
 		if err := rows.Scan(&answerId, &questionId, &potentialAnswerId, &potentialAnswer, &answerSummaryText, &answerText, &storageBucket, &storageKey, &storageRegion, &layoutVersionId, &parentQuestionId, &parentInfoIntakeId); err != nil {
 			return nil, err
 		}
-		patientAnswerToQuestion := &common.AnswerIntake{AnswerIntakeId: answerId,
-			QuestionId:      questionId,
-			LayoutVersionId: layoutVersionId,
+		patientAnswerToQuestion := &common.AnswerIntake{
+			AnswerIntakeId:  common.NewObjectId(answerId),
+			QuestionId:      common.NewObjectId(questionId),
+			LayoutVersionId: common.NewObjectId(layoutVersionId),
 		}
 
 		if potentialAnswerId.Valid {
-			patientAnswerToQuestion.PotentialAnswerId = potentialAnswerId.Int64
+			patientAnswerToQuestion.PotentialAnswerId = common.NewObjectId(potentialAnswerId.Int64)
 		}
 
 		if potentialAnswer.Valid {
@@ -304,10 +305,10 @@ func (d *DataService) getPatientAnswersForQuestionsBasedOnQuery(query string, ar
 			patientAnswerToQuestion.StorageKey = storageKey.String
 		}
 		if parentQuestionId.Valid {
-			patientAnswerToQuestion.ParentQuestionId = parentQuestionId.Int64
+			patientAnswerToQuestion.ParentQuestionId = common.NewObjectId(parentQuestionId.Int64)
 		}
 		if parentInfoIntakeId.Valid {
-			patientAnswerToQuestion.ParentAnswerId = parentInfoIntakeId.Int64
+			patientAnswerToQuestion.ParentAnswerId = common.NewObjectId(parentInfoIntakeId.Int64)
 		}
 		queriedAnswers = append(queriedAnswers, patientAnswerToQuestion)
 	}
@@ -315,8 +316,8 @@ func (d *DataService) getPatientAnswersForQuestionsBasedOnQuery(query string, ar
 	// populate all top-level answers into the map
 	patientAnswers = make(map[int64][]*common.AnswerIntake)
 	for _, patientAnswerToQuestion := range queriedAnswers {
-		if patientAnswerToQuestion.ParentQuestionId == 0 {
-			questionId := patientAnswerToQuestion.QuestionId
+		if patientAnswerToQuestion.ParentQuestionId.Int64() == 0 {
+			questionId := patientAnswerToQuestion.QuestionId.Int64()
 			if patientAnswers[questionId] == nil {
 				patientAnswers[questionId] = make([]*common.AnswerIntake, 0)
 			}
@@ -327,8 +328,8 @@ func (d *DataService) getPatientAnswersForQuestionsBasedOnQuery(query string, ar
 	// add all subanswers to the top-level answers by iterating through the queried answers
 	// to identify any sub answers
 	for _, patientAnswerToQuestion := range queriedAnswers {
-		if patientAnswerToQuestion.ParentQuestionId != 0 {
-			questionId := patientAnswerToQuestion.ParentQuestionId
+		if patientAnswerToQuestion.ParentQuestionId.Int64() != 0 {
+			questionId := patientAnswerToQuestion.ParentQuestionId.Int64()
 			// go through the list of answers to identify the particular answer we care about
 			for _, patientAnswer := range patientAnswers[questionId] {
 				if patientAnswer.AnswerIntakeId == patientAnswerToQuestion.ParentAnswerId {

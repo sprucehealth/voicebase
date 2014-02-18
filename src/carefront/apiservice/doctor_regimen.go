@@ -97,13 +97,13 @@ func (d *DoctorRegimenHandler) updateRegimenSteps(w http.ResponseWriter, r *http
 		return
 	}
 
-	doctorId, _, _, statusCode, err := ValidateDoctorAccessToPatientVisitAndGetRelevantData(requestData.PatientVisitId, GetContext(r).AccountId, d.DataApi)
+	doctorId, _, _, statusCode, err := ValidateDoctorAccessToPatientVisitAndGetRelevantData(requestData.PatientVisitId.Int64(), GetContext(r).AccountId, d.DataApi)
 	if err != nil {
 		WriteDeveloperError(w, statusCode, err.Error())
 		return
 	}
 
-	err = EnsurePatientVisitInExpectedStatus(d.DataApi, requestData.PatientVisitId, api.CASE_STATUS_REVIEWING)
+	err = EnsurePatientVisitInExpectedStatus(d.DataApi, requestData.PatientVisitId.Int64(), api.CASE_STATUS_REVIEWING)
 	if err != nil {
 		WriteDeveloperError(w, http.StatusBadRequest, err.Error())
 		return
@@ -114,7 +114,7 @@ func (d *DoctorRegimenHandler) updateRegimenSteps(w http.ResponseWriter, r *http
 		for _, regimenStep := range regimenSection.RegimenSteps {
 			regimenStepFound := false
 			for _, globalRegimenStep := range requestData.AllRegimenSteps {
-				if globalRegimenStep.Id == 0 {
+				if globalRegimenStep.Id.Int64() == 0 {
 					if globalRegimenStep.Text == regimenStep.Text {
 						regimenStepFound = true
 						break
@@ -170,7 +170,7 @@ func (d *DoctorRegimenHandler) updateRegimenSteps(w http.ResponseWriter, r *http
 				WriteDeveloperError(w, http.StatusInternalServerError, "Unable to add reigmen step to doctor. Application may be left in inconsistent state. Error = "+err.Error())
 				return
 			}
-			newOrUpdatedStepToIdMapping[regimenStep.Text] = regimenStep.Id
+			newOrUpdatedStepToIdMapping[regimenStep.Text] = regimenStep.Id.Int64()
 			updatedAllRegimenSteps = append(updatedAllRegimenSteps, regimenStep)
 		case common.STATE_MODIFIED:
 			err = d.DataApi.UpdateRegimenStepForDoctor(regimenStep, doctorId)
@@ -180,7 +180,7 @@ func (d *DoctorRegimenHandler) updateRegimenSteps(w http.ResponseWriter, r *http
 			}
 			// keep track of the new id for updated regimen steps so that we can update the regimen step in the
 			// regimen section
-			newOrUpdatedStepToIdMapping[regimenStep.Text] = regimenStep.Id
+			newOrUpdatedStepToIdMapping[regimenStep.Text] = regimenStep.Id.Int64()
 			updatedAllRegimenSteps = append(updatedAllRegimenSteps, regimenStep)
 		case common.STATE_DELETED:
 			err = d.DataApi.MarkRegimenStepToBeDeleted(regimenStep, doctorId)
@@ -200,22 +200,22 @@ func (d *DoctorRegimenHandler) updateRegimenSteps(w http.ResponseWriter, r *http
 		for _, regimenStep := range regimenSection.RegimenSteps {
 			updatedOrNewId := newOrUpdatedStepToIdMapping[regimenStep.Text]
 			if updatedOrNewId != 0 {
-				regimenStep.Id = updatedOrNewId
+				regimenStep.Id = common.NewObjectId(updatedOrNewId)
 			}
 			// empty out the state now that it has been taken care of
 			regimenStep.State = ""
 		}
 	}
 
-	treatmentPlanId := requestData.TreatmentPlanId
+	treatmentPlanId := requestData.TreatmentPlanId.Int64()
 	if treatmentPlanId == 0 {
-		treatmentPlanId, err = d.DataApi.GetActiveTreatmentPlanForPatientVisit(doctorId, requestData.PatientVisitId)
+		treatmentPlanId, err = d.DataApi.GetActiveTreatmentPlanForPatientVisit(doctorId, requestData.PatientVisitId.Int64())
 		if err != nil {
 			WriteDeveloperError(w, http.StatusInternalServerError, "Unable to get treatment plan for patient visit: "+err.Error())
 			return
 		}
 	}
-	requestData.TreatmentPlanId = treatmentPlanId
+	requestData.TreatmentPlanId = common.NewObjectId(treatmentPlanId)
 
 	err = d.DataApi.CreateRegimenPlanForPatientVisit(requestData)
 	if err != nil {

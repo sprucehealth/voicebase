@@ -56,7 +56,7 @@ func (p *DoctorPatientVisitReviewHandler) ServeHTTP(w http.ResponseWriter, r *ht
 	}
 
 	// ensure that the doctor is authorized to work on this case
-	doctorId, _, _, statusCode, err := ValidateDoctorAccessToPatientVisitAndGetRelevantData(patientVisit.PatientVisitId, GetContext(r).AccountId, p.DataApi)
+	doctorId, _, _, statusCode, err := ValidateDoctorAccessToPatientVisitAndGetRelevantData(patientVisit.PatientVisitId.Int64(), GetContext(r).AccountId, p.DataApi)
 	if err != nil {
 		WriteDeveloperError(w, statusCode, err.Error())
 		return
@@ -64,32 +64,32 @@ func (p *DoctorPatientVisitReviewHandler) ServeHTTP(w http.ResponseWriter, r *ht
 
 	// udpate the status of the case and the item in the doctor's queue
 	if patientVisit.Status == api.CASE_STATUS_SUBMITTED {
-		_, err = p.DataApi.StartNewTreatmentPlanForPatientVisit(patientVisit.PatientId, patientVisit.PatientVisitId, doctorId)
+		_, err = p.DataApi.StartNewTreatmentPlanForPatientVisit(patientVisit.PatientId.Int64(), patientVisit.PatientVisitId.Int64(), doctorId)
 		if err != nil {
 			WriteDeveloperError(w, http.StatusInternalServerError, "Unable to update the status of the visit to reviewing: "+err.Error())
 			return
 		}
 
-		err = p.DataApi.MarkPatientVisitAsOngoingInDoctorQueue(doctorId, patientVisit.PatientVisitId)
+		err = p.DataApi.MarkPatientVisitAsOngoingInDoctorQueue(doctorId, patientVisit.PatientVisitId.Int64())
 		if err != nil {
 			WriteDeveloperError(w, http.StatusInternalServerError, "Unable to update the item in the queue for the doctor that speaks to this patient visit: "+err.Error())
 			return
 		}
 
-		err = p.DataApi.RecordDoctorAssignmentToPatientVisit(patientVisit.PatientVisitId, doctorId)
+		err = p.DataApi.RecordDoctorAssignmentToPatientVisit(patientVisit.PatientVisitId.Int64(), doctorId)
 		if err != nil {
 			WriteDeveloperError(w, http.StatusInternalServerError, "Unable to assign the patient visit to this doctor: "+err.Error())
 			return
 		}
 	}
 
-	patient, err := p.DataApi.GetPatientFromId(patientVisit.PatientId)
+	patient, err := p.DataApi.GetPatientFromId(patientVisit.PatientId.Int64())
 	if err != nil {
 		WriteDeveloperError(w, http.StatusInternalServerError, "Unable to get patient info based on account id: "+err.Error())
 		return
 	}
 
-	pharmacySelection, err := p.DataApi.GetPatientPharmacySelection(patient.PatientId)
+	pharmacySelection, err := p.DataApi.GetPatientPharmacySelection(patient.PatientId.Int64())
 	if err != nil && err != api.NoRowsError {
 		WriteDeveloperError(w, http.StatusInternalServerError, "Unable to gte patient's pharmacy selection: "+err.Error())
 		return
@@ -106,7 +106,7 @@ func (p *DoctorPatientVisitReviewHandler) ServeHTTP(w http.ResponseWriter, r *ht
 		patient.Pharmacy = pharmacySelection
 	}
 
-	bucket, key, region, _, err := p.DataApi.GetStorageInfoOfCurrentActiveDoctorLayout(patientVisit.HealthConditionId)
+	bucket, key, region, _, err := p.DataApi.GetStorageInfoOfCurrentActiveDoctorLayout(patientVisit.HealthConditionId.Int64())
 	if err != nil {
 		WriteDeveloperError(w, http.StatusInternalServerError, "Unable to get the active layout version for the doctor's view of the patient visit: "+err.Error())
 		return
@@ -134,7 +134,7 @@ func (p *DoctorPatientVisitReviewHandler) ServeHTTP(w http.ResponseWriter, r *ht
 	p.filterOutGenderSpecificQuestionsAndSubSectionsFromOverview(patientVisitOverview, patient)
 
 	questionIds := getQuestionIdsFromPatientVisitOverview(patientVisitOverview)
-	patientAnswersForQuestions, err := p.DataApi.GetAnswersForQuestionsInPatientVisit(api.PATIENT_ROLE, questionIds, patientVisit.PatientId, patientVisit.PatientVisitId)
+	patientAnswersForQuestions, err := p.DataApi.GetAnswersForQuestionsInPatientVisit(api.PATIENT_ROLE, questionIds, patientVisit.PatientId.Int64(), patientVisit.PatientVisitId.Int64())
 	if err != nil {
 		WriteDeveloperError(w, http.StatusInternalServerError, "Unable to get patient answers for questions : "+err.Error())
 		return
@@ -204,8 +204,8 @@ func (p *DoctorPatientVisitReviewHandler) removeQuestionsWithNoAnswersBasedOnFla
 
 func fillInPatientVisitInfoIntoOverview(patientVisit *common.PatientVisit, patientVisitOverview *info_intake.PatientVisitOverview) {
 	patientVisitOverview.PatientVisitTime = patientVisit.SubmittedDate
-	patientVisitOverview.PatientVisitId = patientVisit.PatientVisitId
-	patientVisitOverview.HealthConditionId = patientVisit.HealthConditionId
+	patientVisitOverview.PatientVisitId = patientVisit.PatientVisitId.Int64()
+	patientVisitOverview.HealthConditionId = patientVisit.HealthConditionId.Int64()
 }
 
 func getQuestionIdsFromPatientVisitOverview(patientVisitOverview *info_intake.PatientVisitOverview) (questionIds []int64) {

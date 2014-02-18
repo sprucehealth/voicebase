@@ -6,7 +6,7 @@ import (
 )
 
 type Patient struct {
-	PatientId      int64                  `json:"id,omitempty,string"`
+	PatientId      *ObjectId              `json:"id,omitempty"`
 	FirstName      string                 `json:"first_name,omitempty"`
 	LastName       string                 `json:"last_name,omiempty"`
 	Dob            time.Time              `json:"dob,omitempty"`
@@ -17,33 +17,33 @@ type Patient struct {
 	Phone          string                 `json:"phone,omitempty"`
 	PhoneType      string                 `json:"-"`
 	Status         string                 `json:"-"`
-	AccountId      int64                  `json:"-"`
-	ERxPatientId   int64                  `json:"-"`
+	AccountId      *ObjectId              `json:"-"`
+	ERxPatientId   *ObjectId              `json:"-"`
 	Pharmacy       *pharmacy.PharmacyData `json:"pharmacy,omitempty"`
 	PatientAddress *Address               `json:"address,omitempty"`
 }
 
 type Doctor struct {
-	DoctorId     int64     `json:"id,string,omitempty"`
+	DoctorId     *ObjectId `json:"id,omitempty"`
 	FirstName    string    `json:"first_name,omitempty"`
 	LastName     string    `json:"last_name,omitempty"`
 	Dob          time.Time `json:"-"`
 	Gender       string    `json:"-"`
 	Status       string    `json:"-"`
-	AccountId    int64     `json:"-"`
+	AccountId    *ObjectId `json:"-"`
 	CellPhone    string    `json:"phone"`
 	ThumbnailUrl string    `json:"thumbnail_url,omitempty"`
 }
 
 type PatientVisit struct {
-	PatientVisitId    int64     `json:"patient_visit_id,string,omitempty"`
-	PatientId         int64     `json:"patient_id,string,omitempty"`
+	PatientVisitId    *ObjectId `json:"patient_visit_id,omitempty"`
+	PatientId         *ObjectId `json:"patient_id,omitempty"`
 	CreationDate      time.Time `json:"creation_date,omitempty"`
 	SubmittedDate     time.Time `json:"submitted_date,omitempty"`
 	ClosedDate        time.Time `json:"closed_date,omitempty"`
-	HealthConditionId int64     `json:"health_condition_id,omitempty,string"`
+	HealthConditionId *ObjectId `json:"health_condition_id,omitempty"`
 	Status            string    `json:"status,omitempty"`
-	LayoutVersionId   int64     `json:"layout_version_id,omitempty,string"`
+	LayoutVersionId   *ObjectId `json:"layout_version_id,omitempty"`
 }
 
 type Address struct {
@@ -55,17 +55,17 @@ type Address struct {
 }
 
 type AnswerIntake struct {
-	AnswerIntakeId    int64           `json:"answer_id,string,omitempty"`
-	QuestionId        int64           `json:"-"`
-	RoleId            int64           `json:"-"`
+	AnswerIntakeId    *ObjectId       `json:"answer_id,omitempty"`
+	QuestionId        *ObjectId       `json:"-"`
+	RoleId            *ObjectId       `json:"-"`
 	Role              string          `json:"-"`
-	ContextId         int64           `json:"-"`
-	ParentQuestionId  int64           `json:"-"`
-	ParentAnswerId    int64           `json:"-"`
-	PotentialAnswerId int64           `json:"potential_answer_id,string,omitempty"`
+	ContextId         *ObjectId       `json:"-"`
+	ParentQuestionId  *ObjectId       `json:"-"`
+	ParentAnswerId    *ObjectId       `json:"-"`
+	PotentialAnswerId *ObjectId       `json:"potential_answer_id,omitempty"`
 	PotentialAnswer   string          `json:"potential_answer,omitempty"`
 	AnswerSummary     string          `json:"potential_answer_summary,omitempty"`
-	LayoutVersionId   int64           `json:"-"`
+	LayoutVersionId   *ObjectId       `json:"-"`
 	SubAnswers        []*AnswerIntake `json:"answers,omitempty"`
 	AnswerText        string          `json:"answer_text,omitempty"`
 	ObjectUrl         string          `json:"object_url,omitempty"`
@@ -91,10 +91,10 @@ type PatientCareProviderGroup struct {
 }
 
 type TreatmentPlan struct {
-	Id               int64             `json:"treatment_plan_id,string,omitempty"`
-	PatientId        int64             `json:"patient_id,string,omitempty"`
+	Id               *ObjectId         `json:"treatment_plan_id,omitempty"`
+	PatientId        *ObjectId         `json:"patient_id,omitempty"`
 	PatientInfo      *Patient          `json:"patient,omitempty"`
-	PatientVisitId   int64             `json:"patient_visit_id,string,omitempty"`
+	PatientVisitId   *ObjectId         `json:"patient_visit_id,omitempty"`
 	Status           string            `json:"status,omitempty"`
 	CreationDate     *time.Time        `json:"creation_date,omitempty"`
 	SentDate         *time.Time        `json:"sent_date,omitempty"`
@@ -107,16 +107,16 @@ type TreatmentPlan struct {
 }
 
 type Treatment struct {
-	Id                        int64                    `json:"treatment_id,string,omitempty"`
-	DoctorFavoriteTreatmentId int64                    `json:"dr_favorite_treatment_id,string,omitempty"`
-	PrescriptionId            int64                    `json:"erx_id,string,omitempty"`
-	ErxMedicationId           int64                    `json:"-"`
+	Id                        *ObjectId                `json:"treatment_id,omitempty"`
+	DoctorFavoriteTreatmentId *ObjectId                `json:"dr_favorite_treatment_id,omitempty"`
+	PrescriptionId            *ObjectId                `json:"erx_id,omitempty"`
+	ErxMedicationId           *ObjectId                `json:"-"`
 	PrescriptionStatus        string                   `json:"erx_status,omitempty"`
-	PharmacyLocalId           int64                    `json:"-"`
+	PharmacyLocalId           *ObjectId                `json:"-"`
 	StatusDetails             string                   `json:"erx_status_details,omitempty"`
-	TreatmentPlanId           int64                    `json:"treatment_plan_id,string,omitempty"`
-	PatientVisitId            int64                    `json:"patient_visit_id,string,omitempty"`
-	PatientId                 int64                    `json:"-"`
+	TreatmentPlanId           *ObjectId                `json:"treatment_plan_id,string,omitempty"`
+	PatientVisitId            *ObjectId                `json:"patient_visit_id,string,omitempty"`
+	PatientId                 *ObjectId                `json:"-"`
 	DrugDBIds                 map[string]string        `json:"drug_db_ids,omitempty"`
 	DrugInternalName          string                   `json:"drug_internal_name,omitempty"`
 	DrugName                  string                   `json:"drug_name"`
@@ -124,7 +124,7 @@ type Treatment struct {
 	DrugForm                  string                   `json:"drug_form,omitempty"`
 	DosageStrength            string                   `json:"dosage_strength,omitempty"`
 	DispenseValue             int64                    `json:"dispense_value,string,omitempty"`
-	DispenseUnitId            int64                    `json:"dispense_unit_id,string,omitempty"`
+	DispenseUnitId            *ObjectId                `json:"dispense_unit_id,omitempty"`
 	DispenseUnitDescription   string                   `json:"dispense_unit_description,omitempty"`
 	NumberRefills             int64                    `json:"refills,string,omitempty"`
 	SubstitutionsAllowed      bool                     `json:"substitutions_allowed,omitempty"`
@@ -140,7 +140,7 @@ type Treatment struct {
 }
 
 type DoctorFavoriteTreatment struct {
-	Id                 int64      `json:"id,string"`
+	Id                 *ObjectId  `json:"id,omitempty"`
 	Name               string     `json:"name"`
 	FavoritedTreatment *Treatment `json:"treatment"`
 	Status             string     `json:"-"`
@@ -153,11 +153,11 @@ const (
 )
 
 type DoctorInstructionItem struct {
-	Id       int64  `json:"id,string"`
-	Text     string `json:"text"`
-	Selected bool   `json:"selected,omitempty"`
-	State    string `json:"state,omitempty"`
-	Status   string `json:"-"`
+	Id       *ObjectId `json:"id,omitempty"`
+	Text     string    `json:"text"`
+	Selected bool      `json:"selected,omitempty"`
+	State    string    `json:"state,omitempty"`
+	Status   string    `json:"-"`
 }
 
 type RegimenSection struct {
@@ -166,16 +166,16 @@ type RegimenSection struct {
 }
 
 type RegimenPlan struct {
-	TreatmentPlanId int64                    `json:"treatment_plan_id,string,omitempty"`
-	PatientVisitId  int64                    `json:"patient_visit_id,string,omitempty"`
+	TreatmentPlanId *ObjectId                `json:"treatment_plan_id,omitempty"`
+	PatientVisitId  *ObjectId                `json:"patient_visit_id,omitempty"`
 	RegimenSections []*RegimenSection        `json:"regimen_sections"`
 	AllRegimenSteps []*DoctorInstructionItem `json:"all_regimen_steps,omitempty"`
 	Title           string                   `json:"title,omitempty"`
 }
 
 type FollowUp struct {
-	TreatmentPlanId int64     `json:"treatment_plan_id,string,omitempty"`
-	FollowUpValue   int64     `json:"follow_up_value,string,omitempty"`
+	TreatmentPlanId *ObjectId `json:"treatment_plan_id,omitempty"`
+	FollowUpValue   int64     `json:"follow_up_value,string, omitempty"`
 	FollowUpUnit    string    `json:"follow_up_unit,omitempty"`
 	FollowUpTime    time.Time `json:"follow_up_time,omitempty"`
 	Title           string    `json:"title,omitempty"`
@@ -184,8 +184,8 @@ type FollowUp struct {
 type Advice struct {
 	AllAdvicePoints      []*DoctorInstructionItem `json:"all_advice_points,omitempty"`
 	SelectedAdvicePoints []*DoctorInstructionItem `json:"selected_advice_points,omitempty"`
-	PatientVisitId       int64                    `json:"patient_visit_id,string,omitempty"`
-	TreatmentPlanId      int64                    `json:"treatment_plan_id,string,omitempty"`
+	PatientVisitId       *ObjectId                `json:"patient_visit_id,omitempty"`
+	TreatmentPlanId      *ObjectId                `json:"treatment_plan_id,omitempty"`
 	Title                string                   `json:"title,omitempty"`
 }
 

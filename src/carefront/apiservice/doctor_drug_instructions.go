@@ -70,7 +70,7 @@ func (d *DoctorDrugInstructionsHandler) addDrugInstructions(w http.ResponseWrite
 				WriteDeveloperError(w, http.StatusInternalServerError, "Unable to add instructions for doctor: "+err.Error())
 				return
 			}
-			newOrUpdatedInstructionToIdMapping[drugInstructionItem.Text] = drugInstructionItem.Id
+			newOrUpdatedInstructionToIdMapping[drugInstructionItem.Text] = drugInstructionItem.Id.Int64()
 			updatedInstructionList = append(updatedInstructionList, drugInstructionItem)
 		case common.STATE_DELETED:
 			err := d.DataApi.DeleteDrugInstructionForDoctor(drugInstructionItem, doctorId)
@@ -89,7 +89,7 @@ func (d *DoctorDrugInstructionsHandler) addDrugInstructions(w http.ResponseWrite
 	for _, selectedInstructionItem := range addInstructionsRequestBody.SelectedSupplementalInstructions {
 		updatedOrNewId := newOrUpdatedInstructionToIdMapping[selectedInstructionItem.Text]
 		if updatedOrNewId != 0 {
-			selectedInstructionItem.Id = updatedOrNewId
+			selectedInstructionItem.Id = common.NewObjectId(updatedOrNewId)
 		}
 	}
 

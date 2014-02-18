@@ -173,10 +173,10 @@ func TestAddTreatments(t *testing.T) {
 	}
 
 	// get patient to start a visit
-	patientVisitResponse := CreatePatientVisitForPatient(patientSignedupResponse.Patient.PatientId, testData, t)
+	patientVisitResponse := CreatePatientVisitForPatient(patientSignedupResponse.Patient.PatientId.Int64(), testData, t)
 
 	// get patient to submit the visit
-	SubmitPatientVisitForPatient(patientSignedupResponse.Patient.PatientId, patientVisitResponse.PatientVisitId, testData, t)
+	SubmitPatientVisitForPatient(patientSignedupResponse.Patient.PatientId.Int64(), patientVisitResponse.PatientVisitId, testData, t)
 
 	// get the doctor to start reviewing the case
 	StartReviewingPatientVisit(patientVisitResponse.PatientVisitId, doctor, testData, t)
@@ -184,10 +184,10 @@ func TestAddTreatments(t *testing.T) {
 	// doctor now attempts to add a couple treatments for patient
 	treatment1 := &common.Treatment{}
 	treatment1.DrugInternalName = "Advil"
-	treatment1.PatientVisitId = patientVisitResponse.PatientVisitId
+	treatment1.PatientVisitId = common.NewObjectId(patientVisitResponse.PatientVisitId)
 	treatment1.DosageStrength = "10 mg"
 	treatment1.DispenseValue = 1
-	treatment1.DispenseUnitId = 26
+	treatment1.DispenseUnitId = common.NewObjectId(26)
 	treatment1.NumberRefills = 1
 	treatment1.SubstitutionsAllowed = true
 	treatment1.DaysSupply = 1
@@ -201,10 +201,10 @@ func TestAddTreatments(t *testing.T) {
 
 	treatment2 := &common.Treatment{}
 	treatment2.DrugInternalName = "Advil 2"
-	treatment2.PatientVisitId = patientVisitResponse.PatientVisitId
+	treatment2.PatientVisitId = common.NewObjectId(patientVisitResponse.PatientVisitId)
 	treatment2.DosageStrength = "100 mg"
 	treatment2.DispenseValue = 2
-	treatment2.DispenseUnitId = 27
+	treatment2.DispenseUnitId = common.NewObjectId(27)
 	treatment2.NumberRefills = 3
 	treatment2.SubstitutionsAllowed = false
 	treatment2.DaysSupply = 12
@@ -218,7 +218,7 @@ func TestAddTreatments(t *testing.T) {
 
 	treatments := []*common.Treatment{treatment1, treatment2}
 
-	getTreatmentsResponse := addAndGetTreatmentsForPatientVisit(testData, treatments, doctor.AccountId, patientVisitResponse.PatientVisitId, t)
+	getTreatmentsResponse := addAndGetTreatmentsForPatientVisit(testData, treatments, doctor.AccountId.Int64(), patientVisitResponse.PatientVisitId, t)
 
 	for _, treatment := range getTreatmentsResponse.Treatments {
 		switch treatment.DrugInternalName {
@@ -232,7 +232,7 @@ func TestAddTreatments(t *testing.T) {
 	// now lets go ahead and post an update where we have just one treatment for the patient visit which was updated while the other was deleted
 	treatments[0].DispenseValue = 10
 	treatments = []*common.Treatment{treatments[0]}
-	getTreatmentsResponse = addAndGetTreatmentsForPatientVisit(testData, treatments, doctor.AccountId, patientVisitResponse.PatientVisitId, t)
+	getTreatmentsResponse = addAndGetTreatmentsForPatientVisit(testData, treatments, doctor.AccountId.Int64(), patientVisitResponse.PatientVisitId, t)
 
 	// there should be just one treatment and its name should be the name that we just set
 	if len(getTreatmentsResponse.Treatments) != 1 {
@@ -267,7 +267,7 @@ func TestFavoriteTreatments(t *testing.T) {
 		DrugInternalName:     "DrugName (DrugRoute - DrugForm)",
 		DosageStrength:       "10 mg",
 		DispenseValue:        1,
-		DispenseUnitId:       26,
+		DispenseUnitId:       common.NewObjectId(26),
 		NumberRefills:        1,
 		SubstitutionsAllowed: true,
 		DaysSupply:           1,
@@ -294,7 +294,7 @@ func TestFavoriteTreatments(t *testing.T) {
 		t.Fatal("Unable to marshal request body for adding treatments to patient visit")
 	}
 
-	resp, err := authPost(ts.URL, "application/json", bytes.NewBuffer(data), doctor.AccountId)
+	resp, err := authPost(ts.URL, "application/json", bytes.NewBuffer(data), doctor.AccountId.Int64())
 	if err != nil {
 		t.Fatal("Unable to make POST request to add treatments to patient visit " + err.Error())
 	}
@@ -331,7 +331,7 @@ func TestFavoriteTreatments(t *testing.T) {
 		DrugInternalName:     "DrugName2",
 		DosageStrength:       "10 mg",
 		DispenseValue:        1,
-		DispenseUnitId:       26,
+		DispenseUnitId:       common.NewObjectId(26),
 		NumberRefills:        1,
 		SubstitutionsAllowed: true,
 		DaysSupply:           1,
@@ -354,7 +354,7 @@ func TestFavoriteTreatments(t *testing.T) {
 		t.Fatal("Unable to marshal request body for adding treatments to patient visit")
 	}
 
-	resp, err = authPost(ts.URL, "application/json", bytes.NewBuffer(data), doctor.AccountId)
+	resp, err = authPost(ts.URL, "application/json", bytes.NewBuffer(data), doctor.AccountId.Int64())
 	if err != nil {
 		t.Fatal("Unable to make POST request to add treatments to patient visit " + err.Error())
 	}
@@ -390,7 +390,7 @@ func TestFavoriteTreatments(t *testing.T) {
 		t.Fatal("Unable to marshal request body for adding treatments to patient visit")
 	}
 
-	resp, err = authDelete(ts.URL, "application/json", bytes.NewBuffer(data), doctor.AccountId)
+	resp, err = authDelete(ts.URL, "application/json", bytes.NewBuffer(data), doctor.AccountId.Int64())
 	if err != nil {
 		t.Fatal("Unable to make POST request to add treatments to patient visit " + err.Error())
 	}
@@ -431,8 +431,8 @@ func TestFavoriteTreatmentsInContextOfPatientVisit(t *testing.T) {
 
 	// create random patient
 	patientSignedupResponse := SignupRandomTestPatient(t, testData.DataApi, testData.AuthApi)
-	patientVisitResponse := CreatePatientVisitForPatient(patientSignedupResponse.Patient.PatientId, testData, t)
-	SubmitPatientVisitForPatient(patientSignedupResponse.Patient.PatientId, patientVisitResponse.PatientVisitId, testData, t)
+	patientVisitResponse := CreatePatientVisitForPatient(patientSignedupResponse.Patient.PatientId.Int64(), testData, t)
+	SubmitPatientVisitForPatient(patientSignedupResponse.Patient.PatientId.Int64(), patientVisitResponse.PatientVisitId, testData, t)
 	StartReviewingPatientVisit(patientVisitResponse.PatientVisitId, doctor, testData, t)
 
 	// doctor now attempts to favorite a treatment
@@ -440,7 +440,7 @@ func TestFavoriteTreatmentsInContextOfPatientVisit(t *testing.T) {
 		DrugInternalName:     "DrugName (DrugRoute - DrugForm)",
 		DosageStrength:       "10 mg",
 		DispenseValue:        1,
-		DispenseUnitId:       26,
+		DispenseUnitId:       common.NewObjectId(26),
 		NumberRefills:        1,
 		SubstitutionsAllowed: true,
 		DaysSupply:           1,
@@ -462,13 +462,13 @@ func TestFavoriteTreatmentsInContextOfPatientVisit(t *testing.T) {
 	defer ts.Close()
 
 	favoriteTreatmentsRequest := &apiservice.DoctorFavoriteTreatmentsRequest{FavoriteTreatments: []*common.DoctorFavoriteTreatment{favoriteTreatment}}
-	favoriteTreatmentsRequest.PatientVisitId = patientVisitResponse.PatientVisitId
+	favoriteTreatmentsRequest.PatientVisitId = common.NewObjectId(patientVisitResponse.PatientVisitId)
 	data, err := json.Marshal(&favoriteTreatmentsRequest)
 	if err != nil {
 		t.Fatal("Unable to marshal request body for adding treatments to patient visit")
 	}
 
-	resp, err := authPost(ts.URL, "application/json", bytes.NewBuffer(data), doctor.AccountId)
+	resp, err := authPost(ts.URL, "application/json", bytes.NewBuffer(data), doctor.AccountId.Int64())
 	if err != nil {
 		t.Fatal("Unable to make POST request to add treatments to patient visit " + err.Error())
 	}
@@ -505,7 +505,7 @@ func TestFavoriteTreatmentsInContextOfPatientVisit(t *testing.T) {
 		DrugInternalName:     "DrugName2 (DrugRoute - DrugForm)",
 		DosageStrength:       "10 mg",
 		DispenseValue:        1,
-		DispenseUnitId:       26,
+		DispenseUnitId:       common.NewObjectId(26),
 		NumberRefills:        1,
 		SubstitutionsAllowed: true,
 		DaysSupply:           1,
@@ -519,7 +519,7 @@ func TestFavoriteTreatmentsInContextOfPatientVisit(t *testing.T) {
 	}
 
 	// lets add this as a treatment to the patient visit
-	getTreatmentsResponse := addAndGetTreatmentsForPatientVisit(testData, []*common.Treatment{treatment2}, doctor.AccountId, patientVisitResponse.PatientVisitId, t)
+	getTreatmentsResponse := addAndGetTreatmentsForPatientVisit(testData, []*common.Treatment{treatment2}, doctor.AccountId.Int64(), patientVisitResponse.PatientVisitId, t)
 
 	if len(getTreatmentsResponse.Treatments) != 1 {
 		t.Fatal("Expected patient visit to have 1 treatment")
@@ -530,14 +530,14 @@ func TestFavoriteTreatmentsInContextOfPatientVisit(t *testing.T) {
 	favoriteTreatment2.Name = "Favorite Treatment #2"
 	favoriteTreatment2.FavoritedTreatment = getTreatmentsResponse.Treatments[0]
 	favoriteTreatmentsRequest.FavoriteTreatments[0] = favoriteTreatment2
-	favoriteTreatmentsRequest.PatientVisitId = patientVisitResponse.PatientVisitId
+	favoriteTreatmentsRequest.PatientVisitId = common.NewObjectId(patientVisitResponse.PatientVisitId)
 
 	data, err = json.Marshal(&favoriteTreatmentsRequest)
 	if err != nil {
 		t.Fatal("Unable to marshal request body for adding treatments to patient visit")
 	}
 
-	resp2, err := authPost(ts.URL, "application/json", bytes.NewBuffer(data), doctor.AccountId)
+	resp2, err := authPost(ts.URL, "application/json", bytes.NewBuffer(data), doctor.AccountId.Int64())
 	if err != nil {
 		t.Fatal("Unable to make POST request to add treatments to patient visit " + err.Error())
 	}
@@ -571,24 +571,24 @@ func TestFavoriteTreatmentsInContextOfPatientVisit(t *testing.T) {
 		t.Fatal("Expected there to be 1 treatment added to the visit and the doctor")
 	}
 
-	if favoriteTreatmentsResponse.Treatments[0].DoctorFavoriteTreatmentId != favoriteTreatmentsResponse.FavoritedTreatments[1].Id {
+	if favoriteTreatmentsResponse.Treatments[0].DoctorFavoriteTreatmentId.Int64() != favoriteTreatmentsResponse.FavoritedTreatments[1].Id.Int64() {
 		t.Fatal("Expected the favoriteTreatmentId to be set for the treatment and to be set to the right treatment")
 	}
 
 	// now, lets go ahead and add a treatment to the patient visit from a favorite treatment
-	treatment1.DoctorFavoriteTreatmentId = favoriteTreatmentsResponse.FavoritedTreatments[0].Id
-	treatment2.DoctorFavoriteTreatmentId = favoriteTreatmentsResponse.FavoritedTreatments[1].Id
-	getTreatmentsResponse = addAndGetTreatmentsForPatientVisit(testData, []*common.Treatment{treatment1, treatment2}, doctor.AccountId, patientVisitResponse.PatientVisitId, t)
+	treatment1.DoctorFavoriteTreatmentId = common.NewObjectId(favoriteTreatmentsResponse.FavoritedTreatments[0].Id.Int64())
+	treatment2.DoctorFavoriteTreatmentId = common.NewObjectId(favoriteTreatmentsResponse.FavoritedTreatments[1].Id.Int64())
+	getTreatmentsResponse = addAndGetTreatmentsForPatientVisit(testData, []*common.Treatment{treatment1, treatment2}, doctor.AccountId.Int64(), patientVisitResponse.PatientVisitId, t)
 
 	if len(getTreatmentsResponse.Treatments) != 2 {
 		t.Fatal("There should exist 2 treatments for the patient visit")
 	}
 
-	if getTreatmentsResponse.Treatments[0].DoctorFavoriteTreatmentId == 0 || getTreatmentsResponse.Treatments[1].DoctorFavoriteTreatmentId == 0 {
+	if getTreatmentsResponse.Treatments[0].DoctorFavoriteTreatmentId.Int64() == 0 || getTreatmentsResponse.Treatments[1].DoctorFavoriteTreatmentId.Int64() == 0 {
 		t.Fatal("Expected the doctorFavoriteId to be set for both treatments given that they were added from favorites")
 	}
 
-	favoriteTreatment.Id = getTreatmentsResponse.Treatments[0].DoctorFavoriteTreatmentId
+	favoriteTreatment.Id = common.NewObjectId(getTreatmentsResponse.Treatments[0].DoctorFavoriteTreatmentId.Int64())
 	favoriteTreatment.FavoritedTreatment = getTreatmentsResponse.Treatments[0]
 	favoriteTreatmentsRequest.FavoriteTreatments = []*common.DoctorFavoriteTreatment{favoriteTreatment}
 
@@ -598,7 +598,7 @@ func TestFavoriteTreatmentsInContextOfPatientVisit(t *testing.T) {
 		t.Fatal("Unable to marshal request body for adding treatments to patient visit")
 	}
 
-	resp, err = authDelete(ts.URL, "application/json", bytes.NewBuffer(data), doctor.AccountId)
+	resp, err = authDelete(ts.URL, "application/json", bytes.NewBuffer(data), doctor.AccountId.Int64())
 	if err != nil {
 		t.Fatal("Unable to make POST request to add treatments to patient visit " + err.Error())
 	}
@@ -625,13 +625,13 @@ func TestFavoriteTreatmentsInContextOfPatientVisit(t *testing.T) {
 		t.Fatal("Expected there to exist 2 treatments for the patient visit even after deleting one of the treatments")
 	}
 
-	if favoriteTreatmentsResponse.Treatments[0].DoctorFavoriteTreatmentId != 0 {
+	if favoriteTreatmentsResponse.Treatments[0].DoctorFavoriteTreatmentId.Int64() != 0 {
 		t.Fatal("Expected the first treatment to no longer be a favorited treatment")
 	}
 }
 
 func addAndGetTreatmentsForPatientVisit(testData TestData, treatments []*common.Treatment, doctorAccountId, PatientVisitId int64, t *testing.T) *apiservice.GetTreatmentsResponse {
-	treatmentRequestBody := apiservice.AddTreatmentsRequestBody{PatientVisitId: PatientVisitId, Treatments: treatments}
+	treatmentRequestBody := apiservice.AddTreatmentsRequestBody{PatientVisitId: common.NewObjectId(PatientVisitId), Treatments: treatments}
 	treatmentsHandler := apiservice.NewTreatmentsHandler(testData.DataApi)
 
 	ts := httptest.NewServer(treatmentsHandler)

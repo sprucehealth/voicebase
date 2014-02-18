@@ -23,7 +23,7 @@ type AddTreatmentsResponse struct {
 
 type AddTreatmentsRequestBody struct {
 	Treatments     []*common.Treatment `json:"treatments"`
-	PatientVisitId int64               `json:"patient_visit_id,string"`
+	PatientVisitId *common.ObjectId    `json:"patient_visit_id"`
 }
 
 type GetTreatmentsRequestBody struct {
@@ -113,12 +113,12 @@ func (t *TreatmentsHandler) addTreatment(w http.ResponseWriter, r *http.Request)
 		return
 	}
 
-	if treatmentsRequestBody.PatientVisitId == 0 {
+	if treatmentsRequestBody.PatientVisitId.Int64() == 0 {
 		WriteDeveloperError(w, http.StatusBadRequest, "Patient visit id must be specified: "+err.Error())
 		return
 	}
 
-	doctorId, _, _, httpStatusCode, err := ValidateDoctorAccessToPatientVisitAndGetRelevantData(treatmentsRequestBody.PatientVisitId, GetContext(r).AccountId, t.DataApi)
+	doctorId, _, _, httpStatusCode, err := ValidateDoctorAccessToPatientVisitAndGetRelevantData(treatmentsRequestBody.PatientVisitId.Int64(), GetContext(r).AccountId, t.DataApi)
 	if err != nil {
 		WriteDeveloperError(w, httpStatusCode, "Unable to validate doctor to add treatment to patient visit: "+err.Error())
 		return
@@ -126,13 +126,13 @@ func (t *TreatmentsHandler) addTreatment(w http.ResponseWriter, r *http.Request)
 
 	// intentionally not requiring the treatment plan id from the client when adding treatments because it should only be possible to
 	// add treatments to an active treatment plan
-	treatmentPlanId, err := t.DataApi.GetActiveTreatmentPlanForPatientVisit(doctorId, treatmentsRequestBody.PatientVisitId)
+	treatmentPlanId, err := t.DataApi.GetActiveTreatmentPlanForPatientVisit(doctorId, treatmentsRequestBody.PatientVisitId.Int64())
 	if err != nil {
 		WriteDeveloperError(w, http.StatusInternalServerError, "Unable to get the treatment plan from the patient visit: "+err.Error())
 		return
 	}
 
-	err = EnsurePatientVisitInExpectedStatus(t.DataApi, treatmentsRequestBody.PatientVisitId, api.CASE_STATUS_REVIEWING)
+	err = EnsurePatientVisitInExpectedStatus(t.DataApi, treatmentsRequestBody.PatientVisitId.Int64(), api.CASE_STATUS_REVIEWING)
 	if err != nil {
 		WriteDeveloperError(w, http.StatusBadRequest, err.Error())
 		return
@@ -163,7 +163,7 @@ func (t *TreatmentsHandler) addTreatment(w http.ResponseWriter, r *http.Request)
 		return
 	}
 
-	treatments, err := t.DataApi.GetTreatmentsBasedOnTreatmentPlanId(treatmentsRequestBody.PatientVisitId, treatmentPlanId)
+	treatments, err := t.DataApi.GetTreatmentsBasedOnTreatmentPlanId(treatmentsRequestBody.PatientVisitId.Int64(), treatmentPlanId)
 	if err != nil {
 		WriteDeveloperError(w, http.StatusInternalServerError, "unable to get treatments for patient visit after adding treatments : "+err.Error())
 		return
@@ -185,7 +185,7 @@ func validateTreatment(treatment *common.Treatment) error {
 		return errors.New("DispenseValue for treatment cannot be 0")
 	}
 
-	if treatment.DispenseUnitId == 0 {
+	if treatment.DispenseUnitId.Int64() == 0 {
 		return errors.New("DispenseUnit	 Id for treatment cannot be 0")
 	}
 

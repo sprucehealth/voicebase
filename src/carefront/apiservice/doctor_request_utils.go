@@ -35,7 +35,7 @@ func ValidateDoctorAccessToPatientVisitAndGetRelevantData(patientVisitId, accoun
 		return
 	}
 
-	careTeam, err = DataApi.GetCareTeamForPatient(patientVisit.PatientId)
+	careTeam, err = DataApi.GetCareTeamForPatient(patientVisit.PatientId.Int64())
 	if err != nil {
 		httpStatusCode = http.StatusInternalServerError
 		err = errors.New("Unable to get care team for patient visit id " + err.Error())

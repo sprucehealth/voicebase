@@ -32,9 +32,9 @@ func (s *StubErxService) StartPrescribingPatient(Patient *common.Patient, Treatm
 	fmt.Println("Starting to prescribe patient")
 	// walk through the treatments and assign them each a prescription id
 	// assumption here is that there are as many prescription ids to return as there are treatments
-	Patient.ERxPatientId = s.PatientErxId
+	Patient.ERxPatientId = common.NewObjectId(s.PatientErxId)
 	for i, treatment := range Treatments {
-		treatment.PrescriptionId = s.PrescriptionIdsToReturn[i]
+		treatment.PrescriptionId = common.NewObjectId(s.PrescriptionIdsToReturn[i])
 	}
 	return nil
 }

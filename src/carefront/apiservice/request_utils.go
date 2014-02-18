@@ -84,7 +84,7 @@ func GetPatientInfo(dataApi api.DataAPI, pharmacySearchService pharmacy_service.
 	if err != nil {
 		return nil, errors.New("Unable to get patient from account id:  " + err.Error())
 	}
-	pharmacySelection, err := dataApi.GetPatientPharmacySelection(patient.PatientId)
+	pharmacySelection, err := dataApi.GetPatientPharmacySelection(patient.PatientId.Int64())
 	if err != nil && err != api.NoRowsError {
 		return nil, errors.New("Unable to get patient's pharmacy selection: " + err.Error())
 	}
@@ -105,7 +105,7 @@ func GetPatientInfo(dataApi api.DataAPI, pharmacySearchService pharmacy_service.
 }
 
 func GetPrimaryDoctorInfoBasedOnPatient(dataApi api.DataAPI, patient *common.Patient, staticBaseContentUrl string) (*common.Doctor, error) {
-	careTeam, err := dataApi.GetCareTeamForPatient(patient.PatientId)
+	careTeam, err := dataApi.GetCareTeamForPatient(patient.PatientId.Int64())
 	if err != nil {
 		return nil, err
 	}
@@ -263,12 +263,12 @@ func createAnswersToStoreForQuestion(role string, roleId, questionId, contextId,
 	answersToStore := make([]*common.AnswerIntake, 0)
 	for _, answerIntake := range answerIntakes {
 		answerToStore := new(common.AnswerIntake)
-		answerToStore.RoleId = roleId
+		answerToStore.RoleId = common.NewObjectId(roleId)
 		answerToStore.Role = role
-		answerToStore.QuestionId = questionId
-		answerToStore.ContextId = contextId
-		answerToStore.LayoutVersionId = layoutVersionId
-		answerToStore.PotentialAnswerId = answerIntake.PotentialAnswerId
+		answerToStore.QuestionId = common.NewObjectId(questionId)
+		answerToStore.ContextId = common.NewObjectId(contextId)
+		answerToStore.LayoutVersionId = common.NewObjectId(layoutVersionId)
+		answerToStore.PotentialAnswerId = common.NewObjectId(answerIntake.PotentialAnswerId)
 		answerToStore.AnswerText = answerIntake.AnswerText
 		answersToStore = append(answersToStore, answerToStore)
 	}

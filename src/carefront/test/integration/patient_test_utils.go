@@ -55,7 +55,7 @@ func GetPatientVisitForPatient(PatientId int64, testData TestData, t *testing.T)
 	defer ts.Close()
 
 	// register a patient visit for this patient
-	resp, err := authGet(ts.URL, patient.AccountId)
+	resp, err := authGet(ts.URL, patient.AccountId.Int64())
 	if err != nil {
 		t.Fatal("Unable to get the patient visit id")
 	}
@@ -88,7 +88,7 @@ func CreatePatientVisitForPatient(PatientId int64, testData TestData, t *testing
 	defer ts.Close()
 
 	// register a patient visit for this patient
-	resp, err := authPost(ts.URL, "application/x-www-form-urlencoded", nil, patient.AccountId)
+	resp, err := authPost(ts.URL, "application/x-www-form-urlencoded", nil, patient.AccountId.Int64())
 	if err != nil {
 		t.Fatal("Unable to get the patient visit id")
 	}
@@ -122,7 +122,7 @@ func SubmitPatientVisitForPatient(PatientId, PatientVisitId int64, testData Test
 	buffer := bytes.NewBufferString("patient_visit_id=")
 	buffer.WriteString(strconv.FormatInt(PatientVisitId, 10))
 
-	resp, err := authPut(ts.URL, "application/x-www-form-urlencoded", buffer, patient.AccountId)
+	resp, err := authPut(ts.URL, "application/x-www-form-urlencoded", buffer, patient.AccountId.Int64())
 	if err != nil {
 		t.Fatal("Unable to get the patient visit id")
 	}

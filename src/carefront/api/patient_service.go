@@ -455,13 +455,13 @@ func (d *DataService) getPatientBasedOnQuery(queryStr string, queryParams ...int
 		}
 
 		patient := &common.Patient{
-			PatientId:    patientId,
+			PatientId:    common.NewObjectId(patientId),
 			FirstName:    firstName,
 			LastName:     lastName,
 			Status:       status,
 			Gender:       gender,
-			AccountId:    accountId,
-			ERxPatientId: erxPatientId.Int64,
+			AccountId:    common.NewObjectId(accountId),
+			ERxPatientId: common.NewObjectId(erxPatientId.Int64),
 			Phone:        phone.String,
 			PhoneType:    phoneType.String,
 			Dob:          dob.Time,

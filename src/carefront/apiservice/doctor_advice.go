@@ -77,8 +77,8 @@ func (d *DoctorAdviceHandler) getAdvicePoints(w http.ResponseWriter, r *http.Req
 	responseData := &common.Advice{}
 	responseData.AllAdvicePoints = advicePoints
 	responseData.SelectedAdvicePoints = selectedAdvicePoints
-	responseData.PatientVisitId = patientVisitId
-	responseData.TreatmentPlanId = requestData.TreatmentPlanId
+	responseData.PatientVisitId = common.NewObjectId(patientVisitId)
+	responseData.TreatmentPlanId = common.NewObjectId(requestData.TreatmentPlanId)
 
 	WriteJSONToHTTPResponseWriter(w, http.StatusOK, responseData)
 }
@@ -93,19 +93,19 @@ func (d *DoctorAdviceHandler) updateAdvicePoints(w http.ResponseWriter, r *http.
 		return
 	}
 
-	doctorId, _, _, statusCode, err := ValidateDoctorAccessToPatientVisitAndGetRelevantData(requestData.PatientVisitId, GetContext(r).AccountId, d.DataApi)
+	doctorId, _, _, statusCode, err := ValidateDoctorAccessToPatientVisitAndGetRelevantData(requestData.PatientVisitId.Int64(), GetContext(r).AccountId, d.DataApi)
 	if err != nil {
 		WriteDeveloperError(w, statusCode, err.Error())
 		return
 	}
 
-	err = EnsurePatientVisitInExpectedStatus(d.DataApi, requestData.PatientVisitId, api.CASE_STATUS_REVIEWING)
+	err = EnsurePatientVisitInExpectedStatus(d.DataApi, requestData.PatientVisitId.Int64(), api.CASE_STATUS_REVIEWING)
 	if err != nil {
 		WriteDeveloperError(w, http.StatusBadRequest, err.Error())
 		return
 	}
 
-	treatmentPlanId, err := d.DataApi.GetActiveTreatmentPlanForPatientVisit(doctorId, requestData.PatientVisitId)
+	treatmentPlanId, err := d.DataApi.GetActiveTreatmentPlanForPatientVisit(doctorId, requestData.PatientVisitId.Int64())
 	if err != nil {
 		WriteDeveloperError(w, http.StatusInternalServerError, "Unable to get treatment plan for patient visit: "+err.Error())
 		return
@@ -115,7 +115,7 @@ func (d *DoctorAdviceHandler) updateAdvicePoints(w http.ResponseWriter, r *http.
 	for _, selectedAdvicePoint := range requestData.SelectedAdvicePoints {
 		advicePointFound := false
 		for _, advicePoint := range requestData.AllAdvicePoints {
-			if advicePoint.Id == 0 {
+			if advicePoint.Id.Int64() == 0 {
 				if advicePoint.Text == selectedAdvicePoint.Text {
 					advicePointFound = true
 					break
@@ -171,7 +171,7 @@ func (d *DoctorAdviceHandler) updateAdvicePoints(w http.ResponseWriter, r *http.
 				WriteDeveloperError(w, http.StatusInternalServerError, "Unable to add or update advice point for doctor. Application may be left in inconsistent state. Error = "+err.Error())
 				return
 			}
-			newOrUpdatedPointToIdMapping[advicePoint.Text] = advicePoint.Id
+			newOrUpdatedPointToIdMapping[advicePoint.Text] = advicePoint.Id.Int64()
 			updatedAdvicePoints = append(updatedAdvicePoints, advicePoint)
 		case common.STATE_DELETED:
 			err = d.DataApi.MarkAdvicePointToBeDeleted(advicePoint, doctorId)
@@ -190,7 +190,7 @@ func (d *DoctorAdviceHandler) updateAdvicePoints(w http.ResponseWriter, r *http.
 	for _, advicePoint := range requestData.SelectedAdvicePoints {
 		updatedOrNewId := newOrUpdatedPointToIdMapping[advicePoint.Text]
 		if updatedOrNewId != 0 {
-			advicePoint.Id = updatedOrNewId
+			advicePoint.Id = common.NewObjectId(updatedOrNewId)
 		}
 		// empty out the state information given that it is taken care of
 		advicePoint.State = ""
