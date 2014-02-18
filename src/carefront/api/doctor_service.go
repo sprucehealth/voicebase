@@ -144,16 +144,15 @@ func (d *DataService) MarkRegimenStepsToBeDeleted(regimenSteps []*common.DoctorI
 	return tx.Commit()
 }
 
-func (d *DataService) GetAdvicePointsForDoctor(doctorId int64) (advicePoints []*common.DoctorInstructionItem, err error) {
+func (d *DataService) GetAdvicePointsForDoctor(doctorId int64) ([]*common.DoctorInstructionItem, error) {
 	queryStr := `select id, text from advice_point where status='ACTIVE'`
 
-	advicePoints, err = d.queryAndInsertPredefinedInstructionsForDoctor(dr_advice_point_table, queryStr, doctorId, getAdvicePointsForDoctor, insertPredefinedAdvicePointsForDoctor)
+	advicePoints, err := d.queryAndInsertPredefinedInstructionsForDoctor(dr_advice_point_table, queryStr, doctorId, getAdvicePointsForDoctor, insertPredefinedAdvicePointsForDoctor)
 	if err != nil {
-		return
+		return nil, err
 	}
 
-	advicePoints = getActiveInstructions(advicePoints)
-	return
+	return getActiveInstructions(advicePoints), nil
 }
 
 func (d *DataService) AddOrUpdateAdvicePointForDoctor(advicePoint *common.DoctorInstructionItem, doctorId int64) error {
@@ -243,9 +242,7 @@ func (d *DataService) GetPendingItemsInDoctorQueue(doctorId int64) ([]*DoctorQue
 		return nil, err
 	}
 	defer rows.Close()
-
-	doctorQueue, err := populateDoctorQueueFromRows(rows)
-	return doctorQueue, err
+	return populateDoctorQueueFromRows(rows)
 }
 
 func (d *DataService) GetCompletedItemsInDoctorQueue(doctorId int64) ([]*DoctorQueueItem, error) {
@@ -254,8 +251,7 @@ func (d *DataService) GetCompletedItemsInDoctorQueue(doctorId int64) ([]*DoctorQ
 		return nil, err
 	}
 	defer rows.Close()
-	doctorQueue, err := populateDoctorQueueFromRows(rows)
-	return doctorQueue, err
+	return populateDoctorQueueFromRows(rows)
 }
 
 func populateDoctorQueueFromRows(rows *sql.Rows) ([]*DoctorQueueItem, error) {
@@ -644,17 +640,14 @@ func (d *DataService) GetFavoriteTreatments(doctorId int64) ([]*common.DoctorFav
 	treatmentIds := make([]int64, 0)
 	favoriteTreatmentMapping := make(map[int64]*common.DoctorFavoriteTreatment)
 	for rows.Next() {
-		var name string
-		var id, treatmentId int64
-		err = rows.Scan(&id, &name, &treatmentId)
+		var favoriteTreatment common.DoctorFavoriteTreatment
+		var treatmentId int64
+		err = rows.Scan(&favoriteTreatment.Id, &favoriteTreatment.Name, &treatmentId)
 		if err != nil {
 			return nil, err
 		}
-		favoriteTreatment := &common.DoctorFavoriteTreatment{}
-		favoriteTreatment.Id = id
-		favoriteTreatment.Name = name
 		treatmentIds = append(treatmentIds, treatmentId)
-		favoriteTreatmentMapping[treatmentId] = favoriteTreatment
+		favoriteTreatmentMapping[treatmentId] = &favoriteTreatment
 	}
 
 	// there are no favorited items to return
