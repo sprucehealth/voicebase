@@ -4,6 +4,11 @@
 package config
 
 import (
+	"carefront/common"
+	"carefront/libs/aws"
+	"carefront/libs/golog"
+	"carefront/libs/svcreg"
+	"carefront/libs/svcreg/zksvcreg"
 	"fmt"
 	"io"
 	"io/ioutil"
@@ -15,12 +20,6 @@ import (
 	"strings"
 	"sync"
 	"time"
-
-	"carefront/common"
-	"carefront/libs/aws"
-	"carefront/libs/golog"
-	"carefront/libs/svcreg"
-	"carefront/libs/svcreg/zksvcreg"
 
 	"github.com/BurntSushi/toml"
 	flags "github.com/jessevdk/go-flags"

@@ -1,6 +1,13 @@
 package main
 
 import (
+	"carefront/libs/aws"
+	"carefront/libs/aws/ec2"
+	"carefront/libs/cmd/cryptsetup"
+	"carefront/libs/cmd/dmsetup"
+	"carefront/libs/cmd/lvm"
+	"carefront/libs/cmd/mount"
+	"carefront/libs/cmd/xfs"
 	"crypto/tls"
 	"crypto/x509"
 	"database/sql"
@@ -12,14 +19,6 @@ import (
 	"strconv"
 	"strings"
 	"time"
-
-	"carefront/libs/aws"
-	"carefront/libs/aws/ec2"
-	"carefront/libs/cmd/cryptsetup"
-	"carefront/libs/cmd/dmsetup"
-	"carefront/libs/cmd/lvm"
-	"carefront/libs/cmd/mount"
-	"carefront/libs/cmd/xfs"
 
 	"github.com/go-sql-driver/mysql"
 )

@@ -39,6 +39,8 @@ func (d *DoctorDrugInstructionsHandler) ServeHTTP(w http.ResponseWriter, r *http
 		d.getDrugInstructions(w, r)
 	case "POST":
 		d.addDrugInstructions(w, r)
+	default:
+		w.WriteHeader(http.StatusMethodNotAllowed)
 	}
 }
 

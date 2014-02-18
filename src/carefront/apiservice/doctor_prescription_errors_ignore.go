@@ -18,13 +18,11 @@ type DoctorPrescriptionErrorIgnoreRequestData struct {
 }
 
 func (d *DoctorPrescriptionErrorIgnoreHandler) ServeHTTP(w http.ResponseWriter, r *http.Request) {
-
 	switch r.Method {
 	case "POST":
 	default:
 		WriteDeveloperError(w, http.StatusNotFound, "")
 		return
-
 	}
 
 	r.ParseForm()

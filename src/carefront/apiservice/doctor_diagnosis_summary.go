@@ -23,6 +23,8 @@ func (d *DiagnosisSummaryHandler) ServeHTTP(w http.ResponseWriter, r *http.Reque
 		d.getDiagnosisSummaryForPatientVisit(w, r)
 	case "POST":
 		WriteJSONToHTTPResponseWriter(w, http.StatusNotFound, nil)
+	default:
+		w.WriteHeader(http.StatusMethodNotAllowed)
 	}
 }
 

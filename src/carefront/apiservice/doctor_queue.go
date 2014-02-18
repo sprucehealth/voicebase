@@ -64,8 +64,8 @@ func (d *DoctorQueueHandler) ServeHTTP(w http.ResponseWriter, r *http.Request) {
 	WriteJSONToHTTPResponseWriter(w, http.StatusOK, &doctorDisplayFeed)
 }
 
-func (d *DoctorQueueHandler) convertDoctorQueueIntoDisplayQueue(pendingItems, completedItems []*api.DoctorQueueItem) (doctorDisplayFeedTabs *DisplayFeedTabs, err error) {
-	doctorDisplayFeedTabs = &DisplayFeedTabs{}
+func (d *DoctorQueueHandler) convertDoctorQueueIntoDisplayQueue(pendingItems, completedItems []*api.DoctorQueueItem) (*DisplayFeedTabs, error) {
+	var doctorDisplayFeedTabs DisplayFeedTabs
 
 	var pendingOrOngoingDisplayFeed, completedDisplayFeed *DisplayFeed
 	doctorDisplayFeedTabs.Tabs = make([]*DisplayFeed, 0)
@@ -89,10 +89,9 @@ func (d *DoctorQueueHandler) convertDoctorQueueIntoDisplayQueue(pendingItems, co
 		upcomingVisitSection.Title = "Next Visit"
 
 		pendingItems[0].PositionInQueue = 0
-		item, shadowedErr := converQueueItemToDisplayFeedItem(d.DataApi, pendingItems[0])
-		if shadowedErr != nil {
-			err = shadowedErr
-			return
+		item, err := converQueueItemToDisplayFeedItem(d.DataApi, pendingItems[0])
+		if err != nil {
+			return nil, err
 		}
 		upcomingVisitSection.Items = []*DisplayFeedItem{item}
 
@@ -103,7 +102,7 @@ func (d *DoctorQueueHandler) convertDoctorQueueIntoDisplayQueue(pendingItems, co
 			doctorQueueItem.PositionInQueue = i + 1
 			item, err = converQueueItemToDisplayFeedItem(d.DataApi, doctorQueueItem)
 			if err != nil {
-				return
+				return nil, err
 			}
 			nextVisitsSection.Items = append(nextVisitsSection.Items, item)
 		}
@@ -112,7 +111,6 @@ func (d *DoctorQueueHandler) convertDoctorQueueIntoDisplayQueue(pendingItems, co
 	}
 
 	if len(completedItems) > 0 {
-
 		// cluster feed items based on day
 		displaySections := make([]*DisplayFeedSection, 0)
 		currentDisplaySection := &DisplayFeedSection{}
@@ -127,15 +125,14 @@ func (d *DoctorQueueHandler) convertDoctorQueueIntoDisplayQueue(pendingItems, co
 				displaySections = append(displaySections, currentDisplaySection)
 				lastSeenDay = day
 			}
-			displayItem, shadowedErr := converQueueItemToDisplayFeedItem(d.DataApi, completedItem)
-			if shadowedErr != nil {
-				err = shadowedErr
-				return
+			displayItem, err := converQueueItemToDisplayFeedItem(d.DataApi, completedItem)
+			if err != nil {
+				return nil, err
 			}
 			currentDisplaySection.Items = append(currentDisplaySection.Items, displayItem)
 		}
 		completedDisplayFeed.Sections = displaySections
 	}
 
-	return
+	return &doctorDisplayFeedTabs, nil
 }

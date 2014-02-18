@@ -1,11 +1,10 @@
 package common
 
 import (
-	"crypto/rand"
-	"encoding/base64"
-
 	"carefront/libs/aws"
 	"carefront/libs/aws/sqs"
+	"crypto/rand"
+	"encoding/base64"
 
 	goamz "launchpad.net/goamz/aws"
 )

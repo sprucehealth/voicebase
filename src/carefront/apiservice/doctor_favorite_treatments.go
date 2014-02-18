@@ -30,6 +30,8 @@ func (t *DoctorFavoriteTreatmentsHandler) ServeHTTP(w http.ResponseWriter, r *ht
 		t.addFavoriteTreatments(w, r)
 	case "DELETE":
 		t.deleteFavoriteTreatments(w, r)
+	default:
+		w.WriteHeader(http.StatusMethodNotAllowed)
 	}
 }
 

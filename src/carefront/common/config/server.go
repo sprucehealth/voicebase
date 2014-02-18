@@ -1,11 +1,10 @@
 package config
 
 import (
+	"carefront/libs/svcreg"
 	"fmt"
 	"net"
 	"time"
-
-	"carefront/libs/svcreg"
 
 	"github.com/samuel/go-metrics/metrics"
 )

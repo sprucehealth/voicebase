@@ -1,16 +1,15 @@
 package main
 
 import (
+	"carefront/libs/aws"
+	"carefront/libs/aws/ec2"
+	"carefront/libs/cmd/cryptsetup"
 	"flag"
 	"fmt"
 	"log"
 	"os"
 	"sort"
 	"strconv"
-
-	"carefront/libs/aws"
-	"carefront/libs/aws/ec2"
-	"carefront/libs/cmd/cryptsetup"
 )
 
 var config = struct {
