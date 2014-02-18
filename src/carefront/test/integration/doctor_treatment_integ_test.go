@@ -640,8 +640,6 @@ func addAndGetTreatmentsForPatientVisit(testData TestData, treatments []*common.
 		t.Fatal("Unable to marshal request body for adding treatments to patient visit")
 	}
 
-	fmt.Println(string(data))
-
 	resp, err := authPost(ts.URL, "application/json", bytes.NewBuffer(data), doctorAccountId)
 	if err != nil {
 		t.Fatal("Unable to make POST request to add treatments to patient visit " + err.Error())
