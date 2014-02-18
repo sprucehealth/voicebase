@@ -111,15 +111,15 @@ func TestPatientAnswerParsing(t *testing.T) {
 					continue
 				}
 				for _, patientAnswer := range question.PatientAnswers {
-					if patientAnswer.AnswerIntakeId == 0 {
+					if patientAnswer.AnswerIntakeId.Int64() == 0 {
 						t.Fatal("Patient answer id is not set when it should be")
 					}
 
-					if patientAnswer.QuestionId == 0 {
+					if patientAnswer.QuestionId.Int64() == 0 {
 						t.Fatal("question id not set for subquestion")
 					}
 
-					if patientAnswer.PotentialAnswerId == 0 {
+					if patientAnswer.PotentialAnswerId.Int64() == 0 {
 						t.Fatal("potential answer id not set for subquestion")
 					}
 				}

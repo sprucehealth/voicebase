@@ -183,39 +183,41 @@ func TestAddTreatments(t *testing.T) {
 	StartReviewingPatientVisit(patientVisitResponse.PatientVisitId, doctor, testData, t)
 
 	// doctor now attempts to add a couple treatments for patient
-	treatment1 := &common.Treatment{}
-	treatment1.DrugInternalName = "Advil"
-	treatment1.PatientVisitId = common.NewObjectId(patientVisitResponse.PatientVisitId)
-	treatment1.DosageStrength = "10 mg"
-	treatment1.DispenseValue = 1
-	treatment1.DispenseUnitId = common.NewObjectId(26)
-	treatment1.NumberRefills = 1
-	treatment1.SubstitutionsAllowed = true
-	treatment1.DaysSupply = 1
-	treatment1.OTC = true
-	treatment1.PharmacyNotes = "testing pharmacy notes"
-	treatment1.PatientInstructions = "patient instructions"
-	drugDBIds := make(map[string]string)
-	drugDBIds["drug_db_id_1"] = "12315"
-	drugDBIds["drug_db_id_2"] = "124"
-	treatment1.DrugDBIds = drugDBIds
+	treatment1 := &common.Treatment{
+		DrugInternalName:     "Advil",
+		PatientVisitId:       common.NewObjectId(patientVisitResponse.PatientVisitId),
+		DosageStrength:       "10 mg",
+		DispenseValue:        1,
+		DispenseUnitId:       common.NewObjectId(26),
+		NumberRefills:        1,
+		SubstitutionsAllowed: true,
+		DaysSupply:           1,
+		OTC:                  true,
+		PharmacyNotes:        "testing pharmacy notes",
+		PatientInstructions:  "patient instructions",
+		DrugDBIds: map[string]string{
+			"drug_db_id_1": "12315",
+			"drug_db_id_2": "124",
+		},
+	}
 
-	treatment2 := &common.Treatment{}
-	treatment2.DrugInternalName = "Advil 2"
-	treatment2.PatientVisitId = common.NewObjectId(patientVisitResponse.PatientVisitId)
-	treatment2.DosageStrength = "100 mg"
-	treatment2.DispenseValue = 2
-	treatment2.DispenseUnitId = common.NewObjectId(27)
-	treatment2.NumberRefills = 3
-	treatment2.SubstitutionsAllowed = false
-	treatment2.DaysSupply = 12
-	treatment2.OTC = false
-	treatment2.PharmacyNotes = "testing pharmacy notes 2"
-	treatment2.PatientInstructions = "patient instructions 2"
-	drugDBIds = make(map[string]string)
-	drugDBIds["drug_db_id_3"] = "12414"
-	drugDBIds["drug_db_id_4"] = "214"
-	treatment2.DrugDBIds = drugDBIds
+	treatment2 := &common.Treatment{
+		DrugInternalName:     "Advil 2",
+		PatientVisitId:       common.NewObjectId(patientVisitResponse.PatientVisitId),
+		DosageStrength:       "100 mg",
+		DispenseValue:        2,
+		DispenseUnitId:       common.NewObjectId(27),
+		NumberRefills:        3,
+		SubstitutionsAllowed: false,
+		DaysSupply:           12,
+		OTC:                  false,
+		PharmacyNotes:        "testing pharmacy notes 2",
+		PatientInstructions:  "patient instructions 2",
+		DrugDBIds: map[string]string{
+			"drug_db_id_3": "12414",
+			"drug_db_id_4": "214",
+		},
+	}
 
 	treatments := []*common.Treatment{treatment1, treatment2}
 
