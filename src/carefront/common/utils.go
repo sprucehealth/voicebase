@@ -63,7 +63,6 @@ type ObjectId int64
 func (id *ObjectId) UnmarshalJSON(data []byte) error {
 
 	strData := string(data)
-
 	// only treating the case of an empty string or a null value
 	// as value being 0.
 	// otherwise relying on integer parser

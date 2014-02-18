@@ -6,6 +6,7 @@ import (
 	"carefront/common"
 	"carefront/libs/erx"
 	"encoding/json"
+	"fmt"
 	"io/ioutil"
 	"net/http/httptest"
 	"net/url"
@@ -603,18 +604,13 @@ func TestFavoriteTreatmentsInContextOfPatientVisit(t *testing.T) {
 		t.Fatal("Unable to make POST request to add treatments to patient visit " + err.Error())
 	}
 
-	body, err = ioutil.ReadAll(resp.Body)
-	if err != nil {
-		t.Fatal("Unable to read body of the post request made to add treatments to patient visit: " + err.Error())
-	}
-
-	CheckSuccessfulStatusCode(resp, "Unsuccessful call made to add favorite treatment for doctor "+string(body), t)
-
 	favoriteTreatmentsResponse = &apiservice.DoctorFavoriteTreatmentsResponse{}
-	err = json.Unmarshal(body, favoriteTreatmentsResponse)
+	err = json.NewDecoder(resp.Body).Decode(favoriteTreatmentsResponse)
 	if err != nil {
 		t.Fatal("Unable to unmarshal response into object : " + err.Error())
 	}
+
+	CheckSuccessfulStatusCode(resp, "Unsuccessful call made to add favorite treatment for doctor ", t)
 
 	if len(favoriteTreatmentsResponse.FavoritedTreatments) != 1 {
 		t.Fatal("Expected 1 favorited treatment after deleting the first one")
@@ -642,22 +638,20 @@ func addAndGetTreatmentsForPatientVisit(testData TestData, treatments []*common.
 		t.Fatal("Unable to marshal request body for adding treatments to patient visit")
 	}
 
+	fmt.Println(string(data))
+
 	resp, err := authPost(ts.URL, "application/json", bytes.NewBuffer(data), doctorAccountId)
 	if err != nil {
 		t.Fatal("Unable to make POST request to add treatments to patient visit " + err.Error())
 	}
 
-	body, err := ioutil.ReadAll(resp.Body)
-	if err != nil {
-		t.Fatal("Unable to read body of the post request made to add treatments to patient visit: " + err.Error())
-	}
-
-	CheckSuccessfulStatusCode(resp, "Unsuccessful call made to add treatments for patient visit: "+string(body), t)
 	addTreatmentsResponse := &apiservice.GetTreatmentsResponse{}
-	err = json.Unmarshal(body, addTreatmentsResponse)
+	err = json.NewDecoder(resp.Body).Decode(addTreatmentsResponse)
 	if err != nil {
 		t.Fatal("Unable to unmarshal response into object : " + err.Error())
 	}
+
+	CheckSuccessfulStatusCode(resp, "Unsuccessful call made to add treatments for patient visit: ", t)
 
 	if addTreatmentsResponse.Treatments == nil || len(addTreatmentsResponse.Treatments) == 0 {
 		t.Fatal("Treatment ids expected to be returned for the treatments just added")
@@ -668,7 +662,7 @@ func addAndGetTreatmentsForPatientVisit(testData TestData, treatments []*common.
 
 func compareTreatments(treatment *common.Treatment, treatment1 *common.Treatment, t *testing.T) {
 	if treatment.DosageStrength != treatment1.DosageStrength || treatment.DispenseValue != treatment1.DispenseValue ||
-		treatment.DispenseUnitId != treatment1.DispenseUnitId || treatment.PatientInstructions != treatment1.PatientInstructions ||
+		treatment.DispenseUnitId.Int64() != treatment1.DispenseUnitId.Int64() || treatment.PatientInstructions != treatment1.PatientInstructions ||
 		treatment.PharmacyNotes != treatment1.PharmacyNotes || treatment.NumberRefills != treatment1.NumberRefills ||
 		treatment.SubstitutionsAllowed != treatment1.SubstitutionsAllowed || treatment.DaysSupply != treatment1.DaysSupply ||
 		treatment.OTC != treatment1.OTC {
