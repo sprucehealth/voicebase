@@ -119,7 +119,7 @@ func (d *DoctorRegimenHandler) updateRegimenSteps(w http.ResponseWriter, r *http
 						regimenStepFound = true
 						break
 					}
-				} else if globalRegimenStep.Id == regimenStep.Id {
+				} else if globalRegimenStep.Id.Int64() == regimenStep.Id.Int64() {
 					regimenStepFound = true
 					break
 				}
@@ -142,7 +142,7 @@ func (d *DoctorRegimenHandler) updateRegimenSteps(w http.ResponseWriter, r *http
 	for _, currentRegimenStep := range currentActiveRegimenSteps {
 		regimenStepFound := false
 		for _, regimenStep := range requestData.AllRegimenSteps {
-			if regimenStep.Id == currentRegimenStep.Id {
+			if regimenStep.Id.Int64() == currentRegimenStep.Id.Int64() {
 				regimenStepFound = true
 				break
 			}

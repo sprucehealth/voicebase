@@ -357,10 +357,14 @@ func (d *DataService) GetDiagnosisResponseToQuestionWithTag(questionTag string, 
 		answerIntake := new(common.AnswerIntake)
 		var potentialAnswerId sql.NullInt64
 		var answerText, potentialAnswer, answerSummary sql.NullString
+		var answerIntakeId, questionId int64
 
 		rows.Scan(
-			&answerIntake.AnswerIntakeId, &answerIntake.QuestionId,
+			&answerIntakeId, &questionId,
 			&potentialAnswerId, &answerText, &answerSummary, &potentialAnswer)
+
+		answerIntake.AnswerIntakeId = common.NewObjectId(answerIntakeId)
+		answerIntake.QuestionId = common.NewObjectId(questionId)
 
 		if potentialAnswer.Valid {
 			answerIntake.PotentialAnswer = potentialAnswer.String
