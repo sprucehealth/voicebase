@@ -45,7 +45,7 @@ func TestObjectIdMarshal(t *testing.T) {
 
 	expectedResult := `{"testing_id":"12345","name":"Hello"}`
 	if string(jsonData) != expectedResult {
-		t.Fatal("ObjectId object did not get marshalled as expected. Got %s when expected %s", string(jsonData), expectedResult)
+		t.Fatalf("ObjectId object did not get marshalled as expected. Got %s when expected %s", string(jsonData), expectedResult)
 	}
 
 	e2 := &ExampleObject{
