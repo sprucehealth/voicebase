@@ -4,8 +4,9 @@ import (
 	"carefront/api"
 	"carefront/common"
 	"encoding/json"
-	"github.com/gorilla/schema"
 	"net/http"
+
+	"github.com/gorilla/schema"
 )
 
 type DoctorAdviceHandler struct {
@@ -27,23 +28,23 @@ func (d *DoctorAdviceHandler) ServeHTTP(w http.ResponseWriter, r *http.Request) 
 		d.getAdvicePoints(w, r)
 	case "POST":
 		d.updateAdvicePoints(w, r)
+	default:
+		w.WriteHeader(http.StatusMethodNotAllowed)
 	}
 }
 
 func (d *DoctorAdviceHandler) getAdvicePoints(w http.ResponseWriter, r *http.Request) {
 	r.ParseForm()
-	requestData := new(GetDoctorAdviceRequestData)
-	decoder := schema.NewDecoder()
-	err := decoder.Decode(requestData, r.Form)
-	if err != nil {
+
+	var requestData GetDoctorAdviceRequestData
+	if err := schema.NewDecoder().Decode(&requestData, r.Form); err != nil {
 		WriteDeveloperError(w, http.StatusBadRequest, "Unable to parse input parameters: "+err.Error())
 		return
 	}
 
 	patientVisitId := requestData.PatientVisitId
 	treatmentPlanId := requestData.TreatmentPlanId
-	err = ensureTreatmentPlanOrPatientVisitIdPresent(d.DataApi, treatmentPlanId, &patientVisitId)
-	if err != nil {
+	if err := ensureTreatmentPlanOrPatientVisitIdPresent(d.DataApi, treatmentPlanId, &patientVisitId); err != nil {
 		WriteDeveloperError(w, http.StatusBadRequest, err.Error())
 		return
 	}
@@ -74,21 +75,19 @@ func (d *DoctorAdviceHandler) getAdvicePoints(w http.ResponseWriter, r *http.Req
 		return
 	}
 
-	responseData := &common.Advice{}
-	responseData.AllAdvicePoints = advicePoints
-	responseData.SelectedAdvicePoints = selectedAdvicePoints
-	responseData.PatientVisitId = common.NewObjectId(patientVisitId)
-	responseData.TreatmentPlanId = common.NewObjectId(requestData.TreatmentPlanId)
+	responseData := &common.Advice{
+		AllAdvicePoints:      advicePoints,
+		SelectedAdvicePoints: selectedAdvicePoints,
+		PatientVisitId:       common.NewObjectId(patientVisitId),
+		TreatmentPlanId:      common.NewObjectId(requestData.TreatmentPlanId),
+	}
 
 	WriteJSONToHTTPResponseWriter(w, http.StatusOK, responseData)
 }
 
 func (d *DoctorAdviceHandler) updateAdvicePoints(w http.ResponseWriter, r *http.Request) {
-	jsonDecoder := json.NewDecoder(r.Body)
-	requestData := &common.Advice{}
-
-	err := jsonDecoder.Decode(requestData)
-	if err != nil {
+	var requestData common.Advice
+	if err := json.NewDecoder(r.Body).Decode(&requestData); err != nil {
 		WriteDeveloperError(w, http.StatusBadRequest, "Unable to parse json request body for updating advice points: "+err.Error())
 		return
 	}

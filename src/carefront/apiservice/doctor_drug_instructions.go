@@ -4,8 +4,9 @@ import (
 	"carefront/api"
 	"carefront/common"
 	"encoding/json"
-	"github.com/gorilla/schema"
 	"net/http"
+
+	"github.com/gorilla/schema"
 )
 
 type DoctorDrugInstructionsHandler struct {
@@ -38,15 +39,15 @@ func (d *DoctorDrugInstructionsHandler) ServeHTTP(w http.ResponseWriter, r *http
 		d.getDrugInstructions(w, r)
 	case "POST":
 		d.addDrugInstructions(w, r)
+	default:
+		w.WriteHeader(http.StatusMethodNotAllowed)
 	}
 }
 
 func (d *DoctorDrugInstructionsHandler) addDrugInstructions(w http.ResponseWriter, r *http.Request) {
-	jsonDecoder := json.NewDecoder(r.Body)
-	addInstructionsRequestBody := &DoctorDrugInstructionsRequestResponse{}
+	var addInstructionsRequestBody DoctorDrugInstructionsRequestResponse
 
-	err := jsonDecoder.Decode(addInstructionsRequestBody)
-	if err != nil {
+	if err := json.NewDecoder(r.Body).Decode(&addInstructionsRequestBody); err != nil {
 		WriteDeveloperError(w, http.StatusBadRequest, "Unable to parse json request body for adding instructions: "+err.Error())
 		return
 	}
@@ -106,10 +107,9 @@ func (d *DoctorDrugInstructionsHandler) addDrugInstructions(w http.ResponseWrite
 
 func (d *DoctorDrugInstructionsHandler) getDrugInstructions(w http.ResponseWriter, r *http.Request) {
 	r.ParseForm()
-	requestData := new(GetDoctorDrugInstructionsRequestData)
-	decoder := schema.NewDecoder()
-	err := decoder.Decode(requestData, r.Form)
-	if err != nil {
+
+	var requestData GetDoctorDrugInstructionsRequestData
+	if err := schema.NewDecoder().Decode(&requestData, r.Form); err != nil {
 		WriteDeveloperError(w, http.StatusBadRequest, "Unable to parse input parameters: "+err.Error())
 		return
 	}

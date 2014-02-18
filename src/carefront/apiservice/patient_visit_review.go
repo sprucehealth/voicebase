@@ -4,9 +4,10 @@ import (
 	"carefront/api"
 	"carefront/common"
 	"fmt"
-	"github.com/gorilla/schema"
 	"net/http"
 	"strings"
+
+	"github.com/gorilla/schema"
 )
 
 type PatientVisitReviewHandler struct {
@@ -39,10 +40,9 @@ type PatientVisitReviewResponse struct {
 
 func (p *PatientVisitReviewHandler) ServeHTTP(w http.ResponseWriter, r *http.Request) {
 	r.ParseForm()
-	requestData := new(PatientVisitReviewRequest)
-	decoder := schema.NewDecoder()
-	err := decoder.Decode(requestData, r.Form)
-	if err != nil {
+
+	var requestData PatientVisitReviewRequest
+	if err := schema.NewDecoder().Decode(&requestData, r.Form); err != nil {
 		WriteDeveloperError(w, http.StatusBadRequest, "Unable to parse input parameters: "+err.Error())
 		return
 	}
@@ -75,7 +75,6 @@ func (p *PatientVisitReviewHandler) ServeHTTP(w http.ResponseWriter, r *http.Req
 	} else {
 		patientVisit, err = p.DataApi.GetLatestClosedPatientVisitForPatient(patientId)
 		if err != nil {
-
 			if err == api.NoRowsError {
 				// no patient visit review to return
 				WriteJSONToHTTPResponseWriter(w, http.StatusOK, &common.TreatmentPlan{})
@@ -105,8 +104,9 @@ func (p *PatientVisitReviewHandler) ServeHTTP(w http.ResponseWriter, r *http.Req
 		return
 	}
 
-	patientVisitReviewResponse := &PatientVisitReviewResponse{}
-	patientVisitReviewResponse.PatientVisitId = patientVisit.PatientVisitId.Int64()
+	patientVisitReviewResponse := &PatientVisitReviewResponse{
+		PatientVisitId: patientVisit.PatientVisitId.Int64(),
+	}
 
 	summary, err := p.DataApi.GetDiagnosisSummaryForPatientVisit(patientVisit.PatientVisitId.Int64(), treatmentPlanId)
 	if err != nil {
@@ -115,10 +115,11 @@ func (p *PatientVisitReviewHandler) ServeHTTP(w http.ResponseWriter, r *http.Req
 	}
 
 	if summary != "" {
-		diagnosisSummary := &common.DiagnosisSummary{}
-		diagnosisSummary.Type = "text"
-		diagnosisSummary.Summary = summary
-		diagnosisSummary.Title = fmt.Sprintf("Message from Dr. %s", strings.Title(doctor.LastName))
+		diagnosisSummary := &common.DiagnosisSummary{
+			Type:    "text",
+			Summary: summary,
+			Title:   fmt.Sprintf("Message from Dr. %s", strings.Title(doctor.LastName)),
+		}
 		patientVisitReviewResponse.DiagnosisSummary = diagnosisSummary
 	}
 
@@ -129,15 +130,17 @@ func (p *PatientVisitReviewHandler) ServeHTTP(w http.ResponseWriter, r *http.Req
 	}
 
 	if treatments != nil {
-		treatmentsSection := &treatmentsDisplaySection{}
-		treatmentsSection.Title = "Treatments"
-		treatmentsSection.Medications = make([]*treatmentDisplayItem, 0)
+		treatmentsSection := &treatmentsDisplaySection{
+			Title:       "Treatments",
+			Medications: make([]*treatmentDisplayItem, 0),
+		}
 		for _, treatment := range treatments {
 			drugName, _, _ := breakDrugInternalNameIntoComponents(treatment.DrugInternalName)
-			treatmentItem := &treatmentDisplayItem{}
-			treatmentItem.Name = fmt.Sprintf("%s %s", drugName, treatment.DosageStrength)
-			treatmentItem.Description = treatment.PatientInstructions
-			treatmentItem.OTC = treatment.OTC
+			treatmentItem := &treatmentDisplayItem{
+				Name:        fmt.Sprintf("%s %s", drugName, treatment.DosageStrength),
+				Description: treatment.PatientInstructions,
+				OTC:         treatment.OTC,
+			}
 			treatmentsSection.Medications = append(treatmentsSection.Medications, treatmentItem)
 		}
 
@@ -171,9 +174,10 @@ func (p *PatientVisitReviewHandler) ServeHTTP(w http.ResponseWriter, r *http.Req
 	}
 
 	if advicePoints != nil && len(advicePoints) > 0 {
-		advice := &common.Advice{}
-		advice.SelectedAdvicePoints = advicePoints
-		advice.Title = fmt.Sprintf("Dr. %s's Advice", strings.Title(doctor.LastName))
+		advice := &common.Advice{
+			SelectedAdvicePoints: advicePoints,
+			Title:                fmt.Sprintf("Dr. %s's Advice", strings.Title(doctor.LastName)),
+		}
 		patientVisitReviewResponse.Advice = advice
 	}
 

@@ -6,8 +6,9 @@ import (
 	"crypto/rand"
 	"encoding/base64"
 	"fmt"
-	goamz "launchpad.net/goamz/aws"
 	"strconv"
+
+	goamz "launchpad.net/goamz/aws"
 )
 
 func GenerateToken() (string, error) {

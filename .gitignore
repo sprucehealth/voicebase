@@ -33,3 +33,4 @@ _testmain.go
 
 src/carefront/apps/restapi/restapi
 src/carefront/apps/securesvc/securesvc
+src/code.google.com/p/go.tools/

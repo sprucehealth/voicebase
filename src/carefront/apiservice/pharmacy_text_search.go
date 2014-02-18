@@ -5,11 +5,12 @@ import (
 	"carefront/libs/golog"
 	"carefront/libs/maps"
 	"carefront/libs/pharmacy"
-	"github.com/gorilla/schema"
-	"github.com/samuel/go-cache/cache"
 	"net/http"
 	"strconv"
 	"strings"
+
+	"github.com/gorilla/schema"
+	"github.com/samuel/go-cache/cache"
 )
 
 var locationCache cache.Cache = cache.NewLFUCache(2048)
@@ -37,10 +38,9 @@ type PharmacyTextSearchResponse struct {
 
 func (p *PharmacyTextSearchHandler) ServeHTTP(w http.ResponseWriter, r *http.Request) {
 	r.ParseForm()
-	requestData := new(PharmacyTextSearchRequestData)
-	decoder := schema.NewDecoder()
-	err := decoder.Decode(requestData, r.Form)
-	if err != nil {
+
+	var requestData PharmacyTextSearchRequestData
+	if err := schema.NewDecoder().Decode(&requestData, r.Form); err != nil {
 		WriteDeveloperError(w, http.StatusBadRequest, "unable to parse input parameters: "+err.Error())
 		return
 	}

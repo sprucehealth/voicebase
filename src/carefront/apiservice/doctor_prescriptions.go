@@ -3,9 +3,10 @@ package apiservice
 import (
 	"carefront/api"
 	"carefront/common"
-	"github.com/gorilla/schema"
 	"net/http"
 	"time"
+
+	"github.com/gorilla/schema"
 )
 
 type DoctorPrescriptionsHandler struct {
@@ -23,10 +24,9 @@ type DoctorPrescriptionsResponse struct {
 
 func (d *DoctorPrescriptionsHandler) ServeHTTP(w http.ResponseWriter, r *http.Request) {
 	r.ParseForm()
-	requestData := new(DoctorPrescriptionsRequestData)
-	decoder := schema.NewDecoder()
-	err := decoder.Decode(requestData, r.Form)
-	if err != nil {
+
+	var requestData DoctorPrescriptionsRequestData
+	if err := schema.NewDecoder().Decode(&requestData, r.Form); err != nil {
 		WriteDeveloperError(w, http.StatusBadRequest, "Unable to parse input parameters: "+err.Error())
 		return
 	}

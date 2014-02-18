@@ -17,7 +17,6 @@ type DoctorPrescriptionsNotificationResponse struct {
 }
 
 func (d *DoctorPrescriptionsNotificationsHandler) ServeHTTP(w http.ResponseWriter, r *http.Request) {
-
 	refillRequests, transactionErrors, err := d.ErxApi.GetTransmissionErrorRefillRequestsCount()
 	if err != nil {
 		WriteDeveloperError(w, http.StatusInternalServerError, "Unable to get notifications count: "+err.Error())

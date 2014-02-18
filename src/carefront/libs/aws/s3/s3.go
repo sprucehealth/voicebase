@@ -24,7 +24,7 @@ func (s3 *S3) buildPath(bucket, path string) string {
 	return "/" + bucket + path
 }
 
-func (s3 *S3) buildUrl(bucket, path string) string {
+func (s3 *S3) buildURL(bucket, path string) string {
 	return s3.S3Endpoint + s3.buildPath(bucket, path)
 }
 
@@ -56,7 +56,7 @@ func (s3 *S3) Get(bucket, path string) ([]byte, error) {
 
 // http://docs.aws.amazon.com/AmazonS3/latest/API/RESTObjectGET.html
 func (s3 *S3) GetReader(bucket, path string) (io.ReadCloser, error) {
-	req, err := http.NewRequest("GET", s3.buildUrl(bucket, path), nil)
+	req, err := http.NewRequest("GET", s3.buildURL(bucket, path), nil)
 	if err != nil {
 		return nil, err
 	}
@@ -69,7 +69,7 @@ func (s3 *S3) GetReader(bucket, path string) (io.ReadCloser, error) {
 
 // http://docs.aws.amazon.com/AmazonS3/latest/API/RESTObjectHEAD.html
 func (s3 *S3) Head(bucket, path string) (http.Header, error) {
-	req, err := http.NewRequest("HEAD", s3.buildUrl(bucket, path), nil)
+	req, err := http.NewRequest("HEAD", s3.buildURL(bucket, path), nil)
 	if err != nil {
 		return nil, err
 	}
@@ -90,7 +90,7 @@ func (s3 *S3) Put(bucket, path string, data []byte, contType string, perm ACL, a
 	md5Sum := base64Std.EncodeToString(h.Sum(nil))
 
 	dataReader := bytes.NewReader(data)
-	req, err := http.NewRequest("PUT", s3.buildUrl(bucket, path), dataReader)
+	req, err := http.NewRequest("PUT", s3.buildURL(bucket, path), dataReader)
 	if err != nil {
 		return err
 	}
@@ -117,7 +117,7 @@ func (s3 *S3) Put(bucket, path string, data []byte, contType string, perm ACL, a
 
 // http://docs.aws.amazon.com/AmazonS3/latest/API/RESTObjectPUT.html
 func (s3 *S3) PutFrom(bucket, path string, rd io.Reader, size int64, contType string, perm ACL, additionalHeaders map[string][]string) error {
-	req, err := http.NewRequest("PUT", s3.buildUrl(bucket, path), rd)
+	req, err := http.NewRequest("PUT", s3.buildURL(bucket, path), rd)
 	if err != nil {
 		return err
 	}
@@ -143,7 +143,7 @@ func (s3 *S3) PutFrom(bucket, path string, rd io.Reader, size int64, contType st
 
 // http://docs.aws.amazon.com/AmazonS3/latest/API/RESTObjectDELETE.html
 func (s3 *S3) Delete(bucket, path string) error {
-	req, err := http.NewRequest("DELETE", s3.buildUrl(bucket, path), nil)
+	req, err := http.NewRequest("DELETE", s3.buildURL(bucket, path), nil)
 	if err != nil {
 		return err
 	}

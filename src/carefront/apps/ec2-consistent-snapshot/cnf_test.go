@@ -16,7 +16,7 @@ func TestConfigParser(t *testing.T) {
 		path-and-dash = /some/path
 		# ignore = this
 	`))
-	cnf, err := ParseConfig(rd)
+	cnf, err := parseConfig(rd)
 	if err != nil {
 		t.Fatal(err)
 	}

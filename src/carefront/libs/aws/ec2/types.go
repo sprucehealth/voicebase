@@ -49,13 +49,13 @@ func (t *Time) UnmarshalXML(d *xml.Decoder, start xml.StartElement) error {
 
 // http://docs.aws.amazon.com/AWSEC2/latest/APIReference/ApiReference-ItemType-GroupItemType.html
 type Group struct {
-	Id   string `xml:"groupId"`
+	ID   string `xml:"groupId"`
 	Name string `xml:"groupName"`
 }
 
 type VolumeAttachment struct {
-	VolumeId            string `xml:"volumeId"`
-	InstanceId          string `xml:"instanceId"`
+	VolumeID            string `xml:"volumeId"`
+	InstanceID          string `xml:"instanceId"`
 	Device              string `xml:"device"`
 	Status              string `xml:"status"` // attaching | attached | detaching | detached
 	AttachTime          Time   `xml:"attachTime"`
@@ -64,11 +64,11 @@ type VolumeAttachment struct {
 
 // type NetworkInterface struct {
 // 	Status      string `xml:"status"`
-// 	OwnerId     string `xml:"ownerId"`
+// 	OwnerID     string `xml:"ownerId"`
 // 	Description string `xml:"description"`
-// 	VpcId              string `xml:"vpcId"`
-// 	SubnetId           string `xml:"subnetId"`
-// 	NetworkInterfaceId string `xml:"networkInterfaceId"`
+// 	VpcID              string `xml:"vpcId"`
+// 	SubnetID           string `xml:"subnetId"`
+// 	NetworkInterfaceID string `xml:"networkInterfaceId"`
 // }
 
 // http://docs.aws.amazon.com/AWSEC2/latest/APIReference/ApiReference-ItemType-ProductCodesSetItemType.html
@@ -79,7 +79,7 @@ type ProductCode struct {
 
 // http://docs.aws.amazon.com/AWSEC2/latest/APIReference/ApiReference-ItemType-EbsInstanceBlockDeviceMappingResponseType.html
 type EBS struct {
-	VolumeId            string `xml:"volumeId"`
+	VolumeID            string `xml:"volumeId"`
 	Status              string `xml:"status"` // attaching | attached | detaching | detached
 	AttachTime          Time   `xml:"attachTime"`
 	DeleteOnTermination bool   `xml:"deleteOnTermination"`
@@ -93,11 +93,11 @@ type BlockDevice struct {
 
 // http://docs.aws.amazon.com/AWSEC2/latest/APIReference/ApiReference-ItemType-RunningInstancesItemType.html
 type Instance struct {
-	InstanceId       string        `xml:"instanceId"`
-	ImageId          string        `xml:"imageId"`
+	InstanceID       string        `xml:"instanceId"`
+	ImageID          string        `xml:"imageId"`
 	InstanceState    string        `xml:"instanceState"`
-	PrivateDnsName   string        `xml:"privateDnsName"`
-	DnsName          string        `xml:"dnsName"`
+	PrivateDNSName   string        `xml:"privateDnsName"`
+	DNSName          string        `xml:"dnsName"`
 	Reason           string        `xml:"reason"`
 	KeyName          string        `xml:"keyName"`
 	AmiLaunchIndex   int           `xml:"amiLaunchIndex"`
@@ -105,14 +105,14 @@ type Instance struct {
 	InstanceType     string        `xml:"instanceType"`
 	LaunchTime       Time          `xml:"launchTime"`
 	Placement        string        `xml:"placement"`
-	KernelId         string        `xml:"kernelId"`
-	RamdiskId        string        `xml:"ramdiskId"`
+	KernelID         string        `xml:"kernelId"`
+	RamdiskID        string        `xml:"ramdiskId"`
 	Platform         string        `xml:"platform"`
 	Monitoring       string        `xml:"monitoring"`
-	SubnetId         string        `xml:"subnetId"`
-	VpcId            string        `xml:"vpcId"`
-	PrivateIpAddress string        `xml:"privateIpAddress"`
-	IpAddress        string        `xml:"ipAddress"`
+	SubnetID         string        `xml:"subnetId"`
+	VpcID            string        `xml:"vpcId"`
+	PrivateIPAddress string        `xml:"privateIpAddress"`
+	IPAddress        string        `xml:"ipAddress"`
 	SourceDestCheck  bool          `xml:"sourceDestCheck"`
 	Groups           []Group       `xml:"groupSet>item"`
 	// stateReason
@@ -121,7 +121,7 @@ type Instance struct {
 	RootDeviceName        string         `xml:"rootDeviceName"`
 	BlockDevices          []*BlockDevice `xml:"blockDeviceMapping"`
 	InstanceLifecycle     string         `xml:"instanceLifecycle"` // spot | blank (no value)
-	SpotInstanceRequestId string         `xml:"spotInstanceRequestId"`
+	SpotInstanceRequestID string         `xml:"spotInstanceRequestId"`
 	VirtualizationType    string         `xml:"virtualizationType"` // paravirtual | hvm
 	ClientToken           string         `xml:"clientToken"`
 	Tags                  Tags           `xml:"tagSet"`
@@ -134,20 +134,20 @@ type Instance struct {
 
 // http://docs.aws.amazon.com/AWSEC2/latest/APIReference/ApiReference-ItemType-ReservationInfoType.html
 type Reservation struct {
-	ReservationId string      `xml:"reservationId"`
-	OwnerId       string      `xml:"ownerId"`
+	ReservationID string      `xml:"reservationId"`
+	OwnerID       string      `xml:"ownerId"`
 	Groups        []Group     `xml:"groupSet>item"`
 	Instances     []*Instance `xml:"instancesSet>item"`
-	RequesterId   string      `xml:"requesterId"`
+	RequesterID   string      `xml:"requesterId"`
 }
 
 type Snapshot struct {
-	SnapshotId  string `xml:"snapshotId"`
-	VolumeId    string `xml:"volumeId"`
+	SnapshotID  string `xml:"snapshotId"`
+	VolumeID    string `xml:"volumeId"`
 	Status      string `xml:"status"` // pending, completed, error
 	StartTime   Time   `xml:"startTime"`
 	Progress    string `xml:"progress"` // percentage
-	OwnerId     string `xml:"ownerId"`
+	OwnerID     string `xml:"ownerId"`
 	VolumeSize  int    `xml:"volumeSize"` // GiB
 	Description string `xml:"description"`
 	OwnerAlias  string `xml:"ownerAlias"`
@@ -155,9 +155,9 @@ type Snapshot struct {
 }
 
 type Volume struct {
-	VolumeId         string            `xml:"volumeId"`
+	VolumeID         string            `xml:"volumeId"`
 	Size             int               `xml:"size"` // GiB
-	SnapshotId       string            `xml:"snapshotId"`
+	SnapshotID       string            `xml:"snapshotId"`
 	AvailabilityZone string            `xml:"availabilityZone"`
 	Status           string            `xml:"status"`
 	CreateTime       Time              `xml:"createTime"`
@@ -168,31 +168,31 @@ type Volume struct {
 }
 
 type AttachVolumeResponse struct {
-	RequestId  string `xml:"requestId"`
-	VolumeId   string `xml:"volumeId"`
-	InstanceId string `xml:"instanceId"`
+	RequestID  string `xml:"requestId"`
+	VolumeID   string `xml:"volumeId"`
+	InstanceID string `xml:"instanceId"`
 	Device     string `xml:"device"`
 	Status     string `xml:"status"` // attaching | attached | detaching | detached
 	AttachTime Time   `xml:"attachTime"`
 }
 
 type CreateSnapshotResponse struct {
-	RequestId   string `xml:"requestId"`
-	SnapshotId  string `xml:"snapshotId"`
-	VolumeId    string `xml:"volumeId"`
+	RequestID   string `xml:"requestId"`
+	SnapshotID  string `xml:"snapshotId"`
+	VolumeID    string `xml:"volumeId"`
 	Status      string `xml:"status"` // pending, completed, error
 	StartTime   Time   `xml:"startTime"`
 	Progress    string `xml:"progress"` // percentage
-	OwnerId     string `xml:"ownerId"`
+	OwnerID     string `xml:"ownerId"`
 	VolumeSize  int    `xml:"volumeSize"` // GiB
 	Description string `xml:"description"`
 }
 
 type CreateVolumeResponse struct {
-	RequestId        string `xml:"requestId"`
-	VolumeId         string `xml:"volumeId"`
+	RequestID        string `xml:"requestId"`
+	VolumeID         string `xml:"volumeId"`
 	Size             int    `xml:"size"` // GiB
-	SnapshotId       string `xml:"snapshotId"`
+	SnapshotID       string `xml:"snapshotId"`
 	AvailabilityZone string `xml:"availabilityZone"`
 	Status           string `xml:"status"`
 	CreateTime       Time   `xml:"createTime"`
@@ -201,27 +201,27 @@ type CreateVolumeResponse struct {
 }
 
 type CreateTagsResponse struct {
-	RequestId string `xml:"requestId"`
+	RequestID string `xml:"requestId"`
 	Return    bool   `xml:"return"`
 }
 
 type DescribeInstancesResponse struct {
-	RequestId    string         `xml:"requestId"`
+	RequestID    string         `xml:"requestId"`
 	Reservations []*Reservation `xml:"reservationSet>item"`
 	NextToken    string         `xml:"nextToken"`
 }
 
 type DescribeSnapshotsResponse struct {
-	RequestId string      `xml:"requestId"`
+	RequestID string      `xml:"requestId"`
 	Snapshots []*Snapshot `xml:"snapshotSet>item"`
 }
 
 type DescribeVolumesResponse struct {
-	RequestId string    `xml:"requestId"`
+	RequestID string    `xml:"requestId"`
 	Volumes   []*Volume `xml:"volumeSet>item"`
 }
 
 type SimpleResponse struct {
-	RequestId string `xml:"requestId"`
+	RequestID string `xml:"requestId"`
 	Return    bool   `xml:"return"`
 }

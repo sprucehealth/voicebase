@@ -3,8 +3,9 @@ package apiservice
 import (
 	"carefront/common"
 	"carefront/libs/erx"
-	"github.com/gorilla/schema"
 	"net/http"
+
+	"github.com/gorilla/schema"
 )
 
 type NewTreatmentHandler struct {

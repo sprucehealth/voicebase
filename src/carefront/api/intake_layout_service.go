@@ -115,8 +115,7 @@ func (d *DataService) UpdatePatientActiveLayouts(layoutId int64, clientLayoutIds
 		return err
 	}
 
-	tx.Commit()
-	return nil
+	return tx.Commit()
 }
 
 func (d *DataService) MarkNewDoctorLayoutAsCreating(objectId int64, layoutVersionId int64, healthConditionId int64) (int64, error) {
@@ -151,8 +150,7 @@ func (d *DataService) UpdateDoctorActiveLayouts(layoutId int64, doctorLayoutId i
 		return err
 	}
 
-	tx.Commit()
-	return nil
+	return tx.Commit()
 }
 
 func (d *DataService) GetGlobalSectionIds() ([]int64, error) {

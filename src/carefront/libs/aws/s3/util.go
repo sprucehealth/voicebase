@@ -24,11 +24,11 @@ func dumpResponse(res *http.Response) {
 }
 
 type ErrorResponse struct {
-	Code       string
-	Message    string
-	RequestId  string
+	Code       string `xml:"Code"`
+	Message    string `xml:"Message"`
+	RequestID  string `xml:"RequestId"`
 	ContentMD5 string `xml:"Content-MD5"`
-	HostId     string
+	HostID     string `xml:"HostId"`
 }
 
 func (er *ErrorResponse) Error() string {

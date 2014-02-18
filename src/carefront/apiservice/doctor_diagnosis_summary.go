@@ -3,8 +3,9 @@ package apiservice
 import (
 	"carefront/api"
 	"carefront/common"
-	"github.com/gorilla/schema"
 	"net/http"
+
+	"github.com/gorilla/schema"
 )
 
 type DiagnosisSummaryHandler struct {
@@ -22,23 +23,23 @@ func (d *DiagnosisSummaryHandler) ServeHTTP(w http.ResponseWriter, r *http.Reque
 		d.getDiagnosisSummaryForPatientVisit(w, r)
 	case "POST":
 		WriteJSONToHTTPResponseWriter(w, http.StatusNotFound, nil)
+	default:
+		w.WriteHeader(http.StatusMethodNotAllowed)
 	}
 }
 
 func (d *DiagnosisSummaryHandler) getDiagnosisSummaryForPatientVisit(w http.ResponseWriter, r *http.Request) {
 	r.ParseForm()
-	requestData := new(DiagnosisSummaryRequestData)
-	decoder := schema.NewDecoder()
-	err := decoder.Decode(requestData, r.Form)
-	if err != nil {
+
+	var requestData DiagnosisSummaryRequestData
+	if err := schema.NewDecoder().Decode(&requestData, r.Form); err != nil {
 		WriteDeveloperError(w, http.StatusBadRequest, "Unable to parse input parameters: "+err.Error())
 		return
 	}
 
 	patientVisitId := requestData.PatientVisitId
 	treatmentPlanId := requestData.TreatmentPlanId
-	err = ensureTreatmentPlanOrPatientVisitIdPresent(d.DataApi, treatmentPlanId, &patientVisitId)
-	if err != nil {
+	if err := ensureTreatmentPlanOrPatientVisitIdPresent(d.DataApi, treatmentPlanId, &patientVisitId); err != nil {
 		WriteDeveloperError(w, http.StatusBadRequest, err.Error())
 		return
 	}

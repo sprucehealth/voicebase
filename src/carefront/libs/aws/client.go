@@ -7,8 +7,10 @@ import (
 	"strings"
 )
 
+// UserAgent is the value used for the User-Agent header when talking to the AWS apis.
 var UserAgent = "go-aws/0.1"
 
+// Client is a generic client to use to talk to AWS apis.
 type Client struct {
 	Auth       Auth
 	HTTPClient *http.Client

@@ -1,6 +1,13 @@
 package main
 
 import (
+	"carefront/libs/aws"
+	"carefront/libs/aws/ec2"
+	"carefront/libs/cmd/cryptsetup"
+	"carefront/libs/cmd/dmsetup"
+	"carefront/libs/cmd/lvm"
+	"carefront/libs/cmd/mount"
+	"carefront/libs/cmd/xfs"
 	"crypto/tls"
 	"crypto/x509"
 	"database/sql"
@@ -13,17 +20,10 @@ import (
 	"strings"
 	"time"
 
-	"carefront/libs/aws"
-	"carefront/libs/aws/ec2"
-	"carefront/libs/cmd/cryptsetup"
-	"carefront/libs/cmd/dmsetup"
-	"carefront/libs/cmd/lvm"
-	"carefront/libs/cmd/mount"
-	"carefront/libs/cmd/xfs"
 	"github.com/go-sql-driver/mysql"
 )
 
-type FreezeCmd interface {
+type freezeCmd interface {
 	Freeze(path string) error
 	Thaw(path string) error
 }
@@ -35,7 +35,7 @@ var config = struct {
 	AWSRole    string
 	AWSKeys    aws.Keys
 	Region     string
-	InstanceId string
+	InstanceID string
 	// FS Freeze
 	MountPath  string
 	FSType     string
@@ -52,7 +52,7 @@ var config = struct {
 	ClientCert string
 	ClientKey  string
 
-	freezeCmd     FreezeCmd
+	freezeCmd     freezeCmd
 	db            *sql.DB
 	awsAuth       aws.Auth
 	ec2           *ec2.EC2
@@ -69,31 +69,31 @@ var cnfSearchPath = []string{
 	"/etc/mysql/my.cnf",
 }
 
-type StringListFlag struct {
+type stringListFlag struct {
 	Values *[]string
 }
 
-func (sl StringListFlag) String() string {
+func (sl stringListFlag) String() string {
 	return strings.Join(*sl.Values, ",")
 }
 
-func (sl StringListFlag) Set(s string) error {
+func (sl stringListFlag) Set(s string) error {
 	*sl.Values = append(*sl.Values, s)
 	return nil
 }
 
-type MapFlag struct {
+type mapFlag struct {
 	Values *map[string]string
 }
 
-func (mf MapFlag) String() string {
+func (mf mapFlag) String() string {
 	return fmt.Sprintf("%+v", *mf.Values)
 }
 
-func (mf MapFlag) Set(s string) error {
+func (mf mapFlag) Set(s string) error {
 	idx := strings.Index(s, "=")
 	if idx <= 0 {
-		return fmt.Errorf("Tag arguments must be name=value")
+		return fmt.Errorf("tag arguments must be name=value")
 	}
 	if *mf.Values == nil {
 		*mf.Values = make(map[string]string)
@@ -112,7 +112,7 @@ func init() {
 	flag.IntVar(&config.Port, "mysql.port", config.Port, "MySQL port")
 	flag.StringVar(&config.Username, "mysql.user", config.Username, "MySQL username")
 	flag.StringVar(&config.Password, "mysql.password", config.Password, "MySQL password")
-	flag.Var(MapFlag{Values: &config.Tags}, "tag", "Additional tags (e.g. -tag name=value)")
+	flag.Var(mapFlag{Values: &config.Tags}, "tag", "Additional tags (e.g. -tag name=value)")
 	flag.BoolVar(&config.Verbose, "v", config.Verbose, "Verbose output")
 }
 
@@ -123,7 +123,7 @@ func readMySQLConfig(path string) error {
 	}
 	defer fi.Close()
 
-	cnf, err := ParseConfig(fi)
+	cnf, err := parseConfig(fi)
 	if err != nil {
 		return err
 	}
@@ -312,19 +312,19 @@ func main() {
 		Client: &aws.Client{Auth: config.awsAuth},
 	}
 
-	if config.InstanceId == "" {
+	if config.InstanceID == "" {
 		var err error
-		config.InstanceId, err = aws.GetMetadata(aws.MetadataInstanceID)
+		config.InstanceID, err = aws.GetMetadata(aws.MetadataInstanceID)
 		if err != nil {
 			log.Fatalf("Failed to get instance ID: %+v", err)
 		}
-		info("InstanceId: %s\n", config.InstanceId)
+		info("InstanceID: %s\n", config.InstanceID)
 	}
 
 	// Lookup EBS volumes for devices
 	if len(config.EBSVolumes) == 0 {
 		vol, err := config.ec2.DescribeVolumes(nil, map[string][]string{
-			"attachment.instance-id": []string{config.InstanceId},
+			"attachment.instance-id": []string{config.InstanceID},
 		})
 		if err != nil {
 			log.Fatalf("Failed to get volumes: %+v", err)
@@ -335,10 +335,10 @@ func main() {
 		info("Attached volumes:\n")
 		for _, v := range vol {
 			if v.Attachment != nil {
-				info("\t%s %s %s\n", v.VolumeId, v.Attachment.Device, v.Attachment.Status)
+				info("\t%s %s %s\n", v.VolumeID, v.Attachment.Device, v.Attachment.Status)
 				for j, d := range config.Devices {
 					if d == devMap(v.Attachment.Device) {
-						config.EBSVolumes[j] = v.VolumeId
+						config.EBSVolumes[j] = v.VolumeID
 						config.ebsVolumeInfo[j] = v
 						count--
 						break
@@ -359,8 +359,8 @@ func main() {
 		}
 		config.ebsVolumeInfo = make([]*ec2.Volume, len(config.EBSVolumes))
 		for i, v := range vol {
-			if config.EBSVolumes[i] != v.VolumeId {
-				log.Fatalf("VolumeId mismatch")
+			if config.EBSVolumes[i] != v.VolumeID {
+				log.Fatalf("VolumeID mismatch")
 			}
 			config.ebsVolumeInfo[i] = v
 		}
@@ -415,7 +415,7 @@ func doIt() (err error) {
 	var binlogName string
 	var binlogPos int64
 	if binlogName, binlogPos, err = lockDB(); err != nil {
-		err = fmt.Errorf("Failed to lock DB: %s", err.Error())
+		err = fmt.Errorf("failed to lock DB: %s", err.Error())
 		return
 	}
 	defer func() {
@@ -429,7 +429,7 @@ func doIt() (err error) {
 	}()
 
 	if err = config.freezeCmd.Freeze(config.MountPath); err != nil {
-		err = fmt.Errorf("Failed to freeze filesystem: %s", err.Error())
+		err = fmt.Errorf("failed to freeze filesystem: %s", err.Error())
 		return
 	}
 	defer func() {
@@ -505,20 +505,20 @@ func unlockDB() error {
 func snapshotEBS(binlogName string, binlogPos int64) error {
 	timestamp := time.Now().Format(time.RFC3339)
 	for _, vol := range config.ebsVolumeInfo {
-		fmt.Printf("Snapshotting %s (%s)...", vol.VolumeId, vol.Tags["Name"])
-		res, err := config.ec2.CreateSnapshot(vol.VolumeId, fmt.Sprintf("%s %s", vol.Tags["Group"], timestamp))
+		fmt.Printf("Snapshotting %s (%s)...", vol.VolumeID, vol.Tags["Name"])
+		res, err := config.ec2.CreateSnapshot(vol.VolumeID, fmt.Sprintf("%s %s", vol.Tags["Group"], timestamp))
 		if err != nil {
-			log.Fatalf("Failed to create snapshot of %s: %+v", vol.VolumeId, err)
+			log.Fatalf("Failed to create snapshot of %s: %+v", vol.VolumeID, err)
 		}
-		fmt.Printf(" %s %s\n", res.SnapshotId, res.Status)
+		fmt.Printf(" %s %s\n", res.SnapshotID, res.Status)
 		tags := vol.Tags
 		tags["BinlogName"] = binlogName
 		tags["BinlogPos"] = strconv.FormatInt(binlogPos, 10)
 		for n, v := range config.Tags {
 			tags[n] = v
 		}
-		if err := config.ec2.CreateTags([]string{res.SnapshotId}, tags); err != nil {
-			log.Printf("Failed to tag snapshot %s: %+v", res.SnapshotId, err)
+		if err := config.ec2.CreateTags([]string{res.SnapshotID}, tags); err != nil {
+			log.Printf("Failed to tag snapshot %s: %+v", res.SnapshotID, err)
 		}
 	}
 	return nil

@@ -30,6 +30,8 @@ func (t *DoctorFavoriteTreatmentsHandler) ServeHTTP(w http.ResponseWriter, r *ht
 		t.addFavoriteTreatments(w, r)
 	case "DELETE":
 		t.deleteFavoriteTreatments(w, r)
+	default:
+		w.WriteHeader(http.StatusMethodNotAllowed)
 	}
 }
 
@@ -50,8 +52,7 @@ func (t *DoctorFavoriteTreatmentsHandler) getFavoriteTreatments(w http.ResponseW
 }
 
 func (t *DoctorFavoriteTreatmentsHandler) deleteFavoriteTreatments(w http.ResponseWriter, r *http.Request) {
-	jsonDecoder := json.NewDecoder(r.Body)
-	favoriteTreatmentRequest := &DoctorFavoriteTreatmentsRequest{}
+	var favoriteTreatmentRequest DoctorFavoriteTreatmentsRequest
 
 	doctorId, err := t.DataApi.GetDoctorIdFromAccountId(GetContext(r).AccountId)
 	if err != nil {
@@ -59,8 +60,7 @@ func (t *DoctorFavoriteTreatmentsHandler) deleteFavoriteTreatments(w http.Respon
 		return
 	}
 
-	err = jsonDecoder.Decode(favoriteTreatmentRequest)
-	if err != nil {
+	if err := json.NewDecoder(r.Body).Decode(&favoriteTreatmentRequest); err != nil {
 		WriteDeveloperError(w, http.StatusBadRequest, "Unable to parse treatment body: "+err.Error())
 		return
 	}
@@ -110,11 +110,8 @@ func (t *DoctorFavoriteTreatmentsHandler) deleteFavoriteTreatments(w http.Respon
 }
 
 func (t *DoctorFavoriteTreatmentsHandler) addFavoriteTreatments(w http.ResponseWriter, r *http.Request) {
-	jsonDecoder := json.NewDecoder(r.Body)
-	favoriteTreatmentRequest := &DoctorFavoriteTreatmentsRequest{}
-
-	err := jsonDecoder.Decode(favoriteTreatmentRequest)
-	if err != nil {
+	var favoriteTreatmentRequest DoctorFavoriteTreatmentsRequest
+	if err := json.NewDecoder(r.Body).Decode(&favoriteTreatmentRequest); err != nil {
 		WriteDeveloperError(w, http.StatusBadRequest, "Unable to parse treatment body: "+err.Error())
 		return
 	}
@@ -124,8 +121,8 @@ func (t *DoctorFavoriteTreatmentsHandler) addFavoriteTreatments(w http.ResponseW
 		WriteDeveloperError(w, http.StatusInternalServerError, "Unable to get doctor from account id: "+err.Error())
 		return
 	}
-	for _, favoriteTreatment := range favoriteTreatmentRequest.FavoriteTreatments {
 
+	for _, favoriteTreatment := range favoriteTreatmentRequest.FavoriteTreatments {
 		err = validateTreatment(favoriteTreatment.FavoritedTreatment)
 		if err != nil {
 			WriteDeveloperError(w, http.StatusBadRequest, err.Error())

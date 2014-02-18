@@ -14,7 +14,7 @@ var (
 )
 
 // A poor man's parser for the MySQL config file format. Return a map from section to a map of key, value pairs.
-func ParseConfig(rd io.Reader) (map[string]map[string]string, error) {
+func parseConfig(rd io.Reader) (map[string]map[string]string, error) {
 	bufr := bufio.NewReader(rd)
 	cnf := make(map[string]map[string]string)
 	var sectionName string
@@ -40,7 +40,7 @@ func ParseConfig(rd io.Reader) (map[string]map[string]string, error) {
 			key := m[1]
 			value := strings.TrimSpace(m[2])
 			if section == nil {
-				return cnf, fmt.Errorf("Key %s found outside of a section at line %d", key, lineNum)
+				return cnf, fmt.Errorf("key %s found outside of a section at line %d", key, lineNum)
 			}
 			section[key] = value
 		}

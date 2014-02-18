@@ -4,11 +4,12 @@ import (
 	"carefront/common"
 	"database/sql"
 	"fmt"
-	"github.com/go-sql-driver/mysql"
 	"log"
 	"strconv"
 	"strings"
 	"time"
+
+	"github.com/go-sql-driver/mysql"
 )
 
 func (d *DataService) RegisterDoctor(accountId int64, firstName, lastName, gender string, dob time.Time) (int64, error) {
@@ -52,11 +53,13 @@ func (d *DataService) GetDoctorFromId(doctorId int64) (*common.Doctor, error) {
 
 	return doctor, nil
 }
+
 func (d *DataService) GetDoctorIdFromAccountId(accountId int64) (int64, error) {
 	var doctorId int64
 	err := d.DB.QueryRow("select id from doctor where account_id = ?", accountId).Scan(&doctorId)
 	return doctorId, err
 }
+
 func (d *DataService) GetRegimenStepsForDoctor(doctorId int64) (regimenSteps []*common.DoctorInstructionItem, err error) {
 	// attempt to get regimen steps for doctor
 	queryStr := fmt.Sprintf(`select regimen_step.id, text, drug_name_id, drug_form_id, drug_route_id from regimen_step 
@@ -69,6 +72,7 @@ func (d *DataService) GetRegimenStepsForDoctor(doctorId int64) (regimenSteps []*
 	regimenSteps = getActiveInstructions(regimenSteps)
 	return
 }
+
 func (d *DataService) AddRegimenStepForDoctor(regimenStep *common.DoctorInstructionItem, doctorId int64) error {
 	res, err := d.DB.Exec(`insert into dr_regimen_step (text, doctor_id,status) values (?,?,?)`, regimenStep.Text, doctorId, status_active)
 	if err != nil {
@@ -112,8 +116,7 @@ func (d *DataService) UpdateRegimenStepForDoctor(regimenStep *common.DoctorInstr
 
 	// update the regimenStep Id
 	regimenStep.Id = common.NewObjectId(instructionId)
-	tx.Commit()
-	return nil
+	return tx.Commit()
 }
 
 func (d *DataService) MarkRegimenStepToBeDeleted(regimenStep *common.DoctorInstructionItem, doctorId int64) error {
@@ -138,20 +141,18 @@ func (d *DataService) MarkRegimenStepsToBeDeleted(regimenSteps []*common.DoctorI
 			return err
 		}
 	}
-	tx.Commit()
-	return nil
+	return tx.Commit()
 }
 
-func (d *DataService) GetAdvicePointsForDoctor(doctorId int64) (advicePoints []*common.DoctorInstructionItem, err error) {
+func (d *DataService) GetAdvicePointsForDoctor(doctorId int64) ([]*common.DoctorInstructionItem, error) {
 	queryStr := `select id, text from advice_point where status='ACTIVE'`
 
-	advicePoints, err = d.queryAndInsertPredefinedInstructionsForDoctor(dr_advice_point_table, queryStr, doctorId, getAdvicePointsForDoctor, insertPredefinedAdvicePointsForDoctor)
+	advicePoints, err := d.queryAndInsertPredefinedInstructionsForDoctor(dr_advice_point_table, queryStr, doctorId, getAdvicePointsForDoctor, insertPredefinedAdvicePointsForDoctor)
 	if err != nil {
-		return
+		return nil, err
 	}
 
-	advicePoints = getActiveInstructions(advicePoints)
-	return
+	return getActiveInstructions(advicePoints), nil
 }
 
 func (d *DataService) AddOrUpdateAdvicePointForDoctor(advicePoint *common.DoctorInstructionItem, doctorId int64) error {
@@ -182,17 +183,13 @@ func (d *DataService) AddOrUpdateAdvicePointForDoctor(advicePoint *common.Doctor
 
 	// assign an id given that its a new advice point
 	advicePoint.Id = common.NewObjectId(instructionId)
-	tx.Commit()
-	return nil
+	return tx.Commit()
 }
 
 func (d *DataService) MarkAdvicePointToBeDeleted(advicePoint *common.DoctorInstructionItem, doctorId int64) error {
 	// mark the advice point to be deleted
 	_, err := d.DB.Exec(`update dr_advice_point set status='DELETED' where id = ? and doctor_id = ?`, advicePoint.Id, doctorId)
-	if err != nil {
-		return err
-	}
-	return nil
+	return err
 }
 
 func (d *DataService) MarkAdvicePointsToBeDeleted(advicePoints []*common.DoctorInstructionItem, doctorId int64) error {
@@ -208,8 +205,7 @@ func (d *DataService) MarkAdvicePointsToBeDeleted(advicePoints []*common.DoctorI
 		}
 	}
 
-	tx.Commit()
-	return nil
+	return tx.Commit()
 }
 
 func (d *DataService) AssignPatientVisitToDoctor(doctorId, patientVisitId int64) error {
@@ -237,8 +233,7 @@ func (d *DataService) UpdateStateForPatientVisitInDoctorQueue(doctorId, patientV
 		tx.Rollback()
 		return err
 	}
-	tx.Commit()
-	return err
+	return tx.Commit()
 }
 
 func (d *DataService) GetPendingItemsInDoctorQueue(doctorId int64) ([]*DoctorQueueItem, error) {
@@ -247,9 +242,7 @@ func (d *DataService) GetPendingItemsInDoctorQueue(doctorId int64) ([]*DoctorQue
 		return nil, err
 	}
 	defer rows.Close()
-
-	doctorQueue, err := populateDoctorQueueFromRows(rows)
-	return doctorQueue, err
+	return populateDoctorQueueFromRows(rows)
 }
 
 func (d *DataService) GetCompletedItemsInDoctorQueue(doctorId int64) ([]*DoctorQueueItem, error) {
@@ -258,8 +251,7 @@ func (d *DataService) GetCompletedItemsInDoctorQueue(doctorId int64) ([]*DoctorQ
 		return nil, err
 	}
 	defer rows.Close()
-	doctorQueue, err := populateDoctorQueueFromRows(rows)
-	return doctorQueue, err
+	return populateDoctorQueueFromRows(rows)
 }
 
 func populateDoctorQueueFromRows(rows *sql.Rows) ([]*DoctorQueueItem, error) {
@@ -461,21 +453,16 @@ func (d *DataService) AddOrUpdateDrugInstructionForDoctor(drugName, drugForm, dr
 		return err
 	}
 
-	tx.Commit()
+	err = tx.Commit()
 
 	drugInstructionToAdd.Id = common.NewObjectId(instructionId)
 
-	return nil
+	return err
 }
 
 func (d *DataService) DeleteDrugInstructionForDoctor(drugInstructionToDelete *common.DoctorInstructionItem, doctorId int64) error {
-
 	_, err := d.DB.Exec(`update dr_drug_supplemental_instruction set status=? where id = ? and doctor_id = ?`, status_deleted, drugInstructionToDelete.Id, doctorId)
-	if err != nil {
-		return err
-	}
-
-	return nil
+	return err
 }
 
 func (d *DataService) AddDrugInstructionsToTreatment(drugName, drugForm, drugRoute string, drugInstructions []*common.DoctorInstructionItem, treatmentId int64, doctorId int64) error {
@@ -541,8 +528,7 @@ func (d *DataService) AddDrugInstructionsToTreatment(drugName, drugForm, drugRou
 		}
 	}
 	// commit transaction
-	tx.Commit()
-	return nil
+	return tx.Commit()
 }
 
 func (d *DataService) AddFavoriteTreatments(favoriteTreatments []*common.DoctorFavoriteTreatment, doctorId int64) error {
@@ -654,17 +640,14 @@ func (d *DataService) GetFavoriteTreatments(doctorId int64) ([]*common.DoctorFav
 	treatmentIds := make([]int64, 0)
 	favoriteTreatmentMapping := make(map[int64]*common.DoctorFavoriteTreatment)
 	for rows.Next() {
-		var name string
-		var id, treatmentId int64
-		err = rows.Scan(&id, &name, &treatmentId)
+		var favoriteTreatment common.DoctorFavoriteTreatment
+		var treatmentId int64
+		err = rows.Scan(&favoriteTreatment.Id, &favoriteTreatment.Name, &treatmentId)
 		if err != nil {
 			return nil, err
 		}
-		favoriteTreatment := &common.DoctorFavoriteTreatment{}
-		favoriteTreatment.Id = common.NewObjectId(id)
-		favoriteTreatment.Name = name
 		treatmentIds = append(treatmentIds, treatmentId)
-		favoriteTreatmentMapping[treatmentId] = favoriteTreatment
+		favoriteTreatmentMapping[treatmentId] = &favoriteTreatment
 	}
 
 	// there are no favorited items to return
@@ -933,8 +916,7 @@ func insertPredefinedAdvicePointsForDoctor(db *sql.DB, predefinedAdvicePoints []
 			return err
 		}
 	}
-	tx.Commit()
-	return nil
+	return tx.Commit()
 }
 
 func insertPredefinedRegimenStepsForDoctor(db *sql.DB, predefinedInstructions []*predefinedInstruction, doctorId int64) error {
@@ -951,8 +933,7 @@ func insertPredefinedRegimenStepsForDoctor(db *sql.DB, predefinedInstructions []
 			return err
 		}
 	}
-	tx.Commit()
-	return nil
+	return tx.Commit()
 }
 func insertPredefinedInstructionsForDoctor(db *sql.DB, predefinedInstructions []*predefinedInstruction, doctorId int64) error {
 	tx, err := db.Begin()
@@ -984,8 +965,7 @@ func insertPredefinedInstructionsForDoctor(db *sql.DB, predefinedInstructions []
 			return err
 		}
 	}
-	tx.Commit()
-	return nil
+	return tx.Commit()
 }
 
 type doctorInstructionQuery func(db *sql.DB, doctorId int64, drugComponents ...string) (drugInstructions []*common.DoctorInstructionItem, err error)

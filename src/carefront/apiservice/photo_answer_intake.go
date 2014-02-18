@@ -3,12 +3,13 @@ package apiservice
 import (
 	"bytes"
 	"carefront/api"
-	"github.com/gorilla/schema"
 	"io/ioutil"
 	"net/http"
 	"strconv"
 	"strings"
 	"time"
+
+	"github.com/gorilla/schema"
 )
 
 type PhotoAnswerIntakeHandler struct {
@@ -46,10 +47,8 @@ func (p *PhotoAnswerIntakeHandler) ServeHTTP(w http.ResponseWriter, r *http.Requ
 		return
 	}
 
-	requestData := new(PhotoAnswerIntakeRequestData)
-	decoder := schema.NewDecoder()
-	err = decoder.Decode(requestData, r.Form)
-	if err != nil {
+	var requestData PhotoAnswerIntakeRequestData
+	if err := schema.NewDecoder().Decode(&requestData, r.Form); err != nil {
 		WriteDeveloperError(w, http.StatusBadRequest, err.Error())
 		return
 	}

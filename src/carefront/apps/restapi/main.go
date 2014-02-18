@@ -25,6 +25,7 @@ import (
 	"carefront/libs/svcreg"
 	"carefront/services/auth"
 	thriftapi "carefront/thrift/api"
+
 	"github.com/SpruceHealth/go-proxy-protocol/proxyproto"
 	"github.com/go-sql-driver/mysql"
 	"github.com/samuel/go-metrics/metrics"

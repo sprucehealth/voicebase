@@ -24,10 +24,10 @@ func (ec2 *EC2) Get(action string, params url.Values, response interface{}) erro
 		ec2.Client.HTTPClient = http.DefaultClient
 	}
 	if ec2.host == "" {
-		if u, err := url.Parse(ec2.Region.EC2Endpoint); err != nil {
-			return err
-		} else {
+		if u, err := url.Parse(ec2.Region.EC2Endpoint); err == nil {
 			ec2.host = u.Host
+		} else {
+			return err
 		}
 	}
 	params.Set("Action", action)

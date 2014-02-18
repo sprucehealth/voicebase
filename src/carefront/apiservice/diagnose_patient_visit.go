@@ -7,9 +7,10 @@ import (
 	thriftapi "carefront/thrift/api"
 	"encoding/json"
 	"fmt"
-	"github.com/gorilla/schema"
 	"net/http"
 	"strings"
+
+	"github.com/gorilla/schema"
 )
 
 const (
@@ -67,8 +68,9 @@ func (d *DiagnosePatientHandler) ServeHTTP(w http.ResponseWriter, r *http.Reques
 		d.getDiagnosis(w, r)
 	case "POST":
 		d.diagnosePatient(w, r)
+	default:
+		w.WriteHeader(http.StatusMethodNotAllowed)
 	}
-
 }
 
 func (d *DiagnosePatientHandler) getDiagnosis(w http.ResponseWriter, r *http.Request) {
@@ -116,6 +118,10 @@ func (d *DiagnosePatientHandler) getDiagnosis(w http.ResponseWriter, r *http.Req
 
 	// get the answers to the questions in the array
 	doctorAnswers, err := d.DataApi.GetAnswersForQuestionsInPatientVisit(api.DOCTOR_ROLE, questionIds, doctorId, treatmentPlanId)
+	if err != nil {
+		WriteDeveloperError(w, http.StatusInternalServerError, "Unable to get answers for question: "+err.Error())
+		return
+	}
 
 	// populate the diagnosis layout with the answers to the questions
 	populateDiagnosisLayoutWithDoctorAnswers(diagnosisLayout, doctorAnswers)
@@ -124,17 +130,13 @@ func (d *DiagnosePatientHandler) getDiagnosis(w http.ResponseWriter, r *http.Req
 }
 
 func (d *DiagnosePatientHandler) diagnosePatient(w http.ResponseWriter, r *http.Request) {
-	jsonDecoder := json.NewDecoder(r.Body)
-	answerIntakeRequestBody := &AnswerIntakeRequestBody{}
-
-	err := jsonDecoder.Decode(answerIntakeRequestBody)
-	if err != nil {
+	var answerIntakeRequestBody AnswerIntakeRequestBody
+	if err := json.NewDecoder(r.Body).Decode(&answerIntakeRequestBody); err != nil {
 		WriteDeveloperError(w, http.StatusBadRequest, "Unable to get answer intake parameters from request body "+err.Error())
 		return
 	}
 
-	err = validateRequestBody(answerIntakeRequestBody, w)
-	if err != nil {
+	if err := validateRequestBody(&answerIntakeRequestBody, w); err != nil {
 		WriteDeveloperError(w, http.StatusBadGateway, "Bad parameters for question intake to diagnose patient: "+err.Error())
 		return
 	}
@@ -180,8 +182,7 @@ func (d *DiagnosePatientHandler) diagnosePatient(w http.ResponseWriter, r *http.
 		WriteDeveloperError(w, http.StatusInternalServerError, "Unable to store the multiple choice answer to the question for the patient based on the parameters provided and the internal state of the system: "+err.Error())
 		return
 	}
-	err = d.addDiagnosisSummaryForPatientVisit(doctorId, treatmentPlanId)
-	if err != nil {
+	if err = d.addDiagnosisSummaryForPatientVisit(doctorId, treatmentPlanId); err != nil {
 		WriteDeveloperError(w, http.StatusInternalServerError, "Something went wrong when trying to add and store the summary to the diagnosis of the patient visit: "+err.Error())
 		return
 	}
@@ -249,8 +250,7 @@ func (d *DiagnosePatientHandler) addDiagnosisSummaryForPatientVisit(doctorId, tr
 	}
 
 	diagnosisSummary := fmt.Sprintf(summaryTemplate, strings.Title(patient.FirstName), strings.ToLower(diagnosisMessage), strings.Title(doctorFullName))
-	err = d.DataApi.AddDiagnosisSummaryForPatientVisit(diagnosisSummary, treatmentPlanId, doctorId)
-	return err
+	return d.DataApi.AddDiagnosisSummaryForPatientVisit(diagnosisSummary, treatmentPlanId, doctorId)
 }
 
 func joinAcneTypesIntoString(acneTypeAnswers []*common.AnswerIntake) string {
@@ -292,24 +292,23 @@ func populateDiagnosisLayoutWithDoctorAnswers(diagnosisLayout *info_intake.Diagn
 	return questionIds
 }
 
-func (d *DiagnosePatientHandler) getCurrentActiveDiagnoseLayoutForHealthCondition(healthConditionId int64) (diagnosisLayout *info_intake.DiagnosisIntake, err error) {
+func (d *DiagnosePatientHandler) getCurrentActiveDiagnoseLayoutForHealthCondition(healthConditionId int64) (*info_intake.DiagnosisIntake, error) {
 	bucket, key, region, _, err := d.DataApi.GetStorageInfoOfActiveDoctorDiagnosisLayout(healthConditionId)
 	if err != nil {
-		return
+		return nil, err
 	}
 
 	data, _, err := d.LayoutStorageService.GetObjectAtLocation(bucket, key, region)
 	if err != nil {
-		return
+		return nil, err
 	}
 
-	diagnosisLayout = &info_intake.DiagnosisIntake{}
-	err = json.Unmarshal(data, diagnosisLayout)
-	if err != nil {
-		return
+	var diagnosisLayout info_intake.DiagnosisIntake
+	if err = json.Unmarshal(data, &diagnosisLayout); err != nil {
+		return nil, err
 	}
 
-	return
+	return &diagnosisLayout, nil
 }
 
 func (d *DiagnosePatientHandler) getLayoutVersionIdOfActiveDiagnosisLayout(healthConditionId int64) (layoutVersionId int64, err error) {

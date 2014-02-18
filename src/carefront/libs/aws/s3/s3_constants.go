@@ -38,7 +38,7 @@ const (
 	HeaderDeleteMarker = "x-amz-delete-marker"
 	HeaderExpiration   = "x-amz-expiration"
 	HeaderRestore      = "x-amz-restore"
-	HeaderVersionId    = "x-amz-version-id"
+	HeaderVersionID    = "x-amz-version-id"
 
 	// Request & Response Headers
 

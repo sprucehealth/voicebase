@@ -4,6 +4,7 @@ import (
 	"testing"
 
 	"carefront/libs/svcreg"
+
 	"github.com/samuel/go-zookeeper/zk"
 )
 

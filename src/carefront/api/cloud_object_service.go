@@ -3,10 +3,11 @@ package api
 import (
 	"carefront/common"
 	"carefront/libs/aws"
-	goamz "launchpad.net/goamz/aws"
-	"launchpad.net/goamz/s3"
 	"net/http"
 	"time"
+
+	goamz "launchpad.net/goamz/aws"
+	"launchpad.net/goamz/s3"
 )
 
 // TODO Need a better way of decentralizing access to different buckets
