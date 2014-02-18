@@ -209,9 +209,9 @@ func fillInPatientVisitInfoIntoOverview(patientVisit *common.PatientVisit, patie
 	patientVisitOverview.HealthConditionId = patientVisit.HealthConditionId
 }
 
-func getQuestionIdsFromPatientVisitOverview(patientVisitOverview *info_intake.PatientVisitOverview) (questionIds []int64) {
+func getQuestionIdsFromPatientVisitOverview(patientVisitOverview *info_intake.PatientVisitOverview) []int64 {
 	// collect all question ids for which to get patient answers
-	questionIds = make([]int64, 0)
+	questionIds := make([]int64, 0)
 	for _, section := range patientVisitOverview.Sections {
 		for _, subSection := range section.SubSections {
 			for _, question := range subSection.Questions {
@@ -221,5 +221,5 @@ func getQuestionIdsFromPatientVisitOverview(patientVisitOverview *info_intake.Pa
 			}
 		}
 	}
-	return
+	return questionIds
 }

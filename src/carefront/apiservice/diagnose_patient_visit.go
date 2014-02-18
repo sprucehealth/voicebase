@@ -306,8 +306,7 @@ func (d *DiagnosePatientHandler) getCurrentActiveDiagnoseLayoutForHealthConditio
 	}
 
 	var diagnosisLayout info_intake.DiagnosisIntake
-	err = json.Unmarshal(data, &diagnosisLayout)
-	if err != nil {
+	if err = json.Unmarshal(data, &diagnosisLayout); err != nil {
 		return nil, err
 	}
 
