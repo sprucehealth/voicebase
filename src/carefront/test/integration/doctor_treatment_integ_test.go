@@ -6,7 +6,6 @@ import (
 	"carefront/common"
 	"carefront/libs/erx"
 	"encoding/json"
-	"fmt"
 	"io/ioutil"
 	"net/http/httptest"
 	"net/url"
