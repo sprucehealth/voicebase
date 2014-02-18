@@ -36,10 +36,9 @@ type SignupDoctorRequestData struct {
 
 func (d *SignupDoctorHandler) ServeHTTP(w http.ResponseWriter, r *http.Request) {
 	r.ParseForm()
-	requestData := new(SignupDoctorRequestData)
-	decoder := schema.NewDecoder()
-	err := decoder.Decode(requestData, r.Form)
-	if err != nil {
+
+	var requestData SignupDoctorRequestData
+	if err := schema.NewDecoder().Decode(&requestData, r.Form); err != nil {
 		WriteDeveloperError(w, http.StatusBadRequest, "Unable to parse input to signup doctor: "+err.Error())
 		return
 	}
@@ -83,6 +82,6 @@ func (d *SignupDoctorHandler) ServeHTTP(w http.ResponseWriter, r *http.Request) 
 		WriteDeveloperError(w, http.StatusInternalServerError, "Something went wrong when trying to sign up doctor: "+err.Error())
 		return
 	}
-	WriteJSONToHTTPResponseWriter(w, http.StatusOK, DoctorSignedupResponse{res.Token, doctorId})
 
+	WriteJSONToHTTPResponseWriter(w, http.StatusOK, DoctorSignedupResponse{res.Token, doctorId})
 }

@@ -151,40 +151,43 @@ type ErrorResponse struct {
 func WriteJSONToHTTPResponseWriter(w http.ResponseWriter, httpStatusCode int, v interface{}) {
 	w.Header().Set("Content-Type", "application/json")
 	w.WriteHeader(httpStatusCode)
-	enc := json.NewEncoder(w)
-	if err := enc.Encode(v); err != nil {
+	if err := json.NewEncoder(w).Encode(v); err != nil {
 		golog.Errorf("apiservice: failed to json encode: %+v", err)
 	}
 }
 
 func WriteDeveloperError(w http.ResponseWriter, httpStatusCode int, errorString string) {
 	golog.Logf(2, golog.ERR, errorString)
-	developerError := new(ErrorResponse)
-	developerError.DeveloperError = errorString
-	developerError.UserError = genericUserErrorMessage
+	developerError := &ErrorResponse{
+		DeveloperError: errorString,
+		UserError:      genericUserErrorMessage,
+	}
 	WriteJSONToHTTPResponseWriter(w, httpStatusCode, developerError)
 }
 
 func WriteDeveloperErrorWithCode(w http.ResponseWriter, developerStatusCode int64, httpStatusCode int, errorString string) {
 	golog.Logf(2, golog.ERR, errorString)
-	developerError := new(ErrorResponse)
-	developerError.DeveloperError = errorString
-	developerError.DeveloperCode = developerStatusCode
-	developerError.UserError = genericUserErrorMessage
+	developerError := &ErrorResponse{
+		DeveloperError: errorString,
+		DeveloperCode:  developerStatusCode,
+		UserError:      genericUserErrorMessage,
+	}
 	WriteJSONToHTTPResponseWriter(w, httpStatusCode, developerError)
 }
 
 func WriteUserError(w http.ResponseWriter, httpStatusCode int, errorString string) {
-	userError := new(ErrorResponse)
-	userError.UserError = errorString
+	userError := &ErrorResponse{
+		UserError: errorString,
+	}
 	WriteJSONToHTTPResponseWriter(w, httpStatusCode, userError)
 }
 
 func WriteAuthTimeoutError(w http.ResponseWriter) {
-	userError := new(ErrorResponse)
-	userError.UserError = authTokenExpiredMessage
-	userError.DeveloperCode = DEVELOPER_AUTH_TOKEN_EXPIRED
-	userError.DeveloperError = authTokenExpiredMessage
+	userError := &ErrorResponse{
+		UserError:      authTokenExpiredMessage,
+		DeveloperCode:  DEVELOPER_AUTH_TOKEN_EXPIRED,
+		DeveloperError: authTokenExpiredMessage,
+	}
 	WriteJSONToHTTPResponseWriter(w, http.StatusForbidden, userError)
 }
 
@@ -259,17 +262,17 @@ func populateAnswersToStoreForQuestion(role string, answerToQuestionItem *Answer
 }
 
 func createAnswersToStoreForQuestion(role string, roleId, questionId, contextId, layoutVersionId int64, answerIntakes []*AnswerItem) []*common.AnswerIntake {
-	answersToStore := make([]*common.AnswerIntake, 0)
-	for _, answerIntake := range answerIntakes {
-		answerToStore := new(common.AnswerIntake)
-		answerToStore.RoleId = roleId
-		answerToStore.Role = role
-		answerToStore.QuestionId = questionId
-		answerToStore.ContextId = contextId
-		answerToStore.LayoutVersionId = layoutVersionId
-		answerToStore.PotentialAnswerId = answerIntake.PotentialAnswerId
-		answerToStore.AnswerText = answerIntake.AnswerText
-		answersToStore = append(answersToStore, answerToStore)
+	answersToStore := make([]*common.AnswerIntake, len(answerIntakes))
+	for i, answerIntake := range answerIntakes {
+		answersToStore[i] = &common.AnswerIntake{
+			RoleId:            roleId,
+			Role:              role,
+			QuestionId:        questionId,
+			ContextId:         contextId,
+			LayoutVersionId:   layoutVersionId,
+			PotentialAnswerId: answerIntake.PotentialAnswerId,
+			AnswerText:        answerIntake.AnswerText,
+		}
 	}
 	return answersToStore
 }

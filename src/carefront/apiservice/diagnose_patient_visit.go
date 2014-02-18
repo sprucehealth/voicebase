@@ -130,15 +130,13 @@ func (d *DiagnosePatientHandler) getDiagnosis(w http.ResponseWriter, r *http.Req
 }
 
 func (d *DiagnosePatientHandler) diagnosePatient(w http.ResponseWriter, r *http.Request) {
-	jsonDecoder := json.NewDecoder(r.Body)
-	answerIntakeRequestBody := &AnswerIntakeRequestBody{}
-
-	if err := jsonDecoder.Decode(answerIntakeRequestBody); err != nil {
+	var answerIntakeRequestBody AnswerIntakeRequestBody
+	if err := json.NewDecoder(r.Body).Decode(&answerIntakeRequestBody); err != nil {
 		WriteDeveloperError(w, http.StatusBadRequest, "Unable to get answer intake parameters from request body "+err.Error())
 		return
 	}
 
-	if err := validateRequestBody(answerIntakeRequestBody, w); err != nil {
+	if err := validateRequestBody(&answerIntakeRequestBody, w); err != nil {
 		WriteDeveloperError(w, http.StatusBadGateway, "Bad parameters for question intake to diagnose patient: "+err.Error())
 		return
 	}

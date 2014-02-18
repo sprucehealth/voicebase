@@ -33,15 +33,15 @@ type Suggestion struct {
 
 func (s *AutocompleteHandler) ServeHTTP(w http.ResponseWriter, r *http.Request) {
 	r.ParseForm()
-	requestData := new(AutocompleteRequestData)
-	decoder := schema.NewDecoder()
-	err := decoder.Decode(requestData, r.Form)
-	if err != nil {
+
+	var requestData AutocompleteRequestData
+	if err := schema.NewDecoder().Decode(&requestData, r.Form); err != nil {
 		WriteDeveloperError(w, http.StatusBadRequest, "Unable to parse input paramaters: "+err.Error())
 		return
 	}
 
 	var searchResults []string
+	var err error
 	if s.Role == api.DOCTOR_ROLE {
 		searchResults, err = s.ERxApi.GetDrugNamesForDoctor(requestData.SearchString)
 	} else {
@@ -53,8 +53,10 @@ func (s *AutocompleteHandler) ServeHTTP(w http.ResponseWriter, r *http.Request) 
 	}
 
 	// populate suggestions
-	autocompleteResponse := &AutocompleteResponse{}
-	autocompleteResponse.Suggestions = make([]Suggestion, len(searchResults))
+	autocompleteResponse := &AutocompleteResponse{
+		Title:       "Common Treatments",
+		Suggestions: make([]Suggestion, len(searchResults)),
+	}
 	for i, searchResult := range searchResults {
 		// move anything within brackets to become the subtitle
 		// TODO: Cache the results so that we don't have to constantly
@@ -69,7 +71,6 @@ func (s *AutocompleteHandler) ServeHTTP(w http.ResponseWriter, r *http.Request) 
 			autocompleteResponse.Suggestions[i] = Suggestion{Title: searchResult}
 		}
 	}
-	autocompleteResponse.Title = "Common Treatments"
 	WriteJSONToHTTPResponseWriter(w, http.StatusOK, autocompleteResponse)
 }
 

@@ -23,10 +23,9 @@ type DoctorQueueRequestData struct {
 
 func (d *DoctorQueueHandler) ServeHTTP(w http.ResponseWriter, r *http.Request) {
 	r.ParseForm()
-	requestData := new(DoctorQueueRequestData)
-	decoder := schema.NewDecoder()
-	err := decoder.Decode(requestData, r.Form)
-	if err != nil {
+
+	var requestData DoctorQueueRequestData
+	if err := schema.NewDecoder().Decode(&requestData, r.Form); err != nil {
 		WriteDeveloperError(w, http.StatusBadRequest, "Unable to parse input parameters: "+err.Error())
 		return
 	}
@@ -71,14 +70,16 @@ func (d *DoctorQueueHandler) convertDoctorQueueIntoDisplayQueue(pendingItems, co
 	doctorDisplayFeedTabs.Tabs = make([]*DisplayFeed, 0)
 
 	if pendingItems != nil {
-		pendingOrOngoingDisplayFeed = &DisplayFeed{}
-		pendingOrOngoingDisplayFeed.Title = "Pending"
+		pendingOrOngoingDisplayFeed = &DisplayFeed{
+			Title: "Pending",
+		}
 		doctorDisplayFeedTabs.Tabs = append(doctorDisplayFeedTabs.Tabs, pendingOrOngoingDisplayFeed)
 	}
 
 	if completedItems != nil {
-		completedDisplayFeed = &DisplayFeed{}
-		completedDisplayFeed.Title = "Completed"
+		completedDisplayFeed = &DisplayFeed{
+			Title: "Completed",
+		}
 		doctorDisplayFeedTabs.Tabs = append(doctorDisplayFeedTabs.Tabs, completedDisplayFeed)
 	}
 
@@ -95,9 +96,10 @@ func (d *DoctorQueueHandler) convertDoctorQueueIntoDisplayQueue(pendingItems, co
 		}
 		upcomingVisitSection.Items = []*DisplayFeedItem{item}
 
-		nextVisitsSection := &DisplayFeedSection{}
-		nextVisitsSection.Title = fmt.Sprintf("%d Upcoming Visits", len(pendingItems)-1)
-		nextVisitsSection.Items = make([]*DisplayFeedItem, 0)
+		nextVisitsSection := &DisplayFeedSection{
+			Title: fmt.Sprintf("%d Upcoming Visits", len(pendingItems)-1),
+			Items: make([]*DisplayFeedItem, 0),
+		}
 		for i, doctorQueueItem := range pendingItems[1:] {
 			doctorQueueItem.PositionInQueue = i + 1
 			item, err = converQueueItemToDisplayFeedItem(d.DataApi, doctorQueueItem)
@@ -119,9 +121,10 @@ func (d *DoctorQueueHandler) convertDoctorQueueIntoDisplayQueue(pendingItems, co
 			completedItem.PositionInQueue = i
 			day := fmt.Sprintf("%s %d %d", completedItem.EnqueueDate.Month().String(), completedItem.EnqueueDate.Day(), completedItem.EnqueueDate.Year())
 			if lastSeenDay != day {
-				currentDisplaySection = &DisplayFeedSection{}
-				currentDisplaySection.Title = day
-				currentDisplaySection.Items = make([]*DisplayFeedItem, 0)
+				currentDisplaySection = &DisplayFeedSection{
+					Title: day,
+					Items: make([]*DisplayFeedItem, 0),
+				}
 				displaySections = append(displaySections, currentDisplaySection)
 				lastSeenDay = day
 			}

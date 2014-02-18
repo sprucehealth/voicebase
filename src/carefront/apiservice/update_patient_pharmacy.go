@@ -23,11 +23,8 @@ func (u *UpdatePatientPharmacyHandler) ServeHTTP(w http.ResponseWriter, r *http.
 }
 
 func (u *UpdatePatientPharmacyHandler) updatePatientPharmacy(w http.ResponseWriter, r *http.Request) {
-	jsonDecoder := json.NewDecoder(r.Body)
-	pharmacy := &pharmacy.PharmacyData{}
-
-	err := jsonDecoder.Decode(pharmacy)
-	if err != nil {
+	var pharmacy pharmacy.PharmacyData
+	if err := json.NewDecoder(r.Body).Decode(&pharmacy); err != nil {
 		WriteDeveloperError(w, http.StatusBadRequest, err.Error())
 		return
 	}

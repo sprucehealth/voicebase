@@ -25,17 +25,14 @@ const (
 )
 
 func (a *AnswerIntakeHandler) ServeHTTP(w http.ResponseWriter, r *http.Request) {
-	jsonDecoder := json.NewDecoder(r.Body)
-	answerIntakeRequestBody := &AnswerIntakeRequestBody{}
+	var answerIntakeRequestBody AnswerIntakeRequestBody
 
-	err := jsonDecoder.Decode(answerIntakeRequestBody)
-	if err != nil {
+	if err := json.NewDecoder(r.Body).Decode(&answerIntakeRequestBody); err != nil {
 		WriteDeveloperError(w, http.StatusBadRequest, err.Error())
 		return
 	}
 
-	err = validateRequestBody(answerIntakeRequestBody, w)
-	if err != nil {
+	if err := validateRequestBody(&answerIntakeRequestBody, w); err != nil {
 		WriteDeveloperError(w, http.StatusBadRequest, "Bad request parameters for answer intake: "+err.Error())
 		return
 	}
@@ -66,7 +63,6 @@ func (a *AnswerIntakeHandler) ServeHTTP(w http.ResponseWriter, r *http.Request) 
 
 	answersToStorePerQuestion := make(map[int64][]*common.AnswerIntake)
 	for _, questionItem := range answerIntakeRequestBody.Questions {
-
 		questionType, err := a.DataApi.GetQuestionType(questionItem.QuestionId)
 		if err != nil {
 			WriteDeveloperError(w, http.StatusInternalServerError, "Unable to get the question_type from the question_id provided")

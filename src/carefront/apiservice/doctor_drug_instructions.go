@@ -45,11 +45,9 @@ func (d *DoctorDrugInstructionsHandler) ServeHTTP(w http.ResponseWriter, r *http
 }
 
 func (d *DoctorDrugInstructionsHandler) addDrugInstructions(w http.ResponseWriter, r *http.Request) {
-	jsonDecoder := json.NewDecoder(r.Body)
-	addInstructionsRequestBody := &DoctorDrugInstructionsRequestResponse{}
+	var addInstructionsRequestBody DoctorDrugInstructionsRequestResponse
 
-	err := jsonDecoder.Decode(addInstructionsRequestBody)
-	if err != nil {
+	if err := json.NewDecoder(r.Body).Decode(&addInstructionsRequestBody); err != nil {
 		WriteDeveloperError(w, http.StatusBadRequest, "Unable to parse json request body for adding instructions: "+err.Error())
 		return
 	}

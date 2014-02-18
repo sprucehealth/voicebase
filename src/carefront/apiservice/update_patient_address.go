@@ -35,10 +35,9 @@ func (u *UpdatePatientAddressHandler) ServeHTTP(w http.ResponseWriter, r *http.R
 
 func (u *UpdatePatientAddressHandler) updatePatientAddress(w http.ResponseWriter, r *http.Request) {
 	r.ParseForm()
-	requestData := new(UpdatePatientAddressRequestData)
-	decoder := schema.NewDecoder()
-	err := decoder.Decode(requestData, r.Form)
-	if err != nil {
+
+	var requestData UpdatePatientAddressRequestData
+	if err := schema.NewDecoder().Decode(&requestData, r.Form); err != nil {
 		WriteDeveloperError(w, http.StatusBadRequest, "Unable to parse input parameters: "+err.Error())
 		return
 	}

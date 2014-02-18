@@ -110,11 +110,8 @@ func (t *DoctorFavoriteTreatmentsHandler) deleteFavoriteTreatments(w http.Respon
 }
 
 func (t *DoctorFavoriteTreatmentsHandler) addFavoriteTreatments(w http.ResponseWriter, r *http.Request) {
-	jsonDecoder := json.NewDecoder(r.Body)
-	favoriteTreatmentRequest := &DoctorFavoriteTreatmentsRequest{}
-
-	err := jsonDecoder.Decode(favoriteTreatmentRequest)
-	if err != nil {
+	var favoriteTreatmentRequest DoctorFavoriteTreatmentsRequest
+	if err := json.NewDecoder(r.Body).Decode(&favoriteTreatmentRequest); err != nil {
 		WriteDeveloperError(w, http.StatusBadRequest, "Unable to parse treatment body: "+err.Error())
 		return
 	}

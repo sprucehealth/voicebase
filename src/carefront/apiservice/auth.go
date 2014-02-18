@@ -109,10 +109,8 @@ func (h *AuthenticationHandler) ServeHTTP(w http.ResponseWriter, r *http.Request
 	// call to service
 	switch action {
 	case "authenticate":
-		requestData := new(AuthRequestData)
-		decoder := schema.NewDecoder()
-		err := decoder.Decode(requestData, r.Form)
-		if err != nil {
+		var requestData AuthRequestData
+		if err := schema.NewDecoder().Decode(&requestData, r.Form); err != nil {
 			WriteDeveloperError(w, http.StatusBadRequest, err.Error())
 			return
 		}
