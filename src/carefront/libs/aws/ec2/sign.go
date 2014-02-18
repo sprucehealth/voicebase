@@ -28,7 +28,7 @@ func (ec2 *EC2) sign(method, path string, params url.Values, host string) {
 	// from the natural order of the encoded value of key=value.
 	// Percent and equals affect the sorting order.
 	var keys, sarray []string
-	for k, _ := range params {
+	for k := range params {
 		keys = append(keys, k)
 	}
 	sort.Strings(keys)

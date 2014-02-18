@@ -6,10 +6,10 @@ import (
 	"strconv"
 )
 
-func (ec2 *EC2) AttachVolume(volumeId, instanceId, device string) (*AttachVolumeResponse, error) {
+func (ec2 *EC2) AttachVolume(volumeID, instanceID, device string) (*AttachVolumeResponse, error) {
 	params := url.Values{}
-	params.Set("VolumeId", volumeId)
-	params.Set("InstanceId", instanceId)
+	params.Set("VolumeId", volumeID)
+	params.Set("InstanceId", instanceID)
 	params.Set("Device", device)
 	res := &AttachVolumeResponse{}
 	err := ec2.Get("AttachVolume", params, res)
@@ -19,9 +19,9 @@ func (ec2 *EC2) AttachVolume(volumeId, instanceId, device string) (*AttachVolume
 	return res, nil
 }
 
-func (ec2 *EC2) CreateSnapshot(volumeId, description string) (*CreateSnapshotResponse, error) {
+func (ec2 *EC2) CreateSnapshot(volumeID, description string) (*CreateSnapshotResponse, error) {
 	params := url.Values{}
-	params.Set("VolumeId", volumeId)
+	params.Set("VolumeId", volumeID)
 	if description != "" {
 		params.Set("Description", description)
 	}
@@ -33,14 +33,14 @@ func (ec2 *EC2) CreateSnapshot(volumeId, description string) (*CreateSnapshotRes
 	return res, nil
 }
 
-func (ec2 *EC2) CreateVolume(size int, az, volumeType, snapshotId string, iops int) (*CreateVolumeResponse, error) {
+func (ec2 *EC2) CreateVolume(size int, az, volumeType, snapshotID string, iops int) (*CreateVolumeResponse, error) {
 	params := url.Values{}
 	if size > 0 { // When creating from a snapshot, the default is to use the snapshot size
 		params.Set("Size", strconv.Itoa(size))
 	}
 	params.Set("AvailabilityZone", az)
-	if snapshotId != "" {
-		params.Set("SnapshotId", snapshotId)
+	if snapshotID != "" {
+		params.Set("SnapshotId", snapshotID)
 	}
 	if volumeType != "" {
 		params.Set("VolumeType", volumeType)
@@ -122,10 +122,10 @@ func (ec2 *EC2) DescribeVolumes(ids []string, filters map[string][]string) ([]*V
 	return res.Volumes, nil
 }
 
-func (ec2 *EC2) DetachVolume(volumeId, instanceId, device string, force bool) (*AttachVolumeResponse, error) {
+func (ec2 *EC2) DetachVolume(volumeID, instanceID, device string, force bool) (*AttachVolumeResponse, error) {
 	params := url.Values{}
-	params.Set("VolumeId", volumeId)
-	params.Set("InstanceId", instanceId)
+	params.Set("VolumeId", volumeID)
+	params.Set("InstanceId", instanceID)
 	params.Set("Device", device)
 	if force {
 		params.Set("Force", "true")

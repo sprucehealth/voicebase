@@ -131,8 +131,7 @@ func (d *DataService) StoreAnswersForQuestion(role string, roleId, patientVisitI
 		}
 	}
 
-	tx.Commit()
-	return nil
+	return tx.Commit()
 }
 
 func (d *DataService) CreatePhotoAnswerForQuestionRecord(role string, roleId, questionId, patientVisitId, potentialAnswerId, layoutVersionId int64) (int64, error) {

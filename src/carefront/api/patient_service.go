@@ -43,7 +43,10 @@ func (d *DataService) RegisterPatient(accountId int64, firstName, lastName, gend
 		return nil, err
 	}
 
-	tx.Commit()
+	if err := tx.Commit(); err != nil {
+		return nil, err
+	}
+
 	return d.GetPatientFromId(lastId)
 }
 func (d *DataService) GetPatientIdFromAccountId(accountId int64) (int64, error) {
@@ -171,7 +174,10 @@ func (d *DataService) createProviderAssignmentForPatient(patientId, providerId, 
 		return nil, err
 	}
 
-	tx.Commit()
+	if err := tx.Commit(); err != nil {
+		return nil, err
+	}
+
 	return d.GetCareTeamForPatient(patientId)
 }
 
@@ -290,8 +296,8 @@ func (d *DataService) UpdatePatientAddress(patientId int64, addressLine1, addres
 			return err
 		}
 	}
-	tx.Commit()
-	return nil
+
+	return tx.Commit()
 }
 
 func (d *DataService) UpdatePatientPharmacy(patientId int64, pharmacyDetails *pharmacy.PharmacyData) error {
@@ -431,8 +437,7 @@ func (d *DataService) TrackPatientAgreements(patientId int64, agreements map[str
 		}
 	}
 
-	tx.Commit()
-	return nil
+	return tx.Commit()
 }
 
 func (d *DataService) getPatientBasedOnQuery(queryStr string, queryParams ...interface{}) ([]*common.Patient, error) {

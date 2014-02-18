@@ -35,7 +35,7 @@ type DataService struct {
 }
 
 func infoIdsFromMap(m map[int64]*common.AnswerIntake) []int64 {
-	infoIds := make([]int64, 0)
+	infoIds := make([]int64, 0, len(m))
 	for key := range m {
 		infoIds = append(infoIds, key)
 	}
@@ -43,7 +43,7 @@ func infoIdsFromMap(m map[int64]*common.AnswerIntake) []int64 {
 }
 
 func createKeysArrayFromMap(m map[int64]bool) []int64 {
-	keys := make([]int64, 0)
+	keys := make([]int64, 0, len(m))
 	for key := range m {
 		keys = append(keys, key)
 	}
@@ -51,7 +51,7 @@ func createKeysArrayFromMap(m map[int64]bool) []int64 {
 }
 
 func createValuesArrayFromMap(m map[int64]int64) []int64 {
-	values := make([]int64, 0)
+	values := make([]int64, 0, len(m))
 	for _, value := range m {
 		values = append(values, value)
 	}
@@ -62,9 +62,9 @@ func enumerateItemsIntoString(ids []int64) string {
 	if ids == nil || len(ids) == 0 {
 		return ""
 	}
-	idsStr := make([]string, 0)
-	for _, id := range ids {
-		idsStr = append(idsStr, strconv.FormatInt(id, 10))
+	idsStr := make([]string, len(ids))
+	for i, id := range ids {
+		idsStr[i] = strconv.FormatInt(id, 10)
 	}
 	return strings.Join(idsStr, ",")
 }

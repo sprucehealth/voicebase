@@ -40,18 +40,18 @@ func luksMount() error {
 		return err
 	}
 	if len(vols) == 0 {
-		return fmt.Errorf("Group %s does not exist", name)
+		return fmt.Errorf("goup %s does not exist", name)
 	}
 
 	// Validate the correct number of volumes were returned
 	if total, err := strconv.Atoi(vols[0].Tags["Total"]); err != nil {
 		return err
 	} else if len(vols) != total {
-		return fmt.Errorf("Expected %d volumes but found %d", total, len(vols))
+		return fmt.Errorf("expected %d volumes but found %d", total, len(vols))
 	}
 
 	// Make sure the volumes are attached to an instance
-	instanceId := ""
+	instanceID := ""
 	var devices []string
 	for _, v := range vols {
 		status := ""
@@ -59,26 +59,26 @@ func luksMount() error {
 			status = v.Attachment.Status
 		}
 		if status != "attached" {
-			return fmt.Errorf("Volume %s (%s) is not attached: %s", v.VolumeId, v.Tags["Name"], status)
+			return fmt.Errorf("volume %s (%s) is not attached: %s", v.VolumeID, v.Tags["Name"], status)
 		}
-		if instanceId == "" {
-			instanceId = v.Attachment.InstanceId
-		} else if instanceId != v.Attachment.InstanceId {
-			return fmt.Errorf("Some volumes are attached to different instances")
+		if instanceID == "" {
+			instanceID = v.Attachment.InstanceID
+		} else if instanceID != v.Attachment.InstanceID {
+			return fmt.Errorf("some volumes are attached to different instances")
 		}
 		devices = append(devices, v.Attachment.Device)
 	}
 	sort.Strings(devices)
 
-	res, err := config.ec2.DescribeInstances([]string{instanceId}, 0, "", nil)
+	res, err := config.ec2.DescribeInstances([]string{instanceID}, 0, "", nil)
 	if err != nil {
 		return err
 	}
 	if len(res.Reservations) != 1 {
-		return fmt.Errorf("Instance %s not found", instanceId)
+		return fmt.Errorf("instance %s not found", instanceID)
 	}
 	inst := res.Reservations[0].Instances[0]
-	ip := inst.PrivateIpAddress
+	ip := inst.PrivateIPAddress
 	fmt.Printf("IP: %s\n", ip)
 
 	cmr, err := cmd.NewSSHCommander(fmt.Sprintf("%s@%s:22", config.User, ip), fmt.Sprintf("%s:22", config.Bastion))
@@ -143,33 +143,33 @@ func luksMount() error {
 	// Try to open the LUKS device
 	fmt.Println("Opening LUKS device...")
 	if err := cs.LuksOpen(encryptedName, lvDev, key); err != nil {
-		return fmt.Errorf("Failed to open LUKS device: %+v", err)
+		return fmt.Errorf("failed to open LUKS device: %+v", err)
 	}
 
 	if is, _, _, err := xf.IsXFS(luksDev); err != nil {
-		return fmt.Errorf("IsXFS failed: %+v", err)
+		return fmt.Errorf("failed to check for XFS: %+v", err)
 	} else if !is {
 		fmt.Println("Formatting LUKS dev as XFS...")
 		if err := xf.Format(luksDev); err != nil {
-			return fmt.Errorf("Failed to format LUKS device as XFS: %+v", err)
+			return fmt.Errorf("failed to format LUKS device as XFS: %+v", err)
 		}
 		if err := xf.SetLabel(luksDev, mountName); err != nil {
-			fmt.Printf("Failed to set label of %s to %s\n", luksDev, mountName)
+			fmt.Printf("failed to set label of %s to %s\n", luksDev, mountName)
 		}
 	}
 
-	if c, err := cmr.Command("sudo", "mkdir", "-p", mountPath); err != nil {
+	c, err := cmr.Command("sudo", "mkdir", "-p", mountPath)
+	if err != nil {
 		return err
-	} else {
-		defer c.Close()
-		if err := c.Run(); err != nil {
-			return fmt.Errorf("Failed to create mount path %s: %+v", mountPath, err)
-		}
+	}
+	defer c.Close()
+	if err := c.Run(); err != nil {
+		return fmt.Errorf("failed to create mount path %s: %+v", mountPath, err)
 	}
 
 	fmt.Println("Mounting...")
 	if err := mnt.Mount(luksDev, mountPath); err != mount.ErrAlreadyMounted && err != nil {
-		return fmt.Errorf("Failed to mount: %+v", err)
+		return fmt.Errorf("failed to mount: %+v", err)
 	}
 
 	return nil

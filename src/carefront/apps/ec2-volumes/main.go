@@ -88,9 +88,9 @@ func main() {
 	var err error
 	switch flag.Arg(0) {
 	default:
-		err = fmt.Errorf("Unknown command %s", flag.Arg(0))
+		err = fmt.Errorf("unknown command %s", flag.Arg(0))
 	case "":
-		err = fmt.Errorf("Commands: create, attach")
+		err = fmt.Errorf("commands: create, attach")
 	case "create":
 		err = create()
 	case "attach":
@@ -153,13 +153,13 @@ func create() error {
 	}
 
 	if snapshotGroupName == "" && snapshotDescription != "" {
-		return fmt.Errorf("Cannot have snapshot description specified as %s when there is no snapshot group name specified.", snapshotDescription)
+		return fmt.Errorf("cannot have snapshot description specified as %s when there is no snapshot group name specified", snapshotDescription)
 	}
 
 	if vols, err := findGroup(name); err != nil {
 		return err
 	} else if len(vols) != 0 {
-		return fmt.Errorf("Group %s already exists", name)
+		return fmt.Errorf("group %s already exists", name)
 	}
 
 	var snapshots []*ec2.Snapshot // Snapshot IDs
@@ -176,13 +176,13 @@ func create() error {
 
 		snaps, err := config.ec2.DescribeSnapshots(nil, []string{"self"}, nil, filters)
 		if err != nil {
-			return fmt.Errorf("Failed to lookup snapshots: %+v", err)
+			return fmt.Errorf("failed to lookup snapshots: %+v", err)
 		}
 		if len(snaps) == 0 {
 			if snapshotDescription == "" {
-				return fmt.Errorf("No snapshots found for group %s", snapshotGroupName)
+				return fmt.Errorf("no snapshots found for group %s", snapshotGroupName)
 			}
-			return fmt.Errorf("No snapshots found for group %s with description %s", snapshotGroupName, snapshotDescription)
+			return fmt.Errorf("no snapshots found for group %s with description %s", snapshotGroupName, snapshotDescription)
 		}
 		sort.Sort(snapshotSort(snaps))
 
@@ -196,7 +196,7 @@ func create() error {
 
 		for _, s := range snaps[:count] {
 			if s.Description != desc {
-				return fmt.Errorf("Snapshot group not complete: %s", desc)
+				return fmt.Errorf("snapshot group not complete: %s", desc)
 			}
 			num, err := strconv.Atoi(s.Tags["Number"])
 			if err != nil {
@@ -209,7 +209,7 @@ func create() error {
 	for i := 0; i < count; i++ {
 		snap := ""
 		if len(snapshots) != 0 {
-			snap = snapshots[i].SnapshotId
+			snap = snapshots[i].SnapshotID
 		}
 
 		vol, err := config.ec2.CreateVolume(size, config.AZ, "", snap, config.Iops)
@@ -223,12 +223,12 @@ func create() error {
 			"Environment": config.Environment,
 			"Total":       strconv.Itoa(count),
 		}
-		fmt.Printf("Created volume %s (%s)\n", tags["Name"], vol.VolumeId)
+		fmt.Printf("Created volume %s (%s)\n", tags["Name"], vol.VolumeID)
 		if snapshotGroupName != "" {
 			tags["SnapshotGroup"] = snapshotGroupName
 		}
-		if err := config.ec2.CreateTags([]string{vol.VolumeId}, tags); err != nil {
-			log.Printf("Failed to create tags for %s", vol.VolumeId)
+		if err := config.ec2.CreateTags([]string{vol.VolumeID}, tags); err != nil {
+			log.Printf("Failed to create tags for %s", vol.VolumeID)
 		}
 	}
 
@@ -237,16 +237,16 @@ func create() error {
 
 func attach() error {
 	if len(flag.Args()) < 3 {
-		return fmt.Errorf("usage: attach [name] [firstdevice] <instanceid>")
+		return fmt.Errorf("usage: attach [name] [firstdevice] <instanceID>")
 	}
 	name := flag.Arg(1)
 	firstDevice := flag.Arg(2)
-	instanceId := flag.Arg(3)
-	if instanceId == "" {
-		if id, err := aws.GetMetadata(aws.MetadataInstanceID); err != nil {
-			return fmt.Errorf("Instance ID required when not running on EC2")
-		} else {
-			instanceId = id
+	instanceID := flag.Arg(3)
+	if instanceID == "" {
+		var err error
+		instanceID, err = aws.GetMetadata(aws.MetadataInstanceID)
+		if err != nil {
+			return fmt.Errorf("instance ID required when not running on EC2")
 		}
 	}
 
@@ -255,20 +255,20 @@ func attach() error {
 		return err
 	}
 	if len(vols) == 0 {
-		return fmt.Errorf("Group %s does not exist", name)
+		return fmt.Errorf("group %s does not exist", name)
 	}
 
 	// Validate the correct number of volumes were returned
 	if total, err := strconv.Atoi(vols[0].Tags["Total"]); err != nil {
 		return err
 	} else if len(vols) != total {
-		return fmt.Errorf("Expected %d volumes but found %d", total, len(vols))
+		return fmt.Errorf("expected %d volumes but found %d", total, len(vols))
 	}
 
 	// Make sure the volumes aren't already attached
 	for _, v := range vols {
 		if v.Attachment != nil {
-			return fmt.Errorf("Volume %s (%s) is already attached to %s (%s)", v.VolumeId, v.Tags["Name"], v.Attachment.InstanceId, v.Attachment.Status)
+			return fmt.Errorf("volume %s (%s) is already attached to %s (%s)", v.VolumeID, v.Tags["Name"], v.Attachment.InstanceID, v.Attachment.Status)
 		}
 	}
 
@@ -278,11 +278,11 @@ func attach() error {
 			return err
 		}
 		dev := firstDevice[:len(firstDevice)-1] + string(firstDevice[len(firstDevice)-1]+uint8(num-1))
-		fmt.Printf("Attaching %s (%s) to %s as %s... ", v.VolumeId, v.Tags["Name"], instanceId, dev)
-		if res, err := config.ec2.AttachVolume(v.VolumeId, instanceId, dev); err != nil {
-			return err
-		} else {
+		fmt.Printf("Attaching %s (%s) to %s as %s... ", v.VolumeID, v.Tags["Name"], instanceID, dev)
+		if res, err := config.ec2.AttachVolume(v.VolumeID, instanceID, dev); err == nil {
 			fmt.Printf("%s\n", res.Status)
+		} else {
+			return err
 		}
 	}
 	return nil
@@ -299,16 +299,16 @@ func detach() error {
 		return err
 	}
 	if len(vols) == 0 {
-		return fmt.Errorf("Group %s does not exist", name)
+		return fmt.Errorf("group %s does not exist", name)
 	}
 
 	for _, v := range vols {
 		if v.Attachment != nil && v.Attachment.Status != "available" {
-			fmt.Printf("Detaching %s (%s) from %s... ", v.VolumeId, v.Tags["Name"], v.Attachment.InstanceId)
-			if res, err := config.ec2.DetachVolume(v.VolumeId, "", "", false); err != nil {
-				return err
-			} else {
+			fmt.Printf("Detaching %s (%s) from %s... ", v.VolumeID, v.Tags["Name"], v.Attachment.InstanceID)
+			if res, err := config.ec2.DetachVolume(v.VolumeID, "", "", false); err == nil {
 				fmt.Println(res.Status)
+			} else {
+				return err
 			}
 		}
 	}
@@ -335,7 +335,7 @@ func gcSnapshots() error {
 			"tag:Environment": []string{config.Environment},
 		})
 	if err != nil {
-		return fmt.Errorf("Failed to lookup snapshots: %+v", err)
+		return fmt.Errorf("failed to lookup snapshots: %+v", err)
 	}
 	sort.Sort(snapshotSort(snaps))
 
@@ -356,11 +356,11 @@ func gcSnapshots() error {
 				toKeep--
 			}
 			if toKeep <= 0 && config.Verbose {
-				fmt.Printf("Deleting snapshot group '%s'\n", s.Description)
+				fmt.Printf("deleting snapshot group '%s'\n", s.Description)
 			}
 		}
 		if toKeep <= 0 {
-			if err := config.ec2.DeleteSnapshot(s.SnapshotId); err != nil {
+			if err := config.ec2.DeleteSnapshot(s.SnapshotID); err != nil {
 				return err
 			}
 		}
