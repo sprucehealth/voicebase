@@ -49,20 +49,20 @@ func (d *DoctorAdviceHandler) getAdvicePoints(w http.ResponseWriter, r *http.Req
 		return
 	}
 
-	doctorId, _, _, statusCode, err := ValidateDoctorAccessToPatientVisitAndGetRelevantData(patientVisitId, GetContext(r).AccountId, d.DataApi)
+	patientVisitReviewData, statusCode, err := ValidateDoctorAccessToPatientVisitAndGetRelevantData(patientVisitId, GetContext(r).AccountId, d.DataApi)
 	if err != nil {
 		WriteDeveloperError(w, statusCode, err.Error())
 		return
 	}
 
-	advicePoints, err := d.DataApi.GetAdvicePointsForDoctor(doctorId)
+	advicePoints, err := d.DataApi.GetAdvicePointsForDoctor(patientVisitReviewData.DoctorId)
 	if err != nil {
 		WriteDeveloperError(w, http.StatusInternalServerError, "Unable to get advice points for doctor: "+err.Error())
 		return
 	}
 
 	if treatmentPlanId == 0 {
-		treatmentPlanId, err = d.DataApi.GetActiveTreatmentPlanForPatientVisit(doctorId, patientVisitId)
+		treatmentPlanId, err = d.DataApi.GetActiveTreatmentPlanForPatientVisit(patientVisitReviewData.DoctorId, patientVisitId)
 		if err != nil {
 			WriteDeveloperError(w, http.StatusInternalServerError, "Unable to get treatment plan for patient visit: "+err.Error())
 			return
@@ -92,7 +92,7 @@ func (d *DoctorAdviceHandler) updateAdvicePoints(w http.ResponseWriter, r *http.
 		return
 	}
 
-	doctorId, _, _, statusCode, err := ValidateDoctorAccessToPatientVisitAndGetRelevantData(requestData.PatientVisitId.Int64(), GetContext(r).AccountId, d.DataApi)
+	patientVisitReviewData, statusCode, err := ValidateDoctorAccessToPatientVisitAndGetRelevantData(requestData.PatientVisitId.Int64(), GetContext(r).AccountId, d.DataApi)
 	if err != nil {
 		WriteDeveloperError(w, statusCode, err.Error())
 		return
@@ -104,7 +104,7 @@ func (d *DoctorAdviceHandler) updateAdvicePoints(w http.ResponseWriter, r *http.
 		return
 	}
 
-	treatmentPlanId, err := d.DataApi.GetActiveTreatmentPlanForPatientVisit(doctorId, requestData.PatientVisitId.Int64())
+	treatmentPlanId, err := d.DataApi.GetActiveTreatmentPlanForPatientVisit(patientVisitReviewData.DoctorId, requestData.PatientVisitId.Int64())
 	if err != nil {
 		WriteDeveloperError(w, http.StatusInternalServerError, "Unable to get treatment plan for patient visit: "+err.Error())
 		return
@@ -130,7 +130,7 @@ func (d *DoctorAdviceHandler) updateAdvicePoints(w http.ResponseWriter, r *http.
 		}
 	}
 
-	currentActiveAdvicePoints, err := d.DataApi.GetAdvicePointsForDoctor(doctorId)
+	currentActiveAdvicePoints, err := d.DataApi.GetAdvicePointsForDoctor(patientVisitReviewData.DoctorId)
 	if err != nil {
 		WriteDeveloperError(w, http.StatusInternalServerError, "Unable to get active advice points for the doctor")
 		return
@@ -152,7 +152,7 @@ func (d *DoctorAdviceHandler) updateAdvicePoints(w http.ResponseWriter, r *http.
 	}
 
 	// mark all advice points that are not present in the list coming from the client to be deleted
-	err = d.DataApi.MarkAdvicePointsToBeDeleted(advicePointsToDelete, doctorId)
+	err = d.DataApi.MarkAdvicePointsToBeDeleted(advicePointsToDelete, patientVisitReviewData.DoctorId)
 	if err != nil {
 		WriteDeveloperError(w, http.StatusInternalServerError, "Unable to delete advice points: "+err.Error())
 		return
@@ -165,7 +165,7 @@ func (d *DoctorAdviceHandler) updateAdvicePoints(w http.ResponseWriter, r *http.
 	for _, advicePoint := range requestData.AllAdvicePoints {
 		switch advicePoint.State {
 		case common.STATE_ADDED, common.STATE_MODIFIED:
-			err = d.DataApi.AddOrUpdateAdvicePointForDoctor(advicePoint, doctorId)
+			err = d.DataApi.AddOrUpdateAdvicePointForDoctor(advicePoint, patientVisitReviewData.DoctorId)
 			if err != nil {
 				WriteDeveloperError(w, http.StatusInternalServerError, "Unable to add or update advice point for doctor. Application may be left in inconsistent state. Error = "+err.Error())
 				return
@@ -173,7 +173,7 @@ func (d *DoctorAdviceHandler) updateAdvicePoints(w http.ResponseWriter, r *http.
 			newOrUpdatedPointToIdMapping[advicePoint.Text] = advicePoint.Id.Int64()
 			updatedAdvicePoints = append(updatedAdvicePoints, advicePoint)
 		case common.STATE_DELETED:
-			err = d.DataApi.MarkAdvicePointToBeDeleted(advicePoint, doctorId)
+			err = d.DataApi.MarkAdvicePointToBeDeleted(advicePoint, patientVisitReviewData.DoctorId)
 			if err != nil {
 				WriteDeveloperError(w, http.StatusInternalServerError, "Unable to delete advice point for doctor: "+err.Error())
 				return

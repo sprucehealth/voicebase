@@ -40,35 +40,33 @@ func (d *DoctorRegimenHandler) ServeHTTP(w http.ResponseWriter, r *http.Request)
 func (d *DoctorRegimenHandler) getRegimenSteps(w http.ResponseWriter, r *http.Request) {
 	r.ParseForm()
 	requestData := new(GetDoctorRegimenRequestData)
-	decoder := schema.NewDecoder()
-	err := decoder.Decode(requestData, r.Form)
-	if err != nil {
+
+	if err := schema.NewDecoder().Decode(requestData, r.Form); err != nil {
 		WriteDeveloperError(w, http.StatusBadRequest, "Unable to parse input parameters: "+err.Error())
 		return
 	}
 
 	patientVisitId := requestData.PatientVisitId
 	treatmentPlanId := requestData.TreatmentPlanId
-	err = ensureTreatmentPlanOrPatientVisitIdPresent(d.DataApi, treatmentPlanId, &patientVisitId)
-	if err != nil {
+	if err := ensureTreatmentPlanOrPatientVisitIdPresent(d.DataApi, treatmentPlanId, &patientVisitId); err != nil {
 		WriteDeveloperError(w, http.StatusBadRequest, err.Error())
 		return
 	}
 
-	doctorId, _, _, statusCode, err := ValidateDoctorAccessToPatientVisitAndGetRelevantData(patientVisitId, GetContext(r).AccountId, d.DataApi)
+	patientVisitReviewData, statusCode, err := ValidateDoctorAccessToPatientVisitAndGetRelevantData(patientVisitId, GetContext(r).AccountId, d.DataApi)
 	if err != nil {
 		WriteDeveloperError(w, statusCode, err.Error())
 		return
 	}
 
-	regimenSteps, err := d.DataApi.GetRegimenStepsForDoctor(doctorId)
+	regimenSteps, err := d.DataApi.GetRegimenStepsForDoctor(patientVisitReviewData.DoctorId)
 	if err != nil {
 		WriteDeveloperError(w, http.StatusInternalServerError, "Unable to get regimen steps for doctor: "+err.Error())
 		return
 	}
 
 	if treatmentPlanId == 0 {
-		treatmentPlanId, err = d.DataApi.GetActiveTreatmentPlanForPatientVisit(doctorId, patientVisitId)
+		treatmentPlanId, err = d.DataApi.GetActiveTreatmentPlanForPatientVisit(patientVisitReviewData.DoctorId, patientVisitId)
 		if err != nil {
 			WriteDeveloperError(w, http.StatusInternalServerError, "Unable to get treatment plan for patient visit: "+err.Error())
 			return
@@ -98,7 +96,7 @@ func (d *DoctorRegimenHandler) updateRegimenSteps(w http.ResponseWriter, r *http
 		return
 	}
 
-	doctorId, _, _, statusCode, err := ValidateDoctorAccessToPatientVisitAndGetRelevantData(requestData.PatientVisitId.Int64(), GetContext(r).AccountId, d.DataApi)
+	patientVisitReviewData, statusCode, err := ValidateDoctorAccessToPatientVisitAndGetRelevantData(requestData.PatientVisitId.Int64(), GetContext(r).AccountId, d.DataApi)
 	if err != nil {
 		WriteDeveloperError(w, statusCode, err.Error())
 		return
@@ -134,7 +132,7 @@ func (d *DoctorRegimenHandler) updateRegimenSteps(w http.ResponseWriter, r *http
 
 	// identify any currently existing regimen steps that need to be deleted
 	regimenStepsToDelete := make([]*common.DoctorInstructionItem, 0)
-	currentActiveRegimenSteps, err := d.DataApi.GetRegimenStepsForDoctor(doctorId)
+	currentActiveRegimenSteps, err := d.DataApi.GetRegimenStepsForDoctor(patientVisitReviewData.DoctorId)
 	if err != nil {
 		WriteDeveloperError(w, http.StatusInternalServerError, "Unable to get regimen steps for doctor: "+err.Error())
 		return
@@ -153,7 +151,7 @@ func (d *DoctorRegimenHandler) updateRegimenSteps(w http.ResponseWriter, r *http
 		}
 	}
 
-	err = d.DataApi.MarkRegimenStepsToBeDeleted(regimenStepsToDelete, doctorId)
+	err = d.DataApi.MarkRegimenStepsToBeDeleted(regimenStepsToDelete, patientVisitReviewData.DoctorId)
 	if err != nil {
 		WriteDeveloperError(w, http.StatusInternalServerError, "Unable to delete regimen steps that are no longer in the client list: "+err.Error())
 		return
@@ -166,7 +164,7 @@ func (d *DoctorRegimenHandler) updateRegimenSteps(w http.ResponseWriter, r *http
 	for _, regimenStep := range requestData.AllRegimenSteps {
 		switch regimenStep.State {
 		case common.STATE_ADDED:
-			err = d.DataApi.AddRegimenStepForDoctor(regimenStep, doctorId)
+			err = d.DataApi.AddRegimenStepForDoctor(regimenStep, patientVisitReviewData.DoctorId)
 			if err != nil {
 				WriteDeveloperError(w, http.StatusInternalServerError, "Unable to add reigmen step to doctor. Application may be left in inconsistent state. Error = "+err.Error())
 				return
@@ -174,7 +172,7 @@ func (d *DoctorRegimenHandler) updateRegimenSteps(w http.ResponseWriter, r *http
 			newOrUpdatedStepToIdMapping[regimenStep.Text] = regimenStep.Id.Int64()
 			updatedAllRegimenSteps = append(updatedAllRegimenSteps, regimenStep)
 		case common.STATE_MODIFIED:
-			err = d.DataApi.UpdateRegimenStepForDoctor(regimenStep, doctorId)
+			err = d.DataApi.UpdateRegimenStepForDoctor(regimenStep, patientVisitReviewData.DoctorId)
 			if err != nil {
 				WriteDeveloperError(w, http.StatusInternalServerError, "Unable to update regimen step for doctor: "+err.Error())
 				return
@@ -184,7 +182,7 @@ func (d *DoctorRegimenHandler) updateRegimenSteps(w http.ResponseWriter, r *http
 			newOrUpdatedStepToIdMapping[regimenStep.Text] = regimenStep.Id.Int64()
 			updatedAllRegimenSteps = append(updatedAllRegimenSteps, regimenStep)
 		case common.STATE_DELETED:
-			err = d.DataApi.MarkRegimenStepToBeDeleted(regimenStep, doctorId)
+			err = d.DataApi.MarkRegimenStepToBeDeleted(regimenStep, patientVisitReviewData.DoctorId)
 			if err != nil {
 				WriteDeveloperError(w, http.StatusInternalServerError, "Unable to delete regimen step for doctor: "+err.Error())
 				return
@@ -210,7 +208,7 @@ func (d *DoctorRegimenHandler) updateRegimenSteps(w http.ResponseWriter, r *http
 
 	treatmentPlanId := requestData.TreatmentPlanId.Int64()
 	if treatmentPlanId == 0 {
-		treatmentPlanId, err = d.DataApi.GetActiveTreatmentPlanForPatientVisit(doctorId, requestData.PatientVisitId.Int64())
+		treatmentPlanId, err = d.DataApi.GetActiveTreatmentPlanForPatientVisit(patientVisitReviewData.DoctorId, requestData.PatientVisitId.Int64())
 		if err != nil {
 			WriteDeveloperError(w, http.StatusInternalServerError, "Unable to get treatment plan for patient visit: "+err.Error())
 			return

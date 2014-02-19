@@ -62,7 +62,7 @@ func (d *DoctorSubmitPatientVisitReviewHandler) submitPatientVisitReview(w http.
 		return
 	}
 
-	doctorId, _, _, statusCode, err := ValidateDoctorAccessToPatientVisitAndGetRelevantData(requestData.PatientVisitId, GetContext(r).AccountId, d.DataApi)
+	patientVisitReviewData, statusCode, err := ValidateDoctorAccessToPatientVisitAndGetRelevantData(requestData.PatientVisitId, GetContext(r).AccountId, d.DataApi)
 	if err != nil {
 		WriteDeveloperError(w, statusCode, err.Error())
 		return
@@ -75,7 +75,7 @@ func (d *DoctorSubmitPatientVisitReviewHandler) submitPatientVisitReview(w http.
 		return
 	}
 
-	treatmentPlanId, err := d.DataApi.GetActiveTreatmentPlanForPatientVisit(doctorId, requestData.PatientVisitId)
+	treatmentPlanId, err := d.DataApi.GetActiveTreatmentPlanForPatientVisit(patientVisitReviewData.DoctorId, requestData.PatientVisitId)
 	if err != nil {
 		WriteDeveloperError(w, http.StatusInternalServerError, "Unable to get current active treatment plan for patient visit: "+err.Error())
 		return
@@ -138,7 +138,7 @@ func (d *DoctorSubmitPatientVisitReviewHandler) submitPatientVisitReview(w http.
 			}
 
 			// Save prescription ids for drugs to database
-			err = d.DataApi.MarkTreatmentsAsPrescriptionsSent(treatments, pharmacySelection, doctorId, requestData.PatientVisitId)
+			err = d.DataApi.MarkTreatmentsAsPrescriptionsSent(treatments, pharmacySelection, patientVisitReviewData.DoctorId, requestData.PatientVisitId)
 			if err != nil {
 				WriteDeveloperError(w, http.StatusInternalServerError, "Unable to save prescription ids for treatments: "+err.Error())
 				return
@@ -185,7 +185,7 @@ func (d *DoctorSubmitPatientVisitReviewHandler) submitPatientVisitReview(w http.
 			}
 
 			//  Queue up notification to patient
-			err = d.queueUpJobForErxStatus(patient.PatientId.Int64(), doctorId)
+			err = d.queueUpJobForErxStatus(patient.PatientId.Int64(), patientVisitReviewData.DoctorId)
 			if err != nil {
 				WriteDeveloperError(w, http.StatusInternalServerError, "Unable to queue up job for getting prescription status: "+err.Error())
 				return
@@ -227,7 +227,7 @@ func (d *DoctorSubmitPatientVisitReviewHandler) submitPatientVisitReview(w http.
 
 	// mark the status on the visit in the doctor's queue to move it to the completed tab
 	// so that the visit is no longer in the hands of the doctor
-	err = d.DataApi.UpdateStateForPatientVisitInDoctorQueue(doctorId, requestData.PatientVisitId, api.QUEUE_ITEM_STATUS_ONGOING, requestData.Status)
+	err = d.DataApi.UpdateStateForPatientVisitInDoctorQueue(patientVisitReviewData.DoctorId, requestData.PatientVisitId, api.QUEUE_ITEM_STATUS_ONGOING, requestData.Status)
 	if err != nil {
 		WriteDeveloperError(w, http.StatusInternalServerError, "Unable to update the status of the patient visit in the doctor queue: "+err.Error())
 		return

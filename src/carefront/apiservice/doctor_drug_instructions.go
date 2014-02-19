@@ -54,7 +54,7 @@ func (d *DoctorDrugInstructionsHandler) addDrugInstructions(w http.ResponseWrite
 
 	drugName, drugForm, drugRoute := breakDrugInternalNameIntoComponents(addInstructionsRequestBody.DrugInternalName)
 
-	doctorId, _, _, statusCode, err := ValidateDoctorAccessToPatientVisitAndGetRelevantData(addInstructionsRequestBody.PatientVisitId, GetContext(r).AccountId, d.DataApi)
+	patientVisitReviewData, statusCode, err := ValidateDoctorAccessToPatientVisitAndGetRelevantData(addInstructionsRequestBody.PatientVisitId, GetContext(r).AccountId, d.DataApi)
 	if err != nil {
 		WriteDeveloperError(w, statusCode, err.Error())
 		return
@@ -66,7 +66,7 @@ func (d *DoctorDrugInstructionsHandler) addDrugInstructions(w http.ResponseWrite
 	for _, drugInstructionItem := range addInstructionsRequestBody.AllSupplementalInstructions {
 		switch drugInstructionItem.State {
 		case common.STATE_ADDED, common.STATE_MODIFIED:
-			err = d.DataApi.AddOrUpdateDrugInstructionForDoctor(drugName, drugForm, drugRoute, drugInstructionItem, doctorId)
+			err = d.DataApi.AddOrUpdateDrugInstructionForDoctor(drugName, drugForm, drugRoute, drugInstructionItem, patientVisitReviewData.DoctorId)
 			if err != nil {
 				WriteDeveloperError(w, http.StatusInternalServerError, "Unable to add instructions for doctor: "+err.Error())
 				return
@@ -74,7 +74,7 @@ func (d *DoctorDrugInstructionsHandler) addDrugInstructions(w http.ResponseWrite
 			newOrUpdatedInstructionToIdMapping[drugInstructionItem.Text] = drugInstructionItem.Id.Int64()
 			updatedInstructionList = append(updatedInstructionList, drugInstructionItem)
 		case common.STATE_DELETED:
-			err := d.DataApi.DeleteDrugInstructionForDoctor(drugInstructionItem, doctorId)
+			err := d.DataApi.DeleteDrugInstructionForDoctor(drugInstructionItem, patientVisitReviewData.DoctorId)
 			if err != nil {
 				WriteDeveloperError(w, http.StatusInternalServerError, "Unable to add instruction for doctor: "+err.Error())
 				return
@@ -94,7 +94,7 @@ func (d *DoctorDrugInstructionsHandler) addDrugInstructions(w http.ResponseWrite
 		}
 	}
 
-	err = d.DataApi.AddDrugInstructionsToTreatment(drugName, drugForm, drugRoute, addInstructionsRequestBody.SelectedSupplementalInstructions, addInstructionsRequestBody.TreatmentId, doctorId)
+	err = d.DataApi.AddDrugInstructionsToTreatment(drugName, drugForm, drugRoute, addInstructionsRequestBody.SelectedSupplementalInstructions, addInstructionsRequestBody.TreatmentId, patientVisitReviewData.DoctorId)
 	if err != nil {
 		WriteDeveloperError(w, http.StatusInternalServerError, "Unable to add drug instructions to treatment: "+err.Error())
 		return

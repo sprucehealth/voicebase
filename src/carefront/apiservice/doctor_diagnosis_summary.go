@@ -44,14 +44,14 @@ func (d *DiagnosisSummaryHandler) getDiagnosisSummaryForPatientVisit(w http.Resp
 		return
 	}
 
-	doctorId, _, _, statusCode, err := ValidateDoctorAccessToPatientVisitAndGetRelevantData(patientVisitId, GetContext(r).AccountId, d.DataApi)
+	patientVisitReviewData, statusCode, err := ValidateDoctorAccessToPatientVisitAndGetRelevantData(patientVisitId, GetContext(r).AccountId, d.DataApi)
 	if err != nil {
 		WriteDeveloperError(w, statusCode, err.Error())
 		return
 	}
 
 	if treatmentPlanId == 0 {
-		treatmentPlanId, err = d.DataApi.GetActiveTreatmentPlanForPatientVisit(doctorId, requestData.PatientVisitId)
+		treatmentPlanId, err = d.DataApi.GetActiveTreatmentPlanForPatientVisit(patientVisitReviewData.DoctorId, requestData.PatientVisitId)
 		if err != nil {
 			WriteDeveloperError(w, http.StatusBadRequest, "Unable to get treatment plan for patient visit: "+err.Error())
 			return

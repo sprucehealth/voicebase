@@ -61,14 +61,14 @@ func (t *TreatmentsHandler) getTreatments(w http.ResponseWriter, r *http.Request
 		return
 	}
 
-	doctorId, _, _, httpStatusCode, err := ValidateDoctorAccessToPatientVisitAndGetRelevantData(patientVisitId, GetContext(r).AccountId, t.DataApi)
+	patientVisitReviewData, httpStatusCode, err := ValidateDoctorAccessToPatientVisitAndGetRelevantData(patientVisitId, GetContext(r).AccountId, t.DataApi)
 	if err != nil {
 		WriteDeveloperError(w, httpStatusCode, "Doctor not authorized to get treatments for patient visit: "+err.Error())
 		return
 	}
 
 	if treatmentPlanId == 0 {
-		treatmentPlanId, err = t.DataApi.GetActiveTreatmentPlanForPatientVisit(doctorId, patientVisitId)
+		treatmentPlanId, err = t.DataApi.GetActiveTreatmentPlanForPatientVisit(patientVisitReviewData.DoctorId, patientVisitId)
 		if err != nil {
 			WriteDeveloperError(w, http.StatusInternalServerError, "Unable to get active treatment plan id based on patient visit id : "+err.Error())
 			return
@@ -98,11 +98,9 @@ func (t *TreatmentsHandler) getTreatments(w http.ResponseWriter, r *http.Request
 }
 
 func (t *TreatmentsHandler) addTreatment(w http.ResponseWriter, r *http.Request) {
-	jsonDecoder := json.NewDecoder(r.Body)
 	treatmentsRequestBody := &AddTreatmentsRequestBody{}
 
-	err := jsonDecoder.Decode(treatmentsRequestBody)
-	if err != nil {
+	if err := json.NewDecoder(r.Body).Decode(treatmentsRequestBody); err != nil {
 		WriteDeveloperError(w, http.StatusBadRequest, "Unable to parse treatment body: "+err.Error())
 		return
 	}
@@ -113,11 +111,11 @@ func (t *TreatmentsHandler) addTreatment(w http.ResponseWriter, r *http.Request)
 	}
 
 	if treatmentsRequestBody.PatientVisitId.Int64() == 0 {
-		WriteDeveloperError(w, http.StatusBadRequest, "Patient visit id must be specified: "+err.Error())
+		WriteDeveloperError(w, http.StatusBadRequest, "Patient visit id must be specified")
 		return
 	}
 
-	doctorId, _, _, httpStatusCode, err := ValidateDoctorAccessToPatientVisitAndGetRelevantData(treatmentsRequestBody.PatientVisitId.Int64(), GetContext(r).AccountId, t.DataApi)
+	patientVisitReviewData, httpStatusCode, err := ValidateDoctorAccessToPatientVisitAndGetRelevantData(treatmentsRequestBody.PatientVisitId.Int64(), GetContext(r).AccountId, t.DataApi)
 	if err != nil {
 		WriteDeveloperError(w, httpStatusCode, "Unable to validate doctor to add treatment to patient visit: "+err.Error())
 		return
@@ -125,14 +123,13 @@ func (t *TreatmentsHandler) addTreatment(w http.ResponseWriter, r *http.Request)
 
 	// intentionally not requiring the treatment plan id from the client when adding treatments because it should only be possible to
 	// add treatments to an active treatment plan
-	treatmentPlanId, err := t.DataApi.GetActiveTreatmentPlanForPatientVisit(doctorId, treatmentsRequestBody.PatientVisitId.Int64())
+	treatmentPlanId, err := t.DataApi.GetActiveTreatmentPlanForPatientVisit(patientVisitReviewData.DoctorId, treatmentsRequestBody.PatientVisitId.Int64())
 	if err != nil {
 		WriteDeveloperError(w, http.StatusInternalServerError, "Unable to get the treatment plan from the patient visit: "+err.Error())
 		return
 	}
 
-	err = EnsurePatientVisitInExpectedStatus(t.DataApi, treatmentsRequestBody.PatientVisitId.Int64(), api.CASE_STATUS_REVIEWING)
-	if err != nil {
+	if err := EnsurePatientVisitInExpectedStatus(t.DataApi, treatmentsRequestBody.PatientVisitId.Int64(), api.CASE_STATUS_REVIEWING); err != nil {
 		WriteDeveloperError(w, http.StatusBadRequest, err.Error())
 		return
 	}
@@ -156,8 +153,7 @@ func (t *TreatmentsHandler) addTreatment(w http.ResponseWriter, r *http.Request)
 	}
 
 	// Add treatments to patient
-	err = t.DataApi.AddTreatmentsForPatientVisit(treatmentsRequestBody.Treatments, doctorId, treatmentPlanId)
-	if err != nil {
+	if err := t.DataApi.AddTreatmentsForPatientVisit(treatmentsRequestBody.Treatments, patientVisitReviewData.DoctorId, treatmentPlanId); err != nil {
 		WriteDeveloperError(w, http.StatusInternalServerError, "Unable to add treatment to patient visit: "+err.Error())
 		return
 	}

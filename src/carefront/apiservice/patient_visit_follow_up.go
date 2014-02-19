@@ -35,31 +35,34 @@ func (p *PatientVisitFollowUpHandler) ServeHTTP(w http.ResponseWriter, r *http.R
 		p.getFollowupForPatientVisit(w, r)
 	case "POST":
 		p.updatePatientVisitFollowup(w, r)
+	default:
+		w.WriteHeader(http.StatusNotImplemented)
 	}
 }
 
 func (p *PatientVisitFollowUpHandler) getFollowupForPatientVisit(w http.ResponseWriter, r *http.Request) {
 	r.ParseForm()
 	requestData := new(PatientVisitFollowUpRequestResponse)
-	decoder := schema.NewDecoder()
-	err := decoder.Decode(requestData, r.Form)
+	if err := schema.NewDecoder().Decode(requestData, r.Form); err != nil {
+		WriteDeveloperError(w, http.StatusBadRequest, "Unable to parse patient visit followup request data: "+err.Error())
+		return
+	}
 
 	patientVisitId := requestData.PatientVisitId
 	treatmentPlanId := requestData.TreatmentPlanId
-	err = ensureTreatmentPlanOrPatientVisitIdPresent(p.DataApi, treatmentPlanId, &patientVisitId)
-	if err != nil {
+	if err := ensureTreatmentPlanOrPatientVisitIdPresent(p.DataApi, treatmentPlanId, &patientVisitId); err != nil {
 		WriteDeveloperError(w, http.StatusBadRequest, err.Error())
 		return
 	}
 
-	doctorId, _, _, statusCode, err := ValidateDoctorAccessToPatientVisitAndGetRelevantData(patientVisitId, GetContext(r).AccountId, p.DataApi)
+	patientVisitReviewData, statusCode, err := ValidateDoctorAccessToPatientVisitAndGetRelevantData(patientVisitId, GetContext(r).AccountId, p.DataApi)
 	if err != nil {
 		WriteDeveloperError(w, statusCode, err.Error())
 		return
 	}
 
 	if treatmentPlanId == 0 {
-		treatmentPlanId, err = p.DataApi.GetActiveTreatmentPlanForPatientVisit(doctorId, patientVisitId)
+		treatmentPlanId, err = p.DataApi.GetActiveTreatmentPlanForPatientVisit(patientVisitReviewData.DoctorId, patientVisitId)
 		if err != nil {
 			WriteDeveloperError(w, http.StatusInternalServerError, "Unable to get active treatment plan information from patient visit: "+err.Error())
 			return
@@ -103,19 +106,19 @@ func (p *PatientVisitFollowUpHandler) updatePatientVisitFollowup(w http.Response
 		return
 	}
 
-	doctorId, _, _, statusCode, err := ValidateDoctorAccessToPatientVisitAndGetRelevantData(requestData.PatientVisitId, GetContext(r).AccountId, p.DataApi)
+	patientVisitReviewData, statusCode, err := ValidateDoctorAccessToPatientVisitAndGetRelevantData(requestData.PatientVisitId, GetContext(r).AccountId, p.DataApi)
 	if err != nil {
 		WriteDeveloperError(w, statusCode, err.Error())
 		return
 	}
 
-	treatmentPlanId, err := p.DataApi.GetActiveTreatmentPlanForPatientVisit(doctorId, requestData.PatientVisitId)
+	treatmentPlanId, err := p.DataApi.GetActiveTreatmentPlanForPatientVisit(patientVisitReviewData.DoctorId, requestData.PatientVisitId)
 	if err != nil {
 		WriteDeveloperError(w, http.StatusInternalServerError, "Unable to get treatment plan for patient visit: "+err.Error())
 		return
 	}
 
-	err = p.DataApi.UpdateFollowUpTimeForPatientVisit(treatmentPlanId, time.Now().Unix(), doctorId, requestData.FollowUpValue, requestData.FollowUpUnit)
+	err = p.DataApi.UpdateFollowUpTimeForPatientVisit(treatmentPlanId, time.Now().Unix(), patientVisitReviewData.DoctorId, requestData.FollowUpValue, requestData.FollowUpUnit)
 	if err != nil {
 		WriteDeveloperError(w, http.StatusInternalServerError, "Unable to update followup for patient visit")
 		return

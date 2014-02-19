@@ -640,14 +640,17 @@ func (d *DataService) GetFavoriteTreatments(doctorId int64) ([]*common.DoctorFav
 	treatmentIds := make([]int64, 0)
 	favoriteTreatmentMapping := make(map[int64]*common.DoctorFavoriteTreatment)
 	for rows.Next() {
-		var favoriteTreatment common.DoctorFavoriteTreatment
-		var treatmentId int64
-		err = rows.Scan(&favoriteTreatment.Id, &favoriteTreatment.Name, &treatmentId)
+		var name string
+		var favoriteTreatmentId, treatmentId int64
+		err = rows.Scan(&favoriteTreatmentId, &name, &treatmentId)
 		if err != nil {
 			return nil, err
 		}
 		treatmentIds = append(treatmentIds, treatmentId)
-		favoriteTreatmentMapping[treatmentId] = &favoriteTreatment
+		favoriteTreatmentMapping[treatmentId] = &common.DoctorFavoriteTreatment{
+			Id:   common.NewObjectId(favoriteTreatmentId),
+			Name: name,
+		}
 	}
 
 	// there are no favorited items to return

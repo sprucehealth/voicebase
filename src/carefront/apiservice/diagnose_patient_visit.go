@@ -76,22 +76,19 @@ func (d *DiagnosePatientHandler) ServeHTTP(w http.ResponseWriter, r *http.Reques
 func (d *DiagnosePatientHandler) getDiagnosis(w http.ResponseWriter, r *http.Request) {
 	r.ParseForm()
 	requestData := new(DiagnosePatientRequestData)
-	decoder := schema.NewDecoder()
-	err := decoder.Decode(requestData, r.Form)
-	if err != nil {
+	if err := schema.NewDecoder().Decode(requestData, r.Form); err != nil {
 		WriteDeveloperError(w, http.StatusBadRequest, "Unable to parse input parameters: "+err.Error())
 		return
 	}
 
 	patientVisitId := requestData.PatientVisitId
 	treatmentPlanId := requestData.TreatmentPlanId
-	err = ensureTreatmentPlanOrPatientVisitIdPresent(d.DataApi, treatmentPlanId, &patientVisitId)
-	if err != nil {
+	if err := ensureTreatmentPlanOrPatientVisitIdPresent(d.DataApi, treatmentPlanId, &patientVisitId); err != nil {
 		WriteDeveloperError(w, http.StatusBadRequest, err.Error())
 		return
 	}
 
-	doctorId, _, _, statusCode, err := ValidateDoctorAccessToPatientVisitAndGetRelevantData(patientVisitId, GetContext(r).AccountId, d.DataApi)
+	patientVisitReviewData, statusCode, err := ValidateDoctorAccessToPatientVisitAndGetRelevantData(patientVisitId, GetContext(r).AccountId, d.DataApi)
 	if err != nil {
 		WriteDeveloperError(w, statusCode, err.Error())
 		return
@@ -105,7 +102,7 @@ func (d *DiagnosePatientHandler) getDiagnosis(w http.ResponseWriter, r *http.Req
 	diagnosisLayout.PatientVisitId = patientVisitId
 
 	if treatmentPlanId == 0 {
-		treatmentPlanId, err = d.DataApi.GetActiveTreatmentPlanForPatientVisit(doctorId, patientVisitId)
+		treatmentPlanId, err = d.DataApi.GetActiveTreatmentPlanForPatientVisit(patientVisitReviewData.DoctorId, patientVisitId)
 		if err != nil {
 			WriteDeveloperError(w, http.StatusBadRequest, "Unable to get active treatment plan for patient visit: "+err.Error())
 			return
@@ -117,7 +114,7 @@ func (d *DiagnosePatientHandler) getDiagnosis(w http.ResponseWriter, r *http.Req
 	questionIds := getQuestionIdsInDiagnosisLayout(diagnosisLayout)
 
 	// get the answers to the questions in the array
-	doctorAnswers, err := d.DataApi.GetAnswersForQuestionsInPatientVisit(api.DOCTOR_ROLE, questionIds, doctorId, treatmentPlanId)
+	doctorAnswers, err := d.DataApi.GetAnswersForQuestionsInPatientVisit(api.DOCTOR_ROLE, questionIds, patientVisitReviewData.DoctorId, treatmentPlanId)
 	if err != nil {
 		WriteDeveloperError(w, http.StatusInternalServerError, "Unable to get answers for question: "+err.Error())
 		return
@@ -141,7 +138,7 @@ func (d *DiagnosePatientHandler) diagnosePatient(w http.ResponseWriter, r *http.
 		return
 	}
 
-	doctorId, _, _, httpStatusCode, err := ValidateDoctorAccessToPatientVisitAndGetRelevantData(answerIntakeRequestBody.PatientVisitId, GetContext(r).AccountId, d.DataApi)
+	patientVisitReviewData, httpStatusCode, err := ValidateDoctorAccessToPatientVisitAndGetRelevantData(answerIntakeRequestBody.PatientVisitId, GetContext(r).AccountId, d.DataApi)
 	if err != nil {
 		WriteDeveloperError(w, httpStatusCode, err.Error())
 		return
@@ -159,7 +156,7 @@ func (d *DiagnosePatientHandler) diagnosePatient(w http.ResponseWriter, r *http.
 		return
 	}
 
-	treatmentPlanId, err := d.DataApi.GetActiveTreatmentPlanForPatientVisit(doctorId, answerIntakeRequestBody.PatientVisitId)
+	treatmentPlanId, err := d.DataApi.GetActiveTreatmentPlanForPatientVisit(patientVisitReviewData.DoctorId, answerIntakeRequestBody.PatientVisitId)
 	if err != nil {
 		WriteDeveloperError(w, http.StatusInternalServerError, "Unable to get active treatment plan for patient visit: "+err.Error())
 		return
@@ -168,21 +165,21 @@ func (d *DiagnosePatientHandler) diagnosePatient(w http.ResponseWriter, r *http.
 	answersToStorePerQuestion := make(map[int64][]*common.AnswerIntake)
 	for _, questionItem := range answerIntakeRequestBody.Questions {
 		// enumerate the answers to store from the top level questions as well as the sub questions
-		answersToStorePerQuestion[questionItem.QuestionId] = populateAnswersToStoreForQuestion(api.DOCTOR_ROLE, questionItem, treatmentPlanId, doctorId, layoutVersionId)
+		answersToStorePerQuestion[questionItem.QuestionId] = populateAnswersToStoreForQuestion(api.DOCTOR_ROLE, questionItem, treatmentPlanId, patientVisitReviewData.DoctorId, layoutVersionId)
 	}
 
-	err = d.DataApi.DeactivatePreviousDiagnosisForPatientVisit(treatmentPlanId, doctorId)
+	err = d.DataApi.DeactivatePreviousDiagnosisForPatientVisit(treatmentPlanId, patientVisitReviewData.DoctorId)
 	if err != nil {
 		WriteDeveloperError(w, http.StatusInternalServerError, "Unable to deactivate responses from previous diagnosis of this patient visit: "+err.Error())
 		return
 	}
 
-	err = d.DataApi.StoreAnswersForQuestion(api.DOCTOR_ROLE, doctorId, treatmentPlanId, layoutVersionId, answersToStorePerQuestion)
+	err = d.DataApi.StoreAnswersForQuestion(api.DOCTOR_ROLE, patientVisitReviewData.DoctorId, treatmentPlanId, layoutVersionId, answersToStorePerQuestion)
 	if err != nil {
 		WriteDeveloperError(w, http.StatusInternalServerError, "Unable to store the multiple choice answer to the question for the patient based on the parameters provided and the internal state of the system: "+err.Error())
 		return
 	}
-	if err = d.addDiagnosisSummaryForPatientVisit(doctorId, treatmentPlanId); err != nil {
+	if err = d.addDiagnosisSummaryForPatientVisit(patientVisitReviewData.DoctorId, treatmentPlanId); err != nil {
 		WriteDeveloperError(w, http.StatusInternalServerError, "Something went wrong when trying to add and store the summary to the diagnosis of the patient visit: "+err.Error())
 		return
 	}
