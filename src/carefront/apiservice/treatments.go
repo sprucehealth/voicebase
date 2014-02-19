@@ -143,7 +143,7 @@ func (t *TreatmentsHandler) addTreatment(w http.ResponseWriter, r *http.Request)
 	for _, treatment := range treatmentsRequestBody.Treatments {
 		err = validateTreatment(treatment)
 		if err != nil {
-			WriteDeveloperError(w, http.StatusBadRequest, err.Error())
+			WriteUserError(w, http.StatusBadRequest, err.Error())
 			return
 		}
 
