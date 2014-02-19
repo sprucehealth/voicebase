@@ -28,6 +28,7 @@ const (
 	HTTP_POST                       = "POST"
 	HTTP_PUT                        = "PUT"
 	HTTP_DELETE                     = "DELETE"
+	HTTP_UNPROCESSABLE_ENTITY       = 422
 )
 
 type GenericJsonResponse struct {

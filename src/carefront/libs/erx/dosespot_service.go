@@ -327,6 +327,9 @@ func (d *DoseSpotService) SelectMedication(medicationName, medicationStrength st
 	medication.DispenseUnitId = selectResult.DispenseUnitId
 	medication.DispenseUnitDescription = selectResult.DispenseUnitDescription
 	medication.OTC = selectResult.OTC
+
+	scheduleInt, err := strconv.Atoi(selectResult.Schedule)
+	medication.IsControlledSubstance = err == nil && scheduleInt > 0
 	return medication, err
 }
 

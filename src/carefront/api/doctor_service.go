@@ -555,7 +555,7 @@ func (d *DataService) AddTreatmentTemplates(doctorTreatmentTemplates []*common.D
 			return err
 		}
 
-		lastInsertId, err := tx.Exec(`insert into dr_favorite_treatment (doctor_id, treatment_id, name, status) values (?,?,?,?)`, doctorId, doctorTreatmentTemplate.Treatment.Id, doctorTreatmentTemplate.Name, status_active)
+		lastInsertId, err := tx.Exec(`insert into dr_treatment_template (doctor_id, treatment_id, name, status) values (?,?,?,?)`, doctorId, doctorTreatmentTemplate.Treatment.Id, doctorTreatmentTemplate.Name, status_active)
 		if err != nil {
 			tx.Rollback()
 			return err
@@ -578,7 +578,7 @@ func (d *DataService) AddTreatmentTemplates(doctorTreatmentTemplates []*common.D
 			// this should rarely happen; but what this will do is help ensure that a treatment within a patient visit can only be favorited
 			// once and only once.
 			var preExistingDoctorFavoriteTreatmentId int64
-			err = tx.QueryRow(`select dr_favorite_treatment_id from treatment_dr_favorite_selection where treatment_id = ? `, treatmentIdInPatientTreatmentPlan).Scan(&preExistingDoctorFavoriteTreatmentId)
+			err = tx.QueryRow(`select dr_treatment_template_id from treatment_dr_template_selection where treatment_id = ? `, treatmentIdInPatientTreatmentPlan).Scan(&preExistingDoctorFavoriteTreatmentId)
 			if err != nil && err != sql.ErrNoRows {
 				tx.Rollback()
 				return err
@@ -586,21 +586,21 @@ func (d *DataService) AddTreatmentTemplates(doctorTreatmentTemplates []*common.D
 
 			if preExistingDoctorFavoriteTreatmentId != 0 {
 				// go ahead and delete the selection
-				_, err = tx.Exec(`delete from treatment_dr_favorite_selection where treatment_id = ?`, treatmentIdInPatientTreatmentPlan)
+				_, err = tx.Exec(`delete from treatment_dr_template_selection where treatment_id = ?`, treatmentIdInPatientTreatmentPlan)
 				if err != nil {
 					tx.Rollback()
 					return err
 				}
 
 				// also, go ahead and mark this particular favorited treatment as deleted
-				_, err = tx.Exec(`update dr_favorite_treatment set status = ? where id = ?`, status_deleted, preExistingDoctorFavoriteTreatmentId)
+				_, err = tx.Exec(`update dr_treatment_template set status = ? where id = ?`, status_deleted, preExistingDoctorFavoriteTreatmentId)
 				if err != nil {
 					tx.Rollback()
 					return err
 				}
 			}
 
-			_, err = tx.Exec(`insert into treatment_dr_favorite_selection (treatment_id, dr_favorite_treatment_id) values (?,?)`, treatmentIdInPatientTreatmentPlan, drFavoriteTreatmentId)
+			_, err = tx.Exec(`insert into treatment_dr_template_selection (treatment_id, dr_treatment_template_id) values (?,?)`, treatmentIdInPatientTreatmentPlan, drFavoriteTreatmentId)
 			if err != nil {
 				tx.Rollback()
 				return err
@@ -618,14 +618,14 @@ func (d *DataService) DeleteTreatmentTemplates(doctorTreatmentTemplates []*commo
 		return err
 	}
 	for _, doctorTreatmentTemplate := range doctorTreatmentTemplates {
-		_, err = tx.Exec(`update dr_favorite_treatment set status='DELETED' where id = ? and doctor_id = ?`, doctorTreatmentTemplate.Id, doctorId)
+		_, err = tx.Exec(`update dr_treatment_template set status='DELETED' where id = ? and doctor_id = ?`, doctorTreatmentTemplate.Id, doctorId)
 		if err != nil {
 			tx.Rollback()
 			return err
 		}
 
 		// delete all previous selections for this favorited treatment
-		_, err = tx.Exec(`delete from treatment_dr_favorite_selection where dr_favorite_treatment_id = ?`, doctorTreatmentTemplate.Id)
+		_, err = tx.Exec(`delete from treatment_dr_template_selection where dr_treatment_template_id = ?`, doctorTreatmentTemplate.Id)
 		if err != nil {
 			tx.Rollback()
 			return err
@@ -636,7 +636,7 @@ func (d *DataService) DeleteTreatmentTemplates(doctorTreatmentTemplates []*commo
 }
 
 func (d *DataService) GetTreatmentTemplates(doctorId int64) ([]*common.DoctorTreatmentTemplate, error) {
-	rows, err := d.DB.Query(`select id, name, treatment_id from dr_favorite_treatment where status='ACTIVE' and doctor_id = ?`, doctorId)
+	rows, err := d.DB.Query(`select id, name, treatment_id from dr_treatment_template where status='ACTIVE' and doctor_id = ?`, doctorId)
 	if err != nil {
 		return nil, err
 	}

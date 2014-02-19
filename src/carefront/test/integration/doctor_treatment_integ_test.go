@@ -65,17 +65,12 @@ func TestNewTreatmentSelection(t *testing.T) {
 		t.Fatal("Unable to make a successful query to the medication strength api: " + err.Error())
 	}
 
-	body, err := ioutil.ReadAll(resp.Body)
-	if err != nil {
-		t.Fatal("Unable to parse the body of the response: " + err.Error())
-	}
-
-	CheckSuccessfulStatusCode(resp, "Unable to make a successful query to the medication strength api for the doctor: "+string(body), t)
 	newTreatmentResponse := &apiservice.NewTreatmentResponse{}
-	err = json.Unmarshal(body, newTreatmentResponse)
+	err = json.NewDecoder(resp.Body).Decode(newTreatmentResponse)
 	if err != nil {
 		t.Fatal("Unable to unmarshal the response from the medication strength search api into a json object as expected: " + err.Error())
 	}
+	CheckSuccessfulStatusCode(resp, "Unable to make a successful query to the medication strength api for the docto", t)
 
 	if newTreatmentResponse.Treatment == nil {
 		t.Fatal("Expected medication object to be populated but its not")
@@ -95,22 +90,30 @@ func TestNewTreatmentSelection(t *testing.T) {
 		t.Fatal("Unable to make a successful query to the medication strength api: " + err.Error())
 	}
 
-	body, err = ioutil.ReadAll(resp.Body)
-	if err != nil {
-		t.Fatal("Unable to parse the body of the response: " + err.Error())
-	}
-
-	CheckSuccessfulStatusCode(resp, "Unable to make a successful query to the medication strength api for the doctor for an OTC product: "+string(body), t)
 	newTreatmentResponse = &apiservice.NewTreatmentResponse{}
-	err = json.Unmarshal(body, newTreatmentResponse)
+	err = json.NewDecoder(resp.Body).Decode(newTreatmentResponse)
 	if err != nil {
 		t.Fatal("Unable to unmarshal the response from the medication strength search api into a json object as expected: " + err.Error())
 	}
+
+	CheckSuccessfulStatusCode(resp, "Unable to make a successful query to the medication strength api for the doctor for an OTC product: ", t)
 
 	if newTreatmentResponse.Treatment == nil || newTreatmentResponse.Treatment.OTC == false {
 		t.Fatal("Expected the medication object to be returned and for the medication returned to be an OTC product")
 	}
 
+	// Let's ensure that we are returning a bad request to the doctor if they select a controlled substance
+	urlValues := url.Values{}
+	urlValues.Set("drug_internal_name", "Testosterone (buccal - film, extended release)")
+	urlValues.Set("medication_strength", "30 mg/12 hr")
+	resp, err = authGet(ts.URL+"?"+urlValues.Encode(), 0)
+	if err != nil {
+		t.Fatal("Unable to make successful call to selected a controlled substance as a medication: " + err.Error())
+	}
+
+	if resp.StatusCode != apiservice.HTTP_UNPROCESSABLE_ENTITY {
+		t.Fatal("Expected a bad request when attempting to select a controlled substance given that we don't allow routing of controlled substances using our platform")
+	}
 }
 
 func TestDispenseUnitIds(t *testing.T) {

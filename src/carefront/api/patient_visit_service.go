@@ -621,7 +621,7 @@ func (d *DataService) AddTreatmentsForPatientVisit(treatments []*common.Treatmen
 		}
 
 		if treatment.DoctorTreatmentTemplateId.Int64() != 0 {
-			_, err = tx.Exec(`insert into treatment_dr_favorite_selection (treatment_id, dr_favorite_treatment_id) values (?,?)`, treatment.Id, treatment.DoctorTreatmentTemplateId)
+			_, err = tx.Exec(`insert into treatment_dr_template_selection (treatment_id, dr_treatment_template_id) values (?,?)`, treatment.Id, treatment.DoctorTreatmentTemplateId)
 			if err != nil {
 				tx.Rollback()
 				return err
@@ -767,9 +767,9 @@ func (d *DataService) GetTreatmentsBasedOnTreatmentPlanId(patientVisitId, treatm
 		return treatments, nil
 	}
 
-	favoriteRows, err := d.DB.Query(fmt.Sprintf(`select dr_favorite_treatment_id , treatment_dr_favorite_selection.treatment_id from treatment_dr_favorite_selection 
-													inner join dr_favorite_treatment on dr_favorite_treatment.id = dr_favorite_treatment_id
-														where treatment_dr_favorite_selection.treatment_id in (%s) and dr_favorite_treatment.status = ?`, enumerateItemsIntoString(treatmentIds)), status_active)
+	favoriteRows, err := d.DB.Query(fmt.Sprintf(`select dr_treatment_template_id , treatment_dr_template_selection.treatment_id from treatment_dr_template_selection 
+													inner join dr_treatment_template on dr_treatment_template.id = dr_treatment_template_id
+														where treatment_dr_template_selection.treatment_id in (%s) and dr_treatment_template.status = ?`, enumerateItemsIntoString(treatmentIds)), status_active)
 	treatmentIdToFavoriteIdMapping := make(map[int64]int64)
 	if err != nil {
 		return nil, err

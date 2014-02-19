@@ -50,6 +50,7 @@ type Medication struct {
 	PharmacyNotes           string
 	NoSubstitutions         bool
 	RxReferenceNumber       string
+	IsControlledSubstance   bool
 }
 
 type PrescriptionLog struct {

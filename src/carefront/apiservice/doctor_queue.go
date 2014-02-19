@@ -120,30 +120,30 @@ func (d *DoctorQueueHandler) convertDoctorQueueIntoDisplayQueue(pendingItems, co
 		pendingOrOngoingDisplayFeed.Sections = []*DisplayFeedSection{upcomingVisitSection, nextVisitsSection}
 	}
 
-	if len(completedItems) > 0 {
-		// cluster feed items based on day
-		displaySections := make([]*DisplayFeedSection, 0)
-		currentDisplaySection := &DisplayFeedSection{}
-		lastSeenDay := ""
-		for i, completedItem := range completedItems {
-			completedItem.PositionInQueue = i
-			day := fmt.Sprintf("%s %d %d", completedItem.EnqueueDate.Month().String(), completedItem.EnqueueDate.Day(), completedItem.EnqueueDate.Year())
-			if lastSeenDay != day {
-				currentDisplaySection = &DisplayFeedSection{
-					Title: day,
-					Items: make([]*DisplayFeedItem, 0),
-				}
-				displaySections = append(displaySections, currentDisplaySection)
-				lastSeenDay = day
-			}
-			displayItem, err := converQueueItemToDisplayFeedItem(d.DataApi, completedItem)
-			if err != nil {
-				return nil, err
-			}
-			currentDisplaySection.Items = append(currentDisplaySection.Items, displayItem)
-		}
-		completedDisplayFeed.Sections = displaySections
-	}
+	// if len(completedItems) > 0 {
+	// 	// cluster feed items based on day
+	// 	displaySections := make([]*DisplayFeedSection, 0)
+	// 	currentDisplaySection := &DisplayFeedSection{}
+	// 	lastSeenDay := ""
+	// 	for i, completedItem := range completedItems {
+	// 		completedItem.PositionInQueue = i
+	// 		day := fmt.Sprintf("%s %d %d", completedItem.EnqueueDate.Month().String(), completedItem.EnqueueDate.Day(), completedItem.EnqueueDate.Year())
+	// 		if lastSeenDay != day {
+	// 			currentDisplaySection = &DisplayFeedSection{
+	// 				Title: day,
+	// 				Items: make([]*DisplayFeedItem, 0),
+	// 			}
+	// 			displaySections = append(displaySections, currentDisplaySection)
+	// 			lastSeenDay = day
+	// 		}
+	// 		displayItem, err := converQueueItemToDisplayFeedItem(d.DataApi, completedItem)
+	// 		if err != nil {
+	// 			return nil, err
+	// 		}
+	// 		currentDisplaySection.Items = append(currentDisplaySection.Items, displayItem)
+	// 	}
+	// 	completedDisplayFeed.Sections = displaySections
+	// }
 
 	return &doctorDisplayFeedTabs, nil
 }
