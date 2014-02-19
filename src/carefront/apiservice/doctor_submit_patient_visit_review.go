@@ -28,6 +28,7 @@ type SubmitPatientVisitReviewRequest struct {
 	PatientVisitId int64  `schema:"patient_visit_id"`
 	Status         string `schema:"status"`
 	Message        string `schema:"message"`
+	FailErxRouting bool   `schema:"fail_erx"`
 }
 
 type SubmitPatientVisitReviewResponse struct {
@@ -40,7 +41,9 @@ type PrescriptionStatusCheckMessage struct {
 }
 
 const (
-	patientVisitUpdateNotification = "There is an update to your case. Tap %s://visit to view."
+	patientVisitUpdateNotification     = "There is an update to your case. Tap %s://visit to view."
+	successful_erx_routing_pharmacy_id = "47731"
+	failed_erx_routing_pharmacy_id     = "39203"
 )
 
 func (d *DoctorSubmitPatientVisitReviewHandler) ServeHTTP(w http.ResponseWriter, r *http.Request) {
@@ -112,8 +115,12 @@ func (d *DoctorSubmitPatientVisitReviewHandler) submitPatientVisitReview(w http.
 		// patient.pharmacy = pharmacySelection
 
 		// FIX: add fake pharmacy for now
+		pharmacyId := successful_erx_routing_pharmacy_id
+		if requestData.FailErxRouting {
+			pharmacyId = failed_erx_routing_pharmacy_id
+		}
 		patient.Pharmacy = &pharmacy.PharmacyData{
-			Id:      "39203",
+			Id:      pharmacyId,
 			Source:  pharmacy.PHARMACY_SOURCE_SURESCRIPTS,
 			Address: "123 TEST TEST",
 			City:    "San Francisco",
