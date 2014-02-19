@@ -25,7 +25,8 @@ type DoctorPatientVisitReviewRequestBody struct {
 }
 
 type DoctorPatientVisitReviewResponse struct {
-	DoctorLayout *info_intake.PatientVisitOverview `json:"patient_visit_overview,omitempty"`
+	DoctorLayout    *info_intake.PatientVisitOverview `json:"patient_visit_overview,omitempty"`
+	TreatmentPlanId int64                             `json:"treatment_plan_id"`
 }
 
 func NewDoctorPatientVisitReviewHandler(dataApi api.DataAPI, layoutStorageService api.CloudStorageAPI, patientPhotoStorageService api.CloudStorageAPI) *DoctorPatientVisitReviewHandler {
@@ -146,7 +147,9 @@ func (p *DoctorPatientVisitReviewHandler) ServeHTTP(w http.ResponseWriter, r *ht
 	}
 	p.populatePatientVisitOverviewWithPatientAnswers(patientAnswersForQuestions, patientVisitOverview, patient)
 	p.removeQuestionsWithNoAnswersBasedOnFlag(patientVisitOverview, patient)
-	WriteJSONToHTTPResponseWriter(w, http.StatusOK, DoctorPatientVisitReviewResponse{patientVisitOverview})
+	WriteJSONToHTTPResponseWriter(w, http.StatusOK, DoctorPatientVisitReviewResponse{
+		DoctorLayout:    patientVisitOverview,
+		TreatmentPlanId: treatmentPlanId})
 }
 
 func (p *DoctorPatientVisitReviewHandler) populatePatientVisitOverviewWithPatientAnswers(patientAnswers map[int64][]*common.AnswerIntake,
