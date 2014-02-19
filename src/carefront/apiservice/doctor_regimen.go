@@ -30,15 +30,21 @@ func NewDoctorRegimenHandler(dataApi api.DataAPI) *DoctorRegimenHandler {
 
 func (d *DoctorRegimenHandler) ServeHTTP(w http.ResponseWriter, r *http.Request) {
 	switch r.Method {
-	case "GET":
+	case HTTP_GET:
 		d.getRegimenSteps(w, r)
-	case "POST":
+	case HTTP_POST:
 		d.updateRegimenSteps(w, r)
+	default:
+		w.WriteHeader(http.StatusNotFound)
 	}
 }
 
 func (d *DoctorRegimenHandler) getRegimenSteps(w http.ResponseWriter, r *http.Request) {
-	r.ParseForm()
+	if err := r.ParseForm(); err != nil {
+		WriteDeveloperError(w, http.StatusBadRequest, "Unable to parse request data: "+err.Error())
+		return
+	}
+
 	requestData := new(GetDoctorRegimenRequestData)
 
 	if err := schema.NewDecoder().Decode(requestData, r.Form); err != nil {

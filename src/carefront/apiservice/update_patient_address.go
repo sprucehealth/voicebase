@@ -26,15 +26,18 @@ type UpdatePatientAddressRequestData struct {
 
 func (u *UpdatePatientAddressHandler) ServeHTTP(w http.ResponseWriter, r *http.Request) {
 	switch r.Method {
-	case "POST":
+	case HTTP_POST:
 		u.updatePatientAddress(w, r)
 	default:
-		WriteJSONToHTTPResponseWriter(w, http.StatusNotFound, nil)
+		w.WriteHeader(http.StatusNotFound)
 	}
 }
 
 func (u *UpdatePatientAddressHandler) updatePatientAddress(w http.ResponseWriter, r *http.Request) {
-	r.ParseForm()
+	if err := r.ParseForm(); err != nil {
+		WriteDeveloperError(w, http.StatusBadRequest, "Unable to parse request data: "+err.Error())
+		return
+	}
 
 	var requestData UpdatePatientAddressRequestData
 	if err := schema.NewDecoder().Decode(&requestData, r.Form); err != nil {

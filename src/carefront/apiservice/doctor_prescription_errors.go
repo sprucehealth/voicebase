@@ -25,6 +25,11 @@ type transmissionErrorItem struct {
 }
 
 func (d *DoctorPrescriptionsErrorsHandler) ServeHTTP(w http.ResponseWriter, r *http.Request) {
+	if r.Method != HTTP_GET {
+		w.WriteHeader(http.StatusNotFound)
+		return
+	}
+
 	medicationsWithErrors, err := d.ErxApi.GetTransmissionErrorDetails()
 	if err != nil {
 		WriteDeveloperError(w, http.StatusInternalServerError, "Unable to get prescription related errors: "+err.Error())

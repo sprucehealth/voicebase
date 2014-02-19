@@ -36,6 +36,11 @@ func parseLayoutFileIntoGivenStruct(data []byte, layoutStruct interface{}) error
 }
 
 func (d *GenerateDoctorLayoutHandler) ServeHTTP(w http.ResponseWriter, r *http.Request) {
+	if r.Method != HTTP_POST {
+		w.WriteHeader(http.StatusNotFound)
+		return
+	}
+
 	r.ParseMultipartForm(d.MaxInMemoryForPhoto)
 	file, handler, err := r.FormFile("layout")
 	if err != nil {

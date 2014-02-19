@@ -20,6 +20,10 @@ const (
 type PingHandler int
 
 func (h PingHandler) ServeHTTP(w http.ResponseWriter, r *http.Request) {
+	if r.Method != HTTP_GET {
+		w.WriteHeader(http.StatusNotFound)
+		return
+	}
 	if _, err := w.Write([]byte(Pong)); err != nil {
 		w.WriteHeader(http.StatusInternalServerError)
 	}

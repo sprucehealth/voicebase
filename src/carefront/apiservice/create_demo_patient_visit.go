@@ -460,6 +460,10 @@ func (c *CreateDemoPatientVisitHandler) startPhotoSubmissionForPatient(questionI
 }
 
 func (c *CreateDemoPatientVisitHandler) ServeHTTP(w http.ResponseWriter, r *http.Request) {
+	if r.Method != HTTP_POST {
+		w.WriteHeader(http.StatusNotFound)
+		return
+	}
 
 	doctorId, err := c.DataApi.GetDoctorIdFromAccountId(GetContext(r).AccountId)
 	if err != nil {

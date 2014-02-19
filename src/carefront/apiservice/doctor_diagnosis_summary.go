@@ -19,17 +19,18 @@ type DiagnosisSummaryRequestData struct {
 
 func (d *DiagnosisSummaryHandler) ServeHTTP(w http.ResponseWriter, r *http.Request) {
 	switch r.Method {
-	case "GET":
+	case HTTP_GET:
 		d.getDiagnosisSummaryForPatientVisit(w, r)
-	case "POST":
-		WriteJSONToHTTPResponseWriter(w, http.StatusNotFound, nil)
 	default:
-		w.WriteHeader(http.StatusMethodNotAllowed)
+		w.WriteHeader(http.StatusNotFound)
 	}
 }
 
 func (d *DiagnosisSummaryHandler) getDiagnosisSummaryForPatientVisit(w http.ResponseWriter, r *http.Request) {
-	r.ParseForm()
+	if err := r.ParseForm(); err != nil {
+		WriteDeveloperError(w, http.StatusBadRequest, "Unable to parse request data: "+err.Error())
+		return
+	}
 
 	var requestData DiagnosisSummaryRequestData
 	if err := schema.NewDecoder().Decode(&requestData, r.Form); err != nil {

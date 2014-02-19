@@ -37,7 +37,14 @@ type PharmacyTextSearchResponse struct {
 }
 
 func (p *PharmacyTextSearchHandler) ServeHTTP(w http.ResponseWriter, r *http.Request) {
-	r.ParseForm()
+	if r.Method != HTTP_GET {
+		w.WriteHeader(http.StatusNotFound)
+		return
+	}
+	if err := r.ParseForm(); err != nil {
+		WriteDeveloperError(w, http.StatusBadRequest, "Unable to parse form data: "+err.Error())
+		return
+	}
 
 	var requestData PharmacyTextSearchRequestData
 	if err := schema.NewDecoder().Decode(&requestData, r.Form); err != nil {

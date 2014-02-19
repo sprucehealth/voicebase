@@ -31,7 +31,8 @@ If you have questions or concerns, feel free to call me at (415) 202-6700.
 
 Dr. %s`
 
-	diagnosedSummaryTemplateNonProd = `Hi %s,
+	diagnosedSummaryTemplateNonProd = `--- For Demo Purposes Only ---
+Hi %s,
 
 Based on the photographs you have provided, it looks like you have %s.
 
@@ -64,17 +65,21 @@ func NewDiagnosePatientHandler(dataApi api.DataAPI, authApi thriftapi.Auth, clou
 
 func (d *DiagnosePatientHandler) ServeHTTP(w http.ResponseWriter, r *http.Request) {
 	switch r.Method {
-	case "GET":
+	case HTTP_GET:
 		d.getDiagnosis(w, r)
-	case "POST":
+	case HTTP_POST:
 		d.diagnosePatient(w, r)
 	default:
-		w.WriteHeader(http.StatusMethodNotAllowed)
+		w.WriteHeader(http.StatusNotFound)
 	}
 }
 
 func (d *DiagnosePatientHandler) getDiagnosis(w http.ResponseWriter, r *http.Request) {
-	r.ParseForm()
+	if err := r.ParseForm(); err != nil {
+		WriteDeveloperError(w, http.StatusBadRequest, "Unable to parse request data: "+err.Error())
+		return
+	}
+
 	requestData := new(DiagnosePatientRequestData)
 	if err := schema.NewDecoder().Decode(requestData, r.Form); err != nil {
 		WriteDeveloperError(w, http.StatusBadRequest, "Unable to parse input parameters: "+err.Error())
@@ -144,8 +149,7 @@ func (d *DiagnosePatientHandler) diagnosePatient(w http.ResponseWriter, r *http.
 		return
 	}
 
-	err = EnsurePatientVisitInExpectedStatus(d.DataApi, answerIntakeRequestBody.PatientVisitId, api.CASE_STATUS_REVIEWING)
-	if err != nil {
+	if err := EnsurePatientVisitInExpectedStatus(d.DataApi, answerIntakeRequestBody.PatientVisitId, api.CASE_STATUS_REVIEWING); err != nil {
 		WriteDeveloperError(w, http.StatusBadRequest, err.Error())
 		return
 	}
@@ -168,24 +172,22 @@ func (d *DiagnosePatientHandler) diagnosePatient(w http.ResponseWriter, r *http.
 		answersToStorePerQuestion[questionItem.QuestionId] = populateAnswersToStoreForQuestion(api.DOCTOR_ROLE, questionItem, treatmentPlanId, patientVisitReviewData.DoctorId, layoutVersionId)
 	}
 
-	err = d.DataApi.DeactivatePreviousDiagnosisForPatientVisit(treatmentPlanId, patientVisitReviewData.DoctorId)
-	if err != nil {
+	if err := d.DataApi.DeactivatePreviousDiagnosisForPatientVisit(treatmentPlanId, patientVisitReviewData.DoctorId); err != nil {
 		WriteDeveloperError(w, http.StatusInternalServerError, "Unable to deactivate responses from previous diagnosis of this patient visit: "+err.Error())
 		return
 	}
 
-	err = d.DataApi.StoreAnswersForQuestion(api.DOCTOR_ROLE, patientVisitReviewData.DoctorId, treatmentPlanId, layoutVersionId, answersToStorePerQuestion)
-	if err != nil {
+	if err := d.DataApi.StoreAnswersForQuestion(api.DOCTOR_ROLE, patientVisitReviewData.DoctorId, treatmentPlanId, layoutVersionId, answersToStorePerQuestion); err != nil {
 		WriteDeveloperError(w, http.StatusInternalServerError, "Unable to store the multiple choice answer to the question for the patient based on the parameters provided and the internal state of the system: "+err.Error())
 		return
 	}
+
 	if err = d.addDiagnosisSummaryForPatientVisit(patientVisitReviewData.DoctorId, treatmentPlanId); err != nil {
 		WriteDeveloperError(w, http.StatusInternalServerError, "Something went wrong when trying to add and store the summary to the diagnosis of the patient visit: "+err.Error())
 		return
 	}
 
 	WriteJSONToHTTPResponseWriter(w, http.StatusOK, AnswerIntakeResponse{Result: "success"})
-
 }
 
 func (d *DiagnosePatientHandler) addDiagnosisSummaryForPatientVisit(doctorId, treatmentPlanId int64) error {

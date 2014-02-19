@@ -25,8 +25,12 @@ const (
 )
 
 func (a *AnswerIntakeHandler) ServeHTTP(w http.ResponseWriter, r *http.Request) {
-	var answerIntakeRequestBody AnswerIntakeRequestBody
+	if r.Method != HTTP_POST {
+		w.WriteHeader(http.StatusNotFound)
+		return
+	}
 
+	var answerIntakeRequestBody AnswerIntakeRequestBody
 	if err := json.NewDecoder(r.Body).Decode(&answerIntakeRequestBody); err != nil {
 		WriteDeveloperError(w, http.StatusBadRequest, err.Error())
 		return

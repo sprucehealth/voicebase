@@ -24,17 +24,20 @@ func NewDoctorAdviceHandler(dataApi api.DataAPI) *DoctorAdviceHandler {
 
 func (d *DoctorAdviceHandler) ServeHTTP(w http.ResponseWriter, r *http.Request) {
 	switch r.Method {
-	case "GET":
+	case HTTP_GET:
 		d.getAdvicePoints(w, r)
-	case "POST":
+	case HTTP_POST:
 		d.updateAdvicePoints(w, r)
 	default:
-		w.WriteHeader(http.StatusMethodNotAllowed)
+		w.WriteHeader(http.StatusNotFound)
 	}
 }
 
 func (d *DoctorAdviceHandler) getAdvicePoints(w http.ResponseWriter, r *http.Request) {
-	r.ParseForm()
+	if err := r.ParseForm(); err != nil {
+		WriteDeveloperError(w, http.StatusBadRequest, "Unable to parse request data: "+err.Error())
+		return
+	}
 
 	var requestData GetDoctorAdviceRequestData
 	if err := schema.NewDecoder().Decode(&requestData, r.Form); err != nil {

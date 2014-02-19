@@ -41,6 +41,11 @@ func NewPhotoAnswerIntakeHandler(dataApi api.DataAPI, cloudStorageApi api.CloudS
 }
 
 func (p *PhotoAnswerIntakeHandler) ServeHTTP(w http.ResponseWriter, r *http.Request) {
+	if r.Method != HTTP_POST {
+		w.WriteHeader(http.StatusNotFound)
+		return
+	}
+
 	err := r.ParseMultipartForm(p.MaxInMemoryForPhoto)
 	if err != nil {
 		WriteDeveloperError(w, http.StatusBadRequest, "Unable to parse out the form values for the request: "+err.Error())

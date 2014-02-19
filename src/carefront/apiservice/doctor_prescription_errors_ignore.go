@@ -18,14 +18,15 @@ type DoctorPrescriptionErrorIgnoreRequestData struct {
 }
 
 func (d *DoctorPrescriptionErrorIgnoreHandler) ServeHTTP(w http.ResponseWriter, r *http.Request) {
-	switch r.Method {
-	case "POST":
-	default:
-		WriteDeveloperError(w, http.StatusNotFound, "")
+	if r.Method != HTTP_POST {
+		w.WriteHeader(http.StatusNotFound)
 		return
 	}
 
-	r.ParseForm()
+	if err := r.ParseForm(); err != nil {
+		WriteDeveloperError(w, http.StatusBadRequest, "Unable to parse request data: "+err.Error())
+		return
+	}
 
 	var requestData DoctorPrescriptionErrorIgnoreRequestData
 	if err := schema.NewDecoder().Decode(&requestData, r.Form); err != nil {

@@ -53,21 +53,25 @@ func NewPatientVisitHandler(dataApi api.DataAPI, authApi thriftapi.Auth, layoutS
 
 func (s *PatientVisitHandler) ServeHTTP(w http.ResponseWriter, r *http.Request) {
 	switch r.Method {
-	case "GET":
+	case HTTP_GET:
 		s.returnLastCreatedPatientVisit(w, r)
-	case "POST":
+	case HTTP_POST:
 		s.createNewPatientVisitHandler(w, r)
-	case "PUT":
+	case HTTP_PUT:
 		s.submitPatientVisit(w, r)
+	default:
+		w.WriteHeader(http.StatusNotFound)
 	}
 }
 
 func (s *PatientVisitHandler) submitPatientVisit(w http.ResponseWriter, r *http.Request) {
-	r.ParseForm()
+	if err := r.ParseForm(); err != nil {
+		WriteDeveloperError(w, http.StatusBadRequest, "Unable to parse request data: "+err.Error())
+		return
+	}
+
 	requestData := new(PatientVisitRequestData)
-	decoder := schema.NewDecoder()
-	err := decoder.Decode(requestData, r.Form)
-	if err != nil {
+	if err := schema.NewDecoder().Decode(requestData, r.Form); err != nil {
 		WriteDeveloperError(w, http.StatusBadRequest, "Unable to parse input parameters: "+err.Error())
 		return
 	}

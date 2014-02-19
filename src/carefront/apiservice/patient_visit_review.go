@@ -39,7 +39,15 @@ type PatientVisitReviewResponse struct {
 }
 
 func (p *PatientVisitReviewHandler) ServeHTTP(w http.ResponseWriter, r *http.Request) {
-	r.ParseForm()
+	if r.Method != HTTP_GET {
+		w.WriteHeader(http.StatusNotFound)
+		return
+	}
+
+	if err := r.ParseForm(); err != nil {
+		WriteDeveloperError(w, http.StatusBadRequest, "Unable to parse request data: "+err.Error())
+		return
+	}
 
 	var requestData PatientVisitReviewRequest
 	if err := schema.NewDecoder().Decode(&requestData, r.Form); err != nil {

@@ -35,12 +35,12 @@ func NewDoctorDrugInstructionsHandler(dataApi api.DataAPI) *DoctorDrugInstructio
 
 func (d *DoctorDrugInstructionsHandler) ServeHTTP(w http.ResponseWriter, r *http.Request) {
 	switch r.Method {
-	case "GET":
+	case HTTP_GET:
 		d.getDrugInstructions(w, r)
-	case "POST":
+	case HTTP_POST:
 		d.addDrugInstructions(w, r)
 	default:
-		w.WriteHeader(http.StatusMethodNotAllowed)
+		w.WriteHeader(http.StatusNotFound)
 	}
 }
 
@@ -106,7 +106,10 @@ func (d *DoctorDrugInstructionsHandler) addDrugInstructions(w http.ResponseWrite
 }
 
 func (d *DoctorDrugInstructionsHandler) getDrugInstructions(w http.ResponseWriter, r *http.Request) {
-	r.ParseForm()
+	if err := r.ParseForm(); err != nil {
+		WriteDeveloperError(w, http.StatusBadRequest, "Unable to parse form data: "+err.Error())
+		return
+	}
 
 	var requestData GetDoctorDrugInstructionsRequestData
 	if err := schema.NewDecoder().Decode(&requestData, r.Form); err != nil {

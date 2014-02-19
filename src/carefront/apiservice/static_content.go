@@ -24,15 +24,19 @@ func (s *StaticContentHandler) NonAuthenticated() bool {
 
 func (s *StaticContentHandler) ServeHTTP(w http.ResponseWriter, r *http.Request) {
 	switch r.Method {
-	case "GET":
+	case HTTP_GET:
 		s.getContent(w, r)
 	default:
-		WriteJSONToHTTPResponseWriter(w, http.StatusNotFound, nil)
+		w.WriteHeader(http.StatusNotFound)
 	}
 }
 
 func (s *StaticContentHandler) getContent(w http.ResponseWriter, r *http.Request) {
-	r.ParseForm()
+	if err := r.ParseForm(); err != nil {
+		WriteDeveloperError(w, http.StatusBadRequest, "Unable to parse request data: "+err.Error())
+		return
+	}
+
 	requestData := new(StaticContentRequestData)
 	decoder := schema.NewDecoder()
 	err := decoder.Decode(requestData, r.Form)

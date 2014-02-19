@@ -38,15 +38,20 @@ func NewTreatmentsHandler(dataApi api.DataAPI) *TreatmentsHandler {
 
 func (t *TreatmentsHandler) ServeHTTP(w http.ResponseWriter, r *http.Request) {
 	switch r.Method {
-	case "GET":
+	case HTTP_GET:
 		t.getTreatments(w, r)
-	case "POST":
+	case HTTP_POST:
 		t.addTreatment(w, r)
+	default:
+		w.WriteHeader(http.StatusNotFound)
 	}
 }
 
 func (t *TreatmentsHandler) getTreatments(w http.ResponseWriter, r *http.Request) {
-	r.ParseForm()
+	if err := r.ParseForm(); err != nil {
+		WriteDeveloperError(w, http.StatusBadRequest, "Unable to parse request data: "+err.Error())
+		return
+	}
 
 	var requestData GetTreatmentsRequestBody
 	if err := schema.NewDecoder().Decode(&requestData, r.Form); err != nil {

@@ -33,7 +33,16 @@ func (l *GenerateClientIntakeModelHandler) NonAuthenticated() bool {
 }
 
 func (l *GenerateClientIntakeModelHandler) ServeHTTP(w http.ResponseWriter, r *http.Request) {
-	r.ParseForm()
+	if r.Method != HTTP_POST {
+		w.WriteHeader(http.StatusNotFound)
+		return
+	}
+
+	if err := r.ParseForm(); err != nil {
+		WriteDeveloperError(w, http.StatusBadRequest, "Unable to parse request data: "+err.Error())
+		return
+	}
+
 	file, handler, err := r.FormFile("layout")
 	if err != nil {
 		log.Println(err)

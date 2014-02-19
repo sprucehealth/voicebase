@@ -15,10 +15,10 @@ type UpdatePatientPharmacyHandler struct {
 
 func (u *UpdatePatientPharmacyHandler) ServeHTTP(w http.ResponseWriter, r *http.Request) {
 	switch r.Method {
-	case "POST":
+	case HTTP_POST:
 		u.updatePatientPharmacy(w, r)
 	default:
-		WriteJSONToHTTPResponseWriter(w, http.StatusNotFound, nil)
+		w.WriteHeader(http.StatusNotFound)
 	}
 }
 
@@ -41,8 +41,7 @@ func (u *UpdatePatientPharmacyHandler) updatePatientPharmacy(w http.ResponseWrit
 		golog.Warningf("Unable to get the pharmacy details when it would've been nice to be able to do so: " + err.Error())
 	}
 
-	err = u.DataApi.UpdatePatientPharmacy(patient.PatientId.Int64(), pharmacyDetails)
-	if err != nil {
+	if err := u.DataApi.UpdatePatientPharmacy(patient.PatientId.Int64(), pharmacyDetails); err != nil {
 		WriteJSONToHTTPResponseWriter(w, http.StatusInternalServerError, "Unable to set the patient pharmacy: "+err.Error())
 		return
 	}

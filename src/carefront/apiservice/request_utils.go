@@ -24,6 +24,10 @@ const (
 	authTokenExpiredMessage         = "Authentication expired. Log in to continue."
 	DEVELOPER_ERROR_NO_VISIT_EXISTS = 10001
 	DEVELOPER_AUTH_TOKEN_EXPIRED    = 10002
+	HTTP_GET                        = "GET"
+	HTTP_POST                       = "POST"
+	HTTP_PUT                        = "PUT"
+	HTTP_DELETE                     = "DELETE"
 )
 
 type GenericJsonResponse struct {

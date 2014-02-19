@@ -103,7 +103,10 @@ type AuthLog struct {
 }
 
 func (h *AuthenticationHandler) ServeHTTP(w http.ResponseWriter, r *http.Request) {
-	r.ParseForm()
+	if err := r.ParseForm(); err != nil {
+		WriteDeveloperError(w, http.StatusBadRequest, "Unable to parse request data: "+err.Error())
+		return
+	}
 	action := strings.Split(r.URL.Path, "/")[2]
 	// depending on whether we are signing up or logging in, make appropriate
 	// call to service

@@ -20,7 +20,16 @@ type MedicationStrengthSearchResponse struct {
 }
 
 func (m *MedicationStrengthSearchHandler) ServeHTTP(w http.ResponseWriter, r *http.Request) {
-	r.ParseForm()
+	if r.Method != HTTP_GET {
+		w.WriteHeader(http.StatusNotFound)
+		return
+	}
+
+	if err := r.ParseForm(); err != nil {
+		WriteDeveloperError(w, http.StatusBadRequest, "Unable to parse request data: "+err.Error())
+		return
+	}
+
 	requestData := new(MedicationStrengthRequestData)
 	decoder := schema.NewDecoder()
 	err := decoder.Decode(requestData, r.Form)

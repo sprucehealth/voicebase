@@ -28,16 +28,18 @@ type DisplayFeedTabs struct {
 }
 
 func converQueueItemToDisplayFeedItem(DataApi api.DataAPI, itemToDisplay api.FeedDisplayInterface) (item *DisplayFeedItem, err error) {
-	item = &DisplayFeedItem{}
-	item.Button = itemToDisplay.GetButton()
 	title, subtitle, err := itemToDisplay.GetTitleAndSubtitle(DataApi)
 	if err != nil {
 		return
 	}
-	item.Title = title
-	item.Subtitle = subtitle
-	item.ImageUrl = itemToDisplay.GetImageUrl()
-	item.DisplayTypes = itemToDisplay.GetDisplayTypes()
-	item.ItemUrl = itemToDisplay.GetActionUrl()
+
+	item = &DisplayFeedItem{
+		Button:       itemToDisplay.GetButton(),
+		Title:        title,
+		Subtitle:     subtitle,
+		ImageUrl:     itemToDisplay.GetImageUrl(),
+		DisplayTypes: itemToDisplay.GetDisplayTypes(),
+		ItemUrl:      itemToDisplay.GetActionUrl(),
+	}
 	return
 }

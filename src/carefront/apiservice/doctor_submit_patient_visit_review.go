@@ -45,15 +45,19 @@ const (
 
 func (d *DoctorSubmitPatientVisitReviewHandler) ServeHTTP(w http.ResponseWriter, r *http.Request) {
 	switch r.Method {
-	case "POST":
+	case HTTP_POST:
 		d.submitPatientVisitReview(w, r)
 	default:
-		WriteJSONToHTTPResponseWriter(w, http.StatusNotFound, nil)
+		w.WriteHeader(http.StatusNotFound)
 	}
 }
 
 func (d *DoctorSubmitPatientVisitReviewHandler) submitPatientVisitReview(w http.ResponseWriter, r *http.Request) {
-	r.ParseForm()
+	if err := r.ParseForm(); err != nil {
+		WriteDeveloperError(w, http.StatusBadRequest, "Unable to parse request data: "+err.Error())
+		return
+	}
+
 	requestData := new(SubmitPatientVisitReviewRequest)
 	decoder := schema.NewDecoder()
 	err := decoder.Decode(requestData, r.Form)

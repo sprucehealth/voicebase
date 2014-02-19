@@ -31,17 +31,21 @@ func NewPatientVisitFollowUpHandler(dataApi api.DataAPI) *PatientVisitFollowUpHa
 
 func (p *PatientVisitFollowUpHandler) ServeHTTP(w http.ResponseWriter, r *http.Request) {
 	switch r.Method {
-	case "GET":
+	case HTTP_GET:
 		p.getFollowupForPatientVisit(w, r)
-	case "POST":
+	case HTTP_POST:
 		p.updatePatientVisitFollowup(w, r)
 	default:
-		w.WriteHeader(http.StatusNotImplemented)
+		w.WriteHeader(http.StatusNotFound)
 	}
 }
 
 func (p *PatientVisitFollowUpHandler) getFollowupForPatientVisit(w http.ResponseWriter, r *http.Request) {
-	r.ParseForm()
+	if err := r.ParseForm(); err != nil {
+		WriteDeveloperError(w, http.StatusBadRequest, "Unable to parse request data: "+err.Error())
+		return
+	}
+
 	requestData := new(PatientVisitFollowUpRequestResponse)
 	if err := schema.NewDecoder().Decode(requestData, r.Form); err != nil {
 		WriteDeveloperError(w, http.StatusBadRequest, "Unable to parse patient visit followup request data: "+err.Error())
@@ -84,7 +88,11 @@ func (p *PatientVisitFollowUpHandler) getFollowupForPatientVisit(w http.Response
 }
 
 func (p *PatientVisitFollowUpHandler) updatePatientVisitFollowup(w http.ResponseWriter, r *http.Request) {
-	r.ParseForm()
+	if err := r.ParseForm(); err != nil {
+		WriteDeveloperError(w, http.StatusBadRequest, "Unable to parse form data: "+err.Error())
+		return
+	}
+
 	requestData := new(PatientVisitFollowUpRequestResponse)
 	decoder := schema.NewDecoder()
 	err := decoder.Decode(requestData, r.Form)

@@ -24,14 +24,14 @@ type DoctorFavoriteTreatmentsResponse struct {
 
 func (t *DoctorFavoriteTreatmentsHandler) ServeHTTP(w http.ResponseWriter, r *http.Request) {
 	switch r.Method {
-	case "GET":
+	case HTTP_GET:
 		t.getFavoriteTreatments(w, r)
-	case "POST":
+	case HTTP_POST:
 		t.addFavoriteTreatments(w, r)
-	case "DELETE":
+	case HTTP_DELETE:
 		t.deleteFavoriteTreatments(w, r)
 	default:
-		w.WriteHeader(http.StatusMethodNotAllowed)
+		w.WriteHeader(http.StatusNotFound)
 	}
 }
 
@@ -52,7 +52,6 @@ func (t *DoctorFavoriteTreatmentsHandler) getFavoriteTreatments(w http.ResponseW
 }
 
 func (t *DoctorFavoriteTreatmentsHandler) deleteFavoriteTreatments(w http.ResponseWriter, r *http.Request) {
-	var favoriteTreatmentRequest DoctorFavoriteTreatmentsRequest
 
 	doctorId, err := t.DataApi.GetDoctorIdFromAccountId(GetContext(r).AccountId)
 	if err != nil {
@@ -60,6 +59,7 @@ func (t *DoctorFavoriteTreatmentsHandler) deleteFavoriteTreatments(w http.Respon
 		return
 	}
 
+	var favoriteTreatmentRequest DoctorFavoriteTreatmentsRequest
 	if err := json.NewDecoder(r.Body).Decode(&favoriteTreatmentRequest); err != nil {
 		WriteDeveloperError(w, http.StatusBadRequest, "Unable to parse treatment body: "+err.Error())
 		return

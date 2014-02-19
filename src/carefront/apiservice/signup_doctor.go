@@ -35,7 +35,15 @@ type SignupDoctorRequestData struct {
 }
 
 func (d *SignupDoctorHandler) ServeHTTP(w http.ResponseWriter, r *http.Request) {
-	r.ParseForm()
+	if r.Method != HTTP_POST {
+		w.WriteHeader(http.StatusNotFound)
+		return
+	}
+
+	if err := r.ParseForm(); err != nil {
+		WriteDeveloperError(w, http.StatusBadRequest, "Unable to parse request data: "+err.Error())
+		return
+	}
 
 	var requestData SignupDoctorRequestData
 	if err := schema.NewDecoder().Decode(&requestData, r.Form); err != nil {

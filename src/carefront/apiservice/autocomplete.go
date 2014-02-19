@@ -32,7 +32,15 @@ type Suggestion struct {
 }
 
 func (s *AutocompleteHandler) ServeHTTP(w http.ResponseWriter, r *http.Request) {
-	r.ParseForm()
+	if r.Method != HTTP_GET {
+		w.WriteHeader(http.StatusNotFound)
+		return
+	}
+
+	if err := r.ParseForm(); err != nil {
+		WriteDeveloperError(w, http.StatusBadRequest, "Unable to parse request data: "+err.Error())
+		return
+	}
 
 	var requestData AutocompleteRequestData
 	if err := schema.NewDecoder().Decode(&requestData, r.Form); err != nil {
