@@ -8,6 +8,7 @@ import (
 
 const (
 	EVENT_TYPE_PATIENT_VISIT            = "PATIENT_VISIT"
+	EVENT_TYPE_TREATMENT_PLAN           = "TREATMENT_PLAN"
 	patientVisitImageTag                = "patient_visit_queue_icon"
 	beginPatientVisitReviewAction       = "begin_patient_visit"
 	viewTreatedPatientVisitReviewAction = "view_treated_patient_visit"
@@ -107,6 +108,11 @@ func (d *DoctorQueueItem) GetActionUrl() string {
 		switch d.Status {
 		case QUEUE_ITEM_STATUS_COMPLETED, QUEUE_ITEM_STATUS_TRIAGED:
 			return fmt.Sprintf("%s%s?patient_visit_id=%d", SpruceButtonBaseActionUrl, viewTreatedPatientVisitReviewAction, d.ItemId)
+		}
+	case EVENT_TYPE_TREATMENT_PLAN:
+		switch d.Status {
+		case QUEUE_ITEM_STATUS_COMPLETED, QUEUE_ITEM_STATUS_TRIAGED:
+			return fmt.Sprintf("%s%s?treatment_plan_id=%d", SpruceButtonBaseActionUrl, viewTreatedPatientVisitReviewAction, d.ItemId)
 		}
 	}
 	return ""

@@ -142,7 +142,7 @@ type Treatment struct {
 type DoctorFavoriteTreatment struct {
 	Id                 *ObjectId  `json:"id,omitempty"`
 	Name               string     `json:"name"`
-	FavoritedTreatment *Treatment `json:"treatment"`
+	FavoritedTreatment *Treatment `json:"treatment_template"`
 	Status             string     `json:"-"`
 }
 

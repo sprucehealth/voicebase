@@ -209,26 +209,26 @@ func (d *DataService) MarkAdvicePointsToBeDeleted(advicePoints []*common.DoctorI
 }
 
 func (d *DataService) AssignPatientVisitToDoctor(doctorId, patientVisitId int64) error {
-	_, err := d.DB.Exec("insert into doctor_queue (doctor_id, status, event_type, item_id) values (?, 'PENDING', 'PATIENT_VISIT', ?)", doctorId, patientVisitId)
+	_, err := d.DB.Exec("insert into doctor_queue (doctor_id, status, event_type, item_id) values (?, ?, ?, ?)", doctorId, status_pending, event_type_patient_visit, patientVisitId)
 	return err
 }
 
 func (d *DataService) MarkPatientVisitAsOngoingInDoctorQueue(doctorId, patientVisitId int64) error {
-	_, err := d.DB.Exec(`update doctor_queue set status='ONGOING' where event_type='PATIENT_VISIT' and item_id=? and doctor_id=?`, patientVisitId, doctorId)
+	_, err := d.DB.Exec(`update doctor_queue set status=? where event_type=? and item_id=? and doctor_id=?`, status_ongoing, event_type_patient_visit, patientVisitId, doctorId)
 	return err
 }
 
-func (d *DataService) UpdateStateForPatientVisitInDoctorQueue(doctorId, patientVisitId int64, currentState, updatedState string) error {
+func (d *DataService) MarkGenerationOfTreatmentPlanInVisitQueue(doctorId, patientVisitId, treatmentPlanId int64, currentState, updatedState string) error {
 	tx, err := d.DB.Begin()
 	if err != nil {
 		return err
 	}
-	_, err = tx.Exec(`delete from doctor_queue where status = ? and doctor_id = ? and event_type = 'PATIENT_VISIT' and item_id = ?`, currentState, doctorId, patientVisitId)
+	_, err = tx.Exec(`delete from doctor_queue where status = ? and doctor_id = ? and event_type = ? and item_id = ?`, currentState, doctorId, event_type_patient_visit, patientVisitId)
 	if err != nil {
 		tx.Rollback()
 		return err
 	}
-	_, err = tx.Exec(`insert into doctor_queue (doctor_id, status, event_type, item_id) values (?, ?, 'PATIENT_VISIT', ?)`, doctorId, updatedState, patientVisitId)
+	_, err = tx.Exec(`insert into doctor_queue (doctor_id, status, event_type, item_id) values (?, ?, ?, ?)`, doctorId, updatedState, event_type_treatment_plan, treatmentPlanId)
 	if err != nil {
 		tx.Rollback()
 		return err
@@ -237,7 +237,9 @@ func (d *DataService) UpdateStateForPatientVisitInDoctorQueue(doctorId, patientV
 }
 
 func (d *DataService) GetPendingItemsInDoctorQueue(doctorId int64) ([]*DoctorQueueItem, error) {
-	rows, err := d.DB.Query(`select id, event_type, item_id, enqueue_date, completed_date, status from doctor_queue where doctor_id = ? and status in ('PENDING', 'ONGOING') order by enqueue_date`, doctorId)
+	params := []interface{}{doctor.Interface()}
+	params = appendStringsToInterfaceSlice(params, []string{status_pending, status_ongoing})
+	rows, err := d.DB.Query(fmt.Sprintf(`select id, event_type, item_id, enqueue_date, completed_date, status from doctor_queue where doctor_id = ? and status in (%s) order by enqueue_date`, nReplacements(2)), params)
 	if err != nil {
 		return nil, err
 	}
@@ -246,7 +248,10 @@ func (d *DataService) GetPendingItemsInDoctorQueue(doctorId int64) ([]*DoctorQue
 }
 
 func (d *DataService) GetCompletedItemsInDoctorQueue(doctorId int64) ([]*DoctorQueueItem, error) {
-	rows, err := d.DB.Query(`select id, event_type, item_id, enqueue_date, completed_date, status from doctor_queue where doctor_id = ? and status not in ('PENDING', 'ONGOING') order by enqueue_date desc`, doctorId)
+
+	params := []interface{}{doctor.Interface()}
+	params = appendStringsToInterfaceSlice(params, []string{status_pending, status_ongoing})
+	rows, err := d.DB.Query(fmt.Sprintf(`select id, event_type, item_id, enqueue_date, completed_date, status from doctor_queue where doctor_id = ? and status not in (%s) order by enqueue_date desc`, nReplacements(2)), params)
 	if err != nil {
 		return nil, err
 	}
@@ -694,7 +699,6 @@ func (d *DataService) GetFavoriteTreatments(doctorId int64) ([]*common.DoctorFav
 		}
 
 		treatment := &common.Treatment{
-			Id:                      common.NewObjectId(treatmentId),
 			DrugInternalName:        drugInternalName,
 			DosageStrength:          dosageStrength,
 			DispenseValue:           dispenseValue,
@@ -726,12 +730,9 @@ func (d *DataService) GetFavoriteTreatments(doctorId int64) ([]*common.DoctorFav
 			return nil, err
 		}
 
-		favoriteTreatment := favoriteTreatmentMapping[treatment.Id.Int64()]
+		favoriteTreatment := favoriteTreatmentMapping[treatmentId]
 		favoriteTreatment.FavoritedTreatment = treatment
 
-		// also setting the doctorFavoriteTreatmentId at the treatment level because
-		// that helps the client deal with the treatment object appropriately
-		favoriteTreatment.FavoritedTreatment.DoctorFavoriteTreatmentId = favoriteTreatment.Id
 		favoritedTreatments = append(favoritedTreatments, favoriteTreatment)
 	}
 	return favoritedTreatments, nil

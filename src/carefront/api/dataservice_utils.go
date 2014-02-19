@@ -13,6 +13,8 @@ const (
 	status_creating                        = "CREATING"
 	status_deleted                         = "DELETED"
 	status_inactive                        = "INACTIVE"
+	status_pending                         = "PENDING"
+	status_ongoing                         = "ONGOING"
 	ERX_STATUS_SENDING                     = "Sending"
 	ERX_STATUS_SENT                        = "eRxSent"
 	ERX_STATUS_ERROR                       = "Error"
@@ -28,6 +30,8 @@ const (
 	doctor_phone_type                      = "MAIN"
 	SpruceButtonBaseActionUrl              = "spruce:///action/"
 	SpruceImageBaseUrl                     = "spruce:///image/"
+	event_type_patient_visit               = "PATIENT_VISIT"
+	event_type_treatment_plan              = "TREATMENT_PLAN"
 )
 
 type DataService struct {
