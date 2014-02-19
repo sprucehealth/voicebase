@@ -107,10 +107,10 @@ func TestPatientAnswerParsing(t *testing.T) {
 	for _, section := range visit.Sections {
 		for _, screen := range section.Screens {
 			for _, question := range screen.Questions {
-				if question.PatientAnswers == nil {
+				if question.Answers == nil {
 					continue
 				}
-				for _, patientAnswer := range question.PatientAnswers {
+				for _, patientAnswer := range question.Answers {
 					if patientAnswer.AnswerIntakeId.Int64() == 0 {
 						t.Fatal("Patient answer id is not set when it should be")
 					}

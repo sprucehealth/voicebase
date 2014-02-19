@@ -573,7 +573,7 @@ func TestTreatmentTemplatesInContextOfPatientVisit(t *testing.T) {
 		t.Fatal("Expected there to be 1 treatment added to the visit and the doctor")
 	}
 
-	if treatmentTemplatesResponse.TreatmentTemplates[0].Treatment.DoctorTreatmentTemplateId.Int64() != treatmentTemplatesResponse.TreatmentTemplates[1].Id.Int64() {
+	if treatmentTemplatesResponse.Treatments[0].DoctorTreatmentTemplateId.Int64() != treatmentTemplatesResponse.TreatmentTemplates[1].Id.Int64() {
 		t.Fatal("Expected the favoriteTreatmentId to be set for the treatment and to be set to the right treatment")
 	}
 
