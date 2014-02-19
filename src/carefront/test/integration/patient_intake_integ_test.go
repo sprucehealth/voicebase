@@ -118,10 +118,10 @@ func TestSingleSelectIntake(t *testing.T) {
 		for _, screen := range section.Screens {
 			for _, question := range screen.Questions {
 				if question.QuestionId == questionId {
-					if question.PatientAnswers == nil || len(question.PatientAnswers) == 0 {
+					if question.Answers == nil || len(question.Answers) == 0 {
 						t.Fatalf("Expected patient answer for question with id %d, but got none", questionId)
 					}
-					for _, patientAnswer := range question.PatientAnswers {
+					for _, patientAnswer := range question.Answers {
 						if patientAnswer.PotentialAnswerId.Int64() == potentialAnswerId {
 							return
 						}
@@ -178,10 +178,10 @@ func TestMultipleChoiceIntake(t *testing.T) {
 		for _, screen := range section.Screens {
 			for _, question := range screen.Questions {
 				if question.QuestionId == questionId {
-					if question.PatientAnswers == nil || len(question.PatientAnswers) == 0 {
+					if question.Answers == nil || len(question.Answers) == 0 {
 						t.Fatalf("Expected patient answer for question with id %d, but got none", questionId)
 					}
-					for _, patientAnswer := range question.PatientAnswers {
+					for _, patientAnswer := range question.Answers {
 						answerNotFound := true
 						for _, questionItem := range answerIntakeRequestBody.Questions {
 							for _, answerIntake := range questionItem.AnswerIntakes {
@@ -233,10 +233,10 @@ func TestSingleEntryIntake(t *testing.T) {
 		for _, screen := range section.Screens {
 			for _, question := range screen.Questions {
 				if question.QuestionId == questionId {
-					if question.PatientAnswers == nil || len(question.PatientAnswers) == 0 {
+					if question.Answers == nil || len(question.Answers) == 0 {
 						t.Fatalf("Expected patient answer for question with id %d, but got none", questionId)
 					}
-					for _, patientAnswer := range question.PatientAnswers {
+					for _, patientAnswer := range question.Answers {
 						if patientAnswer.PotentialAnswerId.Int64() == potentialAnswerId && patientAnswer.AnswerText == "testAnswer" {
 							return
 						}
@@ -273,10 +273,10 @@ func submitFreeTextResponseForPatient(patientVisitResponse *apiservice.PatientVi
 		for _, screen := range section.Screens {
 			for _, question := range screen.Questions {
 				if question.QuestionId == questionId {
-					if question.PatientAnswers == nil || len(question.PatientAnswers) == 0 {
+					if question.Answers == nil || len(question.Answers) == 0 {
 						t.Fatalf("Expected patient answer for question with id %d, but got none", questionId)
 					}
-					for _, patientAnswer := range question.PatientAnswers {
+					for _, patientAnswer := range question.Answers {
 						if patientAnswer.AnswerText == freeTextResponse {
 							return
 						}
@@ -388,10 +388,10 @@ func TestSubQuestionEntryIntake(t *testing.T) {
 		for _, screen := range section.Screens {
 			for _, question := range screen.Questions {
 				if question.QuestionId == questionId {
-					if question.PatientAnswers == nil || len(question.PatientAnswers) == 0 {
+					if question.Answers == nil || len(question.Answers) == 0 {
 						t.Fatalf("Expected patient answer for question with id %d, but got none", questionId)
 					}
-					for _, patientAnswer := range question.PatientAnswers {
+					for _, patientAnswer := range question.Answers {
 
 						if !(patientAnswer.AnswerText == neutrogena || patientAnswer.AnswerText == benzoylPeroxide ||
 							patientAnswer.AnswerText == proactive) {
@@ -441,10 +441,10 @@ func TestSubQuestionEntryIntake(t *testing.T) {
 		for _, screen := range section.Screens {
 			for _, question := range screen.Questions {
 				if question.QuestionId == questionId {
-					if question.PatientAnswers == nil || len(question.PatientAnswers) == 0 {
+					if question.Answers == nil || len(question.Answers) == 0 {
 						t.Fatalf("Expected patient answer for question with id %d, but got none", questionId)
 					}
-					for _, patientAnswer := range question.PatientAnswers {
+					for _, patientAnswer := range question.Answers {
 
 						if !(patientAnswer.AnswerText == neutrogena || patientAnswer.AnswerText == benzoylPeroxide ||
 							patientAnswer.AnswerText == proactive) {
@@ -528,10 +528,10 @@ func TestPhotoAnswerIntake(t *testing.T) {
 		for _, screen := range section.Screens {
 			for _, question := range screen.Questions {
 				if question.QuestionId == questionId {
-					if question.PatientAnswers == nil || len(question.PatientAnswers) == 0 {
+					if question.Answers == nil || len(question.Answers) == 0 {
 						t.Fatalf("Expected patient answer for question with id %d, but got none", questionId)
 					}
-					for _, patientAnswer := range question.PatientAnswers {
+					for _, patientAnswer := range question.Answers {
 						if patientAnswer.PotentialAnswerId.Int64() == potentialAnswerId &&
 							patientAnswer.ObjectUrl != "" {
 

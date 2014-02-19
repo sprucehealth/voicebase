@@ -108,7 +108,7 @@ type TreatmentPlan struct {
 
 type Treatment struct {
 	Id                        *ObjectId                `json:"treatment_id,omitempty"`
-	DoctorFavoriteTreatmentId *ObjectId                `json:"dr_favorite_treatment_id,omitempty"`
+	DoctorTreatmentTemplateId *ObjectId                `json:"dr_treatment_template_id,omitempty"`
 	PrescriptionId            *ObjectId                `json:"erx_id,omitempty"`
 	ErxMedicationId           *ObjectId                `json:"-"`
 	PrescriptionStatus        string                   `json:"erx_status,omitempty"`
@@ -139,11 +139,11 @@ type Treatment struct {
 	SupplementalInstructions  []*DoctorInstructionItem `json:"supplemental_instructions,omitempty"`
 }
 
-type DoctorFavoriteTreatment struct {
-	Id                 *ObjectId  `json:"id,omitempty"`
-	Name               string     `json:"name"`
-	FavoritedTreatment *Treatment `json:"treatment_template"`
-	Status             string     `json:"-"`
+type DoctorTreatmentTemplate struct {
+	Id        *ObjectId  `json:"id,omitempty"`
+	Name      string     `json:"name"`
+	Treatment *Treatment `json:"treatment"`
+	Status    string     `json:"-"`
 }
 
 const (

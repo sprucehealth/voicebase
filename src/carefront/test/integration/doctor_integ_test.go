@@ -193,7 +193,7 @@ func TestDoctorDiagnosisOfPatientVisit(t *testing.T) {
 	for _, section := range diagnosisResponse.DiagnosisLayout.InfoIntakeLayout.Sections {
 		for _, question := range section.Questions {
 
-			for _, doctorResponse := range question.DoctorAnswers {
+			for _, doctorResponse := range question.Answers {
 				switch doctorResponse.QuestionId.Int64() {
 				case diagnosisQuestionId:
 					if doctorResponse.PotentialAnswerId.Int64() != 102 {

@@ -620,8 +620,8 @@ func (d *DataService) AddTreatmentsForPatientVisit(treatments []*common.Treatmen
 			return err
 		}
 
-		if treatment.DoctorFavoriteTreatmentId.Int64() != 0 {
-			_, err = tx.Exec(`insert into treatment_dr_favorite_selection (treatment_id, dr_favorite_treatment_id) values (?,?)`, treatment.Id, treatment.DoctorFavoriteTreatmentId)
+		if treatment.DoctorTreatmentTemplateId.Int64() != 0 {
+			_, err = tx.Exec(`insert into treatment_dr_favorite_selection (treatment_id, dr_favorite_treatment_id) values (?,?)`, treatment.Id, treatment.DoctorTreatmentTemplateId)
 			if err != nil {
 				tx.Rollback()
 				return err
@@ -788,7 +788,7 @@ func (d *DataService) GetTreatmentsBasedOnTreatmentPlanId(patientVisitId, treatm
 	// assign the treatments the doctor favorite id if one exists
 	for _, treatment := range treatments {
 		if treatmentIdToFavoriteIdMapping[treatment.Id.Int64()] != 0 {
-			treatment.DoctorFavoriteTreatmentId = common.NewObjectId(treatmentIdToFavoriteIdMapping[treatment.Id.Int64()])
+			treatment.DoctorTreatmentTemplateId = common.NewObjectId(treatmentIdToFavoriteIdMapping[treatment.Id.Int64()])
 		}
 	}
 

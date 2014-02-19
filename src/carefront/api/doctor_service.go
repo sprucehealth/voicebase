@@ -536,26 +536,26 @@ func (d *DataService) AddDrugInstructionsToTreatment(drugName, drugForm, drugRou
 	return tx.Commit()
 }
 
-func (d *DataService) AddFavoriteTreatments(favoriteTreatments []*common.DoctorFavoriteTreatment, doctorId int64) error {
+func (d *DataService) AddTreatmentTemplates(doctorTreatmentTemplates []*common.DoctorTreatmentTemplate, doctorId int64) error {
 	tx, err := d.DB.Begin()
 	if err != nil {
 		return err
 	}
 
-	for _, favoriteTreatment := range favoriteTreatments {
+	for _, doctorTreatmentTemplate := range doctorTreatmentTemplates {
 
 		var treatmentIdInPatientTreatmentPlan int64
-		if favoriteTreatment.FavoritedTreatment.TreatmentPlanId.Int64() != 0 {
-			treatmentIdInPatientTreatmentPlan = favoriteTreatment.FavoritedTreatment.Id.Int64()
+		if doctorTreatmentTemplate.Treatment.TreatmentPlanId.Int64() != 0 {
+			treatmentIdInPatientTreatmentPlan = doctorTreatmentTemplate.Treatment.Id.Int64()
 		}
 
-		err = d.addTreatment(favoriteTreatment.FavoritedTreatment, true, tx)
+		err = d.addTreatment(doctorTreatmentTemplate.Treatment, true, tx)
 		if err != nil {
 			tx.Rollback()
 			return err
 		}
 
-		lastInsertId, err := tx.Exec(`insert into dr_favorite_treatment (doctor_id, treatment_id, name, status) values (?,?,?,?)`, doctorId, favoriteTreatment.FavoritedTreatment.Id, favoriteTreatment.Name, status_active)
+		lastInsertId, err := tx.Exec(`insert into dr_favorite_treatment (doctor_id, treatment_id, name, status) values (?,?,?,?)`, doctorId, doctorTreatmentTemplate.Treatment.Id, doctorTreatmentTemplate.Name, status_active)
 		if err != nil {
 			tx.Rollback()
 			return err
@@ -612,20 +612,20 @@ func (d *DataService) AddFavoriteTreatments(favoriteTreatments []*common.DoctorF
 	return tx.Commit()
 }
 
-func (d *DataService) DeleteFavoriteTreatments(favoriteTreatments []*common.DoctorFavoriteTreatment, doctorId int64) error {
+func (d *DataService) DeleteTreatmentTemplates(doctorTreatmentTemplates []*common.DoctorTreatmentTemplate, doctorId int64) error {
 	tx, err := d.DB.Begin()
 	if err != nil {
 		return err
 	}
-	for _, favoriteTreatment := range favoriteTreatments {
-		_, err = tx.Exec(`update dr_favorite_treatment set status='DELETED' where id = ? and doctor_id = ?`, favoriteTreatment.Id, doctorId)
+	for _, doctorTreatmentTemplate := range doctorTreatmentTemplates {
+		_, err = tx.Exec(`update dr_favorite_treatment set status='DELETED' where id = ? and doctor_id = ?`, doctorTreatmentTemplate.Id, doctorId)
 		if err != nil {
 			tx.Rollback()
 			return err
 		}
 
 		// delete all previous selections for this favorited treatment
-		_, err = tx.Exec(`delete from treatment_dr_favorite_selection where dr_favorite_treatment_id = ?`, favoriteTreatment.Id)
+		_, err = tx.Exec(`delete from treatment_dr_favorite_selection where dr_favorite_treatment_id = ?`, doctorTreatmentTemplate.Id)
 		if err != nil {
 			tx.Rollback()
 			return err
@@ -635,7 +635,7 @@ func (d *DataService) DeleteFavoriteTreatments(favoriteTreatments []*common.Doct
 	return tx.Commit()
 }
 
-func (d *DataService) GetFavoriteTreatments(doctorId int64) ([]*common.DoctorFavoriteTreatment, error) {
+func (d *DataService) GetTreatmentTemplates(doctorId int64) ([]*common.DoctorTreatmentTemplate, error) {
 	rows, err := d.DB.Query(`select id, name, treatment_id from dr_favorite_treatment where status='ACTIVE' and doctor_id = ?`, doctorId)
 	if err != nil {
 		return nil, err
@@ -643,24 +643,24 @@ func (d *DataService) GetFavoriteTreatments(doctorId int64) ([]*common.DoctorFav
 	defer rows.Close()
 
 	treatmentIds := make([]int64, 0)
-	favoriteTreatmentMapping := make(map[int64]*common.DoctorFavoriteTreatment)
+	treatmentTemplateMapping := make(map[int64]*common.DoctorTreatmentTemplate)
 	for rows.Next() {
 		var name string
-		var favoriteTreatmentId, treatmentId int64
-		err = rows.Scan(&favoriteTreatmentId, &name, &treatmentId)
+		var treatmentTemplateId, treatmentId int64
+		err = rows.Scan(&treatmentTemplateId, &name, &treatmentId)
 		if err != nil {
 			return nil, err
 		}
 		treatmentIds = append(treatmentIds, treatmentId)
-		favoriteTreatmentMapping[treatmentId] = &common.DoctorFavoriteTreatment{
-			Id:   common.NewObjectId(favoriteTreatmentId),
+		treatmentTemplateMapping[treatmentId] = &common.DoctorTreatmentTemplate{
+			Id:   common.NewObjectId(treatmentTemplateId),
 			Name: name,
 		}
 	}
 
 	// there are no favorited items to return
 	if len(treatmentIds) == 0 {
-		return []*common.DoctorFavoriteTreatment{}, nil
+		return []*common.DoctorTreatmentTemplate{}, nil
 	}
 
 	treatmentIdsString := make([]string, 0)
@@ -686,7 +686,7 @@ func (d *DataService) GetFavoriteTreatments(doctorId int64) ([]*common.DoctorFav
 	}
 	defer rows.Close()
 
-	favoritedTreatments := make([]*common.DoctorFavoriteTreatment, 0)
+	treatmentTemplates := make([]*common.DoctorTreatmentTemplate, 0)
 	for rows.Next() {
 		var treatmentId, dispenseValue, dispenseUnitId, refills, daysSupply int64
 		var drugInternalName, dosageStrength, patientInstructions, treatmentType, dispenseUnitDescription, status string
@@ -699,6 +699,7 @@ func (d *DataService) GetFavoriteTreatments(doctorId int64) ([]*common.DoctorFav
 		}
 
 		treatment := &common.Treatment{
+			Id:                      common.NewObjectId(treatmentId),
 			DrugInternalName:        drugInternalName,
 			DosageStrength:          dosageStrength,
 			DispenseValue:           dispenseValue,
@@ -730,12 +731,16 @@ func (d *DataService) GetFavoriteTreatments(doctorId int64) ([]*common.DoctorFav
 			return nil, err
 		}
 
-		favoriteTreatment := favoriteTreatmentMapping[treatmentId]
-		favoriteTreatment.FavoritedTreatment = treatment
+		treatmentTemplate := treatmentTemplateMapping[treatmentId]
+		treatmentTemplate.Treatment = treatment
 
-		favoritedTreatments = append(favoritedTreatments, favoriteTreatment)
+		// removing the treatmentId for doctorFavorites for the treatment since it does not make sense
+		// to have the doctorFavoritetreatmentId and the treatmentId (can be confusing to the developer)
+		treatment.Id = nil
+		treatmentTemplates = append(treatmentTemplates, treatmentTemplate)
+
 	}
-	return favoritedTreatments, nil
+	return treatmentTemplates, nil
 }
 
 func (d *DataService) GetCompletedPrescriptionsForDoctor(from, to time.Time, doctorId int64) ([]*common.TreatmentPlan, error) {
