@@ -237,7 +237,7 @@ func (d *DataService) MarkGenerationOfTreatmentPlanInVisitQueue(doctorId, patien
 }
 
 func (d *DataService) GetPendingItemsInDoctorQueue(doctorId int64) ([]*DoctorQueueItem, error) {
-	params := []interface{}{doctor.Interface()}
+	params := []interface{}{doctorId}
 	params = appendStringsToInterfaceSlice(params, []string{status_pending, status_ongoing})
 	rows, err := d.DB.Query(fmt.Sprintf(`select id, event_type, item_id, enqueue_date, completed_date, status from doctor_queue where doctor_id = ? and status in (%s) order by enqueue_date`, nReplacements(2)), params)
 	if err != nil {
@@ -249,7 +249,7 @@ func (d *DataService) GetPendingItemsInDoctorQueue(doctorId int64) ([]*DoctorQue
 
 func (d *DataService) GetCompletedItemsInDoctorQueue(doctorId int64) ([]*DoctorQueueItem, error) {
 
-	params := []interface{}{doctor.Interface()}
+	params := []interface{}{doctorId}
 	params = appendStringsToInterfaceSlice(params, []string{status_pending, status_ongoing})
 	rows, err := d.DB.Query(fmt.Sprintf(`select id, event_type, item_id, enqueue_date, completed_date, status from doctor_queue where doctor_id = ? and status not in (%s) order by enqueue_date desc`, nReplacements(2)), params)
 	if err != nil {
