@@ -153,7 +153,8 @@ func TestPatientVisitReview(t *testing.T) {
 	SubmitPatientVisitForPatient(signedupPatientResponse.Patient.PatientId.Int64(), patientVisitResponse.PatientVisitId, testData, t)
 
 	// get doctor to start reviewing it
-	StartReviewingPatientVisit(patientVisitResponse.PatientVisitId, doctor, testData, t)
+	doctorPatientVisitReviewResponse := StartReviewingPatientVisit(patientVisitResponse.PatientVisitId, doctor, testData, t)
+	t.Logf("Treatment Plan Id is %d", doctorPatientVisitReviewResponse.TreatmentPlanId)
 
 	//
 	//
@@ -210,6 +211,10 @@ func TestPatientVisitReview(t *testing.T) {
 	stubErxService.PrescriptionIdToPrescriptionStatus[20] = api.ERX_STATUS_ERROR
 
 	addAndGetTreatmentsForPatientVisit(testData, treatments, doctor.AccountId.Int64(), patientVisitResponse.PatientVisitId, t)
+	getTreatmentsResponse := getTreatmentsForTreatmentPlan(testData, t, doctorPatientVisitReviewResponse.TreatmentPlanId, doctor)
+	if len(getTreatmentsResponse.Treatments) != 2 {
+		t.Fatalf("Expected 2 treatments to be returned, instead got back %d", len(getTreatmentsResponse.Treatments))
+	}
 
 	//
 	//
@@ -239,6 +244,10 @@ func TestPatientVisitReview(t *testing.T) {
 	regimenPlanRequest.RegimenSections = []*common.RegimenSection{regimenSection, regimenSection2}
 	regimenPlanResponse := createRegimenPlanForPatientVisit(regimenPlanRequest, testData, doctor, t)
 	validateRegimenRequestAgainstResponse(regimenPlanRequest, regimenPlanResponse, t)
+	getRegimenPlanResponse := getRegimenPlanForTreatmentPlan(testData, t, doctorPatientVisitReviewResponse.TreatmentPlanId, doctor)
+	if len(getRegimenPlanResponse.RegimenSections) != 2 {
+		t.Fatal("Expected 2 regimen sections")
+	}
 
 	//
 	//
@@ -257,7 +266,10 @@ func TestPatientVisitReview(t *testing.T) {
 
 	doctorAdviceResponse := updateAdvicePointsForPatientVisit(doctorAdviceRequest, testData, doctor, t)
 	validateAdviceRequestAgainstResponse(doctorAdviceRequest, doctorAdviceResponse, t)
-
+	getAdviceResponse := getAdviceBasedOnTreatmentPlan(testData, t, doctorPatientVisitReviewResponse.TreatmentPlanId, doctor)
+	if len(getAdviceResponse.SelectedAdvicePoints) != len(doctorAdviceRequest.AllAdvicePoints) {
+		t.Fatal("Expected number of advice points not returned")
+	}
 	//
 	//
 	// SUBMIT FOLLOW UP
@@ -405,6 +417,62 @@ func TestPatientVisitReview(t *testing.T) {
 	}
 }
 
+func getTreatmentsForTreatmentPlan(testData TestData, t *testing.T, treatmentPlanId int64, doctor *common.Doctor) *apiservice.GetTreatmentsResponse {
+	ts := httptest.NewServer(&apiservice.TreatmentsHandler{DataApi: testData.DataApi})
+	defer ts.Close()
+
+	resp, err := authGet(ts.URL+fmt.Sprintf("?treatment_plan_id=%d", treatmentPlanId), doctor.AccountId.Int64())
+	if err != nil {
+		t.Fatal("Unable to get treatments for patient based on treatment plan id: " + err.Error())
+	}
+
+	getTreatmentsResponse := &apiservice.GetTreatmentsResponse{}
+	err = json.NewDecoder(resp.Body).Decode(getTreatmentsResponse)
+	if err != nil {
+		t.Fatal("Unable to parse treatments for patient")
+	}
+
+	return getTreatmentsResponse
+}
+
+func getRegimenPlanForTreatmentPlan(testData TestData, t *testing.T, treatmentPlanId int64, doctor *common.Doctor) *common.RegimenPlan {
+	ts := httptest.NewServer(&apiservice.DoctorRegimenHandler{
+		DataApi: testData.DataApi,
+	})
+	defer ts.Close()
+
+	resp, err := authGet(ts.URL+fmt.Sprintf("?treatment_plan_id=%d", treatmentPlanId), doctor.AccountId.Int64())
+	if err != nil {
+		t.Fatal("Unable to get regimen plan based on treatment plan id: " + err.Error())
+	}
+
+	getRegimenPlanResponse := &common.RegimenPlan{}
+	err = json.NewDecoder(resp.Body).Decode(getRegimenPlanResponse)
+	if err != nil {
+		t.Fatal("Unable to parse response for regimen plan based on treatment plan id: " + err.Error())
+	}
+	return getRegimenPlanResponse
+}
+
+func getAdviceBasedOnTreatmentPlan(testData TestData, t *testing.T, treatmentPlanId int64, doctor *common.Doctor) *common.Advice {
+	ts := httptest.NewServer(&apiservice.DoctorAdviceHandler{
+		DataApi: testData.DataApi,
+	})
+	defer ts.Close()
+
+	resp, err := authGet(ts.URL+fmt.Sprintf("?treatment_plan_id=%d", treatmentPlanId), doctor.AccountId.Int64())
+	if err != nil {
+		t.Fatal("Unable to get regimen plan based on treatment plan id: " + err.Error())
+	}
+
+	getAdviceResponse := &common.Advice{}
+	err = json.NewDecoder(resp.Body).Decode(getAdviceResponse)
+	if err != nil {
+		t.Fatal("Unable to parse response for advice based on treatment plan id: " + err.Error())
+	}
+	return getAdviceResponse
+}
+
 func getPrescriptionsForDoctor(dataApi api.DataAPI, t *testing.T, doctor *common.Doctor, fromTime, toTime int64) *apiservice.DoctorPrescriptionsResponse {
 	// check the prescriptions the doctor has sent in and there should be none
 	doctorPrescriptionsHandler := &apiservice.DoctorPrescriptionsHandler{
@@ -424,6 +492,6 @@ func getPrescriptionsForDoctor(dataApi api.DataAPI, t *testing.T, doctor *common
 		t.Fatal("Unable to unmarshal response body into json object: " + err.Error())
 	}
 
-	CheckSuccessfulStatusCode(resp, "Unable to get prescriptions for doctor "+string(respBody), t)
+	CheckSuccessfulStatusCode(resp, "Unable to get prescriptions for doctor ", t)
 	return doctorPrescriptionsResponse
 }

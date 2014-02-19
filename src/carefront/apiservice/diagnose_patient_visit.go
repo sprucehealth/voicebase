@@ -283,7 +283,7 @@ func populateDiagnosisLayoutWithDoctorAnswers(diagnosisLayout *info_intake.Diagn
 		for _, question := range section.Questions {
 			// go through each question to see if there exists a patient answer for it
 			if doctorAnswers[question.QuestionId] != nil {
-				question.DoctorAnswers = doctorAnswers[question.QuestionId]
+				question.Answers = doctorAnswers[question.QuestionId]
 			}
 		}
 	}

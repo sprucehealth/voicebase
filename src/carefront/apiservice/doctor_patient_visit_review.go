@@ -72,7 +72,7 @@ func (p *DoctorPatientVisitReviewHandler) ServeHTTP(w http.ResponseWriter, r *ht
 
 	// udpate the status of the case and the item in the doctor's queue
 	if patientVisit.Status == api.CASE_STATUS_SUBMITTED {
-		_, err = p.DataApi.StartNewTreatmentPlanForPatientVisit(patientVisit.PatientId.Int64(), patientVisit.PatientVisitId.Int64(), patientVisitReviewData.DoctorId)
+		treatmentPlanId, err = p.DataApi.StartNewTreatmentPlanForPatientVisit(patientVisit.PatientId.Int64(), patientVisit.PatientVisitId.Int64(), patientVisitReviewData.DoctorId)
 		if err != nil {
 			WriteDeveloperError(w, http.StatusInternalServerError, "Unable to update the status of the visit to reviewing: "+err.Error())
 			return
@@ -85,6 +85,12 @@ func (p *DoctorPatientVisitReviewHandler) ServeHTTP(w http.ResponseWriter, r *ht
 
 		if err := p.DataApi.RecordDoctorAssignmentToPatientVisit(patientVisit.PatientVisitId.Int64(), patientVisitReviewData.DoctorId); err != nil {
 			WriteDeveloperError(w, http.StatusInternalServerError, "Unable to assign the patient visit to this doctor: "+err.Error())
+			return
+		}
+	} else {
+		treatmentPlanId, err = p.DataApi.GetActiveTreatmentPlanForPatientVisit(patientVisitReviewData.DoctorId, patientVisit.PatientVisitId.Int64())
+		if err != nil {
+			WriteDeveloperError(w, http.StatusInternalServerError, "Unable to get treatment plan id for patient visit: "+err.Error())
 			return
 		}
 	}
@@ -161,7 +167,7 @@ func (p *DoctorPatientVisitReviewHandler) populatePatientVisitOverviewWithPatien
 			for _, question := range subSection.Questions {
 				if question.QuestionId != 0 {
 					if patientAnswers[question.QuestionId] != nil {
-						question.PatientAnswers = patientAnswers[question.QuestionId]
+						question.Answers = patientAnswers[question.QuestionId]
 						GetSignedUrlsForAnswersInQuestion(&question.Question, p.PatientPhotoStorageService)
 					}
 				}
@@ -197,7 +203,7 @@ func (p *DoctorPatientVisitReviewHandler) removeQuestionsWithNoAnswersBasedOnFla
 			filteredQuestions := make([]*info_intake.PatientVisitOverviewQuestion, 0)
 			for _, question := range subSection.Questions {
 				if question.RemoveQuestionIfNoAnswer == true {
-					if question.PatientAnswers != nil && len(question.PatientAnswers) > 0 {
+					if question.Answers != nil && len(question.Answers) > 0 {
 						filteredQuestions = append(filteredQuestions, question)
 					}
 				} else {

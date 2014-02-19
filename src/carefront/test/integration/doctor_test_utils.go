@@ -130,18 +130,13 @@ func StartReviewingPatientVisit(PatientVisitId int64, doctor *common.Doctor, tes
 		t.Fatal("Unable to make call to get patient visit review for patient: " + err.Error())
 	}
 
-	respBody, err := ioutil.ReadAll(resp.Body)
-	if err != nil {
-		t.Fatal("Unable to parse body of response: " + err.Error())
-	}
-
-	CheckSuccessfulStatusCode(resp, "Unable to make successful call to get patient visit review: "+string(respBody), t)
-
 	doctorPatientVisitReviewResponse := &apiservice.DoctorPatientVisitReviewResponse{}
-	err = json.Unmarshal(respBody, doctorPatientVisitReviewResponse)
+	err = json.NewDecoder(resp.Body).Decode(doctorPatientVisitReviewResponse)
 	if err != nil {
 		t.Fatal("Unable to unmarshal response body in to json object: " + err.Error())
 	}
+	CheckSuccessfulStatusCode(resp, "Unable to make successful call to get patient visit review: ", t)
+
 	return doctorPatientVisitReviewResponse
 }
 

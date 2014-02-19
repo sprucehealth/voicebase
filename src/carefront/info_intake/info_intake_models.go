@@ -56,8 +56,7 @@ type Question struct {
 	DisplayStyles      []string               `json:"display_styles,omitempty"`
 	ParentQuestionId   int64                  `json:"parent_question_id,string,omitempty"`
 	PotentialAnswers   []*PotentialAnswer     `json:"potential_answers,omitempty"`
-	PatientAnswers     []*common.AnswerIntake `json:"patient_answers,omitempty"`
-	DoctorAnswers      []*common.AnswerIntake `json:"doctor_answers,omitempty"`
+	Answers            []*common.AnswerIntake `json:"answers,omitempty"`
 	Questions          []*Question            `json:"questions,omitempty"`
 	ConditionBlock     *Condition             `json:"condition,omitempty"`
 	Tips               *TipSection            `json:"tips,omitempty"`

@@ -358,7 +358,7 @@ func (s *PatientVisitHandler) populateHealthConditionWithPatientAnswers(healthCo
 			for _, question := range screen.Questions {
 				// go through each question to see if there exists a patient answer for it
 				if patientAnswers[question.QuestionId] != nil {
-					question.PatientAnswers = patientAnswers[question.QuestionId]
+					question.Answers = patientAnswers[question.QuestionId]
 					GetSignedUrlsForAnswersInQuestion(question, s.PatientPhotoStorageService)
 				}
 			}

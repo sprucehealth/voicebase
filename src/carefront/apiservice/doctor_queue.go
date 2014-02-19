@@ -40,7 +40,7 @@ func (d *DoctorQueueHandler) ServeHTTP(w http.ResponseWriter, r *http.Request) {
 
 	doctorId, err := d.DataApi.GetDoctorIdFromAccountId(GetContext(r).AccountId)
 	if err != nil {
-		WriteDeveloperError(w, http.StatusInternalServerError, "Unable to get doctor id from account id ")
+		WriteDeveloperError(w, http.StatusInternalServerError, "Unable to get doctor id from account id:"+err.Error())
 		return
 	}
 
@@ -49,7 +49,7 @@ func (d *DoctorQueueHandler) ServeHTTP(w http.ResponseWriter, r *http.Request) {
 	if requestData.State == "" || requestData.State == state_pending {
 		pendingItemsDoctorQueue, err = d.DataApi.GetPendingItemsInDoctorQueue(doctorId)
 		if err != nil {
-			WriteDeveloperError(w, http.StatusInternalServerError, "Unable to get doctor queue for doctor ")
+			WriteDeveloperError(w, http.StatusInternalServerError, "Unable to get doctor queue for doctor: "+err.Error())
 			return
 		}
 	}
@@ -57,7 +57,7 @@ func (d *DoctorQueueHandler) ServeHTTP(w http.ResponseWriter, r *http.Request) {
 	if requestData.State == "" || requestData.State == state_completed {
 		completedItemsDoctorQueue, err = d.DataApi.GetCompletedItemsInDoctorQueue(doctorId)
 		if err != nil {
-			WriteDeveloperError(w, http.StatusInternalServerError, "Unable to get doctor queue for doctor")
+			WriteDeveloperError(w, http.StatusInternalServerError, "Unable to get doctor queue for doctor: "+err.Error())
 			return
 		}
 	}

@@ -69,7 +69,7 @@ func ensureTreatmentPlanOrPatientVisitIdPresent(dataApi api.DataAPI, treatmentPl
 
 func GetSignedUrlsForAnswersInQuestion(question *info_intake.Question, photoStorageService api.CloudStorageAPI) {
 	// go through each answer to get signed urls
-	for _, patientAnswer := range question.PatientAnswers {
+	for _, patientAnswer := range question.Answers {
 		if patientAnswer.StorageKey != "" {
 			objectUrl, err := photoStorageService.GetSignedUrlForObjectAtLocation(patientAnswer.StorageBucket,
 				patientAnswer.StorageKey, patientAnswer.StorageRegion, time.Now().Add(10*time.Minute))
