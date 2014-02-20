@@ -43,9 +43,9 @@ func (n *nullInt64) Int64() int64 {
 }
 
 type singleSignOn struct {
-	ClinicId     string `xml:"SingleSignOnClinicId"`
+	ClinicId     int64  `xml:"SingleSignOnClinicId"`
 	Code         string `xml:"SingleSignOnCode"`
-	UserId       string `xml:"SingleSignOnUserId"`
+	UserId       int64  `xml:"SingleSignOnUserId"`
 	UserIdVerify string `xml:"SingleSignOnUserIdVerify"`
 	PhraseLength int64  `xml:"SingleSignOnPhraseLength"`
 }

@@ -53,34 +53,38 @@ type TwilioConfig struct {
 	FromNumber string `long:"twilio_from_number" description:"Twilio From Number for Messages"`
 }
 
+type DosespotConfig struct {
+	ClinicId  int64  `long:"clinic_id" description:"Clinic Id for dosespot"`
+	ClinicKey string `long:"clinic_key" description:"Clinic Key for dosespot"`
+}
+
 type Config struct {
 	*config.BaseConfig
-	ProxyProtocol            bool          `long:"proxy_protocol" description:"Enable if behind a proxy that uses the PROXY protocol"`
-	ListenAddr               string        `short:"l" long:"listen" description:"Address and port on which to listen (e.g. 127.0.0.1:8080)"`
-	TLSListenAddr            string        `long:"tls_listen" description:"Address and port on which to listen (e.g. 127.0.0.1:8080)"`
-	TLSCert                  string        `long:"tls_cert" description:"Path of SSL certificate"`
-	TLSKey                   string        `long:"tls_key" description:"Path of SSL private key"`
-	DB                       *DBConfig     `group:"Database" toml:"database"`
-	PharmacyDB               *DBConfig     `group:"PharmacyDatabase" toml:"pharmacy_database"`
-	MaxInMemoryForPhotoMB    int64         `long:"max_in_memory_photo" description:"Amount of data in MB to be held in memory when parsing multipart form data"`
-	ContentBucket            string        `long:"content_bucket" description:"S3 Bucket name for all static content"`
-	CaseBucket               string        `long:"case_bucket" description:"S3 Bucket name for case information"`
-	PatientLayoutBucket      string        `long:"client_layout_bucket" description:"S3 Bucket name for client digestable layout for patient information intake"`
-	VisualLayoutBucket       string        `long:"patient_layout_bucket" description:"S3 Bucket name for human readable layout for patient information intake"`
-	DoctorVisualLayoutBucket string        `long:"doctor_visual_layout_bucket" description:"S3 Bucket name for patient overview for doctor's viewing"`
-	DoctorLayoutBucket       string        `long:"doctor_layout_bucket" description:"S3 Bucket name for pre-processed patient overview for doctor's viewing"`
-	Debug                    bool          `long:"debug" description:"Enable debugging"`
-	IOSDeeplinkScheme        string        `long:"ios_deeplink_scheme" description:"Scheme for iOS deep-links (e.g. spruce://)"`
-	DoseSpotClinicKey        string        `long:"dose_spot_clinic_key" description:"DoseSpot Clinic Key for eRX integration"`
-	DoseSpotClinicId         string        `long:"dose_spot_clinic_id" description:"DoseSpot Clinic Id for eRX integration"`
-	DoseSpotUserId           string        `long:"dose_spot_user_id" description:"DoseSpot UserId for eRx integration"`
-	NoServices               bool          `long:"noservices" description:"Disable connecting to remote services"`
-	ERxRouting               bool          `long:"erx_routing" description:"Disable sending of prescriptions electronically"`
-	ERxQueue                 string        `long:"erx_queue" description:"Erx queue name"`
-	AuthTokenExpiration      int           `long:"auth_token_expire" description:"Expiration time in seconds for the auth token"`
-	AuthTokenRenew           int           `long:"auth_token_renew" description:"Time left below which to renew the auth token"`
-	StaticContentBaseUrl     string        `long:"static_content_base_url" description:"URL from which to serve static content"`
-	Twilio                   *TwilioConfig `group:"Twilio" toml:"twilio"`
+	ProxyProtocol            bool            `long:"proxy_protocol" description:"Enable if behind a proxy that uses the PROXY protocol"`
+	ListenAddr               string          `short:"l" long:"listen" description:"Address and port on which to listen (e.g. 127.0.0.1:8080)"`
+	TLSListenAddr            string          `long:"tls_listen" description:"Address and port on which to listen (e.g. 127.0.0.1:8080)"`
+	TLSCert                  string          `long:"tls_cert" description:"Path of SSL certificate"`
+	TLSKey                   string          `long:"tls_key" description:"Path of SSL private key"`
+	DB                       *DBConfig       `group:"Database" toml:"database"`
+	PharmacyDB               *DBConfig       `group:"PharmacyDatabase" toml:"pharmacy_database"`
+	MaxInMemoryForPhotoMB    int64           `long:"max_in_memory_photo" description:"Amount of data in MB to be held in memory when parsing multipart form data"`
+	ContentBucket            string          `long:"content_bucket" description:"S3 Bucket name for all static content"`
+	CaseBucket               string          `long:"case_bucket" description:"S3 Bucket name for case information"`
+	PatientLayoutBucket      string          `long:"client_layout_bucket" description:"S3 Bucket name for client digestable layout for patient information intake"`
+	VisualLayoutBucket       string          `long:"patient_layout_bucket" description:"S3 Bucket name for human readable layout for patient information intake"`
+	DoctorVisualLayoutBucket string          `long:"doctor_visual_layout_bucket" description:"S3 Bucket name for patient overview for doctor's viewing"`
+	DoctorLayoutBucket       string          `long:"doctor_layout_bucket" description:"S3 Bucket name for pre-processed patient overview for doctor's viewing"`
+	Debug                    bool            `long:"debug" description:"Enable debugging"`
+	IOSDeeplinkScheme        string          `long:"ios_deeplink_scheme" description:"Scheme for iOS deep-links (e.g. spruce://)"`
+	DoseSpotUserId           string          `long:"dose_spot_user_id" description:"DoseSpot UserId for eRx integration"`
+	NoServices               bool            `long:"noservices" description:"Disable connecting to remote services"`
+	ERxRouting               bool            `long:"erx_routing" description:"Disable sending of prescriptions electronically"`
+	ERxQueue                 string          `long:"erx_queue" description:"Erx queue name"`
+	AuthTokenExpiration      int             `long:"auth_token_expire" description:"Expiration time in seconds for the auth token"`
+	AuthTokenRenew           int             `long:"auth_token_renew" description:"Time left below which to renew the auth token"`
+	StaticContentBaseUrl     string          `long:"static_content_base_url" description:"URL from which to serve static content"`
+	Twilio                   *TwilioConfig   `group:"Twilio" toml:"twilio"`
+	DoseSpot                 *DosespotConfig `group:"Dosespot" toml:"dosespot"`
 }
 
 var DefaultConfig = Config{
@@ -206,7 +210,7 @@ func main() {
 	}
 
 	mapsService := maps.NewGoogleMapsService(metricsRegistry.Scope("google_maps_api"))
-	doseSpotService := erx.NewDoseSpotService(conf.DoseSpotClinicId, conf.DoseSpotClinicKey, conf.DoseSpotUserId, metricsRegistry.Scope("dosespot_api"))
+	doseSpotService := erx.NewDoseSpotService(conf.DoseSpot.ClinicId, conf.DoseSpot.ClinicKey, metricsRegistry.Scope("dosespot_api"))
 
 	dataApi := &api.DataService{DB: db}
 	cloudStorageApi := api.NewCloudStorageService(awsAuth)
@@ -221,13 +225,13 @@ func main() {
 	patientVisitHandler := apiservice.NewPatientVisitHandler(dataApi, authApi, cloudStorageApi, photoAnswerCloudStorageApi, twilioCli, conf.Twilio.FromNumber)
 	patientVisitReviewHandler := &apiservice.PatientVisitReviewHandler{DataApi: dataApi}
 	answerIntakeHandler := apiservice.NewAnswerIntakeHandler(dataApi)
-	autocompleteHandler := &apiservice.AutocompleteHandler{ERxApi: doseSpotService, Role: api.PATIENT_ROLE}
-	doctorTreatmentSuggestionHandler := &apiservice.AutocompleteHandler{ERxApi: doseSpotService, Role: api.DOCTOR_ROLE}
+	autocompleteHandler := &apiservice.AutocompleteHandler{DataApi: dataApi, ERxApi: doseSpotService, Role: api.PATIENT_ROLE}
+	doctorTreatmentSuggestionHandler := &apiservice.AutocompleteHandler{DataApi: dataApi, ERxApi: doseSpotService, Role: api.DOCTOR_ROLE}
 	doctorInstructionsHandler := apiservice.NewDoctorDrugInstructionsHandler(dataApi)
 	doctorFollowupHandler := apiservice.NewPatientVisitFollowUpHandler(dataApi)
 	doctorTreatmentTemplatesHandler := &apiservice.DoctorTreatmentTemplatesHandler{DataApi: dataApi}
-	medicationStrengthSearchHandler := &apiservice.MedicationStrengthSearchHandler{ERxApi: doseSpotService}
-	newTreatmentHandler := &apiservice.NewTreatmentHandler{ERxApi: doseSpotService}
+	medicationStrengthSearchHandler := &apiservice.MedicationStrengthSearchHandler{DataApi: dataApi, ERxApi: doseSpotService}
+	newTreatmentHandler := &apiservice.NewTreatmentHandler{DataApi: dataApi, ERxApi: doseSpotService}
 	medicationDispenseUnitHandler := &apiservice.MedicationDispenseUnitsHandler{DataApi: dataApi}
 	treatmentsHandler := apiservice.NewTreatmentsHandler(dataApi)
 	photoAnswerIntakeHandler := apiservice.NewPhotoAnswerIntakeHandler(dataApi, photoAnswerCloudStorageApi, conf.CaseBucket, conf.AWSRegion, conf.MaxInMemoryForPhotoMB*1024*1024)

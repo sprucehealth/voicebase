@@ -62,8 +62,7 @@ func (d *DoctorSubmitPatientVisitReviewHandler) submitPatientVisitReview(w http.
 	}
 
 	requestData := new(SubmitPatientVisitReviewRequest)
-	decoder := schema.NewDecoder()
-	err := decoder.Decode(requestData, r.Form)
+	err := schema.NewDecoder().Decode(requestData, r.Form)
 	if err != nil {
 		WriteDeveloperError(w, http.StatusBadRequest, "Unable to parse input parameters: "+err.Error())
 		return
@@ -91,6 +90,12 @@ func (d *DoctorSubmitPatientVisitReviewHandler) submitPatientVisitReview(w http.
 	patient, err := d.DataApi.GetPatientFromPatientVisitId(requestData.PatientVisitId)
 	if err != nil {
 		WriteDeveloperError(w, http.StatusInternalServerError, "Unable to get patient data from patient visit: "+err.Error())
+		return
+	}
+
+	doctor, err := d.DataApi.GetDoctorFromAccountId(GetContext(r).AccountId)
+	if err != nil {
+		WriteDeveloperError(w, http.StatusInternalServerError, "Unable to get doctor based on account id: "+err.Error())
 		return
 	}
 
@@ -135,7 +140,7 @@ func (d *DoctorSubmitPatientVisitReviewHandler) submitPatientVisitReview(w http.
 		}
 
 		if d.ERxRouting == true && d.ERxApi != nil && len(treatments) > 0 {
-			err = d.ERxApi.StartPrescribingPatient(patient, treatments)
+			err = d.ERxApi.StartPrescribingPatient(doctor.DoseSpotClinicianId, patient, treatments)
 			if err != nil {
 				WriteDeveloperError(w, http.StatusInternalServerError, "Unable to start prescribing patient: "+err.Error())
 				return
@@ -156,7 +161,7 @@ func (d *DoctorSubmitPatientVisitReviewHandler) submitPatientVisitReview(w http.
 			}
 
 			// Now, send the prescription to the pharmacy
-			unSuccessfulTreatmentIds, err := d.ERxApi.SendMultiplePrescriptions(patient, treatments)
+			unSuccessfulTreatmentIds, err := d.ERxApi.SendMultiplePrescriptions(doctor.DoseSpotClinicianId, patient, treatments)
 			if err != nil {
 				WriteDeveloperError(w, http.StatusInternalServerError, "Unable to send prescription to patient's pharmacy: "+err.Error())
 				return

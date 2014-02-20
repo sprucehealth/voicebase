@@ -28,13 +28,19 @@ func (d *DoctorPrescriptionErrorIgnoreHandler) ServeHTTP(w http.ResponseWriter, 
 		return
 	}
 
+	doctor, err := d.DataApi.GetDoctorFromAccountId(GetContext(r).AccountId)
+	if err != nil {
+		WriteDeveloperError(w, http.StatusBadRequest, "Unable to get doctor from account id: "+err.Error())
+		return
+	}
+
 	var requestData DoctorPrescriptionErrorIgnoreRequestData
 	if err := schema.NewDecoder().Decode(&requestData, r.Form); err != nil {
 		WriteDeveloperError(w, http.StatusBadRequest, "Unable to parse input parameters: "+err.Error())
 		return
 	}
 
-	if err := d.ErxApi.IgnoreAlert(requestData.PrescriptionId); err != nil {
+	if err := d.ErxApi.IgnoreAlert(doctor.DoseSpotClinicianId, requestData.PrescriptionId); err != nil {
 		WriteDeveloperError(w, http.StatusInternalServerError, "Unable to ignore transmission error for prescription: "+err.Error())
 		return
 	}

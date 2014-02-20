@@ -14,9 +14,8 @@ import (
 )
 
 type DoseSpotService struct {
-	ClinicId     string
+	ClinicId     int64
 	ClinicKey    string
-	UserId       string
 	apiLatencies map[DoseSpotApiId]metrics.Histogram
 	apiRequests  map[DoseSpotApiId]metrics.Counter
 	apiFailure   map[DoseSpotApiId]metrics.Counter
@@ -64,16 +63,14 @@ func getDoseSpotClient() *soapClient {
 	return &soapClient{SoapAPIEndPoint: doseSpotSOAPEndPoint, APIEndpoint: doseSpotAPIEndPoint}
 }
 
-func NewDoseSpotService(clinicId, clinicKey, userId string, statsRegistry metrics.Registry) *DoseSpotService {
+func NewDoseSpotService(clinicId int64, clinicKey string, statsRegistry metrics.Registry) *DoseSpotService {
 	d := &DoseSpotService{}
-	if clinicId == "" {
+	if clinicId == 0 {
 		d.ClinicKey = os.Getenv("DOSESPOT_CLINIC_KEY")
-		d.UserId = os.Getenv("DOSESPOT_USER_ID")
-		d.ClinicId = os.Getenv("DOSESPOT_CLINIC_ID")
+		d.ClinicId, _ = strconv.ParseInt(os.Getenv("DOSESPOT_CLINIC_ID"), 10, 64)
 	} else {
 		d.ClinicKey = clinicKey
 		d.ClinicId = clinicId
-		d.UserId = userId
 	}
 
 	d.apiLatencies = make(map[DoseSpotApiId]metrics.Histogram)
@@ -93,9 +90,9 @@ func NewDoseSpotService(clinicId, clinicKey, userId string, statsRegistry metric
 	return d
 }
 
-func (d *DoseSpotService) GetDrugNamesForDoctor(prefix string) ([]string, error) {
+func (d *DoseSpotService) GetDrugNamesForDoctor(clinicianId int64, prefix string) ([]string, error) {
 	medicationSearch := &medicationQuickSearchRequest{
-		SSO:          generateSingleSignOn(d.ClinicKey, d.UserId, d.ClinicId),
+		SSO:          generateSingleSignOn(d.ClinicKey, clinicianId, d.ClinicId),
 		SearchString: prefix,
 	}
 
@@ -114,9 +111,9 @@ func (d *DoseSpotService) GetDrugNamesForDoctor(prefix string) ([]string, error)
 	return searchResult.DisplayNames, nil
 }
 
-func (d *DoseSpotService) GetDrugNamesForPatient(prefix string) ([]string, error) {
+func (d *DoseSpotService) GetDrugNamesForPatient(clinicianId int64, prefix string) ([]string, error) {
 	selfReportedDrugsSearch := &selfReportedMedicationSearchRequest{
-		SSO:        generateSingleSignOn(d.ClinicKey, d.UserId, d.ClinicId),
+		SSO:        generateSingleSignOn(d.ClinicKey, clinicianId, d.ClinicId),
 		SearchTerm: prefix,
 	}
 
@@ -139,9 +136,9 @@ func (d *DoseSpotService) GetDrugNamesForPatient(prefix string) ([]string, error
 	return drugNames, nil
 }
 
-func (d *DoseSpotService) SearchForMedicationStrength(medicationName string) ([]string, error) {
+func (d *DoseSpotService) SearchForMedicationStrength(clinicianId int64, medicationName string) ([]string, error) {
 	medicationStrengthSearch := &medicationStrengthSearchRequest{
-		SSO:            generateSingleSignOn(d.ClinicKey, d.UserId, d.ClinicId),
+		SSO:            generateSingleSignOn(d.ClinicKey, clinicianId, d.ClinicId),
 		MedicationName: medicationName,
 	}
 
@@ -159,9 +156,9 @@ func (d *DoseSpotService) SearchForMedicationStrength(medicationName string) ([]
 	return searchResult.DisplayStrengths, nil
 }
 
-func (d *DoseSpotService) SendMultiplePrescriptions(patient *common.Patient, treatments []*common.Treatment) ([]int64, error) {
+func (d *DoseSpotService) SendMultiplePrescriptions(clinicianId int64, patient *common.Patient, treatments []*common.Treatment) ([]int64, error) {
 	sendPrescriptionsRequest := &sendMultiplePrescriptionsRequest{
-		SSO:       generateSingleSignOn(d.ClinicKey, d.UserId, d.ClinicId),
+		SSO:       generateSingleSignOn(d.ClinicKey, clinicianId, d.ClinicId),
 		PatientId: patient.ERxPatientId.Int64(),
 	}
 
@@ -202,7 +199,7 @@ func (d *DoseSpotService) SendMultiplePrescriptions(patient *common.Patient, tre
 	return unSuccessfulTreatmentIds, nil
 }
 
-func (d *DoseSpotService) StartPrescribingPatient(currentPatient *common.Patient, treatments []*common.Treatment) error {
+func (d *DoseSpotService) StartPrescribingPatient(clinicianId int64, currentPatient *common.Patient, treatments []*common.Treatment) error {
 
 	newPatient := &patient{
 		PatientId:        currentPatient.ERxPatientId.Int64(),
@@ -262,7 +259,7 @@ func (d *DoseSpotService) StartPrescribingPatient(currentPatient *common.Patient
 		AddFavoritePharmacies: []*patientPharmacySelection{patientPreferredPharmacy},
 		AddPrescriptions:      prescriptions,
 		Patient:               newPatient,
-		SSO:                   generateSingleSignOn(d.ClinicKey, d.UserId, d.ClinicId),
+		SSO:                   generateSingleSignOn(d.ClinicKey, clinicianId, d.ClinicId),
 	}
 
 	response := &patientStartPrescribingResponse{}
@@ -302,9 +299,9 @@ func (d *DoseSpotService) StartPrescribingPatient(currentPatient *common.Patient
 	return err
 }
 
-func (d *DoseSpotService) SelectMedication(medicationName, medicationStrength string) (medication *Medication, err error) {
+func (d *DoseSpotService) SelectMedication(clinicianId int64, medicationName, medicationStrength string) (medication *Medication, err error) {
 	medicationSelect := &medicationSelectRequest{
-		SSO:                generateSingleSignOn(d.ClinicKey, d.UserId, d.ClinicId),
+		SSO:                generateSingleSignOn(d.ClinicKey, clinicianId, d.ClinicId),
 		MedicationName:     medicationName,
 		MedicationStrength: medicationStrength,
 	}
@@ -333,14 +330,14 @@ func (d *DoseSpotService) SelectMedication(medicationName, medicationStrength st
 	return medication, err
 }
 
-func (d *DoseSpotService) SearchForPharmacies(city, state, zipcode, name string, pharmacyTypes []string) ([]*pharmacySearch.PharmacyData, error) {
+func (d *DoseSpotService) SearchForPharmacies(clinicianId int64, city, state, zipcode, name string, pharmacyTypes []string) ([]*pharmacySearch.PharmacyData, error) {
 	searchRequest := &pharmacySearchRequest{
 		PharmacyCity:            city,
 		PharmacyStateTwoLetters: state,
 		PharmacyZipCode:         zipcode,
 		PharmacyNameSearch:      name,
 		PharmacyTypes:           pharmacyTypes,
-		SSO:                     generateSingleSignOn(d.ClinicKey, d.UserId, d.ClinicId),
+		SSO:                     generateSingleSignOn(d.ClinicKey, clinicianId, d.ClinicId),
 	}
 
 	searchResponse := &pharmacySearchResult{}
@@ -378,9 +375,9 @@ func (d *DoseSpotService) SearchForPharmacies(city, state, zipcode, name string,
 	return pharmacies, nil
 }
 
-func (d *DoseSpotService) GetPrescriptionStatus(prescriptionId int64) ([]*PrescriptionLog, error) {
+func (d *DoseSpotService) GetPrescriptionStatus(clincianId int64, prescriptionId int64) ([]*PrescriptionLog, error) {
 	request := &getPrescriptionLogDetailsRequest{
-		SSO:            generateSingleSignOn(d.ClinicKey, d.UserId, d.ClinicId),
+		SSO:            generateSingleSignOn(d.ClinicKey, clincianId, d.ClinicId),
 		PrescriptionId: prescriptionId,
 	}
 
@@ -409,10 +406,10 @@ func (d *DoseSpotService) GetPrescriptionStatus(prescriptionId int64) ([]*Prescr
 	return prescriptionLogs, nil
 }
 
-func (d *DoseSpotService) GetMedicationList(PatientId int64) ([]*Medication, error) {
+func (d *DoseSpotService) GetMedicationList(clinicianId int64, PatientId int64) ([]*Medication, error) {
 	request := &getMedicationListRequest{
 		PatientId: PatientId,
-		SSO:       generateSingleSignOn(d.ClinicKey, d.UserId, d.ClinicId),
+		SSO:       generateSingleSignOn(d.ClinicKey, clinicianId, d.ClinicId),
 		Sources:   []string{"Prescription"},
 		Status:    []string{"Active"},
 	}
@@ -437,9 +434,9 @@ func (d *DoseSpotService) GetMedicationList(PatientId int64) ([]*Medication, err
 	return medications, nil
 }
 
-func (d *DoseSpotService) GetTransmissionErrorDetails() ([]*Medication, error) {
+func (d *DoseSpotService) GetTransmissionErrorDetails(clinicianId int64) ([]*Medication, error) {
 	request := &getTransmissionErrorDetailsRequest{
-		SSO: generateSingleSignOn(d.ClinicKey, d.UserId, d.ClinicId),
+		SSO: generateSingleSignOn(d.ClinicKey, clinicianId, d.ClinicId),
 	}
 	response := &getTransmissionErrorDetailsResponse{}
 	err := getDoseSpotClient().makeSoapRequest(DoseSpotApiActions[getTransmissionErrorDetailsAction],
@@ -484,13 +481,12 @@ func (d *DoseSpotService) GetTransmissionErrorDetails() ([]*Medication, error) {
 	return medicationsWithErrors, nil
 }
 
-func (d *DoseSpotService) GetTransmissionErrorRefillRequestsCount() (refillRequests int64, transactionErrors int64, err error) {
-	clinicianId, err := strconv.ParseInt(d.UserId, 0, 64)
+func (d *DoseSpotService) GetTransmissionErrorRefillRequestsCount(clinicianId int64) (refillRequests int64, transactionErrors int64, err error) {
 	if err != nil {
 		return 0, 0, fmt.Errorf("Unable to parse clinicianId: %s", err.Error())
 	}
 	request := &getRefillRequestsTransmissionErrorsMessageRequest{
-		SSO:         generateSingleSignOn(d.ClinicKey, d.UserId, d.ClinicId),
+		SSO:         generateSingleSignOn(d.ClinicKey, clinicianId, d.ClinicId),
 		ClinicianId: clinicianId,
 	}
 
@@ -514,9 +510,9 @@ func (d *DoseSpotService) GetTransmissionErrorRefillRequestsCount() (refillReque
 	return
 }
 
-func (d *DoseSpotService) IgnoreAlert(prescriptionId int64) error {
+func (d *DoseSpotService) IgnoreAlert(clinicianId, prescriptionId int64) error {
 	request := &ignoreAlertRequest{
-		SSO:            generateSingleSignOn(d.ClinicKey, d.UserId, d.ClinicId),
+		SSO:            generateSingleSignOn(d.ClinicKey, clinicianId, d.ClinicId),
 		PrescriptionId: prescriptionId,
 	}
 

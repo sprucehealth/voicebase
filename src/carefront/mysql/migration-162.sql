@@ -1,0 +1,1 @@
+alter table doctor add clinician_id int unsigned;

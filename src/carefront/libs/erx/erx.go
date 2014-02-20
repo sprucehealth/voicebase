@@ -15,18 +15,18 @@ const (
 )
 
 type ERxAPI interface {
-	GetDrugNamesForDoctor(prefix string) ([]string, error)
-	GetDrugNamesForPatient(prefix string) ([]string, error)
-	SearchForMedicationStrength(medicationName string) ([]string, error)
-	SelectMedication(medicationName, medicationStrength string) (medication *Medication, err error)
-	StartPrescribingPatient(patient *common.Patient, treatments []*common.Treatment) error
-	SendMultiplePrescriptions(patient *common.Patient, treatments []*common.Treatment) ([]int64, error)
-	SearchForPharmacies(city, state, zipcode, name string, pharmacyTypes []string) ([]*pharmacySearch.PharmacyData, error)
-	GetPrescriptionStatus(prescriptionId int64) ([]*PrescriptionLog, error)
-	GetMedicationList(patientId int64) ([]*Medication, error)
-	GetTransmissionErrorDetails() ([]*Medication, error)
-	GetTransmissionErrorRefillRequestsCount() (refillRequests int64, transactionErrors int64, err error)
-	IgnoreAlert(prescriptionId int64) error
+	GetDrugNamesForDoctor(clinicianId int64, prefix string) ([]string, error)
+	GetDrugNamesForPatient(clinicianId int64, prefix string) ([]string, error)
+	SearchForMedicationStrength(clinicianId int64, medicationName string) ([]string, error)
+	SelectMedication(clinicianId int64, medicationName, medicationStrength string) (medication *Medication, err error)
+	StartPrescribingPatient(clinicianId int64, patient *common.Patient, treatments []*common.Treatment) error
+	SendMultiplePrescriptions(clinicianId int64, patient *common.Patient, treatments []*common.Treatment) ([]int64, error)
+	SearchForPharmacies(clinicianId int64, city, state, zipcode, name string, pharmacyTypes []string) ([]*pharmacySearch.PharmacyData, error)
+	GetPrescriptionStatus(clinicianId, prescriptionId int64) ([]*PrescriptionLog, error)
+	GetMedicationList(clinicianId, patientId int64) ([]*Medication, error)
+	GetTransmissionErrorDetails(clinicianId int64) ([]*Medication, error)
+	GetTransmissionErrorRefillRequestsCount(clinicianId int64) (refillRequests int64, transactionErrors int64, err error)
+	IgnoreAlert(clinicianId int64, prescriptionId int64) error
 }
 
 type Medication struct {

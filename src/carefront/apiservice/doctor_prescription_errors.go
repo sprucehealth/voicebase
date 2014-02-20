@@ -30,7 +30,13 @@ func (d *DoctorPrescriptionsErrorsHandler) ServeHTTP(w http.ResponseWriter, r *h
 		return
 	}
 
-	medicationsWithErrors, err := d.ErxApi.GetTransmissionErrorDetails()
+	doctor, err := d.DataApi.GetDoctorFromAccountId(GetContext(r).AccountId)
+	if err != nil {
+		WriteDeveloperError(w, http.StatusInternalServerError, "Unable to get doctor from account id: "+err.Error())
+		return
+	}
+
+	medicationsWithErrors, err := d.ErxApi.GetTransmissionErrorDetails(doctor.DoseSpotClinicianId)
 	if err != nil {
 		WriteDeveloperError(w, http.StatusInternalServerError, "Unable to get prescription related errors: "+err.Error())
 		return

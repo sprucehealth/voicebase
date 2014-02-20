@@ -1,6 +1,7 @@
 package apiservice
 
 import (
+	"carefront/api"
 	"carefront/common"
 	"carefront/libs/erx"
 	"net/http"
@@ -9,7 +10,8 @@ import (
 )
 
 type NewTreatmentHandler struct {
-	ERxApi erx.ERxAPI
+	DataApi api.DataAPI
+	ERxApi  erx.ERxAPI
 }
 
 type NewTreatmentRequestData struct {
@@ -33,14 +35,19 @@ func (m *NewTreatmentHandler) ServeHTTP(w http.ResponseWriter, r *http.Request) 
 	}
 
 	requestData := new(NewTreatmentRequestData)
-	decoder := schema.NewDecoder()
-	err := decoder.Decode(requestData, r.Form)
+	err := schema.NewDecoder().Decode(requestData, r.Form)
 	if err != nil {
 		WriteDeveloperError(w, http.StatusBadRequest, "Unable to parse input parameters: "+err.Error())
 		return
 	}
 
-	medication, err := m.ERxApi.SelectMedication(requestData.MedicationName, requestData.MedicationStrength)
+	doctor, err := m.DataApi.GetDoctorFromAccountId(GetContext(r).AccountId)
+	if err != nil {
+		WriteDeveloperError(w, http.StatusInternalServerError, "Unable to get doctor from account id: "+err.Error())
+		return
+	}
+
+	medication, err := m.ERxApi.SelectMedication(doctor.DoseSpotClinicianId, requestData.MedicationName, requestData.MedicationStrength)
 	if err != nil {
 		WriteDeveloperError(w, http.StatusInternalServerError, "Unable to get select medication: "+err.Error())
 		return
@@ -51,12 +58,14 @@ func (m *NewTreatmentHandler) ServeHTTP(w http.ResponseWriter, r *http.Request) 
 		return
 	}
 
-	newTreatmentResponse := &NewTreatmentResponse{}
-	newTreatmentResponse.Treatment = &common.Treatment{}
-	newTreatmentResponse.Treatment.DrugDBIds = medication.DrugDBIds
-	newTreatmentResponse.Treatment.DispenseUnitId = common.NewObjectId(medication.DispenseUnitId)
-	newTreatmentResponse.Treatment.DispenseUnitDescription = medication.DispenseUnitDescription
-	newTreatmentResponse.Treatment.OTC = medication.OTC
+	newTreatmentResponse := &NewTreatmentResponse{
+		Treatment: &common.Treatment{
+			DrugDBIds:               medication.DrugDBIds,
+			DispenseUnitId:          common.NewObjectId(medication.DispenseUnitId),
+			DispenseUnitDescription: medication.DispenseUnitDescription,
+			OTC: medication.OTC,
+		},
+	}
 	WriteJSONToHTTPResponseWriter(w, http.StatusOK, newTreatmentResponse)
 
 	// TODO make sure to return the predefined additional instructions for the drug based on the drug name here.

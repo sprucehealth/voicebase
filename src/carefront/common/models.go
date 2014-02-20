@@ -24,15 +24,16 @@ type Patient struct {
 }
 
 type Doctor struct {
-	DoctorId     *ObjectId `json:"id,omitempty"`
-	FirstName    string    `json:"first_name,omitempty"`
-	LastName     string    `json:"last_name,omitempty"`
-	Dob          time.Time `json:"-"`
-	Gender       string    `json:"-"`
-	Status       string    `json:"-"`
-	AccountId    *ObjectId `json:"-"`
-	CellPhone    string    `json:"phone"`
-	ThumbnailUrl string    `json:"thumbnail_url,omitempty"`
+	DoctorId            *ObjectId `json:"id,omitempty"`
+	FirstName           string    `json:"first_name,omitempty"`
+	LastName            string    `json:"last_name,omitempty"`
+	Dob                 time.Time `json:"-"`
+	Gender              string    `json:"-"`
+	Status              string    `json:"-"`
+	AccountId           *ObjectId `json:"-"`
+	CellPhone           string    `json:"phone"`
+	ThumbnailUrl        string    `json:"thumbnail_url,omitempty"`
+	DoseSpotClinicianId int64     `json:"-"`
 }
 
 type PatientVisit struct {

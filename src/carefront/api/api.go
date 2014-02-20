@@ -114,8 +114,9 @@ type PatientVisitAPI interface {
 }
 
 type DoctorAPI interface {
-	RegisterDoctor(accountId int64, firstName, lastName, gender string, dob time.Time) (int64, error)
+	RegisterDoctor(accountId int64, firstName, lastName, gender string, dob time.Time, clinicianId int64) (int64, error)
 	GetDoctorFromId(doctorId int64) (doctor *common.Doctor, err error)
+	GetDoctorFromAccountId(accountId int64) (doctor *common.Doctor, err error)
 	GetDoctorIdFromAccountId(accountId int64) (int64, error)
 	GetRegimenStepsForDoctor(doctorId int64) (regimenSteps []*common.DoctorInstructionItem, err error)
 	AddRegimenStepForDoctor(regimenStep *common.DoctorInstructionItem, doctorId int64) error

@@ -72,6 +72,13 @@ func ConsumeMessageFromQueue(DataApi api.DataAPI, ERxApi erx.ERxAPI, ErxQueue *c
 			continue
 		}
 
+		doctor, err := DataApi.GetDoctorFromId(statusCheckMessage.DoctorId)
+		if err != nil {
+			golog.Errorf("Unable to get doctor from database based on id: %s", err.Error())
+			statFailure.Inc(1)
+			continue
+		}
+
 		// check if there are any treatments for this patient that do not have a completed status
 		prescriptionStatuses, err := DataApi.GetPrescriptionStatusEventsForPatient(patient.ERxPatientId.Int64())
 		if err != nil {
@@ -111,7 +118,7 @@ func ConsumeMessageFromQueue(DataApi api.DataAPI, ERxApi erx.ERxAPI, ErxQueue *c
 			continue
 		}
 
-		medications, err := ERxApi.GetMedicationList(patient.ERxPatientId.Int64())
+		medications, err := ERxApi.GetMedicationList(doctor.DoseSpotClinicianId, patient.ERxPatientId.Int64())
 		if err != nil {
 			golog.Errorf("Unable to get medications from dosespot: %s", err.Error())
 			statFailure.Inc(1)
@@ -150,7 +157,7 @@ func ConsumeMessageFromQueue(DataApi api.DataAPI, ERxApi erx.ERxAPI, ErxQueue *c
 					}
 
 					// get the error details for this medication
-					prescriptionLogs, err := ERxApi.GetPrescriptionStatus(medication.ErxMedicationId)
+					prescriptionLogs, err := ERxApi.GetPrescriptionStatus(doctor.DoseSpotClinicianId, medication.ErxMedicationId)
 					if err != nil {
 						statFailure.Inc(1)
 						golog.Errorf("Unable to get transmission error details: %s", err.Error())
