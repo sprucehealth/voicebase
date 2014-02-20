@@ -47,7 +47,7 @@ func (d *DoctorPrescriptionsErrorsHandler) ServeHTTP(w http.ResponseWriter, r *h
 	uniquePatientIds := make([]int64, 0)
 	pharmacyIdToTransmissionErrorMapping := make(map[int64]*transmissionErrorItem)
 	for _, medicationWithError := range medicationsWithErrors {
-		treatment, err := d.DataApi.GetTreatmentBasedOnPrescriptionId(medicationWithError.DoseSpotPrescriptionId)
+		treatment, err := d.DataApi.GetTreatmentBasedOnPrescriptionId(medicationWithError.PrescriptionId.Int64())
 		if err != nil {
 			WriteDeveloperError(w, http.StatusInternalServerError, "Unable to get treatment based on prescription: "+err.Error())
 		}
@@ -57,22 +57,7 @@ func (d *DoctorPrescriptionsErrorsHandler) ServeHTTP(w http.ResponseWriter, r *h
 		// without linking it to patient data. This can happen in the event that the prescription id
 		// did not get stored for some reason or if we have multiple doctors using the same account (incorrectly)
 		if treatment == nil {
-			dispenseValue, _ := strconv.ParseInt(medicationWithError.Dispense, 0, 64)
-			treatment = &common.Treatment{
-				PrescriptionId:          common.NewObjectId(medicationWithError.DoseSpotPrescriptionId),
-				ErxSentDate:             medicationWithError.PrescriptionDate,
-				DrugDBIds:               medicationWithError.DrugDBIds,
-				DispenseUnitId:          common.NewObjectId(medicationWithError.DispenseUnitId),
-				DispenseUnitDescription: medicationWithError.DispenseUnitDescription,
-				DrugName:                medicationWithError.DisplayName,
-				DosageStrength:          medicationWithError.Strength,
-				NumberRefills:           medicationWithError.Refills,
-				DaysSupply:              medicationWithError.DaysSupply,
-				DispenseValue:           dispenseValue,
-				PatientInstructions:     medicationWithError.Instructions,
-				PharmacyNotes:           medicationWithError.PharmacyNotes,
-				SubstitutionsAllowed:    !medicationWithError.NoSubstitutions,
-			}
+			treatment = medicationWithError
 		} else {
 			if !uniquePatientIdsBookKeeping[treatment.PatientId.Int64()] {
 				uniquePatientIdsBookKeeping[treatment.PatientId.Int64()] = true
@@ -81,10 +66,10 @@ func (d *DoctorPrescriptionsErrorsHandler) ServeHTTP(w http.ResponseWriter, r *h
 		}
 
 		treatment.PrescriptionStatus = medicationWithError.PrescriptionStatus
-		treatment.TransmissionErrorDate = medicationWithError.ErrorTimeStamp
-		treatment.StatusDetails = medicationWithError.ErrorDetails
+		treatment.TransmissionErrorDate = medicationWithError.TransmissionErrorDate
+		treatment.StatusDetails = medicationWithError.StatusDetails
 		if treatment.ErxSentDate == nil {
-			treatment.ErxSentDate = medicationWithError.PrescriptionDate
+			treatment.ErxSentDate = medicationWithError.ErxSentDate
 		}
 
 		transmissionError := &transmissionErrorItem{
@@ -92,7 +77,7 @@ func (d *DoctorPrescriptionsErrorsHandler) ServeHTTP(w http.ResponseWriter, r *h
 		}
 
 		// keep track of which pharmacy Id maps to which transmissionError so that we can assign the pharmacy to the transmissionError
-		pharmacyIdToTransmissionErrorMapping[medicationWithError.PharmacyId] = transmissionError
+		pharmacyIdToTransmissionErrorMapping[medicationWithError.ErxPharmacyId] = transmissionError
 		transmissionErrors = append(transmissionErrors, transmissionError)
 	}
 

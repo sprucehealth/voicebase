@@ -24,7 +24,7 @@ func (s *StubErxService) SearchForMedicationStrength(clinicianId int64, medicati
 	return nil, nil
 }
 
-func (s *StubErxService) SelectMedication(clinicianId int64, medicationName, medicationStrength string) (medication *Medication, err error) {
+func (s *StubErxService) SelectMedication(clinicianId int64, medicationName, medicationStrength string) (medication *common.Treatment, err error) {
 	return nil, nil
 }
 
@@ -53,18 +53,18 @@ func (s *StubErxService) GetPrescriptionStatus(clinicianId int64, prescriptionId
 	return nil, nil
 }
 
-func (s *StubErxService) GetMedicationList(clinicianId int64, PatientId int64) ([]*Medication, error) {
-	medications := make([]*Medication, 0)
+func (s *StubErxService) GetMedicationList(clinicianId int64, PatientId int64) ([]*common.Treatment, error) {
+	medications := make([]*common.Treatment, 0)
 	for prescriptionId, prescriptionStatus := range s.PrescriptionIdToPrescriptionStatus {
-		medication := &Medication{}
-		medication.ErxMedicationId = prescriptionId
+		medication := &common.Treatment{}
+		medication.ErxMedicationId = common.NewObjectId(prescriptionId)
 		medication.PrescriptionStatus = prescriptionStatus
 		medications = append(medications, medication)
 	}
 	return medications, nil
 }
 
-func (s *StubErxService) GetTransmissionErrorDetails(clinicianId int64) ([]*Medication, error) {
+func (s *StubErxService) GetTransmissionErrorDetails(clinicianId int64) ([]*common.Treatment, error) {
 	return nil, nil
 }
 

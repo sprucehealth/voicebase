@@ -59,12 +59,7 @@ func (m *NewTreatmentHandler) ServeHTTP(w http.ResponseWriter, r *http.Request) 
 	}
 
 	newTreatmentResponse := &NewTreatmentResponse{
-		Treatment: &common.Treatment{
-			DrugDBIds:               medication.DrugDBIds,
-			DispenseUnitId:          common.NewObjectId(medication.DispenseUnitId),
-			DispenseUnitDescription: medication.DispenseUnitDescription,
-			OTC: medication.OTC,
-		},
+		Treatment: medication,
 	}
 	WriteJSONToHTTPResponseWriter(w, http.StatusOK, newTreatmentResponse)
 

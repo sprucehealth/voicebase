@@ -149,10 +149,12 @@ type medication struct {
 	DisplayName            string           `xml:"DisplayName"`
 	DrugName               string           `xml:"DrugName,omitempty"`
 	Strength               string           `xml:"Strength"`
+	Route                  string           `xml:"Route"`
 	DoseSpotPrescriptionId int64            `xml:"PrescriptionId"`
 	LexiGenProductId       int64            `xml:"LexiGenProductId"`
 	LexiDrugSynId          int64            `xml:"LexiDrugSynId"`
 	LexiSynonymTypeId      int64            `xml:"LexiSynonymTypeId"`
+	NDC                    string           `xml:"NDC"`
 	Refills                nullInt64        `xml:"Refills"`
 	DaysSupply             nullInt64        `xml:"DaysSupply,omitempty"`
 	Dispense               string           `xml:"Dispense"`
@@ -165,6 +167,9 @@ type medication struct {
 	PrescriptionStatus     string           `xml:"PrescriptionStatus,omitempty"`
 	Status                 string           `xml:"Status,omitempty"`
 	DatePrescribed         *specialDateTime `xml:"DatePrescribed,omitempty"`
+	LastDateFilled         *specialDateTime `xml:"LastDateFilled,omitempty"`
+	ClinicianId            int64            `xml:"ClinicianId"`
+	ClinicId               int64            `xml:"ClinicId"`
 	MedicationId           int64            `xml:"MedicationId,omitempty"`
 }
 
@@ -178,6 +183,16 @@ type specialDateTime struct {
 
 func (c *specialDateTime) UnmarshalXML(d *xml.Decoder, start xml.StartElement) error {
 	var dateStr string
+	// nothing to do if the value is indicated to be nil via the attribute
+	// form of element would be: <elementName xsi:nil="true" />
+	if len(start.Attr) > 0 {
+		if start.Attr[0].Name.Local == "nil" && start.Attr[0].Value == "true" {
+			// still decoding to consume the element in the xml document
+			d.DecodeElement(&dateStr, &start)
+			return nil
+		}
+	}
+
 	err := d.DecodeElement(&dateStr, &start)
 	if err != nil {
 		return err
@@ -350,4 +365,53 @@ type ignoreAlertRequest struct {
 type ignoreAlertResponse struct {
 	XMLName xml.Name `xml:"http://www.dosespot.com/API/11/ IgnoreAlertResult"`
 	Result
+}
+
+type clinician struct {
+	ClinicianId      int64            `xml:"ClinicianId"`
+	Prefix           string           `xml:"Prefix"`
+	FirstName        string           `xml:"FirstName"`
+	MiddleName       string           `xml:"MiddleName"`
+	LastName         string           `xml:"LastName"`
+	Suffix           string           `xml:"Suffix"`
+	DateOfBirth      *specialDateTime `xml:"SpecialDateTime"`
+	Gender           string           `xml:"Gender"`
+	Email            string           `xml:"Email"`
+	Address1         string           `xml:"Address1"`
+	Address2         string           `xml:"Address2"`
+	City             string           `xml:"City"`
+	State            string           `xml:"State"`
+	ZipCode          string           `xml:"ZipCode"`
+	PrimaryPhone     string           `xml:"PrimaryPhone"`
+	PrimaryPhoneType string           `xml:"PrimaryPhoneType"`
+	PrimaryFax       string           `xml:"PrimaryFax"`
+	DEANumber        string           `xml:"DEANumber"`
+	NPINumber        string           `xml:"NPINumber"`
+}
+
+type refillRequestQueueItem struct {
+	RxRequestQueueItemId      int64            `xml:"RxRequestQueueItemID"`
+	ReferenceNumber           string           `xml:"ReferenceNumber"`
+	PharmacyRxReferenceNumber string           `xml:"PharmacyRxReferenceNumber"`
+	RequestedDrugDescription  string           `xml:"RequestedDrugDescription"`
+	RequestedRefillAmount     string           `xml:"RequestedRefillAmount"`
+	RequestedDispense         string           `xml:"RequestedDispense"`
+	PatientId                 int64            `xml:"PatientID"`
+	PatientAddedForRequest    bool             `xml:"PatientAddedForRequest"`
+	RequestDateStamp          *specialDateTime `xml:"CreatedDateStamp"`
+	Clinician                 *clinician       `xml:"Clinician"`
+	RequestedPrescription     *medication      `xml:"RequestedPrescription"`
+	DispensedPrescription     *medication      `xml:"DispensedPrescription"`
+}
+
+type getMedicationRefillRequestQueueForClinicRequest struct {
+	XMLName xml.Name     `xml:"http://www.dosespot.com/API/11/ GetMedicationRefillRequestQueueRequestForClinic"`
+	SSO     singleSignOn `xml:"SingleSignOn"`
+}
+
+type getMedicationRefillRequestQueueForClinicResult struct {
+	XMLName xml.Name     `xml:"http://www.dosespot.com/API/11/ GetMedicationRefillRequestQueueForClinicResult"`
+	SSO     singleSignOn `xml:"SingleSignOn"`
+	Result
+	RefillRequestQueue []*refillRequestQueueItem `xml:"List>RxRequestQueueItem"`
 }

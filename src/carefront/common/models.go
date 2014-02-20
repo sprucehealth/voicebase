@@ -10,6 +10,7 @@ type Patient struct {
 	FirstName      string                 `json:"first_name,omitempty"`
 	LastName       string                 `json:"last_name,omiempty"`
 	Dob            time.Time              `json:"dob,omitempty"`
+	Email          string                 `json:"email,omitempty"`
 	Gender         string                 `json:"gender,omitempty"`
 	ZipCode        string                 `json:"zip_code,omitempty"`
 	City           string                 `json:"city,omitempty"`
@@ -114,6 +115,7 @@ type Treatment struct {
 	ErxMedicationId           *ObjectId                `json:"-"`
 	PrescriptionStatus        string                   `json:"erx_status,omitempty"`
 	PharmacyLocalId           *ObjectId                `json:"-"`
+	ErxPharmacyId             int64                    `json:"-"`
 	StatusDetails             string                   `json:"erx_status_details,omitempty"`
 	TreatmentPlanId           *ObjectId                `json:"treatment_plan_id,omitempty"`
 	PatientVisitId            *ObjectId                `json:"patient_visit_id,omitempty"`
@@ -135,8 +137,10 @@ type Treatment struct {
 	CreationDate              *time.Time               `json:"creation_date,omitempty"`
 	TransmissionErrorDate     *time.Time               `json:"error_date,omitempty"`
 	ErxSentDate               *time.Time               `json:"erx_sent_date,omitempty"`
+	ErxReferenceNumber        string                   `json:"-"`
 	Status                    string                   `json:"-"`
 	OTC                       bool                     `json:"otc,omitempty"`
+	IsControlledSubstance     bool                     `json:"-"`
 	SupplementalInstructions  []*DoctorInstructionItem `json:"supplemental_instructions,omitempty"`
 }
 

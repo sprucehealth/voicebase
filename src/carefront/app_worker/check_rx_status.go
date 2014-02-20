@@ -142,13 +142,13 @@ func ConsumeMessageFromQueue(DataApi api.DataAPI, ERxApi erx.ERxAPI, ErxQueue *c
 		// go through treatments to see if the status has been updated to anything beyond sending
 		failed := 0
 		for _, medication := range medications {
-			if latestPendingStatusPerPrescription[medication.ErxMedicationId] != nil {
+			if latestPendingStatusPerPrescription[medication.ErxMedicationId.Int64()] != nil {
 				switch medication.PrescriptionStatus {
 				case api.ERX_STATUS_SENDING:
 					// nothing to do
 					pendingTreatments++
 				case api.ERX_STATUS_ERROR:
-					treatment, err := DataApi.GetTreatmentBasedOnPrescriptionId(medication.ErxMedicationId)
+					treatment, err := DataApi.GetTreatmentBasedOnPrescriptionId(medication.ErxMedicationId.Int64())
 					if err != nil {
 						statFailure.Inc(1)
 						golog.Errorf("Unable to get treatment based on prescription id: %s", err.Error())
@@ -157,7 +157,7 @@ func ConsumeMessageFromQueue(DataApi api.DataAPI, ERxApi erx.ERxAPI, ErxQueue *c
 					}
 
 					// get the error details for this medication
-					prescriptionLogs, err := ERxApi.GetPrescriptionStatus(doctor.DoseSpotClinicianId, medication.ErxMedicationId)
+					prescriptionLogs, err := ERxApi.GetPrescriptionStatus(doctor.DoseSpotClinicianId, medication.ErxMedicationId.Int64())
 					if err != nil {
 						statFailure.Inc(1)
 						golog.Errorf("Unable to get transmission error details: %s", err.Error())
@@ -193,7 +193,7 @@ func ConsumeMessageFromQueue(DataApi api.DataAPI, ERxApi erx.ERxAPI, ErxQueue *c
 					}
 
 				case api.ERX_STATUS_SENT:
-					treatment, err := DataApi.GetTreatmentBasedOnPrescriptionId(medication.ErxMedicationId)
+					treatment, err := DataApi.GetTreatmentBasedOnPrescriptionId(medication.ErxMedicationId.Int64())
 					if err != nil {
 						statFailure.Inc(1)
 						golog.Errorf("Unable to get treatment based on prescription id: %s", err.Error())

@@ -202,9 +202,10 @@ func (d *DataService) CreateCareTeamForPatient(patientId int64) (*common.Patient
 }
 
 func (d *DataService) GetPatientFromAccountId(accountId int64) (*common.Patient, error) {
-	patients, err := d.getPatientBasedOnQuery(`select patient.id, patient.erx_patient_id, account_id, first_name, last_name, zip_code,city,state, phone, phone_type, gender, dob, patient.status from patient 
+	patients, err := d.getPatientBasedOnQuery(`select patient.id, patient.erx_patient_id, account_id,account.email, first_name, last_name, zip_code,city,state, phone, phone_type, gender, dob, patient.status from patient 
 							left outer join patient_phone on patient_phone.patient_id = patient.id
 							left outer join patient_location on patient_location.patient_id = patient.id
+							left outer join account on account.id = patient.account_id							
 							where patient.account_id = ? and (phone is null or (patient_phone.status='ACTIVE'))
 								and (zip_code is null or patient_location.status='ACTIVE')`, accountId)
 	if len(patients) > 0 {
@@ -215,9 +216,10 @@ func (d *DataService) GetPatientFromAccountId(accountId int64) (*common.Patient,
 }
 
 func (d *DataService) GetPatientFromId(patientId int64) (*common.Patient, error) {
-	patients, err := d.getPatientBasedOnQuery(`select patient.id, patient.erx_patient_id, account_id, first_name, last_name, zip_code, city, state, phone,phone_type, gender, dob, patient.status from patient 
+	patients, err := d.getPatientBasedOnQuery(`select patient.id, patient.erx_patient_id, account_id, account.email, first_name, last_name, zip_code, city, state, phone,phone_type, gender, dob, patient.status from patient 
 							left outer join patient_phone on patient_phone.patient_id = patient.id
 							left outer join patient_location on patient_location.patient_id = patient.id
+							left outer join account on account.id = patient.account_id
 							where patient.id = ? and (phone is null or (patient_phone.status='ACTIVE'))
 								and (zip_code is null or patient_location.status='ACTIVE') `, patientId)
 
@@ -233,19 +235,21 @@ func (d *DataService) GetPatientsForIds(patientIds []int64) ([]*common.Patient, 
 		return nil, nil
 	}
 
-	return d.getPatientBasedOnQuery(fmt.Sprintf(`select patient.id, patient.erx_patient_id, account_id, first_name, last_name, zip_code, city, state, phone,phone_type, gender, dob, patient.status from patient 
+	return d.getPatientBasedOnQuery(fmt.Sprintf(`select patient.id, patient.erx_patient_id, account_id, account.email, first_name, last_name, zip_code, city, state, phone,phone_type, gender, dob, patient.status from patient 
 							left outer join patient_phone on patient_phone.patient_id = patient.id
 							left outer join patient_location on patient_location.patient_id = patient.id
+							left outer join account on account.id = patient.account_id
 							where patient.id in (%s) and (phone is null or (patient_phone.status='ACTIVE'))
 								and (zip_code is null or patient_location.status='ACTIVE')`, enumerateItemsIntoString(patientIds)))
 }
 
 func (d *DataService) GetPatientFromTreatmentPlanId(treatmentPlanId int64) (*common.Patient, error) {
-	patients, err := d.getPatientBasedOnQuery(`select patient.id, patient.erx_patient_id, account_id, first_name, last_name, zip_code, city, state, phone,phone_type, gender, dob, patient.status from treatment_plan 
+	patients, err := d.getPatientBasedOnQuery(`select patient.id, patient.erx_patient_id, account_id,account.email, first_name, last_name, zip_code, city, state, phone,phone_type, gender, dob, patient.status from treatment_plan 
 							inner join patient_visit on patient_visit_id = patient_visit.id
 							inner join patient on patient.id = patient_visit.patient_id
 							left outer join patient_phone on patient_phone.patient_id = patient.id
 							left outer join patient_location on patient_location.patient_id = patient.id
+							left outer join account on account.id = patient.account_id
 							where treatment_plan.id = ? and (phone is null or (patient_phone.status='ACTIVE'))
 								and (zip_code is null or patient_location.status='ACTIVE') `, treatmentPlanId)
 	if len(patients) > 0 {
@@ -256,10 +260,11 @@ func (d *DataService) GetPatientFromTreatmentPlanId(treatmentPlanId int64) (*com
 }
 
 func (d *DataService) GetPatientFromPatientVisitId(patientVisitId int64) (*common.Patient, error) {
-	patients, err := d.getPatientBasedOnQuery(`select patient.id, patient.erx_patient_id, account_id, first_name, last_name, zip_code,city,state, phone, phone_type, gender, dob, patient.status from patient_visit
+	patients, err := d.getPatientBasedOnQuery(`select patient.id, patient.erx_patient_id, account_id,account.email, first_name, last_name, zip_code,city,state, phone, phone_type, gender, dob, patient.status from patient_visit
 							inner join patient on patient_visit.patient_id = patient.id 
 							left outer join patient_phone on patient_phone.patient_id = patient_visit.patient_id
 							left outer join patient_location on patient_location.patient_id = patient_visit.patient_id
+							left outer join account on account.id = patient.account_id							
 							where patient_visit.id = ? 
 							and (phone is null or (patient_phone.status='ACTIVE'))
 							and (zip_code is null or patient_location.status = 'ACTIVE')`, patientVisitId)
@@ -450,12 +455,12 @@ func (d *DataService) getPatientBasedOnQuery(queryStr string, queryParams ...int
 
 	patients := make([]*common.Patient, 0)
 	for rows.Next() {
-		var firstName, lastName, status, gender string
+		var firstName, lastName, status, gender, email string
 		var dob mysql.NullTime
 		var phone, phoneType, zipCode, city, state sql.NullString
 		var erxPatientId sql.NullInt64
 		var patientId, accountId int64
-		err = rows.Scan(&patientId, &erxPatientId, &accountId, &firstName, &lastName, &zipCode, &city, &state, &phone, &phoneType, &gender, &dob, &status)
+		err = rows.Scan(&patientId, &erxPatientId, &accountId, &email, &firstName, &lastName, &zipCode, &city, &state, &phone, &phoneType, &gender, &dob, &status)
 		if err != nil {
 			return nil, err
 		}
@@ -464,6 +469,7 @@ func (d *DataService) getPatientBasedOnQuery(queryStr string, queryParams ...int
 			PatientId:    common.NewObjectId(patientId),
 			FirstName:    firstName,
 			LastName:     lastName,
+			Email:        email,
 			Status:       status,
 			Gender:       gender,
 			AccountId:    common.NewObjectId(accountId),

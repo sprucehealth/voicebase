@@ -71,7 +71,6 @@ func (id *ObjectId) UnmarshalJSON(data []byte) error {
 		*id = 0
 		return nil
 	}
-
 	intId, err := strconv.ParseInt(strData[1:len(strData)-1], 10, 64)
 	*id = ObjectId(intId)
 	return err
