@@ -63,7 +63,7 @@ func TestNewTreatmentSelection(t *testing.T) {
 	}
 
 	erxApi := setupErxAPI(t)
-	newTreatmentHandler := &apiservice.NewTreatmentHandler{ERxApi: erxApi}
+	newTreatmentHandler := &apiservice.NewTreatmentHandler{DataApi: testData.DataApi, ERxApi: erxApi}
 	ts := httptest.NewServer(newTreatmentHandler)
 	defer ts.Close()
 
