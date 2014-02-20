@@ -36,12 +36,12 @@ func TestMedicationStrengthSearch(t *testing.T) {
 		t.Fatal("Unable to make a successful query to the medication strength api: " + err.Error())
 	}
 
-	CheckSuccessfulStatusCode(resp, "Unable to make a successful query to the medication strength api for the doctor: "+string(body), t)
 	medicationStrengthResponse := &apiservice.MedicationStrengthSearchResponse{}
 	err = json.NewDecoder(resp.Body).Decode(medicationStrengthResponse)
 	if err != nil {
 		t.Fatal("Unable to unmarshal the response from the medication strength search api into a json object as expected: " + err.Error())
 	}
+	CheckSuccessfulStatusCode(resp, "Unable to make a successful query to the medication strength api for the doctor: ", t)
 
 	if medicationStrengthResponse.MedicationStrengths == nil || len(medicationStrengthResponse.MedicationStrengths) == 0 {
 		t.Fatal("Expected a list of medication strengths from the api but got none")
