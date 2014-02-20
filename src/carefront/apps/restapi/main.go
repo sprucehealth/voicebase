@@ -56,6 +56,7 @@ type TwilioConfig struct {
 type DosespotConfig struct {
 	ClinicId  int64  `long:"clinic_id" description:"Clinic Id for dosespot"`
 	ClinicKey string `long:"clinic_key" description:"Clinic Key for dosespot"`
+	UserId    int64  `long:"user_id" description:"User Id for dosespot"`
 }
 
 type Config struct {
@@ -210,7 +211,7 @@ func main() {
 	}
 
 	mapsService := maps.NewGoogleMapsService(metricsRegistry.Scope("google_maps_api"))
-	doseSpotService := erx.NewDoseSpotService(conf.DoseSpot.ClinicId, conf.DoseSpot.ClinicKey, metricsRegistry.Scope("dosespot_api"))
+	doseSpotService := erx.NewDoseSpotService(conf.DoseSpot.ClinicId, conf.DoseSpot.UserId, conf.DoseSpot.ClinicKey, metricsRegistry.Scope("dosespot_api"))
 
 	dataApi := &api.DataService{DB: db}
 	cloudStorageApi := api.NewCloudStorageService(awsAuth)

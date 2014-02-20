@@ -16,6 +16,7 @@ import (
 type DoseSpotService struct {
 	ClinicId     int64
 	ClinicKey    string
+	UserID       int64
 	apiLatencies map[DoseSpotApiId]metrics.Histogram
 	apiRequests  map[DoseSpotApiId]metrics.Counter
 	apiFailure   map[DoseSpotApiId]metrics.Counter
@@ -63,7 +64,7 @@ func getDoseSpotClient() *soapClient {
 	return &soapClient{SoapAPIEndPoint: doseSpotSOAPEndPoint, APIEndpoint: doseSpotAPIEndPoint}
 }
 
-func NewDoseSpotService(clinicId int64, clinicKey string, statsRegistry metrics.Registry) *DoseSpotService {
+func NewDoseSpotService(clinicId, userId int64, clinicKey string, statsRegistry metrics.Registry) *DoseSpotService {
 	d := &DoseSpotService{}
 	if clinicId == 0 {
 		d.ClinicKey = os.Getenv("DOSESPOT_CLINIC_KEY")
