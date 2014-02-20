@@ -331,7 +331,7 @@ func (d *DataService) getPatientAnswersForQuestionsBasedOnQuery(query string, ar
 			questionId := patientAnswerToQuestion.ParentQuestionId.Int64()
 			// go through the list of answers to identify the particular answer we care about
 			for _, patientAnswer := range patientAnswers[questionId] {
-				if patientAnswer.AnswerIntakeId == patientAnswerToQuestion.ParentAnswerId {
+				if patientAnswer.AnswerIntakeId.Int64() == patientAnswerToQuestion.ParentAnswerId.Int64() {
 					// this is the top level answer to
 					if patientAnswer.SubAnswers == nil {
 						patientAnswer.SubAnswers = make([]*common.AnswerIntake, 0)

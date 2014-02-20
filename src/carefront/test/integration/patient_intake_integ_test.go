@@ -384,19 +384,25 @@ func TestSubQuestionEntryIntake(t *testing.T) {
 	patientVisitResponse = GetPatientVisitForPatient(patientSignedUpResponse.Patient.PatientId.Int64(), testData, t)
 
 	// lets go through the questions to find the one for which the patient answer should be present
+	questionNotFound := true
 	for _, section := range patientVisitResponse.ClientLayout.Sections {
 		for _, screen := range section.Screens {
 			for _, question := range screen.Questions {
 				if question.QuestionId == questionId {
+					questionNotFound = false
 					if question.Answers == nil || len(question.Answers) == 0 {
 						t.Fatalf("Expected patient answer for question with id %d, but got none", questionId)
 					}
 					for _, patientAnswer := range question.Answers {
-
 						if !(patientAnswer.AnswerText == neutrogena || patientAnswer.AnswerText == benzoylPeroxide ||
 							patientAnswer.AnswerText == proactive) {
 							t.Fatal("Top level patient answers is not one of the expected answers")
 						}
+
+						if len(patientAnswer.SubAnswers) == 0 {
+							t.Fatal("Expected patient answert o have subanswers but non returned")
+						}
+
 						for _, subAnswer := range patientAnswer.SubAnswers {
 							if !(subAnswer.PotentialAnswerId.Int64() == howEffectiveAnswerId ||
 								subAnswer.PotentialAnswerId.Int64() == usingTreatmentAnswerId ||
@@ -415,6 +421,10 @@ func TestSubQuestionEntryIntake(t *testing.T) {
 				}
 			}
 		}
+	}
+
+	if questionNotFound {
+		t.Fatal("Question that is expected to have the answers and sub answers not found in the visit response")
 	}
 
 	// now update the answer to this question to ensure that we can update answers no problem
@@ -437,10 +447,12 @@ func TestSubQuestionEntryIntake(t *testing.T) {
 	// now, get the patient visit again to ensure that a patient answer was registered for the intended question
 	patientVisitResponse = GetPatientVisitForPatient(patientSignedUpResponse.Patient.PatientId.Int64(), testData, t)
 	// lets go through the questions to find the one for which the patient answer should be present
+	questionNotFound = true
 	for _, section := range patientVisitResponse.ClientLayout.Sections {
 		for _, screen := range section.Screens {
 			for _, question := range screen.Questions {
 				if question.QuestionId == questionId {
+					questionNotFound = false
 					if question.Answers == nil || len(question.Answers) == 0 {
 						t.Fatalf("Expected patient answer for question with id %d, but got none", questionId)
 					}
@@ -458,6 +470,10 @@ func TestSubQuestionEntryIntake(t *testing.T) {
 				}
 			}
 		}
+	}
+
+	if questionNotFound {
+		t.Fatal("Question that is expected to have answers and sub answers not found")
 	}
 }
 
