@@ -75,3 +75,7 @@ func (s *StubErxService) GetTransmissionErrorRefillRequestsCount(clinicianId int
 func (s *StubErxService) IgnoreAlert(clinicianId int64, prescriptionId int64) error {
 	return nil
 }
+
+func (s *StubErxService) GetRefillRequestQueueForClinic() error {
+	return nil
+}
