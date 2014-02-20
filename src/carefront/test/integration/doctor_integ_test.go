@@ -75,14 +75,20 @@ func TestDoctorDrugSearch(t *testing.T) {
 	testData := SetupIntegrationTest(t)
 	defer TearDownIntegrationTest(t, testData)
 
+	doctorId := getDoctorIdOfCurrentPrimaryDoctor(testData, t)
+	doctor, err := testData.DataApi.GetDoctorFromId(doctorId)
+	if err != nil {
+		t.Fatal("Unable to get doctor information from id: " + err.Error())
+	}
+
 	erx := setupErxAPI(t)
 
 	// ensure that the autcoomplete api returns results
-	autocompleteHandler := &apiservice.AutocompleteHandler{ERxApi: erx, Role: api.DOCTOR_ROLE}
+	autocompleteHandler := &apiservice.AutocompleteHandler{DataApi: testData.DataApi, ERxApi: erx, Role: api.DOCTOR_ROLE}
 	ts := httptest.NewServer(autocompleteHandler)
 	defer ts.Close()
 
-	resp, err := authGet(ts.URL+"?query=pro", 0)
+	resp, err := authGet(ts.URL+"?query=pro", doctor.AccountId.Int64())
 	if err != nil {
 		t.Fatal("Unable to make a successful query to the autocomplete API")
 	}

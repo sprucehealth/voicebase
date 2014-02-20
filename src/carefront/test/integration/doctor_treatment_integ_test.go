@@ -20,24 +20,25 @@ func TestMedicationStrengthSearch(t *testing.T) {
 	testData := SetupIntegrationTest(t)
 	defer TearDownIntegrationTest(t, testData)
 
+	doctorId := getDoctorIdOfCurrentPrimaryDoctor(testData, t)
+	doctor, err := testData.DataApi.GetDoctorFromId(doctorId)
+	if err != nil {
+		t.Fatal("Unable to get doctor from id: " + err.Error())
+	}
+
 	erx := setupErxAPI(t)
-	medicationStrengthSearchHandler := &apiservice.MedicationStrengthSearchHandler{ERxApi: erx}
+	medicationStrengthSearchHandler := &apiservice.MedicationStrengthSearchHandler{DataApi: testData.DataApi, ERxApi: erx}
 	ts := httptest.NewServer(medicationStrengthSearchHandler)
 	defer ts.Close()
 
-	resp, err := authGet(ts.URL+"?drug_internal_name="+url.QueryEscape("Benzoyl Peroxide Topical (topical - cream)"), 0)
+	resp, err := authGet(ts.URL+"?drug_internal_name="+url.QueryEscape("Benzoyl Peroxide Topical (topical - cream)"), doctor.AccountId.Int64())
 	if err != nil {
 		t.Fatal("Unable to make a successful query to the medication strength api: " + err.Error())
 	}
 
-	body, err := ioutil.ReadAll(resp.Body)
-	if err != nil {
-		t.Fatal("Unable to parse the body of the response: " + err.Error())
-	}
-
 	CheckSuccessfulStatusCode(resp, "Unable to make a successful query to the medication strength api for the doctor: "+string(body), t)
 	medicationStrengthResponse := &apiservice.MedicationStrengthSearchResponse{}
-	err = json.Unmarshal(body, medicationStrengthResponse)
+	err = json.NewDecoder(resp.Body).Decode(medicationStrengthResponse)
 	if err != nil {
 		t.Fatal("Unable to unmarshal the response from the medication strength search api into a json object as expected: " + err.Error())
 	}
@@ -55,12 +56,18 @@ func TestNewTreatmentSelection(t *testing.T) {
 	testData := SetupIntegrationTest(t)
 	defer TearDownIntegrationTest(t, testData)
 
+	doctorId := getDoctorIdOfCurrentPrimaryDoctor(testData, t)
+	doctor, err := testData.DataApi.GetDoctorFromId(doctorId)
+	if err != nil {
+		t.Fatal("Unable to get doctor from id: " + err.Error())
+	}
+
 	erxApi := setupErxAPI(t)
 	newTreatmentHandler := &apiservice.NewTreatmentHandler{ERxApi: erxApi}
 	ts := httptest.NewServer(newTreatmentHandler)
 	defer ts.Close()
 
-	resp, err := authGet(ts.URL+"?drug_internal_name="+url.QueryEscape("Lisinopril (oral - tablet)")+"&medication_strength="+url.QueryEscape("10 mg"), 0)
+	resp, err := authGet(ts.URL+"?drug_internal_name="+url.QueryEscape("Lisinopril (oral - tablet)")+"&medication_strength="+url.QueryEscape("10 mg"), doctor.AccountId.Int64())
 	if err != nil {
 		t.Fatal("Unable to make a successful query to the medication strength api: " + err.Error())
 	}
