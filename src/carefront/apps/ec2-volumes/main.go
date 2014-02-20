@@ -249,6 +249,27 @@ func attach() error {
 		}
 	}
 
+	// If the instanceID doesn't look like an instance_id (starting with "i-)
+	// then see if there's an instance with the tag Name that matches.
+	if instanceID[:2] != "i-" {
+		res, err := config.ec2.DescribeInstances(nil, 0, "", map[string][]string{
+			"tag:Name":        []string{instanceID},
+			"tag:Environment": []string{config.Environment},
+		})
+		if err != nil {
+			return err
+		}
+		if n := len(res.Reservations); n == 0 {
+			return fmt.Errorf("instance with name %s not found", instanceID)
+		} else if n > 1 {
+			return fmt.Errorf("more than one reservation (%d) with name %s not found", n, instanceID)
+		}
+		if n := len(res.Reservations[0].Instances); n > 1 {
+			return fmt.Errorf("more than one instance (%d) with name %s not found", n, instanceID)
+		}
+		instanceID = res.Reservations[0].Instances[0].InstanceID
+	}
+
 	vols, err := findGroup(name)
 	if err != nil {
 		return err
