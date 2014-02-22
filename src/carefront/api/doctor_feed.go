@@ -29,12 +29,22 @@ func (d *DoctorQueueItem) GetTitleAndSubtitle(dataApi DataAPI) (title, subtitle 
 	switch d.EventType {
 
 	case EVENT_TYPE_PATIENT_VISIT, EVENT_TYPE_TREATMENT_PLAN:
-		patientId, shadowedErr := dataApi.GetPatientIdFromPatientVisitId(d.ItemId)
+		var patientVisitId int64
+
+		if d.EventType == EVENT_TYPE_TREATMENT_PLAN {
+			patientVisitId, err = dataApi.GetPatientVisitIdFromTreatmentPlanId(d.ItemId)
+			if err != nil {
+				return
+			}
+		} else {
+			patientVisitId = d.ItemId
+		}
+
+		patientId, shadowedErr := dataApi.GetPatientIdFromPatientVisitId(patientVisitId)
 		if shadowedErr != nil {
 			err = shadowedErr
 			return
 		}
-
 		patient, shadowedErr := dataApi.GetPatientFromId(patientId)
 		if shadowedErr != nil {
 			err = shadowedErr
