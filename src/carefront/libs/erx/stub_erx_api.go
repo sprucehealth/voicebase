@@ -8,6 +8,9 @@ import (
 
 type StubErxService struct {
 	PatientErxId                       int64
+	PatientDetailsToReturn             *common.Patient
+	PharmacyDetailsToReturn            *pharmacySearch.PharmacyData
+	RefillRxRequestQueueToReturn       []*common.RefillRequestItem
 	PrescriptionIdsToReturn            []int64
 	PrescriptionIdToPrescriptionStatus map[int64]string
 }
@@ -77,13 +80,13 @@ func (s *StubErxService) IgnoreAlert(clinicianId int64, prescriptionId int64) er
 }
 
 func (s *StubErxService) GetRefillRequestQueueForClinic() ([]*common.RefillRequestItem, error) {
-	return nil, nil
+	return s.RefillRxRequestQueueToReturn, nil
 }
 
 func (s *StubErxService) GetPatientDetails(erxPatientId int64) (*common.Patient, error) {
-	return nil, nil
+	return s.PatientDetailsToReturn, nil
 }
 
 func (s *StubErxService) GetPharmacyDetails(pharmacyId int64) (*pharmacySearch.PharmacyData, error) {
-	return nil, nil
+	return s.PharmacyDetailsToReturn, nil
 }

@@ -1315,9 +1315,10 @@ func (d *DataService) addUnlinkedTreatmentFromPharmacy(treatment *common.Treatme
 	}
 
 	treatment.Id = common.NewObjectId(treatmentId)
+	fmt.Printf("treatment id of created treatment is %d\n", treatmentId)
 	// add drug db ids to the table
 	for drugDbTag, drugDbId := range treatment.DrugDBIds {
-		_, err := tx.Exec(`insert into drug_db_id (drug_db_id_tag, drug_db_id, treatment_id) values (?, ?, ?)`, drugDbTag, drugDbId, treatment.Id.Int64())
+		_, err := tx.Exec(`insert into unlinked_requested_treatment_drug_db_id (drug_db_id_tag, drug_db_id, unlinked_requested_treatment_id) values (?, ?, ?)`, drugDbTag, drugDbId, treatment.Id.Int64())
 		if err != nil {
 			tx.Rollback()
 			return err
@@ -1393,7 +1394,7 @@ func (d *DataService) addPharmacyDispensedTreatment(dispensedTreatment, requeste
 	dispensedTreatment.Id = common.NewObjectId(treatmentId)
 	// add drug db ids to the table
 	for drugDbTag, drugDbId := range dispensedTreatment.DrugDBIds {
-		_, err := tx.Exec(`insert into drug_db_id (drug_db_id_tag, drug_db_id, treatment_id) values (?, ?, ?)`, drugDbTag, drugDbId, dispensedTreatment.Id.Int64())
+		_, err := tx.Exec(`insert into pharmacy_dispensed_treatment_drug_db_id (drug_db_id_tag, drug_db_id, pharmacy_dispensed_treatment_id) values (?, ?, ?)`, drugDbTag, drugDbId, dispensedTreatment.Id.Int64())
 		if err != nil {
 			tx.Rollback()
 			return err
