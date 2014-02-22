@@ -105,7 +105,7 @@ func (d *DoctorQueueItem) GetDisplayTypes() []string {
 			if d.PositionInQueue == 0 {
 				return []string{DISPLAY_TYPE_TITLE_SUBTITLE_BUTTON}
 			} else {
-				return []string{DISPLAY_TYPE_TITLE_SUBTITLE_NONACTIONABLE}
+				return []string{DISPLAY_TYPE_TITLE_SUBTITLE_ACTIONABLE}
 			}
 		}
 	}
@@ -118,6 +118,8 @@ func (d *DoctorQueueItem) GetActionUrl() string {
 		switch d.Status {
 		case QUEUE_ITEM_STATUS_COMPLETED, QUEUE_ITEM_STATUS_TRIAGED:
 			return fmt.Sprintf("%s%s?patient_visit_id=%d", SpruceButtonBaseActionUrl, viewTreatedPatientVisitReviewAction, d.ItemId)
+		case QUEUE_ITEM_STATUS_ONGOING, QUEUE_ITEM_STATUS_PENDING:
+			return fmt.Sprintf("%s%s?patient_visit_id=%d", SpruceButtonBaseActionUrl, beginPatientVisitReviewAction, d.ItemId)
 		}
 	case EVENT_TYPE_TREATMENT_PLAN:
 		switch d.Status {
@@ -141,9 +143,6 @@ func (d *DoctorQueueItem) GetButton() *Button {
 			button.ButtonActionUrl = fmt.Sprintf("%s%s?patient_visit_id=%d", SpruceButtonBaseActionUrl, beginPatientVisitReviewAction, d.ItemId)
 			return button
 		case QUEUE_ITEM_STATUS_ONGOING:
-			if d.PositionInQueue != 0 {
-				return nil
-			}
 			button := &Button{}
 			button.ButtonText = "Continue"
 			button.ButtonActionUrl = fmt.Sprintf("%s%s?patient_visit_id=%d", SpruceButtonBaseActionUrl, beginPatientVisitReviewAction, d.ItemId)

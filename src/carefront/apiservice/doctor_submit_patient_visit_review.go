@@ -75,16 +75,28 @@ func (d *DoctorSubmitPatientVisitReviewHandler) submitPatientVisitReview(w http.
 		return
 	}
 
+	treatmentPlanId, err := d.DataApi.GetActiveTreatmentPlanForPatientVisit(patientVisitReviewData.DoctorId, requestData.PatientVisitId)
+	if err != nil {
+		WriteDeveloperError(w, http.StatusInternalServerError, "Unable to get current active treatment plan for patient visit: "+err.Error())
+		return
+	}
+
+	// nothing to do if the visit is already in the completed state from the doctor's perspective
+	if patientVisitReviewData.PatientVisit.Status == api.CASE_STATUS_TREATED || patientVisitReviewData.PatientVisit.Status == api.CASE_STATUS_TRIAGED ||
+		patientVisitReviewData.PatientVisit.Status == api.CASE_STATUS_PHOTOS_REJECTED {
+		err = d.DataApi.MarkGenerationOfTreatmentPlanInVisitQueue(patientVisitReviewData.DoctorId, requestData.PatientVisitId, treatmentPlanId, api.QUEUE_ITEM_STATUS_ONGOING, requestData.Status)
+		if err != nil {
+			WriteDeveloperError(w, http.StatusInternalServerError, "Unable to update the status of the patient visit in the doctor queue: "+err.Error())
+			return
+		}
+		WriteJSONToHTTPResponseWriter(w, http.StatusOK, SuccessfulGenericJSONResponse())
+		return
+	}
+
 	// doctor can only update the state of a patient visit that is currently in REVIEWING state
 	err = EnsurePatientVisitInExpectedStatus(d.DataApi, requestData.PatientVisitId, api.CASE_STATUS_REVIEWING)
 	if err != nil {
 		WriteDeveloperError(w, http.StatusBadRequest, err.Error())
-		return
-	}
-
-	treatmentPlanId, err := d.DataApi.GetActiveTreatmentPlanForPatientVisit(patientVisitReviewData.DoctorId, requestData.PatientVisitId)
-	if err != nil {
-		WriteDeveloperError(w, http.StatusInternalServerError, "Unable to get current active treatment plan for patient visit: "+err.Error())
 		return
 	}
 
