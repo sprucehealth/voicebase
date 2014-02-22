@@ -375,8 +375,10 @@ func main() {
 		mux.Handle("/v1/doctor/demo/patient_visit", createDemoPatientVisitHandler)
 	}
 
-	app_worker.StartWorkerToUpdatePrescriptionStatusForPatient(dataApi, doseSpotService, erxStatusQueue, metricsRegistry.Scope("check_erx_status"))
-	app_worker.StartWorkerToCheckForRefillRequests(dataApi, doseSpotService, metricsRegistry.Scope("check_rx_refill_requests"))
+	if conf.ERxRouting {
+		app_worker.StartWorkerToUpdatePrescriptionStatusForPatient(dataApi, doseSpotService, erxStatusQueue, metricsRegistry.Scope("check_erx_status"))
+		app_worker.StartWorkerToCheckForRefillRequests(dataApi, doseSpotService, metricsRegistry.Scope("check_rx_refill_requests"))
+	}
 
 	s := &http.Server{
 		Addr:           conf.ListenAddr,
