@@ -125,8 +125,8 @@ func (p *PharmacyTextSearchHandler) ServeHTTP(w http.ResponseWriter, r *http.Req
 func breakdownAddressForPharmacies(pharmacies []*pharmacy.PharmacyData) {
 	for _, pharmacyData := range pharmacies {
 		pharmacyData.Source = pharmacy.PHARMACY_SOURCE_GOOGLE
-		addressComponents := strings.Split(pharmacyData.Address, ",")
-		pharmacyData.Address = strings.TrimSpace(addressComponents[0])
+		addressComponents := strings.Split(pharmacyData.AddressLine1, ",")
+		pharmacyData.AddressLine1 = strings.TrimSpace(addressComponents[0])
 		if len(addressComponents) > 1 {
 			pharmacyData.City = strings.TrimSpace(addressComponents[1])
 			if len(addressComponents) > 2 {

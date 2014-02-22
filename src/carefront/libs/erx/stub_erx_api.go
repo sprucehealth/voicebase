@@ -76,6 +76,6 @@ func (s *StubErxService) IgnoreAlert(clinicianId int64, prescriptionId int64) er
 	return nil
 }
 
-func (s *StubErxService) GetRefillRequestQueueForClinic() error {
-	return nil
+func (s *StubErxService) GetRefillRequestQueueForClinic() ([]*common.RefillRequestItem, error) {
+	return nil, nil
 }

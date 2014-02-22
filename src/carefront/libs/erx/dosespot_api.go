@@ -146,31 +146,33 @@ type prescription struct {
 }
 
 type medication struct {
-	DisplayName            string           `xml:"DisplayName"`
-	DrugName               string           `xml:"DrugName,omitempty"`
-	Strength               string           `xml:"Strength"`
-	Route                  string           `xml:"Route"`
-	DoseSpotPrescriptionId int64            `xml:"PrescriptionId"`
-	LexiGenProductId       int64            `xml:"LexiGenProductId"`
-	LexiDrugSynId          int64            `xml:"LexiDrugSynId"`
-	LexiSynonymTypeId      int64            `xml:"LexiSynonymTypeId"`
-	NDC                    string           `xml:"NDC"`
-	Refills                nullInt64        `xml:"Refills"`
-	DaysSupply             nullInt64        `xml:"DaysSupply,omitempty"`
-	Dispense               string           `xml:"Dispense"`
-	DispenseUnitId         int64            `xml:"DispenseUnitId"`
-	Instructions           string           `xml:"Instructions"`
-	PharmacyId             int64            `xml:"PharmacyId"`
-	PharmacyNotes          string           `xml:"PharmacyNotes"`
-	NoSubstitutions        bool             `xml:"NoSubstitutions"`
-	RxReferenceNumber      string           `xml:"RxReferenceNumber"`
-	PrescriptionStatus     string           `xml:"PrescriptionStatus,omitempty"`
-	Status                 string           `xml:"Status,omitempty"`
-	DatePrescribed         *specialDateTime `xml:"DatePrescribed,omitempty"`
-	LastDateFilled         *specialDateTime `xml:"LastDateFilled,omitempty"`
-	ClinicianId            int64            `xml:"ClinicianId"`
-	ClinicId               int64            `xml:"ClinicId"`
-	MedicationId           int64            `xml:"MedicationId,omitempty"`
+	DisplayName             string           `xml:"DisplayName"`
+	DrugName                string           `xml:"DrugName,omitempty"`
+	Strength                string           `xml:"Strength"`
+	Route                   string           `xml:"Route"`
+	DoseSpotPrescriptionId  int64            `xml:"PrescriptionId"`
+	LexiGenProductId        int64            `xml:"LexiGenProductId"`
+	LexiDrugSynId           int64            `xml:"LexiDrugSynId"`
+	LexiSynonymTypeId       int64            `xml:"LexiSynonymTypeId"`
+	NDC                     string           `xml:"NDC"`
+	Refills                 nullInt64        `xml:"Refills"`
+	DaysSupply              nullInt64        `xml:"DaysSupply,omitempty"`
+	Dispense                string           `xml:"Dispense"`
+	DispenseUnitId          int64            `xml:"DispenseUnitId"`
+	DispenseUnitDescription string           `xml:"DispenseUnit"`
+	Instructions            string           `xml:"Instructions"`
+	PharmacyId              int64            `xml:"PharmacyId"`
+	PharmacyNotes           string           `xml:"PharmacyNotes"`
+	NoSubstitutions         bool             `xml:"NoSubstitutions"`
+	RxReferenceNumber       string           `xml:"RxReferenceNumber"`
+	PrescriptionStatus      string           `xml:"PrescriptionStatus,omitempty"`
+	Status                  string           `xml:"Status,omitempty"`
+	DatePrescribed          *specialDateTime `xml:"DatePrescribed,omitempty"`
+	LastDateFilled          *specialDateTime `xml:"LastDateFilled,omitempty"`
+	ClinicianId             int64            `xml:"ClinicianId"`
+	ClinicId                int64            `xml:"ClinicId"`
+	MedicationId            int64            `xml:"MedicationId,omitempty"`
+	Schedule                string           `xml:"Schedule"`
 }
 
 // Need to treat the date object for date of birth as a special case
@@ -414,4 +416,28 @@ type getMedicationRefillRequestQueueForClinicResult struct {
 	SSO     singleSignOn `xml:"SingleSignOn"`
 	Result
 	RefillRequestQueue []*refillRequestQueueItem `xml:"List>RxRequestQueueItem"`
+}
+
+type getPatientDetailRequest struct {
+	XMLName   xml.Name     `xml:"http://www.dosespot.com/API/11/ GetPatientDetailRequest"`
+	SSO       singleSignOn `xml:"SingleSignOn"`
+	PatientId int64        `xml:"PatientId"`
+}
+
+type getPatientDetailResult struct {
+	XMLName        xml.Name         `xml:"http://www.dosespot.com/API/11/ GetPatientDetailResult"`
+	PatientUpdates []*patientUpdate `xml:"PatientUpdates>PatientUpdate"`
+	Result
+}
+
+type pharmacyDetailsRequest struct {
+	XMLName    xml.Name     `xml:"http://www.dosespot.com/API/11/ PharmacyValidateMessage"`
+	SSO        singleSignOn `xml:"SingleSignOn"`
+	PharmacyId int64        `xml:"PharmacyId"`
+}
+
+type pharmacyDetailsResult struct {
+	XMLName xml.Name `xml:"http://www.dosespot.com/API/11/ PharmacyValidateMessageResult"`
+	Result
+	PharmacyDetails *pharmacy `xml:"Pharmacy"`
 }

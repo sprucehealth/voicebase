@@ -41,6 +41,13 @@ func (d *DataService) GetDoctorFromAccountId(accountId int64) (*common.Doctor, e
 	return getDoctorFromRow(row)
 }
 
+func (d *DataService) GetDoctorFromDoseSpotClinicianId(clinicianId int64) (*common.Doctor, error) {
+	row := d.DB.QueryRow(`select doctor.id, account_id, phone, first_name, last_name, gender, dob, status, clinician_id from doctor 
+							left outer join doctor_phone on doctor_phone.doctor_id = doctor.id
+								where doctor.clinician_id = ? and (doctor_phone.phone is null or doctor_phone.phone_type = ?)`, clinicianId, doctor_phone_type)
+	return getDoctorFromRow(row)
+}
+
 func getDoctorFromRow(row *sql.Row) (*common.Doctor, error) {
 	var firstName, lastName, status, gender string
 	var dob mysql.NullTime
@@ -563,7 +570,7 @@ func (d *DataService) AddTreatmentTemplates(doctorTreatmentTemplates []*common.D
 			treatmentIdInPatientTreatmentPlan = doctorTreatmentTemplate.Treatment.Id.Int64()
 		}
 
-		err = d.addTreatment(doctorTreatmentTemplate.Treatment, true, tx)
+		err = d.addTreatment(doctorTreatmentTemplate.Treatment, without_link_to_treatment_plan, tx)
 		if err != nil {
 			tx.Rollback()
 			return err
@@ -851,6 +858,132 @@ func (d *DataService) GetCompletedPrescriptionsForDoctor(from, to time.Time, doc
 	return treatmentPlans, nil
 }
 
+func (d *DataService) GetPendingRefillRequestStatusEventsForClinic() ([]RefillRequestStatus, error) {
+	rows, err := d.DB.Query(`select rx_refill_request_id, rx_refill_request.erx_request_queue_item_id, rx_refill_status, rx_refill_status_date   
+								from rx_refill_status_events 
+									inner join rx_refill_request on rx_refill_request_id = rx_refill_request.id
+									where rx_refill_status_events.status = ? and rx_refill_status = ?`, status_active, RX_REFILL_STATUS_QUEUED)
+	if err != nil {
+		return nil, err
+	}
+	defer rows.Close()
+	refillRequestStatuses := make([]RefillRequestStatus, 0)
+	for rows.Next() {
+		var refillRequestStatus RefillRequestStatus
+		err = rows.Scan(&refillRequestStatus.ErxRefillRequestId, &refillRequestStatus.RxRequestQueueItemId, &refillRequestStatus.Status, &refillRequestStatus.StatusTimeStamp)
+		if err != nil {
+			return nil, err
+		}
+		refillRequestStatuses = append(refillRequestStatuses, refillRequestStatus)
+	}
+	return refillRequestStatuses, nil
+}
+
+func (d *DataService) AddUnlinkedTreatmentFromPharmacy(unlinkedTreatment *common.Treatment) error {
+	tx, err := d.DB.Begin()
+	if err != nil {
+		return err
+	}
+
+	err = d.addUnlinkedTreatmentFromPharmacy(unlinkedTreatment, tx)
+	if err != nil {
+		tx.Rollback()
+		return err
+	}
+
+	return tx.Commit()
+}
+
+func (d *DataService) CreateRefillRequest(refillRequest *common.RefillRequestItem) error {
+	tx, err := d.DB.Begin()
+	if err != nil {
+		return err
+
+	}
+
+	err = d.addPharmacyDispensedTreatment(refillRequest.DispensedPrescription, refillRequest.RequestedPrescription, refillRequest.UnlinkedRequestedPrescription, tx)
+	if err != nil {
+		tx.Rollback()
+		return err
+	}
+
+	columnsAndData := map[string]interface{}{
+		"erx_request_queue_item_id":  refillRequest.RxRequestQueueItemId,
+		"requested_drug_description": refillRequest.RequestedDrugDescription,
+		"requested_refill_amount":    refillRequest.RequestedRefillAmount,
+		"requested_dispense":         refillRequest.RequestedDispense,
+		"patient_id":                 refillRequest.Patient.PatientId.Int64(),
+		"request_date":               refillRequest.RequestDateStamp,
+		"doctor_id":                  refillRequest.Doctor.DoctorId.Int64(),
+		"dispensed_treatment_id":     refillRequest.DispensedPrescription.Id.Int64(),
+	}
+
+	// only have a link to the unlinked treatment if it so exists
+	if refillRequest.UnlinkedRequestedPrescription != nil {
+		columnsAndData["unlinked_requested_treatment_id"] = refillRequest.UnlinkedRequestedPrescription.Id.Int64()
+	} else {
+		columnsAndData["requested_treatment_id"] = refillRequest.RequestedPrescription.Id.Int64()
+
+	}
+
+	if refillRequest.ReferenceNumber != "" {
+		columnsAndData["reference_number"] = refillRequest.ReferenceNumber
+	}
+
+	if refillRequest.PharmacyRxReferenceNumber != "" {
+		columnsAndData["pharmacy_rx_reference_number"] = refillRequest.PharmacyRxReferenceNumber
+	}
+
+	columns, dataForColumns := getKeysAndValuesFromMap(columnsAndData)
+
+	lastId, err := tx.Exec(fmt.Sprintf(`insert into rx_refill_request (%s) values (%s)`,
+		strings.Join(columns, ","), nReplacements(len(columns))), dataForColumns...)
+	if err != nil {
+		tx.Rollback()
+		return err
+	}
+
+	refillRequestId, err := lastId.LastInsertId()
+	if err != nil {
+		tx.Rollback()
+		return err
+	}
+
+	refillRequest.Id = common.NewObjectId(refillRequestId)
+
+	if err := tx.Commit(); err != nil {
+		return err
+	}
+	return nil
+}
+
+func (d *DataService) AddRefillRequestStatusEvent(rxRefillRequestId int64, status string, statusDate time.Time) error {
+	tx, err := d.DB.Begin()
+	if err != nil {
+		return err
+	}
+
+	_, err = tx.Exec(`update rx_refill_status_events set status = ? where status = ? and rx_refill_request_id = ?`, status_inactive, status_active, rxRefillRequestId)
+	if err != nil {
+		tx.Rollback()
+		return err
+	}
+
+	_, err = tx.Exec(`insert into rx_refill_status_events (rx_refill_request_id, rx_refill_status, rx_refill_status_date, status) values (?,?,?,?)`, rxRefillRequestId, status, statusDate, status_active)
+	if err != nil {
+		tx.Rollback()
+		return err
+	}
+
+	return tx.Commit()
+}
+
+func (d *DataService) InsertNewRefillRequestIntoDoctorQueue(refillRequestId int64, doctorId int64) error {
+	_, err := d.DB.Exec(`insert into doctor_queue (doctor_id, item_id, event_type, status) values (?,?,?,?) `,
+		doctorId, refillRequestId, event_type_refill_request, status_pending)
+	return err
+}
+
 func (d *DataService) getIdForNameFromTable(tableName, drugComponentName string) (nullId sql.NullInt64, err error) {
 	err = d.DB.QueryRow(fmt.Sprintf(`select id from %s where name=?`, tableName), drugComponentName).Scan(&nullId)
 	return
@@ -1121,4 +1254,171 @@ func getInstructionsFromRows(rows *sql.Rows) ([]*common.DoctorInstructionItem, e
 		drugInstructions = append(drugInstructions, supplementalInstruction)
 	}
 	return drugInstructions, nil
+}
+
+// this method is used to add treatments that come in from dosespot (either pharmacy dispensed medication or treatments that don't exist but
+// are the basis of a refill request)
+func (d *DataService) addUnlinkedTreatmentFromPharmacy(treatment *common.Treatment, tx *sql.Tx) error {
+	substitutionsAllowedBit := 0
+	if treatment.SubstitutionsAllowed {
+		substitutionsAllowedBit = 1
+	}
+
+	treatmentType := treatment_rx
+	if treatment.OTC {
+		treatmentType = treatment_otc
+	}
+
+	columnsAndData := map[string]interface{}{
+		"drug_internal_name":    treatment.DrugInternalName,
+		"dosage_strength":       treatment.DosageStrength,
+		"type":                  treatmentType,
+		"dispense_value":        treatment.DispenseValue,
+		"dispense_unit":         treatment.DispenseUnitDescription,
+		"refills":               treatment.NumberRefills,
+		"substitutions_allowed": substitutionsAllowedBit,
+		"days_supply":           treatment.DaysSupply,
+		"patient_instructions":  treatment.PatientInstructions,
+		"pharmacy_notes":        treatment.PharmacyNotes,
+		"status":                treatment.Status,
+		"erx_id":                treatment.PrescriptionId.Int64(),
+		"erx_sent_date":         treatment.ErxSentDate,
+		"erx_last_filled_date":  treatment.ErxLastDateFilled,
+		"pharmacy_id":           treatment.PharmacyLocalId,
+	}
+
+	if err := d.includeDrugNameComponentIfNonZero(treatment.DrugName, drug_name_table, "drug_name_id", columnsAndData, tx); err != nil {
+		tx.Rollback()
+		return err
+	}
+
+	if err := d.includeDrugNameComponentIfNonZero(treatment.DrugForm, drug_form_table, "drug_form_id", columnsAndData, tx); err != nil {
+		tx.Rollback()
+		return err
+	}
+	if err := d.includeDrugNameComponentIfNonZero(treatment.DrugRoute, drug_route_table, "drug_route_id", columnsAndData, tx); err != nil {
+		tx.Rollback()
+		return err
+	}
+
+	columns, dataForColumns := getKeysAndValuesFromMap(columnsAndData)
+	res, err := tx.Exec(fmt.Sprintf(`insert into unlinked_requested_treatment (%s) values (%s)`, strings.Join(columns, ","), nReplacements(len(dataForColumns))), dataForColumns...)
+	if err != nil {
+		tx.Rollback()
+		return err
+	}
+
+	treatmentId, err := res.LastInsertId()
+	if err != nil {
+		tx.Rollback()
+		return err
+	}
+
+	treatment.Id = common.NewObjectId(treatmentId)
+	// add drug db ids to the table
+	for drugDbTag, drugDbId := range treatment.DrugDBIds {
+		_, err := tx.Exec(`insert into drug_db_id (drug_db_id_tag, drug_db_id, treatment_id) values (?, ?, ?)`, drugDbTag, drugDbId, treatment.Id.Int64())
+		if err != nil {
+			tx.Rollback()
+			return err
+		}
+	}
+	return nil
+}
+
+func (d *DataService) addPharmacyDispensedTreatment(dispensedTreatment, requestedTreatment, unlinkedRequestedTreatment *common.Treatment, tx *sql.Tx) error {
+	substitutionsAllowedBit := 0
+	if dispensedTreatment.SubstitutionsAllowed {
+		substitutionsAllowedBit = 1
+	}
+
+	treatmentType := treatment_rx
+	if dispensedTreatment.OTC {
+		treatmentType = treatment_otc
+	}
+
+	columnsAndData := map[string]interface{}{
+		"drug_internal_name":    dispensedTreatment.DrugInternalName,
+		"dosage_strength":       dispensedTreatment.DosageStrength,
+		"type":                  treatmentType,
+		"dispense_value":        dispensedTreatment.DispenseValue,
+		"dispense_unit":         dispensedTreatment.DispenseUnitDescription,
+		"refills":               dispensedTreatment.NumberRefills,
+		"substitutions_allowed": substitutionsAllowedBit,
+		"days_supply":           dispensedTreatment.DaysSupply,
+		"patient_instructions":  dispensedTreatment.PatientInstructions,
+		"pharmacy_notes":        dispensedTreatment.PharmacyNotes,
+		"status":                dispensedTreatment.Status,
+		"erx_id":                dispensedTreatment.PrescriptionId.Int64(),
+		"erx_sent_date":         dispensedTreatment.ErxSentDate,
+		"erx_last_filled_date":  dispensedTreatment.ErxLastDateFilled,
+		"pharmacy_id":           dispensedTreatment.PharmacyLocalId,
+	}
+
+	if requestedTreatment != nil {
+		columnsAndData["treatment_id"] = requestedTreatment.Id.Int64()
+	}
+
+	if unlinkedRequestedTreatment != nil {
+		columnsAndData["unlinked_requested_treatment_id"] = unlinkedRequestedTreatment.Id.Int64()
+	}
+
+	if err := d.includeDrugNameComponentIfNonZero(dispensedTreatment.DrugName, drug_name_table, "drug_name_id", columnsAndData, tx); err != nil {
+		tx.Rollback()
+		return err
+	}
+
+	if err := d.includeDrugNameComponentIfNonZero(dispensedTreatment.DrugForm, drug_form_table, "drug_form_id", columnsAndData, tx); err != nil {
+		tx.Rollback()
+		return err
+	}
+	if err := d.includeDrugNameComponentIfNonZero(dispensedTreatment.DrugRoute, drug_route_table, "drug_route_id", columnsAndData, tx); err != nil {
+		tx.Rollback()
+		return err
+	}
+
+	columns, dataForColumns := getKeysAndValuesFromMap(columnsAndData)
+	res, err := tx.Exec(fmt.Sprintf(`insert into pharmacy_dispensed_treatment (%s) values (%s)`, strings.Join(columns, ","), nReplacements(len(dataForColumns))), dataForColumns...)
+	if err != nil {
+		tx.Rollback()
+		return err
+	}
+
+	treatmentId, err := res.LastInsertId()
+	if err != nil {
+		tx.Rollback()
+		return err
+	}
+
+	dispensedTreatment.Id = common.NewObjectId(treatmentId)
+	// add drug db ids to the table
+	for drugDbTag, drugDbId := range dispensedTreatment.DrugDBIds {
+		_, err := tx.Exec(`insert into drug_db_id (drug_db_id_tag, drug_db_id, treatment_id) values (?, ?, ?)`, drugDbTag, drugDbId, dispensedTreatment.Id.Int64())
+		if err != nil {
+			tx.Rollback()
+			return err
+		}
+	}
+	return nil
+}
+
+func getKeysAndValuesFromMap(m map[string]interface{}) ([]string, []interface{}) {
+	values := make([]interface{}, 0)
+	keys := make([]string, 0)
+	for key, value := range m {
+		keys = append(keys, key)
+		values = append(values, value)
+	}
+	return keys, values
+}
+
+func (d *DataService) includeDrugNameComponentIfNonZero(drugNameComponent, tableName, columnName string, columnsAndData map[string]interface{}, tx *sql.Tx) error {
+	if drugNameComponent != "" {
+		componentId, err := d.getOrInsertNameInTable(tx, tableName, drugNameComponent)
+		if err != nil {
+			return err
+		}
+		columnsAndData[columnName] = componentId
+	}
+	return nil
 }

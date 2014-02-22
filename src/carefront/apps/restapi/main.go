@@ -166,6 +166,10 @@ func main() {
 		os.Exit(1)
 	}
 
+	if conf.Debug {
+		golog.SetLevel(golog.DEBUG)
+	}
+
 	metricsRegistry := metrics.NewRegistry()
 	conf.StartReporters(metricsRegistry)
 
@@ -372,6 +376,7 @@ func main() {
 	}
 
 	app_worker.StartWorkerToUpdatePrescriptionStatusForPatient(dataApi, doseSpotService, erxStatusQueue, metricsRegistry.Scope("check_erx_status"))
+	app_worker.StartWorkerToCheckForRefillRequests(dataApi, doseSpotService, metricsRegistry.Scope("check_rx_refill_requests"))
 
 	s := &http.Server{
 		Addr:           conf.ListenAddr,

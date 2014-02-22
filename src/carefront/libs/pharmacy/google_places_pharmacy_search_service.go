@@ -162,16 +162,16 @@ func getPharmacyFromResultItem(resultItem *googlePlacesResultItem) *PharmacyData
 				}
 			}
 		}
-		pharmacyDetails.Address = streetNumberComponent + " " + streetNameComponent
+		pharmacyDetails.AddressLine1 = streetNumberComponent + " " + streetNameComponent
 	} else if resultItem.Vicinity != "" {
-		pharmacyDetails.Address = resultItem.Vicinity
+		pharmacyDetails.AddressLine1 = resultItem.Vicinity
 	} else if resultItem.FormattedAddress != "" {
-		pharmacyDetails.Address = resultItem.FormattedAddress
+		pharmacyDetails.AddressLine1 = resultItem.FormattedAddress
 	}
 
 	pharmacyDetails.Phone = resultItem.FormattedPhoneNumber
 	pharmacyDetails.Name = resultItem.Name
-	pharmacyDetails.Id = resultItem.Reference
+	pharmacyDetails.SourceId = resultItem.Reference
 	pharmacyDetails.Latitude = strconv.FormatFloat(resultItem.Geometry.Location.Latitude, 'f', -1, 64)
 	pharmacyDetails.Longitude = strconv.FormatFloat(resultItem.Geometry.Location.Longitude, 'f', -1, 64)
 	return pharmacyDetails

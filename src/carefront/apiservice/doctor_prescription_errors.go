@@ -96,7 +96,7 @@ func (d *DoctorPrescriptionsErrorsHandler) ServeHTTP(w http.ResponseWriter, r *h
 	for pharmacyId, transmissionError := range pharmacyIdToTransmissionErrorMapping {
 		// check if the pharmacy exists in the pharmacies returned
 		for _, pharmacySelection := range pharmacies {
-			pharmacyIdInt, _ := strconv.ParseInt(pharmacySelection.Id, 0, 64)
+			pharmacyIdInt, _ := strconv.ParseInt(pharmacySelection.SourceId, 0, 64)
 			if pharmacySelection.Source != pharmacy.PHARMACY_SOURCE_SURESCRIPTS && pharmacyIdInt == pharmacyId {
 				transmissionError.Pharmacy = pharmacySelection
 			} else {

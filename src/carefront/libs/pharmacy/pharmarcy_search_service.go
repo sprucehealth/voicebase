@@ -82,47 +82,18 @@ func scanPharmacyDataFromRow(rows *sql.Rows) (pharmacy *PharmacyData, err error)
 		return
 	}
 
-	pharmacy = &PharmacyData{}
-	pharmacy.Id = strconv.FormatInt(id, 10)
-
-	if name.Valid {
-		pharmacy.Name = name.String
-	}
-
-	if address.Valid {
-		pharmacy.Address = address.String
-	}
-
-	if city.Valid {
-		pharmacy.City = city.String
-	}
-
-	if state.Valid {
-		pharmacy.State = state.String
-	}
-
-	if postal.Valid {
-		pharmacy.Postal = postal.String
-	}
-
-	if lat.Valid {
-		pharmacy.Latitude = lat.String
-	}
-
-	if lng.Valid {
-		pharmacy.Longitude = lng.String
-	}
-
-	if phone.Valid {
-		pharmacy.Phone = phone.String
-	}
-
-	if fax.Valid {
-		pharmacy.Fax = fax.String
-	}
-
-	if url.Valid {
-		pharmacy.Url = url.String
+	pharmacy = &PharmacyData{
+		SourceId:     strconv.FormatInt(id, 10),
+		Name:         name.String,
+		AddressLine1: address.String,
+		City:         city.String,
+		State:        state.String,
+		Postal:       postal.String,
+		Latitude:     lat.String,
+		Longitude:    lng.String,
+		Phone:        phone.String,
+		Fax:          fax.String,
+		Url:          url.String,
 	}
 
 	return

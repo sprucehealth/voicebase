@@ -125,12 +125,12 @@ func (d *DoctorSubmitPatientVisitReviewHandler) submitPatientVisitReview(w http.
 			pharmacyId = failed_erx_routing_pharmacy_id
 		}
 		patient.Pharmacy = &pharmacy.PharmacyData{
-			Id:      pharmacyId,
-			Source:  pharmacy.PHARMACY_SOURCE_SURESCRIPTS,
-			Address: "123 TEST TEST",
-			City:    "San Francisco",
-			State:   "CA",
-			Postal:  "94115",
+			SourceId:     pharmacyId,
+			Source:       pharmacy.PHARMACY_SOURCE_SURESCRIPTS,
+			AddressLine1: "123 TEST TEST",
+			City:         "San Francisco",
+			State:        "CA",
+			Postal:       "94115",
 		}
 
 		treatments, err := d.DataApi.GetTreatmentsBasedOnTreatmentPlanId(requestData.PatientVisitId, treatmentPlanId)

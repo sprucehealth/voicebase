@@ -509,12 +509,12 @@ func (c *CreateDemoPatientVisitHandler) ServeHTTP(w http.ResponseWriter, r *http
 	// ********** ASSIGN PHARMACY TO PATIENT **********
 
 	pharmacyDetails := &pharmacy.PharmacyData{
-		Id:      "CoQBdgAAAIU6I2DXvwyyql2HTtAdaMrZ_AEgvKsD1O_V4mePQw3NNgntSwDlCKoCdd47DZdZbPOMEXMWSPyno1qekMr0A0ghV2rWGpVbVjLeM-ehKZH1gxMtTVlon47ktbVi2uUKCyuzpZh5hI7gjQChUPkkGoxnpKoLeAcCnzEeC5m4YGRFEhALIHQkJ_E13vByzK_t9xjlGhSDLIpV9QxTHgTwoESfAKHkMIzuxQ",
-		Address: "116 New Montgomery St",
-		Name:    "Walgreens Pharmacies",
-		City:    "San Francisco",
-		State:   "CA",
-		Source:  pharmacy.PHARMACY_SOURCE_GOOGLE,
+		SourceId:     "CoQBdgAAAIU6I2DXvwyyql2HTtAdaMrZ_AEgvKsD1O_V4mePQw3NNgntSwDlCKoCdd47DZdZbPOMEXMWSPyno1qekMr0A0ghV2rWGpVbVjLeM-ehKZH1gxMtTVlon47ktbVi2uUKCyuzpZh5hI7gjQChUPkkGoxnpKoLeAcCnzEeC5m4YGRFEhALIHQkJ_E13vByzK_t9xjlGhSDLIpV9QxTHgTwoESfAKHkMIzuxQ",
+		AddressLine1: "116 New Montgomery St",
+		Name:         "Walgreens Pharmacies",
+		City:         "San Francisco",
+		State:        "CA",
+		Source:       pharmacy.PHARMACY_SOURCE_GOOGLE,
 	}
 
 	jsonData, err := json.Marshal(pharmacyDetails)

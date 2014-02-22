@@ -108,40 +108,23 @@ type TreatmentPlan struct {
 	Followup         *FollowUp         `json:"follow_up,omitempty"`
 }
 
-type Treatment struct {
-	Id                        *ObjectId                `json:"treatment_id,omitempty"`
-	DoctorTreatmentTemplateId *ObjectId                `json:"dr_treatment_template_id,omitempty"`
-	PrescriptionId            *ObjectId                `json:"erx_id,omitempty"`
-	ErxMedicationId           *ObjectId                `json:"-"`
-	PrescriptionStatus        string                   `json:"erx_status,omitempty"`
-	PharmacyLocalId           *ObjectId                `json:"-"`
-	ErxPharmacyId             int64                    `json:"-"`
-	StatusDetails             string                   `json:"erx_status_details,omitempty"`
-	TreatmentPlanId           *ObjectId                `json:"treatment_plan_id,omitempty"`
-	PatientVisitId            *ObjectId                `json:"patient_visit_id,omitempty"`
-	PatientId                 *ObjectId                `json:"-"`
-	DrugDBIds                 map[string]string        `json:"drug_db_ids,omitempty"`
-	DrugInternalName          string                   `json:"drug_internal_name,omitempty"`
-	DrugName                  string                   `json:"drug_name"`
-	DrugRoute                 string                   `json:"drug_route,omitempty"`
-	DrugForm                  string                   `json:"drug_form,omitempty"`
-	DosageStrength            string                   `json:"dosage_strength,omitempty"`
-	DispenseValue             int64                    `json:"dispense_value,string,omitempty"`
-	DispenseUnitId            *ObjectId                `json:"dispense_unit_id,omitempty"`
-	DispenseUnitDescription   string                   `json:"dispense_unit_description,omitempty"`
-	NumberRefills             int64                    `json:"refills,string,omitempty"`
-	SubstitutionsAllowed      bool                     `json:"substitutions_allowed,omitempty"`
-	DaysSupply                int64                    `json:"days_supply,string,omitempty"`
-	PharmacyNotes             string                   `json:"pharmacy_notes,omitempty"`
-	PatientInstructions       string                   `json:"patient_instructions,omitempty"`
-	CreationDate              *time.Time               `json:"creation_date,omitempty"`
-	TransmissionErrorDate     *time.Time               `json:"error_date,omitempty"`
-	ErxSentDate               *time.Time               `json:"erx_sent_date,omitempty"`
-	ErxReferenceNumber        string                   `json:"-"`
-	Status                    string                   `json:"-"`
-	OTC                       bool                     `json:"otc,omitempty"`
-	IsControlledSubstance     bool                     `json:"-"`
-	SupplementalInstructions  []*DoctorInstructionItem `json:"supplemental_instructions,omitempty"`
+type RefillRequestItem struct {
+	Id                            *ObjectId  `json:"id"`
+	RxRequestQueueItemId          int64      `json:"-"`
+	ReferenceNumber               string     `json:"-"`
+	PharmacyRxReferenceNumber     string     `json:"-"`
+	RequestedDrugDescription      string     `json:"requested_drug_name"`
+	RequestedRefillAmount         string     `json:"requested_refill"`
+	RequestedDispense             string     `json:"requested_dispense"`
+	ErxPatientId                  int64      `json:"-"`
+	Patient                       *Patient   `json:"patient,omitempty"`
+	Doctor                        *Doctor    `json:"doctor,omitempty"`
+	PatientAddedForRequest        bool       `json:"-"`
+	RequestDateStamp              time.Time  `json:"requested_date"`
+	ClinicianId                   int64      `json:"-"`
+	RequestedPrescription         *Treatment `json:"requested_prescription,omitempty"`
+	UnlinkedRequestedPrescription *Treatment `json:"unlinked_requested_prescription,omitempty"`
+	DispensedPrescription         *Treatment `json:"dispensed_prescription"`
 }
 
 type DoctorTreatmentTemplate struct {

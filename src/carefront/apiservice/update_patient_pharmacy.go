@@ -35,7 +35,7 @@ func (u *UpdatePatientPharmacyHandler) updatePatientPharmacy(w http.ResponseWrit
 		return
 	}
 
-	pharmacyDetails, err := u.PharmacySearchService.GetPharmacyBasedOnId(pharmacy.Id)
+	pharmacyDetails, err := u.PharmacySearchService.GetPharmacyBasedOnId(pharmacy.SourceId)
 	pharmacyDetails.Source = pharmacy.Source
 	if err != nil {
 		golog.Warningf("Unable to get the pharmacy details when it would've been nice to be able to do so: " + err.Error())

@@ -614,7 +614,7 @@ func (d *DataService) AddTreatmentsForPatientVisit(treatments []*common.Treatmen
 
 	for _, treatment := range treatments {
 		treatment.TreatmentPlanId = common.NewObjectId(treatmentPlanId)
-		err = d.addTreatment(treatment, false, tx)
+		err = d.addTreatment(treatment, with_link_to_treatment_plan, tx)
 		if err != nil {
 			tx.Rollback()
 			return err
@@ -633,14 +633,14 @@ func (d *DataService) AddTreatmentsForPatientVisit(treatments []*common.Treatmen
 	return tx.Commit()
 }
 
-func (d *DataService) addTreatment(treatment *common.Treatment, asFavorite bool, tx *sql.Tx) error {
+func (d *DataService) addTreatment(treatment *common.Treatment, withoutLinkToTreatmentPlan bool, tx *sql.Tx) error {
 	substitutionsAllowedBit := 0
-	if treatment.SubstitutionsAllowed == true {
+	if treatment.SubstitutionsAllowed {
 		substitutionsAllowedBit = 1
 	}
 
 	treatmentType := treatment_rx
-	if treatment.OTC == true {
+	if treatment.OTC {
 		treatmentType = treatment_otc
 	}
 
@@ -684,7 +684,7 @@ func (d *DataService) addTreatment(treatment *common.Treatment, asFavorite bool,
 	}
 	// add treatment for patient
 	var treatmentId int64
-	if treatment.TreatmentPlanId.Int64() != 0 && !asFavorite {
+	if treatment.TreatmentPlanId.Int64() != 0 && !withoutLinkToTreatmentPlan {
 		insertTreatmentStr := fmt.Sprintf(`insert into treatment (treatment_plan_id, drug_internal_name, drug_name_id, drug_route_id, drug_form_id, dosage_strength, type, dispense_value, dispense_unit_id, refills, substitutions_allowed, days_supply, patient_instructions, pharmacy_notes, status) 
 									values (?,?,%s,%s,%s,?,?,?,?,?,?,?,?,?,?)`, drugNameIdStr, drugRouteIdStr, drugFormIdStr)
 		res, err := tx.Exec(insertTreatmentStr, treatment.TreatmentPlanId, treatment.DrugInternalName, treatment.DosageStrength, treatmentType, treatment.DispenseValue, treatment.DispenseUnitId, treatment.NumberRefills, substitutionsAllowedBit, treatment.DaysSupply, treatment.PatientInstructions, treatment.PharmacyNotes, status_created)
