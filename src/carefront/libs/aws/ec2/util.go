@@ -8,8 +8,8 @@ import (
 )
 
 type Error struct {
-	Code    string `xml:"Error>Code"`
-	Message string `xml:"Error>Message"`
+	Code    string `xml:"Code"`
+	Message string `xml:"Message"`
 }
 
 type ErrorResponse struct {
@@ -30,11 +30,10 @@ func (er *ErrorResponse) Error() string {
 }
 
 func ParseErrorResponse(res *http.Response) error {
-	dec := xml.NewDecoder(res.Body)
 	er := ErrorResponse{
 		StatusCode: res.StatusCode,
 	}
-	if err := dec.Decode(&er); err != nil {
+	if err := xml.NewDecoder(res.Body).Decode(&er); err != nil {
 		return err
 	}
 	return &er
