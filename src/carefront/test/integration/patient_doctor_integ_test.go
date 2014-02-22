@@ -50,7 +50,7 @@ func TestPatientVisitReview(t *testing.T) {
 
 	err = testData.DataApi.UpdatePatientPharmacy(patient.PatientId.Int64(), pharmacySelection)
 	if err != nil {
-		t.Fatal("Unable to update patient pharmacy")
+		t.Fatal("Unable to update patient pharmacy: " + err.Error())
 	}
 
 	// try getting the patient visit review for this patient visit and it should fail
