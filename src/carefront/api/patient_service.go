@@ -405,6 +405,7 @@ func (d *DataService) UpdatePatientPharmacy(patientId int64, pharmacyDetails *ph
 			tx.Rollback()
 			return err
 		}
+		existingPharmacyId = pharmacyDetails.LocalId
 	}
 
 	_, err = tx.Exec(`insert into patient_pharmacy_selection (patient_id, pharmacy_selection_id, status) values (?,?,?)`, patientId, existingPharmacyId, status_active)
