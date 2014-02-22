@@ -28,7 +28,7 @@ type DoctorQueueItem struct {
 func (d *DoctorQueueItem) GetTitleAndSubtitle(dataApi DataAPI) (title, subtitle string, err error) {
 	switch d.EventType {
 
-	case EVENT_TYPE_PATIENT_VISIT:
+	case EVENT_TYPE_PATIENT_VISIT, EVENT_TYPE_TREATMENT_PLAN:
 		patientId, shadowedErr := dataApi.GetPatientIdFromPatientVisitId(d.ItemId)
 		if shadowedErr != nil {
 			err = shadowedErr
@@ -82,7 +82,7 @@ func (d *DoctorQueueItem) GetImageUrl() string {
 
 func (d *DoctorQueueItem) GetDisplayTypes() []string {
 	switch d.EventType {
-	case EVENT_TYPE_PATIENT_VISIT:
+	case EVENT_TYPE_PATIENT_VISIT, EVENT_TYPE_TREATMENT_PLAN:
 		switch d.Status {
 
 		case QUEUE_ITEM_STATUS_PHOTOS_REJECTED:
