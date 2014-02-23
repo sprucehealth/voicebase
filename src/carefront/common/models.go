@@ -125,7 +125,6 @@ type RefillRequestItem struct {
 	RequestDateStamp                 time.Time              `json:"requested_date"`
 	ClinicianId                      int64                  `json:"-"`
 	RequestedPrescription            *Treatment             `json:"requested_prescription,omitempty"`
-	UnlinkedRequestedPrescription    *Treatment             `json:"unlinked_requested_prescription,omitempty"`
 	DispensedPrescription            *Treatment             `json:"dispensed_prescription"`
 }
 

@@ -5,6 +5,11 @@ import (
 	"time"
 )
 
+const (
+	TREATMENT_STATUS_LINKED   = "LINKED"
+	TREATMENT_STATUS_UNLINKED = "UNLINKED"
+)
+
 type Treatment struct {
 	Id                        *ObjectId                `json:"treatment_id,omitempty"`
 	DoctorTreatmentTemplateId *ObjectId                `json:"dr_treatment_template_id,omitempty"`
@@ -36,7 +41,7 @@ type Treatment struct {
 	ErxSentDate               *time.Time               `json:"erx_sent_date,omitempty"`
 	ErxLastDateFilled         *time.Time               `json:"erx_last_filled_date,omitempty"`
 	ErxReferenceNumber        string                   `json:"-"`
-	Status                    string                   `json:"-"`
+	Status                    string                   `json:"status"`
 	OTC                       bool                     `json:"otc,omitempty"`
 	IsControlledSubstance     bool                     `json:"-"`
 	SupplementalInstructions  []*DoctorInstructionItem `json:"supplemental_instructions,omitempty"`

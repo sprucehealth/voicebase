@@ -142,10 +142,10 @@ func PerformRefillRecquestCheckCycle(DataApi api.DataAPI, ERxApi erx.ERxAPI, sta
 		}
 
 		if originalTreatment == nil {
+			refillRequestItem.RequestedPrescription.Status = common.TREATMENT_STATUS_UNLINKED
 			golog.Debugf(`Original treatment with prescription id %d does not exist in our database. Going to create an unlinked treatment in our db`, refillRequestItem.RequestedPrescription.PrescriptionId.Int64())
 
 			// if the treatment does not exist in our system, lets go ahead and create an unlinked treatment
-			refillRequestItem.UnlinkedRequestedPrescription = refillRequestItem.RequestedPrescription
 			err = DataApi.AddUnlinkedTreatmentFromPharmacy(refillRequestItem.RequestedPrescription)
 			if err != nil {
 				golog.Errorf("Original prescription does not exist in our system, and we were unable to create it as an unlinked treatment in our system: %+v", err)
@@ -153,9 +153,10 @@ func PerformRefillRecquestCheckCycle(DataApi api.DataAPI, ERxApi erx.ERxAPI, sta
 				continue
 			}
 			originalTreatment = refillRequestItem.RequestedPrescription
-			refillRequestItem.UnlinkedRequestedPrescription = refillRequestItem.RequestedPrescription
-			refillRequestItem.RequestedPrescription = nil
 		} else {
+			// need an indicator for whether this prescription was found in our
+			// database
+			refillRequestItem.RequestedPrescription.Status = common.TREATMENT_STATUS_LINKED
 			// assigning the treatment plan id to the requested prescription with the assumption that
 			if !originalTreatment.Equals(refillRequestItem.RequestedPrescription) {
 				golog.Errorf(`Original treatment returned from database does not match requested prescription from dosespot. 

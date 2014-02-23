@@ -901,7 +901,7 @@ func (d *DataService) CreateRefillRequest(refillRequest *common.RefillRequestIte
 
 	}
 
-	err = d.addPharmacyDispensedTreatment(refillRequest.DispensedPrescription, refillRequest.RequestedPrescription, refillRequest.UnlinkedRequestedPrescription, tx)
+	err = d.addPharmacyDispensedTreatment(refillRequest.DispensedPrescription, refillRequest.RequestedPrescription, tx)
 	if err != nil {
 		tx.Rollback()
 		return err
@@ -919,8 +919,8 @@ func (d *DataService) CreateRefillRequest(refillRequest *common.RefillRequestIte
 	}
 
 	// only have a link to the unlinked treatment if it so exists
-	if refillRequest.UnlinkedRequestedPrescription != nil {
-		columnsAndData["unlinked_requested_treatment_id"] = refillRequest.UnlinkedRequestedPrescription.Id.Int64()
+	if refillRequest.RequestedPrescription.Status == common.TREATMENT_STATUS_UNLINKED {
+		columnsAndData["unlinked_requested_treatment_id"] = refillRequest.RequestedPrescription.Id.Int64()
 	} else {
 		columnsAndData["requested_treatment_id"] = refillRequest.RequestedPrescription.Id.Int64()
 
@@ -1066,15 +1066,17 @@ func (d *DataService) GetRefillRequestFromId(refillRequestId int64) (*common.Ref
 			if err != nil {
 				return nil, err
 			}
+			refillRequest.RequestedPrescription.Status = common.TREATMENT_STATUS_LINKED
 		}
 	}
 
 	// get the unlinked requested treatment
 	if unlinkedRequestedTreatmentId.Valid {
-		refillRequest.UnlinkedRequestedPrescription, err = d.getTreatmentForRefillRequest(table_name_unlinked_requested_treatment, unlinkedRequestedTreatmentId.Int64)
+		refillRequest.RequestedPrescription, err = d.getTreatmentForRefillRequest(table_name_unlinked_requested_treatment, unlinkedRequestedTreatmentId.Int64)
 		if err != nil {
 			return nil, err
 		}
+		refillRequest.RequestedPrescription.Status = common.TREATMENT_STATUS_UNLINKED
 	}
 
 	// get the pharmacy
@@ -1083,8 +1085,6 @@ func (d *DataService) GetRefillRequestFromId(refillRequestId int64) (*common.Ref
 		pharmacyLocalId = refillRequest.DispensedPrescription.PharmacyLocalId.Int64()
 	} else if refillRequest.RequestedPrescription != nil && refillRequest.RequestedPrescription.PharmacyLocalId != nil {
 		pharmacyLocalId = refillRequest.RequestedPrescription.PharmacyLocalId.Int64()
-	} else if refillRequest.UnlinkedRequestedPrescription != nil && refillRequest.UnlinkedRequestedPrescription.PharmacyLocalId != nil {
-		pharmacyLocalId = refillRequest.UnlinkedRequestedPrescription.PharmacyLocalId.Int64()
 	}
 
 	refillRequest.Pharmacy, err = d.GetPharmacyFromId(pharmacyLocalId)
@@ -1453,7 +1453,7 @@ func (d *DataService) addUnlinkedTreatmentFromPharmacy(treatment *common.Treatme
 	return nil
 }
 
-func (d *DataService) addPharmacyDispensedTreatment(dispensedTreatment, requestedTreatment, unlinkedRequestedTreatment *common.Treatment, tx *sql.Tx) error {
+func (d *DataService) addPharmacyDispensedTreatment(dispensedTreatment, requestedTreatment *common.Treatment, tx *sql.Tx) error {
 	substitutionsAllowedBit := 0
 	if dispensedTreatment.SubstitutionsAllowed {
 		substitutionsAllowedBit = 1
@@ -1482,12 +1482,10 @@ func (d *DataService) addPharmacyDispensedTreatment(dispensedTreatment, requeste
 		"pharmacy_id":           dispensedTreatment.PharmacyLocalId,
 	}
 
-	if requestedTreatment != nil {
+	if requestedTreatment.Status == common.TREATMENT_STATUS_LINKED {
 		columnsAndData["treatment_id"] = requestedTreatment.Id.Int64()
-	}
-
-	if unlinkedRequestedTreatment != nil {
-		columnsAndData["unlinked_requested_treatment_id"] = unlinkedRequestedTreatment.Id.Int64()
+	} else if requestedTreatment.Status == common.TREATMENT_STATUS_UNLINKED {
+		columnsAndData["unlinked_requested_treatment_id"] = requestedTreatment.Id.Int64()
 	}
 
 	if err := d.includeDrugNameComponentIfNonZero(dispensedTreatment.DrugName, drug_name_table, "drug_name_id", columnsAndData, tx); err != nil {

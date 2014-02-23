@@ -43,9 +43,11 @@ func (d *DoctorRefillRequestHandler) ServeHTTP(w http.ResponseWriter, r *http.Re
 		return
 	}
 
-	// fill in the dispense unit description at the top level because it is not provided in the top level
-	// information from dosespot
-	refillRequest.RequestedDispenseUnitDescription = refillRequest.DispensedPrescription.DispenseUnitDescription
+	if refillRequest != nil {
+		// fill in the dispense unit description at the top level because refillrefiit is not provided in the top level
+		// information from dosespot
+		refillRequest.RequestedDispenseUnitDescription = refillRequest.DispensedPrescription.DispenseUnitDescription
+	}
 
 	WriteJSONToHTTPResponseWriter(w, http.StatusOK, &DoctorRefillRequestResponse{RefillRequest: refillRequest})
 }
