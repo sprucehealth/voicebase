@@ -238,7 +238,7 @@ func TestDoctorFeed(t *testing.T) {
 			for _, item := range tab.Sections[1].Items {
 				if item.DisplayTypes == nil || len(item.DisplayTypes) == 0 {
 					t.Fatal("Expected there to exist a list of display types for the item but there arent any")
-				} else if item.DisplayTypes[0] != api.DISPLAY_TYPE_TITLE_SUBTITLE_NONACTIONABLE {
+				} else if item.DisplayTypes[0] != api.DISPLAY_TYPE_TITLE_SUBTITLE_ACTIONABLE {
 					t.Fatalf("Expected the display type to be %s for this item in the queue but instead it was %s.", api.DISPLAY_TYPE_TITLE_SUBTITLE_BUTTON, item.DisplayTypes[0])
 				}
 			}
