@@ -142,7 +142,10 @@ func PerformRefillRecquestCheckCycle(DataApi api.DataAPI, ERxApi erx.ERxAPI, sta
 		}
 
 		if originalTreatment == nil {
-			refillRequestItem.RequestedPrescription.Status = common.TREATMENT_STATUS_UNLINKED
+			// need an indicator for the fact that the requested prescription
+			// could not be mapped to a treatment in our database
+			refillRequestItem.RequestedPrescription.IsUnlinked = true
+
 			golog.Debugf(`Original treatment with prescription id %d does not exist in our database. Going to create an unlinked treatment in our db`, refillRequestItem.RequestedPrescription.PrescriptionId.Int64())
 
 			// if the treatment does not exist in our system, lets go ahead and create an unlinked treatment
@@ -154,9 +157,6 @@ func PerformRefillRecquestCheckCycle(DataApi api.DataAPI, ERxApi erx.ERxAPI, sta
 			}
 			originalTreatment = refillRequestItem.RequestedPrescription
 		} else {
-			// need an indicator for whether this prescription was found in our
-			// database
-			refillRequestItem.RequestedPrescription.Status = common.TREATMENT_STATUS_LINKED
 			// assigning the treatment plan id to the requested prescription with the assumption that
 			if !originalTreatment.Equals(refillRequestItem.RequestedPrescription) {
 				golog.Errorf(`Original treatment returned from database does not match requested prescription from dosespot. 
@@ -220,7 +220,7 @@ func PerformRefillRecquestCheckCycle(DataApi api.DataAPI, ERxApi erx.ERxAPI, sta
 		}
 
 		// insert queued status into db
-		err = DataApi.AddRefillRequestStatusEvent(refillRequestItem.Id, api.RX_REFILL_STATUS_QUEUED, refillRequestItem.RequestDateStamp)
+		err = DataApi.AddRefillRequestStatusEvent(refillRequestItem.Id, api.RX_REFILL_STATUS_REQUESTED, refillRequestItem.RequestDateStamp)
 		if err != nil {
 			golog.Errorf("Unable to add refill request event to our database: %+v", err)
 			statFailure.Inc(1)

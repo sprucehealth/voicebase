@@ -862,7 +862,7 @@ func (d *DataService) GetPendingRefillRequestStatusEventsForClinic() ([]RefillRe
 	rows, err := d.DB.Query(`select rx_refill_request_id, rx_refill_request.erx_request_queue_item_id, rx_refill_status, rx_refill_status_date   
 								from rx_refill_status_events 
 									inner join rx_refill_request on rx_refill_request_id = rx_refill_request.id
-									where rx_refill_status_events.status = ? and rx_refill_status = ?`, status_active, RX_REFILL_STATUS_QUEUED)
+									where rx_refill_status_events.status = ? and rx_refill_status = ?`, status_active, RX_REFILL_STATUS_REQUESTED)
 	if err != nil {
 		return nil, err
 	}
@@ -919,7 +919,7 @@ func (d *DataService) CreateRefillRequest(refillRequest *common.RefillRequestIte
 	}
 
 	// only have a link to the unlinked treatment if it so exists
-	if refillRequest.RequestedPrescription.Status == common.TREATMENT_STATUS_UNLINKED {
+	if refillRequest.RequestedPrescription.IsUnlinked {
 		columnsAndData["unlinked_requested_treatment_id"] = refillRequest.RequestedPrescription.Id.Int64()
 	} else {
 		columnsAndData["requested_treatment_id"] = refillRequest.RequestedPrescription.Id.Int64()
@@ -1008,14 +1008,17 @@ func (d *DataService) GetRefillRequestFromId(refillRequestId int64) (*common.Ref
 	var refillRequest common.RefillRequestItem
 	var patientId, doctorId, pharmacyDispensedTreatmentId int64
 	var unlinkedRequestedTreatmentId, requestedTreatmentId sql.NullInt64
-
+	var refillStatus sql.NullString
 	// get the refill request
-	err := d.DB.QueryRow(`select id, requested_drug_description, requested_refill_amount, 
+	err := d.DB.QueryRow(`select rx_refill_request.id, requested_drug_description, requested_refill_amount, 
 		requested_dispense, patient_id, request_date, doctor_id, requested_treatment_id, 
-		dispensed_treatment_id, unlinked_requested_treatment_id from rx_refill_request 
-		where id = ?`, refillRequestId).Scan(&refillRequest.Id, &refillRequest.RequestedDrugDescription, &refillRequest.RequestedRefillAmount,
+		dispensed_treatment_id, unlinked_requested_treatment_id, rx_refill_status_events.rx_refill_status from rx_refill_request
+			left outer join rx_refill_status_events on rx_refill_request.id =  rx_refill_request_id
+				where rx_refill_request.id = ? and rx_refill_status_events.status = ?`, refillRequestId, status_active).Scan(&refillRequest.Id, &refillRequest.RequestedDrugDescription, &refillRequest.RequestedRefillAmount,
 		&refillRequest.RequestedDispense, &patientId, &refillRequest.RequestDateStamp, &doctorId, &requestedTreatmentId,
-		&pharmacyDispensedTreatmentId, &unlinkedRequestedTreatmentId)
+		&pharmacyDispensedTreatmentId, &unlinkedRequestedTreatmentId, &refillStatus)
+
+	refillRequest.Status = refillStatus.String
 
 	if err != nil {
 		if err == sql.ErrNoRows {
@@ -1056,7 +1059,7 @@ func (d *DataService) GetRefillRequestFromId(refillRequestId int64) (*common.Ref
 				left outer join drug_name on drug_name_id = drug_name.id
 				left outer join drug_route on drug_route_id = drug_route.id
 				left outer join drug_form on drug_form_id = drug_form.id
-				where treatmeid = ?`, requestedTreatmentId.Int64)
+				where treatment.id = ?`, requestedTreatmentId.Int64)
 		if err != nil {
 			return nil, err
 		}
@@ -1066,7 +1069,6 @@ func (d *DataService) GetRefillRequestFromId(refillRequestId int64) (*common.Ref
 			if err != nil {
 				return nil, err
 			}
-			refillRequest.RequestedPrescription.Status = common.TREATMENT_STATUS_LINKED
 		}
 	}
 
@@ -1076,7 +1078,7 @@ func (d *DataService) GetRefillRequestFromId(refillRequestId int64) (*common.Ref
 		if err != nil {
 			return nil, err
 		}
-		refillRequest.RequestedPrescription.Status = common.TREATMENT_STATUS_UNLINKED
+		refillRequest.RequestedPrescription.IsUnlinked = true
 	}
 
 	// get the pharmacy
@@ -1482,10 +1484,10 @@ func (d *DataService) addPharmacyDispensedTreatment(dispensedTreatment, requeste
 		"pharmacy_id":           dispensedTreatment.PharmacyLocalId,
 	}
 
-	if requestedTreatment.Status == common.TREATMENT_STATUS_LINKED {
-		columnsAndData["treatment_id"] = requestedTreatment.Id.Int64()
-	} else if requestedTreatment.Status == common.TREATMENT_STATUS_UNLINKED {
+	if requestedTreatment.IsUnlinked {
 		columnsAndData["unlinked_requested_treatment_id"] = requestedTreatment.Id.Int64()
+	} else {
+		columnsAndData["treatment_id"] = requestedTreatment.Id.Int64()
 	}
 
 	if err := d.includeDrugNameComponentIfNonZero(dispensedTreatment.DrugName, drug_name_table, "drug_name_id", columnsAndData, tx); err != nil {

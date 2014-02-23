@@ -21,7 +21,7 @@ const (
 	ERX_STATUS_SEND_ERROR                   = "Send_Error"
 	treatment_otc                           = "OTC"
 	treatment_rx                            = "RX"
-	RX_REFILL_STATUS_QUEUED                 = "queued"
+	RX_REFILL_STATUS_REQUESTED              = "Requested"
 	dr_drug_supplemental_instruction_table  = "dr_drug_supplemental_instruction"
 	dr_regimen_step_table                   = "dr_regimen_step"
 	dr_advice_point_table                   = "dr_advice_point"
