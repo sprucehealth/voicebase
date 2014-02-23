@@ -669,6 +669,8 @@ func (d *DataService) getPatientBasedOnQuery(queryStr string, queryParams ...int
 			patient.ERxPatientId = common.NewObjectId(erxPatientId.Int64)
 		}
 
+		patient.IsUnlinked = status == PATIENT_UNLINKED
+
 		patients = append(patients, patient)
 	}
 

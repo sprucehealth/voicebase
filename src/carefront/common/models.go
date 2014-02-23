@@ -7,6 +7,7 @@ import (
 
 type Patient struct {
 	PatientId      *ObjectId              `json:"id,omitempty"`
+	IsUnlinked     bool                   `json:"is_unlinked,omitempty"`
 	FirstName      string                 `json:"first_name,omitempty"`
 	LastName       string                 `json:"last_name,omiempty"`
 	Dob            time.Time              `json:"dob,omitempty"`
@@ -17,7 +18,7 @@ type Patient struct {
 	State          string                 `json:"state,omitempty"`
 	Phone          string                 `json:"phone,omitempty"`
 	PhoneType      string                 `json:"-"`
-	Status         string                 `json:"status"`
+	Status         string                 `json:"-"`
 	AccountId      *ObjectId              `json:"-"`
 	ERxPatientId   *ObjectId              `json:"-"`
 	Pharmacy       *pharmacy.PharmacyData `json:"pharmacy,omitempty"`
