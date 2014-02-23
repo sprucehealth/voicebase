@@ -78,6 +78,7 @@ type PatientAPI interface {
 	GetPatientsForIds(patientIds []int64) ([]*common.Patient, error)
 	GetPharmacySelectionForPatients(patientIds []int64) ([]*pharmacy.PharmacyData, error)
 	GetPharmacyBasedOnReferenceIdAndSource(pharmacyid, pharmacySource string) (*pharmacy.PharmacyData, error)
+	GetPharmacyFromId(pharmacyLocalId int64) (*pharmacy.PharmacyData, error)
 	AddPharmacy(pharmacyDetails *pharmacy.PharmacyData) error
 }
 
@@ -165,6 +166,7 @@ type DoctorAPI interface {
 	AddRefillRequestStatusEvent(rxRefillRequestId int64, status string, statusDate time.Time) error
 	InsertNewRefillRequestIntoDoctorQueue(refillRequestId int64, doctorId int64) error
 	AddUnlinkedTreatmentFromPharmacy(unlinkedTreatment *common.Treatment) error
+	GetRefillRequestFromId(refillRequestId int64) (*common.RefillRequestItem, error)
 }
 
 type IntakeAPI interface {

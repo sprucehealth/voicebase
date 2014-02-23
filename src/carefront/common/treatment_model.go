@@ -34,7 +34,7 @@ type Treatment struct {
 	CreationDate              *time.Time               `json:"creation_date,omitempty"`
 	TransmissionErrorDate     *time.Time               `json:"error_date,omitempty"`
 	ErxSentDate               *time.Time               `json:"erx_sent_date,omitempty"`
-	ErxLastDateFilled         *time.Time               `json:"-"`
+	ErxLastDateFilled         *time.Time               `json:"erx_last_filled_date,omitempty"`
 	ErxReferenceNumber        string                   `json:"-"`
 	Status                    string                   `json:"-"`
 	OTC                       bool                     `json:"otc,omitempty"`
@@ -59,5 +59,6 @@ func (t *Treatment) Equals(other *Treatment) bool {
 		t.NumberRefills == other.NumberRefills &&
 		t.SubstitutionsAllowed == other.SubstitutionsAllowed &&
 		t.DaysSupply == other.DaysSupply &&
-		t.PatientInstructions == other.PatientInstructions
+		t.PatientInstructions == other.PatientInstructions &&
+		t.ErxPharmacyId == other.ErxPharmacyId
 }

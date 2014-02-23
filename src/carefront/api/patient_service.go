@@ -489,6 +489,36 @@ func (d *DataService) GetPharmacyBasedOnReferenceIdAndSource(pharmacyId, pharmac
 	}, nil
 }
 
+func (d *DataService) GetPharmacyFromId(pharmacyLocalId int64) (*pharmacy.PharmacyData, error) {
+	var addressLine1, addressLine2, city, state, country, phone, zipCode, lat, lng, name sql.NullString
+	var source, pharmacyReferenceId string
+	err := d.DB.QueryRow(`select source, pharmacy_id, address_line_1, address_line_2, city, state, country, phone, zip_code, name, lat,lng
+		from pharmacy_selection where id = ?`, pharmacyLocalId).
+		Scan(&source, &pharmacyReferenceId, &addressLine1, &addressLine2, &city, &state, &country, &phone, &zipCode, &name, &lat, &lng)
+	if err != nil {
+		if err == sql.ErrNoRows {
+			return nil, nil
+		}
+		return nil, err
+	}
+
+	return &pharmacy.PharmacyData{
+		LocalId:      pharmacyLocalId,
+		SourceId:     pharmacyReferenceId,
+		Source:       source,
+		Name:         name.String,
+		AddressLine1: addressLine1.String,
+		AddressLine2: addressLine2.String,
+		Latitude:     lat.String,
+		Longitude:    lng.String,
+		City:         city.String,
+		State:        state.String,
+		Country:      country.String,
+		Postal:       zipCode.String,
+		Phone:        phone.String,
+	}, nil
+}
+
 func (d *DataService) AddPharmacy(pharmacyDetails *pharmacy.PharmacyData) error {
 	tx, err := d.DB.Begin()
 	if err != nil {
@@ -620,20 +650,23 @@ func (d *DataService) getPatientBasedOnQuery(queryStr string, queryParams ...int
 		}
 
 		patient := &common.Patient{
-			PatientId:    common.NewObjectId(patientId),
-			FirstName:    firstName,
-			LastName:     lastName,
-			Email:        email.String,
-			Status:       status,
-			Gender:       gender,
-			AccountId:    common.NewObjectId(accountId),
-			ERxPatientId: common.NewObjectId(erxPatientId.Int64),
-			Phone:        phone.String,
-			PhoneType:    phoneType.String,
-			Dob:          dob.Time,
-			ZipCode:      zipCode.String,
-			City:         city.String,
-			State:        state.String,
+			PatientId: common.NewObjectId(patientId),
+			FirstName: firstName,
+			LastName:  lastName,
+			Email:     email.String,
+			Status:    status,
+			Gender:    gender,
+			AccountId: common.NewObjectId(accountId),
+			Phone:     phone.String,
+			PhoneType: phoneType.String,
+			Dob:       dob.Time,
+			ZipCode:   zipCode.String,
+			City:      city.String,
+			State:     state.String,
+		}
+
+		if erxPatientId.Valid {
+			patient.ERxPatientId = common.NewObjectId(erxPatientId.Int64)
 		}
 
 		patients = append(patients, patient)

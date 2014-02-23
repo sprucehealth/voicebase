@@ -734,7 +734,7 @@ func (d *DataService) GetTreatmentsBasedOnTreatmentPlanId(patientVisitId, treatm
 	treatments := make([]*common.Treatment, 0)
 	rows, err := d.DB.Query(`select treatment.id,treatment.erx_id, treatment.treatment_plan_id, treatment.drug_internal_name, treatment.dosage_strength, treatment.type,
 			treatment.dispense_value, treatment.dispense_unit_id, ltext, treatment.refills, treatment.substitutions_allowed, 
-			treatment.days_supply, treatment.pharmacy_notes, treatment.patient_instructions, treatment.creation_date, treatment.erx_sent_date,
+			treatment.days_supply, treatment.pharmacy_id, treatment.pharmacy_notes, treatment.patient_instructions, treatment.creation_date, treatment.erx_sent_date,
 			treatment.status, drug_name.name, drug_route.name, drug_form.name,
 			patient_visit.patient_id, treatment_plan.patient_visit_id from treatment 
 				inner join dispense_unit on treatment.dispense_unit_id = dispense_unit.id
@@ -798,7 +798,7 @@ func (d *DataService) GetTreatmentsBasedOnTreatmentPlanId(patientVisitId, treatm
 func (d *DataService) GetTreatmentBasedOnPrescriptionId(erxId int64) (*common.Treatment, error) {
 	rows, err := d.DB.Query(`select treatment.id,treatment.erx_id, treatment.treatment_plan_id, treatment.drug_internal_name, treatment.dosage_strength, treatment.type,
 			treatment.dispense_value, treatment.dispense_unit_id, ltext, treatment.refills, treatment.substitutions_allowed, 
-			treatment.days_supply, treatment.pharmacy_notes, treatment.patient_instructions, treatment.creation_date, treatment.erx_sent_date,
+			treatment.days_supply, treatment.pharmacy_id, treatment.pharmacy_notes, treatment.patient_instructions, treatment.creation_date, treatment.erx_sent_date,
 			treatment.status, drug_name.name, drug_route.name, drug_form.name,
 			patient_visit.patient_id, treatment_plan.patient_visit_id from treatment
 
@@ -941,12 +941,14 @@ func (d *DataService) GetPrescriptionStatusEventsForPatient(patientId int64) ([]
 func (d *DataService) getTreatmentFromCurrentRow(rows *sql.Rows) (*common.Treatment, error) {
 	var treatmentId, treatmentPlanId, dispenseValue, dispenseUnitId, refills, daysSupply, patientId, patientVisitId int64
 	var drugInternalName, dosageStrength, patientInstructions, treatmentType, dispenseUnitDescription, status string
-	var prescriptionId sql.NullInt64
+	var prescriptionId, pharmacyId sql.NullInt64
 	var substitutionsAllowed bool
 	var creationDate time.Time
 	var erxSentDate mysql.NullTime
 	var pharmacyNotes, drugName, drugForm, drugRoute sql.NullString
-	err := rows.Scan(&treatmentId, &prescriptionId, &treatmentPlanId, &drugInternalName, &dosageStrength, &treatmentType, &dispenseValue, &dispenseUnitId, &dispenseUnitDescription, &refills, &substitutionsAllowed, &daysSupply, &pharmacyNotes, &patientInstructions, &creationDate, &erxSentDate, &status, &drugName, &drugRoute, &drugForm, &patientId, &patientVisitId)
+	err := rows.Scan(&treatmentId, &prescriptionId, &treatmentPlanId, &drugInternalName, &dosageStrength, &treatmentType, &dispenseValue, &dispenseUnitId,
+		&dispenseUnitDescription, &refills, &substitutionsAllowed, &daysSupply, &pharmacyId,
+		&pharmacyNotes, &patientInstructions, &creationDate, &erxSentDate, &status, &drugName, &drugRoute, &drugForm, &patientId, &patientVisitId)
 	if err != nil {
 		return nil, err
 	}
@@ -954,7 +956,6 @@ func (d *DataService) getTreatmentFromCurrentRow(rows *sql.Rows) (*common.Treatm
 	treatment := &common.Treatment{
 		Id:                      common.NewObjectId(treatmentId),
 		TreatmentPlanId:         common.NewObjectId(treatmentPlanId),
-		PrescriptionId:          common.NewObjectId(prescriptionId.Int64),
 		PatientId:               common.NewObjectId(patientId),
 		PatientVisitId:          common.NewObjectId(patientVisitId),
 		DrugInternalName:        drugInternalName,
@@ -972,6 +973,14 @@ func (d *DataService) getTreatmentFromCurrentRow(rows *sql.Rows) (*common.Treatm
 		CreationDate:            &creationDate,
 		Status:                  status,
 		PharmacyNotes:           pharmacyNotes.String,
+	}
+
+	if pharmacyId.Valid {
+		treatment.PharmacyLocalId = common.NewObjectId(pharmacyId.Int64)
+	}
+
+	if prescriptionId.Valid {
+		treatment.PrescriptionId = common.NewObjectId(prescriptionId.Int64)
 	}
 
 	if treatmentType == treatment_otc {

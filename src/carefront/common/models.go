@@ -17,7 +17,7 @@ type Patient struct {
 	State          string                 `json:"state,omitempty"`
 	Phone          string                 `json:"phone,omitempty"`
 	PhoneType      string                 `json:"-"`
-	Status         string                 `json:"-"`
+	Status         string                 `json:"status"`
 	AccountId      *ObjectId              `json:"-"`
 	ERxPatientId   *ObjectId              `json:"-"`
 	Pharmacy       *pharmacy.PharmacyData `json:"pharmacy,omitempty"`
@@ -109,22 +109,24 @@ type TreatmentPlan struct {
 }
 
 type RefillRequestItem struct {
-	Id                            *ObjectId  `json:"id"`
-	RxRequestQueueItemId          int64      `json:"-"`
-	ReferenceNumber               string     `json:"-"`
-	PharmacyRxReferenceNumber     string     `json:"-"`
-	RequestedDrugDescription      string     `json:"requested_drug_name"`
-	RequestedRefillAmount         string     `json:"requested_refill"`
-	RequestedDispense             string     `json:"requested_dispense"`
-	ErxPatientId                  int64      `json:"-"`
-	Patient                       *Patient   `json:"patient,omitempty"`
-	Doctor                        *Doctor    `json:"doctor,omitempty"`
-	PatientAddedForRequest        bool       `json:"-"`
-	RequestDateStamp              time.Time  `json:"requested_date"`
-	ClinicianId                   int64      `json:"-"`
-	RequestedPrescription         *Treatment `json:"requested_prescription,omitempty"`
-	UnlinkedRequestedPrescription *Treatment `json:"unlinked_requested_prescription,omitempty"`
-	DispensedPrescription         *Treatment `json:"dispensed_prescription"`
+	Id                               int64                  `json:"id,string"`
+	RxRequestQueueItemId             int64                  `json:"-"`
+	ReferenceNumber                  string                 `json:"-"`
+	PharmacyRxReferenceNumber        string                 `json:"-"`
+	RequestedDrugDescription         string                 `json:"requested_drug_name"`
+	RequestedRefillAmount            string                 `json:"requested_refill"`
+	RequestedDispense                string                 `json:"requested_dispense_value"`
+	RequestedDispenseUnitDescription string                 `json:"requested_dispense_unit_description,omitempty"`
+	ErxPatientId                     int64                  `json:"-"`
+	Patient                          *Patient               `json:"patient,omitempty"`
+	Doctor                           *Doctor                `json:"doctor,omitempty"`
+	Pharmacy                         *pharmacy.PharmacyData `json:"pharmacy"`
+	PatientAddedForRequest           bool                   `json:"-"`
+	RequestDateStamp                 time.Time              `json:"requested_date"`
+	ClinicianId                      int64                  `json:"-"`
+	RequestedPrescription            *Treatment             `json:"requested_prescription,omitempty"`
+	UnlinkedRequestedPrescription    *Treatment             `json:"unlinked_requested_prescription,omitempty"`
+	DispensedPrescription            *Treatment             `json:"dispensed_prescription"`
 }
 
 type DoctorTreatmentTemplate struct {
