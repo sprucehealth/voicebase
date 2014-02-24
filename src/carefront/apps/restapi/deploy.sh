@@ -4,12 +4,10 @@ DATE=$(date +%Y%m%d%H%M)
 DEV_HOSTS="54.209.125.122"
 PROD_HOSTS="10.0.43.95 10.0.95.22"
 STAGING_HOSTS="10.1.19.162 10.1.10.47"
-APP=restapi
 deploy_env=$1
 
 GOVERSION=$(go version)
-REV=$(git rev-parse HEAD)
-BRANCH=$(git rev-parse --abbrev-ref HEAD)
+. ./build.sh
 
 case "$deploy_env" in 
 
@@ -52,9 +50,6 @@ case "$deploy_env" in
 esac
 
 set -e
-
-TIME=$(date)
-GOOS=linux GOARCH=amd64 CGO_ENABLED=0 go build -ldflags "-X carefront/common/config.GitRevision $REV -X carefront/common/config.GitBranch $BRANCH -X carefront/common/config.BuildTime '$TIME'" -o $APP
 
 for HOST in $HOSTS
 do

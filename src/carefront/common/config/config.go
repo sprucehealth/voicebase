@@ -53,9 +53,11 @@ type BaseConfig struct {
 }
 
 var (
-	GitBranch   string
-	GitRevision string
-	BuildTime   string
+	GitBranch       string
+	GitRevision     string
+	BuildTime       string
+	BuildNumber     string // Travis-CI build
+	MigrationNumber string // The database needs to match this migration number for this build
 )
 
 var validEnvironments = map[string]bool{
@@ -249,6 +251,8 @@ func ParseArgs(config interface{}, args []string) ([]string, error) {
 		fmt.Printf("Git Branch: %s\n", GitBranch)
 		fmt.Printf("Git Revision: %s\n", GitRevision)
 		fmt.Printf("Build Time: %s\n", BuildTime)
+		fmt.Printf("Build Number: %s\n", BuildNumber)
+		fmt.Printf("Migration Number: %s\n", MigrationNumber)
 		os.Exit(0)
 	}
 
