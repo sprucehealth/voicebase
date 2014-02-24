@@ -33,11 +33,12 @@ script:
 - go test -v -race ./src/carefront/info_intake
 - go test -v -race ./src/carefront/libs/...
 - go test -v -race ./src/carefront/test/services
-# - go test -v -race -test.timeout=50m ./src/carefront/test/integration
+- go test -v -race -test.timeout=50m ./src/carefront/test/integration
 before_deploy:
 - pushd ./src/carefront/apps/restapi ; ./build.sh ; popd
 - mkdir build
-- cp src/carefront/apps/restapi/restapi build/
+- cp src/carefront/apps/restapi/restapi build/restapi-$TRAVIS_BUILD_NUMBER
+- bzip2 build/restapi-$TRAVIS_BUILD_NUMBER
 deploy:
   provider: s3
   access_key_id: AKIAI4Z55FSWUQ5IJQ3A
