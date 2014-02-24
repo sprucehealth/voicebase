@@ -33,7 +33,7 @@ script:
 - go test -v -race ./src/carefront/info_intake
 - go test -v -race ./src/carefront/libs/...
 - go test -v -race ./src/carefront/test/services
-- go test -v -race -test.timeout=50m ./src/carefront/test/integration
+# - go test -v -race -test.timeout=50m ./src/carefront/test/integration
 before_deploy:
 - cd ./src/carefront/apps/restapi
 - ./build.sh
@@ -46,6 +46,7 @@ deploy:
     secure: V5Jiztdt7wOBIncSfQnhtflZx4CKk4luj5JC3CxGjsC9LYubpNbkgqFkUjKHYqBOWoycgiWy9WaN2MGlk6jlDoQDIbVTvQ9F2p3QN+tIvIRYElQTltisSxUpfsbuPk4GmHvQAmc4RrJx1Vfbs/GQBrt0K48m2A1fJ9JJrNink5Y=
   bucket: spruce-deploy
   local-dir: "src/carefront/apps/restapi/build"
+  skip_cleanup: true
   on:
     branch: master
 notifications:
