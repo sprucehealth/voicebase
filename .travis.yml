@@ -35,17 +35,17 @@ script:
 - go test -v -race ./src/carefront/test/services
 # - go test -v -race -test.timeout=50m ./src/carefront/test/integration
 before_deploy:
-- cd ./src/carefront/apps/restapi
-- ./build.sh
+- pushd ./src/carefront/apps/restapi ; ./build.sh ; popd
 - mkdir build
-- mv restapi build/
+- cp src/carefront/apps/restapi/restapi build/
 deploy:
   provider: s3
   access_key_id: AKIAI4Z55FSWUQ5IJQ3A
   secret_access_key:
     secure: V5Jiztdt7wOBIncSfQnhtflZx4CKk4luj5JC3CxGjsC9LYubpNbkgqFkUjKHYqBOWoycgiWy9WaN2MGlk6jlDoQDIbVTvQ9F2p3QN+tIvIRYElQTltisSxUpfsbuPk4GmHvQAmc4RrJx1Vfbs/GQBrt0K48m2A1fJ9JJrNink5Y=
   bucket: spruce-deploy
-  local-dir: "src/carefront/apps/restapi/build"
+  local-dir: "build"
+  upload-dir: restapi
   skip_cleanup: true
   on:
     branch: master
