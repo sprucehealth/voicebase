@@ -8,6 +8,7 @@ import (
 
 type StubErxService struct {
 	PatientErxId                       int64
+	RefillRequestPrescriptionId        int64
 	PatientDetailsToReturn             *common.Patient
 	PharmacyDetailsToReturn            *pharmacySearch.PharmacyData
 	RefillRxRequestQueueToReturn       []*common.RefillRequestItem
@@ -89,4 +90,12 @@ func (s *StubErxService) GetPatientDetails(erxPatientId int64) (*common.Patient,
 
 func (s *StubErxService) GetPharmacyDetails(pharmacyId int64) (*pharmacySearch.PharmacyData, error) {
 	return s.PharmacyDetailsToReturn, nil
+}
+
+func (s *StubErxService) ApproveRefillRequest(clinicianId, erxRefillRequestQueueItemId, approvedRefillAmount int64, comments string) (int64, error) {
+	return s.RefillRequestPrescriptionId, nil
+}
+
+func (s *StubErxService) DenyRefillRequest(clinicianId, erxRefillRequestQueueItemId int64, denialReason string, comments string) (int64, error) {
+	return s.RefillRequestPrescriptionId, nil
 }

@@ -35,11 +35,11 @@ type DoctorRefillRequestResponse struct {
 }
 
 type DoctorRefillRequestRequestData struct {
-	RefillRequestId     int64  `schema:"refill_request_id,required"`
-	DenialReasonId      int64  `schema:"denial_reason_id"`
-	Comments            string `schema:"comments"`
-	Action              string `schema:"action"`
-	ApprovedRefillCount int64  `schema:"approved_refill_count"`
+	RefillRequestId      int64  `schema:"refill_request_id,required"`
+	DenialReasonId       int64  `schema:"denial_reason_id"`
+	Comments             string `schema:"comments"`
+	Action               string `schema:"action"`
+	ApprovedRefillAmount int64  `schema:"approved_refill_amount"`
 }
 
 func (d *DoctorRefillRequestHandler) ServeHTTP(w http.ResponseWriter, r *http.Request) {
@@ -98,20 +98,20 @@ func (d *DoctorRefillRequestHandler) resolveRefillRequest(w http.ResponseWriter,
 	case refill_request_status_approve:
 		// Ensure that the number of refills is non-zero. If its not,
 		// report it to the user as a user error
-		if requestData.ApprovedRefillCount == 0 {
+		if requestData.ApprovedRefillAmount == 0 {
 			WriteUserError(w, http.StatusBadRequest, "Number of refills to approve has to be greater than 0.")
 			return
 		}
 
 		// Send the approve refill request to dosespot
-		prescriptionId, err := d.ErxApi.ApproveRefillRequest(doctor.DoseSpotClinicianId, refillRequest.RxRequestQueueItemId, requestData.ApprovedRefillCount, requestData.Comments)
+		prescriptionId, err := d.ErxApi.ApproveRefillRequest(doctor.DoseSpotClinicianId, refillRequest.RxRequestQueueItemId, requestData.ApprovedRefillAmount, requestData.Comments)
 		if err != nil {
 			WriteDeveloperError(w, http.StatusBadRequest, "Unable to approve refill request: "+err.Error())
 			return
 		}
 
 		// Update the refill request entry with the approved refill amount and the returned prescription id
-		if err := d.DataApi.MarkRefillRequestAsApproved(requestData.ApprovedRefillCount, refillRequest.Id,
+		if err := d.DataApi.MarkRefillRequestAsApproved(requestData.ApprovedRefillAmount, refillRequest.Id,
 			prescriptionId, requestData.Comments); err != nil {
 			WriteDeveloperError(w, http.StatusBadRequest, "Unable to store the updates to the refill request to mark it as being approved: "+err.Error())
 			return

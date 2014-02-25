@@ -129,6 +129,8 @@ type RefillRequestItem struct {
 	RequestedPrescription            *Treatment             `json:"requested_prescription,omitempty"`
 	DispensedPrescription            *Treatment             `json:"dispensed_prescription"`
 	Status                           string                 `json:"status,omitempty"`
+	Comments                         string                 `json:"comments,omitempty"`
+	DenialReason                     string                 `json:"denial_reason,omitempty"`
 }
 
 type DoctorTreatmentTemplate struct {

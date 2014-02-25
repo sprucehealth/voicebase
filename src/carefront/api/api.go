@@ -135,17 +135,20 @@ type PrescriptionsAPI interface {
 	GetPendingRefillRequestStatusEventsForClinic() ([]RefillRequestStatus, error)
 	CreateRefillRequest(*common.RefillRequestItem) error
 	AddRefillRequestStatusEvent(rxRefillRequestId int64, status string, statusDate time.Time) error
+	AddRefillRequestStatusEventWithMessage(rxRefillRequestId int64, status, message string, statusDate time.Time) error
 	AddUnlinkedTreatmentFromPharmacy(unlinkedTreatment *common.Treatment) error
 	GetRefillRequestFromId(refillRequestId int64) (*common.RefillRequestItem, error)
 	GetRefillRequestDenialReasons() ([]*RefillRequestDenialReason, error)
 	MarkRefillRequestAsApproved(approvedRefillCount, rxRefillRequestId, prescriptionId int64, comments string) error
 	MarkRefillRequestAsDenied(denialReasonId, rxRefillRequestId, prescriptionId int64, comments string) error
+	GetRefillRequestsForPatientInGivenStates(patientId int64, expectedStates []string) ([]RefillRequestStatus, error)
 }
 
 type RefillRequestStatus struct {
 	ErxRefillRequestId   int64
 	RxRequestQueueItemId int64
 	Status               string
+	PrescriptionId       int64
 	StatusTimeStamp      time.Time
 }
 

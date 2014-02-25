@@ -1,11 +1,17 @@
 package integration
 
 import (
+	"bytes"
 	"carefront/api"
+	"carefront/apiservice"
 	"carefront/app_worker"
 	"carefront/common"
 	"carefront/libs/erx"
 	"carefront/libs/pharmacy"
+	"net/http"
+	"net/http/httptest"
+	"net/url"
+	"strconv"
 	"testing"
 	"time"
 
@@ -28,6 +34,9 @@ func TestNewRefillRequestForExistingPatientAndExistingTreatment(t *testing.T) {
 
 	signedupPatientResponse := SignupRandomTestPatient(t, testData.DataApi, testData.AuthApi)
 	erxPatientId := int64(60)
+
+	approvedRefillRequestPrescriptionId := int64(101010)
+	approvedRefillAmount := int64(10)
 
 	// add an erx patient id to the patient
 	err := testData.DataApi.UpdatePatientWithERxPatientId(signedupPatientResponse.Patient.PatientId.Int64(), erxPatientId)
@@ -133,6 +142,7 @@ func TestNewRefillRequestForExistingPatientAndExistingTreatment(t *testing.T) {
 	stubErxAPI := &erx.StubErxService{
 		PharmacyDetailsToReturn:      pharmacyToReturn,
 		RefillRxRequestQueueToReturn: []*common.RefillRequestItem{refillRequestItem},
+		RefillRequestPrescriptionId:  approvedRefillRequestPrescriptionId,
 	}
 
 	// Call the Consume method
@@ -210,6 +220,74 @@ func TestNewRefillRequestForExistingPatientAndExistingTreatment(t *testing.T) {
 	if refillRequest.Patient.Status != api.PATIENT_REGISTERED {
 		t.Fatal("Patient requesting refill expected to be in our system instead the indication is that it was an unlinked patient")
 	}
+
+	// now, lets go ahead and attempt to approve this refill request
+	comment := "this is a test"
+	params := url.Values{}
+	params.Set("action", "approve")
+	params.Set("refill_request_id", strconv.FormatInt(refillRequest.Id, 10))
+	params.Set("approved_refill_amount", strconv.FormatInt(approvedRefillAmount, 10))
+	params.Set("comments", comment)
+
+	doctorRefillRequestsHandler := &apiservice.DoctorRefillRequestHandler{
+		DataApi: testData.DataApi,
+		ErxApi:  stubErxAPI,
+	}
+
+	ts := httptest.NewServer(doctorRefillRequestsHandler)
+	defer ts.Close()
+
+	resp, err := authPut(ts.URL, "application/x-www-form-urlencoded", bytes.NewBufferString(params.Encode()), doctor.AccountId.Int64())
+	if err != nil {
+		t.Fatal("Unable to make successful request to approve refill request: " + err.Error())
+	}
+
+	if resp.StatusCode != http.StatusOK {
+		t.Fatal("Unable to make successful request to approve refill request: " + err.Error())
+	}
+
+	refillRequest, err = testData.DataApi.GetRefillRequestFromId(refillRequest.Id)
+	if err != nil {
+		t.Fatal("Unable to get refill request after approving request: " + err.Error())
+	}
+
+	if refillRequest.Status != api.RX_REFILL_STATUS_APPROVED {
+		t.Fatalf("Expected the refill request status to be %s but was %s instead", api.RX_REFILL_STATUS_APPROVED, refillRequest.Status)
+	}
+
+	if refillRequest.ApprovedRefillAmount != approvedRefillAmount {
+		t.Fatalf("Expected the approved refill amount to be %d but wsa %d instead", approvedRefillAmount, refillRequest.ApprovedRefillAmount)
+	}
+
+	if refillRequest.Comments != comment {
+		t.Fatalf("Expected the comment on the refill request to be '%s' but was '%s' instead", comment, refillRequest.Comments)
+	}
+
+	// doctor queue should be empty and the denied request should be in the completed tab
+	completedItems, err := testData.DataApi.GetCompletedItemsInDoctorQueue(doctor.DoctorId.Int64())
+	if err != nil {
+		t.Fatal("Unable to get the completed items for the doctor: " + err.Error())
+	}
+
+	if len(completedItems) != 1 {
+		t.Fatal("Expected there to be 1 completed item in the doctor's queue for the refill request that was just rejected")
+	}
+
+	if completedItems[0].EventType != api.EVENT_TYPE_REFILL_REQUEST || completedItems[0].ItemId != refillRequest.Id ||
+		completedItems[0].Status != api.QUEUE_ITEM_STATUS_REFILL_APPROVED {
+		t.Fatal("Completed item in the doctor's queue not in the expected state")
+	}
+
+	pendingItems, err = testData.DataApi.GetPendingItemsInDoctorQueue(doctor.DoctorId.Int64())
+	if err != nil {
+		t.Fatal("Unable to get the pending items for the doctor: " + err.Error())
+		return
+	}
+
+	if len(pendingItems) != 0 {
+		t.Fatalf("Expected there to be no pending items in the doctor's queue instead there were %d", len(pendingItems))
+	}
+
 }
 
 func TestNewRefillRequestWithUnlinkedTreatmentAndLinkedPatient(t *testing.T) {
@@ -381,6 +459,79 @@ func TestNewRefillRequestWithUnlinkedTreatmentAndLinkedPatient(t *testing.T) {
 	if refillRequest.Patient.Status != api.PATIENT_REGISTERED {
 		t.Fatal("Patient requesting refill expected to be in our system instead the indication is that it was an unlinked patient")
 	}
+
+	denialReasons, err := testData.DataApi.GetRefillRequestDenialReasons()
+	if err != nil || len(denialReasons) == 0 {
+		t.Fatal("Unable to get the denial reasons for the refill request")
+	}
+
+	// now, lets go ahead and attempt to deny this refill request
+	comment := "this is a test"
+	params := url.Values{}
+	params.Set("action", "deny")
+	params.Set("denial_reason_id", strconv.FormatInt(denialReasons[0].Id, 10))
+	params.Set("comments", comment)
+	params.Set("refill_request_id", strconv.FormatInt(refillRequest.Id, 10))
+
+	doctorRefillRequestsHandler := &apiservice.DoctorRefillRequestHandler{
+		DataApi: testData.DataApi,
+		ErxApi:  stubErxAPI,
+	}
+
+	ts := httptest.NewServer(doctorRefillRequestsHandler)
+	defer ts.Close()
+
+	resp, err := authPut(ts.URL, "application/x-www-form-urlencoded", bytes.NewBufferString(params.Encode()), doctor.AccountId.Int64())
+	if err != nil {
+		t.Fatal("Unable to make successful request to approve refill request: " + err.Error())
+	}
+
+	if resp.StatusCode != http.StatusOK {
+		t.Fatal("Unable to make successful request to approve refill request: " + err.Error())
+	}
+
+	refillRequest, err = testData.DataApi.GetRefillRequestFromId(refillRequest.Id)
+	if err != nil {
+		t.Fatal("Unable to get refill request after approving request: " + err.Error())
+	}
+
+	if refillRequest.Status != api.RX_REFILL_STATUS_DENIED {
+		t.Fatalf("Expected the refill request status to be %s but was %s instead", api.RX_REFILL_STATUS_DENIED, refillRequest.Status)
+	}
+
+	if refillRequest.Comments != comment {
+		t.Fatalf("Expected the comment on the refill request to be '%s' but was '%s' instead", comment, refillRequest.Comments)
+	}
+
+	if refillRequest.DenialReason != denialReasons[0].DenialReason {
+		t.Fatalf("Denial reason expected to be '%s' but is '%s' instead", denialReasons[0].DenialReason, refillRequest.DenialReason)
+	}
+
+	// doctor queue should be empty and the denied request should be in the completed tab
+	completedItems, err := testData.DataApi.GetCompletedItemsInDoctorQueue(doctor.DoctorId.Int64())
+	if err != nil {
+		t.Fatal("Unable to get the completed items for the doctor: " + err.Error())
+	}
+
+	if len(completedItems) != 1 {
+		t.Fatal("Expected there to be 1 completed item in the doctor's queue for the refill request that was just rejected")
+	}
+
+	if completedItems[0].EventType != api.EVENT_TYPE_REFILL_REQUEST || completedItems[0].ItemId != refillRequest.Id ||
+		completedItems[0].Status != api.QUEUE_ITEM_STATUS_REFILL_DENIED {
+		t.Fatal("Completed item in the doctor's queue not in the expected state")
+	}
+
+	pendingItems, err = testData.DataApi.GetPendingItemsInDoctorQueue(doctor.DoctorId.Int64())
+	if err != nil {
+		t.Fatal("Unable to get the pending items for the doctor: " + err.Error())
+		return
+	}
+
+	if len(pendingItems) != 0 {
+		t.Fatalf("Expected there to be no pending items in the doctor's queue instead there were %d", len(pendingItems))
+	}
+
 }
 
 func TestNewRefillRequestWithUnlinkedTreatmentAndUnlinkedPatient(t *testing.T) {
