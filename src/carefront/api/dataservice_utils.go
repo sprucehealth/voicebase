@@ -22,6 +22,8 @@ const (
 	treatment_otc                           = "OTC"
 	treatment_rx                            = "RX"
 	RX_REFILL_STATUS_REQUESTED              = "Requested"
+	RX_REFILL_STATUS_APPROVED               = "Approved"
+	RX_REFILL_STATUS_DENIED                 = "Denied"
 	dr_drug_supplemental_instruction_table  = "dr_drug_supplemental_instruction"
 	dr_regimen_step_table                   = "dr_regimen_step"
 	dr_advice_point_table                   = "dr_advice_point"
@@ -78,6 +80,16 @@ func enumerateItemsIntoString(ids []int64) string {
 		idsStr[i] = strconv.FormatInt(id, 10)
 	}
 	return strings.Join(idsStr, ",")
+}
+
+func getKeysAndValuesFromMap(m map[string]interface{}) ([]string, []interface{}) {
+	values := make([]interface{}, 0)
+	keys := make([]string, 0)
+	for key, value := range m {
+		keys = append(keys, key)
+		values = append(values, value)
+	}
+	return keys, values
 }
 
 func nReplacements(n int) string {

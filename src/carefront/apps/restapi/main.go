@@ -279,24 +279,35 @@ func main() {
 		BucketLocation:        conf.ContentBucket,
 		Region:                conf.AWSRegion,
 	}
+
 	doctorPrescriptionsHandler := &apiservice.DoctorPrescriptionsHandler{
 		DataApi: dataApi,
 	}
+
 	doctorPrescriptionsNotificationsHandler := &apiservice.DoctorPrescriptionsNotificationsHandler{
 		DataApi: dataApi,
 		ErxApi:  doseSpotService,
 	}
+
 	doctorPrescriptionErrorsHandler := &apiservice.DoctorPrescriptionsErrorsHandler{
 		DataApi: dataApi,
 		ErxApi:  doseSpotService,
 	}
+
 	doctorPrescriptionErrorIgnoreHandler := &apiservice.DoctorPrescriptionErrorIgnoreHandler{
 		DataApi: dataApi,
 		ErxApi:  doseSpotService,
 	}
+
 	doctorRefillRequestHandler := &apiservice.DoctorRefillRequestHandler{
 		DataApi: dataApi,
+		ErxApi:  doseSpotService,
 	}
+
+	refillRequestDenialReasonsHandler := &apiservice.RefillRequestDenialReasonsHandler{
+		DataApi: dataApi,
+	}
+
 	erxStatusQueue, err := common.NewQueue(awsAuth, aws.Regions[conf.AWSRegion], conf.ERxQueue)
 	if err != nil {
 		log.Fatal("Unable to get erx queue for sending prescriptions to: " + err.Error())
@@ -353,6 +364,7 @@ func main() {
 	mux.Handle("/v1/doctor/rx/errors", doctorPrescriptionErrorsHandler)
 	mux.Handle("/v1/doctor/rx/error/resolve", doctorPrescriptionErrorIgnoreHandler)
 	mux.Handle("/v1/doctor/rx/refill/request", doctorRefillRequestHandler)
+	mux.Handle("/v1/doctor/rx/refill/reasons", refillRequestDenialReasonsHandler)
 
 	mux.Handle("/v1/doctor/visit/review", doctorPatientVisitReviewHandler)
 	mux.Handle("/v1/doctor/visit/diagnosis", diagnosePatientHandler)

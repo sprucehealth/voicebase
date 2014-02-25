@@ -68,13 +68,23 @@ func (d *DoctorQueueItem) GetTitleAndSubtitle(dataApi DataAPI) (string, string, 
 			return "", "", err
 		}
 
+		if patient == nil {
+			return "", "", nil
+		}
+
 		switch d.Status {
 		case QUEUE_ITEM_STATUS_PENDING:
 			title = fmt.Sprintf("Refill request for %s %s", patient.FirstName, patient.LastName)
 		case QUEUE_ITEM_STATUS_ONGOING:
 			title = fmt.Sprintf("Continue refill request for %s %s", patient.FirstName, patient.LastName)
-		case QUEUE_ITEM_STATUS_COMPLETED:
-			title = fmt.Sprintf("Refill request completed for %s %s", patient.FirstName, patient.LastName)
+		case QUEUE_ITEM_STATUS_REFILL_APPROVED:
+			title = fmt.Sprintf("Refill request approved for %s %s", patient.FirstName, patient.LastName)
+			formattedTime := d.EnqueueDate.Format("3:04pm")
+			subtitle = fmt.Sprintf("%s %d at %s", d.EnqueueDate.Month().String(), d.EnqueueDate.Day(), formattedTime)
+		case QUEUE_ITEM_STATUS_REFILL_DENIED:
+			title = fmt.Sprintf("Refill request denied for %s %s", patient.FirstName, patient.LastName)
+			formattedTime := d.EnqueueDate.Format("3:04pm")
+			subtitle = fmt.Sprintf("%s %d at %s", d.EnqueueDate.Month().String(), d.EnqueueDate.Day(), formattedTime)
 		}
 	}
 	return title, subtitle, nil
@@ -121,7 +131,8 @@ func (d *DoctorQueueItem) GetDisplayTypes() []string {
 			} else {
 				return []string{DISPLAY_TYPE_TITLE_SUBTITLE_NONACTIONABLE}
 			}
-
+		case QUEUE_ITEM_STATUS_REFILL_APPROVED, QUEUE_ITEM_STATUS_REFILL_DENIED:
+			return []string{DISPLAY_TYPE_TITLE_SUBTITLE_ACTIONABLE}
 		}
 	}
 	return nil
@@ -141,7 +152,7 @@ func (d *DoctorQueueItem) GetActionUrl() string {
 		}
 	case EVENT_TYPE_REFILL_REQUEST:
 		switch d.Status {
-		case QUEUE_ITEM_STATUS_ONGOING, QUEUE_ITEM_STATUS_PENDING, QUEUE_ITEM_STATUS_COMPLETED:
+		case QUEUE_ITEM_STATUS_ONGOING, QUEUE_ITEM_STATUS_PENDING, QUEUE_ITEM_STATUS_REFILL_APPROVED, QUEUE_ITEM_STATUS_REFILL_DENIED:
 			return fmt.Sprintf("%s%s?refill_request_id=%d", SpruceButtonBaseActionUrl, viewRefillRequestAction, d.ItemId)
 		}
 	}

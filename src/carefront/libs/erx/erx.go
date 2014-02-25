@@ -30,6 +30,8 @@ type ERxAPI interface {
 	GetRefillRequestQueueForClinic() ([]*common.RefillRequestItem, error)
 	GetPatientDetails(erxPatientId int64) (*common.Patient, error)
 	GetPharmacyDetails(pharmacyId int64) (*pharmacySearch.PharmacyData, error)
+	ApproveRefillRequest(clinicianId, erxRefillRequestQueueItemId, approvedRefillAmount int64, comments string) (int64, error)
+	DenyRefillRequest(clinicianId, erxRefillRequestQueueItemId int64, denialReason string, comments string) (int64, error)
 }
 
 type PrescriptionLog struct {

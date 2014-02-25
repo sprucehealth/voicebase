@@ -40,6 +40,8 @@ const (
 	getMedicationRefillRequestQueueForClinicAction
 	getPatientDetailsAction
 	pharmacyDetailsAction
+	approveRefillAction
+	denyRefillAction
 )
 
 var DoseSpotApiActions = map[DoseSpotApiId]string{
@@ -58,6 +60,8 @@ var DoseSpotApiActions = map[DoseSpotApiId]string{
 	getMedicationRefillRequestQueueForClinicAction: "GetMedicationRefillRequestQueueForClinic",
 	getPatientDetailsAction:                        "GetPatientDetail",
 	pharmacyDetailsAction:                          "PharmacyValidateMessage",
+	approveRefillAction:                            "ApproveRefill",
+	denyRefillAction:                               "DenyRefill",
 }
 
 const (
@@ -658,6 +662,51 @@ func (d *DoseSpotService) GetPharmacyDetails(pharmacyId int64) (*pharmacySearch.
 		Name:         response.PharmacyDetails.StoreName,
 		Source:       pharmacySearch.PHARMACY_SOURCE_SURESCRIPTS,
 	}, nil
+}
+
+func (d *DoseSpotService) ApproveRefillRequest(clinicianId, erxRefillRequestQueueItemId, approvedRefillAmount int64, comments string) (int64, error) {
+	request := &approveRefillRequest{
+		SSO:                  generateSingleSignOn(d.ClinicKey, clinicianId, d.ClinicId),
+		RxRequestQueueItemId: erxRefillRequestQueueItemId,
+		Refills:              approvedRefillAmount,
+		Comments:             comments,
+	}
+
+	response := &approveRefillResponse{}
+	err := getDoseSpotClient().makeSoapRequest(DoseSpotApiActions[approveRefillAction], request, response,
+		d.apiLatencies[approveRefillAction], d.apiRequests[approveRefillAction], d.apiFailure[approveRefillAction])
+	if err != nil {
+		return 0, err
+	}
+
+	if response.ResultCode != resultOk {
+		return 0, fmt.Errorf("Unable to approve refill request: %s", response.ResultDescription)
+	}
+
+	return response.PrescriptionId, nil
+}
+
+func (d *DoseSpotService) DenyRefillRequest(clinicianId, erxRefillRequestQueueItemId int64, denialReason string, comments string) (int64, error) {
+	request := &denyRefillRequest{
+		SSO:                  generateSingleSignOn(d.ClinicKey, clinicianId, d.ClinicId),
+		RxRequestQueueItemId: erxRefillRequestQueueItemId,
+		DenialReason:         denialReason,
+		Comments:             comments,
+	}
+
+	response := &denyRefillResponse{}
+	err := getDoseSpotClient().makeSoapRequest(DoseSpotApiActions[denyRefillAction], request, response,
+		d.apiLatencies[denyRefillAction], d.apiRequests[denyRefillAction], d.apiRequests[denyRefillAction])
+
+	if err != nil {
+		return 0, err
+	}
+
+	if response.ResultCode != resultOk {
+		return 0, fmt.Errorf("Unable to deny refill request: %s", response.ResultDescription)
+	}
+
+	return response.PrescriptionId, nil
 }
 
 func convertMedicationIntoTreatment(medicationItem *medication) *common.Treatment {

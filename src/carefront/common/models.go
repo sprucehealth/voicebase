@@ -116,6 +116,7 @@ type RefillRequestItem struct {
 	PharmacyRxReferenceNumber        string                 `json:"-"`
 	RequestedDrugDescription         string                 `json:"requested_drug_name"`
 	RequestedRefillAmount            string                 `json:"requested_refill"`
+	ApprovedRefillAmount             int64                  `json:"approved_refill,string,omitempty"`
 	RequestedDispense                string                 `json:"requested_dispense_value"`
 	RequestedDispenseUnitDescription string                 `json:"requested_dispense_unit_description,omitempty"`
 	ErxPatientId                     int64                  `json:"-"`

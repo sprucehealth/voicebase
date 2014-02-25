@@ -441,3 +441,34 @@ type pharmacyDetailsResult struct {
 	Result
 	PharmacyDetails *pharmacy `xml:"Pharmacy"`
 }
+
+type approveRefillRequest struct {
+	XMLName              xml.Name     `xml:"http://www.dosespot.com/API/11/ ApproveRefillRequest"`
+	SSO                  singleSignOn `xml:"SingleSignOn"`
+	RxRequestQueueItemId int64        `xml:"RxRequestQueueItemID"`
+	Refills              int64        `xml:"Refills"`
+	Comments             string       `xml:"Note"`
+}
+
+type approveRefillResponse struct {
+	XMLName xml.Name `xml:"http://www.dosespot.com/API/11/ ApproveRefillResult"`
+	Result
+	PatientId      int64 `xml:"PatientID"`
+	PrescriptionId int64 `xml:"PrescriptionId"`
+}
+
+type denyRefillRequest struct {
+	XMLName              xml.Name     `xml:"http://www.dosespot.com/API/11/ DenyRefillRequest"`
+	SSO                  singleSignOn `xml:"SingleSignOn"`
+	RxRequestQueueItemId int64        `xml:"RxRequestQueueItemID"`
+	DenialReason         string       `xml:"DenialReason"`
+	Comments             string       `xml:"Note"`
+}
+
+type denyRefillResponse struct {
+	XMLName xml.Name     `xml:"http://www.dosespot.com/API/11/ DenyRefillResult"`
+	SSO     singleSignOn `xml:"SingleSignOn"`
+	Result
+	PatientId      int64 `xml:"PatientID"`
+	PrescriptionId int64 `xml:"PrescriptionId"`
+}

@@ -125,6 +125,23 @@ type PatientVisitAPI interface {
 	GetPrescriptionStatusEventsForPatient(patientId int64) ([]*PrescriptionStatus, error)
 }
 
+type RefillRequestDenialReason struct {
+	Id           int64
+	DenialCode   string
+	DenialReason string
+}
+
+type PrescriptionsAPI interface {
+	GetPendingRefillRequestStatusEventsForClinic() ([]RefillRequestStatus, error)
+	CreateRefillRequest(*common.RefillRequestItem) error
+	AddRefillRequestStatusEvent(rxRefillRequestId int64, status string, statusDate time.Time) error
+	AddUnlinkedTreatmentFromPharmacy(unlinkedTreatment *common.Treatment) error
+	GetRefillRequestFromId(refillRequestId int64) (*common.RefillRequestItem, error)
+	GetRefillRequestDenialReasons() ([]*RefillRequestDenialReason, error)
+	MarkRefillRequestAsApproved(approvedRefillCount, rxRefillRequestId, prescriptionId int64, comments string) error
+	MarkRefillRequestAsDenied(denialReasonId, rxRefillRequestId, prescriptionId int64, comments string) error
+}
+
 type RefillRequestStatus struct {
 	ErxRefillRequestId   int64
 	RxRequestQueueItemId int64
@@ -161,12 +178,8 @@ type DoctorAPI interface {
 	GetTreatmentTemplates(doctorId int64) ([]*common.DoctorTreatmentTemplate, error)
 	DeleteTreatmentTemplates(doctorTreatmentTemplates []*common.DoctorTreatmentTemplate, doctorId int64) error
 	GetCompletedPrescriptionsForDoctor(from, to time.Time, doctorId int64) ([]*common.TreatmentPlan, error)
-	GetPendingRefillRequestStatusEventsForClinic() ([]RefillRequestStatus, error)
-	CreateRefillRequest(*common.RefillRequestItem) error
-	AddRefillRequestStatusEvent(rxRefillRequestId int64, status string, statusDate time.Time) error
 	InsertNewRefillRequestIntoDoctorQueue(refillRequestId int64, doctorId int64) error
-	AddUnlinkedTreatmentFromPharmacy(unlinkedTreatment *common.Treatment) error
-	GetRefillRequestFromId(refillRequestId int64) (*common.RefillRequestItem, error)
+	MarkRefillRequestCompleteInDoctorQueue(doctorId, rxRefillRequestId int64, currentState, updatedState string) error
 }
 
 type IntakeAPI interface {
@@ -217,6 +230,7 @@ type DataAPI interface {
 	IntakeLayoutAPI
 	ObjectStorageDBAPI
 	IntakeAPI
+	PrescriptionsAPI
 }
 
 type CloudStorageAPI interface {
