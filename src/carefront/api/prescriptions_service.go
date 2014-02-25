@@ -56,8 +56,7 @@ func (d *DataService) AddUnlinkedTreatmentFromPharmacy(unlinkedTreatment *common
 		return err
 	}
 
-	err = d.addUnlinkedTreatmentFromPharmacy(unlinkedTreatment, tx)
-	if err != nil {
+	if err := d.addUnlinkedTreatmentFromPharmacy(unlinkedTreatment, tx); err != nil {
 		tx.Rollback()
 		return err
 	}
@@ -72,8 +71,7 @@ func (d *DataService) CreateRefillRequest(refillRequest *common.RefillRequestIte
 
 	}
 
-	err = d.addPharmacyDispensedTreatment(refillRequest.DispensedPrescription, refillRequest.RequestedPrescription, tx)
-	if err != nil {
+	if err := d.addPharmacyDispensedTreatment(refillRequest.DispensedPrescription, refillRequest.RequestedPrescription, tx); err != nil {
 		tx.Rollback()
 		return err
 	}
@@ -120,10 +118,7 @@ func (d *DataService) CreateRefillRequest(refillRequest *common.RefillRequestIte
 		return err
 	}
 
-	if err := tx.Commit(); err != nil {
-		return err
-	}
-	return nil
+	return tx.Commit()
 }
 
 func (d *DataService) GetRefillRequestFromId(refillRequestId int64) (*common.RefillRequestItem, error) {
@@ -479,3 +474,40 @@ func (d *DataService) MarkRefillRequestAsDenied(denialReasonId, rxRefillRequestI
 
 	return tx.Commit()
 }
+
+// func (d *DataService) GetRefillRequestsForPatientInGivenStates(patientId int64, expectedStates []string) ([]RefillRequestStatus, error) {
+// 	if len(expectedStates) == 0 {
+// 		return nil, nil
+// 	}
+
+// 	params := []interface{}{patientId}
+// 	params = appendStringsToInterfaceSlice(params, expectedStates)
+// 	params = append(params, status_active)
+
+// 	rows, err := d.DB.Query(fmt.Sprintf(`select rx_refill_request_id, rx_refill_status, rx_refill_request.erx_id, 
+// 							rx_refill_request.erx_request_queue_item_id, rx_refill_request.rx_refill_status_date from rx_refill_status_events
+// 								inner join rx_refill_request on rx_refill_request_id = rx_refill_request.id 
+// 									where rx_refill_request.patient_id = ? and rx_refill_status in (%s) 
+// 										and rx_refill_status_events.status = ?`, nReplacements(len(expectedStates))), params...)
+// 	if err != nil {
+// 		return nil, err
+// 	}
+
+// 	refillRequestStatuses := make([]RefillRequestStatus,0)
+// 	for rows.Next() {
+// 		var erxId sql.NullInt64
+// 		var refillRequestStatus RefillRequestStatus
+		
+// 		err = rows.Scan(&refillRequestStatus.ErxRefillRequestId, &refillRequestStatus.Status, 
+// 			&erxId, &refillRequestStatus.RxRequestQueueItemId, &refillRequestStatus.StatusTimeStamp)
+		
+// 		if err != nil {
+// 			return nil, err
+// 		}
+
+// 		refillRequestStatus.PrescriptionId = erxId.Int64
+// 		refillRequestStatuses = append(refillRequestStatuses, refillRequestStatus)
+// 	}
+
+// 	return refillRequestStatuses, nil
+// }

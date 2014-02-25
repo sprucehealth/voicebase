@@ -17,8 +17,7 @@ func (d *DataService) RegisterPatient(patient *common.Patient) error {
 		return err
 	}
 
-	err = createPatientWithStatus(patient, PATIENT_REGISTERED, tx)
-	if err != nil {
+	if err := createPatientWithStatus(patient, PATIENT_REGISTERED, tx); err != nil {
 		tx.Rollback()
 		return err
 	}
@@ -44,8 +43,7 @@ func (d *DataService) CreateUnlinkedPatientFromRefillRequest(patient *common.Pat
 	patient.AccountId = common.NewObjectId(accountId)
 
 	// create an account
-	err = createPatientWithStatus(patient, PATIENT_UNLINKED, tx)
-	if err != nil {
+	if err := createPatientWithStatus(patient, PATIENT_UNLINKED, tx); err != nil {
 		tx.Rollback()
 		return err
 	}
@@ -525,8 +523,7 @@ func (d *DataService) AddPharmacy(pharmacyDetails *pharmacy.PharmacyData) error 
 		return err
 	}
 
-	err = addPharmacy(pharmacyDetails, tx)
-	if err != nil {
+	if err := addPharmacy(pharmacyDetails, tx); err != nil {
 		tx.Rollback()
 		return err
 	}
