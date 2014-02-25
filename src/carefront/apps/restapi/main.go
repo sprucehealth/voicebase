@@ -9,6 +9,7 @@ import (
 	"net"
 	"net/http"
 	"os"
+	"strconv"
 	"time"
 
 	"carefront/api"
@@ -169,6 +170,24 @@ func main() {
 		log.Fatal(err)
 	}
 	defer db.Close()
+
+	if num, err := strconv.Atoi(config.MigrationNumber); err == nil {
+		var latestMigration int
+		if err := db.QueryRow("SELECT MAX(migration_id) FROM migrations").Scan(&latestMigration); err != nil {
+			log.Fatalf("Failed to query for latest migration: %s", err.Error())
+		}
+		if latestMigration != num {
+			if conf.Debug {
+				golog.Warningf("Current database migration = %d, want %d", latestMigration, num)
+			} else {
+				// TODO: eventually make this Fatal once everything has been fully tested
+				golog.Errorf("Current database migration = %d, want %d", latestMigration, num)
+			}
+		}
+	} else if !conf.Debug {
+		// TODO: eventually make this Fatal once everything has been fully tested
+		golog.Errorf("MigrationNumber not set and not debug")
+	}
 
 	awsAuth, err := conf.AWSAuth()
 	if err != nil {
