@@ -49,7 +49,7 @@ deploy:
   upload-dir: restapi
   skip_cleanup: true
   on:
-    branch: master
+    all_branches: true
 notifications:
   email:
   - backend@carefront.net
