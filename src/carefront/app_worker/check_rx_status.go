@@ -130,7 +130,7 @@ func ConsumeMessageFromQueue(DataApi api.DataAPI, ERxApi erx.ERxAPI, ErxQueue *c
 			[]string{api.RX_REFILL_STATUS_APPROVED, api.RX_REFILL_STATUS_DENIED})
 
 		if err != nil {
-			golog.Errorf("Error getting refill request statuses for patient: %s", err.Error)
+			golog.Errorf("Error getting refill request statuses for patient: %s", err.Error())
 			statFailure.Inc(1)
 			continue
 		}
