@@ -16,7 +16,7 @@ const (
 	waitTimeInMinsForRefillRxChecker = 30 * time.Second
 )
 
-func StartWorkerToCheckForRefillRequests(DataApi api.DataAPI, ERxApi erx.ERxAPI, statsRegistry metrics.Registry) {
+func StartWorkerToCheckForRefillRequests(DataApi api.DataAPI, ERxApi erx.ERxAPI, statsRegistry metrics.Registry, environment string) {
 
 	statFailure := metrics.NewCounter()
 	statCycles := metrics.NewCounter()
@@ -28,12 +28,12 @@ func StartWorkerToCheckForRefillRequests(DataApi api.DataAPI, ERxApi erx.ERxAPI,
 		for {
 
 			time.Sleep(waitTimeInMinsForRefillRxChecker)
-			PerformRefillRecquestCheckCycle(DataApi, ERxApi, statFailure, statCycles)
+			PerformRefillRecquestCheckCycle(DataApi, ERxApi, statFailure, statCycles, environment)
 		}
 	}()
 }
 
-func PerformRefillRecquestCheckCycle(DataApi api.DataAPI, ERxApi erx.ERxAPI, statFailure, statCycles metrics.Counter) {
+func PerformRefillRecquestCheckCycle(DataApi api.DataAPI, ERxApi erx.ERxAPI, statFailure, statCycles metrics.Counter, environment string) {
 	// get pending refill request statuses for the clinic that we already have in our database
 	refillRequestStatuses, err := DataApi.GetPendingRefillRequestStatusEventsForClinic()
 	if err != nil {
@@ -181,7 +181,7 @@ func PerformRefillRecquestCheckCycle(DataApi api.DataAPI, ERxApi erx.ERxAPI, sta
 			continue
 		}
 
-		if patientInDb == nil && !refillRequestItem.PatientAddedForRequest {
+		if patientInDb == nil && !refillRequestItem.PatientAddedForRequest && environment == "prod" {
 			golog.Errorf("Patient expected to exist in our db but it does not. This is an undetermined state.")
 			statFailure.Inc(1)
 			continue
