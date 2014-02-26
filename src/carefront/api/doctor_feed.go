@@ -33,27 +33,26 @@ func (d *DoctorQueueItem) GetTitleAndSubtitle(dataApi DataAPI) (string, string, 
 	switch d.EventType {
 	case EVENT_TYPE_PATIENT_VISIT, EVENT_TYPE_TREATMENT_PLAN:
 		var patientVisitId int64
+		var err error
 
 		if d.EventType == EVENT_TYPE_TREATMENT_PLAN {
 			patientVisitId, err = dataApi.GetPatientVisitIdFromTreatmentPlanId(d.ItemId)
 			if err != nil {
-				return
+				return "", "", err
 			}
 		} else {
 			patientVisitId = d.ItemId
 		}
 
-		patientId, shadowedErr := dataApi.GetPatientIdFromPatientVisitId(patientVisitId)
-		if shadowedErr != nil {
-			err = shadowedErr
-			return
+		patientId, err := dataApi.GetPatientIdFromPatientVisitId(patientVisitId)
+		if err != nil {
+			return "", "", err
 		}
-		patient, shadowedErr := dataApi.GetPatientFromId(patientId)
-		if shadowedErr != nil {
-			err = shadowedErr
-			return
+		patient, err := dataApi.GetPatientFromId(patientId)
+		if err != nil {
+			return "", "", err
+		}
 
-		}
 		switch d.Status {
 		case QUEUE_ITEM_STATUS_COMPLETED:
 			title = fmt.Sprintf("Treatment Plan completed for %s %s", patient.FirstName, patient.LastName)
