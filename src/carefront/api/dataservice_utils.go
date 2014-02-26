@@ -42,6 +42,7 @@ const (
 	table_name_unlinked_requested_treatment = "unlinked_requested_treatment"
 	without_link_to_treatment_plan          = true
 	with_link_to_treatment_plan             = false
+	address_usa                             = "USA"
 )
 
 type DataService struct {

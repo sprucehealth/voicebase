@@ -212,26 +212,92 @@ func (d *DoseSpotService) SendMultiplePrescriptions(clinicianId int64, patient *
 	return unSuccessfulTreatmentIds, nil
 }
 
-func (d *DoseSpotService) StartPrescribingPatient(clinicianId int64, currentPatient *common.Patient, treatments []*common.Treatment) error {
+func populatePatientForDoseSpot(currentPatient *common.Patient) *patient {
 
 	newPatient := &patient{
-		PatientId:        currentPatient.ERxPatientId.Int64(),
-		FirstName:        currentPatient.FirstName,
-		LastName:         currentPatient.LastName,
-		Email:            currentPatient.Email,
-		Address1:         currentPatient.PatientAddress.AddressLine1,
-		City:             currentPatient.City,
-		State:            currentPatient.State,
-		ZipCode:          currentPatient.ZipCode,
-		DateOfBirth:      specialDateTime{DateTime: currentPatient.Dob, DateTimeElementName: "DateOfBirth"},
-		Gender:           currentPatient.Gender,
-		PrimaryPhone:     currentPatient.Phone,
-		PrimaryPhoneType: currentPatient.PhoneType,
+		PatientId:   currentPatient.ERxPatientId.Int64(),
+		FirstName:   currentPatient.FirstName,
+		MiddleName:  currentPatient.MiddleName,
+		LastName:    currentPatient.LastName,
+		Suffix:      currentPatient.Suffix,
+		Prefix:      currentPatient.Prefix,
+		Email:       currentPatient.Email,
+		City:        currentPatient.City,
+		State:       currentPatient.State,
+		ZipCode:     currentPatient.ZipCode,
+		DateOfBirth: specialDateTime{DateTime: currentPatient.Dob, DateTimeElementName: "DateOfBirth"},
+		Gender:      currentPatient.Gender,
+	}
+
+	if len(currentPatient.PhoneNumbers) > 0 {
+		newPatient.PrimaryPhone = currentPatient.PhoneNumbers[0].Phone
+		newPatient.PrimaryPhoneType = currentPatient.PhoneNumbers[0].PhoneType
+
+		if len(currentPatient.PhoneNumbers) > 1 {
+			newPatient.PhoneAdditional1 = currentPatient.PhoneNumbers[1].Phone
+			newPatient.PhoneAdditionalType1 = currentPatient.PhoneNumbers[1].PhoneType
+		}
+
+		if len(currentPatient.PhoneNumbers) > 2 {
+			newPatient.PhoneAdditional2 = currentPatient.PhoneNumbers[2].Phone
+			newPatient.PhoneAdditionalType2 = currentPatient.PhoneNumbers[2].PhoneType
+		}
+	}
+
+	if currentPatient.PatientAddress != nil {
+		newPatient.Address1 = currentPatient.PatientAddress.AddressLine1
+		newPatient.Address2 = currentPatient.PatientAddress.AddressLine2
+		newPatient.City = currentPatient.PatientAddress.City
+		newPatient.ZipCode = currentPatient.PatientAddress.ZipCode
 	}
 
 	if currentPatient.ERxPatientId.Int64() != 0 {
 		newPatient.PatientId = currentPatient.ERxPatientId.Int64()
 	}
+
+	return newPatient
+}
+
+func (d *DoseSpotService) UpdatePatientInformation(clinicianId int64, currentPatient *common.Patient) error {
+	newPatient := populatePatientForDoseSpot(currentPatient)
+	patientPreferredPharmacy := &patientPharmacySelection{}
+	patientPreferredPharmacy.IsPrimary = true
+
+	pharmacyId, err := strconv.ParseInt(currentPatient.Pharmacy.SourceId, 0, 64)
+	if err != nil {
+		return fmt.Errorf("Unable to parse the pharmacy id: %s", err.Error())
+	}
+
+	patientPreferredPharmacy.PharmacyId = pharmacyId
+
+	startPrescribingRequest := &patientStartPrescribingRequest{
+		AddFavoritePharmacies: []*patientPharmacySelection{patientPreferredPharmacy},
+		Patient:               newPatient,
+		SSO:                   generateSingleSignOn(d.ClinicKey, clinicianId, d.ClinicId),
+	}
+
+	response := &patientStartPrescribingResponse{}
+	err = getDoseSpotClient().makeSoapRequest(DoseSpotApiActions[startPrescribingPatientAction],
+		startPrescribingRequest, response,
+		d.apiLatencies[startPrescribingPatientAction],
+		d.apiRequests[startPrescribingPatientAction],
+		d.apiFailure[startPrescribingPatientAction])
+	if err != nil {
+		return err
+	}
+
+	if response.ResultCode != resultOk {
+		return errors.New("Something went wrong when attempting to start prescriptions for patient: " + response.ResultDescription)
+	}
+
+	// populate the prescription id into the patient object
+	currentPatient.ERxPatientId = common.NewObjectId(response.PatientUpdates[0].Patient.PatientId)
+	return nil
+}
+
+func (d *DoseSpotService) StartPrescribingPatient(clinicianId int64, currentPatient *common.Patient, treatments []*common.Treatment) error {
+
+	newPatient := populatePatientForDoseSpot(currentPatient)
 
 	patientPreferredPharmacy := &patientPharmacySelection{}
 	patientPreferredPharmacy.IsPrimary = true
@@ -585,13 +651,30 @@ func (d *DoseSpotService) GetPatientDetails(erxPatientId int64) (*common.Patient
 			ZipCode:      response.PatientUpdates[0].Patient.ZipCode,
 			State:        response.PatientUpdates[0].Patient.State,
 		},
-		Dob:       response.PatientUpdates[0].Patient.DateOfBirth.DateTime,
-		Email:     response.PatientUpdates[0].Patient.Email,
-		ZipCode:   response.PatientUpdates[0].Patient.ZipCode,
-		City:      response.PatientUpdates[0].Patient.City,
-		State:     response.PatientUpdates[0].Patient.State,
-		Phone:     response.PatientUpdates[0].Patient.PrimaryPhone,
-		PhoneType: response.PatientUpdates[0].Patient.PrimaryPhoneType,
+		Dob:     response.PatientUpdates[0].Patient.DateOfBirth.DateTime,
+		Email:   response.PatientUpdates[0].Patient.Email,
+		ZipCode: response.PatientUpdates[0].Patient.ZipCode,
+		City:    response.PatientUpdates[0].Patient.City,
+		State:   response.PatientUpdates[0].Patient.State,
+		PhoneNumbers: []*common.PhoneInformation{&common.PhoneInformation{
+			Phone:     response.PatientUpdates[0].Patient.PrimaryPhone,
+			PhoneType: response.PatientUpdates[0].Patient.PrimaryPhoneType,
+		},
+		},
+	}
+
+	if response.PatientUpdates[0].Patient.PhoneAdditional1 != "" {
+		newPatient.PhoneNumbers = append(newPatient.PhoneNumbers, &common.PhoneInformation{
+			Phone:     response.PatientUpdates[0].Patient.PhoneAdditional1,
+			PhoneType: response.PatientUpdates[0].Patient.PhoneAdditionalType1,
+		})
+	}
+
+	if response.PatientUpdates[0].Patient.PhoneAdditional2 != "" {
+		newPatient.PhoneNumbers = append(newPatient.PhoneNumbers, &common.PhoneInformation{
+			Phone:     response.PatientUpdates[0].Patient.PhoneAdditional2,
+			PhoneType: response.PatientUpdates[0].Patient.PhoneAdditionalType2,
+		})
 	}
 
 	return newPatient, nil

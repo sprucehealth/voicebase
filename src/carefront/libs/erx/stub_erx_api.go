@@ -99,3 +99,7 @@ func (s *StubErxService) ApproveRefillRequest(clinicianId, erxRefillRequestQueue
 func (s *StubErxService) DenyRefillRequest(clinicianId, erxRefillRequestQueueItemId int64, denialReason string, comments string) (int64, error) {
 	return s.RefillRequestPrescriptionId, nil
 }
+
+func (s *StubErxService) UpdatePatientInformation(clinicianId int64, patient *common.Patient) error {
+	return nil
+}

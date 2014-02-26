@@ -5,19 +5,26 @@ import (
 	"time"
 )
 
+type PhoneInformation struct {
+	Phone     string `json:"phone,omitempty"`
+	PhoneType string `json:"phone_type,omitempty"`
+}
+
 type Patient struct {
 	PatientId      *ObjectId              `json:"id,omitempty"`
 	IsUnlinked     bool                   `json:"is_unlinked,omitempty"`
 	FirstName      string                 `json:"first_name,omitempty"`
 	LastName       string                 `json:"last_name,omiempty"`
+	MiddleName     string                 `json:"middle_name,omitempty"`
+	Suffix         string                 `json:"suffix,omitempty"`
+	Prefix         string                 `json:"prefix,omitempty"`
 	Dob            time.Time              `json:"dob,omitempty"`
 	Email          string                 `json:"email,omitempty"`
 	Gender         string                 `json:"gender,omitempty"`
 	ZipCode        string                 `json:"zip_code,omitempty"`
 	City           string                 `json:"city,omitempty"`
 	State          string                 `json:"state,omitempty"`
-	Phone          string                 `json:"phone,omitempty"`
-	PhoneType      string                 `json:"-"`
+	PhoneNumbers   []*PhoneInformation    `json:"phone_numbers,omitempty"`
 	Status         string                 `json:"-"`
 	AccountId      *ObjectId              `json:"-"`
 	ERxPatientId   *ObjectId              `json:"-"`
@@ -55,6 +62,7 @@ type Address struct {
 	City         string `json:"city,omitempty"`
 	State        string `json:"state"`
 	ZipCode      string `json:"zip_code"`
+	Country      string `json:"country"`
 }
 
 type AnswerIntake struct {
