@@ -1,8 +1,11 @@
 package cmd
 
 import (
+	"bufio"
 	"net"
 	"os"
+	"path"
+	"regexp"
 	"strings"
 
 	"code.google.com/p/go.crypto/ssh"
@@ -157,4 +160,83 @@ func mapSSHExitError(err error) error {
 			Message: e.String(),
 		}
 	}
+}
+
+type sshHostConfig struct {
+	ProxyCommand string
+	Bastion      string
+}
+
+type sshConfig struct {
+	Default *sshHostConfig
+	Hosts   map[string]*sshHostConfig
+}
+
+func (cnf *sshConfig) ConfigForHost(name string) *sshHostConfig {
+	c := *cnf.Default
+
+	return &c
+}
+
+// does not support unicode and only supports one asterisk
+// func matchAsterisk(toMatch, pattern string) bool {
+// 	for i, c := range pattern {
+// 		if c == '*' {
+// 			for j := 0; j < len(pattern)-i; j++ {
+// 				if toMatch[len(toMatch)-j-1] != pattern[len(pattern)-j-1] {
+// 					return false
+// 				}
+// 			}
+// 			return true
+// 		}
+// 		if toMatch[i] != c {
+// 			return false
+// 		}
+// 	}
+// 	return true
+// }
+
+func toRE(pattern string) *regexp.Regexp {
+	return nil
+}
+
+// parseSSHConfig is a super janky parser for ~/.ssh/config
+func parseSSHConfig() *sshConfig {
+	configPath := path.Join(os.Getenv("HOME"), ".ssh", "config")
+	fi, err := os.Open(configPath)
+	if err != nil {
+		return &sshConfig{}
+	}
+	defer fi.Close()
+	scan := bufio.NewScanner(fi)
+	curHost := &sshHostConfig{}
+	config := &sshConfig{
+		Default: curHost,
+		Hosts:   map[string]*sshHostConfig{},
+	}
+	for scan.Scan() {
+		line := strings.TrimSpace(scan.Text())
+		idx := strings.IndexByte(line, ' ')
+		if idx < 0 {
+			continue
+		}
+		rest := strings.TrimSpace(line[idx+1:])
+		switch strings.ToLower(line[:idx]) {
+		case "proxycommand":
+			curHost.ProxyCommand = rest
+			if strings.HasPrefix(rest, "ssh ") {
+				rest = strings.TrimSpace(rest[4:])
+				if idx := strings.IndexByte(rest, ' '); idx > 0 {
+					curHost.Bastion = rest[:idx]
+				}
+			}
+		case "host":
+			curHost = config.Hosts[rest]
+			if curHost == nil {
+				curHost = &sshHostConfig{}
+				config.Hosts[rest] = curHost
+			}
+		}
+	}
+	return config
 }

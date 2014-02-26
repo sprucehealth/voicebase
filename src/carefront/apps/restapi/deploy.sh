@@ -4,31 +4,28 @@ DATE=$(date +%Y%m%d%H%M)
 DEV_HOSTS="54.209.125.122"
 PROD_HOSTS="10.0.43.95 10.0.95.22"
 STAGING_HOSTS="10.1.19.162 10.1.10.47"
-APP=restapi
-deploy_env=$1
-
+DEPLOY_ENV="$1"
+DEPLOY_BUILD="$2"
+DEPLOY_BRANCH="$3"
+APP="restapi"
+if [ "$DISPLAY_BRANCH" = "" ]; then
+	DEPLOY_BRANCH=$(git rev-parse --abbrev-ref HEAD)
+fi
 GOVERSION=$(go version)
-REV=$(git rev-parse HEAD)
-BRANCH=$(git rev-parse --abbrev-ref HEAD)
 
-case "$deploy_env" in 
-
+case "$DEPLOY_ENV" in
 	"prod" )
-		HOSTS=$PROD_HOSTS
+		HOSTS="$PROD_HOSTS"
+		DEPLOY_BRANCH="master"
 
-		# Make sure the current branch is master and is the latest version according to origin/master
-		if [ "$BRANCH" != "master" ]; then
-			echo "Current branch is $BRANCH. Please only deploy from master."
-			exit 2;
+		if [ "$DEPLOY_BUILD" = "" ]; then
+			echo "Missing build number. Cannot deploy to production from local code."
+			exit 2
 		fi
-
-		# Pull in latest origin
-		git fetch
-		git diff --quiet origin/master
-		if [ "$?" != "0" ]; then
-			echo "Your repo does not match origin/master. Please make sure there's no uncommited changes and you have the latest changes before deploying."
-			exit 3
-		fi
+		# if [ "$DEPLOY_BRANCH" != "master" ]; then
+		# 	echo "Can only deploy the master branch to production."
+		# 	exit 2
+		# fi
 
 		read -p "To be sure you want to deploy to production, type PROD if you wish to deploy to production: " confirmation
 		case $confirmation in
@@ -39,26 +36,42 @@ case "$deploy_env" in
 
 	"dev" ) 
 		HOSTS=$DEV_HOSTS
+
+		if [ "$DEPLOY_BUILD" = "" ]; then
+			. ./build.sh
+		fi
 	;;
 
 	"staging" )
 		HOSTS=$STAGING_HOSTS
+
+		if [ "$DEPLOY_BUILD" = "" ]; then
+			echo "Missing build number. Cannot deploy to staging from local code."
+			exit 2
+		fi
 	;;
 
 	* )
-		echo "ERROR: Usage : ./deploy.sh [staging|dev|prod] " >&2
+		echo "ERROR: Usage : ./deploy.sh [staging|dev|prod] [build number] [branch]" >&2
 		exit 1;
 	;;
 esac
 
 set -e
 
-TIME=$(date)
-GOOS=linux GOARCH=amd64 CGO_ENABLED=0 go build -ldflags "-X carefront/common/config.GitRevision $REV -X carefront/common/config.GitBranch $BRANCH -X carefront/common/config.BuildTime '$TIME'" -o $APP
-
-for HOST in $HOSTS
-do
-	LOGMSG="{\"env\":\"$deploy_env\",\"user\":\"$USER\",\"app\":\"$APP\",\"date\":\"$DATE\",\"host\":\"$HOST\",\"goversion\":\"$GOVERSION\",\"rev\":\"$REV\",\"branch\":\"$BRANCH\"}"
-	scp -C $APP $HOST:/usr/local/apps/$APP/$APP.$DATE
-	ssh $HOST "cd /usr/local/apps/$APP && chmod +x $APP.$DATE && rm -f $APP && ln -s $APP.$DATE $APP && supervisorctl restart $APP ; logger -p user.info -t deploy '$LOGMSG'"
-done
+if [ "$DEPLOY_BUILD" = "" ]; then
+	for HOST in $HOSTS
+	do
+		LOGMSG="{\"env\":\"$DEPLOY_ENV\",\"user\":\"$USER\",\"app\":\"$APP\",\"date\":\"$DATE\",\"host\":\"$HOST\",\"goversion\":\"$GOVERSION\",\"rev\":\"$REV\",\"branch\":\"$BRANCH\"}"
+		scp -C $APP $HOST:/usr/local/apps/$APP/$APP.$DATE
+		ssh $HOST "cd /usr/local/apps/$APP && chmod +x $APP.$DATE && rm -f $APP && ln -s $APP.$DATE $APP && supervisorctl restart $APP ; logger -p user.info -t deploy '$LOGMSG'"
+	done
+else
+	BRANCH="$DEPLOY_BRANCH"
+	for HOST in $HOSTS
+	do
+		LOGMSG="{\"env\":\"$DEPLOY_ENV\",\"user\":\"$USER\",\"app\":\"$APP\",\"date\":\"$DATE\",\"host\":\"$HOST\",\"goversion\":\"$GOVERSION\",\"rev\":\"$REV\",\"branch\":\"$BRANCH\",\"build\":$DEPLOY_BUILD}"
+		NAME="$APP-$DEPLOY_BRANCH-$DEPLOY_BUILD"
+		ssh $HOST "cd /usr/local/apps/$APP && s3cmd -c s3cfg --force get s3://spruce-deploy/$APP/$NAME.bz2 && bzip2 -d $NAME.bz2 && chmod +x $NAME && rm -f $APP && ln -s $NAME $APP && supervisorctl restart $APP ; logger -p user.info -t deploy '$LOGMSG'"
+	done
+fi

@@ -16,7 +16,10 @@ import (
 	"net/http"
 	"net/url"
 	"os"
+	"path"
+	"path/filepath"
 	"reflect"
+	"strconv"
 	"strings"
 	"sync"
 	"time"
@@ -53,10 +56,33 @@ type BaseConfig struct {
 }
 
 var (
-	GitBranch   string
-	GitRevision string
-	BuildTime   string
+	GitBranch       string
+	GitRevision     string
+	BuildTime       string
+	BuildNumber     string // Travis-CI build
+	MigrationNumber string // The database needs to match this migration number for this build
 )
+
+func init() {
+	if MigrationNumber == "" {
+		// Should only be unset for local builds so try to find latest migration in source tree
+		if files, err := filepath.Glob(path.Join(path.Dir(os.Args[0]), "../../mysql/migration-*.sql")); err == nil {
+			maxMigration := 0
+			for _, name := range files {
+				name = path.Base(name)[10:]
+				if idx := strings.IndexByte(name, '.'); idx >= 0 {
+					name = name[:idx]
+					if num, err := strconv.Atoi(name); err == nil && num > maxMigration {
+						maxMigration = num
+					}
+				}
+			}
+			if maxMigration != 0 {
+				MigrationNumber = strconv.Itoa(maxMigration)
+			}
+		}
+	}
+}
 
 var validEnvironments = map[string]bool{
 	"prod":    true,
@@ -249,6 +275,8 @@ func ParseArgs(config interface{}, args []string) ([]string, error) {
 		fmt.Printf("Git Branch: %s\n", GitBranch)
 		fmt.Printf("Git Revision: %s\n", GitRevision)
 		fmt.Printf("Build Time: %s\n", BuildTime)
+		fmt.Printf("Build Number: %s\n", BuildNumber)
+		fmt.Printf("Migration Number: %s\n", MigrationNumber)
 		os.Exit(0)
 	}
 
