@@ -364,7 +364,7 @@ func main() {
 	mux.Handle("/v1/doctor/rx/errors", doctorPrescriptionErrorsHandler)
 	mux.Handle("/v1/doctor/rx/error/resolve", doctorPrescriptionErrorIgnoreHandler)
 	mux.Handle("/v1/doctor/rx/refill/request", doctorRefillRequestHandler)
-	mux.Handle("/v1/doctor/rx/refill/reasons", refillRequestDenialReasonsHandler)
+	mux.Handle("/v1/doctor/rx/refill/denial_reasons", refillRequestDenialReasonsHandler)
 
 	mux.Handle("/v1/doctor/visit/review", doctorPatientVisitReviewHandler)
 	mux.Handle("/v1/doctor/visit/diagnosis", diagnosePatientHandler)
