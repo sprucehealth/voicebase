@@ -7,9 +7,11 @@ import (
 
 type Patient struct {
 	PatientId      *ObjectId              `json:"id,omitempty"`
+	IsUnlinked     bool                   `json:"is_unlinked,omitempty"`
 	FirstName      string                 `json:"first_name,omitempty"`
 	LastName       string                 `json:"last_name,omiempty"`
 	Dob            time.Time              `json:"dob,omitempty"`
+	Email          string                 `json:"email,omitempty"`
 	Gender         string                 `json:"gender,omitempty"`
 	ZipCode        string                 `json:"zip_code,omitempty"`
 	City           string                 `json:"city,omitempty"`
@@ -24,15 +26,16 @@ type Patient struct {
 }
 
 type Doctor struct {
-	DoctorId     *ObjectId `json:"id,omitempty"`
-	FirstName    string    `json:"first_name,omitempty"`
-	LastName     string    `json:"last_name,omitempty"`
-	Dob          time.Time `json:"-"`
-	Gender       string    `json:"-"`
-	Status       string    `json:"-"`
-	AccountId    *ObjectId `json:"-"`
-	CellPhone    string    `json:"phone"`
-	ThumbnailUrl string    `json:"thumbnail_url,omitempty"`
+	DoctorId            *ObjectId `json:"id,omitempty"`
+	FirstName           string    `json:"first_name,omitempty"`
+	LastName            string    `json:"last_name,omitempty"`
+	Dob                 time.Time `json:"-"`
+	Gender              string    `json:"-"`
+	Status              string    `json:"-"`
+	AccountId           *ObjectId `json:"-"`
+	CellPhone           string    `json:"phone"`
+	ThumbnailUrl        string    `json:"thumbnail_url,omitempty"`
+	DoseSpotClinicianId int64     `json:"-"`
 }
 
 type PatientVisit struct {
@@ -106,37 +109,28 @@ type TreatmentPlan struct {
 	Followup         *FollowUp         `json:"follow_up,omitempty"`
 }
 
-type Treatment struct {
-	Id                        *ObjectId                `json:"treatment_id,omitempty"`
-	DoctorTreatmentTemplateId *ObjectId                `json:"dr_treatment_template_id,omitempty"`
-	PrescriptionId            *ObjectId                `json:"erx_id,omitempty"`
-	ErxMedicationId           *ObjectId                `json:"-"`
-	PrescriptionStatus        string                   `json:"erx_status,omitempty"`
-	PharmacyLocalId           *ObjectId                `json:"-"`
-	StatusDetails             string                   `json:"erx_status_details,omitempty"`
-	TreatmentPlanId           *ObjectId                `json:"treatment_plan_id,omitempty"`
-	PatientVisitId            *ObjectId                `json:"patient_visit_id,omitempty"`
-	PatientId                 *ObjectId                `json:"-"`
-	DrugDBIds                 map[string]string        `json:"drug_db_ids,omitempty"`
-	DrugInternalName          string                   `json:"drug_internal_name,omitempty"`
-	DrugName                  string                   `json:"drug_name"`
-	DrugRoute                 string                   `json:"drug_route,omitempty"`
-	DrugForm                  string                   `json:"drug_form,omitempty"`
-	DosageStrength            string                   `json:"dosage_strength,omitempty"`
-	DispenseValue             int64                    `json:"dispense_value,string,omitempty"`
-	DispenseUnitId            *ObjectId                `json:"dispense_unit_id,omitempty"`
-	DispenseUnitDescription   string                   `json:"dispense_unit_description,omitempty"`
-	NumberRefills             int64                    `json:"refills,string,omitempty"`
-	SubstitutionsAllowed      bool                     `json:"substitutions_allowed,omitempty"`
-	DaysSupply                int64                    `json:"days_supply,string,omitempty"`
-	PharmacyNotes             string                   `json:"pharmacy_notes,omitempty"`
-	PatientInstructions       string                   `json:"patient_instructions,omitempty"`
-	CreationDate              *time.Time               `json:"creation_date,omitempty"`
-	TransmissionErrorDate     *time.Time               `json:"error_date,omitempty"`
-	ErxSentDate               *time.Time               `json:"erx_sent_date,omitempty"`
-	Status                    string                   `json:"-"`
-	OTC                       bool                     `json:"otc,omitempty"`
-	SupplementalInstructions  []*DoctorInstructionItem `json:"supplemental_instructions,omitempty"`
+type RefillRequestItem struct {
+	Id                               int64                  `json:"id,string"`
+	RxRequestQueueItemId             int64                  `json:"-"`
+	ReferenceNumber                  string                 `json:"-"`
+	PharmacyRxReferenceNumber        string                 `json:"-"`
+	RequestedDrugDescription         string                 `json:"requested_drug_name"`
+	RequestedRefillAmount            string                 `json:"requested_refill"`
+	ApprovedRefillAmount             int64                  `json:"approved_refill,string,omitempty"`
+	RequestedDispense                string                 `json:"requested_dispense_value"`
+	RequestedDispenseUnitDescription string                 `json:"requested_dispense_unit_description,omitempty"`
+	ErxPatientId                     int64                  `json:"-"`
+	Patient                          *Patient               `json:"patient,omitempty"`
+	Doctor                           *Doctor                `json:"doctor,omitempty"`
+	Pharmacy                         *pharmacy.PharmacyData `json:"pharmacy"`
+	PatientAddedForRequest           bool                   `json:"-"`
+	RequestDateStamp                 time.Time              `json:"requested_date"`
+	ClinicianId                      int64                  `json:"-"`
+	RequestedPrescription            *Treatment             `json:"requested_prescription,omitempty"`
+	DispensedPrescription            *Treatment             `json:"dispensed_prescription"`
+	Status                           string                 `json:"status,omitempty"`
+	Comments                         string                 `json:"comments,omitempty"`
+	DenialReason                     string                 `json:"denial_reason,omitempty"`
 }
 
 type DoctorTreatmentTemplate struct {

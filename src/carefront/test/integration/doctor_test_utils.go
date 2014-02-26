@@ -30,6 +30,8 @@ func SignupRandomTestDoctor(t *testing.T, dataApi api.DataAPI, authApi thriftapi
 	requestBody.WriteString("&password=")
 	requestBody.WriteString(password)
 	requestBody.WriteString("&dob=11/08/1987&gender=male")
+	requestBody.WriteString("&clinician_id=")
+	requestBody.WriteString(os.Getenv("DOSESPOT_USER_ID"))
 	res, err := authPost(ts.URL, "application/x-www-form-urlencoded", requestBody, 0)
 	if err != nil {
 		t.Fatal("Unable to make post request for registering patient: " + err.Error())
@@ -51,15 +53,15 @@ func SignupRandomTestDoctor(t *testing.T, dataApi api.DataAPI, authApi thriftapi
 
 func setupErxAPI(t *testing.T) *erx.DoseSpotService {
 	clinicKey := os.Getenv("DOSESPOT_CLINIC_KEY")
-	userId := os.Getenv("DOSESPOT_USER_ID")
-	clinicId := os.Getenv("DOSESPOT_CLINIC_ID")
+	clinicId, _ := strconv.ParseInt(os.Getenv("DOSESPOT_CLINIC_ID"), 10, 64)
+	userId, _ := strconv.ParseInt(os.Getenv("DOSESPOT_USER_ID"), 10, 64)
 
 	if clinicKey == "" {
 		t.Log("WARNING: skipping doctor drug search test since the dosespot ids are not present as environment variables")
 		t.SkipNow()
 	}
 
-	erx := erx.NewDoseSpotService(clinicId, clinicKey, userId, nil)
+	erx := erx.NewDoseSpotService(clinicId, userId, clinicKey, nil)
 	return erx
 }
 

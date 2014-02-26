@@ -26,12 +26,13 @@ func (d *SignupDoctorHandler) NonAuthenticated() bool {
 }
 
 type SignupDoctorRequestData struct {
-	Email     string `schema:"email,required"`
-	Password  string `schema:"password,required"`
-	FirstName string `schema:"first_name,required"`
-	LastName  string `schema:"last_name,required"`
-	Dob       string `schema:"dob,required"`
-	Gender    string `schema:"gender,required"`
+	Email       string `schema:"email,required"`
+	Password    string `schema:"password,required"`
+	FirstName   string `schema:"first_name,required"`
+	LastName    string `schema:"last_name,required"`
+	Dob         string `schema:"dob,required"`
+	Gender      string `schema:"gender,required"`
+	ClinicianId int64  `schema:"clinician_id,required"`
 }
 
 func (d *SignupDoctorHandler) ServeHTTP(w http.ResponseWriter, r *http.Request) {
@@ -85,7 +86,8 @@ func (d *SignupDoctorHandler) ServeHTTP(w http.ResponseWriter, r *http.Request) 
 	}
 
 	// then, register the signed up user as a patient
-	doctorId, err := d.DataApi.RegisterDoctor(res.AccountId, requestData.FirstName, requestData.LastName, requestData.Gender, time.Date(year, time.Month(month), day, 0, 0, 0, 0, time.UTC))
+	doctorId, err := d.DataApi.RegisterDoctor(res.AccountId, requestData.FirstName, requestData.LastName,
+		requestData.Gender, time.Date(year, time.Month(month), day, 0, 0, 0, 0, time.UTC), requestData.ClinicianId)
 	if err != nil {
 		WriteDeveloperError(w, http.StatusInternalServerError, "Something went wrong when trying to sign up doctor: "+err.Error())
 		return

@@ -1,6 +1,7 @@
 package apiservice
 
 import (
+	"carefront/api"
 	"carefront/libs/erx"
 	"net/http"
 
@@ -8,7 +9,8 @@ import (
 )
 
 type MedicationStrengthSearchHandler struct {
-	ERxApi erx.ERxAPI
+	ERxApi  erx.ERxAPI
+	DataApi api.DataAPI
 }
 
 type MedicationStrengthRequestData struct {
@@ -31,14 +33,19 @@ func (m *MedicationStrengthSearchHandler) ServeHTTP(w http.ResponseWriter, r *ht
 	}
 
 	requestData := new(MedicationStrengthRequestData)
-	decoder := schema.NewDecoder()
-	err := decoder.Decode(requestData, r.Form)
+	err := schema.NewDecoder().Decode(requestData, r.Form)
 	if err != nil {
 		WriteDeveloperError(w, http.StatusBadRequest, "Unable to parse input parameters: "+err.Error())
 		return
 	}
 
-	medicationStrengths, err := m.ERxApi.SearchForMedicationStrength(requestData.MedicationName)
+	doctor, err := m.DataApi.GetDoctorFromAccountId(GetContext(r).AccountId)
+	if err != nil {
+		WriteDeveloperError(w, http.StatusInternalServerError, "Unable to get doctor from account id: "+err.Error())
+		return
+	}
+
+	medicationStrengths, err := m.ERxApi.SearchForMedicationStrength(doctor.DoseSpotClinicianId, requestData.MedicationName)
 	if err != nil {
 		WriteDeveloperError(w, http.StatusInternalServerError, "Unable to get medication strength results for given drug: "+err.Error())
 		return

@@ -14,9 +14,9 @@ import (
 )
 
 type DoseSpotService struct {
-	ClinicId     string
+	ClinicId     int64
 	ClinicKey    string
-	UserId       string
+	UserID       int64
 	apiLatencies map[DoseSpotApiId]metrics.Histogram
 	apiRequests  map[DoseSpotApiId]metrics.Counter
 	apiFailure   map[DoseSpotApiId]metrics.Counter
@@ -37,21 +37,31 @@ const (
 	getTransmissionErrorDetailsAction
 	getRefillRequestsTransmissionsErrorsAction
 	ignoreAlertAction
+	getMedicationRefillRequestQueueForClinicAction
+	getPatientDetailsAction
+	pharmacyDetailsAction
+	approveRefillAction
+	denyRefillAction
 )
 
 var DoseSpotApiActions = map[DoseSpotApiId]string{
-	medicationQuickSearchAction:                "MedicationQuickSearchMessage",
-	selfReportedMedicationSearchAction:         "SelfReportedMedicationSearch",
-	medicationStrengthSearchAction:             "MedicationStrengthSearchMessage",
-	medicationSelectAction:                     "MedicationSelectMessage",
-	startPrescribingPatientAction:              "PatientStartPrescribingMessage",
-	sendMultiplPrescriptionsAction:             "SendMultiplePrescriptions",
-	searchPharmaciesAction:                     "PharmacySearchMessageDetailed",
-	getPrescriptionLogDetailsAction:            "GetPrescriptionLogDetails",
-	getMedicationListAction:                    "GetMedicationList",
-	getTransmissionErrorDetailsAction:          "GetTransmissionErrorsDetails",
-	getRefillRequestsTransmissionsErrorsAction: "GetRefillRequestsTransmissionErrors",
-	ignoreAlertAction:                          "IgnoreAlert",
+	medicationQuickSearchAction:                    "MedicationQuickSearchMessage",
+	selfReportedMedicationSearchAction:             "SelfReportedMedicationSearch",
+	medicationStrengthSearchAction:                 "MedicationStrengthSearchMessage",
+	medicationSelectAction:                         "MedicationSelectMessage",
+	startPrescribingPatientAction:                  "PatientStartPrescribingMessage",
+	sendMultiplPrescriptionsAction:                 "SendMultiplePrescriptions",
+	searchPharmaciesAction:                         "PharmacySearchMessageDetailed",
+	getPrescriptionLogDetailsAction:                "GetPrescriptionLogDetails",
+	getMedicationListAction:                        "GetMedicationList",
+	getTransmissionErrorDetailsAction:              "GetTransmissionErrorsDetails",
+	getRefillRequestsTransmissionsErrorsAction:     "GetRefillRequestsTransmissionErrors",
+	ignoreAlertAction:                              "IgnoreAlert",
+	getMedicationRefillRequestQueueForClinicAction: "GetMedicationRefillRequestQueueForClinic",
+	getPatientDetailsAction:                        "GetPatientDetail",
+	pharmacyDetailsAction:                          "PharmacyValidateMessage",
+	approveRefillAction:                            "ApproveRefill",
+	denyRefillAction:                               "DenyRefill",
 }
 
 const (
@@ -64,16 +74,16 @@ func getDoseSpotClient() *soapClient {
 	return &soapClient{SoapAPIEndPoint: doseSpotSOAPEndPoint, APIEndpoint: doseSpotAPIEndPoint}
 }
 
-func NewDoseSpotService(clinicId, clinicKey, userId string, statsRegistry metrics.Registry) *DoseSpotService {
+func NewDoseSpotService(clinicId, userId int64, clinicKey string, statsRegistry metrics.Registry) *DoseSpotService {
 	d := &DoseSpotService{}
-	if clinicId == "" {
+	if clinicId == 0 {
 		d.ClinicKey = os.Getenv("DOSESPOT_CLINIC_KEY")
-		d.UserId = os.Getenv("DOSESPOT_USER_ID")
-		d.ClinicId = os.Getenv("DOSESPOT_CLINIC_ID")
+		d.ClinicId, _ = strconv.ParseInt(os.Getenv("DOSESPOT_CLINIC_ID"), 10, 64)
+		d.UserID, _ = strconv.ParseInt(os.Getenv("DOSESPOT_USER_ID"), 10, 64)
 	} else {
 		d.ClinicKey = clinicKey
 		d.ClinicId = clinicId
-		d.UserId = userId
+		d.UserID = userId
 	}
 
 	d.apiLatencies = make(map[DoseSpotApiId]metrics.Histogram)
@@ -93,9 +103,9 @@ func NewDoseSpotService(clinicId, clinicKey, userId string, statsRegistry metric
 	return d
 }
 
-func (d *DoseSpotService) GetDrugNamesForDoctor(prefix string) ([]string, error) {
+func (d *DoseSpotService) GetDrugNamesForDoctor(clinicianId int64, prefix string) ([]string, error) {
 	medicationSearch := &medicationQuickSearchRequest{
-		SSO:          generateSingleSignOn(d.ClinicKey, d.UserId, d.ClinicId),
+		SSO:          generateSingleSignOn(d.ClinicKey, clinicianId, d.ClinicId),
 		SearchString: prefix,
 	}
 
@@ -114,9 +124,9 @@ func (d *DoseSpotService) GetDrugNamesForDoctor(prefix string) ([]string, error)
 	return searchResult.DisplayNames, nil
 }
 
-func (d *DoseSpotService) GetDrugNamesForPatient(prefix string) ([]string, error) {
+func (d *DoseSpotService) GetDrugNamesForPatient(clinicianId int64, prefix string) ([]string, error) {
 	selfReportedDrugsSearch := &selfReportedMedicationSearchRequest{
-		SSO:        generateSingleSignOn(d.ClinicKey, d.UserId, d.ClinicId),
+		SSO:        generateSingleSignOn(d.ClinicKey, clinicianId, d.ClinicId),
 		SearchTerm: prefix,
 	}
 
@@ -139,9 +149,9 @@ func (d *DoseSpotService) GetDrugNamesForPatient(prefix string) ([]string, error
 	return drugNames, nil
 }
 
-func (d *DoseSpotService) SearchForMedicationStrength(medicationName string) ([]string, error) {
+func (d *DoseSpotService) SearchForMedicationStrength(clinicianId int64, medicationName string) ([]string, error) {
 	medicationStrengthSearch := &medicationStrengthSearchRequest{
-		SSO:            generateSingleSignOn(d.ClinicKey, d.UserId, d.ClinicId),
+		SSO:            generateSingleSignOn(d.ClinicKey, clinicianId, d.ClinicId),
 		MedicationName: medicationName,
 	}
 
@@ -159,9 +169,9 @@ func (d *DoseSpotService) SearchForMedicationStrength(medicationName string) ([]
 	return searchResult.DisplayStrengths, nil
 }
 
-func (d *DoseSpotService) SendMultiplePrescriptions(patient *common.Patient, treatments []*common.Treatment) ([]int64, error) {
+func (d *DoseSpotService) SendMultiplePrescriptions(clinicianId int64, patient *common.Patient, treatments []*common.Treatment) ([]int64, error) {
 	sendPrescriptionsRequest := &sendMultiplePrescriptionsRequest{
-		SSO:       generateSingleSignOn(d.ClinicKey, d.UserId, d.ClinicId),
+		SSO:       generateSingleSignOn(d.ClinicKey, clinicianId, d.ClinicId),
 		PatientId: patient.ERxPatientId.Int64(),
 	}
 
@@ -202,12 +212,13 @@ func (d *DoseSpotService) SendMultiplePrescriptions(patient *common.Patient, tre
 	return unSuccessfulTreatmentIds, nil
 }
 
-func (d *DoseSpotService) StartPrescribingPatient(currentPatient *common.Patient, treatments []*common.Treatment) error {
+func (d *DoseSpotService) StartPrescribingPatient(clinicianId int64, currentPatient *common.Patient, treatments []*common.Treatment) error {
 
 	newPatient := &patient{
 		PatientId:        currentPatient.ERxPatientId.Int64(),
 		FirstName:        currentPatient.FirstName,
 		LastName:         currentPatient.LastName,
+		Email:            currentPatient.Email,
 		Address1:         currentPatient.PatientAddress.AddressLine1,
 		City:             currentPatient.City,
 		State:            currentPatient.State,
@@ -225,7 +236,7 @@ func (d *DoseSpotService) StartPrescribingPatient(currentPatient *common.Patient
 	patientPreferredPharmacy := &patientPharmacySelection{}
 	patientPreferredPharmacy.IsPrimary = true
 
-	pharmacyId, err := strconv.ParseInt(currentPatient.Pharmacy.Id, 0, 64)
+	pharmacyId, err := strconv.ParseInt(currentPatient.Pharmacy.SourceId, 0, 64)
 	if err != nil {
 		return fmt.Errorf("Unable to parse the pharmacy id: %s", err.Error())
 	}
@@ -262,7 +273,7 @@ func (d *DoseSpotService) StartPrescribingPatient(currentPatient *common.Patient
 		AddFavoritePharmacies: []*patientPharmacySelection{patientPreferredPharmacy},
 		AddPrescriptions:      prescriptions,
 		Patient:               newPatient,
-		SSO:                   generateSingleSignOn(d.ClinicKey, d.UserId, d.ClinicId),
+		SSO:                   generateSingleSignOn(d.ClinicKey, clinicianId, d.ClinicId),
 	}
 
 	response := &patientStartPrescribingResponse{}
@@ -302,9 +313,9 @@ func (d *DoseSpotService) StartPrescribingPatient(currentPatient *common.Patient
 	return err
 }
 
-func (d *DoseSpotService) SelectMedication(medicationName, medicationStrength string) (medication *Medication, err error) {
+func (d *DoseSpotService) SelectMedication(clinicianId int64, medicationName, medicationStrength string) (medication *common.Treatment, err error) {
 	medicationSelect := &medicationSelectRequest{
-		SSO:                generateSingleSignOn(d.ClinicKey, d.UserId, d.ClinicId),
+		SSO:                generateSingleSignOn(d.ClinicKey, clinicianId, d.ClinicId),
 		MedicationName:     medicationName,
 		MedicationStrength: medicationStrength,
 	}
@@ -319,28 +330,35 @@ func (d *DoseSpotService) SelectMedication(medicationName, medicationStrength st
 		return nil, err
 	}
 
-	medication = &Medication{}
-	medication.DrugDBIds = make(map[string]string)
-	medication.DrugDBIds[LexiGenProductId] = strconv.FormatInt(selectResult.LexiGenProductId, 10)
-	medication.DrugDBIds[LexiDrugSynId] = strconv.FormatInt(selectResult.LexiDrugSynId, 10)
-	medication.DrugDBIds[LexiSynonymTypeId] = strconv.FormatInt(selectResult.LexiSynonymTypeId, 10)
-	medication.DispenseUnitId = selectResult.DispenseUnitId
-	medication.DispenseUnitDescription = selectResult.DispenseUnitDescription
-	medication.OTC = selectResult.OTC
+	var scheduleInt int
+	if selectResult.Schedule == "" {
+		scheduleInt = 0
+	} else {
+		scheduleInt, err = strconv.Atoi(selectResult.Schedule)
+	}
+	medication = &common.Treatment{
+		DrugDBIds: map[string]string{
+			LexiGenProductId:  strconv.FormatInt(selectResult.LexiGenProductId, 10),
+			LexiDrugSynId:     strconv.FormatInt(selectResult.LexiDrugSynId, 10),
+			LexiSynonymTypeId: strconv.FormatInt(selectResult.LexiSynonymTypeId, 10),
+		},
+		DispenseUnitId:          common.NewObjectId(selectResult.DispenseUnitId),
+		DispenseUnitDescription: selectResult.DispenseUnitDescription,
+		OTC: selectResult.OTC,
+		IsControlledSubstance: err == nil && scheduleInt > 0,
+	}
 
-	scheduleInt, err := strconv.Atoi(selectResult.Schedule)
-	medication.IsControlledSubstance = err == nil && scheduleInt > 0
 	return medication, err
 }
 
-func (d *DoseSpotService) SearchForPharmacies(city, state, zipcode, name string, pharmacyTypes []string) ([]*pharmacySearch.PharmacyData, error) {
+func (d *DoseSpotService) SearchForPharmacies(clinicianId int64, city, state, zipcode, name string, pharmacyTypes []string) ([]*pharmacySearch.PharmacyData, error) {
 	searchRequest := &pharmacySearchRequest{
 		PharmacyCity:            city,
 		PharmacyStateTwoLetters: state,
 		PharmacyZipCode:         zipcode,
 		PharmacyNameSearch:      name,
 		PharmacyTypes:           pharmacyTypes,
-		SSO:                     generateSingleSignOn(d.ClinicKey, d.UserId, d.ClinicId),
+		SSO:                     generateSingleSignOn(d.ClinicKey, clinicianId, d.ClinicId),
 	}
 
 	searchResponse := &pharmacySearchResult{}
@@ -360,8 +378,9 @@ func (d *DoseSpotService) SearchForPharmacies(city, state, zipcode, name string,
 	pharmacies := make([]*pharmacySearch.PharmacyData, 0)
 	for _, pharmacyResultItem := range searchResponse.Pharmacies {
 		pharmacyData := &pharmacySearch.PharmacyData{
-			Id:            strconv.FormatInt(pharmacyResultItem.PharmacyId, 10),
-			Address:       pharmacyResultItem.Address1 + " " + pharmacyResultItem.Address2,
+			SourceId:      strconv.FormatInt(pharmacyResultItem.PharmacyId, 10),
+			AddressLine1:  pharmacyResultItem.Address1,
+			AddressLine2:  pharmacyResultItem.Address2,
 			City:          pharmacyResultItem.City,
 			State:         pharmacyResultItem.State,
 			Name:          pharmacyResultItem.StoreName,
@@ -378,9 +397,9 @@ func (d *DoseSpotService) SearchForPharmacies(city, state, zipcode, name string,
 	return pharmacies, nil
 }
 
-func (d *DoseSpotService) GetPrescriptionStatus(prescriptionId int64) ([]*PrescriptionLog, error) {
+func (d *DoseSpotService) GetPrescriptionStatus(clincianId int64, prescriptionId int64) ([]*PrescriptionLog, error) {
 	request := &getPrescriptionLogDetailsRequest{
-		SSO:            generateSingleSignOn(d.ClinicKey, d.UserId, d.ClinicId),
+		SSO:            generateSingleSignOn(d.ClinicKey, clincianId, d.ClinicId),
 		PrescriptionId: prescriptionId,
 	}
 
@@ -409,10 +428,10 @@ func (d *DoseSpotService) GetPrescriptionStatus(prescriptionId int64) ([]*Prescr
 	return prescriptionLogs, nil
 }
 
-func (d *DoseSpotService) GetMedicationList(PatientId int64) ([]*Medication, error) {
+func (d *DoseSpotService) GetMedicationList(clinicianId int64, PatientId int64) ([]*common.Treatment, error) {
 	request := &getMedicationListRequest{
 		PatientId: PatientId,
-		SSO:       generateSingleSignOn(d.ClinicKey, d.UserId, d.ClinicId),
+		SSO:       generateSingleSignOn(d.ClinicKey, clinicianId, d.ClinicId),
 		Sources:   []string{"Prescription"},
 		Status:    []string{"Active"},
 	}
@@ -426,20 +445,19 @@ func (d *DoseSpotService) GetMedicationList(PatientId int64) ([]*Medication, err
 		return nil, err
 	}
 
-	medications := make([]*Medication, 0)
-	for _, medicationItem := range response.Medications {
-		medication := &Medication{
-			ErxMedicationId:    medicationItem.MedicationId,
+	medications := make([]*common.Treatment, len(response.Medications))
+	for i, medicationItem := range response.Medications {
+		medications[i] = &common.Treatment{
+			ErxMedicationId:    common.NewObjectId(medicationItem.MedicationId),
 			PrescriptionStatus: medicationItem.PrescriptionStatus,
 		}
-		medications = append(medications, medication)
 	}
 	return medications, nil
 }
 
-func (d *DoseSpotService) GetTransmissionErrorDetails() ([]*Medication, error) {
+func (d *DoseSpotService) GetTransmissionErrorDetails(clinicianId int64) ([]*common.Treatment, error) {
 	request := &getTransmissionErrorDetailsRequest{
-		SSO: generateSingleSignOn(d.ClinicKey, d.UserId, d.ClinicId),
+		SSO: generateSingleSignOn(d.ClinicKey, clinicianId, d.ClinicId),
 	}
 	response := &getTransmissionErrorDetailsResponse{}
 	err := getDoseSpotClient().makeSoapRequest(DoseSpotApiActions[getTransmissionErrorDetailsAction],
@@ -451,46 +469,45 @@ func (d *DoseSpotService) GetTransmissionErrorDetails() ([]*Medication, error) {
 		return nil, err
 	}
 
-	medicationsWithErrors := make([]*Medication, 0)
-	for _, transmissionError := range response.TransmissionErrors {
-		medicationWithError := &Medication{
-			ErxMedicationId:        transmissionError.Medication.MedicationId,
-			DoseSpotPrescriptionId: transmissionError.Medication.DoseSpotPrescriptionId,
-			PrescriptionStatus:     transmissionError.Medication.Status,
-			PrescriptionDate:       &transmissionError.Medication.DatePrescribed.DateTime,
+	medicationsWithErrors := make([]*common.Treatment, len(response.TransmissionErrors))
+	for i, transmissionError := range response.TransmissionErrors {
+		dispenseValueInt, _ := strconv.ParseInt(transmissionError.Medication.Dispense, 10, 64)
+		medicationsWithErrors[i] = &common.Treatment{
+			ErxMedicationId:    common.NewObjectId(transmissionError.Medication.MedicationId),
+			PrescriptionId:     common.NewObjectId(transmissionError.Medication.DoseSpotPrescriptionId),
+			PrescriptionStatus: transmissionError.Medication.Status,
+			ErxSentDate:        &transmissionError.Medication.DatePrescribed.DateTime,
 			DrugDBIds: map[string]string{
 				LexiGenProductId:  strconv.FormatInt(transmissionError.Medication.LexiGenProductId, 10),
 				LexiSynonymTypeId: strconv.FormatInt(transmissionError.Medication.LexiSynonymTypeId, 10),
 				LexiDrugSynId:     strconv.FormatInt(transmissionError.Medication.LexiDrugSynId, 10),
 			},
-			DispenseUnitId:    transmissionError.Medication.DispenseUnitId,
-			ErrorTimeStamp:    &transmissionError.ErrorDateTimeStamp.DateTime,
-			ErrorDetails:      transmissionError.ErrorDetails,
-			DisplayName:       transmissionError.Medication.DrugName,
-			Strength:          transmissionError.Medication.Strength,
-			Refills:           transmissionError.Medication.Refills.Int64(),
-			DaysSupply:        int64(transmissionError.Medication.DaysSupply),
-			Dispense:          transmissionError.Medication.Dispense,
-			Instructions:      transmissionError.Medication.Instructions,
-			PharmacyId:        transmissionError.Medication.PharmacyId,
-			PharmacyNotes:     transmissionError.Medication.PharmacyNotes,
-			NoSubstitutions:   transmissionError.Medication.NoSubstitutions,
-			RxReferenceNumber: transmissionError.Medication.RxReferenceNumber,
+			DispenseUnitId:        common.NewObjectId(transmissionError.Medication.DispenseUnitId),
+			TransmissionErrorDate: &transmissionError.ErrorDateTimeStamp.DateTime,
+			StatusDetails:         transmissionError.ErrorDetails,
+			DrugName:              transmissionError.Medication.DrugName,
+			DosageStrength:        transmissionError.Medication.Strength,
+			NumberRefills:         transmissionError.Medication.Refills.Int64(),
+			DaysSupply:            int64(transmissionError.Medication.DaysSupply),
+			DispenseValue:         dispenseValueInt,
+			PatientInstructions:   transmissionError.Medication.Instructions,
+			ErxPharmacyId:         transmissionError.Medication.PharmacyId,
+			PharmacyNotes:         transmissionError.Medication.PharmacyNotes,
+			SubstitutionsAllowed:  !transmissionError.Medication.NoSubstitutions,
+			ErxReferenceNumber:    transmissionError.Medication.RxReferenceNumber,
 		}
 
-		medicationsWithErrors = append(medicationsWithErrors, medicationWithError)
 	}
 
 	return medicationsWithErrors, nil
 }
 
-func (d *DoseSpotService) GetTransmissionErrorRefillRequestsCount() (refillRequests int64, transactionErrors int64, err error) {
-	clinicianId, err := strconv.ParseInt(d.UserId, 0, 64)
+func (d *DoseSpotService) GetTransmissionErrorRefillRequestsCount(clinicianId int64) (refillRequests int64, transactionErrors int64, err error) {
 	if err != nil {
 		return 0, 0, fmt.Errorf("Unable to parse clinicianId: %s", err.Error())
 	}
 	request := &getRefillRequestsTransmissionErrorsMessageRequest{
-		SSO:         generateSingleSignOn(d.ClinicKey, d.UserId, d.ClinicId),
+		SSO:         generateSingleSignOn(d.ClinicKey, clinicianId, d.ClinicId),
 		ClinicianId: clinicianId,
 	}
 
@@ -514,16 +531,212 @@ func (d *DoseSpotService) GetTransmissionErrorRefillRequestsCount() (refillReque
 	return
 }
 
-func (d *DoseSpotService) IgnoreAlert(prescriptionId int64) error {
+func (d *DoseSpotService) IgnoreAlert(clinicianId, prescriptionId int64) error {
 	request := &ignoreAlertRequest{
-		SSO:            generateSingleSignOn(d.ClinicKey, d.UserId, d.ClinicId),
+		SSO:            generateSingleSignOn(d.ClinicKey, clinicianId, d.ClinicId),
 		PrescriptionId: prescriptionId,
 	}
 
 	response := &ignoreAlertResponse{}
-	err := getDoseSpotClient().makeSoapRequest(DoseSpotApiActions[ignoreAlertAction], request, response,
+	return getDoseSpotClient().makeSoapRequest(DoseSpotApiActions[ignoreAlertAction], request, response,
 		d.apiLatencies[ignoreAlertAction],
 		d.apiRequests[ignoreAlertAction],
-		d.apiRequests[ignoreAlertAction])
-	return err
+		d.apiFailure[ignoreAlertAction])
+}
+
+func (d *DoseSpotService) GetPatientDetails(erxPatientId int64) (*common.Patient, error) {
+	request := &getPatientDetailRequest{
+		SSO:       generateSingleSignOn(d.ClinicKey, d.UserID, d.ClinicId),
+		PatientId: erxPatientId,
+	}
+
+	response := &getPatientDetailResult{}
+	err := getDoseSpotClient().makeSoapRequest(DoseSpotApiActions[getPatientDetailsAction], request, response,
+		d.apiLatencies[getPatientDetailsAction],
+		d.apiRequests[getPatientDetailsAction],
+		d.apiFailure[getPatientDetailsAction])
+
+	if err != nil {
+		return nil, err
+	}
+
+	if response.ResultCode != resultOk {
+		return nil, fmt.Errorf(response.ResultDescription)
+	}
+
+	if len(response.PatientUpdates) == 0 {
+		return nil, nil
+	}
+
+	if response.PatientUpdates[0].Patient == nil {
+		return nil, nil
+	}
+
+	// not worrying about suffix/prefix for now
+	newPatient := &common.Patient{
+		ERxPatientId: common.NewObjectId(response.PatientUpdates[0].Patient.PatientId),
+		FirstName:    response.PatientUpdates[0].Patient.FirstName,
+		LastName:     response.PatientUpdates[0].Patient.LastName,
+		Gender:       response.PatientUpdates[0].Patient.Gender,
+		PatientAddress: &common.Address{
+			AddressLine1: response.PatientUpdates[0].Patient.Address1,
+			AddressLine2: response.PatientUpdates[0].Patient.Address2,
+			City:         response.PatientUpdates[0].Patient.City,
+			ZipCode:      response.PatientUpdates[0].Patient.ZipCode,
+			State:        response.PatientUpdates[0].Patient.State,
+		},
+		Dob:       response.PatientUpdates[0].Patient.DateOfBirth.DateTime,
+		Email:     response.PatientUpdates[0].Patient.Email,
+		ZipCode:   response.PatientUpdates[0].Patient.ZipCode,
+		City:      response.PatientUpdates[0].Patient.City,
+		State:     response.PatientUpdates[0].Patient.State,
+		Phone:     response.PatientUpdates[0].Patient.PrimaryPhone,
+		PhoneType: response.PatientUpdates[0].Patient.PrimaryPhoneType,
+	}
+
+	return newPatient, nil
+}
+
+func (d *DoseSpotService) GetRefillRequestQueueForClinic() ([]*common.RefillRequestItem, error) {
+	request := &getMedicationRefillRequestQueueForClinicRequest{
+		SSO: generateSingleSignOn(d.ClinicKey, d.UserID, d.ClinicId),
+	}
+
+	response := &getMedicationRefillRequestQueueForClinicResult{}
+	err := getDoseSpotClient().makeSoapRequest(DoseSpotApiActions[getMedicationRefillRequestQueueForClinicAction], request, response,
+		d.apiLatencies[getMedicationRefillRequestQueueForClinicAction],
+		d.apiRequests[getMedicationRefillRequestQueueForClinicAction],
+		d.apiFailure[getMedicationRefillRequestQueueForClinicAction])
+
+	if err != nil {
+		return nil, err
+	}
+
+	if response.ResultCode != resultOk {
+		return nil, fmt.Errorf(response.ResultDescription)
+	}
+
+	refillRequestQueue := make([]*common.RefillRequestItem, len(response.RefillRequestQueue))
+	// translate each of the request queue items into the object to return
+	for i, refillRequest := range response.RefillRequestQueue {
+		refillRequestQueue[i] = &common.RefillRequestItem{
+			RxRequestQueueItemId:      refillRequest.RxRequestQueueItemId,
+			ReferenceNumber:           refillRequest.ReferenceNumber,
+			PharmacyRxReferenceNumber: refillRequest.PharmacyRxReferenceNumber,
+			RequestedDrugDescription:  refillRequest.RequestedDrugDescription,
+			RequestedRefillAmount:     refillRequest.RequestedRefillAmount,
+			RequestedDispense:         refillRequest.RequestedDispense,
+			ErxPatientId:              refillRequest.PatientId,
+			PatientAddedForRequest:    refillRequest.PatientAddedForRequest,
+			RequestDateStamp:          refillRequest.RequestDateStamp.DateTime,
+			ClinicianId:               refillRequest.Clinician.ClinicianId,
+			RequestedPrescription:     convertMedicationIntoTreatment(refillRequest.RequestedPrescription),
+			DispensedPrescription:     convertMedicationIntoTreatment(refillRequest.DispensedPrescription),
+		}
+	}
+	return refillRequestQueue, err
+}
+
+func (d *DoseSpotService) GetPharmacyDetails(pharmacyId int64) (*pharmacySearch.PharmacyData, error) {
+	request := &pharmacyDetailsRequest{
+		SSO:        generateSingleSignOn(d.ClinicKey, d.UserID, d.ClinicId),
+		PharmacyId: pharmacyId,
+	}
+
+	response := &pharmacyDetailsResult{}
+	err := getDoseSpotClient().makeSoapRequest(DoseSpotApiActions[pharmacyDetailsAction], request, response,
+		d.apiLatencies[pharmacyDetailsAction],
+		d.apiRequests[pharmacyDetailsAction], d.apiFailure[pharmacyDetailsAction])
+	if err != nil {
+		return nil, err
+	}
+
+	return &pharmacySearch.PharmacyData{
+		SourceId:     strconv.FormatInt(response.PharmacyDetails.PharmacyId, 10),
+		AddressLine1: response.PharmacyDetails.Address1,
+		AddressLine2: response.PharmacyDetails.Address2,
+		City:         response.PharmacyDetails.City,
+		Postal:       response.PharmacyDetails.ZipCode,
+		State:        response.PharmacyDetails.State,
+		Phone:        response.PharmacyDetails.PrimaryPhone,
+		Name:         response.PharmacyDetails.StoreName,
+		Source:       pharmacySearch.PHARMACY_SOURCE_SURESCRIPTS,
+	}, nil
+}
+
+func (d *DoseSpotService) ApproveRefillRequest(clinicianId, erxRefillRequestQueueItemId, approvedRefillAmount int64, comments string) (int64, error) {
+	request := &approveRefillRequest{
+		SSO:                  generateSingleSignOn(d.ClinicKey, clinicianId, d.ClinicId),
+		RxRequestQueueItemId: erxRefillRequestQueueItemId,
+		Refills:              approvedRefillAmount,
+		Comments:             comments,
+	}
+
+	response := &approveRefillResponse{}
+	err := getDoseSpotClient().makeSoapRequest(DoseSpotApiActions[approveRefillAction], request, response,
+		d.apiLatencies[approveRefillAction], d.apiRequests[approveRefillAction], d.apiFailure[approveRefillAction])
+	if err != nil {
+		return 0, err
+	}
+
+	if response.ResultCode != resultOk {
+		return 0, fmt.Errorf("Unable to approve refill request: %s", response.ResultDescription)
+	}
+
+	return response.PrescriptionId, nil
+}
+
+func (d *DoseSpotService) DenyRefillRequest(clinicianId, erxRefillRequestQueueItemId int64, denialReason string, comments string) (int64, error) {
+	request := &denyRefillRequest{
+		SSO:                  generateSingleSignOn(d.ClinicKey, clinicianId, d.ClinicId),
+		RxRequestQueueItemId: erxRefillRequestQueueItemId,
+		DenialReason:         denialReason,
+		Comments:             comments,
+	}
+
+	response := &denyRefillResponse{}
+	err := getDoseSpotClient().makeSoapRequest(DoseSpotApiActions[denyRefillAction], request, response,
+		d.apiLatencies[denyRefillAction], d.apiRequests[denyRefillAction], d.apiRequests[denyRefillAction])
+
+	if err != nil {
+		return 0, err
+	}
+
+	if response.ResultCode != resultOk {
+		return 0, fmt.Errorf("Unable to deny refill request: %s", response.ResultDescription)
+	}
+
+	return response.PrescriptionId, nil
+}
+
+func convertMedicationIntoTreatment(medicationItem *medication) *common.Treatment {
+	if medicationItem == nil {
+		return nil
+	}
+	scheduleInt, err := strconv.Atoi(medicationItem.Schedule)
+	dispenseValue, _ := strconv.ParseInt(medicationItem.Dispense, 10, 64)
+	return &common.Treatment{
+		PrescriptionId: common.NewObjectId(medicationItem.DoseSpotPrescriptionId),
+		DrugDBIds: map[string]string{
+			LexiDrugSynId:     strconv.FormatInt(medicationItem.LexiDrugSynId, 10),
+			LexiGenProductId:  strconv.FormatInt(medicationItem.LexiGenProductId, 10),
+			LexiSynonymTypeId: strconv.FormatInt(medicationItem.LexiSynonymTypeId, 10),
+		},
+		DrugName:                medicationItem.DrugName,
+		ErxSentDate:             &medicationItem.DatePrescribed.DateTime,
+		IsControlledSubstance:   err == nil && scheduleInt > 0,
+		NumberRefills:           int64(medicationItem.Refills),
+		DaysSupply:              int64(medicationItem.DaysSupply),
+		DispenseValue:           dispenseValue,
+		DispenseUnitId:          common.NewObjectId(medicationItem.DispenseUnitId),
+		DispenseUnitDescription: medicationItem.DispenseUnitDescription,
+		PatientInstructions:     medicationItem.Instructions,
+		SubstitutionsAllowed:    !medicationItem.NoSubstitutions,
+		ErxPharmacyId:           medicationItem.PharmacyId,
+		PharmacyNotes:           medicationItem.PharmacyNotes,
+		PrescriptionStatus:      medicationItem.Status,
+		ErxLastDateFilled:       &medicationItem.LastDateFilled.DateTime,
+		DrugRoute:               medicationItem.Route,
+		DosageStrength:          medicationItem.Strength,
+	}
 }

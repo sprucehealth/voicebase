@@ -21,7 +21,14 @@ func (d *DoctorPrescriptionsNotificationsHandler) ServeHTTP(w http.ResponseWrite
 		w.WriteHeader(http.StatusNotFound)
 		return
 	}
-	refillRequests, transactionErrors, err := d.ErxApi.GetTransmissionErrorRefillRequestsCount()
+
+	doctor, err := d.DataApi.GetDoctorFromAccountId(GetContext(r).AccountId)
+	if err != nil {
+		WriteDeveloperError(w, http.StatusInternalServerError, "Unable to get doctor from account id: "+err.Error())
+		return
+	}
+
+	refillRequests, transactionErrors, err := d.ErxApi.GetTransmissionErrorRefillRequestsCount(doctor.DoseSpotClinicianId)
 	if err != nil {
 		WriteDeveloperError(w, http.StatusInternalServerError, "Unable to get notifications count: "+err.Error())
 		return

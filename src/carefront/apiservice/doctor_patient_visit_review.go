@@ -107,8 +107,8 @@ func (p *DoctorPatientVisitReviewHandler) ServeHTTP(w http.ResponseWriter, r *ht
 		return
 	}
 
-	if pharmacySelection != nil && pharmacySelection.Id != "" && pharmacySelection.Address == "" {
-		patientPharmacy, err := p.PharmacySearchService.GetPharmacyBasedOnId(pharmacySelection.Id)
+	if pharmacySelection != nil && pharmacySelection.SourceId != "" && pharmacySelection.AddressLine1 == "" {
+		patientPharmacy, err := p.PharmacySearchService.GetPharmacyBasedOnId(pharmacySelection.SourceId)
 		if err != nil && err != pharmacy.NoPharmacyExists {
 			WriteDeveloperError(w, http.StatusInternalServerError, "Unable to get pharmacy based on id: "+err.Error())
 			return

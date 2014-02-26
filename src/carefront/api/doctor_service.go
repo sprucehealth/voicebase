@@ -12,9 +12,9 @@ import (
 	"github.com/go-sql-driver/mysql"
 )
 
-func (d *DataService) RegisterDoctor(accountId int64, firstName, lastName, gender string, dob time.Time) (int64, error) {
-	res, err := d.DB.Exec(`insert into doctor (account_id, first_name, last_name, gender, dob, status) 
-								values (?, ?, ?, ?, ? , 'REGISTERED')`, accountId, firstName, lastName, gender, dob)
+func (d *DataService) RegisterDoctor(accountId int64, firstName, lastName, gender string, dob time.Time, clinicianId int64) (int64, error) {
+	res, err := d.DB.Exec(`insert into doctor (account_id, first_name, last_name, gender, dob, status, clinician_id) 
+								values (?, ?, ?, ?, ? , 'REGISTERED', ?)`, accountId, firstName, lastName, gender, dob, clinicianId)
 	if err != nil {
 		return 0, err
 	}
@@ -28,24 +28,45 @@ func (d *DataService) RegisterDoctor(accountId int64, firstName, lastName, gende
 }
 
 func (d *DataService) GetDoctorFromId(doctorId int64) (*common.Doctor, error) {
+	row := d.DB.QueryRow(`select doctor.id, account_id, phone, first_name, last_name, gender, dob, status, clinician_id from doctor 
+							left outer join doctor_phone on doctor_phone.doctor_id = doctor.id
+								where doctor.id = ? and (doctor_phone.phone is null or doctor_phone.phone_type = ?)`, doctorId, doctor_phone_type)
+	return getDoctorFromRow(row)
+}
+
+func (d *DataService) GetDoctorFromAccountId(accountId int64) (*common.Doctor, error) {
+	row := d.DB.QueryRow(`select doctor.id, account_id, phone, first_name, last_name, gender, dob, status, clinician_id from doctor 
+							left outer join doctor_phone on doctor_phone.doctor_id = doctor.id
+								where doctor.account_id = ? and (doctor_phone.phone is null or doctor_phone.phone_type = ?)`, accountId, doctor_phone_type)
+	return getDoctorFromRow(row)
+}
+
+func (d *DataService) GetDoctorFromDoseSpotClinicianId(clinicianId int64) (*common.Doctor, error) {
+	row := d.DB.QueryRow(`select doctor.id, account_id, phone, first_name, last_name, gender, dob, status, clinician_id from doctor 
+							left outer join doctor_phone on doctor_phone.doctor_id = doctor.id
+								where doctor.clinician_id = ? and (doctor_phone.phone is null or doctor_phone.phone_type = ?)`, clinicianId, doctor_phone_type)
+	return getDoctorFromRow(row)
+}
+
+func getDoctorFromRow(row *sql.Row) (*common.Doctor, error) {
 	var firstName, lastName, status, gender string
 	var dob mysql.NullTime
 	var cellPhoneNumber sql.NullString
-	var accountId int64
-	err := d.DB.QueryRow(`select account_id, phone, first_name, last_name, gender, dob, status from doctor 
-							left outer join doctor_phone on doctor_phone.doctor_id = doctor.id
-								where doctor.id = ? and (doctor_phone.phone is null or doctor_phone.phone_type = ?)`, doctorId, doctor_phone_type).Scan(&accountId, &cellPhoneNumber, &firstName, &lastName, &gender, &dob, &status)
+	var doctorId, accountId int64
+	var clinicianId sql.NullInt64
+	err := row.Scan(&doctorId, &accountId, &cellPhoneNumber, &firstName, &lastName, &gender, &dob, &status, &clinicianId)
 	if err != nil {
 		return nil, err
 	}
 	doctor := &common.Doctor{
-		FirstName: firstName,
-		LastName:  lastName,
-		Status:    status,
-		Gender:    gender,
-		AccountId: common.NewObjectId(accountId),
-		DoctorId:  common.NewObjectId(doctorId),
-		CellPhone: cellPhoneNumber.String,
+		AccountId:           common.NewObjectId(accountId),
+		DoctorId:            common.NewObjectId(doctorId),
+		FirstName:           firstName,
+		LastName:            lastName,
+		Status:              status,
+		Gender:              gender,
+		CellPhone:           cellPhoneNumber.String,
+		DoseSpotClinicianId: clinicianId.Int64,
 	}
 	if dob.Valid {
 		doctor.Dob = dob.Time
@@ -229,6 +250,24 @@ func (d *DataService) MarkGenerationOfTreatmentPlanInVisitQueue(doctorId, patien
 		return err
 	}
 	_, err = tx.Exec(`insert into doctor_queue (doctor_id, status, event_type, item_id) values (?, ?, ?, ?)`, doctorId, updatedState, event_type_treatment_plan, treatmentPlanId)
+	if err != nil {
+		tx.Rollback()
+		return err
+	}
+	return tx.Commit()
+}
+
+func (d *DataService) MarkRefillRequestCompleteInDoctorQueue(doctorId, rxRefillRequestId int64, currentState, updatedState string) error {
+	tx, err := d.DB.Begin()
+	if err != nil {
+		return err
+	}
+	_, err = tx.Exec(`delete from doctor_queue where status = ? and doctor_id = ? and event_type = ? and item_id = ?`, currentState, doctorId, event_type_refill_request, rxRefillRequestId)
+	if err != nil {
+		tx.Rollback()
+		return err
+	}
+	_, err = tx.Exec(`insert into doctor_queue (doctor_id, status, event_type, item_id) values (?, ?, ?, ?)`, doctorId, updatedState, event_type_refill_request, rxRefillRequestId)
 	if err != nil {
 		tx.Rollback()
 		return err
@@ -549,7 +588,7 @@ func (d *DataService) AddTreatmentTemplates(doctorTreatmentTemplates []*common.D
 			treatmentIdInPatientTreatmentPlan = doctorTreatmentTemplate.Treatment.Id.Int64()
 		}
 
-		err = d.addTreatment(doctorTreatmentTemplate.Treatment, true, tx)
+		err = d.addTreatment(doctorTreatmentTemplate.Treatment, without_link_to_treatment_plan, tx)
 		if err != nil {
 			tx.Rollback()
 			return err
@@ -837,6 +876,12 @@ func (d *DataService) GetCompletedPrescriptionsForDoctor(from, to time.Time, doc
 	return treatmentPlans, nil
 }
 
+func (d *DataService) InsertNewRefillRequestIntoDoctorQueue(refillRequestId int64, doctorId int64) error {
+	_, err := d.DB.Exec(`insert into doctor_queue (doctor_id, item_id, event_type, status) values (?,?,?,?) `,
+		doctorId, refillRequestId, event_type_refill_request, status_pending)
+	return err
+}
+
 func (d *DataService) getIdForNameFromTable(tableName, drugComponentName string) (nullId sql.NullInt64, err error) {
 	err = d.DB.QueryRow(fmt.Sprintf(`select id from %s where name=?`, tableName), drugComponentName).Scan(&nullId)
 	return
@@ -1107,4 +1152,15 @@ func getInstructionsFromRows(rows *sql.Rows) ([]*common.DoctorInstructionItem, e
 		drugInstructions = append(drugInstructions, supplementalInstruction)
 	}
 	return drugInstructions, nil
+}
+
+func (d *DataService) includeDrugNameComponentIfNonZero(drugNameComponent, tableName, columnName string, columnsAndData map[string]interface{}, tx *sql.Tx) error {
+	if drugNameComponent != "" {
+		componentId, err := d.getOrInsertNameInTable(tx, tableName, drugNameComponent)
+		if err != nil {
+			return err
+		}
+		columnsAndData[columnName] = componentId
+	}
+	return nil
 }

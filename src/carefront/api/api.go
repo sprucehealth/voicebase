@@ -10,28 +10,34 @@ import (
 )
 
 const (
-	EN_LANGUAGE_ID              = 1
-	DOCTOR_ROLE                 = "DOCTOR"
-	PRIMARY_DOCTOR_STATUS       = "PRIMARY"
-	PATIENT_ROLE                = "PATIENT"
-	REVIEW_PURPOSE              = "REVIEW"
-	CONDITION_INTAKE_PURPOSE    = "CONDITION_INTAKE"
-	DIAGNOSE_PURPOSE            = "DIAGNOSE"
-	FOLLOW_UP_WEEK              = "week"
-	FOLLOW_UP_DAY               = "day"
-	FOLLOW_UP_MONTH             = "month"
-	CASE_STATUS_OPEN            = "OPEN"
-	CASE_STATUS_SUBMITTED       = "SUBMITTED"
-	CASE_STATUS_REVIEWING       = "REVIEWING"
-	CASE_STATUS_CLOSED          = "CLOSED"
-	CASE_STATUS_TRIAGED         = "TRIAGED"
-	CASE_STATUS_TREATED         = "TREATED"
-	CASE_STATUS_PHOTOS_REJECTED = "PHOTOS_REJECTED"
-	HIPAA_AUTH                  = "hipaa"
-	CONSENT_AUTH                = "consent"
-	PATIENT_PHONE_HOME          = "Home"
-	PATIENT_PHONE_WORK          = "Work"
-	PATIENT_PHONE_CELL          = "Cell"
+	EN_LANGUAGE_ID                 = 1
+	DOCTOR_ROLE                    = "DOCTOR"
+	PRIMARY_DOCTOR_STATUS          = "PRIMARY"
+	PATIENT_ROLE                   = "PATIENT"
+	REVIEW_PURPOSE                 = "REVIEW"
+	CONDITION_INTAKE_PURPOSE       = "CONDITION_INTAKE"
+	DIAGNOSE_PURPOSE               = "DIAGNOSE"
+	FOLLOW_UP_WEEK                 = "week"
+	FOLLOW_UP_DAY                  = "day"
+	FOLLOW_UP_MONTH                = "month"
+	CASE_STATUS_OPEN               = "OPEN"
+	CASE_STATUS_SUBMITTED          = "SUBMITTED"
+	CASE_STATUS_REVIEWING          = "REVIEWING"
+	CASE_STATUS_CLOSED             = "CLOSED"
+	CASE_STATUS_TRIAGED            = "TRIAGED"
+	CASE_STATUS_TREATED            = "TREATED"
+	CASE_STATUS_PHOTOS_REJECTED    = "PHOTOS_REJECTED"
+	REFILL_REQUEST_STATUS_PENDING  = "PENDING"
+	REFILL_REQUEST_STATUS_SENDING  = "SENDING"
+	REFILL_REQUEST_STATUS_APPROVED = "APPROVED"
+	REFILL_REQUEST_STATUS_DENIED   = "DENIED"
+	PATIENT_UNLINKED               = "UNLINKED"
+	PATIENT_REGISTERED             = "REGISTERED"
+	HIPAA_AUTH                     = "hipaa"
+	CONSENT_AUTH                   = "consent"
+	PATIENT_PHONE_HOME             = "Home"
+	PATIENT_PHONE_WORK             = "Work"
+	PATIENT_PHONE_CELL             = "Cell"
 )
 
 var (
@@ -53,7 +59,10 @@ type PotentialAnswerInfo struct {
 type PatientAPI interface {
 	GetPatientFromId(patientId int64) (patient *common.Patient, err error)
 	GetPatientFromAccountId(accountId int64) (patient *common.Patient, err error)
-	RegisterPatient(accountId int64, firstName, lastName, gender, zipCode, city, state, phone, phoneType string, dob time.Time) (*common.Patient, error)
+	GetPatientFromErxPatientId(erxPatientId int64) (*common.Patient, error)
+	GetPatientFromRefillRequestId(refillRequestId int64) (*common.Patient, error)
+	RegisterPatient(patient *common.Patient) error
+	CreateUnlinkedPatientFromRefillRequest(patient *common.Patient) error
 	UpdatePatientWithERxPatientId(patientId, erxPatientId int64) error
 	GetPatientIdFromAccountId(accountId int64) (int64, error)
 	CreateCareTeamForPatient(patientId int64) (careTeam *common.PatientCareProviderGroup, err error)
@@ -68,6 +77,9 @@ type PatientAPI interface {
 	GetPatientFromTreatmentPlanId(treatmentPlanId int64) (patient *common.Patient, err error)
 	GetPatientsForIds(patientIds []int64) ([]*common.Patient, error)
 	GetPharmacySelectionForPatients(patientIds []int64) ([]*pharmacy.PharmacyData, error)
+	GetPharmacyBasedOnReferenceIdAndSource(pharmacyid, pharmacySource string) (*pharmacy.PharmacyData, error)
+	GetPharmacyFromId(pharmacyLocalId int64) (*pharmacy.PharmacyData, error)
+	AddPharmacy(pharmacyDetails *pharmacy.PharmacyData) error
 }
 
 type PrescriptionStatus struct {
@@ -113,9 +125,38 @@ type PatientVisitAPI interface {
 	GetPrescriptionStatusEventsForPatient(patientId int64) ([]*PrescriptionStatus, error)
 }
 
+type RefillRequestDenialReason struct {
+	Id           int64
+	DenialCode   string
+	DenialReason string
+}
+
+type PrescriptionsAPI interface {
+	GetPendingRefillRequestStatusEventsForClinic() ([]RefillRequestStatus, error)
+	CreateRefillRequest(*common.RefillRequestItem) error
+	AddRefillRequestStatusEvent(rxRefillRequestId int64, status string, statusDate time.Time) error
+	// AddRefillRequestStatusEventWithMessage(rxRefillRequestId int64, status, message string, statusDate time.Time) error
+	AddUnlinkedTreatmentFromPharmacy(unlinkedTreatment *common.Treatment) error
+	GetRefillRequestFromId(refillRequestId int64) (*common.RefillRequestItem, error)
+	GetRefillRequestDenialReasons() ([]*RefillRequestDenialReason, error)
+	MarkRefillRequestAsApproved(approvedRefillCount, rxRefillRequestId, prescriptionId int64, comments string) error
+	MarkRefillRequestAsDenied(denialReasonId, rxRefillRequestId, prescriptionId int64, comments string) error
+	// GetRefillRequestsForPatientInGivenStates(patientId int64, expectedStates []string) ([]RefillRequestStatus, error)
+}
+
+type RefillRequestStatus struct {
+	ErxRefillRequestId   int64
+	RxRequestQueueItemId int64
+	Status               string
+	PrescriptionId       int64
+	StatusTimeStamp      time.Time
+}
+
 type DoctorAPI interface {
-	RegisterDoctor(accountId int64, firstName, lastName, gender string, dob time.Time) (int64, error)
+	RegisterDoctor(accountId int64, firstName, lastName, gender string, dob time.Time, clinicianId int64) (int64, error)
 	GetDoctorFromId(doctorId int64) (doctor *common.Doctor, err error)
+	GetDoctorFromAccountId(accountId int64) (doctor *common.Doctor, err error)
+	GetDoctorFromDoseSpotClinicianId(clincianId int64) (doctor *common.Doctor, err error)
 	GetDoctorIdFromAccountId(accountId int64) (int64, error)
 	GetRegimenStepsForDoctor(doctorId int64) (regimenSteps []*common.DoctorInstructionItem, err error)
 	AddRegimenStepForDoctor(regimenStep *common.DoctorInstructionItem, doctorId int64) error
@@ -140,6 +181,8 @@ type DoctorAPI interface {
 	GetTreatmentTemplates(doctorId int64) ([]*common.DoctorTreatmentTemplate, error)
 	DeleteTreatmentTemplates(doctorTreatmentTemplates []*common.DoctorTreatmentTemplate, doctorId int64) error
 	GetCompletedPrescriptionsForDoctor(from, to time.Time, doctorId int64) ([]*common.TreatmentPlan, error)
+	InsertNewRefillRequestIntoDoctorQueue(refillRequestId int64, doctorId int64) error
+	MarkRefillRequestCompleteInDoctorQueue(doctorId, rxRefillRequestId int64, currentState, updatedState string) error
 }
 
 type IntakeAPI interface {
@@ -190,6 +233,7 @@ type DataAPI interface {
 	IntakeLayoutAPI
 	ObjectStorageDBAPI
 	IntakeAPI
+	PrescriptionsAPI
 }
 
 type CloudStorageAPI interface {

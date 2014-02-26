@@ -40,12 +40,12 @@ func TestPatientVisitReview(t *testing.T) {
 	}
 
 	pharmacySelection := &pharmacy.PharmacyData{
-		Id:      "12345",
-		Source:  pharmacy.PHARMACY_SOURCE_SURESCRIPTS,
-		Address: "12345 Marin Street",
-		City:    "San Francisco",
-		State:   "CA",
-		Phone:   "12345667",
+		SourceId:     "12345",
+		Source:       pharmacy.PHARMACY_SOURCE_SURESCRIPTS,
+		AddressLine1: "12345 Marin Street",
+		City:         "San Francisco",
+		State:        "CA",
+		Phone:        "12345667",
 	}
 
 	err = testData.DataApi.UpdatePatientPharmacy(patient.PatientId.Int64(), pharmacySelection)
