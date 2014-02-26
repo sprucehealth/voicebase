@@ -8,7 +8,7 @@ DEPLOY_ENV="$1"
 DEPLOY_BUILD="$2"
 DEPLOY_BRANCH="$3"
 APP="restapi"
-if [ "$DISPLAY_BRANCH" = "" ]; then
+if [ "$DEPLOY_BRANCH" = "" ]; then
 	DEPLOY_BRANCH=$(git rev-parse --abbrev-ref HEAD)
 fi
 GOVERSION=$(go version)
