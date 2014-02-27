@@ -54,7 +54,7 @@ func (d *DoctorUpdatePatientPharmacyHandler) ServeHTTP(w http.ResponseWriter, r 
 
 	primaryDoctorId := getPrimaryDoctorIdFromCareTeam(careTeam)
 	if primaryDoctorId != doctor.DoctorId.Int64() {
-		WriteDeveloperError(w, http.StatusForbidden, "Unable to move forawrd to update patient's pharmacy address as this doctor is not the patient's primary doctor: ")
+		WriteDeveloperError(w, http.StatusForbidden, "Unable to move forawrd to update patient's pharmacy address as this doctor is not the patient's primary doctor")
 		return
 	}
 
