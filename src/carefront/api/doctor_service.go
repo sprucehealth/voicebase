@@ -1024,6 +1024,9 @@ func insertPredefinedInstructionsForDoctor(db *sql.DB, predefinedInstructions []
 
 func (d *DataService) UpdatePatientInformationFromDoctor(patient *common.Patient) error {
 	tx, err := d.DB.Begin()
+	if err != nil {
+		return err
+	}
 
 	// update top level patient details
 	_, err = tx.Exec(`update patient set first_name=?, 

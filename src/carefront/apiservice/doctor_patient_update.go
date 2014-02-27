@@ -64,8 +64,7 @@ func (d *DoctorPatientUpdateHandler) ServeHTTP(w http.ResponseWriter, r *http.Re
 
 	doctorId := getPrimaryDoctorIdFromCareTeam(careTeam)
 	if doctorId != currentDoctor.DoctorId.Int64() {
-		WriteDeveloperError(w, http.StatusInternalServerError, `Unable to move forward to update patient information since this doctor 
-			is not the primary doctor for the patient: `+err.Error())
+		WriteDeveloperError(w, http.StatusInternalServerError, `Unable to move forward to update patient information since this doctor is not the primary doctor for the patient: `+err.Error())
 		return
 	}
 

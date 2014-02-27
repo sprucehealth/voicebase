@@ -64,6 +64,9 @@ func TestDoctorUpdateToPatientAddress(t *testing.T) {
 	defer ts.Close()
 
 	jsonData, err := json.Marshal(signedupPatientResponse.Patient)
+	if err != nil {
+		t.Fatal("Unable to marshal patient object: " + err.Error())
+	}
 
 	resp, err := authPut(ts.URL, "application/json", bytes.NewReader(jsonData), doctor.AccountId.Int64())
 	if err != nil {
@@ -121,6 +124,9 @@ func TestDoctorFailedUpdate(t *testing.T) {
 	defer ts.Close()
 
 	jsonData, err := json.Marshal(signedupPatientResponse.Patient)
+	if err != nil {
+		t.Fatal("Unable to marshal patient object: " + err.Error())
+	}
 
 	resp, err := authPut(ts.URL, "application/json", bytes.NewReader(jsonData), doctor.AccountId.Int64())
 	if err != nil {
@@ -226,6 +232,9 @@ func TestDoctorUpdateToPhoneNumbers(t *testing.T) {
 	defer ts.Close()
 
 	jsonData, err := json.Marshal(signedupPatientResponse.Patient)
+	if err != nil {
+		t.Fatal("Unable to marshal patient object: " + err.Error())
+	}
 
 	resp, err := authPut(ts.URL, "application/json", bytes.NewReader(jsonData), doctor.AccountId.Int64())
 	if err != nil {
