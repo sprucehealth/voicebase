@@ -423,8 +423,11 @@ func (d *DoseSpotService) SearchForPharmacies(clinicianId int64, city, state, zi
 		PharmacyStateTwoLetters: state,
 		PharmacyZipCode:         zipcode,
 		PharmacyNameSearch:      name,
-		PharmacyTypes:           pharmacyTypes,
 		SSO:                     generateSingleSignOn(d.ClinicKey, clinicianId, d.ClinicId),
+	}
+
+	if len(pharmacyTypes) > 0 {
+		searchRequest.PharmacyTypes = pharmacyTypes
 	}
 
 	searchResponse := &pharmacySearchResult{}

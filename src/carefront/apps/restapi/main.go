@@ -358,6 +358,10 @@ func main() {
 	doctorUpdatePatientPharmacyHandler := &apiservice.DoctorUpdatePatientPharmacyHandler{
 		DataApi: dataApi,
 	}
+	doctorPharmacySearchHandler := &apiservice.DoctorPharmacySearchHandler{
+		DataApi: dataApi,
+		ErxApi:  doseSpotService,
+	}
 
 	mux := apiservice.NewAuthServeMux(authApi, metricsRegistry.Scope("restapi"))
 
@@ -395,6 +399,7 @@ func main() {
 
 	mux.Handle("/v1/doctor/patient", doctorPatientUpdateHandler)
 	mux.Handle("/v1/doctor/patient/pharmacy", doctorUpdatePatientPharmacyHandler)
+	mux.Handle("/v1/doctor/pharmacy", doctorPharmacySearchHandler)
 
 	mux.Handle("/v1/doctor/visit/review", doctorPatientVisitReviewHandler)
 	mux.Handle("/v1/doctor/visit/diagnosis", diagnosePatientHandler)
