@@ -891,6 +891,24 @@ func (d *DataService) InsertNewRefillRequestIntoDoctorQueue(refillRequestId int6
 	return err
 }
 
+func (d *DataService) MarkErrorResolvedInDoctorQueue(doctorId, treatmentId int64, currentState, updatedState string) error {
+	tx, err := d.DB.Begin()
+	if err != nil {
+		return err
+	}
+	_, err = tx.Exec(`delete from doctor_queue where status = ? and doctor_id = ? and event_type = ? and item_id = ?`, currentState, doctorId, EVENT_TYPE_TRANSMISSION_ERROR, treatmentId)
+	if err != nil {
+		tx.Rollback()
+		return err
+	}
+	_, err = tx.Exec(`insert into doctor_queue (doctor_id, status, event_type, item_id) values (?, ?, ?, ?)`, doctorId, updatedState, EVENT_TYPE_TRANSMISSION_ERROR, treatmentId)
+	if err != nil {
+		tx.Rollback()
+		return err
+	}
+	return tx.Commit()
+}
+
 func (d *DataService) getIdForNameFromTable(tableName, drugComponentName string) (nullId sql.NullInt64, err error) {
 	err = d.DB.QueryRow(fmt.Sprintf(`select id from %s where name=?`, tableName), drugComponentName).Scan(&nullId)
 	return

@@ -182,6 +182,7 @@ type DoctorAPI interface {
 	MarkRefillRequestCompleteInDoctorQueue(doctorId, rxRefillRequestId int64, currentState, updatedState string) error
 	UpdatePatientInformationFromDoctor(patient *common.Patient) error
 	InsertNewTransmissionErrorInDoctorQueue(treatmentId int64, doctorId int64) error
+	MarkErrorResolvedInDoctorQueue(doctorId, treatmentId int64, currentState, updatedState string) error
 }
 
 type IntakeAPI interface {

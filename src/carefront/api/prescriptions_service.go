@@ -172,7 +172,7 @@ func (d *DataService) GetRefillRequestFromId(refillRequestId int64) (*common.Ref
 		rows, err := d.DB.Query(`select treatment.id, treatment.erx_id, treatment.treatment_plan_id, treatment.drug_internal_name, treatment.dosage_strength, treatment.type,
 			treatment.dispense_value, treatment.dispense_unit_id, ltext, treatment.refills, treatment.substitutions_allowed, 
 			treatment.days_supply, treatment.pharmacy_id, treatment.pharmacy_notes, treatment.patient_instructions, treatment.creation_date, treatment.erx_sent_date,
-			treatment.status, drug_name.name, drug_route.name, drug_form.name,
+			treatment.erx_last_filled_date,treatment.status, drug_name.name, drug_route.name, drug_form.name,
 			patient_visit.patient_id, treatment_plan.patient_visit_id from treatment 
 				inner join dispense_unit on treatment.dispense_unit_id = dispense_unit.id
 				inner join localized_text on localized_text.app_text_id = dispense_unit.dispense_unit_text_id
@@ -484,10 +484,10 @@ func (d *DataService) MarkRefillRequestAsDenied(denialReasonId, rxRefillRequestI
 // 	params = appendStringsToInterfaceSlice(params, expectedStates)
 // 	params = append(params, status_active)
 
-// 	rows, err := d.DB.Query(fmt.Sprintf(`select rx_refill_request_id, rx_refill_status, rx_refill_request.erx_id, 
+// 	rows, err := d.DB.Query(fmt.Sprintf(`select rx_refill_request_id, rx_refill_status, rx_refill_request.erx_id,
 // 							rx_refill_request.erx_request_queue_item_id, rx_refill_request.rx_refill_status_date from rx_refill_status_events
-// 								inner join rx_refill_request on rx_refill_request_id = rx_refill_request.id 
-// 									where rx_refill_request.patient_id = ? and rx_refill_status in (%s) 
+// 								inner join rx_refill_request on rx_refill_request_id = rx_refill_request.id
+// 									where rx_refill_request.patient_id = ? and rx_refill_status in (%s)
 // 										and rx_refill_status_events.status = ?`, nReplacements(len(expectedStates))), params...)
 // 	if err != nil {
 // 		return nil, err
@@ -497,10 +497,10 @@ func (d *DataService) MarkRefillRequestAsDenied(denialReasonId, rxRefillRequestI
 // 	for rows.Next() {
 // 		var erxId sql.NullInt64
 // 		var refillRequestStatus RefillRequestStatus
-		
-// 		err = rows.Scan(&refillRequestStatus.ErxRefillRequestId, &refillRequestStatus.Status, 
+
+// 		err = rows.Scan(&refillRequestStatus.ErxRefillRequestId, &refillRequestStatus.Status,
 // 			&erxId, &refillRequestStatus.RxRequestQueueItemId, &refillRequestStatus.StatusTimeStamp)
-		
+
 // 		if err != nil {
 // 			return nil, err
 // 		}

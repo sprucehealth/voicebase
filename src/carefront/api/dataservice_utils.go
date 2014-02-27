@@ -20,6 +20,7 @@ const (
 	ERX_STATUS_ERROR                        = "Error"
 	ERX_STATUS_SEND_ERROR                   = "Send_Error"
 	ERX_STATUS_REQUESTED                    = "Requested"
+	ERX_STATUS_RESOLVED                     = "Resolved"
 	treatment_otc                           = "OTC"
 	treatment_rx                            = "RX"
 	RX_REFILL_STATUS_REQUESTED              = "Requested"
