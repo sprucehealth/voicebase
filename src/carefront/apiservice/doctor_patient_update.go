@@ -5,8 +5,12 @@ import (
 	"carefront/common"
 	"carefront/libs/erx"
 	"carefront/libs/pharmacy"
+	"strconv"
+
 	"encoding/json"
 	"net/http"
+
+	"github.com/gorilla/schema"
 )
 
 type DoctorPatientUpdateHandler struct {
@@ -14,11 +18,77 @@ type DoctorPatientUpdateHandler struct {
 	ErxApi  erx.ERxAPI
 }
 
+type DoctorPatientUpdateHandlerRequestData struct {
+	PatientId string `schema:"patient_id,required"`
+}
+
 func (d *DoctorPatientUpdateHandler) ServeHTTP(w http.ResponseWriter, r *http.Request) {
-	if r.Method != HTTP_PUT {
+	switch r.Method {
+	case HTTP_GET:
+		d.getPatientInformation(w, r)
+	case HTTP_PUT:
+		d.updatePatientInformation(w, r)
+	default:
 		w.WriteHeader(http.StatusNotFound)
+	}
+}
+
+type DoctorPatientUpdateHandlerResponse struct {
+	Patient *common.Patient `json:"patient"`
+}
+
+func (d *DoctorPatientUpdateHandler) getPatientInformation(w http.ResponseWriter, r *http.Request) {
+	if err := r.ParseForm(); err != nil {
+		WriteDeveloperError(w, http.StatusBadRequest, "Unable to parse input parameters: "+err.Error())
 		return
 	}
+
+	requestData := DoctorPatientUpdateHandlerRequestData{}
+	if err := schema.NewDecoder().Decode(&requestData, r.Form); err != nil {
+		WriteDeveloperError(w, http.StatusBadRequest, "Unable to parse input parameters: "+err.Error())
+		return
+	}
+
+	currentDoctor, err := d.DataApi.GetDoctorFromAccountId(GetContext(r).AccountId)
+	if err != nil {
+		WriteDeveloperError(w, http.StatusInternalServerError, "Unable to get the doctor based on account id: "+err.Error())
+		return
+	}
+
+	patientId, err := strconv.ParseInt(requestData.PatientId, 10, 64)
+	if err != nil {
+		WriteDeveloperError(w, http.StatusBadRequest, "Unable to parse patient id: "+err.Error())
+		return
+	}
+
+	careTeam, err := d.DataApi.GetCareTeamForPatient(patientId)
+	if err != nil {
+		WriteDeveloperError(w, http.StatusInternalServerError, "Unable to get care team based on patient id: "+err.Error())
+		return
+	}
+
+	primaryDoctorId := getPrimaryDoctorIdFromCareTeam(careTeam)
+
+	if currentDoctor.DoctorId.Int64() != primaryDoctorId {
+		WriteDeveloperError(w, http.StatusForbidden, "Unable to get the patient information by doctor when this doctor is not the primary doctor for patient")
+		return
+	}
+
+	patient, err := d.DataApi.GetPatientFromId(patientId)
+	if err != nil {
+		WriteDeveloperError(w, http.StatusBadRequest, "Unable to get patient information from id: "+err.Error())
+	}
+
+	patient.Pharmacy, err = d.DataApi.GetPatientPharmacySelection(patientId)
+	if err != nil {
+		WriteDeveloperError(w, http.StatusBadRequest, "Unable to get pharmacy selection for patient: "+err.Error())
+		return
+	}
+
+	WriteJSONToHTTPResponseWriter(w, http.StatusOK, &DoctorPatientUpdateHandlerResponse{Patient: patient})
+}
+
+func (d *DoctorPatientUpdateHandler) updatePatientInformation(w http.ResponseWriter, r *http.Request) {
 
 	if err := r.ParseForm(); err != nil {
 		WriteDeveloperError(w, http.StatusBadRequest, "Unable to parse input parameters: "+err.Error())
@@ -64,7 +134,7 @@ func (d *DoctorPatientUpdateHandler) ServeHTTP(w http.ResponseWriter, r *http.Re
 
 	doctorId := getPrimaryDoctorIdFromCareTeam(careTeam)
 	if doctorId != currentDoctor.DoctorId.Int64() {
-		WriteDeveloperError(w, http.StatusInternalServerError, `Unable to move forward to update patient information since this doctor is not the primary doctor for the patient: `+err.Error())
+		WriteDeveloperError(w, http.StatusForbidden, `Unable to move forward to update patient information since this doctor is not the primary doctor for the patient: `)
 		return
 	}
 

@@ -345,3 +345,185 @@ func TestDoctorUpdateToTopLevelInformation(t *testing.T) {
 		t.Fatal("Patient data incorrectly updated")
 	}
 }
+
+func TestDoctorUpdatePatientInformationForbidden(t *testing.T) {
+	if err := CheckIfRunningLocally(t); err == CannotRunTestLocally {
+		return
+	}
+
+	testData := SetupIntegrationTest(t)
+	defer TearDownIntegrationTest(t, testData)
+
+	signedupDoctorResponse, _, _ := SignupRandomTestDoctor(t, testData.DataApi, testData.AuthApi)
+
+	signedupPatientResponse := SignupRandomTestPatient(t, testData.DataApi, testData.AuthApi)
+	patientPharmacy := &pharmacy.PharmacyData{
+		Source:       pharmacy.PHARMACY_SOURCE_SURESCRIPTS,
+		SourceId:     "1234",
+		AddressLine1: "123456 main street",
+		City:         "San Francisco",
+		State:        "CA",
+		Postal:       "94115",
+	}
+
+	err := testData.DataApi.UpdatePatientPharmacy(signedupPatientResponse.Patient.PatientId.Int64(), patientPharmacy)
+	if err != nil {
+		t.Fatal("Unable to add patient's preferred pharmacy")
+	}
+	doctorPatientHandler := &apiservice.DoctorPatientUpdateHandler{
+		DataApi: testData.DataApi,
+		ErxApi:  &erx.StubErxService{},
+	}
+
+	ts := httptest.NewServer(doctorPatientHandler)
+	defer ts.Close()
+
+	jsonData, err := json.Marshal(signedupPatientResponse.Patient)
+	if err != nil {
+		t.Fatal("Unable to marshal json object: " + err.Error())
+	}
+
+	doctor, err := testData.DataApi.GetDoctorFromId(signedupDoctorResponse.DoctorId)
+	if err != nil {
+		t.Fatal("unable to get doctor from id: " + err.Error())
+	}
+
+	resp, err := authPut(ts.URL, "application/json", bytes.NewReader(jsonData), doctor.AccountId.Int64())
+	if err != nil {
+		t.Fatal("Unable to make successfull call to upte patient information: " + err.Error())
+	}
+
+	if resp.StatusCode != http.StatusForbidden {
+		t.Fatal("Expected the doctor to be forbidden from updating the patient information given that it is not the patient's primary doctor but this was not the case")
+	}
+
+}
+
+func TestDoctorPatientPharmacyUpdateHandler(t *testing.T) {
+	if err := CheckIfRunningLocally(t); err == CannotRunTestLocally {
+		return
+	}
+
+	testData := SetupIntegrationTest(t)
+	defer TearDownIntegrationTest(t, testData)
+
+	doctorId := getDoctorIdOfCurrentPrimaryDoctor(testData, t)
+	doctor, err := testData.DataApi.GetDoctorFromId(doctorId)
+	if err != nil {
+		t.Fatal("Unable to read doctor information")
+	}
+	signedupPatientResponse := SignupRandomTestPatient(t, testData.DataApi, testData.AuthApi)
+	patientPharmacy := &pharmacy.PharmacyData{
+		Source:       pharmacy.PHARMACY_SOURCE_SURESCRIPTS,
+		SourceId:     "1234",
+		AddressLine1: "123456 main street",
+		City:         "San Francisco",
+		State:        "CA",
+		Postal:       "94115",
+	}
+
+	err = testData.DataApi.UpdatePatientPharmacy(signedupPatientResponse.Patient.PatientId.Int64(), patientPharmacy)
+	if err != nil {
+		t.Fatal("Unable to add patient's preferred pharmacy")
+	}
+
+	updatedPatientPharmacy := &pharmacy.PharmacyData{
+		Source:       pharmacy.PHARMACY_SOURCE_SURESCRIPTS,
+		SourceId:     "12345",
+		AddressLine1: "1231515 Updated main street",
+		AddressLine2: "124151515 apt",
+		City:         "San Francisco",
+		State:        "CA",
+		Postal:       "94115325151",
+	}
+
+	doctorUpdatePatientPharmacy := &apiservice.DoctorUpdatePatientPharmacyHandler{DataApi: testData.DataApi}
+	ts := httptest.NewServer(doctorUpdatePatientPharmacy)
+	defer ts.Close()
+
+	requestData := &apiservice.DoctorUpdatePatientPharmacyRequestData{
+		PatientId: signedupPatientResponse.Patient.PatientId,
+		Pharmacy:  updatedPatientPharmacy,
+	}
+
+	jsonData, err := json.Marshal(&requestData)
+	if err != nil {
+		t.Fatal("Unable to marhsal data: " + err.Error())
+	}
+
+	resp, err := authPut(ts.URL, "application/json", bytes.NewReader(jsonData), doctor.AccountId.Int64())
+	if err != nil {
+		t.Fatal("Unable to make successfull call to update patient information")
+	}
+
+	if resp.StatusCode != http.StatusOK {
+		t.Fatal("Unable to make successful call to update patient information")
+	}
+
+	patientPreferredPharmacy, err := testData.DataApi.GetPatientPharmacySelection(signedupPatientResponse.Patient.PatientId.Int64())
+	if err != nil {
+		t.Fatal("Unable to get patient's preferred pharmacy :" + err.Error())
+	}
+
+	if patientPreferredPharmacy.AddressLine1 != updatedPatientPharmacy.AddressLine1 ||
+		patientPreferredPharmacy.AddressLine2 != updatedPatientPharmacy.AddressLine2 ||
+		patientPreferredPharmacy.City != updatedPatientPharmacy.City ||
+		patientPreferredPharmacy.State != updatedPatientPharmacy.State ||
+		patientPreferredPharmacy.Postal != updatedPatientPharmacy.Postal {
+		t.Fatal("Patient pharmacy not successfully updated:", patientPreferredPharmacy, updatedPatientPharmacy)
+	}
+}
+
+func TestDoctorPharmacyUpdateForbidden(t *testing.T) {
+	if err := CheckIfRunningLocally(t); err == CannotRunTestLocally {
+		return
+	}
+
+	testData := SetupIntegrationTest(t)
+	defer TearDownIntegrationTest(t, testData)
+
+	signedupDoctorResponse, _, _ := SignupRandomTestDoctor(t, testData.DataApi, testData.AuthApi)
+
+	signedupPatientResponse := SignupRandomTestPatient(t, testData.DataApi, testData.AuthApi)
+	patientPharmacy := &pharmacy.PharmacyData{
+		Source:       pharmacy.PHARMACY_SOURCE_SURESCRIPTS,
+		SourceId:     "1234",
+		AddressLine1: "123456 main street",
+		City:         "San Francisco",
+		State:        "CA",
+		Postal:       "94115",
+	}
+
+	err := testData.DataApi.UpdatePatientPharmacy(signedupPatientResponse.Patient.PatientId.Int64(), patientPharmacy)
+	if err != nil {
+		t.Fatal("Unable to add patient's preferred pharmacy")
+	}
+
+	doctorUpdatePatientPharmacy := &apiservice.DoctorUpdatePatientPharmacyHandler{DataApi: testData.DataApi}
+	ts := httptest.NewServer(doctorUpdatePatientPharmacy)
+	defer ts.Close()
+
+	requestData := &apiservice.DoctorUpdatePatientPharmacyRequestData{
+		PatientId: signedupPatientResponse.Patient.PatientId,
+		Pharmacy:  patientPharmacy,
+	}
+
+	jsonData, err := json.Marshal(&requestData)
+	if err != nil {
+		t.Fatal("Unable to marhsal data: " + err.Error())
+	}
+
+	doctor, err := testData.DataApi.GetDoctorFromId(signedupDoctorResponse.DoctorId)
+	if err != nil {
+		t.Fatal("unable to get doctor from id: " + err.Error())
+	}
+
+	resp, err := authPut(ts.URL, "application/json", bytes.NewReader(jsonData), doctor.AccountId.Int64())
+	if err != nil {
+		t.Fatal("Unable to make successfull call to upte patient information: " + err.Error())
+	}
+
+	if resp.StatusCode != http.StatusForbidden {
+		t.Fatal("Expected the doctor to be forbidden from updating the patient pharmacy information given that it is not the patient's primary doctor but this was not the case")
+	}
+}

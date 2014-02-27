@@ -463,7 +463,7 @@ func (d *DataService) UpdatePatientPharmacy(patientId int64, pharmacyDetails *ph
 }
 
 func (d *DataService) GetPatientPharmacySelection(patientId int64) (pharmacySelection *pharmacy.PharmacyData, err error) {
-	rows, err := d.DB.Query(`select pharmacy_selection.id, patient_id, pharmacy_selection.pharmacy_id, source, name, address_line_1, city, state, zip_code, phone,lat,lng 
+	rows, err := d.DB.Query(`select pharmacy_selection.id, patient_id, pharmacy_selection.pharmacy_id, source, name, address_line_1, address_line_2, city, state, zip_code, phone,lat,lng 
 		from patient_pharmacy_selection 
 			inner join pharmacy_selection on pharmacy_selection.id = pharmacy_selection_id 
 				where patient_id = ? and status=?`, patientId, status_active)
@@ -484,7 +484,7 @@ func (d *DataService) GetPharmacySelectionForPatients(patientIds []int64) ([]*ph
 		return nil, nil
 	}
 
-	rows, err := d.DB.Query(fmt.Sprintf(`select pharmacy_selection.id, patient_id,  pharmacy_selection.pharmacy_id, source, name, address_line_1, city, state, zip_code, phone,lat,lng 
+	rows, err := d.DB.Query(fmt.Sprintf(`select pharmacy_selection.id, patient_id,  pharmacy_selection.pharmacy_id, source, name, address_line_1, address_line_2, city, state, zip_code, phone,lat,lng 
 			from patient_pharmacy_selection 
 			inner join pharmacy_selection on pharmacy_selection.id = pharmacy_selection_id where patient_id in (%s) and status=?`, enumerateItemsIntoString(patientIds)), status_active)
 	if err != nil {
@@ -622,8 +622,8 @@ func addPharmacy(pharmacyDetails *pharmacy.PharmacyData, tx *sql.Tx) error {
 
 func getPharmacyFromCurrentRow(rows *sql.Rows) (*pharmacy.PharmacyData, error) {
 	var localId, patientId int64
-	var id, sourceType, name, address, phone, city, state, zipCode, lat, lng sql.NullString
-	err := rows.Scan(&localId, &patientId, &id, &sourceType, &name, &address, &city, &state, &zipCode, &phone, &lat, &lng)
+	var id, sourceType, name, addressLine1, addressLine2, phone, city, state, zipCode, lat, lng sql.NullString
+	err := rows.Scan(&localId, &patientId, &id, &sourceType, &name, &addressLine1, &addressLine2, &city, &state, &zipCode, &phone, &lat, &lng)
 	if err != nil {
 		return nil, err
 	}
@@ -633,7 +633,8 @@ func getPharmacyFromCurrentRow(rows *sql.Rows) (*pharmacy.PharmacyData, error) {
 		PatientId:    patientId,
 		SourceId:     id.String,
 		Source:       sourceType.String,
-		AddressLine1: address.String,
+		AddressLine1: addressLine1.String,
+		AddressLine2: addressLine2.String,
 		City:         city.String,
 		State:        state.String,
 		Postal:       zipCode.String,
