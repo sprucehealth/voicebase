@@ -78,12 +78,8 @@ func (d *DoctorQueueItem) GetTitleAndSubtitle(dataApi DataAPI) (string, string, 
 
 	case EVENT_TYPE_REFILL_REQUEST:
 		patient, err := dataApi.GetPatientFromRefillRequestId(d.ItemId)
-		if err != nil {
+		if err != nil || patient == nil {
 			return "", "", err
-		}
-
-		if patient == nil {
-			return "", "", nil
 		}
 
 		switch d.Status {
@@ -102,12 +98,8 @@ func (d *DoctorQueueItem) GetTitleAndSubtitle(dataApi DataAPI) (string, string, 
 		}
 	case EVENT_TYPE_TRANSMISSION_ERROR:
 		patient, err := dataApi.GetPatientFromTreatmentId(d.ItemId)
-		if err != nil {
+		if err != nil || patient == nil {
 			return "", "", err
-		}
-
-		if patient == nil {
-			return "", "", nil
 		}
 
 		switch d.Status {
