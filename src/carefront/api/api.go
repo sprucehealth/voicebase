@@ -61,6 +61,7 @@ type PatientAPI interface {
 	GetPatientFromAccountId(accountId int64) (patient *common.Patient, err error)
 	GetPatientFromErxPatientId(erxPatientId int64) (*common.Patient, error)
 	GetPatientFromRefillRequestId(refillRequestId int64) (*common.Patient, error)
+	GetPatientFromTreatmentId(treatmentId int64) (*common.Patient, error)
 	RegisterPatient(patient *common.Patient) error
 	CreateUnlinkedPatientFromRefillRequest(patient *common.Patient) error
 	UpdatePatientWithERxPatientId(patientId, erxPatientId int64) error
@@ -80,13 +81,6 @@ type PatientAPI interface {
 	GetPharmacyBasedOnReferenceIdAndSource(pharmacyid, pharmacySource string) (*pharmacy.PharmacyData, error)
 	GetPharmacyFromId(pharmacyLocalId int64) (*pharmacy.PharmacyData, error)
 	AddPharmacy(pharmacyDetails *pharmacy.PharmacyData) error
-}
-
-type PrescriptionStatus struct {
-	TreatmentId        int64
-	PrescriptionId     int64
-	PrescriptionStatus string
-	StatusTimeStamp    time.Time
 }
 
 type PatientVisitAPI interface {
@@ -119,10 +113,12 @@ type PatientVisitAPI interface {
 	AddTreatmentsForPatientVisit(treatments []*common.Treatment, doctorId, treatmentPlanId int64) error
 	GetTreatmentsBasedOnTreatmentPlanId(patientVisitId, treatmentPlanId int64) ([]*common.Treatment, error)
 	GetTreatmentBasedOnPrescriptionId(erxId int64) (*common.Treatment, error)
+	GetTreatmentFromId(treatmentId int64) (*common.Treatment, error)
 	MarkTreatmentsAsPrescriptionsSent(treatments []*common.Treatment, pharmacySentTo *pharmacy.PharmacyData, doctorId, patientVisitId int64) error
 	AddErxStatusEvent(treatments []*common.Treatment, statusEvent string) error
 	AddErxErrorEventWithMessage(treatment *common.Treatment, statusEvent, errorDetails string, errorTimeStamp time.Time) error
-	GetPrescriptionStatusEventsForPatient(patientId int64) ([]*PrescriptionStatus, error)
+	GetPrescriptionStatusEventsForPatient(patientId int64) ([]*common.PrescriptionStatus, error)
+	GetPrescriptionStatusEventsForTreatment(treatmentId int64) ([]*common.PrescriptionStatus, error)
 }
 
 type RefillRequestDenialReason struct {
@@ -158,6 +154,7 @@ type DoctorAPI interface {
 	GetDoctorFromAccountId(accountId int64) (doctor *common.Doctor, err error)
 	GetDoctorFromDoseSpotClinicianId(clincianId int64) (doctor *common.Doctor, err error)
 	GetDoctorIdFromAccountId(accountId int64) (int64, error)
+	GetDoctorFromTreatmentId(treatmentId int64) (*common.Doctor, error)
 	GetRegimenStepsForDoctor(doctorId int64) (regimenSteps []*common.DoctorInstructionItem, err error)
 	AddRegimenStepForDoctor(regimenStep *common.DoctorInstructionItem, doctorId int64) error
 	UpdateRegimenStepForDoctor(regimenStep *common.DoctorInstructionItem, doctorId int64) error
@@ -184,6 +181,7 @@ type DoctorAPI interface {
 	InsertNewRefillRequestIntoDoctorQueue(refillRequestId int64, doctorId int64) error
 	MarkRefillRequestCompleteInDoctorQueue(doctorId, rxRefillRequestId int64, currentState, updatedState string) error
 	UpdatePatientInformationFromDoctor(patient *common.Patient) error
+	InsertNewTransmissionErrorInDoctorQueue(treatmentId int64, doctorId int64) error
 }
 
 type IntakeAPI interface {

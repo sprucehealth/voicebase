@@ -516,10 +516,7 @@ func (d *DoseSpotService) GetMedicationList(clinicianId int64, PatientId int64) 
 
 	medications := make([]*common.Treatment, len(response.Medications))
 	for i, medicationItem := range response.Medications {
-		medications[i] = &common.Treatment{
-			ErxMedicationId:    common.NewObjectId(medicationItem.MedicationId),
-			PrescriptionStatus: medicationItem.PrescriptionStatus,
-		}
+		medications[i] = convertMedicationIntoTreatment(medicationItem)
 	}
 	return medications, nil
 }
@@ -801,7 +798,7 @@ func convertMedicationIntoTreatment(medicationItem *medication) *common.Treatmen
 	}
 	scheduleInt, err := strconv.Atoi(medicationItem.Schedule)
 	dispenseValue, _ := strconv.ParseInt(medicationItem.Dispense, 10, 64)
-	return &common.Treatment{
+	treatment := &common.Treatment{
 		PrescriptionId: common.NewObjectId(medicationItem.DoseSpotPrescriptionId),
 		DrugDBIds: map[string]string{
 			LexiDrugSynId:     strconv.FormatInt(medicationItem.LexiDrugSynId, 10),
@@ -809,7 +806,6 @@ func convertMedicationIntoTreatment(medicationItem *medication) *common.Treatmen
 			LexiSynonymTypeId: strconv.FormatInt(medicationItem.LexiSynonymTypeId, 10),
 		},
 		DrugName:                medicationItem.DrugName,
-		ErxSentDate:             &medicationItem.DatePrescribed.DateTime,
 		IsControlledSubstance:   err == nil && scheduleInt > 0,
 		NumberRefills:           int64(medicationItem.Refills),
 		DaysSupply:              int64(medicationItem.DaysSupply),
@@ -820,9 +816,19 @@ func convertMedicationIntoTreatment(medicationItem *medication) *common.Treatmen
 		SubstitutionsAllowed:    !medicationItem.NoSubstitutions,
 		ErxPharmacyId:           medicationItem.PharmacyId,
 		PharmacyNotes:           medicationItem.PharmacyNotes,
-		PrescriptionStatus:      medicationItem.Status,
-		ErxLastDateFilled:       &medicationItem.LastDateFilled.DateTime,
+		PrescriptionStatus:      medicationItem.PrescriptionStatus,
+		ErxMedicationId:         common.NewObjectId(medicationItem.MedicationId),
 		DrugRoute:               medicationItem.Route,
 		DosageStrength:          medicationItem.Strength,
 	}
+
+	if medicationItem.DatePrescribed != nil {
+		treatment.ErxSentDate = &medicationItem.DatePrescribed.DateTime
+	}
+
+	if medicationItem.LastDateFilled != nil {
+		treatment.ErxLastDateFilled = &medicationItem.LastDateFilled.DateTime
+	}
+	return treatment
+
 }
