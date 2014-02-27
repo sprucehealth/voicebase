@@ -146,7 +146,7 @@ func TestNewRefillRequestForExistingPatientAndExistingTreatment(t *testing.T) {
 	}
 
 	// Call the Consume method
-	app_worker.PerformRefillRecquestCheckCycle(testData.DataApi, stubErxAPI, metrics.NewCounter(), metrics.NewCounter())
+	app_worker.PerformRefillRecquestCheckCycle(testData.DataApi, stubErxAPI, metrics.NewCounter(), metrics.NewCounter(), "test")
 
 	// There should be an unlinked treatment in the unlinked_requested_treatment db
 	var count int64
@@ -379,7 +379,7 @@ func TestNewRefillRequestWithUnlinkedTreatmentAndLinkedPatient(t *testing.T) {
 	}
 
 	// Call the Consume method
-	app_worker.PerformRefillRecquestCheckCycle(testData.DataApi, stubErxAPI, metrics.NewCounter(), metrics.NewCounter())
+	app_worker.PerformRefillRecquestCheckCycle(testData.DataApi, stubErxAPI, metrics.NewCounter(), metrics.NewCounter(), "test")
 
 	// TODO Get Refill Request when that API is written, and ensure that the state of the refill request matches the
 	// end expected state (patient that is unlinked; treatment that is unlinked; pharmacy data in there)
@@ -628,7 +628,7 @@ func TestNewRefillRequestWithUnlinkedTreatmentAndUnlinkedPatient(t *testing.T) {
 	}
 
 	// Call the Consume method
-	app_worker.PerformRefillRecquestCheckCycle(testData.DataApi, stubErxAPI, metrics.NewCounter(), metrics.NewCounter())
+	app_worker.PerformRefillRecquestCheckCycle(testData.DataApi, stubErxAPI, metrics.NewCounter(), metrics.NewCounter(), "test")
 
 	// TODO Get Refill Request when that API is written, and ensure that the state of the refill request matches the
 	// end expected state (patient that is unlinked; treatment that is unlinked; pharmacy data in there)
