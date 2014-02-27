@@ -308,9 +308,8 @@ func main() {
 		ErxApi:  doseSpotService,
 	}
 
-	doctorPrescriptionErrorsHandler := &apiservice.DoctorPrescriptionsErrorsHandler{
+	doctorPrescriptionErrorHandler := &apiservice.DoctorPrescriptionErrorHandler{
 		DataApi: dataApi,
-		ErxApi:  doseSpotService,
 	}
 
 	doctorPrescriptionErrorIgnoreHandler := &apiservice.DoctorPrescriptionErrorIgnoreHandler{
@@ -392,7 +391,7 @@ func main() {
 
 	mux.Handle("/v1/doctor/rx/history", doctorPrescriptionsHandler)
 	mux.Handle("/v1/doctor/rx/notification_counts", doctorPrescriptionsNotificationsHandler)
-	mux.Handle("/v1/doctor/rx/errors", doctorPrescriptionErrorsHandler)
+	mux.Handle("/v1/doctor/rx/error", doctorPrescriptionErrorHandler)
 	mux.Handle("/v1/doctor/rx/error/resolve", doctorPrescriptionErrorIgnoreHandler)
 	mux.Handle("/v1/doctor/rx/refill/request", doctorRefillRequestHandler)
 	mux.Handle("/v1/doctor/rx/refill/denial_reasons", refillRequestDenialReasonsHandler)

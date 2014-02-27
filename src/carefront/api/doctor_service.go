@@ -48,6 +48,15 @@ func (d *DataService) GetDoctorFromDoseSpotClinicianId(clinicianId int64) (*comm
 	return getDoctorFromRow(row)
 }
 
+func (d *DataService) GetDoctorFromTreatmentId(treatmentId int64) (*common.Doctor, error) {
+	row := d.DB.QueryRow(`select doctor.id, account_id, phone, first_name, last_name, gender, dob, doctor.status, clinician_id from treatment
+							inner join treatment_plan on treatment.treatment_plan_id = treatment_plan.id
+							inner join doctor on treatment_plan.doctor_id = doctor.id
+							left outer join doctor_phone on doctor_phone.doctor_id = doctor.id
+								where treatment.id = ? and (doctor_phone.phone is null or doctor_phone.phone_type = ?)`, treatmentId, doctor_phone_type)
+	return getDoctorFromRow(row)
+}
+
 func getDoctorFromRow(row *sql.Row) (*common.Doctor, error) {
 	var firstName, lastName, status, gender string
 	var dob mysql.NullTime
@@ -882,6 +891,24 @@ func (d *DataService) InsertNewRefillRequestIntoDoctorQueue(refillRequestId int6
 	return err
 }
 
+func (d *DataService) MarkErrorResolvedInDoctorQueue(doctorId, treatmentId int64, currentState, updatedState string) error {
+	tx, err := d.DB.Begin()
+	if err != nil {
+		return err
+	}
+	_, err = tx.Exec(`delete from doctor_queue where status = ? and doctor_id = ? and event_type = ? and item_id = ?`, currentState, doctorId, EVENT_TYPE_TRANSMISSION_ERROR, treatmentId)
+	if err != nil {
+		tx.Rollback()
+		return err
+	}
+	_, err = tx.Exec(`insert into doctor_queue (doctor_id, status, event_type, item_id) values (?, ?, ?, ?)`, doctorId, updatedState, EVENT_TYPE_TRANSMISSION_ERROR, treatmentId)
+	if err != nil {
+		tx.Rollback()
+		return err
+	}
+	return tx.Commit()
+}
+
 func (d *DataService) getIdForNameFromTable(tableName, drugComponentName string) (nullId sql.NullInt64, err error) {
 	err = d.DB.QueryRow(fmt.Sprintf(`select id from %s where name=?`, tableName), drugComponentName).Scan(&nullId)
 	return
@@ -1093,6 +1120,12 @@ func (d *DataService) UpdatePatientInformationFromDoctor(patient *common.Patient
 	}
 
 	return tx.Commit()
+}
+
+func (d *DataService) InsertNewTransmissionErrorInDoctorQueue(treatmentId int64, doctorId int64) error {
+	_, err := d.DB.Exec(`insert into doctor_queue (doctor_id, item_id, event_type, status) values (?,?,?,?) `,
+		doctorId, treatmentId, EVENT_TYPE_TRANSMISSION_ERROR, status_pending)
+	return err
 }
 
 type doctorInstructionQuery func(db *sql.DB, doctorId int64, drugComponents ...string) (drugInstructions []*common.DoctorInstructionItem, err error)

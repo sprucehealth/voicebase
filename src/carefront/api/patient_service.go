@@ -393,6 +393,25 @@ func (d *DataService) GetPatientFromRefillRequestId(refillRequestId int64) (*com
 	return nil, err
 }
 
+func (d *DataService) GetPatientFromTreatmentId(treatmentId int64) (*common.Patient, error) {
+	patients, err := d.getPatientBasedOnQuery(`select patient.id, patient.erx_patient_id, account_id,account.email, first_name, middle_name, last_name, suffix, prefix, zip_code,city,state, phone, phone_type, gender, dob, patient.status from treatment
+							inner join treatment_plan on treatment.treatment_plan_id = treatment_plan.id
+							inner join patient_visit on treatment_plan.patient_visit_id = patient_visit.id
+							inner join patient on patient_visit.patient_id = patient.id
+							left outer join patient_phone on patient_phone.patient_id = patient.id
+							left outer join patient_location on patient_location.patient_id = patient.id
+							left outer join account on account.id = patient.account_id							
+							where treatment.id = ? 
+							and (phone is null or (patient_phone.status='ACTIVE'))
+							and (zip_code is null or patient_location.status = 'ACTIVE')`, treatmentId)
+	if len(patients) > 0 {
+		err = d.getAddressAndPhoneNumbersForPatient(patients[0])
+		return patients[0], err
+	}
+
+	return nil, err
+}
+
 func (d *DataService) UpdatePatientAddress(patientId int64, addressLine1, addressLine2, city, state, zipCode, addressType string) error {
 	tx, err := d.DB.Begin()
 	if err != nil {

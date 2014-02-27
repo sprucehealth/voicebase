@@ -96,7 +96,7 @@ func ConsumeMessageFromQueue(DataApi api.DataAPI, ERxApi erx.ERxAPI, ErxQueue *c
 		// only hold on to the latest status event per treatment because that will help us
 		// determine whether or not there are any treatments that do not have the end state
 		// of the messages
-		latestPendingStatusPerPrescription := make(map[int64]*api.PrescriptionStatus)
+		latestPendingStatusPerPrescription := make(map[int64]*common.PrescriptionStatus)
 		for _, prescriptionStatus := range prescriptionStatuses {
 			// the first occurence of every new event per prescription will be the latest because they are ordered by time
 			if latestPendingStatusPerPrescription[prescriptionStatus.PrescriptionId] == nil {
@@ -190,6 +190,16 @@ func ConsumeMessageFromQueue(DataApi api.DataAPI, ERxApi erx.ERxAPI, ErxQueue *c
 							failed++
 							break
 						}
+					} else {
+
+						// insert an item into the doctor's queue to notify the doctor of this error
+						if err := DataApi.InsertNewTransmissionErrorInDoctorQueue(treatment.Id.Int64(), doctor.DoctorId.Int64()); err != nil {
+							statFailure.Inc(1)
+							golog.Errorf("Unable to insert error into doctor queue: %s", err.Error())
+							failed++
+							break
+						}
+
 					}
 
 				case api.ERX_STATUS_SENT:

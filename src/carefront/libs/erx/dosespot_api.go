@@ -169,6 +169,7 @@ type medication struct {
 	Status                  string           `xml:"Status,omitempty"`
 	DatePrescribed          *specialDateTime `xml:"DatePrescribed,omitempty"`
 	LastDateFilled          *specialDateTime `xml:"LastDateFilled,omitempty"`
+	DateWritten             *specialDateTime `xml:"DateWritten,omitempty"`
 	ClinicianId             int64            `xml:"ClinicianId"`
 	ClinicId                int64            `xml:"ClinicId"`
 	MedicationId            int64            `xml:"MedicationId,omitempty"`
