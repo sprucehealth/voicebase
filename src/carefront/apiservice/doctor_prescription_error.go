@@ -55,6 +55,12 @@ func (d *DoctorPrescriptionErrorHandler) ServeHTTP(w http.ResponseWriter, r *htt
 		return
 	}
 
+	patient.Pharmacy, err = d.DataApi.GetPatientPharmacySelection(patient.PatientId.Int64())
+	if err != nil {
+		WriteDeveloperError(w, http.StatusInternalServerError, "Unable to get patient's preferred pharmacy: "+err.Error())
+		return
+	}
+
 	treatment, err := d.DataApi.GetTreatmentFromId(treatmentId)
 	if err != nil {
 		WriteDeveloperError(w, http.StatusInternalServerError, "Unable to get patient based on treatment id: "+err.Error())
