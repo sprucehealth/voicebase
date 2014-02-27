@@ -191,20 +191,11 @@ func (d *DoctorQueueItem) GetActionUrl() string {
 			return fmt.Sprintf("%s%s?patient_visit_id=%d", SpruceButtonBaseActionUrl, beginPatientVisitReviewAction, d.ItemId)
 		}
 	case EVENT_TYPE_TREATMENT_PLAN:
-		switch d.Status {
-		case QUEUE_ITEM_STATUS_COMPLETED, QUEUE_ITEM_STATUS_TRIAGED:
-			return fmt.Sprintf("%s%s?treatment_plan_id=%d", SpruceButtonBaseActionUrl, viewTreatedPatientVisitReviewAction, d.ItemId)
-		}
+		return fmt.Sprintf("%s%s?treatment_plan_id=%d", SpruceButtonBaseActionUrl, viewTreatedPatientVisitReviewAction, d.ItemId)
 	case EVENT_TYPE_REFILL_REQUEST:
-		switch d.Status {
-		case QUEUE_ITEM_STATUS_ONGOING, QUEUE_ITEM_STATUS_PENDING, QUEUE_ITEM_STATUS_REFILL_APPROVED, QUEUE_ITEM_STATUS_REFILL_DENIED:
-			return fmt.Sprintf("%s%s?refill_request_id=%d", SpruceButtonBaseActionUrl, viewRefillRequestAction, d.ItemId)
-		}
+		return fmt.Sprintf("%s%s?refill_request_id=%d", SpruceButtonBaseActionUrl, viewRefillRequestAction, d.ItemId)
 	case EVENT_TYPE_TRANSMISSION_ERROR:
-		switch d.Status {
-		case QUEUE_ITEM_STATUS_ONGOING, QUEUE_ITEM_STATUS_PENDING, QUEUE_ITEM_STATUS_COMPLETED:
-			return fmt.Sprintf("%s%s?treatment_id=%d", SpruceButtonBaseActionUrl, viewTransmissionErrorAction, d.ItemId)
-		}
+		return fmt.Sprintf("%s%s?treatment_id=%d", SpruceButtonBaseActionUrl, viewTransmissionErrorAction, d.ItemId)
 	}
 	return ""
 }
