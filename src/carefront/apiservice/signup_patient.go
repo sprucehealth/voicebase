@@ -105,9 +105,12 @@ func (s *SignupPatientHandler) ServeHTTP(w http.ResponseWriter, r *http.Request)
 		ZipCode:   requestData.Zipcode,
 		City:      cityStateInfo.LongCityName,
 		State:     cityStateInfo.ShortStateName,
-		Phone:     requestData.Phone,
-		PhoneType: api.PATIENT_PHONE_CELL,
-		Dob:       time.Date(year, time.Month(month), day, 0, 0, 0, 0, time.UTC),
+		PhoneNumbers: []*common.PhoneInformation{&common.PhoneInformation{
+			Phone:     requestData.Phone,
+			PhoneType: api.PATIENT_PHONE_CELL,
+		},
+		},
+		Dob: time.Date(year, time.Month(month), day, 0, 0, 0, 0, time.UTC),
 	}
 
 	// then, register the signed up user as a patient

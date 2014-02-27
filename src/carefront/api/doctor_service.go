@@ -1022,6 +1022,79 @@ func insertPredefinedInstructionsForDoctor(db *sql.DB, predefinedInstructions []
 	return tx.Commit()
 }
 
+func (d *DataService) UpdatePatientInformationFromDoctor(patient *common.Patient) error {
+	tx, err := d.DB.Begin()
+	if err != nil {
+		return err
+	}
+
+	// update top level patient details
+	_, err = tx.Exec(`update patient set first_name=?, 
+		middle_name=?, last_name=?, prefix=?, suffix=?, dob=?, gender=? where id = ?`, patient.FirstName, patient.MiddleName,
+		patient.LastName, patient.Prefix, patient.Suffix, patient.Dob, patient.Gender, patient.PatientId.Int64())
+	if err != nil {
+		tx.Rollback()
+		return err
+	}
+
+	// update patient address if it exists
+	if patient.PatientAddress != nil {
+
+		// create a new address, mark it as being updated by the doctor, and set it as default selected address
+		lastId, err := tx.Exec(`insert into address (address_line_1, address_line_2, city, state, zip_code, country) values 
+							(?,?,?,?,?,?)`, patient.PatientAddress.AddressLine1, patient.PatientAddress.AddressLine2, patient.PatientAddress.City,
+			patient.PatientAddress.State, patient.PatientAddress.ZipCode, address_usa)
+		if err != nil {
+			tx.Rollback()
+			return err
+		}
+
+		addressId, err := lastId.LastInsertId()
+		if err != nil {
+			tx.Rollback()
+			return err
+		}
+
+		// mark other addresses as non-default for this patient
+		_, err = tx.Exec(`update patient_address_selection set is_default = 0 where patient_id = ?`, patient.PatientId.Int64())
+		if err != nil {
+			tx.Rollback()
+			return err
+		}
+
+		// create new selection and mark it as having been updated by doctor
+		_, err = tx.Exec(`insert into patient_address_selection (address_id, patient_id, is_default, is_updated_by_doctor) values 
+								(?,?,1,1)`, addressId, patient.PatientId.Int64())
+		if err != nil {
+			tx.Rollback()
+			return err
+		}
+	}
+
+	// delete the existing numbers to add the new ones coming through
+	_, err = tx.Exec(`delete from patient_phone where patient_id=?`, patient.PatientId.Int64())
+	if err != nil {
+		tx.Rollback()
+		return err
+	}
+
+	// add the new ones from the doctor
+	for i, phoneNumber := range patient.PhoneNumbers {
+		status := status_inactive
+		// save the first number as the main/default number
+		if i == 0 {
+			status = status_active
+		}
+		_, err = tx.Exec(`insert into patient_phone (phone, phone_type, patient_id, status) values (?,?,?,?)`, phoneNumber.Phone, phoneNumber.PhoneType, patient.PatientId.Int64(), status)
+		if err != nil {
+			tx.Rollback()
+			return err
+		}
+	}
+
+	return tx.Commit()
+}
+
 type doctorInstructionQuery func(db *sql.DB, doctorId int64, drugComponents ...string) (drugInstructions []*common.DoctorInstructionItem, err error)
 
 func getAdvicePointsForDoctor(db *sql.DB, doctorId int64, drugComponents ...string) ([]*common.DoctorInstructionItem, error) {

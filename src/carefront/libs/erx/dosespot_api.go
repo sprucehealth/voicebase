@@ -210,22 +210,26 @@ func (c *specialDateTime) MarshalXML(e *xml.Encoder, start xml.StartElement) err
 }
 
 type patient struct {
-	PatientId        int64           `xml:"PatientId,omitempty"`
-	Prefix           string          `xml:"Prefix"`
-	FirstName        string          `xml:"FirstName"`
-	MiddleName       string          `xml:"MiddleName"`
-	LastName         string          `xml:"LastName"`
-	Suffix           string          `xml:"Suffix"`
-	DateOfBirth      specialDateTime `xml:"DateOfBirth"`
-	Gender           string          `xml:"Gender"`
-	Email            string          `xml:"Email"`
-	Address1         string          `xml:"Address1"`
-	Address2         string          `xml:"Address2"`
-	City             string          `xml:"City"`
-	State            string          `xml:"State"`
-	ZipCode          string          `xml:"ZipCode"`
-	PrimaryPhone     string          `xml:"PrimaryPhone"`
-	PrimaryPhoneType string          `xml:"PrimaryPhoneType"`
+	PatientId            int64           `xml:"PatientId,omitempty"`
+	Prefix               string          `xml:"Prefix"`
+	FirstName            string          `xml:"FirstName"`
+	MiddleName           string          `xml:"MiddleName"`
+	LastName             string          `xml:"LastName"`
+	Suffix               string          `xml:"Suffix"`
+	DateOfBirth          specialDateTime `xml:"DateOfBirth"`
+	Gender               string          `xml:"Gender"`
+	Email                string          `xml:"Email"`
+	Address1             string          `xml:"Address1"`
+	Address2             string          `xml:"Address2"`
+	City                 string          `xml:"City"`
+	State                string          `xml:"State"`
+	ZipCode              string          `xml:"ZipCode"`
+	PrimaryPhone         string          `xml:"PrimaryPhone"`
+	PrimaryPhoneType     string          `xml:"PrimaryPhoneType"`
+	PhoneAdditional1     string          `xml:"PhoneAdditional1"`
+	PhoneAdditionalType1 string          `xml:"PhoneAdditionalType1"`
+	PhoneAdditional2     string          `xml:"PhoneAdditional2"`
+	PhoneAdditionalType2 string          `xml:"PhoneAdditionalType2"`
 }
 
 type pharmacy struct {

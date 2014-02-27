@@ -290,11 +290,16 @@ func (d *DoctorSubmitPatientVisitReviewHandler) sendSMSToNotifyPatient(patient *
 
 	if d.TwilioCli != nil {
 
-		if patient.Phone != "" {
-			_, _, err := d.TwilioCli.Messages.SendSMS(d.TwilioFromNumber, patient.Phone, fmt.Sprintf(patientVisitUpdateNotification, d.IOSDeeplinkScheme))
-			if err != nil {
-				golog.Errorf("Error sending SMS: %s", err.Error())
+		if len(patient.PhoneNumbers) > 0 {
+			for _, phoneNumber := range patient.PhoneNumbers {
+				if phoneNumber.PhoneType == api.PATIENT_PHONE_CELL {
+					_, _, err := d.TwilioCli.Messages.SendSMS(d.TwilioFromNumber, patient.PhoneNumbers[0].Phone, fmt.Sprintf(patientVisitUpdateNotification, d.IOSDeeplinkScheme))
+					if err != nil {
+						golog.Errorf("Error sending SMS: %s", err.Error())
+					}
+				}
 			}
+
 		}
 	}
 

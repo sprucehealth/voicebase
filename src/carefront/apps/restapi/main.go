@@ -350,6 +350,10 @@ func main() {
 	doctorRegimenHandler := apiservice.NewDoctorRegimenHandler(dataApi)
 	doctorAdviceHandler := apiservice.NewDoctorAdviceHandler(dataApi)
 	doctorQueueHandler := &apiservice.DoctorQueueHandler{DataApi: dataApi}
+	doctorPatientUpdateHandler := &apiservice.DoctorPatientUpdateHandler{
+		DataApi: dataApi,
+		ErxApi:  doseSpotService,
+	}
 
 	mux := apiservice.NewAuthServeMux(authApi, metricsRegistry.Scope("restapi"))
 
@@ -384,6 +388,8 @@ func main() {
 	mux.Handle("/v1/doctor/rx/error/resolve", doctorPrescriptionErrorIgnoreHandler)
 	mux.Handle("/v1/doctor/rx/refill/request", doctorRefillRequestHandler)
 	mux.Handle("/v1/doctor/rx/refill/denial_reasons", refillRequestDenialReasonsHandler)
+
+	mux.Handle("/v1/doctor/patient_update", doctorPatientUpdateHandler)
 
 	mux.Handle("/v1/doctor/visit/review", doctorPatientVisitReviewHandler)
 	mux.Handle("/v1/doctor/visit/diagnosis", diagnosePatientHandler)

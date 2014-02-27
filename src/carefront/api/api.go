@@ -183,6 +183,7 @@ type DoctorAPI interface {
 	GetCompletedPrescriptionsForDoctor(from, to time.Time, doctorId int64) ([]*common.TreatmentPlan, error)
 	InsertNewRefillRequestIntoDoctorQueue(refillRequestId int64, doctorId int64) error
 	MarkRefillRequestCompleteInDoctorQueue(doctorId, rxRefillRequestId int64, currentState, updatedState string) error
+	UpdatePatientInformationFromDoctor(patient *common.Patient) error
 }
 
 type IntakeAPI interface {

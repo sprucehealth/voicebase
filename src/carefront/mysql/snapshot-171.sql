@@ -1,6 +1,6 @@
 -- MySQL dump 10.13  Distrib 5.6.13, for osx10.8 (x86_64)
 --
--- Host: dev-db-3.ccvrwjdx3gvp.us-east-1.rds.amazonaws.com    Database: database_11720
+-- Host: dev-db-3.ccvrwjdx3gvp.us-east-1.rds.amazonaws.com    Database: database_30889
 -- ------------------------------------------------------
 -- Server version	5.6.13-log
 
@@ -28,6 +28,25 @@ CREATE TABLE `account` (
   `password` varbinary(250) DEFAULT NULL,
   PRIMARY KEY (`id`)
 ) ENGINE=InnoDB AUTO_INCREMENT=94 DEFAULT CHARSET=utf8;
+/*!40101 SET character_set_client = @saved_cs_client */;
+
+--
+-- Table structure for table `address`
+--
+
+DROP TABLE IF EXISTS `address`;
+/*!40101 SET @saved_cs_client     = @@character_set_client */;
+/*!40101 SET character_set_client = utf8 */;
+CREATE TABLE `address` (
+  `id` int(10) unsigned NOT NULL AUTO_INCREMENT,
+  `address_line_1` varchar(500) NOT NULL,
+  `address_line_2` varchar(500) NOT NULL,
+  `city` varchar(500) NOT NULL,
+  `state` varchar(500) NOT NULL,
+  `country` varchar(500) NOT NULL,
+  `zip_code` varchar(500) NOT NULL,
+  PRIMARY KEY (`id`)
+) ENGINE=InnoDB DEFAULT CHARSET=utf8;
 /*!40101 SET character_set_client = @saved_cs_client */;
 
 --
@@ -418,7 +437,7 @@ CREATE TABLE `dr_layout_version` (
   CONSTRAINT `dr_layout_version_ibfk_3` FOREIGN KEY (`health_condition_id`) REFERENCES `health_condition` (`id`),
   CONSTRAINT `dr_layout_version_ibfk_1` FOREIGN KEY (`layout_version_id`) REFERENCES `layout_version` (`id`),
   CONSTRAINT `dr_layout_version_ibfk_2` FOREIGN KEY (`object_storage_id`) REFERENCES `object_storage` (`id`)
-) ENGINE=InnoDB AUTO_INCREMENT=30 DEFAULT CHARSET=utf8;
+) ENGINE=InnoDB AUTO_INCREMENT=40 DEFAULT CHARSET=utf8;
 /*!40101 SET character_set_client = @saved_cs_client */;
 
 --
@@ -499,7 +518,7 @@ CREATE TABLE `drug_form` (
   `id` int(10) unsigned NOT NULL AUTO_INCREMENT,
   `name` varchar(150) NOT NULL,
   PRIMARY KEY (`id`)
-) ENGINE=InnoDB AUTO_INCREMENT=11 DEFAULT CHARSET=utf8;
+) ENGINE=InnoDB AUTO_INCREMENT=21 DEFAULT CHARSET=utf8;
 /*!40101 SET character_set_client = @saved_cs_client */;
 
 --
@@ -513,7 +532,7 @@ CREATE TABLE `drug_name` (
   `id` int(10) unsigned NOT NULL AUTO_INCREMENT,
   `name` varchar(150) NOT NULL,
   PRIMARY KEY (`id`)
-) ENGINE=InnoDB AUTO_INCREMENT=5 DEFAULT CHARSET=utf8;
+) ENGINE=InnoDB AUTO_INCREMENT=66 DEFAULT CHARSET=utf8;
 /*!40101 SET character_set_client = @saved_cs_client */;
 
 --
@@ -527,7 +546,7 @@ CREATE TABLE `drug_route` (
   `id` int(10) unsigned NOT NULL AUTO_INCREMENT,
   `name` varchar(150) NOT NULL,
   PRIMARY KEY (`id`)
-) ENGINE=InnoDB AUTO_INCREMENT=4 DEFAULT CHARSET=utf8;
+) ENGINE=InnoDB AUTO_INCREMENT=12 DEFAULT CHARSET=utf8;
 /*!40101 SET character_set_client = @saved_cs_client */;
 
 --
@@ -670,7 +689,7 @@ CREATE TABLE `layout_version` (
   KEY `treatment_id` (`health_condition_id`),
   CONSTRAINT `layout_version_ibfk_1` FOREIGN KEY (`health_condition_id`) REFERENCES `health_condition` (`id`),
   CONSTRAINT `layout_version_ibfk_2` FOREIGN KEY (`object_storage_id`) REFERENCES `object_storage` (`id`)
-) ENGINE=InnoDB AUTO_INCREMENT=148 DEFAULT CHARSET=utf8;
+) ENGINE=InnoDB AUTO_INCREMENT=172 DEFAULT CHARSET=utf8;
 /*!40101 SET character_set_client = @saved_cs_client */;
 
 --
@@ -725,7 +744,7 @@ CREATE TABLE `object_storage` (
   PRIMARY KEY (`id`),
   UNIQUE KEY `region_id` (`region_id`,`storage_key`,`bucket`,`status`),
   CONSTRAINT `object_storage_ibfk_1` FOREIGN KEY (`region_id`) REFERENCES `region` (`id`)
-) ENGINE=InnoDB AUTO_INCREMENT=388 DEFAULT CHARSET=utf8;
+) ENGINE=InnoDB AUTO_INCREMENT=603 DEFAULT CHARSET=utf8;
 /*!40101 SET character_set_client = @saved_cs_client */;
 
 --
@@ -744,6 +763,9 @@ CREATE TABLE `patient` (
   `status` varchar(500) NOT NULL,
   `account_id` int(10) unsigned NOT NULL,
   `erx_patient_id` int(10) unsigned DEFAULT NULL,
+  `prefix` varchar(100) NOT NULL,
+  `middle_name` varchar(100) NOT NULL,
+  `suffix` varchar(100) NOT NULL,
   PRIMARY KEY (`id`),
   KEY `account_id` (`account_id`),
   CONSTRAINT `patient_ibfk_1` FOREIGN KEY (`account_id`) REFERENCES `account` (`id`)
@@ -751,25 +773,24 @@ CREATE TABLE `patient` (
 /*!40101 SET character_set_client = @saved_cs_client */;
 
 --
--- Table structure for table `patient_address`
+-- Table structure for table `patient_address_selection`
 --
 
-DROP TABLE IF EXISTS `patient_address`;
+DROP TABLE IF EXISTS `patient_address_selection`;
 /*!40101 SET @saved_cs_client     = @@character_set_client */;
 /*!40101 SET character_set_client = utf8 */;
-CREATE TABLE `patient_address` (
+CREATE TABLE `patient_address_selection` (
   `id` int(10) unsigned NOT NULL AUTO_INCREMENT,
   `patient_id` int(10) unsigned NOT NULL,
-  `address_line_1` varchar(300) DEFAULT NULL,
-  `address_line_2` varchar(300) DEFAULT NULL,
-  `city` varchar(300) DEFAULT NULL,
-  `state` varchar(300) DEFAULT NULL,
-  `zip_code` varchar(100) DEFAULT NULL,
-  `address_type` varchar(100) DEFAULT NULL,
-  `status` varchar(100) NOT NULL,
+  `address_id` int(10) unsigned NOT NULL,
+  `label` varchar(100) NOT NULL,
+  `is_default` tinyint(1) NOT NULL,
+  `is_updated_by_doctor` tinyint(1) NOT NULL,
   PRIMARY KEY (`id`),
   KEY `patient_id` (`patient_id`),
-  CONSTRAINT `patient_address_ibfk_1` FOREIGN KEY (`patient_id`) REFERENCES `patient` (`id`)
+  KEY `address_id` (`address_id`),
+  CONSTRAINT `patient_address_selection_ibfk_1` FOREIGN KEY (`patient_id`) REFERENCES `patient` (`id`),
+  CONSTRAINT `patient_address_selection_ibfk_2` FOREIGN KEY (`address_id`) REFERENCES `address` (`id`)
 ) ENGINE=InnoDB DEFAULT CHARSET=utf8;
 /*!40101 SET character_set_client = @saved_cs_client */;
 
@@ -885,7 +906,7 @@ CREATE TABLE `patient_layout_version` (
   CONSTRAINT `patient_layout_version_ibfk_2` FOREIGN KEY (`language_id`) REFERENCES `languages_supported` (`id`),
   CONSTRAINT `patient_layout_version_ibfk_3` FOREIGN KEY (`object_storage_id`) REFERENCES `object_storage` (`id`),
   CONSTRAINT `patient_layout_version_ibfk_4` FOREIGN KEY (`health_condition_id`) REFERENCES `health_condition` (`id`)
-) ENGINE=InnoDB AUTO_INCREMENT=104 DEFAULT CHARSET=utf8;
+) ENGINE=InnoDB AUTO_INCREMENT=118 DEFAULT CHARSET=utf8;
 /*!40101 SET character_set_client = @saved_cs_client */;
 
 --
@@ -1633,4 +1654,4 @@ CREATE TABLE `unlinked_requested_treatment_drug_db_id` (
 /*!40101 SET COLLATION_CONNECTION=@OLD_COLLATION_CONNECTION */;
 /*!40111 SET SQL_NOTES=@OLD_SQL_NOTES */;
 
--- Dump completed on 2014-02-24 13:42:07
+-- Dump completed on 2014-02-25 18:23:19
