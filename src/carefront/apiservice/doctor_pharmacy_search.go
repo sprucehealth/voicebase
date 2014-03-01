@@ -4,9 +4,8 @@ import (
 	"carefront/api"
 	"carefront/libs/erx"
 	"carefront/libs/pharmacy"
+	"encoding/json"
 	"net/http"
-
-	"github.com/gorilla/schema"
 )
 
 type DoctorPharmacySearchHandler struct {
@@ -15,8 +14,8 @@ type DoctorPharmacySearchHandler struct {
 }
 
 type DoctorPharmacySearchRequestData struct {
-	SearchString  string   `schema:"search_string"`
-	PharmacyTypes []string `schema:"pharmacy_types"`
+	SearchString  string   `json:"search_string"`
+	PharmacyTypes []string `json:"pharmacy_types"`
 }
 
 type DoctorPharmacySearchResponse struct {
@@ -24,13 +23,9 @@ type DoctorPharmacySearchResponse struct {
 }
 
 func (d *DoctorPharmacySearchHandler) ServeHTTP(w http.ResponseWriter, r *http.Request) {
-	if err := r.ParseForm(); err != nil {
-		WriteDeveloperError(w, http.StatusBadRequest, "Unable to parse input parameters: "+err.Error())
-		return
-	}
 
 	requestData := &DoctorPharmacySearchRequestData{}
-	if err := schema.NewDecoder().Decode(requestData, r.Form); err != nil {
+	if err := json.NewDecoder(r.Body).Decode(requestData); err != nil {
 		WriteDeveloperError(w, http.StatusBadRequest, "Unable to parse input parameters: "+err.Error())
 		return
 	}

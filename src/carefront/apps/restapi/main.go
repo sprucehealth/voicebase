@@ -87,6 +87,7 @@ type Config struct {
 	StaticContentBaseUrl     string          `long:"static_content_base_url" description:"URL from which to serve static content"`
 	Twilio                   *TwilioConfig   `group:"Twilio" toml:"twilio"`
 	DoseSpot                 *DosespotConfig `group:"Dosespot" toml:"dosespot"`
+	StripeSecretKey          string          `long:"strip_secret_key" description:"Stripe secret key"`
 }
 
 var DefaultConfig = Config{

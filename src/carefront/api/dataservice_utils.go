@@ -10,7 +10,9 @@ import (
 const (
 	status_active                           = "ACTIVE"
 	status_created                          = "CREATED"
-	status_creating                         = "CREATING"
+	STATUS_CREATING                         = "CREATING"
+	STATUS_DELETING                         = "DELETING"
+	STATUS_UPDATING                         = "UPDATING"
 	status_deleted                          = "DELETED"
 	status_inactive                         = "INACTIVE"
 	status_pending                          = "PENDING"
@@ -44,6 +46,7 @@ const (
 	without_link_to_treatment_plan          = true
 	with_link_to_treatment_plan             = false
 	address_usa                             = "USA"
+	PENDING_TASK_PATIENT_CARD               = "PATIENT_CARD"
 )
 
 type DataService struct {

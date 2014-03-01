@@ -63,7 +63,11 @@ func TestDoctorUpdateToPatientAddress(t *testing.T) {
 	ts := httptest.NewServer(doctorPatientHandler)
 	defer ts.Close()
 
-	jsonData, err := json.Marshal(signedupPatientResponse.Patient)
+	jsonData, err := json.Marshal(
+		&apiservice.DoctorPatientUpdateHandlerRequestResponse{
+			Patient: signedupPatientResponse.Patient,
+		},
+	)
 	if err != nil {
 		t.Fatal("Unable to marshal patient object: " + err.Error())
 	}
@@ -123,7 +127,11 @@ func TestDoctorFailedUpdate(t *testing.T) {
 	ts := httptest.NewServer(doctorPatientHandler)
 	defer ts.Close()
 
-	jsonData, err := json.Marshal(signedupPatientResponse.Patient)
+	jsonData, err := json.Marshal(
+		&apiservice.DoctorPatientUpdateHandlerRequestResponse{
+			Patient: signedupPatientResponse.Patient,
+		},
+	)
 	if err != nil {
 		t.Fatal("Unable to marshal patient object: " + err.Error())
 	}
@@ -231,7 +239,11 @@ func TestDoctorUpdateToPhoneNumbers(t *testing.T) {
 	ts := httptest.NewServer(doctorPatientHandler)
 	defer ts.Close()
 
-	jsonData, err := json.Marshal(signedupPatientResponse.Patient)
+	jsonData, err := json.Marshal(
+		&apiservice.DoctorPatientUpdateHandlerRequestResponse{
+			Patient: signedupPatientResponse.Patient,
+		},
+	)
 	if err != nil {
 		t.Fatal("Unable to marshal patient object: " + err.Error())
 	}
@@ -318,8 +330,11 @@ func TestDoctorUpdateToTopLevelInformation(t *testing.T) {
 	ts := httptest.NewServer(doctorPatientHandler)
 	defer ts.Close()
 
-	jsonData, err := json.Marshal(signedupPatientResponse.Patient)
-
+	jsonData, err := json.Marshal(
+		&apiservice.DoctorPatientUpdateHandlerRequestResponse{
+			Patient: signedupPatientResponse.Patient,
+		},
+	)
 	resp, err := authPut(ts.URL, "application/json", bytes.NewReader(jsonData), doctor.AccountId.Int64())
 	if err != nil {
 		t.Fatal("Unable to make successful call to update patient information: " + err.Error())
@@ -378,7 +393,11 @@ func TestDoctorUpdatePatientInformationForbidden(t *testing.T) {
 	ts := httptest.NewServer(doctorPatientHandler)
 	defer ts.Close()
 
-	jsonData, err := json.Marshal(signedupPatientResponse.Patient)
+	jsonData, err := json.Marshal(
+		&apiservice.DoctorPatientUpdateHandlerRequestResponse{
+			Patient: signedupPatientResponse.Patient,
+		},
+	)
 	if err != nil {
 		t.Fatal("Unable to marshal json object: " + err.Error())
 	}

@@ -81,6 +81,18 @@ type PatientAPI interface {
 	GetPharmacyBasedOnReferenceIdAndSource(pharmacyid, pharmacySource string) (*pharmacy.PharmacyData, error)
 	GetPharmacyFromId(pharmacyLocalId int64) (*pharmacy.PharmacyData, error)
 	AddPharmacy(pharmacyDetails *pharmacy.PharmacyData) error
+	UpdatePatientWithPaymentCustomerId(patientId int64, paymentCustomerId string) error
+	CreatePendingTask(workType, status string, itemId int64) (int64, error)
+	DeletePendingTask(pendingTaskId int64) error
+	AddCardForPatient(patientId int64, card *common.Card) error
+	MarkCardInactiveForPatient(patientId int64, card *common.Card) error
+	DeleteCardForPatient(patientId int64, card *common.Card) error
+	MakeLatestCardDefaultForPatient(patientId int64) (*common.Card, error)
+	MakeCardDefaultForPatient(patientId int64, card *common.Card) error
+	GetCardsForPatient(patientId int64) ([]*common.Card, error)
+	GetCardFromId(cardId int64) (*common.Card, error)
+	UpdateDefaultAddressForPatient(patientId int64, address *common.Address) error
+	DeleteAddress(addressId int64) error
 }
 
 type PatientVisitAPI interface {

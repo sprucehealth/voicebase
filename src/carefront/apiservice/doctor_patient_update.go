@@ -33,7 +33,7 @@ func (d *DoctorPatientUpdateHandler) ServeHTTP(w http.ResponseWriter, r *http.Re
 	}
 }
 
-type DoctorPatientUpdateHandlerResponse struct {
+type DoctorPatientUpdateHandlerRequestResponse struct {
 	Patient *common.Patient `json:"patient"`
 }
 
@@ -85,7 +85,7 @@ func (d *DoctorPatientUpdateHandler) getPatientInformation(w http.ResponseWriter
 		return
 	}
 
-	WriteJSONToHTTPResponseWriter(w, http.StatusOK, &DoctorPatientUpdateHandlerResponse{Patient: patient})
+	WriteJSONToHTTPResponseWriter(w, http.StatusOK, &DoctorPatientUpdateHandlerRequestResponse{Patient: patient})
 }
 
 func (d *DoctorPatientUpdateHandler) updatePatientInformation(w http.ResponseWriter, r *http.Request) {
@@ -95,22 +95,22 @@ func (d *DoctorPatientUpdateHandler) updatePatientInformation(w http.ResponseWri
 		return
 	}
 
-	patient := new(common.Patient)
-	if err := json.NewDecoder(r.Body).Decode(patient); err != nil {
+	requestData := &DoctorPatientUpdateHandlerRequestResponse{}
+	if err := json.NewDecoder(r.Body).Decode(requestData); err != nil {
 		WriteDeveloperError(w, http.StatusBadRequest, "Unable to parse input body that is meant to be the patient object: "+err.Error())
 		return
 	}
 
 	// avoid the doctor from making changes that would de-identify the patient
-	if patient.FirstName == "" || patient.LastName == "" || patient.Dob.IsZero() || len(patient.PhoneNumbers) == 0 {
+	if requestData.Patient.FirstName == "" || requestData.Patient.LastName == "" || requestData.Patient.Dob.IsZero() || len(requestData.Patient.PhoneNumbers) == 0 {
 		WriteDeveloperError(w, http.StatusBadRequest, "Cannot remove first name, last name, date of birth or phone numbers")
 		return
 	}
 
 	// TODO : Remove this once we have patient information intake
 	// as a requirement
-	if patient.PatientAddress == nil {
-		patient.PatientAddress = &common.Address{
+	if requestData.Patient.PatientAddress == nil {
+		requestData.Patient.PatientAddress = &common.Address{
 			AddressLine1: "1234 Main Street",
 			AddressLine2: "Apt 12345",
 			City:         "San Francisco",
@@ -126,7 +126,7 @@ func (d *DoctorPatientUpdateHandler) updatePatientInformation(w http.ResponseWri
 	}
 
 	// ensure that this doctor is the primary doctor of the patient
-	careTeam, err := d.DataApi.GetCareTeamForPatient(patient.PatientId.Int64())
+	careTeam, err := d.DataApi.GetCareTeamForPatient(requestData.Patient.PatientId.Int64())
 	if err != nil {
 		WriteDeveloperError(w, http.StatusInternalServerError, "Unable to get care team for patient: "+err.Error())
 		return
@@ -139,17 +139,17 @@ func (d *DoctorPatientUpdateHandler) updatePatientInformation(w http.ResponseWri
 	}
 
 	// get the erx id for the patient, if it exists in the database
-	existingPatientInfo, err := d.DataApi.GetPatientFromId(patient.PatientId.Int64())
+	existingPatientInfo, err := d.DataApi.GetPatientFromId(requestData.Patient.PatientId.Int64())
 	if err != nil {
 		WriteDeveloperError(w, http.StatusInternalServerError, "Unable to get patient info from database: "+err.Error())
 		return
 	}
 
-	patient.ERxPatientId = existingPatientInfo.ERxPatientId
+	requestData.Patient.ERxPatientId = existingPatientInfo.ERxPatientId
 
 	// get patient's preferred pharmacy
 	// TODO: Get patient pharmacy from the database once we start using surecsripts as our backing solution
-	patientPreferredPharmacy, err := d.DataApi.GetPatientPharmacySelection(patient.PatientId.Int64())
+	patientPreferredPharmacy, err := d.DataApi.GetPatientPharmacySelection(requestData.Patient.PatientId.Int64())
 	if err != nil {
 		WriteDeveloperError(w, http.StatusInternalServerError, "Unable to get patient's preferred pharmacy: "+err.Error())
 		return
@@ -165,9 +165,9 @@ func (d *DoctorPatientUpdateHandler) updatePatientInformation(w http.ResponseWri
 			Postal:       "94103",
 		}
 	}
-	patient.Pharmacy = patientPreferredPharmacy
+	requestData.Patient.Pharmacy = patientPreferredPharmacy
 
-	if err := d.ErxApi.UpdatePatientInformation(currentDoctor.DoseSpotClinicianId, patient); err != nil {
+	if err := d.ErxApi.UpdatePatientInformation(currentDoctor.DoseSpotClinicianId, requestData.Patient); err != nil {
 		WriteDeveloperError(w, http.StatusInternalServerError, `Unable to update patient information on dosespot. 
 			Failing to avoid out of sync issues between surescripts and our platform `+err.Error())
 		return
@@ -175,14 +175,14 @@ func (d *DoctorPatientUpdateHandler) updatePatientInformation(w http.ResponseWri
 
 	// update the doseSpot Id for the patient in our system now that we got one
 	if existingPatientInfo.ERxPatientId == nil {
-		if err := d.DataApi.UpdatePatientWithERxPatientId(patient.PatientId.Int64(), patient.ERxPatientId.Int64()); err != nil {
+		if err := d.DataApi.UpdatePatientWithERxPatientId(requestData.Patient.PatientId.Int64(), requestData.Patient.ERxPatientId.Int64()); err != nil {
 			WriteDeveloperError(w, http.StatusInternalServerError, "Unable to update the patientId from dosespot: "+err.Error())
 			return
 		}
 	}
 
 	// go ahead and udpate the doctor's information in our system now that dosespot has it
-	if err := d.DataApi.UpdatePatientInformationFromDoctor(patient); err != nil {
+	if err := d.DataApi.UpdatePatientInformationFromDoctor(requestData.Patient); err != nil {
 		WriteDeveloperError(w, http.StatusInternalServerError, "Unable to update patient information on our databsae: "+err.Error())
 		return
 	}
