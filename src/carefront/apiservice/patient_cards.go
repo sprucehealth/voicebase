@@ -288,7 +288,7 @@ func (p *PatientCardsHandler) addCardForPatient(w http.ResponseWriter, r *http.R
 		// add another card to the customer on the payment service
 		card, err = p.PaymentApi.AddCardForCustomer(cardToAdd.Token, patient.PaymentCustomerId)
 		if err != nil {
-			WriteDeveloperError(w, http.StatusInternalServerError, "Unable to add card for customer")
+			WriteDeveloperError(w, http.StatusInternalServerError, "Unable to add card for customer: "+err.Error())
 			return
 		}
 	}
