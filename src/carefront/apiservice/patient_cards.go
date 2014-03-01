@@ -25,10 +25,6 @@ type PatientCardsResponse struct {
 	Cards []common.Card `json:"cards"`
 }
 
-type PatientAddCardResponse struct {
-	Card *common.Card `json:"card"`
-}
-
 func (p *PatientCardsHandler) ServeHTTP(w http.ResponseWriter, r *http.Request) {
 	switch r.Method {
 	case HTTP_GET:
@@ -323,5 +319,5 @@ func (p *PatientCardsHandler) addCardForPatient(w http.ResponseWriter, r *http.R
 		return
 	}
 
-	WriteJSONToHTTPResponseWriter(w, http.StatusOK, PatientAddCardResponse{Card: cardToAdd})
+	WriteJSONToHTTPResponseWriter(w, http.StatusOK, cardToAdd)
 }
