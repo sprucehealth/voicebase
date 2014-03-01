@@ -52,15 +52,20 @@ func (p *PatientCardsHandler) getCardsForPatient(w http.ResponseWriter, r *http.
 		return
 	}
 
-	cards, err := p.PaymentApi.GetCardsForCustomer(patient.PaymentCustomerId)
-	if err != nil {
-		WriteDeveloperError(w, http.StatusInternalServerError, "Unable to get cards for patient: "+err.Error())
-		return
-	}
-
 	localCards, err := p.DataApi.GetCardsForPatient(patient.PatientId.Int64())
 	if err != nil {
 		WriteDeveloperError(w, http.StatusInternalServerError, "Unable to get cards from db: "+err.Error())
+		return
+	}
+
+	if len(localCards) == 0 {
+		WriteJSONToHTTPResponseWriter(w, http.StatusOK, &PatientCardsResponse{Cards: nil})
+		return
+	}
+
+	cards, err := p.PaymentApi.GetCardsForCustomer(patient.PaymentCustomerId)
+	if err != nil {
+		WriteDeveloperError(w, http.StatusInternalServerError, "Unable to get cards for patient: "+err.Error())
 		return
 	}
 
