@@ -146,14 +146,13 @@ func (s *StripeService) query(httpVerb string, endPointUrl string, parameters ur
 
 	endPoint.User = url.User(s.SecretKey)
 
-	var body *io.Reader
+	var body io.Reader
 	if parameters != nil {
 		switch httpVerb {
 		case "GET":
 			endPoint.RawQuery = parameters.Encode()
 		case "POST", "DELETE":
 			body = strings.NewReader(parameters.Encode())
-			request.Header.Set("Content-Type", "application/x-www-form-urlencoded")
 		}
 	}
 
@@ -161,8 +160,8 @@ func (s *StripeService) query(httpVerb string, endPointUrl string, parameters ur
 	if err != nil {
 		return nil, err
 	}
-
 	request.Header.Set("Stripe-Version", apiVersion)
+	request.Header.Set("Content-Type", "application/x-www-form-urlencoded")
 	resp, err := http.DefaultClient.Do(request)
 
 	if err != nil {

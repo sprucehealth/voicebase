@@ -21,6 +21,7 @@ import (
 	"carefront/libs/erx"
 	"carefront/libs/golog"
 	"carefront/libs/maps"
+	"carefront/libs/payment/stripe"
 	"carefront/libs/pharmacy"
 	"carefront/libs/svcclient"
 	"carefront/libs/svcreg"
@@ -327,6 +328,11 @@ func main() {
 		DataApi: dataApi,
 	}
 
+	patientCardsHandler := &apiservice.PatientCardsHandler{
+		DataApi:    dataApi,
+		PaymentApi: &stripe.StripeService{SecretKey: conf.StripeSecretKey},
+	}
+
 	erxStatusQueue, err := common.NewQueue(awsAuth, aws.Regions[conf.AWSRegion], conf.ERxQueue)
 	if err != nil {
 		log.Fatal("Unable to get erx queue for sending prescriptions to: " + err.Error())
@@ -384,6 +390,8 @@ func main() {
 	mux.Handle("/v1/doctor_layout", generateDoctorLayoutHandler)
 	mux.Handle("/v1/diagnose_layout", generateDiagnoseLayoutHandler)
 	mux.Handle("/v1/client_model", generateModelIntakeHandler)
+	mux.Handle("/v1/credit_card", patientCardsHandler)
+	mux.Handle("/v1/credit_card/default", patientCardsHandler)
 
 	mux.Handle("/v1/doctor/signup", signupDoctorHandler)
 	mux.Handle("/v1/doctor/authenticate", authenticateDoctorHandler)
