@@ -22,7 +22,7 @@ type PatientCardsRequestData struct {
 }
 
 type PatientCardsResponse struct {
-	Cards []common.Card `json:"cards"`
+	Cards []*common.Card `json:"cards"`
 }
 
 func (p *PatientCardsHandler) ServeHTTP(w http.ResponseWriter, r *http.Request) {

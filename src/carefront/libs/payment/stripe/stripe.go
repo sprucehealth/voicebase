@@ -77,7 +77,7 @@ func (s *StripeService) CreateCustomerWithDefaultCard(token string) (*payment.Cu
 	}, nil
 }
 
-func (s *StripeService) GetCardsForCustomer(customerId string) ([]common.Card, error) {
+func (s *StripeService) GetCardsForCustomer(customerId string) ([]*common.Card, error) {
 	resp, err := s.query("GET", fmt.Sprintf("%s/%s/cards", stripeCustomersUrl, customerId), nil)
 	if err != nil {
 		return nil, err
@@ -88,9 +88,9 @@ func (s *StripeService) GetCardsForCustomer(customerId string) ([]common.Card, e
 		return nil, err
 	}
 
-	cards := make([]common.Card, len(sCardData.Data))
+	cards := make([]*common.Card, len(sCardData.Data))
 	for i, card := range sCardData.Data {
-		cards[i] = common.Card{
+		cards[i] = &common.Card{
 			ThirdPartyId: card.Id,
 			ExpMonth:     card.ExpMonth,
 			ExpYear:      card.ExpYear,

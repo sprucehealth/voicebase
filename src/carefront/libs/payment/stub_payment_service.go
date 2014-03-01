@@ -19,7 +19,7 @@ func (s *StubPaymentService) MakeCardDefaultForCustomer(cardId string, customerI
 	return nil
 }
 
-func (s *StubPaymentService) GetCardsForCustomer(customerId string) ([]common.Card, error) {
+func (s *StubPaymentService) GetCardsForCustomer(customerId string) ([]*common.Card, error) {
 	return nil, nil
 }
 

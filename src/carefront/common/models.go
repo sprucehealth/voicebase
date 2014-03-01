@@ -37,7 +37,7 @@ type Card struct {
 	Id             *ObjectId `json:"id,omitempty"`
 	ThirdPartyId   string    `json:"third_party_id"`
 	Fingerprint    string    `json:"fingerprint"`
-	Token          string    `json:"token"`
+	Token          string    `json:"token,omitempty"`
 	Type           string    `json:"type"`
 	ExpMonth       int64     `json:"exp_month"`
 	ExpYear        int64     `json:"exp_year"`
