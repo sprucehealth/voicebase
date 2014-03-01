@@ -18,8 +18,7 @@ type PatientCardsHandler struct {
 }
 
 type PatientCardsRequestData struct {
-	Card   *common.Card `json:"card"`
-	CardId string       `schema:"card_id"`
+	CardId string `schema:"card_id"`
 }
 
 type PatientCardsResponse struct {
@@ -245,8 +244,8 @@ func (p *PatientCardsHandler) deleteCardForPatient(w http.ResponseWriter, r *htt
 }
 
 func (p *PatientCardsHandler) addCardForPatient(w http.ResponseWriter, r *http.Request) {
-	requestData := &PatientCardsRequestData{}
-	if err := json.NewDecoder(r.Body).Decode(&requestData); err != nil {
+	cardToAdd := &common.Card{}
+	if err := json.NewDecoder(r.Body).Decode(&cardToAdd); err != nil {
 		WriteDeveloperError(w, http.StatusBadRequest, "Unable to parse input parameters: "+err.Error())
 		return
 	}
@@ -277,7 +276,7 @@ func (p *PatientCardsHandler) addCardForPatient(w http.ResponseWriter, r *http.R
 	var card *common.Card
 	// if it does not exist, go ahead and create one with in stripe
 	if !isPatientRegisteredWithPatientService {
-		customer, err := p.PaymentApi.CreateCustomerWithDefaultCard(requestData.Card.Token)
+		customer, err := p.PaymentApi.CreateCustomerWithDefaultCard(cardToAdd.Token)
 		if err != nil {
 			WriteDeveloperError(w, http.StatusInternalServerError, "Unable to create customer with default card: "+err.Error())
 			return
@@ -291,16 +290,16 @@ func (p *PatientCardsHandler) addCardForPatient(w http.ResponseWriter, r *http.R
 		card = &customer.Cards[0]
 	} else {
 		// add another card to the customer on the payment service
-		card, err = p.PaymentApi.AddCardForCustomer(requestData.Card.Token, patient.PaymentCustomerId)
+		card, err = p.PaymentApi.AddCardForCustomer(cardToAdd.Token, patient.PaymentCustomerId)
 		if err != nil {
 			WriteDeveloperError(w, http.StatusInternalServerError, "Unable to add card for customer")
 			return
 		}
 	}
 
-	requestData.Card.ThirdPartyId = card.ThirdPartyId
-	requestData.Card.Fingerprint = card.Fingerprint
-	if err := p.DataApi.AddCardForPatient(patient.PatientId.Int64(), requestData.Card); err != nil {
+	cardToAdd.ThirdPartyId = card.ThirdPartyId
+	cardToAdd.Fingerprint = card.Fingerprint
+	if err := p.DataApi.AddCardForPatient(patient.PatientId.Int64(), cardToAdd); err != nil {
 		WriteDeveloperError(w, http.StatusInternalServerError, "Unable to add new card for patient: "+err.Error())
 		return
 	}
@@ -308,13 +307,13 @@ func (p *PatientCardsHandler) addCardForPatient(w http.ResponseWriter, r *http.R
 	// the card added for an existing patient does not become default on add; need to explicitly make a call to stripe
 	// toe make it the default card
 	if isPatientRegisteredWithPatientService {
-		if err := p.PaymentApi.MakeCardDefaultForCustomer(requestData.Card.ThirdPartyId, patient.PaymentCustomerId); err != nil {
+		if err := p.PaymentApi.MakeCardDefaultForCustomer(cardToAdd.ThirdPartyId, patient.PaymentCustomerId); err != nil {
 			WriteDeveloperError(w, http.StatusInternalServerError, "Unable to make card just added the default card: "+err.Error())
 			return
 		}
 	}
 
-	if err := p.DataApi.UpdateDefaultAddressForPatient(patient.PatientId.Int64(), requestData.Card.BillingAddress); err != nil {
+	if err := p.DataApi.UpdateDefaultAddressForPatient(patient.PatientId.Int64(), cardToAdd.BillingAddress); err != nil {
 		WriteDeveloperError(w, http.StatusInternalServerError, "Unable to update default address for patient: "+err.Error())
 		return
 	}
@@ -324,5 +323,5 @@ func (p *PatientCardsHandler) addCardForPatient(w http.ResponseWriter, r *http.R
 		return
 	}
 
-	WriteJSONToHTTPResponseWriter(w, http.StatusOK, PatientAddCardResponse{Card: requestData.Card})
+	WriteJSONToHTTPResponseWriter(w, http.StatusOK, PatientAddCardResponse{Card: cardToAdd})
 }

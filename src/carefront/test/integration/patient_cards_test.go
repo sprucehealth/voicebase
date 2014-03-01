@@ -281,9 +281,7 @@ func addCard(t *testing.T, testData TestData, patientAccountId int64, patientCar
 
 	card.ThirdPartyId = stubPaymentsService.CardToReturnOnAdd.ThirdPartyId
 
-	jsonData, err := json.Marshal(&apiservice.PatientCardsRequestData{
-		Card: card,
-	})
+	jsonData, err := json.Marshal(&card)
 
 	if err != nil {
 		t.Fatal("Unable to marshal card object: " + err.Error())
