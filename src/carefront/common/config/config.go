@@ -9,6 +9,7 @@ import (
 	"carefront/libs/golog"
 	"carefront/libs/svcreg"
 	"carefront/libs/svcreg/zksvcreg"
+	"expvar"
 	"fmt"
 	"io"
 	"io/ioutil"
@@ -63,6 +64,8 @@ var (
 	MigrationNumber string // The database needs to match this migration number for this build
 )
 
+var VersionInfo map[string]string
+
 func init() {
 	if MigrationNumber == "" {
 		// Should only be unset for local builds so try to find latest migration in source tree
@@ -82,6 +85,18 @@ func init() {
 			}
 		}
 	}
+
+	VersionInfo = map[string]string{
+		"GitBranch":       GitBranch,
+		"GitRevision":     GitRevision,
+		"BuildTime":       BuildTime,
+		"BuildNumber":     BuildNumber,
+		"MigrationNumber": MigrationNumber,
+	}
+
+	expvar.Publish("version", expvar.Func(func() interface{} {
+		return VersionInfo
+	}))
 }
 
 var validEnvironments = map[string]bool{
@@ -272,11 +287,9 @@ func ParseArgs(config interface{}, args []string) ([]string, error) {
 	}
 
 	if baseConfig.Version {
-		fmt.Printf("Git Branch: %s\n", GitBranch)
-		fmt.Printf("Git Revision: %s\n", GitRevision)
-		fmt.Printf("Build Time: %s\n", BuildTime)
-		fmt.Printf("Build Number: %s\n", BuildNumber)
-		fmt.Printf("Migration Number: %s\n", MigrationNumber)
+		for k, v := range VersionInfo {
+			fmt.Printf("%s: %s\n", k, v)
+		}
 		os.Exit(0)
 	}
 
