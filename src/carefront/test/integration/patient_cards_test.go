@@ -247,7 +247,7 @@ func TestAddCardsForPatient(t *testing.T) {
 	for _, localCard := range localCards {
 		if localCard.IsDefault {
 			if localCard.ThirdPartyId != card4.ThirdPartyId {
-				t.Fatalf("Expected the 4th card to be the default card but it wasnt")
+				t.Fatalf("Expected the 4th card to be the default card but it wasnt. Local Card thirdpartyId: %s, card 4 thirdpartyid: %s", localCard.ThirdPartyId, card4.ThirdPartyId)
 			}
 		}
 	}
