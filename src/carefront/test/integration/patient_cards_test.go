@@ -215,7 +215,7 @@ func TestAddCardsForPatient(t *testing.T) {
 	// this is because mysql does not support millisecond/microsecond level precision unless specified, and
 	// this would make it so that if cards were added within the second, we could not consistently say
 	// which card was made default
-	card3 := addCard(t, testData, patient.AccountId.Int64(), patientCardsHandler, stubPaymentsService)
+	addCard(t, testData, patient.AccountId.Int64(), patientCardsHandler, stubPaymentsService)
 	time.Sleep(time.Second)
 	card4 := addCard(t, testData, patient.AccountId.Int64(), patientCardsHandler, stubPaymentsService)
 	time.Sleep(time.Second)
