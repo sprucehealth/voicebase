@@ -97,12 +97,18 @@ func TestAddCardsForPatient(t *testing.T) {
 		t.Fatalf("Expected to get back 2 cards saved for patient instead got back %d", len(localCards))
 	}
 
+	defaultCardFound := false
 	for _, localCard := range localCards {
 		if localCard.ThirdPartyId == stubPaymentsService.CardToReturnOnAdd.ThirdPartyId {
 			if !localCard.IsDefault {
 				t.Fatal("Expected the card just added to be the default card but it wasnt")
 			}
+			defaultCardFound = true
 		}
+	}
+
+	if !defaultCardFound {
+		t.Fatalf("Expected one of the cards to be the default but none were")
 	}
 
 	// now, lets try to make the previous card the default again
@@ -139,12 +145,18 @@ func TestAddCardsForPatient(t *testing.T) {
 		t.Fatalf("Expected to get back 2 cards saved for patient instead got back %d", len(localCards))
 	}
 
+	defaultCardFound = false
 	for _, localCard := range localCards {
 		if localCard.ThirdPartyId == cardToMakeDefault.ThirdPartyId {
 			if !localCard.IsDefault {
 				t.Fatal("Expected the card just made default to be the default card but it wasnt")
 			}
+			defaultCardFound = true
 		}
+	}
+
+	if !defaultCardFound {
+		t.Fatalf("Expected one of the cards to be the default but none where")
 	}
 
 	// lets delete the default card
@@ -199,13 +211,30 @@ func TestAddCardsForPatient(t *testing.T) {
 
 	checkBillingAddress(t, patient, card2.BillingAddress)
 
-	addCard(t, testData, patient.AccountId.Int64(), patientCardsHandler, stubPaymentsService)
+	card3 := addCard(t, testData, patient.AccountId.Int64(), patientCardsHandler, stubPaymentsService)
+	t.Logf("Card 3 added with third party id : %s", card3.ThirdPartyId)
 	card4 := addCard(t, testData, patient.AccountId.Int64(), patientCardsHandler, stubPaymentsService)
-	addCard(t, testData, patient.AccountId.Int64(), patientCardsHandler, stubPaymentsService)
+	t.Logf("Card 4 added with third party id : %s", card4.ThirdPartyId)
+	card5 := addCard(t, testData, patient.AccountId.Int64(), patientCardsHandler, stubPaymentsService)
+	t.Logf("Card 5 added with third party id : %s", card5.ThirdPartyId)
 
 	localCards, err = testData.DataApi.GetCardsForPatient(patient.PatientId.Int64())
 	if err != nil {
 		t.Fatal("Unable to delete card: " + err.Error())
+	}
+
+	defaultCardFound = false
+	for _, localCard := range localCards {
+		if localCard.ThirdPartyId == card5.ThirdPartyId {
+			if !localCard.IsDefault {
+				t.Fatal("Expected card5 to be the default given it was the last carded added")
+			}
+			defaultCardFound = true
+		}
+	}
+
+	if !defaultCardFound {
+		t.Fatal("No default card found when card5 expected to be default")
 	}
 
 	var cardToDelete *common.Card
@@ -253,7 +282,6 @@ func TestAddCardsForPatient(t *testing.T) {
 	}
 
 	checkBillingAddress(t, patient, card4.BillingAddress)
-
 }
 
 func addCard(t *testing.T, testData TestData, patientAccountId int64, patientCardsHandler *apiservice.PatientCardsHandler, stubPaymentsService *payment.StubPaymentService) *common.Card {
