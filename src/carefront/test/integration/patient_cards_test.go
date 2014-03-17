@@ -211,14 +211,15 @@ func TestAddCardsForPatient(t *testing.T) {
 
 	checkBillingAddress(t, patient, card2.BillingAddress)
 
+	// sleep between adding of cards so that we can consistently ensure that the right card was made default
+	// this is because mysql does not support millisecond/microsecond level precision unless specified, and
+	// this would make it so that if cards were added within the second, we could not consistently say
+	// which card was made default
 	card3 := addCard(t, testData, patient.AccountId.Int64(), patientCardsHandler, stubPaymentsService)
-	t.Logf("Card 3 added with third party id : %s", card3.ThirdPartyId)
 	time.Sleep(time.Second)
 	card4 := addCard(t, testData, patient.AccountId.Int64(), patientCardsHandler, stubPaymentsService)
-	t.Logf("Card 4 added with third party id : %s", card4.ThirdPartyId)
 	time.Sleep(time.Second)
 	card5 := addCard(t, testData, patient.AccountId.Int64(), patientCardsHandler, stubPaymentsService)
-	t.Logf("Card 5 added with third party id : %s", card5.ThirdPartyId)
 
 	localCards, err = testData.DataApi.GetCardsForPatient(patient.PatientId.Int64())
 	if err != nil {
