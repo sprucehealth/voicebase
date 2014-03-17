@@ -127,13 +127,13 @@ func (p *PatientCardsHandler) makeCardDefaultForPatient(w http.ResponseWriter, r
 		return
 	}
 
-	if err := p.PaymentApi.MakeCardDefaultForCustomer(card.ThirdPartyId, patient.PaymentCustomerId); err != nil {
-		WriteDeveloperError(w, http.StatusInternalServerError, "Unable to make card the default card: "+err.Error())
+	if err := p.DataApi.MakeCardDefaultForPatient(patient.PatientId.Int64(), card); err != nil {
+		WriteDeveloperError(w, http.StatusInternalServerError, "Unable to make card the default card on our db: "+err.Error())
 		return
 	}
 
-	if err := p.DataApi.MakeCardDefaultForPatient(patient.PatientId.Int64(), card); err != nil {
-		WriteDeveloperError(w, http.StatusInternalServerError, "Unable to make card the default card on our db: "+err.Error())
+	if err := p.PaymentApi.MakeCardDefaultForCustomer(card.ThirdPartyId, patient.PaymentCustomerId); err != nil {
+		WriteDeveloperError(w, http.StatusInternalServerError, "Unable to make card the default card: "+err.Error())
 		return
 	}
 
@@ -212,8 +212,10 @@ func (p *PatientCardsHandler) deleteCardForPatient(w http.ResponseWriter, r *htt
 				return
 			}
 		}
-	} else {
-		// delete the address only if this was not the default card because there is no link to it as the patient's address
+	}
+
+	// delete the address only if this is not the patient's preferred address
+	if patient.PatientAddress.Id != card.BillingAddress.Id {
 		if err := p.DataApi.DeleteAddress(card.BillingAddress.Id); err != nil {
 			WriteDeveloperError(w, http.StatusInternalServerError, "Unable to delete address: "+err.Error())
 			return
@@ -260,7 +262,7 @@ func (p *PatientCardsHandler) addCardForPatient(w http.ResponseWriter, r *http.R
 
 	// create a pending task to indicate that there's work that is currently in progress
 	// to add a credit card for a patient. The reason to do this is to identify any tasks that span multiple steps
-	// that may fail to complete half way through (due to network blip, etc), and then reconcile the work through a worker
+	// that may fail to complete half way through and then reconcile the work through a worker
 	// that cleans things up
 	pendingTaskId, err := p.DataApi.CreatePendingTask(api.PENDING_TASK_PATIENT_CARD, api.STATUS_CREATING, patient.PatientId.Int64())
 	if err != nil {
@@ -301,7 +303,7 @@ func (p *PatientCardsHandler) addCardForPatient(w http.ResponseWriter, r *http.R
 	}
 
 	// the card added for an existing patient does not become default on add; need to explicitly make a call to stripe
-	// toe make it the default card
+	// to make it the default card
 	if isPatientRegisteredWithPatientService {
 		if err := p.PaymentApi.MakeCardDefaultForCustomer(cardToAdd.ThirdPartyId, patient.PaymentCustomerId); err != nil {
 			WriteDeveloperError(w, http.StatusInternalServerError, "Unable to make card just added the default card: "+err.Error())

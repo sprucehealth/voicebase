@@ -84,7 +84,7 @@ type PatientAPI interface {
 	UpdatePatientWithPaymentCustomerId(patientId int64, paymentCustomerId string) error
 	CreatePendingTask(workType, status string, itemId int64) (int64, error)
 	DeletePendingTask(pendingTaskId int64) error
-	AddCardForPatient(patientId int64, card *common.Card) error
+	AddCardAndMakeDefaultForPatient(patientId int64, card *common.Card) error
 	MarkCardInactiveForPatient(patientId int64, card *common.Card) error
 	DeleteCardForPatient(patientId int64, card *common.Card) error
 	MakeLatestCardDefaultForPatient(patientId int64) (*common.Card, error)

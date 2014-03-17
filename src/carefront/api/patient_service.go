@@ -699,7 +699,7 @@ func (d *DataService) UpdatePatientWithPaymentCustomerId(patientId int64, paymen
 	return err
 }
 
-func (d *DataService) AddCardForPatient(patientId int64, card *common.Card) error {
+func (d *DataService) AddCardAndMakeDefaultForPatient(patientId int64, card *common.Card) error {
 	tx, err := d.DB.Begin()
 	if err != nil {
 		return err
