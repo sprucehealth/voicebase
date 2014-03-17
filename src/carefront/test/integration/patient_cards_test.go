@@ -213,8 +213,10 @@ func TestAddCardsForPatient(t *testing.T) {
 
 	card3 := addCard(t, testData, patient.AccountId.Int64(), patientCardsHandler, stubPaymentsService)
 	t.Logf("Card 3 added with third party id : %s", card3.ThirdPartyId)
+	time.Sleep(time.Second)
 	card4 := addCard(t, testData, patient.AccountId.Int64(), patientCardsHandler, stubPaymentsService)
 	t.Logf("Card 4 added with third party id : %s", card4.ThirdPartyId)
+	time.Sleep(time.Second)
 	card5 := addCard(t, testData, patient.AccountId.Int64(), patientCardsHandler, stubPaymentsService)
 	t.Logf("Card 5 added with third party id : %s", card5.ThirdPartyId)
 
