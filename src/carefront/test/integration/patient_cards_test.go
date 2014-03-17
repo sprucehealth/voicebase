@@ -99,8 +99,8 @@ func TestAddCardsForPatient(t *testing.T) {
 
 	defaultCardFound := false
 	for _, localCard := range localCards {
-		if localCard.ThirdPartyId == stubPaymentsService.CardToReturnOnAdd.ThirdPartyId {
-			if !localCard.IsDefault {
+		if localCard.IsDefault {
+			if localCard.ThirdPartyId != stubPaymentsService.CardToReturnOnAdd.ThirdPartyId {
 				t.Fatal("Expected the card just added to be the default card but it wasnt")
 			}
 			defaultCardFound = true
@@ -147,8 +147,8 @@ func TestAddCardsForPatient(t *testing.T) {
 
 	defaultCardFound = false
 	for _, localCard := range localCards {
-		if localCard.ThirdPartyId == cardToMakeDefault.ThirdPartyId {
-			if !localCard.IsDefault {
+		if localCard.IsDefault {
+			if localCard.ThirdPartyId != cardToMakeDefault.ThirdPartyId {
 				t.Fatal("Expected the card just made default to be the default card but it wasnt")
 			}
 			defaultCardFound = true
@@ -225,12 +225,14 @@ func TestAddCardsForPatient(t *testing.T) {
 
 	defaultCardFound = false
 	for _, localCard := range localCards {
-		if localCard.ThirdPartyId == card5.ThirdPartyId {
-			if !localCard.IsDefault {
+
+		if localCard.IsDefault {
+			if localCard.ThirdPartyId != card5.ThirdPartyId {
 				t.Fatal("Expected card5 to be the default given it was the last carded added")
 			}
 			defaultCardFound = true
 		}
+
 	}
 
 	if !defaultCardFound {
