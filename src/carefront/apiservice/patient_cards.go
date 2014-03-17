@@ -297,7 +297,7 @@ func (p *PatientCardsHandler) addCardForPatient(w http.ResponseWriter, r *http.R
 
 	cardToAdd.ThirdPartyId = card.ThirdPartyId
 	cardToAdd.Fingerprint = card.Fingerprint
-	if err := p.DataApi.AddCardForPatient(patient.PatientId.Int64(), cardToAdd); err != nil {
+	if err := p.DataApi.AddCardAndMakeDefaultForPatient(patient.PatientId.Int64(), cardToAdd); err != nil {
 		WriteDeveloperError(w, http.StatusInternalServerError, "Unable to add new card for patient: "+err.Error())
 		return
 	}
