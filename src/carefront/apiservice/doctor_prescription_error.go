@@ -3,7 +3,6 @@ package apiservice
 import (
 	"carefront/api"
 	"carefront/common"
-	"carefront/libs/pharmacy"
 	"net/http"
 	"strconv"
 
@@ -19,11 +18,8 @@ type DoctorPrescriptionErrorRequestData struct {
 }
 
 type DoctorPrescriptionErrorResponse struct {
-	Treatment *common.Treatment            `json:"treatment,omitempty"`
-	Patient   *common.Patient              `json:"patient,omitempty"`
-	Pharmacy  *pharmacy.PharmacyData       `json:"pharmacy,omitempty"`
-	RxHistory []*common.PrescriptionStatus `json:"erx_history,omitempty"`
-	Doctor    *common.Doctor               `json:"doctor,omitempty"`
+	Treatment *common.Treatment `json:"treatment,omitempty"`
+	Patient   *common.Patient   `json:"patient,omitempty"`
 }
 
 func (d *DoctorPrescriptionErrorHandler) ServeHTTP(w http.ResponseWriter, r *http.Request) {
@@ -61,29 +57,8 @@ func (d *DoctorPrescriptionErrorHandler) ServeHTTP(w http.ResponseWriter, r *htt
 		return
 	}
 
-	pharmacy, err := d.DataApi.GetPharmacyFromId(treatment.PharmacyLocalId.Int64())
-	if err != nil {
-		WriteDeveloperError(w, http.StatusInternalServerError, "Unable to get pharmacy based on treatment information: "+err.Error())
-		return
-	}
-
-	doctor, err := d.DataApi.GetDoctorFromTreatmentId(treatmentId)
-	if err != nil {
-		WriteDeveloperError(w, http.StatusInternalServerError, "Unable to get doctor from treatment id: "+err.Error())
-		return
-	}
-
-	rxHistory, err := d.DataApi.GetPrescriptionStatusEventsForTreatment(treatmentId)
-	if err != nil {
-		WriteDeveloperError(w, http.StatusInternalServerError, "Unable to get rx histor for treatment: "+err.Error())
-		return
-	}
-
 	WriteJSONToHTTPResponseWriter(w, http.StatusOK, &DoctorPrescriptionErrorResponse{
 		Treatment: treatment,
 		Patient:   patient,
-		Pharmacy:  pharmacy,
-		RxHistory: rxHistory,
-		Doctor:    doctor,
 	})
 }

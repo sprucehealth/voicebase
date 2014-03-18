@@ -173,7 +173,7 @@ func (d *DataService) GetRefillRequestFromId(refillRequestId int64) (*common.Ref
 			treatment.dispense_value, treatment.dispense_unit_id, ltext, treatment.refills, treatment.substitutions_allowed, 
 			treatment.days_supply, treatment.pharmacy_id, treatment.pharmacy_notes, treatment.patient_instructions, treatment.creation_date, treatment.erx_sent_date,
 			treatment.erx_last_filled_date,treatment.status, drug_name.name, drug_route.name, drug_form.name,
-			patient_visit.patient_id, treatment_plan.patient_visit_id from treatment 
+			patient_visit.patient_id, treatment_plan.patient_visit_id, treatment_plan.doctor_id from treatment 
 				inner join dispense_unit on treatment.dispense_unit_id = dispense_unit.id
 				inner join localized_text on localized_text.app_text_id = dispense_unit.dispense_unit_text_id
 				inner join treatment_plan on treatment_plan.id = treatment.treatment_plan_id
@@ -187,7 +187,7 @@ func (d *DataService) GetRefillRequestFromId(refillRequestId int64) (*common.Ref
 		}
 		defer rows.Close()
 		if rows.Next() {
-			refillRequest.RequestedPrescription, err = d.getTreatmentFromCurrentRow(rows)
+			refillRequest.RequestedPrescription, err = d.getTreatmentAndMetadataFromCurrentRow(rows)
 			if err != nil {
 				return nil, err
 			}
