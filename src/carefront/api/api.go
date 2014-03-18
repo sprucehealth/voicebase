@@ -72,7 +72,6 @@ type PatientAPI interface {
 	CheckCareProvidingElligibility(shortState string, healthConditionId int64) (doctorId int64, err error)
 	UpdatePatientAddress(patientId int64, addressLine1, addressLine2, city, state, zipCode, addressType string) error
 	UpdatePatientPharmacy(patientId int64, pharmacyDetails *pharmacy.PharmacyData) error
-	GetPatientPharmacySelection(patientId int64) (pharmacySelection *pharmacy.PharmacyData, err error)
 	TrackPatientAgreements(patientId int64, agreements map[string]bool) error
 	GetPatientFromPatientVisitId(patientVisitId int64) (patient *common.Patient, err error)
 	GetPatientFromTreatmentPlanId(treatmentPlanId int64) (patient *common.Patient, err error)

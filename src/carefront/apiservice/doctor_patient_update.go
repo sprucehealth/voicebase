@@ -79,12 +79,6 @@ func (d *DoctorPatientUpdateHandler) getPatientInformation(w http.ResponseWriter
 		WriteDeveloperError(w, http.StatusBadRequest, "Unable to get patient information from id: "+err.Error())
 	}
 
-	patient.Pharmacy, err = d.DataApi.GetPatientPharmacySelection(patientId)
-	if err != nil {
-		WriteDeveloperError(w, http.StatusBadRequest, "Unable to get pharmacy selection for patient: "+err.Error())
-		return
-	}
-
 	WriteJSONToHTTPResponseWriter(w, http.StatusOK, &DoctorPatientUpdateHandlerRequestResponse{Patient: patient})
 }
 
@@ -147,16 +141,9 @@ func (d *DoctorPatientUpdateHandler) updatePatientInformation(w http.ResponseWri
 
 	requestData.Patient.ERxPatientId = existingPatientInfo.ERxPatientId
 
-	// get patient's preferred pharmacy
 	// TODO: Get patient pharmacy from the database once we start using surecsripts as our backing solution
-	patientPreferredPharmacy, err := d.DataApi.GetPatientPharmacySelection(requestData.Patient.PatientId.Int64())
-	if err != nil {
-		WriteDeveloperError(w, http.StatusInternalServerError, "Unable to get patient's preferred pharmacy: "+err.Error())
-		return
-	}
-
-	if patientPreferredPharmacy.Source != pharmacy.PHARMACY_SOURCE_SURESCRIPTS {
-		patientPreferredPharmacy = &pharmacy.PharmacyData{
+	if existingPatientInfo.Pharmacy.Source != pharmacy.PHARMACY_SOURCE_SURESCRIPTS {
+		existingPatientInfo.Pharmacy = &pharmacy.PharmacyData{
 			SourceId:     "47731",
 			Source:       pharmacy.PHARMACY_SOURCE_SURESCRIPTS,
 			AddressLine1: "1234 Main Street",
@@ -165,7 +152,7 @@ func (d *DoctorPatientUpdateHandler) updatePatientInformation(w http.ResponseWri
 			Postal:       "94103",
 		}
 	}
-	requestData.Patient.Pharmacy = patientPreferredPharmacy
+	requestData.Patient.Pharmacy = existingPatientInfo.Pharmacy
 
 	if err := d.ErxApi.UpdatePatientInformation(currentDoctor.DoseSpotClinicianId, requestData.Patient); err != nil {
 		WriteDeveloperError(w, http.StatusInternalServerError, `Unable to update patient information on dosespot. 
