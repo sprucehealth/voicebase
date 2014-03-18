@@ -161,7 +161,7 @@ func (d *DoctorQueueItem) GetDisplayTypes() []string {
 			if d.PositionInQueue == 0 {
 				return []string{DISPLAY_TYPE_TITLE_SUBTITLE_BUTTON}
 			} else {
-				return []string{DISPLAY_TYPE_TITLE_SUBTITLE_NONACTIONABLE}
+				return []string{DISPLAY_TYPE_TITLE_SUBTITLE_ACTIONABLE}
 			}
 		case QUEUE_ITEM_STATUS_REFILL_APPROVED, QUEUE_ITEM_STATUS_REFILL_DENIED:
 			return []string{DISPLAY_TYPE_TITLE_SUBTITLE_ACTIONABLE}
@@ -172,7 +172,7 @@ func (d *DoctorQueueItem) GetDisplayTypes() []string {
 			if d.PositionInQueue == 0 {
 				return []string{DISPLAY_TYPE_TITLE_SUBTITLE_BUTTON}
 			} else {
-				return []string{DISPLAY_TYPE_TITLE_SUBTITLE_NONACTIONABLE}
+				return []string{DISPLAY_TYPE_TITLE_SUBTITLE_ACTIONABLE}
 			}
 		case QUEUE_ITEM_STATUS_COMPLETED:
 			return []string{DISPLAY_TYPE_TITLE_SUBTITLE_ACTIONABLE}
