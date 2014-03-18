@@ -976,9 +976,9 @@ func (d *DataService) getAddressAndPhoneNumbersForPatient(patient *common.Patien
 	var defaultPatientAddress common.Address
 
 	// get default address information (if exists) for each patient
-	err := d.DB.QueryRow(`select address_line_1, address_line_2, city, state, zip_code, country from patient_address_selection
+	err := d.DB.QueryRow(`select id, address_line_1, address_line_2, city, state, zip_code, country from patient_address_selection
 						inner join address on address_id = address.id
-						where patient_id = ? and is_default=1`, patient.PatientId.Int64()).Scan(&defaultPatientAddress.AddressLine1, &defaultPatientAddress.AddressLine2, &defaultPatientAddress.City, &defaultPatientAddress.State, &defaultPatientAddress.ZipCode, &defaultPatientAddress.Country)
+						where patient_id = ? and is_default=1`, patient.PatientId.Int64()).Scan(&defaultPatientAddress.Id, &defaultPatientAddress.AddressLine1, &defaultPatientAddress.AddressLine2, &defaultPatientAddress.City, &defaultPatientAddress.State, &defaultPatientAddress.ZipCode, &defaultPatientAddress.Country)
 
 	if err != nil && err != sql.ErrNoRows {
 		return err
