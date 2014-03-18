@@ -48,15 +48,6 @@ func (d *DataService) GetDoctorFromDoseSpotClinicianId(clinicianId int64) (*comm
 	return getDoctorFromRow(row)
 }
 
-func (d *DataService) GetDoctorFromTreatmentId(treatmentId int64) (*common.Doctor, error) {
-	row := d.DB.QueryRow(`select doctor.id, account_id, phone, first_name, last_name, gender, dob, doctor.status, clinician_id from treatment
-							inner join treatment_plan on treatment.treatment_plan_id = treatment_plan.id
-							inner join doctor on treatment_plan.doctor_id = doctor.id
-							left outer join doctor_phone on doctor_phone.doctor_id = doctor.id
-								where treatment.id = ? and (doctor_phone.phone is null or doctor_phone.phone_type = ?)`, treatmentId, doctor_phone_type)
-	return getDoctorFromRow(row)
-}
-
 func getDoctorFromRow(row *sql.Row) (*common.Doctor, error) {
 	var firstName, lastName, status, gender string
 	var dob mysql.NullTime

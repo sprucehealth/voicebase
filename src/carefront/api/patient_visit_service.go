@@ -731,7 +731,7 @@ func (d *DataService) GetTreatmentsBasedOnTreatmentPlanId(patientVisitId, treatm
 			treatment.dispense_value, treatment.dispense_unit_id, ltext, treatment.refills, treatment.substitutions_allowed, 
 			treatment.days_supply, treatment.pharmacy_id, treatment.pharmacy_notes, treatment.patient_instructions, treatment.creation_date, treatment.erx_sent_date,
 			treatment.erx_last_filled_date, treatment.status, drug_name.name, drug_route.name, drug_form.name,
-			patient_visit.patient_id, treatment_plan.patient_visit_id from treatment 
+			patient_visit.patient_id, treatment_plan.patient_visit_id, treatment_plan.doctor_id from treatment 
 				inner join dispense_unit on treatment.dispense_unit_id = dispense_unit.id
 				inner join localized_text on localized_text.app_text_id = dispense_unit.dispense_unit_text_id
 				inner join treatment_plan on treatment_plan.id = treatment.treatment_plan_id
@@ -749,10 +749,11 @@ func (d *DataService) GetTreatmentsBasedOnTreatmentPlanId(patientVisitId, treatm
 
 	treatmentIds := make([]int64, 0)
 	for rows.Next() {
-		treatment, err := d.getTreatmentFromCurrentRow(rows)
+		treatment, err := d.getTreatmentAndMetadataFromCurrentRow(rows)
 		if err != nil {
 			return nil, err
 		}
+
 		treatment.TreatmentPlanId = common.NewObjectId(treatmentPlanId)
 		treatments = append(treatments, treatment)
 		treatmentIds = append(treatmentIds, treatment.Id.Int64())
@@ -795,7 +796,7 @@ func (d *DataService) GetTreatmentBasedOnPrescriptionId(erxId int64) (*common.Tr
 			treatment.dispense_value, treatment.dispense_unit_id, ltext, treatment.refills, treatment.substitutions_allowed, 
 			treatment.days_supply, treatment.pharmacy_id, treatment.pharmacy_notes, treatment.patient_instructions, treatment.creation_date, treatment.erx_sent_date,
 			treatment.erx_last_filled_date, treatment.status, drug_name.name, drug_route.name, drug_form.name,
-			patient_visit.patient_id, treatment_plan.patient_visit_id from treatment
+			patient_visit.patient_id, treatment_plan.patient_visit_id, treatment_plan.doctor_id from treatment
 
 				inner join dispense_unit on treatment.dispense_unit_id = dispense_unit.id
 				inner join localized_text on localized_text.app_text_id = dispense_unit.dispense_unit_text_id
@@ -813,7 +814,7 @@ func (d *DataService) GetTreatmentBasedOnPrescriptionId(erxId int64) (*common.Tr
 
 	treatments := make([]*common.Treatment, 0)
 	for rows.Next() {
-		treatment, err := d.getTreatmentFromCurrentRow(rows)
+		treatment, err := d.getTreatmentAndMetadataFromCurrentRow(rows)
 		if err != nil {
 			return nil, err
 		}
@@ -837,7 +838,7 @@ func (d *DataService) GetTreatmentFromId(treatmentId int64) (*common.Treatment, 
 			treatment.dispense_value, treatment.dispense_unit_id, ltext, treatment.refills, treatment.substitutions_allowed, 
 			treatment.days_supply, treatment.pharmacy_id, treatment.pharmacy_notes, treatment.patient_instructions, treatment.creation_date, treatment.erx_sent_date,
 			treatment.erx_last_filled_date, treatment.status, drug_name.name, drug_route.name, drug_form.name,
-			patient_visit.patient_id, treatment_plan.patient_visit_id from treatment
+			patient_visit.patient_id, treatment_plan.patient_visit_id, treatment_plan.doctor_id from treatment
 
 				inner join dispense_unit on treatment.dispense_unit_id = dispense_unit.id
 				inner join localized_text on localized_text.app_text_id = dispense_unit.dispense_unit_text_id
@@ -855,7 +856,7 @@ func (d *DataService) GetTreatmentFromId(treatmentId int64) (*common.Treatment, 
 
 	treatments := make([]*common.Treatment, 0)
 	for rows.Next() {
-		treatment, err := d.getTreatmentFromCurrentRow(rows)
+		treatment, err := d.getTreatmentAndMetadataFromCurrentRow(rows)
 		if err != nil {
 			return nil, err
 		}
@@ -1004,8 +1005,8 @@ func (d *DataService) UpdateDateInfoForTreatmentId(treatmentId int64, erxSentDat
 	return err
 }
 
-func (d *DataService) getTreatmentFromCurrentRow(rows *sql.Rows) (*common.Treatment, error) {
-	var treatmentId, treatmentPlanId, dispenseValue, dispenseUnitId, refills, daysSupply, patientId, patientVisitId int64
+func (d *DataService) getTreatmentAndMetadataFromCurrentRow(rows *sql.Rows) (*common.Treatment, error) {
+	var treatmentId, treatmentPlanId, dispenseValue, dispenseUnitId, refills, daysSupply, patientId, patientVisitId, prescriberId int64
 	var drugInternalName, dosageStrength, patientInstructions, treatmentType, dispenseUnitDescription, status string
 	var prescriptionId, pharmacyId sql.NullInt64
 	var substitutionsAllowed bool
@@ -1014,7 +1015,7 @@ func (d *DataService) getTreatmentFromCurrentRow(rows *sql.Rows) (*common.Treatm
 	var pharmacyNotes, drugName, drugForm, drugRoute sql.NullString
 	err := rows.Scan(&treatmentId, &prescriptionId, &treatmentPlanId, &drugInternalName, &dosageStrength, &treatmentType, &dispenseValue, &dispenseUnitId,
 		&dispenseUnitDescription, &refills, &substitutionsAllowed, &daysSupply, &pharmacyId,
-		&pharmacyNotes, &patientInstructions, &creationDate, &erxSentDate, &erxLastFilledDate, &status, &drugName, &drugRoute, &drugForm, &patientId, &patientVisitId)
+		&pharmacyNotes, &patientInstructions, &creationDate, &erxSentDate, &erxLastFilledDate, &status, &drugName, &drugRoute, &drugForm, &patientId, &patientVisitId, &prescriberId)
 	if err != nil {
 		return nil, err
 	}
@@ -1040,6 +1041,7 @@ func (d *DataService) getTreatmentFromCurrentRow(rows *sql.Rows) (*common.Treatm
 		Status:                  status,
 		PharmacyNotes:           pharmacyNotes.String,
 		ErxLastDateFilled:       &erxLastFilledDate.Time,
+		PrescriberId:            prescriberId,
 	}
 
 	if pharmacyId.Valid {
@@ -1064,6 +1066,21 @@ func (d *DataService) getTreatmentFromCurrentRow(rows *sql.Rows) (*common.Treatm
 	}
 
 	err = d.fillInSupplementalInstructionsForTreatment(treatment)
+	if err != nil {
+		return nil, err
+	}
+
+	treatment.RxHistory, err = d.GetPrescriptionStatusEventsForTreatment(treatment.Id.Int64())
+	if err != nil {
+		return nil, err
+	}
+
+	treatment.Pharmacy, err = d.GetPharmacyFromId(treatment.PharmacyLocalId.Int64())
+	if err != nil {
+		return nil, err
+	}
+
+	treatment.Prescriber, err = d.GetDoctorFromId(treatment.PrescriberId)
 	if err != nil {
 		return nil, err
 	}

@@ -1,6 +1,7 @@
 package common
 
 import (
+	"carefront/libs/pharmacy"
 	"reflect"
 	"time"
 )
@@ -49,6 +50,10 @@ type Treatment struct {
 	IsControlledSubstance     bool                     `json:"-"`
 	SupplementalInstructions  []*DoctorInstructionItem `json:"supplemental_instructions,omitempty"`
 	IsUnlinked                bool                     `json:"is_unlinked,omitempty"`
+	Pharmacy                  *pharmacy.PharmacyData   `json:"pharmacy,omitempty"`
+	PrescriberId              int64                    `json:"-"`
+	Prescriber                *Doctor                  `json:"doctor,omitempty"`
+	RxHistory                 []*PrescriptionStatus    `json:"erx_history,omitempty"`
 }
 
 // defining an equals method on the treatment so that
