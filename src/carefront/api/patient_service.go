@@ -481,7 +481,7 @@ func (d *DataService) UpdatePatientPharmacy(patientId int64, pharmacyDetails *ph
 	return tx.Commit()
 }
 
-func (d *DataService) GetPatientPharmacySelection(patientId int64) (pharmacySelection *pharmacy.PharmacyData, err error) {
+func (d *DataService) getPatientPharmacySelection(patientId int64) (pharmacySelection *pharmacy.PharmacyData, err error) {
 	rows, err := d.DB.Query(`select pharmacy_selection.id, patient_id, pharmacy_selection.pharmacy_id, source, name, address_line_1, address_line_2, city, state, zip_code, phone,lat,lng 
 		from patient_pharmacy_selection 
 			inner join pharmacy_selection on pharmacy_selection.id = pharmacy_selection_id 
@@ -956,6 +956,11 @@ func (d *DataService) getPatientBasedOnQuery(queryStr string, queryParams ...int
 		}
 
 		patient.IsUnlinked = status == PATIENT_UNLINKED
+
+		patient.Pharmacy, err = d.getPatientPharmacySelection(patient.PatientId.Int64())
+		if err != nil {
+			return nil, err
+		}
 
 		patients = append(patients, patient)
 	}

@@ -123,19 +123,14 @@ func (d *DoctorSubmitPatientVisitReviewHandler) submitPatientVisitReview(w http.
 			ZipCode:      "94103",
 		}
 
-		pharmacySelection, err := d.DataApi.GetPatientPharmacySelection(patient.PatientId.Int64())
-		if err != nil {
-			WriteDeveloperError(w, http.StatusInternalServerError, "Unable to get pharmacy selection for patient: "+err.Error())
-			return
-		}
-		// FIX: Undo this when we are using surescripts as our backing database for pharmacies
-		// patient.pharmacy = pharmacySelection
+		pharmacySelection := patient.Pharmacy
 
 		// FIX: add fake pharmacy for now
 		pharmacyId := successful_erx_routing_pharmacy_id
 		if requestData.FailErxRouting {
 			pharmacyId = failed_erx_routing_pharmacy_id
 		}
+
 		patient.Pharmacy = &pharmacy.PharmacyData{
 			SourceId:     pharmacyId,
 			Source:       pharmacy.PHARMACY_SOURCE_SURESCRIPTS,

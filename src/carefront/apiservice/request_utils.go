@@ -5,7 +5,6 @@ import (
 	"carefront/common"
 	"carefront/info_intake"
 	"carefront/libs/golog"
-	pharmacy_service "carefront/libs/pharmacy"
 	"encoding/json"
 	"errors"
 	"fmt"
@@ -81,31 +80,6 @@ func GetSignedUrlsForAnswersInQuestion(question *info_intake.Question, photoStor
 			}
 		}
 	}
-}
-
-func GetPatientInfo(dataApi api.DataAPI, pharmacySearchService pharmacy_service.PharmacySearchAPI, accountId int64) (*common.Patient, error) {
-	patient, err := dataApi.GetPatientFromAccountId(accountId)
-	if err != nil {
-		return nil, errors.New("Unable to get patient from account id:  " + err.Error())
-	}
-	pharmacySelection, err := dataApi.GetPatientPharmacySelection(patient.PatientId.Int64())
-	if err != nil && err != api.NoRowsError {
-		return nil, errors.New("Unable to get patient's pharmacy selection: " + err.Error())
-	}
-
-	if pharmacySearchService != nil && pharmacySelection != nil && pharmacySelection.SourceId != "" && pharmacySelection.AddressLine1 == "" {
-		pharmacy, err := pharmacySearchService.GetPharmacyBasedOnId(pharmacySelection.SourceId)
-		if err != nil && err != pharmacy_service.NoPharmacyExists {
-			return nil, errors.New("Unable to get pharmacy based on id: " + err.Error())
-		}
-		if pharmacy != nil {
-			pharmacy.Source = pharmacySelection.Source
-		}
-		patient.Pharmacy = pharmacy
-	} else {
-		patient.Pharmacy = pharmacySelection
-	}
-	return patient, nil
 }
 
 func GetPrimaryDoctorInfoBasedOnPatient(dataApi api.DataAPI, patient *common.Patient, staticBaseContentUrl string) (*common.Doctor, error) {

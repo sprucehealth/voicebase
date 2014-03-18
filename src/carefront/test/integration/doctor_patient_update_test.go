@@ -479,17 +479,17 @@ func TestDoctorPatientPharmacyUpdateHandler(t *testing.T) {
 		t.Fatal("Unable to make successful call to update patient information")
 	}
 
-	patientPreferredPharmacy, err := testData.DataApi.GetPatientPharmacySelection(signedupPatientResponse.Patient.PatientId.Int64())
+	patient, err := testData.DataApi.GetPatientFromId(signedupPatientResponse.Patient.PatientId.Int64())
 	if err != nil {
-		t.Fatal("Unable to get patient's preferred pharmacy :" + err.Error())
+		t.Fatal("Unable to get patient based on id: " + err.Error())
 	}
 
-	if patientPreferredPharmacy.AddressLine1 != updatedPatientPharmacy.AddressLine1 ||
-		patientPreferredPharmacy.AddressLine2 != updatedPatientPharmacy.AddressLine2 ||
-		patientPreferredPharmacy.City != updatedPatientPharmacy.City ||
-		patientPreferredPharmacy.State != updatedPatientPharmacy.State ||
-		patientPreferredPharmacy.Postal != updatedPatientPharmacy.Postal {
-		t.Fatal("Patient pharmacy not successfully updated:", patientPreferredPharmacy, updatedPatientPharmacy)
+	if patient.Pharmacy.AddressLine1 != updatedPatientPharmacy.AddressLine1 ||
+		patient.Pharmacy.AddressLine2 != updatedPatientPharmacy.AddressLine2 ||
+		patient.Pharmacy.City != updatedPatientPharmacy.City ||
+		patient.Pharmacy.State != updatedPatientPharmacy.State ||
+		patient.Pharmacy.Postal != updatedPatientPharmacy.Postal {
+		t.Fatalf("Patient pharmacy not successfully updated: %+v %+v", patient.Pharmacy, updatedPatientPharmacy)
 	}
 }
 

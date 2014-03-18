@@ -138,7 +138,7 @@ func (h *AuthenticationHandler) ServeHTTP(w http.ResponseWriter, r *http.Request
 				return
 			}
 		} else {
-			patient, err := GetPatientInfo(h.DataApi, h.PharmacySearchService, res.AccountId)
+			patient, err := h.DataApi.GetPatientFromAccountId(res.AccountId)
 			if err != nil {
 				WriteDeveloperError(w, http.StatusInternalServerError, err.Error())
 				return
