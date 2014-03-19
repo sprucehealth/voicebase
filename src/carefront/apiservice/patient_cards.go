@@ -260,6 +260,17 @@ func (p *PatientCardsHandler) addCardForPatient(w http.ResponseWriter, r *http.R
 		return
 	}
 
+	if cardToAdd.BillingAddress == nil || cardToAdd.BillingAddress.AddressLine1 == "" || cardToAdd.BillingAddress.City == "" ||
+		cardToAdd.BillingAddress.State == "" || cardToAdd.BillingAddress.ZipCode == "" {
+		WriteDeveloperError(w, http.StatusBadRequest, "Billing address for credit card not correctly specified")
+		return
+	}
+
+	if cardToAdd.Token == "" {
+		WriteDeveloperError(w, http.StatusBadRequest, "Unable to add credit card that does not have a unique token to help identify the card with the third party service")
+		return
+	}
+
 	// create a pending task to indicate that there's work that is currently in progress
 	// to add a credit card for a patient. The reason to do this is to identify any tasks that span multiple steps
 	// that may fail to complete half way through and then reconcile the work through a worker
