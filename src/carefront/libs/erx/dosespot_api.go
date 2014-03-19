@@ -9,6 +9,7 @@ const (
 	LexiGenProductId  = "lexi_gen_product_id"
 	LexiDrugSynId     = "lexi_drug_syn_id"
 	LexiSynonymTypeId = "lexi_synonym_type_id"
+	NDC               = "ndc"
 )
 
 type nullInt64 int64
@@ -155,6 +156,7 @@ type medication struct {
 	LexiDrugSynId           int64            `xml:"LexiDrugSynId"`
 	LexiSynonymTypeId       int64            `xml:"LexiSynonymTypeId"`
 	NDC                     string           `xml:"NDC"`
+	RepresentativeNDC       string           `xml:"RepresentativeNDC"`
 	Refills                 nullInt64        `xml:"Refills"`
 	DaysSupply              nullInt64        `xml:"DaysSupply,omitempty"`
 	Dispense                string           `xml:"Dispense"`
