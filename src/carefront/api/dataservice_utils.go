@@ -42,7 +42,7 @@ const (
 	event_type_treatment_plan               = "TREATMENT_PLAN"
 	table_name_treatment                    = "treatment"
 	table_name_pharmacy_dispensed_treatment = "pharmacy_dispensed_treatment"
-	table_name_unlinked_requested_treatment = "unlinked_requested_treatment"
+	table_name_requested_treatment          = "requested_treatment"
 	without_link_to_treatment_plan          = true
 	with_link_to_treatment_plan             = false
 	address_usa                             = "USA"

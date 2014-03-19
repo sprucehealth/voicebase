@@ -87,7 +87,7 @@ func PerformRefillRecquestCheckCycle(DataApi api.DataAPI, ERxApi erx.ERxAPI, sta
 
 		// Identify the original prescription the refill request links to.
 		if refillRequestItem.RequestedPrescription == nil {
-			golog.Errorf("Requested prescription does not exist, so no way to link this to the original prescription")
+			golog.Errorf("Requested prescription does not exist, so no way to approve or deny a refill request that does not exist in complete form")
 			statFailure.Inc(1)
 			continue
 		}
@@ -98,73 +98,18 @@ func PerformRefillRecquestCheckCycle(DataApi api.DataAPI, ERxApi erx.ERxAPI, sta
 			continue
 		}
 
-		if refillRequestItem.RequestedPrescription.ErxPharmacyId != refillRequestItem.DispensedPrescription.ErxPharmacyId {
-			golog.Errorf("The pharmacy information betwee the requested and dispensed prescriptions are different, when this should not be the case.")
-			statFailure.Inc(1)
-			continue
-		}
-
 		refillRequestItem.Doctor = doctor
 		golog.Debugf("Doctor identified as %s %s", doctor.FirstName, doctor.LastName)
 
-		// lookup pharmacy associated with prescription and link to it
-		pharmacyDetails, err := DataApi.GetPharmacyBasedOnReferenceIdAndSource(strconv.FormatInt(refillRequestItem.RequestedPrescription.ErxPharmacyId, 10), pharmacy.PHARMACY_SOURCE_SURESCRIPTS)
-		if err != nil {
-			golog.Errorf("Unable to make a succesful query to lookup pharmacy returned for refill request from our db: %+v", err)
+		// lookup pharmacy associated with prescriptions (dispensed and requested) and link to it
+		if err := linkPharmacyToPrescription(DataApi, ERxApi, refillRequestItem.DispensedPrescription); err != nil {
 			statFailure.Inc(1)
 			continue
 		}
 
-		if pharmacyDetails == nil {
-			golog.Infof("Pharmacy that the original prescription links to is not found in our database. Searched with id %d Getting from surescripts...", refillRequestItem.RequestedPrescription.ErxPharmacyId)
-			pharmacyDetails, err = ERxApi.GetPharmacyDetails(refillRequestItem.RequestedPrescription.ErxPharmacyId)
-			if err != nil {
-				golog.Errorf("Unable to get pharmacy from surescripts, which means unable to store pharmacy and link to original prescription: %+v", err)
-				statFailure.Inc(1)
-				continue
-			}
-			err = DataApi.AddPharmacy(pharmacyDetails)
-			if err != nil {
-				golog.Errorf("Unable to store pharmacy in our database: %+v", err)
-				statFailure.Inc(1)
-				continue
-			}
-		}
-		refillRequestItem.DispensedPrescription.PharmacyLocalId = common.NewObjectId(pharmacyDetails.LocalId)
-		refillRequestItem.RequestedPrescription.PharmacyLocalId = common.NewObjectId(pharmacyDetails.LocalId)
-		golog.Debugf("Pharmacy identified in our db as %d", pharmacyDetails.LocalId)
-
-		originalTreatment, err := DataApi.GetTreatmentBasedOnPrescriptionId(refillRequestItem.RequestedPrescription.PrescriptionId.Int64())
-		if err != nil {
-			golog.Errorf("Unable to lookup original prescription %+v", err)
+		if err := linkPharmacyToPrescription(DataApi, ERxApi, refillRequestItem.RequestedPrescription); err != nil {
 			statFailure.Inc(1)
 			continue
-		}
-
-		if originalTreatment == nil {
-			// need an indicator for the fact that the requested prescription
-			// could not be mapped to a treatment in our database
-			refillRequestItem.RequestedPrescription.IsUnlinked = true
-
-			golog.Debugf(`Original treatment with prescription id %d does not exist in our database. Going to create an unlinked treatment in our db`, refillRequestItem.RequestedPrescription.PrescriptionId.Int64())
-
-			// if the treatment does not exist in our system, lets go ahead and create an unlinked treatment
-			err = DataApi.AddUnlinkedTreatmentFromPharmacy(refillRequestItem.RequestedPrescription)
-			if err != nil {
-				golog.Errorf("Original prescription does not exist in our system, and we were unable to create it as an unlinked treatment in our system: %+v", err)
-				statFailure.Inc(1)
-				continue
-			}
-			originalTreatment = refillRequestItem.RequestedPrescription
-		} else {
-			// assigning the treatment plan id to the requested prescription with the assumption that
-			if !originalTreatment.Equals(refillRequestItem.RequestedPrescription) {
-				golog.Errorf(`Original treatment returned from database does not match requested prescription from dosespot. 
-							This is an inconsistent state and should not happen.`)
-				statFailure.Inc(1)
-				continue
-			}
-			refillRequestItem.RequestedPrescription.Id = originalTreatment.Id
 		}
 
 		// Identify the patient which this refill request is for.
@@ -207,11 +152,18 @@ func PerformRefillRecquestCheckCycle(DataApi api.DataAPI, ERxApi erx.ERxAPI, sta
 				continue
 			}
 			patientInDb = patientDetailsFromDoseSpot
+		} else {
+			// match the requested treatment to the original treatment if it exists within our database
+			if err := attemptToMatchRequestedPrescriptionToOriginalRx(DataApi, refillRequestItem.RequestedPrescription); err != nil {
+				golog.Errorf("Unable to attempt to link requested prescription to originating prescription: %+v", err)
+				statFailure.Inc(1)
+				continue
+			}
 		}
 		refillRequestItem.Patient = patientInDb
 
-		// Insert refill request into the db. Insert the medication dispensed into its own table in the db, against the original
-		// treatment (which in turn link to the patient visit and the treatment plan)
+		// Insert refill request into the db. Insert the medication dispensed into its own table in the db, and the
+		// requested prescription into its own table as well
 		err = DataApi.CreateRefillRequest(refillRequestItem)
 		if err != nil {
 			golog.Errorf("Unable to store refill request in our database: %+v", err)
@@ -239,4 +191,33 @@ func PerformRefillRecquestCheckCycle(DataApi api.DataAPI, ERxApi erx.ERxAPI, sta
 	}
 
 	statCycles.Inc(1)
+}
+
+func attemptToMatchRequestedPrescriptionToOriginalRx(DataApi api.DataAPI, requestedPrescription *common.Treatment) error {
+	return nil
+}
+
+func linkPharmacyToPrescription(DataApi api.DataAPI, ERxApi erx.ERxAPI, prescription *common.Treatment) error {
+	// lookup pharmacy associated with prescription and link to it
+	pharmacyDetails, err := DataApi.GetPharmacyBasedOnReferenceIdAndSource(strconv.FormatInt(prescription.ErxPharmacyId, 10), pharmacy.PHARMACY_SOURCE_SURESCRIPTS)
+	if err != nil {
+		golog.Errorf("Unable to make a succesful query to lookup pharmacy returned for refill request from our db: %+v", err)
+		return err
+	}
+
+	if pharmacyDetails == nil {
+		golog.Infof("Pharmacy not found in our database. Searched with id %d Getting from surescripts...", prescription.ErxPharmacyId)
+		pharmacyDetails, err = ERxApi.GetPharmacyDetails(prescription.ErxPharmacyId)
+		if err != nil {
+			golog.Errorf("Unable to get pharmacy from surescripts, which means unable to store pharmacy linked to prescription: %+v", err)
+			return err
+		}
+		err = DataApi.AddPharmacy(pharmacyDetails)
+		if err != nil {
+			golog.Errorf("Unable to store pharmacy in our database: %+v", err)
+			return err
+		}
+	}
+	prescription.PharmacyLocalId = common.NewObjectId(pharmacyDetails.LocalId)
+	return nil
 }
