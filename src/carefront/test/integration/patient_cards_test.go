@@ -299,6 +299,7 @@ func addCard(t *testing.T, testData TestData, patientAccountId int64, patientCar
 		AddressLine2: "Apt 12345",
 		City:         "San Francisco",
 		State:        "CA",
+		ZipCode:      "12345",
 	}
 
 	card := &common.Card{
