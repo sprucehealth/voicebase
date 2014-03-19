@@ -84,6 +84,7 @@ func (d *DoctorRefillRequestHandler) resolveRefillRequest(w http.ResponseWriter,
 		if err := d.DataApi.MarkRefillRequestCompleteInDoctorQueue(doctor.DoctorId.Int64(),
 			refillRequest.Id, api.QUEUE_ITEM_STATUS_ONGOING, requestData.Action); err != nil {
 			WriteDeveloperError(w, http.StatusBadRequest, "Unable to update the doctor queue with the refill request item")
+			return
 		}
 		WriteJSONToHTTPResponseWriter(w, http.StatusOK, SuccessfulGenericJSONResponse())
 		return
@@ -123,6 +124,7 @@ func (d *DoctorRefillRequestHandler) resolveRefillRequest(w http.ResponseWriter,
 		denialReasons, err := d.DataApi.GetRefillRequestDenialReasons()
 		if err != nil {
 			WriteDeveloperError(w, http.StatusInternalServerError, "Unable to get the possible reasons for denial for this refill request: "+err.Error())
+			return
 		}
 
 		var denialReasonCode string
@@ -161,6 +163,7 @@ func (d *DoctorRefillRequestHandler) resolveRefillRequest(w http.ResponseWriter,
 	if err := d.DataApi.MarkRefillRequestCompleteInDoctorQueue(doctor.DoctorId.Int64(), refillRequest.Id,
 		api.QUEUE_ITEM_STATUS_PENDING, actionToQueueStateMapping[requestData.Action]); err != nil {
 		WriteDeveloperError(w, http.StatusBadRequest, "Unable to update the doctor queue with the refill request item")
+		return
 	}
 
 	WriteJSONToHTTPResponseWriter(w, http.StatusOK, SuccessfulGenericJSONResponse())
