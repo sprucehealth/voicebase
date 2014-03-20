@@ -146,7 +146,7 @@ type PrescriptionsAPI interface {
 	GetRefillRequestDenialReasons() ([]*RefillRequestDenialReason, error)
 	MarkRefillRequestAsApproved(approvedRefillCount, rxRefillRequestId, prescriptionId int64, comments string) error
 	MarkRefillRequestAsDenied(denialReasonId, rxRefillRequestId, prescriptionId int64, comments string) error
-	GetOriginalTreatmentForRequestedPrescription(requestedTreatment *common.Treatment, patient *common.Patient) error
+	LinkRequestedPrescriptionToOriginalTreatment(requestedTreatment *common.Treatment, patient *common.Patient) error
 }
 
 type RefillRequestStatus struct {
