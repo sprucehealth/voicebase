@@ -221,13 +221,18 @@ func (d *DataService) GetRefillRequestFromId(refillRequestId int64) (*common.Ref
 		return nil, err
 	}
 
-	var originatingTreatmentId sql.NullInt64
-	err = d.DB.QueryRow(`select originating_treatment_id from requested_treatment where id = ?`, refillRequest.RequestedPrescription.Id.Int64()).Scan(&originatingTreatmentId)
+	var originatingTreatmentId, originatingTreatmentPlanId sql.NullInt64
+	err = d.DB.QueryRow(`select originating_treatment_id, treatment_plan_id from requested_treatment 
+							inner join treatment on originating_treatment_id = treatment.id
+								where requested_treatment.id = ?`, refillRequest.RequestedPrescription.Id.Int64()).Scan(&originatingTreatmentId, &originatingTreatmentPlanId)
 	if err != nil && err != sql.ErrNoRows {
 		return nil, err
 	}
 
-	refillRequest.RequestedPrescription.OriginatingTreatmentId = originatingTreatmentId.Int64
+	if originatingTreatmentId.Valid {
+		refillRequest.RequestedPrescription.OriginatingTreatmentId = originatingTreatmentId.Int64
+		refillRequest.TreatmentPlanId = originatingTreatmentPlanId.Int64
+	}
 
 	return &refillRequest, nil
 }
