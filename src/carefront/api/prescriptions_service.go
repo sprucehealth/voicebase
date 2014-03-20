@@ -2,6 +2,7 @@ package api
 
 import (
 	"carefront/common"
+	"carefront/libs/erx"
 	"database/sql"
 	"fmt"
 	"strings"
@@ -50,7 +51,67 @@ func (d *DataService) GetPendingRefillRequestStatusEventsForClinic() ([]RefillRe
 	return refillRequestStatuses, nil
 }
 
-func (d *DataService) GetOriginalTreatmentForRequestedPrescription(requestedTreatment *common.Treatment, patient *common.Patient) error {
+func (d *DataService) LinkRequestedPrescriptionToOriginalTreatment(requestedTreatment *common.Treatment, patient *common.Patient) error {
+	// lookup drug based on the drugIds
+	if len(requestedTreatment.DrugDBIds) == 0 {
+		// nothing to compare against to link to originating drug
+		return nil
+	}
+
+	// lookup drugs prescribed to the patient within a day of the date the requestedPrescription was prescribed
+	// we know that it was prescribed based on whether or not it was succesfully sent to the pharmacy
+	halfDayBefore := requestedTreatment.ErxSentDate.Add(-12 * time.Hour)
+	halfDayAfter := requestedTreatment.ErxSentDate.Add(12 * time.Hour)
+
+	treatmentIds := make([]int64, 0)
+	rows, err := d.DB.Query(`select treatment_id from erx_status_events 
+								inner join treatment on treatment_id = treatment.id 
+								inner join treatment_plan on treatment_plan_id = treatment.treatment_plan_id
+								inner join patient_visit on patient_visit.id = treatment_plan.patient_visit_id
+								where erx_status = ? and erx_status_events.creation_date >= ? and erx_status_events.creation_date <= ? and patient_visit.patient_id = ? `, ERX_STATUS_SENT, halfDayBefore, halfDayAfter, patient.PatientId)
+	if err != nil {
+		return err
+	}
+	defer rows.Close()
+
+	for rows.Next() {
+		var treatmentId int64
+		err = rows.Scan(&treatmentId)
+		if err != nil {
+			return err
+		}
+		treatmentIds = append(treatmentIds, treatmentId)
+	}
+
+	for _, treatmentId := range treatmentIds {
+		// for each of the treatments gathered for the patiend, compare the drug ids against the requested prescription to identify if they
+		// match to find the originating prescritpion
+		drugIds := make(map[string]string)
+		drugDBIdRows, err := d.DB.Query(`select drug_db_id_tag, drug_db_id from drug_db_id where treatment_id= ?`, treatmentId)
+		if err != nil {
+			return err
+		}
+		defer drugDBIdRows.Close()
+
+		for drugDBIdRows.Next() {
+			var drugDbIdTag, drugDbId string
+			err = drugDBIdRows.Scan(&drugDbIdTag, &drugDbId)
+			if err != nil {
+				return err
+			}
+			drugIds[drugDbIdTag] = drugDbId
+		}
+
+		if requestedTreatment.DrugDBIds[erx.LexiGenProductId] == drugIds[erx.LexiGenProductId] &&
+			requestedTreatment.DrugDBIds[erx.LexiDrugSynId] == drugIds[erx.LexiDrugSynId] &&
+			requestedTreatment.DrugDBIds[erx.LexiSynonymTypeId] == drugIds[erx.LexiSynonymTypeId] &&
+			requestedTreatment.DrugDBIds[erx.NDC] == drugIds[erx.NDC] {
+			// linkage found
+			requestedTreatment.OriginatingTreatmentId = treatmentId
+			return nil
+		}
+	}
+
 	return nil
 }
 
@@ -61,12 +122,11 @@ func (d *DataService) CreateRefillRequest(refillRequest *common.RefillRequestIte
 
 	}
 
-	if err := d.addPharmacyDispensedTreatment(refillRequest.DispensedPrescription, refillRequest.RequestedPrescription, tx); err != nil {
+	if err := d.addRequestedTreatmentFromPharmacy(refillRequest.RequestedPrescription, tx); err != nil {
 		tx.Rollback()
 		return err
 	}
-
-	if err := d.addRequestedTreatmentFromPharmacy(refillRequest.RequestedPrescription, tx); err != nil {
+	if err := d.addPharmacyDispensedTreatment(refillRequest.DispensedPrescription, refillRequest.RequestedPrescription, tx); err != nil {
 		tx.Rollback()
 		return err
 	}
@@ -161,6 +221,14 @@ func (d *DataService) GetRefillRequestFromId(refillRequestId int64) (*common.Ref
 		return nil, err
 	}
 
+	var originatingTreatmentId sql.NullInt64
+	err = d.DB.QueryRow(`select originating_treatment_id from requested_treatment where id = ?`, refillRequest.RequestedPrescription.Id.Int64()).Scan(&originatingTreatmentId)
+	if err != nil && err != sql.ErrNoRows {
+		return nil, err
+	}
+
+	refillRequest.RequestedPrescription.OriginatingTreatmentId = originatingTreatmentId.Int64
+
 	return &refillRequest, nil
 }
 
@@ -191,7 +259,7 @@ func (d *DataService) getTreatmentForRefillRequest(tableName string, treatmentId
 	if err != nil && err != sql.ErrNoRows {
 		return nil, err
 	}
-
+	treatment.Id = common.NewObjectId(treatmentId)
 	treatment.PrescriptionId = common.NewObjectId(erxId)
 	treatment.DrugName = drugName.String
 	treatment.DrugForm = drugForm.String
