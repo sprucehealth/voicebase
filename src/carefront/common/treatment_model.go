@@ -51,7 +51,8 @@ type Treatment struct {
 	SupplementalInstructions  []*DoctorInstructionItem `json:"supplemental_instructions,omitempty"`
 	Pharmacy                  *pharmacy.PharmacyData   `json:"pharmacy,omitempty"`
 	PrescriberId              int64                    `json:"-"`
-	Prescriber                *Doctor                  `json:"doctor,omitempty"`
+	Doctor                    *Doctor                  `json:"doctor,omitempty"`
+	DoseSpotClinicianId       int64                    `json:"-"`
 	RxHistory                 []*PrescriptionStatus    `json:"erx_history,omitempty"`
 	OriginatingTreatmentId    int64                    `json:"-"`
 }

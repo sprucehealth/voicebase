@@ -1080,7 +1080,7 @@ func (d *DataService) getTreatmentAndMetadataFromCurrentRow(rows *sql.Rows) (*co
 		return nil, err
 	}
 
-	treatment.Prescriber, err = d.GetDoctorFromId(treatment.PrescriberId)
+	treatment.Doctor, err = d.GetDoctorFromId(treatment.PrescriberId)
 	if err != nil {
 		return nil, err
 	}

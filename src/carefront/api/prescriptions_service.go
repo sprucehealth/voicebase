@@ -235,6 +235,7 @@ func (d *DataService) GetRefillRequestFromId(refillRequestId int64) (*common.Ref
 func (d *DataService) getTreatmentForRefillRequest(tableName string, treatmentId int64) (*common.Treatment, error) {
 	var treatment common.Treatment
 	var erxId, pharmacyLocalId int64
+	var doctorId sql.NullInt64
 	var treatmentType string
 	var drugName, drugForm, drugRoute sql.NullString
 
@@ -243,7 +244,7 @@ func (d *DataService) getTreatmentForRefillRequest(tableName string, treatmentId
 							dispense_unit, refills, substitutions_allowed, 
 							pharmacy_id, days_supply, pharmacy_notes, 
 							patient_instructions, erx_sent_date,
-							erx_last_filled_date,  status, drug_name.name, drug_route.name, drug_form.name from %s 
+							erx_last_filled_date,  status, drug_name.name, drug_route.name, drug_form.name, doctor_id from %s 
 								left outer join drug_name on drug_name_id = drug_name.id
 								left outer join drug_route on drug_route_id = drug_route.id
 								left outer join drug_form on drug_form_id = drug_form.id
@@ -254,7 +255,7 @@ func (d *DataService) getTreatmentForRefillRequest(tableName string, treatmentId
 		&treatment.DaysSupply, &treatment.PharmacyNotes,
 		&treatment.PatientInstructions, &treatment.ErxSentDate,
 		&treatment.ErxLastDateFilled, &treatment.Status,
-		&drugName, &drugForm, &drugRoute)
+		&drugName, &drugForm, &drugRoute, &doctorId)
 
 	if err != nil && err != sql.ErrNoRows {
 		return nil, err
@@ -267,8 +268,16 @@ func (d *DataService) getTreatmentForRefillRequest(tableName string, treatmentId
 	treatment.OTC = treatmentType == treatment_otc
 	treatment.PharmacyLocalId = common.NewObjectId(pharmacyLocalId)
 	treatment.Pharmacy, err = d.GetPharmacyFromId(pharmacyLocalId)
+
 	if err != nil {
 		return nil, err
+	}
+
+	if doctorId.Valid {
+		treatment.Doctor, err = d.GetDoctorFromId(doctorId.Int64)
+		if err != nil {
+			return nil, err
+		}
 	}
 
 	return &treatment, nil
@@ -303,6 +312,7 @@ func (d *DataService) addRequestedTreatmentFromPharmacy(treatment *common.Treatm
 		"erx_sent_date":         treatment.ErxSentDate,
 		"erx_last_filled_date":  treatment.ErxLastDateFilled,
 		"pharmacy_id":           treatment.PharmacyLocalId,
+		"doctor_id":             treatment.Doctor.DoctorId.Int64(),
 	}
 
 	if treatment.OriginatingTreatmentId != 0 {
@@ -376,6 +386,7 @@ func (d *DataService) addPharmacyDispensedTreatment(dispensedTreatment, requeste
 		"erx_last_filled_date":   dispensedTreatment.ErxLastDateFilled,
 		"pharmacy_id":            dispensedTreatment.PharmacyLocalId,
 		"requested_treatment_id": requestedTreatment.Id.Int64(),
+		"doctor_id":              dispensedTreatment.Doctor.DoctorId.Int64(),
 	}
 
 	if err := d.includeDrugNameComponentIfNonZero(dispensedTreatment.DrugName, drug_name_table, "drug_name_id", columnsAndData, tx); err != nil {
