@@ -140,6 +140,7 @@ func TestNewRefillRequestForExistingPatientAndExistingTreatment(t *testing.T) {
 			OTC:                  false,
 			SubstitutionsAllowed: true,
 			ErxSentDate:          &fiveMinutesBeforeTestTime,
+			DoseSpotClinicianId:  clinicianId,
 		},
 		DispensedPrescription: &common.Treatment{
 			PrescriptionId:     common.NewObjectId(5504),
@@ -159,6 +160,7 @@ func TestNewRefillRequestForExistingPatientAndExistingTreatment(t *testing.T) {
 			PatientInstructions:     "Take once daily",
 			ErxLastDateFilled:       &testTime,
 			OTC:                     false,
+			DoseSpotClinicianId:     clinicianId,
 		},
 	}
 
@@ -437,6 +439,7 @@ func TestRefillRequestComingFromDifferentPharmacyThanDispensedPrescription(t *te
 			OTC:                  false,
 			SubstitutionsAllowed: true,
 			ErxSentDate:          &fiveMinutesBeforeTestTime,
+			DoseSpotClinicianId:  clinicianId,
 		},
 		DispensedPrescription: &common.Treatment{
 			PrescriptionId:     common.NewObjectId(5504),
@@ -456,6 +459,7 @@ func TestRefillRequestComingFromDifferentPharmacyThanDispensedPrescription(t *te
 			PatientInstructions:     "Take once daily",
 			ErxLastDateFilled:       &testTime,
 			OTC:                     false,
+			DoseSpotClinicianId:     clinicianId,
 		},
 	}
 
@@ -661,6 +665,7 @@ func TestNewRefillRequestWithUnlinkedTreatmentAndLinkedPatient(t *testing.T) {
 			PatientInstructions:     "Take once daily",
 			ErxSentDate:             &testTime,
 			OTC:                     false,
+			DoseSpotClinicianId:     clinicianId,
 		},
 		DispensedPrescription: &common.Treatment{
 			PrescriptionId:     common.NewObjectId(5504),
@@ -680,6 +685,7 @@ func TestNewRefillRequestWithUnlinkedTreatmentAndLinkedPatient(t *testing.T) {
 			PatientInstructions:     "Take once daily",
 			ErxSentDate:             &testTime,
 			OTC:                     false,
+			DoseSpotClinicianId:     clinicianId,
 		},
 	}
 
@@ -887,6 +893,7 @@ func TestNewRefillRequestWithUnlinkedTreatmentAndUnlinkedPatient(t *testing.T) {
 			PatientInstructions:     "Take once daily",
 			ErxSentDate:             &testTime,
 			OTC:                     false,
+			DoseSpotClinicianId:     clinicianId,
 		},
 		DispensedPrescription: &common.Treatment{
 			PrescriptionId:     common.NewObjectId(5504),
@@ -908,6 +915,7 @@ func TestNewRefillRequestWithUnlinkedTreatmentAndUnlinkedPatient(t *testing.T) {
 			PatientInstructions:     "Take once daily",
 			ErxSentDate:             &testTime,
 			OTC:                     false,
+			DoseSpotClinicianId:     clinicianId,
 		},
 	}
 
@@ -1014,6 +1022,10 @@ func TestNewRefillRequestWithUnlinkedTreatmentAndUnlinkedPatient(t *testing.T) {
 
 	if refillRequest.Patient.Status != api.PATIENT_UNLINKED {
 		t.Fatal("patient should be unlinked but instead it was flagged as registered in our system")
+	}
+
+	if refillRequest.RequestedPrescription.Doctor == nil || refillRequest.DispensedPrescription.Doctor == nil {
+		t.Fatal("Expected doctor object to be present for the requested and dispensed prescription")
 	}
 
 }

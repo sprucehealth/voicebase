@@ -822,6 +822,7 @@ func convertMedicationIntoTreatment(medicationItem *medication) *common.Treatmen
 		ErxMedicationId:         common.NewObjectId(medicationItem.MedicationId),
 		DrugRoute:               medicationItem.Route,
 		DosageStrength:          medicationItem.Strength,
+		DoseSpotClinicianId:     medicationItem.ClinicianId,
 	}
 
 	if medicationItem.DatePrescribed != nil {
