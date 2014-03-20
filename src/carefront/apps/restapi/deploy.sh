@@ -22,10 +22,10 @@ case "$DEPLOY_ENV" in
 			echo "Missing build number. Cannot deploy to production from local code."
 			exit 2
 		fi
-		# if [ "$DEPLOY_BRANCH" != "master" ]; then
-		# 	echo "Can only deploy the master branch to production."
-		# 	exit 2
-		# fi
+		if [ "$DEPLOY_BRANCH" != "master" ]; then
+			echo "Can only deploy the master branch to production."
+			exit 2
+		fi
 
 		read -p "To be sure you want to deploy to production, type PROD if you wish to deploy to production: " confirmation
 		case $confirmation in
