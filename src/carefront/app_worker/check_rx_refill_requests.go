@@ -188,7 +188,11 @@ func PerformRefillRecquestCheckCycle(DataApi api.DataAPI, ERxApi erx.ERxAPI, sta
 		}
 
 		// insert queued status into db
-		err = DataApi.AddRefillRequestStatusEvent(refillRequestItem.Id, api.RX_REFILL_STATUS_REQUESTED, refillRequestItem.RequestDateStamp)
+		err = DataApi.AddRefillRequestStatusEvent(api.RefillRequestStatus{
+			ErxRefillRequestId: refillRequestItem.Id,
+			Status:             api.RX_REFILL_STATUS_REQUESTED,
+			ReportedTimestamp:  refillRequestItem.RequestDateStamp,
+		})
 		if err != nil {
 			golog.Errorf("Unable to add refill request event to our database: %+v", err)
 			statFailure.Inc(1)

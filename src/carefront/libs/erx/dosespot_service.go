@@ -7,6 +7,7 @@ import (
 	"errors"
 	"fmt"
 	"os"
+	"sort"
 	"strconv"
 	"strings"
 
@@ -69,6 +70,14 @@ const (
 	doseSpotSOAPEndPoint = "http://i.dosespot.com/api/11/apifull.asmx"
 	resultOk             = "OK"
 )
+
+type ByLogTimeStamp []*PrescriptionLog
+
+func (a ByLogTimeStamp) Len() int      { return len(a) }
+func (a ByLogTimeStamp) Swap(i, j int) { a[i], a[j] = a[j], a[i] }
+func (a ByLogTimeStamp) Less(i, j int) bool {
+	return a[i].LogTimeStamp.Before(a[j].LogTimeStamp)
+}
 
 func getDoseSpotClient() *soapClient {
 	return &soapClient{SoapAPIEndPoint: doseSpotSOAPEndPoint, APIEndpoint: doseSpotAPIEndPoint}
@@ -494,6 +503,8 @@ func (d *DoseSpotService) GetPrescriptionStatus(clincianId int64, prescriptionId
 			prescriptionLogs = append(prescriptionLogs, prescriptionLog)
 		}
 	}
+
+	sort.Reverse(ByLogTimeStamp(prescriptionLogs))
 
 	return prescriptionLogs, nil
 }

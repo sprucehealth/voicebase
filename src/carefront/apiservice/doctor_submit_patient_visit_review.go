@@ -192,7 +192,7 @@ func (d *DoctorSubmitPatientVisitReviewHandler) submitPatientVisitReview(w http.
 			}
 
 			if len(successfulTreatments) > 0 {
-				err = d.DataApi.AddErxStatusEvent(successfulTreatments, api.ERX_STATUS_SENDING)
+				err = d.DataApi.AddErxStatusEvent(successfulTreatments, common.PrescriptionStatus{PrescriptionStatus: api.ERX_STATUS_SENDING})
 				if err != nil {
 					WriteDeveloperError(w, http.StatusInternalServerError, "Unable to add an erx status event: "+err.Error())
 					return
@@ -200,7 +200,7 @@ func (d *DoctorSubmitPatientVisitReviewHandler) submitPatientVisitReview(w http.
 			}
 
 			if len(unSuccessfulTreatments) > 0 {
-				err = d.DataApi.AddErxStatusEvent(unSuccessfulTreatments, api.ERX_STATUS_SEND_ERROR)
+				err = d.DataApi.AddErxStatusEvent(unSuccessfulTreatments, common.PrescriptionStatus{PrescriptionStatus: api.ERX_STATUS_SEND_ERROR})
 				if err != nil {
 					WriteDeveloperError(w, http.StatusInternalServerError, "Unable to add an erx status event: "+err.Error())
 					return

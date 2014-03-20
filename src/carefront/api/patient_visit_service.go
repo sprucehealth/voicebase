@@ -7,6 +7,7 @@ import (
 	"fmt"
 	"log"
 	"strconv"
+	"strings"
 	"time"
 
 	"github.com/go-sql-driver/mysql"
@@ -905,20 +906,34 @@ func (d *DataService) MarkTreatmentsAsPrescriptionsSent(treatments []*common.Tre
 	return tx.Commit()
 }
 
-func (d *DataService) AddErxStatusEvent(treatments []*common.Treatment, statusEvent string) error {
+func (d *DataService) AddErxStatusEvent(treatments []*common.Treatment, prescriptionStatus common.PrescriptionStatus) error {
 	tx, err := d.DB.Begin()
 	if err != nil {
 		return err
 	}
 
 	for _, treatment := range treatments {
+
 		_, err = tx.Exec(`update erx_status_events set status = ? where treatment_id = ? and status = ?`, status_inactive, treatment.Id, status_active)
 		if err != nil {
 			tx.Rollback()
 			return err
 		}
 
-		_, err = tx.Exec(`insert into erx_status_events (treatment_id, erx_status, status) values (?,?,?)`, treatment.Id, statusEvent, status_active)
+		columnsAndData := make(map[string]interface{}, 0)
+		columnsAndData["treatment_id"] = treatment.Id
+		columnsAndData["erx_status"] = prescriptionStatus.PrescriptionStatus
+		columnsAndData["status"] = status_active
+		if !prescriptionStatus.ReportedTimestamp.IsZero() {
+			columnsAndData["reported_timestamp"] = prescriptionStatus.ReportedTimestamp
+		}
+		if prescriptionStatus.StatusDetails != "" {
+			columnsAndData["event_details"] = prescriptionStatus.StatusDetails
+		}
+
+		keys, values := getKeysAndValuesFromMap(columnsAndData)
+
+		_, err = tx.Exec(fmt.Sprintf(`insert into erx_status_events (%s) values (%s)`, strings.Join(keys, ","), nReplacements(len(values))), values...)
 		if err != nil {
 			tx.Rollback()
 			return err
@@ -926,27 +941,7 @@ func (d *DataService) AddErxStatusEvent(treatments []*common.Treatment, statusEv
 	}
 
 	return tx.Commit()
-}
 
-func (d *DataService) AddErxErrorEventWithMessage(treatment *common.Treatment, statusEvent, errorDetails string, errorTimeStamp time.Time) error {
-	tx, err := d.DB.Begin()
-	if err != nil {
-		return err
-	}
-
-	_, err = tx.Exec(`update erx_status_events set status = ? where treatment_id = ? and status = ?`, status_inactive, treatment.Id, status_active)
-	if err != nil {
-		tx.Rollback()
-		return err
-	}
-
-	_, err = tx.Exec(`insert into erx_status_events (treatment_id, erx_status, event_details, creation_date, status) values (?,?,?,?,?)`, treatment.Id, statusEvent, errorDetails, errorTimeStamp, status_active)
-	if err != nil {
-		tx.Rollback()
-		return err
-	}
-
-	return tx.Commit()
 }
 
 func (d *DataService) GetPrescriptionStatusEventsForPatient(patientId int64) ([]*common.PrescriptionStatus, error) {
@@ -975,7 +970,7 @@ func (d *DataService) GetPrescriptionStatusEventsForPatient(patientId int64) ([]
 		prescriptionStatus := &common.PrescriptionStatus{
 			PrescriptionStatus: status,
 			TreatmentId:        treatmentId,
-			StatusTimeStamp:    creationDate,
+			StatusTimestamp:    creationDate,
 		}
 
 		if prescriptionId.Valid {
@@ -1000,7 +995,7 @@ func (d *DataService) GetPrescriptionStatusEventsForTreatment(treatmentId int64)
 	for rows.Next() {
 		var statusDetails sql.NullString
 		var prescriptionStatus common.PrescriptionStatus
-		err = rows.Scan(&prescriptionStatus.TreatmentId, &prescriptionStatus.PrescriptionStatus, &statusDetails, &prescriptionStatus.StatusTimeStamp)
+		err = rows.Scan(&prescriptionStatus.TreatmentId, &prescriptionStatus.PrescriptionStatus, &statusDetails, &prescriptionStatus.StatusTimestamp)
 		if err != nil {
 			return nil, err
 		}

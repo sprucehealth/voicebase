@@ -126,8 +126,7 @@ type PatientVisitAPI interface {
 	GetTreatmentBasedOnPrescriptionId(erxId int64) (*common.Treatment, error)
 	GetTreatmentFromId(treatmentId int64) (*common.Treatment, error)
 	MarkTreatmentsAsPrescriptionsSent(treatments []*common.Treatment, pharmacySentTo *pharmacy.PharmacyData, doctorId, patientVisitId int64) error
-	AddErxStatusEvent(treatments []*common.Treatment, statusEvent string) error
-	AddErxErrorEventWithMessage(treatment *common.Treatment, statusEvent, errorDetails string, errorTimeStamp time.Time) error
+	AddErxStatusEvent(treatments []*common.Treatment, prescriptionStatus common.PrescriptionStatus) error
 	GetPrescriptionStatusEventsForPatient(patientId int64) ([]*common.PrescriptionStatus, error)
 	GetPrescriptionStatusEventsForTreatment(treatmentId int64) ([]*common.PrescriptionStatus, error)
 }
@@ -141,7 +140,7 @@ type RefillRequestDenialReason struct {
 type PrescriptionsAPI interface {
 	GetPendingRefillRequestStatusEventsForClinic() ([]RefillRequestStatus, error)
 	CreateRefillRequest(*common.RefillRequestItem) error
-	AddRefillRequestStatusEvent(rxRefillRequestId int64, status string, statusDate time.Time) error
+	AddRefillRequestStatusEvent(refillRequestStatus RefillRequestStatus) error
 	GetRefillRequestFromId(refillRequestId int64) (*common.RefillRequestItem, error)
 	GetRefillRequestDenialReasons() ([]*RefillRequestDenialReason, error)
 	MarkRefillRequestAsApproved(approvedRefillCount, rxRefillRequestId, prescriptionId int64, comments string) error
@@ -154,7 +153,8 @@ type RefillRequestStatus struct {
 	RxRequestQueueItemId int64
 	Status               string
 	PrescriptionId       int64
-	StatusTimeStamp      time.Time
+	StatusTimestamp      time.Time
+	ReportedTimestamp    time.Time
 }
 
 type DoctorAPI interface {

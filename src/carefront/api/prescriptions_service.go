@@ -9,19 +9,31 @@ import (
 	"time"
 )
 
-func (d *DataService) AddRefillRequestStatusEvent(rxRefillRequestId int64, status string, statusDate time.Time) error {
+func (d *DataService) AddRefillRequestStatusEvent(refillRequestStatus RefillRequestStatus) error {
 	tx, err := d.DB.Begin()
 	if err != nil {
 		return err
 	}
 
-	_, err = tx.Exec(`update rx_refill_status_events set status = ? where status = ? and rx_refill_request_id = ?`, status_inactive, status_active, rxRefillRequestId)
+	_, err = tx.Exec(`update rx_refill_status_events set status = ? where status = ? and rx_refill_request_id = ?`, status_inactive, status_active, refillRequestStatus.ErxRefillRequestId)
 	if err != nil {
 		tx.Rollback()
 		return err
 	}
 
-	_, err = tx.Exec(`insert into rx_refill_status_events (rx_refill_request_id, rx_refill_status, rx_refill_status_date, status) values (?,?,?,?)`, rxRefillRequestId, status, statusDate, status_active)
+	columnsAndData := map[string]interface{}{
+		"rx_refill_request_id":  refillRequestStatus.ErxRefillRequestId,
+		"rx_refill_status":      refillRequestStatus.Status,
+		"rx_refill_status_date": time.Now(),
+		"status":                status_active,
+	}
+
+	if !refillRequestStatus.ReportedTimestamp.IsZero() {
+		columnsAndData["reported_timestamp"] = refillRequestStatus.ReportedTimestamp
+	}
+
+	keys, values := getKeysAndValuesFromMap(columnsAndData)
+	_, err = tx.Exec(fmt.Sprintf(`insert into rx_refill_status_events (%s) values (%s)`, strings.Join(keys, ","), nReplacements(len(values))), values...)
 	if err != nil {
 		tx.Rollback()
 		return err
@@ -42,7 +54,7 @@ func (d *DataService) GetPendingRefillRequestStatusEventsForClinic() ([]RefillRe
 	refillRequestStatuses := make([]RefillRequestStatus, 0)
 	for rows.Next() {
 		var refillRequestStatus RefillRequestStatus
-		err = rows.Scan(&refillRequestStatus.ErxRefillRequestId, &refillRequestStatus.RxRequestQueueItemId, &refillRequestStatus.Status, &refillRequestStatus.StatusTimeStamp)
+		err = rows.Scan(&refillRequestStatus.ErxRefillRequestId, &refillRequestStatus.RxRequestQueueItemId, &refillRequestStatus.Status, &refillRequestStatus.StatusTimestamp)
 		if err != nil {
 			return nil, err
 		}
