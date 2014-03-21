@@ -1154,6 +1154,7 @@ func TestCheckingStatusOfMultipleRefillRequestsAtOnce(t *testing.T) {
 	params.Set("comments", comment)
 
 	erxStatusQueue := &common.SQSQueue{}
+
 	stubSqs := &sqs.StubSQS{}
 	erxStatusQueue.QueueService = stubSqs
 	erxStatusQueue.QueueUrl = "local-erx"
@@ -1294,6 +1295,22 @@ func TestCheckingStatusOfMultipleRefillRequestsAtOnce(t *testing.T) {
 		t.Fatalf("Expected 0 item to remain in the msg queue instead got %d", len(stubSqs.MsgQueue))
 	}
 
+	// attempt to consume the message put into the queue
+	app_worker.ConsumeMessageFromQueue(testData.DataApi, stubErxAPI, erxStatusQueue, metrics.NewBiasedHistogram(), metrics.NewCounter(), metrics.NewCounter())
+
+	// now, the status of the refill request should be Sent
+	refillStatusEvents, err := testData.DataApi.GetRefillStatusEventsForRefillRequest(refillRequest.Id)
+	if err != nil {
+		t.Fatal("Unable to get refill status events for refill request: " + err.Error())
+	}
+
+	if len(refillStatusEvents) != 3 {
+		t.Fatalf("Expected 2 refill status events for refill request but got %d", len(refillStatusEvents))
+	}
+
+	if refillStatusEvents[0].Status != api.ERX_STATUS_SENT {
+		t.Fatal("Expected the top level item for the refill request to indicate that it was successfully sent to the pharmacy")
+	}
 }
 
 func TestRefillRequestComingFromDifferentPharmacyThanDispensedPrescription(t *testing.T) {
@@ -1626,6 +1643,12 @@ func TestNewRefillRequestWithUnlinkedTreatmentAndLinkedPatient(t *testing.T) {
 	stubErxAPI := &erx.StubErxService{
 		PharmacyDetailsToReturn:      pharmacyToReturn,
 		RefillRxRequestQueueToReturn: []*common.RefillRequestItem{refillRequestItem},
+		PrescriptionIdToPrescriptionStatuses: map[int64][]common.StatusEvent{
+			prescriptionIdForRequestedPrescription: []common.StatusEvent{common.StatusEvent{
+				Status: api.ERX_STATUS_DELETED,
+			},
+			},
+		},
 	}
 
 	// Call the Consume method

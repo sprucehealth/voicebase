@@ -212,6 +212,7 @@ func (d *DoctorQueueItem) GetActionUrl(dataApi DataAPI) (string, error) {
 			return fmt.Sprintf("%s%s?patient_visit_id=%d", SpruceButtonBaseActionUrl, beginPatientVisitReviewAction, d.ItemId), nil
 		}
 	case EVENT_TYPE_TREATMENT_PLAN:
+
 	case QUEUE_ITEM_STATUS_COMPLETED, QUEUE_ITEM_STATUS_TRIAGED:
 		patientVisitId, err := dataApi.GetPatientVisitIdFromTreatmentPlanId(d.ItemId)
 		if err != nil {
