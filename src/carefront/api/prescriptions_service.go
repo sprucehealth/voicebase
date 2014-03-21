@@ -30,15 +30,10 @@ func (d *DataService) AddRefillRequestStatusEvent(refillRequestStatus common.Sta
 		"rx_refill_status_date": time.Now(),
 		"status":                STATUS_ACTIVE,
 		"event_details":         refillRequestStatus.StatusDetails,
-		"notes":                 refillRequestStatus.Comments,
 	}
 
 	if !refillRequestStatus.ReportedTimestamp.IsZero() {
 		columnsAndData["reported_timestamp"] = refillRequestStatus.ReportedTimestamp
-	}
-
-	if refillRequestStatus.RefillRxDenialReasonId != 0 {
-		columnsAndData["reason_id"] = refillRequestStatus.RefillRxDenialReasonId
 	}
 
 	keys, values :=
@@ -598,7 +593,6 @@ func (d *DataService) MarkRefillRequestAsDenied(prescriptionId, denialReasonId, 
 		tx.Rollback()
 		return err
 	}
-
 	_, err = tx.Exec(`insert into rx_refill_status_events (rx_refill_request_id, rx_refill_status, status, rx_refill_status_date) values (?,?,?,?)`, rxRefillRequestId, RX_REFILL_STATUS_DENIED, STATUS_ACTIVE, time.Now())
 	if err != nil {
 		tx.Rollback()

@@ -233,6 +233,7 @@ func (a ByStatusTimestamp) Less(i, j int) bool {
 }
 
 type StatusEvent struct {
+<<<<<<< HEAD
 	ItemId            int64     `json:"-"`
 	PrescriptionId    int64     `json:"-"`
 	Status            string    `json:"status,omitempty"`
@@ -240,4 +241,14 @@ type StatusEvent struct {
 	StatusTimestamp   time.Time `json:"status_timestamp,omitempty"`
 	ReportedTimestamp time.Time `json:"-"`
 	StatusDetails     string    `json:"status_details,omitempty"`
+=======
+	TreatmentId          int64     `json:"-"`
+	PrescriptionId       int64     `json:"erx_id,string,omitempty"`
+	Status               string    `json:"erx_status,omitempty"`
+	StatusTimestamp      time.Time `json:"erx_status_timestamp,omitempty"`
+	ReportedTimestamp    time.Time `json:"reported_timestamp,omitempty"`
+	StatusDetails        string    `json:"erx_status_details,omitempty"`
+	ErxRefillRequestId   int64     `json:"-"`
+	RxRequestQueueItemId int64     `json:"-"`
+>>>>>>> - move the comments and denial reason over to refill request table
 }
