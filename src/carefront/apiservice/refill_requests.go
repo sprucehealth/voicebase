@@ -94,7 +94,6 @@ func (d *DoctorRefillRequestHandler) resolveRefillRequest(w http.ResponseWriter,
 		WriteDeveloperError(w, http.StatusInternalServerError, "Expected status events for refill requests but none found")
 		return
 	}
-
 	// Ensure that the refill request is in the Requested state for
 	// the user to work on it. If it's in the desired end state, then do nothing
 	if refillRequest.RxHistory[0].Status == actionToRefillRequestStateMapping[requestData.Action] {
@@ -129,7 +128,7 @@ func (d *DoctorRefillRequestHandler) resolveRefillRequest(w http.ResponseWriter,
 		trimSpacesFromRefillRequest(refillRequest)
 
 		// Send the approve refill request to dosespot
-		prescriptionId, err := d.ErxApi.ApproveRefillRequest(doctor.DoseSpotClinicianId, refillRequest.RxRequestQueueItemId, requestData.ApprovedRefillAmount, requestData.Comments)
+		_, err = d.ErxApi.ApproveRefillRequest(doctor.DoseSpotClinicianId, refillRequest.RxRequestQueueItemId, requestData.ApprovedRefillAmount, requestData.Comments)
 		if err != nil {
 			WriteDeveloperError(w, http.StatusBadRequest, "Unable to approve refill request: "+err.Error())
 			return
@@ -266,7 +265,7 @@ func (d *DoctorRefillRequestHandler) resolveRefillRequest(w http.ResponseWriter,
 		}
 
 		//  Deny the refill request
-		prescriptionId, err := d.ErxApi.DenyRefillRequest(doctor.DoseSpotClinicianId, refillRequest.RxRequestQueueItemId, denialReasonCode, requestData.Comments)
+		_, err = d.ErxApi.DenyRefillRequest(doctor.DoseSpotClinicianId, refillRequest.RxRequestQueueItemId, denialReasonCode, requestData.Comments)
 		if err != nil {
 			WriteDeveloperError(w, http.StatusInternalServerError, "Unable to deny refill request on the dosespot platform for the following reason: "+err.Error())
 			return
