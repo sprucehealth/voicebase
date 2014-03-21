@@ -57,7 +57,7 @@ func (d *DoctorPrescriptionErrorIgnoreHandler) ServeHTTP(w http.ResponseWriter, 
 			return
 		}
 
-		if err := verifyDoctorPatientRelationship(d.DataApi, doctor, treatment.Patient); err != nil {
+		if err := verifyDoctorPatientRelationship(d.DataApi, treatment.Doctor, treatment.Patient); err != nil {
 			WriteDeveloperError(w, http.StatusForbidden, "Unable to verify patient-doctor relationship: "+err.Error())
 			return
 		}
@@ -91,6 +91,11 @@ func (d *DoctorPrescriptionErrorIgnoreHandler) ServeHTTP(w http.ResponseWriter, 
 		refillRequest, err := d.DataApi.GetRefillRequestFromId(refillRequestId)
 		if err != nil {
 			WriteDeveloperError(w, http.StatusInternalServerError, "Unable to get refill request based on id: "+err.Error())
+			return
+		}
+
+		if err := verifyDoctorPatientRelationship(d.DataApi, refillRequest.Doctor, refillRequest.Patient); err != nil {
+			WriteDeveloperError(w, http.StatusForbidden, "Unable to verify patient-doctor relationship: "+err.Error())
 			return
 		}
 
