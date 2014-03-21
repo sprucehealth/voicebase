@@ -141,7 +141,6 @@ func ConsumeMessageFromQueue(DataApi api.DataAPI, ERxApi erx.ERxAPI, ErxQueue *c
 							latestPendingStatusPerPrescription[prescriptionStatus.PrescriptionId] = prescriptionStatus
 						}
 					}
-
 				}
 			}
 		}
