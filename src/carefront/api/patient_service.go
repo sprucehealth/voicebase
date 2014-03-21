@@ -6,6 +6,7 @@ import (
 	"database/sql"
 	"fmt"
 	"log"
+	"strconv"
 	"strings"
 
 	"github.com/go-sql-driver/mysql"
@@ -536,21 +537,31 @@ func (d *DataService) GetPharmacyBasedOnReferenceIdAndSource(pharmacyId, pharmac
 		return nil, err
 	}
 
-	return &pharmacy.PharmacyData{
+	pharmacyToReturn := &pharmacy.PharmacyData{
 		LocalId:      id,
 		SourceId:     pharmacyId,
 		Source:       pharmacySource,
 		Name:         name.String,
 		AddressLine1: addressLine1.String,
 		AddressLine2: addressLine2.String,
-		Latitude:     lat.String,
-		Longitude:    lng.String,
 		City:         city.String,
 		State:        state.String,
 		Country:      country.String,
 		Postal:       zipCode.String,
 		Phone:        phone.String,
-	}, nil
+	}
+
+	if lat.Valid {
+		latFloat, _ := strconv.ParseFloat(lat.String, 64)
+		pharmacyToReturn.Latitude = latFloat
+	}
+
+	if lng.Valid {
+		lngFloat, _ := strconv.ParseFloat(lng.String, 64)
+		pharmacyToReturn.Longitude = lngFloat
+	}
+
+	return pharmacyToReturn, nil
 }
 
 func (d *DataService) GetPharmacyFromId(pharmacyLocalId int64) (*pharmacy.PharmacyData, error) {
@@ -566,21 +577,31 @@ func (d *DataService) GetPharmacyFromId(pharmacyLocalId int64) (*pharmacy.Pharma
 		return nil, err
 	}
 
-	return &pharmacy.PharmacyData{
+	pharmacyToReturn := &pharmacy.PharmacyData{
 		LocalId:      pharmacyLocalId,
 		SourceId:     pharmacyReferenceId,
 		Source:       source,
 		Name:         name.String,
 		AddressLine1: addressLine1.String,
 		AddressLine2: addressLine2.String,
-		Latitude:     lat.String,
-		Longitude:    lng.String,
 		City:         city.String,
 		State:        state.String,
 		Country:      country.String,
 		Postal:       zipCode.String,
 		Phone:        phone.String,
-	}, nil
+	}
+
+	if lat.Valid {
+		latFloat, _ := strconv.ParseFloat(lat.String, 64)
+		pharmacyToReturn.Latitude = latFloat
+	}
+
+	if lng.Valid {
+		lngFloat, _ := strconv.ParseFloat(lng.String, 64)
+		pharmacyToReturn.Longitude = lngFloat
+	}
+
+	return pharmacyToReturn, nil
 }
 
 func (d *DataService) AddPharmacy(pharmacyDetails *pharmacy.PharmacyData) error {
@@ -613,12 +634,12 @@ func addPharmacy(pharmacyDetails *pharmacy.PharmacyData, tx *sql.Tx) error {
 		columnsAndData["address_line_2"] = pharmacyDetails.AddressLine2
 	}
 
-	if pharmacyDetails.Latitude != "" {
-		columnsAndData["lat"] = pharmacyDetails.Latitude
+	if pharmacyDetails.Latitude != 0 {
+		columnsAndData["lat"] = strconv.FormatFloat(pharmacyDetails.Latitude, 'f', -1, 64)
 	}
 
-	if pharmacyDetails.Longitude != "" {
-		columnsAndData["lng"] = pharmacyDetails.Longitude
+	if pharmacyDetails.Longitude != 0 {
+		columnsAndData["lng"] = strconv.FormatFloat(pharmacyDetails.Longitude, 'f', -1, 64)
 	}
 
 	columns, dataForColumns := getKeysAndValuesFromMap(columnsAndData)
@@ -657,10 +678,18 @@ func getPharmacyFromCurrentRow(rows *sql.Rows) (*pharmacy.PharmacyData, error) {
 		City:         city.String,
 		State:        state.String,
 		Postal:       zipCode.String,
-		Latitude:     lat.String,
-		Longitude:    lng.String,
 		Phone:        phone.String,
 		Name:         name.String,
+	}
+
+	if lat.Valid {
+		latFloat, _ := strconv.ParseFloat(lat.String, 64)
+		pharmacySelection.Latitude = latFloat
+	}
+
+	if lng.Valid {
+		lngFloat, _ := strconv.ParseFloat(lng.String, 64)
+		pharmacySelection.Longitude = lngFloat
 	}
 
 	return pharmacySelection, nil

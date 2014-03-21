@@ -43,9 +43,7 @@ func (p *PharmacySearchService) GetPharmaciesAroundSearchLocation(searchLocation
 			return
 		}
 
-		latFloat, _ := strconv.ParseFloat(pharmacy.Latitude, 64)
-		lngFloat, _ := strconv.ParseFloat(pharmacy.Longitude, 64)
-		pharmacy.DistanceInMiles = GreatCircleDistanceBetweenTwoPoints(&point{Latitude: latFloat, Longitude: lngFloat}, &point{Latitude: searchLocationLat, Longitude: searchLocationLng})
+		pharmacy.DistanceInMiles = GreatCircleDistanceBetweenTwoPoints(&point{Latitude: pharmacy.Latitude, Longitude: pharmacy.Longitude}, &point{Latitude: searchLocationLat, Longitude: searchLocationLng})
 
 		pharmacy.Source = PHARMACY_SOURCE_ODDITY
 		pharmacies = append(pharmacies, pharmacy)
@@ -89,11 +87,19 @@ func scanPharmacyDataFromRow(rows *sql.Rows) (pharmacy *PharmacyData, err error)
 		City:         city.String,
 		State:        state.String,
 		Postal:       postal.String,
-		Latitude:     lat.String,
-		Longitude:    lng.String,
 		Phone:        phone.String,
 		Fax:          fax.String,
 		Url:          url.String,
+	}
+
+	if lat.Valid {
+		latFloat, _ := strconv.ParseFloat(lat.String, 64)
+		pharmacy.Latitude = latFloat
+	}
+
+	if lng.Valid {
+		lngFloat, _ := strconv.ParseFloat(lng.String, 64)
+		pharmacy.Longitude = lngFloat
 	}
 
 	return
