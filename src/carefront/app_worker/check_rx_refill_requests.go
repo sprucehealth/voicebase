@@ -188,7 +188,7 @@ func PerformRefillRecquestCheckCycle(DataApi api.DataAPI, ERxApi erx.ERxAPI, sta
 		}
 
 		// insert queued status into db
-		err = DataApi.AddRefillRequestStatusEvent(api.RefillRequestStatus{
+		err = DataApi.AddRefillRequestStatusEvent(common.StatusEvent{
 			ErxRefillRequestId: refillRequestItem.Id,
 			Status:             api.RX_REFILL_STATUS_REQUESTED,
 			ReportedTimestamp:  refillRequestItem.RequestDateStamp,

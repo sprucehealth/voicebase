@@ -6,15 +6,6 @@ import (
 	"time"
 )
 
-type PrescriptionStatus struct {
-	TreatmentId        int64     `json:"-"`
-	PrescriptionId     int64     `json:"erx_id,string,omitempty"`
-	PrescriptionStatus string    `json:"erx_status,omitempty"`
-	StatusTimestamp    time.Time `json:"erx_status_timestamp,omitempty"`
-	ReportedTimestamp  time.Time `json:"reported_timestamp,omitempty"`
-	StatusDetails      string    `json:"erx_status_details,omitempty"`
-}
-
 type Treatment struct {
 	Id                        *ObjectId                `json:"treatment_id,omitempty"`
 	DoctorTreatmentTemplateId *ObjectId                `json:"dr_treatment_template_id,omitempty"`
@@ -54,7 +45,7 @@ type Treatment struct {
 	PrescriberId              int64                    `json:"-"`
 	Doctor                    *Doctor                  `json:"doctor,omitempty"`
 	DoseSpotClinicianId       int64                    `json:"-"`
-	RxHistory                 []*PrescriptionStatus    `json:"erx_history,omitempty"`
+	RxHistory                 []*StatusEvent           `json:"erx_history,omitempty"`
 	OriginatingTreatmentId    int64                    `json:"-"`
 }
 

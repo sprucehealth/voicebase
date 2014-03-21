@@ -906,7 +906,7 @@ func (d *DataService) MarkTreatmentsAsPrescriptionsSent(treatments []*common.Tre
 	return tx.Commit()
 }
 
-func (d *DataService) AddErxStatusEvent(treatments []*common.Treatment, prescriptionStatus common.PrescriptionStatus) error {
+func (d *DataService) AddErxStatusEvent(treatments []*common.Treatment, prescriptionStatus common.StatusEvent) error {
 	tx, err := d.DB.Begin()
 	if err != nil {
 		return err
@@ -922,7 +922,7 @@ func (d *DataService) AddErxStatusEvent(treatments []*common.Treatment, prescrip
 
 		columnsAndData := make(map[string]interface{}, 0)
 		columnsAndData["treatment_id"] = treatment.Id
-		columnsAndData["erx_status"] = prescriptionStatus.PrescriptionStatus
+		columnsAndData["erx_status"] = prescriptionStatus.Status
 		columnsAndData["status"] = status_active
 		if !prescriptionStatus.ReportedTimestamp.IsZero() {
 			columnsAndData["reported_timestamp"] = prescriptionStatus.ReportedTimestamp
@@ -944,7 +944,7 @@ func (d *DataService) AddErxStatusEvent(treatments []*common.Treatment, prescrip
 
 }
 
-func (d *DataService) GetPrescriptionStatusEventsForPatient(patientId int64) ([]*common.PrescriptionStatus, error) {
+func (d *DataService) GetPrescriptionStatusEventsForPatient(patientId int64) ([]*common.StatusEvent, error) {
 	rows, err := d.DB.Query(`select erx_status_events.treatment_id, treatment.erx_id, erx_status_events.erx_status, erx_status_events.creation_date from treatment 
 								inner join treatment_plan on treatment_plan_id = treatment_plan.id 
 								inner join patient_visit on treatment_plan.patient_visit_id = patient_visit.id 
@@ -956,7 +956,7 @@ func (d *DataService) GetPrescriptionStatusEventsForPatient(patientId int64) ([]
 	}
 	defer rows.Close()
 
-	prescriptionStatuses := make([]*common.PrescriptionStatus, 0)
+	prescriptionStatuses := make([]*common.StatusEvent, 0)
 	for rows.Next() {
 		var treatmentId int64
 		var prescriptionId sql.NullInt64
@@ -967,10 +967,10 @@ func (d *DataService) GetPrescriptionStatusEventsForPatient(patientId int64) ([]
 			return nil, err
 		}
 
-		prescriptionStatus := &common.PrescriptionStatus{
-			PrescriptionStatus: status,
-			TreatmentId:        treatmentId,
-			StatusTimestamp:    creationDate,
+		prescriptionStatus := &common.StatusEvent{
+			Status:          status,
+			TreatmentId:     treatmentId,
+			StatusTimestamp: creationDate,
 		}
 
 		if prescriptionId.Valid {
@@ -983,7 +983,7 @@ func (d *DataService) GetPrescriptionStatusEventsForPatient(patientId int64) ([]
 	return prescriptionStatuses, rows.Err()
 }
 
-func (d *DataService) GetPrescriptionStatusEventsForTreatment(treatmentId int64) ([]*common.PrescriptionStatus, error) {
+func (d *DataService) GetPrescriptionStatusEventsForTreatment(treatmentId int64) ([]*common.StatusEvent, error) {
 	rows, err := d.DB.Query(`select erx_status_events.treatment_id, erx_status_events.erx_status, erx_status_events.event_details, erx_status_events.creation_date
 									  from erx_status_events where treatment_id = ? order by erx_status_events.creation_date desc`, treatmentId)
 	if err != nil {
@@ -991,11 +991,11 @@ func (d *DataService) GetPrescriptionStatusEventsForTreatment(treatmentId int64)
 	}
 	defer rows.Close()
 
-	prescriptionStatuses := make([]*common.PrescriptionStatus, 0)
+	prescriptionStatuses := make([]*common.StatusEvent, 0)
 	for rows.Next() {
 		var statusDetails sql.NullString
-		var prescriptionStatus common.PrescriptionStatus
-		err = rows.Scan(&prescriptionStatus.TreatmentId, &prescriptionStatus.PrescriptionStatus, &statusDetails, &prescriptionStatus.StatusTimestamp)
+		var prescriptionStatus common.StatusEvent
+		err = rows.Scan(&prescriptionStatus.TreatmentId, &prescriptionStatus.Status, &statusDetails, &prescriptionStatus.StatusTimestamp)
 		if err != nil {
 			return nil, err
 		}

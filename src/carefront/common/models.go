@@ -134,28 +134,28 @@ type TreatmentPlan struct {
 }
 
 type RefillRequestItem struct {
-	Id                               int64                 `json:"id,string"`
-	RxRequestQueueItemId             int64                 `json:"-"`
-	ReferenceNumber                  string                `json:"-"`
-	PharmacyRxReferenceNumber        string                `json:"-"`
-	RequestedDrugDescription         string                `json:"requested_drug_name"`
-	RequestedRefillAmount            string                `json:"requested_refill"`
-	ApprovedRefillAmount             int64                 `json:"approved_refill,string,omitempty"`
-	RequestedDispense                string                `json:"requested_dispense_value"`
-	RequestedDispenseUnitDescription string                `json:"requested_dispense_unit_description,omitempty"`
-	ErxPatientId                     int64                 `json:"-"`
-	PatientAddedForRequest           bool                  `json:"-"`
-	RequestDateStamp                 time.Time             `json:"requested_date"`
-	ClinicianId                      int64                 `json:"-"`
-	Patient                          *Patient              `json:"patient,omitempty"`
-	RequestedPrescription            *Treatment            `json:"requested_prescription,omitempty"`
-	DispensedPrescription            *Treatment            `json:"dispensed_prescription"`
-	Doctor                           *Doctor               `json:"-"`
-	TreatmentPlanId                  int64                 `json:"treatment_plan_id,omitempty"`
-	RxHistory                        []*PrescriptionStatus `json:"erx_history,omitempty"`
-	Status                           string                `json:"status,omitempty"`
-	Comments                         string                `json:"comments,omitempty"`
-	DenialReason                     string                `json:"denial_reason,omitempty"`
+	Id                               int64          `json:"id,string"`
+	RxRequestQueueItemId             int64          `json:"-"`
+	ReferenceNumber                  string         `json:"-"`
+	PharmacyRxReferenceNumber        string         `json:"-"`
+	RequestedDrugDescription         string         `json:"requested_drug_name"`
+	RequestedRefillAmount            string         `json:"requested_refill"`
+	ApprovedRefillAmount             int64          `json:"approved_refill,string,omitempty"`
+	RequestedDispense                string         `json:"requested_dispense_value"`
+	RequestedDispenseUnitDescription string         `json:"requested_dispense_unit_description,omitempty"`
+	ErxPatientId                     int64          `json:"-"`
+	PatientAddedForRequest           bool           `json:"-"`
+	RequestDateStamp                 time.Time      `json:"requested_date"`
+	ClinicianId                      int64          `json:"-"`
+	Patient                          *Patient       `json:"patient,omitempty"`
+	RequestedPrescription            *Treatment     `json:"requested_prescription,omitempty"`
+	DispensedPrescription            *Treatment     `json:"dispensed_prescription"`
+	Doctor                           *Doctor        `json:"-"`
+	TreatmentPlanId                  int64          `json:"treatment_plan_id,omitempty"`
+	RxHistory                        []*StatusEvent `json:"erx_history,omitempty"`
+	Status                           string         `json:"status,omitempty"`
+	Comments                         string         `json:"comments,omitempty"`
+	DenialReason                     string         `json:"denial_reason,omitempty"`
 }
 
 type DoctorTreatmentTemplate struct {
@@ -225,4 +225,15 @@ type QuestionInfo struct {
 	AdditionalFields   map[string]string
 	FormattedFieldTags string
 	Required           bool
+}
+
+type StatusEvent struct {
+	TreatmentId          int64     `json:"-"`
+	PrescriptionId       int64     `json:"erx_id,string,omitempty"`
+	Status               string    `json:"erx_status,omitempty"`
+	StatusTimestamp      time.Time `json:"erx_status_timestamp,omitempty"`
+	ReportedTimestamp    time.Time `json:"reported_timestamp,omitempty"`
+	StatusDetails        string    `json:"erx_status_details,omitempty"`
+	ErxRefillRequestId   int64     `json:"-"`
+	RxRequestQueueItemId int64     `json:"-"`
 }

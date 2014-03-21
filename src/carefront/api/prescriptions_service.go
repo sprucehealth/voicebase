@@ -9,7 +9,7 @@ import (
 	"time"
 )
 
-func (d *DataService) AddRefillRequestStatusEvent(refillRequestStatus RefillRequestStatus) error {
+func (d *DataService) AddRefillRequestStatusEvent(refillRequestStatus common.StatusEvent) error {
 	tx, err := d.DB.Begin()
 	if err != nil {
 		return err
@@ -42,7 +42,7 @@ func (d *DataService) AddRefillRequestStatusEvent(refillRequestStatus RefillRequ
 	return tx.Commit()
 }
 
-func (d *DataService) GetPendingRefillRequestStatusEventsForClinic() ([]RefillRequestStatus, error) {
+func (d *DataService) GetPendingRefillRequestStatusEventsForClinic() ([]common.StatusEvent, error) {
 	rows, err := d.DB.Query(`select rx_refill_request_id, rx_refill_request.erx_request_queue_item_id, rx_refill_status, rx_refill_status_date   
 								from rx_refill_status_events 
 									inner join rx_refill_request on rx_refill_request_id = rx_refill_request.id
@@ -51,9 +51,9 @@ func (d *DataService) GetPendingRefillRequestStatusEventsForClinic() ([]RefillRe
 		return nil, err
 	}
 	defer rows.Close()
-	refillRequestStatuses := make([]RefillRequestStatus, 0)
+	refillRequestStatuses := make([]common.StatusEvent, 0)
 	for rows.Next() {
-		var refillRequestStatus RefillRequestStatus
+		var refillRequestStatus common.StatusEvent
 		err = rows.Scan(&refillRequestStatus.ErxRefillRequestId, &refillRequestStatus.RxRequestQueueItemId, &refillRequestStatus.Status, &refillRequestStatus.StatusTimestamp)
 		if err != nil {
 			return nil, err

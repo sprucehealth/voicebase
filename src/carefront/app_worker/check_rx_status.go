@@ -2,7 +2,6 @@ package app_worker
 
 import (
 	"carefront/api"
-	"carefront/apiservice"
 	"carefront/common"
 	"carefront/libs/erx"
 	"carefront/libs/golog"
@@ -57,7 +56,7 @@ func ConsumeMessageFromQueue(DataApi api.DataAPI, ERxApi erx.ERxAPI, ErxQueue *c
 	// whether or not to delete a message from the queue
 	startTime := time.Now()
 	for _, msg := range msgs {
-		statusCheckMessage := &apiservice.PrescriptionStatusCheckMessage{}
+		statusCheckMessage := &common.PrescriptionStatusCheckMessage{}
 		err := json.Unmarshal([]byte(msg.Body), statusCheckMessage)
 		if err != nil {
 			golog.Errorf("Unable to correctly parse json object for status check: %s", err.Error())
@@ -96,12 +95,12 @@ func ConsumeMessageFromQueue(DataApi api.DataAPI, ERxApi erx.ERxAPI, ErxQueue *c
 		// only hold on to the latest status event per treatment because that will help us
 		// determine whether or not there are any treatments that do not have the end state
 		// of the messages
-		latestPendingStatusPerPrescription := make(map[int64]*common.PrescriptionStatus)
+		latestPendingStatusPerPrescription := make(map[int64]*common.StatusEvent)
 		for _, prescriptionStatus := range prescriptionStatuses {
 			// the first occurence of every new event per prescription will be the latest because they are ordered by time
 			if latestPendingStatusPerPrescription[prescriptionStatus.PrescriptionId] == nil {
 				// only keep track of tasks that have not reached the end state yet
-				if prescriptionStatus.PrescriptionId != 0 && prescriptionStatus.PrescriptionStatus == api.ERX_STATUS_SENDING {
+				if prescriptionStatus.PrescriptionId != 0 && prescriptionStatus.Status == api.ERX_STATUS_SENDING {
 					latestPendingStatusPerPrescription[prescriptionStatus.PrescriptionId] = prescriptionStatus
 				}
 			}
@@ -151,7 +150,7 @@ func ConsumeMessageFromQueue(DataApi api.DataAPI, ERxApi erx.ERxAPI, ErxQueue *c
 				}
 
 				// get the error details for this medication
-				err = DataApi.AddErxStatusEvent([]*common.Treatment{treatment}, common.PrescriptionStatus{PrescriptionStatus: api.ERX_STATUS_ERROR, StatusDetails: prescriptionLogs[0].AdditionalInfo, ReportedTimestamp: prescriptionLogs[0].LogTimeStamp})
+				err = DataApi.AddErxStatusEvent([]*common.Treatment{treatment}, common.StatusEvent{Status: api.ERX_STATUS_ERROR, StatusDetails: prescriptionLogs[0].AdditionalInfo, ReportedTimestamp: prescriptionLogs[0].LogTimeStamp})
 				if err != nil {
 					statFailure.Inc(1)
 					golog.Errorf("Unable to add error event for status: %s", err.Error())
@@ -177,7 +176,7 @@ func ConsumeMessageFromQueue(DataApi api.DataAPI, ERxApi erx.ERxAPI, ErxQueue *c
 				}
 
 				// add an event
-				err = DataApi.AddErxStatusEvent([]*common.Treatment{treatment}, common.PrescriptionStatus{PrescriptionStatus: api.ERX_STATUS_SENT, ReportedTimestamp: prescriptionLogs[0].LogTimeStamp})
+				err = DataApi.AddErxStatusEvent([]*common.Treatment{treatment}, common.StatusEvent{Status: api.ERX_STATUS_SENT, ReportedTimestamp: prescriptionLogs[0].LogTimeStamp})
 				if err != nil {
 					statFailure.Inc(1)
 					golog.Errorf("Unable to add status event for this treatment: %s", err.Error())

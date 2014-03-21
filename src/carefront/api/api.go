@@ -126,9 +126,9 @@ type PatientVisitAPI interface {
 	GetTreatmentBasedOnPrescriptionId(erxId int64) (*common.Treatment, error)
 	GetTreatmentFromId(treatmentId int64) (*common.Treatment, error)
 	MarkTreatmentsAsPrescriptionsSent(treatments []*common.Treatment, pharmacySentTo *pharmacy.PharmacyData, doctorId, patientVisitId int64) error
-	AddErxStatusEvent(treatments []*common.Treatment, prescriptionStatus common.PrescriptionStatus) error
-	GetPrescriptionStatusEventsForPatient(patientId int64) ([]*common.PrescriptionStatus, error)
-	GetPrescriptionStatusEventsForTreatment(treatmentId int64) ([]*common.PrescriptionStatus, error)
+	AddErxStatusEvent(treatments []*common.Treatment, prescriptionStatus common.StatusEvent) error
+	GetPrescriptionStatusEventsForPatient(patientId int64) ([]*common.StatusEvent, error)
+	GetPrescriptionStatusEventsForTreatment(treatmentId int64) ([]*common.StatusEvent, error)
 }
 
 type RefillRequestDenialReason struct {
@@ -138,23 +138,14 @@ type RefillRequestDenialReason struct {
 }
 
 type PrescriptionsAPI interface {
-	GetPendingRefillRequestStatusEventsForClinic() ([]RefillRequestStatus, error)
+	GetPendingRefillRequestStatusEventsForClinic() ([]common.StatusEvent, error)
 	CreateRefillRequest(*common.RefillRequestItem) error
-	AddRefillRequestStatusEvent(refillRequestStatus RefillRequestStatus) error
+	AddRefillRequestStatusEvent(refillRequestStatus common.StatusEvent) error
 	GetRefillRequestFromId(refillRequestId int64) (*common.RefillRequestItem, error)
 	GetRefillRequestDenialReasons() ([]*RefillRequestDenialReason, error)
 	MarkRefillRequestAsApproved(approvedRefillCount, rxRefillRequestId, prescriptionId int64, comments string) error
 	MarkRefillRequestAsDenied(denialReasonId, rxRefillRequestId, prescriptionId int64, comments string) error
 	LinkRequestedPrescriptionToOriginalTreatment(requestedTreatment *common.Treatment, patient *common.Patient) error
-}
-
-type RefillRequestStatus struct {
-	ErxRefillRequestId   int64
-	RxRequestQueueItemId int64
-	Status               string
-	PrescriptionId       int64
-	StatusTimestamp      time.Time
-	ReportedTimestamp    time.Time
 }
 
 type DoctorAPI interface {

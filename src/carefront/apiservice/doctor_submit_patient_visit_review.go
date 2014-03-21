@@ -35,11 +35,6 @@ type SubmitPatientVisitReviewResponse struct {
 	Result string `json:"result"`
 }
 
-type PrescriptionStatusCheckMessage struct {
-	PatientId int64
-	DoctorId  int64
-}
-
 const (
 	patientVisitUpdateNotification     = "There is an update to your case. Tap %s://visit to view."
 	successful_erx_routing_pharmacy_id = "47731"
@@ -192,7 +187,7 @@ func (d *DoctorSubmitPatientVisitReviewHandler) submitPatientVisitReview(w http.
 			}
 
 			if len(successfulTreatments) > 0 {
-				err = d.DataApi.AddErxStatusEvent(successfulTreatments, common.PrescriptionStatus{PrescriptionStatus: api.ERX_STATUS_SENDING})
+				err = d.DataApi.AddErxStatusEvent(successfulTreatments, common.StatusEvent{Status: api.ERX_STATUS_SENDING})
 				if err != nil {
 					WriteDeveloperError(w, http.StatusInternalServerError, "Unable to add an erx status event: "+err.Error())
 					return
@@ -200,7 +195,7 @@ func (d *DoctorSubmitPatientVisitReviewHandler) submitPatientVisitReview(w http.
 			}
 
 			if len(unSuccessfulTreatments) > 0 {
-				err = d.DataApi.AddErxStatusEvent(unSuccessfulTreatments, common.PrescriptionStatus{PrescriptionStatus: api.ERX_STATUS_SEND_ERROR})
+				err = d.DataApi.AddErxStatusEvent(unSuccessfulTreatments, common.StatusEvent{Status: api.ERX_STATUS_SEND_ERROR})
 				if err != nil {
 					WriteDeveloperError(w, http.StatusInternalServerError, "Unable to add an erx status event: "+err.Error())
 					return
@@ -268,7 +263,7 @@ func (d *DoctorSubmitPatientVisitReviewHandler) submitPatientVisitReview(w http.
 func (d *DoctorSubmitPatientVisitReviewHandler) queueUpJobForErxStatus(patientId, doctorId int64) error {
 	// queue up a job to get the updated status of the prescription
 	// to know when exatly the message was sent to the pharmacy
-	erxMessage := &PrescriptionStatusCheckMessage{
+	erxMessage := &common.PrescriptionStatusCheckMessage{
 		PatientId: patientId,
 		DoctorId:  doctorId,
 	}
