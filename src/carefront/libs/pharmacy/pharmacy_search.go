@@ -18,13 +18,13 @@ type PharmacyData struct {
 	State           string   `json:"state,omitempty"`
 	Postal          string   `json:"zip_code,omitempty"`
 	Country         string   `json:"country,omitempty"`
-	Latitude        string   `json:"lat,omitempty"`
-	Longitude       string   `json:"lng,omitempty"`
+	Latitude        float64  `json:"lat,omitempty"`
+	Longitude       float64  `json:"lng,omitempty"`
 	Phone           string   `json:"phone,omitempty"`
 	Fax             string   `json:"fax,omitempty"`
 	Url             string   `json:"url,omitempty"`
 	PharmacyTypes   []string `json:"pharmacy_types,omitempty"`
-	DistanceInMiles float64  `json:"distance,string,omitempty"`
+	DistanceInMiles float64  `json:"distance,omitempty"`
 }
 
 type PharmacySearchAPI interface {
