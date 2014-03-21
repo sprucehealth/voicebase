@@ -89,7 +89,7 @@ func TestPatientVisitReview(t *testing.T) {
 	stubErxService := &erx.StubErxService{}
 	stubErxService.PatientErxId = 10
 	stubErxService.PrescriptionIdsToReturn = []int64{}
-	stubErxService.PrescriptionIdToPrescriptionStatus = make(map[int64]string)
+	stubErxService.PrescriptionIdToPrescriptionStatuses = make(map[int64][]common.StatusEvent)
 
 	erxStatusQueue := &common.SQSQueue{}
 	erxStatusQueue.QueueService = &sqs.StubSQS{}
@@ -207,8 +207,8 @@ func TestPatientVisitReview(t *testing.T) {
 	treatments := []*common.Treatment{treatment1, treatment2}
 
 	stubErxService.PrescriptionIdsToReturn = []int64{10, 20}
-	stubErxService.PrescriptionIdToPrescriptionStatus[10] = api.ERX_STATUS_SENT
-	stubErxService.PrescriptionIdToPrescriptionStatus[20] = api.ERX_STATUS_ERROR
+	stubErxService.PrescriptionIdToPrescriptionStatuses[10] = []common.StatusEvent{common.StatusEvent{Status: api.ERX_STATUS_SENT}}
+	stubErxService.PrescriptionIdToPrescriptionStatuses[20] = []common.StatusEvent{common.StatusEvent{Status: api.ERX_STATUS_ERROR, StatusDetails: "error test"}}
 
 	addAndGetTreatmentsForPatientVisit(testData, treatments, doctor.AccountId.Int64(), patientVisitResponse.PatientVisitId, t)
 	getTreatmentsResponse := getTreatmentsForTreatmentPlan(testData, t, doctorPatientVisitReviewResponse.TreatmentPlanId, doctor)

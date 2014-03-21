@@ -101,6 +101,11 @@ func ConsumeMessageFromQueue(DataApi api.DataAPI, ERxApi erx.ERxAPI, ErxQueue *c
 		// nothing to do if there are no prescriptions for this patient to keep track of
 		if prescriptionStatuses == nil || len(prescriptionStatuses) == 0 {
 			golog.Infof("No prescription statuses to keep track of for patient")
+			err = ErxQueue.QueueService.DeleteMessage(ErxQueue.QueueUrl, msg.ReceiptHandle)
+			if err != nil {
+				statFailure.Inc(1)
+				golog.Errorf("Failed to delete message: %s", err.Error())
+			}
 			continue
 		}
 
@@ -164,11 +169,24 @@ func ConsumeMessageFromQueue(DataApi api.DataAPI, ERxApi erx.ERxAPI, ErxQueue *c
 				if statusCheckMessage.CheckRefillRequest {
 					if err := DataApi.AddRefillRequestStatusEvent(common.StatusEvent{
 						Status:             api.ERX_STATUS_ERROR,
-						ReportedTimestamp:  prescriptionLogs[0].LogTimeStamp,
+						ReportedTimestamp:  prescriptionLogs[0].LogTimestamp,
 						ErxRefillRequestId: prescriptionStatus.ErxRefillRequestId,
+						StatusDetails:      prescriptionLogs[0].AdditionalInfo,
 					}); err != nil {
 						statFailure.Inc(1)
 						golog.Errorf("Unable to add status event for refill request: %+v", err)
+						failed++
+						break
+					}
+
+					if err := DataApi.InsertItemIntoDoctorQueue(api.DoctorQueueItem{
+						DoctorId:  doctor.DoctorId.Int64(),
+						ItemId:    prescriptionStatus.ErxRefillRequestId,
+						Status:    api.STATUS_PENDING,
+						EventType: api.EVENT_TYPE_REFILL_TRANSMISSION_ERROR,
+					}); err != nil {
+						statFailure.Inc(1)
+						golog.Errorf("Unable to insert refill transmission error into doctor queue: %+v", err)
 						failed++
 						break
 					}
@@ -182,8 +200,10 @@ func ConsumeMessageFromQueue(DataApi api.DataAPI, ERxApi erx.ERxAPI, ErxQueue *c
 					}
 
 					// get the error details for this medication
-					err = DataApi.AddErxStatusEvent([]*common.Treatment{treatment}, common.StatusEvent{Status: api.ERX_STATUS_ERROR, StatusDetails: prescriptionLogs[0].AdditionalInfo, ReportedTimestamp: prescriptionLogs[0].LogTimeStamp})
-					if err != nil {
+					if err := DataApi.AddErxStatusEvent([]*common.Treatment{treatment}, common.StatusEvent{Status: api.ERX_STATUS_ERROR,
+						StatusDetails:     prescriptionLogs[0].AdditionalInfo,
+						ReportedTimestamp: prescriptionLogs[0].LogTimestamp,
+					}); err != nil {
 						statFailure.Inc(1)
 						golog.Errorf("Unable to add error event for status: %s", err.Error())
 						failed++
@@ -207,7 +227,7 @@ func ConsumeMessageFromQueue(DataApi api.DataAPI, ERxApi erx.ERxAPI, ErxQueue *c
 				if statusCheckMessage.CheckRefillRequest {
 					if err := DataApi.AddRefillRequestStatusEvent(common.StatusEvent{
 						Status:             api.ERX_STATUS_SENT,
-						ReportedTimestamp:  prescriptionLogs[0].LogTimeStamp,
+						ReportedTimestamp:  prescriptionLogs[0].LogTimestamp,
 						ErxRefillRequestId: prescriptionStatus.ErxRefillRequestId,
 					}); err != nil {
 						statFailure.Inc(1)
@@ -225,7 +245,7 @@ func ConsumeMessageFromQueue(DataApi api.DataAPI, ERxApi erx.ERxAPI, ErxQueue *c
 					}
 
 					// add an event
-					err = DataApi.AddErxStatusEvent([]*common.Treatment{treatment}, common.StatusEvent{Status: api.ERX_STATUS_SENT, ReportedTimestamp: prescriptionLogs[0].LogTimeStamp})
+					err = DataApi.AddErxStatusEvent([]*common.Treatment{treatment}, common.StatusEvent{Status: api.ERX_STATUS_SENT, ReportedTimestamp: prescriptionLogs[0].LogTimestamp})
 					if err != nil {
 						statFailure.Inc(1)
 						golog.Errorf("Unable to add status event for this treatment: %s", err.Error())
@@ -237,7 +257,7 @@ func ConsumeMessageFromQueue(DataApi api.DataAPI, ERxApi erx.ERxAPI, ErxQueue *c
 				if statusCheckMessage.CheckRefillRequest {
 					if err := DataApi.AddRefillRequestStatusEvent(common.StatusEvent{
 						Status:             api.ERX_STATUS_DELETED,
-						ReportedTimestamp:  prescriptionLogs[0].LogTimeStamp,
+						ReportedTimestamp:  prescriptionLogs[0].LogTimestamp,
 						ErxRefillRequestId: prescriptionStatus.ErxRefillRequestId,
 					}); err != nil {
 						statFailure.Inc(1)

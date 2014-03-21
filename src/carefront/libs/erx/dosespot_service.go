@@ -76,7 +76,7 @@ type ByLogTimeStamp []*PrescriptionLog
 func (a ByLogTimeStamp) Len() int      { return len(a) }
 func (a ByLogTimeStamp) Swap(i, j int) { a[i], a[j] = a[j], a[i] }
 func (a ByLogTimeStamp) Less(i, j int) bool {
-	return a[i].LogTimeStamp.Before(a[j].LogTimeStamp)
+	return a[i].LogTimestamp.Before(a[j].LogTimestamp)
 }
 
 func getDoseSpotClient() *soapClient {
@@ -496,7 +496,7 @@ func (d *DoseSpotService) GetPrescriptionStatus(clincianId int64, prescriptionId
 	if response.Log != nil {
 		for _, logDetails := range response.Log {
 			prescriptionLog := &PrescriptionLog{
-				LogTimeStamp:       logDetails.DateTimeStamp.DateTime,
+				LogTimestamp:       logDetails.DateTimeStamp.DateTime,
 				PrescriptionStatus: logDetails.Status,
 				AdditionalInfo:     logDetails.AdditionalInfo,
 			}

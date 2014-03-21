@@ -240,6 +240,16 @@ func populateAnswersToStoreForQuestion(role string, answerToQuestionItem *Answer
 	return answersToStore
 }
 
+func queueUpJobForErxStatus(erxStatusQueue *common.SQSQueue, prescriptionStatusCheckMessage common.PrescriptionStatusCheckMessage) error {
+	jsonData, err := json.Marshal(prescriptionStatusCheckMessage)
+	if err != nil {
+		return err
+	}
+
+	// queue up a job
+	return erxStatusQueue.QueueService.SendMessage(erxStatusQueue.QueueUrl, 0, string(jsonData))
+}
+
 func createAnswersToStoreForQuestion(role string, roleId, questionId, contextId, layoutVersionId int64, answerIntakes []*AnswerItem) []*common.AnswerIntake {
 	answersToStore := make([]*common.AnswerIntake, len(answerIntakes))
 	for i, answerIntake := range answerIntakes {

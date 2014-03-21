@@ -86,8 +86,6 @@ func (d *DoctorQueueItem) GetTitleAndSubtitle(dataApi DataAPI) (string, string, 
 		switch d.Status {
 		case QUEUE_ITEM_STATUS_PENDING:
 			title = fmt.Sprintf("Refill request for %s %s", patient.FirstName, patient.LastName)
-		case QUEUE_ITEM_STATUS_ONGOING:
-			title = fmt.Sprintf("Continue refill request for %s %s", patient.FirstName, patient.LastName)
 		case QUEUE_ITEM_STATUS_REFILL_APPROVED:
 			title = fmt.Sprintf("Refill request approved for %s %s", patient.FirstName, patient.LastName)
 			formattedTime := d.EnqueueDate.Format("3:04pm")
@@ -97,6 +95,26 @@ func (d *DoctorQueueItem) GetTitleAndSubtitle(dataApi DataAPI) (string, string, 
 			formattedTime := d.EnqueueDate.Format("3:04pm")
 			subtitle = fmt.Sprintf("%s %d at %s", d.EnqueueDate.Month().String(), d.EnqueueDate.Day(), formattedTime)
 		}
+
+	case EVENT_TYPE_REFILL_TRANSMISSION_ERROR:
+		patient, err := dataApi.GetPatientFromRefillRequestId(d.ItemId)
+		if err != nil {
+			return "", "", err
+		}
+
+		if patient == nil {
+			return "", "", nil
+		}
+
+		switch d.Status {
+		case QUEUE_ITEM_STATUS_PENDING:
+			title = fmt.Sprintf("Error completing refill request for %s %s", patient.FirstName, patient.LastName)
+		case QUEUE_ITEM_STATUS_COMPLETED:
+			title = fmt.Sprintf("Refill request error resolved for %s %s", patient.FirstName, patient.LastName)
+			formattedTime := d.EnqueueDate.Format("3:04pm")
+			subtitle = fmt.Sprintf("%s %d at %s", d.EnqueueDate.Month().String(), d.EnqueueDate.Day(), formattedTime)
+		}
+
 	case EVENT_TYPE_TRANSMISSION_ERROR:
 		patient, err := dataApi.GetPatientFromTreatmentId(d.ItemId)
 		if err != nil || patient == nil {
@@ -148,7 +166,7 @@ func (d *DoctorQueueItem) GetDisplayTypes() []string {
 				return []string{DISPLAY_TYPE_TITLE_SUBTITLE_ACTIONABLE}
 			}
 		}
-	case EVENT_TYPE_REFILL_REQUEST:
+	case EVENT_TYPE_REFILL_REQUEST, EVENT_TYPE_REFILL_TRANSMISSION_ERROR:
 		switch d.Status {
 		case QUEUE_ITEM_STATUS_PENDING, QUEUE_ITEM_STATUS_ONGOING:
 			if d.PositionInQueue == 0 {
@@ -156,7 +174,7 @@ func (d *DoctorQueueItem) GetDisplayTypes() []string {
 			} else {
 				return []string{DISPLAY_TYPE_TITLE_SUBTITLE_ACTIONABLE}
 			}
-		case QUEUE_ITEM_STATUS_REFILL_APPROVED, QUEUE_ITEM_STATUS_REFILL_DENIED:
+		case QUEUE_ITEM_STATUS_REFILL_APPROVED, QUEUE_ITEM_STATUS_REFILL_DENIED, QUEUE_ITEM_STATUS_COMPLETED:
 			return []string{DISPLAY_TYPE_TITLE_SUBTITLE_ACTIONABLE}
 		}
 	case EVENT_TYPE_TRANSMISSION_ERROR:
@@ -185,7 +203,7 @@ func (d *DoctorQueueItem) GetActionUrl() string {
 		}
 	case EVENT_TYPE_TREATMENT_PLAN:
 		return fmt.Sprintf("%s%s?treatment_plan_id=%d", SpruceButtonBaseActionUrl, viewTreatedPatientVisitReviewAction, d.ItemId)
-	case EVENT_TYPE_REFILL_REQUEST:
+	case EVENT_TYPE_REFILL_REQUEST, EVENT_TYPE_REFILL_TRANSMISSION_ERROR:
 		return fmt.Sprintf("%s%s?refill_request_id=%d", SpruceButtonBaseActionUrl, viewRefillRequestAction, d.ItemId)
 	case EVENT_TYPE_TRANSMISSION_ERROR:
 		return fmt.Sprintf("%s%s?treatment_id=%d", SpruceButtonBaseActionUrl, viewTransmissionErrorAction, d.ItemId)
@@ -211,14 +229,18 @@ func (d *DoctorQueueItem) GetButton() *Button {
 			button.ButtonActionUrl = fmt.Sprintf("%s%s?patient_visit_id=%d", SpruceButtonBaseActionUrl, beginPatientVisitReviewAction, d.ItemId)
 			return button
 		}
-	case EVENT_TYPE_REFILL_REQUEST:
+	case EVENT_TYPE_REFILL_REQUEST, EVENT_TYPE_REFILL_TRANSMISSION_ERROR:
 		switch d.Status {
 		case QUEUE_ITEM_STATUS_PENDING:
 			if d.PositionInQueue != 0 {
 				return nil
 			}
 			button := &Button{}
-			button.ButtonText = "Begin"
+			if d.EventType == EVENT_TYPE_REFILL_TRANSMISSION_ERROR {
+				button.ButtonText = "Resolve Error"
+			} else {
+				button.ButtonText = "Begin"
+			}
 			button.ButtonActionUrl = fmt.Sprintf("%s%s?refill_request_id=%d", SpruceButtonBaseActionUrl, viewRefillRequestAction, d.ItemId)
 			return button
 		case QUEUE_ITEM_STATUS_ONGOING:
@@ -226,7 +248,11 @@ func (d *DoctorQueueItem) GetButton() *Button {
 				return nil
 			}
 			button := &Button{}
-			button.ButtonText = "Continue"
+			if d.EventType == EVENT_TYPE_REFILL_TRANSMISSION_ERROR {
+				button.ButtonText = "Resolve Error"
+			} else {
+				button.ButtonText = "Continue"
+			}
 			button.ButtonActionUrl = fmt.Sprintf("%s%s?refill_request_id=%d", SpruceButtonBaseActionUrl, viewRefillRequestAction, d.ItemId)
 			return button
 		}

@@ -6,6 +6,7 @@ import (
 	"carefront/apiservice"
 	"carefront/app_worker"
 	"carefront/common"
+	"carefront/libs/aws/sqs"
 	"carefront/libs/erx"
 	"carefront/libs/pharmacy"
 	"net/http"
@@ -112,7 +113,7 @@ func TestNewRefillRequestForExistingPatientAndExistingTreatment(t *testing.T) {
 	if err != nil {
 		t.Fatal("Unable to update treatment with erx id: " + err.Error())
 	}
-
+	prescriptionIdForRequestedPrescription := int64(123456)
 	fiveMinutesBeforeTestTime := testTime.Add(-5 * time.Minute)
 	// Get StubErx to return refill requests in the refillRequest call
 	refillRequestItem := &common.RefillRequestItem{
@@ -127,7 +128,7 @@ func TestNewRefillRequestForExistingPatientAndExistingTreatment(t *testing.T) {
 		RequestDateStamp:          testTime,
 		ClinicianId:               clinicianId,
 		RequestedPrescription: &common.Treatment{
-			PrescriptionId: common.NewObjectId(123456),
+			PrescriptionId: common.NewObjectId(prescriptionIdForRequestedPrescription),
 			ErxPharmacyId:  1234,
 			DrugDBIds: map[string]string{
 				erx.LexiDrugSynId:     "1234",
@@ -168,6 +169,12 @@ func TestNewRefillRequestForExistingPatientAndExistingTreatment(t *testing.T) {
 		PharmacyDetailsToReturn:      pharmacyToReturn,
 		RefillRxRequestQueueToReturn: []*common.RefillRequestItem{refillRequestItem},
 		RefillRequestPrescriptionId:  approvedRefillRequestPrescriptionId,
+		PrescriptionIdToPrescriptionStatuses: map[int64][]common.StatusEvent{
+			prescriptionIdForRequestedPrescription: []common.StatusEvent{common.StatusEvent{
+				Status: api.ERX_STATUS_SENT,
+			},
+			},
+		},
 	}
 
 	// Call the Consume method
@@ -249,9 +256,14 @@ func TestNewRefillRequestForExistingPatientAndExistingTreatment(t *testing.T) {
 	params.Set("approved_refill_amount", strconv.FormatInt(approvedRefillAmount, 10))
 	params.Set("comments", comment)
 
+	erxStatusQueue := &common.SQSQueue{}
+	erxStatusQueue.QueueService = &sqs.StubSQS{}
+	erxStatusQueue.QueueUrl = "local-erx"
+
 	doctorRefillRequestsHandler := &apiservice.DoctorRefillRequestHandler{
-		DataApi: testData.DataApi,
-		ErxApi:  stubErxAPI,
+		DataApi:        testData.DataApi,
+		ErxApi:         stubErxAPI,
+		ErxStatusQueue: erxStatusQueue,
 	}
 
 	ts := httptest.NewServer(doctorRefillRequestsHandler)
@@ -308,6 +320,22 @@ func TestNewRefillRequestForExistingPatientAndExistingTreatment(t *testing.T) {
 		t.Fatalf("Expected there to be no pending items in the doctor's queue instead there were %d", len(pendingItems))
 	}
 
+	// attempt to consume the message put into the queue
+	app_worker.ConsumeMessageFromQueue(testData.DataApi, stubErxAPI, erxStatusQueue, metrics.NewBiasedHistogram(), metrics.NewCounter(), metrics.NewCounter())
+
+	// now, the status of the refill request should be Sent
+	refillStatusEvents, err := testData.DataApi.GetRefillStatusEventsForRefillRequest(refillRequest.Id)
+	if err != nil {
+		t.Fatal("Unable to get refill status events for refill request: " + err.Error())
+	}
+
+	if len(refillStatusEvents) != 3 {
+		t.Fatalf("Expected 2 refill status events for refill request but got %d", len(refillStatusEvents))
+	}
+
+	if refillStatusEvents[0].Status != api.ERX_STATUS_SENT {
+		t.Fatal("Expected the top level item for the refill request to indicate that it was successfully sent to the pharmacy")
+	}
 }
 
 func TestRefillRequestComingFromDifferentPharmacyThanDispensedPrescription(t *testing.T) {
@@ -416,6 +444,7 @@ func TestRefillRequestComingFromDifferentPharmacyThanDispensedPrescription(t *te
 		t.Fatal("Unable to update treatment with erx id: " + err.Error())
 	}
 
+	prescriptionIdForRequestedPrescription := int64(123456)
 	fiveMinutesBeforeTestTime := testTime.Add(-5 * time.Minute)
 	// Get StubErx to return refill requests in the refillRequest call
 	refillRequestItem := &common.RefillRequestItem{
@@ -430,7 +459,7 @@ func TestRefillRequestComingFromDifferentPharmacyThanDispensedPrescription(t *te
 		RequestDateStamp:          testTime,
 		ClinicianId:               clinicianId,
 		RequestedPrescription: &common.Treatment{
-			PrescriptionId: common.NewObjectId(123456),
+			PrescriptionId: common.NewObjectId(prescriptionIdForRequestedPrescription),
 			ErxPharmacyId:  1234,
 			DrugDBIds: map[string]string{
 				erx.LexiDrugSynId:     "1234",
@@ -471,6 +500,13 @@ func TestRefillRequestComingFromDifferentPharmacyThanDispensedPrescription(t *te
 		PharmacyDetailsToReturn:      pharmacyToReturn,
 		RefillRxRequestQueueToReturn: []*common.RefillRequestItem{refillRequestItem},
 		RefillRequestPrescriptionId:  approvedRefillRequestPrescriptionId,
+		PrescriptionIdToPrescriptionStatuses: map[int64][]common.StatusEvent{
+			prescriptionIdForRequestedPrescription: []common.StatusEvent{common.StatusEvent{
+				Status:        api.ERX_STATUS_ERROR,
+				StatusDetails: "testing this error",
+			},
+			},
+		},
 	}
 
 	// Call the Consume method
@@ -548,6 +584,10 @@ func TestRefillRequestComingFromDifferentPharmacyThanDispensedPrescription(t *te
 		t.Fatal("Expected the pharmacies to be different between the requested and the dispensed prescriptions")
 	}
 
+	erxStatusQueue := &common.SQSQueue{}
+	erxStatusQueue.QueueService = &sqs.StubSQS{}
+	erxStatusQueue.QueueUrl = "local-erx"
+
 	// now, lets go ahead and attempt to approve this refill request
 	comment := "this is a test"
 	params := url.Values{}
@@ -557,8 +597,9 @@ func TestRefillRequestComingFromDifferentPharmacyThanDispensedPrescription(t *te
 	params.Set("comments", comment)
 
 	doctorRefillRequestsHandler := &apiservice.DoctorRefillRequestHandler{
-		DataApi: testData.DataApi,
-		ErxApi:  stubErxAPI,
+		DataApi:        testData.DataApi,
+		ErxApi:         stubErxAPI,
+		ErxStatusQueue: erxStatusQueue,
 	}
 
 	ts := httptest.NewServer(doctorRefillRequestsHandler)
@@ -615,6 +656,26 @@ func TestRefillRequestComingFromDifferentPharmacyThanDispensedPrescription(t *te
 		t.Fatalf("Expected there to be no pending items in the doctor's queue instead there were %d", len(pendingItems))
 	}
 
+	// attempt to consume the message put into the queue
+	app_worker.ConsumeMessageFromQueue(testData.DataApi, stubErxAPI, erxStatusQueue, metrics.NewBiasedHistogram(), metrics.NewCounter(), metrics.NewCounter())
+
+	// now, the status of the refill request should be Sent
+	refillStatusEvents, err := testData.DataApi.GetRefillStatusEventsForRefillRequest(refillRequest.Id)
+	if err != nil {
+		t.Fatal("Unable to get refill status events for refill request: " + err.Error())
+	}
+
+	if len(refillStatusEvents) != 3 {
+		t.Fatalf("Expected 2 refill status events for refill request but got %d", len(refillStatusEvents))
+	}
+
+	if refillStatusEvents[0].Status != api.ERX_STATUS_ERROR {
+		t.Fatal("Expected the top level item for the refill request to indicate that it was successfully sent to the pharmacy")
+	}
+
+	if refillStatusEvents[0].StatusDetails == "" {
+		t.Fatal("Expected there be to an error message for the refill request  given that there was an errror sending to pharmacy")
+	}
 }
 
 func TestNewRefillRequestWithUnlinkedTreatmentAndLinkedPatient(t *testing.T) {
@@ -635,7 +696,7 @@ func TestNewRefillRequestWithUnlinkedTreatmentAndLinkedPatient(t *testing.T) {
 	if err != nil {
 		t.Fatal("Unable to update patient with erx patient id : " + err.Error())
 	}
-
+	prescriptionIdForRequestedPrescription := int64(5504)
 	testTime := time.Now()
 	// Get StubErx to return refill requests in the refillRequest call
 	refillRequestItem := &common.RefillRequestItem{
@@ -650,7 +711,7 @@ func TestNewRefillRequestWithUnlinkedTreatmentAndLinkedPatient(t *testing.T) {
 		RequestDateStamp:          testTime,
 		ClinicianId:               clinicianId,
 		RequestedPrescription: &common.Treatment{
-			PrescriptionId:     common.NewObjectId(5504),
+			PrescriptionId:     common.NewObjectId(prescriptionIdForRequestedPrescription),
 			PrescriptionStatus: "Requested",
 			ErxPharmacyId:      123,
 			DrugDBIds: map[string]string{
@@ -707,6 +768,12 @@ func TestNewRefillRequestWithUnlinkedTreatmentAndLinkedPatient(t *testing.T) {
 	stubErxAPI := &erx.StubErxService{
 		PharmacyDetailsToReturn:      pharmacyToReturn,
 		RefillRxRequestQueueToReturn: []*common.RefillRequestItem{refillRequestItem},
+		PrescriptionIdToPrescriptionStatuses: map[int64][]common.StatusEvent{
+			prescriptionIdForRequestedPrescription: []common.StatusEvent{common.StatusEvent{
+				Status: api.ERX_STATUS_DELETED,
+			},
+			},
+		},
 	}
 
 	// Call the Consume method
@@ -785,6 +852,10 @@ func TestNewRefillRequestWithUnlinkedTreatmentAndLinkedPatient(t *testing.T) {
 		t.Fatal("Unable to get the denial reasons for the refill request")
 	}
 
+	erxStatusQueue := &common.SQSQueue{}
+	erxStatusQueue.QueueService = &sqs.StubSQS{}
+	erxStatusQueue.QueueUrl = "local-erx"
+
 	// now, lets go ahead and attempt to deny this refill request
 	comment := "this is a test"
 	params := url.Values{}
@@ -794,8 +865,9 @@ func TestNewRefillRequestWithUnlinkedTreatmentAndLinkedPatient(t *testing.T) {
 	params.Set("refill_request_id", strconv.FormatInt(refillRequest.Id, 10))
 
 	doctorRefillRequestsHandler := &apiservice.DoctorRefillRequestHandler{
-		DataApi: testData.DataApi,
-		ErxApi:  stubErxAPI,
+		DataApi:        testData.DataApi,
+		ErxApi:         stubErxAPI,
+		ErxStatusQueue: erxStatusQueue,
 	}
 
 	ts := httptest.NewServer(doctorRefillRequestsHandler)
@@ -852,6 +924,22 @@ func TestNewRefillRequestWithUnlinkedTreatmentAndLinkedPatient(t *testing.T) {
 		t.Fatalf("Expected there to be no pending items in the doctor's queue instead there were %d", len(pendingItems))
 	}
 
+	// attempt to consume the message put into the queue
+	app_worker.ConsumeMessageFromQueue(testData.DataApi, stubErxAPI, erxStatusQueue, metrics.NewBiasedHistogram(), metrics.NewCounter(), metrics.NewCounter())
+
+	// now, the status of the refill request should be Sent
+	refillStatusEvents, err := testData.DataApi.GetRefillStatusEventsForRefillRequest(refillRequest.Id)
+	if err != nil {
+		t.Fatal("Unable to get refill status events for refill request: " + err.Error())
+	}
+
+	if len(refillStatusEvents) != 3 {
+		t.Fatalf("Expected 2 refill status events for refill request but got %d", len(refillStatusEvents))
+	}
+
+	if refillStatusEvents[0].Status != api.ERX_STATUS_DELETED {
+		t.Fatal("Expected the top level item for the refill request to indicate that it was successfully sent to the pharmacy")
+	}
 }
 
 func TestNewRefillRequestWithUnlinkedTreatmentAndUnlinkedPatient(t *testing.T) {

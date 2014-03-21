@@ -140,12 +140,13 @@ type RefillRequestDenialReason struct {
 type PrescriptionsAPI interface {
 	GetPendingRefillRequestStatusEventsForClinic() ([]common.StatusEvent, error)
 	GetApprovedOrDeniedRefillRequestsForPatient(patientId int64) ([]common.StatusEvent, error)
+	GetRefillStatusEventsForRefillRequest(refillRequestId int64) ([]common.StatusEvent, error)
 	CreateRefillRequest(*common.RefillRequestItem) error
 	AddRefillRequestStatusEvent(refillRequestStatus common.StatusEvent) error
 	GetRefillRequestFromId(refillRequestId int64) (*common.RefillRequestItem, error)
 	GetRefillRequestDenialReasons() ([]*RefillRequestDenialReason, error)
-	MarkRefillRequestAsApproved(approvedRefillCount, rxRefillRequestId, prescriptionId int64, comments string) error
-	MarkRefillRequestAsDenied(denialReasonId, rxRefillRequestId, prescriptionId int64, comments string) error
+	MarkRefillRequestAsApproved(approvedRefillCount, rxRefillRequestId int64, comments string) error
+	MarkRefillRequestAsDenied(denialReasonId, rxRefillRequestId int64, comments string) error
 	LinkRequestedPrescriptionToOriginalTreatment(requestedTreatment *common.Treatment, patient *common.Patient) error
 }
 

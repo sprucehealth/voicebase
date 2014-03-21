@@ -6,7 +6,6 @@ import (
 	"carefront/libs/erx"
 	"carefront/libs/golog"
 	"carefront/libs/pharmacy"
-	"encoding/json"
 	"fmt"
 	"net/http"
 
@@ -203,9 +202,11 @@ func (d *DoctorSubmitPatientVisitReviewHandler) submitPatientVisitReview(w http.
 			}
 
 			//  Queue up notification to patient
-			err = d.queueUpJobForErxStatus(patient.PatientId.Int64(), patientVisitReviewData.DoctorId)
-			if err != nil {
-				WriteDeveloperError(w, http.StatusInternalServerError, "Unable to queue up job for getting prescription status: "+err.Error())
+			if err := queueUpJobForErxStatus(d.ErxStatusQueue, common.PrescriptionStatusCheckMessage{
+				PatientId: patient.PatientId.Int64(),
+				DoctorId:  patientVisitReviewData.DoctorId,
+			}); err != nil {
+				golog.Errorf("Unable to enqueue job to check status of erx. Not going to error out on this for the user because there is nothing the user can do about this: %+v", err)
 				return
 			}
 		}
@@ -258,22 +259,6 @@ func (d *DoctorSubmitPatientVisitReviewHandler) submitPatientVisitReview(w http.
 	}
 
 	WriteJSONToHTTPResponseWriter(w, http.StatusOK, SuccessfulGenericJSONResponse())
-}
-
-func (d *DoctorSubmitPatientVisitReviewHandler) queueUpJobForErxStatus(patientId, doctorId int64) error {
-	// queue up a job to get the updated status of the prescription
-	// to know when exatly the message was sent to the pharmacy
-	erxMessage := &common.PrescriptionStatusCheckMessage{
-		PatientId: patientId,
-		DoctorId:  doctorId,
-	}
-	jsonData, err := json.Marshal(erxMessage)
-	if err != nil {
-		return err
-	}
-
-	// queue up a job
-	return d.ErxStatusQueue.QueueService.SendMessage(d.ErxStatusQueue.QueueUrl, 0, string(jsonData))
 }
 
 func (d *DoctorSubmitPatientVisitReviewHandler) sendSMSToNotifyPatient(patient *common.Patient, patientVisitId int64) error {

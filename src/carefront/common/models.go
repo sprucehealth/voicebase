@@ -228,12 +228,14 @@ type QuestionInfo struct {
 }
 
 type StatusEvent struct {
-	TreatmentId          int64     `json:"-"`
-	PrescriptionId       int64     `json:"erx_id,string,omitempty"`
-	Status               string    `json:"erx_status,omitempty"`
-	StatusTimestamp      time.Time `json:"erx_status_timestamp,omitempty"`
-	ReportedTimestamp    time.Time `json:"reported_timestamp,omitempty"`
-	StatusDetails        string    `json:"erx_status_details,omitempty"`
-	ErxRefillRequestId   int64     `json:"-"`
-	RxRequestQueueItemId int64     `json:"-"`
+	TreatmentId            int64     `json:"-"`
+	PrescriptionId         int64     `json:"erx_id,string,omitempty"`
+	Status                 string    `json:"erx_status,omitempty"`
+	StatusTimestamp        time.Time `json:"erx_status_timestamp,omitempty"`
+	ReportedTimestamp      time.Time `json:"reported_timestamp,omitempty"`
+	StatusDetails          string    `json:"erx_status_details,omitempty"`
+	ErxRefillRequestId     int64     `json:"-"`
+	RxRequestQueueItemId   int64     `json:"-"`
+	RefillRxDenialReasonId int64     `json:"-"`
+	Comments               string    `json:"-"`
 }

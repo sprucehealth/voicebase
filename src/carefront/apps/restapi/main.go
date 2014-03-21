@@ -243,6 +243,10 @@ func main() {
 
 	mapsService := maps.NewGoogleMapsService(metricsRegistry.Scope("google_maps_api"))
 	doseSpotService := erx.NewDoseSpotService(conf.DoseSpot.ClinicId, conf.DoseSpot.UserId, conf.DoseSpot.ClinicKey, metricsRegistry.Scope("dosespot_api"))
+	erxStatusQueue, err := common.NewQueue(awsAuth, aws.Regions[conf.AWSRegion], conf.ERxQueue)
+	if err != nil {
+		log.Fatal("Unable to get erx queue for sending prescriptions to: " + err.Error())
+	}
 
 	dataApi := &api.DataService{DB: db}
 	cloudStorageApi := api.NewCloudStorageService(awsAuth)
@@ -326,8 +330,9 @@ func main() {
 	}
 
 	doctorRefillRequestHandler := &apiservice.DoctorRefillRequestHandler{
-		DataApi: dataApi,
-		ErxApi:  doseSpotService,
+		DataApi:        dataApi,
+		ErxApi:         doseSpotService,
+		ErxStatusQueue: erxStatusQueue,
 	}
 
 	refillRequestDenialReasonsHandler := &apiservice.RefillRequestDenialReasonsHandler{
@@ -339,10 +344,6 @@ func main() {
 		PaymentApi: &stripe.StripeService{SecretKey: conf.StripeSecretKey},
 	}
 
-	erxStatusQueue, err := common.NewQueue(awsAuth, aws.Regions[conf.AWSRegion], conf.ERxQueue)
-	if err != nil {
-		log.Fatal("Unable to get erx queue for sending prescriptions to: " + err.Error())
-	}
 	doctorSubmitPatientVisitHandler := &apiservice.DoctorSubmitPatientVisitReviewHandler{DataApi: dataApi,
 		ERxApi:            doseSpotService,
 		TwilioFromNumber:  conf.Twilio.FromNumber,

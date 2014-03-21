@@ -4,6 +4,7 @@ import (
 	"carefront/api"
 	"carefront/common"
 	"carefront/libs/erx"
+	"carefront/libs/golog"
 	"net/http"
 
 	"github.com/gorilla/schema"
@@ -26,8 +27,9 @@ var (
 )
 
 type DoctorRefillRequestHandler struct {
-	DataApi api.DataAPI
-	ErxApi  erx.ERxAPI
+	DataApi        api.DataAPI
+	ErxApi         erx.ERxAPI
+	ErxStatusQueue *common.SQSQueue
 }
 
 type DoctorRefillRequestResponse struct {
@@ -77,6 +79,11 @@ func (d *DoctorRefillRequestHandler) resolveRefillRequest(w http.ResponseWriter,
 		return
 	}
 
+	if doctor.DoctorId.Int64() != refillRequest.Doctor.DoctorId.Int64() {
+		WriteDeveloperError(w, http.StatusBadRequest, "The doctor in the refill request is not the same doctor as the one trying to resolve the request.")
+		return
+	}
+
 	// Ensure that the refill request is in the Requested state for
 	// the user to work on it. If it's in the desired end state, then do nothing
 	if refillRequest.Status == actionToRefillRequestStateMapping[requestData.Action] {
@@ -109,15 +116,14 @@ func (d *DoctorRefillRequestHandler) resolveRefillRequest(w http.ResponseWriter,
 		}
 
 		// Send the approve refill request to dosespot
-		prescriptionId, err := d.ErxApi.ApproveRefillRequest(doctor.DoseSpotClinicianId, refillRequest.RxRequestQueueItemId, requestData.ApprovedRefillAmount, requestData.Comments)
+		_, err = d.ErxApi.ApproveRefillRequest(doctor.DoseSpotClinicianId, refillRequest.RxRequestQueueItemId, requestData.ApprovedRefillAmount, requestData.Comments)
 		if err != nil {
 			WriteDeveloperError(w, http.StatusBadRequest, "Unable to approve refill request: "+err.Error())
 			return
 		}
 
 		// Update the refill request entry with the approved refill amount and the returned prescription id
-		if err := d.DataApi.MarkRefillRequestAsApproved(requestData.ApprovedRefillAmount, refillRequest.Id,
-			prescriptionId, requestData.Comments); err != nil {
+		if err := d.DataApi.MarkRefillRequestAsApproved(requestData.ApprovedRefillAmount, refillRequest.Id, requestData.Comments); err != nil {
 			WriteDeveloperError(w, http.StatusBadRequest, "Unable to store the updates to the refill request to mark it as being approved: "+err.Error())
 			return
 		}
@@ -145,15 +151,14 @@ func (d *DoctorRefillRequestHandler) resolveRefillRequest(w http.ResponseWriter,
 		}
 
 		//  Deny the refill request
-		prescriptionId, err := d.ErxApi.DenyRefillRequest(doctor.DoseSpotClinicianId, refillRequest.RxRequestQueueItemId, denialReasonCode, requestData.Comments)
+		_, err = d.ErxApi.DenyRefillRequest(doctor.DoseSpotClinicianId, refillRequest.RxRequestQueueItemId, denialReasonCode, requestData.Comments)
 		if err != nil {
 			WriteDeveloperError(w, http.StatusInternalServerError, "Unable to deny refill request on the dosespot platform for the following reason: "+err.Error())
 			return
 		}
 
 		//  Update the refill request with the reason for denial and the erxid returned
-		if err := d.DataApi.MarkRefillRequestAsDenied(requestData.DenialReasonId, refillRequest.Id,
-			prescriptionId, requestData.Comments); err != nil {
+		if err := d.DataApi.MarkRefillRequestAsDenied(requestData.DenialReasonId, refillRequest.Id, requestData.Comments); err != nil {
 			WriteDeveloperError(w, http.StatusInternalServerError, "Unable to update the status of the refill request to denied: "+err.Error())
 			return
 		}
@@ -172,6 +177,16 @@ func (d *DoctorRefillRequestHandler) resolveRefillRequest(w http.ResponseWriter,
 	}, api.QUEUE_ITEM_STATUS_PENDING); err != nil {
 		WriteDeveloperError(w, http.StatusBadRequest, "Unable to update the doctor queue with the refill request item")
 		return
+	}
+
+	//  Queue up job to check for whether or not the response to this refill request
+	// was successfully transmitted to the pharmacy
+	if err := queueUpJobForErxStatus(d.ErxStatusQueue, common.PrescriptionStatusCheckMessage{
+		PatientId:          refillRequest.Patient.PatientId.Int64(),
+		DoctorId:           refillRequest.Doctor.DoctorId.Int64(),
+		CheckRefillRequest: true,
+	}); err != nil {
+		golog.Errorf("Unable to enqueue job into sqs queue to keep track of refill request status. Not erroring out to user because there's nothing they can do about it: %+v", err)
 	}
 
 	WriteJSONToHTTPResponseWriter(w, http.StatusOK, SuccessfulGenericJSONResponse())

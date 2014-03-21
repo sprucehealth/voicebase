@@ -38,7 +38,7 @@ func PerformRefillRecquestCheckCycle(DataApi api.DataAPI, ERxApi erx.ERxAPI, sta
 	// get pending refill request statuses for the clinic that we already have in our database
 	refillRequestStatuses, err := DataApi.GetPendingRefillRequestStatusEventsForClinic()
 	if err != nil {
-		golog.Errorf("Unable to get pending refill request statuses from DB: %+v", refillRequestStatuses)
+		golog.Errorf("Unable to get pending refill request statuses from DB: %+v", err)
 		statFailure.Inc(1)
 		return
 	}
