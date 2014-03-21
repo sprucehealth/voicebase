@@ -79,10 +79,8 @@ func (p GooglePlacesPharmacySearchService) GetPharmaciesAroundSearchLocation(sea
 	pharmacies = make([]*PharmacyData, 0)
 	for _, placesResultItem := range placesResult.Results {
 		pharmacy := getPharmacyFromResultItem(placesResultItem)
-		latFloat, _ := strconv.ParseFloat(pharmacy.Latitude, 64)
-		lngFloat, _ := strconv.ParseFloat(pharmacy.Longitude, 64)
 
-		pharmacy.DistanceInMiles = GreatCircleDistanceBetweenTwoPoints(&point{Latitude: searchLocationLat, Longitude: searchLocationLng}, &point{Latitude: latFloat, Longitude: lngFloat})
+		pharmacy.DistanceInMiles = GreatCircleDistanceBetweenTwoPoints(&point{Latitude: searchLocationLat, Longitude: searchLocationLng}, &point{Latitude: pharmacy.Latitude, Longitude: pharmacy.Longitude})
 
 		pharmacies = append(pharmacies, pharmacy)
 	}
@@ -129,9 +127,7 @@ func (p GooglePlacesPharmacySearchService) GetPharmaciesBasedOnTextSearch(textSe
 		if lat != "" && lng != "" {
 			latFloat, _ := strconv.ParseFloat(lat, 64)
 			lngFloat, _ := strconv.ParseFloat(lng, 64)
-			pharmacyLatFloat, _ := strconv.ParseFloat(pharmacy.Latitude, 64)
-			pharmacyLngFloat, _ := strconv.ParseFloat(pharmacy.Longitude, 64)
-			pharmacy.DistanceInMiles = GreatCircleDistanceBetweenTwoPoints(&point{Latitude: latFloat, Longitude: lngFloat}, &point{Latitude: pharmacyLatFloat, Longitude: pharmacyLngFloat})
+			pharmacy.DistanceInMiles = GreatCircleDistanceBetweenTwoPoints(&point{Latitude: latFloat, Longitude: lngFloat}, &point{Latitude: pharmacy.Latitude, Longitude: pharmacy.Longitude})
 		}
 
 		pharmacies = append(pharmacies, pharmacy)
@@ -172,8 +168,8 @@ func getPharmacyFromResultItem(resultItem *googlePlacesResultItem) *PharmacyData
 	pharmacyDetails.Phone = resultItem.FormattedPhoneNumber
 	pharmacyDetails.Name = resultItem.Name
 	pharmacyDetails.SourceId = resultItem.Reference
-	pharmacyDetails.Latitude = strconv.FormatFloat(resultItem.Geometry.Location.Latitude, 'f', -1, 64)
-	pharmacyDetails.Longitude = strconv.FormatFloat(resultItem.Geometry.Location.Longitude, 'f', -1, 64)
+	pharmacyDetails.Latitude = resultItem.Geometry.Location.Latitude
+	pharmacyDetails.Longitude = resultItem.Geometry.Location.Longitude
 	return pharmacyDetails
 
 }
