@@ -33,10 +33,6 @@ func (d *DataService) AddRefillRequestStatusEvent(refillRequestStatus common.Sta
 		columnsAndData["reported_timestamp"] = refillRequestStatus.ReportedTimestamp
 	}
 
-	if refillRequestStatus.RefillRxDenialReasonId != 0 {
-		columnsAndData["reason_id"] = refillRequestStatus.RefillRxDenialReasonId
-	}
-
 	keys, values :=
 		getKeysAndValuesFromMap(columnsAndData)
 	_, err = tx.Exec(fmt.Sprintf(`insert into rx_refill_status_events (%s) values (%s)`, strings.Join(keys, ","), nReplacements(len(values))), values...)
@@ -93,7 +89,7 @@ func (d *DataService) GetRefillStatusEventsForRefillRequest(refillRequestId int6
 
 func (d *DataService) GetApprovedOrDeniedRefillRequestsForPatient(patientId int64) ([]common.StatusEvent, error) {
 	rows, err := d.DB.Query(`select rx_refill_request_id, rx_refill_request.erx_request_queue_item_id, rx_refill_status, rx_refill_status_date, 
-									event_details, reason_id, notes, requested_treatment.erx_id    
+									event_details, requested_treatment.erx_id    
 									from rx_refill_status_events 
 										inner join rx_refill_request on rx_refill_request_id = rx_refill_request.id
 										inner join requested_treatment on requested_treatment.id = rx_refill_request.requested_treatment_id											
@@ -108,7 +104,7 @@ func (d *DataService) GetApprovedOrDeniedRefillRequestsForPatient(patientId int6
 
 func (d *DataService) GetRefillStatusEventsForRefillRequest(refillRequestId int64) ([]common.StatusEvent, error) {
 	rows, err := d.DB.Query(`select rx_refill_request_id,rx_refill_request.erx_request_queue_item_id, rx_refill_status, rx_refill_status_date, 
-									event_details, reason_id, notes, requested_treatment.erx_id    
+									event_details, requested_treatment.erx_id    
 									from rx_refill_status_events 
 										inner join rx_refill_request on rx_refill_request_id = rx_refill_request.id
 										inner join requested_treatment on requested_treatment.id = rx_refill_request.requested_treatment_id
