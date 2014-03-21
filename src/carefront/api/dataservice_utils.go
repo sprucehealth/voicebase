@@ -8,6 +8,7 @@ import (
 )
 
 const (
+<<<<<<< HEAD
 	STATUS_ACTIVE                      = "ACTIVE"
 	STATUS_CREATED                     = "CREATED"
 	STATUS_CREATING                    = "CREATING"
