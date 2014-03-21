@@ -27,15 +27,10 @@ func (d *DataService) AddRefillRequestStatusEvent(refillRequestStatus common.Sta
 		"rx_refill_status_date": time.Now(),
 		"status":                STATUS_ACTIVE,
 		"event_details":         refillRequestStatus.StatusDetails,
-		"notes":                 refillRequestStatus.Comments,
 	}
 
 	if !refillRequestStatus.ReportedTimestamp.IsZero() {
 		columnsAndData["reported_timestamp"] = refillRequestStatus.ReportedTimestamp
-	}
-
-	if refillRequestStatus.RefillRxDenialReasonId != 0 {
-		columnsAndData["reason_id"] = refillRequestStatus.RefillRxDenialReasonId
 	}
 
 	keys, values :=
@@ -51,7 +46,7 @@ func (d *DataService) AddRefillRequestStatusEvent(refillRequestStatus common.Sta
 
 func (d *DataService) GetPendingRefillRequestStatusEventsForClinic() ([]common.StatusEvent, error) {
 	rows, err := d.DB.Query(`select rx_refill_request_id, rx_refill_request.erx_request_queue_item_id, rx_refill_status, rx_refill_status_date, 
-								event_details,requested_treatment.erx_id  
+								event_details, requested_treatment.erx_id  
 								from rx_refill_status_events 
 									inner join rx_refill_request on rx_refill_request_id = rx_refill_request.id
 									inner join requested_treatment on requested_treatment.id = rx_refill_request.requested_treatment_id
@@ -102,8 +97,6 @@ func getRefillStatusEventsFromRows(rows *sql.Rows) ([]common.StatusEvent, error)
 		if err != nil {
 			return nil, err
 		}
-		refillRequestStatus.RefillRxDenialReasonId = denialReasonId.Int64
-		refillRequestStatus.Comments = notes.String
 		refillRequestStatuses = append(refillRequestStatuses, refillRequestStatus)
 	}
 	return refillRequestStatuses, nil
@@ -237,21 +230,18 @@ func (d *DataService) GetRefillRequestFromId(refillRequestId int64) (*common.Ref
 	var refillRequest common.RefillRequestItem
 	var patientId, doctorId, pharmacyDispensedTreatmentId int64
 	var requestedTreatmentId, approvedRefillAmount sql.NullInt64
-	var refillStatus, notes, denyReason sql.NullString
+	var denyReason sql.NullString
 	// get the refill request
 	err := d.DB.QueryRow(`select rx_refill_request.id, rx_refill_request.erx_request_queue_item_id, requested_drug_description, requested_refill_amount,
 		approved_refill_amount, requested_dispense, patient_id, request_date, doctor_id, requested_treatment_id, 
-		dispensed_treatment_id, rx_refill_status_events.rx_refill_status, rx_refill_status_events.notes, deny_refill_reason.reason from rx_refill_request
-			left outer join rx_refill_status_events on rx_refill_request.id =  rx_refill_request_id
-			left outer join deny_refill_reason on reason_id = rx_refill_status_events.reason_id
-				where rx_refill_request.id = ? and rx_refill_status_events.status = ?`, refillRequestId, STATUS_ACTIVE).Scan(&refillRequest.Id,
+		dispensed_treatment_id, comments, deny_refill_reason.reason from rx_refill_request
+				left outer join deny_refill_reason on deny_refill_reason.id = denial_reason_id
+				where rx_refill_request.id = ?`, refillRequestId).Scan(&refillRequest.Id,
 		&refillRequest.RxRequestQueueItemId, &refillRequest.RequestedDrugDescription, &refillRequest.RequestedRefillAmount, &approvedRefillAmount,
 		&refillRequest.RequestedDispense, &patientId, &refillRequest.RequestDateStamp, &doctorId, &requestedTreatmentId,
-		&pharmacyDispensedTreatmentId, &refillStatus, &notes, &denyReason)
+		&pharmacyDispensedTreatmentId, &refillRequest.Comments, &denyReason)
 
-	refillRequest.Status = refillStatus.String
 	refillRequest.ApprovedRefillAmount = approvedRefillAmount.Int64
-	refillRequest.Comments = notes.String
 	refillRequest.DenialReason = denyReason.String
 
 	if err != nil {
@@ -296,6 +286,11 @@ func (d *DataService) GetRefillRequestFromId(refillRequestId int64) (*common.Ref
 	if originatingTreatmentId.Valid {
 		refillRequest.RequestedPrescription.OriginatingTreatmentId = originatingTreatmentId.Int64
 		refillRequest.TreatmentPlanId = originatingTreatmentPlanId.Int64
+	}
+
+	refillRequest.RxHistory, err = d.GetRefillStatusEventsForRefillRequest(refillRequest.Id)
+	if err != nil {
+		return nil, err
 	}
 
 	return &refillRequest, nil
@@ -523,7 +518,7 @@ func (d *DataService) MarkRefillRequestAsApproved(approvedRefillCount, rxRefillR
 		return err
 	}
 
-	_, err = tx.Exec(`update rx_refill_request set approved_refill_amount = ? where id = ?`, approvedRefillCount, rxRefillRequestId)
+	_, err = tx.Exec(`update rx_refill_request set approved_refill_amount = ?, comments = ? where id = ?`, approvedRefillCount, comments, rxRefillRequestId)
 	if err != nil {
 		tx.Rollback()
 		return err
@@ -535,7 +530,7 @@ func (d *DataService) MarkRefillRequestAsApproved(approvedRefillCount, rxRefillR
 		return err
 	}
 
-	_, err = tx.Exec(`insert into rx_refill_status_events (rx_refill_request_id, rx_refill_status, status, notes, rx_refill_status_date) values (?,?,?,?, now())`, rxRefillRequestId, RX_REFILL_STATUS_APPROVED, STATUS_ACTIVE, comments)
+	_, err = tx.Exec(`insert into rx_refill_status_events (rx_refill_request_id, rx_refill_status, status, rx_refill_status_date) values (?,?,?	, now())`, rxRefillRequestId, RX_REFILL_STATUS_APPROVED, STATUS_ACTIVE)
 	if err != nil {
 		tx.Rollback()
 		return err
@@ -550,13 +545,19 @@ func (d *DataService) MarkRefillRequestAsDenied(denialReasonId, rxRefillRequestI
 		return err
 	}
 
+	_, err = tx.Exec(`update rx_refill_request set comments = ?, denial_reason_id = ? where id = ?`, comments, denialReasonId, rxRefillRequestId)
+	if err != nil {
+		tx.Rollback()
+		return err
+	}
+
 	_, err = tx.Exec(`update rx_refill_status_events set status = ? where rx_refill_request_id = ? and status = ?`, STATUS_INACTIVE, rxRefillRequestId, STATUS_ACTIVE)
 	if err != nil {
 		tx.Rollback()
 		return err
 	}
 
-	_, err = tx.Exec(`insert into rx_refill_status_events (rx_refill_request_id, rx_refill_status, reason_id,status,notes, rx_refill_status_date) values (?,?,?,?,?, now())`, rxRefillRequestId, RX_REFILL_STATUS_DENIED, denialReasonId, STATUS_ACTIVE, comments)
+	_, err = tx.Exec(`insert into rx_refill_status_events (rx_refill_request_id, rx_refill_status, status, rx_refill_status_date) values (?,?,?, now())`, rxRefillRequestId, RX_REFILL_STATUS_DENIED, STATUS_ACTIVE)
 	if err != nil {
 		tx.Rollback()
 		return err

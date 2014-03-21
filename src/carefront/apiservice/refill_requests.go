@@ -84,9 +84,14 @@ func (d *DoctorRefillRequestHandler) resolveRefillRequest(w http.ResponseWriter,
 		return
 	}
 
+	if len(refillRequest.RxHistory) == 0 {
+		WriteDeveloperError(w, http.StatusInternalServerError, "Expected status events for refill requests but none found")
+		return
+	}
+
 	// Ensure that the refill request is in the Requested state for
 	// the user to work on it. If it's in the desired end state, then do nothing
-	if refillRequest.Status == actionToRefillRequestStateMapping[requestData.Action] {
+	if refillRequest.RxHistory[0].Status == actionToRefillRequestStateMapping[requestData.Action] {
 		// Move the queue item for the doctor from the ongoing to the completed state
 		if err := d.DataApi.ReplaceItemInDoctorQueue(api.DoctorQueueItem{
 			DoctorId:  doctor.DoctorId.Int64(),
@@ -101,8 +106,8 @@ func (d *DoctorRefillRequestHandler) resolveRefillRequest(w http.ResponseWriter,
 		return
 	}
 
-	if refillRequest.Status != api.RX_REFILL_STATUS_REQUESTED {
-		WriteDeveloperError(w, http.StatusBadRequest, "Cannot approve the refill request for one that is not in the requested state. Current state: "+refillRequest.Status)
+	if refillRequest.RxHistory[0].Status != api.RX_REFILL_STATUS_REQUESTED {
+		WriteDeveloperError(w, http.StatusBadRequest, "Cannot approve the refill request for one that is not in the requested state. Current state: "+refillRequest.RxHistory[0].Status)
 		return
 	}
 

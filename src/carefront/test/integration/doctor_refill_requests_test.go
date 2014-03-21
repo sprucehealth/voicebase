@@ -275,7 +275,7 @@ func TestNewRefillRequestForExistingPatientAndExistingTreatment(t *testing.T) {
 	}
 
 	if resp.StatusCode != http.StatusOK {
-		t.Fatal("Unable to make successful request to approve refill request: " + err.Error())
+		t.Fatal("Unable to make successful request to approve refill request: ")
 	}
 
 	refillRequest, err = testData.DataApi.GetRefillRequestFromId(refillRequest.Id)
@@ -283,8 +283,12 @@ func TestNewRefillRequestForExistingPatientAndExistingTreatment(t *testing.T) {
 		t.Fatal("Unable to get refill request after approving request: " + err.Error())
 	}
 
-	if refillRequest.Status != api.RX_REFILL_STATUS_APPROVED {
-		t.Fatalf("Expected the refill request status to be %s but was %s instead", api.RX_REFILL_STATUS_APPROVED, refillRequest.Status)
+	if len(refillRequest.RxHistory) != 2 {
+		t.Fatalf("Expected 2 items in the rx history for the refill request instead got %d", len(refillRequest.RxHistory))
+	}
+
+	if refillRequest.RxHistory[0].Status != api.RX_REFILL_STATUS_APPROVED {
+		t.Fatalf("Expected the refill request status to be %s but was %s instead", api.RX_REFILL_STATUS_APPROVED, refillRequest.RxHistory[0].Status)
 	}
 
 	if refillRequest.ApprovedRefillAmount != approvedRefillAmount {
@@ -619,8 +623,12 @@ func TestRefillRequestComingFromDifferentPharmacyThanDispensedPrescription(t *te
 		t.Fatal("Unable to get refill request after approving request: " + err.Error())
 	}
 
-	if refillRequest.Status != api.RX_REFILL_STATUS_APPROVED {
-		t.Fatalf("Expected the refill request status to be %s but was %s instead", api.RX_REFILL_STATUS_APPROVED, refillRequest.Status)
+	if len(refillRequest.RxHistory) != 2 {
+		t.Fatalf("Expected 2 events in rx history of refill request instead got %d", len(refillRequest.RxHistory))
+	}
+
+	if refillRequest.RxHistory[0].Status != api.RX_REFILL_STATUS_APPROVED {
+		t.Fatalf("Expected the refill request status to be %s but was %s instead", api.RX_REFILL_STATUS_APPROVED, refillRequest.RxHistory[0].Status)
 	}
 
 	if refillRequest.ApprovedRefillAmount != approvedRefillAmount {
@@ -887,8 +895,12 @@ func TestNewRefillRequestWithUnlinkedTreatmentAndLinkedPatient(t *testing.T) {
 		t.Fatal("Unable to get refill request after approving request: " + err.Error())
 	}
 
-	if refillRequest.Status != api.RX_REFILL_STATUS_DENIED {
-		t.Fatalf("Expected the refill request status to be %s but was %s instead", api.RX_REFILL_STATUS_DENIED, refillRequest.Status)
+	if len(refillRequest.RxHistory) != 2 {
+		t.Fatalf("Expected two items in the rx history of the refill request instead got %d", len(refillRequest.RxHistory))
+	}
+
+	if refillRequest.RxHistory[0].Status != api.RX_REFILL_STATUS_DENIED {
+		t.Fatalf("Expected the refill request status to be %s but was %s instead", api.RX_REFILL_STATUS_DENIED, refillRequest.RxHistory[0].Status)
 	}
 
 	if refillRequest.Comments != comment {
