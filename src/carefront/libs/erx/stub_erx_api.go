@@ -8,7 +8,8 @@ import (
 )
 
 type StubErxService struct {
-	PatientErxId                         int64
+	PatientErxId int64
+
 	RefillRequestPrescriptionIds         map[int64]int64
 	PatientDetailsToReturn               *common.Patient
 	PharmacyDetailsToReturn              *pharmacySearch.PharmacyData
