@@ -9,10 +9,12 @@ import (
 	"carefront/libs/aws/sqs"
 	"carefront/libs/erx"
 	"carefront/libs/pharmacy"
+	"fmt"
 	"net/http"
 	"net/http/httptest"
 	"net/url"
 	"strconv"
+	"strings"
 	"testing"
 	"time"
 
@@ -697,6 +699,46 @@ func TestRefillRequestComingFromDifferentPharmacyThanDispensedPrescription(t *te
 
 	if pendingItems[0].EventType != api.EVENT_TYPE_REFILL_TRANSMISSION_ERROR {
 		t.Fatalf("Expected the 1 item in teh doctors queue to be a transmission error for a refill request but instead it was %s", pendingItems[0].EventType)
+	}
+
+	// lets go ahead and resolve this error
+	doctorPrescriptionErrorIgnoreHandler := &apiservice.DoctorPrescriptionErrorIgnoreHandler{
+		DataApi: testData.DataApi,
+		ErxApi:  stubErxAPI,
+	}
+
+	params = url.Values{}
+	params.Set("refill_request_id", fmt.Sprintf("%d", refillRequest.Id))
+
+	errorIgnoreTs := httptest.NewServer(doctorPrescriptionErrorIgnoreHandler)
+	resp, err = authPost(errorIgnoreTs.URL, "application/x-www-form-urlencoded", strings.NewReader(params.Encode()), doctor.AccountId.Int64())
+	if err != nil {
+		t.Fatalf("Unable to resolve refill request transmission error: %+v", err.Error())
+	}
+
+	CheckSuccessfulStatusCode(resp, "Unable to successfull resolve refill request transmission error", t)
+
+	// check the rx history of the refill request
+	refillRequest, err = testData.DataApi.GetRefillRequestFromId(refillRequest.Id)
+	if err != nil {
+		t.Fatalf("Unable to get refill request : %+v", refillRequest)
+	}
+
+	if len(refillRequest.RxHistory) != 4 {
+		t.Fatalf("Expected refill request to have 4 events in its history, instead it had %d", len(refillRequest.RxHistory))
+	}
+
+	if refillRequest.RxHistory[0].Status != api.ERX_STATUS_RESOLVED {
+		t.Fatal("Expected the refill request to be resolved once the doctor resolved the error")
+	}
+
+	pendingItems, err = testData.DataApi.GetPendingItemsInDoctorQueue(doctor.DoctorId.Int64())
+	if err != nil {
+		t.Fatalf("there should be no pending items in the doctor queue: %+v", err)
+	}
+
+	if len(pendingItems) != 0 {
+		t.Fatalf("Expected to have no items in the doctor queue, instead have %d", len(pendingItems))
 	}
 }
 
