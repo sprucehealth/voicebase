@@ -955,6 +955,7 @@ func (d *DataService) AddErxStatusEvent(treatments []*common.Treatment, prescrip
 		columnsAndData := make(map[string]interface{}, 0)
 		columnsAndData["treatment_id"] = treatment.Id
 		columnsAndData["erx_status"] = prescriptionStatus.Status
+
 		columnsAndData["status"] = STATUS_ACTIVE
 		if !prescriptionStatus.ReportedTimestamp.IsZero() {
 			columnsAndData["reported_timestamp"] = prescriptionStatus.ReportedTimestamp
