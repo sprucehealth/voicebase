@@ -245,7 +245,7 @@ func ConsumeMessageFromQueue(DataApi api.DataAPI, ERxApi erx.ERxAPI, ErxQueue *c
 					}
 
 					// add an event
-					err = DataApi.AddErxStatusEvent([]*common.Treatment{treatment}, common.StatusEvent{Status: api.ERX_STATUS_SENT, ReportedTimestamp: prescriptionLogs[0].LogTimestamp})
+					err = DataApi.AddErxStatusEvent([]*common.Treatment{treatment}, common.StatusEvent{Status: api.ERX_STATUS_SENT, ReportedTimestamp: prescriptionLogs[0].LogTimeStamp})
 					if err != nil {
 						statFailure.Inc(1)
 						golog.Errorf("Unable to add status event for this treatment: %s", err.Error())

@@ -1030,6 +1030,7 @@ func (d *DataService) GetPrescriptionStatusEventsForTreatment(treatmentId int64)
 		var statusDetails sql.NullString
 		var prescriptionStatus common.StatusEvent
 		err = rows.Scan(&prescriptionStatus.ItemId, &prescriptionStatus.Status, &statusDetails, &prescriptionStatus.StatusTimestamp)
+
 		if err != nil {
 			return nil, err
 		}
