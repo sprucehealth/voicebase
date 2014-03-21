@@ -105,6 +105,28 @@ func getRefillStatusEventsFromRows(rows *sql.Rows) ([]common.StatusEvent, error)
 	return refillRequestStatuses, rows.Err()
 }
 
+func (d *DataService) GetApprovedOrDeniedRefillRequestsForPatient(patientId int64) ([]common.StatusEvent, error) {
+	rows, err := d.DB.Query(`select rx_refill_request_id, rx_refill_status, rx_refill_status_date, requested_prescription.erx_id    
+									from rx_refill_status_events 
+									inner join requested_prescription on requested_prescription.id = rx_refill_request.requested_prescription_id
+										where rx_refill_status_events.rx_refill_status in ('Approved', 'Denied') and rx_refill_request.patient_id = ? 
+										order by rx_refill_status_date desc`, patientId)
+	if err != nil {
+		return nil, err
+	}
+	defer rows.Close()
+	refillRequestStatuses := make([]common.StatusEvent, 0)
+	for rows.Next() {
+		var refillRequestStatus common.StatusEvent
+		err = rows.Scan(&refillRequestStatus.ErxRefillRequestId, &refillRequestStatus.Status, &refillRequestStatus.StatusTimestamp, &refillRequestStatus.PrescriptionId)
+		if err != nil {
+			return nil, err
+		}
+		refillRequestStatuses = append(refillRequestStatuses, refillRequestStatus)
+	}
+	return refillRequestStatuses, nil
+}
+
 func (d *DataService) LinkRequestedPrescriptionToOriginalTreatment(requestedTreatment *common.Treatment, patient *common.Patient) error {
 	// lookup drug based on the drugIds
 	if len(requestedTreatment.DrugDBIds) == 0 {
