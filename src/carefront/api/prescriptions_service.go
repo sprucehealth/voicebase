@@ -30,15 +30,10 @@ func (d *DataService) AddRefillRequestStatusEvent(refillRequestStatus common.Sta
 		"rx_refill_status_date": time.Now(),
 		"status":                STATUS_ACTIVE,
 		"event_details":         refillRequestStatus.StatusDetails,
-		"notes":                 refillRequestStatus.Comments,
 	}
 
 	if !refillRequestStatus.ReportedTimestamp.IsZero() {
 		columnsAndData["reported_timestamp"] = refillRequestStatus.ReportedTimestamp
-	}
-
-	if refillRequestStatus.RefillRxDenialReasonId != 0 {
-		columnsAndData["reason_id"] = refillRequestStatus.RefillRxDenialReasonId
 	}
 
 	keys, values :=
