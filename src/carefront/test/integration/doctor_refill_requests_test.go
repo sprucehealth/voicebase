@@ -199,7 +199,7 @@ func TestNewRefillRequestForExistingPatientAndExistingTreatment(t *testing.T) {
 		t.Fatal("Expected there to exist 1 refill request status for the refill request just persisted")
 	}
 
-	if refillRequestStatuses[0].RxRequestQueueItemId != refillRequestItem.RxRequestQueueItemId ||
+	if refillRequestStatuses[0].ItemId != refillRequestItem.Id ||
 		refillRequestStatuses[0].Status != api.RX_REFILL_STATUS_REQUESTED {
 		t.Fatal("Refill request status not in expected state")
 	}
@@ -215,11 +215,11 @@ func TestNewRefillRequestForExistingPatientAndExistingTreatment(t *testing.T) {
 	}
 
 	if pendingItems[0].EventType != api.EVENT_TYPE_REFILL_REQUEST ||
-		pendingItems[0].ItemId != refillRequestStatuses[0].ErxRefillRequestId {
+		pendingItems[0].ItemId != refillRequestStatuses[0].ItemId {
 		t.Fatal("Pending item found in the doctor's queue is not the expected item")
 	}
 
-	refillRequest, err := testData.DataApi.GetRefillRequestFromId(refillRequestStatuses[0].ErxRefillRequestId)
+	refillRequest, err := testData.DataApi.GetRefillRequestFromId(refillRequestStatuses[0].ItemId)
 	if err != nil {
 		t.Fatal("Unable to get refill request that was just added: ", err.Error())
 	}
@@ -535,7 +535,7 @@ func TestRefillRequestComingFromDifferentPharmacyThanDispensedPrescription(t *te
 		t.Fatal("Expected there to exist 1 refill request status for the refill request just persisted")
 	}
 
-	if refillRequestStatuses[0].RxRequestQueueItemId != refillRequestItem.RxRequestQueueItemId ||
+	if refillRequestStatuses[0].ItemId != refillRequestItem.Id ||
 		refillRequestStatuses[0].Status != api.RX_REFILL_STATUS_REQUESTED {
 		t.Fatal("Refill request status not in expected state")
 	}
@@ -551,11 +551,11 @@ func TestRefillRequestComingFromDifferentPharmacyThanDispensedPrescription(t *te
 	}
 
 	if pendingItems[0].EventType != api.EVENT_TYPE_REFILL_REQUEST ||
-		pendingItems[0].ItemId != refillRequestStatuses[0].ErxRefillRequestId {
+		pendingItems[0].ItemId != refillRequestStatuses[0].ItemId {
 		t.Fatal("Pending item found in the doctor's queue is not the expected item")
 	}
 
-	refillRequest, err := testData.DataApi.GetRefillRequestFromId(refillRequestStatuses[0].ErxRefillRequestId)
+	refillRequest, err := testData.DataApi.GetRefillRequestFromId(refillRequestStatuses[0].ItemId)
 	if err != nil {
 		t.Fatal("Unable to get refill request that was just added: ", err.Error())
 	}
@@ -684,6 +684,20 @@ func TestRefillRequestComingFromDifferentPharmacyThanDispensedPrescription(t *te
 	if refillStatusEvents[0].StatusDetails == "" {
 		t.Fatal("Expected there be to an error message for the refill request  given that there was an errror sending to pharmacy")
 	}
+
+	// lets make sure that the error for the refill request makes it into the doctor's queue
+	pendingItems, err = testData.DataApi.GetPendingItemsInDoctorQueue(doctor.DoctorId.Int64())
+	if err != nil {
+		t.Fatal("Unable to get pending items in doctors queue: " + err.Error())
+	}
+
+	if len(pendingItems) != 1 {
+		t.Fatalf("Expected there to be 1 item in the doctors queue but there were %d", len(pendingItems))
+	}
+
+	if pendingItems[0].EventType != api.EVENT_TYPE_REFILL_TRANSMISSION_ERROR {
+		t.Fatalf("Expected the 1 item in teh doctors queue to be a transmission error for a refill request but instead it was %s", pendingItems[0].EventType)
+	}
 }
 
 func TestNewRefillRequestWithUnlinkedTreatmentAndLinkedPatient(t *testing.T) {
@@ -810,7 +824,7 @@ func TestNewRefillRequestWithUnlinkedTreatmentAndLinkedPatient(t *testing.T) {
 		t.Fatal("Expected there to exist 1 refill request status for the refill request just persisted")
 	}
 
-	if refillRequestStatuses[0].RxRequestQueueItemId != refillRequestItem.RxRequestQueueItemId ||
+	if refillRequestStatuses[0].ItemId != refillRequestItem.Id ||
 		refillRequestStatuses[0].Status != api.RX_REFILL_STATUS_REQUESTED {
 		t.Fatal("Refill request status not in expected state")
 	}
@@ -826,11 +840,11 @@ func TestNewRefillRequestWithUnlinkedTreatmentAndLinkedPatient(t *testing.T) {
 	}
 
 	if pendingItems[0].EventType != api.EVENT_TYPE_REFILL_REQUEST ||
-		pendingItems[0].ItemId != refillRequestStatuses[0].ErxRefillRequestId {
+		pendingItems[0].ItemId != refillRequestStatuses[0].ItemId {
 		t.Fatal("Pending item found in the doctor's queue is not the expected item")
 	}
 
-	refillRequest, err := testData.DataApi.GetRefillRequestFromId(refillRequestStatuses[0].ErxRefillRequestId)
+	refillRequest, err := testData.DataApi.GetRefillRequestFromId(refillRequestStatuses[0].ItemId)
 	if err != nil {
 		t.Fatal("Unable to get refill request that was just added: ", err.Error)
 	}
@@ -1083,7 +1097,7 @@ func TestNewRefillRequestWithUnlinkedTreatmentAndUnlinkedPatient(t *testing.T) {
 		t.Fatal("Expected there to exist 1 refill request status for the refill request just persisted")
 	}
 
-	if refillRequestStatuses[0].RxRequestQueueItemId != refillRequestItem.RxRequestQueueItemId ||
+	if refillRequestStatuses[0].ItemId != refillRequestItem.Id ||
 		refillRequestStatuses[0].Status != api.RX_REFILL_STATUS_REQUESTED {
 		t.Fatal("Refill request status not in expected state")
 	}
@@ -1099,11 +1113,11 @@ func TestNewRefillRequestWithUnlinkedTreatmentAndUnlinkedPatient(t *testing.T) {
 	}
 
 	if pendingItems[0].EventType != api.EVENT_TYPE_REFILL_REQUEST ||
-		pendingItems[0].ItemId != refillRequestStatuses[0].ErxRefillRequestId {
+		pendingItems[0].ItemId != refillRequestStatuses[0].ItemId {
 		t.Fatal("Pending item found in the doctor's queue is not the expected item")
 	}
 
-	refillRequest, err := testData.DataApi.GetRefillRequestFromId(refillRequestStatuses[0].ErxRefillRequestId)
+	refillRequest, err := testData.DataApi.GetRefillRequestFromId(refillRequestStatuses[0].ItemId)
 	if err != nil {
 		t.Fatal("Unable to get refill request that was just added: ", err.Error)
 	}

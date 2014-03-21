@@ -168,10 +168,10 @@ func ConsumeMessageFromQueue(DataApi api.DataAPI, ERxApi erx.ERxAPI, ErxQueue *c
 			case api.ERX_STATUS_ERROR:
 				if statusCheckMessage.CheckRefillRequest {
 					if err := DataApi.AddRefillRequestStatusEvent(common.StatusEvent{
-						Status:             api.ERX_STATUS_ERROR,
-						ReportedTimestamp:  prescriptionLogs[0].LogTimestamp,
-						ErxRefillRequestId: prescriptionStatus.ErxRefillRequestId,
-						StatusDetails:      prescriptionLogs[0].AdditionalInfo,
+						Status:            api.ERX_STATUS_ERROR,
+						ReportedTimestamp: prescriptionLogs[0].LogTimestamp,
+						ItemId:            prescriptionStatus.ItemId,
+						StatusDetails:     prescriptionLogs[0].AdditionalInfo,
 					}); err != nil {
 						statFailure.Inc(1)
 						golog.Errorf("Unable to add status event for refill request: %+v", err)
@@ -181,7 +181,7 @@ func ConsumeMessageFromQueue(DataApi api.DataAPI, ERxApi erx.ERxAPI, ErxQueue *c
 
 					if err := DataApi.InsertItemIntoDoctorQueue(api.DoctorQueueItem{
 						DoctorId:  doctor.DoctorId.Int64(),
-						ItemId:    prescriptionStatus.ErxRefillRequestId,
+						ItemId:    prescriptionStatus.ItemId,
 						Status:    api.STATUS_PENDING,
 						EventType: api.EVENT_TYPE_REFILL_TRANSMISSION_ERROR,
 					}); err != nil {
@@ -226,9 +226,9 @@ func ConsumeMessageFromQueue(DataApi api.DataAPI, ERxApi erx.ERxAPI, ErxQueue *c
 			case api.ERX_STATUS_SENT:
 				if statusCheckMessage.CheckRefillRequest {
 					if err := DataApi.AddRefillRequestStatusEvent(common.StatusEvent{
-						Status:             api.ERX_STATUS_SENT,
-						ReportedTimestamp:  prescriptionLogs[0].LogTimestamp,
-						ErxRefillRequestId: prescriptionStatus.ErxRefillRequestId,
+						Status:            api.ERX_STATUS_SENT,
+						ReportedTimestamp: prescriptionLogs[0].LogTimestamp,
+						ItemId:            prescriptionStatus.ItemId,
 					}); err != nil {
 						statFailure.Inc(1)
 						golog.Errorf("Unable to add status event for refill request: %+v", err)
@@ -256,9 +256,9 @@ func ConsumeMessageFromQueue(DataApi api.DataAPI, ERxApi erx.ERxAPI, ErxQueue *c
 			case api.ERX_STATUS_DELETED:
 				if statusCheckMessage.CheckRefillRequest {
 					if err := DataApi.AddRefillRequestStatusEvent(common.StatusEvent{
-						Status:             api.ERX_STATUS_DELETED,
-						ReportedTimestamp:  prescriptionLogs[0].LogTimestamp,
-						ErxRefillRequestId: prescriptionStatus.ErxRefillRequestId,
+						Status:            api.ERX_STATUS_DELETED,
+						ReportedTimestamp: prescriptionLogs[0].LogTimestamp,
+						ItemId:            prescriptionStatus.ItemId,
 					}); err != nil {
 						statFailure.Inc(1)
 						golog.Errorf("Unable to add status event for refill request: %+v", err)

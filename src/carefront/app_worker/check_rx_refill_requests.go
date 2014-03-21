@@ -58,7 +58,14 @@ func PerformRefillRecquestCheckCycle(DataApi api.DataAPI, ERxApi erx.ERxAPI, sta
 
 		refillRequestFoundInDB := false
 		for _, refillRequestStatus := range refillRequestStatuses {
-			if refillRequestStatus.RxRequestQueueItemId == refillRequestItem.RxRequestQueueItemId {
+			refillRequest, err := DataApi.GetRefillRequestFromId(refillRequestStatus.ItemId)
+			if err != nil {
+				golog.Errorf("Unable to get refill request based on id: %+v", err)
+				statFailure.Inc(1)
+				continue
+			}
+
+			if refillRequest.RxRequestQueueItemId == refillRequestItem.RxRequestQueueItemId {
 				refillRequestFoundInDB = true
 				break
 			}
@@ -189,9 +196,9 @@ func PerformRefillRecquestCheckCycle(DataApi api.DataAPI, ERxApi erx.ERxAPI, sta
 
 		// insert queued status into db
 		err = DataApi.AddRefillRequestStatusEvent(common.StatusEvent{
-			ErxRefillRequestId: refillRequestItem.Id,
-			Status:             api.RX_REFILL_STATUS_REQUESTED,
-			ReportedTimestamp:  refillRequestItem.RequestDateStamp,
+			ItemId:            refillRequestItem.Id,
+			Status:            api.RX_REFILL_STATUS_REQUESTED,
+			ReportedTimestamp: refillRequestItem.RequestDateStamp,
 		})
 		if err != nil {
 			golog.Errorf("Unable to add refill request event to our database: %+v", err)

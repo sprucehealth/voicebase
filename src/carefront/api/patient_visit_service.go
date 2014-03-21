@@ -969,7 +969,7 @@ func (d *DataService) GetPrescriptionStatusEventsForPatient(patientId int64) ([]
 
 		prescriptionStatus := common.StatusEvent{
 			Status:          status,
-			TreatmentId:     treatmentId,
+			ItemId:          treatmentId,
 			StatusTimestamp: creationDate,
 		}
 
@@ -995,7 +995,7 @@ func (d *DataService) GetPrescriptionStatusEventsForTreatment(treatmentId int64)
 	for rows.Next() {
 		var statusDetails sql.NullString
 		var prescriptionStatus common.StatusEvent
-		err = rows.Scan(&prescriptionStatus.TreatmentId, &prescriptionStatus.Status, &statusDetails, &prescriptionStatus.StatusTimestamp)
+		err = rows.Scan(&prescriptionStatus.ItemId, &prescriptionStatus.Status, &statusDetails, &prescriptionStatus.StatusTimestamp)
 		if err != nil {
 			return nil, err
 		}

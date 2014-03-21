@@ -15,14 +15,14 @@ func (d *DataService) AddRefillRequestStatusEvent(refillRequestStatus common.Sta
 		return err
 	}
 
-	_, err = tx.Exec(`update rx_refill_status_events set status = ? where status = ? and rx_refill_request_id = ?`, STATUS_INACTIVE, STATUS_ACTIVE, refillRequestStatus.ErxRefillRequestId)
+	_, err = tx.Exec(`update rx_refill_status_events set status = ? where status = ? and rx_refill_request_id = ?`, STATUS_INACTIVE, STATUS_ACTIVE, refillRequestStatus.ItemId)
 	if err != nil {
 		tx.Rollback()
 		return err
 	}
 
 	columnsAndData := map[string]interface{}{
-		"rx_refill_request_id":  refillRequestStatus.ErxRefillRequestId,
+		"rx_refill_request_id":  refillRequestStatus.ItemId,
 		"rx_refill_status":      refillRequestStatus.Status,
 		"rx_refill_status_date": time.Now(),
 		"status":                STATUS_ACTIVE,
@@ -45,7 +45,7 @@ func (d *DataService) AddRefillRequestStatusEvent(refillRequestStatus common.Sta
 }
 
 func (d *DataService) GetPendingRefillRequestStatusEventsForClinic() ([]common.StatusEvent, error) {
-	rows, err := d.DB.Query(`select rx_refill_request_id, rx_refill_request.erx_request_queue_item_id, rx_refill_status, rx_refill_status_date, 
+	rows, err := d.DB.Query(`select rx_refill_request_id, rx_refill_status, rx_refill_status_date, 
 								event_details, requested_treatment.erx_id  
 								from rx_refill_status_events 
 									inner join rx_refill_request on rx_refill_request_id = rx_refill_request.id
@@ -59,7 +59,7 @@ func (d *DataService) GetPendingRefillRequestStatusEventsForClinic() ([]common.S
 }
 
 func (d *DataService) GetApprovedOrDeniedRefillRequestsForPatient(patientId int64) ([]common.StatusEvent, error) {
-	rows, err := d.DB.Query(`select rx_refill_request_id, rx_refill_request.erx_request_queue_item_id, rx_refill_status, rx_refill_status_date, 
+	rows, err := d.DB.Query(`select rx_refill_request_id, rx_refill_status, rx_refill_status_date, 
 									event_details, requested_treatment.erx_id    
 									from rx_refill_status_events 
 										inner join rx_refill_request on rx_refill_request_id = rx_refill_request.id
@@ -74,7 +74,7 @@ func (d *DataService) GetApprovedOrDeniedRefillRequestsForPatient(patientId int6
 }
 
 func (d *DataService) GetRefillStatusEventsForRefillRequest(refillRequestId int64) ([]common.StatusEvent, error) {
-	rows, err := d.DB.Query(`select rx_refill_request_id,rx_refill_request.erx_request_queue_item_id, rx_refill_status, rx_refill_status_date, 
+	rows, err := d.DB.Query(`select rx_refill_request_id,rx_refill_status, rx_refill_status_date, 
 									event_details, requested_treatment.erx_id    
 									from rx_refill_status_events 
 										inner join rx_refill_request on rx_refill_request_id = rx_refill_request.id
@@ -92,7 +92,7 @@ func getRefillStatusEventsFromRows(rows *sql.Rows) ([]common.StatusEvent, error)
 	refillRequestStatuses := make([]common.StatusEvent, 0)
 	for rows.Next() {
 		var refillRequestStatus common.StatusEvent
-		err := rows.Scan(&refillRequestStatus.ErxRefillRequestId, &refillRequestStatus.RxRequestQueueItemId, &refillRequestStatus.Status,
+		err := rows.Scan(&refillRequestStatus.ItemId, &refillRequestStatus.Status,
 			&refillRequestStatus.StatusTimestamp, &refillRequestStatus.StatusDetails, &refillRequestStatus.PrescriptionId)
 		if err != nil {
 			return nil, err
