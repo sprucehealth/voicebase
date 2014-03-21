@@ -188,7 +188,6 @@ type DoctorAPI interface {
 	UpdatePatientInformationFromDoctor(patient *common.Patient) error
 	InsertItemIntoDoctorQueue(doctorQueueItem DoctorQueueItem) error
 	ReplaceItemInDoctorQueue(doctorQueueItem DoctorQueueItem, currentState string) error
-
 	MarkGenerationOfTreatmentPlanInVisitQueue(doctorId, patientVisitId, treatmentPlanId int64, currentState, updatedState string) error
 }
 
