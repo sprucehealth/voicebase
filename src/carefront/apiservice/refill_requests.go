@@ -81,8 +81,12 @@ func (d *DoctorRefillRequestHandler) resolveRefillRequest(w http.ResponseWriter,
 	// the user to work on it. If it's in the desired end state, then do nothing
 	if refillRequest.Status == actionToRefillRequestStateMapping[requestData.Action] {
 		// Move the queue item for the doctor from the ongoing to the completed state
-		if err := d.DataApi.MarkRefillRequestCompleteInDoctorQueue(doctor.DoctorId.Int64(),
-			refillRequest.Id, api.QUEUE_ITEM_STATUS_ONGOING, requestData.Action); err != nil {
+		if err := d.DataApi.ReplaceItemInDoctorQueue(api.DoctorQueueItem{
+			DoctorId:  doctor.DoctorId.Int64(),
+			ItemId:    refillRequest.Id,
+			EventType: api.EVENT_TYPE_REFILL_REQUEST,
+			Status:    requestData.Action,
+		}, api.QUEUE_ITEM_STATUS_PENDING); err != nil {
 			WriteDeveloperError(w, http.StatusBadRequest, "Unable to update the doctor queue with the refill request item")
 			return
 		}
@@ -160,8 +164,12 @@ func (d *DoctorRefillRequestHandler) resolveRefillRequest(w http.ResponseWriter,
 	}
 
 	// Move the queue item for the doctor from the ongoing to the completed state
-	if err := d.DataApi.MarkRefillRequestCompleteInDoctorQueue(doctor.DoctorId.Int64(), refillRequest.Id,
-		api.QUEUE_ITEM_STATUS_PENDING, actionToQueueStateMapping[requestData.Action]); err != nil {
+	if err := d.DataApi.ReplaceItemInDoctorQueue(api.DoctorQueueItem{
+		DoctorId:  doctor.DoctorId.Int64(),
+		ItemId:    refillRequest.Id,
+		EventType: api.EVENT_TYPE_REFILL_REQUEST,
+		Status:    actionToQueueStateMapping[requestData.Action],
+	}, api.QUEUE_ITEM_STATUS_PENDING); err != nil {
 		WriteDeveloperError(w, http.StatusBadRequest, "Unable to update the doctor queue with the refill request item")
 		return
 	}

@@ -234,6 +234,24 @@ func (d *DataService) InsertItemIntoDoctorQueue(doctorQueueItem DoctorQueueItem)
 	return err
 }
 
+func (d *DataService) ReplaceItemInDoctorQueue(doctorQueueItem DoctorQueueItem, currentState string) error {
+	tx, err := d.DB.Begin()
+	if err != nil {
+		return err
+	}
+	_, err = tx.Exec(`delete from doctor_queue where status = ? and doctor_id = ? and event_type = ? and item_id = ?`, currentState, doctorQueueItem.DoctorId, doctorQueueItem.EventType, doctorQueueItem.ItemId)
+	if err != nil {
+		tx.Rollback()
+		return err
+	}
+	_, err = tx.Exec(`insert into doctor_queue (doctor_id, status, event_type, item_id) values (?, ?, ?, ?)`, doctorQueueItem.DoctorId, doctorQueueItem.Status, doctorQueueItem.EventType, doctorQueueItem.ItemId)
+	if err != nil {
+		tx.Rollback()
+		return err
+	}
+	return tx.Commit()
+}
+
 func (d *DataService) MarkPatientVisitAsOngoingInDoctorQueue(doctorId, patientVisitId int64) error {
 	_, err := d.DB.Exec(`update doctor_queue set status=? where event_type=? and item_id=? and doctor_id=?`, STATUS_ONGOING, EVENT_TYPE_PATIENT_VISIT, patientVisitId, doctorId)
 	return err
@@ -250,24 +268,6 @@ func (d *DataService) MarkGenerationOfTreatmentPlanInVisitQueue(doctorId, patien
 		return err
 	}
 	_, err = tx.Exec(`insert into doctor_queue (doctor_id, status, event_type, item_id) values (?, ?, ?, ?)`, doctorId, updatedState, EVENT_TYPE_TREATMENT_PLAN, treatmentPlanId)
-	if err != nil {
-		tx.Rollback()
-		return err
-	}
-	return tx.Commit()
-}
-
-func (d *DataService) MarkRefillRequestCompleteInDoctorQueue(doctorId, rxRefillRequestId int64, currentState, updatedState string) error {
-	tx, err := d.DB.Begin()
-	if err != nil {
-		return err
-	}
-	_, err = tx.Exec(`delete from doctor_queue where status = ? and doctor_id = ? and event_type = ? and item_id = ?`, currentState, doctorId, EVENT_TYPE_REFILL_REQUEST, rxRefillRequestId)
-	if err != nil {
-		tx.Rollback()
-		return err
-	}
-	_, err = tx.Exec(`insert into doctor_queue (doctor_id, status, event_type, item_id) values (?, ?, ?, ?)`, doctorId, updatedState, EVENT_TYPE_REFILL_REQUEST, rxRefillRequestId)
 	if err != nil {
 		tx.Rollback()
 		return err
@@ -880,24 +880,6 @@ func (d *DataService) GetCompletedPrescriptionsForDoctor(from, to time.Time, doc
 	}
 
 	return treatmentPlans, rows.Err()
-}
-
-func (d *DataService) MarkErrorResolvedInDoctorQueue(doctorId, treatmentId int64, currentState, updatedState string) error {
-	tx, err := d.DB.Begin()
-	if err != nil {
-		return err
-	}
-	_, err = tx.Exec(`delete from doctor_queue where status = ? and doctor_id = ? and event_type = ? and item_id = ?`, currentState, doctorId, EVENT_TYPE_TRANSMISSION_ERROR, treatmentId)
-	if err != nil {
-		tx.Rollback()
-		return err
-	}
-	_, err = tx.Exec(`insert into doctor_queue (doctor_id, status, event_type, item_id) values (?, ?, ?, ?)`, doctorId, updatedState, EVENT_TYPE_TRANSMISSION_ERROR, treatmentId)
-	if err != nil {
-		tx.Rollback()
-		return err
-	}
-	return tx.Commit()
 }
 
 func (d *DataService) getIdForNameFromTable(tableName, drugComponentName string) (nullId sql.NullInt64, err error) {

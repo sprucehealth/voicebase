@@ -64,7 +64,12 @@ func (d *DoctorPrescriptionErrorIgnoreHandler) ServeHTTP(w http.ResponseWriter, 
 		return
 	}
 
-	if err := d.DataApi.MarkErrorResolvedInDoctorQueue(doctor.DoctorId.Int64(), treatment.Id.Int64(), api.QUEUE_ITEM_STATUS_PENDING, api.QUEUE_ITEM_STATUS_COMPLETED); err != nil {
+	if err := d.DataApi.ReplaceItemInDoctorQueue(api.DoctorQueueItem{
+		DoctorId:  doctor.DoctorId.Int64(),
+		ItemId:    treatment.Id.Int64(),
+		EventType: api.EVENT_TYPE_TRANSMISSION_ERROR,
+		Status:    api.QUEUE_ITEM_STATUS_COMPLETED,
+	}, api.QUEUE_ITEM_STATUS_PENDING); err != nil {
 		WriteDeveloperError(w, http.StatusInternalServerError, "Unable to refresh the doctor queue: "+err.Error())
 		return
 	}
