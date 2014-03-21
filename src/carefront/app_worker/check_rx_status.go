@@ -209,7 +209,6 @@ func ConsumeMessageFromQueue(DataApi api.DataAPI, ERxApi erx.ERxAPI, ErxQueue *c
 						failed++
 						break
 					}
-
 					// insert an item into the doctor's queue to notify the doctor of this error
 					if err := DataApi.InsertItemIntoDoctorQueue(api.DoctorQueueItem{
 						DoctorId:  doctor.DoctorId.Int64(),
