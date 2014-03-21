@@ -77,13 +77,13 @@ func (d *DataService) StoreAnswersForQuestion(role string, roleId, patientVisitI
 			// of the top level questions that need to be inactivated, along with the answers
 			// to the top level question itself.
 			d.updateSubAnswersToPatientInfoIntakesWithStatus(role, []int64{questionId}, roleId,
-				patientVisitId, layoutVersionId, status_inactive, status_active, tx)
+				patientVisitId, layoutVersionId, STATUS_INACTIVE, STATUS_ACTIVE, tx)
 			d.updatePatientInfoIntakesWithStatus(role, []int64{questionId}, roleId,
-				patientVisitId, layoutVersionId, status_inactive, status_active, tx)
+				patientVisitId, layoutVersionId, STATUS_INACTIVE, STATUS_ACTIVE, tx)
 
 			// if there are no subanswers to store, our job is done with just the top level answers
 			d.updatePatientInfoIntakesWithStatus(role, []int64{questionId}, roleId,
-				patientVisitId, layoutVersionId, status_active, STATUS_CREATING, tx)
+				patientVisitId, layoutVersionId, STATUS_ACTIVE, STATUS_CREATING, tx)
 			// tx.Commit()
 			continue
 		}
@@ -105,7 +105,7 @@ func (d *DataService) StoreAnswersForQuestion(role string, roleId, patientVisitI
 		// deactivate all answers to top level questions as well as their sub-questions
 		// as we make the new answers the most current 	up-to-date patient info intake
 		err = d.updateSubAnswersToPatientInfoIntakesWithStatus(role, []int64{questionId}, roleId,
-			patientVisitId, layoutVersionId, status_inactive, status_active, tx)
+			patientVisitId, layoutVersionId, STATUS_INACTIVE, STATUS_ACTIVE, tx)
 		if err != nil {
 			tx.Rollback()
 			// d.deleteAnswersWithId(role, infoIdsFromMap(infoIdToAnswersWithSubAnswers))
@@ -113,7 +113,7 @@ func (d *DataService) StoreAnswersForQuestion(role string, roleId, patientVisitI
 		}
 
 		err = d.updatePatientInfoIntakesWithStatus(role, createKeysArrayFromMap(questionIds), roleId,
-			patientVisitId, layoutVersionId, status_inactive, status_active, tx)
+			patientVisitId, layoutVersionId, STATUS_INACTIVE, STATUS_ACTIVE, tx)
 		if err != nil {
 			tx.Rollback()
 			// d.deleteAnswersWithId(role, infoIdsFromMap(infoIdToAnswersWithSubAnswers))
@@ -123,7 +123,7 @@ func (d *DataService) StoreAnswersForQuestion(role string, roleId, patientVisitI
 		// make all answers pertanining to the questionIds collected the new active set of answers for the
 		// questions traversed
 		err = d.updatePatientInfoIntakesWithStatus(role, createKeysArrayFromMap(questionIds), roleId,
-			patientVisitId, layoutVersionId, status_active, STATUS_CREATING, tx)
+			patientVisitId, layoutVersionId, STATUS_ACTIVE, STATUS_CREATING, tx)
 		if err != nil {
 			tx.Rollback()
 			// d.deleteAnswersWithId(role, infoIdsFromMap(infoIdToAnswersWithSubAnswers))

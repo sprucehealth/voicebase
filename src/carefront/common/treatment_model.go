@@ -45,7 +45,7 @@ type Treatment struct {
 	PrescriberId              int64                    `json:"-"`
 	Doctor                    *Doctor                  `json:"doctor,omitempty"`
 	DoseSpotClinicianId       int64                    `json:"-"`
-	RxHistory                 []*StatusEvent           `json:"erx_history,omitempty"`
+	RxHistory                 []StatusEvent            `json:"erx_history,omitempty"`
 	OriginatingTreatmentId    int64                    `json:"-"`
 }
 

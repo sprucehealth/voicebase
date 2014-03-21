@@ -78,12 +78,24 @@ func ConsumeMessageFromQueue(DataApi api.DataAPI, ERxApi erx.ERxAPI, ErxQueue *c
 			continue
 		}
 
-		// check if there are any treatments for this patient that do not have a completed status
-		prescriptionStatuses, err := DataApi.GetPrescriptionStatusEventsForPatient(patient.ERxPatientId.Int64())
-		if err != nil {
-			golog.Errorf("Error getting prescription events for patient: %s", err.Error())
-			statFailure.Inc(1)
-			continue
+		var prescriptionStatuses []common.StatusEvent
+
+		if statusCheckMessage.CheckRefillRequest {
+			// check if there are any treatments for this patient that do not have a completed status
+			prescriptionStatuses, err = DataApi.GetApprovedOrDeniedRefillRequestsForPatient(patient.PatientId.Int64())
+			if err != nil {
+				golog.Errorf("Error getting prescription events for patient: %s", err.Error())
+				statFailure.Inc(1)
+				continue
+			}
+		} else {
+			// check if there are any treatments for this patient that do not have a completed status
+			prescriptionStatuses, err = DataApi.GetPrescriptionStatusEventsForPatient(patient.ERxPatientId.Int64())
+			if err != nil {
+				golog.Errorf("Error getting prescription events for patient: %s", err.Error())
+				statFailure.Inc(1)
+				continue
+			}
 		}
 
 		// nothing to do if there are no prescriptions for this patient to keep track of
@@ -100,8 +112,16 @@ func ConsumeMessageFromQueue(DataApi api.DataAPI, ERxApi erx.ERxAPI, ErxQueue *c
 			// the first occurence of every new event per prescription will be the latest because they are ordered by time
 			if latestPendingStatusPerPrescription[prescriptionStatus.PrescriptionId] == nil {
 				// only keep track of tasks that have not reached the end state yet
-				if prescriptionStatus.PrescriptionId != 0 && prescriptionStatus.Status == api.ERX_STATUS_SENDING {
-					latestPendingStatusPerPrescription[prescriptionStatus.PrescriptionId] = prescriptionStatus
+				if prescriptionStatus.PrescriptionId != 0 {
+
+					if statusCheckMessage.CheckRefillRequest && (prescriptionStatus.Status == api.RX_REFILL_STATUS_APPROVED ||
+						prescriptionStatus.Status == api.RX_REFILL_STATUS_DENIED) {
+						latestPendingStatusPerPrescription[prescriptionStatus.PrescriptionId] = &prescriptionStatus
+					}
+
+					if !statusCheckMessage.CheckRefillRequest && prescriptionStatus.Status == api.ERX_STATUS_SENDING {
+						latestPendingStatusPerPrescription[prescriptionStatus.PrescriptionId] = &prescriptionStatus
+					}
 				}
 			}
 		}
@@ -122,7 +142,7 @@ func ConsumeMessageFromQueue(DataApi api.DataAPI, ERxApi erx.ERxAPI, ErxQueue *c
 
 		// go through each of the pending prescriptions to get log details to check if there have been any updates
 		failed := 0
-		for prescriptionId := range latestPendingStatusPerPrescription {
+		for prescriptionId, prescriptionStatus := range latestPendingStatusPerPrescription {
 			prescriptionLogs, err := ERxApi.GetPrescriptionStatus(doctor.DoseSpotClinicianId, prescriptionId)
 			if err != nil {
 				golog.Errorf("Unable to get log details for prescription id %d", prescriptionId)
@@ -141,49 +161,91 @@ func ConsumeMessageFromQueue(DataApi api.DataAPI, ERxApi erx.ERxAPI, ErxQueue *c
 				// nothing to do
 				pendingTreatments++
 			case api.ERX_STATUS_ERROR:
-				treatment, err := DataApi.GetTreatmentBasedOnPrescriptionId(prescriptionId)
-				if err != nil {
-					statFailure.Inc(1)
-					golog.Errorf("Unable to get treatment based on prescription id: %s", err.Error())
-					failed++
-					break
-				}
+				if statusCheckMessage.CheckRefillRequest {
+					if err := DataApi.AddRefillRequestStatusEvent(common.StatusEvent{
+						Status:             api.ERX_STATUS_ERROR,
+						ReportedTimestamp:  prescriptionLogs[0].LogTimeStamp,
+						ErxRefillRequestId: prescriptionStatus.ErxRefillRequestId,
+					}); err != nil {
+						statFailure.Inc(1)
+						golog.Errorf("Unable to add status event for refill request: %+v", err)
+						failed++
+						break
+					}
+				} else {
+					treatment, err := DataApi.GetTreatmentBasedOnPrescriptionId(prescriptionId)
+					if err != nil {
+						statFailure.Inc(1)
+						golog.Errorf("Unable to get treatment based on prescription id: %s", err.Error())
+						failed++
+						break
+					}
 
-				// get the error details for this medication
-				err = DataApi.AddErxStatusEvent([]*common.Treatment{treatment}, common.StatusEvent{Status: api.ERX_STATUS_ERROR, StatusDetails: prescriptionLogs[0].AdditionalInfo, ReportedTimestamp: prescriptionLogs[0].LogTimeStamp})
-				if err != nil {
-					statFailure.Inc(1)
-					golog.Errorf("Unable to add error event for status: %s", err.Error())
-					failed++
-					break
-				}
+					// get the error details for this medication
+					err = DataApi.AddErxStatusEvent([]*common.Treatment{treatment}, common.StatusEvent{Status: api.ERX_STATUS_ERROR, StatusDetails: prescriptionLogs[0].AdditionalInfo, ReportedTimestamp: prescriptionLogs[0].LogTimeStamp})
+					if err != nil {
+						statFailure.Inc(1)
+						golog.Errorf("Unable to add error event for status: %s", err.Error())
+						failed++
+						break
+					}
 
-				// insert an item into the doctor's queue to notify the doctor of this error
-				if err := DataApi.InsertNewTransmissionErrorInDoctorQueue(treatment.Id.Int64(), doctor.DoctorId.Int64()); err != nil {
-					statFailure.Inc(1)
-					golog.Errorf("Unable to insert error into doctor queue: %s", err.Error())
-					failed++
-					break
+					// insert an item into the doctor's queue to notify the doctor of this error
+					if err := DataApi.InsertItemIntoDoctorQueue(api.DoctorQueueItem{
+						DoctorId:  doctor.DoctorId.Int64(),
+						ItemId:    treatment.Id.Int64(),
+						Status:    api.STATUS_PENDING,
+						EventType: api.EVENT_TYPE_TRANSMISSION_ERROR,
+					}); err != nil {
+						statFailure.Inc(1)
+						golog.Errorf("Unable to insert error into doctor queue: %s", err.Error())
+						failed++
+						break
+					}
 				}
-
 			case api.ERX_STATUS_SENT:
-				treatment, err := DataApi.GetTreatmentBasedOnPrescriptionId(prescriptionId)
-				if err != nil {
-					statFailure.Inc(1)
-					golog.Errorf("Unable to get treatment based on prescription id: %s", err.Error())
-					failed++
-					break
-				}
+				if statusCheckMessage.CheckRefillRequest {
+					if err := DataApi.AddRefillRequestStatusEvent(common.StatusEvent{
+						Status:             api.ERX_STATUS_SENT,
+						ReportedTimestamp:  prescriptionLogs[0].LogTimeStamp,
+						ErxRefillRequestId: prescriptionStatus.ErxRefillRequestId,
+					}); err != nil {
+						statFailure.Inc(1)
+						golog.Errorf("Unable to add status event for refill request: %+v", err)
+						failed++
+						break
+					}
+				} else {
+					treatment, err := DataApi.GetTreatmentBasedOnPrescriptionId(prescriptionId)
+					if err != nil {
+						statFailure.Inc(1)
+						golog.Errorf("Unable to get treatment based on prescription id: %s", err.Error())
+						failed++
+						break
+					}
 
-				// add an event
-				err = DataApi.AddErxStatusEvent([]*common.Treatment{treatment}, common.StatusEvent{Status: api.ERX_STATUS_SENT, ReportedTimestamp: prescriptionLogs[0].LogTimeStamp})
-				if err != nil {
-					statFailure.Inc(1)
-					golog.Errorf("Unable to add status event for this treatment: %s", err.Error())
-					failed++
-					break
+					// add an event
+					err = DataApi.AddErxStatusEvent([]*common.Treatment{treatment}, common.StatusEvent{Status: api.ERX_STATUS_SENT, ReportedTimestamp: prescriptionLogs[0].LogTimeStamp})
+					if err != nil {
+						statFailure.Inc(1)
+						golog.Errorf("Unable to add status event for this treatment: %s", err.Error())
+						failed++
+						break
+					}
 				}
-
+			case api.ERX_STATUS_DELETED:
+				if statusCheckMessage.CheckRefillRequest {
+					if err := DataApi.AddRefillRequestStatusEvent(common.StatusEvent{
+						Status:             api.ERX_STATUS_DELETED,
+						ReportedTimestamp:  prescriptionLogs[0].LogTimeStamp,
+						ErxRefillRequestId: prescriptionStatus.ErxRefillRequestId,
+					}); err != nil {
+						statFailure.Inc(1)
+						golog.Errorf("Unable to add status event for refill request: %+v", err)
+						failed++
+						break
+					}
+				}
 			}
 		}
 

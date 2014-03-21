@@ -127,8 +127,8 @@ type PatientVisitAPI interface {
 	GetTreatmentFromId(treatmentId int64) (*common.Treatment, error)
 	MarkTreatmentsAsPrescriptionsSent(treatments []*common.Treatment, pharmacySentTo *pharmacy.PharmacyData, doctorId, patientVisitId int64) error
 	AddErxStatusEvent(treatments []*common.Treatment, prescriptionStatus common.StatusEvent) error
-	GetPrescriptionStatusEventsForPatient(patientId int64) ([]*common.StatusEvent, error)
-	GetPrescriptionStatusEventsForTreatment(treatmentId int64) ([]*common.StatusEvent, error)
+	GetPrescriptionStatusEventsForPatient(patientId int64) ([]common.StatusEvent, error)
+	GetPrescriptionStatusEventsForTreatment(treatmentId int64) ([]common.StatusEvent, error)
 }
 
 type RefillRequestDenialReason struct {
@@ -139,6 +139,7 @@ type RefillRequestDenialReason struct {
 
 type PrescriptionsAPI interface {
 	GetPendingRefillRequestStatusEventsForClinic() ([]common.StatusEvent, error)
+	GetApprovedOrDeniedRefillRequestsForPatient(patientId int64) ([]common.StatusEvent, error)
 	CreateRefillRequest(*common.RefillRequestItem) error
 	AddRefillRequestStatusEvent(refillRequestStatus common.StatusEvent) error
 	GetRefillRequestFromId(refillRequestId int64) (*common.RefillRequestItem, error)
@@ -163,9 +164,8 @@ type DoctorAPI interface {
 	AddOrUpdateAdvicePointForDoctor(advicePoint *common.DoctorInstructionItem, doctorId int64) error
 	MarkAdvicePointToBeDeleted(advicePoint *common.DoctorInstructionItem, doctorId int64) error
 	MarkAdvicePointsToBeDeleted(advicePoints []*common.DoctorInstructionItem, doctorId int64) error
-	AssignPatientVisitToDoctor(doctorId, patientVisitId int64) error
 	MarkPatientVisitAsOngoingInDoctorQueue(doctorId, patientVisitId int64) error
-	MarkGenerationOfTreatmentPlanInVisitQueue(doctorId, patientVisitId, treatmentPlanId int64, currentState, updatedState string) error
+
 	GetPendingItemsInDoctorQueue(doctorId int64) (doctorQueue []*DoctorQueueItem, err error)
 	GetCompletedItemsInDoctorQueue(doctorId int64) (doctorQueue []*DoctorQueueItem, err error)
 	GetMedicationDispenseUnits(languageId int64) (dispenseUnitIds []int64, dispenseUnits []string, err error)
@@ -177,10 +177,13 @@ type DoctorAPI interface {
 	GetTreatmentTemplates(doctorId int64) ([]*common.DoctorTreatmentTemplate, error)
 	DeleteTreatmentTemplates(doctorTreatmentTemplates []*common.DoctorTreatmentTemplate, doctorId int64) error
 	GetCompletedPrescriptionsForDoctor(from, to time.Time, doctorId int64) ([]*common.TreatmentPlan, error)
-	InsertNewRefillRequestIntoDoctorQueue(refillRequestId int64, doctorId int64) error
-	MarkRefillRequestCompleteInDoctorQueue(doctorId, rxRefillRequestId int64, currentState, updatedState string) error
+
 	UpdatePatientInformationFromDoctor(patient *common.Patient) error
-	InsertNewTransmissionErrorInDoctorQueue(treatmentId int64, doctorId int64) error
+
+	InsertItemIntoDoctorQueue(doctorQueueItem DoctorQueueItem) error
+
+	MarkGenerationOfTreatmentPlanInVisitQueue(doctorId, patientVisitId, treatmentPlanId int64, currentState, updatedState string) error
+	MarkRefillRequestCompleteInDoctorQueue(doctorId, rxRefillRequestId int64, currentState, updatedState string) error
 	MarkErrorResolvedInDoctorQueue(doctorId, treatmentId int64, currentState, updatedState string) error
 }
 

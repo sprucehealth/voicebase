@@ -130,8 +130,12 @@ func (s *PatientVisitHandler) submitPatientVisit(w http.ResponseWriter, r *http.
 		}
 	}
 
-	err = s.DataApi.AssignPatientVisitToDoctor(doctorId, requestData.PatientVisitId)
-	if err != nil {
+	if err := s.DataApi.InsertItemIntoDoctorQueue(api.DoctorQueueItem{
+		DoctorId:  doctorId,
+		ItemId:    requestData.PatientVisitId,
+		Status:    api.STATUS_PENDING,
+		EventType: api.EVENT_TYPE_PATIENT_VISIT,
+	}); err != nil {
 		WriteDeveloperError(w, http.StatusInternalServerError, "Unable to assign patient visit to doctor")
 		return
 	}

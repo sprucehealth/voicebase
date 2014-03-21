@@ -7,15 +7,16 @@ import (
 )
 
 const (
-	EVENT_TYPE_PATIENT_VISIT            = "PATIENT_VISIT"
-	EVENT_TYPE_TREATMENT_PLAN           = "TREATMENT_PLAN"
-	EVENT_TYPE_REFILL_REQUEST           = "REFILL_REQUEST"
-	EVENT_TYPE_TRANSMISSION_ERROR       = "TRANSMISSION_ERROR"
-	patientVisitImageTag                = "patient_visit_queue_icon"
-	beginPatientVisitReviewAction       = "begin_patient_visit"
-	viewTreatedPatientVisitReviewAction = "view_treated_patient_visit"
-	viewRefillRequestAction             = "view_refill_request"
-	viewTransmissionErrorAction         = "view_transmission_error"
+	EVENT_TYPE_PATIENT_VISIT             = "PATIENT_VISIT"
+	EVENT_TYPE_TREATMENT_PLAN            = "TREATMENT_PLAN"
+	EVENT_TYPE_REFILL_REQUEST            = "REFILL_REQUEST"
+	EVENT_TYPE_TRANSMISSION_ERROR        = "TRANSMISSION_ERROR"
+	EVENT_TYPE_REFILL_TRANSMISSION_ERROR = "REFILL_TRANSMISSION_ERROR"
+	patientVisitImageTag                 = "patient_visit_queue_icon"
+	beginPatientVisitReviewAction        = "begin_patient_visit"
+	viewTreatedPatientVisitReviewAction  = "view_treated_patient_visit"
+	viewRefillRequestAction              = "view_refill_request"
+	viewTransmissionErrorAction          = "view_transmission_error"
 )
 
 type DoctorQueueItem struct {

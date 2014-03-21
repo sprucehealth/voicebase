@@ -200,8 +200,12 @@ func PerformRefillRecquestCheckCycle(DataApi api.DataAPI, ERxApi erx.ERxAPI, sta
 		}
 
 		// insert refill item into doctor queue as a refill request
-		err = DataApi.InsertNewRefillRequestIntoDoctorQueue(refillRequestItem.Id, refillRequestItem.RequestedPrescription.Doctor.DoctorId.Int64())
-		if err != nil {
+		if err := DataApi.InsertItemIntoDoctorQueue(api.DoctorQueueItem{
+			DoctorId:  refillRequestItem.RequestedPrescription.Doctor.DoctorId.Int64(),
+			ItemId:    refillRequestItem.Id,
+			EventType: api.EVENT_TYPE_REFILL_REQUEST,
+			Status:    api.STATUS_PENDING,
+		}); err != nil {
 			golog.Errorf("Unable to insert new item into doctor queue that represents the refill request: %+v", err)
 			statFailure.Inc(1)
 			continue

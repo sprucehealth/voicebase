@@ -31,9 +31,9 @@ func AWSAuthAdapter(auth aws.Auth) goamz.Auth {
 }
 
 type PrescriptionStatusCheckMessage struct {
-	PatientId       int64
-	DoctorId        int64
-	IsRefillRequest bool
+	PatientId          int64
+	DoctorId           int64
+	CheckRefillRequest bool
 }
 
 type SQSQueue struct {

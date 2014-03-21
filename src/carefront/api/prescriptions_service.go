@@ -15,7 +15,7 @@ func (d *DataService) AddRefillRequestStatusEvent(refillRequestStatus common.Sta
 		return err
 	}
 
-	_, err = tx.Exec(`update rx_refill_status_events set status = ? where status = ? and rx_refill_request_id = ?`, status_inactive, status_active, refillRequestStatus.ErxRefillRequestId)
+	_, err = tx.Exec(`update rx_refill_status_events set status = ? where status = ? and rx_refill_request_id = ?`, STATUS_INACTIVE, STATUS_ACTIVE, refillRequestStatus.ErxRefillRequestId)
 	if err != nil {
 		tx.Rollback()
 		return err
@@ -25,7 +25,7 @@ func (d *DataService) AddRefillRequestStatusEvent(refillRequestStatus common.Sta
 		"rx_refill_request_id":  refillRequestStatus.ErxRefillRequestId,
 		"rx_refill_status":      refillRequestStatus.Status,
 		"rx_refill_status_date": time.Now(),
-		"status":                status_active,
+		"status":                STATUS_ACTIVE,
 	}
 
 	if !refillRequestStatus.ReportedTimestamp.IsZero() {
@@ -46,7 +46,7 @@ func (d *DataService) GetPendingRefillRequestStatusEventsForClinic() ([]common.S
 	rows, err := d.DB.Query(`select rx_refill_request_id, rx_refill_request.erx_request_queue_item_id, rx_refill_status, rx_refill_status_date   
 								from rx_refill_status_events 
 									inner join rx_refill_request on rx_refill_request_id = rx_refill_request.id
-									where rx_refill_status_events.status = ? and rx_refill_status = ?`, status_active, RX_REFILL_STATUS_REQUESTED)
+									where rx_refill_status_events.status = ? and rx_refill_status = ?`, STATUS_ACTIVE, RX_REFILL_STATUS_REQUESTED)
 	if err != nil {
 		return nil, err
 	}
@@ -61,6 +61,28 @@ func (d *DataService) GetPendingRefillRequestStatusEventsForClinic() ([]common.S
 		refillRequestStatuses = append(refillRequestStatuses, refillRequestStatus)
 	}
 	return refillRequestStatuses, rows.Err()
+}
+
+func (d *DataService) GetApprovedOrDeniedRefillRequestsForPatient(patientId int64) ([]common.StatusEvent, error) {
+	rows, err := d.DB.Query(`select rx_refill_request_id, rx_refill_status, rx_refill_status_date, requested_prescription.erx_id    
+									from rx_refill_status_events 
+									inner join requested_prescription on requested_prescription.id = rx_refill_request.requested_prescription_id
+										where rx_refill_status_events.rx_refill_status in ('Approved', 'Denied') and rx_refill_request.patient_id = ? 
+										order by rx_refill_status_date desc`, patientId)
+	if err != nil {
+		return nil, err
+	}
+	defer rows.Close()
+	refillRequestStatuses := make([]common.StatusEvent, 0)
+	for rows.Next() {
+		var refillRequestStatus common.StatusEvent
+		err = rows.Scan(&refillRequestStatus.ErxRefillRequestId, &refillRequestStatus.Status, &refillRequestStatus.StatusTimestamp, &refillRequestStatus.PrescriptionId)
+		if err != nil {
+			return nil, err
+		}
+		refillRequestStatuses = append(refillRequestStatuses, refillRequestStatus)
+	}
+	return refillRequestStatuses, nil
 }
 
 func (d *DataService) LinkRequestedPrescriptionToOriginalTreatment(requestedTreatment *common.Treatment, patient *common.Patient) error {
@@ -198,7 +220,7 @@ func (d *DataService) GetRefillRequestFromId(refillRequestId int64) (*common.Ref
 		dispensed_treatment_id, rx_refill_status_events.rx_refill_status, rx_refill_status_events.notes, deny_refill_reason.reason from rx_refill_request
 			left outer join rx_refill_status_events on rx_refill_request.id =  rx_refill_request_id
 			left outer join deny_refill_reason on reason_id = rx_refill_status_events.reason_id
-				where rx_refill_request.id = ? and rx_refill_status_events.status = ?`, refillRequestId, status_active).Scan(&refillRequest.Id,
+				where rx_refill_request.id = ? and rx_refill_status_events.status = ?`, refillRequestId, STATUS_ACTIVE).Scan(&refillRequest.Id,
 		&refillRequest.RxRequestQueueItemId, &refillRequest.RequestedDrugDescription, &refillRequest.RequestedRefillAmount, &approvedRefillAmount,
 		&refillRequest.RequestedDispense, &patientId, &refillRequest.RequestDateStamp, &doctorId, &requestedTreatmentId,
 		&pharmacyDispensedTreatmentId, &refillStatus, &notes, &denyReason)
@@ -483,13 +505,13 @@ func (d *DataService) MarkRefillRequestAsApproved(approvedRefillCount, rxRefillR
 		return err
 	}
 
-	_, err = tx.Exec(`update rx_refill_status_events set status = ? where rx_refill_request_id = ? and status = ?`, status_inactive, rxRefillRequestId, status_active)
+	_, err = tx.Exec(`update rx_refill_status_events set status = ? where rx_refill_request_id = ? and status = ?`, STATUS_INACTIVE, rxRefillRequestId, STATUS_ACTIVE)
 	if err != nil {
 		tx.Rollback()
 		return err
 	}
 
-	_, err = tx.Exec(`insert into rx_refill_status_events (rx_refill_request_id, rx_refill_status, status, notes, rx_refill_status_date) values (?,?,?,?, now())`, rxRefillRequestId, RX_REFILL_STATUS_APPROVED, status_active, comments)
+	_, err = tx.Exec(`insert into rx_refill_status_events (rx_refill_request_id, rx_refill_status, status, notes, rx_refill_status_date) values (?,?,?,?, now())`, rxRefillRequestId, RX_REFILL_STATUS_APPROVED, STATUS_ACTIVE, comments)
 	if err != nil {
 		tx.Rollback()
 		return err
@@ -510,13 +532,13 @@ func (d *DataService) MarkRefillRequestAsDenied(denialReasonId, rxRefillRequestI
 		return err
 	}
 
-	_, err = tx.Exec(`update rx_refill_status_events set status = ? where rx_refill_request_id = ? and status = ?`, status_inactive, rxRefillRequestId, status_active)
+	_, err = tx.Exec(`update rx_refill_status_events set status = ? where rx_refill_request_id = ? and status = ?`, STATUS_INACTIVE, rxRefillRequestId, STATUS_ACTIVE)
 	if err != nil {
 		tx.Rollback()
 		return err
 	}
 
-	_, err = tx.Exec(`insert into rx_refill_status_events (rx_refill_request_id, rx_refill_status, reason_id,status,notes, rx_refill_status_date) values (?,?,?,?,?, now())`, rxRefillRequestId, RX_REFILL_STATUS_DENIED, denialReasonId, status_active, comments)
+	_, err = tx.Exec(`insert into rx_refill_status_events (rx_refill_request_id, rx_refill_status, reason_id,status,notes, rx_refill_status_date) values (?,?,?,?,?, now())`, rxRefillRequestId, RX_REFILL_STATUS_DENIED, denialReasonId, STATUS_ACTIVE, comments)
 	if err != nil {
 		tx.Rollback()
 		return err
