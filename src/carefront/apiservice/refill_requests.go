@@ -216,7 +216,7 @@ func (d *DoctorRefillRequestHandler) getRefillRequest(w http.ResponseWriter, r *
 	}
 
 	if refillRequest != nil {
-		// fill in the dispense unit description at the top level because refillrefiit is not provided in the top level
+		// fill in the dispense unit description at the top level because the dispense unit description is not provided in the top level
 		// information from dosespot
 		refillRequest.RequestedDispenseUnitDescription = refillRequest.DispensedPrescription.DispenseUnitDescription
 	}
