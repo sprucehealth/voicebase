@@ -453,6 +453,10 @@ func TestApproveRefillRequestAndSuccessfulSendToPharmacy(t *testing.T) {
 		t.Fatalf("Expected there to be no pending items in the doctor's queue instead there were %d", len(pendingItems))
 	}
 
+	// sleep for a brief moment before approving so that
+	// the items are ordered correctly for the rx history (in the real world they would not be approved in the same exact millisecond they are sent in)
+	time.Sleep(1 * time.Second)
+
 	// attempt to consume the message put into the queue
 	app_worker.ConsumeMessageFromQueue(testData.DataApi, stubErxAPI, erxStatusQueue, metrics.NewBiasedHistogram(), metrics.NewCounter(), metrics.NewCounter())
 
@@ -675,6 +679,10 @@ func TestApproveRefillRequestAndErrorSendingToPharmacy(t *testing.T) {
 		t.Fatalf("Expected there to be no pending items in the doctor's queue instead there were %d", len(pendingItems))
 	}
 
+	// sleep for a brief moment before approving so that
+	// the items are ordered correctly for the rx history (in the real world they would not be approved in the same exact millisecond they are sent in)
+	time.Sleep(1 * time.Second)
+
 	// attempt to consume the message put into the queue
 	app_worker.ConsumeMessageFromQueue(testData.DataApi, stubErxAPI, erxStatusQueue, metrics.NewBiasedHistogram(), metrics.NewCounter(), metrics.NewCounter())
 
@@ -714,6 +722,10 @@ func TestApproveRefillRequestAndErrorSendingToPharmacy(t *testing.T) {
 		DataApi: testData.DataApi,
 		ErxApi:  stubErxAPI,
 	}
+
+	// sleep for a brief moment before approving so that
+	// the items are ordered correctly for the rx history (in the real world they would not be approved in the same exact millisecond they are sent in)
+	time.Sleep(1 * time.Second)
 
 	params = url.Values{}
 	params.Set("refill_request_id", fmt.Sprintf("%d", refillRequest.Id))
@@ -956,6 +968,10 @@ func TestDenyRefillRequestAndSuccessfulDelete(t *testing.T) {
 	if len(pendingItems) != 0 {
 		t.Fatalf("Expected there to be no pending items in the doctor's queue instead there were %d", len(pendingItems))
 	}
+
+	// sleep for a brief moment before approving so that
+	// the items are ordered correctly for the rx history (in the real world they would not be approved in the same exact millisecond they are sent in)
+	time.Sleep(1 * time.Second)
 
 	// attempt to consume the message put into the queue
 	app_worker.ConsumeMessageFromQueue(testData.DataApi, stubErxAPI, erxStatusQueue, metrics.NewBiasedHistogram(), metrics.NewCounter(), metrics.NewCounter())
