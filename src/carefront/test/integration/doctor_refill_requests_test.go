@@ -39,7 +39,6 @@ func TestNewRefillRequestForExistingPatientAndExistingTreatment(t *testing.T) {
 	erxPatientId := int64(60)
 
 	approvedRefillRequestPrescriptionId := int64(101010)
-	approvedRefillAmount := int64(10)
 
 	// add an erx patient id to the patient
 	err := testData.DataApi.UpdatePatientWithERxPatientId(signedupPatientResponse.Patient.PatientId.Int64(), erxPatientId)
@@ -249,8 +248,132 @@ func TestNewRefillRequestForExistingPatientAndExistingTreatment(t *testing.T) {
 	if refillRequest.Patient.Status != api.PATIENT_REGISTERED {
 		t.Fatal("Patient requesting refill expected to be in our system instead the indication is that it was an unlinked patient")
 	}
+}
 
-	// now, lets go ahead and attempt to approve this refill request
+func TestApproveRefillRequestAndSuccessfulSendToPharmacy(t *testing.T) {
+	if err := CheckIfRunningLocally(t); err == CannotRunTestLocally {
+		return
+	}
+	testData := SetupIntegrationTest(t)
+	defer TearDownIntegrationTest(t, testData)
+
+	// create doctor with clinicianId specicified
+	doctor := createDoctorWithClinicianId(testData, t)
+
+	approvedRefillRequestPrescriptionId := int64(101010)
+	approvedRefillAmount := int64(10)
+
+	// add pharmacy to database so that it can be linked to treatment that is added
+	//  Get StubErx to return pharmacy in the GetPharmacyDetails call
+	pharmacyToReturn := &pharmacy.PharmacyData{
+		SourceId:     "1234",
+		Source:       pharmacy.PHARMACY_SOURCE_SURESCRIPTS,
+		Name:         "Walgreens",
+		AddressLine1: "116 New Montgomery",
+		City:         "San Francisco",
+		State:        "CA",
+		Postal:       "94115",
+	}
+
+	// Get StubErx to return patient details in the GetPatientDetails call
+	patientToReturn := &common.Patient{
+		FirstName:    "Test",
+		LastName:     "TestLastName",
+		Dob:          time.Now(),
+		Email:        "test@test.com",
+		Gender:       "male",
+		ZipCode:      "90210",
+		City:         "Beverly Hills",
+		State:        "CA",
+		ERxPatientId: common.NewObjectId(12345),
+	}
+
+	err := testData.DataApi.AddPharmacy(pharmacyToReturn)
+	if err != nil {
+		t.Fatal("Unable to store pharmacy in db: " + err.Error())
+	}
+
+	testTime := time.Now()
+
+	prescriptionIdForRequestedPrescription := int64(123456)
+	fiveMinutesBeforeTestTime := testTime.Add(-5 * time.Minute)
+	// Get StubErx to return refill requests in the refillRequest call
+	refillRequestItem := &common.RefillRequestItem{
+		RxRequestQueueItemId:      12345,
+		ReferenceNumber:           "TestReferenceNumber",
+		PharmacyRxReferenceNumber: "TestRxReferenceNumber",
+		RequestedDrugDescription:  "Clyndamycin",
+		RequestedRefillAmount:     "10",
+		RequestedDispense:         "123",
+		ErxPatientId:              12345,
+		PatientAddedForRequest:    true,
+		RequestDateStamp:          testTime,
+		ClinicianId:               clinicianId,
+		RequestedPrescription: &common.Treatment{
+			PrescriptionId: common.NewObjectId(prescriptionIdForRequestedPrescription),
+			ErxPharmacyId:  1234,
+			DrugDBIds: map[string]string{
+				erx.LexiDrugSynId:     "1234",
+				erx.LexiGenProductId:  "12345",
+				erx.LexiSynonymTypeId: "123556",
+				erx.NDC:               "2415",
+			},
+			DosageStrength:       "10 mg",
+			DispenseValue:        5,
+			OTC:                  false,
+			SubstitutionsAllowed: true,
+			ErxSentDate:          &fiveMinutesBeforeTestTime,
+			DoseSpotClinicianId:  clinicianId,
+		},
+		DispensedPrescription: &common.Treatment{
+			PrescriptionId:     common.NewObjectId(5504),
+			PrescriptionStatus: "Requested",
+			ErxPharmacyId:      1234,
+			DrugDBIds: map[string]string{
+				"drug_db_id_1": "1234",
+				"drug_db_id_2": "12345",
+			},
+			DrugName:                "Teting (This - Drug)",
+			DosageStrength:          "10 mg",
+			DispenseValue:           5,
+			DispenseUnitDescription: "Tablet",
+			NumberRefills:           5,
+			SubstitutionsAllowed:    false,
+			DaysSupply:              10,
+			PatientInstructions:     "Take once daily",
+			ErxLastDateFilled:       &testTime,
+			OTC:                     false,
+			DoseSpotClinicianId:     clinicianId,
+		},
+	}
+
+	stubErxAPI := &erx.StubErxService{
+		PharmacyDetailsToReturn:      pharmacyToReturn,
+		PatientDetailsToReturn:       patientToReturn,
+		RefillRxRequestQueueToReturn: []*common.RefillRequestItem{refillRequestItem},
+		RefillRequestPrescriptionId:  approvedRefillRequestPrescriptionId,
+		PrescriptionIdToPrescriptionStatuses: map[int64][]common.StatusEvent{
+			prescriptionIdForRequestedPrescription: []common.StatusEvent{common.StatusEvent{
+				Status: api.ERX_STATUS_SENT,
+			},
+			},
+		},
+	}
+
+	// Call the Consume method
+	app_worker.PerformRefillRecquestCheckCycle(testData.DataApi, stubErxAPI, metrics.NewCounter(), metrics.NewCounter(), "test")
+
+	refillRequestStatuses, err := testData.DataApi.GetPendingRefillRequestStatusEventsForClinic()
+	if err != nil {
+		t.Fatal("Unable to successfully get the pending refill requests stauses from the db: " + err.Error())
+	}
+
+	refillRequest, err := testData.DataApi.GetRefillRequestFromId(refillRequestStatuses[0].ItemId)
+	if err != nil {
+		t.Fatal("Unable to get refill request that was just added: ", err.Error())
+	}
+
+	// lets go ahead and attempt to approve this refill request
 	comment := "this is a test"
 	params := url.Values{}
 	params.Set("action", "approve")
@@ -301,7 +424,7 @@ func TestNewRefillRequestForExistingPatientAndExistingTreatment(t *testing.T) {
 		t.Fatalf("Expected the comment on the refill request to be '%s' but was '%s' instead", comment, refillRequest.Comments)
 	}
 
-	// doctor queue should be empty and the denied request should be in the completed tab
+	// doctor queue should be empty and the approved request should be in the completed tab
 	completedItems, err := testData.DataApi.GetCompletedItemsInDoctorQueue(doctor.DoctorId.Int64())
 	if err != nil {
 		t.Fatal("Unable to get the completed items for the doctor: " + err.Error())
@@ -316,7 +439,7 @@ func TestNewRefillRequestForExistingPatientAndExistingTreatment(t *testing.T) {
 		t.Fatal("Completed item in the doctor's queue not in the expected state")
 	}
 
-	pendingItems, err = testData.DataApi.GetPendingItemsInDoctorQueue(doctor.DoctorId.Int64())
+	pendingItems, err := testData.DataApi.GetPendingItemsInDoctorQueue(doctor.DoctorId.Int64())
 	if err != nil {
 		t.Fatal("Unable to get the pending items for the doctor: " + err.Error())
 		return
@@ -344,6 +467,502 @@ func TestNewRefillRequestForExistingPatientAndExistingTreatment(t *testing.T) {
 	}
 }
 
+func TestApproveRefillRequestAndErrorSendingToPharmacy(t *testing.T) {
+	if err := CheckIfRunningLocally(t); err == CannotRunTestLocally {
+		return
+	}
+	testData := SetupIntegrationTest(t)
+	defer TearDownIntegrationTest(t, testData)
+
+	// create doctor with clinicianId specicified
+	doctor := createDoctorWithClinicianId(testData, t)
+
+	approvedRefillRequestPrescriptionId := int64(101010)
+	approvedRefillAmount := int64(10)
+
+	// add pharmacy to database so that it can be linked to treatment that is added
+	//  Get StubErx to return pharmacy in the GetPharmacyDetails call
+	pharmacyToReturn := &pharmacy.PharmacyData{
+		SourceId:     "1234",
+		Source:       pharmacy.PHARMACY_SOURCE_SURESCRIPTS,
+		Name:         "Walgreens",
+		AddressLine1: "116 New Montgomery",
+		City:         "San Francisco",
+		State:        "CA",
+		Postal:       "94115",
+	}
+
+	// Get StubErx to return patient details in the GetPatientDetails call
+	patientToReturn := &common.Patient{
+		FirstName:    "Test",
+		LastName:     "TestLastName",
+		Dob:          time.Now(),
+		Email:        "test@test.com",
+		Gender:       "male",
+		ZipCode:      "90210",
+		City:         "Beverly Hills",
+		State:        "CA",
+		ERxPatientId: common.NewObjectId(12345),
+	}
+
+	err := testData.DataApi.AddPharmacy(pharmacyToReturn)
+	if err != nil {
+		t.Fatal("Unable to store pharmacy in db: " + err.Error())
+	}
+
+	testTime := time.Now()
+
+	prescriptionIdForRequestedPrescription := int64(123456)
+	fiveMinutesBeforeTestTime := testTime.Add(-5 * time.Minute)
+	// Get StubErx to return refill requests in the refillRequest call
+	refillRequestItem := &common.RefillRequestItem{
+		RxRequestQueueItemId:      12345,
+		ReferenceNumber:           "TestReferenceNumber",
+		PharmacyRxReferenceNumber: "TestRxReferenceNumber",
+		RequestedDrugDescription:  "Clyndamycin",
+		RequestedRefillAmount:     "10",
+		RequestedDispense:         "123",
+		ErxPatientId:              12345,
+		PatientAddedForRequest:    true,
+		RequestDateStamp:          testTime,
+		ClinicianId:               clinicianId,
+		RequestedPrescription: &common.Treatment{
+			PrescriptionId: common.NewObjectId(prescriptionIdForRequestedPrescription),
+			ErxPharmacyId:  1234,
+			DrugDBIds: map[string]string{
+				erx.LexiDrugSynId:     "1234",
+				erx.LexiGenProductId:  "12345",
+				erx.LexiSynonymTypeId: "123556",
+				erx.NDC:               "2415",
+			},
+			DosageStrength:       "10 mg",
+			DispenseValue:        5,
+			OTC:                  false,
+			SubstitutionsAllowed: true,
+			ErxSentDate:          &fiveMinutesBeforeTestTime,
+			DoseSpotClinicianId:  clinicianId,
+		},
+		DispensedPrescription: &common.Treatment{
+			PrescriptionId:     common.NewObjectId(5504),
+			PrescriptionStatus: "Requested",
+			ErxPharmacyId:      1234,
+			DrugDBIds: map[string]string{
+				"drug_db_id_1": "1234",
+				"drug_db_id_2": "12345",
+			},
+			DrugName:                "Teting (This - Drug)",
+			DosageStrength:          "10 mg",
+			DispenseValue:           5,
+			DispenseUnitDescription: "Tablet",
+			NumberRefills:           5,
+			SubstitutionsAllowed:    false,
+			DaysSupply:              10,
+			PatientInstructions:     "Take once daily",
+			ErxLastDateFilled:       &testTime,
+			OTC:                     false,
+			DoseSpotClinicianId:     clinicianId,
+		},
+	}
+
+	stubErxAPI := &erx.StubErxService{
+		PharmacyDetailsToReturn:      pharmacyToReturn,
+		PatientDetailsToReturn:       patientToReturn,
+		RefillRxRequestQueueToReturn: []*common.RefillRequestItem{refillRequestItem},
+		RefillRequestPrescriptionId:  approvedRefillRequestPrescriptionId,
+		PrescriptionIdToPrescriptionStatuses: map[int64][]common.StatusEvent{
+			prescriptionIdForRequestedPrescription: []common.StatusEvent{common.StatusEvent{
+				Status:        api.ERX_STATUS_ERROR,
+				StatusDetails: "testing this error",
+			},
+			},
+		},
+	}
+
+	// Call the Consume method
+	app_worker.PerformRefillRecquestCheckCycle(testData.DataApi, stubErxAPI, metrics.NewCounter(), metrics.NewCounter(), "test")
+
+	refillRequestStatuses, err := testData.DataApi.GetPendingRefillRequestStatusEventsForClinic()
+	if err != nil {
+		t.Fatal("Unable to successfully get the pending refill requests stauses from the db: " + err.Error())
+	}
+
+	refillRequest, err := testData.DataApi.GetRefillRequestFromId(refillRequestStatuses[0].ItemId)
+	if err != nil {
+		t.Fatal("Unable to get refill request that was just added: ", err.Error())
+	}
+
+	// lets go ahead and attempt to approve this refill request
+	comment := "this is a test"
+	params := url.Values{}
+	params.Set("action", "approve")
+	params.Set("refill_request_id", strconv.FormatInt(refillRequest.Id, 10))
+	params.Set("approved_refill_amount", strconv.FormatInt(approvedRefillAmount, 10))
+	params.Set("comments", comment)
+
+	erxStatusQueue := &common.SQSQueue{}
+	erxStatusQueue.QueueService = &sqs.StubSQS{}
+	erxStatusQueue.QueueUrl = "local-erx"
+
+	doctorRefillRequestsHandler := &apiservice.DoctorRefillRequestHandler{
+		DataApi:        testData.DataApi,
+		ErxApi:         stubErxAPI,
+		ErxStatusQueue: erxStatusQueue,
+	}
+
+	ts := httptest.NewServer(doctorRefillRequestsHandler)
+	defer ts.Close()
+
+	resp, err := authPut(ts.URL, "application/x-www-form-urlencoded", bytes.NewBufferString(params.Encode()), doctor.AccountId.Int64())
+	if err != nil {
+		t.Fatal("Unable to make successful request to approve refill request: " + err.Error())
+	}
+
+	if resp.StatusCode != http.StatusOK {
+		t.Fatal("Unable to make successful request to approve refill request: ")
+	}
+
+	refillRequest, err = testData.DataApi.GetRefillRequestFromId(refillRequest.Id)
+	if err != nil {
+		t.Fatal("Unable to get refill request after approving request: " + err.Error())
+	}
+
+	if len(refillRequest.RxHistory) != 2 {
+		t.Fatalf("Expected 2 items in the rx history for the refill request instead got %d", len(refillRequest.RxHistory))
+	}
+
+	if refillRequest.RxHistory[0].Status != api.RX_REFILL_STATUS_APPROVED {
+		t.Fatalf("Expected the refill request status to be %s but was %s instead", api.RX_REFILL_STATUS_APPROVED, refillRequest.RxHistory[0].Status)
+	}
+
+	if refillRequest.ApprovedRefillAmount != approvedRefillAmount {
+		t.Fatalf("Expected the approved refill amount to be %d but wsa %d instead", approvedRefillAmount, refillRequest.ApprovedRefillAmount)
+	}
+
+	if refillRequest.Comments != comment {
+		t.Fatalf("Expected the comment on the refill request to be '%s' but was '%s' instead", comment, refillRequest.Comments)
+	}
+
+	// doctor queue should be empty and the approved request should be in the completed tab
+	completedItems, err := testData.DataApi.GetCompletedItemsInDoctorQueue(doctor.DoctorId.Int64())
+	if err != nil {
+		t.Fatal("Unable to get the completed items for the doctor: " + err.Error())
+	}
+
+	if len(completedItems) != 1 {
+		t.Fatal("Expected there to be 1 completed item in the doctor's queue for the refill request that was just rejected")
+	}
+
+	if completedItems[0].EventType != api.EVENT_TYPE_REFILL_REQUEST || completedItems[0].ItemId != refillRequest.Id ||
+		completedItems[0].Status != api.QUEUE_ITEM_STATUS_REFILL_APPROVED {
+		t.Fatal("Completed item in the doctor's queue not in the expected state")
+	}
+
+	pendingItems, err := testData.DataApi.GetPendingItemsInDoctorQueue(doctor.DoctorId.Int64())
+	if err != nil {
+		t.Fatal("Unable to get the pending items for the doctor: " + err.Error())
+		return
+	}
+
+	if len(pendingItems) != 0 {
+		t.Fatalf("Expected there to be no pending items in the doctor's queue instead there were %d", len(pendingItems))
+	}
+
+	// attempt to consume the message put into the queue
+	app_worker.ConsumeMessageFromQueue(testData.DataApi, stubErxAPI, erxStatusQueue, metrics.NewBiasedHistogram(), metrics.NewCounter(), metrics.NewCounter())
+
+	refillStatusEvents, err := testData.DataApi.GetRefillStatusEventsForRefillRequest(refillRequest.Id)
+	if err != nil {
+		t.Fatal("Unable to get refill status events for refill request: " + err.Error())
+	}
+
+	if len(refillStatusEvents) != 3 {
+		t.Fatalf("Expected 2 refill status events for refill request but got %d", len(refillStatusEvents))
+	}
+
+	if refillStatusEvents[0].Status != api.ERX_STATUS_ERROR {
+		t.Fatal("Expected the top level item for the refill request to indicate that it was successfully sent to the pharmacy")
+	}
+
+	if refillStatusEvents[0].StatusDetails == "" {
+		t.Fatal("Expected there be to an error message for the refill request  given that there was an errror sending to pharmacy")
+	}
+
+	// lets make sure that the error for the refill request makes it into the doctor's queue
+	pendingItems, err = testData.DataApi.GetPendingItemsInDoctorQueue(doctor.DoctorId.Int64())
+	if err != nil {
+		t.Fatal("Unable to get pending items in doctors queue: " + err.Error())
+	}
+
+	if len(pendingItems) != 1 {
+		t.Fatalf("Expected there to be 1 item in the doctors queue but there were %d", len(pendingItems))
+	}
+
+	if pendingItems[0].EventType != api.EVENT_TYPE_REFILL_TRANSMISSION_ERROR {
+		t.Fatalf("Expected the 1 item in teh doctors queue to be a transmission error for a refill request but instead it was %s", pendingItems[0].EventType)
+	}
+
+	// lets go ahead and resolve this error
+	doctorPrescriptionErrorIgnoreHandler := &apiservice.DoctorPrescriptionErrorIgnoreHandler{
+		DataApi: testData.DataApi,
+		ErxApi:  stubErxAPI,
+	}
+
+	params = url.Values{}
+	params.Set("refill_request_id", fmt.Sprintf("%d", refillRequest.Id))
+
+	errorIgnoreTs := httptest.NewServer(doctorPrescriptionErrorIgnoreHandler)
+	resp, err = authPost(errorIgnoreTs.URL, "application/x-www-form-urlencoded", strings.NewReader(params.Encode()), doctor.AccountId.Int64())
+	if err != nil {
+		t.Fatalf("Unable to resolve refill request transmission error: %+v", err.Error())
+	}
+
+	CheckSuccessfulStatusCode(resp, "Unable to successfull resolve refill request transmission error", t)
+
+	// check the rx history of the refill request
+	refillRequest, err = testData.DataApi.GetRefillRequestFromId(refillRequest.Id)
+	if err != nil {
+		t.Fatalf("Unable to get refill request : %+v", refillRequest)
+	}
+
+	if len(refillRequest.RxHistory) != 4 {
+		t.Fatalf("Expected refill request to have 4 events in its history, instead it had %d", len(refillRequest.RxHistory))
+	}
+
+	if refillRequest.RxHistory[0].Status != api.ERX_STATUS_RESOLVED {
+		t.Fatal("Expected the refill request to be resolved once the doctor resolved the error")
+	}
+
+	pendingItems, err = testData.DataApi.GetPendingItemsInDoctorQueue(doctor.DoctorId.Int64())
+	if err != nil {
+		t.Fatalf("there should be no pending items in the doctor queue: %+v", err)
+	}
+
+	if len(pendingItems) != 0 {
+		t.Fatalf("Expected to have no items in the doctor queue, instead have %d", len(pendingItems))
+	}
+}
+
+func TestDenyRefillRequestAndSuccessfulDelete(t *testing.T) {
+	if err := CheckIfRunningLocally(t); err == CannotRunTestLocally {
+		return
+	}
+	testData := SetupIntegrationTest(t)
+	defer TearDownIntegrationTest(t, testData)
+
+	// create doctor with clinicianId specicified
+	doctor := createDoctorWithClinicianId(testData, t)
+
+	approvedRefillRequestPrescriptionId := int64(101010)
+
+	// add pharmacy to database so that it can be linked to treatment that is added
+	//  Get StubErx to return pharmacy in the GetPharmacyDetails call
+	pharmacyToReturn := &pharmacy.PharmacyData{
+		SourceId:     "1234",
+		Source:       pharmacy.PHARMACY_SOURCE_SURESCRIPTS,
+		Name:         "Walgreens",
+		AddressLine1: "116 New Montgomery",
+		City:         "San Francisco",
+		State:        "CA",
+		Postal:       "94115",
+	}
+
+	// Get StubErx to return patient details in the GetPatientDetails call
+	patientToReturn := &common.Patient{
+		FirstName:    "Test",
+		LastName:     "TestLastName",
+		Dob:          time.Now(),
+		Email:        "test@test.com",
+		Gender:       "male",
+		ZipCode:      "90210",
+		City:         "Beverly Hills",
+		State:        "CA",
+		ERxPatientId: common.NewObjectId(12345),
+	}
+
+	err := testData.DataApi.AddPharmacy(pharmacyToReturn)
+	if err != nil {
+		t.Fatal("Unable to store pharmacy in db: " + err.Error())
+	}
+
+	testTime := time.Now()
+
+	prescriptionIdForRequestedPrescription := int64(123456)
+	fiveMinutesBeforeTestTime := testTime.Add(-5 * time.Minute)
+	// Get StubErx to return refill requests in the refillRequest call
+	refillRequestItem := &common.RefillRequestItem{
+		RxRequestQueueItemId:      12345,
+		ReferenceNumber:           "TestReferenceNumber",
+		PharmacyRxReferenceNumber: "TestRxReferenceNumber",
+		RequestedDrugDescription:  "Clyndamycin",
+		RequestedRefillAmount:     "10",
+		RequestedDispense:         "123",
+		ErxPatientId:              12345,
+		PatientAddedForRequest:    true,
+		RequestDateStamp:          testTime,
+		ClinicianId:               clinicianId,
+		RequestedPrescription: &common.Treatment{
+			PrescriptionId: common.NewObjectId(prescriptionIdForRequestedPrescription),
+			ErxPharmacyId:  1234,
+			DrugDBIds: map[string]string{
+				erx.LexiDrugSynId:     "1234",
+				erx.LexiGenProductId:  "12345",
+				erx.LexiSynonymTypeId: "123556",
+				erx.NDC:               "2415",
+			},
+			DosageStrength:       "10 mg",
+			DispenseValue:        5,
+			OTC:                  false,
+			SubstitutionsAllowed: true,
+			ErxSentDate:          &fiveMinutesBeforeTestTime,
+			DoseSpotClinicianId:  clinicianId,
+		},
+		DispensedPrescription: &common.Treatment{
+			PrescriptionId:     common.NewObjectId(5504),
+			PrescriptionStatus: "Requested",
+			ErxPharmacyId:      1234,
+			DrugDBIds: map[string]string{
+				"drug_db_id_1": "1234",
+				"drug_db_id_2": "12345",
+			},
+			DrugName:                "Teting (This - Drug)",
+			DosageStrength:          "10 mg",
+			DispenseValue:           5,
+			DispenseUnitDescription: "Tablet",
+			NumberRefills:           5,
+			SubstitutionsAllowed:    false,
+			DaysSupply:              10,
+			PatientInstructions:     "Take once daily",
+			ErxLastDateFilled:       &testTime,
+			OTC:                     false,
+			DoseSpotClinicianId:     clinicianId,
+		},
+	}
+
+	stubErxAPI := &erx.StubErxService{
+		PharmacyDetailsToReturn:      pharmacyToReturn,
+		PatientDetailsToReturn:       patientToReturn,
+		RefillRxRequestQueueToReturn: []*common.RefillRequestItem{refillRequestItem},
+		RefillRequestPrescriptionId:  approvedRefillRequestPrescriptionId,
+		PrescriptionIdToPrescriptionStatuses: map[int64][]common.StatusEvent{
+			prescriptionIdForRequestedPrescription: []common.StatusEvent{common.StatusEvent{
+				Status: api.ERX_STATUS_DELETED,
+			},
+			},
+		},
+	}
+
+	// Call the Consume method
+	app_worker.PerformRefillRecquestCheckCycle(testData.DataApi, stubErxAPI, metrics.NewCounter(), metrics.NewCounter(), "test")
+
+	refillRequestStatuses, err := testData.DataApi.GetPendingRefillRequestStatusEventsForClinic()
+	if err != nil {
+		t.Fatal("Unable to successfully get the pending refill requests stauses from the db: " + err.Error())
+	}
+
+	refillRequest, err := testData.DataApi.GetRefillRequestFromId(refillRequestStatuses[0].ItemId)
+	if err != nil {
+		t.Fatal("Unable to get refill request that was just added: ", err.Error())
+	}
+
+	denialReasons, err := testData.DataApi.GetRefillRequestDenialReasons()
+	if err != nil || len(denialReasons) == 0 {
+		t.Fatal("Unable to get the denial reasons for the refill request")
+	}
+
+	erxStatusQueue := &common.SQSQueue{}
+	erxStatusQueue.QueueService = &sqs.StubSQS{}
+	erxStatusQueue.QueueUrl = "local-erx"
+
+	// now, lets go ahead and attempt to deny this refill request
+	comment := "this is a test"
+	params := url.Values{}
+	params.Set("action", "deny")
+	params.Set("denial_reason_id", strconv.FormatInt(denialReasons[0].Id, 10))
+	params.Set("comments", comment)
+	params.Set("refill_request_id", strconv.FormatInt(refillRequest.Id, 10))
+
+	doctorRefillRequestsHandler := &apiservice.DoctorRefillRequestHandler{
+		DataApi:        testData.DataApi,
+		ErxApi:         stubErxAPI,
+		ErxStatusQueue: erxStatusQueue,
+	}
+
+	ts := httptest.NewServer(doctorRefillRequestsHandler)
+	defer ts.Close()
+
+	resp, err := authPut(ts.URL, "application/x-www-form-urlencoded", bytes.NewBufferString(params.Encode()), doctor.AccountId.Int64())
+	if err != nil {
+		t.Fatal("Unable to make successful request to approve refill request: " + err.Error())
+	}
+
+	if resp.StatusCode != http.StatusOK {
+		t.Fatal("Unable to make successful request to approve refill request: " + err.Error())
+	}
+
+	refillRequest, err = testData.DataApi.GetRefillRequestFromId(refillRequest.Id)
+	if err != nil {
+		t.Fatal("Unable to get refill request after approving request: " + err.Error())
+	}
+
+	if len(refillRequest.RxHistory) != 2 {
+		t.Fatalf("Expected two items in the rx history of the refill request instead got %d", len(refillRequest.RxHistory))
+	}
+
+	if refillRequest.RxHistory[0].Status != api.RX_REFILL_STATUS_DENIED {
+		t.Fatalf("Expected the refill request status to be %s but was %s instead", api.RX_REFILL_STATUS_DENIED, refillRequest.RxHistory[0].Status)
+	}
+
+	if refillRequest.Comments != comment {
+		t.Fatalf("Expected the comment on the refill request to be '%s' but was '%s' instead", comment, refillRequest.Comments)
+	}
+
+	if refillRequest.DenialReason != denialReasons[0].DenialReason {
+		t.Fatalf("Denial reason expected to be '%s' but is '%s' instead", denialReasons[0].DenialReason, refillRequest.DenialReason)
+	}
+
+	// doctor queue should be empty and the denied request should be in the completed tab
+	completedItems, err := testData.DataApi.GetCompletedItemsInDoctorQueue(doctor.DoctorId.Int64())
+	if err != nil {
+		t.Fatal("Unable to get the completed items for the doctor: " + err.Error())
+	}
+
+	if len(completedItems) != 1 {
+		t.Fatal("Expected there to be 1 completed item in the doctor's queue for the refill request that was just rejected")
+	}
+
+	if completedItems[0].EventType != api.EVENT_TYPE_REFILL_REQUEST || completedItems[0].ItemId != refillRequest.Id ||
+		completedItems[0].Status != api.QUEUE_ITEM_STATUS_REFILL_DENIED {
+		t.Fatal("Completed item in the doctor's queue not in the expected state")
+	}
+
+	pendingItems, err := testData.DataApi.GetPendingItemsInDoctorQueue(doctor.DoctorId.Int64())
+	if err != nil {
+		t.Fatal("Unable to get the pending items for the doctor: " + err.Error())
+		return
+	}
+
+	if len(pendingItems) != 0 {
+		t.Fatalf("Expected there to be no pending items in the doctor's queue instead there were %d", len(pendingItems))
+	}
+
+	// attempt to consume the message put into the queue
+	app_worker.ConsumeMessageFromQueue(testData.DataApi, stubErxAPI, erxStatusQueue, metrics.NewBiasedHistogram(), metrics.NewCounter(), metrics.NewCounter())
+
+	// now, the status of the refill request should be Sent
+	refillStatusEvents, err := testData.DataApi.GetRefillStatusEventsForRefillRequest(refillRequest.Id)
+	if err != nil {
+		t.Fatal("Unable to get refill status events for refill request: " + err.Error())
+	}
+
+	if len(refillStatusEvents) != 3 {
+		t.Fatalf("Expected 2 refill status events for refill request but got %d", len(refillStatusEvents))
+	}
+
+	if refillStatusEvents[0].Status != api.ERX_STATUS_DELETED {
+		t.Fatal("Expected the top level item for the refill request to indicate that it was successfully sent to the pharmacy")
+	}
+}
+
 func TestRefillRequestComingFromDifferentPharmacyThanDispensedPrescription(t *testing.T) {
 	if err := CheckIfRunningLocally(t); err == CannotRunTestLocally {
 		return
@@ -358,7 +977,6 @@ func TestRefillRequestComingFromDifferentPharmacyThanDispensedPrescription(t *te
 	erxPatientId := int64(60)
 
 	approvedRefillRequestPrescriptionId := int64(101010)
-	approvedRefillAmount := int64(10)
 
 	// add an erx patient id to the patient
 	err := testData.DataApi.UpdatePatientWithERxPatientId(signedupPatientResponse.Patient.PatientId.Int64(), erxPatientId)
@@ -506,13 +1124,6 @@ func TestRefillRequestComingFromDifferentPharmacyThanDispensedPrescription(t *te
 		PharmacyDetailsToReturn:      pharmacyToReturn,
 		RefillRxRequestQueueToReturn: []*common.RefillRequestItem{refillRequestItem},
 		RefillRequestPrescriptionId:  approvedRefillRequestPrescriptionId,
-		PrescriptionIdToPrescriptionStatuses: map[int64][]common.StatusEvent{
-			prescriptionIdForRequestedPrescription: []common.StatusEvent{common.StatusEvent{
-				Status:        api.ERX_STATUS_ERROR,
-				StatusDetails: "testing this error",
-			},
-			},
-		},
 	}
 
 	// Call the Consume method
@@ -588,157 +1199,6 @@ func TestRefillRequestComingFromDifferentPharmacyThanDispensedPrescription(t *te
 
 	if refillRequest.RequestedPrescription.Pharmacy.SourceId == refillRequest.DispensedPrescription.Pharmacy.SourceId {
 		t.Fatal("Expected the pharmacies to be different between the requested and the dispensed prescriptions")
-	}
-
-	erxStatusQueue := &common.SQSQueue{}
-	erxStatusQueue.QueueService = &sqs.StubSQS{}
-	erxStatusQueue.QueueUrl = "local-erx"
-
-	// now, lets go ahead and attempt to approve this refill request
-	comment := "this is a test"
-	params := url.Values{}
-	params.Set("action", "approve")
-	params.Set("refill_request_id", strconv.FormatInt(refillRequest.Id, 10))
-	params.Set("approved_refill_amount", strconv.FormatInt(approvedRefillAmount, 10))
-	params.Set("comments", comment)
-
-	doctorRefillRequestsHandler := &apiservice.DoctorRefillRequestHandler{
-		DataApi:        testData.DataApi,
-		ErxApi:         stubErxAPI,
-		ErxStatusQueue: erxStatusQueue,
-	}
-
-	ts := httptest.NewServer(doctorRefillRequestsHandler)
-	defer ts.Close()
-
-	resp, err := authPut(ts.URL, "application/x-www-form-urlencoded", bytes.NewBufferString(params.Encode()), doctor.AccountId.Int64())
-	if err != nil {
-		t.Fatal("Unable to make successful request to approve refill request: " + err.Error())
-	}
-
-	if resp.StatusCode != http.StatusOK {
-		t.Fatal("Unable to make successful request to approve refill request: " + err.Error())
-	}
-
-	refillRequest, err = testData.DataApi.GetRefillRequestFromId(refillRequest.Id)
-	if err != nil {
-		t.Fatal("Unable to get refill request after approving request: " + err.Error())
-	}
-
-	if len(refillRequest.RxHistory) != 2 {
-		t.Fatalf("Expected 2 events in rx history of refill request instead got %d", len(refillRequest.RxHistory))
-	}
-
-	if refillRequest.RxHistory[0].Status != api.RX_REFILL_STATUS_APPROVED {
-		t.Fatalf("Expected the refill request status to be %s but was %s instead", api.RX_REFILL_STATUS_APPROVED, refillRequest.RxHistory[0].Status)
-	}
-
-	if refillRequest.ApprovedRefillAmount != approvedRefillAmount {
-		t.Fatalf("Expected the approved refill amount to be %d but wsa %d instead", approvedRefillAmount, refillRequest.ApprovedRefillAmount)
-	}
-
-	if refillRequest.Comments != comment {
-		t.Fatalf("Expected the comment on the refill request to be '%s' but was '%s' instead", comment, refillRequest.Comments)
-	}
-
-	// doctor queue should be empty and the denied request should be in the completed tab
-	completedItems, err := testData.DataApi.GetCompletedItemsInDoctorQueue(doctor.DoctorId.Int64())
-	if err != nil {
-		t.Fatal("Unable to get the completed items for the doctor: " + err.Error())
-	}
-
-	if len(completedItems) != 1 {
-		t.Fatal("Expected there to be 1 completed item in the doctor's queue for the refill request that was just rejected")
-	}
-
-	if completedItems[0].EventType != api.EVENT_TYPE_REFILL_REQUEST || completedItems[0].ItemId != refillRequest.Id ||
-		completedItems[0].Status != api.QUEUE_ITEM_STATUS_REFILL_APPROVED {
-		t.Fatal("Completed item in the doctor's queue not in the expected state")
-	}
-
-	pendingItems, err = testData.DataApi.GetPendingItemsInDoctorQueue(doctor.DoctorId.Int64())
-	if err != nil {
-		t.Fatal("Unable to get the pending items for the doctor: " + err.Error())
-		return
-	}
-
-	if len(pendingItems) != 0 {
-		t.Fatalf("Expected there to be no pending items in the doctor's queue instead there were %d", len(pendingItems))
-	}
-
-	// attempt to consume the message put into the queue
-	app_worker.ConsumeMessageFromQueue(testData.DataApi, stubErxAPI, erxStatusQueue, metrics.NewBiasedHistogram(), metrics.NewCounter(), metrics.NewCounter())
-
-	// now, the status of the refill request should be Sent
-	refillStatusEvents, err := testData.DataApi.GetRefillStatusEventsForRefillRequest(refillRequest.Id)
-	if err != nil {
-		t.Fatal("Unable to get refill status events for refill request: " + err.Error())
-	}
-
-	if len(refillStatusEvents) != 3 {
-		t.Fatalf("Expected 2 refill status events for refill request but got %d", len(refillStatusEvents))
-	}
-
-	if refillStatusEvents[0].Status != api.ERX_STATUS_ERROR {
-		t.Fatal("Expected the top level item for the refill request to indicate that it was successfully sent to the pharmacy")
-	}
-
-	if refillStatusEvents[0].StatusDetails == "" {
-		t.Fatal("Expected there be to an error message for the refill request  given that there was an errror sending to pharmacy")
-	}
-
-	// lets make sure that the error for the refill request makes it into the doctor's queue
-	pendingItems, err = testData.DataApi.GetPendingItemsInDoctorQueue(doctor.DoctorId.Int64())
-	if err != nil {
-		t.Fatal("Unable to get pending items in doctors queue: " + err.Error())
-	}
-
-	if len(pendingItems) != 1 {
-		t.Fatalf("Expected there to be 1 item in the doctors queue but there were %d", len(pendingItems))
-	}
-
-	if pendingItems[0].EventType != api.EVENT_TYPE_REFILL_TRANSMISSION_ERROR {
-		t.Fatalf("Expected the 1 item in teh doctors queue to be a transmission error for a refill request but instead it was %s", pendingItems[0].EventType)
-	}
-
-	// lets go ahead and resolve this error
-	doctorPrescriptionErrorIgnoreHandler := &apiservice.DoctorPrescriptionErrorIgnoreHandler{
-		DataApi: testData.DataApi,
-		ErxApi:  stubErxAPI,
-	}
-
-	params = url.Values{}
-	params.Set("refill_request_id", fmt.Sprintf("%d", refillRequest.Id))
-
-	errorIgnoreTs := httptest.NewServer(doctorPrescriptionErrorIgnoreHandler)
-	resp, err = authPost(errorIgnoreTs.URL, "application/x-www-form-urlencoded", strings.NewReader(params.Encode()), doctor.AccountId.Int64())
-	if err != nil {
-		t.Fatalf("Unable to resolve refill request transmission error: %+v", err.Error())
-	}
-
-	CheckSuccessfulStatusCode(resp, "Unable to successfull resolve refill request transmission error", t)
-
-	// check the rx history of the refill request
-	refillRequest, err = testData.DataApi.GetRefillRequestFromId(refillRequest.Id)
-	if err != nil {
-		t.Fatalf("Unable to get refill request : %+v", refillRequest)
-	}
-
-	if len(refillRequest.RxHistory) != 4 {
-		t.Fatalf("Expected refill request to have 4 events in its history, instead it had %d", len(refillRequest.RxHistory))
-	}
-
-	if refillRequest.RxHistory[0].Status != api.ERX_STATUS_RESOLVED {
-		t.Fatal("Expected the refill request to be resolved once the doctor resolved the error")
-	}
-
-	pendingItems, err = testData.DataApi.GetPendingItemsInDoctorQueue(doctor.DoctorId.Int64())
-	if err != nil {
-		t.Fatalf("there should be no pending items in the doctor queue: %+v", err)
-	}
-
-	if len(pendingItems) != 0 {
-		t.Fatalf("Expected to have no items in the doctor queue, instead have %d", len(pendingItems))
 	}
 }
 
@@ -832,12 +1292,6 @@ func TestNewRefillRequestWithUnlinkedTreatmentAndLinkedPatient(t *testing.T) {
 	stubErxAPI := &erx.StubErxService{
 		PharmacyDetailsToReturn:      pharmacyToReturn,
 		RefillRxRequestQueueToReturn: []*common.RefillRequestItem{refillRequestItem},
-		PrescriptionIdToPrescriptionStatuses: map[int64][]common.StatusEvent{
-			prescriptionIdForRequestedPrescription: []common.StatusEvent{common.StatusEvent{
-				Status: api.ERX_STATUS_DELETED,
-			},
-			},
-		},
 	}
 
 	// Call the Consume method
@@ -909,104 +1363,6 @@ func TestNewRefillRequestWithUnlinkedTreatmentAndLinkedPatient(t *testing.T) {
 
 	if refillRequest.Patient.Status != api.PATIENT_REGISTERED {
 		t.Fatal("Patient requesting refill expected to be in our system instead the indication is that it was an unlinked patient")
-	}
-
-	denialReasons, err := testData.DataApi.GetRefillRequestDenialReasons()
-	if err != nil || len(denialReasons) == 0 {
-		t.Fatal("Unable to get the denial reasons for the refill request")
-	}
-
-	erxStatusQueue := &common.SQSQueue{}
-	erxStatusQueue.QueueService = &sqs.StubSQS{}
-	erxStatusQueue.QueueUrl = "local-erx"
-
-	// now, lets go ahead and attempt to deny this refill request
-	comment := "this is a test"
-	params := url.Values{}
-	params.Set("action", "deny")
-	params.Set("denial_reason_id", strconv.FormatInt(denialReasons[0].Id, 10))
-	params.Set("comments", comment)
-	params.Set("refill_request_id", strconv.FormatInt(refillRequest.Id, 10))
-
-	doctorRefillRequestsHandler := &apiservice.DoctorRefillRequestHandler{
-		DataApi:        testData.DataApi,
-		ErxApi:         stubErxAPI,
-		ErxStatusQueue: erxStatusQueue,
-	}
-
-	ts := httptest.NewServer(doctorRefillRequestsHandler)
-	defer ts.Close()
-
-	resp, err := authPut(ts.URL, "application/x-www-form-urlencoded", bytes.NewBufferString(params.Encode()), doctor.AccountId.Int64())
-	if err != nil {
-		t.Fatal("Unable to make successful request to approve refill request: " + err.Error())
-	}
-
-	if resp.StatusCode != http.StatusOK {
-		t.Fatal("Unable to make successful request to approve refill request: " + err.Error())
-	}
-
-	refillRequest, err = testData.DataApi.GetRefillRequestFromId(refillRequest.Id)
-	if err != nil {
-		t.Fatal("Unable to get refill request after approving request: " + err.Error())
-	}
-
-	if len(refillRequest.RxHistory) != 2 {
-		t.Fatalf("Expected two items in the rx history of the refill request instead got %d", len(refillRequest.RxHistory))
-	}
-
-	if refillRequest.RxHistory[0].Status != api.RX_REFILL_STATUS_DENIED {
-		t.Fatalf("Expected the refill request status to be %s but was %s instead", api.RX_REFILL_STATUS_DENIED, refillRequest.RxHistory[0].Status)
-	}
-
-	if refillRequest.Comments != comment {
-		t.Fatalf("Expected the comment on the refill request to be '%s' but was '%s' instead", comment, refillRequest.Comments)
-	}
-
-	if refillRequest.DenialReason != denialReasons[0].DenialReason {
-		t.Fatalf("Denial reason expected to be '%s' but is '%s' instead", denialReasons[0].DenialReason, refillRequest.DenialReason)
-	}
-
-	// doctor queue should be empty and the denied request should be in the completed tab
-	completedItems, err := testData.DataApi.GetCompletedItemsInDoctorQueue(doctor.DoctorId.Int64())
-	if err != nil {
-		t.Fatal("Unable to get the completed items for the doctor: " + err.Error())
-	}
-
-	if len(completedItems) != 1 {
-		t.Fatal("Expected there to be 1 completed item in the doctor's queue for the refill request that was just rejected")
-	}
-
-	if completedItems[0].EventType != api.EVENT_TYPE_REFILL_REQUEST || completedItems[0].ItemId != refillRequest.Id ||
-		completedItems[0].Status != api.QUEUE_ITEM_STATUS_REFILL_DENIED {
-		t.Fatal("Completed item in the doctor's queue not in the expected state")
-	}
-
-	pendingItems, err = testData.DataApi.GetPendingItemsInDoctorQueue(doctor.DoctorId.Int64())
-	if err != nil {
-		t.Fatal("Unable to get the pending items for the doctor: " + err.Error())
-		return
-	}
-
-	if len(pendingItems) != 0 {
-		t.Fatalf("Expected there to be no pending items in the doctor's queue instead there were %d", len(pendingItems))
-	}
-
-	// attempt to consume the message put into the queue
-	app_worker.ConsumeMessageFromQueue(testData.DataApi, stubErxAPI, erxStatusQueue, metrics.NewBiasedHistogram(), metrics.NewCounter(), metrics.NewCounter())
-
-	// now, the status of the refill request should be Sent
-	refillStatusEvents, err := testData.DataApi.GetRefillStatusEventsForRefillRequest(refillRequest.Id)
-	if err != nil {
-		t.Fatal("Unable to get refill status events for refill request: " + err.Error())
-	}
-
-	if len(refillStatusEvents) != 3 {
-		t.Fatalf("Expected 2 refill status events for refill request but got %d", len(refillStatusEvents))
-	}
-
-	if refillStatusEvents[0].Status != api.ERX_STATUS_DELETED {
-		t.Fatal("Expected the top level item for the refill request to indicate that it was successfully sent to the pharmacy")
 	}
 }
 
@@ -1111,9 +1467,6 @@ func TestNewRefillRequestWithUnlinkedTreatmentAndUnlinkedPatient(t *testing.T) {
 
 	// Call the Consume method
 	app_worker.PerformRefillRecquestCheckCycle(testData.DataApi, stubErxAPI, metrics.NewCounter(), metrics.NewCounter(), "test")
-
-	// TODO Get Refill Request when that API is written, and ensure that the state of the refill request matches the
-	// end expected state (patient that is unlinked; treatment that is unlinked; pharmacy data in there)
 
 	// There should be an unlinked patient in the patient db
 	unlinkedPatient, err := testData.DataApi.GetPatientFromErxPatientId(patientToReturn.ERxPatientId.Int64())
