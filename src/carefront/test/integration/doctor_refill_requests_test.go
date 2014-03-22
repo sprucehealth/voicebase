@@ -394,6 +394,10 @@ func TestApproveRefillRequestAndSuccessfulSendToPharmacy(t *testing.T) {
 	ts := httptest.NewServer(doctorRefillRequestsHandler)
 	defer ts.Close()
 
+	// sleep for a brief moment before approving so that
+	// the items are ordered correctly for the rx history (in the real world they would not be approved in the same exact millisecond they are sent in)
+	time.Sleep(10 * time.Millisecond)
+
 	resp, err := authPut(ts.URL, "application/x-www-form-urlencoded", bytes.NewBufferString(params.Encode()), doctor.AccountId.Int64())
 	if err != nil {
 		t.Fatal("Unable to make successful request to approve refill request: " + err.Error())
@@ -608,6 +612,10 @@ func TestApproveRefillRequestAndErrorSendingToPharmacy(t *testing.T) {
 		ErxApi:         stubErxAPI,
 		ErxStatusQueue: erxStatusQueue,
 	}
+
+	// sleep for a brief moment before approving so that
+	// the items are ordered correctly for the rx history (in the real world they would not be approved in the same exact millisecond they are sent in)
+	time.Sleep(10 * time.Millisecond)
 
 	ts := httptest.NewServer(doctorRefillRequestsHandler)
 	defer ts.Close()
@@ -886,6 +894,10 @@ func TestDenyRefillRequestAndSuccessfulDelete(t *testing.T) {
 		ErxApi:         stubErxAPI,
 		ErxStatusQueue: erxStatusQueue,
 	}
+
+	// sleep for a brief moment before denyingh so that
+	// the items are ordered correctly for the rx history (in the real world they would not be approved in the same exact millisecond they are sent in)
+	time.Sleep(10 * time.Millisecond)
 
 	ts := httptest.NewServer(doctorRefillRequestsHandler)
 	defer ts.Close()
