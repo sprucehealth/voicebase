@@ -226,6 +226,14 @@ type QuestionInfo struct {
 	Required           bool
 }
 
+type ByStatusTimestamp []StatusEvent
+
+func (a ByStatusTimestamp) Len() int      { return len(a) }
+func (a ByStatusTimestamp) Swap(i, j int) { a[i], a[j] = a[j], a[i] }
+func (a ByStatusTimestamp) Less(i, j int) bool {
+	return a[i].StatusTimestamp.Before(a[j].StatusTimestamp)
+}
+
 type StatusEvent struct {
 	ItemId            int64     `json:"-"`
 	PrescriptionId    int64     `json:"erx_id,string,omitempty"`

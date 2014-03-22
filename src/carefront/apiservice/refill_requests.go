@@ -6,6 +6,7 @@ import (
 	"carefront/libs/erx"
 	"carefront/libs/golog"
 	"net/http"
+	"sort"
 
 	"github.com/gorilla/schema"
 )
@@ -216,9 +217,21 @@ func (d *DoctorRefillRequestHandler) getRefillRequest(w http.ResponseWriter, r *
 	}
 
 	if refillRequest != nil {
-		// fill in the dispense unit description at the top level because the dispense unit description is not provided in the top level
+		// fill in the dispense unit description at the top level because the dispense unit description	 is not provided in the top level
 		// information from dosespot
 		refillRequest.RequestedDispenseUnitDescription = refillRequest.DispensedPrescription.DispenseUnitDescription
+	}
+
+	if refillRequest.RequestedPrescription.OriginatingTreatmentId != 0 {
+		rxHistoryOfOriginatingTreatment, err := d.DataApi.GetPrescriptionStatusEventsForTreatment(refillRequest.RequestedPrescription.OriginatingTreatmentId)
+		if err != nil {
+			WriteDeveloperError(w, http.StatusInternalServerError, "Unable to get rxhistory of the originating treatment: "+err.Error())
+			return
+		}
+
+		// add these events to the rx history of the refill request
+		refillRequest.RxHistory = append(refillRequest.RxHistory, rxHistoryOfOriginatingTreatment...)
+		sort.Reverse(common.ByStatusTimestamp(refillRequest.RxHistory))
 	}
 
 	WriteJSONToHTTPResponseWriter(w, http.StatusOK, &DoctorRefillRequestResponse{RefillRequest: refillRequest})

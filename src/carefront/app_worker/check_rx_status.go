@@ -168,7 +168,7 @@ func ConsumeMessageFromQueue(DataApi api.DataAPI, ERxApi erx.ERxAPI, ErxQueue *c
 			case api.ERX_STATUS_ERROR:
 				if statusCheckMessage.CheckRefillRequest {
 					if err := DataApi.AddRefillRequestStatusEvent(common.StatusEvent{
-						Status:            api.ERX_STATUS_ERROR,
+						Status:            api.RX_REFILL_STATUS_ERROR,
 						ReportedTimestamp: prescriptionLogs[0].LogTimestamp,
 						ItemId:            prescriptionStatus.ItemId,
 						StatusDetails:     prescriptionLogs[0].AdditionalInfo,
@@ -226,7 +226,7 @@ func ConsumeMessageFromQueue(DataApi api.DataAPI, ERxApi erx.ERxAPI, ErxQueue *c
 			case api.ERX_STATUS_SENT:
 				if statusCheckMessage.CheckRefillRequest {
 					if err := DataApi.AddRefillRequestStatusEvent(common.StatusEvent{
-						Status:            api.ERX_STATUS_SENT,
+						Status:            api.RX_REFILL_STATUS_SENT,
 						ReportedTimestamp: prescriptionLogs[0].LogTimestamp,
 						ItemId:            prescriptionStatus.ItemId,
 					}); err != nil {
@@ -256,7 +256,7 @@ func ConsumeMessageFromQueue(DataApi api.DataAPI, ERxApi erx.ERxAPI, ErxQueue *c
 			case api.ERX_STATUS_DELETED:
 				if statusCheckMessage.CheckRefillRequest {
 					if err := DataApi.AddRefillRequestStatusEvent(common.StatusEvent{
-						Status:            api.ERX_STATUS_DELETED,
+						Status:            api.RX_REFILL_STATUS_DELETED,
 						ReportedTimestamp: prescriptionLogs[0].LogTimestamp,
 						ItemId:            prescriptionStatus.ItemId,
 					}); err != nil {

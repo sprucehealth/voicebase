@@ -470,7 +470,7 @@ func TestApproveRefillRequestAndSuccessfulSendToPharmacy(t *testing.T) {
 		t.Fatalf("Expected 2 refill status events for refill request but got %d", len(refillStatusEvents))
 	}
 
-	if refillStatusEvents[0].Status != api.ERX_STATUS_SENT {
+	if refillStatusEvents[0].Status != api.RX_REFILL_STATUS_SENT {
 		t.Fatal("Expected the top level item for the refill request to indicate that it was successfully sent to the pharmacy")
 	}
 }
@@ -695,7 +695,7 @@ func TestApproveRefillRequestAndErrorSendingToPharmacy(t *testing.T) {
 		t.Fatalf("Expected 2 refill status events for refill request but got %d", len(refillStatusEvents))
 	}
 
-	if refillStatusEvents[0].Status != api.ERX_STATUS_ERROR {
+	if refillStatusEvents[0].Status != api.RX_REFILL_STATUS_ERROR {
 		t.Fatal("Expected the top level item for the refill request to indicate that it was successfully sent to the pharmacy")
 	}
 
@@ -986,7 +986,7 @@ func TestDenyRefillRequestAndSuccessfulDelete(t *testing.T) {
 		t.Fatalf("Expected 2 refill status events for refill request but got %d", len(refillStatusEvents))
 	}
 
-	if refillStatusEvents[0].Status != api.ERX_STATUS_DELETED {
+	if refillStatusEvents[0].Status != api.RX_REFILL_STATUS_DELETED {
 		t.Fatal("Expected the top level item for the refill request to indicate that it was successfully sent to the pharmacy")
 	}
 }
