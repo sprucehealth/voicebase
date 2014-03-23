@@ -353,7 +353,7 @@ func TestApproveRefillRequestAndSuccessfulSendToPharmacy(t *testing.T) {
 		RefillRxRequestQueueToReturn: []*common.RefillRequestItem{refillRequestItem},
 		RefillRequestPrescriptionId:  approvedRefillRequestPrescriptionId,
 		PrescriptionIdToPrescriptionStatuses: map[int64][]common.StatusEvent{
-			prescriptionIdForRequestedPrescription: []common.StatusEvent{common.StatusEvent{
+			approvedRefillRequestPrescriptionId: []common.StatusEvent{common.StatusEvent{
 				Status: api.ERX_STATUS_SENT,
 			},
 			},
@@ -421,11 +421,15 @@ func TestApproveRefillRequestAndSuccessfulSendToPharmacy(t *testing.T) {
 	}
 
 	if refillRequest.ApprovedRefillAmount != approvedRefillAmount {
-		t.Fatalf("Expected the approved refill amount to be %d but wsa %d instead", approvedRefillAmount, refillRequest.ApprovedRefillAmount)
+		t.Fatalf("Expected the approved refill amount to be %d but wsa %d instead", approvedRefillRequestPrescriptionId, refillRequest.ApprovedRefillAmount)
 	}
 
 	if refillRequest.Comments != comment {
 		t.Fatalf("Expected the comment on the refill request to be '%s' but was '%s' instead", comment, refillRequest.Comments)
+	}
+
+	if refillRequest.PrescriptionId != approvedRefillRequestPrescriptionId {
+		t.Fatalf("Expected the prescription id returned to be %d but instead it was %d", approvedRefillAmount, refillRequest.PrescriptionId)
 	}
 
 	// doctor queue should be empty and the approved request should be in the completed tab
@@ -467,7 +471,7 @@ func TestApproveRefillRequestAndSuccessfulSendToPharmacy(t *testing.T) {
 	}
 
 	if len(refillStatusEvents) != 3 {
-		t.Fatalf("Expected 2 refill status events for refill request but got %d", len(refillStatusEvents))
+		t.Fatalf("Expected 3 refill status events for refill request but got %d", len(refillStatusEvents))
 	}
 
 	if refillStatusEvents[0].Status != api.RX_REFILL_STATUS_SENT {
@@ -578,7 +582,7 @@ func TestApproveRefillRequestAndErrorSendingToPharmacy(t *testing.T) {
 		RefillRxRequestQueueToReturn: []*common.RefillRequestItem{refillRequestItem},
 		RefillRequestPrescriptionId:  approvedRefillRequestPrescriptionId,
 		PrescriptionIdToPrescriptionStatuses: map[int64][]common.StatusEvent{
-			prescriptionIdForRequestedPrescription: []common.StatusEvent{common.StatusEvent{
+			approvedRefillRequestPrescriptionId: []common.StatusEvent{common.StatusEvent{
 				Status:        api.ERX_STATUS_ERROR,
 				StatusDetails: "testing this error",
 			},
@@ -654,6 +658,10 @@ func TestApproveRefillRequestAndErrorSendingToPharmacy(t *testing.T) {
 		t.Fatalf("Expected the comment on the refill request to be '%s' but was '%s' instead", comment, refillRequest.Comments)
 	}
 
+	if refillRequest.PrescriptionId != approvedRefillRequestPrescriptionId {
+		t.Fatalf("Expected the prescription id returned to be %d but instead it was %d", approvedRefillRequestPrescriptionId, refillRequest.PrescriptionId)
+	}
+
 	// doctor queue should be empty and the approved request should be in the completed tab
 	completedItems, err := testData.DataApi.GetCompletedItemsInDoctorQueue(doctor.DoctorId.Int64())
 	if err != nil {
@@ -692,7 +700,7 @@ func TestApproveRefillRequestAndErrorSendingToPharmacy(t *testing.T) {
 	}
 
 	if len(refillStatusEvents) != 3 {
-		t.Fatalf("Expected 2 refill status events for refill request but got %d", len(refillStatusEvents))
+		t.Fatalf("Expected 3 refill status events for refill request but got %d", len(refillStatusEvents))
 	}
 
 	if refillStatusEvents[0].Status != api.RX_REFILL_STATUS_ERROR {
@@ -772,7 +780,7 @@ func TestDenyRefillRequestAndSuccessfulDelete(t *testing.T) {
 	// create doctor with clinicianId specicified
 	doctor := createDoctorWithClinicianId(testData, t)
 
-	approvedRefillRequestPrescriptionId := int64(101010)
+	deniedRefillRequestPrescriptionId := int64(101010)
 
 	// add pharmacy to database so that it can be linked to treatment that is added
 	//  Get StubErx to return pharmacy in the GetPharmacyDetails call
@@ -862,9 +870,9 @@ func TestDenyRefillRequestAndSuccessfulDelete(t *testing.T) {
 		PharmacyDetailsToReturn:      pharmacyToReturn,
 		PatientDetailsToReturn:       patientToReturn,
 		RefillRxRequestQueueToReturn: []*common.RefillRequestItem{refillRequestItem},
-		RefillRequestPrescriptionId:  approvedRefillRequestPrescriptionId,
+		RefillRequestPrescriptionId:  deniedRefillRequestPrescriptionId,
 		PrescriptionIdToPrescriptionStatuses: map[int64][]common.StatusEvent{
-			prescriptionIdForRequestedPrescription: []common.StatusEvent{common.StatusEvent{
+			deniedRefillRequestPrescriptionId: []common.StatusEvent{common.StatusEvent{
 				Status: api.ERX_STATUS_DELETED,
 			},
 			},
@@ -940,6 +948,10 @@ func TestDenyRefillRequestAndSuccessfulDelete(t *testing.T) {
 		t.Fatalf("Expected the comment on the refill request to be '%s' but was '%s' instead", comment, refillRequest.Comments)
 	}
 
+	if refillRequest.PrescriptionId != deniedRefillRequestPrescriptionId {
+		t.Fatalf("Expected the prescription id returned to be %d but instead it was %d", deniedRefillRequestPrescriptionId, refillRequest.PrescriptionId)
+	}
+
 	if refillRequest.DenialReason != denialReasons[0].DenialReason {
 		t.Fatalf("Denial reason expected to be '%s' but is '%s' instead", denialReasons[0].DenialReason, refillRequest.DenialReason)
 	}
@@ -983,7 +995,7 @@ func TestDenyRefillRequestAndSuccessfulDelete(t *testing.T) {
 	}
 
 	if len(refillStatusEvents) != 3 {
-		t.Fatalf("Expected 2 refill status events for refill request but got %d", len(refillStatusEvents))
+		t.Fatalf("Expected 3 refill status events for refill request but got %d", len(refillStatusEvents))
 	}
 
 	if refillStatusEvents[0].Status != api.RX_REFILL_STATUS_DELETED {
