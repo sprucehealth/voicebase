@@ -112,20 +112,20 @@ func ConsumeMessageFromQueue(DataApi api.DataAPI, ERxApi erx.ERxAPI, ErxQueue *c
 		// only hold on to the latest status event per treatment because that will help us
 		// determine whether or not there are any treatments that do not have the end state
 		// of the messages
-		latestPendingStatusPerPrescription := make(map[int64]*common.StatusEvent)
+		latestPendingStatusPerPrescription := make(map[int64]common.StatusEvent)
 		for _, prescriptionStatus := range prescriptionStatuses {
 			// the first occurence of every new event per prescription will be the latest because they are ordered by time
-			if latestPendingStatusPerPrescription[prescriptionStatus.PrescriptionId] == nil {
+			if _, ok := latestPendingStatusPerPrescription[prescriptionStatus.PrescriptionId]; !ok {
 				// only keep track of tasks that have not reached the end state yet
 				if prescriptionStatus.PrescriptionId != 0 {
 
 					if statusCheckMessage.CheckRefillRequest && (prescriptionStatus.Status == api.RX_REFILL_STATUS_APPROVED ||
 						prescriptionStatus.Status == api.RX_REFILL_STATUS_DENIED) {
-						latestPendingStatusPerPrescription[prescriptionStatus.PrescriptionId] = &prescriptionStatus
+						latestPendingStatusPerPrescription[prescriptionStatus.PrescriptionId] = prescriptionStatus
 					}
 
 					if !statusCheckMessage.CheckRefillRequest && prescriptionStatus.Status == api.ERX_STATUS_SENDING {
-						latestPendingStatusPerPrescription[prescriptionStatus.PrescriptionId] = &prescriptionStatus
+						latestPendingStatusPerPrescription[prescriptionStatus.PrescriptionId] = prescriptionStatus
 					}
 				}
 			}
