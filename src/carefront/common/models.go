@@ -153,7 +153,7 @@ type RefillRequestItem struct {
 	DispensedPrescription            *Treatment    `json:"dispensed_prescription"`
 	Doctor                           *Doctor       `json:"-"`
 	TreatmentPlanId                  int64         `json:"treatment_plan_id,omitempty"`
-	RxHistory                        []StatusEvent `json:"erx_history,omitempty"`
+	RxHistory                        []StatusEvent `json:"refill_rx_history,omitempty"`
 	Comments                         string        `json:"comments,omitempty"`
 	DenialReason                     string        `json:"denial_reason,omitempty"`
 }

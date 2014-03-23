@@ -62,9 +62,9 @@ func (d *DataService) GetApprovedOrDeniedRefillRequestsForPatient(patientId int6
 									event_details, erx_id    
 									from rx_refill_status_events 
 										inner join rx_refill_request on rx_refill_request_id = rx_refill_request.id
-										where rx_refill_status_events.rx_refill_status in ('Approved', 'Denied') and rx_refill_request.patient_id = ?
+										where rx_refill_status_events.rx_refill_status in (?, ?) and rx_refill_request.patient_id = ?
 										and status = ?
-											order by rx_refill_status_date desc`, patientId, STATUS_ACTIVE)
+											order by rx_refill_status_date desc`, RX_REFILL_STATUS_APPROVED, RX_REFILL_STATUS_DENIED, patientId, STATUS_ACTIVE)
 	if err != nil {
 		return nil, err
 	}
