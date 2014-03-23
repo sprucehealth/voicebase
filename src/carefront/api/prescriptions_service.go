@@ -52,7 +52,6 @@ func (d *DataService) GetPendingRefillRequestStatusEventsForClinic() ([]common.S
 								event_details, erx_id  
 								from rx_refill_status_events 
 									inner join rx_refill_request on rx_refill_request_id = rx_refill_request.id
-									inner join requested_treatment on requested_treatment.id = rx_refill_request.requested_treatment_id
 									where rx_refill_status_events.status = ? and rx_refill_status = ?`, STATUS_ACTIVE, RX_REFILL_STATUS_REQUESTED)
 	if err != nil {
 		return nil, err
@@ -69,6 +68,7 @@ func (d *DataService) GetApprovedOrDeniedRefillRequestsForPatient(patientId int6
 										where rx_refill_status_events.rx_refill_status in (?, ?) and rx_refill_request.patient_id = ?
 										and status = ?
 											order by rx_refill_status_date desc`, RX_REFILL_STATUS_APPROVED, RX_REFILL_STATUS_DENIED, patientId, STATUS_ACTIVE)
+
 	if err != nil {
 		return nil, err
 	}
