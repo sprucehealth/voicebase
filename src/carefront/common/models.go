@@ -144,6 +144,7 @@ type RefillRequestItem struct {
 	RequestedDispense                string        `json:"requested_dispense_value"`
 	RequestedDispenseUnitDescription string        `json:"requested_dispense_unit_description,omitempty"`
 	ErxPatientId                     int64         `json:"-"`
+	PrescriptionId                   int64         `json:"erx_id,omitempty"`
 	PatientAddedForRequest           bool          `json:"-"`
 	RequestDateStamp                 time.Time     `json:"requested_date"`
 	ClinicianId                      int64         `json:"-"`

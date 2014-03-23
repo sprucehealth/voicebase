@@ -145,8 +145,8 @@ type PrescriptionsAPI interface {
 	AddRefillRequestStatusEvent(refillRequestStatus common.StatusEvent) error
 	GetRefillRequestFromId(refillRequestId int64) (*common.RefillRequestItem, error)
 	GetRefillRequestDenialReasons() ([]*RefillRequestDenialReason, error)
-	MarkRefillRequestAsApproved(approvedRefillCount, rxRefillRequestId int64, comments string) error
-	MarkRefillRequestAsDenied(denialReasonId, rxRefillRequestId int64, comments string) error
+	MarkRefillRequestAsApproved(prescriptionId, approvedRefillCount, rxRefillRequestId int64, comments string) error
+	MarkRefillRequestAsDenied(prescriptionId, denialReasonId, rxRefillRequestId int64, comments string) error
 	LinkRequestedPrescriptionToOriginalTreatment(requestedTreatment *common.Treatment, patient *common.Patient) error
 }
 

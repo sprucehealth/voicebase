@@ -122,14 +122,14 @@ func (d *DoctorRefillRequestHandler) resolveRefillRequest(w http.ResponseWriter,
 		}
 
 		// Send the approve refill request to dosespot
-		_, err = d.ErxApi.ApproveRefillRequest(doctor.DoseSpotClinicianId, refillRequest.RxRequestQueueItemId, requestData.ApprovedRefillAmount, requestData.Comments)
+		prescriptionId, err := d.ErxApi.ApproveRefillRequest(doctor.DoseSpotClinicianId, refillRequest.RxRequestQueueItemId, requestData.ApprovedRefillAmount, requestData.Comments)
 		if err != nil {
 			WriteDeveloperError(w, http.StatusBadRequest, "Unable to approve refill request: "+err.Error())
 			return
 		}
 
 		// Update the refill request entry with the approved refill amount and the returned prescription id
-		if err := d.DataApi.MarkRefillRequestAsApproved(requestData.ApprovedRefillAmount, refillRequest.Id, requestData.Comments); err != nil {
+		if err := d.DataApi.MarkRefillRequestAsApproved(prescriptionId, requestData.ApprovedRefillAmount, refillRequest.Id, requestData.Comments); err != nil {
 			WriteDeveloperError(w, http.StatusBadRequest, "Unable to store the updates to the refill request to mark it as being approved: "+err.Error())
 			return
 		}
@@ -157,14 +157,14 @@ func (d *DoctorRefillRequestHandler) resolveRefillRequest(w http.ResponseWriter,
 		}
 
 		//  Deny the refill request
-		_, err = d.ErxApi.DenyRefillRequest(doctor.DoseSpotClinicianId, refillRequest.RxRequestQueueItemId, denialReasonCode, requestData.Comments)
+		prescriptionId, err := d.ErxApi.DenyRefillRequest(doctor.DoseSpotClinicianId, refillRequest.RxRequestQueueItemId, denialReasonCode, requestData.Comments)
 		if err != nil {
 			WriteDeveloperError(w, http.StatusInternalServerError, "Unable to deny refill request on the dosespot platform for the following reason: "+err.Error())
 			return
 		}
 
 		//  Update the refill request with the reason for denial and the erxid returned
-		if err := d.DataApi.MarkRefillRequestAsDenied(requestData.DenialReasonId, refillRequest.Id, requestData.Comments); err != nil {
+		if err := d.DataApi.MarkRefillRequestAsDenied(prescriptionId, requestData.DenialReasonId, refillRequest.Id, requestData.Comments); err != nil {
 			WriteDeveloperError(w, http.StatusInternalServerError, "Unable to update the status of the refill request to denied: "+err.Error())
 			return
 		}
