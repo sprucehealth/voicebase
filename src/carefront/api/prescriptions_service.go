@@ -49,7 +49,6 @@ func (d *DataService) GetPendingRefillRequestStatusEventsForClinic() ([]common.S
 								event_details, erx_id  
 								from rx_refill_status_events 
 									inner join rx_refill_request on rx_refill_request_id = rx_refill_request.id
-									inner join requested_treatment on requested_treatment.id = rx_refill_request.requested_treatment_id
 									where rx_refill_status_events.status = ? and rx_refill_status = ?`, STATUS_ACTIVE, RX_REFILL_STATUS_REQUESTED)
 	if err != nil {
 		return nil, err
@@ -92,9 +91,9 @@ func (d *DataService) GetApprovedOrDeniedRefillRequestsForPatient(patientId int6
 									event_details, requested_treatment.erx_id    
 									from rx_refill_status_events 
 										inner join rx_refill_request on rx_refill_request_id = rx_refill_request.id
-										inner join requested_treatment on requested_treatment.id = rx_refill_request.requested_treatment_id											
-										where rx_refill_status_events.rx_refill_status in ('Approved', 'Denied') and rx_refill_request.patient_id = ? 
-											order by rx_refill_status_date desc`, patientId)
+										where rx_refill_status_events.rx_refill_status in ('Approved', 'Denied') and rx_refill_request.patient_id = ?
+										and status = ?
+											order by rx_refill_status_date desc`, patientId, STATUS_ACTIVE)
 	if err != nil {
 		return nil, err
 	}
@@ -107,7 +106,6 @@ func (d *DataService) GetRefillStatusEventsForRefillRequest(refillRequestId int6
 									event_details, requested_treatment.erx_id    
 									from rx_refill_status_events 
 										inner join rx_refill_request on rx_refill_request_id = rx_refill_request.id
-										inner join requested_treatment on requested_treatment.id = rx_refill_request.requested_treatment_id
 										where rx_refill_status_events.rx_refill_request_id = ?
 										order by rx_refill_status_date desc`, refillRequestId)
 	if err != nil {
@@ -259,6 +257,7 @@ func (d *DataService) GetRefillRequestFromId(refillRequestId int64) (*common.Ref
 	var requestedTreatmentId, approvedRefillAmount, prescriptionId sql.NullInt64
 	var denyReason sql.NullString
 	// get the refill request
+
 	err := d.DB.QueryRow(`select rx_refill_request.id, rx_refill_request.erx_request_queue_item_id, rx_refill_request.erx_id,
 		approved_refill_amount, patient_id, request_date, doctor_id, requested_treatment_id, 
 		dispensed_treatment_id, comments, deny_refill_reason.reason from rx_refill_request
