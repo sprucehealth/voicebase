@@ -12,7 +12,6 @@ type Treatment struct {
 	StatusDetails             string                   `json:"erx_status_details,omitempty"`
 	TreatmentPlanId           *ObjectId                `json:"treatment_plan_id,omitempty"`
 	PatientVisitId            *ObjectId                `json:"patient_visit_id,omitempty"`
-	PatientId                 *ObjectId                `json:"-"`
 	DrugDBIds                 map[string]string        `json:"drug_db_ids,omitempty"`
 	DrugInternalName          string                   `json:"drug_internal_name,omitempty"`
 	DrugName                  string                   `json:"drug_name"`
@@ -34,6 +33,7 @@ type Treatment struct {
 	SupplementalInstructions  []*DoctorInstructionItem `json:"supplemental_instructions,omitempty"`
 	DoctorId                  int64                    `json:"-"`
 	Doctor                    *Doctor                  `json:"doctor,omitempty"`
+	Patient                   *Patient                 `json:"patient,omitempty"`
 	OriginatingTreatmentId    int64                    `json:"-"`
 	ERx                       *ERxData                 `json:"erx,omitempty"`
 }

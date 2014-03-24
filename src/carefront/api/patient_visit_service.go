@@ -1067,7 +1067,7 @@ func (d *DataService) getTreatmentAndMetadataFromCurrentRow(rows *sql.Rows) (*co
 	treatment := &common.Treatment{
 		Id:                      common.NewObjectId(treatmentId),
 		TreatmentPlanId:         common.NewObjectId(treatmentPlanId),
-		PatientId:               common.NewObjectId(patientId),
+		PatientId:               patientId,
 		PatientVisitId:          common.NewObjectId(patientVisitId),
 		DrugInternalName:        drugInternalName,
 		DosageStrength:          dosageStrength,
@@ -1127,6 +1127,11 @@ func (d *DataService) getTreatmentAndMetadataFromCurrentRow(rows *sql.Rows) (*co
 	}
 
 	treatment.Doctor, err = d.GetDoctorFromId(treatment.DoctorId)
+	if err != nil {
+		return nil, err
+	}
+
+	treatment.Patient, err = d.GetPatientFromId(treatment.PatientId)
 	if err != nil {
 		return nil, err
 	}

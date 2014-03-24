@@ -19,7 +19,6 @@ type DoctorPrescriptionErrorRequestData struct {
 
 type DoctorPrescriptionErrorResponse struct {
 	Treatment *common.Treatment `json:"treatment,omitempty"`
-	Patient   *common.Patient   `json:"patient,omitempty"`
 }
 
 func (d *DoctorPrescriptionErrorHandler) ServeHTTP(w http.ResponseWriter, r *http.Request) {
@@ -45,12 +44,6 @@ func (d *DoctorPrescriptionErrorHandler) ServeHTTP(w http.ResponseWriter, r *htt
 		return
 	}
 
-	patient, err := d.DataApi.GetPatientFromTreatmentId(treatmentId)
-	if err != nil {
-		WriteDeveloperError(w, http.StatusInternalServerError, "Unable to get patient based on treatment id: "+err.Error())
-		return
-	}
-
 	treatment, err := d.DataApi.GetTreatmentFromId(treatmentId)
 	if err != nil {
 		WriteDeveloperError(w, http.StatusInternalServerError, "Unable to get patient based on treatment id: "+err.Error())
@@ -59,6 +52,5 @@ func (d *DoctorPrescriptionErrorHandler) ServeHTTP(w http.ResponseWriter, r *htt
 
 	WriteJSONToHTTPResponseWriter(w, http.StatusOK, &DoctorPrescriptionErrorResponse{
 		Treatment: treatment,
-		Patient:   patient,
 	})
 }
