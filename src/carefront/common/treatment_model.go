@@ -62,6 +62,14 @@ func (t *Treatment) Equals(other *Treatment) bool {
 		return false
 	}
 
+	if t.ERx == nil && other.ERx != nil {
+		return false
+	}
+
+	if t.ERx != nil && other.ERx == nil {
+		return false
+	}
+
 	return t.ERx.PrescriptionId.Int64() == other.ERx.PrescriptionId.Int64() &&
 		reflect.DeepEqual(t.DrugDBIds, other.DrugDBIds) &&
 		t.DosageStrength == other.DosageStrength &&
