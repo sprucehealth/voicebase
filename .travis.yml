@@ -38,6 +38,7 @@ before_deploy:
 - pushd ./src/carefront/apps/restapi ; ./build.sh ; popd
 - mkdir build
 - cp src/carefront/apps/restapi/restapi build/restapi-$TRAVIS_BRANCH-$TRAVIS_BUILD_NUMBER
+- echo $TRAVIS_COMMIT > build/restapi-$TRAVIS_BRANCH-$TRAVIS_BUILD_NUMBER.revision
 - bzip2 build/restapi-$TRAVIS_BRANCH-$TRAVIS_BUILD_NUMBER
 deploy:
   provider: s3
