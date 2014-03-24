@@ -216,12 +216,6 @@ func (d *DoctorRefillRequestHandler) getRefillRequest(w http.ResponseWriter, r *
 		return
 	}
 
-	if refillRequest != nil {
-		// fill in the dispense unit description at the top level because the dispense unit description	 is not provided in the top level
-		// information from dosespot
-		refillRequest.RequestedDispenseUnitDescription = refillRequest.DispensedPrescription.DispenseUnitDescription
-	}
-
 	if refillRequest.RequestedPrescription.OriginatingTreatmentId != 0 {
 		rxHistoryOfOriginatingTreatment, err := d.DataApi.GetPrescriptionStatusEventsForTreatment(refillRequest.RequestedPrescription.OriginatingTreatmentId)
 		if err != nil {

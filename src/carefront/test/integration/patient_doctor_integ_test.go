@@ -111,9 +111,9 @@ func TestPatientVisitReview(t *testing.T) {
 
 	fromTime := time.Now().Add(-24 * time.Hour).Unix()
 	toTime := time.Now().Unix()
-	doctorPrescriptionsResponse := getPrescriptionsForDoctor(testData.DataApi, t, doctor, fromTime, toTime)
+	treatmentPlans := getPrescriptionsForDoctor(testData.DataApi, t, doctor, fromTime, toTime)
 
-	if len(doctorPrescriptionsResponse.TreatmentPlans) > 0 {
+	if len(treatmentPlans) > 0 {
 		t.Fatal("Expected number of treatment plans to be 0")
 	}
 
@@ -313,20 +313,20 @@ func TestPatientVisitReview(t *testing.T) {
 	}
 
 	// number of prescripitons returned when not including the time at which it was submitted should be 0
-	doctorPrescriptionsResponse = getPrescriptionsForDoctor(testData.DataApi, t, doctor, fromTime, toTime)
-	if len(doctorPrescriptionsResponse.TreatmentPlans) > 0 {
+	treatmentPlans = getPrescriptionsForDoctor(testData.DataApi, t, doctor, fromTime, toTime)
+	if len(treatmentPlans) > 0 {
 		t.Fatal("Expected there to be no prescriptions for this doctor yet")
 	}
 
 	// now, lets try again while including time
 	toTime = time.Now().Add(10 * time.Minute).Unix()
-	doctorPrescriptionsResponse = getPrescriptionsForDoctor(testData.DataApi, t, doctor, fromTime, toTime)
-	if len(doctorPrescriptionsResponse.TreatmentPlans) != 1 {
-		t.Fatalf("Expected there to be 1 treatment plan for this doctor, instead we have %d", len(doctorPrescriptionsResponse.TreatmentPlans))
+	treatmentPlans = getPrescriptionsForDoctor(testData.DataApi, t, doctor, fromTime, toTime)
+	if len(treatmentPlans) != 1 {
+		t.Fatalf("Expected there to be 1 treatment plan for this doctor, instead we have %d", len(treatmentPlans))
 	}
 
-	if len(doctorPrescriptionsResponse.TreatmentPlans[0].Treatments) != 2 {
-		t.Fatalf("Expected there to be 2 treatments in this treatment plan for this doctor, instead we have %d", len(doctorPrescriptionsResponse.TreatmentPlans[0].Treatments))
+	if len(treatmentPlans[0].Treatments) != 2 {
+		t.Fatalf("Expected there to be 2 treatments in this treatment plan for this doctor, instead we have %d", len(treatmentPlans[0].Treatments))
 	}
 
 	prescriptionStatuses, err := testData.DataApi.GetPrescriptionStatusEventsForPatient(patient.ERxPatientId.Int64())
@@ -368,12 +368,12 @@ func TestPatientVisitReview(t *testing.T) {
 	}
 
 	// number of prescriptions returned for doctor even after the prescription status update should be 2 total
-	doctorPrescriptionsResponse = getPrescriptionsForDoctor(testData.DataApi, t, doctor, fromTime, toTime)
-	if len(doctorPrescriptionsResponse.TreatmentPlans) != 1 {
+	treatmentPlans = getPrescriptionsForDoctor(testData.DataApi, t, doctor, fromTime, toTime)
+	if len(treatmentPlans) != 1 {
 		t.Fatal("Expected 1 treatment plan to be returned")
 	}
 
-	if len(doctorPrescriptionsResponse.TreatmentPlans[0].Treatments) != 2 {
+	if len(treatmentPlans[0].Treatments) != 2 {
 		t.Fatal("Expected 2 treatments to be returned within treatment plan")
 	}
 
@@ -473,25 +473,12 @@ func getAdviceBasedOnTreatmentPlan(testData TestData, t *testing.T, treatmentPla
 	return getAdviceResponse
 }
 
-func getPrescriptionsForDoctor(dataApi api.DataAPI, t *testing.T, doctor *common.Doctor, fromTime, toTime int64) *apiservice.DoctorPrescriptionsResponse {
-	// check the prescriptions the doctor has sent in and there should be none
-	doctorPrescriptionsHandler := &apiservice.DoctorPrescriptionsHandler{
-		DataApi: dataApi,
-	}
-	ts4 := httptest.NewServer(doctorPrescriptionsHandler)
-	defer ts4.Close()
+func getPrescriptionsForDoctor(dataApi api.DataAPI, t *testing.T, doctor *common.Doctor, fromTime, toTime int64) []*common.TreatmentPlan {
 
-	resp, err := authGet(ts4.URL+fmt.Sprintf("?from=%d&to=%d", fromTime, toTime), doctor.AccountId.Int64())
+	prescriptions, err := dataApi.GetCompletedPrescriptionsForDoctor(time.Unix(fromTime, 0), time.Unix(toTime, 0), doctor.DoctorId.Int64())
 	if err != nil {
-		t.Fatal("Unable to make call to get prescriptions for doctor: " + err.Error())
+		t.Fatal("Unable to get prescriptions for doctor between time period: " + err.Error())
 	}
 
-	doctorPrescriptionsResponse := &apiservice.DoctorPrescriptionsResponse{}
-	err = json.NewDecoder(resp.Body).Decode(doctorPrescriptionsResponse)
-	if err != nil {
-		t.Fatal("Unable to unmarshal response body into json object: " + err.Error())
-	}
-
-	CheckSuccessfulStatusCode(resp, "Unable to get prescriptions for doctor ", t)
-	return doctorPrescriptionsResponse
+	return prescriptions
 }

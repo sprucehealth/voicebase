@@ -188,15 +188,12 @@ func (d *DataService) CreateRefillRequest(refillRequest *common.RefillRequestIte
 	}
 
 	columnsAndData := map[string]interface{}{
-		"erx_request_queue_item_id":  refillRequest.RxRequestQueueItemId,
-		"requested_drug_description": refillRequest.RequestedDrugDescription,
-		"requested_refill_amount":    refillRequest.RequestedRefillAmount,
-		"requested_dispense":         refillRequest.RequestedDispense,
-		"patient_id":                 refillRequest.Patient.PatientId.Int64(),
-		"request_date":               refillRequest.RequestDateStamp,
-		"doctor_id":                  refillRequest.Doctor.DoctorId.Int64(),
-		"dispensed_treatment_id":     refillRequest.DispensedPrescription.Id.Int64(),
-		"requested_treatment_id":     refillRequest.RequestedPrescription.Id.Int64(),
+		"erx_request_queue_item_id": refillRequest.RxRequestQueueItemId,
+		"patient_id":                refillRequest.Patient.PatientId.Int64(),
+		"request_date":              refillRequest.RequestDateStamp,
+		"doctor_id":                 refillRequest.Doctor.DoctorId.Int64(),
+		"dispensed_treatment_id":    refillRequest.DispensedPrescription.Id.Int64(),
+		"requested_treatment_id":    refillRequest.RequestedPrescription.Id.Int64(),
 	}
 
 	if refillRequest.ReferenceNumber != "" {
@@ -231,13 +228,13 @@ func (d *DataService) GetRefillRequestFromId(refillRequestId int64) (*common.Ref
 	var requestedTreatmentId, approvedRefillAmount, prescriptionId sql.NullInt64
 	var denyReason sql.NullString
 	// get the refill request
-	err := d.DB.QueryRow(`select rx_refill_request.id, rx_refill_request.erx_request_queue_item_id, rx_refill_request.erx_id, requested_drug_description, requested_refill_amount,
-		approved_refill_amount, requested_dispense, patient_id, request_date, doctor_id, requested_treatment_id, 
+	err := d.DB.QueryRow(`select rx_refill_request.id, rx_refill_request.erx_request_queue_item_id, rx_refill_request.erx_id,
+		approved_refill_amount, patient_id, request_date, doctor_id, requested_treatment_id, 
 		dispensed_treatment_id, comments, deny_refill_reason.reason from rx_refill_request
 				left outer join deny_refill_reason on deny_refill_reason.id = denial_reason_id
 				where rx_refill_request.id = ?`, refillRequestId).Scan(&refillRequest.Id,
-		&refillRequest.RxRequestQueueItemId, &prescriptionId, &refillRequest.RequestedDrugDescription, &refillRequest.RequestedRefillAmount, &approvedRefillAmount,
-		&refillRequest.RequestedDispense, &patientId, &refillRequest.RequestDateStamp, &doctorId, &requestedTreatmentId,
+		&refillRequest.RxRequestQueueItemId, &prescriptionId, &approvedRefillAmount,
+		&patientId, &refillRequest.RequestDateStamp, &doctorId, &requestedTreatmentId,
 		&pharmacyDispensedTreatmentId, &refillRequest.Comments, &denyReason)
 
 	refillRequest.PrescriptionId = prescriptionId.Int64
