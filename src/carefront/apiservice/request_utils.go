@@ -19,15 +19,16 @@ var ErrBadAuthToken = errors.New("BadAuthToken")
 var Testing = false
 
 const (
-	genericUserErrorMessage         = "Something went wrong on our end. Apologies for the inconvenience and please try again later!"
-	authTokenExpiredMessage         = "Authentication expired. Log in to continue."
-	DEVELOPER_ERROR_NO_VISIT_EXISTS = 10001
-	DEVELOPER_AUTH_TOKEN_EXPIRED    = 10002
-	HTTP_GET                        = "GET"
-	HTTP_POST                       = "POST"
-	HTTP_PUT                        = "PUT"
-	HTTP_DELETE                     = "DELETE"
-	HTTP_UNPROCESSABLE_ENTITY       = 422
+	genericUserErrorMessage          = "Something went wrong on our end. Apologies for the inconvenience and please try again later!"
+	authTokenExpiredMessage          = "Authentication expired. Log in to continue."
+	DEVELOPER_ERROR_NO_VISIT_EXISTS  = 10001
+	DEVELOPER_AUTH_TOKEN_EXPIRED     = 10002
+	DEVELOPER_TREATMENT_MISSING_DNTF = 10003
+	HTTP_GET                         = "GET"
+	HTTP_POST                        = "POST"
+	HTTP_PUT                         = "PUT"
+	HTTP_DELETE                      = "DELETE"
+	HTTP_UNPROCESSABLE_ENTITY        = 422
 )
 
 type GenericJsonResponse struct {
@@ -133,6 +134,11 @@ func WriteJSONToHTTPResponseWriter(w http.ResponseWriter, httpStatusCode int, v 
 	if err := json.NewEncoder(w).Encode(v); err != nil {
 		golog.Errorf("apiservice: failed to json encode: %+v", err)
 	}
+}
+
+func WriteError(w http.ResponseWriter, httpStatusCode int, errorResponse ErrorResponse) {
+	golog.Logf(2, golog.ERR, errorResponse.DeveloperError)
+	WriteJSONToHTTPResponseWriter(w, httpStatusCode, &errorResponse)
 }
 
 func WriteDeveloperError(w http.ResponseWriter, httpStatusCode int, errorString string) {

@@ -269,7 +269,11 @@ func main() {
 	medicationStrengthSearchHandler := &apiservice.MedicationStrengthSearchHandler{DataApi: dataApi, ERxApi: doseSpotService}
 	newTreatmentHandler := &apiservice.NewTreatmentHandler{DataApi: dataApi, ERxApi: doseSpotService}
 	medicationDispenseUnitHandler := &apiservice.MedicationDispenseUnitsHandler{DataApi: dataApi}
-	treatmentsHandler := apiservice.NewTreatmentsHandler(dataApi)
+	treatmentsHandler := &apiservice.TreatmentHandler{
+		DataApi: dataApi,
+		ErxApi:  doseSpotService,
+	}
+
 	photoAnswerIntakeHandler := apiservice.NewPhotoAnswerIntakeHandler(dataApi, photoAnswerCloudStorageApi, conf.CaseBucket, conf.AWSRegion, conf.MaxInMemoryForPhotoMB*1024*1024)
 	pharmacySearchHandler := &apiservice.PharmacyTextSearchHandler{PharmacySearchService: pharmacy.GooglePlacesPharmacySearchService(0), DataApi: dataApi, MapsService: mapsService}
 	generateDoctorLayoutHandler := &apiservice.GenerateDoctorLayoutHandler{
@@ -410,13 +414,14 @@ func main() {
 
 	mux.Handle("/v1/doctor/rx/history", doctorPrescriptionsHandler)
 	mux.Handle("/v1/doctor/rx/notification_counts", doctorPrescriptionsNotificationsHandler)
+
 	mux.Handle("/v1/doctor/rx/error", doctorPrescriptionErrorHandler)
 	mux.Handle("/v1/doctor/rx/error/resolve", doctorPrescriptionErrorIgnoreHandler)
 	mux.Handle("/v1/doctor/rx/refill/request", doctorRefillRequestHandler)
 	mux.Handle("/v1/doctor/rx/refill/denial_reasons", refillRequestDenialReasonsHandler)
+	mux.Handle("/v1/doctor/patient/'treatments'", doctorPatientTreatmentsHandler)
 
 	mux.Handle("/v1/doctor/patient", doctorPatientUpdateHandler)
-	mux.Handle("/v1/doctor/patient/treatments", doctorPatientTreatmentsHandler)
 	mux.Handle("/v1/doctor/patient/pharmacy", doctorUpdatePatientPharmacyHandler)
 	mux.Handle("/v1/doctor/pharmacy", doctorPharmacySearchHandler)
 

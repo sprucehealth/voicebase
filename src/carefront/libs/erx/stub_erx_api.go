@@ -15,6 +15,7 @@ type StubErxService struct {
 	RefillRxRequestQueueToReturn         []*common.RefillRequestItem
 	PrescriptionIdsToReturn              []int64
 	PrescriptionIdToPrescriptionStatuses map[int64][]common.StatusEvent
+	SelectedMedicationToReturn           *common.Treatment
 }
 
 func (s *StubErxService) GetDrugNamesForDoctor(clinicianId int64, prefix string) ([]string, error) {
@@ -30,7 +31,7 @@ func (s *StubErxService) SearchForMedicationStrength(clinicianId int64, medicati
 }
 
 func (s *StubErxService) SelectMedication(clinicianId int64, medicationName, medicationStrength string) (medication *common.Treatment, err error) {
-	return nil, nil
+	return s.SelectedMedicationToReturn, nil
 }
 
 func (s *StubErxService) StartPrescribingPatient(clinicianId int64, Patient *common.Patient, Treatments []*common.Treatment) error {

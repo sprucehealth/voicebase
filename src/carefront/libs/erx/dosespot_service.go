@@ -411,6 +411,12 @@ func (d *DoseSpotService) SelectMedication(clinicianId int64, medicationName, me
 	} else {
 		scheduleInt, err = strconv.Atoi(selectResult.Schedule)
 	}
+
+	if selectResult.LexiGenProductId == 0 && selectResult.LexiDrugSynId == 0 && selectResult.LexiSynonymTypeId == 0 {
+		// this drug does not exist
+		return nil, nil
+	}
+
 	medication = &common.Treatment{
 		DrugDBIds: map[string]string{
 			LexiGenProductId:  strconv.FormatInt(selectResult.LexiGenProductId, 10),

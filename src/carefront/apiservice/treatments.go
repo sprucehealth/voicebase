@@ -3,8 +3,10 @@ package apiservice
 import (
 	"carefront/api"
 	"carefront/common"
+	"carefront/libs/erx"
 	"encoding/json"
 	"errors"
+	"fmt"
 	"net/http"
 
 	"github.com/gorilla/schema"
@@ -12,6 +14,7 @@ import (
 
 type TreatmentsHandler struct {
 	DataApi api.DataAPI
+	ErxApi  erx.ERxAPI
 }
 
 type GetTreatmentsResponse struct {
@@ -30,10 +33,6 @@ type AddTreatmentsRequestBody struct {
 type GetTreatmentsRequestBody struct {
 	PatientVisitId  int64 `schema:"patient_visit_id"`
 	TreatmentPlanId int64 `schema:"treatment_plan_id"`
-}
-
-func NewTreatmentsHandler(dataApi api.DataAPI) *TreatmentsHandler {
-	return &TreatmentsHandler{DataApi: dataApi}
 }
 
 func (t *TreatmentsHandler) ServeHTTP(w http.ResponseWriter, r *http.Request) {
@@ -139,6 +138,12 @@ func (t *TreatmentsHandler) addTreatment(w http.ResponseWriter, r *http.Request)
 		return
 	}
 
+	doctor, err := t.DataApi.GetDoctorFromAccountId(GetContext(r).AccountId)
+	if err != nil {
+		WriteDeveloperError(w, http.StatusInternalServerError, "Unable to get doctor from account id: "+err.Error())
+		return
+	}
+
 	//  validate all treatments
 	for _, treatment := range treatmentsRequestBody.Treatments {
 		err = validateTreatment(treatment)
@@ -154,6 +159,22 @@ func (t *TreatmentsHandler) addTreatment(w http.ResponseWriter, r *http.Request)
 		if drugForm != "" && drugRoute != "" {
 			treatment.DrugForm = drugForm
 			treatment.DrugRoute = drugRoute
+		}
+
+		if treatment.DoctorTreatmentTemplateId.Int64() != 0 {
+			// check to ensure that the drug is still in market; we do so by ensuring that we are still able
+			// to get back the drug db ids to identify this drug
+			medicationToCheck, err := t.ErxApi.SelectMedication(doctor.DoseSpotClinicianId, treatment.DrugInternalName, treatment.DosageStrength)
+			if err != nil {
+				WriteDeveloperError(w, http.StatusInternalServerError, "Unable to select medication to identify whether or not it is still available in the market: "+err.Error())
+				return
+			}
+
+			// if not, we cannot allow the doctor to prescribe this drug given that its no longer in market (a surescripts requirement)
+			if medicationToCheck == nil {
+				WriteUserError(w, http.StatusBadRequest, fmt.Sprintf("%s %s is no longer available and cannot be prescribed to the patient. We suggest that you remove this saved template from your list.", treatment.DrugInternalName, treatment.DosageStrength))
+				return
+			}
 		}
 	}
 

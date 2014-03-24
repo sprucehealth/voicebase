@@ -7,6 +7,7 @@ import (
 	"carefront/libs/erx"
 	"encoding/json"
 	"io/ioutil"
+	"net/http"
 	"net/http/httptest"
 	"net/url"
 	"testing"
@@ -637,9 +638,121 @@ func TestTreatmentTemplatesInContextOfPatientVisit(t *testing.T) {
 	}
 }
 
+func TestTreatmentTemplateWithDrugOutOfMarket(t *testing.T) {
+	if err := CheckIfRunningLocally(t); err == CannotRunTestLocally {
+		t.Log("Skipping test since there is no database to run test on")
+		return
+	}
+	testData := SetupIntegrationTest(t)
+	defer TearDownIntegrationTest(t, testData)
+
+	// get the current primary doctor
+	doctorId := getDoctorIdOfCurrentPrimaryDoctor(testData, t)
+
+	doctor, err := testData.DataApi.GetDoctorFromId(doctorId)
+	if err != nil {
+		t.Fatal("Unable to get doctor from doctor id " + err.Error())
+	}
+
+	// create random patient
+	patientSignedupResponse := SignupRandomTestPatient(t, testData.DataApi, testData.AuthApi)
+	patientVisitResponse := CreatePatientVisitForPatient(patientSignedupResponse.Patient.PatientId.Int64(), testData, t)
+	SubmitPatientVisitForPatient(patientSignedupResponse.Patient.PatientId.Int64(), patientVisitResponse.PatientVisitId, testData, t)
+	StartReviewingPatientVisit(patientVisitResponse.PatientVisitId, doctor, testData, t)
+
+	// doctor now attempts to favorite a treatment
+	treatment1 := &common.Treatment{
+		DrugInternalName:     "DrugName (DrugRoute - DrugForm)",
+		DosageStrength:       "10 mg",
+		DispenseValue:        1,
+		DispenseUnitId:       common.NewObjectId(26),
+		NumberRefills:        1,
+		SubstitutionsAllowed: true,
+		DaysSupply:           1,
+		OTC:                  true,
+		PharmacyNotes:        "testing pharmacy notes",
+		PatientInstructions:  "patient insturctions",
+		DrugDBIds: map[string]string{
+			"drug_db_id_1": "12315",
+			"drug_db_id_2": "124",
+		},
+	}
+
+	treatmentTemplate := &common.DoctorTreatmentTemplate{}
+	treatmentTemplate.Name = "Favorite Treatment #1"
+	treatmentTemplate.Treatment = treatment1
+
+	doctorFavoriteTreatmentsHandler := &apiservice.DoctorTreatmentTemplatesHandler{DataApi: testData.DataApi}
+	ts := httptest.NewServer(doctorFavoriteTreatmentsHandler)
+	defer ts.Close()
+
+	treatmentTemplatesRequest := &apiservice.DoctorTreatmentTemplatesRequest{TreatmentTemplates: []*common.DoctorTreatmentTemplate{treatmentTemplate}}
+	treatmentTemplatesRequest.PatientVisitId = common.NewObjectId(patientVisitResponse.PatientVisitId)
+	data, err := json.Marshal(&treatmentTemplatesRequest)
+	if err != nil {
+		t.Fatal("Unable to marshal request body for adding treatments to patient visit")
+	}
+
+	resp, err := authPost(ts.URL, "application/json", bytes.NewBuffer(data), doctor.AccountId.Int64())
+	if err != nil {
+		t.Fatal("Unable to make POST request to add treatments to patient visit " + err.Error())
+	}
+
+	body, err := ioutil.ReadAll(resp.Body)
+	if err != nil {
+		t.Fatal("Unable to read body of the post request made to add treatments to patient visit: " + err.Error())
+	}
+
+	CheckSuccessfulStatusCode(resp, "Unsuccessful call made to add favorite treatment for doctor "+string(body), t)
+
+	treatmentTemplatesResponse := &apiservice.DoctorTreatmentTemplatesResponse{}
+	err = json.Unmarshal(body, treatmentTemplatesResponse)
+	if err != nil {
+		t.Fatal("Unable to unmarshal response into object : " + err.Error())
+	}
+
+	// lets' attempt to add the favorited treatment to a patient visit. It should fail because the stubErxApi is wired
+	// to return no medication to indicate drug is no longer in market
+	treatment1.DoctorTreatmentTemplateId = treatmentTemplatesResponse.TreatmentTemplates[0].Id
+	stubErxApi := &erx.StubErxService{}
+	treatmentRequestBody := apiservice.AddTreatmentsRequestBody{
+		PatientVisitId: common.NewObjectId(patientVisitResponse.PatientVisitId),
+		Treatments:     []*common.Treatment{treatment1},
+	}
+
+	treatmentsHandler := &apiservice.TreatmentsHandler{
+		ErxApi:  stubErxApi,
+		DataApi: testData.DataApi,
+	}
+
+	ts = httptest.NewServer(treatmentsHandler)
+	defer ts.Close()
+
+	data, err = json.Marshal(&treatmentRequestBody)
+	if err != nil {
+		t.Fatal("Unable to marshal request body for adding treatments to patient visit")
+	}
+
+	resp, err = authPost(ts.URL, "application/json", bytes.NewBuffer(data), doctor.AccountId.Int64())
+	if err != nil {
+		t.Fatal("Unable to add treatments to patient visit: " + err.Error())
+	}
+
+	if resp.StatusCode != http.StatusBadRequest {
+		t.Fatalf("Expected the call to add treatments to error out with bad request (400) because treatment is out of market, but instead got %d returned", resp.StatusCode)
+	}
+}
+
 func addAndGetTreatmentsForPatientVisit(testData TestData, treatments []*common.Treatment, doctorAccountId, PatientVisitId int64, t *testing.T) *apiservice.GetTreatmentsResponse {
+	stubErxApi := &erx.StubErxService{
+		SelectedMedicationToReturn: &common.Treatment{},
+	}
+
 	treatmentRequestBody := apiservice.AddTreatmentsRequestBody{PatientVisitId: common.NewObjectId(PatientVisitId), Treatments: treatments}
-	treatmentsHandler := apiservice.NewTreatmentsHandler(testData.DataApi)
+	treatmentsHandler := &apiservice.TreatmentsHandler{
+		DataApi: testData.DataApi,
+		ErxApi:  stubErxApi,
+	}
 
 	ts := httptest.NewServer(treatmentsHandler)
 	defer ts.Close()
