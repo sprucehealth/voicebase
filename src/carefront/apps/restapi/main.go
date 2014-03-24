@@ -371,6 +371,9 @@ func main() {
 	doctorUpdatePatientPharmacyHandler := &apiservice.DoctorUpdatePatientPharmacyHandler{
 		DataApi: dataApi,
 	}
+	doctorPatientTreatmentsHandler := &apiservice.DoctorPatientTreatmentsHandler{
+		DataApi: dataApi,
+	}
 	doctorPharmacySearchHandler := &apiservice.DoctorPharmacySearchHandler{
 		DataApi: dataApi,
 		ErxApi:  doseSpotService,
@@ -413,6 +416,7 @@ func main() {
 	mux.Handle("/v1/doctor/rx/refill/denial_reasons", refillRequestDenialReasonsHandler)
 
 	mux.Handle("/v1/doctor/patient", doctorPatientUpdateHandler)
+	mux.Handle("/v1/doctor/patient/treatments", doctorPatientTreatmentsHandler)
 	mux.Handle("/v1/doctor/patient/pharmacy", doctorUpdatePatientPharmacyHandler)
 	mux.Handle("/v1/doctor/pharmacy", doctorPharmacySearchHandler)
 
