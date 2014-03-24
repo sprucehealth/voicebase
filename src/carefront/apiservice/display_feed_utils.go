@@ -39,7 +39,12 @@ func converQueueItemToDisplayFeedItem(DataApi api.DataAPI, itemToDisplay api.Fee
 		Subtitle:     subtitle,
 		ImageUrl:     itemToDisplay.GetImageUrl(),
 		DisplayTypes: itemToDisplay.GetDisplayTypes(),
-		ItemUrl:      itemToDisplay.GetActionUrl(),
 	}
+
+	item.ItemUrl, err = itemToDisplay.GetActionUrl(DataApi)
+	if err != nil {
+		return nil, err
+	}
+
 	return
 }

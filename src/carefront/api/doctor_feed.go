@@ -17,6 +17,7 @@ const (
 	viewTreatedPatientVisitReviewAction  = "view_treated_patient_visit"
 	viewRefillRequestAction              = "view_refill_request"
 	viewTransmissionErrorAction          = "view_transmission_error"
+	viewPatientTreatmentsAction          = "view_patient_treatments"
 )
 
 type DoctorQueueItem struct {
@@ -192,23 +193,48 @@ func (d *DoctorQueueItem) GetDisplayTypes() []string {
 	return nil
 }
 
-func (d *DoctorQueueItem) GetActionUrl() string {
+func (d *DoctorQueueItem) GetActionUrl(dataApi DataAPI) (string, error) {
 	switch d.EventType {
 	case EVENT_TYPE_PATIENT_VISIT:
 		switch d.Status {
 		case QUEUE_ITEM_STATUS_COMPLETED, QUEUE_ITEM_STATUS_TRIAGED:
-			return fmt.Sprintf("%s%s?patient_visit_id=%d", SpruceButtonBaseActionUrl, viewTreatedPatientVisitReviewAction, d.ItemId)
+			patientId, err := dataApi.GetPatientIdFromPatientVisitId(d.ItemId)
+			if err != nil {
+				return "", err
+			}
+
+			patient, err := dataApi.GetPatientFromId(patientId)
+			if err != nil {
+				return "", err
+			}
+			return fmt.Sprintf("%s%s?patient_id=%d", SpruceButtonBaseActionUrl, viewPatientTreatmentsAction, patient.PatientId.Int64()), nil
 		case QUEUE_ITEM_STATUS_ONGOING, QUEUE_ITEM_STATUS_PENDING:
-			return fmt.Sprintf("%s%s?patient_visit_id=%d", SpruceButtonBaseActionUrl, beginPatientVisitReviewAction, d.ItemId)
+			return fmt.Sprintf("%s%s?patient_visit_id=%d", SpruceButtonBaseActionUrl, beginPatientVisitReviewAction, d.ItemId), nil
 		}
 	case EVENT_TYPE_TREATMENT_PLAN:
-		return fmt.Sprintf("%s%s?treatment_plan_id=%d", SpruceButtonBaseActionUrl, viewTreatedPatientVisitReviewAction, d.ItemId)
+	case QUEUE_ITEM_STATUS_COMPLETED, QUEUE_ITEM_STATUS_TRIAGED:
+		patientVisitId, err := dataApi.GetPatientVisitIdFromTreatmentPlanId(d.ItemId)
+		if err != nil {
+			return "", err
+		}
+
+		patientId, err := dataApi.GetPatientIdFromPatientVisitId(patientVisitId)
+		if err != nil {
+			return "", err
+		}
+
+		patient, err := dataApi.GetPatientFromId(patientId)
+		if err != nil {
+			return "", err
+		}
+		return fmt.Sprintf("%s%s?patient_id=%d", SpruceButtonBaseActionUrl, viewPatientTreatmentsAction, patient.PatientId.Int64()), nil
+
 	case EVENT_TYPE_REFILL_REQUEST, EVENT_TYPE_REFILL_TRANSMISSION_ERROR:
-		return fmt.Sprintf("%s%s?refill_request_id=%d", SpruceButtonBaseActionUrl, viewRefillRequestAction, d.ItemId)
+		return fmt.Sprintf("%s%s?refill_request_id=%d", SpruceButtonBaseActionUrl, viewRefillRequestAction, d.ItemId), nil
 	case EVENT_TYPE_TRANSMISSION_ERROR:
-		return fmt.Sprintf("%s%s?treatment_id=%d", SpruceButtonBaseActionUrl, viewTransmissionErrorAction, d.ItemId)
+		return fmt.Sprintf("%s%s?treatment_id=%d", SpruceButtonBaseActionUrl, viewTransmissionErrorAction, d.ItemId), nil
 	}
-	return ""
+	return "", nil
 }
 
 func (d *DoctorQueueItem) GetButton() *Button {
