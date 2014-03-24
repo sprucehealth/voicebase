@@ -111,8 +111,8 @@ func (d *DataService) LinkRequestedPrescriptionToOriginalTreatment(requestedTrea
 
 	// lookup drugs prescribed to the patient within a day of the date the requestedPrescription was prescribed
 	// we know that it was prescribed based on whether or not it was succesfully sent to the pharmacy
-	halfDayBefore := requestedTreatment.ErxSentDate.Add(-12 * time.Hour)
-	halfDayAfter := requestedTreatment.ErxSentDate.Add(12 * time.Hour)
+	halfDayBefore := requestedTreatment.ERx.ErxSentDate.Add(-12 * time.Hour)
+	halfDayAfter := requestedTreatment.ERx.ErxSentDate.Add(12 * time.Hour)
 
 	treatmentIds := make([]int64, 0)
 	rows, err := d.DB.Query(`select treatment_id from erx_status_events 
@@ -298,6 +298,7 @@ func (d *DataService) GetRefillRequestFromId(refillRequestId int64) (*common.Ref
 
 func (d *DataService) getTreatmentForRefillRequest(tableName string, treatmentId int64) (*common.Treatment, error) {
 	var treatment common.Treatment
+	treatment.ERx = &common.ERxData{}
 	var erxId, pharmacyLocalId int64
 	var doctorId sql.NullInt64
 	var treatmentType string
@@ -317,21 +318,21 @@ func (d *DataService) getTreatmentForRefillRequest(tableName string, treatmentId
 		&treatment.DispenseUnitDescription, &treatment.NumberRefills,
 		&treatment.SubstitutionsAllowed, &pharmacyLocalId,
 		&treatment.DaysSupply, &treatment.PharmacyNotes,
-		&treatment.PatientInstructions, &treatment.ErxSentDate,
-		&treatment.ErxLastDateFilled, &treatment.Status,
+		&treatment.PatientInstructions, &treatment.ERx.ErxSentDate,
+		&treatment.ERx.ErxLastDateFilled, &treatment.Status,
 		&drugName, &drugForm, &drugRoute, &doctorId)
 
 	if err != nil && err != sql.ErrNoRows {
 		return nil, err
 	}
 	treatment.Id = common.NewObjectId(treatmentId)
-	treatment.PrescriptionId = common.NewObjectId(erxId)
+	treatment.ERx.PrescriptionId = common.NewObjectId(erxId)
 	treatment.DrugName = drugName.String
 	treatment.DrugForm = drugForm.String
 	treatment.DrugRoute = drugRoute.String
 	treatment.OTC = treatmentType == treatment_otc
-	treatment.PharmacyLocalId = common.NewObjectId(pharmacyLocalId)
-	treatment.Pharmacy, err = d.GetPharmacyFromId(pharmacyLocalId)
+	treatment.ERx.PharmacyLocalId = common.NewObjectId(pharmacyLocalId)
+	treatment.ERx.Pharmacy, err = d.GetPharmacyFromId(pharmacyLocalId)
 
 	if err != nil {
 		return nil, err
@@ -372,10 +373,10 @@ func (d *DataService) addRequestedTreatmentFromPharmacy(treatment *common.Treatm
 		"patient_instructions":  treatment.PatientInstructions,
 		"pharmacy_notes":        treatment.PharmacyNotes,
 		"status":                treatment.Status,
-		"erx_id":                treatment.PrescriptionId.Int64(),
-		"erx_sent_date":         treatment.ErxSentDate,
-		"erx_last_filled_date":  treatment.ErxLastDateFilled,
-		"pharmacy_id":           treatment.PharmacyLocalId,
+		"erx_id":                treatment.ERx.PrescriptionId.Int64(),
+		"erx_sent_date":         treatment.ERx.ErxSentDate,
+		"erx_last_filled_date":  treatment.ERx.ErxLastDateFilled,
+		"pharmacy_id":           treatment.ERx.PharmacyLocalId,
 		"doctor_id":             treatment.Doctor.DoctorId.Int64(),
 	}
 
@@ -445,10 +446,10 @@ func (d *DataService) addPharmacyDispensedTreatment(dispensedTreatment, requeste
 		"patient_instructions":   dispensedTreatment.PatientInstructions,
 		"pharmacy_notes":         dispensedTreatment.PharmacyNotes,
 		"status":                 dispensedTreatment.Status,
-		"erx_id":                 dispensedTreatment.PrescriptionId.Int64(),
-		"erx_sent_date":          dispensedTreatment.ErxSentDate,
-		"erx_last_filled_date":   dispensedTreatment.ErxLastDateFilled,
-		"pharmacy_id":            dispensedTreatment.PharmacyLocalId,
+		"erx_id":                 dispensedTreatment.ERx.PrescriptionId.Int64(),
+		"erx_sent_date":          dispensedTreatment.ERx.ErxSentDate,
+		"erx_last_filled_date":   dispensedTreatment.ERx.ErxLastDateFilled,
+		"pharmacy_id":            dispensedTreatment.ERx.PharmacyLocalId,
 		"requested_treatment_id": requestedTreatment.Id.Int64(),
 		"doctor_id":              dispensedTreatment.Doctor.DoctorId.Int64(),
 	}

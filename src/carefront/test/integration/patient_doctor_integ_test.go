@@ -378,11 +378,11 @@ func TestPatientVisitReview(t *testing.T) {
 	}
 
 	for _, treatment := range doctorPrescriptionsResponse.TreatmentPlans[0].Treatments {
-		if treatment.Id.Int64() == 20 && (treatment.PrescriptionStatus != api.ERX_STATUS_ERROR || treatment.PrescriptionStatus != api.ERX_STATUS_SENDING) {
+		if treatment.Id.Int64() == 20 && (treatment.ERx.PrescriptionStatus != api.ERX_STATUS_ERROR || treatment.ERx.PrescriptionStatus != api.ERX_STATUS_SENDING) {
 			t.Fatal("Expected the prescription status to be error for 1 treatment")
 		}
 
-		if treatment.PrescriptionStatus != api.ERX_STATUS_SENT && treatment.PrescriptionStatus != api.ERX_STATUS_SENDING && treatment.PrescriptionStatus != api.ERX_STATUS_ERROR {
+		if treatment.ERx.PrescriptionStatus != api.ERX_STATUS_SENT && treatment.ERx.PrescriptionStatus != api.ERX_STATUS_SENDING && treatment.ERx.PrescriptionStatus != api.ERX_STATUS_ERROR {
 			t.Fatal("Expected the prescription status to be either eRxSent, Sending, or Error")
 		}
 	}

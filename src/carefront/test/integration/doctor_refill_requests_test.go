@@ -72,10 +72,6 @@ func TestNewRefillRequestForExistingPatientAndExistingTreatment(t *testing.T) {
 	testTime := time.Now()
 
 	treatment1 := &common.Treatment{
-		PrescriptionId:     common.NewObjectId(5504),
-		PrescriptionStatus: "Requested",
-		ErxPharmacyId:      1234,
-		PharmacyLocalId:    common.NewObjectId(pharmacyToReturn.LocalId),
 		DrugDBIds: map[string]string{
 			erx.LexiDrugSynId:     "1234",
 			erx.LexiGenProductId:  "12345",
@@ -91,8 +87,14 @@ func TestNewRefillRequestForExistingPatientAndExistingTreatment(t *testing.T) {
 		SubstitutionsAllowed:    false,
 		DaysSupply:              10,
 		PatientInstructions:     "Take once daily",
-		ErxLastDateFilled:       &testTime,
 		OTC:                     false,
+		ERx: &common.ERxData{
+			PrescriptionId:     common.NewObjectId(5504),
+			PrescriptionStatus: "Requested",
+			ErxPharmacyId:      1234,
+			PharmacyLocalId:    common.NewObjectId(pharmacyToReturn.LocalId),
+			ErxLastDateFilled:  &testTime,
+		},
 	}
 
 	// add this treatment to the treatment plan
@@ -108,7 +110,7 @@ func TestNewRefillRequestForExistingPatientAndExistingTreatment(t *testing.T) {
 	}
 
 	// update the treatment with prescription id and pharmacy id for where prescription was routed
-	_, err = testData.DB.Exec(`update treatment set erx_id = ?, pharmacy_id=? where id = ?`, treatment1.PrescriptionId.Int64(), pharmacyToReturn.LocalId, treatment1.Id.Int64())
+	_, err = testData.DB.Exec(`update treatment set erx_id = ?, pharmacy_id=? where id = ?`, treatment1.ERx.PrescriptionId.Int64(), pharmacyToReturn.LocalId, treatment1.Id.Int64())
 	if err != nil {
 		t.Fatal("Unable to update treatment with erx id: " + err.Error())
 	}
@@ -128,8 +130,6 @@ func TestNewRefillRequestForExistingPatientAndExistingTreatment(t *testing.T) {
 		RequestDateStamp:          testTime,
 		ClinicianId:               clinicianId,
 		RequestedPrescription: &common.Treatment{
-			PrescriptionId: common.NewObjectId(prescriptionIdForRequestedPrescription),
-			ErxPharmacyId:  1234,
 			DrugDBIds: map[string]string{
 				erx.LexiDrugSynId:     "1234",
 				erx.LexiGenProductId:  "12345",
@@ -140,13 +140,14 @@ func TestNewRefillRequestForExistingPatientAndExistingTreatment(t *testing.T) {
 			DispenseValue:        5,
 			OTC:                  false,
 			SubstitutionsAllowed: true,
-			ErxSentDate:          &fiveMinutesBeforeTestTime,
-			DoseSpotClinicianId:  clinicianId,
+			ERx: &common.ERxData{
+				ErxSentDate:         &fiveMinutesBeforeTestTime,
+				DoseSpotClinicianId: clinicianId,
+				PrescriptionId:      common.NewObjectId(prescriptionIdForRequestedPrescription),
+				ErxPharmacyId:       1234,
+			},
 		},
 		DispensedPrescription: &common.Treatment{
-			PrescriptionId:     common.NewObjectId(5504),
-			PrescriptionStatus: "Requested",
-			ErxPharmacyId:      1234,
 			DrugDBIds: map[string]string{
 				"drug_db_id_1": "1234",
 				"drug_db_id_2": "12345",
@@ -159,9 +160,14 @@ func TestNewRefillRequestForExistingPatientAndExistingTreatment(t *testing.T) {
 			SubstitutionsAllowed:    false,
 			DaysSupply:              10,
 			PatientInstructions:     "Take once daily",
-			ErxLastDateFilled:       &testTime,
 			OTC:                     false,
-			DoseSpotClinicianId:     clinicianId,
+			ERx: &common.ERxData{
+				ErxLastDateFilled:   &testTime,
+				PrescriptionId:      common.NewObjectId(5504),
+				PrescriptionStatus:  "Requested",
+				ErxPharmacyId:       1234,
+				DoseSpotClinicianId: clinicianId,
+			},
 		},
 	}
 
@@ -309,8 +315,6 @@ func TestApproveRefillRequestAndSuccessfulSendToPharmacy(t *testing.T) {
 		RequestDateStamp:          testTime,
 		ClinicianId:               clinicianId,
 		RequestedPrescription: &common.Treatment{
-			PrescriptionId: common.NewObjectId(prescriptionIdForRequestedPrescription),
-			ErxPharmacyId:  1234,
 			DrugDBIds: map[string]string{
 				erx.LexiDrugSynId:     "1234",
 				erx.LexiGenProductId:  "12345",
@@ -321,13 +325,14 @@ func TestApproveRefillRequestAndSuccessfulSendToPharmacy(t *testing.T) {
 			DispenseValue:        5,
 			OTC:                  false,
 			SubstitutionsAllowed: true,
-			ErxSentDate:          &fiveMinutesBeforeTestTime,
-			DoseSpotClinicianId:  clinicianId,
+			ERx: &common.ERxData{
+				ErxSentDate:         &fiveMinutesBeforeTestTime,
+				DoseSpotClinicianId: clinicianId,
+				PrescriptionId:      common.NewObjectId(prescriptionIdForRequestedPrescription),
+				ErxPharmacyId:       1234,
+			},
 		},
 		DispensedPrescription: &common.Treatment{
-			PrescriptionId:     common.NewObjectId(5504),
-			PrescriptionStatus: "Requested",
-			ErxPharmacyId:      1234,
 			DrugDBIds: map[string]string{
 				"drug_db_id_1": "1234",
 				"drug_db_id_2": "12345",
@@ -340,9 +345,14 @@ func TestApproveRefillRequestAndSuccessfulSendToPharmacy(t *testing.T) {
 			SubstitutionsAllowed:    false,
 			DaysSupply:              10,
 			PatientInstructions:     "Take once daily",
-			ErxLastDateFilled:       &testTime,
 			OTC:                     false,
-			DoseSpotClinicianId:     clinicianId,
+			ERx: &common.ERxData{
+				ErxLastDateFilled:   &testTime,
+				DoseSpotClinicianId: clinicianId,
+				PrescriptionId:      common.NewObjectId(5504),
+				PrescriptionStatus:  "Requested",
+				ErxPharmacyId:       1234,
+			},
 		},
 	}
 
@@ -540,8 +550,6 @@ func TestApproveRefillRequestAndErrorSendingToPharmacy(t *testing.T) {
 		RequestDateStamp:          testTime,
 		ClinicianId:               clinicianId,
 		RequestedPrescription: &common.Treatment{
-			PrescriptionId: common.NewObjectId(prescriptionIdForRequestedPrescription),
-			ErxPharmacyId:  1234,
 			DrugDBIds: map[string]string{
 				erx.LexiDrugSynId:     "1234",
 				erx.LexiGenProductId:  "12345",
@@ -552,13 +560,14 @@ func TestApproveRefillRequestAndErrorSendingToPharmacy(t *testing.T) {
 			DispenseValue:        5,
 			OTC:                  false,
 			SubstitutionsAllowed: true,
-			ErxSentDate:          &fiveMinutesBeforeTestTime,
-			DoseSpotClinicianId:  clinicianId,
+			ERx: &common.ERxData{
+				ErxSentDate:         &fiveMinutesBeforeTestTime,
+				DoseSpotClinicianId: clinicianId,
+				PrescriptionId:      common.NewObjectId(prescriptionIdForRequestedPrescription),
+				ErxPharmacyId:       1234,
+			},
 		},
 		DispensedPrescription: &common.Treatment{
-			PrescriptionId:     common.NewObjectId(5504),
-			PrescriptionStatus: "Requested",
-			ErxPharmacyId:      1234,
 			DrugDBIds: map[string]string{
 				"drug_db_id_1": "1234",
 				"drug_db_id_2": "12345",
@@ -571,9 +580,15 @@ func TestApproveRefillRequestAndErrorSendingToPharmacy(t *testing.T) {
 			SubstitutionsAllowed:    false,
 			DaysSupply:              10,
 			PatientInstructions:     "Take once daily",
-			ErxLastDateFilled:       &testTime,
-			OTC:                     false,
-			DoseSpotClinicianId:     clinicianId,
+
+			OTC: false,
+			ERx: &common.ERxData{
+				ErxLastDateFilled:   &testTime,
+				DoseSpotClinicianId: clinicianId,
+				PrescriptionId:      common.NewObjectId(5504),
+				PrescriptionStatus:  "Requested",
+				ErxPharmacyId:       1234,
+			},
 		},
 	}
 
@@ -832,8 +847,6 @@ func TestDenyRefillRequestAndSuccessfulDelete(t *testing.T) {
 		RequestDateStamp:          testTime,
 		ClinicianId:               clinicianId,
 		RequestedPrescription: &common.Treatment{
-			PrescriptionId: common.NewObjectId(prescriptionIdForRequestedPrescription),
-			ErxPharmacyId:  1234,
 			DrugDBIds: map[string]string{
 				erx.LexiDrugSynId:     "1234",
 				erx.LexiGenProductId:  "12345",
@@ -844,13 +857,14 @@ func TestDenyRefillRequestAndSuccessfulDelete(t *testing.T) {
 			DispenseValue:        5,
 			OTC:                  false,
 			SubstitutionsAllowed: true,
-			ErxSentDate:          &fiveMinutesBeforeTestTime,
-			DoseSpotClinicianId:  clinicianId,
+			ERx: &common.ERxData{
+				ErxSentDate:         &fiveMinutesBeforeTestTime,
+				DoseSpotClinicianId: clinicianId,
+				PrescriptionId:      common.NewObjectId(prescriptionIdForRequestedPrescription),
+				ErxPharmacyId:       1234,
+			},
 		},
 		DispensedPrescription: &common.Treatment{
-			PrescriptionId:     common.NewObjectId(5504),
-			PrescriptionStatus: "Requested",
-			ErxPharmacyId:      1234,
 			DrugDBIds: map[string]string{
 				"drug_db_id_1": "1234",
 				"drug_db_id_2": "12345",
@@ -863,9 +877,14 @@ func TestDenyRefillRequestAndSuccessfulDelete(t *testing.T) {
 			SubstitutionsAllowed:    false,
 			DaysSupply:              10,
 			PatientInstructions:     "Take once daily",
-			ErxLastDateFilled:       &testTime,
 			OTC:                     false,
-			DoseSpotClinicianId:     clinicianId,
+			ERx: &common.ERxData{
+				ErxLastDateFilled:   &testTime,
+				PrescriptionId:      common.NewObjectId(5504),
+				PrescriptionStatus:  "Requested",
+				ErxPharmacyId:       1234,
+				DoseSpotClinicianId: clinicianId,
+			},
 		},
 	}
 
@@ -1070,8 +1089,6 @@ func TestCheckingStatusOfMultipleRefillRequestsAtOnce(t *testing.T) {
 			RequestDateStamp:          testTime,
 			ClinicianId:               clinicianId,
 			RequestedPrescription: &common.Treatment{
-				PrescriptionId: common.NewObjectId(prescriptionIdForRequestedPrescription + i),
-				ErxPharmacyId:  1234,
 				DrugDBIds: map[string]string{
 					erx.LexiDrugSynId:     "1234",
 					erx.LexiGenProductId:  "12345",
@@ -1082,13 +1099,14 @@ func TestCheckingStatusOfMultipleRefillRequestsAtOnce(t *testing.T) {
 				DispenseValue:        5,
 				OTC:                  false,
 				SubstitutionsAllowed: true,
-				ErxSentDate:          &fiveMinutesBeforeTestTime,
-				DoseSpotClinicianId:  clinicianId,
+				ERx: &common.ERxData{
+					ErxSentDate:         &fiveMinutesBeforeTestTime,
+					DoseSpotClinicianId: clinicianId,
+					PrescriptionId:      common.NewObjectId(prescriptionIdForRequestedPrescription + i),
+					ErxPharmacyId:       1234,
+				},
 			},
 			DispensedPrescription: &common.Treatment{
-				PrescriptionId:     common.NewObjectId(5504),
-				PrescriptionStatus: "Requested",
-				ErxPharmacyId:      1234,
 				DrugDBIds: map[string]string{
 					"drug_db_id_1": "1234",
 					"drug_db_id_2": "12345",
@@ -1101,9 +1119,14 @@ func TestCheckingStatusOfMultipleRefillRequestsAtOnce(t *testing.T) {
 				SubstitutionsAllowed:    false,
 				DaysSupply:              10,
 				PatientInstructions:     "Take once daily",
-				ErxLastDateFilled:       &testTime,
 				OTC:                     false,
-				DoseSpotClinicianId:     clinicianId,
+				ERx: &common.ERxData{
+					DoseSpotClinicianId: clinicianId,
+					PrescriptionId:      common.NewObjectId(5504),
+					PrescriptionStatus:  "Requested",
+					ErxPharmacyId:       1234,
+					ErxLastDateFilled:   &testTime,
+				},
 			},
 		}
 		refillRequests = append(refillRequests, refillRequestItem)
@@ -1350,10 +1373,6 @@ func TestRefillRequestComingFromDifferentPharmacyThanDispensedPrescription(t *te
 	testTime := time.Now()
 
 	treatment1 := &common.Treatment{
-		PrescriptionId:     common.NewObjectId(5504),
-		PrescriptionStatus: "Requested",
-		ErxPharmacyId:      1234,
-		PharmacyLocalId:    common.NewObjectId(pharmacyToReturn.LocalId),
 		DrugDBIds: map[string]string{
 			erx.LexiDrugSynId:     "1234",
 			erx.LexiGenProductId:  "12345",
@@ -1369,8 +1388,14 @@ func TestRefillRequestComingFromDifferentPharmacyThanDispensedPrescription(t *te
 		SubstitutionsAllowed:    false,
 		DaysSupply:              10,
 		PatientInstructions:     "Take once daily",
-		ErxLastDateFilled:       &testTime,
 		OTC:                     false,
+		ERx: &common.ERxData{
+			ErxLastDateFilled:  &testTime,
+			PrescriptionId:     common.NewObjectId(5504),
+			PrescriptionStatus: "Requested",
+			ErxPharmacyId:      1234,
+			PharmacyLocalId:    common.NewObjectId(pharmacyToReturn.LocalId),
+		},
 	}
 
 	// add this treatment to the treatment plan
@@ -1386,7 +1411,7 @@ func TestRefillRequestComingFromDifferentPharmacyThanDispensedPrescription(t *te
 	}
 
 	// update the treatment with prescription id and pharmacy id for where prescription was routed
-	_, err = testData.DB.Exec(`update treatment set erx_id = ?, pharmacy_id=? where id = ?`, treatment1.PrescriptionId.Int64(), pharmacyToReturn.LocalId, treatment1.Id.Int64())
+	_, err = testData.DB.Exec(`update treatment set erx_id = ?, pharmacy_id=? where id = ?`, treatment1.ERx.PrescriptionId.Int64(), pharmacyToReturn.LocalId, treatment1.Id.Int64())
 	if err != nil {
 		t.Fatal("Unable to update treatment with erx id: " + err.Error())
 	}
@@ -1406,8 +1431,6 @@ func TestRefillRequestComingFromDifferentPharmacyThanDispensedPrescription(t *te
 		RequestDateStamp:          testTime,
 		ClinicianId:               clinicianId,
 		RequestedPrescription: &common.Treatment{
-			PrescriptionId: common.NewObjectId(prescriptionIdForRequestedPrescription),
-			ErxPharmacyId:  1234,
 			DrugDBIds: map[string]string{
 				erx.LexiDrugSynId:     "1234",
 				erx.LexiGenProductId:  "12345",
@@ -1418,13 +1441,14 @@ func TestRefillRequestComingFromDifferentPharmacyThanDispensedPrescription(t *te
 			DispenseValue:        5,
 			OTC:                  false,
 			SubstitutionsAllowed: true,
-			ErxSentDate:          &fiveMinutesBeforeTestTime,
-			DoseSpotClinicianId:  clinicianId,
+			ERx: &common.ERxData{
+				DoseSpotClinicianId: clinicianId,
+				ErxSentDate:         &fiveMinutesBeforeTestTime,
+				PrescriptionId:      common.NewObjectId(prescriptionIdForRequestedPrescription),
+				ErxPharmacyId:       1234,
+			},
 		},
 		DispensedPrescription: &common.Treatment{
-			PrescriptionId:     common.NewObjectId(5504),
-			PrescriptionStatus: "Requested",
-			ErxPharmacyId:      12345678,
 			DrugDBIds: map[string]string{
 				"drug_db_id_1": "1234",
 				"drug_db_id_2": "12345",
@@ -1437,9 +1461,14 @@ func TestRefillRequestComingFromDifferentPharmacyThanDispensedPrescription(t *te
 			SubstitutionsAllowed:    false,
 			DaysSupply:              10,
 			PatientInstructions:     "Take once daily",
-			ErxLastDateFilled:       &testTime,
 			OTC:                     false,
-			DoseSpotClinicianId:     clinicianId,
+			ERx: &common.ERxData{
+				ErxLastDateFilled:   &testTime,
+				PrescriptionId:      common.NewObjectId(5504),
+				PrescriptionStatus:  "Requested",
+				ErxPharmacyId:       12345678,
+				DoseSpotClinicianId: clinicianId,
+			},
 		},
 	}
 
@@ -1515,11 +1544,11 @@ func TestRefillRequestComingFromDifferentPharmacyThanDispensedPrescription(t *te
 		t.Fatal("Patient requesting refill expected to be in our system instead the indication is that it was an unlinked patient")
 	}
 
-	if refillRequest.RequestedPrescription.Pharmacy == nil || refillRequest.DispensedPrescription.Pharmacy == nil {
+	if refillRequest.RequestedPrescription.ERx.Pharmacy == nil || refillRequest.DispensedPrescription.ERx.Pharmacy == nil {
 		t.Fatal("Expected pharmacy object to be present for requested and dispensed prescriptions")
 	}
 
-	if refillRequest.RequestedPrescription.Pharmacy.SourceId == refillRequest.DispensedPrescription.Pharmacy.SourceId {
+	if refillRequest.RequestedPrescription.ERx.Pharmacy.SourceId == refillRequest.DispensedPrescription.ERx.Pharmacy.SourceId {
 		t.Fatal("Expected the pharmacies to be different between the requested and the dispensed prescriptions")
 	}
 }
@@ -1557,9 +1586,6 @@ func TestNewRefillRequestWithUnlinkedTreatmentAndLinkedPatient(t *testing.T) {
 		RequestDateStamp:          testTime,
 		ClinicianId:               clinicianId,
 		RequestedPrescription: &common.Treatment{
-			PrescriptionId:     common.NewObjectId(prescriptionIdForRequestedPrescription),
-			PrescriptionStatus: "Requested",
-			ErxPharmacyId:      123,
 			DrugDBIds: map[string]string{
 				erx.LexiDrugSynId:     "1234",
 				erx.LexiGenProductId:  "12345",
@@ -1574,14 +1600,16 @@ func TestNewRefillRequestWithUnlinkedTreatmentAndLinkedPatient(t *testing.T) {
 			SubstitutionsAllowed:    false,
 			DaysSupply:              10,
 			PatientInstructions:     "Take once daily",
-			ErxSentDate:             &testTime,
 			OTC:                     false,
-			DoseSpotClinicianId:     clinicianId,
+			ERx: &common.ERxData{
+				DoseSpotClinicianId: clinicianId,
+				ErxSentDate:         &testTime,
+				PrescriptionId:      common.NewObjectId(prescriptionIdForRequestedPrescription),
+				PrescriptionStatus:  "Requested",
+				ErxPharmacyId:       123,
+			},
 		},
 		DispensedPrescription: &common.Treatment{
-			PrescriptionId:     common.NewObjectId(5504),
-			PrescriptionStatus: "Requested",
-			ErxPharmacyId:      123,
 			DrugDBIds: map[string]string{
 				"drug_db_id_1": "1234",
 				"drug_db_id_2": "12345",
@@ -1594,9 +1622,14 @@ func TestNewRefillRequestWithUnlinkedTreatmentAndLinkedPatient(t *testing.T) {
 			SubstitutionsAllowed:    false,
 			DaysSupply:              10,
 			PatientInstructions:     "Take once daily",
-			ErxSentDate:             &testTime,
 			OTC:                     false,
-			DoseSpotClinicianId:     clinicianId,
+			ERx: &common.ERxData{
+				PrescriptionId:      common.NewObjectId(5504),
+				PrescriptionStatus:  "Requested",
+				ErxPharmacyId:       123,
+				ErxSentDate:         &testTime,
+				DoseSpotClinicianId: clinicianId,
+			},
 		},
 	}
 
@@ -1712,9 +1745,6 @@ func TestNewRefillRequestWithUnlinkedTreatmentAndUnlinkedPatient(t *testing.T) {
 		RequestDateStamp:          testTime,
 		ClinicianId:               clinicianId,
 		RequestedPrescription: &common.Treatment{
-			PrescriptionId:     common.NewObjectId(5504),
-			PrescriptionStatus: "Requested",
-			ErxPharmacyId:      123,
 			DrugDBIds: map[string]string{
 				erx.LexiDrugSynId:     "1234",
 				erx.LexiGenProductId:  "12345",
@@ -1729,14 +1759,16 @@ func TestNewRefillRequestWithUnlinkedTreatmentAndUnlinkedPatient(t *testing.T) {
 			SubstitutionsAllowed:    false,
 			DaysSupply:              10,
 			PatientInstructions:     "Take once daily",
-			ErxSentDate:             &testTime,
 			OTC:                     false,
-			DoseSpotClinicianId:     clinicianId,
+			ERx: &common.ERxData{
+				DoseSpotClinicianId: clinicianId,
+				ErxSentDate:         &testTime,
+				PrescriptionId:      common.NewObjectId(5504),
+				PrescriptionStatus:  "Requested",
+				ErxPharmacyId:       123,
+			},
 		},
 		DispensedPrescription: &common.Treatment{
-			PrescriptionId:     common.NewObjectId(5504),
-			PrescriptionStatus: "Requested",
-			ErxPharmacyId:      123,
 			DrugDBIds: map[string]string{
 				erx.LexiDrugSynId:     "1234",
 				erx.LexiGenProductId:  "12345",
@@ -1751,9 +1783,14 @@ func TestNewRefillRequestWithUnlinkedTreatmentAndUnlinkedPatient(t *testing.T) {
 			SubstitutionsAllowed:    false,
 			DaysSupply:              10,
 			PatientInstructions:     "Take once daily",
-			ErxSentDate:             &testTime,
 			OTC:                     false,
-			DoseSpotClinicianId:     clinicianId,
+			ERx: &common.ERxData{
+				DoseSpotClinicianId: clinicianId,
+				PrescriptionId:      common.NewObjectId(5504),
+				PrescriptionStatus:  "Requested",
+				ErxPharmacyId:       123,
+				ErxSentDate:         &testTime,
+			},
 		},
 	}
 

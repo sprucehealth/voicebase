@@ -226,15 +226,15 @@ func PerformRefillRecquestCheckCycle(DataApi api.DataAPI, ERxApi erx.ERxAPI, sta
 
 func linkDoctorToPrescription(DataApi api.DataAPI, prescription *common.Treatment) error {
 	// identify doctor the prescription belongs to based on clinician id
-	doctor, err := DataApi.GetDoctorFromDoseSpotClinicianId(prescription.DoseSpotClinicianId)
+	doctor, err := DataApi.GetDoctorFromDoseSpotClinicianId(prescription.ERx.DoseSpotClinicianId)
 	if err != nil {
 		golog.Errorf("Unable to lookup doctor based on the clinician id: %+v", err)
 		return err
 	}
 
 	if doctor == nil {
-		golog.Errorf("No doctor exists with this clinician id %d. Need to figure out how best to resolve this error.", prescription.DoseSpotClinicianId)
-		return fmt.Errorf("No doctor exists with clinician id %d in our system", prescription.DoseSpotClinicianId)
+		golog.Errorf("No doctor exists with this clinician id %d. Need to figure out how best to resolve this error.", prescription.ERx.DoseSpotClinicianId)
+		return fmt.Errorf("No doctor exists with clinician id %d in our system", prescription.ERx.DoseSpotClinicianId)
 	}
 
 	prescription.Doctor = doctor
@@ -243,15 +243,15 @@ func linkDoctorToPrescription(DataApi api.DataAPI, prescription *common.Treatmen
 
 func linkPharmacyToPrescription(DataApi api.DataAPI, ERxApi erx.ERxAPI, prescription *common.Treatment) error {
 	// lookup pharmacy associated with prescription and link to it
-	pharmacyDetails, err := DataApi.GetPharmacyBasedOnReferenceIdAndSource(strconv.FormatInt(prescription.ErxPharmacyId, 10), pharmacy.PHARMACY_SOURCE_SURESCRIPTS)
+	pharmacyDetails, err := DataApi.GetPharmacyBasedOnReferenceIdAndSource(strconv.FormatInt(prescription.ERx.ErxPharmacyId, 10), pharmacy.PHARMACY_SOURCE_SURESCRIPTS)
 	if err != nil {
 		golog.Errorf("Unable to make a succesful query to lookup pharmacy returned for refill request from our db: %+v", err)
 		return err
 	}
 
 	if pharmacyDetails == nil {
-		golog.Infof("Pharmacy not found in our database. Searched with id %d Getting from surescripts...", prescription.ErxPharmacyId)
-		pharmacyDetails, err = ERxApi.GetPharmacyDetails(prescription.ErxPharmacyId)
+		golog.Infof("Pharmacy not found in our database. Searched with id %d Getting from surescripts...", prescription.ERx.ErxPharmacyId)
+		pharmacyDetails, err = ERxApi.GetPharmacyDetails(prescription.ERx.ErxPharmacyId)
 		if err != nil {
 			golog.Errorf("Unable to get pharmacy from surescripts, which means unable to store pharmacy linked to prescription: %+v", err)
 			return err
@@ -262,6 +262,6 @@ func linkPharmacyToPrescription(DataApi api.DataAPI, ERxApi erx.ERxAPI, prescrip
 			return err
 		}
 	}
-	prescription.PharmacyLocalId = common.NewObjectId(pharmacyDetails.LocalId)
+	prescription.ERx.PharmacyLocalId = common.NewObjectId(pharmacyDetails.LocalId)
 	return nil
 }

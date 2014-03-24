@@ -61,7 +61,7 @@ func (d *DoctorPrescriptionErrorIgnoreHandler) ServeHTTP(w http.ResponseWriter, 
 			return
 		}
 
-		if err := d.ErxApi.IgnoreAlert(doctor.DoseSpotClinicianId, treatment.PrescriptionId.Int64()); err != nil {
+		if err := d.ErxApi.IgnoreAlert(doctor.DoseSpotClinicianId, treatment.ERx.PrescriptionId.Int64()); err != nil {
 			WriteDeveloperError(w, http.StatusInternalServerError, "Unable to ignore transmission error for prescription: "+err.Error())
 			return
 		}

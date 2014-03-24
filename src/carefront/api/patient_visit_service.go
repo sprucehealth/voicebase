@@ -932,8 +932,8 @@ func (d *DataService) MarkTreatmentsAsPrescriptionsSent(treatments []*common.Tre
 	}
 
 	for _, treatment := range treatments {
-		if treatment.PrescriptionId.Int64() != 0 {
-			_, err = tx.Exec(`update treatment set erx_id = ?, pharmacy_id = ?, erx_sent_date=now() where id = ? and treatment_plan_id = ?`, treatment.PrescriptionId, pharmacySentTo.LocalId, treatment.Id, treatment.TreatmentPlanId)
+		if treatment.ERx.PrescriptionId.Int64() != 0 {
+			_, err = tx.Exec(`update treatment set erx_id = ?, pharmacy_id = ?, erx_sent_date=now() where id = ? and treatment_plan_id = ?`, treatment.ERx.PrescriptionId, pharmacySentTo.LocalId, treatment.Id, treatment.TreatmentPlanId)
 			if err != nil {
 				tx.Rollback()
 				return err
@@ -1084,16 +1084,18 @@ func (d *DataService) getTreatmentAndMetadataFromCurrentRow(rows *sql.Rows) (*co
 		CreationDate:            &creationDate,
 		Status:                  status,
 		PharmacyNotes:           pharmacyNotes.String,
-		ErxLastDateFilled:       &erxLastFilledDate.Time,
-		PrescriberId:            prescriberId,
+		DoctorId:                prescriberId,
+		ERx: &common.ERxData{
+			ErxLastDateFilled: &erxLastFilledDate.Time,
+		},
 	}
 
 	if pharmacyId.Valid {
-		treatment.PharmacyLocalId = common.NewObjectId(pharmacyId.Int64)
+		treatment.ERx.PharmacyLocalId = common.NewObjectId(pharmacyId.Int64)
 	}
 
 	if prescriptionId.Valid {
-		treatment.PrescriptionId = common.NewObjectId(prescriptionId.Int64)
+		treatment.ERx.PrescriptionId = common.NewObjectId(prescriptionId.Int64)
 	}
 
 	if treatmentType == treatment_otc {
@@ -1101,7 +1103,7 @@ func (d *DataService) getTreatmentAndMetadataFromCurrentRow(rows *sql.Rows) (*co
 	}
 
 	if erxSentDate.Valid {
-		treatment.ErxSentDate = &erxSentDate.Time
+		treatment.ERx.ErxSentDate = &erxSentDate.Time
 	}
 
 	err = d.fillInDrugDBIdsForTreatment(treatment)
@@ -1114,17 +1116,17 @@ func (d *DataService) getTreatmentAndMetadataFromCurrentRow(rows *sql.Rows) (*co
 		return nil, err
 	}
 
-	treatment.RxHistory, err = d.GetPrescriptionStatusEventsForTreatment(treatment.Id.Int64())
+	treatment.ERx.RxHistory, err = d.GetPrescriptionStatusEventsForTreatment(treatment.Id.Int64())
 	if err != nil {
 		return nil, err
 	}
 
-	treatment.Pharmacy, err = d.GetPharmacyFromId(treatment.PharmacyLocalId.Int64())
+	treatment.ERx.Pharmacy, err = d.GetPharmacyFromId(treatment.ERx.PharmacyLocalId.Int64())
 	if err != nil {
 		return nil, err
 	}
 
-	treatment.Doctor, err = d.GetDoctorFromId(treatment.PrescriberId)
+	treatment.Doctor, err = d.GetDoctorFromId(treatment.DoctorId)
 	if err != nil {
 		return nil, err
 	}

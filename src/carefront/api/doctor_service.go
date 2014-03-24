@@ -857,10 +857,12 @@ func (d *DataService) GetCompletedPrescriptionsForDoctor(from, to time.Time, doc
 			CreationDate:            &creationDate,
 			Status:                  status,
 			PatientInstructions:     patientInstructions,
-			PrescriptionStatus:      erxStatus.String,
 			StatusDetails:           eventDetails.String,
 			PharmacyNotes:           pharmacyNotes.String,
 			OTC:                     treatmentType == treatment_otc,
+			ERx: &common.ERxData{
+				PrescriptionStatus: erxStatus.String,
+			},
 		}
 
 		err = d.fillInDrugDBIdsForTreatment(treatment)

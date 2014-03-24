@@ -9,11 +9,6 @@ import (
 type Treatment struct {
 	Id                        *ObjectId                `json:"treatment_id,omitempty"`
 	DoctorTreatmentTemplateId *ObjectId                `json:"dr_treatment_template_id,omitempty"`
-	PrescriptionId            *ObjectId                `json:"erx_id,omitempty"`
-	ErxMedicationId           *ObjectId                `json:"-"`
-	PrescriptionStatus        string                   `json:"erx_status,omitempty"`
-	PharmacyLocalId           *ObjectId                `json:"-"`
-	ErxPharmacyId             int64                    `json:"-"`
 	StatusDetails             string                   `json:"erx_status_details,omitempty"`
 	TreatmentPlanId           *ObjectId                `json:"treatment_plan_id,omitempty"`
 	PatientVisitId            *ObjectId                `json:"patient_visit_id,omitempty"`
@@ -33,20 +28,29 @@ type Treatment struct {
 	PharmacyNotes             string                   `json:"pharmacy_notes,omitempty"`
 	PatientInstructions       string                   `json:"patient_instructions,omitempty"`
 	CreationDate              *time.Time               `json:"creation_date,omitempty"`
-	TransmissionErrorDate     *time.Time               `json:"error_date,omitempty"`
-	ErxSentDate               *time.Time               `json:"erx_sent_date,omitempty"`
-	ErxLastDateFilled         *time.Time               `json:"erx_last_filled_date,omitempty"`
-	ErxReferenceNumber        string                   `json:"-"`
 	Status                    string                   `json:"-"`
 	OTC                       bool                     `json:"otc,omitempty"`
 	IsControlledSubstance     bool                     `json:"-"`
 	SupplementalInstructions  []*DoctorInstructionItem `json:"supplemental_instructions,omitempty"`
-	Pharmacy                  *pharmacy.PharmacyData   `json:"pharmacy,omitempty"`
-	PrescriberId              int64                    `json:"-"`
+	DoctorId                  int64                    `json:"-"`
 	Doctor                    *Doctor                  `json:"doctor,omitempty"`
-	DoseSpotClinicianId       int64                    `json:"-"`
-	RxHistory                 []StatusEvent            `json:"erx_history,omitempty"`
 	OriginatingTreatmentId    int64                    `json:"-"`
+	ERx                       *ERxData                 `json:"erx,omitempty"`
+}
+
+type ERxData struct {
+	DoseSpotClinicianId   int64                  `json:"-"`
+	RxHistory             []StatusEvent          `json:"erx_history,omitempty"`
+	Pharmacy              *pharmacy.PharmacyData `json:"pharmacy,omitempty"`
+	ErxSentDate           *time.Time             `json:"erx_sent_date,omitempty"`
+	ErxLastDateFilled     *time.Time             `json:"erx_last_filled_date,omitempty"`
+	ErxReferenceNumber    string                 `json:"-"`
+	TransmissionErrorDate *time.Time             `json:"error_date,omitempty"`
+	ErxPharmacyId         int64                  `json:"-"`
+	ErxMedicationId       *ObjectId              `json:"-"`
+	PrescriptionId        *ObjectId              `json:"erx_id,omitempty"`
+	PrescriptionStatus    string                 `json:"erx_status,omitempty"`
+	PharmacyLocalId       *ObjectId              `json:"-"`
 }
 
 // defining an equals method on the treatment so that
@@ -58,7 +62,7 @@ func (t *Treatment) Equals(other *Treatment) bool {
 		return false
 	}
 
-	return t.PrescriptionId.Int64() == other.PrescriptionId.Int64() &&
+	return t.ERx.PrescriptionId.Int64() == other.ERx.PrescriptionId.Int64() &&
 		reflect.DeepEqual(t.DrugDBIds, other.DrugDBIds) &&
 		t.DosageStrength == other.DosageStrength &&
 		t.DispenseValue == other.DispenseValue &&
@@ -67,5 +71,5 @@ func (t *Treatment) Equals(other *Treatment) bool {
 		t.SubstitutionsAllowed == other.SubstitutionsAllowed &&
 		t.DaysSupply == other.DaysSupply &&
 		t.PatientInstructions == other.PatientInstructions &&
-		t.PharmacyLocalId.Int64() == other.PharmacyLocalId.Int64()
+		t.ERx.PharmacyLocalId.Int64() == other.ERx.PharmacyLocalId.Int64()
 }
