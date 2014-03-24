@@ -758,7 +758,7 @@ func TestApproveRefillRequestAndErrorSendingToPharmacy(t *testing.T) {
 		t.Fatalf("Expected refill request to have 4 events in its history, instead it had %d", len(refillRequest.RxHistory))
 	}
 
-	if refillRequest.RxHistory[0].Status != api.ERX_STATUS_RESOLVED {
+	if refillRequest.RxHistory[0].Status != api.RX_REFILL_STATUS_ERROR_RESOLVED {
 		t.Fatal("Expected the refill request to be resolved once the doctor resolved the error")
 	}
 

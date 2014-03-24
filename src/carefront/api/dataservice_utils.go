@@ -28,6 +28,7 @@ const (
 	RX_REFILL_STATUS_SENT                   = "RefillRxSent"
 	RX_REFILL_STATUS_DELETED                = "RefillRxDeleted"
 	RX_REFILL_STATUS_ERROR                  = "RefillRxError"
+	RX_REFILL_STATUS_ERROR_RESOLVED         = "RefillRxErrorResolved"
 	RX_REFILL_STATUS_REQUESTED              = "RefillRxRequested"
 	RX_REFILL_STATUS_APPROVED               = "RefillRxApproved"
 	RX_REFILL_STATUS_DENIED                 = "RefillRxDenied"

@@ -98,7 +98,7 @@ func (d *DoctorPrescriptionErrorIgnoreHandler) ServeHTTP(w http.ResponseWriter, 
 			return
 		}
 
-		if err := d.DataApi.AddRefillRequestStatusEvent(common.StatusEvent{ItemId: refillRequest.Id, Status: api.ERX_STATUS_RESOLVED}); err != nil {
+		if err := d.DataApi.AddRefillRequestStatusEvent(common.StatusEvent{ItemId: refillRequest.Id, Status: api.RX_REFILL_STATUS_ERROR_RESOLVED}); err != nil {
 			WriteDeveloperError(w, http.StatusInternalServerError, "Unable to add a status of resolved once the error is resolved: "+err.Error())
 			return
 		}
