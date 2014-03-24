@@ -315,15 +315,6 @@ func main() {
 		Region:                conf.AWSRegion,
 	}
 
-	doctorPrescriptionsHandler := &apiservice.DoctorPrescriptionsHandler{
-		DataApi: dataApi,
-	}
-
-	doctorPrescriptionsNotificationsHandler := &apiservice.DoctorPrescriptionsNotificationsHandler{
-		DataApi: dataApi,
-		ErxApi:  doseSpotService,
-	}
-
 	doctorPrescriptionErrorHandler := &apiservice.DoctorPrescriptionErrorHandler{
 		DataApi: dataApi,
 	}
@@ -411,9 +402,6 @@ func main() {
 	mux.Handle("/v1/doctor/authenticate", authenticateDoctorHandler)
 	mux.Handle("/v1/doctor/queue", doctorQueueHandler)
 	mux.Handle("/v1/doctor/treatment/templates", doctorTreatmentTemplatesHandler)
-
-	mux.Handle("/v1/doctor/rx/history", doctorPrescriptionsHandler)
-	mux.Handle("/v1/doctor/rx/notification_counts", doctorPrescriptionsNotificationsHandler)
 
 	mux.Handle("/v1/doctor/rx/error", doctorPrescriptionErrorHandler)
 	mux.Handle("/v1/doctor/rx/error/resolve", doctorPrescriptionErrorIgnoreHandler)
