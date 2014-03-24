@@ -44,26 +44,14 @@ func (d *DoctorPrescriptionErrorHandler) ServeHTTP(w http.ResponseWriter, r *htt
 		return
 	}
 
-	patient, err := d.DataApi.GetPatientFromTreatmentId(treatmentId)
-	if err != nil {
-		WriteDeveloperError(w, http.StatusInternalServerError, "Unable to get patient based on treatment id: "+err.Error())
-		return
-	}
-
-	doctor, err := d.DataApi.GetDoctorFromAccountId(GetContext(r).AccountId)
-	if err != nil {
-		WriteDeveloperError(w, http.StatusInternalServerError, "Unable to get doctor from account id: "+err.Error())
-		return
-	}
-
-	if err := verifyDoctorPatientRelationship(d.DataApi, doctor, patient); err != nil {
-		WriteDeveloperError(w, http.StatusForbidden, "Unable to verify patient-doctor relationship: "+err.Error())
-		return
-	}
-
 	treatment, err := d.DataApi.GetTreatmentFromId(treatmentId)
 	if err != nil {
 		WriteDeveloperError(w, http.StatusInternalServerError, "Unable to get patient based on treatment id: "+err.Error())
+		return
+	}
+
+	if err := verifyDoctorPatientRelationship(d.DataApi, treatment.Doctor, treatment.Patient); err != nil {
+		WriteDeveloperError(w, http.StatusForbidden, "Unable to verify patient-doctor relationship: "+err.Error())
 		return
 	}
 
