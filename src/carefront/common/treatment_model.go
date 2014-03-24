@@ -40,16 +40,16 @@ type Treatment struct {
 
 type ERxData struct {
 	DoseSpotClinicianId   int64                  `json:"-"`
-	RxHistory             []StatusEvent          `json:"erx_history,omitempty"`
+	RxHistory             []StatusEvent          `json:"history,omitempty"`
 	Pharmacy              *pharmacy.PharmacyData `json:"pharmacy,omitempty"`
-	ErxSentDate           *time.Time             `json:"erx_sent_date,omitempty"`
-	ErxLastDateFilled     *time.Time             `json:"erx_last_filled_date,omitempty"`
+	ErxSentDate           *time.Time             `json:"sent_date,omitempty"`
+	ErxLastDateFilled     *time.Time             `json:"last_filled_date,omitempty"`
 	ErxReferenceNumber    string                 `json:"-"`
 	TransmissionErrorDate *time.Time             `json:"error_date,omitempty"`
 	ErxPharmacyId         int64                  `json:"-"`
 	ErxMedicationId       *ObjectId              `json:"-"`
-	PrescriptionId        *ObjectId              `json:"erx_id,omitempty"`
-	PrescriptionStatus    string                 `json:"erx_status,omitempty"`
+	PrescriptionId        *ObjectId              `json:"-"`
+	PrescriptionStatus    string                 `json:"status,omitempty"`
 	PharmacyLocalId       *ObjectId              `json:"-"`
 }
 
