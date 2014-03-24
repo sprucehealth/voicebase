@@ -269,7 +269,7 @@ func main() {
 	medicationStrengthSearchHandler := &apiservice.MedicationStrengthSearchHandler{DataApi: dataApi, ERxApi: doseSpotService}
 	newTreatmentHandler := &apiservice.NewTreatmentHandler{DataApi: dataApi, ERxApi: doseSpotService}
 	medicationDispenseUnitHandler := &apiservice.MedicationDispenseUnitsHandler{DataApi: dataApi}
-	treatmentsHandler := &apiservice.TreatmentHandler{
+	treatmentsHandler := &apiservice.TreatmentsHandler{
 		DataApi: dataApi,
 		ErxApi:  doseSpotService,
 	}
@@ -419,7 +419,7 @@ func main() {
 	mux.Handle("/v1/doctor/rx/error/resolve", doctorPrescriptionErrorIgnoreHandler)
 	mux.Handle("/v1/doctor/rx/refill/request", doctorRefillRequestHandler)
 	mux.Handle("/v1/doctor/rx/refill/denial_reasons", refillRequestDenialReasonsHandler)
-	mux.Handle("/v1/doctor/patient/'treatments'", doctorPatientTreatmentsHandler)
+	mux.Handle("/v1/doctor/patient/treatments", doctorPatientTreatmentsHandler)
 
 	mux.Handle("/v1/doctor/patient", doctorPatientUpdateHandler)
 	mux.Handle("/v1/doctor/patient/pharmacy", doctorUpdatePatientPharmacyHandler)
