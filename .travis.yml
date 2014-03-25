@@ -21,7 +21,7 @@ install:
   - "echo \"DELETE FROM mysql.user WHERE User='';\" | mysql -u root -p12345"
   - "echo \"flush privileges;\" | mysql -u root -p12345"
   - "echo \"CREATE USER 'carefront' IDENTIFIED BY 'changethis';\" | mysql -u root -p12345"
-  - "echo \"GRANT ALL ON * TO 'carefront';\" | mysql -u root -p12345"
+  - "echo \"GRANT ALL ON *.* TO 'carefront';\" | mysql -u root -p12345"
 env:
   matrix:
   - TEST_DB=database_${TRAVIS_BUILD_ID}_${RANDOM}
