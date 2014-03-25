@@ -4,8 +4,9 @@ import (
 	"carefront/api"
 	"carefront/libs/erx"
 	"carefront/libs/pharmacy"
-	"encoding/json"
 	"net/http"
+
+	"github.com/gorilla/schema"
 )
 
 type DoctorPharmacySearchHandler struct {
@@ -14,8 +15,8 @@ type DoctorPharmacySearchHandler struct {
 }
 
 type DoctorPharmacySearchRequestData struct {
-	SearchString  string   `json:"search_string"`
-	PharmacyTypes []string `json:"pharmacy_types"`
+	ZipcodeString string   `schema:"zipcode_string"`
+	PharmacyTypes []string `schema:"pharmacy_types"`
 }
 
 type DoctorPharmacySearchResponse struct {
@@ -23,9 +24,9 @@ type DoctorPharmacySearchResponse struct {
 }
 
 func (d *DoctorPharmacySearchHandler) ServeHTTP(w http.ResponseWriter, r *http.Request) {
-
+	r.ParseForm()
 	requestData := &DoctorPharmacySearchRequestData{}
-	if err := json.NewDecoder(r.Body).Decode(requestData); err != nil {
+	if err := schema.NewDecoder().Decode(requestData, r.Form); err != nil {
 		WriteDeveloperError(w, http.StatusBadRequest, "Unable to parse input parameters: "+err.Error())
 		return
 	}
@@ -36,7 +37,7 @@ func (d *DoctorPharmacySearchHandler) ServeHTTP(w http.ResponseWriter, r *http.R
 		return
 	}
 
-	pharmacyResults, err := d.ErxApi.SearchForPharmacies(doctor.DoseSpotClinicianId, "", "", requestData.SearchString, "", requestData.PharmacyTypes)
+	pharmacyResults, err := d.ErxApi.SearchForPharmacies(doctor.DoseSpotClinicianId, "", "", requestData.ZipcodeString, "", requestData.PharmacyTypes)
 	if err != nil {
 		WriteDeveloperError(w, http.StatusInternalServerError, "Unable to search for pharmacies: "+err.Error())
 		return
