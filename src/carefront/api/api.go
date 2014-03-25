@@ -121,7 +121,7 @@ type PatientVisitAPI interface {
 	CreateAdviceForPatientVisit(advicePoints []*common.DoctorInstructionItem, treatmentPlanId int64) error
 	CreateRegimenPlanForPatientVisit(regimenPlan *common.RegimenPlan) error
 	GetRegimenPlanForPatientVisit(patientVisitId, treatmentPlanId int64) (regimenPlan *common.RegimenPlan, err error)
-	AddTreatmentsForPatientVisit(treatments []*common.Treatment, doctorId, treatmentPlanId int64) error
+	AddTreatmentsForPatientVisit(treatments []*common.Treatment, doctorId, treatmentPlanId, patientId int64) error
 	GetTreatmentsBasedOnTreatmentPlanId(patientVisitId, treatmentPlanId int64) ([]*common.Treatment, error)
 	GetTreatmentBasedOnPrescriptionId(erxId int64) (*common.Treatment, error)
 	GetTreatmentsForPatient(patientId int64) ([]*common.Treatment, error)

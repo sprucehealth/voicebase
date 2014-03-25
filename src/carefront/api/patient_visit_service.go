@@ -604,7 +604,7 @@ func (d *DataService) GetRegimenPlanForPatientVisit(patientVisitId, treatmentPla
 	return &regimenPlan, nil
 }
 
-func (d *DataService) AddTreatmentsForPatientVisit(treatments []*common.Treatment, doctorId, treatmentPlanId int64) error {
+func (d *DataService) AddTreatmentsForPatientVisit(treatments []*common.Treatment, doctorId, treatmentPlanId, patientId int64) error {
 	tx, err := d.DB.Begin()
 	if err != nil {
 		return err
@@ -618,6 +618,7 @@ func (d *DataService) AddTreatmentsForPatientVisit(treatments []*common.Treatmen
 
 	for _, treatment := range treatments {
 		treatment.TreatmentPlanId = common.NewObjectId(treatmentPlanId)
+		treatment.PatientId = patientId
 		err = d.addTreatment(treatment, as_patient_treatment, tx)
 		if err != nil {
 			tx.Rollback()
