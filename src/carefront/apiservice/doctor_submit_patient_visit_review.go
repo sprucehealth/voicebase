@@ -155,7 +155,7 @@ func (d *DoctorSubmitPatientVisitReviewHandler) submitPatientVisitReview(w http.
 			}
 
 			// Save prescription ids for drugs to database
-			err = d.DataApi.MarkTreatmentsAsPrescriptionsSent(treatments, pharmacySelection, patientVisitReviewData.DoctorId, requestData.PatientVisitId)
+			err = d.DataApi.UpdateTreatmentWithPharmacyAndErxId(treatments, pharmacySelection, patientVisitReviewData.DoctorId)
 			if err != nil {
 				WriteDeveloperError(w, http.StatusInternalServerError, "Unable to save prescription ids for treatments: "+err.Error())
 				return
@@ -207,7 +207,6 @@ func (d *DoctorSubmitPatientVisitReviewHandler) submitPatientVisitReview(w http.
 				DoctorId:  patientVisitReviewData.DoctorId,
 			}); err != nil {
 				golog.Errorf("Unable to enqueue job to check status of erx. Not going to error out on this for the user because there is nothing the user can do about this: %+v", err)
-				return
 			}
 		}
 	}

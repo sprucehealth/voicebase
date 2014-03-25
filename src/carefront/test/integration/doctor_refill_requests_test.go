@@ -422,7 +422,7 @@ func TestApproveRefillRequestAndSuccessfulSendToPharmacy(t *testing.T) {
 	}
 
 	if refillRequest.RxHistory[0].Status != api.RX_REFILL_STATUS_APPROVED {
-		t.Fatalf("Expected the refill request status to be %s but was %s instead", api.RX_REFILL_STATUS_APPROVED, refillRequest.RxHistory[0].Status)
+		t.Fatalf("Expected the refill request status to be %s but was %s instead: %+v", api.RX_REFILL_STATUS_APPROVED, refillRequest.RxHistory[0].Status, refillRequest.RxHistory)
 	}
 
 	if refillRequest.ApprovedRefillAmount != approvedRefillAmount {
@@ -655,7 +655,7 @@ func TestApproveRefillRequestAndErrorSendingToPharmacy(t *testing.T) {
 	}
 
 	if refillRequest.RxHistory[0].Status != api.RX_REFILL_STATUS_APPROVED {
-		t.Fatalf("Expected the refill request status to be %s but was %s instead", api.RX_REFILL_STATUS_APPROVED, refillRequest.RxHistory[0].Status)
+		t.Fatalf("Expected the refill request status to be %s but was %s instead: %+v", api.RX_REFILL_STATUS_APPROVED, refillRequest.RxHistory[0].Status, refillRequest.RxHistory)
 	}
 
 	if refillRequest.ApprovedRefillAmount != approvedRefillAmount {
@@ -952,7 +952,7 @@ func TestDenyRefillRequestAndSuccessfulDelete(t *testing.T) {
 	}
 
 	if refillRequest.RxHistory[0].Status != api.RX_REFILL_STATUS_DENIED {
-		t.Fatalf("Expected the refill request status to be %s but was %s instead", api.RX_REFILL_STATUS_DENIED, refillRequest.RxHistory[0].Status)
+		t.Fatalf("Expected the refill request status to be %s but was %s instead: %+v", api.RX_REFILL_STATUS_DENIED, refillRequest.RxHistory[0].Status, refillRequest.RxHistory)
 	}
 
 	if refillRequest.Comments != comment {

@@ -5,8 +5,6 @@ import (
 	"carefront/common"
 	"carefront/libs/erx"
 	"encoding/json"
-	"errors"
-	"fmt"
 	"net/http"
 
 	"github.com/gorilla/schema"
@@ -146,8 +144,7 @@ func (t *TreatmentsHandler) addTreatment(w http.ResponseWriter, r *http.Request)
 
 	//  validate all treatments
 	for _, treatment := range treatmentsRequestBody.Treatments {
-		err = validateTreatment(treatment)
-		if err != nil {
+		if err := validateTreatment(treatment); err != nil {
 			WriteUserError(w, http.StatusBadRequest, err.Error())
 			return
 		}
@@ -155,26 +152,13 @@ func (t *TreatmentsHandler) addTreatment(w http.ResponseWriter, r *http.Request)
 		// break up the name into its components so that it can be saved into the database as its components
 		drugName, drugForm, drugRoute := breakDrugInternalNameIntoComponents(treatment.DrugInternalName)
 		treatment.DrugName = drugName
-		// only break down name into route and form if the route and form are non-empty strings
-		if drugForm != "" && drugRoute != "" {
-			treatment.DrugForm = drugForm
-			treatment.DrugRoute = drugRoute
-		}
+		treatment.DrugForm = drugForm
+		treatment.DrugRoute = drugRoute
 
-		if treatment.DoctorTreatmentTemplateId.Int64() != 0 {
-			// check to ensure that the drug is still in market; we do so by ensuring that we are still able
-			// to get back the drug db ids to identify this drug
-			medicationToCheck, err := t.ErxApi.SelectMedication(doctor.DoseSpotClinicianId, treatment.DrugInternalName, treatment.DosageStrength)
-			if err != nil {
-				WriteDeveloperError(w, http.StatusInternalServerError, "Unable to select medication to identify whether or not it is still available in the market: "+err.Error())
-				return
-			}
-
-			// if not, we cannot allow the doctor to prescribe this drug given that its no longer in market (a surescripts requirement)
-			if medicationToCheck == nil {
-				WriteUserError(w, http.StatusBadRequest, fmt.Sprintf("%s %s is no longer available and cannot be prescribed to the patient. We suggest that you remove this saved template from your list.", treatment.DrugInternalName, treatment.DosageStrength))
-				return
-			}
+		httpStatusCode, errorResponse := checkIfDrugInTreatmentFromTemplateIsOutOfMarket(treatment, doctor, t.ErxApi)
+		if errorResponse != nil {
+			WriteError(w, httpStatusCode, *errorResponse)
+			return
 		}
 	}
 
@@ -191,39 +175,4 @@ func (t *TreatmentsHandler) addTreatment(w http.ResponseWriter, r *http.Request)
 	}
 
 	WriteJSONToHTTPResponseWriter(w, http.StatusOK, &GetTreatmentsResponse{Treatments: treatments})
-}
-
-func validateTreatment(treatment *common.Treatment) error {
-	if treatment.DrugInternalName == "" {
-		return errors.New("Drug Internal name for treatment cannot be empty")
-	}
-
-	if treatment.DosageStrength == "" {
-		return errors.New("Dosage Strength for treatment cannot be empty")
-	}
-
-	if treatment.DispenseValue == 0 {
-		return errors.New("DispenseValue for treatment cannot be 0")
-	}
-
-	if treatment.DispenseUnitId.Int64() == 0 {
-		return errors.New("DispenseUnit	 Id for treatment cannot be 0")
-	}
-
-	if treatment.NumberRefills == 0 {
-		return errors.New("Number of refills for treatment cannot be 0")
-	}
-
-	if treatment.DaysSupply == 0 {
-		return errors.New("Days of Supply for treatment cannot be 0")
-	}
-
-	if treatment.PatientInstructions == "" {
-		return errors.New("Patient Instructions for treatment cannot be empty")
-	}
-
-	if treatment.DrugDBIds == nil || len(treatment.DrugDBIds) == 0 {
-		return errors.New("Drug DB Ids for treatment cannot be empty")
-	}
-	return nil
 }

@@ -7,7 +7,6 @@ import (
 	"errors"
 	"fmt"
 	"net/http"
-	"strings"
 )
 
 var (
@@ -83,26 +82,4 @@ func EnsurePatientVisitInExpectedStatus(DataApi api.DataAPI, patientVisitId int6
 		return fmt.Errorf("Unable to take intended action on the patient visit since it is not in the %s state. Current status: %s", expectedState, patientVisit.Status)
 	}
 	return nil
-}
-
-func breakDrugInternalNameIntoComponents(drugInternalName string) (drugName, drugForm, drugRoute string) {
-	indexOfParanthesis := strings.Index(drugInternalName, "(")
-	// nothing to do if the name is not in the required format.
-	// fail gracefully by returning the drug internal name for the drug name and
-	if indexOfParanthesis == -1 {
-		drugName = drugInternalName
-		return
-	}
-
-	indexOfClosingParanthesis := strings.Index(drugInternalName, ")")
-	indexOfHyphen := indexOfParanthesis + strings.Index(drugInternalName[indexOfParanthesis:], "-")
-	if indexOfHyphen == -1 || indexOfHyphen < indexOfParanthesis || indexOfHyphen > indexOfClosingParanthesis {
-		drugName = drugInternalName
-		return
-	}
-
-	drugName = strings.TrimSpace(drugInternalName[:indexOfParanthesis])
-	drugRoute = strings.TrimSpace(drugInternalName[indexOfParanthesis+1 : indexOfHyphen])
-	drugForm = strings.TrimSpace(drugInternalName[indexOfHyphen+1 : indexOfClosingParanthesis])
-	return
 }

@@ -23,6 +23,7 @@ const (
 	ERX_STATUS_DELETED                      = "Deleted"
 	ERX_STATUS_SEND_ERROR                   = "Send_Error"
 	ERX_STATUS_RESOLVED                     = "Resolved"
+	ERX_STATUS_NEW_RX_FROM_DNTF             = "NewRxFromDNTF"
 	treatment_otc                           = "OTC"
 	treatment_rx                            = "RX"
 	RX_REFILL_STATUS_SENT                   = "RefillRxSent"

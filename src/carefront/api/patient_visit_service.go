@@ -680,7 +680,6 @@ func (d *DataService) addTreatment(treatment *common.Treatment, withoutLinkToTre
 		"patient_instructions":  treatment.PatientInstructions,
 		"pharmacy_notes":        treatment.PharmacyNotes,
 		"status":                STATUS_CREATED,
-		"patient_id":            treatment.PatientId,
 	}
 
 	if drugRouteId != 0 {
@@ -921,7 +920,7 @@ func (d *DataService) GetTreatmentFromId(treatmentId int64) (*common.Treatment, 
 	return treatments[0], nil
 }
 
-func (d *DataService) MarkTreatmentsAsPrescriptionsSent(treatments []*common.Treatment, pharmacySentTo *pharmacyService.PharmacyData, doctorId, patientVisitId int64) error {
+func (d *DataService) UpdateTreatmentWithPharmacyAndErxId(treatments []*common.Treatment, pharmacySentTo *pharmacyService.PharmacyData, doctorId int64) error {
 	tx, err := d.DB.Begin()
 	if err != nil {
 		return err
@@ -929,7 +928,7 @@ func (d *DataService) MarkTreatmentsAsPrescriptionsSent(treatments []*common.Tre
 
 	for _, treatment := range treatments {
 		if treatment.ERx.PrescriptionId.Int64() != 0 {
-			_, err = tx.Exec(`update treatment set erx_id = ?, pharmacy_id = ?, erx_sent_date=now() where id = ? and treatment_plan_id = ?`, treatment.ERx.PrescriptionId, pharmacySentTo.LocalId, treatment.Id, treatment.TreatmentPlanId)
+			_, err = tx.Exec(`update treatment set erx_id = ?, pharmacy_id = ?, erx_sent_date=now() where id = ?`, treatment.ERx.PrescriptionId, pharmacySentTo.LocalId, treatment.Id)
 			if err != nil {
 				tx.Rollback()
 				return err

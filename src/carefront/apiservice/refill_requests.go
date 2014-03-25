@@ -5,10 +5,9 @@ import (
 	"carefront/common"
 	"carefront/libs/erx"
 	"carefront/libs/golog"
+	"encoding/json"
 	"net/http"
 	"sort"
-
-	"github.com/gorilla/schema"
 )
 
 const (
@@ -38,11 +37,12 @@ type DoctorRefillRequestResponse struct {
 }
 
 type DoctorRefillRequestRequestData struct {
-	RefillRequestId      int64  `schema:"refill_request_id,required"`
-	DenialReasonId       int64  `schema:"denial_reason_id"`
-	Comments             string `schema:"comments"`
-	Action               string `schema:"action"`
-	ApprovedRefillAmount int64  `schema:"approved_refill_amount"`
+	RefillRequestId      *common.ObjectId  `json:"refill_request_id,required"`
+	DenialReasonId       *common.ObjectId  `json:"denial_reason_id"`
+	Comments             string            `json:"comments"`
+	Action               string            `json:"action"`
+	ApprovedRefillAmount int64             `json:"approved_refill_amount"`
+	Treatment            *common.Treatment `json:"new_treatment,omitempty"`
 }
 
 func (d *DoctorRefillRequestHandler) ServeHTTP(w http.ResponseWriter, r *http.Request) {
@@ -57,18 +57,13 @@ func (d *DoctorRefillRequestHandler) ServeHTTP(w http.ResponseWriter, r *http.Re
 }
 
 func (d *DoctorRefillRequestHandler) resolveRefillRequest(w http.ResponseWriter, r *http.Request) {
-	if err := r.ParseForm(); err != nil {
-		WriteDeveloperError(w, http.StatusInternalServerError, "Unable to parse input parameters: "+err.Error())
-		return
-	}
 
 	requestData := &DoctorRefillRequestRequestData{}
-	if err := schema.NewDecoder().Decode(requestData, r.Form); err != nil {
+	if err := json.NewDecoder(r.Body).Decode(requestData); err != nil {
 		WriteDeveloperError(w, http.StatusBadRequest, "Unable to parse input parameters: "+err.Error())
-		return
 	}
 
-	refillRequest, err := d.DataApi.GetRefillRequestFromId(requestData.RefillRequestId)
+	refillRequest, err := d.DataApi.GetRefillRequestFromId(requestData.RefillRequestId.Int64())
 	if err != nil {
 		WriteDeveloperError(w, http.StatusBadRequest, "Unable to get refill request from id: "+err.Error())
 		return
@@ -145,7 +140,7 @@ func (d *DoctorRefillRequestHandler) resolveRefillRequest(w http.ResponseWriter,
 
 		var denialReasonCode string
 		for _, denialReason := range denialReasons {
-			if denialReason.Id == requestData.DenialReasonId {
+			if denialReason.Id == requestData.DenialReasonId.Int64() {
 				denialReasonCode = denialReason.DenialCode
 				break
 			}
@@ -156,6 +151,91 @@ func (d *DoctorRefillRequestHandler) resolveRefillRequest(w http.ResponseWriter,
 			return
 		}
 
+		// if denial reason is DNTF then make sure that there is a treatment along with the denial request
+		if denialReasonCode == "DeniedNewRx" && requestData.Treatment == nil {
+			WriteDeveloperErrorWithCode(w, DEVELOPER_TREATMENT_MISSING_DNTF, http.StatusBadRequest, "Treatment missing when reason for denial selected as denied new request to follow.")
+			return
+		}
+
+		// validate the treatment
+		if err := validateTreatment(requestData.Treatment); err != nil {
+			WriteUserError(w, http.StatusBadRequest, err.Error())
+			return
+		}
+
+		// break up the name in its components
+		drugName, drugForm, drugRoute := breakDrugInternalNameIntoComponents(requestData.Treatment.DrugInternalName)
+		requestData.Treatment.DrugName = drugName
+		requestData.Treatment.DrugForm = drugForm
+		requestData.Treatment.DrugRoute = drugRoute
+
+		httpStatusCode, errorResponse := checkIfDrugInTreatmentFromTemplateIsOutOfMarket(requestData.Treatment, doctor, d.ErxApi)
+		if errorResponse != nil {
+			WriteError(w, httpStatusCode, *errorResponse)
+			return
+		}
+
+		if refillRequest.ReferenceNumber == "" {
+			WriteDeveloperError(w, http.StatusInternalServerError, "Cannot proceed with refill request denial as reference number for refill request is missing which is required to deny with new request to follow")
+			return
+		}
+
+		// assign the reference number to the treatment so that when it is added it is linked to the refill request
+		if requestData.Treatment.ERx == nil {
+			requestData.Treatment.ERx = &common.ERxData{}
+		}
+		requestData.Treatment.ERx.ErxReferenceNumber = refillRequest.ReferenceNumber
+
+		// add the treatment for the patient
+		if err := d.DataApi.AddTreatmentInEventOfDNTF(requestData.Treatment, doctor.DoctorId.Int64(), refillRequest.Patient.PatientId.Int64(), refillRequest.Id); err != nil {
+			WriteDeveloperError(w, http.StatusInternalServerError, "Unable to add treatment in event of DNTF: "+err.Error())
+			return
+		}
+
+		//  start prescribing
+		if err := d.ErxApi.StartPrescribingPatient(doctor.DoseSpotClinicianId, refillRequest.Patient, []*common.Treatment{requestData.Treatment}); err != nil {
+			WriteDeveloperError(w, http.StatusInternalServerError, "Unable to start prescribing to get back prescription id for treatment: "+err.Error())
+			return
+		}
+
+		// save prescription id for drug to database
+		if err := d.DataApi.UpdateTreatmentWithPharmacyAndErxId([]*common.Treatment{requestData.Treatment}, refillRequest.RequestedPrescription.ERx.Pharmacy, doctor.DoctorId.Int64()); err != nil {
+			WriteDeveloperError(w, http.StatusInternalServerError, "Unable to update treatment with erx id and pharmacy information for treatment: "+err.Error())
+			return
+		}
+
+		//  send prescription to pharmacy
+		unSuccesfulTreatmentIds, err := d.ErxApi.SendMultiplePrescriptions(doctor.DoseSpotClinicianId, refillRequest.Patient, []*common.Treatment{requestData.Treatment})
+		if err != nil {
+			WriteDeveloperError(w, http.StatusInternalServerError, "Unable to send prescription to pharmacy: "+err.Error())
+			return
+		}
+
+		// ensure its successful
+		for _, unSuccessfulTreatmentId := range unSuccesfulTreatmentIds {
+			if unSuccessfulTreatmentId == requestData.Treatment.Id.Int64() {
+				if err := d.DataApi.AddErxStatusEvent([]*common.Treatment{requestData.Treatment}, common.StatusEvent{Status: api.ERX_STATUS_SEND_ERROR}); err != nil {
+					WriteDeveloperError(w, http.StatusInternalServerError, "Unable to add an erx status event: "+err.Error())
+					return
+				}
+				WriteDeveloperError(w, http.StatusInternalServerError, "Unable to send prescription to pharmacy: "+err.Error())
+				return
+			}
+		}
+
+		if err := d.DataApi.AddErxStatusEvent([]*common.Treatment{requestData.Treatment}, common.StatusEvent{Status: api.ERX_STATUS_SENT}); err != nil {
+			WriteDeveloperError(w, http.StatusInternalServerError, "Unable to add status event for treatment: "+err.Error())
+			return
+		}
+
+		// queue up job for status checking
+		if err := queueUpJobForErxStatus(d.ErxStatusQueue, common.PrescriptionStatusCheckMessage{
+			PatientId: refillRequest.Patient.PatientId.Int64(),
+			DoctorId:  doctor.DoctorId.Int64(),
+		}); err != nil {
+			golog.Errorf("Unable to enqueue job to check status of erx for new rx after DNTF. Not going to error out on this for the user becuase there is nothing the user can do about this: %+v", err)
+		}
+
 		//  Deny the refill request
 		prescriptionId, err := d.ErxApi.DenyRefillRequest(doctor.DoseSpotClinicianId, refillRequest.RxRequestQueueItemId, denialReasonCode, requestData.Comments)
 		if err != nil {
@@ -164,7 +244,7 @@ func (d *DoctorRefillRequestHandler) resolveRefillRequest(w http.ResponseWriter,
 		}
 
 		//  Update the refill request with the reason for denial and the erxid returned
-		if err := d.DataApi.MarkRefillRequestAsDenied(prescriptionId, requestData.DenialReasonId, refillRequest.Id, requestData.Comments); err != nil {
+		if err := d.DataApi.MarkRefillRequestAsDenied(prescriptionId, requestData.DenialReasonId.Int64(), refillRequest.Id, requestData.Comments); err != nil {
 			WriteDeveloperError(w, http.StatusInternalServerError, "Unable to update the status of the refill request to denied: "+err.Error())
 			return
 		}
@@ -199,18 +279,12 @@ func (d *DoctorRefillRequestHandler) resolveRefillRequest(w http.ResponseWriter,
 }
 
 func (d *DoctorRefillRequestHandler) getRefillRequest(w http.ResponseWriter, r *http.Request) {
-	if err := r.ParseForm(); err != nil {
-		WriteDeveloperError(w, http.StatusBadRequest, "Unable to parse input parameters: "+err.Error())
-		return
-	}
-
 	requestData := &DoctorRefillRequestRequestData{}
-	if err := schema.NewDecoder().Decode(requestData, r.Form); err != nil {
+	if err := json.NewDecoder(r.Body).Decode(requestData); err != nil {
 		WriteDeveloperError(w, http.StatusBadRequest, "Unable to parse input parameters: "+err.Error())
-		return
 	}
 
-	refillRequest, err := d.DataApi.GetRefillRequestFromId(requestData.RefillRequestId)
+	refillRequest, err := d.DataApi.GetRefillRequestFromId(requestData.RefillRequestId.Int64())
 	if err != nil {
 		WriteDeveloperError(w, http.StatusInternalServerError, "Unable to get refill request based on id: "+err.Error())
 		return

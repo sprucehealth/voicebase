@@ -92,6 +92,7 @@ type PatientAPI interface {
 	GetCardFromId(cardId int64) (*common.Card, error)
 	UpdateDefaultAddressForPatient(patientId int64, address *common.Address) error
 	DeleteAddress(addressId int64) error
+	AddTreatmentInEventOfDNTF(treatment *common.Treatment, doctorId, patientId, refillRequestId int64) error
 }
 
 type PatientVisitAPI interface {
@@ -126,7 +127,7 @@ type PatientVisitAPI interface {
 	GetTreatmentBasedOnPrescriptionId(erxId int64) (*common.Treatment, error)
 	GetTreatmentsForPatient(patientId int64) ([]*common.Treatment, error)
 	GetTreatmentFromId(treatmentId int64) (*common.Treatment, error)
-	MarkTreatmentsAsPrescriptionsSent(treatments []*common.Treatment, pharmacySentTo *pharmacy.PharmacyData, doctorId, patientVisitId int64) error
+	UpdateTreatmentWithPharmacyAndErxId(treatments []*common.Treatment, pharmacySentTo *pharmacy.PharmacyData, doctorId int64) error
 	AddErxStatusEvent(treatments []*common.Treatment, prescriptionStatus common.StatusEvent) error
 	GetPrescriptionStatusEventsForPatient(patientId int64) ([]common.StatusEvent, error)
 	GetPrescriptionStatusEventsForTreatment(treatmentId int64) ([]common.StatusEvent, error)
