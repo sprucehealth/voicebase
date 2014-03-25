@@ -152,88 +152,91 @@ func (d *DoctorRefillRequestHandler) resolveRefillRequest(w http.ResponseWriter,
 		}
 
 		// if denial reason is DNTF then make sure that there is a treatment along with the denial request
-		if denialReasonCode == "DeniedNewRx" && requestData.Treatment == nil {
-			WriteDeveloperErrorWithCode(w, DEVELOPER_TREATMENT_MISSING_DNTF, http.StatusBadRequest, "Treatment missing when reason for denial selected as denied new request to follow.")
-			return
-		}
+		if denialReasonCode == "DeniedNewRx" {
 
-		// validate the treatment
-		if err := validateTreatment(requestData.Treatment); err != nil {
-			WriteUserError(w, http.StatusBadRequest, err.Error())
-			return
-		}
+			if requestData.Treatment == nil {
+				WriteDeveloperErrorWithCode(w, DEVELOPER_TREATMENT_MISSING_DNTF, http.StatusBadRequest, "Treatment missing when reason for denial selected as denied new request to follow.")
+				return
+			}
 
-		// break up the name in its components
-		drugName, drugForm, drugRoute := breakDrugInternalNameIntoComponents(requestData.Treatment.DrugInternalName)
-		requestData.Treatment.DrugName = drugName
-		requestData.Treatment.DrugForm = drugForm
-		requestData.Treatment.DrugRoute = drugRoute
+			// validate the treatment
+			if err := validateTreatment(requestData.Treatment); err != nil {
+				WriteUserError(w, http.StatusBadRequest, err.Error())
+				return
+			}
 
-		httpStatusCode, errorResponse := checkIfDrugInTreatmentFromTemplateIsOutOfMarket(requestData.Treatment, doctor, d.ErxApi)
-		if errorResponse != nil {
-			WriteError(w, httpStatusCode, *errorResponse)
-			return
-		}
+			// break up the name in its components
+			drugName, drugForm, drugRoute := breakDrugInternalNameIntoComponents(requestData.Treatment.DrugInternalName)
+			requestData.Treatment.DrugName = drugName
+			requestData.Treatment.DrugForm = drugForm
+			requestData.Treatment.DrugRoute = drugRoute
 
-		if refillRequest.ReferenceNumber == "" {
-			WriteDeveloperError(w, http.StatusInternalServerError, "Cannot proceed with refill request denial as reference number for refill request is missing which is required to deny with new request to follow")
-			return
-		}
+			httpStatusCode, errorResponse := checkIfDrugInTreatmentFromTemplateIsOutOfMarket(requestData.Treatment, doctor, d.ErxApi)
+			if errorResponse != nil {
+				WriteError(w, httpStatusCode, *errorResponse)
+				return
+			}
 
-		// assign the reference number to the treatment so that when it is added it is linked to the refill request
-		if requestData.Treatment.ERx == nil {
-			requestData.Treatment.ERx = &common.ERxData{}
-		}
-		requestData.Treatment.ERx.ErxReferenceNumber = refillRequest.ReferenceNumber
+			if refillRequest.ReferenceNumber == "" {
+				WriteDeveloperError(w, http.StatusInternalServerError, "Cannot proceed with refill request denial as reference number for refill request is missing which is required to deny with new request to follow")
+				return
+			}
 
-		// add the treatment for the patient
-		if err := d.DataApi.AddTreatmentInEventOfDNTF(requestData.Treatment, doctor.DoctorId.Int64(), refillRequest.Patient.PatientId.Int64(), refillRequest.Id); err != nil {
-			WriteDeveloperError(w, http.StatusInternalServerError, "Unable to add treatment in event of DNTF: "+err.Error())
-			return
-		}
+			// assign the reference number to the treatment so that when it is added it is linked to the refill request
+			if requestData.Treatment.ERx == nil {
+				requestData.Treatment.ERx = &common.ERxData{}
+			}
+			requestData.Treatment.ERx.ErxReferenceNumber = refillRequest.ReferenceNumber
 
-		//  start prescribing
-		if err := d.ErxApi.StartPrescribingPatient(doctor.DoseSpotClinicianId, refillRequest.Patient, []*common.Treatment{requestData.Treatment}); err != nil {
-			WriteDeveloperError(w, http.StatusInternalServerError, "Unable to start prescribing to get back prescription id for treatment: "+err.Error())
-			return
-		}
+			// add the treatment for the patient
+			if err := d.DataApi.AddTreatmentInEventOfDNTF(requestData.Treatment, doctor.DoctorId.Int64(), refillRequest.Patient.PatientId.Int64(), refillRequest.Id); err != nil {
+				WriteDeveloperError(w, http.StatusInternalServerError, "Unable to add treatment in event of DNTF: "+err.Error())
+				return
+			}
 
-		// save prescription id for drug to database
-		if err := d.DataApi.UpdateTreatmentWithPharmacyAndErxId([]*common.Treatment{requestData.Treatment}, refillRequest.RequestedPrescription.ERx.Pharmacy, doctor.DoctorId.Int64()); err != nil {
-			WriteDeveloperError(w, http.StatusInternalServerError, "Unable to update treatment with erx id and pharmacy information for treatment: "+err.Error())
-			return
-		}
+			//  start prescribing
+			if err := d.ErxApi.StartPrescribingPatient(doctor.DoseSpotClinicianId, refillRequest.Patient, []*common.Treatment{requestData.Treatment}); err != nil {
+				WriteDeveloperError(w, http.StatusInternalServerError, "Unable to start prescribing to get back prescription id for treatment: "+err.Error())
+				return
+			}
 
-		//  send prescription to pharmacy
-		unSuccesfulTreatmentIds, err := d.ErxApi.SendMultiplePrescriptions(doctor.DoseSpotClinicianId, refillRequest.Patient, []*common.Treatment{requestData.Treatment})
-		if err != nil {
-			WriteDeveloperError(w, http.StatusInternalServerError, "Unable to send prescription to pharmacy: "+err.Error())
-			return
-		}
+			// save prescription id for drug to database
+			if err := d.DataApi.UpdateTreatmentWithPharmacyAndErxId([]*common.Treatment{requestData.Treatment}, refillRequest.RequestedPrescription.ERx.Pharmacy, doctor.DoctorId.Int64()); err != nil {
+				WriteDeveloperError(w, http.StatusInternalServerError, "Unable to update treatment with erx id and pharmacy information for treatment: "+err.Error())
+				return
+			}
 
-		// ensure its successful
-		for _, unSuccessfulTreatmentId := range unSuccesfulTreatmentIds {
-			if unSuccessfulTreatmentId == requestData.Treatment.Id.Int64() {
-				if err := d.DataApi.AddErxStatusEvent([]*common.Treatment{requestData.Treatment}, common.StatusEvent{Status: api.ERX_STATUS_SEND_ERROR}); err != nil {
-					WriteDeveloperError(w, http.StatusInternalServerError, "Unable to add an erx status event: "+err.Error())
-					return
-				}
+			//  send prescription to pharmacy
+			unSuccesfulTreatmentIds, err := d.ErxApi.SendMultiplePrescriptions(doctor.DoseSpotClinicianId, refillRequest.Patient, []*common.Treatment{requestData.Treatment})
+			if err != nil {
 				WriteDeveloperError(w, http.StatusInternalServerError, "Unable to send prescription to pharmacy: "+err.Error())
 				return
 			}
-		}
 
-		if err := d.DataApi.AddErxStatusEvent([]*common.Treatment{requestData.Treatment}, common.StatusEvent{Status: api.ERX_STATUS_SENT}); err != nil {
-			WriteDeveloperError(w, http.StatusInternalServerError, "Unable to add status event for treatment: "+err.Error())
-			return
-		}
+			// ensure its successful
+			for _, unSuccessfulTreatmentId := range unSuccesfulTreatmentIds {
+				if unSuccessfulTreatmentId == requestData.Treatment.Id.Int64() {
+					if err := d.DataApi.AddErxStatusEvent([]*common.Treatment{requestData.Treatment}, common.StatusEvent{Status: api.ERX_STATUS_SEND_ERROR}); err != nil {
+						WriteDeveloperError(w, http.StatusInternalServerError, "Unable to add an erx status event: "+err.Error())
+						return
+					}
+					WriteDeveloperError(w, http.StatusInternalServerError, "Unable to send prescription to pharmacy: "+err.Error())
+					return
+				}
+			}
 
-		// queue up job for status checking
-		if err := queueUpJobForErxStatus(d.ErxStatusQueue, common.PrescriptionStatusCheckMessage{
-			PatientId: refillRequest.Patient.PatientId.Int64(),
-			DoctorId:  doctor.DoctorId.Int64(),
-		}); err != nil {
-			golog.Errorf("Unable to enqueue job to check status of erx for new rx after DNTF. Not going to error out on this for the user becuase there is nothing the user can do about this: %+v", err)
+			if err := d.DataApi.AddErxStatusEvent([]*common.Treatment{requestData.Treatment}, common.StatusEvent{Status: api.ERX_STATUS_SENT}); err != nil {
+				WriteDeveloperError(w, http.StatusInternalServerError, "Unable to add status event for treatment: "+err.Error())
+				return
+			}
+
+			// queue up job for status checking
+			if err := queueUpJobForErxStatus(d.ErxStatusQueue, common.PrescriptionStatusCheckMessage{
+				PatientId: refillRequest.Patient.PatientId.Int64(),
+				DoctorId:  doctor.DoctorId.Int64(),
+			}); err != nil {
+				golog.Errorf("Unable to enqueue job to check status of erx for new rx after DNTF. Not going to error out on this for the user becuase there is nothing the user can do about this: %+v", err)
+			}
 		}
 
 		//  Deny the refill request
