@@ -5,6 +5,7 @@ import (
 	"flag"
 	"fmt"
 	"log"
+	"math/rand"
 	"sort"
 	"strconv"
 	"strings"
@@ -218,6 +219,9 @@ func (h *handler) Handle(parts syslogparser.LogParts) {
 
 func startPeriodicCleanup(es *ElasticSearch, days int) {
 	go func() {
+		// Sleep a random duration so that if there's multiple of these processes
+		// they don't try to run at the same time.
+		time.Sleep(time.Duration(rand.Intn(2*60*60)) * time.Second)
 		for {
 			aliases, err := es.Aliases()
 			if err != nil {
