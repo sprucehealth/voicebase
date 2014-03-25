@@ -98,7 +98,7 @@ func TestNewRefillRequestForExistingPatientAndExistingTreatment(t *testing.T) {
 	}
 
 	// add this treatment to the treatment plan
-	err = testData.DataApi.AddTreatmentsForPatientVisit([]*common.Treatment{treatment1}, doctor.DoctorId.Int64(), treatmentPlanId)
+	err = testData.DataApi.AddTreatmentsForPatientVisit([]*common.Treatment{treatment1}, doctor.DoctorId.Int64(), treatmentPlanId, signedupPatientResponse.Patient.PatientId.Int64())
 	if err != nil {
 		t.Fatal("Unable to add treatment for patient visit: " + err.Error())
 	}
@@ -1401,7 +1401,7 @@ func TestRefillRequestComingFromDifferentPharmacyThanDispensedPrescription(t *te
 	}
 
 	// add this treatment to the treatment plan
-	err = testData.DataApi.AddTreatmentsForPatientVisit([]*common.Treatment{treatment1}, doctor.DoctorId.Int64(), treatmentPlanId)
+	err = testData.DataApi.AddTreatmentsForPatientVisit([]*common.Treatment{treatment1}, doctor.DoctorId.Int64(), treatmentPlanId, signedupPatientResponse.Patient.PatientId.Int64())
 	if err != nil {
 		t.Fatal("Unable to add treatment for patient visit: " + err.Error())
 	}
