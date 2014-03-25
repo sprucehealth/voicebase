@@ -152,7 +152,7 @@ func (d *DoctorRefillRequestHandler) resolveRefillRequest(w http.ResponseWriter,
 		}
 
 		// if denial reason is DNTF then make sure that there is a treatment along with the denial request
-		if denialReasonCode == "DeniedNewRx" {
+		if denialReasonCode == api.RX_REFILL_DNTF_REASON_CODE {
 
 			if requestData.Treatment == nil {
 				WriteDeveloperErrorWithCode(w, DEVELOPER_TREATMENT_MISSING_DNTF, http.StatusBadRequest, "Treatment missing when reason for denial selected as denied new request to follow.")

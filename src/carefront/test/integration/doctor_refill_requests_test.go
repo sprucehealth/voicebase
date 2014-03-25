@@ -1035,6 +1035,189 @@ func TestDenyRefillRequestAndSuccessfulDelete(t *testing.T) {
 	}
 }
 
+func TestDenyRefillRequestWithDNTFWithoutTreatment(t *testing.T) {
+	if err := CheckIfRunningLocally(t); err == CannotRunTestLocally {
+		return
+	}
+	testData := SetupIntegrationTest(t)
+	defer TearDownIntegrationTest(t, testData)
+
+	// create doctor with clinicianId specicified
+	doctor := createDoctorWithClinicianId(testData, t)
+
+	// add pharmacy to database so that it can be linked to treatment that is added
+	//  Get StubErx to return pharmacy in the GetPharmacyDetails call
+	pharmacyToReturn := &pharmacy.PharmacyData{
+		SourceId:     "1234",
+		Source:       pharmacy.PHARMACY_SOURCE_SURESCRIPTS,
+		Name:         "Walgreens",
+		AddressLine1: "116 New Montgomery",
+		City:         "San Francisco",
+		State:        "CA",
+		Postal:       "94115",
+	}
+
+	// Get StubErx to return patient details in the GetPatientDetails call
+	patientToReturn := &common.Patient{
+		FirstName:    "Test",
+		LastName:     "TestLastName",
+		Dob:          time.Now(),
+		Email:        "test@test.com",
+		Gender:       "male",
+		ZipCode:      "90210",
+		City:         "Beverly Hills",
+		State:        "CA",
+		ERxPatientId: common.NewObjectId(12345),
+	}
+
+	err := testData.DataApi.AddPharmacy(pharmacyToReturn)
+	if err != nil {
+		t.Fatal("Unable to store pharmacy in db: " + err.Error())
+	}
+
+	testTime := time.Now()
+
+	prescriptionIdForRequestedPrescription := int64(123456)
+	fiveMinutesBeforeTestTime := testTime.Add(-5 * time.Minute)
+	refillRequestQueueItemId := int64(12345)
+	// Get StubErx to return refill requests in the refillRequest call
+	refillRequestItem := &common.RefillRequestItem{
+		RxRequestQueueItemId:      refillRequestQueueItemId,
+		ReferenceNumber:           "TestReferenceNumber",
+		PharmacyRxReferenceNumber: "TestRxReferenceNumber",
+		ErxPatientId:              12345,
+		PatientAddedForRequest:    true,
+		RequestDateStamp:          testTime,
+		ClinicianId:               clinicianId,
+		RequestedPrescription: &common.Treatment{
+			DrugDBIds: map[string]string{
+				erx.LexiDrugSynId:     "1234",
+				erx.LexiGenProductId:  "12345",
+				erx.LexiSynonymTypeId: "123556",
+				erx.NDC:               "2415",
+			},
+			DosageStrength:       "10 mg",
+			DispenseValue:        5,
+			OTC:                  false,
+			SubstitutionsAllowed: true,
+			ERx: &common.ERxData{
+				ErxSentDate:         &fiveMinutesBeforeTestTime,
+				DoseSpotClinicianId: clinicianId,
+				PrescriptionId:      common.NewObjectId(prescriptionIdForRequestedPrescription),
+				ErxPharmacyId:       1234,
+			},
+		},
+		DispensedPrescription: &common.Treatment{
+			DrugDBIds: map[string]string{
+				"drug_db_id_1": "1234",
+				"drug_db_id_2": "12345",
+			},
+			DrugName:                "Teting (This - Drug)",
+			DosageStrength:          "10 mg",
+			DispenseValue:           5,
+			DispenseUnitDescription: "Tablet",
+			NumberRefills:           5,
+			SubstitutionsAllowed:    false,
+			DaysSupply:              10,
+			PatientInstructions:     "Take once daily",
+			OTC:                     false,
+			ERx: &common.ERxData{
+				ErxLastDateFilled:   &testTime,
+				PrescriptionId:      common.NewObjectId(5504),
+				PrescriptionStatus:  "Requested",
+				ErxPharmacyId:       1234,
+				DoseSpotClinicianId: clinicianId,
+			},
+		},
+	}
+
+	stubErxAPI := &erx.StubErxService{
+		PharmacyDetailsToReturn:      pharmacyToReturn,
+		PatientDetailsToReturn:       patientToReturn,
+		RefillRxRequestQueueToReturn: []*common.RefillRequestItem{refillRequestItem},
+	}
+
+	// Call the Consume method
+	app_worker.PerformRefillRecquestCheckCycle(testData.DataApi, stubErxAPI, metrics.NewCounter(), metrics.NewCounter(), "test")
+
+	refillRequestStatuses, err := testData.DataApi.GetPendingRefillRequestStatusEventsForClinic()
+	if err != nil {
+		t.Fatal("Unable to successfully get the pending refill requests stauses from the db: " + err.Error())
+	}
+
+	refillRequest, err := testData.DataApi.GetRefillRequestFromId(refillRequestStatuses[0].ItemId)
+	if err != nil {
+		t.Fatal("Unable to get refill request that was just added: ", err.Error())
+	}
+
+	denialReasons, err := testData.DataApi.GetRefillRequestDenialReasons()
+	if err != nil || len(denialReasons) == 0 {
+		t.Fatal("Unable to get the denial reasons for the refill request")
+	}
+
+	var dntfReason *api.RefillRequestDenialReason
+	for _, denialReason := range denialReasons {
+		if denialReason.DenialCode == api.RX_REFILL_DNTF_REASON_CODE {
+			dntfReason = denialReason
+			break
+		}
+	}
+
+	if dntfReason == nil {
+		t.Fatal("Unable to find DNTF reason in database: " + err.Error())
+	}
+
+	erxStatusQueue := &common.SQSQueue{}
+	erxStatusQueue.QueueService = &sqs.StubSQS{}
+	erxStatusQueue.QueueUrl = "local-erx"
+
+	// now, lets go ahead and attempt to deny this refill request
+	comment := "this is a test"
+	requestData := apiservice.DoctorRefillRequestRequestData{
+		RefillRequestId: common.NewObjectId(refillRequest.Id),
+		Action:          "deny",
+		DenialReasonId:  common.NewObjectId(dntfReason.Id),
+		Comments:        comment,
+	}
+
+	doctorRefillRequestsHandler := &apiservice.DoctorRefillRequestHandler{
+		DataApi:        testData.DataApi,
+		ErxApi:         stubErxAPI,
+		ErxStatusQueue: erxStatusQueue,
+	}
+
+	// sleep for a brief moment before denyingh so that
+	// the items are ordered correctly for the rx history (in the real world they would not be approved in the same exact millisecond they are sent in)
+	time.Sleep(1 * time.Second)
+
+	ts := httptest.NewServer(doctorRefillRequestsHandler)
+	defer ts.Close()
+
+	jsonData, err := json.Marshal(requestData)
+	if err != nil {
+		t.Fatal("Unable to marshal json into object: " + err.Error())
+	}
+
+	resp, err := authPut(ts.URL, "application/json", bytes.NewReader(jsonData), doctor.AccountId.Int64())
+	if err != nil {
+		t.Fatal("Unable to make successful request to approve refill request: " + err.Error())
+	}
+
+	if resp.StatusCode != http.StatusBadRequest {
+		t.Fatalf("Expected %d due to missing treatment object instead got %d ", http.StatusBadRequest, resp.StatusCode)
+	}
+
+	errorResponse := apiservice.ErrorResponse{}
+	if err := json.NewDecoder(resp.Body).Decode(&errorResponse); err != nil {
+		t.Fatal("Unable to unmarshal response body into json object: " + err.Error())
+	}
+
+	if errorResponse.DeveloperCode != apiservice.DEVELOPER_TREATMENT_MISSING_DNTF {
+		t.Fatalf("Expected developer code of %d instead got %d", apiservice.DEVELOPER_TREATMENT_MISSING_DNTF, errorResponse.DeveloperCode)
+	}
+
+}
+
 func TestCheckingStatusOfMultipleRefillRequestsAtOnce(t *testing.T) {
 	if err := CheckIfRunningLocally(t); err == CannotRunTestLocally {
 		return

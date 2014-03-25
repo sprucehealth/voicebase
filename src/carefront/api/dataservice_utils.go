@@ -33,6 +33,7 @@ const (
 	RX_REFILL_STATUS_REQUESTED              = "RefillRxRequested"
 	RX_REFILL_STATUS_APPROVED               = "RefillRxApproved"
 	RX_REFILL_STATUS_DENIED                 = "RefillRxDenied"
+	RX_REFILL_DNTF_REASON_CODE              = "DeniedNewRx"
 	dr_drug_supplemental_instruction_table  = "dr_drug_supplemental_instruction"
 	dr_regimen_step_table                   = "dr_regimen_step"
 	dr_advice_point_table                   = "dr_advice_point"
