@@ -5,6 +5,7 @@ import (
 	"flag"
 	"fmt"
 	"log"
+	"sort"
 	"strconv"
 	"strings"
 	"time"
@@ -16,8 +17,9 @@ import (
 // http://tools.ietf.org/html/rfc5424
 
 var (
-	flagCloudTrail  = flag.Bool("cloudtrail", false, "Enable CloudTrail log indexing")
 	flagArchiveLogs = flag.Bool("archive", false, "Enable log archiving to S3")
+	flagCloudTrail  = flag.Bool("cloudtrail", false, "Enable CloudTrail log indexing")
+	flagRetainDays  = flag.Int("retaindays", 60, "Number of days of indexes to retain")
 )
 
 type Facility int
@@ -214,6 +216,33 @@ func (h *handler) Handle(parts syslogparser.LogParts) {
 	}
 }
 
+func startPeriodicCleanup(es *ElasticSearch, days int) {
+	go func() {
+		for {
+			aliases, err := es.Aliases()
+			if err != nil {
+				log.Printf("Failed to get index aliases: %s", err.Error())
+			} else {
+				var indexList []string
+				for index := range aliases {
+					if len(index) == 14 && strings.HasPrefix(index, "log-") {
+						indexList = append(indexList, index)
+					}
+				}
+				sort.Strings(indexList)
+				if len(indexList) > days {
+					for _, index := range indexList[:len(indexList)-days] {
+						if err := es.DeleteIndex(index); err != nil {
+							log.Printf("Failed to delete index %s: %s", index, err.Error())
+						}
+					}
+				}
+			}
+			time.Sleep(time.Hour * 24)
+		}
+	}()
+}
+
 func main() {
 	flag.Parse()
 
@@ -225,6 +254,10 @@ func main() {
 
 	es := &ElasticSearch{
 		Endpoint: "http://127.0.0.1:9200",
+	}
+
+	if *flagRetainDays > 0 {
+		startPeriodicCleanup(es, *flagRetainDays)
 	}
 
 	if *flagCloudTrail {
