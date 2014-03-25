@@ -16,7 +16,7 @@ type DoctorPharmacySearchHandler struct {
 
 type DoctorPharmacySearchRequestData struct {
 	ZipcodeString string   `schema:"zipcode_string"`
-	PharmacyTypes []string `schema:"pharmacy_types"`
+	PharmacyTypes []string `schema:"pharmacy_types[]"`
 }
 
 type DoctorPharmacySearchResponse struct {
