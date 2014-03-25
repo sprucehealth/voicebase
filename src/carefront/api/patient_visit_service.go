@@ -697,6 +697,7 @@ func (d *DataService) addTreatment(treatment *common.Treatment, withoutLinkToTre
 		if treatment.TreatmentPlanId != nil && treatment.TreatmentPlanId.Int64() != 0 {
 			columnsAndData["treatment_plan_id"] = treatment.TreatmentPlanId.Int64()
 		}
+		columnsAndData["patient_id"] = treatment.PatientId
 	}
 
 	columns, values := getKeysAndValuesFromMap(columnsAndData)
@@ -1095,6 +1096,14 @@ func (d *DataService) getTreatmentAndMetadataFromCurrentRow(rows *sql.Rows) (*co
 
 	if pharmacyId.Valid || prescriptionId.Valid || erxSentDate.Valid {
 		treatment.ERx = &common.ERxData{}
+	}
+
+	if treatmentPlanId.Valid {
+		treatment.TreatmentPlanId = common.NewObjectId(treatmentPlanId.Int64)
+	}
+
+	if patientVisitId.Valid {
+		treatment.PatientVisitId = common.NewObjectId(patientVisitId.Int64)
 	}
 
 	if treatmentPlanId.Valid {
