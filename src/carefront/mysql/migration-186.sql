@@ -1,4 +1,3 @@
-
 create table unlinked_dntf_treatment (
 	id int unsigned not null auto_increment,
 	drug_internal_name varchar(250) not null,
@@ -63,4 +62,3 @@ create table dntf_mapping (
 	foreign key (unlinked_dntf_treatment_id) references unlinked_dntf_treatment(id),
 	primary key(id)
 ) character set utf8;
-
