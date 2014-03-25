@@ -941,6 +941,42 @@ func (d *DataService) DeletePendingTask(pendingTaskId int64) error {
 	return err
 }
 
+func (d *DataService) AddTreatmentInEventOfDNTF(treatment *common.Treatment, doctorId, patientId, refillRequestId int64) error {
+	tx, err := d.DB.Begin()
+	if err != nil {
+		return err
+	}
+
+	treatment.PatientId = patientId
+	treatment.DoctorId = doctorId
+	if err := d.addTreatment(treatment, as_patient_treatment, tx); err != nil {
+		tx.Rollback()
+		return err
+	}
+
+	if treatment.DoctorTreatmentTemplateId.Int64() != 0 {
+		_, err = tx.Exec(`insert into treatment_dr_template_selection (treatment_id, dr_treatment_template_id) values (?,?)`, treatment.Id, treatment.DoctorTreatmentTemplateId)
+		if err != nil {
+			tx.Rollback()
+			return err
+		}
+	}
+
+	_, err = tx.Exec(`insert into erx_status_events (treatment_id, erx_status, status) values (?,?,?)`, treatment.Id.Int64(), ERX_STATUS_NEW_RX_FROM_DNTF, STATUS_ACTIVE)
+	if err != nil {
+		tx.Rollback()
+		return err
+	}
+
+	_, err = tx.Exec(`insert into dntf_mapping (treatment_id, rx_refill_request_id) values (?,?)`, treatment.Id.Int64(), refillRequestId)
+	if err != nil {
+		tx.Rollback()
+		return err
+	}
+
+	return tx.Commit()
+}
+
 func (d *DataService) getPatientBasedOnQuery(queryStr string, queryParams ...interface{}) ([]*common.Patient, error) {
 	rows, err := d.DB.Query(queryStr, queryParams...)
 	if err != nil {

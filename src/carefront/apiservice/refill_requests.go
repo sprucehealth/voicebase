@@ -11,6 +11,10 @@ import (
 	"sort"
 	"strconv"
 
+	"encoding/json"
+	"net/http"
+	"sort"
+
 	"github.com/gorilla/schema"
 )
 
@@ -69,7 +73,6 @@ func (d *DoctorRefillRequestHandler) resolveRefillRequest(w http.ResponseWriter,
 	requestData := &DoctorRefillRequestRequestData{}
 	if err := json.NewDecoder(r.Body).Decode(requestData); err != nil {
 		WriteDeveloperError(w, http.StatusBadRequest, "Unable to parse input parameters: "+err.Error())
-		return
 	}
 
 	refillRequest, err := d.DataApi.GetRefillRequestFromId(requestData.RefillRequestId.Int64())
@@ -334,7 +337,6 @@ func (d *DoctorRefillRequestHandler) getRefillRequest(w http.ResponseWriter, r *
 	requestData := &DoctorGetRefillRequestData{}
 	if err := schema.NewDecoder().Decode(requestData, r.Form); err != nil {
 		WriteDeveloperError(w, http.StatusBadRequest, "Unable to parse input parameters: "+err.Error())
-		return
 	}
 
 	refillRequestId, err := strconv.ParseInt(requestData.RefillRequestId, 10, 64)
