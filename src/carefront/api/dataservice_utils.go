@@ -44,8 +44,8 @@ const (
 	table_name_treatment                    = "treatment"
 	table_name_pharmacy_dispensed_treatment = "pharmacy_dispensed_treatment"
 	table_name_requested_treatment          = "requested_treatment"
-	without_link_to_treatment_plan          = true
-	with_link_to_treatment_plan             = false
+	as_doctor_template                      = true
+	as_patient_treatment                    = false
 	address_usa                             = "USA"
 	PENDING_TASK_PATIENT_CARD               = "PATIENT_CARD"
 )

@@ -591,7 +591,7 @@ func (d *DataService) AddTreatmentTemplates(doctorTreatmentTemplates []*common.D
 			treatmentIdInPatientTreatmentPlan = doctorTreatmentTemplate.Treatment.Id.Int64()
 		}
 
-		err = d.addTreatment(doctorTreatmentTemplate.Treatment, without_link_to_treatment_plan, tx)
+		err = d.addTreatment(doctorTreatmentTemplate.Treatment, as_doctor_template, tx)
 		if err != nil {
 			tx.Rollback()
 			return err
