@@ -15,7 +15,6 @@ import (
 	"net/http"
 	"net/http/httptest"
 	"net/url"
-	"strconv"
 	"strings"
 	"testing"
 	"time"
@@ -1600,11 +1599,12 @@ func TestCheckingStatusOfMultipleRefillRequestsAtOnce(t *testing.T) {
 
 	// lets go ahead and approve this refill request
 	comment := "this is a test"
-	params := url.Values{}
-	params.Set("action", "approve")
-	params.Set("refill_request_id", strconv.FormatInt(refillRequest.Id, 10))
-	params.Set("approved_refill_amount", strconv.FormatInt(approvedRefillAmount, 10))
-	params.Set("comments", comment)
+	requestData := apiservice.DoctorRefillRequestRequestData{
+		RefillRequestId:      common.NewObjectId(refillRequest.Id),
+		Action:               "approve",
+		ApprovedRefillAmount: approvedRefillAmount,
+		Comments:             comment,
+	}
 
 	erxStatusQueue := &common.SQSQueue{}
 
@@ -1625,7 +1625,12 @@ func TestCheckingStatusOfMultipleRefillRequestsAtOnce(t *testing.T) {
 	ts := httptest.NewServer(doctorRefillRequestsHandler)
 	defer ts.Close()
 
-	resp, err := authPut(ts.URL, "application/x-www-form-urlencoded", bytes.NewBufferString(params.Encode()), doctor.AccountId.Int64())
+	jsonData, err := json.Marshal(&requestData)
+	if err != nil {
+		t.Fatalf("Unable to marshal json object: %+v", err)
+	}
+
+	resp, err := authPut(ts.URL, "application/json", bytes.NewReader(jsonData), doctor.AccountId.Int64())
 	if err != nil {
 		t.Fatal("Unable to make successful request to approve refill request: " + err.Error())
 	}
@@ -1686,10 +1691,14 @@ func TestCheckingStatusOfMultipleRefillRequestsAtOnce(t *testing.T) {
 
 	// go ahead and approve all remaining refill requests
 	for i := 0; i < len(refillRequestStatuses); i++ {
-		params.Del("refill_request_id")
-		params.Set("refill_request_id", strconv.FormatInt(refillRequestStatuses[i].ItemId, 10))
 
-		resp, err = authPut(ts.URL, "application/x-www-form-urlencoded", bytes.NewBufferString(params.Encode()), doctor.AccountId.Int64())
+		requestData.RefillRequestId = common.NewObjectId(refillRequestStatuses[i].ItemId)
+		jsonData, err = json.Marshal(&requestData)
+		if err != nil {
+			t.Fatalf("Unable to marshal json object: %+v", err)
+		}
+
+		resp, err = authPut(ts.URL, "application/x-www-form-urlencoded", bytes.NewReader(jsonData), doctor.AccountId.Int64())
 		if err != nil {
 			t.Fatal("Unable to make successful request to approve refill request: " + err.Error())
 		}
