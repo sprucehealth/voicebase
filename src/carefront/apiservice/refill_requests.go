@@ -70,6 +70,7 @@ func (d *DoctorRefillRequestHandler) resolveRefillRequest(w http.ResponseWriter,
 	requestData := &DoctorRefillRequestRequestData{}
 	if err := json.NewDecoder(r.Body).Decode(requestData); err != nil {
 		WriteDeveloperError(w, http.StatusBadRequest, "Unable to parse input parameters: "+err.Error())
+		return
 	}
 
 	refillRequest, err := d.DataApi.GetRefillRequestFromId(requestData.RefillRequestId.Int64())
