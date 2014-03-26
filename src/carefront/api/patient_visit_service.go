@@ -618,7 +618,6 @@ func (d *DataService) AddTreatmentsForPatientVisit(treatments []*common.Treatmen
 
 	for _, treatment := range treatments {
 		treatment.TreatmentPlanId = common.NewObjectId(treatmentPlanId)
-		treatment.PatientId = patientId
 		err = d.addTreatment(treatment, as_patient_treatment, tx)
 		if err != nil {
 			tx.Rollback()
@@ -675,7 +674,7 @@ func (d *DataService) addTreatment(treatment *common.Treatment, withoutLinkToTre
 		"dispense_value":        treatment.DispenseValue,
 		"dispense_unit_id":      treatment.DispenseUnitId,
 		"refills":               treatment.NumberRefills,
-		"substitutions_allowed": substitutionsAllowedBit,
+		"substitutions_allowed": treatment.SubstitutionsAllowed,
 		"days_supply":           treatment.DaysSupply,
 		"patient_instructions":  treatment.PatientInstructions,
 		"pharmacy_notes":        treatment.PharmacyNotes,
@@ -698,7 +697,6 @@ func (d *DataService) addTreatment(treatment *common.Treatment, withoutLinkToTre
 		if treatment.TreatmentPlanId != nil && treatment.TreatmentPlanId.Int64() != 0 {
 			columnsAndData["treatment_plan_id"] = treatment.TreatmentPlanId.Int64()
 		}
-		columnsAndData["patient_id"] = treatment.PatientId
 	}
 
 	columns, values := getKeysAndValuesFromMap(columnsAndData)
@@ -737,10 +735,11 @@ func (d *DataService) GetTreatmentsBasedOnTreatmentPlanId(patientVisitId, treatm
 			treatment.dispense_value, treatment.dispense_unit_id, ltext, treatment.refills, treatment.substitutions_allowed, 
 			treatment.days_supply, treatment.pharmacy_id, treatment.pharmacy_notes, treatment.patient_instructions, treatment.creation_date, treatment.erx_sent_date,
 			treatment.erx_last_filled_date, treatment.status, drug_name.name, drug_route.name, drug_form.name,
-			patient_id, treatment_plan.patient_visit_id, treatment_plan.doctor_id from treatment 
+			patient_visit.patient_id, treatment_plan.patient_visit_id, treatment_plan.doctor_id from treatment 
 				inner join dispense_unit on treatment.dispense_unit_id = dispense_unit.id
 				inner join localized_text on localized_text.app_text_id = dispense_unit.dispense_unit_text_id
 				inner join treatment_plan on treatment_plan.id = treatment.treatment_plan_id
+				inner join patient_visit on treatment_plan.patient_visit_id = patient_visit.id
 				left outer join drug_name on drug_name_id = drug_name.id
 				left outer join drug_route on drug_route_id = drug_route.id
 				left outer join drug_form on drug_form_id = drug_form.id
@@ -804,9 +803,10 @@ func (d *DataService) GetTreatmentsForPatient(patientId int64) ([]*common.Treatm
 			treatment.dispense_value, treatment.dispense_unit_id, ltext, treatment.refills, treatment.substitutions_allowed, 
 			treatment.days_supply, treatment.pharmacy_id, treatment.pharmacy_notes, treatment.patient_instructions, treatment.creation_date, treatment.erx_sent_date,
 			treatment.erx_last_filled_date, treatment.status, drug_name.name, drug_route.name, drug_form.name,
-			patient_id, treatment_plan.patient_visit_id, treatment_plan.doctor_id from treatment 
+			patient_visit.patient_id, treatment_plan.patient_visit_id, treatment_plan.doctor_id from treatment 
 				inner join dispense_unit on treatment.dispense_unit_id = dispense_unit.id
 				inner join localized_text on localized_text.app_text_id = dispense_unit.dispense_unit_text_id
+				inner join patient_visit on treatment_plan.patient_visit_id = patient_visit.id
 				left outer join treatment_plan on treatment_plan.id = treatment.treatment_plan_id
 				left outer join drug_name on drug_name_id = drug_name.id
 				left outer join drug_route on drug_route_id = drug_route.id
@@ -837,8 +837,8 @@ func (d *DataService) GetTreatmentBasedOnPrescriptionId(erxId int64) (*common.Tr
 			treatment.dispense_value, treatment.dispense_unit_id, ltext, treatment.refills, treatment.substitutions_allowed, 
 			treatment.days_supply, treatment.pharmacy_id, treatment.pharmacy_notes, treatment.patient_instructions, treatment.creation_date, treatment.erx_sent_date,
 			treatment.erx_last_filled_date, treatment.status, drug_name.name, drug_route.name, drug_form.name,
-			patient_id, treatment_plan.patient_visit_id, treatment_plan.doctor_id from treatment
-
+			patient_visit.patient_id, treatment_plan.patient_visit_id, treatment_plan.doctor_id from treatment
+				inner join patient_visit on treatment_plan.patient_visit_id = patient_visit.id
 				inner join dispense_unit on treatment.dispense_unit_id = dispense_unit.id
 				inner join localized_text on localized_text.app_text_id = dispense_unit.dispense_unit_text_id
 				left outer join treatment_plan on treatment_plan.id = treatment.treatment_plan_id
@@ -881,8 +881,8 @@ func (d *DataService) GetTreatmentFromId(treatmentId int64) (*common.Treatment, 
 			treatment.dispense_value, treatment.dispense_unit_id, ltext, treatment.refills, treatment.substitutions_allowed, 
 			treatment.days_supply, treatment.pharmacy_id, treatment.pharmacy_notes, treatment.patient_instructions, treatment.creation_date, treatment.erx_sent_date,
 			treatment.erx_last_filled_date, treatment.status, drug_name.name, drug_route.name, drug_form.name,
-			patient_id, treatment_plan.patient_visit_id, treatment_plan.doctor_id from treatment
-
+			patient_visit.patient_id, treatment_plan.patient_visit_id, treatment_plan.doctor_id from treatment
+				inner join patient_visit on treatment_plan.patient_visit_id = patient_visit.id
 				inner join dispense_unit on treatment.dispense_unit_id = dispense_unit.id
 				inner join localized_text on localized_text.app_text_id = dispense_unit.dispense_unit_text_id
 				left outer join treatment_plan on treatment_plan.id = treatment.treatment_plan_id

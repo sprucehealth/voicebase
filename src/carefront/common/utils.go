@@ -30,10 +30,18 @@ func AWSAuthAdapter(auth aws.Auth) goamz.Auth {
 	}
 }
 
+type StatusEventCheckType int64
+
+const (
+	ERxType StatusEventCheckType = iota
+	RefillRxType
+	UnlinkedDNTFTreatmentType
+)
+
 type PrescriptionStatusCheckMessage struct {
-	PatientId          int64
-	DoctorId           int64
-	CheckRefillRequest bool
+	PatientId      int64
+	DoctorId       int64
+	EventCheckType StatusEventCheckType
 }
 
 type SQSQueue struct {

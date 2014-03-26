@@ -30,10 +30,6 @@ func validateTreatment(treatment *common.Treatment) error {
 		return errors.New("Number of refills for treatment cannot be 0")
 	}
 
-	if treatment.DaysSupply == 0 {
-		return errors.New("Days of Supply for treatment cannot be 0")
-	}
-
 	if treatment.PatientInstructions == "" {
 		return errors.New("Patient Instructions for treatment cannot be empty")
 	}

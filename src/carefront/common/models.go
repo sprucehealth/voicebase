@@ -236,6 +236,6 @@ type StatusEvent struct {
 	PrescriptionId    int64     `json:"-"`
 	Status            string    `json:"status,omitempty"`
 	StatusTimestamp   time.Time `json:"status_timestamp,omitempty"`
-	ReportedTimestamp time.Time `json:"reported_timestamp,omitempty"`
+	ReportedTimestamp time.Time `json:"-"`
 	StatusDetails     string    `json:"status_details,omitempty"`
 }

@@ -80,7 +80,8 @@ func ConsumeMessageFromQueue(DataApi api.DataAPI, ERxApi erx.ERxAPI, ErxQueue *c
 
 		var prescriptionStatuses []common.StatusEvent
 
-		if statusCheckMessage.CheckRefillRequest {
+		switch statusCheckMessage.EventCheckType {
+		case common.RefillRxType:
 			// check if there are any treatments for this patient that do not have a completed status
 			prescriptionStatuses, err = DataApi.GetApprovedOrDeniedRefillRequestsForPatient(patient.PatientId.Int64())
 			if err != nil {
@@ -88,11 +89,17 @@ func ConsumeMessageFromQueue(DataApi api.DataAPI, ERxApi erx.ERxAPI, ErxQueue *c
 				statFailure.Inc(1)
 				continue
 			}
-		} else {
+		case common.UnlinkedDNTFTreatmentType:
+			prescriptionStatuses, err = DataApi.GetErxStatusEventsForDNTFTreatmentBasedOnPatientId(patient.PatientId.Int64())
+			if err != nil {
+				golog.Errorf("Error getting prescriptiopn status events for dntf treatment for patient: %+v", err)
+				statFailure.Inc(1)
+			}
+		case common.ERxType:
 			// check if there are any treatments for this patient that do not have a completed status
 			prescriptionStatuses, err = DataApi.GetPrescriptionStatusEventsForPatient(patient.ERxPatientId.Int64())
 			if err != nil {
-				golog.Errorf("Error getting prescription events for patient: %s", err.Error())
+				golog.Errorf("Error getting prescription events for patient: %+v", err)
 				statFailure.Inc(1)
 				continue
 			}
@@ -119,14 +126,22 @@ func ConsumeMessageFromQueue(DataApi api.DataAPI, ERxApi erx.ERxAPI, ErxQueue *c
 				// only keep track of tasks that have not reached the end state yet
 				if prescriptionStatus.PrescriptionId != 0 {
 
-					if statusCheckMessage.CheckRefillRequest && (prescriptionStatus.Status == api.RX_REFILL_STATUS_APPROVED ||
-						prescriptionStatus.Status == api.RX_REFILL_STATUS_DENIED) {
-						latestPendingStatusPerPrescription[prescriptionStatus.PrescriptionId] = prescriptionStatus
+					switch statusCheckMessage.EventCheckType {
+					case common.RefillRxType:
+						if prescriptionStatus.Status == api.RX_REFILL_STATUS_APPROVED ||
+							prescriptionStatus.Status == api.RX_REFILL_STATUS_DENIED {
+							latestPendingStatusPerPrescription[prescriptionStatus.PrescriptionId] = prescriptionStatus
+						}
+					case common.ERxType:
+						if prescriptionStatus.Status == api.ERX_STATUS_SENDING {
+							latestPendingStatusPerPrescription[prescriptionStatus.PrescriptionId] = prescriptionStatus
+						}
+					case common.UnlinkedDNTFTreatmentType:
+						if prescriptionStatus.Status == api.ERX_STATUS_SENDING {
+							latestPendingStatusPerPrescription[prescriptionStatus.PrescriptionId] = prescriptionStatus
+						}
 					}
 
-					if !statusCheckMessage.CheckRefillRequest && prescriptionStatus.Status == api.ERX_STATUS_SENDING {
-						latestPendingStatusPerPrescription[prescriptionStatus.PrescriptionId] = prescriptionStatus
-					}
 				}
 			}
 		}
@@ -166,7 +181,8 @@ func ConsumeMessageFromQueue(DataApi api.DataAPI, ERxApi erx.ERxAPI, ErxQueue *c
 				// nothing to do
 				pendingTreatments++
 			case api.ERX_STATUS_ERROR:
-				if statusCheckMessage.CheckRefillRequest {
+				switch statusCheckMessage.EventCheckType {
+				case common.RefillRxType:
 					if err := DataApi.AddRefillRequestStatusEvent(common.StatusEvent{
 						Status:            api.RX_REFILL_STATUS_ERROR,
 						ReportedTimestamp: prescriptionLogs[0].LogTimestamp,
@@ -190,7 +206,34 @@ func ConsumeMessageFromQueue(DataApi api.DataAPI, ERxApi erx.ERxAPI, ErxQueue *c
 						failed++
 						break
 					}
-				} else {
+				case common.UnlinkedDNTFTreatmentType:
+					if err := DataApi.AddErxStatusEventForDNTFTreatment(common.StatusEvent{
+						Status:            api.ERX_STATUS_ERROR,
+						ReportedTimestamp: prescriptionLogs[0].LogTimestamp,
+						ItemId:            prescriptionStatus.ItemId,
+						StatusDetails:     prescriptionLogs[0].AdditionalInfo,
+					}); err != nil {
+						statFailure.Inc(1)
+						golog.Errorf("Unable to add status event for refill request: %+v", err)
+						failed++
+						break
+					}
+
+					// TODO Insert item for unlinked DNTF treatment
+
+					// if err := DataApi.InsertItemIntoDoctorQueue(api.DoctorQueueItem{
+					// 	DoctorId:  doctor.DoctorId.Int64(),
+					// 	ItemId:    prescriptionStatus.ItemId,
+					// 	Status:    api.STATUS_PENDING,
+					// 	EventType: api.EVENT_TYPE_REFILL_TRANSMISSION_ERROR,
+					// }); err != nil {
+					// 	statFailure.Inc(1)
+					// 	golog.Errorf("Unable to insert refill transmission error into doctor queue: %+v", err)
+					// 	failed++
+					// 	break
+					// }
+
+				case common.ERxType:
 					treatment, err := DataApi.GetTreatmentBasedOnPrescriptionId(prescriptionId)
 					if err != nil {
 						statFailure.Inc(1)
@@ -223,7 +266,8 @@ func ConsumeMessageFromQueue(DataApi api.DataAPI, ERxApi erx.ERxAPI, ErxQueue *c
 					}
 				}
 			case api.ERX_STATUS_SENT:
-				if statusCheckMessage.CheckRefillRequest {
+				switch statusCheckMessage.EventCheckType {
+				case common.RefillRxType:
 					if err := DataApi.AddRefillRequestStatusEvent(common.StatusEvent{
 						Status:            api.RX_REFILL_STATUS_SENT,
 						ReportedTimestamp: prescriptionLogs[0].LogTimestamp,
@@ -234,7 +278,18 @@ func ConsumeMessageFromQueue(DataApi api.DataAPI, ERxApi erx.ERxAPI, ErxQueue *c
 						failed++
 						break
 					}
-				} else {
+				case common.UnlinkedDNTFTreatmentType:
+					if err := DataApi.AddErxStatusEventForDNTFTreatment(common.StatusEvent{
+						Status:            api.ERX_STATUS_SENT,
+						ReportedTimestamp: prescriptionLogs[0].LogTimestamp,
+						ItemId:            prescriptionStatus.ItemId,
+					}); err != nil {
+						statFailure.Inc(1)
+						golog.Errorf("Unable to add status event for refill request: %+v", err)
+						failed++
+						break
+					}
+				case common.ERxType:
 					treatment, err := DataApi.GetTreatmentBasedOnPrescriptionId(prescriptionId)
 					if err != nil {
 						statFailure.Inc(1)
@@ -253,7 +308,7 @@ func ConsumeMessageFromQueue(DataApi api.DataAPI, ERxApi erx.ERxAPI, ErxQueue *c
 					}
 				}
 			case api.ERX_STATUS_DELETED:
-				if statusCheckMessage.CheckRefillRequest {
+				if statusCheckMessage.EventCheckType == common.RefillRxType {
 					if err := DataApi.AddRefillRequestStatusEvent(common.StatusEvent{
 						Status:            api.RX_REFILL_STATUS_DELETED,
 						ReportedTimestamp: prescriptionLogs[0].LogTimestamp,

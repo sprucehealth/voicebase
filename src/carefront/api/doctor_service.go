@@ -1228,14 +1228,3 @@ func getInstructionsFromRows(rows *sql.Rows) ([]*common.DoctorInstructionItem, e
 	}
 	return drugInstructions, rows.Err()
 }
-
-func (d *DataService) includeDrugNameComponentIfNonZero(drugNameComponent, tableName, columnName string, columnsAndData map[string]interface{}, tx *sql.Tx) error {
-	if drugNameComponent != "" {
-		componentId, err := d.getOrInsertNameInTable(tx, tableName, drugNameComponent)
-		if err != nil {
-			return err
-		}
-		columnsAndData[columnName] = componentId
-	}
-	return nil
-}

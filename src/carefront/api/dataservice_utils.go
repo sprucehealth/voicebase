@@ -46,6 +46,7 @@ const (
 	table_name_treatment                    = "treatment"
 	table_name_pharmacy_dispensed_treatment = "pharmacy_dispensed_treatment"
 	table_name_requested_treatment          = "requested_treatment"
+	table_name_unlinked_dntf_treatment      = "unlinked_dntf_treatment"
 	as_doctor_template                      = true
 	as_patient_treatment                    = false
 	address_usa                             = "USA"

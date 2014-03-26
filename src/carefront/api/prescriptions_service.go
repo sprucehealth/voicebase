@@ -3,10 +3,13 @@ package api
 import (
 	"carefront/common"
 	"carefront/libs/erx"
+	"carefront/libs/pharmacy"
 	"database/sql"
 	"fmt"
 	"strings"
 	"time"
+
+	"github.com/go-sql-driver/mysql"
 )
 
 func (d *DataService) AddRefillRequestStatusEvent(refillRequestStatus common.StatusEvent) error {
@@ -257,12 +260,12 @@ func (d *DataService) GetRefillRequestFromId(refillRequestId int64) (*common.Ref
 	var requestedTreatmentId, approvedRefillAmount, prescriptionId sql.NullInt64
 	var denyReason sql.NullString
 	// get the refill request
-	err := d.DB.QueryRow(`select rx_refill_request.id, rx_refill_request.erx_request_queue_item_id, rx_refill_request.erx_id,
+	err := d.DB.QueryRow(`select rx_refill_request.id, rx_refill_request.erx_request_queue_item_id,rx_refill_request.reference_number, rx_refill_request.erx_id,
 		approved_refill_amount, patient_id, request_date, doctor_id, requested_treatment_id, 
 		dispensed_treatment_id, comments, deny_refill_reason.reason from rx_refill_request
 				left outer join deny_refill_reason on deny_refill_reason.id = denial_reason_id
 				where rx_refill_request.id = ?`, refillRequestId).Scan(&refillRequest.Id,
-		&refillRequest.RxRequestQueueItemId, &prescriptionId, &approvedRefillAmount,
+		&refillRequest.RxRequestQueueItemId, &refillRequest.ReferenceNumber, &prescriptionId, &approvedRefillAmount,
 		&patientId, &refillRequest.RequestDateStamp, &doctorId, &requestedTreatmentId,
 		&pharmacyDispensedTreatmentId, &refillRequest.Comments, &denyReason)
 
@@ -377,10 +380,6 @@ func (d *DataService) getTreatmentForRefillRequest(tableName string, treatmentId
 // this method is used to add treatments that come in from dosespot (either pharmacy dispensed medication or treatments that don't exist but
 // are the basis of a refill request)
 func (d *DataService) addRequestedTreatmentFromPharmacy(treatment *common.Treatment, tx *sql.Tx) error {
-	substitutionsAllowedBit := 0
-	if treatment.SubstitutionsAllowed {
-		substitutionsAllowedBit = 1
-	}
 
 	treatmentType := treatment_rx
 	if treatment.OTC {
@@ -394,7 +393,7 @@ func (d *DataService) addRequestedTreatmentFromPharmacy(treatment *common.Treatm
 		"dispense_value":        treatment.DispenseValue,
 		"dispense_unit":         treatment.DispenseUnitDescription,
 		"refills":               treatment.NumberRefills,
-		"substitutions_allowed": substitutionsAllowedBit,
+		"substitutions_allowed": treatment.SubstitutionsAllowed,
 		"days_supply":           treatment.DaysSupply,
 		"patient_instructions":  treatment.PatientInstructions,
 		"pharmacy_notes":        treatment.PharmacyNotes,
@@ -450,10 +449,6 @@ func (d *DataService) addRequestedTreatmentFromPharmacy(treatment *common.Treatm
 }
 
 func (d *DataService) addPharmacyDispensedTreatment(dispensedTreatment, requestedTreatment *common.Treatment, tx *sql.Tx) error {
-	substitutionsAllowedBit := 0
-	if dispensedTreatment.SubstitutionsAllowed {
-		substitutionsAllowedBit = 1
-	}
 
 	treatmentType := treatment_rx
 	if dispensedTreatment.OTC {
@@ -467,7 +462,7 @@ func (d *DataService) addPharmacyDispensedTreatment(dispensedTreatment, requeste
 		"dispense_value":         dispensedTreatment.DispenseValue,
 		"dispense_unit":          dispensedTreatment.DispenseUnitDescription,
 		"refills":                dispensedTreatment.NumberRefills,
-		"substitutions_allowed":  substitutionsAllowedBit,
+		"substitutions_allowed":  dispensedTreatment.SubstitutionsAllowed,
 		"days_supply":            dispensedTreatment.DaysSupply,
 		"patient_instructions":   dispensedTreatment.PatientInstructions,
 		"pharmacy_notes":         dispensedTreatment.PharmacyNotes,
@@ -515,6 +510,17 @@ func (d *DataService) addPharmacyDispensedTreatment(dispensedTreatment, requeste
 			tx.Rollback()
 			return err
 		}
+	}
+	return nil
+}
+
+func (d *DataService) includeDrugNameComponentIfNonZero(drugNameComponent, tableName, columnName string, columnsAndData map[string]interface{}, tx *sql.Tx) error {
+	if drugNameComponent != "" {
+		componentId, err := d.getOrInsertNameInTable(tx, tableName, drugNameComponent)
+		if err != nil {
+			return err
+		}
+		columnsAndData[columnName] = componentId
 	}
 	return nil
 }
@@ -591,4 +597,269 @@ func (d *DataService) MarkRefillRequestAsDenied(prescriptionId, denialReasonId, 
 	}
 
 	return tx.Commit()
+}
+
+func (d *DataService) UpdateUnlinkedDNTFTreatmentWithPharmacyAndErxId(treatment *common.Treatment, pharmacySentTo *pharmacy.PharmacyData, doctorId int64) error {
+	if treatment.ERx.PrescriptionId.Int64() != 0 {
+		_, err := d.DB.Exec(`update unlinked_dntf_treatment set erx_id = ?, pharmacy_id = ?, erx_sent_date=now() where id = ?`, treatment.ERx.PrescriptionId, pharmacySentTo.LocalId, treatment.Id)
+		if err != nil {
+			return err
+		}
+	}
+	return nil
+}
+
+func (d *DataService) AddUnlinkedTreatmentInEventOfDNTF(treatment *common.Treatment, patientId, doctorId, refillRequestId int64) error {
+	tx, err := d.DB.Begin()
+	if err != nil {
+		return err
+	}
+
+	treatmentType := treatment_rx
+	if treatment.OTC {
+		treatmentType = treatment_otc
+	}
+
+	columnsAndData := map[string]interface{}{
+		"drug_internal_name":    treatment.DrugInternalName,
+		"dosage_strength":       treatment.DosageStrength,
+		"type":                  treatmentType,
+		"dispense_value":        treatment.DispenseValue,
+		"dispense_unit":         treatment.DispenseUnitDescription,
+		"refills":               treatment.NumberRefills,
+		"substitutions_allowed": treatment.SubstitutionsAllowed,
+		"days_supply":           treatment.DaysSupply,
+		"patient_instructions":  treatment.PatientInstructions,
+		"pharmacy_notes":        treatment.PharmacyNotes,
+		"status":                treatment.Status,
+		"doctor_id":             treatment.Doctor.DoctorId.Int64(),
+		"patient_id":            treatment.PatientId,
+	}
+
+	if err := d.includeDrugNameComponentIfNonZero(treatment.DrugName, drug_name_table, "drug_name_id", columnsAndData, tx); err != nil {
+		tx.Rollback()
+		return err
+	}
+
+	if err := d.includeDrugNameComponentIfNonZero(treatment.DrugForm, drug_form_table, "drug_form_id", columnsAndData, tx); err != nil {
+		tx.Rollback()
+		return err
+	}
+	if err := d.includeDrugNameComponentIfNonZero(treatment.DrugRoute, drug_route_table, "drug_route_id", columnsAndData, tx); err != nil {
+		tx.Rollback()
+		return err
+	}
+
+	columns, dataForColumns := getKeysAndValuesFromMap(columnsAndData)
+	res, err := tx.Exec(fmt.Sprintf(`insert into unlinked_dntf_treatment (%s) values (%s)`, strings.Join(columns, ","), nReplacements(len(dataForColumns))), dataForColumns...)
+	if err != nil {
+		tx.Rollback()
+		return err
+	}
+
+	treatmentId, err := res.LastInsertId()
+	if err != nil {
+		tx.Rollback()
+		return err
+	}
+
+	treatment.Id = common.NewObjectId(treatmentId)
+
+	_, err = tx.Exec(`insert into unlinked_dntf_treatment_status_events (unlinked_dntf_treatment_id, erx_status, status) values (?,?,?)`, treatmentId, ERX_STATUS_NEW_RX_FROM_DNTF, STATUS_ACTIVE)
+	if err != nil {
+		tx.Rollback()
+		return err
+	}
+
+	_, err = tx.Exec(`insert into dntf_mapping (unlinked_dntf_treatment_id, rx_refill_request_id) values (?,?)`, treatmentId, refillRequestId)
+	if err != nil {
+		tx.Rollback()
+		return err
+	}
+
+	return tx.Commit()
+}
+
+func (d *DataService) GetUnlinkedDNTFTreatment(treatmentId int64) (*common.Treatment, error) {
+	row := d.DB.QueryRow(`select unlinked_dntf_treatment.erx_id, unlinked_dntf_treatment.drug_internal_name, unlinked_dntf_treatment.dosage_strength, unlinked_dntf_treatment.type,
+			unlinked_dntf_treatment.dispense_value, unlinked_dntf_treatment.dispense_unit_id, ltext, unlinked_dntf_treatment.refills, unlinked_dntf_treatment.substitutions_allowed, 
+			unlinked_dntf_treatment.days_supply, unlinked_dntf_treatment.pharmacy_id, unlinked_dntf_treatment.pharmacy_notes, unlinked_dntf_treatment.patient_instructions, unlinked_dntf_treatment.creation_date, unlinked_dntf_treatment.erx_sent_date,
+			unlinked_dntf_treatment.erx_last_filled_date, unlinked_dntf_treatment.status, drug_name.name, drug_route.name, drug_form.name,
+			patient_id, unlinked_dntf_treatment.doctor_id from treatment 
+				inner join dispense_unit on treatment.dispense_unit_id = dispense_unit.id
+				inner join localized_text on localized_text.app_text_id = dispense_unit.dispense_unit_text_id
+				left outer join drug_name on drug_name_id = drug_name.id
+				left outer join drug_route on drug_route_id = drug_route.id
+				left outer join drug_form on drug_form_id = drug_form.id
+				where unlinked_dntf_treatment.id = ? and localized_text.language_id = ?`, treatmentId, EN_LANGUAGE_ID)
+
+	var dispenseValue, dispenseUnitId, refills, doctorId, patientId int64
+	var drugInternalName, dosageStrength, treatmentType, dispenseUnitDescription, pharmacyNotes, patientInstructions, status string
+	var creationDate time.Time
+	var erxId, daysSupply, pharmacyId sql.NullInt64
+	var erxSentDate, erxLastFilledDate mysql.NullTime
+	var drugName, drugRoute, drugForm sql.NullString
+	var substitutionsAllowed bool
+	err := row.Scan(&erxId, &drugInternalName, &dosageStrength, &treatmentType, &dispenseValue, &dispenseUnitId, &dispenseUnitDescription,
+		&refills, &substitutionsAllowed, &daysSupply, &pharmacyId, &pharmacyNotes, &patientInstructions, &creationDate, &erxSentDate, &erxLastFilledDate, &status, &drugName, &drugRoute, &drugForm, &patientId, &doctorId)
+	if err != nil {
+		if err == sql.ErrNoRows {
+			return nil, nil
+		}
+		return nil, err
+	}
+
+	treatment := &common.Treatment{
+		Id:                      common.NewObjectId(treatmentId),
+		PatientId:               patientId,
+		DoctorId:                doctorId,
+		DrugInternalName:        drugInternalName,
+		DosageStrength:          dosageStrength,
+		DispenseValue:           dispenseValue,
+		DispenseUnitId:          common.NewObjectId(dispenseUnitId),
+		DispenseUnitDescription: dispenseUnitDescription,
+		NumberRefills:           refills,
+		SubstitutionsAllowed:    substitutionsAllowed,
+		DaysSupply:              daysSupply.Int64,
+		DrugName:                drugName.String,
+		DrugForm:                drugForm.String,
+		DrugRoute:               drugRoute.String,
+		PatientInstructions:     patientInstructions,
+		CreationDate:            &creationDate,
+		Status:                  status,
+		PharmacyNotes:           pharmacyNotes,
+		OTC:                     treatmentType == treatment_otc,
+		ERx: &common.ERxData{
+			ErxLastDateFilled: &erxLastFilledDate.Time,
+			ErxSentDate:       &erxSentDate.Time,
+		},
+	}
+
+	if pharmacyId.Valid {
+		treatment.ERx.PharmacyLocalId = common.NewObjectId(pharmacyId.Int64)
+		treatment.ERx.Pharmacy, err = d.GetPharmacyFromId(pharmacyId.Int64)
+		if err != nil {
+			return nil, err
+		}
+	}
+
+	if erxId.Valid {
+		treatment.ERx.PrescriptionId = common.NewObjectId(erxId.Int64)
+	}
+
+	treatment.Doctor, err = d.GetDoctorFromId(treatment.DoctorId)
+	if err != nil {
+		return nil, err
+	}
+
+	treatment.Patient, err = d.GetPatientFromId(treatment.PatientId)
+	if err != nil {
+		return nil, err
+	}
+
+	treatment.ERx.RxHistory, err = d.GetErxStatusEventsForDNTFTreatment(treatmentId)
+	if err != nil {
+		return nil, err
+	}
+
+	return treatment, nil
+}
+
+func (d *DataService) AddTreatmentToTreatmentPlanInEventOfDNTF(treatment *common.Treatment, doctorId, patientId, refillRequestId int64) error {
+	tx, err := d.DB.Begin()
+	if err != nil {
+		return err
+	}
+
+	treatment.PatientId = patientId
+	treatment.DoctorId = doctorId
+	if err := d.addTreatment(treatment, as_patient_treatment, tx); err != nil {
+		tx.Rollback()
+		return err
+	}
+
+	if treatment.DoctorTreatmentTemplateId.Int64() != 0 {
+		_, err = tx.Exec(`insert into treatment_dr_template_selection (treatment_id, dr_treatment_template_id) values (?,?)`, treatment.Id, treatment.DoctorTreatmentTemplateId)
+		if err != nil {
+			tx.Rollback()
+			return err
+		}
+	}
+
+	_, err = tx.Exec(`insert into erx_status_events (treatment_id, erx_status, status) values (?,?,?)`, treatment.Id.Int64(), ERX_STATUS_NEW_RX_FROM_DNTF, STATUS_ACTIVE)
+	if err != nil {
+		tx.Rollback()
+		return err
+	}
+
+	_, err = tx.Exec(`insert into dntf_mapping (treatment_id, rx_refill_request_id) values (?,?)`, treatment.Id.Int64(), refillRequestId)
+	if err != nil {
+		tx.Rollback()
+		return err
+	}
+
+	return tx.Commit()
+}
+
+func (d *DataService) AddErxStatusEventForDNTFTreatment(statusEvent common.StatusEvent) error {
+	tx, err := d.DB.Begin()
+	if err != nil {
+		return err
+	}
+
+	_, err = tx.Exec(`update unlinked_dntf_treatment_status_events set status = ? where unlinked_dntf_treatment_id = ? and status = ?`, STATUS_INACTIVE, statusEvent.ItemId, STATUS_ACTIVE)
+	if err != nil {
+		tx.Rollback()
+		return err
+	}
+
+	_, err = tx.Exec(`insert into unlinked_dntf_treatment_status_events (unlinked_dntf_treatment_id, erx_status, status)`, statusEvent.ItemId, statusEvent.Status, STATUS_ACTIVE)
+	if err != nil {
+		tx.Rollback()
+		return err
+	}
+
+	return tx.Commit()
+}
+
+func (d *DataService) GetErxStatusEventsForDNTFTreatment(treatmentId int64) ([]common.StatusEvent, error) {
+	rows, err := d.DB.Query(`select unlinked_dntf_treatment_status_events.unlinked_dntf_treatment_id, unlinked_dntf_treatment.erx_id, unlinked_dntf_treatment_status_events.erx_status, unlinked_dntf_treatment_status_events.creation_date from unlinked_dntf_treatment_status_events 
+								inner join unlinked_dntf_treatment on unlinked_dntf_treatment_id = unlinked_dntf_treatment.id
+									where unlinked_dntf_treatment.id = ? and unlinked_dntf_treatment.status = ? order by unlinked_dntf_treatment.creation_date desc`, treatmentId, STATUS_ACTIVE)
+	if err != nil {
+		return nil, err
+	}
+	defer rows.Close()
+
+	statusEvents := make([]common.StatusEvent, 0)
+	for rows.Next() {
+		var statusEventItem common.StatusEvent
+		if err := rows.Scan(&statusEventItem.ItemId, &statusEventItem.PrescriptionId, &statusEventItem.Status, &statusEventItem.StatusTimestamp); err != nil {
+			return nil, err
+		}
+		statusEvents = append(statusEvents, statusEventItem)
+	}
+
+	return statusEvents, nil
+}
+
+func (d *DataService) GetErxStatusEventsForDNTFTreatmentBasedOnPatientId(patientId int64) ([]common.StatusEvent, error) {
+	rows, err := d.DB.Query(`select unlinked_dntf_treatment_status_events.unlinked_dntf_treatment_id, unlinked_dntf_treatment.erx_id, unlinked_dntf_treatment_status_events.erx_status, unlinked_dntf_treatment_status_events.creation_date from unlinked_dntf_treatment_status_events 
+								inner join unlinked_dntf_treatment on unlinked_dntf_treatment_id = unlinked_dntf_treatment.id
+									where unlinked_dntf_treatment.patient_id = ? and unlinked_dntf_treatment.status = ? order by unlinked_dntf_treatment.creation_date desc`, patientId, STATUS_ACTIVE)
+	if err != nil {
+		return nil, err
+	}
+	defer rows.Close()
+
+	statusEvents := make([]common.StatusEvent, 0)
+	for rows.Next() {
+		var statusEventItem common.StatusEvent
+		if err := rows.Scan(&statusEventItem.ItemId, &statusEventItem.PrescriptionId, &statusEventItem.Status, &statusEventItem.StatusTimestamp); err != nil {
+			return nil, err
+		}
+		statusEvents = append(statusEvents, statusEventItem)
+	}
+
+	return statusEvents, nil
 }

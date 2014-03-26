@@ -92,7 +92,6 @@ type PatientAPI interface {
 	GetCardFromId(cardId int64) (*common.Card, error)
 	UpdateDefaultAddressForPatient(patientId int64, address *common.Address) error
 	DeleteAddress(addressId int64) error
-	AddTreatmentInEventOfDNTF(treatment *common.Treatment, doctorId, patientId, refillRequestId int64) error
 }
 
 type PatientVisitAPI interface {
@@ -150,6 +149,13 @@ type PrescriptionsAPI interface {
 	MarkRefillRequestAsApproved(prescriptionId, approvedRefillCount, rxRefillRequestId int64, comments string) error
 	MarkRefillRequestAsDenied(prescriptionId, denialReasonId, rxRefillRequestId int64, comments string) error
 	LinkRequestedPrescriptionToOriginalTreatment(requestedTreatment *common.Treatment, patient *common.Patient) error
+	AddUnlinkedTreatmentInEventOfDNTF(treatment *common.Treatment, doctorId, patientId, refillRequestId int64) error
+	GetUnlinkedDNTFTreatment(treatmentId int64) (*common.Treatment, error)
+	AddTreatmentToTreatmentPlanInEventOfDNTF(treatment *common.Treatment, doctorId, patientId, refillRequestId int64) error
+	UpdateUnlinkedDNTFTreatmentWithPharmacyAndErxId(treatment *common.Treatment, pharmacySentTo *pharmacy.PharmacyData, doctorId int64) error
+	AddErxStatusEventForDNTFTreatment(statusEvent common.StatusEvent) error
+	GetErxStatusEventsForDNTFTreatment(treatmentId int64) ([]common.StatusEvent, error)
+	GetErxStatusEventsForDNTFTreatmentBasedOnPatientId(patientId int64) ([]common.StatusEvent, error)
 }
 
 type DoctorAPI interface {
@@ -179,9 +185,7 @@ type DoctorAPI interface {
 	GetTreatmentTemplates(doctorId int64) ([]*common.DoctorTreatmentTemplate, error)
 	DeleteTreatmentTemplates(doctorTreatmentTemplates []*common.DoctorTreatmentTemplate, doctorId int64) error
 	GetCompletedPrescriptionsForDoctor(from, to time.Time, doctorId int64) ([]*common.TreatmentPlan, error)
-
 	UpdatePatientInformationFromDoctor(patient *common.Patient) error
-
 	InsertItemIntoDoctorQueue(doctorQueueItem DoctorQueueItem) error
 	ReplaceItemInDoctorQueue(doctorQueueItem DoctorQueueItem, currentState string) error
 

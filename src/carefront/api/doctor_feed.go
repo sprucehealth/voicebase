@@ -7,17 +7,18 @@ import (
 )
 
 const (
-	EVENT_TYPE_PATIENT_VISIT             = "PATIENT_VISIT"
-	EVENT_TYPE_TREATMENT_PLAN            = "TREATMENT_PLAN"
-	EVENT_TYPE_REFILL_REQUEST            = "REFILL_REQUEST"
-	EVENT_TYPE_TRANSMISSION_ERROR        = "TRANSMISSION_ERROR"
-	EVENT_TYPE_REFILL_TRANSMISSION_ERROR = "REFILL_TRANSMISSION_ERROR"
-	patientVisitImageTag                 = "patient_visit_queue_icon"
-	beginPatientVisitReviewAction        = "begin_patient_visit"
-	viewTreatedPatientVisitReviewAction  = "view_treated_patient_visit"
-	viewRefillRequestAction              = "view_refill_request"
-	viewTransmissionErrorAction          = "view_transmission_error"
-	viewPatientTreatmentsAction          = "view_patient_treatments"
+	EVENT_TYPE_PATIENT_VISIT                    = "PATIENT_VISIT"
+	EVENT_TYPE_TREATMENT_PLAN                   = "TREATMENT_PLAN"
+	EVENT_TYPE_REFILL_REQUEST                   = "REFILL_REQUEST"
+	EVENT_TYPE_TRANSMISSION_ERROR               = "TRANSMISSION_ERROR"
+	EVENT_TYPE_UNLINKED_DNTF_TRANSMISSION_ERROR = "UNLINKED_DNTF_TRANSMISSION_ERROR"
+	EVENT_TYPE_REFILL_TRANSMISSION_ERROR        = "REFILL_TRANSMISSION_ERROR"
+	patientVisitImageTag                        = "patient_visit_queue_icon"
+	beginPatientVisitReviewAction               = "begin_patient_visit"
+	viewTreatedPatientVisitReviewAction         = "view_treated_patient_visit"
+	viewRefillRequestAction                     = "view_refill_request"
+	viewTransmissionErrorAction                 = "view_transmission_error"
+	viewPatientTreatmentsAction                 = "view_patient_treatments"
 )
 
 type DoctorQueueItem struct {
@@ -116,7 +117,7 @@ func (d *DoctorQueueItem) GetTitleAndSubtitle(dataApi DataAPI) (string, string, 
 			subtitle = fmt.Sprintf("%s %d at %s", d.EnqueueDate.Month().String(), d.EnqueueDate.Day(), formattedTime)
 		}
 
-	case EVENT_TYPE_TRANSMISSION_ERROR:
+	case EVENT_TYPE_TRANSMISSION_ERROR, EVENT_TYPE_UNLINKED_DNTF_TRANSMISSION_ERROR:
 		patient, err := dataApi.GetPatientFromTreatmentId(d.ItemId)
 		if err != nil || patient == nil {
 			return "", "", err
@@ -178,7 +179,7 @@ func (d *DoctorQueueItem) GetDisplayTypes() []string {
 		case QUEUE_ITEM_STATUS_REFILL_APPROVED, QUEUE_ITEM_STATUS_REFILL_DENIED, QUEUE_ITEM_STATUS_COMPLETED:
 			return []string{DISPLAY_TYPE_TITLE_SUBTITLE_ACTIONABLE}
 		}
-	case EVENT_TYPE_TRANSMISSION_ERROR:
+	case EVENT_TYPE_TRANSMISSION_ERROR, EVENT_TYPE_UNLINKED_DNTF_TRANSMISSION_ERROR:
 		switch d.Status {
 		case QUEUE_ITEM_STATUS_PENDING, QUEUE_ITEM_STATUS_ONGOING:
 			if d.PositionInQueue == 0 {
@@ -234,6 +235,8 @@ func (d *DoctorQueueItem) GetActionUrl(dataApi DataAPI) (string, error) {
 		return fmt.Sprintf("%s%s?refill_request_id=%d", SpruceButtonBaseActionUrl, viewRefillRequestAction, d.ItemId), nil
 	case EVENT_TYPE_TRANSMISSION_ERROR:
 		return fmt.Sprintf("%s%s?treatment_id=%d", SpruceButtonBaseActionUrl, viewTransmissionErrorAction, d.ItemId), nil
+	case EVENT_TYPE_UNLINKED_DNTF_TRANSMISSION_ERROR:
+		return fmt.Sprintf("%s%s?unlinked_dntf_treatment_id=%d", SpruceButtonBaseActionUrl, viewTransmissionErrorAction, d.ItemId), nil
 	}
 	return "", nil
 }
@@ -300,6 +303,25 @@ func (d *DoctorQueueItem) GetButton() *Button {
 			button := &Button{}
 			button.ButtonText = "Resolve Error"
 			button.ButtonActionUrl = fmt.Sprintf("%s%s?treatment_id=%d", SpruceButtonBaseActionUrl, viewTransmissionErrorAction, d.ItemId)
+			return button
+		}
+	case EVENT_TYPE_UNLINKED_DNTF_TRANSMISSION_ERROR:
+		switch d.Status {
+		case QUEUE_ITEM_STATUS_PENDING:
+			if d.PositionInQueue != 0 {
+				return nil
+			}
+			button := &Button{}
+			button.ButtonText = "Resolve Error"
+			button.ButtonActionUrl = fmt.Sprintf("%s%s?unlinked_dntf_treatment_id=%d", SpruceButtonBaseActionUrl, viewTransmissionErrorAction, d.ItemId)
+			return button
+		case QUEUE_ITEM_STATUS_ONGOING:
+			if d.PositionInQueue != 0 {
+				return nil
+			}
+			button := &Button{}
+			button.ButtonText = "Resolve Error"
+			button.ButtonActionUrl = fmt.Sprintf("%s%s?unlinked_dntf_treatment_id=%d", SpruceButtonBaseActionUrl, viewTransmissionErrorAction, d.ItemId)
 			return button
 		}
 	}

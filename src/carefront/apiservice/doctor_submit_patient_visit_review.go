@@ -203,8 +203,9 @@ func (d *DoctorSubmitPatientVisitReviewHandler) submitPatientVisitReview(w http.
 
 			//  Queue up notification to patient
 			if err := queueUpJobForErxStatus(d.ErxStatusQueue, common.PrescriptionStatusCheckMessage{
-				PatientId: patient.PatientId.Int64(),
-				DoctorId:  patientVisitReviewData.DoctorId,
+				PatientId:      patient.PatientId.Int64(),
+				DoctorId:       patientVisitReviewData.DoctorId,
+				EventCheckType: common.ERxType,
 			}); err != nil {
 				golog.Errorf("Unable to enqueue job to check status of erx. Not going to error out on this for the user because there is nothing the user can do about this: %+v", err)
 			}

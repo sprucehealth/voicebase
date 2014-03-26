@@ -5,6 +5,7 @@ import (
 	"carefront/common"
 	"carefront/libs/erx"
 	"carefront/libs/golog"
+	"carefront/libs/pharmacy"
 	"encoding/json"
 	"net/http"
 	"sort"
@@ -187,10 +188,19 @@ func (d *DoctorRefillRequestHandler) resolveRefillRequest(w http.ResponseWriter,
 				requestData.Treatment.ERx = &common.ERxData{}
 			}
 			requestData.Treatment.ERx.ErxReferenceNumber = refillRequest.ReferenceNumber
+			originatingTreatmentFound := refillRequest.RequestedPrescription.OriginatingTreatmentId != 0
 
-			// add the treatment for the patient
-			if err := d.DataApi.AddTreatmentInEventOfDNTF(requestData.Treatment, doctor.DoctorId.Int64(), refillRequest.Patient.PatientId.Int64(), refillRequest.Id); err != nil {
-				WriteDeveloperError(w, http.StatusInternalServerError, "Unable to add treatment in event of DNTF: "+err.Error())
+			if originatingTreatmentFound {
+				originatingTreatment, err := d.DataApi.GetTreatmentFromId(refillRequest.RequestedPrescription.OriginatingTreatmentId)
+				if err != nil {
+					WriteDeveloperError(w, http.StatusInternalServerError, "Unable to get originating treatment: "+err.Error())
+					return
+				}
+				requestData.Treatment.TreatmentPlanId = originatingTreatment.TreatmentPlanId
+			}
+
+			if err := d.addTreatmentInEventOfDNTF(originatingTreatmentFound, requestData.Treatment, refillRequest.Patient.PatientId.Int64(), refillRequest.Doctor.DoctorId.Int64(), refillRequest.Id); err != nil {
+				WriteDeveloperError(w, http.StatusInternalServerError, "Unable to add dntf treatment: "+err.Error())
 				return
 			}
 
@@ -200,9 +210,9 @@ func (d *DoctorRefillRequestHandler) resolveRefillRequest(w http.ResponseWriter,
 				return
 			}
 
-			// save prescription id for drug to database
-			if err := d.DataApi.UpdateTreatmentWithPharmacyAndErxId([]*common.Treatment{requestData.Treatment}, refillRequest.RequestedPrescription.ERx.Pharmacy, doctor.DoctorId.Int64()); err != nil {
-				WriteDeveloperError(w, http.StatusInternalServerError, "Unable to update treatment with erx id and pharmacy information for treatment: "+err.Error())
+			// update pharmacy and erx id for treatment
+			if err := d.updateTreatmentWithPharmacyAndErxId(originatingTreatmentFound, requestData.Treatment, refillRequest.RequestedPrescription.ERx.Pharmacy, doctor.DoctorId.Int64()); err != nil {
+				WriteDeveloperError(w, http.StatusInternalServerError, "Unable to update pharmacy and erx for treatment that was just sent: "+err.Error())
 				return
 			}
 
@@ -216,7 +226,7 @@ func (d *DoctorRefillRequestHandler) resolveRefillRequest(w http.ResponseWriter,
 			// ensure its successful
 			for _, unSuccessfulTreatmentId := range unSuccesfulTreatmentIds {
 				if unSuccessfulTreatmentId == requestData.Treatment.Id.Int64() {
-					if err := d.DataApi.AddErxStatusEvent([]*common.Treatment{requestData.Treatment}, common.StatusEvent{Status: api.ERX_STATUS_SEND_ERROR}); err != nil {
+					if err := d.addStatusEvent(originatingTreatmentFound, requestData.Treatment, common.StatusEvent{Status: api.ERX_STATUS_SEND_ERROR}); err != nil {
 						WriteDeveloperError(w, http.StatusInternalServerError, "Unable to add an erx status event: "+err.Error())
 						return
 					}
@@ -225,15 +235,16 @@ func (d *DoctorRefillRequestHandler) resolveRefillRequest(w http.ResponseWriter,
 				}
 			}
 
-			if err := d.DataApi.AddErxStatusEvent([]*common.Treatment{requestData.Treatment}, common.StatusEvent{Status: api.ERX_STATUS_SENT}); err != nil {
+			if err := d.addStatusEvent(originatingTreatmentFound, requestData.Treatment, common.StatusEvent{Status: api.ERX_STATUS_SENDING}); err != nil {
 				WriteDeveloperError(w, http.StatusInternalServerError, "Unable to add status event for treatment: "+err.Error())
 				return
 			}
 
 			// queue up job for status checking
 			if err := queueUpJobForErxStatus(d.ErxStatusQueue, common.PrescriptionStatusCheckMessage{
-				PatientId: refillRequest.Patient.PatientId.Int64(),
-				DoctorId:  doctor.DoctorId.Int64(),
+				PatientId:      refillRequest.Patient.PatientId.Int64(),
+				DoctorId:       doctor.DoctorId.Int64(),
+				EventCheckType: common.UnlinkedDNTFTreatmentType,
 			}); err != nil {
 				golog.Errorf("Unable to enqueue job to check status of erx for new rx after DNTF. Not going to error out on this for the user becuase there is nothing the user can do about this: %+v", err)
 			}
@@ -271,14 +282,35 @@ func (d *DoctorRefillRequestHandler) resolveRefillRequest(w http.ResponseWriter,
 	//  Queue up job to check for whether or not the response to this refill request
 	// was successfully transmitted to the pharmacy
 	if err := queueUpJobForErxStatus(d.ErxStatusQueue, common.PrescriptionStatusCheckMessage{
-		PatientId:          refillRequest.Patient.PatientId.Int64(),
-		DoctorId:           refillRequest.Doctor.DoctorId.Int64(),
-		CheckRefillRequest: true,
+		PatientId:      refillRequest.Patient.PatientId.Int64(),
+		DoctorId:       refillRequest.Doctor.DoctorId.Int64(),
+		EventCheckType: common.RefillRxType,
 	}); err != nil {
 		golog.Errorf("Unable to enqueue job into sqs queue to keep track of refill request status. Not erroring out to user because there's nothing they can do about it: %+v", err)
 	}
 
 	WriteJSONToHTTPResponseWriter(w, http.StatusOK, SuccessfulGenericJSONResponse())
+}
+
+func (d *DoctorRefillRequestHandler) updateTreatmentWithPharmacyAndErxId(originatingTreatmentFound bool, treatment *common.Treatment, pharmacySentTo *pharmacy.PharmacyData, doctorId int64) error {
+	if originatingTreatmentFound {
+		return d.DataApi.UpdateTreatmentWithPharmacyAndErxId([]*common.Treatment{treatment}, pharmacySentTo, doctorId)
+	}
+	return d.DataApi.UpdateUnlinkedDNTFTreatmentWithPharmacyAndErxId(treatment, pharmacySentTo, doctorId)
+}
+
+func (d *DoctorRefillRequestHandler) addStatusEvent(originatingTreatmentFound bool, treatment *common.Treatment, statusEvent common.StatusEvent) error {
+	if originatingTreatmentFound {
+		return d.DataApi.AddErxStatusEvent([]*common.Treatment{treatment}, statusEvent)
+	}
+	return d.DataApi.AddErxStatusEventForDNTFTreatment(statusEvent)
+}
+
+func (d *DoctorRefillRequestHandler) addTreatmentInEventOfDNTF(originatingTreatmentFound bool, treatment *common.Treatment, doctorId, patientId, refillRequestId int64) error {
+	if originatingTreatmentFound {
+		return d.DataApi.AddTreatmentToTreatmentPlanInEventOfDNTF(treatment, doctorId, patientId, refillRequestId)
+	}
+	return d.DataApi.AddUnlinkedTreatmentInEventOfDNTF(treatment, doctorId, patientId, refillRequestId)
 }
 
 func (d *DoctorRefillRequestHandler) getRefillRequest(w http.ResponseWriter, r *http.Request) {
