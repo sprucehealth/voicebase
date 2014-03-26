@@ -44,8 +44,8 @@ func (d *DoctorPrescriptionErrorIgnoreHandler) ServeHTTP(w http.ResponseWriter, 
 		return
 	}
 
-	if requestData.TreatmentId == "" && requestData.RefillRequestId == "" {
-		WriteDeveloperError(w, http.StatusBadRequest, "Require either the treatment id or the refill request id to ignore a particular error")
+	if requestData.TreatmentId == "" && requestData.RefillRequestId == "" && requestData.UnlinkedDNTFTreatmentId == "" {
+		WriteDeveloperError(w, http.StatusBadRequest, "Require either the treatment id or the refill request id or the unlinked dntf treatment id to ignore a particular error")
 		return
 	}
 

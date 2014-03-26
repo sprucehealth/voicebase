@@ -15,6 +15,7 @@ import (
 	"net/http"
 	"net/http/httptest"
 	"net/url"
+	"strconv"
 	"strings"
 	"testing"
 	"time"
@@ -1536,6 +1537,26 @@ func TestDenyRefillRequestWithDNTFUnlinkedTreatmentErrorSending(t *testing.T) {
 	if pendingItems[0].EventType != api.EVENT_TYPE_UNLINKED_DNTF_TRANSMISSION_ERROR {
 		t.Fatalf("Expected event type of item in doctor queue to be %s but was %s instead", api.EVENT_TYPE_UNLINKED_DNTF_TRANSMISSION_ERROR, pendingItems[0].EventType)
 	}
+
+	stubErxApi := &erx.StubErxService{}
+	// lets go ahead and resolve the error, which should also clear the pending items from the doctor queue
+	doctorPrescriptionErrorIgnoreHandler := &apiservice.DoctorPrescriptionErrorIgnoreHandler{
+		DataApi: testData.DataApi,
+		ErxApi:  stubErxApi,
+	}
+
+	params := &url.Values{}
+	params.Set("unlinked_dntf_treatment_id", strconv.FormatInt(unlinkedTreatment.Id.Int64(), 10))
+
+	ignoreErrorTs := httptest.NewServer(doctorPrescriptionErrorIgnoreHandler)
+	defer ignoreErrorTs.Close()
+
+	resp, err := authPost(ignoreErrorTs.URL, "application/x-www-form-urlencoded", strings.NewReader(params.Encode()), unlinkedTreatment.Doctor.AccountId.Int64())
+	if err != nil {
+		t.Fatalf("Unable to successfully resolve error pertaining to unlinked dntf treatment: %+v", err)
+	}
+
+	CheckSuccessfulStatusCode(resp, "Unable to successfully resolve error pertaining to unlinked dntf treatment", t)
 }
 
 func setUpDeniedRefillRequestWithDNTFForLinkedTreatment(t *testing.T, testData TestData, endErxStatus string) *common.Treatment {
