@@ -241,11 +241,16 @@ func (d *DoctorRefillRequestHandler) resolveRefillRequest(w http.ResponseWriter,
 				return
 			}
 
+			eventCheckType := common.ERxType
+			if !originatingTreatmentFound {
+				eventCheckType = common.UnlinkedDNTFTreatmentType
+			}
+
 			// queue up job for status checking
 			if err := queueUpJobForErxStatus(d.ErxStatusQueue, common.PrescriptionStatusCheckMessage{
 				PatientId:      refillRequest.Patient.PatientId.Int64(),
 				DoctorId:       doctor.DoctorId.Int64(),
-				EventCheckType: common.UnlinkedDNTFTreatmentType,
+				EventCheckType: eventCheckType,
 			}); err != nil {
 				golog.Errorf("Unable to enqueue job to check status of erx for new rx after DNTF. Not going to error out on this for the user becuase there is nothing the user can do about this: %+v", err)
 			}
