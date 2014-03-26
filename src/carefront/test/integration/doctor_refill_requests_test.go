@@ -1320,6 +1320,12 @@ func TestDenyRefillRequestWithDNTFWithTreatment(t *testing.T) {
 		PatientDetailsToReturn:       patientToReturn,
 		RefillRxRequestQueueToReturn: []*common.RefillRequestItem{refillRequestItem},
 		PrescriptionIdsToReturn:      []int64{prescriptionIdForTreatment},
+		PrescriptionIdToPrescriptionStatuses: map[int64][]common.StatusEvent{
+			prescriptionIdForTreatment: []common.StatusEvent{common.StatusEvent{
+				Status: api.ERX_STATUS_SENT,
+			},
+			},
+		},
 	}
 
 	// Call the Consume method
@@ -1458,12 +1464,36 @@ func TestDenyRefillRequestWithDNTFWithTreatment(t *testing.T) {
 		if unlinkedTreatmentStatusEvent.InternalStatus == api.STATUS_INACTIVE && unlinkedTreatmentStatusEvent.Status != api.ERX_STATUS_NEW_RX_FROM_DNTF {
 			t.Fatalf("Expected top level item in rx history to be %s instead it was %s", api.ERX_STATUS_NEW_RX_FROM_DNTF, unlinkedTreatmentStatusEvent.Status)
 		}
-
 	}
 
 	// check dntf mapping to ensure that there is an entry
+	var dntfMappingCount int64
+	if err = testData.DB.QueryRow(`select count(*) from dntf_mapping`).Scan(&dntfMappingCount); err != nil {
+		t.Fatalf("Unable to count number of entries in dntf mapping table: %+v", err)
+	}
+
+	if dntfMappingCount != 1 {
+		t.Fatalf("Expected 1 entry in dntf mapping table instead got %d", dntfMappingCount)
+	}
 
 	// check erx status to be sent once its sent
+	app_worker.ConsumeMessageFromQueue(testData.DataApi, stubErxAPI, erxStatusQueue, metrics.NewBiasedHistogram(), metrics.NewCounter(), metrics.NewCounter())
+
+	unlinkedTreatment, err = testData.DataApi.GetUnlinkedDNTFTreatment(unlinkedTreatment.Id.Int64())
+	if err != nil {
+		t.Fatalf("Unable to get unlinked dntf treatment: %+v", err)
+	}
+
+	if len(unlinkedTreatment.ERx.RxHistory) != 3 {
+		t.Fatalf("Expcted 3 events from rx history of unlinked treatment instead got %d", len(unlinkedTreatment.ERx.RxHistory))
+	}
+
+	for _, unlinkedTreatmentStatusEvent := range unlinkedTreatment.ERx.RxHistory {
+		if unlinkedTreatmentStatusEvent.InternalStatus == api.STATUS_ACTIVE && unlinkedTreatmentStatusEvent.Status != api.ERX_STATUS_SENT {
+			t.Fatalf("Expected status %s for top level status of unlinked treatment but got %s", api.ERX_STATUS_SENT, unlinkedTreatmentStatusEvent.Status)
+		}
+	}
+
 }
 
 func TestCheckingStatusOfMultipleRefillRequestsAtOnce(t *testing.T) {
