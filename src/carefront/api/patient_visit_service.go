@@ -697,7 +697,6 @@ func (d *DataService) addTreatment(treatment *common.Treatment, withoutLinkToTre
 		if treatment.TreatmentPlanId != nil && treatment.TreatmentPlanId.Int64() != 0 {
 			columnsAndData["treatment_plan_id"] = treatment.TreatmentPlanId.Int64()
 		}
-		columnsAndData["patient_id"] = treatment.PatientId
 	}
 
 	columns, values := getKeysAndValuesFromMap(columnsAndData)

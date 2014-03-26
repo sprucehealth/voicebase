@@ -831,6 +831,7 @@ func (d *DataService) AddErxStatusEventForDNTFTreatment(statusEvent common.Statu
 	columns, values := getKeysAndValuesFromMap(columnsAndData)
 
 	_, err = tx.Exec(fmt.Sprintf(`insert into unlinked_dntf_treatment_status_events (%s) values (%s)`, strings.Join(columns, ","), nReplacements(len(values))), values...)
+	_, err = tx.Exec(`insert into unlinked_dntf_treatment_status_events (unlinked_dntf_treatment_id, erx_status, status) values (?,?,?)`, statusEvent.ItemId, statusEvent.Status, STATUS_ACTIVE)
 	if err != nil {
 		tx.Rollback()
 		return err
@@ -858,7 +859,6 @@ func (d *DataService) GetErxStatusEventsForDNTFTreatment(treatmentId int64) ([]c
 		statusEventItem.StatusDetails = statusDetails.String
 		statusEvents = append(statusEvents, statusEventItem)
 	}
-
 	return statusEvents, rows.Err()
 }
 
