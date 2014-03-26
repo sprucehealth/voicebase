@@ -92,7 +92,6 @@ type PatientAPI interface {
 	GetCardFromId(cardId int64) (*common.Card, error)
 	UpdateDefaultAddressForPatient(patientId int64, address *common.Address) error
 	DeleteAddress(addressId int64) error
-	AddTreatmentInEventOfDNTF(treatment *common.Treatment, doctorId, patientId, refillRequestId int64) error
 }
 
 type PatientVisitAPI interface {

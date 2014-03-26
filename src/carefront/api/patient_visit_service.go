@@ -697,21 +697,6 @@ func (d *DataService) addTreatment(treatment *common.Treatment, withoutLinkToTre
 		if treatment.TreatmentPlanId != nil && treatment.TreatmentPlanId.Int64() != 0 {
 			columnsAndData["treatment_plan_id"] = treatment.TreatmentPlanId.Int64()
 		}
-		columnsAndData["patient_id"] = treatment.PatientId
-	}
-
-	columns, values := getKeysAndValuesFromMap(columnsAndData)
-
-	res, err := tx.Exec(fmt.Sprintf(`insert into treatment (%s) values (%s)`, strings.Join(columns, ","), nReplacements(len(values))), values...)
-	if err != nil {
-		tx.Rollback()
-		return err
-	}
-
-	treatmentId, err := res.LastInsertId()
-	if err != nil {
-		tx.Rollback()
-		return err
 	}
 
 	columns, values := getKeysAndValuesFromMap(columnsAndData)

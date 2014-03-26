@@ -1,3 +1,4 @@
+
 create table unlinked_dntf_treatment (
 	id int unsigned not null auto_increment,
 	drug_internal_name varchar(250) not null,
