@@ -117,7 +117,7 @@ func (d *DoctorQueueItem) GetTitleAndSubtitle(dataApi DataAPI) (string, string, 
 			subtitle = fmt.Sprintf("%s %d at %s", d.EnqueueDate.Month().String(), d.EnqueueDate.Day(), formattedTime)
 		}
 
-	case EVENT_TYPE_TRANSMISSION_ERROR, EVENT_TYPE_UNLINKED_DNTF_TRANSMISSION_ERROR:
+	case EVENT_TYPE_TRANSMISSION_ERROR:
 		patient, err := dataApi.GetPatientFromTreatmentId(d.ItemId)
 		if err != nil || patient == nil {
 			return "", "", err
@@ -128,6 +128,21 @@ func (d *DoctorQueueItem) GetTitleAndSubtitle(dataApi DataAPI) (string, string, 
 			title = fmt.Sprintf("Error sending prescription for %s %s", patient.FirstName, patient.LastName)
 		case QUEUE_ITEM_STATUS_COMPLETED:
 			title = fmt.Sprintf("Error resolved for %s %s", patient.FirstName, patient.LastName)
+			formattedTime := d.EnqueueDate.Format("3:04pm")
+			subtitle = fmt.Sprintf("%s %d at %s", d.EnqueueDate.Month().String(), d.EnqueueDate.Day(), formattedTime)
+		}
+
+	case EVENT_TYPE_UNLINKED_DNTF_TRANSMISSION_ERROR:
+		unlinkedTreatment, err := dataApi.GetUnlinkedDNTFTreatment(d.ItemId)
+		if err != nil {
+			return "", "", err
+		}
+
+		switch d.Status {
+		case QUEUE_ITEM_STATUS_PENDING, QUEUE_ITEM_STATUS_ONGOING:
+			title = fmt.Sprintf("Error sending prescription for %s %s", unlinkedTreatment.Patient.FirstName, unlinkedTreatment.Patient.LastName)
+		case QUEUE_ITEM_STATUS_COMPLETED:
+			title = fmt.Sprintf("Error resolved for %s %s", unlinkedTreatment.Patient.FirstName, unlinkedTreatment.Patient.LastName)
 			formattedTime := d.EnqueueDate.Format("3:04pm")
 			subtitle = fmt.Sprintf("%s %d at %s", d.EnqueueDate.Month().String(), d.EnqueueDate.Day(), formattedTime)
 		}
