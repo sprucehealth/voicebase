@@ -7,6 +7,7 @@ create table unlinked_dntf_treatment (
 	refills int unsigned not null,
 	days_supply int unsigned,
 	pharmacy_notes varchar(150) not null,
+	substitutions_allowed tinyint,
 	patient_instructions varchar(150) not null,
 	creation_date timestamp(6) default current_timestamp(6),
 	status varchar(100) not null,
@@ -18,7 +19,7 @@ create table unlinked_dntf_treatment (
 	erx_sent_date timestamp,
 	erx_id int unsigned,
 	pharmacy_id int unsigned,
-	erx_last_filled_date timestam
+	erx_last_filled_date timestamp(6),
 	patient_id int unsigned not null,
 	doctor_id int unsigned not null,
 	primary key(id),
@@ -32,7 +33,7 @@ create table unlinked_dntf_treatment (
 ) character set utf8;
 
 create table unlinked_dntf_treatment_status_events (
-	id int unsigned not null,
+	id int unsigned not null auto_increment,
 	unlinked_dntf_treatment_id int unsigned not null,
 	erx_status varchar(100) not null,
 	creation_date timestamp(6) default current_timestamp(6),

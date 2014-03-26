@@ -1427,31 +1427,39 @@ func TestDenyRefillRequestWithDNTFWithTreatment(t *testing.T) {
 		t.Fatalf("Expected top level refill request status of %s instead got %s", refillRequestItem.RxHistory[0].Status, api.RX_REFILL_STATUS_DENIED)
 	}
 
-	// get treatment based on patient id
-	treatments, err := testData.DataApi.GetTreatmentsForPatient(refillRequest.Patient.PatientId.Int64())
+	// get unlinked treatment
+	unlinkedDNTFTreatmentStatusEvents, err := testData.DataApi.GetErxStatusEventsForDNTFTreatmentBasedOnPatientId(refillRequest.Patient.PatientId.Int64())
+	if err != nil {
+		t.Fatalf("Unable to get status events for dntf treatment: %+v", err)
+	}
+
+	if len(unlinkedDNTFTreatmentStatusEvents) != 2 {
+		t.Fatalf("Expected 2 status events for unlinked dntf treatments instead got %d", len(unlinkedDNTFTreatmentStatusEvents))
+	}
+
+	unlinkedTreatment, err := testData.DataApi.GetUnlinkedDNTFTreatment(unlinkedDNTFTreatmentStatusEvents[0].ItemId)
 	if err != nil {
 		t.Fatalf("Unable to get treatments pertaining to patient: %+v", err)
 	}
 
-	if len(treatments) != 1 {
-		t.Fatalf("Expected 1 treatement to exist for patient which is the new rx after DNTF, instead got %d", len(treatments))
-	}
-
-	if treatments[0].ERx.PrescriptionId.Int64() != prescriptionIdForTreatment {
+	if unlinkedTreatment.ERx.PrescriptionId.Int64() != prescriptionIdForTreatment {
 		t.Fatal("Expected the treatment to have the prescription id set as was expected")
 	}
 
-	if treatments[0].ERx.Pharmacy.LocalId != refillRequest.RequestedPrescription.ERx.Pharmacy.LocalId {
+	if unlinkedTreatment.ERx.Pharmacy.LocalId != refillRequest.RequestedPrescription.ERx.Pharmacy.LocalId {
 		t.Fatalf("Expected the new rx to be sent to the same pharmacy as the requestd prescription in the refill request which was not the case. New rx was sent to %d while requested prescription was sent to %d",
-			treatments[0].ERx.Pharmacy.LocalId, refillRequest.RequestedPrescription.ERx.Pharmacy.LocalId)
+			unlinkedTreatment.ERx.Pharmacy.LocalId, refillRequest.RequestedPrescription.ERx.Pharmacy.LocalId)
 	}
 
-	if len(treatments[0].ERx.RxHistory) != 1 {
-		t.Fatalf("Expected there to exist 1 status event pertaining to DNTF but instead got %d", len(treatments[0].ERx.RxHistory))
+	if len(unlinkedTreatment.ERx.RxHistory) != 2 {
+		t.Fatalf("Expected there to exist 1 status event pertaining to DNTF but instead got %d", len(unlinkedTreatment.ERx.RxHistory))
 	}
 
-	if treatments[0].ERx.RxHistory[0].Status != api.ERX_STATUS_NEW_RX_FROM_DNTF {
-		t.Fatalf("Expected top level item in rx history to be %s instead it was %s", api.ERX_STATUS_NEW_RX_FROM_DNTF, treatments[0].ERx.RxHistory[0].Status)
+	for _, unlinkedTreatmentStatusEvent := range unlinkedTreatment.ERx.RxHistory {
+		if unlinkedTreatmentStatusEvent.InternalStatus == api.STATUS_INACTIVE && unlinkedTreatmentStatusEvent.Status != api.ERX_STATUS_NEW_RX_FROM_DNTF {
+			t.Fatalf("Expected top level item in rx history to be %s instead it was %s", api.ERX_STATUS_NEW_RX_FROM_DNTF, unlinkedTreatmentStatusEvent.Status)
+		}
+
 	}
 
 	// check dntf mapping to ensure that there is an entry

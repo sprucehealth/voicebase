@@ -199,7 +199,7 @@ func (d *DoctorRefillRequestHandler) resolveRefillRequest(w http.ResponseWriter,
 				requestData.Treatment.TreatmentPlanId = originatingTreatment.TreatmentPlanId
 			}
 
-			if err := d.addTreatmentInEventOfDNTF(originatingTreatmentFound, requestData.Treatment, refillRequest.Patient.PatientId.Int64(), refillRequest.Doctor.DoctorId.Int64(), refillRequest.Id); err != nil {
+			if err := d.addTreatmentInEventOfDNTF(originatingTreatmentFound, requestData.Treatment, refillRequest.Doctor.DoctorId.Int64(), refillRequest.Patient.PatientId.Int64(), refillRequest.Id); err != nil {
 				WriteDeveloperError(w, http.StatusInternalServerError, "Unable to add dntf treatment: "+err.Error())
 				return
 			}
@@ -235,7 +235,7 @@ func (d *DoctorRefillRequestHandler) resolveRefillRequest(w http.ResponseWriter,
 				}
 			}
 
-			if err := d.addStatusEvent(originatingTreatmentFound, requestData.Treatment, common.StatusEvent{Status: api.ERX_STATUS_SENDING}); err != nil {
+			if err := d.addStatusEvent(originatingTreatmentFound, requestData.Treatment, common.StatusEvent{ItemId: requestData.Treatment.Id.Int64(), Status: api.ERX_STATUS_SENDING}); err != nil {
 				WriteDeveloperError(w, http.StatusInternalServerError, "Unable to add status event for treatment: "+err.Error())
 				return
 			}
@@ -307,10 +307,12 @@ func (d *DoctorRefillRequestHandler) addStatusEvent(originatingTreatmentFound bo
 }
 
 func (d *DoctorRefillRequestHandler) addTreatmentInEventOfDNTF(originatingTreatmentFound bool, treatment *common.Treatment, doctorId, patientId, refillRequestId int64) error {
+	treatment.PatientId = patientId
+	treatment.DoctorId = doctorId
 	if originatingTreatmentFound {
-		return d.DataApi.AddTreatmentToTreatmentPlanInEventOfDNTF(treatment, doctorId, patientId, refillRequestId)
+		return d.DataApi.AddTreatmentToTreatmentPlanInEventOfDNTF(treatment, refillRequestId)
 	}
-	return d.DataApi.AddUnlinkedTreatmentInEventOfDNTF(treatment, doctorId, patientId, refillRequestId)
+	return d.DataApi.AddUnlinkedTreatmentInEventOfDNTF(treatment, refillRequestId)
 }
 
 func (d *DoctorRefillRequestHandler) getRefillRequest(w http.ResponseWriter, r *http.Request) {

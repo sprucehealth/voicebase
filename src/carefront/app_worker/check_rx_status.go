@@ -221,17 +221,17 @@ func ConsumeMessageFromQueue(DataApi api.DataAPI, ERxApi erx.ERxAPI, ErxQueue *c
 
 					// TODO Insert item for unlinked DNTF treatment
 
-					// if err := DataApi.InsertItemIntoDoctorQueue(api.DoctorQueueItem{
-					// 	DoctorId:  doctor.DoctorId.Int64(),
-					// 	ItemId:    prescriptionStatus.ItemId,
-					// 	Status:    api.STATUS_PENDING,
-					// 	EventType: api.EVENT_TYPE_REFILL_TRANSMISSION_ERROR,
-					// }); err != nil {
-					// 	statFailure.Inc(1)
-					// 	golog.Errorf("Unable to insert refill transmission error into doctor queue: %+v", err)
-					// 	failed++
-					// 	break
-					// }
+					if err := DataApi.InsertItemIntoDoctorQueue(api.DoctorQueueItem{
+						DoctorId:  doctor.DoctorId.Int64(),
+						ItemId:    prescriptionStatus.ItemId,
+						Status:    api.STATUS_PENDING,
+						EventType: api.EVENT_TYPE_UNLINKED_DNTF_TRANSMISSION_ERROR,
+					}); err != nil {
+						statFailure.Inc(1)
+						golog.Errorf("Unable to insert refill transmission error into doctor queue: %+v", err)
+						failed++
+						break
+					}
 
 				case common.ERxType:
 					treatment, err := DataApi.GetTreatmentBasedOnPrescriptionId(prescriptionId)

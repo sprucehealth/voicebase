@@ -149,9 +149,9 @@ type PrescriptionsAPI interface {
 	MarkRefillRequestAsApproved(prescriptionId, approvedRefillCount, rxRefillRequestId int64, comments string) error
 	MarkRefillRequestAsDenied(prescriptionId, denialReasonId, rxRefillRequestId int64, comments string) error
 	LinkRequestedPrescriptionToOriginalTreatment(requestedTreatment *common.Treatment, patient *common.Patient) error
-	AddUnlinkedTreatmentInEventOfDNTF(treatment *common.Treatment, doctorId, patientId, refillRequestId int64) error
+	AddUnlinkedTreatmentInEventOfDNTF(treatment *common.Treatment, refillRequestId int64) error
 	GetUnlinkedDNTFTreatment(treatmentId int64) (*common.Treatment, error)
-	AddTreatmentToTreatmentPlanInEventOfDNTF(treatment *common.Treatment, doctorId, patientId, refillRequestId int64) error
+	AddTreatmentToTreatmentPlanInEventOfDNTF(treatment *common.Treatment, refillRequestId int64) error
 	UpdateUnlinkedDNTFTreatmentWithPharmacyAndErxId(treatment *common.Treatment, pharmacySentTo *pharmacy.PharmacyData, doctorId int64) error
 	AddErxStatusEventForDNTFTreatment(statusEvent common.StatusEvent) error
 	GetErxStatusEventsForDNTFTreatment(treatmentId int64) ([]common.StatusEvent, error)

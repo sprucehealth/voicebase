@@ -1,6 +1,6 @@
 -- MySQL dump 10.13  Distrib 5.6.13, for osx10.8 (x86_64)
 --
--- Host: dev-db-3.ccvrwjdx3gvp.us-east-1.rds.amazonaws.com    Database: database_2880
+-- Host: dev-db-3.ccvrwjdx3gvp.us-east-1.rds.amazonaws.com    Database: database_7984
 -- ------------------------------------------------------
 -- Server version	5.6.13-log
 
@@ -1730,6 +1730,7 @@ CREATE TABLE `unlinked_dntf_treatment` (
   `refills` int(10) unsigned NOT NULL,
   `days_supply` int(10) unsigned DEFAULT NULL,
   `pharmacy_notes` varchar(150) NOT NULL,
+  `substitutions_allowed` tinyint(4) DEFAULT NULL,
   `patient_instructions` varchar(150) NOT NULL,
   `creation_date` timestamp(6) NULL DEFAULT CURRENT_TIMESTAMP(6),
   `status` varchar(100) NOT NULL,
@@ -1741,7 +1742,7 @@ CREATE TABLE `unlinked_dntf_treatment` (
   `erx_sent_date` timestamp NULL DEFAULT NULL,
   `erx_id` int(10) unsigned DEFAULT NULL,
   `pharmacy_id` int(10) unsigned DEFAULT NULL,
-  `erx_last_filled_date` timestamp NULL DEFAULT NULL,
+  `erx_last_filled_date` timestamp(6) NULL DEFAULT NULL,
   `patient_id` int(10) unsigned NOT NULL,
   `doctor_id` int(10) unsigned NOT NULL,
   PRIMARY KEY (`id`),
@@ -1788,7 +1789,7 @@ DROP TABLE IF EXISTS `unlinked_dntf_treatment_status_events`;
 /*!40101 SET @saved_cs_client     = @@character_set_client */;
 /*!40101 SET character_set_client = utf8 */;
 CREATE TABLE `unlinked_dntf_treatment_status_events` (
-  `id` int(10) unsigned NOT NULL,
+  `id` int(10) unsigned NOT NULL AUTO_INCREMENT,
   `unlinked_dntf_treatment_id` int(10) unsigned NOT NULL,
   `erx_status` varchar(100) NOT NULL,
   `creation_date` timestamp(6) NULL DEFAULT CURRENT_TIMESTAMP(6),
@@ -1810,4 +1811,4 @@ CREATE TABLE `unlinked_dntf_treatment_status_events` (
 /*!40101 SET COLLATION_CONNECTION=@OLD_COLLATION_CONNECTION */;
 /*!40111 SET SQL_NOTES=@OLD_SQL_NOTES */;
 
--- Dump completed on 2014-03-25 18:38:15
+-- Dump completed on 2014-03-26  0:08:49

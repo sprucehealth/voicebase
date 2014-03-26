@@ -235,6 +235,7 @@ type StatusEvent struct {
 	ItemId            int64     `json:"-"`
 	PrescriptionId    int64     `json:"-"`
 	Status            string    `json:"status,omitempty"`
+	InternalStatus    string    `json:"-"`
 	StatusTimestamp   time.Time `json:"status_timestamp,omitempty"`
 	ReportedTimestamp time.Time `json:"-"`
 	StatusDetails     string    `json:"status_details,omitempty"`
