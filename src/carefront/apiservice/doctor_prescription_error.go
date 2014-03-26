@@ -19,7 +19,8 @@ type DoctorPrescriptionErrorRequestData struct {
 }
 
 type DoctorPrescriptionErrorResponse struct {
-	Treatment *common.Treatment `json:"treatment,omitempty"`
+	Treatment             *common.Treatment `json:"treatment,omitempty"`
+	UnlinkedDNTFTreatment *common.Treatment `json:"unlinked_dntf_treatment,omitempty"`
 }
 
 func (d *DoctorPrescriptionErrorHandler) ServeHTTP(w http.ResponseWriter, r *http.Request) {
@@ -79,7 +80,7 @@ func (d *DoctorPrescriptionErrorHandler) ServeHTTP(w http.ResponseWriter, r *htt
 		}
 
 		WriteJSONToHTTPResponseWriter(w, http.StatusOK, &DoctorPrescriptionErrorResponse{
-			Treatment: treatment,
+			UnlinkedDNTFTreatment: treatment,
 		})
 	}
 }
