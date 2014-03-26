@@ -733,8 +733,8 @@ func (d *DataService) GetTreatmentsBasedOnTreatmentPlanId(patientVisitId, treatm
 	treatments := make([]*common.Treatment, 0)
 	rows, err := d.DB.Query(`select treatment.id,treatment.erx_id, treatment.treatment_plan_id, treatment.drug_internal_name, treatment.dosage_strength, treatment.type,
 			treatment.dispense_value, treatment.dispense_unit_id, ltext, treatment.refills, treatment.substitutions_allowed, 
-			treatment.days_supply, treatment.pharmacy_id, treatment.pharmacy_notes, treatment.patient_instructions, treatment.creation_date, treatment.erx_sent_date,
-			treatment.erx_last_filled_date, treatment.status, drug_name.name, drug_route.name, drug_form.name,
+			treatment.days_supply, treatment.pharmacy_id, treatment.pharmacy_notes, treatment.patient_instructions, treatment.creation_date, treatment.erx_sent_date, 
+			treatment.status, drug_name.name, drug_route.name, drug_form.name,
 			patient_visit.patient_id, treatment_plan.patient_visit_id, treatment_plan.doctor_id from treatment 
 				inner join treatment_plan on treatment.treatment_plan_id = treatment_plan.id
 				inner join patient_visit on treatment_plan.patient_visit_id = patient_visit.id
@@ -802,7 +802,7 @@ func (d *DataService) GetTreatmentsForPatient(patientId int64) ([]*common.Treatm
 	rows, err := d.DB.Query(`select treatment.id,treatment.erx_id, treatment.treatment_plan_id, treatment.drug_internal_name, treatment.dosage_strength, treatment.type,
 			treatment.dispense_value, treatment.dispense_unit_id, ltext, treatment.refills, treatment.substitutions_allowed, 
 			treatment.days_supply, treatment.pharmacy_id, treatment.pharmacy_notes, treatment.patient_instructions, treatment.creation_date, treatment.erx_sent_date,
-			treatment.erx_last_filled_date, treatment.status, drug_name.name, drug_route.name, drug_form.name,
+			treatment.status, drug_name.name, drug_route.name, drug_form.name,
 			patient_visit.patient_id, treatment_plan.patient_visit_id, treatment_plan.doctor_id from treatment 
 				inner join treatment_plan on treatment.treatment_plan_id = treatment_plan.id
 				inner join patient_visit on treatment_plan.patient_visit_id = patient_visit.id
@@ -837,7 +837,7 @@ func (d *DataService) GetTreatmentBasedOnPrescriptionId(erxId int64) (*common.Tr
 	rows, err := d.DB.Query(`select treatment.id,treatment.erx_id, treatment.treatment_plan_id, treatment.drug_internal_name, treatment.dosage_strength, treatment.type,
 			treatment.dispense_value, treatment.dispense_unit_id, ltext, treatment.refills, treatment.substitutions_allowed, 
 			treatment.days_supply, treatment.pharmacy_id, treatment.pharmacy_notes, treatment.patient_instructions, treatment.creation_date, treatment.erx_sent_date,
-			treatment.erx_last_filled_date, treatment.status, drug_name.name, drug_route.name, drug_form.name,
+			treatment.status, drug_name.name, drug_route.name, drug_form.name,
 			patient_visit.patient_id, treatment_plan.patient_visit_id, treatment_plan.doctor_id from treatment
 				inner join treatment_plan on treatment.treatment_plan_id = treatment_plan.id
 				inner join patient_visit on treatment_plan.patient_visit_id = patient_visit.id
@@ -881,7 +881,7 @@ func (d *DataService) GetTreatmentFromId(treatmentId int64) (*common.Treatment, 
 	rows, err := d.DB.Query(`select treatment.id,treatment.erx_id, treatment.treatment_plan_id, treatment.drug_internal_name, treatment.dosage_strength, treatment.type,
 			treatment.dispense_value, treatment.dispense_unit_id, ltext, treatment.refills, treatment.substitutions_allowed, 
 			treatment.days_supply, treatment.pharmacy_id, treatment.pharmacy_notes, treatment.patient_instructions, treatment.creation_date, treatment.erx_sent_date,
-			treatment.erx_last_filled_date, treatment.status, drug_name.name, drug_route.name, drug_form.name,
+			treatment.status, drug_name.name, drug_route.name, drug_form.name,
 			patient_visit.patient_id, treatment_plan.patient_visit_id, treatment_plan.doctor_id from treatment
 				inner join treatment_plan on treatment.treatment_plan_id = treatment_plan.id
 				inner join patient_visit on treatment_plan.patient_visit_id = patient_visit.id
@@ -1052,11 +1052,11 @@ func (d *DataService) getTreatmentAndMetadataFromCurrentRow(rows *sql.Rows) (*co
 	var patientVisitId, treatmentPlanId, prescriptionId, pharmacyId sql.NullInt64
 	var substitutionsAllowed bool
 	var creationDate time.Time
-	var erxSentDate, erxLastFilledDate mysql.NullTime
+	var erxSentDate mysql.NullTime
 	var pharmacyNotes, drugName, drugForm, drugRoute sql.NullString
 	err := rows.Scan(&treatmentId, &prescriptionId, &treatmentPlanId, &drugInternalName, &dosageStrength, &treatmentType, &dispenseValue, &dispenseUnitId,
 		&dispenseUnitDescription, &refills, &substitutionsAllowed, &daysSupply, &pharmacyId,
-		&pharmacyNotes, &patientInstructions, &creationDate, &erxSentDate, &erxLastFilledDate, &status, &drugName, &drugRoute, &drugForm, &patientId, &patientVisitId, &prescriberId)
+		&pharmacyNotes, &patientInstructions, &creationDate, &erxSentDate, &status, &drugName, &drugRoute, &drugForm, &patientId, &patientVisitId, &prescriberId)
 	if err != nil {
 		return nil, err
 	}
@@ -1080,9 +1080,6 @@ func (d *DataService) getTreatmentAndMetadataFromCurrentRow(rows *sql.Rows) (*co
 		Status:                  status,
 		PharmacyNotes:           pharmacyNotes.String,
 		DoctorId:                prescriberId,
-		ERx: &common.ERxData{
-			ErxLastDateFilled: &erxLastFilledDate.Time,
-		},
 	}
 
 	if treatmentPlanId.Valid {
@@ -1093,16 +1090,20 @@ func (d *DataService) getTreatmentAndMetadataFromCurrentRow(rows *sql.Rows) (*co
 		treatment.PatientVisitId = common.NewObjectId(patientVisitId.Int64)
 	}
 
+	if treatmentType == treatment_otc {
+		treatment.OTC = true
+	}
+
+	if pharmacyId.Valid || prescriptionId.Valid || erxSentDate.Valid {
+		treatment.ERx = &common.ERxData{}
+	}
+
 	if pharmacyId.Valid {
 		treatment.ERx.PharmacyLocalId = common.NewObjectId(pharmacyId.Int64)
 	}
 
 	if prescriptionId.Valid {
 		treatment.ERx.PrescriptionId = common.NewObjectId(prescriptionId.Int64)
-	}
-
-	if treatmentType == treatment_otc {
-		treatment.OTC = true
 	}
 
 	if erxSentDate.Valid {

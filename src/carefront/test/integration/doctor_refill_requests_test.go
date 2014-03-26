@@ -1219,7 +1219,7 @@ func TestDenyRefillRequestWithDNTFWithoutTreatment(t *testing.T) {
 
 }
 
-func setUpDeniedRefillRequestWithDNTF(t *testing.T, testData TestData, endErxStatus string) *common.Treatment {
+func setUpDeniedRefillRequestWithDNTF(t *testing.T, testData TestData, endErxStatus string, toAddTemplatedTreatment bool) *common.Treatment {
 
 	// create doctor with clinicianId specicified
 	doctor := createDoctorWithClinicianId(testData, t)
@@ -1252,6 +1252,57 @@ func setUpDeniedRefillRequestWithDNTF(t *testing.T, testData TestData, endErxSta
 	err := testData.DataApi.AddPharmacy(pharmacyToReturn)
 	if err != nil {
 		t.Fatal("Unable to store pharmacy in db: " + err.Error())
+	}
+
+	comment := "this is a test"
+	treatmentToAdd := common.Treatment{
+		DrugInternalName: "Testing (If - This Works)",
+		DrugDBIds: map[string]string{
+			erx.LexiSynonymTypeId: "12345",
+			erx.LexiDrugSynId:     "123151",
+			erx.LexiGenProductId:  "124151",
+			erx.NDC:               "1415",
+		},
+		DosageStrength:      "10 mg",
+		DispenseValue:       1,
+		DispenseUnitId:      common.NewObjectId(12),
+		NumberRefills:       1,
+		OTC:                 false,
+		PatientInstructions: "patient instructions",
+	}
+
+	if toAddTemplatedTreatment {
+
+		treatmentTemplate := &common.DoctorTreatmentTemplate{}
+		treatmentTemplate.Name = "Favorite Treatment #1"
+		treatmentTemplate.Treatment = &treatmentToAdd
+
+		doctorFavoriteTreatmentsHandler := &apiservice.DoctorTreatmentTemplatesHandler{DataApi: testData.DataApi}
+		ts := httptest.NewServer(doctorFavoriteTreatmentsHandler)
+		defer ts.Close()
+
+		treatmentTemplatesRequest := &apiservice.DoctorTreatmentTemplatesRequest{TreatmentTemplates: []*common.DoctorTreatmentTemplate{treatmentTemplate}}
+		data, err := json.Marshal(&treatmentTemplatesRequest)
+		if err != nil {
+			t.Fatal("Unable to marshal request body for adding treatments to patient visit")
+		}
+
+		resp, err := authPost(ts.URL, "application/json", bytes.NewBuffer(data), doctor.AccountId.Int64())
+		if err != nil {
+			t.Fatal("Unable to make POST request to add treatments to patient visit " + err.Error())
+		}
+
+		if resp.StatusCode != http.StatusOK {
+			t.Fatalf("Request to add treatments failed with http status code %d", resp.StatusCode)
+		}
+
+		treatmentTemplatesResponse := &apiservice.DoctorTreatmentTemplatesResponse{}
+		err = json.NewDecoder(resp.Body).Decode(treatmentTemplatesResponse)
+		if err != nil {
+			t.Fatal("Unable to unmarshal response into object : " + err.Error())
+		}
+
+		treatmentToAdd.DoctorTreatmentTemplateId = treatmentTemplatesResponse.TreatmentTemplates[0].Id
 	}
 
 	testTime := time.Now()
@@ -1316,6 +1367,7 @@ func setUpDeniedRefillRequestWithDNTF(t *testing.T, testData TestData, endErxSta
 		PatientDetailsToReturn:       patientToReturn,
 		RefillRxRequestQueueToReturn: []*common.RefillRequestItem{refillRequestItem},
 		PrescriptionIdsToReturn:      []int64{prescriptionIdForTreatment},
+		SelectedMedicationToReturn:   &common.Treatment{},
 		PrescriptionIdToPrescriptionStatuses: map[int64][]common.StatusEvent{
 			prescriptionIdForTreatment: []common.StatusEvent{common.StatusEvent{
 				Status: endErxStatus,
@@ -1359,22 +1411,6 @@ func setUpDeniedRefillRequestWithDNTF(t *testing.T, testData TestData, endErxSta
 	erxStatusQueue.QueueUrl = "local-erx"
 
 	// now, lets go ahead and attempt to deny this refill request
-	comment := "this is a test"
-	treatmentToAdd := common.Treatment{
-		DrugInternalName: "Testing (If - This Works)",
-		DrugDBIds: map[string]string{
-			erx.LexiSynonymTypeId: "12345",
-			erx.LexiDrugSynId:     "123151",
-			erx.LexiGenProductId:  "124151",
-			erx.NDC:               "1415",
-		},
-		DosageStrength:      "10 mg",
-		DispenseValue:       1,
-		DispenseUnitId:      common.NewObjectId(12),
-		NumberRefills:       1,
-		OTC:                 false,
-		PatientInstructions: "patient instructions",
-	}
 
 	requestData := apiservice.DoctorRefillRequestRequestData{
 		RefillRequestId: common.NewObjectId(refillRequest.Id),
@@ -1491,7 +1527,28 @@ func TestDenyRefillRequestWithDNTFWithUnlinkedTreatment(t *testing.T) {
 	testData := SetupIntegrationTest(t)
 	defer TearDownIntegrationTest(t, testData)
 
-	unlinkedTreatment := setUpDeniedRefillRequestWithDNTF(t, testData, api.ERX_STATUS_SENT)
+	unlinkedTreatment := setUpDeniedRefillRequestWithDNTF(t, testData, api.ERX_STATUS_SENT, false)
+
+	if len(unlinkedTreatment.ERx.RxHistory) != 3 {
+		t.Fatalf("Expcted 3 events from rx history of unlinked treatment instead got %d", len(unlinkedTreatment.ERx.RxHistory))
+	}
+
+	for _, unlinkedTreatmentStatusEvent := range unlinkedTreatment.ERx.RxHistory {
+		if unlinkedTreatmentStatusEvent.InternalStatus == api.STATUS_ACTIVE && unlinkedTreatmentStatusEvent.Status != api.ERX_STATUS_SENT {
+			t.Fatalf("Expected status %s for top level status of unlinked treatment but got %s", api.ERX_STATUS_SENT, unlinkedTreatmentStatusEvent.Status)
+		}
+	}
+}
+
+func TestDenyRefillRequestWithDNTFWithUnlinkedTreatmentFromTemplatedTreatment(t *testing.T) {
+	if err := CheckIfRunningLocally(t); err == CannotRunTestLocally {
+		return
+	}
+
+	testData := SetupIntegrationTest(t)
+	defer TearDownIntegrationTest(t, testData)
+
+	unlinkedTreatment := setUpDeniedRefillRequestWithDNTF(t, testData, api.ERX_STATUS_SENT, true)
 
 	if len(unlinkedTreatment.ERx.RxHistory) != 3 {
 		t.Fatalf("Expcted 3 events from rx history of unlinked treatment instead got %d", len(unlinkedTreatment.ERx.RxHistory))
@@ -1512,7 +1569,7 @@ func TestDenyRefillRequestWithDNTFUnlinkedTreatmentErrorSending(t *testing.T) {
 	testData := SetupIntegrationTest(t)
 	defer TearDownIntegrationTest(t, testData)
 
-	unlinkedTreatment := setUpDeniedRefillRequestWithDNTF(t, testData, api.ERX_STATUS_ERROR)
+	unlinkedTreatment := setUpDeniedRefillRequestWithDNTF(t, testData, api.ERX_STATUS_ERROR, false)
 
 	if len(unlinkedTreatment.ERx.RxHistory) != 3 {
 		t.Fatalf("Expcted 3 events from rx history of unlinked treatment instead got %d", len(unlinkedTreatment.ERx.RxHistory))
@@ -1559,7 +1616,7 @@ func TestDenyRefillRequestWithDNTFUnlinkedTreatmentErrorSending(t *testing.T) {
 	CheckSuccessfulStatusCode(resp, "Unable to successfully resolve error pertaining to unlinked dntf treatment", t)
 }
 
-func setUpDeniedRefillRequestWithDNTFForLinkedTreatment(t *testing.T, testData TestData, endErxStatus string) *common.Treatment {
+func setUpDeniedRefillRequestWithDNTFForLinkedTreatment(t *testing.T, testData TestData, endErxStatus string, toAddTemplatedTreatment bool) *common.Treatment {
 	// create doctor with clinicianId specicified
 	doctor := createDoctorWithClinicianId(testData, t)
 
@@ -1595,6 +1652,58 @@ func setUpDeniedRefillRequestWithDNTFForLinkedTreatment(t *testing.T, testData T
 		patientVisitResponse.PatientVisitId, doctor.DoctorId.Int64())
 	if err != nil {
 		t.Fatal("Unable to start new treatment plan for patient visit " + err.Error())
+	}
+
+	comment := "this is a test"
+	treatmentToAdd := common.Treatment{
+		DrugInternalName: "Testing (If - This Works)",
+		DrugDBIds: map[string]string{
+			erx.LexiSynonymTypeId: "12345",
+			erx.LexiDrugSynId:     "123151",
+			erx.LexiGenProductId:  "124151",
+			erx.NDC:               "1415",
+		},
+		DosageStrength:      "10 mg",
+		DispenseValue:       1,
+		DispenseUnitId:      common.NewObjectId(12),
+		NumberRefills:       1,
+		OTC:                 false,
+		PatientInstructions: "patient instructions",
+	}
+
+	if toAddTemplatedTreatment {
+
+		treatmentTemplate := &common.DoctorTreatmentTemplate{}
+		treatmentTemplate.Name = "Favorite Treatment #1"
+		treatmentTemplate.Treatment = &treatmentToAdd
+
+		doctorFavoriteTreatmentsHandler := &apiservice.DoctorTreatmentTemplatesHandler{DataApi: testData.DataApi}
+		ts := httptest.NewServer(doctorFavoriteTreatmentsHandler)
+		defer ts.Close()
+
+		treatmentTemplatesRequest := &apiservice.DoctorTreatmentTemplatesRequest{TreatmentTemplates: []*common.DoctorTreatmentTemplate{treatmentTemplate}}
+		treatmentTemplatesRequest.PatientVisitId = common.NewObjectId(patientVisitResponse.PatientVisitId)
+		data, err := json.Marshal(&treatmentTemplatesRequest)
+		if err != nil {
+			t.Fatal("Unable to marshal request body for adding treatments to patient visit")
+		}
+
+		resp, err := authPost(ts.URL, "application/json", bytes.NewBuffer(data), doctor.AccountId.Int64())
+		if err != nil {
+			t.Fatal("Unable to make POST request to add treatments to patient visit " + err.Error())
+		}
+
+		if resp.StatusCode != http.StatusOK {
+			t.Fatalf("Request to add treatments failed with http status code %d", resp.StatusCode)
+		}
+
+		treatmentTemplatesResponse := &apiservice.DoctorTreatmentTemplatesResponse{}
+		err = json.NewDecoder(resp.Body).Decode(treatmentTemplatesResponse)
+		if err != nil {
+			t.Fatal("Unable to unmarshal response into object : " + err.Error())
+		}
+
+		treatmentToAdd.DoctorTreatmentTemplateId = treatmentTemplatesResponse.TreatmentTemplates[0].Id
 	}
 
 	testTime := time.Now()
@@ -1707,6 +1816,7 @@ func setUpDeniedRefillRequestWithDNTFForLinkedTreatment(t *testing.T, testData T
 			},
 			},
 		},
+		SelectedMedicationToReturn: &common.Treatment{},
 	}
 
 	// Call the Consume method
@@ -1744,22 +1854,6 @@ func setUpDeniedRefillRequestWithDNTFForLinkedTreatment(t *testing.T, testData T
 	erxStatusQueue.QueueUrl = "local-erx"
 
 	// now, lets go ahead and attempt to deny this refill request
-	comment := "this is a test"
-	treatmentToAdd := common.Treatment{
-		DrugInternalName: "Testing (If - This Works)",
-		DrugDBIds: map[string]string{
-			erx.LexiSynonymTypeId: "12345",
-			erx.LexiDrugSynId:     "123151",
-			erx.LexiGenProductId:  "124151",
-			erx.NDC:               "1415",
-		},
-		DosageStrength:      "10 mg",
-		DispenseValue:       1,
-		DispenseUnitId:      common.NewObjectId(12),
-		NumberRefills:       1,
-		OTC:                 false,
-		PatientInstructions: "patient instructions",
-	}
 
 	requestData := apiservice.DoctorRefillRequestRequestData{
 		RefillRequestId: common.NewObjectId(refillRequest.Id),
@@ -1833,9 +1927,31 @@ func setUpDeniedRefillRequestWithDNTFForLinkedTreatment(t *testing.T, testData T
 		t.Fatalf("Expected 1 entry in dntf mapping table instead got %d", dntfMappingCount)
 	}
 
-	linkedTreatment, err := testData.DataApi.GetTreatmentBasedOnPrescriptionId(prescriptionIdForTreatment)
+	treatments, err := testData.DataApi.GetTreatmentsBasedOnTreatmentPlanId(patientVisitResponse.PatientVisitId, treatmentPlanId)
 	if err != nil {
 		t.Fatalf("Unable to get the treatmend based on prescription id: %+v", err)
+	}
+
+	if len(treatments) != 2 {
+		t.Fatalf("Expected 2 treatments in treatment plan instead got %d", len(treatments))
+	}
+
+	var linkedTreatment *common.Treatment
+	for _, treatment := range treatments {
+		if treatment.ERx.PrescriptionId.Int64() == prescriptionIdForTreatment {
+			linkedTreatment = treatment
+			break
+		}
+	}
+
+	if linkedTreatment == nil {
+		t.Fatalf("Unable to find the treatment that was added as a result of DNTF")
+	}
+
+	if toAddTemplatedTreatment {
+		if linkedTreatment.DoctorTreatmentTemplateId == nil || linkedTreatment.DoctorTreatmentTemplateId.Int64() == 0 {
+			t.Fatal("Expected there to exist a doctor template id given that the treatment was created from a template but there wasnt one")
+		}
 	}
 
 	// the treatment as a result of DNTF, if linked, should map back to the original treatemtn plan
@@ -1871,7 +1987,27 @@ func TestDenyRefillRequestWithDNTFWithLinkedTreatmentSuccessfulSend(t *testing.T
 	testData := SetupIntegrationTest(t)
 	defer TearDownIntegrationTest(t, testData)
 
-	linkedTreatment := setUpDeniedRefillRequestWithDNTFForLinkedTreatment(t, testData, api.ERX_STATUS_SENT)
+	linkedTreatment := setUpDeniedRefillRequestWithDNTFForLinkedTreatment(t, testData, api.ERX_STATUS_SENT, false)
+
+	if len(linkedTreatment.ERx.RxHistory) != 3 {
+		t.Fatalf("Expected 3 events for linked treatment instead got %d", len(linkedTreatment.ERx.RxHistory))
+	}
+
+	for _, linkedTreatmentStatusEvent := range linkedTreatment.ERx.RxHistory {
+		if linkedTreatmentStatusEvent.InternalStatus == api.STATUS_ACTIVE && linkedTreatmentStatusEvent.Status != api.ERX_STATUS_SENT {
+			t.Fatalf("Expected the latest event for the linked treatment to be %s instead it was %s", api.ERX_STATUS_SENT, linkedTreatmentStatusEvent.Status)
+		}
+	}
+}
+
+func TestDenyRefillRequestWithDNTFWithLinkedTreatmentSuccessfulSendAddingFromTemplatedTreatment(t *testing.T) {
+	if err := CheckIfRunningLocally(t); err == CannotRunTestLocally {
+		return
+	}
+	testData := SetupIntegrationTest(t)
+	defer TearDownIntegrationTest(t, testData)
+
+	linkedTreatment := setUpDeniedRefillRequestWithDNTFForLinkedTreatment(t, testData, api.ERX_STATUS_SENT, true)
 
 	if len(linkedTreatment.ERx.RxHistory) != 3 {
 		t.Fatalf("Expected 3 events for linked treatment instead got %d", len(linkedTreatment.ERx.RxHistory))
@@ -1891,7 +2027,7 @@ func TestDenyRefillRequestWithDNTFWithLinkedTreatmentErrorSend(t *testing.T) {
 	testData := SetupIntegrationTest(t)
 	defer TearDownIntegrationTest(t, testData)
 
-	linkedTreatment := setUpDeniedRefillRequestWithDNTFForLinkedTreatment(t, testData, api.ERX_STATUS_ERROR)
+	linkedTreatment := setUpDeniedRefillRequestWithDNTFForLinkedTreatment(t, testData, api.ERX_STATUS_ERROR, false)
 
 	if len(linkedTreatment.ERx.RxHistory) != 3 {
 		t.Fatalf("Expected 3 events for linked treatment instead got %d", len(linkedTreatment.ERx.RxHistory))
