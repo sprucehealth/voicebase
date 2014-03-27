@@ -1120,14 +1120,18 @@ func (d *DataService) getTreatmentAndMetadataFromCurrentRow(rows *sql.Rows) (*co
 		return nil, err
 	}
 
-	treatment.ERx.RxHistory, err = d.GetPrescriptionStatusEventsForTreatment(treatment.Id.Int64())
-	if err != nil {
-		return nil, err
-	}
+	// if its null that means that there isn't any erx related information
+	if treatment.ERx != nil {
+		treatment.ERx.RxHistory, err = d.GetPrescriptionStatusEventsForTreatment(treatment.Id.Int64())
+		if err != nil {
+			return nil, err
+		}
 
-	treatment.ERx.Pharmacy, err = d.GetPharmacyFromId(treatment.ERx.PharmacyLocalId.Int64())
-	if err != nil {
-		return nil, err
+		treatment.ERx.Pharmacy, err = d.GetPharmacyFromId(treatment.ERx.PharmacyLocalId.Int64())
+		if err != nil {
+			return nil, err
+		}
+
 	}
 
 	treatment.Doctor, err = d.GetDoctorFromId(treatment.DoctorId)

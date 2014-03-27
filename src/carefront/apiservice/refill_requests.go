@@ -9,6 +9,9 @@ import (
 	"encoding/json"
 	"net/http"
 	"sort"
+	"strconv"
+
+	"github.com/gorilla/schema"
 )
 
 const (
@@ -44,6 +47,10 @@ type DoctorRefillRequestRequestData struct {
 	Action               string            `json:"action"`
 	ApprovedRefillAmount int64             `json:"approved_refill_amount"`
 	Treatment            *common.Treatment `json:"new_treatment,omitempty"`
+}
+
+type DoctorGetRefillRequestData struct {
+	RefillRequestId string `schema:"refill_request_id"`
 }
 
 func (d *DoctorRefillRequestHandler) ServeHTTP(w http.ResponseWriter, r *http.Request) {
@@ -322,12 +329,24 @@ func (d *DoctorRefillRequestHandler) addTreatmentInEventOfDNTF(originatingTreatm
 }
 
 func (d *DoctorRefillRequestHandler) getRefillRequest(w http.ResponseWriter, r *http.Request) {
-	requestData := &DoctorRefillRequestRequestData{}
-	if err := json.NewDecoder(r.Body).Decode(requestData); err != nil {
+	if err := r.ParseForm(); err != nil {
 		WriteDeveloperError(w, http.StatusBadRequest, "Unable to parse input parameters: "+err.Error())
+		return
 	}
 
-	refillRequest, err := d.DataApi.GetRefillRequestFromId(requestData.RefillRequestId.Int64())
+	requestData := &DoctorGetRefillRequestData{}
+	if err := schema.NewDecoder().Decode(requestData, r.Form); err != nil {
+		WriteDeveloperError(w, http.StatusBadRequest, "Unable to parse input parameters: "+err.Error())
+		return
+	}
+
+	refillRequestId, err := strconv.ParseInt(requestData.RefillRequestId, 10, 64)
+	if err != nil {
+		WriteDeveloperError(w, http.StatusBadRequest, "Unable to parse refill request: "+err.Error())
+		return
+	}
+
+	refillRequest, err := d.DataApi.GetRefillRequestFromId(refillRequestId)
 	if err != nil {
 		WriteDeveloperError(w, http.StatusInternalServerError, "Unable to get refill request based on id: "+err.Error())
 		return
