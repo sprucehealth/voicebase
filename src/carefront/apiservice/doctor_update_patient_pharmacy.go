@@ -45,7 +45,6 @@ func (d *DoctorUpdatePatientPharmacyHandler) ServeHTTP(w http.ResponseWriter, r 
 		WriteDeveloperError(w, http.StatusInternalServerError, "Unable to get doctor from account id: "+err.Error())
 		return
 	}
-
 	if err := verifyDoctorPatientRelationship(d.DataApi, doctor, patient); err != nil {
 		WriteDeveloperError(w, http.StatusForbidden, "Unable to verify doctor-patient relationship: "+err.Error())
 		return
