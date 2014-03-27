@@ -107,9 +107,16 @@ func (d *DoctorPatientUpdateHandler) updatePatientInformation(w http.ResponseWri
 		}
 	}
 
-	if err := validatePatientInformationAccordingToSurescriptsRequirements(requestData.Patient); err != nil {
-		WriteUserError(w, http.StatusBadRequest, err.Error())
-		return
+	err, isUserFacingError := d.validatePatientInformationAccordingToSurescriptsRequirements(requestData.Patient)
+
+	if err != nil {
+		if isUserFacingError {
+			WriteUserError(w, http.StatusBadRequest, err.Error())
+			return
+		} else {
+			WriteDeveloperError(w, http.StatusInternalServerError, err.Error())
+			return
+		}
 	}
 
 	trimSpacesFromPatientFields(requestData.Patient)
@@ -170,50 +177,60 @@ func (d *DoctorPatientUpdateHandler) updatePatientInformation(w http.ResponseWri
 	WriteJSONToHTTPResponseWriter(w, http.StatusOK, SuccessfulGenericJSONResponse())
 }
 
-func validatePatientInformationAccordingToSurescriptsRequirements(patient *common.Patient) error {
+func (d *DoctorPatientUpdateHandler) validatePatientInformationAccordingToSurescriptsRequirements(patient *common.Patient) (error, bool) {
 	// following field lengths are surescripts requirements
 	longFieldLength := 35
 	shortFieldLength := 10
 	phoneNumberLength := 25
 
 	if len(patient.Prefix) > shortFieldLength {
-		return fmt.Errorf("Prefix cannot be longer than %d characters in length", shortFieldLength)
+		return fmt.Errorf("Prefix cannot be longer than %d characters in length", shortFieldLength), true
 	}
 
 	if len(patient.Suffix) > shortFieldLength {
-		return fmt.Errorf("Suffix cannot be longer than %d characters in length", shortFieldLength)
+		return fmt.Errorf("Suffix cannot be longer than %d characters in length", shortFieldLength), true
 	}
 
 	if len(patient.FirstName) > longFieldLength {
-		return fmt.Errorf("First name cannot be longer than %d characters", longFieldLength)
+		return fmt.Errorf("First name cannot be longer than %d characters", longFieldLength), true
 	}
 
 	if len(patient.MiddleName) > longFieldLength {
-		return fmt.Errorf("Middle name cannot be longer than %d characters", longFieldLength)
+		return fmt.Errorf("Middle name cannot be longer than %d characters", longFieldLength), true
 	}
 
 	if len(patient.LastName) > longFieldLength {
-		return fmt.Errorf("Last name cannot be longer than %d characters", longFieldLength)
+		return fmt.Errorf("Last name cannot be longer than %d characters", longFieldLength), true
 	}
 
 	if len(patient.PatientAddress.AddressLine1) > longFieldLength {
-		return fmt.Errorf("AddressLine1 of patient address cannot be longer than %d characters", longFieldLength)
+		return fmt.Errorf("AddressLine1 of patient address cannot be longer than %d characters", longFieldLength), true
 	}
 
 	if len(patient.PatientAddress.AddressLine2) > longFieldLength {
-		return fmt.Errorf("AddressLine2 of patient address cannot be longer than %d characters", longFieldLength)
+		return fmt.Errorf("AddressLine2 of patient address cannot be longer than %d characters", longFieldLength), true
 	}
 
 	if len(patient.PatientAddress.City) > longFieldLength {
-		return fmt.Errorf("City cannot be longer than %d characters", longFieldLength)
+		return fmt.Errorf("City cannot be longer than %d characters", longFieldLength), true
 	}
 
 	for _, phoneNumber := range patient.PhoneNumbers {
 		if len(phoneNumber.Phone) > 25 {
-			return fmt.Errorf("Phone numbers cannot be longer than %d digits", phoneNumberLength)
+			return fmt.Errorf("Phone numbers cannot be longer than %d digits", phoneNumberLength), true
 		}
 	}
-	return nil
+
+	isValid, err := d.DataApi.IsStateValid(patient.PatientAddress.State)
+	if err != nil {
+		return err, false
+	}
+
+	if !isValid {
+		return fmt.Errorf("State entered for address is not valid"), true
+	}
+
+	return nil, fal
 }
 
 func trimSpacesFromPatientFields(patient *common.Patient) {

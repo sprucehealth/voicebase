@@ -965,6 +965,18 @@ func (d *DataService) DeletePendingTask(pendingTaskId int64) error {
 	return err
 }
 
+func (d *DataService) IsStateValid(state string) (bool, error) {
+	var id int64
+	err := d.DB.QueryRow(`select id from state where full_name = ? or abbreviation = ?`, state, state).Scan(&id)
+	if err != nil {
+		if err == sql.ErrNoRows {
+			return false, nil
+		}
+		return false, err
+	}
+	return (id != 0), nil
+}
+
 func (d *DataService) getPatientBasedOnQuery(queryStr string, queryParams ...interface{}) ([]*common.Patient, error) {
 	rows, err := d.DB.Query(queryStr, queryParams...)
 	if err != nil {
