@@ -78,7 +78,7 @@ func (t *Treatment) Equals(other *Treatment) bool {
 		t.DispenseUnitId.Int64() == other.DispenseUnitId.Int64() &&
 		t.NumberRefills == other.NumberRefills &&
 		t.SubstitutionsAllowed == other.SubstitutionsAllowed &&
-		t.DaysSupply == other.DaysSupply &&
+		t.DaysSupply.Int64() == other.DaysSupply.Int64() &&
 		t.PatientInstructions == other.PatientInstructions &&
 		t.ERx.PharmacyLocalId.Int64() == other.ERx.PharmacyLocalId.Int64()
 }
