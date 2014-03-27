@@ -363,6 +363,7 @@ func (d *DataService) getTreatmentForRefillRequest(tableName string, treatmentId
 	treatment.DrugForm = drugForm.String
 	treatment.DrugRoute = drugRoute.String
 	treatment.OTC = treatmentType == treatmentOTC
+	treatment.OTC = treatmentType == treatment_otc
 	treatment.ERx.PharmacyLocalId = common.NewObjectId(pharmacyLocalId)
 	treatment.ERx.Pharmacy, err = d.GetPharmacyFromId(pharmacyLocalId)
 

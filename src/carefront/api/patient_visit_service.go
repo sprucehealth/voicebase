@@ -1158,12 +1158,6 @@ func (d *DataService) getTreatmentAndMetadataFromCurrentRow(rows *sql.Rows) (*co
 	if err != nil {
 		return nil, err
 	}
-
-	treatment.Patient, err = d.GetPatientFromId(treatment.PatientId)
-	if err != nil {
-		return nil, err
-	}
-
 	return treatment, nil
 }
 
