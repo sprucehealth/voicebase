@@ -70,6 +70,7 @@ type PatientAPI interface {
 	CreateCareTeamForPatientWithPrimaryDoctor(patientId, doctorId int64) (careTeam *common.PatientCareProviderGroup, err error)
 	GetCareTeamForPatient(patientId int64) (careTeam *common.PatientCareProviderGroup, err error)
 	CheckCareProvidingElligibility(shortState string, healthConditionId int64) (doctorId int64, err error)
+
 	UpdatePatientAddress(patientId int64, addressLine1, addressLine2, city, state, zipCode, addressType string) error
 	UpdatePatientPharmacy(patientId int64, pharmacyDetails *pharmacy.PharmacyData) error
 	TrackPatientAgreements(patientId int64, agreements map[string]bool) error
@@ -133,9 +134,9 @@ type PatientVisitAPI interface {
 }
 
 type RefillRequestDenialReason struct {
-	Id           int64
-	DenialCode   string
-	DenialReason string
+	Id           int64  `json:"id,string"`
+	DenialCode   string `json:"denial_code"`
+	DenialReason string `json:"denial_reason"`
 }
 
 type PrescriptionsAPI interface {
