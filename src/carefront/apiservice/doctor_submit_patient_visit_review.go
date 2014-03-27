@@ -109,29 +109,33 @@ func (d *DoctorSubmitPatientVisitReviewHandler) submitPatientVisitReview(w http.
 	// and send to dose spot
 	if requestData.Status == api.CASE_STATUS_TREATED || requestData.Status == "" {
 
-		// FIX: add fake address for now until we start accepting address from client
-		patient.PatientAddress = &common.Address{
-			AddressLine1: "1234 Main Street",
-			City:         "San Francisco",
-			State:        "CA",
-			ZipCode:      "94103",
+		if patient.PatientAddress == nil {
+			// FIX: add fake address for now until we start accepting address from client
+			patient.PatientAddress = &common.Address{
+				AddressLine1: "1234 Main Street",
+				City:         "San Francisco",
+				State:        "CA",
+				ZipCode:      "94103",
+			}
 		}
 
 		pharmacySelection := patient.Pharmacy
 
-		// FIX: add fake pharmacy for now
-		pharmacyId := successful_erx_routing_pharmacy_id
-		if requestData.FailErxRouting {
-			pharmacyId = failed_erx_routing_pharmacy_id
-		}
+		if patient.Pharmacy == nil || patient.Pharmacy.Source != pharmacy.PHARMACY_SOURCE_SURESCRIPTS || requestData.FailErxRouting {
+			// FIX: add fake pharmacy for now
+			pharmacyId := successful_erx_routing_pharmacy_id
+			if requestData.FailErxRouting {
+				pharmacyId = failed_erx_routing_pharmacy_id
+			}
 
-		patient.Pharmacy = &pharmacy.PharmacyData{
-			SourceId:     pharmacyId,
-			Source:       pharmacy.PHARMACY_SOURCE_SURESCRIPTS,
-			AddressLine1: "123 TEST TEST",
-			City:         "San Francisco",
-			State:        "CA",
-			Postal:       "94115",
+			patient.Pharmacy = &pharmacy.PharmacyData{
+				SourceId:     pharmacyId,
+				Source:       pharmacy.PHARMACY_SOURCE_SURESCRIPTS,
+				AddressLine1: "123 TEST TEST",
+				City:         "San Francisco",
+				State:        "CA",
+				Postal:       "94115",
+			}
 		}
 
 		treatments, err := d.DataApi.GetTreatmentsBasedOnTreatmentPlanId(requestData.PatientVisitId, treatmentPlanId)
