@@ -5,6 +5,7 @@ import (
 	"carefront/common"
 	"carefront/libs/erx"
 	"carefront/libs/pharmacy"
+	"fmt"
 	"strconv"
 
 	"encoding/json"
@@ -106,6 +107,11 @@ func (d *DoctorPatientUpdateHandler) updatePatientInformation(w http.ResponseWri
 		}
 	}
 
+	if err := validatePatientInformationAccordingToSurescriptsRequirements(requestData.Patient); err != nil {
+		WriteUserError(w, http.StatusBadRequest, err.Error())
+		return
+	}
+
 	currentDoctor, err := d.DataApi.GetDoctorFromAccountId(GetContext(r).AccountId)
 	if err != nil {
 		WriteDeveloperError(w, http.StatusInternalServerError, "Unable to get doctor from account id: "+err.Error())
@@ -160,4 +166,50 @@ func (d *DoctorPatientUpdateHandler) updatePatientInformation(w http.ResponseWri
 	}
 
 	WriteJSONToHTTPResponseWriter(w, http.StatusOK, SuccessfulGenericJSONResponse())
+}
+
+func validatePatientInformationAccordingToSurescriptsRequirements(patient *common.Patient) error {
+	// following field lengths are surescripts requirements
+	longFieldLength := 35
+	shortFieldLength := 10
+	phoneNumberLength := 25
+
+	if len(patient.Prefix) > shortFieldLength {
+		return fmt.Errorf("Prefix cannot be longer than %d characters in length", shortFieldLength)
+	}
+
+	if len(patient.Suffix) > shortFieldLength {
+		return fmt.Errorf("Suffix cannot be longer than %d characters in length", shortFieldLength)
+	}
+
+	if len(patient.FirstName) > longFieldLength {
+		return fmt.Errorf("First name cannot be longer than %d characters", longFieldLength)
+	}
+
+	if len(patient.MiddleName) > longFieldLength {
+		return fmt.Errorf("Middle name cannot be longer than %d characters", longFieldLength)
+	}
+
+	if len(patient.LastName) > longFieldLength {
+		return fmt.Errorf("Last name cannot be longer than %d characters", longFieldLength)
+	}
+
+	if len(patient.PatientAddress.AddressLine1) > longFieldLength {
+		return fmt.Errorf("AddressLine1 of patient address cannot be longer than %d characters", longFieldLength)
+	}
+
+	if len(patient.PatientAddress.AddressLine2) > longFieldLength {
+		return fmt.Errorf("AddressLine2 of patient address cannot be longer than %d characters", longFieldLength)
+	}
+
+	if len(patient.PatientAddress.City) > longFieldLength {
+		return fmt.Errorf("City cannot be longer than %d characters", longFieldLength)
+	}
+
+	for _, phoneNumber := range patient.PhoneNumbers {
+		if len(phoneNumber.Phone) > 25 {
+			return fmt.Errorf("Phone numbers cannot be longer than %d digits", phoneNumberLength)
+		}
+	}
+	return nil
 }
