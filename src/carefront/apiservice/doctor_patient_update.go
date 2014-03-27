@@ -109,6 +109,7 @@ func (d *DoctorPatientUpdateHandler) updatePatientInformation(w http.ResponseWri
 
 	err, isUserFacingError := d.validatePatientInformationAccordingToSurescriptsRequirements(requestData.Patient)
 
+	currentDoctor, err := d.DataApi.GetDoctorFromAccountId(GetContext(r).AccountId)
 	if err != nil {
 		if isUserFacingError {
 			WriteUserError(w, http.StatusBadRequest, err.Error())
@@ -119,23 +120,15 @@ func (d *DoctorPatientUpdateHandler) updatePatientInformation(w http.ResponseWri
 		}
 	}
 
-	trimSpacesFromPatientFields(requestData.Patient)
+	if err := verifyDoctorPatientRelationship(d.DataApi, currentDoctor, requestData.Patient); err != nil {
+		WriteDeveloperError(w, http.StatusForbidden, "Unable to verify doctor-patient relationship: "+err.Error())
+		return
+	}
 
 	// get the erx id for the patient, if it exists in the database
 	existingPatientInfo, err := d.DataApi.GetPatientFromId(requestData.Patient.PatientId.Int64())
 	if err != nil {
 		WriteDeveloperError(w, http.StatusInternalServerError, "Unable to get patient info from database: "+err.Error())
-		return
-	}
-
-	currentDoctor, err := d.DataApi.GetDoctorFromAccountId(GetContext(r).AccountId)
-	if err != nil {
-		WriteDeveloperError(w, http.StatusInternalServerError, "Unable to get doctor from account id: "+err.Error())
-		return
-	}
-
-	if err := verifyDoctorPatientRelationship(d.DataApi, currentDoctor, requestData.Patient); err != nil {
-		WriteDeveloperError(w, http.StatusForbidden, "Unable to verify doctor-patient relationship: "+err.Error())
 		return
 	}
 
