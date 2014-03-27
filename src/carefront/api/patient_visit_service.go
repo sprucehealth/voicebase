@@ -808,7 +808,6 @@ func (d *DataService) GetTreatmentsForPatient(patientId int64) ([]*common.Treatm
 				inner join patient_visit on treatment_plan.patient_visit_id = patient_visit.id
 				inner join dispense_unit on treatment.dispense_unit_id = dispense_unit.id
 				inner join localized_text on localized_text.app_text_id = dispense_unit.dispense_unit_text_id
-				inner join patient_visit on treatment_plan.patient_visit_id = patient_visit.id
 				left outer join drug_name on drug_name_id = drug_name.id
 				left outer join drug_route on drug_route_id = drug_route.id
 				left outer join drug_form on drug_form_id = drug_form.id
