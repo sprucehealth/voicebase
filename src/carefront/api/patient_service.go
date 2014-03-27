@@ -71,6 +71,30 @@ func (d *DataService) CreateUnlinkedPatientFromRefillRequest(patient *common.Pat
 		}
 	}
 
+	if patient.Pharmacy != nil {
+		var existingPharmacyId int64
+		err = tx.QueryRow(`select id from pharmacy_selection where pharmacy_id = ?`, patient.Pharmacy.SourceId).Scan(&existingPharmacyId)
+		if err != nil && err != sql.ErrNoRows {
+			tx.Rollback()
+			return err
+		}
+
+		if existingPharmacyId == 0 {
+			err = addPharmacy(patient.Pharmacy, tx)
+			if err != nil {
+				tx.Rollback()
+				return err
+			}
+			existingPharmacyId = patient.Pharmacy.LocalId
+		}
+
+		_, err = tx.Exec(`insert into patient_pharmacy_selection (patient_id, pharmacy_selection_id, status) values (?,?,?)`, patient.PatientId.Int64(), existingPharmacyId, STATUS_ACTIVE)
+		if err != nil {
+			tx.Rollback()
+			return err
+		}
+	}
+
 	// create additional phone numbers for patient
 	if len(patient.PhoneNumbers) > 1 {
 		for _, phoneNumber := range patient.PhoneNumbers[1:] {

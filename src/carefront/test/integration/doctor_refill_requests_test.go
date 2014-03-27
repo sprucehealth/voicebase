@@ -1368,10 +1368,7 @@ func setUpDeniedRefillRequestWithDNTF(t *testing.T, testData TestData, endErxSta
 		PrescriptionIdsToReturn:      []int64{prescriptionIdForTreatment},
 		SelectedMedicationToReturn:   &common.Treatment{},
 		PrescriptionIdToPrescriptionStatuses: map[int64][]common.StatusEvent{
-			prescriptionIdForTreatment: []common.StatusEvent{common.StatusEvent{
-				Status: endErxStatus,
-			},
-			},
+			prescriptionIdForTreatment: []common.StatusEvent{endErxStatus},
 		},
 	}
 
@@ -1526,7 +1523,7 @@ func TestDenyRefillRequestWithDNTFWithUnlinkedTreatment(t *testing.T) {
 	testData := SetupIntegrationTest(t)
 	defer TearDownIntegrationTest(t, testData)
 
-	unlinkedTreatment := setUpDeniedRefillRequestWithDNTF(t, testData, api.ERX_STATUS_SENT, false)
+	unlinkedTreatment := setUpDeniedRefillRequestWithDNTF(t, testData, common.StatusEvent{Status: api.ERX_STATUS_SENT}, false)
 
 	if len(unlinkedTreatment.ERx.RxHistory) != 3 {
 		t.Fatalf("Expcted 3 events from rx history of unlinked treatment instead got %d", len(unlinkedTreatment.ERx.RxHistory))
@@ -1547,7 +1544,7 @@ func TestDenyRefillRequestWithDNTFWithUnlinkedTreatmentFromTemplatedTreatment(t 
 	testData := SetupIntegrationTest(t)
 	defer TearDownIntegrationTest(t, testData)
 
-	unlinkedTreatment := setUpDeniedRefillRequestWithDNTF(t, testData, api.ERX_STATUS_SENT, true)
+	unlinkedTreatment := setUpDeniedRefillRequestWithDNTF(t, testData, common.StatusEvent{Status: api.ERX_STATUS_SENT}, true)
 
 	if len(unlinkedTreatment.ERx.RxHistory) != 3 {
 		t.Fatalf("Expcted 3 events from rx history of unlinked treatment instead got %d", len(unlinkedTreatment.ERx.RxHistory))
@@ -1568,15 +1565,21 @@ func TestDenyRefillRequestWithDNTFUnlinkedTreatmentErrorSending(t *testing.T) {
 	testData := SetupIntegrationTest(t)
 	defer TearDownIntegrationTest(t, testData)
 
-	unlinkedTreatment := setUpDeniedRefillRequestWithDNTF(t, testData, api.ERX_STATUS_ERROR, false)
+	errorMessage := "this is a test error message"
+	unlinkedTreatment := setUpDeniedRefillRequestWithDNTF(t, testData, common.StatusEvent{Status: api.ERX_STATUS_ERROR, StatusDetails: errorMessage}, false)
 
 	if len(unlinkedTreatment.ERx.RxHistory) != 3 {
 		t.Fatalf("Expcted 3 events from rx history of unlinked treatment instead got %d", len(unlinkedTreatment.ERx.RxHistory))
 	}
 
 	for _, unlinkedTreatmentStatusEvent := range unlinkedTreatment.ERx.RxHistory {
-		if unlinkedTreatmentStatusEvent.InternalStatus == api.STATUS_ACTIVE && unlinkedTreatmentStatusEvent.Status != api.ERX_STATUS_ERROR {
-			t.Fatalf("Expected status %s for top level status of unlinked treatment but got %s", api.ERX_STATUS_SENT, unlinkedTreatmentStatusEvent.Status)
+		if unlinkedTreatmentStatusEvent.InternalStatus == api.STATUS_ACTIVE {
+			if unlinkedTreatmentStatusEvent.Status != api.ERX_STATUS_ERROR {
+				t.Fatalf("Expected status %s for top level status of unlinked treatment but got %s", api.ERX_STATUS_SENT, unlinkedTreatmentStatusEvent.Status)
+			}
+			if unlinkedTreatmentStatusEvent.StatusDetails != errorMessage {
+				t.Fatalf("Expected the error message for the status to be '%s' but it was '%s' instead", errorMessage, unlinkedTreatmentStatusEvent.StatusDetails)
+			}
 		}
 	}
 
@@ -1615,7 +1618,7 @@ func TestDenyRefillRequestWithDNTFUnlinkedTreatmentErrorSending(t *testing.T) {
 	CheckSuccessfulStatusCode(resp, "Unable to successfully resolve error pertaining to unlinked dntf treatment", t)
 }
 
-func setUpDeniedRefillRequestWithDNTFForLinkedTreatment(t *testing.T, testData TestData, endErxStatus string, toAddTemplatedTreatment bool) *common.Treatment {
+func setUpDeniedRefillRequestWithDNTFForLinkedTreatment(t *testing.T, testData TestData, endErxStatus common.StatusEvent, toAddTemplatedTreatment bool) *common.Treatment {
 	// create doctor with clinicianId specicified
 	doctor := createDoctorWithClinicianId(testData, t)
 
@@ -1810,10 +1813,7 @@ func setUpDeniedRefillRequestWithDNTFForLinkedTreatment(t *testing.T, testData T
 		RefillRxRequestQueueToReturn: []*common.RefillRequestItem{refillRequestItem},
 		PrescriptionIdsToReturn:      []int64{prescriptionIdForTreatment},
 		PrescriptionIdToPrescriptionStatuses: map[int64][]common.StatusEvent{
-			prescriptionIdForTreatment: []common.StatusEvent{common.StatusEvent{
-				Status: endErxStatus,
-			},
-			},
+			prescriptionIdForTreatment: []common.StatusEvent{endErxStatus},
 		},
 		SelectedMedicationToReturn: &common.Treatment{},
 	}
@@ -1986,7 +1986,7 @@ func TestDenyRefillRequestWithDNTFWithLinkedTreatmentSuccessfulSend(t *testing.T
 	testData := SetupIntegrationTest(t)
 	defer TearDownIntegrationTest(t, testData)
 
-	linkedTreatment := setUpDeniedRefillRequestWithDNTFForLinkedTreatment(t, testData, api.ERX_STATUS_SENT, false)
+	linkedTreatment := setUpDeniedRefillRequestWithDNTFForLinkedTreatment(t, testData, common.StatusEvent{Status: api.ERX_STATUS_SENT}, false)
 
 	if len(linkedTreatment.ERx.RxHistory) != 3 {
 		t.Fatalf("Expected 3 events for linked treatment instead got %d", len(linkedTreatment.ERx.RxHistory))
@@ -2006,7 +2006,7 @@ func TestDenyRefillRequestWithDNTFWithLinkedTreatmentSuccessfulSendAddingFromTem
 	testData := SetupIntegrationTest(t)
 	defer TearDownIntegrationTest(t, testData)
 
-	linkedTreatment := setUpDeniedRefillRequestWithDNTFForLinkedTreatment(t, testData, api.ERX_STATUS_SENT, true)
+	linkedTreatment := setUpDeniedRefillRequestWithDNTFForLinkedTreatment(t, testData, common.StatusEvent{Status: api.ERX_STATUS_SENT}, true)
 
 	if len(linkedTreatment.ERx.RxHistory) != 3 {
 		t.Fatalf("Expected 3 events for linked treatment instead got %d", len(linkedTreatment.ERx.RxHistory))
@@ -2026,15 +2026,22 @@ func TestDenyRefillRequestWithDNTFWithLinkedTreatmentErrorSend(t *testing.T) {
 	testData := SetupIntegrationTest(t)
 	defer TearDownIntegrationTest(t, testData)
 
-	linkedTreatment := setUpDeniedRefillRequestWithDNTFForLinkedTreatment(t, testData, api.ERX_STATUS_ERROR, false)
+	errorMessage := "this is a test error message"
+	linkedTreatment := setUpDeniedRefillRequestWithDNTFForLinkedTreatment(t, testData, common.StatusEvent{Status: api.ERX_STATUS_ERROR, StatusDetails: errorMessage}, false)
 
 	if len(linkedTreatment.ERx.RxHistory) != 3 {
 		t.Fatalf("Expected 3 events for linked treatment instead got %d", len(linkedTreatment.ERx.RxHistory))
 	}
 
 	for _, linkedTreatmentStatusEvent := range linkedTreatment.ERx.RxHistory {
-		if linkedTreatmentStatusEvent.InternalStatus == api.STATUS_ACTIVE && linkedTreatmentStatusEvent.Status != api.ERX_STATUS_ERROR {
-			t.Fatalf("Expected the latest event for the linked treatment to be %s instead it was %s", api.ERX_STATUS_ERROR, linkedTreatmentStatusEvent.Status)
+		if linkedTreatmentStatusEvent.InternalStatus == api.STATUS_ACTIVE {
+			if linkedTreatmentStatusEvent.Status != api.ERX_STATUS_ERROR {
+				t.Fatalf("Expected the latest event for the linked treatment to be %s instead it was %s", api.ERX_STATUS_ERROR, linkedTreatmentStatusEvent.Status)
+			}
+
+			if linkedTreatmentStatusEvent.StatusDetails != errorMessage {
+				t.Fatalf("Expected the status message to be '%s instead it was '%s'", errorMessage, linkedTreatmentStatusEvent.StatusDetails)
+			}
 		}
 	}
 
@@ -2847,6 +2854,7 @@ func TestNewRefillRequestWithUnlinkedTreatmentAndUnlinkedPatient(t *testing.T) {
 		City:         "Beverly Hills",
 		State:        "CA",
 		ERxPatientId: common.NewObjectId(12345),
+		Pharmacy:     pharmacyToReturn,
 	}
 
 	stubErxAPI := &erx.StubErxService{
@@ -2866,6 +2874,15 @@ func TestNewRefillRequestWithUnlinkedTreatmentAndUnlinkedPatient(t *testing.T) {
 
 	if unlinkedPatient.Status != api.PATIENT_UNLINKED {
 		t.Fatal("Patient was expected to be unlinked but it was not")
+	}
+
+	// ensure that the patient has a preferred pharmacy
+	if unlinkedPatient.Pharmacy == nil {
+		t.Fatalf("Expected patient to have a preferred pharmacy instead it has none")
+	}
+
+	if unlinkedPatient.Pharmacy.SourceId != "1234" {
+		t.Fatalf("Expected patients preferred pharmacy to have id %s instead it had id %s", "1234", unlinkedPatient.Pharmacy.SourceId)
 	}
 
 	// There should be an unlinked pharmacy treatment in the unlinked_requested_treatment db

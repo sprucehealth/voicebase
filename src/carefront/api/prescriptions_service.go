@@ -814,7 +814,23 @@ func (d *DataService) AddErxStatusEventForDNTFTreatment(statusEvent common.Statu
 		return err
 	}
 
-	_, err = tx.Exec(`insert into unlinked_dntf_treatment_status_events (unlinked_dntf_treatment_id, erx_status, status) values (?,?,?)`, statusEvent.ItemId, statusEvent.Status, STATUS_ACTIVE)
+	columnsAndData := map[string]interface{}{
+		"unlinked_dntf_treatment_id": statusEvent.ItemId,
+		"erx_status":                 statusEvent.Status,
+		"status":                     STATUS_ACTIVE,
+	}
+
+	if statusEvent.StatusDetails != "" {
+		columnsAndData["event_details"] = statusEvent.StatusDetails
+	}
+
+	if !statusEvent.ReportedTimestamp.IsZero() {
+		columnsAndData["reported_timestamp"] = statusEvent.ReportedTimestamp
+	}
+
+	columns, values := getKeysAndValuesFromMap(columnsAndData)
+
+	_, err = tx.Exec(fmt.Sprintf(`insert into unlinked_dntf_treatment_status_events (%s) values (%s)`, strings.Join(columns, ","), nReplacements(len(values))), values...)
 	if err != nil {
 		tx.Rollback()
 		return err
@@ -824,9 +840,9 @@ func (d *DataService) AddErxStatusEventForDNTFTreatment(statusEvent common.Statu
 }
 
 func (d *DataService) GetErxStatusEventsForDNTFTreatment(treatmentId int64) ([]common.StatusEvent, error) {
-	rows, err := d.DB.Query(`select unlinked_dntf_treatment_status_events.unlinked_dntf_treatment_id, unlinked_dntf_treatment.erx_id, unlinked_dntf_treatment_status_events.erx_status, unlinked_dntf_treatment_status_events.status, unlinked_dntf_treatment_status_events.creation_date from unlinked_dntf_treatment_status_events 
+	rows, err := d.DB.Query(`select unlinked_dntf_treatment_status_events.unlinked_dntf_treatment_id, unlinked_dntf_treatment.erx_id, unlinked_dntf_treatment_status_events.erx_status, unlinked_dntf_treatment_status_events.event_details, unlinked_dntf_treatment_status_events.status, unlinked_dntf_treatment_status_events.creation_date from unlinked_dntf_treatment_status_events 
 								inner join unlinked_dntf_treatment on unlinked_dntf_treatment_id = unlinked_dntf_treatment.id
-									where unlinked_dntf_treatment.id = ? order by unlinked_dntf_treatment.creation_date desc`, treatmentId)
+									where unlinked_dntf_treatment.id = ? order by unlinked_dntf_treatment_status_events.creation_date desc`, treatmentId)
 	if err != nil {
 		return nil, err
 	}
@@ -834,10 +850,12 @@ func (d *DataService) GetErxStatusEventsForDNTFTreatment(treatmentId int64) ([]c
 
 	statusEvents := make([]common.StatusEvent, 0)
 	for rows.Next() {
+		var statusDetails sql.NullString
 		var statusEventItem common.StatusEvent
-		if err := rows.Scan(&statusEventItem.ItemId, &statusEventItem.PrescriptionId, &statusEventItem.Status, &statusEventItem.InternalStatus, &statusEventItem.StatusTimestamp); err != nil {
+		if err := rows.Scan(&statusEventItem.ItemId, &statusEventItem.PrescriptionId, &statusEventItem.Status, &statusDetails, &statusEventItem.InternalStatus, &statusEventItem.StatusTimestamp); err != nil {
 			return nil, err
 		}
+		statusEventItem.StatusDetails = statusDetails.String
 		statusEvents = append(statusEvents, statusEventItem)
 	}
 
@@ -845,9 +863,9 @@ func (d *DataService) GetErxStatusEventsForDNTFTreatment(treatmentId int64) ([]c
 }
 
 func (d *DataService) GetErxStatusEventsForDNTFTreatmentBasedOnPatientId(patientId int64) ([]common.StatusEvent, error) {
-	rows, err := d.DB.Query(`select unlinked_dntf_treatment_status_events.unlinked_dntf_treatment_id, unlinked_dntf_treatment.erx_id, unlinked_dntf_treatment_status_events.erx_status,unlinked_dntf_treatment_status_events.status,  unlinked_dntf_treatment_status_events.creation_date from unlinked_dntf_treatment_status_events 
+	rows, err := d.DB.Query(`select unlinked_dntf_treatment_status_events.unlinked_dntf_treatment_id, unlinked_dntf_treatment.erx_id, unlinked_dntf_treatment_status_events.erx_status,unlinked_dntf_treatment_status_events.status, unlinked_dntf_treatment_status_events.creation_date from unlinked_dntf_treatment_status_events 
 								inner join unlinked_dntf_treatment on unlinked_dntf_treatment_id = unlinked_dntf_treatment.id
-									where unlinked_dntf_treatment.patient_id = ? order by unlinked_dntf_treatment.creation_date desc`, patientId)
+									where unlinked_dntf_treatment.patient_id = ? order by unlinked_dntf_treatment_status_events.creation_date desc`, patientId)
 	if err != nil {
 		return nil, err
 	}
