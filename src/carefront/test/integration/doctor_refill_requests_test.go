@@ -1615,6 +1615,24 @@ func TestDenyRefillRequestWithDNTFUnlinkedTreatmentErrorSending(t *testing.T) {
 		t.Fatalf("Unable to successfully resolve error pertaining to unlinked dntf treatment: %+v", err)
 	}
 
+	pendingItems, err = testData.DataApi.GetPendingItemsInDoctorQueue(unlinkedTreatment.Doctor.DoctorId.Int64())
+	if err != nil {
+		t.Fatal("Unable to get doctor queue")
+	}
+
+	if len(pendingItems) != 0 {
+		t.Fatalf("Expected no items in the pending tab instead got %d", len(pendingItems))
+	}
+
+	completedItems, err := testData.DataApi.GetCompletedItemsInDoctorQueue(unlinkedTreatment.Doctor.DoctorId.Int64())
+	if err != nil {
+		t.Fatal("Unable to get completed items for doctor queue")
+	}
+
+	if len(completedItems) != 2 {
+		t.Fatalf("Expected 2 items in the completed tab instead got %d", len(completedItems))
+	}
+
 	CheckSuccessfulStatusCode(resp, "Unable to successfully resolve error pertaining to unlinked dntf treatment", t)
 }
 
