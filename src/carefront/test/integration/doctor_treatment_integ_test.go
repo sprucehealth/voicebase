@@ -786,7 +786,7 @@ func compareTreatments(treatment *common.Treatment, treatment1 *common.Treatment
 	if treatment.DosageStrength != treatment1.DosageStrength || treatment.DispenseValue != treatment1.DispenseValue ||
 		treatment.DispenseUnitId.Int64() != treatment1.DispenseUnitId.Int64() || treatment.PatientInstructions != treatment1.PatientInstructions ||
 		treatment.PharmacyNotes != treatment1.PharmacyNotes || treatment.NumberRefills != treatment1.NumberRefills ||
-		treatment.SubstitutionsAllowed != treatment1.SubstitutionsAllowed || treatment.DaysSupply != treatment1.DaysSupply ||
+		treatment.SubstitutionsAllowed != treatment1.SubstitutionsAllowed || treatment.DaysSupply.Int64() != treatment1.DaysSupply.Int64() ||
 		treatment.OTC != treatment1.OTC {
 		treatmentData, _ := json.MarshalIndent(treatment, "", " ")
 		treatment1Data, _ := json.MarshalIndent(treatment1, "", " ")
