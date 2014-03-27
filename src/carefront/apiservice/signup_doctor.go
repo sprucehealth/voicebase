@@ -93,12 +93,13 @@ func (d *SignupDoctorHandler) ServeHTTP(w http.ResponseWriter, r *http.Request) 
 	}
 
 	doctorToRegister := &common.Doctor{
-		AccountId: common.NewObjectId(res.AccountId),
-		FirstName: requestData.FirstName,
-		LastName:  requestData.LastName,
-		Gender:    requestData.Gender,
-		Dob:       time.Date(year, time.Month(month), day, 0, 0, 0, 0, time.UTC),
-		CellPhone: requestData.Phone,
+		AccountId:           common.NewObjectId(res.AccountId),
+		FirstName:           requestData.FirstName,
+		LastName:            requestData.LastName,
+		Gender:              requestData.Gender,
+		Dob:                 time.Date(year, time.Month(month), day, 0, 0, 0, 0, time.UTC),
+		CellPhone:           requestData.Phone,
+		DoseSpotClinicianId: requestData.ClinicianId,
 		DoctorAddress: &common.Address{
 			AddressLine1: requestData.AddressLine1,
 			AddressLine2: requestData.AddressLine2,
