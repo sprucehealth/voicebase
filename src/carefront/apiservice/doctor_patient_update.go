@@ -128,6 +128,8 @@ func (d *DoctorPatientUpdateHandler) updatePatientInformation(w http.ResponseWri
 		return
 	}
 
+	trimSpacesFromPatientFields(requestData.Patient)
+
 	currentDoctor, err := d.DataApi.GetDoctorFromAccountId(GetContext(r).AccountId)
 	if err != nil {
 		WriteDeveloperError(w, http.StatusInternalServerError, "Unable to get doctor from account id: "+err.Error())
@@ -231,6 +233,20 @@ func (d *DoctorPatientUpdateHandler) validatePatientInformationAccordingToSuresc
 	}
 
 	return nil, false
+}
+
+func trimSpacesFromPatientFields(patient *common.Patient) {
+	patient.FirstName = strings.TrimSpace(patient.FirstName)
+	patient.LastName = strings.TrimSpace(patient.LastName)
+	patient.MiddleName = strings.TrimSpace(patient.MiddleName)
+	patient.Suffix = strings.TrimSpace(patient.Suffix)
+	patient.Prefix = strings.TrimSpace(patient.Prefix)
+	patient.City = strings.TrimSpace(patient.City)
+	patient.State = strings.TrimSpace(patient.State)
+	patient.PatientAddress.AddressLine1 = strings.TrimSpace(patient.PatientAddress.AddressLine1)
+	patient.PatientAddress.AddressLine2 = strings.TrimSpace(patient.PatientAddress.AddressLine2)
+	patient.PatientAddress.City = strings.TrimSpace(patient.PatientAddress.City)
+	patient.PatientAddress.State = strings.TrimSpace(patient.PatientAddress.State)
 }
 
 func trimSpacesFromPatientFields(patient *common.Patient) {
