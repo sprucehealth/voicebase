@@ -107,7 +107,7 @@ func (s *SignupPatientHandler) ServeHTTP(w http.ResponseWriter, r *http.Request)
 		State:     cityStateInfo.ShortStateName,
 		PhoneNumbers: []*common.PhoneInformation{&common.PhoneInformation{
 			Phone:     requestData.Phone,
-			PhoneType: api.PATIENT_PHONE_CELL,
+			PhoneType: api.PHONE_CELL,
 		},
 		},
 		Dob: time.Date(year, time.Month(month), day, 0, 0, 0, 0, time.UTC),

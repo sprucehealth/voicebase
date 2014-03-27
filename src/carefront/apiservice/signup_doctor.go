@@ -2,6 +2,7 @@ package apiservice
 
 import (
 	"carefront/api"
+	"carefront/common"
 	thriftapi "carefront/thrift/api"
 	"net/http"
 	"strconv"
@@ -26,13 +27,19 @@ func (d *SignupDoctorHandler) NonAuthenticated() bool {
 }
 
 type SignupDoctorRequestData struct {
-	Email       string `schema:"email,required"`
-	Password    string `schema:"password,required"`
-	FirstName   string `schema:"first_name,required"`
-	LastName    string `schema:"last_name,required"`
-	Dob         string `schema:"dob,required"`
-	Gender      string `schema:"gender,required"`
-	ClinicianId int64  `schema:"clinician_id,required"`
+	Email        string `schema:"email,required"`
+	Password     string `schema:"password,required"`
+	FirstName    string `schema:"first_name,required"`
+	LastName     string `schema:"last_name,required"`
+	Dob          string `schema:"dob,required"`
+	Gender       string `schema:"gender,required"`
+	ClinicianId  int64  `schema:"clinician_id,required"`
+	AddressLine1 string `schema:"address_line_1,required"`
+	AddressLine2 string `schema:"address_line_2"`
+	City         string `schema:"city"`
+	State        string `schema:"state"`
+	ZipCode      string `schema:"zip_code"`
+	Phone        string `schema:"phone,required"`
 }
 
 func (d *SignupDoctorHandler) ServeHTTP(w http.ResponseWriter, r *http.Request) {
@@ -85,9 +92,24 @@ func (d *SignupDoctorHandler) ServeHTTP(w http.ResponseWriter, r *http.Request) 
 		return
 	}
 
+	doctorToRegister := &common.Doctor{
+		AccountId: common.NewObjectId(res.AccountId),
+		FirstName: requestData.FirstName,
+		LastName:  requestData.LastName,
+		Gender:    requestData.Gender,
+		Dob:       time.Date(year, time.Month(month), day, 0, 0, 0, 0, time.UTC),
+		CellPhone: requestData.Phone,
+		DoctorAddress: &common.Address{
+			AddressLine1: requestData.AddressLine1,
+			AddressLine2: requestData.AddressLine2,
+			City:         requestData.City,
+			State:        requestData.State,
+			ZipCode:      requestData.ZipCode,
+		},
+	}
+
 	// then, register the signed up user as a patient
-	doctorId, err := d.DataApi.RegisterDoctor(res.AccountId, requestData.FirstName, requestData.LastName,
-		requestData.Gender, time.Date(year, time.Month(month), day, 0, 0, 0, 0, time.UTC), requestData.ClinicianId)
+	doctorId, err := d.DataApi.RegisterDoctor(doctorToRegister)
 	if err != nil {
 		WriteDeveloperError(w, http.StatusInternalServerError, "Something went wrong when trying to sign up doctor: "+err.Error())
 		return

@@ -35,9 +35,9 @@ const (
 	PATIENT_REGISTERED             = "REGISTERED"
 	HIPAA_AUTH                     = "hipaa"
 	CONSENT_AUTH                   = "consent"
-	PATIENT_PHONE_HOME             = "Home"
-	PATIENT_PHONE_WORK             = "Work"
-	PATIENT_PHONE_CELL             = "Cell"
+	PHONE_HOME                     = "Home"
+	PHONE_WORK                     = "Work"
+	PHONE_CELL                     = "Cell"
 )
 
 var (
@@ -161,7 +161,7 @@ type PrescriptionsAPI interface {
 }
 
 type DoctorAPI interface {
-	RegisterDoctor(accountId int64, firstName, lastName, gender string, dob time.Time, clinicianId int64) (int64, error)
+	RegisterDoctor(doctor *common.Doctor) (int64, error)
 	GetDoctorFromId(doctorId int64) (doctor *common.Doctor, err error)
 	GetDoctorFromAccountId(accountId int64) (doctor *common.Doctor, err error)
 	GetDoctorFromDoseSpotClinicianId(clincianId int64) (doctor *common.Doctor, err error)

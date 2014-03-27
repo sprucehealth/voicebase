@@ -12,37 +12,68 @@ import (
 	"github.com/go-sql-driver/mysql"
 )
 
-func (d *DataService) RegisterDoctor(accountId int64, firstName, lastName, gender string, dob time.Time, clinicianId int64) (int64, error) {
-	res, err := d.DB.Exec(`insert into doctor (account_id, first_name, last_name, gender, dob, status, clinician_id) 
-								values (?, ?, ?, ?, ? , 'REGISTERED', ?)`, accountId, firstName, lastName, gender, dob, clinicianId)
+func (d *DataService) RegisterDoctor(doctor *common.Doctor) (int64, error) {
+	tx, err := d.DB.Begin()
+	if err != nil {
+		return 0, err
+	}
+
+	res, err := tx.Exec(`insert into doctor (account_id, first_name, last_name, gender, dob, status, clinician_id) 
+								values (?, ?, ?, ?, ? , 'REGISTERED', ?)`, doctor.AccountId.Int64(), doctor.FirstName, doctor.LastName, doctor.Gender, doctor.Dob, doctor.DoseSpotClinicianId)
 	if err != nil {
 		return 0, err
 	}
 
 	lastId, err := res.LastInsertId()
 	if err != nil {
+		tx.Rollback()
 		log.Fatal("Unable to return id of inserted item as error was returned when trying to return id", err)
 		return 0, err
 	}
+
+	doctor.DoctorId = common.NewObjectId(lastId)
+	doctor.DoctorAddress.Id, err = addAddress(tx, doctor.DoctorAddress)
+	if err != nil {
+		tx.Rollback()
+		return 0, err
+	}
+
+	_, err = tx.Exec(`insert into doctor_address_selection (doctor_id, address_id) values (?,?)`, lastId, doctor.DoctorAddress.Id)
+	if err != nil {
+		tx.Rollback()
+		return 0, err
+	}
+
+	_, err = tx.Exec(`insert into doctor_phone (phone, phone_type, doctor_id) values (?,?,?) `, doctor.CellPhone, doctor_phone_type, doctor.DoctorId.Int64())
+	if err != nil {
+		tx.Rollback()
+		return 0, err
+	}
+
+	tx.Commit()
+
 	return lastId, err
 }
 
 func (d *DataService) GetDoctorFromId(doctorId int64) (*common.Doctor, error) {
-	row := d.DB.QueryRow(`select doctor.id, account_id, phone, first_name, last_name, gender, dob, status, clinician_id from doctor 
+	row := d.DB.QueryRow(`select doctor.id, account_id, phone, first_name, last_name, gender, dob, status, clinician_id, address.address_line_1, 
+							address.address_line_2, address.city, address.state, address.zip_code from doctor 
 							left outer join doctor_phone on doctor_phone.doctor_id = doctor.id
 								where doctor.id = ? and (doctor_phone.phone is null or doctor_phone.phone_type = ?)`, doctorId, doctorPhoneType)
 	return getDoctorFromRow(row)
 }
 
 func (d *DataService) GetDoctorFromAccountId(accountId int64) (*common.Doctor, error) {
-	row := d.DB.QueryRow(`select doctor.id, account_id, phone, first_name, last_name, gender, dob, status, clinician_id from doctor 
+	row := d.DB.QueryRow(`select doctor.id, account_id, phone, first_name, last_name, gender, dob, status, clinician_id,address.address_line_1, 
+							address.address_line_2, address.city, address.state, address.zip_code from doctor 
 							left outer join doctor_phone on doctor_phone.doctor_id = doctor.id
 								where doctor.account_id = ? and (doctor_phone.phone is null or doctor_phone.phone_type = ?)`, accountId, doctorPhoneType)
 	return getDoctorFromRow(row)
 }
 
 func (d *DataService) GetDoctorFromDoseSpotClinicianId(clinicianId int64) (*common.Doctor, error) {
-	row := d.DB.QueryRow(`select doctor.id, account_id, phone, first_name, last_name, gender, dob, status, clinician_id from doctor 
+	row := d.DB.QueryRow(`select doctor.id, account_id, phone, first_name, last_name, gender, dob, status, clinician_id, address.address_line_1, 
+							address.address_line_2, address.city, address.state, address.zip_code from doctor 
 							left outer join doctor_phone on doctor_phone.doctor_id = doctor.id
 								where doctor.clinician_id = ? and (doctor_phone.phone is null or doctor_phone.phone_type = ?)`, clinicianId, doctorPhoneType)
 	return getDoctorFromRow(row)
@@ -51,10 +82,10 @@ func (d *DataService) GetDoctorFromDoseSpotClinicianId(clinicianId int64) (*comm
 func getDoctorFromRow(row *sql.Row) (*common.Doctor, error) {
 	var firstName, lastName, status, gender string
 	var dob mysql.NullTime
-	var cellPhoneNumber sql.NullString
+	var cellPhoneNumber, addressLine1, addressLine2, city, state, zipCode sql.NullString
 	var doctorId, accountId int64
 	var clinicianId sql.NullInt64
-	err := row.Scan(&doctorId, &accountId, &cellPhoneNumber, &firstName, &lastName, &gender, &dob, &status, &clinicianId)
+	err := row.Scan(&doctorId, &accountId, &cellPhoneNumber, &firstName, &lastName, &gender, &dob, &status, &clinicianId, &addressLine1, &addressLine2, &city, &state, &zipCode)
 	if err != nil {
 		return nil, err
 	}
@@ -67,6 +98,13 @@ func getDoctorFromRow(row *sql.Row) (*common.Doctor, error) {
 		Gender:              gender,
 		CellPhone:           cellPhoneNumber.String,
 		DoseSpotClinicianId: clinicianId.Int64,
+		DoctorAddress: &common.Address{
+			AddressLine1: addressLine1.String,
+			AddressLine2: addressLine2.String,
+			City:         city.String,
+			State:        state.String,
+			ZipCode:      zipCode.String,
+		},
 	}
 	if dob.Valid {
 		doctor.Dob = dob.Time
