@@ -10,6 +10,7 @@ import (
 	"net/http"
 	"sort"
 	"strconv"
+	"strings"
 
 	"encoding/json"
 	"net/http"
@@ -129,6 +130,8 @@ func (d *DoctorRefillRequestHandler) resolveRefillRequest(w http.ResponseWriter,
 			return
 		}
 
+		trimSpacesFromRefillRequest(refillRequest)
+
 		// Send the approve refill request to dosespot
 		prescriptionId, err := d.ErxApi.ApproveRefillRequest(doctor.DoseSpotClinicianId, refillRequest.RxRequestQueueItemId, requestData.ApprovedRefillAmount, requestData.Comments)
 		if err != nil {
@@ -143,6 +146,8 @@ func (d *DoctorRefillRequestHandler) resolveRefillRequest(w http.ResponseWriter,
 		}
 
 	case refill_request_status_deny:
+
+		trimSpacesFromRefillRequest(refillRequest)
 
 		// Ensure that the denial reason is one of the possible denial reasons that the user could have
 		denialReasons, err := d.DataApi.GetRefillRequestDenialReasons()
@@ -177,6 +182,8 @@ func (d *DoctorRefillRequestHandler) resolveRefillRequest(w http.ResponseWriter,
 				WriteUserError(w, http.StatusBadRequest, err.Error())
 				return
 			}
+
+			trimSpacesFromTreatmentFields(requestData.Treatment)
 
 			// break up the name in its components
 			requestData.Treatment.DrugName, requestData.Treatment.DrugForm, requestData.Treatment.DrugRoute = breakDrugInternalNameIntoComponents(requestData.Treatment.DrugInternalName)
@@ -365,4 +372,8 @@ func (d *DoctorRefillRequestHandler) getRefillRequest(w http.ResponseWriter, r *
 	}
 
 	WriteJSONToHTTPResponseWriter(w, http.StatusOK, &DoctorRefillRequestResponse{RefillRequest: refillRequest})
+}
+
+func trimSpacesFromRefillRequest(refillRequest *common.RefillRequestItem) {
+	refillRequest.Comments = strings.TrimSpace(refillRequest.Comments)
 }

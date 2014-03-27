@@ -103,3 +103,8 @@ func breakDrugInternalNameIntoComponents(drugInternalName string) (drugName, dru
 	drugForm = strings.TrimSpace(drugInternalName[indexOfHyphen+1 : indexOfClosingParanthesis])
 	return
 }
+
+func trimSpacesFromTreatmentFields(treatment *common.Treatment) {
+	treatment.PatientInstructions = strings.TrimSpace(treatment.PatientInstructions)
+	treatment.PharmacyNotes = strings.TrimSpace(treatment.PharmacyNotes)
+}
