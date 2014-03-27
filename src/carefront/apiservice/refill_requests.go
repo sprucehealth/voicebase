@@ -321,8 +321,8 @@ func (d *DoctorRefillRequestHandler) addStatusEvent(originatingTreatmentFound bo
 }
 
 func (d *DoctorRefillRequestHandler) addTreatmentInEventOfDNTF(originatingTreatmentFound bool, treatment *common.Treatment, doctorId, patientId, refillRequestId int64) error {
-	treatment.PatientId = patientId
-	treatment.DoctorId = doctorId
+	treatment.PatientId = common.NewObjectId(patientId)
+	treatment.DoctorId = common.NewObjectId(doctorId)
 	if originatingTreatmentFound {
 		return d.DataApi.AddTreatmentToTreatmentPlanInEventOfDNTF(treatment, refillRequestId)
 	}

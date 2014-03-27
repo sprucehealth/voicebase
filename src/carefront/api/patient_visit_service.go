@@ -675,7 +675,7 @@ func (d *DataService) addTreatment(treatment *common.Treatment, withoutLinkToTre
 		"dispense_unit_id":      treatment.DispenseUnitId,
 		"refills":               treatment.NumberRefills,
 		"substitutions_allowed": treatment.SubstitutionsAllowed,
-		"days_supply":           treatment.DaysSupply,
+		"days_supply":           treatment.DaysSupply.Int64(),
 		"patient_instructions":  treatment.PatientInstructions,
 		"pharmacy_notes":        treatment.PharmacyNotes,
 		"status":                STATUS_CREATED,
@@ -1063,7 +1063,7 @@ func (d *DataService) getTreatmentAndMetadataFromCurrentRow(rows *sql.Rows) (*co
 
 	treatment := &common.Treatment{
 		Id:                      common.NewObjectId(treatmentId),
-		PatientId:               patientId,
+		PatientId:               common.NewObjectId(patientId),
 		DrugInternalName:        drugInternalName,
 		DosageStrength:          dosageStrength,
 		DispenseValue:           dispenseValue,
@@ -1071,7 +1071,7 @@ func (d *DataService) getTreatmentAndMetadataFromCurrentRow(rows *sql.Rows) (*co
 		DispenseUnitDescription: dispenseUnitDescription,
 		NumberRefills:           refills,
 		SubstitutionsAllowed:    substitutionsAllowed,
-		DaysSupply:              daysSupply,
+		DaysSupply:              common.NewObjectId(daysSupply),
 		DrugName:                drugName.String,
 		DrugForm:                drugForm.String,
 		DrugRoute:               drugRoute.String,
@@ -1079,7 +1079,7 @@ func (d *DataService) getTreatmentAndMetadataFromCurrentRow(rows *sql.Rows) (*co
 		CreationDate:            &creationDate,
 		Status:                  status,
 		PharmacyNotes:           pharmacyNotes.String,
-		DoctorId:                prescriberId,
+		DoctorId:                common.NewObjectId(prescriberId),
 	}
 
 	if treatmentPlanId.Valid {
@@ -1142,12 +1142,12 @@ func (d *DataService) getTreatmentAndMetadataFromCurrentRow(rows *sql.Rows) (*co
 
 	}
 
-	treatment.Doctor, err = d.GetDoctorFromId(treatment.DoctorId)
+	treatment.Doctor, err = d.GetDoctorFromId(treatment.DoctorId.Int64())
 	if err != nil {
 		return nil, err
 	}
 
-	treatment.Patient, err = d.GetPatientFromId(treatment.PatientId)
+	treatment.Patient, err = d.GetPatientFromId(treatment.PatientId.Int64())
 	if err != nil {
 		return nil, err
 	}

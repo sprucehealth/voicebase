@@ -331,7 +331,7 @@ func (d *DataService) GetRefillRequestFromId(refillRequestId int64) (*common.Ref
 func (d *DataService) getTreatmentForRefillRequest(tableName string, treatmentId int64) (*common.Treatment, error) {
 	var treatment common.Treatment
 	treatment.ERx = &common.ERxData{}
-	var erxId, pharmacyLocalId int64
+	var erxId, pharmacyLocalId, daysSupply int64
 	var doctorId sql.NullInt64
 	var treatmentType string
 	var drugName, drugForm, drugRoute sql.NullString
@@ -349,7 +349,7 @@ func (d *DataService) getTreatmentForRefillRequest(tableName string, treatmentId
 		&treatment.DosageStrength, &treatmentType, &treatment.DispenseValue,
 		&treatment.DispenseUnitDescription, &treatment.NumberRefills,
 		&treatment.SubstitutionsAllowed, &pharmacyLocalId,
-		&treatment.DaysSupply, &treatment.PharmacyNotes,
+		&daysSupply, &treatment.PharmacyNotes,
 		&treatment.PatientInstructions, &treatment.ERx.ErxSentDate,
 		&treatment.ERx.ErxLastDateFilled, &treatment.Status,
 		&drugName, &drugForm, &drugRoute, &doctorId)
@@ -397,7 +397,7 @@ func (d *DataService) addRequestedTreatmentFromPharmacy(treatment *common.Treatm
 		"dispense_unit":         treatment.DispenseUnitDescription,
 		"refills":               treatment.NumberRefills,
 		"substitutions_allowed": treatment.SubstitutionsAllowed,
-		"days_supply":           treatment.DaysSupply,
+		"days_supply":           treatment.DaysSupply.Int64(),
 		"patient_instructions":  treatment.PatientInstructions,
 		"pharmacy_notes":        treatment.PharmacyNotes,
 		"status":                treatment.Status,
@@ -631,12 +631,12 @@ func (d *DataService) AddUnlinkedTreatmentInEventOfDNTF(treatment *common.Treatm
 		"dispense_unit_id":      treatment.DispenseUnitId.Int64(),
 		"refills":               treatment.NumberRefills,
 		"substitutions_allowed": treatment.SubstitutionsAllowed,
-		"days_supply":           treatment.DaysSupply,
+		"days_supply":           treatment.DaysSupply.Int64(),
 		"patient_instructions":  treatment.PatientInstructions,
 		"pharmacy_notes":        treatment.PharmacyNotes,
 		"status":                treatment.Status,
-		"doctor_id":             treatment.DoctorId,
-		"patient_id":            treatment.PatientId,
+		"doctor_id":             treatment.DoctorId.Int64(),
+		"patient_id":            treatment.PatientId.Int64(),
 	}
 
 	if err := d.includeDrugNameComponentIfNonZero(treatment.DrugName, drugNameTable, "drug_name_id", columnsAndData, tx); err != nil {
@@ -714,8 +714,8 @@ func (d *DataService) GetUnlinkedDNTFTreatment(treatmentId int64) (*common.Treat
 
 	treatment := &common.Treatment{
 		Id:                      common.NewObjectId(treatmentId),
-		PatientId:               patientId,
-		DoctorId:                doctorId,
+		PatientId:               common.NewObjectId(patientId),
+		DoctorId:                common.NewObjectId(doctorId),
 		DrugInternalName:        drugInternalName,
 		DosageStrength:          dosageStrength,
 		DispenseValue:           dispenseValue,
@@ -723,7 +723,7 @@ func (d *DataService) GetUnlinkedDNTFTreatment(treatmentId int64) (*common.Treat
 		DispenseUnitDescription: dispenseUnitDescription,
 		NumberRefills:           refills,
 		SubstitutionsAllowed:    substitutionsAllowed,
-		DaysSupply:              daysSupply.Int64,
+		DaysSupply:              common.NewObjectId(daysSupply.Int64),
 		DrugName:                drugName.String,
 		DrugForm:                drugForm.String,
 		DrugRoute:               drugRoute.String,
@@ -750,12 +750,12 @@ func (d *DataService) GetUnlinkedDNTFTreatment(treatmentId int64) (*common.Treat
 		treatment.ERx.PrescriptionId = common.NewObjectId(erxId.Int64)
 	}
 
-	treatment.Doctor, err = d.GetDoctorFromId(treatment.DoctorId)
+	treatment.Doctor, err = d.GetDoctorFromId(treatment.DoctorId.Int64())
 	if err != nil {
 		return nil, err
 	}
 
-	treatment.Patient, err = d.GetPatientFromId(treatment.PatientId)
+	treatment.Patient, err = d.GetPatientFromId(treatment.PatientId.Int64())
 	if err != nil {
 		return nil, err
 	}

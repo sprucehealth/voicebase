@@ -325,7 +325,7 @@ func (d *DoseSpotService) StartPrescribingPatient(clinicianId int64, currentPati
 		lexiGenProductIdInt, _ := strconv.ParseInt(treatment.DrugDBIds[LexiGenProductId], 0, 64)
 		lexiSynonymTypeIdInt, _ := strconv.ParseInt(treatment.DrugDBIds[LexiSynonymTypeId], 0, 64)
 
-		daysSupply := nullInt64(treatment.DaysSupply)
+		daysSupply := nullInt64(treatment.DaysSupply.Int64())
 		prescriptionMedication := &medication{
 			DaysSupply:        daysSupply,
 			LexiDrugSynId:     lexiDrugSynIdInt,
@@ -583,7 +583,7 @@ func (d *DoseSpotService) GetTransmissionErrorDetails(clinicianId int64) ([]*com
 			DrugName:             transmissionError.Medication.DrugName,
 			DosageStrength:       transmissionError.Medication.Strength,
 			NumberRefills:        transmissionError.Medication.Refills.Int64(),
-			DaysSupply:           int64(transmissionError.Medication.DaysSupply),
+			DaysSupply:           common.NewObjectId(int64(transmissionError.Medication.DaysSupply)),
 			DispenseValue:        dispenseValueInt,
 			PatientInstructions:  transmissionError.Medication.Instructions,
 			PharmacyNotes:        transmissionError.Medication.PharmacyNotes,
@@ -847,7 +847,7 @@ func convertMedicationIntoTreatment(medicationItem *medication) *common.Treatmen
 		DrugName:                medicationItem.DrugName,
 		IsControlledSubstance:   err == nil && scheduleInt > 0,
 		NumberRefills:           int64(medicationItem.Refills),
-		DaysSupply:              int64(medicationItem.DaysSupply),
+		DaysSupply:              common.NewObjectId(int64(medicationItem.DaysSupply)),
 		DispenseValue:           dispenseValue,
 		DispenseUnitId:          common.NewObjectId(medicationItem.DispenseUnitId),
 		DispenseUnitDescription: medicationItem.DispenseUnitDescription,
