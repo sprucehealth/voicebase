@@ -230,7 +230,7 @@ func (d *DoctorPatientUpdateHandler) validatePatientInformationAccordingToSuresc
 		return fmt.Errorf("State entered for address is not valid"), true
 	}
 
-	return nil, fal
+	return nil, false
 }
 
 func trimSpacesFromPatientFields(patient *common.Patient) {
