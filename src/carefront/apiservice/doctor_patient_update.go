@@ -130,6 +130,13 @@ func (d *DoctorPatientUpdateHandler) updatePatientInformation(w http.ResponseWri
 
 	trimSpacesFromPatientFields(requestData.Patient)
 
+	// get the erx id for the patient, if it exists in the database
+	existingPatientInfo, err := d.DataApi.GetPatientFromId(requestData.Patient.PatientId.Int64())
+	if err != nil {
+		WriteDeveloperError(w, http.StatusInternalServerError, "Unable to get patient info from database: "+err.Error())
+		return
+	}
+
 	currentDoctor, err := d.DataApi.GetDoctorFromAccountId(GetContext(r).AccountId)
 	if err != nil {
 		WriteDeveloperError(w, http.StatusInternalServerError, "Unable to get doctor from account id: "+err.Error())
