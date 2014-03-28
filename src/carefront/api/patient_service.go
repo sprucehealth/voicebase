@@ -679,12 +679,7 @@ func (d *DataService) TrackPatientAgreements(patientId int64, agreements map[str
 			return err
 		}
 
-		var agreedBit int64
-		if agreed == true {
-			agreedBit = 1
-		}
-
-		_, err = tx.Exec(`insert into patient_agreement (patient_id, agreement_type,agreed, status) values (?,?,?,?)`, patientId, agreementType, agreedBit, status_active)
+		_, err = tx.Exec(`insert into patient_agreement (patient_id, agreement_type,agreed, status) values (?,?,?,?)`, patientId, agreementType, agreed, status_active)
 		if err != nil {
 			tx.Rollback()
 			return err
@@ -819,13 +814,11 @@ func (d *DataService) GetCardsForPatient(patientId int64) ([]*common.Card, error
 	for rows.Next() {
 		var cardId int64
 		var card common.Card
-		var isDefaultBit int
 
-		if err := rows.Scan(&cardId, &card.ThirdPartyId, &card.Fingerprint, &card.Type, &isDefaultBit); err != nil {
+		if err := rows.Scan(&cardId, &card.ThirdPartyId, &card.Fingerprint, &card.Type, &card.IsDefault); err != nil {
 			return nil, err
 		}
 		card.Id = common.NewObjectId(cardId)
-		card.IsDefault = isDefaultBit == 1
 		cards = append(cards, &card)
 	}
 	return cards, nil
@@ -833,10 +826,9 @@ func (d *DataService) GetCardsForPatient(patientId int64) ([]*common.Card, error
 
 func (d *DataService) GetCardFromId(cardId int64) (*common.Card, error) {
 	var card common.Card
-	var isDefaultBit int
 	var addressId int64
 	err := d.DB.QueryRow(`select third_party_card_id, fingerprint, type, address_id, is_default from credit_card where id = ?`,
-		cardId).Scan(&card.ThirdPartyId, &card.Fingerprint, &card.Type, &addressId, &isDefaultBit)
+		cardId).Scan(&card.ThirdPartyId, &card.Fingerprint, &card.Type, &addressId, &card.IsDefault)
 	if err != nil {
 		if err == sql.ErrNoRows {
 			return nil, nil
@@ -844,7 +836,6 @@ func (d *DataService) GetCardFromId(cardId int64) (*common.Card, error) {
 		return nil, err
 	}
 	card.Id = common.NewObjectId(cardId)
-	card.IsDefault = isDefaultBit == 1
 	var addressLine1, addressLine2, city, state, country, zipCode sql.NullString
 	err = d.DB.QueryRow(`select address_line_1, address_line_2, city, state, zip_code, country from address where id = ?`, addressId).Scan(&addressLine1, &addressLine2, &city, &state, &zipCode, &country)
 	if err != nil {
