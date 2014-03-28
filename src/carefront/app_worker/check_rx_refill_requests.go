@@ -171,7 +171,7 @@ func PerformRefillRecquestCheckCycle(DataApi api.DataAPI, ERxApi erx.ERxAPI, sta
 		} else {
 			// match the requested treatment to the original treatment if it exists within our database
 			if err := DataApi.LinkRequestedPrescriptionToOriginalTreatment(refillRequestItem.RequestedPrescription, patientInDb); err != nil {
-				golog.Errorf("Unable to attempt to link requested prescription to originating prescription: %+v", err)
+				golog.Errorf("Failed attempt at trying to link requested prescription to originating prescription: %+v", err)
 				statFailure.Inc(1)
 				continue
 			}
