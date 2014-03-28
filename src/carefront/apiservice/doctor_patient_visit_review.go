@@ -101,14 +101,6 @@ func (p *DoctorPatientVisitReviewHandler) ServeHTTP(w http.ResponseWriter, r *ht
 		return
 	}
 
-	if patient.Pharmacy != nil && patient.Pharmacy.SourceId != "" && patient.Pharmacy.AddressLine1 == "" {
-		patient.Pharmacy, err = p.PharmacySearchService.GetPharmacyBasedOnId(patient.Pharmacy.SourceId)
-		if err != nil && err != pharmacy.NoPharmacyExists {
-			WriteDeveloperError(w, http.StatusInternalServerError, "Unable to get pharmacy based on id: "+err.Error())
-			return
-		}
-	}
-
 	bucket, key, region, _, err := p.DataApi.GetStorageInfoOfCurrentActiveDoctorLayout(patientVisit.HealthConditionId.Int64())
 	if err != nil {
 		WriteDeveloperError(w, http.StatusInternalServerError, "Unable to get the active layout version for the doctor's view of the patient visit: "+err.Error())
