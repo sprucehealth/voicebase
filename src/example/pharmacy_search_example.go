@@ -12,7 +12,7 @@ func main() {
 
 	doseSpotService := erx.NewDoseSpotService(clinicId, userId, os.Getenv("DOSESPOT_CLINIC_KEY"), nil)
 
-	_, err := doseSpotService.GetPrescriptionStatus(userId, 5164)
+	_, err := doseSpotService.GetPatientDetails(3056)
 
 	if err != nil {
 		panic(err.Error())
