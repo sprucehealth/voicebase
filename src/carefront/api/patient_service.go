@@ -708,6 +708,7 @@ func (d *DataService) AddCardAndMakeDefaultForPatient(patientId int64, card *com
 	// add a new address to db
 	addressId, err := addAddress(tx, card.BillingAddress)
 	if err != nil {
+		tx.Rollback()
 		return err
 	}
 
@@ -795,13 +796,11 @@ func addAddress(tx *sql.Tx, address *common.Address) (int64, error) {
 	lastId, err := tx.Exec(`insert into address (address_line_1, address_line_2, city, state, zip_code, country) values (?,?,?,?,?,?)`,
 		address.AddressLine1, address.AddressLine2, address.City, address.State, address.ZipCode, address_usa)
 	if err != nil {
-		tx.Rollback()
 		return 0, err
 	}
 
 	addressId, err := lastId.LastInsertId()
 	if err != nil {
-		tx.Rollback()
 		return 0, err
 	}
 
@@ -875,6 +874,7 @@ func (d *DataService) UpdateDefaultAddressForPatient(patientId int64, address *c
 	if address.Id == 0 {
 		address.Id, err = addAddress(tx, address)
 		if err != nil {
+			tx.Rollback()
 			return err
 		}
 	}
