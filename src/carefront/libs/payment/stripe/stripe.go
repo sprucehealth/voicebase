@@ -40,13 +40,17 @@ type stripeCardData struct {
 	Data  []*stripeCard `json:"data"`
 }
 
-type stripeError struct {
+type StripeError struct {
 	Code    int
 	Details struct {
 		Type    string `json:"type"`
 		Message string `json:"message"`
 		Code    string `json:"code"`
 	} `json:"error"`
+}
+
+func (s StripeError) Error() string {
+	return fmt.Sprintf("Error communicating with stripe. ErrorCode: %dErrorDetails:\n- Type: %s\n- Message: %s\n- Code:%s\n", s.Code, s.Details.Type, s.Details.Message, s.Details.Code)
 }
 
 func (s *StripeService) CreateCustomerWithDefaultCard(token string) (*payment.Customer, error) {
@@ -169,11 +173,11 @@ func (s *StripeService) query(httpVerb string, endPointUrl string, parameters ur
 	}
 
 	if resp.StatusCode != http.StatusOK {
-		sError := &stripeError{}
+		sError := &StripeError{}
 		if err := json.NewDecoder(resp.Body).Decode(sError); err != nil {
 			return nil, err
 		}
-		return nil, fmt.Errorf("Something went wrong when making call to stripe %+v", sError)
+		return nil, sError
 	}
 
 	return resp, err
