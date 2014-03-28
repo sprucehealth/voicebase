@@ -102,6 +102,7 @@ func (p *PatientCardsHandler) makeCardDefaultForPatient(w http.ResponseWriter, r
 	cardId, err := strconv.ParseInt(requestData.CardId, 10, 64)
 	if err != nil {
 		WriteDeveloperError(w, http.StatusBadRequest, "Unable to parse cardId: "+err.Error())
+		return
 	}
 
 	card, err := p.DataApi.GetCardFromId(cardId)
