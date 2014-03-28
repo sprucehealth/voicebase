@@ -1,2 +1,3 @@
-data-snapshot-*.sql binary
 snapshot-*.sql binary
+data-snapshot-*.sql binary
+
