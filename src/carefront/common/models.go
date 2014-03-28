@@ -11,25 +11,40 @@ type PhoneInformation struct {
 }
 
 type Patient struct {
-	PatientId      *ObjectId              `json:"id,omitempty"`
-	IsUnlinked     bool                   `json:"is_unlinked,omitempty"`
-	FirstName      string                 `json:"first_name,omitempty"`
-	LastName       string                 `json:"last_name,omiempty"`
-	MiddleName     string                 `json:"middle_name,omitempty"`
-	Suffix         string                 `json:"suffix,omitempty"`
-	Prefix         string                 `json:"prefix,omitempty"`
-	Dob            time.Time              `json:"dob,omitempty"`
-	Email          string                 `json:"email,omitempty"`
-	Gender         string                 `json:"gender,omitempty"`
-	ZipCode        string                 `json:"zip_code,omitempty"`
-	City           string                 `json:"city,omitempty"`
-	State          string                 `json:"state,omitempty"`
-	PhoneNumbers   []*PhoneInformation    `json:"phone_numbers,omitempty"`
-	Status         string                 `json:"-"`
-	AccountId      *ObjectId              `json:"-"`
-	ERxPatientId   *ObjectId              `json:"-"`
-	Pharmacy       *pharmacy.PharmacyData `json:"pharmacy,omitempty"`
-	PatientAddress *Address               `json:"address,omitempty"`
+	PatientId         *ObjectId              `json:"id,omitempty"`
+	IsUnlinked        bool                   `json:"is_unlinked,omitempty"`
+	FirstName         string                 `json:"first_name,omitempty"`
+	LastName          string                 `json:"last_name,omiempty"`
+	MiddleName        string                 `json:"middle_name,omitempty"`
+	Suffix            string                 `json:"suffix,omitempty"`
+	Prefix            string                 `json:"prefix,omitempty"`
+	Dob               time.Time              `json:"dob,omitempty"`
+	Email             string                 `json:"email,omitempty"`
+	Gender            string                 `json:"gender,omitempty"`
+	ZipCode           string                 `json:"zip_code,omitempty"`
+	City              string                 `json:"city,omitempty"`
+	State             string                 `json:"state,omitempty"`
+	PhoneNumbers      []*PhoneInformation    `json:"phone_numbers,omitempty"`
+	Status            string                 `json:"-"`
+	AccountId         *ObjectId              `json:"-"`
+	ERxPatientId      *ObjectId              `json:"-"`
+	PaymentCustomerId string                 `json:"-"`
+	Pharmacy          *pharmacy.PharmacyData `json:"pharmacy,omitempty"`
+	PatientAddress    *Address               `json:"address,omitempty"`
+}
+
+type Card struct {
+	Id             *ObjectId `json:"id,omitempty"`
+	ThirdPartyId   string    `json:"third_party_id"`
+	Fingerprint    string    `json:"fingerprint"`
+	Token          string    `json:"token,omitempty"`
+	Type           string    `json:"type"`
+	ExpMonth       int64     `json:"exp_month"`
+	ExpYear        int64     `json:"exp_year"`
+	Last4          int64     `json:"last4,string"`
+	Label          string    `json:"label,omitempty"`
+	BillingAddress *Address  `json:"address,omitempty"`
+	IsDefault      bool      `json:"is_default,omitempty"`
 }
 
 type Doctor struct {
@@ -57,6 +72,7 @@ type PatientVisit struct {
 }
 
 type Address struct {
+	Id           int64  `json:"-"`
 	AddressLine1 string `json:"address_line_1"`
 	AddressLine2 string `json:"address_line_2,omitempty"`
 	City         string `json:"city,omitempty"`

@@ -52,7 +52,7 @@ func (d *DataService) StoreAnswersForQuestion(role string, roleId, patientVisitI
 		infoIdToAnswersWithSubAnswers := make(map[int64]*common.AnswerIntake)
 		subAnswersFound := false
 		for _, answerToStore := range answersToStore {
-			res, err := insertAnswers(tx, []*common.AnswerIntake{answerToStore}, status_creating)
+			res, err := insertAnswers(tx, []*common.AnswerIntake{answerToStore}, STATUS_CREATING)
 			if err != nil {
 				tx.Rollback()
 				return err
@@ -83,7 +83,7 @@ func (d *DataService) StoreAnswersForQuestion(role string, roleId, patientVisitI
 
 			// if there are no subanswers to store, our job is done with just the top level answers
 			d.updatePatientInfoIntakesWithStatus(role, []int64{questionId}, roleId,
-				patientVisitId, layoutVersionId, status_active, status_creating, tx)
+				patientVisitId, layoutVersionId, status_active, STATUS_CREATING, tx)
 			// tx.Commit()
 			continue
 		}
@@ -91,7 +91,7 @@ func (d *DataService) StoreAnswersForQuestion(role string, roleId, patientVisitI
 		// tx.Commit()
 		// create a query to batch insert all subanswers
 		for infoIntakeId, answerToStore := range infoIdToAnswersWithSubAnswers {
-			_, err = insertAnswersForSubQuestions(tx, answerToStore.SubAnswers, strconv.FormatInt(infoIntakeId, 10), strconv.FormatInt(answerToStore.QuestionId.Int64(), 10), status_creating)
+			_, err = insertAnswersForSubQuestions(tx, answerToStore.SubAnswers, strconv.FormatInt(infoIntakeId, 10), strconv.FormatInt(answerToStore.QuestionId.Int64(), 10), STATUS_CREATING)
 			if err != nil {
 				tx.Rollback()
 				return err
@@ -123,7 +123,7 @@ func (d *DataService) StoreAnswersForQuestion(role string, roleId, patientVisitI
 		// make all answers pertanining to the questionIds collected the new active set of answers for the
 		// questions traversed
 		err = d.updatePatientInfoIntakesWithStatus(role, createKeysArrayFromMap(questionIds), roleId,
-			patientVisitId, layoutVersionId, status_active, status_creating, tx)
+			patientVisitId, layoutVersionId, status_active, STATUS_CREATING, tx)
 		if err != nil {
 			tx.Rollback()
 			// d.deleteAnswersWithId(role, infoIdsFromMap(infoIdToAnswersWithSubAnswers))
