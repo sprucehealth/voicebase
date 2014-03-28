@@ -3,6 +3,7 @@ package erx
 import (
 	"bytes"
 	"encoding/xml"
+	"fmt"
 	"io/ioutil"
 	"net/http"
 	"time"
@@ -66,6 +67,7 @@ func (s *soapClient) makeSoapRequest(soapAction string, requestMessage interface
 		return err
 	}
 
+	fmt.Println(string(body))
 	responseEnvelope := &soapEnvelope{}
 	err = xml.Unmarshal(body, responseEnvelope)
 	if err != nil {

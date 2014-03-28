@@ -231,9 +231,6 @@ func populatePatientForDoseSpot(currentPatient *common.Patient) *patient {
 		Suffix:      currentPatient.Suffix,
 		Prefix:      currentPatient.Prefix,
 		Email:       currentPatient.Email,
-		City:        currentPatient.City,
-		State:       currentPatient.State,
-		ZipCode:     currentPatient.ZipCode,
 		DateOfBirth: specialDateTime{DateTime: currentPatient.Dob, DateTimeElementName: "DateOfBirth"},
 		Gender:      currentPatient.Gender,
 	}
@@ -258,6 +255,7 @@ func populatePatientForDoseSpot(currentPatient *common.Patient) *patient {
 		newPatient.Address2 = currentPatient.PatientAddress.AddressLine2
 		newPatient.City = currentPatient.PatientAddress.City
 		newPatient.ZipCode = currentPatient.PatientAddress.ZipCode
+		newPatient.State = currentPatient.PatientAddress.State
 	}
 
 	if currentPatient.ERxPatientId.Int64() != 0 {
@@ -265,6 +263,80 @@ func populatePatientForDoseSpot(currentPatient *common.Patient) *patient {
 	}
 
 	return newPatient
+}
+
+func ensurePatientInformationIsConsistent(currentPatient *common.Patient, patientUpdatesFromDoseSpot []*patientUpdate) error {
+	if len(patientUpdatesFromDoseSpot) != 1 {
+		return fmt.Errorf("Expected a single patient to be returned from dosespot instead got back %d", len(patientUpdatesFromDoseSpot))
+	}
+
+	patientFromDoseSpot := patientUpdatesFromDoseSpot[0].Patient
+
+	if currentPatient.FirstName != patientFromDoseSpot.FirstName {
+		return errors.New("PATIENT_INFO_MISMATCH: firstName")
+	}
+
+	if currentPatient.LastName != patientFromDoseSpot.LastName {
+		return errors.New("PATIENT_INFO_MISTMATCH: lastName")
+	}
+
+	if currentPatient.MiddleName != patientFromDoseSpot.MiddleName {
+		return errors.New("PATIENT_INFO_MISTMATCH: middleName")
+	}
+
+	if currentPatient.Suffix != patientFromDoseSpot.Suffix {
+		return errors.New("PATIENT_INFO_MISTMATCH: suffix")
+	}
+
+	if currentPatient.Prefix != patientFromDoseSpot.Prefix {
+		return errors.New("PATIENT_INFO_MISTMATCH: prefix")
+	}
+
+	if currentPatient.LastName != patientFromDoseSpot.LastName {
+		return errors.New("PATIENT_INFO_MISTMATCH: lastName")
+	}
+
+	if currentPatient.Dob.Equal(patientFromDoseSpot.DateOfBirth.DateTime) {
+		return errors.New("PATIENT_INFO_MISTMATCH: dob")
+	}
+
+	if strings.ToLower(currentPatient.Gender) != strings.ToLower(patientFromDoseSpot.Gender) {
+		return errors.New("PATIENT_INFO_MISTMATCH: gender")
+	}
+
+	if currentPatient.Email != patientFromDoseSpot.Email {
+		return errors.New("PATIENT_INFO_MISTMATCH: email")
+	}
+
+	if currentPatient.PatientAddress.AddressLine1 != patientFromDoseSpot.Address1 {
+		return errors.New("PATIENT_INFO_MISTMATCH: address1")
+	}
+
+	if currentPatient.PatientAddress.AddressLine2 != patientFromDoseSpot.Address2 {
+		return errors.New("PATIENT_INFO_MISTMATCH: email")
+	}
+
+	if currentPatient.PatientAddress.City != patientFromDoseSpot.City {
+		return errors.New("PATIENT_INFO_MISTMATCH: city")
+	}
+
+	// if currentPatient.PatientAddress.State != patientFromDoseSpot.State {
+	// 	return errors.New("PATIENT_INFO_MISTMATCH: state")
+	// }
+
+	if currentPatient.PatientAddress.ZipCode != patientFromDoseSpot.ZipCode {
+		return errors.New("PATIENT_INFO_MISTMATCH: zipCode")
+	}
+
+	if currentPatient.PhoneNumbers[0].Phone != patientFromDoseSpot.PrimaryPhone {
+		return errors.New("PATIENT_INFO_MISTMATCH: primaryPhone")
+	}
+
+	if currentPatient.PhoneNumbers[0].PhoneType != patientFromDoseSpot.PrimaryPhoneType {
+		return errors.New("PATIENT_INFO_MISTMATCH: primaryPhoneType")
+	}
+
+	return nil
 }
 
 func (d *DoseSpotService) UpdatePatientInformation(clinicianId int64, currentPatient *common.Patient) error {
@@ -297,6 +369,10 @@ func (d *DoseSpotService) UpdatePatientInformation(clinicianId int64, currentPat
 
 	if response.ResultCode != resultOk {
 		return errors.New("Something went wrong when attempting to start prescriptions for patient: " + response.ResultDescription)
+	}
+
+	if err := ensurePatientInformationIsConsistent(currentPatient, response.PatientUpdates); err != nil {
+		return err
 	}
 
 	// populate the prescription id into the patient object
@@ -367,6 +443,10 @@ func (d *DoseSpotService) StartPrescribingPatient(clinicianId int64, currentPati
 
 	if response.ResultCode != resultOk {
 		return errors.New("Something went wrong when attempting to start prescriptions for patient: " + response.ResultDescription)
+	}
+
+	if err := ensurePatientInformationIsConsistent(currentPatient, response.PatientUpdates); err != nil {
+		return err
 	}
 
 	// populate the prescription id into the patient object
