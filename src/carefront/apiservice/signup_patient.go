@@ -9,7 +9,6 @@ import (
 	"net/http"
 	"strconv"
 	"strings"
-	"time"
 
 	"github.com/gorilla/schema"
 )
@@ -110,7 +109,7 @@ func (s *SignupPatientHandler) ServeHTTP(w http.ResponseWriter, r *http.Request)
 			PhoneType: api.PHONE_CELL,
 		},
 		},
-		Dob: time.Date(year, time.Month(month), day, 0, 0, 0, 0, time.UTC),
+		Dob: dobParts,
 	}
 
 	// then, register the signed up user as a patient

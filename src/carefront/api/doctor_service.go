@@ -32,7 +32,7 @@ func (d *DataService) RegisterDoctor(doctor *common.Doctor) (int64, error) {
 	}
 
 	doctor.DoctorId = common.NewObjectId(lastId)
-	doctor.DoctorAddress.Id, err = addAddress(tx, doctor.DoctorAddress)
+	doctor.DoctorAddress.Id, err = d.addAddress(tx, doctor.DoctorAddress)
 	if err != nil {
 		tx.Rollback()
 		return 0, err
@@ -1085,15 +1085,7 @@ func (d *DataService) UpdatePatientInformationFromDoctor(patient *common.Patient
 	if patient.PatientAddress != nil {
 
 		// create a new address, mark it as being updated by the doctor, and set it as default selected address
-		lastId, err := tx.Exec(`insert into address (address_line_1, address_line_2, city, state, zip_code, country) values 
-							(?,?,?,?,?,?)`, patient.PatientAddress.AddressLine1, patient.PatientAddress.AddressLine2, patient.PatientAddress.City,
-			patient.PatientAddress.State, patient.PatientAddress.ZipCode, addressUsa)
-		if err != nil {
-			tx.Rollback()
-			return err
-		}
-
-		addressId, err := lastId.LastInsertId()
+		addressId, err := d.addAddress(tx, patient.PatientAddress)
 		if err != nil {
 			tx.Rollback()
 			return err

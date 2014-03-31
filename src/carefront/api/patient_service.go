@@ -51,14 +51,7 @@ func (d *DataService) CreateUnlinkedPatientFromRefillRequest(patient *common.Pat
 
 	// create address for patient
 	if patient.PatientAddress != nil {
-		lastId, err = tx.Exec(`insert into address (address_line_1, address_line_2, city, state, country, zip_code) values (?,?,?,?,?,?)`,
-			patient.PatientAddress.AddressLine1, patient.PatientAddress.AddressLine2, patient.City, patient.State, addressUsa, patient.ZipCode)
-		if err != nil {
-			tx.Rollback()
-			return err
-		}
-
-		addressId, err := lastId.LastInsertId()
+		addressId, err := d.addAddress(tx, patient.PatientAddress)
 		if err != nil {
 			tx.Rollback()
 			return err
@@ -757,7 +750,7 @@ func (d *DataService) AddCardAndMakeDefaultForPatient(patientId int64, card *com
 	}
 
 	// add a new address to db
-	addressId, err := addAddress(tx, card.BillingAddress)
+	addressId, err := d.addAddress(tx, card.BillingAddress)
 	if err != nil {
 		tx.Rollback()
 		return err
@@ -843,7 +836,8 @@ func (d *DataService) MakeLatestCardDefaultForPatient(patientId int64) (*common.
 	return card, err
 }
 
-func addAddress(tx *sql.Tx, address *common.Address) (int64, error) {
+func (d *DataService) addAddress(tx *sql.Tx, address *common.Address) (int64, error) {
+
 	lastId, err := tx.Exec(`insert into address (address_line_1, address_line_2, city, state, zip_code, country) values (?,?,?,?,?,?)`,
 		address.AddressLine1, address.AddressLine2, address.City, address.State, address.ZipCode, addressUsa)
 	if err != nil {
@@ -920,7 +914,7 @@ func (d *DataService) UpdateDefaultAddressForPatient(patientId int64, address *c
 	}
 
 	if address.Id == 0 {
-		address.Id, err = addAddress(tx, address)
+		address.Id, err = d.addAddress(tx, address)
 		if err != nil {
 			tx.Rollback()
 			return err
@@ -965,16 +959,16 @@ func (d *DataService) DeletePendingTask(pendingTaskId int64) error {
 	return err
 }
 
-func (d *DataService) IsStateValid(state string) (bool, error) {
-	var id int64
-	err := d.DB.QueryRow(`select id from state where full_name = ? or abbreviation = ?`, state, state).Scan(&id)
+func (d *DataService) GetFullNameForState(state string) (string, error) {
+	var fullName string
+	err := d.DB.QueryRow(`select full_name from state where full_name = ? or abbreviation = ?`, state, state).Scan(&fullName)
 	if err != nil {
 		if err == sql.ErrNoRows {
-			return false, nil
+			return "", nil
 		}
-		return false, err
+		return "", err
 	}
-	return (id != 0), nil
+	return fullName, nil
 }
 
 func (d *DataService) getPatientBasedOnQuery(queryStr string, queryParams ...interface{}) ([]*common.Patient, error) {

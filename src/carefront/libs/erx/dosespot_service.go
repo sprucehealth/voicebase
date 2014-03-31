@@ -296,8 +296,8 @@ func ensurePatientInformationIsConsistent(currentPatient *common.Patient, patien
 		return errors.New("PATIENT_INFO_MISTMATCH: lastName")
 	}
 
-	if currentPatient.Dob.Equal(patientFromDoseSpot.DateOfBirth.DateTime) {
-		return errors.New("PATIENT_INFO_MISTMATCH: dob")
+	if !currentPatient.Dob.Equal(patientFromDoseSpot.DateOfBirth.DateTime) {
+		return fmt.Errorf("PATIENT_INFO_MISTMATCH: dob %s %s", currentPatient.Dob, patientFromDoseSpot.DateOfBirth.DateTime)
 	}
 
 	if strings.ToLower(currentPatient.Gender) != strings.ToLower(patientFromDoseSpot.Gender) {
@@ -320,9 +320,9 @@ func ensurePatientInformationIsConsistent(currentPatient *common.Patient, patien
 		return errors.New("PATIENT_INFO_MISTMATCH: city")
 	}
 
-	// if currentPatient.PatientAddress.State != patientFromDoseSpot.State {
-	// 	return errors.New("PATIENT_INFO_MISTMATCH: state")
-	// }
+	if strings.ToLower(currentPatient.PatientAddress.State) != strings.ToLower(patientFromDoseSpot.State) {
+		return errors.New("PATIENT_INFO_MISTMATCH: state")
+	}
 
 	if currentPatient.PatientAddress.ZipCode != patientFromDoseSpot.ZipCode {
 		return errors.New("PATIENT_INFO_MISTMATCH: zipCode")
