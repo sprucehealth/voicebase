@@ -272,6 +272,11 @@ func (p *PatientCardsHandler) addCardForPatient(w http.ResponseWriter, r *http.R
 		return
 	}
 
+	if err := validateAddress(p.DataApi, patient.PatientAddress); err != nil {
+		WriteUserError(w, http.StatusBadRequest, err.Error())
+		return
+	}
+
 	// create a pending task to indicate that there's work that is currently in progress
 	// to add a credit card for a patient. The reason to do this is to identify any tasks that span multiple steps
 	// that may fail to complete half way through and then reconcile the work through a worker

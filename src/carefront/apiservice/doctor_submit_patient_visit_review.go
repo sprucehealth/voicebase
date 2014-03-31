@@ -114,7 +114,7 @@ func (d *DoctorSubmitPatientVisitReviewHandler) submitPatientVisitReview(w http.
 			patient.PatientAddress = &common.Address{
 				AddressLine1: "1234 Main Street",
 				City:         "San Francisco",
-				State:        "CA",
+				State:        "California",
 				ZipCode:      "94103",
 			}
 		}

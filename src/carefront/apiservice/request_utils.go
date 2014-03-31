@@ -289,3 +289,17 @@ func createAnswersToStoreForQuestion(role string, roleId, questionId, contextId,
 	}
 	return answersToStore
 }
+
+func validateAddress(dataApi api.DataAPI, address *common.Address) error {
+	fullStateName, err := dataApi.GetFullNameForState(address.State)
+	if err != nil {
+		return err
+	}
+
+	if fullStateName == "" {
+		return errors.New("Enter a valid state")
+	}
+
+	address.State = fullStateName
+	return nil
+}
