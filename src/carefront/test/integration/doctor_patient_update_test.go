@@ -10,7 +10,6 @@ import (
 	"net/http"
 	"net/http/httptest"
 	"testing"
-	"time"
 )
 
 func TestDoctorUpdateToPatientAddress(t *testing.T) {
@@ -161,7 +160,7 @@ func TestDoctorFailedUpdate(t *testing.T) {
 	}
 
 	// now lets try no dob
-	signedupPatientResponse.Patient.Dob = time.Time{}
+	signedupPatientResponse.Patient.Dob = common.Dob{Month: 11, Day: 8, Year: 1987}
 	resp, err = authPut(ts.URL, "application/json", bytes.NewReader(jsonData), doctor.AccountId.Int64())
 	if err != nil {
 		t.Fatal("Unable to make successful call to update patient information: " + err.Error())
@@ -317,7 +316,7 @@ func TestDoctorUpdateToTopLevelInformation(t *testing.T) {
 	signedupPatientResponse.Patient.Prefix = "n"
 	signedupPatientResponse.Patient.MiddleName = "aaaa"
 	signedupPatientResponse.Patient.Gender = "Unknown"
-	signedupPatientResponse.Patient.Dob = time.Now()
+	signedupPatientResponse.Patient.Dob = common.Dob{Day: 11, Month: 9, Year: 1987}
 
 	stubErxApi := &erx.StubErxService{}
 
@@ -354,9 +353,9 @@ func TestDoctorUpdateToTopLevelInformation(t *testing.T) {
 		patient.MiddleName != signedupPatientResponse.Patient.MiddleName ||
 		patient.Suffix != signedupPatientResponse.Patient.Suffix ||
 		patient.Prefix != signedupPatientResponse.Patient.Prefix ||
-		patient.Dob.Day() != signedupPatientResponse.Patient.Dob.Day() ||
-		patient.Dob.Year() != signedupPatientResponse.Patient.Dob.Year() ||
-		patient.Dob.Month() != signedupPatientResponse.Patient.Dob.Month() {
+		patient.Dob.Day != signedupPatientResponse.Patient.Dob.Day ||
+		patient.Dob.Year != signedupPatientResponse.Patient.Dob.Year ||
+		patient.Dob.Month != signedupPatientResponse.Patient.Dob.Month {
 		t.Fatal("Patient data incorrectly updated")
 	}
 }

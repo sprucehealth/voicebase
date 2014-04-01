@@ -1074,8 +1074,8 @@ func (d *DataService) UpdatePatientInformationFromDoctor(patient *common.Patient
 
 	// update top level patient details
 	_, err = tx.Exec(`update patient set first_name=?, 
-		middle_name=?, last_name=?, prefix=?, suffix=?, dob=?, gender=? where id = ?`, patient.FirstName, patient.MiddleName,
-		patient.LastName, patient.Prefix, patient.Suffix, patient.Dob, patient.Gender, patient.PatientId.Int64())
+		middle_name=?, last_name=?, prefix=?, suffix=?, dob_month=?, dob_day=?, dob_year=?, gender=? where id = ?`, patient.FirstName, patient.MiddleName,
+		patient.LastName, patient.Prefix, patient.Suffix, patient.Dob.Month, patient.Dob.Day, patient.Dob.Year, patient.Gender, patient.PatientId.Int64())
 	if err != nil {
 		tx.Rollback()
 		return err
