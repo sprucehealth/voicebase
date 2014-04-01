@@ -175,6 +175,11 @@ func (p *PatientCardsHandler) deleteCardForPatient(w http.ResponseWriter, r *htt
 		return
 	}
 
+	if card == nil {
+		WriteDeveloperError(w, http.StatusBadRequest, "No card found with this id")
+		return
+	}
+
 	patient, err := p.DataApi.GetPatientFromAccountId(GetContext(r).AccountId)
 	if err != nil {
 		WriteDeveloperError(w, http.StatusInternalServerError, "Unable to get patient from account id : "+err.Error())
@@ -199,6 +204,8 @@ func (p *PatientCardsHandler) deleteCardForPatient(w http.ResponseWriter, r *htt
 		return
 	}
 
+	currentPatientAddressId := patient.PatientAddress.Id
+
 	// switch over the default card to the last added card if we are currently deleting the default card
 	if card.IsDefault {
 		latestCard, err := p.DataApi.MakeLatestCardDefaultForPatient(patient.PatientId.Int64())
@@ -215,14 +222,6 @@ func (p *PatientCardsHandler) deleteCardForPatient(w http.ResponseWriter, r *htt
 		}
 	}
 
-	// delete the address only if this is not the patient's preferred address
-	if patient.PatientAddress.Id != card.BillingAddress.Id {
-		if err := p.DataApi.DeleteAddress(card.BillingAddress.Id); err != nil {
-			WriteDeveloperError(w, http.StatusInternalServerError, "Unable to delete address: "+err.Error())
-			return
-		}
-	}
-
 	// the payment service changes the default card to the last added active card internally
 	if err := p.PaymentApi.DeleteCardForCustomer(patient.PaymentCustomerId, card.ThirdPartyId); err != nil {
 		WriteDeveloperError(w, http.StatusInternalServerError, "Unable to delete card on the payment service: "+err.Error())
@@ -232,6 +231,14 @@ func (p *PatientCardsHandler) deleteCardForPatient(w http.ResponseWriter, r *htt
 	if err := p.DataApi.DeleteCardForPatient(patient.PatientId.Int64(), card); err != nil {
 		WriteDeveloperError(w, http.StatusInternalServerError, "Unable to delete card for patient: "+err.Error())
 		return
+	}
+
+	// delete the address only if this is not the patient's preferred address
+	if currentPatientAddressId != card.BillingAddress.Id {
+		if err := p.DataApi.DeleteAddress(card.BillingAddress.Id); err != nil {
+			WriteDeveloperError(w, http.StatusInternalServerError, "Unable to delete address: "+err.Error())
+			return
+		}
 	}
 
 	if err := p.DataApi.DeletePendingTask(pendingTaskId); err != nil {

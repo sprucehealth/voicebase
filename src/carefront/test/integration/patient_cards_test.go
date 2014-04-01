@@ -215,7 +215,7 @@ func TestAddCardsForPatient(t *testing.T) {
 	// this is because mysql does not support millisecond/microsecond level precision unless specified, and
 	// this would make it so that if cards were added within the second, we could not consistently say
 	// which card was made default
-	addCard(t, testData, patient.AccountId.Int64(), patientCardsHandler, stubPaymentsService)
+	card3 := addCard(t, testData, patient.AccountId.Int64(), patientCardsHandler, stubPaymentsService)
 	time.Sleep(time.Second)
 	card4 := addCard(t, testData, patient.AccountId.Int64(), patientCardsHandler, stubPaymentsService)
 	time.Sleep(time.Second)
@@ -278,15 +278,50 @@ func TestAddCardsForPatient(t *testing.T) {
 		t.Fatal("Unable to get patient for id ", err.Error())
 	}
 
+	// identify card3 as the next card to be deleted (which is not the default) while
+	// also checking to make sure that card4 is actually the current default
+	cardToDelete = nil
 	for _, localCard := range localCards {
 		if localCard.IsDefault {
 			if localCard.ThirdPartyId != card4.ThirdPartyId {
 				t.Fatalf("Expected the 4th card to be the default card but it wasnt. Local Card thirdpartyId: %s, card 4 thirdpartyid: %s", localCard.ThirdPartyId, card4.ThirdPartyId)
 			}
+		} else {
+			if localCard.ThirdPartyId == card3.ThirdPartyId {
+				cardToDelete = localCard
+			}
 		}
 	}
-
 	checkBillingAddress(t, patient, card4.BillingAddress)
+
+	if cardToDelete == nil {
+		t.Fatal("Unable to locate card3 which should exist")
+	}
+
+	params.Set("card_id", strconv.FormatInt(cardToDelete.Id.Int64(), 10))
+	resp, err = authDelete(ts.URL+"?"+params.Encode(), "application/x-www-form-urlencode", nil, patient.AccountId.Int64())
+	if err != nil {
+		t.Fatalf("Unable to delete card3: %+v", err)
+	}
+
+	CheckSuccessfulStatusCode(resp, "Unable to successfully delete card3", t)
+
+	localCards, err = testData.DataApi.GetCardsForPatient(patient.PatientId.Int64())
+	if err != nil {
+		t.Fatalf("Unable to get cards for patient: %+v", err)
+	}
+
+	if len(localCards) != 1 {
+		t.Fatalf("Expected 1 card to remain instead got back %d", len(localCards))
+	}
+
+	if localCards[0].ThirdPartyId != card4.ThirdPartyId {
+		t.Fatalf("Expected card4 (%s) to be returned instead got back %s", card4.ThirdPartyId, localCards[0].ThirdPartyId)
+	}
+
+	if !localCards[0].IsDefault {
+		t.Fatal("Expected the single remaining card to be the default")
+	}
 }
 
 func addCard(t *testing.T, testData TestData, patientAccountId int64, patientCardsHandler *apiservice.PatientCardsHandler, stubPaymentsService *payment.StubPaymentService) *common.Card {
