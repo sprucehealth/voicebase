@@ -90,7 +90,7 @@ func TestDoctorUpdateToPatientAddress(t *testing.T) {
 	}
 
 	if patient.PatientAddress.AddressLine1 != patientAddress.AddressLine1 || patient.PatientAddress.AddressLine2 != patientAddress.AddressLine2 ||
-		patient.PatientAddress.State != patientAddress.State || patient.PatientAddress.City != patientAddress.City ||
+		patient.PatientAddress.State != "California" || patient.PatientAddress.City != patientAddress.City ||
 		patient.PatientAddress.ZipCode != patientAddress.ZipCode {
 		t.Fatal("Patient address did not updated to match what was entered")
 	}
