@@ -59,10 +59,10 @@ func (s *SignupPatientHandler) ServeHTTP(w http.ResponseWriter, r *http.Request)
 
 	// ensure that the date of birth can be correctly parsed
 	// Note that the date will be returned as MM/DD/YYYY
-	dobParts := strings.Split(requestData.Dob, "/")
+	dobParts := strings.Split(requestData.Dob, common.DOB_SEPARATOR)
 
 	if len(dobParts) < 3 {
-		WriteUserError(w, http.StatusBadRequest, "Unable to parse dob. Format should be YYYY/MM/DD")
+		WriteUserError(w, http.StatusBadRequest, "Unable to parse dob. Format should be "+common.DOB_FORMAT)
 		return
 	}
 
@@ -100,7 +100,7 @@ func (s *SignupPatientHandler) ServeHTTP(w http.ResponseWriter, r *http.Request)
 
 	newPatient.Dob, err = common.NewDobFromComponents(dobParts[0], dobParts[1], dobParts[2])
 	if err != nil {
-		WriteUserError(w, http.StatusBadRequest, "Unable to parse date of birth. Required format YYYY/MM/DD")
+		WriteUserError(w, http.StatusBadRequest, "Unable to parse date of birth. Required format + "+common.DOB_FORMAT)
 		return
 	}
 

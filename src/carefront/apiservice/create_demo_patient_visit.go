@@ -482,7 +482,7 @@ func (c *CreateDemoPatientVisitHandler) ServeHTTP(w http.ResponseWriter, r *http
 	urlValues := url.Values{}
 	urlValues.Set("first_name", "Demo")
 	urlValues.Set("last_name", "User")
-	urlValues.Set("dob", "1987/11/08")
+	urlValues.Set("dob", "1987-11-08")
 	urlValues.Set("gender", "female")
 	urlValues.Set("zip_code", "94115")
 	urlValues.Set("phone", "2068773590")

@@ -11,7 +11,7 @@ type DobExampleObject struct {
 
 const (
 	testDobString = `{
-		"dob" : "1987/11/08"
+		"dob" : "1987-11-08"
 				}`
 
 	testDobStringWithEmptyValue = `{
@@ -35,7 +35,7 @@ func TestDobMarshal(t *testing.T) {
 		t.Fatalf("Unable to marshal dob as expected: %+v", err)
 	}
 
-	expectedResult := `{"dob":"2014/12/11"}`
+	expectedResult := `{"dob":"2014-12-11"}`
 	if string(jsonData) != expectedResult {
 		t.Fatalf("Dob did not get marshalled as expected. Got %s when expected %s", string(jsonData), expectedResult)
 	}
@@ -53,7 +53,7 @@ func TestDobMarshalSingleMonthDay(t *testing.T) {
 		t.Fatalf("Unable to marshal dob as expected: %+v", err)
 	}
 
-	expectedResult := `{"dob":"2014/12/05"}`
+	expectedResult := `{"dob":"2014-12-05"}`
 	if string(jsonData) != expectedResult {
 		t.Fatalf("Dob did not get marshalled as expected. Got %s when expected %s", string(jsonData), expectedResult)
 	}
@@ -69,7 +69,7 @@ func TestDobMarshalSingleMonthDay(t *testing.T) {
 		t.Fatalf("Unable to marshal dob as expected: %+v", err)
 	}
 
-	expectedResult = `{"dob":"2014/05/05"}`
+	expectedResult = `{"dob":"2014-05-05"}`
 	if string(jsonData) != expectedResult {
 		t.Fatalf("Dob did not get marshalled as expected. Got %s when expected %s", string(jsonData), expectedResult)
 	}

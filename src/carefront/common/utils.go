@@ -5,7 +5,6 @@ import (
 	"carefront/libs/aws/sqs"
 	"crypto/rand"
 	"encoding/base64"
-	"errors"
 	"fmt"
 	"strconv"
 	"strings"
@@ -113,6 +112,11 @@ func (id *ObjectId) Int64() int64 {
 	return int64(*id)
 }
 
+const (
+	DOB_SEPARATOR = "-"
+	DOB_FORMAT    = "YYYY-MM-DD"
+)
+
 type Dob struct {
 	Month int
 	Day   int
@@ -128,14 +132,14 @@ func (dob *Dob) UnmarshalJSON(data []byte) error {
 	}
 
 	// break up dob into components (of the format MM/DD/YYYY)
-	dobParts := strings.Split(strDob, "/")
+	dobParts := strings.Split(strDob, DOB_SEPARATOR)
 
 	if len(dobParts) < 3 {
-		return errors.New("Dob incorrectly formatted. Expected format YYYY/MM/DD")
+		return fmt.Errorf("Dob incorrectly formatted. Expected format %s", DOB_FORMAT)
 	}
 
 	if len(dobParts[0]) != 5 || len(dobParts[1]) != 2 || len(dobParts[2]) != 3 {
-		return errors.New("Dob incorrectly formatted. Expected format YYYY/MM/DD")
+		return fmt.Errorf("Dob incorrectly formatted. Expected format %s", DOB_FORMAT)
 	}
 
 	dobYear, err := strconv.Atoi(dobParts[0][1:]) // to remove the `"`
@@ -167,7 +171,7 @@ func (dob *Dob) MarshalJSON() ([]byte, error) {
 		return []byte(`null`), nil
 	}
 
-	return []byte(fmt.Sprintf(`"%d/%02d/%02d"`, dob.Year, dob.Month, dob.Day)), nil
+	return []byte(fmt.Sprintf(`"%d-%02d-%02d"`, dob.Year, dob.Month, dob.Day)), nil
 }
 
 func (dob *Dob) ToTime() time.Time {
