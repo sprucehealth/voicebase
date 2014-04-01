@@ -47,41 +47,10 @@ func (p *PatientCardsHandler) getCardsForPatient(w http.ResponseWriter, r *http.
 		return
 	}
 
-	localCards, err := p.DataApi.GetCardsForPatient(patient.PatientId.Int64())
+	cards, err := p.getCardsAndReconcileWithPaymentService(patient)
 	if err != nil {
-		WriteDeveloperError(w, http.StatusInternalServerError, "Unable to get cards from db: "+err.Error())
+		WriteDeveloperError(w, http.StatusInternalServerError, "Unable to get cards from db and reconcile with payments service: "+err.Error())
 		return
-	}
-
-	if len(localCards) == 0 {
-		WriteJSONToHTTPResponseWriter(w, http.StatusOK, &PatientCardsResponse{Cards: nil})
-		return
-	}
-
-	cards, err := p.PaymentApi.GetCardsForCustomer(patient.PaymentCustomerId)
-	if err != nil {
-		WriteDeveloperError(w, http.StatusInternalServerError, "Unable to get cards for patient: "+err.Error())
-		return
-	}
-
-	// log this fact so that we can figure out what is going on
-	if len(localCards) != len(cards) {
-		golog.Warningf("Number of cards returned from payment service differs from number of cards locally stored for patient with id %d", patient.PatientId.Int64())
-	}
-
-	// trust the cards from the payment service as the source of authority
-	for _, cardFromService := range cards {
-		localCardFound := false
-		for _, localCard := range localCards {
-			if localCard.ThirdPartyId == cardFromService.ThirdPartyId {
-				cardFromService.Id = localCard.Id
-				cardFromService.IsDefault = localCard.IsDefault
-				localCardFound = true
-			}
-		}
-		if !localCardFound {
-			golog.Warningf("Local card not found in set of cards returned from payment service for patient with id %d", patient.PatientId.Int64())
-		}
 	}
 
 	WriteJSONToHTTPResponseWriter(w, http.StatusOK, &PatientCardsResponse{Cards: cards})
@@ -148,7 +117,13 @@ func (p *PatientCardsHandler) makeCardDefaultForPatient(w http.ResponseWriter, r
 		return
 	}
 
-	WriteJSONToHTTPResponseWriter(w, http.StatusOK, SuccessfulGenericJSONResponse())
+	cards, err := p.getCardsAndReconcileWithPaymentService(patient)
+	if err != nil {
+		WriteDeveloperError(w, http.StatusInternalServerError, "Unable to get cards and reconcile with payments service: "+err.Error())
+		return
+	}
+
+	WriteJSONToHTTPResponseWriter(w, http.StatusOK, &PatientCardsResponse{Cards: cards})
 }
 
 func (p *PatientCardsHandler) deleteCardForPatient(w http.ResponseWriter, r *http.Request) {
@@ -246,7 +221,13 @@ func (p *PatientCardsHandler) deleteCardForPatient(w http.ResponseWriter, r *htt
 		return
 	}
 
-	WriteJSONToHTTPResponseWriter(w, http.StatusOK, SuccessfulGenericJSONResponse())
+	cards, err := p.getCardsAndReconcileWithPaymentService(patient)
+	if err != nil {
+		WriteDeveloperError(w, http.StatusInternalServerError, "Unable to get cards and reconcile with payments service: "+err.Error())
+		return
+	}
+
+	WriteJSONToHTTPResponseWriter(w, http.StatusOK, &PatientCardsResponse{Cards: cards})
 }
 
 func (p *PatientCardsHandler) addCardForPatient(w http.ResponseWriter, r *http.Request) {
@@ -345,5 +326,49 @@ func (p *PatientCardsHandler) addCardForPatient(w http.ResponseWriter, r *http.R
 		return
 	}
 
-	WriteJSONToHTTPResponseWriter(w, http.StatusOK, cardToAdd)
+	cards, err := p.getCardsAndReconcileWithPaymentService(patient)
+	if err != nil {
+		WriteDeveloperError(w, http.StatusInternalServerError, "Unable to get cards and reconcile with payments service: "+err.Error())
+		return
+	}
+
+	WriteJSONToHTTPResponseWriter(w, http.StatusOK, &PatientCardsResponse{Cards: cards})
+}
+
+func (p *PatientCardsHandler) getCardsAndReconcileWithPaymentService(patient *common.Patient) ([]*common.Card, error) {
+	localCards, err := p.DataApi.GetCardsForPatient(patient.PatientId.Int64())
+	if err != nil {
+		return nil, err
+	}
+
+	if len(localCards) == 0 {
+		return localCards, nil
+	}
+
+	cards, err := p.PaymentApi.GetCardsForCustomer(patient.PaymentCustomerId)
+	if err != nil {
+		return nil, err
+	}
+
+	// log this fact so that we can figure out what is going on
+	if len(localCards) != len(cards) {
+		golog.Warningf("Number of cards returned from payment service differs from number of cards locally stored for patient with id %d", patient.PatientId.Int64())
+	}
+
+	// trust the cards from the payment service as the source of authority
+	for _, cardFromService := range cards {
+		localCardFound := false
+		for _, localCard := range localCards {
+			if localCard.ThirdPartyId == cardFromService.ThirdPartyId {
+				cardFromService.Id = localCard.Id
+				cardFromService.IsDefault = localCard.IsDefault
+				localCardFound = true
+			}
+		}
+		if !localCardFound {
+			golog.Warningf("Local card not found in set of cards returned from payment service for patient with id %d", patient.PatientId.Int64())
+		}
+	}
+
+	return cards, nil
 }

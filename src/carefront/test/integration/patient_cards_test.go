@@ -6,6 +6,7 @@ import (
 	"carefront/common"
 	"carefront/libs/payment"
 	"encoding/json"
+	"fmt"
 	"net/http/httptest"
 	"net/url"
 	"strconv"
@@ -26,8 +27,8 @@ func TestAddCardsForPatient(t *testing.T) {
 	customerToAdd := &payment.Customer{
 		Id: "test_customer_id",
 		Cards: []common.Card{common.Card{
-			ThirdPartyId: "test_card_id",
-			Fingerprint:  "test_finger_print",
+			ThirdPartyId: "third_party_id0",
+			Fingerprint:  "test_fingerprint0",
 		},
 		},
 	}
@@ -49,7 +50,7 @@ func TestAddCardsForPatient(t *testing.T) {
 		t.Fatal("Unable to get patient from id: " + err.Error())
 	}
 
-	card1 := addCard(t, testData, patient.AccountId.Int64(), patientCardsHandler, stubPaymentsService)
+	card1, localCards := addCard(t, testData, patient.AccountId.Int64(), patientCardsHandler, stubPaymentsService, nil)
 
 	// check to ensure there is no pending task left
 	checkPendingTaskCount(t, testData, patient.PatientId.Int64())
@@ -62,12 +63,6 @@ func TestAddCardsForPatient(t *testing.T) {
 
 	checkBillingAddress(t, patient, card1.BillingAddress)
 
-	//  Get cards with the patient to ensure that they have just one and this is the one
-	localCards, err := testData.DataApi.GetCardsForPatient(patient.PatientId.Int64())
-	if err != nil {
-		t.Fatal("Unable to get cards for patient: " + err.Error())
-	}
-
 	if len(localCards) != 1 {
 		t.Fatalf("Expected to get back one card saved for patient instead got back %d", len(localCards))
 	}
@@ -78,7 +73,7 @@ func TestAddCardsForPatient(t *testing.T) {
 		t.Fatalf("card added has different id and finger print than was expected")
 	}
 
-	card2 := addCard(t, testData, patient.AccountId.Int64(), patientCardsHandler, stubPaymentsService)
+	card2, localCards := addCard(t, testData, patient.AccountId.Int64(), patientCardsHandler, stubPaymentsService, localCards)
 
 	checkPendingTaskCount(t, testData, patient.PatientId.Int64())
 	patient, err = testData.DataApi.GetPatientFromId(patient.PatientId.Int64())
@@ -87,11 +82,6 @@ func TestAddCardsForPatient(t *testing.T) {
 	}
 
 	checkBillingAddress(t, patient, card2.BillingAddress)
-
-	localCards, err = testData.DataApi.GetCardsForPatient(patient.PatientId.Int64())
-	if err != nil {
-		t.Fatal("Unable to get cards for patient: " + err.Error())
-	}
 
 	if len(localCards) != 2 {
 		t.Fatalf("Expected to get back 2 cards saved for patient instead got back %d", len(localCards))
@@ -127,6 +117,12 @@ func TestAddCardsForPatient(t *testing.T) {
 		t.Fatal("Unable to make previous card default: " + err.Error())
 	}
 
+	patientCardsResponse := &apiservice.PatientCardsResponse{}
+	if err := json.NewDecoder(resp.Body).Decode(patientCardsResponse); err != nil {
+		t.Fatalf("Unable to unmarshal response body into patient cards response: %+v", err)
+	}
+	localCards = patientCardsResponse.Cards
+
 	CheckSuccessfulStatusCode(resp, "Unable to make previous card default", t)
 
 	patient, err = testData.DataApi.GetPatientFromId(patient.PatientId.Int64())
@@ -135,11 +131,6 @@ func TestAddCardsForPatient(t *testing.T) {
 	}
 
 	checkBillingAddress(t, patient, card1.BillingAddress)
-
-	localCards, err = testData.DataApi.GetCardsForPatient(patient.PatientId.Int64())
-	if err != nil {
-		t.Fatal("Unable to get cards for patient: " + err.Error())
-	}
 
 	if len(localCards) != 2 {
 		t.Fatalf("Expected to get back 2 cards saved for patient instead got back %d", len(localCards))
@@ -160,19 +151,7 @@ func TestAddCardsForPatient(t *testing.T) {
 	}
 
 	// lets delete the default card
-	params = url.Values{}
-	params.Set("card_id", strconv.FormatInt(cardToMakeDefault.Id.Int64(), 10))
-	resp, err = authDelete(ts.URL+"?"+params.Encode(), "application/x-www-form-urlencoded", nil, patient.AccountId.Int64())
-	if err != nil {
-		t.Fatal("Unable to delete card: " + err.Error())
-	}
-
-	CheckSuccessfulStatusCode(resp, "Unable to delete card", t)
-
-	localCards, err = testData.DataApi.GetCardsForPatient(patient.PatientId.Int64())
-	if len(localCards) != 1 {
-		t.Fatalf("Expected just 1 card after the card was deleted instead got %d", len(localCards))
-	}
+	localCards = deleteCard(t, testData, patient, cardToMakeDefault, stubPaymentsService, patientCardsHandler, localCards)
 
 	if !localCards[0].IsDefault {
 		t.Fatal("Expected the only remaining card to be the default")
@@ -186,19 +165,7 @@ func TestAddCardsForPatient(t *testing.T) {
 	checkBillingAddress(t, patient, card2.BillingAddress)
 
 	// lets delete the last card
-	params = url.Values{}
-	params.Set("card_id", strconv.FormatInt(localCards[0].Id.Int64(), 10))
-	resp, err = authDelete(ts.URL+"?"+params.Encode(), "application/x-www-form-urlencoded", nil, patient.AccountId.Int64())
-	if err != nil {
-		t.Fatal("Unable to delete card: " + err.Error())
-	}
-
-	CheckSuccessfulStatusCode(resp, "Unable to delete card", t)
-
-	localCards, err = testData.DataApi.GetCardsForPatient(patient.PatientId.Int64())
-	if err != nil {
-		t.Fatal("Unable to delete card: " + err.Error())
-	}
+	localCards = deleteCard(t, testData, patient, localCards[0], stubPaymentsService, patientCardsHandler, localCards)
 
 	if len(localCards) != 0 {
 		t.Fatalf("expected to be 0 cards but there was %d ", len(localCards))
@@ -215,16 +182,11 @@ func TestAddCardsForPatient(t *testing.T) {
 	// this is because mysql does not support millisecond/microsecond level precision unless specified, and
 	// this would make it so that if cards were added within the second, we could not consistently say
 	// which card was made default
-	card3 := addCard(t, testData, patient.AccountId.Int64(), patientCardsHandler, stubPaymentsService)
+	card3, localCards := addCard(t, testData, patient.AccountId.Int64(), patientCardsHandler, stubPaymentsService, localCards)
 	time.Sleep(time.Second)
-	card4 := addCard(t, testData, patient.AccountId.Int64(), patientCardsHandler, stubPaymentsService)
+	card4, localCards := addCard(t, testData, patient.AccountId.Int64(), patientCardsHandler, stubPaymentsService, localCards)
 	time.Sleep(time.Second)
-	card5 := addCard(t, testData, patient.AccountId.Int64(), patientCardsHandler, stubPaymentsService)
-
-	localCards, err = testData.DataApi.GetCardsForPatient(patient.PatientId.Int64())
-	if err != nil {
-		t.Fatal("Unable to delete card: " + err.Error())
-	}
+	card5, localCards := addCard(t, testData, patient.AccountId.Int64(), patientCardsHandler, stubPaymentsService, localCards)
 
 	defaultCardFound = false
 	for _, localCard := range localCards {
@@ -255,19 +217,7 @@ func TestAddCardsForPatient(t *testing.T) {
 	}
 
 	// delete card 5 and card 4 should be the default card
-	params = url.Values{}
-	params.Set("card_id", strconv.FormatInt(cardToDelete.Id.Int64(), 10))
-	resp, err = authDelete(ts.URL+"?"+params.Encode(), "application/x-www-form-urlencoded", nil, patient.AccountId.Int64())
-	if err != nil {
-		t.Fatal("Unable to delete card: " + err.Error())
-	}
-
-	CheckSuccessfulStatusCode(resp, "Unable to delete card", t)
-
-	localCards, err = testData.DataApi.GetCardsForPatient(patient.PatientId.Int64())
-	if err != nil {
-		t.Fatal("Unable to get local cards " + err.Error())
-	}
+	localCards = deleteCard(t, testData, patient, cardToDelete, stubPaymentsService, patientCardsHandler, localCards)
 
 	if len(localCards) != 2 {
 		t.Fatalf("Expected to get 2 cards but instead got %d", len(localCards))
@@ -298,18 +248,7 @@ func TestAddCardsForPatient(t *testing.T) {
 		t.Fatal("Unable to locate card3 which should exist")
 	}
 
-	params.Set("card_id", strconv.FormatInt(cardToDelete.Id.Int64(), 10))
-	resp, err = authDelete(ts.URL+"?"+params.Encode(), "application/x-www-form-urlencode", nil, patient.AccountId.Int64())
-	if err != nil {
-		t.Fatalf("Unable to delete card3: %+v", err)
-	}
-
-	CheckSuccessfulStatusCode(resp, "Unable to successfully delete card3", t)
-
-	localCards, err = testData.DataApi.GetCardsForPatient(patient.PatientId.Int64())
-	if err != nil {
-		t.Fatalf("Unable to get cards for patient: %+v", err)
-	}
+	localCards = deleteCard(t, testData, patient, cardToDelete, stubPaymentsService, patientCardsHandler, localCards)
 
 	if len(localCards) != 1 {
 		t.Fatalf("Expected 1 card to remain instead got back %d", len(localCards))
@@ -324,7 +263,37 @@ func TestAddCardsForPatient(t *testing.T) {
 	}
 }
 
-func addCard(t *testing.T, testData TestData, patientAccountId int64, patientCardsHandler *apiservice.PatientCardsHandler, stubPaymentsService *payment.StubPaymentService) *common.Card {
+func deleteCard(t *testing.T, TestData TestData, patient *common.Patient, cardToDelete *common.Card, stubPaymentsService *payment.StubPaymentService, patientCardsHandler *apiservice.PatientCardsHandler, currentCards []*common.Card) []*common.Card {
+	params := url.Values{}
+	params.Set("card_id", strconv.FormatInt(cardToDelete.Id.Int64(), 10))
+
+	updatedCards := make([]*common.Card, 0)
+	for _, card := range currentCards {
+		if card.ThirdPartyId != cardToDelete.ThirdPartyId {
+			updatedCards = append(updatedCards, card)
+		}
+	}
+	stubPaymentsService.CardsToReturn = updatedCards
+
+	ts := httptest.NewServer(patientCardsHandler)
+	defer ts.Close()
+
+	resp, err := authDelete(ts.URL+"?"+params.Encode(), "application/x-www-form-urlencoded", nil, patient.AccountId.Int64())
+	if err != nil {
+		t.Fatal("Unable to delete card: " + err.Error())
+	}
+
+	patientCardsResponse := &apiservice.PatientCardsResponse{}
+	if err := json.NewDecoder(resp.Body).Decode(patientCardsResponse); err != nil {
+		t.Fatalf("Unable to unmarshal cards ")
+	}
+
+	CheckSuccessfulStatusCode(resp, "Unable to delete card", t)
+
+	return patientCardsResponse.Cards
+}
+
+func addCard(t *testing.T, testData TestData, patientAccountId int64, patientCardsHandler *apiservice.PatientCardsHandler, stubPaymentsService *payment.StubPaymentService, currentCards []*common.Card) (*common.Card, []*common.Card) {
 
 	ts := httptest.NewServer(patientCardsHandler)
 	defer ts.Close()
@@ -344,11 +313,18 @@ func addCard(t *testing.T, testData TestData, patientAccountId int64, patientCar
 	}
 
 	stubPaymentsService.CardToReturnOnAdd = &common.Card{
-		Fingerprint:  "test_fingerprint" + strconv.FormatInt(time.Now().UnixNano(), 10),
-		ThirdPartyId: "test_id " + strconv.FormatInt(time.Now().UnixNano(), 10),
+		Fingerprint:  fmt.Sprintf("test_fingerprint%d", len(currentCards)),
+		ThirdPartyId: fmt.Sprintf("third_party_id%d", len(currentCards)),
 	}
 
 	card.ThirdPartyId = stubPaymentsService.CardToReturnOnAdd.ThirdPartyId
+	card.Fingerprint = stubPaymentsService.CardToReturnOnAdd.Fingerprint
+
+	stubPaymentsService.CardsToReturn = make([]*common.Card, 0)
+	if currentCards != nil {
+		stubPaymentsService.CardsToReturn = append(stubPaymentsService.CardsToReturn, currentCards...)
+	}
+	stubPaymentsService.CardsToReturn = append(stubPaymentsService.CardsToReturn, card)
 
 	jsonData, err := json.Marshal(card)
 
@@ -365,9 +341,14 @@ func addCard(t *testing.T, testData TestData, patientAccountId int64, patientCar
 		t.Fatal("Unable to successfully add card to customer " + err.Error())
 	}
 
+	patientCardsResponse := &apiservice.PatientCardsResponse{}
+	if err := json.NewDecoder(resp.Body).Decode(patientCardsResponse); err != nil {
+		t.Fatalf("Unable to unmarshal response body into cardsResponse object: %+v", err)
+	}
+
 	CheckSuccessfulStatusCode(resp, "Unable to add card to patient", t)
 
-	return card
+	return card, patientCardsResponse.Cards
 }
 
 func checkPendingTaskCount(t *testing.T, testData TestData, patientId int64) {
