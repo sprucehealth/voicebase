@@ -272,7 +272,7 @@ func (p *PatientCardsHandler) addCardForPatient(w http.ResponseWriter, r *http.R
 		return
 	}
 
-	if err := validateAddress(p.DataApi, patient.PatientAddress); err != nil {
+	if err := validateAddress(p.DataApi, cardToAdd.BillingAddress); err != nil {
 		WriteUserError(w, http.StatusBadRequest, err.Error())
 		return
 	}

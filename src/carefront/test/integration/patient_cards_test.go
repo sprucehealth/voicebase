@@ -298,7 +298,7 @@ func addCard(t *testing.T, testData TestData, patientAccountId int64, patientCar
 		AddressLine1: "1234 Main Street " + strconv.FormatInt(time.Now().UnixNano(), 10),
 		AddressLine2: "Apt 12345",
 		City:         "San Francisco",
-		State:        "CA",
+		State:        "California",
 		ZipCode:      "12345",
 	}
 
