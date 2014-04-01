@@ -59,10 +59,10 @@ func (d *SignupDoctorHandler) ServeHTTP(w http.ResponseWriter, r *http.Request) 
 	}
 	// ensure that the date of birth can be correctly parsed
 	// Note that the date will be returned as MM/DD/YYYY
-	dobParts := strings.Split(requestData.Dob, "/")
+	dobParts := strings.Split(requestData.Dob, common.DOB_SEPARATOR)
 
 	if len(dobParts) != 3 {
-		WriteUserError(w, http.StatusBadRequest, "Dob not valid. Required format YYYY/MM/DD")
+		WriteUserError(w, http.StatusBadRequest, "Dob not valid. Required format "+common.DOB_FORMAT)
 		return
 	}
 

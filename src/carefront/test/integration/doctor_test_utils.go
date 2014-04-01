@@ -32,7 +32,7 @@ func SignupRandomTestDoctor(t *testing.T, dataApi api.DataAPI, authApi thriftapi
 	params.Set("last_name", "Test")
 	params.Set("email", email)
 	params.Set("password", password)
-	params.Set("dob", "1987/11/08")
+	params.Set("dob", "1987-11-08")
 	params.Set("gender", "male")
 	params.Set("clinician_id", os.Getenv("DOSESPOT_USER_ID"))
 	params.Set("phone", "123451616")
