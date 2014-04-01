@@ -153,9 +153,9 @@ func (s *StripeService) query(httpVerb string, endPointUrl string, parameters ur
 	var body io.Reader
 	if parameters != nil {
 		switch httpVerb {
-		case "GET":
+		case "GET", "DELETE":
 			endPoint.RawQuery = parameters.Encode()
-		case "POST", "DELETE":
+		case "POST":
 			body = strings.NewReader(parameters.Encode())
 		}
 	}
