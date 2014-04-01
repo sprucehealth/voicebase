@@ -18,7 +18,7 @@ type Patient struct {
 	MiddleName        string                 `json:"middle_name,omitempty"`
 	Suffix            string                 `json:"suffix,omitempty"`
 	Prefix            string                 `json:"prefix,omitempty"`
-	Dob               string                 `json:"dob,omitempty"`
+	Dob               Dob                    `json:"dob,omitempty"`
 	Email             string                 `json:"email,omitempty"`
 	Gender            string                 `json:"gender,omitempty"`
 	ZipCode           string                 `json:"zip_code,omitempty"`

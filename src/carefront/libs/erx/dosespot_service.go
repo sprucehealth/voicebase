@@ -221,8 +221,7 @@ func (d *DoseSpotService) SendMultiplePrescriptions(clinicianId int64, patient *
 	return unSuccessfulTreatmentIds, nil
 }
 
-func populatePatientForDoseSpot(currentPatient *common.Patient) *patient {
-
+func populatePatientForDoseSpot(currentPatient *common.Patient) (*patient, error) {
 	newPatient := &patient{
 		PatientId:   currentPatient.ERxPatientId.Int64(),
 		FirstName:   currentPatient.FirstName,
@@ -231,7 +230,7 @@ func populatePatientForDoseSpot(currentPatient *common.Patient) *patient {
 		Suffix:      currentPatient.Suffix,
 		Prefix:      currentPatient.Prefix,
 		Email:       currentPatient.Email,
-		DateOfBirth: specialDateTime{DateTime: currentPatient.Dob, DateTimeElementName: "DateOfBirth"},
+		DateOfBirth: specialDateTime{DateTime: currentPatient.Dob.ToTime(), DateTimeElementName: "DateOfBirth"},
 		Gender:      currentPatient.Gender,
 	}
 
@@ -262,7 +261,7 @@ func populatePatientForDoseSpot(currentPatient *common.Patient) *patient {
 		newPatient.PatientId = currentPatient.ERxPatientId.Int64()
 	}
 
-	return newPatient
+	return newPatient, nil
 }
 
 func ensurePatientInformationIsConsistent(currentPatient *common.Patient, patientUpdatesFromDoseSpot []*patientUpdate) error {
@@ -296,8 +295,11 @@ func ensurePatientInformationIsConsistent(currentPatient *common.Patient, patien
 		return errors.New("PATIENT_INFO_MISTMATCH: lastName")
 	}
 
-	if !currentPatient.Dob.Equal(patientFromDoseSpot.DateOfBirth.DateTime) {
-		return fmt.Errorf("PATIENT_INFO_MISTMATCH: dob %s %s", currentPatient.Dob, patientFromDoseSpot.DateOfBirth.DateTime)
+	// lets compare the day, month and year components
+	doseSpotPatientDobYear, doseSpotPatientDobMonth, doseSpotPatientDay := patientFromDoseSpot.DateOfBirth.DateTime.Date()
+
+	if currentPatient.Dob.Day != doseSpotPatientDay || currentPatient.Dob.Month != int(doseSpotPatientDobMonth) || currentPatient.Dob.Year != doseSpotPatientDobYear {
+		return fmt.Errorf("PATIENT_INFO_MISTMATCH: dob %+v %+v", currentPatient.Dob, patientFromDoseSpot.DateOfBirth.DateTime)
 	}
 
 	if strings.ToLower(currentPatient.Gender) != strings.ToLower(patientFromDoseSpot.Gender) {
@@ -340,7 +342,10 @@ func ensurePatientInformationIsConsistent(currentPatient *common.Patient, patien
 }
 
 func (d *DoseSpotService) UpdatePatientInformation(clinicianId int64, currentPatient *common.Patient) error {
-	newPatient := populatePatientForDoseSpot(currentPatient)
+	newPatient, err := populatePatientForDoseSpot(currentPatient)
+	if err != nil {
+		return err
+	}
 	patientPreferredPharmacy := &patientPharmacySelection{}
 	patientPreferredPharmacy.IsPrimary = true
 
@@ -382,7 +387,10 @@ func (d *DoseSpotService) UpdatePatientInformation(clinicianId int64, currentPat
 
 func (d *DoseSpotService) StartPrescribingPatient(clinicianId int64, currentPatient *common.Patient, treatments []*common.Treatment) error {
 
-	newPatient := populatePatientForDoseSpot(currentPatient)
+	newPatient, err := populatePatientForDoseSpot(currentPatient)
+	if err != nil {
+		return err
+	}
 
 	patientPreferredPharmacy := &patientPharmacySelection{}
 	patientPreferredPharmacy.IsPrimary = true
@@ -758,11 +766,11 @@ func (d *DoseSpotService) GetPatientDetails(erxPatientId int64) (*common.Patient
 			ZipCode:      response.PatientUpdates[0].Patient.ZipCode,
 			State:        response.PatientUpdates[0].Patient.State,
 		},
-		Dob:     response.PatientUpdates[0].Patient.DateOfBirth.DateTime,
 		Email:   response.PatientUpdates[0].Patient.Email,
 		ZipCode: response.PatientUpdates[0].Patient.ZipCode,
 		City:    response.PatientUpdates[0].Patient.City,
 		State:   response.PatientUpdates[0].Patient.State,
+		Dob:     common.NewDobFromTime(response.PatientUpdates[0].Patient.DateOfBirth.DateTime),
 		PhoneNumbers: []*common.PhoneInformation{&common.PhoneInformation{
 			Phone:     response.PatientUpdates[0].Patient.PrimaryPhone,
 			PhoneType: response.PatientUpdates[0].Patient.PrimaryPhoneType,

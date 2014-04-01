@@ -91,7 +91,7 @@ func (d *DoctorPatientUpdateHandler) updatePatientInformation(w http.ResponseWri
 	}
 
 	// avoid the doctor from making changes that would de-identify the patient
-	if requestData.Patient.FirstName == "" || requestData.Patient.LastName == "" || requestData.Patient.Dob.IsZero() || len(requestData.Patient.PhoneNumbers) == 0 {
+	if requestData.Patient.FirstName == "" || requestData.Patient.LastName == "" || requestData.Patient.Dob.Month == 0 || requestData.Patient.Dob.Year == 0 || requestData.Patient.Dob.Day == 0 || len(requestData.Patient.PhoneNumbers) == 0 {
 		WriteUserError(w, http.StatusBadRequest, "Cannot remove first name, last name, date of birth or phone numbers")
 		return
 	}

@@ -482,7 +482,7 @@ func (c *CreateDemoPatientVisitHandler) ServeHTTP(w http.ResponseWriter, r *http
 	urlValues := url.Values{}
 	urlValues.Set("first_name", "Demo")
 	urlValues.Set("last_name", "User")
-	urlValues.Set("dob", "11/08/1987")
+	urlValues.Set("dob", "1987/11/08")
 	urlValues.Set("gender", "female")
 	urlValues.Set("zip_code", "94115")
 	urlValues.Set("phone", "2068773590")
@@ -528,7 +528,7 @@ func (c *CreateDemoPatientVisitHandler) ServeHTTP(w http.ResponseWriter, r *http
 		AddressLine1: "12345 Main Street",
 		AddressLine2: "Apt 1112",
 		City:         "San Francisco",
-		State:        "CA",
+		State:        "California",
 		ZipCode:      "94115",
 	}); err != nil {
 		WriteDeveloperError(w, http.StatusInternalServerError, "Unable to add address for patient: "+err.Error())
