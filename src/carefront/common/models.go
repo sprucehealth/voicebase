@@ -51,7 +51,7 @@ type Doctor struct {
 	DoctorId            *ObjectId `json:"id,omitempty"`
 	FirstName           string    `json:"first_name,omitempty"`
 	LastName            string    `json:"last_name,omitempty"`
-	Dob                 time.Time `json:"-"`
+	Dob                 Dob       `json:"-"`
 	Gender              string    `json:"-"`
 	Status              string    `json:"-"`
 	AccountId           *ObjectId `json:"-"`

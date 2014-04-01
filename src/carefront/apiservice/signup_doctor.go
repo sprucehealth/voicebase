@@ -7,7 +7,6 @@ import (
 	"net/http"
 	"strconv"
 	"strings"
-	"time"
 
 	"github.com/gorilla/schema"
 )
@@ -62,19 +61,24 @@ func (d *SignupDoctorHandler) ServeHTTP(w http.ResponseWriter, r *http.Request) 
 	// Note that the date will be returned as MM/DD/YYYY
 	dobParts := strings.Split(requestData.Dob, "/")
 
-	month, err := strconv.Atoi(dobParts[0])
+	if len(dobParts) != 3 {
+		WriteUserError(w, http.StatusBadRequest, "Dob not valid. Required format YYYY/MM/DD")
+		return
+	}
+
+	year, err := strconv.Atoi(dobParts[0])
 	if err != nil {
 		w.WriteHeader(http.StatusBadRequest)
 		return
 	}
 
-	day, err := strconv.Atoi(dobParts[1])
+	month, err := strconv.Atoi(dobParts[1])
 	if err != nil {
 		w.WriteHeader(http.StatusBadRequest)
 		return
 	}
 
-	year, err := strconv.Atoi(dobParts[2])
+	day, err := strconv.Atoi(dobParts[2])
 	if err != nil {
 		w.WriteHeader(http.StatusBadRequest)
 		return
@@ -97,7 +101,7 @@ func (d *SignupDoctorHandler) ServeHTTP(w http.ResponseWriter, r *http.Request) 
 		FirstName:           requestData.FirstName,
 		LastName:            requestData.LastName,
 		Gender:              requestData.Gender,
-		Dob:                 time.Date(year, time.Month(month), day, 0, 0, 0, 0, time.UTC),
+		Dob:                 common.Dob{Year: year, Month: month, Day: day},
 		CellPhone:           requestData.Phone,
 		DoseSpotClinicianId: requestData.ClinicianId,
 		DoctorAddress: &common.Address{
