@@ -5,6 +5,7 @@ import "carefront/common"
 type StubPaymentService struct {
 	CustomerToReturn  *Customer
 	CardToReturnOnAdd *common.Card
+	CardsToReturn     []*common.Card
 }
 
 func (s *StubPaymentService) CreateCustomerWithDefaultCard(token string) (*Customer, error) {
@@ -20,7 +21,7 @@ func (s *StubPaymentService) MakeCardDefaultForCustomer(cardId string, customerI
 }
 
 func (s *StubPaymentService) GetCardsForCustomer(customerId string) ([]*common.Card, error) {
-	return nil, nil
+	return s.CardsToReturn, nil
 }
 
 func (s *StubPaymentService) DeleteCardForCustomer(customerId string, cardId string) error {
