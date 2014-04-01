@@ -18,8 +18,8 @@ func (d *DataService) RegisterDoctor(doctor *common.Doctor) (int64, error) {
 		return 0, err
 	}
 
-	res, err := tx.Exec(`insert into doctor (account_id, first_name, last_name, gender, dob, status, clinician_id) 
-								values (?, ?, ?, ?, ? , ?, ?)`, doctor.AccountId.Int64(), doctor.FirstName, doctor.LastName, doctor.Gender, doctor.Dob, DOCTOR_REGISTERED, doctor.DoseSpotClinicianId)
+	res, err := tx.Exec(`insert into doctor (account_id, first_name, last_name, gender, dob_year, dob_month, dob_day, status, clinician_id) 
+								values (?, ?, ?, ?, ?, ?, ? , ?, ?)`, doctor.AccountId.Int64(), doctor.FirstName, doctor.LastName, doctor.Gender, doctor.Dob.Year, doctor.Dob.Month, doctor.Dob.Day, DOCTOR_REGISTERED, doctor.DoseSpotClinicianId)
 	if err != nil {
 		return 0, err
 	}
@@ -54,7 +54,7 @@ func (d *DataService) RegisterDoctor(doctor *common.Doctor) (int64, error) {
 }
 
 func (d *DataService) GetDoctorFromId(doctorId int64) (*common.Doctor, error) {
-	row := d.DB.QueryRow(`select doctor.id, account_id, phone, first_name, last_name, gender, dob, status, clinician_id, address.address_line_1, 
+	row := d.DB.QueryRow(`select doctor.id, account_id, phone, first_name, last_name, gender, dob_year, dob_month, dob_day, status, clinician_id, address.address_line_1, 
 							address.address_line_2, address.city, address.state, address.zip_code from doctor 
 							left outer join doctor_address_selection on doctor_id = doctor.id
 							left outer join address on address.id = address_id
@@ -64,17 +64,17 @@ func (d *DataService) GetDoctorFromId(doctorId int64) (*common.Doctor, error) {
 }
 
 func (d *DataService) GetDoctorFromAccountId(accountId int64) (*common.Doctor, error) {
-	row := d.DB.QueryRow(`select doctor.id, account_id, phone, first_name, last_name, gender, dob, status, clinician_id,address.address_line_1, 
-							address.address_line_2, address.city, address.state, address.zip_code from doctor
+	row := d.DB.QueryRow(`select doctor.id, account_id, phone, first_name, last_name, gender, dob_year, dob_month, dob_day, status, clinician_id,address.address_line_1, 
+							address.address_line_2, address.city, address.state, address.zip_code from doctor 
+							left outer join doctor_phone on doctor_phone.doctor_id = doctor.id
 							left outer join doctor_address_selection on doctor_id = doctor.id
 							left outer join address on address.id = address_id 
-							left outer join doctor_phone on doctor_phone.doctor_id = doctor.id
 								where doctor.account_id = ? and (doctor_phone.phone is null or doctor_phone.phone_type = ?)`, accountId, doctorPhoneType)
 	return getDoctorFromRow(row)
 }
 
 func (d *DataService) GetDoctorFromDoseSpotClinicianId(clinicianId int64) (*common.Doctor, error) {
-	row := d.DB.QueryRow(`select doctor.id, account_id, phone, first_name, last_name, gender, dob, status, clinician_id, address.address_line_1, 
+	row := d.DB.QueryRow(`select doctor.id, account_id, phone, first_name, last_name, gender, dob_year, dob_month, dob_day, status, clinician_id, address.address_line_1, 
 							address.address_line_2, address.city, address.state, address.zip_code from doctor 
 							left outer join doctor_address_selection on doctor_id = doctor.id
 							left outer join address on address.id = address_id
@@ -85,11 +85,11 @@ func (d *DataService) GetDoctorFromDoseSpotClinicianId(clinicianId int64) (*comm
 
 func getDoctorFromRow(row *sql.Row) (*common.Doctor, error) {
 	var firstName, lastName, status, gender string
-	var dob mysql.NullTime
 	var cellPhoneNumber, addressLine1, addressLine2, city, state, zipCode sql.NullString
 	var doctorId, accountId int64
+	var dobYear, dobMonth, dobDay int
 	var clinicianId sql.NullInt64
-	err := row.Scan(&doctorId, &accountId, &cellPhoneNumber, &firstName, &lastName, &gender, &dob, &status, &clinicianId, &addressLine1, &addressLine2, &city, &state, &zipCode)
+	err := row.Scan(&doctorId, &accountId, &cellPhoneNumber, &firstName, &lastName, &gender, &dobYear, &dobMonth, &dobDay, &status, &clinicianId, &addressLine1, &addressLine2, &city, &state, &zipCode)
 	if err != nil {
 		return nil, err
 	}
@@ -109,9 +109,7 @@ func getDoctorFromRow(row *sql.Row) (*common.Doctor, error) {
 			State:        state.String,
 			ZipCode:      zipCode.String,
 		},
-	}
-	if dob.Valid {
-		doctor.Dob = dob.Time
+		Dob: common.Dob{Year: dobYear, Month: dobMonth, Day: dobDay},
 	}
 
 	return doctor, nil

@@ -452,13 +452,13 @@ func (d *DataService) RecordDoctorAssignmentToPatientVisit(patientVisitId, docto
 
 func (d *DataService) GetDoctorAssignedToPatientVisit(patientVisitId int64) (*common.Doctor, error) {
 	var firstName, lastName, status, gender string
-	var dob mysql.NullTime
 	var doctorId, accountId int64
+	var dobYear, dobMonth, dobDay int
 
-	err := d.DB.QueryRow(`select doctor.id,account_id, first_name, last_name, gender, dob, doctor.status from doctor 
+	err := d.DB.QueryRow(`select doctor.id,account_id, first_name, last_name, gender, dob_year, dob_month, dob_day, doctor.status from doctor 
 		inner join patient_visit_care_provider_assignment on provider_id = doctor.id
 		inner join provider_role on provider_role_id = provider_role.id
-		where provider_tag = 'DOCTOR' and patient_visit_id = ? and patient_visit_care_provider_assignment.status = 'ACTIVE'`, patientVisitId).Scan(&doctorId, &accountId, &firstName, &lastName, &gender, &dob, &status)
+		where provider_tag = 'DOCTOR' and patient_visit_id = ? and patient_visit_care_provider_assignment.status = 'ACTIVE'`, patientVisitId).Scan(&doctorId, &accountId, &firstName, &lastName, &gender, &dobYear, &dobMonth, &dobDay, &status)
 	if err != nil {
 		return nil, err
 	}
@@ -467,11 +467,10 @@ func (d *DataService) GetDoctorAssignedToPatientVisit(patientVisitId int64) (*co
 		LastName:  lastName,
 		Status:    status,
 		Gender:    gender,
+		Dob:       common.Dob{Year: dobYear, Month: dobMonth, Day: dobDay},
 		AccountId: common.NewObjectId(accountId),
 	}
-	if dob.Valid {
-		doctor.Dob = dob.Time
-	}
+
 	doctor.DoctorId = common.NewObjectId(doctorId)
 	return doctor, nil
 }
