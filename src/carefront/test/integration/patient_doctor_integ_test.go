@@ -90,6 +90,7 @@ func TestPatientVisitReview(t *testing.T) {
 	stubErxService.PatientErxId = 10
 	stubErxService.PrescriptionIdsToReturn = []int64{}
 	stubErxService.PrescriptionIdToPrescriptionStatuses = make(map[int64][]common.StatusEvent)
+	stubErxService.PharmacyToSendPrescriptionTo = pharmacySelection.SourceId
 
 	erxStatusQueue := &common.SQSQueue{}
 	erxStatusQueue.QueueService = &sqs.StubSQS{}
