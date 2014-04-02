@@ -10,6 +10,7 @@ import (
 	"strings"
 
 	"encoding/json"
+	"errors"
 	"net/http"
 
 	"github.com/gorilla/schema"
@@ -86,12 +87,6 @@ func (d *DoctorPatientUpdateHandler) updatePatientInformation(w http.ResponseWri
 	requestData := &DoctorPatientUpdateHandlerRequestResponse{}
 	if err := json.NewDecoder(r.Body).Decode(requestData); err != nil {
 		WriteDeveloperError(w, http.StatusBadRequest, "Unable to parse input body that is meant to be the patient object: "+err.Error())
-		return
-	}
-
-	// avoid the doctor from making changes that would de-identify the patient
-	if requestData.Patient.FirstName == "" || requestData.Patient.LastName == "" || requestData.Patient.Dob.Month == 0 || requestData.Patient.Dob.Year == 0 || requestData.Patient.Dob.Day == 0 || len(requestData.Patient.PhoneNumbers) == 0 {
-		WriteUserError(w, http.StatusBadRequest, "Cannot remove first name, last name, date of birth or phone numbers")
 		return
 	}
 
@@ -182,6 +177,35 @@ func (d *DoctorPatientUpdateHandler) updatePatientInformation(w http.ResponseWri
 }
 
 func (d *DoctorPatientUpdateHandler) validatePatientInformationAccordingToSurescriptsRequirements(patient *common.Patient) error {
+
+	if patient.FirstName == "" {
+		return errors.New("First name is required")
+	}
+
+	if patient.LastName == "" {
+		return errors.New("Last name is required")
+	}
+
+	if patient.Dob.Month == 0 || patient.Dob.Year == 0 || patient.Dob.Day == 0 {
+		return errors.New("Dob is invalid. Required format is YYYY-MM-DD")
+	}
+
+	if len(patient.PhoneNumbers) == 0 {
+		return errors.New("Atleast one phone number is required")
+	}
+
+	if patient.PatientAddress.AddressLine1 == "" {
+		return errors.New("AddressLine1 of address is required")
+	}
+
+	if patient.PatientAddress.City == "" {
+		return errors.New("City in address is required")
+	}
+
+	if patient.PatientAddress.State == "" {
+		return errors.New("State in address is required")
+	}
+
 	// following field lengths are surescripts requirements
 	longFieldLength := 35
 	shortFieldLength := 10
