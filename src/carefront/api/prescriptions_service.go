@@ -363,6 +363,7 @@ func (d *DataService) getTreatmentForRefillRequest(tableName string, treatmentId
 	treatment.DrugForm = drugForm.String
 	treatment.DrugRoute = drugRoute.String
 	treatment.OTC = treatmentType == treatmentOTC
+	treatment.DaysSupply = daysSupply
 	treatment.ERx.PharmacyLocalId = common.NewObjectId(pharmacyLocalId)
 	treatment.ERx.Pharmacy, err = d.GetPharmacyFromId(pharmacyLocalId)
 
@@ -397,7 +398,7 @@ func (d *DataService) addRequestedTreatmentFromPharmacy(treatment *common.Treatm
 		"dispense_unit":         treatment.DispenseUnitDescription,
 		"refills":               treatment.NumberRefills,
 		"substitutions_allowed": treatment.SubstitutionsAllowed,
-		"days_supply":           treatment.DaysSupply.Int64(),
+		"days_supply":           treatment.DaysSupply,
 		"patient_instructions":  treatment.PatientInstructions,
 		"pharmacy_notes":        treatment.PharmacyNotes,
 		"status":                treatment.Status,
@@ -631,7 +632,7 @@ func (d *DataService) AddUnlinkedTreatmentInEventOfDNTF(treatment *common.Treatm
 		"dispense_unit_id":      treatment.DispenseUnitId.Int64(),
 		"refills":               treatment.NumberRefills,
 		"substitutions_allowed": treatment.SubstitutionsAllowed,
-		"days_supply":           treatment.DaysSupply.Int64(),
+		"days_supply":           treatment.DaysSupply,
 		"patient_instructions":  treatment.PatientInstructions,
 		"pharmacy_notes":        treatment.PharmacyNotes,
 		"status":                treatment.Status,
@@ -723,7 +724,7 @@ func (d *DataService) GetUnlinkedDNTFTreatment(treatmentId int64) (*common.Treat
 		DispenseUnitDescription: dispenseUnitDescription,
 		NumberRefills:           refills,
 		SubstitutionsAllowed:    substitutionsAllowed,
-		DaysSupply:              common.NewObjectId(daysSupply.Int64),
+		DaysSupply:              daysSupply.Int64,
 		DrugName:                drugName.String,
 		DrugForm:                drugForm.String,
 		DrugRoute:               drugRoute.String,

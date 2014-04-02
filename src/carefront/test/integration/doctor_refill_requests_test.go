@@ -87,7 +87,7 @@ func TestNewRefillRequestForExistingPatientAndExistingTreatment(t *testing.T) {
 		DispenseUnitId:          common.NewObjectId(19),
 		NumberRefills:           5,
 		SubstitutionsAllowed:    false,
-		DaysSupply:              common.NewObjectId(10),
+		DaysSupply:              10,
 		PatientInstructions:     "Take once daily",
 		OTC:                     false,
 		ERx: &common.ERxData{
@@ -157,7 +157,7 @@ func TestNewRefillRequestForExistingPatientAndExistingTreatment(t *testing.T) {
 			DispenseUnitDescription: "Tablet",
 			NumberRefills:           5,
 			SubstitutionsAllowed:    false,
-			DaysSupply:              common.NewObjectId(10),
+			DaysSupply:              10,
 			PatientInstructions:     "Take once daily",
 			OTC:                     false,
 			ERx: &common.ERxData{
@@ -339,7 +339,7 @@ func TestApproveRefillRequestAndSuccessfulSendToPharmacy(t *testing.T) {
 			DispenseUnitDescription: "Tablet",
 			NumberRefills:           5,
 			SubstitutionsAllowed:    false,
-			DaysSupply:              common.NewObjectId(10),
+			DaysSupply:              10,
 			PatientInstructions:     "Take once daily",
 			OTC:                     false,
 			ERx: &common.ERxData{
@@ -578,7 +578,7 @@ func TestApproveRefillRequestAndErrorSendingToPharmacy(t *testing.T) {
 			DispenseUnitDescription: "Tablet",
 			NumberRefills:           5,
 			SubstitutionsAllowed:    false,
-			DaysSupply:              common.NewObjectId(10),
+			DaysSupply:              10,
 			PatientInstructions:     "Take once daily",
 
 			OTC: false,
@@ -879,7 +879,7 @@ func TestDenyRefillRequestAndSuccessfulDelete(t *testing.T) {
 			DispenseUnitDescription: "Tablet",
 			NumberRefills:           5,
 			SubstitutionsAllowed:    false,
-			DaysSupply:              common.NewObjectId(10),
+			DaysSupply:              10,
 			PatientInstructions:     "Take once daily",
 			OTC:                     false,
 			ERx: &common.ERxData{
@@ -1119,7 +1119,7 @@ func TestDenyRefillRequestWithDNTFWithoutTreatment(t *testing.T) {
 			DispenseUnitDescription: "Tablet",
 			NumberRefills:           5,
 			SubstitutionsAllowed:    false,
-			DaysSupply:              common.NewObjectId(10),
+			DaysSupply:              10,
 			PatientInstructions:     "Take once daily",
 			OTC:                     false,
 			ERx: &common.ERxData{
@@ -1348,7 +1348,7 @@ func setUpDeniedRefillRequestWithDNTF(t *testing.T, testData TestData, endErxSta
 			DispenseUnitDescription: "Tablet",
 			NumberRefills:           5,
 			SubstitutionsAllowed:    false,
-			DaysSupply:              common.NewObjectId(10),
+			DaysSupply:              10,
 			PatientInstructions:     "Take once daily",
 			OTC:                     false,
 			ERx: &common.ERxData{
@@ -1744,7 +1744,7 @@ func setUpDeniedRefillRequestWithDNTFForLinkedTreatment(t *testing.T, testData T
 		DispenseUnitId:          common.NewObjectId(19),
 		NumberRefills:           5,
 		SubstitutionsAllowed:    false,
-		DaysSupply:              common.NewObjectId(10),
+		DaysSupply:              10,
 		PatientInstructions:     "Take once daily",
 		OTC:                     false,
 		ERx: &common.ERxData{
@@ -1814,7 +1814,7 @@ func setUpDeniedRefillRequestWithDNTFForLinkedTreatment(t *testing.T, testData T
 			DispenseUnitDescription: "Tablet",
 			NumberRefills:           5,
 			SubstitutionsAllowed:    false,
-			DaysSupply:              common.NewObjectId(10),
+			DaysSupply:              10,
 			PatientInstructions:     "Take once daily",
 			OTC:                     false,
 			ERx: &common.ERxData{
@@ -2169,7 +2169,7 @@ func TestCheckingStatusOfMultipleRefillRequestsAtOnce(t *testing.T) {
 				DispenseUnitDescription: "Tablet",
 				NumberRefills:           5,
 				SubstitutionsAllowed:    false,
-				DaysSupply:              common.NewObjectId(10),
+				DaysSupply:              10,
 				PatientInstructions:     "Take once daily",
 				OTC:                     false,
 				ERx: &common.ERxData{
@@ -2448,7 +2448,7 @@ func TestRefillRequestComingFromDifferentPharmacyThanDispensedPrescription(t *te
 		DispenseUnitId:          common.NewObjectId(19),
 		NumberRefills:           5,
 		SubstitutionsAllowed:    false,
-		DaysSupply:              common.NewObjectId(10),
+		DaysSupply:              10,
 		PatientInstructions:     "Take once daily",
 		OTC:                     false,
 		ERx: &common.ERxData{
@@ -2518,7 +2518,7 @@ func TestRefillRequestComingFromDifferentPharmacyThanDispensedPrescription(t *te
 			DispenseUnitDescription: "Tablet",
 			NumberRefills:           5,
 			SubstitutionsAllowed:    false,
-			DaysSupply:              common.NewObjectId(10),
+			DaysSupply:              10,
 			PatientInstructions:     "Take once daily",
 			OTC:                     false,
 			ERx: &common.ERxData{
@@ -2654,7 +2654,7 @@ func TestNewRefillRequestWithUnlinkedTreatmentAndLinkedPatient(t *testing.T) {
 			DispenseUnitDescription: "Tablet",
 			NumberRefills:           5,
 			SubstitutionsAllowed:    false,
-			DaysSupply:              common.NewObjectId(10),
+			DaysSupply:              10,
 			PatientInstructions:     "Take once daily",
 			OTC:                     false,
 			ERx: &common.ERxData{
@@ -2676,7 +2676,7 @@ func TestNewRefillRequestWithUnlinkedTreatmentAndLinkedPatient(t *testing.T) {
 			DispenseUnitDescription: "Tablet",
 			NumberRefills:           5,
 			SubstitutionsAllowed:    false,
-			DaysSupply:              common.NewObjectId(10),
+			DaysSupply:              10,
 			PatientInstructions:     "Take once daily",
 			OTC:                     false,
 			ERx: &common.ERxData{
@@ -2816,7 +2816,7 @@ func TestNewRefillRequestWithUnlinkedTreatmentAndUnlinkedPatient(t *testing.T) {
 			DispenseUnitDescription: "Tablet",
 			NumberRefills:           5,
 			SubstitutionsAllowed:    false,
-			DaysSupply:              common.NewObjectId(10),
+			DaysSupply:              10,
 			PatientInstructions:     "Take once daily",
 			OTC:                     false,
 			ERx: &common.ERxData{
@@ -2840,7 +2840,7 @@ func TestNewRefillRequestWithUnlinkedTreatmentAndUnlinkedPatient(t *testing.T) {
 			DispenseUnitDescription: "Tablet",
 			NumberRefills:           5,
 			SubstitutionsAllowed:    false,
-			DaysSupply:              common.NewObjectId(10),
+			DaysSupply:              10,
 			PatientInstructions:     "Take once daily",
 			OTC:                     false,
 			ERx: &common.ERxData{
