@@ -18,7 +18,9 @@ type DoctorPatientTreatmentsRequestData struct {
 }
 
 type DoctorPatientTreatmentsResponse struct {
-	Treatments []*common.Treatment `json:"treatments"`
+	Treatments             []*common.Treatment         `json:"treatments,omitempty"`
+	UnlinkedDNTFTreatments []*common.Treatment         `json:"unlinked_dntf_treatments,omitempty"`
+	RefillRequests         []*common.RefillRequestItem `json:"refill_requests,omitempty"`
 }
 
 func (d *DoctorPatientTreatmentsHandler) ServeHTTP(w http.ResponseWriter, r *http.Request) {
