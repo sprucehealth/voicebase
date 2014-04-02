@@ -291,6 +291,7 @@ func (p *PatientCardsHandler) addCardForPatient(w http.ResponseWriter, r *http.R
 			return
 		}
 		card = &customer.Cards[0]
+		patient.PaymentCustomerId = customer.Id
 	} else {
 		// add another card to the customer on the payment service
 		card, err = p.PaymentApi.AddCardForCustomer(cardToAdd.Token, patient.PaymentCustomerId)
