@@ -233,8 +233,20 @@ func (d *DoctorQueueItem) GetActionUrl(dataApi DataAPI) (string, error) {
 			return "", err
 		}
 		return fmt.Sprintf("%s%s?patient_id=%d", SpruceButtonBaseActionUrl, viewPatientTreatmentsAction, patient.PatientId.Int64()), nil
-	case EVENT_TYPE_REFILL_REQUEST, EVENT_TYPE_REFILL_TRANSMISSION_ERROR:
+	case EVENT_TYPE_REFILL_TRANSMISSION_ERROR:
 		return fmt.Sprintf("%s%s?refill_request_id=%d", SpruceButtonBaseActionUrl, viewRefillRequestAction, d.ItemId), nil
+	case EVENT_TYPE_REFILL_REQUEST:
+		switch d.Status {
+		case QUEUE_ITEM_STATUS_ONGOING, QUEUE_ITEM_STATUS_PENDING:
+			return fmt.Sprintf("%s%s?refill_request_id=%d", SpruceButtonBaseActionUrl, viewRefillRequestAction, d.ItemId), nil
+		case QUEUE_ITEM_STATUS_COMPLETED:
+			patient, err := dataApi.GetPatientFromRefillRequestId(d.ItemId)
+			if err != nil {
+				return "", err
+			}
+
+			return fmt.Sprintf("%s%s?patient_id=%d", SpruceButtonBaseActionUrl, viewPatientTreatmentsAction, patient.PatientId.Int64()), nil
+		}
 	case EVENT_TYPE_TRANSMISSION_ERROR:
 		return fmt.Sprintf("%s%s?treatment_id=%d", SpruceButtonBaseActionUrl, viewTransmissionErrorAction, d.ItemId), nil
 	case EVENT_TYPE_UNLINKED_DNTF_TRANSMISSION_ERROR:
