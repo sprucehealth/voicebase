@@ -697,7 +697,8 @@ func (d *DataService) GetUnlinkedDNTFTreatment(treatmentId int64) (*common.Treat
 				left outer join drug_form on drug_form_id = drug_form.id
 				where unlinked_dntf_treatment.id = ? and localized_text.language_id = ?`, treatmentId, EN_LANGUAGE_ID)
 
-	var dispenseValue, dispenseUnitId, refills, doctorId, patientId int64
+	var dispenseUnitId, refills, doctorId, patientId int64
+	var dispenseValue float64
 	var drugInternalName, dosageStrength, treatmentType, dispenseUnitDescription, pharmacyNotes, patientInstructions, status string
 	var creationDate time.Time
 	var erxId, daysSupply, pharmacyId sql.NullInt64

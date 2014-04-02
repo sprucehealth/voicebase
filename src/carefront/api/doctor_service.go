@@ -773,7 +773,8 @@ func (d *DataService) GetTreatmentTemplates(doctorId int64) ([]*common.DoctorTre
 
 	treatmentTemplates := make([]*common.DoctorTreatmentTemplate, 0)
 	for rows.Next() {
-		var treatmentId, dispenseValue, dispenseUnitId, refills, daysSupply int64
+		var treatmentId, dispenseUnitId, refills, daysSupply int64
+		var dispenseValue float64
 		var drugInternalName, dosageStrength, patientInstructions, treatmentType, dispenseUnitDescription, status string
 		var substitutionsAllowed bool
 		var creationDate time.Time
@@ -852,7 +853,8 @@ func (d *DataService) GetCompletedPrescriptionsForDoctor(from, to time.Time, doc
 
 	defer rows.Close()
 	for rows.Next() {
-		var treatmentId, treatmentPlanId, patientId, patientVisitId, dispenseValue, dispenseUnitId, refills, daysSupply int64
+		var treatmentId, treatmentPlanId, patientId, patientVisitId, dispenseUnitId, refills, daysSupply int64
+		var dispenseValue float64
 		var drugInternalName, dosageStrength, treatmentType, dispenseUnitDescription, patientInstructions, status string
 		var creationDate, sentDate, treatmentPlanCreationDate time.Time
 		var substituionsAllowed bool

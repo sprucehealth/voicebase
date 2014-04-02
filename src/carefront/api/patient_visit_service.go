@@ -1045,7 +1045,8 @@ func (d *DataService) UpdateDateInfoForTreatmentId(treatmentId int64, erxSentDat
 }
 
 func (d *DataService) getTreatmentAndMetadataFromCurrentRow(rows *sql.Rows) (*common.Treatment, error) {
-	var treatmentId, dispenseValue, dispenseUnitId, refills, daysSupply, patientId, prescriberId int64
+	var treatmentId, dispenseUnitId, refills, daysSupply, patientId, prescriberId int64
+	var dispenseValue float64
 	var drugInternalName, dosageStrength, patientInstructions, treatmentType, dispenseUnitDescription, status string
 	var patientVisitId, treatmentPlanId, prescriptionId, pharmacyId sql.NullInt64
 	var substitutionsAllowed bool
