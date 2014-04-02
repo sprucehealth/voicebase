@@ -240,7 +240,7 @@ func TestNewRefillRequestForExistingPatientAndExistingTreatment(t *testing.T) {
 		t.Fatal("Requested prescription should be one that was found in our system, but instead its indicated to be unlinked")
 	}
 
-	if refillRequest.TreatmentPlanId == 0 {
+	if refillRequest.TreatmentPlanId == nil || refillRequest.TreatmentPlanId.Int64() == 0 {
 		t.Fatal("Expected treatment plan id to be set given that the treatment is linked")
 	}
 
