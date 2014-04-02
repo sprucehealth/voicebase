@@ -33,6 +33,12 @@ type Patient struct {
 	PatientAddress    *Address               `json:"address,omitempty"`
 }
 
+type ByCreationDate []*Card
+
+func (c ByCreationDate) Len() int           { return len(c) }
+func (c ByCreationDate) Swap(i, j int)      { c[i], c[j] = c[j], c[i] }
+func (c ByCreationDate) Less(i, j int) bool { return c[i].CreationDate.Before(c[j].CreationDate) }
+
 type Card struct {
 	Id             *ObjectId `json:"id,omitempty"`
 	ThirdPartyId   string    `json:"third_party_id"`
@@ -45,6 +51,7 @@ type Card struct {
 	Label          string    `json:"label,omitempty"`
 	BillingAddress *Address  `json:"address,omitempty"`
 	IsDefault      bool      `json:"is_default,omitempty"`
+	CreationDate   time.Time `json:"creation_date"`
 }
 
 type Doctor struct {

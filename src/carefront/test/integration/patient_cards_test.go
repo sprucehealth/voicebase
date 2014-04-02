@@ -188,6 +188,19 @@ func TestAddCardsForPatient(t *testing.T) {
 	time.Sleep(time.Second)
 	card5, localCards := addCard(t, testData, patient.AccountId.Int64(), patientCardsHandler, stubPaymentsService, localCards)
 
+	// the cards should appear in ascending order of being added.
+	if localCards[0].ThirdPartyId != card3.ThirdPartyId {
+		t.Fatal("Expected the first card returned to be card3 but it wasnt")
+	}
+
+	if localCards[1].ThirdPartyId != card4.ThirdPartyId {
+		t.Fatal("Expected the second card returned to be card4 but it wasnt")
+	}
+
+	if localCards[2].ThirdPartyId != card5.ThirdPartyId {
+		t.Fatal("Expected the third card returned to be card5 but it wasn't")
+	}
+
 	defaultCardFound = false
 	for _, localCard := range localCards {
 
@@ -321,10 +334,11 @@ func addCard(t *testing.T, testData TestData, patientAccountId int64, patientCar
 	card.Fingerprint = stubPaymentsService.CardToReturnOnAdd.Fingerprint
 
 	stubPaymentsService.CardsToReturn = make([]*common.Card, 0)
+	// lets add the cards out of order to ensure they come back in ascending order
+	stubPaymentsService.CardsToReturn = append(stubPaymentsService.CardsToReturn, card)
 	if currentCards != nil {
 		stubPaymentsService.CardsToReturn = append(stubPaymentsService.CardsToReturn, currentCards...)
 	}
-	stubPaymentsService.CardsToReturn = append(stubPaymentsService.CardsToReturn, card)
 
 	jsonData, err := json.Marshal(card)
 

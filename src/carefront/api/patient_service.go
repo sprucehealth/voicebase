@@ -856,7 +856,7 @@ func (d *DataService) addAddress(tx *sql.Tx, address *common.Address) (int64, er
 func (d *DataService) GetCardsForPatient(patientId int64) ([]*common.Card, error) {
 	cards := make([]*common.Card, 0)
 
-	rows, err := d.DB.Query(`select id, third_party_card_id, fingerprint, type, is_default from credit_card where patient_id = ? and status = ?`, patientId, STATUS_ACTIVE)
+	rows, err := d.DB.Query(`select id, third_party_card_id, fingerprint, type, is_default, creation_date from credit_card where patient_id = ? and status = ?`, patientId, STATUS_ACTIVE)
 	if err != nil {
 		return nil, err
 	}
@@ -866,7 +866,7 @@ func (d *DataService) GetCardsForPatient(patientId int64) ([]*common.Card, error
 		var cardId int64
 		var card common.Card
 
-		if err := rows.Scan(&cardId, &card.ThirdPartyId, &card.Fingerprint, &card.Type, &card.IsDefault); err != nil {
+		if err := rows.Scan(&cardId, &card.ThirdPartyId, &card.Fingerprint, &card.Type, &card.IsDefault, &card.CreationDate); err != nil {
 			return nil, err
 		}
 		card.Id = common.NewObjectId(cardId)
@@ -879,8 +879,8 @@ func (d *DataService) GetCardsForPatient(patientId int64) ([]*common.Card, error
 func (d *DataService) GetCardFromId(cardId int64) (*common.Card, error) {
 	var card common.Card
 	var addressId int64
-	err := d.DB.QueryRow(`select third_party_card_id, fingerprint, type, address_id, is_default from credit_card where id = ?`,
-		cardId).Scan(&card.ThirdPartyId, &card.Fingerprint, &card.Type, &addressId, &card.IsDefault)
+	err := d.DB.QueryRow(`select third_party_card_id, fingerprint, type, address_id, is_default, creation_date from credit_card where id = ?`,
+		cardId).Scan(&card.ThirdPartyId, &card.Fingerprint, &card.Type, &addressId, &card.IsDefault, &card.CreationDate)
 	if err != nil {
 		if err == sql.ErrNoRows {
 			return nil, nil
