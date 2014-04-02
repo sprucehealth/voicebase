@@ -391,7 +391,7 @@ func main() {
 	mux.Handle("/v1/logout", authHandler)
 	mux.Handle("/v1/ping", pingHandler)
 	mux.Handle("/v1/autocomplete", autocompleteHandler)
-	mux.Handle("/v1/pharmacy", pharmacySearchHandler)
+	mux.Handle("/v1/pharmacy_search", pharmacySearchHandler)
 	mux.Handle("/v1/doctor_layout", generateDoctorLayoutHandler)
 	mux.Handle("/v1/diagnose_layout", generateDiagnoseLayoutHandler)
 	mux.Handle("/v1/client_model", generateModelIntakeHandler)
