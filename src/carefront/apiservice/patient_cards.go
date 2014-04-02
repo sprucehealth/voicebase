@@ -7,6 +7,7 @@ import (
 	"carefront/libs/payment"
 	"encoding/json"
 	"net/http"
+	"sort"
 	"strconv"
 
 	"github.com/gorilla/schema"
@@ -363,6 +364,7 @@ func (p *PatientCardsHandler) getCardsAndReconcileWithPaymentService(patient *co
 			if localCard.ThirdPartyId == cardFromService.ThirdPartyId {
 				cardFromService.Id = localCard.Id
 				cardFromService.IsDefault = localCard.IsDefault
+				cardFromService.CreationDate = localCard.CreationDate
 				localCardFound = true
 			}
 		}
@@ -370,6 +372,9 @@ func (p *PatientCardsHandler) getCardsAndReconcileWithPaymentService(patient *co
 			golog.Warningf("Local card not found in set of cards returned from payment service for patient with id %d", patient.PatientId.Int64())
 		}
 	}
+
+	// sort cards by creation date so that customer seems them in the order that they entered the cards
+	sort.Sort(common.ByCreationDate(cards))
 
 	return cards, nil
 }

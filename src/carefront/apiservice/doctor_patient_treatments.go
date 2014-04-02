@@ -52,17 +52,25 @@ func (d *DoctorPatientTreatmentsHandler) ServeHTTP(w http.ResponseWriter, r *htt
 		return
 	}
 
-	careTeam, err := d.DataApi.GetCareTeamForPatient(patientId)
+	patient, err := d.DataApi.GetPatientFromId(patientId)
 	if err != nil {
-		WriteDeveloperError(w, http.StatusInternalServerError, "Unable to get care team based on patient id: "+err.Error())
+		WriteDeveloperError(w, http.StatusInternalServerError, "Unable to get patient based on id: "+err.Error())
 		return
 	}
 
-	primaryDoctorId := getPrimaryDoctorIdFromCareTeam(careTeam)
+	if !patient.IsUnlinked {
+		careTeam, err := d.DataApi.GetCareTeamForPatient(patientId)
+		if err != nil {
+			WriteDeveloperError(w, http.StatusInternalServerError, "Unable to get care team based on patient id: "+err.Error())
+			return
+		}
 
-	if currentDoctor.DoctorId.Int64() != primaryDoctorId {
-		WriteDeveloperError(w, http.StatusForbidden, "Unable to get the patient information by doctor when this doctor is not the primary doctor for patient")
-		return
+		primaryDoctorId := getPrimaryDoctorIdFromCareTeam(careTeam)
+
+		if currentDoctor.DoctorId.Int64() != primaryDoctorId {
+			WriteDeveloperError(w, http.StatusForbidden, "Unable to get the patient information by doctor when this doctor is not the primary doctor for patient")
+			return
+		}
 	}
 
 	treatments, err := d.DataApi.GetTreatmentsForPatient(patientId)
@@ -71,5 +79,21 @@ func (d *DoctorPatientTreatmentsHandler) ServeHTTP(w http.ResponseWriter, r *htt
 		return
 	}
 
-	WriteJSONToHTTPResponseWriter(w, http.StatusOK, &DoctorPatientTreatmentsResponse{Treatments: treatments})
+	refillRequests, err := d.DataApi.GetRefillRequestsForPatient(patientId)
+	if err != nil {
+		WriteDeveloperError(w, http.StatusInternalServerError, "Unable to get refill requests for patient: "+err.Error())
+		return
+	}
+
+	unlinkedDNTFTreatments, err := d.DataApi.GetUnlinkedDNTFTreatmentsForPatient(patientId)
+	if err != nil {
+		WriteDeveloperError(w, http.StatusInternalServerError, "Unable to get unlinked dntf treatments for patient: "+err.Error())
+		return
+	}
+
+	WriteJSONToHTTPResponseWriter(w, http.StatusOK, &DoctorPatientTreatmentsResponse{
+		Treatments:             treatments,
+		RefillRequests:         refillRequests,
+		UnlinkedDNTFTreatments: unlinkedDNTFTreatments,
+	})
 }

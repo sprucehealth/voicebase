@@ -292,6 +292,20 @@ func (d *DataService) GetRefillRequestFromId(refillRequestId int64) (*common.Ref
 	// get the pharmacy dispensed treatment
 	refillRequest.DispensedPrescription, err = d.getTreatmentForRefillRequest(pharmacyDispensedTreatmentTable, pharmacyDispensedTreatmentTableId)
 
+	if len(refillRequests) == 0 {
+		return nil, nil
+	}
+
+	return refillRequests[0], nil
+}
+
+func (d *DataService) GetRefillRequestsForPatient(patientId int64) ([]*common.RefillRequestItem, error) {
+	// get the refill request
+	rows, err := d.DB.Query(`select rx_refill_request.id, rx_refill_request.erx_request_queue_item_id,rx_refill_request.reference_number, rx_refill_request.erx_id,
+		approved_refill_amount, patient_id, request_date, doctor_id, requested_treatment_id, 
+		dispensed_treatment_id, comments, deny_refill_reason.reason from rx_refill_request
+				left outer join deny_refill_reason on deny_refill_reason.id = denial_reason_id
+				where patient_id = ? order by rx_refill_request.request_date desc`, patientId)
 	if err != nil {
 		return nil, err
 	}
@@ -783,7 +797,7 @@ func (d *DataService) GetUnlinkedDNTFTreatmentsForPatient(patientId int64) ([]*c
 				left outer join drug_name on drug_name_id = drug_name.id
 				left outer join drug_route on drug_route_id = drug_route.id
 				left outer join drug_form on drug_form_id = drug_form.id
-				where patient_id = ? and localized_text.language_id = ?`, patientId, EN_LANGUAGE_ID)
+				where patient_id = ? and localized_text.language_id = ? order by unlinked_dntf_treatment.creation_date desc`, patientId, EN_LANGUAGE_ID)
 	if err != nil {
 		return nil, err
 	}
@@ -808,7 +822,7 @@ func (d *DataService) getUnlinkedDNTFTreatmentsFromRow(rows *sql.Rows) ([]*commo
 		var erxSentDate, erxLastFilledDate mysql.NullTime
 		var drugName, drugRoute, drugForm sql.NullString
 		var substitutionsAllowed bool
-		err := rows.Scan(&erxId, &drugInternalName, &dosageStrength, &treatmentType, &dispenseValue, &dispenseUnitId, &dispenseUnitDescription,
+		err := rows.Scan(&unlinkedDntfTreatmentId, &erxId, &drugInternalName, &dosageStrength, &treatmentType, &dispenseValue, &dispenseUnitId, &dispenseUnitDescription,
 			&refills, &substitutionsAllowed, &daysSupply, &pharmacyId, &pharmacyNotes, &patientInstructions, &creationDate, &erxSentDate, &erxLastFilledDate, &status, &drugName, &drugRoute, &drugForm, &patientId, &doctorId)
 		if err != nil {
 			return nil, err
