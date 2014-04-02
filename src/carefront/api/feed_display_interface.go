@@ -24,4 +24,5 @@ type FeedDisplayInterface interface {
 	GetActionUrl(dataApi DataAPI) (string, error)
 	GetDisplayTypes() []string
 	GetButton() *Button
+	GetTimestamp() int64
 }
