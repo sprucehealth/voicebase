@@ -385,21 +385,20 @@ func (d *DoseSpotService) UpdatePatientInformation(clinicianId int64, currentPat
 	return nil
 }
 
-func (d *DoseSpotService) StartPrescribingPatient(clinicianId int64, currentPatient *common.Patient, treatments []*common.Treatment) error {
+func (d *DoseSpotService) StartPrescribingPatient(clinicianId int64, currentPatient *common.Patient, treatments []*common.Treatment, pharmacySourceId string) error {
 
 	newPatient, err := populatePatientForDoseSpot(currentPatient)
 	if err != nil {
 		return err
 	}
 
-	patientPreferredPharmacy := &patientPharmacySelection{}
-	patientPreferredPharmacy.IsPrimary = true
-
-	pharmacyId, err := strconv.ParseInt(currentPatient.Pharmacy.SourceId, 0, 64)
+	pharmacyId, err := strconv.ParseInt(pharmacySourceId, 0, 64)
 	if err != nil {
 		return fmt.Errorf("Unable to parse the pharmacy id: %s", err.Error())
 	}
 
+	patientPreferredPharmacy := &patientPharmacySelection{}
+	patientPreferredPharmacy.IsPrimary = true
 	patientPreferredPharmacy.PharmacyId = pharmacyId
 
 	prescriptions := make([]*prescription, 0)

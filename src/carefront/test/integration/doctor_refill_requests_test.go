@@ -1371,6 +1371,7 @@ func setUpDeniedRefillRequestWithDNTF(t *testing.T, testData TestData, endErxSta
 		PrescriptionIdToPrescriptionStatuses: map[int64][]common.StatusEvent{
 			prescriptionIdForTreatment: []common.StatusEvent{endErxStatus},
 		},
+		PharmacyToSendPrescriptionTo: pharmacyToReturn.SourceId,
 	}
 
 	// Call the Consume method
@@ -1834,7 +1835,8 @@ func setUpDeniedRefillRequestWithDNTFForLinkedTreatment(t *testing.T, testData T
 		PrescriptionIdToPrescriptionStatuses: map[int64][]common.StatusEvent{
 			prescriptionIdForTreatment: []common.StatusEvent{endErxStatus},
 		},
-		SelectedMedicationToReturn: &common.Treatment{},
+		SelectedMedicationToReturn:   &common.Treatment{},
+		PharmacyToSendPrescriptionTo: pharmacyToReturn.SourceId,
 	}
 
 	// Call the Consume method

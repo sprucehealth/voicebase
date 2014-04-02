@@ -16,6 +16,7 @@ type StubErxService struct {
 	PrescriptionIdsToReturn              []int64
 	PrescriptionIdToPrescriptionStatuses map[int64][]common.StatusEvent
 	SelectedMedicationToReturn           *common.Treatment
+	PharmacyToSendPrescriptionTo         string
 }
 
 func (s *StubErxService) GetDrugNamesForDoctor(clinicianId int64, prefix string) ([]string, error) {
@@ -34,7 +35,10 @@ func (s *StubErxService) SelectMedication(clinicianId int64, medicationName, med
 	return s.SelectedMedicationToReturn, nil
 }
 
-func (s *StubErxService) StartPrescribingPatient(clinicianId int64, Patient *common.Patient, Treatments []*common.Treatment) error {
+func (s *StubErxService) StartPrescribingPatient(clinicianId int64, Patient *common.Patient, Treatments []*common.Treatment, pharmacySourceId string) error {
+	if s.PharmacyToSendPrescriptionTo != "" && s.PharmacyToSendPrescriptionTo != pharmacySourceId {
+		return fmt.Errorf("Expected to send treatment to pharmacy with sourceId %s instead it was attempted to be sent to pharmacy with id %s", s.PharmacyToSendPrescriptionTo, pharmacySourceId)
+	}
 	fmt.Println("Starting to prescribe patient")
 	// walk through the treatments and assign them each a prescription id
 	// assumption here is that there are as many prescription ids to return as there are treatments
