@@ -317,7 +317,7 @@ func (d *DataService) GetRefillRequestFromId(refillRequestId int64) (*common.Ref
 
 	if originatingTreatmentId.Valid {
 		refillRequest.RequestedPrescription.OriginatingTreatmentId = originatingTreatmentId.Int64
-		refillRequest.TreatmentPlanId = originatingTreatmentPlanId.Int64
+		refillRequest.TreatmentPlanId = common.NewObjectId(originatingTreatmentPlanId.Int64)
 	}
 
 	refillRequest.RxHistory, err = d.GetRefillStatusEventsForRefillRequest(refillRequest.Id)
