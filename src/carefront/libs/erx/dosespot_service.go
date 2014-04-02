@@ -415,7 +415,7 @@ func (d *DoseSpotService) StartPrescribingPatient(clinicianId int64, currentPati
 			LexiGenProductId:  lexiGenProductIdInt,
 			LexiSynonymTypeId: lexiSynonymTypeIdInt,
 			Refills:           nullInt64(treatment.NumberRefills),
-			Dispense:          strconv.FormatInt(treatment.DispenseValue, 10),
+			Dispense:          strconv.FormatFloat(treatment.DispenseValue, 'f', -1, 64),
 			DispenseUnitId:    treatment.DispenseUnitId.Int64(),
 			Instructions:      treatment.PatientInstructions,
 			NoSubstitutions:   !treatment.SubstitutionsAllowed,
@@ -649,7 +649,7 @@ func (d *DoseSpotService) GetTransmissionErrorDetails(clinicianId int64) ([]*com
 
 	medicationsWithErrors := make([]*common.Treatment, len(response.TransmissionErrors))
 	for i, transmissionError := range response.TransmissionErrors {
-		dispenseValueInt, _ := strconv.ParseInt(transmissionError.Medication.Dispense, 10, 64)
+		dispenseValueFloat, _ := strconv.ParseFloat(transmissionError.Medication.Dispense, 64)
 		medicationsWithErrors[i] = &common.Treatment{
 			ERx: &common.ERxData{
 				ErxMedicationId:       common.NewObjectId(transmissionError.Medication.MedicationId),
@@ -670,8 +670,8 @@ func (d *DoseSpotService) GetTransmissionErrorDetails(clinicianId int64) ([]*com
 			DrugName:             transmissionError.Medication.DrugName,
 			DosageStrength:       transmissionError.Medication.Strength,
 			NumberRefills:        transmissionError.Medication.Refills.Int64(),
-			DaysSupply:           int64(transmissionError.Medication.DaysSupply),
-			DispenseValue:        dispenseValueInt,
+			DaysSupply:           transmissionError.Medication.DaysSupply.Int64(),
+			DispenseValue:        dispenseValueFloat,
 			PatientInstructions:  transmissionError.Medication.Instructions,
 			PharmacyNotes:        transmissionError.Medication.PharmacyNotes,
 			SubstitutionsAllowed: !transmissionError.Medication.NoSubstitutions,
@@ -923,7 +923,7 @@ func convertMedicationIntoTreatment(medicationItem *medication) *common.Treatmen
 		return nil
 	}
 	scheduleInt, err := strconv.Atoi(medicationItem.Schedule)
-	dispenseValue, _ := strconv.ParseInt(medicationItem.Dispense, 10, 64)
+	dispenseValue, _ := strconv.ParseFloat(medicationItem.Dispense, 64)
 	treatment := &common.Treatment{
 		DrugDBIds: map[string]string{
 			LexiDrugSynId:     strconv.FormatInt(medicationItem.LexiDrugSynId, 10),
