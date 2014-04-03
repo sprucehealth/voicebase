@@ -286,8 +286,6 @@ func TestApproveRefillRequestAndSuccessfulSendToPharmacy(t *testing.T) {
 		Email:        "test@test.com",
 		Gender:       "male",
 		ZipCode:      "90210",
-		City:         "Beverly Hills",
-		State:        "CA",
 		ERxPatientId: common.NewObjectId(12345),
 	}
 
@@ -525,8 +523,6 @@ func TestApproveRefillRequestAndErrorSendingToPharmacy(t *testing.T) {
 		Email:        "test@test.com",
 		Gender:       "male",
 		ZipCode:      "90210",
-		City:         "Beverly Hills",
-		State:        "CA",
 		ERxPatientId: common.NewObjectId(12345),
 	}
 
@@ -826,8 +822,6 @@ func TestDenyRefillRequestAndSuccessfulDelete(t *testing.T) {
 		Email:        "test@test.com",
 		Gender:       "male",
 		ZipCode:      "90210",
-		City:         "Beverly Hills",
-		State:        "CA",
 		ERxPatientId: common.NewObjectId(12345),
 	}
 
@@ -1066,8 +1060,6 @@ func TestDenyRefillRequestWithDNTFWithoutTreatment(t *testing.T) {
 		Email:        "test@test.com",
 		Gender:       "male",
 		ZipCode:      "90210",
-		City:         "Beverly Hills",
-		State:        "CA",
 		ERxPatientId: common.NewObjectId(12345),
 	}
 
@@ -1244,8 +1236,6 @@ func setUpDeniedRefillRequestWithDNTF(t *testing.T, testData TestData, endErxSta
 		Email:        "test@test.com",
 		Gender:       "male",
 		ZipCode:      "90210",
-		City:         "Beverly Hills",
-		State:        "CA",
 		ERxPatientId: common.NewObjectId(12345),
 	}
 
@@ -2114,8 +2104,6 @@ func TestCheckingStatusOfMultipleRefillRequestsAtOnce(t *testing.T) {
 		Email:        "test@test.com",
 		Gender:       "male",
 		ZipCode:      "90210",
-		City:         "Beverly Hills",
-		State:        "CA",
 		ERxPatientId: common.NewObjectId(12345),
 	}
 
@@ -2872,8 +2860,6 @@ func TestNewRefillRequestWithUnlinkedTreatmentAndUnlinkedPatient(t *testing.T) {
 		Email:        "test@test.com",
 		Gender:       "male",
 		ZipCode:      "90210",
-		City:         "Beverly Hills",
-		State:        "CA",
 		ERxPatientId: common.NewObjectId(12345),
 		Pharmacy:     pharmacyToReturn,
 	}

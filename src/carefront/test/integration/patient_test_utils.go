@@ -12,12 +12,11 @@ import (
 
 	"carefront/api"
 	"carefront/apiservice"
-	"carefront/libs/maps"
 	thriftapi "carefront/thrift/api"
 )
 
 func SignupRandomTestPatient(t *testing.T, dataApi api.DataAPI, authApi thriftapi.Auth) *apiservice.PatientSignedupResponse {
-	authHandler := &apiservice.SignupPatientHandler{AuthApi: authApi, DataApi: dataApi, MapsApi: maps.NewGoogleMapsService(nil)}
+	authHandler := &apiservice.SignupPatientHandler{AuthApi: authApi, DataApi: dataApi}
 	ts := httptest.NewServer(authHandler)
 	defer ts.Close()
 
