@@ -2,6 +2,7 @@ package apiservice
 
 import (
 	"carefront/api"
+	"time"
 )
 
 type DisplayFeedSection struct {
@@ -12,7 +13,7 @@ type DisplayFeedSection struct {
 type DisplayFeedItem struct {
 	Title        string      `json:"title"`
 	Subtitle     string      `json:"subtitle,omitempty"`
-	Timestamp    int64       `json:"timestamp"`
+	Timestamp    *time.Time  `json:"timestamp,omitempty"`
 	Button       *api.Button `json:"button,omitempty"`
 	ImageUrl     string      `json:"image_url,omitempty"`
 	ItemUrl      string      `json:"action_url,omitempty"`

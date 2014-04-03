@@ -1,5 +1,7 @@
 package api
 
+import "time"
+
 const (
 	QUEUE_ITEM_STATUS_PENDING                 = "PENDING"
 	QUEUE_ITEM_STATUS_COMPLETED               = "TREATED"
@@ -24,5 +26,5 @@ type FeedDisplayInterface interface {
 	GetActionUrl(dataApi DataAPI) (string, error)
 	GetDisplayTypes() []string
 	GetButton() *Button
-	GetTimestamp() int64
+	GetTimestamp() *time.Time
 }
