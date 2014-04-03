@@ -53,3 +53,9 @@ func TestInValidPhoneNumberExtensionInvalid(t *testing.T) {
 		t.Fatal("Expected phone number to be invalid")
 	}
 }
+
+func TestInvalidPhoneNumberInvalidAreaCode(t *testing.T) {
+	if err := validatePhoneNumber("0008773590"); err == nil {
+		t.Fatal("Expected phone number to be invalid")
+	}
+}
