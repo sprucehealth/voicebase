@@ -3,16 +3,16 @@ package apiservice
 import (
 	"carefront/api"
 	"carefront/common"
-	"carefront/libs/maps"
+	"carefront/libs/address_validation"
 	"net/http"
 
 	"github.com/gorilla/schema"
 )
 
 type CheckCareProvidingElligibilityHandler struct {
-	DataApi          api.DataAPI
-	MapsService      maps.MapsService
-	StaticContentUrl string
+	DataApi              api.DataAPI
+	AddressValidationApi address_validation.AddressValidationAPI
+	StaticContentUrl     string
 }
 
 type CheckCareProvidingElligibilityRequestData struct {
@@ -49,15 +49,20 @@ func (c *CheckCareProvidingElligibilityHandler) ServeHTTP(w http.ResponseWriter,
 	}
 
 	// given the zipcode, cover to city and state info
-	cityStateInfo, err := c.MapsService.ConvertZipcodeToCityState(requestData.Zipcode)
+	cityStateInfo, err := c.AddressValidationApi.ZipcodeLookup(requestData.Zipcode)
 	if err != nil {
+		if err == address_validation.InvalidZipcodeError {
+			WriteUserError(w, http.StatusBadRequest, "Please enter a valid zipcode")
+			return
+		}
+
 		WriteDeveloperError(w, http.StatusInternalServerError, "Unable to use the maps service to reverse geocode the given zipcode to city and state information: "+err.Error())
 		return
 	}
 
 	var doctorId int64
-	if cityStateInfo != nil {
-		doctorId, err = c.DataApi.CheckCareProvidingElligibility(cityStateInfo.ShortStateName, HEALTH_CONDITION_ACNE_ID)
+	if cityStateInfo.StateAbbreviation != "" {
+		doctorId, err = c.DataApi.CheckCareProvidingElligibility(cityStateInfo.StateAbbreviation, HEALTH_CONDITION_ACNE_ID)
 		if err != nil {
 			WriteDeveloperError(w, http.StatusInternalServerError, "Unable to check elligiblity for the patient to be seen by doctor: "+err.Error())
 			return

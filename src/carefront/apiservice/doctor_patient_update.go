@@ -3,6 +3,7 @@ package apiservice
 import (
 	"carefront/api"
 	"carefront/common"
+	"carefront/libs/address_validation"
 	"carefront/libs/erx"
 	"carefront/libs/pharmacy"
 	"fmt"
@@ -17,8 +18,9 @@ import (
 )
 
 type DoctorPatientUpdateHandler struct {
-	DataApi api.DataAPI
-	ErxApi  erx.ERxAPI
+	DataApi              api.DataAPI
+	ErxApi               erx.ERxAPI
+	AddressValidationApi address_validation.AddressValidationAPI
 }
 
 type DoctorPatientUpdateHandlerRequestData struct {
@@ -102,7 +104,7 @@ func (d *DoctorPatientUpdateHandler) updatePatientInformation(w http.ResponseWri
 		}
 	}
 
-	err := d.validatePatientInformationAccordingToSurescriptsRequirements(requestData.Patient)
+	err := d.validatePatientInformationAccordingToSurescriptsRequirements(requestData.Patient, d.AddressValidationApi)
 
 	if err != nil {
 		WriteUserError(w, http.StatusBadRequest, err.Error())

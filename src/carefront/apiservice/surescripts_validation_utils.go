@@ -2,6 +2,7 @@ package apiservice
 
 import (
 	"carefront/common"
+	"carefront/libs/address_validation"
 	"errors"
 	"fmt"
 	"strconv"
@@ -31,7 +32,7 @@ var (
 		"947", "949", "951", "952", "954", "956", "970", "971", "972", "973", "978", "979", "980", "985", "989"}
 )
 
-func (d *DoctorPatientUpdateHandler) validatePatientInformationAccordingToSurescriptsRequirements(patient *common.Patient) error {
+func (d *DoctorPatientUpdateHandler) validatePatientInformationAccordingToSurescriptsRequirements(patient *common.Patient, addressValidationApi address_validation.AddressValidationAPI) error {
 
 	if patient.FirstName == "" {
 		return errors.New("First name is required")
@@ -104,7 +105,7 @@ func (d *DoctorPatientUpdateHandler) validatePatientInformationAccordingToSuresc
 		}
 	}
 
-	if err := validateAddress(d.DataApi, patient.PatientAddress); err != nil {
+	if err := validateAddress(d.DataApi, patient.PatientAddress, addressValidationApi); err != nil {
 		return err
 	}
 
