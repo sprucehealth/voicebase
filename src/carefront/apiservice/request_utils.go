@@ -337,7 +337,7 @@ func validateZipcodeLocally(zipcode string) error {
 
 		if zipcode[5] != '-' {
 
-			if len(zipcode[5:]) != 4 {
+			if len(zipcode) != 9 {
 				return fmt.Errorf("Invalid zip code format: zip+4 can only be 9 digits in length")
 			}
 
@@ -348,7 +348,7 @@ func validateZipcodeLocally(zipcode string) error {
 
 		} else {
 
-			if len(zipcode) != 9 {
+			if len(zipcode) != 10 {
 				return fmt.Errorf("Invalid zip code format: zip+4 has to be 9 digits in length")
 			}
 

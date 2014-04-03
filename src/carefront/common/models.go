@@ -22,8 +22,6 @@ type Patient struct {
 	Email             string                 `json:"email,omitempty"`
 	Gender            string                 `json:"gender,omitempty"`
 	ZipCode           string                 `json:"zip_code,omitempty"`
-	City              string                 `json:"city,omitempty"`
-	State             string                 `json:"state,omitempty"`
 	PhoneNumbers      []*PhoneInformation    `json:"phone_numbers,omitempty"`
 	Status            string                 `json:"-"`
 	AccountId         *ObjectId              `json:"-"`

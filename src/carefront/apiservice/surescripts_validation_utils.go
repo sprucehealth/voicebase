@@ -124,8 +124,6 @@ func trimSpacesFromPatientFields(patient *common.Patient) {
 	patient.MiddleName = strings.TrimSpace(patient.MiddleName)
 	patient.Suffix = strings.TrimSpace(patient.Suffix)
 	patient.Prefix = strings.TrimSpace(patient.Prefix)
-	patient.City = strings.TrimSpace(patient.City)
-	patient.State = strings.TrimSpace(patient.State)
 	patient.PatientAddress.AddressLine1 = strings.TrimSpace(patient.PatientAddress.AddressLine1)
 	patient.PatientAddress.AddressLine2 = strings.TrimSpace(patient.PatientAddress.AddressLine2)
 	patient.PatientAddress.City = strings.TrimSpace(patient.PatientAddress.City)

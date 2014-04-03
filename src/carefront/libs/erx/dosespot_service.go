@@ -767,8 +767,6 @@ func (d *DoseSpotService) GetPatientDetails(erxPatientId int64) (*common.Patient
 		},
 		Email:   response.PatientUpdates[0].Patient.Email,
 		ZipCode: response.PatientUpdates[0].Patient.ZipCode,
-		City:    response.PatientUpdates[0].Patient.City,
-		State:   response.PatientUpdates[0].Patient.State,
 		Dob:     common.NewDobFromTime(response.PatientUpdates[0].Patient.DateOfBirth.DateTime),
 		PhoneNumbers: []*common.PhoneInformation{&common.PhoneInformation{
 			Phone:     response.PatientUpdates[0].Patient.PrimaryPhone,

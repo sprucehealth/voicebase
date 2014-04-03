@@ -3,7 +3,6 @@ package apiservice
 import (
 	"carefront/api"
 	"carefront/common"
-	"carefront/libs/address_validation"
 	"carefront/libs/golog"
 	thriftapi "carefront/thrift/api"
 	"net/http"
@@ -13,9 +12,8 @@ import (
 )
 
 type SignupPatientHandler struct {
-	DataApi              api.DataAPI
-	AuthApi              thriftapi.Auth
-	AddressValidationApi address_validation.AddressValidationAPI
+	DataApi api.DataAPI
+	AuthApi thriftapi.Auth
 }
 
 type PatientSignedupResponse struct {
@@ -78,19 +76,12 @@ func (s *SignupPatientHandler) ServeHTTP(w http.ResponseWriter, r *http.Request)
 		return
 	}
 
-	// ignore the error case of the reverse geocoding failing because it is not detrimental to
-	// serving the patient, especially after the client has already checked to ensure that we can actually
-	// serve the patient.
-	cityStateInfo, _ := s.AddressValidationApi.ZipcodeLookup(requestData.Zipcode)
-
 	newPatient := &common.Patient{
 		AccountId: common.NewObjectId(res.AccountId),
 		FirstName: requestData.FirstName,
 		LastName:  requestData.LastName,
 		Gender:    requestData.Gender,
 		ZipCode:   requestData.Zipcode,
-		City:      cityStateInfo.City,
-		State:     cityStateInfo.StateAbbreviation,
 		PhoneNumbers: []*common.PhoneInformation{&common.PhoneInformation{
 			Phone:     requestData.Phone,
 			PhoneType: api.PHONE_CELL,
