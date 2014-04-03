@@ -149,8 +149,12 @@ func (d *DoctorQueueItem) GetImageUrl() string {
 	return ""
 }
 
-func (d *DoctorQueueItem) GetTimestamp() int64 {
-	return d.EnqueueDate.Unix()
+func (d *DoctorQueueItem) GetTimestamp() *time.Time {
+	if d.EnqueueDate.IsZero() {
+		return nil
+	}
+
+	return &d.EnqueueDate
 }
 
 func (d *DoctorQueueItem) GetDisplayTypes() []string {
