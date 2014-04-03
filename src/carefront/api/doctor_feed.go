@@ -239,7 +239,7 @@ func (d *DoctorQueueItem) GetActionUrl(dataApi DataAPI) (string, error) {
 		switch d.Status {
 		case QUEUE_ITEM_STATUS_ONGOING, QUEUE_ITEM_STATUS_PENDING:
 			return fmt.Sprintf("%s%s?refill_request_id=%d", SpruceButtonBaseActionUrl, viewRefillRequestAction, d.ItemId), nil
-		case QUEUE_ITEM_STATUS_COMPLETED:
+		case QUEUE_ITEM_STATUS_COMPLETED, QUEUE_ITEM_STATUS_REFILL_APPROVED, QUEUE_ITEM_STATUS_REFILL_DENIED:
 			patient, err := dataApi.GetPatientFromRefillRequestId(d.ItemId)
 			if err != nil {
 				return "", err
