@@ -213,15 +213,15 @@ func TestDoctorUpdateToPhoneNumbers(t *testing.T) {
 	// lets go ahead and modify current phone number list
 
 	phoneNumbers := []*common.PhoneInformation{&common.PhoneInformation{
-		Phone:     "123456",
+		Phone:     "7348465522",
 		PhoneType: "Home",
 	},
 		&common.PhoneInformation{
-			Phone:     "1231515",
+			Phone:     "7348465522",
 			PhoneType: "Work",
 		},
 		&common.PhoneInformation{
-			Phone:     "12341515",
+			Phone:     "7348465522",
 			PhoneType: "Work",
 		},
 	}
