@@ -3,6 +3,7 @@ package apiservice
 import (
 	"carefront/api"
 	"carefront/common"
+	"carefront/libs/address_validation"
 	"carefront/libs/erx"
 	"carefront/libs/pharmacy"
 	"strconv"
@@ -14,8 +15,9 @@ import (
 )
 
 type DoctorPatientUpdateHandler struct {
-	DataApi api.DataAPI
-	ErxApi  erx.ERxAPI
+	DataApi              api.DataAPI
+	ErxApi               erx.ERxAPI
+	AddressValidationApi address_validation.AddressValidationAPI
 }
 
 type DoctorPatientUpdateHandlerRequestData struct {
@@ -100,7 +102,7 @@ func (d *DoctorPatientUpdateHandler) updatePatientInformation(w http.ResponseWri
 		}
 	}
 
-	err := d.validatePatientInformationAccordingToSurescriptsRequirements(requestData.Patient)
+	err := d.validatePatientInformationAccordingToSurescriptsRequirements(requestData.Patient, d.AddressValidationApi)
 
 	// get the erx id for the patient, if it exists in the database
 	existingPatientInfo, err := d.DataApi.GetPatientFromId(requestData.Patient.PatientId.Int64())

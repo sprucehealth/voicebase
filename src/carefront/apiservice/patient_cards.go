@@ -3,6 +3,7 @@ package apiservice
 import (
 	"carefront/api"
 	"carefront/common"
+	"carefront/libs/address_validation"
 	"carefront/libs/golog"
 	"carefront/libs/payment"
 	"encoding/json"
@@ -14,8 +15,9 @@ import (
 )
 
 type PatientCardsHandler struct {
-	DataApi    api.DataAPI
-	PaymentApi payment.PaymentAPI
+	DataApi              api.DataAPI
+	PaymentApi           payment.PaymentAPI
+	AddressValidationApi address_validation.AddressValidationAPI
 }
 
 type PatientCardsRequestData struct {
@@ -261,7 +263,7 @@ func (p *PatientCardsHandler) addCardForPatient(w http.ResponseWriter, r *http.R
 		return
 	}
 
-	if err := validateAddress(p.DataApi, cardToAdd.BillingAddress); err != nil {
+	if err := validateAddress(p.DataApi, cardToAdd.BillingAddress, p.AddressValidationApi); err != nil {
 		WriteUserError(w, http.StatusBadRequest, err.Error())
 		return
 	}
