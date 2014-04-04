@@ -1,6 +1,9 @@
 package apiservice
 
-import "testing"
+import (
+	"carefront/common"
+	"testing"
+)
 
 func TestValidPhoneNumber(t *testing.T) {
 	if err := validatePhoneNumber("2068773590"); err != nil {
@@ -58,4 +61,30 @@ func TestInvalidPhoneNumberInvalidAreaCode(t *testing.T) {
 	if err := validatePhoneNumber("0008773590"); err == nil {
 		t.Fatal("Expected phone number to be invalid")
 	}
+}
+
+func TestAgeCalculation(t *testing.T) {
+	dob := common.Dob{
+		Year:  2014,
+		Month: 1,
+		Day:   1,
+	}
+
+	if is18YearsOfAge(dob) {
+		t.Fatal("Expected the age to be < 18 years")
+	}
+
+	dob.Year = 1995
+	dob.Month = 1
+	dob.Day = 1
+
+	if !is18YearsOfAge(dob) {
+		t.Fatal("Expected the age to be > 18 years")
+	}
+
+	dob.Year = 1997
+	if is18YearsOfAge(dob) {
+		t.Fatal("Expecte age to be < 18 years")
+	}
+
 }
