@@ -7,6 +7,7 @@ import (
 	"fmt"
 	"strconv"
 	"strings"
+	"time"
 )
 
 // these are valid area codes as obtained from dosespot, for what they claim is a list last updated from January 2011
@@ -44,6 +45,10 @@ func (d *DoctorPatientUpdateHandler) validatePatientInformationAccordingToSuresc
 
 	if patient.Dob.Month == 0 || patient.Dob.Year == 0 || patient.Dob.Day == 0 {
 		return errors.New("Dob is invalid. Required format is YYYY-MM-DD")
+	}
+
+	if !is18YearsOfAge(patient.Dob) {
+		return errors.New("Patient is not 18 years of age")
 	}
 
 	if len(patient.PhoneNumbers) == 0 {
@@ -116,6 +121,13 @@ func (d *DoctorPatientUpdateHandler) validatePatientInformationAccordingToSuresc
 	}
 
 	return nil
+}
+
+func is18YearsOfAge(dob common.Dob) bool {
+	dobTime := time.Date(dob.Year, time.Month(dob.Month), dob.Day, 0, 0, 0, 0, time.UTC)
+	ageDuration := time.Now().Sub(dobTime)
+	numYears := ageDuration.Hours() / (float64(24.0) * float64(365.0))
+	return numYears >= 18
 }
 
 func trimSpacesFromPatientFields(patient *common.Patient) {
