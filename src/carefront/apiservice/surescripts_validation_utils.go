@@ -148,29 +148,81 @@ func validatePhoneNumber(phoneNumber string) error {
 		return fmt.Errorf("Invalid phone number")
 	}
 
-	// if first 10 characteres are not digits, phone number is not valid
-	_, err := strconv.ParseInt(phoneNumber[0:10], 10, 64)
-	if err != nil {
-		return fmt.Errorf("Invalid phone number")
-	}
+	// attempt to break the string based on "-" to identify if phone number is formatted
+	components := strings.Split(phoneNumber, "-")
 
-	if !isValidAreaCode(phoneNumber[0:3]) {
-		return fmt.Errorf("Invalid area code")
-	}
+	if len(components) == 1 {
+		// if there is no "-" in the number, then the only possible format that we accept is all digits for phone number
 
-	if len(phoneNumber) > 10 {
-		// only acceptable character for extension is x
-		if phoneNumber[10] != 'x' && phoneNumber[10] != 'X' {
-			return fmt.Errorf("Invalid extension for phone number. Extension must to start with an 'x'")
-		}
-
-		if len(phoneNumber) == 11 {
-			return fmt.Errorf("Invalid extension for phone number. 'x' must follow the extension")
-		}
-
-		_, err := strconv.ParseInt(phoneNumber[11:], 10, 64)
+		// if first 10 characteres are not digits, phone number is not valid
+		_, err := strconv.ParseInt(phoneNumber[0:10], 10, 64)
 		if err != nil {
-			return fmt.Errorf("Invalid extension for phone number. Extension can only be digits")
+			return fmt.Errorf("Invalid phone number")
+		}
+
+		if !isValidAreaCode(phoneNumber[0:3]) {
+			return fmt.Errorf("Invalid area code")
+		}
+
+		if len(phoneNumber) > 10 {
+			// only acceptable character for extension is x
+			if phoneNumber[10] != 'x' && phoneNumber[10] != 'X' {
+				return fmt.Errorf("Invalid extension for phone number. Extension must to start with an 'x'")
+			}
+
+			if len(phoneNumber) == 11 {
+				return fmt.Errorf("Invalid extension for phone number. 'x' must follow the extension")
+			}
+
+			_, err := strconv.ParseInt(phoneNumber[11:], 10, 64)
+			if err != nil {
+				return fmt.Errorf("Invalid extension for phone number. Extension can only be digits")
+			}
+		}
+	} else {
+		// there should be three components "DDD"-"DDD"-"DDDD[xDDDDD..]"
+		if len(components) != 3 {
+			return fmt.Errorf("Invalid phone number")
+		}
+
+		// area code should have 3 digits in it
+		if len(components[0]) != 3 || !isValidAreaCode(components[0]) {
+			return fmt.Errorf("Invalid area code")
+		}
+
+		// second component should also have 3 digits in it
+		if len(components[1]) != 3 {
+			return fmt.Errorf("Invalid area code")
+		}
+		_, err := strconv.ParseInt(components[1], 10, 64)
+		if err != nil {
+			return fmt.Errorf("Invalid phone number")
+		}
+
+		// third component shoudl definitely have 4 digits but can have more if there is an extension involved
+		if len(components[2]) < 4 {
+			return fmt.Errorf("Invalid phone number")
+		}
+
+		// first 4 can only be digits in the last component
+		_, err = strconv.ParseInt(components[2][0:4], 10, 64)
+		if err != nil {
+			return fmt.Errorf("Invalid phone number")
+		}
+
+		if len(components[2]) > 4 {
+			if components[2][4] != 'x' && components[2][4] != 'X' {
+				return fmt.Errorf("Invalid extension for phone number. Extension must to start with an 'x'")
+			}
+
+			if len(components[2]) == 5 {
+				return fmt.Errorf("Invalid extension for phone number. 'x' must follow the extension")
+			}
+
+			_, err := strconv.ParseInt(components[2][5:], 10, 64)
+			if err != nil {
+				return fmt.Errorf("Invalid extension for phone number. Extension can only be digits")
+			}
 		}
 	}
 

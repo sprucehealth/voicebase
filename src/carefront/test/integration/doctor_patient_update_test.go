@@ -4,6 +4,7 @@ import (
 	"bytes"
 	"carefront/apiservice"
 	"carefront/common"
+	"carefront/libs/address_validation"
 	"carefront/libs/erx"
 	"carefront/libs/pharmacy"
 	"encoding/json"
@@ -53,10 +54,19 @@ func TestDoctorUpdateToPatientAddress(t *testing.T) {
 
 	stubErxApi := &erx.StubErxService{}
 
+	stubAddressValidationService := address_validation.StubAddressValidationService{
+		CityStateToReturn: address_validation.CityState{
+			City:              "San Francisco",
+			State:             "California",
+			StateAbbreviation: "CA",
+		},
+	}
+
 	// lets go ahead and add this address to the patient and we should get back an address when we get the patient information
 	doctorPatientHandler := &apiservice.DoctorPatientUpdateHandler{
-		DataApi: testData.DataApi,
-		ErxApi:  stubErxApi,
+		DataApi:              testData.DataApi,
+		ErxApi:               stubErxApi,
+		AddressValidationApi: stubAddressValidationService,
 	}
 
 	ts := httptest.NewServer(doctorPatientHandler)
@@ -116,11 +126,19 @@ func TestDoctorFailedUpdate(t *testing.T) {
 	signedupPatientResponse := SignupRandomTestPatient(t, testData.DataApi, testData.AuthApi)
 	signedupPatientResponse.Patient.PhoneNumbers = nil
 	stubErxApi := &erx.StubErxService{}
+	stubAddressValidationService := address_validation.StubAddressValidationService{
+		CityStateToReturn: address_validation.CityState{
+			City:              "San Francisco",
+			State:             "California",
+			StateAbbreviation: "CA",
+		},
+	}
 
 	// lets go ahead and add this address to the patient and we should get back an address when we get the patient information
 	doctorPatientHandler := &apiservice.DoctorPatientUpdateHandler{
-		DataApi: testData.DataApi,
-		ErxApi:  stubErxApi,
+		DataApi:              testData.DataApi,
+		ErxApi:               stubErxApi,
+		AddressValidationApi: stubAddressValidationService,
 	}
 
 	ts := httptest.NewServer(doctorPatientHandler)
@@ -228,11 +246,18 @@ func TestDoctorUpdateToPhoneNumbers(t *testing.T) {
 	signedupPatientResponse.Patient.PhoneNumbers = phoneNumbers
 
 	stubErxApi := &erx.StubErxService{}
-
+	stubAddressValidationService := address_validation.StubAddressValidationService{
+		CityStateToReturn: address_validation.CityState{
+			City:              "San Francisco",
+			State:             "California",
+			StateAbbreviation: "CA",
+		},
+	}
 	// lets go ahead and add this address to the patient and we should get back an address when we get the patient information
 	doctorPatientHandler := &apiservice.DoctorPatientUpdateHandler{
-		DataApi: testData.DataApi,
-		ErxApi:  stubErxApi,
+		DataApi:              testData.DataApi,
+		ErxApi:               stubErxApi,
+		AddressValidationApi: stubAddressValidationService,
 	}
 
 	ts := httptest.NewServer(doctorPatientHandler)
@@ -319,11 +344,18 @@ func TestDoctorUpdateToTopLevelInformation(t *testing.T) {
 	signedupPatientResponse.Patient.Dob = common.Dob{Day: 11, Month: 9, Year: 1987}
 
 	stubErxApi := &erx.StubErxService{}
-
+	stubAddressValidationService := address_validation.StubAddressValidationService{
+		CityStateToReturn: address_validation.CityState{
+			City:              "San Francisco",
+			State:             "California",
+			StateAbbreviation: "CA",
+		},
+	}
 	// lets go ahead and add this address to the patient and we should get back an address when we get the patient information
 	doctorPatientHandler := &apiservice.DoctorPatientUpdateHandler{
-		DataApi: testData.DataApi,
-		ErxApi:  stubErxApi,
+		DataApi:              testData.DataApi,
+		ErxApi:               stubErxApi,
+		AddressValidationApi: stubAddressValidationService,
 	}
 
 	ts := httptest.NewServer(doctorPatientHandler)
@@ -384,9 +416,17 @@ func TestDoctorUpdatePatientInformationForbidden(t *testing.T) {
 	if err != nil {
 		t.Fatal("Unable to add patient's preferred pharmacy")
 	}
+	stubAddressValidationService := address_validation.StubAddressValidationService{
+		CityStateToReturn: address_validation.CityState{
+			City:              "San Francisco",
+			State:             "California",
+			StateAbbreviation: "CA",
+		},
+	}
 	doctorPatientHandler := &apiservice.DoctorPatientUpdateHandler{
-		DataApi: testData.DataApi,
-		ErxApi:  &erx.StubErxService{},
+		DataApi:              testData.DataApi,
+		ErxApi:               &erx.StubErxService{},
+		AddressValidationApi: stubAddressValidationService,
 	}
 
 	ts := httptest.NewServer(doctorPatientHandler)
