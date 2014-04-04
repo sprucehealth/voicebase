@@ -58,6 +58,8 @@ func (m *NewTreatmentHandler) ServeHTTP(w http.ResponseWriter, r *http.Request) 
 		return
 	}
 
+	medication.DrugName, medication.DrugForm, medication.DrugRoute = breakDrugInternalNameIntoComponents(requestData.MedicationName)
+
 	if medication.IsControlledSubstance {
 		WriteUserError(w, HTTP_UNPROCESSABLE_ENTITY, "Unfortunately, we do not support electronic routing of controlled substances using the platform. If you have any questions, feel free to contact support. Apologies for any inconvenience!")
 		return

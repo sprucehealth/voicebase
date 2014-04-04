@@ -520,7 +520,8 @@ func (d *DoseSpotService) SelectMedication(clinicianId int64, medicationName, me
 		},
 		DispenseUnitId:          common.NewObjectId(selectResult.DispenseUnitId),
 		DispenseUnitDescription: selectResult.DispenseUnitDescription,
-		OTC: selectResult.OTC,
+		DrugInternalName:        medicationName,
+		OTC:                     selectResult.OTC,
 		IsControlledSubstance: err == nil && scheduleInt > 0,
 	}
 
