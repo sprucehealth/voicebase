@@ -4,6 +4,7 @@ import (
 	"bytes"
 	"carefront/apiservice"
 	"carefront/common"
+	"carefront/libs/address_validation"
 	"carefront/libs/payment"
 	"encoding/json"
 	"fmt"
@@ -37,9 +38,18 @@ func TestAddCardsForPatient(t *testing.T) {
 		CustomerToReturn: customerToAdd,
 	}
 
+	stubAddressValidationService := &address_validation.StubAddressValidationService{
+		CityStateToReturn: address_validation.CityState{
+			City:              "San Francisco",
+			State:             "California",
+			StateAbbreviation: "CA",
+		},
+	}
+
 	patientCardsHandler := &apiservice.PatientCardsHandler{
-		DataApi:    testData.DataApi,
-		PaymentApi: stubPaymentsService,
+		DataApi:              testData.DataApi,
+		PaymentApi:           stubPaymentsService,
+		AddressValidationApi: stubAddressValidationService,
 	}
 
 	ts := httptest.NewServer(patientCardsHandler)

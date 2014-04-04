@@ -57,6 +57,8 @@ func TestPatientCareProvidingEllgibility(t *testing.T) {
 		StateAbbreviation: "FL",
 	}
 
+	checkElligibilityHandler.AddressValidationApi = stubAddressValidationService
+
 	resp, err = authGet(ts.URL+"?zip_code=33180", 0)
 	if err != nil {
 		t.Fatal("Unable to successfuly check care providing elligibility for patient" + err.Error())
