@@ -22,7 +22,7 @@ type Treatment struct {
 	DispenseUnitId            *ObjectId                `json:"dispense_unit_id,omitempty"`
 	DispenseUnitDescription   string                   `json:"dispense_unit_description,omitempty"`
 	NumberRefills             int64                    `json:"refills,omitempty"`
-	SubstitutionsAllowed      bool                     `json:"substitutions_allowed,omitempty"`
+	SubstitutionsAllowed      bool                     `json:"substitutions_allowed"`
 	DaysSupply                int64                    `json:"days_supply,omitempty"`
 	PharmacyNotes             string                   `json:"pharmacy_notes,omitempty"`
 	PatientInstructions       string                   `json:"patient_instructions,omitempty"`
