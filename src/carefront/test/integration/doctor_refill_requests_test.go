@@ -488,7 +488,7 @@ func TestApproveRefillRequestAndSuccessfulSendToPharmacy(t *testing.T) {
 	}
 
 	if refillStatusEvents[0].Status != api.RX_REFILL_STATUS_SENT {
-		t.Fatal("Expected the top level item for the refill request to indicate that it was successfully sent to the pharmacy")
+		t.Fatalf("Expected the top level item for the refill request to indicate that it was successfully sent to the pharmacy %+v", refillStatusEvents)
 	}
 }
 func TestApproveRefillRequestAndErrorSendingToPharmacy(t *testing.T) {
