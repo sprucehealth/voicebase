@@ -1,0 +1,1 @@
+alter table rx_refill_status_events modify column rx_refill_status_date timestamp(6) not null default current_timestamp(6);
