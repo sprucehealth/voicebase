@@ -25,11 +25,10 @@ func (d *DataService) AddRefillRequestStatusEvent(refillRequestStatus common.Sta
 	}
 
 	columnsAndData := map[string]interface{}{
-		"rx_refill_request_id":  refillRequestStatus.ItemId,
-		"rx_refill_status":      refillRequestStatus.Status,
-		"rx_refill_status_date": time.Now(),
-		"status":                STATUS_ACTIVE,
-		"event_details":         refillRequestStatus.StatusDetails,
+		"rx_refill_request_id": refillRequestStatus.ItemId,
+		"rx_refill_status":     refillRequestStatus.Status,
+		"status":               STATUS_ACTIVE,
+		"event_details":        refillRequestStatus.StatusDetails,
 	}
 
 	if !refillRequestStatus.ReportedTimestamp.IsZero() {
@@ -623,7 +622,7 @@ func (d *DataService) MarkRefillRequestAsApproved(prescriptionId, approvedRefill
 		return err
 	}
 
-	_, err = tx.Exec(`insert into rx_refill_status_events (rx_refill_request_id, rx_refill_status, status, rx_refill_status_date) values (?,?,?,now(6))`, rxRefillRequestId, RX_REFILL_STATUS_APPROVED, STATUS_ACTIVE)
+	_, err = tx.Exec(`insert into rx_refill_status_events (rx_refill_request_id, rx_refill_status, status) values (?,?,?)`, rxRefillRequestId, RX_REFILL_STATUS_APPROVED, STATUS_ACTIVE)
 	if err != nil {
 		tx.Rollback()
 		return err
@@ -649,7 +648,8 @@ func (d *DataService) MarkRefillRequestAsDenied(prescriptionId, denialReasonId, 
 		tx.Rollback()
 		return err
 	}
-	_, err = tx.Exec(`insert into rx_refill_status_events (rx_refill_request_id, rx_refill_status, status, rx_refill_status_date) values (?,?,?,?)`, rxRefillRequestId, RX_REFILL_STATUS_DENIED, STATUS_ACTIVE, time.Now())
+
+	_, err = tx.Exec(`insert into rx_refill_status_events (rx_refill_request_id, rx_refill_status, status) values (?,?,?)`, rxRefillRequestId, RX_REFILL_STATUS_DENIED, STATUS_ACTIVE)
 	if err != nil {
 		tx.Rollback()
 		return err

@@ -404,7 +404,7 @@ func TestApproveRefillRequestAndSuccessfulSendToPharmacy(t *testing.T) {
 
 	// sleep for a brief moment before approving so that
 	// the items are ordered correctly for the rx history (in the real world they would not be approved in the same exact millisecond they are sent in)
-	time.Sleep(2 * time.Second)
+	time.Sleep(1 * time.Second)
 
 	jsonData, err := json.Marshal(&requestData)
 	if err != nil {
@@ -472,7 +472,7 @@ func TestApproveRefillRequestAndSuccessfulSendToPharmacy(t *testing.T) {
 
 	// sleep for a brief moment before approving so that
 	// the items are ordered correctly for the rx history (in the real world they would not be approved in the same exact millisecond they are sent in)
-	time.Sleep(2 * time.Second)
+	time.Sleep(1 * time.Second)
 
 	// attempt to consume the message put into the queue
 	app_worker.ConsumeMessageFromQueue(testData.DataApi, stubErxAPI, erxStatusQueue, metrics.NewBiasedHistogram(), metrics.NewCounter(), metrics.NewCounter())
