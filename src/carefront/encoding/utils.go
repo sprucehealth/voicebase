@@ -14,14 +14,14 @@ type NullInt64 struct {
 	Int64Value int64
 }
 
-func NullInt64FromSql(nullInt64 sql.NullInt64) NullInt64 {
-	return NullInt64{
+func NullInt64FromSql(nullInt64 sql.NullInt64) *NullInt64 {
+	return &NullInt64{
 		IsNull:     !nullInt64.Valid,
 		Int64Value: nullInt64.Int64,
 	}
 }
 
-func (n NullInt64) MarshalJSON() ([]byte, error) {
+func (n *NullInt64) MarshalJSON() ([]byte, error) {
 	if n.IsNull {
 		return []byte(`null`), nil
 	}
@@ -29,18 +29,18 @@ func (n NullInt64) MarshalJSON() ([]byte, error) {
 	return []byte(fmt.Sprintf(`%d`, n.Int64Value)), nil
 }
 
-func (n NullInt64) UnmarshalJSON(data []byte) error {
+func (n *NullInt64) UnmarshalJSON(data []byte) error {
 	strData := string(data)
 
 	if len(data) < 2 || strData == "null" {
-		n = NullInt64{
+		*n = NullInt64{
 			IsNull: true,
 		}
 		return nil
 	}
 
 	intValue, err := strconv.ParseInt(strData, 10, 64)
-	n = NullInt64{
+	*n = NullInt64{
 		IsNull:     false,
 		Int64Value: intValue,
 	}

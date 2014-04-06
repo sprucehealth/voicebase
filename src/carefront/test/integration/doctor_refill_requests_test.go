@@ -86,12 +86,12 @@ func TestNewRefillRequestForExistingPatientAndExistingTreatment(t *testing.T) {
 		DispenseValue:           5,
 		DispenseUnitDescription: "Tablet",
 		DispenseUnitId:          encoding.NewObjectId(19),
-		NumberRefills: encoding.NullInt64{
+		NumberRefills: &encoding.NullInt64{
 			IsNull:     false,
 			Int64Value: 5,
 		},
 		SubstitutionsAllowed: false,
-		DaysSupply: encoding.NullInt64{
+		DaysSupply: &encoding.NullInt64{
 			IsNull:     false,
 			Int64Value: 5,
 		},
@@ -162,12 +162,12 @@ func TestNewRefillRequestForExistingPatientAndExistingTreatment(t *testing.T) {
 			DosageStrength:          "10 mg",
 			DispenseValue:           5,
 			DispenseUnitDescription: "Tablet",
-			NumberRefills: encoding.NullInt64{
+			NumberRefills: &encoding.NullInt64{
 				IsNull:     false,
 				Int64Value: 5,
 			},
 			SubstitutionsAllowed: false,
-			DaysSupply: encoding.NullInt64{
+			DaysSupply: &encoding.NullInt64{
 				IsNull:     false,
 				Int64Value: 10,
 			}, PatientInstructions: "Take once daily",
@@ -348,12 +348,12 @@ func TestApproveRefillRequestAndSuccessfulSendToPharmacy(t *testing.T) {
 			DosageStrength:          "10 mg",
 			DispenseValue:           5,
 			DispenseUnitDescription: "Tablet",
-			NumberRefills: encoding.NullInt64{
+			NumberRefills: &encoding.NullInt64{
 				IsNull:     false,
 				Int64Value: 5,
 			},
 			SubstitutionsAllowed: false,
-			DaysSupply: encoding.NullInt64{
+			DaysSupply: &encoding.NullInt64{
 				IsNull:     true,
 				Int64Value: 5,
 			}, PatientInstructions: "Take once daily",
@@ -590,12 +590,12 @@ func TestApproveRefillRequestAndErrorSendingToPharmacy(t *testing.T) {
 			DosageStrength:          "10 mg",
 			DispenseValue:           5,
 			DispenseUnitDescription: "Tablet",
-			NumberRefills: encoding.NullInt64{
+			NumberRefills: &encoding.NullInt64{
 				IsNull:     false,
 				Int64Value: 5,
 			},
 			SubstitutionsAllowed: false,
-			DaysSupply: encoding.NullInt64{
+			DaysSupply: &encoding.NullInt64{
 				IsNull:     false,
 				Int64Value: 5,
 			}, PatientInstructions: "Take once daily",
@@ -876,7 +876,7 @@ func TestDenyRefillRequestAndSuccessfulDelete(t *testing.T) {
 			},
 			DosageStrength: "10 mg",
 			DispenseValue:  5,
-			DaysSupply: encoding.NullInt64{
+			DaysSupply: &encoding.NullInt64{
 				IsNull: true,
 			},
 			OTC:                  false,
@@ -897,12 +897,12 @@ func TestDenyRefillRequestAndSuccessfulDelete(t *testing.T) {
 			DosageStrength:          "10 mg",
 			DispenseValue:           5,
 			DispenseUnitDescription: "Tablet",
-			NumberRefills: encoding.NullInt64{
+			NumberRefills: &encoding.NullInt64{
 				IsNull:     false,
 				Int64Value: 5,
 			},
 			SubstitutionsAllowed: false,
-			DaysSupply: encoding.NullInt64{
+			DaysSupply: &encoding.NullInt64{
 				IsNull:     false,
 				Int64Value: 5,
 			}, PatientInstructions: "Take once daily",
@@ -1122,7 +1122,7 @@ func TestDenyRefillRequestWithDNTFWithoutTreatment(t *testing.T) {
 			},
 			DosageStrength: "10 mg",
 			DispenseValue:  5,
-			DaysSupply: encoding.NullInt64{
+			DaysSupply: &encoding.NullInt64{
 				IsNull: true,
 			},
 			OTC:                  false,
@@ -1143,12 +1143,12 @@ func TestDenyRefillRequestWithDNTFWithoutTreatment(t *testing.T) {
 			DosageStrength:          "10 mg",
 			DispenseValue:           5,
 			DispenseUnitDescription: "Tablet",
-			NumberRefills: encoding.NullInt64{
+			NumberRefills: &encoding.NullInt64{
 				IsNull:     false,
 				Int64Value: 5,
 			},
 			SubstitutionsAllowed: false,
-			DaysSupply: encoding.NullInt64{
+			DaysSupply: &encoding.NullInt64{
 				IsNull:     false,
 				Int64Value: 5,
 			}, PatientInstructions: "Take once daily",
@@ -1293,11 +1293,11 @@ func setUpDeniedRefillRequestWithDNTF(t *testing.T, testData TestData, endErxSta
 		},
 		DosageStrength: "10 mg",
 		DispenseValue:  1,
-		DaysSupply: encoding.NullInt64{
+		DaysSupply: &encoding.NullInt64{
 			IsNull: true,
 		},
 		DispenseUnitId: encoding.NewObjectId(12),
-		NumberRefills: encoding.NullInt64{
+		NumberRefills: &encoding.NullInt64{
 			IsNull:     false,
 			Int64Value: 1,
 		},
@@ -1363,7 +1363,7 @@ func setUpDeniedRefillRequestWithDNTF(t *testing.T, testData TestData, endErxSta
 			DosageStrength: "10 mg",
 			DispenseValue:  5,
 			OTC:            false,
-			DaysSupply: encoding.NullInt64{
+			DaysSupply: &encoding.NullInt64{
 				IsNull: true,
 			},
 			SubstitutionsAllowed: true,
@@ -1383,12 +1383,12 @@ func setUpDeniedRefillRequestWithDNTF(t *testing.T, testData TestData, endErxSta
 			DosageStrength:          "10 mg",
 			DispenseValue:           5,
 			DispenseUnitDescription: "Tablet",
-			NumberRefills: encoding.NullInt64{
+			NumberRefills: &encoding.NullInt64{
 				IsNull:     false,
 				Int64Value: 5,
 			},
 			SubstitutionsAllowed: false,
-			DaysSupply: encoding.NullInt64{
+			DaysSupply: &encoding.NullInt64{
 				IsNull:     false,
 				Int64Value: 5,
 			}, PatientInstructions: "Take once daily",
@@ -1730,11 +1730,11 @@ func setUpDeniedRefillRequestWithDNTFForLinkedTreatment(t *testing.T, testData T
 		DosageStrength: "10 mg",
 		DispenseValue:  1,
 		DispenseUnitId: encoding.NewObjectId(12),
-		NumberRefills: encoding.NullInt64{
+		NumberRefills: &encoding.NullInt64{
 			IsNull:     false,
 			Int64Value: 1,
 		},
-		DaysSupply: encoding.NullInt64{
+		DaysSupply: &encoding.NullInt64{
 			IsNull: true,
 		},
 		OTC:                 false,
@@ -1790,12 +1790,12 @@ func setUpDeniedRefillRequestWithDNTFForLinkedTreatment(t *testing.T, testData T
 		DispenseValue:           5,
 		DispenseUnitDescription: "Tablet",
 		DispenseUnitId:          encoding.NewObjectId(19),
-		NumberRefills: encoding.NullInt64{
+		NumberRefills: &encoding.NullInt64{
 			IsNull:     false,
 			Int64Value: 5,
 		},
 		SubstitutionsAllowed: false,
-		DaysSupply: encoding.NullInt64{
+		DaysSupply: &encoding.NullInt64{
 			IsNull: true,
 		},
 		PatientInstructions: "Take once daily",
@@ -1865,12 +1865,12 @@ func setUpDeniedRefillRequestWithDNTFForLinkedTreatment(t *testing.T, testData T
 			DosageStrength:          "10 mg",
 			DispenseValue:           5,
 			DispenseUnitDescription: "Tablet",
-			NumberRefills: encoding.NullInt64{
+			NumberRefills: &encoding.NullInt64{
 				IsNull:     false,
 				Int64Value: 5,
 			},
 			SubstitutionsAllowed: false,
-			DaysSupply: encoding.NullInt64{
+			DaysSupply: &encoding.NullInt64{
 				IsNull:     false,
 				Int64Value: 5,
 			},
@@ -2205,7 +2205,7 @@ func TestCheckingStatusOfMultipleRefillRequestsAtOnce(t *testing.T) {
 					erx.NDC:               "2415",
 				},
 				DosageStrength: "10 mg",
-				DaysSupply: encoding.NullInt64{
+				DaysSupply: &encoding.NullInt64{
 					IsNull: true,
 				},
 				DispenseValue:        5,
@@ -2227,12 +2227,12 @@ func TestCheckingStatusOfMultipleRefillRequestsAtOnce(t *testing.T) {
 				DosageStrength:          "10 mg",
 				DispenseValue:           5,
 				DispenseUnitDescription: "Tablet",
-				NumberRefills: encoding.NullInt64{
+				NumberRefills: &encoding.NullInt64{
 					IsNull:     false,
 					Int64Value: 5,
 				},
 				SubstitutionsAllowed: false,
-				DaysSupply: encoding.NullInt64{
+				DaysSupply: &encoding.NullInt64{
 					IsNull:     false,
 					Int64Value: 5,
 				}, PatientInstructions: "Take once daily",
@@ -2511,12 +2511,12 @@ func TestRefillRequestComingFromDifferentPharmacyThanDispensedPrescription(t *te
 		DispenseValue:           5,
 		DispenseUnitDescription: "Tablet",
 		DispenseUnitId:          encoding.NewObjectId(19),
-		NumberRefills: encoding.NullInt64{
+		NumberRefills: &encoding.NullInt64{
 			IsNull:     false,
 			Int64Value: 5,
 		},
 		SubstitutionsAllowed: false,
-		DaysSupply: encoding.NullInt64{
+		DaysSupply: &encoding.NullInt64{
 			IsNull:     false,
 			Int64Value: 5,
 		}, PatientInstructions: "Take once daily",
@@ -2567,7 +2567,7 @@ func TestRefillRequestComingFromDifferentPharmacyThanDispensedPrescription(t *te
 				erx.NDC:               "2415",
 			},
 			DosageStrength: "10 mg",
-			DaysSupply: encoding.NullInt64{
+			DaysSupply: &encoding.NullInt64{
 				IsNull: true,
 			},
 			DispenseValue:        5,
@@ -2589,12 +2589,12 @@ func TestRefillRequestComingFromDifferentPharmacyThanDispensedPrescription(t *te
 			DosageStrength:          "10 mg",
 			DispenseValue:           5,
 			DispenseUnitDescription: "Tablet",
-			NumberRefills: encoding.NullInt64{
+			NumberRefills: &encoding.NullInt64{
 				IsNull:     false,
 				Int64Value: 5,
 			},
 			SubstitutionsAllowed: false,
-			DaysSupply: encoding.NullInt64{
+			DaysSupply: &encoding.NullInt64{
 				IsNull:     false,
 				Int64Value: 5,
 			}, PatientInstructions: "Take once daily",
@@ -2730,12 +2730,12 @@ func TestNewRefillRequestWithUnlinkedTreatmentAndLinkedPatient(t *testing.T) {
 			DosageStrength:          "10 mg",
 			DispenseValue:           5,
 			DispenseUnitDescription: "Tablet",
-			NumberRefills: encoding.NullInt64{
+			NumberRefills: &encoding.NullInt64{
 				IsNull:     false,
 				Int64Value: 5,
 			},
 			SubstitutionsAllowed: false,
-			DaysSupply: encoding.NullInt64{
+			DaysSupply: &encoding.NullInt64{
 				IsNull: true,
 			}, PatientInstructions: "Take once daily",
 			OTC: false,
@@ -2756,12 +2756,12 @@ func TestNewRefillRequestWithUnlinkedTreatmentAndLinkedPatient(t *testing.T) {
 			DosageStrength:          "10 mg",
 			DispenseValue:           5,
 			DispenseUnitDescription: "Tablet",
-			NumberRefills: encoding.NullInt64{
+			NumberRefills: &encoding.NullInt64{
 				IsNull:     false,
 				Int64Value: 5,
 			},
 			SubstitutionsAllowed: false,
-			DaysSupply: encoding.NullInt64{
+			DaysSupply: &encoding.NullInt64{
 				IsNull:     false,
 				Int64Value: 5,
 			},
@@ -2902,12 +2902,12 @@ func TestNewRefillRequestWithUnlinkedTreatmentAndUnlinkedPatient(t *testing.T) {
 			DosageStrength:          "10 mg",
 			DispenseValue:           5,
 			DispenseUnitDescription: "Tablet",
-			NumberRefills: encoding.NullInt64{
+			NumberRefills: &encoding.NullInt64{
 				IsNull:     false,
 				Int64Value: 5,
 			},
 			SubstitutionsAllowed: false,
-			DaysSupply: encoding.NullInt64{
+			DaysSupply: &encoding.NullInt64{
 				IsNull:     false,
 				Int64Value: 5,
 			}, PatientInstructions: "Take once daily",
@@ -2931,11 +2931,11 @@ func TestNewRefillRequestWithUnlinkedTreatmentAndUnlinkedPatient(t *testing.T) {
 			DosageStrength:          "10 mg",
 			DispenseValue:           5,
 			DispenseUnitDescription: "Tablet",
-			DaysSupply: encoding.NullInt64{
+			DaysSupply: &encoding.NullInt64{
 				IsNull:     false,
 				Int64Value: 5,
 			},
-			NumberRefills: encoding.NullInt64{
+			NumberRefills: &encoding.NullInt64{
 				IsNull:     false,
 				Int64Value: 5,
 			},

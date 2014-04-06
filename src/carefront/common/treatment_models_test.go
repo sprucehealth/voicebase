@@ -19,11 +19,11 @@ func TestTreatmentEquals(t *testing.T) {
 		DosageStrength:   "50mg",
 		DispenseValue:    12,
 		DispenseUnitId:   encoding.NewObjectId(12),
-		NumberRefills: encoding.NullInt64{
+		NumberRefills: &encoding.NullInt64{
 			IsNull:     false,
 			Int64Value: 1,
 		}, SubstitutionsAllowed: false,
-		DaysSupply: encoding.NullInt64{
+		DaysSupply: &encoding.NullInt64{
 			IsNull:     false,
 			Int64Value: 5,
 		}, ERx: &ERxData{
@@ -45,11 +45,11 @@ func TestTreatmentEquals(t *testing.T) {
 		DosageStrength:   "50mg",
 		DispenseValue:    12,
 		DispenseUnitId:   encoding.NewObjectId(12),
-		NumberRefills: encoding.NullInt64{
+		NumberRefills: &encoding.NullInt64{
 			IsNull:     false,
 			Int64Value: 1,
 		}, SubstitutionsAllowed: false,
-		DaysSupply: encoding.NullInt64{
+		DaysSupply: &encoding.NullInt64{
 			IsNull:     false,
 			Int64Value: 5,
 		}, ERx: &ERxData{
@@ -76,11 +76,11 @@ func TestTreatmentEquals(t *testing.T) {
 		DosageStrength:   "50mg",
 		DispenseValue:    12,
 		DispenseUnitId:   encoding.NewObjectId(12),
-		NumberRefills: encoding.NullInt64{
+		NumberRefills: &encoding.NullInt64{
 			IsNull:     false,
 			Int64Value: 1,
 		}, SubstitutionsAllowed: false,
-		DaysSupply: encoding.NullInt64{
+		DaysSupply: &encoding.NullInt64{
 			IsNull:     false,
 			Int64Value: 5,
 		}, ERx: &ERxData{
@@ -106,11 +106,11 @@ func TestTreatmentEquals(t *testing.T) {
 		DosageStrength:   "50mg",
 		DispenseValue:    12,
 		DispenseUnitId:   encoding.NewObjectId(12),
-		NumberRefills: encoding.NullInt64{
+		NumberRefills: &encoding.NullInt64{
 			IsNull:     false,
 			Int64Value: 1,
 		}, SubstitutionsAllowed: false,
-		DaysSupply: encoding.NullInt64{
+		DaysSupply: &encoding.NullInt64{
 			IsNull:     false,
 			Int64Value: 5,
 		}, ERx: &ERxData{
@@ -136,11 +136,11 @@ func TestTreatmentEquals(t *testing.T) {
 		DosageStrength:   "50mg",
 		DispenseValue:    12,
 		DispenseUnitId:   encoding.NewObjectId(12),
-		NumberRefills: encoding.NullInt64{
+		NumberRefills: &encoding.NullInt64{
 			IsNull:     false,
 			Int64Value: 1,
 		}, SubstitutionsAllowed: false,
-		DaysSupply: encoding.NullInt64{
+		DaysSupply: &encoding.NullInt64{
 			IsNull:     false,
 			Int64Value: 5,
 		}, ERx: &ERxData{
@@ -166,11 +166,11 @@ func TestTreatmentEquals(t *testing.T) {
 		DosageStrength:   "50mg",
 		DispenseValue:    12,
 		DispenseUnitId:   encoding.NewObjectId(12),
-		NumberRefills: encoding.NullInt64{
+		NumberRefills: &encoding.NullInt64{
 			IsNull:     false,
 			Int64Value: 1,
 		}, SubstitutionsAllowed: false,
-		DaysSupply: encoding.NullInt64{
+		DaysSupply: &encoding.NullInt64{
 			IsNull:     false,
 			Int64Value: 5,
 		}, ERx: &ERxData{
@@ -196,11 +196,11 @@ func TestTreatmentEquals(t *testing.T) {
 		DosageStrength:   "50mgs",
 		DispenseValue:    12,
 		DispenseUnitId:   encoding.NewObjectId(12),
-		NumberRefills: encoding.NullInt64{
+		NumberRefills: &encoding.NullInt64{
 			IsNull:     false,
 			Int64Value: 1,
 		}, SubstitutionsAllowed: false,
-		DaysSupply: encoding.NullInt64{
+		DaysSupply: &encoding.NullInt64{
 			IsNull:     false,
 			Int64Value: 5,
 		}, ERx: &ERxData{

@@ -22,9 +22,9 @@ type Treatment struct {
 	DispenseValue             float64                  `json:"dispense_value,omitempty"`
 	DispenseUnitId            *encoding.ObjectId       `json:"dispense_unit_id,omitempty"`
 	DispenseUnitDescription   string                   `json:"dispense_unit_description,omitempty"`
-	NumberRefills             encoding.NullInt64       `json:"refills,omitempty"`
+	NumberRefills             *encoding.NullInt64      `json:"refills,omitempty"`
 	SubstitutionsAllowed      bool                     `json:"substitutions_allowed"`
-	DaysSupply                encoding.NullInt64       `json:"days_supply"`
+	DaysSupply                *encoding.NullInt64      `json:"days_supply"`
 	PharmacyNotes             string                   `json:"pharmacy_notes,omitempty"`
 	PatientInstructions       string                   `json:"patient_instructions,omitempty"`
 	CreationDate              *time.Time               `json:"creation_date,omitempty"`
@@ -77,9 +77,11 @@ func (t *Treatment) Equals(other *Treatment) bool {
 		t.DosageStrength == other.DosageStrength &&
 		t.DispenseValue == other.DispenseValue &&
 		t.DispenseUnitId.Int64() == other.DispenseUnitId.Int64() &&
-		t.NumberRefills == other.NumberRefills &&
+		t.NumberRefills.IsNull == other.NumberRefills.IsNull &&
+		t.NumberRefills.Int64Value == other.NumberRefills.Int64Value &&
 		t.SubstitutionsAllowed == other.SubstitutionsAllowed &&
-		t.DaysSupply == other.DaysSupply &&
+		t.DaysSupply.IsNull == other.DaysSupply.IsNull &&
+		t.DaysSupply.Int64Value == other.DaysSupply.Int64Value &&
 		t.PatientInstructions == other.PatientInstructions &&
 		t.ERx.PharmacyLocalId.Int64() == other.ERx.PharmacyLocalId.Int64()
 }
