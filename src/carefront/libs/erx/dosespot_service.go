@@ -2,6 +2,7 @@ package erx
 
 import (
 	"carefront/common"
+	"carefront/encoding"
 	"carefront/libs/golog"
 	pharmacySearch "carefront/libs/pharmacy"
 	"errors"
@@ -381,7 +382,7 @@ func (d *DoseSpotService) UpdatePatientInformation(clinicianId int64, currentPat
 	}
 
 	// populate the prescription id into the patient object
-	currentPatient.ERxPatientId = common.NewObjectId(response.PatientUpdates[0].Patient.PatientId)
+	currentPatient.ERxPatientId = encoding.NewObjectId(response.PatientUpdates[0].Patient.PatientId)
 	return nil
 }
 
@@ -408,14 +409,13 @@ func (d *DoseSpotService) StartPrescribingPatient(clinicianId int64, currentPati
 		lexiGenProductIdInt, _ := strconv.ParseInt(treatment.DrugDBIds[LexiGenProductId], 0, 64)
 		lexiSynonymTypeIdInt, _ := strconv.ParseInt(treatment.DrugDBIds[LexiSynonymTypeId], 0, 64)
 
-		daysSupply := nullInt64(treatment.DaysSupply)
 		prescriptionMedication := &medication{
-			DaysSupply:        daysSupply,
 			LexiDrugSynId:     lexiDrugSynIdInt,
 			LexiGenProductId:  lexiGenProductIdInt,
 			LexiSynonymTypeId: lexiSynonymTypeIdInt,
-			Refills:           nullInt64(treatment.NumberRefills),
+			Refills:           treatment.NumberRefills,
 			Dispense:          strconv.FormatFloat(treatment.DispenseValue, 'f', -1, 64),
+			DaysSupply:        treatment.DaysSupply,
 			DispenseUnitId:    treatment.DispenseUnitId.Int64(),
 			Instructions:      treatment.PatientInstructions,
 			NoSubstitutions:   !treatment.SubstitutionsAllowed,
@@ -457,7 +457,7 @@ func (d *DoseSpotService) StartPrescribingPatient(clinicianId int64, currentPati
 	}
 
 	// populate the prescription id into the patient object
-	currentPatient.ERxPatientId = common.NewObjectId(response.PatientUpdates[0].Patient.PatientId)
+	currentPatient.ERxPatientId = encoding.NewObjectId(response.PatientUpdates[0].Patient.PatientId)
 
 	// go through and assign medication ids to all prescriptions
 	for _, patientUpdate := range response.PatientUpdates {
@@ -472,7 +472,7 @@ func (d *DoseSpotService) StartPrescribingPatient(clinicianId int64, currentPati
 					if treatment.ERx == nil {
 						treatment.ERx = &common.ERxData{}
 					}
-					treatment.ERx.PrescriptionId = common.NewObjectId(medication.DoseSpotPrescriptionId)
+					treatment.ERx.PrescriptionId = encoding.NewObjectId(medication.DoseSpotPrescriptionId)
 					break
 				}
 			}
@@ -518,7 +518,7 @@ func (d *DoseSpotService) SelectMedication(clinicianId int64, medicationName, me
 			LexiSynonymTypeId: strconv.FormatInt(selectResult.LexiSynonymTypeId, 10),
 			NDC:               selectResult.RepresentativeNDC,
 		},
-		DispenseUnitId:          common.NewObjectId(selectResult.DispenseUnitId),
+		DispenseUnitId:          encoding.NewObjectId(selectResult.DispenseUnitId),
 		DispenseUnitDescription: selectResult.DispenseUnitDescription,
 		DrugInternalName:        medicationName,
 		OTC:                     selectResult.OTC,
@@ -653,8 +653,8 @@ func (d *DoseSpotService) GetTransmissionErrorDetails(clinicianId int64) ([]*com
 		dispenseValueFloat, _ := strconv.ParseFloat(transmissionError.Medication.Dispense, 64)
 		medicationsWithErrors[i] = &common.Treatment{
 			ERx: &common.ERxData{
-				ErxMedicationId:       common.NewObjectId(transmissionError.Medication.MedicationId),
-				PrescriptionId:        common.NewObjectId(transmissionError.Medication.DoseSpotPrescriptionId),
+				ErxMedicationId:       encoding.NewObjectId(transmissionError.Medication.MedicationId),
+				PrescriptionId:        encoding.NewObjectId(transmissionError.Medication.DoseSpotPrescriptionId),
 				PrescriptionStatus:    transmissionError.Medication.Status,
 				ErxSentDate:           &transmissionError.Medication.DatePrescribed.DateTime,
 				TransmissionErrorDate: &transmissionError.ErrorDateTimeStamp.DateTime,
@@ -666,12 +666,13 @@ func (d *DoseSpotService) GetTransmissionErrorDetails(clinicianId int64) ([]*com
 				LexiSynonymTypeId: strconv.FormatInt(transmissionError.Medication.LexiSynonymTypeId, 10),
 				LexiDrugSynId:     strconv.FormatInt(transmissionError.Medication.LexiDrugSynId, 10),
 			},
-			DispenseUnitId:       common.NewObjectId(transmissionError.Medication.DispenseUnitId),
-			StatusDetails:        transmissionError.ErrorDetails,
-			DrugName:             transmissionError.Medication.DrugName,
-			DosageStrength:       transmissionError.Medication.Strength,
-			NumberRefills:        transmissionError.Medication.Refills.Int64(),
-			DaysSupply:           transmissionError.Medication.DaysSupply.Int64(),
+			DispenseUnitId: encoding.NewObjectId(transmissionError.Medication.DispenseUnitId),
+			StatusDetails:  transmissionError.ErrorDetails,
+			DrugName:       transmissionError.Medication.DrugName,
+			DosageStrength: transmissionError.Medication.Strength,
+			NumberRefills:  transmissionError.Medication.Refills,
+			DaysSupply:     transmissionError.Medication.DaysSupply,
+
 			DispenseValue:        dispenseValueFloat,
 			PatientInstructions:  transmissionError.Medication.Instructions,
 			PharmacyNotes:        transmissionError.Medication.PharmacyNotes,
@@ -755,7 +756,7 @@ func (d *DoseSpotService) GetPatientDetails(erxPatientId int64) (*common.Patient
 
 	// not worrying about suffix/prefix for now
 	newPatient := &common.Patient{
-		ERxPatientId: common.NewObjectId(response.PatientUpdates[0].Patient.PatientId),
+		ERxPatientId: encoding.NewObjectId(response.PatientUpdates[0].Patient.PatientId),
 		FirstName:    response.PatientUpdates[0].Patient.FirstName,
 		LastName:     response.PatientUpdates[0].Patient.LastName,
 		Gender:       response.PatientUpdates[0].Patient.Gender,
@@ -768,7 +769,7 @@ func (d *DoseSpotService) GetPatientDetails(erxPatientId int64) (*common.Patient
 		},
 		Email:   response.PatientUpdates[0].Patient.Email,
 		ZipCode: response.PatientUpdates[0].Patient.ZipCode,
-		Dob:     common.NewDobFromTime(response.PatientUpdates[0].Patient.DateOfBirth.DateTime),
+		Dob:     encoding.NewDobFromTime(response.PatientUpdates[0].Patient.DateOfBirth.DateTime),
 		PhoneNumbers: []*common.PhoneInformation{&common.PhoneInformation{
 			Phone:     response.PatientUpdates[0].Patient.PrimaryPhone,
 			PhoneType: response.PatientUpdates[0].Patient.PrimaryPhoneType,
@@ -932,10 +933,10 @@ func convertMedicationIntoTreatment(medicationItem *medication) *common.Treatmen
 		},
 		DrugName:                medicationItem.DrugName,
 		IsControlledSubstance:   err == nil && scheduleInt > 0,
-		NumberRefills:           int64(medicationItem.Refills),
-		DaysSupply:              int64(medicationItem.DaysSupply),
+		NumberRefills:           medicationItem.Refills,
+		DaysSupply:              medicationItem.DaysSupply,
 		DispenseValue:           dispenseValue,
-		DispenseUnitId:          common.NewObjectId(medicationItem.DispenseUnitId),
+		DispenseUnitId:          encoding.NewObjectId(medicationItem.DispenseUnitId),
 		DispenseUnitDescription: medicationItem.DispenseUnitDescription,
 		PatientInstructions:     medicationItem.Instructions,
 		SubstitutionsAllowed:    !medicationItem.NoSubstitutions,
@@ -943,10 +944,10 @@ func convertMedicationIntoTreatment(medicationItem *medication) *common.Treatmen
 		DrugRoute:               medicationItem.Route,
 		DosageStrength:          medicationItem.Strength,
 		ERx: &common.ERxData{
-			PrescriptionId:      common.NewObjectId(medicationItem.DoseSpotPrescriptionId),
+			PrescriptionId:      encoding.NewObjectId(medicationItem.DoseSpotPrescriptionId),
 			ErxPharmacyId:       medicationItem.PharmacyId,
 			PrescriptionStatus:  medicationItem.PrescriptionStatus,
-			ErxMedicationId:     common.NewObjectId(medicationItem.MedicationId),
+			ErxMedicationId:     encoding.NewObjectId(medicationItem.MedicationId),
 			DoseSpotClinicianId: medicationItem.ClinicianId,
 		},
 	}

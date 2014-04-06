@@ -2,7 +2,7 @@ package apiservice
 
 import (
 	"carefront/api"
-	"carefront/common"
+	"carefront/encoding"
 	"carefront/libs/pharmacy"
 	"encoding/json"
 	"net/http"
@@ -13,7 +13,7 @@ type DoctorUpdatePatientPharmacyHandler struct {
 }
 
 type DoctorUpdatePatientPharmacyRequestData struct {
-	PatientId *common.ObjectId       `json:"patient_id"`
+	PatientId *encoding.ObjectId     `json:"patient_id"`
 	Pharmacy  *pharmacy.PharmacyData `json:"pharmacy"`
 }
 

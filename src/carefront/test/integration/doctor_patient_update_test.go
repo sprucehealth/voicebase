@@ -4,6 +4,7 @@ import (
 	"bytes"
 	"carefront/apiservice"
 	"carefront/common"
+	"carefront/encoding"
 	"carefront/libs/address_validation"
 	"carefront/libs/erx"
 	"carefront/libs/pharmacy"
@@ -178,7 +179,7 @@ func TestDoctorFailedUpdate(t *testing.T) {
 	}
 
 	// now lets try no dob
-	signedupPatientResponse.Patient.Dob = common.Dob{Month: 11, Day: 8, Year: 1987}
+	signedupPatientResponse.Patient.Dob = encoding.Dob{Month: 11, Day: 8, Year: 1987}
 	resp, err = authPut(ts.URL, "application/json", bytes.NewReader(jsonData), doctor.AccountId.Int64())
 	if err != nil {
 		t.Fatal("Unable to make successful call to update patient information: " + err.Error())
@@ -341,7 +342,7 @@ func TestDoctorUpdateToTopLevelInformation(t *testing.T) {
 	signedupPatientResponse.Patient.Prefix = "n"
 	signedupPatientResponse.Patient.MiddleName = "aaaa"
 	signedupPatientResponse.Patient.Gender = "Unknown"
-	signedupPatientResponse.Patient.Dob = common.Dob{Day: 11, Month: 9, Year: 1987}
+	signedupPatientResponse.Patient.Dob = encoding.Dob{Day: 11, Month: 9, Year: 1987}
 
 	stubErxApi := &erx.StubErxService{}
 	stubAddressValidationService := address_validation.StubAddressValidationService{

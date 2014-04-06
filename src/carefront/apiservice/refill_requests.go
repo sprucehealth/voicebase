@@ -3,6 +3,7 @@ package apiservice
 import (
 	"carefront/api"
 	"carefront/common"
+	"carefront/encoding"
 	"carefront/libs/erx"
 	"carefront/libs/golog"
 	"carefront/libs/pharmacy"
@@ -42,12 +43,12 @@ type DoctorRefillRequestResponse struct {
 }
 
 type DoctorRefillRequestRequestData struct {
-	RefillRequestId      *common.ObjectId  `json:"refill_request_id,required"`
-	DenialReasonId       *common.ObjectId  `json:"denial_reason_id"`
-	Comments             string            `json:"comments"`
-	Action               string            `json:"action"`
-	ApprovedRefillAmount int64             `json:"approved_refill_amount"`
-	Treatment            *common.Treatment `json:"new_treatment,omitempty"`
+	RefillRequestId      *encoding.ObjectId `json:"refill_request_id,required"`
+	DenialReasonId       *encoding.ObjectId `json:"denial_reason_id"`
+	Comments             string             `json:"comments"`
+	Action               string             `json:"action"`
+	ApprovedRefillAmount int64              `json:"approved_refill_amount"`
+	Treatment            *common.Treatment  `json:"new_treatment,omitempty"`
 }
 
 type DoctorGetRefillRequestData struct {
@@ -324,8 +325,8 @@ func (d *DoctorRefillRequestHandler) addStatusEvent(originatingTreatmentFound bo
 }
 
 func (d *DoctorRefillRequestHandler) addTreatmentInEventOfDNTF(originatingTreatmentFound bool, treatment *common.Treatment, doctorId, patientId, refillRequestId int64) error {
-	treatment.PatientId = common.NewObjectId(patientId)
-	treatment.DoctorId = common.NewObjectId(doctorId)
+	treatment.PatientId = encoding.NewObjectId(patientId)
+	treatment.DoctorId = encoding.NewObjectId(doctorId)
 	if originatingTreatmentFound {
 		return d.DataApi.AddTreatmentToTreatmentPlanInEventOfDNTF(treatment, refillRequestId)
 	}

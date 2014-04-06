@@ -11,6 +11,7 @@ import (
 
 	"carefront/apiservice"
 	"carefront/common"
+	"carefront/encoding"
 )
 
 func TestAdvicePointsForPatientVisit(t *testing.T) {
@@ -59,7 +60,7 @@ func TestAdvicePointsForPatientVisit(t *testing.T) {
 	doctorAdviceRequest := &common.Advice{}
 	doctorAdviceRequest.AllAdvicePoints = []*common.DoctorInstructionItem{advicePoint1, advicePoint2}
 	doctorAdviceRequest.SelectedAdvicePoints = doctorAdviceRequest.AllAdvicePoints
-	doctorAdviceRequest.PatientVisitId = common.NewObjectId(patientVisitResponse.PatientVisitId)
+	doctorAdviceRequest.PatientVisitId = encoding.NewObjectId(patientVisitResponse.PatientVisitId)
 
 	doctorAdviceResponse = updateAdvicePointsForPatientVisit(doctorAdviceRequest, testData, doctor, t)
 

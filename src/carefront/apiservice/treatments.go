@@ -3,6 +3,7 @@ package apiservice
 import (
 	"carefront/api"
 	"carefront/common"
+	"carefront/encoding"
 	"carefront/libs/erx"
 	"encoding/json"
 	"net/http"
@@ -25,7 +26,7 @@ type AddTreatmentsResponse struct {
 
 type AddTreatmentsRequestBody struct {
 	Treatments     []*common.Treatment `json:"treatments"`
-	PatientVisitId *common.ObjectId    `json:"patient_visit_id"`
+	PatientVisitId *encoding.ObjectId  `json:"patient_visit_id"`
 }
 
 type GetTreatmentsRequestBody struct {

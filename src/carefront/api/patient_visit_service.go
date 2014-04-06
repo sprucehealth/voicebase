@@ -2,6 +2,7 @@ package api
 
 import (
 	"carefront/common"
+	"carefront/encoding"
 	pharmacyService "carefront/libs/pharmacy"
 	"database/sql"
 	"fmt"
@@ -52,11 +53,11 @@ func (d *DataService) GetLatestSubmittedPatientVisit() (*common.PatientVisit, er
 	}
 
 	patientVisit := &common.PatientVisit{
-		PatientVisitId:    common.NewObjectId(patientVisitId),
-		PatientId:         common.NewObjectId(patientId),
-		HealthConditionId: common.NewObjectId(healthConditionId),
+		PatientVisitId:    encoding.NewObjectId(patientVisitId),
+		PatientId:         encoding.NewObjectId(patientId),
+		HealthConditionId: encoding.NewObjectId(healthConditionId),
 		Status:            status,
-		LayoutVersionId:   common.NewObjectId(layoutVersionId),
+		LayoutVersionId:   encoding.NewObjectId(layoutVersionId),
 	}
 
 	if creationDateBytes.Valid {
@@ -96,11 +97,11 @@ func (d *DataService) GetLatestClosedPatientVisitForPatient(patientId int64) (*c
 	}
 
 	patientVisit := &common.PatientVisit{
-		PatientVisitId:    common.NewObjectId(patientVisitId),
-		PatientId:         common.NewObjectId(patientId),
-		HealthConditionId: common.NewObjectId(healthConditionId),
+		PatientVisitId:    encoding.NewObjectId(patientVisitId),
+		PatientId:         encoding.NewObjectId(patientId),
+		HealthConditionId: encoding.NewObjectId(healthConditionId),
 		Status:            status,
-		LayoutVersionId:   common.NewObjectId(layoutVersionId),
+		LayoutVersionId:   encoding.NewObjectId(layoutVersionId),
 	}
 
 	if creationDateBytes.Valid {
@@ -119,7 +120,7 @@ func (d *DataService) GetLatestClosedPatientVisitForPatient(patientId int64) (*c
 }
 
 func (d *DataService) GetPatientVisitFromId(patientVisitId int64) (*common.PatientVisit, error) {
-	patientVisit := common.PatientVisit{PatientVisitId: common.NewObjectId(patientVisitId)}
+	patientVisit := common.PatientVisit{PatientVisitId: encoding.NewObjectId(patientVisitId)}
 	var patientId, healthConditionId, layoutVersionId int64
 	var creationDateBytes, submittedDateBytes, closedDateBytes mysql.NullTime
 	err := d.DB.QueryRow(`select patient_id, health_condition_id, layout_version_id, 
@@ -132,9 +133,9 @@ func (d *DataService) GetPatientVisitFromId(patientVisitId int64) (*common.Patie
 		return nil, err
 	}
 
-	patientVisit.PatientId = common.NewObjectId(patientId)
-	patientVisit.HealthConditionId = common.NewObjectId(healthConditionId)
-	patientVisit.LayoutVersionId = common.NewObjectId(layoutVersionId)
+	patientVisit.PatientId = encoding.NewObjectId(patientId)
+	patientVisit.HealthConditionId = encoding.NewObjectId(healthConditionId)
+	patientVisit.LayoutVersionId = encoding.NewObjectId(layoutVersionId)
 
 	if creationDateBytes.Valid {
 		patientVisit.CreationDate = creationDateBytes.Time
@@ -335,7 +336,7 @@ func (d *DataService) GetFollowUpTimeForPatientVisit(patientVisitId, treatmentPl
 	}
 
 	followUp := &common.FollowUp{}
-	followUp.TreatmentPlanId = common.NewObjectId(treatmentPlanId)
+	followUp.TreatmentPlanId = encoding.NewObjectId(treatmentPlanId)
 	followUp.FollowUpValue = followupValue
 	followUp.FollowUpUnit = followupUnit
 	followUp.FollowUpTime = followupTime
@@ -365,8 +366,8 @@ func (d *DataService) GetDiagnosisResponseToQuestionWithTag(questionTag string, 
 			&answerIntakeId, &questionId,
 			&potentialAnswerId, &answerText, &answerSummary, &potentialAnswer)
 
-		answerIntake.AnswerIntakeId = common.NewObjectId(answerIntakeId)
-		answerIntake.QuestionId = common.NewObjectId(questionId)
+		answerIntake.AnswerIntakeId = encoding.NewObjectId(answerIntakeId)
+		answerIntake.QuestionId = encoding.NewObjectId(questionId)
 
 		if potentialAnswer.Valid {
 			answerIntake.PotentialAnswer = potentialAnswer.String
@@ -374,9 +375,9 @@ func (d *DataService) GetDiagnosisResponseToQuestionWithTag(questionTag string, 
 		if answerText.Valid {
 			answerIntake.AnswerText = answerText.String
 		}
-		answerIntake.ContextId = common.NewObjectId(treatmentPlanId)
+		answerIntake.ContextId = encoding.NewObjectId(treatmentPlanId)
 		if potentialAnswerId.Valid {
-			answerIntake.PotentialAnswerId = common.NewObjectId(potentialAnswerId.Int64)
+			answerIntake.PotentialAnswerId = encoding.NewObjectId(potentialAnswerId.Int64)
 		}
 
 		if answerSummary.Valid {
@@ -467,11 +468,11 @@ func (d *DataService) GetDoctorAssignedToPatientVisit(patientVisitId int64) (*co
 		LastName:  lastName,
 		Status:    status,
 		Gender:    gender,
-		Dob:       common.Dob{Year: dobYear, Month: dobMonth, Day: dobDay},
-		AccountId: common.NewObjectId(accountId),
+		Dob:       encoding.Dob{Year: dobYear, Month: dobMonth, Day: dobDay},
+		AccountId: encoding.NewObjectId(accountId),
 	}
 
-	doctor.DoctorId = common.NewObjectId(doctorId)
+	doctor.DoctorId = encoding.NewObjectId(doctorId)
 	return doctor, nil
 }
 
@@ -491,7 +492,7 @@ func (d *DataService) GetAdvicePointsForPatientVisit(patientVisitId, treatmentPl
 		}
 
 		advicePoint := &common.DoctorInstructionItem{
-			Id:   common.NewObjectId(id),
+			Id:   encoding.NewObjectId(id),
 			Text: text,
 		}
 		advicePoints = append(advicePoints, advicePoint)
@@ -553,7 +554,7 @@ func (d *DataService) CreateRegimenPlanForPatientVisit(regimenPlan *common.Regim
 
 func (d *DataService) GetRegimenPlanForPatientVisit(patientVisitId, treatmentPlanId int64) (*common.RegimenPlan, error) {
 	var regimenPlan common.RegimenPlan
-	regimenPlan.TreatmentPlanId = common.NewObjectId(treatmentPlanId)
+	regimenPlan.TreatmentPlanId = encoding.NewObjectId(treatmentPlanId)
 
 	rows, err := d.DB.Query(`select regimen_type, dr_regimen_step.id, dr_regimen_step.text 
 								from regimen inner join dr_regimen_step on dr_regimen_step_id = dr_regimen_step.id 
@@ -569,7 +570,7 @@ func (d *DataService) GetRegimenPlanForPatientVisit(patientVisitId, treatmentPla
 		var regimenStepId int64
 		err = rows.Scan(&regimenType, &regimenStepId, &regimenText)
 		regimenStep := &common.DoctorInstructionItem{
-			Id:   common.NewObjectId(regimenStepId),
+			Id:   encoding.NewObjectId(regimenStepId),
 			Text: regimenText,
 		}
 
@@ -674,10 +675,13 @@ func (d *DataService) addTreatment(treatment *common.Treatment, withoutLinkToTre
 		"dispense_unit_id":      treatment.DispenseUnitId,
 		"refills":               treatment.NumberRefills,
 		"substitutions_allowed": treatment.SubstitutionsAllowed,
-		"days_supply":           treatment.DaysSupply,
 		"patient_instructions":  treatment.PatientInstructions,
 		"pharmacy_notes":        treatment.PharmacyNotes,
 		"status":                STATUS_CREATED,
+	}
+
+	if !treatment.DaysSupply.IsNull {
+		columnsAndData["days_supply"] = treatment.DaysSupply.Int64Value
 	}
 
 	if drugRouteId != 0 {
@@ -713,7 +717,7 @@ func (d *DataService) addTreatment(treatment *common.Treatment, withoutLinkToTre
 	}
 
 	// update the treatment object with the information
-	treatment.Id = common.NewObjectId(treatmentId)
+	treatment.Id = encoding.NewObjectId(treatmentId)
 
 	// add drug db ids to the table
 	for drugDbTag, drugDbId := range treatment.DrugDBIds {
@@ -757,7 +761,7 @@ func (d *DataService) GetTreatmentsBasedOnTreatmentPlanId(patientVisitId, treatm
 			return nil, err
 		}
 
-		treatment.TreatmentPlanId = common.NewObjectId(treatmentPlanId)
+		treatment.TreatmentPlanId = encoding.NewObjectId(treatmentPlanId)
 		treatments = append(treatments, treatment)
 		treatmentIds = append(treatmentIds, treatment.Id.Int64())
 	}
@@ -790,7 +794,7 @@ func (d *DataService) GetTreatmentsBasedOnTreatmentPlanId(patientVisitId, treatm
 	// assign the treatments the doctor favorite id if one exists
 	for _, treatment := range treatments {
 		if treatmentIdToFavoriteIdMapping[treatment.Id.Int64()] != 0 {
-			treatment.DoctorTreatmentTemplateId = common.NewObjectId(treatmentIdToFavoriteIdMapping[treatment.Id.Int64()])
+			treatment.DoctorTreatmentTemplateId = encoding.NewObjectId(treatmentIdToFavoriteIdMapping[treatment.Id.Int64()])
 		}
 	}
 
@@ -1045,11 +1049,12 @@ func (d *DataService) UpdateDateInfoForTreatmentId(treatmentId int64, erxSentDat
 }
 
 func (d *DataService) getTreatmentAndMetadataFromCurrentRow(rows *sql.Rows) (*common.Treatment, error) {
-	var treatmentId, dispenseUnitId, refills, daysSupply, patientId, prescriberId int64
+	var treatmentId, dispenseUnitId, patientId, prescriberId int64
 	var dispenseValue float64
 	var drugInternalName, dosageStrength, patientInstructions, treatmentType, dispenseUnitDescription, status string
 	var patientVisitId, treatmentPlanId, prescriptionId, pharmacyId sql.NullInt64
 	var substitutionsAllowed bool
+	var refills, daysSupply sql.NullInt64
 	var creationDate time.Time
 	var erxSentDate mysql.NullTime
 	var pharmacyNotes, drugName, drugForm, drugRoute sql.NullString
@@ -1061,16 +1066,16 @@ func (d *DataService) getTreatmentAndMetadataFromCurrentRow(rows *sql.Rows) (*co
 	}
 
 	treatment := &common.Treatment{
-		Id:                      common.NewObjectId(treatmentId),
-		PatientId:               common.NewObjectId(patientId),
+		Id:                      encoding.NewObjectId(treatmentId),
+		PatientId:               encoding.NewObjectId(patientId),
 		DrugInternalName:        drugInternalName,
 		DosageStrength:          dosageStrength,
 		DispenseValue:           dispenseValue,
-		DispenseUnitId:          common.NewObjectId(dispenseUnitId),
+		DispenseUnitId:          encoding.NewObjectId(dispenseUnitId),
 		DispenseUnitDescription: dispenseUnitDescription,
-		NumberRefills:           refills,
+		NumberRefills:           encoding.NullInt64FromSql(refills),
 		SubstitutionsAllowed:    substitutionsAllowed,
-		DaysSupply:              daysSupply,
+		DaysSupply:              encoding.NullInt64FromSql(daysSupply),
 		DrugName:                drugName.String,
 		DrugForm:                drugForm.String,
 		DrugRoute:               drugRoute.String,
@@ -1078,15 +1083,15 @@ func (d *DataService) getTreatmentAndMetadataFromCurrentRow(rows *sql.Rows) (*co
 		CreationDate:            &creationDate,
 		Status:                  status,
 		PharmacyNotes:           pharmacyNotes.String,
-		DoctorId:                common.NewObjectId(prescriberId),
+		DoctorId:                encoding.NewObjectId(prescriberId),
 	}
 
 	if treatmentPlanId.Valid {
-		treatment.TreatmentPlanId = common.NewObjectId(treatmentPlanId.Int64)
+		treatment.TreatmentPlanId = encoding.NewObjectId(treatmentPlanId.Int64)
 	}
 
 	if patientVisitId.Valid {
-		treatment.PatientVisitId = common.NewObjectId(patientVisitId.Int64)
+		treatment.PatientVisitId = encoding.NewObjectId(patientVisitId.Int64)
 	}
 
 	if treatmentType == treatmentOTC {
@@ -1114,11 +1119,11 @@ func (d *DataService) getTreatmentAndMetadataFromCurrentRow(rows *sql.Rows) (*co
 	}
 
 	if pharmacyId.Valid {
-		treatment.ERx.PharmacyLocalId = common.NewObjectId(pharmacyId.Int64)
+		treatment.ERx.PharmacyLocalId = encoding.NewObjectId(pharmacyId.Int64)
 	}
 
 	if prescriptionId.Valid {
-		treatment.ERx.PrescriptionId = common.NewObjectId(prescriptionId.Int64)
+		treatment.ERx.PrescriptionId = encoding.NewObjectId(prescriptionId.Int64)
 	}
 
 	if erxSentDate.Valid {
@@ -1197,7 +1202,7 @@ func (d *DataService) fillInSupplementalInstructionsForTreatment(treatment *comm
 		var text string
 		instructionsRows.Scan(&instructionId, &text)
 		drugInstruction := &common.DoctorInstructionItem{
-			Id:       common.NewObjectId(instructionId),
+			Id:       encoding.NewObjectId(instructionId),
 			Text:     text,
 			Selected: true,
 		}

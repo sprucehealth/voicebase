@@ -3,6 +3,7 @@ package apiservice
 import (
 	"carefront/api"
 	"carefront/common"
+	"carefront/encoding"
 	"encoding/json"
 	"net/http"
 
@@ -205,7 +206,7 @@ func (d *DoctorRegimenHandler) updateRegimenSteps(w http.ResponseWriter, r *http
 		for _, regimenStep := range regimenSection.RegimenSteps {
 			updatedOrNewId := newOrUpdatedStepToIdMapping[regimenStep.Text]
 			if updatedOrNewId != 0 {
-				regimenStep.Id = common.NewObjectId(updatedOrNewId)
+				regimenStep.Id = encoding.NewObjectId(updatedOrNewId)
 			}
 			// empty out the state now that it has been taken care of
 			regimenStep.State = ""
@@ -220,7 +221,7 @@ func (d *DoctorRegimenHandler) updateRegimenSteps(w http.ResponseWriter, r *http
 			return
 		}
 	}
-	requestData.TreatmentPlanId = common.NewObjectId(treatmentPlanId)
+	requestData.TreatmentPlanId = encoding.NewObjectId(treatmentPlanId)
 
 	err = d.DataApi.CreateRegimenPlanForPatientVisit(requestData)
 	if err != nil {

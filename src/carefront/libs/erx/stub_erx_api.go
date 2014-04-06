@@ -2,6 +2,7 @@ package erx
 
 import (
 	"carefront/common"
+	"carefront/encoding"
 	pharmacySearch "carefront/libs/pharmacy"
 	"fmt"
 	"time"
@@ -43,12 +44,12 @@ func (s *StubErxService) StartPrescribingPatient(clinicianId int64, Patient *com
 	fmt.Println("Starting to prescribe patient")
 	// walk through the treatments and assign them each a prescription id
 	// assumption here is that there are as many prescription ids to return as there are treatments
-	Patient.ERxPatientId = common.NewObjectId(s.PatientErxId)
+	Patient.ERxPatientId = encoding.NewObjectId(s.PatientErxId)
 	for i, treatment := range Treatments {
 		if treatment.ERx == nil {
 			treatment.ERx = &common.ERxData{}
 		}
-		treatment.ERx.PrescriptionId = common.NewObjectId(s.PrescriptionIdsToReturn[i])
+		treatment.ERx.PrescriptionId = encoding.NewObjectId(s.PrescriptionIdsToReturn[i])
 	}
 	return nil
 }

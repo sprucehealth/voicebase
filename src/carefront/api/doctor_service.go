@@ -2,6 +2,7 @@ package api
 
 import (
 	"carefront/common"
+	"carefront/encoding"
 	"database/sql"
 	"fmt"
 	"log"
@@ -31,7 +32,7 @@ func (d *DataService) RegisterDoctor(doctor *common.Doctor) (int64, error) {
 		return 0, err
 	}
 
-	doctor.DoctorId = common.NewObjectId(lastId)
+	doctor.DoctorId = encoding.NewObjectId(lastId)
 	doctor.DoctorAddress.Id, err = d.addAddress(tx, doctor.DoctorAddress)
 	if err != nil {
 		tx.Rollback()
@@ -94,8 +95,8 @@ func getDoctorFromRow(row *sql.Row) (*common.Doctor, error) {
 		return nil, err
 	}
 	doctor := &common.Doctor{
-		AccountId:           common.NewObjectId(accountId),
-		DoctorId:            common.NewObjectId(doctorId),
+		AccountId:           encoding.NewObjectId(accountId),
+		DoctorId:            encoding.NewObjectId(doctorId),
 		FirstName:           firstName,
 		LastName:            lastName,
 		Status:              status,
@@ -109,7 +110,7 @@ func getDoctorFromRow(row *sql.Row) (*common.Doctor, error) {
 			State:        state.String,
 			ZipCode:      zipCode.String,
 		},
-		Dob: common.Dob{Year: dobYear, Month: dobMonth, Day: dobDay},
+		Dob: encoding.Dob{Year: dobYear, Month: dobMonth, Day: dobDay},
 	}
 
 	return doctor, nil
@@ -145,7 +146,7 @@ func (d *DataService) AddRegimenStepForDoctor(regimenStep *common.DoctorInstruct
 	}
 
 	// assign an id given that its a new regimen step
-	regimenStep.Id = common.NewObjectId(instructionId)
+	regimenStep.Id = encoding.NewObjectId(instructionId)
 	return nil
 }
 
@@ -176,7 +177,7 @@ func (d *DataService) UpdateRegimenStepForDoctor(regimenStep *common.DoctorInstr
 	}
 
 	// update the regimenStep Id
-	regimenStep.Id = common.NewObjectId(instructionId)
+	regimenStep.Id = encoding.NewObjectId(instructionId)
 	return tx.Commit()
 }
 
@@ -243,7 +244,7 @@ func (d *DataService) AddOrUpdateAdvicePointForDoctor(advicePoint *common.Doctor
 	}
 
 	// assign an id given that its a new advice point
-	advicePoint.Id = common.NewObjectId(instructionId)
+	advicePoint.Id = encoding.NewObjectId(instructionId)
 	return tx.Commit()
 }
 
@@ -542,7 +543,7 @@ func (d *DataService) AddOrUpdateDrugInstructionForDoctor(drugName, drugForm, dr
 
 	err = tx.Commit()
 
-	drugInstructionToAdd.Id = common.NewObjectId(instructionId)
+	drugInstructionToAdd.Id = encoding.NewObjectId(instructionId)
 
 	return err
 }
@@ -735,7 +736,7 @@ func (d *DataService) GetTreatmentTemplates(doctorId int64) ([]*common.DoctorTre
 		}
 		treatmentIds = append(treatmentIds, treatmentId)
 		treatmentTemplateMapping[treatmentId] = &common.DoctorTreatmentTemplate{
-			Id:   common.NewObjectId(treatmentTemplateId),
+			Id:   encoding.NewObjectId(treatmentTemplateId),
 			Name: name,
 		}
 	}
@@ -773,7 +774,8 @@ func (d *DataService) GetTreatmentTemplates(doctorId int64) ([]*common.DoctorTre
 
 	treatmentTemplates := make([]*common.DoctorTreatmentTemplate, 0)
 	for rows.Next() {
-		var treatmentId, dispenseUnitId, refills, daysSupply int64
+		var treatmentId, dispenseUnitId int64
+		var daysSupply, refills sql.NullInt64
 		var dispenseValue float64
 		var drugInternalName, dosageStrength, patientInstructions, treatmentType, dispenseUnitDescription, status string
 		var substitutionsAllowed bool
@@ -785,15 +787,15 @@ func (d *DataService) GetTreatmentTemplates(doctorId int64) ([]*common.DoctorTre
 		}
 
 		treatment := &common.Treatment{
-			Id:                      common.NewObjectId(treatmentId),
+			Id:                      encoding.NewObjectId(treatmentId),
 			DrugInternalName:        drugInternalName,
 			DosageStrength:          dosageStrength,
 			DispenseValue:           dispenseValue,
-			DispenseUnitId:          common.NewObjectId(dispenseUnitId),
+			DispenseUnitId:          encoding.NewObjectId(dispenseUnitId),
 			DispenseUnitDescription: dispenseUnitDescription,
-			NumberRefills:           refills,
+			NumberRefills:           encoding.NullInt64FromSql(refills),
 			SubstitutionsAllowed:    substitutionsAllowed,
-			DaysSupply:              daysSupply,
+			DaysSupply:              encoding.NullInt64FromSql(daysSupply),
 			DrugName:                drugName.String,
 			DrugForm:                drugForm.String,
 			DrugRoute:               drugRoute.String,
@@ -853,8 +855,9 @@ func (d *DataService) GetCompletedPrescriptionsForDoctor(from, to time.Time, doc
 
 	defer rows.Close()
 	for rows.Next() {
-		var treatmentId, treatmentPlanId, patientId, patientVisitId, dispenseUnitId, refills, daysSupply int64
+		var treatmentId, treatmentPlanId, patientId, patientVisitId, dispenseUnitId int64
 		var dispenseValue float64
+		var refills, daysSupply sql.NullInt64
 		var drugInternalName, dosageStrength, treatmentType, dispenseUnitDescription, patientInstructions, status string
 		var creationDate, sentDate, treatmentPlanCreationDate time.Time
 		var substituionsAllowed bool
@@ -872,9 +875,9 @@ func (d *DataService) GetCompletedPrescriptionsForDoctor(from, to time.Time, doc
 			treatmentPlan = treatmentPlanIdToPlanMapping[treatmentPlanId]
 		} else {
 			treatmentPlan = &common.TreatmentPlan{
-				Id:             common.NewObjectId(treatmentPlanId),
-				PatientId:      common.NewObjectId(patientId),
-				PatientVisitId: common.NewObjectId(patientVisitId),
+				Id:             encoding.NewObjectId(treatmentPlanId),
+				PatientId:      encoding.NewObjectId(patientId),
+				PatientVisitId: encoding.NewObjectId(patientVisitId),
 				CreationDate:   &creationDate,
 				SentDate:       &sentDate,
 			}
@@ -883,16 +886,16 @@ func (d *DataService) GetCompletedPrescriptionsForDoctor(from, to time.Time, doc
 		}
 
 		treatment := &common.Treatment{
-			Id:                      common.NewObjectId(treatmentId),
-			TreatmentPlanId:         common.NewObjectId(treatmentPlanId),
+			Id:                      encoding.NewObjectId(treatmentId),
+			TreatmentPlanId:         encoding.NewObjectId(treatmentPlanId),
 			DrugInternalName:        drugInternalName,
 			DosageStrength:          dosageStrength,
 			DispenseValue:           dispenseValue,
-			DispenseUnitId:          common.NewObjectId(dispenseUnitId),
+			DispenseUnitId:          encoding.NewObjectId(dispenseUnitId),
 			DispenseUnitDescription: dispenseUnitDescription,
-			NumberRefills:           refills,
+			NumberRefills:           encoding.NullInt64FromSql(refills),
 			SubstitutionsAllowed:    substituionsAllowed,
-			DaysSupply:              daysSupply,
+			DaysSupply:              encoding.NullInt64FromSql(daysSupply),
 			DrugName:                drugName.String,
 			DrugForm:                drugForm.String,
 			DrugRoute:               drugRoute.String,
@@ -1255,7 +1258,7 @@ func getInstructionsFromRows(rows *sql.Rows) ([]*common.DoctorInstructionItem, e
 			return nil, err
 		}
 		supplementalInstruction := &common.DoctorInstructionItem{}
-		supplementalInstruction.Id = common.NewObjectId(id)
+		supplementalInstruction.Id = encoding.NewObjectId(id)
 		supplementalInstruction.Text = text
 		supplementalInstruction.Status = status
 		drugInstructions = append(drugInstructions, supplementalInstruction)

@@ -1,7 +1,7 @@
 package apiservice
 
 import (
-	"carefront/common"
+	"carefront/encoding"
 	"testing"
 )
 
@@ -100,7 +100,7 @@ func TestInvalidPhoneNumberInvalidAreaCode(t *testing.T) {
 }
 
 func TestAgeCalculation(t *testing.T) {
-	dob := common.Dob{
+	dob := encoding.Dob{
 		Year:  2014,
 		Month: 1,
 		Day:   1,

@@ -1,6 +1,7 @@
 package erx
 
 import (
+	"carefront/encoding"
 	"encoding/xml"
 	"time"
 )
@@ -11,37 +12,6 @@ const (
 	LexiSynonymTypeId = "lexi_synonym_type_id"
 	NDC               = "ndc"
 )
-
-type nullInt64 int64
-
-// need to unmarshal any integer elements that can possibly be returned as nil values
-// from dosespot, as indicated by the attribute xsi:nil being set to true.
-// I could be doing something incorrectly, but golang seems to not handle
-// empty elements for integer types well. Using this custom unmarshaller to
-// get around the problem
-func (n *nullInt64) UnmarshalXML(d *xml.Decoder, start xml.StartElement) error {
-	var num int64
-
-	// nothing to do if the value is indicated to be nil via the attribute
-	// form of element would be: <elementName xsi:nil="true" />
-	if len(start.Attr) > 0 {
-		if start.Attr[0].Name.Local == "nil" && start.Attr[0].Value == "true" {
-			*n = nullInt64(0)
-			// still decoding to consume the element in the xml document
-			d.DecodeElement(&num, &start)
-			return nil
-		}
-	}
-
-	err := d.DecodeElement(&num, &start)
-	*n = nullInt64(num)
-
-	return err
-}
-
-func (n *nullInt64) Int64() int64 {
-	return int64(*n)
-}
 
 type singleSignOn struct {
 	ClinicId     int64  `xml:"SingleSignOnClinicId"`
@@ -148,35 +118,35 @@ type prescription struct {
 }
 
 type medication struct {
-	DisplayName             string           `xml:"DisplayName"`
-	DrugName                string           `xml:"DrugName,omitempty"`
-	Strength                string           `xml:"Strength"`
-	Route                   string           `xml:"Route"`
-	DoseSpotPrescriptionId  int64            `xml:"PrescriptionId"`
-	LexiGenProductId        int64            `xml:"LexiGenProductId"`
-	LexiDrugSynId           int64            `xml:"LexiDrugSynId"`
-	LexiSynonymTypeId       int64            `xml:"LexiSynonymTypeId"`
-	NDC                     string           `xml:"NDC"`
-	RepresentativeNDC       string           `xml:"RepresentativeNDC"`
-	Refills                 nullInt64        `xml:"Refills"`
-	DaysSupply              nullInt64        `xml:"DaysSupply,omitempty"`
-	Dispense                string           `xml:"Dispense"`
-	DispenseUnitId          int64            `xml:"DispenseUnitId"`
-	DispenseUnitDescription string           `xml:"DispenseUnit"`
-	Instructions            string           `xml:"Instructions"`
-	PharmacyId              int64            `xml:"PharmacyId"`
-	PharmacyNotes           string           `xml:"PharmacyNotes"`
-	NoSubstitutions         bool             `xml:"NoSubstitutions"`
-	RxReferenceNumber       string           `xml:"RxReferenceNumber"`
-	PrescriptionStatus      string           `xml:"PrescriptionStatus,omitempty"`
-	Status                  string           `xml:"Status,omitempty"`
-	DatePrescribed          *specialDateTime `xml:"DatePrescribed,omitempty"`
-	LastDateFilled          *specialDateTime `xml:"LastDateFilled,omitempty"`
-	DateWritten             *specialDateTime `xml:"DateWritten,omitempty"`
-	ClinicianId             int64            `xml:"ClinicianId"`
-	ClinicId                int64            `xml:"ClinicId"`
-	MedicationId            int64            `xml:"MedicationId,omitempty"`
-	Schedule                string           `xml:"Schedule"`
+	DisplayName             string             `xml:"DisplayName"`
+	DrugName                string             `xml:"DrugName,omitempty"`
+	Strength                string             `xml:"Strength"`
+	Route                   string             `xml:"Route"`
+	DoseSpotPrescriptionId  int64              `xml:"PrescriptionId"`
+	LexiGenProductId        int64              `xml:"LexiGenProductId"`
+	LexiDrugSynId           int64              `xml:"LexiDrugSynId"`
+	LexiSynonymTypeId       int64              `xml:"LexiSynonymTypeId"`
+	NDC                     string             `xml:"NDC"`
+	RepresentativeNDC       string             `xml:"RepresentativeNDC"`
+	Refills                 encoding.NullInt64 `xml:"Refills"`
+	DaysSupply              encoding.NullInt64 `xml:"DaysSupply,omitempty"`
+	Dispense                string             `xml:"Dispense"`
+	DispenseUnitId          int64              `xml:"DispenseUnitId"`
+	DispenseUnitDescription string             `xml:"DispenseUnit"`
+	Instructions            string             `xml:"Instructions"`
+	PharmacyId              int64              `xml:"PharmacyId"`
+	PharmacyNotes           string             `xml:"PharmacyNotes"`
+	NoSubstitutions         bool               `xml:"NoSubstitutions"`
+	RxReferenceNumber       string             `xml:"RxReferenceNumber"`
+	PrescriptionStatus      string             `xml:"PrescriptionStatus,omitempty"`
+	Status                  string             `xml:"Status,omitempty"`
+	DatePrescribed          *specialDateTime   `xml:"DatePrescribed,omitempty"`
+	LastDateFilled          *specialDateTime   `xml:"LastDateFilled,omitempty"`
+	DateWritten             *specialDateTime   `xml:"DateWritten,omitempty"`
+	ClinicianId             int64              `xml:"ClinicianId"`
+	ClinicId                int64              `xml:"ClinicId"`
+	MedicationId            int64              `xml:"MedicationId,omitempty"`
+	Schedule                string             `xml:"Schedule"`
 }
 
 // Need to treat the date object for date of birth as a special case

@@ -2,6 +2,7 @@ package api
 
 import (
 	"carefront/common"
+	"carefront/encoding"
 	"database/sql"
 	"fmt"
 	"strconv"
@@ -279,13 +280,13 @@ func (d *DataService) getPatientAnswersForQuestionsBasedOnQuery(query string, ar
 			return nil, err
 		}
 		patientAnswerToQuestion := &common.AnswerIntake{
-			AnswerIntakeId:  common.NewObjectId(answerId),
-			QuestionId:      common.NewObjectId(questionId),
-			LayoutVersionId: common.NewObjectId(layoutVersionId),
+			AnswerIntakeId:  encoding.NewObjectId(answerId),
+			QuestionId:      encoding.NewObjectId(questionId),
+			LayoutVersionId: encoding.NewObjectId(layoutVersionId),
 		}
 
 		if potentialAnswerId.Valid {
-			patientAnswerToQuestion.PotentialAnswerId = common.NewObjectId(potentialAnswerId.Int64)
+			patientAnswerToQuestion.PotentialAnswerId = encoding.NewObjectId(potentialAnswerId.Int64)
 		}
 
 		if potentialAnswer.Valid {
@@ -307,10 +308,10 @@ func (d *DataService) getPatientAnswersForQuestionsBasedOnQuery(query string, ar
 			patientAnswerToQuestion.StorageKey = storageKey.String
 		}
 		if parentQuestionId.Valid {
-			patientAnswerToQuestion.ParentQuestionId = common.NewObjectId(parentQuestionId.Int64)
+			patientAnswerToQuestion.ParentQuestionId = encoding.NewObjectId(parentQuestionId.Int64)
 		}
 		if parentInfoIntakeId.Valid {
-			patientAnswerToQuestion.ParentAnswerId = common.NewObjectId(parentInfoIntakeId.Int64)
+			patientAnswerToQuestion.ParentAnswerId = encoding.NewObjectId(parentInfoIntakeId.Int64)
 		}
 		queriedAnswers = append(queriedAnswers, patientAnswerToQuestion)
 	}

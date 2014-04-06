@@ -3,6 +3,7 @@ package apiservice
 import (
 	"carefront/api"
 	"carefront/common"
+	"carefront/encoding"
 	"carefront/info_intake"
 	"carefront/libs/address_validation"
 	"carefront/libs/golog"
@@ -280,12 +281,12 @@ func createAnswersToStoreForQuestion(role string, roleId, questionId, contextId,
 	answersToStore := make([]*common.AnswerIntake, len(answerIntakes))
 	for i, answerIntake := range answerIntakes {
 		answersToStore[i] = &common.AnswerIntake{
-			RoleId:            common.NewObjectId(roleId),
+			RoleId:            encoding.NewObjectId(roleId),
 			Role:              role,
-			QuestionId:        common.NewObjectId(questionId),
-			ContextId:         common.NewObjectId(contextId),
-			LayoutVersionId:   common.NewObjectId(layoutVersionId),
-			PotentialAnswerId: common.NewObjectId(answerIntake.PotentialAnswerId),
+			QuestionId:        encoding.NewObjectId(questionId),
+			ContextId:         encoding.NewObjectId(contextId),
+			LayoutVersionId:   encoding.NewObjectId(layoutVersionId),
+			PotentialAnswerId: encoding.NewObjectId(answerIntake.PotentialAnswerId),
 			AnswerText:        answerIntake.AnswerText,
 		}
 	}

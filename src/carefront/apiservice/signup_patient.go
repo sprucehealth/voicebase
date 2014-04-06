@@ -3,6 +3,7 @@ package apiservice
 import (
 	"carefront/api"
 	"carefront/common"
+	"carefront/encoding"
 	"carefront/libs/golog"
 	thriftapi "carefront/thrift/api"
 	"net/http"
@@ -57,10 +58,10 @@ func (s *SignupPatientHandler) ServeHTTP(w http.ResponseWriter, r *http.Request)
 
 	// ensure that the date of birth can be correctly parsed
 	// Note that the date will be returned as MM/DD/YYYY
-	dobParts := strings.Split(requestData.Dob, common.DOB_SEPARATOR)
+	dobParts := strings.Split(requestData.Dob, encoding.DOB_SEPARATOR)
 
 	if len(dobParts) < 3 {
-		WriteUserError(w, http.StatusBadRequest, "Unable to parse dob. Format should be "+common.DOB_FORMAT)
+		WriteUserError(w, http.StatusBadRequest, "Unable to parse dob. Format should be "+encoding.DOB_FORMAT)
 		return
 	}
 
@@ -77,7 +78,7 @@ func (s *SignupPatientHandler) ServeHTTP(w http.ResponseWriter, r *http.Request)
 	}
 
 	newPatient := &common.Patient{
-		AccountId: common.NewObjectId(res.AccountId),
+		AccountId: encoding.NewObjectId(res.AccountId),
 		FirstName: requestData.FirstName,
 		LastName:  requestData.LastName,
 		Gender:    requestData.Gender,
@@ -89,9 +90,9 @@ func (s *SignupPatientHandler) ServeHTTP(w http.ResponseWriter, r *http.Request)
 		},
 	}
 
-	newPatient.Dob, err = common.NewDobFromComponents(dobParts[0], dobParts[1], dobParts[2])
+	newPatient.Dob, err = encoding.NewDobFromComponents(dobParts[0], dobParts[1], dobParts[2])
 	if err != nil {
-		WriteUserError(w, http.StatusBadRequest, "Unable to parse date of birth. Required format + "+common.DOB_FORMAT)
+		WriteUserError(w, http.StatusBadRequest, "Unable to parse date of birth. Required format + "+encoding.DOB_FORMAT)
 		return
 	}
 

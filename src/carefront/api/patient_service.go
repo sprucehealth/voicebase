@@ -2,6 +2,7 @@ package api
 
 import (
 	"carefront/common"
+	"carefront/encoding"
 	"carefront/libs/pharmacy"
 	"database/sql"
 	"fmt"
@@ -41,7 +42,7 @@ func (d *DataService) CreateUnlinkedPatientFromRefillRequest(patient *common.Pat
 		tx.Rollback()
 		return err
 	}
-	patient.AccountId = common.NewObjectId(accountId)
+	patient.AccountId = encoding.NewObjectId(accountId)
 
 	// create an account
 	if err := createPatientWithStatus(patient, PATIENT_UNLINKED, tx); err != nil {
@@ -140,7 +141,7 @@ func createPatientWithStatus(patient *common.Patient, status string, tx *sql.Tx)
 		return err
 	}
 
-	patient.PatientId = common.NewObjectId(lastId)
+	patient.PatientId = encoding.NewObjectId(lastId)
 	return nil
 }
 
@@ -785,7 +786,7 @@ func (d *DataService) AddCardAndMakeDefaultForPatient(patientId int64, card *com
 		return err
 	}
 
-	card.Id = common.NewObjectId(cardId)
+	card.Id = encoding.NewObjectId(cardId)
 	return tx.Commit()
 }
 
@@ -874,7 +875,7 @@ func (d *DataService) GetCardsForPatient(patientId int64) ([]*common.Card, error
 		if err := rows.Scan(&cardId, &card.ThirdPartyId, &card.Fingerprint, &card.Type, &card.IsDefault, &card.CreationDate); err != nil {
 			return nil, err
 		}
-		card.Id = common.NewObjectId(cardId)
+		card.Id = encoding.NewObjectId(cardId)
 		cards = append(cards, &card)
 	}
 
@@ -892,7 +893,7 @@ func (d *DataService) GetCardFromId(cardId int64) (*common.Card, error) {
 		}
 		return nil, err
 	}
-	card.Id = common.NewObjectId(cardId)
+	card.Id = encoding.NewObjectId(cardId)
 	var addressLine1, addressLine2, city, state, country, zipCode sql.NullString
 	err = d.DB.QueryRow(`select address_line_1, address_line_2, city, state, zip_code, country from address where id = ?`, addressId).Scan(&addressLine1, &addressLine2, &city, &state, &zipCode, &country)
 	if err != nil {
@@ -998,7 +999,7 @@ func (d *DataService) getPatientBasedOnQuery(queryStr string, queryParams ...int
 		}
 
 		patient := &common.Patient{
-			PatientId:         common.NewObjectId(patientId),
+			PatientId:         encoding.NewObjectId(patientId),
 			PaymentCustomerId: paymentServiceCustomerId.String,
 			FirstName:         firstName,
 			LastName:          lastName,
@@ -1008,9 +1009,9 @@ func (d *DataService) getPatientBasedOnQuery(queryStr string, queryParams ...int
 			Email:             email.String,
 			Status:            status,
 			Gender:            gender,
-			AccountId:         common.NewObjectId(accountId),
+			AccountId:         encoding.NewObjectId(accountId),
 			ZipCode:           zipCode.String,
-			Dob:               common.Dob{Year: dobYear, Month: dobMonth, Day: dobDay},
+			Dob:               encoding.Dob{Year: dobYear, Month: dobMonth, Day: dobDay},
 			PhoneNumbers: []*common.PhoneInformation{&common.PhoneInformation{
 				Phone:     phone.String,
 				PhoneType: phoneType.String,
@@ -1019,7 +1020,7 @@ func (d *DataService) getPatientBasedOnQuery(queryStr string, queryParams ...int
 		}
 
 		if erxPatientId.Valid {
-			patient.ERxPatientId = common.NewObjectId(erxPatientId.Int64)
+			patient.ERxPatientId = encoding.NewObjectId(erxPatientId.Int64)
 		}
 
 		patient.IsUnlinked = status == PATIENT_UNLINKED

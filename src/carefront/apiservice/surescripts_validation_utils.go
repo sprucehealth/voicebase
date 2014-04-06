@@ -2,6 +2,7 @@ package apiservice
 
 import (
 	"carefront/common"
+	"carefront/encoding"
 	"carefront/libs/address_validation"
 	"errors"
 	"fmt"
@@ -123,7 +124,7 @@ func (d *DoctorPatientUpdateHandler) validatePatientInformationAccordingToSuresc
 	return nil
 }
 
-func is18YearsOfAge(dob common.Dob) bool {
+func is18YearsOfAge(dob encoding.Dob) bool {
 	dobTime := time.Date(dob.Year, time.Month(dob.Month), dob.Day, 0, 0, 0, 0, time.UTC)
 	ageDuration := time.Now().Sub(dobTime)
 	numYears := ageDuration.Hours() / (float64(24.0) * float64(365.0))

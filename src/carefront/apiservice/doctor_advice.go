@@ -3,6 +3,7 @@ package apiservice
 import (
 	"carefront/api"
 	"carefront/common"
+	"carefront/encoding"
 	"encoding/json"
 	"net/http"
 
@@ -81,8 +82,8 @@ func (d *DoctorAdviceHandler) getAdvicePoints(w http.ResponseWriter, r *http.Req
 	responseData := &common.Advice{
 		AllAdvicePoints:      advicePoints,
 		SelectedAdvicePoints: selectedAdvicePoints,
-		PatientVisitId:       common.NewObjectId(patientVisitId),
-		TreatmentPlanId:      common.NewObjectId(requestData.TreatmentPlanId),
+		PatientVisitId:       encoding.NewObjectId(patientVisitId),
+		TreatmentPlanId:      encoding.NewObjectId(requestData.TreatmentPlanId),
 	}
 
 	WriteJSONToHTTPResponseWriter(w, http.StatusOK, responseData)
@@ -192,7 +193,7 @@ func (d *DoctorAdviceHandler) updateAdvicePoints(w http.ResponseWriter, r *http.
 	for _, advicePoint := range requestData.SelectedAdvicePoints {
 		updatedOrNewId := newOrUpdatedPointToIdMapping[advicePoint.Text]
 		if updatedOrNewId != 0 {
-			advicePoint.Id = common.NewObjectId(updatedOrNewId)
+			advicePoint.Id = encoding.NewObjectId(updatedOrNewId)
 		}
 		// empty out the state information given that it is taken care of
 		advicePoint.State = ""

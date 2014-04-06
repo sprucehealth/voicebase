@@ -6,6 +6,7 @@ import (
 	"carefront/apiservice"
 	"carefront/app_worker"
 	"carefront/common"
+	"carefront/encoding"
 	"carefront/libs/aws/sqs"
 	"carefront/libs/erx"
 	"carefront/libs/pharmacy"
@@ -84,18 +85,24 @@ func TestNewRefillRequestForExistingPatientAndExistingTreatment(t *testing.T) {
 		DosageStrength:          "10 mg",
 		DispenseValue:           5,
 		DispenseUnitDescription: "Tablet",
-		DispenseUnitId:          common.NewObjectId(19),
-		NumberRefills:           5,
-		SubstitutionsAllowed:    false,
-		DaysSupply:              10,
-		PatientInstructions:     "Take once daily",
-		OTC:                     false,
+		DispenseUnitId:          encoding.NewObjectId(19),
+		NumberRefills: encoding.NullInt64{
+			IsNull:     false,
+			Int64Value: 5,
+		},
+		SubstitutionsAllowed: false,
+		DaysSupply: encoding.NullInt64{
+			IsNull:     false,
+			Int64Value: 5,
+		},
+		PatientInstructions: "Take once daily",
+		OTC:                 false,
 		ERx: &common.ERxData{
-			PrescriptionId:     common.NewObjectId(5504),
+			PrescriptionId:     encoding.NewObjectId(5504),
 			PrescriptionStatus: "Requested",
 			ErxPharmacyId:      1234,
-			PharmacyLocalId:    common.NewObjectId(pharmacyToReturn.LocalId),
-			ErxSentDate:        &testTime,
+			PharmacyLocalId:    encoding.NewObjectId(pharmacyToReturn.LocalId),
+			ErxLastDateFilled:  &testTime,
 		},
 	}
 
@@ -142,7 +149,7 @@ func TestNewRefillRequestForExistingPatientAndExistingTreatment(t *testing.T) {
 			ERx: &common.ERxData{
 				ErxSentDate:         &fiveMinutesBeforeTestTime,
 				DoseSpotClinicianId: clinicianId,
-				PrescriptionId:      common.NewObjectId(prescriptionIdForRequestedPrescription),
+				PrescriptionId:      encoding.NewObjectId(prescriptionIdForRequestedPrescription),
 				ErxPharmacyId:       1234,
 			},
 		},
@@ -155,14 +162,19 @@ func TestNewRefillRequestForExistingPatientAndExistingTreatment(t *testing.T) {
 			DosageStrength:          "10 mg",
 			DispenseValue:           5,
 			DispenseUnitDescription: "Tablet",
-			NumberRefills:           5,
-			SubstitutionsAllowed:    false,
-			DaysSupply:              10,
-			PatientInstructions:     "Take once daily",
-			OTC:                     false,
+			NumberRefills: encoding.NullInt64{
+				IsNull:     false,
+				Int64Value: 5,
+			},
+			SubstitutionsAllowed: false,
+			DaysSupply: encoding.NullInt64{
+				IsNull:     false,
+				Int64Value: 10,
+			}, PatientInstructions: "Take once daily",
+			OTC: false,
 			ERx: &common.ERxData{
 				ErxLastDateFilled:   &testTime,
-				PrescriptionId:      common.NewObjectId(5504),
+				PrescriptionId:      encoding.NewObjectId(5504),
 				PrescriptionStatus:  "Requested",
 				ErxPharmacyId:       1234,
 				DoseSpotClinicianId: clinicianId,
@@ -283,11 +295,11 @@ func TestApproveRefillRequestAndSuccessfulSendToPharmacy(t *testing.T) {
 	patientToReturn := &common.Patient{
 		FirstName:    "Test",
 		LastName:     "TestLastName",
-		Dob:          common.Dob{Day: 11, Month: 11, Year: 1980},
+		Dob:          encoding.Dob{Day: 11, Month: 11, Year: 1980},
 		Email:        "test@test.com",
 		Gender:       "male",
 		ZipCode:      "90210",
-		ERxPatientId: common.NewObjectId(12345),
+		ERxPatientId: encoding.NewObjectId(12345),
 	}
 
 	err := testData.DataApi.AddPharmacy(pharmacyToReturn)
@@ -323,7 +335,7 @@ func TestApproveRefillRequestAndSuccessfulSendToPharmacy(t *testing.T) {
 			ERx: &common.ERxData{
 				ErxSentDate:         &fiveMinutesBeforeTestTime,
 				DoseSpotClinicianId: clinicianId,
-				PrescriptionId:      common.NewObjectId(prescriptionIdForRequestedPrescription),
+				PrescriptionId:      encoding.NewObjectId(prescriptionIdForRequestedPrescription),
 				ErxPharmacyId:       1234,
 			},
 		},
@@ -336,15 +348,20 @@ func TestApproveRefillRequestAndSuccessfulSendToPharmacy(t *testing.T) {
 			DosageStrength:          "10 mg",
 			DispenseValue:           5,
 			DispenseUnitDescription: "Tablet",
-			NumberRefills:           5,
-			SubstitutionsAllowed:    false,
-			DaysSupply:              10,
-			PatientInstructions:     "Take once daily",
-			OTC:                     false,
+			NumberRefills: encoding.NullInt64{
+				IsNull:     false,
+				Int64Value: 5,
+			},
+			SubstitutionsAllowed: false,
+			DaysSupply: encoding.NullInt64{
+				IsNull:     true,
+				Int64Value: 5,
+			}, PatientInstructions: "Take once daily",
+			OTC: false,
 			ERx: &common.ERxData{
 				ErxLastDateFilled:   &testTime,
 				DoseSpotClinicianId: clinicianId,
-				PrescriptionId:      common.NewObjectId(5504),
+				PrescriptionId:      encoding.NewObjectId(5504),
 				PrescriptionStatus:  "Requested",
 				ErxPharmacyId:       1234,
 			},
@@ -383,7 +400,7 @@ func TestApproveRefillRequestAndSuccessfulSendToPharmacy(t *testing.T) {
 	comment := "this is a test"
 
 	requestData := apiservice.DoctorRefillRequestRequestData{
-		RefillRequestId:      common.NewObjectId(refillRequest.Id),
+		RefillRequestId:      encoding.NewObjectId(refillRequest.Id),
 		Action:               "approve",
 		ApprovedRefillAmount: 10,
 		Comments:             comment,
@@ -520,11 +537,11 @@ func TestApproveRefillRequestAndErrorSendingToPharmacy(t *testing.T) {
 	patientToReturn := &common.Patient{
 		FirstName:    "Test",
 		LastName:     "TestLastName",
-		Dob:          common.Dob{Year: 1987, Month: 1, Day: 22},
+		Dob:          encoding.Dob{Year: 1987, Month: 1, Day: 22},
 		Email:        "test@test.com",
 		Gender:       "male",
 		ZipCode:      "90210",
-		ERxPatientId: common.NewObjectId(12345),
+		ERxPatientId: encoding.NewObjectId(12345),
 	}
 
 	err := testData.DataApi.AddPharmacy(pharmacyToReturn)
@@ -560,7 +577,7 @@ func TestApproveRefillRequestAndErrorSendingToPharmacy(t *testing.T) {
 			ERx: &common.ERxData{
 				ErxSentDate:         &fiveMinutesBeforeTestTime,
 				DoseSpotClinicianId: clinicianId,
-				PrescriptionId:      common.NewObjectId(prescriptionIdForRequestedPrescription),
+				PrescriptionId:      encoding.NewObjectId(prescriptionIdForRequestedPrescription),
 				ErxPharmacyId:       1234,
 			},
 		},
@@ -573,16 +590,21 @@ func TestApproveRefillRequestAndErrorSendingToPharmacy(t *testing.T) {
 			DosageStrength:          "10 mg",
 			DispenseValue:           5,
 			DispenseUnitDescription: "Tablet",
-			NumberRefills:           5,
-			SubstitutionsAllowed:    false,
-			DaysSupply:              10,
-			PatientInstructions:     "Take once daily",
+			NumberRefills: encoding.NullInt64{
+				IsNull:     false,
+				Int64Value: 5,
+			},
+			SubstitutionsAllowed: false,
+			DaysSupply: encoding.NullInt64{
+				IsNull:     false,
+				Int64Value: 5,
+			}, PatientInstructions: "Take once daily",
 
 			OTC: false,
 			ERx: &common.ERxData{
 				ErxLastDateFilled:   &testTime,
 				DoseSpotClinicianId: clinicianId,
-				PrescriptionId:      common.NewObjectId(5504),
+				PrescriptionId:      encoding.NewObjectId(5504),
 				PrescriptionStatus:  "Requested",
 				ErxPharmacyId:       1234,
 			},
@@ -621,7 +643,7 @@ func TestApproveRefillRequestAndErrorSendingToPharmacy(t *testing.T) {
 	comment := "this is a test"
 
 	requestData := apiservice.DoctorRefillRequestRequestData{
-		RefillRequestId:      common.NewObjectId(refillRequest.Id),
+		RefillRequestId:      encoding.NewObjectId(refillRequest.Id),
 		Action:               "approve",
 		ApprovedRefillAmount: 10,
 		Comments:             comment,
@@ -819,11 +841,11 @@ func TestDenyRefillRequestAndSuccessfulDelete(t *testing.T) {
 	patientToReturn := &common.Patient{
 		FirstName:    "Test",
 		LastName:     "TestLastName",
-		Dob:          common.Dob{Year: 1921, Month: 8, Day: 12},
+		Dob:          encoding.Dob{Year: 1921, Month: 8, Day: 12},
 		Email:        "test@test.com",
 		Gender:       "male",
 		ZipCode:      "90210",
-		ERxPatientId: common.NewObjectId(12345),
+		ERxPatientId: encoding.NewObjectId(12345),
 	}
 
 	err := testData.DataApi.AddPharmacy(pharmacyToReturn)
@@ -852,14 +874,17 @@ func TestDenyRefillRequestAndSuccessfulDelete(t *testing.T) {
 				erx.LexiSynonymTypeId: "123556",
 				erx.NDC:               "2415",
 			},
-			DosageStrength:       "10 mg",
-			DispenseValue:        5,
+			DosageStrength: "10 mg",
+			DispenseValue:  5,
+			DaysSupply: encoding.NullInt64{
+				IsNull: true,
+			},
 			OTC:                  false,
 			SubstitutionsAllowed: true,
 			ERx: &common.ERxData{
 				ErxSentDate:         &fiveMinutesBeforeTestTime,
 				DoseSpotClinicianId: clinicianId,
-				PrescriptionId:      common.NewObjectId(prescriptionIdForRequestedPrescription),
+				PrescriptionId:      encoding.NewObjectId(prescriptionIdForRequestedPrescription),
 				ErxPharmacyId:       1234,
 			},
 		},
@@ -872,14 +897,19 @@ func TestDenyRefillRequestAndSuccessfulDelete(t *testing.T) {
 			DosageStrength:          "10 mg",
 			DispenseValue:           5,
 			DispenseUnitDescription: "Tablet",
-			NumberRefills:           5,
-			SubstitutionsAllowed:    false,
-			DaysSupply:              10,
-			PatientInstructions:     "Take once daily",
-			OTC:                     false,
+			NumberRefills: encoding.NullInt64{
+				IsNull:     false,
+				Int64Value: 5,
+			},
+			SubstitutionsAllowed: false,
+			DaysSupply: encoding.NullInt64{
+				IsNull:     false,
+				Int64Value: 5,
+			}, PatientInstructions: "Take once daily",
+			OTC: false,
 			ERx: &common.ERxData{
 				ErxLastDateFilled:   &testTime,
-				PrescriptionId:      common.NewObjectId(5504),
+				PrescriptionId:      encoding.NewObjectId(5504),
 				PrescriptionStatus:  "Requested",
 				ErxPharmacyId:       1234,
 				DoseSpotClinicianId: clinicianId,
@@ -926,9 +956,9 @@ func TestDenyRefillRequestAndSuccessfulDelete(t *testing.T) {
 	// now, lets go ahead and attempt to deny this refill request
 	comment := "this is a test"
 	requestData := apiservice.DoctorRefillRequestRequestData{
-		RefillRequestId: common.NewObjectId(refillRequest.Id),
+		RefillRequestId: encoding.NewObjectId(refillRequest.Id),
 		Action:          "deny",
-		DenialReasonId:  common.NewObjectId(denialReasons[0].Id),
+		DenialReasonId:  encoding.NewObjectId(denialReasons[0].Id),
 		Comments:        comment,
 	}
 
@@ -1057,11 +1087,11 @@ func TestDenyRefillRequestWithDNTFWithoutTreatment(t *testing.T) {
 	patientToReturn := &common.Patient{
 		FirstName:    "Test",
 		LastName:     "TestLastName",
-		Dob:          common.Dob{Month: 1, Day: 1, Year: 2000},
+		Dob:          encoding.Dob{Month: 1, Day: 1, Year: 2000},
 		Email:        "test@test.com",
 		Gender:       "male",
 		ZipCode:      "90210",
-		ERxPatientId: common.NewObjectId(12345),
+		ERxPatientId: encoding.NewObjectId(12345),
 	}
 
 	err := testData.DataApi.AddPharmacy(pharmacyToReturn)
@@ -1090,14 +1120,17 @@ func TestDenyRefillRequestWithDNTFWithoutTreatment(t *testing.T) {
 				erx.LexiSynonymTypeId: "123556",
 				erx.NDC:               "2415",
 			},
-			DosageStrength:       "10 mg",
-			DispenseValue:        5,
+			DosageStrength: "10 mg",
+			DispenseValue:  5,
+			DaysSupply: encoding.NullInt64{
+				IsNull: true,
+			},
 			OTC:                  false,
 			SubstitutionsAllowed: true,
 			ERx: &common.ERxData{
 				ErxSentDate:         &fiveMinutesBeforeTestTime,
 				DoseSpotClinicianId: clinicianId,
-				PrescriptionId:      common.NewObjectId(prescriptionIdForRequestedPrescription),
+				PrescriptionId:      encoding.NewObjectId(prescriptionIdForRequestedPrescription),
 				ErxPharmacyId:       1234,
 			},
 		},
@@ -1110,14 +1143,19 @@ func TestDenyRefillRequestWithDNTFWithoutTreatment(t *testing.T) {
 			DosageStrength:          "10 mg",
 			DispenseValue:           5,
 			DispenseUnitDescription: "Tablet",
-			NumberRefills:           5,
-			SubstitutionsAllowed:    false,
-			DaysSupply:              10,
-			PatientInstructions:     "Take once daily",
-			OTC:                     false,
+			NumberRefills: encoding.NullInt64{
+				IsNull:     false,
+				Int64Value: 5,
+			},
+			SubstitutionsAllowed: false,
+			DaysSupply: encoding.NullInt64{
+				IsNull:     false,
+				Int64Value: 5,
+			}, PatientInstructions: "Take once daily",
+			OTC: false,
 			ERx: &common.ERxData{
 				ErxLastDateFilled:   &testTime,
-				PrescriptionId:      common.NewObjectId(5504),
+				PrescriptionId:      encoding.NewObjectId(5504),
 				PrescriptionStatus:  "Requested",
 				ErxPharmacyId:       1234,
 				DoseSpotClinicianId: clinicianId,
@@ -1168,9 +1206,9 @@ func TestDenyRefillRequestWithDNTFWithoutTreatment(t *testing.T) {
 	// now, lets go ahead and attempt to deny this refill request
 	comment := "this is a test"
 	requestData := apiservice.DoctorRefillRequestRequestData{
-		RefillRequestId: common.NewObjectId(refillRequest.Id),
+		RefillRequestId: encoding.NewObjectId(refillRequest.Id),
 		Action:          "deny",
-		DenialReasonId:  common.NewObjectId(dntfReason.Id),
+		DenialReasonId:  encoding.NewObjectId(dntfReason.Id),
 		Comments:        comment,
 	}
 
@@ -1232,11 +1270,11 @@ func setUpDeniedRefillRequestWithDNTF(t *testing.T, testData TestData, endErxSta
 	patientToReturn := &common.Patient{
 		FirstName:    "Test",
 		LastName:     "TestLastName",
-		Dob:          common.Dob{Year: 1987, Month: 8, Day: 1},
+		Dob:          encoding.Dob{Year: 1987, Month: 8, Day: 1},
 		Email:        "test@test.com",
 		Gender:       "male",
 		ZipCode:      "90210",
-		ERxPatientId: common.NewObjectId(12345),
+		ERxPatientId: encoding.NewObjectId(12345),
 	}
 
 	err := testData.DataApi.AddPharmacy(pharmacyToReturn)
@@ -1253,10 +1291,16 @@ func setUpDeniedRefillRequestWithDNTF(t *testing.T, testData TestData, endErxSta
 			erx.LexiGenProductId:  "124151",
 			erx.NDC:               "1415",
 		},
-		DosageStrength:      "10 mg",
-		DispenseValue:       1,
-		DispenseUnitId:      common.NewObjectId(12),
-		NumberRefills:       1,
+		DosageStrength: "10 mg",
+		DispenseValue:  1,
+		DaysSupply: encoding.NullInt64{
+			IsNull: true,
+		},
+		DispenseUnitId: encoding.NewObjectId(12),
+		NumberRefills: encoding.NullInt64{
+			IsNull:     false,
+			Int64Value: 1,
+		},
 		OTC:                 false,
 		PatientInstructions: "patient instructions",
 	}
@@ -1316,14 +1360,17 @@ func setUpDeniedRefillRequestWithDNTF(t *testing.T, testData TestData, endErxSta
 				erx.LexiSynonymTypeId: "123556",
 				erx.NDC:               "2415",
 			},
-			DosageStrength:       "10 mg",
-			DispenseValue:        5,
-			OTC:                  false,
+			DosageStrength: "10 mg",
+			DispenseValue:  5,
+			OTC:            false,
+			DaysSupply: encoding.NullInt64{
+				IsNull: true,
+			},
 			SubstitutionsAllowed: true,
 			ERx: &common.ERxData{
 				ErxSentDate:         &fiveMinutesBeforeTestTime,
 				DoseSpotClinicianId: clinicianId,
-				PrescriptionId:      common.NewObjectId(prescriptionIdForRequestedPrescription),
+				PrescriptionId:      encoding.NewObjectId(prescriptionIdForRequestedPrescription),
 				ErxPharmacyId:       1234,
 			},
 		},
@@ -1336,14 +1383,19 @@ func setUpDeniedRefillRequestWithDNTF(t *testing.T, testData TestData, endErxSta
 			DosageStrength:          "10 mg",
 			DispenseValue:           5,
 			DispenseUnitDescription: "Tablet",
-			NumberRefills:           5,
-			SubstitutionsAllowed:    false,
-			DaysSupply:              10,
-			PatientInstructions:     "Take once daily",
-			OTC:                     false,
+			NumberRefills: encoding.NullInt64{
+				IsNull:     false,
+				Int64Value: 5,
+			},
+			SubstitutionsAllowed: false,
+			DaysSupply: encoding.NullInt64{
+				IsNull:     false,
+				Int64Value: 5,
+			}, PatientInstructions: "Take once daily",
+			OTC: false,
 			ERx: &common.ERxData{
 				ErxLastDateFilled:   &testTime,
-				PrescriptionId:      common.NewObjectId(5504),
+				PrescriptionId:      encoding.NewObjectId(5504),
 				PrescriptionStatus:  "Requested",
 				ErxPharmacyId:       1234,
 				DoseSpotClinicianId: clinicianId,
@@ -1401,9 +1453,9 @@ func setUpDeniedRefillRequestWithDNTF(t *testing.T, testData TestData, endErxSta
 	// now, lets go ahead and attempt to deny this refill request
 
 	requestData := apiservice.DoctorRefillRequestRequestData{
-		RefillRequestId: common.NewObjectId(refillRequest.Id),
+		RefillRequestId: encoding.NewObjectId(refillRequest.Id),
 		Action:          "deny",
-		DenialReasonId:  common.NewObjectId(dntfReason.Id),
+		DenialReasonId:  encoding.NewObjectId(dntfReason.Id),
 		Comments:        comment,
 		Treatment:       &treatmentToAdd,
 	}
@@ -1675,10 +1727,16 @@ func setUpDeniedRefillRequestWithDNTFForLinkedTreatment(t *testing.T, testData T
 			erx.LexiGenProductId:  "124151",
 			erx.NDC:               "1415",
 		},
-		DosageStrength:      "10 mg",
-		DispenseValue:       1,
-		DispenseUnitId:      common.NewObjectId(12),
-		NumberRefills:       1,
+		DosageStrength: "10 mg",
+		DispenseValue:  1,
+		DispenseUnitId: encoding.NewObjectId(12),
+		NumberRefills: encoding.NullInt64{
+			IsNull:     false,
+			Int64Value: 1,
+		},
+		DaysSupply: encoding.NullInt64{
+			IsNull: true,
+		},
 		OTC:                 false,
 		PatientInstructions: "patient instructions",
 	}
@@ -1694,7 +1752,7 @@ func setUpDeniedRefillRequestWithDNTFForLinkedTreatment(t *testing.T, testData T
 		defer ts.Close()
 
 		treatmentTemplatesRequest := &apiservice.DoctorTreatmentTemplatesRequest{TreatmentTemplates: []*common.DoctorTreatmentTemplate{treatmentTemplate}}
-		treatmentTemplatesRequest.PatientVisitId = common.NewObjectId(patientVisitResponse.PatientVisitId)
+		treatmentTemplatesRequest.PatientVisitId = encoding.NewObjectId(patientVisitResponse.PatientVisitId)
 		data, err := json.Marshal(&treatmentTemplatesRequest)
 		if err != nil {
 			t.Fatal("Unable to marshal request body for adding treatments to patient visit")
@@ -1731,17 +1789,22 @@ func setUpDeniedRefillRequestWithDNTFForLinkedTreatment(t *testing.T, testData T
 		DosageStrength:          "10 mg",
 		DispenseValue:           5,
 		DispenseUnitDescription: "Tablet",
-		DispenseUnitId:          common.NewObjectId(19),
-		NumberRefills:           5,
-		SubstitutionsAllowed:    false,
-		DaysSupply:              10,
-		PatientInstructions:     "Take once daily",
-		OTC:                     false,
+		DispenseUnitId:          encoding.NewObjectId(19),
+		NumberRefills: encoding.NullInt64{
+			IsNull:     false,
+			Int64Value: 5,
+		},
+		SubstitutionsAllowed: false,
+		DaysSupply: encoding.NullInt64{
+			IsNull: true,
+		},
+		PatientInstructions: "Take once daily",
+		OTC:                 false,
 		ERx: &common.ERxData{
-			PrescriptionId:     common.NewObjectId(5504),
+			PrescriptionId:     encoding.NewObjectId(5504),
 			PrescriptionStatus: "Requested",
 			ErxPharmacyId:      1234,
-			PharmacyLocalId:    common.NewObjectId(pharmacyToReturn.LocalId),
+			PharmacyLocalId:    encoding.NewObjectId(pharmacyToReturn.LocalId),
 			ErxLastDateFilled:  &testTime,
 		},
 	}
@@ -1789,7 +1852,7 @@ func setUpDeniedRefillRequestWithDNTFForLinkedTreatment(t *testing.T, testData T
 			ERx: &common.ERxData{
 				ErxSentDate:         &fiveMinutesBeforeTestTime,
 				DoseSpotClinicianId: clinicianId,
-				PrescriptionId:      common.NewObjectId(prescriptionIdForRequestedPrescription),
+				PrescriptionId:      encoding.NewObjectId(prescriptionIdForRequestedPrescription),
 				ErxPharmacyId:       1234,
 			},
 		},
@@ -1802,14 +1865,20 @@ func setUpDeniedRefillRequestWithDNTFForLinkedTreatment(t *testing.T, testData T
 			DosageStrength:          "10 mg",
 			DispenseValue:           5,
 			DispenseUnitDescription: "Tablet",
-			NumberRefills:           5,
-			SubstitutionsAllowed:    false,
-			DaysSupply:              10,
-			PatientInstructions:     "Take once daily",
-			OTC:                     false,
+			NumberRefills: encoding.NullInt64{
+				IsNull:     false,
+				Int64Value: 5,
+			},
+			SubstitutionsAllowed: false,
+			DaysSupply: encoding.NullInt64{
+				IsNull:     false,
+				Int64Value: 5,
+			},
+			PatientInstructions: "Take once daily",
+			OTC:                 false,
 			ERx: &common.ERxData{
 				ErxLastDateFilled:   &testTime,
-				PrescriptionId:      common.NewObjectId(5504),
+				PrescriptionId:      encoding.NewObjectId(5504),
 				PrescriptionStatus:  "Requested",
 				ErxPharmacyId:       1234,
 				DoseSpotClinicianId: clinicianId,
@@ -1866,9 +1935,9 @@ func setUpDeniedRefillRequestWithDNTFForLinkedTreatment(t *testing.T, testData T
 	// now, lets go ahead and attempt to deny this refill request
 
 	requestData := apiservice.DoctorRefillRequestRequestData{
-		RefillRequestId: common.NewObjectId(refillRequest.Id),
+		RefillRequestId: encoding.NewObjectId(refillRequest.Id),
 		Action:          "deny",
-		DenialReasonId:  common.NewObjectId(dntfReason.Id),
+		DenialReasonId:  encoding.NewObjectId(dntfReason.Id),
 		Comments:        comment,
 		Treatment:       &treatmentToAdd,
 	}
@@ -2100,11 +2169,11 @@ func TestCheckingStatusOfMultipleRefillRequestsAtOnce(t *testing.T) {
 	patientToReturn := &common.Patient{
 		FirstName:    "Test",
 		LastName:     "TestLastName",
-		Dob:          common.Dob{Month: 1, Year: 1967, Day: 1},
+		Dob:          encoding.Dob{Month: 1, Year: 1967, Day: 1},
 		Email:        "test@test.com",
 		Gender:       "male",
 		ZipCode:      "90210",
-		ERxPatientId: common.NewObjectId(12345),
+		ERxPatientId: encoding.NewObjectId(12345),
 	}
 
 	err := testData.DataApi.AddPharmacy(pharmacyToReturn)
@@ -2135,14 +2204,17 @@ func TestCheckingStatusOfMultipleRefillRequestsAtOnce(t *testing.T) {
 					erx.LexiSynonymTypeId: "123556",
 					erx.NDC:               "2415",
 				},
-				DosageStrength:       "10 mg",
+				DosageStrength: "10 mg",
+				DaysSupply: encoding.NullInt64{
+					IsNull: true,
+				},
 				DispenseValue:        5,
 				OTC:                  false,
 				SubstitutionsAllowed: true,
 				ERx: &common.ERxData{
 					ErxSentDate:         &fiveMinutesBeforeTestTime,
 					DoseSpotClinicianId: clinicianId,
-					PrescriptionId:      common.NewObjectId(prescriptionIdForRequestedPrescription + i),
+					PrescriptionId:      encoding.NewObjectId(prescriptionIdForRequestedPrescription + i),
 					ErxPharmacyId:       1234,
 				},
 			},
@@ -2155,14 +2227,19 @@ func TestCheckingStatusOfMultipleRefillRequestsAtOnce(t *testing.T) {
 				DosageStrength:          "10 mg",
 				DispenseValue:           5,
 				DispenseUnitDescription: "Tablet",
-				NumberRefills:           5,
-				SubstitutionsAllowed:    false,
-				DaysSupply:              10,
-				PatientInstructions:     "Take once daily",
-				OTC:                     false,
+				NumberRefills: encoding.NullInt64{
+					IsNull:     false,
+					Int64Value: 5,
+				},
+				SubstitutionsAllowed: false,
+				DaysSupply: encoding.NullInt64{
+					IsNull:     false,
+					Int64Value: 5,
+				}, PatientInstructions: "Take once daily",
+				OTC: false,
 				ERx: &common.ERxData{
 					DoseSpotClinicianId: clinicianId,
-					PrescriptionId:      common.NewObjectId(5504),
+					PrescriptionId:      encoding.NewObjectId(5504),
 					PrescriptionStatus:  "Requested",
 					ErxPharmacyId:       1234,
 					ErxLastDateFilled:   &testTime,
@@ -2203,7 +2280,7 @@ func TestCheckingStatusOfMultipleRefillRequestsAtOnce(t *testing.T) {
 	// lets go ahead and approve this refill request
 	comment := "this is a test"
 	requestData := apiservice.DoctorRefillRequestRequestData{
-		RefillRequestId:      common.NewObjectId(refillRequest.Id),
+		RefillRequestId:      encoding.NewObjectId(refillRequest.Id),
 		Action:               "approve",
 		ApprovedRefillAmount: approvedRefillAmount,
 		Comments:             comment,
@@ -2295,7 +2372,7 @@ func TestCheckingStatusOfMultipleRefillRequestsAtOnce(t *testing.T) {
 	// go ahead and approve all remaining refill requests
 	for i := 0; i < len(refillRequestStatuses); i++ {
 
-		requestData.RefillRequestId = common.NewObjectId(refillRequestStatuses[i].ItemId)
+		requestData.RefillRequestId = encoding.NewObjectId(refillRequestStatuses[i].ItemId)
 		jsonData, err = json.Marshal(&requestData)
 		if err != nil {
 			t.Fatalf("Unable to marshal json object: %+v", err)
@@ -2433,18 +2510,23 @@ func TestRefillRequestComingFromDifferentPharmacyThanDispensedPrescription(t *te
 		DosageStrength:          "10 mg",
 		DispenseValue:           5,
 		DispenseUnitDescription: "Tablet",
-		DispenseUnitId:          common.NewObjectId(19),
-		NumberRefills:           5,
-		SubstitutionsAllowed:    false,
-		DaysSupply:              10,
-		PatientInstructions:     "Take once daily",
-		OTC:                     false,
+		DispenseUnitId:          encoding.NewObjectId(19),
+		NumberRefills: encoding.NullInt64{
+			IsNull:     false,
+			Int64Value: 5,
+		},
+		SubstitutionsAllowed: false,
+		DaysSupply: encoding.NullInt64{
+			IsNull:     false,
+			Int64Value: 5,
+		}, PatientInstructions: "Take once daily",
+		OTC: false,
 		ERx: &common.ERxData{
 			ErxLastDateFilled:  &testTime,
-			PrescriptionId:     common.NewObjectId(5504),
+			PrescriptionId:     encoding.NewObjectId(5504),
 			PrescriptionStatus: "Requested",
 			ErxPharmacyId:      1234,
-			PharmacyLocalId:    common.NewObjectId(pharmacyToReturn.LocalId),
+			PharmacyLocalId:    encoding.NewObjectId(pharmacyToReturn.LocalId),
 		},
 	}
 
@@ -2484,14 +2566,17 @@ func TestRefillRequestComingFromDifferentPharmacyThanDispensedPrescription(t *te
 				erx.LexiSynonymTypeId: "123556",
 				erx.NDC:               "2415",
 			},
-			DosageStrength:       "10 mg",
+			DosageStrength: "10 mg",
+			DaysSupply: encoding.NullInt64{
+				IsNull: true,
+			},
 			DispenseValue:        5,
 			OTC:                  false,
 			SubstitutionsAllowed: true,
 			ERx: &common.ERxData{
 				DoseSpotClinicianId: clinicianId,
 				ErxSentDate:         &fiveMinutesBeforeTestTime,
-				PrescriptionId:      common.NewObjectId(prescriptionIdForRequestedPrescription),
+				PrescriptionId:      encoding.NewObjectId(prescriptionIdForRequestedPrescription),
 				ErxPharmacyId:       1234,
 			},
 		},
@@ -2504,14 +2589,19 @@ func TestRefillRequestComingFromDifferentPharmacyThanDispensedPrescription(t *te
 			DosageStrength:          "10 mg",
 			DispenseValue:           5,
 			DispenseUnitDescription: "Tablet",
-			NumberRefills:           5,
-			SubstitutionsAllowed:    false,
-			DaysSupply:              10,
-			PatientInstructions:     "Take once daily",
-			OTC:                     false,
+			NumberRefills: encoding.NullInt64{
+				IsNull:     false,
+				Int64Value: 5,
+			},
+			SubstitutionsAllowed: false,
+			DaysSupply: encoding.NullInt64{
+				IsNull:     false,
+				Int64Value: 5,
+			}, PatientInstructions: "Take once daily",
+			OTC: false,
 			ERx: &common.ERxData{
 				ErxLastDateFilled:   &testTime,
-				PrescriptionId:      common.NewObjectId(5504),
+				PrescriptionId:      encoding.NewObjectId(5504),
 				PrescriptionStatus:  "Requested",
 				ErxPharmacyId:       12345678,
 				DoseSpotClinicianId: clinicianId,
@@ -2640,15 +2730,19 @@ func TestNewRefillRequestWithUnlinkedTreatmentAndLinkedPatient(t *testing.T) {
 			DosageStrength:          "10 mg",
 			DispenseValue:           5,
 			DispenseUnitDescription: "Tablet",
-			NumberRefills:           5,
-			SubstitutionsAllowed:    false,
-			DaysSupply:              10,
-			PatientInstructions:     "Take once daily",
-			OTC:                     false,
+			NumberRefills: encoding.NullInt64{
+				IsNull:     false,
+				Int64Value: 5,
+			},
+			SubstitutionsAllowed: false,
+			DaysSupply: encoding.NullInt64{
+				IsNull: true,
+			}, PatientInstructions: "Take once daily",
+			OTC: false,
 			ERx: &common.ERxData{
 				DoseSpotClinicianId: clinicianId,
 				ErxSentDate:         &testTime,
-				PrescriptionId:      common.NewObjectId(prescriptionIdForRequestedPrescription),
+				PrescriptionId:      encoding.NewObjectId(prescriptionIdForRequestedPrescription),
 				PrescriptionStatus:  "Requested",
 				ErxPharmacyId:       123,
 			},
@@ -2662,13 +2756,19 @@ func TestNewRefillRequestWithUnlinkedTreatmentAndLinkedPatient(t *testing.T) {
 			DosageStrength:          "10 mg",
 			DispenseValue:           5,
 			DispenseUnitDescription: "Tablet",
-			NumberRefills:           5,
-			SubstitutionsAllowed:    false,
-			DaysSupply:              10,
-			PatientInstructions:     "Take once daily",
-			OTC:                     false,
+			NumberRefills: encoding.NullInt64{
+				IsNull:     false,
+				Int64Value: 5,
+			},
+			SubstitutionsAllowed: false,
+			DaysSupply: encoding.NullInt64{
+				IsNull:     false,
+				Int64Value: 5,
+			},
+			PatientInstructions: "Take once daily",
+			OTC:                 false,
 			ERx: &common.ERxData{
-				PrescriptionId:      common.NewObjectId(5504),
+				PrescriptionId:      encoding.NewObjectId(5504),
 				PrescriptionStatus:  "Requested",
 				ErxPharmacyId:       123,
 				ErxSentDate:         &testTime,
@@ -2802,15 +2902,20 @@ func TestNewRefillRequestWithUnlinkedTreatmentAndUnlinkedPatient(t *testing.T) {
 			DosageStrength:          "10 mg",
 			DispenseValue:           5,
 			DispenseUnitDescription: "Tablet",
-			NumberRefills:           5,
-			SubstitutionsAllowed:    false,
-			DaysSupply:              10,
-			PatientInstructions:     "Take once daily",
-			OTC:                     false,
+			NumberRefills: encoding.NullInt64{
+				IsNull:     false,
+				Int64Value: 5,
+			},
+			SubstitutionsAllowed: false,
+			DaysSupply: encoding.NullInt64{
+				IsNull:     false,
+				Int64Value: 5,
+			}, PatientInstructions: "Take once daily",
+			OTC: false,
 			ERx: &common.ERxData{
 				DoseSpotClinicianId: clinicianId,
 				ErxSentDate:         &testTime,
-				PrescriptionId:      common.NewObjectId(5504),
+				PrescriptionId:      encoding.NewObjectId(5504),
 				PrescriptionStatus:  "Requested",
 				ErxPharmacyId:       123,
 			},
@@ -2826,14 +2931,20 @@ func TestNewRefillRequestWithUnlinkedTreatmentAndUnlinkedPatient(t *testing.T) {
 			DosageStrength:          "10 mg",
 			DispenseValue:           5,
 			DispenseUnitDescription: "Tablet",
-			NumberRefills:           5,
-			SubstitutionsAllowed:    false,
-			DaysSupply:              10,
-			PatientInstructions:     "Take once daily",
-			OTC:                     false,
+			DaysSupply: encoding.NullInt64{
+				IsNull:     false,
+				Int64Value: 5,
+			},
+			NumberRefills: encoding.NullInt64{
+				IsNull:     false,
+				Int64Value: 5,
+			},
+			SubstitutionsAllowed: false,
+			PatientInstructions:  "Take once daily",
+			OTC:                  false,
 			ERx: &common.ERxData{
 				DoseSpotClinicianId: clinicianId,
-				PrescriptionId:      common.NewObjectId(5504),
+				PrescriptionId:      encoding.NewObjectId(5504),
 				PrescriptionStatus:  "Requested",
 				ErxPharmacyId:       123,
 				ErxSentDate:         &testTime,
@@ -2856,11 +2967,11 @@ func TestNewRefillRequestWithUnlinkedTreatmentAndUnlinkedPatient(t *testing.T) {
 	patientToReturn := &common.Patient{
 		FirstName:    "Test",
 		LastName:     "TestLastName",
-		Dob:          common.Dob{Year: 2013, Month: 8, Day: 9},
+		Dob:          encoding.Dob{Year: 2013, Month: 8, Day: 9},
 		Email:        "test@test.com",
 		Gender:       "male",
 		ZipCode:      "90210",
-		ERxPatientId: common.NewObjectId(12345),
+		ERxPatientId: encoding.NewObjectId(12345),
 		Pharmacy:     pharmacyToReturn,
 	}
 
