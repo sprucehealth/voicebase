@@ -703,7 +703,6 @@ func (d *DataService) addTreatment(treatment *common.Treatment, withoutLinkToTre
 	}
 
 	columns, values := getKeysAndValuesFromMap(columnsAndData)
-	fmt.Printf("%+v %+v", columns, values)
 	res, err := tx.Exec(fmt.Sprintf(`insert into treatment (%s) values (%s)`, strings.Join(columns, ","), nReplacements(len(values))), values...)
 	if err != nil {
 		tx.Rollback()
