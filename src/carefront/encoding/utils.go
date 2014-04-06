@@ -31,8 +31,8 @@ func (n *NullInt64) MarshalJSON() ([]byte, error) {
 
 func (n *NullInt64) UnmarshalJSON(data []byte) error {
 	strData := string(data)
-	fmt.Println(strData)
-	if len(data) < 2 || strData == "null" {
+
+	if strData == "null" {
 		*n = NullInt64{
 			IsNull: true,
 		}
