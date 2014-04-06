@@ -45,8 +45,6 @@ func (n *NullInt64) UnmarshalJSON(data []byte) error {
 		Int64Value: intValue,
 	}
 
-	fmt.Printf("%+v", *n)
-
 	return err
 }
 
