@@ -14,8 +14,8 @@ type NullInt64 struct {
 	Int64Value int64
 }
 
-func NullInt64FromSql(nullInt64 sql.NullInt64) *NullInt64 {
-	return &NullInt64{
+func NullInt64FromSql(nullInt64 sql.NullInt64) NullInt64 {
+	return NullInt64{
 		IsNull:     !nullInt64.Valid,
 		Int64Value: nullInt64.Int64,
 	}

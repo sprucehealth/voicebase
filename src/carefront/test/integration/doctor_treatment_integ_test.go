@@ -200,12 +200,12 @@ func TestAddTreatments(t *testing.T) {
 		DosageStrength:   "10 mg",
 		DispenseValue:    1,
 		DispenseUnitId:   encoding.NewObjectId(26),
-		NumberRefills: &encoding.NullInt64{
+		NumberRefills: encoding.NullInt64{
 			IsNull:     false,
 			Int64Value: 1,
 		},
 		SubstitutionsAllowed: true,
-		DaysSupply: &encoding.NullInt64{
+		DaysSupply: encoding.NullInt64{
 			IsNull:     false,
 			Int64Value: 1,
 		},
@@ -224,12 +224,12 @@ func TestAddTreatments(t *testing.T) {
 		DosageStrength:   "100 mg",
 		DispenseValue:    2,
 		DispenseUnitId:   encoding.NewObjectId(27),
-		NumberRefills: &encoding.NullInt64{
+		NumberRefills: encoding.NullInt64{
 			IsNull:     false,
 			Int64Value: 3,
 		},
 		SubstitutionsAllowed: false,
-		DaysSupply: &encoding.NullInt64{
+		DaysSupply: encoding.NullInt64{
 			IsNull: true,
 		}, OTC: false,
 		PharmacyNotes:       "testing pharmacy notes 2",
@@ -292,12 +292,12 @@ func TestTreatmentTemplates(t *testing.T) {
 		DosageStrength:   "10 mg",
 		DispenseValue:    1,
 		DispenseUnitId:   encoding.NewObjectId(26),
-		NumberRefills: &encoding.NullInt64{
+		NumberRefills: encoding.NullInt64{
 			IsNull:     false,
 			Int64Value: 1,
 		},
 		SubstitutionsAllowed: true,
-		DaysSupply: &encoding.NullInt64{
+		DaysSupply: encoding.NullInt64{
 			IsNull:     false,
 			Int64Value: 1,
 		},
@@ -362,12 +362,12 @@ func TestTreatmentTemplates(t *testing.T) {
 		DosageStrength:   "10 mg",
 		DispenseValue:    1,
 		DispenseUnitId:   encoding.NewObjectId(26),
-		NumberRefills: &encoding.NullInt64{
+		NumberRefills: encoding.NullInt64{
 			IsNull:     false,
 			Int64Value: 1,
 		},
 		SubstitutionsAllowed: true,
-		DaysSupply: &encoding.NullInt64{
+		DaysSupply: encoding.NullInt64{
 			IsNull:     false,
 			Int64Value: 1,
 		},
@@ -477,12 +477,12 @@ func TestTreatmentTemplatesInContextOfPatientVisit(t *testing.T) {
 		DosageStrength:   "10 mg",
 		DispenseValue:    1,
 		DispenseUnitId:   encoding.NewObjectId(26),
-		NumberRefills: &encoding.NullInt64{
+		NumberRefills: encoding.NullInt64{
 			IsNull:     false,
 			Int64Value: 1,
 		},
 		SubstitutionsAllowed: true,
-		DaysSupply: &encoding.NullInt64{
+		DaysSupply: encoding.NullInt64{
 			IsNull:     false,
 			Int64Value: 1,
 		},
@@ -548,12 +548,12 @@ func TestTreatmentTemplatesInContextOfPatientVisit(t *testing.T) {
 		DosageStrength:   "10 mg",
 		DispenseValue:    1,
 		DispenseUnitId:   encoding.NewObjectId(26),
-		NumberRefills: &encoding.NullInt64{
+		NumberRefills: encoding.NullInt64{
 			IsNull:     false,
 			Int64Value: 1,
 		},
 		SubstitutionsAllowed: true,
-		DaysSupply: &encoding.NullInt64{
+		DaysSupply: encoding.NullInt64{
 			IsNull:     false,
 			Int64Value: 1,
 		}, OTC: true,
@@ -700,12 +700,12 @@ func TestTreatmentTemplateWithDrugOutOfMarket(t *testing.T) {
 		DosageStrength:   "10 mg",
 		DispenseValue:    1,
 		DispenseUnitId:   encoding.NewObjectId(26),
-		NumberRefills: &encoding.NullInt64{
+		NumberRefills: encoding.NullInt64{
 			IsNull:     false,
 			Int64Value: 1,
 		},
 		SubstitutionsAllowed: true,
-		DaysSupply: &encoding.NullInt64{
+		DaysSupply: encoding.NullInt64{
 			IsNull:     false,
 			Int64Value: 1,
 		}, OTC: true,
