@@ -673,7 +673,7 @@ func (d *DataService) addTreatment(treatment *common.Treatment, withoutLinkToTre
 		"type":                  treatmentType,
 		"dispense_value":        treatment.DispenseValue,
 		"dispense_unit_id":      treatment.DispenseUnitId,
-		"refills":               treatment.NumberRefills,
+		"refills":               treatment.NumberRefills.Int64Value,
 		"substitutions_allowed": treatment.SubstitutionsAllowed,
 		"patient_instructions":  treatment.PatientInstructions,
 		"pharmacy_notes":        treatment.PharmacyNotes,
