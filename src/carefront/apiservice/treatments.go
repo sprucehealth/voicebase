@@ -6,7 +6,6 @@ import (
 	"carefront/encoding"
 	"carefront/libs/erx"
 	"encoding/json"
-	"fmt"
 	"net/http"
 
 	"github.com/gorilla/schema"
@@ -118,9 +117,6 @@ func (t *TreatmentsHandler) addTreatment(w http.ResponseWriter, r *http.Request)
 		WriteDeveloperError(w, http.StatusBadRequest, "Patient visit id must be specified")
 		return
 	}
-
-	fmt.Printf("%+v", *treatmentsRequestBody.Treatments[0])
-	fmt.Printf("%+v", *treatmentsRequestBody.Treatments[1])
 
 	patientVisitReviewData, httpStatusCode, err := ValidateDoctorAccessToPatientVisitAndGetRelevantData(treatmentsRequestBody.PatientVisitId.Int64(), GetContext(r).AccountId, t.DataApi)
 	if err != nil {
