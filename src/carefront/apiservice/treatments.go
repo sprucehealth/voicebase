@@ -119,7 +119,7 @@ func (t *TreatmentsHandler) addTreatment(w http.ResponseWriter, r *http.Request)
 		return
 	}
 
-	fmt.Printf("%+v", treatmentsRequestBody)
+	fmt.Printf("%+v", treatmentsRequestBody.Treatments)
 
 	patientVisitReviewData, httpStatusCode, err := ValidateDoctorAccessToPatientVisitAndGetRelevantData(treatmentsRequestBody.PatientVisitId.Int64(), GetContext(r).AccountId, t.DataApi)
 	if err != nil {
