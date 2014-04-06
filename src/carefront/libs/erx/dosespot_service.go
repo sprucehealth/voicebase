@@ -511,6 +511,8 @@ func (d *DoseSpotService) SelectMedication(clinicianId int64, medicationName, me
 		return nil, nil
 	}
 
+	// starting refills at 0 because we default to 0 even when doctor
+	// does not enter something
 	medication = &common.Treatment{
 		DrugDBIds: map[string]string{
 			LexiGenProductId:  strconv.FormatInt(selectResult.LexiGenProductId, 10),
@@ -522,6 +524,10 @@ func (d *DoseSpotService) SelectMedication(clinicianId int64, medicationName, me
 		DispenseUnitDescription: selectResult.DispenseUnitDescription,
 		DrugInternalName:        medicationName,
 		OTC:                     selectResult.OTC,
+		NumberRefills: encoding.NullInt64{
+			IsValid:    true,
+			Int64Value: 0,
+		},
 		IsControlledSubstance: err == nil && scheduleInt > 0,
 	}
 
