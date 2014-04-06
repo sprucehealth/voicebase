@@ -86,8 +86,8 @@ func TestJSONUnmarshallingNullInt(t *testing.T) {
 	marshalJsonAndCheckResult(e1, expectedResult, t)
 
 	e1.NullValue.IsNull = false
-	e1.NullValue.Int64Value = 0
-	expectedResult = "{\"NullValue\":0}"
+	e1.NullValue.Int64Value = 1
+	expectedResult = "{\"NullValue\":1}"
 	marshalJsonAndCheckResult(e1, expectedResult, t)
 }
 
@@ -110,6 +110,19 @@ func TestJsonUnmarshalNullInt(t *testing.T) {
 
 	if e1.NullValue.Int64Value != 10 {
 		t.Fatalf("Value should be 10 instead it is %d", e1.NullValue.Int64Value)
+	}
+
+	if e1.NullValue.IsNull {
+		t.Fatal("Should not indicate that its null but it does")
+	}
+
+	marshalledJson = "{\"NullValue\":1}"
+	if err := json.Unmarshal([]byte(marshalledJson), &e1); err != nil {
+		t.Fatalf("Unable to unmarshal json: %+v", err)
+	}
+
+	if e1.NullValue.Int64Value != 1 {
+		t.Fatalf("Value should be 1 instead it is %d", e1.NullValue.Int64Value)
 	}
 
 	if e1.NullValue.IsNull {
