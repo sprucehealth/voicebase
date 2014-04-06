@@ -20,11 +20,11 @@ func TestTreatmentEquals(t *testing.T) {
 		DispenseValue:    12,
 		DispenseUnitId:   encoding.NewObjectId(12),
 		NumberRefills: encoding.NullInt64{
-			IsNull:     false,
+			IsValid:    true,
 			Int64Value: 1,
 		}, SubstitutionsAllowed: false,
 		DaysSupply: encoding.NullInt64{
-			IsNull:     false,
+			IsValid:    true,
 			Int64Value: 5,
 		}, ERx: &ERxData{
 			PrescriptionId:     encoding.NewObjectId(20),
@@ -46,11 +46,11 @@ func TestTreatmentEquals(t *testing.T) {
 		DispenseValue:    12,
 		DispenseUnitId:   encoding.NewObjectId(12),
 		NumberRefills: encoding.NullInt64{
-			IsNull:     false,
+			IsValid:    true,
 			Int64Value: 1,
 		}, SubstitutionsAllowed: false,
 		DaysSupply: encoding.NullInt64{
-			IsNull:     false,
+			IsValid:    true,
 			Int64Value: 5,
 		}, ERx: &ERxData{
 			PrescriptionId:     encoding.NewObjectId(20),
@@ -77,11 +77,11 @@ func TestTreatmentEquals(t *testing.T) {
 		DispenseValue:    12,
 		DispenseUnitId:   encoding.NewObjectId(12),
 		NumberRefills: encoding.NullInt64{
-			IsNull:     false,
+			IsValid:    true,
 			Int64Value: 1,
 		}, SubstitutionsAllowed: false,
 		DaysSupply: encoding.NullInt64{
-			IsNull:     false,
+			IsValid:    true,
 			Int64Value: 5,
 		}, ERx: &ERxData{
 			PrescriptionId:     encoding.NewObjectId(21),
@@ -107,11 +107,11 @@ func TestTreatmentEquals(t *testing.T) {
 		DispenseValue:    12,
 		DispenseUnitId:   encoding.NewObjectId(12),
 		NumberRefills: encoding.NullInt64{
-			IsNull:     false,
+			IsValid:    true,
 			Int64Value: 1,
 		}, SubstitutionsAllowed: false,
 		DaysSupply: encoding.NullInt64{
-			IsNull:     false,
+			IsValid:    true,
 			Int64Value: 5,
 		}, ERx: &ERxData{
 			PrescriptionId:     encoding.NewObjectId(20),
@@ -137,11 +137,11 @@ func TestTreatmentEquals(t *testing.T) {
 		DispenseValue:    12,
 		DispenseUnitId:   encoding.NewObjectId(12),
 		NumberRefills: encoding.NullInt64{
-			IsNull:     false,
+			IsValid:    true,
 			Int64Value: 1,
 		}, SubstitutionsAllowed: false,
 		DaysSupply: encoding.NullInt64{
-			IsNull:     false,
+			IsValid:    true,
 			Int64Value: 5,
 		}, ERx: &ERxData{
 			PrescriptionId:     encoding.NewObjectId(20),
@@ -167,11 +167,11 @@ func TestTreatmentEquals(t *testing.T) {
 		DispenseValue:    12,
 		DispenseUnitId:   encoding.NewObjectId(12),
 		NumberRefills: encoding.NullInt64{
-			IsNull:     false,
+			IsValid:    true,
 			Int64Value: 1,
 		}, SubstitutionsAllowed: false,
 		DaysSupply: encoding.NullInt64{
-			IsNull:     false,
+			IsValid:    true,
 			Int64Value: 5,
 		}, ERx: &ERxData{
 			PrescriptionId:     encoding.NewObjectId(20),
@@ -197,11 +197,11 @@ func TestTreatmentEquals(t *testing.T) {
 		DispenseValue:    12,
 		DispenseUnitId:   encoding.NewObjectId(12),
 		NumberRefills: encoding.NullInt64{
-			IsNull:     false,
+			IsValid:    true,
 			Int64Value: 1,
 		}, SubstitutionsAllowed: false,
 		DaysSupply: encoding.NullInt64{
-			IsNull:     false,
+			IsValid:    true,
 			Int64Value: 5,
 		}, ERx: &ERxData{
 			PrescriptionId:     encoding.NewObjectId(20),

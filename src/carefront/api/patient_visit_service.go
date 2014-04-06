@@ -680,7 +680,7 @@ func (d *DataService) addTreatment(treatment *common.Treatment, withoutLinkToTre
 		"status":                STATUS_CREATED,
 	}
 
-	if !treatment.DaysSupply.IsNull {
+	if treatment.DaysSupply.IsValid {
 		columnsAndData["days_supply"] = treatment.DaysSupply.Int64Value
 	}
 

@@ -465,7 +465,7 @@ func (d *DataService) addRequestedTreatmentFromPharmacy(treatment *common.Treatm
 		"doctor_id":             treatment.Doctor.DoctorId.Int64(),
 	}
 
-	if !treatment.DaysSupply.IsNull {
+	if treatment.DaysSupply.IsValid {
 		columnsAndData["days_supply"] = treatment.DaysSupply.Int64Value
 	}
 
@@ -538,7 +538,7 @@ func (d *DataService) addPharmacyDispensedTreatment(dispensedTreatment, requeste
 		"doctor_id":              dispensedTreatment.Doctor.DoctorId.Int64(),
 	}
 
-	if !dispensedTreatment.DaysSupply.IsNull {
+	if dispensedTreatment.DaysSupply.IsValid {
 		columnsAndData["days_supply"] = dispensedTreatment.DaysSupply.Int64Value
 	}
 
@@ -702,7 +702,7 @@ func (d *DataService) AddUnlinkedTreatmentInEventOfDNTF(treatment *common.Treatm
 		"patient_id":            treatment.PatientId.Int64(),
 	}
 
-	if !treatment.DaysSupply.IsNull {
+	if treatment.DaysSupply.IsValid {
 		columnsAndData["days_supply"] = treatment.DaysSupply.Int64Value
 	}
 

@@ -178,12 +178,12 @@ func TestPatientVisitReview(t *testing.T) {
 		DispenseValue:    1,
 		DispenseUnitId:   encoding.NewObjectId(26),
 		NumberRefills: encoding.NullInt64{
-			IsNull:     false,
+			IsValid:    true,
 			Int64Value: 1,
 		},
 		SubstitutionsAllowed: true,
 		DaysSupply: encoding.NullInt64{
-			IsNull:     false,
+			IsValid:    true,
 			Int64Value: 1,
 		},
 		OTC:                 true,
@@ -201,12 +201,12 @@ func TestPatientVisitReview(t *testing.T) {
 		DispenseValue:    2,
 		DispenseUnitId:   encoding.NewObjectId(27),
 		NumberRefills: encoding.NullInt64{
-			IsNull:     false,
+			IsValid:    true,
 			Int64Value: 3,
 		},
 		SubstitutionsAllowed: false,
 		DaysSupply: encoding.NullInt64{
-			IsNull:     false,
+			IsValid:    true,
 			Int64Value: 12,
 		},
 		OTC:                 false,

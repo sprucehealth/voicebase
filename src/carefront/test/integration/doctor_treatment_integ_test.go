@@ -201,12 +201,12 @@ func TestAddTreatments(t *testing.T) {
 		DispenseValue:    1,
 		DispenseUnitId:   encoding.NewObjectId(26),
 		NumberRefills: encoding.NullInt64{
-			IsNull:     false,
+			IsValid:    true,
 			Int64Value: 1,
 		},
 		SubstitutionsAllowed: true,
 		DaysSupply: encoding.NullInt64{
-			IsNull:     false,
+			IsValid:    true,
 			Int64Value: 1,
 		},
 		OTC:                 true,
@@ -225,13 +225,11 @@ func TestAddTreatments(t *testing.T) {
 		DispenseValue:    2,
 		DispenseUnitId:   encoding.NewObjectId(27),
 		NumberRefills: encoding.NullInt64{
-			IsNull:     false,
+			IsValid:    true,
 			Int64Value: 3,
 		},
 		SubstitutionsAllowed: false,
-		DaysSupply: encoding.NullInt64{
-			IsNull: true,
-		}, OTC: false,
+		DaysSupply:           encoding.NullInt64{}, OTC: false,
 		PharmacyNotes:       "testing pharmacy notes 2",
 		PatientInstructions: "patient instructions 2",
 		DrugDBIds: map[string]string{
@@ -293,12 +291,12 @@ func TestTreatmentTemplates(t *testing.T) {
 		DispenseValue:    1,
 		DispenseUnitId:   encoding.NewObjectId(26),
 		NumberRefills: encoding.NullInt64{
-			IsNull:     false,
+			IsValid:    true,
 			Int64Value: 1,
 		},
 		SubstitutionsAllowed: true,
 		DaysSupply: encoding.NullInt64{
-			IsNull:     false,
+			IsValid:    true,
 			Int64Value: 1,
 		},
 		OTC:                 true,
@@ -363,12 +361,12 @@ func TestTreatmentTemplates(t *testing.T) {
 		DispenseValue:    1,
 		DispenseUnitId:   encoding.NewObjectId(26),
 		NumberRefills: encoding.NullInt64{
-			IsNull:     false,
+			IsValid:    true,
 			Int64Value: 1,
 		},
 		SubstitutionsAllowed: true,
 		DaysSupply: encoding.NullInt64{
-			IsNull:     false,
+			IsValid:    true,
 			Int64Value: 1,
 		},
 		OTC:                 true,
@@ -478,12 +476,12 @@ func TestTreatmentTemplatesInContextOfPatientVisit(t *testing.T) {
 		DispenseValue:    1,
 		DispenseUnitId:   encoding.NewObjectId(26),
 		NumberRefills: encoding.NullInt64{
-			IsNull:     false,
+			IsValid:    true,
 			Int64Value: 1,
 		},
 		SubstitutionsAllowed: true,
 		DaysSupply: encoding.NullInt64{
-			IsNull:     false,
+			IsValid:    true,
 			Int64Value: 1,
 		},
 		OTC:                 true,
@@ -549,12 +547,12 @@ func TestTreatmentTemplatesInContextOfPatientVisit(t *testing.T) {
 		DispenseValue:    1,
 		DispenseUnitId:   encoding.NewObjectId(26),
 		NumberRefills: encoding.NullInt64{
-			IsNull:     false,
+			IsValid:    true,
 			Int64Value: 1,
 		},
 		SubstitutionsAllowed: true,
 		DaysSupply: encoding.NullInt64{
-			IsNull:     false,
+			IsValid:    true,
 			Int64Value: 1,
 		}, OTC: true,
 		PharmacyNotes:       "testing pharmacy notes",
@@ -701,12 +699,12 @@ func TestTreatmentTemplateWithDrugOutOfMarket(t *testing.T) {
 		DispenseValue:    1,
 		DispenseUnitId:   encoding.NewObjectId(26),
 		NumberRefills: encoding.NullInt64{
-			IsNull:     false,
+			IsValid:    true,
 			Int64Value: 1,
 		},
 		SubstitutionsAllowed: true,
 		DaysSupply: encoding.NullInt64{
-			IsNull:     false,
+			IsValid:    true,
 			Int64Value: 1,
 		}, OTC: true,
 		PharmacyNotes:       "testing pharmacy notes",

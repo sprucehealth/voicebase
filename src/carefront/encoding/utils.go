@@ -10,19 +10,19 @@ import (
 )
 
 type NullInt64 struct {
-	IsNull     bool
+	IsValid    bool
 	Int64Value int64
 }
 
 func NullInt64FromSql(nullInt64 sql.NullInt64) NullInt64 {
 	return NullInt64{
-		IsNull:     !nullInt64.Valid,
+		IsValid:    nullInt64.Valid,
 		Int64Value: nullInt64.Int64,
 	}
 }
 
 func (n *NullInt64) MarshalJSON() ([]byte, error) {
-	if n.IsNull {
+	if !n.IsValid {
 		return []byte(`null`), nil
 	}
 
@@ -33,15 +33,13 @@ func (n *NullInt64) UnmarshalJSON(data []byte) error {
 	strData := string(data)
 
 	if strData == "null" {
-		*n = NullInt64{
-			IsNull: true,
-		}
+		*n = NullInt64{}
 		return nil
 	}
 
 	intValue, err := strconv.ParseInt(strData, 10, 64)
 	*n = NullInt64{
-		IsNull:     false,
+		IsValid:    true,
 		Int64Value: intValue,
 	}
 
@@ -60,9 +58,7 @@ func (n *NullInt64) UnmarshalXML(d *xml.Decoder, start xml.StartElement) error {
 	// form of element would be: <elementName xsi:nil="true" />
 	if len(start.Attr) > 0 {
 		if start.Attr[0].Name.Local == "nil" && start.Attr[0].Value == "true" {
-			*n = NullInt64{
-				IsNull: true,
-			}
+			*n = NullInt64{}
 			// still decoding to consume the element in the xml document
 			d.DecodeElement(&num, &start)
 			return nil
@@ -71,7 +67,7 @@ func (n *NullInt64) UnmarshalXML(d *xml.Decoder, start xml.StartElement) error {
 
 	err := d.DecodeElement(&num, &start)
 	*n = NullInt64{
-		IsNull:     false,
+		IsValid:    true,
 		Int64Value: num,
 	}
 
@@ -79,7 +75,7 @@ func (n *NullInt64) UnmarshalXML(d *xml.Decoder, start xml.StartElement) error {
 }
 func (n *NullInt64) MarshalXML(e *xml.Encoder, start xml.StartElement) error {
 	value := ""
-	if n.IsNull {
+	if !n.IsValid {
 		if start.Attr == nil {
 			start.Attr = make([]xml.Attr, 0)
 		}
