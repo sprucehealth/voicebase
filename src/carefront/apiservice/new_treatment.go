@@ -41,6 +41,11 @@ func (m *NewTreatmentHandler) ServeHTTP(w http.ResponseWriter, r *http.Request) 
 		return
 	}
 
+	if len(requestData.MedicationName) > 105 {
+		WriteUserError(w, http.StatusBadRequest, "Any medication name longer than 105 characters cannot be sent electronically and instead must be called in. Please call in this prescription to the patient's preferred pharmacy if you would like to route it.")
+		return
+	}
+
 	doctor, err := m.DataApi.GetDoctorFromAccountId(GetContext(r).AccountId)
 	if err != nil {
 		WriteDeveloperError(w, http.StatusInternalServerError, "Unable to get doctor from account id: "+err.Error())
