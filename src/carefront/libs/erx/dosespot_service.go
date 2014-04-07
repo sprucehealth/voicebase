@@ -524,6 +524,7 @@ func (d *DoseSpotService) SelectMedication(clinicianId int64, medicationName, me
 		DispenseUnitDescription: selectResult.DispenseUnitDescription,
 		DrugInternalName:        medicationName,
 		OTC:                     selectResult.OTC,
+		SubstitutionsAllowed:    true, // defaulting to substitutions being allowed as required by surescripts
 		NumberRefills: encoding.NullInt64{
 			IsValid:    true,
 			Int64Value: 0,
