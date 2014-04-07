@@ -19,7 +19,7 @@ type Treatment struct {
 	DrugRoute                 string                   `json:"drug_route,omitempty"`
 	DrugForm                  string                   `json:"drug_form,omitempty"`
 	DosageStrength            string                   `json:"dosage_strength,omitempty"`
-	DispenseValue             float64                  `json:"dispense_value,omitempty"`
+	DispenseValue             float64                  `json:"dispense_value,string,omitempty"`
 	DispenseUnitId            *encoding.ObjectId       `json:"dispense_unit_id,omitempty"`
 	DispenseUnitDescription   string                   `json:"dispense_unit_description,omitempty"`
 	NumberRefills             encoding.NullInt64       `json:"refills,omitempty"`
