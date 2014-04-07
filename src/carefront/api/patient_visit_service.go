@@ -929,7 +929,7 @@ func (d *DataService) UpdateTreatmentWithPharmacyAndErxId(treatments []*common.T
 	}
 
 	for _, treatment := range treatments {
-		if treatment.ERx.PrescriptionId.Int64() != 0 {
+		if treatment.ERx != nil && treatment.ERx.PrescriptionId.Int64() != 0 {
 			_, err = tx.Exec(`update treatment set erx_id = ?, pharmacy_id = ?, erx_sent_date=now() where id = ?`, treatment.ERx.PrescriptionId, pharmacySentTo.LocalId, treatment.Id)
 			if err != nil {
 				tx.Rollback()

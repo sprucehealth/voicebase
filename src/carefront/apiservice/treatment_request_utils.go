@@ -38,6 +38,10 @@ func validateTreatment(treatment *common.Treatment) error {
 		return errors.New(("Number of refills has to be less than 99"))
 	}
 
+	if treatment.DaysSupply.Int64Value > 999 {
+		return errors.New("Days supply cannot be greater than 999")
+	}
+
 	trimSpacesFromTreatmentFields(treatment)
 
 	return nil

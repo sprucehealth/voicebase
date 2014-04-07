@@ -45,7 +45,7 @@ func (d *DoctorPatientUpdateHandler) validatePatientInformationAccordingToSuresc
 	}
 
 	if patient.Dob.Month == 0 || patient.Dob.Year == 0 || patient.Dob.Day == 0 {
-		return errors.New("Dob is invalid. Required format is YYYY-MM-DD")
+		return errors.New("Dob is invalid. Please enter in right format.")
 	}
 
 	if !is18YearsOfAge(patient.Dob) {
