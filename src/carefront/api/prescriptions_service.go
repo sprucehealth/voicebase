@@ -996,9 +996,11 @@ func (d *DataService) GetErxStatusEventsForDNTFTreatment(treatmentId int64) ([]c
 	for rows.Next() {
 		var statusDetails sql.NullString
 		var statusEventItem common.StatusEvent
-		if err := rows.Scan(&statusEventItem.ItemId, &statusEventItem.PrescriptionId, &statusEventItem.Status, &statusDetails, &statusEventItem.InternalStatus, &statusEventItem.StatusTimestamp); err != nil {
+		var erxId sql.NullInt64
+		if err := rows.Scan(&statusEventItem.ItemId, &erxId, &statusEventItem.Status, &statusDetails, &statusEventItem.InternalStatus, &statusEventItem.StatusTimestamp); err != nil {
 			return nil, err
 		}
+		statusEventItem.PrescriptionId = erxId.Int64
 		statusEventItem.StatusDetails = statusDetails.String
 		statusEvents = append(statusEvents, statusEventItem)
 	}
