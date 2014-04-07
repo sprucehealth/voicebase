@@ -53,7 +53,7 @@ func validateTreatment(treatment *common.Treatment) error {
 		return errors.New(("Number of refills has to be less than 99"))
 	}
 
-	if treatment.DaysSupply.Int64Value == 0 {
+	if treatment.DaysSupply.IsValid && treatment.DaysSupply.Int64Value == 0 {
 		return errors.New("Days Supply cannot be 0")
 	}
 
