@@ -23,7 +23,7 @@ func validateTreatment(treatment *common.Treatment) error {
 	}
 
 	// only allow values between 0 and 99999.99999
-	if treatment.DispenseValue > 100000.0 {
+	if int64(treatment.DispenseValue) > int64(100000) {
 		return errors.New("Dispense value can only be between 0 and 99999")
 	}
 
