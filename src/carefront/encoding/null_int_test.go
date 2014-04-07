@@ -14,7 +14,7 @@ func TestXMLMarshallingNullInt(t *testing.T) {
 
 	e1 := exampleObjectForNullInt64{}
 
-	expectedResult := "<exampleObjectForNullInt64><NullValue xsi:nil=\"true\"></NullValue></exampleObjectForNullInt64>"
+	expectedResult := "<exampleObjectForNullInt64></exampleObjectForNullInt64>"
 	marshalAndCheckResult(e1, expectedResult, t)
 
 	expectedResult = "<exampleObjectForNullInt64><NullValue>50</NullValue></exampleObjectForNullInt64>"
@@ -22,7 +22,7 @@ func TestXMLMarshallingNullInt(t *testing.T) {
 	e1.NullValue.IsValid = true
 	marshalAndCheckResult(e1, expectedResult, t)
 
-	expectedResult = "<exampleObjectForNullInt64><NullValue xsi:nil=\"true\"></NullValue></exampleObjectForNullInt64>"
+	expectedResult = "<exampleObjectForNullInt64></exampleObjectForNullInt64>"
 	e1.NullValue.Int64Value = 100
 	e1.NullValue.IsValid = false
 	marshalAndCheckResult(e1, expectedResult, t)

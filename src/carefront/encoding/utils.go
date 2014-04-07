@@ -74,22 +74,11 @@ func (n *NullInt64) UnmarshalXML(d *xml.Decoder, start xml.StartElement) error {
 	return err
 }
 func (n *NullInt64) MarshalXML(e *xml.Encoder, start xml.StartElement) error {
-	value := ""
-	if !n.IsValid {
-		if start.Attr == nil {
-			start.Attr = make([]xml.Attr, 0)
-		}
-		start.Attr = append(start.Attr, xml.Attr{
-			Name: xml.Name{
-				Local: "xsi:nil",
-			},
-			Value: "true",
-		})
-	} else {
-		value = strconv.FormatInt(n.Int64Value, 10)
+	if n.IsValid {
+		return e.EncodeElement(strconv.FormatInt(n.Int64Value, 10), start)
 	}
 
-	return e.EncodeElement(value, start)
+	return e.EncodeElement(nil, start)
 }
 
 func (n *NullInt64) Int64() int64 {
