@@ -80,6 +80,11 @@ func (d *DoctorRefillRequestHandler) resolveRefillRequest(w http.ResponseWriter,
 		return
 	}
 
+	if len(requestData.Comments) > refillRequestCommentLength {
+		WriteUserError(w, http.StatusBadRequest, "Comments for refill request cannot be greater than 70 characters")
+		return
+	}
+
 	doctor, err := d.DataApi.GetDoctorFromAccountId(GetContext(r).AccountId)
 	if err != nil {
 		WriteDeveloperError(w, http.StatusInternalServerError, "Unable to get doctor from account id: "+err.Error())

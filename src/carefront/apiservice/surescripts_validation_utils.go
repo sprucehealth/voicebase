@@ -34,6 +34,18 @@ var (
 		"947", "949", "951", "952", "954", "956", "970", "971", "972", "973", "978", "979", "980", "985", "989"}
 )
 
+// following constants are defined by surescripts requirements
+const (
+	longFieldLength            = 35
+	shortFieldLength           = 10
+	phoneNumberLength          = 25
+	pharmacyNotesLength        = 210
+	patientInstructionsLength  = 140
+	numberRefillsMaxValue      = 99
+	daysSupplyMaxValue         = 999
+	refillRequestCommentLength = 70
+)
+
 func (d *DoctorPatientUpdateHandler) validatePatientInformationAccordingToSurescriptsRequirements(patient *common.Patient, addressValidationApi address_validation.AddressValidationAPI) error {
 
 	if patient.FirstName == "" {
@@ -67,11 +79,6 @@ func (d *DoctorPatientUpdateHandler) validatePatientInformationAccordingToSuresc
 	if patient.PatientAddress.State == "" {
 		return errors.New("State in address is required")
 	}
-
-	// following field lengths are surescripts requirements
-	longFieldLength := 35
-	shortFieldLength := 10
-	phoneNumberLength := 25
 
 	if len(patient.Prefix) > shortFieldLength {
 		return fmt.Errorf("Prefix cannot be longer than %d characters in length", shortFieldLength)
