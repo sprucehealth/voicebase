@@ -22,6 +22,17 @@ func validateTreatment(treatment *common.Treatment) error {
 		return errors.New("DispenseValue for treatment cannot be 0")
 	}
 
+	// only allow values between 0 and 99999.99999
+	if treatment.DispenseValue > 100000.0 {
+		return errors.New("Dispense value can only be between 0 and 99999")
+	}
+
+	dispenseValuePlusSixDecimalDigits := int64(treatment.DispenseValue * 100000)
+
+	if float64(dispenseValuePlusSixDecimalDigits) != float64(treatment.DispenseValue*100000) {
+		return errors.New("Only 5 decimal places allowed for dispense value")
+	}
+
 	if treatment.DispenseUnitId.Int64() == 0 {
 		return errors.New("DispenseUnit	 Id for treatment cannot be 0")
 	}
