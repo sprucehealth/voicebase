@@ -34,7 +34,7 @@ func validateTreatment(treatment *common.Treatment) error {
 		return errors.New("Drug DB Ids for treatment cannot be empty")
 	}
 
-	if treatment.NumberRefills > 99 {
+	if treatment.NumberRefills.Int64Value > 99 {
 		return errors.New(("Number of refills has to be less than 99"))
 	}
 
