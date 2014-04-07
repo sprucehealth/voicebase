@@ -123,6 +123,18 @@ func TestNewTreatmentSelection(t *testing.T) {
 	if resp.StatusCode != apiservice.HTTP_UNPROCESSABLE_ENTITY {
 		t.Fatal("Expected a bad request when attempting to select a controlled substance given that we don't allow routing of controlled substances using our platform")
 	}
+
+	// Let's ensure that we are rejecting a drug description that is longer than 105 characters to be routed via eRX.
+	urlValues = url.Values{}
+	urlValues.Set("drug_internal_name", "Clinimix E Sulfite-Free 2.75% with 10% Dextrose and Electrolytes (intravenous - solution)")
+	urlValues.Set("medication_strength", "Amino Acids 2.75% with 10% Dextrose and Electrolytes (Clinimix E Sulfite-Free)")
+	resp, err = authGet(ts.URL+"?"+urlValues.Encode(), doctor.AccountId.Int64())
+	if err != nil {
+		t.Fatal("Unable to make successfull call to select a drug whose description is longer than the limit" + err.Error())
+	}
+	if resp.StatusCode != apiservice.HTTP_UNPROCESSABLE_ENTITY {
+		t.Fatal("Expected a bad request when attempting to select a drug with longer than max drug description to ensure that we don't send through eRx but advice doc to call drug in")
+	}
 }
 
 func TestDispenseUnitIds(t *testing.T) {

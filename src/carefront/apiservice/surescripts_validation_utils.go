@@ -36,14 +36,15 @@ var (
 
 // following constants are defined by surescripts requirements
 const (
-	longFieldLength            = 35
-	shortFieldLength           = 10
-	phoneNumberLength          = 25
-	pharmacyNotesLength        = 210
-	patientInstructionsLength  = 140
-	numberRefillsMaxValue      = 99
-	daysSupplyMaxValue         = 999
-	refillRequestCommentLength = 70
+	maxLongFieldLength             = 35
+	maxShortFieldLength            = 10
+	maxPhoneNumberLength           = 25
+	maxPharmacyNotesLength         = 210
+	maxPatientInstructionsLength   = 140
+	maxNumberRefillsMaxValue       = 99
+	maxDaysSupplyMaxValue          = 999
+	maxRefillRequestCommentLength  = 70
+	maxMedicationDescriptionLength = 105
 )
 
 func (d *DoctorPatientUpdateHandler) validatePatientInformationAccordingToSurescriptsRequirements(patient *common.Patient, addressValidationApi address_validation.AddressValidationAPI) error {
@@ -80,41 +81,41 @@ func (d *DoctorPatientUpdateHandler) validatePatientInformationAccordingToSuresc
 		return errors.New("State in address is required")
 	}
 
-	if len(patient.Prefix) > shortFieldLength {
-		return fmt.Errorf("Prefix cannot be longer than %d characters in length", shortFieldLength)
+	if len(patient.Prefix) > maxShortFieldLength {
+		return fmt.Errorf("Prefix cannot be longer than %d characters in length", maxShortFieldLength)
 	}
 
-	if len(patient.Suffix) > shortFieldLength {
-		return fmt.Errorf("Suffix cannot be longer than %d characters in length", shortFieldLength)
+	if len(patient.Suffix) > maxShortFieldLength {
+		return fmt.Errorf("Suffix cannot be longer than %d characters in length", maxShortFieldLength)
 	}
 
-	if len(patient.FirstName) > longFieldLength {
-		return fmt.Errorf("First name cannot be longer than %d characters", longFieldLength)
+	if len(patient.FirstName) > maxLongFieldLength {
+		return fmt.Errorf("First name cannot be longer than %d characters", maxLongFieldLength)
 	}
 
-	if len(patient.MiddleName) > longFieldLength {
-		return fmt.Errorf("Middle name cannot be longer than %d characters", longFieldLength)
+	if len(patient.MiddleName) > maxLongFieldLength {
+		return fmt.Errorf("Middle name cannot be longer than %d characters", maxLongFieldLength)
 	}
 
-	if len(patient.LastName) > longFieldLength {
-		return fmt.Errorf("Last name cannot be longer than %d characters", longFieldLength)
+	if len(patient.LastName) > maxLongFieldLength {
+		return fmt.Errorf("Last name cannot be longer than %d characters", maxLongFieldLength)
 	}
 
-	if len(patient.PatientAddress.AddressLine1) > longFieldLength {
-		return fmt.Errorf("AddressLine1 of patient address cannot be longer than %d characters", longFieldLength)
+	if len(patient.PatientAddress.AddressLine1) > maxLongFieldLength {
+		return fmt.Errorf("AddressLine1 of patient address cannot be longer than %d characters", maxLongFieldLength)
 	}
 
-	if len(patient.PatientAddress.AddressLine2) > longFieldLength {
-		return fmt.Errorf("AddressLine2 of patient address cannot be longer than %d characters", longFieldLength)
+	if len(patient.PatientAddress.AddressLine2) > maxLongFieldLength {
+		return fmt.Errorf("AddressLine2 of patient address cannot be longer than %d characters", maxLongFieldLength)
 	}
 
-	if len(patient.PatientAddress.City) > longFieldLength {
-		return fmt.Errorf("City cannot be longer than %d characters", longFieldLength)
+	if len(patient.PatientAddress.City) > maxLongFieldLength {
+		return fmt.Errorf("City cannot be longer than %d characters", maxLongFieldLength)
 	}
 
 	for _, phoneNumber := range patient.PhoneNumbers {
 		if len(phoneNumber.Phone) > 25 {
-			return fmt.Errorf("Phone numbers cannot be longer than %d digits", phoneNumberLength)
+			return fmt.Errorf("Phone numbers cannot be longer than %d digits", maxPhoneNumberLength)
 		}
 	}
 

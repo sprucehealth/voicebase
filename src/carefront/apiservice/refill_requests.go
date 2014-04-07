@@ -80,7 +80,7 @@ func (d *DoctorRefillRequestHandler) resolveRefillRequest(w http.ResponseWriter,
 		return
 	}
 
-	if len(requestData.Comments) > refillRequestCommentLength {
+	if len(requestData.Comments) > maxRefillRequestCommentLength {
 		WriteUserError(w, http.StatusBadRequest, "Comments for refill request cannot be greater than 70 characters")
 		return
 	}
