@@ -473,7 +473,6 @@ func (d *DoseSpotService) StartPrescribingPatient(clinicianId int64, currentPati
 						treatment.ERx = &common.ERxData{}
 					}
 					treatment.ERx.PrescriptionId = encoding.NewObjectId(medication.DoseSpotPrescriptionId)
-					break
 				}
 			}
 		}
