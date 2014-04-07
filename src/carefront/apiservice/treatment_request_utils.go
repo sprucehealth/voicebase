@@ -41,6 +41,10 @@ func validateTreatment(treatment *common.Treatment) error {
 		return errors.New("Patient Instructions for treatment cannot be empty")
 	}
 
+	if len(treatment.PatientInstructions) > 140 {
+		return errors.New("Patient instructions should not be greater than 140 characters")
+	}
+
 	if treatment.DrugDBIds == nil || len(treatment.DrugDBIds) == 0 {
 		return errors.New("Drug DB Ids for treatment cannot be empty")
 	}
@@ -49,8 +53,16 @@ func validateTreatment(treatment *common.Treatment) error {
 		return errors.New(("Number of refills has to be less than 99"))
 	}
 
+	if treatment.DaysSupply.Int64Value == 0 {
+		return errors.New("Days Supply cannot be 0")
+	}
+
 	if treatment.DaysSupply.Int64Value > 999 {
 		return errors.New("Days supply cannot be greater than 999")
+	}
+
+	if len(treatment.PharmacyNotes) > 210 {
+		return errors.New("Pharmacy notes should not be great than 210 characters")
 	}
 
 	trimSpacesFromTreatmentFields(treatment)
