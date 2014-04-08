@@ -222,6 +222,10 @@ func (dob *Dob) ToTime() time.Time {
 	return time.Date(dob.Year, time.Month(dob.Month), dob.Day, 0, 0, 0, 0, time.UTC)
 }
 
+func (dob *Dob) String() string {
+	return fmt.Sprintf(`%d-%02d-%02d`, dob.Year, dob.Month, dob.Day)
+}
+
 func NewDobFromTime(dobTime time.Time) Dob {
 	dobYear, dobMonth, dobDay := dobTime.Date()
 	dob := Dob{}

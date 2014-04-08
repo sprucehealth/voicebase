@@ -4,11 +4,13 @@ import (
 	"bytes"
 	"carefront/api"
 	"carefront/common"
+	"carefront/encoding"
 	"carefront/libs/golog"
 	"carefront/libs/pharmacy"
 	"encoding/json"
 	"fmt"
 	"io"
+	"io/ioutil"
 	"mime/multipart"
 	"net/http"
 	"net/url"
@@ -478,162 +480,219 @@ func (c *CreateDemoPatientVisitHandler) ServeHTTP(w http.ResponseWriter, r *http
 		return
 	}
 
-	// ********** CREATE RANDOM PATIENT **********
-	urlValues := url.Values{}
-	urlValues.Set("first_name", "Demo")
-	urlValues.Set("last_name", "User")
-	urlValues.Set("dob", "1987-11-08")
-	urlValues.Set("gender", "female")
-	urlValues.Set("zip_code", "94115")
-	urlValues.Set("phone", "2068773590")
-	urlValues.Set("password", "12345")
-	urlValues.Set("email", fmt.Sprintf("%d%d@example.com", time.Now().UnixNano(), doctorId))
-	urlValues.Set("doctor_id", fmt.Sprintf("%d", doctorId))
-	signupPatientRequest, err := http.NewRequest("POST", signupPatientUrl, bytes.NewBufferString(urlValues.Encode()))
-	signupPatientRequest.Header.Set("Content-Type", "application/x-www-form-urlencoded")
-
-	resp, err := http.DefaultClient.Do(signupPatientRequest)
-	if err != nil || resp.StatusCode != http.StatusOK {
-		WriteDeveloperError(w, http.StatusInternalServerError, "Unable to signup random patient: "+err.Error())
-		return
+	demoPatientToCreate := common.Patient{
+		FirstName: "Demo",
+		LastName:  "User",
+		Gender:    "female",
+		Dob: encoding.Dob{
+			Year:  1987,
+			Month: 11,
+			Day:   8,
+		},
+		ZipCode: "94115",
+		PhoneNumbers: []*common.PhoneInformation{&common.PhoneInformation{
+			Phone:     "2068773590",
+			PhoneType: "Home",
+		},
+		},
+		Pharmacy: &pharmacy.PharmacyData{
+			SourceId:     "47731",
+			AddressLine1: "116 New Montgomery St",
+			Name:         "CA pharmacy store 10.6",
+			City:         "San Francisco",
+			State:        "CA",
+			Postal:       "92804",
+			Source:       pharmacy.PHARMACY_SOURCE_SURESCRIPTS,
+		},
+		PatientAddress: &common.Address{
+			AddressLine1: "12345 Main Street",
+			AddressLine2: "Apt 1112",
+			City:         "San Francisco",
+			State:        "California",
+			ZipCode:      "94115",
+		},
 	}
 
-	signupResponse := &PatientSignedupResponse{}
-	err = json.NewDecoder(resp.Body).Decode(&signupResponse)
-	defer resp.Body.Close()
-
-	if err != nil {
-		WriteDeveloperError(w, http.StatusInternalServerError, "Unable to unmarshal response body into object: "+err.Error())
-		return
-	}
-
-	// ********** ASSIGN PHARMACY TO PATIENT **********
-
-	pharmacyDetails := &pharmacy.PharmacyData{
-		SourceId:     "47731",
-		AddressLine1: "116 New Montgomery St",
-		Name:         "CA pharmacy store 10.6",
-		City:         "San Francisco",
-		State:        "CA",
-		Postal:       "92804",
-		Source:       pharmacy.PHARMACY_SOURCE_SURESCRIPTS,
-	}
-
-	if err := c.DataApi.UpdatePatientPharmacy(signupResponse.Patient.PatientId.Int64(), pharmacyDetails); err != nil {
-		WriteDeveloperError(w, http.StatusInternalServerError, "Unable to update patient pharmacy: "+err.Error())
-		return
-	}
-	// add address for patient
-	if err := c.DataApi.UpdateDefaultAddressForPatient(signupResponse.Patient.PatientId.Int64(), &common.Address{
-		AddressLine1: "12345 Main Street",
-		AddressLine2: "Apt 1112",
-		City:         "San Francisco",
-		State:        "California",
-		ZipCode:      "94115",
-	}); err != nil {
-		WriteDeveloperError(w, http.StatusInternalServerError, "Unable to add address for patient: "+err.Error())
-		return
-	}
-
-	// ********** CREATE PATIENT VISIT **********
-
-	// create patient visit
-	createPatientVisitRequest, err := http.NewRequest("POST", patientVisitUrl, nil)
-	createPatientVisitRequest.Header.Set("Authorization", "token "+signupResponse.Token)
-	resp, err = http.DefaultClient.Do(createPatientVisitRequest)
-	if err != nil || resp.StatusCode != http.StatusOK {
-		WriteDeveloperError(w, http.StatusInternalServerError, "Unable to create new patient visit: "+err.Error())
-		return
-	}
-
-	patientVisitResponse := &PatientVisitResponse{}
-	err = json.NewDecoder(resp.Body).Decode(&patientVisitResponse)
-	defer resp.Body.Close()
-	if err != nil {
-		WriteDeveloperError(w, http.StatusInternalServerError, "Unable to unmarshal response into patient visit response: "+err.Error())
-		return
-	}
-
-	// ********** SIMULATE PATIENT INTAKE **********
-
-	questionIds := make(map[questionTag]int64)
-	questionTagsForLookup := make([]string, 0)
-	for questionTagString, _ := range questionTags {
-		questionTagsForLookup = append(questionTagsForLookup, questionTagString)
-	}
-
-	questionInfos, err := c.DataApi.GetQuestionInfoForTags(questionTagsForLookup, api.EN_LANGUAGE_ID)
-	if err != nil {
-		WriteDeveloperError(w, http.StatusInternalServerError, "Unable to lookup ids based on question tags: "+err.Error())
-		return
-	}
-
-	for _, questionInfoItem := range questionInfos {
-		questionIds[questionTags[questionInfoItem.QuestionTag]] = questionInfoItem.Id
-	}
-
-	answerIds := make(map[potentialAnswerTag]int64)
-	answerTagsForLookup := make([]string, 0)
-	for answerTagString, _ := range answerTags {
-		answerTagsForLookup = append(answerTagsForLookup, answerTagString)
-	}
-	answerInfos, err := c.DataApi.GetAnswerInfoForTags(answerTagsForLookup, api.EN_LANGUAGE_ID)
-	if err != nil {
-		WriteDeveloperError(w, http.StatusInternalServerError, "Unable to lookup answer infos based on tags: "+err.Error())
-		return
-	}
-	for _, answerInfoItem := range answerInfos {
-		answerIds[answerTags[answerInfoItem.AnswerTag]] = answerInfoItem.PotentialAnswerId
-	}
-
-	answersToQuestions := populatePatientIntake(questionIds, answerIds)
-
-	// use a buffered channel so that the goroutines don't block
-	// until the receiver reads off the channel
-	signal := make(chan int, 6)
-	numRequestsWaitingFor := 6
-
-	startPatientIntakeSubmission(answersToQuestions, patientVisitResponse.PatientVisitId, signupResponse.Token, signal)
-
-	c.startPhotoSubmissionForPatient(questionIds[qFacePhotoIntake],
-		answerIds[aFaceFrontPhotoIntake], patientVisitResponse.PatientVisitId, frontPhoto, signupResponse.Token, signal)
-
-	c.startPhotoSubmissionForPatient(questionIds[qFacePhotoIntake],
-		answerIds[aProfileRightPhotoIntake], patientVisitResponse.PatientVisitId, profileRightPhoto, signupResponse.Token, signal)
-
-	c.startPhotoSubmissionForPatient(questionIds[qFacePhotoIntake],
-		answerIds[aProfileLeftPhotoIntake], patientVisitResponse.PatientVisitId, profileLeftPhoto, signupResponse.Token, signal)
-
-	c.startPhotoSubmissionForPatient(questionIds[qNeckPhotoIntake],
-		answerIds[aNeckPhotoIntake], patientVisitResponse.PatientVisitId, neckPhoto, signupResponse.Token, signal)
-
-	c.startPhotoSubmissionForPatient(questionIds[qChestPhotoIntake],
-		answerIds[aChestPhotoIntake], patientVisitResponse.PatientVisitId, chestPhoto, signupResponse.Token, signal)
-
-	// wait for all requests to finish
-	for numRequestsWaitingFor > 0 {
-		result := <-signal
-		if result == failure {
-			WriteDeveloperError(w, http.StatusInternalServerError, "Something went wrong when tryign to submit patient visit intake. Patient visit not successfully submitted")
-			return
-		}
-		numRequestsWaitingFor--
-	}
-
-	// ********** SUBMIT CASE TO DOCTOR **********
-	submitPatientVisitRequest, err := http.NewRequest("PUT", patientVisitUrl, bytes.NewBufferString(fmt.Sprintf("patient_visit_id=%d", patientVisitResponse.PatientVisitId)))
-	submitPatientVisitRequest.Header.Set("Content-Type", "application/x-www-form-urlencoded")
-	submitPatientVisitRequest.Header.Set("Authorization", "token "+signupResponse.Token)
-	if err != nil {
-		WriteDeveloperError(w, http.StatusInternalServerError, "Unable to create new request to submit patient visit: "+err.Error())
-		return
-	}
-
-	resp, err = http.DefaultClient.Do(submitPatientVisitRequest)
-	if err != nil || resp.StatusCode != http.StatusOK {
-		WriteDeveloperError(w, http.StatusInternalServerError, "Unable to make successful request to submit patient visit")
+	topLevelSignal := make(chan int)
+	c.createNewDemoPatient(&demoPatientToCreate, doctorId, topLevelSignal)
+	result := <-topLevelSignal
+	if result == failure {
+		WriteDeveloperError(w, http.StatusInternalServerError, "Something went wrong while trying to create demo patient")
 		return
 	}
 
 	WriteJSONToHTTPResponseWriter(w, http.StatusOK, SuccessfulGenericJSONResponse())
+}
+
+func (c *CreateDemoPatientVisitHandler) createNewDemoPatient(patient *common.Patient, doctorId int64, topLevelSignal chan int) {
+	go func() {
+		// ********** CREATE RANDOM PATIENT **********
+		// Note that once this random patient is created, we will use the patientId and the accountId
+		// to update the patient information. The reason to go through this flow instead of directly
+		// adding the patient to the database is to avoid the work of assigning a care team to the patient
+		// and setting a patient up with an account
+		urlValues := url.Values{}
+		urlValues.Set("first_name", patient.FirstName)
+		urlValues.Set("last_name", patient.LastName)
+		urlValues.Set("dob", patient.Dob.String())
+		urlValues.Set("gender", patient.Gender)
+		urlValues.Set("zip_code", patient.ZipCode)
+		urlValues.Set("phone", patient.PhoneNumbers[0].Phone)
+		urlValues.Set("password", "12345")
+		urlValues.Set("email", fmt.Sprintf("%d%d@example.com", time.Now().UnixNano(), doctorId))
+		urlValues.Set("doctor_id", fmt.Sprintf("%d", doctorId))
+		signupPatientRequest, err := http.NewRequest("POST", signupPatientUrl, bytes.NewBufferString(urlValues.Encode()))
+		signupPatientRequest.Header.Set("Content-Type", "application/x-www-form-urlencoded")
+
+		resp, err := http.DefaultClient.Do(signupPatientRequest)
+		if err != nil {
+			golog.Errorf("Unable to signup random patient:%+v", err)
+			topLevelSignal <- failure
+			return
+		}
+
+		if resp.StatusCode != http.StatusOK {
+			respBody, err := ioutil.ReadAll(resp.Body)
+			if err != nil {
+				golog.Errorf("Unable to signup random patient and unable to read body of response: %+v", err)
+				topLevelSignal <- failure
+				return
+			}
+			golog.Errorf("Status %d when trying to signup random patient: %+v", resp.StatusCode, string(respBody))
+			topLevelSignal <- failure
+			return
+		}
+
+		signupResponse := &PatientSignedupResponse{}
+		err = json.NewDecoder(resp.Body).Decode(&signupResponse)
+		defer resp.Body.Close()
+
+		if err != nil {
+			golog.Errorf("Unable to unmarshal response body into object: %+v", err)
+			topLevelSignal <- failure
+			return
+		}
+
+		// ********** UPDATE PATIENT DEMOGRAPHIC INFORMATION AS THOUGH A DOCTOR WERE UPDATING IT **********
+		patient.PatientId = signupResponse.Patient.PatientId
+		patient.AccountId = signupResponse.Patient.AccountId
+		patient.Email = signupResponse.Patient.Email
+		err = c.DataApi.UpdatePatientInformationFromDoctor(patient)
+		if err != nil {
+			golog.Errorf("Unable to update patient information:%+v", err)
+			topLevelSignal <- failure
+			return
+		}
+
+		// ********** CREATE PATIENT VISIT **********
+
+		// create patient visit
+		createPatientVisitRequest, err := http.NewRequest("POST", patientVisitUrl, nil)
+		createPatientVisitRequest.Header.Set("Authorization", "token "+signupResponse.Token)
+		resp, err = http.DefaultClient.Do(createPatientVisitRequest)
+		if err != nil || resp.StatusCode != http.StatusOK {
+			golog.Errorf("Unable to create new patient visit: %+v", err)
+			topLevelSignal <- failure
+			return
+		}
+
+		patientVisitResponse := &PatientVisitResponse{}
+		err = json.NewDecoder(resp.Body).Decode(&patientVisitResponse)
+		defer resp.Body.Close()
+		if err != nil {
+			golog.Errorf("Unable to unmarshal response into patient visit response: %+v", err.Error())
+			topLevelSignal <- failure
+			return
+		}
+
+		// ********** SIMULATE PATIENT INTAKE **********
+
+		questionIds := make(map[questionTag]int64)
+		questionTagsForLookup := make([]string, 0)
+		for questionTagString, _ := range questionTags {
+			questionTagsForLookup = append(questionTagsForLookup, questionTagString)
+		}
+
+		questionInfos, err := c.DataApi.GetQuestionInfoForTags(questionTagsForLookup, api.EN_LANGUAGE_ID)
+		if err != nil {
+			golog.Errorf("Unable to lookup ids based on question tags:%+v", err.Error())
+			topLevelSignal <- failure
+			return
+		}
+
+		for _, questionInfoItem := range questionInfos {
+			questionIds[questionTags[questionInfoItem.QuestionTag]] = questionInfoItem.Id
+		}
+
+		answerIds := make(map[potentialAnswerTag]int64)
+		answerTagsForLookup := make([]string, 0)
+		for answerTagString, _ := range answerTags {
+			answerTagsForLookup = append(answerTagsForLookup, answerTagString)
+		}
+		answerInfos, err := c.DataApi.GetAnswerInfoForTags(answerTagsForLookup, api.EN_LANGUAGE_ID)
+		if err != nil {
+			golog.Errorf("Unable to lookup answer infos based on tags:%+v", err.Error())
+			topLevelSignal <- failure
+			return
+		}
+		for _, answerInfoItem := range answerInfos {
+			answerIds[answerTags[answerInfoItem.AnswerTag]] = answerInfoItem.PotentialAnswerId
+		}
+
+		answersToQuestions := populatePatientIntake(questionIds, answerIds)
+
+		// use a buffered channel so that the goroutines don't block
+		// until the receiver reads off the channel
+		signal := make(chan int, 6)
+		numRequestsWaitingFor := 6
+
+		startPatientIntakeSubmission(answersToQuestions, patientVisitResponse.PatientVisitId, signupResponse.Token, signal)
+
+		c.startPhotoSubmissionForPatient(questionIds[qFacePhotoIntake],
+			answerIds[aFaceFrontPhotoIntake], patientVisitResponse.PatientVisitId, frontPhoto, signupResponse.Token, signal)
+
+		c.startPhotoSubmissionForPatient(questionIds[qFacePhotoIntake],
+			answerIds[aProfileRightPhotoIntake], patientVisitResponse.PatientVisitId, profileRightPhoto, signupResponse.Token, signal)
+
+		c.startPhotoSubmissionForPatient(questionIds[qFacePhotoIntake],
+			answerIds[aProfileLeftPhotoIntake], patientVisitResponse.PatientVisitId, profileLeftPhoto, signupResponse.Token, signal)
+
+		c.startPhotoSubmissionForPatient(questionIds[qNeckPhotoIntake],
+			answerIds[aNeckPhotoIntake], patientVisitResponse.PatientVisitId, neckPhoto, signupResponse.Token, signal)
+
+		c.startPhotoSubmissionForPatient(questionIds[qChestPhotoIntake],
+			answerIds[aChestPhotoIntake], patientVisitResponse.PatientVisitId, chestPhoto, signupResponse.Token, signal)
+
+		// wait for all requests to finish
+		for numRequestsWaitingFor > 0 {
+			result := <-signal
+			if result == failure {
+				golog.Errorf("Something went wrong when tryign to submit patient visit intake. Patient visit not successfully submitted")
+				topLevelSignal <- failure
+				return
+
+			}
+			numRequestsWaitingFor--
+		}
+
+		// ********** SUBMIT CASE TO DOCTOR **********
+		submitPatientVisitRequest, err := http.NewRequest("PUT", patientVisitUrl, bytes.NewBufferString(fmt.Sprintf("patient_visit_id=%d", patientVisitResponse.PatientVisitId)))
+		submitPatientVisitRequest.Header.Set("Content-Type", "application/x-www-form-urlencoded")
+		submitPatientVisitRequest.Header.Set("Authorization", "token "+signupResponse.Token)
+		if err != nil {
+			golog.Errorf("Unable to create new request to submit patient visit:%+v", err)
+			topLevelSignal <- failure
+			return
+		}
+
+		resp, err = http.DefaultClient.Do(submitPatientVisitRequest)
+		if err != nil || resp.StatusCode != http.StatusOK {
+			golog.Errorf("Unable to make successful request to submit patient visit")
+			topLevelSignal <- failure
+			return
+		}
+
+		topLevelSignal <- success
+	}()
+
 }
