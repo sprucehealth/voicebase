@@ -1,6 +1,7 @@
 package encoding
 
 import (
+	"bytes"
 	"database/sql"
 	"encoding/xml"
 	"fmt"
@@ -8,6 +9,36 @@ import (
 	"strings"
 	"time"
 )
+
+type HighPrecisionFloat64 float64
+
+func (h *HighPrecisionFloat64) MarshalJSON() ([]byte, error) {
+	var marshalledValue bytes.Buffer
+	marshalledValue.WriteString("\"")
+	marshalledValue.WriteString(strconv.FormatFloat(float64(*h), 'f', -1, 64))
+	marshalledValue.WriteString("\"")
+	return marshalledValue.Bytes(), nil
+}
+
+func (h *HighPrecisionFloat64) UnmarshalJSON(data []byte) error {
+	strData := string(data)
+	if strData == "null" || strData == "" {
+		*h = HighPrecisionFloat64(0)
+		return nil
+	}
+
+	floatValue, err := strconv.ParseFloat(string(strData[1:len(strData)-1]), 64)
+	*h = HighPrecisionFloat64(floatValue)
+	return err
+}
+
+func (h *HighPrecisionFloat64) Float64() float64 {
+	return float64(*h)
+}
+
+func (h *HighPrecisionFloat64) String() string {
+	return strconv.FormatFloat(float64(*h), 'f', -1, 64)
+}
 
 type NullInt64 struct {
 	IsValid    bool

@@ -860,7 +860,7 @@ func (d *DataService) getUnlinkedDNTFTreatmentsFromRow(rows *sql.Rows) ([]*commo
 			DoctorId:                encoding.NewObjectId(doctorId),
 			DrugInternalName:        drugInternalName,
 			DosageStrength:          dosageStrength,
-			DispenseValue:           dispenseValue,
+			DispenseValue:           encoding.HighPrecisionFloat64(dispenseValue),
 			DispenseUnitId:          encoding.NewObjectId(dispenseUnitId),
 			DispenseUnitDescription: dispenseUnitDescription,
 			NumberRefills:           encoding.NullInt64FromSql(refills),

@@ -6,6 +6,7 @@ import (
 	"errors"
 	"fmt"
 	"net/http"
+	"strconv"
 	"strings"
 )
 
@@ -18,19 +19,14 @@ func validateTreatment(treatment *common.Treatment) error {
 		return errors.New("Dosage Strength for treatment cannot be empty")
 	}
 
-	if treatment.DispenseValue == 0 {
+	if treatment.DispenseValue.Float64() == 0 {
 		return errors.New("DispenseValue for treatment cannot be 0")
 	}
 
-	// only allow values between 0 and 99999.99999
-	if treatment.DispenseValue >= 100000.0 {
-		return errors.New("Dispense value can only be between 0 and 99999")
-	}
-
-	dispenseValuePlusSixDecimalDigits := int64(treatment.DispenseValue * 100000)
-
-	if float64(dispenseValuePlusSixDecimalDigits) != float64(treatment.DispenseValue*100000) {
-		return errors.New("Only 5 decimal places allowed for dispense value")
+	// only allow a total of 10 digits with 1 decimal or 11 digits without a decimal
+	dispenseValueStr := strconv.FormatFloat(treatment.DispenseValue.Float64(), 'f', -1, 64)
+	if len(dispenseValueStr) > 11 {
+		return errors.New("Dispense value invalid. Can only be 10 digits with a decimal point or 11 digits without decimal")
 	}
 
 	if treatment.DispenseUnitId.Int64() == 0 {
