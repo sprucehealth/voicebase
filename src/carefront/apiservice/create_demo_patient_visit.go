@@ -683,7 +683,7 @@ func (c *CreateDemoPatientVisitHandler) ServeHTTP(w http.ResponseWriter, r *http
 			MiddleName: "R",
 			Gender:     "Male",
 			Dob: encoding.Dob{
-				Year:  1998,
+				Year:  1994,
 				Month: 9,
 				Day:   29,
 			},
