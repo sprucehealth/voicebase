@@ -16,6 +16,8 @@ import (
 	"net/url"
 	"strconv"
 	"time"
+
+	"github.com/gorilla/schema"
 )
 
 type CreateDemoPatientVisitHandler struct {
@@ -462,6 +464,10 @@ func (c *CreateDemoPatientVisitHandler) startPhotoSubmissionForPatient(questionI
 	}()
 }
 
+type CreateDemoPatientVisitRequestData struct {
+	ToCreateSurescriptsPatients bool `schema:"surescripts"`
+}
+
 func (c *CreateDemoPatientVisitHandler) ServeHTTP(w http.ResponseWriter, r *http.Request) {
 	if r.Method != HTTP_POST {
 		w.WriteHeader(http.StatusNotFound)
@@ -480,45 +486,394 @@ func (c *CreateDemoPatientVisitHandler) ServeHTTP(w http.ResponseWriter, r *http
 		return
 	}
 
-	demoPatientToCreate := common.Patient{
-		FirstName: "Demo",
-		LastName:  "User",
-		Gender:    "female",
-		Dob: encoding.Dob{
-			Year:  1987,
-			Month: 11,
-			Day:   8,
-		},
-		ZipCode: "94115",
-		PhoneNumbers: []*common.PhoneInformation{&common.PhoneInformation{
-			Phone:     "2068773590",
-			PhoneType: "Home",
-		},
-		},
-		Pharmacy: &pharmacy.PharmacyData{
-			SourceId:     "47731",
-			AddressLine1: "116 New Montgomery St",
-			Name:         "CA pharmacy store 10.6",
-			City:         "San Francisco",
-			State:        "CA",
-			Postal:       "92804",
-			Source:       pharmacy.PHARMACY_SOURCE_SURESCRIPTS,
-		},
-		PatientAddress: &common.Address{
-			AddressLine1: "12345 Main Street",
-			AddressLine2: "Apt 1112",
-			City:         "San Francisco",
-			State:        "California",
-			ZipCode:      "94115",
-		},
+	if err := r.ParseForm(); err != nil {
+		WriteDeveloperError(w, http.StatusInternalServerError, "Unable to parse input parameters: "+err.Error())
+		return
 	}
 
-	topLevelSignal := make(chan int)
-	c.createNewDemoPatient(&demoPatientToCreate, doctorId, topLevelSignal)
-	result := <-topLevelSignal
-	if result == failure {
-		WriteDeveloperError(w, http.StatusInternalServerError, "Something went wrong while trying to create demo patient")
+	requestData := &CreateDemoPatientVisitRequestData{}
+	if err := schema.NewDecoder().Decode(requestData, r.Form); err != nil {
+		WriteDeveloperError(w, http.StatusInternalServerError, "Unable to parse input parameters: "+err.Error())
 		return
+	}
+
+	if requestData.ToCreateSurescriptsPatients {
+		ciLi := common.Patient{
+			FirstName: "Ci",
+			LastName:  "Li",
+			Gender:    "Male",
+			Dob: encoding.Dob{
+				Year:  1923,
+				Month: 10,
+				Day:   18,
+			},
+			ZipCode: "94115",
+			PhoneNumbers: []*common.PhoneInformation{&common.PhoneInformation{
+				Phone:     "2068773590",
+				PhoneType: "Home",
+			},
+			},
+			Pharmacy: &pharmacy.PharmacyData{
+				SourceId:     "47731",
+				AddressLine1: "116 New Montgomery St",
+				Name:         "CA pharmacy store 10.6",
+				City:         "San Francisco",
+				State:        "CA",
+				Postal:       "92804",
+				Source:       pharmacy.PHARMACY_SOURCE_SURESCRIPTS,
+			},
+			PatientAddress: &common.Address{
+				AddressLine1: "12345 Main Street",
+				AddressLine2: "Apt 1112",
+				City:         "San Francisco",
+				State:        "California",
+				ZipCode:      "94115",
+			},
+		}
+
+		howardPlower := common.Patient{
+			Prefix:    "Mr",
+			FirstName: "Howard",
+			LastName:  "Plower",
+			Gender:    "Male",
+			Dob: encoding.Dob{
+				Year:  1923,
+				Month: 10,
+				Day:   18,
+			},
+			ZipCode: "19102",
+			PhoneNumbers: []*common.PhoneInformation{
+				&common.PhoneInformation{
+					Phone:     "215-988-6728",
+					PhoneType: "Home",
+				},
+				&common.PhoneInformation{
+					Phone:     "4137762738",
+					PhoneType: "Cell",
+				},
+			},
+			Pharmacy: &pharmacy.PharmacyData{
+				SourceId:     "47731",
+				AddressLine1: "116 New Montgomery St",
+				Name:         "CA pharmacy store 10.6",
+				City:         "San Francisco",
+				State:        "CA",
+				Postal:       "92804",
+				Source:       pharmacy.PHARMACY_SOURCE_SURESCRIPTS,
+			},
+			PatientAddress: &common.Address{
+				AddressLine1: "76 Deerlake Road",
+				City:         "Philadelphia",
+				State:        "Pennsylvania",
+				ZipCode:      "19102",
+			},
+		}
+
+		karaWhiteside := common.Patient{
+			FirstName: "Kara",
+			LastName:  "Whiteside",
+			Gender:    "Female",
+			Dob: encoding.Dob{
+				Year:  1952,
+				Month: 10,
+				Day:   11,
+			},
+			ZipCode: "44306",
+			PhoneNumbers: []*common.PhoneInformation{
+				&common.PhoneInformation{
+					Phone:     "3305547754",
+					PhoneType: "Home",
+				},
+			},
+			Pharmacy: &pharmacy.PharmacyData{
+				SourceId:     "47731",
+				AddressLine1: "116 New Montgomery St",
+				Name:         "CA pharmacy store 10.6",
+				City:         "San Francisco",
+				State:        "CA",
+				Postal:       "92804",
+				Source:       pharmacy.PHARMACY_SOURCE_SURESCRIPTS,
+			},
+			PatientAddress: &common.Address{
+				AddressLine1: "23230 Seaport",
+				City:         "Akron",
+				State:        "Ohio",
+				ZipCode:      "44306",
+			},
+		}
+
+		debraTucker := common.Patient{
+			Prefix:    "Ms",
+			FirstName: "Debra",
+			LastName:  "Tucker",
+			Gender:    "Female",
+			Dob: encoding.Dob{
+				Year:  1980,
+				Month: 11,
+				Day:   01,
+			},
+			ZipCode: "44103",
+			PhoneNumbers: []*common.PhoneInformation{
+				&common.PhoneInformation{
+					Phone:     "4408450398",
+					PhoneType: "Home",
+				},
+			},
+			Pharmacy: &pharmacy.PharmacyData{
+				SourceId:     "47731",
+				AddressLine1: "116 New Montgomery St",
+				Name:         "CA pharmacy store 10.6",
+				City:         "San Francisco",
+				State:        "CA",
+				Postal:       "92804",
+				Source:       pharmacy.PHARMACY_SOURCE_SURESCRIPTS,
+			},
+			PatientAddress: &common.Address{
+				AddressLine1: "8331 Everwood Dr.",
+				AddressLine2: "Apt 342",
+				City:         "Cleveland",
+				State:        "Ohio",
+				ZipCode:      "44103",
+			},
+		}
+
+		feliciaFlounders := common.Patient{
+			Prefix:     "Ms",
+			FirstName:  "Felicia",
+			LastName:   "Flounders",
+			MiddleName: "Ann",
+			Gender:     "Female",
+			Dob: encoding.Dob{
+				Year:  1980,
+				Month: 11,
+				Day:   01,
+			},
+			ZipCode: "20187",
+			PhoneNumbers: []*common.PhoneInformation{
+				&common.PhoneInformation{
+					Phone:     "3108620035x2345",
+					PhoneType: "Home",
+				},
+				&common.PhoneInformation{
+					Phone:     "3019289283",
+					PhoneType: "Cell",
+				},
+			},
+			Pharmacy: &pharmacy.PharmacyData{
+				SourceId:     "47731",
+				AddressLine1: "116 New Montgomery St",
+				Name:         "CA pharmacy store 10.6",
+				City:         "San Francisco",
+				State:        "CA",
+				Postal:       "92804",
+				Source:       pharmacy.PHARMACY_SOURCE_SURESCRIPTS,
+			},
+			PatientAddress: &common.Address{
+				AddressLine1: "6715 Swanson Ave",
+				AddressLine2: "Apt 102",
+				City:         "Bethesda",
+				State:        "Maryland",
+				ZipCode:      "20187",
+			},
+		}
+
+		douglasRichardson := common.Patient{
+			FirstName:  "Douglas",
+			LastName:   "Richardson",
+			MiddleName: "R",
+			Gender:     "Male",
+			Dob: encoding.Dob{
+				Year:  1998,
+				Month: 9,
+				Day:   29,
+			},
+			ZipCode: "01040",
+			PhoneNumbers: []*common.PhoneInformation{
+				&common.PhoneInformation{
+					Phone:     "4137760938",
+					PhoneType: "Home",
+				},
+				&common.PhoneInformation{
+					Phone:     "4137762738",
+					PhoneType: "Cell",
+				},
+			},
+			Pharmacy: &pharmacy.PharmacyData{
+				SourceId:     "47731",
+				AddressLine1: "116 New Montgomery St",
+				Name:         "CA pharmacy store 10.6",
+				City:         "San Francisco",
+				State:        "CA",
+				Postal:       "92804",
+				Source:       pharmacy.PHARMACY_SOURCE_SURESCRIPTS,
+			},
+			PatientAddress: &common.Address{
+				AddressLine1: "23 Trumble Dr",
+				AddressLine2: "Apt 101",
+				City:         "Holyoke",
+				State:        "Massachusetts",
+				ZipCode:      "01040-2239",
+			},
+		}
+
+		davidThrower := common.Patient{
+			FirstName: "David",
+			LastName:  "Thrower",
+			Gender:    "Male",
+			Dob: encoding.Dob{
+				Year:  1933,
+				Month: 2,
+				Day:   22,
+			},
+			ZipCode: "34737",
+			PhoneNumbers: []*common.PhoneInformation{
+				&common.PhoneInformation{
+					Phone:     "3526685547",
+					PhoneType: "Home",
+				},
+				&common.PhoneInformation{
+					Phone:     "4137762738",
+					PhoneType: "Cell",
+				},
+			},
+			Pharmacy: &pharmacy.PharmacyData{
+				SourceId:     "47731",
+				AddressLine1: "116 New Montgomery St",
+				Name:         "CA pharmacy store 10.6",
+				City:         "San Francisco",
+				State:        "CA",
+				Postal:       "92804",
+				Source:       pharmacy.PHARMACY_SOURCE_SURESCRIPTS,
+			},
+			PatientAddress: &common.Address{
+				AddressLine1: "64 Violet Lane",
+				AddressLine2: "Apt 101",
+				City:         "Hower In The Hills",
+				State:        "Florida",
+				ZipCode:      "34737",
+			},
+		}
+
+		maxLengthPatient := common.Patient{
+			Prefix:     "Patient II",
+			FirstName:  "!\"#$%'+,-/:;=?@[\\]^_`{|}~0000&",
+			LastName:   "!\"#$%'+,-/:;=?@[\\]^_`{|}~0000&",
+			MiddleName: "!\"#$%'+,-/:;=?@[\\]^_`{|}~0000&",
+			Suffix:     "Junior iii",
+			Gender:     "Male",
+			Dob: encoding.Dob{
+				Year:  1948,
+				Month: 1,
+				Day:   1,
+			},
+			ZipCode: "34737",
+			PhoneNumbers: []*common.PhoneInformation{
+				&common.PhoneInformation{
+					Phone:     "5719212122x1234567890444",
+					PhoneType: "Home",
+				},
+				&common.PhoneInformation{
+					Phone:     "7034445523x4473",
+					PhoneType: "Cell",
+				},
+				&common.PhoneInformation{
+					Phone:     "7034445524x4474",
+					PhoneType: "Work",
+				},
+				&common.PhoneInformation{
+					Phone:     "7034445522x4472",
+					PhoneType: "Work",
+				},
+				&common.PhoneInformation{
+					Phone:     "7034445526x4476",
+					PhoneType: "Home",
+				},
+			},
+			Pharmacy: &pharmacy.PharmacyData{
+				SourceId:     "47731",
+				AddressLine1: "116 New Montgomery St",
+				Name:         "CA pharmacy store 10.6",
+				City:         "San Francisco",
+				State:        "CA",
+				Postal:       "92804",
+				Source:       pharmacy.PHARMACY_SOURCE_SURESCRIPTS,
+			},
+			PatientAddress: &common.Address{
+				AddressLine1: "!\"#$%'+,-/:;=?@[\\]^_`{|}~0000&",
+				AddressLine2: "!\"#$%'+,-/:;=?@[\\]^_`{|}~0000&",
+				City:         "!\"#$%'+,-/:;=?@[\\]^_`{|}~0000&",
+				State:        "Colorado",
+				ZipCode:      "94115",
+			},
+		}
+
+		topLevelSignal := make(chan int, 8)
+		c.createNewDemoPatient(&ciLi, doctorId, topLevelSignal)
+		time.Sleep(500 * time.Millisecond)
+		c.createNewDemoPatient(&howardPlower, doctorId, topLevelSignal)
+		time.Sleep(500 * time.Millisecond)
+		c.createNewDemoPatient(&karaWhiteside, doctorId, topLevelSignal)
+		time.Sleep(500 * time.Millisecond)
+		c.createNewDemoPatient(&debraTucker, doctorId, topLevelSignal)
+		time.Sleep(500 * time.Millisecond)
+		c.createNewDemoPatient(&feliciaFlounders, doctorId, topLevelSignal)
+		time.Sleep(500 * time.Millisecond)
+		c.createNewDemoPatient(&douglasRichardson, doctorId, topLevelSignal)
+		time.Sleep(500 * time.Millisecond)
+		c.createNewDemoPatient(&davidThrower, doctorId, topLevelSignal)
+		time.Sleep(500 * time.Millisecond)
+		c.createNewDemoPatient(&maxLengthPatient, doctorId, topLevelSignal)
+
+		numberPatientsWaitingFor := 8
+		for numberPatientsWaitingFor > 0 {
+			result := <-topLevelSignal
+			if result == failure {
+				WriteDeveloperError(w, http.StatusInternalServerError, "Something went wrong while trying to create demo patient")
+				return
+			}
+			numberPatientsWaitingFor--
+		}
+
+	} else {
+		demoPatientToCreate := common.Patient{
+			FirstName: "Demo",
+			LastName:  "User",
+			Gender:    "female",
+			Dob: encoding.Dob{
+				Year:  1987,
+				Month: 11,
+				Day:   8,
+			},
+			ZipCode: "94115",
+			PhoneNumbers: []*common.PhoneInformation{&common.PhoneInformation{
+				Phone:     "2068773590",
+				PhoneType: "Home",
+			},
+			},
+			Pharmacy: &pharmacy.PharmacyData{
+				SourceId:     "47731",
+				AddressLine1: "116 New Montgomery St",
+				Name:         "CA pharmacy store 10.6",
+				City:         "San Francisco",
+				State:        "CA",
+				Postal:       "92804",
+				Source:       pharmacy.PHARMACY_SOURCE_SURESCRIPTS,
+			},
+			PatientAddress: &common.Address{
+				AddressLine1: "12345 Main Street",
+				AddressLine2: "Apt 1112",
+				City:         "San Francisco",
+				State:        "California",
+				ZipCode:      "94115",
+			},
+		}
+		topLevelSignal := make(chan int)
+		c.createNewDemoPatient(&demoPatientToCreate, doctorId, topLevelSignal)
+		result := <-topLevelSignal
+		if result == failure {
+			WriteDeveloperError(w, http.StatusInternalServerError, "Something went wrong while trying to create demo patient")
+			return
+		}
 	}
 
 	WriteJSONToHTTPResponseWriter(w, http.StatusOK, SuccessfulGenericJSONResponse())
@@ -580,6 +935,13 @@ func (c *CreateDemoPatientVisitHandler) createNewDemoPatient(patient *common.Pat
 		err = c.DataApi.UpdatePatientInformationFromDoctor(patient)
 		if err != nil {
 			golog.Errorf("Unable to update patient information:%+v", err)
+			topLevelSignal <- failure
+			return
+		}
+
+		err = c.DataApi.UpdatePatientPharmacy(patient.PatientId.Int64(), patient.Pharmacy)
+		if err != nil {
+			golog.Errorf("Unable to update patients preferred pharmacy:%+v", err)
 			topLevelSignal <- failure
 			return
 		}
