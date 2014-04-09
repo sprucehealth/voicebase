@@ -24,7 +24,11 @@ type DoctorPharmacySearchResponse struct {
 }
 
 func (d *DoctorPharmacySearchHandler) ServeHTTP(w http.ResponseWriter, r *http.Request) {
-	r.ParseForm()
+	if err := r.ParseForm(); err != nil {
+		WriteDeveloperError(w, http.StatusBadRequest, "Unable to parse input parameters: "+err.Error())
+		return
+	}
+
 	requestData := &DoctorPharmacySearchRequestData{}
 	if err := schema.NewDecoder().Decode(requestData, r.Form); err != nil {
 		WriteDeveloperError(w, http.StatusBadRequest, "Unable to parse input parameters: "+err.Error())
