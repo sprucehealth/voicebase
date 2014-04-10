@@ -10,8 +10,8 @@ env:
   matrix:
   - TEST_DB=database_${TRAVIS_BUILD_ID}_${RANDOM}
   global:
-  - secure: YujoyamYeqDVRshSF8lesBaOLSZDGybHcIbOwfF6euCYwkSsw26W0JGgcAnqzbf+D/+YkqCS0qiewNAFHxCM4djOb3ZjnytMuk8264q+BwdpstSQlArk27J218wifNn/Z+y4y7T0gsMDH3PySjoytxwxCboNwZ6uGZ/DwdMmYbY=
-  - secure: JpEPrJLdkjO7Tvi2svWvuWDcY/UVYO98pwEgpVVLblgiizy/+cK+QClg2pls0fi5rfYvs0t51SAMYV4XYsJ9jkMit1yifXpbA1LhkgvemippjvQ/uXvwZyAlS8MRW9HJDVjl9WQlLFv0n5dYWC2Y8tOiqS/YpLtm27Qlm36VZpA=
+  - secure: CdooXcT4WmvF1vgA2iygvhR892c0kIn3OuLSkGx2txfvVrfhWNzrApfDuvQcgqM2KcPN2HX40RM+RY1M2nFUcGEhZeLdWqtX5eXqZiphd8c6SerYVysOCnPHo9yOqVscxHWcZduCoScuKzX4Uo64tCfvlGxLTD3FOUk3Hg/8QXs=
+  - secure: W9KF0ACC9mjYXzWS9g3iaL1aJMPaUEu/eRFpQ1sh/4gE375qUXX9HuyLoKgFoCj/xaA5fJYRr75lrgo4tw44YCR7Nptq8avkM1Y90MVJRB0w7ebAWATghEdAiNO8Bb6eNU3bq5ey9vFnVxZ/dXh4EUgTDCIdCvrq6AazmgOlyIE=
   - secure: Ip8X+IWnKmU+523CFjPVJRYul0+ezbsI3zMh/SzT/iCJyJ4Pw/5gdsY9LhtZl+p/nLQJlehn/FwmWo8NjV3SdZ7QGtBvaUEmLPkeKGVTpcyEjFz6XKtoRXxCWhvnphXUFZaU8HjqAv78fD/G2+EcmInfCoBg7fK8FKk1TeWmqWA=
   - secure: ZjeraleiMdr/wmH74vAU5ruL+CdzbGyImwXWLz6ZsUDD0dbK+oMFe1WmNJOsO1yeW/WGXD1enemzDeBrdVqDFXClyzbHcVtZ86YZSgYjtadocEX+RslbobrfNWxW8w/KHioObC7wpyBllQQb8hqzS1rakFOjZ7t0CgpNUiuBsLE=
   - secure: GAHw/Z037AezGOA5v/j1MvZTdLL/RFcofSdgH2mfp+nQWvswbQRS5dxJyfJO6BcNkZrvnuru3Lnh7azKShw6XUD+RT+vq0Ata5KQ4BiZa+ssX3VnMIsvrM4VIPxh+v6ESRPYvym1GHUKc7tqJ+ObVXaTkPJH8vqbdx7JHXSNjCM=

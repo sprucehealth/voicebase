@@ -618,7 +618,7 @@ func (d *DataService) AddTreatmentsForPatientVisit(treatments []*common.Treatmen
 
 	for _, treatment := range treatments {
 		treatment.TreatmentPlanId = common.NewObjectId(treatmentPlanId)
-		err = d.addTreatment(treatment, as_patient_treatment, tx)
+		err = d.addTreatment(treatment, asPatientTreatment, tx)
 		if err != nil {
 			tx.Rollback()
 			return err
@@ -640,28 +640,28 @@ func (d *DataService) AddTreatmentsForPatientVisit(treatments []*common.Treatmen
 func (d *DataService) addTreatment(treatment *common.Treatment, withoutLinkToTreatmentPlan bool, tx *sql.Tx) error {
 	treatmentType := treatment_rx
 	if treatment.OTC {
-		treatmentType = treatment_otc
+		treatmentType = treatmentOTC
 	}
 
 	var drugNameId, drugRouteId, drugFormId int64
 	var err error
 
 	if treatment.DrugName != "" {
-		drugNameId, err = d.getOrInsertNameInTable(tx, drug_name_table, treatment.DrugName)
+		drugNameId, err = d.getOrInsertNameInTable(tx, drugNameTable, treatment.DrugName)
 		if err != nil {
 			return err
 		}
 	}
 
 	if treatment.DrugForm != "" {
-		drugFormId, err = d.getOrInsertNameInTable(tx, drug_form_table, treatment.DrugForm)
+		drugFormId, err = d.getOrInsertNameInTable(tx, drugFormTable, treatment.DrugForm)
 		if err != nil {
 			return err
 		}
 	}
 
 	if treatment.DrugRoute != "" {
-		drugRouteId, err = d.getOrInsertNameInTable(tx, drug_route_table, treatment.DrugRoute)
+		drugRouteId, err = d.getOrInsertNameInTable(tx, drugRouteTable, treatment.DrugRoute)
 		if err != nil {
 			return err
 		}
@@ -1090,7 +1090,7 @@ func (d *DataService) getTreatmentAndMetadataFromCurrentRow(rows *sql.Rows) (*co
 		treatment.PatientVisitId = common.NewObjectId(patientVisitId.Int64)
 	}
 
-	if treatmentType == treatment_otc {
+	if treatmentType == treatmentOTC {
 		treatment.OTC = true
 	}
 

@@ -256,7 +256,7 @@ func (d *DataService) CreateRefillRequest(refillRequest *common.RefillRequestIte
 
 func (d *DataService) GetRefillRequestFromId(refillRequestId int64) (*common.RefillRequestItem, error) {
 	var refillRequest common.RefillRequestItem
-	var patientId, doctorId, pharmacyDispensedTreatmentId int64
+	var patientId, doctorId, pharmacyDispensedTreatmentTableId int64
 	var requestedTreatmentId, approvedRefillAmount, prescriptionId sql.NullInt64
 	var denyReason sql.NullString
 	// get the refill request
@@ -267,7 +267,7 @@ func (d *DataService) GetRefillRequestFromId(refillRequestId int64) (*common.Ref
 				where rx_refill_request.id = ?`, refillRequestId).Scan(&refillRequest.Id,
 		&refillRequest.RxRequestQueueItemId, &refillRequest.ReferenceNumber, &prescriptionId, &approvedRefillAmount,
 		&patientId, &refillRequest.RequestDateStamp, &doctorId, &requestedTreatmentId,
-		&pharmacyDispensedTreatmentId, &refillRequest.Comments, &denyReason)
+		&pharmacyDispensedTreatmentTableId, &refillRequest.Comments, &denyReason)
 
 	refillRequest.PrescriptionId = prescriptionId.Int64
 	refillRequest.ApprovedRefillAmount = approvedRefillAmount.Int64
@@ -293,13 +293,13 @@ func (d *DataService) GetRefillRequestFromId(refillRequestId int64) (*common.Ref
 	}
 
 	// get the pharmacy dispensed treatment
-	refillRequest.DispensedPrescription, err = d.getTreatmentForRefillRequest(table_name_pharmacy_dispensed_treatment, pharmacyDispensedTreatmentId)
+	refillRequest.DispensedPrescription, err = d.getTreatmentForRefillRequest(pharmacyDispensedTreatmentTable, pharmacyDispensedTreatmentTableId)
 	if err != nil {
 		return nil, err
 	}
 
 	// get the unlinked requested treatment
-	refillRequest.RequestedPrescription, err = d.getTreatmentForRefillRequest(table_name_requested_treatment, requestedTreatmentId.Int64)
+	refillRequest.RequestedPrescription, err = d.getTreatmentForRefillRequest(requestedTreatmentTable, requestedTreatmentId.Int64)
 	if err != nil {
 		return nil, err
 	}
@@ -359,7 +359,7 @@ func (d *DataService) getTreatmentForRefillRequest(tableName string, treatmentId
 	treatment.DrugName = drugName.String
 	treatment.DrugForm = drugForm.String
 	treatment.DrugRoute = drugRoute.String
-	treatment.OTC = treatmentType == treatment_otc
+	treatment.OTC = treatmentType == treatmentOTC
 	treatment.ERx.PharmacyLocalId = common.NewObjectId(pharmacyLocalId)
 	treatment.ERx.Pharmacy, err = d.GetPharmacyFromId(pharmacyLocalId)
 
@@ -381,9 +381,9 @@ func (d *DataService) getTreatmentForRefillRequest(tableName string, treatmentId
 // are the basis of a refill request)
 func (d *DataService) addRequestedTreatmentFromPharmacy(treatment *common.Treatment, tx *sql.Tx) error {
 
-	treatmentType := treatment_rx
+	treatmentType := treatmentRX
 	if treatment.OTC {
-		treatmentType = treatment_otc
+		treatmentType = treatmentOTC
 	}
 
 	columnsAndData := map[string]interface{}{
@@ -409,16 +409,16 @@ func (d *DataService) addRequestedTreatmentFromPharmacy(treatment *common.Treatm
 		columnsAndData["originating_treatment_id"] = treatment.OriginatingTreatmentId
 	}
 
-	if err := d.includeDrugNameComponentIfNonZero(treatment.DrugName, drug_name_table, "drug_name_id", columnsAndData, tx); err != nil {
+	if err := d.includeDrugNameComponentIfNonZero(treatment.DrugName, drugNameTable, "drug_name_id", columnsAndData, tx); err != nil {
 		tx.Rollback()
 		return err
 	}
 
-	if err := d.includeDrugNameComponentIfNonZero(treatment.DrugForm, drug_form_table, "drug_form_id", columnsAndData, tx); err != nil {
+	if err := d.includeDrugNameComponentIfNonZero(treatment.DrugForm, drugFormTable, "drug_form_id", columnsAndData, tx); err != nil {
 		tx.Rollback()
 		return err
 	}
-	if err := d.includeDrugNameComponentIfNonZero(treatment.DrugRoute, drug_route_table, "drug_route_id", columnsAndData, tx); err != nil {
+	if err := d.includeDrugNameComponentIfNonZero(treatment.DrugRoute, drugRouteTable, "drug_route_id", columnsAndData, tx); err != nil {
 		tx.Rollback()
 		return err
 	}
@@ -450,9 +450,9 @@ func (d *DataService) addRequestedTreatmentFromPharmacy(treatment *common.Treatm
 
 func (d *DataService) addPharmacyDispensedTreatment(dispensedTreatment, requestedTreatment *common.Treatment, tx *sql.Tx) error {
 
-	treatmentType := treatment_rx
+	treatmentType := treatmentRX
 	if dispensedTreatment.OTC {
-		treatmentType = treatment_otc
+		treatmentType = treatmentOTC
 	}
 
 	columnsAndData := map[string]interface{}{
@@ -475,16 +475,16 @@ func (d *DataService) addPharmacyDispensedTreatment(dispensedTreatment, requeste
 		"doctor_id":              dispensedTreatment.Doctor.DoctorId.Int64(),
 	}
 
-	if err := d.includeDrugNameComponentIfNonZero(dispensedTreatment.DrugName, drug_name_table, "drug_name_id", columnsAndData, tx); err != nil {
+	if err := d.includeDrugNameComponentIfNonZero(dispensedTreatment.DrugName, drugNameTable, "drug_name_id", columnsAndData, tx); err != nil {
 		tx.Rollback()
 		return err
 	}
 
-	if err := d.includeDrugNameComponentIfNonZero(dispensedTreatment.DrugForm, drug_form_table, "drug_form_id", columnsAndData, tx); err != nil {
+	if err := d.includeDrugNameComponentIfNonZero(dispensedTreatment.DrugForm, drugFormTable, "drug_form_id", columnsAndData, tx); err != nil {
 		tx.Rollback()
 		return err
 	}
-	if err := d.includeDrugNameComponentIfNonZero(dispensedTreatment.DrugRoute, drug_route_table, "drug_route_id", columnsAndData, tx); err != nil {
+	if err := d.includeDrugNameComponentIfNonZero(dispensedTreatment.DrugRoute, drugRouteTable, "drug_route_id", columnsAndData, tx); err != nil {
 		tx.Rollback()
 		return err
 	}
@@ -615,9 +615,9 @@ func (d *DataService) AddUnlinkedTreatmentInEventOfDNTF(treatment *common.Treatm
 		return err
 	}
 
-	treatmentType := treatment_rx
+	treatmentType := treatmentRX
 	if treatment.OTC {
-		treatmentType = treatment_otc
+		treatmentType = treatmentOTC
 	}
 
 	columnsAndData := map[string]interface{}{
@@ -636,16 +636,16 @@ func (d *DataService) AddUnlinkedTreatmentInEventOfDNTF(treatment *common.Treatm
 		"patient_id":            treatment.PatientId,
 	}
 
-	if err := d.includeDrugNameComponentIfNonZero(treatment.DrugName, drug_name_table, "drug_name_id", columnsAndData, tx); err != nil {
+	if err := d.includeDrugNameComponentIfNonZero(treatment.DrugName, drugNameTable, "drug_name_id", columnsAndData, tx); err != nil {
 		tx.Rollback()
 		return err
 	}
 
-	if err := d.includeDrugNameComponentIfNonZero(treatment.DrugForm, drug_form_table, "drug_form_id", columnsAndData, tx); err != nil {
+	if err := d.includeDrugNameComponentIfNonZero(treatment.DrugForm, drugFormTable, "drug_form_id", columnsAndData, tx); err != nil {
 		tx.Rollback()
 		return err
 	}
-	if err := d.includeDrugNameComponentIfNonZero(treatment.DrugRoute, drug_route_table, "drug_route_id", columnsAndData, tx); err != nil {
+	if err := d.includeDrugNameComponentIfNonZero(treatment.DrugRoute, drugRouteTable, "drug_route_id", columnsAndData, tx); err != nil {
 		tx.Rollback()
 		return err
 	}
@@ -728,7 +728,7 @@ func (d *DataService) GetUnlinkedDNTFTreatment(treatmentId int64) (*common.Treat
 		CreationDate:            &creationDate,
 		Status:                  status,
 		PharmacyNotes:           pharmacyNotes,
-		OTC:                     treatmentType == treatment_otc,
+		OTC:                     treatmentType == treatmentOTC,
 		ERx: &common.ERxData{
 			ErxLastDateFilled: &erxLastFilledDate.Time,
 			ErxSentDate:       &erxSentDate.Time,
@@ -771,7 +771,7 @@ func (d *DataService) AddTreatmentToTreatmentPlanInEventOfDNTF(treatment *common
 		return err
 	}
 
-	if err := d.addTreatment(treatment, as_patient_treatment, tx); err != nil {
+	if err := d.addTreatment(treatment, asPatientTreatment, tx); err != nil {
 		tx.Rollback()
 		return err
 	}
