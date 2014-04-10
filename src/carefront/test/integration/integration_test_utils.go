@@ -191,6 +191,7 @@ func SetupIntegrationTest(t *testing.T) TestData {
 	// considered elligible to serve in the state of CA.
 	signedupDoctorResponse, _, _ := SignupRandomTestDoctor(t, testData.DataApi, testData.AuthApi)
 
+	ts = time.Now()
 	// create the role of a primary doctor
 	_, err = testData.DB.Exec(`insert into provider_role (provider_tag) values ('DOCTOR')`)
 	if err != nil {
@@ -203,6 +204,8 @@ func SetupIntegrationTest(t *testing.T) TestData {
 	if err != nil {
 		t.Fatal("Unable to make the signed up doctor the primary doctor elligible in CA to diagnose patients: " + err.Error())
 	}
+
+	t.Logf(("Time to run 2 sql statements: %.3f seconds"), float64(time.Since(ts))/float64(time.Second))
 
 	return testData
 }
