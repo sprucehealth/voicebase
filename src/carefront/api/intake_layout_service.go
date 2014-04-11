@@ -280,6 +280,9 @@ func (d *DataService) GetQuestionInfoForTags(questionTags []string, languageId i
 			}
 			questionInfo.AdditionalFields[questionField] = fieldText
 		}
+		if rows.Err() != nil {
+			return nil, rows.Err()
+		}
 		questionInfos = append(questionInfos, questionInfo)
 	}
 

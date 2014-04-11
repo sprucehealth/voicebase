@@ -822,7 +822,7 @@ func (d *DataService) GetTreatmentBasedOnPrescriptionId(erxId int64) (*common.Tr
 	for rows.Next() {
 		treatment, err := d.getTreatmentAndMetadataFromCurrentRow(rows)
 		if err != nil {
-			return nil, rows.Err()
+			return nil, err
 		}
 
 		treatments = append(treatments, treatment)
@@ -867,7 +867,7 @@ func (d *DataService) GetTreatmentFromId(treatmentId int64) (*common.Treatment, 
 	for rows.Next() {
 		treatment, err := d.getTreatmentAndMetadataFromCurrentRow(rows)
 		if err != nil {
-			return nil, rows.Err()
+			return nil, err
 		}
 
 		treatments = append(treatments, treatment)
@@ -969,7 +969,7 @@ func (d *DataService) GetPrescriptionStatusEventsForPatient(patientId int64) ([]
 		var creationDate time.Time
 		err = rows.Scan(&treatmentId, &prescriptionId, &status, &creationDate)
 		if err != nil {
-			return nil, rows.Err()
+			return nil, err
 		}
 
 		prescriptionStatus := &common.PrescriptionStatus{
@@ -1002,7 +1002,7 @@ func (d *DataService) GetPrescriptionStatusEventsForTreatment(treatmentId int64)
 		var prescriptionStatus common.PrescriptionStatus
 		err = rows.Scan(&prescriptionStatus.TreatmentId, &prescriptionStatus.PrescriptionStatus, &statusDetails, &prescriptionStatus.StatusTimeStamp)
 		if err != nil {
-			return nil, rows.Err()
+			return nil, err
 		}
 		prescriptionStatus.StatusDetails = statusDetails.String
 
