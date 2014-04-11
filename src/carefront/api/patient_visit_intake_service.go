@@ -315,7 +315,7 @@ func (d *DataService) getPatientAnswersForQuestionsBasedOnQuery(query string, ar
 		queriedAnswers = append(queriedAnswers, patientAnswerToQuestion)
 	}
 	if rows.Err() != nil {
-		return 0, rows.Err()
+		return nil, rows.Err()
 	}
 
 	// populate all top-level answers into the map

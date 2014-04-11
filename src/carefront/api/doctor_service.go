@@ -700,7 +700,7 @@ func (d *DataService) GetTreatmentTemplates(doctorId int64) ([]*common.DoctorTre
 		}
 	}
 	if rows.Err() != nil {
-		return 0, rows.Err()
+		return nil, rows.Err()
 	}
 
 	// there are no favorited items to return
