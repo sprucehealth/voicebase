@@ -34,6 +34,7 @@ type Treatment struct {
 	DoctorId                  int64                    `json:"-"`
 	Doctor                    *Doctor                  `json:"doctor,omitempty"`
 	Patient                   *Patient                 `json:"patient,omitempty"`
+	PatientId                 int64                    `json:"-,omitempty"`
 	OriginatingTreatmentId    int64                    `json:"-"`
 	ERx                       *ERxData                 `json:"erx,omitempty"`
 }

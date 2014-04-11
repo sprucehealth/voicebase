@@ -377,7 +377,7 @@ func TestPatientVisitReview(t *testing.T) {
 		t.Fatal("Expected 2 treatments to be returned within treatment plan")
 	}
 
-	for _, treatment := range doctorPrescriptionsResponse.TreatmentPlans[0].Treatments {
+	for _, treatment := range treatmentPlans[0].Treatments {
 		if treatment.Id.Int64() == 20 && (treatment.ERx.PrescriptionStatus != api.ERX_STATUS_ERROR || treatment.ERx.PrescriptionStatus != api.ERX_STATUS_SENDING) {
 			t.Fatal("Expected the prescription status to be error for 1 treatment")
 		}
