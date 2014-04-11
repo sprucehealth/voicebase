@@ -240,6 +240,9 @@ func (d *DataService) updateSubAnswersToPatientInfoIntakesWithStatus(role string
 		rows.Scan(&id)
 		parentInfoIntakeIds = append(parentInfoIntakeIds, id)
 	}
+	if rows.Err() != nil {
+		return rows.Err()
+	}
 
 	if len(parentInfoIntakeIds) == 0 {
 		return
@@ -310,6 +313,9 @@ func (d *DataService) getPatientAnswersForQuestionsBasedOnQuery(query string, ar
 			patientAnswerToQuestion.ParentAnswerId = common.NewObjectId(parentInfoIntakeId.Int64)
 		}
 		queriedAnswers = append(queriedAnswers, patientAnswerToQuestion)
+	}
+	if rows.Err() != nil {
+		return 0, rows.Err()
 	}
 
 	// populate all top-level answers into the map

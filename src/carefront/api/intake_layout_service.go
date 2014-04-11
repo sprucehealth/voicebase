@@ -166,7 +166,7 @@ func (d *DataService) GetGlobalSectionIds() ([]int64, error) {
 		rows.Scan(&sectionId)
 		globalSectionIds = append(globalSectionIds, sectionId)
 	}
-	return globalSectionIds, nil
+	return globalSectionIds, rows.Err()
 }
 
 func (d *DataService) GetSectionIdsForHealthCondition(healthConditionId int64) ([]int64, error) {
@@ -182,7 +182,7 @@ func (d *DataService) GetSectionIdsForHealthCondition(healthConditionId int64) (
 		rows.Scan(&sectionId)
 		sectionIds = append(sectionIds, sectionId)
 	}
-	return sectionIds, nil
+	return sectionIds, rows.Err()
 }
 
 func (d *DataService) GetHealthConditionInfo(healthConditionTag string) (int64, error) {
@@ -283,7 +283,7 @@ func (d *DataService) GetQuestionInfoForTags(questionTags []string, languageId i
 		questionInfos = append(questionInfos, questionInfo)
 	}
 
-	return questionInfos, nil
+	return questionInfos, rows.Err()
 }
 
 func (d *DataService) GetAnswerInfo(questionId int64, languageId int64) ([]PotentialAnswerInfo, error) {
@@ -319,7 +319,7 @@ func createAnswerInfosFromRows(rows *sql.Rows) ([]PotentialAnswerInfo, error) {
 			return answerInfos, err
 		}
 	}
-	return answerInfos, nil
+	return answerInfos, rows.Err()
 }
 
 func (d *DataService) GetAnswerInfoForTags(answerTags []string, languageId int64) ([]PotentialAnswerInfo, error) {
@@ -374,5 +374,5 @@ func (d *DataService) GetSupportedLanguages() (languagesSupported []string, lang
 		languagesSupported = append(languagesSupported, language)
 		languagesSupportedIds = append(languagesSupportedIds, languageId)
 	}
-	return languagesSupported, languagesSupportedIds, nil
+	return languagesSupported, languagesSupportedIds, rows.Err()
 }

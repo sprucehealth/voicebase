@@ -321,7 +321,7 @@ func populateDoctorQueueFromRows(rows *sql.Rows) ([]*DoctorQueueItem, error) {
 		}
 		doctorQueue = append(doctorQueue, queueItem)
 	}
-	return doctorQueue, nil
+	return doctorQueue, rows.Err()
 }
 
 func (d *DataService) GetMedicationDispenseUnits(languageId int64) (dispenseUnitIds []int64, dispenseUnits []string, err error) {
@@ -339,7 +339,7 @@ func (d *DataService) GetMedicationDispenseUnits(languageId int64) (dispenseUnit
 		dispenseUnits = append(dispenseUnits, dispenseUnit)
 		dispenseUnitIds = append(dispenseUnitIds, dipenseUnitId)
 	}
-	return dispenseUnitIds, dispenseUnits, nil
+	return dispenseUnitIds, dispenseUnits, rows.Err()
 }
 
 func (d *DataService) GetDrugInstructionsForDoctor(drugName, drugForm, drugRoute string, doctorId int64) ([]*common.DoctorInstructionItem, error) {
@@ -408,6 +408,9 @@ func (d *DataService) GetDrugInstructionsForDoctor(drugName, drugForm, drugRoute
 		var instructionId int64
 		rows.Scan(&instructionId)
 		selectedInstructionIds[instructionId] = true
+	}
+	if rows.Err() != nil {
+		return nil, rows.Err()
 	}
 
 	// go through the drug instructions to set the selected state
@@ -696,6 +699,9 @@ func (d *DataService) GetTreatmentTemplates(doctorId int64) ([]*common.DoctorTre
 			Name: name,
 		}
 	}
+	if rows.Err() != nil {
+		return 0, rows.Err()
+	}
 
 	// there are no favorited items to return
 	if len(treatmentIds) == 0 {
@@ -779,7 +785,7 @@ func (d *DataService) GetTreatmentTemplates(doctorId int64) ([]*common.DoctorTre
 		treatmentTemplates = append(treatmentTemplates, treatmentTemplate)
 
 	}
-	return treatmentTemplates, nil
+	return treatmentTemplates, rows.Err()
 }
 
 func (d *DataService) GetCompletedPrescriptionsForDoctor(from, to time.Time, doctorId int64) ([]*common.TreatmentPlan, error) {
@@ -873,7 +879,7 @@ func (d *DataService) GetCompletedPrescriptionsForDoctor(from, to time.Time, doc
 		treatmentPlan.Treatments = append(treatmentPlan.Treatments, treatment)
 	}
 
-	return treatmentPlans, nil
+	return treatmentPlans, rows.Err()
 }
 
 func (d *DataService) InsertNewRefillRequestIntoDoctorQueue(refillRequestId int64, doctorId int64) error {
@@ -1230,7 +1236,7 @@ func getPredefinedInstructionsFromRows(rows *sql.Rows) ([]*predefinedInstruction
 		instruction.text = text
 		predefinedInstructions = append(predefinedInstructions, instruction)
 	}
-	return predefinedInstructions, nil
+	return predefinedInstructions, rows.Err()
 }
 
 func getInstructionsFromRows(rows *sql.Rows) ([]*common.DoctorInstructionItem, error) {
@@ -1248,7 +1254,7 @@ func getInstructionsFromRows(rows *sql.Rows) ([]*common.DoctorInstructionItem, e
 		supplementalInstruction.Status = status
 		drugInstructions = append(drugInstructions, supplementalInstruction)
 	}
-	return drugInstructions, nil
+	return drugInstructions, rows.Err()
 }
 
 func (d *DataService) includeDrugNameComponentIfNonZero(drugNameComponent, tableName, columnName string, columnsAndData map[string]interface{}, tx *sql.Tx) error {

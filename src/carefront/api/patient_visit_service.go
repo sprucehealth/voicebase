@@ -385,7 +385,7 @@ func (d *DataService) GetDiagnosisResponseToQuestionWithTag(questionTag string, 
 		answerIntakes = append(answerIntakes, answerIntake)
 	}
 
-	return answerIntakes, nil
+	return answerIntakes, rows.Err()
 }
 
 func (d *DataService) AddDiagnosisSummaryForPatientVisit(summary string, treatmentPlanId, doctorId int64) error {
@@ -496,7 +496,7 @@ func (d *DataService) GetAdvicePointsForPatientVisit(patientVisitId, treatmentPl
 		}
 		advicePoints = append(advicePoints, advicePoint)
 	}
-	return advicePoints, nil
+	return advicePoints, rows.Err()
 }
 
 func (d *DataService) CreateAdviceForPatientVisit(advicePoints []*common.DoctorInstructionItem, treatmentPlanId int64) error {
@@ -579,6 +579,9 @@ func (d *DataService) GetRegimenPlanForPatientVisit(patientVisitId, treatmentPla
 		}
 		regimenSteps = append(regimenSteps, regimenStep)
 		regimenSections[regimenType] = regimenSteps
+	}
+	if rows.Err() != nil {
+		return nil, rows.Err()
 	}
 
 	// if there are no regimen steps to return, error out indicating so
@@ -758,6 +761,9 @@ func (d *DataService) GetTreatmentsBasedOnTreatmentPlanId(patientVisitId, treatm
 		treatments = append(treatments, treatment)
 		treatmentIds = append(treatmentIds, treatment.Id.Int64())
 	}
+	if rows.Err() != nil {
+		return nil, rows.Err()
+	}
 
 	if len(treatments) == 0 {
 		return treatments, nil
@@ -816,10 +822,13 @@ func (d *DataService) GetTreatmentBasedOnPrescriptionId(erxId int64) (*common.Tr
 	for rows.Next() {
 		treatment, err := d.getTreatmentAndMetadataFromCurrentRow(rows)
 		if err != nil {
-			return nil, err
+			return nil, rows.Err()
 		}
 
 		treatments = append(treatments, treatment)
+	}
+	if rows.Err() != nil {
+		return nil, rows.Err()
 	}
 
 	if len(treatments) == 0 {
@@ -858,10 +867,13 @@ func (d *DataService) GetTreatmentFromId(treatmentId int64) (*common.Treatment, 
 	for rows.Next() {
 		treatment, err := d.getTreatmentAndMetadataFromCurrentRow(rows)
 		if err != nil {
-			return nil, err
+			return nil, rows.Err()
 		}
 
 		treatments = append(treatments, treatment)
+	}
+	if rows.Err() != nil {
+		return nil, rows.Err()
 	}
 
 	if len(treatments) == 0 {
@@ -957,7 +969,7 @@ func (d *DataService) GetPrescriptionStatusEventsForPatient(patientId int64) ([]
 		var creationDate time.Time
 		err = rows.Scan(&treatmentId, &prescriptionId, &status, &creationDate)
 		if err != nil {
-			return nil, err
+			return nil, rows.Err()
 		}
 
 		prescriptionStatus := &common.PrescriptionStatus{
@@ -973,7 +985,7 @@ func (d *DataService) GetPrescriptionStatusEventsForPatient(patientId int64) ([]
 		prescriptionStatuses = append(prescriptionStatuses, prescriptionStatus)
 	}
 
-	return prescriptionStatuses, nil
+	return prescriptionStatuses, rows.Err()
 }
 
 func (d *DataService) GetPrescriptionStatusEventsForTreatment(treatmentId int64) ([]*common.PrescriptionStatus, error) {
@@ -990,14 +1002,14 @@ func (d *DataService) GetPrescriptionStatusEventsForTreatment(treatmentId int64)
 		var prescriptionStatus common.PrescriptionStatus
 		err = rows.Scan(&prescriptionStatus.TreatmentId, &prescriptionStatus.PrescriptionStatus, &statusDetails, &prescriptionStatus.StatusTimeStamp)
 		if err != nil {
-			return nil, err
+			return nil, rows.Err()
 		}
 		prescriptionStatus.StatusDetails = statusDetails.String
 
 		prescriptionStatuses = append(prescriptionStatuses, &prescriptionStatus)
 	}
 
-	return prescriptionStatuses, nil
+	return prescriptionStatuses, rows.Err()
 }
 
 func (d *DataService) UpdateDateInfoForTreatmentId(treatmentId int64, erxSentDate time.Time) error {

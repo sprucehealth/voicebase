@@ -48,7 +48,7 @@ func (d *DataService) GetPendingRefillRequestStatusEventsForClinic() ([]RefillRe
 		}
 		refillRequestStatuses = append(refillRequestStatuses, refillRequestStatus)
 	}
-	return refillRequestStatuses, nil
+	return refillRequestStatuses, rows.Err()
 }
 
 func (d *DataService) LinkRequestedPrescriptionToOriginalTreatment(requestedTreatment *common.Treatment, patient *common.Patient) error {
@@ -82,6 +82,9 @@ func (d *DataService) LinkRequestedPrescriptionToOriginalTreatment(requestedTrea
 		}
 		treatmentIds = append(treatmentIds, treatmentId)
 	}
+	if rows.Err() != nil {
+		return rows.Err()
+	}
 
 	for _, treatmentId := range treatmentIds {
 		// for each of the treatments gathered for the patiend, compare the drug ids against the requested prescription to identify if they
@@ -100,6 +103,9 @@ func (d *DataService) LinkRequestedPrescriptionToOriginalTreatment(requestedTrea
 				return err
 			}
 			drugIds[drugDbIdTag] = drugDbId
+		}
+		if drugDBIdRows.Err() != nil {
+			return drugDBIdRows.Err()
 		}
 
 		if requestedTreatment.DrugDBIds[erx.LexiGenProductId] == drugIds[erx.LexiGenProductId] &&
@@ -450,7 +456,7 @@ func (d *DataService) GetRefillRequestDenialReasons() ([]*RefillRequestDenialRea
 		denialReasons = append(denialReasons, &denialReason)
 	}
 
-	return denialReasons, nil
+	return denialReasons, rows.Err()
 }
 
 func (d *DataService) MarkRefillRequestAsApproved(approvedRefillCount, rxRefillRequestId, prescriptionId int64, comments string) error {

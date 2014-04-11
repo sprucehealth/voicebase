@@ -148,6 +148,9 @@ func (d *DataService) CheckCareProvidingElligibility(shortState string, healthCo
 		rows.Scan(&doctorId)
 		doctorIds = append(doctorIds, doctorId)
 	}
+	if rows.Err() != nil {
+		return 0, rows.Err()
+	}
 
 	if len(doctorIds) == 0 {
 		return 0, nil
@@ -204,7 +207,7 @@ func (d *DataService) GetCareTeamForPatient(patientId int64) (*common.PatientCar
 		careTeam.Assignments = append(careTeam.Assignments, patientCareProviderAssignment)
 	}
 
-	return careTeam, nil
+	return careTeam, rows.Err()
 }
 
 func (d *DataService) CreateCareTeamForPatientWithPrimaryDoctor(patientId, doctorId int64) (*common.PatientCareProviderGroup, error) {
@@ -521,7 +524,7 @@ func (d *DataService) GetPharmacySelectionForPatients(patientIds []int64) ([]*ph
 		pharmacies = append(pharmacies, pharmacySelection)
 	}
 
-	return pharmacies, nil
+	return pharmacies, rows.Err()
 }
 
 func (d *DataService) GetPharmacyBasedOnReferenceIdAndSource(pharmacyId, pharmacySource string) (*pharmacy.PharmacyData, error) {
@@ -850,7 +853,8 @@ func (d *DataService) GetCardsForPatient(patientId int64) ([]*common.Card, error
 		card.Id = common.NewObjectId(cardId)
 		cards = append(cards, &card)
 	}
-	return cards, nil
+
+	return cards, rows.Err()
 }
 
 func (d *DataService) GetCardFromId(cardId int64) (*common.Card, error) {
@@ -994,7 +998,7 @@ func (d *DataService) getPatientBasedOnQuery(queryStr string, queryParams ...int
 		patients = append(patients, patient)
 	}
 
-	return patients, nil
+	return patients, rows.Err()
 }
 
 func (d *DataService) getAddressAndPhoneNumbersForPatient(patient *common.Patient) error {
@@ -1028,5 +1032,5 @@ func (d *DataService) getAddressAndPhoneNumbersForPatient(patient *common.Patien
 		patient.PhoneNumbers = append(patient.PhoneNumbers, &phoneInformation)
 	}
 
-	return nil
+	return rows.Err()
 }
