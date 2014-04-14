@@ -832,7 +832,7 @@ func (d *DataService) GetTreatmentsForPatient(patientId int64) ([]*common.Treatm
 		treatmentIds = append(treatmentIds, treatment.Id.Int64())
 	}
 
-	return treatments, nil
+	return treatments, rows.Err()
 }
 
 func (d *DataService) GetTreatmentBasedOnPrescriptionId(erxId int64) (*common.Treatment, error) {

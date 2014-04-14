@@ -99,7 +99,7 @@ func getRefillStatusEventsFromRows(rows *sql.Rows) ([]common.StatusEvent, error)
 		refillRequestStatus.PrescriptionId = prescriptionId.Int64
 		refillRequestStatuses = append(refillRequestStatuses, refillRequestStatus)
 	}
-	return refillRequestStatuses, nil
+	return refillRequestStatuses, rows.Err()
 }
 
 func (d *DataService) LinkRequestedPrescriptionToOriginalTreatment(requestedTreatment *common.Treatment, patient *common.Patient) error {
