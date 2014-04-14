@@ -544,7 +544,7 @@ func (c *CreateDemoPatientVisitHandler) ServeHTTP(w http.ResponseWriter, r *http
 			ZipCode: "19102",
 			PhoneNumbers: []*common.PhoneInformation{
 				&common.PhoneInformation{
-					Phone:     "215-988-6728",
+					Phone:     "215-988-6723",
 					PhoneType: "Home",
 				},
 				&common.PhoneInformation{
@@ -608,7 +608,7 @@ func (c *CreateDemoPatientVisitHandler) ServeHTTP(w http.ResponseWriter, r *http
 			LastName:  "Tucker",
 			Gender:    "Female",
 			Dob: encoding.Dob{
-				Year:  1980,
+				Year:  1970,
 				Month: 11,
 				Day:   01,
 			},
@@ -683,9 +683,9 @@ func (c *CreateDemoPatientVisitHandler) ServeHTTP(w http.ResponseWriter, r *http
 			MiddleName: "R",
 			Gender:     "Male",
 			Dob: encoding.Dob{
-				Year:  1994,
+				Year:  1968,
 				Month: 9,
-				Day:   29,
+				Day:   1,
 			},
 			ZipCode: "01040",
 			PhoneNumbers: []*common.PhoneInformation{
@@ -708,10 +708,10 @@ func (c *CreateDemoPatientVisitHandler) ServeHTTP(w http.ResponseWriter, r *http
 				Source:       pharmacy.PHARMACY_SOURCE_SURESCRIPTS,
 			},
 			PatientAddress: &common.Address{
-				AddressLine1: "23 Trumble Dr",
+				AddressLine1: "2556 Lane Rd",
 				AddressLine2: "Apt 101",
-				City:         "Holyoke",
-				State:        "Massachusetts",
+				City:         "Smittyville",
+				State:        "Virginia",
 				ZipCode:      "01040-2239",
 			},
 		}
@@ -748,7 +748,7 @@ func (c *CreateDemoPatientVisitHandler) ServeHTTP(w http.ResponseWriter, r *http
 			PatientAddress: &common.Address{
 				AddressLine1: "64 Violet Lane",
 				AddressLine2: "Apt 101",
-				City:         "Hower In The Hills",
+				City:         "Howey In The Hills",
 				State:        "Florida",
 				ZipCode:      "34737",
 			},
