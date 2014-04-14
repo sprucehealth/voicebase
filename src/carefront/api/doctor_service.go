@@ -55,7 +55,7 @@ func (d *DataService) RegisterDoctor(doctor *common.Doctor) (int64, error) {
 }
 
 func (d *DataService) GetDoctorFromId(doctorId int64) (*common.Doctor, error) {
-	row := d.DB.QueryRow(`select doctor.id, account_id, phone, first_name, last_name, gender, dob_year, dob_month, dob_day, status, clinician_id, address.address_line_1, 
+	row := d.DB.QueryRow(`select doctor.id, account_id, phone, first_name, last_name, middle_name, suffix, prefix, gender, dob_year, dob_month, dob_day, status, clinician_id, address.address_line_1, 
 							address.address_line_2, address.city, address.state, address.zip_code from doctor 
 							left outer join doctor_address_selection on doctor_id = doctor.id
 							left outer join address on address.id = address_id
@@ -65,7 +65,7 @@ func (d *DataService) GetDoctorFromId(doctorId int64) (*common.Doctor, error) {
 }
 
 func (d *DataService) GetDoctorFromAccountId(accountId int64) (*common.Doctor, error) {
-	row := d.DB.QueryRow(`select doctor.id, account_id, phone, first_name, last_name, gender, dob_year, dob_month, dob_day, status, clinician_id,address.address_line_1, 
+	row := d.DB.QueryRow(`select doctor.id, account_id, phone, first_name, last_name, middle_name, suffix, prefix, gender, dob_year, dob_month, dob_day, status, clinician_id,address.address_line_1, 
 							address.address_line_2, address.city, address.state, address.zip_code from doctor 
 							left outer join doctor_phone on doctor_phone.doctor_id = doctor.id
 							left outer join doctor_address_selection on doctor_id = doctor.id
@@ -75,7 +75,7 @@ func (d *DataService) GetDoctorFromAccountId(accountId int64) (*common.Doctor, e
 }
 
 func (d *DataService) GetDoctorFromDoseSpotClinicianId(clinicianId int64) (*common.Doctor, error) {
-	row := d.DB.QueryRow(`select doctor.id, account_id, phone, first_name, last_name, gender, dob_year, dob_month, dob_day, status, clinician_id, address.address_line_1, 
+	row := d.DB.QueryRow(`select doctor.id, account_id, phone, first_name, last_name, middle_name, suffix, prefix, gender, dob_year, dob_month, dob_day, status, clinician_id, address.address_line_1, 
 							address.address_line_2, address.city, address.state, address.zip_code from doctor 
 							left outer join doctor_address_selection on doctor_id = doctor.id
 							left outer join address on address.id = address_id
@@ -86,11 +86,11 @@ func (d *DataService) GetDoctorFromDoseSpotClinicianId(clinicianId int64) (*comm
 
 func getDoctorFromRow(row *sql.Row) (*common.Doctor, error) {
 	var firstName, lastName, status, gender string
-	var cellPhoneNumber, addressLine1, addressLine2, city, state, zipCode sql.NullString
+	var cellPhoneNumber, addressLine1, addressLine2, city, state, zipCode, middleName, suffix, prefix sql.NullString
 	var doctorId, accountId int64
 	var dobYear, dobMonth, dobDay int
 	var clinicianId sql.NullInt64
-	err := row.Scan(&doctorId, &accountId, &cellPhoneNumber, &firstName, &lastName, &gender, &dobYear, &dobMonth, &dobDay, &status, &clinicianId, &addressLine1, &addressLine2, &city, &state, &zipCode)
+	err := row.Scan(&doctorId, &accountId, &cellPhoneNumber, &firstName, &lastName, &middleName, &suffix, &prefix, &gender, &dobYear, &dobMonth, &dobDay, &status, &clinicianId, &addressLine1, &addressLine2, &city, &state, &zipCode)
 	if err != nil {
 		return nil, err
 	}
@@ -99,6 +99,9 @@ func getDoctorFromRow(row *sql.Row) (*common.Doctor, error) {
 		DoctorId:            encoding.NewObjectId(doctorId),
 		FirstName:           firstName,
 		LastName:            lastName,
+		MiddleName:          middleName.String,
+		Suffix:              suffix.String,
+		Prefix:              prefix.String,
 		Status:              status,
 		Gender:              gender,
 		CellPhone:           cellPhoneNumber.String,

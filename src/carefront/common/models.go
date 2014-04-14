@@ -57,6 +57,9 @@ type Doctor struct {
 	DoctorId            *encoding.ObjectId `json:"id,omitempty"`
 	FirstName           string             `json:"first_name,omitempty"`
 	LastName            string             `json:"last_name,omitempty"`
+	MiddleName          string             `json:"middle_name,omitempty"`
+	Prefix              string             `json:"prefix,omitempty"`
+	Suffix              string             `json:"suffix,omitempty"`
 	Dob                 encoding.Dob       `json:"-"`
 	Gender              string             `json:"-"`
 	Status              string             `json:"-"`

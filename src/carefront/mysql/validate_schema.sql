@@ -3,7 +3,7 @@
 # This script assumes that there is a live RDS instance
 # that is publically accessible. The RDS instance is needed
 # to validate the migration DDL and create an updated snapshot
-RDS_INSTANCE="dev-db-3.ccvrwjdx3gvp.us-east-1.rds.amazonaws.com"
+RDS_INSTANCE="127.0.0.1"
 RDS_USERNAME="carefront"
 DATABASE_NAME="database_$RANDOM"
 
