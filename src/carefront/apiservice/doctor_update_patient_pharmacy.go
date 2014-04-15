@@ -46,15 +46,8 @@ func (d *DoctorUpdatePatientPharmacyHandler) ServeHTTP(w http.ResponseWriter, r 
 		return
 	}
 
-	careTeam, err := d.DataApi.GetCareTeamForPatient(patient.PatientId.Int64())
-	if err != nil {
-		WriteDeveloperError(w, http.StatusInternalServerError, "Unable to get care team for patient: "+err.Error())
-		return
-	}
-
-	primaryDoctorId := getPrimaryDoctorIdFromCareTeam(careTeam)
-	if primaryDoctorId != doctor.DoctorId.Int64() {
-		WriteDeveloperError(w, http.StatusForbidden, "Unable to move forawrd to update patient's pharmacy address as this doctor is not the patient's primary doctor")
+	if err := verifyDoctorPatientRelationship(d.DataApi, doctor, patient); err != nil {
+		WriteDeveloperError(w, http.StatusForbidden, "Unable to verify doctor-patient relationship: "+err.Error())
 		return
 	}
 

@@ -61,22 +61,15 @@ func (d *DoctorPatientUpdateHandler) getPatientInformation(w http.ResponseWriter
 		return
 	}
 
-	careTeam, err := d.DataApi.GetCareTeamForPatient(patientId)
-	if err != nil {
-		WriteDeveloperError(w, http.StatusInternalServerError, "Unable to get care team based on patient id: "+err.Error())
-		return
-	}
-
-	primaryDoctorId := getPrimaryDoctorIdFromCareTeam(careTeam)
-
-	if currentDoctor.DoctorId.Int64() != primaryDoctorId {
-		WriteDeveloperError(w, http.StatusForbidden, "Unable to get the patient information by doctor when this doctor is not the primary doctor for patient")
-		return
-	}
-
 	patient, err := d.DataApi.GetPatientFromId(patientId)
 	if err != nil {
 		WriteDeveloperError(w, http.StatusBadRequest, "Unable to get patient information from id: "+err.Error())
+		return
+	}
+
+	if err := verifyDoctorPatientRelationship(d.DataApi, currentDoctor, patient); err != nil {
+		WriteDeveloperError(w, http.StatusForbidden, "Unable to verify doctor-patient relationship: "+err.Error())
+		return
 	}
 
 	WriteJSONToHTTPResponseWriter(w, http.StatusOK, &DoctorPatientUpdateHandlerRequestResponse{Patient: patient})
@@ -119,16 +112,8 @@ func (d *DoctorPatientUpdateHandler) updatePatientInformation(w http.ResponseWri
 		return
 	}
 
-	// ensure that this doctor is the primary doctor of the patient
-	careTeam, err := d.DataApi.GetCareTeamForPatient(requestData.Patient.PatientId.Int64())
-	if err != nil {
-		WriteDeveloperError(w, http.StatusInternalServerError, "Unable to get care team for patient: "+err.Error())
-		return
-	}
-
-	doctorId := getPrimaryDoctorIdFromCareTeam(careTeam)
-	if doctorId != currentDoctor.DoctorId.Int64() {
-		WriteDeveloperError(w, http.StatusForbidden, `Unable to move forward to update patient information since this doctor is not the primary doctor for the patient `)
+	if err := verifyDoctorPatientRelationship(d.DataApi, currentDoctor, requestData.Patient); err != nil {
+		WriteDeveloperError(w, http.StatusForbidden, "Unable to verify doctor-patient relationship: "+err.Error())
 		return
 	}
 
