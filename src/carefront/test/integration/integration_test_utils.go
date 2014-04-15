@@ -149,18 +149,30 @@ func getDoctorIdOfCurrentPrimaryDoctor(testData TestData, t *testing.T) int64 {
 }
 
 func SetupIntegrationTest(t *testing.T) TestData {
+	dbConfig := GetDBConfig(t)
+	if s := os.Getenv("RDS_INSTANCE"); s != "" {
+		dbConfig.Host = s
+	}
+	if s := os.Getenv("RDS_USERNAME"); s != "" {
+		dbConfig.User = s
+		dbConfig.Password = os.Getenv("RDS_PASSWORD")
+	}
+
 	ts := time.Now()
 	setupScript := os.Getenv(carefrontProjectDirEnv) + "/src/carefront/test/integration/setup_integration_test.sh"
 	cmd := exec.Command(setupScript)
 	var out bytes.Buffer
 	cmd.Stdout = &out
 	cmd.Stderr = os.Stderr
-	err := cmd.Run()
-	if err != nil {
+	cmd.Env = append(os.Environ(),
+		fmt.Sprintf("RDS_INSTANCE=%s", dbConfig.Host),
+		fmt.Sprintf("RDS_USERNAME=%s", dbConfig.User),
+		fmt.Sprintf("RDS_PASSWORD=%s", dbConfig.Password),
+	)
+	if err := cmd.Run(); err != nil {
 		t.Fatal("Unable to run the setup_database.sh script for integration tests: " + err.Error() + " " + out.String())
 	}
 
-	dbConfig := GetDBConfig(t)
 	dbConfig.DatabaseName = strings.TrimSpace(out.String())
 	db := ConnectToDB(t, dbConfig)
 	conf := config.BaseConfig{}

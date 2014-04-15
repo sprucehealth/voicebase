@@ -1,4 +1,4 @@
-#!/bin/bash 
+#!/bin/bash
 
 # This script assumes that there is a live RDS instance
 # that is publically accessible. The RDS instance is needed
@@ -9,9 +9,13 @@ DATABASE_NAME="database_$RANDOM"
 
 # The RDS password for this instance is expected to be set as an environment variable
 # named DEV_RDS_PASSWORD
+if [ "$DEV_RDS_PASSWORD" == "" ]; then
+	echo "DEV_RDS_PASSWORD not set"
+	exit 1
+fi
 
 # trapping the TERM signal enables us to instruct the
-# process executing the bash script to exit if the TERM 
+# process executing the bash script to exit if the TERM
 # signal is sent to it
 trap "exit 1" TERM
 export TOP_PID=$$
@@ -38,7 +42,7 @@ latestMigrationNumber=`ls -r migration-*.sql | cut -d- -f 2  | cut -d. -f1 | sor
 ## add the create database and use database statements before the rest of the sql statements
 echo "create database $DATABASE_NAME; use $DATABASE_NAME;"  | cat - snapshot-$latestSnapshotNumber.sql > temp.sql
 echo "use $DATABASE_NAME;" | cat - data-snapshot-$latestDataSnapshotNumber.sql > temp-data.sql
- 
+
 # Use this snapshot as the base to create a random database on a test mysql instance
 echo -e "--- Creating database $DATABASE_NAME and restoring schema from snapshot-$latestSnapshotNumber.sql\n"
 mysql -h $RDS_INSTANCE -u $RDS_USERNAME -p$DEV_RDS_PASSWORD < temp.sql
@@ -47,7 +51,7 @@ mysql -h $RDS_INSTANCE -u $RDS_USERNAME -p$DEV_RDS_PASSWORD < temp-data.sql
 # Apply the latest migration file to the database
 echo -e "--- Applying DDL in migrate-$latestMigrationNumber.sql to database\n"
 echo "use $DATABASE_NAME;" | cat - migration-$latestMigrationNumber.sql > temp-migration.sql
-mysql -h $RDS_INSTANCE -u $RDS_USERNAME -p$DEV_RDS_PASSWORD < temp-migration.sql 
+mysql -h $RDS_INSTANCE -u $RDS_USERNAME -p$DEV_RDS_PASSWORD < temp-migration.sql
 
 if [ $? -ne 0 ]; then
 	cleanup
