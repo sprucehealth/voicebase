@@ -271,6 +271,7 @@ func main() {
 	updatePatientPharmacyHandler := &apiservice.UpdatePatientPharmacyHandler{DataApi: dataApi, PharmacySearchService: pharmacy.GooglePlacesPharmacySearchService(0)}
 	authenticateDoctorHandler := &apiservice.DoctorAuthenticationHandler{DataApi: dataApi, AuthApi: authApi}
 	signupDoctorHandler := &apiservice.SignupDoctorHandler{DataApi: dataApi, AuthApi: authApi}
+	patientTreatmentGuideHandler := apiservice.NewPatientTreatmentGuideHandler(dataApi, authApi)
 	patientVisitHandler := apiservice.NewPatientVisitHandler(dataApi, authApi, cloudStorageApi, photoAnswerCloudStorageApi, twilioCli, conf.Twilio.FromNumber)
 	patientVisitReviewHandler := &apiservice.PatientVisitReviewHandler{DataApi: dataApi}
 	answerIntakeHandler := apiservice.NewAnswerIntakeHandler(dataApi)
@@ -395,6 +396,7 @@ func main() {
 	mux.Handle("/v1/patient", signupPatientHandler)
 	mux.Handle("/v1/patient/address/billing", updatePatientBillingAddress)
 	mux.Handle("/v1/patient/pharmacy", updatePatientPharmacyHandler)
+	mux.Handle("/v1/patient/treatmentguide", patientTreatmentGuideHandler)
 	mux.Handle("/v1/visit", patientVisitHandler)
 	mux.Handle("/v1/visit/review", patientVisitReviewHandler)
 	mux.Handle("/v1/check_eligibility", checkElligibilityHandler)
@@ -412,8 +414,6 @@ func main() {
 	mux.Handle("/v1/client_model", generateModelIntakeHandler)
 	mux.Handle("/v1/credit_card", patientCardsHandler)
 	mux.Handle("/v1/credit_card/default", patientCardsHandler)
-
-	// mux.Handle("/v1/patient/treatmentguide", ...) ?treatment_id
 
 	mux.Handle("/v1/doctor/signup", signupDoctorHandler)
 	mux.Handle("/v1/doctor/authenticate", authenticateDoctorHandler)
