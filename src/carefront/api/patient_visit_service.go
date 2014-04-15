@@ -821,7 +821,6 @@ func (d *DataService) GetTreatmentsForPatient(patientId int64) ([]*common.Treatm
 
 	defer rows.Close()
 
-	treatmentIds := make([]int64, 0)
 	for rows.Next() {
 		treatment, err := d.getTreatmentAndMetadataFromCurrentRow(rows)
 		if err != nil {
@@ -829,7 +828,6 @@ func (d *DataService) GetTreatmentsForPatient(patientId int64) ([]*common.Treatm
 		}
 
 		treatments = append(treatments, treatment)
-		treatmentIds = append(treatmentIds, treatment.Id.Int64())
 	}
 
 	return treatments, rows.Err()
