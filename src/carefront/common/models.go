@@ -250,3 +250,17 @@ type StatusEvent struct {
 	ReportedTimestamp time.Time `json:"-"`
 	StatusDetails     string    `json:"status_details,omitempty"`
 }
+
+type DrugDetails struct {
+	Name               string
+	NDC                string
+	Alternative        string
+	Description        string
+	HowMuchToUse       string
+	Warnings           []string
+	Precautions        []string
+	HowToUse           []string
+	MessageDoctorIf    []string
+	SeriousSideEffects []string
+	CommonSideEffects  []string
+}
