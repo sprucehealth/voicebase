@@ -799,8 +799,6 @@ func (d *DataService) GetTreatmentsBasedOnTreatmentPlanId(patientVisitId, treatm
 }
 
 func (d *DataService) GetTreatmentsForPatient(patientId int64) ([]*common.Treatment, error) {
-	// get treatment plan information
-	treatments := make([]*common.Treatment, 0)
 	rows, err := d.DB.Query(`select treatment.id,treatment.erx_id, treatment.treatment_plan_id, treatment.drug_internal_name, treatment.dosage_strength, treatment.type,
 			treatment.dispense_value, treatment.dispense_unit_id, ltext, treatment.refills, treatment.substitutions_allowed, 
 			treatment.days_supply, treatment.pharmacy_id, treatment.pharmacy_notes, treatment.patient_instructions, treatment.creation_date, treatment.erx_sent_date,
@@ -821,12 +819,13 @@ func (d *DataService) GetTreatmentsForPatient(patientId int64) ([]*common.Treatm
 
 	defer rows.Close()
 
+	// get treatment plan information
+	treatments := make([]*common.Treatment, 0)
 	for rows.Next() {
 		treatment, err := d.getTreatmentAndMetadataFromCurrentRow(rows)
 		if err != nil {
 			return nil, err
 		}
-
 		treatments = append(treatments, treatment)
 	}
 
