@@ -33,8 +33,7 @@ func (d *DataService) AddRefillRequestStatusEvent(refillRequestStatus common.Sta
 		columnsAndData["reported_timestamp"] = refillRequestStatus.ReportedTimestamp
 	}
 
-	keys, values :=
-		getKeysAndValuesFromMap(columnsAndData)
+	keys, values := getKeysAndValuesFromMap(columnsAndData)
 	_, err = tx.Exec(fmt.Sprintf(`insert into rx_refill_status_events (%s) values (%s)`, strings.Join(keys, ","), nReplacements(len(values))), values...)
 	if err != nil {
 		tx.Rollback()
