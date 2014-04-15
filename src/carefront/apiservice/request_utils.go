@@ -67,6 +67,24 @@ func ensureTreatmentPlanOrPatientVisitIdPresent(dataApi api.DataAPI, treatmentPl
 	return nil
 }
 
+func ensureDoctorIsPrimaryForPatient(dataApi api.DataAPI, doctor *common.Doctor, patient *common.Patient) error {
+	// nothing to verify for an unlinked patient since they dont have a care team
+	if patient.IsUnlinked {
+		return nil
+	}
+
+	careTeam, err := dataApi.GetCareTeamForPatient(patient.PatientId.Int64())
+	if err != nil {
+		return fmt.Errorf("Unable to get care team based on patient id: %+v", err)
+	}
+
+	primaryDoctorId := getPrimaryDoctorIdFromCareTeam(careTeam)
+	if doctor.DoctorId.Int64() != primaryDoctorId {
+		return fmt.Errorf("Unable to get the patient information by doctor when this doctor is not the primary doctor for patient")
+	}
+	return nil
+}
+
 func GetSignedUrlsForAnswersInQuestion(question *info_intake.Question, photoStorageService api.CloudStorageAPI) {
 	// go through each answer to get signed urls
 	for _, patientAnswer := range question.Answers {

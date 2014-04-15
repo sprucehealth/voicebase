@@ -54,6 +54,17 @@ func (d *DoctorPrescriptionErrorIgnoreHandler) ServeHTTP(w http.ResponseWriter, 
 		return
 	}
 
+	patient, err := d.DataApi.GetPatientFromTreatmentId(treatmentId)
+	if err != nil {
+		WriteDeveloperError(w, http.StatusInternalServerError, "Unable to get patient from treatment: "+err.Error())
+		return
+	}
+
+	if err := ensureDoctorIsPrimaryForPatient(d.DataApi, doctor, patient); err != nil {
+		WriteDeveloperError(w, http.StatusForbidden, "Unable to verify patient-doctor relationship: "+err.Error())
+		return
+	}
+
 	if err := d.ErxApi.IgnoreAlert(doctor.DoseSpotClinicianId, treatment.PrescriptionId.Int64()); err != nil {
 		WriteDeveloperError(w, http.StatusInternalServerError, "Unable to ignore transmission error for prescription: "+err.Error())
 		return
