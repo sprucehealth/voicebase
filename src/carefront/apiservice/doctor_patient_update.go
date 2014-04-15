@@ -64,6 +64,7 @@ func (d *DoctorPatientUpdateHandler) getPatientInformation(w http.ResponseWriter
 	patient, err := d.DataApi.GetPatientFromId(patientId)
 	if err != nil {
 		WriteDeveloperError(w, http.StatusBadRequest, "Unable to get patient information from id: "+err.Error())
+		return
 	}
 
 	if err := verifyDoctorPatientRelationship(d.DataApi, currentDoctor, patient); err != nil {
