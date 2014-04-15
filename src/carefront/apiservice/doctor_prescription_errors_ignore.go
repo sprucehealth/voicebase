@@ -60,7 +60,7 @@ func (d *DoctorPrescriptionErrorIgnoreHandler) ServeHTTP(w http.ResponseWriter, 
 		return
 	}
 
-	if err := ensureDoctorIsPrimaryForPatient(d.DataApi, doctor, patient); err != nil {
+	if err := verifyDoctorPatientRelationship(d.DataApi, doctor, patient); err != nil {
 		WriteDeveloperError(w, http.StatusForbidden, "Unable to verify patient-doctor relationship: "+err.Error())
 		return
 	}

@@ -66,7 +66,7 @@ func (d *DoctorPatientUpdateHandler) getPatientInformation(w http.ResponseWriter
 		WriteDeveloperError(w, http.StatusBadRequest, "Unable to get patient information from id: "+err.Error())
 	}
 
-	if err := ensureDoctorIsPrimaryForPatient(d.DataApi, currentDoctor, patient); err != nil {
+	if err := verifyDoctorPatientRelationship(d.DataApi, currentDoctor, patient); err != nil {
 		WriteDeveloperError(w, http.StatusForbidden, "Unable to verify doctor-patient relationship: "+err.Error())
 		return
 	}
@@ -111,7 +111,7 @@ func (d *DoctorPatientUpdateHandler) updatePatientInformation(w http.ResponseWri
 		return
 	}
 
-	if err := ensureDoctorIsPrimaryForPatient(d.DataApi, currentDoctor, requestData.Patient); err != nil {
+	if err := verifyDoctorPatientRelationship(d.DataApi, currentDoctor, requestData.Patient); err != nil {
 		WriteDeveloperError(w, http.StatusForbidden, "Unable to verify doctor-patient relationship: "+err.Error())
 		return
 	}

@@ -67,7 +67,7 @@ func ensureTreatmentPlanOrPatientVisitIdPresent(dataApi api.DataAPI, treatmentPl
 	return nil
 }
 
-func ensureDoctorIsPrimaryForPatient(dataApi api.DataAPI, doctor *common.Doctor, patient *common.Patient) error {
+func verifyDoctorPatientRelationship(dataApi api.DataAPI, doctor *common.Doctor, patient *common.Patient) error {
 	// nothing to verify for an unlinked patient since they dont have a care team
 	if patient.IsUnlinked {
 		return nil
