@@ -38,5 +38,5 @@ type ERxAPI interface {
 type PrescriptionLog struct {
 	PrescriptionStatus string
 	AdditionalInfo     string
-	LogTimeStamp       time.Time
+	LogTimestamp       time.Time
 }

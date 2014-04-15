@@ -243,6 +243,10 @@ func main() {
 
 	mapsService := maps.NewGoogleMapsService(metricsRegistry.Scope("google_maps_api"))
 	doseSpotService := erx.NewDoseSpotService(conf.DoseSpot.ClinicId, conf.DoseSpot.UserId, conf.DoseSpot.ClinicKey, metricsRegistry.Scope("dosespot_api"))
+	erxStatusQueue, err := common.NewQueue(awsAuth, aws.Regions[conf.AWSRegion], conf.ERxQueue)
+	if err != nil {
+		log.Fatal("Unable to get erx queue for sending prescriptions to: " + err.Error())
+	}
 
 	dataApi := &api.DataService{DB: db}
 	cloudStorageApi := api.NewCloudStorageService(awsAuth)
@@ -265,7 +269,11 @@ func main() {
 	medicationStrengthSearchHandler := &apiservice.MedicationStrengthSearchHandler{DataApi: dataApi, ERxApi: doseSpotService}
 	newTreatmentHandler := &apiservice.NewTreatmentHandler{DataApi: dataApi, ERxApi: doseSpotService}
 	medicationDispenseUnitHandler := &apiservice.MedicationDispenseUnitsHandler{DataApi: dataApi}
-	treatmentsHandler := apiservice.NewTreatmentsHandler(dataApi)
+	treatmentsHandler := &apiservice.TreatmentsHandler{
+		DataApi: dataApi,
+		ErxApi:  doseSpotService,
+	}
+
 	photoAnswerIntakeHandler := apiservice.NewPhotoAnswerIntakeHandler(dataApi, photoAnswerCloudStorageApi, conf.CaseBucket, conf.AWSRegion, conf.MaxInMemoryForPhotoMB*1024*1024)
 	pharmacySearchHandler := &apiservice.PharmacyTextSearchHandler{PharmacySearchService: pharmacy.GooglePlacesPharmacySearchService(0), DataApi: dataApi, MapsService: mapsService}
 	generateDoctorLayoutHandler := &apiservice.GenerateDoctorLayoutHandler{
@@ -307,15 +315,6 @@ func main() {
 		Region:                conf.AWSRegion,
 	}
 
-	doctorPrescriptionsHandler := &apiservice.DoctorPrescriptionsHandler{
-		DataApi: dataApi,
-	}
-
-	doctorPrescriptionsNotificationsHandler := &apiservice.DoctorPrescriptionsNotificationsHandler{
-		DataApi: dataApi,
-		ErxApi:  doseSpotService,
-	}
-
 	doctorPrescriptionErrorHandler := &apiservice.DoctorPrescriptionErrorHandler{
 		DataApi: dataApi,
 	}
@@ -326,8 +325,9 @@ func main() {
 	}
 
 	doctorRefillRequestHandler := &apiservice.DoctorRefillRequestHandler{
-		DataApi: dataApi,
-		ErxApi:  doseSpotService,
+		DataApi:        dataApi,
+		ErxApi:         doseSpotService,
+		ErxStatusQueue: erxStatusQueue,
 	}
 
 	refillRequestDenialReasonsHandler := &apiservice.RefillRequestDenialReasonsHandler{
@@ -339,10 +339,6 @@ func main() {
 		PaymentApi: &stripe.StripeService{SecretKey: conf.StripeSecretKey},
 	}
 
-	erxStatusQueue, err := common.NewQueue(awsAuth, aws.Regions[conf.AWSRegion], conf.ERxQueue)
-	if err != nil {
-		log.Fatal("Unable to get erx queue for sending prescriptions to: " + err.Error())
-	}
 	doctorSubmitPatientVisitHandler := &apiservice.DoctorSubmitPatientVisitReviewHandler{DataApi: dataApi,
 		ERxApi:            doseSpotService,
 		TwilioFromNumber:  conf.Twilio.FromNumber,
@@ -368,6 +364,9 @@ func main() {
 	}
 
 	doctorUpdatePatientPharmacyHandler := &apiservice.DoctorUpdatePatientPharmacyHandler{
+		DataApi: dataApi,
+	}
+	doctorPatientTreatmentsHandler := &apiservice.DoctorPatientTreatmentsHandler{
 		DataApi: dataApi,
 	}
 	doctorPharmacySearchHandler := &apiservice.DoctorPharmacySearchHandler{
@@ -404,12 +403,11 @@ func main() {
 	mux.Handle("/v1/doctor/queue", doctorQueueHandler)
 	mux.Handle("/v1/doctor/treatment/templates", doctorTreatmentTemplatesHandler)
 
-	mux.Handle("/v1/doctor/rx/history", doctorPrescriptionsHandler)
-	mux.Handle("/v1/doctor/rx/notification_counts", doctorPrescriptionsNotificationsHandler)
 	mux.Handle("/v1/doctor/rx/error", doctorPrescriptionErrorHandler)
 	mux.Handle("/v1/doctor/rx/error/resolve", doctorPrescriptionErrorIgnoreHandler)
 	mux.Handle("/v1/doctor/rx/refill/request", doctorRefillRequestHandler)
 	mux.Handle("/v1/doctor/rx/refill/denial_reasons", refillRequestDenialReasonsHandler)
+	mux.Handle("/v1/doctor/patient/treatments", doctorPatientTreatmentsHandler)
 
 	mux.Handle("/v1/doctor/patient", doctorPatientUpdateHandler)
 	mux.Handle("/v1/doctor/patient/pharmacy", doctorUpdatePatientPharmacyHandler)

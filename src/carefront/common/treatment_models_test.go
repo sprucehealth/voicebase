@@ -5,10 +5,7 @@ import "testing"
 func TestTreatmentEquals(t *testing.T) {
 
 	treatment1 := &Treatment{
-		Id:                 NewObjectId(5),
-		PrescriptionId:     NewObjectId(20),
-		ErxMedicationId:    NewObjectId(25),
-		PrescriptionStatus: "eRxSent",
+		Id: NewObjectId(5),
 		DrugDBIds: map[string]string{
 			"lexi_gen_product_id":  "12345",
 			"lexi_drug_syn_id":     "56789",
@@ -22,13 +19,15 @@ func TestTreatmentEquals(t *testing.T) {
 		NumberRefills:        1,
 		SubstitutionsAllowed: false,
 		DaysSupply:           5,
+		ERx: &ERxData{
+			PrescriptionId:     NewObjectId(20),
+			ErxMedicationId:    NewObjectId(25),
+			PrescriptionStatus: "eRxSent",
+		},
 	}
 
 	treatment2 := &Treatment{
-		Id:                 NewObjectId(5),
-		PrescriptionId:     NewObjectId(20),
-		ErxMedicationId:    NewObjectId(25),
-		PrescriptionStatus: "eRxSent",
+		Id: NewObjectId(5),
 		DrugDBIds: map[string]string{
 			"lexi_gen_product_id":  "12345",
 			"lexi_drug_syn_id":     "56789",
@@ -42,6 +41,11 @@ func TestTreatmentEquals(t *testing.T) {
 		NumberRefills:        1,
 		SubstitutionsAllowed: false,
 		DaysSupply:           5,
+		ERx: &ERxData{
+			PrescriptionId:     NewObjectId(20),
+			ErxMedicationId:    NewObjectId(25),
+			PrescriptionStatus: "eRxSent",
+		},
 	}
 
 	// treatment1 and treatment 2 should be equal
@@ -50,10 +54,7 @@ func TestTreatmentEquals(t *testing.T) {
 	}
 
 	treatment3 := &Treatment{
-		Id:                 NewObjectId(5),
-		PrescriptionId:     NewObjectId(21),
-		ErxMedicationId:    NewObjectId(25),
-		PrescriptionStatus: "eRxSent",
+		Id: NewObjectId(5),
 		DrugDBIds: map[string]string{
 			"lexi_gen_product_id":  "12345",
 			"lexi_drug_syn_id":     "56789",
@@ -67,6 +68,11 @@ func TestTreatmentEquals(t *testing.T) {
 		NumberRefills:        1,
 		SubstitutionsAllowed: false,
 		DaysSupply:           5,
+		ERx: &ERxData{
+			PrescriptionId:     NewObjectId(21),
+			ErxMedicationId:    NewObjectId(25),
+			PrescriptionStatus: "eRxSent",
+		},
 	}
 
 	if treatment1.Equals(treatment3) {
@@ -74,10 +80,7 @@ func TestTreatmentEquals(t *testing.T) {
 	}
 
 	treatment4 := &Treatment{
-		Id:                 NewObjectId(5),
-		PrescriptionId:     NewObjectId(20),
-		ErxMedicationId:    NewObjectId(26),
-		PrescriptionStatus: "eRxSent",
+		Id: NewObjectId(5),
 		DrugDBIds: map[string]string{
 			"lexi_gen_product_id":  "12345",
 			"lexi_drug_syn_id":     "56789",
@@ -91,6 +94,11 @@ func TestTreatmentEquals(t *testing.T) {
 		NumberRefills:        1,
 		SubstitutionsAllowed: false,
 		DaysSupply:           5,
+		ERx: &ERxData{
+			PrescriptionId:     NewObjectId(20),
+			ErxMedicationId:    NewObjectId(26),
+			PrescriptionStatus: "eRxSent",
+		},
 	}
 
 	if !treatment1.Equals(treatment4) {
@@ -98,10 +106,7 @@ func TestTreatmentEquals(t *testing.T) {
 	}
 
 	treatment5 := &Treatment{
-		Id:                 NewObjectId(5),
-		PrescriptionId:     NewObjectId(20),
-		ErxMedicationId:    NewObjectId(25),
-		PrescriptionStatus: "eRxSent",
+		Id: NewObjectId(5),
 		DrugDBIds: map[string]string{
 			"lexi_gen_product_id":  "123456",
 			"lexi_drug_syn_id":     "56789",
@@ -115,6 +120,11 @@ func TestTreatmentEquals(t *testing.T) {
 		NumberRefills:        1,
 		SubstitutionsAllowed: false,
 		DaysSupply:           5,
+		ERx: &ERxData{
+			PrescriptionId:     NewObjectId(20),
+			ErxMedicationId:    NewObjectId(25),
+			PrescriptionStatus: "eRxSent",
+		},
 	}
 
 	if treatment1.Equals(treatment5) {
@@ -122,10 +132,7 @@ func TestTreatmentEquals(t *testing.T) {
 	}
 
 	treatment6 := &Treatment{
-		Id:                 NewObjectId(5),
-		PrescriptionId:     NewObjectId(20),
-		ErxMedicationId:    NewObjectId(25),
-		PrescriptionStatus: "eRxSent",
+		Id: NewObjectId(5),
 		DrugDBIds: map[string]string{
 			"lexi_gen_product_id":  "12345",
 			"lexi_drug_syn_id":     "56789",
@@ -139,6 +146,11 @@ func TestTreatmentEquals(t *testing.T) {
 		NumberRefills:        1,
 		SubstitutionsAllowed: false,
 		DaysSupply:           5,
+		ERx: &ERxData{
+			PrescriptionId:     NewObjectId(20),
+			ErxMedicationId:    NewObjectId(25),
+			PrescriptionStatus: "eRxSent",
+		},
 	}
 
 	if !treatment1.Equals(treatment6) {
@@ -146,10 +158,7 @@ func TestTreatmentEquals(t *testing.T) {
 	}
 
 	treatment7 := &Treatment{
-		Id:                 NewObjectId(5),
-		PrescriptionId:     NewObjectId(20),
-		ErxMedicationId:    NewObjectId(25),
-		PrescriptionStatus: "eRxSent",
+		Id: NewObjectId(5),
 		DrugDBIds: map[string]string{
 			"lexi_gen_product_id":  "12345",
 			"lexi_drug_syn_id":     "56789",
@@ -163,6 +172,11 @@ func TestTreatmentEquals(t *testing.T) {
 		NumberRefills:        1,
 		SubstitutionsAllowed: false,
 		DaysSupply:           5,
+		ERx: &ERxData{
+			PrescriptionId:     NewObjectId(20),
+			ErxMedicationId:    NewObjectId(25),
+			PrescriptionStatus: "eRxSent",
+		},
 	}
 
 	if treatment1.Equals(treatment7) {

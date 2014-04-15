@@ -19,15 +19,16 @@ var ErrBadAuthToken = errors.New("BadAuthToken")
 var Testing = false
 
 const (
-	genericUserErrorMessage         = "Something went wrong on our end. Apologies for the inconvenience and please try again later!"
-	authTokenExpiredMessage         = "Authentication expired. Log in to continue."
-	DEVELOPER_ERROR_NO_VISIT_EXISTS = 10001
-	DEVELOPER_AUTH_TOKEN_EXPIRED    = 10002
-	HTTP_GET                        = "GET"
-	HTTP_POST                       = "POST"
-	HTTP_PUT                        = "PUT"
-	HTTP_DELETE                     = "DELETE"
-	HTTP_UNPROCESSABLE_ENTITY       = 422
+	genericUserErrorMessage          = "Something went wrong on our end. Apologies for the inconvenience and please try again later!"
+	authTokenExpiredMessage          = "Authentication expired. Log in to continue."
+	DEVELOPER_ERROR_NO_VISIT_EXISTS  = 10001
+	DEVELOPER_AUTH_TOKEN_EXPIRED     = 10002
+	DEVELOPER_TREATMENT_MISSING_DNTF = 10003
+	HTTP_GET                         = "GET"
+	HTTP_POST                        = "POST"
+	HTTP_PUT                         = "PUT"
+	HTTP_DELETE                      = "DELETE"
+	HTTP_UNPROCESSABLE_ENTITY        = 422
 )
 
 type GenericJsonResponse struct {
@@ -135,6 +136,11 @@ func WriteJSONToHTTPResponseWriter(w http.ResponseWriter, httpStatusCode int, v 
 	}
 }
 
+func WriteError(w http.ResponseWriter, httpStatusCode int, errorResponse ErrorResponse) {
+	golog.Logf(2, golog.ERR, errorResponse.DeveloperError)
+	WriteJSONToHTTPResponseWriter(w, httpStatusCode, &errorResponse)
+}
+
 func WriteDeveloperError(w http.ResponseWriter, httpStatusCode int, errorString string) {
 	golog.Logf(2, golog.ERR, errorString)
 	developerError := &ErrorResponse{
@@ -238,6 +244,16 @@ func populateAnswersToStoreForQuestion(role string, answerToQuestionItem *Answer
 		}
 	}
 	return answersToStore
+}
+
+func queueUpJobForErxStatus(erxStatusQueue *common.SQSQueue, prescriptionStatusCheckMessage common.PrescriptionStatusCheckMessage) error {
+	jsonData, err := json.Marshal(prescriptionStatusCheckMessage)
+	if err != nil {
+		return err
+	}
+
+	// queue up a job
+	return erxStatusQueue.QueueService.SendMessage(erxStatusQueue.QueueUrl, 0, string(jsonData))
 }
 
 func createAnswersToStoreForQuestion(role string, roleId, questionId, contextId, layoutVersionId int64, answerIntakes []*AnswerItem) []*common.AnswerIntake {

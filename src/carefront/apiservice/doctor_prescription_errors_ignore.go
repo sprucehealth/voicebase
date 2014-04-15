@@ -16,7 +16,8 @@ type DoctorPrescriptionErrorIgnoreHandler struct {
 }
 
 type DoctorPrescriptionErrorIgnoreRequestData struct {
-	TreatmentId string `schema:"treatment_id,required"`
+	TreatmentId     string `schema:"treatment_id"`
+	RefillRequestId string `schema:"refill_request_id"`
 }
 
 func (d *DoctorPrescriptionErrorIgnoreHandler) ServeHTTP(w http.ResponseWriter, r *http.Request) {
@@ -42,31 +43,75 @@ func (d *DoctorPrescriptionErrorIgnoreHandler) ServeHTTP(w http.ResponseWriter, 
 		return
 	}
 
-	treatmentId, err := strconv.ParseInt(requestData.TreatmentId, 10, 64)
-	if err != nil {
-		WriteDeveloperError(w, http.StatusBadRequest, "Unable to parse treament id : "+err.Error())
+	if requestData.TreatmentId == "" && requestData.RefillRequestId == "" {
+		WriteDeveloperError(w, http.StatusBadRequest, "Require either the treatment id or the refill request id to ignore a particular error")
 		return
 	}
 
-	treatment, err := d.DataApi.GetTreatmentFromId(treatmentId)
-	if err != nil {
-		WriteDeveloperError(w, http.StatusInternalServerError, "Unable to get treatment based on id: "+err.Error())
-		return
-	}
+	if requestData.TreatmentId != "" {
+		treatmentId, err := strconv.ParseInt(requestData.TreatmentId, 10, 64)
+		if err != nil {
+			WriteDeveloperError(w, http.StatusBadRequest, "Unable to parse treament id : "+err.Error())
+			return
+		}
 
-	if err := d.ErxApi.IgnoreAlert(doctor.DoseSpotClinicianId, treatment.PrescriptionId.Int64()); err != nil {
-		WriteDeveloperError(w, http.StatusInternalServerError, "Unable to ignore transmission error for prescription: "+err.Error())
-		return
-	}
+		treatment, err := d.DataApi.GetTreatmentFromId(treatmentId)
+		if err != nil {
+			WriteDeveloperError(w, http.StatusInternalServerError, "Unable to get treatment based on id: "+err.Error())
+			return
+		}
 
-	if err := d.DataApi.AddErxStatusEvent([]*common.Treatment{treatment}, api.ERX_STATUS_RESOLVED); err != nil {
-		WriteDeveloperError(w, http.StatusInternalServerError, "Unable to add a status of resolved once the error is resolved: "+err.Error())
-		return
-	}
+		if err := d.ErxApi.IgnoreAlert(doctor.DoseSpotClinicianId, treatment.ERx.PrescriptionId.Int64()); err != nil {
+			WriteDeveloperError(w, http.StatusInternalServerError, "Unable to ignore transmission error for prescription: "+err.Error())
+			return
+		}
 
-	if err := d.DataApi.MarkErrorResolvedInDoctorQueue(doctor.DoctorId.Int64(), treatment.Id.Int64(), api.QUEUE_ITEM_STATUS_PENDING, api.QUEUE_ITEM_STATUS_COMPLETED); err != nil {
-		WriteDeveloperError(w, http.StatusInternalServerError, "Unable to refresh the doctor queue: "+err.Error())
-		return
+		if err := d.DataApi.AddErxStatusEvent([]*common.Treatment{treatment}, common.StatusEvent{Status: api.ERX_STATUS_RESOLVED}); err != nil {
+			WriteDeveloperError(w, http.StatusInternalServerError, "Unable to add a status of resolved once the error is resolved: "+err.Error())
+			return
+		}
+
+		if err := d.DataApi.ReplaceItemInDoctorQueue(api.DoctorQueueItem{
+			DoctorId:  doctor.DoctorId.Int64(),
+			ItemId:    treatment.Id.Int64(),
+			EventType: api.EVENT_TYPE_TRANSMISSION_ERROR,
+			Status:    api.QUEUE_ITEM_STATUS_COMPLETED,
+		}, api.QUEUE_ITEM_STATUS_PENDING); err != nil {
+			WriteDeveloperError(w, http.StatusInternalServerError, "Unable to refresh the doctor queue: "+err.Error())
+			return
+		}
+	} else if requestData.RefillRequestId != "" {
+		refillRequestId, err := strconv.ParseInt(requestData.RefillRequestId, 10, 64)
+		if err != nil {
+			WriteDeveloperError(w, http.StatusBadRequest, "Unable to parse treament id : "+err.Error())
+			return
+		}
+
+		refillRequest, err := d.DataApi.GetRefillRequestFromId(refillRequestId)
+		if err != nil {
+			WriteDeveloperError(w, http.StatusInternalServerError, "Unable to get refill request based on id: "+err.Error())
+			return
+		}
+
+		if err := d.ErxApi.IgnoreAlert(doctor.DoseSpotClinicianId, refillRequest.PrescriptionId); err != nil {
+			WriteDeveloperError(w, http.StatusInternalServerError, "Unable to ignore transmission error for prescription: "+err.Error())
+			return
+		}
+
+		if err := d.DataApi.AddRefillRequestStatusEvent(common.StatusEvent{ItemId: refillRequest.Id, Status: api.RX_REFILL_STATUS_ERROR_RESOLVED}); err != nil {
+			WriteDeveloperError(w, http.StatusInternalServerError, "Unable to add a status of resolved once the error is resolved: "+err.Error())
+			return
+		}
+
+		if err := d.DataApi.ReplaceItemInDoctorQueue(api.DoctorQueueItem{
+			DoctorId:  doctor.DoctorId.Int64(),
+			ItemId:    refillRequest.Id,
+			EventType: api.EVENT_TYPE_REFILL_TRANSMISSION_ERROR,
+			Status:    api.QUEUE_ITEM_STATUS_COMPLETED,
+		}, api.QUEUE_ITEM_STATUS_PENDING); err != nil {
+			WriteDeveloperError(w, http.StatusInternalServerError, "Unable to refresh the doctor queue: "+err.Error())
+			return
+		}
 	}
 
 	WriteJSONToHTTPResponseWriter(w, http.StatusOK, SuccessfulGenericJSONResponse())

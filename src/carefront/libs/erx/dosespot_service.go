@@ -7,6 +7,7 @@ import (
 	"errors"
 	"fmt"
 	"os"
+	"sort"
 	"strconv"
 	"strings"
 
@@ -69,6 +70,14 @@ const (
 	doseSpotSOAPEndPoint = "http://i.dosespot.com/api/11/apifull.asmx"
 	resultOk             = "OK"
 )
+
+type ByLogTimeStamp []*PrescriptionLog
+
+func (a ByLogTimeStamp) Len() int      { return len(a) }
+func (a ByLogTimeStamp) Swap(i, j int) { a[i], a[j] = a[j], a[i] }
+func (a ByLogTimeStamp) Less(i, j int) bool {
+	return a[i].LogTimestamp.Before(a[j].LogTimestamp)
+}
 
 func getDoseSpotClient() *soapClient {
 	return &soapClient{SoapAPIEndPoint: doseSpotSOAPEndPoint, APIEndpoint: doseSpotAPIEndPoint}
@@ -178,11 +187,11 @@ func (d *DoseSpotService) SendMultiplePrescriptions(clinicianId int64, patient *
 	prescriptionIds := make([]int64, 0)
 	prescriptionIdToTreatmentIdMapping := make(map[int64]int64)
 	for _, treatment := range treatments {
-		if treatment.PrescriptionId.Int64() == 0 {
+		if treatment.ERx.PrescriptionId.Int64() == 0 {
 			continue
 		}
-		prescriptionIds = append(prescriptionIds, treatment.PrescriptionId.Int64())
-		prescriptionIdToTreatmentIdMapping[treatment.PrescriptionId.Int64()] = treatment.Id.Int64()
+		prescriptionIds = append(prescriptionIds, treatment.ERx.PrescriptionId.Int64())
+		prescriptionIdToTreatmentIdMapping[treatment.ERx.PrescriptionId.Int64()] = treatment.Id.Int64()
 	}
 
 	sendPrescriptionsRequest.PrescriptionIds = prescriptionIds
@@ -369,7 +378,7 @@ func (d *DoseSpotService) StartPrescribingPatient(clinicianId int64, currentPati
 				if medication.LexiDrugSynId == LexiDrugSynIdInt &&
 					medication.LexiGenProductId == LexiGenProductIdInt &&
 					medication.LexiSynonymTypeId == LexiSynonymTypeIdInt {
-					treatment.PrescriptionId = common.NewObjectId(medication.DoseSpotPrescriptionId)
+					treatment.ERx.PrescriptionId = common.NewObjectId(medication.DoseSpotPrescriptionId)
 					break
 				}
 			}
@@ -402,6 +411,12 @@ func (d *DoseSpotService) SelectMedication(clinicianId int64, medicationName, me
 	} else {
 		scheduleInt, err = strconv.Atoi(selectResult.Schedule)
 	}
+
+	if selectResult.LexiGenProductId == 0 && selectResult.LexiDrugSynId == 0 && selectResult.LexiSynonymTypeId == 0 {
+		// this drug does not exist
+		return nil, nil
+	}
+
 	medication = &common.Treatment{
 		DrugDBIds: map[string]string{
 			LexiGenProductId:  strconv.FormatInt(selectResult.LexiGenProductId, 10),
@@ -487,13 +502,15 @@ func (d *DoseSpotService) GetPrescriptionStatus(clincianId int64, prescriptionId
 	if response.Log != nil {
 		for _, logDetails := range response.Log {
 			prescriptionLog := &PrescriptionLog{
-				LogTimeStamp:       logDetails.DateTimeStamp.DateTime,
+				LogTimestamp:       logDetails.DateTimeStamp.DateTime,
 				PrescriptionStatus: logDetails.Status,
 				AdditionalInfo:     logDetails.AdditionalInfo,
 			}
 			prescriptionLogs = append(prescriptionLogs, prescriptionLog)
 		}
 	}
+
+	sort.Reverse(ByLogTimeStamp(prescriptionLogs))
 
 	return prescriptionLogs, nil
 }
@@ -540,28 +557,30 @@ func (d *DoseSpotService) GetTransmissionErrorDetails(clinicianId int64) ([]*com
 	for i, transmissionError := range response.TransmissionErrors {
 		dispenseValueInt, _ := strconv.ParseInt(transmissionError.Medication.Dispense, 10, 64)
 		medicationsWithErrors[i] = &common.Treatment{
-			ErxMedicationId:    common.NewObjectId(transmissionError.Medication.MedicationId),
-			PrescriptionId:     common.NewObjectId(transmissionError.Medication.DoseSpotPrescriptionId),
-			PrescriptionStatus: transmissionError.Medication.Status,
-			ErxSentDate:        &transmissionError.Medication.DatePrescribed.DateTime,
+			ERx: &common.ERxData{
+				ErxMedicationId:       common.NewObjectId(transmissionError.Medication.MedicationId),
+				PrescriptionId:        common.NewObjectId(transmissionError.Medication.DoseSpotPrescriptionId),
+				PrescriptionStatus:    transmissionError.Medication.Status,
+				ErxSentDate:           &transmissionError.Medication.DatePrescribed.DateTime,
+				TransmissionErrorDate: &transmissionError.ErrorDateTimeStamp.DateTime,
+				ErxReferenceNumber:    transmissionError.Medication.RxReferenceNumber,
+				ErxPharmacyId:         transmissionError.Medication.PharmacyId,
+			},
 			DrugDBIds: map[string]string{
 				LexiGenProductId:  strconv.FormatInt(transmissionError.Medication.LexiGenProductId, 10),
 				LexiSynonymTypeId: strconv.FormatInt(transmissionError.Medication.LexiSynonymTypeId, 10),
 				LexiDrugSynId:     strconv.FormatInt(transmissionError.Medication.LexiDrugSynId, 10),
 			},
-			DispenseUnitId:        common.NewObjectId(transmissionError.Medication.DispenseUnitId),
-			TransmissionErrorDate: &transmissionError.ErrorDateTimeStamp.DateTime,
-			StatusDetails:         transmissionError.ErrorDetails,
-			DrugName:              transmissionError.Medication.DrugName,
-			DosageStrength:        transmissionError.Medication.Strength,
-			NumberRefills:         transmissionError.Medication.Refills.Int64(),
-			DaysSupply:            int64(transmissionError.Medication.DaysSupply),
-			DispenseValue:         dispenseValueInt,
-			PatientInstructions:   transmissionError.Medication.Instructions,
-			ErxPharmacyId:         transmissionError.Medication.PharmacyId,
-			PharmacyNotes:         transmissionError.Medication.PharmacyNotes,
-			SubstitutionsAllowed:  !transmissionError.Medication.NoSubstitutions,
-			ErxReferenceNumber:    transmissionError.Medication.RxReferenceNumber,
+			DispenseUnitId:       common.NewObjectId(transmissionError.Medication.DispenseUnitId),
+			StatusDetails:        transmissionError.ErrorDetails,
+			DrugName:             transmissionError.Medication.DrugName,
+			DosageStrength:       transmissionError.Medication.Strength,
+			NumberRefills:        transmissionError.Medication.Refills.Int64(),
+			DaysSupply:           int64(transmissionError.Medication.DaysSupply),
+			DispenseValue:        dispenseValueInt,
+			PatientInstructions:  transmissionError.Medication.Instructions,
+			PharmacyNotes:        transmissionError.Medication.PharmacyNotes,
+			SubstitutionsAllowed: !transmissionError.Medication.NoSubstitutions,
 		}
 
 	}
@@ -707,9 +726,6 @@ func (d *DoseSpotService) GetRefillRequestQueueForClinic() ([]*common.RefillRequ
 			RxRequestQueueItemId:      refillRequest.RxRequestQueueItemId,
 			ReferenceNumber:           refillRequest.ReferenceNumber,
 			PharmacyRxReferenceNumber: refillRequest.PharmacyRxReferenceNumber,
-			RequestedDrugDescription:  refillRequest.RequestedDrugDescription,
-			RequestedRefillAmount:     refillRequest.RequestedRefillAmount,
-			RequestedDispense:         refillRequest.RequestedDispense,
 			ErxPatientId:              refillRequest.PatientId,
 			PatientAddedForRequest:    refillRequest.PatientAddedForRequest,
 			RequestDateStamp:          refillRequest.RequestDateStamp.DateTime,
@@ -800,7 +816,6 @@ func convertMedicationIntoTreatment(medicationItem *medication) *common.Treatmen
 	scheduleInt, err := strconv.Atoi(medicationItem.Schedule)
 	dispenseValue, _ := strconv.ParseInt(medicationItem.Dispense, 10, 64)
 	treatment := &common.Treatment{
-		PrescriptionId: common.NewObjectId(medicationItem.DoseSpotPrescriptionId),
 		DrugDBIds: map[string]string{
 			LexiDrugSynId:     strconv.FormatInt(medicationItem.LexiDrugSynId, 10),
 			LexiGenProductId:  strconv.FormatInt(medicationItem.LexiGenProductId, 10),
@@ -816,21 +831,24 @@ func convertMedicationIntoTreatment(medicationItem *medication) *common.Treatmen
 		DispenseUnitDescription: medicationItem.DispenseUnitDescription,
 		PatientInstructions:     medicationItem.Instructions,
 		SubstitutionsAllowed:    !medicationItem.NoSubstitutions,
-		ErxPharmacyId:           medicationItem.PharmacyId,
 		PharmacyNotes:           medicationItem.PharmacyNotes,
-		PrescriptionStatus:      medicationItem.PrescriptionStatus,
-		ErxMedicationId:         common.NewObjectId(medicationItem.MedicationId),
 		DrugRoute:               medicationItem.Route,
 		DosageStrength:          medicationItem.Strength,
-		DoseSpotClinicianId:     medicationItem.ClinicianId,
+		ERx: &common.ERxData{
+			PrescriptionId:      common.NewObjectId(medicationItem.DoseSpotPrescriptionId),
+			ErxPharmacyId:       medicationItem.PharmacyId,
+			PrescriptionStatus:  medicationItem.PrescriptionStatus,
+			ErxMedicationId:     common.NewObjectId(medicationItem.MedicationId),
+			DoseSpotClinicianId: medicationItem.ClinicianId,
+		},
 	}
 
 	if medicationItem.DatePrescribed != nil {
-		treatment.ErxSentDate = &medicationItem.DatePrescribed.DateTime
+		treatment.ERx.ErxSentDate = &medicationItem.DatePrescribed.DateTime
 	}
 
 	if medicationItem.LastDateFilled != nil {
-		treatment.ErxLastDateFilled = &medicationItem.LastDateFilled.DateTime
+		treatment.ERx.ErxLastDateFilled = &medicationItem.LastDateFilled.DateTime
 	}
 	return treatment
 

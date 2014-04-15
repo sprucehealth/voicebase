@@ -7,7 +7,7 @@ import (
 )
 
 type StubSQS struct {
-	msgQueue           map[string]*list.List
+	MsgQueue           map[string]*list.List
 	receiptHandleToMsg map[string]map[string]*Message
 }
 
@@ -19,13 +19,13 @@ func (s *StubSQS) DeleteMessage(queueUrl, receiptHandle string) error {
 		return nil
 	}
 
-	msgQueue := s.msgQueue[queueUrl]
+	msgQueueForList := s.MsgQueue[queueUrl]
 
 	var next *list.Element
-	for e := msgQueue.Front(); e != nil; e = next {
+	for e := msgQueueForList.Front(); e != nil; e = next {
 		next = e.Next()
 		if e.Value.(*Message).MessageId == msgToDelete.MessageId {
-			msgQueue.Remove(e)
+			msgQueueForList.Remove(e)
 		}
 	}
 	return nil
@@ -36,15 +36,15 @@ func (s *StubSQS) GetQueueUrl(queueName, queueOwnerAWSAccountId string) (string,
 }
 
 func (s *StubSQS) SendMessage(queueUrl string, delaySeconds int, messageBody string) error {
-	if s.msgQueue == nil {
-		s.msgQueue = make(map[string]*list.List)
+	if s.MsgQueue == nil {
+		s.MsgQueue = make(map[string]*list.List)
 	}
 
 	// look up queue, if it does not exist create one
-	var msgQueue *list.List
-	if s.msgQueue[queueUrl] == nil {
-		msgQueue = list.New()
-		s.msgQueue[queueUrl] = msgQueue
+	msgQueueForList := s.MsgQueue[queueUrl]
+	if msgQueueForList == nil {
+		msgQueueForList = list.New()
+		s.MsgQueue[queueUrl] = msgQueueForList
 	}
 
 	// create a messsage
@@ -64,18 +64,18 @@ func (s *StubSQS) SendMessage(queueUrl string, delaySeconds int, messageBody str
 	s.receiptHandleToMsg[queueUrl][msg.ReceiptHandle] = msg
 
 	// push the message to the back of the list
-	msgQueue.PushBack(msg)
+	msgQueueForList.PushBack(msg)
 
 	return nil
 }
 
 func (s *StubSQS) ReceiveMessage(queueUrl string, attributes []AttributeName, maxNumberOfMessages, visibilityTimeout, waitTimeSeconds int) ([]*Message, error) {
 	// lookup queue
-	msgQueue := s.msgQueue[queueUrl]
-	if msgQueue == nil {
+	msgQueueForList := s.MsgQueue[queueUrl]
+	if msgQueueForList == nil {
 		return nil, nil
 	}
 
-	msg := msgQueue.Front().Value.(*Message)
+	msg := msgQueueForList.Front().Value.(*Message)
 	return []*Message{msg}, nil
 }

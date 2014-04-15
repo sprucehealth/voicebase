@@ -4,16 +4,18 @@ import (
 	"carefront/common"
 	pharmacySearch "carefront/libs/pharmacy"
 	"fmt"
+	"time"
 )
 
 type StubErxService struct {
-	PatientErxId                       int64
-	RefillRequestPrescriptionId        int64
-	PatientDetailsToReturn             *common.Patient
-	PharmacyDetailsToReturn            *pharmacySearch.PharmacyData
-	RefillRxRequestQueueToReturn       []*common.RefillRequestItem
-	PrescriptionIdsToReturn            []int64
-	PrescriptionIdToPrescriptionStatus map[int64]string
+	PatientErxId                         int64
+	RefillRequestPrescriptionIds         map[int64]int64
+	PatientDetailsToReturn               *common.Patient
+	PharmacyDetailsToReturn              *pharmacySearch.PharmacyData
+	RefillRxRequestQueueToReturn         []*common.RefillRequestItem
+	PrescriptionIdsToReturn              []int64
+	PrescriptionIdToPrescriptionStatuses map[int64][]common.StatusEvent
+	SelectedMedicationToReturn           *common.Treatment
 }
 
 func (s *StubErxService) GetDrugNamesForDoctor(clinicianId int64, prefix string) ([]string, error) {
@@ -29,7 +31,7 @@ func (s *StubErxService) SearchForMedicationStrength(clinicianId int64, medicati
 }
 
 func (s *StubErxService) SelectMedication(clinicianId int64, medicationName, medicationStrength string) (medication *common.Treatment, err error) {
-	return nil, nil
+	return s.SelectedMedicationToReturn, nil
 }
 
 func (s *StubErxService) StartPrescribingPatient(clinicianId int64, Patient *common.Patient, Treatments []*common.Treatment) error {
@@ -38,7 +40,7 @@ func (s *StubErxService) StartPrescribingPatient(clinicianId int64, Patient *com
 	// assumption here is that there are as many prescription ids to return as there are treatments
 	Patient.ERxPatientId = common.NewObjectId(s.PatientErxId)
 	for i, treatment := range Treatments {
-		treatment.PrescriptionId = common.NewObjectId(s.PrescriptionIdsToReturn[i])
+		treatment.ERx.PrescriptionId = common.NewObjectId(s.PrescriptionIdsToReturn[i])
 	}
 	return nil
 }
@@ -54,18 +56,21 @@ func (s *StubErxService) SearchForPharmacies(clinicianId int64, city, state, zip
 }
 
 func (s *StubErxService) GetPrescriptionStatus(clinicianId int64, prescriptionId int64) ([]*PrescriptionLog, error) {
-	return nil, nil
+	prescriptionStatuses := s.PrescriptionIdToPrescriptionStatuses[prescriptionId]
+	prescriptionLogs := make([]*PrescriptionLog, 0)
+	for _, prescriptionStatus := range prescriptionStatuses {
+		prescriptionLogs = append(prescriptionLogs, &PrescriptionLog{
+			PrescriptionStatus: prescriptionStatus.Status,
+			LogTimestamp:       time.Now(),
+			AdditionalInfo:     prescriptionStatus.StatusDetails,
+		})
+	}
+
+	return prescriptionLogs, nil
 }
 
 func (s *StubErxService) GetMedicationList(clinicianId int64, PatientId int64) ([]*common.Treatment, error) {
-	medications := make([]*common.Treatment, 0)
-	for prescriptionId, prescriptionStatus := range s.PrescriptionIdToPrescriptionStatus {
-		medication := &common.Treatment{}
-		medication.ErxMedicationId = common.NewObjectId(prescriptionId)
-		medication.PrescriptionStatus = prescriptionStatus
-		medications = append(medications, medication)
-	}
-	return medications, nil
+	return nil, nil
 }
 
 func (s *StubErxService) GetTransmissionErrorDetails(clinicianId int64) ([]*common.Treatment, error) {
@@ -93,11 +98,11 @@ func (s *StubErxService) GetPharmacyDetails(pharmacyId int64) (*pharmacySearch.P
 }
 
 func (s *StubErxService) ApproveRefillRequest(clinicianId, erxRefillRequestQueueItemId, approvedRefillAmount int64, comments string) (int64, error) {
-	return s.RefillRequestPrescriptionId, nil
+	return s.RefillRequestPrescriptionIds[erxRefillRequestQueueItemId], nil
 }
 
 func (s *StubErxService) DenyRefillRequest(clinicianId, erxRefillRequestQueueItemId int64, denialReason string, comments string) (int64, error) {
-	return s.RefillRequestPrescriptionId, nil
+	return s.RefillRequestPrescriptionIds[erxRefillRequestQueueItemId], nil
 }
 
 func (s *StubErxService) UpdatePatientInformation(clinicianId int64, patient *common.Patient) error {

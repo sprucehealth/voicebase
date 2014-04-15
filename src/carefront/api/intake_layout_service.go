@@ -102,7 +102,7 @@ func (d *DataService) UpdatePatientActiveLayouts(layoutId int64, clientLayoutIds
 	}
 
 	// update the new layout as ACTIVE
-	_, err = tx.Exec(`update layout_version set status=? where id = ?`, status_active, layoutId)
+	_, err = tx.Exec(`update layout_version set status=? where id = ?`, STATUS_ACTIVE, layoutId)
 	if err != nil {
 		tx.Rollback()
 		return err
@@ -139,10 +139,10 @@ func (d *DataService) UpdateDoctorActiveLayouts(layoutId int64, doctorLayoutId i
 	}
 	if err == nil {
 		// update the new layout as ACTIVE
-		_, err = tx.Exec(`update layout_version set status=? where id = ?`, status_active, layoutId)
+		_, err = tx.Exec(`update layout_version set status=? where id = ?`, STATUS_ACTIVE, layoutId)
 	}
 	if err == nil {
-		_, err = tx.Exec(`update dr_layout_version set status=? where id = ?`, status_active, doctorLayoutId)
+		_, err = tx.Exec(`update dr_layout_version set status=? where id = ?`, STATUS_ACTIVE, doctorLayoutId)
 	}
 	if err != nil {
 		log.Println(err)

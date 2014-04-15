@@ -27,19 +27,24 @@ type DisplayFeedTabs struct {
 	Tabs []*DisplayFeed `json:"tabs"`
 }
 
-func converQueueItemToDisplayFeedItem(DataApi api.DataAPI, itemToDisplay api.FeedDisplayInterface) (item *DisplayFeedItem, err error) {
+func converQueueItemToDisplayFeedItem(DataApi api.DataAPI, itemToDisplay api.FeedDisplayInterface) (*DisplayFeedItem, error) {
 	title, subtitle, err := itemToDisplay.GetTitleAndSubtitle(DataApi)
 	if err != nil {
-		return
+		return nil, err
 	}
 
-	item = &DisplayFeedItem{
+	item := &DisplayFeedItem{
 		Button:       itemToDisplay.GetButton(),
 		Title:        title,
 		Subtitle:     subtitle,
 		ImageUrl:     itemToDisplay.GetImageUrl(),
 		DisplayTypes: itemToDisplay.GetDisplayTypes(),
-		ItemUrl:      itemToDisplay.GetActionUrl(),
 	}
-	return
+
+	item.ItemUrl, err = itemToDisplay.GetActionUrl(DataApi)
+	if err != nil {
+		return nil, err
+	}
+
+	return item, nil
 }

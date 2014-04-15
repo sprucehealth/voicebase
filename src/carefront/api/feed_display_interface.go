@@ -21,7 +21,7 @@ type Button struct {
 type FeedDisplayInterface interface {
 	GetTitleAndSubtitle(dataApi DataAPI) (title, subtitle string, err error)
 	GetImageUrl() string
-	GetActionUrl() string
+	GetActionUrl(dataApi DataAPI) (string, error)
 	GetDisplayTypes() []string
 	GetButton() *Button
 }
