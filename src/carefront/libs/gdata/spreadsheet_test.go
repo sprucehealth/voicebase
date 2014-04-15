@@ -36,22 +36,22 @@ func testClient(t *testing.T) *Client {
 
 func TestListSpreadsheets(t *testing.T) {
 	c := testClient(t)
-	docs, err := c.ListSpreadsheets()
+	res, err := c.ListSpreadsheets()
 	if err != nil {
 		t.Fatal(err)
 	}
-	for _, d := range docs {
+	for _, d := range res.Entries {
 		t.Logf("%+v\n", d)
 	}
 }
 
 func TestListWorksheets(t *testing.T) {
 	c := testClient(t)
-	docs, err := c.ListWorksheets("...")
+	res, err := c.ListWorksheets("...")
 	if err != nil {
 		t.Fatal(err)
 	}
-	for _, d := range docs {
+	for _, d := range res.Entries {
 		t.Logf("%+v\n", d)
 	}
 }
@@ -64,11 +64,11 @@ func TestGetCells(t *testing.T) {
 		MaxCol: 5,
 		MaxRow: 5,
 	}
-	e, err := c.GetCells(os.Getenv("GDATA_SPREADSHEET_CELLS_FEED"), rng)
+	res, err := c.GetCells(os.Getenv("GDATA_SPREADSHEET_CELLS_FEED"), rng)
 	if err != nil {
 		t.Fatal(err)
 	}
-	for _, d := range e.Entries {
+	for _, d := range res.Entries {
 		t.Logf("%+v\n", d)
 	}
 }

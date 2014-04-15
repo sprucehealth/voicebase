@@ -83,7 +83,7 @@ func main() {
 	getList := func(col int, section string) []string {
 		rows, ok := sections[section]
 		if !ok || rows[0] == 0 || rows[1] == 0 {
-			log.Fatalf("Unknown section %f", section)
+			log.Fatalf("Unknown section %s", section)
 		}
 		out := make([]string, 0)
 		for i := rows[0]; i <= rows[1]; i++ {

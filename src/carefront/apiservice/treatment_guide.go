@@ -2,6 +2,7 @@ package apiservice
 
 import (
 	"carefront/api"
+	"carefront/libs/erx"
 	"net/http"
 
 	"github.com/gorilla/schema"
@@ -76,15 +77,14 @@ type VisitHeaderView struct {
 
 type PatientTreatmentGuideHandler struct {
 	DataApi api.DataAPI
-	AuthApi thriftapi.Auth
 }
 
 type TreatmentGuideRequestData struct {
 	TreatmentId int64 `schema:"treatment_id,required"`
 }
 
-func NewPatientTreatmentGuideHandler(dataApi api.DataAPI, authApi thriftapi.Auth) *PatientTreatmentGuideHandler {
-	return &PatientTreatmentGuideHandler{DataApi: dataApi, AuthApi: authApi}
+func NewPatientTreatmentGuideHandler(dataApi api.DataAPI) *PatientTreatmentGuideHandler {
+	return &PatientTreatmentGuideHandler{DataApi: dataApi}
 }
 
 func (h *PatientTreatmentGuideHandler) ServeHTTP(w http.ResponseWriter, r *http.Request) {
@@ -104,5 +104,45 @@ func (h *PatientTreatmentGuideHandler) ServeHTTP(w http.ResponseWriter, r *http.
 		return
 	}
 
-	// patient :=
+	patient, err := h.DataApi.GetPatientFromId(GetContext(r).AccountId)
+	if err != nil {
+		WriteDeveloperError(w, http.StatusInternalServerError, "Failed to get patient: "+err.Error())
+		return
+	} else if patient == nil {
+		WriteUserError(w, http.StatusNotFound, "Unknown patient")
+		return
+	}
+
+	treatment, err := h.DataApi.GetTreatmentFromId(requestData.TreatmentId)
+	if err != nil {
+		WriteDeveloperError(w, http.StatusInternalServerError, "Failed to get treatment: "+err.Error())
+		return
+	} else if patient == nil {
+		WriteUserError(w, http.StatusNotFound, "Unknown treatment")
+		return
+	}
+
+	if treatment.PatientId != patient.PatientId.Int64() {
+		WriteUserError(w, http.StatusForbidden, "Patient does not have access to the given treatment")
+		return
+	}
+
+	ndc := treatment.DrugDBIds[erx.NDC]
+	if ndc == "" {
+		WriteUserError(w, http.StatusNotFound, "NDC unknown")
+		return
+	}
+
+	details, err := h.DataApi.DrugDetails(ndc)
+	if err == api.NoRowsError {
+		WriteUserError(w, http.StatusNotFound, "No details available")
+	} else if err != nil {
+		WriteDeveloperError(w, http.StatusInternalServerError, "Failed to get drug details: "+err.Error())
+		return
+	}
+
+	// TODO: map details to views
+	views := details
+
+	WriteJSONToHTTPResponseWriter(w, http.StatusOK, views)
 }
