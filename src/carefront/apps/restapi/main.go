@@ -173,8 +173,8 @@ func main() {
 		log.Fatal(err)
 	}
 
-	if conf.DB.User == "" || conf.DB.Password == "" || conf.DB.Host == "" || conf.DB.Name == "" {
-		fmt.Fprintf(os.Stderr, "Missing either one of user, password, host, or name for the database.\n")
+	if conf.DB.User == "" || conf.DB.Host == "" || conf.DB.Name == "" {
+		fmt.Fprintf(os.Stderr, "Missing either one of user, host, or name for the database.\n")
 		os.Exit(1)
 	}
 
@@ -194,7 +194,11 @@ func main() {
 	if num, err := strconv.Atoi(config.MigrationNumber); err == nil {
 		var latestMigration int
 		if err := db.QueryRow("SELECT MAX(migration_id) FROM migrations").Scan(&latestMigration); err != nil {
-			log.Fatalf("Failed to query for latest migration: %s", err.Error())
+			if !conf.Debug {
+				log.Fatalf("Failed to query for latest migration: %s", err.Error())
+			} else {
+				log.Printf("Failed to query for latest migration: %s", err.Error())
+			}
 		}
 		if latestMigration != num {
 			if conf.Debug {
@@ -252,13 +256,18 @@ func main() {
 
 	mapsService := maps.NewGoogleMapsService(metricsRegistry.Scope("google_maps_api"))
 	doseSpotService := erx.NewDoseSpotService(conf.DoseSpot.ClinicId, conf.DoseSpot.UserId, conf.DoseSpot.ClinicKey, metricsRegistry.Scope("dosespot_api"))
+
 	smartyStreetsService := &address_validation.SmartyStreetsService{
 		AuthId:    conf.SmartyStreets.AuthId,
 		AuthToken: conf.SmartyStreets.AuthToken,
 	}
-	erxStatusQueue, err := common.NewQueue(awsAuth, aws.Regions[conf.AWSRegion], conf.ERxQueue)
-	if err != nil {
-		log.Fatal("Unable to get erx queue for sending prescriptions to: " + err.Error())
+
+	var erxStatusQueue *common.SQSQueue
+	if conf.ERxQueue != "" {
+		erxStatusQueue, err = common.NewQueue(awsAuth, aws.Regions[conf.AWSRegion], conf.ERxQueue)
+		if err != nil {
+			log.Fatal("Unable to get erx queue for sending prescriptions to: " + err.Error())
+		}
 	}
 
 	dataApi := &api.DataService{DB: db}
@@ -272,6 +281,7 @@ func main() {
 	authenticateDoctorHandler := &apiservice.DoctorAuthenticationHandler{DataApi: dataApi, AuthApi: authApi}
 	signupDoctorHandler := &apiservice.SignupDoctorHandler{DataApi: dataApi, AuthApi: authApi}
 	patientTreatmentGuideHandler := apiservice.NewPatientTreatmentGuideHandler(dataApi)
+	doctorTreatmentGuideHandler := apiservice.NewDoctorTreatmentGuideHandler(dataApi)
 	patientVisitHandler := apiservice.NewPatientVisitHandler(dataApi, authApi, cloudStorageApi, photoAnswerCloudStorageApi, twilioCli, conf.Twilio.FromNumber)
 	patientVisitReviewHandler := &apiservice.PatientVisitReviewHandler{DataApi: dataApi}
 	answerIntakeHandler := apiservice.NewAnswerIntakeHandler(dataApi)
@@ -396,7 +406,7 @@ func main() {
 	mux.Handle("/v1/patient", signupPatientHandler)
 	mux.Handle("/v1/patient/address/billing", updatePatientBillingAddress)
 	mux.Handle("/v1/patient/pharmacy", updatePatientPharmacyHandler)
-	mux.Handle("/v1/patient/treatmentguide", patientTreatmentGuideHandler)
+	mux.Handle("/v1/patient/treatment/guide", patientTreatmentGuideHandler)
 	mux.Handle("/v1/visit", patientVisitHandler)
 	mux.Handle("/v1/visit/review", patientVisitReviewHandler)
 	mux.Handle("/v1/check_eligibility", checkElligibilityHandler)
@@ -439,6 +449,7 @@ func main() {
 	mux.Handle("/v1/doctor/visit/treatment/medication_strengths", medicationStrengthSearchHandler)
 	mux.Handle("/v1/doctor/visit/treatment/medication_dispense_units", medicationDispenseUnitHandler)
 	mux.Handle("/v1/doctor/visit/treatment/supplemental_instructions", doctorInstructionsHandler)
+	mux.Handle("/v1/doctor/visit/treatment/guide", doctorTreatmentGuideHandler)
 	mux.Handle("/v1/doctor/visit/regimen", doctorRegimenHandler)
 	mux.Handle("/v1/doctor/visit/advice", doctorAdviceHandler)
 	mux.Handle("/v1/doctor/visit/followup", doctorFollowupHandler)

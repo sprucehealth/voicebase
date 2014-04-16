@@ -260,6 +260,7 @@ type DrugDetails struct {
 	Warnings           []string
 	Precautions        []string
 	HowToUse           []string
+	DoNots             []string
 	MessageDoctorIf    []string
 	SeriousSideEffects []string
 	CommonSideEffects  []string
