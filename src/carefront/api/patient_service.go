@@ -52,7 +52,7 @@ func (d *DataService) CreateUnlinkedPatientFromRefillRequest(patient *common.Pat
 	// create address for patient
 	if patient.PatientAddress != nil {
 		lastId, err = tx.Exec(`insert into address (address_line_1, address_line_2, city, state, country, zip_code) values (?,?,?,?,?,?)`,
-			patient.PatientAddress.AddressLine1, patient.PatientAddress.AddressLine2, patient.City, patient.State, address_usa, patient.ZipCode)
+			patient.PatientAddress.AddressLine1, patient.PatientAddress.AddressLine2, patient.City, patient.State, addressUsa, patient.ZipCode)
 		if err != nil {
 			tx.Rollback()
 			return err
@@ -821,7 +821,7 @@ func (d *DataService) MakeLatestCardDefaultForPatient(patientId int64) (*common.
 
 func addAddress(tx *sql.Tx, address *common.Address) (int64, error) {
 	lastId, err := tx.Exec(`insert into address (address_line_1, address_line_2, city, state, zip_code, country) values (?,?,?,?,?,?)`,
-		address.AddressLine1, address.AddressLine2, address.City, address.State, address.ZipCode, address_usa)
+		address.AddressLine1, address.AddressLine2, address.City, address.State, address.ZipCode, addressUsa)
 	if err != nil {
 		return 0, err
 	}

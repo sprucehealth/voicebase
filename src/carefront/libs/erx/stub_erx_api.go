@@ -40,6 +40,9 @@ func (s *StubErxService) StartPrescribingPatient(clinicianId int64, Patient *com
 	// assumption here is that there are as many prescription ids to return as there are treatments
 	Patient.ERxPatientId = common.NewObjectId(s.PatientErxId)
 	for i, treatment := range Treatments {
+		if treatment.ERx == nil {
+			treatment.ERx = &common.ERxData{}
+		}
 		treatment.ERx.PrescriptionId = common.NewObjectId(s.PrescriptionIdsToReturn[i])
 	}
 	return nil
