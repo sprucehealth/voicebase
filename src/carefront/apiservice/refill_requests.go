@@ -12,10 +12,6 @@ import (
 	"strconv"
 	"strings"
 
-	"encoding/json"
-	"net/http"
-	"sort"
-
 	"github.com/gorilla/schema"
 )
 

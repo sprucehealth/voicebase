@@ -44,7 +44,7 @@ func (d *DataService) RegisterDoctor(doctor *common.Doctor) (int64, error) {
 		return 0, err
 	}
 
-	_, err = tx.Exec(`insert into doctor_phone (phone, phone_type, doctor_id) values (?,?,?) `, doctor.CellPhone, doctor_phone_type, doctor.DoctorId.Int64())
+	_, err = tx.Exec(`insert into doctor_phone (phone, phone_type, doctor_id) values (?,?,?) `, doctor.CellPhone, doctorPhoneType, doctor.DoctorId.Int64())
 	if err != nil {
 		tx.Rollback()
 		return 0, err

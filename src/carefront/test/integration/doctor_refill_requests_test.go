@@ -1219,7 +1219,7 @@ func TestDenyRefillRequestWithDNTFWithoutTreatment(t *testing.T) {
 
 }
 
-func setUpDeniedRefillRequestWithDNTF(t *testing.T, testData TestData, endErxStatus string, toAddTemplatedTreatment bool) *common.Treatment {
+func setUpDeniedRefillRequestWithDNTF(t *testing.T, testData TestData, endErxStatus common.StatusEvent, toAddTemplatedTreatment bool) *common.Treatment {
 	// create doctor with clinicianId specicified
 	doctor := createDoctorWithClinicianId(testData, t)
 
