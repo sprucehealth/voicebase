@@ -179,8 +179,6 @@ func (d *DoctorRefillRequestHandler) resolveRefillRequest(w http.ResponseWriter,
 				return
 			}
 
-			trimSpacesFromTreatmentFields(requestData.Treatment)
-
 			// break up the name in its components
 			requestData.Treatment.DrugName, requestData.Treatment.DrugForm, requestData.Treatment.DrugRoute = breakDrugInternalNameIntoComponents(requestData.Treatment.DrugInternalName)
 

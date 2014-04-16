@@ -37,6 +37,9 @@ func validateTreatment(treatment *common.Treatment) error {
 	if treatment.DrugDBIds == nil || len(treatment.DrugDBIds) == 0 {
 		return errors.New("Drug DB Ids for treatment cannot be empty")
 	}
+
+	trimSpacesFromTreatmentFields(treatment)
+
 	return nil
 }
 

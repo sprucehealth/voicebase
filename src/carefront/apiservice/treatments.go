@@ -160,8 +160,6 @@ func (t *TreatmentsHandler) addTreatment(w http.ResponseWriter, r *http.Request)
 			WriteError(w, httpStatusCode, *errorResponse)
 			return
 		}
-
-		trimSpacesFromTreatmentFields(treatment)
 	}
 
 	// Add treatments to patient
