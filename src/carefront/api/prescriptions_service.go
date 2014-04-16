@@ -809,7 +809,7 @@ func (d *DataService) GetErxStatusEventsForDNTFTreatment(treatmentId int64) ([]c
 		statusEvents = append(statusEvents, statusEventItem)
 	}
 
-	return statusEvents, nil
+	return statusEvents, rows.Err()
 }
 
 func (d *DataService) GetErxStatusEventsForDNTFTreatmentBasedOnPatientId(patientId int64) ([]common.StatusEvent, error) {
@@ -830,5 +830,5 @@ func (d *DataService) GetErxStatusEventsForDNTFTreatmentBasedOnPatientId(patient
 		statusEvents = append(statusEvents, statusEventItem)
 	}
 
-	return statusEvents, nil
+	return statusEvents, rows.Err()
 }
