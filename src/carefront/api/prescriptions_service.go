@@ -167,7 +167,6 @@ func (d *DataService) LinkRequestedPrescriptionToOriginalTreatment(requestedTrea
 			requestedTreatment.DrugDBIds[erx.LexiSynonymTypeId] == drugIds[erx.LexiSynonymTypeId] {
 			// linkage found
 			requestedTreatment.OriginatingTreatmentId = treatmentId
-			fmt.Println("Link found!")
 			return nil
 		}
 	}
