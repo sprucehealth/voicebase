@@ -190,8 +190,6 @@ type DoctorAPI interface {
 	ReplaceItemInDoctorQueue(doctorQueueItem DoctorQueueItem, currentState string) error
 
 	MarkGenerationOfTreatmentPlanInVisitQueue(doctorId, patientVisitId, treatmentPlanId int64, currentState, updatedState string) error
-	MarkRefillRequestCompleteInDoctorQueue(doctorId, rxRefillRequestId int64, currentState, updatedState string) error
-	MarkErrorResolvedInDoctorQueue(doctorId, treatmentId int64, currentState, updatedState string) error
 }
 
 type IntakeAPI interface {

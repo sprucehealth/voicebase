@@ -638,7 +638,7 @@ func (d *DataService) AddTreatmentsForPatientVisit(treatments []*common.Treatmen
 }
 
 func (d *DataService) addTreatment(treatment *common.Treatment, withoutLinkToTreatmentPlan bool, tx *sql.Tx) error {
-	treatmentType := treatment_rx
+	treatmentType := treatmentRX
 	if treatment.OTC {
 		treatmentType = treatmentOTC
 	}
