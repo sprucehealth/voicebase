@@ -74,6 +74,7 @@ type Config struct {
 	TLSListenAddr            string               `long:"tls_listen" description:"Address and port on which to listen (e.g. 127.0.0.1:8080)"`
 	TLSCert                  string               `long:"tls_cert" description:"Path of SSL certificate"`
 	TLSKey                   string               `long:"tls_key" description:"Path of SSL private key"`
+	InfoAddr                 string               `long:"info_addr" description:"Address to listen on for the info server"`
 	DB                       *DBConfig            `group:"Database" toml:"database"`
 	PharmacyDB               *DBConfig            `group:"PharmacyDatabase" toml:"pharmacy_database"`
 	MaxInMemoryForPhotoMB    int64                `long:"max_in_memory_photo" description:"Amount of data in MB to be held in memory when parsing multipart form data"`

@@ -1150,7 +1150,6 @@ func (d *DataService) getTreatmentAndMetadataFromCurrentRow(rows *sql.Rows) (*co
 	if err != nil {
 		return nil, err
 	}
-
 	return treatment, nil
 }
 
