@@ -219,8 +219,6 @@ func ConsumeMessageFromQueue(DataApi api.DataAPI, ERxApi erx.ERxAPI, ErxQueue *c
 						break
 					}
 
-					// TODO Insert item for unlinked DNTF treatment
-
 					if err := DataApi.InsertItemIntoDoctorQueue(api.DoctorQueueItem{
 						DoctorId:  doctor.DoctorId.Int64(),
 						ItemId:    prescriptionStatus.ItemId,

@@ -44,11 +44,6 @@ func (d *DoctorPrescriptionErrorIgnoreHandler) ServeHTTP(w http.ResponseWriter, 
 		return
 	}
 
-	if requestData.TreatmentId == "" && requestData.RefillRequestId == "" && requestData.UnlinkedDNTFTreatmentId == "" {
-		WriteDeveloperError(w, http.StatusBadRequest, "Require either the treatment id or the refill request id or the unlinked dntf treatment id to ignore a particular error")
-		return
-	}
-
 	if requestData.TreatmentId != "" {
 		treatmentId, err := strconv.ParseInt(requestData.TreatmentId, 10, 64)
 		if err != nil {
@@ -153,6 +148,9 @@ func (d *DoctorPrescriptionErrorIgnoreHandler) ServeHTTP(w http.ResponseWriter, 
 			WriteDeveloperError(w, http.StatusInternalServerError, "Unable to refresh the doctor queue: "+err.Error())
 			return
 		}
+	} else {
+		WriteDeveloperError(w, http.StatusBadRequest, "Require either the treatment id or the refill request id or the unlinked dntf treatment id to ignore a particular error")
+		return
 	}
 
 	WriteJSONToHTTPResponseWriter(w, http.StatusOK, SuccessfulGenericJSONResponse())

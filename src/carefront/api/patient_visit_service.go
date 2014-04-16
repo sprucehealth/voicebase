@@ -693,7 +693,7 @@ func (d *DataService) addTreatment(treatment *common.Treatment, withoutLinkToTre
 		columnsAndData["drug_form_id"] = drugFormId
 	}
 
-	if !asDoctorTemplate {
+	if !withoutLinkToTreatmentPlan {
 		if treatment.TreatmentPlanId != nil && treatment.TreatmentPlanId.Int64() != 0 {
 			columnsAndData["treatment_plan_id"] = treatment.TreatmentPlanId.Int64()
 		}

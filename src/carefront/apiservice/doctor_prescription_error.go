@@ -40,6 +40,7 @@ func (d *DoctorPrescriptionErrorHandler) ServeHTTP(w http.ResponseWriter, r *htt
 		return
 	}
 
+	var treatment *common.Treatment
 	if requestData.TreatmentId != "" {
 		treatmentId, err := strconv.ParseInt(requestData.TreatmentId, 10, 64)
 		if err != nil {
@@ -47,20 +48,12 @@ func (d *DoctorPrescriptionErrorHandler) ServeHTTP(w http.ResponseWriter, r *htt
 			return
 		}
 
-		treatment, err := d.DataApi.GetTreatmentFromId(treatmentId)
+		treatment, err = d.DataApi.GetTreatmentFromId(treatmentId)
 		if err != nil {
 			WriteDeveloperError(w, http.StatusInternalServerError, "Unable to get patient based on treatment id: "+err.Error())
 			return
 		}
 
-		if err := verifyDoctorPatientRelationship(d.DataApi, treatment.Doctor, treatment.Patient); err != nil {
-			WriteDeveloperError(w, http.StatusForbidden, "Unable to verify patient-doctor relationship: "+err.Error())
-			return
-		}
-
-		WriteJSONToHTTPResponseWriter(w, http.StatusOK, &DoctorPrescriptionErrorResponse{
-			Treatment: treatment,
-		})
 	} else if requestData.UnlinkedDNTFTreatmentId != "" {
 		treatmentId, err := strconv.ParseInt(requestData.UnlinkedDNTFTreatmentId, 10, 64)
 		if err != nil {
@@ -68,19 +61,20 @@ func (d *DoctorPrescriptionErrorHandler) ServeHTTP(w http.ResponseWriter, r *htt
 			return
 		}
 
-		treatment, err := d.DataApi.GetUnlinkedDNTFTreatment(treatmentId)
+		treatment, err = d.DataApi.GetUnlinkedDNTFTreatment(treatmentId)
 		if err != nil {
 			WriteDeveloperError(w, http.StatusInternalServerError, "Unable to get patient based on treatment id: "+err.Error())
 			return
 		}
+	}
 
+	if treatment != nil {
 		if err := verifyDoctorPatientRelationship(d.DataApi, treatment.Doctor, treatment.Patient); err != nil {
 			WriteDeveloperError(w, http.StatusForbidden, "Unable to verify patient-doctor relationship: "+err.Error())
 			return
 		}
-
-		WriteJSONToHTTPResponseWriter(w, http.StatusOK, &DoctorPrescriptionErrorResponse{
-			UnlinkedDNTFTreatment: treatment,
-		})
 	}
+	WriteJSONToHTTPResponseWriter(w, http.StatusOK, &DoctorPrescriptionErrorResponse{
+		Treatment: treatment,
+	})
 }

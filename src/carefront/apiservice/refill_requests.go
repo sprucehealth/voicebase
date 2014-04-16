@@ -175,10 +175,7 @@ func (d *DoctorRefillRequestHandler) resolveRefillRequest(w http.ResponseWriter,
 			}
 
 			// break up the name in its components
-			drugName, drugForm, drugRoute := breakDrugInternalNameIntoComponents(requestData.Treatment.DrugInternalName)
-			requestData.Treatment.DrugName = drugName
-			requestData.Treatment.DrugForm = drugForm
-			requestData.Treatment.DrugRoute = drugRoute
+			requestData.Treatment.DrugName, requestData.Treatment.DrugForm, requestData.Treatment.DrugRoute = breakDrugInternalNameIntoComponents(requestData.Treatment.DrugInternalName)
 
 			httpStatusCode, errorResponse := checkIfDrugInTreatmentFromTemplateIsOutOfMarket(requestData.Treatment, doctor, d.ErxApi)
 			if errorResponse != nil {

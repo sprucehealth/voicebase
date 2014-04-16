@@ -121,7 +121,8 @@ func (d *DataService) LinkRequestedPrescriptionToOriginalTreatment(requestedTrea
 								inner join treatment on treatment_id = treatment.id 
 								inner join treatment_plan on treatment_plan_id = treatment.treatment_plan_id
 								inner join patient_visit on patient_visit.id = treatment_plan.patient_visit_id
-								where erx_status = ? and erx_status_events.creation_date >= ? and erx_status_events.creation_date <= ? and patient_visit.patient_id = ? `, ERX_STATUS_SENT, halfDayBefore, halfDayAfter, patient.PatientId)
+								where erx_status = ? and erx_status_events.creation_date >= ? 
+								and erx_status_events.creation_date <= ? and patient_visit.patient_id = ? `, ERX_STATUS_SENT, halfDayBefore, halfDayAfter, patient.PatientId.Int64())
 	if err != nil {
 		return err
 	}
@@ -166,6 +167,7 @@ func (d *DataService) LinkRequestedPrescriptionToOriginalTreatment(requestedTrea
 			requestedTreatment.DrugDBIds[erx.LexiSynonymTypeId] == drugIds[erx.LexiSynonymTypeId] {
 			// linkage found
 			requestedTreatment.OriginatingTreatmentId = treatmentId
+			fmt.Println("Link found!")
 			return nil
 		}
 	}
