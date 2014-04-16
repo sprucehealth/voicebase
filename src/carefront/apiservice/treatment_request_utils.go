@@ -63,8 +63,11 @@ func checkIfDrugInTreatmentFromTemplateIsOutOfMarket(treatment *common.Treatment
 	return http.StatusOK, nil
 }
 
+// A complete and valid drug name from dosespot is represented as "DrugName (DrugRoute - DrugForm)"
+// This method tries to break up this complete internal drug name into its individual components. It's a best effort
+// in that it treats the entire name presented as the drugName if the drugInternalName is of any invalid format
 func breakDrugInternalNameIntoComponents(drugInternalName string) (drugName, drugForm, drugRoute string) {
-	indexOfParanthesis := strings.Index(drugInternalName, "(")
+	indexOfParanthesis := strings.IndexRune(drugInternalName, '(')
 	// nothing to do if the name is not in the required format.
 	// fail gracefully by returning the drug internal name for the drug name and
 	if indexOfParanthesis == -1 {
@@ -72,9 +75,25 @@ func breakDrugInternalNameIntoComponents(drugInternalName string) (drugName, dru
 		return
 	}
 
-	indexOfClosingParanthesis := strings.Index(drugInternalName, ")")
-	indexOfHyphen := indexOfParanthesis + strings.Index(drugInternalName[indexOfParanthesis:], "-")
-	if indexOfHyphen == -1 || indexOfHyphen < indexOfParanthesis || indexOfHyphen > indexOfClosingParanthesis {
+	// treat the entire name as the drugName if there is no closing paranthesis
+	indexOfClosingParanthesis := strings.IndexRune(drugInternalName, ')')
+	if indexOfClosingParanthesis == -1 {
+		drugName = drugInternalName
+		return
+	}
+
+	// treat the entire name as the drugName if there is no hyphen
+	indexOfHyphen := strings.IndexRune(drugInternalName[indexOfParanthesis:], '-')
+	if indexOfHyphen == -1 {
+		drugName = drugInternalName
+		return
+	}
+
+	// located the position of the hyphen within the actual string
+	indexOfHyphen = indexOfParanthesis + indexOfHyphen
+
+	// treat the entire name as the drug name if hyphen is found after the closing paranthesis
+	if indexOfHyphen > indexOfClosingParanthesis {
 		drugName = drugInternalName
 		return
 	}
