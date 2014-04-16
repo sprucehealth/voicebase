@@ -339,6 +339,7 @@ func (d *DoctorRefillRequestHandler) getRefillRequest(w http.ResponseWriter, r *
 	requestData := &DoctorGetRefillRequestData{}
 	if err := schema.NewDecoder().Decode(requestData, r.Form); err != nil {
 		WriteDeveloperError(w, http.StatusBadRequest, "Unable to parse input parameters: "+err.Error())
+		return
 	}
 
 	refillRequestId, err := strconv.ParseInt(requestData.RefillRequestId, 10, 64)

@@ -77,9 +77,9 @@ func (d *DataService) GetDoctorFromAccountId(accountId int64) (*common.Doctor, e
 
 func (d *DataService) GetDoctorFromDoseSpotClinicianId(clinicianId int64) (*common.Doctor, error) {
 	row := d.DB.QueryRow(`select doctor.id, account_id, phone, first_name, last_name, gender, dob, status, clinician_id, address.address_line_1, 
+							address.address_line_2, address.city, address.state, address.zip_code from doctor 
 							left outer join doctor_address_selection on doctor_id = doctor.id
 							left outer join address on address.id = address_id
-							address.address_line_2, address.city, address.state, address.zip_code from doctor 
 							left outer join doctor_phone on doctor_phone.doctor_id = doctor.id
 								where doctor.clinician_id = ? and (doctor_phone.phone is null or doctor_phone.phone_type = ?)`, clinicianId, doctorPhoneType)
 	return getDoctorFromRow(row)

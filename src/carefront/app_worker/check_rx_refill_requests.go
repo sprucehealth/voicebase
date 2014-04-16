@@ -95,7 +95,7 @@ func PerformRefillRecquestCheckCycle(DataApi api.DataAPI, ERxApi erx.ERxAPI, sta
 		doctor, err := DataApi.GetDoctorFromDoseSpotClinicianId(refillRequestItem.ClinicianId)
 
 		if err != nil {
-			golog.Errorf("Unable to get doctor for refill request.")
+			golog.Errorf("Unable to get doctor for refill request: %+v", err)
 			statFailure.Inc(1)
 			continue
 		}
