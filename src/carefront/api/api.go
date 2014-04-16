@@ -33,6 +33,7 @@ const (
 	REFILL_REQUEST_STATUS_DENIED   = "DENIED"
 	PATIENT_UNLINKED               = "UNLINKED"
 	PATIENT_REGISTERED             = "REGISTERED"
+	DOCTOR_REGISTERED              = "REGISTERED"
 	HIPAA_AUTH                     = "hipaa"
 	CONSENT_AUTH                   = "consent"
 	PHONE_HOME                     = "Home"
