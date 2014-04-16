@@ -31,10 +31,10 @@ type Treatment struct {
 	OTC                       bool                     `json:"otc,omitempty"`
 	IsControlledSubstance     bool                     `json:"-"`
 	SupplementalInstructions  []*DoctorInstructionItem `json:"supplemental_instructions,omitempty"`
-	DoctorId                  int64                    `json:"-"`
+	DoctorId                  *ObjectId                `json:"-"`
 	Doctor                    *Doctor                  `json:"doctor,omitempty"`
 	Patient                   *Patient                 `json:"patient,omitempty"`
-	PatientId                 int64                    `json:"-,omitempty"`
+	PatientId                 *ObjectId                `json:"-,omitempty"`
 	OriginatingTreatmentId    int64                    `json:"-"`
 	ERx                       *ERxData                 `json:"erx,omitempty"`
 }
