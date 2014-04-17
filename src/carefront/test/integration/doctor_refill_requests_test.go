@@ -185,7 +185,6 @@ func TestNewRefillRequestForExistingPatientAndExistingTreatment(t *testing.T) {
 	stubErxAPI := &erx.StubErxService{
 		PharmacyDetailsToReturn:      pharmacyToReturn,
 		RefillRxRequestQueueToReturn: []*common.RefillRequestItem{refillRequestItem},
-		RefillRequestPrescriptionId:  approvedRefillRequestPrescriptionId,
 		PrescriptionIdToPrescriptionStatuses: map[int64][]common.StatusEvent{
 			prescriptionIdForRequestedPrescription: []common.StatusEvent{common.StatusEvent{
 				Status: api.ERX_STATUS_SENT,

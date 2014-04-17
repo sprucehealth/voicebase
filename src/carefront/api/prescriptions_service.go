@@ -106,36 +106,6 @@ func getRefillStatusEventsFromRows(rows *sql.Rows) ([]common.StatusEvent, error)
 	return refillRequestStatuses, rows.Err()
 }
 
-func (d *DataService) GetApprovedOrDeniedRefillRequestsForPatient(patientId int64) ([]common.StatusEvent, error) {
-	rows, err := d.DB.Query(`select rx_refill_request_id, rx_refill_request.erx_request_queue_item_id, rx_refill_status, rx_refill_status_date, 
-									event_details, reason_id, notes, requested_treatment.erx_id    
-									from rx_refill_status_events 
-										inner join rx_refill_request on rx_refill_request_id = rx_refill_request.id
-										inner join requested_treatment on requested_treatment.id = rx_refill_request.requested_treatment_id											
-										where rx_refill_status_events.rx_refill_status in ('Approved', 'Denied') and rx_refill_request.patient_id = ? 
-											order by rx_refill_status_date desc`, patientId)
-	if err != nil {
-		return nil, err
-	}
-	defer rows.Close()
-	return getRefillStatusEventsFromRows(rows)
-}
-
-func (d *DataService) GetRefillStatusEventsForRefillRequest(refillRequestId int64) ([]common.StatusEvent, error) {
-	rows, err := d.DB.Query(`select rx_refill_request_id,rx_refill_request.erx_request_queue_item_id, rx_refill_status, rx_refill_status_date, 
-									event_details, reason_id, notes, requested_treatment.erx_id    
-									from rx_refill_status_events 
-										inner join rx_refill_request on rx_refill_request_id = rx_refill_request.id
-										inner join requested_treatment on requested_treatment.id = rx_refill_request.requested_treatment_id
-										where rx_refill_status_events.rx_refill_request_id = ?
-										order by rx_refill_status_date desc`, refillRequestId)
-	if err != nil {
-		return nil, err
-	}
-	defer rows.Close()
-	return getRefillStatusEventsFromRows(rows)
-}
-
 func (d *DataService) LinkRequestedPrescriptionToOriginalTreatment(requestedTreatment *common.Treatment, patient *common.Patient) error {
 	// lookup drug based on the drugIds
 	if len(requestedTreatment.DrugDBIds) == 0 {
@@ -348,13 +318,13 @@ func (d *DataService) getRefillRequestsFromRow(rows *sql.Rows) ([]*common.Refill
 		}
 
 		// get the pharmacy dispensed treatment
-		refillRequest.DispensedPrescription, err = d.getTreatmentForRefillRequest(table_name_pharmacy_dispensed_treatment, pharmacyDispensedTreatmentId)
+		refillRequest.DispensedPrescription, err = d.getTreatmentForRefillRequest(pharmacyDispensedTreatmentTable, pharmacyDispensedTreatmentId)
 		if err != nil {
 			return nil, err
 		}
 
 		// get the unlinked requested treatment
-		refillRequest.RequestedPrescription, err = d.getTreatmentForRefillRequest(table_name_requested_treatment, requestedTreatmentId.Int64)
+		refillRequest.RequestedPrescription, err = d.getTreatmentForRefillRequest(requestedTreatmentTable, requestedTreatmentId.Int64)
 		if err != nil {
 			return nil, err
 		}
@@ -418,7 +388,6 @@ func (d *DataService) getTreatmentForRefillRequest(tableName string, treatmentId
 	treatment.DrugForm = drugForm.String
 	treatment.DrugRoute = drugRoute.String
 	treatment.OTC = treatmentType == treatmentOTC
-	treatment.OTC = treatmentType == treatment_otc
 	treatment.DaysSupply = encoding.NullInt64FromSql(daysSupply)
 	treatment.NumberRefills = encoding.NullInt64FromSql(refills)
 	treatment.ERx.PharmacyLocalId = encoding.NewObjectId(pharmacyLocalId)
@@ -453,7 +422,7 @@ func (d *DataService) addRequestedTreatmentFromPharmacy(treatment *common.Treatm
 		"type":                  treatmentType,
 		"dispense_value":        treatment.DispenseValue,
 		"dispense_unit":         treatment.DispenseUnitDescription,
-		"refills":               treatment.NumberRefills.Int64Value,
+		"refills":               treatment.NumberRefills,
 		"substitutions_allowed": treatment.SubstitutionsAllowed,
 		"patient_instructions":  treatment.PatientInstructions,
 		"pharmacy_notes":        treatment.PharmacyNotes,
@@ -525,7 +494,7 @@ func (d *DataService) addPharmacyDispensedTreatment(dispensedTreatment, requeste
 		"type":                   treatmentType,
 		"dispense_value":         dispensedTreatment.DispenseValue,
 		"dispense_unit":          dispensedTreatment.DispenseUnitDescription,
-		"refills":                dispensedTreatment.NumberRefills.Int64Value,
+		"refills":                dispensedTreatment.NumberRefills,
 		"substitutions_allowed":  dispensedTreatment.SubstitutionsAllowed,
 		"patient_instructions":   dispensedTreatment.PatientInstructions,
 		"pharmacy_notes":         dispensedTreatment.PharmacyNotes,
@@ -542,7 +511,7 @@ func (d *DataService) addPharmacyDispensedTreatment(dispensedTreatment, requeste
 		columnsAndData["days_supply"] = dispensedTreatment.DaysSupply.Int64Value
 	}
 
-	if err := d.includeDrugNameComponentIfNonZero(dispensedTreatment.DrugName, drug_name_table, "drug_name_id", columnsAndData, tx); err != nil {
+	if err := d.includeDrugNameComponentIfNonZero(dispensedTreatment.DrugName, drugNameTable, "drug_name_id", columnsAndData, tx); err != nil {
 		tx.Rollback()
 		return err
 	}
@@ -693,7 +662,7 @@ func (d *DataService) AddUnlinkedTreatmentInEventOfDNTF(treatment *common.Treatm
 		"type":                  treatmentType,
 		"dispense_value":        treatment.DispenseValue,
 		"dispense_unit_id":      treatment.DispenseUnitId.Int64(),
-		"refills":               treatment.NumberRefills.Int64Value,
+		"refills":               treatment.NumberRefills,
 		"substitutions_allowed": treatment.SubstitutionsAllowed,
 		"patient_instructions":  treatment.PatientInstructions,
 		"pharmacy_notes":        treatment.PharmacyNotes,
@@ -706,7 +675,7 @@ func (d *DataService) AddUnlinkedTreatmentInEventOfDNTF(treatment *common.Treatm
 		columnsAndData["days_supply"] = treatment.DaysSupply.Int64Value
 	}
 
-	if err := d.includeDrugNameComponentIfNonZero(treatment.DrugName, drug_name_table, "drug_name_id", columnsAndData, tx); err != nil {
+	if err := d.includeDrugNameComponentIfNonZero(treatment.DrugName, drugNameTable, "drug_name_id", columnsAndData, tx); err != nil {
 		tx.Rollback()
 		return err
 	}
@@ -767,38 +736,9 @@ func (d *DataService) GetUnlinkedDNTFTreatment(treatmentId int64) (*common.Treat
 	}
 	defer rows.Close()
 
-	treatment := &common.Treatment{
-		Id:                      common.NewObjectId(treatmentId),
-		PatientId:               common.NewObjectId(patientId),
-		DoctorId:                common.NewObjectId(doctorId),
-		DrugInternalName:        drugInternalName,
-		DosageStrength:          dosageStrength,
-		DispenseValue:           dispenseValue,
-		DispenseUnitId:          common.NewObjectId(dispenseUnitId),
-		DispenseUnitDescription: dispenseUnitDescription,
-		NumberRefills:           refills,
-		SubstitutionsAllowed:    substitutionsAllowed,
-		DaysSupply:              daysSupply.Int64,
-		DrugName:                drugName.String,
-		DrugForm:                drugForm.String,
-		DrugRoute:               drugRoute.String,
-		PatientInstructions:     patientInstructions,
-		CreationDate:            &creationDate,
-		Status:                  status,
-		PharmacyNotes:           pharmacyNotes,
-		OTC:                     treatmentType == treatmentOTC,
-		ERx: &common.ERxData{
-			ErxLastDateFilled: &erxLastFilledDate.Time,
-			ErxSentDate:       &erxSentDate.Time,
-		},
-	}
-
-	if pharmacyId.Valid {
-		treatment.ERx.PharmacyLocalId = common.NewObjectId(pharmacyId.Int64)
-		treatment.ERx.Pharmacy, err = d.GetPharmacyFromId(pharmacyId.Int64)
-		if err != nil {
-			return nil, err
-		}
+	treatments, err := d.getUnlinkedDNTFTreatmentsFromRow(rows)
+	if err != nil {
+		return nil, err
 	}
 
 	if len(treatments) > 1 {
@@ -873,7 +813,7 @@ func (d *DataService) getUnlinkedDNTFTreatmentsFromRow(rows *sql.Rows) ([]*commo
 			CreationDate:            &creationDate,
 			Status:                  status,
 			PharmacyNotes:           pharmacyNotes,
-			OTC:                     treatmentType == treatment_otc,
+			OTC:                     treatmentType == treatmentOTC,
 			ERx: &common.ERxData{
 				ErxLastDateFilled: &erxLastFilledDate.Time,
 				ErxSentDate:       &erxSentDate.Time,
@@ -996,11 +936,9 @@ func (d *DataService) GetErxStatusEventsForDNTFTreatment(treatmentId int64) ([]c
 	for rows.Next() {
 		var statusDetails sql.NullString
 		var statusEventItem common.StatusEvent
-		var erxId sql.NullInt64
-		if err := rows.Scan(&statusEventItem.ItemId, &erxId, &statusEventItem.Status, &statusDetails, &statusEventItem.InternalStatus, &statusEventItem.StatusTimestamp); err != nil {
+		if err := rows.Scan(&statusEventItem.ItemId, &statusEventItem.PrescriptionId, &statusEventItem.Status, &statusDetails, &statusEventItem.InternalStatus, &statusEventItem.StatusTimestamp); err != nil {
 			return nil, err
 		}
-		statusEventItem.PrescriptionId = erxId.Int64
 		statusEventItem.StatusDetails = statusDetails.String
 		statusEvents = append(statusEvents, statusEventItem)
 	}

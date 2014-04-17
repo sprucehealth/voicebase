@@ -617,7 +617,7 @@ func (d *DataService) AddTreatmentsForPatientVisit(treatments []*common.Treatmen
 	}
 
 	for _, treatment := range treatments {
-		treatment.TreatmentPlanId = common.NewObjectId(treatmentPlanId)
+		treatment.TreatmentPlanId = encoding.NewObjectId(treatmentPlanId)
 		err = d.addTreatment(treatment, asPatientTreatment, tx)
 		if err != nil {
 			tx.Rollback()
@@ -1102,19 +1102,19 @@ func (d *DataService) getTreatmentAndMetadataFromCurrentRow(rows *sql.Rows) (*co
 	}
 
 	if treatmentPlanId.Valid {
-		treatment.TreatmentPlanId = common.NewObjectId(treatmentPlanId.Int64)
+		treatment.TreatmentPlanId = encoding.NewObjectId(treatmentPlanId.Int64)
 	}
 
 	if patientVisitId.Valid {
-		treatment.PatientVisitId = common.NewObjectId(patientVisitId.Int64)
+		treatment.PatientVisitId = encoding.NewObjectId(patientVisitId.Int64)
 	}
 
 	if treatmentPlanId.Valid {
-		treatment.TreatmentPlanId = common.NewObjectId(treatmentPlanId.Int64)
+		treatment.TreatmentPlanId = encoding.NewObjectId(treatmentPlanId.Int64)
 	}
 
 	if patientVisitId.Valid {
-		treatment.PatientVisitId = common.NewObjectId(patientVisitId.Int64)
+		treatment.PatientVisitId = encoding.NewObjectId(patientVisitId.Int64)
 	}
 
 	if pharmacyId.Valid {
