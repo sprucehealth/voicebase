@@ -227,23 +227,13 @@ func (d *DataService) CreateRefillRequest(refillRequest *common.RefillRequestIte
 }
 
 func (d *DataService) GetRefillRequestFromId(refillRequestId int64) (*common.RefillRequestItem, error) {
-	var refillRequest common.RefillRequestItem
-	var patientId, doctorId, pharmacyDispensedTreatmentTableId int64
-	var requestedTreatmentId, approvedRefillAmount, prescriptionId sql.NullInt64
-	var denyReason sql.NullString
+
 	// get the refill request
 	rows, err := d.DB.Query(`select rx_refill_request.id, rx_refill_request.erx_request_queue_item_id,rx_refill_request.reference_number, rx_refill_request.erx_id,
 		approved_refill_amount, patient_id, request_date, doctor_id, requested_treatment_id, 
 		dispensed_treatment_id, comments, deny_refill_reason.reason from rx_refill_request
 				left outer join deny_refill_reason on deny_refill_reason.id = denial_reason_id
-				where rx_refill_request.id = ?`, refillRequestId).Scan(&refillRequest.Id,
-		&refillRequest.RxRequestQueueItemId, &refillRequest.ReferenceNumber, &prescriptionId, &approvedRefillAmount,
-		&patientId, &refillRequest.RequestDateStamp, &doctorId, &requestedTreatmentId,
-		&pharmacyDispensedTreatmentTableId, &refillRequest.Comments, &denyReason)
-
-	refillRequest.PrescriptionId = prescriptionId.Int64
-	refillRequest.ApprovedRefillAmount = approvedRefillAmount.Int64
-	refillRequest.DenialReason = denyReason.String
+				where rx_refill_request.id = ?`, refillRequestId)
 
 	if err != nil {
 		return nil, err
@@ -258,8 +248,6 @@ func (d *DataService) GetRefillRequestFromId(refillRequestId int64) (*common.Ref
 	if len(refillRequests) > 1 {
 		return nil, fmt.Errorf("Expected just one refill request instead got %d", len(refillRequests))
 	}
-	// get the pharmacy dispensed treatment
-	refillRequest.DispensedPrescription, err = d.getTreatmentForRefillRequest(pharmacyDispensedTreatmentTable, pharmacyDispensedTreatmentTableId)
 
 	if len(refillRequests) == 0 {
 		return nil, nil
@@ -280,13 +268,9 @@ func (d *DataService) GetRefillRequestsForPatient(patientId int64) ([]*common.Re
 	}
 	defer rows.Close()
 
-	// get the unlinked requested treatment
-	refillRequest.RequestedPrescription, err = d.getTreatmentForRefillRequest(requestedTreatmentTable, requestedTreatmentId.Int64)
-	if err != nil {
-		return nil, err
-	}
+	refillRequests, err := d.getRefillRequestsFromRow(rows)
 
-	return refillRequests, nil
+	return refillRequests, err
 }
 
 func (d *DataService) getRefillRequestsFromRow(rows *sql.Rows) ([]*common.RefillRequestItem, error) {
@@ -331,13 +315,13 @@ func (d *DataService) getRefillRequestsFromRow(rows *sql.Rows) ([]*common.Refill
 		}
 
 		// get the pharmacy dispensed treatment
-		refillRequest.DispensedPrescription, err = d.getTreatmentForRefillRequest(table_name_pharmacy_dispensed_treatment, pharmacyDispensedTreatmentId)
+		refillRequest.DispensedPrescription, err = d.getTreatmentForRefillRequest(pharmacyDispensedTreatmentTable, pharmacyDispensedTreatmentId)
 		if err != nil {
 			return nil, err
 		}
 
 		// get the unlinked requested treatment
-		refillRequest.RequestedPrescription, err = d.getTreatmentForRefillRequest(table_name_requested_treatment, requestedTreatmentId.Int64)
+		refillRequest.RequestedPrescription, err = d.getTreatmentForRefillRequest(requestedTreatmentTable, requestedTreatmentId.Int64)
 		if err != nil {
 			return nil, err
 		}
@@ -816,7 +800,7 @@ func (d *DataService) getUnlinkedDNTFTreatmentsFromRow(rows *sql.Rows) ([]*commo
 			CreationDate:            &creationDate,
 			Status:                  status,
 			PharmacyNotes:           pharmacyNotes,
-			OTC:                     treatmentType == treatment_otc,
+			OTC:                     treatmentType == treatmentOTC,
 			ERx: &common.ERxData{
 				ErxLastDateFilled: &erxLastFilledDate.Time,
 				ErxSentDate:       &erxSentDate.Time,
