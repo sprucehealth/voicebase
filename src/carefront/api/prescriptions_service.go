@@ -660,7 +660,7 @@ func (d *DataService) AddUnlinkedTreatmentInEventOfDNTF(treatment *common.Treatm
 		"type":                  treatmentType,
 		"dispense_value":        treatment.DispenseValue,
 		"dispense_unit_id":      treatment.DispenseUnitId.Int64(),
-		"refills":               treatment.NumberRefills,
+		"refills":               treatment.NumberRefills.Int64Value,
 		"substitutions_allowed": treatment.SubstitutionsAllowed,
 		"patient_instructions":  treatment.PatientInstructions,
 		"pharmacy_notes":        treatment.PharmacyNotes,

@@ -25,7 +25,7 @@ func SignupRandomTestDoctor(t *testing.T, dataApi api.DataAPI, authApi thriftapi
 	ts := httptest.NewServer(authHandler)
 	defer ts.Close()
 
-	email = strconv.FormatInt(time.Now().Unix(), 10) + "@example.com"
+	email = strconv.FormatInt(time.Now().UnixNano(), 10) + "@example.com"
 	password = "12345"
 	params := &url.Values{}
 	params.Set("first_name", "Test")
