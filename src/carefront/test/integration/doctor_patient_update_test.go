@@ -160,7 +160,7 @@ func TestDoctorFailedUpdate(t *testing.T) {
 	}
 
 	if resp.StatusCode != http.StatusBadRequest {
-		t.Fatal("Expected a failed request due to remove of phone numbers")
+		t.Fatalf("Expected a %d request due to remove of phone numbers, instead got %d", http.StatusBadRequest, resp.StatusCode)
 	}
 
 	signedupPatientResponse.Patient.PhoneNumbers = []*common.PhoneInformation{&common.PhoneInformation{
