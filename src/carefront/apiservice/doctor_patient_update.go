@@ -103,6 +103,10 @@ func (d *DoctorPatientUpdateHandler) updatePatientInformation(w http.ResponseWri
 	}
 
 	err := d.validatePatientInformationAccordingToSurescriptsRequirements(requestData.Patient, d.AddressValidationApi)
+	if err != nil {
+		WriteDeveloperError(w, http.StatusBadRequest, err.Error())
+		return
+	}
 
 	// get the erx id for the patient, if it exists in the database
 	existingPatientInfo, err := d.DataApi.GetPatientFromId(requestData.Patient.PatientId.Int64())
