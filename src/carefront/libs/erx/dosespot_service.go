@@ -325,7 +325,7 @@ func (d *DoseSpotService) StartPrescribingPatient(clinicianId int64, currentPati
 		lexiGenProductIdInt, _ := strconv.ParseInt(treatment.DrugDBIds[LexiGenProductId], 0, 64)
 		lexiSynonymTypeIdInt, _ := strconv.ParseInt(treatment.DrugDBIds[LexiSynonymTypeId], 0, 64)
 
-		daysSupply := nullInt64(treatment.DaysSupply)
+		daysSupply := nullInt64(treatment.DaysSupply.Int64())
 		prescriptionMedication := &medication{
 			DaysSupply:        daysSupply,
 			LexiDrugSynId:     lexiDrugSynIdInt,
@@ -583,7 +583,7 @@ func (d *DoseSpotService) GetTransmissionErrorDetails(clinicianId int64) ([]*com
 			DrugName:             transmissionError.Medication.DrugName,
 			DosageStrength:       transmissionError.Medication.Strength,
 			NumberRefills:        transmissionError.Medication.Refills.Int64(),
-			DaysSupply:           int64(transmissionError.Medication.DaysSupply),
+			DaysSupply:           common.NewObjectId(int64(transmissionError.Medication.DaysSupply)),
 			DispenseValue:        dispenseValueInt,
 			PatientInstructions:  transmissionError.Medication.Instructions,
 			PharmacyNotes:        transmissionError.Medication.PharmacyNotes,
@@ -702,6 +702,21 @@ func (d *DoseSpotService) GetPatientDetails(erxPatientId int64) (*common.Patient
 			Phone:     response.PatientUpdates[0].Patient.PhoneAdditional2,
 			PhoneType: response.PatientUpdates[0].Patient.PhoneAdditionalType2,
 		})
+	}
+
+	if len(response.PatientUpdates[0].Pharmacies) > 0 {
+		newPatient.Pharmacy = &pharmacySearch.PharmacyData{
+			Source:       pharmacySearch.PHARMACY_SOURCE_SURESCRIPTS,
+			SourceId:     strconv.FormatInt(response.PatientUpdates[0].Pharmacies[0].PharmacyId, 10),
+			Name:         response.PatientUpdates[0].Pharmacies[0].StoreName,
+			AddressLine1: response.PatientUpdates[0].Pharmacies[0].Address1,
+			AddressLine2: response.PatientUpdates[0].Pharmacies[0].Address2,
+			City:         response.PatientUpdates[0].Pharmacies[0].City,
+			State:        response.PatientUpdates[0].Pharmacies[0].State,
+			Postal:       response.PatientUpdates[0].Pharmacies[0].ZipCode,
+			Phone:        response.PatientUpdates[0].Pharmacies[0].PrimaryPhone,
+			Fax:          response.PatientUpdates[0].Pharmacies[0].PrimaryFax,
+		}
 	}
 
 	return newPatient, nil
@@ -832,7 +847,7 @@ func convertMedicationIntoTreatment(medicationItem *medication) *common.Treatmen
 		DrugName:                medicationItem.DrugName,
 		IsControlledSubstance:   err == nil && scheduleInt > 0,
 		NumberRefills:           int64(medicationItem.Refills),
-		DaysSupply:              int64(medicationItem.DaysSupply),
+		DaysSupply:              common.NewObjectId(int64(medicationItem.DaysSupply)),
 		DispenseValue:           dispenseValue,
 		DispenseUnitId:          common.NewObjectId(medicationItem.DispenseUnitId),
 		DispenseUnitDescription: medicationItem.DispenseUnitDescription,

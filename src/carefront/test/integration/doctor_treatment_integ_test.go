@@ -201,7 +201,7 @@ func TestAddTreatments(t *testing.T) {
 		DispenseUnitId:       common.NewObjectId(26),
 		NumberRefills:        1,
 		SubstitutionsAllowed: true,
-		DaysSupply:           1,
+		DaysSupply:           common.NewObjectId(1),
 		OTC:                  true,
 		PharmacyNotes:        "testing pharmacy notes",
 		PatientInstructions:  "patient instructions",
@@ -219,7 +219,7 @@ func TestAddTreatments(t *testing.T) {
 		DispenseUnitId:       common.NewObjectId(27),
 		NumberRefills:        3,
 		SubstitutionsAllowed: false,
-		DaysSupply:           12,
+		DaysSupply:           common.NewObjectId(12),
 		OTC:                  false,
 		PharmacyNotes:        "testing pharmacy notes 2",
 		PatientInstructions:  "patient instructions 2",
@@ -283,7 +283,7 @@ func TestTreatmentTemplates(t *testing.T) {
 		DispenseUnitId:       common.NewObjectId(26),
 		NumberRefills:        1,
 		SubstitutionsAllowed: true,
-		DaysSupply:           1,
+		DaysSupply:           common.NewObjectId(1),
 		OTC:                  true,
 		PharmacyNotes:        "testing pharmacy notes",
 		PatientInstructions:  "patient insturctions",
@@ -347,7 +347,7 @@ func TestTreatmentTemplates(t *testing.T) {
 		DispenseUnitId:       common.NewObjectId(26),
 		NumberRefills:        1,
 		SubstitutionsAllowed: true,
-		DaysSupply:           1,
+		DaysSupply:           common.NewObjectId(1),
 		OTC:                  true,
 		PharmacyNotes:        "testing pharmacy notes",
 		PatientInstructions:  "patient instructions",
@@ -456,7 +456,7 @@ func TestTreatmentTemplatesInContextOfPatientVisit(t *testing.T) {
 		DispenseUnitId:       common.NewObjectId(26),
 		NumberRefills:        1,
 		SubstitutionsAllowed: true,
-		DaysSupply:           1,
+		DaysSupply:           common.NewObjectId(1),
 		OTC:                  true,
 		PharmacyNotes:        "testing pharmacy notes",
 		PatientInstructions:  "patient insturctions",
@@ -521,7 +521,7 @@ func TestTreatmentTemplatesInContextOfPatientVisit(t *testing.T) {
 		DispenseUnitId:       common.NewObjectId(26),
 		NumberRefills:        1,
 		SubstitutionsAllowed: true,
-		DaysSupply:           1,
+		DaysSupply:           common.NewObjectId(1),
 		OTC:                  true,
 		PharmacyNotes:        "testing pharmacy notes",
 		PatientInstructions:  "patient instructions",
@@ -668,7 +668,7 @@ func TestTreatmentTemplateWithDrugOutOfMarket(t *testing.T) {
 		DispenseUnitId:       common.NewObjectId(26),
 		NumberRefills:        1,
 		SubstitutionsAllowed: true,
-		DaysSupply:           1,
+		DaysSupply:           common.NewObjectId(1),
 		OTC:                  true,
 		PharmacyNotes:        "testing pharmacy notes",
 		PatientInstructions:  "patient insturctions",
@@ -786,7 +786,7 @@ func compareTreatments(treatment *common.Treatment, treatment1 *common.Treatment
 	if treatment.DosageStrength != treatment1.DosageStrength || treatment.DispenseValue != treatment1.DispenseValue ||
 		treatment.DispenseUnitId.Int64() != treatment1.DispenseUnitId.Int64() || treatment.PatientInstructions != treatment1.PatientInstructions ||
 		treatment.PharmacyNotes != treatment1.PharmacyNotes || treatment.NumberRefills != treatment1.NumberRefills ||
-		treatment.SubstitutionsAllowed != treatment1.SubstitutionsAllowed || treatment.DaysSupply != treatment1.DaysSupply ||
+		treatment.SubstitutionsAllowed != treatment1.SubstitutionsAllowed || treatment.DaysSupply.Int64() != treatment1.DaysSupply.Int64() ||
 		treatment.OTC != treatment1.OTC {
 		treatmentData, _ := json.MarshalIndent(treatment, "", " ")
 		treatment1Data, _ := json.MarshalIndent(treatment1, "", " ")

@@ -67,6 +67,7 @@ func (d *DataService) GetApprovedOrDeniedRefillRequestsForPatient(patientId int6
 										where rx_refill_status_events.rx_refill_status in (?, ?) and rx_refill_request.patient_id = ?
 										and status = ?
 											order by rx_refill_status_date desc`, RX_REFILL_STATUS_APPROVED, RX_REFILL_STATUS_DENIED, patientId, STATUS_ACTIVE)
+
 	if err != nil {
 		return nil, err
 	}
@@ -299,7 +300,7 @@ func (d *DataService) GetRefillRequestFromId(refillRequestId int64) (*common.Ref
 func (d *DataService) getTreatmentForRefillRequest(tableName string, treatmentId int64) (*common.Treatment, error) {
 	var treatment common.Treatment
 	treatment.ERx = &common.ERxData{}
-	var erxId, pharmacyLocalId int64
+	var erxId, pharmacyLocalId, daysSupply int64
 	var doctorId sql.NullInt64
 	var treatmentType string
 	var drugName, drugForm, drugRoute sql.NullString
@@ -317,7 +318,7 @@ func (d *DataService) getTreatmentForRefillRequest(tableName string, treatmentId
 		&treatment.DosageStrength, &treatmentType, &treatment.DispenseValue,
 		&treatment.DispenseUnitDescription, &treatment.NumberRefills,
 		&treatment.SubstitutionsAllowed, &pharmacyLocalId,
-		&treatment.DaysSupply, &treatment.PharmacyNotes,
+		&daysSupply, &treatment.PharmacyNotes,
 		&treatment.PatientInstructions, &treatment.ERx.ErxSentDate,
 		&treatment.ERx.ErxLastDateFilled, &treatment.Status,
 		&drugName, &drugForm, &drugRoute, &doctorId)
@@ -365,7 +366,7 @@ func (d *DataService) addRequestedTreatmentFromPharmacy(treatment *common.Treatm
 		"dispense_unit":         treatment.DispenseUnitDescription,
 		"refills":               treatment.NumberRefills,
 		"substitutions_allowed": treatment.SubstitutionsAllowed,
-		"days_supply":           treatment.DaysSupply,
+		"days_supply":           treatment.DaysSupply.Int64(),
 		"patient_instructions":  treatment.PatientInstructions,
 		"pharmacy_notes":        treatment.PharmacyNotes,
 		"status":                treatment.Status,
@@ -599,12 +600,12 @@ func (d *DataService) AddUnlinkedTreatmentInEventOfDNTF(treatment *common.Treatm
 		"dispense_unit_id":      treatment.DispenseUnitId.Int64(),
 		"refills":               treatment.NumberRefills,
 		"substitutions_allowed": treatment.SubstitutionsAllowed,
-		"days_supply":           treatment.DaysSupply,
+		"days_supply":           treatment.DaysSupply.Int64(),
 		"patient_instructions":  treatment.PatientInstructions,
 		"pharmacy_notes":        treatment.PharmacyNotes,
 		"status":                treatment.Status,
-		"doctor_id":             treatment.DoctorId,
-		"patient_id":            treatment.PatientId,
+		"doctor_id":             treatment.DoctorId.Int64(),
+		"patient_id":            treatment.PatientId.Int64(),
 	}
 
 	if err := d.includeDrugNameComponentIfNonZero(treatment.DrugName, drugNameTable, "drug_name_id", columnsAndData, tx); err != nil {
@@ -682,8 +683,8 @@ func (d *DataService) GetUnlinkedDNTFTreatment(treatmentId int64) (*common.Treat
 
 	treatment := &common.Treatment{
 		Id:                      common.NewObjectId(treatmentId),
-		PatientId:               patientId,
-		DoctorId:                doctorId,
+		PatientId:               common.NewObjectId(patientId),
+		DoctorId:                common.NewObjectId(doctorId),
 		DrugInternalName:        drugInternalName,
 		DosageStrength:          dosageStrength,
 		DispenseValue:           dispenseValue,
@@ -691,7 +692,7 @@ func (d *DataService) GetUnlinkedDNTFTreatment(treatmentId int64) (*common.Treat
 		DispenseUnitDescription: dispenseUnitDescription,
 		NumberRefills:           refills,
 		SubstitutionsAllowed:    substitutionsAllowed,
-		DaysSupply:              daysSupply.Int64,
+		DaysSupply:              common.NewObjectId(daysSupply.Int64),
 		DrugName:                drugName.String,
 		DrugForm:                drugForm.String,
 		DrugRoute:               drugRoute.String,
@@ -718,12 +719,12 @@ func (d *DataService) GetUnlinkedDNTFTreatment(treatmentId int64) (*common.Treat
 		treatment.ERx.PrescriptionId = common.NewObjectId(erxId.Int64)
 	}
 
-	treatment.Doctor, err = d.GetDoctorFromId(treatment.DoctorId)
+	treatment.Doctor, err = d.GetDoctorFromId(treatment.DoctorId.Int64())
 	if err != nil {
 		return nil, err
 	}
 
-	treatment.Patient, err = d.GetPatientFromId(treatment.PatientId)
+	treatment.Patient, err = d.GetPatientFromId(treatment.PatientId.Int64())
 	if err != nil {
 		return nil, err
 	}
@@ -782,7 +783,23 @@ func (d *DataService) AddErxStatusEventForDNTFTreatment(statusEvent common.Statu
 		return err
 	}
 
-	_, err = tx.Exec(`insert into unlinked_dntf_treatment_status_events (unlinked_dntf_treatment_id, erx_status, status) values (?,?,?)`, statusEvent.ItemId, statusEvent.Status, STATUS_ACTIVE)
+	columnsAndData := map[string]interface{}{
+		"unlinked_dntf_treatment_id": statusEvent.ItemId,
+		"erx_status":                 statusEvent.Status,
+		"status":                     STATUS_ACTIVE,
+	}
+
+	if statusEvent.StatusDetails != "" {
+		columnsAndData["event_details"] = statusEvent.StatusDetails
+	}
+
+	if !statusEvent.ReportedTimestamp.IsZero() {
+		columnsAndData["reported_timestamp"] = statusEvent.ReportedTimestamp
+	}
+
+	columns, values := getKeysAndValuesFromMap(columnsAndData)
+
+	_, err = tx.Exec(fmt.Sprintf(`insert into unlinked_dntf_treatment_status_events (%s) values (%s)`, strings.Join(columns, ","), nReplacements(len(values))), values...)
 	if err != nil {
 		tx.Rollback()
 		return err
@@ -792,9 +809,9 @@ func (d *DataService) AddErxStatusEventForDNTFTreatment(statusEvent common.Statu
 }
 
 func (d *DataService) GetErxStatusEventsForDNTFTreatment(treatmentId int64) ([]common.StatusEvent, error) {
-	rows, err := d.DB.Query(`select unlinked_dntf_treatment_status_events.unlinked_dntf_treatment_id, unlinked_dntf_treatment.erx_id, unlinked_dntf_treatment_status_events.erx_status, unlinked_dntf_treatment_status_events.status, unlinked_dntf_treatment_status_events.creation_date from unlinked_dntf_treatment_status_events 
+	rows, err := d.DB.Query(`select unlinked_dntf_treatment_status_events.unlinked_dntf_treatment_id, unlinked_dntf_treatment.erx_id, unlinked_dntf_treatment_status_events.erx_status, unlinked_dntf_treatment_status_events.event_details, unlinked_dntf_treatment_status_events.status, unlinked_dntf_treatment_status_events.creation_date from unlinked_dntf_treatment_status_events 
 								inner join unlinked_dntf_treatment on unlinked_dntf_treatment_id = unlinked_dntf_treatment.id
-									where unlinked_dntf_treatment.id = ? order by unlinked_dntf_treatment.creation_date desc`, treatmentId)
+									where unlinked_dntf_treatment.id = ? order by unlinked_dntf_treatment_status_events.creation_date desc`, treatmentId)
 	if err != nil {
 		return nil, err
 	}
@@ -802,10 +819,12 @@ func (d *DataService) GetErxStatusEventsForDNTFTreatment(treatmentId int64) ([]c
 
 	statusEvents := make([]common.StatusEvent, 0)
 	for rows.Next() {
+		var statusDetails sql.NullString
 		var statusEventItem common.StatusEvent
-		if err := rows.Scan(&statusEventItem.ItemId, &statusEventItem.PrescriptionId, &statusEventItem.Status, &statusEventItem.InternalStatus, &statusEventItem.StatusTimestamp); err != nil {
+		if err := rows.Scan(&statusEventItem.ItemId, &statusEventItem.PrescriptionId, &statusEventItem.Status, &statusDetails, &statusEventItem.InternalStatus, &statusEventItem.StatusTimestamp); err != nil {
 			return nil, err
 		}
+		statusEventItem.StatusDetails = statusDetails.String
 		statusEvents = append(statusEvents, statusEventItem)
 	}
 
@@ -813,9 +832,9 @@ func (d *DataService) GetErxStatusEventsForDNTFTreatment(treatmentId int64) ([]c
 }
 
 func (d *DataService) GetErxStatusEventsForDNTFTreatmentBasedOnPatientId(patientId int64) ([]common.StatusEvent, error) {
-	rows, err := d.DB.Query(`select unlinked_dntf_treatment_status_events.unlinked_dntf_treatment_id, unlinked_dntf_treatment.erx_id, unlinked_dntf_treatment_status_events.erx_status,unlinked_dntf_treatment_status_events.status,  unlinked_dntf_treatment_status_events.creation_date from unlinked_dntf_treatment_status_events 
+	rows, err := d.DB.Query(`select unlinked_dntf_treatment_status_events.unlinked_dntf_treatment_id, unlinked_dntf_treatment.erx_id, unlinked_dntf_treatment_status_events.erx_status,unlinked_dntf_treatment_status_events.status, unlinked_dntf_treatment_status_events.creation_date from unlinked_dntf_treatment_status_events 
 								inner join unlinked_dntf_treatment on unlinked_dntf_treatment_id = unlinked_dntf_treatment.id
-									where unlinked_dntf_treatment.patient_id = ? order by unlinked_dntf_treatment.creation_date desc`, patientId)
+									where unlinked_dntf_treatment.patient_id = ? order by unlinked_dntf_treatment_status_events.creation_date desc`, patientId)
 	if err != nil {
 		return nil, err
 	}

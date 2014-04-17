@@ -140,6 +140,7 @@ type patientStartPrescribingResponse struct {
 type patientUpdate struct {
 	Patient     *patient      `xml:"Patient"`
 	Medications []*medication `xml:"Medications>Medication"`
+	Pharmacies  []*pharmacy   `xml:"Pharmacies>Pharmacy"`
 }
 
 type prescription struct {

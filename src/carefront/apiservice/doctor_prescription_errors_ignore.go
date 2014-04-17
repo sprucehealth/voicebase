@@ -57,7 +57,7 @@ func (d *DoctorPrescriptionErrorIgnoreHandler) ServeHTTP(w http.ResponseWriter, 
 			return
 		}
 
-		if err := verifyDoctorPatientRelationship(d.DataApi, doctor, treatment.Patient); err != nil {
+		if err := verifyDoctorPatientRelationship(d.DataApi, treatment.Doctor, treatment.Patient); err != nil {
 			WriteDeveloperError(w, http.StatusForbidden, "Unable to verify patient-doctor relationship: "+err.Error())
 			return
 		}
@@ -91,6 +91,11 @@ func (d *DoctorPrescriptionErrorIgnoreHandler) ServeHTTP(w http.ResponseWriter, 
 		refillRequest, err := d.DataApi.GetRefillRequestFromId(refillRequestId)
 		if err != nil {
 			WriteDeveloperError(w, http.StatusInternalServerError, "Unable to get refill request based on id: "+err.Error())
+			return
+		}
+
+		if err := verifyDoctorPatientRelationship(d.DataApi, refillRequest.Doctor, refillRequest.Patient); err != nil {
+			WriteDeveloperError(w, http.StatusForbidden, "Unable to verify patient-doctor relationship: "+err.Error())
 			return
 		}
 
@@ -142,7 +147,7 @@ func (d *DoctorPrescriptionErrorIgnoreHandler) ServeHTTP(w http.ResponseWriter, 
 		if err := d.DataApi.ReplaceItemInDoctorQueue(api.DoctorQueueItem{
 			DoctorId:  doctor.DoctorId.Int64(),
 			ItemId:    unlinkedDNTFTreatmentId,
-			EventType: api.EVENT_TYPE_TRANSMISSION_ERROR,
+			EventType: api.EVENT_TYPE_UNLINKED_DNTF_TRANSMISSION_ERROR,
 			Status:    api.QUEUE_ITEM_STATUS_COMPLETED,
 		}, api.QUEUE_ITEM_STATUS_PENDING); err != nil {
 			WriteDeveloperError(w, http.StatusInternalServerError, "Unable to refresh the doctor queue: "+err.Error())

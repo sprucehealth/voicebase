@@ -13,7 +13,7 @@ import (
 )
 
 const (
-	waitTimeInMins        = 5
+	waitTimeInSeconds     = 30
 	msgVisibilityTimeout  = 30
 	longPollingTimePeriod = 20
 )
@@ -40,14 +40,14 @@ func ConsumeMessageFromQueue(DataApi api.DataAPI, ERxApi erx.ERxAPI, ErxQueue *c
 	msgs, err := ErxQueue.QueueService.ReceiveMessage(ErxQueue.QueueUrl, nil, 1, msgVisibilityTimeout, longPollingTimePeriod)
 	statCycles.Inc(1)
 	if err != nil {
-		golog.Errorf("Unable to receieve messages from queue. Sleeping and trying again in %d minutes", waitTimeInMins)
-		time.Sleep(waitTimeInMins * time.Minute)
+		golog.Errorf("Unable to receieve messages from queue. Sleeping and trying again in %d seconds", waitTimeInSeconds)
+		time.Sleep(waitTimeInSeconds * time.Second)
 		statFailure.Inc(1)
 		return
 	}
 
 	if msgs == nil || len(msgs) == 0 {
-		time.Sleep(waitTimeInMins * time.Minute)
+		time.Sleep(waitTimeInSeconds * time.Second)
 		statFailure.Inc(1)
 		return
 	}

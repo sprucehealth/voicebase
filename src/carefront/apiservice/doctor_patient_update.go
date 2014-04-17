@@ -5,7 +5,9 @@ import (
 	"carefront/common"
 	"carefront/libs/erx"
 	"carefront/libs/pharmacy"
+	"fmt"
 	"strconv"
+	"strings"
 
 	"encoding/json"
 	"net/http"
@@ -71,7 +73,6 @@ func (d *DoctorPatientUpdateHandler) getPatientInformation(w http.ResponseWriter
 		WriteDeveloperError(w, http.StatusForbidden, "Unable to verify doctor-patient relationship: "+err.Error())
 		return
 	}
-
 	WriteJSONToHTTPResponseWriter(w, http.StatusOK, &DoctorPatientUpdateHandlerRequestResponse{Patient: patient})
 }
 
@@ -106,6 +107,27 @@ func (d *DoctorPatientUpdateHandler) updatePatientInformation(w http.ResponseWri
 		}
 	}
 
+	err, isUserFacingError := d.validatePatientInformationAccordingToSurescriptsRequirements(requestData.Patient)
+
+	if err != nil {
+		if isUserFacingError {
+			WriteUserError(w, http.StatusBadRequest, err.Error())
+			return
+		} else {
+			WriteDeveloperError(w, http.StatusInternalServerError, err.Error())
+			return
+		}
+	}
+
+	trimSpacesFromPatientFields(requestData.Patient)
+
+	// get the erx id for the patient, if it exists in the database
+	existingPatientInfo, err := d.DataApi.GetPatientFromId(requestData.Patient.PatientId.Int64())
+	if err != nil {
+		WriteDeveloperError(w, http.StatusInternalServerError, "Unable to get patient info from database: "+err.Error())
+		return
+	}
+
 	currentDoctor, err := d.DataApi.GetDoctorFromAccountId(GetContext(r).AccountId)
 	if err != nil {
 		WriteDeveloperError(w, http.StatusInternalServerError, "Unable to get doctor from account id: "+err.Error())
@@ -114,13 +136,6 @@ func (d *DoctorPatientUpdateHandler) updatePatientInformation(w http.ResponseWri
 
 	if err := verifyDoctorPatientRelationship(d.DataApi, currentDoctor, requestData.Patient); err != nil {
 		WriteDeveloperError(w, http.StatusForbidden, "Unable to verify doctor-patient relationship: "+err.Error())
-		return
-	}
-
-	// get the erx id for the patient, if it exists in the database
-	existingPatientInfo, err := d.DataApi.GetPatientFromId(requestData.Patient.PatientId.Int64())
-	if err != nil {
-		WriteDeveloperError(w, http.StatusInternalServerError, "Unable to get patient info from database: "+err.Error())
 		return
 	}
 
@@ -160,4 +175,74 @@ func (d *DoctorPatientUpdateHandler) updatePatientInformation(w http.ResponseWri
 	}
 
 	WriteJSONToHTTPResponseWriter(w, http.StatusOK, SuccessfulGenericJSONResponse())
+}
+
+func (d *DoctorPatientUpdateHandler) validatePatientInformationAccordingToSurescriptsRequirements(patient *common.Patient) (error, bool) {
+	// following field lengths are surescripts requirements
+	longFieldLength := 35
+	shortFieldLength := 10
+	phoneNumberLength := 25
+
+	if len(patient.Prefix) > shortFieldLength {
+		return fmt.Errorf("Prefix cannot be longer than %d characters in length", shortFieldLength), true
+	}
+
+	if len(patient.Suffix) > shortFieldLength {
+		return fmt.Errorf("Suffix cannot be longer than %d characters in length", shortFieldLength), true
+	}
+
+	if len(patient.FirstName) > longFieldLength {
+		return fmt.Errorf("First name cannot be longer than %d characters", longFieldLength), true
+	}
+
+	if len(patient.MiddleName) > longFieldLength {
+		return fmt.Errorf("Middle name cannot be longer than %d characters", longFieldLength), true
+	}
+
+	if len(patient.LastName) > longFieldLength {
+		return fmt.Errorf("Last name cannot be longer than %d characters", longFieldLength), true
+	}
+
+	if len(patient.PatientAddress.AddressLine1) > longFieldLength {
+		return fmt.Errorf("AddressLine1 of patient address cannot be longer than %d characters", longFieldLength), true
+	}
+
+	if len(patient.PatientAddress.AddressLine2) > longFieldLength {
+		return fmt.Errorf("AddressLine2 of patient address cannot be longer than %d characters", longFieldLength), true
+	}
+
+	if len(patient.PatientAddress.City) > longFieldLength {
+		return fmt.Errorf("City cannot be longer than %d characters", longFieldLength), true
+	}
+
+	for _, phoneNumber := range patient.PhoneNumbers {
+		if len(phoneNumber.Phone) > 25 {
+			return fmt.Errorf("Phone numbers cannot be longer than %d digits", phoneNumberLength), true
+		}
+	}
+
+	isValid, err := d.DataApi.IsStateValid(patient.PatientAddress.State)
+	if err != nil {
+		return err, false
+	}
+
+	if !isValid {
+		return fmt.Errorf("State entered for address is not valid"), true
+	}
+
+	return nil, false
+}
+
+func trimSpacesFromPatientFields(patient *common.Patient) {
+	patient.FirstName = strings.TrimSpace(patient.FirstName)
+	patient.LastName = strings.TrimSpace(patient.LastName)
+	patient.MiddleName = strings.TrimSpace(patient.MiddleName)
+	patient.Suffix = strings.TrimSpace(patient.Suffix)
+	patient.Prefix = strings.TrimSpace(patient.Prefix)
+	patient.City = strings.TrimSpace(patient.City)
+	patient.State = strings.TrimSpace(patient.State)
+	patient.PatientAddress.AddressLine1 = strings.TrimSpace(patient.PatientAddress.AddressLine1)
+	patient.PatientAddress.AddressLine2 = strings.TrimSpace(patient.PatientAddress.AddressLine2)
+	patient.PatientAddress.City = strings.TrimSpace(patient.PatientAddress.City)
+	patient.PatientAddress.State = strings.TrimSpace(patient.PatientAddress.State)
 }

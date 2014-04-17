@@ -53,7 +53,6 @@ func (d *DoctorPrescriptionErrorHandler) ServeHTTP(w http.ResponseWriter, r *htt
 			WriteDeveloperError(w, http.StatusInternalServerError, "Unable to get patient based on treatment id: "+err.Error())
 			return
 		}
-
 	} else if requestData.UnlinkedDNTFTreatmentId != "" {
 		treatmentId, err := strconv.ParseInt(requestData.UnlinkedDNTFTreatmentId, 10, 64)
 		if err != nil {
@@ -74,7 +73,9 @@ func (d *DoctorPrescriptionErrorHandler) ServeHTTP(w http.ResponseWriter, r *htt
 			return
 		}
 	}
+
 	WriteJSONToHTTPResponseWriter(w, http.StatusOK, &DoctorPrescriptionErrorResponse{
 		Treatment: treatment,
 	})
+
 }

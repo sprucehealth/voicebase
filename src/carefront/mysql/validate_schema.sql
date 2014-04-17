@@ -59,5 +59,5 @@ newSnapshotNumber=$((latestSnapshotNumber + 1))
 newDataSnapshotNumber=$((latestDataSnapshotNumber + 1))
 echo -e "--- Creating new snapshot from database into snapshot-$newSnapshotNumber.sql\n"
 `mysqldump -h $RDS_INSTANCE -u $RDS_USERNAME --no-data $DATABASE_NAME -p$DEV_RDS_PASSWORD > snapshot-$newSnapshotNumber.sql`
-`mysqldump -h $RDS_INSTANCE -u $RDS_USERNAME -p$DEV_RDS_PASSWORD $DATABASE_NAME app_text localized_text answer_type region health_condition languages_supported tips tips_section section screen_type question_type question question_fields potential_answer photo_tips patient_layout_version object_storage layout_version dr_layout_version care_providing_state dispense_unit drug_name drug_route drug_form drug_supplemental_instruction deny_refill_reason > data-snapshot-$newDataSnapshotNumber.sql`
+`mysqldump -h $RDS_INSTANCE -u $RDS_USERNAME -p$DEV_RDS_PASSWORD $DATABASE_NAME app_text localized_text answer_type region health_condition languages_supported tips tips_section section screen_type question_type question question_fields potential_answer photo_tips patient_layout_version object_storage layout_version dr_layout_version care_providing_state dispense_unit drug_name drug_route drug_form drug_supplemental_instruction deny_refill_reason state > data-snapshot-$newDataSnapshotNumber.sql`
 cleanup

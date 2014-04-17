@@ -33,11 +33,12 @@ const (
 	REFILL_REQUEST_STATUS_DENIED   = "DENIED"
 	PATIENT_UNLINKED               = "UNLINKED"
 	PATIENT_REGISTERED             = "REGISTERED"
+	DOCTOR_REGISTERED              = "REGISTERED"
 	HIPAA_AUTH                     = "hipaa"
 	CONSENT_AUTH                   = "consent"
-	PATIENT_PHONE_HOME             = "Home"
-	PATIENT_PHONE_WORK             = "Work"
-	PATIENT_PHONE_CELL             = "Cell"
+	PHONE_HOME                     = "Home"
+	PHONE_WORK                     = "Work"
+	PHONE_CELL                     = "Cell"
 )
 
 var (
@@ -70,6 +71,7 @@ type PatientAPI interface {
 	CreateCareTeamForPatientWithPrimaryDoctor(patientId, doctorId int64) (careTeam *common.PatientCareProviderGroup, err error)
 	GetCareTeamForPatient(patientId int64) (careTeam *common.PatientCareProviderGroup, err error)
 	CheckCareProvidingElligibility(shortState string, healthConditionId int64) (doctorId int64, err error)
+
 	UpdatePatientAddress(patientId int64, addressLine1, addressLine2, city, state, zipCode, addressType string) error
 	UpdatePatientPharmacy(patientId int64, pharmacyDetails *pharmacy.PharmacyData) error
 	TrackPatientAgreements(patientId int64, agreements map[string]bool) error
@@ -92,6 +94,7 @@ type PatientAPI interface {
 	GetCardFromId(cardId int64) (*common.Card, error)
 	UpdateDefaultAddressForPatient(patientId int64, address *common.Address) error
 	DeleteAddress(addressId int64) error
+	IsStateValid(state string) (bool, error)
 }
 
 type PatientVisitAPI interface {
@@ -133,9 +136,9 @@ type PatientVisitAPI interface {
 }
 
 type RefillRequestDenialReason struct {
-	Id           int64
-	DenialCode   string
-	DenialReason string
+	Id           int64  `json:"id,string"`
+	DenialCode   string `json:"denial_code"`
+	DenialReason string `json:"denial_reason"`
 }
 
 type PrescriptionsAPI interface {
@@ -159,7 +162,7 @@ type PrescriptionsAPI interface {
 }
 
 type DoctorAPI interface {
-	RegisterDoctor(accountId int64, firstName, lastName, gender string, dob time.Time, clinicianId int64) (int64, error)
+	RegisterDoctor(doctor *common.Doctor) (int64, error)
 	GetDoctorFromId(doctorId int64) (doctor *common.Doctor, err error)
 	GetDoctorFromAccountId(accountId int64) (doctor *common.Doctor, err error)
 	GetDoctorFromDoseSpotClinicianId(clincianId int64) (doctor *common.Doctor, err error)
@@ -188,7 +191,6 @@ type DoctorAPI interface {
 	UpdatePatientInformationFromDoctor(patient *common.Patient) error
 	InsertItemIntoDoctorQueue(doctorQueueItem DoctorQueueItem) error
 	ReplaceItemInDoctorQueue(doctorQueueItem DoctorQueueItem, currentState string) error
-
 	MarkGenerationOfTreatmentPlanInVisitQueue(doctorId, patientVisitId, treatmentPlanId int64, currentState, updatedState string) error
 }
 

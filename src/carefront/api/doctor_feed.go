@@ -245,7 +245,6 @@ func (d *DoctorQueueItem) GetActionUrl(dataApi DataAPI) (string, error) {
 			return "", err
 		}
 		return fmt.Sprintf("%s%s?patient_id=%d", SpruceButtonBaseActionUrl, viewPatientTreatmentsAction, patient.PatientId.Int64()), nil
-
 	case EVENT_TYPE_REFILL_REQUEST, EVENT_TYPE_REFILL_TRANSMISSION_ERROR:
 		return fmt.Sprintf("%s%s?refill_request_id=%d", SpruceButtonBaseActionUrl, viewRefillRequestAction, d.ItemId), nil
 	case EVENT_TYPE_TRANSMISSION_ERROR:

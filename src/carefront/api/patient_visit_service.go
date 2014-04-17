@@ -675,7 +675,7 @@ func (d *DataService) addTreatment(treatment *common.Treatment, withoutLinkToTre
 		"dispense_unit_id":      treatment.DispenseUnitId,
 		"refills":               treatment.NumberRefills,
 		"substitutions_allowed": treatment.SubstitutionsAllowed,
-		"days_supply":           treatment.DaysSupply,
+		"days_supply":           treatment.DaysSupply.Int64(),
 		"patient_instructions":  treatment.PatientInstructions,
 		"pharmacy_notes":        treatment.PharmacyNotes,
 		"status":                STATUS_CREATED,
@@ -808,7 +808,6 @@ func (d *DataService) GetTreatmentsForPatient(patientId int64) ([]*common.Treatm
 				inner join patient_visit on treatment_plan.patient_visit_id = patient_visit.id
 				inner join dispense_unit on treatment.dispense_unit_id = dispense_unit.id
 				inner join localized_text on localized_text.app_text_id = dispense_unit.dispense_unit_text_id
-				inner join patient_visit on treatment_plan.patient_visit_id = patient_visit.id
 				left outer join drug_name on drug_name_id = drug_name.id
 				left outer join drug_route on drug_route_id = drug_route.id
 				left outer join drug_form on drug_form_id = drug_form.id
@@ -1063,7 +1062,7 @@ func (d *DataService) getTreatmentAndMetadataFromCurrentRow(rows *sql.Rows) (*co
 
 	treatment := &common.Treatment{
 		Id:                      common.NewObjectId(treatmentId),
-		PatientId:               patientId,
+		PatientId:               common.NewObjectId(patientId),
 		DrugInternalName:        drugInternalName,
 		DosageStrength:          dosageStrength,
 		DispenseValue:           dispenseValue,
@@ -1071,7 +1070,7 @@ func (d *DataService) getTreatmentAndMetadataFromCurrentRow(rows *sql.Rows) (*co
 		DispenseUnitDescription: dispenseUnitDescription,
 		NumberRefills:           refills,
 		SubstitutionsAllowed:    substitutionsAllowed,
-		DaysSupply:              daysSupply,
+		DaysSupply:              common.NewObjectId(daysSupply),
 		DrugName:                drugName.String,
 		DrugForm:                drugForm.String,
 		DrugRoute:               drugRoute.String,
@@ -1079,7 +1078,7 @@ func (d *DataService) getTreatmentAndMetadataFromCurrentRow(rows *sql.Rows) (*co
 		CreationDate:            &creationDate,
 		Status:                  status,
 		PharmacyNotes:           pharmacyNotes.String,
-		DoctorId:                prescriberId,
+		DoctorId:                common.NewObjectId(prescriberId),
 	}
 
 	if treatmentPlanId.Valid {
@@ -1096,6 +1095,14 @@ func (d *DataService) getTreatmentAndMetadataFromCurrentRow(rows *sql.Rows) (*co
 
 	if pharmacyId.Valid || prescriptionId.Valid || erxSentDate.Valid {
 		treatment.ERx = &common.ERxData{}
+	}
+
+	if treatmentPlanId.Valid {
+		treatment.TreatmentPlanId = common.NewObjectId(treatmentPlanId.Int64)
+	}
+
+	if patientVisitId.Valid {
+		treatment.PatientVisitId = common.NewObjectId(patientVisitId.Int64)
 	}
 
 	if pharmacyId.Valid {
@@ -1134,17 +1141,12 @@ func (d *DataService) getTreatmentAndMetadataFromCurrentRow(rows *sql.Rows) (*co
 
 	}
 
-	treatment.Doctor, err = d.GetDoctorFromId(treatment.DoctorId)
+	treatment.Doctor, err = d.GetDoctorFromId(treatment.DoctorId.Int64())
 	if err != nil {
 		return nil, err
 	}
 
-	treatment.Patient, err = d.GetPatientFromId(treatment.PatientId)
-	if err != nil {
-		return nil, err
-	}
-
-	treatment.Patient, err = d.GetPatientFromId(treatment.PatientId)
+	treatment.Patient, err = d.GetPatientFromId(treatment.PatientId.Int64())
 	if err != nil {
 		return nil, err
 	}

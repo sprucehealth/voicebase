@@ -2,6 +2,7 @@ package apiservice
 
 import (
 	"carefront/api"
+	"carefront/common"
 	thriftapi "carefront/thrift/api"
 	"net/http"
 
@@ -14,8 +15,8 @@ type DoctorAuthenticationHandler struct {
 }
 
 type DoctorAuthenticationResponse struct {
-	Token    string `json:"token"`
-	DoctorId int64  `json:"doctorId,string"`
+	Token  string         `json:"token,omitempty"`
+	Doctor *common.Doctor `json:"doctor,omitempty"`
 }
 
 func (d *DoctorAuthenticationHandler) NonAuthenticated() bool {
@@ -54,12 +55,13 @@ func (d *DoctorAuthenticationHandler) ServeHTTP(w http.ResponseWriter, r *http.R
 			return
 		}
 	} else {
-		doctorId, err := d.DataApi.GetDoctorIdFromAccountId(res.AccountId)
+		doctor, err := d.DataApi.GetDoctorFromAccountId(res.AccountId)
 		if err != nil {
 			WriteDeveloperError(w, http.StatusInternalServerError, "Unable to get doctor id from account id "+err.Error())
 			return
 		}
-		WriteJSONToHTTPResponseWriter(w, http.StatusOK, DoctorAuthenticationResponse{Token: res.Token, DoctorId: doctorId})
+
+		WriteJSONToHTTPResponseWriter(w, http.StatusOK, DoctorAuthenticationResponse{Token: res.Token, Doctor: doctor})
 	}
 
 }

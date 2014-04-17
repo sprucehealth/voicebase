@@ -63,4 +63,3 @@ create table dntf_mapping (
 	foreign key (unlinked_dntf_treatment_id) references unlinked_dntf_treatment(id),
 	primary key(id)
 ) character set utf8;
-

@@ -23,7 +23,7 @@ type Treatment struct {
 	DispenseUnitDescription   string                   `json:"dispense_unit_description,omitempty"`
 	NumberRefills             int64                    `json:"refills,string,omitempty"`
 	SubstitutionsAllowed      bool                     `json:"substitutions_allowed,omitempty"`
-	DaysSupply                int64                    `json:"days_supply,string,omitempty"`
+	DaysSupply                *ObjectId                `json:"days_supply,omitempty"`
 	PharmacyNotes             string                   `json:"pharmacy_notes,omitempty"`
 	PatientInstructions       string                   `json:"patient_instructions,omitempty"`
 	CreationDate              *time.Time               `json:"creation_date,omitempty"`
@@ -31,10 +31,10 @@ type Treatment struct {
 	OTC                       bool                     `json:"otc,omitempty"`
 	IsControlledSubstance     bool                     `json:"-"`
 	SupplementalInstructions  []*DoctorInstructionItem `json:"supplemental_instructions,omitempty"`
-	DoctorId                  int64                    `json:"-"`
+	DoctorId                  *ObjectId                `json:"-"`
 	Doctor                    *Doctor                  `json:"doctor,omitempty"`
 	Patient                   *Patient                 `json:"patient,omitempty"`
-	PatientId                 int64                    `json:"-,omitempty"`
+	PatientId                 *ObjectId                `json:"-,omitempty"`
 	OriginatingTreatmentId    int64                    `json:"-"`
 	ERx                       *ERxData                 `json:"erx,omitempty"`
 }
@@ -78,7 +78,7 @@ func (t *Treatment) Equals(other *Treatment) bool {
 		t.DispenseUnitId.Int64() == other.DispenseUnitId.Int64() &&
 		t.NumberRefills == other.NumberRefills &&
 		t.SubstitutionsAllowed == other.SubstitutionsAllowed &&
-		t.DaysSupply == other.DaysSupply &&
+		t.DaysSupply.Int64() == other.DaysSupply.Int64() &&
 		t.PatientInstructions == other.PatientInstructions &&
 		t.ERx.PharmacyLocalId.Int64() == other.ERx.PharmacyLocalId.Int64()
 }

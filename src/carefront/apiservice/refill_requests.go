@@ -10,6 +10,7 @@ import (
 	"net/http"
 	"sort"
 	"strconv"
+	"strings"
 
 	"github.com/gorilla/schema"
 )
@@ -125,6 +126,8 @@ func (d *DoctorRefillRequestHandler) resolveRefillRequest(w http.ResponseWriter,
 			return
 		}
 
+		trimSpacesFromRefillRequest(refillRequest)
+
 		// Send the approve refill request to dosespot
 		prescriptionId, err := d.ErxApi.ApproveRefillRequest(doctor.DoseSpotClinicianId, refillRequest.RxRequestQueueItemId, requestData.ApprovedRefillAmount, requestData.Comments)
 		if err != nil {
@@ -139,6 +142,8 @@ func (d *DoctorRefillRequestHandler) resolveRefillRequest(w http.ResponseWriter,
 		}
 
 	case refill_request_status_deny:
+
+		trimSpacesFromRefillRequest(refillRequest)
 
 		// Ensure that the denial reason is one of the possible denial reasons that the user could have
 		denialReasons, err := d.DataApi.GetRefillRequestDenialReasons()
@@ -317,8 +322,8 @@ func (d *DoctorRefillRequestHandler) addStatusEvent(originatingTreatmentFound bo
 }
 
 func (d *DoctorRefillRequestHandler) addTreatmentInEventOfDNTF(originatingTreatmentFound bool, treatment *common.Treatment, doctorId, patientId, refillRequestId int64) error {
-	treatment.PatientId = patientId
-	treatment.DoctorId = doctorId
+	treatment.PatientId = common.NewObjectId(patientId)
+	treatment.DoctorId = common.NewObjectId(doctorId)
 	if originatingTreatmentFound {
 		return d.DataApi.AddTreatmentToTreatmentPlanInEventOfDNTF(treatment, refillRequestId)
 	}
@@ -362,4 +367,8 @@ func (d *DoctorRefillRequestHandler) getRefillRequest(w http.ResponseWriter, r *
 	}
 
 	WriteJSONToHTTPResponseWriter(w, http.StatusOK, &DoctorRefillRequestResponse{RefillRequest: refillRequest})
+}
+
+func trimSpacesFromRefillRequest(refillRequest *common.RefillRequestItem) {
+	refillRequest.Comments = strings.TrimSpace(refillRequest.Comments)
 }

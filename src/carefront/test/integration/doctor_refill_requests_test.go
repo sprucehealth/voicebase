@@ -87,7 +87,7 @@ func TestNewRefillRequestForExistingPatientAndExistingTreatment(t *testing.T) {
 		DispenseUnitId:          common.NewObjectId(19),
 		NumberRefills:           5,
 		SubstitutionsAllowed:    false,
-		DaysSupply:              10,
+		DaysSupply:              common.NewObjectId(10),
 		PatientInstructions:     "Take once daily",
 		OTC:                     false,
 		ERx: &common.ERxData{
@@ -157,7 +157,7 @@ func TestNewRefillRequestForExistingPatientAndExistingTreatment(t *testing.T) {
 			DispenseUnitDescription: "Tablet",
 			NumberRefills:           5,
 			SubstitutionsAllowed:    false,
-			DaysSupply:              10,
+			DaysSupply:              common.NewObjectId(10),
 			PatientInstructions:     "Take once daily",
 			OTC:                     false,
 			ERx: &common.ERxData{
@@ -339,7 +339,7 @@ func TestApproveRefillRequestAndSuccessfulSendToPharmacy(t *testing.T) {
 			DispenseUnitDescription: "Tablet",
 			NumberRefills:           5,
 			SubstitutionsAllowed:    false,
-			DaysSupply:              10,
+			DaysSupply:              common.NewObjectId(10),
 			PatientInstructions:     "Take once daily",
 			OTC:                     false,
 			ERx: &common.ERxData{
@@ -578,7 +578,7 @@ func TestApproveRefillRequestAndErrorSendingToPharmacy(t *testing.T) {
 			DispenseUnitDescription: "Tablet",
 			NumberRefills:           5,
 			SubstitutionsAllowed:    false,
-			DaysSupply:              10,
+			DaysSupply:              common.NewObjectId(10),
 			PatientInstructions:     "Take once daily",
 
 			OTC: false,
@@ -879,7 +879,7 @@ func TestDenyRefillRequestAndSuccessfulDelete(t *testing.T) {
 			DispenseUnitDescription: "Tablet",
 			NumberRefills:           5,
 			SubstitutionsAllowed:    false,
-			DaysSupply:              10,
+			DaysSupply:              common.NewObjectId(10),
 			PatientInstructions:     "Take once daily",
 			OTC:                     false,
 			ERx: &common.ERxData{
@@ -1119,7 +1119,7 @@ func TestDenyRefillRequestWithDNTFWithoutTreatment(t *testing.T) {
 			DispenseUnitDescription: "Tablet",
 			NumberRefills:           5,
 			SubstitutionsAllowed:    false,
-			DaysSupply:              10,
+			DaysSupply:              common.NewObjectId(10),
 			PatientInstructions:     "Take once daily",
 			OTC:                     false,
 			ERx: &common.ERxData{
@@ -1219,8 +1219,7 @@ func TestDenyRefillRequestWithDNTFWithoutTreatment(t *testing.T) {
 
 }
 
-func setUpDeniedRefillRequestWithDNTF(t *testing.T, testData TestData, endErxStatus string, toAddTemplatedTreatment bool) *common.Treatment {
-
+func setUpDeniedRefillRequestWithDNTF(t *testing.T, testData TestData, endErxStatus common.StatusEvent, toAddTemplatedTreatment bool) *common.Treatment {
 	// create doctor with clinicianId specicified
 	doctor := createDoctorWithClinicianId(testData, t)
 
@@ -1348,7 +1347,7 @@ func setUpDeniedRefillRequestWithDNTF(t *testing.T, testData TestData, endErxSta
 			DispenseUnitDescription: "Tablet",
 			NumberRefills:           5,
 			SubstitutionsAllowed:    false,
-			DaysSupply:              10,
+			DaysSupply:              common.NewObjectId(10),
 			PatientInstructions:     "Take once daily",
 			OTC:                     false,
 			ERx: &common.ERxData{
@@ -1369,10 +1368,7 @@ func setUpDeniedRefillRequestWithDNTF(t *testing.T, testData TestData, endErxSta
 		PrescriptionIdsToReturn:      []int64{prescriptionIdForTreatment},
 		SelectedMedicationToReturn:   &common.Treatment{},
 		PrescriptionIdToPrescriptionStatuses: map[int64][]common.StatusEvent{
-			prescriptionIdForTreatment: []common.StatusEvent{common.StatusEvent{
-				Status: endErxStatus,
-			},
-			},
+			prescriptionIdForTreatment: []common.StatusEvent{endErxStatus},
 		},
 	}
 
@@ -1527,7 +1523,7 @@ func TestDenyRefillRequestWithDNTFWithUnlinkedTreatment(t *testing.T) {
 	testData := SetupIntegrationTest(t)
 	defer TearDownIntegrationTest(t, testData)
 
-	unlinkedTreatment := setUpDeniedRefillRequestWithDNTF(t, testData, api.ERX_STATUS_SENT, false)
+	unlinkedTreatment := setUpDeniedRefillRequestWithDNTF(t, testData, common.StatusEvent{Status: api.ERX_STATUS_SENT}, false)
 
 	if len(unlinkedTreatment.ERx.RxHistory) != 3 {
 		t.Fatalf("Expcted 3 events from rx history of unlinked treatment instead got %d", len(unlinkedTreatment.ERx.RxHistory))
@@ -1548,7 +1544,7 @@ func TestDenyRefillRequestWithDNTFWithUnlinkedTreatmentFromTemplatedTreatment(t 
 	testData := SetupIntegrationTest(t)
 	defer TearDownIntegrationTest(t, testData)
 
-	unlinkedTreatment := setUpDeniedRefillRequestWithDNTF(t, testData, api.ERX_STATUS_SENT, true)
+	unlinkedTreatment := setUpDeniedRefillRequestWithDNTF(t, testData, common.StatusEvent{Status: api.ERX_STATUS_SENT}, true)
 
 	if len(unlinkedTreatment.ERx.RxHistory) != 3 {
 		t.Fatalf("Expcted 3 events from rx history of unlinked treatment instead got %d", len(unlinkedTreatment.ERx.RxHistory))
@@ -1569,15 +1565,21 @@ func TestDenyRefillRequestWithDNTFUnlinkedTreatmentErrorSending(t *testing.T) {
 	testData := SetupIntegrationTest(t)
 	defer TearDownIntegrationTest(t, testData)
 
-	unlinkedTreatment := setUpDeniedRefillRequestWithDNTF(t, testData, api.ERX_STATUS_ERROR, false)
+	errorMessage := "this is a test error message"
+	unlinkedTreatment := setUpDeniedRefillRequestWithDNTF(t, testData, common.StatusEvent{Status: api.ERX_STATUS_ERROR, StatusDetails: errorMessage}, false)
 
 	if len(unlinkedTreatment.ERx.RxHistory) != 3 {
 		t.Fatalf("Expcted 3 events from rx history of unlinked treatment instead got %d", len(unlinkedTreatment.ERx.RxHistory))
 	}
 
 	for _, unlinkedTreatmentStatusEvent := range unlinkedTreatment.ERx.RxHistory {
-		if unlinkedTreatmentStatusEvent.InternalStatus == api.STATUS_ACTIVE && unlinkedTreatmentStatusEvent.Status != api.ERX_STATUS_ERROR {
-			t.Fatalf("Expected status %s for top level status of unlinked treatment but got %s", api.ERX_STATUS_SENT, unlinkedTreatmentStatusEvent.Status)
+		if unlinkedTreatmentStatusEvent.InternalStatus == api.STATUS_ACTIVE {
+			if unlinkedTreatmentStatusEvent.Status != api.ERX_STATUS_ERROR {
+				t.Fatalf("Expected status %s for top level status of unlinked treatment but got %s", api.ERX_STATUS_SENT, unlinkedTreatmentStatusEvent.Status)
+			}
+			if unlinkedTreatmentStatusEvent.StatusDetails != errorMessage {
+				t.Fatalf("Expected the error message for the status to be '%s' but it was '%s' instead", errorMessage, unlinkedTreatmentStatusEvent.StatusDetails)
+			}
 		}
 	}
 
@@ -1613,10 +1615,28 @@ func TestDenyRefillRequestWithDNTFUnlinkedTreatmentErrorSending(t *testing.T) {
 		t.Fatalf("Unable to successfully resolve error pertaining to unlinked dntf treatment: %+v", err)
 	}
 
+	pendingItems, err = testData.DataApi.GetPendingItemsInDoctorQueue(unlinkedTreatment.Doctor.DoctorId.Int64())
+	if err != nil {
+		t.Fatal("Unable to get doctor queue")
+	}
+
+	if len(pendingItems) != 0 {
+		t.Fatalf("Expected no items in the pending tab instead got %d", len(pendingItems))
+	}
+
+	completedItems, err := testData.DataApi.GetCompletedItemsInDoctorQueue(unlinkedTreatment.Doctor.DoctorId.Int64())
+	if err != nil {
+		t.Fatal("Unable to get completed items for doctor queue")
+	}
+
+	if len(completedItems) != 2 {
+		t.Fatalf("Expected 2 items in the completed tab instead got %d", len(completedItems))
+	}
+
 	CheckSuccessfulStatusCode(resp, "Unable to successfully resolve error pertaining to unlinked dntf treatment", t)
 }
 
-func setUpDeniedRefillRequestWithDNTFForLinkedTreatment(t *testing.T, testData TestData, endErxStatus string, toAddTemplatedTreatment bool) *common.Treatment {
+func setUpDeniedRefillRequestWithDNTFForLinkedTreatment(t *testing.T, testData TestData, endErxStatus common.StatusEvent, toAddTemplatedTreatment bool) *common.Treatment {
 	// create doctor with clinicianId specicified
 	doctor := createDoctorWithClinicianId(testData, t)
 
@@ -1722,7 +1742,7 @@ func setUpDeniedRefillRequestWithDNTFForLinkedTreatment(t *testing.T, testData T
 		DispenseUnitId:          common.NewObjectId(19),
 		NumberRefills:           5,
 		SubstitutionsAllowed:    false,
-		DaysSupply:              10,
+		DaysSupply:              common.NewObjectId(10),
 		PatientInstructions:     "Take once daily",
 		OTC:                     false,
 		ERx: &common.ERxData{
@@ -1792,7 +1812,7 @@ func setUpDeniedRefillRequestWithDNTFForLinkedTreatment(t *testing.T, testData T
 			DispenseUnitDescription: "Tablet",
 			NumberRefills:           5,
 			SubstitutionsAllowed:    false,
-			DaysSupply:              10,
+			DaysSupply:              common.NewObjectId(10),
 			PatientInstructions:     "Take once daily",
 			OTC:                     false,
 			ERx: &common.ERxData{
@@ -1811,10 +1831,7 @@ func setUpDeniedRefillRequestWithDNTFForLinkedTreatment(t *testing.T, testData T
 		RefillRxRequestQueueToReturn: []*common.RefillRequestItem{refillRequestItem},
 		PrescriptionIdsToReturn:      []int64{prescriptionIdForTreatment},
 		PrescriptionIdToPrescriptionStatuses: map[int64][]common.StatusEvent{
-			prescriptionIdForTreatment: []common.StatusEvent{common.StatusEvent{
-				Status: endErxStatus,
-			},
-			},
+			prescriptionIdForTreatment: []common.StatusEvent{endErxStatus},
 		},
 		SelectedMedicationToReturn: &common.Treatment{},
 	}
@@ -1987,7 +2004,7 @@ func TestDenyRefillRequestWithDNTFWithLinkedTreatmentSuccessfulSend(t *testing.T
 	testData := SetupIntegrationTest(t)
 	defer TearDownIntegrationTest(t, testData)
 
-	linkedTreatment := setUpDeniedRefillRequestWithDNTFForLinkedTreatment(t, testData, api.ERX_STATUS_SENT, false)
+	linkedTreatment := setUpDeniedRefillRequestWithDNTFForLinkedTreatment(t, testData, common.StatusEvent{Status: api.ERX_STATUS_SENT}, false)
 
 	if len(linkedTreatment.ERx.RxHistory) != 3 {
 		t.Fatalf("Expected 3 events for linked treatment instead got %d", len(linkedTreatment.ERx.RxHistory))
@@ -2007,7 +2024,7 @@ func TestDenyRefillRequestWithDNTFWithLinkedTreatmentSuccessfulSendAddingFromTem
 	testData := SetupIntegrationTest(t)
 	defer TearDownIntegrationTest(t, testData)
 
-	linkedTreatment := setUpDeniedRefillRequestWithDNTFForLinkedTreatment(t, testData, api.ERX_STATUS_SENT, true)
+	linkedTreatment := setUpDeniedRefillRequestWithDNTFForLinkedTreatment(t, testData, common.StatusEvent{Status: api.ERX_STATUS_SENT}, true)
 
 	if len(linkedTreatment.ERx.RxHistory) != 3 {
 		t.Fatalf("Expected 3 events for linked treatment instead got %d", len(linkedTreatment.ERx.RxHistory))
@@ -2027,15 +2044,22 @@ func TestDenyRefillRequestWithDNTFWithLinkedTreatmentErrorSend(t *testing.T) {
 	testData := SetupIntegrationTest(t)
 	defer TearDownIntegrationTest(t, testData)
 
-	linkedTreatment := setUpDeniedRefillRequestWithDNTFForLinkedTreatment(t, testData, api.ERX_STATUS_ERROR, false)
+	errorMessage := "this is a test error message"
+	linkedTreatment := setUpDeniedRefillRequestWithDNTFForLinkedTreatment(t, testData, common.StatusEvent{Status: api.ERX_STATUS_ERROR, StatusDetails: errorMessage}, false)
 
 	if len(linkedTreatment.ERx.RxHistory) != 3 {
 		t.Fatalf("Expected 3 events for linked treatment instead got %d", len(linkedTreatment.ERx.RxHistory))
 	}
 
 	for _, linkedTreatmentStatusEvent := range linkedTreatment.ERx.RxHistory {
-		if linkedTreatmentStatusEvent.InternalStatus == api.STATUS_ACTIVE && linkedTreatmentStatusEvent.Status != api.ERX_STATUS_ERROR {
-			t.Fatalf("Expected the latest event for the linked treatment to be %s instead it was %s", api.ERX_STATUS_ERROR, linkedTreatmentStatusEvent.Status)
+		if linkedTreatmentStatusEvent.InternalStatus == api.STATUS_ACTIVE {
+			if linkedTreatmentStatusEvent.Status != api.ERX_STATUS_ERROR {
+				t.Fatalf("Expected the latest event for the linked treatment to be %s instead it was %s", api.ERX_STATUS_ERROR, linkedTreatmentStatusEvent.Status)
+			}
+
+			if linkedTreatmentStatusEvent.StatusDetails != errorMessage {
+				t.Fatalf("Expected the status message to be '%s instead it was '%s'", errorMessage, linkedTreatmentStatusEvent.StatusDetails)
+			}
 		}
 	}
 
@@ -2142,7 +2166,7 @@ func TestCheckingStatusOfMultipleRefillRequestsAtOnce(t *testing.T) {
 				DispenseUnitDescription: "Tablet",
 				NumberRefills:           5,
 				SubstitutionsAllowed:    false,
-				DaysSupply:              10,
+				DaysSupply:              common.NewObjectId(10),
 				PatientInstructions:     "Take once daily",
 				OTC:                     false,
 				ERx: &common.ERxData{
@@ -2421,7 +2445,7 @@ func TestRefillRequestComingFromDifferentPharmacyThanDispensedPrescription(t *te
 		DispenseUnitId:          common.NewObjectId(19),
 		NumberRefills:           5,
 		SubstitutionsAllowed:    false,
-		DaysSupply:              10,
+		DaysSupply:              common.NewObjectId(10),
 		PatientInstructions:     "Take once daily",
 		OTC:                     false,
 		ERx: &common.ERxData{
@@ -2491,7 +2515,7 @@ func TestRefillRequestComingFromDifferentPharmacyThanDispensedPrescription(t *te
 			DispenseUnitDescription: "Tablet",
 			NumberRefills:           5,
 			SubstitutionsAllowed:    false,
-			DaysSupply:              10,
+			DaysSupply:              common.NewObjectId(10),
 			PatientInstructions:     "Take once daily",
 			OTC:                     false,
 			ERx: &common.ERxData{
@@ -2627,7 +2651,7 @@ func TestNewRefillRequestWithUnlinkedTreatmentAndLinkedPatient(t *testing.T) {
 			DispenseUnitDescription: "Tablet",
 			NumberRefills:           5,
 			SubstitutionsAllowed:    false,
-			DaysSupply:              10,
+			DaysSupply:              common.NewObjectId(10),
 			PatientInstructions:     "Take once daily",
 			OTC:                     false,
 			ERx: &common.ERxData{
@@ -2649,7 +2673,7 @@ func TestNewRefillRequestWithUnlinkedTreatmentAndLinkedPatient(t *testing.T) {
 			DispenseUnitDescription: "Tablet",
 			NumberRefills:           5,
 			SubstitutionsAllowed:    false,
-			DaysSupply:              10,
+			DaysSupply:              common.NewObjectId(10),
 			PatientInstructions:     "Take once daily",
 			OTC:                     false,
 			ERx: &common.ERxData{
@@ -2789,7 +2813,7 @@ func TestNewRefillRequestWithUnlinkedTreatmentAndUnlinkedPatient(t *testing.T) {
 			DispenseUnitDescription: "Tablet",
 			NumberRefills:           5,
 			SubstitutionsAllowed:    false,
-			DaysSupply:              10,
+			DaysSupply:              common.NewObjectId(10),
 			PatientInstructions:     "Take once daily",
 			OTC:                     false,
 			ERx: &common.ERxData{
@@ -2813,7 +2837,7 @@ func TestNewRefillRequestWithUnlinkedTreatmentAndUnlinkedPatient(t *testing.T) {
 			DispenseUnitDescription: "Tablet",
 			NumberRefills:           5,
 			SubstitutionsAllowed:    false,
-			DaysSupply:              10,
+			DaysSupply:              common.NewObjectId(10),
 			PatientInstructions:     "Take once daily",
 			OTC:                     false,
 			ERx: &common.ERxData{
@@ -2848,6 +2872,7 @@ func TestNewRefillRequestWithUnlinkedTreatmentAndUnlinkedPatient(t *testing.T) {
 		City:         "Beverly Hills",
 		State:        "CA",
 		ERxPatientId: common.NewObjectId(12345),
+		Pharmacy:     pharmacyToReturn,
 	}
 
 	stubErxAPI := &erx.StubErxService{
@@ -2867,6 +2892,15 @@ func TestNewRefillRequestWithUnlinkedTreatmentAndUnlinkedPatient(t *testing.T) {
 
 	if unlinkedPatient.Status != api.PATIENT_UNLINKED {
 		t.Fatal("Patient was expected to be unlinked but it was not")
+	}
+
+	// ensure that the patient has a preferred pharmacy
+	if unlinkedPatient.Pharmacy == nil {
+		t.Fatalf("Expected patient to have a preferred pharmacy instead it has none")
+	}
+
+	if unlinkedPatient.Pharmacy.SourceId != "1234" {
+		t.Fatalf("Expected patients preferred pharmacy to have id %s instead it had id %s", "1234", unlinkedPatient.Pharmacy.SourceId)
 	}
 
 	// There should be an unlinked pharmacy treatment in the unlinked_requested_treatment db

@@ -3,6 +3,7 @@ package apiservice
 import (
 	"bytes"
 	"carefront/api"
+	"carefront/common"
 	"carefront/libs/golog"
 	"carefront/libs/pharmacy"
 	"encoding/json"
@@ -509,30 +510,28 @@ func (c *CreateDemoPatientVisitHandler) ServeHTTP(w http.ResponseWriter, r *http
 	// ********** ASSIGN PHARMACY TO PATIENT **********
 
 	pharmacyDetails := &pharmacy.PharmacyData{
-		SourceId:     "CoQBdgAAAIU6I2DXvwyyql2HTtAdaMrZ_AEgvKsD1O_V4mePQw3NNgntSwDlCKoCdd47DZdZbPOMEXMWSPyno1qekMr0A0ghV2rWGpVbVjLeM-ehKZH1gxMtTVlon47ktbVi2uUKCyuzpZh5hI7gjQChUPkkGoxnpKoLeAcCnzEeC5m4YGRFEhALIHQkJ_E13vByzK_t9xjlGhSDLIpV9QxTHgTwoESfAKHkMIzuxQ",
+		SourceId:     "47731",
 		AddressLine1: "116 New Montgomery St",
-		Name:         "Walgreens Pharmacies",
+		Name:         "CA pharmacy store 10.6",
 		City:         "San Francisco",
 		State:        "CA",
-		Source:       pharmacy.PHARMACY_SOURCE_GOOGLE,
+		Postal:       "92804",
+		Source:       pharmacy.PHARMACY_SOURCE_SURESCRIPTS,
 	}
 
-	jsonData, err := json.Marshal(pharmacyDetails)
-	if err != nil {
-		WriteDeveloperError(w, http.StatusInternalServerError, "Unable to marshal pharmacy details")
-	}
-
-	updatePatientPharmacyRequest, err := http.NewRequest("POST", updatePatientPharmacyUrl, bytes.NewReader(jsonData))
-	updatePatientPharmacyRequest.Header.Set("Content-Type", "application/json")
-	updatePatientPharmacyRequest.Header.Set("Authorization", "token "+signupResponse.Token)
-	if err != nil {
-		WriteDeveloperError(w, http.StatusInternalServerError, "Unable to create new http request: "+err.Error())
+	if err := c.DataApi.UpdatePatientPharmacy(signupResponse.Patient.PatientId.Int64(), pharmacyDetails); err != nil {
+		WriteDeveloperError(w, http.StatusInternalServerError, "Unable to update patient pharmacy: "+err.Error())
 		return
 	}
-
-	_, err = http.DefaultClient.Do(updatePatientPharmacyRequest)
-	if err != nil {
-		WriteDeveloperError(w, http.StatusInternalServerError, "Unable to update pharmacy for patient: "+err.Error())
+	// add address for patient
+	if err := c.DataApi.UpdateDefaultAddressForPatient(signupResponse.Patient.PatientId.Int64(), &common.Address{
+		AddressLine1: "12345 Main Street",
+		AddressLine2: "Apt 1112",
+		City:         "San Francisco",
+		State:        "CA",
+		ZipCode:      "94115",
+	}); err != nil {
+		WriteDeveloperError(w, http.StatusInternalServerError, "Unable to add address for patient: "+err.Error())
 		return
 	}
 

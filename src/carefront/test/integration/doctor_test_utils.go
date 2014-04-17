@@ -6,8 +6,10 @@ import (
 	"fmt"
 	"io/ioutil"
 	"net/http/httptest"
+	"net/url"
 	"os"
 	"strconv"
+	"strings"
 	"testing"
 	"time"
 
@@ -23,16 +25,24 @@ func SignupRandomTestDoctor(t *testing.T, dataApi api.DataAPI, authApi thriftapi
 	ts := httptest.NewServer(authHandler)
 	defer ts.Close()
 
-	requestBody := bytes.NewBufferString("first_name=Test&last_name=Test&email=")
 	email = strconv.FormatInt(time.Now().Unix(), 10) + "@example.com"
 	password = "12345"
-	requestBody.WriteString(email)
-	requestBody.WriteString("&password=")
-	requestBody.WriteString(password)
-	requestBody.WriteString("&dob=11/08/1987&gender=male")
-	requestBody.WriteString("&clinician_id=")
-	requestBody.WriteString(os.Getenv("DOSESPOT_USER_ID"))
-	res, err := authPost(ts.URL, "application/x-www-form-urlencoded", requestBody, 0)
+	params := &url.Values{}
+	params.Set("first_name", "Test")
+	params.Set("last_name", "Test")
+	params.Set("email", email)
+	params.Set("password", password)
+	params.Set("dob", "11/08/1987")
+	params.Set("gender", "male")
+	params.Set("clinician_id", os.Getenv("DOSESPOT_USER_ID"))
+	params.Set("phone", "123451616")
+	params.Set("address_line_1", "12345 Main street")
+	params.Set("address_line_2", "apt 11415")
+	params.Set("city", "san francisco")
+	params.Set("state", "ca")
+	params.Set("zip_code", "94115")
+
+	res, err := authPost(ts.URL, "application/x-www-form-urlencoded", strings.NewReader(params.Encode()), 0)
 	if err != nil {
 		t.Fatal("Unable to make post request for registering patient: " + err.Error())
 	}

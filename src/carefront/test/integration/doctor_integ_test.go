@@ -62,7 +62,7 @@ func TestDoctorAuthentication(t *testing.T) {
 		t.Fatal("Unable to parse response from patient authenticated")
 	}
 
-	if authenticatedDoctorResponse.Token == "" || authenticatedDoctorResponse.DoctorId == 0 {
+	if authenticatedDoctorResponse.Token == "" || authenticatedDoctorResponse.Doctor == nil {
 		t.Fatal("Doctor not authenticated as expected")
 	}
 }

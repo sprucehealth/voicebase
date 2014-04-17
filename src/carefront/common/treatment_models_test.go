@@ -18,7 +18,7 @@ func TestTreatmentEquals(t *testing.T) {
 		DispenseUnitId:       NewObjectId(12),
 		NumberRefills:        1,
 		SubstitutionsAllowed: false,
-		DaysSupply:           5,
+		DaysSupply:           NewObjectId(5),
 		ERx: &ERxData{
 			PrescriptionId:     NewObjectId(20),
 			ErxMedicationId:    NewObjectId(25),
@@ -40,7 +40,7 @@ func TestTreatmentEquals(t *testing.T) {
 		DispenseUnitId:       NewObjectId(12),
 		NumberRefills:        1,
 		SubstitutionsAllowed: false,
-		DaysSupply:           5,
+		DaysSupply:           NewObjectId(5),
 		ERx: &ERxData{
 			PrescriptionId:     NewObjectId(20),
 			ErxMedicationId:    NewObjectId(25),
@@ -67,7 +67,7 @@ func TestTreatmentEquals(t *testing.T) {
 		DispenseUnitId:       NewObjectId(12),
 		NumberRefills:        1,
 		SubstitutionsAllowed: false,
-		DaysSupply:           5,
+		DaysSupply:           NewObjectId(5),
 		ERx: &ERxData{
 			PrescriptionId:     NewObjectId(21),
 			ErxMedicationId:    NewObjectId(25),
@@ -93,7 +93,7 @@ func TestTreatmentEquals(t *testing.T) {
 		DispenseUnitId:       NewObjectId(12),
 		NumberRefills:        1,
 		SubstitutionsAllowed: false,
-		DaysSupply:           5,
+		DaysSupply:           NewObjectId(5),
 		ERx: &ERxData{
 			PrescriptionId:     NewObjectId(20),
 			ErxMedicationId:    NewObjectId(26),
@@ -119,7 +119,7 @@ func TestTreatmentEquals(t *testing.T) {
 		DispenseUnitId:       NewObjectId(12),
 		NumberRefills:        1,
 		SubstitutionsAllowed: false,
-		DaysSupply:           5,
+		DaysSupply:           NewObjectId(5),
 		ERx: &ERxData{
 			PrescriptionId:     NewObjectId(20),
 			ErxMedicationId:    NewObjectId(25),
@@ -145,7 +145,7 @@ func TestTreatmentEquals(t *testing.T) {
 		DispenseUnitId:       NewObjectId(12),
 		NumberRefills:        1,
 		SubstitutionsAllowed: false,
-		DaysSupply:           5,
+		DaysSupply:           NewObjectId(5),
 		ERx: &ERxData{
 			PrescriptionId:     NewObjectId(20),
 			ErxMedicationId:    NewObjectId(25),
@@ -171,7 +171,7 @@ func TestTreatmentEquals(t *testing.T) {
 		DispenseUnitId:       NewObjectId(12),
 		NumberRefills:        1,
 		SubstitutionsAllowed: false,
-		DaysSupply:           5,
+		DaysSupply:           NewObjectId(5),
 		ERx: &ERxData{
 			PrescriptionId:     NewObjectId(20),
 			ErxMedicationId:    NewObjectId(25),

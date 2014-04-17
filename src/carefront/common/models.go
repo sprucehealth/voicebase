@@ -58,6 +58,7 @@ type Doctor struct {
 	CellPhone           string    `json:"phone"`
 	ThumbnailUrl        string    `json:"thumbnail_url,omitempty"`
 	DoseSpotClinicianId int64     `json:"-"`
+	DoctorAddress       *Address  `json:"address,omitempty"`
 }
 
 type PatientVisit struct {
