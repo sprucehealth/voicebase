@@ -704,18 +704,18 @@ func (d *DoseSpotService) GetPatientDetails(erxPatientId int64) (*common.Patient
 		})
 	}
 
-	if len(response.PatientUpdates[0].Pharmaces) > 0 {
+	if len(response.PatientUpdates[0].Pharmacies) > 0 {
 		newPatient.Pharmacy = &pharmacySearch.PharmacyData{
 			Source:       pharmacySearch.PHARMACY_SOURCE_SURESCRIPTS,
-			SourceId:     strconv.FormatInt(response.PatientUpdates[0].Pharmaces[0].PharmacyId, 10),
-			Name:         response.PatientUpdates[0].Pharmaces[0].StoreName,
-			AddressLine1: response.PatientUpdates[0].Pharmaces[0].Address1,
-			AddressLine2: response.PatientUpdates[0].Pharmaces[0].Address2,
-			City:         response.PatientUpdates[0].Pharmaces[0].City,
-			State:        response.PatientUpdates[0].Pharmaces[0].State,
-			Postal:       response.PatientUpdates[0].Pharmaces[0].ZipCode,
-			Phone:        response.PatientUpdates[0].Pharmaces[0].PrimaryPhone,
-			Fax:          response.PatientUpdates[0].Pharmaces[0].PrimaryFax,
+			SourceId:     strconv.FormatInt(response.PatientUpdates[0].Pharmacies[0].PharmacyId, 10),
+			Name:         response.PatientUpdates[0].Pharmacies[0].StoreName,
+			AddressLine1: response.PatientUpdates[0].Pharmacies[0].Address1,
+			AddressLine2: response.PatientUpdates[0].Pharmacies[0].Address2,
+			City:         response.PatientUpdates[0].Pharmacies[0].City,
+			State:        response.PatientUpdates[0].Pharmacies[0].State,
+			Postal:       response.PatientUpdates[0].Pharmacies[0].ZipCode,
+			Phone:        response.PatientUpdates[0].Pharmacies[0].PrimaryPhone,
+			Fax:          response.PatientUpdates[0].Pharmacies[0].PrimaryFax,
 		}
 	}
 
