@@ -41,7 +41,6 @@ func (s *StubErxService) StartPrescribingPatient(clinicianId int64, Patient *com
 	if s.PharmacyToSendPrescriptionTo != "" && s.PharmacyToSendPrescriptionTo != pharmacySourceId {
 		return fmt.Errorf("Expected to send treatment to pharmacy with sourceId %s instead it was attempted to be sent to pharmacy with id %s", s.PharmacyToSendPrescriptionTo, pharmacySourceId)
 	}
-	fmt.Println("Starting to prescribe patient")
 	// walk through the treatments and assign them each a prescription id
 	// assumption here is that there are as many prescription ids to return as there are treatments
 	Patient.ERxPatientId = encoding.NewObjectId(s.PatientErxId)
@@ -56,7 +55,6 @@ func (s *StubErxService) StartPrescribingPatient(clinicianId int64, Patient *com
 
 func (s *StubErxService) SendMultiplePrescriptions(clinicianId int64, Patient *common.Patient, Treatments []*common.Treatment) ([]int64, error) {
 	// nothing to do here given that the act of sending a prescription successfully does not change the state of the system
-	fmt.Println("Sending multiple prescriptions")
 	return nil, nil
 }
 
@@ -67,7 +65,9 @@ func (s *StubErxService) SearchForPharmacies(clinicianId int64, city, state, zip
 func (s *StubErxService) GetPrescriptionStatus(clinicianId int64, prescriptionId int64) ([]*PrescriptionLog, error) {
 	prescriptionStatuses := s.PrescriptionIdToPrescriptionStatuses[prescriptionId]
 	prescriptionLogs := make([]*PrescriptionLog, 0)
+
 	for _, prescriptionStatus := range prescriptionStatuses {
+		fmt.Printf("%#v\n", prescriptionStatus)
 		prescriptionLogs = append(prescriptionLogs, &PrescriptionLog{
 			PrescriptionStatus: prescriptionStatus.Status,
 			LogTimestamp:       time.Now(),

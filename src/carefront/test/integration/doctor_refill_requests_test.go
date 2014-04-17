@@ -97,6 +97,7 @@ func TestNewRefillRequestForExistingPatientAndExistingTreatment(t *testing.T) {
 		},
 		PatientInstructions: "Take once daily",
 		OTC:                 false,
+
 		ERx: &common.ERxData{
 			PrescriptionId:     encoding.NewObjectId(5504),
 			PrescriptionStatus: "Requested",
@@ -1246,6 +1247,7 @@ func TestDenyRefillRequestWithDNTFWithoutTreatment(t *testing.T) {
 }
 
 func setUpDeniedRefillRequestWithDNTF(t *testing.T, testData TestData, endErxStatus common.StatusEvent, toAddTemplatedTreatment bool) *common.Treatment {
+
 	// create doctor with clinicianId specicified
 	doctor := createDoctorWithClinicianId(testData, t)
 

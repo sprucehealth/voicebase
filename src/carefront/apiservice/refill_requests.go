@@ -100,7 +100,6 @@ func (d *DoctorRefillRequestHandler) resolveRefillRequest(w http.ResponseWriter,
 		WriteDeveloperError(w, http.StatusInternalServerError, "Expected status events for refill requests but none found")
 		return
 	}
-
 	// Ensure that the refill request is in the Requested state for
 	// the user to work on it. If it's in the desired end state, then do nothing
 	if refillRequest.RxHistory[0].Status == actionToRefillRequestStateMapping[requestData.Action] {

@@ -69,7 +69,6 @@ type SmartyStreetsConfig struct {
 
 type Config struct {
 	*config.BaseConfig
-
 	ProxyProtocol            bool                 `long:"proxy_protocol" description:"Enable if behind a proxy that uses the PROXY protocol"`
 	ListenAddr               string               `short:"l" long:"listen" description:"Address and port on which to listen (e.g. 127.0.0.1:8080)"`
 	TLSListenAddr            string               `long:"tls_listen" description:"Address and port on which to listen (e.g. 127.0.0.1:8080)"`

@@ -269,11 +269,8 @@ func (d *DataService) GetRefillRequestsForPatient(patientId int64) ([]*common.Re
 	defer rows.Close()
 
 	refillRequests, err := d.getRefillRequestsFromRow(rows)
-	if err != nil {
-		return nil, err
-	}
 
-	return refillRequests, nil
+	return refillRequests, err
 }
 
 func (d *DataService) getRefillRequestsFromRow(rows *sql.Rows) ([]*common.RefillRequestItem, error) {
@@ -942,7 +939,6 @@ func (d *DataService) GetErxStatusEventsForDNTFTreatment(treatmentId int64) ([]c
 		statusEventItem.StatusDetails = statusDetails.String
 		statusEvents = append(statusEvents, statusEventItem)
 	}
-
 	return statusEvents, rows.Err()
 }
 
