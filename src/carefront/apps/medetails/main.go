@@ -75,8 +75,9 @@ func main() {
 		log.Fatal(err)
 	}
 
+	// This is left here to demonstrate how to obtain a refresh token
 	// fmt.Printf("%s\n", cli.AuthCodeURL("abc"))
-	// tok, err := cli.ExchangeToken("4/Ze4oHhADhzNvLp6j4_fPYvNE0y91.skBugwSQO6sYEnp6UAPFm0F-LlSbigI")
+	// tok, err := cli.ExchangeToken("...")
 	// if err != nil {
 	// 	log.Fatal(err)
 	// }
@@ -139,16 +140,25 @@ func main() {
 	for i := 1; i <= feed.ColCount; i++ {
 		if cells[2][i] != nil {
 			info := &common.DrugDetails{
-				Name:               cleanupText(cells[1][i].Cell.Content),
+				Name: cleanupText(cells[1][i].Cell.Content),
+				// Subtitle: TODO: The spreadsheet does not have a subtitle for the drug yet
 				Alternative:        cleanupText(cells[2][i].Cell.Content),
 				Description:        cleanupText(cells[sections["Description"][0]][i].Cell.Content),
 				Warnings:           getList(i, "Warnings"),
-				Precautions:        getList(i, "Precautions"),
 				HowToUse:           getList(i, "How to use"),
 				DoNots:             getList(i, "Do Not"),
 				MessageDoctorIf:    getList(i, "Message your doctor if"),
 				SeriousSideEffects: getList(i, "Serious side effects"),
 				CommonSideEffects:  getList(i, "Common side effects"),
+			}
+			for _, p := range getList(i, "Precautions") {
+				// TODO: The spreadsheet does not have snippet and details broken out for precautions yet
+				info.Precautions = append(info.Precautions,
+					common.DrugPrecation{
+						Snippet: "TODO",
+						Details: p,
+					},
+				)
 			}
 			if c := cells[sections["NDC"][0]][i]; c != nil {
 				info.NDC = cleanupText(c.Cell.Content)
@@ -161,8 +171,13 @@ func main() {
 			if conf.Debug {
 				fmt.Printf("------------------\nName: %s\nNDC: %s\nAlternative: %s\nDescription: %s\n", info.Name, info.NDC, info.Alternative, info.Description)
 				fmt.Printf("How much to use: %s\n", info.HowMuchToUse)
+				if len(info.Precautions) > 0 {
+					fmt.Println("Precations:")
+					for _, p := range info.Precautions {
+						fmt.Printf("\t- %s :: %s\n", p.Snippet, p.Details)
+					}
+				}
 				printList("Warnings", info.Warnings)
-				printList("Precautions", info.Precautions)
 				printList("How to use", info.HowToUse)
 				printList("Message your doctor if", info.MessageDoctorIf)
 				printList("Serious side effects", info.SeriousSideEffects)

@@ -270,9 +270,9 @@ func treatmentGuideResponse(dataAPI api.DataAPI, w http.ResponseWriter, treatmen
 
 	views := []View{
 		&IconTitleSubtitleView{
-			IconURL: "spruce:///images/icon_rx",
-			Title:   details.Name,
-			// TODO Subtitle: details.
+			IconURL:  "spruce:///images/icon_rx",
+			Title:    details.Name,
+			Subtitle: details.Subtitle,
 		},
 		&SmallDividerView{},
 		&TextView{
@@ -318,19 +318,12 @@ func treatmentGuideResponse(dataAPI api.DataAPI, w http.ResponseWriter, treatmen
 			Text:  "Precautions",
 			Style: "subheader",
 		})
-		for _, s := range details.Precautions {
-			views = append(views, &TextView{
-				Text:  s,
-				Style: "warning",
+		for _, p := range details.Precautions {
+			views = append(views, &SnippetDetailsView{
+				Snippet: p.Snippet,
+				Details: p.Details,
 			})
 		}
-		// TODO: the spreadsheet doesn't have snippet and details for precautions
-		// for _, s := range details.Precautions {
-		// 	views = append(views, &SnippetDetailsView{
-		// 		Snippet:  "",
-		// 		Details: "",
-		// 	})
-		// }
 	}
 
 	views = append(views,
