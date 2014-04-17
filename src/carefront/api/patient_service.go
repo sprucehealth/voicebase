@@ -987,8 +987,8 @@ func (d *DataService) getPatientBasedOnQuery(queryStr string, queryParams ...int
 
 	patients := make([]*common.Patient, 0)
 	for rows.Next() {
-		var firstName, lastName, status, gender, suffix, prefix, middleName string
-		var phone, phoneType, zipCode, email, paymentServiceCustomerId sql.NullString
+		var firstName, lastName, status, gender string
+		var phone, phoneType, zipCode, email, paymentServiceCustomerId, suffix, prefix, middleName sql.NullString
 		var erxPatientId sql.NullInt64
 		var patientId, accountId int64
 		var dobMonth, dobYear, dobDay int
@@ -1003,9 +1003,9 @@ func (d *DataService) getPatientBasedOnQuery(queryStr string, queryParams ...int
 			PaymentCustomerId: paymentServiceCustomerId.String,
 			FirstName:         firstName,
 			LastName:          lastName,
-			Prefix:            prefix,
-			Suffix:            suffix,
-			MiddleName:        middleName,
+			Prefix:            prefix.String,
+			Suffix:            suffix.String,
+			MiddleName:        middleName.String,
 			Email:             email.String,
 			Status:            status,
 			Gender:            gender,
