@@ -36,8 +36,7 @@ func (d *DataService) AddRefillRequestStatusEvent(refillRequestStatus common.Sta
 		columnsAndData["reported_timestamp"] = refillRequestStatus.ReportedTimestamp
 	}
 
-	keys, values :=
-		getKeysAndValuesFromMap(columnsAndData)
+	keys, values := getKeysAndValuesFromMap(columnsAndData)
 	_, err = tx.Exec(fmt.Sprintf(`insert into rx_refill_status_events (%s) values (%s)`, strings.Join(keys, ","), nReplacements(len(values))), values...)
 	if err != nil {
 		tx.Rollback()
@@ -348,7 +347,7 @@ func (d *DataService) getRefillRequestsFromRow(rows *sql.Rows) ([]*common.Refill
 		refillRequests = append(refillRequests, &refillRequest)
 	}
 
-	return refillRequests, nil
+	return refillRequests, rows.Err()
 }
 
 func (d *DataService) getTreatmentForRefillRequest(tableName string, treatmentId int64) (*common.Treatment, error) {
@@ -847,7 +846,7 @@ func (d *DataService) getUnlinkedDNTFTreatmentsFromRow(rows *sql.Rows) ([]*commo
 		treatments = append(treatments, treatment)
 
 	}
-	return treatments, nil
+	return treatments, rows.Err()
 }
 
 func (d *DataService) AddTreatmentToTreatmentPlanInEventOfDNTF(treatment *common.Treatment, refillRequestId int64) error {
