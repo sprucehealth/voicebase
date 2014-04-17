@@ -491,7 +491,7 @@ func (d *DataService) addPharmacyDispensedTreatment(dispensedTreatment, requeste
 		"type":                   treatmentType,
 		"dispense_value":         dispensedTreatment.DispenseValue,
 		"dispense_unit":          dispensedTreatment.DispenseUnitDescription,
-		"refills":                dispensedTreatment.NumberRefills,
+		"refills":                dispensedTreatment.NumberRefills.Int64Value,
 		"substitutions_allowed":  dispensedTreatment.SubstitutionsAllowed,
 		"patient_instructions":   dispensedTreatment.PatientInstructions,
 		"pharmacy_notes":         dispensedTreatment.PharmacyNotes,
