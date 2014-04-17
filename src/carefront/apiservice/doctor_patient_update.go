@@ -6,12 +6,9 @@ import (
 	"carefront/libs/address_validation"
 	"carefront/libs/erx"
 	"carefront/libs/pharmacy"
-	"fmt"
 	"strconv"
-	"strings"
 
 	"encoding/json"
-	"errors"
 	"net/http"
 
 	"github.com/gorilla/schema"
@@ -167,112 +164,4 @@ func (d *DoctorPatientUpdateHandler) updatePatientInformation(w http.ResponseWri
 	}
 
 	WriteJSONToHTTPResponseWriter(w, http.StatusOK, SuccessfulGenericJSONResponse())
-}
-
-func (d *DoctorPatientUpdateHandler) validatePatientInformationAccordingToSurescriptsRequirements(patient *common.Patient) error {
-
-	if patient.FirstName == "" {
-		return errors.New("First name is required")
-	}
-
-	if patient.LastName == "" {
-		return errors.New("Last name is required")
-	}
-
-	if patient.Dob.Month == 0 || patient.Dob.Year == 0 || patient.Dob.Day == 0 {
-		return errors.New("Dob is invalid. Required format is YYYY-MM-DD")
-	}
-
-	if len(patient.PhoneNumbers) == 0 {
-		return errors.New("Atleast one phone number is required")
-	}
-
-	if patient.PatientAddress.AddressLine1 == "" {
-		return errors.New("AddressLine1 of address is required")
-	}
-
-	if patient.PatientAddress.City == "" {
-		return errors.New("City in address is required")
-	}
-
-	if patient.PatientAddress.State == "" {
-		return errors.New("State in address is required")
-	}
-
-	// following field lengths are surescripts requirements
-	longFieldLength := 35
-	shortFieldLength := 10
-	phoneNumberLength := 25
-
-	if len(patient.Prefix) > shortFieldLength {
-		return fmt.Errorf("Prefix cannot be longer than %d characters in length", shortFieldLength)
-	}
-
-	if len(patient.Suffix) > shortFieldLength {
-		return fmt.Errorf("Suffix cannot be longer than %d characters in length", shortFieldLength)
-	}
-
-	if len(patient.FirstName) > longFieldLength {
-		return fmt.Errorf("First name cannot be longer than %d characters", longFieldLength)
-	}
-
-	if len(patient.MiddleName) > longFieldLength {
-		return fmt.Errorf("Middle name cannot be longer than %d characters", longFieldLength)
-	}
-
-	if len(patient.LastName) > longFieldLength {
-		return fmt.Errorf("Last name cannot be longer than %d characters", longFieldLength)
-	}
-
-	if len(patient.PatientAddress.AddressLine1) > longFieldLength {
-		return fmt.Errorf("AddressLine1 of patient address cannot be longer than %d characters", longFieldLength)
-	}
-
-	if len(patient.PatientAddress.AddressLine2) > longFieldLength {
-		return fmt.Errorf("AddressLine2 of patient address cannot be longer than %d characters", longFieldLength)
-	}
-
-	if len(patient.PatientAddress.City) > longFieldLength {
-		return fmt.Errorf("City cannot be longer than %d characters", longFieldLength)
-	}
-
-	for _, phoneNumber := range patient.PhoneNumbers {
-		if len(phoneNumber.Phone) > 25 {
-			return fmt.Errorf("Phone numbers cannot be longer than %d digits", phoneNumberLength)
-		}
-	}
-
-	if err := validateAddress(d.DataApi, patient.PatientAddress); err != nil {
-		return err
-	}
-
-	return nil
-}
-
-func trimSpacesFromPatientFields(patient *common.Patient) {
-	patient.FirstName = strings.TrimSpace(patient.FirstName)
-	patient.LastName = strings.TrimSpace(patient.LastName)
-	patient.MiddleName = strings.TrimSpace(patient.MiddleName)
-	patient.Suffix = strings.TrimSpace(patient.Suffix)
-	patient.Prefix = strings.TrimSpace(patient.Prefix)
-	patient.City = strings.TrimSpace(patient.City)
-	patient.State = strings.TrimSpace(patient.State)
-	patient.PatientAddress.AddressLine1 = strings.TrimSpace(patient.PatientAddress.AddressLine1)
-	patient.PatientAddress.AddressLine2 = strings.TrimSpace(patient.PatientAddress.AddressLine2)
-	patient.PatientAddress.City = strings.TrimSpace(patient.PatientAddress.City)
-	patient.PatientAddress.State = strings.TrimSpace(patient.PatientAddress.State)
-}
-
-func trimSpacesFromPatientFields(patient *common.Patient) {
-	patient.FirstName = strings.TrimSpace(patient.FirstName)
-	patient.LastName = strings.TrimSpace(patient.LastName)
-	patient.MiddleName = strings.TrimSpace(patient.MiddleName)
-	patient.Suffix = strings.TrimSpace(patient.Suffix)
-	patient.Prefix = strings.TrimSpace(patient.Prefix)
-	patient.City = strings.TrimSpace(patient.City)
-	patient.State = strings.TrimSpace(patient.State)
-	patient.PatientAddress.AddressLine1 = strings.TrimSpace(patient.PatientAddress.AddressLine1)
-	patient.PatientAddress.AddressLine2 = strings.TrimSpace(patient.PatientAddress.AddressLine2)
-	patient.PatientAddress.City = strings.TrimSpace(patient.PatientAddress.City)
-	patient.PatientAddress.State = strings.TrimSpace(patient.PatientAddress.State)
 }
