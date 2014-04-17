@@ -113,6 +113,7 @@ func main() {
 				Warnings:           getList(i, "Warnings"),
 				Precautions:        getList(i, "Precautions"),
 				HowToUse:           getList(i, "How to use"),
+				DoNots:             getList(i, "Do Not"),
 				MessageDoctorIf:    getList(i, "Message your doctor if"),
 				SeriousSideEffects: getList(i, "Serious side effects"),
 				CommonSideEffects:  getList(i, "Common side effects"),
