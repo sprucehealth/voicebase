@@ -281,12 +281,12 @@ func (d *DataService) getRefillRequestsFromRow(rows *sql.Rows) ([]*common.Refill
 		var refillRequest common.RefillRequestItem
 		var patientId, doctorId, pharmacyDispensedTreatmentId int64
 		var requestedTreatmentId, approvedRefillAmount, prescriptionId sql.NullInt64
-		var denyReason sql.NullString
+		var denyReason, comments sql.NullString
 
 		err := rows.Scan(&refillRequest.Id,
 			&refillRequest.RxRequestQueueItemId, &refillRequest.ReferenceNumber, &prescriptionId, &approvedRefillAmount,
 			&patientId, &refillRequest.RequestDateStamp, &doctorId, &requestedTreatmentId,
-			&pharmacyDispensedTreatmentId, &refillRequest.Comments, &denyReason)
+			&pharmacyDispensedTreatmentId, &comments, &denyReason)
 		if err != nil {
 			return nil, err
 		}
@@ -294,6 +294,7 @@ func (d *DataService) getRefillRequestsFromRow(rows *sql.Rows) ([]*common.Refill
 		refillRequest.PrescriptionId = prescriptionId.Int64
 		refillRequest.ApprovedRefillAmount = approvedRefillAmount.Int64
 		refillRequest.DenialReason = denyReason.String
+		refillRequest.Comments = comments.String
 
 		if err != nil {
 			if err == sql.ErrNoRows {
