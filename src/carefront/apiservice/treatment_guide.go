@@ -182,12 +182,12 @@ func (h *PatientTreatmentGuideHandler) ServeHTTP(w http.ResponseWriter, r *http.
 		return
 	}
 
-	if treatment.PatientId != patient.PatientId.Int64() {
+	if treatment.PatientId.Int64() != patient.PatientId.Int64() {
 		WriteUserError(w, http.StatusForbidden, "Patient does not have access to the given treatment")
 		return
 	}
 
-	doctor, err := h.DataAPI.GetDoctorFromId(treatment.DoctorId)
+	doctor, err := h.DataAPI.GetDoctorFromId(treatment.DoctorId.Int64())
 	if err != nil {
 		WriteDeveloperError(w, http.StatusInternalServerError, "Failed to get doctor: "+err.Error())
 		return
@@ -234,12 +234,12 @@ func (h *DoctorTreatmentGuideHandler) ServeHTTP(w http.ResponseWriter, r *http.R
 		return
 	}
 
-	if treatment.DoctorId != doctor.DoctorId.Int64() {
+	if treatment.DoctorId.Int64() != doctor.DoctorId.Int64() {
 		WriteUserError(w, http.StatusForbidden, "Doctor does not have access to the given treatment")
 		return
 	}
 
-	patient, err := h.DataAPI.GetPatientFromId(treatment.PatientId)
+	patient, err := h.DataAPI.GetPatientFromId(treatment.PatientId.Int64())
 	if err != nil {
 		WriteDeveloperError(w, http.StatusInternalServerError, "Failed to get patient: "+err.Error())
 		return

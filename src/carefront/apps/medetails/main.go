@@ -1,21 +1,37 @@
 package main
 
 import (
+	"carefront/api"
+	"carefront/common"
+	"carefront/common/config"
+	"carefront/libs/gdata"
+	"carefront/libs/golog"
 	"encoding/json"
-	"flag"
 	"fmt"
 	"log"
 	"os"
 	"strings"
-
-	"carefront/common"
-	"carefront/libs/gdata"
 )
 
-var (
-	flagCellsFeed    = flag.String("cellsfeed", "", "Cells feed URL")
-	flagRefreshToken = flag.String("refreshtoken", "", "Google API refresh token")
-)
+type Config struct {
+	*config.BaseConfig
+	Debug        bool       `long:"debug" description:"Enable debugging"`
+	DB           *config.DB `group:"Database" toml:"database"`
+	CellsFeed    string     `long:"feed" description:"Cells feed URI"`
+	RefreshToken string     `long:"refreshtoken" description:"Refresh token for OAUTH2"`
+	JSON         string     `long:"json" description:"Save details into a JSON file instead of writing to the database"`
+}
+
+var DefaultConfig = Config{
+	BaseConfig: &config.BaseConfig{
+		AppName: "medetails",
+	},
+	DB: &config.DB{
+		Name: "carefront",
+		Host: "127.0.0.1",
+		Port: 3306,
+	},
+}
 
 func cleanupText(s string) string {
 	s = strings.TrimSpace(s)
@@ -25,19 +41,35 @@ func cleanupText(s string) string {
 
 func main() {
 	log.SetFlags(0)
-	flag.Parse()
+	conf := DefaultConfig
+	_, err := config.Parse(&conf)
+	if err != nil {
+		log.Fatal(err)
+	}
+
+	if conf.Debug {
+		golog.SetLevel(golog.DEBUG)
+	}
+
+	db, err := conf.DB.Connect(conf.BaseConfig)
+	if err != nil {
+		log.Fatal(err)
+	}
+	defer db.Close()
 
 	clientId := os.Getenv("GDATA_CLIENT_ID")
 	clientSecret := os.Getenv("GDATA_SECRET")
 	if clientId == "" || clientSecret == "" {
 		log.Fatal("GDATA_CLIENT_ID or GDATA_SECRET not set")
 	}
-	if *flagRefreshToken == "" {
+	if conf.RefreshToken == "" {
 		log.Fatal("Refresh token not set")
 	}
-	refreshToken := *flagRefreshToken
+	if conf.CellsFeed == "" {
+		log.Fatal("CellsFeed not set")
+	}
 
-	transport := gdata.MakeOauthTransport(gdata.SpreadsheetScope, clientId, clientSecret, "", refreshToken)
+	transport := gdata.MakeOauthTransport(gdata.SpreadsheetScope, clientId, clientSecret, "", conf.RefreshToken)
 	cli, err := gdata.NewClient(transport)
 	if err != nil {
 		log.Fatal(err)
@@ -50,7 +82,7 @@ func main() {
 	// }
 	// fmt.Printf("%+v\n", tok)
 
-	feed, err := cli.GetCells(*flagCellsFeed, nil)
+	feed, err := cli.GetCells(conf.CellsFeed, nil)
 	if err != nil {
 		log.Fatal(err)
 	}
@@ -126,27 +158,44 @@ func main() {
 			}
 			drugs = append(drugs, info)
 
-			fmt.Printf("------------------\nName: %s\nNDC: %s\nAlternative: %s\nDescription: %s\n", info.Name, info.NDC, info.Alternative, info.Description)
-			fmt.Printf("How much to use: %s\n", info.HowMuchToUse)
-			printList("Warnings", info.Warnings)
-			printList("Precautions", info.Precautions)
-			printList("How to use", info.HowToUse)
-			printList("Message your doctor if", info.MessageDoctorIf)
-			printList("Serious side effects", info.SeriousSideEffects)
-			printList("Common side effects", info.CommonSideEffects)
+			if conf.Debug {
+				fmt.Printf("------------------\nName: %s\nNDC: %s\nAlternative: %s\nDescription: %s\n", info.Name, info.NDC, info.Alternative, info.Description)
+				fmt.Printf("How much to use: %s\n", info.HowMuchToUse)
+				printList("Warnings", info.Warnings)
+				printList("Precautions", info.Precautions)
+				printList("How to use", info.HowToUse)
+				printList("Message your doctor if", info.MessageDoctorIf)
+				printList("Serious side effects", info.SeriousSideEffects)
+				printList("Common side effects", info.CommonSideEffects)
+			}
 		}
 	}
 
-	b, err := json.MarshalIndent(drugs, "", "    ")
-	if err != nil {
-		log.Fatal(err)
+	if conf.JSON != "" {
+		b, err := json.MarshalIndent(drugs, "", "    ")
+		if err != nil {
+			log.Fatal(err)
+		}
+		f, err := os.Create(conf.JSON)
+		if err != nil {
+			log.Fatal(err)
+		}
+		defer f.Close()
+		if _, err := f.Write(b); err != nil {
+			log.Fatal(err)
+		}
+		return
 	}
-	f, err := os.Create("drugs.json")
-	if err != nil {
-		log.Fatal(err)
+
+	details := make(map[string]*common.DrugDetails)
+	for _, d := range drugs {
+		if d.NDC != "" {
+			details[d.NDC] = d
+		}
 	}
-	defer f.Close()
-	if _, err := f.Write(b); err != nil {
-		log.Fatal(err)
+
+	dataAPI := api.DataService{DB: db}
+	if err := dataAPI.SetDrugDetails(details); err != nil {
+		log.Fatalf("Failed to write details to DB: %v", err)
 	}
 }

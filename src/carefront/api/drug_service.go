@@ -34,7 +34,7 @@ func (d *DataService) SetDrugDetails(details map[string]*common.DrugDetails) err
 			tx.Rollback()
 			return err
 		}
-		if _, err := tx.Exec(`replace into drug_details (ndc, json) values (?, ?)`, ndc, buf.Bytes()); err != nil {
+		if _, err := tx.Exec(`replace into drug_details (ndc, json, modified_date) values (?, ?, now())`, ndc, buf.Bytes()); err != nil {
 			tx.Rollback()
 			return err
 		}
