@@ -50,9 +50,7 @@ func (d *DataService) RegisterDoctor(doctor *common.Doctor) (int64, error) {
 		return 0, err
 	}
 
-	tx.Commit()
-
-	return lastId, err
+	return lastId, tx.Commit()
 }
 
 func (d *DataService) GetDoctorFromId(doctorId int64) (*common.Doctor, error) {
