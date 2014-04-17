@@ -125,7 +125,7 @@ func (d *DoctorPatientUpdateHandler) updatePatientInformation(w http.ResponseWri
 	requestData.Patient.ERxPatientId = existingPatientInfo.ERxPatientId
 
 	// TODO: Get patient pharmacy from the database once we start using surecsripts as our backing solution
-	if existingPatientInfo.Pharmacy.Source != pharmacy.PHARMACY_SOURCE_SURESCRIPTS {
+	if existingPatientInfo.Pharmacy == nil || existingPatientInfo.Pharmacy.Source != pharmacy.PHARMACY_SOURCE_SURESCRIPTS {
 		existingPatientInfo.Pharmacy = &pharmacy.PharmacyData{
 			SourceId:     "47731",
 			Source:       pharmacy.PHARMACY_SOURCE_SURESCRIPTS,
