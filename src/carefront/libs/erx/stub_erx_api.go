@@ -25,7 +25,7 @@ func (s *StubErxService) GetDrugNamesForDoctor(clinicianId int64, prefix string)
 	return nil, nil
 }
 
-func (s *StubErxService) GetDrugNamesForPatient(clinicianId int64, prefix string) ([]string, error) {
+func (s *StubErxService) GetDrugNamesForPatient(prefix string) ([]string, error) {
 	return nil, nil
 }
 

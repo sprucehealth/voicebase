@@ -62,24 +62,7 @@ func (s *AutocompleteHandler) ServeHTTP(w http.ResponseWriter, r *http.Request) 
 		searchResults, err = s.ERxApi.GetDrugNamesForDoctor(doctor.DoseSpotClinicianId, requestData.SearchString)
 	} else {
 
-		patient, err := s.DataApi.GetPatientFromAccountId(GetContext(r).AccountId)
-		if err != nil {
-			WriteDeveloperError(w, http.StatusInternalServerError, "Unable to get patient from account id: "+err.Error())
-			return
-		}
-		careTeam, err := s.DataApi.GetCareTeamForPatient(patient.PatientId.Int64())
-		if err != nil {
-			WriteDeveloperError(w, http.StatusInternalServerError, "Unable to get care team for patient: "+err.Error())
-			return
-		}
-		doctorId := getPrimaryDoctorIdFromCareTeam(careTeam)
-		doctor, err := s.DataApi.GetDoctorFromId(doctorId)
-		if err != nil {
-			WriteDeveloperError(w, http.StatusInternalServerError, "Unable to get doctor from id: "+err.Error())
-			return
-		}
-
-		searchResults, err = s.ERxApi.GetDrugNamesForPatient(doctor.DoseSpotClinicianId, requestData.SearchString)
+		searchResults, err = s.ERxApi.GetDrugNamesForPatient(requestData.SearchString)
 	}
 	if err != nil {
 		WriteDeveloperError(w, http.StatusInternalServerError, "Unable to get search results for drugs: "+err.Error())

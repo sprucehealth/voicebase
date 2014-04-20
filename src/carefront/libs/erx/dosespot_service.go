@@ -134,9 +134,9 @@ func (d *DoseSpotService) GetDrugNamesForDoctor(clinicianId int64, prefix string
 	return searchResult.DisplayNames, nil
 }
 
-func (d *DoseSpotService) GetDrugNamesForPatient(clinicianId int64, prefix string) ([]string, error) {
+func (d *DoseSpotService) GetDrugNamesForPatient(prefix string) ([]string, error) {
 	selfReportedDrugsSearch := &selfReportedMedicationSearchRequest{
-		SSO:        generateSingleSignOn(d.ClinicKey, clinicianId, d.ClinicId),
+		SSO:        generateSingleSignOn(d.ClinicKey, d.UserID, d.ClinicId),
 		SearchTerm: prefix,
 	}
 

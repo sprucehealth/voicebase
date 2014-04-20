@@ -2,12 +2,15 @@ package integration
 
 import (
 	"bytes"
+	"encoding/json"
 	"io/ioutil"
 	"net/http"
 	"net/http/httptest"
+	"net/url"
 	"strconv"
 	"testing"
 
+	"carefront/api"
 	"carefront/apiservice"
 	"carefront/libs/address_validation"
 
@@ -155,5 +158,45 @@ func TestPatientVisitSubmission(t *testing.T) {
 
 	if resp.StatusCode != http.StatusBadRequest {
 		t.Fatalf("Expected a bad request 403 to be returned when attempting to submit an already submitted patient visit, but instead got %d", resp.StatusCode)
+	}
+}
+
+func TestPatientAutocompleteForDrugs(t *testing.T) {
+	if err := CheckIfRunningLocally(t); err == CannotRunTestLocally {
+		return
+	}
+	testData := SetupIntegrationTest(t)
+	defer TearDownIntegrationTest(t, testData)
+
+	signedupPatientResponse := SignupRandomTestPatient(t, testData.DataApi, testData.AuthApi)
+
+	autocompleteHandler := apiservice.AutocompleteHandler{
+		DataApi: testData.DataApi,
+		ERxApi:  setupErxAPI(t),
+		Role:    api.PATIENT_ROLE,
+	}
+
+	params := url.Values{}
+	params.Set("query", "Lipi")
+
+	ts := httptest.NewServer(&autocompleteHandler)
+	defer ts.Close()
+
+	resp, err := authGet(ts.URL+"?"+params.Encode(), signedupPatientResponse.Patient.AccountId.Int64())
+	if err != nil {
+		t.Fatalf("Unsuccessful get request to autocomplete api: %s", err)
+	}
+
+	if resp.StatusCode != http.StatusOK {
+		t.Fatalf("Unable to successfully do a drug search from patient side: %s", err)
+	}
+
+	autoCompleteResponse := apiservice.AutocompleteResponse{}
+	if err := json.NewDecoder(resp.Body).Decode(&autoCompleteResponse); err != nil {
+		t.Fatalf("Unable to decode response body into json: %s", err)
+	}
+
+	if len(autoCompleteResponse.Suggestions) == 0 {
+		t.Fatalf("Expected suggestions to be returned from the autocomplete api instead got 0")
 	}
 }
