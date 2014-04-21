@@ -251,7 +251,7 @@ type StatusEvent struct {
 	StatusDetails     string    `json:"status_details,omitempty"`
 }
 
-type DrugPrecation struct {
+type DrugPrecaution struct {
 	Snippet string
 	Details string
 }
@@ -264,7 +264,7 @@ type DrugDetails struct {
 	Description        string
 	HowMuchToUse       string
 	Warnings           []string
-	Precautions        []DrugPrecation
+	Precautions        []DrugPrecaution
 	HowToUse           []string
 	DoNots             []string
 	MessageDoctorIf    []string

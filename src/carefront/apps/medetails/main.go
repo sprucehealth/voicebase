@@ -154,7 +154,7 @@ func main() {
 			for _, p := range getList(i, "Precautions") {
 				// TODO: The spreadsheet does not have snippet and details broken out for precautions yet
 				info.Precautions = append(info.Precautions,
-					common.DrugPrecation{
+					common.DrugPrecaution{
 						Snippet: "TODO",
 						Details: p,
 					},
