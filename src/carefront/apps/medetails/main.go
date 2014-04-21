@@ -1,5 +1,11 @@
 package main
 
+/*
+The medication details are stored in a Google Spreadsheet. Each drug is a column
+with rows being different items of information. The information is broken out
+into sections which are defined by the labels in the second column of the spreadsheet.
+*/
+
 import (
 	"carefront/api"
 	"carefront/common"
@@ -88,15 +94,18 @@ func main() {
 		log.Fatal(err)
 	}
 
+	// Turn the sparse list of cells into a full grid since it makes it
+	// easier to parse and shouldn't be very big overall.
 	cells := make([][]*gdata.Entry, feed.RowCount+1)
 	for row := 1; row <= feed.RowCount; row++ {
 		cells[row] = make([]*gdata.Entry, feed.ColCount+1)
 	}
-
 	for _, c := range feed.Entries {
 		cells[c.Cell.Row][c.Cell.Col] = c
 	}
 
+	// The second column contains the section labels so pull out the
+	// beginning row and count of rows for each section.
 	sections := make(map[string][2]int)
 	inSection := ""
 	for r := 1; r <= feed.RowCount; r++ {
@@ -113,6 +122,7 @@ func main() {
 		}
 	}
 
+	// Helper to pull out the content of cells in a section
 	getList := func(col int, section string) []string {
 		rows, ok := sections[section]
 		if !ok || rows[0] == 0 || rows[1] == 0 {

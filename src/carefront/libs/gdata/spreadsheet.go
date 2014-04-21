@@ -97,6 +97,8 @@ func (c *Client) ListWorksheets(spreadsheetURL string) (*Entry, error) {
 	return &feed, nil
 }
 
+// GetCells fetches either all the cells or a range of cells for the spreadsheet.
+// It is a sparse so does not include empty cells.
 func (c *Client) GetCells(cellsFeedURL string, cellRange *CellRange) (*Entry, error) {
 	if cellRange != nil {
 		cellsFeedURL = fmt.Sprintf("%s?min-col=%d&min-row=%d&max-col=%d&max-row=%d",
