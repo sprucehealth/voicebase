@@ -111,7 +111,7 @@ func (d *DataService) CreateUnlinkedPatientFromRefillRequest(patient *common.Pat
 }
 
 func createPatientWithStatus(patient *common.Patient, status string, tx *sql.Tx) error {
-	res, err := tx.Exec(`insert into patient (account_id, first_name, last_name, gender, dob_year, dob_month, dob_day, status) 
+	res, err := tx.Exec(`insert into patient (account_id, first_name, last_name, gender, dob_year, dob_month, dob_day, status)
 								values (?, ?, ?, ?, ?, ?, ?, ?)`, patient.AccountId.Int64(), patient.FirstName, patient.LastName, patient.Gender, patient.Dob.Year, patient.Dob.Month, patient.Dob.Day, status)
 	if err != nil {
 		tx.Rollback()
