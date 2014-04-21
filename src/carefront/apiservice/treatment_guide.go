@@ -4,6 +4,7 @@ import (
 	"carefront/api"
 	"carefront/common"
 	"carefront/libs/erx"
+	"carefront/libs/golog"
 	"errors"
 	"fmt"
 	"net/http"
@@ -164,12 +165,9 @@ func (h *PatientTreatmentGuideHandler) ServeHTTP(w http.ResponseWriter, r *http.
 		return
 	}
 
-	patient, err := h.DataAPI.GetPatientFromAccountId(GetContext(r).AccountId)
+	patientID, err := h.DataAPI.GetPatientIdFromAccountId(GetContext(r).AccountId)
 	if err != nil {
 		WriteDeveloperError(w, http.StatusInternalServerError, "Failed to get patient: "+err.Error())
-		return
-	} else if patient == nil {
-		WriteUserError(w, http.StatusNotFound, "Unknown patient")
 		return
 	}
 
@@ -182,19 +180,10 @@ func (h *PatientTreatmentGuideHandler) ServeHTTP(w http.ResponseWriter, r *http.
 		return
 	}
 
-	if treatment.PatientId.Int64() != patient.PatientId.Int64() {
+	if treatment.PatientId.Int64() != patientID {
 		WriteUserError(w, http.StatusForbidden, "Patient does not have access to the given treatment")
 		return
 	}
-
-	doctor, err := h.DataAPI.GetDoctorFromId(treatment.DoctorId.Int64())
-	if err != nil {
-		WriteDeveloperError(w, http.StatusInternalServerError, "Failed to get doctor: "+err.Error())
-		return
-	}
-
-	treatment.Patient = patient
-	treatment.Doctor = doctor
 
 	treatmentGuideResponse(h.DataAPI, w, treatment)
 }
@@ -216,12 +205,9 @@ func (h *DoctorTreatmentGuideHandler) ServeHTTP(w http.ResponseWriter, r *http.R
 		return
 	}
 
-	doctor, err := h.DataAPI.GetDoctorFromAccountId(GetContext(r).AccountId)
+	doctorID, err := h.DataAPI.GetDoctorIdFromAccountId(GetContext(r).AccountId)
 	if err != nil {
 		WriteDeveloperError(w, http.StatusInternalServerError, "Failed to get doctor: "+err.Error())
-		return
-	} else if doctor == nil {
-		WriteUserError(w, http.StatusNotFound, "Unknown doctor")
 		return
 	}
 
@@ -234,19 +220,11 @@ func (h *DoctorTreatmentGuideHandler) ServeHTTP(w http.ResponseWriter, r *http.R
 		return
 	}
 
-	if treatment.DoctorId.Int64() != doctor.DoctorId.Int64() {
+	if err := verifyDoctorPatientRelationship(h.DataAPI, treatment.Doctor, treatment.Patient); err != nil {
+		golog.Warningf("Doctor %d does not have access to treatment %d: %s", doctorID, treatment.Id.Int64(), err.Error())
 		WriteUserError(w, http.StatusForbidden, "Doctor does not have access to the given treatment")
 		return
 	}
-
-	patient, err := h.DataAPI.GetPatientFromId(treatment.PatientId.Int64())
-	if err != nil {
-		WriteDeveloperError(w, http.StatusInternalServerError, "Failed to get patient: "+err.Error())
-		return
-	}
-
-	treatment.Patient = patient
-	treatment.Doctor = doctor
 
 	treatmentGuideResponse(h.DataAPI, w, treatment)
 }
