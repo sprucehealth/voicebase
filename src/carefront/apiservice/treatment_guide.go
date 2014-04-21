@@ -12,6 +12,12 @@ import (
 	"github.com/gorilla/schema"
 )
 
+const (
+	sectionHeaderStyle = "section_header"
+	smallGrayStyle     = "small_gray"
+	subheaderStyle     = "subheader"
+)
+
 type TGView interface {
 	Validate() error
 }
@@ -254,7 +260,7 @@ func treatmentGuideResponse(dataAPI api.DataAPI, w http.ResponseWriter, treatmen
 		},
 		&TGSmallDividerView{},
 		&TGTextView{
-			Style: "small_gray",
+			Style: smallGrayStyle,
 			Text:  details.Description,
 		},
 		&TGLargeDividerView{},
@@ -264,7 +270,7 @@ func treatmentGuideResponse(dataAPI api.DataAPI, w http.ResponseWriter, treatmen
 			IconWidth:  32,
 			IconHeight: 32,
 			Text:       fmt.Sprintf("Dr. %s's Instructions", treatment.Doctor.LastName),
-			Style:      "section_header",
+			Style:      sectionHeaderStyle,
 		},
 		&TGSmallDividerView{},
 		&TGTextView{
@@ -273,7 +279,7 @@ func treatmentGuideResponse(dataAPI api.DataAPI, w http.ResponseWriter, treatmen
 		&TGLargeDividerView{},
 		&TGTextView{
 			Text:  "What to Know",
-			Style: "section_header",
+			Style: sectionHeaderStyle,
 		},
 		&TGSmallDividerView{},
 	}
@@ -281,7 +287,7 @@ func treatmentGuideResponse(dataAPI api.DataAPI, w http.ResponseWriter, treatmen
 	if len(details.Warnings) != 0 {
 		views = append(views, &TGTextView{
 			Text:  "Warnings",
-			Style: "subheader",
+			Style: subheaderStyle,
 		})
 		for _, s := range details.Warnings {
 			views = append(views, &TGTextView{
@@ -294,7 +300,7 @@ func treatmentGuideResponse(dataAPI api.DataAPI, w http.ResponseWriter, treatmen
 	if len(details.Precautions) != 0 {
 		views = append(views, &TGTextView{
 			Text:  "Precautions",
-			Style: "subheader",
+			Style: subheaderStyle,
 		})
 		for _, p := range details.Precautions {
 			views = append(views, &TGSnippetDetailsView{
@@ -308,7 +314,7 @@ func treatmentGuideResponse(dataAPI api.DataAPI, w http.ResponseWriter, treatmen
 		&TGLargeDividerView{},
 		&TGTextView{
 			Text:  "How to Use " + details.Name,
-			Style: "section_header",
+			Style: sectionHeaderStyle,
 		},
 		&TGSmallDividerView{},
 	)
@@ -335,7 +341,7 @@ func treatmentGuideResponse(dataAPI api.DataAPI, w http.ResponseWriter, treatmen
 		&TGLargeDividerView{},
 		&TGTextView{
 			Text:  "Message Your Doctor If\u2026",
-			Style: "section_header",
+			Style: sectionHeaderStyle,
 		},
 		&TGSmallDividerView{},
 	)
