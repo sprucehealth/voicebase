@@ -200,6 +200,8 @@ func main() {
 		if err != nil {
 			log.Fatal("Unable to get erx queue for sending prescriptions to: " + err.Error())
 		}
+	} else if conf.ERxRouting {
+		log.Fatal("ERxQueue not configured but ERxRouting is enabled")
 	}
 
 	dataApi := &api.DataService{DB: db}
