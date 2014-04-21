@@ -13,9 +13,10 @@ import (
 )
 
 const (
-	sectionHeaderStyle = "section_header"
-	smallGrayStyle     = "small_gray"
-	subheaderStyle     = "subheader"
+	sectionHeaderStyle     = "section_header"
+	smallGrayStyle         = "small_gray"
+	subheaderStyle         = "subheader"
+	treatmentViewNamespace = "treatment"
 )
 
 type TGView interface {
@@ -27,7 +28,7 @@ type TGSmallDividerView struct {
 }
 
 func (v *TGSmallDividerView) Validate() error {
-	v.Type = "view:small_divider"
+	v.Type = treatmentViewNamespace + ":small_divider"
 	return nil
 }
 
@@ -36,7 +37,7 @@ type TGLargeDividerView struct {
 }
 
 func (v *TGLargeDividerView) Validate() error {
-	v.Type = "view:large_divider"
+	v.Type = treatmentViewNamespace + ":large_divider"
 	return nil
 }
 
@@ -56,7 +57,7 @@ type TGIconTitleSubtitleView struct {
 }
 
 func (v *TGIconTitleSubtitleView) Validate() error {
-	v.Type = "view:icon_title_subtitle_view"
+	v.Type = treatmentViewNamespace + ":icon_title_subtitle_view"
 	return nil
 }
 
@@ -67,7 +68,7 @@ type TGTextView struct {
 }
 
 func (v *TGTextView) Validate() error {
-	v.Type = "view:text"
+	v.Type = treatmentViewNamespace + ":text"
 	return nil
 }
 
@@ -81,7 +82,7 @@ type TGIconTextView struct {
 }
 
 func (v *TGIconTextView) Validate() error {
-	v.Type = "view:icon_text_view"
+	v.Type = treatmentViewNamespace + ":icon_text_view"
 	return nil
 }
 
@@ -92,7 +93,7 @@ type TGSnippetDetailsView struct {
 }
 
 func (v *TGSnippetDetailsView) Validate() error {
-	v.Type = "view:snippet_details"
+	v.Type = treatmentViewNamespace + ":snippet_details"
 	return nil
 }
 
@@ -107,7 +108,7 @@ func (v *TGListElementView) Validate() error {
 	if v.ElementStyle != "numbered" && v.ElementStyle != "dont" {
 		return errors.New("ListElementView expects ElementStyle of numbered or dont, not " + v.ElementStyle)
 	}
-	v.Type = "view:list_element"
+	v.Type = treatmentViewNamespace + ":list_element"
 	return nil
 }
 
@@ -118,7 +119,7 @@ type TGPlainButtonView struct {
 }
 
 func (v *TGPlainButtonView) Validate() error {
-	v.Type = "view:plain_button"
+	v.Type = treatmentViewNamespace + ":plain_button"
 	return nil
 }
 
@@ -130,7 +131,7 @@ type TGButtonView struct {
 }
 
 func (v *TGButtonView) Validate() error {
-	v.Type = "view:button"
+	v.Type = treatmentViewNamespace + ":button"
 	return nil
 }
 
