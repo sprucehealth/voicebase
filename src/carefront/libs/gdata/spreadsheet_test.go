@@ -19,18 +19,6 @@ func testClient(t *testing.T) *Client {
 	if err != nil {
 		t.Fatal(err)
 	}
-
-	// fmt.Printf("%s\n", c.transport.Config.AuthCodeURL("abc"))
-
-	// tok, err := c.transport.Exchange("...")
-	// if err != nil {
-	// 	t.Fatal(err)
-	// }
-
-	// if err := c.transport.Refresh(); err != nil {
-	// 	t.Fatal(err)
-	// }
-
 	return c
 }
 
@@ -72,16 +60,3 @@ func TestGetCells(t *testing.T) {
 		t.Logf("%+v\n", d)
 	}
 }
-
-// func TestParse(t *testing.T) {
-// 	fi, err := os.Open("listspreadsheets.xml")
-// 	if err != nil {
-// 		t.Fatal(err)
-// 	}
-// 	defer fi.Close()
-// 	var feed Entry
-// 	if err := xml.NewDecoder(fi).Decode(&feed); err != nil {
-// 		t.Fatal(err)
-// 	}
-// 	fmt.Printf("%+v\n", feed)
-// }

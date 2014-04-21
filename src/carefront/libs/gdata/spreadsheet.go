@@ -76,11 +76,6 @@ func (c *Client) Get(url string, res interface{}) error {
 		return fmt.Errorf("gdata: status %d not 200", r.StatusCode)
 	}
 	if res != nil {
-		// out, err := os.Create("out.xml")
-		// if err != nil {
-		// 	return err
-		// }
-		// return xml.NewDecoder(io.TeeReader(r.Body, out)).Decode(res)
 		return xml.NewDecoder(r.Body).Decode(res)
 	}
 	return nil
