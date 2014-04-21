@@ -11,128 +11,128 @@ import (
 	"github.com/gorilla/schema"
 )
 
-type View interface {
+type TGView interface {
 	Validate() error
 }
 
-type SmallDividerView struct {
-	Types []string `json:"types"`
+type TGSmallDividerView struct {
+	Type string `json:"type"`
 }
 
-func (v *SmallDividerView) Validate() error {
-	v.Types = []string{"view:small_divider"}
+func (v *TGSmallDividerView) Validate() error {
+	v.Type = "view:small_divider"
 	return nil
 }
 
-type LargeDividerView struct {
-	Types []string `json:"types"`
+type TGLargeDividerView struct {
+	Type string `json:"type"`
 }
 
-func (v *LargeDividerView) Validate() error {
-	v.Types = []string{"view:large_divider"}
+func (v *TGLargeDividerView) Validate() error {
+	v.Type = "view:large_divider"
 	return nil
 }
 
-type ImageView struct {
-	Types       []string `json:"types"`
-	ImageWidth  int      `json:"image_width"`
-	ImageHeight int      `json:"image_height"`
-	ImageURL    string   `json:"image_url"`
+type TGImageView struct {
+	Type        string `json:"type"`
+	ImageWidth  int    `json:"image_width"`
+	ImageHeight int    `json:"image_height"`
+	ImageURL    string `json:"image_url"`
 	// TODO insets
 }
 
-type IconTitleSubtitleView struct {
-	Types    []string `json:"types"`
-	IconURL  string   `json:"icon_url"`
-	Title    string   `json:"title"`
-	Subtitle string   `json:"subtitle"`
+type TGIconTitleSubtitleView struct {
+	Type     string `json:"type"`
+	IconURL  string `json:"icon_url"`
+	Title    string `json:"title"`
+	Subtitle string `json:"subtitle"`
 }
 
-func (v *IconTitleSubtitleView) Validate() error {
-	v.Types = []string{"view:icon_title_subtitle_view"}
+func (v *TGIconTitleSubtitleView) Validate() error {
+	v.Type = "view:icon_title_subtitle_view"
 	return nil
 }
 
-type TextView struct {
-	Types []string `json:"types"`
-	Style string   `json:"style,omitempty"`
-	Text  string   `json:"text"`
+type TGTextView struct {
+	Type  string `json:"type"`
+	Style string `json:"style,omitempty"`
+	Text  string `json:"text"`
 }
 
-func (v *TextView) Validate() error {
-	v.Types = []string{"view:text"}
+func (v *TGTextView) Validate() error {
+	v.Type = "view:text"
 	return nil
 }
 
-type IconTextView struct {
-	Types      []string `json:"types"`
-	IconURL    string   `json:"icon_url"`
-	IconWidth  int      `json:"icon_width"`
-	IconHeight int      `json:"icon_height"`
-	Style      string   `json:"style"`
-	Text       string   `json:"text"`
+type TGIconTextView struct {
+	Type       string `json:"type"`
+	IconURL    string `json:"icon_url"`
+	IconWidth  int    `json:"icon_width"`
+	IconHeight int    `json:"icon_height"`
+	Style      string `json:"style"`
+	Text       string `json:"text"`
 }
 
-func (v *IconTextView) Validate() error {
-	v.Types = []string{"view:icon_text_view"}
+func (v *TGIconTextView) Validate() error {
+	v.Type = "view:icon_text_view"
 	return nil
 }
 
-type SnippetDetailsView struct {
-	Types   []string `json:"types"`
-	Snippet string   `json:"snippet"`
-	Details string   `json:"details"`
+type TGSnippetDetailsView struct {
+	Type    string `json:"type"`
+	Snippet string `json:"snippet"`
+	Details string `json:"details"`
 }
 
-func (v *SnippetDetailsView) Validate() error {
-	v.Types = []string{"view:snippet_details"}
+func (v *TGSnippetDetailsView) Validate() error {
+	v.Type = "view:snippet_details"
 	return nil
 }
 
-type ListElementView struct {
-	Types        []string `json:"types"`
-	ElementStyle string   `json:"element_style"` // numbered, dont
-	Number       int      `json:"number,omitempty"`
-	Text         string   `json:"text"`
+type TGListElementView struct {
+	Type         string `json:"type"`
+	ElementStyle string `json:"element_style"` // numbered, dont
+	Number       int    `json:"number,omitempty"`
+	Text         string `json:"text"`
 }
 
-func (v *ListElementView) Validate() error {
+func (v *TGListElementView) Validate() error {
 	if v.ElementStyle != "numbered" && v.ElementStyle != "dont" {
 		return errors.New("ListElementView expects ElementStyle of numbered or dont, not " + v.ElementStyle)
 	}
-	v.Types = []string{"view:list_element"}
+	v.Type = "view:list_element"
 	return nil
 }
 
-type PlainButtonView struct {
-	Types  []string `json:"types"`
-	Text   string   `json:"text"`
-	TapURL string   `json:"tap_url"`
+type TGPlainButtonView struct {
+	Type   string `json:"type"`
+	Text   string `json:"text"`
+	TapURL string `json:"tap_url"`
 }
 
-func (v *PlainButtonView) Validate() error {
-	v.Types = []string{"view:plain_button"}
+func (v *TGPlainButtonView) Validate() error {
+	v.Type = "view:plain_button"
 	return nil
 }
 
-type ButtonView struct {
-	Types   []string `json:"types"`
-	Text    string   `json:"text"`
-	TapURL  string   `json:"tap_url"`
-	IconURL string   `json:"icon_url"`
+type TGButtonView struct {
+	Type    string `json:"type"`
+	Text    string `json:"text"`
+	TapURL  string `json:"tap_url"`
+	IconURL string `json:"icon_url"`
 }
 
-func (v *ButtonView) Validate() error {
-	v.Types = []string{"view:button"}
+func (v *TGButtonView) Validate() error {
+	v.Type = "view:button"
 	return nil
-}
-
-type PatientTreatmentGuideHandler struct {
-	DataAPI api.DataAPI
 }
 
 type TreatmentGuideRequestData struct {
 	TreatmentId int64 `schema:"treatment_id,required"`
+}
+
+type PatientTreatmentGuideHandler struct {
+	DataAPI api.DataAPI
 }
 
 type DoctorTreatmentGuideHandler struct {
@@ -268,19 +268,19 @@ func treatmentGuideResponse(dataAPI api.DataAPI, w http.ResponseWriter, treatmen
 
 	// Format drug details into views
 
-	views := []View{
-		&IconTitleSubtitleView{
+	views := []TGView{
+		&TGIconTitleSubtitleView{
 			IconURL:  "spruce:///images/icon_rx",
 			Title:    details.Name,
 			Subtitle: details.Subtitle,
 		},
-		&SmallDividerView{},
-		&TextView{
+		&TGSmallDividerView{},
+		&TGTextView{
 			Style: "small_gray",
 			Text:  details.Description,
 		},
-		&LargeDividerView{},
-		&IconTextView{
+		&TGLargeDividerView{},
+		&TGIconTextView{
 			// TODO: This icon info isn't robust or likely accurate
 			IconURL:    fmt.Sprintf("spruce:///images/doctor_photo_%s_%s", treatment.Doctor.FirstName, treatment.Doctor.LastName),
 			IconWidth:  32,
@@ -288,25 +288,25 @@ func treatmentGuideResponse(dataAPI api.DataAPI, w http.ResponseWriter, treatmen
 			Text:       fmt.Sprintf("Dr. %s's Instructions", treatment.Doctor.LastName),
 			Style:      "section_header",
 		},
-		&SmallDividerView{},
-		&TextView{
+		&TGSmallDividerView{},
+		&TGTextView{
 			Text: treatment.PatientInstructions,
 		},
-		&LargeDividerView{},
-		&TextView{
+		&TGLargeDividerView{},
+		&TGTextView{
 			Text:  "What to Know",
 			Style: "section_header",
 		},
-		&SmallDividerView{},
+		&TGSmallDividerView{},
 	}
 
 	if len(details.Warnings) != 0 {
-		views = append(views, &TextView{
+		views = append(views, &TGTextView{
 			Text:  "Warnings",
 			Style: "subheader",
 		})
 		for _, s := range details.Warnings {
-			views = append(views, &TextView{
+			views = append(views, &TGTextView{
 				Text:  s,
 				Style: "warning",
 			})
@@ -314,12 +314,12 @@ func treatmentGuideResponse(dataAPI api.DataAPI, w http.ResponseWriter, treatmen
 	}
 
 	if len(details.Precautions) != 0 {
-		views = append(views, &TextView{
+		views = append(views, &TGTextView{
 			Text:  "Precautions",
 			Style: "subheader",
 		})
 		for _, p := range details.Precautions {
-			views = append(views, &SnippetDetailsView{
+			views = append(views, &TGSnippetDetailsView{
 				Snippet: p.Snippet,
 				Details: p.Details,
 			})
@@ -327,16 +327,16 @@ func treatmentGuideResponse(dataAPI api.DataAPI, w http.ResponseWriter, treatmen
 	}
 
 	views = append(views,
-		&LargeDividerView{},
-		&TextView{
+		&TGLargeDividerView{},
+		&TGTextView{
 			Text:  "How to Use " + details.Name,
 			Style: "section_header",
 		},
-		&SmallDividerView{},
+		&TGSmallDividerView{},
 	)
 
 	for i, s := range details.HowToUse {
-		views = append(views, &ListElementView{
+		views = append(views, &TGListElementView{
 			ElementStyle: "numbered",
 			Number:       i + 1,
 			Text:         s,
@@ -344,9 +344,9 @@ func treatmentGuideResponse(dataAPI api.DataAPI, w http.ResponseWriter, treatmen
 	}
 
 	if len(details.DoNots) != 0 {
-		views = append(views, &SmallDividerView{})
+		views = append(views, &TGSmallDividerView{})
 		for _, s := range details.DoNots {
-			views = append(views, &ListElementView{
+			views = append(views, &TGListElementView{
 				ElementStyle: "dont",
 				Text:         s,
 			})
@@ -354,26 +354,26 @@ func treatmentGuideResponse(dataAPI api.DataAPI, w http.ResponseWriter, treatmen
 	}
 
 	views = append(views,
-		&LargeDividerView{},
-		&TextView{
+		&TGLargeDividerView{},
+		&TGTextView{
 			Text:  "Message Your Doctor If\u2026",
 			Style: "section_header",
 		},
-		&SmallDividerView{},
+		&TGSmallDividerView{},
 	)
 
 	for _, s := range details.MessageDoctorIf {
-		views = append(views, &TextView{
+		views = append(views, &TGTextView{
 			Text: s,
 		})
 	}
 
 	views = append(views,
-		&PlainButtonView{
+		&TGPlainButtonView{
 			Text:   fmt.Sprintf("View all %s side effects", details.Name),
 			TapURL: "spruce:///action/view_side_effects",
 		},
-		&ButtonView{
+		&TGButtonView{
 			Text:    "Message Dr. " + treatment.Doctor.LastName,
 			IconURL: "spruce:///images/icon_message",
 			TapURL:  "spruce:///action/message_doctor",
@@ -387,5 +387,5 @@ func treatmentGuideResponse(dataAPI api.DataAPI, w http.ResponseWriter, treatmen
 		}
 	}
 
-	WriteJSONToHTTPResponseWriter(w, http.StatusOK, map[string][]View{"views": views})
+	WriteJSONToHTTPResponseWriter(w, http.StatusOK, map[string][]TGView{"views": views})
 }
