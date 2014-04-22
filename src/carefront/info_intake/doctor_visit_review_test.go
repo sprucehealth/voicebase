@@ -27,22 +27,9 @@ func TestParsingTemplateForDoctorVisitReview(t *testing.T) {
 		Result:  sectionList,
 		TagName: "json",
 	}
-
-	decoderConfig.RegisterType(common.SectionListView{})
-	decoderConfig.RegisterType(common.StandardPhotosSectionView{})
-	decoderConfig.RegisterType(common.StandardPhotosSubsectionView{})
-	decoderConfig.RegisterType(common.StandardPhotosListView{})
-	decoderConfig.RegisterType(common.StandardSectionView{})
-	decoderConfig.RegisterType(common.StandardSubsectionView{})
-	decoderConfig.RegisterType(common.StandardOneColumnRowView{})
-	decoderConfig.RegisterType(common.StandardTwoColumnRowView{})
-	decoderConfig.RegisterType(common.DividedViewsList{})
-	decoderConfig.RegisterType(common.AlertLabelsList{})
-	decoderConfig.RegisterType(common.TitleLabelsList{})
-	decoderConfig.RegisterType(common.ContentLabelsList{})
-	decoderConfig.RegisterType(common.CheckXItemsList{})
-	decoderConfig.RegisterType(common.TitleSubtitleSubItemsDividedItemsList{})
-	decoderConfig.RegisterType(common.TitleSubtitleLabels{})
+	if err := decoderConfig.SetRegistry(dVisitReviewViewTypeRegistry.Map()); err != nil {
+		t.Fatalf("Error setting registry for decoder config: %s", err)
+	}
 
 	d, err := mapstructure.NewDecoder(decoderConfig)
 	if err != nil {
@@ -73,22 +60,9 @@ func TestParsingLayoutForDoctorVisitReview(t *testing.T) {
 		Result:  sectionList,
 		TagName: "json",
 	}
-
-	decoderConfig.RegisterType(common.SectionListView{})
-	decoderConfig.RegisterType(common.StandardPhotosSectionView{})
-	decoderConfig.RegisterType(common.StandardPhotosSubsectionView{})
-	decoderConfig.RegisterType(common.StandardPhotosListView{})
-	decoderConfig.RegisterType(common.StandardSectionView{})
-	decoderConfig.RegisterType(common.StandardSubsectionView{})
-	decoderConfig.RegisterType(common.StandardOneColumnRowView{})
-	decoderConfig.RegisterType(common.StandardTwoColumnRowView{})
-	decoderConfig.RegisterType(common.DividedViewsList{})
-	decoderConfig.RegisterType(common.AlertLabelsList{})
-	decoderConfig.RegisterType(common.TitleLabelsList{})
-	decoderConfig.RegisterType(common.ContentLabelsList{})
-	decoderConfig.RegisterType(common.CheckXItemsList{})
-	decoderConfig.RegisterType(common.TitleSubtitleSubItemsDividedItemsList{})
-	decoderConfig.RegisterType(common.TitleSubtitleLabels{})
+	if err := decoderConfig.SetRegistry(dVisitReviewViewTypeRegistry.Map()); err != nil {
+		t.Fatalf("Error setting registry for decoder config: %s", err)
+	}
 
 	d, err := mapstructure.NewDecoder(decoderConfig)
 	if err != nil {

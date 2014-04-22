@@ -6,7 +6,7 @@ import (
 	"reflect"
 )
 
-var dVisitReviewViewTypeRegistry = new(common.TypeRegistry)
+var dVisitReviewViewTypeRegistry common.TypeRegistry = common.TypeRegistry(map[string]reflect.Type{})
 
 func init() {
 	dVisitReviewViewTypeRegistry.

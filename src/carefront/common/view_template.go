@@ -19,7 +19,6 @@ func (c ViewContext) Get(key string) (interface{}, bool) {
 type TypeRegistry map[string]reflect.Type
 
 func (t TypeRegistry) RegisterType(typ Typed) TypeRegistry {
-
 	t[typ.TypeName()] = reflect.TypeOf(typ)
 	return t
 }
