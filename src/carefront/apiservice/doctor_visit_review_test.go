@@ -127,6 +127,111 @@ func TestRenderingLayoutForDoctorVisitReview(t *testing.T) {
 		},
 	})
 
+	viewContext.Set("q_reason_visit:question_summary", "testing5")
+	viewContext.Set("q_reason_visit:answer", "testing")
+
+	viewContext.Set("q_onset_acne:question_summary", "testing5")
+	viewContext.Set("q_onset_acne:answer", "testing")
+
+	viewContext.Set("q_acne_location:question_summary", "testing5")
+	viewContext.Set("q_acne_location:answers", []CheckedUncheckedData{
+		CheckedUncheckedData{
+			Value:     "val1",
+			IsChecked: true,
+		},
+		CheckedUncheckedData{
+			Value:     "val2",
+			IsChecked: false,
+		},
+		CheckedUncheckedData{
+			Value:     "val3",
+			IsChecked: true,
+		},
+		CheckedUncheckedData{
+			Value:     "val4",
+			IsChecked: false,
+		},
+	})
+
+	viewContext.Set("q_acne_symptoms:question_summary", "testing5")
+	viewContext.Set("q_acne_symptoms:answers", []CheckedUncheckedData{
+		CheckedUncheckedData{
+			Value:     "val1",
+			IsChecked: true,
+		},
+		CheckedUncheckedData{
+			Value:     "val2",
+			IsChecked: false,
+		},
+		CheckedUncheckedData{
+			Value:     "val3",
+			IsChecked: true,
+		},
+		CheckedUncheckedData{
+			Value:     "val4",
+			IsChecked: true,
+		},
+	})
+
+	viewContext.Set("q_acne_prev_treatment_list:question_summary", "testing3")
+	viewContext.Set("q_acne_prev_treatment_list:answers", []TitleSubtitleSubItemsData{
+		TitleSubtitleSubItemsData{
+			Title:    "testing3",
+			Subtitle: "testing3",
+			SubItems: []string{
+				"testing3",
+				"testing3",
+				"testing3",
+			},
+		},
+		TitleSubtitleSubItemsData{
+			Title:    "testing3",
+			Subtitle: "testing3",
+			SubItems: []string{
+				"testing3",
+				"testing3",
+				"testing3",
+			},
+		},
+	})
+
+	viewContext.Set("q_acne_prev_otc_treatment_list:question_summary", "testing3")
+	viewContext.Set("q_acne_prev_otc_treatment_list:answers", []TitleSubtitleSubItemsData{
+		TitleSubtitleSubItemsData{
+			Title:    "testing3",
+			Subtitle: "testing3",
+			SubItems: []string{
+				"testing3",
+				"testing3",
+				"testing3",
+			},
+		},
+		TitleSubtitleSubItemsData{
+			Title:    "testing3",
+			Subtitle: "testing3",
+			SubItems: []string{
+				"testing3",
+				"testing3",
+				"testing3",
+			},
+		},
+	})
+
+	viewContext.Set("q_acne_worse:question_summary", "testing5")
+	viewContext.Set("q_acne_worse:answer", "testing")
+
+	viewContext.Set("q_changes_acne_worse:question_summary", "testing5")
+	viewContext.Set("q_changes_acne_worse:answer", "testing")
+
+	viewContext.Set("q_skin_description:question_summary", "testing5")
+	viewContext.Set("q_skin_description:answers", []string{"testing", "testing1", "testing2"})
+
+	viewContext.Set("q_acne_prev_treatment_types:question_summary", "testing5")
+	viewContext.Set("q_acne_prev_treatment_types:answers", []string{"testing", "testing1", "testing2"})
+
+	viewContext.Set("q_anything_else_acne:question_summary", "testing5")
+	viewContext.Set("q_anything_else_acne:answer", "testing")
+
 	sectionList := parseTemplateFromFile("../api-response-examples/v1/doctor/visit/review_v2_template.json", t)
 	_, err := sectionList.Render(viewContext)
 	if err != nil {

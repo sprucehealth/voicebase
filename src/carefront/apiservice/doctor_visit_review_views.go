@@ -352,7 +352,12 @@ func (d *DVisitReviewContentLabelsList) Render(context common.ViewContext) (map[
 	var err error
 	d.Values, err = getStringArrayFromContext(d, d.ContentConfig.Key, context)
 	if err != nil {
-		return nil, err
+		value, err := getStringFromContext(d, d.ContentConfig.Key, context)
+		if err != nil {
+			return nil, err
+		}
+
+		d.Values = []string{value}
 	}
 	renderedView["values"] = d.Values
 	return renderedView, nil
