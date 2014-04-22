@@ -1,6 +1,9 @@
 package common
 
-import "reflect"
+import (
+	"fmt"
+	"reflect"
+)
 
 type ViewContext map[string]interface{}
 
@@ -51,20 +54,28 @@ type ViewCondition struct {
 	Key string `json:"key"`
 }
 
+type ViewConditionEvaluationError struct {
+	Message string
+}
+
+func (v ViewConditionEvaluationError) Error() string {
+	return v.Message
+}
+
 type ConditionEvaluator interface {
-	EvaluateCondition(condition ViewCondition, context ViewContext) bool
+	EvaluateCondition(condition ViewCondition, context ViewContext) (bool, error)
 	Operand() string
 }
 
 type DataExistsEvaluator int64
 
-func (d DataExistsEvaluator) EvaluateCondition(condition ViewCondition, context ViewContext) bool {
+func (d DataExistsEvaluator) EvaluateCondition(condition ViewCondition, context ViewContext) (bool, error) {
 	if condition.Op != "key_exists" {
-		return false
+		return false, ViewConditionEvaluationError{Message: fmt.Sprintf("Condition evaluation called with wrong operand. Expected key_exists but got %s", condition.Op)}
 	}
 
 	_, ok := context.Get(condition.Key)
-	return ok
+	return ok, nil
 }
 
 func (d DataExistsEvaluator) Operand() string {
