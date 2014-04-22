@@ -7,6 +7,12 @@ import (
 
 type ViewContext map[string]interface{}
 
+func NewViewContext() *ViewContext {
+	viewContextMap := make(map[string]interface{})
+	viewContext := ViewContext(viewContextMap)
+	return &viewContext
+}
+
 func (c ViewContext) Set(key string, data interface{}) {
 	c[key] = data
 }

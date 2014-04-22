@@ -119,7 +119,7 @@ func (p *DoctorPatientVisitReviewHandler) ServeHTTP(w http.ResponseWriter, r *ht
 	}
 
 	// TODO get the appropriate template to render here
-	fileContents, err := ioutil.ReadFile("../carefront/api-response-examples/v1/doctor/visit/review_v2_template.json")
+	fileContents, err := ioutil.ReadFile("../api-response-examples/v1/doctor/visit/review_v2_template.json")
 	if err != nil {
 		WriteDeveloperError(w, http.StatusInternalServerError, "Unable to open file to render the template: "+err.Error())
 		return
@@ -160,7 +160,7 @@ func (p *DoctorPatientVisitReviewHandler) ServeHTTP(w http.ResponseWriter, r *ht
 }
 
 func populateContextForRenderingLayout(patientAnswersForQuestions map[int64][]*common.AnswerIntake, questionInfos []*common.QuestionInfo, dataApi api.DataAPI, photoStorageService api.CloudStorageAPI) (common.ViewContext, error) {
-	context := new(common.ViewContext)
+	context := common.NewViewContext()
 	// go through each question
 	for _, questionInfo := range questionInfos {
 		switch questionInfo.Type {
