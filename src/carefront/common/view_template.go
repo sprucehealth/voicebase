@@ -82,9 +82,18 @@ func (d DataExistsEvaluator) Operand() string {
 	return "key_exists"
 }
 
-var ConditionEvaluators map[string]ConditionEvaluator = make(map[string]ConditionEvaluator)
+var conditionEvaluators = make(map[string]ConditionEvaluator)
 
 func init() {
 	dataExistsEvaluator := DataExistsEvaluator(0)
-	ConditionEvaluators[dataExistsEvaluator.Operand()] = dataExistsEvaluator
+	conditionEvaluators[dataExistsEvaluator.Operand()] = dataExistsEvaluator
+}
+
+func EvaluateConditionForView(view View, condition ViewCondition, context ViewContext) (bool, error) {
+	conditionEvaluator, ok := conditionEvaluators[condition.Op]
+	if !ok {
+		return false, ViewConditionEvaluationError{Message: fmt.Sprintf("Unable to find condition with op %s for view type %s", condition.Op, view.TypeName())}
+	}
+
+	return conditionEvaluator.EvaluateCondition(condition, context)
 }

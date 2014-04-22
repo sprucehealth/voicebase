@@ -43,10 +43,12 @@ func (d *DVisitReviewSectionListView) Render(context common.ViewContext) (map[st
 	renderedView["type"] = d.TypeName()
 	renderedSections := make([]interface{}, len(d.Sections))
 	for i, section := range d.Sections {
-		var err error
-		renderedSections[i], err = section.Render(context)
+		renderedSection, err := section.Render(context)
 		if err != nil {
 			return nil, err
+		}
+		if renderedSection != nil {
+			renderedSections[i] = renderedSection
 		}
 	}
 	renderedView["sections"] = renderedSections
@@ -221,12 +223,7 @@ func (d DVisitReviewStandardTwoColumnRowView) TypeName() string {
 
 func (d *DVisitReviewStandardTwoColumnRowView) Render(context common.ViewContext) (map[string]interface{}, error) {
 	if d.ContentConfig.ViewCondition.Op != "" {
-		conditionEvaluator, ok := common.ConditionEvaluators[d.ContentConfig.ViewCondition.Op]
-		if !ok {
-			return nil, common.NewViewRenderingError(fmt.Sprintf("Condition with op %s not found for view type %s", d.ContentConfig.ViewCondition.Op, d.TypeName()))
-		}
-
-		if result, err := conditionEvaluator.EvaluateCondition(d.ContentConfig.ViewCondition, context); err != nil || !result {
+		if result, err := common.EvaluateConditionForView(d, d.ContentConfig.ViewCondition, context); err != nil || !result {
 			return nil, err
 		}
 	}
@@ -417,12 +414,7 @@ func (d DVisitReviewTitleSubtitleLabels) TypeName() string {
 
 func (d *DVisitReviewTitleSubtitleLabels) Render(context common.ViewContext) (map[string]interface{}, error) {
 	if d.ContentConfig.ViewCondition.Op != "" {
-		conditionEvaluator, ok := common.ConditionEvaluators[d.ContentConfig.ViewCondition.Op]
-		if !ok {
-			return nil, common.NewViewRenderingError(fmt.Sprintf("Unable to find condition with op %s for view type %s", d.ContentConfig.ViewCondition.Op, d.TypeName()))
-		}
-
-		if result, err := conditionEvaluator.EvaluateCondition(d.ContentConfig.ViewCondition, context); err != nil || !result {
+		if result, err := common.EvaluateConditionForView(d, d.ContentConfig.ViewCondition, context); err != nil || !result {
 			return nil, err
 		}
 	}
