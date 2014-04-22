@@ -7,7 +7,6 @@ import (
 	"carefront/libs/pharmacy"
 	"encoding/json"
 	"fmt"
-	"io/ioutil"
 	"net/http"
 
 	"github.com/SpruceHealth/mapstructure"
@@ -30,6 +29,361 @@ type DoctorPatientVisitReviewResponse struct {
 	DoctorLayout    *info_intake.PatientVisitOverview `json:"patient_visit_overview,omitempty"`
 	TreatmentPlanId int64                             `json:"treatment_plan_id"`
 }
+
+var reviewTemplate = `{
+  "type": "d_visit_review:sections_list",
+  "sections": [
+    {
+      "title": "Photos",
+      "type": "d_visit_review:standard_photo_section",
+      "subsections": [
+        {
+          "type": "d_visit_review:standard_photo_subsection",
+          "view": {
+            "type": "d_visit_review:standard_photos_list",
+            "content_config": {
+              "key": "patient_visit_photos"
+            }
+          }
+        }
+      ]
+    },
+    {
+      "title": "Medical History",
+      "type": "d_visit_review:standard_section",
+      "subsections": [
+        {
+          "title": "Alerts",
+          "type": "d_visit_review:standard_subsection",
+          "rows": [
+            {
+              "type": "d_visit_review:standard_one_column_row",
+              "view": {
+                "type": "d_visit_review:alert_labels_list",
+                "content_config": {
+                  "key": "patient_visit_alerts"
+                }
+              }
+            }
+          ]
+        },
+        {
+          "title": "Medication",
+          "type": "d_visit_review:standard_subsection",
+          "rows": [
+            {
+              "type": "d_visit_review:standard_two_column_row",
+              "left_view": {
+                "type": "d_visit_review:title_labels_list",
+                "content_config": {
+                  "key": "q_allergic_medication_entry:question_summary"
+                }
+              },
+              "right_view": {
+                "type": "d_visit_review:content_labels_list",
+                "content_config": {
+                  "key": "q_allergic_medication_entry:answers"
+                }
+              }
+            },
+            {
+              "type": "d_visit_review:standard_two_column_row",
+              "left_view": {
+                "type": "d_visit_review:title_labels_list",
+                "content_config": {
+                  "key": "q_current_medications_entry:question_summary"
+                }
+              },
+              "right_view": {
+                "type": "d_visit_review:title_subtitle_subitems_divided_items_list",
+                "content_config": {
+                  "key": "q_current_medications_entry:answers"
+                }
+              }
+            }
+          ]
+        },
+        {
+          "title": "Past Medical Conditions",
+          "type": "d_visit_review:standard_subsection",
+          "rows": [
+            {
+              "type": "d_visit_review:standard_two_column_row",
+              "left_view": {
+                "type": "d_visit_review:title_labels_list",
+                "content_config": {
+                  "key": "q_list_prev_skin_condition_diagnosis:question_summary"
+                }
+              },
+              "right_view": {
+                "type": "d_visit_review:content_labels_list",
+                "content_config": {
+                  "key": "q_list_prev_skin_condition_diagnosis:answers"
+                }
+              }
+            },
+            {
+              "type": "d_visit_review:standard_two_column_row",
+              "content_config": {
+                "condition": {
+                  "op": "key_exists",
+                  "key": "q_other_skin_condition_entry:question_summary"
+                }
+              },
+              "left_view": {
+                "type": "d_visit_review:title_labels_list",
+                "content_config": {
+                  "key": "q_other_skin_condition_entry:question_summary"
+                }
+              },
+              "right_view": {
+                "type": "d_visit_review:check_x_items_list",
+                "content_config": {
+                  "key": "q_other_skin_condition_entry:answers"
+                }
+              }
+            }
+          ]
+        },
+        {
+          "title": "Additional Information",
+          "type": "d_visit_review:standard_subsection",
+          "content_config": {
+            "condition": {
+              "op": "key_exists",
+              "key": "q_pregnancy_planning:answers"
+            }
+          },
+          "rows": [
+            {
+              "type": "d_visit_review:standard_two_column_row",
+              "left_view": {
+                "type": "d_visit_review:title_labels_list",
+                "content_config": {
+                  "key": "q_pregnancy_planning:question_summary"
+                }
+              },
+              "right_view": {
+                "type": "d_visit_review:check_x_items_list",
+                "content_config": {
+                  "key": "q_pregnancy_planning:answers"
+                }
+              }
+            }
+          ]
+        }
+      ]
+    },
+    {
+      "title": "History of Present Illness",
+      "type": "d_visit_review:standard_section",
+      "subsections": [
+        {
+          "title": "Symptoms Overview",
+          "type": "d_visit_review:standard_subsection",
+          "rows": [
+            {
+              "type": "d_visit_review:standard_two_column_row",
+              "left_view": {
+                "type": "d_visit_review:title_labels_list",
+                "content_config": {
+                  "key": "q_onset_acne:question_summary"
+                }
+              },
+              "right_view": {
+                "type": "d_visit_review:content_labels_list",
+                "content_config": {
+                  "key": "q_onset_acne:answers"
+                }
+              }
+            },
+            {
+              "type": "d_visit_review:standard_two_column_row",
+              "left_view": {
+                "type": "d_visit_review:title_labels_list",
+                "content_config": {
+                  "key": "q_acne_location:question_summary"
+                }
+              },
+              "right_view": {
+                "type": "d_visit_review:check_x_items_list",
+                "content_config": {
+                  "key": "q_acne_location:answers"
+                }
+              }
+            },
+            {
+              "type": "d_visit_review:standard_two_column_row",
+              "left_view": {
+                "type": "d_visit_review:title_labels_list",
+                "content_config": {
+                  "key": "q_acne_symptoms:question_summary"
+                }
+              },
+              "right_view": {
+                "type": "d_visit_review:check_x_items_list",
+                "content_config": {
+                  "key": "q_acne_symptoms:answers"
+                }
+              }
+            },
+            {
+              "type": "d_visit_review:standard_two_column_row",
+              "left_view": {
+                "type": "d_visit_review:title_labels_list",
+                "content_config": {
+                  "key": "q_acne_worse:question_summary"
+                }
+              },
+              "right_view": {
+                "type": "d_visit_review:divided_views_list",
+                "views": [
+                  {
+                    "type": "d_visit_review:content_labels_list",
+                    "content_config": {
+                      "key": "q_acne_worse:answers"
+                    }
+                  },
+                  {
+                    "type": "d_visit_review:title_subtitle_labels",
+                    "content_config": {
+                      "condition": {
+                        "op": "key_exists",
+                        "key": "q_changes_acne_worse:answers"
+                      },
+                      "title_key": "q_changes_acne_worse:question_summary",
+                      "subtitle_key": "q_changes_acne_worse:answers"
+                    }
+                  }
+                ]
+              }
+            },
+            {
+              "type": "d_visit_review:standard_two_column_row",
+              "content_config": {
+                "condition": {
+                  "op": "key_exists",
+                  "key": "q_acne_worse_period:question_summary"
+                }
+              },
+              "left_view": {
+                "type": "d_visit_review:title_labels_list",
+                "content_config": {
+                  "key": "q_acne_worse_period:question_summary"
+                }
+              },
+              "right_view": {
+                "type": "d_visit_review:divided_views_list",
+                "views": [
+                  {
+                    "type": "d_visit_review:content_labels_list",
+                    "content_config": {
+                      "key": "q_acne_worse_period:answers"
+                    }
+                  },
+                  {
+                    "type": "d_visit_review:title_subtitle_labels",
+                    "content_config": {
+                      "title_key": "q_periods_regular:question_summary",
+                      "subtitle_key": "q_periods_regular:answers"
+                    }
+                  }
+                ]
+              }
+            },
+            {
+              "type": "d_visit_review:standard_two_column_row",
+              "left_view": {
+                "type": "d_visit_review:title_labels_list",
+                "content_config": {
+                  "key": "q_skin_description:question_summary"
+                }
+              },
+              "right_view": {
+                "type": "d_visit_review:content_labels_list",
+                "content_config": {
+                  "key": "q_skin_description:answers"
+                }
+              }
+            }
+          ]
+        },
+        {
+          "title": "Prior Treatments",
+          "type": "d_visit_review:standard_subsection",
+          "rows": [
+            {
+              "type": "d_visit_review:standard_two_column_row",
+              "left_view": {
+                "type": "d_visit_review:title_labels_list",
+                "content_config": {
+                  "key": "q_acne_prev_treatment_types:question_summary"
+                }
+              },
+              "right_view": {
+                "type": "d_visit_review:content_labels_list",
+                "content_config": {
+                  "key": "q_acne_prev_treatment_types:answers"
+                }
+              }
+            },
+            {
+              "type": "d_visit_review:standard_two_column_row",
+              "left_view": {
+                "type": "d_visit_review:title_labels_list",
+                "content_config": {
+                  "key": "q_acne_prev_treatment_list:question_summary"
+                }
+              },
+              "right_view": {
+                "type": "d_visit_review:title_subtitle_subitems_divided_items_list",
+                "content_config": {
+                  "key": "q_acne_prev_treatment_list:answers"
+                }
+              }
+            },
+            {
+              "type": "d_visit_review:standard_two_column_row",
+              "content_config": {
+                "condition": {
+                  "op": "key_exists",
+                  "key": "q_acne_prev_otc_treatment_list:question_summary"
+                }
+              },
+              "left_view": {
+                "type": "d_visit_review:title_labels_list",
+                "content_config": {
+                  "key": "q_acne_prev_otc_treatment_list:question_summary"
+                }
+              },
+              "right_view": {
+                "type": "d_visit_review:title_subtitle_subitems_divided_items_list",
+                "content_config": {
+                  "key": "q_acne_prev_otc_treatment_list:answers"
+                }
+              }
+            }
+          ]
+        },
+        {
+          "title": "Additional Information from Patient",
+          "type": "d_visit_review:standard_subsection",
+          "rows": [
+            {
+              "type": "d_visit_review:standard_one_column_row",
+              "view": {
+                "type": "d_visit_review:content_labels_list",
+                "content_config": {
+                  "key": "q_anything_else_acne:answers"
+                }
+              }
+            }
+          ]
+        }
+      ]
+    }
+  ]
+}`
 
 func (p *DoctorPatientVisitReviewHandler) ServeHTTP(w http.ResponseWriter, r *http.Request) {
 	if r.Method != HTTP_GET {
@@ -119,14 +473,9 @@ func (p *DoctorPatientVisitReviewHandler) ServeHTTP(w http.ResponseWriter, r *ht
 	}
 
 	// TODO get the appropriate template to render here
-	fileContents, err := ioutil.ReadFile("../api-response-examples/v1/doctor/visit/review_v2_template.json")
-	if err != nil {
-		WriteDeveloperError(w, http.StatusInternalServerError, "Unable to open file to render the template: "+err.Error())
-		return
-	}
 
 	var jsonData map[string]interface{}
-	err = json.Unmarshal(fileContents, &jsonData)
+	err = json.Unmarshal([]byte(reviewTemplate), &jsonData)
 	if err != nil {
 		WriteDeveloperError(w, http.StatusInternalServerError, "Unbale to unmarshal file contents into map[string]interface{}: "+err.Error())
 	}
@@ -161,6 +510,9 @@ func (p *DoctorPatientVisitReviewHandler) ServeHTTP(w http.ResponseWriter, r *ht
 
 func populateContextForRenderingLayout(patientAnswersForQuestions map[int64][]*common.AnswerIntake, questionInfos []*common.QuestionInfo, dataApi api.DataAPI, photoStorageService api.CloudStorageAPI) (common.ViewContext, error) {
 	context := common.NewViewContext()
+
+	populateAlerts(patientAnswersForQuestions, context, dataApi)
+
 	// go through each question
 	for _, questionInfo := range questionInfos {
 		switch questionInfo.Type {
@@ -184,6 +536,11 @@ func populateContextForRenderingLayout(patientAnswersForQuestions map[int64][]*c
 	}
 
 	return *context, nil
+}
+
+func populateAlerts(patientAnswers map[int64][]*common.AnswerIntake, context *common.ViewContext, dataApi api.DataAPI) error {
+	context.Set("patient_visit_alerts", []string{"No alerts"})
+	return nil
 }
 
 func populateCheckedUncheckedData(patientAnswers []*common.AnswerIntake, questionInfo *common.QuestionInfo, context *common.ViewContext, dataApi api.DataAPI) error {
@@ -251,7 +608,7 @@ func populateDataForSingleEntryAnswers(patientAnswers []*common.AnswerIntake, qu
 	}
 
 	context.Set(fmt.Sprintf("%s:question_summary", questionInfo.QuestionTag), questionInfo.Summary)
-	context.Set(fmt.Sprintf("%s:answer", questionInfo.QuestionTag), answer)
+	context.Set(fmt.Sprintf("%s:answers", questionInfo.QuestionTag), answer)
 	return nil
 }
 

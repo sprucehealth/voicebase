@@ -93,6 +93,21 @@ func TestRenderingLayoutForDoctorVisitReview_ContentLabels(t *testing.T) {
 	if err != nil {
 		t.Fatalf("Error rendering layout:%s", err)
 	}
+
+	// now change it to titlesubtitlesubtiems type with just the title set
+	viewContext.Set("q_skin_description:question_summary", "testing3")
+	viewContext.Set("q_skin_description:answers", []TitleSubtitleSubItemsData{
+		TitleSubtitleSubItemsData{
+			Title: "testing3",
+		},
+		TitleSubtitleSubItemsData{
+			Title: "testing3",
+		},
+	})
+	_, err = sectionList.Render(viewContext)
+	if err != nil {
+		t.Fatalf("Error rendering layout:%s", err)
+	}
 }
 
 func populateCompleteViewContext(viewContext common.ViewContext) {
@@ -170,10 +185,10 @@ func populateCompleteViewContext(viewContext common.ViewContext) {
 	})
 
 	viewContext.Set("q_reason_visit:question_summary", "testing5")
-	viewContext.Set("q_reason_visit:answer", "testing")
+	viewContext.Set("q_reason_visit:answers", "testing")
 
 	viewContext.Set("q_onset_acne:question_summary", "testing5")
-	viewContext.Set("q_onset_acne:answer", "testing")
+	viewContext.Set("q_onset_acne:answers", "testing")
 
 	viewContext.Set("q_acne_location:question_summary", "testing5")
 	viewContext.Set("q_acne_location:answers", []CheckedUncheckedData{
@@ -260,10 +275,10 @@ func populateCompleteViewContext(viewContext common.ViewContext) {
 	})
 
 	viewContext.Set("q_acne_worse:question_summary", "testing5")
-	viewContext.Set("q_acne_worse:answer", "testing")
+	viewContext.Set("q_acne_worse:answers", "testing")
 
 	viewContext.Set("q_changes_acne_worse:question_summary", "testing5")
-	viewContext.Set("q_changes_acne_worse:answer", "testing")
+	viewContext.Set("q_changes_acne_worse:answers", "testing")
 
 	viewContext.Set("q_skin_description:question_summary", "testing5")
 	viewContext.Set("q_skin_description:answers", []string{"testing", "testing1", "testing2"})
@@ -272,5 +287,5 @@ func populateCompleteViewContext(viewContext common.ViewContext) {
 	viewContext.Set("q_acne_prev_treatment_types:answers", []string{"testing", "testing1", "testing2"})
 
 	viewContext.Set("q_anything_else_acne:question_summary", "testing5")
-	viewContext.Set("q_anything_else_acne:answer", "testing")
+	viewContext.Set("q_anything_else_acne:answers", "testing")
 }

@@ -41,14 +41,15 @@ func (d DVisitReviewSectionListView) TypeName() string {
 func (d *DVisitReviewSectionListView) Render(context common.ViewContext) (map[string]interface{}, error) {
 	renderedView := make(map[string]interface{})
 	renderedView["type"] = d.TypeName()
-	renderedSections := make([]interface{}, len(d.Sections))
-	for i, section := range d.Sections {
+	renderedSections := make([]interface{}, 0)
+	for _, section := range d.Sections {
 		renderedSection, err := section.Render(context)
 		if err != nil {
 			return nil, err
 		}
+
 		if renderedSection != nil {
-			renderedSections[i] = renderedSection
+			renderedSections = append(renderedSections, renderedSection)
 		}
 	}
 	renderedView["sections"] = renderedSections
@@ -68,13 +69,17 @@ func (d *DVisitReviewStandardPhotosSectionView) Render(context common.ViewContex
 	renderedView := make(map[string]interface{})
 	renderedView["title"] = d.Title
 	renderedView["type"] = d.TypeName()
-	renderedSubSections := make([]interface{}, len(d.Subsections))
+	renderedSubSections := make([]interface{}, 0)
 
-	for i, subSection := range d.Subsections {
+	for _, subSection := range d.Subsections {
 		var err error
-		renderedSubSections[i], err = subSection.Render(context)
+		renderedSubSection, err := subSection.Render(context)
 		if err != nil {
 			return nil, err
+		}
+
+		if renderedSubSection != nil {
+			renderedSubSections = append(renderedSubSections, renderedSubSection)
 		}
 	}
 	renderedView["subsections"] = renderedSubSections
@@ -150,15 +155,15 @@ func (d *DVisitReviewStandardSectionView) Render(context common.ViewContext) (ma
 	renderedView := make(map[string]interface{})
 	renderedView["type"] = d.TypeName()
 	renderedView["title"] = d.Title
-	renderedSubsections := make([]interface{}, len(d.Subsections))
+	renderedSubsections := make([]interface{}, 0)
 
-	for i, subsection := range d.Subsections {
+	for _, subsection := range d.Subsections {
 		renderedSubsection, err := subsection.Render(context)
 		if err != nil {
 			return nil, err
 		}
 		if renderedSubsection != nil {
-			renderedSubsections[i] = renderedSubsection
+			renderedSubsections = append(renderedSubsections, renderedSubsection)
 		}
 	}
 	renderedView["subsections"] = renderedSubsections
@@ -166,8 +171,11 @@ func (d *DVisitReviewStandardSectionView) Render(context common.ViewContext) (ma
 }
 
 type DVisitReviewStandardSubsectionView struct {
-	Title string        `json:"title"`
-	Rows  []common.View `json:"rows"`
+	Title         string        `json:"title"`
+	Rows          []common.View `json:"rows"`
+	ContentConfig struct {
+		common.ViewCondition `json:"condition"`
+	} `json:"content_config"`
 }
 
 func (d DVisitReviewStandardSubsectionView) TypeName() string {
@@ -175,18 +183,23 @@ func (d DVisitReviewStandardSubsectionView) TypeName() string {
 }
 
 func (d *DVisitReviewStandardSubsectionView) Render(context common.ViewContext) (map[string]interface{}, error) {
+	if d.ContentConfig.ViewCondition.Op != "" {
+		if result, err := common.EvaluateConditionForView(d, d.ContentConfig.ViewCondition, context); err != nil || !result {
+			return nil, err
+		}
+	}
 	renderedView := make(map[string]interface{})
 	renderedView["type"] = d.TypeName()
 	renderedView["title"] = d.Title
-	renderedRows := make([]interface{}, len(d.Rows))
+	renderedRows := make([]interface{}, 0)
 
-	for i, row := range d.Rows {
+	for _, row := range d.Rows {
 		renderedRow, err := row.Render(context)
 		if err != nil {
 			return nil, err
 		}
 		if renderedRow != nil {
-			renderedRows[i] = renderedRow
+			renderedRows = append(renderedRows, renderedRow)
 		}
 	}
 	renderedView["rows"] = renderedRows
@@ -270,14 +283,14 @@ func (d DVisitReviewDividedViewsList) TypeName() string {
 func (d *DVisitReviewDividedViewsList) Render(context common.ViewContext) (map[string]interface{}, error) {
 	renderedView := make(map[string]interface{})
 	renderedView["type"] = d.TypeName()
-	renderedSubviews := make([]interface{}, len(d.DividedViews))
-	for i, dividedView := range d.DividedViews {
+	renderedSubviews := make([]interface{}, 0)
+	for _, dividedView := range d.DividedViews {
 		renderedSubview, err := dividedView.Render(context)
 		if err != nil {
 			return nil, err
 		}
 		if renderedSubview != nil {
-			renderedSubviews[i] = renderedSubview
+			renderedSubviews = append(renderedSubviews, renderedSubview)
 		}
 	}
 	renderedView["views"] = renderedSubviews
@@ -378,8 +391,16 @@ func (d *DVisitReviewContentLabelsList) Render(context common.ViewContext) (map[
 			}
 		}
 		d.Values = strItems
+	case []TitleSubtitleSubItemsData:
+		// read the checked items to populate the content list
+		items := content.([]TitleSubtitleSubItemsData)
+		strItems := make([]string, 0)
+		for _, item := range items {
+			strItems = append(strItems, item.Title)
+		}
+		d.Values = strItems
 	default:
-		return nil, common.NewViewRenderingError(fmt.Sprintf("Expected content to be either string, []string or []CheckedUnCheckedData for view type %s", d.TypeName()))
+		return nil, common.NewViewRenderingError(fmt.Sprintf("Expected content to be either string, []string, []CheckedUnCheckedData or []TitleSubtitleSubitemsData for view type %s and key %s but was %s", d.TypeName(), d.ContentConfig.Key, reflect.TypeOf(content)))
 	}
 
 	renderedView["values"] = d.Values
@@ -407,7 +428,7 @@ func (d *DVisitReviewCheckXItemsList) Render(context common.ViewContext) (map[st
 
 	checkedUncheckedItems, ok := content.([]CheckedUncheckedData)
 	if !ok {
-		return nil, common.NewViewRenderingError(fmt.Sprintf("Expected content of type []CheckedUncheckedData for view type %s", d.TypeName()))
+		return nil, common.NewViewRenderingError(fmt.Sprintf("Expected content of type []CheckedUncheckedData for view type %s and key %s", d.TypeName(), d.ContentConfig.Key))
 	}
 	d.Items = checkedUncheckedItems
 	renderedView["items"] = checkedUncheckedItems
