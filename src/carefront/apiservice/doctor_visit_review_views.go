@@ -95,10 +95,12 @@ func (d *DVisitReviewStandardPhotosSubsectionView) Render(context common.ViewCon
 	renderedView["type"] = d.TypeName()
 
 	if d.SubsectionView != nil {
-		var err error
-		renderedView["view"], err = d.SubsectionView.Render(context)
+		renderedSubsectionView, err := d.SubsectionView.Render(context)
 		if err != nil {
 			return nil, err
+		}
+		if renderedSubsectionView != nil {
+			renderedView["view"] = renderedSubsectionView
 		}
 	}
 	return renderedView, nil
@@ -151,10 +153,12 @@ func (d *DVisitReviewStandardSectionView) Render(context common.ViewContext) (ma
 	renderedSubsections := make([]interface{}, len(d.Subsections))
 
 	for i, subsection := range d.Subsections {
-		var err error
-		renderedSubsections[i], err = subsection.Render(context)
+		renderedSubsection, err := subsection.Render(context)
 		if err != nil {
 			return nil, err
+		}
+		if renderedSubsection != nil {
+			renderedSubsections[i] = renderedSubsection
 		}
 	}
 	renderedView["subsections"] = renderedSubsections
@@ -177,10 +181,12 @@ func (d *DVisitReviewStandardSubsectionView) Render(context common.ViewContext) 
 	renderedRows := make([]interface{}, len(d.Rows))
 
 	for i, row := range d.Rows {
-		var err error
-		renderedRows[i], err = row.Render(context)
+		renderedRow, err := row.Render(context)
 		if err != nil {
 			return nil, err
+		}
+		if renderedRow != nil {
+			renderedRows[i] = renderedRow
 		}
 	}
 	renderedView["rows"] = renderedRows
@@ -200,10 +206,12 @@ func (d *DVisitReviewStandardOneColumnRowView) Render(context common.ViewContext
 	renderedView := make(map[string]interface{})
 	renderedView["type"] = d.TypeName()
 	if d.SingleView != nil {
-		var err error
-		renderedView["view"], err = d.SingleView.Render(context)
+		renderedSingleView, err := d.SingleView.Render(context)
 		if err != nil {
 			return nil, err
+		}
+		if renderedSingleView != nil {
+			renderedView["view"] = renderedSingleView
 		}
 	}
 	return renderedView, nil
@@ -230,18 +238,22 @@ func (d *DVisitReviewStandardTwoColumnRowView) Render(context common.ViewContext
 	renderedView := make(map[string]interface{})
 	renderedView["type"] = d.TypeName()
 	if d.LeftView != nil {
-		var err error
-		renderedView["left_view"], err = d.LeftView.Render(context)
+		renderedLeftView, err := d.LeftView.Render(context)
 		if err != nil {
 			return nil, err
+		}
+		if renderedLeftView != nil {
+			renderedView["left_view"] = renderedLeftView
 		}
 	}
 
 	if d.RightView != nil {
-		var err error
-		renderedView["right_view"], err = d.RightView.Render(context)
+		renderedRightView, err := d.RightView.Render(context)
 		if err != nil {
 			return nil, err
+		}
+		if renderedRightView != nil {
+			renderedView["right_view"] = renderedRightView
 		}
 	}
 	return renderedView, nil
@@ -260,10 +272,12 @@ func (d *DVisitReviewDividedViewsList) Render(context common.ViewContext) (map[s
 	renderedView["type"] = d.TypeName()
 	renderedSubviews := make([]interface{}, len(d.DividedViews))
 	for i, dividedView := range d.DividedViews {
-		var err error
-		renderedSubviews[i], err = dividedView.Render(context)
+		renderedSubview, err := dividedView.Render(context)
 		if err != nil {
 			return nil, err
+		}
+		if renderedSubview != nil {
+			renderedSubviews[i] = renderedSubview
 		}
 	}
 	renderedView["views"] = renderedSubviews
