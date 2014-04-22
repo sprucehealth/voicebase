@@ -54,6 +54,48 @@ func parseTemplateFromFile(fileLocation string, t *testing.T) DVisitReviewSectio
 
 func TestRenderingLayoutForDoctorVisitReview(t *testing.T) {
 	viewContext := common.ViewContext(map[string]interface{}{})
+	populateCompleteViewContext(viewContext)
+
+	sectionList := parseTemplateFromFile("../api-response-examples/v1/doctor/visit/review_v2_template.json", t)
+	_, err := sectionList.Render(viewContext)
+	if err != nil {
+		t.Fatalf("Error rendering layout:%s", err)
+	}
+}
+
+func TestRenderingLayoutForDoctorVisitReview_ContentLabels(t *testing.T) {
+	viewContext := common.ViewContext(map[string]interface{}{})
+	populateCompleteViewContext(viewContext)
+
+	// change one of the content labels list content to populate CheckedUncheckedData items
+	viewContext.Set("q_skin_description:question_summary", "testing5")
+	viewContext.Set("q_skin_description:answers", []CheckedUncheckedData{
+		CheckedUncheckedData{
+			Value:     "val1",
+			IsChecked: true,
+		},
+		CheckedUncheckedData{
+			Value:     "val2",
+			IsChecked: false,
+		},
+		CheckedUncheckedData{
+			Value:     "val3",
+			IsChecked: false,
+		},
+		CheckedUncheckedData{
+			Value:     "val4",
+			IsChecked: true,
+		},
+	})
+
+	sectionList := parseTemplateFromFile("../api-response-examples/v1/doctor/visit/review_v2_template.json", t)
+	_, err := sectionList.Render(viewContext)
+	if err != nil {
+		t.Fatalf("Error rendering layout:%s", err)
+	}
+}
+
+func populateCompleteViewContext(viewContext common.ViewContext) {
 	viewContext.Set("patient_visit_photos", []PhotoData{
 		PhotoData{
 			Title:          "Left Photo",
@@ -231,10 +273,4 @@ func TestRenderingLayoutForDoctorVisitReview(t *testing.T) {
 
 	viewContext.Set("q_anything_else_acne:question_summary", "testing5")
 	viewContext.Set("q_anything_else_acne:answer", "testing")
-
-	sectionList := parseTemplateFromFile("../api-response-examples/v1/doctor/visit/review_v2_template.json", t)
-	_, err := sectionList.Render(viewContext)
-	if err != nil {
-		t.Fatalf("Error rendering layout:%s", err)
-	}
 }

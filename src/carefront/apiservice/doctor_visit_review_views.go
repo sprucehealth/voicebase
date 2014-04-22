@@ -323,14 +323,21 @@ func (d *DVisitReviewTitleLabelsList) Render(context common.ViewContext) (map[st
 	renderedView := make(map[string]interface{})
 	renderedView["type"] = d.TypeName()
 	var err error
-	d.Values, err = getStringArrayFromContext(d, d.ContentConfig.Key, context)
+
+	content, err := getContentFromContextForView(d, d.ContentConfig.Key, context)
 	if err != nil {
-		value, err := getStringFromContext(d, d.ContentConfig.Key, context)
-		if err != nil {
-			return nil, err
-		}
-		d.Values = []string{value}
+		return nil, err
 	}
+
+	switch content.(type) {
+	case string:
+		d.Values = []string{content.(string)}
+	case []string:
+		d.Values = content.([]string)
+	default:
+		return nil, common.NewViewRenderingError(fmt.Sprintf("Expected content to be either string or []string for view type %s", d.TypeName()))
+	}
+
 	renderedView["values"] = d.Values
 	return renderedView, nil
 }
@@ -350,15 +357,31 @@ func (d *DVisitReviewContentLabelsList) Render(context common.ViewContext) (map[
 	renderedView := make(map[string]interface{})
 	renderedView["type"] = d.TypeName()
 	var err error
-	d.Values, err = getStringArrayFromContext(d, d.ContentConfig.Key, context)
-	if err != nil {
-		value, err := getStringFromContext(d, d.ContentConfig.Key, context)
-		if err != nil {
-			return nil, err
-		}
 
-		d.Values = []string{value}
+	content, err := getContentFromContextForView(d, d.ContentConfig.Key, context)
+	if err != nil {
+		return nil, err
 	}
+
+	switch content.(type) {
+	case string:
+		d.Values = []string{content.(string)}
+	case []string:
+		d.Values = content.([]string)
+	case []CheckedUncheckedData:
+		// read the checked items to populate the content list
+		items := content.([]CheckedUncheckedData)
+		strItems := make([]string, 0)
+		for _, item := range items {
+			if item.IsChecked {
+				strItems = append(strItems, item.Value)
+			}
+		}
+		d.Values = strItems
+	default:
+		return nil, common.NewViewRenderingError(fmt.Sprintf("Expected content to be either string, []string or []CheckedUnCheckedData for view type %s", d.TypeName()))
+	}
+
 	renderedView["values"] = d.Values
 	return renderedView, nil
 }
