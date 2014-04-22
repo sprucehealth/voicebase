@@ -71,29 +71,14 @@ func TestRenderingLayoutForDoctorVisitReview(t *testing.T) {
 		"testing3",
 	})
 
-	viewContext.Set("q_allergic_medication_entry:question_summary", []string{"testing"})
-	viewContext.Set("q_allergic_medication_entry:answers", []TitleSubtitleSubItemsData{
-		TitleSubtitleSubItemsData{
-			Title:    "testing",
-			Subtitle: "Testing",
-			SubItems: []string{
-				"testing",
-				"testing",
-				"testing",
-			},
-		},
-		TitleSubtitleSubItemsData{
-			Title:    "testing2",
-			Subtitle: "Testing2",
-			SubItems: []string{
-				"testing2",
-				"testing2",
-				"testing2",
-			},
-		},
+	viewContext.Set("q_allergic_medication_entry:question_summary", "testing")
+	viewContext.Set("q_allergic_medication_entry:answers", []string{
+		"testing1",
+		"testing2",
+		"testing3",
 	})
 
-	viewContext.Set("q_current_medications_entry:question_summary", []string{"testing3"})
+	viewContext.Set("q_current_medications_entry:question_summary", "testing3")
 	viewContext.Set("q_current_medications_entry:answers", []TitleSubtitleSubItemsData{
 		TitleSubtitleSubItemsData{
 			Title:    "testing3",
@@ -115,14 +100,14 @@ func TestRenderingLayoutForDoctorVisitReview(t *testing.T) {
 		},
 	})
 
-	viewContext.Set("q_list_prev_skin_condition_diagnosis:question_summary", []string{"testing4"})
+	viewContext.Set("q_list_prev_skin_condition_diagnosis:question_summary", "testing4")
 	viewContext.Set("q_list_prev_skin_condition_diagnosis:answers", []string{
 		"testing1",
 		"testing2",
 		"testing3",
 	})
 
-	viewContext.Set("q_other_skin_condition_entry:question_summary", []string{"testing5"})
+	viewContext.Set("q_other_skin_condition_entry:question_summary", "testing5")
 	viewContext.Set("q_other_skin_condition_entry:answers", []CheckedUncheckedData{
 		CheckedUncheckedData{
 			Value:     "val1",
