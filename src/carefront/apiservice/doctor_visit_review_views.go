@@ -10,22 +10,22 @@ var dVisitReviewViewTypeRegistry common.TypeRegistry = common.TypeRegistry(map[s
 
 func init() {
 	dVisitReviewViewTypeRegistry.
-		RegisterType(DVisitReviewSectionListView{}).
-		RegisterType(DVisitReviewStandardPhotosSectionView{}).
-		RegisterType(DVisitReviewStandardPhotosSubsectionView{}).
-		RegisterType(DVisitReviewStandardPhotosListView{}).
-		RegisterType(DVisitReviewStandardSectionView{}).
-		RegisterType(DVisitReviewStandardSubsectionView{}).
-		RegisterType(DVisitReviewStandardSubsectionView{}).
-		RegisterType(DVisitReviewStandardOneColumnRowView{}).
-		RegisterType(DVisitReviewStandardTwoColumnRowView{}).
-		RegisterType(DVisitReviewDividedViewsList{}).
-		RegisterType(DVisitReviewAlertLabelsList{}).
-		RegisterType(DVisitReviewTitleLabelsList{}).
-		RegisterType(DVisitReviewContentLabelsList{}).
-		RegisterType(DVisitReviewCheckXItemsList{}).
-		RegisterType(DVisitReviewTitleSubtitleSubItemsDividedItemsList{}).
-		RegisterType(DVisitReviewTitleSubtitleLabels{})
+		RegisterType(&DVisitReviewSectionListView{}).
+		RegisterType(&DVisitReviewStandardPhotosSectionView{}).
+		RegisterType(&DVisitReviewStandardPhotosSubsectionView{}).
+		RegisterType(&DVisitReviewStandardPhotosListView{}).
+		RegisterType(&DVisitReviewStandardSectionView{}).
+		RegisterType(&DVisitReviewStandardSubsectionView{}).
+		RegisterType(&DVisitReviewStandardSubsectionView{}).
+		RegisterType(&DVisitReviewStandardOneColumnRowView{}).
+		RegisterType(&DVisitReviewStandardTwoColumnRowView{}).
+		RegisterType(&DVisitReviewDividedViewsList{}).
+		RegisterType(&DVisitReviewAlertLabelsList{}).
+		RegisterType(&DVisitReviewTitleLabelsList{}).
+		RegisterType(&DVisitReviewContentLabelsList{}).
+		RegisterType(&DVisitReviewCheckXItemsList{}).
+		RegisterType(&DVisitReviewTitleSubtitleSubItemsDividedItemsList{}).
+		RegisterType(&DVisitReviewTitleSubtitleLabels{})
 }
 
 // View definitions
