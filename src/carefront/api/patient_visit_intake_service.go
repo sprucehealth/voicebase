@@ -20,7 +20,7 @@ func (d *DataService) GetPatientAnswersForQuestionsInGlobalSections(questionIds 
 	return d.getPatientAnswersForQuestionsBasedOnQuery(queryStr, patientId)
 }
 
-func (d *DataService) GetAnswersForQuestionsInPatientVisit(role string, questionIds []int64, roleId int64, patientVisitId int64) (answerIntakes map[int64][]*common.AnswerIntake, err error) {
+func (d *DataService) GetAnswersForQuestionsBasedOnQuestionIds(questionIds []int64, roleId int64, patientVisitId int64) (answerIntakes map[int64][]*common.AnswerIntake, err error) {
 	enumeratedStrings := enumerateItemsIntoString(questionIds)
 	queryStr := fmt.Sprintf(`select info_intake.id, info_intake.question_id, potential_answer_id, l1.ltext, l2.ltext, answer_text, bucket, storage_key, region_tag,
 								layout_version_id, parent_question_id, parent_info_intake_id from info_intake  
@@ -29,7 +29,32 @@ func (d *DataService) GetAnswersForQuestionsInPatientVisit(role string, question
 								left outer join potential_answer on potential_answer_id = potential_answer.id
 								left outer join localized_text as l1 on potential_answer.answer_localized_text_id = l1.app_text_id
 								left outer join localized_text as l2 on potential_answer.answer_summary_text_id = l2.app_text_id
-								where (info_intake.question_id in (%s) or parent_question_id in (%s)) and role_id = ? and context_id = ? and info_intake.status='ACTIVE' and role='%s'`, enumeratedStrings, enumeratedStrings, role)
+								where (info_intake.question_id in (%s) or parent_question_id in (%s)) and role_id = ? and context_id = ? and info_intake.status='ACTIVE' and role='PATIENT'`, enumeratedStrings, enumeratedStrings)
+	return d.getPatientAnswersForQuestionsBasedOnQuery(queryStr, roleId, patientVisitId)
+}
+
+func (d *DataService) GetAnswersForQuestionsInPatientVisit(roleId int64, patientVisitId int64) (answerIntakes map[int64][]*common.AnswerIntake, err error) {
+	queryStr := `select info_intake.id, info_intake.question_id, potential_answer_id, l1.ltext, l2.ltext, answer_text, bucket, storage_key, region_tag,
+								layout_version_id, parent_question_id, parent_info_intake_id from info_intake  
+								left outer join object_storage on object_storage_id = object_storage.id 
+								left outer join region on region_id=region.id 
+								left outer join potential_answer on potential_answer_id = potential_answer.id
+								left outer join localized_text as l1 on potential_answer.answer_localized_text_id = l1.app_text_id
+								left outer join localized_text as l2 on potential_answer.answer_summary_text_id = l2.app_text_id
+								where role_id = ? and context_id = ? and info_intake.status='ACTIVE' and role='PATIENT'`
+	return d.getPatientAnswersForQuestionsBasedOnQuery(queryStr, roleId, patientVisitId)
+}
+
+func (d *DataService) GetAnswersForQuestionsInDiagnosisLayout(questionIds []int64, roleId int64, patientVisitId int64) (answerIntakes map[int64][]*common.AnswerIntake, err error) {
+	enumeratedStrings := enumerateItemsIntoString(questionIds)
+	queryStr := fmt.Sprintf(`select info_intake.id, info_intake.question_id, potential_answer_id, l1.ltext, l2.ltext, answer_text, bucket, storage_key, region_tag,
+								layout_version_id, parent_question_id, parent_info_intake_id from info_intake  
+								left outer join object_storage on object_storage_id = object_storage.id 
+								left outer join region on region_id=region.id 
+								left outer join potential_answer on potential_answer_id = potential_answer.id
+								left outer join localized_text as l1 on potential_answer.answer_localized_text_id = l1.app_text_id
+								left outer join localized_text as l2 on potential_answer.answer_summary_text_id = l2.app_text_id
+								where (info_intake.question_id in (%s) or parent_question_id in (%s)) and role_id = ? and context_id = ? and info_intake.status='ACTIVE' and role='DOCTOR'`, enumeratedStrings, enumeratedStrings)
 	return d.getPatientAnswersForQuestionsBasedOnQuery(queryStr, roleId, patientVisitId)
 }
 

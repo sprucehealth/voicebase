@@ -229,7 +229,7 @@ func (s *PatientVisitHandler) returnLastCreatedPatientVisit(w http.ResponseWrite
 		questionIds := getQuestionIdsInSectionInHealthConditionLayout(healthCondition, sectionId)
 		questionIdsInAllSections = append(questionIdsInAllSections, questionIds...)
 	}
-	patientAnswersForVisit, err := s.DataApi.GetAnswersForQuestionsInPatientVisit(api.PATIENT_ROLE, questionIdsInAllSections, patientId, patientVisitId)
+	patientAnswersForVisit, err := s.DataApi.GetAnswersForQuestionsBasedOnQuestionIds(questionIdsInAllSections, patientId, patientVisitId)
 	if err != nil {
 		WriteDeveloperError(w, http.StatusInternalServerError, "Unable to get patient answers for patient visit: "+err.Error())
 		return

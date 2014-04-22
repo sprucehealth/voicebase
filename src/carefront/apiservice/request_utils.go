@@ -32,6 +32,7 @@ const (
 	HTTP_PUT                         = "PUT"
 	HTTP_DELETE                      = "DELETE"
 	HTTP_UNPROCESSABLE_ENTITY        = 422
+	signedUrlAuthTimeout             = 10 * time.Minute
 )
 
 type GenericJsonResponse struct {
@@ -89,12 +90,25 @@ func verifyDoctorPatientRelationship(dataApi api.DataAPI, doctor *common.Doctor,
 	return nil
 }
 
+func GetSignedUrlForAnswer(patientAnswer *common.AnswerIntake, photoStorageService api.CloudStorageAPI) string {
+	if patientAnswer.StorageKey != "" {
+		objectUrl, err := photoStorageService.GetSignedUrlForObjectAtLocation(patientAnswer.StorageBucket,
+			patientAnswer.StorageKey, patientAnswer.StorageRegion, time.Now().Add(signedUrlAuthTimeout))
+		if err != nil {
+			log.Fatal("Unable to get signed url for photo object: " + err.Error())
+			return ""
+		}
+		return objectUrl
+	}
+	return ""
+}
+
 func GetSignedUrlsForAnswersInQuestion(question *info_intake.Question, photoStorageService api.CloudStorageAPI) {
 	// go through each answer to get signed urls
 	for _, patientAnswer := range question.Answers {
 		if patientAnswer.StorageKey != "" {
 			objectUrl, err := photoStorageService.GetSignedUrlForObjectAtLocation(patientAnswer.StorageBucket,
-				patientAnswer.StorageKey, patientAnswer.StorageRegion, time.Now().Add(10*time.Minute))
+				patientAnswer.StorageKey, patientAnswer.StorageRegion, time.Now().Add(signedUrlAuthTimeout))
 			if err != nil {
 				log.Fatal("Unable to get signed url for photo object: " + err.Error())
 			} else {

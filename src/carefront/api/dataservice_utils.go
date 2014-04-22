@@ -122,3 +122,10 @@ func appendStringsToInterfaceSlice(interfaceSlice []interface{}, strSlice []stri
 	}
 	return interfaceSlice
 }
+
+func appendInt64sToInterfaceSlice(interfaceSlice []interface{}, int64Slice []int64) []interface{} {
+	for _, int64Item := range int64Slice {
+		interfaceSlice = append(interfaceSlice, int64Item)
+	}
+	return interfaceSlice
+}

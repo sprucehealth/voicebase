@@ -203,7 +203,9 @@ type DoctorAPI interface {
 
 type IntakeAPI interface {
 	GetPatientAnswersForQuestionsInGlobalSections(questionIds []int64, patientId int64) (map[int64][]*common.AnswerIntake, error)
-	GetAnswersForQuestionsInPatientVisit(role string, questionIds []int64, roleId int64, patientVisitId int64) (map[int64][]*common.AnswerIntake, error)
+	GetAnswersForQuestionsBasedOnQuestionIds(questionIds []int64, roleId int64, patientVisitId int64) (map[int64][]*common.AnswerIntake, error)
+	GetAnswersForQuestionsInDiagnosisLayout(questionIds []int64, roleId int64, patientVisitId int64) (map[int64][]*common.AnswerIntake, error)
+	GetAnswersForQuestionsInPatientVisit(roleId int64, patientVisitId int64) (map[int64][]*common.AnswerIntake, error)
 	StoreAnswersForQuestion(role string, roleId, patientVisitId, layoutVersionId int64, answersToStorePerQuestion map[int64][]*common.AnswerIntake) error
 	CreatePhotoAnswerForQuestionRecord(role string, roleId, questionId, patientVisitId, potentialAnswerId, layoutVersionId int64) (patientInfoIntakeId int64, err error)
 	UpdatePhotoAnswerRecordWithObjectStorageId(patientInfoIntakeId, objectStorageId int64) error
@@ -230,6 +232,7 @@ type IntakeLayoutAPI interface {
 	GetSectionInfo(sectionTag string, languageId int64) (id int64, title string, err error)
 	GetQuestionInfo(questionTag string, languageId int64) (*common.QuestionInfo, error)
 	GetQuestionInfoForTags(questionTags []string, languageId int64) ([]*common.QuestionInfo, error)
+	GetQuestionInfoForIds(questionIds []int64, languageId int64) ([]*common.QuestionInfo, error)
 	GetAnswerInfo(questionId int64, languageId int64) (answerInfos []PotentialAnswerInfo, err error)
 	GetAnswerInfoForTags(answerTags []string, languageId int64) ([]PotentialAnswerInfo, error)
 	GetTipSectionInfo(tipSectionTag string, languageId int64) (id int64, tipSectionTitle string, tipSectionSubtext string, err error)

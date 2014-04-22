@@ -6,9 +6,11 @@ import (
 	"carefront/info_intake"
 	"carefront/libs/pharmacy"
 	"encoding/json"
+	"fmt"
+	"io/ioutil"
 	"net/http"
-	"strings"
 
+	"github.com/SpruceHealth/mapstructure"
 	"github.com/gorilla/schema"
 )
 
@@ -27,10 +29,6 @@ type DoctorPatientVisitReviewRequestBody struct {
 type DoctorPatientVisitReviewResponse struct {
 	DoctorLayout    *info_intake.PatientVisitOverview `json:"patient_visit_overview,omitempty"`
 	TreatmentPlanId int64                             `json:"treatment_plan_id"`
-}
-
-func NewDoctorPatientVisitReviewHandler(dataApi api.DataAPI, layoutStorageService api.CloudStorageAPI, patientPhotoStorageService api.CloudStorageAPI) *DoctorPatientVisitReviewHandler {
-	return &DoctorPatientVisitReviewHandler{DataApi: dataApi, LayoutStorageService: layoutStorageService, PatientPhotoStorageService: patientPhotoStorageService}
 }
 
 func (p *DoctorPatientVisitReviewHandler) ServeHTTP(w http.ResponseWriter, r *http.Request) {
@@ -95,127 +93,186 @@ func (p *DoctorPatientVisitReviewHandler) ServeHTTP(w http.ResponseWriter, r *ht
 		}
 	}
 
-	patient, err := p.DataApi.GetPatientFromId(patientVisit.PatientId.Int64())
-	if err != nil {
-		WriteDeveloperError(w, http.StatusInternalServerError, "Unable to get patient info based on account id: "+err.Error())
-		return
-	}
-
-	bucket, key, region, _, err := p.DataApi.GetStorageInfoOfCurrentActiveDoctorLayout(patientVisit.HealthConditionId.Int64())
-	if err != nil {
-		WriteDeveloperError(w, http.StatusInternalServerError, "Unable to get the active layout version for the doctor's view of the patient visit: "+err.Error())
-		return
-	}
-
-	data, _, err := p.LayoutStorageService.GetObjectAtLocation(bucket, key, region)
-	if err != nil {
-		WriteDeveloperError(w, http.StatusInternalServerError, "Unable to get doctor layout for patient visit from s3: "+err.Error())
-		return
-	}
-
-	patientVisitOverview := &info_intake.PatientVisitOverview{}
-	err = json.Unmarshal(data, patientVisitOverview)
-	if err != nil {
-		WriteDeveloperError(w, http.StatusInternalServerError, "Unable to parse doctor layout for patient visit from s3: "+err.Error())
-		return
-	}
-
-	fillInPatientVisitInfoIntoOverview(patientVisit, patientVisitOverview)
-	patientVisitOverview.Patient = patient
-
-	// capitalizing the gender for display purposes. TODO Make how we do this better for v1
-	patientVisitOverview.Patient.Gender = strings.Title(patient.Gender)
-
-	p.filterOutGenderSpecificQuestionsAndSubSectionsFromOverview(patientVisitOverview, patient)
-
-	questionIds := getQuestionIdsFromPatientVisitOverview(patientVisitOverview)
-	patientAnswersForQuestions, err := p.DataApi.GetAnswersForQuestionsInPatientVisit(api.PATIENT_ROLE, questionIds, patientVisit.PatientId.Int64(), patientVisit.PatientVisitId.Int64())
+	patientAnswersForQuestions, err := p.DataApi.GetAnswersForQuestionsInPatientVisit(patientVisit.PatientId.Int64(), patientVisit.PatientVisitId.Int64())
 	if err != nil {
 		WriteDeveloperError(w, http.StatusInternalServerError, "Unable to get patient answers for questions : "+err.Error())
 		return
 	}
-	p.populatePatientVisitOverviewWithPatientAnswers(patientAnswersForQuestions, patientVisitOverview, patient)
-	p.removeQuestionsWithNoAnswersBasedOnFlag(patientVisitOverview, patient)
-	WriteJSONToHTTPResponseWriter(w, http.StatusOK, DoctorPatientVisitReviewResponse{
-		DoctorLayout:    patientVisitOverview,
-		TreatmentPlanId: treatmentPlanId})
+
+	questionIds := make([]int64, len(patientAnswersForQuestions))
+	var i int
+	for key, _ := range patientAnswersForQuestions {
+		questionIds[i] = key
+		i++
+	}
+
+	questionInfos, err := p.DataApi.GetQuestionInfoForIds(questionIds, api.EN_LANGUAGE_ID)
+	if err != nil {
+		WriteDeveloperError(w, http.StatusInternalServerError, "Unable to get question info for question ids : "+err.Error())
+		return
+	}
+
+	context, err := populateContextForRenderingLayout(patientAnswersForQuestions, questionInfos, p.DataApi, p.PatientPhotoStorageService)
+	if err != nil {
+		WriteDeveloperError(w, http.StatusInternalServerError, "Unable to populate context for rendering layout: "+err.Error())
+		return
+	}
+
+	// TODO get the appropriate template to render here
+	fileContents, err := ioutil.ReadFile("../carefront/api-response-examples/v1/doctor/visit/review_v2_template.json")
+	if err != nil {
+		WriteDeveloperError(w, http.StatusInternalServerError, "Unable to open file to render the template: "+err.Error())
+		return
+	}
+
+	var jsonData map[string]interface{}
+	err = json.Unmarshal(fileContents, &jsonData)
+	if err != nil {
+		WriteDeveloperError(w, http.StatusInternalServerError, "Unbale to unmarshal file contents into map[string]interface{}: "+err.Error())
+	}
+
+	sectionList := &DVisitReviewSectionListView{}
+	decoderConfig := &mapstructure.DecoderConfig{
+		Result:  sectionList,
+		TagName: "json",
+	}
+	decoderConfig.SetRegistry(dVisitReviewViewTypeRegistry.Map())
+
+	d, err := mapstructure.NewDecoder(decoderConfig)
+	if err != nil {
+		WriteDeveloperError(w, http.StatusInternalServerError, "Unable to create new decoder: "+err.Error())
+		return
+	}
+
+	err = d.Decode(jsonData)
+	if err != nil {
+		WriteDeveloperError(w, http.StatusInternalServerError, "Unable to parse template into structure: "+err.Error())
+		return
+	}
+
+	renderedJsonData, err := sectionList.Render(context)
+	if err != nil {
+		WriteDeveloperError(w, http.StatusInternalServerError, "Unable to render template into expected view layout for doctor visit review: "+err.Error())
+		return
+	}
+
+	WriteJSONToHTTPResponseWriter(w, http.StatusOK, renderedJsonData)
 }
 
-func (p *DoctorPatientVisitReviewHandler) populatePatientVisitOverviewWithPatientAnswers(patientAnswers map[int64][]*common.AnswerIntake,
-	patientVisitOverview *info_intake.PatientVisitOverview,
-	patient *common.Patient) {
-	// collect all question ids for which to get patient answers
-	for _, section := range patientVisitOverview.Sections {
-		for _, subSection := range section.SubSections {
-			for _, question := range subSection.Questions {
-				if question.QuestionId != 0 {
-					if patientAnswers[question.QuestionId] != nil {
-						question.Answers = patientAnswers[question.QuestionId]
-						GetSignedUrlsForAnswersInQuestion(&question.Question, p.PatientPhotoStorageService)
-					}
-				}
+func populateContextForRenderingLayout(patientAnswersForQuestions map[int64][]*common.AnswerIntake, questionInfos []*common.QuestionInfo, dataApi api.DataAPI, photoStorageService api.CloudStorageAPI) (common.ViewContext, error) {
+	context := new(common.ViewContext)
+	// go through each question
+	for _, questionInfo := range questionInfos {
+		switch questionInfo.Type {
+
+		case info_intake.QUESTION_TYPE_PHOTO, info_intake.QUESTION_TYPE_MULTIPLE_PHOTO, info_intake.QUESTION_TYPE_SINGLE_PHOTO:
+			populatePhotos(patientAnswersForQuestions[questionInfo.Id], context, photoStorageService)
+
+		case info_intake.QUESTION_TYPE_AUTOCOMPLETE:
+			populateDataForAnswerWithSubAnswers(patientAnswersForQuestions[questionInfo.Id], questionInfo, context)
+
+		case info_intake.QUESTION_TYPE_MULTIPLE_CHOICE, info_intake.QUESTION_TYPE_SINGLE_SELECT:
+			if err := populateCheckedUncheckedData(patientAnswersForQuestions[questionInfo.Id], questionInfo, context, dataApi); err != nil {
+				return nil, err
+			}
+
+		case info_intake.QUESTION_TYPE_SINGLE_ENTRY, info_intake.QUESTION_TYPE_FREE_TEXT:
+			if err := populateDataForSingleEntryAnswers(patientAnswersForQuestions[questionInfo.Id], questionInfo, context); err != nil {
+				return nil, err
 			}
 		}
 	}
-	return
+
+	return *context, nil
 }
 
-func (p *DoctorPatientVisitReviewHandler) filterOutGenderSpecificQuestionsAndSubSectionsFromOverview(patientVisitOverview *info_intake.PatientVisitOverview, patient *common.Patient) {
-	for _, section := range patientVisitOverview.Sections {
-		filteredSubSections := make([]*info_intake.PatientVisitOverviewSubSection, 0)
-		for _, subSection := range section.SubSections {
-			if !(subSection.GenderFilter == "" || subSection.GenderFilter == patient.Gender) {
-				continue
-			}
-			filteredQuestions := make([]*info_intake.PatientVisitOverviewQuestion, 0)
-			for _, question := range subSection.Questions {
-				if question.GenderFilter == "" || question.GenderFilter == patient.Gender {
-					filteredQuestions = append(filteredQuestions, question)
-				}
-			}
-			subSection.Questions = filteredQuestions
-			filteredSubSections = append(filteredSubSections, subSection)
-		}
-		section.SubSections = filteredSubSections
+func populateCheckedUncheckedData(patientAnswers []*common.AnswerIntake, questionInfo *common.QuestionInfo, context *common.ViewContext, dataApi api.DataAPI) error {
+	answerInfos, err := dataApi.GetAnswerInfo(questionInfo.Id, api.EN_LANGUAGE_ID)
+	if err != nil {
+		return err
 	}
-}
 
-func (p *DoctorPatientVisitReviewHandler) removeQuestionsWithNoAnswersBasedOnFlag(patientVisitOverview *info_intake.PatientVisitOverview, patient *common.Patient) {
-	for _, section := range patientVisitOverview.Sections {
-		for _, subSection := range section.SubSections {
-			filteredQuestions := make([]*info_intake.PatientVisitOverviewQuestion, 0)
-			for _, question := range subSection.Questions {
-				if question.RemoveQuestionIfNoAnswer == true {
-					if question.Answers != nil && len(question.Answers) > 0 {
-						filteredQuestions = append(filteredQuestions, question)
-					}
-				} else {
-					filteredQuestions = append(filteredQuestions, question)
-				}
+	checkedUncheckedItems := make([]CheckedUncheckedData, len(answerInfos))
+	for i, answerInfo := range answerInfos {
+		answerSelected := false
+
+		for _, patientAnswer := range patientAnswers {
+			if patientAnswer.PotentialAnswerId.Int64() == answerInfo.PotentialAnswerId {
+				answerSelected = true
 			}
-			subSection.Questions = filteredQuestions
+		}
+
+		checkedUncheckedItems[i] = CheckedUncheckedData{
+			Value:     answerInfo.Answer,
+			IsChecked: answerSelected,
 		}
 	}
 
+	context.Set(fmt.Sprintf("%s:question_summary", questionInfo.QuestionTag), questionInfo.Summary)
+	context.Set(fmt.Sprintf("%s:answers", questionInfo.QuestionTag), checkedUncheckedItems)
+	return nil
 }
 
-func fillInPatientVisitInfoIntoOverview(patientVisit *common.PatientVisit, patientVisitOverview *info_intake.PatientVisitOverview) {
-	patientVisitOverview.PatientVisitTime = patientVisit.SubmittedDate
-	patientVisitOverview.PatientVisitId = patientVisit.PatientVisitId.Int64()
-	patientVisitOverview.HealthConditionId = patientVisit.HealthConditionId.Int64()
+func populatePhotos(patientAnswers []*common.AnswerIntake, context *common.ViewContext, photoStorageService api.CloudStorageAPI) {
+	var photos []PhotoData
+	photoData, ok := context.Get("patient_visit_photos")
+
+	if !ok || photoData == nil {
+		photos = make([]PhotoData, 0)
+	} else {
+		photos = photoData.([]PhotoData)
+	}
+
+	for _, answerIntake := range patientAnswers {
+		photos = append(photos, PhotoData{
+			Title:    answerIntake.PotentialAnswer,
+			PhotoUrl: GetSignedUrlForAnswer(answerIntake, photoStorageService),
+		})
+	}
+
+	context.Set("patient_visit_photos", photos)
 }
 
-func getQuestionIdsFromPatientVisitOverview(patientVisitOverview *info_intake.PatientVisitOverview) []int64 {
-	// collect all question ids for which to get patient answers
-	questionIds := make([]int64, 0)
-	for _, section := range patientVisitOverview.Sections {
-		for _, subSection := range section.SubSections {
-			for _, question := range subSection.Questions {
-				if question.QuestionId != 0 {
-					questionIds = append(questionIds, question.QuestionId)
-				}
+func populateDataForSingleEntryAnswers(patientAnswers []*common.AnswerIntake, questionInfo *common.QuestionInfo, context *common.ViewContext) error {
+	if len(patientAnswers) == 0 {
+		return nil
+	}
+
+	if len(patientAnswers) > 1 {
+		return fmt.Errorf("Expected just one answer for question %s instead we have  %d", questionInfo.QuestionTag, len(patientAnswers))
+	}
+
+	answer := patientAnswers[0].AnswerText
+	if answer == "" {
+		answer = patientAnswers[0].AnswerSummary
+	}
+	if answer == "" {
+		answer = patientAnswers[0].PotentialAnswer
+	}
+
+	context.Set(fmt.Sprintf("%s:question_summary", questionInfo.QuestionTag), questionInfo.Summary)
+	context.Set(fmt.Sprintf("%s:answer", questionInfo.QuestionTag), answer)
+	return nil
+}
+
+func populateDataForAnswerWithSubAnswers(patientAnswers []*common.AnswerIntake, questionInfo *common.QuestionInfo, context *common.ViewContext) {
+	data := make([]TitleSubtitleSubItemsData, len(patientAnswers))
+	for _, patientAnswer := range patientAnswers {
+
+		items := make([]string, len(patientAnswer.SubAnswers))
+		for i, subAnswer := range patientAnswer.SubAnswers {
+			if subAnswer.AnswerSummary != "" {
+				items[i] = subAnswer.AnswerSummary
+			} else {
+				items[i] = subAnswer.PotentialAnswer
 			}
 		}
+
+		data = append(data, TitleSubtitleSubItemsData{
+			Title:    patientAnswer.AnswerText,
+			SubItems: items,
+		})
 	}
-	return questionIds
+	context.Set(fmt.Sprintf("%s:question_summary", questionInfo.QuestionTag), questionInfo.Summary)
+	context.Set(fmt.Sprintf("%s:answers", questionInfo.QuestionTag), data)
 }

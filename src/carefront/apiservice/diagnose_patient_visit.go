@@ -119,7 +119,7 @@ func (d *DiagnosePatientHandler) getDiagnosis(w http.ResponseWriter, r *http.Req
 	questionIds := getQuestionIdsInDiagnosisLayout(diagnosisLayout)
 
 	// get the answers to the questions in the array
-	doctorAnswers, err := d.DataApi.GetAnswersForQuestionsInPatientVisit(api.DOCTOR_ROLE, questionIds, patientVisitReviewData.DoctorId, treatmentPlanId)
+	doctorAnswers, err := d.DataApi.GetAnswersForQuestionsInDiagnosisLayout(questionIds, patientVisitReviewData.DoctorId, treatmentPlanId)
 	if err != nil {
 		WriteDeveloperError(w, http.StatusInternalServerError, "Unable to get answers for question: "+err.Error())
 		return
