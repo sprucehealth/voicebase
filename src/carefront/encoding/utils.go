@@ -10,6 +10,10 @@ import (
 	"time"
 )
 
+// Defining a type of float that holds the precision in the format entered
+// versus compacting the result to scientific exponent notation on marshalling the value
+// this is useful to send the value as it was entered across the wire so that the client
+// can display it as a string without having to worry about the float value, the exact precision, etc.
 type HighPrecisionFloat64 float64
 
 func (h *HighPrecisionFloat64) MarshalJSON() ([]byte, error) {
@@ -43,13 +47,6 @@ func (h *HighPrecisionFloat64) String() string {
 type NullInt64 struct {
 	IsValid    bool
 	Int64Value int64
-}
-
-func NullInt64FromSql(nullInt64 sql.NullInt64) NullInt64 {
-	return NullInt64{
-		IsValid:    nullInt64.Valid,
-		Int64Value: nullInt64.Int64,
-	}
 }
 
 func (n *NullInt64) MarshalJSON() ([]byte, error) {
@@ -114,6 +111,18 @@ func (n *NullInt64) MarshalXML(e *xml.Encoder, start xml.StartElement) error {
 
 func (n *NullInt64) Int64() int64 {
 	return n.Int64Value
+}
+
+func (n *NullInt64) Scan(src interface{}) error {
+	var nullInt sql.NullInt64
+	err := nullInt.Scan(src)
+	if err != nil {
+		return err
+	}
+
+	n.IsValid = nullInt.Valid
+	n.Int64Value = nullInt.Int64
+	return nil
 }
 
 // This is an object used for the (un)marshalling

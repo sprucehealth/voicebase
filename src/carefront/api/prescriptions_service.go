@@ -354,7 +354,8 @@ func (d *DataService) getTreatmentForRefillRequest(tableName string, treatmentId
 	var treatment common.Treatment
 	treatment.ERx = &common.ERxData{}
 	var erxId, pharmacyLocalId int64
-	var doctorId, daysSupply, refills sql.NullInt64
+	var daysSupply, refills encoding.NullInt64
+	var doctorId sql.NullInt64
 	var treatmentType string
 	var drugName, drugForm, drugRoute sql.NullString
 
@@ -385,8 +386,8 @@ func (d *DataService) getTreatmentForRefillRequest(tableName string, treatmentId
 	treatment.DrugForm = drugForm.String
 	treatment.DrugRoute = drugRoute.String
 	treatment.OTC = treatmentType == treatmentOTC
-	treatment.DaysSupply = encoding.NullInt64FromSql(daysSupply)
-	treatment.NumberRefills = encoding.NullInt64FromSql(refills)
+	treatment.DaysSupply = daysSupply
+	treatment.NumberRefills = refills
 	treatment.ERx.PharmacyLocalId = encoding.NewObjectId(pharmacyLocalId)
 	treatment.ERx.Pharmacy, err = d.GetPharmacyFromId(pharmacyLocalId)
 
@@ -781,7 +782,8 @@ func (d *DataService) getUnlinkedDNTFTreatmentsFromRow(rows *sql.Rows) ([]*commo
 		var dispenseValue float64
 		var drugInternalName, dosageStrength, treatmentType, dispenseUnitDescription, pharmacyNotes, patientInstructions, status string
 		var creationDate time.Time
-		var erxId, daysSupply, pharmacyId, refills sql.NullInt64
+		var erxId, pharmacyId sql.NullInt64
+		var daysSupply, refills encoding.NullInt64
 		var erxSentDate, erxLastFilledDate mysql.NullTime
 		var drugName, drugRoute, drugForm sql.NullString
 		var substitutionsAllowed bool
@@ -800,9 +802,9 @@ func (d *DataService) getUnlinkedDNTFTreatmentsFromRow(rows *sql.Rows) ([]*commo
 			DispenseValue:           encoding.HighPrecisionFloat64(dispenseValue),
 			DispenseUnitId:          encoding.NewObjectId(dispenseUnitId),
 			DispenseUnitDescription: dispenseUnitDescription,
-			NumberRefills:           encoding.NullInt64FromSql(refills),
+			NumberRefills:           refills,
 			SubstitutionsAllowed:    substitutionsAllowed,
-			DaysSupply:              encoding.NullInt64FromSql(daysSupply),
+			DaysSupply:              daysSupply,
 			DrugName:                drugName.String,
 			DrugForm:                drugForm.String,
 			DrugRoute:               drugRoute.String,

@@ -778,7 +778,7 @@ func (d *DataService) GetTreatmentTemplates(doctorId int64) ([]*common.DoctorTre
 	treatmentTemplates := make([]*common.DoctorTreatmentTemplate, 0)
 	for rows.Next() {
 		var treatmentId, dispenseUnitId int64
-		var daysSupply, refills sql.NullInt64
+		var daysSupply, refills encoding.NullInt64
 		var dispenseValue float64
 		var drugInternalName, dosageStrength, patientInstructions, treatmentType, dispenseUnitDescription, status string
 		var substitutionsAllowed bool
@@ -796,9 +796,9 @@ func (d *DataService) GetTreatmentTemplates(doctorId int64) ([]*common.DoctorTre
 			DispenseValue:           encoding.HighPrecisionFloat64(dispenseValue),
 			DispenseUnitId:          encoding.NewObjectId(dispenseUnitId),
 			DispenseUnitDescription: dispenseUnitDescription,
-			NumberRefills:           encoding.NullInt64FromSql(refills),
+			NumberRefills:           refills,
 			SubstitutionsAllowed:    substitutionsAllowed,
-			DaysSupply:              encoding.NullInt64FromSql(daysSupply),
+			DaysSupply:              daysSupply,
 			DrugName:                drugName.String,
 			DrugForm:                drugForm.String,
 			DrugRoute:               drugRoute.String,
@@ -860,7 +860,7 @@ func (d *DataService) GetCompletedPrescriptionsForDoctor(from, to time.Time, doc
 	for rows.Next() {
 		var treatmentId, treatmentPlanId, patientId, patientVisitId, dispenseUnitId int64
 		var dispenseValue float64
-		var refills, daysSupply sql.NullInt64
+		var refills, daysSupply encoding.NullInt64
 		var drugInternalName, dosageStrength, treatmentType, dispenseUnitDescription, patientInstructions, status string
 		var creationDate, sentDate, treatmentPlanCreationDate time.Time
 		var substituionsAllowed bool
@@ -896,9 +896,9 @@ func (d *DataService) GetCompletedPrescriptionsForDoctor(from, to time.Time, doc
 			DispenseValue:           encoding.HighPrecisionFloat64(dispenseValue),
 			DispenseUnitId:          encoding.NewObjectId(dispenseUnitId),
 			DispenseUnitDescription: dispenseUnitDescription,
-			NumberRefills:           encoding.NullInt64FromSql(refills),
+			NumberRefills:           refills,
 			SubstitutionsAllowed:    substituionsAllowed,
-			DaysSupply:              encoding.NullInt64FromSql(daysSupply),
+			DaysSupply:              daysSupply,
 			DrugName:                drugName.String,
 			DrugForm:                drugForm.String,
 			DrugRoute:               drugRoute.String,

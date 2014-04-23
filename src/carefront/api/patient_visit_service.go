@@ -671,7 +671,7 @@ func (d *DataService) addTreatment(treatment *common.Treatment, withoutLinkToTre
 		"drug_internal_name":    treatment.DrugInternalName,
 		"dosage_strength":       treatment.DosageStrength,
 		"type":                  treatmentType,
-		"dispense_value":        treatment.DispenseValue,
+		"dispense_value":        treatment.DispenseValue.Float64(),
 		"dispense_unit_id":      treatment.DispenseUnitId,
 		"refills":               treatment.NumberRefills.Int64Value,
 		"substitutions_allowed": treatment.SubstitutionsAllowed,
@@ -1053,7 +1053,7 @@ func (d *DataService) getTreatmentAndMetadataFromCurrentRow(rows *sql.Rows) (*co
 	var drugInternalName, dosageStrength, patientInstructions, treatmentType, dispenseUnitDescription, status string
 	var patientVisitId, treatmentPlanId, prescriptionId, pharmacyId sql.NullInt64
 	var substitutionsAllowed bool
-	var refills, daysSupply sql.NullInt64
+	var refills, daysSupply encoding.NullInt64
 	var creationDate time.Time
 	var erxSentDate mysql.NullTime
 	var pharmacyNotes, drugName, drugForm, drugRoute sql.NullString
@@ -1072,9 +1072,9 @@ func (d *DataService) getTreatmentAndMetadataFromCurrentRow(rows *sql.Rows) (*co
 		DispenseValue:           encoding.HighPrecisionFloat64(dispenseValue),
 		DispenseUnitId:          encoding.NewObjectId(dispenseUnitId),
 		DispenseUnitDescription: dispenseUnitDescription,
-		NumberRefills:           encoding.NullInt64FromSql(refills),
+		NumberRefills:           refills,
 		SubstitutionsAllowed:    substitutionsAllowed,
-		DaysSupply:              encoding.NullInt64FromSql(daysSupply),
+		DaysSupply:              daysSupply,
 		DrugName:                drugName.String,
 		DrugForm:                drugForm.String,
 		DrugRoute:               drugRoute.String,
