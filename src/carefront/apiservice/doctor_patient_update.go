@@ -148,7 +148,7 @@ func (d *DoctorPatientUpdateHandler) updatePatientInformation(w http.ResponseWri
 	}
 
 	// update the doseSpot Id for the patient in our system now that we got one
-	if existingPatientInfo.ERxPatientId == nil {
+	if !existingPatientInfo.ERxPatientId.IsValid {
 		if err := d.DataApi.UpdatePatientWithERxPatientId(requestData.Patient.PatientId.Int64(), requestData.Patient.ERxPatientId.Int64()); err != nil {
 			WriteDeveloperError(w, http.StatusInternalServerError, "Unable to update the patientId from dosespot: "+err.Error())
 			return

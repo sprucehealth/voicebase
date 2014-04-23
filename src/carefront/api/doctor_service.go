@@ -87,7 +87,7 @@ func (d *DataService) GetDoctorFromDoseSpotClinicianId(clinicianId int64) (*comm
 func getDoctorFromRow(row *sql.Row) (*common.Doctor, error) {
 	var firstName, lastName, status, gender string
 	var cellPhoneNumber, addressLine1, addressLine2, city, state, zipCode, middleName, suffix, prefix sql.NullString
-	var doctorId, accountId int64
+	var doctorId, accountId encoding.ObjectId
 	var dobYear, dobMonth, dobDay int
 	var clinicianId sql.NullInt64
 	err := row.Scan(&doctorId, &accountId, &cellPhoneNumber, &firstName, &lastName, &middleName, &suffix, &prefix, &gender, &dobYear, &dobMonth, &dobDay, &status, &clinicianId, &addressLine1, &addressLine2, &city, &state, &zipCode)
@@ -95,8 +95,8 @@ func getDoctorFromRow(row *sql.Row) (*common.Doctor, error) {
 		return nil, err
 	}
 	doctor := &common.Doctor{
-		AccountId:           encoding.NewObjectId(accountId),
-		DoctorId:            encoding.NewObjectId(doctorId),
+		AccountId:           accountId,
+		DoctorId:            doctorId,
 		FirstName:           firstName,
 		LastName:            lastName,
 		MiddleName:          middleName.String,
@@ -732,14 +732,15 @@ func (d *DataService) GetTreatmentTemplates(doctorId int64) ([]*common.DoctorTre
 	treatmentTemplateMapping := make(map[int64]*common.DoctorTreatmentTemplate)
 	for rows.Next() {
 		var name string
-		var treatmentTemplateId, treatmentId int64
+		var treatmentId int64
+		var treatmentTemplateId encoding.ObjectId
 		err = rows.Scan(&treatmentTemplateId, &name, &treatmentId)
 		if err != nil {
 			return nil, err
 		}
 		treatmentIds = append(treatmentIds, treatmentId)
 		treatmentTemplateMapping[treatmentId] = &common.DoctorTreatmentTemplate{
-			Id:   encoding.NewObjectId(treatmentTemplateId),
+			Id:   treatmentTemplateId,
 			Name: name,
 		}
 	}
@@ -777,7 +778,7 @@ func (d *DataService) GetTreatmentTemplates(doctorId int64) ([]*common.DoctorTre
 
 	treatmentTemplates := make([]*common.DoctorTreatmentTemplate, 0)
 	for rows.Next() {
-		var treatmentId, dispenseUnitId int64
+		var treatmentId, dispenseUnitId encoding.ObjectId
 		var daysSupply, refills encoding.NullInt64
 		var dispenseValue encoding.HighPrecisionFloat64
 		var drugInternalName, dosageStrength, patientInstructions, treatmentType, dispenseUnitDescription, status string
@@ -790,11 +791,11 @@ func (d *DataService) GetTreatmentTemplates(doctorId int64) ([]*common.DoctorTre
 		}
 
 		treatment := &common.Treatment{
-			Id:                      encoding.NewObjectId(treatmentId),
+			Id:                      treatmentId,
 			DrugInternalName:        drugInternalName,
 			DosageStrength:          dosageStrength,
 			DispenseValue:           dispenseValue,
-			DispenseUnitId:          encoding.NewObjectId(dispenseUnitId),
+			DispenseUnitId:          dispenseUnitId,
 			DispenseUnitDescription: dispenseUnitDescription,
 			NumberRefills:           refills,
 			SubstitutionsAllowed:    substitutionsAllowed,
@@ -822,12 +823,12 @@ func (d *DataService) GetTreatmentTemplates(doctorId int64) ([]*common.DoctorTre
 			return nil, err
 		}
 
-		treatmentTemplate := treatmentTemplateMapping[treatmentId]
+		treatmentTemplate := treatmentTemplateMapping[treatmentId.Int64()]
 		treatmentTemplate.Treatment = treatment
 
 		// removing the treatmentId for doctorFavorites for the treatment since it does not make sense
 		// to have the doctorFavoritetreatmentId and the treatmentId (can be confusing to the developer)
-		treatment.Id = nil
+		treatment.Id.IsValid = false
 		treatmentTemplates = append(treatmentTemplates, treatmentTemplate)
 
 	}
@@ -858,7 +859,7 @@ func (d *DataService) GetCompletedPrescriptionsForDoctor(from, to time.Time, doc
 
 	defer rows.Close()
 	for rows.Next() {
-		var treatmentId, treatmentPlanId, patientId, patientVisitId, dispenseUnitId int64
+		var treatmentId, treatmentPlanId, patientId, patientVisitId, dispenseUnitId encoding.ObjectId
 		var dispenseValue encoding.HighPrecisionFloat64
 		var refills, daysSupply encoding.NullInt64
 		var drugInternalName, dosageStrength, treatmentType, dispenseUnitDescription, patientInstructions, status string
@@ -874,27 +875,27 @@ func (d *DataService) GetCompletedPrescriptionsForDoctor(from, to time.Time, doc
 		}
 
 		var treatmentPlan *common.TreatmentPlan
-		if treatmentPlanIdToPlanMapping[treatmentPlanId] != nil {
-			treatmentPlan = treatmentPlanIdToPlanMapping[treatmentPlanId]
+		if treatmentPlanIdToPlanMapping[treatmentPlanId.Int64()] != nil {
+			treatmentPlan = treatmentPlanIdToPlanMapping[treatmentPlanId.Int64()]
 		} else {
 			treatmentPlan = &common.TreatmentPlan{
-				Id:             encoding.NewObjectId(treatmentPlanId),
-				PatientId:      encoding.NewObjectId(patientId),
-				PatientVisitId: encoding.NewObjectId(patientVisitId),
+				Id:             treatmentPlanId,
+				PatientId:      patientId,
+				PatientVisitId: patientVisitId,
 				CreationDate:   &creationDate,
 				SentDate:       &sentDate,
 			}
-			treatmentPlanIdToPlanMapping[treatmentPlanId] = treatmentPlan
+			treatmentPlanIdToPlanMapping[treatmentPlanId.Int64()] = treatmentPlan
 			treatmentPlans = append(treatmentPlans, treatmentPlan)
 		}
 
 		treatment := &common.Treatment{
-			Id:                      encoding.NewObjectId(treatmentId),
-			TreatmentPlanId:         encoding.NewObjectId(treatmentPlanId),
+			Id:                      treatmentId,
+			TreatmentPlanId:         treatmentPlanId,
 			DrugInternalName:        drugInternalName,
 			DosageStrength:          dosageStrength,
 			DispenseValue:           dispenseValue,
-			DispenseUnitId:          encoding.NewObjectId(dispenseUnitId),
+			DispenseUnitId:          dispenseUnitId,
 			DispenseUnitDescription: dispenseUnitDescription,
 			NumberRefills:           refills,
 			SubstitutionsAllowed:    substituionsAllowed,
@@ -1255,13 +1256,13 @@ func getInstructionsFromRows(rows *sql.Rows) ([]*common.DoctorInstructionItem, e
 	defer rows.Close()
 	drugInstructions := make([]*common.DoctorInstructionItem, 0)
 	for rows.Next() {
-		var id int64
+		var id encoding.ObjectId
 		var text, status string
 		if err := rows.Scan(&id, &text, &status); err != nil {
 			return nil, err
 		}
 		supplementalInstruction := &common.DoctorInstructionItem{}
-		supplementalInstruction.Id = encoding.NewObjectId(id)
+		supplementalInstruction.Id = id
 		supplementalInstruction.Text = text
 		supplementalInstruction.Status = status
 		drugInstructions = append(drugInstructions, supplementalInstruction)

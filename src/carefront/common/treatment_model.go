@@ -8,11 +8,11 @@ import (
 )
 
 type Treatment struct {
-	Id                        *encoding.ObjectId            `json:"treatment_id,omitempty"`
-	DoctorTreatmentTemplateId *encoding.ObjectId            `json:"dr_treatment_template_id,omitempty"`
+	Id                        encoding.ObjectId             `json:"treatment_id,omitempty"`
+	DoctorTreatmentTemplateId encoding.ObjectId             `json:"dr_treatment_template_id,omitempty"`
 	StatusDetails             string                        `json:"erx_status_details,omitempty"`
-	TreatmentPlanId           *encoding.ObjectId            `json:"treatment_plan_id,omitempty"`
-	PatientVisitId            *encoding.ObjectId            `json:"patient_visit_id,omitempty"`
+	TreatmentPlanId           encoding.ObjectId             `json:"treatment_plan_id,omitempty"`
+	PatientVisitId            encoding.ObjectId             `json:"patient_visit_id,omitempty"`
 	DrugDBIds                 map[string]string             `json:"drug_db_ids,omitempty"`
 	DrugInternalName          string                        `json:"drug_internal_name,omitempty"`
 	DrugName                  string                        `json:"drug_name"`
@@ -20,7 +20,7 @@ type Treatment struct {
 	DrugForm                  string                        `json:"drug_form,omitempty"`
 	DosageStrength            string                        `json:"dosage_strength,omitempty"`
 	DispenseValue             encoding.HighPrecisionFloat64 `json:"dispense_value"`
-	DispenseUnitId            *encoding.ObjectId            `json:"dispense_unit_id,omitempty"`
+	DispenseUnitId            encoding.ObjectId             `json:"dispense_unit_id,omitempty"`
 	DispenseUnitDescription   string                        `json:"dispense_unit_description,omitempty"`
 	NumberRefills             encoding.NullInt64            `json:"refills,omitempty"`
 	SubstitutionsAllowed      bool                          `json:"substitutions_allowed"`
@@ -33,9 +33,9 @@ type Treatment struct {
 	IsControlledSubstance     bool                          `json:"-"`
 	SupplementalInstructions  []*DoctorInstructionItem      `json:"supplemental_instructions,omitempty"`
 	Doctor                    *Doctor                       `json:"doctor,omitempty"`
-	PatientId                 *encoding.ObjectId            `json:"patient_id,omitempty"`
+	PatientId                 encoding.ObjectId             `json:"patient_id,omitempty"`
 	Patient                   *Patient                      `json:"patient,omitempty"`
-	DoctorId                  *encoding.ObjectId            `json:"doctor_id,omitempty"`
+	DoctorId                  encoding.ObjectId             `json:"doctor_id,omitempty"`
 	OriginatingTreatmentId    int64                         `json:"-"`
 	ERx                       *ERxData                      `json:"erx,omitempty"`
 }
@@ -49,10 +49,10 @@ type ERxData struct {
 	ErxReferenceNumber    string                 `json:"-"`
 	TransmissionErrorDate *time.Time             `json:"error_date,omitempty"`
 	ErxPharmacyId         int64                  `json:"-"`
-	ErxMedicationId       *encoding.ObjectId     `json:"-"`
-	PrescriptionId        *encoding.ObjectId     `json:"-"`
+	ErxMedicationId       encoding.ObjectId      `json:"-"`
+	PrescriptionId        encoding.ObjectId      `json:"-"`
 	PrescriptionStatus    string                 `json:"status,omitempty"`
-	PharmacyLocalId       *encoding.ObjectId     `json:"-"`
+	PharmacyLocalId       encoding.ObjectId      `json:"-"`
 }
 
 // defining an equals method on the treatment so that

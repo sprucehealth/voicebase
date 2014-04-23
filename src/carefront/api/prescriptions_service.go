@@ -326,7 +326,8 @@ func (d *DataService) getRefillRequestsFromRow(rows *sql.Rows) ([]*common.Refill
 			return nil, err
 		}
 
-		var originatingTreatmentId, originatingTreatmentPlanId sql.NullInt64
+		var originatingTreatmentId sql.NullInt64
+		var originatingTreatmentPlanId encoding.ObjectId
 		err = d.DB.QueryRow(`select originating_treatment_id, treatment_plan_id from requested_treatment 
 							inner join treatment on originating_treatment_id = treatment.id
 								where requested_treatment.id = ?`, refillRequest.RequestedPrescription.Id.Int64()).Scan(&originatingTreatmentId, &originatingTreatmentPlanId)
@@ -336,7 +337,7 @@ func (d *DataService) getRefillRequestsFromRow(rows *sql.Rows) ([]*common.Refill
 
 		if originatingTreatmentId.Valid {
 			refillRequest.RequestedPrescription.OriginatingTreatmentId = originatingTreatmentId.Int64
-			refillRequest.TreatmentPlanId = encoding.NewObjectId(originatingTreatmentPlanId.Int64)
+			refillRequest.TreatmentPlanId = originatingTreatmentPlanId
 		}
 
 		refillRequest.RxHistory, err = d.GetRefillStatusEventsForRefillRequest(refillRequest.Id)
@@ -353,7 +354,7 @@ func (d *DataService) getRefillRequestsFromRow(rows *sql.Rows) ([]*common.Refill
 func (d *DataService) getTreatmentForRefillRequest(tableName string, treatmentId int64) (*common.Treatment, error) {
 	var treatment common.Treatment
 	treatment.ERx = &common.ERxData{}
-	var erxId, pharmacyLocalId int64
+	var erxId, pharmacyLocalId encoding.ObjectId
 	var daysSupply, refills encoding.NullInt64
 	var doctorId sql.NullInt64
 	var treatmentType string
@@ -381,15 +382,15 @@ func (d *DataService) getTreatmentForRefillRequest(tableName string, treatmentId
 		return nil, err
 	}
 	treatment.Id = encoding.NewObjectId(treatmentId)
-	treatment.ERx.PrescriptionId = encoding.NewObjectId(erxId)
+	treatment.ERx.PrescriptionId = erxId
 	treatment.DrugName = drugName.String
 	treatment.DrugForm = drugForm.String
 	treatment.DrugRoute = drugRoute.String
 	treatment.OTC = treatmentType == treatmentOTC
 	treatment.DaysSupply = daysSupply
 	treatment.NumberRefills = refills
-	treatment.ERx.PharmacyLocalId = encoding.NewObjectId(pharmacyLocalId)
-	treatment.ERx.Pharmacy, err = d.GetPharmacyFromId(pharmacyLocalId)
+	treatment.ERx.PharmacyLocalId = pharmacyLocalId
+	treatment.ERx.Pharmacy, err = d.GetPharmacyFromId(pharmacyLocalId.Int64())
 
 	if err != nil {
 		return nil, err
@@ -778,11 +779,10 @@ func (d *DataService) GetUnlinkedDNTFTreatmentsForPatient(patientId int64) ([]*c
 func (d *DataService) getUnlinkedDNTFTreatmentsFromRow(rows *sql.Rows) ([]*common.Treatment, error) {
 	treatments := make([]*common.Treatment, 0)
 	for rows.Next() {
-		var dispenseUnitId, doctorId, patientId, unlinkedDntfTreatmentId int64
+		var dispenseUnitId, doctorId, patientId, unlinkedDntfTreatmentId, pharmacyId, erxId encoding.ObjectId
 		var dispenseValue encoding.HighPrecisionFloat64
 		var drugInternalName, dosageStrength, treatmentType, dispenseUnitDescription, pharmacyNotes, patientInstructions, status string
 		var creationDate time.Time
-		var erxId, pharmacyId sql.NullInt64
 		var daysSupply, refills encoding.NullInt64
 		var erxSentDate, erxLastFilledDate mysql.NullTime
 		var drugName, drugRoute, drugForm sql.NullString
@@ -794,13 +794,13 @@ func (d *DataService) getUnlinkedDNTFTreatmentsFromRow(rows *sql.Rows) ([]*commo
 		}
 
 		treatment := &common.Treatment{
-			Id:                      encoding.NewObjectId(unlinkedDntfTreatmentId),
-			PatientId:               encoding.NewObjectId(patientId),
-			DoctorId:                encoding.NewObjectId(doctorId),
+			Id:                      unlinkedDntfTreatmentId,
+			PatientId:               patientId,
+			DoctorId:                doctorId,
 			DrugInternalName:        drugInternalName,
 			DosageStrength:          dosageStrength,
 			DispenseValue:           dispenseValue,
-			DispenseUnitId:          encoding.NewObjectId(dispenseUnitId),
+			DispenseUnitId:          dispenseUnitId,
 			DispenseUnitDescription: dispenseUnitDescription,
 			NumberRefills:           refills,
 			SubstitutionsAllowed:    substitutionsAllowed,
@@ -819,17 +819,15 @@ func (d *DataService) getUnlinkedDNTFTreatmentsFromRow(rows *sql.Rows) ([]*commo
 			},
 		}
 
-		if pharmacyId.Valid {
-			treatment.ERx.PharmacyLocalId = encoding.NewObjectId(pharmacyId.Int64)
-			treatment.ERx.Pharmacy, err = d.GetPharmacyFromId(pharmacyId.Int64)
+		if pharmacyId.IsValid {
+			treatment.ERx.PharmacyLocalId = pharmacyId
+			treatment.ERx.Pharmacy, err = d.GetPharmacyFromId(pharmacyId.Int64())
 			if err != nil {
 				return nil, err
 			}
 		}
 
-		if erxId.Valid {
-			treatment.ERx.PrescriptionId = encoding.NewObjectId(erxId.Int64)
-		}
+		treatment.ERx.PrescriptionId = erxId
 
 		treatment.Doctor, err = d.GetDoctorFromId(treatment.DoctorId.Int64())
 		if err != nil {
@@ -841,7 +839,7 @@ func (d *DataService) getUnlinkedDNTFTreatmentsFromRow(rows *sql.Rows) ([]*commo
 			return nil, err
 		}
 
-		treatment.ERx.RxHistory, err = d.GetErxStatusEventsForDNTFTreatment(unlinkedDntfTreatmentId)
+		treatment.ERx.RxHistory, err = d.GetErxStatusEventsForDNTFTreatment(unlinkedDntfTreatmentId.Int64())
 		if err != nil {
 			return nil, err
 		}

@@ -869,13 +869,13 @@ func (d *DataService) GetCardsForPatient(patientId int64) ([]*common.Card, error
 	defer rows.Close()
 
 	for rows.Next() {
-		var cardId int64
+		var cardId encoding.ObjectId
 		var card common.Card
 
 		if err := rows.Scan(&cardId, &card.ThirdPartyId, &card.Fingerprint, &card.Type, &card.IsDefault, &card.CreationDate); err != nil {
 			return nil, err
 		}
-		card.Id = encoding.NewObjectId(cardId)
+		card.Id = cardId
 		cards = append(cards, &card)
 	}
 
@@ -989,8 +989,7 @@ func (d *DataService) getPatientBasedOnQuery(queryStr string, queryParams ...int
 	for rows.Next() {
 		var firstName, lastName, status, gender string
 		var phone, phoneType, zipCode, email, paymentServiceCustomerId, suffix, prefix, middleName sql.NullString
-		var erxPatientId sql.NullInt64
-		var patientId, accountId int64
+		var patientId, accountId, erxPatientId encoding.ObjectId
 		var dobMonth, dobYear, dobDay int
 		err = rows.Scan(&patientId, &erxPatientId, &paymentServiceCustomerId, &accountId, &email, &firstName, &middleName, &lastName, &suffix, &prefix,
 			&zipCode, &phone, &phoneType, &gender, &dobYear, &dobMonth, &dobDay, &status)
@@ -999,7 +998,7 @@ func (d *DataService) getPatientBasedOnQuery(queryStr string, queryParams ...int
 		}
 
 		patient := &common.Patient{
-			PatientId:         encoding.NewObjectId(patientId),
+			PatientId:         patientId,
 			PaymentCustomerId: paymentServiceCustomerId.String,
 			FirstName:         firstName,
 			LastName:          lastName,
@@ -1009,18 +1008,15 @@ func (d *DataService) getPatientBasedOnQuery(queryStr string, queryParams ...int
 			Email:             email.String,
 			Status:            status,
 			Gender:            gender,
-			AccountId:         encoding.NewObjectId(accountId),
+			AccountId:         accountId,
 			ZipCode:           zipCode.String,
+			ERxPatientId:      erxPatientId,
 			Dob:               encoding.Dob{Year: dobYear, Month: dobMonth, Day: dobDay},
 			PhoneNumbers: []*common.PhoneInformation{&common.PhoneInformation{
 				Phone:     phone.String,
 				PhoneType: phoneType.String,
 			},
 			},
-		}
-
-		if erxPatientId.Valid {
-			patient.ERxPatientId = encoding.NewObjectId(erxPatientId.Int64)
 		}
 
 		patient.IsUnlinked = status == PATIENT_UNLINKED

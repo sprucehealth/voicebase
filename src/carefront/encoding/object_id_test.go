@@ -6,8 +6,8 @@ import (
 )
 
 type ExampleObject struct {
-	Id   *ObjectId `json:"testing_id,omitempty"`
-	Name string    `json:"name"`
+	Id   ObjectId `json:"testing_id,omitempty"`
+	Name string   `json:"name"`
 }
 
 const (
@@ -26,15 +26,19 @@ const (
 }`
 
 	testObjectStringWithNoObjectId = `{
- "name": "Hello"
+ "name": "Hello",
+ "testing_id": null
 }`
 )
 
 func TestObjectIdMarshal(t *testing.T) {
-	objId := ObjectId(12345)
+	objId := ObjectId{
+		Int64Value: 12345,
+		IsValid:    true,
+	}
 
 	e1 := &ExampleObject{
-		Id:   &objId,
+		Id:   objId,
 		Name: "Hello",
 	}
 
@@ -57,8 +61,8 @@ func TestObjectIdMarshal(t *testing.T) {
 		t.Fatal("Unable to marshal object with no objectId: " + err.Error())
 	}
 
-	if string(jsonData) != `{"name":"Hello"}` {
-		t.Fatal("ObjectId object did not get marshalled as expected")
+	if string(jsonData) != `{"testing_id":null,"name":"Hello"}` {
+		t.Fatalf("ObjectId object did not get marshalled as expected: got %s", string(jsonData))
 	}
 }
 
@@ -80,7 +84,7 @@ func TestObjectIdUnmarshal(t *testing.T) {
 		t.Fatal("Unable to unmarshal object as expected: " + err.Error())
 	}
 
-	if testObject.Id != nil {
+	if testObject.Id.IsValid {
 		t.Fatalf("Expected the objectId to be set as 0, Instead it was set as %d", testObject.Id.Int64())
 	}
 
@@ -102,7 +106,7 @@ func TestObjectIdUnmarshal(t *testing.T) {
 		t.Fatal("Unable to unmarshal object as expected")
 	}
 
-	if testObject.Id != nil {
+	if testObject.Id.IsValid {
 		t.Fatal("Expected the objectId to be set as 0")
 	}
 }

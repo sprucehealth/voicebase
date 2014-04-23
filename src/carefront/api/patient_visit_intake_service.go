@@ -2,7 +2,6 @@ package api
 
 import (
 	"carefront/common"
-	"carefront/encoding"
 	"database/sql"
 	"fmt"
 	"strconv"
@@ -272,48 +271,21 @@ func (d *DataService) getPatientAnswersForQuestionsBasedOnQuery(query string, ar
 	patientAnswers := make(map[int64][]*common.AnswerIntake)
 	queriedAnswers := make([]*common.AnswerIntake, 0)
 	for rows.Next() {
-		var answerId, questionId, layoutVersionId int64
-		var potentialAnswerId sql.NullInt64
+		var patientAnswerToQuestion common.AnswerIntake
 		var answerText, answerSummaryText, storageBucket, storageKey, storageRegion, potentialAnswer sql.NullString
-		var parentQuestionId, parentInfoIntakeId sql.NullInt64
-		if err := rows.Scan(&answerId, &questionId, &potentialAnswerId, &potentialAnswer, &answerSummaryText, &answerText, &storageBucket, &storageKey, &storageRegion, &layoutVersionId, &parentQuestionId, &parentInfoIntakeId); err != nil {
+		if err := rows.Scan(&patientAnswerToQuestion.AnswerIntakeId, &patientAnswerToQuestion.QuestionId, &patientAnswerToQuestion.PotentialAnswerId, &potentialAnswer,
+			&answerSummaryText, &answerText, &storageBucket, &storageKey, &storageRegion, &patientAnswerToQuestion.LayoutVersionId, &patientAnswerToQuestion.ParentQuestionId, &patientAnswerToQuestion.ParentAnswerId); err != nil {
 			return nil, err
 		}
-		patientAnswerToQuestion := &common.AnswerIntake{
-			AnswerIntakeId:  encoding.NewObjectId(answerId),
-			QuestionId:      encoding.NewObjectId(questionId),
-			LayoutVersionId: encoding.NewObjectId(layoutVersionId),
-		}
 
-		if potentialAnswerId.Valid {
-			patientAnswerToQuestion.PotentialAnswerId = encoding.NewObjectId(potentialAnswerId.Int64)
-		}
+		patientAnswerToQuestion.PotentialAnswer = potentialAnswer.String
+		patientAnswerToQuestion.AnswerText = answerText.String
+		patientAnswerToQuestion.AnswerSummary = answerSummaryText.String
+		patientAnswerToQuestion.StorageBucket = storageBucket.String
+		patientAnswerToQuestion.StorageRegion = storageRegion.String
+		patientAnswerToQuestion.StorageKey = storageKey.String
 
-		if potentialAnswer.Valid {
-			patientAnswerToQuestion.PotentialAnswer = potentialAnswer.String
-		}
-		if answerText.Valid {
-			patientAnswerToQuestion.AnswerText = answerText.String
-		}
-		if answerSummaryText.Valid {
-			patientAnswerToQuestion.AnswerSummary = answerSummaryText.String
-		}
-		if storageBucket.Valid {
-			patientAnswerToQuestion.StorageBucket = storageBucket.String
-		}
-		if storageRegion.Valid {
-			patientAnswerToQuestion.StorageRegion = storageRegion.String
-		}
-		if storageKey.Valid {
-			patientAnswerToQuestion.StorageKey = storageKey.String
-		}
-		if parentQuestionId.Valid {
-			patientAnswerToQuestion.ParentQuestionId = encoding.NewObjectId(parentQuestionId.Int64)
-		}
-		if parentInfoIntakeId.Valid {
-			patientAnswerToQuestion.ParentAnswerId = encoding.NewObjectId(parentInfoIntakeId.Int64)
-		}
-		queriedAnswers = append(queriedAnswers, patientAnswerToQuestion)
+		queriedAnswers = append(queriedAnswers, &patientAnswerToQuestion)
 	}
 	if rows.Err() != nil {
 		return nil, rows.Err()

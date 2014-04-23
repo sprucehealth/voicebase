@@ -253,7 +253,7 @@ func TestNewRefillRequestForExistingPatientAndExistingTreatment(t *testing.T) {
 		t.Fatal("Requested prescription should be one that was found in our system, but instead its indicated to be unlinked")
 	}
 
-	if refillRequest.TreatmentPlanId == nil || refillRequest.TreatmentPlanId.Int64() == 0 {
+	if !refillRequest.TreatmentPlanId.IsValid || refillRequest.TreatmentPlanId.Int64() == 0 {
 		t.Fatal("Expected treatment plan id to be set given that the treatment is linked")
 	}
 
@@ -2017,14 +2017,14 @@ func setUpDeniedRefillRequestWithDNTFForLinkedTreatment(t *testing.T, testData T
 	}
 
 	if toAddTemplatedTreatment {
-		if linkedTreatment.DoctorTreatmentTemplateId == nil || linkedTreatment.DoctorTreatmentTemplateId.Int64() == 0 {
+		if !linkedTreatment.DoctorTreatmentTemplateId.IsValid || linkedTreatment.DoctorTreatmentTemplateId.Int64() == 0 {
 			t.Fatal("Expected there to exist a doctor template id given that the treatment was created from a template but there wasnt one")
 		}
 	}
 
 	// the treatment as a result of DNTF, if linked, should map back to the original treatemtn plan
 	// associated with the originating treatment for the refill request
-	if linkedTreatment.TreatmentPlanId == nil || linkedTreatment.TreatmentPlanId.Int64() != treatmentPlanId {
+	if !linkedTreatment.TreatmentPlanId.IsValid || linkedTreatment.TreatmentPlanId.Int64() != treatmentPlanId {
 		t.Fatalf("Expected the linked treatment to map back to the original treatment but it didnt")
 	}
 

@@ -139,7 +139,10 @@ func (n *NullInt64) Scan(src interface{}) error {
 // This is an object used for the (un)marshalling
 // of data models ids, such that null values passed from the client
 // can be treated as 0 values.
-type ObjectId int64
+type ObjectId struct {
+	Int64Value int64
+	IsValid    bool
+}
 
 func (id *ObjectId) UnmarshalJSON(data []byte) error {
 
@@ -148,32 +151,53 @@ func (id *ObjectId) UnmarshalJSON(data []byte) error {
 	// as value being 0.
 	// otherwise relying on integer parser
 	if len(data) < 2 || strData == "null" || strData == `""` {
-		*id = 0
+		*id = ObjectId{
+			Int64Value: 0,
+			IsValid:    false,
+		}
 		return nil
 	}
 	intId, err := strconv.ParseInt(strData[1:len(strData)-1], 10, 64)
-	*id = ObjectId(intId)
+	*id = ObjectId{
+		Int64Value: intId,
+		IsValid:    true,
+	}
 	return err
 }
 
 func (id *ObjectId) MarshalJSON() ([]byte, error) {
-	if id == nil {
+	// don't marshal anything if value is not valid
+	if !id.IsValid {
 		return []byte(`null`), nil
 	}
 
-	return []byte(fmt.Sprintf(`"%d"`, *id)), nil
+	return []byte(fmt.Sprintf(`"%d"`, id.Int64Value)), nil
 }
 
-func NewObjectId(intId int64) *ObjectId {
-	objectId := ObjectId(intId)
-	return &objectId
+func NewObjectId(intId int64) ObjectId {
+	objectId := ObjectId{
+		Int64Value: intId,
+		IsValid:    true,
+	}
+	return objectId
 }
 
 func (id *ObjectId) Int64() int64 {
-	if id == nil {
-		return 0
+	return id.Int64Value
+}
+
+func (id *ObjectId) Scan(src interface{}) error {
+	var nullInt64 sql.NullInt64
+	err := nullInt64.Scan(src)
+	if err != nil {
+		return err
 	}
-	return int64(*id)
+
+	*id = ObjectId{
+		Int64Value: nullInt64.Int64,
+		IsValid:    nullInt64.Valid,
+	}
+	return nil
 }
 
 const (

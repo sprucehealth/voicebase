@@ -43,12 +43,12 @@ type DoctorRefillRequestResponse struct {
 }
 
 type DoctorRefillRequestRequestData struct {
-	RefillRequestId      *encoding.ObjectId `json:"refill_request_id,required"`
-	DenialReasonId       *encoding.ObjectId `json:"denial_reason_id"`
-	Comments             string             `json:"comments"`
-	Action               string             `json:"action"`
-	ApprovedRefillAmount int64              `json:"approved_refill_amount"`
-	Treatment            *common.Treatment  `json:"new_treatment,omitempty"`
+	RefillRequestId      encoding.ObjectId `json:"refill_request_id,required"`
+	DenialReasonId       encoding.ObjectId `json:"denial_reason_id"`
+	Comments             string            `json:"comments"`
+	Action               string            `json:"action"`
+	ApprovedRefillAmount int64             `json:"approved_refill_amount"`
+	Treatment            *common.Treatment `json:"new_treatment,omitempty"`
 }
 
 type DoctorGetRefillRequestData struct {

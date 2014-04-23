@@ -13,7 +13,7 @@ type DoctorUpdatePatientPharmacyHandler struct {
 }
 
 type DoctorUpdatePatientPharmacyRequestData struct {
-	PatientId *encoding.ObjectId     `json:"patient_id"`
+	PatientId encoding.ObjectId      `json:"patient_id"`
 	Pharmacy  *pharmacy.PharmacyData `json:"pharmacy"`
 }
 
