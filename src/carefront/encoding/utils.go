@@ -51,7 +51,7 @@ func (h *HighPrecisionFloat64) Scan(src interface{}) error {
 		return err
 	}
 
-	*h = nullFloat64.Float64
+	*h = HighPrecisionFloat64(nullFloat64.Float64)
 	return nil
 }
 
