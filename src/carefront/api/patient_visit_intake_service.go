@@ -171,13 +171,13 @@ func insertAnswers(tx *sql.Tx, answersToStore []*common.AnswerIntake, status str
 		if answerToStore.PotentialAnswerId.Int64() == 0 {
 			res, err = tx.Exec(`insert into info_intake (role_id, context_id, 
 			question_id, answer_text, layout_version_id, role, status) values
-			(?, ?, ?, ?, ?, ?, ?)`, answerToStore.RoleId, answerToStore.ContextId,
-				answerToStore.QuestionId, answerToStore.AnswerText, answerToStore.LayoutVersionId, answerToStore.Role, status)
+			(?, ?, ?, ?, ?, ?, ?)`, answerToStore.RoleId, answerToStore.ContextId.Int64(),
+				answerToStore.QuestionId.Int64(), answerToStore.AnswerText, answerToStore.LayoutVersionId.Int64(), answerToStore.Role, status)
 		} else {
 			res, err = tx.Exec(`insert into info_intake (role_id, context_id,  
 			question_id, potential_answer_id, answer_text, layout_version_id, role, status) values
-			(?, ?, ?, ?, ?, ?, ?, ?)`, answerToStore.RoleId, answerToStore.ContextId,
-				answerToStore.QuestionId, answerToStore.PotentialAnswerId, answerToStore.AnswerText, answerToStore.LayoutVersionId, answerToStore.Role, status)
+			(?, ?, ?, ?, ?, ?, ?, ?)`, answerToStore.RoleId, answerToStore.ContextId.Int64(),
+				answerToStore.QuestionId.Int64(), answerToStore.PotentialAnswerId.Int64(), answerToStore.AnswerText, answerToStore.LayoutVersionId.Int64(), answerToStore.Role, status)
 		}
 
 		if err != nil {
@@ -195,13 +195,13 @@ func insertAnswersForSubQuestions(tx *sql.Tx, answersToStore []*common.AnswerInt
 		if answerToStore.PotentialAnswerId.Int64() == 0 {
 			res, err = tx.Exec(`insert into info_intake (role_id, context_id, parent_info_intake_id, parent_question_id, 
 			question_id, answer_text, layout_version_id, role, status) values
-			(?, ?, ?, ?, ?, ?, ?, ?, ?)`, answerToStore.RoleId, answerToStore.ContextId, parentInfoIntakeId, parentQuestionId,
-				answerToStore.QuestionId, answerToStore.AnswerText, answerToStore.LayoutVersionId, answerToStore.Role, status)
+			(?, ?, ?, ?, ?, ?, ?, ?, ?)`, answerToStore.RoleId, answerToStore.ContextId.Int64(), parentInfoIntakeId, parentQuestionId,
+				answerToStore.QuestionId.Int64(), answerToStore.AnswerText, answerToStore.LayoutVersionId.Int64(), answerToStore.Role, status)
 		} else {
 			res, err = tx.Exec(`insert into info_intake (role_id, context_id, parent_info_intake_id, parent_question_id, 
 			question_id, potential_answer_id, answer_text, layout_version_id, role, status) values
-			(?, ?, ?, ?, ?, ?, ?, ?, ?, ?)`, answerToStore.RoleId, answerToStore.ContextId, parentInfoIntakeId, parentQuestionId,
-				answerToStore.QuestionId, answerToStore.PotentialAnswerId, answerToStore.AnswerText, answerToStore.LayoutVersionId, answerToStore.Role, status)
+			(?, ?, ?, ?, ?, ?, ?, ?, ?, ?)`, answerToStore.RoleId, answerToStore.ContextId.Int64(), parentInfoIntakeId, parentQuestionId,
+				answerToStore.QuestionId.Int64(), answerToStore.PotentialAnswerId.Int64(), answerToStore.AnswerText, answerToStore.LayoutVersionId.Int64(), answerToStore.Role, status)
 		}
 
 		if err != nil {

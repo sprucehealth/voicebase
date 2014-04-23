@@ -2,7 +2,6 @@ package encoding
 
 import (
 	"database/sql"
-	"database/sql/driver"
 	"encoding/xml"
 	"fmt"
 	"strconv"
@@ -16,10 +15,10 @@ import (
 // can display it as a string without having to worry about the float value, the exact precision, etc.
 type HighPrecisionFloat64 float64
 
-func (h *HighPrecisionFloat64) MarshalJSON() ([]byte, error) {
+func (h HighPrecisionFloat64) MarshalJSON() ([]byte, error) {
 	var marshalledValue []byte
 	marshalledValue = append(marshalledValue, '"')
-	marshalledValue = strconv.AppendFloat(marshalledValue, float64(*h), 'f', -1, 64)
+	marshalledValue = strconv.AppendFloat(marshalledValue, float64(h), 'f', -1, 64)
 	marshalledValue = append(marshalledValue, '"')
 	return marshalledValue, nil
 }
@@ -36,12 +35,12 @@ func (h *HighPrecisionFloat64) UnmarshalJSON(data []byte) error {
 	return err
 }
 
-func (h *HighPrecisionFloat64) Float64() float64 {
-	return float64(*h)
+func (h HighPrecisionFloat64) Float64() float64 {
+	return float64(h)
 }
 
-func (h *HighPrecisionFloat64) String() string {
-	return strconv.FormatFloat(float64(*h), 'f', -1, 64)
+func (h HighPrecisionFloat64) String() string {
+	return strconv.FormatFloat(float64(h), 'f', -1, 64)
 }
 
 func (h *HighPrecisionFloat64) Scan(src interface{}) error {
@@ -55,16 +54,12 @@ func (h *HighPrecisionFloat64) Scan(src interface{}) error {
 	return nil
 }
 
-func (h *HighPrecisionFloat64) Value() (driver.Value, error) {
-	return float64(*h), nil
-}
-
 type NullInt64 struct {
 	IsValid    bool
 	Int64Value int64
 }
 
-func (n *NullInt64) MarshalJSON() ([]byte, error) {
+func (n NullInt64) MarshalJSON() ([]byte, error) {
 	if !n.IsValid {
 		return []byte(`null`), nil
 	}
@@ -116,7 +111,7 @@ func (n *NullInt64) UnmarshalXML(d *xml.Decoder, start xml.StartElement) error {
 
 	return err
 }
-func (n *NullInt64) MarshalXML(e *xml.Encoder, start xml.StartElement) error {
+func (n NullInt64) MarshalXML(e *xml.Encoder, start xml.StartElement) error {
 	if n.IsValid {
 		return e.EncodeElement(strconv.FormatInt(n.Int64Value, 10), start)
 	}
@@ -124,7 +119,7 @@ func (n *NullInt64) MarshalXML(e *xml.Encoder, start xml.StartElement) error {
 	return e.EncodeElement(nil, start)
 }
 
-func (n *NullInt64) Int64() int64 {
+func (n NullInt64) Int64() int64 {
 	return n.Int64Value
 }
 
@@ -138,10 +133,6 @@ func (n *NullInt64) Scan(src interface{}) error {
 	n.IsValid = nullInt.Valid
 	n.Int64Value = nullInt.Int64
 	return nil
-}
-
-func (n *NullInt64) Value() (driver.Value, error) {
-	return n.Int64Value, nil
 }
 
 // This is an object used for the (un)marshalling
@@ -158,7 +149,7 @@ func (id *ObjectId) UnmarshalJSON(data []byte) error {
 	// only treating the case of an empty string or a null value
 	// as value being 0.
 	// otherwise relying on integer parser
-	if len(data) < 2 || strData == "null" || strData == `""` {
+	if len(strData) < 2 || strData == "null" || strData == `""` {
 		*id = ObjectId{
 			Int64Value: 0,
 			IsValid:    false,
@@ -173,7 +164,7 @@ func (id *ObjectId) UnmarshalJSON(data []byte) error {
 	return err
 }
 
-func (id *ObjectId) MarshalJSON() ([]byte, error) {
+func (id ObjectId) MarshalJSON() ([]byte, error) {
 	// don't marshal anything if value is not valid
 	if !id.IsValid {
 		return []byte(`null`), nil
@@ -190,7 +181,7 @@ func NewObjectId(intId int64) ObjectId {
 	return objectId
 }
 
-func (id *ObjectId) Int64() int64 {
+func (id ObjectId) Int64() int64 {
 	return id.Int64Value
 }
 
@@ -206,10 +197,6 @@ func (id *ObjectId) Scan(src interface{}) error {
 		IsValid:    nullInt64.Valid,
 	}
 	return nil
-}
-
-func (id *ObjectId) Value() (driver.Value, error) {
-	return id.Int64Value, nil
 }
 
 const (
@@ -266,19 +253,19 @@ func (dob *Dob) UnmarshalJSON(data []byte) error {
 	return nil
 }
 
-func (dob *Dob) MarshalJSON() ([]byte, error) {
-	if dob == nil {
+func (dob Dob) MarshalJSON() ([]byte, error) {
+	if dob.Month == 0 && dob.Year == 0 && dob.Day == 0 {
 		return []byte(`null`), nil
 	}
 
 	return []byte(fmt.Sprintf(`"%d-%02d-%02d"`, dob.Year, dob.Month, dob.Day)), nil
 }
 
-func (dob *Dob) ToTime() time.Time {
+func (dob Dob) ToTime() time.Time {
 	return time.Date(dob.Year, time.Month(dob.Month), dob.Day, 0, 0, 0, 0, time.UTC)
 }
 
-func (dob *Dob) String() string {
+func (dob Dob) String() string {
 	return fmt.Sprintf(`%d-%02d-%02d`, dob.Year, dob.Month, dob.Day)
 }
 

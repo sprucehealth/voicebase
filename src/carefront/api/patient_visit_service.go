@@ -501,7 +501,7 @@ func (d *DataService) CreateAdviceForPatientVisit(advicePoints []*common.DoctorI
 	}
 
 	for _, advicePoint := range advicePoints {
-		_, err = tx.Exec(`insert into advice (treatment_plan_id, dr_advice_point_id, status) values (?, ?, ?)`, treatmentPlanId, advicePoint.Id, STATUS_ACTIVE)
+		_, err = tx.Exec(`insert into advice (treatment_plan_id, dr_advice_point_id, status) values (?, ?, ?)`, treatmentPlanId, advicePoint.Id.Int64(), STATUS_ACTIVE)
 		if err != nil {
 			tx.Rollback()
 			return err
@@ -528,7 +528,7 @@ func (d *DataService) CreateRegimenPlanForPatientVisit(regimenPlan *common.Regim
 	// create new regimen steps within each section
 	for _, regimenSection := range regimenPlan.RegimenSections {
 		for _, regimenStep := range regimenSection.RegimenSteps {
-			_, err = tx.Exec(`insert into regimen (treatment_plan_id, regimen_type, dr_regimen_step_id, status) values (?,?,?,?)`, regimenPlan.TreatmentPlanId, regimenSection.RegimenName, regimenStep.Id, STATUS_ACTIVE)
+			_, err = tx.Exec(`insert into regimen (treatment_plan_id, regimen_type, dr_regimen_step_id, status) values (?,?,?,?)`, regimenPlan.TreatmentPlanId.Int64(), regimenSection.RegimenName, regimenStep.Id.Int64(), STATUS_ACTIVE)
 			if err != nil {
 				tx.Rollback()
 				return err
@@ -659,7 +659,7 @@ func (d *DataService) addTreatment(treatment *common.Treatment, withoutLinkToTre
 		"dosage_strength":       treatment.DosageStrength,
 		"type":                  treatmentType,
 		"dispense_value":        treatment.DispenseValue.Float64(),
-		"dispense_unit_id":      treatment.DispenseUnitId,
+		"dispense_unit_id":      treatment.DispenseUnitId.Int64(),
 		"refills":               treatment.NumberRefills.Int64Value,
 		"substitutions_allowed": treatment.SubstitutionsAllowed,
 		"patient_instructions":  treatment.PatientInstructions,
@@ -707,7 +707,7 @@ func (d *DataService) addTreatment(treatment *common.Treatment, withoutLinkToTre
 
 	// add drug db ids to the table
 	for drugDbTag, drugDbId := range treatment.DrugDBIds {
-		_, err := tx.Exec(`insert into drug_db_id (drug_db_id_tag, drug_db_id, treatment_id) values (?, ?, ?)`, drugDbTag, drugDbId, treatment.Id)
+		_, err := tx.Exec(`insert into drug_db_id (drug_db_id_tag, drug_db_id, treatment_id) values (?, ?, ?)`, drugDbTag, drugDbId, treatment.Id.Int64())
 		if err != nil {
 			tx.Rollback()
 			return err
@@ -935,7 +935,7 @@ func (d *DataService) AddErxStatusEvent(treatments []*common.Treatment, prescrip
 
 	for _, treatment := range treatments {
 
-		_, err = tx.Exec(`update erx_status_events set status = ? where treatment_id = ? and status = ?`, STATUS_INACTIVE, treatment.Id, STATUS_ACTIVE)
+		_, err = tx.Exec(`update erx_status_events set status = ? where treatment_id = ? and status = ?`, STATUS_INACTIVE, treatment.Id.Int64(), STATUS_ACTIVE)
 		if err != nil {
 			tx.Rollback()
 			return err
