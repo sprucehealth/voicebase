@@ -596,7 +596,6 @@ func populateContextForRenderingLayout(patientAnswersForQuestions map[int64][]*c
 
 	// go through each question
 	for _, question := range questions {
-		fmt.Printf("%#v", *question)
 		switch question.QuestionTypes[0] {
 
 		case info_intake.QUESTION_TYPE_PHOTO, info_intake.QUESTION_TYPE_MULTIPLE_PHOTO, info_intake.QUESTION_TYPE_SINGLE_PHOTO:
