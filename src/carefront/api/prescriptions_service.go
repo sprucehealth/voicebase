@@ -779,7 +779,7 @@ func (d *DataService) getUnlinkedDNTFTreatmentsFromRow(rows *sql.Rows) ([]*commo
 	treatments := make([]*common.Treatment, 0)
 	for rows.Next() {
 		var dispenseUnitId, doctorId, patientId, unlinkedDntfTreatmentId int64
-		var dispenseValue float64
+		var dispenseValue encoding.HighPrecisionFloat64
 		var drugInternalName, dosageStrength, treatmentType, dispenseUnitDescription, pharmacyNotes, patientInstructions, status string
 		var creationDate time.Time
 		var erxId, pharmacyId sql.NullInt64
@@ -799,7 +799,7 @@ func (d *DataService) getUnlinkedDNTFTreatmentsFromRow(rows *sql.Rows) ([]*commo
 			DoctorId:                encoding.NewObjectId(doctorId),
 			DrugInternalName:        drugInternalName,
 			DosageStrength:          dosageStrength,
-			DispenseValue:           encoding.HighPrecisionFloat64(dispenseValue),
+			DispenseValue:           dispenseValue,
 			DispenseUnitId:          encoding.NewObjectId(dispenseUnitId),
 			DispenseUnitDescription: dispenseUnitDescription,
 			NumberRefills:           refills,

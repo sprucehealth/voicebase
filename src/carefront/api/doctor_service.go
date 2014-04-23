@@ -779,7 +779,7 @@ func (d *DataService) GetTreatmentTemplates(doctorId int64) ([]*common.DoctorTre
 	for rows.Next() {
 		var treatmentId, dispenseUnitId int64
 		var daysSupply, refills encoding.NullInt64
-		var dispenseValue float64
+		var dispenseValue encoding.HighPrecisionFloat64
 		var drugInternalName, dosageStrength, patientInstructions, treatmentType, dispenseUnitDescription, status string
 		var substitutionsAllowed bool
 		var creationDate time.Time
@@ -793,7 +793,7 @@ func (d *DataService) GetTreatmentTemplates(doctorId int64) ([]*common.DoctorTre
 			Id:                      encoding.NewObjectId(treatmentId),
 			DrugInternalName:        drugInternalName,
 			DosageStrength:          dosageStrength,
-			DispenseValue:           encoding.HighPrecisionFloat64(dispenseValue),
+			DispenseValue:           dispenseValue,
 			DispenseUnitId:          encoding.NewObjectId(dispenseUnitId),
 			DispenseUnitDescription: dispenseUnitDescription,
 			NumberRefills:           refills,
@@ -859,7 +859,7 @@ func (d *DataService) GetCompletedPrescriptionsForDoctor(from, to time.Time, doc
 	defer rows.Close()
 	for rows.Next() {
 		var treatmentId, treatmentPlanId, patientId, patientVisitId, dispenseUnitId int64
-		var dispenseValue float64
+		var dispenseValue encoding.HighPrecisionFloat64
 		var refills, daysSupply encoding.NullInt64
 		var drugInternalName, dosageStrength, treatmentType, dispenseUnitDescription, patientInstructions, status string
 		var creationDate, sentDate, treatmentPlanCreationDate time.Time
@@ -893,7 +893,7 @@ func (d *DataService) GetCompletedPrescriptionsForDoctor(from, to time.Time, doc
 			TreatmentPlanId:         encoding.NewObjectId(treatmentPlanId),
 			DrugInternalName:        drugInternalName,
 			DosageStrength:          dosageStrength,
-			DispenseValue:           encoding.HighPrecisionFloat64(dispenseValue),
+			DispenseValue:           dispenseValue,
 			DispenseUnitId:          encoding.NewObjectId(dispenseUnitId),
 			DispenseUnitDescription: dispenseUnitDescription,
 			NumberRefills:           refills,

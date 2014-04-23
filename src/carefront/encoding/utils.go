@@ -44,6 +44,17 @@ func (h *HighPrecisionFloat64) String() string {
 	return strconv.FormatFloat(float64(*h), 'f', -1, 64)
 }
 
+func (h *HighPrecisionFloat64) Scan(src interface{}) error {
+	var nullFloat64 sql.NullFloat64
+	err := nullFloat64.Scan(src)
+	if err != nil {
+		return err
+	}
+
+	*h = nullFloat64.Float64
+	return nil
+}
+
 type NullInt64 struct {
 	IsValid    bool
 	Int64Value int64

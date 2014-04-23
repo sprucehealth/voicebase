@@ -1049,7 +1049,7 @@ func (d *DataService) UpdateDateInfoForTreatmentId(treatmentId int64, erxSentDat
 
 func (d *DataService) getTreatmentAndMetadataFromCurrentRow(rows *sql.Rows) (*common.Treatment, error) {
 	var treatmentId, dispenseUnitId, patientId, prescriberId int64
-	var dispenseValue float64
+	var dispenseValue encoding.HighPrecisionFloat64
 	var drugInternalName, dosageStrength, patientInstructions, treatmentType, dispenseUnitDescription, status string
 	var patientVisitId, treatmentPlanId, prescriptionId, pharmacyId sql.NullInt64
 	var substitutionsAllowed bool
@@ -1069,7 +1069,7 @@ func (d *DataService) getTreatmentAndMetadataFromCurrentRow(rows *sql.Rows) (*co
 		PatientId:               encoding.NewObjectId(patientId),
 		DrugInternalName:        drugInternalName,
 		DosageStrength:          dosageStrength,
-		DispenseValue:           encoding.HighPrecisionFloat64(dispenseValue),
+		DispenseValue:           dispenseValue,
 		DispenseUnitId:          encoding.NewObjectId(dispenseUnitId),
 		DispenseUnitDescription: dispenseUnitDescription,
 		NumberRefills:           refills,
