@@ -228,7 +228,7 @@ func (d *DataService) AddOrUpdateAdvicePointForDoctor(advicePoint *common.Doctor
 
 	if advicePoint.Id.Int64() != 0 {
 		// update the current advice point to be inactive
-		_, err = tx.Exec(`update dr_advice_point set status=? where id = ? and doctor_id = ?`, STATUS_INACTIVE, advicePoint.Id, doctorId)
+		_, err = tx.Exec(`update dr_advice_point set status=? where id = ? and doctor_id = ?`, STATUS_INACTIVE, advicePoint.Id.Int64(), doctorId)
 		if err != nil {
 			tx.Rollback()
 			return err

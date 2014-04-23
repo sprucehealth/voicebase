@@ -429,7 +429,7 @@ func (d *DataService) addRequestedTreatmentFromPharmacy(treatment *common.Treatm
 		"erx_id":                treatment.ERx.PrescriptionId.Int64(),
 		"erx_sent_date":         treatment.ERx.ErxSentDate,
 		"erx_last_filled_date":  treatment.ERx.ErxLastDateFilled,
-		"pharmacy_id":           treatment.ERx.PharmacyLocalId,
+		"pharmacy_id":           treatment.ERx.PharmacyLocalId.Int64(),
 		"doctor_id":             treatment.Doctor.DoctorId.Int64(),
 	}
 
@@ -501,7 +501,7 @@ func (d *DataService) addPharmacyDispensedTreatment(dispensedTreatment, requeste
 		"erx_id":                 dispensedTreatment.ERx.PrescriptionId.Int64(),
 		"erx_sent_date":          dispensedTreatment.ERx.ErxSentDate,
 		"erx_last_filled_date":   dispensedTreatment.ERx.ErxLastDateFilled,
-		"pharmacy_id":            dispensedTreatment.ERx.PharmacyLocalId,
+		"pharmacy_id":            dispensedTreatment.ERx.PharmacyLocalId.Int64(),
 		"requested_treatment_id": requestedTreatment.Id.Int64(),
 		"doctor_id":              dispensedTreatment.Doctor.DoctorId.Int64(),
 	}
