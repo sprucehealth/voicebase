@@ -27,8 +27,10 @@ type DoctorPatientVisitReviewRequestBody struct {
 }
 
 type DoctorPatientVisitReviewResponse struct {
-	DoctorLayout    *info_intake.PatientVisitOverview `json:"patient_visit_overview,omitempty"`
-	TreatmentPlanId int64                             `json:"treatment_plan_id"`
+	Patient            *common.Patient        `json:"patient"`
+	PatientVisit       *common.PatientVisit   `json:"patient_visit"`
+	TreatmentPlanId    int64                  `json:"treatment_plan_id"`
+	PatientVisitReview map[string]interface{} `json:"visit_review"`
 }
 
 var reviewTemplate = `{
@@ -572,7 +574,19 @@ func (p *DoctorPatientVisitReviewHandler) ServeHTTP(w http.ResponseWriter, r *ht
 		return
 	}
 
-	WriteJSONToHTTPResponseWriter(w, http.StatusOK, renderedJsonData)
+	response := &DoctorPatientVisitReviewResponse{}
+	response.PatientVisit = patientVisit
+	patient, err := p.DataApi.GetPatientFromId(patientVisit.PatientId.Int64())
+	if err != nil {
+		WriteDeveloperError(w, http.StatusInternalServerError, "Unable to get patient based on id: "+err.Error())
+		return
+	}
+
+	response.Patient = patient
+	response.TreatmentPlanId = treatmentPlanId
+	response.PatientVisitReview = renderedJsonData
+
+	WriteJSONToHTTPResponseWriter(w, http.StatusOK, response)
 }
 
 func populateContextForRenderingLayout(patientAnswersForQuestions map[int64][]*common.AnswerIntake, questions []*info_intake.Question, dataApi api.DataAPI, photoStorageService api.CloudStorageAPI) (common.ViewContext, error) {
