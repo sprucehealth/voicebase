@@ -1,8 +1,8 @@
 package encoding
 
 import (
-	"bytes"
 	"database/sql"
+	"database/sql/driver"
 	"encoding/xml"
 	"fmt"
 	"strconv"
@@ -17,11 +17,11 @@ import (
 type HighPrecisionFloat64 float64
 
 func (h *HighPrecisionFloat64) MarshalJSON() ([]byte, error) {
-	var marshalledValue bytes.Buffer
-	marshalledValue.WriteString("\"")
-	marshalledValue.WriteString(strconv.FormatFloat(float64(*h), 'f', -1, 64))
-	marshalledValue.WriteString("\"")
-	return marshalledValue.Bytes(), nil
+	var marshalledValue []byte
+	marshalledValue = append(marshalledValue, '"')
+	marshalledValue = strconv.AppendFloat(marshalledValue, float64(*h), 'f', -1, 64)
+	marshalledValue = append(marshalledValue, '"')
+	return marshalledValue, nil
 }
 
 func (h *HighPrecisionFloat64) UnmarshalJSON(data []byte) error {
@@ -53,6 +53,10 @@ func (h *HighPrecisionFloat64) Scan(src interface{}) error {
 
 	*h = HighPrecisionFloat64(nullFloat64.Float64)
 	return nil
+}
+
+func (h *HighPrecisionFloat64) Value() (driver.Value, error) {
+	return float64(*h), nil
 }
 
 type NullInt64 struct {
@@ -136,6 +140,10 @@ func (n *NullInt64) Scan(src interface{}) error {
 	return nil
 }
 
+func (n *NullInt64) Value() (driver.Value, error) {
+	return n.Int64Value, nil
+}
+
 // This is an object used for the (un)marshalling
 // of data models ids, such that null values passed from the client
 // can be treated as 0 values.
@@ -198,6 +206,10 @@ func (id *ObjectId) Scan(src interface{}) error {
 		IsValid:    nullInt64.Valid,
 	}
 	return nil
+}
+
+func (id *ObjectId) Value() (driver.Value, error) {
+	return id.Int64Value, nil
 }
 
 const (
