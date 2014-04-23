@@ -110,6 +110,30 @@ func TestRenderingLayoutForDoctorVisitReview_ContentLabels(t *testing.T) {
 	}
 }
 
+func TestRenderingLayoutForDoctorVisitReview_EmptyStateViews(t *testing.T) {
+	viewContext := common.ViewContext(map[string]interface{}{})
+	populateCompleteViewContext(viewContext)
+
+	// delete certain entries and specify the empty state instead
+	viewContext.Delete("patient_visit_alerts")
+	viewContext.Set("patient_visit_alerts:empty_state_text", "No alerts specified")
+
+	sectionList := parseTemplateFromFile("../api-response-examples/v1/doctor/visit/review_v2_template.json", t)
+	_, err := sectionList.Render(viewContext)
+	if err != nil {
+		t.Fatalf("Error rendering layout:%s", err)
+	}
+
+	// do the same for the empty_title_subtitle_labels
+	viewContext.Delete("q_changes_acne_worse:answers")
+	viewContext.Set("q_changes_acne_worse:empty_state_text", "Patient chose not to answer")
+	_, err = sectionList.Render(viewContext)
+	if err != nil {
+		t.Fatalf("Error rendering layout:%s", err)
+	}
+
+}
+
 func populateCompleteViewContext(viewContext common.ViewContext) {
 	viewContext.Set("patient_visit_photos", []PhotoData{
 		PhotoData{

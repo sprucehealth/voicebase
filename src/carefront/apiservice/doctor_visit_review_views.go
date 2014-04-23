@@ -25,7 +25,9 @@ func init() {
 		RegisterType(&DVisitReviewContentLabelsList{}).
 		RegisterType(&DVisitReviewCheckXItemsList{}).
 		RegisterType(&DVisitReviewTitleSubtitleSubItemsDividedItemsList{}).
-		RegisterType(&DVisitReviewTitleSubtitleLabels{})
+		RegisterType(&DVisitReviewTitleSubtitleLabels{}).
+		RegisterType(&DVisitReviewEmptyLabelView{}).
+		RegisterType(&DVisitReviewEmptyTitleSubtitleLabelView{})
 }
 
 // View definitions
@@ -298,8 +300,9 @@ func (d *DVisitReviewDividedViewsList) Render(context common.ViewContext) (map[s
 }
 
 type DVisitReviewAlertLabelsList struct {
-	Values        []string `json:"values"`
-	ContentConfig struct {
+	Values         []string    `json:"values"`
+	EmptyStateView common.View `json:"empty_state_view"`
+	ContentConfig  struct {
 		Key string `json:"key"`
 	} `json:"content_config"`
 }
@@ -310,12 +313,17 @@ func (d DVisitReviewAlertLabelsList) TypeName() string {
 
 func (d *DVisitReviewAlertLabelsList) Render(context common.ViewContext) (map[string]interface{}, error) {
 	renderedView := make(map[string]interface{})
-	renderedView["type"] = d.TypeName()
 	var err error
 	d.Values, err = getStringArrayFromContext(d, d.ContentConfig.Key, context)
+
 	if err != nil {
+		if d.EmptyStateView != nil {
+			return handleRenderingOfEmptyStateViewOnError(err, d.EmptyStateView, d, context)
+		}
 		return nil, err
 	}
+
+	renderedView["type"] = d.TypeName()
 	renderedView["values"] = d.Values
 
 	return renderedView, nil
@@ -356,8 +364,9 @@ func (d *DVisitReviewTitleLabelsList) Render(context common.ViewContext) (map[st
 }
 
 type DVisitReviewContentLabelsList struct {
-	Values        []string `json:"values"`
-	ContentConfig struct {
+	Values         []string    `json:"values"`
+	EmptyStateView common.View `json:"empty_state_view"`
+	ContentConfig  struct {
 		Key string `json:"key"`
 	} `json:"content_config"`
 }
@@ -368,11 +377,12 @@ func (d DVisitReviewContentLabelsList) TypeName() string {
 
 func (d *DVisitReviewContentLabelsList) Render(context common.ViewContext) (map[string]interface{}, error) {
 	renderedView := make(map[string]interface{})
-	renderedView["type"] = d.TypeName()
-	var err error
 
 	content, err := getContentFromContextForView(d, d.ContentConfig.Key, context)
 	if err != nil {
+		if d.EmptyStateView != nil {
+			return handleRenderingOfEmptyStateViewOnError(err, d.EmptyStateView, d, context)
+		}
 		return nil, err
 	}
 
@@ -403,6 +413,7 @@ func (d *DVisitReviewContentLabelsList) Render(context common.ViewContext) (map[
 		return nil, common.NewViewRenderingError(fmt.Sprintf("Expected content to be either string, []string, []CheckedUnCheckedData or []TitleSubtitleSubitemsData for view type %s and key %s but was %s", d.TypeName(), d.ContentConfig.Key, reflect.TypeOf(content)))
 	}
 
+	renderedView["type"] = d.TypeName()
 	renderedView["values"] = d.Values
 	return renderedView, nil
 }
@@ -437,8 +448,9 @@ func (d *DVisitReviewCheckXItemsList) Render(context common.ViewContext) (map[st
 }
 
 type DVisitReviewTitleSubtitleSubItemsDividedItemsList struct {
-	Items         []TitleSubtitleSubItemsData `json:"items"`
-	ContentConfig struct {
+	Items          []TitleSubtitleSubItemsData `json:"items"`
+	EmptyStateView common.View                 `json:"empty_state_view"`
+	ContentConfig  struct {
 		Key string `json:"key"`
 	} `json:"content_config"`
 }
@@ -449,9 +461,12 @@ func (d DVisitReviewTitleSubtitleSubItemsDividedItemsList) TypeName() string {
 
 func (d *DVisitReviewTitleSubtitleSubItemsDividedItemsList) Render(context common.ViewContext) (map[string]interface{}, error) {
 	renderedView := make(map[string]interface{})
-	renderedView["type"] = d.TypeName()
 	content, err := getContentFromContextForView(d, d.ContentConfig.Key, context)
 	if err != nil {
+		if d.EmptyStateView != nil {
+			return handleRenderingOfEmptyStateViewOnError(err, d.EmptyStateView, d, context)
+		}
+
 		return nil, err
 	}
 
@@ -461,14 +476,16 @@ func (d *DVisitReviewTitleSubtitleSubItemsDividedItemsList) Render(context commo
 	}
 	d.Items = items
 	renderedView["items"] = items
+	renderedView["type"] = d.TypeName()
 
 	return renderedView, nil
 }
 
 type DVisitReviewTitleSubtitleLabels struct {
-	Title         string `json:"title"`
-	Subtitle      string `json:"subtitle"`
-	ContentConfig struct {
+	Title          string      `json:"title"`
+	Subtitle       string      `json:"subtitle"`
+	EmptyStateView common.View `json:"empty_state_view"`
+	ContentConfig  struct {
 		TitleKey             string `json:"title_key"`
 		SubtitleKey          string `json:"subtitle_key"`
 		common.ViewCondition `json:"condition"`
@@ -487,21 +504,81 @@ func (d *DVisitReviewTitleSubtitleLabels) Render(context common.ViewContext) (ma
 	}
 
 	renderedView := make(map[string]interface{})
-	renderedView["type"] = d.TypeName()
 	var err error
 
 	d.Title, err = getStringFromContext(d, d.ContentConfig.TitleKey, context)
 	if err != nil {
+		if d.EmptyStateView != nil {
+			return handleRenderingOfEmptyStateViewOnError(err, d.EmptyStateView, d, context)
+		}
 		return nil, err
 	}
-	renderedView["title"] = d.Title
 
 	d.Subtitle, err = getStringFromContext(d, d.ContentConfig.SubtitleKey, context)
 	if err != nil {
+		if d.EmptyStateView != nil {
+			return handleRenderingOfEmptyStateViewOnError(err, d.EmptyStateView, d, context)
+		}
 		return nil, err
 	}
-	renderedView["subtitle"] = d.Subtitle
 
+	renderedView["title"] = d.Title
+	renderedView["subtitle"] = d.Subtitle
+	renderedView["type"] = d.TypeName()
+	return renderedView, nil
+}
+
+type DVisitReviewEmptyLabelView struct {
+	Text          string
+	ContentConfig struct {
+		Key string `json:"key"`
+	} `json:"content_config"`
+}
+
+func (d DVisitReviewEmptyLabelView) TypeName() string {
+	return wrapNamespace("empty_label")
+}
+
+func (d *DVisitReviewEmptyLabelView) Render(context common.ViewContext) (map[string]interface{}, error) {
+	renderedView := make(map[string]interface{})
+	text, err := getStringFromContext(d, d.ContentConfig.Key, context)
+	if err != nil {
+		return nil, err
+	}
+
+	renderedView["text"] = text
+	renderedView["type"] = d.TypeName()
+	return renderedView, nil
+}
+
+type DVisitReviewEmptyTitleSubtitleLabelView struct {
+	Title         string
+	Subtitle      string
+	ContentConfig struct {
+		TitleKey    string `json:"title_key"`
+		SubtitleKey string `json:"subtitle_key"`
+	} `json:"content_config"`
+}
+
+func (d DVisitReviewEmptyTitleSubtitleLabelView) TypeName() string {
+	return wrapNamespace("empty_title_subtitle_labels")
+}
+
+func (d DVisitReviewEmptyTitleSubtitleLabelView) Render(context common.ViewContext) (map[string]interface{}, error) {
+	renderedView := make(map[string]interface{})
+	title, err := getStringFromContext(d, d.ContentConfig.TitleKey, context)
+	if err != nil {
+		return nil, err
+	}
+
+	subtitle, err := getStringFromContext(d, d.ContentConfig.SubtitleKey, context)
+	if err != nil {
+		return nil, err
+	}
+
+	renderedView["type"] = d.TypeName()
+	renderedView["title"] = title
+	renderedView["subtitle"] = subtitle
 	return renderedView, nil
 }
 
@@ -545,8 +622,28 @@ func getContentFromContextForView(view common.View, key string, context common.V
 
 	content, ok := context.Get(key)
 	if !ok {
-		return nil, common.NewViewRenderingError(fmt.Sprintf("Content with key %s not found in view context for view type %s", key, view.TypeName()))
+		return nil, &common.ViewRenderingError{
+			Message:          fmt.Sprintf("Content with key %s not found in view context for view type %s", key, view.TypeName()),
+			IsContentMissing: true,
+		}
 	}
 
 	return content, nil
+}
+
+func handleRenderingOfEmptyStateViewOnError(err error, emptyStateView common.View, currentView common.View, context common.ViewContext) (map[string]interface{}, error) {
+	e, ok := err.(*common.ViewRenderingError)
+	if ok && e.IsContentMissing {
+		// render the empty state view only if the content is indicated to be missing from the context
+		emptyStateRenderedView, emptyStateRenderingError := emptyStateView.Render(context)
+		// if rendering of the empty state view also fails, then capture errors from both the rendering
+		// of the current view and the empty state view
+		if emptyStateRenderingError != nil {
+			return nil, common.NewViewRenderingError(fmt.Sprintf("Unable to render the view type %s (Reason: %s) or its empty state view %s (Reason: %s)",
+				currentView.TypeName(), err, emptyStateView.TypeName(), emptyStateRenderingError))
+		}
+
+		return emptyStateRenderedView, nil
+	}
+	return nil, err
 }

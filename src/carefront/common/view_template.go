@@ -22,6 +22,10 @@ func (c ViewContext) Get(key string) (interface{}, bool) {
 	return data, ok
 }
 
+func (c ViewContext) Delete(key string) {
+	delete(c, key)
+}
+
 type TypeRegistry map[string]reflect.Type
 
 func (t TypeRegistry) RegisterType(typ Typed) TypeRegistry {
@@ -43,7 +47,8 @@ type View interface {
 }
 
 type ViewRenderingError struct {
-	Message string
+	Message          string
+	IsContentMissing bool
 }
 
 func (v ViewRenderingError) Error() string {
