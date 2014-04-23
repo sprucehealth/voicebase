@@ -109,6 +109,7 @@ type AnswerIntake struct {
 	StorageBucket     string            `json:"-"`
 	StorageKey        string            `json:"-"`
 	StorageRegion     string            `json:"-"`
+	ToAlert           bool              `json:"-"`
 }
 
 type PatientCareProviderAssignment struct {
@@ -231,6 +232,8 @@ type QuestionInfo struct {
 	AdditionalFields   map[string]string
 	FormattedFieldTags string
 	Required           bool
+	ToAlert            bool
+	AlertFormattedText string
 }
 
 type ByStatusTimestamp []StatusEvent

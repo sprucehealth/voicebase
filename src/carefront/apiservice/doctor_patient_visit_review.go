@@ -8,6 +8,7 @@ import (
 	"encoding/json"
 	"fmt"
 	"net/http"
+	"strings"
 
 	"github.com/SpruceHealth/mapstructure"
 	"github.com/gorilla/schema"
@@ -288,7 +289,7 @@ var reviewTemplate = `{
                     "content_config": {
                       "condition": {
                         "op": "key_exists",
-                        "key": "q_changes_acne_worse:answers"
+                        "key": "q_changes_acne_worse:question_summary"
                       },
                       "title_key": "q_changes_acne_worse:question_summary",
                       "subtitle_key": "q_changes_acne_worse:answers"
@@ -330,6 +331,10 @@ var reviewTemplate = `{
                   {
                     "type": "d_visit_review:title_subtitle_labels",
                     "content_config": {
+                      "condition": {
+                        "op": "key_exists",
+                        "key": "q_periods_regular:question_summary"
+                      },
                       "title_key": "q_periods_regular:question_summary",
                       "subtitle_key": "q_periods_regular:answers"
                     }
@@ -573,10 +578,11 @@ func (p *DoctorPatientVisitReviewHandler) ServeHTTP(w http.ResponseWriter, r *ht
 func populateContextForRenderingLayout(patientAnswersForQuestions map[int64][]*common.AnswerIntake, questions []*info_intake.Question, dataApi api.DataAPI, photoStorageService api.CloudStorageAPI) (common.ViewContext, error) {
 	context := common.NewViewContext()
 
-	populateAlerts(patientAnswersForQuestions, context, dataApi)
+	populateAlerts(patientAnswersForQuestions, questions, context, dataApi)
 
 	// go through each question
 	for _, question := range questions {
+		fmt.Printf("%#v", *question)
 		switch question.QuestionTypes[0] {
 
 		case info_intake.QUESTION_TYPE_PHOTO, info_intake.QUESTION_TYPE_MULTIPLE_PHOTO, info_intake.QUESTION_TYPE_SINGLE_PHOTO:
@@ -600,8 +606,68 @@ func populateContextForRenderingLayout(patientAnswersForQuestions map[int64][]*c
 	return *context, nil
 }
 
-func populateAlerts(patientAnswers map[int64][]*common.AnswerIntake, context *common.ViewContext, dataApi api.DataAPI) error {
-	context.Set("patient_visit_alerts", []string{"No alerts"})
+func populateAlerts(patientAnswers map[int64][]*common.AnswerIntake, questions []*info_intake.Question, context *common.ViewContext, dataApi api.DataAPI) error {
+
+	questionIdToQuestion := make(map[int64]*info_intake.Question)
+	for _, question := range questions {
+		questionIdToQuestion[question.QuestionId] = question
+	}
+
+	alerts := make([]string, 0)
+	// lets go over every answered question
+	for questionId, answers := range patientAnswers {
+		// check if the alert flag is set on the question
+		question := questionIdToQuestion[questionId]
+		if question.ToAlert {
+			switch question.QuestionTypes[0] {
+
+			case info_intake.QUESTION_TYPE_AUTOCOMPLETE:
+				// populate the answers to call out in the alert
+				enteredAnswers := make([]string, len(answers))
+				for i, answer := range answers {
+
+					answerText := answer.AnswerText
+
+					if answerText == "" {
+						answerText = answer.AnswerSummary
+					}
+
+					if answerText == "" {
+						answerText = answer.PotentialAnswer
+					}
+
+					enteredAnswers[i] = answerText
+				}
+				if len(enteredAnswers) > 0 {
+					alerts = append(alerts, fmt.Sprintf(question.AlertFormattedText, strings.Join(enteredAnswers, ", ")))
+				}
+
+			case info_intake.QUESTION_TYPE_MULTIPLE_CHOICE, info_intake.QUESTION_TYPE_SINGLE_SELECT:
+				selectedAnswers := make([]string, 0)
+				for _, potentialAnswer := range question.PotentialAnswers {
+					for _, patientAnswer := range answers {
+						// populate all the selected answers to show in the alert
+						if patientAnswer.PotentialAnswerId.Int64() == potentialAnswer.AnswerId {
+							if potentialAnswer.ToAlert {
+								selectedAnswers = append(selectedAnswers, potentialAnswer.Answer)
+								break
+							}
+						}
+					}
+				}
+				if len(selectedAnswers) > 0 {
+					alerts = append(alerts, fmt.Sprintf(question.AlertFormattedText, strings.Join(selectedAnswers, ", ")))
+				}
+			}
+		}
+	}
+
+	if len(alerts) > 0 {
+		context.Set("patient_visit_alerts", alerts)
+	} else {
+		context.Set("patient_visit_alerts:empty_state_text", "No alerts")
+	}
+
 	return nil
 }
 
@@ -612,23 +678,18 @@ func populateCheckedUncheckedData(patientAnswers []*common.AnswerIntake, questio
 		return nil
 	}
 
-	answerInfos, err := dataApi.GetAnswerInfo(question.QuestionId, api.EN_LANGUAGE_ID)
-	if err != nil {
-		return err
-	}
-
-	checkedUncheckedItems := make([]CheckedUncheckedData, len(answerInfos))
-	for i, answerInfo := range answerInfos {
+	checkedUncheckedItems := make([]CheckedUncheckedData, len(question.PotentialAnswers))
+	for i, potentialAnswer := range question.PotentialAnswers {
 		answerSelected := false
 
 		for _, patientAnswer := range patientAnswers {
-			if patientAnswer.PotentialAnswerId.Int64() == answerInfo.PotentialAnswerId {
+			if patientAnswer.PotentialAnswerId.Int64() == potentialAnswer.AnswerId {
 				answerSelected = true
 			}
 		}
 
 		checkedUncheckedItems[i] = CheckedUncheckedData{
-			Value:     answerInfo.Answer,
+			Value:     potentialAnswer.Answer,
 			IsChecked: answerSelected,
 		}
 	}

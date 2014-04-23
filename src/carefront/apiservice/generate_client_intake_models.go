@@ -119,7 +119,10 @@ func (l *GenerateClientIntakeModelHandler) ServeHTTP(w http.ResponseWriter, r *h
 
 	for i, supportedLanguageId := range supportedLanguageIds {
 		clientModel := healthCondition
-		clientModel.FillInDatabaseInfo(l.DataApi, supportedLanguageId)
+		if err := clientModel.FillInDatabaseInfo(l.DataApi, supportedLanguageId); err != nil {
+			WriteDeveloperError(w, http.StatusInternalServerError, "Unable to populate the layout as expected: "+err.Error())
+			return
+		}
 		clientIntakeModels[supportedLanguageId] = clientModel
 
 		jsonData, err := json.Marshal(&clientModel)

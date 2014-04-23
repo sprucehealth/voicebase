@@ -213,14 +213,17 @@ func (d *DataService) GetQuestionInfoForTags(questionTags []string, languageId i
 	params = appendStringsToInterfaceSlice(params, questionTags)
 	params = append(params, languageId)
 	params = append(params, languageId)
+	params = append(params, languageId)
 
 	rows, err := d.DB.Query(fmt.Sprintf(
-		`select question.question_tag, question.id, l1.ltext, qtype, parent_question_id, l2.ltext, l3.ltext, formatted_field_tags, required from question 
+		`select question.question_tag, question.id, l1.ltext, qtype, parent_question_id, l2.ltext, l3.ltext, formatted_field_tags, required, to_alert, l4.ltext from question 
 			left outer join localized_text as l1 on l1.app_text_id=qtext_app_text_id
 			left outer join question_type on qtype_id=question_type.id
 			left outer join localized_text as l2 on qtext_short_text_id = l2.app_text_id
 			left outer join localized_text as l3 on subtext_app_text_id = l3.app_text_id
-				where question_tag in (%s) and (l1.ltext is NULL or l1.language_id = ?) and (l3.ltext is NULL or l3.language_id=?)`, nReplacements(len(questionTags))), params...)
+			left outer join localized_text as l4 on alert_app_text_id = l4.app_text_id
+				where question_tag in (%s) and (l1.ltext is NULL or l1.language_id = ?) and (l3.ltext is NULL or l3.language_id=?)
+				and (l4.ltext is NULL or l4.language_id=?)`, nReplacements(len(questionTags))), params...)
 
 	if err != nil {
 		return nil, err
@@ -236,14 +239,17 @@ func (d *DataService) GetQuestionInfoForIds(questionIds []int64, languageId int6
 	params = appendInt64sToInterfaceSlice(params, questionIds)
 	params = append(params, languageId)
 	params = append(params, languageId)
+	params = append(params, languageId)
 
 	rows, err := d.DB.Query(fmt.Sprintf(
-		`select question.question_tag, question.id, l1.ltext, qtype, parent_question_id, l2.ltext, l3.ltext, formatted_field_tags, required from question 
+		`select question.question_tag, question.id, l1.ltext, qtype, parent_question_id, l2.ltext, l3.ltext, formatted_field_tags, required, to_alert, l4.ltext from question 
 			left outer join localized_text as l1 on l1.app_text_id=qtext_app_text_id
 			left outer join question_type on qtype_id=question_type.id
 			left outer join localized_text as l2 on qtext_short_text_id = l2.app_text_id
 			left outer join localized_text as l3 on subtext_app_text_id = l3.app_text_id
-				where question.id in (%s) and (l1.ltext is NULL or l1.language_id = ?) and (l3.ltext is NULL or l3.language_id=?)`, nReplacements(len(questionIds))), params...)
+			left outer join localized_text as l4 on alert_app_text_id = l4.app_text_id
+				where question.id in (%s) and (l1.ltext is NULL or l1.language_id = ?) and (l3.ltext is NULL or l3.language_id=?)
+				and (l4.ltext is NULL or l4.language_id=?)`, nReplacements(len(questionIds))), params...)
 
 	if err != nil {
 		return nil, err
@@ -260,8 +266,9 @@ func (d *DataService) getQuestionInfoFromRows(rows *sql.Rows, languageId int64) 
 	for rows.Next() {
 		var id int64
 		var questionTag string
-		var questionTitle, questionType, questionSummary, questionSubText, formattedFieldTagsNull sql.NullString
-		var nullParentQuestionId, requiredBit sql.NullInt64
+		var questionTitle, questionType, questionSummary, questionSubText, formattedFieldTagsNull, alertText sql.NullString
+		var nullParentQuestionId sql.NullInt64
+		var requiredBit, toAlertBit sql.NullBool
 
 		err := rows.Scan(
 			&questionTag,
@@ -273,6 +280,8 @@ func (d *DataService) getQuestionInfoFromRows(rows *sql.Rows, languageId int64) 
 			&questionSubText,
 			&formattedFieldTagsNull,
 			&requiredBit,
+			&toAlertBit,
+			&alertText,
 		)
 
 		if err != nil {
@@ -288,7 +297,9 @@ func (d *DataService) getQuestionInfoFromRows(rows *sql.Rows, languageId int64) 
 			Summary:            questionSummary.String,
 			SubText:            questionSubText.String,
 			FormattedFieldTags: formattedFieldTagsNull.String,
-			Required:           requiredBit.Valid && requiredBit.Int64 == 1,
+			Required:           requiredBit.Valid && requiredBit.Bool,
+			ToAlert:            toAlertBit.Valid && toAlertBit.Bool,
+			AlertFormattedText: alertText.String,
 		}
 
 		// get any additional fields pertaining to the question from the database
@@ -319,7 +330,7 @@ func (d *DataService) getQuestionInfoFromRows(rows *sql.Rows, languageId int64) 
 }
 
 func (d *DataService) GetAnswerInfo(questionId int64, languageId int64) ([]PotentialAnswerInfo, error) {
-	rows, err := d.DB.Query(`select potential_answer.id, l1.ltext, l2.ltext, atype, potential_answer_tag, ordering from potential_answer 
+	rows, err := d.DB.Query(`select potential_answer.id, l1.ltext, l2.ltext, atype, potential_answer_tag, ordering, to_alert from potential_answer 
 								left outer join localized_text as l1 on answer_localized_text_id=l1.app_text_id 
 								left outer join answer_type on atype_id=answer_type.id 
 								left outer join localized_text as l2 on answer_summary_text_id=l2.app_text_id
@@ -337,7 +348,8 @@ func createAnswerInfosFromRows(rows *sql.Rows) ([]PotentialAnswerInfo, error) {
 		var id, ordering int64
 		var answerType, answerTag string
 		var answer, answerSummary sql.NullString
-		err := rows.Scan(&id, &answer, &answerSummary, &answerType, &answerTag, &ordering)
+		var toAlert sql.NullBool
+		err := rows.Scan(&id, &answer, &answerSummary, &answerType, &answerTag, &ordering, &toAlert)
 		potentialAnswerInfo := PotentialAnswerInfo{
 			Answer:            answer.String,
 			AnswerSummary:     answerSummary.String,
@@ -345,6 +357,7 @@ func createAnswerInfosFromRows(rows *sql.Rows) ([]PotentialAnswerInfo, error) {
 			AnswerTag:         answerTag,
 			Ordering:          ordering,
 			AnswerType:        answerType,
+			ToAlert:           toAlert.Valid && toAlert.Bool,
 		}
 		answerInfos = append(answerInfos, potentialAnswerInfo)
 		if err != nil {
@@ -360,7 +373,7 @@ func (d *DataService) GetAnswerInfoForTags(answerTags []string, languageId int64
 	params = appendStringsToInterfaceSlice(params, answerTags)
 	params = append(params, languageId)
 	params = append(params, languageId)
-	rows, err := d.DB.Query(fmt.Sprintf(`select potential_answer.id, l1.ltext, l2.ltext, atype, potential_answer_tag, ordering from potential_answer 
+	rows, err := d.DB.Query(fmt.Sprintf(`select potential_answer.id, l1.ltext, l2.ltext, atype, potential_answer_tag, ordering, to_alert from potential_answer 
 								left outer join localized_text as l1 on answer_localized_text_id=l1.app_text_id 
 								left outer join answer_type on atype_id=answer_type.id 
 								left outer join localized_text as l2 on answer_summary_text_id=l2.app_text_id

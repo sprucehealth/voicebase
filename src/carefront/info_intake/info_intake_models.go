@@ -52,6 +52,7 @@ type PotentialAnswer struct {
 	AnswerSummary string   `json:"potential_answer_summary,omitempty"`
 	AnswerTypes   []string `json:"answer_types,omitempty"`
 	Ordering      int64    `json:"ordering,string"`
+	ToAlert       bool     `json:"to_alert"`
 }
 
 type Question struct {
@@ -71,6 +72,8 @@ type Question struct {
 	ConditionBlock     *Condition             `json:"condition,omitempty"`
 	Tips               *TipSection            `json:"tips,omitempty"`
 	Required           bool                   `json:"required"`
+	ToAlert            bool                   `json:"to_alert"`
+	AlertFormattedText string                 `json:"alert_text"`
 }
 
 type Screen struct {

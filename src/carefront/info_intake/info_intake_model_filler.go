@@ -69,6 +69,8 @@ func (q *Question) FillInDatabaseInfo(dataApi api.DataAPI, languageId int64) err
 	q.AdditionalFields = questionInfo.AdditionalFields
 	q.QuestionSubText = questionInfo.SubText
 	q.Required = questionInfo.Required
+	q.ToAlert = questionInfo.ToAlert
+	q.AlertFormattedText = questionInfo.AlertFormattedText
 	if questionInfo.FormattedFieldTags != "" {
 		q.FormattedFieldTags = strings.Split(questionInfo.FormattedFieldTags, ",")
 	}
@@ -107,7 +109,10 @@ func (q *Question) FillInDatabaseInfo(dataApi api.DataAPI, languageId int64) err
 			Answer:        answerInfo.Answer,
 			AnswerSummary: answerInfo.AnswerSummary,
 			AnswerTypes:   []string{answerInfo.AnswerType},
-			Ordering:      answerInfo.Ordering}
+			Ordering:      answerInfo.Ordering,
+			ToAlert:       answerInfo.ToAlert,
+		}
+
 		q.PotentialAnswers = append(q.PotentialAnswers, potentialAnswer)
 	}
 

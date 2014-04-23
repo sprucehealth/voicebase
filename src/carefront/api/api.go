@@ -55,6 +55,7 @@ type PotentialAnswerInfo struct {
 	AnswerSummary     string
 	AnswerTag         string
 	Ordering          int64
+	ToAlert           bool
 }
 
 type PatientAPI interface {
