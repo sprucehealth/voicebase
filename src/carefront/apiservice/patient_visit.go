@@ -5,7 +5,6 @@ import (
 	"carefront/common"
 	"carefront/info_intake"
 	thriftapi "carefront/thrift/api"
-	"encoding/json"
 	"errors"
 	"fmt"
 	"log"
@@ -205,13 +204,13 @@ func (s *PatientVisitHandler) returnLastCreatedPatientVisit(w http.ResponseWrite
 	// based on what is the current active layout because that may have potentially changed and we want to ensure
 	// to not confuse the patient by changing the question structure under their feet for this particular patient visit
 	// in other words, want to show them what they have already seen in terms of a flow.
-	healthCondition, _, err := s.getClientLayoutForPatientVisit(patientVisitId, api.EN_LANGUAGE_ID)
+	patientVisitLayout, _, err := getClientLayoutForPatientVisit(patientVisitId, api.EN_LANGUAGE_ID, s.DataApi, s.LayoutStorageService)
 	if err != nil {
 		WriteDeveloperError(w, http.StatusInternalServerError, "Unable to get client layout for existing patient visit: "+err.Error())
 		return
 	}
 
-	err = s.populateGlobalSectionsWithPatientAnswers(healthCondition, patientId)
+	err = s.populateGlobalSectionsWithPatientAnswers(patientVisitLayout, patientId)
 	if err != nil {
 		WriteDeveloperError(w, http.StatusInternalServerError, err.Error())
 		return
@@ -219,23 +218,16 @@ func (s *PatientVisitHandler) returnLastCreatedPatientVisit(w http.ResponseWrite
 
 	// get answers that the patient has previously entered for this particular patient visit
 	// and feed the answers into the layout
-	sectionIdsForHealthCondition, err := s.DataApi.GetSectionIdsForHealthCondition(HEALTH_CONDITION_ACNE_ID)
-	if err != nil {
-		WriteDeveloperError(w, http.StatusInternalServerError, "Unable to get section ids for health condition: "+err.Error())
-		return
-	}
-	questionIdsInAllSections := make([]int64, 0)
-	for _, sectionId := range sectionIdsForHealthCondition {
-		questionIds := getQuestionIdsInSectionInHealthConditionLayout(healthCondition, sectionId)
-		questionIdsInAllSections = append(questionIdsInAllSections, questionIds...)
-	}
+	questionIdsInAllSections := getQuestionIdsInPatientVisitLayout(patientVisitLayout)
+
 	patientAnswersForVisit, err := s.DataApi.GetAnswersForQuestionsBasedOnQuestionIds(questionIdsInAllSections, patientId, patientVisitId)
 	if err != nil {
 		WriteDeveloperError(w, http.StatusInternalServerError, "Unable to get patient answers for patient visit: "+err.Error())
 		return
 	}
-	s.populateHealthConditionWithPatientAnswers(healthCondition, patientAnswersForVisit)
-	s.fillInFormattedFieldsForQuestions(healthCondition, doctor)
+
+	s.populateHealthConditionWithPatientAnswers(patientVisitLayout, patientAnswersForVisit)
+	s.fillInFormattedFieldsForQuestions(patientVisitLayout, doctor)
 
 	message, err := s.DataApi.GetMessageForPatientVisitStatus(patientVisit.PatientVisitId.Int64())
 	if err != nil {
@@ -243,7 +235,7 @@ func (s *PatientVisitHandler) returnLastCreatedPatientVisit(w http.ResponseWrite
 		return
 	}
 
-	WriteJSONToHTTPResponseWriter(w, http.StatusOK, PatientVisitResponse{PatientVisitId: patientVisitId, ClientLayout: healthCondition, Status: patientVisit.Status, StatusMessage: message})
+	WriteJSONToHTTPResponseWriter(w, http.StatusOK, PatientVisitResponse{PatientVisitId: patientVisitId, ClientLayout: patientVisitLayout, Status: patientVisit.Status, StatusMessage: message})
 }
 
 func (s *PatientVisitHandler) createNewPatientVisitHandler(w http.ResponseWriter, r *http.Request) {
@@ -378,35 +370,6 @@ func (s *PatientVisitHandler) getCurrentActiveClientLayoutForHealthCondition(hea
 		return
 	}
 
-	healthCondition, err = s.getHealthConditionObjectAtLocation(bucket, key, region)
+	healthCondition, err = getHealthConditionObjectAtLocation(bucket, key, region, s.LayoutStorageService)
 	return
-}
-
-func (s *PatientVisitHandler) getClientLayoutForPatientVisit(patientVisitId, languageId int64) (healthCondition *info_intake.InfoIntakeLayout, layoutVersionId int64, err error) {
-	layoutVersionId, err = s.DataApi.GetLayoutVersionIdForPatientVisit(patientVisitId)
-	if err != nil {
-		return
-	}
-
-	var e error
-	bucket, key, region, e := s.DataApi.GetStorageInfoForClientLayout(layoutVersionId, languageId)
-	if e != nil {
-		err = e
-		return
-	}
-
-	healthCondition, err = s.getHealthConditionObjectAtLocation(bucket, key, region)
-	return
-}
-
-func (s *PatientVisitHandler) getHealthConditionObjectAtLocation(bucket, key, region string) (*info_intake.InfoIntakeLayout, error) {
-	data, _, err := s.LayoutStorageService.GetObjectAtLocation(bucket, key, region)
-	if err != nil {
-		return nil, err
-	}
-	healthCondition := &info_intake.InfoIntakeLayout{}
-	if err := json.Unmarshal(data, healthCondition); err != nil {
-		return nil, err
-	}
-	return healthCondition, nil
 }

@@ -594,7 +594,7 @@ func getStringFromContext(view common.View, key string, context common.ViewConte
 
 	str, ok := content.(string)
 	if !ok {
-		return "", common.NewViewRenderingError(fmt.Sprintf("Expected string for content of view type %s instead got %s", view.TypeName(), reflect.TypeOf(content)))
+		return "", common.NewViewRenderingError(fmt.Sprintf("Expected string for content of view type %s instead got %s for key %s", view.TypeName(), reflect.TypeOf(content), key))
 	}
 
 	return str, nil

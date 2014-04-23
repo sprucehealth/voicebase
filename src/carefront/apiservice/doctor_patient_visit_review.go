@@ -62,6 +62,12 @@ var reviewTemplate = `{
                 "type": "d_visit_review:alert_labels_list",
                 "content_config": {
                   "key": "patient_visit_alerts"
+                },
+                "empty_state_view": {
+                  "type": "d_visit_review:empty_label",
+                  "content_config": {
+                    "key": "patient_visit_alerts:empty_state_text"
+                  }
                 }
               }
             }
@@ -83,6 +89,12 @@ var reviewTemplate = `{
                 "type": "d_visit_review:content_labels_list",
                 "content_config": {
                   "key": "q_allergic_medication_entry:answers"
+                },
+                "empty_state_view": {
+                  "type": "d_visit_review:empty_label",
+                  "content_config": {
+                    "key": "q_allergic_medication_entry:empty_state_text"
+                  }
                 }
               }
             },
@@ -98,6 +110,12 @@ var reviewTemplate = `{
                 "type": "d_visit_review:title_subtitle_subitems_divided_items_list",
                 "content_config": {
                   "key": "q_current_medications_entry:answers"
+                },
+                "empty_state_view": {
+                  "type": "d_visit_review:empty_label",
+                  "content_config": {
+                    "key": "q_current_medications_entry:empty_state_text"
+                  }
                 }
               }
             }
@@ -119,6 +137,27 @@ var reviewTemplate = `{
                 "type": "d_visit_review:content_labels_list",
                 "content_config": {
                   "key": "q_list_prev_skin_condition_diagnosis:answers"
+                },
+                "empty_state_view": {
+                  "type": "d_visit_review:empty_label",
+                  "content_config": {
+                    "key": "q_list_prev_skin_condition_diagnosis:empty_state_text"
+                  }
+                }
+              }
+            },
+            {
+              "type": "d_visit_review:standard_two_column_row",
+              "left_view": {
+                "type": "d_visit_review:title_labels_list",
+                "content_config": {
+                  "key": "q_other_conditions_acne:question_summary"
+                }
+              },
+              "right_view": {
+                "type": "d_visit_review:check_x_items_list",
+                "content_config": {
+                  "key": "q_other_conditions_acne:answers"
                 }
               }
             },
@@ -137,7 +176,7 @@ var reviewTemplate = `{
                 }
               },
               "right_view": {
-                "type": "d_visit_review:check_x_items_list",
+                "type": "d_visit_review:content_labels_list",
                 "content_config": {
                   "key": "q_other_skin_condition_entry:answers"
                 }
@@ -253,6 +292,13 @@ var reviewTemplate = `{
                       },
                       "title_key": "q_changes_acne_worse:question_summary",
                       "subtitle_key": "q_changes_acne_worse:answers"
+                    },
+                    "empty_state_view": {
+                      "type": "d_visit_review:empty_title_subtitle_labels",
+                      "content_config": {
+                        "title_key": "q_changes_acne_worse:question_summary",
+                        "subtitle_key": "q_changes_acne_worse:empty_state_text"
+                      }
                     }
                   }
                 ]
@@ -339,6 +385,12 @@ var reviewTemplate = `{
                 "type": "d_visit_review:title_subtitle_subitems_divided_items_list",
                 "content_config": {
                   "key": "q_acne_prev_treatment_list:answers"
+                },
+                "empty_state_view": {
+                  "type": "d_visit_review:empty_label",
+                  "content_config": {
+                    "key": "q_acne_prev_treatment_list:empty_state_text"
+                  }
                 }
               }
             },
@@ -360,6 +412,12 @@ var reviewTemplate = `{
                 "type": "d_visit_review:title_subtitle_subitems_divided_items_list",
                 "content_config": {
                   "key": "q_acne_prev_otc_treatment_list:answers"
+                },
+                "empty_state_view": {
+                  "type": "d_visit_review:empty_label",
+                  "content_config": {
+                    "key": "q_acne_prev_otc_treatment_list:empty_state_text"
+                  }
                 }
               }
             }
@@ -375,6 +433,12 @@ var reviewTemplate = `{
                 "type": "d_visit_review:content_labels_list",
                 "content_config": {
                   "key": "q_anything_else_acne:answers"
+                },
+                "empty_state_view": {
+                  "type": "d_visit_review:empty_label",
+                  "content_config": {
+                    "key": "q_anything_else_acne:empty_state_text"
+                  }
                 }
               }
             }
@@ -447,26 +511,24 @@ func (p *DoctorPatientVisitReviewHandler) ServeHTTP(w http.ResponseWriter, r *ht
 		}
 	}
 
-	patientAnswersForQuestions, err := p.DataApi.GetAnswersForQuestionsInPatientVisit(patientVisit.PatientId.Int64(), patientVisit.PatientVisitId.Int64())
+	patientVisitLayout, _, err := getClientLayoutForPatientVisit(patientVisitId, api.EN_LANGUAGE_ID, p.DataApi, p.LayoutStorageService)
+	if err != nil {
+		WriteDeveloperError(w, http.StatusInternalServerError, "Unable to get patient visit layout: "+err.Error())
+		return
+	}
+
+	// get all questions presented to the patient in the patient visit layout
+	questions := getQuestionsInPatientVisitLayout(patientVisitLayout)
+	questionIds := getQuestionIdsInPatientVisitLayout(patientVisitLayout)
+
+	// get all the answers the patient entered for the questions (note that there may not be an answer for every question)
+	patientAnswersForQuestions, err := p.DataApi.GetAnswersForQuestionsBasedOnQuestionIds(questionIds, patientVisit.PatientId.Int64(), patientVisit.PatientVisitId.Int64())
 	if err != nil {
 		WriteDeveloperError(w, http.StatusInternalServerError, "Unable to get patient answers for questions : "+err.Error())
 		return
 	}
 
-	questionIds := make([]int64, len(patientAnswersForQuestions))
-	var i int
-	for key, _ := range patientAnswersForQuestions {
-		questionIds[i] = key
-		i++
-	}
-
-	questionInfos, err := p.DataApi.GetQuestionInfoForIds(questionIds, api.EN_LANGUAGE_ID)
-	if err != nil {
-		WriteDeveloperError(w, http.StatusInternalServerError, "Unable to get question info for question ids : "+err.Error())
-		return
-	}
-
-	context, err := populateContextForRenderingLayout(patientAnswersForQuestions, questionInfos, p.DataApi, p.PatientPhotoStorageService)
+	context, err := populateContextForRenderingLayout(patientAnswersForQuestions, questions, p.DataApi, p.PatientPhotoStorageService)
 	if err != nil {
 		WriteDeveloperError(w, http.StatusInternalServerError, "Unable to populate context for rendering layout: "+err.Error())
 		return
@@ -508,28 +570,28 @@ func (p *DoctorPatientVisitReviewHandler) ServeHTTP(w http.ResponseWriter, r *ht
 	WriteJSONToHTTPResponseWriter(w, http.StatusOK, renderedJsonData)
 }
 
-func populateContextForRenderingLayout(patientAnswersForQuestions map[int64][]*common.AnswerIntake, questionInfos []*common.QuestionInfo, dataApi api.DataAPI, photoStorageService api.CloudStorageAPI) (common.ViewContext, error) {
+func populateContextForRenderingLayout(patientAnswersForQuestions map[int64][]*common.AnswerIntake, questions []*info_intake.Question, dataApi api.DataAPI, photoStorageService api.CloudStorageAPI) (common.ViewContext, error) {
 	context := common.NewViewContext()
 
 	populateAlerts(patientAnswersForQuestions, context, dataApi)
 
 	// go through each question
-	for _, questionInfo := range questionInfos {
-		switch questionInfo.Type {
+	for _, question := range questions {
+		switch question.QuestionTypes[0] {
 
 		case info_intake.QUESTION_TYPE_PHOTO, info_intake.QUESTION_TYPE_MULTIPLE_PHOTO, info_intake.QUESTION_TYPE_SINGLE_PHOTO:
-			populatePhotos(patientAnswersForQuestions[questionInfo.Id], context, photoStorageService)
+			populatePhotos(patientAnswersForQuestions[question.QuestionId], context, photoStorageService)
 
 		case info_intake.QUESTION_TYPE_AUTOCOMPLETE:
-			populateDataForAnswerWithSubAnswers(patientAnswersForQuestions[questionInfo.Id], questionInfo, context)
+			populateDataForAnswerWithSubAnswers(patientAnswersForQuestions[question.QuestionId], question, context)
 
-		case info_intake.QUESTION_TYPE_MULTIPLE_CHOICE, info_intake.QUESTION_TYPE_SINGLE_SELECT:
-			if err := populateCheckedUncheckedData(patientAnswersForQuestions[questionInfo.Id], questionInfo, context, dataApi); err != nil {
+		case info_intake.QUESTION_TYPE_MULTIPLE_CHOICE:
+			if err := populateCheckedUncheckedData(patientAnswersForQuestions[question.QuestionId], question, context, dataApi); err != nil {
 				return nil, err
 			}
 
-		case info_intake.QUESTION_TYPE_SINGLE_ENTRY, info_intake.QUESTION_TYPE_FREE_TEXT:
-			if err := populateDataForSingleEntryAnswers(patientAnswersForQuestions[questionInfo.Id], questionInfo, context); err != nil {
+		case info_intake.QUESTION_TYPE_SINGLE_ENTRY, info_intake.QUESTION_TYPE_FREE_TEXT, info_intake.QUESTION_TYPE_SINGLE_SELECT:
+			if err := populateDataForSingleEntryAnswers(patientAnswersForQuestions[question.QuestionId], question, context); err != nil {
 				return nil, err
 			}
 		}
@@ -543,8 +605,14 @@ func populateAlerts(patientAnswers map[int64][]*common.AnswerIntake, context *co
 	return nil
 }
 
-func populateCheckedUncheckedData(patientAnswers []*common.AnswerIntake, questionInfo *common.QuestionInfo, context *common.ViewContext, dataApi api.DataAPI) error {
-	answerInfos, err := dataApi.GetAnswerInfo(questionInfo.Id, api.EN_LANGUAGE_ID)
+func populateCheckedUncheckedData(patientAnswers []*common.AnswerIntake, question *info_intake.Question, context *common.ViewContext, dataApi api.DataAPI) error {
+
+	if len(patientAnswers) == 0 {
+		populateEmptyStateTextIfPresent(question, context)
+		return nil
+	}
+
+	answerInfos, err := dataApi.GetAnswerInfo(question.QuestionId, api.EN_LANGUAGE_ID)
 	if err != nil {
 		return err
 	}
@@ -565,8 +633,8 @@ func populateCheckedUncheckedData(patientAnswers []*common.AnswerIntake, questio
 		}
 	}
 
-	context.Set(fmt.Sprintf("%s:question_summary", questionInfo.QuestionTag), questionInfo.Summary)
-	context.Set(fmt.Sprintf("%s:answers", questionInfo.QuestionTag), checkedUncheckedItems)
+	context.Set(fmt.Sprintf("%s:question_summary", question.QuestionTag), question.QuestionSummary)
+	context.Set(fmt.Sprintf("%s:answers", question.QuestionTag), checkedUncheckedItems)
 	return nil
 }
 
@@ -590,13 +658,15 @@ func populatePhotos(patientAnswers []*common.AnswerIntake, context *common.ViewC
 	context.Set("patient_visit_photos", photos)
 }
 
-func populateDataForSingleEntryAnswers(patientAnswers []*common.AnswerIntake, questionInfo *common.QuestionInfo, context *common.ViewContext) error {
+func populateDataForSingleEntryAnswers(patientAnswers []*common.AnswerIntake, question *info_intake.Question, context *common.ViewContext) error {
+
 	if len(patientAnswers) == 0 {
+		populateEmptyStateTextIfPresent(question, context)
 		return nil
 	}
 
 	if len(patientAnswers) > 1 {
-		return fmt.Errorf("Expected just one answer for question %s instead we have  %d", questionInfo.QuestionTag, len(patientAnswers))
+		return fmt.Errorf("Expected just one answer for question %s instead we have  %d", question.QuestionTag, len(patientAnswers))
 	}
 
 	answer := patientAnswers[0].AnswerText
@@ -607,29 +677,48 @@ func populateDataForSingleEntryAnswers(patientAnswers []*common.AnswerIntake, qu
 		answer = patientAnswers[0].PotentialAnswer
 	}
 
-	context.Set(fmt.Sprintf("%s:question_summary", questionInfo.QuestionTag), questionInfo.Summary)
-	context.Set(fmt.Sprintf("%s:answers", questionInfo.QuestionTag), answer)
+	context.Set(fmt.Sprintf("%s:question_summary", question.QuestionTag), question.QuestionSummary)
+	context.Set(fmt.Sprintf("%s:answers", question.QuestionTag), answer)
 	return nil
 }
 
-func populateDataForAnswerWithSubAnswers(patientAnswers []*common.AnswerIntake, questionInfo *common.QuestionInfo, context *common.ViewContext) {
+func populateDataForAnswerWithSubAnswers(patientAnswers []*common.AnswerIntake, question *info_intake.Question, context *common.ViewContext) {
+
+	if len(patientAnswers) == 0 {
+		populateEmptyStateTextIfPresent(question, context)
+		return
+	}
+
 	data := make([]TitleSubtitleSubItemsData, len(patientAnswers))
-	for _, patientAnswer := range patientAnswers {
+	for i, patientAnswer := range patientAnswers {
 
 		items := make([]string, len(patientAnswer.SubAnswers))
-		for i, subAnswer := range patientAnswer.SubAnswers {
+		for j, subAnswer := range patientAnswer.SubAnswers {
 			if subAnswer.AnswerSummary != "" {
-				items[i] = subAnswer.AnswerSummary
+				items[j] = subAnswer.AnswerSummary
 			} else {
-				items[i] = subAnswer.PotentialAnswer
+				items[j] = subAnswer.PotentialAnswer
 			}
 		}
 
-		data = append(data, TitleSubtitleSubItemsData{
+		data[i] = TitleSubtitleSubItemsData{
 			Title:    patientAnswer.AnswerText,
 			SubItems: items,
-		})
+		}
 	}
-	context.Set(fmt.Sprintf("%s:question_summary", questionInfo.QuestionTag), questionInfo.Summary)
-	context.Set(fmt.Sprintf("%s:answers", questionInfo.QuestionTag), data)
+	context.Set(fmt.Sprintf("%s:question_summary", question.QuestionTag), question.QuestionSummary)
+	context.Set(fmt.Sprintf("%s:answers", question.QuestionTag), data)
+}
+
+// if there are no patient answers for this question,
+// check if the empty state text is specified in the additional fields
+// of the question
+func populateEmptyStateTextIfPresent(question *info_intake.Question, context *common.ViewContext) {
+	emptyStateText, ok := question.AdditionalFields["empty_state_text"]
+	if !ok {
+		return
+	}
+
+	context.Set(fmt.Sprintf("%s:question_summary", question.QuestionTag), question.QuestionSummary)
+	context.Set(fmt.Sprintf("%s:empty_state_text", question.QuestionTag), emptyStateText)
 }
