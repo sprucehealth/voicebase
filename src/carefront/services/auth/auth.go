@@ -8,16 +8,13 @@ import (
 
 	"carefront/common"
 	"carefront/thrift/api"
-
-	"code.google.com/p/go.crypto/bcrypt"
 )
-
-const bcryptCost = 10
 
 type AuthService struct {
 	ExpireDuration time.Duration
 	RenewDuration  time.Duration // When validation, if the time left on the token is less than this duration than the token is extended
 	DB             *sql.DB
+	Hasher         PasswordHasher
 }
 
 func (m *AuthService) SignUp(email, password string) (*api.AuthResponse, error) {
@@ -35,7 +32,7 @@ func (m *AuthService) SignUp(email, password string) (*api.AuthResponse, error) 
 		return nil, &api.InternalServerError{Message: err.Error()}
 	}
 
-	hashedPassword, err := bcrypt.GenerateFromPassword([]byte(password), bcryptCost)
+	hashedPassword, err := m.Hasher.GenerateFromPassword([]byte(password))
 	if err != nil {
 		golog.Errorf("services/auth: %s", err.Error())
 		return nil, &api.InternalServerError{Message: err.Error()}
@@ -98,7 +95,7 @@ func (m *AuthService) LogIn(email, password string) (*api.AuthResponse, error) {
 	}
 
 	// compare the hashed password value to that stored in the database to authenticate the user
-	if err := bcrypt.CompareHashAndPassword([]byte(hashedPassword), []byte(password)); err != nil {
+	if err := m.Hasher.CompareHashAndPassword([]byte(hashedPassword), []byte(password)); err != nil {
 		return nil, &api.InvalidPassword{AccountId: accountId}
 	}
 
@@ -168,7 +165,7 @@ func (m *AuthService) SetPassword(accountId int64, password string) error {
 	if password == "" {
 		return &api.InvalidPassword{}
 	}
-	hashedPassword, err := bcrypt.GenerateFromPassword([]byte(password), bcryptCost)
+	hashedPassword, err := m.Hasher.GenerateFromPassword([]byte(password))
 	if err != nil {
 		return &api.InternalServerError{Message: err.Error()}
 	}

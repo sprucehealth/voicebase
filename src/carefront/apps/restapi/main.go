@@ -162,6 +162,7 @@ func main() {
 				DB:             db,
 				ExpireDuration: time.Duration(conf.AuthTokenExpiration) * time.Second,
 				RenewDuration:  time.Duration(conf.AuthTokenRenew) * time.Second,
+				Hasher:         auth.NewBcryptHasher(0),
 			}
 		} else {
 			log.Fatalf("No Zookeeper hosts defined and not running under debug")

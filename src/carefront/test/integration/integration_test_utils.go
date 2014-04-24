@@ -50,6 +50,19 @@ type TestData struct {
 	StartTime           time.Time
 }
 
+type nullHasher struct{}
+
+func (nullHasher) GenerateFromPassword(password []byte) ([]byte, error) {
+	return password, nil
+}
+
+func (nullHasher) CompareHashAndPassword(hashedPassword, password []byte) error {
+	if !bytes.Equal(hashedPassword, password) {
+		return errors.New("Wrong password")
+	}
+	return nil
+}
+
 func init() {
 	apiservice.Testing = true
 }
@@ -186,10 +199,10 @@ func SetupIntegrationTest(t *testing.T) TestData {
 		ExpireDuration: time.Minute * 10,
 		RenewDuration:  time.Minute * 5,
 		DB:             db,
+		Hasher:         nullHasher{},
 	}
-	dataApi := &api.DataService{DB: db}
-
-	testData := TestData{DataApi: dataApi,
+	testData := TestData{
+		DataApi:             &api.DataService{DB: db},
 		AuthApi:             authApi,
 		DBConfig:            dbConfig,
 		CloudStorageService: cloudStorageService,
