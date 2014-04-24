@@ -519,7 +519,7 @@ func (d *DataService) CreateRegimenPlanForPatientVisit(regimenPlan *common.Regim
 	}
 
 	// mark any previous regimen steps for this patient visit and regimen type as inactive
-	_, err = tx.Exec(`update regimen set status=? where treatment_plan_id = ?`, STATUS_INACTIVE, regimenPlan.TreatmentPlanId)
+	_, err = tx.Exec(`update regimen set status=? where treatment_plan_id = ?`, STATUS_INACTIVE, regimenPlan.TreatmentPlanId.Int64())
 	if err != nil {
 		tx.Rollback()
 		return err
@@ -942,7 +942,7 @@ func (d *DataService) AddErxStatusEvent(treatments []*common.Treatment, prescrip
 		}
 
 		columnsAndData := make(map[string]interface{}, 0)
-		columnsAndData["treatment_id"] = treatment.Id
+		columnsAndData["treatment_id"] = treatment.Id.Int64()
 		columnsAndData["erx_status"] = prescriptionStatus.Status
 		columnsAndData["status"] = STATUS_ACTIVE
 		if !prescriptionStatus.ReportedTimestamp.IsZero() {
