@@ -2,6 +2,7 @@ package erx
 
 import (
 	"carefront/common"
+	"carefront/encoding"
 	"carefront/libs/golog"
 	pharmacySearch "carefront/libs/pharmacy"
 	"errors"
@@ -221,8 +222,7 @@ func (d *DoseSpotService) SendMultiplePrescriptions(clinicianId int64, patient *
 	return unSuccessfulTreatmentIds, nil
 }
 
-func populatePatientForDoseSpot(currentPatient *common.Patient) *patient {
-
+func populatePatientForDoseSpot(currentPatient *common.Patient) (*patient, error) {
 	newPatient := &patient{
 		PatientId:   currentPatient.ERxPatientId.Int64(),
 		FirstName:   currentPatient.FirstName,
@@ -231,10 +231,7 @@ func populatePatientForDoseSpot(currentPatient *common.Patient) *patient {
 		Suffix:      currentPatient.Suffix,
 		Prefix:      currentPatient.Prefix,
 		Email:       currentPatient.Email,
-		City:        currentPatient.City,
-		State:       currentPatient.State,
-		ZipCode:     currentPatient.ZipCode,
-		DateOfBirth: specialDateTime{DateTime: currentPatient.Dob, DateTimeElementName: "DateOfBirth"},
+		DateOfBirth: specialDateTime{DateTime: currentPatient.Dob.ToTime(), DateTimeElementName: "DateOfBirth"},
 		Gender:      currentPatient.Gender,
 	}
 
@@ -258,17 +255,98 @@ func populatePatientForDoseSpot(currentPatient *common.Patient) *patient {
 		newPatient.Address2 = currentPatient.PatientAddress.AddressLine2
 		newPatient.City = currentPatient.PatientAddress.City
 		newPatient.ZipCode = currentPatient.PatientAddress.ZipCode
+		newPatient.State = currentPatient.PatientAddress.State
 	}
 
 	if currentPatient.ERxPatientId.Int64() != 0 {
 		newPatient.PatientId = currentPatient.ERxPatientId.Int64()
 	}
 
-	return newPatient
+	return newPatient, nil
+}
+
+func ensurePatientInformationIsConsistent(currentPatient *common.Patient, patientUpdatesFromDoseSpot []*patientUpdate) error {
+	if len(patientUpdatesFromDoseSpot) != 1 {
+		return fmt.Errorf("Expected a single patient to be returned from dosespot instead got back %d", len(patientUpdatesFromDoseSpot))
+	}
+
+	patientFromDoseSpot := patientUpdatesFromDoseSpot[0].Patient
+
+	if currentPatient.FirstName != patientFromDoseSpot.FirstName {
+		return errors.New("PATIENT_INFO_MISMATCH: firstName")
+	}
+
+	if currentPatient.LastName != patientFromDoseSpot.LastName {
+		return errors.New("PATIENT_INFO_MISTMATCH: lastName")
+	}
+
+	if currentPatient.MiddleName != patientFromDoseSpot.MiddleName {
+		return errors.New("PATIENT_INFO_MISTMATCH: middleName")
+	}
+
+	if currentPatient.Suffix != patientFromDoseSpot.Suffix {
+		return errors.New("PATIENT_INFO_MISTMATCH: suffix")
+	}
+
+	if currentPatient.Prefix != patientFromDoseSpot.Prefix {
+		return errors.New("PATIENT_INFO_MISTMATCH: prefix")
+	}
+
+	if currentPatient.LastName != patientFromDoseSpot.LastName {
+		return errors.New("PATIENT_INFO_MISTMATCH: lastName")
+	}
+
+	// lets compare the day, month and year components
+	doseSpotPatientDobYear, doseSpotPatientDobMonth, doseSpotPatientDay := patientFromDoseSpot.DateOfBirth.DateTime.Date()
+
+	if currentPatient.Dob.Day != doseSpotPatientDay || currentPatient.Dob.Month != int(doseSpotPatientDobMonth) || currentPatient.Dob.Year != doseSpotPatientDobYear {
+		return fmt.Errorf("PATIENT_INFO_MISTMATCH: dob %+v %+v", currentPatient.Dob, patientFromDoseSpot.DateOfBirth.DateTime)
+	}
+
+	if strings.ToLower(currentPatient.Gender) != strings.ToLower(patientFromDoseSpot.Gender) {
+		return errors.New("PATIENT_INFO_MISTMATCH: gender")
+	}
+
+	if currentPatient.Email != patientFromDoseSpot.Email {
+		return errors.New("PATIENT_INFO_MISTMATCH: email")
+	}
+
+	if currentPatient.PatientAddress.AddressLine1 != patientFromDoseSpot.Address1 {
+		return errors.New("PATIENT_INFO_MISTMATCH: address1")
+	}
+
+	if currentPatient.PatientAddress.AddressLine2 != patientFromDoseSpot.Address2 {
+		return errors.New("PATIENT_INFO_MISTMATCH: email")
+	}
+
+	if currentPatient.PatientAddress.City != patientFromDoseSpot.City {
+		return errors.New("PATIENT_INFO_MISTMATCH: city")
+	}
+
+	if strings.ToLower(currentPatient.PatientAddress.State) != strings.ToLower(patientFromDoseSpot.State) {
+		return errors.New("PATIENT_INFO_MISTMATCH: state")
+	}
+
+	if currentPatient.PatientAddress.ZipCode != patientFromDoseSpot.ZipCode {
+		return errors.New("PATIENT_INFO_MISTMATCH: zipCode")
+	}
+
+	if currentPatient.PhoneNumbers[0].Phone != patientFromDoseSpot.PrimaryPhone {
+		return errors.New("PATIENT_INFO_MISTMATCH: primaryPhone")
+	}
+
+	if currentPatient.PhoneNumbers[0].PhoneType != patientFromDoseSpot.PrimaryPhoneType {
+		return errors.New("PATIENT_INFO_MISTMATCH: primaryPhoneType")
+	}
+
+	return nil
 }
 
 func (d *DoseSpotService) UpdatePatientInformation(clinicianId int64, currentPatient *common.Patient) error {
-	newPatient := populatePatientForDoseSpot(currentPatient)
+	newPatient, err := populatePatientForDoseSpot(currentPatient)
+	if err != nil {
+		return err
+	}
 	patientPreferredPharmacy := &patientPharmacySelection{}
 	patientPreferredPharmacy.IsPrimary = true
 
@@ -299,23 +377,29 @@ func (d *DoseSpotService) UpdatePatientInformation(clinicianId int64, currentPat
 		return errors.New("Something went wrong when attempting to start prescriptions for patient: " + response.ResultDescription)
 	}
 
+	if err := ensurePatientInformationIsConsistent(currentPatient, response.PatientUpdates); err != nil {
+		return err
+	}
+
 	// populate the prescription id into the patient object
-	currentPatient.ERxPatientId = common.NewObjectId(response.PatientUpdates[0].Patient.PatientId)
+	currentPatient.ERxPatientId = encoding.NewObjectId(response.PatientUpdates[0].Patient.PatientId)
 	return nil
 }
 
-func (d *DoseSpotService) StartPrescribingPatient(clinicianId int64, currentPatient *common.Patient, treatments []*common.Treatment) error {
+func (d *DoseSpotService) StartPrescribingPatient(clinicianId int64, currentPatient *common.Patient, treatments []*common.Treatment, pharmacySourceId string) error {
 
-	newPatient := populatePatientForDoseSpot(currentPatient)
+	newPatient, err := populatePatientForDoseSpot(currentPatient)
+	if err != nil {
+		return err
+	}
 
-	patientPreferredPharmacy := &patientPharmacySelection{}
-	patientPreferredPharmacy.IsPrimary = true
-
-	pharmacyId, err := strconv.ParseInt(currentPatient.Pharmacy.SourceId, 0, 64)
+	pharmacyId, err := strconv.ParseInt(pharmacySourceId, 0, 64)
 	if err != nil {
 		return fmt.Errorf("Unable to parse the pharmacy id: %s", err.Error())
 	}
 
+	patientPreferredPharmacy := &patientPharmacySelection{}
+	patientPreferredPharmacy.IsPrimary = true
 	patientPreferredPharmacy.PharmacyId = pharmacyId
 
 	prescriptions := make([]*prescription, 0)
@@ -325,14 +409,13 @@ func (d *DoseSpotService) StartPrescribingPatient(clinicianId int64, currentPati
 		lexiGenProductIdInt, _ := strconv.ParseInt(treatment.DrugDBIds[LexiGenProductId], 0, 64)
 		lexiSynonymTypeIdInt, _ := strconv.ParseInt(treatment.DrugDBIds[LexiSynonymTypeId], 0, 64)
 
-		daysSupply := nullInt64(treatment.DaysSupply.Int64())
 		prescriptionMedication := &medication{
-			DaysSupply:        daysSupply,
 			LexiDrugSynId:     lexiDrugSynIdInt,
 			LexiGenProductId:  lexiGenProductIdInt,
 			LexiSynonymTypeId: lexiSynonymTypeIdInt,
-			Refills:           nullInt64(treatment.NumberRefills),
-			Dispense:          strconv.FormatInt(treatment.DispenseValue, 10),
+			Refills:           treatment.NumberRefills,
+			Dispense:          treatment.DispenseValue.String(),
+			DaysSupply:        treatment.DaysSupply,
 			DispenseUnitId:    treatment.DispenseUnitId.Int64(),
 			Instructions:      treatment.PatientInstructions,
 			NoSubstitutions:   !treatment.SubstitutionsAllowed,
@@ -369,8 +452,12 @@ func (d *DoseSpotService) StartPrescribingPatient(clinicianId int64, currentPati
 		return errors.New("Something went wrong when attempting to start prescriptions for patient: " + response.ResultDescription)
 	}
 
+	if err := ensurePatientInformationIsConsistent(currentPatient, response.PatientUpdates); err != nil {
+		return err
+	}
+
 	// populate the prescription id into the patient object
-	currentPatient.ERxPatientId = common.NewObjectId(response.PatientUpdates[0].Patient.PatientId)
+	currentPatient.ERxPatientId = encoding.NewObjectId(response.PatientUpdates[0].Patient.PatientId)
 
 	// go through and assign medication ids to all prescriptions
 	for _, patientUpdate := range response.PatientUpdates {
@@ -385,8 +472,7 @@ func (d *DoseSpotService) StartPrescribingPatient(clinicianId int64, currentPati
 					if treatment.ERx == nil {
 						treatment.ERx = &common.ERxData{}
 					}
-					treatment.ERx.PrescriptionId = common.NewObjectId(medication.DoseSpotPrescriptionId)
-					break
+					treatment.ERx.PrescriptionId = encoding.NewObjectId(medication.DoseSpotPrescriptionId)
 				}
 			}
 		}
@@ -424,6 +510,8 @@ func (d *DoseSpotService) SelectMedication(clinicianId int64, medicationName, me
 		return nil, nil
 	}
 
+	// starting refills at 0 because we default to 0 even when doctor
+	// does not enter something
 	medication = &common.Treatment{
 		DrugDBIds: map[string]string{
 			LexiGenProductId:  strconv.FormatInt(selectResult.LexiGenProductId, 10),
@@ -431,9 +519,15 @@ func (d *DoseSpotService) SelectMedication(clinicianId int64, medicationName, me
 			LexiSynonymTypeId: strconv.FormatInt(selectResult.LexiSynonymTypeId, 10),
 			NDC:               selectResult.RepresentativeNDC,
 		},
-		DispenseUnitId:          common.NewObjectId(selectResult.DispenseUnitId),
+		DispenseUnitId:          encoding.NewObjectId(selectResult.DispenseUnitId),
 		DispenseUnitDescription: selectResult.DispenseUnitDescription,
-		OTC: selectResult.OTC,
+		DrugInternalName:        medicationName,
+		OTC:                     selectResult.OTC,
+		SubstitutionsAllowed:    true, // defaulting to substitutions being allowed as required by surescripts
+		NumberRefills: encoding.NullInt64{
+			IsValid:    true,
+			Int64Value: 0,
+		},
 		IsControlledSubstance: err == nil && scheduleInt > 0,
 	}
 
@@ -562,11 +656,11 @@ func (d *DoseSpotService) GetTransmissionErrorDetails(clinicianId int64) ([]*com
 
 	medicationsWithErrors := make([]*common.Treatment, len(response.TransmissionErrors))
 	for i, transmissionError := range response.TransmissionErrors {
-		dispenseValueInt, _ := strconv.ParseInt(transmissionError.Medication.Dispense, 10, 64)
+		dispenseValueFloat, _ := strconv.ParseFloat(transmissionError.Medication.Dispense, 64)
 		medicationsWithErrors[i] = &common.Treatment{
 			ERx: &common.ERxData{
-				ErxMedicationId:       common.NewObjectId(transmissionError.Medication.MedicationId),
-				PrescriptionId:        common.NewObjectId(transmissionError.Medication.DoseSpotPrescriptionId),
+				ErxMedicationId:       encoding.NewObjectId(transmissionError.Medication.MedicationId),
+				PrescriptionId:        encoding.NewObjectId(transmissionError.Medication.DoseSpotPrescriptionId),
 				PrescriptionStatus:    transmissionError.Medication.Status,
 				ErxSentDate:           &transmissionError.Medication.DatePrescribed.DateTime,
 				TransmissionErrorDate: &transmissionError.ErrorDateTimeStamp.DateTime,
@@ -578,13 +672,13 @@ func (d *DoseSpotService) GetTransmissionErrorDetails(clinicianId int64) ([]*com
 				LexiSynonymTypeId: strconv.FormatInt(transmissionError.Medication.LexiSynonymTypeId, 10),
 				LexiDrugSynId:     strconv.FormatInt(transmissionError.Medication.LexiDrugSynId, 10),
 			},
-			DispenseUnitId:       common.NewObjectId(transmissionError.Medication.DispenseUnitId),
+			DispenseUnitId:       encoding.NewObjectId(transmissionError.Medication.DispenseUnitId),
 			StatusDetails:        transmissionError.ErrorDetails,
 			DrugName:             transmissionError.Medication.DrugName,
 			DosageStrength:       transmissionError.Medication.Strength,
-			NumberRefills:        transmissionError.Medication.Refills.Int64(),
-			DaysSupply:           common.NewObjectId(int64(transmissionError.Medication.DaysSupply)),
-			DispenseValue:        dispenseValueInt,
+			NumberRefills:        transmissionError.Medication.Refills,
+			DaysSupply:           transmissionError.Medication.DaysSupply,
+			DispenseValue:        encoding.HighPrecisionFloat64(dispenseValueFloat),
 			PatientInstructions:  transmissionError.Medication.Instructions,
 			PharmacyNotes:        transmissionError.Medication.PharmacyNotes,
 			SubstitutionsAllowed: !transmissionError.Medication.NoSubstitutions,
@@ -667,7 +761,7 @@ func (d *DoseSpotService) GetPatientDetails(erxPatientId int64) (*common.Patient
 
 	// not worrying about suffix/prefix for now
 	newPatient := &common.Patient{
-		ERxPatientId: common.NewObjectId(response.PatientUpdates[0].Patient.PatientId),
+		ERxPatientId: encoding.NewObjectId(response.PatientUpdates[0].Patient.PatientId),
 		FirstName:    response.PatientUpdates[0].Patient.FirstName,
 		LastName:     response.PatientUpdates[0].Patient.LastName,
 		Gender:       response.PatientUpdates[0].Patient.Gender,
@@ -678,11 +772,9 @@ func (d *DoseSpotService) GetPatientDetails(erxPatientId int64) (*common.Patient
 			ZipCode:      response.PatientUpdates[0].Patient.ZipCode,
 			State:        response.PatientUpdates[0].Patient.State,
 		},
-		Dob:     response.PatientUpdates[0].Patient.DateOfBirth.DateTime,
 		Email:   response.PatientUpdates[0].Patient.Email,
 		ZipCode: response.PatientUpdates[0].Patient.ZipCode,
-		City:    response.PatientUpdates[0].Patient.City,
-		State:   response.PatientUpdates[0].Patient.State,
+		Dob:     encoding.NewDobFromTime(response.PatientUpdates[0].Patient.DateOfBirth.DateTime),
 		PhoneNumbers: []*common.PhoneInformation{&common.PhoneInformation{
 			Phone:     response.PatientUpdates[0].Patient.PrimaryPhone,
 			PhoneType: response.PatientUpdates[0].Patient.PrimaryPhoneType,
@@ -836,7 +928,7 @@ func convertMedicationIntoTreatment(medicationItem *medication) *common.Treatmen
 		return nil
 	}
 	scheduleInt, err := strconv.Atoi(medicationItem.Schedule)
-	dispenseValue, _ := strconv.ParseInt(medicationItem.Dispense, 10, 64)
+	dispenseValue, _ := strconv.ParseFloat(medicationItem.Dispense, 64)
 	treatment := &common.Treatment{
 		DrugDBIds: map[string]string{
 			LexiDrugSynId:     strconv.FormatInt(medicationItem.LexiDrugSynId, 10),
@@ -846,10 +938,10 @@ func convertMedicationIntoTreatment(medicationItem *medication) *common.Treatmen
 		},
 		DrugName:                medicationItem.DrugName,
 		IsControlledSubstance:   err == nil && scheduleInt > 0,
-		NumberRefills:           int64(medicationItem.Refills),
-		DaysSupply:              common.NewObjectId(int64(medicationItem.DaysSupply)),
-		DispenseValue:           dispenseValue,
-		DispenseUnitId:          common.NewObjectId(medicationItem.DispenseUnitId),
+		NumberRefills:           medicationItem.Refills,
+		DaysSupply:              medicationItem.DaysSupply,
+		DispenseValue:           encoding.HighPrecisionFloat64(dispenseValue),
+		DispenseUnitId:          encoding.NewObjectId(medicationItem.DispenseUnitId),
 		DispenseUnitDescription: medicationItem.DispenseUnitDescription,
 		PatientInstructions:     medicationItem.Instructions,
 		SubstitutionsAllowed:    !medicationItem.NoSubstitutions,
@@ -857,10 +949,10 @@ func convertMedicationIntoTreatment(medicationItem *medication) *common.Treatmen
 		DrugRoute:               medicationItem.Route,
 		DosageStrength:          medicationItem.Strength,
 		ERx: &common.ERxData{
-			PrescriptionId:      common.NewObjectId(medicationItem.DoseSpotPrescriptionId),
+			PrescriptionId:      encoding.NewObjectId(medicationItem.DoseSpotPrescriptionId),
 			ErxPharmacyId:       medicationItem.PharmacyId,
 			PrescriptionStatus:  medicationItem.PrescriptionStatus,
-			ErxMedicationId:     common.NewObjectId(medicationItem.MedicationId),
+			ErxMedicationId:     encoding.NewObjectId(medicationItem.MedicationId),
 			DoseSpotClinicianId: medicationItem.ClinicianId,
 		},
 	}

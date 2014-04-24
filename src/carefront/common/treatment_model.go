@@ -1,42 +1,43 @@
 package common
 
 import (
+	"carefront/encoding"
 	"carefront/libs/pharmacy"
 	"reflect"
 	"time"
 )
 
 type Treatment struct {
-	Id                        *ObjectId                `json:"treatment_id,omitempty"`
-	DoctorTreatmentTemplateId *ObjectId                `json:"dr_treatment_template_id,omitempty"`
-	StatusDetails             string                   `json:"erx_status_details,omitempty"`
-	TreatmentPlanId           *ObjectId                `json:"treatment_plan_id,omitempty"`
-	PatientVisitId            *ObjectId                `json:"patient_visit_id,omitempty"`
-	DrugDBIds                 map[string]string        `json:"drug_db_ids,omitempty"`
-	DrugInternalName          string                   `json:"drug_internal_name,omitempty"`
-	DrugName                  string                   `json:"drug_name"`
-	DrugRoute                 string                   `json:"drug_route,omitempty"`
-	DrugForm                  string                   `json:"drug_form,omitempty"`
-	DosageStrength            string                   `json:"dosage_strength,omitempty"`
-	DispenseValue             int64                    `json:"dispense_value,string,omitempty"`
-	DispenseUnitId            *ObjectId                `json:"dispense_unit_id,omitempty"`
-	DispenseUnitDescription   string                   `json:"dispense_unit_description,omitempty"`
-	NumberRefills             int64                    `json:"refills,string,omitempty"`
-	SubstitutionsAllowed      bool                     `json:"substitutions_allowed,omitempty"`
-	DaysSupply                *ObjectId                `json:"days_supply,omitempty"`
-	PharmacyNotes             string                   `json:"pharmacy_notes,omitempty"`
-	PatientInstructions       string                   `json:"patient_instructions,omitempty"`
-	CreationDate              *time.Time               `json:"creation_date,omitempty"`
-	Status                    string                   `json:"-"`
-	OTC                       bool                     `json:"otc,omitempty"`
-	IsControlledSubstance     bool                     `json:"-"`
-	SupplementalInstructions  []*DoctorInstructionItem `json:"supplemental_instructions,omitempty"`
-	DoctorId                  *ObjectId                `json:"-"`
-	Doctor                    *Doctor                  `json:"doctor,omitempty"`
-	Patient                   *Patient                 `json:"patient,omitempty"`
-	PatientId                 *ObjectId                `json:"-,omitempty"`
-	OriginatingTreatmentId    int64                    `json:"-"`
-	ERx                       *ERxData                 `json:"erx,omitempty"`
+	Id                        encoding.ObjectId             `json:"treatment_id,omitempty"`
+	DoctorTreatmentTemplateId encoding.ObjectId             `json:"dr_treatment_template_id,omitempty"`
+	StatusDetails             string                        `json:"erx_status_details,omitempty"`
+	TreatmentPlanId           encoding.ObjectId             `json:"treatment_plan_id,omitempty"`
+	PatientVisitId            encoding.ObjectId             `json:"patient_visit_id,omitempty"`
+	DrugDBIds                 map[string]string             `json:"drug_db_ids,omitempty"`
+	DrugInternalName          string                        `json:"drug_internal_name,omitempty"`
+	DrugName                  string                        `json:"drug_name"`
+	DrugRoute                 string                        `json:"drug_route,omitempty"`
+	DrugForm                  string                        `json:"drug_form,omitempty"`
+	DosageStrength            string                        `json:"dosage_strength,omitempty"`
+	DispenseValue             encoding.HighPrecisionFloat64 `json:"dispense_value"`
+	DispenseUnitId            encoding.ObjectId             `json:"dispense_unit_id,omitempty"`
+	DispenseUnitDescription   string                        `json:"dispense_unit_description,omitempty"`
+	NumberRefills             encoding.NullInt64            `json:"refills,omitempty"`
+	SubstitutionsAllowed      bool                          `json:"substitutions_allowed"`
+	DaysSupply                encoding.NullInt64            `json:"days_supply"`
+	PharmacyNotes             string                        `json:"pharmacy_notes,omitempty"`
+	PatientInstructions       string                        `json:"patient_instructions,omitempty"`
+	CreationDate              *time.Time                    `json:"creation_date,omitempty"`
+	Status                    string                        `json:"-"`
+	OTC                       bool                          `json:"otc,omitempty"`
+	IsControlledSubstance     bool                          `json:"-"`
+	SupplementalInstructions  []*DoctorInstructionItem      `json:"supplemental_instructions,omitempty"`
+	Doctor                    *Doctor                       `json:"doctor,omitempty"`
+	PatientId                 encoding.ObjectId             `json:"patient_id,omitempty"`
+	Patient                   *Patient                      `json:"patient,omitempty"`
+	DoctorId                  encoding.ObjectId             `json:"doctor_id,omitempty"`
+	OriginatingTreatmentId    int64                         `json:"-"`
+	ERx                       *ERxData                      `json:"erx,omitempty"`
 }
 
 type ERxData struct {
@@ -48,10 +49,10 @@ type ERxData struct {
 	ErxReferenceNumber    string                 `json:"-"`
 	TransmissionErrorDate *time.Time             `json:"error_date,omitempty"`
 	ErxPharmacyId         int64                  `json:"-"`
-	ErxMedicationId       *ObjectId              `json:"-"`
-	PrescriptionId        *ObjectId              `json:"-"`
+	ErxMedicationId       encoding.ObjectId      `json:"-"`
+	PrescriptionId        encoding.ObjectId      `json:"-"`
 	PrescriptionStatus    string                 `json:"status,omitempty"`
-	PharmacyLocalId       *ObjectId              `json:"-"`
+	PharmacyLocalId       encoding.ObjectId      `json:"-"`
 }
 
 // defining an equals method on the treatment so that
@@ -78,7 +79,7 @@ func (t *Treatment) Equals(other *Treatment) bool {
 		t.DispenseUnitId.Int64() == other.DispenseUnitId.Int64() &&
 		t.NumberRefills == other.NumberRefills &&
 		t.SubstitutionsAllowed == other.SubstitutionsAllowed &&
-		t.DaysSupply.Int64() == other.DaysSupply.Int64() &&
+		t.DaysSupply == other.DaysSupply &&
 		t.PatientInstructions == other.PatientInstructions &&
 		t.ERx.PharmacyLocalId.Int64() == other.ERx.PharmacyLocalId.Int64()
 }

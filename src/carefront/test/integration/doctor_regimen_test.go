@@ -4,6 +4,7 @@ import (
 	"bytes"
 	"carefront/apiservice"
 	"carefront/common"
+	"carefront/encoding"
 	"encoding/json"
 	"io/ioutil"
 	"net/http"
@@ -52,7 +53,7 @@ func TestRegimenForPatientVisit(t *testing.T) {
 
 	// adding new regimen steps to the doctor but not to the patient visit
 	regimenPlanRequest := &common.RegimenPlan{}
-	regimenPlanRequest.PatientVisitId = common.NewObjectId(patientVisitResponse.PatientVisitId)
+	regimenPlanRequest.PatientVisitId = encoding.NewObjectId(patientVisitResponse.PatientVisitId)
 
 	regimenStep1 := &common.DoctorInstructionItem{}
 	regimenStep1.Text = "Regimen Step 1"

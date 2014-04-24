@@ -3,6 +3,7 @@ package apiservice
 import (
 	"carefront/api"
 	"carefront/common"
+	"carefront/encoding"
 	"carefront/libs/erx"
 	"encoding/json"
 	"net/http"
@@ -25,7 +26,7 @@ type AddTreatmentsResponse struct {
 
 type AddTreatmentsRequestBody struct {
 	Treatments     []*common.Treatment `json:"treatments"`
-	PatientVisitId *common.ObjectId    `json:"patient_visit_id"`
+	PatientVisitId encoding.ObjectId   `json:"patient_visit_id"`
 }
 
 type GetTreatmentsRequestBody struct {
@@ -160,6 +161,8 @@ func (t *TreatmentsHandler) addTreatment(w http.ResponseWriter, r *http.Request)
 			WriteError(w, httpStatusCode, *errorResponse)
 			return
 		}
+
+		trimSpacesFromTreatmentFields(treatment)
 	}
 
 	// Add treatments to patient

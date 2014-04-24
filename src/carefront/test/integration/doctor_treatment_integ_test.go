@@ -4,6 +4,7 @@ import (
 	"bytes"
 	"carefront/apiservice"
 	"carefront/common"
+	"carefront/encoding"
 	"carefront/libs/erx"
 	"encoding/json"
 	"io/ioutil"
@@ -122,6 +123,18 @@ func TestNewTreatmentSelection(t *testing.T) {
 	if resp.StatusCode != apiservice.HTTP_UNPROCESSABLE_ENTITY {
 		t.Fatal("Expected a bad request when attempting to select a controlled substance given that we don't allow routing of controlled substances using our platform")
 	}
+
+	// Let's ensure that we are rejecting a drug description that is longer than 105 characters to be routed via eRX.
+	urlValues = url.Values{}
+	urlValues.Set("drug_internal_name", "Clinimix E Sulfite-Free 2.75% with 10% Dextrose and Electrolytes (intravenous - solution)")
+	urlValues.Set("medication_strength", "Amino Acids 2.75% with 10% Dextrose and Electrolytes (Clinimix E Sulfite-Free)")
+	resp, err = authGet(ts.URL+"?"+urlValues.Encode(), doctor.AccountId.Int64())
+	if err != nil {
+		t.Fatal("Unable to make successfull call to select a drug whose description is longer than the limit" + err.Error())
+	}
+	if resp.StatusCode != apiservice.HTTP_UNPROCESSABLE_ENTITY {
+		t.Fatal("Expected a bad request when attempting to select a drug with longer than max drug description to ensure that we don't send through eRx but advice doc to call drug in")
+	}
 }
 
 func TestDispenseUnitIds(t *testing.T) {
@@ -194,17 +207,23 @@ func TestAddTreatments(t *testing.T) {
 
 	// doctor now attempts to add a couple treatments for patient
 	treatment1 := &common.Treatment{
-		DrugInternalName:     "Advil",
-		PatientVisitId:       common.NewObjectId(patientVisitResponse.PatientVisitId),
-		DosageStrength:       "10 mg",
-		DispenseValue:        1,
-		DispenseUnitId:       common.NewObjectId(26),
-		NumberRefills:        1,
+		DrugInternalName: "Advil",
+		PatientVisitId:   encoding.NewObjectId(patientVisitResponse.PatientVisitId),
+		DosageStrength:   "10 mg",
+		DispenseValue:    1,
+		DispenseUnitId:   encoding.NewObjectId(26),
+		NumberRefills: encoding.NullInt64{
+			IsValid:    true,
+			Int64Value: 1,
+		},
 		SubstitutionsAllowed: true,
-		DaysSupply:           common.NewObjectId(1),
-		OTC:                  true,
-		PharmacyNotes:        "testing pharmacy notes",
-		PatientInstructions:  "patient instructions",
+		DaysSupply: encoding.NullInt64{
+			IsValid:    true,
+			Int64Value: 1,
+		},
+		OTC:                 true,
+		PharmacyNotes:       "testing pharmacy notes",
+		PatientInstructions: "patient instructions",
 		DrugDBIds: map[string]string{
 			"drug_db_id_1": "12315",
 			"drug_db_id_2": "124",
@@ -212,17 +231,19 @@ func TestAddTreatments(t *testing.T) {
 	}
 
 	treatment2 := &common.Treatment{
-		DrugInternalName:     "Advil 2",
-		PatientVisitId:       common.NewObjectId(patientVisitResponse.PatientVisitId),
-		DosageStrength:       "100 mg",
-		DispenseValue:        2,
-		DispenseUnitId:       common.NewObjectId(27),
-		NumberRefills:        3,
+		DrugInternalName: "Advil 2",
+		PatientVisitId:   encoding.NewObjectId(patientVisitResponse.PatientVisitId),
+		DosageStrength:   "100 mg",
+		DispenseValue:    2,
+		DispenseUnitId:   encoding.NewObjectId(27),
+		NumberRefills: encoding.NullInt64{
+			IsValid:    true,
+			Int64Value: 3,
+		},
 		SubstitutionsAllowed: false,
-		DaysSupply:           common.NewObjectId(12),
-		OTC:                  false,
-		PharmacyNotes:        "testing pharmacy notes 2",
-		PatientInstructions:  "patient instructions 2",
+		DaysSupply:           encoding.NullInt64{}, OTC: false,
+		PharmacyNotes:       "testing pharmacy notes 2",
+		PatientInstructions: "patient instructions 2",
 		DrugDBIds: map[string]string{
 			"drug_db_id_3": "12414",
 			"drug_db_id_4": "214",
@@ -277,16 +298,22 @@ func TestTreatmentTemplates(t *testing.T) {
 
 	// doctor now attempts to favorite a treatment
 	treatment1 := &common.Treatment{
-		DrugInternalName:     "DrugName (DrugRoute - DrugForm)",
-		DosageStrength:       "10 mg",
-		DispenseValue:        1,
-		DispenseUnitId:       common.NewObjectId(26),
-		NumberRefills:        1,
+		DrugInternalName: "DrugName (DrugRoute - DrugForm)",
+		DosageStrength:   "10 mg",
+		DispenseValue:    1,
+		DispenseUnitId:   encoding.NewObjectId(26),
+		NumberRefills: encoding.NullInt64{
+			IsValid:    true,
+			Int64Value: 1,
+		},
 		SubstitutionsAllowed: true,
-		DaysSupply:           common.NewObjectId(1),
-		OTC:                  true,
-		PharmacyNotes:        "testing pharmacy notes",
-		PatientInstructions:  "patient insturctions",
+		DaysSupply: encoding.NullInt64{
+			IsValid:    true,
+			Int64Value: 1,
+		},
+		OTC:                 true,
+		PharmacyNotes:       "testing pharmacy notes",
+		PatientInstructions: "patient insturctions",
 		DrugDBIds: map[string]string{
 			"drug_db_id_1": "12315",
 			"drug_db_id_2": "124",
@@ -341,16 +368,22 @@ func TestTreatmentTemplates(t *testing.T) {
 	}
 
 	treatment2 := &common.Treatment{
-		DrugInternalName:     "DrugName2",
-		DosageStrength:       "10 mg",
-		DispenseValue:        1,
-		DispenseUnitId:       common.NewObjectId(26),
-		NumberRefills:        1,
+		DrugInternalName: "DrugName2",
+		DosageStrength:   "10 mg",
+		DispenseValue:    1,
+		DispenseUnitId:   encoding.NewObjectId(26),
+		NumberRefills: encoding.NullInt64{
+			IsValid:    true,
+			Int64Value: 1,
+		},
 		SubstitutionsAllowed: true,
-		DaysSupply:           common.NewObjectId(1),
-		OTC:                  true,
-		PharmacyNotes:        "testing pharmacy notes",
-		PatientInstructions:  "patient instructions",
+		DaysSupply: encoding.NullInt64{
+			IsValid:    true,
+			Int64Value: 1,
+		},
+		OTC:                 true,
+		PharmacyNotes:       "testing pharmacy notes",
+		PatientInstructions: "patient instructions",
 		DrugDBIds: map[string]string{
 			"drug_db_id_1": "12315",
 			"drug_db_id_2": "124",
@@ -450,16 +483,22 @@ func TestTreatmentTemplatesInContextOfPatientVisit(t *testing.T) {
 
 	// doctor now attempts to favorite a treatment
 	treatment1 := &common.Treatment{
-		DrugInternalName:     "DrugName (DrugRoute - DrugForm)",
-		DosageStrength:       "10 mg",
-		DispenseValue:        1,
-		DispenseUnitId:       common.NewObjectId(26),
-		NumberRefills:        1,
+		DrugInternalName: "DrugName (DrugRoute - DrugForm)",
+		DosageStrength:   "10 mg",
+		DispenseValue:    1,
+		DispenseUnitId:   encoding.NewObjectId(26),
+		NumberRefills: encoding.NullInt64{
+			IsValid:    true,
+			Int64Value: 1,
+		},
 		SubstitutionsAllowed: true,
-		DaysSupply:           common.NewObjectId(1),
-		OTC:                  true,
-		PharmacyNotes:        "testing pharmacy notes",
-		PatientInstructions:  "patient insturctions",
+		DaysSupply: encoding.NullInt64{
+			IsValid:    true,
+			Int64Value: 1,
+		},
+		OTC:                 true,
+		PharmacyNotes:       "testing pharmacy notes",
+		PatientInstructions: "patient insturctions",
 		DrugDBIds: map[string]string{
 			"drug_db_id_1": "12315",
 			"drug_db_id_2": "124",
@@ -475,7 +514,7 @@ func TestTreatmentTemplatesInContextOfPatientVisit(t *testing.T) {
 	defer ts.Close()
 
 	treatmentTemplatesRequest := &apiservice.DoctorTreatmentTemplatesRequest{TreatmentTemplates: []*common.DoctorTreatmentTemplate{treatmentTemplate}}
-	treatmentTemplatesRequest.PatientVisitId = common.NewObjectId(patientVisitResponse.PatientVisitId)
+	treatmentTemplatesRequest.PatientVisitId = encoding.NewObjectId(patientVisitResponse.PatientVisitId)
 	data, err := json.Marshal(&treatmentTemplatesRequest)
 	if err != nil {
 		t.Fatal("Unable to marshal request body for adding treatments to patient visit")
@@ -515,16 +554,21 @@ func TestTreatmentTemplatesInContextOfPatientVisit(t *testing.T) {
 	}
 
 	treatment2 := &common.Treatment{
-		DrugInternalName:     "DrugName2 (DrugRoute - DrugForm)",
-		DosageStrength:       "10 mg",
-		DispenseValue:        1,
-		DispenseUnitId:       common.NewObjectId(26),
-		NumberRefills:        1,
+		DrugInternalName: "DrugName2 (DrugRoute - DrugForm)",
+		DosageStrength:   "10 mg",
+		DispenseValue:    1,
+		DispenseUnitId:   encoding.NewObjectId(26),
+		NumberRefills: encoding.NullInt64{
+			IsValid:    true,
+			Int64Value: 1,
+		},
 		SubstitutionsAllowed: true,
-		DaysSupply:           common.NewObjectId(1),
-		OTC:                  true,
-		PharmacyNotes:        "testing pharmacy notes",
-		PatientInstructions:  "patient instructions",
+		DaysSupply: encoding.NullInt64{
+			IsValid:    true,
+			Int64Value: 1,
+		}, OTC: true,
+		PharmacyNotes:       "testing pharmacy notes",
+		PatientInstructions: "patient instructions",
 		DrugDBIds: map[string]string{
 			"drug_db_id_1": "12315",
 			"drug_db_id_2": "124",
@@ -543,7 +587,7 @@ func TestTreatmentTemplatesInContextOfPatientVisit(t *testing.T) {
 	treatmentTemplate2.Name = "Favorite Treatment #2"
 	treatmentTemplate2.Treatment = getTreatmentsResponse.Treatments[0]
 	treatmentTemplatesRequest.TreatmentTemplates[0] = treatmentTemplate2
-	treatmentTemplatesRequest.PatientVisitId = common.NewObjectId(patientVisitResponse.PatientVisitId)
+	treatmentTemplatesRequest.PatientVisitId = encoding.NewObjectId(patientVisitResponse.PatientVisitId)
 
 	data, err = json.Marshal(&treatmentTemplatesRequest)
 	if err != nil {
@@ -589,8 +633,8 @@ func TestTreatmentTemplatesInContextOfPatientVisit(t *testing.T) {
 	}
 
 	// now, lets go ahead and add a treatment to the patient visit from a favorite treatment
-	treatment1.DoctorTreatmentTemplateId = common.NewObjectId(treatmentTemplatesResponse.TreatmentTemplates[0].Id.Int64())
-	treatment2.DoctorTreatmentTemplateId = common.NewObjectId(treatmentTemplatesResponse.TreatmentTemplates[1].Id.Int64())
+	treatment1.DoctorTreatmentTemplateId = encoding.NewObjectId(treatmentTemplatesResponse.TreatmentTemplates[0].Id.Int64())
+	treatment2.DoctorTreatmentTemplateId = encoding.NewObjectId(treatmentTemplatesResponse.TreatmentTemplates[1].Id.Int64())
 	getTreatmentsResponse = addAndGetTreatmentsForPatientVisit(testData, []*common.Treatment{treatment1, treatment2}, doctor.AccountId.Int64(), patientVisitResponse.PatientVisitId, t)
 
 	if len(getTreatmentsResponse.Treatments) != 2 {
@@ -601,7 +645,7 @@ func TestTreatmentTemplatesInContextOfPatientVisit(t *testing.T) {
 		t.Fatal("Expected the doctorFavoriteId to be set for both treatments given that they were added from favorites")
 	}
 
-	treatmentTemplate.Id = common.NewObjectId(getTreatmentsResponse.Treatments[0].DoctorTreatmentTemplateId.Int64())
+	treatmentTemplate.Id = encoding.NewObjectId(getTreatmentsResponse.Treatments[0].DoctorTreatmentTemplateId.Int64())
 	treatmentTemplate.Treatment = getTreatmentsResponse.Treatments[0]
 	treatmentTemplatesRequest.TreatmentTemplates = []*common.DoctorTreatmentTemplate{treatmentTemplate}
 
@@ -662,16 +706,21 @@ func TestTreatmentTemplateWithDrugOutOfMarket(t *testing.T) {
 
 	// doctor now attempts to favorite a treatment
 	treatment1 := &common.Treatment{
-		DrugInternalName:     "DrugName (DrugRoute - DrugForm)",
-		DosageStrength:       "10 mg",
-		DispenseValue:        1,
-		DispenseUnitId:       common.NewObjectId(26),
-		NumberRefills:        1,
+		DrugInternalName: "DrugName (DrugRoute - DrugForm)",
+		DosageStrength:   "10 mg",
+		DispenseValue:    1,
+		DispenseUnitId:   encoding.NewObjectId(26),
+		NumberRefills: encoding.NullInt64{
+			IsValid:    true,
+			Int64Value: 1,
+		},
 		SubstitutionsAllowed: true,
-		DaysSupply:           common.NewObjectId(1),
-		OTC:                  true,
-		PharmacyNotes:        "testing pharmacy notes",
-		PatientInstructions:  "patient insturctions",
+		DaysSupply: encoding.NullInt64{
+			IsValid:    true,
+			Int64Value: 1,
+		}, OTC: true,
+		PharmacyNotes:       "testing pharmacy notes",
+		PatientInstructions: "patient insturctions",
 		DrugDBIds: map[string]string{
 			"drug_db_id_1": "12315",
 			"drug_db_id_2": "124",
@@ -687,7 +736,7 @@ func TestTreatmentTemplateWithDrugOutOfMarket(t *testing.T) {
 	defer ts.Close()
 
 	treatmentTemplatesRequest := &apiservice.DoctorTreatmentTemplatesRequest{TreatmentTemplates: []*common.DoctorTreatmentTemplate{treatmentTemplate}}
-	treatmentTemplatesRequest.PatientVisitId = common.NewObjectId(patientVisitResponse.PatientVisitId)
+	treatmentTemplatesRequest.PatientVisitId = encoding.NewObjectId(patientVisitResponse.PatientVisitId)
 	data, err := json.Marshal(&treatmentTemplatesRequest)
 	if err != nil {
 		t.Fatal("Unable to marshal request body for adding treatments to patient visit")
@@ -716,7 +765,7 @@ func TestTreatmentTemplateWithDrugOutOfMarket(t *testing.T) {
 	treatment1.DoctorTreatmentTemplateId = treatmentTemplatesResponse.TreatmentTemplates[0].Id
 	stubErxApi := &erx.StubErxService{}
 	treatmentRequestBody := apiservice.AddTreatmentsRequestBody{
-		PatientVisitId: common.NewObjectId(patientVisitResponse.PatientVisitId),
+		PatientVisitId: encoding.NewObjectId(patientVisitResponse.PatientVisitId),
 		Treatments:     []*common.Treatment{treatment1},
 	}
 
@@ -748,7 +797,7 @@ func addAndGetTreatmentsForPatientVisit(testData TestData, treatments []*common.
 		SelectedMedicationToReturn: &common.Treatment{},
 	}
 
-	treatmentRequestBody := apiservice.AddTreatmentsRequestBody{PatientVisitId: common.NewObjectId(PatientVisitId), Treatments: treatments}
+	treatmentRequestBody := apiservice.AddTreatmentsRequestBody{PatientVisitId: encoding.NewObjectId(PatientVisitId), Treatments: treatments}
 	treatmentsHandler := &apiservice.TreatmentsHandler{
 		DataApi: testData.DataApi,
 		ErxApi:  stubErxApi,
@@ -786,7 +835,7 @@ func compareTreatments(treatment *common.Treatment, treatment1 *common.Treatment
 	if treatment.DosageStrength != treatment1.DosageStrength || treatment.DispenseValue != treatment1.DispenseValue ||
 		treatment.DispenseUnitId.Int64() != treatment1.DispenseUnitId.Int64() || treatment.PatientInstructions != treatment1.PatientInstructions ||
 		treatment.PharmacyNotes != treatment1.PharmacyNotes || treatment.NumberRefills != treatment1.NumberRefills ||
-		treatment.SubstitutionsAllowed != treatment1.SubstitutionsAllowed || treatment.DaysSupply.Int64() != treatment1.DaysSupply.Int64() ||
+		treatment.SubstitutionsAllowed != treatment1.SubstitutionsAllowed || treatment.DaysSupply != treatment1.DaysSupply ||
 		treatment.OTC != treatment1.OTC {
 		treatmentData, _ := json.MarshalIndent(treatment, "", " ")
 		treatment1Data, _ := json.MarshalIndent(treatment1, "", " ")

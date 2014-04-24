@@ -3,6 +3,7 @@ package apiservice
 import (
 	"carefront/api"
 	"carefront/common"
+	"carefront/encoding"
 	"carefront/libs/erx"
 	"carefront/libs/golog"
 	"carefront/libs/pharmacy"
@@ -42,8 +43,8 @@ type DoctorRefillRequestResponse struct {
 }
 
 type DoctorRefillRequestRequestData struct {
-	RefillRequestId      *common.ObjectId  `json:"refill_request_id,required"`
-	DenialReasonId       *common.ObjectId  `json:"denial_reason_id"`
+	RefillRequestId      encoding.ObjectId `json:"refill_request_id,required"`
+	DenialReasonId       encoding.ObjectId `json:"denial_reason_id"`
 	Comments             string            `json:"comments"`
 	Action               string            `json:"action"`
 	ApprovedRefillAmount int64             `json:"approved_refill_amount"`
@@ -79,6 +80,11 @@ func (d *DoctorRefillRequestHandler) resolveRefillRequest(w http.ResponseWriter,
 		return
 	}
 
+	if len(requestData.Comments) > maxRefillRequestCommentLength {
+		WriteUserError(w, http.StatusBadRequest, "Comments for refill request cannot be greater than 70 characters")
+		return
+	}
+
 	doctor, err := d.DataApi.GetDoctorFromAccountId(GetContext(r).AccountId)
 	if err != nil {
 		WriteDeveloperError(w, http.StatusInternalServerError, "Unable to get doctor from account id: "+err.Error())
@@ -94,7 +100,6 @@ func (d *DoctorRefillRequestHandler) resolveRefillRequest(w http.ResponseWriter,
 		WriteDeveloperError(w, http.StatusInternalServerError, "Expected status events for refill requests but none found")
 		return
 	}
-
 	// Ensure that the refill request is in the Requested state for
 	// the user to work on it. If it's in the desired end state, then do nothing
 	if refillRequest.RxHistory[0].Status == actionToRefillRequestStateMapping[requestData.Action] {
@@ -179,6 +184,8 @@ func (d *DoctorRefillRequestHandler) resolveRefillRequest(w http.ResponseWriter,
 				return
 			}
 
+			trimSpacesFromTreatmentFields(requestData.Treatment)
+
 			// break up the name in its components
 			requestData.Treatment.DrugName, requestData.Treatment.DrugForm, requestData.Treatment.DrugRoute = breakDrugInternalNameIntoComponents(requestData.Treatment.DrugInternalName)
 
@@ -215,7 +222,7 @@ func (d *DoctorRefillRequestHandler) resolveRefillRequest(w http.ResponseWriter,
 			}
 
 			//  start prescribing
-			if err := d.ErxApi.StartPrescribingPatient(doctor.DoseSpotClinicianId, refillRequest.Patient, []*common.Treatment{requestData.Treatment}); err != nil {
+			if err := d.ErxApi.StartPrescribingPatient(doctor.DoseSpotClinicianId, refillRequest.Patient, []*common.Treatment{requestData.Treatment}, refillRequest.RequestedPrescription.ERx.Pharmacy.SourceId); err != nil {
 				WriteDeveloperError(w, http.StatusInternalServerError, "Unable to start prescribing to get back prescription id for treatment: "+err.Error())
 				return
 			}
@@ -322,8 +329,8 @@ func (d *DoctorRefillRequestHandler) addStatusEvent(originatingTreatmentFound bo
 }
 
 func (d *DoctorRefillRequestHandler) addTreatmentInEventOfDNTF(originatingTreatmentFound bool, treatment *common.Treatment, doctorId, patientId, refillRequestId int64) error {
-	treatment.PatientId = common.NewObjectId(patientId)
-	treatment.DoctorId = common.NewObjectId(doctorId)
+	treatment.PatientId = encoding.NewObjectId(patientId)
+	treatment.DoctorId = encoding.NewObjectId(doctorId)
 	if originatingTreatmentFound {
 		return d.DataApi.AddTreatmentToTreatmentPlanInEventOfDNTF(treatment, refillRequestId)
 	}
@@ -339,7 +346,6 @@ func (d *DoctorRefillRequestHandler) getRefillRequest(w http.ResponseWriter, r *
 	requestData := &DoctorGetRefillRequestData{}
 	if err := schema.NewDecoder().Decode(requestData, r.Form); err != nil {
 		WriteDeveloperError(w, http.StatusBadRequest, "Unable to parse input parameters: "+err.Error())
-		return
 	}
 
 	refillRequestId, err := strconv.ParseInt(requestData.RefillRequestId, 10, 64)

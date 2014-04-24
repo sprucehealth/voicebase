@@ -3,13 +3,16 @@ package apiservice
 import (
 	"carefront/api"
 	"carefront/common"
+	"carefront/encoding"
 	"carefront/info_intake"
+	"carefront/libs/address_validation"
 	"carefront/libs/golog"
 	"encoding/json"
 	"errors"
 	"fmt"
 	"log"
 	"net/http"
+	"strconv"
 	"strings"
 	"time"
 )
@@ -278,14 +281,84 @@ func createAnswersToStoreForQuestion(role string, roleId, questionId, contextId,
 	answersToStore := make([]*common.AnswerIntake, len(answerIntakes))
 	for i, answerIntake := range answerIntakes {
 		answersToStore[i] = &common.AnswerIntake{
-			RoleId:            common.NewObjectId(roleId),
+			RoleId:            encoding.NewObjectId(roleId),
 			Role:              role,
-			QuestionId:        common.NewObjectId(questionId),
-			ContextId:         common.NewObjectId(contextId),
-			LayoutVersionId:   common.NewObjectId(layoutVersionId),
-			PotentialAnswerId: common.NewObjectId(answerIntake.PotentialAnswerId),
+			QuestionId:        encoding.NewObjectId(questionId),
+			ContextId:         encoding.NewObjectId(contextId),
+			LayoutVersionId:   encoding.NewObjectId(layoutVersionId),
+			PotentialAnswerId: encoding.NewObjectId(answerIntake.PotentialAnswerId),
 			AnswerText:        answerIntake.AnswerText,
 		}
 	}
 	return answersToStore
+}
+
+func validateAddress(dataApi api.DataAPI, address *common.Address, addressValidationApi address_validation.AddressValidationAPI) error {
+	fullStateName, err := dataApi.GetFullNameForState(address.State)
+	if err != nil {
+		return err
+	}
+
+	if fullStateName == "" {
+		return errors.New("Enter a valid state")
+	}
+
+	address.State = fullStateName
+
+	return validateZipcode(address.ZipCode, addressValidationApi)
+}
+
+func validateZipcode(zipcode string, addressLookupApi address_validation.AddressValidationAPI) error {
+
+	// first validate format of zipcode
+	if err := validateZipcodeLocally(zipcode); err != nil {
+		return err
+	}
+
+	// then check for existence of zipcode
+	_, err := addressLookupApi.ZipcodeLookup(zipcode)
+	if err != nil {
+		return fmt.Errorf("Invalid or non-existent zip code")
+	}
+
+	return nil
+}
+
+func validateZipcodeLocally(zipcode string) error {
+	if len(zipcode) < 5 {
+		return fmt.Errorf("Invalid zip code: has to be at least 5 digits in length")
+	}
+
+	_, err := strconv.ParseInt(zipcode[0:5], 10, 64)
+	if err != nil {
+		return fmt.Errorf("Invalid zip code: Only digits allowed in zipcode")
+	}
+
+	if len(zipcode) > 5 {
+
+		if zipcode[5] != '-' {
+
+			if len(zipcode) != 9 {
+				return fmt.Errorf("Invalid zip code format: zip+4 can only be 9 digits in length")
+			}
+
+			_, err := strconv.ParseInt(zipcode[5:], 10, 64)
+			if err != nil {
+				return fmt.Errorf("Invalid zipcode: zip+4 can only have digits after hyphen")
+			}
+
+		} else {
+
+			if len(zipcode) != 10 {
+				return fmt.Errorf("Invalid zip code format: zip+4 has to be 9 digits in length")
+			}
+
+			_, err := strconv.ParseInt(zipcode[5:], 10, 64)
+			if err != nil {
+				return fmt.Errorf("Invalid zipcode format: Only digits allowed in zip+4")
+			}
+
+		}
+	}
+	return nil
 }

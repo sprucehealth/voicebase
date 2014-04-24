@@ -61,8 +61,6 @@ func (d *DoctorQueueItem) GetTitleAndSubtitle(dataApi DataAPI) (string, string, 
 		switch d.Status {
 		case QUEUE_ITEM_STATUS_COMPLETED:
 			title = fmt.Sprintf("Treatment Plan completed for %s %s", patient.FirstName, patient.LastName)
-			formattedTime := d.EnqueueDate.Format("3:04pm")
-			subtitle = fmt.Sprintf("%s %d at %s", d.EnqueueDate.Month().String(), d.EnqueueDate.Day(), formattedTime)
 		case QUEUE_ITEM_STATUS_PENDING:
 			title = fmt.Sprintf("New visit with %s %s", patient.FirstName, patient.LastName)
 			subtitle = getRemainingTimeSubtitleForCaseToBeReviewed(d.EnqueueDate)
@@ -71,12 +69,8 @@ func (d *DoctorQueueItem) GetTitleAndSubtitle(dataApi DataAPI) (string, string, 
 			subtitle = getRemainingTimeSubtitleForCaseToBeReviewed(d.EnqueueDate)
 		case QUEUE_ITEM_STATUS_PHOTOS_REJECTED:
 			title = fmt.Sprintf("Photos rejected for visit with %s %s", patient.FirstName, patient.LastName)
-			formattedTime := d.EnqueueDate.Format("3:04pm")
-			subtitle = fmt.Sprintf("%s %d at %s", d.EnqueueDate.Month().String(), d.EnqueueDate.Day(), formattedTime)
 		case QUEUE_ITEM_STATUS_TRIAGED:
 			title = fmt.Sprintf("Completed and triaged visit for %s %s", patient.FirstName, patient.LastName)
-			formattedTime := d.EnqueueDate.Format("3:04pm")
-			subtitle = fmt.Sprintf("%s %d at %s", d.EnqueueDate.Month().String(), d.EnqueueDate.Day(), formattedTime)
 		}
 
 	case EVENT_TYPE_REFILL_REQUEST:
@@ -90,12 +84,8 @@ func (d *DoctorQueueItem) GetTitleAndSubtitle(dataApi DataAPI) (string, string, 
 			title = fmt.Sprintf("Refill request for %s %s", patient.FirstName, patient.LastName)
 		case QUEUE_ITEM_STATUS_REFILL_APPROVED:
 			title = fmt.Sprintf("Refill request approved for %s %s", patient.FirstName, patient.LastName)
-			formattedTime := d.EnqueueDate.Format("3:04pm")
-			subtitle = fmt.Sprintf("%s %d at %s", d.EnqueueDate.Month().String(), d.EnqueueDate.Day(), formattedTime)
 		case QUEUE_ITEM_STATUS_REFILL_DENIED:
 			title = fmt.Sprintf("Refill request denied for %s %s", patient.FirstName, patient.LastName)
-			formattedTime := d.EnqueueDate.Format("3:04pm")
-			subtitle = fmt.Sprintf("%s %d at %s", d.EnqueueDate.Month().String(), d.EnqueueDate.Day(), formattedTime)
 		}
 
 	case EVENT_TYPE_REFILL_TRANSMISSION_ERROR:
@@ -113,8 +103,6 @@ func (d *DoctorQueueItem) GetTitleAndSubtitle(dataApi DataAPI) (string, string, 
 			title = fmt.Sprintf("Error completing refill request for %s %s", patient.FirstName, patient.LastName)
 		case QUEUE_ITEM_STATUS_COMPLETED:
 			title = fmt.Sprintf("Refill request error resolved for %s %s", patient.FirstName, patient.LastName)
-			formattedTime := d.EnqueueDate.Format("3:04pm")
-			subtitle = fmt.Sprintf("%s %d at %s", d.EnqueueDate.Month().String(), d.EnqueueDate.Day(), formattedTime)
 		}
 
 	case EVENT_TYPE_TRANSMISSION_ERROR:
@@ -128,8 +116,6 @@ func (d *DoctorQueueItem) GetTitleAndSubtitle(dataApi DataAPI) (string, string, 
 			title = fmt.Sprintf("Error sending prescription for %s %s", patient.FirstName, patient.LastName)
 		case QUEUE_ITEM_STATUS_COMPLETED:
 			title = fmt.Sprintf("Error resolved for %s %s", patient.FirstName, patient.LastName)
-			formattedTime := d.EnqueueDate.Format("3:04pm")
-			subtitle = fmt.Sprintf("%s %d at %s", d.EnqueueDate.Month().String(), d.EnqueueDate.Day(), formattedTime)
 		}
 
 	case EVENT_TYPE_UNLINKED_DNTF_TRANSMISSION_ERROR:
@@ -143,8 +129,6 @@ func (d *DoctorQueueItem) GetTitleAndSubtitle(dataApi DataAPI) (string, string, 
 			title = fmt.Sprintf("Error sending prescription for %s %s", unlinkedTreatment.Patient.FirstName, unlinkedTreatment.Patient.LastName)
 		case QUEUE_ITEM_STATUS_COMPLETED:
 			title = fmt.Sprintf("Error resolved for %s %s", unlinkedTreatment.Patient.FirstName, unlinkedTreatment.Patient.LastName)
-			formattedTime := d.EnqueueDate.Format("3:04pm")
-			subtitle = fmt.Sprintf("%s %d at %s", d.EnqueueDate.Month().String(), d.EnqueueDate.Day(), formattedTime)
 		}
 	}
 	return title, subtitle, nil
@@ -163,6 +147,14 @@ func (d *DoctorQueueItem) GetImageUrl() string {
 		return fmt.Sprintf("%s%s", SpruceImageBaseUrl, patientVisitImageTag)
 	}
 	return ""
+}
+
+func (d *DoctorQueueItem) GetTimestamp() *time.Time {
+	if d.EnqueueDate.IsZero() {
+		return nil
+	}
+
+	return &d.EnqueueDate
 }
 
 func (d *DoctorQueueItem) GetDisplayTypes() []string {
@@ -229,24 +221,38 @@ func (d *DoctorQueueItem) GetActionUrl(dataApi DataAPI) (string, error) {
 		}
 	case EVENT_TYPE_TREATMENT_PLAN:
 
-	case QUEUE_ITEM_STATUS_COMPLETED, QUEUE_ITEM_STATUS_TRIAGED:
-		patientVisitId, err := dataApi.GetPatientVisitIdFromTreatmentPlanId(d.ItemId)
-		if err != nil {
-			return "", err
-		}
+		switch d.Status {
+		case QUEUE_ITEM_STATUS_COMPLETED, QUEUE_ITEM_STATUS_TRIAGED:
+			patientVisitId, err := dataApi.GetPatientVisitIdFromTreatmentPlanId(d.ItemId)
+			if err != nil {
+				return "", err
+			}
 
-		patientId, err := dataApi.GetPatientIdFromPatientVisitId(patientVisitId)
-		if err != nil {
-			return "", err
-		}
+			patientId, err := dataApi.GetPatientIdFromPatientVisitId(patientVisitId)
+			if err != nil {
+				return "", err
+			}
 
-		patient, err := dataApi.GetPatientFromId(patientId)
-		if err != nil {
-			return "", err
+			patient, err := dataApi.GetPatientFromId(patientId)
+			if err != nil {
+				return "", err
+			}
+			return fmt.Sprintf("%s%s?patient_id=%d", SpruceButtonBaseActionUrl, viewPatientTreatmentsAction, patient.PatientId.Int64()), nil
 		}
-		return fmt.Sprintf("%s%s?patient_id=%d", SpruceButtonBaseActionUrl, viewPatientTreatmentsAction, patient.PatientId.Int64()), nil
-	case EVENT_TYPE_REFILL_REQUEST, EVENT_TYPE_REFILL_TRANSMISSION_ERROR:
+	case EVENT_TYPE_REFILL_TRANSMISSION_ERROR:
 		return fmt.Sprintf("%s%s?refill_request_id=%d", SpruceButtonBaseActionUrl, viewRefillRequestAction, d.ItemId), nil
+	case EVENT_TYPE_REFILL_REQUEST:
+		switch d.Status {
+		case QUEUE_ITEM_STATUS_ONGOING, QUEUE_ITEM_STATUS_PENDING:
+			return fmt.Sprintf("%s%s?refill_request_id=%d", SpruceButtonBaseActionUrl, viewRefillRequestAction, d.ItemId), nil
+		case QUEUE_ITEM_STATUS_COMPLETED, QUEUE_ITEM_STATUS_REFILL_APPROVED, QUEUE_ITEM_STATUS_REFILL_DENIED:
+			patient, err := dataApi.GetPatientFromRefillRequestId(d.ItemId)
+			if err != nil {
+				return "", err
+			}
+
+			return fmt.Sprintf("%s%s?patient_id=%d", SpruceButtonBaseActionUrl, viewPatientTreatmentsAction, patient.PatientId.Int64()), nil
+		}
 	case EVENT_TYPE_TRANSMISSION_ERROR:
 		return fmt.Sprintf("%s%s?treatment_id=%d", SpruceButtonBaseActionUrl, viewTransmissionErrorAction, d.ItemId), nil
 	case EVENT_TYPE_UNLINKED_DNTF_TRANSMISSION_ERROR:

@@ -3,6 +3,7 @@ package apiservice
 import (
 	"carefront/api"
 	"carefront/common"
+	"carefront/encoding"
 	"encoding/json"
 	"net/http"
 )
@@ -12,8 +13,8 @@ type DoctorTreatmentTemplatesHandler struct {
 }
 
 type DoctorTreatmentTemplatesRequest struct {
-	TreatmentPlanId    *common.ObjectId                  `json:"treamtent_plan_id"`
-	PatientVisitId     *common.ObjectId                  `json:"patient_visit_id"`
+	TreatmentPlanId    encoding.ObjectId                 `json:"treamtent_plan_id"`
+	PatientVisitId     encoding.ObjectId                 `json:"patient_visit_id"`
 	TreatmentTemplates []*common.DoctorTreatmentTemplate `json:"treatment_templates"`
 }
 

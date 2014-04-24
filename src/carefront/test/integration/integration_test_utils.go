@@ -47,6 +47,7 @@ type TestData struct {
 	DBConfig            *TestDBConfig
 	CloudStorageService api.CloudStorageAPI
 	DB                  *sql.DB
+	StartTime           time.Time
 }
 
 func init() {
@@ -184,6 +185,7 @@ func SetupIntegrationTest(t *testing.T) TestData {
 	}
 
 	t.Logf("Created and connected to database with name: %s (%.3f seconds)", testData.DBConfig.DatabaseName, float64(time.Since(ts))/float64(time.Second))
+	testData.StartTime = time.Now()
 
 	// When setting up the database for each integration test, ensure to setup a doctor that is
 	// considered elligible to serve in the state of CA.
@@ -208,6 +210,7 @@ func SetupIntegrationTest(t *testing.T) TestData {
 func TearDownIntegrationTest(t *testing.T, testData TestData) {
 	testData.DB.Close()
 
+	t.Logf("Time to run test: %.3f seconds", float64(time.Since(testData.StartTime))/float64(time.Second))
 	ts := time.Now()
 	// put anything here that is global to the teardown process for integration tests
 	teardownScript := os.Getenv(carefrontProjectDirEnv) + "/src/carefront/test/integration/teardown_integration_test.sh"

@@ -6,6 +6,7 @@ import (
 	"carefront/apiservice"
 	"carefront/app_worker"
 	"carefront/common"
+	"carefront/encoding"
 	"carefront/libs/aws/sqs"
 	"carefront/libs/erx"
 	"carefront/libs/pharmacy"
@@ -90,6 +91,7 @@ func TestPatientVisitReview(t *testing.T) {
 	stubErxService.PatientErxId = 10
 	stubErxService.PrescriptionIdsToReturn = []int64{}
 	stubErxService.PrescriptionIdToPrescriptionStatuses = make(map[int64][]common.StatusEvent)
+	stubErxService.PharmacyToSendPrescriptionTo = pharmacySelection.SourceId
 
 	erxStatusQueue := &common.SQSQueue{}
 	erxStatusQueue.QueueService = &sqs.StubSQS{}
@@ -171,16 +173,22 @@ func TestPatientVisitReview(t *testing.T) {
 	//
 	// doctor now attempts to add a couple treatments for patient
 	treatment1 := &common.Treatment{
-		DrugInternalName:     "Advil",
-		DosageStrength:       "10 mg",
-		DispenseValue:        1,
-		DispenseUnitId:       common.NewObjectId(26),
-		NumberRefills:        1,
+		DrugInternalName: "Advil",
+		DosageStrength:   "10 mg",
+		DispenseValue:    1,
+		DispenseUnitId:   encoding.NewObjectId(26),
+		NumberRefills: encoding.NullInt64{
+			IsValid:    true,
+			Int64Value: 1,
+		},
 		SubstitutionsAllowed: true,
-		DaysSupply:           common.NewObjectId(1),
-		OTC:                  true,
-		PharmacyNotes:        "testing pharmacy notes",
-		PatientInstructions:  "patient instructions",
+		DaysSupply: encoding.NullInt64{
+			IsValid:    true,
+			Int64Value: 1,
+		},
+		OTC:                 true,
+		PharmacyNotes:       "testing pharmacy notes",
+		PatientInstructions: "patient instructions",
 		DrugDBIds: map[string]string{
 			"drug_db_id_1": "12315",
 			"drug_db_id_2": "124",
@@ -188,16 +196,22 @@ func TestPatientVisitReview(t *testing.T) {
 	}
 
 	treatment2 := &common.Treatment{
-		DrugInternalName:     "Advil 2",
-		DosageStrength:       "100 mg",
-		DispenseValue:        2,
-		DispenseUnitId:       common.NewObjectId(27),
-		NumberRefills:        3,
+		DrugInternalName: "Advil 2",
+		DosageStrength:   "100 mg",
+		DispenseValue:    2,
+		DispenseUnitId:   encoding.NewObjectId(27),
+		NumberRefills: encoding.NullInt64{
+			IsValid:    true,
+			Int64Value: 3,
+		},
 		SubstitutionsAllowed: false,
-		DaysSupply:           common.NewObjectId(12),
-		OTC:                  false,
-		PharmacyNotes:        "testing pharmacy notes 2",
-		PatientInstructions:  "patient instructions 2",
+		DaysSupply: encoding.NullInt64{
+			IsValid:    true,
+			Int64Value: 12,
+		},
+		OTC:                 false,
+		PharmacyNotes:       "testing pharmacy notes 2",
+		PatientInstructions: "patient instructions 2",
 		DrugDBIds: map[string]string{
 			"drug_db_id_3": "12414",
 			"drug_db_id_4": "214",
@@ -222,7 +236,7 @@ func TestPatientVisitReview(t *testing.T) {
 	//
 	//
 	regimenPlanRequest := &common.RegimenPlan{}
-	regimenPlanRequest.PatientVisitId = common.NewObjectId(patientVisitResponse.PatientVisitId)
+	regimenPlanRequest.PatientVisitId = encoding.NewObjectId(patientVisitResponse.PatientVisitId)
 
 	regimenStep1 := &common.DoctorInstructionItem{}
 	regimenStep1.Text = "Regimen Step 1"
@@ -262,7 +276,7 @@ func TestPatientVisitReview(t *testing.T) {
 	doctorAdviceRequest := &common.Advice{}
 	doctorAdviceRequest.AllAdvicePoints = []*common.DoctorInstructionItem{advicePoint1, advicePoint2}
 	doctorAdviceRequest.SelectedAdvicePoints = doctorAdviceRequest.AllAdvicePoints
-	doctorAdviceRequest.PatientVisitId = common.NewObjectId(patientVisitResponse.PatientVisitId)
+	doctorAdviceRequest.PatientVisitId = encoding.NewObjectId(patientVisitResponse.PatientVisitId)
 
 	doctorAdviceResponse := updateAdvicePointsForPatientVisit(doctorAdviceRequest, testData, doctor, t)
 	validateAdviceRequestAgainstResponse(doctorAdviceRequest, doctorAdviceResponse, t)

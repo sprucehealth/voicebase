@@ -2,13 +2,15 @@ package erx
 
 import (
 	"carefront/common"
+	"carefront/encoding"
 	pharmacySearch "carefront/libs/pharmacy"
 	"fmt"
 	"time"
 )
 
 type StubErxService struct {
-	PatientErxId                         int64
+	PatientErxId int64
+
 	RefillRequestPrescriptionIds         map[int64]int64
 	PatientDetailsToReturn               *common.Patient
 	PharmacyDetailsToReturn              *pharmacySearch.PharmacyData
@@ -16,6 +18,7 @@ type StubErxService struct {
 	PrescriptionIdsToReturn              []int64
 	PrescriptionIdToPrescriptionStatuses map[int64][]common.StatusEvent
 	SelectedMedicationToReturn           *common.Treatment
+	PharmacyToSendPrescriptionTo         string
 }
 
 func (s *StubErxService) GetDrugNamesForDoctor(clinicianId int64, prefix string) ([]string, error) {
@@ -34,23 +37,24 @@ func (s *StubErxService) SelectMedication(clinicianId int64, medicationName, med
 	return s.SelectedMedicationToReturn, nil
 }
 
-func (s *StubErxService) StartPrescribingPatient(clinicianId int64, Patient *common.Patient, Treatments []*common.Treatment) error {
-	fmt.Println("Starting to prescribe patient")
+func (s *StubErxService) StartPrescribingPatient(clinicianId int64, Patient *common.Patient, Treatments []*common.Treatment, pharmacySourceId string) error {
+	if s.PharmacyToSendPrescriptionTo != "" && s.PharmacyToSendPrescriptionTo != pharmacySourceId {
+		return fmt.Errorf("Expected to send treatment to pharmacy with sourceId %s instead it was attempted to be sent to pharmacy with id %s", s.PharmacyToSendPrescriptionTo, pharmacySourceId)
+	}
 	// walk through the treatments and assign them each a prescription id
 	// assumption here is that there are as many prescription ids to return as there are treatments
-	Patient.ERxPatientId = common.NewObjectId(s.PatientErxId)
+	Patient.ERxPatientId = encoding.NewObjectId(s.PatientErxId)
 	for i, treatment := range Treatments {
 		if treatment.ERx == nil {
 			treatment.ERx = &common.ERxData{}
 		}
-		treatment.ERx.PrescriptionId = common.NewObjectId(s.PrescriptionIdsToReturn[i])
+		treatment.ERx.PrescriptionId = encoding.NewObjectId(s.PrescriptionIdsToReturn[i])
 	}
 	return nil
 }
 
 func (s *StubErxService) SendMultiplePrescriptions(clinicianId int64, Patient *common.Patient, Treatments []*common.Treatment) ([]int64, error) {
 	// nothing to do here given that the act of sending a prescription successfully does not change the state of the system
-	fmt.Println("Sending multiple prescriptions")
 	return nil, nil
 }
 
@@ -61,7 +65,9 @@ func (s *StubErxService) SearchForPharmacies(clinicianId int64, city, state, zip
 func (s *StubErxService) GetPrescriptionStatus(clinicianId int64, prescriptionId int64) ([]*PrescriptionLog, error) {
 	prescriptionStatuses := s.PrescriptionIdToPrescriptionStatuses[prescriptionId]
 	prescriptionLogs := make([]*PrescriptionLog, 0)
+
 	for _, prescriptionStatus := range prescriptionStatuses {
+		fmt.Printf("%#v\n", prescriptionStatus)
 		prescriptionLogs = append(prescriptionLogs, &PrescriptionLog{
 			PrescriptionStatus: prescriptionStatus.Status,
 			LogTimestamp:       time.Now(),

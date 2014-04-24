@@ -3,11 +3,11 @@ package apiservice
 import (
 	"carefront/api"
 	"carefront/common"
+	"carefront/encoding"
 	thriftapi "carefront/thrift/api"
 	"net/http"
 	"strconv"
 	"strings"
-	"time"
 
 	"github.com/gorilla/schema"
 )
@@ -60,21 +60,26 @@ func (d *SignupDoctorHandler) ServeHTTP(w http.ResponseWriter, r *http.Request) 
 	}
 	// ensure that the date of birth can be correctly parsed
 	// Note that the date will be returned as MM/DD/YYYY
-	dobParts := strings.Split(requestData.Dob, "/")
+	dobParts := strings.Split(requestData.Dob, encoding.DOB_SEPARATOR)
 
-	month, err := strconv.Atoi(dobParts[0])
+	if len(dobParts) != 3 {
+		WriteUserError(w, http.StatusBadRequest, "Dob not valid. Required format "+encoding.DOB_FORMAT)
+		return
+	}
+
+	year, err := strconv.Atoi(dobParts[0])
 	if err != nil {
 		w.WriteHeader(http.StatusBadRequest)
 		return
 	}
 
-	day, err := strconv.Atoi(dobParts[1])
+	month, err := strconv.Atoi(dobParts[1])
 	if err != nil {
 		w.WriteHeader(http.StatusBadRequest)
 		return
 	}
 
-	year, err := strconv.Atoi(dobParts[2])
+	day, err := strconv.Atoi(dobParts[2])
 	if err != nil {
 		w.WriteHeader(http.StatusBadRequest)
 		return
@@ -93,11 +98,11 @@ func (d *SignupDoctorHandler) ServeHTTP(w http.ResponseWriter, r *http.Request) 
 	}
 
 	doctorToRegister := &common.Doctor{
-		AccountId:           common.NewObjectId(res.AccountId),
+		AccountId:           encoding.NewObjectId(res.AccountId),
 		FirstName:           requestData.FirstName,
 		LastName:            requestData.LastName,
 		Gender:              requestData.Gender,
-		Dob:                 time.Date(year, time.Month(month), day, 0, 0, 0, 0, time.UTC),
+		Dob:                 encoding.Dob{Year: year, Month: month, Day: day},
 		CellPhone:           requestData.Phone,
 		DoseSpotClinicianId: requestData.ClinicianId,
 		DoctorAddress: &common.Address{

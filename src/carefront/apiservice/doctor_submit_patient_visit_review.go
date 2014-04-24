@@ -114,7 +114,7 @@ func (d *DoctorSubmitPatientVisitReviewHandler) submitPatientVisitReview(w http.
 			patient.PatientAddress = &common.Address{
 				AddressLine1: "1234 Main Street",
 				City:         "San Francisco",
-				State:        "CA",
+				State:        "California",
 				ZipCode:      "94103",
 			}
 		}
@@ -145,7 +145,8 @@ func (d *DoctorSubmitPatientVisitReviewHandler) submitPatientVisitReview(w http.
 		}
 
 		if d.ERxRouting == true && d.ERxApi != nil && len(treatments) > 0 {
-			err = d.ERxApi.StartPrescribingPatient(doctor.DoseSpotClinicianId, patient, treatments)
+
+			err = d.ERxApi.StartPrescribingPatient(doctor.DoseSpotClinicianId, patient, treatments, patient.Pharmacy.SourceId)
 			if err != nil {
 				WriteDeveloperError(w, http.StatusInternalServerError, "Unable to start prescribing patient: "+err.Error())
 				return

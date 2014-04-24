@@ -94,7 +94,7 @@ type PatientAPI interface {
 	GetCardFromId(cardId int64) (*common.Card, error)
 	UpdateDefaultAddressForPatient(patientId int64, address *common.Address) error
 	DeleteAddress(addressId int64) error
-	IsStateValid(state string) (bool, error)
+	GetFullNameForState(state string) (string, error)
 }
 
 type PatientVisitAPI interface {
@@ -148,12 +148,14 @@ type PrescriptionsAPI interface {
 	CreateRefillRequest(*common.RefillRequestItem) error
 	AddRefillRequestStatusEvent(refillRequestStatus common.StatusEvent) error
 	GetRefillRequestFromId(refillRequestId int64) (*common.RefillRequestItem, error)
+	GetRefillRequestsForPatient(patientId int64) ([]*common.RefillRequestItem, error)
 	GetRefillRequestDenialReasons() ([]*RefillRequestDenialReason, error)
 	MarkRefillRequestAsApproved(prescriptionId, approvedRefillCount, rxRefillRequestId int64, comments string) error
 	MarkRefillRequestAsDenied(prescriptionId, denialReasonId, rxRefillRequestId int64, comments string) error
 	LinkRequestedPrescriptionToOriginalTreatment(requestedTreatment *common.Treatment, patient *common.Patient) error
 	AddUnlinkedTreatmentInEventOfDNTF(treatment *common.Treatment, refillRequestId int64) error
 	GetUnlinkedDNTFTreatment(treatmentId int64) (*common.Treatment, error)
+	GetUnlinkedDNTFTreatmentsForPatient(patientId int64) ([]*common.Treatment, error)
 	AddTreatmentToTreatmentPlanInEventOfDNTF(treatment *common.Treatment, refillRequestId int64) error
 	UpdateUnlinkedDNTFTreatmentWithPharmacyAndErxId(treatment *common.Treatment, pharmacySentTo *pharmacy.PharmacyData, doctorId int64) error
 	AddErxStatusEventForDNTFTreatment(statusEvent common.StatusEvent) error

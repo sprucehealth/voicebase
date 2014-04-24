@@ -1,49 +1,60 @@
 package common
 
-import "testing"
+import (
+	"carefront/encoding"
+	"testing"
+)
 
 func TestTreatmentEquals(t *testing.T) {
 
 	treatment1 := &Treatment{
-		Id: NewObjectId(5),
+		Id: encoding.NewObjectId(5),
 		DrugDBIds: map[string]string{
 			"lexi_gen_product_id":  "12345",
 			"lexi_drug_syn_id":     "56789",
 			"lexi_synonym_type_id": "123415",
 		},
-		DrugInternalName:     "Testing",
-		DrugName:             "Testing",
-		DosageStrength:       "50mg",
-		DispenseValue:        12,
-		DispenseUnitId:       NewObjectId(12),
-		NumberRefills:        1,
-		SubstitutionsAllowed: false,
-		DaysSupply:           NewObjectId(5),
-		ERx: &ERxData{
-			PrescriptionId:     NewObjectId(20),
-			ErxMedicationId:    NewObjectId(25),
+		DrugInternalName: "Testing",
+		DrugName:         "Testing",
+		DosageStrength:   "50mg",
+		DispenseValue:    12,
+		DispenseUnitId:   encoding.NewObjectId(12),
+		NumberRefills: encoding.NullInt64{
+			IsValid:    true,
+			Int64Value: 1,
+		}, SubstitutionsAllowed: false,
+		DaysSupply: encoding.NullInt64{
+			IsValid:    true,
+			Int64Value: 5,
+		}, ERx: &ERxData{
+			PrescriptionId:     encoding.NewObjectId(20),
+			ErxMedicationId:    encoding.NewObjectId(25),
 			PrescriptionStatus: "eRxSent",
 		},
 	}
 
 	treatment2 := &Treatment{
-		Id: NewObjectId(5),
+		Id: encoding.NewObjectId(5),
 		DrugDBIds: map[string]string{
 			"lexi_gen_product_id":  "12345",
 			"lexi_drug_syn_id":     "56789",
 			"lexi_synonym_type_id": "123415",
 		},
-		DrugInternalName:     "Testing",
-		DrugName:             "Testing",
-		DosageStrength:       "50mg",
-		DispenseValue:        12,
-		DispenseUnitId:       NewObjectId(12),
-		NumberRefills:        1,
-		SubstitutionsAllowed: false,
-		DaysSupply:           NewObjectId(5),
-		ERx: &ERxData{
-			PrescriptionId:     NewObjectId(20),
-			ErxMedicationId:    NewObjectId(25),
+		DrugInternalName: "Testing",
+		DrugName:         "Testing",
+		DosageStrength:   "50mg",
+		DispenseValue:    12,
+		DispenseUnitId:   encoding.NewObjectId(12),
+		NumberRefills: encoding.NullInt64{
+			IsValid:    true,
+			Int64Value: 1,
+		}, SubstitutionsAllowed: false,
+		DaysSupply: encoding.NullInt64{
+			IsValid:    true,
+			Int64Value: 5,
+		}, ERx: &ERxData{
+			PrescriptionId:     encoding.NewObjectId(20),
+			ErxMedicationId:    encoding.NewObjectId(25),
 			PrescriptionStatus: "eRxSent",
 		},
 	}
@@ -54,23 +65,27 @@ func TestTreatmentEquals(t *testing.T) {
 	}
 
 	treatment3 := &Treatment{
-		Id: NewObjectId(5),
+		Id: encoding.NewObjectId(5),
 		DrugDBIds: map[string]string{
 			"lexi_gen_product_id":  "12345",
 			"lexi_drug_syn_id":     "56789",
 			"lexi_synonym_type_id": "123415",
 		},
-		DrugInternalName:     "Testing",
-		DrugName:             "Testing",
-		DosageStrength:       "50mg",
-		DispenseValue:        12,
-		DispenseUnitId:       NewObjectId(12),
-		NumberRefills:        1,
-		SubstitutionsAllowed: false,
-		DaysSupply:           NewObjectId(5),
-		ERx: &ERxData{
-			PrescriptionId:     NewObjectId(21),
-			ErxMedicationId:    NewObjectId(25),
+		DrugInternalName: "Testing",
+		DrugName:         "Testing",
+		DosageStrength:   "50mg",
+		DispenseValue:    12,
+		DispenseUnitId:   encoding.NewObjectId(12),
+		NumberRefills: encoding.NullInt64{
+			IsValid:    true,
+			Int64Value: 1,
+		}, SubstitutionsAllowed: false,
+		DaysSupply: encoding.NullInt64{
+			IsValid:    true,
+			Int64Value: 5,
+		}, ERx: &ERxData{
+			PrescriptionId:     encoding.NewObjectId(21),
+			ErxMedicationId:    encoding.NewObjectId(25),
 			PrescriptionStatus: "eRxSent",
 		},
 	}
@@ -80,23 +95,27 @@ func TestTreatmentEquals(t *testing.T) {
 	}
 
 	treatment4 := &Treatment{
-		Id: NewObjectId(5),
+		Id: encoding.NewObjectId(5),
 		DrugDBIds: map[string]string{
 			"lexi_gen_product_id":  "12345",
 			"lexi_drug_syn_id":     "56789",
 			"lexi_synonym_type_id": "123415",
 		},
-		DrugInternalName:     "Testing",
-		DrugName:             "Testing",
-		DosageStrength:       "50mg",
-		DispenseValue:        12,
-		DispenseUnitId:       NewObjectId(12),
-		NumberRefills:        1,
-		SubstitutionsAllowed: false,
-		DaysSupply:           NewObjectId(5),
-		ERx: &ERxData{
-			PrescriptionId:     NewObjectId(20),
-			ErxMedicationId:    NewObjectId(26),
+		DrugInternalName: "Testing",
+		DrugName:         "Testing",
+		DosageStrength:   "50mg",
+		DispenseValue:    12,
+		DispenseUnitId:   encoding.NewObjectId(12),
+		NumberRefills: encoding.NullInt64{
+			IsValid:    true,
+			Int64Value: 1,
+		}, SubstitutionsAllowed: false,
+		DaysSupply: encoding.NullInt64{
+			IsValid:    true,
+			Int64Value: 5,
+		}, ERx: &ERxData{
+			PrescriptionId:     encoding.NewObjectId(20),
+			ErxMedicationId:    encoding.NewObjectId(26),
 			PrescriptionStatus: "eRxSent",
 		},
 	}
@@ -106,23 +125,27 @@ func TestTreatmentEquals(t *testing.T) {
 	}
 
 	treatment5 := &Treatment{
-		Id: NewObjectId(5),
+		Id: encoding.NewObjectId(5),
 		DrugDBIds: map[string]string{
 			"lexi_gen_product_id":  "123456",
 			"lexi_drug_syn_id":     "56789",
 			"lexi_synonym_type_id": "123415",
 		},
-		DrugInternalName:     "Testing",
-		DrugName:             "Testing",
-		DosageStrength:       "50mg",
-		DispenseValue:        12,
-		DispenseUnitId:       NewObjectId(12),
-		NumberRefills:        1,
-		SubstitutionsAllowed: false,
-		DaysSupply:           NewObjectId(5),
-		ERx: &ERxData{
-			PrescriptionId:     NewObjectId(20),
-			ErxMedicationId:    NewObjectId(25),
+		DrugInternalName: "Testing",
+		DrugName:         "Testing",
+		DosageStrength:   "50mg",
+		DispenseValue:    12,
+		DispenseUnitId:   encoding.NewObjectId(12),
+		NumberRefills: encoding.NullInt64{
+			IsValid:    true,
+			Int64Value: 1,
+		}, SubstitutionsAllowed: false,
+		DaysSupply: encoding.NullInt64{
+			IsValid:    true,
+			Int64Value: 5,
+		}, ERx: &ERxData{
+			PrescriptionId:     encoding.NewObjectId(20),
+			ErxMedicationId:    encoding.NewObjectId(25),
 			PrescriptionStatus: "eRxSent",
 		},
 	}
@@ -132,23 +155,27 @@ func TestTreatmentEquals(t *testing.T) {
 	}
 
 	treatment6 := &Treatment{
-		Id: NewObjectId(5),
+		Id: encoding.NewObjectId(5),
 		DrugDBIds: map[string]string{
 			"lexi_gen_product_id":  "12345",
 			"lexi_drug_syn_id":     "56789",
 			"lexi_synonym_type_id": "123415",
 		},
-		DrugInternalName:     "DifferentName",
-		DrugName:             "Testing",
-		DosageStrength:       "50mg",
-		DispenseValue:        12,
-		DispenseUnitId:       NewObjectId(12),
-		NumberRefills:        1,
-		SubstitutionsAllowed: false,
-		DaysSupply:           NewObjectId(5),
-		ERx: &ERxData{
-			PrescriptionId:     NewObjectId(20),
-			ErxMedicationId:    NewObjectId(25),
+		DrugInternalName: "DifferentName",
+		DrugName:         "Testing",
+		DosageStrength:   "50mg",
+		DispenseValue:    12,
+		DispenseUnitId:   encoding.NewObjectId(12),
+		NumberRefills: encoding.NullInt64{
+			IsValid:    true,
+			Int64Value: 1,
+		}, SubstitutionsAllowed: false,
+		DaysSupply: encoding.NullInt64{
+			IsValid:    true,
+			Int64Value: 5,
+		}, ERx: &ERxData{
+			PrescriptionId:     encoding.NewObjectId(20),
+			ErxMedicationId:    encoding.NewObjectId(25),
 			PrescriptionStatus: "eRxSent",
 		},
 	}
@@ -158,23 +185,27 @@ func TestTreatmentEquals(t *testing.T) {
 	}
 
 	treatment7 := &Treatment{
-		Id: NewObjectId(5),
+		Id: encoding.NewObjectId(5),
 		DrugDBIds: map[string]string{
 			"lexi_gen_product_id":  "12345",
 			"lexi_drug_syn_id":     "56789",
 			"lexi_synonym_type_id": "123415",
 		},
-		DrugInternalName:     "DifferentName",
-		DrugName:             "Testing",
-		DosageStrength:       "50mgs",
-		DispenseValue:        12,
-		DispenseUnitId:       NewObjectId(12),
-		NumberRefills:        1,
-		SubstitutionsAllowed: false,
-		DaysSupply:           NewObjectId(5),
-		ERx: &ERxData{
-			PrescriptionId:     NewObjectId(20),
-			ErxMedicationId:    NewObjectId(25),
+		DrugInternalName: "DifferentName",
+		DrugName:         "Testing",
+		DosageStrength:   "50mgs",
+		DispenseValue:    12,
+		DispenseUnitId:   encoding.NewObjectId(12),
+		NumberRefills: encoding.NullInt64{
+			IsValid:    true,
+			Int64Value: 1,
+		}, SubstitutionsAllowed: false,
+		DaysSupply: encoding.NullInt64{
+			IsValid:    true,
+			Int64Value: 5,
+		}, ERx: &ERxData{
+			PrescriptionId:     encoding.NewObjectId(20),
+			ErxMedicationId:    encoding.NewObjectId(25),
 			PrescriptionStatus: "eRxSent",
 		},
 	}

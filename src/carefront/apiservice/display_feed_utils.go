@@ -2,6 +2,7 @@ package apiservice
 
 import (
 	"carefront/api"
+	"time"
 )
 
 type DisplayFeedSection struct {
@@ -11,11 +12,12 @@ type DisplayFeedSection struct {
 
 type DisplayFeedItem struct {
 	Title        string      `json:"title"`
-	Subtitle     string      `json:"subtitle"`
+	Subtitle     string      `json:"subtitle,omitempty"`
+	Timestamp    *time.Time  `json:"timestamp,omitempty"`
 	Button       *api.Button `json:"button,omitempty"`
-	ImageUrl     string      `json:"image_url"`
+	ImageUrl     string      `json:"image_url,omitempty"`
 	ItemUrl      string      `json:"action_url,omitempty"`
-	DisplayTypes []string    `json:"display_types"`
+	DisplayTypes []string    `json:"display_types,omitempty"`
 }
 
 type DisplayFeed struct {
@@ -39,6 +41,7 @@ func converQueueItemToDisplayFeedItem(DataApi api.DataAPI, itemToDisplay api.Fee
 		Subtitle:     subtitle,
 		ImageUrl:     itemToDisplay.GetImageUrl(),
 		DisplayTypes: itemToDisplay.GetDisplayTypes(),
+		Timestamp:    itemToDisplay.GetTimestamp(),
 	}
 
 	item.ItemUrl, err = itemToDisplay.GetActionUrl(DataApi)

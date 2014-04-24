@@ -3,11 +3,10 @@ package apiservice
 import (
 	"carefront/api"
 	"carefront/common"
+	"carefront/libs/address_validation"
 	"carefront/libs/erx"
 	"carefront/libs/pharmacy"
-	"fmt"
 	"strconv"
-	"strings"
 
 	"encoding/json"
 	"net/http"
@@ -16,8 +15,9 @@ import (
 )
 
 type DoctorPatientUpdateHandler struct {
-	DataApi api.DataAPI
-	ErxApi  erx.ERxAPI
+	DataApi              api.DataAPI
+	ErxApi               erx.ERxAPI
+	AddressValidationApi address_validation.AddressValidationAPI
 }
 
 type DoctorPatientUpdateHandlerRequestData struct {
@@ -73,6 +73,7 @@ func (d *DoctorPatientUpdateHandler) getPatientInformation(w http.ResponseWriter
 		WriteDeveloperError(w, http.StatusForbidden, "Unable to verify doctor-patient relationship: "+err.Error())
 		return
 	}
+
 	WriteJSONToHTTPResponseWriter(w, http.StatusOK, &DoctorPatientUpdateHandlerRequestResponse{Patient: patient})
 }
 
@@ -89,12 +90,6 @@ func (d *DoctorPatientUpdateHandler) updatePatientInformation(w http.ResponseWri
 		return
 	}
 
-	// avoid the doctor from making changes that would de-identify the patient
-	if requestData.Patient.FirstName == "" || requestData.Patient.LastName == "" || requestData.Patient.Dob.IsZero() || len(requestData.Patient.PhoneNumbers) == 0 {
-		WriteDeveloperError(w, http.StatusBadRequest, "Cannot remove first name, last name, date of birth or phone numbers")
-		return
-	}
-
 	// TODO : Remove this once we have patient information intake
 	// as a requirement
 	if requestData.Patient.PatientAddress == nil {
@@ -102,29 +97,21 @@ func (d *DoctorPatientUpdateHandler) updatePatientInformation(w http.ResponseWri
 			AddressLine1: "1234 Main Street",
 			AddressLine2: "Apt 12345",
 			City:         "San Francisco",
-			State:        "CA",
+			State:        "California",
 			ZipCode:      "94115",
 		}
 	}
 
-	err, isUserFacingError := d.validatePatientInformationAccordingToSurescriptsRequirements(requestData.Patient)
-
+	err := d.validatePatientInformationAccordingToSurescriptsRequirements(requestData.Patient, d.AddressValidationApi)
 	if err != nil {
-		if isUserFacingError {
-			WriteUserError(w, http.StatusBadRequest, err.Error())
-			return
-		} else {
-			WriteDeveloperError(w, http.StatusInternalServerError, err.Error())
-			return
-		}
+		WriteDeveloperError(w, http.StatusBadRequest, err.Error())
+		return
 	}
-
-	trimSpacesFromPatientFields(requestData.Patient)
 
 	// get the erx id for the patient, if it exists in the database
 	existingPatientInfo, err := d.DataApi.GetPatientFromId(requestData.Patient.PatientId.Int64())
 	if err != nil {
-		WriteDeveloperError(w, http.StatusInternalServerError, "Unable to get patient info from database: "+err.Error())
+		WriteUserError(w, http.StatusBadRequest, err.Error())
 		return
 	}
 
@@ -142,7 +129,7 @@ func (d *DoctorPatientUpdateHandler) updatePatientInformation(w http.ResponseWri
 	requestData.Patient.ERxPatientId = existingPatientInfo.ERxPatientId
 
 	// TODO: Get patient pharmacy from the database once we start using surecsripts as our backing solution
-	if existingPatientInfo.Pharmacy.Source != pharmacy.PHARMACY_SOURCE_SURESCRIPTS {
+	if existingPatientInfo.Pharmacy == nil || existingPatientInfo.Pharmacy.Source != pharmacy.PHARMACY_SOURCE_SURESCRIPTS {
 		existingPatientInfo.Pharmacy = &pharmacy.PharmacyData{
 			SourceId:     "47731",
 			Source:       pharmacy.PHARMACY_SOURCE_SURESCRIPTS,
@@ -161,7 +148,7 @@ func (d *DoctorPatientUpdateHandler) updatePatientInformation(w http.ResponseWri
 	}
 
 	// update the doseSpot Id for the patient in our system now that we got one
-	if existingPatientInfo.ERxPatientId == nil {
+	if !existingPatientInfo.ERxPatientId.IsValid {
 		if err := d.DataApi.UpdatePatientWithERxPatientId(requestData.Patient.PatientId.Int64(), requestData.Patient.ERxPatientId.Int64()); err != nil {
 			WriteDeveloperError(w, http.StatusInternalServerError, "Unable to update the patientId from dosespot: "+err.Error())
 			return
@@ -175,74 +162,4 @@ func (d *DoctorPatientUpdateHandler) updatePatientInformation(w http.ResponseWri
 	}
 
 	WriteJSONToHTTPResponseWriter(w, http.StatusOK, SuccessfulGenericJSONResponse())
-}
-
-func (d *DoctorPatientUpdateHandler) validatePatientInformationAccordingToSurescriptsRequirements(patient *common.Patient) (error, bool) {
-	// following field lengths are surescripts requirements
-	longFieldLength := 35
-	shortFieldLength := 10
-	phoneNumberLength := 25
-
-	if len(patient.Prefix) > shortFieldLength {
-		return fmt.Errorf("Prefix cannot be longer than %d characters in length", shortFieldLength), true
-	}
-
-	if len(patient.Suffix) > shortFieldLength {
-		return fmt.Errorf("Suffix cannot be longer than %d characters in length", shortFieldLength), true
-	}
-
-	if len(patient.FirstName) > longFieldLength {
-		return fmt.Errorf("First name cannot be longer than %d characters", longFieldLength), true
-	}
-
-	if len(patient.MiddleName) > longFieldLength {
-		return fmt.Errorf("Middle name cannot be longer than %d characters", longFieldLength), true
-	}
-
-	if len(patient.LastName) > longFieldLength {
-		return fmt.Errorf("Last name cannot be longer than %d characters", longFieldLength), true
-	}
-
-	if len(patient.PatientAddress.AddressLine1) > longFieldLength {
-		return fmt.Errorf("AddressLine1 of patient address cannot be longer than %d characters", longFieldLength), true
-	}
-
-	if len(patient.PatientAddress.AddressLine2) > longFieldLength {
-		return fmt.Errorf("AddressLine2 of patient address cannot be longer than %d characters", longFieldLength), true
-	}
-
-	if len(patient.PatientAddress.City) > longFieldLength {
-		return fmt.Errorf("City cannot be longer than %d characters", longFieldLength), true
-	}
-
-	for _, phoneNumber := range patient.PhoneNumbers {
-		if len(phoneNumber.Phone) > 25 {
-			return fmt.Errorf("Phone numbers cannot be longer than %d digits", phoneNumberLength), true
-		}
-	}
-
-	isValid, err := d.DataApi.IsStateValid(patient.PatientAddress.State)
-	if err != nil {
-		return err, false
-	}
-
-	if !isValid {
-		return fmt.Errorf("State entered for address is not valid"), true
-	}
-
-	return nil, false
-}
-
-func trimSpacesFromPatientFields(patient *common.Patient) {
-	patient.FirstName = strings.TrimSpace(patient.FirstName)
-	patient.LastName = strings.TrimSpace(patient.LastName)
-	patient.MiddleName = strings.TrimSpace(patient.MiddleName)
-	patient.Suffix = strings.TrimSpace(patient.Suffix)
-	patient.Prefix = strings.TrimSpace(patient.Prefix)
-	patient.City = strings.TrimSpace(patient.City)
-	patient.State = strings.TrimSpace(patient.State)
-	patient.PatientAddress.AddressLine1 = strings.TrimSpace(patient.PatientAddress.AddressLine1)
-	patient.PatientAddress.AddressLine2 = strings.TrimSpace(patient.PatientAddress.AddressLine2)
-	patient.PatientAddress.City = strings.TrimSpace(patient.PatientAddress.City)
-	patient.PatientAddress.State = strings.TrimSpace(patient.PatientAddress.State)
 }

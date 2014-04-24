@@ -9,7 +9,7 @@ import (
 	"testing"
 
 	"carefront/apiservice"
-	"carefront/libs/maps"
+	"carefront/libs/address_validation"
 
 	_ "github.com/go-sql-driver/mysql"
 )
@@ -27,7 +27,15 @@ func TestPatientCareProvidingEllgibility(t *testing.T) {
 	testData := SetupIntegrationTest(t)
 	defer TearDownIntegrationTest(t, testData)
 
-	checkElligibilityHandler := &apiservice.CheckCareProvidingElligibilityHandler{DataApi: testData.DataApi, MapsService: maps.NewGoogleMapsService(nil)}
+	stubAddressValidationService := address_validation.StubAddressValidationService{
+		CityStateToReturn: address_validation.CityState{
+			City:              "San Francisco",
+			State:             "California",
+			StateAbbreviation: "CA",
+		},
+	}
+
+	checkElligibilityHandler := &apiservice.CheckCareProvidingElligibilityHandler{DataApi: testData.DataApi, AddressValidationApi: stubAddressValidationService}
 	ts := httptest.NewServer(checkElligibilityHandler)
 	defer ts.Close()
 	resp, err := http.Get(ts.URL + "?zip_code=94115")
@@ -42,6 +50,14 @@ func TestPatientCareProvidingEllgibility(t *testing.T) {
 	}
 
 	CheckSuccessfulStatusCode(resp, "Unable to make a successful call to check for care providing elligibility: "+string(body), t)
+
+	stubAddressValidationService.CityStateToReturn = address_validation.CityState{
+		City:              "Aventura",
+		State:             "Florida",
+		StateAbbreviation: "FL",
+	}
+
+	checkElligibilityHandler.AddressValidationApi = stubAddressValidationService
 
 	resp, err = authGet(ts.URL+"?zip_code=33180", 0)
 	if err != nil {

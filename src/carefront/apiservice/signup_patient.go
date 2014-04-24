@@ -3,13 +3,11 @@ package apiservice
 import (
 	"carefront/api"
 	"carefront/common"
+	"carefront/encoding"
 	"carefront/libs/golog"
-	"carefront/libs/maps"
 	thriftapi "carefront/thrift/api"
 	"net/http"
-	"strconv"
 	"strings"
-	"time"
 
 	"github.com/gorilla/schema"
 )
@@ -17,7 +15,6 @@ import (
 type SignupPatientHandler struct {
 	DataApi api.DataAPI
 	AuthApi thriftapi.Auth
-	MapsApi maps.MapsService
 }
 
 type PatientSignedupResponse struct {
@@ -58,25 +55,13 @@ func (s *SignupPatientHandler) ServeHTTP(w http.ResponseWriter, r *http.Request)
 		WriteDeveloperError(w, http.StatusBadRequest, "Unable to parse input parameters: "+err.Error())
 		return
 	}
+
 	// ensure that the date of birth can be correctly parsed
 	// Note that the date will be returned as MM/DD/YYYY
-	dobParts := strings.Split(requestData.Dob, "/")
+	dobParts := strings.Split(requestData.Dob, encoding.DOB_SEPARATOR)
 
-	month, err := strconv.Atoi(dobParts[0])
-	if err != nil {
-		w.WriteHeader(http.StatusBadRequest)
-		return
-	}
-
-	day, err := strconv.Atoi(dobParts[1])
-	if err != nil {
-		w.WriteHeader(http.StatusBadRequest)
-		return
-	}
-
-	year, err := strconv.Atoi(dobParts[2])
-	if err != nil {
-		w.WriteHeader(http.StatusBadRequest)
+	if len(dobParts) < 3 {
+		WriteUserError(w, http.StatusBadRequest, "Unable to parse dob. Format should be "+encoding.DOB_FORMAT)
 		return
 	}
 
@@ -92,25 +77,23 @@ func (s *SignupPatientHandler) ServeHTTP(w http.ResponseWriter, r *http.Request)
 		return
 	}
 
-	// ignore the error case of the reverse geocoding failing because it is not detrimental to
-	// serving the patient, especially after the client has already checked to ensure that we can actually
-	// serve the patient.
-	cityStateInfo, _ := s.MapsApi.ConvertZipcodeToCityState(requestData.Zipcode)
-
 	newPatient := &common.Patient{
-		AccountId: common.NewObjectId(res.AccountId),
+		AccountId: encoding.NewObjectId(res.AccountId),
 		FirstName: requestData.FirstName,
 		LastName:  requestData.LastName,
 		Gender:    requestData.Gender,
 		ZipCode:   requestData.Zipcode,
-		City:      cityStateInfo.LongCityName,
-		State:     cityStateInfo.ShortStateName,
 		PhoneNumbers: []*common.PhoneInformation{&common.PhoneInformation{
 			Phone:     requestData.Phone,
 			PhoneType: api.PHONE_CELL,
 		},
 		},
-		Dob: time.Date(year, time.Month(month), day, 0, 0, 0, 0, time.UTC),
+	}
+
+	newPatient.Dob, err = encoding.NewDobFromComponents(dobParts[0], dobParts[1], dobParts[2])
+	if err != nil {
+		WriteUserError(w, http.StatusBadRequest, "Unable to parse date of birth. Required format + "+encoding.DOB_FORMAT)
+		return
 	}
 
 	// then, register the signed up user as a patient

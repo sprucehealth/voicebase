@@ -3,6 +3,7 @@ package apiservice
 import (
 	"carefront/api"
 	"carefront/common"
+	"carefront/encoding"
 	"encoding/json"
 	"net/http"
 
@@ -90,7 +91,7 @@ func (d *DoctorDrugInstructionsHandler) addDrugInstructions(w http.ResponseWrite
 	for _, selectedInstructionItem := range addInstructionsRequestBody.SelectedSupplementalInstructions {
 		updatedOrNewId := newOrUpdatedInstructionToIdMapping[selectedInstructionItem.Text]
 		if updatedOrNewId != 0 {
-			selectedInstructionItem.Id = common.NewObjectId(updatedOrNewId)
+			selectedInstructionItem.Id = encoding.NewObjectId(updatedOrNewId)
 		}
 	}
 

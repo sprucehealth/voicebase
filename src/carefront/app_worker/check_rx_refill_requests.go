@@ -3,6 +3,7 @@ package app_worker
 import (
 	"carefront/api"
 	"carefront/common"
+	"carefront/encoding"
 	"carefront/libs/erx"
 	"carefront/libs/golog"
 	"carefront/libs/pharmacy"
@@ -262,6 +263,6 @@ func linkPharmacyToPrescription(DataApi api.DataAPI, ERxApi erx.ERxAPI, prescrip
 			return err
 		}
 	}
-	prescription.ERx.PharmacyLocalId = common.NewObjectId(pharmacyDetails.LocalId)
+	prescription.ERx.PharmacyLocalId = encoding.NewObjectId(pharmacyDetails.LocalId)
 	return nil
 }

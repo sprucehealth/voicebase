@@ -12,18 +12,17 @@ import (
 
 	"carefront/api"
 	"carefront/apiservice"
-	"carefront/libs/maps"
 	thriftapi "carefront/thrift/api"
 )
 
 func SignupRandomTestPatient(t *testing.T, dataApi api.DataAPI, authApi thriftapi.Auth) *apiservice.PatientSignedupResponse {
-	authHandler := &apiservice.SignupPatientHandler{AuthApi: authApi, DataApi: dataApi, MapsApi: maps.NewGoogleMapsService(nil)}
+	authHandler := &apiservice.SignupPatientHandler{AuthApi: authApi, DataApi: dataApi}
 	ts := httptest.NewServer(authHandler)
 	defer ts.Close()
 
 	requestBody := bytes.NewBufferString("first_name=Test&last_name=Test&email=")
 	requestBody.WriteString(strconv.FormatInt(rand.Int63(), 10))
-	requestBody.WriteString("@example.com&password=12345&dob=11/08/1987&zip_code=94115&phone=123455115&gender=male")
+	requestBody.WriteString("@example.com&password=12345&dob=1987-11-08&zip_code=94115&phone=7348465522&gender=male")
 	res, err := authPost(ts.URL, "application/x-www-form-urlencoded", requestBody, 0)
 	if err != nil {
 		t.Fatal("Unable to make post request for registering patient: " + err.Error())

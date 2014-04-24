@@ -5,8 +5,6 @@ import (
 	"carefront/libs/aws/sqs"
 	"crypto/rand"
 	"encoding/base64"
-	"fmt"
-	"strconv"
 
 	goamz "launchpad.net/goamz/aws"
 )
@@ -68,44 +66,4 @@ func NewQueue(auth aws.Auth, region aws.Region, queueName string) (*SQSQueue, er
 		QueueService: sq,
 		QueueUrl:     queueUrl,
 	}, nil
-}
-
-// This is an object used for the (un)marshalling
-// of data models ids, such that null values passed from the client
-// can be treated as 0 values.
-type ObjectId int64
-
-func (id *ObjectId) UnmarshalJSON(data []byte) error {
-
-	strData := string(data)
-	// only treating the case of an empty string or a null value
-	// as value being 0.
-	// otherwise relying on integer parser
-	if len(data) < 2 || strData == "null" || strData == `""` {
-		*id = 0
-		return nil
-	}
-	intId, err := strconv.ParseInt(strData[1:len(strData)-1], 10, 64)
-	*id = ObjectId(intId)
-	return err
-}
-
-func (id *ObjectId) MarshalJSON() ([]byte, error) {
-	if id == nil {
-		return []byte(`null`), nil
-	}
-
-	return []byte(fmt.Sprintf(`"%d"`, *id)), nil
-}
-
-func NewObjectId(intId int64) *ObjectId {
-	objectId := ObjectId(intId)
-	return &objectId
-}
-
-func (id *ObjectId) Int64() int64 {
-	if id == nil {
-		return 0
-	}
-	return int64(*id)
 }

@@ -4,16 +4,20 @@ import (
 	"bytes"
 	"carefront/api"
 	"carefront/common"
+	"carefront/encoding"
 	"carefront/libs/golog"
 	"carefront/libs/pharmacy"
 	"encoding/json"
 	"fmt"
 	"io"
+	"io/ioutil"
 	"mime/multipart"
 	"net/http"
 	"net/url"
 	"strconv"
 	"time"
+
+	"github.com/gorilla/schema"
 )
 
 type CreateDemoPatientVisitHandler struct {
@@ -460,6 +464,10 @@ func (c *CreateDemoPatientVisitHandler) startPhotoSubmissionForPatient(questionI
 	}()
 }
 
+type CreateDemoPatientVisitRequestData struct {
+	ToCreateSurescriptsPatients bool `schema:"surescripts"`
+}
+
 func (c *CreateDemoPatientVisitHandler) ServeHTTP(w http.ResponseWriter, r *http.Request) {
 	if r.Method != HTTP_POST {
 		w.WriteHeader(http.StatusNotFound)
@@ -478,162 +486,575 @@ func (c *CreateDemoPatientVisitHandler) ServeHTTP(w http.ResponseWriter, r *http
 		return
 	}
 
-	// ********** CREATE RANDOM PATIENT **********
-	urlValues := url.Values{}
-	urlValues.Set("first_name", "Demo")
-	urlValues.Set("last_name", "User")
-	urlValues.Set("dob", "11/08/1987")
-	urlValues.Set("gender", "female")
-	urlValues.Set("zip_code", "94115")
-	urlValues.Set("phone", "2068773590")
-	urlValues.Set("password", "12345")
-	urlValues.Set("email", fmt.Sprintf("%d%d@example.com", time.Now().UnixNano(), doctorId))
-	urlValues.Set("doctor_id", fmt.Sprintf("%d", doctorId))
-	signupPatientRequest, err := http.NewRequest("POST", signupPatientUrl, bytes.NewBufferString(urlValues.Encode()))
-	signupPatientRequest.Header.Set("Content-Type", "application/x-www-form-urlencoded")
-
-	resp, err := http.DefaultClient.Do(signupPatientRequest)
-	if err != nil || resp.StatusCode != http.StatusOK {
-		WriteDeveloperError(w, http.StatusInternalServerError, "Unable to signup random patient: "+err.Error())
+	if err := r.ParseForm(); err != nil {
+		WriteDeveloperError(w, http.StatusInternalServerError, "Unable to parse input parameters: "+err.Error())
 		return
 	}
 
-	signupResponse := &PatientSignedupResponse{}
-	err = json.NewDecoder(resp.Body).Decode(&signupResponse)
-	defer resp.Body.Close()
-
-	if err != nil {
-		WriteDeveloperError(w, http.StatusInternalServerError, "Unable to unmarshal response body into object: "+err.Error())
+	requestData := &CreateDemoPatientVisitRequestData{}
+	if err := schema.NewDecoder().Decode(requestData, r.Form); err != nil {
+		WriteDeveloperError(w, http.StatusInternalServerError, "Unable to parse input parameters: "+err.Error())
 		return
 	}
 
-	// ********** ASSIGN PHARMACY TO PATIENT **********
+	if requestData.ToCreateSurescriptsPatients {
+		ciLi := common.Patient{
+			FirstName: "Ci",
+			LastName:  "Li",
+			Gender:    "Male",
+			Dob: encoding.Dob{
+				Year:  1923,
+				Month: 10,
+				Day:   18,
+			},
+			ZipCode: "94115",
+			PhoneNumbers: []*common.PhoneInformation{&common.PhoneInformation{
+				Phone:     "2068773590",
+				PhoneType: "Home",
+			},
+			},
+			Pharmacy: &pharmacy.PharmacyData{
+				SourceId:     "47731",
+				AddressLine1: "116 New Montgomery St",
+				Name:         "CA pharmacy store 10.6",
+				City:         "San Francisco",
+				State:        "CA",
+				Postal:       "92804",
+				Source:       pharmacy.PHARMACY_SOURCE_SURESCRIPTS,
+			},
+			PatientAddress: &common.Address{
+				AddressLine1: "12345 Main Street",
+				AddressLine2: "Apt 1112",
+				City:         "San Francisco",
+				State:        "California",
+				ZipCode:      "94115",
+			},
+		}
 
-	pharmacyDetails := &pharmacy.PharmacyData{
-		SourceId:     "47731",
-		AddressLine1: "116 New Montgomery St",
-		Name:         "CA pharmacy store 10.6",
-		City:         "San Francisco",
-		State:        "CA",
-		Postal:       "92804",
-		Source:       pharmacy.PHARMACY_SOURCE_SURESCRIPTS,
-	}
+		howardPlower := common.Patient{
+			Prefix:    "Mr",
+			FirstName: "Howard",
+			LastName:  "Plower",
+			Gender:    "Male",
+			Dob: encoding.Dob{
+				Year:  1923,
+				Month: 10,
+				Day:   18,
+			},
+			ZipCode: "19102",
+			PhoneNumbers: []*common.PhoneInformation{
+				&common.PhoneInformation{
+					Phone:     "215-988-6723",
+					PhoneType: "Home",
+				},
+				&common.PhoneInformation{
+					Phone:     "4137762738",
+					PhoneType: "Cell",
+				},
+			},
+			Pharmacy: &pharmacy.PharmacyData{
+				SourceId:     "47731",
+				AddressLine1: "116 New Montgomery St",
+				Name:         "CA pharmacy store 10.6",
+				City:         "San Francisco",
+				State:        "CA",
+				Postal:       "92804",
+				Source:       pharmacy.PHARMACY_SOURCE_SURESCRIPTS,
+			},
+			PatientAddress: &common.Address{
+				AddressLine1: "76 Deerlake Road",
+				City:         "Philadelphia",
+				State:        "Pennsylvania",
+				ZipCode:      "19102",
+			},
+		}
 
-	if err := c.DataApi.UpdatePatientPharmacy(signupResponse.Patient.PatientId.Int64(), pharmacyDetails); err != nil {
-		WriteDeveloperError(w, http.StatusInternalServerError, "Unable to update patient pharmacy: "+err.Error())
-		return
-	}
-	// add address for patient
-	if err := c.DataApi.UpdateDefaultAddressForPatient(signupResponse.Patient.PatientId.Int64(), &common.Address{
-		AddressLine1: "12345 Main Street",
-		AddressLine2: "Apt 1112",
-		City:         "San Francisco",
-		State:        "CA",
-		ZipCode:      "94115",
-	}); err != nil {
-		WriteDeveloperError(w, http.StatusInternalServerError, "Unable to add address for patient: "+err.Error())
-		return
-	}
+		karaWhiteside := common.Patient{
+			FirstName: "Kara",
+			LastName:  "Whiteside",
+			Gender:    "Female",
+			Dob: encoding.Dob{
+				Year:  1952,
+				Month: 10,
+				Day:   11,
+			},
+			ZipCode: "44306",
+			PhoneNumbers: []*common.PhoneInformation{
+				&common.PhoneInformation{
+					Phone:     "3305547754",
+					PhoneType: "Home",
+				},
+			},
+			Pharmacy: &pharmacy.PharmacyData{
+				SourceId:     "47731",
+				AddressLine1: "116 New Montgomery St",
+				Name:         "CA pharmacy store 10.6",
+				City:         "San Francisco",
+				State:        "CA",
+				Postal:       "92804",
+				Source:       pharmacy.PHARMACY_SOURCE_SURESCRIPTS,
+			},
+			PatientAddress: &common.Address{
+				AddressLine1: "23230 Seaport",
+				City:         "Akron",
+				State:        "Ohio",
+				ZipCode:      "44306",
+			},
+		}
 
-	// ********** CREATE PATIENT VISIT **********
+		debraTucker := common.Patient{
+			Prefix:    "Ms",
+			FirstName: "Debra",
+			LastName:  "Tucker",
+			Gender:    "Female",
+			Dob: encoding.Dob{
+				Year:  1970,
+				Month: 11,
+				Day:   01,
+			},
+			ZipCode: "44103",
+			PhoneNumbers: []*common.PhoneInformation{
+				&common.PhoneInformation{
+					Phone:     "4408450398",
+					PhoneType: "Home",
+				},
+			},
+			Pharmacy: &pharmacy.PharmacyData{
+				SourceId:     "47731",
+				AddressLine1: "116 New Montgomery St",
+				Name:         "CA pharmacy store 10.6",
+				City:         "San Francisco",
+				State:        "CA",
+				Postal:       "92804",
+				Source:       pharmacy.PHARMACY_SOURCE_SURESCRIPTS,
+			},
+			PatientAddress: &common.Address{
+				AddressLine1: "8331 Everwood Dr.",
+				AddressLine2: "Apt 342",
+				City:         "Cleveland",
+				State:        "Ohio",
+				ZipCode:      "44103",
+			},
+		}
 
-	// create patient visit
-	createPatientVisitRequest, err := http.NewRequest("POST", patientVisitUrl, nil)
-	createPatientVisitRequest.Header.Set("Authorization", "token "+signupResponse.Token)
-	resp, err = http.DefaultClient.Do(createPatientVisitRequest)
-	if err != nil || resp.StatusCode != http.StatusOK {
-		WriteDeveloperError(w, http.StatusInternalServerError, "Unable to create new patient visit: "+err.Error())
-		return
-	}
+		feliciaFlounders := common.Patient{
+			Prefix:     "Ms",
+			FirstName:  "Felicia",
+			LastName:   "Flounders",
+			MiddleName: "Ann",
+			Gender:     "Female",
+			Dob: encoding.Dob{
+				Year:  1980,
+				Month: 11,
+				Day:   01,
+			},
+			ZipCode: "20187",
+			PhoneNumbers: []*common.PhoneInformation{
+				&common.PhoneInformation{
+					Phone:     "3108620035x2345",
+					PhoneType: "Home",
+				},
+				&common.PhoneInformation{
+					Phone:     "3019289283",
+					PhoneType: "Cell",
+				},
+			},
+			Pharmacy: &pharmacy.PharmacyData{
+				SourceId:     "47731",
+				AddressLine1: "116 New Montgomery St",
+				Name:         "CA pharmacy store 10.6",
+				City:         "San Francisco",
+				State:        "CA",
+				Postal:       "92804",
+				Source:       pharmacy.PHARMACY_SOURCE_SURESCRIPTS,
+			},
+			PatientAddress: &common.Address{
+				AddressLine1: "6715 Swanson Ave",
+				AddressLine2: "Apt 102",
+				City:         "Bethesda",
+				State:        "Maryland",
+				ZipCode:      "20187",
+			},
+		}
 
-	patientVisitResponse := &PatientVisitResponse{}
-	err = json.NewDecoder(resp.Body).Decode(&patientVisitResponse)
-	defer resp.Body.Close()
-	if err != nil {
-		WriteDeveloperError(w, http.StatusInternalServerError, "Unable to unmarshal response into patient visit response: "+err.Error())
-		return
-	}
+		douglasRichardson := common.Patient{
+			FirstName:  "Douglas",
+			LastName:   "Richardson",
+			MiddleName: "R",
+			Gender:     "Male",
+			Dob: encoding.Dob{
+				Year:  1968,
+				Month: 9,
+				Day:   1,
+			},
+			ZipCode: "01040",
+			PhoneNumbers: []*common.PhoneInformation{
+				&common.PhoneInformation{
+					Phone:     "4137760938",
+					PhoneType: "Home",
+				},
+				&common.PhoneInformation{
+					Phone:     "4137762738",
+					PhoneType: "Cell",
+				},
+			},
+			Pharmacy: &pharmacy.PharmacyData{
+				SourceId:     "47731",
+				AddressLine1: "116 New Montgomery St",
+				Name:         "CA pharmacy store 10.6",
+				City:         "San Francisco",
+				State:        "CA",
+				Postal:       "92804",
+				Source:       pharmacy.PHARMACY_SOURCE_SURESCRIPTS,
+			},
+			PatientAddress: &common.Address{
+				AddressLine1: "2556 Lane Rd",
+				AddressLine2: "Apt 101",
+				City:         "Smittyville",
+				State:        "Virginia",
+				ZipCode:      "01040-2239",
+			},
+		}
 
-	// ********** SIMULATE PATIENT INTAKE **********
+		davidThrower := common.Patient{
+			FirstName: "David",
+			LastName:  "Thrower",
+			Gender:    "Male",
+			Dob: encoding.Dob{
+				Year:  1933,
+				Month: 2,
+				Day:   22,
+			},
+			ZipCode: "34737",
+			PhoneNumbers: []*common.PhoneInformation{
+				&common.PhoneInformation{
+					Phone:     "3526685547",
+					PhoneType: "Home",
+				},
+				&common.PhoneInformation{
+					Phone:     "4137762738",
+					PhoneType: "Cell",
+				},
+			},
+			Pharmacy: &pharmacy.PharmacyData{
+				SourceId:     "47731",
+				AddressLine1: "116 New Montgomery St",
+				Name:         "CA pharmacy store 10.6",
+				City:         "San Francisco",
+				State:        "CA",
+				Postal:       "92804",
+				Source:       pharmacy.PHARMACY_SOURCE_SURESCRIPTS,
+			},
+			PatientAddress: &common.Address{
+				AddressLine1: "64 Violet Lane",
+				AddressLine2: "Apt 101",
+				City:         "Howey In The Hills",
+				State:        "Florida",
+				ZipCode:      "34737",
+			},
+		}
 
-	questionIds := make(map[questionTag]int64)
-	questionTagsForLookup := make([]string, 0)
-	for questionTagString, _ := range questionTags {
-		questionTagsForLookup = append(questionTagsForLookup, questionTagString)
-	}
+		maxLengthPatient := common.Patient{
+			Prefix:     "Patient II",
+			FirstName:  "!\"#$%'+,-/:;=?@[\\]^_`{|}~0000&",
+			LastName:   "!\"#$%'+,-/:;=?@[\\]^_`{|}~0000&",
+			MiddleName: "!\"#$%'+,-/:;=?@[\\]^_`{|}~0000&",
+			Suffix:     "Junior iii",
+			Gender:     "Male",
+			Dob: encoding.Dob{
+				Year:  1948,
+				Month: 1,
+				Day:   1,
+			},
+			ZipCode: "34737",
+			PhoneNumbers: []*common.PhoneInformation{
+				&common.PhoneInformation{
+					Phone:     "5719212122x1234567890444",
+					PhoneType: "Home",
+				},
+				&common.PhoneInformation{
+					Phone:     "7034445523x4473",
+					PhoneType: "Cell",
+				},
+				&common.PhoneInformation{
+					Phone:     "7034445524x4474",
+					PhoneType: "Work",
+				},
+				&common.PhoneInformation{
+					Phone:     "7034445522x4472",
+					PhoneType: "Work",
+				},
+				&common.PhoneInformation{
+					Phone:     "7034445526x4476",
+					PhoneType: "Home",
+				},
+			},
+			Pharmacy: &pharmacy.PharmacyData{
+				SourceId:     "47731",
+				AddressLine1: "116 New Montgomery St",
+				Name:         "CA pharmacy store 10.6",
+				City:         "San Francisco",
+				State:        "CA",
+				Postal:       "92804",
+				Source:       pharmacy.PHARMACY_SOURCE_SURESCRIPTS,
+			},
+			PatientAddress: &common.Address{
+				AddressLine1: "!\"#$%'+,-/:;=?@[\\]^_`{|}~0000&",
+				AddressLine2: "!\"#$%'+,-/:;=?@[\\]^_`{|}~0000&",
+				City:         "!\"#$%'+,-/:;=?@[\\]^_`{|}~0000&",
+				State:        "Colorado",
+				ZipCode:      "94115",
+			},
+		}
 
-	questionInfos, err := c.DataApi.GetQuestionInfoForTags(questionTagsForLookup, api.EN_LANGUAGE_ID)
-	if err != nil {
-		WriteDeveloperError(w, http.StatusInternalServerError, "Unable to lookup ids based on question tags: "+err.Error())
-		return
-	}
+		topLevelSignal := make(chan int, 8)
+		c.createNewDemoPatient(&ciLi, doctorId, topLevelSignal)
+		time.Sleep(500 * time.Millisecond)
+		c.createNewDemoPatient(&howardPlower, doctorId, topLevelSignal)
+		time.Sleep(500 * time.Millisecond)
+		c.createNewDemoPatient(&karaWhiteside, doctorId, topLevelSignal)
+		time.Sleep(500 * time.Millisecond)
+		c.createNewDemoPatient(&debraTucker, doctorId, topLevelSignal)
+		time.Sleep(500 * time.Millisecond)
+		c.createNewDemoPatient(&feliciaFlounders, doctorId, topLevelSignal)
+		time.Sleep(500 * time.Millisecond)
+		c.createNewDemoPatient(&douglasRichardson, doctorId, topLevelSignal)
+		time.Sleep(500 * time.Millisecond)
+		c.createNewDemoPatient(&davidThrower, doctorId, topLevelSignal)
+		time.Sleep(500 * time.Millisecond)
+		c.createNewDemoPatient(&maxLengthPatient, doctorId, topLevelSignal)
 
-	for _, questionInfoItem := range questionInfos {
-		questionIds[questionTags[questionInfoItem.QuestionTag]] = questionInfoItem.Id
-	}
+		numberPatientsWaitingFor := 8
+		for numberPatientsWaitingFor > 0 {
+			result := <-topLevelSignal
+			if result == failure {
+				WriteDeveloperError(w, http.StatusInternalServerError, "Something went wrong while trying to create demo patient")
+				return
+			}
+			numberPatientsWaitingFor--
+		}
 
-	answerIds := make(map[potentialAnswerTag]int64)
-	answerTagsForLookup := make([]string, 0)
-	for answerTagString, _ := range answerTags {
-		answerTagsForLookup = append(answerTagsForLookup, answerTagString)
-	}
-	answerInfos, err := c.DataApi.GetAnswerInfoForTags(answerTagsForLookup, api.EN_LANGUAGE_ID)
-	if err != nil {
-		WriteDeveloperError(w, http.StatusInternalServerError, "Unable to lookup answer infos based on tags: "+err.Error())
-		return
-	}
-	for _, answerInfoItem := range answerInfos {
-		answerIds[answerTags[answerInfoItem.AnswerTag]] = answerInfoItem.PotentialAnswerId
-	}
-
-	answersToQuestions := populatePatientIntake(questionIds, answerIds)
-
-	// use a buffered channel so that the goroutines don't block
-	// until the receiver reads off the channel
-	signal := make(chan int, 6)
-	numRequestsWaitingFor := 6
-
-	startPatientIntakeSubmission(answersToQuestions, patientVisitResponse.PatientVisitId, signupResponse.Token, signal)
-
-	c.startPhotoSubmissionForPatient(questionIds[qFacePhotoIntake],
-		answerIds[aFaceFrontPhotoIntake], patientVisitResponse.PatientVisitId, frontPhoto, signupResponse.Token, signal)
-
-	c.startPhotoSubmissionForPatient(questionIds[qFacePhotoIntake],
-		answerIds[aProfileRightPhotoIntake], patientVisitResponse.PatientVisitId, profileRightPhoto, signupResponse.Token, signal)
-
-	c.startPhotoSubmissionForPatient(questionIds[qFacePhotoIntake],
-		answerIds[aProfileLeftPhotoIntake], patientVisitResponse.PatientVisitId, profileLeftPhoto, signupResponse.Token, signal)
-
-	c.startPhotoSubmissionForPatient(questionIds[qNeckPhotoIntake],
-		answerIds[aNeckPhotoIntake], patientVisitResponse.PatientVisitId, neckPhoto, signupResponse.Token, signal)
-
-	c.startPhotoSubmissionForPatient(questionIds[qChestPhotoIntake],
-		answerIds[aChestPhotoIntake], patientVisitResponse.PatientVisitId, chestPhoto, signupResponse.Token, signal)
-
-	// wait for all requests to finish
-	for numRequestsWaitingFor > 0 {
-		result := <-signal
+	} else {
+		demoPatientToCreate := common.Patient{
+			FirstName: "Demo",
+			LastName:  "User",
+			Gender:    "female",
+			Dob: encoding.Dob{
+				Year:  1987,
+				Month: 11,
+				Day:   8,
+			},
+			ZipCode: "94115",
+			PhoneNumbers: []*common.PhoneInformation{&common.PhoneInformation{
+				Phone:     "2068773590",
+				PhoneType: "Home",
+			},
+			},
+			Pharmacy: &pharmacy.PharmacyData{
+				SourceId:     "47731",
+				AddressLine1: "116 New Montgomery St",
+				Name:         "CA pharmacy store 10.6",
+				City:         "San Francisco",
+				State:        "CA",
+				Postal:       "92804",
+				Source:       pharmacy.PHARMACY_SOURCE_SURESCRIPTS,
+			},
+			PatientAddress: &common.Address{
+				AddressLine1: "12345 Main Street",
+				AddressLine2: "Apt 1112",
+				City:         "San Francisco",
+				State:        "California",
+				ZipCode:      "94115",
+			},
+		}
+		topLevelSignal := make(chan int)
+		c.createNewDemoPatient(&demoPatientToCreate, doctorId, topLevelSignal)
+		result := <-topLevelSignal
 		if result == failure {
-			WriteDeveloperError(w, http.StatusInternalServerError, "Something went wrong when tryign to submit patient visit intake. Patient visit not successfully submitted")
+			WriteDeveloperError(w, http.StatusInternalServerError, "Something went wrong while trying to create demo patient")
 			return
 		}
-		numRequestsWaitingFor--
-	}
-
-	// ********** SUBMIT CASE TO DOCTOR **********
-	submitPatientVisitRequest, err := http.NewRequest("PUT", patientVisitUrl, bytes.NewBufferString(fmt.Sprintf("patient_visit_id=%d", patientVisitResponse.PatientVisitId)))
-	submitPatientVisitRequest.Header.Set("Content-Type", "application/x-www-form-urlencoded")
-	submitPatientVisitRequest.Header.Set("Authorization", "token "+signupResponse.Token)
-	if err != nil {
-		WriteDeveloperError(w, http.StatusInternalServerError, "Unable to create new request to submit patient visit: "+err.Error())
-		return
-	}
-
-	resp, err = http.DefaultClient.Do(submitPatientVisitRequest)
-	if err != nil || resp.StatusCode != http.StatusOK {
-		WriteDeveloperError(w, http.StatusInternalServerError, "Unable to make successful request to submit patient visit")
-		return
 	}
 
 	WriteJSONToHTTPResponseWriter(w, http.StatusOK, SuccessfulGenericJSONResponse())
+}
+
+func (c *CreateDemoPatientVisitHandler) createNewDemoPatient(patient *common.Patient, doctorId int64, topLevelSignal chan int) {
+	go func() {
+		// ********** CREATE RANDOM PATIENT **********
+		// Note that once this random patient is created, we will use the patientId and the accountId
+		// to update the patient information. The reason to go through this flow instead of directly
+		// adding the patient to the database is to avoid the work of assigning a care team to the patient
+		// and setting a patient up with an account
+		urlValues := url.Values{}
+		urlValues.Set("first_name", patient.FirstName)
+		urlValues.Set("last_name", patient.LastName)
+		urlValues.Set("dob", patient.Dob.String())
+		urlValues.Set("gender", patient.Gender)
+		urlValues.Set("zip_code", patient.ZipCode)
+		urlValues.Set("phone", patient.PhoneNumbers[0].Phone)
+		urlValues.Set("password", "12345")
+		urlValues.Set("email", fmt.Sprintf("%d%d@example.com", time.Now().UnixNano(), doctorId))
+		urlValues.Set("doctor_id", fmt.Sprintf("%d", doctorId))
+		signupPatientRequest, err := http.NewRequest("POST", signupPatientUrl, bytes.NewBufferString(urlValues.Encode()))
+		signupPatientRequest.Header.Set("Content-Type", "application/x-www-form-urlencoded")
+
+		resp, err := http.DefaultClient.Do(signupPatientRequest)
+		if err != nil {
+			golog.Errorf("Unable to signup random patient:%+v", err)
+			topLevelSignal <- failure
+			return
+		}
+
+		if resp.StatusCode != http.StatusOK {
+			respBody, err := ioutil.ReadAll(resp.Body)
+			if err != nil {
+				golog.Errorf("Unable to signup random patient and unable to read body of response: %+v", err)
+				topLevelSignal <- failure
+				return
+			}
+			golog.Errorf("Status %d when trying to signup random patient: %+v", resp.StatusCode, string(respBody))
+			topLevelSignal <- failure
+			return
+		}
+
+		signupResponse := &PatientSignedupResponse{}
+		err = json.NewDecoder(resp.Body).Decode(&signupResponse)
+		defer resp.Body.Close()
+
+		if err != nil {
+			golog.Errorf("Unable to unmarshal response body into object: %+v", err)
+			topLevelSignal <- failure
+			return
+		}
+
+		// ********** UPDATE PATIENT DEMOGRAPHIC INFORMATION AS THOUGH A DOCTOR WERE UPDATING IT **********
+		patient.PatientId = signupResponse.Patient.PatientId
+		patient.AccountId = signupResponse.Patient.AccountId
+		patient.Email = signupResponse.Patient.Email
+		err = c.DataApi.UpdatePatientInformationFromDoctor(patient)
+		if err != nil {
+			golog.Errorf("Unable to update patient information:%+v", err)
+			topLevelSignal <- failure
+			return
+		}
+
+		err = c.DataApi.UpdatePatientPharmacy(patient.PatientId.Int64(), patient.Pharmacy)
+		if err != nil {
+			golog.Errorf("Unable to update patients preferred pharmacy:%+v", err)
+			topLevelSignal <- failure
+			return
+		}
+
+		// ********** CREATE PATIENT VISIT **********
+
+		// create patient visit
+		createPatientVisitRequest, err := http.NewRequest("POST", patientVisitUrl, nil)
+		createPatientVisitRequest.Header.Set("Authorization", "token "+signupResponse.Token)
+		resp, err = http.DefaultClient.Do(createPatientVisitRequest)
+		if err != nil || resp.StatusCode != http.StatusOK {
+			golog.Errorf("Unable to create new patient visit: %+v", err)
+			topLevelSignal <- failure
+			return
+		}
+
+		patientVisitResponse := &PatientVisitResponse{}
+		err = json.NewDecoder(resp.Body).Decode(&patientVisitResponse)
+		defer resp.Body.Close()
+		if err != nil {
+			golog.Errorf("Unable to unmarshal response into patient visit response: %+v", err.Error())
+			topLevelSignal <- failure
+			return
+		}
+
+		// ********** SIMULATE PATIENT INTAKE **********
+
+		questionIds := make(map[questionTag]int64)
+		questionTagsForLookup := make([]string, 0)
+		for questionTagString, _ := range questionTags {
+			questionTagsForLookup = append(questionTagsForLookup, questionTagString)
+		}
+
+		questionInfos, err := c.DataApi.GetQuestionInfoForTags(questionTagsForLookup, api.EN_LANGUAGE_ID)
+		if err != nil {
+			golog.Errorf("Unable to lookup ids based on question tags:%+v", err.Error())
+			topLevelSignal <- failure
+			return
+		}
+
+		for _, questionInfoItem := range questionInfos {
+			questionIds[questionTags[questionInfoItem.QuestionTag]] = questionInfoItem.Id
+		}
+
+		answerIds := make(map[potentialAnswerTag]int64)
+		answerTagsForLookup := make([]string, 0)
+		for answerTagString, _ := range answerTags {
+			answerTagsForLookup = append(answerTagsForLookup, answerTagString)
+		}
+		answerInfos, err := c.DataApi.GetAnswerInfoForTags(answerTagsForLookup, api.EN_LANGUAGE_ID)
+		if err != nil {
+			golog.Errorf("Unable to lookup answer infos based on tags:%+v", err.Error())
+			topLevelSignal <- failure
+			return
+		}
+		for _, answerInfoItem := range answerInfos {
+			answerIds[answerTags[answerInfoItem.AnswerTag]] = answerInfoItem.PotentialAnswerId
+		}
+
+		answersToQuestions := populatePatientIntake(questionIds, answerIds)
+
+		// use a buffered channel so that the goroutines don't block
+		// until the receiver reads off the channel
+		signal := make(chan int, 6)
+		numRequestsWaitingFor := 6
+
+		startPatientIntakeSubmission(answersToQuestions, patientVisitResponse.PatientVisitId, signupResponse.Token, signal)
+
+		c.startPhotoSubmissionForPatient(questionIds[qFacePhotoIntake],
+			answerIds[aFaceFrontPhotoIntake], patientVisitResponse.PatientVisitId, frontPhoto, signupResponse.Token, signal)
+
+		c.startPhotoSubmissionForPatient(questionIds[qFacePhotoIntake],
+			answerIds[aProfileRightPhotoIntake], patientVisitResponse.PatientVisitId, profileRightPhoto, signupResponse.Token, signal)
+
+		c.startPhotoSubmissionForPatient(questionIds[qFacePhotoIntake],
+			answerIds[aProfileLeftPhotoIntake], patientVisitResponse.PatientVisitId, profileLeftPhoto, signupResponse.Token, signal)
+
+		c.startPhotoSubmissionForPatient(questionIds[qNeckPhotoIntake],
+			answerIds[aNeckPhotoIntake], patientVisitResponse.PatientVisitId, neckPhoto, signupResponse.Token, signal)
+
+		c.startPhotoSubmissionForPatient(questionIds[qChestPhotoIntake],
+			answerIds[aChestPhotoIntake], patientVisitResponse.PatientVisitId, chestPhoto, signupResponse.Token, signal)
+
+		// wait for all requests to finish
+		for numRequestsWaitingFor > 0 {
+			result := <-signal
+			if result == failure {
+				golog.Errorf("Something went wrong when tryign to submit patient visit intake. Patient visit not successfully submitted")
+				topLevelSignal <- failure
+				return
+
+			}
+			numRequestsWaitingFor--
+		}
+
+		// ********** SUBMIT CASE TO DOCTOR **********
+		submitPatientVisitRequest, err := http.NewRequest("PUT", patientVisitUrl, bytes.NewBufferString(fmt.Sprintf("patient_visit_id=%d", patientVisitResponse.PatientVisitId)))
+		submitPatientVisitRequest.Header.Set("Content-Type", "application/x-www-form-urlencoded")
+		submitPatientVisitRequest.Header.Set("Authorization", "token "+signupResponse.Token)
+		if err != nil {
+			golog.Errorf("Unable to create new request to submit patient visit:%+v", err)
+			topLevelSignal <- failure
+			return
+		}
+
+		resp, err = http.DefaultClient.Do(submitPatientVisitRequest)
+		if err != nil || resp.StatusCode != http.StatusOK {
+			golog.Errorf("Unable to make successful request to submit patient visit")
+			topLevelSignal <- failure
+			return
+		}
+
+		topLevelSignal <- success
+	}()
+
 }

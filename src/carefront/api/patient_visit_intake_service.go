@@ -171,13 +171,13 @@ func insertAnswers(tx *sql.Tx, answersToStore []*common.AnswerIntake, status str
 		if answerToStore.PotentialAnswerId.Int64() == 0 {
 			res, err = tx.Exec(`insert into info_intake (role_id, context_id, 
 			question_id, answer_text, layout_version_id, role, status) values
-			(?, ?, ?, ?, ?, ?, ?)`, answerToStore.RoleId, answerToStore.ContextId,
-				answerToStore.QuestionId, answerToStore.AnswerText, answerToStore.LayoutVersionId, answerToStore.Role, status)
+			(?, ?, ?, ?, ?, ?, ?)`, answerToStore.RoleId.Int64(), answerToStore.ContextId.Int64(),
+				answerToStore.QuestionId.Int64(), answerToStore.AnswerText, answerToStore.LayoutVersionId.Int64(), answerToStore.Role, status)
 		} else {
 			res, err = tx.Exec(`insert into info_intake (role_id, context_id,  
 			question_id, potential_answer_id, answer_text, layout_version_id, role, status) values
-			(?, ?, ?, ?, ?, ?, ?, ?)`, answerToStore.RoleId, answerToStore.ContextId,
-				answerToStore.QuestionId, answerToStore.PotentialAnswerId, answerToStore.AnswerText, answerToStore.LayoutVersionId, answerToStore.Role, status)
+			(?, ?, ?, ?, ?, ?, ?, ?)`, answerToStore.RoleId.Int64(), answerToStore.ContextId.Int64(),
+				answerToStore.QuestionId.Int64(), answerToStore.PotentialAnswerId.Int64(), answerToStore.AnswerText, answerToStore.LayoutVersionId.Int64(), answerToStore.Role, status)
 		}
 
 		if err != nil {
@@ -195,13 +195,13 @@ func insertAnswersForSubQuestions(tx *sql.Tx, answersToStore []*common.AnswerInt
 		if answerToStore.PotentialAnswerId.Int64() == 0 {
 			res, err = tx.Exec(`insert into info_intake (role_id, context_id, parent_info_intake_id, parent_question_id, 
 			question_id, answer_text, layout_version_id, role, status) values
-			(?, ?, ?, ?, ?, ?, ?, ?, ?)`, answerToStore.RoleId, answerToStore.ContextId, parentInfoIntakeId, parentQuestionId,
-				answerToStore.QuestionId, answerToStore.AnswerText, answerToStore.LayoutVersionId, answerToStore.Role, status)
+			(?, ?, ?, ?, ?, ?, ?, ?, ?)`, answerToStore.RoleId.Int64(), answerToStore.ContextId.Int64(), parentInfoIntakeId, parentQuestionId,
+				answerToStore.QuestionId.Int64(), answerToStore.AnswerText, answerToStore.LayoutVersionId.Int64(), answerToStore.Role, status)
 		} else {
 			res, err = tx.Exec(`insert into info_intake (role_id, context_id, parent_info_intake_id, parent_question_id, 
 			question_id, potential_answer_id, answer_text, layout_version_id, role, status) values
-			(?, ?, ?, ?, ?, ?, ?, ?, ?, ?)`, answerToStore.RoleId, answerToStore.ContextId, parentInfoIntakeId, parentQuestionId,
-				answerToStore.QuestionId, answerToStore.PotentialAnswerId, answerToStore.AnswerText, answerToStore.LayoutVersionId, answerToStore.Role, status)
+			(?, ?, ?, ?, ?, ?, ?, ?, ?, ?)`, answerToStore.RoleId.Int64(), answerToStore.ContextId.Int64(), parentInfoIntakeId, parentQuestionId,
+				answerToStore.QuestionId.Int64(), answerToStore.PotentialAnswerId.Int64(), answerToStore.AnswerText, answerToStore.LayoutVersionId.Int64(), answerToStore.Role, status)
 		}
 
 		if err != nil {
@@ -271,48 +271,21 @@ func (d *DataService) getPatientAnswersForQuestionsBasedOnQuery(query string, ar
 	patientAnswers := make(map[int64][]*common.AnswerIntake)
 	queriedAnswers := make([]*common.AnswerIntake, 0)
 	for rows.Next() {
-		var answerId, questionId, layoutVersionId int64
-		var potentialAnswerId sql.NullInt64
+		var patientAnswerToQuestion common.AnswerIntake
 		var answerText, answerSummaryText, storageBucket, storageKey, storageRegion, potentialAnswer sql.NullString
-		var parentQuestionId, parentInfoIntakeId sql.NullInt64
-		if err := rows.Scan(&answerId, &questionId, &potentialAnswerId, &potentialAnswer, &answerSummaryText, &answerText, &storageBucket, &storageKey, &storageRegion, &layoutVersionId, &parentQuestionId, &parentInfoIntakeId); err != nil {
+		if err := rows.Scan(&patientAnswerToQuestion.AnswerIntakeId, &patientAnswerToQuestion.QuestionId, &patientAnswerToQuestion.PotentialAnswerId, &potentialAnswer,
+			&answerSummaryText, &answerText, &storageBucket, &storageKey, &storageRegion, &patientAnswerToQuestion.LayoutVersionId, &patientAnswerToQuestion.ParentQuestionId, &patientAnswerToQuestion.ParentAnswerId); err != nil {
 			return nil, err
 		}
-		patientAnswerToQuestion := &common.AnswerIntake{
-			AnswerIntakeId:  common.NewObjectId(answerId),
-			QuestionId:      common.NewObjectId(questionId),
-			LayoutVersionId: common.NewObjectId(layoutVersionId),
-		}
 
-		if potentialAnswerId.Valid {
-			patientAnswerToQuestion.PotentialAnswerId = common.NewObjectId(potentialAnswerId.Int64)
-		}
+		patientAnswerToQuestion.PotentialAnswer = potentialAnswer.String
+		patientAnswerToQuestion.AnswerText = answerText.String
+		patientAnswerToQuestion.AnswerSummary = answerSummaryText.String
+		patientAnswerToQuestion.StorageBucket = storageBucket.String
+		patientAnswerToQuestion.StorageRegion = storageRegion.String
+		patientAnswerToQuestion.StorageKey = storageKey.String
 
-		if potentialAnswer.Valid {
-			patientAnswerToQuestion.PotentialAnswer = potentialAnswer.String
-		}
-		if answerText.Valid {
-			patientAnswerToQuestion.AnswerText = answerText.String
-		}
-		if answerSummaryText.Valid {
-			patientAnswerToQuestion.AnswerSummary = answerSummaryText.String
-		}
-		if storageBucket.Valid {
-			patientAnswerToQuestion.StorageBucket = storageBucket.String
-		}
-		if storageRegion.Valid {
-			patientAnswerToQuestion.StorageRegion = storageRegion.String
-		}
-		if storageKey.Valid {
-			patientAnswerToQuestion.StorageKey = storageKey.String
-		}
-		if parentQuestionId.Valid {
-			patientAnswerToQuestion.ParentQuestionId = common.NewObjectId(parentQuestionId.Int64)
-		}
-		if parentInfoIntakeId.Valid {
-			patientAnswerToQuestion.ParentAnswerId = common.NewObjectId(parentInfoIntakeId.Int64)
-		}
-		queriedAnswers = append(queriedAnswers, patientAnswerToQuestion)
+		queriedAnswers = append(queriedAnswers, &patientAnswerToQuestion)
 	}
 	if rows.Err() != nil {
 		return nil, rows.Err()

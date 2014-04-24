@@ -17,6 +17,7 @@ import (
 	"carefront/app_worker"
 	"carefront/common"
 	"carefront/common/config"
+	"carefront/libs/address_validation"
 	"carefront/libs/aws"
 	"carefront/libs/erx"
 	"carefront/libs/golog"
@@ -61,35 +62,41 @@ type DosespotConfig struct {
 	UserId    int64  `long:"user_id" description:"User Id for dosespot"`
 }
 
+type SmartyStreetsConfig struct {
+	AuthId    string `long:"auth_id" description:"Auth id for smarty streets"`
+	AuthToken string `long:"auth_token" description:"Auth token for smarty streets"`
+}
+
 type Config struct {
 	*config.BaseConfig
-	ProxyProtocol            bool            `long:"proxy_protocol" description:"Enable if behind a proxy that uses the PROXY protocol"`
-	ListenAddr               string          `short:"l" long:"listen" description:"Address and port on which to listen (e.g. 127.0.0.1:8080)"`
-	TLSListenAddr            string          `long:"tls_listen" description:"Address and port on which to listen (e.g. 127.0.0.1:8080)"`
-	TLSCert                  string          `long:"tls_cert" description:"Path of SSL certificate"`
-	TLSKey                   string          `long:"tls_key" description:"Path of SSL private key"`
-	InfoAddr                 string          `long:"info_addr" description:"Address to listen on for the info server"`
-	DB                       *DBConfig       `group:"Database" toml:"database"`
-	PharmacyDB               *DBConfig       `group:"PharmacyDatabase" toml:"pharmacy_database"`
-	MaxInMemoryForPhotoMB    int64           `long:"max_in_memory_photo" description:"Amount of data in MB to be held in memory when parsing multipart form data"`
-	ContentBucket            string          `long:"content_bucket" description:"S3 Bucket name for all static content"`
-	CaseBucket               string          `long:"case_bucket" description:"S3 Bucket name for case information"`
-	PatientLayoutBucket      string          `long:"client_layout_bucket" description:"S3 Bucket name for client digestable layout for patient information intake"`
-	VisualLayoutBucket       string          `long:"patient_layout_bucket" description:"S3 Bucket name for human readable layout for patient information intake"`
-	DoctorVisualLayoutBucket string          `long:"doctor_visual_layout_bucket" description:"S3 Bucket name for patient overview for doctor's viewing"`
-	DoctorLayoutBucket       string          `long:"doctor_layout_bucket" description:"S3 Bucket name for pre-processed patient overview for doctor's viewing"`
-	Debug                    bool            `long:"debug" description:"Enable debugging"`
-	IOSDeeplinkScheme        string          `long:"ios_deeplink_scheme" description:"Scheme for iOS deep-links (e.g. spruce://)"`
-	DoseSpotUserId           string          `long:"dose_spot_user_id" description:"DoseSpot UserId for eRx integration"`
-	NoServices               bool            `long:"noservices" description:"Disable connecting to remote services"`
-	ERxRouting               bool            `long:"erx_routing" description:"Disable sending of prescriptions electronically"`
-	ERxQueue                 string          `long:"erx_queue" description:"Erx queue name"`
-	AuthTokenExpiration      int             `long:"auth_token_expire" description:"Expiration time in seconds for the auth token"`
-	AuthTokenRenew           int             `long:"auth_token_renew" description:"Time left below which to renew the auth token"`
-	StaticContentBaseUrl     string          `long:"static_content_base_url" description:"URL from which to serve static content"`
-	Twilio                   *TwilioConfig   `group:"Twilio" toml:"twilio"`
-	DoseSpot                 *DosespotConfig `group:"Dosespot" toml:"dosespot"`
-	StripeSecretKey          string          `long:"strip_secret_key" description:"Stripe secret key"`
+	ProxyProtocol            bool                 `long:"proxy_protocol" description:"Enable if behind a proxy that uses the PROXY protocol"`
+	ListenAddr               string               `short:"l" long:"listen" description:"Address and port on which to listen (e.g. 127.0.0.1:8080)"`
+	TLSListenAddr            string               `long:"tls_listen" description:"Address and port on which to listen (e.g. 127.0.0.1:8080)"`
+	TLSCert                  string               `long:"tls_cert" description:"Path of SSL certificate"`
+	TLSKey                   string               `long:"tls_key" description:"Path of SSL private key"`
+	DB                       *DBConfig            `group:"Database" toml:"database"`
+	InfoAddr                 string               `long:"info_addr" description:"Address to listen on for the info server"`
+	PharmacyDB               *DBConfig            `group:"PharmacyDatabase" toml:"pharmacy_database"`
+	MaxInMemoryForPhotoMB    int64                `long:"max_in_memory_photo" description:"Amount of data in MB to be held in memory when parsing multipart form data"`
+	ContentBucket            string               `long:"content_bucket" description:"S3 Bucket name for all static content"`
+	CaseBucket               string               `long:"case_bucket" description:"S3 Bucket name for case information"`
+	PatientLayoutBucket      string               `long:"client_layout_bucket" description:"S3 Bucket name for client digestable layout for patient information intake"`
+	VisualLayoutBucket       string               `long:"patient_layout_bucket" description:"S3 Bucket name for human readable layout for patient information intake"`
+	DoctorVisualLayoutBucket string               `long:"doctor_visual_layout_bucket" description:"S3 Bucket name for patient overview for doctor's viewing"`
+	DoctorLayoutBucket       string               `long:"doctor_layout_bucket" description:"S3 Bucket name for pre-processed patient overview for doctor's viewing"`
+	Debug                    bool                 `long:"debug" description:"Enable debugging"`
+	IOSDeeplinkScheme        string               `long:"ios_deeplink_scheme" description:"Scheme for iOS deep-links (e.g. spruce://)"`
+	DoseSpotUserId           string               `long:"dose_spot_user_id" description:"DoseSpot UserId for eRx integration"`
+	NoServices               bool                 `long:"noservices" description:"Disable connecting to remote services"`
+	ERxRouting               bool                 `long:"erx_routing" description:"Disable sending of prescriptions electronically"`
+	ERxQueue                 string               `long:"erx_queue" description:"Erx queue name"`
+	AuthTokenExpiration      int                  `long:"auth_token_expire" description:"Expiration time in seconds for the auth token"`
+	AuthTokenRenew           int                  `long:"auth_token_renew" description:"Time left below which to renew the auth token"`
+	StaticContentBaseUrl     string               `long:"static_content_base_url" description:"URL from which to serve static content"`
+	Twilio                   *TwilioConfig        `group:"Twilio" toml:"twilio"`
+	DoseSpot                 *DosespotConfig      `group:"Dosespot" toml:"dosespot"`
+	SmartyStreets            *SmartyStreetsConfig `group:"smarty_streets" toml:"smarty_streets"`
+	StripeSecretKey          string               `long:"strip_secret_key" description:"Stripe secret key"`
 }
 
 var DefaultConfig = Config{
@@ -243,6 +250,10 @@ func main() {
 
 	mapsService := maps.NewGoogleMapsService(metricsRegistry.Scope("google_maps_api"))
 	doseSpotService := erx.NewDoseSpotService(conf.DoseSpot.ClinicId, conf.DoseSpot.UserId, conf.DoseSpot.ClinicKey, metricsRegistry.Scope("dosespot_api"))
+	smartyStreetsService := &address_validation.SmartyStreetsService{
+		AuthId:    conf.SmartyStreets.AuthId,
+		AuthToken: conf.SmartyStreets.AuthToken,
+	}
 	erxStatusQueue, err := common.NewQueue(awsAuth, aws.Regions[conf.AWSRegion], conf.ERxQueue)
 	if err != nil {
 		log.Fatal("Unable to get erx queue for sending prescriptions to: " + err.Error())
@@ -252,8 +263,8 @@ func main() {
 	cloudStorageApi := api.NewCloudStorageService(awsAuth)
 	photoAnswerCloudStorageApi := api.NewCloudStorageService(awsAuth)
 	authHandler := &apiservice.AuthenticationHandler{AuthApi: authApi, DataApi: dataApi, PharmacySearchService: pharmacy.GooglePlacesPharmacySearchService(0), StaticContentBaseUrl: conf.StaticContentBaseUrl}
-	checkElligibilityHandler := &apiservice.CheckCareProvidingElligibilityHandler{DataApi: dataApi, MapsService: mapsService, StaticContentUrl: conf.StaticContentBaseUrl}
-	signupPatientHandler := &apiservice.SignupPatientHandler{DataApi: dataApi, AuthApi: authApi, MapsApi: mapsService}
+	checkElligibilityHandler := &apiservice.CheckCareProvidingElligibilityHandler{DataApi: dataApi, AddressValidationApi: smartyStreetsService, StaticContentUrl: conf.StaticContentBaseUrl}
+	signupPatientHandler := &apiservice.SignupPatientHandler{DataApi: dataApi, AuthApi: authApi}
 	updatePatientBillingAddress := &apiservice.UpdatePatientAddressHandler{DataApi: dataApi, AddressType: apiservice.BILLING_ADDRESS_TYPE}
 	updatePatientPharmacyHandler := &apiservice.UpdatePatientPharmacyHandler{DataApi: dataApi, PharmacySearchService: pharmacy.GooglePlacesPharmacySearchService(0)}
 	authenticateDoctorHandler := &apiservice.DoctorAuthenticationHandler{DataApi: dataApi, AuthApi: authApi}
@@ -335,8 +346,9 @@ func main() {
 	}
 
 	patientCardsHandler := &apiservice.PatientCardsHandler{
-		DataApi:    dataApi,
-		PaymentApi: &stripe.StripeService{SecretKey: conf.StripeSecretKey},
+		DataApi:              dataApi,
+		PaymentApi:           &stripe.StripeService{SecretKey: conf.StripeSecretKey},
+		AddressValidationApi: smartyStreetsService,
 	}
 
 	doctorSubmitPatientVisitHandler := &apiservice.DoctorSubmitPatientVisitReviewHandler{DataApi: dataApi,
@@ -359,8 +371,9 @@ func main() {
 	doctorAdviceHandler := apiservice.NewDoctorAdviceHandler(dataApi)
 	doctorQueueHandler := &apiservice.DoctorQueueHandler{DataApi: dataApi}
 	doctorPatientUpdateHandler := &apiservice.DoctorPatientUpdateHandler{
-		DataApi: dataApi,
-		ErxApi:  doseSpotService,
+		DataApi:              dataApi,
+		ErxApi:               doseSpotService,
+		AddressValidationApi: smartyStreetsService,
 	}
 
 	doctorUpdatePatientPharmacyHandler := &apiservice.DoctorUpdatePatientPharmacyHandler{
@@ -391,7 +404,7 @@ func main() {
 	mux.Handle("/v1/logout", authHandler)
 	mux.Handle("/v1/ping", pingHandler)
 	mux.Handle("/v1/autocomplete", autocompleteHandler)
-	mux.Handle("/v1/pharmacy", pharmacySearchHandler)
+	mux.Handle("/v1/pharmacy_search", pharmacySearchHandler)
 	mux.Handle("/v1/doctor_layout", generateDoctorLayoutHandler)
 	mux.Handle("/v1/diagnose_layout", generateDiagnoseLayoutHandler)
 	mux.Handle("/v1/client_model", generateModelIntakeHandler)

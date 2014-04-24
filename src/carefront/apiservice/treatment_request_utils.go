@@ -6,6 +6,7 @@ import (
 	"errors"
 	"fmt"
 	"net/http"
+	"strconv"
 	"strings"
 )
 
@@ -18,24 +19,46 @@ func validateTreatment(treatment *common.Treatment) error {
 		return errors.New("Dosage Strength for treatment cannot be empty")
 	}
 
-	if treatment.DispenseValue == 0 {
+	if treatment.DispenseValue.Float64() == 0 {
 		return errors.New("DispenseValue for treatment cannot be 0")
+	}
+
+	// only allow a total of 10 digits with 1 decimal or 11 digits without a decimal
+	dispenseValueStr := strconv.FormatFloat(treatment.DispenseValue.Float64(), 'f', -1, 64)
+	if len(dispenseValueStr) > 11 {
+		return errors.New("Dispense value invalid. Can only be 10 digits with a decimal point or 11 digits without decimal")
 	}
 
 	if treatment.DispenseUnitId.Int64() == 0 {
 		return errors.New("DispenseUnit	 Id for treatment cannot be 0")
 	}
 
-	if treatment.NumberRefills == 0 {
-		return errors.New("Number of refills for treatment cannot be 0")
-	}
-
 	if treatment.PatientInstructions == "" {
 		return errors.New("Patient Instructions for treatment cannot be empty")
 	}
 
+	if len(treatment.PatientInstructions) > maxPatientInstructionsLength {
+		return errors.New("Patient instructions should not be greater than 140 characters")
+	}
+
 	if treatment.DrugDBIds == nil || len(treatment.DrugDBIds) == 0 {
 		return errors.New("Drug DB Ids for treatment cannot be empty")
+	}
+
+	if treatment.NumberRefills.Int64Value > maxNumberRefillsMaxValue {
+		return errors.New(("Number of refills has to be less than 99"))
+	}
+
+	if treatment.DaysSupply.IsValid && treatment.DaysSupply.Int64Value == 0 {
+		return errors.New("Days Supply cannot be 0")
+	}
+
+	if treatment.DaysSupply.Int64Value > maxDaysSupplyMaxValue {
+		return errors.New("Days supply cannot be greater than 999")
+	}
+
+	if len(treatment.PharmacyNotes) > maxPharmacyNotesLength {
+		return errors.New("Pharmacy notes should not be great than 210 characters")
 	}
 
 	trimSpacesFromTreatmentFields(treatment)

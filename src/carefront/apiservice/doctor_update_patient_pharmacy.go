@@ -2,7 +2,7 @@ package apiservice
 
 import (
 	"carefront/api"
-	"carefront/common"
+	"carefront/encoding"
 	"carefront/libs/pharmacy"
 	"encoding/json"
 	"net/http"
@@ -13,7 +13,7 @@ type DoctorUpdatePatientPharmacyHandler struct {
 }
 
 type DoctorUpdatePatientPharmacyRequestData struct {
-	PatientId *common.ObjectId       `json:"patient_id"`
+	PatientId encoding.ObjectId      `json:"patient_id"`
 	Pharmacy  *pharmacy.PharmacyData `json:"pharmacy"`
 }
 
@@ -45,7 +45,6 @@ func (d *DoctorUpdatePatientPharmacyHandler) ServeHTTP(w http.ResponseWriter, r 
 		WriteDeveloperError(w, http.StatusInternalServerError, "Unable to get doctor from account id: "+err.Error())
 		return
 	}
-
 	if err := verifyDoctorPatientRelationship(d.DataApi, doctor, patient); err != nil {
 		WriteDeveloperError(w, http.StatusForbidden, "Unable to verify doctor-patient relationship: "+err.Error())
 		return
