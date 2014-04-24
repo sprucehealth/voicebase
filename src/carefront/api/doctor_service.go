@@ -253,7 +253,7 @@ func (d *DataService) AddOrUpdateAdvicePointForDoctor(advicePoint *common.Doctor
 
 func (d *DataService) MarkAdvicePointToBeDeleted(advicePoint *common.DoctorInstructionItem, doctorId int64) error {
 	// mark the advice point to be deleted
-	_, err := d.DB.Exec(`update dr_advice_point set status='DELETED' where id = ? and doctor_id = ?`, advicePoint.Id, doctorId)
+	_, err := d.DB.Exec(`update dr_advice_point set status='DELETED' where id = ? and doctor_id = ?`, advicePoint.Id.Int64(), doctorId)
 	return err
 }
 
@@ -263,7 +263,7 @@ func (d *DataService) MarkAdvicePointsToBeDeleted(advicePoints []*common.DoctorI
 		return err
 	}
 	for _, advicePoint := range advicePoints {
-		_, err = tx.Exec(`update dr_advice_point set status='DELETED' where id = ? and doctor_id = ?`, advicePoint.Id, doctorId)
+		_, err = tx.Exec(`update dr_advice_point set status='DELETED' where id = ? and doctor_id = ?`, advicePoint.Id.Int64(), doctorId)
 		if err != nil {
 			tx.Rollback()
 			return err
