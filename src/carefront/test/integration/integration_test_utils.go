@@ -229,6 +229,11 @@ func TearDownIntegrationTest(t *testing.T, testData TestData) {
 	cmd := exec.Command(teardownScript, testData.DBConfig.DatabaseName)
 	var out bytes.Buffer
 	cmd.Stdout = &out
+	cmd.Env = append(os.Environ(),
+		fmt.Sprintf("RDS_INSTANCE=%s", testData.DBConfig.Host),
+		fmt.Sprintf("RDS_USERNAME=%s", testData.DBConfig.User),
+		fmt.Sprintf("RDS_PASSWORD=%s", testData.DBConfig.Password),
+	)
 	err := cmd.Run()
 	if err != nil {
 		t.Fatal("Unable to run the teardown integration script for integration tests: " + err.Error() + " " + out.String())
