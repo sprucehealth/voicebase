@@ -4,14 +4,17 @@
 # that is publically accessible. The RDS instance is needed
 # to validate the migration DDL and create an updated snapshot
 RDS_INSTANCE="127.0.0.1"
-RDS_USERNAME="carefront"
+if [ "$RDS_USERNAME" = "" ]; then
+	RDS_USERNAME="carefront"
+fi
+
 DATABASE_NAME="database_$RANDOM"
 
 # The RDS password for this instance is expected to be set as an environment variable
 # named DEV_RDS_PASSWORD
-if [ "$DEV_RDS_PASSWORD" == "" ]; then
-	echo "DEV_RDS_PASSWORD not set"
-	exit 1
+PASSWORD_ARG="-p$DEV_RDS_PASSWORD"
+if [ "$DEV_RDS_PASSWORD" = "" ]; then
+	PASSWORD_ARG=""
 fi
 
 # trapping the TERM signal enables us to instruct the
@@ -26,7 +29,7 @@ function cleanup {
 	rm temp.sql
 	rm temp-data.sql
 	echo "drop database $DATABASE_NAME;" > temp-drop-database.sql
-	mysql -h $RDS_INSTANCE -u $RDS_USERNAME -p$DEV_RDS_PASSWORD < temp-drop-database.sql
+	mysql -h $RDS_INSTANCE -u $RDS_USERNAME $PASSWORD_ARG < temp-drop-database.sql
 	if [ $? -ne 0 ]; then
 		echo "--- ERROR: Unable to drop database $DATABASE_NAME from rds instance"
 	fi
@@ -45,13 +48,13 @@ echo "use $DATABASE_NAME;" | cat - data-snapshot-$latestDataSnapshotNumber.sql >
 
 # Use this snapshot as the base to create a random database on a test mysql instance
 echo -e "--- Creating database $DATABASE_NAME and restoring schema from snapshot-$latestSnapshotNumber.sql\n"
-mysql -h $RDS_INSTANCE -u $RDS_USERNAME -p$DEV_RDS_PASSWORD < temp.sql
-mysql -h $RDS_INSTANCE -u $RDS_USERNAME -p$DEV_RDS_PASSWORD < temp-data.sql
+mysql -h $RDS_INSTANCE -u $RDS_USERNAME $PASSWORD_ARG < temp.sql
+mysql -h $RDS_INSTANCE -u $RDS_USERNAME $PASSWORD_ARG < temp-data.sql
 
 # Apply the latest migration file to the database
 echo -e "--- Applying DDL in migrate-$latestMigrationNumber.sql to database\n"
 echo "use $DATABASE_NAME;" | cat - migration-$latestMigrationNumber.sql > temp-migration.sql
-mysql -h $RDS_INSTANCE -u $RDS_USERNAME -p$DEV_RDS_PASSWORD < temp-migration.sql
+mysql -h $RDS_INSTANCE -u $RDS_USERNAME $PASSWORD_ARG < temp-migration.sql
 
 if [ $? -ne 0 ]; then
 	cleanup
@@ -62,6 +65,6 @@ fi
 newSnapshotNumber=$((latestSnapshotNumber + 1))
 newDataSnapshotNumber=$((latestDataSnapshotNumber + 1))
 echo -e "--- Creating new snapshot from database into snapshot-$newSnapshotNumber.sql\n"
-`mysqldump -h $RDS_INSTANCE -u $RDS_USERNAME --no-data $DATABASE_NAME -p$DEV_RDS_PASSWORD > snapshot-$newSnapshotNumber.sql`
-`mysqldump -h $RDS_INSTANCE -u $RDS_USERNAME -p$DEV_RDS_PASSWORD $DATABASE_NAME app_text localized_text answer_type region health_condition languages_supported tips tips_section section screen_type question_type question question_fields potential_answer photo_tips patient_layout_version object_storage layout_version dr_layout_version care_providing_state dispense_unit drug_name drug_route drug_form drug_supplemental_instruction deny_refill_reason state > data-snapshot-$newDataSnapshotNumber.sql`
+`mysqldump -h $RDS_INSTANCE -u $RDS_USERNAME --no-data $DATABASE_NAME $PASSWORD_ARG > snapshot-$newSnapshotNumber.sql`
+`mysqldump -h $RDS_INSTANCE -u $RDS_USERNAME $PASSWORD_ARG $DATABASE_NAME app_text localized_text answer_type region health_condition languages_supported tips tips_section section screen_type question_type question question_fields potential_answer photo_tips patient_layout_version object_storage layout_version dr_layout_version care_providing_state dispense_unit drug_name drug_route drug_form drug_supplemental_instruction deny_refill_reason state > data-snapshot-$newDataSnapshotNumber.sql`
 cleanup
