@@ -1078,10 +1078,9 @@ func (d *DataService) getTreatmentAndMetadataFromCurrentRow(rows *sql.Rows) (*co
 
 	if pharmacyId.IsValid || prescriptionId.IsValid || erxSentDate.Valid {
 		treatment.ERx = &common.ERxData{}
+		treatment.ERx.PharmacyLocalId = pharmacyId
+		treatment.ERx.PrescriptionId = prescriptionId
 	}
-
-	treatment.ERx.PharmacyLocalId = pharmacyId
-	treatment.ERx.PrescriptionId = prescriptionId
 
 	if erxSentDate.Valid {
 		treatment.ERx.ErxSentDate = &erxSentDate.Time
