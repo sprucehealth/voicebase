@@ -636,7 +636,7 @@ func (d *DataService) MarkRefillRequestAsDenied(prescriptionId, denialReasonId, 
 
 func (d *DataService) UpdateUnlinkedDNTFTreatmentWithPharmacyAndErxId(treatment *common.Treatment, pharmacySentTo *pharmacy.PharmacyData, doctorId int64) error {
 	if treatment.ERx.PrescriptionId.Int64() != 0 {
-		_, err := d.DB.Exec(`update unlinked_dntf_treatment set erx_id = ?, pharmacy_id = ?, erx_sent_date=now() where id = ?`, treatment.ERx.PrescriptionId, pharmacySentTo.LocalId, treatment.Id)
+		_, err := d.DB.Exec(`update unlinked_dntf_treatment set erx_id = ?, pharmacy_id = ?, erx_sent_date=now() where id = ?`, treatment.ERx.PrescriptionId.Int64(), pharmacySentTo.LocalId, treatment.Id.Int64())
 		if err != nil {
 			return err
 		}

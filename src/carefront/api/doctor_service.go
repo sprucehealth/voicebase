@@ -186,7 +186,7 @@ func (d *DataService) UpdateRegimenStepForDoctor(regimenStep *common.DoctorInstr
 
 func (d *DataService) MarkRegimenStepToBeDeleted(regimenStep *common.DoctorInstructionItem, doctorId int64) error {
 	// mark the regimen step to be deleted
-	_, err := d.DB.Exec(`update dr_regimen_step set status='DELETED' where id = ? and doctor_id = ?`, regimenStep.Id, doctorId)
+	_, err := d.DB.Exec(`update dr_regimen_step set status='DELETED' where id = ? and doctor_id = ?`, regimenStep.Id.Int64(), doctorId)
 	if err != nil {
 		return err
 	}
@@ -200,7 +200,7 @@ func (d *DataService) MarkRegimenStepsToBeDeleted(regimenSteps []*common.DoctorI
 	}
 
 	for _, regimenStep := range regimenSteps {
-		_, err = tx.Exec(`update dr_regimen_step set status='DELETED' where id = ? and doctor_id=?`, regimenStep.Id, doctorId)
+		_, err = tx.Exec(`update dr_regimen_step set status='DELETED' where id = ? and doctor_id=?`, regimenStep.Id.Int64(), doctorId)
 		if err != nil {
 			tx.Rollback()
 			return err
