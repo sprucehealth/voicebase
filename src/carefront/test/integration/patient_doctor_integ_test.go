@@ -112,7 +112,7 @@ func TestPatientVisitReview(t *testing.T) {
 	CheckSuccessfulStatusCode(resp, "Unable to make successful call to close the patient visit", t)
 
 	fromTime := time.Now().Add(-24 * time.Hour).Unix()
-	toTime := time.Now().Unix()
+	toTime := time.Now().Add(-10 * time.Minute).Unix()
 	treatmentPlans := getPrescriptionsForDoctor(testData.DataApi, t, doctor, fromTime, toTime)
 
 	if len(treatmentPlans) > 0 {
@@ -324,12 +324,6 @@ func TestPatientVisitReview(t *testing.T) {
 	patient, err = testData.DataApi.GetPatientFromId(signedupPatientResponse.Patient.PatientId.Int64())
 	if err != nil {
 		t.Fatal("Unable to get patient from database: " + err.Error())
-	}
-
-	// number of prescripitons returned when not including the time at which it was submitted should be 0
-	treatmentPlans = getPrescriptionsForDoctor(testData.DataApi, t, doctor, fromTime, toTime)
-	if len(treatmentPlans) > 0 {
-		t.Fatal("Expected there to be no prescriptions for this doctor yet")
 	}
 
 	// now, lets try again while including time
