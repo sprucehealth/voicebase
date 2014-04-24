@@ -16,6 +16,7 @@ import (
 // can display it as a string without having to worry about the float value, the exact precision, etc.
 type HighPrecisionFloat64 float64
 
+// Note that HighPrecisionFloat is always marshalled and unmarshalled as a string
 func (h HighPrecisionFloat64) MarshalJSON() ([]byte, error) {
 	var marshalledValue []byte
 	marshalledValue = append(marshalledValue, '"')
