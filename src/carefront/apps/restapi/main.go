@@ -59,8 +59,8 @@ type Config struct {
 	TLSCert                  string               `long:"tls_cert" description:"Path of SSL certificate"`
 	TLSKey                   string               `long:"tls_key" description:"Path of SSL private key"`
 	InfoAddr                 string               `long:"info_addr" description:"Address to listen on for the info server"`
-	DB                       *config.DBConfig     `group:"Database" toml:"database"`
-	PharmacyDB               *config.DBConfig     `group:"PharmacyDatabase" toml:"pharmacy_database"`
+	DB                       *config.DB           `group:"Database" toml:"database"`
+	PharmacyDB               *config.DB           `group:"PharmacyDatabase" toml:"pharmacy_database"`
 	MaxInMemoryForPhotoMB    int64                `long:"max_in_memory_photo" description:"Amount of data in MB to be held in memory when parsing multipart form data"`
 	ContentBucket            string               `long:"content_bucket" description:"S3 Bucket name for all static content"`
 	CaseBucket               string               `long:"case_bucket" description:"S3 Bucket name for case information"`
