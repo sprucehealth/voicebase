@@ -3,6 +3,7 @@ package encoding
 import (
 	"database/sql"
 	"encoding/xml"
+	"errors"
 	"fmt"
 	"strconv"
 	"strings"
@@ -64,7 +65,7 @@ func (n NullInt64) MarshalJSON() ([]byte, error) {
 		return []byte(`null`), nil
 	}
 
-	return []byte(fmt.Sprintf(`%d`, n.Int64Value)), nil
+	return []byte(strconv.FormatInt(n.Int64Value, 10)), nil
 }
 
 func (n *NullInt64) UnmarshalJSON(data []byte) error {
@@ -221,7 +222,7 @@ func (dob *Dob) UnmarshalJSON(data []byte) error {
 	// break up dob into components (of the format MM/DD/YYYY)
 	dobParts := strings.Split(strDob, DOB_SEPARATOR)
 
-	if len(dobParts) < 3 {
+	if len(dobParts) != 3 {
 		return fmt.Errorf("Dob incorrectly formatted. Expected format %s", DOB_FORMAT)
 	}
 
@@ -242,6 +243,18 @@ func (dob *Dob) UnmarshalJSON(data []byte) error {
 	dobDay, err := strconv.Atoi(dobParts[2][:len(dobParts[2])-1]) // to remove the `"`
 	if err != nil {
 		return err
+	}
+
+	if dobYear < 1900 {
+		return errors.New("Invalid year in date of birth")
+	}
+
+	if dobMonth < 1 || dobMonth > 12 {
+		return errors.New("Invalid month in date of birth")
+	}
+
+	if dobDay < 1 || dobDay > 31 {
+		return errors.New("Invalid day in date of birth")
 	}
 
 	*dob = Dob{
