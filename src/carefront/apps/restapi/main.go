@@ -2,13 +2,9 @@ package main
 
 import (
 	"crypto/tls"
-	"crypto/x509"
-	"database/sql"
-	"fmt"
 	"log"
 	"net"
 	"net/http"
-	"os"
 	"strconv"
 	"time"
 
@@ -30,7 +26,6 @@ import (
 	thriftapi "carefront/thrift/api"
 
 	"github.com/SpruceHealth/go-proxy-protocol/proxyproto"
-	"github.com/go-sql-driver/mysql"
 	"github.com/samuel/go-metrics/metrics"
 	"github.com/subosito/twilio"
 )
@@ -38,17 +33,6 @@ import (
 const (
 	defaultMaxInMemoryPhotoMB = 2
 )
-
-type DBConfig struct {
-	User     string `long:"db_user" description:"Username for accessing database"`
-	Password string `long:"db_password" description:"Password for accessing database"`
-	Host     string `long:"db_host" description:"Database host"`
-	Port     int    `long:"db_port" description:"Database port"`
-	Name     string `long:"db_name" description:"Database name"`
-	CACert   string `long:"db_cacert" description:"Database TLS CA certificate path"`
-	TLSCert  string `long:"db_cert" description:"Database TLS client certificate path"`
-	TLSKey   string `long:"db_key" description:"Database TLS client key path"`
-}
 
 type TwilioConfig struct {
 	AccountSid string `long:"twilio_account_sid" description:"Twilio AccountSid"`
@@ -74,9 +58,9 @@ type Config struct {
 	TLSListenAddr            string               `long:"tls_listen" description:"Address and port on which to listen (e.g. 127.0.0.1:8080)"`
 	TLSCert                  string               `long:"tls_cert" description:"Path of SSL certificate"`
 	TLSKey                   string               `long:"tls_key" description:"Path of SSL private key"`
-	DB                       *DBConfig            `group:"Database" toml:"database"`
 	InfoAddr                 string               `long:"info_addr" description:"Address to listen on for the info server"`
-	PharmacyDB               *DBConfig            `group:"PharmacyDatabase" toml:"pharmacy_database"`
+	DB                       *config.DB           `group:"Database" toml:"database"`
+	PharmacyDB               *config.DB           `group:"PharmacyDatabase" toml:"pharmacy_database"`
 	MaxInMemoryForPhotoMB    int64                `long:"max_in_memory_photo" description:"Amount of data in MB to be held in memory when parsing multipart form data"`
 	ContentBucket            string               `long:"content_bucket" description:"S3 Bucket name for all static content"`
 	CaseBucket               string               `long:"case_bucket" description:"S3 Bucket name for case information"`
@@ -103,7 +87,7 @@ var DefaultConfig = Config{
 	BaseConfig: &config.BaseConfig{
 		AppName: "restapi",
 	},
-	DB: &DBConfig{
+	DB: &config.DB{
 		Name: "carefront",
 		Host: "127.0.0.1",
 		Port: 3306,
@@ -119,53 +103,6 @@ var DefaultConfig = Config{
 	IOSDeeplinkScheme:     "spruce",
 }
 
-func connectToDatabase(conf *Config, dbConf *DBConfig) (*sql.DB, error) {
-	enableTLS := dbConf.CACert != "" && dbConf.TLSCert != "" && dbConf.TLSKey != ""
-	if enableTLS {
-		rootCertPool := x509.NewCertPool()
-		pem, err := conf.ReadURI(dbConf.CACert)
-		if err != nil {
-			return nil, err
-		}
-		if ok := rootCertPool.AppendCertsFromPEM(pem); !ok {
-			return nil, fmt.Errorf("Failed to append PEM.")
-		}
-		clientCert := make([]tls.Certificate, 0, 1)
-		cert, err := conf.ReadURI(dbConf.TLSCert)
-		if err != nil {
-			return nil, err
-		}
-		key, err := conf.ReadURI(dbConf.TLSKey)
-		if err != nil {
-			return nil, err
-		}
-		certs, err := tls.X509KeyPair(cert, key)
-		if err != nil {
-			return nil, err
-		}
-		clientCert = append(clientCert, certs)
-		mysql.RegisterTLSConfig("custom", &tls.Config{
-			RootCAs:      rootCertPool,
-			Certificates: clientCert,
-		})
-	}
-
-	tlsOpt := "?parseTime=true"
-	if enableTLS {
-		tlsOpt += "&tls=custom"
-	}
-	db, err := sql.Open("mysql", fmt.Sprintf("%s:%s@tcp(%s:%d)/%s%s", dbConf.User, dbConf.Password, dbConf.Host, dbConf.Port, dbConf.Name, tlsOpt))
-	if err != nil {
-		return nil, err
-	}
-	// test the connection to the database by running a ping against it
-	if err := db.Ping(); err != nil {
-		db.Close()
-		return nil, err
-	}
-	return db, nil
-}
-
 func main() {
 	conf := DefaultConfig
 	_, err := config.Parse(&conf)
@@ -173,28 +110,27 @@ func main() {
 		log.Fatal(err)
 	}
 
-	if conf.DB.User == "" || conf.DB.Password == "" || conf.DB.Host == "" || conf.DB.Name == "" {
-		fmt.Fprintf(os.Stderr, "Missing either one of user, password, host, or name for the database.\n")
-		os.Exit(1)
-	}
-
 	if conf.Debug {
 		golog.SetLevel(golog.DEBUG)
 	}
 
-	metricsRegistry := metrics.NewRegistry()
-	conf.StartReporters(metricsRegistry)
-
-	db, err := connectToDatabase(&conf, conf.DB)
+	db, err := conf.DB.Connect(conf.BaseConfig)
 	if err != nil {
 		log.Fatal(err)
 	}
 	defer db.Close()
 
+	metricsRegistry := metrics.NewRegistry()
+	conf.StartReporters(metricsRegistry)
+
 	if num, err := strconv.Atoi(config.MigrationNumber); err == nil {
 		var latestMigration int
 		if err := db.QueryRow("SELECT MAX(migration_id) FROM migrations").Scan(&latestMigration); err != nil {
-			log.Fatalf("Failed to query for latest migration: %s", err.Error())
+			if !conf.Debug {
+				log.Fatalf("Failed to query for latest migration: %s", err.Error())
+			} else {
+				log.Printf("Failed to query for latest migration: %s", err.Error())
+			}
 		}
 		if latestMigration != num {
 			if conf.Debug {
@@ -226,6 +162,7 @@ func main() {
 				DB:             db,
 				ExpireDuration: time.Duration(conf.AuthTokenExpiration) * time.Second,
 				RenewDuration:  time.Duration(conf.AuthTokenRenew) * time.Second,
+				Hasher:         auth.NewBcryptHasher(0),
 			}
 		} else {
 			log.Fatalf("No Zookeeper hosts defined and not running under debug")
@@ -252,13 +189,20 @@ func main() {
 
 	mapsService := maps.NewGoogleMapsService(metricsRegistry.Scope("google_maps_api"))
 	doseSpotService := erx.NewDoseSpotService(conf.DoseSpot.ClinicId, conf.DoseSpot.UserId, conf.DoseSpot.ClinicKey, metricsRegistry.Scope("dosespot_api"))
+
 	smartyStreetsService := &address_validation.SmartyStreetsService{
 		AuthId:    conf.SmartyStreets.AuthId,
 		AuthToken: conf.SmartyStreets.AuthToken,
 	}
-	erxStatusQueue, err := common.NewQueue(awsAuth, aws.Regions[conf.AWSRegion], conf.ERxQueue)
-	if err != nil {
-		log.Fatal("Unable to get erx queue for sending prescriptions to: " + err.Error())
+
+	var erxStatusQueue *common.SQSQueue
+	if conf.ERxQueue != "" {
+		erxStatusQueue, err = common.NewQueue(awsAuth, aws.Regions[conf.AWSRegion], conf.ERxQueue)
+		if err != nil {
+			log.Fatal("Unable to get erx queue for sending prescriptions to: " + err.Error())
+		}
+	} else if conf.ERxRouting {
+		log.Fatal("ERxQueue not configured but ERxRouting is enabled")
 	}
 
 	dataApi := &api.DataService{DB: db}
@@ -271,6 +215,8 @@ func main() {
 	updatePatientPharmacyHandler := &apiservice.UpdatePatientPharmacyHandler{DataApi: dataApi, PharmacySearchService: pharmacy.GooglePlacesPharmacySearchService(0)}
 	authenticateDoctorHandler := &apiservice.DoctorAuthenticationHandler{DataApi: dataApi, AuthApi: authApi}
 	signupDoctorHandler := &apiservice.SignupDoctorHandler{DataApi: dataApi, AuthApi: authApi}
+	patientTreatmentGuideHandler := apiservice.NewPatientTreatmentGuideHandler(dataApi)
+	doctorTreatmentGuideHandler := apiservice.NewDoctorTreatmentGuideHandler(dataApi)
 	patientVisitHandler := apiservice.NewPatientVisitHandler(dataApi, authApi, cloudStorageApi, photoAnswerCloudStorageApi, twilioCli, conf.Twilio.FromNumber)
 	patientVisitReviewHandler := &apiservice.PatientVisitReviewHandler{DataApi: dataApi}
 	answerIntakeHandler := apiservice.NewAnswerIntakeHandler(dataApi)
@@ -395,6 +341,7 @@ func main() {
 	mux.Handle("/v1/patient", signupPatientHandler)
 	mux.Handle("/v1/patient/address/billing", updatePatientBillingAddress)
 	mux.Handle("/v1/patient/pharmacy", updatePatientPharmacyHandler)
+	mux.Handle("/v1/patient/treatment/guide", patientTreatmentGuideHandler)
 	mux.Handle("/v1/visit", patientVisitHandler)
 	mux.Handle("/v1/visit/review", patientVisitReviewHandler)
 	mux.Handle("/v1/check_eligibility", checkElligibilityHandler)
@@ -437,6 +384,7 @@ func main() {
 	mux.Handle("/v1/doctor/visit/treatment/medication_strengths", medicationStrengthSearchHandler)
 	mux.Handle("/v1/doctor/visit/treatment/medication_dispense_units", medicationDispenseUnitHandler)
 	mux.Handle("/v1/doctor/visit/treatment/supplemental_instructions", doctorInstructionsHandler)
+	mux.Handle("/v1/doctor/visit/treatment/guide", doctorTreatmentGuideHandler)
 	mux.Handle("/v1/doctor/visit/regimen", doctorRegimenHandler)
 	mux.Handle("/v1/doctor/visit/advice", doctorAdviceHandler)
 	mux.Handle("/v1/doctor/visit/followup", doctorFollowupHandler)

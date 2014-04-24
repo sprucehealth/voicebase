@@ -163,6 +163,11 @@ type PrescriptionsAPI interface {
 	GetErxStatusEventsForDNTFTreatmentBasedOnPatientId(patientId int64) ([]common.StatusEvent, error)
 }
 
+type DrugAPI interface {
+	DrugDetails(ndc string) (*common.DrugDetails, error)
+	SetDrugDetails(ndcToDrugDetails map[string]*common.DrugDetails) error
+}
+
 type DoctorAPI interface {
 	RegisterDoctor(doctor *common.Doctor) (int64, error)
 	GetDoctorFromId(doctorId int64) (doctor *common.Doctor, err error)
@@ -245,6 +250,7 @@ type DataAPI interface {
 	ObjectStorageDBAPI
 	IntakeAPI
 	PrescriptionsAPI
+	DrugAPI
 }
 
 type CloudStorageAPI interface {
