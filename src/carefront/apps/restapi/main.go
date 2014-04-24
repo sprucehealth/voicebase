@@ -245,7 +245,9 @@ func main() {
 	}
 
 	if conf.InfoAddr != "" {
-		go log.Fatal(http.ListenAndServe(conf.InfoAddr, nil))
+		go func() {
+			log.Fatal(http.ListenAndServe(conf.InfoAddr, nil))
+		}()
 	}
 
 	mapsService := maps.NewGoogleMapsService(metricsRegistry.Scope("google_maps_api"))
