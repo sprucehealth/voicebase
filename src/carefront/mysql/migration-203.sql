@@ -8,3 +8,4 @@ create table drug_details (
 ) character set utf8;
 
 alter table drug_db_id modify column drug_db_id varchar(100);
+
