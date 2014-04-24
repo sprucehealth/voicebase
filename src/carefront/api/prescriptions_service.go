@@ -861,7 +861,7 @@ func (d *DataService) AddTreatmentToTreatmentPlanInEventOfDNTF(treatment *common
 	}
 
 	if treatment.DoctorTreatmentTemplateId.Int64() != 0 {
-		_, err = tx.Exec(`insert into treatment_dr_template_selection (treatment_id, dr_treatment_template_id) values (?,?)`, treatment.Id, treatment.DoctorTreatmentTemplateId)
+		_, err = tx.Exec(`insert into treatment_dr_template_selection (treatment_id, dr_treatment_template_id) values (?,?)`, treatment.Id.Int64(), treatment.DoctorTreatmentTemplateId)
 		if err != nil {
 			tx.Rollback()
 			return err
