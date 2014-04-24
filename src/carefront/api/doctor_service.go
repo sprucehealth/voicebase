@@ -641,7 +641,7 @@ func (d *DataService) AddTreatmentTemplates(doctorTreatmentTemplates []*common.D
 			return err
 		}
 
-		lastInsertId, err := tx.Exec(`insert into dr_treatment_template (doctor_id, treatment_id, name, status) values (?,?,?,?)`, doctorId, doctorTreatmentTemplate.Treatment.Id, doctorTreatmentTemplate.Name, STATUS_ACTIVE)
+		lastInsertId, err := tx.Exec(`insert into dr_treatment_template (doctor_id, treatment_id, name, status) values (?,?,?,?)`, doctorId, doctorTreatmentTemplate.Treatment.Id.Int64(), doctorTreatmentTemplate.Name, STATUS_ACTIVE)
 		if err != nil {
 			tx.Rollback()
 			return err
@@ -704,14 +704,14 @@ func (d *DataService) DeleteTreatmentTemplates(doctorTreatmentTemplates []*commo
 		return err
 	}
 	for _, doctorTreatmentTemplate := range doctorTreatmentTemplates {
-		_, err = tx.Exec(`update dr_treatment_template set status='DELETED' where id = ? and doctor_id = ?`, doctorTreatmentTemplate.Id, doctorId)
+		_, err = tx.Exec(`update dr_treatment_template set status='DELETED' where id = ? and doctor_id = ?`, doctorTreatmentTemplate.Id.Int64(), doctorId)
 		if err != nil {
 			tx.Rollback()
 			return err
 		}
 
 		// delete all previous selections for this favorited treatment
-		_, err = tx.Exec(`delete from treatment_dr_template_selection where dr_treatment_template_id = ?`, doctorTreatmentTemplate.Id)
+		_, err = tx.Exec(`delete from treatment_dr_template_selection where dr_treatment_template_id = ?`, doctorTreatmentTemplate.Id.Int64())
 		if err != nil {
 			tx.Rollback()
 			return err

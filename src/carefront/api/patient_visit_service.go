@@ -1126,7 +1126,7 @@ func (d *DataService) getTreatmentAndMetadataFromCurrentRow(rows *sql.Rows) (*co
 func (d *DataService) fillInDrugDBIdsForTreatment(treatment *common.Treatment) error {
 	// for each of the drugs, populate the drug db ids
 	drugDbIds := make(map[string]string)
-	drugRows, err := d.DB.Query(`select drug_db_id_tag, drug_db_id from drug_db_id where treatment_id = ? `, treatment.Id)
+	drugRows, err := d.DB.Query(`select drug_db_id_tag, drug_db_id from drug_db_id where treatment_id = ? `, treatment.Id.Int64())
 	if err != nil {
 		return err
 	}
@@ -1147,7 +1147,7 @@ func (d *DataService) fillInSupplementalInstructionsForTreatment(treatment *comm
 	// get the supplemental instructions for this treatment
 	instructionsRows, err := d.DB.Query(`select dr_drug_supplemental_instruction.id, dr_drug_supplemental_instruction.text from treatment_instructions 
 												inner join dr_drug_supplemental_instruction on dr_drug_instruction_id = dr_drug_supplemental_instruction.id 
-													where treatment_instructions.status=? and treatment_id=?`, STATUS_ACTIVE, treatment.Id)
+													where treatment_instructions.status=? and treatment_id=?`, STATUS_ACTIVE, treatment.Id.Int64())
 	if err != nil {
 		return err
 	}
