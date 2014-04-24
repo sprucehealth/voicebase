@@ -94,11 +94,13 @@ func getRefillStatusEventsFromRows(rows *sql.Rows) ([]common.StatusEvent, error)
 	for rows.Next() {
 		var refillRequestStatus common.StatusEvent
 		var prescriptionId sql.NullInt64
+		var statusDetails sql.NullString
 		err := rows.Scan(&refillRequestStatus.ItemId, &refillRequestStatus.Status,
-			&refillRequestStatus.StatusTimestamp, &refillRequestStatus.StatusDetails, &prescriptionId)
+			&refillRequestStatus.StatusTimestamp, &statusDetails, &prescriptionId)
 		if err != nil {
 			return nil, err
 		}
+		refillRequestStatus.StatusDetails = statusDetails.String
 		refillRequestStatus.PrescriptionId = prescriptionId.Int64
 		refillRequestStatuses = append(refillRequestStatuses, refillRequestStatus)
 	}
