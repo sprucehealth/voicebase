@@ -26,7 +26,7 @@ func (h HighPrecisionFloat64) MarshalJSON() ([]byte, error) {
 
 func (h *HighPrecisionFloat64) UnmarshalJSON(data []byte) error {
 	strData := string(data)
-	if strData == "null" || strData == "" {
+	if len(strData) < 2 || strData == "null" || strData == "" {
 		*h = HighPrecisionFloat64(0)
 		return nil
 	}
