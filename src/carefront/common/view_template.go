@@ -5,6 +5,9 @@ import (
 	"reflect"
 )
 
+// The ViewContext is a generic container for data that Views consume
+// from when being rendered. Data exists in the ViewContext based on keys
+// which are specified in the "content_config" of a view definition in the template
 type ViewContext map[string]interface{}
 
 func NewViewContext() *ViewContext {
@@ -26,8 +29,12 @@ func (c ViewContext) Delete(key string) {
 	delete(c, key)
 }
 
+// The TypeRegistry is used to maintain a mapping of a type
+// to the actual concrete type of a go structure
 type TypeRegistry map[string]reflect.Type
 
+// Only structures that implement the Typed interface are assumed
+// to exist in the registry
 func (t TypeRegistry) RegisterType(typ Typed) TypeRegistry {
 	t[typ.TypeName()] = reflect.TypeOf(typ)
 	return t
@@ -37,6 +44,8 @@ func (t TypeRegistry) Map() map[string]reflect.Type {
 	return (map[string]reflect.Type)(t)
 }
 
+// Any structure that implements the Typed interface
+// requires a string that defines the type of the structure
 type Typed interface {
 	TypeName() string
 }
@@ -59,6 +68,10 @@ func NewViewRenderingError(message string) ViewRenderingError {
 	return ViewRenderingError{Message: message}
 }
 
+// The ViewCondition is a structure found in the ContentConfig
+// of views. The Operand defines the type of implementation to use
+// to evaluate the condition based on the key, to either true or false
+// which essentially indicates whether or not to include the view in the rendering
 type ViewCondition struct {
 	Op  string `json:"op"`
 	Key string `json:"key"`
@@ -72,6 +85,8 @@ func (v ViewConditionEvaluationError) Error() string {
 	return v.Message
 }
 
+// The ConditionEvaluator is a generic interface for conditions so
+// as to provide different implementations based on the operand
 type ConditionEvaluator interface {
 	EvaluateCondition(condition ViewCondition, context ViewContext) (bool, error)
 	Operand() string
