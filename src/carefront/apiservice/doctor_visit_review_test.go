@@ -188,8 +188,8 @@ func populateCompleteViewContext(viewContext common.ViewContext) {
 		"testing3",
 	})
 
-	viewContext.Set("q_other_skin_condition_entry:question_summary", "testing5")
-	viewContext.Set("q_other_skin_condition_entry:answers", []CheckedUncheckedData{
+	viewContext.Set("q_other_conditions_acne:question_summary", "testing5")
+	viewContext.Set("q_other_conditions_acne:answers", []CheckedUncheckedData{
 		CheckedUncheckedData{
 			Value:     "val1",
 			IsChecked: true,
