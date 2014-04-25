@@ -20,7 +20,7 @@ func (d *DataService) GetPatientAnswersForQuestionsInGlobalSections(questionIds 
 	return d.getPatientAnswersForQuestionsBasedOnQuery(queryStr, patientId)
 }
 
-func (d *DataService) GetAnswersForQuestionsBasedOnQuestionIds(questionIds []int64, roleId int64, patientVisitId int64) (answerIntakes map[int64][]*common.AnswerIntake, err error) {
+func (d *DataService) GetPatientAnswersForQuestionsBasedOnQuestionIds(questionIds []int64, roleId int64, patientVisitId int64) (answerIntakes map[int64][]*common.AnswerIntake, err error) {
 	enumeratedStrings := enumerateItemsIntoString(questionIds)
 	queryStr := fmt.Sprintf(`select info_intake.id, info_intake.question_id, potential_answer_id, l1.ltext, l2.ltext, answer_text, bucket, storage_key, region_tag,
 								layout_version_id, parent_question_id, parent_info_intake_id from info_intake  
@@ -33,7 +33,7 @@ func (d *DataService) GetAnswersForQuestionsBasedOnQuestionIds(questionIds []int
 	return d.getPatientAnswersForQuestionsBasedOnQuery(queryStr, roleId, patientVisitId)
 }
 
-func (d *DataService) GetAnswersForQuestionsInDiagnosisLayout(questionIds []int64, roleId int64, patientVisitId int64) (answerIntakes map[int64][]*common.AnswerIntake, err error) {
+func (d *DataService) GetDoctorAnswersForQuestionsInDiagnosisLayout(questionIds []int64, roleId int64, patientVisitId int64) (answerIntakes map[int64][]*common.AnswerIntake, err error) {
 	enumeratedStrings := enumerateItemsIntoString(questionIds)
 	queryStr := fmt.Sprintf(`select info_intake.id, info_intake.question_id, potential_answer_id, l1.ltext, l2.ltext, answer_text, bucket, storage_key, region_tag,
 								layout_version_id, parent_question_id, parent_info_intake_id from info_intake  

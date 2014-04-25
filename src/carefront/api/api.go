@@ -204,8 +204,8 @@ type DoctorAPI interface {
 
 type IntakeAPI interface {
 	GetPatientAnswersForQuestionsInGlobalSections(questionIds []int64, patientId int64) (map[int64][]*common.AnswerIntake, error)
-	GetAnswersForQuestionsBasedOnQuestionIds(questionIds []int64, roleId int64, patientVisitId int64) (map[int64][]*common.AnswerIntake, error)
-	GetAnswersForQuestionsInDiagnosisLayout(questionIds []int64, roleId int64, patientVisitId int64) (map[int64][]*common.AnswerIntake, error)
+	GetPatientAnswersForQuestionsBasedOnQuestionIds(questionIds []int64, roleId int64, patientVisitId int64) (map[int64][]*common.AnswerIntake, error)
+	GetDoctorAnswersForQuestionsInDiagnosisLayout(questionIds []int64, roleId int64, patientVisitId int64) (map[int64][]*common.AnswerIntake, error)
 	StoreAnswersForQuestion(role string, roleId, patientVisitId, layoutVersionId int64, answersToStorePerQuestion map[int64][]*common.AnswerIntake) error
 	CreatePhotoAnswerForQuestionRecord(role string, roleId, questionId, patientVisitId, potentialAnswerId, layoutVersionId int64) (patientInfoIntakeId int64, err error)
 	UpdatePhotoAnswerRecordWithObjectStorageId(patientInfoIntakeId, objectStorageId int64) error

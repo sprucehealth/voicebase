@@ -106,7 +106,7 @@ func (p *DoctorPatientVisitReviewHandler) ServeHTTP(w http.ResponseWriter, r *ht
 	questionIds := getQuestionIdsInPatientVisitLayout(patientVisitLayout)
 
 	// get all the answers the patient entered for the questions (note that there may not be an answer for every question)
-	patientAnswersForQuestions, err := p.DataApi.GetAnswersForQuestionsBasedOnQuestionIds(questionIds, patientVisit.PatientId.Int64(), patientVisit.PatientVisitId.Int64())
+	patientAnswersForQuestions, err := p.DataApi.GetPatientAnswersForQuestionsBasedOnQuestionIds(questionIds, patientVisit.PatientId.Int64(), patientVisit.PatientVisitId.Int64())
 	if err != nil {
 		WriteDeveloperError(w, http.StatusInternalServerError, "Unable to get patient answers for questions : "+err.Error())
 		return

@@ -220,7 +220,7 @@ func (s *PatientVisitHandler) returnLastCreatedPatientVisit(w http.ResponseWrite
 	// and feed the answers into the layout
 	questionIdsInAllSections := getQuestionIdsInPatientVisitLayout(patientVisitLayout)
 
-	patientAnswersForVisit, err := s.DataApi.GetAnswersForQuestionsBasedOnQuestionIds(questionIdsInAllSections, patientId, patientVisitId)
+	patientAnswersForVisit, err := s.DataApi.GetPatientAnswersForQuestionsBasedOnQuestionIds(questionIdsInAllSections, patientId, patientVisitId)
 	if err != nil {
 		WriteDeveloperError(w, http.StatusInternalServerError, "Unable to get patient answers for patient visit: "+err.Error())
 		return
