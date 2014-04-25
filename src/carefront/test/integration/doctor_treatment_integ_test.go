@@ -199,6 +199,15 @@ func TestAddTreatments(t *testing.T) {
 	// get patient to start a visit
 	patientVisitResponse := CreatePatientVisitForPatient(patientSignedupResponse.Patient.PatientId.Int64(), testData, t)
 
+	// submit answers to questions in patient visit
+	patient, err := testData.DataApi.GetPatientFromId(patientSignedupResponse.Patient.PatientId.Int64())
+	if err != nil {
+		t.Fatal("Unable to get patient from id: " + err.Error())
+	}
+
+	answerIntakeRequestBody := prepareAnswersForQuestionsInPatientVisit(patientVisitResponse, t)
+	submitAnswersIntakeForPatient(patient.PatientId.Int64(), patient.AccountId.Int64(), answerIntakeRequestBody, testData, t)
+
 	// get patient to submit the visit
 	SubmitPatientVisitForPatient(patientSignedupResponse.Patient.PatientId.Int64(), patientVisitResponse.PatientVisitId, testData, t)
 
@@ -478,6 +487,16 @@ func TestTreatmentTemplatesInContextOfPatientVisit(t *testing.T) {
 	// create random patient
 	patientSignedupResponse := SignupRandomTestPatient(t, testData.DataApi, testData.AuthApi)
 	patientVisitResponse := CreatePatientVisitForPatient(patientSignedupResponse.Patient.PatientId.Int64(), testData, t)
+
+	// submit answers to questions in patient visit
+	patient, err := testData.DataApi.GetPatientFromId(patientSignedupResponse.Patient.PatientId.Int64())
+	if err != nil {
+		t.Fatal("Unable to get patient from id: " + err.Error())
+	}
+
+	answerIntakeRequestBody := prepareAnswersForQuestionsInPatientVisit(patientVisitResponse, t)
+	submitAnswersIntakeForPatient(patient.PatientId.Int64(), patient.AccountId.Int64(), answerIntakeRequestBody, testData, t)
+
 	SubmitPatientVisitForPatient(patientSignedupResponse.Patient.PatientId.Int64(), patientVisitResponse.PatientVisitId, testData, t)
 	StartReviewingPatientVisit(patientVisitResponse.PatientVisitId, doctor, testData, t)
 
@@ -701,6 +720,15 @@ func TestTreatmentTemplateWithDrugOutOfMarket(t *testing.T) {
 	// create random patient
 	patientSignedupResponse := SignupRandomTestPatient(t, testData.DataApi, testData.AuthApi)
 	patientVisitResponse := CreatePatientVisitForPatient(patientSignedupResponse.Patient.PatientId.Int64(), testData, t)
+	// submit answers to questions in patient visit
+	patient, err := testData.DataApi.GetPatientFromId(patientSignedupResponse.Patient.PatientId.Int64())
+	if err != nil {
+		t.Fatal("Unable to get patient from id: " + err.Error())
+	}
+
+	answerIntakeRequestBody := prepareAnswersForQuestionsInPatientVisit(patientVisitResponse, t)
+	submitAnswersIntakeForPatient(patient.PatientId.Int64(), patient.AccountId.Int64(), answerIntakeRequestBody, testData, t)
+
 	SubmitPatientVisitForPatient(patientSignedupResponse.Patient.PatientId.Int64(), patientVisitResponse.PatientVisitId, testData, t)
 	StartReviewingPatientVisit(patientVisitResponse.PatientVisitId, doctor, testData, t)
 

@@ -23,7 +23,10 @@ func TestAdvicePointsForPatientVisit(t *testing.T) {
 	defer TearDownIntegrationTest(t, testData)
 
 	patientSignedupResponse := SignupRandomTestPatient(t, testData.DataApi, testData.AuthApi)
-
+	patient, err := testData.DataApi.GetPatientFromId(patientSignedupResponse.Patient.PatientId.Int64())
+	if err != nil {
+		t.Fatal("Unable to get patient from id " + err.Error())
+	}
 	// get the current primary doctor
 	doctorId := getDoctorIdOfCurrentPrimaryDoctor(testData, t)
 
@@ -34,6 +37,9 @@ func TestAdvicePointsForPatientVisit(t *testing.T) {
 
 	// get patient to start a visit
 	patientVisitResponse := CreatePatientVisitForPatient(patientSignedupResponse.Patient.PatientId.Int64(), testData, t)
+
+	answerIntakeRequestBody := prepareAnswersForQuestionsInPatientVisit(patientVisitResponse, t)
+	submitAnswersIntakeForPatient(patient.PatientId.Int64(), patient.AccountId.Int64(), answerIntakeRequestBody, testData, t)
 
 	// get the patient to submit the case so that it can be reviewed by the doctor
 	SubmitPatientVisitForPatient(patientSignedupResponse.Patient.PatientId.Int64(), patientVisitResponse.PatientVisitId, testData, t)

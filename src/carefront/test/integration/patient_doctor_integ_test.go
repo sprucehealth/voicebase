@@ -33,12 +33,14 @@ func TestPatientVisitReview(t *testing.T) {
 	signedupPatientResponse := SignupRandomTestPatient(t, testData.DataApi, testData.AuthApi)
 
 	patientVisitResponse := CreatePatientVisitForPatient(signedupPatientResponse.Patient.PatientId.Int64(), testData, t)
-	SubmitPatientVisitForPatient(signedupPatientResponse.Patient.PatientId.Int64(), patientVisitResponse.PatientVisitId, testData, t)
-
 	patient, err := testData.DataApi.GetPatientFromId(signedupPatientResponse.Patient.PatientId.Int64())
 	if err != nil {
-		t.Fatal("Unable to get patient from id: " + err.Error())
+		t.Fatal("Unable to get patient from id " + err.Error())
 	}
+	answerIntakeRequestBody := prepareAnswersForQuestionsInPatientVisit(patientVisitResponse, t)
+	submitAnswersIntakeForPatient(patient.PatientId.Int64(), patient.AccountId.Int64(), answerIntakeRequestBody, testData, t)
+
+	SubmitPatientVisitForPatient(signedupPatientResponse.Patient.PatientId.Int64(), patientVisitResponse.PatientVisitId, testData, t)
 
 	pharmacySelection := &pharmacy.PharmacyData{
 		SourceId:     "12345",
@@ -74,7 +76,7 @@ func TestPatientVisitReview(t *testing.T) {
 		t.Fatal("Unable to get doctor from id: " + err.Error())
 	}
 
-	// now lets go ahead and get doctor to start reviewing the patient visit and then submit the patient visit review
+	// get doctor to start reviewing the patient visit and then submit the patient visit review
 	doctorPatientVisitReviewHandler := &apiservice.DoctorPatientVisitReviewHandler{DataApi: testData.DataApi, LayoutStorageService: testData.CloudStorageService, PatientPhotoStorageService: testData.CloudStorageService}
 	ts2 := httptest.NewServer(doctorPatientVisitReviewHandler)
 	defer ts2.Close()
@@ -152,6 +154,15 @@ func TestPatientVisitReview(t *testing.T) {
 		t.Fatal("Unable to update patient pharmacy: " + err.Error())
 	}
 	patientVisitResponse = CreatePatientVisitForPatient(signedupPatientResponse.Patient.PatientId.Int64(), testData, t)
+
+	// submit answers to the patient visit questions
+	patient, err = testData.DataApi.GetPatientFromId(signedupPatientResponse.Patient.PatientId.Int64())
+	if err != nil {
+		t.Fatal("Unable to get patient from id " + err.Error())
+	}
+	answerIntakeRequestBody = prepareAnswersForQuestionsInPatientVisit(patientVisitResponse, t)
+	submitAnswersIntakeForPatient(patient.PatientId.Int64(), patient.AccountId.Int64(), answerIntakeRequestBody, testData, t)
+
 	SubmitPatientVisitForPatient(signedupPatientResponse.Patient.PatientId.Int64(), patientVisitResponse.PatientVisitId, testData, t)
 
 	// get doctor to start reviewing it

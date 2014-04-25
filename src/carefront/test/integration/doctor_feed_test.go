@@ -34,6 +34,13 @@ func TestDoctorQueueWithPatientVisits(t *testing.T) {
 	patientVisitResponse := CreatePatientVisitForPatient(signedUpPatientResponse.Patient.PatientId.Int64(), testData, t)
 	patientVisitResponses = append(patientVisitResponses, patientVisitResponse)
 	signedUpPatients = append(signedUpPatients, signedUpPatientResponse)
+	patient, err := testData.DataApi.GetPatientFromId(signedUpPatientResponse.Patient.PatientId.Int64())
+	if err != nil {
+		t.Fatal("Unable to get patient from id " + err.Error())
+	}
+	answerIntakeRequestBody := prepareAnswersForQuestionsInPatientVisit(patientVisitResponse, t)
+	submitAnswersIntakeForPatient(patient.PatientId.Int64(), patient.AccountId.Int64(), answerIntakeRequestBody, testData, t)
+
 	// submit this patient visit and check to ensure that there is something in the doctor's queue
 	SubmitPatientVisitForPatient(signedUpPatientResponse.Patient.PatientId.Int64(), patientVisitResponse.PatientVisitId, testData, t)
 
@@ -79,6 +86,7 @@ func TestDoctorQueueWithPatientVisits(t *testing.T) {
 	patientVisitResponse = CreatePatientVisitForPatient(signedUpPatientResponse.Patient.PatientId.Int64(), testData, t)
 	patientVisitResponses = append(patientVisitResponses, patientVisitResponse)
 	signedUpPatients = append(signedUpPatients, signedUpPatientResponse)
+
 	SubmitPatientVisitForPatient(signedUpPatientResponse.Patient.PatientId.Int64(), patientVisitResponse.PatientVisitId, testData, t)
 
 	doctorDisplayFeedTabs = getDoctorQueue(testData, doctor.AccountId.Int64(), t)

@@ -6,12 +6,14 @@ import (
 	"fmt"
 	"io/ioutil"
 	"math/rand"
+	"net/http"
 	"net/http/httptest"
 	"strconv"
 	"testing"
 
 	"carefront/api"
 	"carefront/apiservice"
+	"carefront/info_intake"
 	thriftapi "carefront/thrift/api"
 )
 
@@ -106,6 +108,83 @@ func CreatePatientVisitForPatient(PatientId int64, testData TestData, t *testing
 	}
 
 	return patientVisitResponse
+}
+
+// randomly answering all top level questions in the patient visit, regardless of the condition under which the questions are presented to the user.
+// the goal of this is to get all questions answered so as to render the views for the doctor layout, not to test the sanity of the answers the patient inputs.
+func prepareAnswersForQuestionsInPatientVisit(patientVisitResponse *apiservice.PatientVisitResponse, t *testing.T) *apiservice.AnswerIntakeRequestBody {
+	answerIntakeRequestBody := apiservice.AnswerIntakeRequestBody{}
+	answerIntakeRequestBody.PatientVisitId = patientVisitResponse.PatientVisitId
+	answerIntakeRequestBody.Questions = make([]*apiservice.AnswerToQuestionItem, 0)
+	for _, section := range patientVisitResponse.ClientLayout.Sections {
+		for _, screen := range section.Screens {
+			for _, question := range screen.Questions {
+				switch question.QuestionTypes[0] {
+				case info_intake.QUESTION_TYPE_SINGLE_SELECT:
+					answerIntakeRequestBody.Questions = append(answerIntakeRequestBody.Questions, &apiservice.AnswerToQuestionItem{
+						QuestionId: question.QuestionId,
+						AnswerIntakes: []*apiservice.AnswerItem{&apiservice.AnswerItem{
+							PotentialAnswerId: question.PotentialAnswers[0].AnswerId,
+						},
+						},
+					})
+				case info_intake.QUESTION_TYPE_MULTIPLE_CHOICE:
+					answerIntakeRequestBody.Questions = append(answerIntakeRequestBody.Questions, &apiservice.AnswerToQuestionItem{
+						QuestionId: question.QuestionId,
+						AnswerIntakes: []*apiservice.AnswerItem{
+							&apiservice.AnswerItem{
+								PotentialAnswerId: question.PotentialAnswers[0].AnswerId,
+							},
+							&apiservice.AnswerItem{
+								PotentialAnswerId: question.PotentialAnswers[1].AnswerId,
+							},
+						},
+					})
+				case info_intake.QUESTION_TYPE_AUTOCOMPLETE:
+					answerIntakeRequestBody.Questions = append(answerIntakeRequestBody.Questions, &apiservice.AnswerToQuestionItem{
+						QuestionId: question.QuestionId,
+						AnswerIntakes: []*apiservice.AnswerItem{
+							&apiservice.AnswerItem{
+								AnswerText: "autocomplete 1",
+							},
+						},
+					})
+				case info_intake.QUESTION_TYPE_FREE_TEXT:
+					answerIntakeRequestBody.Questions = append(answerIntakeRequestBody.Questions, &apiservice.AnswerToQuestionItem{
+						QuestionId: question.QuestionId,
+						AnswerIntakes: []*apiservice.AnswerItem{
+							&apiservice.AnswerItem{
+								AnswerText: "This is a test answer",
+							},
+						},
+					})
+				}
+			}
+		}
+	}
+	return &answerIntakeRequestBody
+}
+
+func submitAnswersIntakeForPatient(patientId, patientAccountId int64, answerIntakeRequestBody *apiservice.AnswerIntakeRequestBody, testData TestData, t *testing.T) {
+	answerIntakeHandler := &apiservice.AnswerIntakeHandler{
+		DataApi: testData.DataApi,
+	}
+
+	ts := httptest.NewServer(answerIntakeHandler)
+	defer ts.Close()
+
+	jsonData, err := json.Marshal(answerIntakeRequestBody)
+	if err != nil {
+		t.Fatalf("Unable to marshal answer intake body: %s", err)
+	}
+	resp, err := authPost(ts.URL, "application/json", bytes.NewReader(jsonData), patientAccountId)
+	if err != nil {
+		t.Fatalf("Unable to successfully make request to submit answer intake: %s", err)
+	}
+
+	if resp.StatusCode != http.StatusOK {
+		t.Fatalf("Unable to successfuly make call to submit answer intake. Expected 200 but got %d", resp.StatusCode)
+	}
 }
 
 func SubmitPatientVisitForPatient(PatientId, PatientVisitId int64, testData TestData, t *testing.T) {

@@ -67,7 +67,6 @@ func (s *StubErxService) GetPrescriptionStatus(clinicianId int64, prescriptionId
 	prescriptionLogs := make([]*PrescriptionLog, 0)
 
 	for _, prescriptionStatus := range prescriptionStatuses {
-		fmt.Printf("%#v\n", prescriptionStatus)
 		prescriptionLogs = append(prescriptionLogs, &PrescriptionLog{
 			PrescriptionStatus: prescriptionStatus.Status,
 			LogTimestamp:       time.Now(),
