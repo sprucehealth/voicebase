@@ -232,7 +232,6 @@ type IntakeLayoutAPI interface {
 	GetSectionInfo(sectionTag string, languageId int64) (id int64, title string, err error)
 	GetQuestionInfo(questionTag string, languageId int64) (*common.QuestionInfo, error)
 	GetQuestionInfoForTags(questionTags []string, languageId int64) ([]*common.QuestionInfo, error)
-	GetQuestionInfoForIds(questionIds []int64, languageId int64) ([]*common.QuestionInfo, error)
 	GetAnswerInfo(questionId int64, languageId int64) (answerInfos []PotentialAnswerInfo, err error)
 	GetAnswerInfoForTags(answerTags []string, languageId int64) ([]PotentialAnswerInfo, error)
 	GetTipSectionInfo(tipSectionTag string, languageId int64) (id int64, tipSectionTitle string, tipSectionSubtext string, err error)
