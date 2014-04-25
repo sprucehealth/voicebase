@@ -331,7 +331,7 @@ func createAnswerInfosFromRows(rows *sql.Rows) ([]PotentialAnswerInfo, error) {
 			AnswerTag:         answerTag,
 			Ordering:          ordering,
 			AnswerType:        answerType,
-			ToAlert:           toAlert.Valid && toAlert.Bool,
+			ToAlert:           toAlert.Bool,
 		}
 		answerInfos = append(answerInfos, potentialAnswerInfo)
 		if err != nil {
