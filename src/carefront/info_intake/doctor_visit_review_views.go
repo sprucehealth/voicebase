@@ -1,4 +1,4 @@
-package apiservice
+package info_intake
 
 import (
 	"carefront/common"
@@ -6,10 +6,10 @@ import (
 	"reflect"
 )
 
-var dVisitReviewViewTypeRegistry common.TypeRegistry = common.TypeRegistry(map[string]reflect.Type{})
+var DVisitReviewViewTypeRegistry common.TypeRegistry = common.TypeRegistry(map[string]reflect.Type{})
 
 func init() {
-	dVisitReviewViewTypeRegistry.
+	DVisitReviewViewTypeRegistry.
 		RegisterType(&DVisitReviewSectionListView{}).
 		RegisterType(&DVisitReviewStandardPhotosSectionView{}).
 		RegisterType(&DVisitReviewStandardPhotosSubsectionView{}).

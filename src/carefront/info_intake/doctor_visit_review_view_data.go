@@ -1,4 +1,4 @@
-package apiservice
+package info_intake
 
 type PhotoData struct {
 	Title          string `json:"title"`

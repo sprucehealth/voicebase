@@ -1,4 +1,4 @@
-package apiservice
+package info_intake
 
 import (
 	"carefront/common"
@@ -11,11 +11,11 @@ import (
 
 func TestParsingTemplateForDoctorVisitReview(t *testing.T) {
 
-	parseTemplateFromFile("../api-response-examples/v1/doctor/visit/review_v2_template.json", t)
+	parseTemplateFromFile("../api-response-examples/v1/doctor/visit/review_template.json", t)
 }
 
 func TestParsingLayoutForDoctorVisitReview(t *testing.T) {
-	parseTemplateFromFile("../api-response-examples/v1/doctor/visit/review_v2.json", t)
+	parseTemplateFromFile("../api-response-examples/v1/doctor/visit/review.json", t)
 }
 
 func parseTemplateFromFile(fileLocation string, t *testing.T) DVisitReviewSectionListView {
@@ -35,7 +35,7 @@ func parseTemplateFromFile(fileLocation string, t *testing.T) DVisitReviewSectio
 		Result:  sectionList,
 		TagName: "json",
 	}
-	if err := decoderConfig.SetRegistry(dVisitReviewViewTypeRegistry.Map()); err != nil {
+	if err := decoderConfig.SetRegistry(DVisitReviewViewTypeRegistry.Map()); err != nil {
 		t.Fatalf("Error setting registry for decoder config: %s", err)
 	}
 
@@ -56,7 +56,7 @@ func TestRenderingLayoutForDoctorVisitReview(t *testing.T) {
 	viewContext := common.ViewContext(map[string]interface{}{})
 	populateCompleteViewContext(viewContext)
 
-	sectionList := parseTemplateFromFile("../api-response-examples/v1/doctor/visit/review_v2_template.json", t)
+	sectionList := parseTemplateFromFile("../api-response-examples/v1/doctor/visit/review_template.json", t)
 	_, err := sectionList.Render(viewContext)
 	if err != nil {
 		t.Fatalf("Error rendering layout:%s", err)
@@ -88,7 +88,7 @@ func TestRenderingLayoutForDoctorVisitReview_ContentLabels(t *testing.T) {
 		},
 	})
 
-	sectionList := parseTemplateFromFile("../api-response-examples/v1/doctor/visit/review_v2_template.json", t)
+	sectionList := parseTemplateFromFile("../api-response-examples/v1/doctor/visit/review_template.json", t)
 	_, err := sectionList.Render(viewContext)
 	if err != nil {
 		t.Fatalf("Error rendering layout:%s", err)
@@ -118,7 +118,7 @@ func TestRenderingLayoutForDoctorVisitReview_EmptyStateViews(t *testing.T) {
 	viewContext.Delete("patient_visit_alerts")
 	viewContext.Set("patient_visit_alerts:empty_state_text", "No alerts specified")
 
-	sectionList := parseTemplateFromFile("../api-response-examples/v1/doctor/visit/review_v2_template.json", t)
+	sectionList := parseTemplateFromFile("../api-response-examples/v1/doctor/visit/review_template.json", t)
 	_, err := sectionList.Render(viewContext)
 	if err != nil {
 		t.Fatalf("Error rendering layout:%s", err)
