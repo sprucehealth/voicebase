@@ -271,8 +271,8 @@ func (d *DataService) getQuestionInfoFromRows(rows *sql.Rows, languageId int64) 
 			Summary:            questionSummary.String,
 			SubText:            questionSubText.String,
 			FormattedFieldTags: formattedFieldTagsNull.String,
-			Required:           requiredBit.Valid && requiredBit.Bool,
-			ToAlert:            toAlertBit.Valid && toAlertBit.Bool,
+			Required:           requiredBit.Bool,
+			ToAlert:            toAlertBit.Bool,
 			AlertFormattedText: alertText.String,
 		}
 
