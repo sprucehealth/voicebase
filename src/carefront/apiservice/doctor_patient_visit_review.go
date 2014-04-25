@@ -8,7 +8,6 @@ import (
 	"encoding/json"
 	"fmt"
 	"net/http"
-	"strings"
 
 	"github.com/SpruceHealth/mapstructure"
 	"github.com/gorilla/schema"
@@ -190,207 +189,23 @@ func (d *DoctorPatientVisitReviewHandler) getLatestDoctorVisitReviewLayout(patie
 func populateContextForRenderingLayout(patientAnswersForQuestions map[int64][]*common.AnswerIntake, questions []*info_intake.Question, dataApi api.DataAPI, photoStorageService api.CloudStorageAPI) (common.ViewContext, error) {
 	context := common.NewViewContext()
 
-	populateAlerts(patientAnswersForQuestions, questions, context, dataApi)
+	for _, contextPopulator := range genericPopulators {
+		if err := contextPopulator.PopulateViewContextWithInfo(patientAnswersForQuestions, questions, context, dataApi); err != nil {
+			return nil, err
+		}
+	}
 
 	// go through each question
 	for _, question := range questions {
-		switch question.QuestionTypes[0] {
+		contextPopulator, ok := patientQAPopulators[question.QuestionTypes[0]]
+		if !ok {
+			return nil, fmt.Errorf("Context populator not found for question with type %s", question.QuestionTypes[0])
+		}
 
-		case info_intake.QUESTION_TYPE_PHOTO, info_intake.QUESTION_TYPE_MULTIPLE_PHOTO, info_intake.QUESTION_TYPE_SINGLE_PHOTO:
-			populatePhotos(patientAnswersForQuestions[question.QuestionId], context, photoStorageService)
-
-		case info_intake.QUESTION_TYPE_AUTOCOMPLETE:
-			populateDataForAnswerWithSubAnswers(patientAnswersForQuestions[question.QuestionId], question, context)
-
-		case info_intake.QUESTION_TYPE_MULTIPLE_CHOICE:
-			if err := populateCheckedUncheckedData(patientAnswersForQuestions[question.QuestionId], question, context, dataApi); err != nil {
-				return nil, err
-			}
-
-		case info_intake.QUESTION_TYPE_SINGLE_ENTRY, info_intake.QUESTION_TYPE_FREE_TEXT, info_intake.QUESTION_TYPE_SINGLE_SELECT:
-			if err := populateDataForSingleEntryAnswers(patientAnswersForQuestions[question.QuestionId], question, context); err != nil {
-				return nil, err
-			}
+		if err := contextPopulator.PopulateViewContextWithPatientQA(patientAnswersForQuestions[question.QuestionId], question, context, dataApi, photoStorageService); err != nil {
+			return nil, err
 		}
 	}
 
 	return *context, nil
-}
-
-func populateAlerts(patientAnswers map[int64][]*common.AnswerIntake, questions []*info_intake.Question, context *common.ViewContext, dataApi api.DataAPI) error {
-
-	questionIdToQuestion := make(map[int64]*info_intake.Question)
-	for _, question := range questions {
-		questionIdToQuestion[question.QuestionId] = question
-	}
-
-	alerts := make([]string, 0)
-	// lets go over every answered question
-	for questionId, answers := range patientAnswers {
-		// check if the alert flag is set on the question
-		question := questionIdToQuestion[questionId]
-		if question.ToAlert {
-			switch question.QuestionTypes[0] {
-
-			case info_intake.QUESTION_TYPE_AUTOCOMPLETE:
-				// populate the answers to call out in the alert
-				enteredAnswers := make([]string, len(answers))
-				for i, answer := range answers {
-
-					answerText := answer.AnswerText
-
-					if answerText == "" {
-						answerText = answer.AnswerSummary
-					}
-
-					if answerText == "" {
-						answerText = answer.PotentialAnswer
-					}
-
-					enteredAnswers[i] = answerText
-				}
-				if len(enteredAnswers) > 0 {
-					alerts = append(alerts, fmt.Sprintf(question.AlertFormattedText, strings.Join(enteredAnswers, ", ")))
-				}
-
-			case info_intake.QUESTION_TYPE_MULTIPLE_CHOICE, info_intake.QUESTION_TYPE_SINGLE_SELECT:
-				selectedAnswers := make([]string, 0)
-				for _, potentialAnswer := range question.PotentialAnswers {
-					for _, patientAnswer := range answers {
-						// populate all the selected answers to show in the alert
-						if patientAnswer.PotentialAnswerId.Int64() == potentialAnswer.AnswerId {
-							if potentialAnswer.ToAlert {
-								selectedAnswers = append(selectedAnswers, potentialAnswer.Answer)
-								break
-							}
-						}
-					}
-				}
-				if len(selectedAnswers) > 0 {
-					alerts = append(alerts, fmt.Sprintf(question.AlertFormattedText, strings.Join(selectedAnswers, ", ")))
-				}
-			}
-		}
-	}
-
-	if len(alerts) > 0 {
-		context.Set("patient_visit_alerts", alerts)
-	} else {
-		context.Set("patient_visit_alerts:empty_state_text", "No alerts")
-	}
-
-	return nil
-}
-
-func populateCheckedUncheckedData(patientAnswers []*common.AnswerIntake, question *info_intake.Question, context *common.ViewContext, dataApi api.DataAPI) error {
-
-	if len(patientAnswers) == 0 {
-		populateEmptyStateTextIfPresent(question, context)
-		return nil
-	}
-
-	checkedUncheckedItems := make([]info_intake.CheckedUncheckedData, len(question.PotentialAnswers))
-	for i, potentialAnswer := range question.PotentialAnswers {
-		answerSelected := false
-
-		for _, patientAnswer := range patientAnswers {
-			if patientAnswer.PotentialAnswerId.Int64() == potentialAnswer.AnswerId {
-				answerSelected = true
-			}
-		}
-
-		checkedUncheckedItems[i] = info_intake.CheckedUncheckedData{
-			Value:     potentialAnswer.Answer,
-			IsChecked: answerSelected,
-		}
-	}
-
-	context.Set(fmt.Sprintf("%s:question_summary", question.QuestionTag), question.QuestionSummary)
-	context.Set(fmt.Sprintf("%s:answers", question.QuestionTag), checkedUncheckedItems)
-	return nil
-}
-
-func populatePhotos(patientAnswers []*common.AnswerIntake, context *common.ViewContext, photoStorageService api.CloudStorageAPI) {
-	var photos []info_intake.PhotoData
-	photoData, ok := context.Get("patient_visit_photos")
-
-	if !ok || photoData == nil {
-		photos = make([]info_intake.PhotoData, 0)
-	} else {
-		photos = photoData.([]info_intake.PhotoData)
-	}
-
-	for _, answerIntake := range patientAnswers {
-		photos = append(photos, info_intake.PhotoData{
-			Title:    answerIntake.PotentialAnswer,
-			PhotoUrl: GetSignedUrlForAnswer(answerIntake, photoStorageService),
-		})
-	}
-
-	context.Set("patient_visit_photos", photos)
-}
-
-func populateDataForSingleEntryAnswers(patientAnswers []*common.AnswerIntake, question *info_intake.Question, context *common.ViewContext) error {
-
-	if len(patientAnswers) == 0 {
-		populateEmptyStateTextIfPresent(question, context)
-		return nil
-	}
-
-	if len(patientAnswers) > 1 {
-		return fmt.Errorf("Expected just one answer for question %s instead we have  %d", question.QuestionTag, len(patientAnswers))
-	}
-
-	answer := patientAnswers[0].AnswerText
-	if answer == "" {
-		answer = patientAnswers[0].AnswerSummary
-	}
-	if answer == "" {
-		answer = patientAnswers[0].PotentialAnswer
-	}
-
-	context.Set(fmt.Sprintf("%s:question_summary", question.QuestionTag), question.QuestionSummary)
-	context.Set(fmt.Sprintf("%s:answers", question.QuestionTag), answer)
-	return nil
-}
-
-func populateDataForAnswerWithSubAnswers(patientAnswers []*common.AnswerIntake, question *info_intake.Question, context *common.ViewContext) {
-
-	if len(patientAnswers) == 0 {
-		populateEmptyStateTextIfPresent(question, context)
-		return
-	}
-
-	data := make([]info_intake.TitleSubtitleSubItemsData, len(patientAnswers))
-	for i, patientAnswer := range patientAnswers {
-
-		items := make([]string, len(patientAnswer.SubAnswers))
-		for j, subAnswer := range patientAnswer.SubAnswers {
-			if subAnswer.AnswerSummary != "" {
-				items[j] = subAnswer.AnswerSummary
-			} else {
-				items[j] = subAnswer.PotentialAnswer
-			}
-		}
-
-		data[i] = info_intake.TitleSubtitleSubItemsData{
-			Title:    patientAnswer.AnswerText,
-			SubItems: items,
-		}
-	}
-	context.Set(fmt.Sprintf("%s:question_summary", question.QuestionTag), question.QuestionSummary)
-	context.Set(fmt.Sprintf("%s:answers", question.QuestionTag), data)
-}
-
-// if there are no patient answers for this question,
-// check if the empty state text is specified in the additional fields
-// of the question
-func populateEmptyStateTextIfPresent(question *info_intake.Question, context *common.ViewContext) {
-	emptyStateText, ok := question.AdditionalFields["empty_state_text"]
-	if !ok {
-		return
-	}
-
-	context.Set(fmt.Sprintf("%s:question_summary", question.QuestionTag), question.QuestionSummary)
-	context.Set(fmt.Sprintf("%s:empty_state_text", question.QuestionTag), emptyStateText)
 }
