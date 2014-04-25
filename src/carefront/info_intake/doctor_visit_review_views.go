@@ -6,6 +6,7 @@ import (
 	"reflect"
 )
 
+// This TypeRegistry contains all views pertaining to the DVisitReview namespace
 var DVisitReviewViewTypeRegistry common.TypeRegistry = common.TypeRegistry(map[string]reflect.Type{})
 
 func init() {
@@ -42,7 +43,6 @@ func (d DVisitReviewSectionListView) TypeName() string {
 
 func (d *DVisitReviewSectionListView) Render(context common.ViewContext) (map[string]interface{}, error) {
 	renderedView := make(map[string]interface{})
-	renderedView["type"] = d.TypeName()
 	renderedSections := make([]interface{}, 0)
 	for _, section := range d.Sections {
 		renderedSection, err := section.Render(context)
@@ -54,6 +54,8 @@ func (d *DVisitReviewSectionListView) Render(context common.ViewContext) (map[st
 			renderedSections = append(renderedSections, renderedSection)
 		}
 	}
+
+	renderedView["type"] = d.TypeName()
 	renderedView["sections"] = renderedSections
 	return renderedView, nil
 }
@@ -69,8 +71,6 @@ func (d DVisitReviewStandardPhotosSectionView) TypeName() string {
 
 func (d *DVisitReviewStandardPhotosSectionView) Render(context common.ViewContext) (map[string]interface{}, error) {
 	renderedView := make(map[string]interface{})
-	renderedView["title"] = d.Title
-	renderedView["type"] = d.TypeName()
 	renderedSubSections := make([]interface{}, 0)
 
 	for _, subSection := range d.Subsections {
@@ -84,6 +84,9 @@ func (d *DVisitReviewStandardPhotosSectionView) Render(context common.ViewContex
 			renderedSubSections = append(renderedSubSections, renderedSubSection)
 		}
 	}
+
+	renderedView["title"] = d.Title
+	renderedView["type"] = d.TypeName()
 	renderedView["subsections"] = renderedSubSections
 
 	return renderedView, nil
@@ -99,7 +102,6 @@ func (d DVisitReviewStandardPhotosSubsectionView) TypeName() string {
 
 func (d *DVisitReviewStandardPhotosSubsectionView) Render(context common.ViewContext) (map[string]interface{}, error) {
 	renderedView := make(map[string]interface{})
-	renderedView["type"] = d.TypeName()
 
 	if d.SubsectionView != nil {
 		renderedSubsectionView, err := d.SubsectionView.Render(context)
@@ -110,6 +112,8 @@ func (d *DVisitReviewStandardPhotosSubsectionView) Render(context common.ViewCon
 			renderedView["view"] = renderedSubsectionView
 		}
 	}
+	renderedView["type"] = d.TypeName()
+
 	return renderedView, nil
 }
 
@@ -126,7 +130,6 @@ func (d DVisitReviewStandardPhotosListView) TypeName() string {
 
 func (d *DVisitReviewStandardPhotosListView) Render(context common.ViewContext) (map[string]interface{}, error) {
 	renderedView := make(map[string]interface{})
-	renderedView["type"] = d.TypeName()
 
 	content, err := getContentFromContextForView(d, d.ContentConfig.Key, context)
 	if err != nil {
@@ -140,6 +143,7 @@ func (d *DVisitReviewStandardPhotosListView) Render(context common.ViewContext) 
 	}
 
 	renderedView["photos"] = d.Photos
+	renderedView["type"] = d.TypeName()
 
 	return renderedView, nil
 }
@@ -155,8 +159,6 @@ func (d DVisitReviewStandardSectionView) TypeName() string {
 
 func (d *DVisitReviewStandardSectionView) Render(context common.ViewContext) (map[string]interface{}, error) {
 	renderedView := make(map[string]interface{})
-	renderedView["type"] = d.TypeName()
-	renderedView["title"] = d.Title
 	renderedSubsections := make([]interface{}, 0)
 
 	for _, subsection := range d.Subsections {
@@ -168,6 +170,8 @@ func (d *DVisitReviewStandardSectionView) Render(context common.ViewContext) (ma
 			renderedSubsections = append(renderedSubsections, renderedSubsection)
 		}
 	}
+	renderedView["type"] = d.TypeName()
+	renderedView["title"] = d.Title
 	renderedView["subsections"] = renderedSubsections
 	return renderedView, nil
 }
@@ -191,8 +195,6 @@ func (d *DVisitReviewStandardSubsectionView) Render(context common.ViewContext) 
 		}
 	}
 	renderedView := make(map[string]interface{})
-	renderedView["type"] = d.TypeName()
-	renderedView["title"] = d.Title
 	renderedRows := make([]interface{}, 0)
 
 	for _, row := range d.Rows {
@@ -204,6 +206,8 @@ func (d *DVisitReviewStandardSubsectionView) Render(context common.ViewContext) 
 			renderedRows = append(renderedRows, renderedRow)
 		}
 	}
+	renderedView["type"] = d.TypeName()
+	renderedView["title"] = d.Title
 	renderedView["rows"] = renderedRows
 
 	return renderedView, nil
@@ -219,7 +223,6 @@ func (d DVisitReviewStandardOneColumnRowView) TypeName() string {
 
 func (d *DVisitReviewStandardOneColumnRowView) Render(context common.ViewContext) (map[string]interface{}, error) {
 	renderedView := make(map[string]interface{})
-	renderedView["type"] = d.TypeName()
 	if d.SingleView != nil {
 		renderedSingleView, err := d.SingleView.Render(context)
 		if err != nil {
@@ -229,6 +232,7 @@ func (d *DVisitReviewStandardOneColumnRowView) Render(context common.ViewContext
 			renderedView["view"] = renderedSingleView
 		}
 	}
+	renderedView["type"] = d.TypeName()
 	return renderedView, nil
 }
 
@@ -251,7 +255,6 @@ func (d *DVisitReviewStandardTwoColumnRowView) Render(context common.ViewContext
 		}
 	}
 	renderedView := make(map[string]interface{})
-	renderedView["type"] = d.TypeName()
 	if d.LeftView != nil {
 		renderedLeftView, err := d.LeftView.Render(context)
 		if err != nil {
@@ -271,6 +274,7 @@ func (d *DVisitReviewStandardTwoColumnRowView) Render(context common.ViewContext
 			renderedView["right_view"] = renderedRightView
 		}
 	}
+	renderedView["type"] = d.TypeName()
 	return renderedView, nil
 }
 
@@ -342,7 +346,6 @@ func (d DVisitReviewTitleLabelsList) TypeName() string {
 
 func (d *DVisitReviewTitleLabelsList) Render(context common.ViewContext) (map[string]interface{}, error) {
 	renderedView := make(map[string]interface{})
-	renderedView["type"] = d.TypeName()
 	var err error
 
 	content, err := getContentFromContextForView(d, d.ContentConfig.Key, context)
@@ -359,6 +362,7 @@ func (d *DVisitReviewTitleLabelsList) Render(context common.ViewContext) (map[st
 		return nil, common.NewViewRenderingError(fmt.Sprintf("Expected content to be either string or []string for view type %s", d.TypeName()))
 	}
 
+	renderedView["type"] = d.TypeName()
 	renderedView["values"] = d.Values
 	return renderedView, nil
 }
@@ -431,7 +435,6 @@ func (d DVisitReviewCheckXItemsList) TypeName() string {
 
 func (d *DVisitReviewCheckXItemsList) Render(context common.ViewContext) (map[string]interface{}, error) {
 	renderedView := make(map[string]interface{})
-	renderedView["type"] = d.TypeName()
 	content, err := getContentFromContextForView(d, d.ContentConfig.Key, context)
 	if err != nil {
 		return nil, err
@@ -443,6 +446,7 @@ func (d *DVisitReviewCheckXItemsList) Render(context common.ViewContext) (map[st
 	}
 	d.Items = checkedUncheckedItems
 	renderedView["items"] = checkedUncheckedItems
+	renderedView["type"] = d.TypeName()
 
 	return renderedView, nil
 }
