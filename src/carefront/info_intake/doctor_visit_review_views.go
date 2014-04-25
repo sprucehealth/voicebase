@@ -4,31 +4,32 @@ import (
 	"carefront/common"
 	"fmt"
 	"reflect"
+
+	"github.com/SpruceHealth/mapstructure"
 )
 
 // This TypeRegistry contains all views pertaining to the DVisitReview namespace
-var DVisitReviewViewTypeRegistry common.TypeRegistry = common.TypeRegistry(map[string]reflect.Type{})
+var DVisitReviewViewTypeRegistry *mapstructure.TypeRegistry = mapstructure.NewTypeRegistry()
 
 func init() {
-	DVisitReviewViewTypeRegistry.
-		RegisterType(&DVisitReviewSectionListView{}).
-		RegisterType(&DVisitReviewStandardPhotosSectionView{}).
-		RegisterType(&DVisitReviewStandardPhotosSubsectionView{}).
-		RegisterType(&DVisitReviewStandardPhotosListView{}).
-		RegisterType(&DVisitReviewStandardSectionView{}).
-		RegisterType(&DVisitReviewStandardSubsectionView{}).
-		RegisterType(&DVisitReviewStandardSubsectionView{}).
-		RegisterType(&DVisitReviewStandardOneColumnRowView{}).
-		RegisterType(&DVisitReviewStandardTwoColumnRowView{}).
-		RegisterType(&DVisitReviewDividedViewsList{}).
-		RegisterType(&DVisitReviewAlertLabelsList{}).
-		RegisterType(&DVisitReviewTitleLabelsList{}).
-		RegisterType(&DVisitReviewContentLabelsList{}).
-		RegisterType(&DVisitReviewCheckXItemsList{}).
-		RegisterType(&DVisitReviewTitleSubtitleSubItemsDividedItemsList{}).
-		RegisterType(&DVisitReviewTitleSubtitleLabels{}).
-		RegisterType(&DVisitReviewEmptyLabelView{}).
-		RegisterType(&DVisitReviewEmptyTitleSubtitleLabelView{})
+	DVisitReviewViewTypeRegistry.MustRegisterType(&DVisitReviewSectionListView{})
+	DVisitReviewViewTypeRegistry.MustRegisterType(&DVisitReviewStandardPhotosSectionView{})
+	DVisitReviewViewTypeRegistry.MustRegisterType(&DVisitReviewStandardPhotosSubsectionView{})
+	DVisitReviewViewTypeRegistry.MustRegisterType(&DVisitReviewStandardPhotosListView{})
+	DVisitReviewViewTypeRegistry.MustRegisterType(&DVisitReviewStandardSectionView{})
+	DVisitReviewViewTypeRegistry.MustRegisterType(&DVisitReviewStandardSubsectionView{})
+	DVisitReviewViewTypeRegistry.MustRegisterType(&DVisitReviewStandardSubsectionView{})
+	DVisitReviewViewTypeRegistry.MustRegisterType(&DVisitReviewStandardOneColumnRowView{})
+	DVisitReviewViewTypeRegistry.MustRegisterType(&DVisitReviewStandardTwoColumnRowView{})
+	DVisitReviewViewTypeRegistry.MustRegisterType(&DVisitReviewDividedViewsList{})
+	DVisitReviewViewTypeRegistry.MustRegisterType(&DVisitReviewAlertLabelsList{})
+	DVisitReviewViewTypeRegistry.MustRegisterType(&DVisitReviewTitleLabelsList{})
+	DVisitReviewViewTypeRegistry.MustRegisterType(&DVisitReviewContentLabelsList{})
+	DVisitReviewViewTypeRegistry.MustRegisterType(&DVisitReviewCheckXItemsList{})
+	DVisitReviewViewTypeRegistry.MustRegisterType(&DVisitReviewTitleSubtitleSubItemsDividedItemsList{})
+	DVisitReviewViewTypeRegistry.MustRegisterType(&DVisitReviewTitleSubtitleLabels{})
+	DVisitReviewViewTypeRegistry.MustRegisterType(&DVisitReviewEmptyLabelView{})
+	DVisitReviewViewTypeRegistry.MustRegisterType(&DVisitReviewEmptyTitleSubtitleLabelView{})
 }
 
 // View definitions

@@ -32,11 +32,9 @@ func parseTemplateFromFile(fileLocation string, t *testing.T) DVisitReviewSectio
 
 	sectionList := &DVisitReviewSectionListView{}
 	decoderConfig := &mapstructure.DecoderConfig{
-		Result:  sectionList,
-		TagName: "json",
-	}
-	if err := decoderConfig.SetRegistry(DVisitReviewViewTypeRegistry.Map()); err != nil {
-		t.Fatalf("Error setting registry for decoder config: %s", err)
+		Result:   sectionList,
+		TagName:  "json",
+		Registry: *DVisitReviewViewTypeRegistry,
 	}
 
 	d, err := mapstructure.NewDecoder(decoderConfig)

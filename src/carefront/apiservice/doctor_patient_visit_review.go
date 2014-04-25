@@ -133,10 +133,10 @@ func (p *DoctorPatientVisitReviewHandler) ServeHTTP(w http.ResponseWriter, r *ht
 	// to use when parsing the template into a native go structure
 	sectionList := info_intake.DVisitReviewSectionListView{}
 	decoderConfig := &mapstructure.DecoderConfig{
-		Result:  &sectionList,
-		TagName: "json",
+		Result:   &sectionList,
+		TagName:  "json",
+		Registry: *info_intake.DVisitReviewViewTypeRegistry,
 	}
-	decoderConfig.SetRegistry(info_intake.DVisitReviewViewTypeRegistry.Map())
 
 	d, err := mapstructure.NewDecoder(decoderConfig)
 	if err != nil {

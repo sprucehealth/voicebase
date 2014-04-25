@@ -1,9 +1,6 @@
 package common
 
-import (
-	"fmt"
-	"reflect"
-)
+import "fmt"
 
 // The ViewContext is a generic container for data that Views consume
 // from when being rendered. Data exists in the ViewContext based on keys
@@ -27,21 +24,6 @@ func (c ViewContext) Get(key string) (interface{}, bool) {
 
 func (c ViewContext) Delete(key string) {
 	delete(c, key)
-}
-
-// The TypeRegistry is used to maintain a mapping of a type
-// to the actual concrete type of a go structure
-type TypeRegistry map[string]reflect.Type
-
-// Only structures that implement the Typed interface are assumed
-// to exist in the registry
-func (t TypeRegistry) RegisterType(typ Typed) TypeRegistry {
-	t[typ.TypeName()] = reflect.TypeOf(typ)
-	return t
-}
-
-func (t TypeRegistry) Map() map[string]reflect.Type {
-	return (map[string]reflect.Type)(t)
 }
 
 // Any structure that implements the Typed interface
