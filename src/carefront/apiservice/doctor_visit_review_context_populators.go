@@ -35,7 +35,7 @@ func init() {
 
 type patientAlertsPopulator int64
 
-func (p patientAlertsPopulator) PopulateViewContextWithInfo(patientAnswersToQuestions map[int64][]*common.AnswerIntake, questions []*info_intake.Question, context *common.ViewContext, dataApi api.DataAPI) error {
+func (patientAlertsPopulator) PopulateViewContextWithInfo(patientAnswersToQuestions map[int64][]*common.AnswerIntake, questions []*info_intake.Question, context *common.ViewContext, dataApi api.DataAPI) error {
 	questionIdToQuestion := make(map[int64]*info_intake.Question)
 	for _, question := range questions {
 		questionIdToQuestion[question.QuestionId] = question
@@ -101,7 +101,7 @@ func (p patientAlertsPopulator) PopulateViewContextWithInfo(patientAnswersToQues
 
 type multipleChoiceQAPopulator int64
 
-func (m multipleChoiceQAPopulator) PopulateViewContextWithPatientQA(patientAnswers []*common.AnswerIntake, question *info_intake.Question, context *common.ViewContext, dataApi api.DataAPI, photoStorageService api.CloudStorageAPI) error {
+func (multipleChoiceQAPopulator) PopulateViewContextWithPatientQA(patientAnswers []*common.AnswerIntake, question *info_intake.Question, context *common.ViewContext, dataApi api.DataAPI, photoStorageService api.CloudStorageAPI) error {
 	if len(patientAnswers) == 0 {
 		populateEmptyStateTextIfPresent(question, context)
 		return nil
@@ -130,7 +130,7 @@ func (m multipleChoiceQAPopulator) PopulateViewContextWithPatientQA(patientAnswe
 
 type patientPhotosPopulator int64
 
-func (p patientPhotosPopulator) PopulateViewContextWithPatientQA(patientAnswers []*common.AnswerIntake, question *info_intake.Question, context *common.ViewContext, dataApi api.DataAPI, photoStorageService api.CloudStorageAPI) error {
+func (patientPhotosPopulator) PopulateViewContextWithPatientQA(patientAnswers []*common.AnswerIntake, question *info_intake.Question, context *common.ViewContext, dataApi api.DataAPI, photoStorageService api.CloudStorageAPI) error {
 	var photos []info_intake.PhotoData
 	photoData, ok := context.Get("patient_visit_photos")
 
@@ -153,7 +153,7 @@ func (p patientPhotosPopulator) PopulateViewContextWithPatientQA(patientAnswers 
 
 type singleEntryAnswerPopulator int64
 
-func (s singleEntryAnswerPopulator) PopulateViewContextWithPatientQA(patientAnswers []*common.AnswerIntake, question *info_intake.Question, context *common.ViewContext, dataApi api.DataAPI, photoStorageService api.CloudStorageAPI) error {
+func (singleEntryAnswerPopulator) PopulateViewContextWithPatientQA(patientAnswers []*common.AnswerIntake, question *info_intake.Question, context *common.ViewContext, dataApi api.DataAPI, photoStorageService api.CloudStorageAPI) error {
 	if len(patientAnswers) == 0 {
 		populateEmptyStateTextIfPresent(question, context)
 		return nil
@@ -178,7 +178,7 @@ func (s singleEntryAnswerPopulator) PopulateViewContextWithPatientQA(patientAnsw
 
 type questionWithSubQuestionsAnswerPopulator int64
 
-func (q questionWithSubQuestionsAnswerPopulator) PopulateViewContextWithPatientQA(patientAnswers []*common.AnswerIntake, question *info_intake.Question, context *common.ViewContext, dataApi api.DataAPI, photoStorageService api.CloudStorageAPI) error {
+func (questionWithSubQuestionsAnswerPopulator) PopulateViewContextWithPatientQA(patientAnswers []*common.AnswerIntake, question *info_intake.Question, context *common.ViewContext, dataApi api.DataAPI, photoStorageService api.CloudStorageAPI) error {
 	if len(patientAnswers) == 0 {
 		populateEmptyStateTextIfPresent(question, context)
 		return nil
