@@ -249,7 +249,7 @@ func (d *DiagnosePatientHandler) addDiagnosisSummaryForPatientVisit(doctorId, tr
 	}
 
 	diagnosisSummary := fmt.Sprintf(summaryTemplate, strings.Title(patient.FirstName), strings.ToLower(diagnosisMessage), strings.Title(doctorFullName))
-	return d.DataApi.AddDiagnosisSummaryForPatientVisit(diagnosisSummary, treatmentPlanId, doctorId)
+	return d.DataApi.AddDiagnosisSummaryForTreatmentPlan(diagnosisSummary, treatmentPlanId, doctorId)
 }
 
 func joinAcneTypesIntoString(acneTypeAnswers []*common.AnswerIntake) string {

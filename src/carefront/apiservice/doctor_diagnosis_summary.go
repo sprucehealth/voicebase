@@ -59,7 +59,7 @@ func (d *DiagnosisSummaryHandler) getDiagnosisSummaryForPatientVisit(w http.Resp
 		}
 	}
 
-	summary, err := d.DataApi.GetDiagnosisSummaryForPatientVisit(patientVisitId, treatmentPlanId)
+	summary, err := d.DataApi.GetDiagnosisSummaryForTreatmentPlan(treatmentPlanId)
 	if err != nil {
 		WriteDeveloperError(w, http.StatusInternalServerError, "Unable to get diagnosis summary for patient visit: "+err.Error())
 		return

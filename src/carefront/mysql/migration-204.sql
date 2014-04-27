@@ -1,4 +1,3 @@
-
 set @en_id = (select id from languages_supported where language='en');
 insert into app_text(app_text_tag, comment) values ('txt_empty_state_q_allergic_medication_entry', 'empty state text');
 

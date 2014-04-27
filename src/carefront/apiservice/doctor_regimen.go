@@ -80,7 +80,7 @@ func (d *DoctorRegimenHandler) getRegimenSteps(w http.ResponseWriter, r *http.Re
 		}
 	}
 
-	regimenPlan, err := d.DataApi.GetRegimenPlanForPatientVisit(patientVisitId, treatmentPlanId)
+	regimenPlan, err := d.DataApi.GetRegimenPlanForTreatmentPlan(treatmentPlanId)
 	if err != nil && err != api.NoRegimenPlanForPatientVisit {
 		WriteDeveloperError(w, http.StatusInternalServerError, "Unable to lookup regimen plan for patient visit: "+err.Error())
 	}
