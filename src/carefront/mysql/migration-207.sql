@@ -1,4 +1,3 @@
-
 CREATE TABLE person (
     id BIGINT UNSIGNED NOT NULL AUTO_INCREMENT,
     role_type VARCHAR(32) NOT NULL, -- PATIENT, DOCTOR
@@ -86,3 +85,4 @@ INSERT INTO conversation_topic (title, ordinal, active) VALUES
     ('Side Effects', 300, 1),
     ('Not Seeing Results', 400, 1),
     ('Other', 500, 1);
+
