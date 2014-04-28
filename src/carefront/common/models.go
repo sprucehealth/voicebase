@@ -275,6 +275,10 @@ type DrugDetails struct {
 	CommonSideEffects  []string
 }
 
+type NotificationData interface {
+	TypeName() string
+}
+
 type HomeNotification struct {
 	Id              int64
 	PatientId       int64
@@ -285,5 +289,5 @@ type HomeNotification struct {
 	DismissOnAction bool
 	Priority        int
 	Type            string
-	Data            interface{}
+	Data            NotificationData
 }

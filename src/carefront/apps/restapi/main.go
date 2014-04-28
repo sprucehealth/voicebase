@@ -13,6 +13,7 @@ import (
 	"carefront/app_worker"
 	"carefront/common"
 	"carefront/common/config"
+	"carefront/homelog"
 	"carefront/libs/address_validation"
 	"carefront/libs/aws"
 	"carefront/libs/erx"
@@ -209,6 +210,8 @@ func main() {
 		notify.InitTwilio(dataApi, twilioCli, conf.Twilio.FromNumber, conf.IOSDeeplinkScheme)
 	}
 
+	homelog.InitListeners(dataApi)
+
 	cloudStorageApi := api.NewCloudStorageService(awsAuth)
 	photoAnswerCloudStorageApi := api.NewCloudStorageService(awsAuth)
 	authHandler := &apiservice.AuthenticationHandler{AuthApi: authApi, DataApi: dataApi, PharmacySearchService: pharmacy.GooglePlacesPharmacySearchService(0), StaticContentBaseUrl: conf.StaticContentBaseUrl}
@@ -342,6 +345,7 @@ func main() {
 	mux.Handle("/v1/patient/address/billing", updatePatientBillingAddress)
 	mux.Handle("/v1/patient/pharmacy", updatePatientPharmacyHandler)
 	mux.Handle("/v1/patient/treatment/guide", patientTreatmentGuideHandler)
+	mux.Handle("/v1/patient/home", homelog.NewHandler(dataApi))
 	mux.Handle("/v1/visit", patientVisitHandler)
 	mux.Handle("/v1/visit/review", patientVisitReviewHandler)
 	mux.Handle("/v1/check_eligibility", checkElligibilityHandler)
