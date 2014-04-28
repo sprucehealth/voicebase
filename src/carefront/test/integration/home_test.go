@@ -53,7 +53,7 @@ func TestHomeAPI(t *testing.T) {
 	} else if len(notes) != 1 {
 		t.Fatalf("Expected 1 notification. Got %d", len(notes))
 	} else if notes[0].Data.TypeName() != "test" {
-		t.Fatalf("Expected data type of 'test'. Got '%s'", "test", notes[0].Data.TypeName())
+		t.Fatalf("Expected data type of 'test'. Got '%s'", notes[0].Data.TypeName())
 	} else if notes[0].Data.(*testNotification).SomeId != 1234 {
 		t.Fatal("Test notification data mismatch")
 	}

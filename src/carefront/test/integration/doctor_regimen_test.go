@@ -262,7 +262,7 @@ func validateRegimenRequestAgainstResponse(doctorRegimenRequest, doctorRegimenRe
 				t.Fatal("Regimen steps in each section are expected to have an id")
 			}
 			if regimenStepsMapping[regimenStep.Id.Int64()] == false {
-				t.Fatalf("There exists a regimen step in a section that is not present in the global list. Id of regimen step %d", regimenStep.Id)
+				t.Fatalf("There exists a regimen step in a section that is not present in the global list. Id of regimen step %d", regimenStep.Id.Int64())
 			}
 		}
 	}
@@ -284,7 +284,7 @@ func validateRegimenRequestAgainstResponse(doctorRegimenRequest, doctorRegimenRe
 	for _, regimenStep := range doctorRegimenResponse.AllRegimenSteps {
 		if updatedRegimenSteps[regimenStep.Text] != 0 {
 			if regimenStep.Id.Int64() == updatedRegimenSteps[regimenStep.Text] {
-				t.Fatalf("Expected an updated regimen step to have a different id in the response. Id = %d", regimenStep.Id)
+				t.Fatalf("Expected an updated regimen step to have a different id in the response. Id = %d", regimenStep.Id.Int64())
 			}
 		}
 
