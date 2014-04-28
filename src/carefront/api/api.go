@@ -244,6 +244,13 @@ type ObjectStorageDBAPI interface {
 	UpdateCloudObjectRecordToSayCompleted(id int64) error
 }
 
+type HomeFeedAPI interface {
+	DeleteHomeNotification(id int64) error
+	DeleteHomeNotificationByUID(patientId int64, uid string) error
+	GetHomeNotificationsForPatient(patientId int64) ([]*common.HomeNotification, error)
+	InsertHomeNotification(note *common.HomeNotification) (int64, error)
+}
+
 type DataAPI interface {
 	PatientAPI
 	DoctorAPI
@@ -253,6 +260,7 @@ type DataAPI interface {
 	IntakeAPI
 	PrescriptionsAPI
 	DrugAPI
+	HomeFeedAPI
 }
 
 type CloudStorageAPI interface {

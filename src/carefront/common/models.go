@@ -274,3 +274,16 @@ type DrugDetails struct {
 	SeriousSideEffects []string
 	CommonSideEffects  []string
 }
+
+type HomeNotification struct {
+	Id              int64
+	PatientId       int64
+	UID             string // Unique event ID scoped to the patient.
+	Timestamp       time.Time
+	Expires         *time.Time
+	Dismissible     bool
+	DismissOnAction bool
+	Priority        int
+	Type            string
+	Data            interface{}
+}

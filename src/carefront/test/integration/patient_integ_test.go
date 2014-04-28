@@ -140,7 +140,7 @@ func TestPatientVisitSubmission(t *testing.T) {
 	// try submitting the exact same patient visit again, and it should come back with a 403 given that the case has already been submitted
 
 	patientVisitHandler := apiservice.NewPatientVisitHandler(testData.DataApi, testData.AuthApi,
-		testData.CloudStorageService, testData.CloudStorageService, nil, "")
+		testData.CloudStorageService, testData.CloudStorageService)
 	patient, err := testData.DataApi.GetPatientFromId(signedupPatientResponse.Patient.PatientId.Int64())
 	if err != nil {
 		t.Fatal("Unable to get patient information given the patient id: " + err.Error())
