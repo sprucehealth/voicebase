@@ -10,13 +10,11 @@ insert into question_fields(question_field, question_id, app_text_id) values ('e
 
 
 insert into app_text(app_text_tag, comment) values ('txt_empty_state_q_current_medications_entry','empty state text');
-
 set @app_text_id = (select id from app_text where app_text_tag='txt_empty_state_q_current_medications_entry');
 insert into localized_text (language_id, ltext, app_text_id) values (@en_id,'No medications specified', @app_text_id);
 
 set @question_id = (select id from question where question_tag='q_current_medications_entry');
 insert into question_fields(question_field, question_id, app_text_id) values ('empty_state_text', @question_id, @app_text_id);
-
 
 insert into app_text(app_text_tag, comment) values ('txt_empty_state_q_list_prev_skin_condition_diagnosis','empty state text');
 

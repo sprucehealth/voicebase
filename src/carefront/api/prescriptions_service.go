@@ -146,28 +146,14 @@ func (d *DataService) LinkRequestedPrescriptionToOriginalTreatment(requestedTrea
 	for _, treatmentId := range treatmentIds {
 		// for each of the treatments gathered for the patiend, compare the drug ids against the requested prescription to identify if they
 		// match to find the originating prescritpion
-		drugIds := make(map[string]string)
-		drugDBIdRows, err := d.DB.Query(`select drug_db_id_tag, drug_db_id from drug_db_id where treatment_id= ?`, treatmentId)
+		treatment, err := d.GetTreatmentFromId(treatmentId)
 		if err != nil {
 			return err
 		}
-		defer drugDBIdRows.Close()
 
-		for drugDBIdRows.Next() {
-			var drugDbIdTag, drugDbId string
-			err = drugDBIdRows.Scan(&drugDbIdTag, &drugDbId)
-			if err != nil {
-				return err
-			}
-			drugIds[drugDbIdTag] = drugDbId
-		}
-		if drugDBIdRows.Err() != nil {
-			return drugDBIdRows.Err()
-		}
-
-		if requestedTreatment.DrugDBIds[erx.LexiGenProductId] == drugIds[erx.LexiGenProductId] &&
-			requestedTreatment.DrugDBIds[erx.LexiDrugSynId] == drugIds[erx.LexiDrugSynId] &&
-			requestedTreatment.DrugDBIds[erx.LexiSynonymTypeId] == drugIds[erx.LexiSynonymTypeId] {
+		if requestedTreatment.DrugDBIds[erx.LexiGenProductId] == treatment.DrugDBIds[erx.LexiGenProductId] &&
+			requestedTreatment.DrugDBIds[erx.LexiDrugSynId] == treatment.DrugDBIds[erx.LexiDrugSynId] &&
+			requestedTreatment.DrugDBIds[erx.LexiSynonymTypeId] == treatment.DrugDBIds[erx.LexiSynonymTypeId] {
 			// linkage found
 			requestedTreatment.OriginatingTreatmentId = treatmentId
 			return nil
@@ -367,7 +353,7 @@ func (d *DataService) getTreatmentForRefillRequest(tableName string, treatmentId
 							dispense_unit, refills, substitutions_allowed, 
 							pharmacy_id, days_supply, pharmacy_notes, 
 							patient_instructions, erx_sent_date,
-							erx_last_filled_date,  status, drug_name.name, drug_route.name, drug_form.name, doctor_id from %s 
+							erx_last_filled_date,  status, drug_db_ids_group_id, drug_name.name, drug_route.name, drug_form.name, doctor_id from %s 
 								left outer join drug_name on drug_name_id = drug_name.id
 								left outer join drug_route on drug_route_id = drug_route.id
 								left outer join drug_form on drug_form_id = drug_form.id
@@ -377,7 +363,7 @@ func (d *DataService) getTreatmentForRefillRequest(tableName string, treatmentId
 		&treatment.SubstitutionsAllowed, &pharmacyLocalId,
 		&daysSupply, &treatment.PharmacyNotes,
 		&treatment.PatientInstructions, &treatment.ERx.ErxSentDate,
-		&treatment.ERx.ErxLastDateFilled, &treatment.Status,
+		&treatment.ERx.ErxLastDateFilled, &treatment.Status, &treatment.DrugDBIdsGroupId,
 		&drugName, &drugForm, &drugRoute, &doctorId)
 
 	if err != nil && err != sql.ErrNoRows {
@@ -417,6 +403,19 @@ func (d *DataService) addRequestedTreatmentFromPharmacy(treatment *common.Treatm
 		treatmentType = treatmentOTC
 	}
 
+	// get group id for adding drug db ids
+	rowInsertId, err := tx.Exec(`insert into drug_db_ids_group () values () `)
+	if err != nil {
+		tx.Rollback()
+		return err
+	}
+
+	drugDbIdsGroupId, err := rowInsertId.LastInsertId()
+	if err != nil {
+		tx.Rollback()
+		return err
+	}
+
 	columnsAndData := map[string]interface{}{
 		"drug_internal_name":    treatment.DrugInternalName,
 		"dosage_strength":       treatment.DosageStrength,
@@ -433,6 +432,7 @@ func (d *DataService) addRequestedTreatmentFromPharmacy(treatment *common.Treatm
 		"erx_last_filled_date":  treatment.ERx.ErxLastDateFilled,
 		"pharmacy_id":           treatment.ERx.PharmacyLocalId.Int64(),
 		"doctor_id":             treatment.Doctor.DoctorId.Int64(),
+		"drug_db_ids_group_id":  drugDbIdsGroupId,
 	}
 
 	if treatment.DaysSupply.IsValid {
@@ -471,9 +471,9 @@ func (d *DataService) addRequestedTreatmentFromPharmacy(treatment *common.Treatm
 	}
 
 	treatment.Id = encoding.NewObjectId(treatmentId)
-	// add drug db ids to the table
+
 	for drugDbTag, drugDbId := range treatment.DrugDBIds {
-		_, err := tx.Exec(`insert into requested_treatment_drug_db_id (drug_db_id_tag, drug_db_id, requested_treatment_id) values (?, ?, ?)`, drugDbTag, drugDbId, treatment.Id.Int64())
+		_, err := tx.Exec(`insert into drug_db_id (drug_db_id_tag, drug_db_id, drug_db_ids_group_id) values (?, ?, ?)`, drugDbTag, drugDbId, drugDbIdsGroupId)
 		if err != nil {
 			tx.Rollback()
 			return err
@@ -487,6 +487,19 @@ func (d *DataService) addPharmacyDispensedTreatment(dispensedTreatment, requeste
 	treatmentType := treatmentRX
 	if dispensedTreatment.OTC {
 		treatmentType = treatmentOTC
+	}
+
+	// get group id to insert drug db ids
+	rowInsertId, err := tx.Exec(`insert into drug_db_ids_group () values ()`)
+	if err != nil {
+		tx.Rollback()
+		return err
+	}
+
+	drugDbIdsGroupId, err := rowInsertId.LastInsertId()
+	if err != nil {
+		tx.Rollback()
+		return err
 	}
 
 	columnsAndData := map[string]interface{}{
@@ -506,6 +519,7 @@ func (d *DataService) addPharmacyDispensedTreatment(dispensedTreatment, requeste
 		"pharmacy_id":            dispensedTreatment.ERx.PharmacyLocalId.Int64(),
 		"requested_treatment_id": requestedTreatment.Id.Int64(),
 		"doctor_id":              dispensedTreatment.Doctor.DoctorId.Int64(),
+		"drug_db_ids_group_id":   drugDbIdsGroupId,
 	}
 
 	if dispensedTreatment.DaysSupply.IsValid {
@@ -541,8 +555,9 @@ func (d *DataService) addPharmacyDispensedTreatment(dispensedTreatment, requeste
 
 	dispensedTreatment.Id = encoding.NewObjectId(treatmentId)
 	// add drug db ids to the table
+
 	for drugDbTag, drugDbId := range dispensedTreatment.DrugDBIds {
-		_, err := tx.Exec(`insert into pharmacy_dispensed_treatment_drug_db_id (drug_db_id_tag, drug_db_id, pharmacy_dispensed_treatment_id) values (?, ?, ?)`, drugDbTag, drugDbId, dispensedTreatment.Id.Int64())
+		_, err := tx.Exec(`insert into drug_db_id (drug_db_id_tag, drug_db_id, drug_db_ids_group_id) values (?, ?, ?)`, drugDbTag, drugDbId, drugDbIdsGroupId)
 		if err != nil {
 			tx.Rollback()
 			return err
@@ -657,6 +672,19 @@ func (d *DataService) AddUnlinkedTreatmentInEventOfDNTF(treatment *common.Treatm
 		treatmentType = treatmentOTC
 	}
 
+	// get group id for adding drug db ids
+	rowInsertId, err := tx.Exec(`insert into drug_db_ids_group () values () `)
+	if err != nil {
+		tx.Rollback()
+		return err
+	}
+
+	drugDbIdsGroupId, err := rowInsertId.LastInsertId()
+	if err != nil {
+		tx.Rollback()
+		return err
+	}
+
 	columnsAndData := map[string]interface{}{
 		"drug_internal_name":    treatment.DrugInternalName,
 		"dosage_strength":       treatment.DosageStrength,
@@ -670,6 +698,7 @@ func (d *DataService) AddUnlinkedTreatmentInEventOfDNTF(treatment *common.Treatm
 		"status":                treatment.Status,
 		"doctor_id":             treatment.DoctorId.Int64(),
 		"patient_id":            treatment.PatientId.Int64(),
+		"drug_db_ids_group_id":  drugDbIdsGroupId,
 	}
 
 	if treatment.DaysSupply.IsValid {
@@ -704,6 +733,14 @@ func (d *DataService) AddUnlinkedTreatmentInEventOfDNTF(treatment *common.Treatm
 	}
 
 	treatment.Id = encoding.NewObjectId(treatmentId)
+
+	for drugDbTag, drugDbId := range treatment.DrugDBIds {
+		_, err := tx.Exec(`insert into drug_db_id (drug_db_id_tag, drug_db_id, drug_db_ids_group_id) values (?, ?, ?)`, drugDbTag, drugDbId, drugDbIdsGroupId)
+		if err != nil {
+			tx.Rollback()
+			return err
+		}
+	}
 
 	_, err = tx.Exec(`insert into unlinked_dntf_treatment_status_events (unlinked_dntf_treatment_id, erx_status, status) values (?,?,?)`, treatmentId, ERX_STATUS_NEW_RX_FROM_DNTF, STATUS_ACTIVE)
 	if err != nil {

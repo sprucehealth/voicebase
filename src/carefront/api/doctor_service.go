@@ -778,7 +778,7 @@ func (d *DataService) GetTreatmentTemplates(doctorId int64) ([]*common.DoctorTre
 	rows, err = d.DB.Query(fmt.Sprintf(`select treatment.id, treatment.drug_internal_name, treatment.dosage_strength, treatment.type,
 			treatment.dispense_value, treatment.dispense_unit_id, ltext, treatment.refills, treatment.substitutions_allowed, 
 			treatment.days_supply, treatment.pharmacy_notes, treatment.patient_instructions, treatment.creation_date,
-			treatment.status, drug_name.name, drug_route.name, drug_form.name from treatment 
+			treatment.status, treatment.drug_db_ids_group_id, drug_name.name, drug_route.name, drug_form.name from treatment 
 				
 				inner join dispense_unit on treatment.dispense_unit_id = dispense_unit.id
 				inner join localized_text on localized_text.app_text_id = dispense_unit.dispense_unit_text_id
@@ -798,10 +798,11 @@ func (d *DataService) GetTreatmentTemplates(doctorId int64) ([]*common.DoctorTre
 		var daysSupply, refills encoding.NullInt64
 		var dispenseValue encoding.HighPrecisionFloat64
 		var drugInternalName, dosageStrength, patientInstructions, treatmentType, dispenseUnitDescription, status string
+		var drugDbIdsGroupId int64
 		var substitutionsAllowed bool
 		var creationDate time.Time
 		var pharmacyNotes, drugName, drugForm, drugRoute sql.NullString
-		err = rows.Scan(&treatmentId, &drugInternalName, &dosageStrength, &treatmentType, &dispenseValue, &dispenseUnitId, &dispenseUnitDescription, &refills, &substitutionsAllowed, &daysSupply, &pharmacyNotes, &patientInstructions, &creationDate, &status, &drugName, &drugRoute, &drugForm)
+		err = rows.Scan(&treatmentId, &drugInternalName, &dosageStrength, &treatmentType, &dispenseValue, &dispenseUnitId, &dispenseUnitDescription, &refills, &substitutionsAllowed, &daysSupply, &pharmacyNotes, &patientInstructions, &creationDate, &status, &drugDbIdsGroupId, &drugName, &drugRoute, &drugForm)
 		if err != nil {
 			return nil, err
 		}
@@ -822,6 +823,7 @@ func (d *DataService) GetTreatmentTemplates(doctorId int64) ([]*common.DoctorTre
 			PatientInstructions:     patientInstructions,
 			CreationDate:            &creationDate,
 			Status:                  status,
+			DrugDBIdsGroupId:        drugDbIdsGroupId,
 			PharmacyNotes:           pharmacyNotes.String,
 		}
 
@@ -857,7 +859,7 @@ func (d *DataService) GetCompletedPrescriptionsForDoctor(from, to time.Time, doc
 	rows, err := d.DB.Query(`select treatment.id, treatment.treatment_plan_id, patient_visit.patient_id, treatment_plan.patient_visit_id, treatment_plan.creation_date, treatment.drug_internal_name, treatment.dosage_strength, treatment.type,
 			treatment.dispense_value, treatment.dispense_unit_id, ltext, treatment.refills, treatment.substitutions_allowed, 
 			treatment.days_supply, treatment.pharmacy_notes, treatment.patient_instructions, treatment.creation_date, 
-			treatment.status, drug_name.name, drug_route.name, drug_form.name, erx_status_events.erx_status, erx_status_events.event_details, treatment_plan.sent_date from treatment 
+			treatment.status, treatment.drug_db_ids_group_id, drug_name.name, drug_route.name, drug_form.name, erx_status_events.erx_status, erx_status_events.event_details, treatment_plan.sent_date from treatment 
 				inner join dispense_unit on treatment.dispense_unit_id = dispense_unit.id
 				inner join localized_text on localized_text.app_text_id = dispense_unit.dispense_unit_text_id
 				inner join treatment_plan on treatment_plan.id = treatment.treatment_plan_id
@@ -878,6 +880,7 @@ func (d *DataService) GetCompletedPrescriptionsForDoctor(from, to time.Time, doc
 		var treatmentId, treatmentPlanId, patientId, patientVisitId, dispenseUnitId encoding.ObjectId
 		var dispenseValue encoding.HighPrecisionFloat64
 		var refills, daysSupply encoding.NullInt64
+		var drugDbIdsGroupId int64
 		var drugInternalName, dosageStrength, treatmentType, dispenseUnitDescription, patientInstructions, status string
 		var creationDate, sentDate, treatmentPlanCreationDate time.Time
 		var substituionsAllowed bool
@@ -885,7 +888,7 @@ func (d *DataService) GetCompletedPrescriptionsForDoctor(from, to time.Time, doc
 
 		err = rows.Scan(&treatmentId, &treatmentPlanId, &patientId, &patientVisitId, &treatmentPlanCreationDate, &drugInternalName, &dosageStrength, &treatmentType,
 			&dispenseValue, &dispenseUnitId, &dispenseUnitDescription, &refills, &substituionsAllowed,
-			&daysSupply, &pharmacyNotes, &patientInstructions, &creationDate, &status, &drugName, &drugRoute, &drugForm, &erxStatus, &eventDetails, &sentDate)
+			&daysSupply, &pharmacyNotes, &patientInstructions, &creationDate, &status, &drugDbIdsGroupId, &drugName, &drugRoute, &drugForm, &erxStatus, &eventDetails, &sentDate)
 		if err != nil {
 			return nil, err
 		}
@@ -921,6 +924,7 @@ func (d *DataService) GetCompletedPrescriptionsForDoctor(from, to time.Time, doc
 			DrugRoute:               drugRoute.String,
 			CreationDate:            &creationDate,
 			Status:                  status,
+			DrugDBIdsGroupId:        drugDbIdsGroupId,
 			PatientInstructions:     patientInstructions,
 			StatusDetails:           eventDetails.String,
 			PharmacyNotes:           pharmacyNotes.String,

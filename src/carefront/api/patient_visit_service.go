@@ -656,6 +656,19 @@ func (d *DataService) addTreatment(treatment *common.Treatment, withoutLinkToTre
 		}
 	}
 
+	// get an id for a grouping into which to insert the drug_db_ids
+	rowInsertId, err := tx.Exec(`insert into drug_db_ids_group () values ()`)
+	if err != nil {
+		tx.Rollback()
+		return err
+	}
+
+	drugDbIdsGroupId, err := rowInsertId.LastInsertId()
+	if err != nil {
+		tx.Rollback()
+		return err
+	}
+
 	columnsAndData := map[string]interface{}{
 		"drug_internal_name":    treatment.DrugInternalName,
 		"dosage_strength":       treatment.DosageStrength,
@@ -667,6 +680,7 @@ func (d *DataService) addTreatment(treatment *common.Treatment, withoutLinkToTre
 		"patient_instructions":  treatment.PatientInstructions,
 		"pharmacy_notes":        treatment.PharmacyNotes,
 		"status":                STATUS_CREATED,
+		"drug_db_ids_group_id":  drugDbIdsGroupId,
 	}
 
 	if treatment.DaysSupply.IsValid {
@@ -709,7 +723,7 @@ func (d *DataService) addTreatment(treatment *common.Treatment, withoutLinkToTre
 
 	// add drug db ids to the table
 	for drugDbTag, drugDbId := range treatment.DrugDBIds {
-		_, err := tx.Exec(`insert into drug_db_id (drug_db_id_tag, drug_db_id, treatment_id) values (?, ?, ?)`, drugDbTag, drugDbId, treatment.Id.Int64())
+		_, err := tx.Exec(`insert into drug_db_id (drug_db_id_tag, drug_db_id, drug_db_ids_group_id) values (?, ?, ?)`, drugDbTag, drugDbId, drugDbIdsGroupId)
 		if err != nil {
 			tx.Rollback()
 			return err
@@ -725,7 +739,7 @@ func (d *DataService) GetTreatmentsBasedOnTreatmentPlanId(patientVisitId, treatm
 	rows, err := d.DB.Query(`select treatment.id,treatment.erx_id, treatment.treatment_plan_id, treatment.drug_internal_name, treatment.dosage_strength, treatment.type,
 			treatment.dispense_value, treatment.dispense_unit_id, ltext, treatment.refills, treatment.substitutions_allowed, 
 			treatment.days_supply, treatment.pharmacy_id, treatment.pharmacy_notes, treatment.patient_instructions, treatment.creation_date, treatment.erx_sent_date, 
-			treatment.status, drug_name.name, drug_route.name, drug_form.name,
+			treatment.status, treatment.drug_db_ids_group_id, drug_name.name, drug_route.name, drug_form.name,
 			patient_visit.patient_id, treatment_plan.patient_visit_id, treatment_plan.doctor_id from treatment 
 				inner join treatment_plan on treatment.treatment_plan_id = treatment_plan.id
 				inner join patient_visit on treatment_plan.patient_visit_id = patient_visit.id
@@ -793,7 +807,7 @@ func (d *DataService) GetTreatmentsForPatient(patientId int64) ([]*common.Treatm
 	rows, err := d.DB.Query(`select treatment.id,treatment.erx_id, treatment.treatment_plan_id, treatment.drug_internal_name, treatment.dosage_strength, treatment.type,
 			treatment.dispense_value, treatment.dispense_unit_id, ltext, treatment.refills, treatment.substitutions_allowed, 
 			treatment.days_supply, treatment.pharmacy_id, treatment.pharmacy_notes, treatment.patient_instructions, treatment.creation_date, treatment.erx_sent_date,
-			treatment.status, drug_name.name, drug_route.name, drug_form.name,
+			treatment.status, treatment.drug_db_ids_group_id, drug_name.name, drug_route.name, drug_form.name,
 			patient_visit.patient_id, treatment_plan.patient_visit_id, treatment_plan.doctor_id from treatment 
 				inner join treatment_plan on treatment.treatment_plan_id = treatment_plan.id
 				inner join patient_visit on treatment_plan.patient_visit_id = patient_visit.id
@@ -827,7 +841,7 @@ func (d *DataService) GetTreatmentBasedOnPrescriptionId(erxId int64) (*common.Tr
 	rows, err := d.DB.Query(`select treatment.id,treatment.erx_id, treatment.treatment_plan_id, treatment.drug_internal_name, treatment.dosage_strength, treatment.type,
 			treatment.dispense_value, treatment.dispense_unit_id, ltext, treatment.refills, treatment.substitutions_allowed, 
 			treatment.days_supply, treatment.pharmacy_id, treatment.pharmacy_notes, treatment.patient_instructions, treatment.creation_date, treatment.erx_sent_date,
-			treatment.status, drug_name.name, drug_route.name, drug_form.name,
+			treatment.status, treatment.drug_db_ids_group_id, drug_name.name, drug_route.name, drug_form.name,
 			patient_visit.patient_id, treatment_plan.patient_visit_id, treatment_plan.doctor_id from treatment
 				inner join treatment_plan on treatment.treatment_plan_id = treatment_plan.id
 				inner join patient_visit on treatment_plan.patient_visit_id = patient_visit.id
@@ -871,7 +885,7 @@ func (d *DataService) GetTreatmentFromId(treatmentId int64) (*common.Treatment, 
 	rows, err := d.DB.Query(`select treatment.id,treatment.erx_id, treatment.treatment_plan_id, treatment.drug_internal_name, treatment.dosage_strength, treatment.type,
 			treatment.dispense_value, treatment.dispense_unit_id, ltext, treatment.refills, treatment.substitutions_allowed, 
 			treatment.days_supply, treatment.pharmacy_id, treatment.pharmacy_notes, treatment.patient_instructions, treatment.creation_date, treatment.erx_sent_date,
-			treatment.status, drug_name.name, drug_route.name, drug_form.name,
+			treatment.status, treatment.drug_db_ids_group_id, drug_name.name, drug_route.name, drug_form.name,
 			patient_visit.patient_id, treatment_plan.patient_visit_id, treatment_plan.doctor_id from treatment
 				inner join treatment_plan on treatment.treatment_plan_id = treatment_plan.id
 				inner join patient_visit on treatment_plan.patient_visit_id = patient_visit.id
@@ -1038,6 +1052,7 @@ func (d *DataService) UpdateDateInfoForTreatmentId(treatmentId int64, erxSentDat
 
 func (d *DataService) getTreatmentAndMetadataFromCurrentRow(rows *sql.Rows) (*common.Treatment, error) {
 	var treatmentId, treatmentPlanId, dispenseUnitId, patientId, prescriberId, patientVisitId, prescriptionId, pharmacyId encoding.ObjectId
+	var drugDbIdsGroupId int64
 	var dispenseValue encoding.HighPrecisionFloat64
 	var drugInternalName, dosageStrength, patientInstructions, treatmentType, dispenseUnitDescription, status string
 	var substitutionsAllowed bool
@@ -1047,7 +1062,7 @@ func (d *DataService) getTreatmentAndMetadataFromCurrentRow(rows *sql.Rows) (*co
 	var pharmacyNotes, drugName, drugForm, drugRoute sql.NullString
 	err := rows.Scan(&treatmentId, &prescriptionId, &treatmentPlanId, &drugInternalName, &dosageStrength, &treatmentType, &dispenseValue, &dispenseUnitId,
 		&dispenseUnitDescription, &refills, &substitutionsAllowed, &daysSupply, &pharmacyId,
-		&pharmacyNotes, &patientInstructions, &creationDate, &erxSentDate, &status, &drugName, &drugRoute, &drugForm, &patientId, &patientVisitId, &prescriberId)
+		&pharmacyNotes, &patientInstructions, &creationDate, &erxSentDate, &status, &drugDbIdsGroupId, &drugName, &drugRoute, &drugForm, &patientId, &patientVisitId, &prescriberId)
 	if err != nil {
 		return nil, err
 	}
@@ -1069,6 +1084,7 @@ func (d *DataService) getTreatmentAndMetadataFromCurrentRow(rows *sql.Rows) (*co
 		PatientInstructions:     patientInstructions,
 		CreationDate:            &creationDate,
 		Status:                  status,
+		DrugDBIdsGroupId:        drugDbIdsGroupId,
 		PharmacyNotes:           pharmacyNotes.String,
 		DoctorId:                prescriberId,
 		TreatmentPlanId:         treatmentPlanId,
@@ -1127,7 +1143,7 @@ func (d *DataService) getTreatmentAndMetadataFromCurrentRow(rows *sql.Rows) (*co
 func (d *DataService) fillInDrugDBIdsForTreatment(treatment *common.Treatment) error {
 	// for each of the drugs, populate the drug db ids
 	drugDbIds := make(map[string]string)
-	drugRows, err := d.DB.Query(`select drug_db_id_tag, drug_db_id from drug_db_id where treatment_id = ? `, treatment.Id.Int64())
+	drugRows, err := d.DB.Query(`select drug_db_id_tag, drug_db_id from drug_db_id where drug_db_ids_group_id = ? `, treatment.DrugDBIdsGroupId)
 	if err != nil {
 		return err
 	}
