@@ -22,6 +22,7 @@ import (
 	"carefront/libs/pharmacy"
 	"carefront/libs/svcclient"
 	"carefront/libs/svcreg"
+	"carefront/notify"
 	"carefront/services/auth"
 	thriftapi "carefront/thrift/api"
 
@@ -176,11 +177,6 @@ func main() {
 		authApi = &thriftapi.AuthClient{Client: secureSvcClient}
 	}
 
-	var twilioCli *twilio.Client
-	if conf.Twilio != nil && conf.Twilio.AccountSid != "" && conf.Twilio.AuthToken != "" {
-		twilioCli = twilio.NewClient(conf.Twilio.AccountSid, conf.Twilio.AuthToken, nil)
-	}
-
 	if conf.InfoAddr != "" {
 		go func() {
 			log.Fatal(http.ListenAndServe(conf.InfoAddr, nil))
@@ -206,6 +202,13 @@ func main() {
 	}
 
 	dataApi := &api.DataService{DB: db}
+
+	var twilioCli *twilio.Client
+	if conf.Twilio != nil && conf.Twilio.AccountSid != "" && conf.Twilio.AuthToken != "" {
+		twilioCli = twilio.NewClient(conf.Twilio.AccountSid, conf.Twilio.AuthToken, nil)
+		notify.InitTwilio(dataApi, twilioCli, conf.Twilio.FromNumber, conf.IOSDeeplinkScheme)
+	}
+
 	cloudStorageApi := api.NewCloudStorageService(awsAuth)
 	photoAnswerCloudStorageApi := api.NewCloudStorageService(awsAuth)
 	authHandler := &apiservice.AuthenticationHandler{AuthApi: authApi, DataApi: dataApi, PharmacySearchService: pharmacy.GooglePlacesPharmacySearchService(0), StaticContentBaseUrl: conf.StaticContentBaseUrl}
@@ -217,7 +220,7 @@ func main() {
 	signupDoctorHandler := &apiservice.SignupDoctorHandler{DataApi: dataApi, AuthApi: authApi}
 	patientTreatmentGuideHandler := apiservice.NewPatientTreatmentGuideHandler(dataApi)
 	doctorTreatmentGuideHandler := apiservice.NewDoctorTreatmentGuideHandler(dataApi)
-	patientVisitHandler := apiservice.NewPatientVisitHandler(dataApi, authApi, cloudStorageApi, photoAnswerCloudStorageApi, twilioCli, conf.Twilio.FromNumber)
+	patientVisitHandler := apiservice.NewPatientVisitHandler(dataApi, authApi, cloudStorageApi, photoAnswerCloudStorageApi)
 	patientVisitReviewHandler := &apiservice.PatientVisitReviewHandler{DataApi: dataApi}
 	answerIntakeHandler := apiservice.NewAnswerIntakeHandler(dataApi)
 	autocompleteHandler := &apiservice.AutocompleteHandler{DataApi: dataApi, ERxApi: doseSpotService, Role: api.PATIENT_ROLE}
@@ -300,12 +303,9 @@ func main() {
 	}
 
 	doctorSubmitPatientVisitHandler := &apiservice.DoctorSubmitPatientVisitReviewHandler{DataApi: dataApi,
-		ERxApi:            doseSpotService,
-		TwilioFromNumber:  conf.Twilio.FromNumber,
-		TwilioCli:         twilioCli,
-		IOSDeeplinkScheme: conf.IOSDeeplinkScheme,
-		ErxStatusQueue:    erxStatusQueue,
-		ERxRouting:        conf.ERxRouting}
+		ERxApi:         doseSpotService,
+		ErxStatusQueue: erxStatusQueue,
+		ERxRouting:     conf.ERxRouting}
 
 	diagnosePatientHandler := &apiservice.DiagnosePatientHandler{
 		DataApi:              dataApi,

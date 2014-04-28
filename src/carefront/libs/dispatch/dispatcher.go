@@ -38,6 +38,7 @@ package dispatch
 
 import (
 	"fmt"
+	"log"
 	"reflect"
 	"strings"
 )
@@ -99,11 +100,19 @@ func (d *Dispatcher) Publish(e interface{}) error {
 	var errors []error
 	for _, l := range d.listeners[t] {
 		if ev := l.Call(args)[0]; !ev.IsNil() {
-			errors = append(errors, ev.Interface().(error))
+			e := ev.Interface().(error)
+			log.Printf("[ERR] Listener failed for type %+v: %s", t, e.Error())
+			errors = append(errors, e)
 		}
 	}
 	if len(errors) == 0 {
 		return nil
 	}
 	return ErrorList(errors)
+}
+
+// PublishAsync does the publishing in the background using a goroutine ignoring
+// any errors returned by listeners.
+func (d *Dispatcher) PublishAsync(e interface{}) {
+	go d.Publish(e)
 }

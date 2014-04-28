@@ -3,6 +3,7 @@ package apiservice
 import (
 	"carefront/api"
 	"carefront/common"
+	"carefront/libs/dispatch"
 	"carefront/libs/erx"
 	"carefront/libs/golog"
 	"carefront/libs/pharmacy"
@@ -10,17 +11,13 @@ import (
 	"net/http"
 
 	"github.com/gorilla/schema"
-	"github.com/subosito/twilio"
 )
 
 type DoctorSubmitPatientVisitReviewHandler struct {
-	IOSDeeplinkScheme string
-	DataApi           api.DataAPI
-	TwilioCli         *twilio.Client
-	TwilioFromNumber  string
-	ERxApi            erx.ERxAPI
-	ErxStatusQueue    *common.SQSQueue
-	ERxRouting        bool
+	DataApi        api.DataAPI
+	ERxApi         erx.ERxAPI
+	ErxStatusQueue *common.SQSQueue
+	ERxRouting     bool
 }
 
 type SubmitPatientVisitReviewRequest struct {
@@ -35,7 +32,6 @@ type SubmitPatientVisitReviewResponse struct {
 }
 
 const (
-	patientVisitUpdateNotification     = "There is an update to your case. Tap %s://visit to view."
 	successful_erx_routing_pharmacy_id = "47731"
 	failed_erx_routing_pharmacy_id     = "39203"
 )
@@ -257,31 +253,12 @@ func (d *DoctorSubmitPatientVisitReviewHandler) submitPatientVisitReview(w http.
 		return
 	}
 
-	err = d.sendSMSToNotifyPatient(patient, requestData.PatientVisitId)
-	if err != nil {
-		WriteDeveloperError(w, http.StatusInternalServerError, "Unable to SMS notification to patient: "+err.Error())
-		return
-	}
+	dispatch.Default.PublishAsync(&VisitReviewSubmittedEvent{
+		PatientId: patient.PatientId.Int64(),
+		DoctorId:  doctor.DoctorId.Int64(),
+		VisitId:   requestData.PatientVisitId,
+		Patient:   patient,
+	})
 
 	WriteJSONToHTTPResponseWriter(w, http.StatusOK, SuccessfulGenericJSONResponse())
-}
-
-func (d *DoctorSubmitPatientVisitReviewHandler) sendSMSToNotifyPatient(patient *common.Patient, patientVisitId int64) error {
-
-	if d.TwilioCli != nil {
-
-		if len(patient.PhoneNumbers) > 0 {
-			for _, phoneNumber := range patient.PhoneNumbers {
-				if phoneNumber.PhoneType == api.PHONE_CELL {
-					_, _, err := d.TwilioCli.Messages.SendSMS(d.TwilioFromNumber, patient.PhoneNumbers[0].Phone, fmt.Sprintf(patientVisitUpdateNotification, d.IOSDeeplinkScheme))
-					if err != nil {
-						golog.Errorf("Error sending SMS: %s", err.Error())
-					}
-				}
-			}
-
-		}
-	}
-
-	return nil
 }
