@@ -2,6 +2,7 @@ package integration
 
 import (
 	"bytes"
+	"database/sql"
 	"encoding/json"
 	"io/ioutil"
 	"net/http"
@@ -167,6 +168,111 @@ func TestAdvicePointsForPatientVisit(t *testing.T) {
 	if len(doctorAdviceResponse.SelectedAdvicePoints) > 0 {
 		t.Fatal("Expected no advice points to exist for patient visit given that all were deleted")
 	}
+}
+
+// The purpose of this test is to ensure that we are tracking updated items
+// against the original item that was added in the first place via the source_id
+func TestAdvicePointsForPatientVisit_TrackingSourceId(t *testing.T) {
+	if err := CheckIfRunningLocally(t); err == CannotRunTestLocally {
+		return
+	}
+
+	testData := SetupIntegrationTest(t)
+	defer TearDownIntegrationTest(t, testData)
+
+	patientSignedupResponse := SignupRandomTestPatient(t, testData.DataApi, testData.AuthApi)
+	patient, err := testData.DataApi.GetPatientFromId(patientSignedupResponse.Patient.PatientId.Int64())
+	if err != nil {
+		t.Fatal("Unable to get patient from id " + err.Error())
+	}
+	// get the current primary doctor
+	doctorId := getDoctorIdOfCurrentPrimaryDoctor(testData, t)
+
+	doctor, err := testData.DataApi.GetDoctorFromId(doctorId)
+	if err != nil {
+		t.Fatal("Unable to get doctor from doctor id " + err.Error())
+	}
+
+	// get patient to start a visit
+	patientVisitResponse := CreatePatientVisitForPatient(patientSignedupResponse.Patient.PatientId.Int64(), testData, t)
+
+	answerIntakeRequestBody := prepareAnswersForQuestionsInPatientVisit(patientVisitResponse, t)
+	submitAnswersIntakeForPatient(patient.PatientId.Int64(), patient.AccountId.Int64(), answerIntakeRequestBody, testData, t)
+
+	// get the patient to submit the case so that it can be reviewed by the doctor
+	SubmitPatientVisitForPatient(patientSignedupResponse.Patient.PatientId.Int64(), patientVisitResponse.PatientVisitId, testData, t)
+
+	// get the doctor to start reviewing the case
+	StartReviewingPatientVisit(patientVisitResponse.PatientVisitId, doctor, testData, t)
+
+	// lets go ahead and add a couple of advice points
+	advicePoint1 := &common.DoctorInstructionItem{Text: "Advice point 1", State: common.STATE_ADDED}
+	advicePoint2 := &common.DoctorInstructionItem{Text: "Advice point 2", State: common.STATE_ADDED}
+
+	// lets go ahead and create a request for this patient visit
+	doctorAdviceRequest := &common.Advice{}
+	doctorAdviceRequest.AllAdvicePoints = []*common.DoctorInstructionItem{advicePoint1, advicePoint2}
+	doctorAdviceRequest.PatientVisitId = encoding.NewObjectId(patientVisitResponse.PatientVisitId)
+
+	doctorAdviceResponse := updateAdvicePointsForPatientVisit(doctorAdviceRequest, testData, doctor, t)
+
+	// lets keep track of these two items as the source of a couple of updates
+	sourceId1 := doctorAdviceResponse.AllAdvicePoints[0].Id.Int64()
+	sourceId2 := doctorAdviceResponse.AllAdvicePoints[1].Id.Int64()
+
+	// lets go ahead and modify the items
+	doctorAdviceRequest = doctorAdviceResponse
+	doctorAdviceRequest.AllAdvicePoints[0].State = common.STATE_MODIFIED
+	doctorAdviceRequest.AllAdvicePoints[0].Text = "updated Advice Point 1"
+	doctorAdviceRequest.AllAdvicePoints[1].State = common.STATE_MODIFIED
+	doctorAdviceRequest.AllAdvicePoints[1].Text = "updated Advice Point 2"
+
+	doctorAdviceResponse = updateAdvicePointsForPatientVisit(doctorAdviceRequest, testData, doctor, t)
+
+	// lets read the source id of the updated items and compare them
+	var updatedItemSourceId1, updatedItemSourceId2 sql.NullInt64
+	if err := testData.DB.QueryRow(`select source_id from dr_advice_point where id=?`, doctorAdviceResponse.AllAdvicePoints[0].Id.Int64()).Scan(&updatedItemSourceId1); err != nil {
+		t.Fatalf("Attempt to get source_id for an advice point failed: %s", err)
+	}
+
+	if updatedItemSourceId1.Int64 != sourceId1 {
+		t.Fatalf("Expected the sourceId of the updated item (%d) to match the id of the originating item %d ", updatedItemSourceId1.Int64, sourceId1)
+	}
+
+	if err := testData.DB.QueryRow(`select source_id from dr_advice_point where id=?`, doctorAdviceResponse.AllAdvicePoints[1].Id.Int64()).Scan(&updatedItemSourceId2); err != nil {
+		t.Fatalf("Attempt to get source_id for an advice point failed: %s", err)
+	}
+
+	if updatedItemSourceId2.Int64 != sourceId2 {
+		t.Fatalf("Expected the sourceId of the updated item (%d) to match the id of the originating item %d ", updatedItemSourceId2.Int64, sourceId2)
+	}
+
+	// lets go ahead and modify items once more the source id should still remain the same
+	doctorAdviceRequest = doctorAdviceResponse
+	doctorAdviceRequest.AllAdvicePoints[0].State = common.STATE_MODIFIED
+	doctorAdviceRequest.AllAdvicePoints[0].Text = "updated again Advice Point 1"
+	doctorAdviceRequest.AllAdvicePoints[1].State = common.STATE_MODIFIED
+	doctorAdviceRequest.AllAdvicePoints[1].Text = "updated again Advice Point 2"
+
+	doctorAdviceResponse = updateAdvicePointsForPatientVisit(doctorAdviceRequest, testData, doctor, t)
+
+	// lets read the source id of the updated items and compare them
+	if err := testData.DB.QueryRow(`select source_id from dr_advice_point where id=?`, doctorAdviceResponse.AllAdvicePoints[0].Id.Int64()).Scan(&updatedItemSourceId1); err != nil {
+		t.Fatalf("Attempt to get source_id for an advice point failed: %s", err)
+	}
+
+	if updatedItemSourceId1.Int64 != sourceId1 {
+		t.Fatalf("Expected the sourceId of the updated item (%d) to match the id of the originating item %d ", updatedItemSourceId1.Int64, sourceId1)
+	}
+
+	if err := testData.DB.QueryRow(`select source_id from dr_advice_point where id=?`, doctorAdviceResponse.AllAdvicePoints[1].Id.Int64()).Scan(&updatedItemSourceId2); err != nil {
+		t.Fatalf("Attempt to get source_id for an advice point failed: %s", err)
+	}
+
+	if updatedItemSourceId2.Int64 != sourceId2 {
+		t.Fatalf("Expected the sourceId of the updated item (%d) to match the id of the originating item %d ", updatedItemSourceId2.Int64, sourceId2)
+	}
+
 }
 
 func getAdvicePointsInPatientVisit(testData TestData, doctor *common.Doctor, patientVisitId int64, t *testing.T) *common.Advice {

@@ -5,6 +5,7 @@ import (
 	"carefront/apiservice"
 	"carefront/common"
 	"carefront/encoding"
+	"database/sql"
 	"encoding/json"
 	"io/ioutil"
 	"net/http"
@@ -170,6 +171,123 @@ func TestRegimenForPatientVisit(t *testing.T) {
 	if len(regimenPlan.AllRegimenSteps) != 1 {
 		t.Fatal("There should be 1 regimen step existing globally for this doctor")
 	}
+}
+
+// The purpose of this test is to ensure that when regimen steps are updated,
+// we are keeping track of the original step that has been modified via a source_id
+func TestRegimenForPatientVisit_TrackingSourceId(t *testing.T) {
+	if err := CheckIfRunningLocally(t); err == CannotRunTestLocally {
+		return
+	}
+
+	testData := SetupIntegrationTest(t)
+	defer TearDownIntegrationTest(t, testData)
+
+	patientSignedupResponse := SignupRandomTestPatient(t, testData.DataApi, testData.AuthApi)
+
+	// get the current primary doctor
+	doctorId := getDoctorIdOfCurrentPrimaryDoctor(testData, t)
+
+	doctor, err := testData.DataApi.GetDoctorFromId(doctorId)
+	if err != nil {
+		t.Fatal("Unable to get doctor from doctor id " + err.Error())
+	}
+
+	// get patient to start a visit
+	patientVisitResponse := CreatePatientVisitForPatient(patientSignedupResponse.Patient.PatientId.Int64(), testData, t)
+
+	// submit answers to questions in patient visit
+	patient, err := testData.DataApi.GetPatientFromId(patientSignedupResponse.Patient.PatientId.Int64())
+	if err != nil {
+		t.Fatal("Unable to get patient from id: " + err.Error())
+	}
+
+	answerIntakeRequestBody := prepareAnswersForQuestionsInPatientVisit(patientVisitResponse, t)
+	submitAnswersIntakeForPatient(patient.PatientId.Int64(), patient.AccountId.Int64(), answerIntakeRequestBody, testData, t)
+
+	// get the patient to submit the case
+	SubmitPatientVisitForPatient(patientSignedupResponse.Patient.PatientId.Int64(), patientVisitResponse.PatientVisitId, testData, t)
+
+	// get the patient to start reviewing the case
+	StartReviewingPatientVisit(patientVisitResponse.PatientVisitId, doctor, testData, t)
+
+	// adding new regimen steps to the doctor but not to the patient visit
+	regimenPlanRequest := &common.RegimenPlan{}
+	regimenPlanRequest.PatientVisitId = encoding.NewObjectId(patientVisitResponse.PatientVisitId)
+
+	regimenStep1 := &common.DoctorInstructionItem{}
+	regimenStep1.Text = "Regimen Step 1"
+	regimenStep1.State = common.STATE_ADDED
+
+	regimenStep2 := &common.DoctorInstructionItem{}
+	regimenStep2.Text = "Regimen Step 2"
+	regimenStep2.State = common.STATE_ADDED
+
+	regimenPlanRequest.AllRegimenSteps = []*common.DoctorInstructionItem{regimenStep1, regimenStep2}
+	regimenPlanResponse := createRegimenPlanForPatientVisit(regimenPlanRequest, testData, doctor, t)
+	validateRegimenRequestAgainstResponse(regimenPlanRequest, regimenPlanResponse, t)
+
+	if len(regimenPlanResponse.RegimenSections) > 0 {
+		t.Fatal("Regimen section should not exist even though regimen steps were created by doctor")
+	}
+
+	// keep track of the source ids of both steps
+	sourceId1 := regimenPlanResponse.AllRegimenSteps[0].Id.Int64()
+	sourceId2 := regimenPlanResponse.AllRegimenSteps[1].Id.Int64()
+
+	// lets update both steps
+	regimenPlanRequest = regimenPlanResponse
+	regimenPlanRequest.AllRegimenSteps[0].State = common.STATE_MODIFIED
+	regimenPlanRequest.AllRegimenSteps[0].Text = "Updated step 1"
+	regimenPlanRequest.AllRegimenSteps[1].State = common.STATE_MODIFIED
+	regimenPlanRequest.AllRegimenSteps[1].Text = "Updated step 2"
+	regimenPlanResponse = createRegimenPlanForPatientVisit(regimenPlanRequest, testData, doctor, t)
+	validateRegimenRequestAgainstResponse(regimenPlanRequest, regimenPlanResponse, t)
+
+	// the source id of the two returned steps should match the source id of the original steps
+	var updatedItemSourceId1, updatedItemSourceId2 sql.NullInt64
+	if err := testData.DB.QueryRow(`select source_id from dr_regimen_step where id=?`, regimenPlanResponse.AllRegimenSteps[0].Id.Int64()).Scan(&updatedItemSourceId1); err != nil {
+		t.Fatalf("Expected the query to get source_id to succeed instead it failed: %s", err)
+	}
+
+	if updatedItemSourceId1.Int64 != sourceId1 {
+		t.Fatalf("Expected the sourceId retrieved from the updated item (%d) to match the id of the original item (%d)", updatedItemSourceId1.Int64, sourceId1)
+	}
+
+	if err := testData.DB.QueryRow(`select source_id from dr_regimen_step where id=?`, regimenPlanResponse.AllRegimenSteps[1].Id.Int64()).Scan(&updatedItemSourceId2); err != nil {
+		t.Fatalf("Expected the query to get source_id to succeed instead it failed: %s", err)
+	}
+
+	if updatedItemSourceId2.Int64 != sourceId2 {
+		t.Fatalf("Expected the sourceId retrieved from the updated item (%d) to match the id of the original item (%d)", updatedItemSourceId2.Int64, sourceId2)
+	}
+
+	// lets update again and the source id should still match
+	regimenPlanRequest = regimenPlanResponse
+	regimenPlanRequest.AllRegimenSteps[0].State = common.STATE_MODIFIED
+	regimenPlanRequest.AllRegimenSteps[0].Text = "Updated again step 1"
+	regimenPlanRequest.AllRegimenSteps[1].State = common.STATE_MODIFIED
+	regimenPlanRequest.AllRegimenSteps[1].Text = "Updated again step 2"
+	regimenPlanResponse = createRegimenPlanForPatientVisit(regimenPlanRequest, testData, doctor, t)
+	validateRegimenRequestAgainstResponse(regimenPlanRequest, regimenPlanResponse, t)
+
+	// the source id of the two returned steps should match the source id of the original steps
+	if err := testData.DB.QueryRow(`select source_id from dr_regimen_step where id=?`, regimenPlanResponse.AllRegimenSteps[0].Id.Int64()).Scan(&updatedItemSourceId1); err != nil {
+		t.Fatalf("Expected the query to get source_id to succeed instead it failed: %s", err)
+	}
+
+	if updatedItemSourceId1.Int64 != sourceId1 {
+		t.Fatalf("Expected the sourceId retrieved from the updated item (%d) to match the id of the original item (%d)", updatedItemSourceId1.Int64, sourceId1)
+	}
+
+	if err := testData.DB.QueryRow(`select source_id from dr_regimen_step where id=?`, regimenPlanResponse.AllRegimenSteps[1].Id.Int64()).Scan(&updatedItemSourceId2); err != nil {
+		t.Fatalf("Expected the query to get source_id to succeed instead it failed: %s", err)
+	}
+
+	if updatedItemSourceId2.Int64 != sourceId2 {
+		t.Fatalf("Expected the sourceId retrieved from the updated item (%d) to match the id of the original item (%d)", updatedItemSourceId2.Int64, sourceId2)
+	}
+
 }
 
 func getRegimenPlanForPatientVisit(testData TestData, doctor *common.Doctor, patientVisitId int64, t *testing.T) *common.RegimenPlan {

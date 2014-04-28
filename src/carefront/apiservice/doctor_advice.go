@@ -168,8 +168,16 @@ func (d *DoctorAdviceHandler) updateAdvicePoints(w http.ResponseWriter, r *http.
 	updatedAdvicePoints := make([]*common.DoctorInstructionItem, 0)
 	for _, advicePoint := range requestData.AllAdvicePoints {
 		switch advicePoint.State {
-		case common.STATE_ADDED, common.STATE_MODIFIED:
-			err = d.DataApi.AddOrUpdateAdvicePointForDoctor(advicePoint, patientVisitReviewData.DoctorId)
+		case common.STATE_ADDED:
+			err = d.DataApi.AddAdvicePointForDoctor(advicePoint, patientVisitReviewData.DoctorId)
+			if err != nil {
+				WriteDeveloperError(w, http.StatusInternalServerError, "Unable to add or update advice point for doctor. Application may be left in inconsistent state. Error = "+err.Error())
+				return
+			}
+			newOrUpdatedPointToIdMapping[advicePoint.Text] = advicePoint.Id.Int64()
+			updatedAdvicePoints = append(updatedAdvicePoints, advicePoint)
+		case common.STATE_MODIFIED:
+			err = d.DataApi.UpdateAdvicePointForDoctor(advicePoint, patientVisitReviewData.DoctorId)
 			if err != nil {
 				WriteDeveloperError(w, http.StatusInternalServerError, "Unable to add or update advice point for doctor. Application may be left in inconsistent state. Error = "+err.Error())
 				return

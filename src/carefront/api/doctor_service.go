@@ -171,6 +171,20 @@ func (d *DataService) UpdateRegimenStepForDoctor(regimenStep *common.DoctorInstr
 		return err
 	}
 
+	// lookup the sourceId for the current regimen step if it exists
+	var sourceId sql.NullInt64
+	if err := tx.QueryRow(`select source_id from dr_regimen_step where id=? and doctor_id=?`, regimenStep.Id.Int64(), doctorId).Scan(&sourceId); err != nil {
+		return err
+	}
+
+	// if the source id does not exist for the step, this means that
+	// this step is the source itself. tracking the source id helps for
+	// tracking revision from the beginning of time.
+	sourceIdForUpdatedStep := sourceId.Int64
+	if !sourceId.Valid {
+		sourceIdForUpdatedStep = regimenStep.Id.Int64()
+	}
+
 	// update the current regimen step to be inactive
 	_, err = tx.Exec(`update dr_regimen_step set status=? where id = ? and doctor_id = ?`, STATUS_INACTIVE, regimenStep.Id.Int64(), doctorId)
 	if err != nil {
@@ -179,7 +193,7 @@ func (d *DataService) UpdateRegimenStepForDoctor(regimenStep *common.DoctorInstr
 	}
 
 	// insert a new active regimen step in its place
-	res, err := tx.Exec(`insert into dr_regimen_step (text, doctor_id, status) values (?, ?, ?)`, regimenStep.Text, doctorId, STATUS_ACTIVE)
+	res, err := tx.Exec(`insert into dr_regimen_step (text, doctor_id, source_id, status) values (?, ?, ?, ?)`, regimenStep.Text, doctorId, sourceIdForUpdatedStep, STATUS_ACTIVE)
 	if err != nil {
 		tx.Rollback()
 		return err
@@ -232,22 +246,56 @@ func (d *DataService) GetAdvicePointsForDoctor(doctorId int64) ([]*common.Doctor
 	return getActiveInstructions(advicePoints), nil
 }
 
-func (d *DataService) AddOrUpdateAdvicePointForDoctor(advicePoint *common.DoctorInstructionItem, doctorId int64) error {
+func (d *DataService) UpdateAdvicePointForDoctor(advicePoint *common.DoctorInstructionItem, doctorId int64) error {
 	tx, err := d.DB.Begin()
 	if err != nil {
 		return err
 	}
 
-	if advicePoint.Id.Int64() != 0 {
-		// update the current advice point to be inactive
-		_, err = tx.Exec(`update dr_advice_point set status=? where id = ? and doctor_id = ?`, STATUS_INACTIVE, advicePoint.Id.Int64(), doctorId)
-		if err != nil {
-			tx.Rollback()
-			return err
-		}
+	var sourceId sql.NullInt64
+	if err := tx.QueryRow(`select source_id from dr_advice_point where id=? and doctor_id=?`, advicePoint.Id.Int64(), doctorId).Scan(&sourceId); err != nil {
+		return err
 	}
 
-	res, err := tx.Exec(`insert into dr_advice_point (text, doctor_id,status) values (?,?,?)`, advicePoint.Text, doctorId, STATUS_ACTIVE)
+	// If a sourceId does not exist for the current advice point, this means that this point
+	// is being updated for the first time. In this case, the advice point itself is the source id.
+	// Storing the sourceId helps tracking revision on a particular step.
+	sourceIdForUpdatedAdvicePoint := sourceId.Int64
+	if !sourceId.Valid {
+		sourceIdForUpdatedAdvicePoint = advicePoint.Id.Int64()
+	}
+
+	// update the current advice point to be inactive
+	_, err = tx.Exec(`update dr_advice_point set status=? where id = ? and doctor_id = ?`, STATUS_INACTIVE, advicePoint.Id.Int64(), doctorId)
+	if err != nil {
+		tx.Rollback()
+		return err
+	}
+
+	res, err := tx.Exec(`insert into dr_advice_point (text, doctor_id, source_id, status) values (?,?,?,?)`, advicePoint.Text, doctorId, sourceIdForUpdatedAdvicePoint, STATUS_ACTIVE)
+	if err != nil {
+		tx.Rollback()
+		return err
+	}
+
+	instructionId, err := res.LastInsertId()
+	if err != nil {
+		tx.Rollback()
+		return err
+	}
+
+	// assign an id given that its a new advice point
+	advicePoint.Id = encoding.NewObjectId(instructionId)
+	return tx.Commit()
+}
+
+func (d *DataService) AddAdvicePointForDoctor(advicePoint *common.DoctorInstructionItem, doctorId int64) error {
+	tx, err := d.DB.Begin()
+	if err != nil {
+		return err
+	}
+
+	res, err := tx.Exec(`insert into dr_advice_point (text, doctor_id, status) values (?,?,?)`, advicePoint.Text, doctorId, STATUS_ACTIVE)
 	if err != nil {
 		tx.Rollback()
 		return err
@@ -1289,21 +1337,13 @@ func getPredefinedInstructionsFromRows(rows *sql.Rows) ([]*predefinedInstruction
 		if err := rows.Scan(&id, &text, &drugNameId, &drugFormId, &drugRouteId); err != nil {
 			return nil, err
 		}
-		instruction := &predefinedInstruction{}
-		instruction.id = id
-		if drugFormId.Valid {
-			instruction.drugFormId = drugFormId.Int64
+		instruction := &predefinedInstruction{
+			id:          id,
+			drugFormId:  drugFormId.Int64,
+			drugNameId:  drugNameId.Int64,
+			drugRouteId: drugRouteId.Int64,
+			text:        text,
 		}
-
-		if drugNameId.Valid {
-			instruction.drugNameId = drugNameId.Int64
-		}
-
-		if drugRouteId.Valid {
-			instruction.drugRouteId = drugRouteId.Int64
-		}
-
-		instruction.text = text
 		predefinedInstructions = append(predefinedInstructions, instruction)
 	}
 	return predefinedInstructions, rows.Err()
