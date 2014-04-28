@@ -47,8 +47,6 @@ const (
 	pharmacyDispensedTreatmentTable    = "pharmacy_dispensed_treatment"
 	requestedTreatmentTable            = "requested_treatment"
 	unlinkedDntfTreatmentTable         = "unlinked_dntf_treatment"
-	asDoctorTemplate                   = true
-	asPatientTreatment                 = false
 	addressUsa                         = "USA"
 	PENDING_TASK_PATIENT_CARD          = "PATIENT_CARD"
 )

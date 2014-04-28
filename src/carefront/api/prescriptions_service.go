@@ -894,7 +894,7 @@ func (d *DataService) AddTreatmentToTreatmentPlanInEventOfDNTF(treatment *common
 		return err
 	}
 
-	if err := d.addTreatment(treatment, asPatientTreatment, tx); err != nil {
+	if err := d.addTreatment(treatment, tx); err != nil {
 		tx.Rollback()
 		return err
 	}

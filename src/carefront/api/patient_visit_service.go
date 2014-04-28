@@ -607,7 +607,7 @@ func (d *DataService) AddTreatmentsForPatientVisit(treatments []*common.Treatmen
 
 	for _, treatment := range treatments {
 		treatment.TreatmentPlanId = encoding.NewObjectId(treatmentPlanId)
-		err = d.addTreatment(treatment, asPatientTreatment, tx)
+		err = d.addTreatment(treatment, tx)
 		if err != nil {
 			tx.Rollback()
 			return err
@@ -626,7 +626,7 @@ func (d *DataService) AddTreatmentsForPatientVisit(treatments []*common.Treatmen
 	return tx.Commit()
 }
 
-func (d *DataService) addTreatment(treatment *common.Treatment, withoutLinkToTreatmentPlan bool, tx *sql.Tx) error {
+func (d *DataService) addTreatment(treatment *common.Treatment, tx *sql.Tx) error {
 	treatmentType := treatmentRX
 	if treatment.OTC {
 		treatmentType = treatmentOTC
@@ -699,10 +699,8 @@ func (d *DataService) addTreatment(treatment *common.Treatment, withoutLinkToTre
 		columnsAndData["drug_form_id"] = drugFormId
 	}
 
-	if !withoutLinkToTreatmentPlan {
-		if treatment.TreatmentPlanId.IsValid && treatment.TreatmentPlanId.Int64() != 0 {
-			columnsAndData["treatment_plan_id"] = treatment.TreatmentPlanId.Int64()
-		}
+	if treatment.TreatmentPlanId.Int64() != 0 {
+		columnsAndData["treatment_plan_id"] = treatment.TreatmentPlanId.Int64()
 	}
 
 	columns, values := getKeysAndValuesFromMap(columnsAndData)
