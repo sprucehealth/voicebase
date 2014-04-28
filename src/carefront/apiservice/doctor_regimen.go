@@ -166,7 +166,7 @@ func (d *DoctorRegimenHandler) updateRegimenSteps(w http.ResponseWriter, r *http
 
 	// Go through regimen steps to add, update and delete regimen steps before creating the regimen plan
 	// for the user
-	newOrUpdatedStepToIdMapping := make(map[string]int64)
+	newOrUpdatedStepToIdMapping := make(map[string][]int64)
 	updatedAllRegimenSteps := make([]*common.DoctorInstructionItem, 0)
 	for _, regimenStep := range requestData.AllRegimenSteps {
 		switch regimenStep.State {
@@ -176,7 +176,7 @@ func (d *DoctorRegimenHandler) updateRegimenSteps(w http.ResponseWriter, r *http
 				WriteDeveloperError(w, http.StatusInternalServerError, "Unable to add reigmen step to doctor. Application may be left in inconsistent state. Error = "+err.Error())
 				return
 			}
-			newOrUpdatedStepToIdMapping[regimenStep.Text] = regimenStep.Id.Int64()
+			newOrUpdatedStepToIdMapping[regimenStep.Text] = append(newOrUpdatedStepToIdMapping[regimenStep.Text], regimenStep.Id.Int64())
 			updatedAllRegimenSteps = append(updatedAllRegimenSteps, regimenStep)
 		case common.STATE_MODIFIED:
 			err = d.DataApi.UpdateRegimenStepForDoctor(regimenStep, patientVisitReviewData.DoctorId)
@@ -186,7 +186,7 @@ func (d *DoctorRegimenHandler) updateRegimenSteps(w http.ResponseWriter, r *http
 			}
 			// keep track of the new id for updated regimen steps so that we can update the regimen step in the
 			// regimen section
-			newOrUpdatedStepToIdMapping[regimenStep.Text] = regimenStep.Id.Int64()
+			newOrUpdatedStepToIdMapping[regimenStep.Text] = append(newOrUpdatedStepToIdMapping[regimenStep.Text], regimenStep.Id.Int64())
 			updatedAllRegimenSteps = append(updatedAllRegimenSteps, regimenStep)
 		case common.STATE_DELETED:
 			err = d.DataApi.MarkRegimenStepToBeDeleted(regimenStep, patientVisitReviewData.DoctorId)
@@ -204,9 +204,11 @@ func (d *DoctorRegimenHandler) updateRegimenSteps(w http.ResponseWriter, r *http
 	// go through regimen steps within the regimen sections to assign ids to the new steps that dont have them
 	for _, regimenSection := range requestData.RegimenSections {
 		for _, regimenStep := range regimenSection.RegimenSteps {
-			updatedOrNewId := newOrUpdatedStepToIdMapping[regimenStep.Text]
-			if updatedOrNewId != 0 {
-				regimenStep.ParentId = encoding.NewObjectId(updatedOrNewId)
+			updatedOrNewIds := newOrUpdatedStepToIdMapping[regimenStep.Text]
+			if len(updatedOrNewIds) != 0 {
+				regimenStep.ParentId = encoding.NewObjectId(updatedOrNewIds[0])
+				// update the list to remove the first item
+				updatedOrNewIds = updatedOrNewIds[1:]
 			}
 			// empty out the state now that it has been taken care of
 			regimenStep.State = ""
@@ -229,13 +231,29 @@ func (d *DoctorRegimenHandler) updateRegimenSteps(w http.ResponseWriter, r *http
 		return
 	}
 
+	// Attempt to reconcile the list of regimen steps for the doctor in the event that they may have gone out of sync for
+	// between client and server. In this event, we treat the client's view of the world as the source of truth
+	if err := d.DataApi.InactivateAllOtherActiveRegimenStepsForDoctor(updatedAllRegimenSteps, patientVisitReviewData.DoctorId); err != nil {
+		WriteDeveloperError(w, http.StatusInternalServerError, "Unable to attempt to reconcile advice points: "+err.Error())
+		return
+	}
+
+	// fetch all regimen steps in the treatment plan and the global regimen steps to
+	// return an updated view of the world to the client
 	regimenPlan, err := d.DataApi.GetRegimenPlanForTreatmentPlan(treatmentPlanId)
 	if err != nil {
 		WriteDeveloperError(w, http.StatusInternalServerError, "Unable to get the regimen plan for treatment plan: "+err.Error())
 		return
 	}
 
+	allRegimenSteps, err := d.DataApi.GetRegimenStepsForDoctor(patientVisitReviewData.DoctorId)
+	if err != nil {
+		WriteDeveloperError(w, http.StatusInternalServerError, "Unable to get the list of regimen steps for doctor: " + err.Error())
+		return
+	}
+
 	requestData.RegimenSections = regimenPlan.RegimenSections
-	requestData.AllRegimenSteps = updatedAllRegimenSteps
+	requestData.AllRegimenSteps = allRegimenSteps
+	
 	WriteJSONToHTTPResponseWriter(w, http.StatusOK, requestData)
 }

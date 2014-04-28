@@ -164,7 +164,7 @@ func (d *DoctorAdviceHandler) updateAdvicePoints(w http.ResponseWriter, r *http.
 
 	// Go through advice points to add, update and delete advice points before creating the advice points for this patient visit
 	// for the user
-	newOrUpdatedPointToIdMapping := make(map[string]int64)
+	newOrUpdatedPointToIdMapping := make(map[string][]int64)
 	updatedAdvicePoints := make([]*common.DoctorInstructionItem, 0)
 	for _, advicePoint := range requestData.AllAdvicePoints {
 		switch advicePoint.State {
@@ -174,7 +174,7 @@ func (d *DoctorAdviceHandler) updateAdvicePoints(w http.ResponseWriter, r *http.
 				WriteDeveloperError(w, http.StatusInternalServerError, "Unable to add or update advice point for doctor. Application may be left in inconsistent state. Error = "+err.Error())
 				return
 			}
-			newOrUpdatedPointToIdMapping[advicePoint.Text] = advicePoint.Id.Int64()
+			newOrUpdatedPointToIdMapping[advicePoint.Text] = append(newOrUpdatedPointToIdMapping[advicePoint.Text], advicePoint.Id.Int64())
 			updatedAdvicePoints = append(updatedAdvicePoints, advicePoint)
 		case common.STATE_MODIFIED:
 			err = d.DataApi.UpdateAdvicePointForDoctor(advicePoint, patientVisitReviewData.DoctorId)
@@ -182,7 +182,7 @@ func (d *DoctorAdviceHandler) updateAdvicePoints(w http.ResponseWriter, r *http.
 				WriteDeveloperError(w, http.StatusInternalServerError, "Unable to add or update advice point for doctor. Application may be left in inconsistent state. Error = "+err.Error())
 				return
 			}
-			newOrUpdatedPointToIdMapping[advicePoint.Text] = advicePoint.Id.Int64()
+			newOrUpdatedPointToIdMapping[advicePoint.Text] = append(newOrUpdatedPointToIdMapping[advicePoint.Text], advicePoint.Id.Int64())
 			updatedAdvicePoints = append(updatedAdvicePoints, advicePoint)
 		case common.STATE_DELETED:
 			err = d.DataApi.MarkAdvicePointToBeDeleted(advicePoint, patientVisitReviewData.DoctorId)
@@ -199,9 +199,10 @@ func (d *DoctorAdviceHandler) updateAdvicePoints(w http.ResponseWriter, r *http.
 
 	// go through advice points to assign ids to the new points that dont have them
 	for _, advicePoint := range requestData.SelectedAdvicePoints {
-		updatedOrNewId := newOrUpdatedPointToIdMapping[advicePoint.Text]
-		if updatedOrNewId != 0 {
-			advicePoint.ParentId = encoding.NewObjectId(updatedOrNewId)
+		updatedOrNewIds := newOrUpdatedPointToIdMapping[advicePoint.Text]
+		if len(updatedOrNewIds) != 0 {
+			advicePoint.ParentId = encoding.NewObjectId(updatedOrNewIds[0])
+			updatedOrNewIds = updatedOrNewIds[1:]
 		}
 		// empty out the state information given that it is taken care of
 		advicePoint.State = ""
@@ -213,13 +214,28 @@ func (d *DoctorAdviceHandler) updateAdvicePoints(w http.ResponseWriter, r *http.
 		return
 	}
 
+	// Attempt to reconcile the list of advice points for the doctor in the event that they may have gone out of sync for
+	// between client and server. In this event, we treat the client's view of the world as the source of truth
+	if err := d.DataApi.InactivateAllOtherActiveAdvicePointsForDoctor(updatedAdvicePoints, patientVisitReviewData.DoctorId); err != nil {
+		WriteDeveloperError(w, http.StatusInternalServerError, "Unable to attempt to reconcile advice points: "+err.Error())
+		return
+	}
+
+	// fetch all advice points in the treatment plan and the global advice poitns to
+	// return an updated view of the world to the client
 	advicePoints, err := d.DataApi.GetAdvicePointsForTreatmentPlan(treatmentPlanId)
 	if err != nil {
 		WriteDeveloperError(w, http.StatusInternalServerError, "Unable to get the advice points that were just created "+err.Error())
 		return
 	}
 
-	requestData.AllAdvicePoints = updatedAdvicePoints
+	allAdvicePoints, err := d.DataApi.GetAdvicePointsForDoctor(patientVisitReviewData.DoctorId)
+	if err != nil {
+		WriteDeveloperError(w, http.StatusInternalServerError, "Unable to get all advice points for doctor: "+err.Error())
+		return
+	}
+
 	requestData.SelectedAdvicePoints = advicePoints
+	requestData.AllAdvicePoints = allAdvicePoints
 	WriteJSONToHTTPResponseWriter(w, http.StatusOK, requestData)
 }

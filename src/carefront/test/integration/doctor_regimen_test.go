@@ -131,6 +131,7 @@ func TestRegimenForPatientVisit(t *testing.T) {
 	// lets delete a regimen step
 	regimenPlanRequest = regimenPlanResponse
 	regimenPlanRequest.AllRegimenSteps = []*common.DoctorInstructionItem{regimenPlanRequest.AllRegimenSteps[0]}
+	regimenPlanRequest.RegimenSections = []*common.RegimenSection{}
 	regimenPlanResponse = createRegimenPlanForPatientVisit(regimenPlanRequest, testData, doctor, t)
 	validateRegimenRequestAgainstResponse(regimenPlanRequest, regimenPlanResponse, t)
 	if len(regimenPlanResponse.AllRegimenSteps) != 1 {
@@ -141,6 +142,7 @@ func TestRegimenForPatientVisit(t *testing.T) {
 	// since the regimen step in the section does not exist in the global steps
 	regimenPlanRequest = regimenPlanResponse
 	regimenPlanRequest.AllRegimenSteps = []*common.DoctorInstructionItem{}
+	regimenPlanRequest.RegimenSections = []*common.RegimenSection{regimenSection}
 	doctorRegimenHandler := apiservice.NewDoctorRegimenHandler(testData.DataApi)
 	ts := httptest.NewServer(doctorRegimenHandler)
 	defer ts.Close()
@@ -175,6 +177,7 @@ func TestRegimenForPatientVisit(t *testing.T) {
 
 // The purpose of this test is to ensure that when regimen steps are updated,
 // we are keeping track of the original step that has been modified via a source_id
+
 func TestRegimenForPatientVisit_TrackingSourceId(t *testing.T) {
 	if err := CheckIfRunningLocally(t); err == CannotRunTestLocally {
 		return
