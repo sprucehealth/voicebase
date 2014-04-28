@@ -466,7 +466,8 @@ func (d *DataService) GetDoctorAssignedToPatientVisit(patientVisitId int64) (*co
 }
 
 func (d *DataService) GetAdvicePointsForTreatmentPlan(treatmentPlanId int64) ([]*common.DoctorInstructionItem, error) {
-	rows, err := d.DB.Query(`select dr_advice_point_id,text from advice inner join dr_advice_point on dr_advice_point_id = dr_advice_point.id where treatment_plan_id = ?  and advice.status = ?`, treatmentPlanId, STATUS_ACTIVE)
+	rows, err := d.DB.Query(`select dr_advice_point_id, advice.text from advice 
+			where treatment_plan_id = ?  and advice.status = ?`, treatmentPlanId, STATUS_ACTIVE)
 	if err != nil {
 		return nil, err
 	}
@@ -496,14 +497,14 @@ func (d *DataService) CreateAdviceForPatientVisit(advicePoints []*common.DoctorI
 		return err
 	}
 
-	_, err = tx.Exec(`update advice set status=? where treatment_plan_id=?`, STATUS_INACTIVE, treatmentPlanId)
+	_, err = tx.Exec(`delete from advice where treatment_plan_id=?`, treatmentPlanId)
 	if err != nil {
 		tx.Rollback()
 		return err
 	}
 
 	for _, advicePoint := range advicePoints {
-		_, err = tx.Exec(`insert into advice (treatment_plan_id, dr_advice_point_id, status) values (?, ?, ?)`, treatmentPlanId, advicePoint.Id.Int64(), STATUS_ACTIVE)
+		_, err = tx.Exec(`insert into advice (treatment_plan_id, dr_advice_point_id, text, status) values (?, ?, ?, ?)`, treatmentPlanId, advicePoint.Id.Int64(), advicePoint.Text, STATUS_ACTIVE)
 		if err != nil {
 			tx.Rollback()
 			return err
@@ -520,8 +521,8 @@ func (d *DataService) CreateRegimenPlanForPatientVisit(regimenPlan *common.Regim
 		return err
 	}
 
-	// mark any previous regimen steps for this patient visit and regimen type as inactive
-	_, err = tx.Exec(`update regimen set status=? where treatment_plan_id = ?`, STATUS_INACTIVE, regimenPlan.TreatmentPlanId.Int64())
+	// delete any previous steps given that we have new ones coming in
+	_, err = tx.Exec(`delete from regimen where treatment_plan_id = ?`, regimenPlan.TreatmentPlanId.Int64())
 	if err != nil {
 		tx.Rollback()
 		return err
@@ -530,7 +531,7 @@ func (d *DataService) CreateRegimenPlanForPatientVisit(regimenPlan *common.Regim
 	// create new regimen steps within each section
 	for _, regimenSection := range regimenPlan.RegimenSections {
 		for _, regimenStep := range regimenSection.RegimenSteps {
-			_, err = tx.Exec(`insert into regimen (treatment_plan_id, regimen_type, dr_regimen_step_id, status) values (?,?,?,?)`, regimenPlan.TreatmentPlanId.Int64(), regimenSection.RegimenName, regimenStep.Id.Int64(), STATUS_ACTIVE)
+			_, err = tx.Exec(`insert into regimen (treatment_plan_id, regimen_type, dr_regimen_step_id, text, status) values (?,?,?,?,?)`, regimenPlan.TreatmentPlanId.Int64(), regimenSection.RegimenName, regimenStep.Id.Int64(), regimenStep.Text, STATUS_ACTIVE)
 			if err != nil {
 				tx.Rollback()
 				return err
@@ -545,9 +546,8 @@ func (d *DataService) GetRegimenPlanForTreatmentPlan(treatmentPlanId int64) (*co
 	var regimenPlan common.RegimenPlan
 	regimenPlan.TreatmentPlanId = encoding.NewObjectId(treatmentPlanId)
 
-	rows, err := d.DB.Query(`select regimen_type, dr_regimen_step.id, dr_regimen_step.text 
-								from regimen inner join dr_regimen_step on dr_regimen_step_id = dr_regimen_step.id 
-									where treatment_plan_id = ? and regimen.status = 'ACTIVE' order by regimen.id`, treatmentPlanId)
+	rows, err := d.DB.Query(`select regimen_type, dr_regimen_step_id, regimen.text 
+								from regimen where treatment_plan_id = ? and regimen.status = 'ACTIVE' order by regimen.id`, treatmentPlanId)
 	if err != nil {
 		return nil, err
 	}
