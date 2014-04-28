@@ -29,7 +29,7 @@ func TestHomeAPI(t *testing.T) {
 	}
 	id, err := testData.DataApi.InsertHomeNotification(note)
 	if err != nil {
-		t.Fatalf("Failed to insert notification: %S", err.Error())
+		t.Fatalf("Failed to insert notification: %s", err.Error())
 	}
 
 	notes, err := testData.DataApi.GetHomeNotificationsForPatient(patientId)
@@ -57,7 +57,7 @@ func TestHomeAPI(t *testing.T) {
 
 	// Test delete by UID
 	if _, err := testData.DataApi.InsertHomeNotification(note); err != nil {
-		t.Fatalf("Failed to insert notification: %S", err.Error())
+		t.Fatalf("Failed to insert notification: %s", err.Error())
 	}
 	if err := testData.DataApi.DeleteHomeNotificationByUID(patientId, note.UID); err != nil {
 		t.Fatalf("Failed to delete notification: %s", err.Error())
