@@ -191,6 +191,7 @@ const (
 
 type DoctorInstructionItem struct {
 	Id       encoding.ObjectId `json:"id,omitempty"`
+	ParentId encoding.ObjectId `json:"parent_id,omitempty"`
 	Text     string            `json:"text"`
 	Selected bool              `json:"selected,omitempty"`
 	State    string            `json:"state,omitempty"`

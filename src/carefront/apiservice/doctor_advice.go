@@ -123,7 +123,7 @@ func (d *DoctorAdviceHandler) updateAdvicePoints(w http.ResponseWriter, r *http.
 					advicePointFound = true
 					break
 				}
-			} else if advicePoint.Id.Int64() == selectedAdvicePoint.Id.Int64() {
+			} else if advicePoint.Id.Int64() == selectedAdvicePoint.ParentId.Int64() {
 				advicePointFound = true
 				break
 			}
@@ -193,7 +193,7 @@ func (d *DoctorAdviceHandler) updateAdvicePoints(w http.ResponseWriter, r *http.
 	for _, advicePoint := range requestData.SelectedAdvicePoints {
 		updatedOrNewId := newOrUpdatedPointToIdMapping[advicePoint.Text]
 		if updatedOrNewId != 0 {
-			advicePoint.Id = encoding.NewObjectId(updatedOrNewId)
+			advicePoint.ParentId = encoding.NewObjectId(updatedOrNewId)
 		}
 		// empty out the state information given that it is taken care of
 		advicePoint.State = ""
@@ -205,6 +205,13 @@ func (d *DoctorAdviceHandler) updateAdvicePoints(w http.ResponseWriter, r *http.
 		return
 	}
 
+	advicePoints, err := d.DataApi.GetAdvicePointsForTreatmentPlan(treatmentPlanId)
+	if err != nil {
+		WriteDeveloperError(w, http.StatusInternalServerError, "Unable to get the advice points that were just created "+err.Error())
+		return
+	}
+
 	requestData.AllAdvicePoints = updatedAdvicePoints
+	requestData.SelectedAdvicePoints = advicePoints
 	WriteJSONToHTTPResponseWriter(w, http.StatusOK, requestData)
 }

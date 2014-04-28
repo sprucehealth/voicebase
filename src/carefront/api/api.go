@@ -43,10 +43,9 @@ const (
 )
 
 var (
-	NoRowsError                  = errors.New("No rows exist")
-	NoElligibileProviderInState  = errors.New("There are no providers elligible in the state the patient resides")
-	NoRegimenPlanForPatientVisit = errors.New("There is no regimen plan for patient visit")
-	NoDiagnosisResponseErr       = errors.New("No diagnosis response exists to the question queried tag queried with")
+	NoRowsError                 = errors.New("No rows exist")
+	NoElligibileProviderInState = errors.New("There are no providers elligible in the state the patient resides")
+	NoDiagnosisResponseErr      = errors.New("No diagnosis response exists to the question queried tag queried with")
 )
 
 type PotentialAnswerInfo struct {

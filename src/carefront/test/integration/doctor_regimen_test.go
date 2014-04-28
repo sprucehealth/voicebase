@@ -86,11 +86,19 @@ func TestRegimenForPatientVisit(t *testing.T) {
 	// now lets add a couple regimen steps to a regimen section
 	regimenSection := &common.RegimenSection{}
 	regimenSection.RegimenName = "morning"
-	regimenSection.RegimenSteps = []*common.DoctorInstructionItem{regimenPlanRequest.AllRegimenSteps[0]}
+	regimenSection.RegimenSteps = []*common.DoctorInstructionItem{&common.DoctorInstructionItem{
+		ParentId: regimenPlanRequest.AllRegimenSteps[0].Id,
+		Text:     regimenPlanRequest.AllRegimenSteps[0].Text,
+	},
+	}
 
 	regimenSection2 := &common.RegimenSection{}
 	regimenSection2.RegimenName = "night"
-	regimenSection2.RegimenSteps = []*common.DoctorInstructionItem{regimenPlanRequest.AllRegimenSteps[1]}
+	regimenSection2.RegimenSteps = []*common.DoctorInstructionItem{&common.DoctorInstructionItem{
+		ParentId: regimenPlanRequest.AllRegimenSteps[1].Id,
+		Text:     regimenPlanRequest.AllRegimenSteps[1].Text,
+	},
+	}
 
 	regimenPlanRequest.RegimenSections = []*common.RegimenSection{regimenSection, regimenSection2}
 	regimenPlanResponse = createRegimenPlanForPatientVisit(regimenPlanRequest, testData, doctor, t)
@@ -261,8 +269,11 @@ func validateRegimenRequestAgainstResponse(doctorRegimenRequest, doctorRegimenRe
 			if regimenStep.Id.Int64() == 0 {
 				t.Fatal("Regimen steps in each section are expected to have an id")
 			}
-			if regimenStepsMapping[regimenStep.Id.Int64()] == false {
-				t.Fatalf("There exists a regimen step in a section that is not present in the global list. Id of regimen step %d", regimenStep.Id.Int64())
+			if regimenStepsMapping[regimenStep.ParentId.Int64()] == false {
+				t.Fatalf("There exists a regimen step in a section that is not present in the global list. Id of regimen step %d", regimenStep.Id)
+			}
+			if regimenStep.ParentId.Int64() == 0 {
+				t.Fatal("Regimen steps in each section are expected to link to an item in the global regimen list")
 			}
 		}
 	}

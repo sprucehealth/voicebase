@@ -92,10 +92,17 @@ func TestAdvicePointsForPatientVisit(t *testing.T) {
 
 	// now lets go ahead and update the advice for the patient visit
 	doctorAdviceRequest = doctorAdviceResponse
+	selectedAdvicePoints := make([]*common.DoctorInstructionItem, len(doctorAdviceRequest.AllAdvicePoints))
 	for i, advicePoint := range doctorAdviceRequest.AllAdvicePoints {
 		advicePoint.State = common.STATE_MODIFIED
 		advicePoint.Text = "UPDATED " + strconv.Itoa(i)
+		selectedAdvicePoints[i] = &common.DoctorInstructionItem{
+			Text:     advicePoint.Text,
+			ParentId: advicePoint.Id,
+			State:    common.STATE_MODIFIED,
+		}
 	}
+	doctorAdviceRequest.SelectedAdvicePoints = selectedAdvicePoints
 
 	doctorAdviceResponse = updateAdvicePointsForPatientVisit(doctorAdviceRequest, testData, doctor, t)
 	validateAdviceRequestAgainstResponse(doctorAdviceRequest, doctorAdviceResponse, t)
@@ -103,7 +110,11 @@ func TestAdvicePointsForPatientVisit(t *testing.T) {
 	// lets delete one of the advice points
 	doctorAdviceRequest = doctorAdviceResponse
 	doctorAdviceRequest.AllAdvicePoints = []*common.DoctorInstructionItem{doctorAdviceRequest.AllAdvicePoints[1]}
-	doctorAdviceRequest.SelectedAdvicePoints = doctorAdviceRequest.AllAdvicePoints
+	doctorAdviceRequest.SelectedAdvicePoints = []*common.DoctorInstructionItem{&common.DoctorInstructionItem{
+		ParentId: doctorAdviceRequest.AllAdvicePoints[0].Id,
+		Text:     doctorAdviceRequest.AllAdvicePoints[0].Text,
+	},
+	}
 	doctorAdviceResponse = updateAdvicePointsForPatientVisit(doctorAdviceRequest, testData, doctor, t)
 	validateAdviceRequestAgainstResponse(doctorAdviceRequest, doctorAdviceResponse, t)
 
@@ -237,6 +248,9 @@ func validateAdviceRequestAgainstResponse(doctorAdviceRequest, doctorAdviceRespo
 		}
 		if advicePoint.Text == "" {
 			t.Fatal("Selectd advice point text is empty when not expected to be")
+		}
+		if advicePoint.ParentId.Int64() == 0 {
+			t.Fatal("Expected parent Id to exist for the advice points but they dont")
 		}
 	}
 

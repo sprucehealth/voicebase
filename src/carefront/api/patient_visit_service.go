@@ -466,7 +466,7 @@ func (d *DataService) GetDoctorAssignedToPatientVisit(patientVisitId int64) (*co
 }
 
 func (d *DataService) GetAdvicePointsForTreatmentPlan(treatmentPlanId int64) ([]*common.DoctorInstructionItem, error) {
-	rows, err := d.DB.Query(`select dr_advice_point_id, advice.text from advice 
+	rows, err := d.DB.Query(`select id, dr_advice_point_id, advice.text from advice 
 			where treatment_plan_id = ?  and advice.status = ?`, treatmentPlanId, STATUS_ACTIVE)
 	if err != nil {
 		return nil, err
@@ -475,15 +475,16 @@ func (d *DataService) GetAdvicePointsForTreatmentPlan(treatmentPlanId int64) ([]
 
 	advicePoints := make([]*common.DoctorInstructionItem, 0)
 	for rows.Next() {
-		var id encoding.ObjectId
+		var id, parentId encoding.ObjectId
 		var text string
-		if err := rows.Scan(&id, &text); err != nil {
+		if err := rows.Scan(&id, &parentId, &text); err != nil {
 			return nil, err
 		}
 
 		advicePoint := &common.DoctorInstructionItem{
-			Id:   id,
-			Text: text,
+			Id:       id,
+			ParentId: parentId,
+			Text:     text,
 		}
 		advicePoints = append(advicePoints, advicePoint)
 	}
@@ -504,7 +505,7 @@ func (d *DataService) CreateAdviceForPatientVisit(advicePoints []*common.DoctorI
 	}
 
 	for _, advicePoint := range advicePoints {
-		_, err = tx.Exec(`insert into advice (treatment_plan_id, dr_advice_point_id, text, status) values (?, ?, ?, ?)`, treatmentPlanId, advicePoint.Id.Int64(), advicePoint.Text, STATUS_ACTIVE)
+		_, err = tx.Exec(`insert into advice (treatment_plan_id, dr_advice_point_id, text, status) values (?, ?, ?, ?)`, treatmentPlanId, advicePoint.ParentId.Int64(), advicePoint.Text, STATUS_ACTIVE)
 		if err != nil {
 			tx.Rollback()
 			return err
@@ -531,7 +532,7 @@ func (d *DataService) CreateRegimenPlanForPatientVisit(regimenPlan *common.Regim
 	// create new regimen steps within each section
 	for _, regimenSection := range regimenPlan.RegimenSections {
 		for _, regimenStep := range regimenSection.RegimenSteps {
-			_, err = tx.Exec(`insert into regimen (treatment_plan_id, regimen_type, dr_regimen_step_id, text, status) values (?,?,?,?,?)`, regimenPlan.TreatmentPlanId.Int64(), regimenSection.RegimenName, regimenStep.Id.Int64(), regimenStep.Text, STATUS_ACTIVE)
+			_, err = tx.Exec(`insert into regimen (treatment_plan_id, regimen_type, dr_regimen_step_id, text, status) values (?,?,?,?,?)`, regimenPlan.TreatmentPlanId.Int64(), regimenSection.RegimenName, regimenStep.ParentId.Int64(), regimenStep.Text, STATUS_ACTIVE)
 			if err != nil {
 				tx.Rollback()
 				return err
@@ -546,7 +547,7 @@ func (d *DataService) GetRegimenPlanForTreatmentPlan(treatmentPlanId int64) (*co
 	var regimenPlan common.RegimenPlan
 	regimenPlan.TreatmentPlanId = encoding.NewObjectId(treatmentPlanId)
 
-	rows, err := d.DB.Query(`select regimen_type, dr_regimen_step_id, regimen.text 
+	rows, err := d.DB.Query(`select id, regimen_type, dr_regimen_step_id, regimen.text 
 								from regimen where treatment_plan_id = ? and regimen.status = 'ACTIVE' order by regimen.id`, treatmentPlanId)
 	if err != nil {
 		return nil, err
@@ -556,11 +557,12 @@ func (d *DataService) GetRegimenPlanForTreatmentPlan(treatmentPlanId int64) (*co
 	regimenSections := make(map[string][]*common.DoctorInstructionItem)
 	for rows.Next() {
 		var regimenType, regimenText string
-		var regimenStepId encoding.ObjectId
-		err = rows.Scan(&regimenType, &regimenStepId, &regimenText)
+		var regimenId, parentId encoding.ObjectId
+		err = rows.Scan(&regimenId, &regimenType, &parentId, &regimenText)
 		regimenStep := &common.DoctorInstructionItem{
-			Id:   regimenStepId,
-			Text: regimenText,
+			Id:       regimenId,
+			Text:     regimenText,
+			ParentId: parentId,
 		}
 
 		regimenSteps := regimenSections[regimenType]
@@ -572,11 +574,6 @@ func (d *DataService) GetRegimenPlanForTreatmentPlan(treatmentPlanId int64) (*co
 	}
 	if rows.Err() != nil {
 		return nil, rows.Err()
-	}
-
-	// if there are no regimen steps to return, error out indicating so
-	if len(regimenSections) == 0 {
-		return nil, NoRegimenPlanForPatientVisit
 	}
 
 	regimenSectionsArray := make([]*common.RegimenSection, 0)

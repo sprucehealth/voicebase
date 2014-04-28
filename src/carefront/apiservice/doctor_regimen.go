@@ -81,7 +81,7 @@ func (d *DoctorRegimenHandler) getRegimenSteps(w http.ResponseWriter, r *http.Re
 	}
 
 	regimenPlan, err := d.DataApi.GetRegimenPlanForTreatmentPlan(treatmentPlanId)
-	if err != nil && err != api.NoRegimenPlanForPatientVisit {
+	if err != nil {
 		WriteDeveloperError(w, http.StatusInternalServerError, "Unable to lookup regimen plan for patient visit: "+err.Error())
 	}
 
@@ -125,7 +125,7 @@ func (d *DoctorRegimenHandler) updateRegimenSteps(w http.ResponseWriter, r *http
 						regimenStepFound = true
 						break
 					}
-				} else if globalRegimenStep.Id.Int64() == regimenStep.Id.Int64() {
+				} else if globalRegimenStep.Id.Int64() == regimenStep.ParentId.Int64() {
 					regimenStepFound = true
 					break
 				}
@@ -206,7 +206,7 @@ func (d *DoctorRegimenHandler) updateRegimenSteps(w http.ResponseWriter, r *http
 		for _, regimenStep := range regimenSection.RegimenSteps {
 			updatedOrNewId := newOrUpdatedStepToIdMapping[regimenStep.Text]
 			if updatedOrNewId != 0 {
-				regimenStep.Id = encoding.NewObjectId(updatedOrNewId)
+				regimenStep.ParentId = encoding.NewObjectId(updatedOrNewId)
 			}
 			// empty out the state now that it has been taken care of
 			regimenStep.State = ""
@@ -229,6 +229,13 @@ func (d *DoctorRegimenHandler) updateRegimenSteps(w http.ResponseWriter, r *http
 		return
 	}
 
+	regimenPlan, err := d.DataApi.GetRegimenPlanForTreatmentPlan(treatmentPlanId)
+	if err != nil {
+		WriteDeveloperError(w, http.StatusInternalServerError, "Unable to get the regimen plan for treatment plan: "+err.Error())
+		return
+	}
+
+	requestData.RegimenSections = regimenPlan.RegimenSections
 	requestData.AllRegimenSteps = updatedAllRegimenSteps
 	WriteJSONToHTTPResponseWriter(w, http.StatusOK, requestData)
 }
