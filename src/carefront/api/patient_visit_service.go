@@ -604,7 +604,7 @@ func (d *DataService) AddTreatmentsForPatientVisit(treatments []*common.Treatmen
 
 	for _, treatment := range treatments {
 		treatment.TreatmentPlanId = encoding.NewObjectId(treatmentPlanId)
-		err = d.addTreatment(treatment, tx)
+		err = d.addTreatment(treatmentForPatientType, treatment, nil, tx)
 		if err != nil {
 			tx.Rollback()
 			return err
@@ -621,110 +621,6 @@ func (d *DataService) AddTreatmentsForPatientVisit(treatments []*common.Treatmen
 	}
 
 	return tx.Commit()
-}
-
-func (d *DataService) addTreatment(treatment *common.Treatment, tx *sql.Tx) error {
-	treatmentType := treatmentRX
-	if treatment.OTC {
-		treatmentType = treatmentOTC
-	}
-
-	var drugNameId, drugRouteId, drugFormId int64
-	var err error
-
-	if treatment.DrugName != "" {
-		drugNameId, err = d.getOrInsertNameInTable(tx, drugNameTable, treatment.DrugName)
-		if err != nil {
-			return err
-		}
-	}
-
-	if treatment.DrugForm != "" {
-		drugFormId, err = d.getOrInsertNameInTable(tx, drugFormTable, treatment.DrugForm)
-		if err != nil {
-			return err
-		}
-	}
-
-	if treatment.DrugRoute != "" {
-		drugRouteId, err = d.getOrInsertNameInTable(tx, drugRouteTable, treatment.DrugRoute)
-		if err != nil {
-			return err
-		}
-	}
-
-	// get an id for a grouping into which to insert the drug_db_ids
-	rowInsertId, err := tx.Exec(`insert into drug_db_ids_group () values ()`)
-	if err != nil {
-		tx.Rollback()
-		return err
-	}
-
-	drugDbIdsGroupId, err := rowInsertId.LastInsertId()
-	if err != nil {
-		tx.Rollback()
-		return err
-	}
-
-	columnsAndData := map[string]interface{}{
-		"drug_internal_name":    treatment.DrugInternalName,
-		"dosage_strength":       treatment.DosageStrength,
-		"type":                  treatmentType,
-		"dispense_value":        treatment.DispenseValue.Float64(),
-		"dispense_unit_id":      treatment.DispenseUnitId.Int64(),
-		"refills":               treatment.NumberRefills.Int64Value,
-		"substitutions_allowed": treatment.SubstitutionsAllowed,
-		"patient_instructions":  treatment.PatientInstructions,
-		"pharmacy_notes":        treatment.PharmacyNotes,
-		"status":                STATUS_CREATED,
-		"drug_db_ids_group_id":  drugDbIdsGroupId,
-	}
-
-	if treatment.DaysSupply.IsValid {
-		columnsAndData["days_supply"] = treatment.DaysSupply.Int64Value
-	}
-
-	if drugRouteId != 0 {
-		columnsAndData["drug_route_id"] = drugRouteId
-	}
-
-	if drugNameId != 0 {
-		columnsAndData["drug_name_id"] = drugNameId
-	}
-
-	if drugFormId != 0 {
-		columnsAndData["drug_form_id"] = drugFormId
-	}
-
-	if treatment.TreatmentPlanId.Int64() != 0 {
-		columnsAndData["treatment_plan_id"] = treatment.TreatmentPlanId.Int64()
-	}
-
-	columns, values := getKeysAndValuesFromMap(columnsAndData)
-	res, err := tx.Exec(fmt.Sprintf(`insert into treatment (%s) values (%s)`, strings.Join(columns, ","), nReplacements(len(values))), values...)
-	if err != nil {
-		tx.Rollback()
-		return err
-	}
-
-	treatmentId, err := res.LastInsertId()
-	if err != nil {
-		tx.Rollback()
-		return err
-	}
-
-	// update the treatment object with the information
-	treatment.Id = encoding.NewObjectId(treatmentId)
-
-	// add drug db ids to the table
-	for drugDbTag, drugDbId := range treatment.DrugDBIds {
-		_, err := tx.Exec(`insert into drug_db_id (drug_db_id_tag, drug_db_id, drug_db_ids_group_id) values (?, ?, ?)`, drugDbTag, drugDbId, drugDbIdsGroupId)
-		if err != nil {
-			tx.Rollback()
-			return err
-		}
-	}
-	return nil
 }
 
 func (d *DataService) GetTreatmentsBasedOnTreatmentPlanId(patientVisitId, treatmentPlanId int64) ([]*common.Treatment, error) {
