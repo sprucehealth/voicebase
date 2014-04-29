@@ -1436,7 +1436,7 @@ func deleteComponentsOfFavoriteTreatmentPlan(tx *sql.Tx, favoriteTreatmentPlanId
 		return err
 	}
 
-	_, err = tx.Exec(`delete from dr_favorite_regimen_plan where dr_favorite_treatment_plan_id=?`, favoriteTreatmentPlanId)
+	_, err = tx.Exec(`delete from dr_favorite_regimen where dr_favorite_treatment_plan_id=?`, favoriteTreatmentPlanId)
 	if err != nil {
 		return err
 	}
@@ -1446,7 +1446,7 @@ func deleteComponentsOfFavoriteTreatmentPlan(tx *sql.Tx, favoriteTreatmentPlanId
 		return err
 	}
 
-	_, err = tx.Exec(`delete from dr_favorite_follow_up where dr_favorite_treatment_plan_id=?`, favoriteTreatmentPlanId)
+	_, err = tx.Exec(`delete from dr_favorite_patient_visit_follow_up where dr_favorite_treatment_plan_id=?`, favoriteTreatmentPlanId)
 	if err != nil {
 		return err
 	}

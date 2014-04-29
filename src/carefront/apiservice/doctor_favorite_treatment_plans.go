@@ -117,14 +117,9 @@ func (d *DoctorFavoriteTreatmentPlansHandler) addOrUpdateFavoriteTreatmentPlan(w
 		return
 	}
 
-	// echo back updated list of favorite treatment plans
-	favoriteTreatmentPlans, err := d.DataApi.GetFavoriteTreatmentPlansForDoctor(doctor.DoctorId.Int64())
-	if err != nil {
-		WriteDeveloperError(w, http.StatusInternalServerError, "Unable to get favorite treatment plans for doctor: "+err.Error())
-		return
-	}
+	// echo back added favorite treatment plan
 
-	WriteJSONToHTTPResponseWriter(w, http.StatusOK, &DoctorFavoriteTreatmentPlansResponseData{FavoriteTreatmentPlans: favoriteTreatmentPlans})
+	WriteJSONToHTTPResponseWriter(w, http.StatusOK, &DoctorFavoriteTreatmentPlansResponseData{FavoriteTreatmentPlan: requestData.FavoriteTreatmentPlan})
 }
 
 func (d *DoctorFavoriteTreatmentPlansHandler) deleteFavoriteTreatmentPlan(w http.ResponseWriter, r *http.Request, doctor *common.Doctor) {
