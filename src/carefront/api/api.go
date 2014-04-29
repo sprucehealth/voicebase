@@ -177,11 +177,13 @@ type DoctorAPI interface {
 	GetDoctorFromDoseSpotClinicianId(clincianId int64) (doctor *common.Doctor, err error)
 	GetDoctorIdFromAccountId(accountId int64) (int64, error)
 	GetRegimenStepsForDoctor(doctorId int64) (regimenSteps []*common.DoctorInstructionItem, err error)
+	GetRegimenStepForDoctor(regimenStepId, doctorId int64) (*common.DoctorInstructionItem, error)
 	AddRegimenStepForDoctor(regimenStep *common.DoctorInstructionItem, doctorId int64) error
 	UpdateRegimenStepForDoctor(regimenStep *common.DoctorInstructionItem, doctorId int64) error
 	MarkRegimenStepToBeDeleted(regimenStep *common.DoctorInstructionItem, doctorId int64) error
 	MarkRegimenStepsToBeDeleted(regimenSteps []*common.DoctorInstructionItem, doctorId int64) error
 	GetAdvicePointsForDoctor(doctorId int64) (advicePoints []*common.DoctorInstructionItem, err error)
+	GetAdvicePointForDoctor(advicePointId, doctorId int64) (*common.DoctorInstructionItem, error)
 	AddAdvicePointForDoctor(advicePoint *common.DoctorInstructionItem, doctorId int64) error
 	UpdateAdvicePointForDoctor(advicePoint *common.DoctorInstructionItem, doctorId int64) error
 	MarkAdvicePointToBeDeleted(advicePoint *common.DoctorInstructionItem, doctorId int64) error

@@ -299,6 +299,83 @@ func TestAdvicePointsForPatientVisit_UpdatingMultipleItems(t *testing.T) {
 	validateAdviceRequestAgainstResponse(doctorAdviceRequest, doctorAdviceResponse, t)
 }
 
+func TestAdvicePointsForPatientVisit_SelectAdviceFromDeletedAdvice(t *testing.T) {
+	if err := CheckIfRunningLocally(t); err == CannotRunTestLocally {
+		return
+	}
+
+	testData := SetupIntegrationTest(t)
+	defer TearDownIntegrationTest(t, testData)
+
+	patientVisitResponse, doctor := setupAdviceCreationTest(t, testData)
+
+	// lets go ahead and create a request for this patient visit
+	doctorAdviceRequest := &common.Advice{}
+	doctorAdviceRequest.AllAdvicePoints = make([]*common.DoctorInstructionItem, 0)
+	doctorAdviceRequest.SelectedAdvicePoints = make([]*common.DoctorInstructionItem, 0)
+	doctorAdviceRequest.PatientVisitId = encoding.NewObjectId(patientVisitResponse.PatientVisitId)
+
+	for i := 0; i < 5; i++ {
+		doctorAdviceRequest.AllAdvicePoints = append(doctorAdviceRequest.AllAdvicePoints, &common.DoctorInstructionItem{
+			Text:  "Advice point",
+			State: common.STATE_ADDED,
+		})
+		doctorAdviceRequest.SelectedAdvicePoints = append(doctorAdviceRequest.SelectedAdvicePoints, &common.DoctorInstructionItem{
+			Text:  "Advice point",
+			State: common.STATE_ADDED,
+		})
+	}
+	doctorAdviceResponse := updateAdvicePointsForPatientVisit(doctorAdviceRequest, testData, doctor, t)
+	validateAdviceRequestAgainstResponse(doctorAdviceRequest, doctorAdviceResponse, t)
+
+	// lets go ahead and delete an advice point in the context of another patient's visit
+
+	patientVisitResponse2 := signupAndSubmitPatientVisitForRandomPatient(t, testData, doctor)
+	doctorAdviceResponse2 := getAdvicePointsInPatientVisit(testData, doctor, patientVisitResponse2.PatientVisitId, t)
+
+	doctorAdviceRequest = doctorAdviceResponse2
+	doctorAdviceRequest.AllAdvicePoints[4].State = common.STATE_DELETED
+	doctorAdviceResponse = updateAdvicePointsForPatientVisit(doctorAdviceRequest, testData, doctor, t)
+	validateAdviceRequestAgainstResponse(doctorAdviceRequest, doctorAdviceResponse, t)
+
+	// now, lets open up the previous patient's adviceList
+	doctorAdviceResponse = getAdvicePointsInPatientVisit(testData, doctor, patientVisitResponse.PatientVisitId, t)
+
+	// this should have an item in the selected advice list that does not exist in the current active list
+	// Lets ensure that is true
+	if len(doctorAdviceResponse.AllAdvicePoints) != 4 && len(doctorAdviceResponse.SelectedAdvicePoints) != 5 {
+		t.Fatalf("Expected the global list to have 4 items and the selected list to have 5 items, instead there are %d items in the global list and %d items in the selected list", len(doctorAdviceResponse.AllAdvicePoints), len(doctorAdviceResponse.SelectedAdvicePoints))
+	}
+
+	// we should be able to submit the exact same list without having to modify anything
+	doctorAdviceRequest = doctorAdviceResponse
+	doctorAdviceResponse = updateAdvicePointsForPatientVisit(doctorAdviceRequest, testData, doctor, t)
+	if len(doctorAdviceResponse.AllAdvicePoints) != 4 && len(doctorAdviceResponse.SelectedAdvicePoints) != 5 {
+		t.Fatalf("Expected the global list to have 4 items and the selected list to have 5 items, instead there are %d items in the global list and %d items in the selected list", len(doctorAdviceResponse.AllAdvicePoints), len(doctorAdviceResponse.SelectedAdvicePoints))
+	}
+
+	// now, lets go ahead and attempt to modify the last selected item in the advice list
+	doctorAdviceRequest = doctorAdviceResponse
+	doctorAdviceRequest.SelectedAdvicePoints[4].State = common.STATE_MODIFIED
+	doctorAdviceRequest.SelectedAdvicePoints[4].Text = "Updating text of deleted item"
+	doctorAdviceResponse = updateAdvicePointsForPatientVisit(doctorAdviceRequest, testData, doctor, t)
+
+	// now there should still be a disparate number of items between the global and the selected list, but the last item should still be updated
+	if len(doctorAdviceResponse.AllAdvicePoints) != 4 && len(doctorAdviceResponse.SelectedAdvicePoints) != 5 {
+		t.Fatalf("Expected the global list to have 4 items and the selected list to have 5 items, instead there are %d items in the global list and %d items in the selected list", len(doctorAdviceResponse.AllAdvicePoints), len(doctorAdviceResponse.SelectedAdvicePoints))
+	}
+
+	if doctorAdviceResponse.SelectedAdvicePoints[4].Text != "Updating text of deleted item" {
+		t.Fatalf("Expected text to have been updated for item that is referencing a deleted item from the global list of doctor")
+	}
+
+	// now lets go ahead and remove this last item from the list
+	doctorAdviceRequest = doctorAdviceResponse
+	doctorAdviceRequest.SelectedAdvicePoints = doctorAdviceRequest.SelectedAdvicePoints[:4]
+	doctorAdviceResponse = updateAdvicePointsForPatientVisit(doctorAdviceRequest, testData, doctor, t)
+	validateAdviceRequestAgainstResponse(doctorAdviceRequest, doctorAdviceResponse, t)
+}
+
 func TestAdvicePointsForPatientVisit_ErrorDifferentTextForLinkedItems(t *testing.T) {
 	if err := CheckIfRunningLocally(t); err == CannotRunTestLocally {
 		return
@@ -358,11 +435,7 @@ func TestAdvicePointsForPatientVisit_ErrorDifferentTextForLinkedItems(t *testing
 }
 
 func setupAdviceCreationTest(t *testing.T, testData TestData) (*apiservice.PatientVisitResponse, *common.Doctor) {
-	patientSignedupResponse := SignupRandomTestPatient(t, testData.DataApi, testData.AuthApi)
-	patient, err := testData.DataApi.GetPatientFromId(patientSignedupResponse.Patient.PatientId.Int64())
-	if err != nil {
-		t.Fatal("Unable to get patient from id " + err.Error())
-	}
+
 	// get the current primary doctor
 	doctorId := getDoctorIdOfCurrentPrimaryDoctor(testData, t)
 
@@ -372,16 +445,8 @@ func setupAdviceCreationTest(t *testing.T, testData TestData) (*apiservice.Patie
 	}
 
 	// get patient to start a visit
-	patientVisitResponse := CreatePatientVisitForPatient(patientSignedupResponse.Patient.PatientId.Int64(), testData, t)
+	patientVisitResponse := signupAndSubmitPatientVisitForRandomPatient(t, testData, doctor)
 
-	answerIntakeRequestBody := prepareAnswersForQuestionsInPatientVisit(patientVisitResponse, t)
-	submitAnswersIntakeForPatient(patient.PatientId.Int64(), patient.AccountId.Int64(), answerIntakeRequestBody, testData, t)
-
-	// get the patient to submit the case so that it can be reviewed by the doctor
-	SubmitPatientVisitForPatient(patientSignedupResponse.Patient.PatientId.Int64(), patientVisitResponse.PatientVisitId, testData, t)
-
-	// get the doctor to start reviewing the case
-	StartReviewingPatientVisit(patientVisitResponse.PatientVisitId, doctor, testData, t)
 	return patientVisitResponse, doctor
 }
 

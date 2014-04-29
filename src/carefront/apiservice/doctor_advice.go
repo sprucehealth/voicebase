@@ -114,26 +114,6 @@ func (d *DoctorAdviceHandler) updateAdvicePoints(w http.ResponseWriter, r *http.
 		return
 	}
 
-	// first, ensure that all selected advice points are actually in the global list on the client side
-	for _, selectedAdvicePoint := range requestData.SelectedAdvicePoints {
-		advicePointFound := false
-		for _, advicePoint := range requestData.AllAdvicePoints {
-			if advicePoint.Id.Int64() == 0 {
-				if advicePoint.Text == selectedAdvicePoint.Text {
-					advicePointFound = true
-					break
-				}
-			} else if advicePoint.Id.Int64() == selectedAdvicePoint.ParentId.Int64() {
-				advicePointFound = true
-				break
-			}
-		}
-		if !advicePointFound {
-			WriteDeveloperError(w, http.StatusBadRequest, "There is an advice point in the selected list that is not in the global list")
-			return
-		}
-	}
-
 	// ensure that items in the selected list have exactly the same text as items in the global list,
 	// if they are linked to an item that is found in the global list
 	idToTextMapping := make(map[int64]string)
@@ -143,10 +123,43 @@ func (d *DoctorAdviceHandler) updateAdvicePoints(w http.ResponseWriter, r *http.
 		}
 	}
 
-	// now, if the linkage exists via the parentId, ensure that the text is exactly the same
-	for _, advicePoint := range requestData.SelectedAdvicePoints {
-		if textOfGlobalAdvicePoint, ok := idToTextMapping[advicePoint.ParentId.Int64()]; ok {
-			if textOfGlobalAdvicePoint != advicePoint.Text {
+	// first, ensure that all selected advice points are actually in the global list on the client side
+	for _, selectedAdvicePoint := range requestData.SelectedAdvicePoints {
+		advicePointFound := false
+		for _, advicePoint := range requestData.AllAdvicePoints {
+			if advicePoint.Id.Int64() == 0 && advicePoint.ParentId.Int64() == 0 {
+				if advicePoint.Text == selectedAdvicePoint.Text {
+					advicePointFound = true
+					break
+				}
+			} else if advicePoint.Id.Int64() == selectedAdvicePoint.ParentId.Int64() {
+				advicePointFound = true
+				break
+			} else if selectedAdvicePoint.ParentId.Int64() != 0 {
+				parentAdvicePoint, err := d.DataApi.GetAdvicePointForDoctor(selectedAdvicePoint.ParentId.Int64(), patientVisitReviewData.DoctorId)
+				if err != nil && err == api.NoRowsError {
+					WriteDeveloperError(w, http.StatusBadRequest, "No parent advice point found for advice point in the selected list")
+					return
+				} else if err != nil {
+					WriteDeveloperError(w, http.StatusInternalServerError, "Unable to fetch the parent advice point for an advice point in the selected list: "+err.Error())
+					return
+				}
+
+				if parentAdvicePoint.Text != selectedAdvicePoint.Text && selectedAdvicePoint.State != common.STATE_MODIFIED {
+					WriteDeveloperError(w, http.StatusBadRequest, "Cannot modify the text for a selected item linked to a parent advice point without indicating the intent to modify with STATE=MODIFIED")
+					return
+				}
+				advicePointFound = true
+				break
+			}
+		}
+
+		if !advicePointFound {
+			WriteDeveloperError(w, http.StatusBadRequest, "There is an advice point in the selected list that is not in the global list")
+			return
+		}
+		if textOfGlobalAdvicePoint, ok := idToTextMapping[selectedAdvicePoint.ParentId.Int64()]; ok {
+			if textOfGlobalAdvicePoint != selectedAdvicePoint.Text {
 				WriteDeveloperError(w, http.StatusBadRequest, "Text of an item in the selected list that is linked to an item in the global list has to match up")
 				return
 			}

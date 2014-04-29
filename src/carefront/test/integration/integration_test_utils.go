@@ -23,6 +23,13 @@ import (
 	"testing"
 	"time"
 
+	"carefront/api"
+	"carefront/apiservice"
+	"carefront/common"
+	"carefront/common/config"
+	"carefront/services/auth"
+	thriftapi "carefront/thrift/api"
+
 	"github.com/BurntSushi/toml"
 	_ "github.com/go-sql-driver/mysql"
 )
@@ -163,6 +170,23 @@ func getDoctorIdOfCurrentPrimaryDoctor(testData TestData, t *testing.T) int64 {
 		t.Fatal("Unable to query for doctor that is elligible to diagnose in CA: " + err.Error())
 	}
 	return doctorId
+}
+
+func signupAndSubmitPatientVisitForRandomPatient(t *testing.T, testData TestData, doctor *common.Doctor) *apiservice.PatientVisitResponse {
+	patientSignedupResponse := SignupRandomTestPatient(t, testData.DataApi, testData.AuthApi)
+	patientVisitResponse := CreatePatientVisitForPatient(patientSignedupResponse.Patient.PatientId.Int64(), testData, t)
+
+	patient, err := testData.DataApi.GetPatientFromId(patientSignedupResponse.Patient.PatientId.Int64())
+	if err != nil {
+		t.Fatal("Unable to get patient from id: " + err.Error())
+	}
+	answerIntakeRequestBody := prepareAnswersForQuestionsInPatientVisit(patientVisitResponse, t)
+	submitAnswersIntakeForPatient(patient.PatientId.Int64(), patient.AccountId.Int64(), answerIntakeRequestBody, testData, t)
+	SubmitPatientVisitForPatient(patientSignedupResponse.Patient.PatientId.Int64(), patientVisitResponse.PatientVisitId, testData, t)
+	// get the patient to start reviewing the case
+	StartReviewingPatientVisit(patientVisitResponse.PatientVisitId, doctor, testData, t)
+
+	return patientVisitResponse
 }
 
 func SetupIntegrationTest(t *testing.T) TestData {

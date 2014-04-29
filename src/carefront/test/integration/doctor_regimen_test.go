@@ -303,6 +303,83 @@ func TestRegimenForPatientVisit_UpdatingMultipleItemsWithSameText(t *testing.T) 
 	validateRegimenRequestAgainstResponse(regimenPlanRequest, regimenPlanResponse, t)
 }
 
+func TestRegimenForPatientVisit_UpdatingItemLinkedToDeletedItem(t *testing.T) {
+	if err := CheckIfRunningLocally(t); err == CannotRunTestLocally {
+		t.Skip("Skipping test since its not configured to run locally")
+	}
+
+	testData := SetupIntegrationTest(t)
+	defer TearDownIntegrationTest(t, testData)
+
+	patientVisitResponse, doctor := setupTestForRegimenCreation(t, testData)
+
+	// add multiple items with the exact same text and ensure that they all get assigned new ids
+	regimenPlanRequest := &common.RegimenPlan{}
+	regimenPlanRequest.PatientVisitId = encoding.NewObjectId(patientVisitResponse.PatientVisitId)
+	regimenPlanRequest.AllRegimenSteps = make([]*common.DoctorInstructionItem, 0)
+
+	for i := 0; i < 5; i++ {
+		regimenPlanRequest.AllRegimenSteps = append(regimenPlanRequest.AllRegimenSteps, &common.DoctorInstructionItem{
+			Text:  "Regimen Step",
+			State: common.STATE_ADDED,
+		})
+
+		regimenPlanRequest.RegimenSections = append(regimenPlanRequest.RegimenSections, &common.RegimenSection{
+			RegimenName: "test " + strconv.Itoa(i),
+			RegimenSteps: []*common.DoctorInstructionItem{&common.DoctorInstructionItem{
+				Text:  "Regimen Step",
+				State: common.STATE_ADDED,
+			},
+			},
+		})
+	}
+
+	regimenPlanResponse := createRegimenPlanForPatientVisit(regimenPlanRequest, testData, doctor, t)
+	validateRegimenRequestAgainstResponse(regimenPlanRequest, regimenPlanResponse, t)
+
+	// now lets update the global set of regimen steps in the context of another patient's visit
+	patientVisitResponse2 := signupAndSubmitPatientVisitForRandomPatient(t, testData, doctor)
+	regimenPlanResponse = getRegimenPlanForPatientVisit(testData, doctor, patientVisitResponse2.PatientVisitId, t)
+
+	// lets go ahead and delete one of the items from the regimen step
+	regimenPlanRequest = regimenPlanResponse
+	regimenPlanRequest.PatientVisitId = encoding.NewObjectId(patientVisitResponse2.PatientVisitId)
+	regimenPlanRequest.AllRegimenSteps[4].State = common.STATE_DELETED
+
+	regimenPlanResponse = createRegimenPlanForPatientVisit(regimenPlanRequest, testData, doctor, t)
+	if len(regimenPlanResponse.AllRegimenSteps) != 4 {
+		t.Fatalf("Expected there to exist 4 items in the global regimen steps after deleting one of them instead got %d items ", len(regimenPlanResponse.AllRegimenSteps))
+	}
+
+	// now, lets go back to the previous patient and attempt to get the regimen plan
+	regimenPlanResponse = getRegimenPlanForPatientVisit(testData, doctor, patientVisitResponse.PatientVisitId, t)
+	if len(regimenPlanResponse.AllRegimenSteps) != 4 && len(regimenPlanResponse.RegimenSections) != 5 {
+		t.Fatalf("Expected 4 items in the global regimen steps and 5 items in the regimen sections instead got %d in global regimen list and %d items in the regimen sections", len(regimenPlanRequest.AllRegimenSteps), len(regimenPlanRequest.RegimenSections))
+	}
+
+	// now lets go ahead and try and modify the item in the regimen section
+	regimenPlanRequest = regimenPlanResponse
+	regimenPlanRequest.RegimenSections[4].RegimenSteps[0].State = common.STATE_MODIFIED
+	regimenPlanRequest.PatientVisitId = encoding.NewObjectId(patientVisitResponse.PatientVisitId)
+	updatedText := "Updating text for an item linked to deleted item"
+	regimenPlanRequest.RegimenSections[4].RegimenSteps[0].Text = updatedText
+
+	regimenPlanResponse = createRegimenPlanForPatientVisit(regimenPlanRequest, testData, doctor, t)
+	if len(regimenPlanResponse.AllRegimenSteps) != 4 && len(regimenPlanResponse.RegimenSections) != 5 {
+		t.Fatalf("Expected 4 items in the global regimen steps and 5 items in the regimen sections instead got %d in global regimen list and %d items in the regimen sections", len(regimenPlanRequest.AllRegimenSteps), len(regimenPlanRequest.RegimenSections))
+	}
+
+	if regimenPlanResponse.RegimenSections[4].RegimenSteps[0].Text != updatedText {
+		t.Fatalf("Exepcted text to have updated for item linked to deleted item but it didn't")
+	}
+
+	// now lets go ahead and remove the item from the regimen section
+	regimenPlanRequest = regimenPlanResponse
+	regimenPlanRequest.RegimenSections = regimenPlanRequest.RegimenSections[:4]
+	regimenPlanResponse = createRegimenPlanForPatientVisit(regimenPlanRequest, testData, doctor, t)
+	validateRegimenRequestAgainstResponse(regimenPlanRequest, regimenPlanResponse, t)
+}
+
 // The purpose of this test is to ensure that when regimen steps are updated,
 // we are keeping track of the original step that has been modified via a source_id
 func TestRegimenForPatientVisit_TrackingSourceId(t *testing.T) {
@@ -395,7 +472,6 @@ func TestRegimenForPatientVisit_TrackingSourceId(t *testing.T) {
 }
 
 func setupTestForRegimenCreation(t *testing.T, testData TestData) (*apiservice.PatientVisitResponse, *common.Doctor) {
-	patientSignedupResponse := SignupRandomTestPatient(t, testData.DataApi, testData.AuthApi)
 
 	// get the current primary doctor
 	doctorId := getDoctorIdOfCurrentPrimaryDoctor(testData, t)
@@ -404,25 +480,7 @@ func setupTestForRegimenCreation(t *testing.T, testData TestData) (*apiservice.P
 	if err != nil {
 		t.Fatal("Unable to get doctor from doctor id " + err.Error())
 	}
-
-	// get patient to start a visit
-	patientVisitResponse := CreatePatientVisitForPatient(patientSignedupResponse.Patient.PatientId.Int64(), testData, t)
-
-	// submit answers to questions in patient visit
-	patient, err := testData.DataApi.GetPatientFromId(patientSignedupResponse.Patient.PatientId.Int64())
-	if err != nil {
-		t.Fatal("Unable to get patient from id: " + err.Error())
-	}
-
-	answerIntakeRequestBody := prepareAnswersForQuestionsInPatientVisit(patientVisitResponse, t)
-	submitAnswersIntakeForPatient(patient.PatientId.Int64(), patient.AccountId.Int64(), answerIntakeRequestBody, testData, t)
-
-	// get the patient to submit the case
-	SubmitPatientVisitForPatient(patientSignedupResponse.Patient.PatientId.Int64(), patientVisitResponse.PatientVisitId, testData, t)
-
-	// get the patient to start reviewing the case
-	StartReviewingPatientVisit(patientVisitResponse.PatientVisitId, doctor, testData, t)
-
+	patientVisitResponse := signupAndSubmitPatientVisitForRandomPatient(t, testData, doctor)
 	return patientVisitResponse, doctor
 }
 

@@ -150,6 +150,16 @@ func (d *DataService) GetRegimenStepsForDoctor(doctorId int64) (regimenSteps []*
 	return
 }
 
+func (d *DataService) GetRegimenStepForDoctor(regimenStepId, doctorId int64) (*common.DoctorInstructionItem, error) {
+	var regimenStep common.DoctorInstructionItem
+	err := d.DB.QueryRow(`select id, text, status from dr_regimen_step where id=? and doctor_id=?`, regimenStepId, doctorId).Scan(&regimenStep.Id, &regimenStep.Text, &regimenStep.Status)
+	if err == sql.ErrNoRows {
+		return &regimenStep, NoRowsError
+	}
+
+	return &regimenStep, err
+}
+
 func (d *DataService) AddRegimenStepForDoctor(regimenStep *common.DoctorInstructionItem, doctorId int64) error {
 	res, err := d.DB.Exec(`insert into dr_regimen_step (text, doctor_id,status) values (?,?,?)`, regimenStep.Text, doctorId, STATUS_ACTIVE)
 	if err != nil {
@@ -244,6 +254,15 @@ func (d *DataService) GetAdvicePointsForDoctor(doctorId int64) ([]*common.Doctor
 	}
 
 	return getActiveInstructions(advicePoints), nil
+}
+
+func (d *DataService) GetAdvicePointForDoctor(advicePointId, doctorId int64) (*common.DoctorInstructionItem, error) {
+	var advicePoint common.DoctorInstructionItem
+	err := d.DB.QueryRow(`select id, text, status from dr_advice_point where id=? and doctor_id=?`, advicePointId, doctorId).Scan(&advicePoint.Id, &advicePoint.Text, &advicePoint.Status)
+	if err == sql.ErrNoRows {
+		return &advicePoint, NoRowsError
+	}
+	return &advicePoint, err
 }
 
 func (d *DataService) UpdateAdvicePointForDoctor(advicePoint *common.DoctorInstructionItem, doctorId int64) error {
