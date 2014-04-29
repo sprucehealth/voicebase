@@ -23,24 +23,24 @@ type notification interface {
 	makeView(dataAPI api.DataAPI, patientId int64) (view, error)
 }
 
-type IncompleteVisitNotification struct {
+type incompleteVisitNotification struct {
 	VisitId int64
 }
 
-type VisitReviewedNotification struct {
+type visitReviewedNotification struct {
 	DoctorId int64
 	VisitId  int64
 }
 
-func (*IncompleteVisitNotification) TypeName() string {
+func (*incompleteVisitNotification) TypeName() string {
 	return incompleteVisit
 }
 
-func (*VisitReviewedNotification) TypeName() string {
+func (*visitReviewedNotification) TypeName() string {
 	return visitReviewed
 }
 
-func (n *IncompleteVisitNotification) makeView(dataAPI api.DataAPI, patientId int64) (view, error) {
+func (n *incompleteVisitNotification) makeView(dataAPI api.DataAPI, patientId int64) (view, error) {
 	patient, err := dataAPI.GetPatientFromId(patientId)
 	if err != nil {
 		return nil, err
@@ -60,7 +60,7 @@ func (n *IncompleteVisitNotification) makeView(dataAPI api.DataAPI, patientId in
 	}, nil
 }
 
-func (n *VisitReviewedNotification) makeView(dataAPI api.DataAPI, patientId int64) (view, error) {
+func (n *visitReviewedNotification) makeView(dataAPI api.DataAPI, patientId int64) (view, error) {
 	doctor, err := dataAPI.GetDoctorFromId(n.DoctorId)
 	if err != nil {
 		return nil, err
@@ -86,8 +86,8 @@ func (n *VisitReviewedNotification) makeView(dataAPI api.DataAPI, patientId int6
 var notifyTypes = map[string]reflect.Type{}
 
 func init() {
-	registerNotificationType(&IncompleteVisitNotification{})
-	registerNotificationType(&VisitReviewedNotification{})
+	registerNotificationType(&incompleteVisitNotification{})
+	registerNotificationType(&visitReviewedNotification{})
 }
 
 func registerNotificationType(n notification) {

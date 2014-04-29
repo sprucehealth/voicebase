@@ -17,7 +17,7 @@ func InitListeners(dataAPI api.DataAPI) {
 			Dismissible:     false,
 			DismissOnAction: false,
 			Priority:        1000,
-			Data: &IncompleteVisitNotification{
+			Data: &incompleteVisitNotification{
 				VisitId: ev.VisitId,
 			},
 		})
@@ -75,6 +75,29 @@ func InitListeners(dataAPI api.DataAPI) {
 			golog.Errorf("Failed to insert visit treatment plan created into health log for patient %d: %s", ev.PatientId, err.Error())
 		}
 
+		return nil
+	})
+
+	dispatch.Default.Subscribe(func(ev *apiservice.CareTeamAssingmentEvent) error {
+		for _, a := range ev.Assignments {
+			if a.ProviderRole == api.DOCTOR_ROLE {
+				doctor, err := dataAPI.GetDoctorFromId(a.ProviderId)
+				if err != nil {
+					golog.Errorf("Failed to lookup doctor %d: %s", a.ProviderId, err.Error())
+				} else {
+					if _, err := dataAPI.InsertOrUpdatePatientHealthLogItem(ev.PatientId, &common.HealthLogItem{
+						UID: fmt.Sprintf("doctor_added:%d", a.ProviderId),
+						Data: &textLogItem{
+							Text:    fmt.Sprintf("%d %d, M.D., added to your care team.", doctor.FirstName, doctor.LastName),
+							IconURL: fmt.Sprintf("spruce:///image/thumbnail_care_team_%d", doctor.DoctorId.Int64()), // TODO
+							TapURL:  "spruce:///action/view_care_team",
+						},
+					}); err != nil {
+						golog.Errorf("Failed to insert visit treatment plan created into health log for patient %d: %s", ev.PatientId, err.Error())
+					}
+				}
+			}
+		}
 		return nil
 	})
 }
