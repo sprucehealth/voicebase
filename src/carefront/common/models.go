@@ -275,18 +275,25 @@ type DrugDetails struct {
 	CommonSideEffects  []string
 }
 
-type NotificationData interface {
+type TypedData interface {
 	TypeName() string
 }
 
-type HomeNotification struct {
+type Notification struct {
 	Id              int64
-	PatientId       int64
-	UID             string // Unique event ID scoped to the patient.
+	UID             string // Unique ID scoped to the patient.
 	Timestamp       time.Time
 	Expires         *time.Time
 	Dismissible     bool
 	DismissOnAction bool
 	Priority        int
-	Data            NotificationData
+	Data            TypedData
+}
+
+type HealthLogItem struct {
+	Id        int64
+	PatientId int64
+	UID       string // Unique ID scoped to the patient.
+	Timestamp time.Time
+	Data      TypedData
 }

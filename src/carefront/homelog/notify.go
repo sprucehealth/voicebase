@@ -6,8 +6,6 @@ package homelog
 import (
 	"carefront/api"
 	"carefront/apiservice"
-	"carefront/common"
-	"carefront/libs/dispatch"
 	"fmt"
 
 	"reflect"
@@ -94,26 +92,4 @@ func init() {
 
 func registerNotificationType(n notification) {
 	notifyTypes[n.TypeName()] = reflect.TypeOf(reflect.Indirect(reflect.ValueOf(n)))
-}
-
-func InitListeners(dataAPI api.DataAPI) {
-	// Insert an incomplete notification when a patient starts a visit
-	dispatch.Default.Subscribe(func(ev *apiservice.VisitStartedEvent) error {
-		_, err := dataAPI.InsertHomeNotification(&common.HomeNotification{
-			PatientId:       ev.PatientId,
-			UID:             incompleteVisit,
-			Dismissible:     false,
-			DismissOnAction: false,
-			Priority:        1000,
-			Data: &IncompleteVisitNotification{
-				VisitId: ev.VisitId,
-			},
-		})
-		return err
-	})
-
-	// Remove the incomplete visit notification when the patient submits a visit
-	dispatch.Default.Subscribe(func(ev *apiservice.VisitSubmittedEvent) error {
-		return dataAPI.DeleteHomeNotificationByUID(ev.PatientId, incompleteVisit)
-	})
 }

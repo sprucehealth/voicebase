@@ -8,39 +8,37 @@ import (
 	"time"
 )
 
-func (d *DataService) DeleteHomeNotifications(ids []int64) error {
+func (d *DataService) DeletePatientNotifications(ids []int64) error {
 	switch len(ids) {
 	case 0:
 		return nil
 	case 1:
-		_, err := d.DB.Exec("DELETE FROM home_feed WHERE id = ?", ids[0])
+		_, err := d.DB.Exec("DELETE FROM patient_notifications WHERE id = ?", ids[0])
 		return err
 	}
-	_, err := d.DB.Exec("DELETE FROM home_feed WHERE id IN "+nReplacements(len(ids)), appendInt64sToInterfaceSlice(nil, ids)...)
+	_, err := d.DB.Exec("DELETE FROM patient_notifications WHERE id IN "+nReplacements(len(ids)), appendInt64sToInterfaceSlice(nil, ids)...)
 	return err
 }
 
-func (d *DataService) DeleteHomeNotificationByUID(patientId int64, uid string) error {
-	_, err := d.DB.Exec("DELETE FROM home_feed WHERE patient_id = ? AND uid = ?", patientId, uid)
+func (d *DataService) DeletePatientNotificationByUID(patientId int64, uid string) error {
+	_, err := d.DB.Exec("DELETE FROM patient_notifications WHERE patient_id = ? AND uid = ?", patientId, uid)
 	return err
 }
 
-func (d *DataService) GetHomeNotificationsForPatient(patientId int64, typeMap map[string]reflect.Type) ([]*common.HomeNotification, error) {
+func (d *DataService) GetNotificationsForPatient(patientId int64, typeMap map[string]reflect.Type) ([]*common.Notification, error) {
 	rows, err := d.DB.Query(`
 		SELECT id, uid, tstamp, expires, dismissible, dismiss_on_action, priority, type, data
-		FROM home_feed
+		FROM patient_notifications
 		WHERE patient_id = ?
 		ORDER BY priority DESC, tstamp DESC`, patientId)
 	if err != nil {
 		return nil, err
 	}
-	var notes []*common.HomeNotification
+	var notes []*common.Notification
 	var toDelete []int64
 	now := time.Now()
 	for rows.Next() {
-		note := &common.HomeNotification{
-			PatientId: patientId,
-		}
+		note := &common.Notification{}
 		var dataType string
 		var data []byte
 		err := rows.Scan(
@@ -63,7 +61,7 @@ func (d *DataService) GetHomeNotificationsForPatient(patientId int64, typeMap ma
 			golog.Errorf("Unknown notification type %s for %d", dataType, note.Id)
 			continue
 		}
-		note.Data = reflect.New(t).Interface().(common.NotificationData)
+		note.Data = reflect.New(t).Interface().(common.TypedData)
 		if err := json.Unmarshal(data, &note.Data); err != nil {
 			golog.Errorf("Failed to unmarshal home notification %d: %s", note.Id, err.Error())
 			continue
@@ -73,7 +71,7 @@ func (d *DataService) GetHomeNotificationsForPatient(patientId int64, typeMap ma
 	// Delete expired notifications in the background
 	if len(toDelete) > 0 {
 		go func() {
-			if err := d.DeleteHomeNotifications(toDelete); err != nil {
+			if err := d.DeletePatientNotifications(toDelete); err != nil {
 				golog.Errorf("Failed to delete expired notifications: %s", err.Error())
 			}
 		}()
@@ -81,16 +79,67 @@ func (d *DataService) GetHomeNotificationsForPatient(patientId int64, typeMap ma
 	return notes, rows.Err()
 }
 
-func (d *DataService) InsertHomeNotification(note *common.HomeNotification) (int64, error) {
+func (d *DataService) InsertPatientNotification(patientId int64, note *common.Notification) (int64, error) {
 	data, err := json.Marshal(note.Data)
 	if err != nil {
 		return 0, err
 	}
 	res, err := d.DB.Exec(`
-		INSERT INTO home_feed (patient_id, uid, expires, dismissible, dismiss_on_action, priority, type, data)
+		INSERT INTO patient_notifications (patient_id, uid, expires, dismissible, dismiss_on_action, priority, type, data)
 		VALUES (?, ?, ?, ?, ?, ?, ?, ?)`,
-		note.PatientId, note.UID, &note.Expires, note.Dismissible,
+		patientId, note.UID, &note.Expires, note.Dismissible,
 		note.DismissOnAction, note.Priority, note.Data.TypeName(), data)
+	if err != nil {
+		return 0, err
+	}
+	return res.LastInsertId()
+}
+
+func (d *DataService) GetHealthLogForPatient(patientId int64, typeMap map[string]reflect.Type) ([]*common.HealthLogItem, error) {
+	rows, err := d.DB.Query(`
+		SELECT id, uid, tstamp, type, data
+		FROM health_log
+		WHERE patient_id = ?
+		ORDER BY tstamp DESC`, patientId)
+	if err != nil {
+		return nil, err
+	}
+	var items []*common.HealthLogItem
+	for rows.Next() {
+		item := &common.HealthLogItem{}
+		var dataType string
+		var data []byte
+		err := rows.Scan(&item.Id, &item.UID, &item.Timestamp, &dataType, &data)
+		if err != nil {
+			return nil, err
+		}
+		// If the type is unknown or the data failes to unmarshal then ignore the item
+		// but continue since it's better to filter out the bad items rather than
+		// not returning any.
+		t := typeMap[dataType]
+		if t == nil {
+			golog.Errorf("Unknown health log item type %s for %d", dataType, item.Id)
+			continue
+		}
+		item.Data = reflect.New(t).Interface().(common.TypedData)
+		if err := json.Unmarshal(data, &item.Data); err != nil {
+			golog.Errorf("Failed to unmarshal health log item %d: %s", item.Id, err.Error())
+			continue
+		}
+		items = append(items, item)
+	}
+	return items, rows.Err()
+}
+
+func (d *DataService) InsertOrUpdatePatientHealthLogItem(patientId int64, item *common.HealthLogItem) (int64, error) {
+	data, err := json.Marshal(item.Data)
+	if err != nil {
+		return 0, err
+	}
+	res, err := d.DB.Exec(`
+		REPLACE INTO health_log (patient_id, uid, type, data)
+		VALUES (?, ?, ?, ?)`,
+		patientId, item.UID, item.Data.TypeName(), data)
 	if err != nil {
 		return 0, err
 	}
