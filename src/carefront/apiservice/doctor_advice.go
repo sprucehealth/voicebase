@@ -164,7 +164,10 @@ func (d *DoctorAdviceHandler) updateAdvicePoints(w http.ResponseWriter, r *http.
 
 	// Go through advice points to add, update and delete advice points before creating the advice points for this patient visit
 	// for the user
-	newOrUpdatedPointToIdMapping := make(map[string][]int64)
+	// its possible for multiple items with the exact same text to be added, which is why we maintain a mapping of
+	// text to a slice of int64s
+	newPointToIdMapping := make(map[string][]int64)
+	updatedPointToIdMapping := make(map[int64]int64)
 	updatedAdvicePoints := make([]*common.DoctorInstructionItem, 0)
 	for _, advicePoint := range requestData.AllAdvicePoints {
 		switch advicePoint.State {
@@ -174,15 +177,16 @@ func (d *DoctorAdviceHandler) updateAdvicePoints(w http.ResponseWriter, r *http.
 				WriteDeveloperError(w, http.StatusInternalServerError, "Unable to add or update advice point for doctor. Application may be left in inconsistent state. Error = "+err.Error())
 				return
 			}
-			newOrUpdatedPointToIdMapping[advicePoint.Text] = append(newOrUpdatedPointToIdMapping[advicePoint.Text], advicePoint.Id.Int64())
+			newPointToIdMapping[advicePoint.Text] = append(newPointToIdMapping[advicePoint.Text], advicePoint.Id.Int64())
 			updatedAdvicePoints = append(updatedAdvicePoints, advicePoint)
 		case common.STATE_MODIFIED:
+			previousAdvicePointId := advicePoint.Id.Int64()
 			err = d.DataApi.UpdateAdvicePointForDoctor(advicePoint, patientVisitReviewData.DoctorId)
 			if err != nil {
 				WriteDeveloperError(w, http.StatusInternalServerError, "Unable to add or update advice point for doctor. Application may be left in inconsistent state. Error = "+err.Error())
 				return
 			}
-			newOrUpdatedPointToIdMapping[advicePoint.Text] = append(newOrUpdatedPointToIdMapping[advicePoint.Text], advicePoint.Id.Int64())
+			updatedPointToIdMapping[previousAdvicePointId] = advicePoint.Id.Int64()
 			updatedAdvicePoints = append(updatedAdvicePoints, advicePoint)
 		case common.STATE_DELETED:
 			err = d.DataApi.MarkAdvicePointToBeDeleted(advicePoint, patientVisitReviewData.DoctorId)
@@ -199,11 +203,20 @@ func (d *DoctorAdviceHandler) updateAdvicePoints(w http.ResponseWriter, r *http.
 
 	// go through advice points to assign ids to the new points that dont have them
 	for _, advicePoint := range requestData.SelectedAdvicePoints {
-		updatedOrNewIds := newOrUpdatedPointToIdMapping[advicePoint.Text]
-		if len(updatedOrNewIds) != 0 {
-			advicePoint.ParentId = encoding.NewObjectId(updatedOrNewIds[0])
-			updatedOrNewIds = updatedOrNewIds[1:]
+		newIds, ok := newPointToIdMapping[advicePoint.Text]
+		if ok {
+			advicePoint.ParentId = encoding.NewObjectId(newIds[0])
+			// remove the id that was just used so as to assign a different id to the same text
+			// that could appear again
+			newPointToIdMapping[advicePoint.Text] = newIds[1:]
 		}
+
+		updatedId, ok := updatedPointToIdMapping[advicePoint.ParentId.Int64()]
+		if ok {
+			// update the parentId to point to the new updated item
+			advicePoint.ParentId = encoding.NewObjectId(updatedId)
+		}
+
 		// empty out the state information given that it is taken care of
 		advicePoint.State = ""
 	}

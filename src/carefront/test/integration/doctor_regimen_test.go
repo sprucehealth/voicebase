@@ -16,39 +16,13 @@ import (
 
 func TestRegimenForPatientVisit(t *testing.T) {
 	if err := CheckIfRunningLocally(t); err == CannotRunTestLocally {
-		return
+		t.Skip("Skipping test since its not configured to run locally")
 	}
 
 	testData := SetupIntegrationTest(t)
 	defer TearDownIntegrationTest(t, testData)
 
-	patientSignedupResponse := SignupRandomTestPatient(t, testData.DataApi, testData.AuthApi)
-
-	// get the current primary doctor
-	doctorId := getDoctorIdOfCurrentPrimaryDoctor(testData, t)
-
-	doctor, err := testData.DataApi.GetDoctorFromId(doctorId)
-	if err != nil {
-		t.Fatal("Unable to get doctor from doctor id " + err.Error())
-	}
-
-	// get patient to start a visit
-	patientVisitResponse := CreatePatientVisitForPatient(patientSignedupResponse.Patient.PatientId.Int64(), testData, t)
-
-	// submit answers to questions in patient visit
-	patient, err := testData.DataApi.GetPatientFromId(patientSignedupResponse.Patient.PatientId.Int64())
-	if err != nil {
-		t.Fatal("Unable to get patient from id: " + err.Error())
-	}
-
-	answerIntakeRequestBody := prepareAnswersForQuestionsInPatientVisit(patientVisitResponse, t)
-	submitAnswersIntakeForPatient(patient.PatientId.Int64(), patient.AccountId.Int64(), answerIntakeRequestBody, testData, t)
-
-	// get the patient to submit the case
-	SubmitPatientVisitForPatient(patientSignedupResponse.Patient.PatientId.Int64(), patientVisitResponse.PatientVisitId, testData, t)
-
-	// get the patient to start reviewing the case
-	StartReviewingPatientVisit(patientVisitResponse.PatientVisitId, doctor, testData, t)
+	patientVisitResponse, doctor := setupTestForRegimenCreation(t, testData)
 
 	// attempt to get the regimen plan or a patient visit
 	regimenPlan := getRegimenPlanForPatientVisit(testData, doctor, patientVisitResponse.PatientVisitId, t)
@@ -162,7 +136,7 @@ func TestRegimenForPatientVisit(t *testing.T) {
 	}
 
 	// get patient to start a visit
-	patientSignedupResponse = SignupRandomTestPatient(t, testData.DataApi, testData.AuthApi)
+	patientSignedupResponse := SignupRandomTestPatient(t, testData.DataApi, testData.AuthApi)
 	patientVisitResponse = CreatePatientVisitForPatient(patientSignedupResponse.Patient.PatientId.Int64(), testData, t)
 
 	regimenPlan = getRegimenPlanForPatientVisit(testData, doctor, patientVisitResponse.PatientVisitId, t)
@@ -175,44 +149,103 @@ func TestRegimenForPatientVisit(t *testing.T) {
 	}
 }
 
-// The purpose of this test is to ensure that when regimen steps are updated,
-// we are keeping track of the original step that has been modified via a source_id
-
-func TestRegimenForPatientVisit_TrackingSourceId(t *testing.T) {
+func TestRegimenForPatientVisit_AddingMultipleItemsWithSameText(t *testing.T) {
 	if err := CheckIfRunningLocally(t); err == CannotRunTestLocally {
-		return
+		t.Skip("Skipping test since its not configured to run locally")
 	}
 
 	testData := SetupIntegrationTest(t)
 	defer TearDownIntegrationTest(t, testData)
 
-	patientSignedupResponse := SignupRandomTestPatient(t, testData.DataApi, testData.AuthApi)
+	patientVisitResponse, doctor := setupTestForRegimenCreation(t, testData)
 
-	// get the current primary doctor
-	doctorId := getDoctorIdOfCurrentPrimaryDoctor(testData, t)
+	// add multiple items with the exact same text and ensure that they all get assigned new ids
+	regimenPlanRequest := &common.RegimenPlan{}
+	regimenPlanRequest.PatientVisitId = encoding.NewObjectId(patientVisitResponse.PatientVisitId)
+	regimenPlanRequest.AllRegimenSteps = make([]*common.DoctorInstructionItem, 0)
 
-	doctor, err := testData.DataApi.GetDoctorFromId(doctorId)
-	if err != nil {
-		t.Fatal("Unable to get doctor from doctor id " + err.Error())
+	for i := 0; i < 5; i++ {
+		regimenPlanRequest.AllRegimenSteps = append(regimenPlanRequest.AllRegimenSteps, &common.DoctorInstructionItem{
+			Text:  "Regimen Step",
+			State: common.STATE_ADDED,
+		})
+
+		regimenPlanRequest.RegimenSections = append(regimenPlanRequest.RegimenSections, &common.RegimenSection{
+			RegimenName: "test " + strconv.Itoa(i),
+			RegimenSteps: []*common.DoctorInstructionItem{&common.DoctorInstructionItem{
+				Text:  "Regimen Step",
+				State: common.STATE_ADDED,
+			},
+			},
+		})
 	}
 
-	// get patient to start a visit
-	patientVisitResponse := CreatePatientVisitForPatient(patientSignedupResponse.Patient.PatientId.Int64(), testData, t)
+	regimenPlanResponse := createRegimenPlanForPatientVisit(regimenPlanRequest, testData, doctor, t)
+	validateRegimenRequestAgainstResponse(regimenPlanRequest, regimenPlanResponse, t)
 
-	// submit answers to questions in patient visit
-	patient, err := testData.DataApi.GetPatientFromId(patientSignedupResponse.Patient.PatientId.Int64())
-	if err != nil {
-		t.Fatal("Unable to get patient from id: " + err.Error())
+}
+
+func TestRegimenForPatientVisit_UpdatingMultipleItemsWithSameText(t *testing.T) {
+	if err := CheckIfRunningLocally(t); err == CannotRunTestLocally {
+		t.Skip("Skipping test since its not configured to run locally")
 	}
 
-	answerIntakeRequestBody := prepareAnswersForQuestionsInPatientVisit(patientVisitResponse, t)
-	submitAnswersIntakeForPatient(patient.PatientId.Int64(), patient.AccountId.Int64(), answerIntakeRequestBody, testData, t)
+	testData := SetupIntegrationTest(t)
+	defer TearDownIntegrationTest(t, testData)
 
-	// get the patient to submit the case
-	SubmitPatientVisitForPatient(patientSignedupResponse.Patient.PatientId.Int64(), patientVisitResponse.PatientVisitId, testData, t)
+	patientVisitResponse, doctor := setupTestForRegimenCreation(t, testData)
 
-	// get the patient to start reviewing the case
-	StartReviewingPatientVisit(patientVisitResponse.PatientVisitId, doctor, testData, t)
+	// add multiple items with the exact same text and ensure that they all get assigned new ids
+	regimenPlanRequest := &common.RegimenPlan{}
+	regimenPlanRequest.PatientVisitId = encoding.NewObjectId(patientVisitResponse.PatientVisitId)
+	regimenPlanRequest.AllRegimenSteps = make([]*common.DoctorInstructionItem, 0)
+
+	for i := 0; i < 5; i++ {
+		regimenPlanRequest.AllRegimenSteps = append(regimenPlanRequest.AllRegimenSteps, &common.DoctorInstructionItem{
+			Text:  "Regimen Step",
+			State: common.STATE_ADDED,
+		})
+
+		regimenPlanRequest.RegimenSections = append(regimenPlanRequest.RegimenSections, &common.RegimenSection{
+			RegimenName: "test " + strconv.Itoa(i),
+			RegimenSteps: []*common.DoctorInstructionItem{&common.DoctorInstructionItem{
+				Text:  "Regimen Step",
+				State: common.STATE_ADDED,
+			},
+			},
+		})
+	}
+
+	regimenPlanResponse := createRegimenPlanForPatientVisit(regimenPlanRequest, testData, doctor, t)
+	validateRegimenRequestAgainstResponse(regimenPlanRequest, regimenPlanResponse, t)
+
+	regimenPlanRequest = regimenPlanResponse
+
+	// lets go ahead and update each item in the list
+	for i := 0; i < 5; i++ {
+		regimenPlanRequest.AllRegimenSteps[i].Text = "Updated Regimen Step"
+		regimenPlanRequest.AllRegimenSteps[i].State = common.STATE_MODIFIED
+
+		regimenPlanRequest.RegimenSections[i].RegimenSteps[0].ParentId = regimenPlanRequest.AllRegimenSteps[i].Id
+		regimenPlanRequest.RegimenSections[i].RegimenSteps[0].Text = "Updated Regimen Step"
+		regimenPlanRequest.RegimenSections[i].RegimenSteps[0].State = common.STATE_MODIFIED
+	}
+
+	regimenPlanResponse = createRegimenPlanForPatientVisit(regimenPlanRequest, testData, doctor, t)
+	validateRegimenRequestAgainstResponse(regimenPlanRequest, regimenPlanResponse, t)
+}
+
+// The purpose of this test is to ensure that when regimen steps are updated,
+// we are keeping track of the original step that has been modified via a source_id
+func TestRegimenForPatientVisit_TrackingSourceId(t *testing.T) {
+	if err := CheckIfRunningLocally(t); err == CannotRunTestLocally {
+		t.Skip("Skipping test since its not configured to run locally")
+	}
+
+	testData := SetupIntegrationTest(t)
+	defer TearDownIntegrationTest(t, testData)
+
+	patientVisitResponse, doctor := setupTestForRegimenCreation(t, testData)
 
 	// adding new regimen steps to the doctor but not to the patient visit
 	regimenPlanRequest := &common.RegimenPlan{}
@@ -291,6 +324,38 @@ func TestRegimenForPatientVisit_TrackingSourceId(t *testing.T) {
 		t.Fatalf("Expected the sourceId retrieved from the updated item (%d) to match the id of the original item (%d)", updatedItemSourceId2.Int64, sourceId2)
 	}
 
+}
+
+func setupTestForRegimenCreation(t *testing.T, testData TestData) (*apiservice.PatientVisitResponse, *common.Doctor) {
+	patientSignedupResponse := SignupRandomTestPatient(t, testData.DataApi, testData.AuthApi)
+
+	// get the current primary doctor
+	doctorId := getDoctorIdOfCurrentPrimaryDoctor(testData, t)
+
+	doctor, err := testData.DataApi.GetDoctorFromId(doctorId)
+	if err != nil {
+		t.Fatal("Unable to get doctor from doctor id " + err.Error())
+	}
+
+	// get patient to start a visit
+	patientVisitResponse := CreatePatientVisitForPatient(patientSignedupResponse.Patient.PatientId.Int64(), testData, t)
+
+	// submit answers to questions in patient visit
+	patient, err := testData.DataApi.GetPatientFromId(patientSignedupResponse.Patient.PatientId.Int64())
+	if err != nil {
+		t.Fatal("Unable to get patient from id: " + err.Error())
+	}
+
+	answerIntakeRequestBody := prepareAnswersForQuestionsInPatientVisit(patientVisitResponse, t)
+	submitAnswersIntakeForPatient(patient.PatientId.Int64(), patient.AccountId.Int64(), answerIntakeRequestBody, testData, t)
+
+	// get the patient to submit the case
+	SubmitPatientVisitForPatient(patientSignedupResponse.Patient.PatientId.Int64(), patientVisitResponse.PatientVisitId, testData, t)
+
+	// get the patient to start reviewing the case
+	StartReviewingPatientVisit(patientVisitResponse.PatientVisitId, doctor, testData, t)
+
+	return patientVisitResponse, doctor
 }
 
 func getRegimenPlanForPatientVisit(testData TestData, doctor *common.Doctor, patientVisitId int64, t *testing.T) *common.RegimenPlan {
@@ -399,24 +464,46 @@ func validateRegimenRequestAgainstResponse(doctorRegimenRequest, doctorRegimenRe
 		}
 	}
 
+	// no two items should have the same id
+	idsFound := make(map[int64]bool)
+	for _, regimenStep := range doctorRegimenResponse.AllRegimenSteps {
+		if _, ok := idsFound[regimenStep.Id.Int64()]; ok {
+			t.Fatal("No two items can have the same id in the global list")
+		}
+		idsFound[regimenStep.Id.Int64()] = true
+	}
+
+	// no two items should have the same parent id in the regimen section
+	idsFound = make(map[int64]bool)
+	for _, regimenSection := range doctorRegimenResponse.RegimenSections {
+		for _, regimenStep := range regimenSection.RegimenSteps {
+			if _, ok := idsFound[regimenStep.ParentId.Int64()]; ok {
+				t.Fatalf("No two items can have the same parent id")
+			}
+			idsFound[regimenStep.ParentId.Int64()] = true
+		}
+	}
+
 	// deleted regimen steps should not show up in the response
 	deletedRegimenStepIds := make(map[int64]bool)
 	// updated regimen steps should have a different id in the response
-	updatedRegimenSteps := make(map[string]int64)
+	updatedRegimenSteps := make(map[string][]int64)
 
 	for _, regimenStep := range doctorRegimenRequest.AllRegimenSteps {
 		switch regimenStep.State {
 		case common.STATE_MODIFIED:
-			updatedRegimenSteps[regimenStep.Text] = regimenStep.Id.Int64()
+			updatedRegimenSteps[regimenStep.Text] = append(updatedRegimenSteps[regimenStep.Text], regimenStep.Id.Int64())
 		case common.STATE_DELETED:
 			deletedRegimenStepIds[regimenStep.Id.Int64()] = true
 		}
 	}
 
 	for _, regimenStep := range doctorRegimenResponse.AllRegimenSteps {
-		if updatedRegimenSteps[regimenStep.Text] != 0 {
-			if regimenStep.Id.Int64() == updatedRegimenSteps[regimenStep.Text] {
-				t.Fatalf("Expected an updated regimen step to have a different id in the response. Id = %d", regimenStep.Id.Int64())
+		if updatedIds, ok := updatedRegimenSteps[regimenStep.Text]; ok {
+			for _, updatedId := range updatedIds {
+				if regimenStep.Id.Int64() == updatedId {
+					t.Fatalf("Expected an updated regimen step to have a different id in the response. Id = %d", regimenStep.Id)
+				}
 			}
 		}
 

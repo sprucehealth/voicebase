@@ -20,7 +20,7 @@ type GetDoctorRegimenRequestData struct {
 }
 
 type DoctorRegimenRequestResponse struct {
-	RegimenSteps     []*common.DoctorInstructionItem `json:"regimen_steps"`
+	RegimenSteps     []*common.DoctorInstructionItem `json:"regimen_steps"` 
 	DrugInternalName string                          `json:"drug_internal_name,omitempty"`
 	PatientVisitId   int64                           `json:"patient_visit_id,string,omitempty"`
 }
@@ -166,7 +166,9 @@ func (d *DoctorRegimenHandler) updateRegimenSteps(w http.ResponseWriter, r *http
 
 	// Go through regimen steps to add, update and delete regimen steps before creating the regimen plan
 	// for the user
-	newOrUpdatedStepToIdMapping := make(map[string][]int64)
+	newStepToIdMapping := make(map[string][]int64)
+	// keep track of the multiple items that could have the exact same text associated with it
+	updatedStepToIdMapping := make(map[int64]int64)
 	updatedAllRegimenSteps := make([]*common.DoctorInstructionItem, 0)
 	for _, regimenStep := range requestData.AllRegimenSteps {
 		switch regimenStep.State {
@@ -176,9 +178,10 @@ func (d *DoctorRegimenHandler) updateRegimenSteps(w http.ResponseWriter, r *http
 				WriteDeveloperError(w, http.StatusInternalServerError, "Unable to add reigmen step to doctor. Application may be left in inconsistent state. Error = "+err.Error())
 				return
 			}
-			newOrUpdatedStepToIdMapping[regimenStep.Text] = append(newOrUpdatedStepToIdMapping[regimenStep.Text], regimenStep.Id.Int64())
+			newStepToIdMapping[regimenStep.Text] = append(newStepToIdMapping[regimenStep.Text], regimenStep.Id.Int64())
 			updatedAllRegimenSteps = append(updatedAllRegimenSteps, regimenStep)
 		case common.STATE_MODIFIED:
+			previousRegimenStepId := regimenStep.Id.Int64()
 			err = d.DataApi.UpdateRegimenStepForDoctor(regimenStep, patientVisitReviewData.DoctorId)
 			if err != nil {
 				WriteDeveloperError(w, http.StatusInternalServerError, "Unable to update regimen step for doctor: "+err.Error())
@@ -186,7 +189,7 @@ func (d *DoctorRegimenHandler) updateRegimenSteps(w http.ResponseWriter, r *http
 			}
 			// keep track of the new id for updated regimen steps so that we can update the regimen step in the
 			// regimen section
-			newOrUpdatedStepToIdMapping[regimenStep.Text] = append(newOrUpdatedStepToIdMapping[regimenStep.Text], regimenStep.Id.Int64())
+			updatedStepToIdMapping[previousRegimenStepId] = regimenStep.Id.Int64()
 			updatedAllRegimenSteps = append(updatedAllRegimenSteps, regimenStep)
 		case common.STATE_DELETED:
 			err = d.DataApi.MarkRegimenStepToBeDeleted(regimenStep, patientVisitReviewData.DoctorId)
@@ -204,11 +207,18 @@ func (d *DoctorRegimenHandler) updateRegimenSteps(w http.ResponseWriter, r *http
 	// go through regimen steps within the regimen sections to assign ids to the new steps that dont have them
 	for _, regimenSection := range requestData.RegimenSections {
 		for _, regimenStep := range regimenSection.RegimenSteps {
-			updatedOrNewIds := newOrUpdatedStepToIdMapping[regimenStep.Text]
-			if len(updatedOrNewIds) != 0 {
-				regimenStep.ParentId = encoding.NewObjectId(updatedOrNewIds[0])
-				// update the list to remove the first item
-				updatedOrNewIds = updatedOrNewIds[1:]
+			
+			newIds, ok := newStepToIdMapping[regimenStep.Text]
+			if ok {
+				regimenStep.ParentId = encoding.NewObjectId(newIds[0])
+				// update the list to remove the item just used
+				newStepToIdMapping[regimenStep.Text] = newIds[1:]
+			}
+
+			updatedId, ok := updatedStepToIdMapping[regimenStep.ParentId.Int64()]
+			if ok {
+				// update the parentId to point to the new updated regimen step
+				regimenStep.ParentId = encoding.NewObjectId(updatedId)
 			}
 			// empty out the state now that it has been taken care of
 			regimenStep.State = ""
