@@ -134,6 +134,25 @@ func (d *DoctorAdviceHandler) updateAdvicePoints(w http.ResponseWriter, r *http.
 		}
 	}
 
+	// ensure that items in the selected list have exactly the same text as items in the global list,
+	// if they are linked to an item that is found in the global list
+	idToTextMapping := make(map[int64]string)
+	for _, advicePoint := range requestData.AllAdvicePoints {
+		if advicePoint.Id.Int64() != 0 {
+			idToTextMapping[advicePoint.Id.Int64()] = advicePoint.Text
+		}
+	}
+
+	// now, if the linkage exists via the parentId, ensure that the text is exactly the same
+	for _, advicePoint := range requestData.SelectedAdvicePoints {
+		if textOfGlobalAdvicePoint, ok := idToTextMapping[advicePoint.ParentId.Int64()]; ok {
+			if textOfGlobalAdvicePoint != advicePoint.Text {
+				WriteDeveloperError(w, http.StatusBadRequest, "Text of an item in the selected list that is linked to an item in the global list has to match up")
+				return
+			}
+		}
+	}
+
 	currentActiveAdvicePoints, err := d.DataApi.GetAdvicePointsForDoctor(patientVisitReviewData.DoctorId)
 	if err != nil {
 		WriteDeveloperError(w, http.StatusInternalServerError, "Unable to get active advice points for the doctor")
@@ -224,13 +243,6 @@ func (d *DoctorAdviceHandler) updateAdvicePoints(w http.ResponseWriter, r *http.
 	err = d.DataApi.CreateAdviceForPatientVisit(requestData.SelectedAdvicePoints, treatmentPlanId)
 	if err != nil {
 		WriteDeveloperError(w, http.StatusInternalServerError, "Unable to add advice for patient visit: "+err.Error())
-		return
-	}
-
-	// Attempt to reconcile the list of advice points for the doctor in the event that they may have gone out of sync for
-	// between client and server. In this event, we treat the client's view of the world as the source of truth
-	if err := d.DataApi.InactivateAllOtherActiveAdvicePointsForDoctor(updatedAdvicePoints, patientVisitReviewData.DoctorId); err != nil {
-		WriteDeveloperError(w, http.StatusInternalServerError, "Unable to attempt to reconcile advice points: "+err.Error())
 		return
 	}
 

@@ -181,11 +181,9 @@ type DoctorAPI interface {
 	UpdateRegimenStepForDoctor(regimenStep *common.DoctorInstructionItem, doctorId int64) error
 	MarkRegimenStepToBeDeleted(regimenStep *common.DoctorInstructionItem, doctorId int64) error
 	MarkRegimenStepsToBeDeleted(regimenSteps []*common.DoctorInstructionItem, doctorId int64) error
-	InactivateAllOtherActiveRegimenStepsForDoctor(regimenSteps []*common.DoctorInstructionItem, doctorId int64) error
 	GetAdvicePointsForDoctor(doctorId int64) (advicePoints []*common.DoctorInstructionItem, err error)
 	AddAdvicePointForDoctor(advicePoint *common.DoctorInstructionItem, doctorId int64) error
 	UpdateAdvicePointForDoctor(advicePoint *common.DoctorInstructionItem, doctorId int64) error
-	InactivateAllOtherActiveAdvicePointsForDoctor(advicePoints []*common.DoctorInstructionItem, doctorId int64) error
 	MarkAdvicePointToBeDeleted(advicePoint *common.DoctorInstructionItem, doctorId int64) error
 	MarkAdvicePointsToBeDeleted(advicePoints []*common.DoctorInstructionItem, doctorId int64) error
 	MarkPatientVisitAsOngoingInDoctorQueue(doctorId, patientVisitId int64) error

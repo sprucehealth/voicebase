@@ -20,7 +20,7 @@ type GetDoctorRegimenRequestData struct {
 }
 
 type DoctorRegimenRequestResponse struct {
-	RegimenSteps     []*common.DoctorInstructionItem `json:"regimen_steps"` 
+	RegimenSteps     []*common.DoctorInstructionItem `json:"regimen_steps"`
 	DrugInternalName string                          `json:"drug_internal_name,omitempty"`
 	PatientVisitId   int64                           `json:"patient_visit_id,string,omitempty"`
 }
@@ -137,6 +137,28 @@ func (d *DoctorRegimenHandler) updateRegimenSteps(w http.ResponseWriter, r *http
 		}
 	}
 
+	// ensure that the text of selected items matches that of the global list
+	// for items that have ids and thereby already exist in the database
+	idToTextMapping := make(map[int64]string)
+	for _, regimen := range requestData.AllRegimenSteps {
+		if regimen.Id.Int64() != 0 {
+			idToTextMapping[regimen.Id.Int64()] = regimen.Text
+		}
+	}
+
+	// go through the list of items in the regimen sections to ensure that text is exactly the same
+	// if the parent id exists
+	for _, regimenSection := range requestData.RegimenSections {
+		for _, regimenStep := range regimenSection.RegimenSteps {
+			if textOfGlobalRegimenStep, ok := idToTextMapping[regimenStep.ParentId.Int64()]; ok {
+				if textOfGlobalRegimenStep != regimenStep.Text {
+					WriteDeveloperError(w, http.StatusBadRequest, "The text of an item in the regimen section cannot be different from that in the global list if they are considered linked.")
+					return
+				}
+			}
+		}
+	}
+
 	// identify any currently existing regimen steps that need to be deleted
 	regimenStepsToDelete := make([]*common.DoctorInstructionItem, 0)
 	currentActiveRegimenSteps, err := d.DataApi.GetRegimenStepsForDoctor(patientVisitReviewData.DoctorId)
@@ -207,7 +229,7 @@ func (d *DoctorRegimenHandler) updateRegimenSteps(w http.ResponseWriter, r *http
 	// go through regimen steps within the regimen sections to assign ids to the new steps that dont have them
 	for _, regimenSection := range requestData.RegimenSections {
 		for _, regimenStep := range regimenSection.RegimenSteps {
-			
+
 			newIds, ok := newStepToIdMapping[regimenStep.Text]
 			if ok {
 				regimenStep.ParentId = encoding.NewObjectId(newIds[0])
@@ -241,13 +263,6 @@ func (d *DoctorRegimenHandler) updateRegimenSteps(w http.ResponseWriter, r *http
 		return
 	}
 
-	// Attempt to reconcile the list of regimen steps for the doctor in the event that they may have gone out of sync for
-	// between client and server. In this event, we treat the client's view of the world as the source of truth
-	if err := d.DataApi.InactivateAllOtherActiveRegimenStepsForDoctor(updatedAllRegimenSteps, patientVisitReviewData.DoctorId); err != nil {
-		WriteDeveloperError(w, http.StatusInternalServerError, "Unable to attempt to reconcile advice points: "+err.Error())
-		return
-	}
-
 	// fetch all regimen steps in the treatment plan and the global regimen steps to
 	// return an updated view of the world to the client
 	regimenPlan, err := d.DataApi.GetRegimenPlanForTreatmentPlan(treatmentPlanId)
@@ -258,12 +273,12 @@ func (d *DoctorRegimenHandler) updateRegimenSteps(w http.ResponseWriter, r *http
 
 	allRegimenSteps, err := d.DataApi.GetRegimenStepsForDoctor(patientVisitReviewData.DoctorId)
 	if err != nil {
-		WriteDeveloperError(w, http.StatusInternalServerError, "Unable to get the list of regimen steps for doctor: " + err.Error())
+		WriteDeveloperError(w, http.StatusInternalServerError, "Unable to get the list of regimen steps for doctor: "+err.Error())
 		return
 	}
 
 	requestData.RegimenSections = regimenPlan.RegimenSections
 	requestData.AllRegimenSteps = allRegimenSteps
-	
+
 	WriteJSONToHTTPResponseWriter(w, http.StatusOK, requestData)
 }

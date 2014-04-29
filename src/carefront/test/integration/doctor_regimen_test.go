@@ -185,6 +185,75 @@ func TestRegimenForPatientVisit_AddingMultipleItemsWithSameText(t *testing.T) {
 
 }
 
+// The purpose of this test is to ensure that we do not let the client specify text for
+// items in the regimen sections that does not match up to what is indicated in the global list, if the
+// linkage exists in the global list.
+func TestRegimenForPatientVisit_ErrorTextDifferentForLinkedItem(t *testing.T) {
+	if err := CheckIfRunningLocally(t); err == CannotRunTestLocally {
+		t.Skip("Skipping test since its not configured to run locally")
+	}
+
+	testData := SetupIntegrationTest(t)
+	defer TearDownIntegrationTest(t, testData)
+
+	patientVisitResponse, doctor := setupTestForRegimenCreation(t, testData)
+
+	// add multiple items with the exact same text and ensure that they all get assigned new ids
+	regimenPlanRequest := &common.RegimenPlan{}
+	regimenPlanRequest.PatientVisitId = encoding.NewObjectId(patientVisitResponse.PatientVisitId)
+	regimenPlanRequest.AllRegimenSteps = make([]*common.DoctorInstructionItem, 0)
+
+	for i := 0; i < 5; i++ {
+		regimenPlanRequest.AllRegimenSteps = append(regimenPlanRequest.AllRegimenSteps, &common.DoctorInstructionItem{
+			Text:  "Regimen Step",
+			State: common.STATE_ADDED,
+		})
+
+		regimenPlanRequest.RegimenSections = append(regimenPlanRequest.RegimenSections, &common.RegimenSection{
+			RegimenName: "test " + strconv.Itoa(i),
+			RegimenSteps: []*common.DoctorInstructionItem{&common.DoctorInstructionItem{
+				Text:  "Regimen Step",
+				State: common.STATE_ADDED,
+			},
+			},
+		})
+	}
+
+	regimenPlanResponse := createRegimenPlanForPatientVisit(regimenPlanRequest, testData, doctor, t)
+	validateRegimenRequestAgainstResponse(regimenPlanRequest, regimenPlanResponse, t)
+
+	regimenPlanRequest = regimenPlanResponse
+
+	// lets go ahead and update each item in the list
+	for i := 0; i < 5; i++ {
+		regimenPlanRequest.AllRegimenSteps[i].Text = "Updated Regimen Step"
+		regimenPlanRequest.AllRegimenSteps[i].State = common.STATE_MODIFIED
+
+		// text cannot be different given that the parent id maps to an item in the global list so this should error out
+		regimenPlanRequest.RegimenSections[i].RegimenSteps[0].Text = "Updated Regimen Step " + strconv.Itoa(i)
+		regimenPlanRequest.RegimenSections[i].RegimenSteps[0].State = common.STATE_MODIFIED
+	}
+
+	doctorRegimenHandler := apiservice.NewDoctorRegimenHandler(testData.DataApi)
+	ts := httptest.NewServer(doctorRegimenHandler)
+	defer ts.Close()
+
+	requestBody, err := json.Marshal(regimenPlanRequest)
+	if err != nil {
+		t.Fatal("Unable to marshal request body for adding regimen steps: " + err.Error())
+	}
+
+	resp, err := authPost(ts.URL, "application/json", bytes.NewBuffer(requestBody), doctor.AccountId.Int64())
+	if err != nil {
+		t.Fatal("Unable to make successful request to create regimen for patient visit")
+	}
+
+	if resp.StatusCode != http.StatusBadRequest {
+		t.Fatal("Expected to get a bad request for when the regimen step's text is different than what its linked to")
+	}
+
+}
+
 func TestRegimenForPatientVisit_UpdatingMultipleItemsWithSameText(t *testing.T) {
 	if err := CheckIfRunningLocally(t); err == CannotRunTestLocally {
 		t.Skip("Skipping test since its not configured to run locally")

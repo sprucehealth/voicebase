@@ -235,31 +235,6 @@ func (d *DataService) MarkRegimenStepsToBeDeleted(regimenSteps []*common.DoctorI
 	return tx.Commit()
 }
 
-// InactivateAllOtherActiveRegimenStepsForDoctor is used to inactivate all steps that are currently marked as active, but not present in the provided list.
-// In other words, we take the current list and attempt to reconcile the global list for the doctor to be the provided list.
-func (d *DataService) InactivateAllOtherActiveRegimenStepsForDoctor(regimenSteps []*common.DoctorInstructionItem, doctorId int64) error {
-	regimenStepIds := make([]int64, len(regimenSteps))
-	for i, regimenStep := range regimenSteps {
-		regimenStepIds[i] = regimenStep.Id.Int64()
-	}
-
-	// nothing to do
-	if len(regimenStepIds) == 0 {
-		return nil
-	}
-
-	params := make([]interface{}, 0)
-	params = append(params, STATUS_INACTIVE)
-	params = append(params, STATUS_ACTIVE)
-	params = append(params, doctorId)
-	params = appendInt64sToInterfaceSlice(params, regimenStepIds)
-
-	// mark any other advice points beloning to the doctor that are currently active as inactive to ensure that the list
-	// we have is the authoritative list of advice points
-	_, err := d.DB.Exec(fmt.Sprintf(`update dr_regimen_step set status=? where status=? and doctor_id=? and id not in (%s)`, nReplacements(len(regimenStepIds))), params...)
-	return err
-}
-
 func (d *DataService) GetAdvicePointsForDoctor(doctorId int64) ([]*common.DoctorInstructionItem, error) {
 	queryStr := `select id, text from advice_point where status='ACTIVE'`
 
@@ -312,31 +287,6 @@ func (d *DataService) UpdateAdvicePointForDoctor(advicePoint *common.DoctorInstr
 	// assign an id given that its a new advice point
 	advicePoint.Id = encoding.NewObjectId(instructionId)
 	return tx.Commit()
-}
-
-// InactivateAllOtherActiveAdvicePointsForDoctor is used to inactivate all advice points that are currently marked as active, but not present in the provided list.
-// In other words, we take the current list and attempt to reconcile the global list for the doctor to be the provided list.
-func (d *DataService) InactivateAllOtherActiveAdvicePointsForDoctor(advicePoints []*common.DoctorInstructionItem, doctorId int64) error {
-	advicePointIds := make([]int64, len(advicePoints))
-	for i, advicePoint := range advicePoints {
-		advicePointIds[i] = advicePoint.Id.Int64()
-	}
-
-	// nothing to do
-	if len(advicePointIds) == 0 {
-		return nil
-	}
-
-	params := make([]interface{}, 0)
-	params = append(params, STATUS_INACTIVE)
-	params = append(params, STATUS_ACTIVE)
-	params = append(params, doctorId)
-	params = appendInt64sToInterfaceSlice(params, advicePointIds)
-
-	// mark any other advice points beloning to the doctor that are currently active as inactive to ensure that the list
-	// we have is the authoritative list of advice points
-	_, err := d.DB.Exec(fmt.Sprintf(`update dr_advice_point set status=? where status=? and doctor_id=? and id not in (%s)`, nReplacements(len(advicePointIds))), params...)
-	return err
 }
 
 func (d *DataService) AddAdvicePointForDoctor(advicePoint *common.DoctorInstructionItem, doctorId int64) error {

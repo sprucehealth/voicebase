@@ -299,6 +299,64 @@ func TestAdvicePointsForPatientVisit_UpdatingMultipleItems(t *testing.T) {
 	validateAdviceRequestAgainstResponse(doctorAdviceRequest, doctorAdviceResponse, t)
 }
 
+func TestAdvicePointsForPatientVisit_ErrorDifferentTextForLinkedItems(t *testing.T) {
+	if err := CheckIfRunningLocally(t); err == CannotRunTestLocally {
+		return
+	}
+
+	testData := SetupIntegrationTest(t)
+	defer TearDownIntegrationTest(t, testData)
+
+	patientVisitResponse, doctor := setupAdviceCreationTest(t, testData)
+
+	// lets go ahead and create a request for this patient visit
+	doctorAdviceRequest := &common.Advice{}
+	doctorAdviceRequest.AllAdvicePoints = make([]*common.DoctorInstructionItem, 0)
+	doctorAdviceRequest.SelectedAdvicePoints = make([]*common.DoctorInstructionItem, 0)
+	doctorAdviceRequest.PatientVisitId = encoding.NewObjectId(patientVisitResponse.PatientVisitId)
+
+	for i := 0; i < 5; i++ {
+		doctorAdviceRequest.AllAdvicePoints = append(doctorAdviceRequest.AllAdvicePoints, &common.DoctorInstructionItem{
+			Text:  "Advice point",
+			State: common.STATE_ADDED,
+		})
+		doctorAdviceRequest.SelectedAdvicePoints = append(doctorAdviceRequest.SelectedAdvicePoints, &common.DoctorInstructionItem{
+			Text:  "Advice point",
+			State: common.STATE_ADDED,
+		})
+	}
+	doctorAdviceResponse := updateAdvicePointsForPatientVisit(doctorAdviceRequest, testData, doctor, t)
+	validateAdviceRequestAgainstResponse(doctorAdviceRequest, doctorAdviceResponse, t)
+
+	doctorAdviceRequest = doctorAdviceResponse
+	for i := 0; i < 5; i++ {
+		doctorAdviceRequest.AllAdvicePoints[i].Text = "Updated text " + strconv.Itoa(i)
+		doctorAdviceRequest.AllAdvicePoints[i].State = common.STATE_MODIFIED
+		// text cannot be different for linked items
+		doctorAdviceRequest.SelectedAdvicePoints[i].Text = "Updated text " + strconv.Itoa(10-i)
+		doctorAdviceRequest.SelectedAdvicePoints[i].State = common.STATE_MODIFIED
+	}
+
+	doctorAdviceHandler := apiservice.NewDoctorAdviceHandler(testData.DataApi)
+	ts := httptest.NewServer(doctorAdviceHandler)
+	defer ts.Close()
+
+	requestBody, err := json.Marshal(doctorAdviceRequest)
+	if err != nil {
+		t.Fatal("Unable to marshal request body for adding advice points: " + err.Error())
+	}
+
+	resp, err := authPost(ts.URL, "application/json", bytes.NewBuffer(requestBody), doctor.AccountId.Int64())
+	if err != nil {
+		t.Fatal("Unable to make successful request to add advice points to patient visit " + err.Error())
+	}
+
+	if resp.StatusCode != http.StatusBadRequest {
+		t.Fatal("Expected a bad request for a request that contains advice points in the selected list where the text does not match the text in the global list for linked items")
+	}
+
+}
+
 func setupAdviceCreationTest(t *testing.T, testData TestData) (*apiservice.PatientVisitResponse, *common.Doctor) {
 	patientSignedupResponse := SignupRandomTestPatient(t, testData.DataApi, testData.AuthApi)
 	patient, err := testData.DataApi.GetPatientFromId(patientSignedupResponse.Patient.PatientId.Int64())
