@@ -226,7 +226,6 @@ func TestRegimenForPatientVisit_UpdatingMultipleItemsWithSameText(t *testing.T) 
 		regimenPlanRequest.AllRegimenSteps[i].Text = "Updated Regimen Step"
 		regimenPlanRequest.AllRegimenSteps[i].State = common.STATE_MODIFIED
 
-		regimenPlanRequest.RegimenSections[i].RegimenSteps[0].ParentId = regimenPlanRequest.AllRegimenSteps[i].Id
 		regimenPlanRequest.RegimenSections[i].RegimenSteps[0].Text = "Updated Regimen Step"
 		regimenPlanRequest.RegimenSections[i].RegimenSteps[0].State = common.STATE_MODIFIED
 	}
