@@ -246,7 +246,7 @@ type ObjectStorageDBAPI interface {
 }
 
 type HomeFeedAPI interface {
-	DeleteHomeNotification(id int64) error
+	DeleteHomeNotifications(ids []int64) error
 	DeleteHomeNotificationByUID(patientId int64, uid string) error
 	GetHomeNotificationsForPatient(patientId int64, typeMap map[string]reflect.Type) ([]*common.HomeNotification, error)
 	InsertHomeNotification(note *common.HomeNotification) (int64, error)

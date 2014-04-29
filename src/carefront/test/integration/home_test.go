@@ -65,7 +65,7 @@ func TestHomeAPI(t *testing.T) {
 	}
 
 	// Test delete
-	if err := testData.DataApi.DeleteHomeNotification(id); err != nil {
+	if err := testData.DataApi.DeleteHomeNotifications([]int64{id}); err != nil {
 		t.Fatalf("Failed to delete notification: %s", err.Error())
 	}
 	if notes, err := testData.DataApi.GetHomeNotificationsForPatient(patientId, notificationTypes); err != nil {
