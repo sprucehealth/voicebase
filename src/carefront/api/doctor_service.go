@@ -1239,21 +1239,30 @@ func (d *DataService) UpdatePatientInformationFromDoctor(patient *common.Patient
 }
 
 func (d *DataService) GetFavoriteTreatmentPlansForDoctor(doctorId int64) ([]*common.FavoriteTreatmentPlan, error) {
-	rows, err := d.DB.Query(`select id, name, modified_date, doctor_id from dr_favorite_treatment_plan where doctor_id = ?`, doctorId)
+	rows, err := d.DB.Query(`select id from dr_favorite_treatment_plan where doctor_id = ?`, doctorId)
 	if err != nil {
 		return nil, err
 	}
 	defer rows.Close()
 
-	favoriteTreatmentPlans := make([]*common.FavoriteTreatmentPlan, 0)
+	favoriteTreatmentPlanIds := make([]int64, 0)
 	for rows.Next() {
-		var favoritePlan common.FavoriteTreatmentPlan
-		err := rows.Scan(&favoritePlan.Id, &favoritePlan.Name, &favoritePlan.ModifiedDate, &favoritePlan.DoctorId)
+		var favoriteTreatmentPlanId int64
+		err := rows.Scan(&favoriteTreatmentPlanId)
 		if err != nil {
 			return nil, err
 		}
 
-		favoriteTreatmentPlans = append(favoriteTreatmentPlans, &favoritePlan)
+		favoriteTreatmentPlanIds = append(favoriteTreatmentPlanIds, favoriteTreatmentPlanId)
+	}
+
+	favoriteTreatmentPlans := make([]*common.FavoriteTreatmentPlan, len(favoriteTreatmentPlanIds))
+	for i, favoriteTreatmentPlanId := range favoriteTreatmentPlanIds {
+		favoriteTreatmentPlan, err := d.GetFavoriteTreatmentPlan(favoriteTreatmentPlanId)
+		if err != nil {
+			return nil, err
+		}
+		favoriteTreatmentPlans[i] = favoriteTreatmentPlan
 	}
 
 	return favoriteTreatmentPlans, rows.Err()
@@ -1274,7 +1283,7 @@ func (d *DataService) GetFavoriteTreatmentPlan(favoriteTreatmentPlanId int64) (*
 				days_supply, pharmacy_notes, patient_instructions, creation_date, status,
 				drug_db_ids_group_id, drug_name.name, drug_route.name, drug_form.name
 			 		from dr_favorite_treatment 
-						inner join dispense_unit on dr_treatment_template.dispense_unit_id = dispense_unit.id
+						inner join dispense_unit on dr_favorite_treatment.dispense_unit_id = dispense_unit.id
 						inner join localized_text on localized_text.app_text_id = dispense_unit.dispense_unit_text_id
 						left outer join drug_name on drug_name_id = drug_name.id
 						left outer join drug_route on drug_route_id = drug_route.id
@@ -1315,8 +1324,8 @@ func (d *DataService) GetFavoriteTreatmentPlan(favoriteTreatmentPlanId int64) (*
 	}
 
 	// get regimen
-	regimenPlanRows, err := d.DB.Query(`select id, regimen_type, dr_regimen_step_id, regimen.text 
-								from dr_favorite_regimen where dr_favorite_treatment_plan_id = ? and regimen.status = 'ACTIVE' order by regimen.id`, favoriteTreatmentPlanId)
+	regimenPlanRows, err := d.DB.Query(`select id, regimen_type, dr_regimen_step_id, text 
+								from dr_favorite_regimen where dr_favorite_treatment_plan_id = ? and status = 'ACTIVE' order by id`, favoriteTreatmentPlanId)
 	if err != nil {
 		return nil, err
 	}
@@ -1328,16 +1337,20 @@ func (d *DataService) GetFavoriteTreatmentPlan(favoriteTreatmentPlanId int64) (*
 	}
 
 	// get advice
-	advicePointsRows, err := d.DB.Query(`select id, dr_advice_point_id, advice.text from dr_favorite_advice 
-			where dr_favorite_treatment_plan_id = ?  and advice.status = ?`, favoriteTreatmentPlanId, STATUS_ACTIVE)
+	advicePointsRows, err := d.DB.Query(`select id, dr_advice_point_id, text from dr_favorite_advice 
+			where dr_favorite_treatment_plan_id = ?  and status = ?`, favoriteTreatmentPlanId, STATUS_ACTIVE)
 	if err != nil {
 		return nil, err
 	}
 	defer advicePointsRows.Close()
 
-	favoriteTreatmentPlan.Advice.SelectedAdvicePoints, err = getAdvicePointsFromRows(advicePointsRows)
+	selectedAdvicePoints, err := getAdvicePointsFromRows(advicePointsRows)
 	if err != nil {
 		return nil, err
+	}
+
+	favoriteTreatmentPlan.Advice = &common.Advice{
+		SelectedAdvicePoints: selectedAdvicePoints,
 	}
 
 	return &favoriteTreatmentPlan, err
