@@ -2,6 +2,8 @@ package integration
 
 import (
 	"bytes"
+	"carefront/homelog"
+	"carefront/libs/dispatch"
 	"database/sql"
 	"errors"
 	"fmt"
@@ -228,6 +230,9 @@ func SetupIntegrationTest(t *testing.T) TestData {
 	if err != nil {
 		t.Fatal("Unable to make the signed up doctor the primary doctor elligible in CA to diagnose patients: " + err.Error())
 	}
+
+	dispatch.Default = dispatch.New()
+	homelog.InitListeners(testData.DataApi)
 
 	return testData
 }
