@@ -41,10 +41,11 @@ func (d *DataService) GetHomeNotificationsForPatient(patientId int64, typeMap ma
 		note := &common.HomeNotification{
 			PatientId: patientId,
 		}
+		var dataType string
 		var data []byte
 		err := rows.Scan(
 			&note.Id, &note.UID, &note.Timestamp, &note.Expires, &note.Dismissible,
-			&note.DismissOnAction, &note.Priority, &note.Type, &data,
+			&note.DismissOnAction, &note.Priority, &dataType, &data,
 		)
 		if err != nil {
 			return nil, err
@@ -57,9 +58,9 @@ func (d *DataService) GetHomeNotificationsForPatient(patientId int64, typeMap ma
 		// If the type is unknown or the data failes to unmarshal then ignore the notification
 		// but continue since it's better to filter out the bad notifications rather than
 		// not returning any.
-		t := typeMap[note.Type]
+		t := typeMap[dataType]
 		if t == nil {
-			golog.Errorf("Unknown notification type %s for %d", note.Type, note.Id)
+			golog.Errorf("Unknown notification type %s for %d", dataType, note.Id)
 			continue
 		}
 		note.Data = reflect.New(t).Interface().(common.NotificationData)

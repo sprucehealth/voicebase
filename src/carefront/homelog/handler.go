@@ -55,7 +55,7 @@ func (h *ListHandler) ServeHTTP(w http.ResponseWriter, r *http.Request) {
 	for _, n := range notes {
 		view, err := n.Data.(notification).makeView(h.dataAPI, patientId)
 		if err != nil {
-			golog.Errorf("Failed to create view for notification %d of type %s", n.Id, n.Type)
+			golog.Errorf("Failed to create view for notification %d of type %s", n.Id, n.Data.TypeName())
 			continue
 		}
 		noteViews = append(noteViews, view)

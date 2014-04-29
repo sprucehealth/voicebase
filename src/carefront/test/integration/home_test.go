@@ -39,7 +39,6 @@ func TestHomeAPI(t *testing.T) {
 		Dismissible:     true,
 		DismissOnAction: true,
 		Priority:        10,
-		Type:            "foo",
 		Data:            data,
 	}
 	id, err := testData.DataApi.InsertHomeNotification(note)

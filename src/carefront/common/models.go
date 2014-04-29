@@ -288,6 +288,5 @@ type HomeNotification struct {
 	Dismissible     bool
 	DismissOnAction bool
 	Priority        int
-	Type            string
 	Data            NotificationData
 }

@@ -102,7 +102,6 @@ func InitListeners(dataAPI api.DataAPI) {
 		_, err := dataAPI.InsertHomeNotification(&common.HomeNotification{
 			PatientId:       ev.PatientId,
 			UID:             incompleteVisit,
-			Type:            incompleteVisit,
 			Dismissible:     false,
 			DismissOnAction: false,
 			Priority:        1000,
