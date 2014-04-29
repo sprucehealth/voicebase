@@ -473,22 +473,7 @@ func (d *DataService) GetAdvicePointsForTreatmentPlan(treatmentPlanId int64) ([]
 	}
 	defer rows.Close()
 
-	advicePoints := make([]*common.DoctorInstructionItem, 0)
-	for rows.Next() {
-		var id, parentId encoding.ObjectId
-		var text string
-		if err := rows.Scan(&id, &parentId, &text); err != nil {
-			return nil, err
-		}
-
-		advicePoint := &common.DoctorInstructionItem{
-			Id:       id,
-			ParentId: parentId,
-			Text:     text,
-		}
-		advicePoints = append(advicePoints, advicePoint)
-	}
-	return advicePoints, rows.Err()
+	return getAdvicePointsFromRows(rows)
 }
 
 func (d *DataService) CreateAdviceForPatientVisit(advicePoints []*common.DoctorInstructionItem, treatmentPlanId int64) error {
@@ -544,8 +529,6 @@ func (d *DataService) CreateRegimenPlanForPatientVisit(regimenPlan *common.Regim
 }
 
 func (d *DataService) GetRegimenPlanForTreatmentPlan(treatmentPlanId int64) (*common.RegimenPlan, error) {
-	var regimenPlan common.RegimenPlan
-	regimenPlan.TreatmentPlanId = encoding.NewObjectId(treatmentPlanId)
 
 	rows, err := d.DB.Query(`select id, regimen_type, dr_regimen_step_id, regimen.text 
 								from regimen where treatment_plan_id = ? and regimen.status = 'ACTIVE' order by regimen.id`, treatmentPlanId)
@@ -554,40 +537,13 @@ func (d *DataService) GetRegimenPlanForTreatmentPlan(treatmentPlanId int64) (*co
 	}
 	defer rows.Close()
 
-	regimenSections := make(map[string][]*common.DoctorInstructionItem)
-	for rows.Next() {
-		var regimenType, regimenText string
-		var regimenId, parentId encoding.ObjectId
-		err = rows.Scan(&regimenId, &regimenType, &parentId, &regimenText)
-		regimenStep := &common.DoctorInstructionItem{
-			Id:       regimenId,
-			Text:     regimenText,
-			ParentId: parentId,
-		}
-
-		regimenSteps := regimenSections[regimenType]
-		if regimenSteps == nil {
-			regimenSteps = make([]*common.DoctorInstructionItem, 0)
-		}
-		regimenSteps = append(regimenSteps, regimenStep)
-		regimenSections[regimenType] = regimenSteps
+	regimenPlan, err := getRegimenPlanFromRows(rows)
+	if err != nil {
+		return nil, err
 	}
-	if rows.Err() != nil {
-		return nil, rows.Err()
-	}
+	regimenPlan.TreatmentPlanId = encoding.NewObjectId(treatmentPlanId)
 
-	regimenSectionsArray := make([]*common.RegimenSection, 0)
-	// create the regimen sections
-	for regimenSectionName, regimenSteps := range regimenSections {
-		regimenSection := &common.RegimenSection{
-			RegimenName:  regimenSectionName,
-			RegimenSteps: regimenSteps,
-		}
-		regimenSectionsArray = append(regimenSectionsArray, regimenSection)
-	}
-	regimenPlan.RegimenSections = regimenSectionsArray
-
-	return &regimenPlan, nil
+	return regimenPlan, nil
 }
 
 func (d *DataService) AddTreatmentsForPatientVisit(treatments []*common.Treatment, doctorId, treatmentPlanId, patientId int64) error {
@@ -1079,4 +1035,62 @@ func (d *DataService) fillInSupplementalInstructionsForTreatment(treatment *comm
 	}
 	treatment.SupplementalInstructions = drugInstructions
 	return nil
+}
+func getRegimenPlanFromRows(rows *sql.Rows) (*common.RegimenPlan, error) {
+	var regimenPlan common.RegimenPlan
+	regimenSections := make(map[string][]*common.DoctorInstructionItem)
+	for rows.Next() {
+		var regimenType, regimenText string
+		var regimenId, parentId encoding.ObjectId
+		err := rows.Scan(&regimenId, &regimenType, &parentId, &regimenText)
+		if err != nil {
+			return nil, err
+		}
+		regimenStep := &common.DoctorInstructionItem{
+			Id:       regimenId,
+			Text:     regimenText,
+			ParentId: parentId,
+		}
+
+		regimenSteps := regimenSections[regimenType]
+		if regimenSteps == nil {
+			regimenSteps = make([]*common.DoctorInstructionItem, 0)
+		}
+		regimenSteps = append(regimenSteps, regimenStep)
+		regimenSections[regimenType] = regimenSteps
+	}
+	if rows.Err() != nil {
+		return nil, rows.Err()
+	}
+
+	regimenSectionsArray := make([]*common.RegimenSection, 0)
+	// create the regimen sections
+	for regimenSectionName, regimenSteps := range regimenSections {
+		regimenSection := &common.RegimenSection{
+			RegimenName:  regimenSectionName,
+			RegimenSteps: regimenSteps,
+		}
+		regimenSectionsArray = append(regimenSectionsArray, regimenSection)
+	}
+	regimenPlan.RegimenSections = regimenSectionsArray
+	return &regimenPlan, nil
+}
+
+func getAdvicePointsFromRows(rows *sql.Rows) ([]*common.DoctorInstructionItem, error) {
+	advicePoints := make([]*common.DoctorInstructionItem, 0)
+	for rows.Next() {
+		var id, parentId encoding.ObjectId
+		var text string
+		if err := rows.Scan(&id, &parentId, &text); err != nil {
+			return nil, err
+		}
+
+		advicePoint := &common.DoctorInstructionItem{
+			Id:       id,
+			ParentId: parentId,
+			Text:     text,
+		}
+		advicePoints = append(advicePoints, advicePoint)
+	}
+	return advicePoints, rows.Err()
 }

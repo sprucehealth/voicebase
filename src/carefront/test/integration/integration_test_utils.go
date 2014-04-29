@@ -148,15 +148,13 @@ func ConnectToDB(t *testing.T, dbConfig *TestDBConfig) *sql.DB {
 	return db
 }
 
-func CheckIfRunningLocally(t *testing.T) error {
+func CheckIfRunningLocally(t *testing.T) {
 	// if the TEST_DB is not set in the environment, we assume
 	// that we are running these tests locally, in which case
 	// we exit the tests with a warning
 	if os.Getenv(carefrontProjectDirEnv) == "" {
-		t.Log("WARNING: The test database is not set. Skipping test ")
-		return CannotRunTestLocally
+		t.Skip("WARNING: The test database is not set. Skipping test ")
 	}
-	return nil
 }
 
 func getDoctorIdOfCurrentPrimaryDoctor(testData TestData, t *testing.T) int64 {
@@ -190,6 +188,8 @@ func signupAndSubmitPatientVisitForRandomPatient(t *testing.T, testData TestData
 }
 
 func SetupIntegrationTest(t *testing.T) TestData {
+	CheckIfRunningLocally(t)
+
 	dbConfig := GetDBConfig(t)
 	if s := os.Getenv("RDS_INSTANCE"); s != "" {
 		dbConfig.Host = s

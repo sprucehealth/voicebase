@@ -5,10 +5,6 @@ import (
 )
 
 func TestNoPotentialAnswerForQuestionTypes(t *testing.T) {
-	if err := CheckIfRunningLocally(t); err == CannotRunTestLocally {
-		return
-	}
-
 	testData := SetupIntegrationTest(t)
 	defer TearDownIntegrationTest(t, testData)
 
@@ -41,9 +37,6 @@ func TestNoPotentialAnswerForQuestionTypes(t *testing.T) {
 // autocomplete question type, as they should be for the client to
 // be able to show additional pieces of content in the question
 func TestAdditionalFieldsInAutocompleteQuestion(t *testing.T) {
-	if err := CheckIfRunningLocally(t); err == CannotRunTestLocally {
-		return
-	}
 	testData := SetupIntegrationTest(t)
 	defer TearDownIntegrationTest(t, testData)
 

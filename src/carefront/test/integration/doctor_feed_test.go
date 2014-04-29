@@ -13,9 +13,7 @@ import (
 )
 
 func TestDoctorQueueWithPatientVisits(t *testing.T) {
-	if err := CheckIfRunningLocally(t); err == CannotRunTestLocally {
-		return
-	}
+
 	testData := SetupIntegrationTest(t)
 	defer TearDownIntegrationTest(t, testData)
 
@@ -169,9 +167,7 @@ func doBasicCheckOfDoctorQueue(doctorDisplayFeedTabs *apiservice.DisplayFeedTabs
 }
 
 func TestDoctorFeed(t *testing.T) {
-	if err := CheckIfRunningLocally(t); err == CannotRunTestLocally {
-		return
-	}
+
 	testData := SetupIntegrationTest(t)
 	defer TearDownIntegrationTest(t, testData)
 

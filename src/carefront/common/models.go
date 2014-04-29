@@ -155,6 +155,17 @@ type TreatmentPlan struct {
 	Followup         *FollowUp         `json:"follow_up,omitempty"`
 }
 
+type FavoriteTreatmentPlan struct {
+	Id           encoding.ObjectId `json:"id"`
+	Name         string            `json:"name"`
+	ModifiedDate time.Time         `json:"modified_date,omitempty"`
+	DoctorId     int64             `json:"-"`
+	RegimenPlan  *RegimenPlan      `json:"regimen_plan,omitempty"`
+	Treatments   []*Treatment      `json:"treatments,omitempty"`
+	Advice       *Advice           `json:"advice,omitempty"`
+	Followup     *FollowUp         `json:"follow_up,omitempty"`
+}
+
 type RefillRequestItem struct {
 	Id                        int64             `json:"id,string"`
 	RxRequestQueueItemId      int64             `json:"-"`

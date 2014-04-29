@@ -15,9 +15,6 @@ import (
 )
 
 func TestDoctorUpdateToPatientAddress(t *testing.T) {
-	if err := CheckIfRunningLocally(t); err == CannotRunTestLocally {
-		return
-	}
 
 	testData := SetupIntegrationTest(t)
 	defer TearDownIntegrationTest(t, testData)
@@ -109,9 +106,6 @@ func TestDoctorUpdateToPatientAddress(t *testing.T) {
 }
 
 func TestDoctorFailedUpdate(t *testing.T) {
-	if err := CheckIfRunningLocally(t); err == CannotRunTestLocally {
-		return
-	}
 
 	testData := SetupIntegrationTest(t)
 	defer TearDownIntegrationTest(t, testData)
@@ -192,9 +186,6 @@ func TestDoctorFailedUpdate(t *testing.T) {
 }
 
 func TestDoctorUpdateToPhoneNumbers(t *testing.T) {
-	if err := CheckIfRunningLocally(t); err == CannotRunTestLocally {
-		return
-	}
 
 	testData := SetupIntegrationTest(t)
 	defer TearDownIntegrationTest(t, testData)
@@ -299,9 +290,6 @@ func TestDoctorUpdateToPhoneNumbers(t *testing.T) {
 }
 
 func TestDoctorUpdateToTopLevelInformation(t *testing.T) {
-	if err := CheckIfRunningLocally(t); err == CannotRunTestLocally {
-		return
-	}
 
 	testData := SetupIntegrationTest(t)
 	defer TearDownIntegrationTest(t, testData)
@@ -394,9 +382,6 @@ func TestDoctorUpdateToTopLevelInformation(t *testing.T) {
 }
 
 func TestDoctorUpdatePatientInformationForbidden(t *testing.T) {
-	if err := CheckIfRunningLocally(t); err == CannotRunTestLocally {
-		return
-	}
 
 	testData := SetupIntegrationTest(t)
 	defer TearDownIntegrationTest(t, testData)
@@ -459,9 +444,6 @@ func TestDoctorUpdatePatientInformationForbidden(t *testing.T) {
 }
 
 func TestDoctorPatientPharmacyUpdateHandler(t *testing.T) {
-	if err := CheckIfRunningLocally(t); err == CannotRunTestLocally {
-		return
-	}
 
 	testData := SetupIntegrationTest(t)
 	defer TearDownIntegrationTest(t, testData)
@@ -534,9 +516,6 @@ func TestDoctorPatientPharmacyUpdateHandler(t *testing.T) {
 }
 
 func TestDoctorPharmacyUpdateForbidden(t *testing.T) {
-	if err := CheckIfRunningLocally(t); err == CannotRunTestLocally {
-		return
-	}
 
 	testData := SetupIntegrationTest(t)
 	defer TearDownIntegrationTest(t, testData)

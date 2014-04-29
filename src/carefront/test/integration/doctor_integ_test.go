@@ -18,9 +18,6 @@ import (
 )
 
 func TestDoctorRegistration(t *testing.T) {
-	if err := CheckIfRunningLocally(t); err == CannotRunTestLocally {
-		return
-	}
 
 	testData := SetupIntegrationTest(t)
 	defer TearDownIntegrationTest(t, testData)
@@ -29,9 +26,6 @@ func TestDoctorRegistration(t *testing.T) {
 }
 
 func TestDoctorAuthentication(t *testing.T) {
-	if err := CheckIfRunningLocally(t); err == CannotRunTestLocally {
-		return
-	}
 
 	testData := SetupIntegrationTest(t)
 	defer TearDownIntegrationTest(t, testData)
@@ -68,9 +62,6 @@ func TestDoctorAuthentication(t *testing.T) {
 }
 
 func TestDoctorDrugSearch(t *testing.T) {
-	if err := CheckIfRunningLocally(t); err == CannotRunTestLocally {
-		return
-	}
 
 	testData := SetupIntegrationTest(t)
 	defer TearDownIntegrationTest(t, testData)
@@ -117,10 +108,7 @@ func TestDoctorDrugSearch(t *testing.T) {
 }
 
 func TestDoctorDiagnosisOfPatientVisit(t *testing.T) {
-	if err := CheckIfRunningLocally(t); err == CannotRunTestLocally {
-		t.Log("Skipping test since there is no database to run test on")
-		return
-	}
+
 	testData := SetupIntegrationTest(t)
 	defer TearDownIntegrationTest(t, testData)
 
@@ -258,10 +246,7 @@ func TestDoctorDiagnosisOfPatientVisit(t *testing.T) {
 }
 
 func TestDoctorSubmissionOfPatientVisitReview(t *testing.T) {
-	if err := CheckIfRunningLocally(t); err == CannotRunTestLocally {
-		t.Log("Skipping test since there is no database to run test on")
-		return
-	}
+
 	testData := SetupIntegrationTest(t)
 	defer TearDownIntegrationTest(t, testData)
 
@@ -339,10 +324,7 @@ func TestDoctorSubmissionOfPatientVisitReview(t *testing.T) {
 }
 
 func TestDoctorAddingOfFollowUpForPatientVisit(t *testing.T) {
-	if err := CheckIfRunningLocally(t); err == CannotRunTestLocally {
-		t.Log("Skipping test since there is no database to run test on")
-		return
-	}
+
 	testData := SetupIntegrationTest(t)
 	defer TearDownIntegrationTest(t, testData)
 

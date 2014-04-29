@@ -723,30 +723,6 @@ func (d *DataService) AddTreatmentTemplates(doctorTreatmentTemplates []*common.D
 			treatmentType = treatmentOTC
 		}
 
-		var drugNameId, drugRouteId, drugFormId int64
-		var err error
-
-		if doctorTreatmentTemplate.Treatment.DrugName != "" {
-			drugNameId, err = d.getOrInsertNameInTable(tx, drugNameTable, doctorTreatmentTemplate.Treatment.DrugName)
-			if err != nil {
-				return err
-			}
-		}
-
-		if doctorTreatmentTemplate.Treatment.DrugForm != "" {
-			drugFormId, err = d.getOrInsertNameInTable(tx, drugFormTable, doctorTreatmentTemplate.Treatment.DrugForm)
-			if err != nil {
-				return err
-			}
-		}
-
-		if doctorTreatmentTemplate.Treatment.DrugRoute != "" {
-			drugRouteId, err = d.getOrInsertNameInTable(tx, drugRouteTable, doctorTreatmentTemplate.Treatment.DrugRoute)
-			if err != nil {
-				return err
-			}
-		}
-
 		// get an id for a grouping into which to insert the drug_db_ids
 		rowInsertId, err := tx.Exec(`insert into drug_db_ids_group () values ()`)
 		if err != nil {
@@ -780,16 +756,16 @@ func (d *DataService) AddTreatmentTemplates(doctorTreatmentTemplates []*common.D
 			columnsAndData["days_supply"] = doctorTreatmentTemplate.Treatment.DaysSupply.Int64Value
 		}
 
-		if drugRouteId != 0 {
-			columnsAndData["drug_route_id"] = drugRouteId
+		if err := d.includeDrugNameComponentIfNonZero(doctorTreatmentTemplate.Treatment.DrugName, drugNameTable, "drug_name_id", columnsAndData, tx); err != nil {
+			return err
 		}
 
-		if drugNameId != 0 {
-			columnsAndData["drug_name_id"] = drugNameId
+		if err := d.includeDrugNameComponentIfNonZero(doctorTreatmentTemplate.Treatment.DrugForm, drugFormTable, "drug_form_id", columnsAndData, tx); err != nil {
+			return err
 		}
 
-		if drugFormId != 0 {
-			columnsAndData["drug_form_id"] = drugFormId
+		if err := d.includeDrugNameComponentIfNonZero(doctorTreatmentTemplate.Treatment.DrugRoute, drugRouteTable, "drug_route_id", columnsAndData, tx); err != nil {
+			return err
 		}
 
 		columns, values := getKeysAndValuesFromMap(columnsAndData)
@@ -1260,6 +1236,222 @@ func (d *DataService) UpdatePatientInformationFromDoctor(patient *common.Patient
 	}
 
 	return tx.Commit()
+}
+
+func (d *DataService) GetFavoriteTreatmentPlansForDoctor(doctorId int64) ([]*common.FavoriteTreatmentPlan, error) {
+	rows, err := d.DB.Query(`select id, name, modified_date, doctor_id from dr_favorite_treatment_plan where doctor_id = ?`, doctorId)
+	if err != nil {
+		return nil, err
+	}
+	defer rows.Close()
+
+	favoriteTreatmentPlans := make([]*common.FavoriteTreatmentPlan, 0)
+	for rows.Next() {
+		var favoritePlan common.FavoriteTreatmentPlan
+		err := rows.Scan(&favoritePlan.Id, &favoritePlan.Name, &favoritePlan.ModifiedDate, &favoritePlan.DoctorId)
+		if err != nil {
+			return nil, err
+		}
+
+		favoriteTreatmentPlans = append(favoriteTreatmentPlans, &favoritePlan)
+	}
+
+	return favoriteTreatmentPlans, rows.Err()
+}
+
+func (d *DataService) GetFavoriteTreatmentPlan(favoriteTreatmentPlanId int64) (*common.FavoriteTreatmentPlan, error) {
+	var favoriteTreatmentPlan common.FavoriteTreatmentPlan
+	err := d.DB.QueryRow(`select id, name, modified_date, doctor_id from dr_favorite_treatment_plan where id=?`, favoriteTreatmentPlanId).Scan(&favoriteTreatmentPlan.Id, &favoriteTreatmentPlan.Name, &favoriteTreatmentPlan.ModifiedDate, &favoriteTreatmentPlan.DoctorId)
+	if err == sql.ErrNoRows {
+		return nil, NoRowsError
+	} else if err != nil {
+		return nil, err
+	}
+
+	// get treatments
+	rows, err := d.DB.Query(`select dr_favorite_treatment.id,  drug_internal_name, dosage_strength, type, 
+				dispense_value, dispense_unit_id, ltext, refills, substitutions_allowed,
+				days_supply, pharmacy_notes, patient_instructions, creation_date, status,
+				drug_db_ids_group_id, drug_name.name, drug_route.name, drug_form.name
+			 		from dr_favorite_treatment 
+						inner join dispense_unit on dr_treatment_template.dispense_unit_id = dispense_unit.id
+						inner join localized_text on localized_text.app_text_id = dispense_unit.dispense_unit_text_id
+						left outer join drug_name on drug_name_id = drug_name.id
+						left outer join drug_route on drug_route_id = drug_route.id
+						left outer join drug_form on drug_form_id = drug_form.id
+			 					where status='ACTIVE' and dr_favorite_treatment_plan_id = ? and localized_text.language_id=?`, favoriteTreatmentPlanId, EN_LANGUAGE_ID)
+	if err != nil {
+		return nil, err
+	}
+	defer rows.Close()
+
+	favoriteTreatmentPlan.Treatments = make([]*common.Treatment, 0)
+	for rows.Next() {
+		var treatment common.Treatment
+		var medicationType string
+		var drugDbIdsGroupId sql.NullInt64
+		var drugName, drugForm, drugRoute sql.NullString
+		err := rows.Scan(&treatment.Id, &treatment.DrugInternalName, &treatment.DosageStrength, &medicationType, &treatment.DispenseValue, &treatment.DispenseUnitId, &treatment.DispenseUnitDescription,
+			&treatment.NumberRefills, &treatment.SubstitutionsAllowed, &treatment.DaysSupply, &treatment.PharmacyNotes, &treatment.PatientInstructions, &treatment.CreationDate, &treatment.Status, &drugDbIdsGroupId,
+			&drugName, &drugRoute, &drugForm)
+		if err != nil {
+			return nil, err
+		}
+		treatment.DrugName = drugName.String
+		treatment.DrugForm = drugForm.String
+		treatment.DrugRoute = drugRoute.String
+		treatment.DrugDBIdsGroupId = drugDbIdsGroupId.Int64
+		treatment.OTC = medicationType == treatmentOTC
+
+		err = d.fillInDrugDBIdsForTreatment(&treatment)
+		if err != nil {
+			return nil, err
+		}
+		favoriteTreatmentPlan.Treatments = append(favoriteTreatmentPlan.Treatments, &treatment)
+	}
+
+	if err := rows.Err(); err != nil {
+		return nil, err
+	}
+
+	// get regimen
+	regimenPlanRows, err := d.DB.Query(`select id, regimen_type, dr_regimen_step_id, regimen.text 
+								from dr_favorite_regimen where dr_favorite_treatment_plan_id = ? and regimen.status = 'ACTIVE' order by regimen.id`, favoriteTreatmentPlanId)
+	if err != nil {
+		return nil, err
+	}
+	defer regimenPlanRows.Close()
+
+	favoriteTreatmentPlan.RegimenPlan, err = getRegimenPlanFromRows(regimenPlanRows)
+	if err != nil {
+		return nil, err
+	}
+
+	// get advice
+	advicePointsRows, err := d.DB.Query(`select id, dr_advice_point_id, advice.text from dr_favorite_advice 
+			where dr_favorite_treatment_plan_id = ?  and advice.status = ?`, favoriteTreatmentPlanId, STATUS_ACTIVE)
+	if err != nil {
+		return nil, err
+	}
+	defer advicePointsRows.Close()
+
+	favoriteTreatmentPlan.Advice.SelectedAdvicePoints, err = getAdvicePointsFromRows(advicePointsRows)
+	if err != nil {
+		return nil, err
+	}
+
+	return &favoriteTreatmentPlan, err
+}
+
+func (d *DataService) CreateOrUpdateFavoriteTreatmentPlan(favoriteTreatmentPlan *common.FavoriteTreatmentPlan) error {
+	tx, err := d.DB.Begin()
+	if err != nil {
+		return err
+	}
+
+	// If updating treatment plan, delete all items that currently make up this favorited treatment plan
+	if favoriteTreatmentPlan.Id.Int64() != 0 {
+		if err := deleteComponentsOfFavoriteTreatmentPlan(tx, favoriteTreatmentPlan.Id.Int64()); err != nil {
+			tx.Rollback()
+			return err
+		}
+		_, err = tx.Exec(`update dr_favorite_treatment_plan set name=? where id=?`, favoriteTreatmentPlan.Name, favoriteTreatmentPlan.Id.Int64())
+		if err != nil {
+			tx.Rollback()
+			return err
+		}
+	} else {
+		lastInsertId, err := tx.Exec(`insert into dr_favorite_treatment_plan (name, doctor_id) values (?,?)`, favoriteTreatmentPlan.Name, favoriteTreatmentPlan.DoctorId)
+		if err != nil {
+			tx.Rollback()
+			return err
+		}
+
+		favoriteTreatmentPlanId, err := lastInsertId.LastInsertId()
+		if err != nil {
+			tx.Rollback()
+			return err
+		}
+		favoriteTreatmentPlan.Id = encoding.NewObjectId(favoriteTreatmentPlanId)
+	}
+
+	// Add all treatments
+	for _, treatment := range favoriteTreatmentPlan.Treatments {
+		params := make(map[string]interface{})
+		params["dr_favorite_treatment_plan_id"] = favoriteTreatmentPlan.Id.Int64()
+		err := d.addTreatment(doctorFavoriteTreatmentType, treatment, params, tx)
+		if err != nil {
+			tx.Rollback()
+			return err
+		}
+	}
+
+	// Add regimen plan
+	for _, regimenSection := range favoriteTreatmentPlan.RegimenPlan.RegimenSections {
+		for _, regimenStep := range regimenSection.RegimenSteps {
+			_, err = tx.Exec(`insert into dr_favorite_regimen (dr_favorite_treatment_plan_id, regimen_type, dr_regimen_step_id, text, status) values (?,?,?,?,?)`, favoriteTreatmentPlan.Id.Int64(), regimenSection.RegimenName, regimenStep.ParentId.Int64(), regimenStep.Text, STATUS_ACTIVE)
+			if err != nil {
+				tx.Rollback()
+				return err
+			}
+		}
+	}
+
+	for _, advicePoint := range favoriteTreatmentPlan.Advice.SelectedAdvicePoints {
+		_, err = tx.Exec(`insert into dr_favorite_advice (dr_favorite_treatment_plan_id, dr_advice_point_id, text, status) values (?, ?, ?, ?)`, favoriteTreatmentPlan.Id.Int64(), advicePoint.ParentId.Int64(), advicePoint.Text, STATUS_ACTIVE)
+		if err != nil {
+			tx.Rollback()
+			return err
+		}
+	}
+
+	return tx.Commit()
+}
+
+func (d *DataService) DeleteFavoriteTreatmentPlan(favoriteTreatmentPlanId int64) error {
+	tx, err := d.DB.Begin()
+	if err != nil {
+		return err
+	}
+
+	if err := deleteComponentsOfFavoriteTreatmentPlan(tx, favoriteTreatmentPlanId); err != nil {
+		tx.Rollback()
+		return err
+	}
+
+	_, err = tx.Exec(`delete from dr_favorite_treatment_plan where id=?`, favoriteTreatmentPlanId)
+	if err != nil {
+		tx.Rollback()
+		return err
+	}
+
+	return tx.Commit()
+
+}
+
+func deleteComponentsOfFavoriteTreatmentPlan(tx *sql.Tx, favoriteTreatmentPlanId int64) error {
+
+	_, err := tx.Exec(`delete from dr_favorite_treatment where dr_favorite_treatment_plan_id = ?`, favoriteTreatmentPlanId)
+	if err != nil {
+		return err
+	}
+
+	_, err = tx.Exec(`delete from dr_favorite_regimen_plan where dr_favorite_treatment_plan_id=?`, favoriteTreatmentPlanId)
+	if err != nil {
+		return err
+	}
+
+	_, err = tx.Exec(`delete from dr_favorite_advice where dr_favorite_treatment_plan_id=?`, favoriteTreatmentPlanId)
+	if err != nil {
+		return err
+	}
+
+	_, err = tx.Exec(`delete from dr_favorite_follow_up where dr_favorite_treatment_plan_id=?`, favoriteTreatmentPlanId)
+	if err != nil {
+		return err
+	}
+
+	return nil
 }
 
 type doctorInstructionQuery func(db *sql.DB, doctorId int64, drugComponents ...string) (drugInstructions []*common.DoctorInstructionItem, err error)

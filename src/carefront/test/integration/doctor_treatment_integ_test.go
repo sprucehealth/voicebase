@@ -15,9 +15,6 @@ import (
 )
 
 func TestMedicationStrengthSearch(t *testing.T) {
-	if err := CheckIfRunningLocally(t); err == CannotRunTestLocally {
-		return
-	}
 
 	testData := SetupIntegrationTest(t)
 	defer TearDownIntegrationTest(t, testData)
@@ -51,9 +48,6 @@ func TestMedicationStrengthSearch(t *testing.T) {
 }
 
 func TestNewTreatmentSelection(t *testing.T) {
-	if err := CheckIfRunningLocally(t); err == CannotRunTestLocally {
-		return
-	}
 
 	testData := SetupIntegrationTest(t)
 	defer TearDownIntegrationTest(t, testData)
@@ -138,9 +132,6 @@ func TestNewTreatmentSelection(t *testing.T) {
 }
 
 func TestDispenseUnitIds(t *testing.T) {
-	if err := CheckIfRunningLocally(t); err == CannotRunTestLocally {
-		return
-	}
 
 	testData := SetupIntegrationTest(t)
 	defer TearDownIntegrationTest(t, testData)
@@ -179,10 +170,7 @@ func TestDispenseUnitIds(t *testing.T) {
 }
 
 func TestAddTreatments(t *testing.T) {
-	if err := CheckIfRunningLocally(t); err == CannotRunTestLocally {
-		t.Log("Skipping test since there is no database to run test on")
-		return
-	}
+
 	testData := SetupIntegrationTest(t)
 	defer TearDownIntegrationTest(t, testData)
 
@@ -290,10 +278,7 @@ func TestAddTreatments(t *testing.T) {
 }
 
 func TestTreatmentTemplates(t *testing.T) {
-	if err := CheckIfRunningLocally(t); err == CannotRunTestLocally {
-		t.Log("Skipping test since there is no database to run test on")
-		return
-	}
+
 	testData := SetupIntegrationTest(t)
 	defer TearDownIntegrationTest(t, testData)
 
@@ -469,10 +454,7 @@ func TestTreatmentTemplates(t *testing.T) {
 }
 
 func TestTreatmentTemplatesInContextOfPatientVisit(t *testing.T) {
-	if err := CheckIfRunningLocally(t); err == CannotRunTestLocally {
-		t.Log("Skipping test since there is no database to run test on")
-		return
-	}
+
 	testData := SetupIntegrationTest(t)
 	defer TearDownIntegrationTest(t, testData)
 
@@ -702,10 +684,7 @@ func TestTreatmentTemplatesInContextOfPatientVisit(t *testing.T) {
 }
 
 func TestTreatmentTemplateWithDrugOutOfMarket(t *testing.T) {
-	if err := CheckIfRunningLocally(t); err == CannotRunTestLocally {
-		t.Log("Skipping test since there is no database to run test on")
-		return
-	}
+
 	testData := SetupIntegrationTest(t)
 	defer TearDownIntegrationTest(t, testData)
 

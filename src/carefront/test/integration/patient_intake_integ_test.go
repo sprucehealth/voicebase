@@ -88,9 +88,6 @@ func submitPatientAnswerForVisit(PatientId int64, testData TestData, patientInta
 }
 
 func TestSingleSelectIntake(t *testing.T) {
-	if err := CheckIfRunningLocally(t); err == CannotRunTestLocally {
-		return
-	}
 
 	testData := SetupIntegrationTest(t)
 	defer TearDownIntegrationTest(t, testData)
@@ -135,9 +132,7 @@ func TestSingleSelectIntake(t *testing.T) {
 }
 
 func TestMultipleChoiceIntake(t *testing.T) {
-	if err := CheckIfRunningLocally(t); err == CannotRunTestLocally {
-		return
-	}
+
 	testData := SetupIntegrationTest(t)
 	defer TearDownIntegrationTest(t, testData)
 
@@ -201,9 +196,7 @@ func TestMultipleChoiceIntake(t *testing.T) {
 }
 
 func TestSingleEntryIntake(t *testing.T) {
-	if err := CheckIfRunningLocally(t); err == CannotRunTestLocally {
-		return
-	}
+
 	testData := SetupIntegrationTest(t)
 	defer TearDownIntegrationTest(t, testData)
 
@@ -290,9 +283,7 @@ func submitFreeTextResponseForPatient(patientVisitResponse *apiservice.PatientVi
 }
 
 func TestFreeTextEntryIntake(t *testing.T) {
-	if err := CheckIfRunningLocally(t); err == CannotRunTestLocally {
-		return
-	}
+
 	testData := SetupIntegrationTest(t)
 	defer TearDownIntegrationTest(t, testData)
 
@@ -319,9 +310,7 @@ func addSubAnswerToAnswerIntake(answerIntake *apiservice.AnswerItem, subAnswerQu
 }
 
 func TestSubQuestionEntryIntake(t *testing.T) {
-	if err := CheckIfRunningLocally(t); err == CannotRunTestLocally {
-		return
-	}
+
 	testData := SetupIntegrationTest(t)
 	defer TearDownIntegrationTest(t, testData)
 
@@ -478,9 +467,6 @@ func TestSubQuestionEntryIntake(t *testing.T) {
 }
 
 func TestPhotoAnswerIntake(t *testing.T) {
-	if err := CheckIfRunningLocally(t); err == CannotRunTestLocally {
-		return
-	}
 
 	fileToUpload := "../../info_intake/condition_intake.json"
 

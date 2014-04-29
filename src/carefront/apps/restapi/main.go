@@ -341,6 +341,9 @@ func main() {
 		DataApi: dataApi,
 		ErxApi:  doseSpotService,
 	}
+	doctorFavoriteTreatmentPlansHandler := &apiservice.DoctorFavoriteTreatmentPlansHandler{
+		DataApi: dataApi,
+	}
 
 	mux := apiservice.NewAuthServeMux(authApi, metricsRegistry.Scope("restapi"))
 
@@ -407,6 +410,7 @@ func main() {
 	mux.Handle("/v1/doctor/visit/advice", doctorAdviceHandler)
 	mux.Handle("/v1/doctor/visit/followup", doctorFollowupHandler)
 	mux.Handle("/v1/doctor/visit/submit", doctorSubmitPatientVisitHandler)
+	mux.Handle("/v1/doctor/favorite_treatment_plans", doctorFavoriteTreatmentPlansHandler)
 
 	// add the api to create demo visits to every environment except production
 	if conf.Environment != "prod" {

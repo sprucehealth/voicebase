@@ -138,6 +138,7 @@ const (
 	pharmacyDispensedTreatmentType
 	refillRequestTreatmentType
 	unlinkedDNTFTreatmentType
+	doctorFavoriteTreatmentType
 )
 
 var possibleTreatmentTables = map[treatmentType]string{
@@ -145,6 +146,7 @@ var possibleTreatmentTables = map[treatmentType]string{
 	pharmacyDispensedTreatmentType: "pharmacy_dispensed_treatment",
 	refillRequestTreatmentType:     "requested_treatment",
 	unlinkedDNTFTreatmentType:      "unlinked_dntf_treatment",
+	doctorFavoriteTreatmentType:    "dr_favorite_treatment",
 }
 
 func (d *DataService) addTreatment(tType treatmentType, treatment *common.Treatment, params map[string]interface{}, tx *sql.Tx) error {
@@ -201,7 +203,14 @@ func (d *DataService) addTreatment(tType treatmentType, treatment *common.Treatm
 		if treatment.TreatmentPlanId.Int64() != 0 {
 			columnsAndData["treatment_plan_id"] = treatment.TreatmentPlanId.Int64()
 		}
-
+	case doctorFavoriteTreatmentType:
+		columnsAndData["status"] = STATUS_ACTIVE
+		columnsAndData["dispense_unit_id"] = treatment.DispenseUnitId.Int64()
+		drFavoriteTreatmentId, ok := params["dr_favorite_treatment_plan_id"]
+		if !ok {
+			return errors.New("Expected dr_favorite_treatment_planid to be present in the params but it wasnt")
+		}
+		columnsAndData["dr_favorite_treatment_plan_id"] = drFavoriteTreatmentId
 	case pharmacyDispensedTreatmentType:
 		columnsAndData["doctor_id"] = treatment.Doctor.DoctorId.Int64()
 		columnsAndData["erx_id"] = treatment.ERx.PrescriptionId.Int64()

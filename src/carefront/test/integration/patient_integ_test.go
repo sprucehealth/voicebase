@@ -24,9 +24,6 @@ func TestPatientRegistration(t *testing.T) {
 }
 
 func TestPatientCareProvidingEllgibility(t *testing.T) {
-	if err := CheckIfRunningLocally(t); err == CannotRunTestLocally {
-		return
-	}
 	testData := SetupIntegrationTest(t)
 	defer TearDownIntegrationTest(t, testData)
 
@@ -78,9 +75,6 @@ func TestPatientCareProvidingEllgibility(t *testing.T) {
 }
 
 func TestPatientVisitCreation(t *testing.T) {
-	if err := CheckIfRunningLocally(t); err == CannotRunTestLocally {
-		return
-	}
 	testData := SetupIntegrationTest(t)
 	defer TearDownIntegrationTest(t, testData)
 
@@ -126,9 +120,6 @@ func TestPatientVisitCreation(t *testing.T) {
 }
 
 func TestPatientVisitSubmission(t *testing.T) {
-	if err := CheckIfRunningLocally(t); err == CannotRunTestLocally {
-		return
-	}
 	testData := SetupIntegrationTest(t)
 	defer TearDownIntegrationTest(t, testData)
 
@@ -162,9 +153,6 @@ func TestPatientVisitSubmission(t *testing.T) {
 }
 
 func TestPatientAutocompleteForDrugs(t *testing.T) {
-	if err := CheckIfRunningLocally(t); err == CannotRunTestLocally {
-		return
-	}
 	testData := SetupIntegrationTest(t)
 	defer TearDownIntegrationTest(t, testData)
 
