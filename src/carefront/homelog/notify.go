@@ -91,5 +91,5 @@ func init() {
 }
 
 func registerNotificationType(n notification) {
-	notifyTypes[n.TypeName()] = reflect.TypeOf(reflect.Indirect(reflect.ValueOf(n)))
+	notifyTypes[n.TypeName()] = reflect.TypeOf(reflect.Indirect(reflect.ValueOf(n)).Interface())
 }

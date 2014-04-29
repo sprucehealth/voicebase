@@ -3,6 +3,7 @@ package api
 import (
 	"carefront/common"
 	"carefront/libs/golog"
+	"database/sql"
 	"encoding/json"
 	"reflect"
 	"time"
@@ -31,7 +32,9 @@ func (d *DataService) GetNotificationsForPatient(patientId int64, typeMap map[st
 		FROM patient_notifications
 		WHERE patient_id = ?
 		ORDER BY priority DESC, tstamp DESC`, patientId)
-	if err != nil {
+	if err == sql.ErrNoRows {
+		return []*common.Notification{}, nil
+	} else if err != nil {
 		return nil, err
 	}
 	var notes []*common.Notification
@@ -101,7 +104,9 @@ func (d *DataService) GetHealthLogForPatient(patientId int64, typeMap map[string
 		FROM health_log
 		WHERE patient_id = ?
 		ORDER BY tstamp DESC`, patientId)
-	if err != nil {
+	if err == sql.ErrNoRows {
+		return []*common.HealthLogItem{}, nil
+	} else if err != nil {
 		return nil, err
 	}
 	var items []*common.HealthLogItem

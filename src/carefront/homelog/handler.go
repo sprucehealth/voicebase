@@ -42,13 +42,13 @@ func (h *ListHandler) ServeHTTP(w http.ResponseWriter, r *http.Request) {
 
 	patientId, err := h.dataAPI.GetPatientIdFromAccountId(apiservice.GetContext(r).AccountId)
 	if err != nil {
-		apiservice.WriteDeveloperError(w, http.StatusInternalServerError, "Failed to get patient: "+err.Error())
+		apiservice.WriteDeveloperError(w, http.StatusInternalServerError, "home/list: failed to get patient: "+err.Error())
 		return
 	}
 
 	notes, err := h.dataAPI.GetNotificationsForPatient(patientId, notifyTypes)
 	if err != nil {
-		apiservice.WriteDeveloperError(w, http.StatusInternalServerError, "Failed to get patient notifications: "+err.Error())
+		apiservice.WriteDeveloperError(w, http.StatusInternalServerError, "home/list: failed to get patient notifications: "+err.Error())
 		return
 	}
 	noteViews := make([]view, 0, len(notes))
@@ -63,17 +63,17 @@ func (h *ListHandler) ServeHTTP(w http.ResponseWriter, r *http.Request) {
 
 	log, err := h.dataAPI.GetHealthLogForPatient(patientId, logItemTypes)
 	if err != nil {
-		apiservice.WriteDeveloperError(w, http.StatusInternalServerError, "Failed to get health log: "+err.Error())
+		apiservice.WriteDeveloperError(w, http.StatusInternalServerError, "home/list: failed to get health log: "+err.Error())
 		return
 	}
 	logViews := make([]view, 0, len(log))
 	for _, lit := range log {
 		view, err := lit.Data.(logItem).makeView(h.dataAPI, patientId, lit)
 		if err != nil {
-			golog.Errorf("Failed to create view for notification %d of type %s", lit.Id, lit.Data.TypeName())
+			golog.Errorf("home/list: failed to create view for notification %d of type %s", lit.Id, lit.Data.TypeName())
 			continue
 		}
-		noteViews = append(noteViews, view)
+		logViews = append(logViews, view)
 	}
 
 	res := &response{
@@ -99,7 +99,7 @@ func (h *DismissHandler) ServeHTTP(w http.ResponseWriter, r *http.Request) {
 	for _, s := range r.PostForm["notification_id"] {
 		id, err := strconv.ParseInt(s, 10, 64)
 		if err != nil {
-			apiservice.WriteUserError(w, http.StatusBadRequest, fmt.Sprintf("Notification ID '%s' not an integer", s))
+			apiservice.WriteUserError(w, http.StatusBadRequest, fmt.Sprintf("home/dismiss: notification ID '%s' not an integer", s))
 			return
 		}
 		noteIDs = append(noteIDs, id)
@@ -110,7 +110,7 @@ func (h *DismissHandler) ServeHTTP(w http.ResponseWriter, r *http.Request) {
 	}
 
 	if err := h.dataAPI.DeletePatientNotifications(noteIDs); err != nil {
-		apiservice.WriteDeveloperError(w, http.StatusInternalServerError, "Failed to delete notifications: "+err.Error())
+		apiservice.WriteDeveloperError(w, http.StatusInternalServerError, "home/dismiss: failed to delete notifications: "+err.Error())
 		return
 	}
 

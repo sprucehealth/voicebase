@@ -2,23 +2,26 @@ package integration
 
 import (
 	"carefront/common"
+	"carefront/homelog"
+	"io/ioutil"
+	"net/http/httptest"
 	"reflect"
 	"testing"
 )
 
-type testNotification struct {
+type titleSubtitleItem struct {
 	SomeId int64
 }
 
-func (*testNotification) TypeName() string {
-	return "test"
+func (*titleSubtitleItem) TypeName() string {
+	return "title_subtitle"
 }
 
 var notificationTypes = map[string]reflect.Type{
-	(&testNotification{}).TypeName(): reflect.TypeOf(testNotification{}),
+	(&titleSubtitleItem{}).TypeName(): reflect.TypeOf(titleSubtitleItem{}),
 }
 
-func TestPatientNotifications(t *testing.T) {
+func TestPatientNotificationsAPI(t *testing.T) {
 	if err := CheckIfRunningLocally(t); err == CannotRunTestLocally {
 		return
 	}
@@ -29,7 +32,7 @@ func TestPatientNotifications(t *testing.T) {
 	patient := pr.Patient
 	patientId := patient.PatientId.Int64()
 
-	data := &testNotification{
+	data := &titleSubtitleItem{
 		SomeId: 1234,
 	}
 	note := &common.Notification{
@@ -50,9 +53,9 @@ func TestPatientNotifications(t *testing.T) {
 		t.Fatal(err)
 	} else if len(notes) != 1 {
 		t.Fatalf("Expected 1 notification. Got %d", len(notes))
-	} else if notes[0].Data.TypeName() != "test" {
-		t.Fatalf("Expected data type of 'test'. Got '%s'", notes[0].Data.TypeName())
-	} else if notes[0].Data.(*testNotification).SomeId != 1234 {
+	} else if notes[0].Data.TypeName() != "title_subtitle" {
+		t.Fatalf("Expected data type of 'title_subtitle'. Got '%s'", notes[0].Data.TypeName())
+	} else if notes[0].Data.(*titleSubtitleItem).SomeId != 1234 {
 		t.Fatal("Test notification data mismatch")
 	}
 
@@ -86,7 +89,7 @@ func TestPatientNotifications(t *testing.T) {
 	}
 }
 
-func TestHealthLog(t *testing.T) {
+func TestHealthLogAPI(t *testing.T) {
 	if err := CheckIfRunningLocally(t); err == CannotRunTestLocally {
 		return
 	}
@@ -97,7 +100,7 @@ func TestHealthLog(t *testing.T) {
 	patient := pr.Patient
 	patientId := patient.PatientId.Int64()
 
-	data := &testNotification{
+	data := &titleSubtitleItem{
 		SomeId: 1234,
 	}
 	item := &common.HealthLogItem{
@@ -113,9 +116,9 @@ func TestHealthLog(t *testing.T) {
 		t.Fatal(err)
 	} else if len(items) != 1 {
 		t.Fatalf("Expected 1 item. Got %d", len(items))
-	} else if items[0].Data.TypeName() != "test" {
-		t.Fatalf("Expected data type of 'test'. Got '%s'", items[0].Data.TypeName())
-	} else if items[0].Data.(*testNotification).SomeId != 1234 {
+	} else if items[0].Data.TypeName() != "title_subtitle" {
+		t.Fatalf("Expected data type of 'title_subtitle'. Got '%s'", items[0].Data.TypeName())
+	} else if items[0].Data.(*titleSubtitleItem).SomeId != 1234 {
 		t.Fatal("Test item data mismatch")
 	}
 
@@ -130,9 +133,47 @@ func TestHealthLog(t *testing.T) {
 		t.Fatal(err)
 	} else if len(items) != 1 {
 		t.Fatalf("Expected 1 item. Got %d", len(items))
-	} else if items[0].Data.TypeName() != "test" {
-		t.Fatalf("Expected data type of 'test'. Got '%s'", items[0].Data.TypeName())
-	} else if items[0].Data.(*testNotification).SomeId != 9999 {
+	} else if items[0].Data.TypeName() != "title_subtitle" {
+		t.Fatalf("Expected data type of 'title_subtitle'. Got '%s'", items[0].Data.TypeName())
+	} else if items[0].Data.(*titleSubtitleItem).SomeId != 9999 {
 		t.Fatal("Test item data mismatch")
+	}
+}
+
+func TestHealthLog(t *testing.T) {
+	if err := CheckIfRunningLocally(t); err == CannotRunTestLocally {
+		return
+	}
+	testData := SetupIntegrationTest(t)
+	defer TearDownIntegrationTest(t, testData)
+
+	pr := SignupRandomTestPatient(t, testData.DataApi, testData.AuthApi)
+	patient := pr.Patient
+	patientId := patient.PatientId.Int64()
+
+	visit := CreatePatientVisitForPatient(patientId, testData, t)
+	SubmitPatientVisitForPatient(patientId, visit.PatientVisitId, testData, t)
+
+	if items, err := testData.DataApi.GetHealthLogForPatient(patientId, notificationTypes); err != nil {
+		t.Fatal(err)
+	} else if len(items) != 1 {
+		t.Fatalf("Expected 1 item. Got %d", len(items))
+	} else if items[0].Data.TypeName() != "title_subtitle" {
+		t.Fatalf("Expected data type of 'title_subtitle'. Got '%s'", items[0].Data.TypeName())
+	}
+
+	ts := httptest.NewServer(homelog.NewListHandler(testData.DataApi))
+	defer ts.Close()
+
+	resp, err := authGet(ts.URL, patient.AccountId.Int64())
+	if err != nil {
+		t.Fatal("Unable to get home")
+	}
+	defer resp.Body.Close()
+
+	if body, err := ioutil.ReadAll(resp.Body); err != nil {
+		t.Fatalf("Failed to get body: %+v", err)
+	} else {
+		CheckSuccessfulStatusCode(resp, "Unable to get home: "+string(body), t)
 	}
 }

@@ -25,7 +25,7 @@ type Patient struct {
 	ZipCode           string                 `json:"zip_code,omitempty"`
 	PhoneNumbers      []*PhoneInformation    `json:"phone_numbers,omitempty"`
 	Status            string                 `json:"-"`
-	AccountId         encoding.ObjectId      `json:"-"`
+	AccountId         encoding.ObjectId      `json:"account_id,omitempty"`
 	ERxPatientId      encoding.ObjectId      `json:"-"`
 	PaymentCustomerId string                 `json:"-"`
 	Pharmacy          *pharmacy.PharmacyData `json:"pharmacy,omitempty"`

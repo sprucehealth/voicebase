@@ -43,6 +43,10 @@ import (
 	"strings"
 )
 
+// If Testing is set then PublishAsync is actually synchronous. This makes
+// tests that rely on dispatch must easier to write.
+var Testing = false
+
 type ErrorList []error
 
 func (e ErrorList) Error() string {
@@ -114,5 +118,9 @@ func (d *Dispatcher) Publish(e interface{}) error {
 // PublishAsync does the publishing in the background using a goroutine ignoring
 // any errors returned by listeners.
 func (d *Dispatcher) PublishAsync(e interface{}) {
-	go d.Publish(e)
+	if Testing {
+		d.Publish(e)
+	} else {
+		go d.Publish(e)
+	}
 }

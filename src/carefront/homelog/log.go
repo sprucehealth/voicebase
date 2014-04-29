@@ -69,5 +69,5 @@ func init() {
 }
 
 func registerLogItemType(n logItem) {
-	logItemTypes[n.TypeName()] = reflect.TypeOf(reflect.Indirect(reflect.ValueOf(n)))
+	logItemTypes[n.TypeName()] = reflect.TypeOf(reflect.Indirect(reflect.ValueOf(n)).Interface())
 }
