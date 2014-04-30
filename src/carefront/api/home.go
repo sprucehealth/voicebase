@@ -91,7 +91,7 @@ func (d *DataService) InsertPatientNotification(patientId int64, note *common.No
 	res, err := d.DB.Exec(`
 		INSERT INTO patient_notifications (patient_id, uid, expires, dismissible, dismiss_on_action, priority, type, data)
 		VALUES (?, ?, ?, ?, ?, ?, ?, ?)`,
-		patientId, note.UID, &note.Expires, note.Dismissible,
+		patientId, note.UID, note.Expires, note.Dismissible,
 		note.DismissOnAction, note.Priority, note.Data.TypeName(), data)
 	if err != nil {
 		return 0, err
