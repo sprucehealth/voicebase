@@ -6,6 +6,7 @@ package homelog
 import (
 	"carefront/api"
 	"carefront/apiservice"
+	"carefront/common"
 	"fmt"
 
 	"reflect"
@@ -19,7 +20,7 @@ const (
 )
 
 type notification interface {
-	TypeName() string
+	common.Typed
 	makeView(dataAPI api.DataAPI, patientId int64) (view, error)
 }
 

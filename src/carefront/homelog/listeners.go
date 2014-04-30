@@ -88,7 +88,7 @@ func InitListeners(dataAPI api.DataAPI) {
 					if _, err := dataAPI.InsertOrUpdatePatientHealthLogItem(ev.PatientId, &common.HealthLogItem{
 						UID: fmt.Sprintf("doctor_added:%d", a.ProviderId),
 						Data: &textLogItem{
-							Text:    fmt.Sprintf("%d %d, M.D., added to your care team.", doctor.FirstName, doctor.LastName),
+							Text:    fmt.Sprintf("%s %s, M.D., added to your care team.", doctor.FirstName, doctor.LastName),
 							IconURL: fmt.Sprintf("spruce:///image/thumbnail_care_team_%d", doctor.DoctorId.Int64()), // TODO
 							TapURL:  "spruce:///action/view_care_team",
 						},

@@ -15,7 +15,7 @@ const (
 )
 
 type logItem interface {
-	TypeName() string
+	common.Typed
 	makeView(dataAPI api.DataAPI, patientId int64, item *common.HealthLogItem) (view, error)
 }
 
