@@ -323,8 +323,8 @@ func TestPatientVisitReview(t *testing.T) {
 		t.Fatalf("Expected there to be 1 treatment plan for this doctor, instead we have %d", len(treatmentPlans))
 	}
 
-	if len(treatmentPlans[0].Treatments) != 2 {
-		t.Fatalf("Expected there to be 2 treatments in this treatment plan for this doctor, instead we have %d", len(treatmentPlans[0].Treatments))
+	if len(treatmentPlans[0].TreatmentList.Treatments) != 2 {
+		t.Fatalf("Expected there to be 2 treatments in this treatment plan for this doctor, instead we have %d", len(treatmentPlans[0].TreatmentList.Treatments))
 	}
 
 	prescriptionStatuses, err := testData.DataApi.GetPrescriptionStatusEventsForPatient(patient.ERxPatientId.Int64())
@@ -371,11 +371,11 @@ func TestPatientVisitReview(t *testing.T) {
 		t.Fatal("Expected 1 treatment plan to be returned")
 	}
 
-	if len(treatmentPlans[0].Treatments) != 2 {
+	if len(treatmentPlans[0].TreatmentList.Treatments) != 2 {
 		t.Fatal("Expected 2 treatments to be returned within treatment plan")
 	}
 
-	for _, treatment := range treatmentPlans[0].Treatments {
+	for _, treatment := range treatmentPlans[0].TreatmentList.Treatments {
 		if treatment.Id.Int64() == 20 && (treatment.ERx.PrescriptionStatus != api.ERX_STATUS_ERROR || treatment.ERx.PrescriptionStatus != api.ERX_STATUS_SENDING) {
 			t.Fatal("Expected the prescription status to be error for 1 treatment")
 		}

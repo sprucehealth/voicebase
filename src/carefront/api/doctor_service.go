@@ -1006,10 +1006,12 @@ func (d *DataService) GetCompletedPrescriptionsForDoctor(from, to time.Time, doc
 			return nil, err
 		}
 
-		if treatmentPlan.Treatments == nil {
-			treatmentPlan.Treatments = make([]*common.Treatment, 0)
+		if treatmentPlan.TreatmentList == nil {
+			treatmentPlan.TreatmentList = &common.TreatmentList{
+				Treatments: make([]*common.Treatment, 0),
+			}
 		}
-		treatmentPlan.Treatments = append(treatmentPlan.Treatments, treatment)
+		treatmentPlan.TreatmentList.Treatments = append(treatmentPlan.TreatmentList.Treatments, treatment)
 	}
 
 	return treatmentPlans, rows.Err()

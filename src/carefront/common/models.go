@@ -147,7 +147,7 @@ type TreatmentPlan struct {
 	Status           string            `json:"status,omitempty"`
 	CreationDate     *time.Time        `json:"creation_date,omitempty"`
 	SentDate         *time.Time        `json:"sent_date,omitempty"`
-	Treatments       []*Treatment      `json:"treatments,omitempty"`
+	TreatmentList    *TreatmentList    `json:"treatment_list,omitempty"`
 	Title            string            `json:"title,omitempty"`
 	DiagnosisSummary *DiagnosisSummary `json:"diagnosis_summary,omitempty"`
 	RegimenPlan      *RegimenPlan      `json:"regimen_plan,omitempty"`
