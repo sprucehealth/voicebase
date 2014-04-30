@@ -9,6 +9,21 @@ import (
 	goamz "launchpad.net/goamz/aws"
 )
 
+// Any structure that implements the Typed interface
+// requires a string that defines the type of the structure
+type Typed interface {
+	TypeName() string
+}
+
+type TypedData struct {
+	Data []byte
+	Type string
+}
+
+func (t *TypedData) TypeName() string {
+	return t.Type
+}
+
 func GenerateToken() (string, error) {
 	tokBytes := make([]byte, 16)
 	if _, err := rand.Read(tokBytes); err != nil {

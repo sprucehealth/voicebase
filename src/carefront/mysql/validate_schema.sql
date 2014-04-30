@@ -42,6 +42,16 @@ latestSnapshotNumber=`ls -r snapshot-*.sql | cut -d- -f 2  | cut -d. -f1 | sort 
 latestDataSnapshotNumber=`ls -r data-snapshot-*.sql | cut -d- -f 3  | cut -d. -f1 | sort -nr | head -1`
 latestMigrationNumber=`ls -r migration-*.sql | cut -d- -f 2  | cut -d. -f1 | sort -nr | head -1`
 
+if [ ! $latestMigrationNumber -gt $latestSnapshotNumber ]; then
+	echo "FAILED: Latest snapshot $latestSnapshotNumber >= migration $latestMigrationNumber" > /dev/stderr
+	exit 1
+fi
+
+if [ ! $latestMigrationNumber -gt $latestDataSnapshotNumber ]; then
+	echo "FAILED: Latest data snapshot $latestDataSnapshotNumber >= migration $latestMigrationNumber" > /dev/stderr
+	exit 1
+fi
+
 ## add the create database and use database statements before the rest of the sql statements
 echo "create database $DATABASE_NAME; use $DATABASE_NAME;"  | cat - snapshot-$latestSnapshotNumber.sql > temp.sql
 echo "use $DATABASE_NAME;" | cat - data-snapshot-$latestDataSnapshotNumber.sql > temp-data.sql

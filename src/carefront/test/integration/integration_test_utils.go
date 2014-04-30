@@ -2,6 +2,13 @@ package integration
 
 import (
 	"bytes"
+	"carefront/api"
+	"carefront/apiservice"
+	"carefront/common/config"
+	"carefront/homelog"
+	"carefront/libs/dispatch"
+	"carefront/services/auth"
+	thriftapi "carefront/thrift/api"
 	"database/sql"
 	"errors"
 	"fmt"
@@ -14,12 +21,6 @@ import (
 	"strings"
 	"testing"
 	"time"
-
-	"carefront/api"
-	"carefront/apiservice"
-	"carefront/common/config"
-	"carefront/services/auth"
-	thriftapi "carefront/thrift/api"
 
 	"github.com/BurntSushi/toml"
 	_ "github.com/go-sql-driver/mysql"
@@ -65,6 +66,7 @@ func (nullHasher) CompareHashAndPassword(hashedPassword, password []byte) error 
 
 func init() {
 	apiservice.Testing = true
+	dispatch.Testing = true
 }
 
 func authGet(url string, accountId int64) (*http.Response, error) {
@@ -228,6 +230,9 @@ func SetupIntegrationTest(t *testing.T) TestData {
 	if err != nil {
 		t.Fatal("Unable to make the signed up doctor the primary doctor elligible in CA to diagnose patients: " + err.Error())
 	}
+
+	dispatch.Default = dispatch.New()
+	homelog.InitListeners(testData.DataApi)
 
 	return testData
 }

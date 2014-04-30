@@ -212,16 +212,16 @@ func TestDoctorDiagnosisOfPatientVisit(t *testing.T) {
 				switch doctorResponse.QuestionId.Int64() {
 				case diagnosisQuestionId:
 					if doctorResponse.PotentialAnswerId.Int64() != 102 {
-						t.Fatalf("Doctor response to question id %d expectd to have id %d but has id %d", doctorResponse.QuestionId, 102, doctorResponse.PotentialAnswerId)
+						t.Fatalf("Doctor response to question id %d expectd to have id %d but has id %d", doctorResponse.QuestionId.Int64(), 102, doctorResponse.PotentialAnswerId.Int64())
 					}
 				case severityQuestionId:
 					if doctorResponse.PotentialAnswerId.Int64() != 107 {
-						t.Fatalf("Doctor response to question id %d expectd to have id %d but has id %d", doctorResponse.QuestionId, 107, doctorResponse.PotentialAnswerId)
+						t.Fatalf("Doctor response to question id %d expectd to have id %d but has id %d", doctorResponse.QuestionId.Int64(), 107, doctorResponse.PotentialAnswerId.Int64())
 					}
 
 				case acneTypeQuestionId:
 					if doctorResponse.PotentialAnswerId.Int64() != 109 && doctorResponse.PotentialAnswerId.Int64() != 114 && doctorResponse.PotentialAnswerId.Int64() != 113 {
-						t.Fatalf("Doctor response to question id %d expectd to have any of ids %s but instead has id %d", doctorResponse.QuestionId, "(109,114,113)", doctorResponse.PotentialAnswerId)
+						t.Fatalf("Doctor response to question id %d expectd to have any of ids %s but instead has id %d", doctorResponse.QuestionId.Int64(), "(109,114,113)", doctorResponse.PotentialAnswerId.Int64())
 					}
 
 				}

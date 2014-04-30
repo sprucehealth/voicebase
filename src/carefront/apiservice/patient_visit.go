@@ -4,30 +4,25 @@ import (
 	"carefront/api"
 	"carefront/common"
 	"carefront/info_intake"
+	"carefront/libs/dispatch"
 	thriftapi "carefront/thrift/api"
 	"errors"
 	"fmt"
-	"log"
 	"net/http"
 	"strings"
 
 	"github.com/gorilla/schema"
-	"github.com/subosito/twilio"
 )
 
 const (
 	HEALTH_CONDITION_ACNE_ID = 1
 )
 
-const doctorNewVisitNotification = "SPRUCE: You have a new patient visit waiting."
-
 type PatientVisitHandler struct {
 	DataApi                    api.DataAPI
 	AuthApi                    thriftapi.Auth
 	LayoutStorageService       api.CloudStorageAPI
 	PatientPhotoStorageService api.CloudStorageAPI
-	twilioCli                  *twilio.Client
-	twilioFromNumber           string
 }
 
 type PatientVisitRequestData struct {
@@ -46,8 +41,13 @@ type PatientVisitSubmittedResponse struct {
 	Status         string `json:"status,omitempty"`
 }
 
-func NewPatientVisitHandler(dataApi api.DataAPI, authApi thriftapi.Auth, layoutStorageService api.CloudStorageAPI, patientPhotoStorageService api.CloudStorageAPI, twilioCli *twilio.Client, twilioFromNumber string) *PatientVisitHandler {
-	return &PatientVisitHandler{dataApi, authApi, layoutStorageService, patientPhotoStorageService, twilioCli, twilioFromNumber}
+func NewPatientVisitHandler(dataApi api.DataAPI, authApi thriftapi.Auth, layoutStorageService api.CloudStorageAPI, patientPhotoStorageService api.CloudStorageAPI) *PatientVisitHandler {
+	return &PatientVisitHandler{
+		DataApi:                    dataApi,
+		AuthApi:                    authApi,
+		LayoutStorageService:       layoutStorageService,
+		PatientPhotoStorageService: patientPhotoStorageService,
+	}
 }
 
 func (s *PatientVisitHandler) ServeHTTP(w http.ResponseWriter, r *http.Request) {
@@ -139,18 +139,11 @@ func (s *PatientVisitHandler) submitPatientVisit(w http.ResponseWriter, r *http.
 		return
 	}
 
-	if s.twilioCli != nil {
-		if doc, err := s.DataApi.GetDoctorFromId(doctorId); err != nil {
-			log.Printf("Failed to get doctor for ID %d: %s", doctorId, err.Error())
-		} else {
-			if doc.CellPhone != "" {
-				_, _, err = s.twilioCli.Messages.SendSMS(s.twilioFromNumber, doc.CellPhone, doctorNewVisitNotification)
-				if err != nil {
-					log.Println("Error sending SMS: " + err.Error())
-				}
-			}
-		}
-	}
+	dispatch.Default.PublishAsync(&VisitSubmittedEvent{
+		PatientId: patientId,
+		DoctorId:  doctorId,
+		VisitId:   patientVisit.PatientVisitId.Int64(),
+	})
 
 	WriteJSONToHTTPResponseWriter(w, http.StatusOK, PatientVisitSubmittedResponse{PatientVisitId: patientVisit.PatientVisitId.Int64(), Status: patientVisit.Status})
 }
@@ -283,6 +276,11 @@ func (s *PatientVisitHandler) createNewPatientVisitHandler(w http.ResponseWriter
 		return
 	}
 	s.fillInFormattedFieldsForQuestions(healthCondition, doctor)
+
+	dispatch.Default.PublishAsync(&VisitStartedEvent{
+		PatientId: patient.PatientId.Int64(),
+		VisitId:   patientVisitId,
+	})
 	WriteJSONToHTTPResponseWriter(w, http.StatusOK, PatientVisitResponse{PatientVisitId: patientVisitId, ClientLayout: healthCondition})
 }
 

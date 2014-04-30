@@ -4,7 +4,9 @@ A MySQL-Driver for Go's [database/sql](http://golang.org/pkg/database/sql) packa
 
 ![Go-MySQL-Driver logo](https://raw.github.com/wiki/go-sql-driver/mysql/gomysql_m.png "Golang Gopher holding the MySQL Dolphin")
 
-**Version 1.1** (November 02, 2013)
+**Current tagged Release:** Version 1.1 (November 02, 2013)
+
+[![Build Status](https://travis-ci.org/go-sql-driver/mysql.png?branch=master)](https://travis-ci.org/go-sql-driver/mysql) *(master branch)*
 
 ---------------------------------------
   * [Features](#features)
@@ -49,6 +51,8 @@ Simple install the package to your [$GOPATH](http://code.google.com/p/go-wiki/wi
 $ go get github.com/go-sql-driver/mysql
 ```
 Make sure [Git is installed](http://git-scm.com/downloads) on your machine and in your system's `PATH`.
+
+*`go get` installs the latest tagged release*
 
 ## Usage
 _Go MySQL Driver_ is an implementation of Go's `database/sql/driver` interface. You only need to import the driver and can use the full [`database/sql`](http://golang.org/pkg/database/sql) API then.
@@ -111,7 +115,7 @@ For Unix domain sockets the address is the absolute path to the MySQL-Server-soc
 
 ```
 Type:           bool
-Valid Values:   true, false 
+Valid Values:   true, false
 Default:        false
 ```
 
@@ -122,7 +126,7 @@ Default:        false
 
 ```
 Type:           bool
-Valid Values:   true, false 
+Valid Values:   true, false
 Default:        false
 ```
 `allowAllFiles=true` allows the usage of the insecure old password method. This should be avoided, but is necessary in some cases. See also [the old_passwords wiki page](https://github.com/go-sql-driver/mysql/wiki/old_passwords).
@@ -142,7 +146,7 @@ Sets the charset used for client-server interaction (`"SET NAMES <value>"`). If 
 
 ```
 Type:           bool
-Valid Values:   true, false 
+Valid Values:   true, false
 Default:        false
 ```
 
@@ -166,7 +170,7 @@ Please keep in mind, that param values must be [url.QueryEscape](http://golang.o
 
 ```
 Type:           bool
-Valid Values:   true, false 
+Valid Values:   true, false
 Default:        false
 ```
 
@@ -177,7 +181,7 @@ Default:        false
 
 ```
 Type:           bool
-Valid Values:   true, false 
+Valid Values:   true, false
 Default:        false
 ```
 
@@ -198,7 +202,7 @@ Default:        OS default
 
 ```
 Type:           bool / string
-Valid Values:   true, false, skip-verify, <name> 
+Valid Values:   true, false, skip-verify, <name>
 Default:        false
 ```
 
@@ -236,6 +240,11 @@ user:password@tcp([de:ad:be:ef::ca:fe]:80)/dbname?timeout=90s
 TCP on a remote host, e.g. Amazon RDS:
 ```
 id:password@tcp(your-amazonaws-uri.com:3306)/dbname
+```
+
+Google Cloud SQL on App Engine:
+```
+user@cloudsql(project-id:instance-name)/dbname
 ```
 
 TCP using default port (3306) on localhost:
@@ -288,7 +297,7 @@ To run the driver tests you may need to adjust the configuration. See the [Testi
 Go-MySQL-Driver is not feature-complete yet. Your help is very appreciated.
 If you want to contribute, you can work on an [open issue](https://github.com/go-sql-driver/mysql/issues?state=open) or review a [pull request](https://github.com/go-sql-driver/mysql/pulls).
 
-See the [Contributing Guidelines](https://github.com/go-sql-driver/mysql/blob/master/CHANGELOG.md) for details.
+See the [Contribution Guidelines](https://github.com/go-sql-driver/mysql/blob/master/CONTRIBUTING.md) for details.
 
 ---------------------------------------
 

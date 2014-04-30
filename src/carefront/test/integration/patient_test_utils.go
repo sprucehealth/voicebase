@@ -44,10 +44,10 @@ func SignupRandomTestPatient(t *testing.T, dataApi api.DataAPI, authApi thriftap
 	return signedupPatientResponse
 }
 
-func GetPatientVisitForPatient(PatientId int64, testData TestData, t *testing.T) *apiservice.PatientVisitResponse {
+func GetPatientVisitForPatient(patientId int64, testData TestData, t *testing.T) *apiservice.PatientVisitResponse {
 	patientVisitHandler := apiservice.NewPatientVisitHandler(testData.DataApi, testData.AuthApi,
-		testData.CloudStorageService, testData.CloudStorageService, nil, "")
-	patient, err := testData.DataApi.GetPatientFromId(PatientId)
+		testData.CloudStorageService, testData.CloudStorageService)
+	patient, err := testData.DataApi.GetPatientFromId(patientId)
 	if err != nil {
 		t.Fatal("Unable to get patient information given the patient id: " + err.Error())
 	}
@@ -77,10 +77,10 @@ func GetPatientVisitForPatient(PatientId int64, testData TestData, t *testing.T)
 	return patientVisitResponse
 }
 
-func CreatePatientVisitForPatient(PatientId int64, testData TestData, t *testing.T) *apiservice.PatientVisitResponse {
+func CreatePatientVisitForPatient(patientId int64, testData TestData, t *testing.T) *apiservice.PatientVisitResponse {
 	patientVisitHandler := apiservice.NewPatientVisitHandler(testData.DataApi, testData.AuthApi,
-		testData.CloudStorageService, testData.CloudStorageService, nil, "")
-	patient, err := testData.DataApi.GetPatientFromId(PatientId)
+		testData.CloudStorageService, testData.CloudStorageService)
+	patient, err := testData.DataApi.GetPatientFromId(patientId)
 	if err != nil {
 		t.Fatal("Unable to get patient information given the patient id: " + err.Error())
 	}
@@ -189,7 +189,7 @@ func submitAnswersIntakeForPatient(patientId, patientAccountId int64, answerInta
 
 func SubmitPatientVisitForPatient(PatientId, PatientVisitId int64, testData TestData, t *testing.T) {
 	patientVisitHandler := apiservice.NewPatientVisitHandler(testData.DataApi, testData.AuthApi,
-		testData.CloudStorageService, testData.CloudStorageService, nil, "")
+		testData.CloudStorageService, testData.CloudStorageService)
 	patient, err := testData.DataApi.GetPatientFromId(PatientId)
 	if err != nil {
 		t.Fatal("Unable to get patient information given the patient id: " + err.Error())

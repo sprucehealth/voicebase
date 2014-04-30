@@ -18,7 +18,6 @@ func init() {
 	DVisitReviewViewTypeRegistry.MustRegisterType(&DVisitReviewStandardPhotosListView{})
 	DVisitReviewViewTypeRegistry.MustRegisterType(&DVisitReviewStandardSectionView{})
 	DVisitReviewViewTypeRegistry.MustRegisterType(&DVisitReviewStandardSubsectionView{})
-	DVisitReviewViewTypeRegistry.MustRegisterType(&DVisitReviewStandardSubsectionView{})
 	DVisitReviewViewTypeRegistry.MustRegisterType(&DVisitReviewStandardOneColumnRowView{})
 	DVisitReviewViewTypeRegistry.MustRegisterType(&DVisitReviewStandardTwoColumnRowView{})
 	DVisitReviewViewTypeRegistry.MustRegisterType(&DVisitReviewDividedViewsList{})

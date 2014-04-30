@@ -4,6 +4,7 @@ import (
 	"carefront/api"
 	"carefront/common"
 	"carefront/encoding"
+	"carefront/libs/dispatch"
 	"carefront/libs/golog"
 	thriftapi "carefront/thrift/api"
 	"net/http"
@@ -118,20 +119,26 @@ func (s *SignupPatientHandler) ServeHTTP(w http.ResponseWriter, r *http.Request)
 	}
 
 	// create care team for patient
+	var careProviderGroup *common.PatientCareProviderGroup
 	if requestData.DoctorId != 0 {
-		_, err = s.DataApi.CreateCareTeamForPatientWithPrimaryDoctor(newPatient.PatientId.Int64(), requestData.DoctorId)
+		careProviderGroup, err = s.DataApi.CreateCareTeamForPatientWithPrimaryDoctor(newPatient.PatientId.Int64(), requestData.DoctorId)
 		if err != nil {
 			WriteDeveloperError(w, http.StatusInternalServerError, "Unable to create care team with specified doctor for patient: "+err.Error())
 			return
 		}
 	} else {
-		_, err = s.DataApi.CreateCareTeamForPatient(newPatient.PatientId.Int64())
+		careProviderGroup, err = s.DataApi.CreateCareTeamForPatient(newPatient.PatientId.Int64())
 		if err != nil {
 			golog.Errorf(err.Error())
 			WriteDeveloperError(w, http.StatusInternalServerError, "Unable to create care team for patient :"+err.Error())
 			return
 		}
 	}
+
+	dispatch.Default.PublishAsync(&CareTeamAssingmentEvent{
+		PatientId:   newPatient.PatientId.Int64(),
+		Assignments: careProviderGroup.Assignments,
+	})
 
 	WriteJSONToHTTPResponseWriter(w, http.StatusOK, PatientSignedupResponse{Token: res.Token, Patient: newPatient})
 }

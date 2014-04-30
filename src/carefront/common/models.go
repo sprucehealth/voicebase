@@ -25,7 +25,7 @@ type Patient struct {
 	ZipCode           string                 `json:"zip_code,omitempty"`
 	PhoneNumbers      []*PhoneInformation    `json:"phone_numbers,omitempty"`
 	Status            string                 `json:"-"`
-	AccountId         encoding.ObjectId      `json:"-"`
+	AccountId         encoding.ObjectId      `json:"account_id,omitempty"`
 	ERxPatientId      encoding.ObjectId      `json:"-"`
 	PaymentCustomerId string                 `json:"-"`
 	Pharmacy          *pharmacy.PharmacyData `json:"pharmacy,omitempty"`
@@ -273,4 +273,23 @@ type DrugDetails struct {
 	MessageDoctorIf    []string
 	SeriousSideEffects []string
 	CommonSideEffects  []string
+}
+
+type Notification struct {
+	Id              int64
+	UID             string // Unique ID scoped to the patient.
+	Timestamp       time.Time
+	Expires         *time.Time
+	Dismissible     bool
+	DismissOnAction bool
+	Priority        int
+	Data            Typed
+}
+
+type HealthLogItem struct {
+	Id        int64
+	PatientId int64
+	UID       string // Unique ID scoped to the patient.
+	Timestamp time.Time
+	Data      Typed
 }
