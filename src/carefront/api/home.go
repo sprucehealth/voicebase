@@ -37,6 +37,7 @@ func (d *DataService) GetNotificationsForPatient(patientId int64, typeMap map[st
 	} else if err != nil {
 		return nil, err
 	}
+	defer rows.Close()
 	var notes []*common.Notification
 	var toDelete []int64
 	now := time.Now()
@@ -109,6 +110,7 @@ func (d *DataService) GetHealthLogForPatient(patientId int64, typeMap map[string
 	} else if err != nil {
 		return nil, err
 	}
+	defer rows.Close()
 	var items []*common.HealthLogItem
 	for rows.Next() {
 		item := &common.HealthLogItem{}
