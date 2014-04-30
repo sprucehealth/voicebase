@@ -26,12 +26,6 @@ func (c ViewContext) Delete(key string) {
 	delete(c, key)
 }
 
-// Any structure that implements the Typed interface
-// requires a string that defines the type of the structure
-type Typed interface {
-	TypeName() string
-}
-
 type View interface {
 	Typed
 	Render(context ViewContext) (map[string]interface{}, error)

@@ -46,7 +46,7 @@ func (h *ListHandler) ServeHTTP(w http.ResponseWriter, r *http.Request) {
 		return
 	}
 
-	notes, err := h.dataAPI.GetNotificationsForPatient(patientId, notifyTypes)
+	notes, _, err := h.dataAPI.GetNotificationsForPatient(patientId, notifyTypes)
 	if err != nil {
 		apiservice.WriteDeveloperError(w, http.StatusInternalServerError, "home/list: failed to get patient notifications: "+err.Error())
 		return
@@ -61,7 +61,7 @@ func (h *ListHandler) ServeHTTP(w http.ResponseWriter, r *http.Request) {
 		noteViews = append(noteViews, view)
 	}
 
-	log, err := h.dataAPI.GetHealthLogForPatient(patientId, logItemTypes)
+	log, _, err := h.dataAPI.GetHealthLogForPatient(patientId, logItemTypes)
 	if err != nil {
 		apiservice.WriteDeveloperError(w, http.StatusInternalServerError, "home/list: failed to get health log: "+err.Error())
 		return

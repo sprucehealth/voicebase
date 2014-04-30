@@ -275,10 +275,6 @@ type DrugDetails struct {
 	CommonSideEffects  []string
 }
 
-type TypedData interface {
-	TypeName() string
-}
-
 type Notification struct {
 	Id              int64
 	UID             string // Unique ID scoped to the patient.
@@ -287,7 +283,7 @@ type Notification struct {
 	Dismissible     bool
 	DismissOnAction bool
 	Priority        int
-	Data            TypedData
+	Data            Typed
 }
 
 type HealthLogItem struct {
@@ -295,5 +291,5 @@ type HealthLogItem struct {
 	PatientId int64
 	UID       string // Unique ID scoped to the patient.
 	Timestamp time.Time
-	Data      TypedData
+	Data      Typed
 }

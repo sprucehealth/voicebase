@@ -48,7 +48,7 @@ func TestPatientNotificationsAPI(t *testing.T) {
 		t.Fatalf("Failed to insert notification: %s", err.Error())
 	}
 
-	notes, err := testData.DataApi.GetNotificationsForPatient(patientId, notificationTypes)
+	notes, _, err := testData.DataApi.GetNotificationsForPatient(patientId, notificationTypes)
 	if err != nil {
 		t.Fatal(err)
 	} else if len(notes) != 1 {
@@ -69,7 +69,7 @@ func TestPatientNotificationsAPI(t *testing.T) {
 	if err := testData.DataApi.DeletePatientNotifications([]int64{id}); err != nil {
 		t.Fatalf("Failed to delete notification: %s", err.Error())
 	}
-	if notes, err := testData.DataApi.GetNotificationsForPatient(patientId, notificationTypes); err != nil {
+	if notes, _, err := testData.DataApi.GetNotificationsForPatient(patientId, notificationTypes); err != nil {
 		t.Fatal(err)
 	} else if len(notes) != 0 {
 		t.Fatalf("Expected 0 notification. Got %d", len(notes))
@@ -82,7 +82,7 @@ func TestPatientNotificationsAPI(t *testing.T) {
 	if err := testData.DataApi.DeletePatientNotificationByUID(patientId, note.UID); err != nil {
 		t.Fatalf("Failed to delete notification: %s", err.Error())
 	}
-	if notes, err := testData.DataApi.GetNotificationsForPatient(patientId, notificationTypes); err != nil {
+	if notes, _, err := testData.DataApi.GetNotificationsForPatient(patientId, notificationTypes); err != nil {
 		t.Fatal(err)
 	} else if len(notes) != 0 {
 		t.Fatalf("Expected 0 notification. Got %d", len(notes))
@@ -112,7 +112,7 @@ func TestHealthLogAPI(t *testing.T) {
 		t.Fatalf("Failed to insert item: %s", err.Error())
 	}
 
-	if items, err := testData.DataApi.GetHealthLogForPatient(patientId, notificationTypes); err != nil {
+	if items, _, err := testData.DataApi.GetHealthLogForPatient(patientId, notificationTypes); err != nil {
 		t.Fatal(err)
 	} else if len(items) != 1 {
 		t.Fatalf("Expected 1 item. Got %d", len(items))
@@ -129,7 +129,7 @@ func TestHealthLogAPI(t *testing.T) {
 	if err != nil {
 		t.Fatalf("Failed to update log item: %s", err.Error())
 	}
-	if items, err := testData.DataApi.GetHealthLogForPatient(patientId, notificationTypes); err != nil {
+	if items, _, err := testData.DataApi.GetHealthLogForPatient(patientId, notificationTypes); err != nil {
 		t.Fatal(err)
 	} else if len(items) != 1 {
 		t.Fatalf("Expected 1 item. Got %d", len(items))
@@ -154,7 +154,7 @@ func TestHealthLog(t *testing.T) {
 	visit := CreatePatientVisitForPatient(patientId, testData, t)
 	SubmitPatientVisitForPatient(patientId, visit.PatientVisitId, testData, t)
 
-	if items, err := testData.DataApi.GetHealthLogForPatient(patientId, notificationTypes); err != nil {
+	if items, _, err := testData.DataApi.GetHealthLogForPatient(patientId, notificationTypes); err != nil {
 		t.Fatal(err)
 	} else if len(items) != 1 {
 		t.Fatalf("Expected 1 item. Got %d", len(items))
