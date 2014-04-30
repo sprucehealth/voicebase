@@ -9,15 +9,6 @@ import (
 	"time"
 )
 
-type TypedData struct {
-	Data []byte
-	Type string
-}
-
-func (t *TypedData) TypeName() string {
-	return t.Type
-}
-
 func (d *DataService) DeletePatientNotifications(ids []int64) error {
 	switch len(ids) {
 	case 0:
@@ -73,14 +64,14 @@ func (d *DataService) GetNotificationsForPatient(patientId int64, typeMap map[st
 		t := typeMap[dataType]
 		if t == nil {
 			golog.Errorf("Unknown notification type %s for %d", dataType, note.Id)
-			note.Data = &TypedData{Data: data, Type: dataType}
+			note.Data = &common.TypedData{Data: data, Type: dataType}
 			badNotes = append(badNotes, note)
 			continue
 		}
 		note.Data = reflect.New(t).Interface().(common.Typed)
 		if err := json.Unmarshal(data, &note.Data); err != nil {
 			golog.Errorf("Failed to unmarshal home notification %d: %s", note.Id, err.Error())
-			note.Data = &TypedData{Data: data, Type: dataType}
+			note.Data = &common.TypedData{Data: data, Type: dataType}
 			badNotes = append(badNotes, note)
 			continue
 		}
@@ -141,14 +132,14 @@ func (d *DataService) GetHealthLogForPatient(patientId int64, typeMap map[string
 		t := typeMap[dataType]
 		if t == nil {
 			golog.Errorf("Unknown health log item type %s for %d", dataType, item.Id)
-			item.Data = &TypedData{Data: data, Type: dataType}
+			item.Data = &common.TypedData{Data: data, Type: dataType}
 			badItems = append(badItems, item)
 			continue
 		}
 		item.Data = reflect.New(t).Interface().(common.Typed)
 		if err := json.Unmarshal(data, &item.Data); err != nil {
 			golog.Errorf("Failed to unmarshal health log item %d: %s", item.Id, err.Error())
-			item.Data = &TypedData{Data: data, Type: dataType}
+			item.Data = &common.TypedData{Data: data, Type: dataType}
 			badItems = append(badItems, item)
 			continue
 		}
