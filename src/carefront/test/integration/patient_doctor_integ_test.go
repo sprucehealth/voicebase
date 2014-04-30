@@ -147,7 +147,6 @@ func TestPatientVisitReview(t *testing.T) {
 
 	// get doctor to start reviewing it
 	doctorPatientVisitReviewResponse := StartReviewingPatientVisit(patientVisitResponse.PatientVisitId, doctor, testData, t)
-	t.Logf("Treatment Plan Id is %d", doctorPatientVisitReviewResponse.TreatmentPlanId)
 
 	//
 	//

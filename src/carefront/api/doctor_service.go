@@ -723,19 +723,6 @@ func (d *DataService) AddTreatmentTemplates(doctorTreatmentTemplates []*common.D
 			treatmentType = treatmentOTC
 		}
 
-		// get an id for a grouping into which to insert the drug_db_ids
-		rowInsertId, err := tx.Exec(`insert into drug_db_ids_group () values ()`)
-		if err != nil {
-			tx.Rollback()
-			return err
-		}
-
-		drugDbIdsGroupId, err := rowInsertId.LastInsertId()
-		if err != nil {
-			tx.Rollback()
-			return err
-		}
-
 		columnsAndData := map[string]interface{}{
 			"drug_internal_name":    doctorTreatmentTemplate.Treatment.DrugInternalName,
 			"dosage_strength":       doctorTreatmentTemplate.Treatment.DosageStrength,
@@ -747,7 +734,6 @@ func (d *DataService) AddTreatmentTemplates(doctorTreatmentTemplates []*common.D
 			"patient_instructions":  doctorTreatmentTemplate.Treatment.PatientInstructions,
 			"pharmacy_notes":        doctorTreatmentTemplate.Treatment.PharmacyNotes,
 			"status":                STATUS_ACTIVE,
-			"drug_db_ids_group_id":  drugDbIdsGroupId,
 			"doctor_id":             doctorId,
 			"name":                  doctorTreatmentTemplate.Name,
 		}
@@ -784,6 +770,19 @@ func (d *DataService) AddTreatmentTemplates(doctorTreatmentTemplates []*common.D
 		// update the treatment object with the information
 		doctorTreatmentTemplate.Id = encoding.NewObjectId(drTreatmentTemplateId)
 
+		// get an id for a grouping into which to insert the drug_db_ids
+		rowInsertId, err := tx.Exec(`insert into drug_db_ids_group () values ()`)
+		if err != nil {
+			tx.Rollback()
+			return err
+		}
+
+		drugDbIdsGroupId, err := rowInsertId.LastInsertId()
+		if err != nil {
+			tx.Rollback()
+			return err
+		}
+
 		// add drug db ids to the table
 		for drugDbTag, drugDbId := range doctorTreatmentTemplate.Treatment.DrugDBIds {
 			_, err := tx.Exec(`insert into drug_db_id (drug_db_id_tag, drug_db_id, drug_db_ids_group_id) values (?, ?, ?)`, drugDbTag, drugDbId, drugDbIdsGroupId)
@@ -791,6 +790,13 @@ func (d *DataService) AddTreatmentTemplates(doctorTreatmentTemplates []*common.D
 				tx.Rollback()
 				return err
 			}
+		}
+
+		// create the mapping between the drug db ids and the treatment template id
+		_, err = tx.Exec(`insert into dr_treatment_template_drug_db_ids_group_mapping (drug_db_ids_group_id, dr_treatment_template_id) values (?,?)`, drugDbIdsGroupId, drTreatmentTemplateId)
+		if err != nil {
+			tx.Rollback()
+			return err
 		}
 
 		// mark the fact that the treatment was added as a favorite from a patient's treatment
@@ -869,6 +875,7 @@ func (d *DataService) GetTreatmentTemplates(doctorId int64) ([]*common.DoctorTre
 			 		from dr_treatment_template 
 						inner join dispense_unit on dr_treatment_template.dispense_unit_id = dispense_unit.id
 						inner join localized_text on localized_text.app_text_id = dispense_unit.dispense_unit_text_id
+						inner join dr_treatment_template_drug_db_ids_group_mapping on dr_treatment_template_drug_db_ids_group_mapping.dr_treatment_template_id = dr_treatment_template.id
 						left outer join drug_name on drug_name_id = drug_name.id
 						left outer join drug_route on drug_route_id = drug_route.id
 						left outer join drug_form on drug_form_id = drug_form.id
@@ -939,11 +946,12 @@ func (d *DataService) GetCompletedPrescriptionsForDoctor(from, to time.Time, doc
 	rows, err := d.DB.Query(`select treatment.id, treatment.treatment_plan_id, patient_visit.patient_id, treatment_plan.patient_visit_id, treatment_plan.creation_date, treatment.drug_internal_name, treatment.dosage_strength, treatment.type,
 			treatment.dispense_value, treatment.dispense_unit_id, ltext, treatment.refills, treatment.substitutions_allowed, 
 			treatment.days_supply, treatment.pharmacy_notes, treatment.patient_instructions, treatment.creation_date, 
-			treatment.status, treatment.drug_db_ids_group_id, drug_name.name, drug_route.name, drug_form.name, erx_status_events.erx_status, erx_status_events.event_details, treatment_plan.sent_date from treatment 
+			treatment.status, drug_db_ids_group_id, drug_name.name, drug_route.name, drug_form.name, erx_status_events.erx_status, erx_status_events.event_details, treatment_plan.sent_date from treatment 
 				inner join dispense_unit on treatment.dispense_unit_id = dispense_unit.id
 				inner join localized_text on localized_text.app_text_id = dispense_unit.dispense_unit_text_id
 				inner join treatment_plan on treatment_plan.id = treatment.treatment_plan_id
 				inner join patient_visit on patient_visit.id = treatment_plan.patient_visit_id
+				inner join treatment_drug_db_ids_group_mapping on treatment_drug_db_ids_group_mapping.treatment_id = treatment.id				
 				left outer join erx_status_events on erx_status_events.treatment_id = treatment.id
 				left outer join drug_name on drug_name_id = drug_name.id
 				left outer join drug_route on drug_route_id = drug_route.id
@@ -1285,6 +1293,7 @@ func (d *DataService) GetFavoriteTreatmentPlan(favoriteTreatmentPlanId int64) (*
 			 		from dr_favorite_treatment 
 						inner join dispense_unit on dr_favorite_treatment.dispense_unit_id = dispense_unit.id
 						inner join localized_text on localized_text.app_text_id = dispense_unit.dispense_unit_text_id
+						inner join dr_favorite_treatment_drug_db_ids_group_mapping on dr_favorite_treatment_drug_db_ids_group_mapping.dr_favorite_treatment_id = dr_favorite_treatment.id
 						left outer join drug_name on drug_name_id = drug_name.id
 						left outer join drug_route on drug_route_id = drug_route.id
 						left outer join drug_form on drug_form_id = drug_form.id

@@ -586,12 +586,13 @@ func (d *DataService) GetTreatmentsBasedOnTreatmentPlanId(patientVisitId, treatm
 	rows, err := d.DB.Query(`select treatment.id,treatment.erx_id, treatment.treatment_plan_id, treatment.drug_internal_name, treatment.dosage_strength, treatment.type,
 			treatment.dispense_value, treatment.dispense_unit_id, ltext, treatment.refills, treatment.substitutions_allowed, 
 			treatment.days_supply, treatment.pharmacy_id, treatment.pharmacy_notes, treatment.patient_instructions, treatment.creation_date, treatment.erx_sent_date, 
-			treatment.status, treatment.drug_db_ids_group_id, drug_name.name, drug_route.name, drug_form.name,
+			treatment.status, drug_db_ids_group_id, drug_name.name, drug_route.name, drug_form.name,
 			patient_visit.patient_id, treatment_plan.patient_visit_id, treatment_plan.doctor_id from treatment 
 				inner join treatment_plan on treatment.treatment_plan_id = treatment_plan.id
 				inner join patient_visit on treatment_plan.patient_visit_id = patient_visit.id
 				inner join dispense_unit on treatment.dispense_unit_id = dispense_unit.id
 				inner join localized_text on localized_text.app_text_id = dispense_unit.dispense_unit_text_id
+				inner join treatment_drug_db_ids_group_mapping on treatment_drug_db_ids_group_mapping.treatment_id = treatment.id
 				left outer join drug_name on drug_name_id = drug_name.id
 				left outer join drug_route on drug_route_id = drug_route.id
 				left outer join drug_form on drug_form_id = drug_form.id
@@ -654,12 +655,13 @@ func (d *DataService) GetTreatmentsForPatient(patientId int64) ([]*common.Treatm
 	rows, err := d.DB.Query(`select treatment.id,treatment.erx_id, treatment.treatment_plan_id, treatment.drug_internal_name, treatment.dosage_strength, treatment.type,
 			treatment.dispense_value, treatment.dispense_unit_id, ltext, treatment.refills, treatment.substitutions_allowed, 
 			treatment.days_supply, treatment.pharmacy_id, treatment.pharmacy_notes, treatment.patient_instructions, treatment.creation_date, treatment.erx_sent_date,
-			treatment.status, treatment.drug_db_ids_group_id, drug_name.name, drug_route.name, drug_form.name,
+			treatment.status, drug_db_ids_group_id, drug_name.name, drug_route.name, drug_form.name,
 			patient_visit.patient_id, treatment_plan.patient_visit_id, treatment_plan.doctor_id from treatment 
 				inner join treatment_plan on treatment.treatment_plan_id = treatment_plan.id
 				inner join patient_visit on treatment_plan.patient_visit_id = patient_visit.id
 				inner join dispense_unit on treatment.dispense_unit_id = dispense_unit.id
 				inner join localized_text on localized_text.app_text_id = dispense_unit.dispense_unit_text_id
+				inner join treatment_drug_db_ids_group_mapping on treatment_drug_db_ids_group_mapping.treatment_id = treatment.id
 				left outer join drug_name on drug_name_id = drug_name.id
 				left outer join drug_route on drug_route_id = drug_route.id
 				left outer join drug_form on drug_form_id = drug_form.id
@@ -688,12 +690,13 @@ func (d *DataService) GetTreatmentBasedOnPrescriptionId(erxId int64) (*common.Tr
 	rows, err := d.DB.Query(`select treatment.id,treatment.erx_id, treatment.treatment_plan_id, treatment.drug_internal_name, treatment.dosage_strength, treatment.type,
 			treatment.dispense_value, treatment.dispense_unit_id, ltext, treatment.refills, treatment.substitutions_allowed, 
 			treatment.days_supply, treatment.pharmacy_id, treatment.pharmacy_notes, treatment.patient_instructions, treatment.creation_date, treatment.erx_sent_date,
-			treatment.status, treatment.drug_db_ids_group_id, drug_name.name, drug_route.name, drug_form.name,
+			treatment.status, drug_db_ids_group_id, drug_name.name, drug_route.name, drug_form.name,
 			patient_visit.patient_id, treatment_plan.patient_visit_id, treatment_plan.doctor_id from treatment
 				inner join treatment_plan on treatment.treatment_plan_id = treatment_plan.id
 				inner join patient_visit on treatment_plan.patient_visit_id = patient_visit.id
 				inner join dispense_unit on treatment.dispense_unit_id = dispense_unit.id
 				inner join localized_text on localized_text.app_text_id = dispense_unit.dispense_unit_text_id
+				inner join treatment_drug_db_ids_group_mapping on treatment_drug_db_ids_group_mapping.treatment_id = treatment.id				
 				left outer join drug_name on drug_name_id = drug_name.id
 				left outer join drug_route on drug_route_id = drug_route.id
 				left outer join drug_form on drug_form_id = drug_form.id
@@ -732,12 +735,13 @@ func (d *DataService) GetTreatmentFromId(treatmentId int64) (*common.Treatment, 
 	rows, err := d.DB.Query(`select treatment.id,treatment.erx_id, treatment.treatment_plan_id, treatment.drug_internal_name, treatment.dosage_strength, treatment.type,
 			treatment.dispense_value, treatment.dispense_unit_id, ltext, treatment.refills, treatment.substitutions_allowed, 
 			treatment.days_supply, treatment.pharmacy_id, treatment.pharmacy_notes, treatment.patient_instructions, treatment.creation_date, treatment.erx_sent_date,
-			treatment.status, treatment.drug_db_ids_group_id, drug_name.name, drug_route.name, drug_form.name,
+			treatment.status, drug_db_ids_group_id, drug_name.name, drug_route.name, drug_form.name,
 			patient_visit.patient_id, treatment_plan.patient_visit_id, treatment_plan.doctor_id from treatment
 				inner join treatment_plan on treatment.treatment_plan_id = treatment_plan.id
 				inner join patient_visit on treatment_plan.patient_visit_id = patient_visit.id
 				inner join dispense_unit on treatment.dispense_unit_id = dispense_unit.id
 				inner join localized_text on localized_text.app_text_id = dispense_unit.dispense_unit_text_id
+				inner join treatment_drug_db_ids_group_mapping on treatment_drug_db_ids_group_mapping.treatment_id = treatment.id								
 				left outer join drug_name on drug_name_id = drug_name.id
 				left outer join drug_route on drug_route_id = drug_route.id
 				left outer join drug_form on drug_form_id = drug_form.id

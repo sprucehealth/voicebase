@@ -358,11 +358,12 @@ func (d *DataService) getTreatmentForRefillRequest(tableName string, treatmentId
 							dispense_unit, refills, substitutions_allowed, 
 							pharmacy_id, days_supply, pharmacy_notes, 
 							patient_instructions, erx_sent_date,
-							erx_last_filled_date,  status, drug_db_ids_group_id, drug_name.name, drug_route.name, drug_form.name, doctor_id from %s 
+							erx_last_filled_date,  status, drug_db_ids_group_id, drug_name.name, drug_route.name, drug_form.name, doctor_id from %s
+								inner join %s_drug_db_ids_group_mapping on %s_drug_db_ids_group_mapping.%s_id = %s.id 
 								left outer join drug_name on drug_name_id = drug_name.id
 								left outer join drug_route on drug_route_id = drug_route.id
 								left outer join drug_form on drug_form_id = drug_form.id
-									where %s.id = ?`, tableName, tableName), treatmentId).Scan(&erxId, &treatment.DrugInternalName,
+									where %s.id = ?`, tableName, tableName, tableName, tableName, tableName, tableName), treatmentId).Scan(&erxId, &treatment.DrugInternalName,
 		&treatment.DosageStrength, &treatmentType, &treatment.DispenseValue,
 		&treatment.DispenseUnitDescription, &refills,
 		&treatment.SubstitutionsAllowed, &pharmacyLocalId,

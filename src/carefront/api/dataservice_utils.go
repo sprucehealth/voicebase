@@ -155,17 +155,6 @@ func (d *DataService) addTreatment(tType treatmentType, treatment *common.Treatm
 		medicationType = treatmentOTC
 	}
 
-	// get an id for a grouping into which to insert the drug_db_ids
-	rowInsertId, err := tx.Exec(`insert into drug_db_ids_group () values ()`)
-	if err != nil {
-		return err
-	}
-
-	drugDbIdsGroupId, err := rowInsertId.LastInsertId()
-	if err != nil {
-		return err
-	}
-
 	columnsAndData := map[string]interface{}{
 		"drug_internal_name":    treatment.DrugInternalName,
 		"dosage_strength":       treatment.DosageStrength,
@@ -176,7 +165,6 @@ func (d *DataService) addTreatment(tType treatmentType, treatment *common.Treatm
 		"patient_instructions":  treatment.PatientInstructions,
 		"pharmacy_notes":        treatment.PharmacyNotes,
 		"status":                treatment.Status,
-		"drug_db_ids_group_id":  drugDbIdsGroupId,
 	}
 
 	if treatment.DaysSupply.IsValid {
@@ -258,12 +246,28 @@ func (d *DataService) addTreatment(tType treatmentType, treatment *common.Treatm
 	// update the treatment object with the information
 	treatment.Id = encoding.NewObjectId(treatmentId)
 
+	rowInsertId, err := tx.Exec(`insert into drug_db_ids_group () values ()`)
+	if err != nil {
+		return err
+	}
+
+	drugDbIdsGroupId, err := rowInsertId.LastInsertId()
+	if err != nil {
+		return err
+	}
+
 	// add drug db ids to the table
 	for drugDbTag, drugDbId := range treatment.DrugDBIds {
 		_, err := tx.Exec(`insert into drug_db_id (drug_db_id_tag, drug_db_id, drug_db_ids_group_id) values (?, ?, ?)`, drugDbTag, drugDbId, drugDbIdsGroupId)
 		if err != nil {
 			return err
 		}
+	}
+
+	// create the mapping for drug_db_ids with the treatment id
+	_, err = tx.Exec(fmt.Sprintf(`insert into %s_drug_db_ids_group_mapping (drug_db_ids_group_id, %s_id) values (?,?)`, possibleTreatmentTables[tType], possibleTreatmentTables[tType]), drugDbIdsGroupId, treatmentId)
+	if err != nil {
+		return err
 	}
 
 	return nil
