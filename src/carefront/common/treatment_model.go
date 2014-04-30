@@ -13,7 +13,6 @@ type Treatment struct {
 	StatusDetails             string                        `json:"erx_status_details,omitempty"`
 	TreatmentPlanId           encoding.ObjectId             `json:"treatment_plan_id,omitempty"`
 	PatientVisitId            encoding.ObjectId             `json:"patient_visit_id,omitempty"`
-	DrugDBIdsGroupId          int64                         `json:"-"`
 	DrugDBIds                 map[string]string             `json:"drug_db_ids,omitempty"`
 	DrugInternalName          string                        `json:"drug_internal_name,omitempty"`
 	DrugName                  string                        `json:"drug_name"`
