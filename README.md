@@ -7,18 +7,17 @@ Running integration tests locally
 
 Prerequisites:
 
-	# Need the mysql client
-	brew install mysql
+	$ brew install mysql
+	$ mysql.server start
 
 Setup the environment:
 
-	export CAREFRONT_PROJECT_DIR=$GOPATH
-	export RDS_INSTANCE=dev-db-3.ccvrwjdx3gvp.us-east-1.rds.amazonaws.com
-	export RDS_USERNAME=carefront
-	export RDS_PASSWORD=<password>
-	export AWS_ACCESS_KEY=<for dev account>
-	export AWS_SECRET_KEY=<for dev account>
+	$ export CAREFRONT_PROJECT_DIR=$GOPATH
+	$ export RDS_INSTANCE=localhost
+	$ export RDS_USERNAME=$USER
+	$ export AWS_ACCESS_KEY=<for dev account>
+	$ export AWS_SECRET_KEY=<for dev account>
 
 Run tests:
 
-	go test -v carefront/test/integration
+	$ go test -v carefront/test/integration
