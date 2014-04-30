@@ -1,6 +1,6 @@
 Backend Monorepo
 ================
-[![Build Status](https://magnum.travis-ci.com/CareFront/backend.png?token=r5Esrm81raFJUqszt9iT&branch=master)](https://magnum.travis-ci.com/CareFront/backend)
+[![Build Status](https://magnum.travis-ci.com/SpruceHealth/backend.svg?token=NtmZSFxujHkPCqsPtfXC&branch=master)](https://magnum.travis-ci.com/SpruceHealth/backend)
 
 Running integration tests locally
 ---------------------------------
