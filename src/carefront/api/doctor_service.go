@@ -1276,7 +1276,8 @@ func (d *DataService) GetFavoriteTreatmentPlan(favoriteTreatmentPlanId int64) (*
 	}
 	defer rows.Close()
 
-	favoriteTreatmentPlan.Treatments = make([]*common.Treatment, 0)
+	favoriteTreatmentPlan.TreatmentList = &common.TreatmentList{}
+	favoriteTreatmentPlan.TreatmentList.Treatments = make([]*common.Treatment, 0)
 	for rows.Next() {
 		var treatment common.Treatment
 		var medicationType string
@@ -1296,7 +1297,7 @@ func (d *DataService) GetFavoriteTreatmentPlan(favoriteTreatmentPlanId int64) (*
 		if err != nil {
 			return nil, err
 		}
-		favoriteTreatmentPlan.Treatments = append(favoriteTreatmentPlan.Treatments, &treatment)
+		favoriteTreatmentPlan.TreatmentList.Treatments = append(favoriteTreatmentPlan.TreatmentList.Treatments, &treatment)
 	}
 
 	if err := rows.Err(); err != nil {
@@ -1369,7 +1370,7 @@ func (d *DataService) CreateOrUpdateFavoriteTreatmentPlan(favoriteTreatmentPlan 
 	}
 
 	// Add all treatments
-	for _, treatment := range favoriteTreatmentPlan.Treatments {
+	for _, treatment := range favoriteTreatmentPlan.TreatmentList.Treatments {
 		params := make(map[string]interface{})
 		params["dr_favorite_treatment_plan_id"] = favoriteTreatmentPlan.Id.Int64()
 		err := d.addTreatment(doctorFavoriteTreatmentType, treatment, params, tx)

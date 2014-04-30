@@ -156,14 +156,14 @@ type TreatmentPlan struct {
 }
 
 type FavoriteTreatmentPlan struct {
-	Id           encoding.ObjectId `json:"id"`
-	Name         string            `json:"name"`
-	ModifiedDate time.Time         `json:"modified_date,omitempty"`
-	DoctorId     int64             `json:"-"`
-	RegimenPlan  *RegimenPlan      `json:"regimen_plan,omitempty"`
-	Treatments   []*Treatment      `json:"treatments,omitempty"`
-	Advice       *Advice           `json:"advice,omitempty"`
-	Followup     *FollowUp         `json:"follow_up,omitempty"`
+	Id            encoding.ObjectId `json:"id"`
+	Name          string            `json:"name"`
+	ModifiedDate  time.Time         `json:"modified_date,omitempty"`
+	DoctorId      int64             `json:"-"`
+	RegimenPlan   *RegimenPlan      `json:"regimen_plan,omitempty"`
+	TreatmentList *TreatmentList    `json:"treatment_list,omitempty"`
+	Advice        *Advice           `json:"advice,omitempty"`
+	Followup      *FollowUp         `json:"follow_up,omitempty"`
 }
 
 type RefillRequestItem struct {
@@ -214,12 +214,18 @@ type RegimenSection struct {
 	RegimenSteps []*DoctorInstructionItem `json:"regimen_steps"`
 }
 
+type TreatmentList struct {
+	Treatments []*Treatment `json:"treatments,omitempty"`
+	Status     string       `json:"status,omitempty"`
+}
+
 type RegimenPlan struct {
 	TreatmentPlanId encoding.ObjectId        `json:"treatment_plan_id,omitempty"`
 	PatientVisitId  encoding.ObjectId        `json:"patient_visit_id,omitempty"`
 	RegimenSections []*RegimenSection        `json:"regimen_sections"`
 	AllRegimenSteps []*DoctorInstructionItem `json:"all_regimen_steps,omitempty"`
 	Title           string                   `json:"title,omitempty"`
+	Status          string                   `json:"status,omitempty"`
 }
 
 type FollowUp struct {
@@ -228,6 +234,7 @@ type FollowUp struct {
 	FollowUpUnit    string            `json:"follow_up_unit,omitempty"`
 	FollowUpTime    time.Time         `json:"follow_up_time,omitempty"`
 	Title           string            `json:"title,omitempty"`
+	Status          string            `json:"omitempty"`
 }
 
 type Advice struct {
@@ -236,6 +243,7 @@ type Advice struct {
 	PatientVisitId       encoding.ObjectId        `json:"patient_visit_id,omitempty"`
 	TreatmentPlanId      encoding.ObjectId        `json:"treatment_plan_id,omitempty"`
 	Title                string                   `json:"title,omitempty"`
+	Status               string                   `json:"status,omitempty"`
 }
 
 type DiagnosisSummary struct {
