@@ -174,8 +174,8 @@ func (d *DataService) StartNewTreatmentPlanForPatientVisit(patientId, patientVis
 		return 0, err
 	}
 
-	// when starting a new treatment plan, ensure to inactive any old treatment plans
-	_, err = tx.Exec(`update treatment_plan set status=? where patient_visit_id = ? and status = ?`, STATUS_INACTIVE, patientVisitId, STATUS_ACTIVE)
+	// when starting a new treatment plan, ensure to delete any old treatment plan
+	_, err = tx.Exec(`delete from treatment_plan where patient_visit_id = ? and status = ?`, patientVisitId, STATUS_ACTIVE)
 	if err != nil {
 		tx.Rollback()
 		return 0, err
