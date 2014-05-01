@@ -107,13 +107,16 @@ func (d *DoctorPickTreatmentPlanHandler) ServeHTTP(w http.ResponseWriter, r *htt
 			WriteDeveloperError(w, http.StatusInternalServerError, "Unable to get favorite treatment plan "+err.Error())
 			return
 		}
-		populateFavoriteTreatmentPlanIntoTreatmentPlan(drTreatmentPlan, favoriteTreatmentPlan)
+		if err := d.populateFavoriteTreatmentPlanIntoTreatmentPlan(drTreatmentPlan, favoriteTreatmentPlan); err != nil {
+			WriteDeveloperError(w, http.StatusInternalServerError, "Unable to populate treatment plan with favorite treatment plan data: "+err.Error())
+			return
+		}
 	}
 
 	WriteJSONToHTTPResponseWriter(w, http.StatusOK, &DoctorPickTreatmentPlanResponseData{TreatmentPlan: drTreatmentPlan})
 }
 
-func populateFavoriteTreatmentPlanIntoTreatmentPlan(treatmentPlan *DoctorTreatmentPlan, favoriteTreatmentPlan *common.FavoriteTreatmentPlan) {
+func (d *DoctorPickTreatmentPlanHandler) populateFavoriteTreatmentPlanIntoTreatmentPlan(treatmentPlan *DoctorTreatmentPlan, favoriteTreatmentPlan *common.FavoriteTreatmentPlan) error {
 
 	treatmentPlan.DoctorFavoriteTreatmentPlanName = favoriteTreatmentPlan.Name
 	treatmentPlan.DoctorFavoriteTreatmentPlanId = favoriteTreatmentPlan.Id
@@ -179,6 +182,11 @@ func populateFavoriteTreatmentPlanIntoTreatmentPlan(treatmentPlan *DoctorTreatme
 			}
 		}
 	}
+	var err error
+	treatmentPlan.RegimenPlan.AllRegimenSteps, err = d.DataApi.GetRegimenStepsForDoctor(favoriteTreatmentPlan.DoctorId)
+	if err != nil {
+		return err
+	}
 
 	// populate advice
 	if treatmentPlan.Advice == nil {
@@ -193,5 +201,6 @@ func populateFavoriteTreatmentPlanIntoTreatmentPlan(treatmentPlan *DoctorTreatme
 			}
 		}
 	}
-
+	treatmentPlan.Advice.AllAdvicePoints, err = d.DataApi.GetAdvicePointsForDoctor(favoriteTreatmentPlan.DoctorId)
+	return err
 }
