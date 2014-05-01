@@ -131,7 +131,7 @@ func TestAdvicePointsForPatientVisit(t *testing.T) {
 
 	// lets go ahead and delete all advice points
 	doctorAdviceRequest = doctorAdviceResponse
-	doctorAdviceRequest.AllAdvicePoints[0].State = common.STATE_DELETED
+	doctorAdviceRequest.AllAdvicePoints = nil
 	doctorAdviceRequest.SelectedAdvicePoints = []*common.DoctorInstructionItem{}
 	doctorAdviceResponse = updateAdvicePointsForPatientVisit(doctorAdviceRequest, testData, doctor, t)
 	if len(doctorAdviceResponse.AllAdvicePoints) > 0 {
@@ -318,7 +318,7 @@ func TestAdvicePointsForPatientVisit_SelectAdviceFromDeletedAdvice(t *testing.T)
 	doctorAdviceResponse2 := getAdvicePointsInPatientVisit(testData, doctor, patientVisitResponse2.PatientVisitId, t)
 
 	doctorAdviceRequest = doctorAdviceResponse2
-	doctorAdviceRequest.AllAdvicePoints[4].State = common.STATE_DELETED
+	doctorAdviceRequest.AllAdvicePoints = doctorAdviceRequest.AllAdvicePoints[:4]
 	doctorAdviceResponse = updateAdvicePointsForPatientVisit(doctorAdviceRequest, testData, doctor, t)
 	validateAdviceRequestAgainstResponse(doctorAdviceRequest, doctorAdviceResponse, t)
 
@@ -547,9 +547,6 @@ func validateAdviceRequestAgainstResponse(doctorAdviceRequest, doctorAdviceRespo
 		switch advicePoint.State {
 		case common.STATE_MODIFIED:
 			textToIdMapping[advicePoint.Text] = append(textToIdMapping[advicePoint.Text], advicePoint.Id.Int64())
-
-		case common.STATE_DELETED:
-			deletedAdvicePointIds[advicePoint.Id.Int64()] = true
 
 		case common.STATE_ADDED:
 			newAdvicePoints[advicePoint.Text] = true

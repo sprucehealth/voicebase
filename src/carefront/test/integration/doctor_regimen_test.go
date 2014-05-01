@@ -601,8 +601,6 @@ func validateRegimenRequestAgainstResponse(doctorRegimenRequest, doctorRegimenRe
 		switch regimenStep.State {
 		case common.STATE_MODIFIED:
 			updatedRegimenSteps[regimenStep.Text] = append(updatedRegimenSteps[regimenStep.Text], regimenStep.Id.Int64())
-		case common.STATE_DELETED:
-			deletedRegimenStepIds[regimenStep.Id.Int64()] = true
 		}
 	}
 

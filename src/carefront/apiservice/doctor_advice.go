@@ -6,6 +6,7 @@ import (
 	"carefront/encoding"
 	"carefront/libs/dispatch"
 	"encoding/json"
+	"errors"
 	"net/http"
 
 	"github.com/gorilla/schema"
@@ -115,60 +116,12 @@ func (d *DoctorAdviceHandler) updateAdvicePoints(w http.ResponseWriter, r *http.
 		return
 	}
 
-	// ensure that items in the selected list have exactly the same text as items in the global list,
-	// if they are linked to an item that is found in the global list
-	idToTextMapping := make(map[int64]string)
-	for _, advicePoint := range requestData.AllAdvicePoints {
-		if advicePoint.Id.Int64() != 0 {
-			idToTextMapping[advicePoint.Id.Int64()] = advicePoint.Text
-		}
-	}
-
 	// ensure that all selected advice points are actually in the global list on the client side
 	for _, selectedAdvicePoint := range requestData.SelectedAdvicePoints {
-		advicePointFound := false
-		for _, advicePoint := range requestData.AllAdvicePoints {
-			if advicePoint.Id.Int64() == 0 && selectedAdvicePoint.ParentId.Int64() == 0 {
-				// compare text if this is a new item
-				if advicePoint.Text == selectedAdvicePoint.Text {
-					advicePointFound = true
-					break
-				}
-			} else if advicePoint.Id.Int64() == selectedAdvicePoint.ParentId.Int64() {
-				// ensure that text matches up
-				if textOfGlobalAdvicePoint, ok := idToTextMapping[selectedAdvicePoint.ParentId.Int64()]; ok {
-					if textOfGlobalAdvicePoint != selectedAdvicePoint.Text {
-						WriteDeveloperError(w, http.StatusBadRequest, "Text of an item in the selected list that is linked to an item in the global list has to match up")
-						return
-					}
-				}
-				advicePointFound = true
-				break
-			} else if selectedAdvicePoint.ParentId.Int64() != 0 {
-
-				parentAdvicePoint, err := d.DataApi.GetAdvicePointForDoctor(selectedAdvicePoint.ParentId.Int64(), patientVisitReviewData.DoctorId)
-				if err == api.NoRowsError {
-					WriteDeveloperError(w, http.StatusBadRequest, "No parent advice point found for advice point in the selected list")
-					return
-				} else if err != nil {
-					WriteDeveloperError(w, http.StatusInternalServerError, "Unable to fetch the parent advice point for an advice point in the selected list: "+err.Error())
-					return
-				}
-
-				if parentAdvicePoint.Text != selectedAdvicePoint.Text && selectedAdvicePoint.State != common.STATE_MODIFIED {
-					WriteDeveloperError(w, http.StatusBadRequest, "Cannot modify the text for a selected item linked to a parent advice point without indicating the intent to modify with STATE=MODIFIED")
-					return
-				}
-				advicePointFound = true
-				break
-			}
-		}
-
-		if !advicePointFound {
-			WriteDeveloperError(w, http.StatusBadRequest, "There is an advice point in the selected list that is not in the global list")
+		if httpStatusCode, err := d.ensureAdvicePointExistsInMasterList(selectedAdvicePoint, &requestData, patientVisitReviewData.DoctorId); err != nil {
+			WriteDeveloperError(w, httpStatusCode, err.Error())
 			return
 		}
-
 	}
 
 	currentActiveAdvicePoints, err := d.DataApi.GetAdvicePointsForDoctor(patientVisitReviewData.DoctorId)
@@ -225,37 +178,23 @@ func (d *DoctorAdviceHandler) updateAdvicePoints(w http.ResponseWriter, r *http.
 			}
 			updatedPointToIdMapping[previousAdvicePointId] = advicePoint.Id.Int64()
 			updatedAdvicePoints = append(updatedAdvicePoints, advicePoint)
-		case common.STATE_DELETED:
-			err = d.DataApi.MarkAdvicePointToBeDeleted(advicePoint, patientVisitReviewData.DoctorId)
-			if err != nil {
-				WriteDeveloperError(w, http.StatusInternalServerError, "Unable to delete advice point for doctor: "+err.Error())
-				return
-			}
 		default:
 			updatedAdvicePoints = append(updatedAdvicePoints, advicePoint)
 		}
-		// empty out the state now that it has been taken care of
-		advicePoint.State = ""
 	}
 
 	// go through advice points to assign ids to the new points that dont have them
 	for _, advicePoint := range requestData.SelectedAdvicePoints {
-		newIds, ok := newPointToIdMapping[advicePoint.Text]
-		if ok {
+		if newIds, ok := newPointToIdMapping[advicePoint.Text]; ok {
 			advicePoint.ParentId = encoding.NewObjectId(newIds[0])
 			// remove the id that was just used so as to assign a different id to the same text
 			// that could appear again
 			newPointToIdMapping[advicePoint.Text] = newIds[1:]
 		}
-
-		updatedId, ok := updatedPointToIdMapping[advicePoint.ParentId.Int64()]
-		if ok {
+		if updatedId, ok := updatedPointToIdMapping[advicePoint.ParentId.Int64()]; ok {
 			// update the parentId to point to the new updated item
 			advicePoint.ParentId = encoding.NewObjectId(updatedId)
 		}
-
-		// empty out the state information given that it is taken care of
-		advicePoint.State = ""
 	}
 
 	err = d.DataApi.CreateAdviceForPatientVisit(requestData.SelectedAdvicePoints, treatmentPlanId)
@@ -278,13 +217,56 @@ func (d *DoctorAdviceHandler) updateAdvicePoints(w http.ResponseWriter, r *http.
 		return
 	}
 
-	requestData.SelectedAdvicePoints = advicePoints
-	requestData.AllAdvicePoints = allAdvicePoints
+	advice := &common.Advice{
+		TreatmentPlanId:      encoding.NewObjectId(treatmentPlanId),
+		PatientVisitId:       requestData.PatientVisitId,
+		AllAdvicePoints:      allAdvicePoints,
+		SelectedAdvicePoints: advicePoints,
+	}
 
 	dispatch.Default.Publish(&AdviceAddedEvent{
 		TreatmentPlanId: treatmentPlanId,
 		Advice:          &requestData,
 	})
 
-	WriteJSONToHTTPResponseWriter(w, http.StatusOK, requestData)
+	WriteJSONToHTTPResponseWriter(w, http.StatusOK, advice)
+}
+
+func (d *DoctorAdviceHandler) ensureAdvicePointExistsInMasterList(selectedAdvicePoint *common.DoctorInstructionItem, advice *common.Advice, doctorId int64) (int, error) {
+	advicePointFound := false
+	for _, advicePoint := range advice.AllAdvicePoints {
+		if advicePoint.Id.Int64() == 0 && selectedAdvicePoint.ParentId.Int64() == 0 {
+			// compare text if this is a new item
+			if advicePoint.Text == selectedAdvicePoint.Text {
+				advicePointFound = true
+				break
+			}
+		} else if advicePoint.Id.Int64() == selectedAdvicePoint.ParentId.Int64() {
+			// ensure that text matches up
+			if advicePoint.Text != selectedAdvicePoint.Text {
+				return http.StatusBadRequest, errors.New("Text of an item in the selected list that is linked to an item in the global list has to match up")
+			}
+			advicePointFound = true
+			break
+		} else if selectedAdvicePoint.ParentId.Int64() != 0 {
+
+			parentAdvicePoint, err := d.DataApi.GetAdvicePointForDoctor(selectedAdvicePoint.ParentId.Int64(), doctorId)
+			if err == api.NoRowsError {
+				return http.StatusBadRequest, errors.New("No parent advice point found for advice point in the selected list")
+			} else if err != nil {
+				return http.StatusInternalServerError, errors.New("Unable to fetch the parent advice point for an advice point in the selected list: " + err.Error())
+			}
+
+			if parentAdvicePoint.Text != selectedAdvicePoint.Text && selectedAdvicePoint.State != common.STATE_MODIFIED {
+				return http.StatusBadRequest, errors.New("Cannot modify the text for a selected item linked to a parent advice point without indicating the intent to modify with STATE=MODIFIED")
+			}
+			advicePointFound = true
+			break
+		}
+	}
+
+	if !advicePointFound {
+		return http.StatusBadRequest, errors.New("There is an advice point in the selected list that is not in the global list")
+	}
+	return 0, nil
 }
