@@ -21,6 +21,7 @@ const (
 	STATUS_PENDING                     = "PENDING"
 	STATUS_ONGOING                     = "ONGOING"
 	STATUS_UNCOMMITTED                 = "UNCOMMITTED"
+	STATUS_COMMITTED                   = "COMMITTED"
 	ERX_STATUS_SENDING                 = "Sending"
 	ERX_STATUS_SENT                    = "eRxSent"
 	ERX_STATUS_ERROR                   = "Error"

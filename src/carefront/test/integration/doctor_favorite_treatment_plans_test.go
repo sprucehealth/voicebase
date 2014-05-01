@@ -262,8 +262,8 @@ func TestFavoriteTreatmentPlan_CommittedStateForTreatmentPlan(t *testing.T) {
 		t.Fatalf("Unable to unmarshal response into struct %s", err)
 	} else if responseData.TreatmentPlan.TreatmentList.Status != api.STATUS_UNCOMMITTED {
 		t.Fatalf("Expected the status to be UNCOMMITTED for treatments")
-	} else if responseData.TreatmentPlan.RegimenPlan.Status == api.STATUS_UNCOMMITTED {
-		t.Fatalf("Expected regimen status to not be UNCOMMITTED")
+	} else if responseData.TreatmentPlan.RegimenPlan.Status != api.STATUS_COMMITTED {
+		t.Fatalf("Expected regimen status to not be COMMITTED")
 	} else if responseData.TreatmentPlan.Advice.Status != api.STATUS_UNCOMMITTED {
 		t.Fatalf("Expected the advice status to be UNCOMMITTED")
 	}
@@ -287,10 +287,10 @@ func TestFavoriteTreatmentPlan_CommittedStateForTreatmentPlan(t *testing.T) {
 		t.Fatalf("Unable to unmarshal response into struct %s", err)
 	} else if responseData.TreatmentPlan.TreatmentList.Status != api.STATUS_UNCOMMITTED {
 		t.Fatalf("Expected the status to be UNCOMMITTED for treatments")
-	} else if responseData.TreatmentPlan.RegimenPlan.Status == api.STATUS_UNCOMMITTED {
-		t.Fatalf("Expected regimen status to not be UNCOMMITTED")
-	} else if responseData.TreatmentPlan.Advice.Status == api.STATUS_UNCOMMITTED {
-		t.Fatalf("Expected the advice status to not be UNCOMMITTED")
+	} else if responseData.TreatmentPlan.RegimenPlan.Status != api.STATUS_COMMITTED {
+		t.Fatalf("Expected regimen status to be COMMITTED")
+	} else if responseData.TreatmentPlan.Advice.Status != api.STATUS_COMMITTED {
+		t.Fatalf("Expected the advice status to be COMMITTED")
 	}
 
 	// now lets go ahead and add a treatment to the treatment plan
@@ -305,11 +305,11 @@ func TestFavoriteTreatmentPlan_CommittedStateForTreatmentPlan(t *testing.T) {
 		t.Fatalf("Expected %d response for getting treatment plan instead got %d", http.StatusOK, resp.StatusCode)
 	} else if json.NewDecoder(resp.Body).Decode(responseData); err != nil {
 		t.Fatalf("Unable to unmarshal response into struct %s", err)
-	} else if responseData.TreatmentPlan.TreatmentList.Status == api.STATUS_UNCOMMITTED {
+	} else if responseData.TreatmentPlan.TreatmentList.Status != api.STATUS_COMMITTED {
 		t.Fatalf("Expected the status to be in the committed state")
-	} else if responseData.TreatmentPlan.RegimenPlan.Status == api.STATUS_UNCOMMITTED {
+	} else if responseData.TreatmentPlan.RegimenPlan.Status != api.STATUS_COMMITTED {
 		t.Fatalf("Expected regimen status to be in the committed state")
-	} else if responseData.TreatmentPlan.Advice.Status == api.STATUS_UNCOMMITTED {
+	} else if responseData.TreatmentPlan.Advice.Status != api.STATUS_COMMITTED {
 		t.Fatalf("Expected the advice status to be in the committed")
 	}
 

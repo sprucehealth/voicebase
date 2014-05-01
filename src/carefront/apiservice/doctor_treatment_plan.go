@@ -120,6 +120,8 @@ func (d *DoctorTreatmentPlanHandler) getTreatmentPlanForPatientVisit(w http.Resp
 		WriteDeveloperError(w, http.StatusInternalServerError, "Unable to get advice points for doctor")
 	}
 
+	setCommittedStateForEachSection(drTreatmentPlan)
+
 	if err := d.populateFavoriteTreatmentPlanIntoTreatmentPlan(drTreatmentPlan, drTreatmentPlan.DoctorFavoriteTreatmentPlanId.Int64()); err == api.NoRowsError {
 		WriteDeveloperError(w, http.StatusNotFound, "Favorite treatment plan not found")
 		return
@@ -191,7 +193,10 @@ func (d *DoctorTreatmentPlanHandler) pickATreatmentPlan(w http.ResponseWriter, r
 		RegimenPlan: &common.RegimenPlan{
 			AllRegimenSteps: allRegimenSteps,
 		},
+		TreatmentList: &common.TreatmentList{},
 	}
+
+	setCommittedStateForEachSection(drTreatmentPlan)
 
 	if err := d.populateFavoriteTreatmentPlanIntoTreatmentPlan(drTreatmentPlan, favoriteTreatmentPlanId); err == api.NoRowsError {
 		WriteDeveloperError(w, http.StatusNotFound, "No favorite treatment plan found")
@@ -202,6 +207,24 @@ func (d *DoctorTreatmentPlanHandler) pickATreatmentPlan(w http.ResponseWriter, r
 	}
 
 	WriteJSONToHTTPResponseWriter(w, http.StatusOK, &DoctorTreatmentPlanResponse{TreatmentPlan: drTreatmentPlan})
+}
+
+func setCommittedStateForEachSection(drTreatmentPlan *common.DoctorTreatmentPlan) {
+	// depending on which sections have data in them, mark them to be committed or uncommitted
+	// note that we intentionally treat a section with no data to be in the UNCOMMITTED state so as
+	// to ensure that the doctor actually wanted to leave a particular section blank
+	drTreatmentPlan.TreatmentList.Status = api.STATUS_UNCOMMITTED
+	drTreatmentPlan.RegimenPlan.Status = api.STATUS_UNCOMMITTED
+	drTreatmentPlan.Advice.Status = api.STATUS_UNCOMMITTED
+	if len(drTreatmentPlan.TreatmentList.Treatments) > 0 {
+		drTreatmentPlan.TreatmentList.Status = api.STATUS_COMMITTED
+	}
+	if len(drTreatmentPlan.RegimenPlan.RegimenSections) > 0 {
+		drTreatmentPlan.RegimenPlan.Status = api.STATUS_COMMITTED
+	}
+	if len(drTreatmentPlan.Advice.SelectedAdvicePoints) > 0 {
+		drTreatmentPlan.Advice.Status = api.STATUS_COMMITTED
+	}
 }
 
 func (d *DoctorTreatmentPlanHandler) populateFavoriteTreatmentPlanIntoTreatmentPlan(treatmentPlan *common.DoctorTreatmentPlan, favoriteTreatmentPlanId int64) error {
@@ -229,10 +252,7 @@ func (d *DoctorTreatmentPlanHandler) populateFavoriteTreatmentPlanIntoTreatmentP
 	// to the database as part of the treatment plan.
 
 	// populate treatments
-	if treatmentPlan.TreatmentList == nil || len(treatmentPlan.TreatmentList.Treatments) == 0 {
-		treatmentPlan.TreatmentList = &common.TreatmentList{
-			Status: api.STATUS_UNCOMMITTED,
-		}
+	if len(treatmentPlan.TreatmentList.Treatments) == 0 {
 
 		treatmentPlan.TreatmentList.Treatments = make([]*common.Treatment, len(favoriteTreatmentPlan.Treatments))
 		for i, treatment := range favoriteTreatmentPlan.Treatments {
@@ -261,7 +281,6 @@ func (d *DoctorTreatmentPlanHandler) populateFavoriteTreatmentPlanIntoTreatmentP
 	// populate regimen plan
 	if len(treatmentPlan.RegimenPlan.RegimenSections) == 0 {
 		treatmentPlan.RegimenPlan.RegimenSections = make([]*common.RegimenSection, len(favoriteTreatmentPlan.RegimenPlan.RegimenSections))
-		treatmentPlan.RegimenPlan.Status = api.STATUS_UNCOMMITTED
 
 		for i, regimenSection := range favoriteTreatmentPlan.RegimenPlan.RegimenSections {
 			treatmentPlan.RegimenPlan.RegimenSections[i] = &common.RegimenSection{
@@ -280,7 +299,6 @@ func (d *DoctorTreatmentPlanHandler) populateFavoriteTreatmentPlanIntoTreatmentP
 
 	// populate advice
 	if len(treatmentPlan.Advice.SelectedAdvicePoints) == 0 {
-		treatmentPlan.Advice.Status = api.STATUS_UNCOMMITTED
 		treatmentPlan.Advice.SelectedAdvicePoints = make([]*common.DoctorInstructionItem, len(favoriteTreatmentPlan.Advice.SelectedAdvicePoints))
 		for i, advicePoint := range favoriteTreatmentPlan.Advice.SelectedAdvicePoints {
 			treatmentPlan.Advice.SelectedAdvicePoints[i] = &common.DoctorInstructionItem{
