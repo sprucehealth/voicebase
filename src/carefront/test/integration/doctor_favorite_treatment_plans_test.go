@@ -160,6 +160,7 @@ func TestFavoriteTreatmentPlan_PickingAFavoriteTreatmentPlan(t *testing.T) {
 	favoriteTreamentPlan := createFavoriteTreatmentPlan(patientVisitResponse.PatientVisitId, testData, doctor, t)
 
 	// lets attempt to get the treatment plan for the patient visit
+	// and ensure that its empty
 	ts := httptest.NewServer(&apiservice.DoctorTreatmentPlanHandler{
 		DataApi: testData.DataApi,
 	})
@@ -214,6 +215,102 @@ func TestFavoriteTreatmentPlan_PickingAFavoriteTreatmentPlan(t *testing.T) {
 		t.Fatalf("Unable to query database to get number of treatment plans for patient visit: %s", err)
 	} else if count != 1 {
 		t.Fatalf("Expected 1 treatment plan for patient visit instead got %d", count)
+	}
+}
+
+func TestFavoriteTreatmentPlan_CommittedStateForTreatmentPlan(t *testing.T) {
+	testData := SetupIntegrationTest(t)
+	defer TearDownIntegrationTest(t, testData)
+
+	doctorId := getDoctorIdOfCurrentPrimaryDoctor(testData, t)
+	doctor, err := testData.DataApi.GetDoctorFromId(doctorId)
+	if err != nil {
+		t.Fatalf("Unable to get doctor from id: %s", err)
+	}
+
+	patientVisitResponse, _ := signupAndSubmitPatientVisitForRandomPatient(t, testData, doctor)
+
+	// create a favorite treatment plan
+	favoriteTreamentPlan := createFavoriteTreatmentPlan(patientVisitResponse.PatientVisitId, testData, doctor, t)
+
+	// pick this favorite treatment plan for the visit
+	responseData := pickATreatmentPlanForPatientVisit(patientVisitResponse.PatientVisitId, doctor, favoriteTreamentPlan, testData, t)
+
+	// lets attempt to submit regimen section for patient visit
+	regimenPlanRequest := &common.RegimenPlan{
+		TreatmentPlanId: responseData.TreatmentPlan.Id,
+		PatientVisitId:  encoding.NewObjectId(patientVisitResponse.PatientVisitId),
+		AllRegimenSteps: favoriteTreamentPlan.RegimenPlan.AllRegimenSteps,
+		RegimenSections: favoriteTreamentPlan.RegimenPlan.RegimenSections,
+	}
+	createRegimenPlanForPatientVisit(regimenPlanRequest, testData, doctor, t)
+
+	// now lets attempt to get the treatment plan for the patient visit
+	ts := httptest.NewServer(&apiservice.DoctorTreatmentPlanHandler{
+		DataApi: testData.DataApi,
+	})
+	defer ts.Close()
+
+	// the regimen plan should indicate that it was committed while the rest of the sections
+	// should continue to be in the UNCOMMITTED state
+	responseData = &apiservice.DoctorTreatmentPlanResponse{}
+	if resp, err := authGet(ts.URL+"?patient_visit_id="+strconv.FormatInt(patientVisitResponse.PatientVisitId, 10), doctor.AccountId.Int64()); err != nil {
+		t.Fatalf("Unable to make call to get treatment plan for patient visit")
+	} else if resp.StatusCode != http.StatusOK {
+		t.Fatalf("Expected %d response for getting treatment plan instead got %d", http.StatusOK, resp.StatusCode)
+	} else if json.NewDecoder(resp.Body).Decode(responseData); err != nil {
+		t.Fatalf("Unable to unmarshal response into struct %s", err)
+	} else if responseData.TreatmentPlan.TreatmentList.Status != api.STATUS_UNCOMMITTED {
+		t.Fatalf("Expected the status to be UNCOMMITTED for treatments instead it was %s")
+	} else if responseData.TreatmentPlan.RegimenPlan.Status == api.STATUS_UNCOMMITTED {
+		t.Fatalf("Expected regimen status to not be UNCOMMITTED")
+	} else if responseData.TreatmentPlan.Advice.Status != api.STATUS_UNCOMMITTED {
+		t.Fatalf("Expected the advice status to be UNCOMMITTED")
+	}
+
+	// now lets go ahead and submit the advice section
+	doctorAdviceRequest := &common.Advice{
+		PatientVisitId:       encoding.NewObjectId(patientVisitResponse.PatientVisitId),
+		AllAdvicePoints:      favoriteTreamentPlan.Advice.AllAdvicePoints,
+		SelectedAdvicePoints: favoriteTreamentPlan.Advice.SelectedAdvicePoints,
+	}
+	updateAdvicePointsForPatientVisit(doctorAdviceRequest, testData, doctor, t)
+
+	// now if we were to get the treatment plan again it should indicate that the
+	// advice and regimen sections are committed but not the treatment section
+	responseData = &apiservice.DoctorTreatmentPlanResponse{}
+	if resp, err := authGet(ts.URL+"?patient_visit_id="+strconv.FormatInt(patientVisitResponse.PatientVisitId, 10), doctor.AccountId.Int64()); err != nil {
+		t.Fatalf("Unable to make call to get treatment plan for patient visit")
+	} else if resp.StatusCode != http.StatusOK {
+		t.Fatalf("Expected %d response for getting treatment plan instead got %d", http.StatusOK, resp.StatusCode)
+	} else if json.NewDecoder(resp.Body).Decode(responseData); err != nil {
+		t.Fatalf("Unable to unmarshal response into struct %s", err)
+	} else if responseData.TreatmentPlan.TreatmentList.Status != api.STATUS_UNCOMMITTED {
+		t.Fatalf("Expected the status to be UNCOMMITTED for treatments instead it was %s")
+	} else if responseData.TreatmentPlan.RegimenPlan.Status == api.STATUS_UNCOMMITTED {
+		t.Fatalf("Expected regimen status to not be UNCOMMITTED")
+	} else if responseData.TreatmentPlan.Advice.Status == api.STATUS_UNCOMMITTED {
+		t.Fatalf("Expected the advice status to not be UNCOMMITTED")
+	}
+
+	// now lets go ahead and add a treatment to the treatment plan
+	favoriteTreamentPlan.Treatments[0].PatientVisitId = encoding.NewObjectId(patientVisitResponse.PatientVisitId)
+	addAndGetTreatmentsForPatientVisit(testData, favoriteTreamentPlan.Treatments, doctor.AccountId.Int64(), patientVisitResponse.PatientVisitId, t)
+
+	// now the treatment section should also indicate that it has been committed
+	responseData = &apiservice.DoctorTreatmentPlanResponse{}
+	if resp, err := authGet(ts.URL+"?patient_visit_id="+strconv.FormatInt(patientVisitResponse.PatientVisitId, 10), doctor.AccountId.Int64()); err != nil {
+		t.Fatalf("Unable to make call to get treatment plan for patient visit")
+	} else if resp.StatusCode != http.StatusOK {
+		t.Fatalf("Expected %d response for getting treatment plan instead got %d", http.StatusOK, resp.StatusCode)
+	} else if json.NewDecoder(resp.Body).Decode(responseData); err != nil {
+		t.Fatalf("Unable to unmarshal response into struct %s", err)
+	} else if responseData.TreatmentPlan.TreatmentList.Status == api.STATUS_UNCOMMITTED {
+		t.Fatalf("Expected the status to be in the committed state")
+	} else if responseData.TreatmentPlan.RegimenPlan.Status == api.STATUS_UNCOMMITTED {
+		t.Fatalf("Expected regimen status to be in the committed state")
+	} else if responseData.TreatmentPlan.Advice.Status == api.STATUS_UNCOMMITTED {
+		t.Fatalf("Expected the advice status to be in the committed")
 	}
 
 }
@@ -294,7 +391,7 @@ func createFavoriteTreatmentPlan(patientVisitId int64, testData TestData, doctor
 				erx.LexiSynonymTypeId: "123556",
 				erx.NDC:               "2415",
 			},
-			DrugName:                "Teting (This - Drug)",
+			DrugInternalName:        "Teting (This - Drug)",
 			DosageStrength:          "10 mg",
 			DispenseValue:           5,
 			DispenseUnitDescription: "Tablet",
