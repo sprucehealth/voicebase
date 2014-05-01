@@ -46,7 +46,7 @@ func signupRandomTestPatient(t *testing.T, dataApi api.DataAPI, authApi thriftap
 
 func getPatientVisitForPatient(patientId int64, testData TestData, t *testing.T) *apiservice.PatientVisitResponse {
 	patientVisitHandler := apiservice.NewPatientVisitHandler(testData.DataApi, testData.AuthApi,
-		testData.CloudStorageService, testData.CloudStorageService, nil, "")
+		testData.CloudStorageService, testData.CloudStorageService)
 	patient, err := testData.DataApi.GetPatientFromId(patientId)
 	if err != nil {
 		t.Fatal("Unable to get patient information given the patient id: " + err.Error())
@@ -79,7 +79,7 @@ func getPatientVisitForPatient(patientId int64, testData TestData, t *testing.T)
 
 func createPatientVisitForPatient(patientId int64, testData TestData, t *testing.T) *apiservice.PatientVisitResponse {
 	patientVisitHandler := apiservice.NewPatientVisitHandler(testData.DataApi, testData.AuthApi,
-		testData.CloudStorageService, testData.CloudStorageService, nil, "")
+		testData.CloudStorageService, testData.CloudStorageService)
 	patient, err := testData.DataApi.GetPatientFromId(patientId)
 	if err != nil {
 		t.Fatal("Unable to get patient information given the patient id: " + err.Error())
@@ -190,7 +190,7 @@ func submitAnswersIntakeForPatient(patientId, patientAccountId int64, answerInta
 func submitPatientVisitForPatient(patientId, patientVisitId int64, testData TestData, t *testing.T) {
 	patientVisitHandler := apiservice.NewPatientVisitHandler(testData.DataApi, testData.AuthApi,
 		testData.CloudStorageService, testData.CloudStorageService)
-	patient, err := testData.DataApi.GetPatientFromId(PatientId)
+	patient, err := testData.DataApi.GetPatientFromId(patientId)
 	if err != nil {
 		t.Fatal("Unable to get patient information given the patient id: " + err.Error())
 	}

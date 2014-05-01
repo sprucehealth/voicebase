@@ -1,6 +1,6 @@
 -- MySQL dump 10.13  Distrib 5.6.17, for osx10.9 (x86_64)
 --
--- Host: 127.0.0.1    Database: database_24873
+-- Host: 127.0.0.1    Database: database_10659
 -- ------------------------------------------------------
 -- Server version	5.6.17
 
@@ -62,12 +62,11 @@ CREATE TABLE `advice` (
   `status` varchar(100) NOT NULL,
   `creation_date` timestamp(6) NULL DEFAULT CURRENT_TIMESTAMP(6),
   `treatment_plan_id` int(10) unsigned NOT NULL,
-  `text` varchar(150) DEFAULT NULL,
   PRIMARY KEY (`id`),
   KEY `dr_advice_point_id` (`dr_advice_point_id`),
   KEY `treatment_plan_id` (`treatment_plan_id`),
-  CONSTRAINT `advice_ibfk_2` FOREIGN KEY (`dr_advice_point_id`) REFERENCES `dr_advice_point` (`id`),
-  CONSTRAINT `advice_ibfk_3` FOREIGN KEY (`treatment_plan_id`) REFERENCES `treatment_plan` (`id`)
+  CONSTRAINT `advice_ibfk_3` FOREIGN KEY (`treatment_plan_id`) REFERENCES `treatment_plan` (`id`),
+  CONSTRAINT `advice_ibfk_2` FOREIGN KEY (`dr_advice_point_id`) REFERENCES `dr_advice_point` (`id`)
 ) ENGINE=InnoDB DEFAULT CHARSET=utf8;
 /*!40101 SET character_set_client = @saved_cs_client */;
 
@@ -417,11 +416,8 @@ CREATE TABLE `dr_advice_point` (
   `doctor_id` int(10) unsigned NOT NULL,
   `status` varchar(100) NOT NULL,
   `creation_date` timestamp(6) NULL DEFAULT CURRENT_TIMESTAMP(6),
-  `source_id` int(10) unsigned DEFAULT NULL,
   PRIMARY KEY (`id`),
   KEY `doctor_id` (`doctor_id`),
-  KEY `source_id` (`source_id`),
-  CONSTRAINT `dr_advice_point_ibfk_2` FOREIGN KEY (`source_id`) REFERENCES `dr_advice_point` (`id`),
   CONSTRAINT `dr_advice_point_ibfk_1` FOREIGN KEY (`doctor_id`) REFERENCES `doctor` (`id`)
 ) ENGINE=InnoDB DEFAULT CHARSET=utf8;
 /*!40101 SET character_set_client = @saved_cs_client */;
@@ -526,14 +522,11 @@ CREATE TABLE `dr_regimen_step` (
   `doctor_id` int(10) unsigned NOT NULL,
   `status` varchar(100) NOT NULL,
   `creation_date` timestamp(6) NULL DEFAULT CURRENT_TIMESTAMP(6),
-  `source_id` int(10) unsigned DEFAULT NULL,
   PRIMARY KEY (`id`),
   KEY `drug_name_id` (`drug_name_id`),
   KEY `drug_form_id` (`drug_form_id`),
   KEY `drug_route_id` (`drug_route_id`),
   KEY `doctor_id` (`doctor_id`),
-  KEY `source_id` (`source_id`),
-  CONSTRAINT `dr_regimen_step_ibfk_5` FOREIGN KEY (`source_id`) REFERENCES `dr_regimen_step` (`id`),
   CONSTRAINT `dr_regimen_step_ibfk_1` FOREIGN KEY (`drug_name_id`) REFERENCES `drug_name` (`id`),
   CONSTRAINT `dr_regimen_step_ibfk_2` FOREIGN KEY (`drug_form_id`) REFERENCES `drug_form` (`id`),
   CONSTRAINT `dr_regimen_step_ibfk_3` FOREIGN KEY (`drug_route_id`) REFERENCES `drug_route` (`id`),
@@ -724,6 +717,26 @@ CREATE TABLE `health_condition` (
   PRIMARY KEY (`id`),
   UNIQUE KEY `treatment_tag` (`health_condition_tag`)
 ) ENGINE=InnoDB AUTO_INCREMENT=2 DEFAULT CHARSET=utf8;
+/*!40101 SET character_set_client = @saved_cs_client */;
+
+--
+-- Table structure for table `health_log`
+--
+
+DROP TABLE IF EXISTS `health_log`;
+/*!40101 SET @saved_cs_client     = @@character_set_client */;
+/*!40101 SET character_set_client = utf8 */;
+CREATE TABLE `health_log` (
+  `id` bigint(20) unsigned NOT NULL AUTO_INCREMENT,
+  `patient_id` int(10) unsigned NOT NULL,
+  `uid` varchar(128) NOT NULL,
+  `tstamp` timestamp NOT NULL DEFAULT CURRENT_TIMESTAMP ON UPDATE CURRENT_TIMESTAMP,
+  `type` varchar(64) NOT NULL,
+  `data` blob NOT NULL,
+  PRIMARY KEY (`id`),
+  UNIQUE KEY `patient_id` (`patient_id`,`uid`),
+  CONSTRAINT `health_log_ibfk_1` FOREIGN KEY (`patient_id`) REFERENCES `patient` (`id`)
+) ENGINE=InnoDB DEFAULT CHARSET=utf8;
 /*!40101 SET character_set_client = @saved_cs_client */;
 
 --
@@ -1045,6 +1058,30 @@ CREATE TABLE `patient_location` (
   PRIMARY KEY (`id`),
   KEY `patient_id` (`patient_id`),
   CONSTRAINT `patient_location_ibfk_1` FOREIGN KEY (`patient_id`) REFERENCES `patient` (`id`)
+) ENGINE=InnoDB DEFAULT CHARSET=utf8;
+/*!40101 SET character_set_client = @saved_cs_client */;
+
+--
+-- Table structure for table `patient_notifications`
+--
+
+DROP TABLE IF EXISTS `patient_notifications`;
+/*!40101 SET @saved_cs_client     = @@character_set_client */;
+/*!40101 SET character_set_client = utf8 */;
+CREATE TABLE `patient_notifications` (
+  `id` bigint(20) unsigned NOT NULL AUTO_INCREMENT,
+  `patient_id` int(10) unsigned NOT NULL,
+  `uid` varchar(128) NOT NULL,
+  `tstamp` timestamp NOT NULL DEFAULT CURRENT_TIMESTAMP,
+  `expires` timestamp NULL DEFAULT NULL,
+  `dismissible` tinyint(1) NOT NULL,
+  `dismiss_on_action` tinyint(1) NOT NULL,
+  `priority` int(11) NOT NULL,
+  `type` varchar(64) NOT NULL,
+  `data` blob NOT NULL,
+  PRIMARY KEY (`id`),
+  UNIQUE KEY `patient_id` (`patient_id`,`uid`),
+  CONSTRAINT `patient_notifications_ibfk_1` FOREIGN KEY (`patient_id`) REFERENCES `patient` (`id`)
 ) ENGINE=InnoDB DEFAULT CHARSET=utf8;
 /*!40101 SET character_set_client = @saved_cs_client */;
 
@@ -1432,12 +1469,11 @@ CREATE TABLE `regimen` (
   `status` varchar(100) NOT NULL,
   `creation_date` timestamp(6) NULL DEFAULT CURRENT_TIMESTAMP(6),
   `treatment_plan_id` int(10) unsigned NOT NULL,
-  `text` varchar(150) DEFAULT NULL,
   PRIMARY KEY (`id`),
   KEY `dr_regimen_step_id` (`dr_regimen_step_id`),
   KEY `treatment_plan_id` (`treatment_plan_id`),
-  CONSTRAINT `regimen_ibfk_2` FOREIGN KEY (`dr_regimen_step_id`) REFERENCES `dr_regimen_step` (`id`),
-  CONSTRAINT `regimen_ibfk_3` FOREIGN KEY (`treatment_plan_id`) REFERENCES `treatment_plan` (`id`)
+  CONSTRAINT `regimen_ibfk_3` FOREIGN KEY (`treatment_plan_id`) REFERENCES `treatment_plan` (`id`),
+  CONSTRAINT `regimen_ibfk_2` FOREIGN KEY (`dr_regimen_step_id`) REFERENCES `dr_regimen_step` (`id`)
 ) ENGINE=InnoDB DEFAULT CHARSET=utf8;
 /*!40101 SET character_set_client = @saved_cs_client */;
 
@@ -1915,4 +1951,4 @@ CREATE TABLE `unlinked_dntf_treatment_status_events` (
 /*!40101 SET COLLATION_CONNECTION=@OLD_COLLATION_CONNECTION */;
 /*!40111 SET SQL_NOTES=@OLD_SQL_NOTES */;
 
--- Dump completed on 2014-04-29 23:54:38
+-- Dump completed on 2014-04-30 23:29:03

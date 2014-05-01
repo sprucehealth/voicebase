@@ -4,6 +4,7 @@ import (
 	"bytes"
 	"carefront/api"
 	"carefront/apiservice"
+	"carefront/common"
 	"carefront/common/config"
 	"carefront/homelog"
 	"carefront/libs/aws"
@@ -22,13 +23,6 @@ import (
 	"strings"
 	"testing"
 	"time"
-
-	"carefront/api"
-	"carefront/apiservice"
-	"carefront/common"
-	"carefront/common/config"
-	"carefront/services/auth"
-	thriftapi "carefront/thrift/api"
 
 	"github.com/BurntSushi/toml"
 	_ "github.com/go-sql-driver/mysql"
