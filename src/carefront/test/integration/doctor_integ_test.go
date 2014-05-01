@@ -22,7 +22,7 @@ func TestDoctorRegistration(t *testing.T) {
 	testData := SetupIntegrationTest(t)
 	defer TearDownIntegrationTest(t, testData)
 
-	SignupRandomTestDoctor(t, testData.DataApi, testData.AuthApi)
+	signupRandomTestDoctor(t, testData.DataApi, testData.AuthApi)
 }
 
 func TestDoctorAuthentication(t *testing.T) {
@@ -30,7 +30,7 @@ func TestDoctorAuthentication(t *testing.T) {
 	testData := SetupIntegrationTest(t)
 	defer TearDownIntegrationTest(t, testData)
 
-	_, email, password := SignupRandomTestDoctor(t, testData.DataApi, testData.AuthApi)
+	_, email, password := signupRandomTestDoctor(t, testData.DataApi, testData.AuthApi)
 
 	doctorAuthHandler := &apiservice.DoctorAuthenticationHandler{AuthApi: testData.AuthApi, DataApi: testData.DataApi}
 	ts := httptest.NewServer(doctorAuthHandler)
@@ -112,8 +112,6 @@ func TestDoctorDiagnosisOfPatientVisit(t *testing.T) {
 	testData := SetupIntegrationTest(t)
 	defer TearDownIntegrationTest(t, testData)
 
-	patientSignedupResponse := SignupRandomTestPatient(t, testData.DataApi, testData.AuthApi)
-
 	// get the current primary doctor
 	doctorId := getDoctorIdOfCurrentPrimaryDoctor(testData, t)
 
@@ -123,22 +121,7 @@ func TestDoctorDiagnosisOfPatientVisit(t *testing.T) {
 	}
 
 	// get patient to start a visit
-	patientVisitResponse := CreatePatientVisitForPatient(patientSignedupResponse.Patient.PatientId.Int64(), testData, t)
-
-	// submit answers to questions in patient visit
-	patient, err := testData.DataApi.GetPatientFromId(patientSignedupResponse.Patient.PatientId.Int64())
-	if err != nil {
-		t.Fatal("Unable to get patient from id: " + err.Error())
-	}
-
-	answerIntakeRequestBody := prepareAnswersForQuestionsInPatientVisit(patientVisitResponse, t)
-	submitAnswersIntakeForPatient(patient.PatientId.Int64(), patient.AccountId.Int64(), answerIntakeRequestBody, testData, t)
-
-	// get patient to submit the visit
-	SubmitPatientVisitForPatient(patientSignedupResponse.Patient.PatientId.Int64(), patientVisitResponse.PatientVisitId, testData, t)
-
-	// doctor should start reviewing the case before diagnosing the case
-	StartReviewingPatientVisit(patientVisitResponse.PatientVisitId, doctor, testData, t)
+	patientVisitResponse, _ := signupAndSubmitPatientVisitForRandomPatient(t, testData, doctor)
 
 	// doctor now attempts to diagnose patient visit
 	diagnosePatientHandler := apiservice.NewDiagnosePatientHandler(testData.DataApi, testData.AuthApi, testData.CloudStorageService)
@@ -250,12 +233,12 @@ func TestDoctorSubmissionOfPatientVisitReview(t *testing.T) {
 	testData := SetupIntegrationTest(t)
 	defer TearDownIntegrationTest(t, testData)
 
-	patientSignedupResponse := SignupRandomTestPatient(t, testData.DataApi, testData.AuthApi)
+	patientSignedupResponse := signupRandomTestPatient(t, testData.DataApi, testData.AuthApi)
 
 	doctorId := getDoctorIdOfCurrentPrimaryDoctor(testData, t)
 
 	// get patient to start a visit
-	patientVisitResponse := CreatePatientVisitForPatient(patientSignedupResponse.Patient.PatientId.Int64(), testData, t)
+	patientVisitResponse := createPatientVisitForPatient(patientSignedupResponse.Patient.PatientId.Int64(), testData, t)
 
 	// submit answers to questions in patient visit
 	patient, err := testData.DataApi.GetPatientFromId(patientSignedupResponse.Patient.PatientId.Int64())
@@ -267,7 +250,7 @@ func TestDoctorSubmissionOfPatientVisitReview(t *testing.T) {
 	submitAnswersIntakeForPatient(patient.PatientId.Int64(), patient.AccountId.Int64(), answerIntakeRequestBody, testData, t)
 
 	// get patient to submit the visit
-	SubmitPatientVisitForPatient(patientSignedupResponse.Patient.PatientId.Int64(), patientVisitResponse.PatientVisitId, testData, t)
+	submitPatientVisitForPatient(patientSignedupResponse.Patient.PatientId.Int64(), patientVisitResponse.PatientVisitId, testData, t)
 
 	doctor, err := testData.DataApi.GetDoctorFromId(doctorId)
 	if err != nil {
@@ -328,8 +311,6 @@ func TestDoctorAddingOfFollowUpForPatientVisit(t *testing.T) {
 	testData := SetupIntegrationTest(t)
 	defer TearDownIntegrationTest(t, testData)
 
-	patientSignedupResponse := SignupRandomTestPatient(t, testData.DataApi, testData.AuthApi)
-
 	// get the current primary doctor
 	doctorId := getDoctorIdOfCurrentPrimaryDoctor(testData, t)
 
@@ -338,23 +319,7 @@ func TestDoctorAddingOfFollowUpForPatientVisit(t *testing.T) {
 		t.Fatal("Unable to get doctor from doctor id " + err.Error())
 	}
 
-	// get patient to start a visit
-	patientVisitResponse := CreatePatientVisitForPatient(patientSignedupResponse.Patient.PatientId.Int64(), testData, t)
-
-	// submit answers to questions in patient visit
-	patient, err := testData.DataApi.GetPatientFromId(patientSignedupResponse.Patient.PatientId.Int64())
-	if err != nil {
-		t.Fatal("Unable to get patient from id: " + err.Error())
-	}
-
-	answerIntakeRequestBody := prepareAnswersForQuestionsInPatientVisit(patientVisitResponse, t)
-	submitAnswersIntakeForPatient(patient.PatientId.Int64(), patient.AccountId.Int64(), answerIntakeRequestBody, testData, t)
-
-	// get patient to submit the visit
-	SubmitPatientVisitForPatient(patientSignedupResponse.Patient.PatientId.Int64(), patientVisitResponse.PatientVisitId, testData, t)
-
-	// get the doctor to start reviewing the case before attempting to add follow up
-	StartReviewingPatientVisit(patientVisitResponse.PatientVisitId, doctor, testData, t)
+	patientVisitResponse, _ := signupAndSubmitPatientVisitForRandomPatient(t, testData, doctor)
 
 	// lets add a follow up time for 1 week from now
 	doctorFollowupHandler := apiservice.NewPatientVisitFollowUpHandler(testData.DataApi)

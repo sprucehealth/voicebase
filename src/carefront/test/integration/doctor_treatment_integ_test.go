@@ -174,8 +174,6 @@ func TestAddTreatments(t *testing.T) {
 	testData := SetupIntegrationTest(t)
 	defer TearDownIntegrationTest(t, testData)
 
-	patientSignedupResponse := SignupRandomTestPatient(t, testData.DataApi, testData.AuthApi)
-
 	// get the current primary doctor
 	doctorId := getDoctorIdOfCurrentPrimaryDoctor(testData, t)
 
@@ -184,23 +182,7 @@ func TestAddTreatments(t *testing.T) {
 		t.Fatal("Unable to get doctor from doctor id " + err.Error())
 	}
 
-	// get patient to start a visit
-	patientVisitResponse := CreatePatientVisitForPatient(patientSignedupResponse.Patient.PatientId.Int64(), testData, t)
-
-	// submit answers to questions in patient visit
-	patient, err := testData.DataApi.GetPatientFromId(patientSignedupResponse.Patient.PatientId.Int64())
-	if err != nil {
-		t.Fatal("Unable to get patient from id: " + err.Error())
-	}
-
-	answerIntakeRequestBody := prepareAnswersForQuestionsInPatientVisit(patientVisitResponse, t)
-	submitAnswersIntakeForPatient(patient.PatientId.Int64(), patient.AccountId.Int64(), answerIntakeRequestBody, testData, t)
-
-	// get patient to submit the visit
-	SubmitPatientVisitForPatient(patientSignedupResponse.Patient.PatientId.Int64(), patientVisitResponse.PatientVisitId, testData, t)
-
-	// get the doctor to start reviewing the case
-	StartReviewingPatientVisit(patientVisitResponse.PatientVisitId, doctor, testData, t)
+	patientVisitResponse, _ := signupAndSubmitPatientVisitForRandomPatient(t, testData, doctor)
 
 	// doctor now attempts to add a couple treatments for patient
 	treatment1 := &common.Treatment{
@@ -467,20 +449,7 @@ func TestTreatmentTemplatesInContextOfPatientVisit(t *testing.T) {
 	}
 
 	// create random patient
-	patientSignedupResponse := SignupRandomTestPatient(t, testData.DataApi, testData.AuthApi)
-	patientVisitResponse := CreatePatientVisitForPatient(patientSignedupResponse.Patient.PatientId.Int64(), testData, t)
-
-	// submit answers to questions in patient visit
-	patient, err := testData.DataApi.GetPatientFromId(patientSignedupResponse.Patient.PatientId.Int64())
-	if err != nil {
-		t.Fatal("Unable to get patient from id: " + err.Error())
-	}
-
-	answerIntakeRequestBody := prepareAnswersForQuestionsInPatientVisit(patientVisitResponse, t)
-	submitAnswersIntakeForPatient(patient.PatientId.Int64(), patient.AccountId.Int64(), answerIntakeRequestBody, testData, t)
-
-	SubmitPatientVisitForPatient(patientSignedupResponse.Patient.PatientId.Int64(), patientVisitResponse.PatientVisitId, testData, t)
-	StartReviewingPatientVisit(patientVisitResponse.PatientVisitId, doctor, testData, t)
+	patientVisitResponse, _ := signupAndSubmitPatientVisitForRandomPatient(t, testData, doctor)
 
 	// doctor now attempts to favorite a treatment
 	treatment1 := &common.Treatment{
@@ -697,8 +666,8 @@ func TestTreatmentTemplateWithDrugOutOfMarket(t *testing.T) {
 	}
 
 	// create random patient
-	patientSignedupResponse := SignupRandomTestPatient(t, testData.DataApi, testData.AuthApi)
-	patientVisitResponse := CreatePatientVisitForPatient(patientSignedupResponse.Patient.PatientId.Int64(), testData, t)
+	patientSignedupResponse := signupRandomTestPatient(t, testData.DataApi, testData.AuthApi)
+	patientVisitResponse := createPatientVisitForPatient(patientSignedupResponse.Patient.PatientId.Int64(), testData, t)
 	// submit answers to questions in patient visit
 	patient, err := testData.DataApi.GetPatientFromId(patientSignedupResponse.Patient.PatientId.Int64())
 	if err != nil {
@@ -708,8 +677,8 @@ func TestTreatmentTemplateWithDrugOutOfMarket(t *testing.T) {
 	answerIntakeRequestBody := prepareAnswersForQuestionsInPatientVisit(patientVisitResponse, t)
 	submitAnswersIntakeForPatient(patient.PatientId.Int64(), patient.AccountId.Int64(), answerIntakeRequestBody, testData, t)
 
-	SubmitPatientVisitForPatient(patientSignedupResponse.Patient.PatientId.Int64(), patientVisitResponse.PatientVisitId, testData, t)
-	StartReviewingPatientVisit(patientVisitResponse.PatientVisitId, doctor, testData, t)
+	submitPatientVisitForPatient(patientSignedupResponse.Patient.PatientId.Int64(), patientVisitResponse.PatientVisitId, testData, t)
+	startReviewingPatientVisit(patientVisitResponse.PatientVisitId, doctor, testData, t)
 
 	// doctor now attempts to favorite a treatment
 	treatment1 := &common.Treatment{

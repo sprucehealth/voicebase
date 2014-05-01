@@ -20,6 +20,7 @@ const (
 	STATUS_INACTIVE                    = "INACTIVE"
 	STATUS_PENDING                     = "PENDING"
 	STATUS_ONGOING                     = "ONGOING"
+	STATUS_UNCOMMITTED                 = "UNCOMMITTED"
 	ERX_STATUS_SENDING                 = "Sending"
 	ERX_STATUS_SENT                    = "eRxSent"
 	ERX_STATUS_ERROR                   = "Error"
@@ -155,6 +156,7 @@ func (d *DataService) addTreatment(tType treatmentType, treatment *common.Treatm
 		medicationType = treatmentOTC
 	}
 
+	// collecting data for fields that are common to all types of treatment
 	columnsAndData := map[string]interface{}{
 		"drug_internal_name":    treatment.DrugInternalName,
 		"dosage_strength":       treatment.DosageStrength,

@@ -147,7 +147,7 @@ type TreatmentPlan struct {
 	Status           string            `json:"status,omitempty"`
 	CreationDate     *time.Time        `json:"creation_date,omitempty"`
 	SentDate         *time.Time        `json:"sent_date,omitempty"`
-	TreatmentList    *TreatmentList    `json:"treatment_list,omitempty"`
+	Treatments       []*Treatment      `json:"treatments,omitempty"`
 	Title            string            `json:"title,omitempty"`
 	DiagnosisSummary *DiagnosisSummary `json:"diagnosis_summary,omitempty"`
 	RegimenPlan      *RegimenPlan      `json:"regimen_plan,omitempty"`
@@ -156,14 +156,13 @@ type TreatmentPlan struct {
 }
 
 type FavoriteTreatmentPlan struct {
-	Id            encoding.ObjectId `json:"id"`
-	Name          string            `json:"name"`
-	ModifiedDate  time.Time         `json:"modified_date,omitempty"`
-	DoctorId      int64             `json:"-"`
-	RegimenPlan   *RegimenPlan      `json:"regimen_plan,omitempty"`
-	TreatmentList *TreatmentList    `json:"treatment_list,omitempty"`
-	Advice        *Advice           `json:"advice,omitempty"`
-	Followup      *FollowUp         `json:"follow_up,omitempty"`
+	Id           encoding.ObjectId `json:"id"`
+	Name         string            `json:"name"`
+	ModifiedDate time.Time         `json:"modified_date,omitempty"`
+	DoctorId     int64             `json:"-"`
+	RegimenPlan  *RegimenPlan      `json:"regimen_plan,omitempty"`
+	Treatments   []*Treatment      `json:"treatments,omitempty"`
+	Advice       *Advice           `json:"advice,omitempty"`
 }
 
 type RefillRequestItem struct {
@@ -212,11 +211,6 @@ type DoctorInstructionItem struct {
 type RegimenSection struct {
 	RegimenName  string                   `json:"regimen_name"`
 	RegimenSteps []*DoctorInstructionItem `json:"regimen_steps"`
-}
-
-type TreatmentList struct {
-	Treatments []*Treatment `json:"treatments,omitempty"`
-	Status     string       `json:"status,omitempty"`
 }
 
 type RegimenPlan struct {

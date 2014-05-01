@@ -25,7 +25,7 @@ func TestDoctorUpdateToPatientAddress(t *testing.T) {
 		t.Fatal("Unable to read doctor information")
 	}
 
-	signedupPatientResponse := SignupRandomTestPatient(t, testData.DataApi, testData.AuthApi)
+	signedupPatientResponse := signupRandomTestPatient(t, testData.DataApi, testData.AuthApi)
 
 	patientPharmacy := &pharmacy.PharmacyData{
 		Source:       pharmacy.PHARMACY_SOURCE_SURESCRIPTS,
@@ -118,7 +118,7 @@ func TestDoctorFailedUpdate(t *testing.T) {
 
 	// ensure that an update does not go through if we remove the patient address
 	// or the dob or phone numbers
-	signedupPatientResponse := SignupRandomTestPatient(t, testData.DataApi, testData.AuthApi)
+	signedupPatientResponse := signupRandomTestPatient(t, testData.DataApi, testData.AuthApi)
 	signedupPatientResponse.Patient.PhoneNumbers = nil
 	stubErxApi := &erx.StubErxService{}
 	stubAddressValidationService := address_validation.StubAddressValidationService{
@@ -196,7 +196,7 @@ func TestDoctorUpdateToPhoneNumbers(t *testing.T) {
 		t.Fatal("Unable to read doctor information")
 	}
 
-	signedupPatientResponse := SignupRandomTestPatient(t, testData.DataApi, testData.AuthApi)
+	signedupPatientResponse := signupRandomTestPatient(t, testData.DataApi, testData.AuthApi)
 	patientPharmacy := &pharmacy.PharmacyData{
 		Source:       pharmacy.PHARMACY_SOURCE_SURESCRIPTS,
 		SourceId:     "1234",
@@ -300,7 +300,7 @@ func TestDoctorUpdateToTopLevelInformation(t *testing.T) {
 		t.Fatal("Unable to read doctor information")
 	}
 
-	signedupPatientResponse := SignupRandomTestPatient(t, testData.DataApi, testData.AuthApi)
+	signedupPatientResponse := signupRandomTestPatient(t, testData.DataApi, testData.AuthApi)
 	patientPharmacy := &pharmacy.PharmacyData{
 		Source:       pharmacy.PHARMACY_SOURCE_SURESCRIPTS,
 		SourceId:     "1234",
@@ -386,9 +386,9 @@ func TestDoctorUpdatePatientInformationForbidden(t *testing.T) {
 	testData := SetupIntegrationTest(t)
 	defer TearDownIntegrationTest(t, testData)
 
-	signedupDoctorResponse, _, _ := SignupRandomTestDoctor(t, testData.DataApi, testData.AuthApi)
+	signedupDoctorResponse, _, _ := signupRandomTestDoctor(t, testData.DataApi, testData.AuthApi)
 
-	signedupPatientResponse := SignupRandomTestPatient(t, testData.DataApi, testData.AuthApi)
+	signedupPatientResponse := signupRandomTestPatient(t, testData.DataApi, testData.AuthApi)
 	patientPharmacy := &pharmacy.PharmacyData{
 		Source:       pharmacy.PHARMACY_SOURCE_SURESCRIPTS,
 		SourceId:     "1234",
@@ -453,7 +453,7 @@ func TestDoctorPatientPharmacyUpdateHandler(t *testing.T) {
 	if err != nil {
 		t.Fatal("Unable to read doctor information")
 	}
-	signedupPatientResponse := SignupRandomTestPatient(t, testData.DataApi, testData.AuthApi)
+	signedupPatientResponse := signupRandomTestPatient(t, testData.DataApi, testData.AuthApi)
 	patientPharmacy := &pharmacy.PharmacyData{
 		Source:       pharmacy.PHARMACY_SOURCE_SURESCRIPTS,
 		SourceId:     "1234",
@@ -520,9 +520,9 @@ func TestDoctorPharmacyUpdateForbidden(t *testing.T) {
 	testData := SetupIntegrationTest(t)
 	defer TearDownIntegrationTest(t, testData)
 
-	signedupDoctorResponse, _, _ := SignupRandomTestDoctor(t, testData.DataApi, testData.AuthApi)
+	signedupDoctorResponse, _, _ := signupRandomTestDoctor(t, testData.DataApi, testData.AuthApi)
 
-	signedupPatientResponse := SignupRandomTestPatient(t, testData.DataApi, testData.AuthApi)
+	signedupPatientResponse := signupRandomTestPatient(t, testData.DataApi, testData.AuthApi)
 	patientPharmacy := &pharmacy.PharmacyData{
 		Source:       pharmacy.PHARMACY_SOURCE_SURESCRIPTS,
 		SourceId:     "1234",

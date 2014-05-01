@@ -20,7 +20,7 @@ import (
 func TestPatientRegistration(t *testing.T) {
 	testData := SetupIntegrationTest(t)
 	defer TearDownIntegrationTest(t, testData)
-	SignupRandomTestPatient(t, testData.DataApi, testData.AuthApi)
+	signupRandomTestPatient(t, testData.DataApi, testData.AuthApi)
 }
 
 func TestPatientCareProvidingEllgibility(t *testing.T) {
@@ -78,8 +78,8 @@ func TestPatientVisitCreation(t *testing.T) {
 	testData := SetupIntegrationTest(t)
 	defer TearDownIntegrationTest(t, testData)
 
-	signedupPatientResponse := SignupRandomTestPatient(t, testData.DataApi, testData.AuthApi)
-	patientVisitResponse := CreatePatientVisitForPatient(signedupPatientResponse.Patient.PatientId.Int64(), testData, t)
+	signedupPatientResponse := signupRandomTestPatient(t, testData.DataApi, testData.AuthApi)
+	patientVisitResponse := createPatientVisitForPatient(signedupPatientResponse.Patient.PatientId.Int64(), testData, t)
 
 	if patientVisitResponse.PatientVisitId == 0 {
 		t.Fatal("Patient Visit Id not set when it should be.")
@@ -113,7 +113,7 @@ func TestPatientVisitCreation(t *testing.T) {
 
 	// getting the patient visit again as we should get back the same patient visit id
 	// since this patient visit has not been completed
-	anotherPatientVisitResponse := GetPatientVisitForPatient(signedupPatientResponse.Patient.PatientId.Int64(), testData, t)
+	anotherPatientVisitResponse := getPatientVisitForPatient(signedupPatientResponse.Patient.PatientId.Int64(), testData, t)
 	if anotherPatientVisitResponse.PatientVisitId != patientVisitResponse.PatientVisitId {
 		t.Fatal("The patient visit id for subsequent calls should be the same so long as we have not closed/submitted the case")
 	}
@@ -123,10 +123,10 @@ func TestPatientVisitSubmission(t *testing.T) {
 	testData := SetupIntegrationTest(t)
 	defer TearDownIntegrationTest(t, testData)
 
-	signedupPatientResponse := SignupRandomTestPatient(t, testData.DataApi, testData.AuthApi)
-	patientVisitResponse := CreatePatientVisitForPatient(signedupPatientResponse.Patient.PatientId.Int64(), testData, t)
+	signedupPatientResponse := signupRandomTestPatient(t, testData.DataApi, testData.AuthApi)
+	patientVisitResponse := createPatientVisitForPatient(signedupPatientResponse.Patient.PatientId.Int64(), testData, t)
 
-	SubmitPatientVisitForPatient(signedupPatientResponse.Patient.PatientId.Int64(), patientVisitResponse.PatientVisitId, testData, t)
+	submitPatientVisitForPatient(signedupPatientResponse.Patient.PatientId.Int64(), patientVisitResponse.PatientVisitId, testData, t)
 
 	// try submitting the exact same patient visit again, and it should come back with a 403 given that the case has already been submitted
 
@@ -156,7 +156,7 @@ func TestPatientAutocompleteForDrugs(t *testing.T) {
 	testData := SetupIntegrationTest(t)
 	defer TearDownIntegrationTest(t, testData)
 
-	signedupPatientResponse := SignupRandomTestPatient(t, testData.DataApi, testData.AuthApi)
+	signedupPatientResponse := signupRandomTestPatient(t, testData.DataApi, testData.AuthApi)
 
 	autocompleteHandler := apiservice.AutocompleteHandler{
 		DataApi: testData.DataApi,

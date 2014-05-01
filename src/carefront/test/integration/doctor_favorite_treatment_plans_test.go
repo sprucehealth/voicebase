@@ -23,7 +23,7 @@ func TestFavoriteTreatmentPlan(t *testing.T) {
 		t.Fatalf("Unable to get doctor from id: %s", err)
 	}
 
-	patientVisitResponse := signupAndSubmitPatientVisitForRandomPatient(t, testData, doctor)
+	patientVisitResponse, _ := signupAndSubmitPatientVisitForRandomPatient(t, testData, doctor)
 
 	// lets submit a regimen plan for this patient
 	regimenPlanRequest := &common.RegimenPlan{}
@@ -77,32 +77,30 @@ func TestFavoriteTreatmentPlan(t *testing.T) {
 	// lets add a favorite treatment plan for doctor
 	favoriteTreatmentPlan := &common.FavoriteTreatmentPlan{
 		Name: "Test Treatment Plan",
-		TreatmentList: &common.TreatmentList{
-			Treatments: []*common.Treatment{&common.Treatment{
-				DrugDBIds: map[string]string{
-					erx.LexiDrugSynId:     "1234",
-					erx.LexiGenProductId:  "12345",
-					erx.LexiSynonymTypeId: "123556",
-					erx.NDC:               "2415",
-				},
-				DrugName:                "Teting (This - Drug)",
-				DosageStrength:          "10 mg",
-				DispenseValue:           5,
-				DispenseUnitDescription: "Tablet",
-				DispenseUnitId:          encoding.NewObjectId(19),
-				NumberRefills: encoding.NullInt64{
-					IsValid:    true,
-					Int64Value: 5,
-				},
-				SubstitutionsAllowed: false,
-				DaysSupply: encoding.NullInt64{
-					IsValid:    true,
-					Int64Value: 5,
-				},
-				PatientInstructions: "Take once daily",
-				OTC:                 false,
+		Treatments: []*common.Treatment{&common.Treatment{
+			DrugDBIds: map[string]string{
+				erx.LexiDrugSynId:     "1234",
+				erx.LexiGenProductId:  "12345",
+				erx.LexiSynonymTypeId: "123556",
+				erx.NDC:               "2415",
 			},
+			DrugName:                "Teting (This - Drug)",
+			DosageStrength:          "10 mg",
+			DispenseValue:           5,
+			DispenseUnitDescription: "Tablet",
+			DispenseUnitId:          encoding.NewObjectId(19),
+			NumberRefills: encoding.NullInt64{
+				IsValid:    true,
+				Int64Value: 5,
 			},
+			SubstitutionsAllowed: false,
+			DaysSupply: encoding.NullInt64{
+				IsValid:    true,
+				Int64Value: 5,
+			},
+			PatientInstructions: "Take once daily",
+			OTC:                 false,
+		},
 		},
 		RegimenPlan: regimenPlanResponse,
 		Advice:      doctorAdviceResponse,
@@ -189,32 +187,30 @@ func TestFavoriteTreatmentPlan(t *testing.T) {
 	// lets go ahead and add another favorited treatment
 	favoriteTreatmentPlan2 := &common.FavoriteTreatmentPlan{
 		Name: "Test Treatment Plan #2",
-		TreatmentList: &common.TreatmentList{
-			Treatments: []*common.Treatment{&common.Treatment{
-				DrugDBIds: map[string]string{
-					erx.LexiDrugSynId:     "1234",
-					erx.LexiGenProductId:  "12345",
-					erx.LexiSynonymTypeId: "123556",
-					erx.NDC:               "2415",
-				},
-				DrugName:                "Teting (This - Drug)",
-				DosageStrength:          "10 mg",
-				DispenseValue:           5,
-				DispenseUnitDescription: "Tablet",
-				DispenseUnitId:          encoding.NewObjectId(19),
-				NumberRefills: encoding.NullInt64{
-					IsValid:    true,
-					Int64Value: 5,
-				},
-				SubstitutionsAllowed: false,
-				DaysSupply: encoding.NullInt64{
-					IsValid:    true,
-					Int64Value: 5,
-				},
-				PatientInstructions: "Take once daily",
-				OTC:                 false,
+		Treatments: []*common.Treatment{&common.Treatment{
+			DrugDBIds: map[string]string{
+				erx.LexiDrugSynId:     "1234",
+				erx.LexiGenProductId:  "12345",
+				erx.LexiSynonymTypeId: "123556",
+				erx.NDC:               "2415",
 			},
+			DrugName:                "Teting (This - Drug)",
+			DosageStrength:          "10 mg",
+			DispenseValue:           5,
+			DispenseUnitDescription: "Tablet",
+			DispenseUnitId:          encoding.NewObjectId(19),
+			NumberRefills: encoding.NullInt64{
+				IsValid:    true,
+				Int64Value: 5,
 			},
+			SubstitutionsAllowed: false,
+			DaysSupply: encoding.NullInt64{
+				IsValid:    true,
+				Int64Value: 5,
+			},
+			PatientInstructions: "Take once daily",
+			OTC:                 false,
+		},
 		},
 		RegimenPlan: regimenPlanResponse,
 		Advice:      doctorAdviceResponse,

@@ -93,8 +93,8 @@ func TestSingleSelectIntake(t *testing.T) {
 	defer TearDownIntegrationTest(t, testData)
 
 	// signup a random test patient for which to answer questions
-	patientSignedUpResponse := SignupRandomTestPatient(t, testData.DataApi, testData.AuthApi)
-	patientVisitResponse := CreatePatientVisitForPatient(patientSignedUpResponse.Patient.PatientId.Int64(), testData, t)
+	patientSignedUpResponse := signupRandomTestPatient(t, testData.DataApi, testData.AuthApi)
+	patientVisitResponse := createPatientVisitForPatient(patientSignedUpResponse.Patient.PatientId.Int64(), testData, t)
 
 	// now lets go ahead and try and answer the question about the reason for visit given that it is
 	// single select
@@ -108,7 +108,7 @@ func TestSingleSelectIntake(t *testing.T) {
 	submitPatientAnswerForVisit(patientSignedUpResponse.Patient.PatientId.Int64(), testData, patientIntakeRequestData, t)
 
 	// now, get the patient visit again to ensure that a patient answer was registered for the intended question
-	patientVisitResponse = GetPatientVisitForPatient(patientSignedUpResponse.Patient.PatientId.Int64(), testData, t)
+	patientVisitResponse = getPatientVisitForPatient(patientSignedUpResponse.Patient.PatientId.Int64(), testData, t)
 
 	// lets go through the questions to find the one for which the patient answer should be present
 	for _, section := range patientVisitResponse.ClientLayout.Sections {
@@ -137,8 +137,8 @@ func TestMultipleChoiceIntake(t *testing.T) {
 	defer TearDownIntegrationTest(t, testData)
 
 	// signup a random test patient for which to answer questions
-	patientSignedUpResponse := SignupRandomTestPatient(t, testData.DataApi, testData.AuthApi)
-	patientVisitResponse := CreatePatientVisitForPatient(patientSignedUpResponse.Patient.PatientId.Int64(), testData, t)
+	patientSignedUpResponse := signupRandomTestPatient(t, testData.DataApi, testData.AuthApi)
+	patientVisitResponse := createPatientVisitForPatient(patientSignedUpResponse.Patient.PatientId.Int64(), testData, t)
 
 	// now lets go ahead and try and answer the question about the reason for visit given that it is
 	// single select
@@ -166,7 +166,7 @@ func TestMultipleChoiceIntake(t *testing.T) {
 	}
 	submitPatientAnswerForVisit(patientSignedUpResponse.Patient.PatientId.Int64(), testData, string(requestData), t)
 	// now, get the patient visit again to ensure that a patient answer was registered for the intended question
-	patientVisitResponse = GetPatientVisitForPatient(patientSignedUpResponse.Patient.PatientId.Int64(), testData, t)
+	patientVisitResponse = getPatientVisitForPatient(patientSignedUpResponse.Patient.PatientId.Int64(), testData, t)
 
 	// lets go through the questions to find the one for which the patient answer should be present
 	for _, section := range patientVisitResponse.ClientLayout.Sections {
@@ -201,8 +201,8 @@ func TestSingleEntryIntake(t *testing.T) {
 	defer TearDownIntegrationTest(t, testData)
 
 	// signup a random test patient for which to answer questions
-	patientSignedUpResponse := SignupRandomTestPatient(t, testData.DataApi, testData.AuthApi)
-	patientVisitResponse := CreatePatientVisitForPatient(patientSignedUpResponse.Patient.PatientId.Int64(), testData, t)
+	patientSignedUpResponse := signupRandomTestPatient(t, testData.DataApi, testData.AuthApi)
+	patientVisitResponse := createPatientVisitForPatient(patientSignedUpResponse.Patient.PatientId.Int64(), testData, t)
 
 	questionId := getQuestionWithTagAndExpectedType("q_other_acne_location_entry", "q_type_single_entry", t, testData)
 	potentialAnswerId := getAnswerWithTagAndExpectedType("a_other_acne_location_entry", "a_type_single_entry", questionId, testData, t)
@@ -219,7 +219,7 @@ func TestSingleEntryIntake(t *testing.T) {
 	}
 	submitPatientAnswerForVisit(patientSignedUpResponse.Patient.PatientId.Int64(), testData, string(requestData), t)
 	// now, get the patient visit again to ensure that a patient answer was registered for the intended question
-	patientVisitResponse = GetPatientVisitForPatient(patientSignedUpResponse.Patient.PatientId.Int64(), testData, t)
+	patientVisitResponse = getPatientVisitForPatient(patientSignedUpResponse.Patient.PatientId.Int64(), testData, t)
 
 	// lets go through the questions to find the one for which the patient answer should be present
 	for _, section := range patientVisitResponse.ClientLayout.Sections {
@@ -259,7 +259,7 @@ func submitFreeTextResponseForPatient(patientVisitResponse *apiservice.PatientVi
 	}
 	submitPatientAnswerForVisit(PatientId, testData, string(requestData), t)
 	// now, get the patient visit again to ensure that a patient answer was registered for the intended question
-	patientVisitResponse = GetPatientVisitForPatient(PatientId, testData, t)
+	patientVisitResponse = getPatientVisitForPatient(PatientId, testData, t)
 
 	// lets go through the questions to find the one for which the patient answer should be present
 	for _, section := range patientVisitResponse.ClientLayout.Sections {
@@ -288,8 +288,8 @@ func TestFreeTextEntryIntake(t *testing.T) {
 	defer TearDownIntegrationTest(t, testData)
 
 	// signup a random test patient for which to answer questions
-	patientSignedUpResponse := SignupRandomTestPatient(t, testData.DataApi, testData.AuthApi)
-	patientVisitResponse := CreatePatientVisitForPatient(patientSignedUpResponse.Patient.PatientId.Int64(), testData, t)
+	patientSignedUpResponse := signupRandomTestPatient(t, testData.DataApi, testData.AuthApi)
+	patientVisitResponse := createPatientVisitForPatient(patientSignedUpResponse.Patient.PatientId.Int64(), testData, t)
 	freeTextResponse := "This is a free text response that should be accepted as a response for free text."
 	submitFreeTextResponseForPatient(patientVisitResponse, patientSignedUpResponse.Patient.PatientId.Int64(), freeTextResponse, testData, t)
 
@@ -315,8 +315,8 @@ func TestSubQuestionEntryIntake(t *testing.T) {
 	defer TearDownIntegrationTest(t, testData)
 
 	// signup a random test patient for which to answer questions
-	patientSignedUpResponse := SignupRandomTestPatient(t, testData.DataApi, testData.AuthApi)
-	patientVisitResponse := CreatePatientVisitForPatient(patientSignedUpResponse.Patient.PatientId.Int64(), testData, t)
+	patientSignedUpResponse := signupRandomTestPatient(t, testData.DataApi, testData.AuthApi)
+	patientVisitResponse := createPatientVisitForPatient(patientSignedUpResponse.Patient.PatientId.Int64(), testData, t)
 
 	// now lets go ahead and try and answer the question about the reason for visit given that it is
 	// single select
@@ -370,7 +370,7 @@ func TestSubQuestionEntryIntake(t *testing.T) {
 	}
 	submitPatientAnswerForVisit(patientSignedUpResponse.Patient.PatientId.Int64(), testData, string(requestData), t)
 	// now, get the patient visit again to ensure that a patient answer was registered for the intended question
-	patientVisitResponse = GetPatientVisitForPatient(patientSignedUpResponse.Patient.PatientId.Int64(), testData, t)
+	patientVisitResponse = getPatientVisitForPatient(patientSignedUpResponse.Patient.PatientId.Int64(), testData, t)
 
 	// lets go through the questions to find the one for which the patient answer should be present
 	questionNotFound := true
@@ -434,7 +434,7 @@ func TestSubQuestionEntryIntake(t *testing.T) {
 
 	submitPatientAnswerForVisit(patientSignedUpResponse.Patient.PatientId.Int64(), testData, string(requestData), t)
 	// now, get the patient visit again to ensure that a patient answer was registered for the intended question
-	patientVisitResponse = GetPatientVisitForPatient(patientSignedUpResponse.Patient.PatientId.Int64(), testData, t)
+	patientVisitResponse = getPatientVisitForPatient(patientSignedUpResponse.Patient.PatientId.Int64(), testData, t)
 	// lets go through the questions to find the one for which the patient answer should be present
 	questionNotFound = true
 	for _, section := range patientVisitResponse.ClientLayout.Sections {
@@ -474,8 +474,8 @@ func TestPhotoAnswerIntake(t *testing.T) {
 	defer TearDownIntegrationTest(t, testData)
 
 	// signup a random test patient for which to answer questions
-	patientSignedUpResponse := SignupRandomTestPatient(t, testData.DataApi, testData.AuthApi)
-	patientVisitResponse := CreatePatientVisitForPatient(patientSignedUpResponse.Patient.PatientId.Int64(), testData, t)
+	patientSignedUpResponse := signupRandomTestPatient(t, testData.DataApi, testData.AuthApi)
+	patientVisitResponse := createPatientVisitForPatient(patientSignedUpResponse.Patient.PatientId.Int64(), testData, t)
 	questionId := getQuestionWithTagAndExpectedType("q_chest_photo_intake", "q_type_photo", t, testData)
 	potentialAnswerId := getAnswerWithTagAndExpectedType("a_chest_phota_intake", "a_type_photo_entry_chest", questionId, testData, t)
 
@@ -525,7 +525,7 @@ func TestPhotoAnswerIntake(t *testing.T) {
 	CheckSuccessfulStatusCode(resp, "Unable to submit photo answer for patient: "+string(responseBody), t)
 
 	// get the patient visit again to get the patient answer in there
-	patientVisitResponse = GetPatientVisitForPatient(patientSignedUpResponse.Patient.PatientId.Int64(), testData, t)
+	patientVisitResponse = getPatientVisitForPatient(patientSignedUpResponse.Patient.PatientId.Int64(), testData, t)
 	for _, section := range patientVisitResponse.ClientLayout.Sections {
 		for _, screen := range section.Screens {
 			for _, question := range screen.Questions {

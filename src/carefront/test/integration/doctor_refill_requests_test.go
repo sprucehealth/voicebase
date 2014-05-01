@@ -36,7 +36,7 @@ func TestNewRefillRequestForExistingPatientAndExistingTreatment(t *testing.T) {
 	// create doctor with clinicianId specicified
 	doctor := createDoctorWithClinicianId(testData, t)
 
-	signedupPatientResponse := SignupRandomTestPatient(t, testData.DataApi, testData.AuthApi)
+	signedupPatientResponse := signupRandomTestPatient(t, testData.DataApi, testData.AuthApi)
 	erxPatientId := int64(60)
 
 	// add an erx patient id to the patient
@@ -62,10 +62,10 @@ func TestNewRefillRequestForExistingPatientAndExistingTreatment(t *testing.T) {
 		t.Fatal("Unable to store pharmacy in db: " + err.Error())
 	}
 
-	patientVisitResponse := CreatePatientVisitForPatient(signedupPatientResponse.Patient.PatientId.Int64(), testData, t)
+	patientVisitResponse := createPatientVisitForPatient(signedupPatientResponse.Patient.PatientId.Int64(), testData, t)
 	// start a new treatemtn plan for the patient visit
 	treatmentPlanId, err := testData.DataApi.StartNewTreatmentPlanForPatientVisit(signedupPatientResponse.Patient.PatientId.Int64(),
-		patientVisitResponse.PatientVisitId, doctor.DoctorId.Int64())
+		patientVisitResponse.PatientVisitId, doctor.DoctorId.Int64(), 0)
 	if err != nil {
 		t.Fatal("Unable to start new treatment plan for patient visit " + err.Error())
 	}
@@ -1658,7 +1658,7 @@ func setUpDeniedRefillRequestWithDNTFForLinkedTreatment(t *testing.T, testData T
 	// create doctor with clinicianId specicified
 	doctor := createDoctorWithClinicianId(testData, t)
 
-	signedupPatientResponse := SignupRandomTestPatient(t, testData.DataApi, testData.AuthApi)
+	signedupPatientResponse := signupRandomTestPatient(t, testData.DataApi, testData.AuthApi)
 	erxPatientId := int64(60)
 
 	// add an erx patient id to the patient
@@ -1684,10 +1684,10 @@ func setUpDeniedRefillRequestWithDNTFForLinkedTreatment(t *testing.T, testData T
 		t.Fatal("Unable to store pharmacy in db: " + err.Error())
 	}
 
-	patientVisitResponse := CreatePatientVisitForPatient(signedupPatientResponse.Patient.PatientId.Int64(), testData, t)
+	patientVisitResponse := createPatientVisitForPatient(signedupPatientResponse.Patient.PatientId.Int64(), testData, t)
 	// start a new treatemtn plan for the patient visit
 	treatmentPlanId, err := testData.DataApi.StartNewTreatmentPlanForPatientVisit(signedupPatientResponse.Patient.PatientId.Int64(),
-		patientVisitResponse.PatientVisitId, doctor.DoctorId.Int64())
+		patientVisitResponse.PatientVisitId, doctor.DoctorId.Int64(), 0)
 	if err != nil {
 		t.Fatal("Unable to start new treatment plan for patient visit " + err.Error())
 	}
@@ -2406,7 +2406,7 @@ func TestRefillRequestComingFromDifferentPharmacyThanDispensedPrescription(t *te
 	// create doctor with clinicianId specicified
 	doctor := createDoctorWithClinicianId(testData, t)
 
-	signedupPatientResponse := SignupRandomTestPatient(t, testData.DataApi, testData.AuthApi)
+	signedupPatientResponse := signupRandomTestPatient(t, testData.DataApi, testData.AuthApi)
 	erxPatientId := int64(60)
 
 	// add an erx patient id to the patient
@@ -2447,10 +2447,10 @@ func TestRefillRequestComingFromDifferentPharmacyThanDispensedPrescription(t *te
 		t.Fatal("Unable to store pharmacy in db: " + err.Error())
 	}
 
-	patientVisitResponse := CreatePatientVisitForPatient(signedupPatientResponse.Patient.PatientId.Int64(), testData, t)
+	patientVisitResponse := createPatientVisitForPatient(signedupPatientResponse.Patient.PatientId.Int64(), testData, t)
 	// start a new treatemtn plan for the patient visit
 	treatmentPlanId, err := testData.DataApi.StartNewTreatmentPlanForPatientVisit(signedupPatientResponse.Patient.PatientId.Int64(),
-		patientVisitResponse.PatientVisitId, doctor.DoctorId.Int64())
+		patientVisitResponse.PatientVisitId, doctor.DoctorId.Int64(), 0)
 	if err != nil {
 		t.Fatal("Unable to start new treatment plan for patient visit " + err.Error())
 	}
@@ -2654,7 +2654,7 @@ func TestNewRefillRequestWithUnlinkedTreatmentAndLinkedPatient(t *testing.T) {
 	// create doctor with clinicianId specicified
 	doctor := createDoctorWithClinicianId(testData, t)
 
-	signedupPatientResponse := SignupRandomTestPatient(t, testData.DataApi, testData.AuthApi)
+	signedupPatientResponse := signupRandomTestPatient(t, testData.DataApi, testData.AuthApi)
 	erxPatientId := int64(60)
 
 	// add an erx patient id to the patient
@@ -3020,7 +3020,7 @@ func TestNewRefillRequestWithUnlinkedTreatmentAndUnlinkedPatient(t *testing.T) {
 }
 
 func createDoctorWithClinicianId(testData TestData, t *testing.T) *common.Doctor {
-	signedupDoctorResponse, _, _ := SignupRandomTestDoctor(t, testData.DataApi, testData.AuthApi)
+	signedupDoctorResponse, _, _ := signupRandomTestDoctor(t, testData.DataApi, testData.AuthApi)
 	_, err := testData.DB.Exec(`update doctor set clinician_id = ? where id = ?`, clinicianId, signedupDoctorResponse.DoctorId)
 	if err != nil {
 		t.Fatal("Unable to assign a clinicianId to the doctor: " + err.Error())

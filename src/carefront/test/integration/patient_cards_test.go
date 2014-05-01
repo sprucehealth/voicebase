@@ -21,7 +21,7 @@ func TestAddCardsForPatient(t *testing.T) {
 	testData := SetupIntegrationTest(t)
 	defer TearDownIntegrationTest(t, testData)
 
-	signedupPatientResponse := SignupRandomTestPatient(t, testData.DataApi, testData.AuthApi)
+	signedupPatientResponse := signupRandomTestPatient(t, testData.DataApi, testData.AuthApi)
 
 	customerToAdd := &payment.Customer{
 		Id: "test_customer_id",

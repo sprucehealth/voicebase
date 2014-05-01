@@ -114,8 +114,8 @@ func TestAdvicePointsForPatientVisit(t *testing.T) {
 	}
 
 	// lets start a new patient visit and ensure that we still get back the advice points as added
-	patientSignedupResponse := SignupRandomTestPatient(t, testData.DataApi, testData.AuthApi)
-	patientVisitResponse2 := CreatePatientVisitForPatient(patientSignedupResponse.Patient.PatientId.Int64(), testData, t)
+	patientSignedupResponse := signupRandomTestPatient(t, testData.DataApi, testData.AuthApi)
+	patientVisitResponse2 := createPatientVisitForPatient(patientSignedupResponse.Patient.PatientId.Int64(), testData, t)
 
 	// get the advice points for this patient visit
 	doctorAdviceResponse2 := getAdvicePointsInPatientVisit(testData, doctor, patientVisitResponse2.PatientVisitId, t)
@@ -314,7 +314,7 @@ func TestAdvicePointsForPatientVisit_SelectAdviceFromDeletedAdvice(t *testing.T)
 
 	// lets go ahead and delete an advice point in the context of another patient's visit
 
-	patientVisitResponse2 := signupAndSubmitPatientVisitForRandomPatient(t, testData, doctor)
+	patientVisitResponse2, _ := signupAndSubmitPatientVisitForRandomPatient(t, testData, doctor)
 	doctorAdviceResponse2 := getAdvicePointsInPatientVisit(testData, doctor, patientVisitResponse2.PatientVisitId, t)
 
 	doctorAdviceRequest = doctorAdviceResponse2
@@ -426,7 +426,7 @@ func setupAdviceCreationTest(t *testing.T, testData TestData) (*apiservice.Patie
 	}
 
 	// get patient to start a visit
-	patientVisitResponse := signupAndSubmitPatientVisitForRandomPatient(t, testData, doctor)
+	patientVisitResponse, _ := signupAndSubmitPatientVisitForRandomPatient(t, testData, doctor)
 
 	return patientVisitResponse, doctor
 }

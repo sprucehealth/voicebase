@@ -28,7 +28,6 @@ type DoctorPatientVisitReviewRequestBody struct {
 type DoctorPatientVisitReviewResponse struct {
 	Patient            *common.Patient        `json:"patient"`
 	PatientVisit       *common.PatientVisit   `json:"patient_visit"`
-	TreatmentPlanId    int64                  `json:"treatment_plan_id"`
 	PatientVisitReview map[string]interface{} `json:"visit_review"`
 }
 
@@ -71,9 +70,8 @@ func (p *DoctorPatientVisitReviewHandler) ServeHTTP(w http.ResponseWriter, r *ht
 
 	// udpate the status of the case and the item in the doctor's queue
 	if patientVisit.Status == api.CASE_STATUS_SUBMITTED {
-		treatmentPlanId, err = p.DataApi.StartNewTreatmentPlanForPatientVisit(patientVisit.PatientId.Int64(), patientVisit.PatientVisitId.Int64(), patientVisitReviewData.DoctorId)
-		if err != nil {
-			WriteDeveloperError(w, http.StatusInternalServerError, "Unable to update the status of the visit to reviewing: "+err.Error())
+		if err := p.DataApi.UpdatePatientVisitStatus(patientVisitReviewData.PatientVisit.PatientVisitId.Int64(), "", api.CASE_STATUS_REVIEWING); err != nil {
+			WriteDeveloperError(w, http.StatusInternalServerError, "Unable to update status of patient visit: "+err.Error())
 			return
 		}
 
@@ -166,7 +164,6 @@ func (p *DoctorPatientVisitReviewHandler) ServeHTTP(w http.ResponseWriter, r *ht
 	}
 
 	response.Patient = patient
-	response.TreatmentPlanId = treatmentPlanId
 	response.PatientVisitReview = renderedJsonData
 
 	WriteJSONToHTTPResponseWriter(w, http.StatusOK, response)

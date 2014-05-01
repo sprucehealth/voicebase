@@ -168,21 +168,15 @@ func (d *DataService) GetActiveTreatmentPlanForPatientVisit(doctorId, patientVis
 	return treatmentPlanId, err
 }
 
-func (d *DataService) StartNewTreatmentPlanForPatientVisit(patientId, patientVisitId, doctorId int64) (int64, error) {
+func (d *DataService) StartNewTreatmentPlanForPatientVisit(patientId, patientVisitId, doctorId, favoriteTreatmentPlanId int64) (int64, error) {
 	tx, err := d.DB.Begin()
 	if err != nil {
 		return 0, err
 	}
 
 	// when starting a new treatment plan, ensure to delete any old treatment plan
+	// this will probably have to be handled more gracefully when we have versioning of treatment plans
 	_, err = tx.Exec(`delete from treatment_plan where patient_visit_id = ? and status = ?`, patientVisitId, STATUS_ACTIVE)
-	if err != nil {
-		tx.Rollback()
-		return 0, err
-	}
-
-	// also ensure to update the status of the visit to reviewing
-	_, err = tx.Exec(`update patient_visit set status=? where id=?`, CASE_STATUS_REVIEWING, patientVisitId)
 	if err != nil {
 		tx.Rollback()
 		return 0, err
@@ -198,6 +192,15 @@ func (d *DataService) StartNewTreatmentPlanForPatientVisit(patientId, patientVis
 	if err != nil {
 		tx.Rollback()
 		return 0, err
+	}
+
+	// include the mapping between the favorite treatment plan and the treatment plan if non-zero
+	if favoriteTreatmentPlanId != 0 {
+		_, err := tx.Exec(`insert into treatment_plan_favorite_mapping (treatment_plan_id, dr_favorite_treatment_plan_id) values (?,?)`, treatmentPlanId, favoriteTreatmentPlanId)
+		if err != nil {
+			tx.Rollback()
+			return 0, err
+		}
 	}
 
 	err = tx.Commit()

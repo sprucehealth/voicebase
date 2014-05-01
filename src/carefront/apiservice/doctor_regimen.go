@@ -124,24 +124,33 @@ func (d *DoctorRegimenHandler) updateRegimenSteps(w http.ResponseWriter, r *http
 		}
 	}
 
-	// first, ensure that all regimen steps in the regimen sections actually exist in the client global list
+	// ensure that all regimen steps in the regimen sections actually exist in the client global list
 	for _, regimenSection := range requestData.RegimenSections {
 		for _, regimenStep := range regimenSection.RegimenSteps {
 			regimenStepFound := false
 			for _, globalRegimenStep := range requestData.AllRegimenSteps {
-				if globalRegimenStep.Id.Int64() == 0 && globalRegimenStep.ParentId.Int64() == 0 {
+
+				// if we are working with new items in the list do a text comparison to check for the existence of the step
+				if globalRegimenStep.Id.Int64() == 0 && regimenStep.ParentId.Int64() == 0 {
 					if globalRegimenStep.Text == regimenStep.Text {
 						regimenStepFound = true
 						break
 					}
 				} else if globalRegimenStep.Id.Int64() == regimenStep.ParentId.Int64() {
+					// check the text to ensure that its the same
+					if textOfGlobalRegimenStep, ok := idToTextMapping[regimenStep.ParentId.Int64()]; ok {
+						if textOfGlobalRegimenStep != regimenStep.Text {
+							WriteDeveloperError(w, http.StatusBadRequest, "The text of an item in the regimen section cannot be different from that in the global list if they are considered linked.")
+							return
+						}
+					}
 					regimenStepFound = true
 					break
 				} else if regimenStep.ParentId.Int64() != 0 {
 					// its possible that the step is not present in the active global list but exists as a
 					// step from the past
 					parentRegimenStep, err := d.DataApi.GetRegimenStepForDoctor(regimenStep.ParentId.Int64(), patientVisitReviewData.DoctorId)
-					if err != nil && err == api.NoRowsError {
+					if err == api.NoRowsError {
 						WriteDeveloperError(w, http.StatusBadRequest, "Cannot have a step in a regimen section that does not link to a regimen step the doctor created at some point.")
 						return
 					} else if err != nil {
@@ -160,12 +169,6 @@ func (d *DoctorRegimenHandler) updateRegimenSteps(w http.ResponseWriter, r *http
 			if !regimenStepFound {
 				WriteDeveloperError(w, http.StatusBadRequest, "Regimen step in the section for the patient visit not found in the global list of all regimen steps")
 				return
-			}
-			if textOfGlobalRegimenStep, ok := idToTextMapping[regimenStep.ParentId.Int64()]; ok {
-				if textOfGlobalRegimenStep != regimenStep.Text {
-					WriteDeveloperError(w, http.StatusBadRequest, "The text of an item in the regimen section cannot be different from that in the global list if they are considered linked.")
-					return
-				}
 			}
 		}
 	}

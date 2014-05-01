@@ -170,9 +170,9 @@ func getDoctorIdOfCurrentPrimaryDoctor(testData TestData, t *testing.T) int64 {
 	return doctorId
 }
 
-func signupAndSubmitPatientVisitForRandomPatient(t *testing.T, testData TestData, doctor *common.Doctor) *apiservice.PatientVisitResponse {
-	patientSignedupResponse := SignupRandomTestPatient(t, testData.DataApi, testData.AuthApi)
-	patientVisitResponse := CreatePatientVisitForPatient(patientSignedupResponse.Patient.PatientId.Int64(), testData, t)
+func signupAndSubmitPatientVisitForRandomPatient(t *testing.T, testData TestData, doctor *common.Doctor) (*apiservice.PatientVisitResponse, *apiservice.DoctorTreatmentPlan) {
+	patientSignedupResponse := signupRandomTestPatient(t, testData.DataApi, testData.AuthApi)
+	patientVisitResponse := createPatientVisitForPatient(patientSignedupResponse.Patient.PatientId.Int64(), testData, t)
 
 	patient, err := testData.DataApi.GetPatientFromId(patientSignedupResponse.Patient.PatientId.Int64())
 	if err != nil {
@@ -180,11 +180,11 @@ func signupAndSubmitPatientVisitForRandomPatient(t *testing.T, testData TestData
 	}
 	answerIntakeRequestBody := prepareAnswersForQuestionsInPatientVisit(patientVisitResponse, t)
 	submitAnswersIntakeForPatient(patient.PatientId.Int64(), patient.AccountId.Int64(), answerIntakeRequestBody, testData, t)
-	SubmitPatientVisitForPatient(patientSignedupResponse.Patient.PatientId.Int64(), patientVisitResponse.PatientVisitId, testData, t)
+	submitPatientVisitForPatient(patientSignedupResponse.Patient.PatientId.Int64(), patientVisitResponse.PatientVisitId, testData, t)
 	// get the patient to start reviewing the case
-	StartReviewingPatientVisit(patientVisitResponse.PatientVisitId, doctor, testData, t)
-
-	return patientVisitResponse
+	startReviewingPatientVisit(patientVisitResponse.PatientVisitId, doctor, testData, t)
+	doctorPickTreatmentPlanResponse := pickATreatmentPlanForPatientVisit(patientVisitResponse.PatientVisitId, doctor, nil, testData, t)
+	return patientVisitResponse, doctorPickTreatmentPlanResponse.TreatmentPlan
 }
 
 func SetupIntegrationTest(t *testing.T) TestData {
@@ -243,7 +243,7 @@ func SetupIntegrationTest(t *testing.T) TestData {
 
 	// When setting up the database for each integration test, ensure to setup a doctor that is
 	// considered elligible to serve in the state of CA.
-	signedupDoctorResponse, _, _ := SignupRandomTestDoctor(t, testData.DataApi, testData.AuthApi)
+	signedupDoctorResponse, _, _ := signupRandomTestDoctor(t, testData.DataApi, testData.AuthApi)
 
 	// create the role of a primary doctor
 	_, err = testData.DB.Exec(`insert into provider_role (provider_tag) values ('DOCTOR')`)

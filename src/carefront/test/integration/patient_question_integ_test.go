@@ -41,8 +41,8 @@ func TestAdditionalFieldsInAutocompleteQuestion(t *testing.T) {
 	defer TearDownIntegrationTest(t, testData)
 
 	// signup a random test patient for which to answer questions
-	patientSignedUpResponse := SignupRandomTestPatient(t, testData.DataApi, testData.AuthApi)
-	patientVisitResponse := CreatePatientVisitForPatient(patientSignedUpResponse.Patient.PatientId.Int64(), testData, t)
+	patientSignedUpResponse := signupRandomTestPatient(t, testData.DataApi, testData.AuthApi)
+	patientVisitResponse := createPatientVisitForPatient(patientSignedUpResponse.Patient.PatientId.Int64(), testData, t)
 
 	// lets go through the questions to find the one for which the patient answer should be present
 	for _, section := range patientVisitResponse.ClientLayout.Sections {
