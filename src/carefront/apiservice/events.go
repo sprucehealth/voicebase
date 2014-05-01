@@ -24,3 +24,18 @@ type CareTeamAssingmentEvent struct {
 	PatientId   int64
 	Assignments []*common.PatientCareProviderAssignment
 }
+
+type TreatmentsAddedEvent struct {
+	TreatmentPlanId int64
+	Treatments      []*common.Treatment
+}
+
+type RegimenPlanAddedEvent struct {
+	TreatmentPlanId int64
+	RegimenPlan     *common.RegimenPlan
+}
+
+type AdviceAddedEvent struct {
+	TreatmentPlanId int64
+	Advice          *common.Advice
+}

@@ -329,7 +329,7 @@ func TestRegimenForPatientVisit_UpdatingItemLinkedToDeletedItem(t *testing.T) {
 	// lets go ahead and delete one of the items from the regimen step
 	regimenPlanRequest = regimenPlanResponse
 	regimenPlanRequest.PatientVisitId = encoding.NewObjectId(patientVisitResponse2.PatientVisitId)
-	regimenPlanRequest.AllRegimenSteps[4].State = common.STATE_DELETED
+	regimenPlanRequest.AllRegimenSteps = regimenPlanRequest.AllRegimenSteps[0:4]
 
 	regimenPlanResponse = createRegimenPlanForPatientVisit(regimenPlanRequest, testData, doctor, t)
 	if len(regimenPlanResponse.AllRegimenSteps) != 4 {

@@ -4,6 +4,7 @@ import (
 	"carefront/api"
 	"carefront/common"
 	"carefront/encoding"
+	"carefront/libs/dispatch"
 	"encoding/json"
 	"net/http"
 
@@ -115,21 +116,11 @@ func (d *DoctorRegimenHandler) updateRegimenSteps(w http.ResponseWriter, r *http
 		return
 	}
 
-	// ensure that the text of selected items matches that of the global list
-	// for items that have ids and thereby already exist in the database
-	idToTextMapping := make(map[int64]string)
-	for _, regimen := range requestData.AllRegimenSteps {
-		if regimen.Id.Int64() != 0 {
-			idToTextMapping[regimen.Id.Int64()] = regimen.Text
-		}
-	}
-
 	// ensure that all regimen steps in the regimen sections actually exist in the client global list
 	for _, regimenSection := range requestData.RegimenSections {
 		for _, regimenStep := range regimenSection.RegimenSteps {
 			regimenStepFound := false
 			for _, globalRegimenStep := range requestData.AllRegimenSteps {
-
 				// if we are working with new items in the list do a text comparison to check for the existence of the step
 				if globalRegimenStep.Id.Int64() == 0 && regimenStep.ParentId.Int64() == 0 {
 					if globalRegimenStep.Text == regimenStep.Text {
@@ -137,12 +128,10 @@ func (d *DoctorRegimenHandler) updateRegimenSteps(w http.ResponseWriter, r *http
 						break
 					}
 				} else if globalRegimenStep.Id.Int64() == regimenStep.ParentId.Int64() {
-					// check the text to ensure that its the same
-					if textOfGlobalRegimenStep, ok := idToTextMapping[regimenStep.ParentId.Int64()]; ok {
-						if textOfGlobalRegimenStep != regimenStep.Text {
-							WriteDeveloperError(w, http.StatusBadRequest, "The text of an item in the regimen section cannot be different from that in the global list if they are considered linked.")
-							return
-						}
+					if globalRegimenStep.Text != regimenStep.Text {
+						// check the text to ensure that its the same
+						WriteDeveloperError(w, http.StatusBadRequest, "The text of an item in the regimen section cannot be different from that in the global list if they are considered linked.")
+						return
 					}
 					regimenStepFound = true
 					break
@@ -173,7 +162,8 @@ func (d *DoctorRegimenHandler) updateRegimenSteps(w http.ResponseWriter, r *http
 		}
 	}
 
-	// identify any currently existing regimen steps that need to be deleted
+	// compare the master list of regimen steps from the client with the active list
+	// that we have stored on the server
 	regimenStepsToDelete := make([]*common.DoctorInstructionItem, 0)
 	currentActiveRegimenSteps, err := d.DataApi.GetRegimenStepsForDoctor(patientVisitReviewData.DoctorId)
 	if err != nil {
@@ -200,7 +190,7 @@ func (d *DoctorRegimenHandler) updateRegimenSteps(w http.ResponseWriter, r *http
 		return
 	}
 
-	// Go through regimen steps to add, update and delete regimen steps before creating the regimen plan
+	// Go through regimen steps to add and update regimen steps before creating the regimen plan
 	// for the user
 	newStepToIdMapping := make(map[string][]int64)
 	// keep track of the multiple items that could have the exact same text associated with it
@@ -227,12 +217,6 @@ func (d *DoctorRegimenHandler) updateRegimenSteps(w http.ResponseWriter, r *http
 			// regimen section
 			updatedStepToIdMapping[previousRegimenStepId] = regimenStep.Id.Int64()
 			updatedAllRegimenSteps = append(updatedAllRegimenSteps, regimenStep)
-		case common.STATE_DELETED:
-			err = d.DataApi.MarkRegimenStepToBeDeleted(regimenStep, patientVisitReviewData.DoctorId)
-			if err != nil {
-				WriteDeveloperError(w, http.StatusInternalServerError, "Unable to delete regimen step for doctor: "+err.Error())
-				return
-			}
 		default:
 			updatedAllRegimenSteps = append(updatedAllRegimenSteps, regimenStep)
 		}
@@ -269,8 +253,8 @@ func (d *DoctorRegimenHandler) updateRegimenSteps(w http.ResponseWriter, r *http
 			return
 		}
 	}
-	requestData.TreatmentPlanId = encoding.NewObjectId(treatmentPlanId)
 
+	requestData.TreatmentPlanId = encoding.NewObjectId(treatmentPlanId)
 	err = d.DataApi.CreateRegimenPlanForPatientVisit(requestData)
 	if err != nil {
 		WriteDeveloperError(w, http.StatusInternalServerError, "Unable to create regimen plan for patient visit: "+err.Error())
@@ -291,8 +275,17 @@ func (d *DoctorRegimenHandler) updateRegimenSteps(w http.ResponseWriter, r *http
 		return
 	}
 
-	requestData.RegimenSections = regimenPlan.RegimenSections
-	requestData.AllRegimenSteps = allRegimenSteps
+	regimenPlan = &common.RegimenPlan{
+		RegimenSections: regimenPlan.RegimenSections,
+		AllRegimenSteps: allRegimenSteps,
+		TreatmentPlanId: encoding.NewObjectId(treatmentPlanId),
+		PatientVisitId:  requestData.PatientVisitId,
+	}
 
-	WriteJSONToHTTPResponseWriter(w, http.StatusOK, requestData)
+	dispatch.Default.Publish(&RegimenPlanAddedEvent{
+		TreatmentPlanId: treatmentPlanId,
+		RegimenPlan:     requestData,
+	})
+
+	WriteJSONToHTTPResponseWriter(w, http.StatusOK, regimenPlan)
 }

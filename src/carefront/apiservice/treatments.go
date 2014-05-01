@@ -4,6 +4,7 @@ import (
 	"carefront/api"
 	"carefront/common"
 	"carefront/encoding"
+	"carefront/libs/dispatch"
 	"carefront/libs/erx"
 	"encoding/json"
 	"net/http"
@@ -86,15 +87,7 @@ func (t *TreatmentsHandler) getTreatments(w http.ResponseWriter, r *http.Request
 
 	// for each of the drugs, go ahead and fill in the drug name, route and form
 	for _, treatment := range treatments {
-		if treatment.DrugForm == "" {
-			drugName, drugForm, drugRoute := BreakDrugInternalNameIntoComponents(treatment.DrugInternalName)
-			treatment.DrugName = drugName
-			// only break down name into route and form if the route and form are non-empty strings
-			if drugForm != "" && drugRoute != "" {
-				treatment.DrugForm = drugForm
-				treatment.DrugRoute = drugRoute
-			}
-		}
+		treatment.DrugName, treatment.DrugForm, treatment.DrugRoute = breakDrugInternalNameIntoComponents(treatment.DrugInternalName)
 	}
 
 	WriteJSONToHTTPResponseWriter(w, http.StatusOK, &GetTreatmentsResponse{Treatments: treatments})
@@ -151,10 +144,7 @@ func (t *TreatmentsHandler) addTreatment(w http.ResponseWriter, r *http.Request)
 		}
 
 		// break up the name into its components so that it can be saved into the database as its components
-		drugName, drugForm, drugRoute := BreakDrugInternalNameIntoComponents(treatment.DrugInternalName)
-		treatment.DrugName = drugName
-		treatment.DrugForm = drugForm
-		treatment.DrugRoute = drugRoute
+		treatment.DrugName, treatment.DrugForm, treatment.DrugRoute = breakDrugInternalNameIntoComponents(treatment.DrugInternalName)
 
 		httpStatusCode, errorResponse := checkIfDrugInTreatmentFromTemplateIsOutOfMarket(treatment, doctor, t.ErxApi)
 		if errorResponse != nil {
@@ -162,7 +152,6 @@ func (t *TreatmentsHandler) addTreatment(w http.ResponseWriter, r *http.Request)
 			return
 		}
 
-		trimSpacesFromTreatmentFields(treatment)
 	}
 
 	// Add treatments to patient
@@ -176,6 +165,11 @@ func (t *TreatmentsHandler) addTreatment(w http.ResponseWriter, r *http.Request)
 		WriteDeveloperError(w, http.StatusInternalServerError, "unable to get treatments for patient visit after adding treatments : "+err.Error())
 		return
 	}
+
+	dispatch.Default.Publish(&TreatmentsAddedEvent{
+		TreatmentPlanId: treatmentPlanId,
+		Treatments:      treatments,
+	})
 
 	WriteJSONToHTTPResponseWriter(w, http.StatusOK, &GetTreatmentsResponse{Treatments: treatments})
 }

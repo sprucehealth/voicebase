@@ -4,6 +4,7 @@ import (
 	"carefront/api"
 	"carefront/common"
 	"carefront/encoding"
+	"carefront/libs/dispatch"
 	"encoding/json"
 	"net/http"
 
@@ -279,5 +280,11 @@ func (d *DoctorAdviceHandler) updateAdvicePoints(w http.ResponseWriter, r *http.
 
 	requestData.SelectedAdvicePoints = advicePoints
 	requestData.AllAdvicePoints = allAdvicePoints
+
+	dispatch.Default.Publish(&AdviceAddedEvent{
+		TreatmentPlanId: treatmentPlanId,
+		Advice:          &requestData,
+	})
+
 	WriteJSONToHTTPResponseWriter(w, http.StatusOK, requestData)
 }
