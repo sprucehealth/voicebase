@@ -208,6 +208,14 @@ type DoctorInstructionItem struct {
 	Status   string            `json:"-"`
 }
 
+func (d *DoctorInstructionItem) Equals(other *DoctorInstructionItem) bool {
+	if d == nil || other == nil {
+		return false
+	}
+
+	return d.Text == other.Text && d.ParentId.Int64() == other.ParentId.Int64()
+}
+
 type RegimenSection struct {
 	RegimenName  string                   `json:"regimen_name"`
 	RegimenSteps []*DoctorInstructionItem `json:"regimen_steps"`
@@ -247,12 +255,7 @@ func (r *RegimenPlan) Equals(other *RegimenPlan) bool {
 		}
 
 		for j, regimenStep := range regimenSection.RegimenSteps {
-
-			if regimenStep.Text != other.RegimenSections[i].RegimenSteps[j].Text {
-				return false
-			}
-
-			if regimenStep.ParentId.Int64() != other.RegimenSections[i].RegimenSteps[j].ParentId.Int64() {
+			if !regimenStep.Equals(other.RegimenSections[i].RegimenSteps[j]) {
 				return false
 			}
 		}
@@ -277,6 +280,28 @@ type Advice struct {
 	TreatmentPlanId      encoding.ObjectId        `json:"treatment_plan_id,omitempty"`
 	Title                string                   `json:"title,omitempty"`
 	Status               string                   `json:"status,omitempty"`
+}
+
+func (a *Advice) Equals(other *Advice) bool {
+	if a == nil || other == nil {
+		return false
+	}
+
+	if a.SelectedAdvicePoints == nil || other.SelectedAdvicePoints == nil {
+		return false
+	}
+
+	if len(a.SelectedAdvicePoints) != len(other.SelectedAdvicePoints) {
+		return false
+	}
+
+	for i, advicePoint := range a.SelectedAdvicePoints {
+		if !advicePoint.Equals(other.SelectedAdvicePoints[i]) {
+			return false
+		}
+	}
+
+	return true
 }
 
 type DiagnosisSummary struct {
