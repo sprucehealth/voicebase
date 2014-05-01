@@ -261,7 +261,7 @@ func TestFavoriteTreatmentPlan_CommittedStateForTreatmentPlan(t *testing.T) {
 	} else if json.NewDecoder(resp.Body).Decode(responseData); err != nil {
 		t.Fatalf("Unable to unmarshal response into struct %s", err)
 	} else if responseData.TreatmentPlan.TreatmentList.Status != api.STATUS_UNCOMMITTED {
-		t.Fatalf("Expected the status to be UNCOMMITTED for treatments instead it was %s")
+		t.Fatalf("Expected the status to be UNCOMMITTED for treatments")
 	} else if responseData.TreatmentPlan.RegimenPlan.Status == api.STATUS_UNCOMMITTED {
 		t.Fatalf("Expected regimen status to not be UNCOMMITTED")
 	} else if responseData.TreatmentPlan.Advice.Status != api.STATUS_UNCOMMITTED {
@@ -286,7 +286,7 @@ func TestFavoriteTreatmentPlan_CommittedStateForTreatmentPlan(t *testing.T) {
 	} else if json.NewDecoder(resp.Body).Decode(responseData); err != nil {
 		t.Fatalf("Unable to unmarshal response into struct %s", err)
 	} else if responseData.TreatmentPlan.TreatmentList.Status != api.STATUS_UNCOMMITTED {
-		t.Fatalf("Expected the status to be UNCOMMITTED for treatments instead it was %s")
+		t.Fatalf("Expected the status to be UNCOMMITTED for treatments")
 	} else if responseData.TreatmentPlan.RegimenPlan.Status == api.STATUS_UNCOMMITTED {
 		t.Fatalf("Expected regimen status to not be UNCOMMITTED")
 	} else if responseData.TreatmentPlan.Advice.Status == api.STATUS_UNCOMMITTED {
