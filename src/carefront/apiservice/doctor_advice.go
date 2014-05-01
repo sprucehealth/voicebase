@@ -218,15 +218,15 @@ func (d *DoctorAdviceHandler) updateAdvicePoints(w http.ResponseWriter, r *http.
 	}
 
 	advice := &common.Advice{
-		TreatmentPlanId:      encoding.NewObjectId(treatmentPlanId),
 		PatientVisitId:       requestData.PatientVisitId,
 		AllAdvicePoints:      allAdvicePoints,
 		SelectedAdvicePoints: advicePoints,
 	}
 
 	dispatch.Default.Publish(&AdviceAddedEvent{
-		TreatmentPlanId: treatmentPlanId,
-		Advice:          &requestData,
+		PatientVisitId: patientVisitReviewData.PatientVisit.PatientVisitId.Int64(),
+		Advice:         &requestData,
+		DoctorId:       patientVisitReviewData.DoctorId,
 	})
 
 	WriteJSONToHTTPResponseWriter(w, http.StatusOK, advice)

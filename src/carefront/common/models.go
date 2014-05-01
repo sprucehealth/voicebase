@@ -180,6 +180,28 @@ type TreatmentList struct {
 	Status     string       `json:"status,omitempty"`
 }
 
+func (t *TreatmentList) Equals(other *TreatmentList) bool {
+	if t == nil || other == nil {
+		return false
+	}
+
+	if len(t.Treatments) == 0 || len(other.Treatments) == 0 {
+		return false
+	}
+
+	if len(t.Treatments) != len(other.Treatments) {
+		return false
+	}
+
+	for i, treatment := range t.Treatments {
+		if !treatment.Equals(other.Treatments[i]) {
+			return false
+		}
+	}
+
+	return true
+}
+
 type RefillRequestItem struct {
 	Id                        int64             `json:"id,string"`
 	RxRequestQueueItemId      int64             `json:"-"`

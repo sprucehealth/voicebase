@@ -240,8 +240,9 @@ func (d *DoctorRegimenHandler) updateRegimenSteps(w http.ResponseWriter, r *http
 	}
 
 	dispatch.Default.Publish(&RegimenPlanAddedEvent{
-		TreatmentPlanId: treatmentPlanId,
-		RegimenPlan:     requestData,
+		PatientVisitId: patientVisitReviewData.PatientVisit.PatientVisitId.Int64(),
+		RegimenPlan:    requestData,
+		DoctorId:       patientVisitReviewData.DoctorId,
 	})
 
 	WriteJSONToHTTPResponseWriter(w, http.StatusOK, regimenPlan)

@@ -167,8 +167,9 @@ func (t *TreatmentsHandler) addTreatment(w http.ResponseWriter, r *http.Request)
 	}
 
 	dispatch.Default.Publish(&TreatmentsAddedEvent{
-		TreatmentPlanId: treatmentPlanId,
-		Treatments:      treatments,
+		PatientVisitId: patientVisitReviewData.PatientVisit.PatientVisitId.Int64(),
+		DoctorId:       doctor.DoctorId.Int64(),
+		Treatments:     treatments,
 	})
 
 	WriteJSONToHTTPResponseWriter(w, http.StatusOK, &GetTreatmentsResponse{Treatments: treatments})

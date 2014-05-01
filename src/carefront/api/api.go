@@ -205,10 +205,17 @@ type DoctorAPI interface {
 	InsertItemIntoDoctorQueue(doctorQueueItem DoctorQueueItem) error
 	ReplaceItemInDoctorQueue(doctorQueueItem DoctorQueueItem, currentState string) error
 	MarkGenerationOfTreatmentPlanInVisitQueue(doctorId, patientVisitId, treatmentPlanId int64, currentState, updatedState string) error
+}
+
+type FavoriteTreatmentPlanAPI interface {
 	CreateOrUpdateFavoriteTreatmentPlan(favoriteTreatmentPlan *common.FavoriteTreatmentPlan) error
 	GetFavoriteTreatmentPlansForDoctor(doctorId int64) ([]*common.FavoriteTreatmentPlan, error)
 	GetFavoriteTreatmentPlan(favoriteTreatmentPlanId int64) (*common.FavoriteTreatmentPlan, error)
 	DeleteFavoriteTreatmentPlan(favoriteTreatmentPlanId int64) error
+	GetTreatmentsInFavoriteTreatmentPlan(favoriteTreatmentPlanId int64) ([]*common.Treatment, error)
+	GetRegimenPlanForFavoriteTreatmentPlan(favoriteTreatmentPlanId int64) (*common.RegimenPlan, error)
+	GetAdviceForFavoriteTreatmentPlan(favoriteTreatmentPlanId int64) (*common.Advice, error)
+	DeleteFavoriteTreatmentPlanMapping(treatmentPlanId, favoriteTreatmentPlanId int64) error
 }
 
 type IntakeAPI interface {
@@ -299,6 +306,7 @@ type DataAPI interface {
 	PeopleAPI
 	MessageAPI
 	PhotoAPI
+	FavoriteTreatmentPlanAPI
 }
 
 type CloudStorageAPI interface {
