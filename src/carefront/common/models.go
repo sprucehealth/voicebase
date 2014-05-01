@@ -222,6 +222,45 @@ type RegimenPlan struct {
 	Status          string                   `json:"status,omitempty"`
 }
 
+func (r *RegimenPlan) Equals(other *RegimenPlan) bool {
+	if r == nil || other == nil {
+		return false
+	}
+
+	if r.RegimenSections == nil || other.RegimenSections == nil {
+		return false
+	}
+
+	if len(r.RegimenSections) != len(other.RegimenSections) {
+		return false
+	}
+
+	// the ordering of the regimen sections and its steps have to be
+	// exactly the same for the regimen plan to be considered equal
+	for i, regimenSection := range r.RegimenSections {
+		if regimenSection.RegimenName != other.RegimenSections[i].RegimenName {
+			return false
+		}
+
+		if len(regimenSection.RegimenSteps) != len(other.RegimenSections[i].RegimenSteps) {
+			return false
+		}
+
+		for j, regimenStep := range regimenSection.RegimenSteps {
+
+			if regimenStep.Text != other.RegimenSections[i].RegimenSteps[j].Text {
+				return false
+			}
+
+			if regimenStep.ParentId.Int64() != other.RegimenSections[i].RegimenSteps[j].ParentId.Int64() {
+				return false
+			}
+		}
+	}
+
+	return true
+}
+
 type FollowUp struct {
 	TreatmentPlanId encoding.ObjectId `json:"treatment_plan_id,omitempty"`
 	FollowUpValue   int64             `json:"follow_up_value,string, omitempty"`

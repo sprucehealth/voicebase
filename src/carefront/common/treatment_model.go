@@ -72,8 +72,15 @@ func (t *Treatment) Equals(other *Treatment) bool {
 		return false
 	}
 
-	return t.ERx.PrescriptionId.Int64() == other.ERx.PrescriptionId.Int64() &&
-		reflect.DeepEqual(t.DrugDBIds, other.DrugDBIds) &&
+	// only check erx related data if treatment erx is non-empty
+	if t.ERx != nil && other.ERx != nil {
+		if !(t.ERx.PrescriptionId.Int64() == other.ERx.PrescriptionId.Int64() &&
+			t.ERx.PharmacyLocalId.Int64() == other.ERx.PharmacyLocalId.Int64()) {
+			return false
+		}
+	}
+
+	return reflect.DeepEqual(t.DrugDBIds, other.DrugDBIds) &&
 		t.DosageStrength == other.DosageStrength &&
 		t.DispenseValue == other.DispenseValue &&
 		t.DispenseUnitId.Int64() == other.DispenseUnitId.Int64() &&
@@ -81,5 +88,5 @@ func (t *Treatment) Equals(other *Treatment) bool {
 		t.SubstitutionsAllowed == other.SubstitutionsAllowed &&
 		t.DaysSupply == other.DaysSupply &&
 		t.PatientInstructions == other.PatientInstructions &&
-		t.ERx.PharmacyLocalId.Int64() == other.ERx.PharmacyLocalId.Int64()
+		t.PharmacyNotes == other.PharmacyNotes
 }
