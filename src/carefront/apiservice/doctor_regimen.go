@@ -239,7 +239,7 @@ func (d *DoctorRegimenHandler) updateRegimenSteps(w http.ResponseWriter, r *http
 		PatientVisitId:  requestData.PatientVisitId,
 	}
 
-	dispatch.Default.Publish(&RegimenPlanAddedEvent{
+	dispatch.Default.PublishAsync(&RegimenPlanAddedEvent{
 		PatientVisitId: patientVisitReviewData.PatientVisit.PatientVisitId.Int64(),
 		RegimenPlan:    requestData,
 		DoctorId:       patientVisitReviewData.DoctorId,

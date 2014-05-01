@@ -223,7 +223,7 @@ func (d *DoctorAdviceHandler) updateAdvicePoints(w http.ResponseWriter, r *http.
 		SelectedAdvicePoints: advicePoints,
 	}
 
-	dispatch.Default.Publish(&AdviceAddedEvent{
+	dispatch.Default.PublishAsync(&AdviceAddedEvent{
 		PatientVisitId: patientVisitReviewData.PatientVisit.PatientVisitId.Int64(),
 		Advice:         &requestData,
 		DoctorId:       patientVisitReviewData.DoctorId,
