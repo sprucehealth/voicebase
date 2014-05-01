@@ -259,11 +259,10 @@ func (d *DoctorTreatmentPlanHandler) populateFavoriteTreatmentPlanIntoTreatmentP
 	}
 
 	// populate regimen plan
-	if treatmentPlan.RegimenPlan == nil || len(treatmentPlan.RegimenPlan.RegimenSections) == 0 {
-		treatmentPlan.RegimenPlan = &common.RegimenPlan{
-			RegimenSections: make([]*common.RegimenSection, len(favoriteTreatmentPlan.RegimenPlan.RegimenSections)),
-			Status:          api.STATUS_UNCOMMITTED,
-		}
+	if len(treatmentPlan.RegimenPlan.RegimenSections) == 0 {
+		treatmentPlan.RegimenPlan.RegimenSections = make([]*common.RegimenSection, len(favoriteTreatmentPlan.RegimenPlan.RegimenSections))
+		treatmentPlan.RegimenPlan.Status = api.STATUS_UNCOMMITTED
+
 		for i, regimenSection := range favoriteTreatmentPlan.RegimenPlan.RegimenSections {
 			treatmentPlan.RegimenPlan.RegimenSections[i] = &common.RegimenSection{
 				RegimenName:  regimenSection.RegimenName,
@@ -280,11 +279,9 @@ func (d *DoctorTreatmentPlanHandler) populateFavoriteTreatmentPlanIntoTreatmentP
 	}
 
 	// populate advice
-	if treatmentPlan.Advice == nil || len(treatmentPlan.Advice.SelectedAdvicePoints) == 0 {
-		treatmentPlan.Advice = &common.Advice{
-			SelectedAdvicePoints: make([]*common.DoctorInstructionItem, len(favoriteTreatmentPlan.Advice.SelectedAdvicePoints)),
-			Status:               api.STATUS_UNCOMMITTED,
-		}
+	if len(treatmentPlan.Advice.SelectedAdvicePoints) == 0 {
+		treatmentPlan.Advice.Status = api.STATUS_UNCOMMITTED
+		treatmentPlan.Advice.SelectedAdvicePoints = make([]*common.DoctorInstructionItem, len(favoriteTreatmentPlan.Advice.SelectedAdvicePoints))
 		for i, advicePoint := range favoriteTreatmentPlan.Advice.SelectedAdvicePoints {
 			treatmentPlan.Advice.SelectedAdvicePoints[i] = &common.DoctorInstructionItem{
 				ParentId: advicePoint.ParentId,
