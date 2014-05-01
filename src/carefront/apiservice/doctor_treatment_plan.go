@@ -4,6 +4,7 @@ import (
 	"carefront/api"
 	"carefront/common"
 	"carefront/encoding"
+	"errors"
 	"fmt"
 	"net/http"
 	"strconv"
@@ -11,54 +12,129 @@ import (
 	"github.com/gorilla/schema"
 )
 
-type DoctorPickTreatmentPlanHandler struct {
+type DoctorTreatmentPlanHandler struct {
 	DataApi api.DataAPI
 }
 
-type DoctorPickTreatmentPlanRequestData struct {
+type DoctorTreatmentPlanRequestData struct {
 	DoctorFavoriteTreatmentPlanId string `schema:"dr_favorite_treatment_plan_id"`
 	PatientVisitId                string `schema:"patient_visit_id,required"`
+	Abbreviated                   bool   `schema:"abbreviated"`
 }
 
-type DoctorTreatmentPlan struct {
-	Id                              encoding.ObjectId   `json:"id,omitempty"`
-	PatientVisitId                  encoding.ObjectId   `json:"patient_visit_id,omitempty"`
-	DoctorFavoriteTreatmentPlanId   encoding.ObjectId   `json:"dr_favorite_treatment_plan_id"`
-	DoctorFavoriteTreatmentPlanName string              `json:"dr_favorite_treatment_plan_name,omitempty"`
-	TreatmentList                   *treatmentList      `json:"treatment_list"`
-	RegimenPlan                     *common.RegimenPlan `json:"regimen_plan,omitempty"`
-	Advice                          *common.Advice      `json:"advice,omitempty"`
+type DoctorTreatmentPlanResponse struct {
+	TreatmentPlan *common.DoctorTreatmentPlan `json:"treatment_plan"`
 }
 
-type treatmentList struct {
-	Treatments []*common.Treatment `json:"treatments,omitempty"`
-	Status     string              `json:"status,omitempty"`
-}
-
-type DoctorPickTreatmentPlanResponseData struct {
-	TreatmentPlan *DoctorTreatmentPlan `json:"treatment_plan"`
-}
-
-func (d *DoctorPickTreatmentPlanHandler) ServeHTTP(w http.ResponseWriter, r *http.Request) {
-	if r.Method != HTTP_PUT {
+func (d *DoctorTreatmentPlanHandler) ServeHTTP(w http.ResponseWriter, r *http.Request) {
+	switch r.Method {
+	case HTTP_GET:
+		d.getTreatmentPlanForPatientVisit(w, r)
+	case HTTP_PUT:
+		d.pickATreatmentPlan(w, r)
+	default:
 		w.WriteHeader(http.StatusNotFound)
-		return
 	}
+}
 
+func getPatientVisitIdFromRequest(r *http.Request) (int64, *DoctorTreatmentPlanRequestData, error) {
 	if err := r.ParseForm(); err != nil {
-		WriteDeveloperError(w, http.StatusBadRequest, "Unable to parse input parameters: "+err.Error())
-		return
+		return 0, nil, errors.New("Unable to parse input parameters: " + err.Error())
 	}
 
-	requestData := DoctorPickTreatmentPlanRequestData{}
-	if err := schema.NewDecoder().Decode(&requestData, r.Form); err != nil {
-		WriteDeveloperError(w, http.StatusBadRequest, "Unable to parse input parameters: "+err.Error())
-		return
+	requestData := &DoctorTreatmentPlanRequestData{}
+	if err := schema.NewDecoder().Decode(requestData, r.Form); err != nil {
+		return 0, nil, errors.New("Unable to parse input parameters: " + err.Error())
+
 	}
 
 	patientVisitId, err := strconv.ParseInt(requestData.PatientVisitId, 10, 64)
 	if err != nil {
-		WriteDeveloperError(w, http.StatusBadRequest, "Unable to parse patient visit id: "+err.Error())
+		return 0, nil, errors.New("Unable to parse patient visit id: " + err.Error())
+	}
+
+	return patientVisitId, requestData, nil
+
+}
+
+func (d *DoctorTreatmentPlanHandler) getTreatmentPlanForPatientVisit(w http.ResponseWriter, r *http.Request) {
+	patientVisitId, requestData, err := getPatientVisitIdFromRequest(r)
+	if err != nil {
+		WriteDeveloperError(w, http.StatusBadRequest, err.Error())
+		return
+	}
+
+	patientVisitReviewData, statusCode, err := ValidateDoctorAccessToPatientVisitAndGetRelevantData(patientVisitId, GetContext(r).AccountId, d.DataApi)
+	if err != nil {
+		WriteDeveloperError(w, statusCode, err.Error())
+		return
+	}
+
+	drTreatmentPlan, err := d.DataApi.GetAbbreviatedTreatmentPlanForPatientVisit(patientVisitReviewData.DoctorId, patientVisitId)
+	if err == api.NoRowsError {
+		WriteDeveloperError(w, http.StatusNotFound, "No treatment plan exists for patient visit")
+		return
+	} else if err != nil {
+		WriteDeveloperError(w, http.StatusInternalServerError, "Unable to get treatment plan for patient visit: "+err.Error())
+		return
+	}
+
+	// only return the small amount of information retreived about the treatment plan
+	if requestData.Abbreviated {
+		WriteJSONToHTTPResponseWriter(w, http.StatusOK, &DoctorTreatmentPlanResponse{TreatmentPlan: drTreatmentPlan})
+		return
+	}
+
+	drTreatmentPlan.TreatmentList = &common.TreatmentList{}
+	drTreatmentPlan.TreatmentList.Treatments, err = d.DataApi.GetTreatmentsBasedOnTreatmentPlanId(patientVisitId, drTreatmentPlan.Id.Int64())
+	if err != nil {
+		WriteJSONToHTTPResponseWriter(w, http.StatusInternalServerError, "Unable to get treatments for treatment plan: "+err.Error())
+		return
+	}
+
+	drTreatmentPlan.RegimenPlan, err = d.DataApi.GetRegimenPlanForTreatmentPlan(drTreatmentPlan.Id.Int64())
+	if err != nil {
+		WriteJSONToHTTPResponseWriter(w, http.StatusInternalServerError, "Unable to get regimen plan for treatment plan: "+err.Error())
+		return
+	}
+
+	drTreatmentPlan.RegimenPlan.AllRegimenSteps, err = d.DataApi.GetRegimenStepsForDoctor(patientVisitReviewData.DoctorId)
+	if err != nil {
+		WriteJSONToHTTPResponseWriter(w, http.StatusInternalServerError, "Unable to get all regimen steps for doctor")
+		return
+	}
+
+	drTreatmentPlan.Advice = &common.Advice{
+		TreatmentPlanId: drTreatmentPlan.Id,
+		PatientVisitId:  encoding.NewObjectId(patientVisitId),
+	}
+
+	drTreatmentPlan.Advice.SelectedAdvicePoints, err = d.DataApi.GetAdvicePointsForTreatmentPlan(drTreatmentPlan.Id.Int64())
+	if err != nil {
+		WriteJSONToHTTPResponseWriter(w, http.StatusInternalServerError, "Unable to get advice points for treatment plan")
+		return
+	}
+
+	drTreatmentPlan.Advice.AllAdvicePoints, err = d.DataApi.GetAdvicePointsForDoctor(patientVisitReviewData.DoctorId)
+	if err != nil {
+		WriteDeveloperError(w, http.StatusInternalServerError, "Unable to get advice points for doctor")
+	}
+
+	if err := d.populateFavoriteTreatmentPlanIntoTreatmentPlan(drTreatmentPlan, drTreatmentPlan.DoctorFavoriteTreatmentPlanId.Int64()); err == api.NoRowsError {
+		WriteDeveloperError(w, http.StatusNotFound, "Favorite treatment plan not found")
+		return
+	} else if err != nil {
+		WriteDeveloperError(w, http.StatusInternalServerError, "Unable to get favorite treatment plan "+err.Error())
+		return
+	}
+
+	WriteJSONToHTTPResponseWriter(w, http.StatusOK, &DoctorTreatmentPlanResponse{TreatmentPlan: drTreatmentPlan})
+}
+
+func (d *DoctorTreatmentPlanHandler) pickATreatmentPlan(w http.ResponseWriter, r *http.Request) {
+	patientVisitId, requestData, err := getPatientVisitIdFromRequest(r)
+	if err != nil {
+		WriteDeveloperError(w, http.StatusBadRequest, err.Error())
 		return
 	}
 
@@ -92,32 +168,52 @@ func (d *DoctorPickTreatmentPlanHandler) ServeHTTP(w http.ResponseWriter, r *htt
 		return
 	}
 
-	drTreatmentPlan := &DoctorTreatmentPlan{
+	// populate the regimen steps and the advice steps for now until we figure out a cleaner way to handle
+	// the client getting the master list of regimen and advice
+	allRegimenSteps, err := d.DataApi.GetRegimenStepsForDoctor(patientVisitReviewData.DoctorId)
+	if err != nil {
+		WriteDeveloperError(w, http.StatusInternalServerError, "Unable to get regimen steps for doctor: "+err.Error())
+		return
+	}
+
+	allAdvicePoints, err := d.DataApi.GetAdvicePointsForDoctor(patientVisitReviewData.DoctorId)
+	if err != nil {
+		WriteDeveloperError(w, http.StatusInternalServerError, "Unable to get advice poitns for doctor: "+err.Error())
+		return
+	}
+
+	drTreatmentPlan := &common.DoctorTreatmentPlan{
 		Id:             encoding.NewObjectId(treatmentPlanId),
 		PatientVisitId: patientVisitReviewData.PatientVisit.PatientVisitId,
+		Advice: &common.Advice{
+			AllAdvicePoints: allAdvicePoints,
+		},
+		RegimenPlan: &common.RegimenPlan{
+			AllRegimenSteps: allRegimenSteps,
+		},
 	}
 
-	// Populate treatment plan with favorite treatment plan data if favorite treatment plan specified
-	if favoriteTreatmentPlanId != 0 {
-		favoriteTreatmentPlan, err := d.DataApi.GetFavoriteTreatmentPlan(favoriteTreatmentPlanId)
-		if err == api.NoRowsError {
-			WriteDeveloperError(w, http.StatusNotFound, "Favorite treatment plan not found")
-			return
-		} else if err != nil {
-			WriteDeveloperError(w, http.StatusInternalServerError, "Unable to get favorite treatment plan "+err.Error())
-			return
-		}
-		if err := d.populateFavoriteTreatmentPlanIntoTreatmentPlan(drTreatmentPlan, favoriteTreatmentPlan); err != nil {
-			WriteDeveloperError(w, http.StatusInternalServerError, "Unable to populate treatment plan with favorite treatment plan data: "+err.Error())
-			return
-		}
+	if err := d.populateFavoriteTreatmentPlanIntoTreatmentPlan(drTreatmentPlan, favoriteTreatmentPlanId); err == api.NoRowsError {
+		WriteDeveloperError(w, http.StatusNotFound, "No favorite treatment plan found")
+		return
+	} else if err != nil {
+		WriteDeveloperError(w, http.StatusInternalServerError, "Unable to get favorite treatment plan: "+err.Error())
+		return
 	}
 
-	WriteJSONToHTTPResponseWriter(w, http.StatusOK, &DoctorPickTreatmentPlanResponseData{TreatmentPlan: drTreatmentPlan})
+	WriteJSONToHTTPResponseWriter(w, http.StatusOK, &DoctorTreatmentPlanResponse{TreatmentPlan: drTreatmentPlan})
 }
 
-func (d *DoctorPickTreatmentPlanHandler) populateFavoriteTreatmentPlanIntoTreatmentPlan(treatmentPlan *DoctorTreatmentPlan, favoriteTreatmentPlan *common.FavoriteTreatmentPlan) error {
+func (d *DoctorTreatmentPlanHandler) populateFavoriteTreatmentPlanIntoTreatmentPlan(treatmentPlan *common.DoctorTreatmentPlan, favoriteTreatmentPlanId int64) error {
+	// Populate treatment plan with favorite treatment plan data if favorite treatment plan specified
+	if favoriteTreatmentPlanId == 0 {
+		return nil
+	}
 
+	favoriteTreatmentPlan, err := d.DataApi.GetFavoriteTreatmentPlan(favoriteTreatmentPlanId)
+	if err != nil {
+		return err
+	}
 	treatmentPlan.DoctorFavoriteTreatmentPlanName = favoriteTreatmentPlan.Name
 	treatmentPlan.DoctorFavoriteTreatmentPlanId = favoriteTreatmentPlan.Id
 
@@ -133,8 +229,8 @@ func (d *DoctorPickTreatmentPlanHandler) populateFavoriteTreatmentPlanIntoTreatm
 	// to the database as part of the treatment plan.
 
 	// populate treatments
-	if treatmentPlan.TreatmentList == nil {
-		treatmentPlan.TreatmentList = &treatmentList{
+	if treatmentPlan.TreatmentList == nil || len(treatmentPlan.TreatmentList.Treatments) == 0 {
+		treatmentPlan.TreatmentList = &common.TreatmentList{
 			Status: api.STATUS_UNCOMMITTED,
 		}
 
@@ -163,7 +259,7 @@ func (d *DoctorPickTreatmentPlanHandler) populateFavoriteTreatmentPlanIntoTreatm
 	}
 
 	// populate regimen plan
-	if treatmentPlan.RegimenPlan == nil {
+	if treatmentPlan.RegimenPlan == nil || len(treatmentPlan.RegimenPlan.RegimenSections) == 0 {
 		treatmentPlan.RegimenPlan = &common.RegimenPlan{
 			RegimenSections: make([]*common.RegimenSection, len(favoriteTreatmentPlan.RegimenPlan.RegimenSections)),
 			Status:          api.STATUS_UNCOMMITTED,
@@ -182,14 +278,9 @@ func (d *DoctorPickTreatmentPlanHandler) populateFavoriteTreatmentPlanIntoTreatm
 			}
 		}
 	}
-	var err error
-	treatmentPlan.RegimenPlan.AllRegimenSteps, err = d.DataApi.GetRegimenStepsForDoctor(favoriteTreatmentPlan.DoctorId)
-	if err != nil {
-		return err
-	}
 
 	// populate advice
-	if treatmentPlan.Advice == nil {
+	if treatmentPlan.Advice == nil || len(treatmentPlan.Advice.SelectedAdvicePoints) == 0 {
 		treatmentPlan.Advice = &common.Advice{
 			SelectedAdvicePoints: make([]*common.DoctorInstructionItem, len(favoriteTreatmentPlan.Advice.SelectedAdvicePoints)),
 			Status:               api.STATUS_UNCOMMITTED,
@@ -201,6 +292,7 @@ func (d *DoctorPickTreatmentPlanHandler) populateFavoriteTreatmentPlanIntoTreatm
 			}
 		}
 	}
-	treatmentPlan.Advice.AllAdvicePoints, err = d.DataApi.GetAdvicePointsForDoctor(favoriteTreatmentPlan.DoctorId)
-	return err
+
+	return nil
+
 }

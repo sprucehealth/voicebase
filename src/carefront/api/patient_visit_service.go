@@ -159,6 +159,30 @@ func (d *DataService) CreateNewPatientVisit(patientId, healthConditionId, layout
 	return lastId, err
 }
 
+func (d *DataService) GetAbbreviatedTreatmentPlanForPatientVisit(doctorId, patientVisitId int64) (*common.DoctorTreatmentPlan, error) {
+	drTreatmentPlan := common.DoctorTreatmentPlan{}
+	err := d.DB.QueryRow(`select id from treatment_plan where patient_visit_id = ? and status =?`, patientVisitId, STATUS_ACTIVE).Scan(&drTreatmentPlan.Id)
+	if err == sql.ErrNoRows {
+		return nil, NoRowsError
+	} else if err != nil {
+		return nil, err
+	}
+
+	// return the favorite treatment plan info as well if it exists
+	err = d.DB.QueryRow(`select dr_favorite_treatment_plan_id, name from treatment_plan_favorite_mapping 
+							inner join dr_favorite_treatment_plan on dr_favorite_treatment_plan.id = dr_favorite_treatment_plan_id
+								where treatment_plan_id = ?`, drTreatmentPlan.Id.Int64()).Scan(
+		&drTreatmentPlan.DoctorFavoriteTreatmentPlanId,
+		&drTreatmentPlan.DoctorFavoriteTreatmentPlanName)
+	if err == sql.ErrNoRows {
+		return &drTreatmentPlan, nil
+	} else if err != nil {
+		return nil, err
+	}
+
+	return &drTreatmentPlan, nil
+}
+
 func (d *DataService) GetActiveTreatmentPlanForPatientVisit(doctorId, patientVisitId int64) (int64, error) {
 	var treatmentPlanId int64
 	err := d.DB.QueryRow(`select id from treatment_plan where patient_visit_id = ? and status = ?`, patientVisitId, STATUS_ACTIVE).Scan(&treatmentPlanId)

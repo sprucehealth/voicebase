@@ -344,6 +344,9 @@ func main() {
 	doctorFavoriteTreatmentPlansHandler := &apiservice.DoctorFavoriteTreatmentPlansHandler{
 		DataApi: dataApi,
 	}
+	doctorTreatmentPlanHandler := &apiservice.DoctorTreatmentPlanHandler{
+		DataApi: dataApi,
+	}
 
 	mux := apiservice.NewAuthServeMux(authApi, metricsRegistry.Scope("restapi"))
 
@@ -397,6 +400,7 @@ func main() {
 	mux.Handle("/v1/doctor/pharmacy", doctorPharmacySearchHandler)
 
 	mux.Handle("/v1/doctor/visit/review", doctorPatientVisitReviewHandler)
+	mux.Handle("/v1/doctor/visit/treatment_plan", doctorTreatmentPlanHandler)
 	mux.Handle("/v1/doctor/visit/diagnosis", diagnosePatientHandler)
 	mux.Handle("/v1/doctor/visit/diagnosis/summary", diagnosisSummaryHandler)
 	mux.Handle("/v1/doctor/visit/treatment/new", newTreatmentHandler)

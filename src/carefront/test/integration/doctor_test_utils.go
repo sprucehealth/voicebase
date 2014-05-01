@@ -153,8 +153,8 @@ func startReviewingPatientVisit(patientVisitId int64, doctor *common.Doctor, tes
 	return doctorPatientVisitReviewResponse
 }
 
-func pickATreatmentPlanForPatientVisit(patientVisitId int64, doctor *common.Doctor, favoriteTreatmentPlan *common.FavoriteTreatmentPlan, testData TestData, t *testing.T) *apiservice.DoctorPickTreatmentPlanResponseData {
-	doctorPickTreatmentPlanHandler := &apiservice.DoctorPickTreatmentPlanHandler{
+func pickATreatmentPlanForPatientVisit(patientVisitId int64, doctor *common.Doctor, favoriteTreatmentPlan *common.FavoriteTreatmentPlan, testData TestData, t *testing.T) *apiservice.DoctorTreatmentPlanResponse {
+	doctorPickTreatmentPlanHandler := &apiservice.DoctorTreatmentPlanHandler{
 		DataApi: testData.DataApi,
 	}
 
@@ -176,7 +176,7 @@ func pickATreatmentPlanForPatientVisit(patientVisitId int64, doctor *common.Doct
 		t.Fatalf("Expected successful picking up of treatment plan instead got %d", resp.StatusCode)
 	}
 
-	responseData := &apiservice.DoctorPickTreatmentPlanResponseData{}
+	responseData := &apiservice.DoctorTreatmentPlanResponse{}
 	if err := json.NewDecoder(resp.Body).Decode(responseData); err != nil {
 		t.Fatalf("Unable to unmarshal response into response json: %s", responseData)
 	}

@@ -165,6 +165,21 @@ type FavoriteTreatmentPlan struct {
 	Advice       *Advice           `json:"advice,omitempty"`
 }
 
+type DoctorTreatmentPlan struct {
+	Id                              encoding.ObjectId `json:"id,omitempty"`
+	PatientVisitId                  encoding.ObjectId `json:"patient_visit_id,omitempty"`
+	DoctorFavoriteTreatmentPlanId   encoding.ObjectId `json:"dr_favorite_treatment_plan_id"`
+	DoctorFavoriteTreatmentPlanName string            `json:"dr_favorite_treatment_plan_name,omitempty"`
+	TreatmentList                   *TreatmentList    `json:"treatment_list"`
+	RegimenPlan                     *RegimenPlan      `json:"regimen_plan,omitempty"`
+	Advice                          *Advice           `json:"advice,omitempty"`
+}
+
+type TreatmentList struct {
+	Treatments []*Treatment `json:"treatments,omitempty"`
+	Status     string       `json:"status,omitempty"`
+}
+
 type RefillRequestItem struct {
 	Id                        int64             `json:"id,string"`
 	RxRequestQueueItemId      int64             `json:"-"`
