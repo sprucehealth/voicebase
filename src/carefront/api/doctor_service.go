@@ -190,9 +190,9 @@ func (d *DataService) UpdateRegimenStepForDoctor(regimenStep *common.DoctorInstr
 	// if the source id does not exist for the step, this means that
 	// this step is the source itself. tracking the source id helps for
 	// tracking revision from the beginning of time.
-	sourceIdForUpdatedStep := sourceId.Int64
-	if !sourceId.Valid {
-		sourceIdForUpdatedStep = regimenStep.Id.Int64()
+	sourceIdForUpdatedStep := regimenStep.Id.Int64()
+	if sourceId.Valid {
+		sourceIdForUpdatedStep = sourceId.Int64
 	}
 
 	// update the current regimen step to be inactive
@@ -279,9 +279,9 @@ func (d *DataService) UpdateAdvicePointForDoctor(advicePoint *common.DoctorInstr
 	// If a sourceId does not exist for the current advice point, this means that this point
 	// is being updated for the first time. In this case, the advice point itself is the source id.
 	// Storing the sourceId helps tracking revision on a particular step.
-	sourceIdForUpdatedAdvicePoint := sourceId.Int64
-	if !sourceId.Valid {
-		sourceIdForUpdatedAdvicePoint = advicePoint.Id.Int64()
+	sourceIdForUpdatedAdvicePoint := advicePoint.Id.Int64()
+	if sourceId.Valid {
+		sourceIdForUpdatedAdvicePoint = sourceId.Int64
 	}
 
 	// update the current advice point to be inactive
