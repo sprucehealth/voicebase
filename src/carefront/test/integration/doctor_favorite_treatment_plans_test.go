@@ -36,8 +36,8 @@ func TestFavoriteTreatmentPlan(t *testing.T) {
 
 	updatedName := "Updating name"
 	favoriteTreatmentPlan.Name = updatedName
-	favoriteTreatmentPlan.RegimenPlan.RegimenSections = []*common.RegimenSection{favoriteTreatmentPlan.RegimenPlan.RegimenSections[0]}
-	favoriteTreatmentPlan.Advice.SelectedAdvicePoints = []*common.DoctorInstructionItem{favoriteTreatmentPlan.Advice.SelectedAdvicePoints[0]}
+	favoriteTreatmentPlan.RegimenPlan.RegimenSections = favoriteTreatmentPlan.RegimenPlan.RegimenSections[1:]
+	favoriteTreatmentPlan.Advice.SelectedAdvicePoints = favoriteTreatmentPlan.Advice.SelectedAdvicePoints[1:]
 
 	requestData := &apiservice.DoctorFavoriteTreatmentPlansRequestData{}
 	requestData.FavoriteTreatmentPlan = favoriteTreatmentPlan
@@ -370,6 +370,8 @@ func TestFavoriteTreatmentPlan_BreakingMappingOnModify(t *testing.T) {
 	// lets make sure linkage exists
 	if responseData.TreatmentPlan.DoctorFavoriteTreatmentPlanId.Int64() == 0 {
 		t.Fatalf("Expected the treatment plan to come from a favorite treatment plan")
+	} else if responseData.TreatmentPlan.DoctorFavoriteTreatmentPlanId.Int64() != favoriteTreamentPlan.Id.Int64() {
+		t.Fatalf("Got a different favorite treatment plan linking to the treatment plan. Expected %d got %d", favoriteTreamentPlan.Id.Int64(), responseData.TreatmentPlan.Id.Int64())
 	}
 
 	// modify treatment

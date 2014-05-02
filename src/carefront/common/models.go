@@ -165,6 +165,27 @@ type FavoriteTreatmentPlan struct {
 	Advice       *Advice           `json:"advice,omitempty"`
 }
 
+func (f *FavoriteTreatmentPlan) EqualsDoctorTreatmentPlan(treatmentPlan *DoctorTreatmentPlan) bool {
+	if f == nil || treatmentPlan == nil {
+		return false
+	}
+
+	favoriteTreatmentList := &TreatmentList{Treatments: f.Treatments}
+	if !favoriteTreatmentList.Equals(treatmentPlan.TreatmentList) {
+		return false
+	}
+
+	if !f.RegimenPlan.Equals(treatmentPlan.RegimenPlan) {
+		return false
+	}
+
+	if !f.Advice.Equals(treatmentPlan.Advice) {
+		return false
+	}
+
+	return true
+}
+
 type DoctorTreatmentPlan struct {
 	Id                              encoding.ObjectId `json:"id,omitempty"`
 	PatientVisitId                  encoding.ObjectId `json:"patient_visit_id,omitempty"`
