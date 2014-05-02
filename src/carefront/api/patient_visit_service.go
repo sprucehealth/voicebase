@@ -413,7 +413,7 @@ func (d *DataService) AddDiagnosisSummaryForTreatmentPlan(summary string, treatm
 	}
 
 	// inactivate any previous summaries for this patient visit
-	_, err = tx.Exec(`update diagnosis_summary set status=? where doctor_id = ? and treatment_plan_id = ? and status = ?`, STATUS_INACTIVE, doctorId, treatmentPlanId, STATUS_ACTIVE)
+	_, err = tx.Exec(`delete from diagnosis_summary where doctor_id = ? and treatment_plan_id = ? and status = ?`, doctorId, treatmentPlanId, STATUS_ACTIVE)
 	if err != nil {
 		tx.Rollback()
 		return err
@@ -439,7 +439,7 @@ func (d *DataService) GetDiagnosisSummaryForTreatmentPlan(treatmentPlanId int64)
 }
 
 func (d *DataService) AddOrUpdateDiagnosisSummaryForTreatmentPlan(summary string, treatmentPlanId, doctorId int64, isUpdatedByDoctor bool) error {
-	_, err := d.DB.Exec(`replace into diagnosis_summary (summary, treatment_plan_id, doctor_id, updated_by_doctor) values (?,?,?,?)`, summary, treatmentPlanId, doctorId, isUpdatedByDoctor)
+	_, err := d.DB.Exec(`replace into diagnosis_summary (summary, treatment_plan_id, doctor_id, updated_by_doctor, status) values (?,?,?,?,?)`, summary, treatmentPlanId, doctorId, isUpdatedByDoctor, STATUS_ACTIVE)
 	return err
 }
 

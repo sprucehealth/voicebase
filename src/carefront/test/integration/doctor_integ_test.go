@@ -8,7 +8,9 @@ import (
 	"math"
 	"net/http"
 	"net/http/httptest"
+	"net/url"
 	"strconv"
+	"strings"
 	"testing"
 	"time"
 
@@ -204,28 +206,57 @@ func TestDoctorDiagnosisOfPatientVisit(t *testing.T) {
 	diagnosisSummaryHandler := &apiservice.DiagnosisSummaryHandler{DataApi: testData.DataApi}
 	ts = httptest.NewServer(diagnosisSummaryHandler)
 	defer ts.Close()
-
+	getDiagnosisSummaryResponse := &common.DiagnosisSummary{}
 	resp, err = authGet(ts.URL+"?patient_visit_id="+strconv.FormatInt(patientVisitResponse.PatientVisitId, 10), doctor.AccountId.Int64())
 	if err != nil {
 		t.Fatal("Unable to make call to get diagnosis summary for patient visit: " + err.Error())
-	}
-
-	respBody, err := ioutil.ReadAll(resp.Body)
-	if err != nil {
-		t.Fatal("Unable to parse body of response when trying to get diagnosis summary for patient visit")
-	}
-
-	CheckSuccessfulStatusCode(resp, "Unable to make successful call to get diagnosis summary for patient visit "+string(respBody), t)
-
-	getDiagnosisSummaryResponse := &common.DiagnosisSummary{}
-	err = json.Unmarshal(respBody, getDiagnosisSummaryResponse)
-	if err != nil {
+	} else if resp.StatusCode != http.StatusOK {
+		t.Fatalf("Expected status code %d but got %d", http.StatusOK, resp.StatusCode)
+	} else if err := json.NewDecoder(resp.Body).Decode(&getDiagnosisSummaryResponse); err != nil {
 		t.Fatal("Unable to unmarshal response into json object : " + err.Error())
-	}
-
-	if getDiagnosisSummaryResponse.Summary == "" {
+	} else if getDiagnosisSummaryResponse.Summary == "" {
 		t.Fatal("Expected summary for patient visit to exist but instead got nothing")
 	}
+
+	// now lets try and manually update the summary
+	updatedSummary := "This is the new value that the diagnosis summary should be updated to"
+	params := url.Values{}
+	params.Set("patient_visit_id", strconv.FormatInt(patientVisitResponse.PatientVisitId, 10))
+	params.Set("summary", updatedSummary)
+	resp, err = authPut(ts.URL, "application/x-www-form-urlencoded", strings.NewReader(params.Encode()), doctor.AccountId.Int64())
+	if err != nil {
+		t.Fatalf("Unable to make call to update diagnosis summary %s", err)
+	} else if resp.StatusCode != http.StatusOK {
+		t.Fatalf("Unable to make successfull call to update diagnosis summary")
+	}
+
+	// lets get the diagnosis summary again to compare
+	resp, err = authGet(ts.URL+"?patient_visit_id="+strconv.FormatInt(patientVisitResponse.PatientVisitId, 10), doctor.AccountId.Int64())
+	if err != nil {
+		t.Fatal("Unable to make call to get diagnosis summary for patient visit: " + err.Error())
+	} else if resp.StatusCode != http.StatusOK {
+		t.Fatalf("Expected status code %d but got %d", http.StatusOK, resp.StatusCode)
+	} else if err := json.NewDecoder(resp.Body).Decode(&getDiagnosisSummaryResponse); err != nil {
+		t.Fatal("Unable to unmarshal response into json object : " + err.Error())
+	} else if getDiagnosisSummaryResponse.Summary != updatedSummary {
+		t.Fatalf("Expected diagnosis summary %s instead got %s", updatedSummary, getDiagnosisSummaryResponse.Summary)
+	}
+
+	// lets attempt to diagnose the patient again
+	submitPatientVisitDiagnosis(patientVisitResponse.PatientVisitId, doctor, testData, t)
+
+	// now get the diagnosis summary again to ensure that it did not change
+	resp, err = authGet(ts.URL+"?patient_visit_id="+strconv.FormatInt(patientVisitResponse.PatientVisitId, 10), doctor.AccountId.Int64())
+	if err != nil {
+		t.Fatal("Unable to make call to get diagnosis summary for patient visit: " + err.Error())
+	} else if resp.StatusCode != http.StatusOK {
+		t.Fatalf("Expected status code %d but got %d", http.StatusOK, resp.StatusCode)
+	} else if err := json.NewDecoder(resp.Body).Decode(&getDiagnosisSummaryResponse); err != nil {
+		t.Fatal("Unable to unmarshal response into json object : " + err.Error())
+	} else if getDiagnosisSummaryResponse.Summary != updatedSummary {
+		t.Fatalf("Expected diagnosis summary %s instead got %s", updatedSummary, getDiagnosisSummaryResponse.Summary)
+	}
+
 }
 
 func TestDoctorSubmissionOfPatientVisitReview(t *testing.T) {
