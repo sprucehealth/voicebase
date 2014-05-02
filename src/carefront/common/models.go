@@ -363,9 +363,10 @@ func (a *Advice) Equals(other *Advice) bool {
 }
 
 type DiagnosisSummary struct {
-	Type    string `json:"type"`
-	Summary string `json:"text"`
-	Title   string `json:"title,omitempty"`
+	Type            string `json:"type"`
+	Summary         string `json:"text"`
+	Title           string `json:"title,omitempty"`
+	UpdatedByDoctor bool   `json:"updated_by_doctor"`
 }
 
 type QuestionInfo struct {

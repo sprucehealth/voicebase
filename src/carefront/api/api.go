@@ -119,6 +119,7 @@ type PatientVisitAPI interface {
 	GetDiagnosisResponseToQuestionWithTag(questionTag string, doctorId, patientVisitId int64) ([]*common.AnswerIntake, error)
 	AddDiagnosisSummaryForTreatmentPlan(summary string, treatmentPlanId, doctorId int64) error
 	GetDiagnosisSummaryForTreatmentPlan(treatmentPlanId int64) (summary string, err error)
+	AddOrUpdateDiagnosisSummaryForTreatmentPlan(summary string, treatmentPlanId, doctorId int64, isUpdatedByDoctor bool) error
 	DeactivatePreviousDiagnosisForPatientVisit(treatmentPlanId int64, doctorId int64) error
 	RecordDoctorAssignmentToPatientVisit(patientVisitId, doctorId int64) error
 	GetDoctorAssignedToPatientVisit(patientVisitId int64) (doctor *common.Doctor, err error)

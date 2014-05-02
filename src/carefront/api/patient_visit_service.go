@@ -424,7 +424,6 @@ func (d *DataService) AddDiagnosisSummaryForTreatmentPlan(summary string, treatm
 		tx.Rollback()
 		return err
 	}
-
 	return tx.Commit()
 }
 
@@ -432,10 +431,16 @@ func (d *DataService) GetDiagnosisSummaryForTreatmentPlan(treatmentPlanId int64)
 	err = d.DB.QueryRow(`select summary from diagnosis_summary where treatment_plan_id = ? and status='ACTIVE'`, treatmentPlanId).Scan(&summary)
 	if err != nil {
 		if err == sql.ErrNoRows {
-			return "", nil
+			return nil, NoRowsError
 		}
 	}
-	return
+
+	return diagnosisSummary, nil
+}
+
+func (d *DataService) AddOrUpdateDiagnosisSummaryForTreatmentPlan(summary string, treatmentPlanId, doctorId int64, isUpdatedByDoctor bool) error {
+	_, err := d.DB.Exec(`replace into diagnosis_summary (summary, treatment_plan_id, doctor_id, updated_by_doctor) values (?,?,?,?)`, summary, treatmentPlanId, doctorId, isUpdatedByDoctor)
+	return err
 }
 
 func (d *DataService) DeactivatePreviousDiagnosisForPatientVisit(treatmentPlanId int64, doctorId int64) error {

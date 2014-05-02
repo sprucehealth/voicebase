@@ -4,6 +4,7 @@ import (
 	"carefront/api"
 	"carefront/common"
 	"carefront/info_intake"
+	"carefront/libs/golog"
 	thriftapi "carefront/thrift/api"
 	"encoding/json"
 	"fmt"
@@ -182,9 +183,16 @@ func (d *DiagnosePatientHandler) diagnosePatient(w http.ResponseWriter, r *http.
 		return
 	}
 
-	if err = d.addDiagnosisSummaryForPatientVisit(patientVisitReviewData.DoctorId, treatmentPlanId); err != nil {
-		WriteDeveloperError(w, http.StatusInternalServerError, "Something went wrong when trying to add and store the summary to the diagnosis of the patient visit: "+err.Error())
-		return
+	diagnosisSummary, err := d.DataApi.GetDiagnosisSummaryForPatientVisit(patientVisitReviewData.PatientVisit.PatientVisitId.Int64(), treatmentPlanId)
+	if err != nil && err != api.NoRowsError {
+		golog.Errorf("Error trying to retreive diagnosis summary for patient visit: %s", err)
+	}
+
+	if diagnosisSummary == nil || !diagnosisSummary.UpdatedByDoctor { // use what the doctor entered if the summary has been updated by the doctor
+		if err = d.addDiagnosisSummaryForPatientVisit(patientVisitReviewData.DoctorId, treatmentPlanId); err != nil {
+			WriteDeveloperError(w, http.StatusInternalServerError, "Something went wrong when trying to add and store the summary to the diagnosis of the patient visit: "+err.Error())
+			return
+		}
 	}
 
 	WriteJSONToHTTPResponseWriter(w, http.StatusOK, AnswerIntakeResponse{Result: "success"})
