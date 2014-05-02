@@ -4,6 +4,8 @@ import (
 	"carefront/api"
 	"carefront/apiservice"
 	"carefront/common"
+	"carefront/libs/erx"
+	"carefront/libs/golog"
 	"fmt"
 	"net/http"
 	"strings"
@@ -142,10 +144,10 @@ func (p *PatientVisitReviewHandler) ServeHTTP(w http.ResponseWriter, r *http.Req
 		}
 	}
 
-	treatmentPlanResponse(w, r, treatmentPlan, patientVisit, doctor, patient)
+	p.treatmentPlanResponse(w, r, treatmentPlan, patientVisit, doctor, patient)
 }
 
-func treatmentPlanResponse(w http.ResponseWriter, r *http.Request, treatmentPlan *common.TreatmentPlan, patientVisit *common.PatientVisit, doctor *common.Doctor, patient *common.Patient) {
+func (p *PatientVisitReviewHandler) treatmentPlanResponse(w http.ResponseWriter, r *http.Request, treatmentPlan *common.TreatmentPlan, patientVisit *common.PatientVisit, doctor *common.Doctor, patient *common.Patient) {
 	views := make([]TPView, 0)
 	views = append(views, &TPVisitHeaderView{
 		ImageURL: fmt.Sprintf("spruce:///images/doctor_photo_%d", doctor.DoctorId.Int64()),
@@ -179,17 +181,29 @@ func treatmentPlanResponse(w http.ResponseWriter, r *http.Request, treatmentPlan
 				iconURL = "spruce:///image/icon_otc"
 			}
 
+			// only include tapurl and buttontitle if drug details
+			// exist
+			var buttonTitle, tapUrl string
+			if ndc := treatment.DrugDBIds[erx.NDC]; ndc != "" {
+				if exists, err := p.DataApi.DoesDrugDetailsExist(ndc); exists {
+					buttonTitle = "What to know about " + treatment.DrugName
+					tapUrl = fmt.Sprintf("spruce:///action/show_treatment_guide?treatment_id=%d", treatment.Id.Int64())
+				} else if err != nil && err != api.NoRowsError {
+					golog.Errorf("Error when trying to check if drug details exist: %s", err)
+				}
+			}
+
 			views = append(views, &TPPrescriptionView{
 				IconURL:     iconURL,
 				Title:       fmt.Sprintf("%s %s", treatment.DrugInternalName, treatment.DosageStrength),
 				Description: treatment.PatientInstructions,
-				ButtonTitle: "What to know about " + treatment.DrugName,
-				TapURL:      fmt.Sprintf("spruce:///action/show_treatment_guide?treatment_id=%d", treatment.Id.Int64()),
+				ButtonTitle: buttonTitle,
+				TapURL:      tapUrl,
 			})
 		}
 	}
 
-	if len(treatmentPlan.RegimenPlan.RegimenSections) > 0 {
+	if treatmentPlan.RegimenPlan != nil && len(treatmentPlan.RegimenPlan.RegimenSections) > 0 {
 		views = append(views, &TPLargeDividerView{})
 		views = append(views, &TPTextView{
 			Text:  "Personal Regimen",
@@ -213,7 +227,7 @@ func treatmentPlanResponse(w http.ResponseWriter, r *http.Request, treatmentPlan
 		}
 	}
 
-	if len(treatmentPlan.Advice.SelectedAdvicePoints) > 0 {
+	if treatmentPlan.Advice != nil && len(treatmentPlan.Advice.SelectedAdvicePoints) > 0 {
 		views = append(views, &TPLargeDividerView{})
 		views = append(views, &TPTextView{
 			Text:  fmt.Sprintf("Dr. %s's Advice", doctor.LastName),

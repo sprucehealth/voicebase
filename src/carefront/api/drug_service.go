@@ -7,6 +7,19 @@ import (
 	"encoding/json"
 )
 
+func (d *DataService) DoesDrugDetailsExist(ndc string) (bool, error) {
+	var id int64
+	if err := d.DB.QueryRow(`select id from drug_details where ndc=?`, ndc).Scan(&id); err == sql.ErrNoRows {
+		return false, nil
+	} else if err == sql.ErrNoRows {
+		return false, NoRowsError
+	} else if err != nil {
+		return false, err
+	}
+
+	return true, nil
+}
+
 func (d *DataService) DrugDetails(ndc string) (*common.DrugDetails, error) {
 	var js []byte
 	if err := d.DB.QueryRow(`select json from drug_details where ndc = ?`, ndc).Scan(&js); err == sql.ErrNoRows {

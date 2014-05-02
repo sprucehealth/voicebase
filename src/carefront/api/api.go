@@ -166,6 +166,7 @@ type PrescriptionsAPI interface {
 }
 
 type DrugAPI interface {
+	DoesDrugDetailsExist(ndc string) (bool, error)
 	DrugDetails(ndc string) (*common.DrugDetails, error)
 	SetDrugDetails(ndcToDrugDetails map[string]*common.DrugDetails) error
 }

@@ -152,8 +152,8 @@ type TPPrescriptionView struct {
 	IconURL     string `json:"icon_url"`
 	Title       string `json:"title"`
 	Description string `json:"description"`
-	ButtonTitle string `json:"button_title"`
-	TapURL      string `json:"tap_url"`
+	ButtonTitle string `json:"button_title,omitempty"`
+	TapURL      string `json:"tap_url,omitempty"`
 }
 
 func (v *TPPrescriptionView) Validate() error {
