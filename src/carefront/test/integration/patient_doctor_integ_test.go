@@ -402,6 +402,13 @@ func TestPatientVisitReview(t *testing.T) {
 		t.Fatal("Unable to make call to get patient visit review: " + err.Error())
 	}
 
+	diagnosisSummary, err := testData.DataApi.GetDiagnosisSummaryForPatientVisit(patientVisitResponse.PatientVisitId, doctorPatientVisitReviewResponse.TreatmentPlanId)
+	if err != nil {
+		t.Fatalf("Error while getting diagnosis summary %s", err)
+	}
+	if diagnosisSummary == "" {
+		t.Fatalf("Diagnosis summary expected to exist")
+	}
 }
 
 func getTreatmentsForTreatmentPlan(testData TestData, t *testing.T, treatmentPlanId int64, doctor *common.Doctor) *apiservice.GetTreatmentsResponse {
