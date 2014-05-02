@@ -354,9 +354,12 @@ func (d *DataService) GetDiagnosisResponseToQuestionWithTag(questionTag string, 
 		answerIntake := new(common.AnswerIntake)
 		var answerText, potentialAnswer, answerSummary sql.NullString
 
-		rows.Scan(
+		err := rows.Scan(
 			&answerIntake.AnswerIntakeId, &answerIntake.QuestionId,
 			&answerIntake.PotentialAnswerId, &answerText, &answerSummary, &potentialAnswer)
+		if err != nil {
+			return nil, err
+		}
 
 		if potentialAnswer.Valid {
 			answerIntake.PotentialAnswer = potentialAnswer.String
@@ -1133,7 +1136,9 @@ func (d *DataService) fillInDrugDBIdsForTreatment(treatment *common.Treatment) e
 	for drugRows.Next() {
 		var dbIdTag string
 		var dbId string
-		drugRows.Scan(&dbIdTag, &dbId)
+		if err := drugRows.Scan(&dbIdTag, &dbId); err != nil {
+			return err
+		}
 		drugDbIds[dbIdTag] = dbId
 	}
 
@@ -1155,7 +1160,9 @@ func (d *DataService) fillInSupplementalInstructionsForTreatment(treatment *comm
 	for instructionsRows.Next() {
 		var instructionId encoding.ObjectId
 		var text string
-		instructionsRows.Scan(&instructionId, &text)
+		if err := instructionsRows.Scan(&instructionId, &text); err != nil {
+			return err
+		}
 		drugInstruction := &common.DoctorInstructionItem{
 			Id:       instructionId,
 			Text:     text,

@@ -163,7 +163,9 @@ func (d *DataService) GetGlobalSectionIds() ([]int64, error) {
 	globalSectionIds := make([]int64, 0)
 	for rows.Next() {
 		var sectionId int64
-		rows.Scan(&sectionId)
+		if err := rows.Scan(&sectionId); err != nil {
+			return nil, err
+		}
 		globalSectionIds = append(globalSectionIds, sectionId)
 	}
 	return globalSectionIds, rows.Err()
@@ -179,7 +181,9 @@ func (d *DataService) GetSectionIdsForHealthCondition(healthConditionId int64) (
 	sectionIds := make([]int64, 0)
 	for rows.Next() {
 		var sectionId int64
-		rows.Scan(&sectionId)
+		if err := rows.Scan(&sectionId); err != nil {
+			return nil, err
+		}
 		sectionIds = append(sectionIds, sectionId)
 	}
 	return sectionIds, rows.Err()

@@ -65,7 +65,7 @@ func (d *DoctorPatientTreatmentsHandler) ServeHTTP(w http.ResponseWriter, r *htt
 			return
 		}
 
-		primaryDoctorId := getPrimaryDoctorIdFromCareTeam(careTeam)
+		primaryDoctorId := GetPrimaryDoctorIdFromCareTeam(careTeam)
 
 		if currentDoctor.DoctorId.Int64() != primaryDoctorId {
 			WriteDeveloperError(w, http.StatusForbidden, "Unable to get the patient information by doctor when this doctor is not the primary doctor for patient")

@@ -114,13 +114,11 @@ func createPatientWithStatus(patient *common.Patient, status string, tx *sql.Tx)
 	res, err := tx.Exec(`insert into patient (account_id, first_name, last_name, gender, dob_year, dob_month, dob_day, status)
 								values (?, ?, ?, ?, ?, ?, ?, ?)`, patient.AccountId.Int64(), patient.FirstName, patient.LastName, patient.Gender, patient.Dob.Year, patient.Dob.Month, patient.Dob.Day, status)
 	if err != nil {
-		tx.Rollback()
 		return err
 	}
 
 	lastId, err := res.LastInsertId()
 	if err != nil {
-		tx.Rollback()
 		log.Fatal("Unable to return id of inserted item as error was returned when trying to return id", err)
 		return err
 	}
@@ -128,7 +126,6 @@ func createPatientWithStatus(patient *common.Patient, status string, tx *sql.Tx)
 	if len(patient.PhoneNumbers) > 0 {
 		_, err = tx.Exec(`insert into patient_phone (patient_id, phone, phone_type, status) values (?,?,?, 'ACTIVE')`, lastId, patient.PhoneNumbers[0].Phone, patient.PhoneNumbers[0].PhoneType)
 		if err != nil {
-			tx.Rollback()
 			return err
 		}
 	}
@@ -136,7 +133,10 @@ func createPatientWithStatus(patient *common.Patient, status string, tx *sql.Tx)
 	_, err = tx.Exec(`insert into patient_location (patient_id, zip_code, status) 
 									values (?, ?, 'ACTIVE')`, lastId, patient.ZipCode)
 	if err != nil {
-		tx.Rollback()
+		return err
+	}
+
+	if _, err := tx.Exec(`INSERT INTO person (role_type, role_id) VALUES (?, ?)`, PATIENT_ROLE, lastId); err != nil {
 		return err
 	}
 
@@ -163,7 +163,9 @@ func (d *DataService) CheckCareProvidingElligibility(shortState string, healthCo
 	doctorIds := make([]int64, 0)
 	for rows.Next() {
 		var doctorId int64
-		rows.Scan(&doctorId)
+		if err := rows.Scan(&doctorId); err != nil {
+			return 0, err
+		}
 		doctorIds = append(doctorIds, doctorId)
 	}
 	if rows.Err() != nil {
@@ -200,7 +202,10 @@ func (d *DataService) GetCareTeamForPatient(patientId int64) (*common.PatientCar
 		var groupId, assignmentId, providerId int64
 		var providerTag, groupStatus, assignmentStatus string
 		var createdDate, modifiedDate mysql.NullTime
-		rows.Scan(&groupId, &assignmentId, &providerTag, &createdDate, &modifiedDate, &providerId, &groupStatus, &assignmentStatus)
+		err := rows.Scan(&groupId, &assignmentId, &providerTag, &createdDate, &modifiedDate, &providerId, &groupStatus, &assignmentStatus)
+		if err != nil {
+			return nil, err
+		}
 		if careTeam == nil {
 			careTeam = &common.PatientCareProviderGroup{}
 			careTeam.Id = groupId

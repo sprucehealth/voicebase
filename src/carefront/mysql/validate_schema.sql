@@ -71,10 +71,15 @@ if [ $? -ne 0 ]; then
 	kill -s TERM $TOP_PID
 fi
 
+dataSnapshotTables="app_text localized_text answer_type region health_condition languages_supported tips \
+	tips_section section screen_type question_type question question_fields potential_answer photo_tips \
+	patient_layout_version object_storage layout_version dr_layout_version care_providing_state dispense_unit \
+	drug_name drug_route drug_form drug_supplemental_instruction deny_refill_reason state conversation_topic"
+
 # If migration successful, snapshotting database again to generate new schema
 newSnapshotNumber=$((latestSnapshotNumber + 1))
 newDataSnapshotNumber=$((latestDataSnapshotNumber + 1))
 echo -e "--- Creating new snapshot from database into snapshot-$newSnapshotNumber.sql\n"
 `mysqldump -h $RDS_INSTANCE -u $RDS_USERNAME --no-data $DATABASE_NAME $PASSWORD_ARG > snapshot-$newSnapshotNumber.sql`
-`mysqldump -h $RDS_INSTANCE -u $RDS_USERNAME $PASSWORD_ARG $DATABASE_NAME app_text localized_text answer_type region health_condition languages_supported tips tips_section section screen_type question_type question question_fields potential_answer photo_tips patient_layout_version object_storage layout_version dr_layout_version care_providing_state dispense_unit drug_name drug_route drug_form drug_supplemental_instruction deny_refill_reason state > data-snapshot-$newDataSnapshotNumber.sql`
+`mysqldump -h $RDS_INSTANCE -u $RDS_USERNAME $PASSWORD_ARG $DATABASE_NAME $dataSnapshotTables > data-snapshot-$newDataSnapshotNumber.sql`
 cleanup

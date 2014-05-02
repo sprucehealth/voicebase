@@ -6,6 +6,11 @@ import (
 	"time"
 )
 
+const (
+	AttachmentTypePhoto         = "photo"
+	AttachmentTypeTreatmentPlan = "treatment_plan"
+)
+
 type PhoneInformation struct {
 	Phone     string `json:"phone,omitempty"`
 	PhoneType string `json:"phone_type,omitempty"`
@@ -292,4 +297,61 @@ type HealthLogItem struct {
 	UID       string // Unique ID scoped to the patient.
 	Timestamp time.Time
 	Data      Typed
+}
+
+type Photo struct {
+	Id          int64
+	Uploaded    time.Time
+	UploaderId  int64
+	URL         string
+	Mimetype    string
+	ClaimerType string
+	ClaimerId   int64
+}
+
+type Person struct {
+	Id       int64
+	RoleType string
+	RoleId   int64
+
+	Patient *Patient
+	Doctor  *Doctor
+}
+
+type Conversation struct {
+	Id                int64
+	Time              time.Time
+	Title             string
+	TopicId           int64
+	MessageCount      int
+	CreatorId         int64
+	OwnerId           int64
+	LastParticipantId int64
+	LastMessageTime   time.Time
+	Unread            bool
+
+	Messages     []*ConversationMessage
+	Participants map[int64]*Person
+}
+
+type ConversationTopic struct {
+	Id      int64
+	Title   string
+	Ordinal int
+	Active  bool
+}
+
+type ConversationAttachment struct {
+	Id       int64
+	ItemType string
+	ItemId   int64
+}
+
+type ConversationMessage struct {
+	Id             int64
+	ConversationId int64
+	Time           time.Time
+	FromId         int64
+	Body           string
+	Attachments    []*ConversationAttachment
 }

@@ -51,6 +51,11 @@ func (d *DataService) RegisterDoctor(doctor *common.Doctor) (int64, error) {
 		return 0, err
 	}
 
+	if _, err := tx.Exec(`INSERT INTO person (role_type, role_id) VALUES (?, ?)`, DOCTOR_ROLE, lastId); err != nil {
+		tx.Rollback()
+		return 0, err
+	}
+
 	return lastId, tx.Commit()
 }
 
@@ -379,7 +384,9 @@ func (d *DataService) GetMedicationDispenseUnits(languageId int64) (dispenseUnit
 	for rows.Next() {
 		var dipenseUnitId int64
 		var dispenseUnit string
-		rows.Scan(&dipenseUnitId, &dispenseUnit)
+		if err := rows.Scan(&dipenseUnitId, &dispenseUnit); err != nil {
+			return nil, nil, err
+		}
 		dispenseUnits = append(dispenseUnits, dispenseUnit)
 		dispenseUnitIds = append(dispenseUnitIds, dipenseUnitId)
 	}
@@ -450,7 +457,9 @@ func (d *DataService) GetDrugInstructionsForDoctor(drugName, drugForm, drugRoute
 
 	for rows.Next() {
 		var instructionId int64
-		rows.Scan(&instructionId)
+		if err := rows.Scan(&instructionId); err != nil {
+			return nil, err
+		}
 		selectedInstructionIds[instructionId] = true
 	}
 	if rows.Err() != nil {
