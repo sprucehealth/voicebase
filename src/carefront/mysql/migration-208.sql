@@ -72,6 +72,8 @@ alter table dr_treatment_template drop column treatment_id;
 -- clean up dr_treatment_templates that are no longer used
 delete from treatment_dr_template_selection 
 	where dr_treatment_template_id in (select id from dr_treatment_template where status='DELETED');
+delete from dr_treatment_template_drug_db_id
+	where dr_treatment_template_id in (select id from dr_treatment_template where status='DELETED');
 delete from dr_treatment_template where status='DELETED';
 
 alter table dr_treatment_template modify column drug_internal_name varchar(250) not null;
