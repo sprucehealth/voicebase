@@ -249,7 +249,6 @@ func (d *DoctorAdviceHandler) ensureAdvicePointExistsInMasterList(selectedAdvice
 			advicePointFound = true
 			break
 		} else if selectedAdvicePoint.ParentId.Int64() != 0 {
-
 			parentAdvicePoint, err := d.DataApi.GetAdvicePointForDoctor(selectedAdvicePoint.ParentId.Int64(), doctorId)
 			if err == api.NoRowsError {
 				return http.StatusBadRequest, errors.New("No parent advice point found for advice point in the selected list")

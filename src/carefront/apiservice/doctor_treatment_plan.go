@@ -240,11 +240,6 @@ func (d *DoctorTreatmentPlanHandler) populateFavoriteTreatmentPlanIntoTreatmentP
 	treatmentPlan.DoctorFavoriteTreatmentPlanName = favoriteTreatmentPlan.Name
 	treatmentPlan.DoctorFavoriteTreatmentPlanId = favoriteTreatmentPlan.Id
 
-	// for each of the sections populated from the faovrite treatment plan,
-	// indicate to the client that the section has not yet been committed.
-	// Doing so enables the client to distinguish between a comitted
-	// (where the doctor has explicitly pressed the add button) and non-comitted state
-
 	// The assumption here is that all components of a treatment plan that are already populated
 	// match the items in the favorite treatment plan, if there exists a mapping to indicate that this
 	// treatment plan must be filled in from a favorite treatment plan. The reason that we don't just write over

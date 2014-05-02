@@ -81,7 +81,6 @@ func (d *DoctorFavoriteTreatmentPlansHandler) getFavoriteTreatmentPlans(w http.R
 		WriteDeveloperError(w, http.StatusInternalServerError, "Unable to get favorite treatment plan: "+err.Error())
 		return
 	}
-
 	WriteJSONToHTTPResponseWriter(w, http.StatusOK, &DoctorFavoriteTreatmentPlansResponseData{FavoriteTreatmentPlan: favoriteTreatmentPlan})
 }
 
@@ -116,8 +115,6 @@ func (d *DoctorFavoriteTreatmentPlansHandler) addOrUpdateFavoriteTreatmentPlan(w
 		WriteDeveloperError(w, http.StatusInternalServerError, "Unable to add or update favorite treatment plan : "+err.Error())
 		return
 	}
-
-	// echo back added favorite treatment plan
 
 	WriteJSONToHTTPResponseWriter(w, http.StatusOK, &DoctorFavoriteTreatmentPlansResponseData{FavoriteTreatmentPlan: requestData.FavoriteTreatmentPlan})
 }
