@@ -23,7 +23,7 @@ func InitListeners(dataAPI api.DataAPI) {
 		}
 
 		// get the treatments from the favorite treatment plan to compare
-		favoritedTreatments, err := dataAPI.GetTreatmentsFromFavoriteTreatmentPlan(doctorTreatmentPlan.DoctorFavoriteTreatmentPlanId.Int64())
+		favoritedTreatments, err := dataAPI.GetTreatmentsInFavoriteTreatmentPlan(doctorTreatmentPlan.DoctorFavoriteTreatmentPlanId.Int64())
 		if err != nil {
 			return err
 		}
@@ -43,7 +43,7 @@ func InitListeners(dataAPI api.DataAPI) {
 
 	// subscribe to invalidate the link between a treatment plan and
 	// favorite treatment if the doctor modifies the regimen section
-	dispatch.Default.Subscribe(func(ev *apiservice.TreatmentsAddedEvent) error {
+	dispatch.Default.Subscribe(func(ev *apiservice.RegimenPlanAddedEvent) error {
 		doctorTreatmentPlan, err := dataAPI.GetAbbreviatedTreatmentPlanForPatientVisit(ev.DoctorId, ev.PatientVisitId)
 		if err != nil {
 			return err
@@ -55,7 +55,7 @@ func InitListeners(dataAPI api.DataAPI) {
 		}
 
 		// get the treatments from the favorite treatment plan to compare
-		favoritedRegimenPlan, err := dataAPI.GetRegimenPlanFromFavoritedTreatmentPlan(doctorTreatmentPlan.DoctorFavoriteTreatmentPlanId.Int64())
+		favoritedRegimenPlan, err := dataAPI.GetRegimenPlanInFavoriteTreatmentPlan(doctorTreatmentPlan.DoctorFavoriteTreatmentPlanId.Int64())
 		if err != nil {
 			return err
 		}
@@ -70,7 +70,7 @@ func InitListeners(dataAPI api.DataAPI) {
 
 	// subscribe to invalidate the link between a treatment plan and
 	// favorite treatment if the doctor modifies the advice section
-	dispatch.Default.Subscribe(func(ev *apiservice.TreatmentsAddedEvent) error {
+	dispatch.Default.Subscribe(func(ev *apiservice.AdviceAddedEvent) error {
 		doctorTreatmentPlan, err := dataAPI.GetAbbreviatedTreatmentPlanForPatientVisit(ev.DoctorId, ev.PatientVisitId)
 		if err != nil {
 			return err
@@ -82,7 +82,7 @@ func InitListeners(dataAPI api.DataAPI) {
 		}
 
 		// get the treatments from the favorite treatment plan to compare
-		favoritedAdvice, err := dataAPI.GetAdviceForFavoriteTreatmentPlan(doctorTreatmentPlan.DoctorFavoriteTreatmentPlanId.Int64())
+		favoritedAdvice, err := dataAPI.GetAdviceInFavoriteTreatmentPlan(doctorTreatmentPlan.DoctorFavoriteTreatmentPlanId.Int64())
 		if err != nil {
 			return err
 		}

@@ -178,7 +178,7 @@ func pickATreatmentPlanForPatientVisit(patientVisitId int64, doctor *common.Doct
 
 	responseData := &apiservice.DoctorTreatmentPlanResponse{}
 	if err := json.NewDecoder(resp.Body).Decode(responseData); err != nil {
-		t.Fatalf("Unable to unmarshal response into response json: %s", responseData)
+		t.Fatalf("Unable to unmarshal response into response json: %s", err)
 	}
 
 	return responseData

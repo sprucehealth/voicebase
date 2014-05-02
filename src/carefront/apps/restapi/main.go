@@ -29,6 +29,7 @@ import (
 	"carefront/photos"
 	"carefront/services/auth"
 	thriftapi "carefront/thrift/api"
+	"carefront/treatment_plan"
 
 	"github.com/SpruceHealth/go-proxy-protocol/proxyproto"
 	"github.com/samuel/go-metrics/metrics"
@@ -215,6 +216,7 @@ func main() {
 	}
 
 	homelog.InitListeners(dataApi)
+	treatment_plan.InitListeners(dataApi)
 
 	cloudStorageApi := api.NewCloudStorageService(awsAuth)
 	photoAnswerCloudStorageApi := api.NewCloudStorageService(awsAuth)

@@ -315,6 +315,108 @@ func TestFavoriteTreatmentPlan_CommittedStateForTreatmentPlan(t *testing.T) {
 
 }
 
+func TestFavoriteTreatmentPlan_BreakingMappingOnModify(t *testing.T) {
+	testData := SetupIntegrationTest(t)
+	defer TearDownIntegrationTest(t, testData)
+
+	doctorId := getDoctorIdOfCurrentPrimaryDoctor(testData, t)
+	doctor, err := testData.DataApi.GetDoctorFromId(doctorId)
+	if err != nil {
+		t.Fatalf("Unable to get doctor from id: %s", err)
+	}
+
+	patientVisitResponse, _ := signupAndSubmitPatientVisitForRandomPatient(t, testData, doctor)
+
+	// create a favorite treatment plan
+	favoriteTreamentPlan := createFavoriteTreatmentPlan(patientVisitResponse.PatientVisitId, testData, doctor, t)
+
+	// pick this favorite treatment plan for the visit
+	responseData := pickATreatmentPlanForPatientVisit(patientVisitResponse.PatientVisitId, doctor, favoriteTreamentPlan, testData, t)
+
+	// lets attempt to modify and submit regimen section for patient visit
+	regimenPlanRequest := &common.RegimenPlan{
+		TreatmentPlanId: responseData.TreatmentPlan.Id,
+		PatientVisitId:  encoding.NewObjectId(patientVisitResponse.PatientVisitId),
+		AllRegimenSteps: favoriteTreamentPlan.RegimenPlan.AllRegimenSteps,
+		RegimenSections: favoriteTreamentPlan.RegimenPlan.RegimenSections[:1],
+	}
+	createRegimenPlanForPatientVisit(regimenPlanRequest, testData, doctor, t)
+
+	// now lets attempt to get the abbreviated version of the treatment plan
+	ts := httptest.NewServer(&apiservice.DoctorTreatmentPlanHandler{
+		DataApi: testData.DataApi,
+	})
+	defer ts.Close()
+
+	// the regimen plan should indicate that it was committed while the rest of the sections
+	// should continue to be in the UNCOMMITTED state
+	params := url.Values{}
+	params.Set("patient_visit_id", strconv.FormatInt(patientVisitResponse.PatientVisitId, 10))
+	params.Set("abbreviated", "true")
+	responseData = &apiservice.DoctorTreatmentPlanResponse{}
+	if resp, err := authGet(ts.URL+"?"+params.Encode(), doctor.AccountId.Int64()); err != nil {
+		t.Fatalf("Unable to make call to get treatment plan for patient visit")
+	} else if resp.StatusCode != http.StatusOK {
+		t.Fatalf("Expected %d response for getting treatment plan instead got %d", http.StatusOK, resp.StatusCode)
+	} else if json.NewDecoder(resp.Body).Decode(responseData); err != nil {
+		t.Fatalf("Unable to unmarshal response into struct %s", err)
+	} else if responseData.TreatmentPlan.DoctorFavoriteTreatmentPlanId.Int64() != 0 {
+		t.Fatalf("Expected the treatment plan to no longer be connected to the favorite treatment plan")
+	}
+
+	// lets try modfying treatments on a new treatment plan picked from favorites
+	responseData = pickATreatmentPlanForPatientVisit(patientVisitResponse.PatientVisitId, doctor, favoriteTreamentPlan, testData, t)
+
+	// lets make sure linkage exists
+	if responseData.TreatmentPlan.DoctorFavoriteTreatmentPlanId.Int64() == 0 {
+		t.Fatalf("Expected the treatment plan to come from a favorite treatment plan")
+	}
+
+	// modify treatment
+	favoriteTreamentPlan.Treatments[0].PatientVisitId = encoding.NewObjectId(patientVisitResponse.PatientVisitId)
+	favoriteTreamentPlan.Treatments[0].DispenseValue = encoding.HighPrecisionFloat64(123.12345)
+	addAndGetTreatmentsForPatientVisit(testData, favoriteTreamentPlan.Treatments, doctor.AccountId.Int64(), patientVisitResponse.PatientVisitId, t)
+
+	// linkage should now be broken
+	if resp, err := authGet(ts.URL+"?"+params.Encode(), doctor.AccountId.Int64()); err != nil {
+		t.Fatalf("Unable to make call to get treatment plan for patient visit")
+	} else if resp.StatusCode != http.StatusOK {
+		t.Fatalf("Expected %d response for getting treatment plan instead got %d", http.StatusOK, resp.StatusCode)
+	} else if json.NewDecoder(resp.Body).Decode(responseData); err != nil {
+		t.Fatalf("Unable to unmarshal response into struct %s", err)
+	} else if responseData.TreatmentPlan.DoctorFavoriteTreatmentPlanId.Int64() != 0 {
+		t.Fatalf("Expected the treatment plan to no longer be connected to the favorite treatment plan")
+	}
+
+	// lets try modifying advice
+	responseData = pickATreatmentPlanForPatientVisit(patientVisitResponse.PatientVisitId, doctor, favoriteTreamentPlan, testData, t)
+
+	// lets make sure linkage exists
+	if responseData.TreatmentPlan.DoctorFavoriteTreatmentPlanId.Int64() == 0 {
+		t.Fatalf("Expected the treatment plan to come from a favorite treatment plan")
+	}
+
+	// modify advice
+	doctorAdviceRequest := &common.Advice{
+		PatientVisitId:       encoding.NewObjectId(patientVisitResponse.PatientVisitId),
+		AllAdvicePoints:      favoriteTreamentPlan.Advice.AllAdvicePoints,
+		SelectedAdvicePoints: favoriteTreamentPlan.Advice.SelectedAdvicePoints[1:],
+	}
+	updateAdvicePointsForPatientVisit(doctorAdviceRequest, testData, doctor, t)
+
+	// linkage should now be broken
+	if resp, err := authGet(ts.URL+"?"+params.Encode(), doctor.AccountId.Int64()); err != nil {
+		t.Fatalf("Unable to make call to get treatment plan for patient visit")
+	} else if resp.StatusCode != http.StatusOK {
+		t.Fatalf("Expected %d response for getting treatment plan instead got %d", http.StatusOK, resp.StatusCode)
+	} else if json.NewDecoder(resp.Body).Decode(responseData); err != nil {
+		t.Fatalf("Unable to unmarshal response into struct %s", err)
+	} else if responseData.TreatmentPlan.DoctorFavoriteTreatmentPlanId.Int64() != 0 {
+		t.Fatalf("Expected the treatment plan to no longer be connected to the favorite treatment plan")
+	}
+
+}
+
 func createFavoriteTreatmentPlan(patientVisitId int64, testData TestData, doctor *common.Doctor, t *testing.T) *common.FavoriteTreatmentPlan {
 
 	// lets submit a regimen plan for this patient
@@ -439,7 +541,7 @@ func createFavoriteTreatmentPlan(patientVisitId int64, testData TestData, doctor
 
 	responseData := &apiservice.DoctorFavoriteTreatmentPlansResponseData{}
 	if err := json.NewDecoder(resp.Body).Decode(responseData); err != nil {
-		t.Fatalf("Unable to unmarshal response into json %s", responseData)
+		t.Fatalf("Unable to unmarshal response into json %s", err)
 	} else if resp.StatusCode != http.StatusOK {
 		t.Fatalf("Expected 200 response for adding a favorite treatment plan but got %d instead", resp.StatusCode)
 	} else if responseData.FavoriteTreatmentPlan == nil {

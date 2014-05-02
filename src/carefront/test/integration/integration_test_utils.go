@@ -11,6 +11,7 @@ import (
 	"carefront/libs/dispatch"
 	"carefront/services/auth"
 	thriftapi "carefront/thrift/api"
+	"carefront/treatment_plan"
 	"database/sql"
 	"errors"
 	"fmt"
@@ -254,6 +255,7 @@ func SetupIntegrationTest(t *testing.T) TestData {
 
 	dispatch.Default = dispatch.New()
 	homelog.InitListeners(testData.DataApi)
+	treatment_plan.InitListeners(testData.DataApi)
 
 	return testData
 }

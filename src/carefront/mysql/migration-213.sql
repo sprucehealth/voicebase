@@ -55,6 +55,9 @@ alter table dr_favorite_advice add foreign key (dr_favorite_treatment_plan_id) r
 alter table dr_favorite_patient_visit_follow_up drop foreign key dr_favorite_patient_visit_follow_up_ibfk_1;
 alter table dr_favorite_patient_visit_follow_up add foreign key (dr_favorite_treatment_plan_id) references dr_favorite_treatment_plan(id) on delete cascade;
 
+alter table treatment drop foreign key treatment_ibfk_9;
+alter table treatment add foreign key (treatment_plan_id) references treatment_plan(id) on delete cascade;
+
 
 
 

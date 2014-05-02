@@ -50,12 +50,12 @@ func (d *DataService) GetFavoriteTreatmentPlan(favoriteTreatmentPlanId int64) (*
 		return nil, err
 	}
 
-	favoriteTreatmentPlan.RegimenPlan, err = d.GetRegimenPlanForFavoriteTreatmentPlan(favoriteTreatmentPlanId)
+	favoriteTreatmentPlan.RegimenPlan, err = d.GetRegimenPlanInFavoriteTreatmentPlan(favoriteTreatmentPlanId)
 	if err != nil {
 		return nil, err
 	}
 
-	favoriteTreatmentPlan.Advice, err = d.GetAdviceForFavoriteTreatmentPlan(favoriteTreatmentPlanId)
+	favoriteTreatmentPlan.Advice, err = d.GetAdviceInFavoriteTreatmentPlan(favoriteTreatmentPlanId)
 	if err != nil {
 		return nil, err
 	}
@@ -186,7 +186,7 @@ func (d *DataService) GetTreatmentsInFavoriteTreatmentPlan(favoriteTreatmentPlan
 	return treatments, rows.Err()
 }
 
-func (d *DataService) GetRegimenPlanForFavoriteTreatmentPlan(favoriteTreatmentPlanId int64) (*common.RegimenPlan, error) {
+func (d *DataService) GetRegimenPlanInFavoriteTreatmentPlan(favoriteTreatmentPlanId int64) (*common.RegimenPlan, error) {
 	regimenPlanRows, err := d.DB.Query(`select id, regimen_type, dr_regimen_step_id, text 
 								from dr_favorite_regimen where dr_favorite_treatment_plan_id = ? and status = 'ACTIVE' order by id`, favoriteTreatmentPlanId)
 	if err != nil {
@@ -197,7 +197,7 @@ func (d *DataService) GetRegimenPlanForFavoriteTreatmentPlan(favoriteTreatmentPl
 	return getRegimenPlanFromRows(regimenPlanRows)
 }
 
-func (d *DataService) GetAdviceForFavoriteTreatmentPlan(favoriteTreatmentPlanId int64) (*common.Advice, error) {
+func (d *DataService) GetAdviceInFavoriteTreatmentPlan(favoriteTreatmentPlanId int64) (*common.Advice, error) {
 	advicePointsRows, err := d.DB.Query(`select id, dr_advice_point_id, text from dr_favorite_advice 
 			where dr_favorite_treatment_plan_id = ?  and status = ?`, favoriteTreatmentPlanId, STATUS_ACTIVE)
 	if err != nil {
@@ -216,7 +216,7 @@ func (d *DataService) GetAdviceForFavoriteTreatmentPlan(favoriteTreatmentPlanId 
 }
 
 func (d *DataService) DeleteFavoriteTreatmentPlanMapping(treatmentPlanId, favoriteTreatmentPlanId int64) error {
-	_, err := d.DB.Exec(`delete from favorite_treatment_plan_mapping where treatment_plan_id = ? and favorite_treatment_plan_id = ?`, treatmentPlanId, favoriteTreatmentPlanId)
+	_, err := d.DB.Exec(`delete from treatment_plan_favorite_mapping where treatment_plan_id = ? and dr_favorite_treatment_plan_id = ?`, treatmentPlanId, favoriteTreatmentPlanId)
 	return err
 }
 
