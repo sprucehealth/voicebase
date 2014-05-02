@@ -87,7 +87,7 @@ func (t *TreatmentsHandler) getTreatments(w http.ResponseWriter, r *http.Request
 	// for each of the drugs, go ahead and fill in the drug name, route and form
 	for _, treatment := range treatments {
 		if treatment.DrugForm == "" {
-			drugName, drugForm, drugRoute := breakDrugInternalNameIntoComponents(treatment.DrugInternalName)
+			drugName, drugForm, drugRoute := BreakDrugInternalNameIntoComponents(treatment.DrugInternalName)
 			treatment.DrugName = drugName
 			// only break down name into route and form if the route and form are non-empty strings
 			if drugForm != "" && drugRoute != "" {
@@ -151,7 +151,7 @@ func (t *TreatmentsHandler) addTreatment(w http.ResponseWriter, r *http.Request)
 		}
 
 		// break up the name into its components so that it can be saved into the database as its components
-		drugName, drugForm, drugRoute := breakDrugInternalNameIntoComponents(treatment.DrugInternalName)
+		drugName, drugForm, drugRoute := BreakDrugInternalNameIntoComponents(treatment.DrugInternalName)
 		treatment.DrugName = drugName
 		treatment.DrugForm = drugForm
 		treatment.DrugRoute = drugRoute

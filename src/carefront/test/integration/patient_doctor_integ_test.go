@@ -10,6 +10,7 @@ import (
 	"carefront/libs/aws/sqs"
 	"carefront/libs/erx"
 	"carefront/libs/pharmacy"
+	"carefront/patient_treatment_plan"
 
 	"github.com/samuel/go-metrics/metrics"
 
@@ -57,7 +58,7 @@ func TestPatientVisitReview(t *testing.T) {
 	}
 
 	// try getting the patient visit review for this patient visit and it should fail
-	patientVisitReviewHandler := &apiservice.PatientVisitReviewHandler{DataApi: testData.DataApi}
+	patientVisitReviewHandler := &patient_treatment_plan.PatientVisitReviewHandler{DataApi: testData.DataApi}
 	ts := httptest.NewServer(patientVisitReviewHandler)
 	defer ts.Close()
 
@@ -119,25 +120,6 @@ func TestPatientVisitReview(t *testing.T) {
 
 	if len(treatmentPlans) > 0 {
 		t.Fatal("Expected number of treatment plans to be 0")
-	}
-
-	// now, lets try and get the patient visit review again
-	resp, err = authGet(ts2.URL+"?patient_visit_id="+strconv.FormatInt(patientVisitResponse.PatientVisitId, 10), doctor.AccountId.Int64())
-	if err != nil {
-		t.Fatal("Unable to make call to get patient visit review: " + err.Error())
-	}
-
-	patientVisitReviewResponse := &apiservice.PatientVisitReviewResponse{}
-	err = json.NewDecoder(resp.Body).Decode(patientVisitResponse)
-	if err != nil {
-		t.Fatal("Unable to unmarshal response body in to json object: " + err.Error())
-	}
-
-	CheckSuccessfulStatusCode(resp, "Unable to make successful call to get patient visit review: ", t)
-
-	if patientVisitReviewResponse.DiagnosisSummary != nil || patientVisitReviewResponse.Treatments != nil || patientVisitReviewResponse.RegimenPlan != nil ||
-		patientVisitReviewResponse.Advice != nil || patientVisitReviewResponse.Followup != nil {
-		t.Fatal("Expected there to exist no review for this patient visit, but some parts of it do exist")
 	}
 
 	patientVisitResponse = GetPatientVisitForPatient(patient.PatientId.Int64(), testData, t)
@@ -420,20 +402,6 @@ func TestPatientVisitReview(t *testing.T) {
 		t.Fatal("Unable to make call to get patient visit review: " + err.Error())
 	}
 
-	patientVisitReviewResponse = &apiservice.PatientVisitReviewResponse{}
-	err = json.NewDecoder(resp.Body).Decode(patientVisitReviewResponse)
-	if err != nil {
-		t.Fatal("Unable to unmarshal response body in to json object: " + err.Error())
-	}
-
-	CheckSuccessfulStatusCode(resp, "Unable to make successful call to get patient visit review", t)
-
-	patientVisitResponse = GetPatientVisitForPatient(patient.PatientId.Int64(), testData, t)
-
-	if patientVisitReviewResponse.DiagnosisSummary == nil || patientVisitReviewResponse.Treatments == nil || patientVisitReviewResponse.RegimenPlan == nil ||
-		patientVisitReviewResponse.Advice == nil || patientVisitReviewResponse.Followup == nil {
-		t.Fatal("Expected there to exist all sections of the review")
-	}
 }
 
 func getTreatmentsForTreatmentPlan(testData TestData, t *testing.T, treatmentPlanId int64, doctor *common.Doctor) *apiservice.GetTreatmentsResponse {

@@ -24,6 +24,7 @@ import (
 	"carefront/libs/svcclient"
 	"carefront/libs/svcreg"
 	"carefront/notify"
+	"carefront/patient_treatment_plan"
 	"carefront/services/auth"
 	thriftapi "carefront/thrift/api"
 
@@ -221,10 +222,10 @@ func main() {
 	updatePatientPharmacyHandler := &apiservice.UpdatePatientPharmacyHandler{DataApi: dataApi, PharmacySearchService: pharmacy.GooglePlacesPharmacySearchService(0)}
 	authenticateDoctorHandler := &apiservice.DoctorAuthenticationHandler{DataApi: dataApi, AuthApi: authApi}
 	signupDoctorHandler := &apiservice.SignupDoctorHandler{DataApi: dataApi, AuthApi: authApi}
-	patientTreatmentGuideHandler := apiservice.NewPatientTreatmentGuideHandler(dataApi)
-	doctorTreatmentGuideHandler := apiservice.NewDoctorTreatmentGuideHandler(dataApi)
+	patientTreatmentGuideHandler := patient_treatment_plan.NewPatientTreatmentGuideHandler(dataApi)
+	doctorTreatmentGuideHandler := patient_treatment_plan.NewDoctorTreatmentGuideHandler(dataApi)
 	patientVisitHandler := apiservice.NewPatientVisitHandler(dataApi, authApi, cloudStorageApi, photoAnswerCloudStorageApi)
-	patientVisitReviewHandler := &apiservice.PatientVisitReviewHandler{DataApi: dataApi}
+	patientVisitReviewHandler := &patient_treatment_plan.PatientVisitReviewHandler{DataApi: dataApi}
 	answerIntakeHandler := apiservice.NewAnswerIntakeHandler(dataApi)
 	autocompleteHandler := &apiservice.AutocompleteHandler{DataApi: dataApi, ERxApi: doseSpotService, Role: api.PATIENT_ROLE}
 	doctorTreatmentSuggestionHandler := &apiservice.AutocompleteHandler{DataApi: dataApi, ERxApi: doseSpotService, Role: api.DOCTOR_ROLE}

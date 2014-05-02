@@ -76,7 +76,7 @@ func TestUnsuccessfulBreakingUpOfDrugNameIntoComponents(t *testing.T) {
 }
 
 func testDrugNameIntoComponents(expectedDrugNameComponent, expectedDrugRouteComponent, expectedDrugFormComponent, nameToTest string, t *testing.T) {
-	drugName, drugForm, drugRoute := breakDrugInternalNameIntoComponents(nameToTest)
+	drugName, drugForm, drugRoute := BreakDrugInternalNameIntoComponents(nameToTest)
 	checkComponent(expectedDrugNameComponent, drugName, t)
 	checkComponent(expectedDrugFormComponent, drugForm, t)
 	checkComponent(expectedDrugRouteComponent, drugRoute, t)

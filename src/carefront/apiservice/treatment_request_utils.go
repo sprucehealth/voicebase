@@ -92,7 +92,7 @@ func checkIfDrugInTreatmentFromTemplateIsOutOfMarket(treatment *common.Treatment
 // A complete and valid drug name from dosespot is represented as "DrugName (DrugRoute - DrugForm)"
 // This method tries to break up this complete internal drug name into its individual components. It's a best effort
 // in that it treats the entire name presented as the drugName if the drugInternalName is of any invalid format
-func breakDrugInternalNameIntoComponents(drugInternalName string) (drugName, drugForm, drugRoute string) {
+func BreakDrugInternalNameIntoComponents(drugInternalName string) (drugName, drugForm, drugRoute string) {
 	indexOfParanthesis := strings.IndexRune(drugInternalName, '(')
 	// nothing to do if the name is not in the required format.
 	// fail gracefully by returning the drug internal name for the drug name and

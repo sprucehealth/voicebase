@@ -131,7 +131,7 @@ func (t *DoctorTreatmentTemplatesHandler) addTreatmentTemplates(w http.ResponseW
 		}
 
 		// break up the name into its components so that it can be saved into the database as its components
-		drugName, drugForm, drugRoute := breakDrugInternalNameIntoComponents(treatmentTemplate.Treatment.DrugInternalName)
+		drugName, drugForm, drugRoute := BreakDrugInternalNameIntoComponents(treatmentTemplate.Treatment.DrugInternalName)
 		treatmentTemplate.Treatment.DrugName = drugName
 		// only break down name into route and form if the route and form are non-empty strings
 		if drugForm != "" && drugRoute != "" {
