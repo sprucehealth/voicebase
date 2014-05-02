@@ -144,7 +144,7 @@ func treatmentGuideResponse(dataAPI api.DataAPI, w http.ResponseWriter, treatmen
 		&TPLargeDividerView{},
 		&TPIconTextView{
 			// TODO: This icon info isn't robust or likely accurate
-			IconURL:    fmt.Sprintf("spruce:///images/doctor_photo_%s_%s", treatment.Doctor.FirstName, treatment.Doctor.LastName),
+			IconURL:    fmt.Sprintf("spruce:///images/doctor_photo_%d", treatment.Doctor.DoctorId.Int64()),
 			IconWidth:  32,
 			IconHeight: 32,
 			Text:       fmt.Sprintf("Dr. %s's Instructions", treatment.Doctor.LastName),

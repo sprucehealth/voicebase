@@ -148,9 +148,9 @@ func (p *PatientVisitReviewHandler) ServeHTTP(w http.ResponseWriter, r *http.Req
 func treatmentPlanResponse(w http.ResponseWriter, r *http.Request, treatmentPlan *common.TreatmentPlan, patientVisit *common.PatientVisit, doctor *common.Doctor, patient *common.Patient) {
 	views := make([]TPView, 0)
 	views = append(views, &TPVisitHeaderView{
-		ImageURL: "spruce:///images/icon_treatment_plan",
-		Title:    "Treatment Plan",
-		Subtitle: fmt.Sprintf("Received %s", patientVisit.ClosedDate.Format(timeFormatlayout)),
+		ImageURL: fmt.Sprintf("spruce:///images/doctor_photo_%d", doctor.DoctorId.Int64()),
+		Title:    fmt.Sprintf("Dr. %s %s", doctor.FirstName, doctor.LastName),
+		Subtitle: "Dermatologist",
 	})
 
 	views = append(views, &TPTextView{
@@ -184,7 +184,7 @@ func treatmentPlanResponse(w http.ResponseWriter, r *http.Request, treatmentPlan
 				Title:       fmt.Sprintf("%s %s", treatment.DrugInternalName, treatment.DosageStrength),
 				Description: treatment.PatientInstructions,
 				ButtonTitle: "What to know about " + treatment.DrugName,
-				TapURL:      fmt.Sprintf("spruce:///action/show_treatment_guide/%d", treatment.Id.Int64()),
+				TapURL:      fmt.Sprintf("spruce:///action/show_treatment_guide?treatment_id=%d", treatment.Id.Int64()),
 			})
 		}
 	}
