@@ -13,6 +13,7 @@ type incompleteVisitView struct {
 	ButtonIconURL  string `json:"button_icon_url,omitempty"`
 	TapURL         string `json:"tap_url"`
 	PatientVisitId int64  `json:"patient_visit_id,string"`
+	NotificationId int64  `json:"notification_id,string"`
 }
 
 type bodyButtonView struct {
@@ -27,6 +28,7 @@ type bodyButtonView struct {
 	BodyButtonIconURL string `json:"body_button_icon_url"`
 	BodyButtonText    string `json:"body_button_text"`
 	BodyButtonTapURL  string `json:"body_button_url"`
+	NotificationId    int64  `json:"notification_id,string"`
 }
 
 type titleSubtitleView struct {
