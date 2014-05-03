@@ -85,4 +85,3 @@ INSERT INTO conversation_topic (title, ordinal, active) VALUES
     ('Side Effects', 300, 1),
     ('Not Seeing Results', 400, 1),
     ('Other', 500, 1);
-
