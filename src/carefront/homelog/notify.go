@@ -56,7 +56,7 @@ func (n *incompleteVisitNotification) makeView(dataAPI api.DataAPI, patientId in
 		Title:          fmt.Sprintf("Complete your visit with Dr. %s.", doctor.LastName),
 		IconURL:        fmt.Sprintf("spruce:///image/thumbnail_care_team_%d", doctor.DoctorId.Int64()), // TODO
 		ButtonText:     "Continue Your Visit",
-		TapURL:         fmt.Sprintf("spruce:///action/view_visit?visit_id=%d", n.VisitId),
+		TapURL:         fmt.Sprintf("spruce:///action/continue_visit?visit_id=%d", n.VisitId),
 		PatientVisitId: n.VisitId,
 	}, nil
 }
