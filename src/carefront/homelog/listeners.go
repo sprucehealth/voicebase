@@ -42,7 +42,7 @@ func InitListeners(dataAPI api.DataAPI) {
 				Title:    "Visit Submitted",
 				Subtitle: fmt.Sprintf("With Dr. %s", doctor.LastName),
 				IconURL:  "spruce:///image/icon_log_visit",
-				TapURL:   fmt.Sprintf("spruce:///action/view_visit/visit_id=%d", ev.VisitId),
+				TapURL:   fmt.Sprintf("spruce:///action/view_visit?visit_id=%d", ev.VisitId),
 			},
 		}); err != nil {
 			golog.Errorf("Failed to insert visit submitted into health log for patient %d: %s", ev.PatientId, err.Error())
