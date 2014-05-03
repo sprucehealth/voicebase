@@ -37,4 +37,4 @@ src/carefront/apps/restapi/restapi
 src/carefront/apps/securesvc/securesvc
 src/carefront/apps/syslogidx/syslogidx
 src/code.google.com/p/go.tools/
-
+src/carefront/apps/medetails/medetails

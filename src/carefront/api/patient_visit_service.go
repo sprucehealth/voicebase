@@ -7,7 +7,6 @@ import (
 	"database/sql"
 	"fmt"
 	"log"
-	"strconv"
 	"strings"
 	"time"
 
@@ -1133,9 +1132,9 @@ func (d *DataService) fillInDrugDBIdsForTreatment(treatment *common.Treatment) e
 
 	for drugRows.Next() {
 		var dbIdTag string
-		var dbId int64
+		var dbId string
 		drugRows.Scan(&dbIdTag, &dbId)
-		drugDbIds[dbIdTag] = strconv.FormatInt(dbId, 10)
+		drugDbIds[dbIdTag] = dbId
 	}
 
 	treatment.DrugDBIds = drugDbIds

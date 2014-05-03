@@ -53,7 +53,7 @@ func (d *DoctorDrugInstructionsHandler) addDrugInstructions(w http.ResponseWrite
 		return
 	}
 
-	drugName, drugForm, drugRoute := breakDrugInternalNameIntoComponents(addInstructionsRequestBody.DrugInternalName)
+	drugName, drugForm, drugRoute := BreakDrugInternalNameIntoComponents(addInstructionsRequestBody.DrugInternalName)
 
 	patientVisitReviewData, statusCode, err := ValidateDoctorAccessToPatientVisitAndGetRelevantData(addInstructionsRequestBody.PatientVisitId, GetContext(r).AccountId, d.DataApi)
 	if err != nil {
@@ -124,7 +124,7 @@ func (d *DoctorDrugInstructionsHandler) getDrugInstructions(w http.ResponseWrite
 		return
 	}
 
-	drugName, drugForm, drugRoute := breakDrugInternalNameIntoComponents(requestData.DrugInternalName)
+	drugName, drugForm, drugRoute := BreakDrugInternalNameIntoComponents(requestData.DrugInternalName)
 	// break up drug name into its components
 	drugInstructions, err := d.DataApi.GetDrugInstructionsForDoctor(drugName, drugForm, drugRoute, doctorId)
 	if err != nil {
