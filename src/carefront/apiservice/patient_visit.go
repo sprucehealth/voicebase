@@ -139,7 +139,7 @@ func (s *PatientVisitHandler) submitPatientVisit(w http.ResponseWriter, r *http.
 		return
 	}
 
-	dispatch.Default.PublishAsync(&VisitSubmittedEvent{
+	dispatch.Default.Publish(&VisitSubmittedEvent{
 		PatientId: patientId,
 		DoctorId:  doctorId,
 		VisitId:   patientVisit.PatientVisitId.Int64(),
