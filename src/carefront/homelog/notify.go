@@ -21,7 +21,7 @@ const (
 
 type notification interface {
 	common.Typed
-	makeView(dataAPI api.DataAPI, patientId int64) (view, error)
+	makeView(dataAPI api.DataAPI, patientId, notificationId int64) (view, error)
 }
 
 type incompleteVisitNotification struct {
@@ -41,7 +41,7 @@ func (*visitReviewedNotification) TypeName() string {
 	return visitReviewed
 }
 
-func (n *incompleteVisitNotification) makeView(dataAPI api.DataAPI, patientId int64) (view, error) {
+func (n *incompleteVisitNotification) makeView(dataAPI api.DataAPI, patientId, notificationId int64) (view, error) {
 	patient, err := dataAPI.GetPatientFromId(patientId)
 	if err != nil {
 		return nil, err
@@ -58,10 +58,11 @@ func (n *incompleteVisitNotification) makeView(dataAPI api.DataAPI, patientId in
 		ButtonText:     "Continue Your Visit",
 		TapURL:         fmt.Sprintf("spruce:///action/continue_visit?visit_id=%d", n.VisitId),
 		PatientVisitId: n.VisitId,
+		NotificationId: notificationId,
 	}, nil
 }
 
-func (n *visitReviewedNotification) makeView(dataAPI api.DataAPI, patientId int64) (view, error) {
+func (n *visitReviewedNotification) makeView(dataAPI api.DataAPI, patientId, notificationId int64) (view, error) {
 	doctor, err := dataAPI.GetDoctorFromId(n.DoctorId)
 	if err != nil {
 		return nil, err
@@ -81,6 +82,7 @@ func (n *visitReviewedNotification) makeView(dataAPI api.DataAPI, patientId int6
 		BodyButtonIconURL: "spruce:///image/icon_blue_treatment_plan",
 		BodyButtonText:    "Treatment Plan",
 		BodyButtonTapURL:  tapURL,
+		NotificationId:    notificationId,
 	}, nil
 }
 
