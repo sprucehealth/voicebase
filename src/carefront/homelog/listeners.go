@@ -62,6 +62,20 @@ func InitListeners(dataAPI api.DataAPI) {
 			return err
 		}
 
+		// Add "treatment plan created" notification
+		if _, err := dataAPI.InsertPatientNotification(ev.PatientId, &common.Notification{
+			UID:             visitReviewed,
+			Dismissible:     true,
+			DismissOnAction: true,
+			Priority:        1000,
+			Data: &visitReviewedNotification{
+				VisitId:  ev.VisitId,
+				DoctorId: doctor.DoctorId.Int64(),
+			},
+		}); err != nil {
+			golog.Errorf("Failed to insert treatment plan created into noficiation queue for patient %d: %s", ev.PatientId, err.Error())
+		}
+
 		// Add "treatment plan created" to health log
 		if _, err := dataAPI.InsertOrUpdatePatientHealthLogItem(ev.PatientId, &common.HealthLogItem{
 			UID: fmt.Sprintf("treatment_plan_created:%d", planID),

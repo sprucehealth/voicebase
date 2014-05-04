@@ -17,8 +17,17 @@ func (*titleSubtitleItem) TypeName() string {
 	return "title_subtitle"
 }
 
+type visitReviewedNotification struct {
+	SomeId int64
+}
+
+func (*visitReviewedNotification) TypeName() string {
+	return "visit_reviewed"
+}
+
 var notificationTypes = map[string]reflect.Type{
-	(&titleSubtitleItem{}).TypeName(): reflect.TypeOf(titleSubtitleItem{}),
+	(&titleSubtitleItem{}).TypeName():         reflect.TypeOf(titleSubtitleItem{}),
+	(&visitReviewedNotification{}).TypeName(): reflect.TypeOf(visitReviewedNotification{}),
 }
 
 func TestPatientNotificationsAPI(t *testing.T) {
@@ -176,4 +185,42 @@ func TestHealthLog(t *testing.T) {
 	} else {
 		CheckSuccessfulStatusCode(resp, "Unable to get home: "+string(body), t)
 	}
+}
+
+func TestVisitCreatedNotification(t *testing.T) {
+	if err := CheckIfRunningLocally(t); err == CannotRunTestLocally {
+		return
+	}
+	testData := SetupIntegrationTest(t)
+	defer TearDownIntegrationTest(t, testData)
+
+	pr := SignupRandomTestPatient(t, testData.DataApi, testData.AuthApi)
+	patient := pr.Patient
+	patientId := patient.PatientId.Int64()
+
+	doctorId := getDoctorIdOfCurrentPrimaryDoctor(testData, t)
+	doctor, err := testData.DataApi.GetDoctorFromId(doctorId)
+	if err != nil {
+		t.Fatalf("Error getting doctor from id: %s", err.Error())
+	}
+
+	visit := CreatePatientVisitForPatient(patientId, testData, t)
+	SubmitPatientVisitForPatient(patientId, visit.PatientVisitId, testData, t)
+	StartReviewingPatientVisit(visit.PatientVisitId, doctor, testData, t)
+	SubmitPatientVisitBackToPatient(visit.PatientVisitId, doctor, testData, t)
+
+	// make a call to get patient notifications
+	listNotificationsHandler := homelog.NewListHandler(testData.DataApi)
+	ts := httptest.NewServer(listNotificationsHandler)
+	defer ts.Close()
+
+	notes, _, err := testData.DataApi.GetNotificationsForPatient(patientId, notificationTypes)
+	if err != nil {
+		t.Fatalf("Unable to get notifications for patient %s", err)
+	} else if len(notes) != 1 {
+		t.Fatalf("Expected 1 notification for patient instead got %d", len(notes))
+	} else if notes[0].Data.TypeName() != "visit_reviewed" {
+		t.Fatalf("Expected notification of type %s instead got %s", "visit_reviewed", notes[0].Data.TypeName())
+	}
+
 }
