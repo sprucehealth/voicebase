@@ -64,7 +64,7 @@ func InitListeners(dataAPI api.DataAPI) {
 
 		// Add "treatment plan created" notification
 		if _, err := dataAPI.InsertPatientNotification(ev.PatientId, &common.Notification{
-			UID:             incompleteVisit,
+			UID:             visitReviewed,
 			Dismissible:     true,
 			DismissOnAction: true,
 			Priority:        1000,
