@@ -6,6 +6,7 @@ import (
 	"carefront/common"
 	"carefront/libs/dispatch"
 	"carefront/libs/golog"
+	"carefront/messages"
 	"fmt"
 )
 
@@ -112,6 +113,16 @@ func InitListeners(dataAPI api.DataAPI) {
 				}
 			}
 		}
+		return nil
+	})
+
+	dispatch.Default.Subscribe(func(ev *messages.ConversationStartedEvent) error {
+		// TODO
+		return nil
+	})
+
+	dispatch.Default.Subscribe(func(ev *messages.ConversationReplyEvent) error {
+		// TODO
 		return nil
 	})
 }

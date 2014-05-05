@@ -113,7 +113,7 @@ func (h *DoctorConversationHandler) newConversation(w http.ResponseWriter, r *ht
 		apiservice.WriteDeveloperError(w, http.StatusInternalServerError, "Failed to get attachments: "+err.Error())
 		return
 	}
-	cid, err = h.dataAPI.CreateConversation(personId, toPersonId, req.TopicId, req.Message, attachments)
+	cid, err := h.dataAPI.CreateConversation(personId, toPersonId, req.TopicId, req.Message, attachments)
 	if err != nil {
 		apiservice.WriteDeveloperError(w, http.StatusInternalServerError, "Failed to create conversation: "+err.Error())
 		return

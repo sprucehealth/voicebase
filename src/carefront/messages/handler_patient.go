@@ -94,7 +94,7 @@ func (h *PatientConversationHandler) newConversation(w http.ResponseWriter, r *h
 		apiservice.WriteDeveloperError(w, http.StatusInternalServerError, "Failed to get attachments: "+err.Error())
 		return
 	}
-	cid, err = h.dataAPI.CreateConversation(personId, doctorPersonId, req.TopicId, req.Message, attachments)
+	cid, err := h.dataAPI.CreateConversation(personId, doctorPersonId, req.TopicId, req.Message, attachments)
 	if err != nil {
 		apiservice.WriteDeveloperError(w, http.StatusInternalServerError, "Failed to create conversation: "+err.Error())
 		return
@@ -103,7 +103,7 @@ func (h *PatientConversationHandler) newConversation(w http.ResponseWriter, r *h
 	dispatch.Default.PublishAsync(&ConversationStartedEvent{
 		ConversationId: cid,
 		FromId:         personId,
-		ToId:           toPersonId,
+		ToId:           doctorPersonId,
 	})
 
 	apiservice.WriteJSONToHTTPResponseWriter(w, http.StatusOK, apiservice.SuccessfulGenericJSONResponse())
