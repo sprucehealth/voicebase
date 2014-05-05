@@ -35,6 +35,9 @@ func (d *DataService) GetPersonIdByRole(roleType string, roleId int64) (int64, e
 	err := d.DB.QueryRow(
 		`SELECT id FROM person WHERE role_type = ? AND role_id = ?`,
 		roleType, roleId).Scan(&id)
+	if err == sql.ErrNoRows {
+		return 0, NoRowsError
+	}
 	return id, err
 }
 
