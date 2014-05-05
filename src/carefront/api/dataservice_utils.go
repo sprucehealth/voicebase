@@ -175,14 +175,17 @@ func (d *DataService) addTreatment(tType treatmentType, treatment *common.Treatm
 	}
 
 	if err := d.includeDrugNameComponentIfNonZero(treatment.DrugName, drugNameTable, "drug_name_id", columnsAndData, tx); err != nil {
+		tx.Rollback()
 		return err
 	}
 
 	if err := d.includeDrugNameComponentIfNonZero(treatment.DrugForm, drugFormTable, "drug_form_id", columnsAndData, tx); err != nil {
+		tx.Rollback()
 		return err
 	}
 
 	if err := d.includeDrugNameComponentIfNonZero(treatment.DrugRoute, drugRouteTable, "drug_route_id", columnsAndData, tx); err != nil {
+		tx.Rollback()
 		return err
 	}
 

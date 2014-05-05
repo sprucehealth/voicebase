@@ -743,14 +743,17 @@ func (d *DataService) AddTreatmentTemplates(doctorTreatmentTemplates []*common.D
 		}
 
 		if err := d.includeDrugNameComponentIfNonZero(doctorTreatmentTemplate.Treatment.DrugName, drugNameTable, "drug_name_id", columnsAndData, tx); err != nil {
+			tx.Rollback()
 			return err
 		}
 
 		if err := d.includeDrugNameComponentIfNonZero(doctorTreatmentTemplate.Treatment.DrugForm, drugFormTable, "drug_form_id", columnsAndData, tx); err != nil {
+			tx.Rollback()
 			return err
 		}
 
 		if err := d.includeDrugNameComponentIfNonZero(doctorTreatmentTemplate.Treatment.DrugRoute, drugRouteTable, "drug_route_id", columnsAndData, tx); err != nil {
+			tx.Rollback()
 			return err
 		}
 
