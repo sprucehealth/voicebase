@@ -13,7 +13,7 @@ import (
 type message struct {
 	Type        string        `json:"type"`
 	Time        time.Time     `json:"date_time"`
-	SenderId    int64         `json:"sender_participant_id"`
+	SenderId    int64         `json:"sender_participant_id,string"`
 	Message     string        `json:"message"`
 	Attachments []*attachment `json:"attachments,omitempty"`
 }
@@ -21,11 +21,11 @@ type message struct {
 type attachment struct {
 	Type            string `json:"type"`
 	URL             string `json:"url,omitempty"`
-	TreatmentPlanId int64  `json:"treatment_plan_id,omitempty"`
+	TreatmentPlanId int64  `json:"treatment_plan_id,string,omitempty"`
 }
 
 type conversationListItem struct {
-	Id                int64     `json:"id"`
+	Id                int64     `json:"id,string"`
 	Title             string    `json:"title"`
 	LastMessageTime   time.Time `json:"last_message_date_time"`
 	LastParticipantId int64     `json:"last_message_participant_id,string"`
@@ -47,7 +47,7 @@ type conversationListResponse struct {
 }
 
 type conversationResponse struct {
-	Id           int64          `json:"conversation_id"`
+	Id           int64          `json:"conversation_id,string"`
 	Title        string         `json:"title"`
 	Items        []*message     `json:"items"`
 	Participants []*participant `json:"participants"`
@@ -58,14 +58,14 @@ type attachments struct {
 }
 
 type newConversationRequest struct {
-	PatientId   int64        `json:"patient_id"`
-	TopicId     int64        `json:"topic_id"`
+	PatientId   int64        `json:"patient_id,string"`
+	TopicId     int64        `json:"topic_id,string"`
 	Message     string       `json:"message"`
 	Attachments *attachments `json:"attachments"`
 }
 
 type replyRequest struct {
-	ConversationId int64        `json:"conversation_id"`
+	ConversationId int64        `json:"conversation_id,string"`
 	Message        string       `json:"message"`
 	Attachments    *attachments `json:"attachments"`
 }
