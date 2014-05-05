@@ -42,6 +42,14 @@ func (d *DataService) GetPersonIdByRole(roleType string, roleId int64) (int64, e
 }
 
 func (d *DataService) GetConversationsWithParticipants(ids []int64) ([]*common.Conversation, map[int64]*common.Person, error) {
+	// Find the intersection of the sets of conversation_id for all of the participants.
+	// This gives us the conversations that include ALL of the participants. The options
+	// for doing this include using an intersection of queries (not available in MySQL),
+	// a join for each participant, group by on a sub-query, or doing the group by in code.
+	// The last option was chosen here. The query pulls down all conversation_id for each
+	// participant, and if a conversation includes all of the participants then the number
+	// of times the conversation_id appears in the results (# of rows) should equal the
+	// number of participants.
 	idvals := appendInt64sToInterfaceSlice(nil, ids)
 	rows, err := d.DB.Query(fmt.Sprintf(`SELECT conversation_id FROM conversation_participant WHERE person_id IN (%s)`, nReplacements(len(ids))), idvals...)
 	if err != nil {
