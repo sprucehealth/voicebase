@@ -374,6 +374,8 @@ func main() {
 	mux.Handle("/v1/doctor/conversation", messages.NewDoctorConversationHandler(dataApi))
 	mux.Handle("/v1/patient/conversation/messages", messages.NewPatientMessagesHandler(dataApi))
 	mux.Handle("/v1/doctor/conversation/messages", messages.NewDoctorMessagesHandler(dataApi))
+	mux.Handle("/v1/patient/conversation/read", messages.NewPatientReadHandler(dataApi))
+	mux.Handle("/v1/doctor/conversation/read", messages.NewDoctorReadHandler(dataApi))
 	mux.Handle("/v1/conversation/topics", messages.NewTopicsHandler(dataApi))
 
 	mux.Handle("/v1/doctor/signup", signupDoctorHandler)

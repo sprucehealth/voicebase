@@ -2,12 +2,15 @@ package messages
 
 import (
 	"carefront/api"
+	"carefront/apiservice"
 	"carefront/common"
 	"carefront/libs/golog"
 	"fmt"
 	"net/http"
 	"strconv"
 	"time"
+
+	"github.com/gorilla/schema"
 )
 
 type message struct {
@@ -184,4 +187,43 @@ func parseAttachments(dataAPI api.DataAPI, att *attachments, personId int64) ([]
 		}
 	}
 	return attachments, nil
+}
+
+func markConversationAsRead(w http.ResponseWriter, r *http.Request, dataAPI api.DataAPI, personId int64) {
+	if r.Method != apiservice.HTTP_POST {
+		w.WriteHeader(http.StatusNotFound)
+		return
+	}
+
+	if err := r.ParseForm(); err != nil {
+		apiservice.WriteUserError(w, http.StatusBadRequest, "Unable to parse request data: "+err.Error())
+		return
+	}
+
+	var req conversationRequest
+	if err := schema.NewDecoder().Decode(&req, r.Form); err != nil {
+		apiservice.WriteDeveloperError(w, http.StatusBadRequest, "Unable to parse input parameters: "+err.Error())
+		return
+	}
+
+	con, err := dataAPI.GetConversation(req.ConversationId)
+	if err == api.NoRowsError {
+		http.NotFound(w, r)
+		return
+	} else if err != nil {
+		apiservice.WriteDeveloperError(w, http.StatusInternalServerError, "Failed to get conversation: "+err.Error())
+		return
+	}
+
+	// Make sure only the current owner can mark the conversation as read
+	if con.OwnerId != personId {
+		apiservice.WriteDeveloperError(w, http.StatusBadRequest, "Only the current owner of the conversation can flag it as read")
+		return
+	}
+	if err := dataAPI.MarkConversationAsRead(req.ConversationId); err != nil {
+		apiservice.WriteDeveloperError(w, http.StatusInternalServerError, "Failed to mark conversation as read: "+err.Error())
+		return
+	}
+
+	apiservice.WriteJSONToHTTPResponseWriter(w, http.StatusOK, apiservice.SuccessfulGenericJSONResponse())
 }

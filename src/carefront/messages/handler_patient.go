@@ -18,6 +18,10 @@ type PatientMessagesHandler struct {
 	dataAPI api.DataAPI
 }
 
+type PatientReadHandler struct {
+	dataAPI api.DataAPI
+}
+
 func NewPatientConversationHandler(dataAPI api.DataAPI) *PatientConversationHandler {
 	return &PatientConversationHandler{
 		dataAPI: dataAPI,
@@ -210,4 +214,24 @@ func (h *PatientMessagesHandler) postMessage(w http.ResponseWriter, r *http.Requ
 	})
 
 	apiservice.WriteJSONToHTTPResponseWriter(w, http.StatusOK, apiservice.SuccessfulGenericJSONResponse())
+}
+
+func NewPatientReadHandler(dataAPI api.DataAPI) *PatientReadHandler {
+	return &PatientReadHandler{
+		dataAPI: dataAPI,
+	}
+}
+
+func (h *PatientReadHandler) ServeHTTP(w http.ResponseWriter, r *http.Request) {
+	patientId, err := h.dataAPI.GetPatientIdFromAccountId(apiservice.GetContext(r).AccountId)
+	if err != nil {
+		apiservice.WriteDeveloperError(w, http.StatusInternalServerError, "messages: failed to get patient: "+err.Error())
+		return
+	}
+	personId, err := h.dataAPI.GetPersonIdByRole(api.PATIENT_ROLE, patientId)
+	if err != nil {
+		apiservice.WriteDeveloperError(w, http.StatusInternalServerError, "messages: failed to get person object for patient: "+err.Error())
+		return
+	}
+	markConversationAsRead(w, r, h.dataAPI, personId)
 }
