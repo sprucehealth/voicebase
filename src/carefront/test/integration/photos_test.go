@@ -16,15 +16,7 @@ type photoUploadResponse struct {
 	PhotoID int64 `json:"photo_id"`
 }
 
-func TestPhotoUpload(t *testing.T) {
-	if err := CheckIfRunningLocally(t); err == CannotRunTestLocally {
-		return
-	}
-	testData := SetupIntegrationTest(t)
-	defer TearDownIntegrationTest(t, testData)
-
-	pr := SignupRandomTestPatient(t, testData.DataApi, testData.AuthApi)
-
+func uploadPhoto(t *testing.T, testData TestData, accountID int64) int64 {
 	h := photos.NewHandler(testData.DataApi, testData.AWSAuth, "dev-carefront-test", "us-east-1")
 	ts := httptest.NewServer(h)
 	defer ts.Close()
@@ -42,10 +34,11 @@ func TestPhotoUpload(t *testing.T) {
 		t.Fatal(err)
 	}
 
-	res, err := authPost(ts.URL, writer.FormDataContentType(), body, pr.Patient.AccountId.Int64())
+	res, err := authPost(ts.URL, writer.FormDataContentType(), body, accountID)
 	if err != nil {
 		t.Fatal(err)
 	}
+	defer res.Body.Close()
 	if res.StatusCode != http.StatusOK {
 		t.Fatalf("Expected 200. Got %d", res.StatusCode)
 	}
@@ -53,9 +46,26 @@ func TestPhotoUpload(t *testing.T) {
 	if err := json.NewDecoder(res.Body).Decode(&r); err != nil {
 		t.Fatal(err)
 	}
-	res.Body.Close()
 
-	res, err = authGet(fmt.Sprintf("%s?photo_id=%d&claimer_type=&claimer_id=0", ts.URL, r.PhotoID), pr.Patient.AccountId.Int64())
+	return r.PhotoID
+}
+
+func TestPhotoUpload(t *testing.T) {
+	if err := CheckIfRunningLocally(t); err == CannotRunTestLocally {
+		return
+	}
+	testData := SetupIntegrationTest(t)
+	defer TearDownIntegrationTest(t, testData)
+
+	pr := SignupRandomTestPatient(t, testData.DataApi, testData.AuthApi)
+
+	photoID := uploadPhoto(t, testData, pr.Patient.AccountId.Int64())
+
+	h := photos.NewHandler(testData.DataApi, testData.AWSAuth, "dev-carefront-test", "us-east-1")
+	ts := httptest.NewServer(h)
+	defer ts.Close()
+
+	res, err := authGet(fmt.Sprintf("%s?photo_id=%d&claimer_type=&claimer_id=0", ts.URL, photoID), pr.Patient.AccountId.Int64())
 	if err != nil {
 		t.Fatal(err)
 	}

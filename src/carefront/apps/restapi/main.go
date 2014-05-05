@@ -456,8 +456,7 @@ func main() {
 			}
 			key, err := conf.ReadURI(conf.TLSKey)
 			if err != nil {
-				log.Fatal( //  #define GLFW_DLL,
-				)
+				log.Fatal(err)
 			}
 			certs, err := tls.X509KeyPair(cert, key)
 			if err != nil {
