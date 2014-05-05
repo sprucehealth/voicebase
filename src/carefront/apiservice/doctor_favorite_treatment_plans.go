@@ -74,7 +74,7 @@ func (d *DoctorFavoriteTreatmentPlansHandler) getFavoriteTreatmentPlans(w http.R
 	}
 
 	favoriteTreatmentPlan, err := d.DataApi.GetFavoriteTreatmentPlan(favoriteTreatmentPlanId)
-	if err != nil && err == api.NoRowsError {
+	if err == api.NoRowsError {
 		WriteDeveloperError(w, http.StatusNotFound, "Favorite treatment plan with requested id does not exist")
 		return
 	} else if err != nil {
