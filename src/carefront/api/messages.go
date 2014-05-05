@@ -113,7 +113,7 @@ func (d *DataService) GetConversationsWithParticipants(ids []int64) ([]*common.C
 		return nil, nil, err
 	}
 
-	return convos, participants, rows.Err()
+	return convos, participants, nil
 }
 
 func (d *DataService) GetConversation(id int64) (*common.Conversation, error) {
