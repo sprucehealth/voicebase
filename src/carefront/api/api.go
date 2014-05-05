@@ -118,7 +118,7 @@ type PatientVisitAPI interface {
 	GetFollowUpTimeForTreatmentPlan(treatmentPlanId int64) (followUp *common.FollowUp, err error)
 	GetDiagnosisResponseToQuestionWithTag(questionTag string, doctorId, patientVisitId int64) ([]*common.AnswerIntake, error)
 	AddDiagnosisSummaryForTreatmentPlan(summary string, treatmentPlanId, doctorId int64) error
-	GetDiagnosisSummaryForTreatmentPlan(treatmentPlanId int64) (summary string, err error)
+	GetDiagnosisSummaryForTreatmentPlan(treatmentPlanId int64) (*common.DiagnosisSummary, error)
 	AddOrUpdateDiagnosisSummaryForTreatmentPlan(summary string, treatmentPlanId, doctorId int64, isUpdatedByDoctor bool) error
 	DeactivatePreviousDiagnosisForPatientVisit(treatmentPlanId int64, doctorId int64) error
 	RecordDoctorAssignmentToPatientVisit(patientVisitId, doctorId int64) error

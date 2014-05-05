@@ -40,7 +40,12 @@ function cleanup {
 # The latest snapshot is essentially the snapshot with the largest number in the snapshot-N.sql format
 latestSnapshotNumber=`ls -r snapshot-*.sql | cut -d- -f 2  | cut -d. -f1 | sort -nr | head -1`
 latestDataSnapshotNumber=`ls -r data-snapshot-*.sql | cut -d- -f 3  | cut -d. -f1 | sort -nr | head -1`
-latestMigrationNumber=`ls -r migration-*.sql | cut -d- -f 2  | cut -d. -f1 | sort -nr | head -1`
+latestMigrationNumber=$((latestSnapshotNumber + 1))
+
+if [ ! -f migration-$latestMigrationNumber.sql ]; then
+	echo "FAILED: migration-$latestMigrationNumber.sql file does not exist"
+	exit 1
+fi
 
 if [ ! $latestMigrationNumber -gt $latestSnapshotNumber ]; then
 	echo "FAILED: Latest snapshot $latestSnapshotNumber >= migration $latestMigrationNumber" > /dev/stderr

@@ -1,6 +1,6 @@
 -- MySQL dump 10.13  Distrib 5.6.17, for osx10.9 (x86_64)
 --
--- Host: 127.0.0.1    Database: database_14079
+-- Host: 127.0.0.1    Database: database_392
 -- ------------------------------------------------------
 -- Server version	5.6.17
 
@@ -425,6 +425,7 @@ CREATE TABLE `dr_advice_point` (
   PRIMARY KEY (`id`),
   KEY `doctor_id` (`doctor_id`),
   KEY `source_id` (`source_id`),
+  KEY `doctor_id_2` (`doctor_id`),
   CONSTRAINT `dr_advice_point_ibfk_1` FOREIGN KEY (`doctor_id`) REFERENCES `doctor` (`id`),
   CONSTRAINT `dr_advice_point_ibfk_2` FOREIGN KEY (`source_id`) REFERENCES `dr_advice_point` (`id`)
 ) ENGINE=InnoDB DEFAULT CHARSET=utf8;
@@ -626,6 +627,7 @@ CREATE TABLE `dr_favorite_treatment_plan` (
   `modified_date` timestamp(6) NOT NULL DEFAULT CURRENT_TIMESTAMP(6) ON UPDATE CURRENT_TIMESTAMP(6),
   PRIMARY KEY (`id`),
   KEY `doctor_id` (`doctor_id`),
+  KEY `doctor_id_2` (`doctor_id`),
   CONSTRAINT `dr_favorite_treatment_plan_ibfk_1` FOREIGN KEY (`doctor_id`) REFERENCES `doctor` (`id`)
 ) ENGINE=InnoDB DEFAULT CHARSET=utf8;
 /*!40101 SET character_set_client = @saved_cs_client */;
@@ -679,6 +681,7 @@ CREATE TABLE `dr_regimen_step` (
   KEY `drug_route_id` (`drug_route_id`),
   KEY `doctor_id` (`doctor_id`),
   KEY `source_id` (`source_id`),
+  KEY `doctor_id_2` (`doctor_id`),
   CONSTRAINT `dr_regimen_step_ibfk_1` FOREIGN KEY (`drug_name_id`) REFERENCES `drug_name` (`id`),
   CONSTRAINT `dr_regimen_step_ibfk_2` FOREIGN KEY (`drug_form_id`) REFERENCES `drug_form` (`id`),
   CONSTRAINT `dr_regimen_step_ibfk_3` FOREIGN KEY (`drug_route_id`) REFERENCES `drug_route` (`id`),
@@ -2021,6 +2024,7 @@ CREATE TABLE `treatment_plan_favorite_mapping` (
   `treatment_plan_id` int(10) unsigned NOT NULL,
   `dr_favorite_treatment_plan_id` int(10) unsigned NOT NULL,
   PRIMARY KEY (`id`),
+  UNIQUE KEY `treatment_plan_id_2` (`treatment_plan_id`,`dr_favorite_treatment_plan_id`),
   KEY `treatment_plan_id` (`treatment_plan_id`),
   KEY `dr_favorite_treatment_plan_id` (`dr_favorite_treatment_plan_id`),
   CONSTRAINT `treatment_plan_favorite_mapping_ibfk_1` FOREIGN KEY (`treatment_plan_id`) REFERENCES `treatment_plan` (`id`) ON DELETE CASCADE,
@@ -2124,4 +2128,4 @@ CREATE TABLE `unlinked_dntf_treatment_status_events` (
 /*!40101 SET COLLATION_CONNECTION=@OLD_COLLATION_CONNECTION */;
 /*!40111 SET SQL_NOTES=@OLD_SQL_NOTES */;
 
--- Dump completed on 2014-05-05 16:02:36
+-- Dump completed on 2014-05-05 16:02:39

@@ -328,7 +328,6 @@ func TestPatientVisitReview(t *testing.T) {
 	}
 
 	// number of prescriptions returned for doctor even after the prescription status update should be 2 total
-	treatmentPlans = getPrescriptionsForDoctor(testData.DataApi, t, doctor, fromTime, toTime)
 	if len(treatmentPlans) != 1 {
 		t.Fatal("Expected 1 treatment plan to be returned")
 	}
@@ -361,12 +360,12 @@ func TestPatientVisitReview(t *testing.T) {
 		t.Fatal("Unable to make call to get patient visit review: " + err.Error())
 	}
 
-	diagnosisSummary, err := testData.DataApi.GetDiagnosisSummaryForPatientVisit(patientVisitResponse.PatientVisitId, doctorPatientVisitReviewResponse.TreatmentPlanId)
+	diagnosisSummary, err := testData.DataApi.GetDiagnosisSummaryForTreatmentPlan(treatmentPlan.Id.Int64())
 	if err != nil {
 		t.Fatalf("Error while getting diagnosis summary %s", err)
 	}
 
-	if diagnosisSummary == "" {
+	if diagnosisSummary == nil || diagnosisSummary.Summary == "" {
 		t.Fatalf("Diagnosis summary expected to exist")
 	}
 }

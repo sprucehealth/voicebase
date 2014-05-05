@@ -1,6 +1,6 @@
 -- MySQL dump 10.13  Distrib 5.6.17, for osx10.9 (x86_64)
 --
--- Host: 127.0.0.1    Database: database_19996
+-- Host: 127.0.0.1    Database: database_8685
 -- ------------------------------------------------------
 -- Server version	5.6.17
 
@@ -251,7 +251,10 @@ CREATE TABLE `diagnosis_summary` (
   `summary` varchar(600) NOT NULL,
   `status` varchar(100) NOT NULL,
   `treatment_plan_id` int(10) unsigned NOT NULL,
+  `creation_date` timestamp NOT NULL DEFAULT CURRENT_TIMESTAMP ON UPDATE CURRENT_TIMESTAMP,
+  `updated_by_doctor` tinyint(4) NOT NULL DEFAULT '0',
   PRIMARY KEY (`id`),
+  UNIQUE KEY `treatment_plan_id_2` (`treatment_plan_id`),
   KEY `doctor_id` (`doctor_id`),
   KEY `treatment_plan_id` (`treatment_plan_id`),
   CONSTRAINT `diagnosis_summary_ibfk_3` FOREIGN KEY (`treatment_plan_id`) REFERENCES `treatment_plan` (`id`),
@@ -1438,7 +1441,7 @@ DROP TABLE IF EXISTS `pharmacy_dispensed_treatment_drug_db_id`;
 /*!40101 SET character_set_client = utf8 */;
 CREATE TABLE `pharmacy_dispensed_treatment_drug_db_id` (
   `id` int(10) unsigned NOT NULL AUTO_INCREMENT,
-  `drug_db_id` varchar(100) NOT NULL,
+  `drug_db_id` int(10) unsigned NOT NULL,
   `drug_db_id_tag` varchar(100) NOT NULL,
   `pharmacy_dispensed_treatment_id` int(10) unsigned NOT NULL,
   PRIMARY KEY (`id`),
@@ -2063,8 +2066,8 @@ DROP TABLE IF EXISTS `unlinked_dntf_treatment_drug_db_id`;
 /*!40101 SET character_set_client = utf8 */;
 CREATE TABLE `unlinked_dntf_treatment_drug_db_id` (
   `id` int(10) unsigned NOT NULL AUTO_INCREMENT,
-  `drug_db_id` varchar(100) NOT NULL,
-  `drug_db_id_tag` varchar(100) NOT NULL,
+  `drug_db_id` int(10) unsigned NOT NULL,
+  `drug_db_id_tag` int(10) unsigned NOT NULL,
   `unlinked_dntf_treatment_id` int(10) unsigned NOT NULL,
   PRIMARY KEY (`id`),
   KEY `unlinked_dntf_treatment_id` (`unlinked_dntf_treatment_id`),
@@ -2102,4 +2105,4 @@ CREATE TABLE `unlinked_dntf_treatment_status_events` (
 /*!40101 SET COLLATION_CONNECTION=@OLD_COLLATION_CONNECTION */;
 /*!40111 SET SQL_NOTES=@OLD_SQL_NOTES */;
 
--- Dump completed on 2014-04-30 23:30:08
+-- Dump completed on 2014-05-05 16:02:29

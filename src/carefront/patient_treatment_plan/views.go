@@ -117,7 +117,7 @@ type TPListElementView struct {
 }
 
 func (v *TPListElementView) Validate() error {
-	if v.ElementStyle != "numbered" && v.ElementStyle != "dont" {
+	if v.ElementStyle != "numbered" && v.ElementStyle != "dont" && v.ElementStyle != "buletted" {
 		return errors.New("ListElementView expects ElementStyle of numbered or dont, not " + v.ElementStyle)
 	}
 	v.Type = treatmentViewNamespace + ":list_element"

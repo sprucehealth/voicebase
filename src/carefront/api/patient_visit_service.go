@@ -427,15 +427,16 @@ func (d *DataService) AddDiagnosisSummaryForTreatmentPlan(summary string, treatm
 	return tx.Commit()
 }
 
-func (d *DataService) GetDiagnosisSummaryForTreatmentPlan(treatmentPlanId int64) (summary string, err error) {
-	err = d.DB.QueryRow(`select summary from diagnosis_summary where treatment_plan_id = ? and status='ACTIVE'`, treatmentPlanId).Scan(&summary)
-	if err != nil {
-		if err == sql.ErrNoRows {
-			return nil, NoRowsError
-		}
+func (d *DataService) GetDiagnosisSummaryForTreatmentPlan(treatmentPlanId int64) (*common.DiagnosisSummary, error) {
+	var diagnosisSummary common.DiagnosisSummary
+	err := d.DB.QueryRow(`select summary, updated_by_doctor from diagnosis_summary where treatment_plan_id = ? and status='ACTIVE'`, treatmentPlanId).Scan(&diagnosisSummary.Summary, &diagnosisSummary.UpdatedByDoctor)
+	if err == sql.ErrNoRows {
+		return nil, NoRowsError
+	} else if err != nil {
+		return nil, err
 	}
 
-	return diagnosisSummary, nil
+	return &diagnosisSummary, nil
 }
 
 func (d *DataService) AddOrUpdateDiagnosisSummaryForTreatmentPlan(summary string, treatmentPlanId, doctorId int64, isUpdatedByDoctor bool) error {

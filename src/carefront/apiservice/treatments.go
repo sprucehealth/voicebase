@@ -87,7 +87,7 @@ func (t *TreatmentsHandler) getTreatments(w http.ResponseWriter, r *http.Request
 
 	// for each of the drugs, go ahead and fill in the drug name, route and form
 	for _, treatment := range treatments {
-		treatment.DrugName, treatment.DrugForm, treatment.DrugRoute = breakDrugInternalNameIntoComponents(treatment.DrugInternalName)
+		treatment.DrugName, treatment.DrugForm, treatment.DrugRoute = BreakDrugInternalNameIntoComponents(treatment.DrugInternalName)
 	}
 
 	WriteJSONToHTTPResponseWriter(w, http.StatusOK, &GetTreatmentsResponse{Treatments: treatments})
@@ -144,7 +144,7 @@ func (t *TreatmentsHandler) addTreatment(w http.ResponseWriter, r *http.Request)
 		}
 
 		// break up the name into its components so that it can be saved into the database as its components
-		treatment.DrugName, treatment.DrugForm, treatment.DrugRoute = breakDrugInternalNameIntoComponents(treatment.DrugInternalName)
+		treatment.DrugName, treatment.DrugForm, treatment.DrugRoute = BreakDrugInternalNameIntoComponents(treatment.DrugInternalName)
 
 		httpStatusCode, errorResponse := checkIfDrugInTreatmentFromTemplateIsOutOfMarket(treatment, doctor, t.ErxApi)
 		if errorResponse != nil {

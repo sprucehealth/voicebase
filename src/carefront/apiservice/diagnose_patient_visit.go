@@ -183,7 +183,7 @@ func (d *DiagnosePatientHandler) diagnosePatient(w http.ResponseWriter, r *http.
 		return
 	}
 
-	diagnosisSummary, err := d.DataApi.GetDiagnosisSummaryForPatientVisit(patientVisitReviewData.PatientVisit.PatientVisitId.Int64(), treatmentPlanId)
+	diagnosisSummary, err := d.DataApi.GetDiagnosisSummaryForTreatmentPlan(treatmentPlanId)
 	if err != nil && err != api.NoRowsError {
 		golog.Errorf("Error trying to retreive diagnosis summary for patient visit: %s", err)
 	}

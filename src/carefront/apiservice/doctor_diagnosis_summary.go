@@ -59,7 +59,7 @@ func (d *DiagnosisSummaryHandler) ServeHTTP(w http.ResponseWriter, r *http.Reque
 	}
 
 	if r.Method == HTTP_GET {
-		diagnosisSummary, err := d.DataApi.GetDIagnosisForTreatmentPlan(treatmentPlanId)
+		diagnosisSummary, err := d.DataApi.GetDiagnosisSummaryForTreatmentPlan(treatmentPlanId)
 		if err != nil && err != api.NoRowsError {
 			WriteDeveloperError(w, http.StatusInternalServerError, "Unable to get diagnosis summary for patient visit: "+err.Error())
 			return

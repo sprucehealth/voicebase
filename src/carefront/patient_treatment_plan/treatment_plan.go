@@ -8,7 +8,6 @@ import (
 	"carefront/libs/golog"
 	"fmt"
 	"net/http"
-	"strings"
 
 	"github.com/gorilla/schema"
 )
@@ -99,19 +98,10 @@ func (p *PatientVisitReviewHandler) ServeHTTP(w http.ResponseWriter, r *http.Req
 		PatientVisitId: patientVisit.PatientVisitId,
 	}
 
-	summary, err := p.DataApi.GetDiagnosisSummaryForPatientVisit(patientVisit.PatientVisitId.Int64(), treatmentPlanId)
+	treatmentPlan.DiagnosisSummary, err = p.DataApi.GetDiagnosisSummaryForTreatmentPlan(treatmentPlanId)
 	if err != nil {
 		apiservice.WriteDeveloperError(w, http.StatusInternalServerError, "Unable to get diagnosis summary for patient visit: "+err.Error())
 		return
-	}
-
-	if summary != "" {
-		diagnosisSummary := &common.DiagnosisSummary{
-			Type:    "text",
-			Summary: summary,
-			Title:   fmt.Sprintf("Message from Dr. %s", strings.Title(doctor.LastName)),
-		}
-		treatmentPlan.DiagnosisSummary = diagnosisSummary
 	}
 
 	treatmentPlan.Treatments, err = p.DataApi.GetTreatmentsBasedOnTreatmentPlanId(patientVisit.PatientVisitId.Int64(), treatmentPlanId)
@@ -120,19 +110,19 @@ func (p *PatientVisitReviewHandler) ServeHTTP(w http.ResponseWriter, r *http.Req
 		return
 	}
 
-	treatmentPlan.RegimenPlan, err = p.DataApi.GetRegimenPlanForPatientVisit(patientVisit.PatientVisitId.Int64(), treatmentPlanId)
-	if err != nil && err != api.NoRegimenPlanForPatientVisit {
+	treatmentPlan.RegimenPlan, err = p.DataApi.GetRegimenPlanForTreatmentPlan(treatmentPlanId)
+	if err != nil {
 		apiservice.WriteDeveloperError(w, http.StatusInternalServerError, "Unable to get regimen plan for this patient visit id: "+err.Error())
 		return
 	}
 
-	treatmentPlan.Followup, err = p.DataApi.GetFollowUpTimeForPatientVisit(patientVisit.PatientVisitId.Int64(), treatmentPlanId)
+	treatmentPlan.Followup, err = p.DataApi.GetFollowUpTimeForTreatmentPlan(treatmentPlanId)
 	if err != nil {
 		apiservice.WriteDeveloperError(w, http.StatusInternalServerError, "Unable to get follow up information for this paitent visit: "+err.Error())
 		return
 	}
 
-	advicePoints, err := p.DataApi.GetAdvicePointsForPatientVisit(patientVisit.PatientVisitId.Int64(), treatmentPlanId)
+	advicePoints, err := p.DataApi.GetAdvicePointsForTreatmentPlan(treatmentPlanId)
 	if err != nil {
 		apiservice.WriteDeveloperError(w, http.StatusInternalServerError, "Unable to get advice for patient visit: "+err.Error())
 		return

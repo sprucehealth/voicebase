@@ -1,6 +1,6 @@
 -- MySQL dump 10.13  Distrib 5.6.17, for osx10.9 (x86_64)
 --
--- Host: 127.0.0.1    Database: database_27323
+-- Host: 127.0.0.1    Database: database_6443
 -- ------------------------------------------------------
 -- Server version	5.6.17
 
@@ -251,7 +251,10 @@ CREATE TABLE `diagnosis_summary` (
   `summary` varchar(600) NOT NULL,
   `status` varchar(100) NOT NULL,
   `treatment_plan_id` int(10) unsigned NOT NULL,
+  `creation_date` timestamp NOT NULL DEFAULT CURRENT_TIMESTAMP ON UPDATE CURRENT_TIMESTAMP,
+  `updated_by_doctor` tinyint(4) NOT NULL DEFAULT '0',
   PRIMARY KEY (`id`),
+  UNIQUE KEY `treatment_plan_id_2` (`treatment_plan_id`),
   KEY `doctor_id` (`doctor_id`),
   KEY `treatment_plan_id` (`treatment_plan_id`),
   CONSTRAINT `diagnosis_summary_ibfk_3` FOREIGN KEY (`treatment_plan_id`) REFERENCES `treatment_plan` (`id`),
@@ -483,147 +486,6 @@ CREATE TABLE `dr_drug_supplemental_instruction_selected_state` (
   CONSTRAINT `dr_drug_supplemental_instruction_selected_state_ibfk_3` FOREIGN KEY (`drug_form_id`) REFERENCES `drug_form` (`id`),
   CONSTRAINT `dr_drug_supplemental_instruction_selected_state_ibfk_4` FOREIGN KEY (`drug_route_id`) REFERENCES `drug_route` (`id`),
   CONSTRAINT `dr_drug_supplemental_instruction_selected_state_ibfk_5` FOREIGN KEY (`dr_drug_supplemental_instruction_id`) REFERENCES `dr_drug_supplemental_instruction` (`id`)
-) ENGINE=InnoDB DEFAULT CHARSET=utf8;
-/*!40101 SET character_set_client = @saved_cs_client */;
-
---
--- Table structure for table `dr_favorite_advice`
---
-
-DROP TABLE IF EXISTS `dr_favorite_advice`;
-/*!40101 SET @saved_cs_client     = @@character_set_client */;
-/*!40101 SET character_set_client = utf8 */;
-CREATE TABLE `dr_favorite_advice` (
-  `id` int(10) unsigned NOT NULL AUTO_INCREMENT,
-  `status` varchar(100) NOT NULL,
-  `creation_date` timestamp(6) NOT NULL DEFAULT CURRENT_TIMESTAMP(6),
-  `text` varchar(150) NOT NULL,
-  `dr_advice_point_id` int(10) unsigned NOT NULL,
-  `dr_favorite_treatment_plan_id` int(10) unsigned NOT NULL,
-  PRIMARY KEY (`id`),
-  KEY `dr_advice_point_id` (`dr_advice_point_id`),
-  KEY `dr_favorite_treatment_plan_id` (`dr_favorite_treatment_plan_id`),
-  CONSTRAINT `dr_favorite_advice_ibfk_1` FOREIGN KEY (`dr_advice_point_id`) REFERENCES `dr_advice_point` (`id`),
-  CONSTRAINT `dr_favorite_advice_ibfk_2` FOREIGN KEY (`dr_favorite_treatment_plan_id`) REFERENCES `dr_favorite_treatment_plan` (`id`)
-) ENGINE=InnoDB DEFAULT CHARSET=utf8;
-/*!40101 SET character_set_client = @saved_cs_client */;
-
---
--- Table structure for table `dr_favorite_patient_visit_follow_up`
---
-
-DROP TABLE IF EXISTS `dr_favorite_patient_visit_follow_up`;
-/*!40101 SET @saved_cs_client     = @@character_set_client */;
-/*!40101 SET character_set_client = utf8 */;
-CREATE TABLE `dr_favorite_patient_visit_follow_up` (
-  `id` int(10) unsigned NOT NULL AUTO_INCREMENT,
-  `follow_up_date` date NOT NULL,
-  `follow_up_value` int(10) unsigned NOT NULL,
-  `follow_up_unit` varchar(100) NOT NULL,
-  `creation_date` timestamp(6) NOT NULL DEFAULT CURRENT_TIMESTAMP(6),
-  `status` varchar(100) NOT NULL,
-  `dr_favorite_treatment_plan_id` int(10) unsigned NOT NULL,
-  PRIMARY KEY (`id`),
-  KEY `dr_favorite_treatment_plan_id` (`dr_favorite_treatment_plan_id`),
-  CONSTRAINT `dr_favorite_patient_visit_follow_up_ibfk_1` FOREIGN KEY (`dr_favorite_treatment_plan_id`) REFERENCES `dr_favorite_treatment_plan` (`id`)
-) ENGINE=InnoDB DEFAULT CHARSET=utf8;
-/*!40101 SET character_set_client = @saved_cs_client */;
-
---
--- Table structure for table `dr_favorite_regimen`
---
-
-DROP TABLE IF EXISTS `dr_favorite_regimen`;
-/*!40101 SET @saved_cs_client     = @@character_set_client */;
-/*!40101 SET character_set_client = utf8 */;
-CREATE TABLE `dr_favorite_regimen` (
-  `id` int(10) unsigned NOT NULL AUTO_INCREMENT,
-  `regimen_type` varchar(150) NOT NULL,
-  `status` varchar(100) NOT NULL,
-  `creation_date` timestamp(6) NOT NULL DEFAULT CURRENT_TIMESTAMP(6),
-  `text` varchar(150) NOT NULL,
-  `dr_regimen_step_id` int(10) unsigned NOT NULL,
-  `dr_favorite_treatment_plan_id` int(10) unsigned NOT NULL,
-  PRIMARY KEY (`id`),
-  KEY `dr_favorite_treatment_plan_id` (`dr_favorite_treatment_plan_id`),
-  KEY `dr_regimen_step_id` (`dr_regimen_step_id`),
-  CONSTRAINT `dr_favorite_regimen_ibfk_1` FOREIGN KEY (`dr_favorite_treatment_plan_id`) REFERENCES `dr_favorite_treatment_plan` (`id`),
-  CONSTRAINT `dr_favorite_regimen_ibfk_2` FOREIGN KEY (`dr_regimen_step_id`) REFERENCES `dr_regimen_step` (`id`)
-) ENGINE=InnoDB DEFAULT CHARSET=utf8;
-/*!40101 SET character_set_client = @saved_cs_client */;
-
---
--- Table structure for table `dr_favorite_treatment`
---
-
-DROP TABLE IF EXISTS `dr_favorite_treatment`;
-/*!40101 SET @saved_cs_client     = @@character_set_client */;
-/*!40101 SET character_set_client = utf8 */;
-CREATE TABLE `dr_favorite_treatment` (
-  `id` int(10) unsigned NOT NULL AUTO_INCREMENT,
-  `dr_favorite_treatment_plan_id` int(10) unsigned NOT NULL,
-  `drug_internal_name` varchar(250) NOT NULL,
-  `dispense_value` decimal(21,10) NOT NULL,
-  `dispense_unit_id` int(10) unsigned NOT NULL,
-  `refills` int(10) unsigned NOT NULL,
-  `substitutions_allowed` tinyint(4) DEFAULT NULL,
-  `days_supply` int(10) unsigned DEFAULT NULL,
-  `pharmacy_notes` varchar(150) DEFAULT NULL,
-  `patient_instructions` varchar(150) NOT NULL,
-  `creation_date` timestamp(6) NOT NULL DEFAULT CURRENT_TIMESTAMP(6),
-  `status` varchar(100) NOT NULL,
-  `dosage_strength` varchar(250) NOT NULL,
-  `type` varchar(150) NOT NULL,
-  `drug_name_id` int(10) unsigned DEFAULT NULL,
-  `drug_form_id` int(10) unsigned DEFAULT NULL,
-  `drug_route_id` int(10) unsigned DEFAULT NULL,
-  PRIMARY KEY (`id`),
-  KEY `dr_favorite_treatment_plan_id` (`dr_favorite_treatment_plan_id`),
-  KEY `dispense_unit_id` (`dispense_unit_id`),
-  KEY `drug_name_id` (`drug_name_id`),
-  KEY `drug_route_id` (`drug_route_id`),
-  KEY `drug_form_id` (`drug_form_id`),
-  CONSTRAINT `dr_favorite_treatment_ibfk_1` FOREIGN KEY (`dr_favorite_treatment_plan_id`) REFERENCES `dr_favorite_treatment_plan` (`id`),
-  CONSTRAINT `dr_favorite_treatment_ibfk_2` FOREIGN KEY (`dispense_unit_id`) REFERENCES `dispense_unit` (`id`),
-  CONSTRAINT `dr_favorite_treatment_ibfk_3` FOREIGN KEY (`drug_name_id`) REFERENCES `drug_name` (`id`),
-  CONSTRAINT `dr_favorite_treatment_ibfk_4` FOREIGN KEY (`drug_route_id`) REFERENCES `drug_route` (`id`),
-  CONSTRAINT `dr_favorite_treatment_ibfk_5` FOREIGN KEY (`drug_form_id`) REFERENCES `drug_form` (`id`)
-) ENGINE=InnoDB DEFAULT CHARSET=utf8;
-/*!40101 SET character_set_client = @saved_cs_client */;
-
---
--- Table structure for table `dr_favorite_treatment_drug_db_id`
---
-
-DROP TABLE IF EXISTS `dr_favorite_treatment_drug_db_id`;
-/*!40101 SET @saved_cs_client     = @@character_set_client */;
-/*!40101 SET character_set_client = utf8 */;
-CREATE TABLE `dr_favorite_treatment_drug_db_id` (
-  `id` int(10) unsigned NOT NULL AUTO_INCREMENT,
-  `drug_db_id` varchar(100) NOT NULL,
-  `drug_db_id_tag` varchar(100) NOT NULL,
-  `dr_favorite_treatment_id` int(10) unsigned NOT NULL,
-  PRIMARY KEY (`id`),
-  KEY `dr_favorite_treatment_id` (`dr_favorite_treatment_id`),
-  CONSTRAINT `dr_favorite_treatment_drug_db_id_ibfk_1` FOREIGN KEY (`dr_favorite_treatment_id`) REFERENCES `dr_favorite_treatment` (`id`)
-) ENGINE=InnoDB DEFAULT CHARSET=utf8;
-/*!40101 SET character_set_client = @saved_cs_client */;
-
---
--- Table structure for table `dr_favorite_treatment_plan`
---
-
-DROP TABLE IF EXISTS `dr_favorite_treatment_plan`;
-/*!40101 SET @saved_cs_client     = @@character_set_client */;
-/*!40101 SET character_set_client = utf8 */;
-CREATE TABLE `dr_favorite_treatment_plan` (
-  `id` int(10) unsigned NOT NULL AUTO_INCREMENT,
-  `name` varchar(600) NOT NULL,
-  `doctor_id` int(10) unsigned NOT NULL,
-  `modified_date` timestamp(6) NOT NULL DEFAULT CURRENT_TIMESTAMP(6) ON UPDATE CURRENT_TIMESTAMP(6),
-  PRIMARY KEY (`id`),
-  KEY `doctor_id` (`doctor_id`),
-  CONSTRAINT `dr_favorite_treatment_plan_ibfk_1` FOREIGN KEY (`doctor_id`) REFERENCES `doctor` (`id`)
 ) ENGINE=InnoDB DEFAULT CHARSET=utf8;
 /*!40101 SET character_set_client = @saved_cs_client */;
 
@@ -2102,4 +1964,4 @@ CREATE TABLE `unlinked_dntf_treatment_status_events` (
 /*!40101 SET COLLATION_CONNECTION=@OLD_COLLATION_CONNECTION */;
 /*!40111 SET SQL_NOTES=@OLD_SQL_NOTES */;
 
--- Dump completed on 2014-04-30 23:29:59
+-- Dump completed on 2014-05-05 16:02:26

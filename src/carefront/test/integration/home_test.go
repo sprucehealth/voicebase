@@ -179,13 +179,10 @@ func TestHealthLog(t *testing.T) {
 }
 
 func TestVisitCreatedNotification(t *testing.T) {
-	if err := CheckIfRunningLocally(t); err == CannotRunTestLocally {
-		return
-	}
 	testData := SetupIntegrationTest(t)
 	defer TearDownIntegrationTest(t, testData)
 
-	pr := SignupRandomTestPatient(t, testData.DataApi, testData.AuthApi)
+	pr := signupRandomTestPatient(t, testData.DataApi, testData.AuthApi)
 	patient := pr.Patient
 	patientId := patient.PatientId.Int64()
 
@@ -195,10 +192,10 @@ func TestVisitCreatedNotification(t *testing.T) {
 		t.Fatalf("Error getting doctor from id: %s", err.Error())
 	}
 
-	visit := CreatePatientVisitForPatient(patientId, testData, t)
-	SubmitPatientVisitForPatient(patientId, visit.PatientVisitId, testData, t)
-	StartReviewingPatientVisit(visit.PatientVisitId, doctor, testData, t)
-	SubmitPatientVisitBackToPatient(visit.PatientVisitId, doctor, testData, t)
+	visit := createPatientVisitForPatient(patientId, testData, t)
+	submitPatientVisitForPatient(patientId, visit.PatientVisitId, testData, t)
+	startReviewingPatientVisit(visit.PatientVisitId, doctor, testData, t)
+	submitPatientVisitBackToPatient(visit.PatientVisitId, doctor, testData, t)
 
 	// make a call to get patient notifications
 	listNotificationsHandler := homelog.NewListHandler(testData.DataApi)
