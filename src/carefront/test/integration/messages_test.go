@@ -3,6 +3,10 @@ package integration
 import (
 	"carefront/api"
 	"carefront/common"
+	"carefront/messages"
+	"net/http/httptest"
+	"strconv"
+	"strings"
 	"testing"
 )
 
@@ -273,5 +277,70 @@ func TestGetConversationsWithParticipants(t *testing.T) {
 		t.Fatalf("Expected 2 participants. Got %d", len(par))
 	} else if con[0].Id != cid {
 		t.Fatalf("Expected conversation %d. Got %d", cid, con[0].Id)
+	}
+}
+
+func TestConversationReadFlag(t *testing.T) {
+	if err := CheckIfRunningLocally(t); err == CannotRunTestLocally {
+		return
+	}
+	testData := SetupIntegrationTest(t)
+	defer TearDownIntegrationTest(t, testData)
+
+	pr := SignupRandomTestPatient(t, testData.DataApi, testData.AuthApi)
+	patientId, err := testData.DataApi.GetPersonIdByRole(api.PATIENT_ROLE, pr.Patient.PatientId.Int64())
+	if err != nil {
+		t.Fatal(err)
+	}
+	drRes, _, _ := SignupRandomTestDoctor(t, testData.DataApi, testData.AuthApi)
+	doctorId, err := testData.DataApi.GetPersonIdByRole(api.DOCTOR_ROLE, drRes.DoctorId)
+	if err != nil {
+		t.Fatal(err)
+	}
+	dr, err := testData.DataApi.GetDoctorFromId(drRes.DoctorId)
+	if err != nil {
+		t.Fatal(err)
+	}
+
+	topicId, err := testData.DataApi.AddConversationTopic("Foo", 100, true)
+	if err != nil {
+		t.Fatal(err)
+	}
+	cid, err := testData.DataApi.CreateConversation(patientId, doctorId, topicId, "Helllloooooo", nil)
+	if err != nil {
+		t.Fatal(err)
+	}
+	if c, err := testData.DataApi.GetConversation(cid); err != nil {
+		t.Fatal(err)
+	} else if !c.Unread {
+		t.Fatalf("Expected conversation to be unread")
+	}
+
+	h := messages.NewDoctorReadHandler(testData.DataApi)
+	ts := httptest.NewServer(h)
+	defer ts.Close()
+
+	res, err := authPost(ts.URL, "application/x-www-form-urlencoded", strings.NewReader("conversation_id="+strconv.FormatInt(cid, 10)), dr.AccountId.Int64())
+	if err != nil {
+		t.Fatal(err)
+	} else if res.StatusCode != 200 {
+		t.Fatalf("Expected status 200. Got %d", res.StatusCode)
+	}
+
+	if c, err := testData.DataApi.GetConversation(cid); err != nil {
+		t.Fatal(err)
+	} else if c.Unread {
+		t.Fatalf("Expected conversation to be read")
+	}
+
+	_, err = testData.DataApi.ReplyToConversation(cid, doctorId, "Yep yep", nil)
+	if err != nil {
+		t.Fatal(err)
+	}
+
+	if c, err := testData.DataApi.GetConversation(cid); err != nil {
+		t.Fatal(err)
+	} else if !c.Unread {
+		t.Fatalf("Expected conversation to be unread")
 	}
 }
