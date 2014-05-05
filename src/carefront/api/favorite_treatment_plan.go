@@ -129,18 +129,8 @@ func (d *DataService) CreateOrUpdateFavoriteTreatmentPlan(favoriteTreatmentPlan 
 }
 
 func (d *DataService) DeleteFavoriteTreatmentPlan(favoriteTreatmentPlanId int64) error {
-	tx, err := d.DB.Begin()
-	if err != nil {
-		return err
-	}
-	_, err = tx.Exec(`delete from dr_favorite_treatment_plan where id=?`, favoriteTreatmentPlanId)
-	if err != nil {
-		tx.Rollback()
-		return err
-	}
-
-	return tx.Commit()
-
+	_, err := d.DB.Exec(`delete from dr_favorite_treatment_plan where id=?`, favoriteTreatmentPlanId)
+	return err
 }
 
 func (d *DataService) GetTreatmentsInFavoriteTreatmentPlan(favoriteTreatmentPlanId int64) ([]*common.Treatment, error) {
