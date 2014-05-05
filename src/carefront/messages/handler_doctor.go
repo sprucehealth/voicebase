@@ -3,6 +3,7 @@ package messages
 import (
 	"carefront/api"
 	"carefront/apiservice"
+	"carefront/libs/dispatch"
 	"encoding/json"
 	"net/http"
 	"strconv"
@@ -112,11 +113,17 @@ func (h *DoctorConversationHandler) newConversation(w http.ResponseWriter, r *ht
 		apiservice.WriteDeveloperError(w, http.StatusInternalServerError, "Failed to get attachments: "+err.Error())
 		return
 	}
-	_, err = h.dataAPI.CreateConversation(personId, toPersonId, req.TopicId, req.Message, attachments)
+	cid, err = h.dataAPI.CreateConversation(personId, toPersonId, req.TopicId, req.Message, attachments)
 	if err != nil {
 		apiservice.WriteDeveloperError(w, http.StatusInternalServerError, "Failed to create conversation: "+err.Error())
 		return
 	}
+
+	dispatch.Default.PublishAsync(&ConversationStartedEvent{
+		ConversationId: cid,
+		FromId:         personId,
+		ToId:           toPersonId,
+	})
 
 	apiservice.WriteJSONToHTTPResponseWriter(w, http.StatusOK, apiservice.SuccessfulGenericJSONResponse())
 }
@@ -209,10 +216,17 @@ func (h *DoctorMessagesHandler) postMessage(w http.ResponseWriter, r *http.Reque
 		apiservice.WriteDeveloperError(w, http.StatusInternalServerError, "Failed to get attachments: "+err.Error())
 		return
 	}
-	if _, err := h.dataAPI.ReplyToConversation(req.ConversationId, personId, req.Message, attachments); err != nil {
+	mid, err := h.dataAPI.ReplyToConversation(req.ConversationId, personId, req.Message, attachments)
+	if err != nil {
 		apiservice.WriteDeveloperError(w, http.StatusBadRequest, "Unable to create reply to conversation: "+err.Error())
 		return
 	}
+
+	dispatch.Default.PublishAsync(&ConversationReplyEvent{
+		ConversationId: req.ConversationId,
+		MessageId:      mid,
+		FromId:         personId,
+	})
 
 	apiservice.WriteJSONToHTTPResponseWriter(w, http.StatusOK, apiservice.SuccessfulGenericJSONResponse())
 }
