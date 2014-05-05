@@ -39,6 +39,7 @@ type Patient struct {
 	PaymentCustomerId string                 `json:"-"`
 	Pharmacy          *pharmacy.PharmacyData `json:"pharmacy,omitempty"`
 	PatientAddress    *Address               `json:"address,omitempty"`
+	PersonId          int64                  `json:"person_id"`
 }
 
 type ByCreationDate []*Card
@@ -77,6 +78,7 @@ type Doctor struct {
 	ThumbnailUrl        string            `json:"thumbnail_url,omitempty"`
 	DoseSpotClinicianId int64             `json:"-"`
 	DoctorAddress       *Address          `json:"address,omitempty"`
+	PersonId            int64             `json:"person_id"`
 }
 
 type PatientVisit struct {

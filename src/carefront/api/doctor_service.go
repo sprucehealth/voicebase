@@ -51,7 +51,13 @@ func (d *DataService) RegisterDoctor(doctor *common.Doctor) (int64, error) {
 		return 0, err
 	}
 
-	if _, err := tx.Exec(`INSERT INTO person (role_type, role_id) VALUES (?, ?)`, DOCTOR_ROLE, lastId); err != nil {
+	res, err = tx.Exec(`INSERT INTO person (role_type, role_id) VALUES (?, ?)`, DOCTOR_ROLE, lastId)
+	if err != nil {
+		tx.Rollback()
+		return 0, err
+	}
+	doctor.PersonId, err = res.LastInsertId()
+	if err != nil {
 		tx.Rollback()
 		return 0, err
 	}
@@ -60,42 +66,42 @@ func (d *DataService) RegisterDoctor(doctor *common.Doctor) (int64, error) {
 }
 
 func (d *DataService) GetDoctorFromId(doctorId int64) (*common.Doctor, error) {
-	row := d.DB.QueryRow(`select doctor.id, account_id, phone, first_name, last_name, middle_name, suffix, prefix, gender, dob_year, dob_month, dob_day, status, clinician_id, address.address_line_1, 
-							address.address_line_2, address.city, address.state, address.zip_code from doctor 
-							left outer join doctor_phone on doctor_phone.doctor_id = doctor.id
-							left outer join doctor_address_selection on doctor_address_selection.doctor_id = doctor.id
-							left outer join address on doctor_address_selection.address_id = address.id
-								where doctor.id = ? and (doctor_phone.phone is null or doctor_phone.phone_type = ?)`, doctorId, doctorPhoneType)
-	return getDoctorFromRow(row)
+	return d.queryDoctor(`doctor.id = ? AND (doctor_phone.phone IS NULL OR doctor_phone.phone_type = ?)`, doctorId, doctorPhoneType)
 }
 
 func (d *DataService) GetDoctorFromAccountId(accountId int64) (*common.Doctor, error) {
-	row := d.DB.QueryRow(`select doctor.id, account_id, phone, first_name, last_name, middle_name, suffix, prefix, gender, dob_year, dob_month, dob_day, status, clinician_id,address.address_line_1, 
-							address.address_line_2, address.city, address.state, address.zip_code from doctor 
-							left outer join doctor_phone on doctor_phone.doctor_id = doctor.id
-							left outer join doctor_address_selection on doctor_address_selection.doctor_id = doctor.id
-							left outer join address on address.id = address_id 
-								where doctor.account_id = ? and (doctor_phone.phone is null or doctor_phone.phone_type = ?)`, accountId, doctorPhoneType)
-	return getDoctorFromRow(row)
+	return d.queryDoctor(`doctor.account_id = ? AND (doctor_phone.phone IS NULL OR doctor_phone.phone_type = ?)`, accountId, doctorPhoneType)
 }
 
 func (d *DataService) GetDoctorFromDoseSpotClinicianId(clinicianId int64) (*common.Doctor, error) {
-	row := d.DB.QueryRow(`select doctor.id, account_id, phone, first_name, last_name, middle_name, suffix, prefix, gender, dob_year, dob_month, dob_day, status, clinician_id, address.address_line_1, 
-							address.address_line_2, address.city, address.state, address.zip_code from doctor 
-							left outer join doctor_phone on doctor_phone.doctor_id = doctor.id
-							left outer join doctor_address_selection on doctor_address_selection.doctor_id = doctor.id
-							left outer join address on doctor_address_selection.address_id = address.id
-								where doctor.clinician_id = ? and (doctor_phone.phone is null or doctor_phone.phone_type = ?)`, clinicianId, doctorPhoneType)
-	return getDoctorFromRow(row)
+	return d.queryDoctor(`doctor.clinician_id = ? AND (doctor_phone.phone IS NULL OR doctor_phone.phone_type = ?)`, clinicianId, doctorPhoneType)
 }
 
-func getDoctorFromRow(row *sql.Row) (*common.Doctor, error) {
+func (d *DataService) queryDoctor(where string, queryParams ...interface{}) (*common.Doctor, error) {
+	row := d.DB.QueryRow(fmt.Sprintf(`
+		SELECT doctor.id, account_id, phone, first_name, last_name, middle_name, suffix,
+			prefix, gender, dob_year, dob_month, dob_day, status, clinician_id,
+			address.address_line_1,	address.address_line_2, address.city, address.state,
+			address.zip_code, person.id
+		FROM doctor
+		INNER JOIN person ON person.role_type = '%s' AND person.role_id = doctor.id
+		LEFT OUTER JOIN doctor_phone ON doctor_phone.doctor_id = doctor.id
+		LEFT OUTER JOIN doctor_address_selection ON doctor_address_selection.doctor_id = doctor.id
+		LEFT OUTER JOIN address ON doctor_address_selection.address_id = address.id
+		WHERE %s`, DOCTOR_ROLE, where),
+		queryParams...)
+
 	var firstName, lastName, status, gender string
 	var cellPhoneNumber, addressLine1, addressLine2, city, state, zipCode, middleName, suffix, prefix sql.NullString
 	var doctorId, accountId encoding.ObjectId
 	var dobYear, dobMonth, dobDay int
+	var personId int64
 	var clinicianId sql.NullInt64
-	err := row.Scan(&doctorId, &accountId, &cellPhoneNumber, &firstName, &lastName, &middleName, &suffix, &prefix, &gender, &dobYear, &dobMonth, &dobDay, &status, &clinicianId, &addressLine1, &addressLine2, &city, &state, &zipCode)
+	err := row.Scan(
+		&doctorId, &accountId, &cellPhoneNumber, &firstName, &lastName,
+		&middleName, &suffix, &prefix, &gender, &dobYear, &dobMonth,
+		&dobDay, &status, &clinicianId, &addressLine1, &addressLine2,
+		&city, &state, &zipCode, &personId)
 	if err != nil {
 		return nil, err
 	}
@@ -118,7 +124,8 @@ func getDoctorFromRow(row *sql.Row) (*common.Doctor, error) {
 			State:        state.String,
 			ZipCode:      zipCode.String,
 		},
-		Dob: encoding.Dob{Year: dobYear, Month: dobMonth, Day: dobDay},
+		Dob:      encoding.Dob{Year: dobYear, Month: dobMonth, Day: dobDay},
+		PersonId: personId,
 	}
 
 	return doctor, nil
