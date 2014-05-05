@@ -118,6 +118,7 @@ func (d *DoctorTreatmentPlanHandler) getTreatmentPlanForPatientVisit(w http.Resp
 	drTreatmentPlan.Advice.AllAdvicePoints, err = d.DataApi.GetAdvicePointsForDoctor(patientVisitReviewData.DoctorId)
 	if err != nil {
 		WriteDeveloperError(w, http.StatusInternalServerError, "Unable to get advice points for doctor")
+		return
 	}
 
 	setCommittedStateForEachSection(drTreatmentPlan)

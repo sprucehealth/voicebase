@@ -1,1 +1,0 @@
-alter table dr_regimen_step add index (doctor_id);
