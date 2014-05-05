@@ -258,7 +258,7 @@ type HomeAPI interface {
 }
 
 type PeopleAPI interface {
-	GetPeople(id []int64) (map[int64]*common.Person, error)
+	GetPeople(ids []int64) (map[int64]*common.Person, error)
 	GetPersonIdByRole(roleType string, roleId int64) (int64, error)
 }
 
