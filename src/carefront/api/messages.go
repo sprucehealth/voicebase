@@ -51,7 +51,9 @@ func (d *DataService) GetConversationsWithParticipants(ids []int64) ([]*common.C
 	// of times the conversation_id appears in the results (# of rows) should equal the
 	// number of participants.
 	idvals := appendInt64sToInterfaceSlice(nil, ids)
-	rows, err := d.DB.Query(fmt.Sprintf(`SELECT conversation_id FROM conversation_participant WHERE person_id IN (%s)`, nReplacements(len(ids))), idvals...)
+	rows, err := d.DB.Query(
+		fmt.Sprintf(`SELECT conversation_id FROM conversation_participant WHERE person_id IN (%s)`, nReplacements(len(ids))),
+		idvals...)
 	if err != nil {
 		return nil, nil, err
 	}
