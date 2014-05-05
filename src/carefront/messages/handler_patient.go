@@ -161,7 +161,7 @@ func (h *PatientMessagesHandler) listMessages(w http.ResponseWriter, r *http.Req
 	res := &conversationResponse{
 		Id:           req.ConversationId,
 		Title:        con.Title,
-		Items:        messageList(con.Messages),
+		Items:        messageList(con.Messages, r),
 		Participants: peopleToParticipants(con.Participants),
 	}
 	apiservice.WriteJSONToHTTPResponseWriter(w, http.StatusOK, res)

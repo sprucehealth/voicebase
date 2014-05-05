@@ -6,6 +6,7 @@ import (
 	"carefront/apiservice"
 	"carefront/common/config"
 	"carefront/homelog"
+	"carefront/libs/aws"
 	"carefront/libs/dispatch"
 	"carefront/services/auth"
 	thriftapi "carefront/thrift/api"
@@ -49,6 +50,7 @@ type TestData struct {
 	CloudStorageService api.CloudStorageAPI
 	DB                  *sql.DB
 	StartTime           time.Time
+	AWSAuth             aws.Auth
 }
 
 type nullHasher struct{}
@@ -209,6 +211,7 @@ func SetupIntegrationTest(t *testing.T) TestData {
 		DBConfig:            dbConfig,
 		CloudStorageService: cloudStorageService,
 		DB:                  db,
+		AWSAuth:             awsAuth,
 	}
 
 	t.Logf("Created and connected to database with name: %s (%.3f seconds)", testData.DBConfig.DatabaseName, float64(time.Since(ts))/float64(time.Second))

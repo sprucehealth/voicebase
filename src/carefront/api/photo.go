@@ -39,7 +39,11 @@ func (d *DataService) GetPhoto(photoId int64) (*common.Photo, error) {
 }
 
 func (d *DataService) ClaimPhoto(photoId int64, claimerType string, claimerId int64) error {
-	_, err := d.DB.Exec(`
+	return d.claimPhoto(d.DB, photoId, claimerType, claimerId)
+}
+
+func (d *DataService) claimPhoto(db db, photoId int64, claimerType string, claimerId int64) error {
+	_, err := db.Exec(`
 		UPDATE photo
 		SET claimer_type = ?, claimer_id = ?
 		WHERE id = ?`, claimerType, claimerId, photoId)

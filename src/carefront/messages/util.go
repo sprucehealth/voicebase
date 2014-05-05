@@ -5,6 +5,7 @@ import (
 	"carefront/common"
 	"carefront/libs/golog"
 	"fmt"
+	"net/http"
 	"time"
 )
 
@@ -119,7 +120,9 @@ func peopleToParticipants(people map[int64]*common.Person) []*participant {
 	return parts
 }
 
-func messageList(msgs []*common.ConversationMessage) []*message {
+func messageList(msgs []*common.ConversationMessage, req *http.Request) []*message {
+	// TODO: don't hard code the photoURL
+	photoURL := fmt.Sprintf("https://%s/v1/photo/", req.Host)
 	mr := make([]*message, len(msgs))
 	for i, m := range msgs {
 		mr[i] = &message{
@@ -134,7 +137,7 @@ func messageList(msgs []*common.ConversationMessage) []*message {
 			case common.AttachmentTypePhoto:
 				mr[i].Attachments[j] = &attachment{
 					Type: "attachment:photo",
-					URL:  "TODO", // TODO
+					URL:  fmt.Sprintf("%s?photo_id=%d&claimer_type=%s&claimer_id=%d", photoURL, a.Id, common.ClaimerTypeConversationMessage, m.Id),
 				}
 			default:
 				golog.Errorf("Unknown attachment type %s for message %d", a.ItemType, m.Id)
@@ -166,7 +169,7 @@ func parseAttachments(dataAPI api.DataAPI, att *attachments, personId int64) ([]
 			if err != nil {
 				return nil, err
 			}
-			if photo.UploaderId != personId {
+			if photo.UploaderId != personId || photo.ClaimerType != "" {
 				return nil, api.NoRowsError
 			}
 			attachments = append(attachments, &common.ConversationAttachment{

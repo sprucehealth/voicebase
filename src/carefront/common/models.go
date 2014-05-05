@@ -11,6 +11,10 @@ const (
 	AttachmentTypeTreatmentPlan = "treatment_plan"
 )
 
+const (
+	ClaimerTypeConversationMessage = "conversation_message"
+)
+
 type PhoneInformation struct {
 	Phone     string `json:"phone,omitempty"`
 	PhoneType string `json:"phone_type,omitempty"`

@@ -324,6 +324,12 @@ func (d *DataService) createMessage(tx *sql.Tx, now time.Time, conversationId, f
 		if err != nil {
 			return 0, err
 		}
+		switch a.ItemType {
+		case common.AttachmentTypePhoto:
+			if err := d.claimPhoto(tx, a.ItemId, common.ClaimerTypeConversationMessage, msgId); err != nil {
+				return 0, err
+			}
+		}
 	}
 
 	return msgId, nil

@@ -5,11 +5,15 @@ import (
 	"carefront/apiservice"
 	"carefront/common"
 	"carefront/libs/aws"
+	"carefront/libs/golog"
 	"crypto/rand"
 	"encoding/hex"
 	"fmt"
+	"io"
+	"io/ioutil"
 	"net/http"
 	"net/url"
+	"strings"
 
 	"github.com/gorilla/schema"
 
@@ -26,7 +30,7 @@ type Handler struct {
 
 type getRequest struct {
 	PhotoId     int64  `schema:"photo_id,required"`
-	ClaimerType string `schema:"claimer_rype,required"`
+	ClaimerType string `schema:"claimer_type,required"`
 	ClaimerId   int64  `schema:"claimer_id,required"`
 }
 
@@ -92,12 +96,29 @@ func (h *Handler) get(w http.ResponseWriter, r *http.Request) {
 		apiservice.WriteDeveloperError(w, http.StatusInternalServerError, "Failed to parse photo URL: "+err.Error())
 		return
 	}
-	region := u.Host
-	bucket := u.Path
+	region, ok := goamz.Regions[u.Host]
+	if !ok {
+		apiservice.WriteDeveloperError(w, http.StatusInternalServerError, "Invalid region: "+u.Host)
+		return
+	}
+	pathParts := strings.SplitN(u.Path, "/", 3)
+	bucketName := pathParts[1]
+	path := pathParts[2]
 
-	s3conn := s3.New(common.AWSAuthAdapter(h.awsAuth), h.region)
-	bucket := s3conn.Bucket(h.bucket)
-	bucket.SignedURL(path, expires, additionalHeaders)
+	s3conn := s3.New(common.AWSAuthAdapter(h.awsAuth), region)
+	bucket := s3conn.Bucket(bucketName)
+	rc, header, err := bucket.GetReader(path)
+	if err != nil {
+		apiservice.WriteDeveloperError(w, http.StatusInternalServerError, "Failed to get photo: "+err.Error())
+		return
+	}
+
+	w.Header().Set("Content-Type", header.Get("Content-Type"))
+	w.Header().Set("Content-Length", header.Get("Content-Length"))
+	w.WriteHeader(http.StatusOK)
+	if _, err := io.Copy(w, rc); err != nil {
+		golog.Errorf("Failed to send photo image: %s", err.Error())
+	}
 }
 
 func (h *Handler) upload(w http.ResponseWriter, r *http.Request) {
@@ -126,19 +147,26 @@ func (h *Handler) upload(w http.ResponseWriter, r *http.Request) {
 		return
 	}
 
+	data, err := ioutil.ReadAll(file)
+	if err != nil {
+		apiservice.WriteUserError(w, http.StatusBadRequest, "Failed to read photo data: "+err.Error())
+		return
+	}
+
 	uidBytes := make([]byte, 16)
 	if _, err := rand.Read(uidBytes); err != nil {
 		apiservice.WriteDeveloperError(w, http.StatusInternalServerError, "Failed to generate key: "+err.Error())
 		return
 	}
 	uid := hex.EncodeToString(uidBytes)
-	url := fmt.Sprintf("s3://%s/%s/%s", h.region, h.bucket, uid)
+	path := fmt.Sprintf("photo-%s", uid)
+	url := fmt.Sprintf("s3://%s/%s/%s", h.region.Name, h.bucket, path)
 
 	contentType := handler.Header.Get("Content-Type")
 
 	s3conn := s3.New(common.AWSAuthAdapter(h.awsAuth), h.region)
 	bucket := s3conn.Bucket(h.bucket)
-	err = bucket.PutReader(uid, file, r.ContentLength, contentType, s3.BucketOwnerFull, map[string][]string{"x-amz-server-side-encryption": {"AES256"}})
+	err = bucket.Put(path, data, contentType, s3.BucketOwnerFull, map[string][]string{"x-amz-server-side-encryption": {"AES256"}})
 	if err != nil {
 		apiservice.WriteDeveloperError(w, http.StatusInternalServerError, "Failed to upload photo: "+err.Error())
 		return
@@ -146,7 +174,7 @@ func (h *Handler) upload(w http.ResponseWriter, r *http.Request) {
 
 	id, err := h.dataAPI.AddPhoto(personId, url, contentType)
 	if err != nil {
-		apiservice.WriteUserError(w, http.StatusBadRequest, "Failed to add photo: "+err.Error())
+		apiservice.WriteDeveloperError(w, http.StatusInternalServerError, "Failed to add photo: "+err.Error())
 		return
 	}
 
