@@ -6,6 +6,8 @@ import (
 	"carefront/common"
 	"carefront/libs/dispatch"
 	"carefront/libs/golog"
+	"carefront/messages"
+	"errors"
 	"fmt"
 )
 
@@ -110,6 +112,76 @@ func InitListeners(dataAPI api.DataAPI) {
 						golog.Errorf("Failed to insert visit treatment plan created into health log for patient %d: %s", ev.PatientId, err.Error())
 					}
 				}
+			}
+		}
+		return nil
+	})
+
+	dispatch.Default.Subscribe(func(ev *messages.ConversationStartedEvent) error {
+		people, err := dataAPI.GetPeople([]int64{ev.FromId, ev.ToId})
+		if err != nil {
+			return err
+		}
+		from := people[ev.FromId]
+		if from == nil {
+			return errors.New("failed to find person conversation is from")
+		}
+		to := people[ev.ToId]
+		if to == nil {
+			return errors.New("failed to find person conversation is addressed to")
+		}
+
+		// TODO: currently only supporting patient notifications
+		if to.RoleType != api.PATIENT_ROLE || from.RoleType != api.DOCTOR_ROLE {
+			return nil
+		}
+
+		_, err = dataAPI.InsertPatientNotification(to.RoleId, &common.Notification{
+			UID:             fmt.Sprintf("conversation:%d", ev.ConversationId),
+			Dismissible:     true,
+			DismissOnAction: true,
+			Priority:        1000,
+			Data: &newConversationNotification{
+				ConversationId: ev.ConversationId,
+				DoctorId:       from.RoleId,
+			},
+		})
+		return err
+	})
+
+	dispatch.Default.Subscribe(func(ev *messages.ConversationReplyEvent) error {
+		people, err := dataAPI.GetPeople([]int64{ev.FromId})
+		if err != nil {
+			return err
+		}
+		from := people[ev.FromId]
+		if from == nil {
+			return errors.New("failed to find person conversation is from")
+		}
+
+		// TODO: currently only supporting patient notifications
+		if from.RoleType != api.DOCTOR_ROLE {
+			return nil
+		}
+
+		con, err := dataAPI.GetConversation(ev.ConversationId)
+		if err != nil {
+			return err
+		}
+		// Find the patient participant
+		for _, p := range con.Participants {
+			if p.RoleType == api.PATIENT_ROLE {
+				_, err = dataAPI.InsertPatientNotification(p.RoleId, &common.Notification{
+					UID:             fmt.Sprintf("conversation:%d", ev.ConversationId),
+					Dismissible:     true,
+					DismissOnAction: true,
+					Priority:        1000,
+					Data: &conversationReplyNotification{
+						ConversationId: ev.ConversationId,
+						DoctorId:       from.RoleId,
+					},
+				})
+				return err
 			}
 		}
 		return nil

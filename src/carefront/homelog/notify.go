@@ -17,6 +17,9 @@ const (
 	incompleteVisit              = "incomplete_visit"
 	visitReviewed                = "visit_reviewed"
 	patientNotificationNamespace = "patient_notification"
+	newConversation              = "new_conversation"
+	conversationReply            = "conversation_reply"
+	message                      = "message"
 )
 
 type notification interface {
@@ -33,12 +36,30 @@ type visitReviewedNotification struct {
 	VisitId  int64
 }
 
+type newConversationNotification struct {
+	DoctorId       int64
+	ConversationId int64
+}
+
+type conversationReplyNotification struct {
+	DoctorId       int64
+	ConversationId int64
+}
+
 func (*incompleteVisitNotification) TypeName() string {
 	return incompleteVisit
 }
 
 func (*visitReviewedNotification) TypeName() string {
 	return visitReviewed
+}
+
+func (*newConversationNotification) TypeName() string {
+	return newConversation
+}
+
+func (*conversationReplyNotification) TypeName() string {
+	return conversationReply
 }
 
 func (n *incompleteVisitNotification) makeView(dataAPI api.DataAPI, patientId, notificationId int64) (view, error) {
@@ -86,11 +107,57 @@ func (n *visitReviewedNotification) makeView(dataAPI api.DataAPI, patientId, not
 	}, nil
 }
 
+func (n *newConversationNotification) makeView(dataAPI api.DataAPI, patientId, notificationId int64) (view, error) {
+	doctor, err := dataAPI.GetDoctorFromId(n.DoctorId)
+	if err != nil {
+		return nil, err
+	}
+	con, err := dataAPI.GetConversation(n.ConversationId)
+	if err != nil {
+		return nil, err
+	}
+	tapURL := fmt.Sprintf("spruce:///action/view_messages?conversation_id=%d", n.ConversationId)
+	return &messageView{
+		Dismissible:     true,
+		DismissOnAction: true,
+		Type:            patientNotificationNamespace + ":" + message,
+		Title:           fmt.Sprintf("Dr. %s sent you a message.", doctor.LastName),
+		IconURL:         fmt.Sprintf("spruce:///image/thumbnail_care_team_%d", n.DoctorId),
+		TapURL:          tapURL,
+		ButtonIconURL:   "spruce:///image/icon_reply",
+		ButtonText:      "Reply",
+		Text:            con.Messages[0].Body,
+	}, nil
+}
+
+func (n *conversationReplyNotification) makeView(dataAPI api.DataAPI, patientId, notificationId int64) (view, error) {
+	doctor, err := dataAPI.GetDoctorFromId(n.DoctorId)
+	if err != nil {
+		return nil, err
+	}
+	con, err := dataAPI.GetConversation(n.ConversationId)
+	if err != nil {
+		return nil, err
+	}
+	tapURL := fmt.Sprintf("spruce:///action/view_messages?conversation_id=%d", n.ConversationId)
+	return &messageView{
+		Dismissible:     true,
+		DismissOnAction: true,
+		Type:            patientNotificationNamespace + ":" + message,
+		Title:           fmt.Sprintf("Dr. %s replied to your message about %s.", doctor.LastName, con.Title),
+		IconURL:         fmt.Sprintf("spruce:///image/thumbnail_care_team_%d", n.DoctorId),
+		TapURL:          tapURL,
+		Text:            con.Messages[0].Body,
+	}, nil
+}
+
 var notifyTypes = map[string]reflect.Type{}
 
 func init() {
 	registerNotificationType(&incompleteVisitNotification{})
 	registerNotificationType(&visitReviewedNotification{})
+	registerNotificationType(&newConversationNotification{})
+	registerNotificationType(&conversationReplyNotification{})
 }
 
 func registerNotificationType(n notification) {

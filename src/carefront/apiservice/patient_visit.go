@@ -181,7 +181,7 @@ func (s *PatientVisitHandler) returnLastCreatedPatientVisit(w http.ResponseWrite
 		return
 	}
 
-	primaryDoctorId := getPrimaryDoctorIdFromCareTeam(careTeam)
+	primaryDoctorId := GetPrimaryDoctorIdFromCareTeam(careTeam)
 	if primaryDoctorId == 0 {
 		WriteDeveloperError(w, http.StatusInternalServerError, "Unable to identify the primary doctor for the patient")
 		return

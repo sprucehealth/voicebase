@@ -23,8 +23,10 @@ import (
 	"carefront/libs/pharmacy"
 	"carefront/libs/svcclient"
 	"carefront/libs/svcreg"
+	"carefront/messages"
 	"carefront/notify"
 	"carefront/patient_treatment_plan"
+	"carefront/photos"
 	"carefront/services/auth"
 	thriftapi "carefront/thrift/api"
 
@@ -71,6 +73,7 @@ type Config struct {
 	VisualLayoutBucket       string               `long:"patient_layout_bucket" description:"S3 Bucket name for human readable layout for patient information intake"`
 	DoctorVisualLayoutBucket string               `long:"doctor_visual_layout_bucket" description:"S3 Bucket name for patient overview for doctor's viewing"`
 	DoctorLayoutBucket       string               `long:"doctor_layout_bucket" description:"S3 Bucket name for pre-processed patient overview for doctor's viewing"`
+	PhotoBucket              string               `long:"photo_bucket" description:"S3 Bucket name for uploaded photos"`
 	Debug                    bool                 `long:"debug" description:"Enable debugging"`
 	IOSDeeplinkScheme        string               `long:"ios_deeplink_scheme" description:"Scheme for iOS deep-links (e.g. spruce://)"`
 	DoseSpotUserId           string               `long:"dose_spot_user_id" description:"DoseSpot UserId for eRx integration"`
@@ -365,6 +368,15 @@ func main() {
 	mux.Handle("/v1/client_model", generateModelIntakeHandler)
 	mux.Handle("/v1/credit_card", patientCardsHandler)
 	mux.Handle("/v1/credit_card/default", patientCardsHandler)
+
+	mux.Handle("/v1/photo", photos.NewHandler(dataApi, awsAuth, conf.PhotoBucket, conf.AWSRegion))
+	mux.Handle("/v1/patient/conversation", messages.NewPatientConversationHandler(dataApi))
+	mux.Handle("/v1/doctor/conversation", messages.NewDoctorConversationHandler(dataApi))
+	mux.Handle("/v1/patient/conversation/messages", messages.NewPatientMessagesHandler(dataApi))
+	mux.Handle("/v1/doctor/conversation/messages", messages.NewDoctorMessagesHandler(dataApi))
+	mux.Handle("/v1/patient/conversation/read", messages.NewPatientReadHandler(dataApi))
+	mux.Handle("/v1/doctor/conversation/read", messages.NewDoctorReadHandler(dataApi))
+	mux.Handle("/v1/conversation/topics", messages.NewTopicsHandler(dataApi))
 
 	mux.Handle("/v1/doctor/signup", signupDoctorHandler)
 	mux.Handle("/v1/doctor/authenticate", authenticateDoctorHandler)

@@ -250,7 +250,9 @@ func (d *DataService) updateSubAnswersToPatientInfoIntakesWithStatus(role string
 
 	for rows.Next() {
 		var id int64
-		rows.Scan(&id)
+		if err := rows.Scan(&id); err != nil {
+			return err
+		}
 		parentInfoIntakeIds = append(parentInfoIntakeIds, id)
 	}
 	if rows.Err() != nil {

@@ -83,7 +83,7 @@ func VerifyDoctorPatientRelationship(dataApi api.DataAPI, doctor *common.Doctor,
 		return fmt.Errorf("Unable to get care team based on patient id: %+v", err)
 	}
 
-	primaryDoctorId := getPrimaryDoctorIdFromCareTeam(careTeam)
+	primaryDoctorId := GetPrimaryDoctorIdFromCareTeam(careTeam)
 	if doctor.DoctorId.Int64() != primaryDoctorId {
 		return fmt.Errorf("Unable to get the patient information by doctor when this doctor is not the primary doctor for patient")
 	}
@@ -124,7 +124,7 @@ func GetPrimaryDoctorInfoBasedOnPatient(dataApi api.DataAPI, patient *common.Pat
 		return nil, err
 	}
 
-	primaryDoctorId := getPrimaryDoctorIdFromCareTeam(careTeam)
+	primaryDoctorId := GetPrimaryDoctorIdFromCareTeam(careTeam)
 	if primaryDoctorId == 0 {
 		return nil, errors.New("Unable to get primary doctor based on patient")
 	}
@@ -144,7 +144,7 @@ func GetDoctorInfo(dataApi api.DataAPI, doctorId int64, staticBaseContentUrl str
 	return doctor, err
 }
 
-func getPrimaryDoctorIdFromCareTeam(careTeam *common.PatientCareProviderGroup) int64 {
+func GetPrimaryDoctorIdFromCareTeam(careTeam *common.PatientCareProviderGroup) int64 {
 	for _, assignment := range careTeam.Assignments {
 		if assignment.ProviderRole == api.DOCTOR_ROLE && assignment.Status == api.PRIMARY_DOCTOR_STATUS {
 			return assignment.ProviderId

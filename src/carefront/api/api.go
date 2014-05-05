@@ -257,6 +257,28 @@ type HomeAPI interface {
 	InsertOrUpdatePatientHealthLogItem(patientId int64, item *common.HealthLogItem) (int64, error)
 }
 
+type PeopleAPI interface {
+	GetPeople(ids []int64) (map[int64]*common.Person, error)
+	GetPersonIdByRole(roleType string, roleId int64) (int64, error)
+}
+
+type MessageAPI interface {
+	GetConversationParticipantIds(conversationId int64) ([]int64, error)
+	GetConversationTopics() ([]*common.ConversationTopic, error)
+	AddConversationTopic(title string, ordinal int, active bool) (int64, error)
+	GetConversationsWithParticipants(ids []int64) ([]*common.Conversation, map[int64]*common.Person, error)
+	GetConversation(id int64) (*common.Conversation, error)
+	MarkConversationAsRead(id int64) error
+	CreateConversation(fromId, toId, topicId int64, message string, attachments []*common.ConversationAttachment) (int64, error)
+	ReplyToConversation(conversationId, fromId int64, message string, attachments []*common.ConversationAttachment) (int64, error)
+}
+
+type PhotoAPI interface {
+	AddPhoto(uploaderId int64, url, mimetype string) (int64, error)
+	GetPhoto(photoID int64) (*common.Photo, error)
+	ClaimPhoto(photoId int64, claimerType string, claimerId int64) error
+}
+
 type DataAPI interface {
 	PatientAPI
 	DoctorAPI
@@ -267,6 +289,9 @@ type DataAPI interface {
 	PrescriptionsAPI
 	DrugAPI
 	HomeAPI
+	PeopleAPI
+	MessageAPI
+	PhotoAPI
 }
 
 type CloudStorageAPI interface {

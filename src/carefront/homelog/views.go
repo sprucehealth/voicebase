@@ -16,6 +16,18 @@ type incompleteVisitView struct {
 	NotificationId int64  `json:"notification_id,string"`
 }
 
+type messageView struct {
+	Dismissible     bool   `json:"dismissible"`
+	DismissOnAction bool   `json:"dismiss_on_action"`
+	Type            string `json:"type"`
+	Title           string `json:"title"`
+	IconURL         string `json:"icon_url"`
+	ButtonText      string `json:"button_text,omitempty"`
+	ButtonIconURL   string `json:"button_icon_url,omitempty"`
+	TapURL          string `json:"tap_url"`
+	Text            string `json:"text"`
+}
+
 type bodyButtonView struct {
 	Type              string `json:"type"`
 	Dismissible       bool   `json:"dismissible"`
