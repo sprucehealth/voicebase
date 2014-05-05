@@ -6,6 +6,7 @@ import (
 	"carefront/libs/golog"
 	"fmt"
 	"net/http"
+	"strconv"
 	"time"
 )
 
@@ -53,7 +54,7 @@ type conversationResponse struct {
 }
 
 type attachments struct {
-	Photos []int64 `json:"photos"`
+	Photos []string `json:"photos"`
 }
 
 type newConversationRequest struct {
@@ -164,7 +165,11 @@ func isPersonAParticipant(dataAPI api.DataAPI, conversationId, personId int64) (
 func parseAttachments(dataAPI api.DataAPI, att *attachments, personId int64) ([]*common.ConversationAttachment, error) {
 	var attachments []*common.ConversationAttachment
 	if att != nil {
-		for _, photoID := range att.Photos {
+		for _, photoIDStr := range att.Photos {
+			photoID, err := strconv.ParseInt(photoIDStr, 10, 64)
+			if err != nil {
+				return nil, err
+			}
 			photo, err := dataAPI.GetPhoto(photoID)
 			if err != nil {
 				return nil, err
