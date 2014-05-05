@@ -19,7 +19,8 @@ type SignupDoctorHandler struct {
 
 type DoctorSignedupResponse struct {
 	Token    string `json:"token"`
-	DoctorId int64  `json:"doctorId, string"`
+	DoctorId int64  `json:"doctorId,string"`
+	PersonId int64  `json:"person_id,string"`
 }
 
 func (d *SignupDoctorHandler) NonAuthenticated() bool {
@@ -121,5 +122,9 @@ func (d *SignupDoctorHandler) ServeHTTP(w http.ResponseWriter, r *http.Request) 
 		return
 	}
 
-	WriteJSONToHTTPResponseWriter(w, http.StatusOK, DoctorSignedupResponse{res.Token, doctorId})
+	WriteJSONToHTTPResponseWriter(w, http.StatusOK, &DoctorSignedupResponse{
+		Token:    res.Token,
+		DoctorId: doctorId,
+		PersonId: doctorToRegister.PersonId,
+	})
 }
