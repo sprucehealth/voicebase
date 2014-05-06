@@ -31,7 +31,8 @@ func (u *UpdateHandler) ServeHTTP(w http.ResponseWriter, r *http.Request) {
 
 	patient, err := u.dataApi.GetPatientFromAccountId(apiservice.GetContext(r).AccountId)
 	if err != nil {
-		apiservice.WriteDeveloperError(w, http.StatusInternalServerError, "Unable to ")
+		apiservice.WriteDeveloperError(w, http.StatusInternalServerError, "Unable to get patient from id: "+err.Error())
+		return
 	}
 
 	// identify the fields that the caller wants updated
@@ -70,7 +71,7 @@ func (u *UpdateHandler) ServeHTTP(w http.ResponseWriter, r *http.Request) {
 	if dobString := r.FormValue("dob"); dobString != "" {
 		patient.Dob, err = encoding.NewDobFromString(dobString)
 		if err != nil {
-			apiservice.WriteDeveloperError(w, http.StatusBadRequest, "Unable to parse dob: "+err.Error())
+			apiservice.WriteUserError(w, http.StatusBadRequest, "Unable to parse dob: "+err.Error())
 			return
 		}
 	}
