@@ -349,6 +349,13 @@ func TestAdvicePointsForPatientVisit_SelectAdviceFromDeletedAdvice(t *testing.T)
 		t.Fatalf("Expected the global list to have 4 items and the selected list to have 5 items, instead there are %d items in the global list and %d items in the selected list", len(doctorAdviceResponse.AllAdvicePoints), len(doctorAdviceResponse.SelectedAdvicePoints))
 	}
 
+	// now lets go ahead and send back to the server what we got back in a response.
+	// this is to ensure that the doctor can submit the advice points unmodified and pass
+	// validation on the server after modifying an item in the list that is no longer in the master
+	// list
+	doctorAdviceRequest = doctorAdviceResponse
+	doctorAdviceResponse = updateAdvicePointsForPatientVisit(doctorAdviceRequest, testData, doctor, t)
+
 	if doctorAdviceResponse.SelectedAdvicePoints[4].Text != "Updating text of deleted item" {
 		t.Fatalf("Expected text to have been updated for item that is referencing a deleted item from the global list of doctor")
 	}

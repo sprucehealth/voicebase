@@ -358,6 +358,12 @@ func TestRegimenForPatientVisit_UpdatingItemLinkedToDeletedItem(t *testing.T) {
 		t.Fatalf("Exepcted text to have updated for item linked to deleted item but it didn't")
 	}
 
+	// now lets go ahead and echo back the response to the server to ensure that it takes the list
+	// as it modified back without any issue. This is essentially to ensure that it passes the validation
+	// of text being modified for an item that is no longer active in the master list
+	regimenPlanRequest = regimenPlanResponse
+	regimenPlanResponse = createRegimenPlanForPatientVisit(regimenPlanRequest, testData, doctor, t)
+
 	// now lets go ahead and remove the item from the regimen section
 	regimenPlanRequest = regimenPlanResponse
 	regimenPlanRequest.RegimenSections = regimenPlanRequest.RegimenSections[:4]

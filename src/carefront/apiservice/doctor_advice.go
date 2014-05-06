@@ -194,6 +194,22 @@ func (d *DoctorAdviceHandler) updateAdvicePoints(w http.ResponseWriter, r *http.
 		if updatedId, ok := updatedPointToIdMapping[advicePoint.ParentId.Int64()]; ok {
 			// update the parentId to point to the new updated item
 			advicePoint.ParentId = encoding.NewObjectId(updatedId)
+		} else if advicePoint.State == common.STATE_MODIFIED {
+			// if the step has been modified and is only included in the advice section of treatment plan and not in the master list,
+			// this means that it links to an older step that is no longer active in the doctor's master list
+			// go ahead and populate the fields of the parent advice point to update it in the database
+			parentAdvicePoint := &common.DoctorInstructionItem{
+				Id:   advicePoint.ParentId,
+				Text: advicePoint.Text,
+			}
+			// now lets go ahead and update this parent advice point
+			// (even though this point is considered inactice/deleted, updating it helps maintain the integrity
+			// of the system where the text in the treatment plan is linked to an item in the master list)
+			if err := d.DataApi.UpdateAdvicePointForDoctor(parentAdvicePoint, patientVisitReviewData.DoctorId); err != nil {
+				WriteDeveloperError(w, http.StatusInternalServerError, "Unable to update ")
+			}
+			// update the parent id to reflect the linkage to the newly updated step
+			advicePoint.ParentId = parentAdvicePoint.Id
 		}
 	}
 
