@@ -375,6 +375,11 @@ func (d *DataService) ReplaceItemInDoctorQueue(doctorQueueItem DoctorQueueItem, 
 	return tx.Commit()
 }
 
+func (d *DataService) DeleteItemFromDoctorQueue(doctorQueueItem DoctorQueueItem) error {
+	_, err := d.DB.Exec(`delete from doctor_queue where doctor_id = ? and item_id = ? and event_type = ? and status = ?`, doctorQueueItem.DoctorId, doctorQueueItem.ItemId, doctorQueueItem.EventType, doctorQueueItem.Status)
+	return err
+}
+
 func (d *DataService) MarkPatientVisitAsOngoingInDoctorQueue(doctorId, patientVisitId int64) error {
 	_, err := d.DB.Exec(`update doctor_queue set status=? where event_type=? and item_id=? and doctor_id=?`, STATUS_ONGOING, EVENT_TYPE_PATIENT_VISIT, patientVisitId, doctorId)
 	return err

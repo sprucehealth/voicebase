@@ -166,4 +166,28 @@ func InitListeners(dataAPI api.DataAPI) {
 		}
 		return nil
 	})
+
+	dispatch.Default.Subscribe(func(ev *messages.ConversationReadEvent) error {
+		// delete the item from the queue when the doctor marks the conversation
+		// as being read
+		people, err := dataAPI.GetPeople([]int64{ev.FromId})
+		if err != nil {
+			return err
+		}
+
+		person := people[ev.FromId]
+		if person.RoleType == api.DOCTOR_ROLE {
+			if err := dataAPI.DeleteItemFromDoctorQueue(api.DoctorQueueItem{
+				DoctorId:  person.Doctor.DoctorId.Int64(),
+				ItemId:    ev.ConversationId,
+				EventType: api.EVENT_TYPE_CONVERSATION,
+				Status:    api.QUEUE_ITEM_STATUS_REPLIED,
+			}); err != nil {
+				golog.Errorf("Unable to replace item in doctor queue with a replied item: %s", err)
+				return err
+			}
+		}
+		return nil
+	})
+
 }

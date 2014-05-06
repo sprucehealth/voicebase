@@ -11,3 +11,8 @@ type ConversationReplyEvent struct {
 	MessageId      int64
 	FromId         int64
 }
+
+type ConversationReadEvent struct {
+	ConversationId int64
+	FromId         int64
+}
