@@ -57,7 +57,7 @@ func (h *PatientConversationHandler) listConversations(w http.ResponseWriter, r 
 		apiservice.WriteDeveloperError(w, http.StatusInternalServerError, "messages: failed to get conversations: "+err.Error())
 		return
 	}
-	res := &conversationListResponse{
+	res := &ConversationListResponse{
 		Conversations: conversationsToConversationList(con, personId),
 		Participants:  peopleToParticipants(par),
 	}
@@ -65,7 +65,7 @@ func (h *PatientConversationHandler) listConversations(w http.ResponseWriter, r 
 }
 
 func (h *PatientConversationHandler) newConversation(w http.ResponseWriter, r *http.Request, patientId, personId int64) {
-	req := &newConversationRequest{}
+	req := &NewConversationRequest{}
 	if err := json.NewDecoder(r.Body).Decode(req); err != nil {
 		apiservice.WriteUserError(w, http.StatusBadRequest, "Unable to parse request data: "+err.Error())
 		return
@@ -91,8 +91,8 @@ func (h *PatientConversationHandler) newConversation(w http.ResponseWriter, r *h
 	}
 
 	attachments, err := parseAttachments(h.dataAPI, req.Attachments, personId)
-	if err != api.NoRowsError {
-		apiservice.WriteUserError(w, http.StatusInternalServerError, "Unknown photo")
+	if err == api.NoRowsError {
+		apiservice.WriteDeveloperError(w, http.StatusInternalServerError, "Unknown photo")
 		return
 	} else if err != nil {
 		apiservice.WriteDeveloperError(w, http.StatusInternalServerError, "Failed to get attachments: "+err.Error())
@@ -110,7 +110,7 @@ func (h *PatientConversationHandler) newConversation(w http.ResponseWriter, r *h
 		ToId:           doctorPersonId,
 	})
 
-	apiservice.WriteJSONToHTTPResponseWriter(w, http.StatusOK, apiservice.SuccessfulGenericJSONResponse())
+	apiservice.WriteJSONToHTTPResponseWriter(w, http.StatusOK, &NewConversationResponse{ConversationId: cid})
 }
 
 func NewPatientMessagesHandler(dataAPI api.DataAPI) *PatientMessagesHandler {
@@ -179,7 +179,7 @@ func (h *PatientMessagesHandler) listMessages(w http.ResponseWriter, r *http.Req
 }
 
 func (h *PatientMessagesHandler) postMessage(w http.ResponseWriter, r *http.Request, patientId, personId int64) {
-	req := &replyRequest{}
+	req := &ReplyRequest{}
 	if err := json.NewDecoder(r.Body).Decode(req); err != nil {
 		apiservice.WriteUserError(w, http.StatusBadRequest, "Unable to parse request data: "+err.Error())
 		return
@@ -194,7 +194,7 @@ func (h *PatientMessagesHandler) postMessage(w http.ResponseWriter, r *http.Requ
 	}
 
 	attachments, err := parseAttachments(h.dataAPI, req.Attachments, personId)
-	if err != api.NoRowsError {
+	if err == api.NoRowsError {
 		apiservice.WriteUserError(w, http.StatusInternalServerError, "Unknown photo")
 		return
 	} else if err != nil {

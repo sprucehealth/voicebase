@@ -27,7 +27,7 @@ type attachment struct {
 	TreatmentPlanId int64  `json:"treatment_plan_id,string,omitempty"`
 }
 
-type conversationListItem struct {
+type ConversationListItem struct {
 	Id                int64     `json:"id,string"`
 	Title             string    `json:"title"`
 	LastMessageTime   time.Time `json:"last_message_date_time"`
@@ -36,7 +36,7 @@ type conversationListItem struct {
 	Unread            bool      `json:"unread"`
 }
 
-type participant struct {
+type Participant struct {
 	Id           int64  `json:"participant_id,string"`
 	Name         string `json:"name"`
 	Subtitle     string `json:"subtitle,omitempty"`
@@ -44,30 +44,34 @@ type participant struct {
 	Initials     string `json:"initials"`
 }
 
-type conversationListResponse struct {
-	Conversations []*conversationListItem `json:"conversations"`
-	Participants  []*participant          `json:"participants"`
+type ConversationListResponse struct {
+	Conversations []*ConversationListItem `json:"conversations"`
+	Participants  []*Participant          `json:"participants"`
 }
 
 type conversationResponse struct {
 	Id           int64          `json:"conversation_id,string"`
 	Title        string         `json:"title"`
 	Items        []*message     `json:"items"`
-	Participants []*participant `json:"participants"`
+	Participants []*Participant `json:"participants"`
 }
 
 type attachments struct {
 	Photos []string `json:"photos"`
 }
 
-type newConversationRequest struct {
+type NewConversationRequest struct {
 	PatientId   int64        `json:"patient_id,string"`
 	TopicId     int64        `json:"topic_id,string"`
 	Message     string       `json:"message"`
 	Attachments *attachments `json:"attachments"`
 }
 
-type replyRequest struct {
+type NewConversationResponse struct {
+	ConversationId int64 `json:"conversation_id,string"`
+}
+
+type ReplyRequest struct {
 	ConversationId int64        `json:"conversation_id,string"`
 	Message        string       `json:"message"`
 	Attachments    *attachments `json:"attachments"`
@@ -77,10 +81,10 @@ type conversationRequest struct {
 	ConversationId int64 `schema:"conversation_id,required"`
 }
 
-func conversationsToConversationList(con []*common.Conversation, personId int64) []*conversationListItem {
-	items := make([]*conversationListItem, len(con))
+func conversationsToConversationList(con []*common.Conversation, personId int64) []*ConversationListItem {
+	items := make([]*ConversationListItem, len(con))
 	for i, c := range con {
-		item := &conversationListItem{
+		item := &ConversationListItem{
 			Id:                c.Id,
 			Title:             c.Title,
 			LastMessageTime:   c.LastMessageTime,
@@ -93,10 +97,10 @@ func conversationsToConversationList(con []*common.Conversation, personId int64)
 	return items
 }
 
-func peopleToParticipants(people map[int64]*common.Person) []*participant {
-	parts := make([]*participant, 0, len(people))
+func peopleToParticipants(people map[int64]*common.Person) []*Participant {
+	parts := make([]*Participant, 0, len(people))
 	for _, per := range people {
-		p := &participant{
+		p := &Participant{
 			Id: per.Id,
 		}
 		switch per.RoleType {
