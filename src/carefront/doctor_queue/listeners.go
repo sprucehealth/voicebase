@@ -7,6 +7,8 @@ import (
 	"carefront/common"
 	"carefront/libs/dispatch"
 	"carefront/libs/golog"
+	"carefront/messages"
+	"errors"
 )
 
 func InitListeners(dataAPI api.DataAPI) {
@@ -107,6 +109,37 @@ func InitListeners(dataAPI api.DataAPI) {
 			Status:    ev.Status,
 		}, api.QUEUE_ITEM_STATUS_PENDING); err != nil {
 			golog.Errorf("Unable to insert refill request resolved error into doctor queue: %s", err)
+			return err
+		}
+		return nil
+	})
+
+	dispatch.Default.Subscribe(func(ev *messages.ConversationStartedEvent) error {
+		people, err := dataAPI.GetPeople([]int64{ev.FromId, ev.ToId})
+		if err != nil {
+			return err
+		}
+		from := people[ev.FromId]
+		if from == nil {
+			return errors.New("failed to find person conversation is from")
+		}
+		to := people[ev.ToId]
+		if to == nil {
+			return errors.New("failed to find person conversation is addressed to")
+		}
+
+		// only act on event if the message goes from patient->doctor
+		if to.RoleType != api.DOCTOR_ROLE || from.RoleType != api.PATIENT_ROLE {
+			return nil
+		}
+
+		if err := dataAPI.InsertItemIntoDoctorQueue(api.DoctorQueueItem{
+			DoctorId:  to.Doctor.DoctorId.Int64(),
+			ItemId:    ev.ConversationId,
+			EventType: api.EVENT_TYPE_CONVERSATION,
+			Status:    api.STATUS_PENDING,
+		}); err != nil {
+			golog.Errorf("Unable to insert conversation item into doctor queue: %s", err)
 			return err
 		}
 		return nil

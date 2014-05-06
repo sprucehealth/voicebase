@@ -387,6 +387,16 @@ func TestConversationHandlers(t *testing.T) {
 		dr = p[doctorPersonId].Doctor
 	}
 
+	// ensure that an item is inserted into the doctor queue
+	pendingItems, err := testData.DataApi.GetPendingItemsInDoctorQueue(dr.DoctorId.Int64())
+	if err != nil {
+		t.Fatalf("Unable to get doctor queue: %s", err)
+	} else if len(pendingItems) != 1 {
+		t.Fatalf("Expected 1 item in the pending items but got %d instead", len(pendingItems))
+	} else if pendingItems[0].EventType != api.EVENT_TYPE_CONVERSATION {
+		t.Fatalf("Expected item type to be %s instead it was %s", api.EVENT_TYPE_CONVERSATION, pendingItems[0].EventType)
+	}
+
 	// List conversations
 
 	res, err = authGet(fmt.Sprintf("%s?patient_id=%d", doctorConvoServer.URL, pr.Patient.PatientId.Int64()), dr.AccountId.Int64())

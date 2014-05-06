@@ -13,12 +13,14 @@ const (
 	EVENT_TYPE_TRANSMISSION_ERROR               = "TRANSMISSION_ERROR"
 	EVENT_TYPE_UNLINKED_DNTF_TRANSMISSION_ERROR = "UNLINKED_DNTF_TRANSMISSION_ERROR"
 	EVENT_TYPE_REFILL_TRANSMISSION_ERROR        = "REFILL_TRANSMISSION_ERROR"
+	EVENT_TYPE_CONVERSATION                     = "CONVERSATION"
 	patientVisitImageTag                        = "patient_visit_queue_icon"
 	beginPatientVisitReviewAction               = "begin_patient_visit"
 	viewCompletedPatientVisitAction             = "view_completed_patient_visit"
 	viewRefillRequestAction                     = "view_refill_request"
 	viewTransmissionErrorAction                 = "view_transmission_error"
 	viewPatientTreatmentsAction                 = "view_patient_treatments"
+	viewPatientConversations                    = "view_patient_conversations"
 )
 
 type DoctorQueueItem struct {
@@ -130,6 +132,23 @@ func (d *DoctorQueueItem) GetTitleAndSubtitle(dataApi DataAPI) (string, string, 
 		case QUEUE_ITEM_STATUS_COMPLETED:
 			title = fmt.Sprintf("Error resolved for %s %s", unlinkedTreatment.Patient.FirstName, unlinkedTreatment.Patient.LastName)
 		}
+
+	case EVENT_TYPE_CONVERSATION:
+		conversation, err := dataApi.GetConversation(d.ItemId)
+		if err != nil {
+			return "", "", err
+		}
+
+		people, err := dataApi.GetPeople([]int64{conversation.LastParticipantId})
+		patient := people[conversation.LastParticipantId].Patient
+		switch d.Status {
+		case QUEUE_ITEM_STATUS_PENDING:
+			title = fmt.Sprintf("%s %s started a conversation about %s", patient.FirstName, patient.LastName, conversation.Title)
+		case QUEUE_ITEM_STATUS_COMPLETED:
+			title = fmt.Sprintf("Completed conversation with %s %s about %s", patient.FirstName, patient.LastName, conversation.Title)
+		case QUEUE_ITEM_STATUS_REPLIED:
+			title = fmt.Sprintf("Replied to %s %s in conversation about %s", patient.FirstName, patient.LastName, conversation.Title)
+		}
 	}
 	return title, subtitle, nil
 }
@@ -161,42 +180,17 @@ func (d *DoctorQueueItem) GetDisplayTypes() []string {
 	switch d.EventType {
 	case EVENT_TYPE_PATIENT_VISIT, EVENT_TYPE_TREATMENT_PLAN:
 		switch d.Status {
-
 		case QUEUE_ITEM_STATUS_PHOTOS_REJECTED:
 			return []string{DISPLAY_TYPE_TITLE_SUBTITLE_NONACTIONABLE}
-
-		case QUEUE_ITEM_STATUS_COMPLETED, QUEUE_ITEM_STATUS_TRIAGED:
+		default:
 			return []string{DISPLAY_TYPE_TITLE_SUBTITLE_ACTIONABLE}
-
-		case QUEUE_ITEM_STATUS_PENDING, QUEUE_ITEM_STATUS_ONGOING:
-			if d.PositionInQueue == 0 {
-				return []string{DISPLAY_TYPE_TITLE_SUBTITLE_BUTTON}
-			} else {
-				return []string{DISPLAY_TYPE_TITLE_SUBTITLE_ACTIONABLE}
-			}
 		}
 	case EVENT_TYPE_REFILL_REQUEST, EVENT_TYPE_REFILL_TRANSMISSION_ERROR:
-		switch d.Status {
-		case QUEUE_ITEM_STATUS_PENDING, QUEUE_ITEM_STATUS_ONGOING:
-			if d.PositionInQueue == 0 {
-				return []string{DISPLAY_TYPE_TITLE_SUBTITLE_BUTTON}
-			} else {
-				return []string{DISPLAY_TYPE_TITLE_SUBTITLE_ACTIONABLE}
-			}
-		case QUEUE_ITEM_STATUS_REFILL_APPROVED, QUEUE_ITEM_STATUS_REFILL_DENIED, QUEUE_ITEM_STATUS_COMPLETED:
-			return []string{DISPLAY_TYPE_TITLE_SUBTITLE_ACTIONABLE}
-		}
+		return []string{DISPLAY_TYPE_TITLE_SUBTITLE_ACTIONABLE}
 	case EVENT_TYPE_TRANSMISSION_ERROR, EVENT_TYPE_UNLINKED_DNTF_TRANSMISSION_ERROR:
-		switch d.Status {
-		case QUEUE_ITEM_STATUS_PENDING, QUEUE_ITEM_STATUS_ONGOING:
-			if d.PositionInQueue == 0 {
-				return []string{DISPLAY_TYPE_TITLE_SUBTITLE_BUTTON}
-			} else {
-				return []string{DISPLAY_TYPE_TITLE_SUBTITLE_ACTIONABLE}
-			}
-		case QUEUE_ITEM_STATUS_COMPLETED:
-			return []string{DISPLAY_TYPE_TITLE_SUBTITLE_ACTIONABLE}
-		}
+		return []string{DISPLAY_TYPE_TITLE_SUBTITLE_ACTIONABLE}
+	case EVENT_TYPE_CONVERSATION:
+		return []string{DISPLAY_TYPE_TITLE_SUBTITLE_ACTIONABLE}
 	}
 	return nil
 }
@@ -240,93 +234,14 @@ func (d *DoctorQueueItem) GetActionUrl(dataApi DataAPI) (string, error) {
 		return fmt.Sprintf("%s%s?treatment_id=%d", SpruceButtonBaseActionUrl, viewTransmissionErrorAction, d.ItemId), nil
 	case EVENT_TYPE_UNLINKED_DNTF_TRANSMISSION_ERROR:
 		return fmt.Sprintf("%s%s?unlinked_dntf_treatment_id=%d", SpruceButtonBaseActionUrl, viewTransmissionErrorAction, d.ItemId), nil
+	case EVENT_TYPE_CONVERSATION:
+		conversation, err := dataApi.GetConversation(d.ItemId)
+		if err != nil {
+			return "", err
+		}
+		people, err := dataApi.GetPeople([]int64{conversation.LastParticipantId})
+		return fmt.Sprintf("%s%s?patient_id=%d", SpruceButtonBaseActionUrl, viewPatientConversations, people[conversation.LastParticipantId].Patient.PatientId.Int64()), nil
 	}
-	return "", nil
-}
 
-func (d *DoctorQueueItem) GetButton() *Button {
-	switch d.EventType {
-	case EVENT_TYPE_PATIENT_VISIT:
-		switch d.Status {
-		case QUEUE_ITEM_STATUS_PENDING:
-			if d.PositionInQueue != 0 {
-				return nil
-			}
-			button := &Button{}
-			button.ButtonText = "Begin"
-			button.ButtonActionUrl = fmt.Sprintf("%s%s?patient_visit_id=%d", SpruceButtonBaseActionUrl, beginPatientVisitReviewAction, d.ItemId)
-			return button
-		case QUEUE_ITEM_STATUS_ONGOING:
-			button := &Button{}
-			button.ButtonText = "Continue"
-			button.ButtonActionUrl = fmt.Sprintf("%s%s?patient_visit_id=%d", SpruceButtonBaseActionUrl, beginPatientVisitReviewAction, d.ItemId)
-			return button
-		}
-	case EVENT_TYPE_REFILL_REQUEST, EVENT_TYPE_REFILL_TRANSMISSION_ERROR:
-		switch d.Status {
-		case QUEUE_ITEM_STATUS_PENDING:
-			if d.PositionInQueue != 0 {
-				return nil
-			}
-			button := &Button{}
-			if d.EventType == EVENT_TYPE_REFILL_TRANSMISSION_ERROR {
-				button.ButtonText = "Resolve Error"
-			} else {
-				button.ButtonText = "Begin"
-			}
-			button.ButtonActionUrl = fmt.Sprintf("%s%s?refill_request_id=%d", SpruceButtonBaseActionUrl, viewRefillRequestAction, d.ItemId)
-			return button
-		case QUEUE_ITEM_STATUS_ONGOING:
-			if d.PositionInQueue != 0 {
-				return nil
-			}
-			button := &Button{}
-			if d.EventType == EVENT_TYPE_REFILL_TRANSMISSION_ERROR {
-				button.ButtonText = "Resolve Error"
-			} else {
-				button.ButtonText = "Continue"
-			}
-			button.ButtonActionUrl = fmt.Sprintf("%s%s?refill_request_id=%d", SpruceButtonBaseActionUrl, viewRefillRequestAction, d.ItemId)
-			return button
-		}
-	case EVENT_TYPE_TRANSMISSION_ERROR:
-		switch d.Status {
-		case QUEUE_ITEM_STATUS_PENDING:
-			if d.PositionInQueue != 0 {
-				return nil
-			}
-			button := &Button{}
-			button.ButtonText = "Resolve Error"
-			button.ButtonActionUrl = fmt.Sprintf("%s%s?treatment_id=%d", SpruceButtonBaseActionUrl, viewTransmissionErrorAction, d.ItemId)
-			return button
-		case QUEUE_ITEM_STATUS_ONGOING:
-			if d.PositionInQueue != 0 {
-				return nil
-			}
-			button := &Button{}
-			button.ButtonText = "Resolve Error"
-			button.ButtonActionUrl = fmt.Sprintf("%s%s?treatment_id=%d", SpruceButtonBaseActionUrl, viewTransmissionErrorAction, d.ItemId)
-			return button
-		}
-	case EVENT_TYPE_UNLINKED_DNTF_TRANSMISSION_ERROR:
-		switch d.Status {
-		case QUEUE_ITEM_STATUS_PENDING:
-			if d.PositionInQueue != 0 {
-				return nil
-			}
-			button := &Button{}
-			button.ButtonText = "Resolve Error"
-			button.ButtonActionUrl = fmt.Sprintf("%s%s?unlinked_dntf_treatment_id=%d", SpruceButtonBaseActionUrl, viewTransmissionErrorAction, d.ItemId)
-			return button
-		case QUEUE_ITEM_STATUS_ONGOING:
-			if d.PositionInQueue != 0 {
-				return nil
-			}
-			button := &Button{}
-			button.ButtonText = "Resolve Error"
-			button.ButtonActionUrl = fmt.Sprintf("%s%s?unlinked_dntf_treatment_id=%d", SpruceButtonBaseActionUrl, viewTransmissionErrorAction, d.ItemId)
-			return button
-		}
-	}
-	return nil
+	return "", nil
 }

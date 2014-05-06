@@ -56,10 +56,6 @@ func TestDoctorQueueWithPatientVisits(t *testing.T) {
 		t.Fatal("Expected there to be items under the first section of the first tab")
 	}
 
-	if doctorDisplayFeedTabs.Tabs[0].Sections[0].Items[0].Button == nil || doctorDisplayFeedTabs.Tabs[0].Sections[0].Items[0].Button.ButtonText != "Begin" {
-		t.Fatal("Expected the first item in the first section of the first tab to be actionable")
-	}
-
 	// now go ahead and start reviewing the visit and the item should change to continue visiting
 	startReviewingPatientVisit(patientVisitResponse.PatientVisitId, doctor, testData, t)
 	pickATreatmentPlanForPatientVisit(patientVisitResponse.PatientVisitId, doctor, nil, testData, t)
@@ -75,10 +71,6 @@ func TestDoctorQueueWithPatientVisits(t *testing.T) {
 	// there should be an item in the first tab
 	if doctorDisplayFeedTabs.Tabs[0].Sections[0].Items == nil || len(doctorDisplayFeedTabs.Tabs[0].Sections[0].Items) == 0 {
 		t.Fatal("Expected there to be items under the first section of the first tab")
-	}
-
-	if doctorDisplayFeedTabs.Tabs[0].Sections[0].Items[0].Button == nil || doctorDisplayFeedTabs.Tabs[0].Sections[0].Items[0].Button.ButtonText != "Continue" {
-		t.Fatal("Expected the first item in the first section of the first tab to be actionable")
 	}
 
 	// and another item and it should be in the second section and not the first
@@ -98,10 +90,6 @@ func TestDoctorQueueWithPatientVisits(t *testing.T) {
 
 	if len(doctorDisplayFeedTabs.Tabs[0].Sections) != 2 {
 		t.Fatal("There should be 2 sections in this tab")
-	}
-
-	if doctorDisplayFeedTabs.Tabs[0].Sections[0].Items[0].Button == nil || doctorDisplayFeedTabs.Tabs[0].Sections[0].Items[0].Button.ButtonText != "Continue" {
-		t.Fatal("Expected the first item to be continuing a visit")
 	}
 
 	if doctorDisplayFeedTabs.Tabs[0].Sections[1].Items == nil || len(doctorDisplayFeedTabs.Tabs[0].Sections[1].Items) != 1 {
@@ -127,10 +115,6 @@ func TestDoctorQueueWithPatientVisits(t *testing.T) {
 		t.Fatal("There should be 2 sections in this tab")
 	}
 
-	if doctorDisplayFeedTabs.Tabs[0].Sections[0].Items[0].Button == nil || doctorDisplayFeedTabs.Tabs[0].Sections[0].Items[0].Button.ButtonText != "Continue" {
-		t.Fatal("Expected the first item to be continuing a visit")
-	}
-
 	if doctorDisplayFeedTabs.Tabs[0].Sections[1].Items == nil || len(doctorDisplayFeedTabs.Tabs[0].Sections[1].Items) != 6 {
 		t.Fatal("There should be 6 items in the second section of the first tab")
 	}
@@ -146,10 +130,6 @@ func TestDoctorQueueWithPatientVisits(t *testing.T) {
 
 	if len(doctorDisplayFeedTabs.Tabs[0].Sections) != 2 {
 		t.Fatal("There should be 2 sections in this tab")
-	}
-
-	if doctorDisplayFeedTabs.Tabs[0].Sections[0].Items[0].Button == nil || doctorDisplayFeedTabs.Tabs[0].Sections[0].Items[0].Button.ButtonText != "Begin" {
-		t.Fatal("Expected the first item to be continuing a visit")
 	}
 
 	if doctorDisplayFeedTabs.Tabs[0].Sections[1].Items == nil || len(doctorDisplayFeedTabs.Tabs[0].Sections[1].Items) != 5 {
@@ -229,23 +209,18 @@ func TestDoctorFeed(t *testing.T) {
 				t.Fatal("Expect there to be 3 sections, one for upcoming visit and another for the rest of the visits")
 			}
 
-			// ensure that the first item has the button text set to Continue to indicate an ongoing itgem
-			if tab.Sections[0].Items[0].Button.ButtonText != "Continue" {
-				t.Fatal("Expected the first item in the list to be the ongoing item. ")
-			}
-
 			// ensure that all items in the pending section have the display type set as needed
 			if tab.Sections[0].Items[0].DisplayTypes == nil || len(tab.Sections[0].Items[0].DisplayTypes) == 0 {
 				t.Fatal("Expected there to exist a list of display types for the item but there arent any")
-			} else if tab.Sections[0].Items[0].DisplayTypes[0] != api.DISPLAY_TYPE_TITLE_SUBTITLE_BUTTON {
-				t.Fatalf("Expected the display type to be %s for this item in the queue but instead it was %s.", api.DISPLAY_TYPE_TITLE_SUBTITLE_BUTTON, tab.Sections[0].Items[0].DisplayTypes[0])
+			} else if tab.Sections[0].Items[0].DisplayTypes[0] != api.DISPLAY_TYPE_TITLE_SUBTITLE_ACTIONABLE {
+				t.Fatalf("Expected the display type to be %s for this item in the queue but instead it was %s.", api.DISPLAY_TYPE_TITLE_SUBTITLE_ACTIONABLE, tab.Sections[0].Items[0].DisplayTypes[0])
 			}
 
 			for _, item := range tab.Sections[1].Items {
 				if item.DisplayTypes == nil || len(item.DisplayTypes) == 0 {
 					t.Fatal("Expected there to exist a list of display types for the item but there arent any")
 				} else if item.DisplayTypes[0] != api.DISPLAY_TYPE_TITLE_SUBTITLE_ACTIONABLE {
-					t.Fatalf("Expected the display type to be %s for this item in the queue but instead it was %s.", api.DISPLAY_TYPE_TITLE_SUBTITLE_BUTTON, item.DisplayTypes[0])
+					t.Fatalf("Expected the display type to be %s for this item in the queue but instead it was %s.", api.DISPLAY_TYPE_TITLE_SUBTITLE_ACTIONABLE, item.DisplayTypes[0])
 				}
 			}
 

@@ -11,13 +11,12 @@ type DisplayFeedSection struct {
 }
 
 type DisplayFeedItem struct {
-	Title        string      `json:"title"`
-	Subtitle     string      `json:"subtitle,omitempty"`
-	Timestamp    *time.Time  `json:"timestamp,omitempty"`
-	Button       *api.Button `json:"button,omitempty"`
-	ImageUrl     string      `json:"image_url,omitempty"`
-	ItemUrl      string      `json:"action_url,omitempty"`
-	DisplayTypes []string    `json:"display_types,omitempty"`
+	Title        string     `json:"title"`
+	Subtitle     string     `json:"subtitle,omitempty"`
+	Timestamp    *time.Time `json:"timestamp,omitempty"`
+	ImageUrl     string     `json:"image_url,omitempty"`
+	ItemUrl      string     `json:"action_url,omitempty"`
+	DisplayTypes []string   `json:"display_types,omitempty"`
 }
 
 type DisplayFeed struct {
@@ -36,7 +35,6 @@ func converQueueItemToDisplayFeedItem(dataApi api.DataAPI, itemToDisplay api.Fee
 	}
 
 	item := &DisplayFeedItem{
-		Button:       itemToDisplay.GetButton(),
 		Title:        title,
 		Subtitle:     subtitle,
 		ImageUrl:     itemToDisplay.GetImageUrl(),
