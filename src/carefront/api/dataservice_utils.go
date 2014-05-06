@@ -2,7 +2,10 @@ package api
 
 import (
 	"carefront/common"
+	"carefront/encoding"
 	"database/sql"
+	"errors"
+	"fmt"
 	"strconv"
 	"strings"
 )
@@ -17,6 +20,8 @@ const (
 	STATUS_INACTIVE                    = "INACTIVE"
 	STATUS_PENDING                     = "PENDING"
 	STATUS_ONGOING                     = "ONGOING"
+	STATUS_UNCOMMITTED                 = "UNCOMMITTED"
+	STATUS_COMMITTED                   = "COMMITTED"
 	ERX_STATUS_SENDING                 = "Sending"
 	ERX_STATUS_SENT                    = "eRxSent"
 	ERX_STATUS_ERROR                   = "Error"
@@ -47,8 +52,6 @@ const (
 	pharmacyDispensedTreatmentTable    = "pharmacy_dispensed_treatment"
 	requestedTreatmentTable            = "requested_treatment"
 	unlinkedDntfTreatmentTable         = "unlinked_dntf_treatment"
-	asDoctorTemplate                   = true
-	asPatientTreatment                 = false
 	addressUsa                         = "USA"
 	PENDING_TASK_PATIENT_CARD          = "PATIENT_CARD"
 )
@@ -128,4 +131,145 @@ func appendInt64sToInterfaceSlice(interfaceSlice []interface{}, int64Slice []int
 		interfaceSlice = append(interfaceSlice, int64Item)
 	}
 	return interfaceSlice
+}
+
+type treatmentType int64
+
+const (
+	treatmentForPatientType treatmentType = iota
+	pharmacyDispensedTreatmentType
+	refillRequestTreatmentType
+	unlinkedDNTFTreatmentType
+	doctorFavoriteTreatmentType
+)
+
+var possibleTreatmentTables = map[treatmentType]string{
+	treatmentForPatientType:        "treatment",
+	pharmacyDispensedTreatmentType: "pharmacy_dispensed_treatment",
+	refillRequestTreatmentType:     "requested_treatment",
+	unlinkedDNTFTreatmentType:      "unlinked_dntf_treatment",
+	doctorFavoriteTreatmentType:    "dr_favorite_treatment",
+}
+
+func (d *DataService) addTreatment(tType treatmentType, treatment *common.Treatment, params map[string]interface{}, tx *sql.Tx) error {
+	medicationType := treatmentRX
+	if treatment.OTC {
+		medicationType = treatmentOTC
+	}
+
+	// collecting data for fields that are common to all types of treatment
+	columnsAndData := map[string]interface{}{
+		"drug_internal_name":    treatment.DrugInternalName,
+		"dosage_strength":       treatment.DosageStrength,
+		"type":                  medicationType,
+		"dispense_value":        treatment.DispenseValue.Float64(),
+		"refills":               treatment.NumberRefills.Int64Value,
+		"substitutions_allowed": treatment.SubstitutionsAllowed,
+		"patient_instructions":  treatment.PatientInstructions,
+		"pharmacy_notes":        treatment.PharmacyNotes,
+		"status":                treatment.Status,
+	}
+
+	if treatment.DaysSupply.IsValid {
+		columnsAndData["days_supply"] = treatment.DaysSupply.Int64Value
+	}
+
+	if err := d.includeDrugNameComponentIfNonZero(treatment.DrugName, drugNameTable, "drug_name_id", columnsAndData, tx); err != nil {
+		tx.Rollback()
+		return err
+	}
+
+	if err := d.includeDrugNameComponentIfNonZero(treatment.DrugForm, drugFormTable, "drug_form_id", columnsAndData, tx); err != nil {
+		tx.Rollback()
+		return err
+	}
+
+	if err := d.includeDrugNameComponentIfNonZero(treatment.DrugRoute, drugRouteTable, "drug_route_id", columnsAndData, tx); err != nil {
+		tx.Rollback()
+		return err
+	}
+
+	// add any treatment type specific information to the table
+	switch tType {
+	case treatmentForPatientType:
+		columnsAndData["status"] = STATUS_CREATED
+		columnsAndData["dispense_unit_id"] = treatment.DispenseUnitId.Int64()
+		if treatment.TreatmentPlanId.Int64() != 0 {
+			columnsAndData["treatment_plan_id"] = treatment.TreatmentPlanId.Int64()
+		}
+	case doctorFavoriteTreatmentType:
+		columnsAndData["status"] = STATUS_ACTIVE
+		columnsAndData["dispense_unit_id"] = treatment.DispenseUnitId.Int64()
+		drFavoriteTreatmentId, ok := params["dr_favorite_treatment_plan_id"]
+		if !ok {
+			return errors.New("Expected dr_favorite_treatment_planid to be present in the params but it wasnt")
+		}
+		columnsAndData["dr_favorite_treatment_plan_id"] = drFavoriteTreatmentId
+	case pharmacyDispensedTreatmentType:
+		columnsAndData["doctor_id"] = treatment.Doctor.DoctorId.Int64()
+		columnsAndData["erx_id"] = treatment.ERx.PrescriptionId.Int64()
+		columnsAndData["erx_sent_date"] = treatment.ERx.ErxSentDate
+		columnsAndData["erx_last_filled_date"] = treatment.ERx.ErxLastDateFilled
+		columnsAndData["pharmacy_id"] = treatment.ERx.PharmacyLocalId.Int64()
+		columnsAndData["dispense_unit"] = treatment.DispenseUnitDescription
+		requestedTreatment, ok := params["requested_treatment"].(*common.Treatment)
+		if !ok {
+			return errors.New("Expected requested_treatment to be present in the params for adding a pharmacy_dispensed_treatment")
+		}
+		columnsAndData["requested_treatment_id"] = requestedTreatment.Id.Int64()
+
+	case refillRequestTreatmentType:
+		columnsAndData["doctor_id"] = treatment.Doctor.DoctorId.Int64()
+		columnsAndData["erx_id"] = treatment.ERx.PrescriptionId.Int64()
+		columnsAndData["erx_sent_date"] = treatment.ERx.ErxSentDate
+		columnsAndData["erx_last_filled_date"] = treatment.ERx.ErxLastDateFilled
+		columnsAndData["pharmacy_id"] = treatment.ERx.PharmacyLocalId.Int64()
+		columnsAndData["dispense_unit"] = treatment.DispenseUnitDescription
+		if treatment.OriginatingTreatmentId != 0 {
+			columnsAndData["originating_treatment_id"] = treatment.OriginatingTreatmentId
+		}
+
+	case unlinkedDNTFTreatmentType:
+		columnsAndData["doctor_id"] = treatment.DoctorId.Int64()
+		columnsAndData["patient_id"] = treatment.PatientId.Int64()
+		columnsAndData["dispense_unit_id"] = treatment.DispenseUnitId.Int64()
+
+	default:
+		return errors.New("Unexpected type of treatment trying to be added to a table")
+	}
+
+	columns, values := getKeysAndValuesFromMap(columnsAndData)
+	res, err := tx.Exec(fmt.Sprintf(`insert into %s (%s) values (%s)`, possibleTreatmentTables[tType], strings.Join(columns, ","), nReplacements(len(values))), values...)
+	if err != nil {
+		return err
+	}
+
+	treatmentId, err := res.LastInsertId()
+	if err != nil {
+		return err
+	}
+
+	// update the treatment object with the information
+	treatment.Id = encoding.NewObjectId(treatmentId)
+
+	// add drug db ids to the table
+	for drugDbTag, drugDbId := range treatment.DrugDBIds {
+		_, err := tx.Exec(fmt.Sprintf(`insert into %s_drug_db_id (drug_db_id_tag, drug_db_id, %s_id) values (?, ?, ?)`, possibleTreatmentTables[tType], possibleTreatmentTables[tType]), drugDbTag, drugDbId, treatmentId)
+		if err != nil {
+			return err
+		}
+	}
+
+	return nil
+}
+
+func (d *DataService) includeDrugNameComponentIfNonZero(drugNameComponent, tableName, columnName string, columnsAndData map[string]interface{}, tx *sql.Tx) error {
+	if drugNameComponent != "" {
+		componentId, err := d.getOrInsertNameInTable(tx, tableName, drugNameComponent)
+		if err != nil {
+			return err
+		}
+		columnsAndData[columnName] = componentId
+	}
+	return nil
 }

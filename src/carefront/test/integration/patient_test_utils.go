@@ -17,7 +17,7 @@ import (
 	thriftapi "carefront/thrift/api"
 )
 
-func SignupRandomTestPatient(t *testing.T, dataApi api.DataAPI, authApi thriftapi.Auth) *apiservice.PatientSignedupResponse {
+func signupRandomTestPatient(t *testing.T, dataApi api.DataAPI, authApi thriftapi.Auth) *apiservice.PatientSignedupResponse {
 	authHandler := &apiservice.SignupPatientHandler{AuthApi: authApi, DataApi: dataApi}
 	ts := httptest.NewServer(authHandler)
 	defer ts.Close()
@@ -44,7 +44,7 @@ func SignupRandomTestPatient(t *testing.T, dataApi api.DataAPI, authApi thriftap
 	return signedupPatientResponse
 }
 
-func GetPatientVisitForPatient(patientId int64, testData TestData, t *testing.T) *apiservice.PatientVisitResponse {
+func getPatientVisitForPatient(patientId int64, testData TestData, t *testing.T) *apiservice.PatientVisitResponse {
 	patientVisitHandler := apiservice.NewPatientVisitHandler(testData.DataApi, testData.AuthApi,
 		testData.CloudStorageService, testData.CloudStorageService)
 	patient, err := testData.DataApi.GetPatientFromId(patientId)
@@ -77,7 +77,7 @@ func GetPatientVisitForPatient(patientId int64, testData TestData, t *testing.T)
 	return patientVisitResponse
 }
 
-func CreatePatientVisitForPatient(patientId int64, testData TestData, t *testing.T) *apiservice.PatientVisitResponse {
+func createPatientVisitForPatient(patientId int64, testData TestData, t *testing.T) *apiservice.PatientVisitResponse {
 	patientVisitHandler := apiservice.NewPatientVisitHandler(testData.DataApi, testData.AuthApi,
 		testData.CloudStorageService, testData.CloudStorageService)
 	patient, err := testData.DataApi.GetPatientFromId(patientId)
@@ -187,10 +187,10 @@ func submitAnswersIntakeForPatient(patientId, patientAccountId int64, answerInta
 	}
 }
 
-func SubmitPatientVisitForPatient(PatientId, PatientVisitId int64, testData TestData, t *testing.T) {
+func submitPatientVisitForPatient(patientId, patientVisitId int64, testData TestData, t *testing.T) {
 	patientVisitHandler := apiservice.NewPatientVisitHandler(testData.DataApi, testData.AuthApi,
 		testData.CloudStorageService, testData.CloudStorageService)
-	patient, err := testData.DataApi.GetPatientFromId(PatientId)
+	patient, err := testData.DataApi.GetPatientFromId(patientId)
 	if err != nil {
 		t.Fatal("Unable to get patient information given the patient id: " + err.Error())
 	}
@@ -198,7 +198,7 @@ func SubmitPatientVisitForPatient(PatientId, PatientVisitId int64, testData Test
 	ts := httptest.NewServer(patientVisitHandler)
 	defer ts.Close()
 	buffer := bytes.NewBufferString("patient_visit_id=")
-	buffer.WriteString(strconv.FormatInt(PatientVisitId, 10))
+	buffer.WriteString(strconv.FormatInt(patientVisitId, 10))
 
 	resp, err := authPut(ts.URL, "application/x-www-form-urlencoded", buffer, patient.AccountId.Int64())
 	if err != nil {
@@ -213,7 +213,7 @@ func SubmitPatientVisitForPatient(PatientId, PatientVisitId int64, testData Test
 	CheckSuccessfulStatusCode(resp, "Unsuccessful call to register new patient visit: "+string(body), t)
 
 	// get the patient visit information to ensure that the case has been submitted
-	patientVisit, err := testData.DataApi.GetPatientVisitFromId(PatientVisitId)
+	patientVisit, err := testData.DataApi.GetPatientVisitFromId(patientVisitId)
 	if patientVisit.Status != "SUBMITTED" {
 		t.Fatalf("Case status should be submitted after the case was submitted to the doctor, but its not. It is %s instead.", patientVisit.Status)
 	}

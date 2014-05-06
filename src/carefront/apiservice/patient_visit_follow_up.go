@@ -73,7 +73,7 @@ func (p *PatientVisitFollowUpHandler) getFollowupForPatientVisit(w http.Response
 		}
 	}
 
-	followup, err := p.DataApi.GetFollowUpTimeForPatientVisit(patientVisitId, treatmentPlanId)
+	followup, err := p.DataApi.GetFollowUpTimeForTreatmentPlan(treatmentPlanId)
 	if err != nil {
 		WriteDeveloperError(w, http.StatusBadRequest, "Unable to get follow up for patient visit: "+err.Error())
 		return

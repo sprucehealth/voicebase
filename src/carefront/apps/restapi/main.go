@@ -29,6 +29,7 @@ import (
 	"carefront/photos"
 	"carefront/services/auth"
 	thriftapi "carefront/thrift/api"
+	"carefront/treatment_plan"
 
 	"github.com/SpruceHealth/go-proxy-protocol/proxyproto"
 	"github.com/samuel/go-metrics/metrics"
@@ -215,6 +216,7 @@ func main() {
 	}
 
 	homelog.InitListeners(dataApi)
+	treatment_plan.InitListeners(dataApi)
 
 	cloudStorageApi := api.NewCloudStorageService(awsAuth)
 	photoAnswerCloudStorageApi := api.NewCloudStorageService(awsAuth)
@@ -341,6 +343,12 @@ func main() {
 		DataApi: dataApi,
 		ErxApi:  doseSpotService,
 	}
+	doctorFavoriteTreatmentPlansHandler := &apiservice.DoctorFavoriteTreatmentPlansHandler{
+		DataApi: dataApi,
+	}
+	doctorTreatmentPlanHandler := &apiservice.DoctorTreatmentPlanHandler{
+		DataApi: dataApi,
+	}
 
 	mux := apiservice.NewAuthServeMux(authApi, metricsRegistry.Scope("restapi"))
 
@@ -394,6 +402,7 @@ func main() {
 	mux.Handle("/v1/doctor/pharmacy", doctorPharmacySearchHandler)
 
 	mux.Handle("/v1/doctor/visit/review", doctorPatientVisitReviewHandler)
+	mux.Handle("/v1/doctor/visit/treatment_plan", doctorTreatmentPlanHandler)
 	mux.Handle("/v1/doctor/visit/diagnosis", diagnosePatientHandler)
 	mux.Handle("/v1/doctor/visit/diagnosis/summary", diagnosisSummaryHandler)
 	mux.Handle("/v1/doctor/visit/treatment/new", newTreatmentHandler)
@@ -407,6 +416,7 @@ func main() {
 	mux.Handle("/v1/doctor/visit/advice", doctorAdviceHandler)
 	mux.Handle("/v1/doctor/visit/followup", doctorFollowupHandler)
 	mux.Handle("/v1/doctor/visit/submit", doctorSubmitPatientVisitHandler)
+	mux.Handle("/v1/doctor/favorite_treatment_plans", doctorFavoriteTreatmentPlansHandler)
 
 	// add the api to create demo visits to every environment except production
 	if conf.Environment != "prod" {

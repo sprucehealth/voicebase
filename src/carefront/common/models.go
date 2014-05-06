@@ -155,6 +155,74 @@ type TreatmentPlan struct {
 	Followup         *FollowUp         `json:"follow_up,omitempty"`
 }
 
+type FavoriteTreatmentPlan struct {
+	Id           encoding.ObjectId `json:"id"`
+	Name         string            `json:"name"`
+	ModifiedDate time.Time         `json:"modified_date,omitempty"`
+	DoctorId     int64             `json:"-"`
+	RegimenPlan  *RegimenPlan      `json:"regimen_plan,omitempty"`
+	Treatments   []*Treatment      `json:"treatments,omitempty"`
+	Advice       *Advice           `json:"advice,omitempty"`
+}
+
+func (f *FavoriteTreatmentPlan) EqualsDoctorTreatmentPlan(treatmentPlan *DoctorTreatmentPlan) bool {
+	if f == nil || treatmentPlan == nil {
+		return false
+	}
+
+	favoriteTreatmentList := &TreatmentList{Treatments: f.Treatments}
+	if !favoriteTreatmentList.Equals(treatmentPlan.TreatmentList) {
+		return false
+	}
+
+	if !f.RegimenPlan.Equals(treatmentPlan.RegimenPlan) {
+		return false
+	}
+
+	if !f.Advice.Equals(treatmentPlan.Advice) {
+		return false
+	}
+
+	return true
+}
+
+type DoctorTreatmentPlan struct {
+	Id                              encoding.ObjectId `json:"id,omitempty"`
+	PatientVisitId                  encoding.ObjectId `json:"patient_visit_id,omitempty"`
+	DoctorFavoriteTreatmentPlanId   encoding.ObjectId `json:"dr_favorite_treatment_plan_id"`
+	DoctorFavoriteTreatmentPlanName string            `json:"dr_favorite_treatment_plan_name,omitempty"`
+	TreatmentList                   *TreatmentList    `json:"treatment_list"`
+	RegimenPlan                     *RegimenPlan      `json:"regimen_plan,omitempty"`
+	Advice                          *Advice           `json:"advice,omitempty"`
+}
+
+type TreatmentList struct {
+	Treatments []*Treatment `json:"treatments,omitempty"`
+	Status     string       `json:"status,omitempty"`
+}
+
+func (t *TreatmentList) Equals(other *TreatmentList) bool {
+	if t == nil || other == nil {
+		return false
+	}
+
+	if len(t.Treatments) == 0 || len(other.Treatments) == 0 {
+		return false
+	}
+
+	if len(t.Treatments) != len(other.Treatments) {
+		return false
+	}
+
+	for i, treatment := range t.Treatments {
+		if !treatment.Equals(other.Treatments[i]) {
+			return false
+		}
+	}
+
+	return true
+}
+
 type RefillRequestItem struct {
 	Id                        int64             `json:"id,string"`
 	RxRequestQueueItemId      int64             `json:"-"`
@@ -191,10 +259,19 @@ const (
 
 type DoctorInstructionItem struct {
 	Id       encoding.ObjectId `json:"id,omitempty"`
+	ParentId encoding.ObjectId `json:"parent_id,omitempty"`
 	Text     string            `json:"text"`
 	Selected bool              `json:"selected,omitempty"`
 	State    string            `json:"state,omitempty"`
 	Status   string            `json:"-"`
+}
+
+func (d *DoctorInstructionItem) Equals(other *DoctorInstructionItem) bool {
+	if d == nil || other == nil {
+		return false
+	}
+
+	return d.Text == other.Text && d.ParentId.Int64() == other.ParentId.Int64()
 }
 
 type RegimenSection struct {
@@ -208,6 +285,41 @@ type RegimenPlan struct {
 	RegimenSections []*RegimenSection        `json:"regimen_sections"`
 	AllRegimenSteps []*DoctorInstructionItem `json:"all_regimen_steps,omitempty"`
 	Title           string                   `json:"title,omitempty"`
+	Status          string                   `json:"status,omitempty"`
+}
+
+func (r *RegimenPlan) Equals(other *RegimenPlan) bool {
+	if r == nil || other == nil {
+		return false
+	}
+
+	if r.RegimenSections == nil || other.RegimenSections == nil {
+		return false
+	}
+
+	if len(r.RegimenSections) != len(other.RegimenSections) {
+		return false
+	}
+
+	// the ordering of the regimen sections and its steps have to be
+	// exactly the same for the regimen plan to be considered equal
+	for i, regimenSection := range r.RegimenSections {
+		if regimenSection.RegimenName != other.RegimenSections[i].RegimenName {
+			return false
+		}
+
+		if len(regimenSection.RegimenSteps) != len(other.RegimenSections[i].RegimenSteps) {
+			return false
+		}
+
+		for j, regimenStep := range regimenSection.RegimenSteps {
+			if !regimenStep.Equals(other.RegimenSections[i].RegimenSteps[j]) {
+				return false
+			}
+		}
+	}
+
+	return true
 }
 
 type FollowUp struct {
@@ -216,6 +328,7 @@ type FollowUp struct {
 	FollowUpUnit    string            `json:"follow_up_unit,omitempty"`
 	FollowUpTime    time.Time         `json:"follow_up_time,omitempty"`
 	Title           string            `json:"title,omitempty"`
+	Status          string            `json:"omitempty"`
 }
 
 type Advice struct {
@@ -224,12 +337,36 @@ type Advice struct {
 	PatientVisitId       encoding.ObjectId        `json:"patient_visit_id,omitempty"`
 	TreatmentPlanId      encoding.ObjectId        `json:"treatment_plan_id,omitempty"`
 	Title                string                   `json:"title,omitempty"`
+	Status               string                   `json:"status,omitempty"`
+}
+
+func (a *Advice) Equals(other *Advice) bool {
+	if a == nil || other == nil {
+		return false
+	}
+
+	if a.SelectedAdvicePoints == nil || other.SelectedAdvicePoints == nil {
+		return false
+	}
+
+	if len(a.SelectedAdvicePoints) != len(other.SelectedAdvicePoints) {
+		return false
+	}
+
+	for i, advicePoint := range a.SelectedAdvicePoints {
+		if !advicePoint.Equals(other.SelectedAdvicePoints[i]) {
+			return false
+		}
+	}
+
+	return true
 }
 
 type DiagnosisSummary struct {
-	Type    string `json:"type"`
-	Summary string `json:"text"`
-	Title   string `json:"title,omitempty"`
+	Type            string `json:"type"`
+	Summary         string `json:"text"`
+	Title           string `json:"title,omitempty"`
+	UpdatedByDoctor bool   `json:"-"`
 }
 
 type QuestionInfo struct {

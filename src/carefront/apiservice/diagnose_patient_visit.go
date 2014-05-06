@@ -4,6 +4,7 @@ import (
 	"carefront/api"
 	"carefront/common"
 	"carefront/info_intake"
+	"carefront/libs/golog"
 	thriftapi "carefront/thrift/api"
 	"encoding/json"
 	"fmt"
@@ -182,9 +183,16 @@ func (d *DiagnosePatientHandler) diagnosePatient(w http.ResponseWriter, r *http.
 		return
 	}
 
-	if err = d.addDiagnosisSummaryForPatientVisit(patientVisitReviewData.DoctorId, treatmentPlanId); err != nil {
-		WriteDeveloperError(w, http.StatusInternalServerError, "Something went wrong when trying to add and store the summary to the diagnosis of the patient visit: "+err.Error())
-		return
+	diagnosisSummary, err := d.DataApi.GetDiagnosisSummaryForTreatmentPlan(treatmentPlanId)
+	if err != nil && err != api.NoRowsError {
+		golog.Errorf("Error trying to retreive diagnosis summary for patient visit: %s", err)
+	}
+
+	if diagnosisSummary == nil || !diagnosisSummary.UpdatedByDoctor { // use what the doctor entered if the summary has been updated by the doctor
+		if err = d.addDiagnosisSummaryForPatientVisit(patientVisitReviewData.DoctorId, treatmentPlanId); err != nil {
+			WriteDeveloperError(w, http.StatusInternalServerError, "Something went wrong when trying to add and store the summary to the diagnosis of the patient visit: "+err.Error())
+			return
+		}
 	}
 
 	WriteJSONToHTTPResponseWriter(w, http.StatusOK, AnswerIntakeResponse{Result: "success"})
@@ -249,7 +257,7 @@ func (d *DiagnosePatientHandler) addDiagnosisSummaryForPatientVisit(doctorId, tr
 	}
 
 	diagnosisSummary := fmt.Sprintf(summaryTemplate, strings.Title(patient.FirstName), strings.ToLower(diagnosisMessage), strings.Title(doctorFullName))
-	return d.DataApi.AddDiagnosisSummaryForPatientVisit(diagnosisSummary, treatmentPlanId, doctorId)
+	return d.DataApi.AddDiagnosisSummaryForTreatmentPlan(diagnosisSummary, treatmentPlanId, doctorId)
 }
 
 func joinAcneTypesIntoString(acneTypeAnswers []*common.AnswerIntake) string {

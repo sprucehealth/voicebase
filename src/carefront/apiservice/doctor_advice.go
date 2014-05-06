@@ -4,7 +4,9 @@ import (
 	"carefront/api"
 	"carefront/common"
 	"carefront/encoding"
+	"carefront/libs/dispatch"
 	"encoding/json"
+	"errors"
 	"net/http"
 
 	"github.com/gorilla/schema"
@@ -73,7 +75,7 @@ func (d *DoctorAdviceHandler) getAdvicePoints(w http.ResponseWriter, r *http.Req
 		}
 	}
 
-	selectedAdvicePoints, err := d.DataApi.GetAdvicePointsForPatientVisit(patientVisitId, treatmentPlanId)
+	selectedAdvicePoints, err := d.DataApi.GetAdvicePointsForTreatmentPlan(treatmentPlanId)
 	if err != nil {
 		WriteDeveloperError(w, http.StatusInternalServerError, "Unable to get the selected advice points for this patient visit: "+err.Error())
 		return
@@ -114,22 +116,10 @@ func (d *DoctorAdviceHandler) updateAdvicePoints(w http.ResponseWriter, r *http.
 		return
 	}
 
-	// first, ensure that all selected advice points are actually in the global list on the client side
+	// ensure that all selected advice points are actually in the global list on the client side
 	for _, selectedAdvicePoint := range requestData.SelectedAdvicePoints {
-		advicePointFound := false
-		for _, advicePoint := range requestData.AllAdvicePoints {
-			if advicePoint.Id.Int64() == 0 {
-				if advicePoint.Text == selectedAdvicePoint.Text {
-					advicePointFound = true
-					break
-				}
-			} else if advicePoint.Id.Int64() == selectedAdvicePoint.Id.Int64() {
-				advicePointFound = true
-				break
-			}
-		}
-		if !advicePointFound {
-			WriteDeveloperError(w, http.StatusBadRequest, "There is an advice point in the selected list that is not in the global list")
+		if httpStatusCode, err := d.ensureAdvicePointExistsInMasterList(selectedAdvicePoint, &requestData, patientVisitReviewData.DoctorId); err != nil {
+			WriteDeveloperError(w, httpStatusCode, err.Error())
 			return
 		}
 	}
@@ -164,39 +154,47 @@ func (d *DoctorAdviceHandler) updateAdvicePoints(w http.ResponseWriter, r *http.
 
 	// Go through advice points to add, update and delete advice points before creating the advice points for this patient visit
 	// for the user
-	newOrUpdatedPointToIdMapping := make(map[string]int64)
+	// its possible for multiple items with the exact same text to be added, which is why we maintain a mapping of
+	// text to a slice of int64s
+	newPointToIdMapping := make(map[string][]int64)
+	updatedPointToIdMapping := make(map[int64]int64)
 	updatedAdvicePoints := make([]*common.DoctorInstructionItem, 0)
 	for _, advicePoint := range requestData.AllAdvicePoints {
 		switch advicePoint.State {
-		case common.STATE_ADDED, common.STATE_MODIFIED:
-			err = d.DataApi.AddOrUpdateAdvicePointForDoctor(advicePoint, patientVisitReviewData.DoctorId)
+		case common.STATE_ADDED:
+			err = d.DataApi.AddAdvicePointForDoctor(advicePoint, patientVisitReviewData.DoctorId)
 			if err != nil {
 				WriteDeveloperError(w, http.StatusInternalServerError, "Unable to add or update advice point for doctor. Application may be left in inconsistent state. Error = "+err.Error())
 				return
 			}
-			newOrUpdatedPointToIdMapping[advicePoint.Text] = advicePoint.Id.Int64()
+			newPointToIdMapping[advicePoint.Text] = append(newPointToIdMapping[advicePoint.Text], advicePoint.Id.Int64())
 			updatedAdvicePoints = append(updatedAdvicePoints, advicePoint)
-		case common.STATE_DELETED:
-			err = d.DataApi.MarkAdvicePointToBeDeleted(advicePoint, patientVisitReviewData.DoctorId)
+		case common.STATE_MODIFIED:
+			previousAdvicePointId := advicePoint.Id.Int64()
+			err = d.DataApi.UpdateAdvicePointForDoctor(advicePoint, patientVisitReviewData.DoctorId)
 			if err != nil {
-				WriteDeveloperError(w, http.StatusInternalServerError, "Unable to delete advice point for doctor: "+err.Error())
+				WriteDeveloperError(w, http.StatusInternalServerError, "Unable to add or update advice point for doctor. Application may be left in inconsistent state. Error = "+err.Error())
 				return
 			}
+			updatedPointToIdMapping[previousAdvicePointId] = advicePoint.Id.Int64()
+			updatedAdvicePoints = append(updatedAdvicePoints, advicePoint)
 		default:
 			updatedAdvicePoints = append(updatedAdvicePoints, advicePoint)
 		}
-		// empty out the state now that it has been taken care of
-		advicePoint.State = ""
 	}
 
 	// go through advice points to assign ids to the new points that dont have them
 	for _, advicePoint := range requestData.SelectedAdvicePoints {
-		updatedOrNewId := newOrUpdatedPointToIdMapping[advicePoint.Text]
-		if updatedOrNewId != 0 {
-			advicePoint.Id = encoding.NewObjectId(updatedOrNewId)
+		if newIds, ok := newPointToIdMapping[advicePoint.Text]; ok {
+			advicePoint.ParentId = encoding.NewObjectId(newIds[0])
+			// remove the id that was just used so as to assign a different id to the same text
+			// that could appear again
+			newPointToIdMapping[advicePoint.Text] = newIds[1:]
 		}
-		// empty out the state information given that it is taken care of
-		advicePoint.State = ""
+		if updatedId, ok := updatedPointToIdMapping[advicePoint.ParentId.Int64()]; ok {
+			// update the parentId to point to the new updated item
+			advicePoint.ParentId = encoding.NewObjectId(updatedId)
+		}
 	}
 
 	err = d.DataApi.CreateAdviceForPatientVisit(requestData.SelectedAdvicePoints, treatmentPlanId)
@@ -205,6 +203,69 @@ func (d *DoctorAdviceHandler) updateAdvicePoints(w http.ResponseWriter, r *http.
 		return
 	}
 
-	requestData.AllAdvicePoints = updatedAdvicePoints
-	WriteJSONToHTTPResponseWriter(w, http.StatusOK, requestData)
+	// fetch all advice points in the treatment plan and the global advice poitns to
+	// return an updated view of the world to the client
+	advicePoints, err := d.DataApi.GetAdvicePointsForTreatmentPlan(treatmentPlanId)
+	if err != nil {
+		WriteDeveloperError(w, http.StatusInternalServerError, "Unable to get the advice points that were just created "+err.Error())
+		return
+	}
+
+	allAdvicePoints, err := d.DataApi.GetAdvicePointsForDoctor(patientVisitReviewData.DoctorId)
+	if err != nil {
+		WriteDeveloperError(w, http.StatusInternalServerError, "Unable to get all advice points for doctor: "+err.Error())
+		return
+	}
+
+	advice := &common.Advice{
+		PatientVisitId:       requestData.PatientVisitId,
+		AllAdvicePoints:      allAdvicePoints,
+		SelectedAdvicePoints: advicePoints,
+	}
+
+	dispatch.Default.PublishAsync(&AdviceAddedEvent{
+		PatientVisitId: patientVisitReviewData.PatientVisit.PatientVisitId.Int64(),
+		Advice:         &requestData,
+		DoctorId:       patientVisitReviewData.DoctorId,
+	})
+
+	WriteJSONToHTTPResponseWriter(w, http.StatusOK, advice)
+}
+
+func (d *DoctorAdviceHandler) ensureAdvicePointExistsInMasterList(selectedAdvicePoint *common.DoctorInstructionItem, advice *common.Advice, doctorId int64) (int, error) {
+	advicePointFound := false
+	for _, advicePoint := range advice.AllAdvicePoints {
+		if advicePoint.Id.Int64() == 0 && selectedAdvicePoint.ParentId.Int64() == 0 {
+			// compare text if this is a new item
+			if advicePoint.Text == selectedAdvicePoint.Text {
+				advicePointFound = true
+				break
+			}
+		} else if advicePoint.Id.Int64() == selectedAdvicePoint.ParentId.Int64() {
+			// ensure that text matches up
+			if advicePoint.Text != selectedAdvicePoint.Text {
+				return http.StatusBadRequest, errors.New("Text of an item in the selected list that is linked to an item in the global list has to match up")
+			}
+			advicePointFound = true
+			break
+		} else if selectedAdvicePoint.ParentId.Int64() != 0 {
+			parentAdvicePoint, err := d.DataApi.GetAdvicePointForDoctor(selectedAdvicePoint.ParentId.Int64(), doctorId)
+			if err == api.NoRowsError {
+				return http.StatusBadRequest, errors.New("No parent advice point found for advice point in the selected list")
+			} else if err != nil {
+				return http.StatusInternalServerError, errors.New("Unable to fetch the parent advice point for an advice point in the selected list: " + err.Error())
+			}
+
+			if parentAdvicePoint.Text != selectedAdvicePoint.Text && selectedAdvicePoint.State != common.STATE_MODIFIED {
+				return http.StatusBadRequest, errors.New("Cannot modify the text for a selected item linked to a parent advice point without indicating the intent to modify with STATE=MODIFIED")
+			}
+			advicePointFound = true
+			break
+		}
+	}
+
+	if !advicePointFound {
+		return http.StatusBadRequest, errors.New("There is an advice point in the selected list that is not in the global list")
+	}
+	return 0, nil
 }

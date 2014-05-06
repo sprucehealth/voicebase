@@ -4,12 +4,14 @@ import (
 	"bytes"
 	"carefront/api"
 	"carefront/apiservice"
+	"carefront/common"
 	"carefront/common/config"
 	"carefront/homelog"
 	"carefront/libs/aws"
 	"carefront/libs/dispatch"
 	"carefront/services/auth"
 	thriftapi "carefront/thrift/api"
+	"carefront/treatment_plan"
 	"database/sql"
 	"errors"
 	"fmt"
@@ -141,15 +143,13 @@ func ConnectToDB(t *testing.T, dbConfig *TestDBConfig) *sql.DB {
 	return db
 }
 
-func CheckIfRunningLocally(t *testing.T) error {
+func CheckIfRunningLocally(t *testing.T) {
 	// if the TEST_DB is not set in the environment, we assume
 	// that we are running these tests locally, in which case
 	// we exit the tests with a warning
 	if os.Getenv(carefrontProjectDirEnv) == "" {
-		t.Log("WARNING: The test database is not set. Skipping test ")
-		return CannotRunTestLocally
+		t.Skip("WARNING: The test database is not set. Skipping test ")
 	}
-	return nil
 }
 
 func getDoctorIdOfCurrentPrimaryDoctor(testData TestData, t *testing.T) int64 {
@@ -165,7 +165,26 @@ func getDoctorIdOfCurrentPrimaryDoctor(testData TestData, t *testing.T) int64 {
 	return doctorId
 }
 
-func SetupIntegrationTest(t *testing.T) TestData {
+func signupAndSubmitPatientVisitForRandomPatient(t *testing.T, testData TestData, doctor *common.Doctor) (*apiservice.PatientVisitResponse, *common.DoctorTreatmentPlan) {
+	patientSignedupResponse := signupRandomTestPatient(t, testData.DataApi, testData.AuthApi)
+	patientVisitResponse := createPatientVisitForPatient(patientSignedupResponse.Patient.PatientId.Int64(), testData, t)
+
+	patient, err := testData.DataApi.GetPatientFromId(patientSignedupResponse.Patient.PatientId.Int64())
+	if err != nil {
+		t.Fatal("Unable to get patient from id: " + err.Error())
+	}
+	answerIntakeRequestBody := prepareAnswersForQuestionsInPatientVisit(patientVisitResponse, t)
+	submitAnswersIntakeForPatient(patient.PatientId.Int64(), patient.AccountId.Int64(), answerIntakeRequestBody, testData, t)
+	submitPatientVisitForPatient(patientSignedupResponse.Patient.PatientId.Int64(), patientVisitResponse.PatientVisitId, testData, t)
+	// get the patient to start reviewing the case
+	startReviewingPatientVisit(patientVisitResponse.PatientVisitId, doctor, testData, t)
+	doctorPickTreatmentPlanResponse := pickATreatmentPlanForPatientVisit(patientVisitResponse.PatientVisitId, doctor, nil, testData, t)
+	return patientVisitResponse, doctorPickTreatmentPlanResponse.TreatmentPlan
+}
+
+func setupIntegrationTest(t *testing.T) TestData {
+	CheckIfRunningLocally(t)
+
 	dbConfig := GetDBConfig(t)
 	if s := os.Getenv("RDS_INSTANCE"); s != "" {
 		dbConfig.Host = s
@@ -219,7 +238,7 @@ func SetupIntegrationTest(t *testing.T) TestData {
 
 	// When setting up the database for each integration test, ensure to setup a doctor that is
 	// considered elligible to serve in the state of CA.
-	signedupDoctorResponse, _, _ := SignupRandomTestDoctor(t, testData.DataApi, testData.AuthApi)
+	signedupDoctorResponse, _, _ := signupRandomTestDoctor(t, testData.DataApi, testData.AuthApi)
 
 	// create the role of a primary doctor
 	_, err = testData.DB.Exec(`insert into provider_role (provider_tag) values ('DOCTOR')`)
@@ -236,11 +255,12 @@ func SetupIntegrationTest(t *testing.T) TestData {
 
 	dispatch.Default = dispatch.New()
 	homelog.InitListeners(testData.DataApi)
+	treatment_plan.InitListeners(testData.DataApi)
 
 	return testData
 }
 
-func TearDownIntegrationTest(t *testing.T, testData TestData) {
+func tearDownIntegrationTest(t *testing.T, testData TestData) {
 	testData.DB.Close()
 
 	t.Logf("Time to run test: %.3f seconds", float64(time.Since(testData.StartTime))/float64(time.Second))

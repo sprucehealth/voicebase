@@ -229,3 +229,253 @@ func TestTreatmentEquals(t *testing.T) {
 	}
 
 }
+
+func TestTreatmentEquals_NoErxData(t *testing.T) {
+	treatment1 := &Treatment{
+		Id: encoding.NewObjectId(5),
+		DrugDBIds: map[string]string{
+			"lexi_gen_product_id":  "12345",
+			"lexi_drug_syn_id":     "56789",
+			"lexi_synonym_type_id": "123415",
+		},
+		DrugInternalName: "Testing",
+		DrugName:         "Testing",
+		DosageStrength:   "50mg",
+		DispenseValue:    12,
+		DispenseUnitId:   encoding.NewObjectId(12),
+		NumberRefills: encoding.NullInt64{
+			IsValid:    true,
+			Int64Value: 1,
+		}, SubstitutionsAllowed: false,
+		DaysSupply: encoding.NullInt64{
+			IsValid:    true,
+			Int64Value: 5,
+		},
+	}
+
+	treatment2 := &Treatment{
+		Id: encoding.NewObjectId(5),
+		DrugDBIds: map[string]string{
+			"lexi_gen_product_id":  "12345",
+			"lexi_drug_syn_id":     "56789",
+			"lexi_synonym_type_id": "123415",
+		},
+		DrugInternalName: "Testing",
+		DrugName:         "Testing",
+		DosageStrength:   "50mg",
+		DispenseValue:    12,
+		DispenseUnitId:   encoding.NewObjectId(12),
+		NumberRefills: encoding.NullInt64{
+			IsValid:    true,
+			Int64Value: 1,
+		}, SubstitutionsAllowed: false,
+		DaysSupply: encoding.NullInt64{
+			IsValid:    true,
+			Int64Value: 5,
+		},
+	}
+
+	// treatment1 and treatment 2 should be equal
+	if !treatment1.Equals(treatment2) {
+		t.Fatal("treatment 1 and 2 expected to be equal")
+	}
+}
+
+func TestTreatmentListEquals(t *testing.T) {
+	treatmentList1 := &TreatmentList{
+		Treatments: []*Treatment{
+			&Treatment{
+				Id: encoding.NewObjectId(5),
+				DrugDBIds: map[string]string{
+					"lexi_gen_product_id":  "12345",
+					"lexi_drug_syn_id":     "56789",
+					"lexi_synonym_type_id": "123415",
+				},
+				DrugInternalName: "Testing",
+				DrugName:         "Testing",
+				DosageStrength:   "50mg",
+				DispenseValue:    12,
+				DispenseUnitId:   encoding.NewObjectId(12),
+				NumberRefills: encoding.NullInt64{
+					IsValid:    true,
+					Int64Value: 1,
+				}, SubstitutionsAllowed: false,
+				DaysSupply: encoding.NullInt64{
+					IsValid:    true,
+					Int64Value: 5,
+				},
+			},
+			&Treatment{
+				Id: encoding.NewObjectId(5),
+				DrugDBIds: map[string]string{
+					"lexi_gen_product_id":  "12345",
+					"lexi_drug_syn_id":     "56789",
+					"lexi_synonym_type_id": "123415",
+				},
+				DrugInternalName: "DifferentName",
+				DrugName:         "Testing",
+				DosageStrength:   "50mgs",
+				DispenseValue:    12,
+				DispenseUnitId:   encoding.NewObjectId(12),
+				NumberRefills: encoding.NullInt64{
+					IsValid:    true,
+					Int64Value: 1,
+				}, SubstitutionsAllowed: false,
+				DaysSupply: encoding.NullInt64{
+					IsValid:    true,
+					Int64Value: 5,
+				}, ERx: &ERxData{
+					PrescriptionId:     encoding.NewObjectId(20),
+					ErxMedicationId:    encoding.NewObjectId(25),
+					PrescriptionStatus: "eRxSent",
+				},
+			},
+		},
+	}
+
+	treatmentList2 := &TreatmentList{
+		Treatments: []*Treatment{
+			&Treatment{
+				Id: encoding.NewObjectId(5),
+				DrugDBIds: map[string]string{
+					"lexi_gen_product_id":  "12345",
+					"lexi_drug_syn_id":     "56789",
+					"lexi_synonym_type_id": "123415",
+				},
+				DrugInternalName: "Testing",
+				DrugName:         "Testing",
+				DosageStrength:   "50mg",
+				DispenseValue:    12,
+				DispenseUnitId:   encoding.NewObjectId(12),
+				NumberRefills: encoding.NullInt64{
+					IsValid:    true,
+					Int64Value: 1,
+				}, SubstitutionsAllowed: false,
+				DaysSupply: encoding.NullInt64{
+					IsValid:    true,
+					Int64Value: 5,
+				},
+			},
+			&Treatment{
+				Id: encoding.NewObjectId(5),
+				DrugDBIds: map[string]string{
+					"lexi_gen_product_id":  "12345",
+					"lexi_drug_syn_id":     "56789",
+					"lexi_synonym_type_id": "123415",
+				},
+				DrugInternalName: "DifferentName",
+				DrugName:         "Testing",
+				DosageStrength:   "50mgs",
+				DispenseValue:    12,
+				DispenseUnitId:   encoding.NewObjectId(12),
+				NumberRefills: encoding.NullInt64{
+					IsValid:    true,
+					Int64Value: 1,
+				}, SubstitutionsAllowed: false,
+				DaysSupply: encoding.NullInt64{
+					IsValid:    true,
+					Int64Value: 5,
+				}, ERx: &ERxData{
+					PrescriptionId:     encoding.NewObjectId(20),
+					ErxMedicationId:    encoding.NewObjectId(25),
+					PrescriptionStatus: "eRxSent",
+				},
+			},
+		},
+	}
+
+	if !treatmentList1.Equals(treatmentList2) {
+		t.Fatalf("TreatmentLists expected to be equal")
+	}
+}
+
+func TestTreatmentListEquals_DifferentLength(t *testing.T) {
+	treatmentList1 := &TreatmentList{
+		Treatments: []*Treatment{
+			&Treatment{
+				Id: encoding.NewObjectId(5),
+				DrugDBIds: map[string]string{
+					"lexi_gen_product_id":  "12345",
+					"lexi_drug_syn_id":     "56789",
+					"lexi_synonym_type_id": "123415",
+				},
+				DrugInternalName: "Testing",
+				DrugName:         "Testing",
+				DosageStrength:   "50mg",
+				DispenseValue:    12,
+				DispenseUnitId:   encoding.NewObjectId(12),
+				NumberRefills: encoding.NullInt64{
+					IsValid:    true,
+					Int64Value: 1,
+				}, SubstitutionsAllowed: false,
+				DaysSupply: encoding.NullInt64{
+					IsValid:    true,
+					Int64Value: 5,
+				},
+			},
+		},
+	}
+
+	treatmentList2 := &TreatmentList{
+		Treatments: []*Treatment{
+			&Treatment{
+				Id: encoding.NewObjectId(5),
+				DrugDBIds: map[string]string{
+					"lexi_gen_product_id":  "12345",
+					"lexi_drug_syn_id":     "56789",
+					"lexi_synonym_type_id": "123415",
+				},
+				DrugInternalName: "Testing",
+				DrugName:         "Testing",
+				DosageStrength:   "50mg",
+				DispenseValue:    12,
+				DispenseUnitId:   encoding.NewObjectId(12),
+				NumberRefills: encoding.NullInt64{
+					IsValid:    true,
+					Int64Value: 1,
+				}, SubstitutionsAllowed: false,
+				DaysSupply: encoding.NullInt64{
+					IsValid:    true,
+					Int64Value: 5,
+				},
+			},
+			&Treatment{
+				Id: encoding.NewObjectId(5),
+				DrugDBIds: map[string]string{
+					"lexi_gen_product_id":  "12345",
+					"lexi_drug_syn_id":     "56789",
+					"lexi_synonym_type_id": "123415",
+				},
+				DrugInternalName: "DifferentName",
+				DrugName:         "Testing",
+				DosageStrength:   "50mgs",
+				DispenseValue:    12,
+				DispenseUnitId:   encoding.NewObjectId(12),
+				NumberRefills: encoding.NullInt64{
+					IsValid:    true,
+					Int64Value: 1,
+				}, SubstitutionsAllowed: false,
+				DaysSupply: encoding.NullInt64{
+					IsValid:    true,
+					Int64Value: 5,
+				}, ERx: &ERxData{
+					PrescriptionId:     encoding.NewObjectId(20),
+					ErxMedicationId:    encoding.NewObjectId(25),
+					PrescriptionStatus: "eRxSent",
+				},
+			},
+		},
+	}
+
+	if treatmentList1.Equals(treatmentList2) {
+		t.Fatalf("TreatmentLists expected to be unequal")
+	}
+}
+
+func TestTreatmentListEquals_EmptyLists(t *testing.T) {
+	treatmentList1 := &TreatmentList{}
+	treatmentList2 := &TreatmentList{}
+	if treatmentList2.Equals(treatmentList1) {
+		t.Fatalf("TreatmentLists expected to be unequal")
+	}
+}

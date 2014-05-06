@@ -5,6 +5,7 @@ import (
 	"encoding/json"
 	"fmt"
 	"io/ioutil"
+	"net/http"
 	"net/http/httptest"
 	"net/url"
 	"os"
@@ -20,7 +21,7 @@ import (
 	thriftapi "carefront/thrift/api"
 )
 
-func SignupRandomTestDoctor(t *testing.T, dataApi api.DataAPI, authApi thriftapi.Auth) (signedupDoctorResponse *apiservice.DoctorSignedupResponse, email, password string) {
+func signupRandomTestDoctor(t *testing.T, dataApi api.DataAPI, authApi thriftapi.Auth) (signedupDoctorResponse *apiservice.DoctorSignedupResponse, email, password string) {
 	authHandler := &apiservice.SignupDoctorHandler{AuthApi: authApi, DataApi: dataApi}
 	ts := httptest.NewServer(authHandler)
 	defer ts.Close()
@@ -132,12 +133,12 @@ func submitPatientVisitDiagnosis(PatientVisitId int64, doctor *common.Doctor, te
 	return
 }
 
-func StartReviewingPatientVisit(PatientVisitId int64, doctor *common.Doctor, testData TestData, t *testing.T) *apiservice.DoctorPatientVisitReviewResponse {
+func startReviewingPatientVisit(patientVisitId int64, doctor *common.Doctor, testData TestData, t *testing.T) *apiservice.DoctorPatientVisitReviewResponse {
 	doctorPatientVisitReviewHandler := &apiservice.DoctorPatientVisitReviewHandler{DataApi: testData.DataApi, LayoutStorageService: testData.CloudStorageService, PatientPhotoStorageService: testData.CloudStorageService}
 	ts := httptest.NewServer(doctorPatientVisitReviewHandler)
 	defer ts.Close()
 
-	resp, err := authGet(ts.URL+"?patient_visit_id="+strconv.FormatInt(PatientVisitId, 10), doctor.AccountId.Int64())
+	resp, err := authGet(ts.URL+"?patient_visit_id="+strconv.FormatInt(patientVisitId, 10), doctor.AccountId.Int64())
 	if err != nil {
 		t.Fatal("Unable to make call to get patient visit review for patient: " + err.Error())
 	}
@@ -152,12 +153,43 @@ func StartReviewingPatientVisit(PatientVisitId int64, doctor *common.Doctor, tes
 	return doctorPatientVisitReviewResponse
 }
 
-func SubmitPatientVisitBackToPatient(PatientVisitId int64, doctor *common.Doctor, testData TestData, t *testing.T) {
+func pickATreatmentPlanForPatientVisit(patientVisitId int64, doctor *common.Doctor, favoriteTreatmentPlan *common.FavoriteTreatmentPlan, testData TestData, t *testing.T) *apiservice.DoctorTreatmentPlanResponse {
+	doctorPickTreatmentPlanHandler := &apiservice.DoctorTreatmentPlanHandler{
+		DataApi: testData.DataApi,
+	}
+
+	ts := httptest.NewServer(doctorPickTreatmentPlanHandler)
+	defer ts.Close()
+
+	params := url.Values{}
+	params.Set("patient_visit_id", strconv.FormatInt(patientVisitId, 10))
+	if favoriteTreatmentPlan != nil {
+		params.Set("dr_favorite_treatment_plan_id", strconv.FormatInt(favoriteTreatmentPlan.Id.Int64(), 10))
+	}
+
+	resp, err := authPut(ts.URL, "application/x-www-form-urlencoded", strings.NewReader(params.Encode()), doctor.AccountId.Int64())
+	if err != nil {
+		t.Fatalf("Unable to pick a treatment plan for the patient visit doctor %s", err)
+	}
+
+	if resp.StatusCode != http.StatusOK {
+		t.Fatalf("Expected successful picking up of treatment plan instead got %d", resp.StatusCode)
+	}
+
+	responseData := &apiservice.DoctorTreatmentPlanResponse{}
+	if err := json.NewDecoder(resp.Body).Decode(responseData); err != nil {
+		t.Fatalf("Unable to unmarshal response into response json: %s", err)
+	}
+
+	return responseData
+}
+
+func submitPatientVisitBackToPatient(patientVisitId int64, doctor *common.Doctor, testData TestData, t *testing.T) {
 	doctorSubmitPatientVisitReviewHandler := &apiservice.DoctorSubmitPatientVisitReviewHandler{DataApi: testData.DataApi}
 	ts := httptest.NewServer(doctorSubmitPatientVisitReviewHandler)
 	defer ts.Close()
 
-	resp, err := authPost(ts.URL, "application/x-www-form-urlencoded", bytes.NewBufferString("patient_visit_id="+strconv.FormatInt(PatientVisitId, 10)), doctor.AccountId.Int64())
+	resp, err := authPost(ts.URL, "application/x-www-form-urlencoded", bytes.NewBufferString("patient_visit_id="+strconv.FormatInt(patientVisitId, 10)), doctor.AccountId.Int64())
 	if err != nil {
 		t.Fatal("Unable to make call to close patient visit " + err.Error())
 	}

@@ -4,7 +4,9 @@ import (
 	"carefront/api"
 	"carefront/common"
 	"carefront/encoding"
+	"carefront/libs/dispatch"
 	"encoding/json"
+	"errors"
 	"net/http"
 
 	"github.com/gorilla/schema"
@@ -80,9 +82,10 @@ func (d *DoctorRegimenHandler) getRegimenSteps(w http.ResponseWriter, r *http.Re
 		}
 	}
 
-	regimenPlan, err := d.DataApi.GetRegimenPlanForPatientVisit(patientVisitId, treatmentPlanId)
-	if err != nil && err != api.NoRegimenPlanForPatientVisit {
+	regimenPlan, err := d.DataApi.GetRegimenPlanForTreatmentPlan(treatmentPlanId)
+	if err != nil {
 		WriteDeveloperError(w, http.StatusInternalServerError, "Unable to lookup regimen plan for patient visit: "+err.Error())
+		return
 	}
 
 	if regimenPlan == nil {
@@ -115,36 +118,24 @@ func (d *DoctorRegimenHandler) updateRegimenSteps(w http.ResponseWriter, r *http
 		return
 	}
 
-	// first, ensure that all regimen steps in the regimen sections actually exist in the client global list
+	// ensure that all regimen steps in the regimen sections actually exist in the client global list
 	for _, regimenSection := range requestData.RegimenSections {
 		for _, regimenStep := range regimenSection.RegimenSteps {
-			regimenStepFound := false
-			for _, globalRegimenStep := range requestData.AllRegimenSteps {
-				if globalRegimenStep.Id.Int64() == 0 {
-					if globalRegimenStep.Text == regimenStep.Text {
-						regimenStepFound = true
-						break
-					}
-				} else if globalRegimenStep.Id.Int64() == regimenStep.Id.Int64() {
-					regimenStepFound = true
-					break
-				}
-			}
-			if !regimenStepFound {
-				WriteDeveloperError(w, http.StatusBadRequest, "Regimen step in the section for the patient visit not found in the global list of all regimen steps")
+			if httpStatusCode, err := d.ensureRegimenStepExistsInMasterList(regimenStep, requestData, patientVisitReviewData.DoctorId); err != nil {
+				WriteDeveloperError(w, httpStatusCode, err.Error())
 				return
 			}
 		}
 	}
 
-	// identify any currently existing regimen steps that need to be deleted
-	regimenStepsToDelete := make([]*common.DoctorInstructionItem, 0)
+	// compare the master list of regimen steps from the client with the active list
+	// that we have stored on the server
 	currentActiveRegimenSteps, err := d.DataApi.GetRegimenStepsForDoctor(patientVisitReviewData.DoctorId)
 	if err != nil {
 		WriteDeveloperError(w, http.StatusInternalServerError, "Unable to get regimen steps for doctor: "+err.Error())
 		return
 	}
-
+	regimenStepsToDelete := make([]*common.DoctorInstructionItem, 0, len(currentActiveRegimenSteps))
 	for _, currentRegimenStep := range currentActiveRegimenSteps {
 		regimenStepFound := false
 		for _, regimenStep := range requestData.AllRegimenSteps {
@@ -157,16 +148,17 @@ func (d *DoctorRegimenHandler) updateRegimenSteps(w http.ResponseWriter, r *http
 			regimenStepsToDelete = append(regimenStepsToDelete, currentRegimenStep)
 		}
 	}
-
 	err = d.DataApi.MarkRegimenStepsToBeDeleted(regimenStepsToDelete, patientVisitReviewData.DoctorId)
 	if err != nil {
 		WriteDeveloperError(w, http.StatusInternalServerError, "Unable to delete regimen steps that are no longer in the client list: "+err.Error())
 		return
 	}
 
-	// Go through regimen steps to add, update and delete regimen steps before creating the regimen plan
+	// Go through regimen steps to add and update regimen steps before creating the regimen plan
 	// for the user
-	newOrUpdatedStepToIdMapping := make(map[string]int64)
+	newStepToIdMapping := make(map[string][]int64)
+	// keep track of the multiple items that could have the exact same text associated with it
+	updatedStepToIdMapping := make(map[int64]int64)
 	updatedAllRegimenSteps := make([]*common.DoctorInstructionItem, 0)
 	for _, regimenStep := range requestData.AllRegimenSteps {
 		switch regimenStep.State {
@@ -176,9 +168,10 @@ func (d *DoctorRegimenHandler) updateRegimenSteps(w http.ResponseWriter, r *http
 				WriteDeveloperError(w, http.StatusInternalServerError, "Unable to add reigmen step to doctor. Application may be left in inconsistent state. Error = "+err.Error())
 				return
 			}
-			newOrUpdatedStepToIdMapping[regimenStep.Text] = regimenStep.Id.Int64()
+			newStepToIdMapping[regimenStep.Text] = append(newStepToIdMapping[regimenStep.Text], regimenStep.Id.Int64())
 			updatedAllRegimenSteps = append(updatedAllRegimenSteps, regimenStep)
 		case common.STATE_MODIFIED:
+			previousRegimenStepId := regimenStep.Id.Int64()
 			err = d.DataApi.UpdateRegimenStepForDoctor(regimenStep, patientVisitReviewData.DoctorId)
 			if err != nil {
 				WriteDeveloperError(w, http.StatusInternalServerError, "Unable to update regimen step for doctor: "+err.Error())
@@ -186,30 +179,27 @@ func (d *DoctorRegimenHandler) updateRegimenSteps(w http.ResponseWriter, r *http
 			}
 			// keep track of the new id for updated regimen steps so that we can update the regimen step in the
 			// regimen section
-			newOrUpdatedStepToIdMapping[regimenStep.Text] = regimenStep.Id.Int64()
+			updatedStepToIdMapping[previousRegimenStepId] = regimenStep.Id.Int64()
 			updatedAllRegimenSteps = append(updatedAllRegimenSteps, regimenStep)
-		case common.STATE_DELETED:
-			err = d.DataApi.MarkRegimenStepToBeDeleted(regimenStep, patientVisitReviewData.DoctorId)
-			if err != nil {
-				WriteDeveloperError(w, http.StatusInternalServerError, "Unable to delete regimen step for doctor: "+err.Error())
-				return
-			}
 		default:
 			updatedAllRegimenSteps = append(updatedAllRegimenSteps, regimenStep)
 		}
-		// empty out the state now that it has been taken care of
-		regimenStep.State = ""
 	}
 
 	// go through regimen steps within the regimen sections to assign ids to the new steps that dont have them
 	for _, regimenSection := range requestData.RegimenSections {
 		for _, regimenStep := range regimenSection.RegimenSteps {
-			updatedOrNewId := newOrUpdatedStepToIdMapping[regimenStep.Text]
-			if updatedOrNewId != 0 {
-				regimenStep.Id = encoding.NewObjectId(updatedOrNewId)
+
+			if newIds, ok := newStepToIdMapping[regimenStep.Text]; ok {
+				regimenStep.ParentId = encoding.NewObjectId(newIds[0])
+				// update the list to remove the item just used
+				newStepToIdMapping[regimenStep.Text] = newIds[1:]
 			}
-			// empty out the state now that it has been taken care of
-			regimenStep.State = ""
+
+			if updatedId, ok := updatedStepToIdMapping[regimenStep.ParentId.Int64()]; ok {
+				// update the parentId to point to the new updated regimen step
+				regimenStep.ParentId = encoding.NewObjectId(updatedId)
+			}
 		}
 	}
 
@@ -221,14 +211,82 @@ func (d *DoctorRegimenHandler) updateRegimenSteps(w http.ResponseWriter, r *http
 			return
 		}
 	}
-	requestData.TreatmentPlanId = encoding.NewObjectId(treatmentPlanId)
 
+	requestData.TreatmentPlanId = encoding.NewObjectId(treatmentPlanId)
 	err = d.DataApi.CreateRegimenPlanForPatientVisit(requestData)
 	if err != nil {
 		WriteDeveloperError(w, http.StatusInternalServerError, "Unable to create regimen plan for patient visit: "+err.Error())
 		return
 	}
 
-	requestData.AllRegimenSteps = updatedAllRegimenSteps
-	WriteJSONToHTTPResponseWriter(w, http.StatusOK, requestData)
+	// fetch all regimen steps in the treatment plan and the global regimen steps to
+	// return an updated view of the world to the client
+	regimenPlan, err := d.DataApi.GetRegimenPlanForTreatmentPlan(treatmentPlanId)
+	if err != nil {
+		WriteDeveloperError(w, http.StatusInternalServerError, "Unable to get the regimen plan for treatment plan: "+err.Error())
+		return
+	}
+
+	allRegimenSteps, err := d.DataApi.GetRegimenStepsForDoctor(patientVisitReviewData.DoctorId)
+	if err != nil {
+		WriteDeveloperError(w, http.StatusInternalServerError, "Unable to get the list of regimen steps for doctor: "+err.Error())
+		return
+	}
+
+	regimenPlan = &common.RegimenPlan{
+		RegimenSections: regimenPlan.RegimenSections,
+		AllRegimenSteps: allRegimenSteps,
+		TreatmentPlanId: encoding.NewObjectId(treatmentPlanId),
+		PatientVisitId:  requestData.PatientVisitId,
+	}
+
+	dispatch.Default.PublishAsync(&RegimenPlanAddedEvent{
+		PatientVisitId: patientVisitReviewData.PatientVisit.PatientVisitId.Int64(),
+		RegimenPlan:    requestData,
+		DoctorId:       patientVisitReviewData.DoctorId,
+	})
+
+	WriteJSONToHTTPResponseWriter(w, http.StatusOK, regimenPlan)
+}
+
+func (d *DoctorRegimenHandler) ensureRegimenStepExistsInMasterList(regimenStep *common.DoctorInstructionItem, regimenPlan *common.RegimenPlan, doctorId int64) (int, error) {
+	regimenStepFound := false
+
+	for _, globalRegimenStep := range regimenPlan.AllRegimenSteps {
+		// if we are working with new items in the list do a text comparison to check for the existence of the step
+		if globalRegimenStep.Id.Int64() == 0 && regimenStep.ParentId.Int64() == 0 {
+			if globalRegimenStep.Text == regimenStep.Text {
+				regimenStepFound = true
+				break
+			}
+		} else if globalRegimenStep.Id.Int64() == regimenStep.ParentId.Int64() {
+			if globalRegimenStep.Text != regimenStep.Text {
+				// check the text to ensure that its the same
+				return http.StatusBadRequest, errors.New("The text of an item in the regimen section cannot be different from that in the global list if they are considered linked.")
+			}
+			regimenStepFound = true
+			break
+		} else if regimenStep.ParentId.Int64() != 0 {
+			// its possible that the step is not present in the active global list but exists as a
+			// step from the past
+			parentRegimenStep, err := d.DataApi.GetRegimenStepForDoctor(regimenStep.ParentId.Int64(), doctorId)
+			if err == api.NoRowsError {
+				return http.StatusBadRequest, errors.New("Cannot have a step in a regimen section that does not link to a regimen step the doctor created at some point.")
+			} else if err != nil {
+				return http.StatusInternalServerError, errors.New("Unable to get a regimen step for a doctor: " + err.Error())
+			}
+			// if the parent regimen step does exist, ensure that the text matches up
+			if parentRegimenStep.Text != regimenStep.Text && regimenStep.State != common.STATE_MODIFIED {
+				return http.StatusBadRequest, errors.New("Cannot modify the text of a regimen step that is linked to a parent regimen step without indicating intent via STATE=MODIFIED")
+			}
+			regimenStepFound = true
+			break
+		}
+	}
+
+	if !regimenStepFound {
+		return http.StatusBadRequest, errors.New("Regimen step in the section for the patient visit not found in the global list of all regimen steps")
+	}
+
+	return 0, nil
 }

@@ -13,20 +13,19 @@ type DiagnosisSummaryHandler struct {
 }
 
 type DiagnosisSummaryRequestData struct {
-	PatientVisitId  int64 `schema:"patient_visit_id"`
-	TreatmentPlanId int64 `schema:"treatment_plan_id"`
+	PatientVisitId  int64  `schema:"patient_visit_id"`
+	TreatmentPlanId int64  `schema:"treatment_plan_id"`
+	Summary         string `schema:"summary"`
 }
 
 func (d *DiagnosisSummaryHandler) ServeHTTP(w http.ResponseWriter, r *http.Request) {
+
 	switch r.Method {
-	case HTTP_GET:
-		d.getDiagnosisSummaryForPatientVisit(w, r)
+	case HTTP_GET, HTTP_PUT:
 	default:
 		w.WriteHeader(http.StatusNotFound)
 	}
-}
 
-func (d *DiagnosisSummaryHandler) getDiagnosisSummaryForPatientVisit(w http.ResponseWriter, r *http.Request) {
 	if err := r.ParseForm(); err != nil {
 		WriteDeveloperError(w, http.StatusBadRequest, "Unable to parse request data: "+err.Error())
 		return
@@ -52,18 +51,34 @@ func (d *DiagnosisSummaryHandler) getDiagnosisSummaryForPatientVisit(w http.Resp
 	}
 
 	if treatmentPlanId == 0 {
-		treatmentPlanId, err = d.DataApi.GetActiveTreatmentPlanForPatientVisit(patientVisitReviewData.DoctorId, requestData.PatientVisitId)
+		treatmentPlanId, err = d.DataApi.GetActiveTreatmentPlanForPatientVisit(patientVisitReviewData.DoctorId, patientVisitId)
 		if err != nil {
-			WriteDeveloperError(w, http.StatusBadRequest, "Unable to get treatment plan for patient visit: "+err.Error())
+			WriteDeveloperError(w, http.StatusInternalServerError, "Unable to get active treatment plan id based on patient visit id : "+err.Error())
 			return
 		}
 	}
 
-	summary, err := d.DataApi.GetDiagnosisSummaryForPatientVisit(patientVisitId, treatmentPlanId)
-	if err != nil {
-		WriteDeveloperError(w, http.StatusInternalServerError, "Unable to get diagnosis summary for patient visit: "+err.Error())
-		return
-	}
+	if r.Method == HTTP_GET {
+		diagnosisSummary, err := d.DataApi.GetDiagnosisSummaryForTreatmentPlan(treatmentPlanId)
+		if err != nil && err != api.NoRowsError {
+			WriteDeveloperError(w, http.StatusInternalServerError, "Unable to get diagnosis summary for patient visit: "+err.Error())
+			return
+		}
+		var summary string
+		if diagnosisSummary != nil {
+			summary = diagnosisSummary.Summary
+		}
+		WriteJSONToHTTPResponseWriter(w, http.StatusOK, &common.DiagnosisSummary{Type: "text", Summary: summary})
+	} else if r.Method == HTTP_PUT {
+		if requestData.Summary == "" {
+			WriteDeveloperError(w, http.StatusBadRequest, "Summary to patient cannot be empty")
+			return
+		}
 
-	WriteJSONToHTTPResponseWriter(w, http.StatusOK, &common.DiagnosisSummary{Type: "text", Summary: summary})
+		if err := d.DataApi.AddOrUpdateDiagnosisSummaryForTreatmentPlan(requestData.Summary, treatmentPlanId, patientVisitReviewData.DoctorId, true); err != nil {
+			WriteDeveloperError(w, http.StatusInternalServerError, "Unable to update doctor diagnosis summary: "+err.Error())
+			return
+		}
+		WriteJSONToHTTPResponseWriter(w, http.StatusOK, SuccessfulGenericJSONResponse())
+	}
 }

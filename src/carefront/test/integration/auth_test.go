@@ -3,12 +3,9 @@ package integration
 import "testing"
 
 func TestAuth(t *testing.T) {
-	if err := CheckIfRunningLocally(t); err == CannotRunTestLocally {
-		return
-	}
 
-	testData := SetupIntegrationTest(t)
-	defer TearDownIntegrationTest(t, testData)
+	testData := setupIntegrationTest(t)
+	defer tearDownIntegrationTest(t, testData)
 
 	email, pass, pass2 := "someone@somewhere.com", "somepass", "newPass"
 

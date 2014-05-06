@@ -5,6 +5,7 @@ import (
 	"carefront/apiservice"
 	"carefront/common"
 	"carefront/encoding"
+	"database/sql"
 	"encoding/json"
 	"io/ioutil"
 	"net/http"
@@ -14,40 +15,11 @@ import (
 )
 
 func TestRegimenForPatientVisit(t *testing.T) {
-	if err := CheckIfRunningLocally(t); err == CannotRunTestLocally {
-		return
-	}
 
-	testData := SetupIntegrationTest(t)
-	defer TearDownIntegrationTest(t, testData)
+	testData := setupIntegrationTest(t)
+	defer tearDownIntegrationTest(t, testData)
 
-	patientSignedupResponse := SignupRandomTestPatient(t, testData.DataApi, testData.AuthApi)
-
-	// get the current primary doctor
-	doctorId := getDoctorIdOfCurrentPrimaryDoctor(testData, t)
-
-	doctor, err := testData.DataApi.GetDoctorFromId(doctorId)
-	if err != nil {
-		t.Fatal("Unable to get doctor from doctor id " + err.Error())
-	}
-
-	// get patient to start a visit
-	patientVisitResponse := CreatePatientVisitForPatient(patientSignedupResponse.Patient.PatientId.Int64(), testData, t)
-
-	// submit answers to questions in patient visit
-	patient, err := testData.DataApi.GetPatientFromId(patientSignedupResponse.Patient.PatientId.Int64())
-	if err != nil {
-		t.Fatal("Unable to get patient from id: " + err.Error())
-	}
-
-	answerIntakeRequestBody := prepareAnswersForQuestionsInPatientVisit(patientVisitResponse, t)
-	submitAnswersIntakeForPatient(patient.PatientId.Int64(), patient.AccountId.Int64(), answerIntakeRequestBody, testData, t)
-
-	// get the patient to submit the case
-	SubmitPatientVisitForPatient(patientSignedupResponse.Patient.PatientId.Int64(), patientVisitResponse.PatientVisitId, testData, t)
-
-	// get the patient to start reviewing the case
-	StartReviewingPatientVisit(patientVisitResponse.PatientVisitId, doctor, testData, t)
+	patientVisitResponse, doctor := setupTestForRegimenCreation(t, testData)
 
 	// attempt to get the regimen plan or a patient visit
 	regimenPlan := getRegimenPlanForPatientVisit(testData, doctor, patientVisitResponse.PatientVisitId, t)
@@ -86,11 +58,19 @@ func TestRegimenForPatientVisit(t *testing.T) {
 	// now lets add a couple regimen steps to a regimen section
 	regimenSection := &common.RegimenSection{}
 	regimenSection.RegimenName = "morning"
-	regimenSection.RegimenSteps = []*common.DoctorInstructionItem{regimenPlanRequest.AllRegimenSteps[0]}
+	regimenSection.RegimenSteps = []*common.DoctorInstructionItem{&common.DoctorInstructionItem{
+		ParentId: regimenPlanRequest.AllRegimenSteps[0].Id,
+		Text:     regimenPlanRequest.AllRegimenSteps[0].Text,
+	},
+	}
 
 	regimenSection2 := &common.RegimenSection{}
 	regimenSection2.RegimenName = "night"
-	regimenSection2.RegimenSteps = []*common.DoctorInstructionItem{regimenPlanRequest.AllRegimenSteps[1]}
+	regimenSection2.RegimenSteps = []*common.DoctorInstructionItem{&common.DoctorInstructionItem{
+		ParentId: regimenPlanRequest.AllRegimenSteps[1].Id,
+		Text:     regimenPlanRequest.AllRegimenSteps[1].Text,
+	},
+	}
 
 	regimenPlanRequest.RegimenSections = []*common.RegimenSection{regimenSection, regimenSection2}
 	regimenPlanResponse = createRegimenPlanForPatientVisit(regimenPlanRequest, testData, doctor, t)
@@ -122,6 +102,7 @@ func TestRegimenForPatientVisit(t *testing.T) {
 	// lets delete a regimen step
 	regimenPlanRequest = regimenPlanResponse
 	regimenPlanRequest.AllRegimenSteps = []*common.DoctorInstructionItem{regimenPlanRequest.AllRegimenSteps[0]}
+	regimenPlanRequest.RegimenSections = []*common.RegimenSection{}
 	regimenPlanResponse = createRegimenPlanForPatientVisit(regimenPlanRequest, testData, doctor, t)
 	validateRegimenRequestAgainstResponse(regimenPlanRequest, regimenPlanResponse, t)
 	if len(regimenPlanResponse.AllRegimenSteps) != 1 {
@@ -132,6 +113,7 @@ func TestRegimenForPatientVisit(t *testing.T) {
 	// since the regimen step in the section does not exist in the global steps
 	regimenPlanRequest = regimenPlanResponse
 	regimenPlanRequest.AllRegimenSteps = []*common.DoctorInstructionItem{}
+	regimenPlanRequest.RegimenSections = []*common.RegimenSection{regimenSection}
 	doctorRegimenHandler := apiservice.NewDoctorRegimenHandler(testData.DataApi)
 	ts := httptest.NewServer(doctorRegimenHandler)
 	defer ts.Close()
@@ -151,8 +133,8 @@ func TestRegimenForPatientVisit(t *testing.T) {
 	}
 
 	// get patient to start a visit
-	patientSignedupResponse = SignupRandomTestPatient(t, testData.DataApi, testData.AuthApi)
-	patientVisitResponse = CreatePatientVisitForPatient(patientSignedupResponse.Patient.PatientId.Int64(), testData, t)
+	patientSignedupResponse := signupRandomTestPatient(t, testData.DataApi, testData.AuthApi)
+	patientVisitResponse = createPatientVisitForPatient(patientSignedupResponse.Patient.PatientId.Int64(), testData, t)
 
 	regimenPlan = getRegimenPlanForPatientVisit(testData, doctor, patientVisitResponse.PatientVisitId, t)
 	if len(regimenPlan.RegimenSections) > 0 {
@@ -162,6 +144,326 @@ func TestRegimenForPatientVisit(t *testing.T) {
 	if len(regimenPlan.AllRegimenSteps) != 1 {
 		t.Fatal("There should be 1 regimen step existing globally for this doctor")
 	}
+}
+
+func TestRegimenForPatientVisit_AddingMultipleItemsWithSameText(t *testing.T) {
+
+	testData := setupIntegrationTest(t)
+	defer tearDownIntegrationTest(t, testData)
+
+	patientVisitResponse, doctor := setupTestForRegimenCreation(t, testData)
+
+	// add multiple items with the exact same text and ensure that they all get assigned new ids
+	regimenPlanRequest := &common.RegimenPlan{}
+	regimenPlanRequest.PatientVisitId = encoding.NewObjectId(patientVisitResponse.PatientVisitId)
+	regimenPlanRequest.AllRegimenSteps = make([]*common.DoctorInstructionItem, 0)
+
+	for i := 0; i < 5; i++ {
+		regimenPlanRequest.AllRegimenSteps = append(regimenPlanRequest.AllRegimenSteps, &common.DoctorInstructionItem{
+			Text:  "Regimen Step",
+			State: common.STATE_ADDED,
+		})
+
+		regimenPlanRequest.RegimenSections = append(regimenPlanRequest.RegimenSections, &common.RegimenSection{
+			RegimenName: "test " + strconv.Itoa(i),
+			RegimenSteps: []*common.DoctorInstructionItem{&common.DoctorInstructionItem{
+				Text:  "Regimen Step",
+				State: common.STATE_ADDED,
+			},
+			},
+		})
+	}
+
+	regimenPlanResponse := createRegimenPlanForPatientVisit(regimenPlanRequest, testData, doctor, t)
+	validateRegimenRequestAgainstResponse(regimenPlanRequest, regimenPlanResponse, t)
+
+}
+
+// The purpose of this test is to ensure that we do not let the client specify text for
+// items in the regimen sections that does not match up to what is indicated in the global list, if the
+// linkage exists in the global list.
+func TestRegimenForPatientVisit_ErrorTextDifferentForLinkedItem(t *testing.T) {
+
+	testData := setupIntegrationTest(t)
+	defer tearDownIntegrationTest(t, testData)
+
+	patientVisitResponse, doctor := setupTestForRegimenCreation(t, testData)
+
+	// add multiple items with the exact same text and ensure that they all get assigned new ids
+	regimenPlanRequest := &common.RegimenPlan{}
+	regimenPlanRequest.PatientVisitId = encoding.NewObjectId(patientVisitResponse.PatientVisitId)
+	regimenPlanRequest.AllRegimenSteps = make([]*common.DoctorInstructionItem, 0)
+
+	for i := 0; i < 5; i++ {
+		regimenPlanRequest.AllRegimenSteps = append(regimenPlanRequest.AllRegimenSteps, &common.DoctorInstructionItem{
+			Text:  "Regimen Step",
+			State: common.STATE_ADDED,
+		})
+
+		regimenPlanRequest.RegimenSections = append(regimenPlanRequest.RegimenSections, &common.RegimenSection{
+			RegimenName: "test " + strconv.Itoa(i),
+			RegimenSteps: []*common.DoctorInstructionItem{&common.DoctorInstructionItem{
+				Text:  "Regimen Step",
+				State: common.STATE_ADDED,
+			},
+			},
+		})
+	}
+
+	regimenPlanResponse := createRegimenPlanForPatientVisit(regimenPlanRequest, testData, doctor, t)
+	validateRegimenRequestAgainstResponse(regimenPlanRequest, regimenPlanResponse, t)
+
+	regimenPlanRequest = regimenPlanResponse
+
+	// lets go ahead and update each item in the list
+	for i := 0; i < 5; i++ {
+		regimenPlanRequest.AllRegimenSteps[i].Text = "Updated Regimen Step"
+		regimenPlanRequest.AllRegimenSteps[i].State = common.STATE_MODIFIED
+
+		// text cannot be different given that the parent id maps to an item in the global list so this should error out
+		regimenPlanRequest.RegimenSections[i].RegimenSteps[0].Text = "Updated Regimen Step " + strconv.Itoa(i)
+		regimenPlanRequest.RegimenSections[i].RegimenSteps[0].State = common.STATE_MODIFIED
+	}
+
+	doctorRegimenHandler := apiservice.NewDoctorRegimenHandler(testData.DataApi)
+	ts := httptest.NewServer(doctorRegimenHandler)
+	defer ts.Close()
+
+	requestBody, err := json.Marshal(regimenPlanRequest)
+	if err != nil {
+		t.Fatal("Unable to marshal request body for adding regimen steps: " + err.Error())
+	}
+
+	resp, err := authPost(ts.URL, "application/json", bytes.NewBuffer(requestBody), doctor.AccountId.Int64())
+	if err != nil {
+		t.Fatal("Unable to make successful request to create regimen for patient visit")
+	}
+
+	if resp.StatusCode != http.StatusBadRequest {
+		t.Fatal("Expected to get a bad request for when the regimen step's text is different than what its linked to")
+	}
+
+}
+
+func TestRegimenForPatientVisit_UpdatingMultipleItemsWithSameText(t *testing.T) {
+
+	testData := setupIntegrationTest(t)
+	defer tearDownIntegrationTest(t, testData)
+
+	patientVisitResponse, doctor := setupTestForRegimenCreation(t, testData)
+
+	// add multiple items with the exact same text and ensure that they all get assigned new ids
+	regimenPlanRequest := &common.RegimenPlan{}
+	regimenPlanRequest.PatientVisitId = encoding.NewObjectId(patientVisitResponse.PatientVisitId)
+	regimenPlanRequest.AllRegimenSteps = make([]*common.DoctorInstructionItem, 0)
+
+	for i := 0; i < 5; i++ {
+		regimenPlanRequest.AllRegimenSteps = append(regimenPlanRequest.AllRegimenSteps, &common.DoctorInstructionItem{
+			Text:  "Regimen Step",
+			State: common.STATE_ADDED,
+		})
+
+		regimenPlanRequest.RegimenSections = append(regimenPlanRequest.RegimenSections, &common.RegimenSection{
+			RegimenName: "test " + strconv.Itoa(i),
+			RegimenSteps: []*common.DoctorInstructionItem{&common.DoctorInstructionItem{
+				Text:  "Regimen Step",
+				State: common.STATE_ADDED,
+			},
+			},
+		})
+	}
+
+	regimenPlanResponse := createRegimenPlanForPatientVisit(regimenPlanRequest, testData, doctor, t)
+	validateRegimenRequestAgainstResponse(regimenPlanRequest, regimenPlanResponse, t)
+
+	regimenPlanRequest = regimenPlanResponse
+
+	// lets go ahead and update each item in the list
+	for i := 0; i < 5; i++ {
+		regimenPlanRequest.AllRegimenSteps[i].Text = "Updated Regimen Step"
+		regimenPlanRequest.AllRegimenSteps[i].State = common.STATE_MODIFIED
+
+		regimenPlanRequest.RegimenSections[i].RegimenSteps[0].Text = "Updated Regimen Step"
+		regimenPlanRequest.RegimenSections[i].RegimenSteps[0].State = common.STATE_MODIFIED
+	}
+
+	regimenPlanResponse = createRegimenPlanForPatientVisit(regimenPlanRequest, testData, doctor, t)
+	validateRegimenRequestAgainstResponse(regimenPlanRequest, regimenPlanResponse, t)
+}
+
+func TestRegimenForPatientVisit_UpdatingItemLinkedToDeletedItem(t *testing.T) {
+
+	testData := setupIntegrationTest(t)
+	defer tearDownIntegrationTest(t, testData)
+
+	patientVisitResponse, doctor := setupTestForRegimenCreation(t, testData)
+
+	// add multiple items with the exact same text and ensure that they all get assigned new ids
+	regimenPlanRequest := &common.RegimenPlan{}
+	regimenPlanRequest.PatientVisitId = encoding.NewObjectId(patientVisitResponse.PatientVisitId)
+	regimenPlanRequest.AllRegimenSteps = make([]*common.DoctorInstructionItem, 0)
+
+	for i := 0; i < 5; i++ {
+		regimenPlanRequest.AllRegimenSteps = append(regimenPlanRequest.AllRegimenSteps, &common.DoctorInstructionItem{
+			Text:  "Regimen Step",
+			State: common.STATE_ADDED,
+		})
+
+		regimenPlanRequest.RegimenSections = append(regimenPlanRequest.RegimenSections, &common.RegimenSection{
+			RegimenName: "test " + strconv.Itoa(i),
+			RegimenSteps: []*common.DoctorInstructionItem{&common.DoctorInstructionItem{
+				Text:  "Regimen Step",
+				State: common.STATE_ADDED,
+			},
+			},
+		})
+	}
+
+	regimenPlanResponse := createRegimenPlanForPatientVisit(regimenPlanRequest, testData, doctor, t)
+	validateRegimenRequestAgainstResponse(regimenPlanRequest, regimenPlanResponse, t)
+
+	// now lets update the global set of regimen steps in the context of another patient's visit
+	patientVisitResponse2, _ := signupAndSubmitPatientVisitForRandomPatient(t, testData, doctor)
+	regimenPlanResponse = getRegimenPlanForPatientVisit(testData, doctor, patientVisitResponse2.PatientVisitId, t)
+
+	// lets go ahead and delete one of the items from the regimen step
+	regimenPlanRequest = regimenPlanResponse
+	regimenPlanRequest.PatientVisitId = encoding.NewObjectId(patientVisitResponse2.PatientVisitId)
+	regimenPlanRequest.AllRegimenSteps = regimenPlanRequest.AllRegimenSteps[0:4]
+
+	regimenPlanResponse = createRegimenPlanForPatientVisit(regimenPlanRequest, testData, doctor, t)
+	if len(regimenPlanResponse.AllRegimenSteps) != 4 {
+		t.Fatalf("Expected there to exist 4 items in the global regimen steps after deleting one of them instead got %d items ", len(regimenPlanResponse.AllRegimenSteps))
+	}
+
+	// now, lets go back to the previous patient and attempt to get the regimen plan
+	regimenPlanResponse = getRegimenPlanForPatientVisit(testData, doctor, patientVisitResponse.PatientVisitId, t)
+	if len(regimenPlanResponse.AllRegimenSteps) != 4 && len(regimenPlanResponse.RegimenSections) != 5 {
+		t.Fatalf("Expected 4 items in the global regimen steps and 5 items in the regimen sections instead got %d in global regimen list and %d items in the regimen sections", len(regimenPlanRequest.AllRegimenSteps), len(regimenPlanRequest.RegimenSections))
+	}
+
+	// now lets go ahead and try and modify the item in the regimen section
+	regimenPlanRequest = regimenPlanResponse
+	regimenPlanRequest.RegimenSections[4].RegimenSteps[0].State = common.STATE_MODIFIED
+	regimenPlanRequest.PatientVisitId = encoding.NewObjectId(patientVisitResponse.PatientVisitId)
+	updatedText := "Updating text for an item linked to deleted item"
+	regimenPlanRequest.RegimenSections[4].RegimenSteps[0].Text = updatedText
+
+	regimenPlanResponse = createRegimenPlanForPatientVisit(regimenPlanRequest, testData, doctor, t)
+	if len(regimenPlanResponse.AllRegimenSteps) != 4 && len(regimenPlanResponse.RegimenSections) != 5 {
+		t.Fatalf("Expected 4 items in the global regimen steps and 5 items in the regimen sections instead got %d in global regimen list and %d items in the regimen sections", len(regimenPlanRequest.AllRegimenSteps), len(regimenPlanRequest.RegimenSections))
+	}
+
+	if regimenPlanResponse.RegimenSections[4].RegimenSteps[0].Text != updatedText {
+		t.Fatalf("Exepcted text to have updated for item linked to deleted item but it didn't")
+	}
+
+	// now lets go ahead and remove the item from the regimen section
+	regimenPlanRequest = regimenPlanResponse
+	regimenPlanRequest.RegimenSections = regimenPlanRequest.RegimenSections[:4]
+	regimenPlanResponse = createRegimenPlanForPatientVisit(regimenPlanRequest, testData, doctor, t)
+	validateRegimenRequestAgainstResponse(regimenPlanRequest, regimenPlanResponse, t)
+}
+
+// The purpose of this test is to ensure that when regimen steps are updated,
+// we are keeping track of the original step that has been modified via a source_id
+func TestRegimenForPatientVisit_TrackingSourceId(t *testing.T) {
+
+	testData := setupIntegrationTest(t)
+	defer tearDownIntegrationTest(t, testData)
+
+	patientVisitResponse, doctor := setupTestForRegimenCreation(t, testData)
+
+	// adding new regimen steps to the doctor but not to the patient visit
+	regimenPlanRequest := &common.RegimenPlan{}
+	regimenPlanRequest.PatientVisitId = encoding.NewObjectId(patientVisitResponse.PatientVisitId)
+
+	regimenStep1 := &common.DoctorInstructionItem{}
+	regimenStep1.Text = "Regimen Step 1"
+	regimenStep1.State = common.STATE_ADDED
+
+	regimenStep2 := &common.DoctorInstructionItem{}
+	regimenStep2.Text = "Regimen Step 2"
+	regimenStep2.State = common.STATE_ADDED
+
+	regimenPlanRequest.AllRegimenSteps = []*common.DoctorInstructionItem{regimenStep1, regimenStep2}
+	regimenPlanResponse := createRegimenPlanForPatientVisit(regimenPlanRequest, testData, doctor, t)
+	validateRegimenRequestAgainstResponse(regimenPlanRequest, regimenPlanResponse, t)
+
+	if len(regimenPlanResponse.RegimenSections) > 0 {
+		t.Fatal("Regimen section should not exist even though regimen steps were created by doctor")
+	}
+
+	// keep track of the source ids of both steps
+	sourceId1 := regimenPlanResponse.AllRegimenSteps[0].Id.Int64()
+	sourceId2 := regimenPlanResponse.AllRegimenSteps[1].Id.Int64()
+
+	// lets update both steps
+	regimenPlanRequest = regimenPlanResponse
+	regimenPlanRequest.AllRegimenSteps[0].State = common.STATE_MODIFIED
+	regimenPlanRequest.AllRegimenSteps[0].Text = "Updated step 1"
+	regimenPlanRequest.AllRegimenSteps[1].State = common.STATE_MODIFIED
+	regimenPlanRequest.AllRegimenSteps[1].Text = "Updated step 2"
+	regimenPlanResponse = createRegimenPlanForPatientVisit(regimenPlanRequest, testData, doctor, t)
+	validateRegimenRequestAgainstResponse(regimenPlanRequest, regimenPlanResponse, t)
+
+	// the source id of the two returned steps should match the source id of the original steps
+	var updatedItemSourceId1, updatedItemSourceId2 sql.NullInt64
+	if err := testData.DB.QueryRow(`select source_id from dr_regimen_step where id=?`, regimenPlanResponse.AllRegimenSteps[0].Id.Int64()).Scan(&updatedItemSourceId1); err != nil {
+		t.Fatalf("Expected the query to get source_id to succeed instead it failed: %s", err)
+	}
+
+	if updatedItemSourceId1.Int64 != sourceId1 {
+		t.Fatalf("Expected the sourceId retrieved from the updated item (%d) to match the id of the original item (%d)", updatedItemSourceId1.Int64, sourceId1)
+	}
+
+	if err := testData.DB.QueryRow(`select source_id from dr_regimen_step where id=?`, regimenPlanResponse.AllRegimenSteps[1].Id.Int64()).Scan(&updatedItemSourceId2); err != nil {
+		t.Fatalf("Expected the query to get source_id to succeed instead it failed: %s", err)
+	}
+
+	if updatedItemSourceId2.Int64 != sourceId2 {
+		t.Fatalf("Expected the sourceId retrieved from the updated item (%d) to match the id of the original item (%d)", updatedItemSourceId2.Int64, sourceId2)
+	}
+
+	// lets update again and the source id should still match
+	regimenPlanRequest = regimenPlanResponse
+	regimenPlanRequest.AllRegimenSteps[0].State = common.STATE_MODIFIED
+	regimenPlanRequest.AllRegimenSteps[0].Text = "Updated again step 1"
+	regimenPlanRequest.AllRegimenSteps[1].State = common.STATE_MODIFIED
+	regimenPlanRequest.AllRegimenSteps[1].Text = "Updated again step 2"
+	regimenPlanResponse = createRegimenPlanForPatientVisit(regimenPlanRequest, testData, doctor, t)
+	validateRegimenRequestAgainstResponse(regimenPlanRequest, regimenPlanResponse, t)
+
+	// the source id of the two returned steps should match the source id of the original steps
+	if err := testData.DB.QueryRow(`select source_id from dr_regimen_step where id=?`, regimenPlanResponse.AllRegimenSteps[0].Id.Int64()).Scan(&updatedItemSourceId1); err != nil {
+		t.Fatalf("Expected the query to get source_id to succeed instead it failed: %s", err)
+	}
+
+	if updatedItemSourceId1.Int64 != sourceId1 {
+		t.Fatalf("Expected the sourceId retrieved from the updated item (%d) to match the id of the original item (%d)", updatedItemSourceId1.Int64, sourceId1)
+	}
+
+	if err := testData.DB.QueryRow(`select source_id from dr_regimen_step where id=?`, regimenPlanResponse.AllRegimenSteps[1].Id.Int64()).Scan(&updatedItemSourceId2); err != nil {
+		t.Fatalf("Expected the query to get source_id to succeed instead it failed: %s", err)
+	}
+
+	if updatedItemSourceId2.Int64 != sourceId2 {
+		t.Fatalf("Expected the sourceId retrieved from the updated item (%d) to match the id of the original item (%d)", updatedItemSourceId2.Int64, sourceId2)
+	}
+
+}
+
+func setupTestForRegimenCreation(t *testing.T, testData TestData) (*apiservice.PatientVisitResponse, *common.Doctor) {
+
+	// get the current primary doctor
+	doctorId := getDoctorIdOfCurrentPrimaryDoctor(testData, t)
+
+	doctor, err := testData.DataApi.GetDoctorFromId(doctorId)
+	if err != nil {
+		t.Fatal("Unable to get doctor from doctor id " + err.Error())
+	}
+	patientVisitResponse, _ := signupAndSubmitPatientVisitForRandomPatient(t, testData, doctor)
+	return patientVisitResponse, doctor
 }
 
 func getRegimenPlanForPatientVisit(testData TestData, doctor *common.Doctor, patientVisitId int64, t *testing.T) *common.RegimenPlan {
@@ -261,30 +563,53 @@ func validateRegimenRequestAgainstResponse(doctorRegimenRequest, doctorRegimenRe
 			if regimenStep.Id.Int64() == 0 {
 				t.Fatal("Regimen steps in each section are expected to have an id")
 			}
-			if regimenStepsMapping[regimenStep.Id.Int64()] == false {
-				t.Fatalf("There exists a regimen step in a section that is not present in the global list. Id of regimen step %d", regimenStep.Id.Int64())
+			if regimenStepsMapping[regimenStep.ParentId.Int64()] == false {
+				t.Fatalf("There exists a regimen step in a section that is not present in the global list. Id of regimen step %d", regimenStep.Id.Int64Value)
 			}
+			if regimenStep.ParentId.Int64() == 0 {
+				t.Fatal("Regimen steps in each section are expected to link to an item in the global regimen list")
+			}
+		}
+	}
+
+	// no two items should have the same id
+	idsFound := make(map[int64]bool)
+	for _, regimenStep := range doctorRegimenResponse.AllRegimenSteps {
+		if _, ok := idsFound[regimenStep.Id.Int64()]; ok {
+			t.Fatal("No two items can have the same id in the global list")
+		}
+		idsFound[regimenStep.Id.Int64()] = true
+	}
+
+	// no two items should have the same parent id in the regimen section
+	idsFound = make(map[int64]bool)
+	for _, regimenSection := range doctorRegimenResponse.RegimenSections {
+		for _, regimenStep := range regimenSection.RegimenSteps {
+			if _, ok := idsFound[regimenStep.ParentId.Int64()]; ok {
+				t.Fatalf("No two items can have the same parent id")
+			}
+			idsFound[regimenStep.ParentId.Int64()] = true
 		}
 	}
 
 	// deleted regimen steps should not show up in the response
 	deletedRegimenStepIds := make(map[int64]bool)
 	// updated regimen steps should have a different id in the response
-	updatedRegimenSteps := make(map[string]int64)
+	updatedRegimenSteps := make(map[string][]int64)
 
 	for _, regimenStep := range doctorRegimenRequest.AllRegimenSteps {
 		switch regimenStep.State {
 		case common.STATE_MODIFIED:
-			updatedRegimenSteps[regimenStep.Text] = regimenStep.Id.Int64()
-		case common.STATE_DELETED:
-			deletedRegimenStepIds[regimenStep.Id.Int64()] = true
+			updatedRegimenSteps[regimenStep.Text] = append(updatedRegimenSteps[regimenStep.Text], regimenStep.Id.Int64())
 		}
 	}
 
 	for _, regimenStep := range doctorRegimenResponse.AllRegimenSteps {
-		if updatedRegimenSteps[regimenStep.Text] != 0 {
-			if regimenStep.Id.Int64() == updatedRegimenSteps[regimenStep.Text] {
-				t.Fatalf("Expected an updated regimen step to have a different id in the response. Id = %d", regimenStep.Id.Int64())
+		if updatedIds, ok := updatedRegimenSteps[regimenStep.Text]; ok {
+			for _, updatedId := range updatedIds {
+				if regimenStep.Id.Int64() == updatedId {
+					t.Fatalf("Expected an updated regimen step to have a different id in the response. Id = %d", regimenStep.Id.Int64())
+				}
 			}
 		}
 

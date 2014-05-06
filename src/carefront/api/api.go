@@ -43,10 +43,9 @@ const (
 )
 
 var (
-	NoRowsError                  = errors.New("No rows exist")
-	NoElligibileProviderInState  = errors.New("There are no providers elligible in the state the patient resides")
-	NoRegimenPlanForPatientVisit = errors.New("There is no regimen plan for patient visit")
-	NoDiagnosisResponseErr       = errors.New("No diagnosis response exists to the question queried tag queried with")
+	NoRowsError                 = errors.New("No rows exist")
+	NoElligibileProviderInState = errors.New("There are no providers elligible in the state the patient resides")
+	NoDiagnosisResponseErr      = errors.New("No diagnosis response exists to the question queried tag queried with")
 )
 
 type PotentialAnswerInfo struct {
@@ -108,24 +107,26 @@ type PatientVisitAPI interface {
 	GetLatestClosedPatientVisitForPatient(patientId int64) (*common.PatientVisit, error)
 	GetPatientVisitFromId(patientVisitId int64) (patientVisit *common.PatientVisit, err error)
 	CreateNewPatientVisit(patientId, healthConditionId, layoutVersionId int64) (int64, error)
-	StartNewTreatmentPlanForPatientVisit(patientId, patientVisitId, doctorId int64) (int64, error)
+	StartNewTreatmentPlanForPatientVisit(patientId, patientVisitId, doctorId, favoriteTreatmentPlanId int64) (int64, error)
+	GetAbbreviatedTreatmentPlanForPatientVisit(doctorId, patientVisitId int64) (*common.DoctorTreatmentPlan, error)
 	GetActiveTreatmentPlanForPatientVisit(doctorId, patientVisitId int64) (int64, error)
 	UpdatePatientVisitStatus(patientVisitId int64, message, event string) error
 	GetMessageForPatientVisitStatus(patientVisitId int64) (message string, err error)
 	ClosePatientVisit(patientVisitId, treatmentPlanId int64, event, message string) error
 	SubmitPatientVisitWithId(patientVisitId int64) error
 	UpdateFollowUpTimeForPatientVisit(treatmentPlanId, doctorId, currentTimeSinceEpoch, followUpValue int64, followUpUnit string) error
-	GetFollowUpTimeForPatientVisit(patientVisitId, treatmentPlanId int64) (followUp *common.FollowUp, err error)
+	GetFollowUpTimeForTreatmentPlan(treatmentPlanId int64) (followUp *common.FollowUp, err error)
 	GetDiagnosisResponseToQuestionWithTag(questionTag string, doctorId, patientVisitId int64) ([]*common.AnswerIntake, error)
-	AddDiagnosisSummaryForPatientVisit(summary string, treatmentPlanId, doctorId int64) error
-	GetDiagnosisSummaryForPatientVisit(patientVisitId, treatmentPlanId int64) (summary string, err error)
+	AddDiagnosisSummaryForTreatmentPlan(summary string, treatmentPlanId, doctorId int64) error
+	GetDiagnosisSummaryForTreatmentPlan(treatmentPlanId int64) (*common.DiagnosisSummary, error)
+	AddOrUpdateDiagnosisSummaryForTreatmentPlan(summary string, treatmentPlanId, doctorId int64, isUpdatedByDoctor bool) error
 	DeactivatePreviousDiagnosisForPatientVisit(treatmentPlanId int64, doctorId int64) error
 	RecordDoctorAssignmentToPatientVisit(patientVisitId, doctorId int64) error
 	GetDoctorAssignedToPatientVisit(patientVisitId int64) (doctor *common.Doctor, err error)
-	GetAdvicePointsForPatientVisit(patientVisitId, treatmentPlanId int64) (advicePoints []*common.DoctorInstructionItem, err error)
+	GetAdvicePointsForTreatmentPlan(treatmentPlanId int64) (advicePoints []*common.DoctorInstructionItem, err error)
 	CreateAdviceForPatientVisit(advicePoints []*common.DoctorInstructionItem, treatmentPlanId int64) error
 	CreateRegimenPlanForPatientVisit(regimenPlan *common.RegimenPlan) error
-	GetRegimenPlanForPatientVisit(patientVisitId, treatmentPlanId int64) (regimenPlan *common.RegimenPlan, err error)
+	GetRegimenPlanForTreatmentPlan(treatmentPlanId int64) (regimenPlan *common.RegimenPlan, err error)
 	AddTreatmentsForPatientVisit(treatments []*common.Treatment, doctorId, treatmentPlanId, patientId int64) error
 	GetTreatmentsBasedOnTreatmentPlanId(patientVisitId, treatmentPlanId int64) ([]*common.Treatment, error)
 	GetTreatmentBasedOnPrescriptionId(erxId int64) (*common.Treatment, error)
@@ -178,12 +179,15 @@ type DoctorAPI interface {
 	GetDoctorFromDoseSpotClinicianId(clincianId int64) (doctor *common.Doctor, err error)
 	GetDoctorIdFromAccountId(accountId int64) (int64, error)
 	GetRegimenStepsForDoctor(doctorId int64) (regimenSteps []*common.DoctorInstructionItem, err error)
+	GetRegimenStepForDoctor(regimenStepId, doctorId int64) (*common.DoctorInstructionItem, error)
 	AddRegimenStepForDoctor(regimenStep *common.DoctorInstructionItem, doctorId int64) error
 	UpdateRegimenStepForDoctor(regimenStep *common.DoctorInstructionItem, doctorId int64) error
 	MarkRegimenStepToBeDeleted(regimenStep *common.DoctorInstructionItem, doctorId int64) error
 	MarkRegimenStepsToBeDeleted(regimenSteps []*common.DoctorInstructionItem, doctorId int64) error
 	GetAdvicePointsForDoctor(doctorId int64) (advicePoints []*common.DoctorInstructionItem, err error)
-	AddOrUpdateAdvicePointForDoctor(advicePoint *common.DoctorInstructionItem, doctorId int64) error
+	GetAdvicePointForDoctor(advicePointId, doctorId int64) (*common.DoctorInstructionItem, error)
+	AddAdvicePointForDoctor(advicePoint *common.DoctorInstructionItem, doctorId int64) error
+	UpdateAdvicePointForDoctor(advicePoint *common.DoctorInstructionItem, doctorId int64) error
 	MarkAdvicePointToBeDeleted(advicePoint *common.DoctorInstructionItem, doctorId int64) error
 	MarkAdvicePointsToBeDeleted(advicePoints []*common.DoctorInstructionItem, doctorId int64) error
 	MarkPatientVisitAsOngoingInDoctorQueue(doctorId, patientVisitId int64) error
@@ -202,6 +206,17 @@ type DoctorAPI interface {
 	InsertItemIntoDoctorQueue(doctorQueueItem DoctorQueueItem) error
 	ReplaceItemInDoctorQueue(doctorQueueItem DoctorQueueItem, currentState string) error
 	MarkGenerationOfTreatmentPlanInVisitQueue(doctorId, patientVisitId, treatmentPlanId int64, currentState, updatedState string) error
+}
+
+type FavoriteTreatmentPlanAPI interface {
+	CreateOrUpdateFavoriteTreatmentPlan(favoriteTreatmentPlan *common.FavoriteTreatmentPlan) error
+	GetFavoriteTreatmentPlansForDoctor(doctorId int64) ([]*common.FavoriteTreatmentPlan, error)
+	GetFavoriteTreatmentPlan(favoriteTreatmentPlanId int64) (*common.FavoriteTreatmentPlan, error)
+	DeleteFavoriteTreatmentPlan(favoriteTreatmentPlanId int64) error
+	GetTreatmentsInFavoriteTreatmentPlan(favoriteTreatmentPlanId int64) ([]*common.Treatment, error)
+	GetRegimenPlanInFavoriteTreatmentPlan(favoriteTreatmentPlanId int64) (*common.RegimenPlan, error)
+	GetAdviceInFavoriteTreatmentPlan(favoriteTreatmentPlanId int64) (*common.Advice, error)
+	DeleteFavoriteTreatmentPlanMapping(treatmentPlanId, favoriteTreatmentPlanId int64) error
 }
 
 type IntakeAPI interface {
@@ -292,6 +307,7 @@ type DataAPI interface {
 	PeopleAPI
 	MessageAPI
 	PhotoAPI
+	FavoriteTreatmentPlanAPI
 }
 
 type CloudStorageAPI interface {
