@@ -139,15 +139,19 @@ func (d *DoctorQueueItem) GetTitleAndSubtitle(dataApi DataAPI) (string, string, 
 			return "", "", err
 		}
 
-		people, err := dataApi.GetPeople([]int64{conversation.LastParticipantId})
-		patient := people[conversation.LastParticipantId].Patient
-		switch d.Status {
-		case QUEUE_ITEM_STATUS_PENDING:
-			title = fmt.Sprintf("%s %s started a conversation about %s", patient.FirstName, patient.LastName, conversation.Title)
-		case QUEUE_ITEM_STATUS_READ:
-			title = fmt.Sprintf("Conversation with %s %s about %s", patient.FirstName, patient.LastName, conversation.Title)
-		case QUEUE_ITEM_STATUS_REPLIED:
-			title = fmt.Sprintf("Replied to %s %s in conversation about %s", patient.FirstName, patient.LastName, conversation.Title)
+		for _, person := range conversation.Participants {
+			if person.RoleType == PATIENT_ROLE {
+				patient := person.Patient
+				switch d.Status {
+				case QUEUE_ITEM_STATUS_PENDING:
+					title = fmt.Sprintf("%s %s started a conversation about %s", patient.FirstName, patient.LastName, conversation.Title)
+				case QUEUE_ITEM_STATUS_READ:
+					title = fmt.Sprintf("Conversation with %s %s about %s", patient.FirstName, patient.LastName, conversation.Title)
+				case QUEUE_ITEM_STATUS_REPLIED:
+					title = fmt.Sprintf("Replied to %s %s in conversation about %s", patient.FirstName, patient.LastName, conversation.Title)
+				}
+				break
+			}
 		}
 	}
 	return title, subtitle, nil
@@ -239,11 +243,11 @@ func (d *DoctorQueueItem) GetActionUrl(dataApi DataAPI) (string, error) {
 		if err != nil {
 			return "", err
 		}
-		people, err := dataApi.GetPeople([]int64{conversation.LastParticipantId})
-		if err != nil {
-			return "", err
+		for _, person := range conversation.Participants {
+			if person.RoleType == PATIENT_ROLE {
+				return fmt.Sprintf("%s%s?patient_id=%d", SpruceButtonBaseActionUrl, viewPatientConversations, person.Patient.PatientId.Int64()), nil
+			}
 		}
-		return fmt.Sprintf("%s%s?patient_id=%d", SpruceButtonBaseActionUrl, viewPatientConversations, people[conversation.LastParticipantId].Patient.PatientId.Int64()), nil
 	}
 
 	return "", nil
