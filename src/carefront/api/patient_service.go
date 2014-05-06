@@ -43,10 +43,12 @@ func (d *DataService) UpdatePatientInformation(patient *common.Patient, updateFr
 	}
 
 	// update email
-	_, err = tx.Exec(`update account set email=? where id=?`, patient.AccountId.Int64())
-	if err != nil {
-		tx.Rollback()
-		return err
+	if patient.Email != "" {
+		_, err = tx.Exec(`update account set email=? where id=?`, patient.Email, patient.AccountId.Int64())
+		if err != nil {
+			tx.Rollback()
+			return err
+		}
 	}
 
 	// update patient address if it exists
