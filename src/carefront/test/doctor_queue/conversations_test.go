@@ -97,6 +97,79 @@ func TestConversationItemsInDoctorQueue(t *testing.T) {
 	}
 }
 
+func TestConversationItemsInDoctorQueue_DoctorInitiated(t *testing.T) {
+	testData := integration.SetupIntegrationTest(t)
+	defer integration.TearDownIntegrationTest(t, testData)
+
+	pr := integration.SignupRandomTestPatient(t, testData.DataApi, testData.AuthApi)
+
+	topicId, err := testData.DataApi.AddConversationTopic("Foo", 100, true)
+	if err != nil {
+		t.Fatal(err)
+	}
+
+	doctorConvoServer := httptest.NewServer(messages.NewDoctorConversationHandler(testData.DataApi))
+	defer doctorConvoServer.Close()
+	patientMessageServer := httptest.NewServer(messages.NewPatientMessagesHandler(testData.DataApi))
+	defer patientMessageServer.Close()
+
+	body := &bytes.Buffer{}
+	if err := json.NewEncoder(body).Encode(&messages.NewconversationRequest{
+		TopicId:   topicId,
+		Message:   "Foo",
+		PatientId: pr.Patient.PatientId.Int64(),
+	}); err != nil {
+		t.Fatal(err)
+	}
+	res, err := integration.AuthPost(doctorConvoServer.URL, "application/json", body, pr.Patient.AccountId.Int64())
+	if err != nil {
+		t.Fatal(err)
+	}
+	newConvRes := &messages.NewConversationResponse{}
+	if err := json.NewDecoder(res.Body).Decode(newConvRes); err != nil {
+		t.Fatal(err)
+	}
+	res.Body.Close()
+
+	doctorId := integration.GetDoctorIdOfCurrentPrimaryDoctor(testData, t)
+
+	// ensure that an item is inserted into the doctor queue
+	pendingItems, err := testData.DataApi.GetPendingItemsInDoctorQueue(doctorId)
+	if err != nil {
+		t.Fatalf("Unable to get doctor queue: %s", err)
+	} else if len(pendingItems) != 0 {
+		t.Fatalf("Expected no item in the pending items but got %d instead", len(pendingItems))
+	}
+
+	// Reply
+	body = &bytes.Buffer{}
+	if err := json.NewEncoder(body).Encode(&messages.ReplyRequest{
+		ConversationId: newConvRes.ConversationId,
+		Message:        "Foo",
+	}); err != nil {
+		t.Fatal(err)
+	}
+	res, err = integration.AuthPost(patientMessageServer.URL, "application/json", body, pr.Patient.AccountId.Int64())
+	if err != nil {
+		t.Fatal(err)
+	}
+
+	// ensure that the item is marked as completed for the doctor
+	pendingItems, err = testData.DataApi.GetPendingItemsInDoctorQueue(doctorId)
+	if err != nil {
+		t.Fatalf("Unable to get doctor queue: %s", err)
+	} else if len(pendingItems) != 0 {
+		t.Fatalf("Expected no item in the pending items but got %d instead", len(pendingItems))
+	}
+
+	completedItems, err := testData.DataApi.GetCompletedItemsInDoctorQueue(doctorId)
+	if err != nil {
+		t.Fatalf("Unable to get completed items in the doctor queue: %s", err)
+	} else if len(completedItems) != 0 {
+		t.Fatalf("Expected no item in the completed tab instead got %d", len(completedItems))
+	}
+}
+
 func TestMarkingConversationReadWithDoctorQueue(t *testing.T) {
 	testData := integration.SetupIntegrationTest(t)
 	defer integration.TearDownIntegrationTest(t, testData)
@@ -159,5 +232,4 @@ func TestMarkingConversationReadWithDoctorQueue(t *testing.T) {
 	} else if len(completedItems) != 0 {
 		t.Fatalf("Expected no item in the completed tab instead got %d", len(completedItems))
 	}
-
 }
