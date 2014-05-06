@@ -205,7 +205,7 @@ func populatePatientIntake(questionIds map[questionTag]int64, answerIds map[pote
 			QuestionId: questionIds[qAcneChangesWorse],
 			AnswerIntakes: []*apiservice.AnswerItem{
 				&apiservice.AnswerItem{
-					AnswerText: "This is a demo.",
+					AnswerText: "I've starting working out again so wonder if sweat could be a contributing factor?",
 				},
 			},
 		},
@@ -296,7 +296,7 @@ func populatePatientIntake(questionIds map[questionTag]int64, answerIds map[pote
 			QuestionId: questionIds[qAnythingElseAcne],
 			AnswerIntakes: []*apiservice.AnswerItem{
 				&apiservice.AnswerItem{
-					AnswerText: "This is a demo. This is where patient will enter anything they'd like to share with us",
+					AnswerText: "I've noticed that my acne flares up when I wait longer between changing razor blades. Also, my acne typically concentrates around my lips.",
 				},
 			},
 		},
@@ -847,9 +847,9 @@ func (c *Handler) ServeHTTP(w http.ResponseWriter, r *http.Request) {
 
 	} else {
 		demoPatientToCreate := common.Patient{
-			FirstName: "Demo",
-			LastName:  "User",
-			Gender:    "female",
+			FirstName: "Kunal",
+			LastName:  "Jham",
+			Gender:    "male",
 			Dob: encoding.Dob{
 				Year:  1987,
 				Month: 11,
