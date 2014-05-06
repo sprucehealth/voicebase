@@ -5,8 +5,8 @@ import (
 )
 
 func TestNoPotentialAnswerForQuestionTypes(t *testing.T) {
-	testData := SetupIntegrationTest(t)
-	defer TearDownIntegrationTest(t, testData)
+	testData := setupIntegrationTest(t)
+	defer tearDownIntegrationTest(t, testData)
 
 	// no free text question type should have potential answers associated with it
 	rows, err := testData.DB.Query(`select question.id from question inner join question_type on question_type.id = question.qtype_id where question_type.qtype in ('q_type_free_text', 'q_type_autocomplete')`)
@@ -37,8 +37,8 @@ func TestNoPotentialAnswerForQuestionTypes(t *testing.T) {
 // autocomplete question type, as they should be for the client to
 // be able to show additional pieces of content in the question
 func TestAdditionalFieldsInAutocompleteQuestion(t *testing.T) {
-	testData := SetupIntegrationTest(t)
-	defer TearDownIntegrationTest(t, testData)
+	testData := setupIntegrationTest(t)
+	defer tearDownIntegrationTest(t, testData)
 
 	// signup a random test patient for which to answer questions
 	patientSignedUpResponse := signupRandomTestPatient(t, testData.DataApi, testData.AuthApi)

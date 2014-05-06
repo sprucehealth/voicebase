@@ -16,8 +16,8 @@ import (
 
 func TestMedicationStrengthSearch(t *testing.T) {
 
-	testData := SetupIntegrationTest(t)
-	defer TearDownIntegrationTest(t, testData)
+	testData := setupIntegrationTest(t)
+	defer tearDownIntegrationTest(t, testData)
 
 	doctorId := getDoctorIdOfCurrentPrimaryDoctor(testData, t)
 	doctor, err := testData.DataApi.GetDoctorFromId(doctorId)
@@ -49,8 +49,8 @@ func TestMedicationStrengthSearch(t *testing.T) {
 
 func TestNewTreatmentSelection(t *testing.T) {
 
-	testData := SetupIntegrationTest(t)
-	defer TearDownIntegrationTest(t, testData)
+	testData := setupIntegrationTest(t)
+	defer tearDownIntegrationTest(t, testData)
 
 	doctorId := getDoctorIdOfCurrentPrimaryDoctor(testData, t)
 	doctor, err := testData.DataApi.GetDoctorFromId(doctorId)
@@ -133,8 +133,8 @@ func TestNewTreatmentSelection(t *testing.T) {
 
 func TestDispenseUnitIds(t *testing.T) {
 
-	testData := SetupIntegrationTest(t)
-	defer TearDownIntegrationTest(t, testData)
+	testData := setupIntegrationTest(t)
+	defer tearDownIntegrationTest(t, testData)
 
 	medicationDispenseUnitsHandler := &apiservice.MedicationDispenseUnitsHandler{DataApi: testData.DataApi}
 	ts := httptest.NewServer(medicationDispenseUnitsHandler)
@@ -171,8 +171,8 @@ func TestDispenseUnitIds(t *testing.T) {
 
 func TestAddTreatments(t *testing.T) {
 
-	testData := SetupIntegrationTest(t)
-	defer TearDownIntegrationTest(t, testData)
+	testData := setupIntegrationTest(t)
+	defer tearDownIntegrationTest(t, testData)
 
 	// get the current primary doctor
 	doctorId := getDoctorIdOfCurrentPrimaryDoctor(testData, t)
@@ -261,8 +261,8 @@ func TestAddTreatments(t *testing.T) {
 
 func TestTreatmentTemplates(t *testing.T) {
 
-	testData := SetupIntegrationTest(t)
-	defer TearDownIntegrationTest(t, testData)
+	testData := setupIntegrationTest(t)
+	defer tearDownIntegrationTest(t, testData)
 
 	// get the current primary doctor
 	doctorId := getDoctorIdOfCurrentPrimaryDoctor(testData, t)
@@ -437,8 +437,8 @@ func TestTreatmentTemplates(t *testing.T) {
 
 func TestTreatmentTemplatesInContextOfPatientVisit(t *testing.T) {
 
-	testData := SetupIntegrationTest(t)
-	defer TearDownIntegrationTest(t, testData)
+	testData := setupIntegrationTest(t)
+	defer tearDownIntegrationTest(t, testData)
 
 	// get the current primary doctor
 	doctorId := getDoctorIdOfCurrentPrimaryDoctor(testData, t)
@@ -654,8 +654,8 @@ func TestTreatmentTemplatesInContextOfPatientVisit(t *testing.T) {
 
 func TestTreatmentTemplateWithDrugOutOfMarket(t *testing.T) {
 
-	testData := SetupIntegrationTest(t)
-	defer TearDownIntegrationTest(t, testData)
+	testData := setupIntegrationTest(t)
+	defer tearDownIntegrationTest(t, testData)
 
 	// get the current primary doctor
 	doctorId := getDoctorIdOfCurrentPrimaryDoctor(testData, t)

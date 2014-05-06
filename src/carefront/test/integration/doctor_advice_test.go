@@ -16,8 +16,8 @@ import (
 )
 
 func TestAdvicePointsForPatientVisit(t *testing.T) {
-	testData := SetupIntegrationTest(t)
-	defer TearDownIntegrationTest(t, testData)
+	testData := setupIntegrationTest(t)
+	defer tearDownIntegrationTest(t, testData)
 
 	patientVisitResponse, doctor := setupAdviceCreationTest(t, testData)
 
@@ -147,8 +147,8 @@ func TestAdvicePointsForPatientVisit(t *testing.T) {
 // against the original item that was added in the first place via the source_id
 func TestAdvicePointsForPatientVisit_TrackingSourceId(t *testing.T) {
 
-	testData := SetupIntegrationTest(t)
-	defer TearDownIntegrationTest(t, testData)
+	testData := setupIntegrationTest(t)
+	defer tearDownIntegrationTest(t, testData)
 
 	patientVisitResponse, doctor := setupAdviceCreationTest(t, testData)
 
@@ -224,8 +224,8 @@ func TestAdvicePointsForPatientVisit_TrackingSourceId(t *testing.T) {
 
 func TestAdvicePointsForPatientVisit_AddingMultipleItemsWithSameText(t *testing.T) {
 
-	testData := SetupIntegrationTest(t)
-	defer TearDownIntegrationTest(t, testData)
+	testData := setupIntegrationTest(t)
+	defer tearDownIntegrationTest(t, testData)
 
 	patientVisitResponse, doctor := setupAdviceCreationTest(t, testData)
 
@@ -251,8 +251,8 @@ func TestAdvicePointsForPatientVisit_AddingMultipleItemsWithSameText(t *testing.
 
 func TestAdvicePointsForPatientVisit_UpdatingMultipleItems(t *testing.T) {
 
-	testData := SetupIntegrationTest(t)
-	defer TearDownIntegrationTest(t, testData)
+	testData := setupIntegrationTest(t)
+	defer tearDownIntegrationTest(t, testData)
 
 	patientVisitResponse, doctor := setupAdviceCreationTest(t, testData)
 
@@ -288,8 +288,8 @@ func TestAdvicePointsForPatientVisit_UpdatingMultipleItems(t *testing.T) {
 
 func TestAdvicePointsForPatientVisit_SelectAdviceFromDeletedAdvice(t *testing.T) {
 
-	testData := SetupIntegrationTest(t)
-	defer TearDownIntegrationTest(t, testData)
+	testData := setupIntegrationTest(t)
+	defer tearDownIntegrationTest(t, testData)
 
 	patientVisitResponse, doctor := setupAdviceCreationTest(t, testData)
 
@@ -362,8 +362,8 @@ func TestAdvicePointsForPatientVisit_SelectAdviceFromDeletedAdvice(t *testing.T)
 
 func TestAdvicePointsForPatientVisit_ErrorDifferentTextForLinkedItems(t *testing.T) {
 
-	testData := SetupIntegrationTest(t)
-	defer TearDownIntegrationTest(t, testData)
+	testData := setupIntegrationTest(t)
+	defer tearDownIntegrationTest(t, testData)
 
 	patientVisitResponse, doctor := setupAdviceCreationTest(t, testData)
 

@@ -21,16 +21,16 @@ import (
 
 func TestDoctorRegistration(t *testing.T) {
 
-	testData := SetupIntegrationTest(t)
-	defer TearDownIntegrationTest(t, testData)
+	testData := setupIntegrationTest(t)
+	defer tearDownIntegrationTest(t, testData)
 
 	signupRandomTestDoctor(t, testData.DataApi, testData.AuthApi)
 }
 
 func TestDoctorAuthentication(t *testing.T) {
 
-	testData := SetupIntegrationTest(t)
-	defer TearDownIntegrationTest(t, testData)
+	testData := setupIntegrationTest(t)
+	defer tearDownIntegrationTest(t, testData)
 
 	_, email, password := signupRandomTestDoctor(t, testData.DataApi, testData.AuthApi)
 
@@ -65,8 +65,8 @@ func TestDoctorAuthentication(t *testing.T) {
 
 func TestDoctorDrugSearch(t *testing.T) {
 
-	testData := SetupIntegrationTest(t)
-	defer TearDownIntegrationTest(t, testData)
+	testData := setupIntegrationTest(t)
+	defer tearDownIntegrationTest(t, testData)
 
 	doctorId := getDoctorIdOfCurrentPrimaryDoctor(testData, t)
 	doctor, err := testData.DataApi.GetDoctorFromId(doctorId)
@@ -111,8 +111,8 @@ func TestDoctorDrugSearch(t *testing.T) {
 
 func TestDoctorDiagnosisOfPatientVisit(t *testing.T) {
 
-	testData := SetupIntegrationTest(t)
-	defer TearDownIntegrationTest(t, testData)
+	testData := setupIntegrationTest(t)
+	defer tearDownIntegrationTest(t, testData)
 
 	// get the current primary doctor
 	doctorId := getDoctorIdOfCurrentPrimaryDoctor(testData, t)
@@ -261,8 +261,8 @@ func TestDoctorDiagnosisOfPatientVisit(t *testing.T) {
 
 func TestDoctorSubmissionOfPatientVisitReview(t *testing.T) {
 
-	testData := SetupIntegrationTest(t)
-	defer TearDownIntegrationTest(t, testData)
+	testData := setupIntegrationTest(t)
+	defer tearDownIntegrationTest(t, testData)
 
 	patientSignedupResponse := signupRandomTestPatient(t, testData.DataApi, testData.AuthApi)
 
@@ -339,8 +339,8 @@ func TestDoctorSubmissionOfPatientVisitReview(t *testing.T) {
 
 func TestDoctorAddingOfFollowUpForPatientVisit(t *testing.T) {
 
-	testData := SetupIntegrationTest(t)
-	defer TearDownIntegrationTest(t, testData)
+	testData := setupIntegrationTest(t)
+	defer tearDownIntegrationTest(t, testData)
 
 	// get the current primary doctor
 	doctorId := getDoctorIdOfCurrentPrimaryDoctor(testData, t)

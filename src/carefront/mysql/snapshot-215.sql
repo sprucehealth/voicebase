@@ -1,6 +1,6 @@
 -- MySQL dump 10.13  Distrib 5.6.17, for osx10.9 (x86_64)
 --
--- Host: 127.0.0.1    Database: database_392
+-- Host: 127.0.0.1    Database: database_11796
 -- ------------------------------------------------------
 -- Server version	5.6.17
 
@@ -172,6 +172,108 @@ CREATE TABLE `care_providing_state` (
   KEY `health_condition_id` (`health_condition_id`),
   CONSTRAINT `care_providing_state_ibfk_1` FOREIGN KEY (`health_condition_id`) REFERENCES `health_condition` (`id`)
 ) ENGINE=InnoDB AUTO_INCREMENT=2 DEFAULT CHARSET=utf8;
+/*!40101 SET character_set_client = @saved_cs_client */;
+
+--
+-- Table structure for table `conversation`
+--
+
+DROP TABLE IF EXISTS `conversation`;
+/*!40101 SET @saved_cs_client     = @@character_set_client */;
+/*!40101 SET character_set_client = utf8 */;
+CREATE TABLE `conversation` (
+  `id` bigint(20) unsigned NOT NULL AUTO_INCREMENT,
+  `tstamp` timestamp NOT NULL DEFAULT CURRENT_TIMESTAMP,
+  `topic_id` int(10) unsigned NOT NULL,
+  `message_count` int(11) NOT NULL,
+  `creator_id` bigint(20) unsigned NOT NULL,
+  `owner_id` bigint(20) unsigned NOT NULL,
+  `last_participant_id` bigint(20) unsigned NOT NULL,
+  `last_message_tstamp` timestamp NOT NULL DEFAULT '0000-00-00 00:00:00',
+  `unread` tinyint(1) NOT NULL,
+  PRIMARY KEY (`id`),
+  KEY `topic_id` (`topic_id`),
+  KEY `creator_id` (`creator_id`),
+  KEY `owner_id` (`owner_id`),
+  KEY `last_participant_id` (`last_participant_id`),
+  CONSTRAINT `conversation_ibfk_1` FOREIGN KEY (`topic_id`) REFERENCES `conversation_topic` (`id`),
+  CONSTRAINT `conversation_ibfk_2` FOREIGN KEY (`creator_id`) REFERENCES `person` (`id`),
+  CONSTRAINT `conversation_ibfk_3` FOREIGN KEY (`owner_id`) REFERENCES `person` (`id`),
+  CONSTRAINT `conversation_ibfk_4` FOREIGN KEY (`last_participant_id`) REFERENCES `person` (`id`)
+) ENGINE=InnoDB DEFAULT CHARSET=utf8;
+/*!40101 SET character_set_client = @saved_cs_client */;
+
+--
+-- Table structure for table `conversation_message`
+--
+
+DROP TABLE IF EXISTS `conversation_message`;
+/*!40101 SET @saved_cs_client     = @@character_set_client */;
+/*!40101 SET character_set_client = utf8 */;
+CREATE TABLE `conversation_message` (
+  `id` bigint(20) unsigned NOT NULL AUTO_INCREMENT,
+  `tstamp` timestamp NOT NULL DEFAULT CURRENT_TIMESTAMP,
+  `conversation_id` bigint(20) unsigned NOT NULL,
+  `person_id` bigint(20) unsigned NOT NULL,
+  `body` text NOT NULL,
+  PRIMARY KEY (`id`),
+  KEY `person_id` (`person_id`),
+  KEY `conversation_id` (`conversation_id`,`tstamp`),
+  CONSTRAINT `conversation_message_ibfk_1` FOREIGN KEY (`conversation_id`) REFERENCES `conversation` (`id`),
+  CONSTRAINT `conversation_message_ibfk_2` FOREIGN KEY (`person_id`) REFERENCES `person` (`id`)
+) ENGINE=InnoDB DEFAULT CHARSET=utf8;
+/*!40101 SET character_set_client = @saved_cs_client */;
+
+--
+-- Table structure for table `conversation_message_attachment`
+--
+
+DROP TABLE IF EXISTS `conversation_message_attachment`;
+/*!40101 SET @saved_cs_client     = @@character_set_client */;
+/*!40101 SET character_set_client = utf8 */;
+CREATE TABLE `conversation_message_attachment` (
+  `id` bigint(20) unsigned NOT NULL AUTO_INCREMENT,
+  `message_id` bigint(20) unsigned DEFAULT NULL,
+  `item_type` varchar(64) NOT NULL,
+  `item_id` bigint(20) unsigned NOT NULL,
+  PRIMARY KEY (`id`),
+  KEY `message_id` (`message_id`),
+  CONSTRAINT `conversation_message_attachment_ibfk_1` FOREIGN KEY (`message_id`) REFERENCES `conversation_message` (`id`)
+) ENGINE=InnoDB DEFAULT CHARSET=utf8;
+/*!40101 SET character_set_client = @saved_cs_client */;
+
+--
+-- Table structure for table `conversation_participant`
+--
+
+DROP TABLE IF EXISTS `conversation_participant`;
+/*!40101 SET @saved_cs_client     = @@character_set_client */;
+/*!40101 SET character_set_client = utf8 */;
+CREATE TABLE `conversation_participant` (
+  `person_id` bigint(20) unsigned NOT NULL,
+  `conversation_id` bigint(20) unsigned NOT NULL,
+  `joined` timestamp NOT NULL DEFAULT CURRENT_TIMESTAMP,
+  PRIMARY KEY (`person_id`,`conversation_id`),
+  KEY `conversation_id` (`conversation_id`),
+  CONSTRAINT `conversation_participant_ibfk_1` FOREIGN KEY (`person_id`) REFERENCES `person` (`id`),
+  CONSTRAINT `conversation_participant_ibfk_2` FOREIGN KEY (`conversation_id`) REFERENCES `conversation` (`id`)
+) ENGINE=InnoDB DEFAULT CHARSET=utf8;
+/*!40101 SET character_set_client = @saved_cs_client */;
+
+--
+-- Table structure for table `conversation_topic`
+--
+
+DROP TABLE IF EXISTS `conversation_topic`;
+/*!40101 SET @saved_cs_client     = @@character_set_client */;
+/*!40101 SET character_set_client = utf8 */;
+CREATE TABLE `conversation_topic` (
+  `id` int(10) unsigned NOT NULL AUTO_INCREMENT,
+  `title` varchar(255) NOT NULL,
+  `ordinal` int(11) NOT NULL,
+  `active` tinyint(1) NOT NULL,
+  PRIMARY KEY (`id`)
+) ENGINE=InnoDB AUTO_INCREMENT=6 DEFAULT CHARSET=utf8;
 /*!40101 SET character_set_client = @saved_cs_client */;
 
 --
@@ -425,7 +527,6 @@ CREATE TABLE `dr_advice_point` (
   PRIMARY KEY (`id`),
   KEY `doctor_id` (`doctor_id`),
   KEY `source_id` (`source_id`),
-  KEY `doctor_id_2` (`doctor_id`),
   CONSTRAINT `dr_advice_point_ibfk_1` FOREIGN KEY (`doctor_id`) REFERENCES `doctor` (`id`),
   CONSTRAINT `dr_advice_point_ibfk_2` FOREIGN KEY (`source_id`) REFERENCES `dr_advice_point` (`id`)
 ) ENGINE=InnoDB DEFAULT CHARSET=utf8;
@@ -627,7 +728,6 @@ CREATE TABLE `dr_favorite_treatment_plan` (
   `modified_date` timestamp(6) NOT NULL DEFAULT CURRENT_TIMESTAMP(6) ON UPDATE CURRENT_TIMESTAMP(6),
   PRIMARY KEY (`id`),
   KEY `doctor_id` (`doctor_id`),
-  KEY `doctor_id_2` (`doctor_id`),
   CONSTRAINT `dr_favorite_treatment_plan_ibfk_1` FOREIGN KEY (`doctor_id`) REFERENCES `doctor` (`id`)
 ) ENGINE=InnoDB DEFAULT CHARSET=utf8;
 /*!40101 SET character_set_client = @saved_cs_client */;
@@ -681,7 +781,6 @@ CREATE TABLE `dr_regimen_step` (
   KEY `drug_route_id` (`drug_route_id`),
   KEY `doctor_id` (`doctor_id`),
   KEY `source_id` (`source_id`),
-  KEY `doctor_id_2` (`doctor_id`),
   CONSTRAINT `dr_regimen_step_ibfk_1` FOREIGN KEY (`drug_name_id`) REFERENCES `drug_name` (`id`),
   CONSTRAINT `dr_regimen_step_ibfk_2` FOREIGN KEY (`drug_form_id`) REFERENCES `drug_form` (`id`),
   CONSTRAINT `dr_regimen_step_ibfk_3` FOREIGN KEY (`drug_route_id`) REFERENCES `drug_route` (`id`),
@@ -1390,6 +1489,22 @@ CREATE TABLE `pending_task` (
 /*!40101 SET character_set_client = @saved_cs_client */;
 
 --
+-- Table structure for table `person`
+--
+
+DROP TABLE IF EXISTS `person`;
+/*!40101 SET @saved_cs_client     = @@character_set_client */;
+/*!40101 SET character_set_client = utf8 */;
+CREATE TABLE `person` (
+  `id` bigint(20) unsigned NOT NULL AUTO_INCREMENT,
+  `role_type` varchar(32) NOT NULL,
+  `role_id` int(10) unsigned NOT NULL,
+  PRIMARY KEY (`id`),
+  UNIQUE KEY `role_type` (`role_type`,`role_id`)
+) ENGINE=InnoDB DEFAULT CHARSET=utf8;
+/*!40101 SET character_set_client = @saved_cs_client */;
+
+--
 -- Table structure for table `pharmacy_dispensed_treatment`
 --
 
@@ -1475,6 +1590,27 @@ CREATE TABLE `pharmacy_selection` (
   `lng` varchar(100) DEFAULT NULL,
   `name` varchar(500) DEFAULT NULL,
   PRIMARY KEY (`id`)
+) ENGINE=InnoDB DEFAULT CHARSET=utf8;
+/*!40101 SET character_set_client = @saved_cs_client */;
+
+--
+-- Table structure for table `photo`
+--
+
+DROP TABLE IF EXISTS `photo`;
+/*!40101 SET @saved_cs_client     = @@character_set_client */;
+/*!40101 SET character_set_client = utf8 */;
+CREATE TABLE `photo` (
+  `id` int(10) unsigned NOT NULL AUTO_INCREMENT,
+  `uploaded` timestamp NOT NULL DEFAULT CURRENT_TIMESTAMP,
+  `uploader_id` bigint(20) unsigned NOT NULL,
+  `mimetype` varchar(128) NOT NULL,
+  `url` varchar(255) NOT NULL,
+  `claimer_type` varchar(64) DEFAULT NULL,
+  `claimer_id` bigint(20) unsigned DEFAULT NULL,
+  PRIMARY KEY (`id`),
+  KEY `uploader_id` (`uploader_id`),
+  CONSTRAINT `photo_ibfk_1` FOREIGN KEY (`uploader_id`) REFERENCES `person` (`id`)
 ) ENGINE=InnoDB DEFAULT CHARSET=utf8;
 /*!40101 SET character_set_client = @saved_cs_client */;
 
@@ -2024,7 +2160,6 @@ CREATE TABLE `treatment_plan_favorite_mapping` (
   `treatment_plan_id` int(10) unsigned NOT NULL,
   `dr_favorite_treatment_plan_id` int(10) unsigned NOT NULL,
   PRIMARY KEY (`id`),
-  UNIQUE KEY `treatment_plan_id_2` (`treatment_plan_id`,`dr_favorite_treatment_plan_id`),
   KEY `treatment_plan_id` (`treatment_plan_id`),
   KEY `dr_favorite_treatment_plan_id` (`dr_favorite_treatment_plan_id`),
   CONSTRAINT `treatment_plan_favorite_mapping_ibfk_1` FOREIGN KEY (`treatment_plan_id`) REFERENCES `treatment_plan` (`id`) ON DELETE CASCADE,
@@ -2128,4 +2263,4 @@ CREATE TABLE `unlinked_dntf_treatment_status_events` (
 /*!40101 SET COLLATION_CONNECTION=@OLD_COLLATION_CONNECTION */;
 /*!40111 SET SQL_NOTES=@OLD_SQL_NOTES */;
 
--- Dump completed on 2014-05-05 16:02:39
+-- Dump completed on 2014-05-05 17:13:36

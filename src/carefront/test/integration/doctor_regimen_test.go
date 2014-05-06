@@ -16,8 +16,8 @@ import (
 
 func TestRegimenForPatientVisit(t *testing.T) {
 
-	testData := SetupIntegrationTest(t)
-	defer TearDownIntegrationTest(t, testData)
+	testData := setupIntegrationTest(t)
+	defer tearDownIntegrationTest(t, testData)
 
 	patientVisitResponse, doctor := setupTestForRegimenCreation(t, testData)
 
@@ -148,8 +148,8 @@ func TestRegimenForPatientVisit(t *testing.T) {
 
 func TestRegimenForPatientVisit_AddingMultipleItemsWithSameText(t *testing.T) {
 
-	testData := SetupIntegrationTest(t)
-	defer TearDownIntegrationTest(t, testData)
+	testData := setupIntegrationTest(t)
+	defer tearDownIntegrationTest(t, testData)
 
 	patientVisitResponse, doctor := setupTestForRegimenCreation(t, testData)
 
@@ -184,8 +184,8 @@ func TestRegimenForPatientVisit_AddingMultipleItemsWithSameText(t *testing.T) {
 // linkage exists in the global list.
 func TestRegimenForPatientVisit_ErrorTextDifferentForLinkedItem(t *testing.T) {
 
-	testData := SetupIntegrationTest(t)
-	defer TearDownIntegrationTest(t, testData)
+	testData := setupIntegrationTest(t)
+	defer tearDownIntegrationTest(t, testData)
 
 	patientVisitResponse, doctor := setupTestForRegimenCreation(t, testData)
 
@@ -247,8 +247,8 @@ func TestRegimenForPatientVisit_ErrorTextDifferentForLinkedItem(t *testing.T) {
 
 func TestRegimenForPatientVisit_UpdatingMultipleItemsWithSameText(t *testing.T) {
 
-	testData := SetupIntegrationTest(t)
-	defer TearDownIntegrationTest(t, testData)
+	testData := setupIntegrationTest(t)
+	defer tearDownIntegrationTest(t, testData)
 
 	patientVisitResponse, doctor := setupTestForRegimenCreation(t, testData)
 
@@ -293,8 +293,8 @@ func TestRegimenForPatientVisit_UpdatingMultipleItemsWithSameText(t *testing.T) 
 
 func TestRegimenForPatientVisit_UpdatingItemLinkedToDeletedItem(t *testing.T) {
 
-	testData := SetupIntegrationTest(t)
-	defer TearDownIntegrationTest(t, testData)
+	testData := setupIntegrationTest(t)
+	defer tearDownIntegrationTest(t, testData)
 
 	patientVisitResponse, doctor := setupTestForRegimenCreation(t, testData)
 
@@ -369,8 +369,8 @@ func TestRegimenForPatientVisit_UpdatingItemLinkedToDeletedItem(t *testing.T) {
 // we are keeping track of the original step that has been modified via a source_id
 func TestRegimenForPatientVisit_TrackingSourceId(t *testing.T) {
 
-	testData := SetupIntegrationTest(t)
-	defer TearDownIntegrationTest(t, testData)
+	testData := setupIntegrationTest(t)
+	defer tearDownIntegrationTest(t, testData)
 
 	patientVisitResponse, doctor := setupTestForRegimenCreation(t, testData)
 

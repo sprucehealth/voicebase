@@ -31,8 +31,8 @@ var notificationTypes = map[string]reflect.Type{
 }
 
 func TestPatientNotificationsAPI(t *testing.T) {
-	testData := SetupIntegrationTest(t)
-	defer TearDownIntegrationTest(t, testData)
+	testData := setupIntegrationTest(t)
+	defer tearDownIntegrationTest(t, testData)
 
 	pr := signupRandomTestPatient(t, testData.DataApi, testData.AuthApi)
 	patient := pr.Patient
@@ -96,8 +96,8 @@ func TestPatientNotificationsAPI(t *testing.T) {
 }
 
 func TestHealthLogAPI(t *testing.T) {
-	testData := SetupIntegrationTest(t)
-	defer TearDownIntegrationTest(t, testData)
+	testData := setupIntegrationTest(t)
+	defer tearDownIntegrationTest(t, testData)
 
 	pr := signupRandomTestPatient(t, testData.DataApi, testData.AuthApi)
 	patient := pr.Patient
@@ -144,8 +144,8 @@ func TestHealthLogAPI(t *testing.T) {
 }
 
 func TestHealthLog(t *testing.T) {
-	testData := SetupIntegrationTest(t)
-	defer TearDownIntegrationTest(t, testData)
+	testData := setupIntegrationTest(t)
+	defer tearDownIntegrationTest(t, testData)
 
 	pr := signupRandomTestPatient(t, testData.DataApi, testData.AuthApi)
 	patient := pr.Patient
@@ -179,8 +179,8 @@ func TestHealthLog(t *testing.T) {
 }
 
 func TestVisitCreatedNotification(t *testing.T) {
-	testData := SetupIntegrationTest(t)
-	defer TearDownIntegrationTest(t, testData)
+	testData := setupIntegrationTest(t)
+	defer tearDownIntegrationTest(t, testData)
 
 	pr := signupRandomTestPatient(t, testData.DataApi, testData.AuthApi)
 	patient := pr.Patient

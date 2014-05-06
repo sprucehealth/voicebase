@@ -18,8 +18,8 @@ import (
 
 func TestAddCardsForPatient(t *testing.T) {
 
-	testData := SetupIntegrationTest(t)
-	defer TearDownIntegrationTest(t, testData)
+	testData := setupIntegrationTest(t)
+	defer tearDownIntegrationTest(t, testData)
 
 	signedupPatientResponse := signupRandomTestPatient(t, testData.DataApi, testData.AuthApi)
 

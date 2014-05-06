@@ -89,8 +89,8 @@ func submitPatientAnswerForVisit(PatientId int64, testData TestData, patientInta
 
 func TestSingleSelectIntake(t *testing.T) {
 
-	testData := SetupIntegrationTest(t)
-	defer TearDownIntegrationTest(t, testData)
+	testData := setupIntegrationTest(t)
+	defer tearDownIntegrationTest(t, testData)
 
 	// signup a random test patient for which to answer questions
 	patientSignedUpResponse := signupRandomTestPatient(t, testData.DataApi, testData.AuthApi)
@@ -133,8 +133,8 @@ func TestSingleSelectIntake(t *testing.T) {
 
 func TestMultipleChoiceIntake(t *testing.T) {
 
-	testData := SetupIntegrationTest(t)
-	defer TearDownIntegrationTest(t, testData)
+	testData := setupIntegrationTest(t)
+	defer tearDownIntegrationTest(t, testData)
 
 	// signup a random test patient for which to answer questions
 	patientSignedUpResponse := signupRandomTestPatient(t, testData.DataApi, testData.AuthApi)
@@ -197,8 +197,8 @@ func TestMultipleChoiceIntake(t *testing.T) {
 
 func TestSingleEntryIntake(t *testing.T) {
 
-	testData := SetupIntegrationTest(t)
-	defer TearDownIntegrationTest(t, testData)
+	testData := setupIntegrationTest(t)
+	defer tearDownIntegrationTest(t, testData)
 
 	// signup a random test patient for which to answer questions
 	patientSignedUpResponse := signupRandomTestPatient(t, testData.DataApi, testData.AuthApi)
@@ -284,8 +284,8 @@ func submitFreeTextResponseForPatient(patientVisitResponse *apiservice.PatientVi
 
 func TestFreeTextEntryIntake(t *testing.T) {
 
-	testData := SetupIntegrationTest(t)
-	defer TearDownIntegrationTest(t, testData)
+	testData := setupIntegrationTest(t)
+	defer tearDownIntegrationTest(t, testData)
 
 	// signup a random test patient for which to answer questions
 	patientSignedUpResponse := signupRandomTestPatient(t, testData.DataApi, testData.AuthApi)
@@ -311,8 +311,8 @@ func addSubAnswerToAnswerIntake(answerIntake *apiservice.AnswerItem, subAnswerQu
 
 func TestSubQuestionEntryIntake(t *testing.T) {
 
-	testData := SetupIntegrationTest(t)
-	defer TearDownIntegrationTest(t, testData)
+	testData := setupIntegrationTest(t)
+	defer tearDownIntegrationTest(t, testData)
 
 	// signup a random test patient for which to answer questions
 	patientSignedUpResponse := signupRandomTestPatient(t, testData.DataApi, testData.AuthApi)
@@ -470,8 +470,8 @@ func TestPhotoAnswerIntake(t *testing.T) {
 
 	fileToUpload := "../../info_intake/condition_intake.json"
 
-	testData := SetupIntegrationTest(t)
-	defer TearDownIntegrationTest(t, testData)
+	testData := setupIntegrationTest(t)
+	defer tearDownIntegrationTest(t, testData)
 
 	// signup a random test patient for which to answer questions
 	patientSignedUpResponse := signupRandomTestPatient(t, testData.DataApi, testData.AuthApi)

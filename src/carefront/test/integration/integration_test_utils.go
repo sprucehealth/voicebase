@@ -182,7 +182,7 @@ func signupAndSubmitPatientVisitForRandomPatient(t *testing.T, testData TestData
 	return patientVisitResponse, doctorPickTreatmentPlanResponse.TreatmentPlan
 }
 
-func SetupIntegrationTest(t *testing.T) TestData {
+func setupIntegrationTest(t *testing.T) TestData {
 	CheckIfRunningLocally(t)
 
 	dbConfig := GetDBConfig(t)
@@ -260,7 +260,7 @@ func SetupIntegrationTest(t *testing.T) TestData {
 	return testData
 }
 
-func TearDownIntegrationTest(t *testing.T, testData TestData) {
+func tearDownIntegrationTest(t *testing.T, testData TestData) {
 	testData.DB.Close()
 
 	t.Logf("Time to run test: %.3f seconds", float64(time.Since(testData.StartTime))/float64(time.Second))

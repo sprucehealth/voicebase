@@ -16,8 +16,8 @@ import (
 )
 
 func TestFavoriteTreatmentPlan(t *testing.T) {
-	testData := SetupIntegrationTest(t)
-	defer TearDownIntegrationTest(t, testData)
+	testData := setupIntegrationTest(t)
+	defer tearDownIntegrationTest(t, testData)
 
 	doctorId := getDoctorIdOfCurrentPrimaryDoctor(testData, t)
 	doctor, err := testData.DataApi.GetDoctorFromId(doctorId)
@@ -145,8 +145,8 @@ func TestFavoriteTreatmentPlan(t *testing.T) {
 }
 
 func TestFavoriteTreatmentPlan_PickingAFavoriteTreatmentPlan(t *testing.T) {
-	testData := SetupIntegrationTest(t)
-	defer TearDownIntegrationTest(t, testData)
+	testData := setupIntegrationTest(t)
+	defer tearDownIntegrationTest(t, testData)
 
 	doctorId := getDoctorIdOfCurrentPrimaryDoctor(testData, t)
 	doctor, err := testData.DataApi.GetDoctorFromId(doctorId)
@@ -219,8 +219,8 @@ func TestFavoriteTreatmentPlan_PickingAFavoriteTreatmentPlan(t *testing.T) {
 }
 
 func TestFavoriteTreatmentPlan_CommittedStateForTreatmentPlan(t *testing.T) {
-	testData := SetupIntegrationTest(t)
-	defer TearDownIntegrationTest(t, testData)
+	testData := setupIntegrationTest(t)
+	defer tearDownIntegrationTest(t, testData)
 
 	doctorId := getDoctorIdOfCurrentPrimaryDoctor(testData, t)
 	doctor, err := testData.DataApi.GetDoctorFromId(doctorId)
@@ -316,8 +316,8 @@ func TestFavoriteTreatmentPlan_CommittedStateForTreatmentPlan(t *testing.T) {
 }
 
 func TestFavoriteTreatmentPlan_BreakingMappingOnModify(t *testing.T) {
-	testData := SetupIntegrationTest(t)
-	defer TearDownIntegrationTest(t, testData)
+	testData := setupIntegrationTest(t)
+	defer tearDownIntegrationTest(t, testData)
 
 	doctorId := getDoctorIdOfCurrentPrimaryDoctor(testData, t)
 	doctor, err := testData.DataApi.GetDoctorFromId(doctorId)

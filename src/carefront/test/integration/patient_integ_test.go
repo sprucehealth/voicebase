@@ -18,14 +18,14 @@ import (
 )
 
 func TestPatientRegistration(t *testing.T) {
-	testData := SetupIntegrationTest(t)
-	defer TearDownIntegrationTest(t, testData)
+	testData := setupIntegrationTest(t)
+	defer tearDownIntegrationTest(t, testData)
 	signupRandomTestPatient(t, testData.DataApi, testData.AuthApi)
 }
 
 func TestPatientCareProvidingEllgibility(t *testing.T) {
-	testData := SetupIntegrationTest(t)
-	defer TearDownIntegrationTest(t, testData)
+	testData := setupIntegrationTest(t)
+	defer tearDownIntegrationTest(t, testData)
 
 	stubAddressValidationService := address_validation.StubAddressValidationService{
 		CityStateToReturn: address_validation.CityState{
@@ -75,8 +75,8 @@ func TestPatientCareProvidingEllgibility(t *testing.T) {
 }
 
 func TestPatientVisitCreation(t *testing.T) {
-	testData := SetupIntegrationTest(t)
-	defer TearDownIntegrationTest(t, testData)
+	testData := setupIntegrationTest(t)
+	defer tearDownIntegrationTest(t, testData)
 
 	signedupPatientResponse := signupRandomTestPatient(t, testData.DataApi, testData.AuthApi)
 	patientVisitResponse := createPatientVisitForPatient(signedupPatientResponse.Patient.PatientId.Int64(), testData, t)
@@ -120,8 +120,8 @@ func TestPatientVisitCreation(t *testing.T) {
 }
 
 func TestPatientVisitSubmission(t *testing.T) {
-	testData := SetupIntegrationTest(t)
-	defer TearDownIntegrationTest(t, testData)
+	testData := setupIntegrationTest(t)
+	defer tearDownIntegrationTest(t, testData)
 
 	signedupPatientResponse := signupRandomTestPatient(t, testData.DataApi, testData.AuthApi)
 	patientVisitResponse := createPatientVisitForPatient(signedupPatientResponse.Patient.PatientId.Int64(), testData, t)
@@ -153,8 +153,8 @@ func TestPatientVisitSubmission(t *testing.T) {
 }
 
 func TestPatientAutocompleteForDrugs(t *testing.T) {
-	testData := SetupIntegrationTest(t)
-	defer TearDownIntegrationTest(t, testData)
+	testData := setupIntegrationTest(t)
+	defer tearDownIntegrationTest(t, testData)
 
 	signedupPatientResponse := signupRandomTestPatient(t, testData.DataApi, testData.AuthApi)
 

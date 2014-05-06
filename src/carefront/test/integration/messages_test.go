@@ -11,15 +11,12 @@ import (
 )
 
 func TestPersonCreation(t *testing.T) {
-	if err := CheckIfRunningLocally(t); err == CannotRunTestLocally {
-		return
-	}
-	testData := SetupIntegrationTest(t)
-	defer TearDownIntegrationTest(t, testData)
+	testData := setupIntegrationTest(t)
+	defer tearDownIntegrationTest(t, testData)
 
 	// Make sure a person row is inserted when creating a patient
 
-	pr := SignupRandomTestPatient(t, testData.DataApi, testData.AuthApi)
+	pr := signupRandomTestPatient(t, testData.DataApi, testData.AuthApi)
 	patientId := pr.Patient.PatientId.Int64()
 	if pid, err := testData.DataApi.GetPersonIdByRole(api.PATIENT_ROLE, patientId); err != nil {
 		t.Fatalf("Failed to get person for role %s/%d: %s", api.PATIENT_ROLE, patientId, err.Error())
@@ -29,7 +26,7 @@ func TestPersonCreation(t *testing.T) {
 
 	// Make sure a person row is inserted when creating a doctor
 
-	dr, _, _ := SignupRandomTestDoctor(t, testData.DataApi, testData.AuthApi)
+	dr, _, _ := signupRandomTestDoctor(t, testData.DataApi, testData.AuthApi)
 	doctorId := dr.DoctorId
 	if pid, err := testData.DataApi.GetPersonIdByRole(api.DOCTOR_ROLE, doctorId); err != nil {
 		t.Fatalf("Failed to get person for role %s/%d: %s", api.DOCTOR_ROLE, doctorId, err.Error())
@@ -39,11 +36,8 @@ func TestPersonCreation(t *testing.T) {
 }
 
 func TestConversationTopics(t *testing.T) {
-	if err := CheckIfRunningLocally(t); err == CannotRunTestLocally {
-		return
-	}
-	testData := SetupIntegrationTest(t)
-	defer TearDownIntegrationTest(t, testData)
+	testData := setupIntegrationTest(t)
+	defer tearDownIntegrationTest(t, testData)
 
 	title := "Help"
 	ordinal := 123
@@ -76,18 +70,15 @@ func TestConversationTopics(t *testing.T) {
 }
 
 func TestCreateConversation(t *testing.T) {
-	if err := CheckIfRunningLocally(t); err == CannotRunTestLocally {
-		return
-	}
-	testData := SetupIntegrationTest(t)
-	defer TearDownIntegrationTest(t, testData)
+	testData := setupIntegrationTest(t)
+	defer tearDownIntegrationTest(t, testData)
 
-	pr := SignupRandomTestPatient(t, testData.DataApi, testData.AuthApi)
+	pr := signupRandomTestPatient(t, testData.DataApi, testData.AuthApi)
 	patientId, err := testData.DataApi.GetPersonIdByRole(api.PATIENT_ROLE, pr.Patient.PatientId.Int64())
 	if err != nil {
 		t.Fatal(err)
 	}
-	dr, _, _ := SignupRandomTestDoctor(t, testData.DataApi, testData.AuthApi)
+	dr, _, _ := signupRandomTestDoctor(t, testData.DataApi, testData.AuthApi)
 	doctorId, err := testData.DataApi.GetPersonIdByRole(api.DOCTOR_ROLE, dr.DoctorId)
 	if err != nil {
 		t.Fatal(err)
@@ -171,18 +162,15 @@ func TestCreateConversation(t *testing.T) {
 }
 
 func TestReplyToConversation(t *testing.T) {
-	if err := CheckIfRunningLocally(t); err == CannotRunTestLocally {
-		return
-	}
-	testData := SetupIntegrationTest(t)
-	defer TearDownIntegrationTest(t, testData)
+	testData := setupIntegrationTest(t)
+	defer tearDownIntegrationTest(t, testData)
 
-	pr := SignupRandomTestPatient(t, testData.DataApi, testData.AuthApi)
+	pr := signupRandomTestPatient(t, testData.DataApi, testData.AuthApi)
 	patientId, err := testData.DataApi.GetPersonIdByRole(api.PATIENT_ROLE, pr.Patient.PatientId.Int64())
 	if err != nil {
 		t.Fatal(err)
 	}
-	dr, _, _ := SignupRandomTestDoctor(t, testData.DataApi, testData.AuthApi)
+	dr, _, _ := signupRandomTestDoctor(t, testData.DataApi, testData.AuthApi)
 	doctorId, err := testData.DataApi.GetPersonIdByRole(api.DOCTOR_ROLE, dr.DoctorId)
 	if err != nil {
 		t.Fatal(err)
@@ -242,18 +230,15 @@ func TestReplyToConversation(t *testing.T) {
 }
 
 func TestGetConversationsWithParticipants(t *testing.T) {
-	if err := CheckIfRunningLocally(t); err == CannotRunTestLocally {
-		return
-	}
-	testData := SetupIntegrationTest(t)
-	defer TearDownIntegrationTest(t, testData)
+	testData := setupIntegrationTest(t)
+	defer tearDownIntegrationTest(t, testData)
 
-	pr := SignupRandomTestPatient(t, testData.DataApi, testData.AuthApi)
+	pr := signupRandomTestPatient(t, testData.DataApi, testData.AuthApi)
 	patientId, err := testData.DataApi.GetPersonIdByRole(api.PATIENT_ROLE, pr.Patient.PatientId.Int64())
 	if err != nil {
 		t.Fatal(err)
 	}
-	dr, _, _ := SignupRandomTestDoctor(t, testData.DataApi, testData.AuthApi)
+	dr, _, _ := signupRandomTestDoctor(t, testData.DataApi, testData.AuthApi)
 	doctorId, err := testData.DataApi.GetPersonIdByRole(api.DOCTOR_ROLE, dr.DoctorId)
 	if err != nil {
 		t.Fatal(err)
@@ -281,18 +266,15 @@ func TestGetConversationsWithParticipants(t *testing.T) {
 }
 
 func TestConversationReadFlag(t *testing.T) {
-	if err := CheckIfRunningLocally(t); err == CannotRunTestLocally {
-		return
-	}
-	testData := SetupIntegrationTest(t)
-	defer TearDownIntegrationTest(t, testData)
+	testData := setupIntegrationTest(t)
+	defer tearDownIntegrationTest(t, testData)
 
-	pr := SignupRandomTestPatient(t, testData.DataApi, testData.AuthApi)
+	pr := signupRandomTestPatient(t, testData.DataApi, testData.AuthApi)
 	patientId, err := testData.DataApi.GetPersonIdByRole(api.PATIENT_ROLE, pr.Patient.PatientId.Int64())
 	if err != nil {
 		t.Fatal(err)
 	}
-	drRes, _, _ := SignupRandomTestDoctor(t, testData.DataApi, testData.AuthApi)
+	drRes, _, _ := signupRandomTestDoctor(t, testData.DataApi, testData.AuthApi)
 	doctorId, err := testData.DataApi.GetPersonIdByRole(api.DOCTOR_ROLE, drRes.DoctorId)
 	if err != nil {
 		t.Fatal(err)

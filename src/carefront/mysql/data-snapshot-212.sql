@@ -1,6 +1,6 @@
 -- MySQL dump 10.13  Distrib 5.6.17, for osx10.9 (x86_64)
 --
--- Host: 127.0.0.1    Database: database_8685
+-- Host: 127.0.0.1    Database: database_4160
 -- ------------------------------------------------------
 -- Server version	5.6.17
 
@@ -806,6 +806,32 @@ LOCK TABLES `state` WRITE;
 INSERT INTO `state` VALUES (51,'Alabama','AL','USA'),(52,'Alaska','AK','USA'),(53,'Arizona','AZ','USA'),(54,'Arkansas','AR','USA'),(55,'California','CA','USA'),(56,'Colorado','CO','USA'),(57,'Connecticut','CT','USA'),(58,'Delaware','DE','USA'),(59,'Florida','FL','USA'),(60,'Georgia','GA','USA'),(61,'Hawaii','HI','USA'),(62,'Idaho','ID','USA'),(63,'Illinois','IL','USA'),(64,'Indiana','IN','USA'),(65,'Iowa','IA','USA'),(66,'Kansas','KS','USA'),(67,'Kentucky','KY','USA'),(68,'Louisiana','LA','USA'),(69,'Maine','ME','US'),(70,'Maryland','MD','USA'),(71,'Massachusetts','MA','USA'),(72,'Michigan','MI','USA'),(73,'Minnesota','MN','USA'),(74,'Mississippi','MS','USA'),(75,'Missouri','MO','USA'),(76,'Montana','MT','USA'),(77,'Nebraska','NE','USA'),(78,'Nevada','NV','USA'),(79,'New Hampshire','NH','USA'),(80,'New Jersey','NJ','USA'),(81,'New Mexico','NM','USA'),(82,'New York','NY','USA'),(83,'North Carolina','NC','USA'),(84,'North Dakota','ND','USA'),(85,'Ohio','OH','USA'),(86,'Oklahoma','OK','USA'),(87,'Oregon','OR','USA'),(88,'Pennsylvania','PA','USA'),(89,'Rhode Island','RI','USA'),(90,'South Carolina','SC','USA'),(91,'South Dakota','SD','USA'),(92,'Tennessee','TN','USA'),(93,'Texas','TX','USA'),(94,'Utah','UT','USA'),(95,'Vermont','VT','USA'),(96,'Virginia','VA','USA'),(97,'Washington','WA','USA'),(98,'West Virginia','WV','USA'),(99,'Wisconsin','WI','USA'),(100,'Wyoming','WY','USA');
 /*!40000 ALTER TABLE `state` ENABLE KEYS */;
 UNLOCK TABLES;
+
+--
+-- Table structure for table `conversation_topic`
+--
+
+DROP TABLE IF EXISTS `conversation_topic`;
+/*!40101 SET @saved_cs_client     = @@character_set_client */;
+/*!40101 SET character_set_client = utf8 */;
+CREATE TABLE `conversation_topic` (
+  `id` int(10) unsigned NOT NULL AUTO_INCREMENT,
+  `title` varchar(255) NOT NULL,
+  `ordinal` int(11) NOT NULL,
+  `active` tinyint(1) NOT NULL,
+  PRIMARY KEY (`id`)
+) ENGINE=InnoDB AUTO_INCREMENT=6 DEFAULT CHARSET=utf8;
+/*!40101 SET character_set_client = @saved_cs_client */;
+
+--
+-- Dumping data for table `conversation_topic`
+--
+
+LOCK TABLES `conversation_topic` WRITE;
+/*!40000 ALTER TABLE `conversation_topic` DISABLE KEYS */;
+INSERT INTO `conversation_topic` VALUES (1,'Acne Treatent Plan',100,1),(2,'Prescriptions',200,1),(3,'Side Effects',300,1),(4,'Not Seeing Results',400,1),(5,'Other',500,1);
+/*!40000 ALTER TABLE `conversation_topic` ENABLE KEYS */;
+UNLOCK TABLES;
 /*!40103 SET TIME_ZONE=@OLD_TIME_ZONE */;
 
 /*!40101 SET SQL_MODE=@OLD_SQL_MODE */;
@@ -816,4 +842,4 @@ UNLOCK TABLES;
 /*!40101 SET COLLATION_CONNECTION=@OLD_COLLATION_CONNECTION */;
 /*!40111 SET SQL_NOTES=@OLD_SQL_NOTES */;
 
--- Dump completed on 2014-05-05 16:02:29
+-- Dump completed on 2014-05-05 17:13:27

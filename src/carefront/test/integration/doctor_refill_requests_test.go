@@ -30,8 +30,8 @@ const (
 
 func TestNewRefillRequestForExistingPatientAndExistingTreatment(t *testing.T) {
 
-	testData := SetupIntegrationTest(t)
-	defer TearDownIntegrationTest(t, testData)
+	testData := setupIntegrationTest(t)
+	defer tearDownIntegrationTest(t, testData)
 
 	// create doctor with clinicianId specicified
 	doctor := createDoctorWithClinicianId(testData, t)
@@ -266,8 +266,8 @@ func TestNewRefillRequestForExistingPatientAndExistingTreatment(t *testing.T) {
 
 func TestApproveRefillRequestAndSuccessfulSendToPharmacy(t *testing.T) {
 
-	testData := SetupIntegrationTest(t)
-	defer TearDownIntegrationTest(t, testData)
+	testData := setupIntegrationTest(t)
+	defer tearDownIntegrationTest(t, testData)
 
 	// create doctor with clinicianId specicified
 	doctor := createDoctorWithClinicianId(testData, t)
@@ -506,8 +506,8 @@ func TestApproveRefillRequestAndSuccessfulSendToPharmacy(t *testing.T) {
 }
 func TestApproveRefillRequestAndErrorSendingToPharmacy(t *testing.T) {
 
-	testData := SetupIntegrationTest(t)
-	defer TearDownIntegrationTest(t, testData)
+	testData := setupIntegrationTest(t)
+	defer tearDownIntegrationTest(t, testData)
 
 	// create doctor with clinicianId specicified
 	doctor := createDoctorWithClinicianId(testData, t)
@@ -809,8 +809,8 @@ func TestApproveRefillRequestAndErrorSendingToPharmacy(t *testing.T) {
 
 func TestDenyRefillRequestAndSuccessfulDelete(t *testing.T) {
 
-	testData := SetupIntegrationTest(t)
-	defer TearDownIntegrationTest(t, testData)
+	testData := setupIntegrationTest(t)
+	defer tearDownIntegrationTest(t, testData)
 
 	// create doctor with clinicianId specicified
 	doctor := createDoctorWithClinicianId(testData, t)
@@ -1053,8 +1053,8 @@ func TestDenyRefillRequestAndSuccessfulDelete(t *testing.T) {
 
 func TestDenyRefillRequestWithDNTFWithoutTreatment(t *testing.T) {
 
-	testData := SetupIntegrationTest(t)
-	defer TearDownIntegrationTest(t, testData)
+	testData := setupIntegrationTest(t)
+	defer tearDownIntegrationTest(t, testData)
 
 	// create doctor with clinicianId specicified
 	doctor := createDoctorWithClinicianId(testData, t)
@@ -1544,8 +1544,8 @@ func setUpDeniedRefillRequestWithDNTF(t *testing.T, testData TestData, endErxSta
 
 func TestDenyRefillRequestWithDNTFWithUnlinkedTreatment(t *testing.T) {
 
-	testData := SetupIntegrationTest(t)
-	defer TearDownIntegrationTest(t, testData)
+	testData := setupIntegrationTest(t)
+	defer tearDownIntegrationTest(t, testData)
 
 	unlinkedTreatment := setUpDeniedRefillRequestWithDNTF(t, testData, common.StatusEvent{Status: api.ERX_STATUS_SENT}, false)
 
@@ -1562,8 +1562,8 @@ func TestDenyRefillRequestWithDNTFWithUnlinkedTreatment(t *testing.T) {
 
 func TestDenyRefillRequestWithDNTFWithUnlinkedTreatmentFromTemplatedTreatment(t *testing.T) {
 
-	testData := SetupIntegrationTest(t)
-	defer TearDownIntegrationTest(t, testData)
+	testData := setupIntegrationTest(t)
+	defer tearDownIntegrationTest(t, testData)
 
 	unlinkedTreatment := setUpDeniedRefillRequestWithDNTF(t, testData, common.StatusEvent{Status: api.ERX_STATUS_SENT}, true)
 
@@ -1580,8 +1580,8 @@ func TestDenyRefillRequestWithDNTFWithUnlinkedTreatmentFromTemplatedTreatment(t 
 
 func TestDenyRefillRequestWithDNTFUnlinkedTreatmentErrorSending(t *testing.T) {
 
-	testData := SetupIntegrationTest(t)
-	defer TearDownIntegrationTest(t, testData)
+	testData := setupIntegrationTest(t)
+	defer tearDownIntegrationTest(t, testData)
 
 	errorMessage := "this is a test error message"
 	unlinkedTreatment := setUpDeniedRefillRequestWithDNTF(t, testData, common.StatusEvent{Status: api.ERX_STATUS_ERROR, StatusDetails: errorMessage}, false)
@@ -2031,8 +2031,8 @@ func setUpDeniedRefillRequestWithDNTFForLinkedTreatment(t *testing.T, testData T
 
 func TestDenyRefillRequestWithDNTFWithLinkedTreatmentSuccessfulSend(t *testing.T) {
 
-	testData := SetupIntegrationTest(t)
-	defer TearDownIntegrationTest(t, testData)
+	testData := setupIntegrationTest(t)
+	defer tearDownIntegrationTest(t, testData)
 
 	linkedTreatment := setUpDeniedRefillRequestWithDNTFForLinkedTreatment(t, testData, common.StatusEvent{Status: api.ERX_STATUS_SENT}, false)
 
@@ -2049,8 +2049,8 @@ func TestDenyRefillRequestWithDNTFWithLinkedTreatmentSuccessfulSend(t *testing.T
 
 func TestDenyRefillRequestWithDNTFWithLinkedTreatmentSuccessfulSendAddingFromTemplatedTreatment(t *testing.T) {
 
-	testData := SetupIntegrationTest(t)
-	defer TearDownIntegrationTest(t, testData)
+	testData := setupIntegrationTest(t)
+	defer tearDownIntegrationTest(t, testData)
 
 	linkedTreatment := setUpDeniedRefillRequestWithDNTFForLinkedTreatment(t, testData, common.StatusEvent{Status: api.ERX_STATUS_SENT}, true)
 
@@ -2067,8 +2067,8 @@ func TestDenyRefillRequestWithDNTFWithLinkedTreatmentSuccessfulSendAddingFromTem
 
 func TestDenyRefillRequestWithDNTFWithLinkedTreatmentErrorSend(t *testing.T) {
 
-	testData := SetupIntegrationTest(t)
-	defer TearDownIntegrationTest(t, testData)
+	testData := setupIntegrationTest(t)
+	defer tearDownIntegrationTest(t, testData)
 
 	errorMessage := "this is a test error message"
 	linkedTreatment := setUpDeniedRefillRequestWithDNTFForLinkedTreatment(t, testData, common.StatusEvent{Status: api.ERX_STATUS_ERROR, StatusDetails: errorMessage}, false)
@@ -2106,8 +2106,8 @@ func TestDenyRefillRequestWithDNTFWithLinkedTreatmentErrorSend(t *testing.T) {
 
 func TestCheckingStatusOfMultipleRefillRequestsAtOnce(t *testing.T) {
 
-	testData := SetupIntegrationTest(t)
-	defer TearDownIntegrationTest(t, testData)
+	testData := setupIntegrationTest(t)
+	defer tearDownIntegrationTest(t, testData)
 
 	// create doctor with clinicianId specicified
 	doctor := createDoctorWithClinicianId(testData, t)
@@ -2400,8 +2400,8 @@ func TestCheckingStatusOfMultipleRefillRequestsAtOnce(t *testing.T) {
 
 func TestRefillRequestComingFromDifferentPharmacyThanDispensedPrescription(t *testing.T) {
 
-	testData := SetupIntegrationTest(t)
-	defer TearDownIntegrationTest(t, testData)
+	testData := setupIntegrationTest(t)
+	defer tearDownIntegrationTest(t, testData)
 
 	// create doctor with clinicianId specicified
 	doctor := createDoctorWithClinicianId(testData, t)
@@ -2648,8 +2648,8 @@ func TestRefillRequestComingFromDifferentPharmacyThanDispensedPrescription(t *te
 
 func TestNewRefillRequestWithUnlinkedTreatmentAndLinkedPatient(t *testing.T) {
 
-	testData := SetupIntegrationTest(t)
-	defer TearDownIntegrationTest(t, testData)
+	testData := setupIntegrationTest(t)
+	defer tearDownIntegrationTest(t, testData)
 
 	// create doctor with clinicianId specicified
 	doctor := createDoctorWithClinicianId(testData, t)
@@ -2826,8 +2826,8 @@ func TestNewRefillRequestWithUnlinkedTreatmentAndLinkedPatient(t *testing.T) {
 
 func TestNewRefillRequestWithUnlinkedTreatmentAndUnlinkedPatient(t *testing.T) {
 
-	testData := SetupIntegrationTest(t)
-	defer TearDownIntegrationTest(t, testData)
+	testData := setupIntegrationTest(t)
+	defer tearDownIntegrationTest(t, testData)
 
 	// create doctor with clinicianId specicified
 	doctor := createDoctorWithClinicianId(testData, t)

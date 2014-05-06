@@ -14,8 +14,8 @@ import (
 
 func TestDoctorQueueWithPatientVisits(t *testing.T) {
 
-	testData := SetupIntegrationTest(t)
-	defer TearDownIntegrationTest(t, testData)
+	testData := setupIntegrationTest(t)
+	defer tearDownIntegrationTest(t, testData)
 
 	// get the current primary doctor
 	doctorId := getDoctorIdOfCurrentPrimaryDoctor(testData, t)
@@ -168,8 +168,8 @@ func doBasicCheckOfDoctorQueue(doctorDisplayFeedTabs *apiservice.DisplayFeedTabs
 
 func TestDoctorFeed(t *testing.T) {
 
-	testData := SetupIntegrationTest(t)
-	defer TearDownIntegrationTest(t, testData)
+	testData := setupIntegrationTest(t)
+	defer tearDownIntegrationTest(t, testData)
 
 	// get the current primary doctor
 	doctorId := getDoctorIdOfCurrentPrimaryDoctor(testData, t)
