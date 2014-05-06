@@ -52,7 +52,7 @@ type TPImageView struct {
 	ImageWidth  int    `json:"image_width"`
 	ImageHeight int    `json:"image_height"`
 	ImageURL    string `json:"image_url"`
-	// TODO insets
+	Insets      string `json:"insets"`
 }
 
 func (v *TPImageView) Validate() error {

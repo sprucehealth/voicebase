@@ -130,11 +130,24 @@ func treatmentGuideResponse(dataAPI api.DataAPI, w http.ResponseWriter, treatmen
 
 	// Format drug details into views
 
-	views := []TPView{
+	var views []TPView
+
+	if details.ImageURL != "" {
+		views = append(views,
+			&TPImageView{
+				ImageURL:    details.ImageURL,
+				ImageWidth:  320,
+				ImageHeight: 210,
+				Insets:      "none",
+			},
+		)
+	}
+
+	views = append(views,
 		&TPIconTitleSubtitleView{
 			IconURL:  "spruce:///images/icon_rx",
 			Title:    details.Name,
-			Subtitle: details.Subtitle,
+			Subtitle: "", // TODO: Not sure what to put here yet. Possibly details.Alternative.
 		},
 		&TPSmallDividerView{},
 		&TPTextView{
@@ -144,7 +157,7 @@ func treatmentGuideResponse(dataAPI api.DataAPI, w http.ResponseWriter, treatmen
 		&TPLargeDividerView{},
 		&TPIconTextView{
 			// TODO: This icon info isn't robust or likely accurate
-			IconURL:    fmt.Sprintf("spruce:///images/doctor_photo_%d", treatment.Doctor.DoctorId.Int64()),
+			IconURL:    fmt.Sprintf("spruce:///image/thumbnail_care_team_%d", treatment.Doctor.DoctorId.Int64()),
 			IconWidth:  32,
 			IconHeight: 32,
 			Text:       fmt.Sprintf("Dr. %s's Instructions", treatment.Doctor.LastName),
@@ -154,87 +167,85 @@ func treatmentGuideResponse(dataAPI api.DataAPI, w http.ResponseWriter, treatmen
 		&TPTextView{
 			Text: treatment.PatientInstructions,
 		},
-		&TPLargeDividerView{},
-		&TPTextView{
-			Text:  "What to Know",
-			Style: sectionHeaderStyle,
-		},
-		&TPSmallDividerView{},
-	}
-
-	if len(details.Warnings) != 0 {
-		views = append(views, &TPTextView{
-			Text:  "Warnings",
-			Style: subheaderStyle,
-		})
-		for _, s := range details.Warnings {
-			views = append(views, &TPTextView{
-				Text:  s,
-				Style: "warning",
-			})
-		}
-	}
-
-	if len(details.Precautions) != 0 {
-		views = append(views, &TPTextView{
-			Text:  "Precautions",
-			Style: subheaderStyle,
-		})
-		for _, p := range details.Precautions {
-			views = append(views, &TPSnippetDetailsView{
-				Snippet: p.Snippet,
-				Details: p.Details,
-			})
-		}
-	}
-
-	views = append(views,
-		&TPLargeDividerView{},
-		&TPTextView{
-			Text:  "How to Use " + details.Name,
-			Style: sectionHeaderStyle,
-		},
-		&TPSmallDividerView{},
 	)
 
-	for i, s := range details.HowToUse {
-		views = append(views, &TPListElementView{
-			ElementStyle: "numbered",
-			Number:       i + 1,
-			Text:         s,
-		})
+	if len(details.Warnings) != 0 || len(details.Precautions) != 0 {
+		views = append(views,
+			&TPLargeDividerView{},
+			&TPTextView{
+				Text:  "What to Know",
+				Style: sectionHeaderStyle,
+			},
+		)
+
+		if len(details.Warnings) != 0 {
+			views = append(views,
+				&TPSmallDividerView{},
+				&TPTextView{
+					Text:  "Warnings",
+					Style: subheaderStyle,
+				},
+			)
+			for _, s := range details.Warnings {
+				views = append(views, &TPTextView{
+					Text:  s,
+					Style: "warning",
+				})
+			}
+		}
+
+		if len(details.Precautions) != 0 {
+			views = append(views,
+				&TPSmallDividerView{},
+				&TPTextView{
+					Text:  "Precautions",
+					Style: sectionHeaderStyle,
+				},
+			)
+
+			for _, p := range details.Precautions {
+				views = append(views, &TPTextView{
+					Text: p,
+				})
+			}
+		}
 	}
 
-	if len(details.DoNots) != 0 {
-		views = append(views, &TPSmallDividerView{})
-		for _, s := range details.DoNots {
+	if len(details.HowToUse) != 0 {
+		views = append(views,
+			&TPLargeDividerView{},
+			&TPTextView{
+				Text:  "How to Use " + treatment.DrugName,
+				Style: sectionHeaderStyle,
+			},
+			&TPSmallDividerView{},
+		)
+		for i, s := range details.HowToUse {
 			views = append(views, &TPListElementView{
-				ElementStyle: "dont",
+				ElementStyle: "numbered",
+				Number:       i + 1,
 				Text:         s,
 			})
 		}
 	}
 
-	views = append(views,
-		&TPLargeDividerView{},
-		&TPTextView{
-			Text:  "Message Your Doctor If\u2026",
-			Style: sectionHeaderStyle,
-		},
-		&TPSmallDividerView{},
-	)
-
-	for _, s := range details.MessageDoctorIf {
-		views = append(views, &TPTextView{
-			Text: s,
-		})
+	if len(details.SideEffects) != 0 {
+		views = append(views,
+			&TPLargeDividerView{},
+			&TPTextView{
+				Text:  "Potential Side Effects",
+				Style: sectionHeaderStyle,
+			},
+			&TPSmallDividerView{},
+		)
+		for _, s := range details.SideEffects {
+			views = append(views, &TPTextView{
+				Text: s,
+			})
+		}
 	}
 
 	views = append(views,
-		&TPPlainButtonView{
-			Text:   fmt.Sprintf("View all %s side effects", details.Name),
-			TapURL: "spruce:///action/view_side_effects",
-		},
 		&TPButtonView{
 			Text:    "Message Dr. " + treatment.Doctor.LastName,
 			IconURL: "spruce:///images/icon_message",
