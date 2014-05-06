@@ -238,7 +238,7 @@ func treatmentGuideResponse(dataAPI api.DataAPI, w http.ResponseWriter, treatmen
 			},
 			&TPSmallDividerView{},
 		)
-		for i, s := range details.SideEffects {
+		for _, s := range details.SideEffects {
 			views = append(views, &TPTextView{
 				Text: s,
 			})

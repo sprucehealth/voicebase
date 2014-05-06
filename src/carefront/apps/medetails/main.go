@@ -196,10 +196,6 @@ func main() {
 		}
 	}
 
-	for name, s := range sections {
-		fmt.Printf("%s %+v\n", name, s)
-	}
-
 	drugs := make([]*common.DrugDetails, 0)
 	for i := 1; i <= feed.ColCount; i++ {
 		if cells[2][i] != nil {
