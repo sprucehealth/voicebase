@@ -3,7 +3,7 @@
 # This script makes it easy to apply changes to the development and production database once 
 # the schema has been validated. 
 
-RDS_INSTANCE="dev-test.ckwporuc939i.us-east-1.rds.amazonaws.com"
+RDS_INSTANCE="dev-db-2b.ckwporuc939i.us-east-1.rds.amazonaws.com"
 RDS_USERNAME="carefront"
 DATABASE_NAME="carefront_db"
 
@@ -19,6 +19,8 @@ fi
 env=${argsArray[0]}
 for migrationNumber in ${argsArray[@]:1:$len}
 do 
+	echo "Applying migration-$migrationNumber.sql"
+	
 	# ensure that the file exists
 	if [ ! -f snapshot-$migrationNumber.sql ] || [ ! -f data-snapshot-$migrationNumber.sql ] || [ ! -f migration-$migrationNumber.sql ]; then
 		echo "ERROR: Looks like migration $migrationNumber has not yet been validated using validate_schema.sql and so they will not be applied to database"
