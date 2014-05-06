@@ -61,7 +61,7 @@ type attachments struct {
 	Photos []string `json:"photos"`
 }
 
-type NewconversationRequest struct {
+type NewConversationRequest struct {
 	PatientId   int64        `json:"patient_id,string"`
 	TopicId     int64        `json:"topic_id,string"`
 	Message     string       `json:"message"`

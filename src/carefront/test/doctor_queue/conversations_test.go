@@ -30,7 +30,7 @@ func TestConversationItemsInDoctorQueue(t *testing.T) {
 	defer doctorMessageServer.Close()
 
 	body := &bytes.Buffer{}
-	if err := json.NewEncoder(body).Encode(&messages.NewconversationRequest{
+	if err := json.NewEncoder(body).Encode(&messages.NewConversationRequest{
 		TopicId: topicId,
 		Message: "Foo",
 	}); err != nil {
@@ -114,7 +114,7 @@ func TestConversationItemsInDoctorQueue_DoctorInitiated(t *testing.T) {
 	defer patientMessageServer.Close()
 
 	body := &bytes.Buffer{}
-	if err := json.NewEncoder(body).Encode(&messages.NewconversationRequest{
+	if err := json.NewEncoder(body).Encode(&messages.NewConversationRequest{
 		TopicId:   topicId,
 		Message:   "Foo",
 		PatientId: pr.Patient.PatientId.Int64(),
@@ -189,7 +189,7 @@ func TestMarkingConversationReadWithDoctorQueue(t *testing.T) {
 	defer doctorReadServer.Close()
 
 	body := &bytes.Buffer{}
-	if err := json.NewEncoder(body).Encode(&messages.NewconversationRequest{
+	if err := json.NewEncoder(body).Encode(&messages.NewConversationRequest{
 		TopicId: topicId,
 		Message: "Foo",
 	}); err != nil {

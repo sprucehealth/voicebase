@@ -240,6 +240,9 @@ func (d *DoctorQueueItem) GetActionUrl(dataApi DataAPI) (string, error) {
 			return "", err
 		}
 		people, err := dataApi.GetPeople([]int64{conversation.LastParticipantId})
+		if err != nil {
+			return "", err
+		}
 		return fmt.Sprintf("%s%s?patient_id=%d", SpruceButtonBaseActionUrl, viewPatientConversations, people[conversation.LastParticipantId].Patient.PatientId.Int64()), nil
 	}
 

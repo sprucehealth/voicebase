@@ -351,7 +351,7 @@ func TestConversationHandlers(t *testing.T) {
 	// New conversation
 
 	body := &bytes.Buffer{}
-	if err := json.NewEncoder(body).Encode(&messages.NewconversationRequest{
+	if err := json.NewEncoder(body).Encode(&messages.NewConversationRequest{
 		TopicId: topicId,
 		Message: "Foo",
 	}); err != nil {
