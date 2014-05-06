@@ -245,19 +245,13 @@ func (d *DoctorSubmitPatientVisitReviewHandler) submitPatientVisitReview(w http.
 		return
 	}
 
-	// mark the status on the visit in the doctor's queue to move it to the completed tab
-	// so that the visit is no longer in the hands of the doctor
-	err = d.DataApi.MarkGenerationOfTreatmentPlanInVisitQueue(patientVisitReviewData.DoctorId, requestData.PatientVisitId, treatmentPlanId, api.QUEUE_ITEM_STATUS_ONGOING, requestData.Status)
-	if err != nil {
-		WriteDeveloperError(w, http.StatusInternalServerError, "Unable to update the status of the patient visit in the doctor queue: "+err.Error())
-		return
-	}
-
 	dispatch.Default.PublishAsync(&VisitReviewSubmittedEvent{
-		PatientId: patient.PatientId.Int64(),
-		DoctorId:  doctor.DoctorId.Int64(),
-		VisitId:   requestData.PatientVisitId,
-		Patient:   patient,
+		PatientId:       patient.PatientId.Int64(),
+		DoctorId:        doctor.DoctorId.Int64(),
+		VisitId:         requestData.PatientVisitId,
+		TreatmentPlanId: treatmentPlanId,
+		Patient:         patient,
+		Status:          requestData.Status,
 	})
 
 	WriteJSONToHTTPResponseWriter(w, http.StatusOK, SuccessfulGenericJSONResponse())

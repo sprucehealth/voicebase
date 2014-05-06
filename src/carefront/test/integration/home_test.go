@@ -31,10 +31,10 @@ var notificationTypes = map[string]reflect.Type{
 }
 
 func TestPatientNotificationsAPI(t *testing.T) {
-	testData := setupIntegrationTest(t)
-	defer tearDownIntegrationTest(t, testData)
+	testData := SetupIntegrationTest(t)
+	defer TearDownIntegrationTest(t, testData)
 
-	pr := signupRandomTestPatient(t, testData.DataApi, testData.AuthApi)
+	pr := SignupRandomTestPatient(t, testData.DataApi, testData.AuthApi)
 	patient := pr.Patient
 	patientId := patient.PatientId.Int64()
 
@@ -96,10 +96,10 @@ func TestPatientNotificationsAPI(t *testing.T) {
 }
 
 func TestHealthLogAPI(t *testing.T) {
-	testData := setupIntegrationTest(t)
-	defer tearDownIntegrationTest(t, testData)
+	testData := SetupIntegrationTest(t)
+	defer TearDownIntegrationTest(t, testData)
 
-	pr := signupRandomTestPatient(t, testData.DataApi, testData.AuthApi)
+	pr := SignupRandomTestPatient(t, testData.DataApi, testData.AuthApi)
 	patient := pr.Patient
 	patientId := patient.PatientId.Int64()
 
@@ -144,10 +144,10 @@ func TestHealthLogAPI(t *testing.T) {
 }
 
 func TestHealthLog(t *testing.T) {
-	testData := setupIntegrationTest(t)
-	defer tearDownIntegrationTest(t, testData)
+	testData := SetupIntegrationTest(t)
+	defer TearDownIntegrationTest(t, testData)
 
-	pr := signupRandomTestPatient(t, testData.DataApi, testData.AuthApi)
+	pr := SignupRandomTestPatient(t, testData.DataApi, testData.AuthApi)
 	patient := pr.Patient
 	patientId := patient.PatientId.Int64()
 
@@ -165,7 +165,7 @@ func TestHealthLog(t *testing.T) {
 	ts := httptest.NewServer(homelog.NewListHandler(testData.DataApi))
 	defer ts.Close()
 
-	resp, err := authGet(ts.URL, patient.AccountId.Int64())
+	resp, err := AuthGet(ts.URL, patient.AccountId.Int64())
 	if err != nil {
 		t.Fatal("Unable to get home")
 	}
@@ -179,14 +179,14 @@ func TestHealthLog(t *testing.T) {
 }
 
 func TestVisitCreatedNotification(t *testing.T) {
-	testData := setupIntegrationTest(t)
-	defer tearDownIntegrationTest(t, testData)
+	testData := SetupIntegrationTest(t)
+	defer TearDownIntegrationTest(t, testData)
 
-	pr := signupRandomTestPatient(t, testData.DataApi, testData.AuthApi)
+	pr := SignupRandomTestPatient(t, testData.DataApi, testData.AuthApi)
 	patient := pr.Patient
 	patientId := patient.PatientId.Int64()
 
-	doctorId := getDoctorIdOfCurrentPrimaryDoctor(testData, t)
+	doctorId := GetDoctorIdOfCurrentPrimaryDoctor(testData, t)
 	doctor, err := testData.DataApi.GetDoctorFromId(doctorId)
 	if err != nil {
 		t.Fatalf("Error getting doctor from id: %s", err.Error())

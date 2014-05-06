@@ -1,7 +1,8 @@
-package apiservice
+package doctor_queue
 
 import (
 	"carefront/api"
+	"carefront/apiservice"
 	"fmt"
 	"net/http"
 
@@ -13,65 +14,71 @@ const (
 	state_pending   = "pending"
 )
 
-type DoctorQueueHandler struct {
-	DataApi api.DataAPI
+type QueueHandler struct {
+	dataApi api.DataAPI
+}
+
+func NewQueueHandler(dataApi api.DataAPI) *QueueHandler {
+	return &QueueHandler{
+		dataApi: dataApi,
+	}
 }
 
 type DoctorQueueRequestData struct {
 	State string `schema:"state"`
 }
 
-func (d *DoctorQueueHandler) ServeHTTP(w http.ResponseWriter, r *http.Request) {
-	if r.Method != HTTP_GET {
+func (d *QueueHandler) ServeHTTP(w http.ResponseWriter, r *http.Request) {
+	if r.Method != apiservice.HTTP_GET {
 		w.WriteHeader(http.StatusNotFound)
 		return
 	}
 
 	if err := r.ParseForm(); err != nil {
-		WriteDeveloperError(w, http.StatusBadRequest, "Unable to parse request data: "+err.Error())
+		apiservice.WriteDeveloperError(w, http.StatusBadRequest, "Unable to parse request data: "+err.Error())
 		return
 	}
 
 	var requestData DoctorQueueRequestData
 	if err := schema.NewDecoder().Decode(&requestData, r.Form); err != nil {
-		WriteDeveloperError(w, http.StatusBadRequest, "Unable to parse input parameters: "+err.Error())
+		apiservice.WriteDeveloperError(w, http.StatusBadRequest, "Unable to parse input parameters: "+err.Error())
 		return
 	}
 
-	doctorId, err := d.DataApi.GetDoctorIdFromAccountId(GetContext(r).AccountId)
+	doctorId, err := d.dataApi.GetDoctorIdFromAccountId(apiservice.GetContext(r).AccountId)
 	if err != nil {
-		WriteDeveloperError(w, http.StatusInternalServerError, "Unable to get doctor id from account id:"+err.Error())
+		apiservice.WriteDeveloperError(w, http.StatusInternalServerError, "Unable to get doctor id from account id:"+err.Error())
 		return
 	}
 
 	var pendingItemsDoctorQueue, completedItemsDoctorQueue []*api.DoctorQueueItem
 
 	if requestData.State == "" || requestData.State == state_pending {
-		pendingItemsDoctorQueue, err = d.DataApi.GetPendingItemsInDoctorQueue(doctorId)
+		pendingItemsDoctorQueue, err = d.dataApi.GetPendingItemsInDoctorQueue(doctorId)
 		if err != nil {
-			WriteDeveloperError(w, http.StatusInternalServerError, "Unable to get doctor queue for doctor: "+err.Error())
+			apiservice.WriteDeveloperError(w, http.StatusInternalServerError, "Unable to get doctor queue for doctor: "+err.Error())
 			return
 		}
 	}
 
 	if requestData.State == "" || requestData.State == state_completed {
-		completedItemsDoctorQueue, err = d.DataApi.GetCompletedItemsInDoctorQueue(doctorId)
+		completedItemsDoctorQueue, err = d.dataApi.GetCompletedItemsInDoctorQueue(doctorId)
 		if err != nil {
-			WriteDeveloperError(w, http.StatusInternalServerError, "Unable to get doctor queue for doctor: "+err.Error())
+			apiservice.WriteDeveloperError(w, http.StatusInternalServerError, "Unable to get doctor queue for doctor: "+err.Error())
 			return
 		}
 	}
 
 	doctorDisplayFeed, err := d.convertDoctorQueueIntoDisplayQueue(pendingItemsDoctorQueue, completedItemsDoctorQueue)
 	if err != nil {
-		WriteDeveloperError(w, http.StatusInternalServerError, "Unable to convert doctor queue into a display feed: "+err.Error())
+		apiservice.WriteDeveloperError(w, http.StatusInternalServerError, "Unable to convert doctor queue into a display feed: "+err.Error())
 		return
 	}
 
-	WriteJSONToHTTPResponseWriter(w, http.StatusOK, &doctorDisplayFeed)
+	apiservice.WriteJSONToHTTPResponseWriter(w, http.StatusOK, &doctorDisplayFeed)
 }
 
-func (d *DoctorQueueHandler) convertDoctorQueueIntoDisplayQueue(pendingItems, completedItems []*api.DoctorQueueItem) (*DisplayFeedTabs, error) {
+func (d *QueueHandler) convertDoctorQueueIntoDisplayQueue(pendingItems, completedItems []*api.DoctorQueueItem) (*DisplayFeedTabs, error) {
 	var doctorDisplayFeedTabs DisplayFeedTabs
 
 	var pendingOrOngoingDisplayFeed, completedDisplayFeed *DisplayFeed
@@ -98,7 +105,7 @@ func (d *DoctorQueueHandler) convertDoctorQueueIntoDisplayQueue(pendingItems, co
 		upcomingVisitSection.Title = "Next Visit"
 
 		pendingItems[0].PositionInQueue = 0
-		item, err := converQueueItemToDisplayFeedItem(d.DataApi, pendingItems[0])
+		item, err := converQueueItemToDisplayFeedItem(d.dataApi, pendingItems[0])
 		if err != nil {
 			return nil, err
 		}
@@ -110,7 +117,7 @@ func (d *DoctorQueueHandler) convertDoctorQueueIntoDisplayQueue(pendingItems, co
 		}
 		for i, doctorQueueItem := range pendingItems[1:] {
 			doctorQueueItem.PositionInQueue = i + 1
-			item, err = converQueueItemToDisplayFeedItem(d.DataApi, doctorQueueItem)
+			item, err = converQueueItemToDisplayFeedItem(d.dataApi, doctorQueueItem)
 			if err != nil {
 				return nil, err
 			}
@@ -136,7 +143,7 @@ func (d *DoctorQueueHandler) convertDoctorQueueIntoDisplayQueue(pendingItems, co
 				displaySections = append(displaySections, currentDisplaySection)
 				lastSeenDay = day
 			}
-			displayItem, err := converQueueItemToDisplayFeedItem(d.DataApi, completedItem)
+			displayItem, err := converQueueItemToDisplayFeedItem(d.dataApi, completedItem)
 			if err != nil {
 				return nil, err
 			}

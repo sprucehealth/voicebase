@@ -16,8 +16,8 @@ import (
 )
 
 func TestAdvicePointsForPatientVisit(t *testing.T) {
-	testData := setupIntegrationTest(t)
-	defer tearDownIntegrationTest(t, testData)
+	testData := SetupIntegrationTest(t)
+	defer TearDownIntegrationTest(t, testData)
 
 	patientVisitResponse, doctor := setupAdviceCreationTest(t, testData)
 
@@ -104,7 +104,7 @@ func TestAdvicePointsForPatientVisit(t *testing.T) {
 		t.Fatal("Unable to marshal request body for adding advice points: " + err.Error())
 	}
 
-	resp, err := authPost(ts.URL, "application/json", bytes.NewBuffer(requestBody), doctor.AccountId.Int64())
+	resp, err := AuthPost(ts.URL, "application/json", bytes.NewBuffer(requestBody), doctor.AccountId.Int64())
 	if err != nil {
 		t.Fatal("Unable to make successful request to add advice points to patient visit " + err.Error())
 	}
@@ -114,7 +114,7 @@ func TestAdvicePointsForPatientVisit(t *testing.T) {
 	}
 
 	// lets start a new patient visit and ensure that we still get back the advice points as added
-	patientSignedupResponse := signupRandomTestPatient(t, testData.DataApi, testData.AuthApi)
+	patientSignedupResponse := SignupRandomTestPatient(t, testData.DataApi, testData.AuthApi)
 	patientVisitResponse2 := createPatientVisitForPatient(patientSignedupResponse.Patient.PatientId.Int64(), testData, t)
 
 	// get the advice points for this patient visit
@@ -147,8 +147,8 @@ func TestAdvicePointsForPatientVisit(t *testing.T) {
 // against the original item that was added in the first place via the source_id
 func TestAdvicePointsForPatientVisit_TrackingSourceId(t *testing.T) {
 
-	testData := setupIntegrationTest(t)
-	defer tearDownIntegrationTest(t, testData)
+	testData := SetupIntegrationTest(t)
+	defer TearDownIntegrationTest(t, testData)
 
 	patientVisitResponse, doctor := setupAdviceCreationTest(t, testData)
 
@@ -224,8 +224,8 @@ func TestAdvicePointsForPatientVisit_TrackingSourceId(t *testing.T) {
 
 func TestAdvicePointsForPatientVisit_AddingMultipleItemsWithSameText(t *testing.T) {
 
-	testData := setupIntegrationTest(t)
-	defer tearDownIntegrationTest(t, testData)
+	testData := SetupIntegrationTest(t)
+	defer TearDownIntegrationTest(t, testData)
 
 	patientVisitResponse, doctor := setupAdviceCreationTest(t, testData)
 
@@ -251,8 +251,8 @@ func TestAdvicePointsForPatientVisit_AddingMultipleItemsWithSameText(t *testing.
 
 func TestAdvicePointsForPatientVisit_UpdatingMultipleItems(t *testing.T) {
 
-	testData := setupIntegrationTest(t)
-	defer tearDownIntegrationTest(t, testData)
+	testData := SetupIntegrationTest(t)
+	defer TearDownIntegrationTest(t, testData)
 
 	patientVisitResponse, doctor := setupAdviceCreationTest(t, testData)
 
@@ -288,8 +288,8 @@ func TestAdvicePointsForPatientVisit_UpdatingMultipleItems(t *testing.T) {
 
 func TestAdvicePointsForPatientVisit_SelectAdviceFromDeletedAdvice(t *testing.T) {
 
-	testData := setupIntegrationTest(t)
-	defer tearDownIntegrationTest(t, testData)
+	testData := SetupIntegrationTest(t)
+	defer TearDownIntegrationTest(t, testData)
 
 	patientVisitResponse, doctor := setupAdviceCreationTest(t, testData)
 
@@ -362,8 +362,8 @@ func TestAdvicePointsForPatientVisit_SelectAdviceFromDeletedAdvice(t *testing.T)
 
 func TestAdvicePointsForPatientVisit_ErrorDifferentTextForLinkedItems(t *testing.T) {
 
-	testData := setupIntegrationTest(t)
-	defer tearDownIntegrationTest(t, testData)
+	testData := SetupIntegrationTest(t)
+	defer TearDownIntegrationTest(t, testData)
 
 	patientVisitResponse, doctor := setupAdviceCreationTest(t, testData)
 
@@ -404,7 +404,7 @@ func TestAdvicePointsForPatientVisit_ErrorDifferentTextForLinkedItems(t *testing
 		t.Fatal("Unable to marshal request body for adding advice points: " + err.Error())
 	}
 
-	resp, err := authPost(ts.URL, "application/json", bytes.NewBuffer(requestBody), doctor.AccountId.Int64())
+	resp, err := AuthPost(ts.URL, "application/json", bytes.NewBuffer(requestBody), doctor.AccountId.Int64())
 	if err != nil {
 		t.Fatal("Unable to make successful request to add advice points to patient visit " + err.Error())
 	}
@@ -418,7 +418,7 @@ func TestAdvicePointsForPatientVisit_ErrorDifferentTextForLinkedItems(t *testing
 func setupAdviceCreationTest(t *testing.T, testData TestData) (*apiservice.PatientVisitResponse, *common.Doctor) {
 
 	// get the current primary doctor
-	doctorId := getDoctorIdOfCurrentPrimaryDoctor(testData, t)
+	doctorId := GetDoctorIdOfCurrentPrimaryDoctor(testData, t)
 
 	doctor, err := testData.DataApi.GetDoctorFromId(doctorId)
 	if err != nil {
@@ -436,7 +436,7 @@ func getAdvicePointsInPatientVisit(testData TestData, doctor *common.Doctor, pat
 	ts := httptest.NewServer(doctorAdviceHandler)
 	defer ts.Close()
 
-	resp, err := authGet(ts.URL+"?patient_visit_id="+strconv.FormatInt(patientVisitId, 10), doctor.AccountId.Int64())
+	resp, err := AuthGet(ts.URL+"?patient_visit_id="+strconv.FormatInt(patientVisitId, 10), doctor.AccountId.Int64())
 	if err != nil {
 		t.Fatal("Unable to get advice points for patient visit: " + err.Error())
 	}
@@ -467,7 +467,7 @@ func updateAdvicePointsForPatientVisit(doctorAdviceRequest *common.Advice, testD
 		t.Fatal("Unable to marshal request body for adding advice points: " + err.Error())
 	}
 
-	resp, err := authPost(ts.URL, "application/json", bytes.NewBuffer(requestBody), doctor.AccountId.Int64())
+	resp, err := AuthPost(ts.URL, "application/json", bytes.NewBuffer(requestBody), doctor.AccountId.Int64())
 	if err != nil {
 		t.Fatal("Unable to make successful request to add advice points to patient visit " + err.Error())
 	}

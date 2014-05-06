@@ -4,6 +4,7 @@ import (
 	"carefront/api"
 	"carefront/common"
 	"carefront/encoding"
+	"carefront/libs/dispatch"
 	"carefront/libs/erx"
 	"carefront/libs/golog"
 	"carefront/libs/pharmacy"
@@ -103,16 +104,11 @@ func (d *DoctorRefillRequestHandler) resolveRefillRequest(w http.ResponseWriter,
 	// Ensure that the refill request is in the Requested state for
 	// the user to work on it. If it's in the desired end state, then do nothing
 	if refillRequest.RxHistory[0].Status == actionToRefillRequestStateMapping[requestData.Action] {
-		// Move the queue item for the doctor from the ongoing to the completed state
-		if err := d.DataApi.ReplaceItemInDoctorQueue(api.DoctorQueueItem{
-			DoctorId:  doctor.DoctorId.Int64(),
-			ItemId:    refillRequest.Id,
-			EventType: api.EVENT_TYPE_REFILL_REQUEST,
-			Status:    requestData.Action,
-		}, api.QUEUE_ITEM_STATUS_PENDING); err != nil {
-			WriteDeveloperError(w, http.StatusBadRequest, "Unable to update the doctor queue with the refill request item")
-			return
-		}
+		dispatch.Default.Publish(&RefillRequestResolvedEvent{
+			DoctorId:        doctor.DoctorId.Int64(),
+			Status:          actionToRefillRequestStateMapping[requestData.Action],
+			RefillRequestId: refillRequest.Id,
+		})
 		WriteJSONToHTTPResponseWriter(w, http.StatusOK, SuccessfulGenericJSONResponse())
 		return
 	}
@@ -290,16 +286,11 @@ func (d *DoctorRefillRequestHandler) resolveRefillRequest(w http.ResponseWriter,
 		return
 	}
 
-	// Move the queue item for the doctor from the ongoing to the completed state
-	if err := d.DataApi.ReplaceItemInDoctorQueue(api.DoctorQueueItem{
-		DoctorId:  doctor.DoctorId.Int64(),
-		ItemId:    refillRequest.Id,
-		EventType: api.EVENT_TYPE_REFILL_REQUEST,
-		Status:    actionToQueueStateMapping[requestData.Action],
-	}, api.QUEUE_ITEM_STATUS_PENDING); err != nil {
-		WriteDeveloperError(w, http.StatusBadRequest, "Unable to update the doctor queue with the refill request item")
-		return
-	}
+	dispatch.Default.Publish(&RefillRequestResolvedEvent{
+		DoctorId:        doctor.DoctorId.Int64(),
+		Status:          actionToQueueStateMapping[requestData.Action],
+		RefillRequestId: refillRequest.Id,
+	})
 
 	//  Queue up job to check for whether or not the response to this refill request
 	// was successfully transmitted to the pharmacy

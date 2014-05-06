@@ -4,6 +4,7 @@ import (
 	"carefront/api"
 	"carefront/apiservice"
 	"carefront/common"
+	"carefront/libs/dispatch"
 	"carefront/libs/golog"
 	"fmt"
 	"net/http"
@@ -228,6 +229,11 @@ func markConversationAsRead(w http.ResponseWriter, r *http.Request, dataAPI api.
 		apiservice.WriteDeveloperError(w, http.StatusInternalServerError, "Failed to mark conversation as read: "+err.Error())
 		return
 	}
+
+	dispatch.Default.PublishAsync(&ConversationReadEvent{
+		ConversationId: req.ConversationId,
+		FromId:         personId,
+	})
 
 	apiservice.WriteJSONToHTTPResponseWriter(w, http.StatusOK, apiservice.SuccessfulGenericJSONResponse())
 }

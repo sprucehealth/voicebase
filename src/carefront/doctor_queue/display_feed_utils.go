@@ -1,4 +1,4 @@
-package apiservice
+package doctor_queue
 
 import (
 	"carefront/api"
@@ -11,13 +11,12 @@ type DisplayFeedSection struct {
 }
 
 type DisplayFeedItem struct {
-	Title        string      `json:"title"`
-	Subtitle     string      `json:"subtitle,omitempty"`
-	Timestamp    *time.Time  `json:"timestamp,omitempty"`
-	Button       *api.Button `json:"button,omitempty"`
-	ImageUrl     string      `json:"image_url,omitempty"`
-	ItemUrl      string      `json:"action_url,omitempty"`
-	DisplayTypes []string    `json:"display_types,omitempty"`
+	Title        string     `json:"title"`
+	Subtitle     string     `json:"subtitle,omitempty"`
+	Timestamp    *time.Time `json:"timestamp,omitempty"`
+	ImageUrl     string     `json:"image_url,omitempty"`
+	ItemUrl      string     `json:"action_url,omitempty"`
+	DisplayTypes []string   `json:"display_types,omitempty"`
 }
 
 type DisplayFeed struct {
@@ -29,14 +28,13 @@ type DisplayFeedTabs struct {
 	Tabs []*DisplayFeed `json:"tabs"`
 }
 
-func converQueueItemToDisplayFeedItem(DataApi api.DataAPI, itemToDisplay api.FeedDisplayInterface) (*DisplayFeedItem, error) {
-	title, subtitle, err := itemToDisplay.GetTitleAndSubtitle(DataApi)
+func converQueueItemToDisplayFeedItem(dataApi api.DataAPI, itemToDisplay api.FeedDisplayInterface) (*DisplayFeedItem, error) {
+	title, subtitle, err := itemToDisplay.GetTitleAndSubtitle(dataApi)
 	if err != nil {
 		return nil, err
 	}
 
 	item := &DisplayFeedItem{
-		Button:       itemToDisplay.GetButton(),
 		Title:        title,
 		Subtitle:     subtitle,
 		ImageUrl:     itemToDisplay.GetImageUrl(),
@@ -44,7 +42,7 @@ func converQueueItemToDisplayFeedItem(DataApi api.DataAPI, itemToDisplay api.Fee
 		Timestamp:    itemToDisplay.GetTimestamp(),
 	}
 
-	item.ItemUrl, err = itemToDisplay.GetActionUrl(DataApi)
+	item.ItemUrl, err = itemToDisplay.GetActionUrl(dataApi)
 	if err != nil {
 		return nil, err
 	}

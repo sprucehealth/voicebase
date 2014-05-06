@@ -3,6 +3,7 @@ package integration
 import (
 	"carefront/api"
 	"carefront/apiservice"
+	"carefront/doctor_queue"
 	patientApiService "carefront/patient"
 	"carefront/settings"
 	"encoding/json"
@@ -15,11 +16,11 @@ import (
 
 func TestDoctorQueueWithPatientVisits(t *testing.T) {
 
-	testData := setupIntegrationTest(t)
-	defer tearDownIntegrationTest(t, testData)
+	testData := SetupIntegrationTest(t)
+	defer TearDownIntegrationTest(t, testData)
 
 	// get the current primary doctor
-	doctorId := getDoctorIdOfCurrentPrimaryDoctor(testData, t)
+	doctorId := GetDoctorIdOfCurrentPrimaryDoctor(testData, t)
 
 	doctor, err := testData.DataApi.GetDoctorFromId(doctorId)
 	if err != nil {
@@ -29,7 +30,7 @@ func TestDoctorQueueWithPatientVisits(t *testing.T) {
 	patientVisitResponses := make([]*apiservice.PatientVisitResponse, 0)
 	signedUpPatients := make([]*patientApiService.PatientSignedupResponse, 0)
 
-	signedUpPatientResponse := signupRandomTestPatient(t, testData.DataApi, testData.AuthApi)
+	signedUpPatientResponse := SignupRandomTestPatient(t, testData.DataApi, testData.AuthApi)
 	patientVisitResponse := createPatientVisitForPatient(signedUpPatientResponse.Patient.PatientId.Int64(), testData, t)
 	patientVisitResponses = append(patientVisitResponses, patientVisitResponse)
 	signedUpPatients = append(signedUpPatients, signedUpPatientResponse)
@@ -55,10 +56,6 @@ func TestDoctorQueueWithPatientVisits(t *testing.T) {
 		t.Fatal("Expected there to be items under the first section of the first tab")
 	}
 
-	if doctorDisplayFeedTabs.Tabs[0].Sections[0].Items[0].Button == nil || doctorDisplayFeedTabs.Tabs[0].Sections[0].Items[0].Button.ButtonText != "Begin" {
-		t.Fatal("Expected the first item in the first section of the first tab to be actionable")
-	}
-
 	// now go ahead and start reviewing the visit and the item should change to continue visiting
 	startReviewingPatientVisit(patientVisitResponse.PatientVisitId, doctor, testData, t)
 	pickATreatmentPlanForPatientVisit(patientVisitResponse.PatientVisitId, doctor, nil, testData, t)
@@ -76,12 +73,8 @@ func TestDoctorQueueWithPatientVisits(t *testing.T) {
 		t.Fatal("Expected there to be items under the first section of the first tab")
 	}
 
-	if doctorDisplayFeedTabs.Tabs[0].Sections[0].Items[0].Button == nil || doctorDisplayFeedTabs.Tabs[0].Sections[0].Items[0].Button.ButtonText != "Continue" {
-		t.Fatal("Expected the first item in the first section of the first tab to be actionable")
-	}
-
 	// and another item and it should be in the second section and not the first
-	signedUpPatientResponse = signupRandomTestPatient(t, testData.DataApi, testData.AuthApi)
+	signedUpPatientResponse = SignupRandomTestPatient(t, testData.DataApi, testData.AuthApi)
 	patientVisitResponse = createPatientVisitForPatient(signedUpPatientResponse.Patient.PatientId.Int64(), testData, t)
 	patientVisitResponses = append(patientVisitResponses, patientVisitResponse)
 	signedUpPatients = append(signedUpPatients, signedUpPatientResponse)
@@ -99,16 +92,12 @@ func TestDoctorQueueWithPatientVisits(t *testing.T) {
 		t.Fatal("There should be 2 sections in this tab")
 	}
 
-	if doctorDisplayFeedTabs.Tabs[0].Sections[0].Items[0].Button == nil || doctorDisplayFeedTabs.Tabs[0].Sections[0].Items[0].Button.ButtonText != "Continue" {
-		t.Fatal("Expected the first item to be continuing a visit")
-	}
-
 	if doctorDisplayFeedTabs.Tabs[0].Sections[1].Items == nil || len(doctorDisplayFeedTabs.Tabs[0].Sections[1].Items) != 1 {
 		t.Fatal("There should be 1 item in the second section of the first tab")
 	}
 
 	for i := 0; i < 5; i++ {
-		signedUpPatientResponse = signupRandomTestPatient(t, testData.DataApi, testData.AuthApi)
+		signedUpPatientResponse = SignupRandomTestPatient(t, testData.DataApi, testData.AuthApi)
 		patientVisitResponse = createPatientVisitForPatient(signedUpPatientResponse.Patient.PatientId.Int64(), testData, t)
 		patientVisitResponses = append(patientVisitResponses, patientVisitResponse)
 		signedUpPatients = append(signedUpPatients, signedUpPatientResponse)
@@ -124,10 +113,6 @@ func TestDoctorQueueWithPatientVisits(t *testing.T) {
 
 	if len(doctorDisplayFeedTabs.Tabs[0].Sections) != 2 {
 		t.Fatal("There should be 2 sections in this tab")
-	}
-
-	if doctorDisplayFeedTabs.Tabs[0].Sections[0].Items[0].Button == nil || doctorDisplayFeedTabs.Tabs[0].Sections[0].Items[0].Button.ButtonText != "Continue" {
-		t.Fatal("Expected the first item to be continuing a visit")
 	}
 
 	if doctorDisplayFeedTabs.Tabs[0].Sections[1].Items == nil || len(doctorDisplayFeedTabs.Tabs[0].Sections[1].Items) != 6 {
@@ -147,16 +132,12 @@ func TestDoctorQueueWithPatientVisits(t *testing.T) {
 		t.Fatal("There should be 2 sections in this tab")
 	}
 
-	if doctorDisplayFeedTabs.Tabs[0].Sections[0].Items[0].Button == nil || doctorDisplayFeedTabs.Tabs[0].Sections[0].Items[0].Button.ButtonText != "Begin" {
-		t.Fatal("Expected the first item to be continuing a visit")
-	}
-
 	if doctorDisplayFeedTabs.Tabs[0].Sections[1].Items == nil || len(doctorDisplayFeedTabs.Tabs[0].Sections[1].Items) != 5 {
 		t.Fatal("There should be 6 items in the second section of the first tab")
 	}
 }
 
-func doBasicCheckOfDoctorQueue(doctorDisplayFeedTabs *apiservice.DisplayFeedTabs, t *testing.T) {
+func doBasicCheckOfDoctorQueue(doctorDisplayFeedTabs *doctor_queue.DisplayFeedTabs, t *testing.T) {
 	// there should be no sections, but just two empty tabs
 	if doctorDisplayFeedTabs.Tabs == nil {
 		t.Fatal("Expected there to be 2 sections instead got none")
@@ -169,11 +150,11 @@ func doBasicCheckOfDoctorQueue(doctorDisplayFeedTabs *apiservice.DisplayFeedTabs
 
 func TestDoctorFeed(t *testing.T) {
 
-	testData := setupIntegrationTest(t)
-	defer tearDownIntegrationTest(t, testData)
+	testData := SetupIntegrationTest(t)
+	defer TearDownIntegrationTest(t, testData)
 
 	// get the current primary doctor
-	doctorId := getDoctorIdOfCurrentPrimaryDoctor(testData, t)
+	doctorId := GetDoctorIdOfCurrentPrimaryDoctor(testData, t)
 
 	doctor, err := testData.DataApi.GetDoctorFromId(doctorId)
 	if err != nil {
@@ -189,7 +170,7 @@ func TestDoctorFeed(t *testing.T) {
 		}
 	}
 
-	patientSignedupResponse := signupRandomTestPatient(t, testData.DataApi, testData.AuthApi)
+	patientSignedupResponse := SignupRandomTestPatient(t, testData.DataApi, testData.AuthApi)
 	// get patient to start a visit
 	patientVisitResponse := createPatientVisitForPatient(patientSignedupResponse.Patient.PatientId.Int64(), testData, t)
 
@@ -228,23 +209,18 @@ func TestDoctorFeed(t *testing.T) {
 				t.Fatal("Expect there to be 3 sections, one for upcoming visit and another for the rest of the visits")
 			}
 
-			// ensure that the first item has the button text set to Continue to indicate an ongoing itgem
-			if tab.Sections[0].Items[0].Button.ButtonText != "Continue" {
-				t.Fatal("Expected the first item in the list to be the ongoing item. ")
-			}
-
 			// ensure that all items in the pending section have the display type set as needed
 			if tab.Sections[0].Items[0].DisplayTypes == nil || len(tab.Sections[0].Items[0].DisplayTypes) == 0 {
 				t.Fatal("Expected there to exist a list of display types for the item but there arent any")
-			} else if tab.Sections[0].Items[0].DisplayTypes[0] != api.DISPLAY_TYPE_TITLE_SUBTITLE_BUTTON {
-				t.Fatalf("Expected the display type to be %s for this item in the queue but instead it was %s.", api.DISPLAY_TYPE_TITLE_SUBTITLE_BUTTON, tab.Sections[0].Items[0].DisplayTypes[0])
+			} else if tab.Sections[0].Items[0].DisplayTypes[0] != api.DISPLAY_TYPE_TITLE_SUBTITLE_ACTIONABLE {
+				t.Fatalf("Expected the display type to be %s for this item in the queue but instead it was %s.", api.DISPLAY_TYPE_TITLE_SUBTITLE_ACTIONABLE, tab.Sections[0].Items[0].DisplayTypes[0])
 			}
 
 			for _, item := range tab.Sections[1].Items {
 				if item.DisplayTypes == nil || len(item.DisplayTypes) == 0 {
 					t.Fatal("Expected there to exist a list of display types for the item but there arent any")
 				} else if item.DisplayTypes[0] != api.DISPLAY_TYPE_TITLE_SUBTITLE_ACTIONABLE {
-					t.Fatalf("Expected the display type to be %s for this item in the queue but instead it was %s.", api.DISPLAY_TYPE_TITLE_SUBTITLE_BUTTON, item.DisplayTypes[0])
+					t.Fatalf("Expected the display type to be %s for this item in the queue but instead it was %s.", api.DISPLAY_TYPE_TITLE_SUBTITLE_ACTIONABLE, item.DisplayTypes[0])
 				}
 			}
 
@@ -360,12 +336,12 @@ func TestDoctorFeed(t *testing.T) {
 
 }
 
-func getDoctorQueue(testData TestData, doctorAccountId int64, t *testing.T) *apiservice.DisplayFeedTabs {
-	doctorQueueHandler := &apiservice.DoctorQueueHandler{DataApi: testData.DataApi}
+func getDoctorQueue(testData TestData, doctorAccountId int64, t *testing.T) *doctor_queue.DisplayFeedTabs {
+	doctorQueueHandler := doctor_queue.NewQueueHandler(testData.DataApi)
 	ts := httptest.NewServer(doctorQueueHandler)
 	defer ts.Close()
 
-	resp, err := authGet(ts.URL, doctorAccountId)
+	resp, err := AuthGet(ts.URL, doctorAccountId)
 	if err != nil {
 		t.Fatal("Unable to get doctor feed for doctor: " + err.Error())
 	}
@@ -377,7 +353,7 @@ func getDoctorQueue(testData TestData, doctorAccountId int64, t *testing.T) *api
 
 	CheckSuccessfulStatusCode(resp, "Unable to make successful call to get doctor feed "+string(respBody), t)
 
-	doctorDisplayFeedTabs := &apiservice.DisplayFeedTabs{}
+	doctorDisplayFeedTabs := &doctor_queue.DisplayFeedTabs{}
 	err = json.Unmarshal(respBody, doctorDisplayFeedTabs)
 	if err != nil {
 		t.Fatal("Unable to unmarshal response body into tabs " + err.Error())

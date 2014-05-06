@@ -206,6 +206,7 @@ type DoctorAPI interface {
 	GetCompletedPrescriptionsForDoctor(from, to time.Time, doctorId int64) ([]*common.TreatmentPlan, error)
 	InsertItemIntoDoctorQueue(doctorQueueItem DoctorQueueItem) error
 	ReplaceItemInDoctorQueue(doctorQueueItem DoctorQueueItem, currentState string) error
+	DeleteItemFromDoctorQueue(doctorQueueItem DoctorQueueItem) error
 	MarkGenerationOfTreatmentPlanInVisitQueue(doctorId, patientVisitId, treatmentPlanId int64, currentState, updatedState string) error
 }
 
