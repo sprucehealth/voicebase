@@ -2,9 +2,11 @@ package main
 
 import (
 	"crypto/tls"
+	"fmt"
 	"log"
 	"net"
 	"net/http"
+	"os"
 	"strconv"
 	"time"
 
@@ -110,6 +112,35 @@ var DefaultConfig = Config{
 	IOSDeeplinkScheme:     "spruce",
 }
 
+func (c *Config) Validate() {
+	var errors []string
+	if c.ContentBucket == "" {
+		errors = append(errors, "ContentBucket not set")
+	}
+	if c.VisualLayoutBucket == "" {
+		errors = append(errors, "VisualLayoutBucket not set")
+	}
+	if c.PatientLayoutBucket == "" {
+		errors = append(errors, "PatientLayoutBucket not set")
+	}
+	if c.DoctorVisualLayoutBucket == "" {
+		errors = append(errors, "DoctorVisualLayoutBucket not set")
+	}
+	if c.DoctorLayoutBucket == "" {
+		errors = append(errors, "DoctorLayoutBucket")
+	}
+	if c.PhotoBucket == "" {
+		errors = append(errors, "PhotoBucket not set")
+	}
+	if len(errors) != 0 {
+		fmt.Fprintf(os.Stderr, "Config failed validation:\n")
+		for _, e := range errors {
+			fmt.Fprintf(os.Stderr, "- %s\n", e)
+		}
+		os.Exit(1)
+	}
+}
+
 func main() {
 	conf := DefaultConfig
 	_, err := config.Parse(&conf)
@@ -120,6 +151,8 @@ func main() {
 	if conf.Debug {
 		golog.SetLevel(golog.DEBUG)
 	}
+
+	conf.Validate()
 
 	db, err := conf.DB.Connect(conf.BaseConfig)
 	if err != nil {
