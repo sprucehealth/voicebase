@@ -1,7 +1,6 @@
 package integration
 
 import (
-	"bytes"
 	"carefront/api"
 	"carefront/common"
 	"carefront/messages"
@@ -348,31 +347,12 @@ func TestConversationHandlers(t *testing.T) {
 	doctorMessageServer := httptest.NewServer(messages.NewDoctorMessagesHandler(testData.DataApi))
 	defer doctorMessageServer.Close()
 
-	// New conversation from patient to doctor
-
-	body := &bytes.Buffer{}
-	if err := json.NewEncoder(body).Encode(&messages.NewConversationRequest{
-		TopicId: topicId,
-		Message: "Foo",
-	}); err != nil {
-		t.Fatal(err)
-	}
-	res, err := AuthPost(patientConvoServer.URL, "application/json", body, pr.Patient.AccountId.Int64())
-	if err != nil {
-		t.Fatal(err)
-	} else if res.StatusCode != 200 {
-		t.Fatalf("Expected status 200. Got %d", res.StatusCode)
-	}
-	newConvRes := &messages.NewConversationResponse{}
-	if err := json.NewDecoder(res.Body).Decode(newConvRes); err != nil {
-		t.Fatal(err)
-	}
-	res.Body.Close()
+	convId := StartConversationFromPatientToDoctor(t, testData.DataApi, pr.Patient.AccountId.Int64(), topicId)
 
 	// Make sure conversation was created
 
 	var doctorPersonId int64
-	if c, err := testData.DataApi.GetConversation(newConvRes.ConversationId); err != nil {
+	if c, err := testData.DataApi.GetConversation(convId); err != nil {
 		t.Fatal(err)
 	} else {
 		doctorPersonId = c.OwnerId
@@ -389,7 +369,7 @@ func TestConversationHandlers(t *testing.T) {
 
 	// List conversations
 
-	res, err = AuthGet(fmt.Sprintf("%s?patient_id=%d", doctorConvoServer.URL, pr.Patient.PatientId.Int64()), dr.AccountId.Int64())
+	res, err := AuthGet(fmt.Sprintf("%s?patient_id=%d", doctorConvoServer.URL, pr.Patient.PatientId.Int64()), dr.AccountId.Int64())
 	if err != nil {
 		t.Fatal(err)
 	} else if res.StatusCode != 200 {
@@ -407,17 +387,5 @@ func TestConversationHandlers(t *testing.T) {
 
 	// Reply
 
-	body = &bytes.Buffer{}
-	if err := json.NewEncoder(body).Encode(&messages.ReplyRequest{
-		ConversationId: newConvRes.ConversationId,
-		Message:        "Foo",
-	}); err != nil {
-		t.Fatal(err)
-	}
-	res, err = AuthPost(doctorMessageServer.URL, "application/json", body, dr.AccountId.Int64())
-	if err != nil {
-		t.Fatal(err)
-	} else if res.StatusCode != 200 {
-		t.Fatalf("Expected status 200. Got %d", res.StatusCode)
-	}
+	DoctorReplyToConversation(t, testData.DataApi, convId, dr.AccountId.Int64())
 }

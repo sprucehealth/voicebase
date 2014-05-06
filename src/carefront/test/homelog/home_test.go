@@ -18,21 +18,51 @@ type titleSubtitleItem struct {
 	TapURL   string
 }
 
+type incompleteVisitNotification struct {
+	VisitId int64
+}
+
+type visitReviewedNotification struct {
+	DoctorId int64
+	VisitId  int64
+}
+
+type newConversationNotification struct {
+	DoctorId       int64
+	ConversationId int64
+}
+
+type conversationReplyNotification struct {
+	DoctorId       int64
+	ConversationId int64
+}
+
 func (*titleSubtitleItem) TypeName() string {
 	return "title_subtitle"
 }
 
-type visitReviewedNotification struct {
-	SomeId int64
+func (*incompleteVisitNotification) TypeName() string {
+	return "incomplete_visit"
 }
 
 func (*visitReviewedNotification) TypeName() string {
 	return "visit_reviewed"
 }
 
+func (*newConversationNotification) TypeName() string {
+	return "new_conversation"
+}
+
+func (*conversationReplyNotification) TypeName() string {
+	return "conversation_reply"
+}
+
 var notificationTypes = map[string]reflect.Type{
-	(&titleSubtitleItem{}).TypeName():         reflect.TypeOf(titleSubtitleItem{}),
-	(&visitReviewedNotification{}).TypeName(): reflect.TypeOf(visitReviewedNotification{}),
+	(&titleSubtitleItem{}).TypeName():             reflect.TypeOf(titleSubtitleItem{}),
+	(&incompleteVisitNotification{}).TypeName():   reflect.TypeOf(incompleteVisitNotification{}),
+	(&visitReviewedNotification{}).TypeName():     reflect.TypeOf(visitReviewedNotification{}),
+	(&newConversationNotification{}).TypeName():   reflect.TypeOf(newConversationNotification{}),
+	(&conversationReplyNotification{}).TypeName(): reflect.TypeOf(conversationReplyNotification{}),
 }
 
 func TestPatientNotificationsAPI(t *testing.T) {
@@ -215,10 +245,9 @@ func TestVisitCreatedNotification(t *testing.T) {
 	} else if notes[0].Data.TypeName() != "visit_reviewed" {
 		t.Fatalf("Expected notification of type %s instead got %s", "visit_reviewed", notes[0].Data.TypeName())
 	}
-
 }
 
-func TestConversationStartedLogItem(t *testing.T) {
+func TestConversationLogItem(t *testing.T) {
 	testData := integration.SetupIntegrationTest(t)
 	defer integration.TearDownIntegrationTest(t, testData)
 
@@ -233,7 +262,6 @@ func TestConversationStartedLogItem(t *testing.T) {
 	}
 
 	convId := integration.StartConversationFromDoctorToPatient(t, testData.DataApi, doctor.AccountId.Int64(), patientId, 0)
-	_ = convId
 
 	items, _, err := testData.DataApi.GetHealthLogForPatient(patientId, notificationTypes)
 	if err != nil {
@@ -264,5 +292,74 @@ func TestConversationStartedLogItem(t *testing.T) {
 		t.Fatalf("Test item subtitle mismatch: %s", items[0].Data.(*titleSubtitleItem).Subtitle)
 	} else if items[0].Timestamp.Sub(firstItem.Timestamp) == 0 {
 		t.Fatalf("Timestamp not updated")
+	}
+}
+
+func TestConversationNotifications(t *testing.T) {
+	testData := integration.SetupIntegrationTest(t)
+	defer integration.TearDownIntegrationTest(t, testData)
+
+	pr := integration.SignupRandomTestPatient(t, testData.DataApi, testData.AuthApi)
+	patient := pr.Patient
+	patientId := patient.PatientId.Int64()
+
+	doctorId := integration.GetDoctorIdOfCurrentPrimaryDoctor(testData, t)
+	doctor, err := testData.DataApi.GetDoctorFromId(doctorId)
+	if err != nil {
+		t.Fatalf("Error getting doctor from id: %s", err.Error())
+	}
+
+	// New conversation from doctor to patient MUST create a notification
+
+	convId := integration.StartConversationFromDoctorToPatient(t, testData.DataApi, doctor.AccountId.Int64(), patientId, 0)
+
+	notes, _, err := testData.DataApi.GetNotificationsForPatient(patientId, notificationTypes)
+	if err != nil {
+		t.Fatalf("Unable to get notifications for patient %s", err)
+	} else if len(notes) != 1 {
+		t.Fatalf("Expected 1 notification for patient instead got %d", len(notes))
+	} else if notes[0].Data.TypeName() != "new_conversation" {
+		t.Fatalf("Expected notification of type %s instead got %s", "new_conversation", notes[0].Data.TypeName())
+	}
+	if err := testData.DataApi.DeletePatientNotifications([]int64{notes[0].Id}); err != nil {
+		t.Fatalf("Failed to delete notification: %s", err.Error())
+	}
+
+	// Reply from patient to doctor MUST NOT create a notification
+
+	integration.PatientReplyToConversation(t, testData.DataApi, convId, patient.AccountId.Int64())
+
+	notes, _, err = testData.DataApi.GetNotificationsForPatient(patientId, notificationTypes)
+	if err != nil {
+		t.Fatalf("Unable to get notifications for patient %s", err)
+	} else if len(notes) != 0 {
+		t.Fatalf("Expected 0 notifications for patient instead got %d", len(notes))
+	}
+
+	// Reply from doctor to patient MUST create a notification
+
+	integration.DoctorReplyToConversation(t, testData.DataApi, convId, doctor.AccountId.Int64())
+
+	notes, _, err = testData.DataApi.GetNotificationsForPatient(patientId, notificationTypes)
+	if err != nil {
+		t.Fatalf("Unable to get notifications for patient %s", err)
+	} else if len(notes) != 1 {
+		t.Fatalf("Expected 1 notification for patient instead got %d", len(notes))
+	} else if notes[0].Data.TypeName() != "conversation_reply" {
+		t.Fatalf("Expected notification of type %s instead got %s", "conversation_reply", notes[0].Data.TypeName())
+	}
+	if err := testData.DataApi.DeletePatientNotifications([]int64{notes[0].Id}); err != nil {
+		t.Fatalf("Failed to delete notification: %s", err.Error())
+	}
+
+	// New conversation from patient to doctor MUST NOT create a notification
+
+	integration.StartConversationFromPatientToDoctor(t, testData.DataApi, patient.AccountId.Int64(), 0)
+
+	notes, _, err = testData.DataApi.GetNotificationsForPatient(patientId, notificationTypes)
+	if err != nil {
+		t.Fatalf("Unable to get notifications for patient %s", err)
+	} else if len(notes) != 0 {
+		t.Fatalf("Expected 0 notifications for patient instead got %d", len(notes))
 	}
 }
