@@ -42,7 +42,6 @@ func (d *DataService) updateTopLevelPatientInformation(db db, patient *common.Pa
 		return err
 	}
 
-	// add the new ones from the doctor
 	for i, phoneNumber := range patient.PhoneNumbers {
 		status := STATUS_INACTIVE
 		// save the first number as the main/default number
@@ -76,7 +75,6 @@ func (d *DataService) UpdatePatientInformation(patient *common.Patient, updateFr
 	// update patient address if it exists
 	if patient.PatientAddress != nil {
 
-		// create a new address, mark it as being updated by the doctor, and set it as default selected address
 		addressId, err := d.addAddress(tx, patient.PatientAddress)
 		if err != nil {
 			tx.Rollback()
@@ -90,7 +88,6 @@ func (d *DataService) UpdatePatientInformation(patient *common.Patient, updateFr
 			return err
 		}
 
-		// create new selection and mark it as having been updated by doctor
 		_, err = tx.Exec(`insert into patient_address_selection (address_id, patient_id, is_default, is_updated_by_doctor) values 
 								(?,?,1,?)`, addressId, patient.PatientId.Int64(), updateFromDoctor)
 		if err != nil {
