@@ -74,7 +74,7 @@ func init() {
 	dispatch.Testing = true
 }
 
-func authGet(url string, accountId int64) (*http.Response, error) {
+func AuthGet(url string, accountId int64) (*http.Response, error) {
 	req, err := http.NewRequest("GET", url, nil)
 	if err != nil {
 		return nil, err
@@ -84,7 +84,7 @@ func authGet(url string, accountId int64) (*http.Response, error) {
 	return http.DefaultClient.Do(req)
 }
 
-func authPost(url, bodyType string, body io.Reader, accountId int64) (*http.Response, error) {
+func AuthPost(url, bodyType string, body io.Reader, accountId int64) (*http.Response, error) {
 	req, err := http.NewRequest("POST", url, body)
 	if err != nil {
 		return nil, err
@@ -95,7 +95,7 @@ func authPost(url, bodyType string, body io.Reader, accountId int64) (*http.Resp
 	return http.DefaultClient.Do(req)
 }
 
-func authPut(url, bodyType string, body io.Reader, accountId int64) (*http.Response, error) {
+func AuthPut(url, bodyType string, body io.Reader, accountId int64) (*http.Response, error) {
 	req, err := http.NewRequest("PUT", url, body)
 	if err != nil {
 		return nil, err
@@ -106,7 +106,7 @@ func authPut(url, bodyType string, body io.Reader, accountId int64) (*http.Respo
 	return http.DefaultClient.Do(req)
 }
 
-func authDelete(url, bodyType string, body io.Reader, accountId int64) (*http.Response, error) {
+func AuthDelete(url, bodyType string, body io.Reader, accountId int64) (*http.Response, error) {
 	req, err := http.NewRequest("DELETE", url, body)
 	if err != nil {
 		return nil, err
@@ -119,7 +119,7 @@ func authDelete(url, bodyType string, body io.Reader, accountId int64) (*http.Re
 
 func GetDBConfig(t *testing.T) *TestDBConfig {
 	dbConfig := TestConf{}
-	fileContents, err := ioutil.ReadFile("../../apps/restapi/dev.conf")
+	fileContents, err := ioutil.ReadFile(os.Getenv(carefrontProjectDirEnv) + "/src/carefront/apps/restapi/dev.conf")
 	if err != nil {
 		t.Fatal("Unable to upload dev.conf to read database data from : " + err.Error())
 	}
@@ -153,7 +153,7 @@ func CheckIfRunningLocally(t *testing.T) {
 	}
 }
 
-func getDoctorIdOfCurrentPrimaryDoctor(testData TestData, t *testing.T) int64 {
+func GetDoctorIdOfCurrentPrimaryDoctor(testData TestData, t *testing.T) int64 {
 	// get the current primary doctor
 	var doctorId int64
 	err := testData.DB.QueryRow(`select provider_id from care_provider_state_elligibility 
@@ -167,7 +167,7 @@ func getDoctorIdOfCurrentPrimaryDoctor(testData TestData, t *testing.T) int64 {
 }
 
 func signupAndSubmitPatientVisitForRandomPatient(t *testing.T, testData TestData, doctor *common.Doctor) (*apiservice.PatientVisitResponse, *common.DoctorTreatmentPlan) {
-	patientSignedupResponse := signupRandomTestPatient(t, testData.DataApi, testData.AuthApi)
+	patientSignedupResponse := SignupRandomTestPatient(t, testData.DataApi, testData.AuthApi)
 	patientVisitResponse := createPatientVisitForPatient(patientSignedupResponse.Patient.PatientId.Int64(), testData, t)
 
 	patient, err := testData.DataApi.GetPatientFromId(patientSignedupResponse.Patient.PatientId.Int64())
@@ -183,7 +183,7 @@ func signupAndSubmitPatientVisitForRandomPatient(t *testing.T, testData TestData
 	return patientVisitResponse, doctorPickTreatmentPlanResponse.TreatmentPlan
 }
 
-func setupIntegrationTest(t *testing.T) TestData {
+func SetupIntegrationTest(t *testing.T) TestData {
 	CheckIfRunningLocally(t)
 
 	dbConfig := GetDBConfig(t)
@@ -262,7 +262,7 @@ func setupIntegrationTest(t *testing.T) TestData {
 	return testData
 }
 
-func tearDownIntegrationTest(t *testing.T, testData TestData) {
+func TearDownIntegrationTest(t *testing.T, testData TestData) {
 	testData.DB.Close()
 
 	t.Logf("Time to run test: %.3f seconds", float64(time.Since(testData.StartTime))/float64(time.Second))

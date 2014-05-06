@@ -16,11 +16,11 @@ import (
 
 func TestDoctorQueueWithPatientVisits(t *testing.T) {
 
-	testData := setupIntegrationTest(t)
-	defer tearDownIntegrationTest(t, testData)
+	testData := SetupIntegrationTest(t)
+	defer TearDownIntegrationTest(t, testData)
 
 	// get the current primary doctor
-	doctorId := getDoctorIdOfCurrentPrimaryDoctor(testData, t)
+	doctorId := GetDoctorIdOfCurrentPrimaryDoctor(testData, t)
 
 	doctor, err := testData.DataApi.GetDoctorFromId(doctorId)
 	if err != nil {
@@ -30,7 +30,7 @@ func TestDoctorQueueWithPatientVisits(t *testing.T) {
 	patientVisitResponses := make([]*apiservice.PatientVisitResponse, 0)
 	signedUpPatients := make([]*patientApiService.PatientSignedupResponse, 0)
 
-	signedUpPatientResponse := signupRandomTestPatient(t, testData.DataApi, testData.AuthApi)
+	signedUpPatientResponse := SignupRandomTestPatient(t, testData.DataApi, testData.AuthApi)
 	patientVisitResponse := createPatientVisitForPatient(signedUpPatientResponse.Patient.PatientId.Int64(), testData, t)
 	patientVisitResponses = append(patientVisitResponses, patientVisitResponse)
 	signedUpPatients = append(signedUpPatients, signedUpPatientResponse)
@@ -74,7 +74,7 @@ func TestDoctorQueueWithPatientVisits(t *testing.T) {
 	}
 
 	// and another item and it should be in the second section and not the first
-	signedUpPatientResponse = signupRandomTestPatient(t, testData.DataApi, testData.AuthApi)
+	signedUpPatientResponse = SignupRandomTestPatient(t, testData.DataApi, testData.AuthApi)
 	patientVisitResponse = createPatientVisitForPatient(signedUpPatientResponse.Patient.PatientId.Int64(), testData, t)
 	patientVisitResponses = append(patientVisitResponses, patientVisitResponse)
 	signedUpPatients = append(signedUpPatients, signedUpPatientResponse)
@@ -97,7 +97,7 @@ func TestDoctorQueueWithPatientVisits(t *testing.T) {
 	}
 
 	for i := 0; i < 5; i++ {
-		signedUpPatientResponse = signupRandomTestPatient(t, testData.DataApi, testData.AuthApi)
+		signedUpPatientResponse = SignupRandomTestPatient(t, testData.DataApi, testData.AuthApi)
 		patientVisitResponse = createPatientVisitForPatient(signedUpPatientResponse.Patient.PatientId.Int64(), testData, t)
 		patientVisitResponses = append(patientVisitResponses, patientVisitResponse)
 		signedUpPatients = append(signedUpPatients, signedUpPatientResponse)
@@ -150,11 +150,11 @@ func doBasicCheckOfDoctorQueue(doctorDisplayFeedTabs *doctor_queue.DisplayFeedTa
 
 func TestDoctorFeed(t *testing.T) {
 
-	testData := setupIntegrationTest(t)
-	defer tearDownIntegrationTest(t, testData)
+	testData := SetupIntegrationTest(t)
+	defer TearDownIntegrationTest(t, testData)
 
 	// get the current primary doctor
-	doctorId := getDoctorIdOfCurrentPrimaryDoctor(testData, t)
+	doctorId := GetDoctorIdOfCurrentPrimaryDoctor(testData, t)
 
 	doctor, err := testData.DataApi.GetDoctorFromId(doctorId)
 	if err != nil {
@@ -170,7 +170,7 @@ func TestDoctorFeed(t *testing.T) {
 		}
 	}
 
-	patientSignedupResponse := signupRandomTestPatient(t, testData.DataApi, testData.AuthApi)
+	patientSignedupResponse := SignupRandomTestPatient(t, testData.DataApi, testData.AuthApi)
 	// get patient to start a visit
 	patientVisitResponse := createPatientVisitForPatient(patientSignedupResponse.Patient.PatientId.Int64(), testData, t)
 
@@ -341,7 +341,7 @@ func getDoctorQueue(testData TestData, doctorAccountId int64, t *testing.T) *doc
 	ts := httptest.NewServer(doctorQueueHandler)
 	defer ts.Close()
 
-	resp, err := authGet(ts.URL, doctorAccountId)
+	resp, err := AuthGet(ts.URL, doctorAccountId)
 	if err != nil {
 		t.Fatal("Unable to get doctor feed for doctor: " + err.Error())
 	}

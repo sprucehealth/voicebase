@@ -16,10 +16,10 @@ import (
 
 func TestMedicationStrengthSearch(t *testing.T) {
 
-	testData := setupIntegrationTest(t)
-	defer tearDownIntegrationTest(t, testData)
+	testData := SetupIntegrationTest(t)
+	defer TearDownIntegrationTest(t, testData)
 
-	doctorId := getDoctorIdOfCurrentPrimaryDoctor(testData, t)
+	doctorId := GetDoctorIdOfCurrentPrimaryDoctor(testData, t)
 	doctor, err := testData.DataApi.GetDoctorFromId(doctorId)
 	if err != nil {
 		t.Fatal("Unable to get doctor from id: " + err.Error())
@@ -30,7 +30,7 @@ func TestMedicationStrengthSearch(t *testing.T) {
 	ts := httptest.NewServer(medicationStrengthSearchHandler)
 	defer ts.Close()
 
-	resp, err := authGet(ts.URL+"?drug_internal_name="+url.QueryEscape("Benzoyl Peroxide Topical (topical - cream)"), doctor.AccountId.Int64())
+	resp, err := AuthGet(ts.URL+"?drug_internal_name="+url.QueryEscape("Benzoyl Peroxide Topical (topical - cream)"), doctor.AccountId.Int64())
 	if err != nil {
 		t.Fatal("Unable to make a successful query to the medication strength api: " + err.Error())
 	}
@@ -49,10 +49,10 @@ func TestMedicationStrengthSearch(t *testing.T) {
 
 func TestNewTreatmentSelection(t *testing.T) {
 
-	testData := setupIntegrationTest(t)
-	defer tearDownIntegrationTest(t, testData)
+	testData := SetupIntegrationTest(t)
+	defer TearDownIntegrationTest(t, testData)
 
-	doctorId := getDoctorIdOfCurrentPrimaryDoctor(testData, t)
+	doctorId := GetDoctorIdOfCurrentPrimaryDoctor(testData, t)
 	doctor, err := testData.DataApi.GetDoctorFromId(doctorId)
 	if err != nil {
 		t.Fatal("Unable to get doctor from id: " + err.Error())
@@ -63,7 +63,7 @@ func TestNewTreatmentSelection(t *testing.T) {
 	ts := httptest.NewServer(newTreatmentHandler)
 	defer ts.Close()
 
-	resp, err := authGet(ts.URL+"?drug_internal_name="+url.QueryEscape("Lisinopril (oral - tablet)")+"&medication_strength="+url.QueryEscape("10 mg"), doctor.AccountId.Int64())
+	resp, err := AuthGet(ts.URL+"?drug_internal_name="+url.QueryEscape("Lisinopril (oral - tablet)")+"&medication_strength="+url.QueryEscape("10 mg"), doctor.AccountId.Int64())
 	if err != nil {
 		t.Fatal("Unable to make a successful query to the medication strength api: " + err.Error())
 	}
@@ -88,7 +88,7 @@ func TestNewTreatmentSelection(t *testing.T) {
 	}
 
 	// Let's run a test for an OTC product to ensure that the OTC flag is set as expected
-	resp, err = authGet(ts.URL+"?drug_internal_name="+url.QueryEscape("Fish Oil (oral - capsule)")+"&medication_strength="+url.QueryEscape("500 mg"), doctor.AccountId.Int64())
+	resp, err = AuthGet(ts.URL+"?drug_internal_name="+url.QueryEscape("Fish Oil (oral - capsule)")+"&medication_strength="+url.QueryEscape("500 mg"), doctor.AccountId.Int64())
 	if err != nil {
 		t.Fatal("Unable to make a successful query to the medication strength api: " + err.Error())
 	}
@@ -109,7 +109,7 @@ func TestNewTreatmentSelection(t *testing.T) {
 	urlValues := url.Values{}
 	urlValues.Set("drug_internal_name", "Testosterone (buccal - film, extended release)")
 	urlValues.Set("medication_strength", "30 mg/12 hr")
-	resp, err = authGet(ts.URL+"?"+urlValues.Encode(), doctor.AccountId.Int64())
+	resp, err = AuthGet(ts.URL+"?"+urlValues.Encode(), doctor.AccountId.Int64())
 	if err != nil {
 		t.Fatal("Unable to make successful call to selected a controlled substance as a medication: " + err.Error())
 	}
@@ -122,7 +122,7 @@ func TestNewTreatmentSelection(t *testing.T) {
 	urlValues = url.Values{}
 	urlValues.Set("drug_internal_name", "Clinimix E Sulfite-Free 2.75% with 10% Dextrose and Electrolytes (intravenous - solution)")
 	urlValues.Set("medication_strength", "Amino Acids 2.75% with 10% Dextrose and Electrolytes (Clinimix E Sulfite-Free)")
-	resp, err = authGet(ts.URL+"?"+urlValues.Encode(), doctor.AccountId.Int64())
+	resp, err = AuthGet(ts.URL+"?"+urlValues.Encode(), doctor.AccountId.Int64())
 	if err != nil {
 		t.Fatal("Unable to make successfull call to select a drug whose description is longer than the limit" + err.Error())
 	}
@@ -133,14 +133,14 @@ func TestNewTreatmentSelection(t *testing.T) {
 
 func TestDispenseUnitIds(t *testing.T) {
 
-	testData := setupIntegrationTest(t)
-	defer tearDownIntegrationTest(t, testData)
+	testData := SetupIntegrationTest(t)
+	defer TearDownIntegrationTest(t, testData)
 
 	medicationDispenseUnitsHandler := &apiservice.MedicationDispenseUnitsHandler{DataApi: testData.DataApi}
 	ts := httptest.NewServer(medicationDispenseUnitsHandler)
 	defer ts.Close()
 
-	resp, err := authGet(ts.URL, 0)
+	resp, err := AuthGet(ts.URL, 0)
 	if err != nil {
 		t.Fatal("Unable to make a successful query to the medication dispense units api: " + err.Error())
 	}
@@ -171,11 +171,11 @@ func TestDispenseUnitIds(t *testing.T) {
 
 func TestAddTreatments(t *testing.T) {
 
-	testData := setupIntegrationTest(t)
-	defer tearDownIntegrationTest(t, testData)
+	testData := SetupIntegrationTest(t)
+	defer TearDownIntegrationTest(t, testData)
 
 	// get the current primary doctor
-	doctorId := getDoctorIdOfCurrentPrimaryDoctor(testData, t)
+	doctorId := GetDoctorIdOfCurrentPrimaryDoctor(testData, t)
 
 	doctor, err := testData.DataApi.GetDoctorFromId(doctorId)
 	if err != nil {
@@ -261,11 +261,11 @@ func TestAddTreatments(t *testing.T) {
 
 func TestTreatmentTemplates(t *testing.T) {
 
-	testData := setupIntegrationTest(t)
-	defer tearDownIntegrationTest(t, testData)
+	testData := SetupIntegrationTest(t)
+	defer TearDownIntegrationTest(t, testData)
 
 	// get the current primary doctor
-	doctorId := getDoctorIdOfCurrentPrimaryDoctor(testData, t)
+	doctorId := GetDoctorIdOfCurrentPrimaryDoctor(testData, t)
 
 	doctor, err := testData.DataApi.GetDoctorFromId(doctorId)
 	if err != nil {
@@ -310,7 +310,7 @@ func TestTreatmentTemplates(t *testing.T) {
 		t.Fatal("Unable to marshal request body for adding treatments to patient visit")
 	}
 
-	resp, err := authPost(ts.URL, "application/json", bytes.NewBuffer(data), doctor.AccountId.Int64())
+	resp, err := AuthPost(ts.URL, "application/json", bytes.NewBuffer(data), doctor.AccountId.Int64())
 	if err != nil {
 		t.Fatal("Unable to make POST request to add treatments to patient visit " + err.Error())
 	}
@@ -376,7 +376,7 @@ func TestTreatmentTemplates(t *testing.T) {
 		t.Fatal("Unable to marshal request body for adding treatments to patient visit")
 	}
 
-	resp, err = authPost(ts.URL, "application/json", bytes.NewBuffer(data), doctor.AccountId.Int64())
+	resp, err = AuthPost(ts.URL, "application/json", bytes.NewBuffer(data), doctor.AccountId.Int64())
 	if err != nil {
 		t.Fatal("Unable to make POST request to add treatments to patient visit " + err.Error())
 	}
@@ -412,7 +412,7 @@ func TestTreatmentTemplates(t *testing.T) {
 		t.Fatal("Unable to marshal request body for adding treatments to patient visit")
 	}
 
-	resp, err = authDelete(ts.URL, "application/json", bytes.NewBuffer(data), doctor.AccountId.Int64())
+	resp, err = AuthDelete(ts.URL, "application/json", bytes.NewBuffer(data), doctor.AccountId.Int64())
 	if err != nil {
 		t.Fatal("Unable to make POST request to add treatments to patient visit " + err.Error())
 	}
@@ -437,11 +437,11 @@ func TestTreatmentTemplates(t *testing.T) {
 
 func TestTreatmentTemplatesInContextOfPatientVisit(t *testing.T) {
 
-	testData := setupIntegrationTest(t)
-	defer tearDownIntegrationTest(t, testData)
+	testData := SetupIntegrationTest(t)
+	defer TearDownIntegrationTest(t, testData)
 
 	// get the current primary doctor
-	doctorId := getDoctorIdOfCurrentPrimaryDoctor(testData, t)
+	doctorId := GetDoctorIdOfCurrentPrimaryDoctor(testData, t)
 
 	doctor, err := testData.DataApi.GetDoctorFromId(doctorId)
 	if err != nil {
@@ -490,7 +490,7 @@ func TestTreatmentTemplatesInContextOfPatientVisit(t *testing.T) {
 		t.Fatal("Unable to marshal request body for adding treatments to patient visit")
 	}
 
-	resp, err := authPost(ts.URL, "application/json", bytes.NewBuffer(data), doctor.AccountId.Int64())
+	resp, err := AuthPost(ts.URL, "application/json", bytes.NewBuffer(data), doctor.AccountId.Int64())
 	if err != nil {
 		t.Fatal("Unable to make POST request to add treatments to patient visit " + err.Error())
 	}
@@ -564,7 +564,7 @@ func TestTreatmentTemplatesInContextOfPatientVisit(t *testing.T) {
 		t.Fatal("Unable to marshal request body for adding treatments to patient visit")
 	}
 
-	resp2, err := authPost(ts.URL, "application/json", bytes.NewBuffer(data), doctor.AccountId.Int64())
+	resp2, err := AuthPost(ts.URL, "application/json", bytes.NewBuffer(data), doctor.AccountId.Int64())
 	if err != nil {
 		t.Fatal("Unable to make POST request to add treatments to patient visit " + err.Error())
 	}
@@ -625,7 +625,7 @@ func TestTreatmentTemplatesInContextOfPatientVisit(t *testing.T) {
 		t.Fatal("Unable to marshal request body for adding treatments to patient visit")
 	}
 
-	resp, err = authDelete(ts.URL, "application/json", bytes.NewBuffer(data), doctor.AccountId.Int64())
+	resp, err = AuthDelete(ts.URL, "application/json", bytes.NewBuffer(data), doctor.AccountId.Int64())
 	if err != nil {
 		t.Fatal("Unable to make POST request to add treatments to patient visit " + err.Error())
 	}
@@ -654,11 +654,11 @@ func TestTreatmentTemplatesInContextOfPatientVisit(t *testing.T) {
 
 func TestTreatmentTemplateWithDrugOutOfMarket(t *testing.T) {
 
-	testData := setupIntegrationTest(t)
-	defer tearDownIntegrationTest(t, testData)
+	testData := SetupIntegrationTest(t)
+	defer TearDownIntegrationTest(t, testData)
 
 	// get the current primary doctor
-	doctorId := getDoctorIdOfCurrentPrimaryDoctor(testData, t)
+	doctorId := GetDoctorIdOfCurrentPrimaryDoctor(testData, t)
 
 	doctor, err := testData.DataApi.GetDoctorFromId(doctorId)
 	if err != nil {
@@ -666,7 +666,7 @@ func TestTreatmentTemplateWithDrugOutOfMarket(t *testing.T) {
 	}
 
 	// create random patient
-	patientSignedupResponse := signupRandomTestPatient(t, testData.DataApi, testData.AuthApi)
+	patientSignedupResponse := SignupRandomTestPatient(t, testData.DataApi, testData.AuthApi)
 	patientVisitResponse := createPatientVisitForPatient(patientSignedupResponse.Patient.PatientId.Int64(), testData, t)
 	// submit answers to questions in patient visit
 	patient, err := testData.DataApi.GetPatientFromId(patientSignedupResponse.Patient.PatientId.Int64())
@@ -718,7 +718,7 @@ func TestTreatmentTemplateWithDrugOutOfMarket(t *testing.T) {
 		t.Fatal("Unable to marshal request body for adding treatments to patient visit")
 	}
 
-	resp, err := authPost(ts.URL, "application/json", bytes.NewBuffer(data), doctor.AccountId.Int64())
+	resp, err := AuthPost(ts.URL, "application/json", bytes.NewBuffer(data), doctor.AccountId.Int64())
 	if err != nil {
 		t.Fatal("Unable to make POST request to add treatments to patient visit " + err.Error())
 	}
@@ -758,7 +758,7 @@ func TestTreatmentTemplateWithDrugOutOfMarket(t *testing.T) {
 		t.Fatal("Unable to marshal request body for adding treatments to patient visit")
 	}
 
-	resp, err = authPost(ts.URL, "application/json", bytes.NewBuffer(data), doctor.AccountId.Int64())
+	resp, err = AuthPost(ts.URL, "application/json", bytes.NewBuffer(data), doctor.AccountId.Int64())
 	if err != nil {
 		t.Fatal("Unable to add treatments to patient visit: " + err.Error())
 	}
@@ -787,7 +787,7 @@ func addAndGetTreatmentsForPatientVisit(testData TestData, treatments []*common.
 		t.Fatal("Unable to marshal request body for adding treatments to patient visit")
 	}
 
-	resp, err := authPost(ts.URL, "application/json", bytes.NewBuffer(data), doctorAccountId)
+	resp, err := AuthPost(ts.URL, "application/json", bytes.NewBuffer(data), doctorAccountId)
 	if err != nil {
 		t.Fatal("Unable to make POST request to add treatments to patient visit " + err.Error())
 	}

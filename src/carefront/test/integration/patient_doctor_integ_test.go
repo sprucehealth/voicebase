@@ -25,10 +25,10 @@ import (
 )
 
 func TestPatientVisitReview(t *testing.T) {
-	testData := setupIntegrationTest(t)
-	defer tearDownIntegrationTest(t, testData)
+	testData := SetupIntegrationTest(t)
+	defer TearDownIntegrationTest(t, testData)
 
-	doctorId := getDoctorIdOfCurrentPrimaryDoctor(testData, t)
+	doctorId := GetDoctorIdOfCurrentPrimaryDoctor(testData, t)
 	doctor, err := testData.DataApi.GetDoctorFromId(doctorId)
 	if err != nil {
 		t.Fatal("Unable to get doctor from id: " + err.Error())
@@ -58,7 +58,7 @@ func TestPatientVisitReview(t *testing.T) {
 	ts := httptest.NewServer(patientVisitReviewHandler)
 	defer ts.Close()
 
-	resp, err := authGet(ts.URL+"?patient_visit_id="+strconv.FormatInt(patientVisitResponse.PatientVisitId, 10), patient.AccountId.Int64())
+	resp, err := AuthGet(ts.URL+"?patient_visit_id="+strconv.FormatInt(patientVisitResponse.PatientVisitId, 10), patient.AccountId.Int64())
 	if err != nil {
 		t.Fatal("Unable to make call to get the patient visit review for patient visit: " + err.Error())
 	}
@@ -86,7 +86,7 @@ func TestPatientVisitReview(t *testing.T) {
 	ts3 := httptest.NewServer(doctorSubmitPatientVisitReviewHandler)
 	defer ts3.Close()
 
-	resp, err = authPost(ts3.URL, "application/x-www-form-urlencoded", bytes.NewBufferString("patient_visit_id="+strconv.FormatInt(patientVisitResponse.PatientVisitId, 10)), doctor.AccountId.Int64())
+	resp, err = AuthPost(ts3.URL, "application/x-www-form-urlencoded", bytes.NewBufferString("patient_visit_id="+strconv.FormatInt(patientVisitResponse.PatientVisitId, 10)), doctor.AccountId.Int64())
 	if err != nil {
 		t.Fatal("Unable to make call to close patient visit " + err.Error())
 	}
@@ -248,7 +248,7 @@ func TestPatientVisitReview(t *testing.T) {
 	defer ts5.Close()
 
 	requestBody := fmt.Sprintf("patient_visit_id=%d&follow_up_unit=week&follow_up_value=1", patientVisitResponse.PatientVisitId)
-	resp, err = authPost(ts5.URL, "application/x-www-form-urlencoded", bytes.NewBufferString(requestBody), doctor.AccountId.Int64())
+	resp, err = AuthPost(ts5.URL, "application/x-www-form-urlencoded", bytes.NewBufferString(requestBody), doctor.AccountId.Int64())
 	if err != nil {
 		t.Fatal("Unable to make successful call to add follow up time for patient visit: " + err.Error())
 	}
@@ -266,7 +266,7 @@ func TestPatientVisitReview(t *testing.T) {
 	//
 
 	// get doctor to submit the patient visit review
-	resp, err = authPost(ts3.URL, "application/x-www-form-urlencoded", bytes.NewBufferString("patient_visit_id="+strconv.FormatInt(patientVisitResponse.PatientVisitId, 10)), doctor.AccountId.Int64())
+	resp, err = AuthPost(ts3.URL, "application/x-www-form-urlencoded", bytes.NewBufferString("patient_visit_id="+strconv.FormatInt(patientVisitResponse.PatientVisitId, 10)), doctor.AccountId.Int64())
 	if err != nil {
 		t.Fatal("Unable to make call to close patient visit " + err.Error())
 	}
@@ -355,7 +355,7 @@ func TestPatientVisitReview(t *testing.T) {
 	if err != nil {
 		t.Fatal("Unable to get the patient object given the id: " + err.Error())
 	}
-	resp, err = authGet(ts.URL+"?patient_visit_id="+strconv.FormatInt(patientVisitResponse.PatientVisitId, 10), patient.AccountId.Int64())
+	resp, err = AuthGet(ts.URL+"?patient_visit_id="+strconv.FormatInt(patientVisitResponse.PatientVisitId, 10), patient.AccountId.Int64())
 	if err != nil {
 		t.Fatal("Unable to make call to get patient visit review: " + err.Error())
 	}
@@ -374,7 +374,7 @@ func getTreatmentsForTreatmentPlan(testData TestData, t *testing.T, treatmentPla
 	ts := httptest.NewServer(&apiservice.TreatmentsHandler{DataApi: testData.DataApi})
 	defer ts.Close()
 
-	resp, err := authGet(ts.URL+fmt.Sprintf("?treatment_plan_id=%d", treatmentPlanId), doctor.AccountId.Int64())
+	resp, err := AuthGet(ts.URL+fmt.Sprintf("?treatment_plan_id=%d", treatmentPlanId), doctor.AccountId.Int64())
 	if err != nil {
 		t.Fatal("Unable to get treatments for patient based on treatment plan id: " + err.Error())
 	}
@@ -394,7 +394,7 @@ func getRegimenPlanForTreatmentPlan(testData TestData, t *testing.T, treatmentPl
 	})
 	defer ts.Close()
 
-	resp, err := authGet(ts.URL+fmt.Sprintf("?treatment_plan_id=%d", treatmentPlanId), doctor.AccountId.Int64())
+	resp, err := AuthGet(ts.URL+fmt.Sprintf("?treatment_plan_id=%d", treatmentPlanId), doctor.AccountId.Int64())
 	if err != nil {
 		t.Fatal("Unable to get regimen plan based on treatment plan id: " + err.Error())
 	}
@@ -413,7 +413,7 @@ func getAdviceBasedOnTreatmentPlan(testData TestData, t *testing.T, treatmentPla
 	})
 	defer ts.Close()
 
-	resp, err := authGet(ts.URL+fmt.Sprintf("?treatment_plan_id=%d", treatmentPlanId), doctor.AccountId.Int64())
+	resp, err := AuthGet(ts.URL+fmt.Sprintf("?treatment_plan_id=%d", treatmentPlanId), doctor.AccountId.Int64())
 	if err != nil {
 		t.Fatal("Unable to get regimen plan based on treatment plan id: " + err.Error())
 	}

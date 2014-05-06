@@ -18,10 +18,10 @@ import (
 
 func TestAddCardsForPatient(t *testing.T) {
 
-	testData := setupIntegrationTest(t)
-	defer tearDownIntegrationTest(t, testData)
+	testData := SetupIntegrationTest(t)
+	defer TearDownIntegrationTest(t, testData)
 
-	signedupPatientResponse := signupRandomTestPatient(t, testData.DataApi, testData.AuthApi)
+	signedupPatientResponse := SignupRandomTestPatient(t, testData.DataApi, testData.AuthApi)
 
 	customerToAdd := &payment.Customer{
 		Id: "test_customer_id",
@@ -119,7 +119,7 @@ func TestAddCardsForPatient(t *testing.T) {
 
 	params := url.Values{}
 	params.Set("card_id", strconv.FormatInt(cardToMakeDefault.Id.Int64(), 10))
-	resp, err := authPut(ts.URL, "application/x-www-form-urlencoded", strings.NewReader(params.Encode()),
+	resp, err := AuthPut(ts.URL, "application/x-www-form-urlencoded", strings.NewReader(params.Encode()),
 		patient.AccountId.Int64())
 	if err != nil {
 		t.Fatal("Unable to make previous card default: " + err.Error())
@@ -299,7 +299,7 @@ func deleteCard(t *testing.T, TestData TestData, patient *common.Patient, cardTo
 	ts := httptest.NewServer(patientCardsHandler)
 	defer ts.Close()
 
-	resp, err := authDelete(ts.URL+"?"+params.Encode(), "application/x-www-form-urlencoded", nil, patient.AccountId.Int64())
+	resp, err := AuthDelete(ts.URL+"?"+params.Encode(), "application/x-www-form-urlencoded", nil, patient.AccountId.Int64())
 	if err != nil {
 		t.Fatal("Unable to delete card: " + err.Error())
 	}
@@ -354,7 +354,7 @@ func addCard(t *testing.T, testData TestData, patientAccountId int64, patientCar
 		t.Fatal("Unable to marshal card object: " + err.Error())
 	}
 
-	resp, err := authPost(ts.URL, "application/json", bytes.NewReader(jsonData), patientAccountId)
+	resp, err := AuthPost(ts.URL, "application/json", bytes.NewReader(jsonData), patientAccountId)
 	if err != nil {
 		t.Fatal("Unable to make successful call to add cards to patient: " + err.Error())
 	}

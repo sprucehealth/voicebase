@@ -16,8 +16,8 @@ import (
 
 func TestRegimenForPatientVisit(t *testing.T) {
 
-	testData := setupIntegrationTest(t)
-	defer tearDownIntegrationTest(t, testData)
+	testData := SetupIntegrationTest(t)
+	defer TearDownIntegrationTest(t, testData)
 
 	patientVisitResponse, doctor := setupTestForRegimenCreation(t, testData)
 
@@ -123,7 +123,7 @@ func TestRegimenForPatientVisit(t *testing.T) {
 		t.Fatal("Unable to marshal request body for adding regimen steps: " + err.Error())
 	}
 
-	resp, err := authPost(ts.URL, "application/json", bytes.NewBuffer(requestBody), doctor.AccountId.Int64())
+	resp, err := AuthPost(ts.URL, "application/json", bytes.NewBuffer(requestBody), doctor.AccountId.Int64())
 	if err != nil {
 		t.Fatal("Unable to make successful request to create regimen for patient visit")
 	}
@@ -133,7 +133,7 @@ func TestRegimenForPatientVisit(t *testing.T) {
 	}
 
 	// get patient to start a visit
-	patientSignedupResponse := signupRandomTestPatient(t, testData.DataApi, testData.AuthApi)
+	patientSignedupResponse := SignupRandomTestPatient(t, testData.DataApi, testData.AuthApi)
 	patientVisitResponse = createPatientVisitForPatient(patientSignedupResponse.Patient.PatientId.Int64(), testData, t)
 
 	regimenPlan = getRegimenPlanForPatientVisit(testData, doctor, patientVisitResponse.PatientVisitId, t)
@@ -148,8 +148,8 @@ func TestRegimenForPatientVisit(t *testing.T) {
 
 func TestRegimenForPatientVisit_AddingMultipleItemsWithSameText(t *testing.T) {
 
-	testData := setupIntegrationTest(t)
-	defer tearDownIntegrationTest(t, testData)
+	testData := SetupIntegrationTest(t)
+	defer TearDownIntegrationTest(t, testData)
 
 	patientVisitResponse, doctor := setupTestForRegimenCreation(t, testData)
 
@@ -184,8 +184,8 @@ func TestRegimenForPatientVisit_AddingMultipleItemsWithSameText(t *testing.T) {
 // linkage exists in the global list.
 func TestRegimenForPatientVisit_ErrorTextDifferentForLinkedItem(t *testing.T) {
 
-	testData := setupIntegrationTest(t)
-	defer tearDownIntegrationTest(t, testData)
+	testData := SetupIntegrationTest(t)
+	defer TearDownIntegrationTest(t, testData)
 
 	patientVisitResponse, doctor := setupTestForRegimenCreation(t, testData)
 
@@ -234,7 +234,7 @@ func TestRegimenForPatientVisit_ErrorTextDifferentForLinkedItem(t *testing.T) {
 		t.Fatal("Unable to marshal request body for adding regimen steps: " + err.Error())
 	}
 
-	resp, err := authPost(ts.URL, "application/json", bytes.NewBuffer(requestBody), doctor.AccountId.Int64())
+	resp, err := AuthPost(ts.URL, "application/json", bytes.NewBuffer(requestBody), doctor.AccountId.Int64())
 	if err != nil {
 		t.Fatal("Unable to make successful request to create regimen for patient visit")
 	}
@@ -247,8 +247,8 @@ func TestRegimenForPatientVisit_ErrorTextDifferentForLinkedItem(t *testing.T) {
 
 func TestRegimenForPatientVisit_UpdatingMultipleItemsWithSameText(t *testing.T) {
 
-	testData := setupIntegrationTest(t)
-	defer tearDownIntegrationTest(t, testData)
+	testData := SetupIntegrationTest(t)
+	defer TearDownIntegrationTest(t, testData)
 
 	patientVisitResponse, doctor := setupTestForRegimenCreation(t, testData)
 
@@ -293,8 +293,8 @@ func TestRegimenForPatientVisit_UpdatingMultipleItemsWithSameText(t *testing.T) 
 
 func TestRegimenForPatientVisit_UpdatingItemLinkedToDeletedItem(t *testing.T) {
 
-	testData := setupIntegrationTest(t)
-	defer tearDownIntegrationTest(t, testData)
+	testData := SetupIntegrationTest(t)
+	defer TearDownIntegrationTest(t, testData)
 
 	patientVisitResponse, doctor := setupTestForRegimenCreation(t, testData)
 
@@ -369,8 +369,8 @@ func TestRegimenForPatientVisit_UpdatingItemLinkedToDeletedItem(t *testing.T) {
 // we are keeping track of the original step that has been modified via a source_id
 func TestRegimenForPatientVisit_TrackingSourceId(t *testing.T) {
 
-	testData := setupIntegrationTest(t)
-	defer tearDownIntegrationTest(t, testData)
+	testData := SetupIntegrationTest(t)
+	defer TearDownIntegrationTest(t, testData)
 
 	patientVisitResponse, doctor := setupTestForRegimenCreation(t, testData)
 
@@ -456,7 +456,7 @@ func TestRegimenForPatientVisit_TrackingSourceId(t *testing.T) {
 func setupTestForRegimenCreation(t *testing.T, testData TestData) (*apiservice.PatientVisitResponse, *common.Doctor) {
 
 	// get the current primary doctor
-	doctorId := getDoctorIdOfCurrentPrimaryDoctor(testData, t)
+	doctorId := GetDoctorIdOfCurrentPrimaryDoctor(testData, t)
 
 	doctor, err := testData.DataApi.GetDoctorFromId(doctorId)
 	if err != nil {
@@ -471,7 +471,7 @@ func getRegimenPlanForPatientVisit(testData TestData, doctor *common.Doctor, pat
 	ts := httptest.NewServer(doctorRegimenHandler)
 	defer ts.Close()
 
-	resp, err := authGet(ts.URL+"?patient_visit_id="+strconv.FormatInt(patientVisitId, 10), doctor.AccountId.Int64())
+	resp, err := AuthGet(ts.URL+"?patient_visit_id="+strconv.FormatInt(patientVisitId, 10), doctor.AccountId.Int64())
 	if err != nil {
 		t.Fatal("Unable to get regimen for patient visit: " + err.Error())
 	}
@@ -502,7 +502,7 @@ func createRegimenPlanForPatientVisit(doctorRegimenRequest *common.RegimenPlan, 
 		t.Fatal("Unable to marshal request body for adding regimen steps: " + err.Error())
 	}
 
-	resp, err := authPost(ts.URL, "application/json", bytes.NewBuffer(requestBody), doctor.AccountId.Int64())
+	resp, err := AuthPost(ts.URL, "application/json", bytes.NewBuffer(requestBody), doctor.AccountId.Int64())
 	if err != nil {
 		t.Fatal("Unable to make successful request to create regimen for patient visit")
 	}

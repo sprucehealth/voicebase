@@ -21,16 +21,16 @@ import (
 
 func TestDoctorRegistration(t *testing.T) {
 
-	testData := setupIntegrationTest(t)
-	defer tearDownIntegrationTest(t, testData)
+	testData := SetupIntegrationTest(t)
+	defer TearDownIntegrationTest(t, testData)
 
 	signupRandomTestDoctor(t, testData.DataApi, testData.AuthApi)
 }
 
 func TestDoctorAuthentication(t *testing.T) {
 
-	testData := setupIntegrationTest(t)
-	defer tearDownIntegrationTest(t, testData)
+	testData := SetupIntegrationTest(t)
+	defer TearDownIntegrationTest(t, testData)
 
 	_, email, password := signupRandomTestDoctor(t, testData.DataApi, testData.AuthApi)
 
@@ -41,7 +41,7 @@ func TestDoctorAuthentication(t *testing.T) {
 	requestBody.WriteString(email)
 	requestBody.WriteString("&password=")
 	requestBody.WriteString(password)
-	res, err := authPost(ts.URL, "application/x-www-form-urlencoded", requestBody, 0)
+	res, err := AuthPost(ts.URL, "application/x-www-form-urlencoded", requestBody, 0)
 	if err != nil {
 		t.Fatal("Unable to authenticate doctor " + err.Error())
 	}
@@ -65,10 +65,10 @@ func TestDoctorAuthentication(t *testing.T) {
 
 func TestDoctorDrugSearch(t *testing.T) {
 
-	testData := setupIntegrationTest(t)
-	defer tearDownIntegrationTest(t, testData)
+	testData := SetupIntegrationTest(t)
+	defer TearDownIntegrationTest(t, testData)
 
-	doctorId := getDoctorIdOfCurrentPrimaryDoctor(testData, t)
+	doctorId := GetDoctorIdOfCurrentPrimaryDoctor(testData, t)
 	doctor, err := testData.DataApi.GetDoctorFromId(doctorId)
 	if err != nil {
 		t.Fatal("Unable to get doctor information from id: " + err.Error())
@@ -81,7 +81,7 @@ func TestDoctorDrugSearch(t *testing.T) {
 	ts := httptest.NewServer(autocompleteHandler)
 	defer ts.Close()
 
-	resp, err := authGet(ts.URL+"?query=pro", doctor.AccountId.Int64())
+	resp, err := AuthGet(ts.URL+"?query=pro", doctor.AccountId.Int64())
 	if err != nil {
 		t.Fatal("Unable to make a successful query to the autocomplete API")
 	}
@@ -111,11 +111,11 @@ func TestDoctorDrugSearch(t *testing.T) {
 
 func TestDoctorDiagnosisOfPatientVisit(t *testing.T) {
 
-	testData := setupIntegrationTest(t)
-	defer tearDownIntegrationTest(t, testData)
+	testData := SetupIntegrationTest(t)
+	defer TearDownIntegrationTest(t, testData)
 
 	// get the current primary doctor
-	doctorId := getDoctorIdOfCurrentPrimaryDoctor(testData, t)
+	doctorId := GetDoctorIdOfCurrentPrimaryDoctor(testData, t)
 
 	doctor, err := testData.DataApi.GetDoctorFromId(doctorId)
 	if err != nil {
@@ -133,7 +133,7 @@ func TestDoctorDiagnosisOfPatientVisit(t *testing.T) {
 	requestParams := bytes.NewBufferString("?patient_visit_id=")
 	requestParams.WriteString(strconv.FormatInt(patientVisitResponse.PatientVisitId, 10))
 
-	resp, err := authGet(ts.URL+requestParams.String(), doctor.AccountId.Int64())
+	resp, err := AuthGet(ts.URL+requestParams.String(), doctor.AccountId.Int64())
 	if err != nil {
 		t.Fatal("Something went wrong when trying to get diagnoses layout for doctor to diagnose patient visit: " + err.Error())
 	}
@@ -160,7 +160,7 @@ func TestDoctorDiagnosisOfPatientVisit(t *testing.T) {
 	diagnosisQuestionId, severityQuestionId, acneTypeQuestionId := submitPatientVisitDiagnosis(patientVisitResponse.PatientVisitId, doctor, testData, t)
 
 	// now, get diagnosis layout again and check to ensure that the doctor successfully diagnosed the patient with the expected answers
-	resp, err = authGet(ts.URL+requestParams.String(), doctor.AccountId.Int64())
+	resp, err = AuthGet(ts.URL+requestParams.String(), doctor.AccountId.Int64())
 	if err != nil {
 		t.Fatal(err)
 	}
@@ -207,7 +207,7 @@ func TestDoctorDiagnosisOfPatientVisit(t *testing.T) {
 	ts = httptest.NewServer(diagnosisSummaryHandler)
 	defer ts.Close()
 	getDiagnosisSummaryResponse := &common.DiagnosisSummary{}
-	resp, err = authGet(ts.URL+"?patient_visit_id="+strconv.FormatInt(patientVisitResponse.PatientVisitId, 10), doctor.AccountId.Int64())
+	resp, err = AuthGet(ts.URL+"?patient_visit_id="+strconv.FormatInt(patientVisitResponse.PatientVisitId, 10), doctor.AccountId.Int64())
 	if err != nil {
 		t.Fatal("Unable to make call to get diagnosis summary for patient visit: " + err.Error())
 	} else if resp.StatusCode != http.StatusOK {
@@ -223,7 +223,7 @@ func TestDoctorDiagnosisOfPatientVisit(t *testing.T) {
 	params := url.Values{}
 	params.Set("patient_visit_id", strconv.FormatInt(patientVisitResponse.PatientVisitId, 10))
 	params.Set("summary", updatedSummary)
-	resp, err = authPut(ts.URL, "application/x-www-form-urlencoded", strings.NewReader(params.Encode()), doctor.AccountId.Int64())
+	resp, err = AuthPut(ts.URL, "application/x-www-form-urlencoded", strings.NewReader(params.Encode()), doctor.AccountId.Int64())
 	if err != nil {
 		t.Fatalf("Unable to make call to update diagnosis summary %s", err)
 	} else if resp.StatusCode != http.StatusOK {
@@ -231,7 +231,7 @@ func TestDoctorDiagnosisOfPatientVisit(t *testing.T) {
 	}
 
 	// lets get the diagnosis summary again to compare
-	resp, err = authGet(ts.URL+"?patient_visit_id="+strconv.FormatInt(patientVisitResponse.PatientVisitId, 10), doctor.AccountId.Int64())
+	resp, err = AuthGet(ts.URL+"?patient_visit_id="+strconv.FormatInt(patientVisitResponse.PatientVisitId, 10), doctor.AccountId.Int64())
 	if err != nil {
 		t.Fatal("Unable to make call to get diagnosis summary for patient visit: " + err.Error())
 	} else if resp.StatusCode != http.StatusOK {
@@ -246,7 +246,7 @@ func TestDoctorDiagnosisOfPatientVisit(t *testing.T) {
 	submitPatientVisitDiagnosis(patientVisitResponse.PatientVisitId, doctor, testData, t)
 
 	// now get the diagnosis summary again to ensure that it did not change
-	resp, err = authGet(ts.URL+"?patient_visit_id="+strconv.FormatInt(patientVisitResponse.PatientVisitId, 10), doctor.AccountId.Int64())
+	resp, err = AuthGet(ts.URL+"?patient_visit_id="+strconv.FormatInt(patientVisitResponse.PatientVisitId, 10), doctor.AccountId.Int64())
 	if err != nil {
 		t.Fatal("Unable to make call to get diagnosis summary for patient visit: " + err.Error())
 	} else if resp.StatusCode != http.StatusOK {
@@ -261,12 +261,12 @@ func TestDoctorDiagnosisOfPatientVisit(t *testing.T) {
 
 func TestDoctorSubmissionOfPatientVisitReview(t *testing.T) {
 
-	testData := setupIntegrationTest(t)
-	defer tearDownIntegrationTest(t, testData)
+	testData := SetupIntegrationTest(t)
+	defer TearDownIntegrationTest(t, testData)
 
-	patientSignedupResponse := signupRandomTestPatient(t, testData.DataApi, testData.AuthApi)
+	patientSignedupResponse := SignupRandomTestPatient(t, testData.DataApi, testData.AuthApi)
 
-	doctorId := getDoctorIdOfCurrentPrimaryDoctor(testData, t)
+	doctorId := GetDoctorIdOfCurrentPrimaryDoctor(testData, t)
 
 	// get patient to start a visit
 	patientVisitResponse := createPatientVisitForPatient(patientSignedupResponse.Patient.PatientId.Int64(), testData, t)
@@ -293,7 +293,7 @@ func TestDoctorSubmissionOfPatientVisitReview(t *testing.T) {
 	ts := httptest.NewServer(doctorSubmitPatientVisitReviewHandler)
 	defer ts.Close()
 
-	resp, err := authPost(ts.URL, "application/x-www-form-urlencoded", bytes.NewBufferString("patient_visit_id="+strconv.FormatInt(patientVisitResponse.PatientVisitId, 10)), doctor.AccountId.Int64())
+	resp, err := AuthPost(ts.URL, "application/x-www-form-urlencoded", bytes.NewBufferString("patient_visit_id="+strconv.FormatInt(patientVisitResponse.PatientVisitId, 10)), doctor.AccountId.Int64())
 	if err != nil {
 		t.Fatal("Unable to make a call to submit the patient visit review : " + err.Error())
 	}
@@ -312,7 +312,7 @@ func TestDoctorSubmissionOfPatientVisitReview(t *testing.T) {
 	ts2 := httptest.NewServer(doctorPatientVisitReviewHandler)
 	defer ts2.Close()
 
-	resp, err = authGet(ts2.URL+"?patient_visit_id="+strconv.FormatInt(patientVisitResponse.PatientVisitId, 10), doctor.AccountId.Int64())
+	resp, err = AuthGet(ts2.URL+"?patient_visit_id="+strconv.FormatInt(patientVisitResponse.PatientVisitId, 10), doctor.AccountId.Int64())
 	if err != nil {
 		t.Fatal("Unable to get the doctor to start reviewing the patient visit: " + err.Error())
 	}
@@ -320,7 +320,7 @@ func TestDoctorSubmissionOfPatientVisitReview(t *testing.T) {
 	CheckSuccessfulStatusCode(resp, "Unable to make a successful call for doctor to start reviewing patient visti", t)
 
 	// attempt to submit the patient visit review here. It should work
-	resp, err = authPost(ts.URL, "application/x-www-form-urlencoded", bytes.NewBufferString("patient_visit_id="+strconv.FormatInt(patientVisitResponse.PatientVisitId, 10)), doctor.AccountId.Int64())
+	resp, err = AuthPost(ts.URL, "application/x-www-form-urlencoded", bytes.NewBufferString("patient_visit_id="+strconv.FormatInt(patientVisitResponse.PatientVisitId, 10)), doctor.AccountId.Int64())
 	if err != nil {
 		t.Fatal("Unable to make successful call to submit patient visit review")
 	}
@@ -339,11 +339,11 @@ func TestDoctorSubmissionOfPatientVisitReview(t *testing.T) {
 
 func TestDoctorAddingOfFollowUpForPatientVisit(t *testing.T) {
 
-	testData := setupIntegrationTest(t)
-	defer tearDownIntegrationTest(t, testData)
+	testData := SetupIntegrationTest(t)
+	defer TearDownIntegrationTest(t, testData)
 
 	// get the current primary doctor
-	doctorId := getDoctorIdOfCurrentPrimaryDoctor(testData, t)
+	doctorId := GetDoctorIdOfCurrentPrimaryDoctor(testData, t)
 
 	doctor, err := testData.DataApi.GetDoctorFromId(doctorId)
 	if err != nil {
@@ -358,7 +358,7 @@ func TestDoctorAddingOfFollowUpForPatientVisit(t *testing.T) {
 	defer ts.Close()
 
 	requestBody := fmt.Sprintf("patient_visit_id=%d&follow_up_unit=week&follow_up_value=1", patientVisitResponse.PatientVisitId)
-	resp, err := authPost(ts.URL, "application/x-www-form-urlencoded", bytes.NewBufferString(requestBody), doctor.AccountId.Int64())
+	resp, err := AuthPost(ts.URL, "application/x-www-form-urlencoded", bytes.NewBufferString(requestBody), doctor.AccountId.Int64())
 	if err != nil {
 		t.Fatal("Unable to make successful call to add follow up time for patient visit: " + err.Error())
 	}
@@ -370,7 +370,7 @@ func TestDoctorAddingOfFollowUpForPatientVisit(t *testing.T) {
 	CheckSuccessfulStatusCode(resp, "Unable to make successful call to add follow up for patient visit: "+string(body), t)
 
 	// lets get the follow up time back
-	resp, err = authGet(ts.URL+"?patient_visit_id="+strconv.FormatInt(patientVisitResponse.PatientVisitId, 10), doctor.AccountId.Int64())
+	resp, err = AuthGet(ts.URL+"?patient_visit_id="+strconv.FormatInt(patientVisitResponse.PatientVisitId, 10), doctor.AccountId.Int64())
 	if err != nil {
 		t.Fatal("Unable to make successful call to get follow up time for patient visit: " + err.Error())
 	}

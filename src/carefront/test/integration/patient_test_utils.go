@@ -18,7 +18,7 @@ import (
 	thriftapi "carefront/thrift/api"
 )
 
-func signupRandomTestPatient(t *testing.T, dataApi api.DataAPI, authApi thriftapi.Auth) *patientApiService.PatientSignedupResponse {
+func SignupRandomTestPatient(t *testing.T, dataApi api.DataAPI, authApi thriftapi.Auth) *patientApiService.PatientSignedupResponse {
 	authHandler := patientApiService.NewSignupHandler(dataApi, authApi)
 	ts := httptest.NewServer(authHandler)
 	defer ts.Close()
@@ -26,7 +26,7 @@ func signupRandomTestPatient(t *testing.T, dataApi api.DataAPI, authApi thriftap
 	requestBody := bytes.NewBufferString("first_name=Test&last_name=Test&email=")
 	requestBody.WriteString(strconv.FormatInt(rand.Int63(), 10))
 	requestBody.WriteString("@example.com&password=12345&dob=1987-11-08&zip_code=94115&phone=7348465522&gender=male")
-	res, err := authPost(ts.URL, "application/x-www-form-urlencoded", requestBody, 0)
+	res, err := AuthPost(ts.URL, "application/x-www-form-urlencoded", requestBody, 0)
 	if err != nil {
 		t.Fatal("Unable to make post request for registering patient: " + err.Error())
 	}
@@ -57,7 +57,7 @@ func getPatientVisitForPatient(patientId int64, testData TestData, t *testing.T)
 	defer ts.Close()
 
 	// register a patient visit for this patient
-	resp, err := authGet(ts.URL, patient.AccountId.Int64())
+	resp, err := AuthGet(ts.URL, patient.AccountId.Int64())
 	if err != nil {
 		t.Fatal("Unable to get the patient visit id")
 	}
@@ -90,7 +90,7 @@ func createPatientVisitForPatient(patientId int64, testData TestData, t *testing
 	defer ts.Close()
 
 	// register a patient visit for this patient
-	resp, err := authPost(ts.URL, "application/x-www-form-urlencoded", nil, patient.AccountId.Int64())
+	resp, err := AuthPost(ts.URL, "application/x-www-form-urlencoded", nil, patient.AccountId.Int64())
 	if err != nil {
 		t.Fatal("Unable to get the patient visit id")
 	}
@@ -178,7 +178,7 @@ func submitAnswersIntakeForPatient(patientId, patientAccountId int64, answerInta
 	if err != nil {
 		t.Fatalf("Unable to marshal answer intake body: %s", err)
 	}
-	resp, err := authPost(ts.URL, "application/json", bytes.NewReader(jsonData), patientAccountId)
+	resp, err := AuthPost(ts.URL, "application/json", bytes.NewReader(jsonData), patientAccountId)
 	if err != nil {
 		t.Fatalf("Unable to successfully make request to submit answer intake: %s", err)
 	}
@@ -201,7 +201,7 @@ func submitPatientVisitForPatient(patientId, patientVisitId int64, testData Test
 	buffer := bytes.NewBufferString("patient_visit_id=")
 	buffer.WriteString(strconv.FormatInt(patientVisitId, 10))
 
-	resp, err := authPut(ts.URL, "application/x-www-form-urlencoded", buffer, patient.AccountId.Int64())
+	resp, err := AuthPut(ts.URL, "application/x-www-form-urlencoded", buffer, patient.AccountId.Int64())
 	if err != nil {
 		t.Fatal("Unable to get the patient visit id")
 	}

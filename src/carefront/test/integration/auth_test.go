@@ -4,8 +4,8 @@ import "testing"
 
 func TestAuth(t *testing.T) {
 
-	testData := setupIntegrationTest(t)
-	defer tearDownIntegrationTest(t, testData)
+	testData := SetupIntegrationTest(t)
+	defer TearDownIntegrationTest(t, testData)
 
 	email, pass, pass2 := "someone@somewhere.com", "somepass", "newPass"
 

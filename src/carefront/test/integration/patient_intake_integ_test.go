@@ -75,7 +75,7 @@ func submitPatientAnswerForVisit(PatientId int64, testData TestData, patientInta
 	ts := httptest.NewServer(answerIntakeHandler)
 	defer ts.Close()
 
-	resp, err := authPost(ts.URL, "application/json", bytes.NewBufferString(patientIntakeRequestData), patient.AccountId.Int64())
+	resp, err := AuthPost(ts.URL, "application/json", bytes.NewBufferString(patientIntakeRequestData), patient.AccountId.Int64())
 	if err != nil {
 		t.Fatal("Unable to get the patient visit id")
 	}
@@ -89,11 +89,11 @@ func submitPatientAnswerForVisit(PatientId int64, testData TestData, patientInta
 
 func TestSingleSelectIntake(t *testing.T) {
 
-	testData := setupIntegrationTest(t)
-	defer tearDownIntegrationTest(t, testData)
+	testData := SetupIntegrationTest(t)
+	defer TearDownIntegrationTest(t, testData)
 
 	// signup a random test patient for which to answer questions
-	patientSignedUpResponse := signupRandomTestPatient(t, testData.DataApi, testData.AuthApi)
+	patientSignedUpResponse := SignupRandomTestPatient(t, testData.DataApi, testData.AuthApi)
 	patientVisitResponse := createPatientVisitForPatient(patientSignedUpResponse.Patient.PatientId.Int64(), testData, t)
 
 	// now lets go ahead and try and answer the question about the reason for visit given that it is
@@ -133,11 +133,11 @@ func TestSingleSelectIntake(t *testing.T) {
 
 func TestMultipleChoiceIntake(t *testing.T) {
 
-	testData := setupIntegrationTest(t)
-	defer tearDownIntegrationTest(t, testData)
+	testData := SetupIntegrationTest(t)
+	defer TearDownIntegrationTest(t, testData)
 
 	// signup a random test patient for which to answer questions
-	patientSignedUpResponse := signupRandomTestPatient(t, testData.DataApi, testData.AuthApi)
+	patientSignedUpResponse := SignupRandomTestPatient(t, testData.DataApi, testData.AuthApi)
 	patientVisitResponse := createPatientVisitForPatient(patientSignedUpResponse.Patient.PatientId.Int64(), testData, t)
 
 	// now lets go ahead and try and answer the question about the reason for visit given that it is
@@ -197,11 +197,11 @@ func TestMultipleChoiceIntake(t *testing.T) {
 
 func TestSingleEntryIntake(t *testing.T) {
 
-	testData := setupIntegrationTest(t)
-	defer tearDownIntegrationTest(t, testData)
+	testData := SetupIntegrationTest(t)
+	defer TearDownIntegrationTest(t, testData)
 
 	// signup a random test patient for which to answer questions
-	patientSignedUpResponse := signupRandomTestPatient(t, testData.DataApi, testData.AuthApi)
+	patientSignedUpResponse := SignupRandomTestPatient(t, testData.DataApi, testData.AuthApi)
 	patientVisitResponse := createPatientVisitForPatient(patientSignedUpResponse.Patient.PatientId.Int64(), testData, t)
 
 	questionId := getQuestionWithTagAndExpectedType("q_other_acne_location_entry", "q_type_single_entry", t, testData)
@@ -284,11 +284,11 @@ func submitFreeTextResponseForPatient(patientVisitResponse *apiservice.PatientVi
 
 func TestFreeTextEntryIntake(t *testing.T) {
 
-	testData := setupIntegrationTest(t)
-	defer tearDownIntegrationTest(t, testData)
+	testData := SetupIntegrationTest(t)
+	defer TearDownIntegrationTest(t, testData)
 
 	// signup a random test patient for which to answer questions
-	patientSignedUpResponse := signupRandomTestPatient(t, testData.DataApi, testData.AuthApi)
+	patientSignedUpResponse := SignupRandomTestPatient(t, testData.DataApi, testData.AuthApi)
 	patientVisitResponse := createPatientVisitForPatient(patientSignedUpResponse.Patient.PatientId.Int64(), testData, t)
 	freeTextResponse := "This is a free text response that should be accepted as a response for free text."
 	submitFreeTextResponseForPatient(patientVisitResponse, patientSignedUpResponse.Patient.PatientId.Int64(), freeTextResponse, testData, t)
@@ -311,11 +311,11 @@ func addSubAnswerToAnswerIntake(answerIntake *apiservice.AnswerItem, subAnswerQu
 
 func TestSubQuestionEntryIntake(t *testing.T) {
 
-	testData := setupIntegrationTest(t)
-	defer tearDownIntegrationTest(t, testData)
+	testData := SetupIntegrationTest(t)
+	defer TearDownIntegrationTest(t, testData)
 
 	// signup a random test patient for which to answer questions
-	patientSignedUpResponse := signupRandomTestPatient(t, testData.DataApi, testData.AuthApi)
+	patientSignedUpResponse := SignupRandomTestPatient(t, testData.DataApi, testData.AuthApi)
 	patientVisitResponse := createPatientVisitForPatient(patientSignedUpResponse.Patient.PatientId.Int64(), testData, t)
 
 	// now lets go ahead and try and answer the question about the reason for visit given that it is
@@ -470,11 +470,11 @@ func TestPhotoAnswerIntake(t *testing.T) {
 
 	fileToUpload := "../../info_intake/condition_intake.json"
 
-	testData := setupIntegrationTest(t)
-	defer tearDownIntegrationTest(t, testData)
+	testData := SetupIntegrationTest(t)
+	defer TearDownIntegrationTest(t, testData)
 
 	// signup a random test patient for which to answer questions
-	patientSignedUpResponse := signupRandomTestPatient(t, testData.DataApi, testData.AuthApi)
+	patientSignedUpResponse := SignupRandomTestPatient(t, testData.DataApi, testData.AuthApi)
 	patientVisitResponse := createPatientVisitForPatient(patientSignedUpResponse.Patient.PatientId.Int64(), testData, t)
 	questionId := getQuestionWithTagAndExpectedType("q_chest_photo_intake", "q_type_photo", t, testData)
 	potentialAnswerId := getAnswerWithTagAndExpectedType("a_chest_phota_intake", "a_type_photo_entry_chest", questionId, testData, t)
@@ -513,7 +513,7 @@ func TestPhotoAnswerIntake(t *testing.T) {
 	ts := httptest.NewServer(photoAnswerIntakeHandler)
 	defer ts.Close()
 
-	resp, err := authPost(ts.URL, writer.FormDataContentType(), body, patient.AccountId.Int64())
+	resp, err := AuthPost(ts.URL, writer.FormDataContentType(), body, patient.AccountId.Int64())
 	if err != nil {
 		t.Fatal("Unable to submit photo answer for patient: " + err.Error())
 	}
@@ -538,7 +538,7 @@ func TestPhotoAnswerIntake(t *testing.T) {
 							patientAnswer.ObjectUrl != "" {
 
 							// make sure that we can actually download the file that was just uploaded
-							res, err := authGet(patientAnswer.ObjectUrl, patient.AccountId.Int64())
+							res, err := AuthGet(patientAnswer.ObjectUrl, patient.AccountId.Int64())
 							if err != nil {
 								t.Fatal("Unable to get the file that was just uploaded : " + err.Error())
 							}

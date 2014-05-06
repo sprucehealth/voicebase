@@ -30,13 +30,13 @@ const (
 
 func TestNewRefillRequestForExistingPatientAndExistingTreatment(t *testing.T) {
 
-	testData := setupIntegrationTest(t)
-	defer tearDownIntegrationTest(t, testData)
+	testData := SetupIntegrationTest(t)
+	defer TearDownIntegrationTest(t, testData)
 
 	// create doctor with clinicianId specicified
 	doctor := createDoctorWithClinicianId(testData, t)
 
-	signedupPatientResponse := signupRandomTestPatient(t, testData.DataApi, testData.AuthApi)
+	signedupPatientResponse := SignupRandomTestPatient(t, testData.DataApi, testData.AuthApi)
 	erxPatientId := int64(60)
 
 	// add an erx patient id to the patient
@@ -266,8 +266,8 @@ func TestNewRefillRequestForExistingPatientAndExistingTreatment(t *testing.T) {
 
 func TestApproveRefillRequestAndSuccessfulSendToPharmacy(t *testing.T) {
 
-	testData := setupIntegrationTest(t)
-	defer tearDownIntegrationTest(t, testData)
+	testData := SetupIntegrationTest(t)
+	defer TearDownIntegrationTest(t, testData)
 
 	// create doctor with clinicianId specicified
 	doctor := createDoctorWithClinicianId(testData, t)
@@ -424,7 +424,7 @@ func TestApproveRefillRequestAndSuccessfulSendToPharmacy(t *testing.T) {
 		t.Fatal("Unable to marshal json object: " + err.Error())
 	}
 
-	resp, err := authPut(ts.URL, "application/json", bytes.NewReader(jsonData), doctor.AccountId.Int64())
+	resp, err := AuthPut(ts.URL, "application/json", bytes.NewReader(jsonData), doctor.AccountId.Int64())
 	if err != nil {
 		t.Fatal("Unable to make successful request to approve refill request: " + err.Error())
 	}
@@ -506,8 +506,8 @@ func TestApproveRefillRequestAndSuccessfulSendToPharmacy(t *testing.T) {
 }
 func TestApproveRefillRequestAndErrorSendingToPharmacy(t *testing.T) {
 
-	testData := setupIntegrationTest(t)
-	defer tearDownIntegrationTest(t, testData)
+	testData := SetupIntegrationTest(t)
+	defer TearDownIntegrationTest(t, testData)
 
 	// create doctor with clinicianId specicified
 	doctor := createDoctorWithClinicianId(testData, t)
@@ -665,7 +665,7 @@ func TestApproveRefillRequestAndErrorSendingToPharmacy(t *testing.T) {
 		t.Fatal("Unable to marshal json object: " + err.Error())
 	}
 
-	resp, err := authPut(ts.URL, "application/json", bytes.NewReader(jsonData), doctor.AccountId.Int64())
+	resp, err := AuthPut(ts.URL, "application/json", bytes.NewReader(jsonData), doctor.AccountId.Int64())
 	if err != nil {
 		t.Fatal("Unable to make successful request to approve refill request: " + err.Error())
 	}
@@ -776,7 +776,7 @@ func TestApproveRefillRequestAndErrorSendingToPharmacy(t *testing.T) {
 	params.Set("refill_request_id", fmt.Sprintf("%d", refillRequest.Id))
 
 	errorIgnoreTs := httptest.NewServer(doctorPrescriptionErrorIgnoreHandler)
-	resp, err = authPost(errorIgnoreTs.URL, "application/x-www-form-urlencoded", strings.NewReader(params.Encode()), doctor.AccountId.Int64())
+	resp, err = AuthPost(errorIgnoreTs.URL, "application/x-www-form-urlencoded", strings.NewReader(params.Encode()), doctor.AccountId.Int64())
 	if err != nil {
 		t.Fatalf("Unable to resolve refill request transmission error: %+v", err.Error())
 	}
@@ -809,8 +809,8 @@ func TestApproveRefillRequestAndErrorSendingToPharmacy(t *testing.T) {
 
 func TestDenyRefillRequestAndSuccessfulDelete(t *testing.T) {
 
-	testData := setupIntegrationTest(t)
-	defer tearDownIntegrationTest(t, testData)
+	testData := SetupIntegrationTest(t)
+	defer TearDownIntegrationTest(t, testData)
 
 	// create doctor with clinicianId specicified
 	doctor := createDoctorWithClinicianId(testData, t)
@@ -970,7 +970,7 @@ func TestDenyRefillRequestAndSuccessfulDelete(t *testing.T) {
 		t.Fatal("Unable to marshal json into object: " + err.Error())
 	}
 
-	resp, err := authPut(ts.URL, "application/json", bytes.NewReader(jsonData), doctor.AccountId.Int64())
+	resp, err := AuthPut(ts.URL, "application/json", bytes.NewReader(jsonData), doctor.AccountId.Int64())
 	if err != nil {
 		t.Fatal("Unable to make successful request to approve refill request: " + err.Error())
 	}
@@ -1053,8 +1053,8 @@ func TestDenyRefillRequestAndSuccessfulDelete(t *testing.T) {
 
 func TestDenyRefillRequestWithDNTFWithoutTreatment(t *testing.T) {
 
-	testData := setupIntegrationTest(t)
-	defer tearDownIntegrationTest(t, testData)
+	testData := SetupIntegrationTest(t)
+	defer TearDownIntegrationTest(t, testData)
 
 	// create doctor with clinicianId specicified
 	doctor := createDoctorWithClinicianId(testData, t)
@@ -1216,7 +1216,7 @@ func TestDenyRefillRequestWithDNTFWithoutTreatment(t *testing.T) {
 		t.Fatal("Unable to marshal json into object: " + err.Error())
 	}
 
-	resp, err := authPut(ts.URL, "application/json", bytes.NewReader(jsonData), doctor.AccountId.Int64())
+	resp, err := AuthPut(ts.URL, "application/json", bytes.NewReader(jsonData), doctor.AccountId.Int64())
 	if err != nil {
 		t.Fatal("Unable to make successful request to approve refill request: " + err.Error())
 	}
@@ -1306,7 +1306,7 @@ func setUpDeniedRefillRequestWithDNTF(t *testing.T, testData TestData, endErxSta
 			t.Fatal("Unable to marshal request body for adding treatments to patient visit")
 		}
 
-		resp, err := authPost(ts.URL, "application/json", bytes.NewBuffer(data), doctor.AccountId.Int64())
+		resp, err := AuthPost(ts.URL, "application/json", bytes.NewBuffer(data), doctor.AccountId.Int64())
 		if err != nil {
 			t.Fatal("Unable to make POST request to add treatments to patient visit " + err.Error())
 		}
@@ -1461,7 +1461,7 @@ func setUpDeniedRefillRequestWithDNTF(t *testing.T, testData TestData, endErxSta
 		t.Fatal("Unable to marshal json into object: " + err.Error())
 	}
 
-	resp, err := authPut(ts.URL, "application/json", bytes.NewReader(jsonData), doctor.AccountId.Int64())
+	resp, err := AuthPut(ts.URL, "application/json", bytes.NewReader(jsonData), doctor.AccountId.Int64())
 	if err != nil {
 		t.Fatal("Unable to make successful request to deny refill request: " + err.Error())
 	}
@@ -1544,8 +1544,8 @@ func setUpDeniedRefillRequestWithDNTF(t *testing.T, testData TestData, endErxSta
 
 func TestDenyRefillRequestWithDNTFWithUnlinkedTreatment(t *testing.T) {
 
-	testData := setupIntegrationTest(t)
-	defer tearDownIntegrationTest(t, testData)
+	testData := SetupIntegrationTest(t)
+	defer TearDownIntegrationTest(t, testData)
 
 	unlinkedTreatment := setUpDeniedRefillRequestWithDNTF(t, testData, common.StatusEvent{Status: api.ERX_STATUS_SENT}, false)
 
@@ -1562,8 +1562,8 @@ func TestDenyRefillRequestWithDNTFWithUnlinkedTreatment(t *testing.T) {
 
 func TestDenyRefillRequestWithDNTFWithUnlinkedTreatmentFromTemplatedTreatment(t *testing.T) {
 
-	testData := setupIntegrationTest(t)
-	defer tearDownIntegrationTest(t, testData)
+	testData := SetupIntegrationTest(t)
+	defer TearDownIntegrationTest(t, testData)
 
 	unlinkedTreatment := setUpDeniedRefillRequestWithDNTF(t, testData, common.StatusEvent{Status: api.ERX_STATUS_SENT}, true)
 
@@ -1580,8 +1580,8 @@ func TestDenyRefillRequestWithDNTFWithUnlinkedTreatmentFromTemplatedTreatment(t 
 
 func TestDenyRefillRequestWithDNTFUnlinkedTreatmentErrorSending(t *testing.T) {
 
-	testData := setupIntegrationTest(t)
-	defer tearDownIntegrationTest(t, testData)
+	testData := SetupIntegrationTest(t)
+	defer TearDownIntegrationTest(t, testData)
 
 	errorMessage := "this is a test error message"
 	unlinkedTreatment := setUpDeniedRefillRequestWithDNTF(t, testData, common.StatusEvent{Status: api.ERX_STATUS_ERROR, StatusDetails: errorMessage}, false)
@@ -1628,7 +1628,7 @@ func TestDenyRefillRequestWithDNTFUnlinkedTreatmentErrorSending(t *testing.T) {
 	ignoreErrorTs := httptest.NewServer(doctorPrescriptionErrorIgnoreHandler)
 	defer ignoreErrorTs.Close()
 
-	resp, err := authPost(ignoreErrorTs.URL, "application/x-www-form-urlencoded", strings.NewReader(params.Encode()), unlinkedTreatment.Doctor.AccountId.Int64())
+	resp, err := AuthPost(ignoreErrorTs.URL, "application/x-www-form-urlencoded", strings.NewReader(params.Encode()), unlinkedTreatment.Doctor.AccountId.Int64())
 	if err != nil {
 		t.Fatalf("Unable to successfully resolve error pertaining to unlinked dntf treatment: %+v", err)
 	}
@@ -1658,7 +1658,7 @@ func setUpDeniedRefillRequestWithDNTFForLinkedTreatment(t *testing.T, testData T
 	// create doctor with clinicianId specicified
 	doctor := createDoctorWithClinicianId(testData, t)
 
-	signedupPatientResponse := signupRandomTestPatient(t, testData.DataApi, testData.AuthApi)
+	signedupPatientResponse := SignupRandomTestPatient(t, testData.DataApi, testData.AuthApi)
 	erxPatientId := int64(60)
 
 	// add an erx patient id to the patient
@@ -1730,7 +1730,7 @@ func setUpDeniedRefillRequestWithDNTFForLinkedTreatment(t *testing.T, testData T
 			t.Fatal("Unable to marshal request body for adding treatments to patient visit")
 		}
 
-		resp, err := authPost(ts.URL, "application/json", bytes.NewBuffer(data), doctor.AccountId.Int64())
+		resp, err := AuthPost(ts.URL, "application/json", bytes.NewBuffer(data), doctor.AccountId.Int64())
 		if err != nil {
 			t.Fatal("Unable to make POST request to add treatments to patient visit " + err.Error())
 		}
@@ -1930,7 +1930,7 @@ func setUpDeniedRefillRequestWithDNTFForLinkedTreatment(t *testing.T, testData T
 		t.Fatal("Unable to marshal json into object: " + err.Error())
 	}
 
-	resp, err := authPut(ts.URL, "application/json", bytes.NewReader(jsonData), doctor.AccountId.Int64())
+	resp, err := AuthPut(ts.URL, "application/json", bytes.NewReader(jsonData), doctor.AccountId.Int64())
 	if err != nil {
 		t.Fatal("Unable to make successful request to deny refill request: " + err.Error())
 	}
@@ -2031,8 +2031,8 @@ func setUpDeniedRefillRequestWithDNTFForLinkedTreatment(t *testing.T, testData T
 
 func TestDenyRefillRequestWithDNTFWithLinkedTreatmentSuccessfulSend(t *testing.T) {
 
-	testData := setupIntegrationTest(t)
-	defer tearDownIntegrationTest(t, testData)
+	testData := SetupIntegrationTest(t)
+	defer TearDownIntegrationTest(t, testData)
 
 	linkedTreatment := setUpDeniedRefillRequestWithDNTFForLinkedTreatment(t, testData, common.StatusEvent{Status: api.ERX_STATUS_SENT}, false)
 
@@ -2049,8 +2049,8 @@ func TestDenyRefillRequestWithDNTFWithLinkedTreatmentSuccessfulSend(t *testing.T
 
 func TestDenyRefillRequestWithDNTFWithLinkedTreatmentSuccessfulSendAddingFromTemplatedTreatment(t *testing.T) {
 
-	testData := setupIntegrationTest(t)
-	defer tearDownIntegrationTest(t, testData)
+	testData := SetupIntegrationTest(t)
+	defer TearDownIntegrationTest(t, testData)
 
 	linkedTreatment := setUpDeniedRefillRequestWithDNTFForLinkedTreatment(t, testData, common.StatusEvent{Status: api.ERX_STATUS_SENT}, true)
 
@@ -2067,8 +2067,8 @@ func TestDenyRefillRequestWithDNTFWithLinkedTreatmentSuccessfulSendAddingFromTem
 
 func TestDenyRefillRequestWithDNTFWithLinkedTreatmentErrorSend(t *testing.T) {
 
-	testData := setupIntegrationTest(t)
-	defer tearDownIntegrationTest(t, testData)
+	testData := SetupIntegrationTest(t)
+	defer TearDownIntegrationTest(t, testData)
 
 	errorMessage := "this is a test error message"
 	linkedTreatment := setUpDeniedRefillRequestWithDNTFForLinkedTreatment(t, testData, common.StatusEvent{Status: api.ERX_STATUS_ERROR, StatusDetails: errorMessage}, false)
@@ -2106,8 +2106,8 @@ func TestDenyRefillRequestWithDNTFWithLinkedTreatmentErrorSend(t *testing.T) {
 
 func TestCheckingStatusOfMultipleRefillRequestsAtOnce(t *testing.T) {
 
-	testData := setupIntegrationTest(t)
-	defer tearDownIntegrationTest(t, testData)
+	testData := SetupIntegrationTest(t)
+	defer TearDownIntegrationTest(t, testData)
 
 	// create doctor with clinicianId specicified
 	doctor := createDoctorWithClinicianId(testData, t)
@@ -2270,7 +2270,7 @@ func TestCheckingStatusOfMultipleRefillRequestsAtOnce(t *testing.T) {
 		t.Fatalf("Unable to marshal json object: %+v", err)
 	}
 
-	resp, err := authPut(ts.URL, "application/json", bytes.NewReader(jsonData), doctor.AccountId.Int64())
+	resp, err := AuthPut(ts.URL, "application/json", bytes.NewReader(jsonData), doctor.AccountId.Int64())
 	if err != nil {
 		t.Fatal("Unable to make successful request to approve refill request: " + err.Error())
 	}
@@ -2338,7 +2338,7 @@ func TestCheckingStatusOfMultipleRefillRequestsAtOnce(t *testing.T) {
 			t.Fatalf("Unable to marshal json object: %+v", err)
 		}
 
-		resp, err = authPut(ts.URL, "application/x-www-form-urlencoded", bytes.NewReader(jsonData), doctor.AccountId.Int64())
+		resp, err = AuthPut(ts.URL, "application/x-www-form-urlencoded", bytes.NewReader(jsonData), doctor.AccountId.Int64())
 		if err != nil {
 			t.Fatal("Unable to make successful request to approve refill request: " + err.Error())
 		}
@@ -2400,13 +2400,13 @@ func TestCheckingStatusOfMultipleRefillRequestsAtOnce(t *testing.T) {
 
 func TestRefillRequestComingFromDifferentPharmacyThanDispensedPrescription(t *testing.T) {
 
-	testData := setupIntegrationTest(t)
-	defer tearDownIntegrationTest(t, testData)
+	testData := SetupIntegrationTest(t)
+	defer TearDownIntegrationTest(t, testData)
 
 	// create doctor with clinicianId specicified
 	doctor := createDoctorWithClinicianId(testData, t)
 
-	signedupPatientResponse := signupRandomTestPatient(t, testData.DataApi, testData.AuthApi)
+	signedupPatientResponse := SignupRandomTestPatient(t, testData.DataApi, testData.AuthApi)
 	erxPatientId := int64(60)
 
 	// add an erx patient id to the patient
@@ -2648,13 +2648,13 @@ func TestRefillRequestComingFromDifferentPharmacyThanDispensedPrescription(t *te
 
 func TestNewRefillRequestWithUnlinkedTreatmentAndLinkedPatient(t *testing.T) {
 
-	testData := setupIntegrationTest(t)
-	defer tearDownIntegrationTest(t, testData)
+	testData := SetupIntegrationTest(t)
+	defer TearDownIntegrationTest(t, testData)
 
 	// create doctor with clinicianId specicified
 	doctor := createDoctorWithClinicianId(testData, t)
 
-	signedupPatientResponse := signupRandomTestPatient(t, testData.DataApi, testData.AuthApi)
+	signedupPatientResponse := SignupRandomTestPatient(t, testData.DataApi, testData.AuthApi)
 	erxPatientId := int64(60)
 
 	// add an erx patient id to the patient
@@ -2826,8 +2826,8 @@ func TestNewRefillRequestWithUnlinkedTreatmentAndLinkedPatient(t *testing.T) {
 
 func TestNewRefillRequestWithUnlinkedTreatmentAndUnlinkedPatient(t *testing.T) {
 
-	testData := setupIntegrationTest(t)
-	defer tearDownIntegrationTest(t, testData)
+	testData := SetupIntegrationTest(t)
+	defer TearDownIntegrationTest(t, testData)
 
 	// create doctor with clinicianId specicified
 	doctor := createDoctorWithClinicianId(testData, t)

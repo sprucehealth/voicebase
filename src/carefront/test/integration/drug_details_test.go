@@ -9,8 +9,8 @@ import (
 
 func TestDrugDetails(t *testing.T) {
 
-	testData := setupIntegrationTest(t)
-	defer tearDownIntegrationTest(t, testData)
+	testData := SetupIntegrationTest(t)
+	defer TearDownIntegrationTest(t, testData)
 
 	_, err := testData.DataApi.DrugDetails("non-existant")
 	if err != api.NoRowsError {

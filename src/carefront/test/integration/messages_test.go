@@ -14,12 +14,12 @@ import (
 )
 
 func TestPersonCreation(t *testing.T) {
-	testData := setupIntegrationTest(t)
-	defer tearDownIntegrationTest(t, testData)
+	testData := SetupIntegrationTest(t)
+	defer TearDownIntegrationTest(t, testData)
 
 	// Make sure a person row is inserted when creating a patient
 
-	pr := signupRandomTestPatient(t, testData.DataApi, testData.AuthApi)
+	pr := SignupRandomTestPatient(t, testData.DataApi, testData.AuthApi)
 	patientId := pr.Patient.PatientId.Int64()
 	if pid, err := testData.DataApi.GetPersonIdByRole(api.PATIENT_ROLE, patientId); err != nil {
 		t.Fatalf("Failed to get person for role %s/%d: %s", api.PATIENT_ROLE, patientId, err.Error())
@@ -39,8 +39,8 @@ func TestPersonCreation(t *testing.T) {
 }
 
 func TestConversationTopics(t *testing.T) {
-	testData := setupIntegrationTest(t)
-	defer tearDownIntegrationTest(t, testData)
+	testData := SetupIntegrationTest(t)
+	defer TearDownIntegrationTest(t, testData)
 
 	title := "Help"
 	ordinal := 123
@@ -73,10 +73,10 @@ func TestConversationTopics(t *testing.T) {
 }
 
 func TestCreateConversation(t *testing.T) {
-	testData := setupIntegrationTest(t)
-	defer tearDownIntegrationTest(t, testData)
+	testData := SetupIntegrationTest(t)
+	defer TearDownIntegrationTest(t, testData)
 
-	pr := signupRandomTestPatient(t, testData.DataApi, testData.AuthApi)
+	pr := SignupRandomTestPatient(t, testData.DataApi, testData.AuthApi)
 	patientId, err := testData.DataApi.GetPersonIdByRole(api.PATIENT_ROLE, pr.Patient.PatientId.Int64())
 	if err != nil {
 		t.Fatal(err)
@@ -165,10 +165,10 @@ func TestCreateConversation(t *testing.T) {
 }
 
 func TestReplyToConversation(t *testing.T) {
-	testData := setupIntegrationTest(t)
-	defer tearDownIntegrationTest(t, testData)
+	testData := SetupIntegrationTest(t)
+	defer TearDownIntegrationTest(t, testData)
 
-	pr := signupRandomTestPatient(t, testData.DataApi, testData.AuthApi)
+	pr := SignupRandomTestPatient(t, testData.DataApi, testData.AuthApi)
 	patientId, err := testData.DataApi.GetPersonIdByRole(api.PATIENT_ROLE, pr.Patient.PatientId.Int64())
 	if err != nil {
 		t.Fatal(err)
@@ -233,10 +233,10 @@ func TestReplyToConversation(t *testing.T) {
 }
 
 func TestGetConversationsWithParticipants(t *testing.T) {
-	testData := setupIntegrationTest(t)
-	defer tearDownIntegrationTest(t, testData)
+	testData := SetupIntegrationTest(t)
+	defer TearDownIntegrationTest(t, testData)
 
-	pr := signupRandomTestPatient(t, testData.DataApi, testData.AuthApi)
+	pr := SignupRandomTestPatient(t, testData.DataApi, testData.AuthApi)
 	patientId, err := testData.DataApi.GetPersonIdByRole(api.PATIENT_ROLE, pr.Patient.PatientId.Int64())
 	if err != nil {
 		t.Fatal(err)
@@ -269,10 +269,10 @@ func TestGetConversationsWithParticipants(t *testing.T) {
 }
 
 func TestConversationReadFlag(t *testing.T) {
-	testData := setupIntegrationTest(t)
-	defer tearDownIntegrationTest(t, testData)
+	testData := SetupIntegrationTest(t)
+	defer TearDownIntegrationTest(t, testData)
 
-	pr := signupRandomTestPatient(t, testData.DataApi, testData.AuthApi)
+	pr := SignupRandomTestPatient(t, testData.DataApi, testData.AuthApi)
 	patientId, err := testData.DataApi.GetPersonIdByRole(api.PATIENT_ROLE, pr.Patient.PatientId.Int64())
 	if err != nil {
 		t.Fatal(err)
@@ -305,7 +305,7 @@ func TestConversationReadFlag(t *testing.T) {
 	ts := httptest.NewServer(h)
 	defer ts.Close()
 
-	res, err := authPost(ts.URL, "application/x-www-form-urlencoded", strings.NewReader("conversation_id="+strconv.FormatInt(cid, 10)), dr.AccountId.Int64())
+	res, err := AuthPost(ts.URL, "application/x-www-form-urlencoded", strings.NewReader("conversation_id="+strconv.FormatInt(cid, 10)), dr.AccountId.Int64())
 	if err != nil {
 		t.Fatal(err)
 	} else if res.StatusCode != 200 {
@@ -331,10 +331,10 @@ func TestConversationReadFlag(t *testing.T) {
 }
 
 func TestConversationHandlers(t *testing.T) {
-	testData := setupIntegrationTest(t)
-	defer tearDownIntegrationTest(t, testData)
+	testData := SetupIntegrationTest(t)
+	defer TearDownIntegrationTest(t, testData)
 
-	pr := signupRandomTestPatient(t, testData.DataApi, testData.AuthApi)
+	pr := SignupRandomTestPatient(t, testData.DataApi, testData.AuthApi)
 
 	topicId, err := testData.DataApi.AddConversationTopic("Foo", 100, true)
 	if err != nil {
@@ -357,7 +357,7 @@ func TestConversationHandlers(t *testing.T) {
 	}); err != nil {
 		t.Fatal(err)
 	}
-	res, err := authPost(patientConvoServer.URL, "application/json", body, pr.Patient.AccountId.Int64())
+	res, err := AuthPost(patientConvoServer.URL, "application/json", body, pr.Patient.AccountId.Int64())
 	if err != nil {
 		t.Fatal(err)
 	} else if res.StatusCode != 200 {
@@ -387,19 +387,9 @@ func TestConversationHandlers(t *testing.T) {
 		dr = p[doctorPersonId].Doctor
 	}
 
-	// ensure that an item is inserted into the doctor queue
-	pendingItems, err := testData.DataApi.GetPendingItemsInDoctorQueue(dr.DoctorId.Int64())
-	if err != nil {
-		t.Fatalf("Unable to get doctor queue: %s", err)
-	} else if len(pendingItems) != 1 {
-		t.Fatalf("Expected 1 item in the pending items but got %d instead", len(pendingItems))
-	} else if pendingItems[0].EventType != api.EVENT_TYPE_CONVERSATION {
-		t.Fatalf("Expected item type to be %s instead it was %s", api.EVENT_TYPE_CONVERSATION, pendingItems[0].EventType)
-	}
-
 	// List conversations
 
-	res, err = authGet(fmt.Sprintf("%s?patient_id=%d", doctorConvoServer.URL, pr.Patient.PatientId.Int64()), dr.AccountId.Int64())
+	res, err = AuthGet(fmt.Sprintf("%s?patient_id=%d", doctorConvoServer.URL, pr.Patient.PatientId.Int64()), dr.AccountId.Int64())
 	if err != nil {
 		t.Fatal(err)
 	} else if res.StatusCode != 200 {
@@ -424,10 +414,11 @@ func TestConversationHandlers(t *testing.T) {
 	}); err != nil {
 		t.Fatal(err)
 	}
-	res, err = authPost(doctorMessageServer.URL, "application/json", body, dr.AccountId.Int64())
+	res, err = AuthPost(doctorMessageServer.URL, "application/json", body, dr.AccountId.Int64())
 	if err != nil {
 		t.Fatal(err)
 	} else if res.StatusCode != 200 {
 		t.Fatalf("Expected status 200. Got %d", res.StatusCode)
 	}
+
 }
