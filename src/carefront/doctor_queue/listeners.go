@@ -159,7 +159,7 @@ func InitListeners(dataAPI api.DataAPI) {
 				ItemId:    ev.ConversationId,
 				EventType: api.EVENT_TYPE_CONVERSATION,
 				Status:    api.QUEUE_ITEM_STATUS_REPLIED,
-			}, api.STATUS_PENDING); err != nil {
+			}, api.QUEUE_ITEM_STATUS_PENDING); err != nil {
 				golog.Errorf("Unable to replace item in doctor queue with a replied item: %s", err)
 				return err
 			}
@@ -177,12 +177,12 @@ func InitListeners(dataAPI api.DataAPI) {
 
 		person := people[ev.FromId]
 		if person.RoleType == api.DOCTOR_ROLE {
-			if err := dataAPI.DeleteItemFromDoctorQueue(api.DoctorQueueItem{
+			if err := dataAPI.ReplaceItemInDoctorQueue(api.DoctorQueueItem{
 				DoctorId:  person.Doctor.DoctorId.Int64(),
 				ItemId:    ev.ConversationId,
 				EventType: api.EVENT_TYPE_CONVERSATION,
-				Status:    api.QUEUE_ITEM_STATUS_PENDING,
-			}); err != nil {
+				Status:    api.QUEUE_ITEM_STATUS_READ,
+			}, api.QUEUE_ITEM_STATUS_PENDING); err != nil {
 				golog.Errorf("Unable to replace item in doctor queue with a replied item: %s", err)
 				return err
 			}

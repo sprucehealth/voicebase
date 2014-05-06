@@ -11,6 +11,7 @@ const (
 	QUEUE_ITEM_STATUS_REFILL_APPROVED         = "APPROVED"
 	QUEUE_ITEM_STATUS_REFILL_DENIED           = "DENIED"
 	QUEUE_ITEM_STATUS_REPLIED                 = "REPLIED"
+	QUEUE_ITEM_STATUS_READ                    = "READ"
 	DISPLAY_TYPE_TITLE_SUBTITLE_NONACTIONABLE = "title_subtitle_nonactionable"
 	DISPLAY_TYPE_TITLE_SUBTITLE_ACTIONABLE    = "title_subtitle_actionable"
 )

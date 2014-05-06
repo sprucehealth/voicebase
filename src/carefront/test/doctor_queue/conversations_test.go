@@ -229,7 +229,9 @@ func TestMarkingConversationReadWithDoctorQueue(t *testing.T) {
 	completedItems, err := testData.DataApi.GetCompletedItemsInDoctorQueue(doctorId)
 	if err != nil {
 		t.Fatalf("Unable to get completed items in the doctor queue: %s", err)
-	} else if len(completedItems) != 0 {
-		t.Fatalf("Expected no item in the completed tab instead got %d", len(completedItems))
+	} else if len(completedItems) != 1 {
+		t.Fatalf("Expected 1 item in the completed tab instead got %d", len(completedItems))
+	} else if completedItems[0].EventType != api.EVENT_TYPE_CONVERSATION {
+		t.Fatalf("Expected item to be of type %s instead got %s", api.EVENT_TYPE_CONVERSATION, completedItems[0].EventType)
 	}
 }
