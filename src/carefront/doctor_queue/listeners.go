@@ -181,7 +181,7 @@ func InitListeners(dataAPI api.DataAPI) {
 				DoctorId:  person.Doctor.DoctorId.Int64(),
 				ItemId:    ev.ConversationId,
 				EventType: api.EVENT_TYPE_CONVERSATION,
-				Status:    api.QUEUE_ITEM_STATUS_REPLIED,
+				Status:    api.QUEUE_ITEM_STATUS_PENDING,
 			}); err != nil {
 				golog.Errorf("Unable to replace item in doctor queue with a replied item: %s", err)
 				return err

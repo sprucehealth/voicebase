@@ -81,7 +81,7 @@ func (h *DoctorConversationHandler) listConversations(w http.ResponseWriter, r *
 }
 
 func (h *DoctorConversationHandler) newConversation(w http.ResponseWriter, r *http.Request, doctorId, personId int64) {
-	req := &NewConversationRequest{}
+	req := &NewconversationRequest{}
 	if err := json.NewDecoder(r.Body).Decode(req); err != nil {
 		apiservice.WriteUserError(w, http.StatusBadRequest, "Unable to parse request data: "+err.Error())
 		return

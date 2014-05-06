@@ -7,6 +7,9 @@ import (
 	"carefront/test/integration"
 	"encoding/json"
 	"net/http/httptest"
+	"net/url"
+	"strconv"
+	"strings"
 	"testing"
 )
 
@@ -27,7 +30,7 @@ func TestConversationItemsInDoctorQueue(t *testing.T) {
 	defer doctorMessageServer.Close()
 
 	body := &bytes.Buffer{}
-	if err := json.NewEncoder(body).Encode(&messages.NewConversationRequest{
+	if err := json.NewEncoder(body).Encode(&messages.NewconversationRequest{
 		TopicId: topicId,
 		Message: "Foo",
 	}); err != nil {
@@ -109,9 +112,11 @@ func TestMarkingConversationReadWithDoctorQueue(t *testing.T) {
 	defer patientConvoServer.Close()
 	doctorMessageServer := httptest.NewServer(messages.NewDoctorMessagesHandler(testData.DataApi))
 	defer doctorMessageServer.Close()
+	doctorReadServer := httptest.NewServer(messages.NewDoctorReadHandler(testData.DataApi))
+	defer doctorReadServer.Close()
 
 	body := &bytes.Buffer{}
-	if err := json.NewEncoder(body).Encode(&messages.NewConversationRequest{
+	if err := json.NewEncoder(body).Encode(&messages.NewconversationRequest{
 		TopicId: topicId,
 		Message: "Foo",
 	}); err != nil {
@@ -131,6 +136,28 @@ func TestMarkingConversationReadWithDoctorQueue(t *testing.T) {
 	doctor, err := testData.DataApi.GetDoctorFromId(doctorId)
 	if err != nil {
 		t.Fatal(err)
+	}
+
+	params := url.Values{}
+	params.Set("conversation_id", strconv.FormatInt(newConvRes.ConversationId, 10))
+	res, err = integration.AuthPost(doctorReadServer.URL, "application/x-www-form-urlencoded", strings.NewReader(params.Encode()), doctor.AccountId.Int64())
+	if err != nil {
+		t.Fatal(err)
+	}
+
+	// ensure that the item is marked as completed for the doctor
+	pendingItems, err := testData.DataApi.GetPendingItemsInDoctorQueue(doctorId)
+	if err != nil {
+		t.Fatalf("Unable to get doctor queue: %s", err)
+	} else if len(pendingItems) != 0 {
+		t.Fatalf("Expected no item in the pending items but got %d instead", len(pendingItems))
+	}
+
+	completedItems, err := testData.DataApi.GetCompletedItemsInDoctorQueue(doctorId)
+	if err != nil {
+		t.Fatalf("Unable to get completed items in the doctor queue: %s", err)
+	} else if len(completedItems) != 0 {
+		t.Fatalf("Expected no item in the completed tab instead got %d", len(completedItems))
 	}
 
 }
