@@ -1,9 +1,12 @@
 package integration
 
 import (
+	"bytes"
 	"carefront/api"
 	"carefront/common"
 	"carefront/messages"
+	"encoding/json"
+	"fmt"
 	"net/http/httptest"
 	"strconv"
 	"strings"
@@ -324,5 +327,90 @@ func TestConversationReadFlag(t *testing.T) {
 		t.Fatal(err)
 	} else if !c.Unread {
 		t.Fatalf("Expected conversation to be unread")
+	}
+}
+
+func TestConversationHandlers(t *testing.T) {
+	testData := setupIntegrationTest(t)
+	defer tearDownIntegrationTest(t, testData)
+
+	pr := signupRandomTestPatient(t, testData.DataApi, testData.AuthApi)
+	drRes, _, _ := signupRandomTestDoctor(t, testData.DataApi, testData.AuthApi)
+	dr, err := testData.DataApi.GetDoctorFromId(drRes.DoctorId)
+	if err != nil {
+		t.Fatal(err)
+	}
+
+	topicId, err := testData.DataApi.AddConversationTopic("Foo", 100, true)
+	if err != nil {
+		t.Fatal(err)
+	}
+
+	patientConvoServer := httptest.NewServer(messages.NewPatientConversationHandler(testData.DataApi))
+	defer patientConvoServer.Close()
+	doctorConvoServer := httptest.NewServer(messages.NewDoctorConversationHandler(testData.DataApi))
+	defer doctorConvoServer.Close()
+	doctorMessageServer := httptest.NewServer(messages.NewDoctorMessagesHandler(testData.DataApi))
+	defer doctorMessageServer.Close()
+
+	// New conversation
+
+	body := &bytes.Buffer{}
+	if err := json.NewEncoder(body).Encode(&messages.NewConversationRequest{
+		TopicId: topicId,
+		Message: "Foo",
+	}); err != nil {
+		t.Fatal(err)
+	}
+	res, err := authPost(patientConvoServer.URL, "application/json", body, pr.Patient.AccountId.Int64())
+	if err != nil {
+		t.Fatal(err)
+	} else if res.StatusCode != 200 {
+		t.Fatalf("Expected status 200. Got %d", res.StatusCode)
+	}
+	newConvRes := &messages.NewConversationResponse{}
+	if err := json.NewDecoder(res.Body).Decode(newConvRes); err != nil {
+		t.Fatal(err)
+	}
+	res.Body.Close()
+
+	// Make sure conversation was created
+
+	if _, err := testData.DataApi.GetConversation(newConvRes.ConversationId); err != nil {
+		t.Fatal(err)
+	}
+
+	// List conversations
+
+	res, err = authGet(fmt.Sprintf("%s?patient_id=%d", doctorConvoServer.URL, pr.Patient.PatientId.Int64()), dr.AccountId.Int64())
+	if err != nil {
+		t.Fatal(err)
+	} else if res.StatusCode != 200 {
+		t.Fatalf("Expected status 200. Got %d", res.StatusCode)
+	}
+	convList := &messages.ConversationListResponse{}
+	if err := json.NewDecoder(res.Body).Decode(convList); err != nil {
+		t.Fatal(err)
+	}
+	if len(convList.Conversations) != 1 {
+		t.Fatalf("Expected 1 conversation. Got %d", len(convList.Conversations))
+	} else if len(convList.Participants) != 2 {
+		t.Fatalf("Expected 2 participants. Got %d", len(convList.Participants))
+	}
+
+	// Reply
+
+	body = &bytes.Buffer{}
+	if err := json.NewEncoder(body).Encode(&messages.ReplyRequest{
+		ConversationId: newConvRes.ConversationId,
+		Message:        "Foo",
+	}); err != nil {
+		t.Fatal(err)
+	}
+	res, err = authPost(doctorMessageServer.URL, "application/json", body, dr.AccountId.Int64())
+	if err != nil {
+		t.Fatal(err)
+	} else if res.StatusCode != 200 {
+		t.Fatalf("Expected status 200. Got %d", res.StatusCode)
 	}
 }
