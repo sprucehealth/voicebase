@@ -402,25 +402,17 @@ type StatusEvent struct {
 	StatusDetails     string    `json:"status_details,omitempty"`
 }
 
-type DrugPrecaution struct {
-	Snippet string
-	Details string
-}
-
 type DrugDetails struct {
-	Name               string
-	Subtitle           string
-	NDC                string
-	Alternative        string
-	Description        string
-	HowMuchToUse       string
-	Warnings           []string
-	Precautions        []DrugPrecaution
-	HowToUse           []string
-	DoNots             []string
-	MessageDoctorIf    []string
-	SeriousSideEffects []string
-	CommonSideEffects  []string
+	Name           string
+	NDC            string
+	ImageURL       string
+	Alternative    string
+	Description    string
+	Warnings       []string
+	Precautions    []string
+	HowToUse       []string
+	SideEffects    []string
+	AdverseEffects []string
 }
 
 type Notification struct {

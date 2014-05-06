@@ -7,6 +7,7 @@ into sections which are defined by the labels in the second column of the spread
 */
 
 import (
+	"bufio"
 	"carefront/api"
 	"carefront/common"
 	"carefront/common/config"
@@ -16,21 +17,25 @@ import (
 	"fmt"
 	"log"
 	"os"
+	"os/exec"
 	"strings"
 )
 
 type Config struct {
 	*config.BaseConfig
-	Debug        bool       `long:"debug" description:"Enable debugging"`
-	DB           *config.DB `group:"Database" toml:"database"`
-	CellsFeed    string     `long:"feed" description:"Cells feed URI"`
-	RefreshToken string     `long:"refreshtoken" description:"Refresh token for OAUTH2"`
-	JSON         string     `long:"json" description:"Save details into a JSON file instead of writing to the database"`
+	Debug         bool       `long:"debug" description:"Enable debugging"`
+	DB            *config.DB `group:"Database" toml:"database"`
+	CellsFeed     string     `long:"feed" description:"Cells feed URI"`
+	RefreshToken  string     `long:"refreshtoken" description:"Refresh token for OAUTH2"`
+	JSON          string     `long:"json" description:"Save details into a JSON file instead of writing to the database"`
+	GDataClientID string     `long:"gdata_client_id" description:"Google Data API Client ID"`
+	GDataSecret   string     `long:"gdata_secret" description:"Google Data API Secret"`
 }
 
 var DefaultConfig = Config{
 	BaseConfig: &config.BaseConfig{
-		AppName: "medetails",
+		AppName:   "medetails",
+		AWSRegion: "us-east-1", // Unused but the config parser tries to lookup metadata without this
 	},
 	DB: &config.DB{
 		Name: "carefront",
@@ -48,7 +53,7 @@ func cleanupText(s string) string {
 func main() {
 	log.SetFlags(0)
 	conf := DefaultConfig
-	_, err := config.Parse(&conf)
+	args, err := config.Parse(&conf)
 	if err != nil {
 		log.Fatal(err)
 	}
@@ -63,31 +68,76 @@ func main() {
 	}
 	defer db.Close()
 
-	clientId := os.Getenv("GDATA_CLIENT_ID")
-	clientSecret := os.Getenv("GDATA_SECRET")
-	if clientId == "" || clientSecret == "" {
-		log.Fatal("GDATA_CLIENT_ID or GDATA_SECRET not set")
+	if conf.GDataClientID == "" {
+		conf.GDataClientID = os.Getenv("GDATA_CLIENT_ID")
 	}
-	if conf.RefreshToken == "" {
-		log.Fatal("Refresh token not set")
+	if conf.GDataSecret == "" {
+		conf.GDataSecret = os.Getenv("GDATA_SECRET")
 	}
-	if conf.CellsFeed == "" {
-		log.Fatal("CellsFeed not set")
+	if conf.GDataClientID == "" || conf.GDataSecret == "" {
+		log.Fatal("GDataClientID or GDataSecret not set")
 	}
 
-	transport := gdata.MakeOauthTransport(gdata.SpreadsheetScope, clientId, clientSecret, "", conf.RefreshToken)
+	transport := gdata.MakeOauthTransport(gdata.SpreadsheetScope, conf.GDataClientID, conf.GDataSecret, "", conf.RefreshToken)
 	cli, err := gdata.NewClient(transport)
 	if err != nil {
 		log.Fatal(err)
 	}
 
-	// This is left here to demonstrate how to obtain a refresh token
-	// fmt.Printf("%s\n", cli.AuthCodeURL("abc"))
-	// tok, err := cli.ExchangeToken("...")
-	// if err != nil {
-	// 	log.Fatal(err)
-	// }
-	// fmt.Printf("%+v\n", tok)
+	if len(args) > 0 {
+		switch args[0] {
+		default:
+			fmt.Fprintf(os.Stderr, "Unknown command %s\n", args[0])
+			os.Exit(1)
+		case "auth":
+			authURL := cli.AuthCodeURL("")
+			// Ignore error since this assume running under OS X
+			exec.Command("open", authURL).Run()
+			fmt.Printf("Go to: %s\n", authURL)
+
+			fmt.Printf("Paste auth code: ")
+			rd := bufio.NewReader(os.Stdin)
+			code, err := rd.ReadString('\n')
+			if err != nil {
+				log.Fatal(err)
+			}
+			code = strings.TrimSpace(code)
+
+			tok, err := cli.ExchangeToken(code)
+			if err != nil {
+				log.Fatal(err)
+			}
+			fmt.Printf("Refresh Token: %+v\n", tok.RefreshToken)
+		case "listspreadsheets":
+			data, err := cli.ListSpreadsheets()
+			if err != nil {
+				log.Fatal(err)
+			}
+			for _, e := range data.Entries {
+				fmt.Printf("%-40s\t%-10s\t%s\n", e.Title.Content, e.Author.Name, e.WorksheetsFeedURL())
+			}
+		case "listworksheets":
+			if len(args) < 2 {
+				fmt.Fprintf(os.Stderr, "Spreadsheet URL argument required\n")
+				os.Exit(1)
+			}
+			data, err := cli.ListWorksheets(args[1])
+			if err != nil {
+				log.Fatal(err)
+			}
+			for _, e := range data.Entries {
+				fmt.Printf("%-40s\t%s\n", e.Title.Content, e.CellsFeedURL())
+			}
+		}
+		return
+	}
+
+	if conf.RefreshToken == "" {
+		log.Fatal("Refresh token not set. Use 'auth' command to obtain one.")
+	}
+	if conf.CellsFeed == "" {
+		log.Fatal("CellsFeed not set")
+	}
 
 	feed, err := cli.GetCells(conf.CellsFeed, nil)
 	if err != nil {
@@ -109,13 +159,13 @@ func main() {
 	sections := make(map[string][2]int)
 	inSection := ""
 	for r := 1; r <= feed.RowCount; r++ {
-		if c := cells[r][1]; c != nil {
-			txt := c.Cell.Content
+		if c := cells[r][2]; c != nil {
+			txt := strings.ToLower(c.Cell.Content)
 			if inSection != "" {
 				sections[inSection] = [2]int{sections[inSection][0], r - 1}
 				inSection = ""
 			}
-			if txt != "Comments" {
+			if txt != "comments" {
 				inSection = txt
 				sections[inSection] = [2]int{r, feed.RowCount}
 			}
@@ -146,52 +196,39 @@ func main() {
 		}
 	}
 
+	for name, s := range sections {
+		fmt.Printf("%s %+v\n", name, s)
+	}
+
 	drugs := make([]*common.DrugDetails, 0)
 	for i := 1; i <= feed.ColCount; i++ {
 		if cells[2][i] != nil {
 			info := &common.DrugDetails{
-				Name: cleanupText(cells[1][i].Cell.Content),
-				// Subtitle: TODO: The spreadsheet does not have a subtitle for the drug yet
-				Alternative:        cleanupText(cells[2][i].Cell.Content),
-				Description:        cleanupText(cells[sections["Description"][0]][i].Cell.Content),
-				Warnings:           getList(i, "Warnings"),
-				HowToUse:           getList(i, "How to use"),
-				DoNots:             getList(i, "Do Not"),
-				MessageDoctorIf:    getList(i, "Message your doctor if"),
-				SeriousSideEffects: getList(i, "Serious side effects"),
-				CommonSideEffects:  getList(i, "Common side effects"),
+				Name:           cleanupText(cells[1][i].Cell.Content),
+				Alternative:    cleanupText(cells[2][i].Cell.Content),
+				Description:    cleanupText(cells[sections["description"][0]][i].Cell.Content),
+				Warnings:       getList(i, "warnings"),
+				Precautions:    getList(i, "precautions"),
+				HowToUse:       getList(i, "how to use"),
+				SideEffects:    getList(i, "side effects"),
+				AdverseEffects: getList(i, "adverse effects (wolverton)"),
 			}
-			for _, p := range getList(i, "Precautions") {
-				// TODO: The spreadsheet does not have snippet and details broken out for precautions yet
-				info.Precautions = append(info.Precautions,
-					common.DrugPrecaution{
-						Snippet: "TODO",
-						Details: p,
-					},
-				)
+			if c := cells[sections["image url"][0]][i]; c != nil {
+				info.ImageURL = strings.TrimSpace(c.Cell.Content)
 			}
-			if c := cells[sections["NDC"][0]][i]; c != nil {
+			if c := cells[sections["ndc"][0]][i]; c != nil {
 				info.NDC = cleanupText(c.Cell.Content)
-			}
-			if c := cells[sections["How much to use"][0]][i]; c != nil {
-				info.HowMuchToUse = strings.TrimSpace(c.Cell.Content)
 			}
 			drugs = append(drugs, info)
 
 			if conf.Debug {
-				fmt.Printf("------------------\nName: %s\nNDC: %s\nAlternative: %s\nDescription: %s\n", info.Name, info.NDC, info.Alternative, info.Description)
-				fmt.Printf("How much to use: %s\n", info.HowMuchToUse)
-				if len(info.Precautions) > 0 {
-					fmt.Println("Precations:")
-					for _, p := range info.Precautions {
-						fmt.Printf("\t- %s :: %s\n", p.Snippet, p.Details)
-					}
-				}
+				fmt.Printf("------------------\nName: %s\nNDC: %s\nAlternative: %s\nImage URL: %s\nDescription: %s\n",
+					info.Name, info.NDC, info.Alternative, info.ImageURL, info.Description)
+				printList("Precautions", info.Precautions)
 				printList("Warnings", info.Warnings)
 				printList("How to use", info.HowToUse)
-				printList("Message your doctor if", info.MessageDoctorIf)
-				printList("Serious side effects", info.SeriousSideEffects)
-				printList("Common side effects", info.CommonSideEffects)
+				printList("Side effects", info.SideEffects)
+				printList("Adverse effects", info.AdverseEffects)
 			}
 		}
 	}
