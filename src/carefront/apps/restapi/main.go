@@ -387,6 +387,7 @@ func main() {
 
 	mux.Handle("/v1/content", staticContentHandler)
 	mux.Handle("/v1/patient", patient.NewSignupHandler(dataApi, authApi))
+	mux.Handle("/v1/patient/info", patient.NewUpdateHandler(dataApi))
 	mux.Handle("/v1/patient/address/billing", updatePatientBillingAddress)
 	mux.Handle("/v1/patient/pharmacy", updatePatientPharmacyHandler)
 	mux.Handle("/v1/patient/treatment/guide", patientTreatmentGuideHandler)

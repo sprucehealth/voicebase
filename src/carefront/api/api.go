@@ -65,6 +65,7 @@ type PatientAPI interface {
 	GetPatientFromRefillRequestId(refillRequestId int64) (*common.Patient, error)
 	GetPatientFromTreatmentId(treatmentId int64) (*common.Patient, error)
 	RegisterPatient(patient *common.Patient) error
+	UpdateTopLevelPatientInformation(patient *common.Patient) error
 	UpdatePatientInformation(patient *common.Patient, updateFromDoctor bool) error
 	CreateUnlinkedPatientFromRefillRequest(patient *common.Patient) error
 	UpdatePatientWithERxPatientId(patientId, erxPatientId int64) error

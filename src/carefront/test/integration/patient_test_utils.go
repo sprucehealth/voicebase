@@ -19,7 +19,7 @@ import (
 )
 
 func signupRandomTestPatient(t *testing.T, dataApi api.DataAPI, authApi thriftapi.Auth) *patientApiService.PatientSignedupResponse {
-	authHandler := &patientApiService.SignupPatientHandler{AuthApi: authApi, DataApi: dataApi}
+	authHandler := patientApiService.NewSignupHandler(dataApi, authApi)
 	ts := httptest.NewServer(authHandler)
 	defer ts.Close()
 

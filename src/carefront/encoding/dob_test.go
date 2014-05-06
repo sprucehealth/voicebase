@@ -107,3 +107,23 @@ func TestDobUnMarshallEmptyValue(t *testing.T) {
 		t.Fatalf("testObject not unmarshalled into values as expected: %+v", testObject.Dob)
 	}
 }
+
+func TestDobFromString(t *testing.T) {
+	dobString := "1987-11-08"
+	dob, err := NewDobFromString(dobString)
+	if err != nil {
+		t.Fatalf("unexpected error from dob parsing: %s", err)
+	}
+	if dob.Year != 1987 || dob.Month != 11 || dob.Day != 8 {
+		t.Fatalf("Expected dob to be 1987-11-08 instead got %d-%02d-%02d", dob.Year, dob.Month, dob.Day)
+	}
+}
+
+func TestDobFromString_Error(t *testing.T) {
+	dobString := "1987-aa-08"
+	_, err := NewDobFromString(dobString)
+	if err == nil {
+		t.Fatalf("expected error but got none")
+	}
+
+}

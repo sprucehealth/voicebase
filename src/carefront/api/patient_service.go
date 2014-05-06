@@ -27,28 +27,50 @@ func (d *DataService) RegisterPatient(patient *common.Patient) error {
 	return tx.Commit()
 }
 
+func (d *DataService) updateTopLevelPatientInformation(db db, patient *common.Patient) error {
+	// update top level patient details
+	_, err := db.Exec(`update patient set first_name=?, 
+		middle_name=?, last_name=?, prefix=?, suffix=?, dob_month=?, dob_day=?, dob_year=?, gender=? where id = ?`, patient.FirstName, patient.MiddleName,
+		patient.LastName, patient.Prefix, patient.Suffix, patient.Dob.Month, patient.Dob.Day, patient.Dob.Year, patient.Gender, patient.PatientId.Int64())
+	if err != nil {
+		return err
+	}
+
+	// delete the existing numbers to add the new ones coming through
+	_, err = db.Exec(`delete from patient_phone where patient_id=?`, patient.PatientId.Int64())
+	if err != nil {
+		return err
+	}
+
+	// add the new ones from the doctor
+	for i, phoneNumber := range patient.PhoneNumbers {
+		status := STATUS_INACTIVE
+		// save the first number as the main/default number
+		if i == 0 {
+			status = STATUS_ACTIVE
+		}
+		_, err = db.Exec(`insert into patient_phone (phone, phone_type, patient_id, status) values (?,?,?,?)`, phoneNumber.Phone, phoneNumber.PhoneType, patient.PatientId.Int64(), status)
+		if err != nil {
+			return err
+		}
+	}
+
+	return nil
+}
+
+func (d *DataService) UpdateTopLevelPatientInformation(patient *common.Patient) error {
+	return d.updateTopLevelPatientInformation(d.DB, patient)
+}
+
 func (d *DataService) UpdatePatientInformation(patient *common.Patient, updateFromDoctor bool) error {
 	tx, err := d.DB.Begin()
 	if err != nil {
 		return err
 	}
 
-	// update top level patient details
-	_, err = tx.Exec(`update patient set first_name=?, 
-		middle_name=?, last_name=?, prefix=?, suffix=?, dob_month=?, dob_day=?, dob_year=?, gender=? where id = ?`, patient.FirstName, patient.MiddleName,
-		patient.LastName, patient.Prefix, patient.Suffix, patient.Dob.Month, patient.Dob.Day, patient.Dob.Year, patient.Gender, patient.PatientId.Int64())
-	if err != nil {
+	if err := d.updateTopLevelPatientInformation(tx, patient); err != nil {
 		tx.Rollback()
 		return err
-	}
-
-	// update email
-	if patient.Email != "" {
-		_, err = tx.Exec(`update account set email=? where id=?`, patient.Email, patient.AccountId.Int64())
-		if err != nil {
-			tx.Rollback()
-			return err
-		}
 	}
 
 	// update patient address if it exists
@@ -71,27 +93,6 @@ func (d *DataService) UpdatePatientInformation(patient *common.Patient, updateFr
 		// create new selection and mark it as having been updated by doctor
 		_, err = tx.Exec(`insert into patient_address_selection (address_id, patient_id, is_default, is_updated_by_doctor) values 
 								(?,?,1,?)`, addressId, patient.PatientId.Int64(), updateFromDoctor)
-		if err != nil {
-			tx.Rollback()
-			return err
-		}
-	}
-
-	// delete the existing numbers to add the new ones coming through
-	_, err = tx.Exec(`delete from patient_phone where patient_id=?`, patient.PatientId.Int64())
-	if err != nil {
-		tx.Rollback()
-		return err
-	}
-
-	// add the new ones from the doctor
-	for i, phoneNumber := range patient.PhoneNumbers {
-		status := STATUS_INACTIVE
-		// save the first number as the main/default number
-		if i == 0 {
-			status = STATUS_ACTIVE
-		}
-		_, err = tx.Exec(`insert into patient_phone (phone, phone_type, patient_id, status) values (?,?,?,?)`, phoneNumber.Phone, phoneNumber.PhoneType, patient.PatientId.Int64(), status)
 		if err != nil {
 			tx.Rollback()
 			return err
