@@ -206,7 +206,8 @@ func (d *DoctorAdviceHandler) updateAdvicePoints(w http.ResponseWriter, r *http.
 			// (even though this point is considered inactice/deleted, updating it helps maintain the integrity
 			// of the system where the text in the treatment plan is linked to an item in the master list)
 			if err := d.DataApi.UpdateAdvicePointForDoctor(parentAdvicePoint, patientVisitReviewData.DoctorId); err != nil {
-				WriteDeveloperError(w, http.StatusInternalServerError, "Unable to update ")
+				WriteDeveloperError(w, http.StatusInternalServerError, "Unable to update advice point for doctor: "+err.Error())
+				return
 			}
 			// update the parent id to reflect the linkage to the newly updated step
 			advicePoint.ParentId = parentAdvicePoint.Id
