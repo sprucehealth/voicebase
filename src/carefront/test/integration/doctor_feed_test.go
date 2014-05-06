@@ -31,7 +31,7 @@ func TestDoctorQueueWithPatientVisits(t *testing.T) {
 	signedUpPatients := make([]*patientApiService.PatientSignedupResponse, 0)
 
 	signedUpPatientResponse := SignupRandomTestPatient(t, testData.DataApi, testData.AuthApi)
-	patientVisitResponse := createPatientVisitForPatient(signedUpPatientResponse.Patient.PatientId.Int64(), testData, t)
+	patientVisitResponse := CreatePatientVisitForPatient(signedUpPatientResponse.Patient.PatientId.Int64(), testData, t)
 	patientVisitResponses = append(patientVisitResponses, patientVisitResponse)
 	signedUpPatients = append(signedUpPatients, signedUpPatientResponse)
 	patient, err := testData.DataApi.GetPatientFromId(signedUpPatientResponse.Patient.PatientId.Int64())
@@ -39,9 +39,9 @@ func TestDoctorQueueWithPatientVisits(t *testing.T) {
 		t.Fatal("Unable to get patient from id " + err.Error())
 	}
 	answerIntakeRequestBody := prepareAnswersForQuestionsInPatientVisit(patientVisitResponse, t)
-	submitAnswersIntakeForPatient(patient.PatientId.Int64(), patient.AccountId.Int64(), answerIntakeRequestBody, testData, t)
+	SubmitAnswersIntakeForPatient(patient.PatientId.Int64(), patient.AccountId.Int64(), answerIntakeRequestBody, testData, t)
 	// submit this patient visit and check to ensure that there is something in the doctor's queue
-	submitPatientVisitForPatient(signedUpPatientResponse.Patient.PatientId.Int64(), patientVisitResponse.PatientVisitId, testData, t)
+	SubmitPatientVisitForPatient(signedUpPatientResponse.Patient.PatientId.Int64(), patientVisitResponse.PatientVisitId, testData, t)
 
 	doctorDisplayFeedTabs := getDoctorQueue(testData, doctor.AccountId.Int64(), t)
 	doBasicCheckOfDoctorQueue(doctorDisplayFeedTabs, t)
@@ -57,7 +57,7 @@ func TestDoctorQueueWithPatientVisits(t *testing.T) {
 	}
 
 	// now go ahead and start reviewing the visit and the item should change to continue visiting
-	startReviewingPatientVisit(patientVisitResponse.PatientVisitId, doctor, testData, t)
+	StartReviewingPatientVisit(patientVisitResponse.PatientVisitId, doctor, testData, t)
 	pickATreatmentPlanForPatientVisit(patientVisitResponse.PatientVisitId, doctor, nil, testData, t)
 
 	doctorDisplayFeedTabs = getDoctorQueue(testData, doctor.AccountId.Int64(), t)
@@ -75,11 +75,11 @@ func TestDoctorQueueWithPatientVisits(t *testing.T) {
 
 	// and another item and it should be in the second section and not the first
 	signedUpPatientResponse = SignupRandomTestPatient(t, testData.DataApi, testData.AuthApi)
-	patientVisitResponse = createPatientVisitForPatient(signedUpPatientResponse.Patient.PatientId.Int64(), testData, t)
+	patientVisitResponse = CreatePatientVisitForPatient(signedUpPatientResponse.Patient.PatientId.Int64(), testData, t)
 	patientVisitResponses = append(patientVisitResponses, patientVisitResponse)
 	signedUpPatients = append(signedUpPatients, signedUpPatientResponse)
 
-	submitPatientVisitForPatient(signedUpPatientResponse.Patient.PatientId.Int64(), patientVisitResponse.PatientVisitId, testData, t)
+	SubmitPatientVisitForPatient(signedUpPatientResponse.Patient.PatientId.Int64(), patientVisitResponse.PatientVisitId, testData, t)
 
 	doctorDisplayFeedTabs = getDoctorQueue(testData, doctor.AccountId.Int64(), t)
 	doBasicCheckOfDoctorQueue(doctorDisplayFeedTabs, t)
@@ -98,10 +98,10 @@ func TestDoctorQueueWithPatientVisits(t *testing.T) {
 
 	for i := 0; i < 5; i++ {
 		signedUpPatientResponse = SignupRandomTestPatient(t, testData.DataApi, testData.AuthApi)
-		patientVisitResponse = createPatientVisitForPatient(signedUpPatientResponse.Patient.PatientId.Int64(), testData, t)
+		patientVisitResponse = CreatePatientVisitForPatient(signedUpPatientResponse.Patient.PatientId.Int64(), testData, t)
 		patientVisitResponses = append(patientVisitResponses, patientVisitResponse)
 		signedUpPatients = append(signedUpPatients, signedUpPatientResponse)
-		submitPatientVisitForPatient(signedUpPatientResponse.Patient.PatientId.Int64(), patientVisitResponse.PatientVisitId, testData, t)
+		SubmitPatientVisitForPatient(signedUpPatientResponse.Patient.PatientId.Int64(), patientVisitResponse.PatientVisitId, testData, t)
 	}
 
 	doctorDisplayFeedTabs = getDoctorQueue(testData, doctor.AccountId.Int64(), t)
@@ -120,7 +120,7 @@ func TestDoctorQueueWithPatientVisits(t *testing.T) {
 	}
 
 	// now, go ahead and submit the first diagnosis so that it clears from the queue
-	submitPatientVisitBackToPatient(patientVisitResponses[0].PatientVisitId, doctor, testData, t)
+	SubmitPatientVisitBackToPatient(patientVisitResponses[0].PatientVisitId, doctor, testData, t)
 	doctorDisplayFeedTabs = getDoctorQueue(testData, doctor.AccountId.Int64(), t)
 	doBasicCheckOfDoctorQueue(doctorDisplayFeedTabs, t)
 
@@ -172,7 +172,7 @@ func TestDoctorFeed(t *testing.T) {
 
 	patientSignedupResponse := SignupRandomTestPatient(t, testData.DataApi, testData.AuthApi)
 	// get patient to start a visit
-	patientVisitResponse := createPatientVisitForPatient(patientSignedupResponse.Patient.PatientId.Int64(), testData, t)
+	patientVisitResponse := CreatePatientVisitForPatient(patientSignedupResponse.Patient.PatientId.Int64(), testData, t)
 
 	// lets go ahead and insert several items into the doctor queue for this doctor
 	doctorQueueItem := &api.DoctorQueueItem{}

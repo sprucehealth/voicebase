@@ -168,17 +168,17 @@ func GetDoctorIdOfCurrentPrimaryDoctor(testData TestData, t *testing.T) int64 {
 
 func signupAndSubmitPatientVisitForRandomPatient(t *testing.T, testData TestData, doctor *common.Doctor) (*apiservice.PatientVisitResponse, *common.DoctorTreatmentPlan) {
 	patientSignedupResponse := SignupRandomTestPatient(t, testData.DataApi, testData.AuthApi)
-	patientVisitResponse := createPatientVisitForPatient(patientSignedupResponse.Patient.PatientId.Int64(), testData, t)
+	patientVisitResponse := CreatePatientVisitForPatient(patientSignedupResponse.Patient.PatientId.Int64(), testData, t)
 
 	patient, err := testData.DataApi.GetPatientFromId(patientSignedupResponse.Patient.PatientId.Int64())
 	if err != nil {
 		t.Fatal("Unable to get patient from id: " + err.Error())
 	}
 	answerIntakeRequestBody := prepareAnswersForQuestionsInPatientVisit(patientVisitResponse, t)
-	submitAnswersIntakeForPatient(patient.PatientId.Int64(), patient.AccountId.Int64(), answerIntakeRequestBody, testData, t)
-	submitPatientVisitForPatient(patientSignedupResponse.Patient.PatientId.Int64(), patientVisitResponse.PatientVisitId, testData, t)
+	SubmitAnswersIntakeForPatient(patient.PatientId.Int64(), patient.AccountId.Int64(), answerIntakeRequestBody, testData, t)
+	SubmitPatientVisitForPatient(patientSignedupResponse.Patient.PatientId.Int64(), patientVisitResponse.PatientVisitId, testData, t)
 	// get the patient to start reviewing the case
-	startReviewingPatientVisit(patientVisitResponse.PatientVisitId, doctor, testData, t)
+	StartReviewingPatientVisit(patientVisitResponse.PatientVisitId, doctor, testData, t)
 	doctorPickTreatmentPlanResponse := pickATreatmentPlanForPatientVisit(patientVisitResponse.PatientVisitId, doctor, nil, testData, t)
 	return patientVisitResponse, doctorPickTreatmentPlanResponse.TreatmentPlan
 }

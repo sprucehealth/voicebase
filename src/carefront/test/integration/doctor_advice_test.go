@@ -115,7 +115,7 @@ func TestAdvicePointsForPatientVisit(t *testing.T) {
 
 	// lets start a new patient visit and ensure that we still get back the advice points as added
 	patientSignedupResponse := SignupRandomTestPatient(t, testData.DataApi, testData.AuthApi)
-	patientVisitResponse2 := createPatientVisitForPatient(patientSignedupResponse.Patient.PatientId.Int64(), testData, t)
+	patientVisitResponse2 := CreatePatientVisitForPatient(patientSignedupResponse.Patient.PatientId.Int64(), testData, t)
 
 	// get the advice points for this patient visit
 	doctorAdviceResponse2 := getAdvicePointsInPatientVisit(testData, doctor, patientVisitResponse2.PatientVisitId, t)
