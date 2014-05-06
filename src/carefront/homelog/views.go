@@ -26,6 +26,7 @@ type messageView struct {
 	ButtonIconURL   string `json:"button_icon_url,omitempty"`
 	TapURL          string `json:"tap_url"`
 	Text            string `json:"text"`
+	NotificationId  int64  `json:"notification_id,string"`
 }
 
 type bodyButtonView struct {
