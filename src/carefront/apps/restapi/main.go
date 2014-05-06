@@ -361,7 +361,6 @@ func main() {
 	diagnosisSummaryHandler := &apiservice.DiagnosisSummaryHandler{DataApi: dataApi}
 	doctorRegimenHandler := apiservice.NewDoctorRegimenHandler(dataApi)
 	doctorAdviceHandler := apiservice.NewDoctorAdviceHandler(dataApi)
-	doctorQueueHandler := &apiservice.DoctorQueueHandler{DataApi: dataApi}
 	doctorPatientUpdateHandler := &apiservice.DoctorPatientUpdateHandler{
 		DataApi:              dataApi,
 		ErxApi:               doseSpotService,
@@ -422,7 +421,7 @@ func main() {
 
 	mux.Handle("/v1/doctor/signup", signupDoctorHandler)
 	mux.Handle("/v1/doctor/authenticate", authenticateDoctorHandler)
-	mux.Handle("/v1/doctor/queue", doctorQueueHandler)
+	mux.Handle("/v1/doctor/queue", doctor_queue.NewQueueHandler(dataApi))
 	mux.Handle("/v1/doctor/treatment/templates", doctorTreatmentTemplatesHandler)
 
 	mux.Handle("/v1/doctor/rx/error", doctorPrescriptionErrorHandler)

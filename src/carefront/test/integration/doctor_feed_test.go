@@ -3,6 +3,7 @@ package integration
 import (
 	"carefront/api"
 	"carefront/apiservice"
+	"carefront/doctor_queue"
 	patientApiService "carefront/patient"
 	"carefront/settings"
 	"encoding/json"
@@ -156,7 +157,7 @@ func TestDoctorQueueWithPatientVisits(t *testing.T) {
 	}
 }
 
-func doBasicCheckOfDoctorQueue(doctorDisplayFeedTabs *apiservice.DisplayFeedTabs, t *testing.T) {
+func doBasicCheckOfDoctorQueue(doctorDisplayFeedTabs *doctor_queue.DisplayFeedTabs, t *testing.T) {
 	// there should be no sections, but just two empty tabs
 	if doctorDisplayFeedTabs.Tabs == nil {
 		t.Fatal("Expected there to be 2 sections instead got none")
@@ -360,8 +361,8 @@ func TestDoctorFeed(t *testing.T) {
 
 }
 
-func getDoctorQueue(testData TestData, doctorAccountId int64, t *testing.T) *apiservice.DisplayFeedTabs {
-	doctorQueueHandler := &apiservice.DoctorQueueHandler{DataApi: testData.DataApi}
+func getDoctorQueue(testData TestData, doctorAccountId int64, t *testing.T) *doctor_queue.DisplayFeedTabs {
+	doctorQueueHandler := doctor_queue.NewQueueHandler(testData.DataApi)
 	ts := httptest.NewServer(doctorQueueHandler)
 	defer ts.Close()
 
@@ -377,7 +378,7 @@ func getDoctorQueue(testData TestData, doctorAccountId int64, t *testing.T) *api
 
 	CheckSuccessfulStatusCode(resp, "Unable to make successful call to get doctor feed "+string(respBody), t)
 
-	doctorDisplayFeedTabs := &apiservice.DisplayFeedTabs{}
+	doctorDisplayFeedTabs := &doctor_queue.DisplayFeedTabs{}
 	err = json.Unmarshal(respBody, doctorDisplayFeedTabs)
 	if err != nil {
 		t.Fatal("Unable to unmarshal response body into tabs " + err.Error())
