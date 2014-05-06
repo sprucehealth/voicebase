@@ -32,12 +32,12 @@ func NewDoctorConversationHandler(dataAPI api.DataAPI) *DoctorConversationHandle
 func (h *DoctorConversationHandler) ServeHTTP(w http.ResponseWriter, r *http.Request) {
 	doctorId, err := h.dataAPI.GetDoctorIdFromAccountId(apiservice.GetContext(r).AccountId)
 	if err != nil {
-		apiservice.WriteDeveloperError(w, http.StatusInternalServerError, "messages: failed to get patient: "+err.Error())
+		apiservice.WriteDeveloperError(w, http.StatusInternalServerError, "messages: failed to get doctor: "+err.Error())
 		return
 	}
 	personId, err := h.dataAPI.GetPersonIdByRole(api.DOCTOR_ROLE, doctorId)
 	if err != nil {
-		apiservice.WriteDeveloperError(w, http.StatusInternalServerError, "messages: failed to get person object for patient: "+err.Error())
+		apiservice.WriteDeveloperError(w, http.StatusInternalServerError, "messages: failed to get person object for doctor: "+err.Error())
 		return
 	}
 
@@ -53,7 +53,7 @@ func (h *DoctorConversationHandler) ServeHTTP(w http.ResponseWriter, r *http.Req
 }
 
 func (h *DoctorConversationHandler) listConversations(w http.ResponseWriter, r *http.Request, doctorId, personId int64) {
-	participants := []int64{doctorId}
+	participants := []int64{personId}
 	if pidStr := r.FormValue("patient_id"); pidStr != "" {
 		pid, err := strconv.ParseInt(pidStr, 10, 64)
 		if err != nil {

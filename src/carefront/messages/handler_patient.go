@@ -52,7 +52,7 @@ func (h *PatientConversationHandler) ServeHTTP(w http.ResponseWriter, r *http.Re
 }
 
 func (h *PatientConversationHandler) listConversations(w http.ResponseWriter, r *http.Request, patientId, personId int64) {
-	con, par, err := h.dataAPI.GetConversationsWithParticipants([]int64{patientId})
+	con, par, err := h.dataAPI.GetConversationsWithParticipants([]int64{personId})
 	if err != nil {
 		apiservice.WriteDeveloperError(w, http.StatusInternalServerError, "messages: failed to get conversations: "+err.Error())
 		return
