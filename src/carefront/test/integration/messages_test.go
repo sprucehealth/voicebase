@@ -348,7 +348,7 @@ func TestConversationHandlers(t *testing.T) {
 	doctorMessageServer := httptest.NewServer(messages.NewDoctorMessagesHandler(testData.DataApi))
 	defer doctorMessageServer.Close()
 
-	// New conversation
+	// New conversation from patient to doctor
 
 	body := &bytes.Buffer{}
 	if err := json.NewEncoder(body).Encode(&messages.NewConversationRequest{
@@ -420,5 +420,4 @@ func TestConversationHandlers(t *testing.T) {
 	} else if res.StatusCode != 200 {
 		t.Fatalf("Expected status 200. Got %d", res.StatusCode)
 	}
-
 }

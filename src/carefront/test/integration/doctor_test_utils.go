@@ -76,7 +76,7 @@ func setupErxAPI(t *testing.T) *erx.DoseSpotService {
 	return erx
 }
 
-func submitPatientVisitDiagnosis(PatientVisitId int64, doctor *common.Doctor, testData TestData, t *testing.T) (diagnosisQuestionId, severityQuestionId, acneTypeQuestionId int64) {
+func SubmitPatientVisitDiagnosis(PatientVisitId int64, doctor *common.Doctor, testData TestData, t *testing.T) (diagnosisQuestionId, severityQuestionId, acneTypeQuestionId int64) {
 	answerIntakeRequestBody := &apiservice.AnswerIntakeRequestBody{}
 	answerIntakeRequestBody.PatientVisitId = PatientVisitId
 
@@ -133,7 +133,7 @@ func submitPatientVisitDiagnosis(PatientVisitId int64, doctor *common.Doctor, te
 	return
 }
 
-func startReviewingPatientVisit(patientVisitId int64, doctor *common.Doctor, testData TestData, t *testing.T) *apiservice.DoctorPatientVisitReviewResponse {
+func StartReviewingPatientVisit(patientVisitId int64, doctor *common.Doctor, testData TestData, t *testing.T) *apiservice.DoctorPatientVisitReviewResponse {
 	doctorPatientVisitReviewHandler := &apiservice.DoctorPatientVisitReviewHandler{DataApi: testData.DataApi, LayoutStorageService: testData.CloudStorageService, PatientPhotoStorageService: testData.CloudStorageService}
 	ts := httptest.NewServer(doctorPatientVisitReviewHandler)
 	defer ts.Close()
@@ -184,7 +184,7 @@ func pickATreatmentPlanForPatientVisit(patientVisitId int64, doctor *common.Doct
 	return responseData
 }
 
-func submitPatientVisitBackToPatient(patientVisitId int64, doctor *common.Doctor, testData TestData, t *testing.T) {
+func SubmitPatientVisitBackToPatient(patientVisitId int64, doctor *common.Doctor, testData TestData, t *testing.T) {
 	doctorSubmitPatientVisitReviewHandler := &apiservice.DoctorSubmitPatientVisitReviewHandler{DataApi: testData.DataApi}
 	ts := httptest.NewServer(doctorSubmitPatientVisitReviewHandler)
 	defer ts.Close()

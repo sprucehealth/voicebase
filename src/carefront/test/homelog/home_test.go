@@ -1,16 +1,21 @@
-package integration
+package homelog
 
 import (
 	"carefront/common"
 	"carefront/homelog"
+	"carefront/test/integration"
 	"io/ioutil"
 	"net/http/httptest"
 	"reflect"
 	"testing"
+	"time"
 )
 
 type titleSubtitleItem struct {
-	SomeId int64
+	Title    string
+	Subtitle string
+	IconURL  string
+	TapURL   string
 }
 
 func (*titleSubtitleItem) TypeName() string {
@@ -31,15 +36,15 @@ var notificationTypes = map[string]reflect.Type{
 }
 
 func TestPatientNotificationsAPI(t *testing.T) {
-	testData := SetupIntegrationTest(t)
-	defer TearDownIntegrationTest(t, testData)
+	testData := integration.SetupIntegrationTest(t)
+	defer integration.TearDownIntegrationTest(t, testData)
 
-	pr := SignupRandomTestPatient(t, testData.DataApi, testData.AuthApi)
+	pr := integration.SignupRandomTestPatient(t, testData.DataApi, testData.AuthApi)
 	patient := pr.Patient
 	patientId := patient.PatientId.Int64()
 
 	data := &titleSubtitleItem{
-		SomeId: 1234,
+		Title: "1234",
 	}
 	note := &common.Notification{
 		UID:             "note1",
@@ -61,7 +66,7 @@ func TestPatientNotificationsAPI(t *testing.T) {
 		t.Fatalf("Expected 1 notification. Got %d", len(notes))
 	} else if notes[0].Data.TypeName() != "title_subtitle" {
 		t.Fatalf("Expected data type of 'title_subtitle'. Got '%s'", notes[0].Data.TypeName())
-	} else if notes[0].Data.(*titleSubtitleItem).SomeId != 1234 {
+	} else if notes[0].Data.(*titleSubtitleItem).Title != "1234" {
 		t.Fatal("Test notification data mismatch")
 	}
 
@@ -96,15 +101,15 @@ func TestPatientNotificationsAPI(t *testing.T) {
 }
 
 func TestHealthLogAPI(t *testing.T) {
-	testData := SetupIntegrationTest(t)
-	defer TearDownIntegrationTest(t, testData)
+	testData := integration.SetupIntegrationTest(t)
+	defer integration.TearDownIntegrationTest(t, testData)
 
-	pr := SignupRandomTestPatient(t, testData.DataApi, testData.AuthApi)
+	pr := integration.SignupRandomTestPatient(t, testData.DataApi, testData.AuthApi)
 	patient := pr.Patient
 	patientId := patient.PatientId.Int64()
 
 	data := &titleSubtitleItem{
-		SomeId: 1234,
+		Title: "4321",
 	}
 	item := &common.HealthLogItem{
 		UID:  "item1",
@@ -121,12 +126,12 @@ func TestHealthLogAPI(t *testing.T) {
 		t.Fatalf("Expected 1 item. Got %d", len(items))
 	} else if items[0].Data.TypeName() != "title_subtitle" {
 		t.Fatalf("Expected data type of 'title_subtitle'. Got '%s'", items[0].Data.TypeName())
-	} else if items[0].Data.(*titleSubtitleItem).SomeId != 1234 {
+	} else if items[0].Data.(*titleSubtitleItem).Title != "4321" {
 		t.Fatal("Test item data mismatch")
 	}
 
 	// Inserting an item with a duplicate UID should update the item
-	data.SomeId = 9999
+	data.Title = "9999"
 	item.Data = data
 	_, err = testData.DataApi.InsertOrUpdatePatientHealthLogItem(patientId, item)
 	if err != nil {
@@ -138,21 +143,21 @@ func TestHealthLogAPI(t *testing.T) {
 		t.Fatalf("Expected 1 item. Got %d", len(items))
 	} else if items[0].Data.TypeName() != "title_subtitle" {
 		t.Fatalf("Expected data type of 'title_subtitle'. Got '%s'", items[0].Data.TypeName())
-	} else if items[0].Data.(*titleSubtitleItem).SomeId != 9999 {
+	} else if items[0].Data.(*titleSubtitleItem).Title != "9999" {
 		t.Fatal("Test item data mismatch")
 	}
 }
 
 func TestHealthLog(t *testing.T) {
-	testData := SetupIntegrationTest(t)
-	defer TearDownIntegrationTest(t, testData)
+	testData := integration.SetupIntegrationTest(t)
+	defer integration.TearDownIntegrationTest(t, testData)
 
-	pr := SignupRandomTestPatient(t, testData.DataApi, testData.AuthApi)
+	pr := integration.SignupRandomTestPatient(t, testData.DataApi, testData.AuthApi)
 	patient := pr.Patient
 	patientId := patient.PatientId.Int64()
 
-	visit := createPatientVisitForPatient(patientId, testData, t)
-	submitPatientVisitForPatient(patientId, visit.PatientVisitId, testData, t)
+	visit := integration.CreatePatientVisitForPatient(patientId, testData, t)
+	integration.SubmitPatientVisitForPatient(patientId, visit.PatientVisitId, testData, t)
 
 	if items, _, err := testData.DataApi.GetHealthLogForPatient(patientId, notificationTypes); err != nil {
 		t.Fatal(err)
@@ -165,7 +170,7 @@ func TestHealthLog(t *testing.T) {
 	ts := httptest.NewServer(homelog.NewListHandler(testData.DataApi))
 	defer ts.Close()
 
-	resp, err := AuthGet(ts.URL, patient.AccountId.Int64())
+	resp, err := integration.AuthGet(ts.URL, patient.AccountId.Int64())
 	if err != nil {
 		t.Fatal("Unable to get home")
 	}
@@ -174,28 +179,28 @@ func TestHealthLog(t *testing.T) {
 	if body, err := ioutil.ReadAll(resp.Body); err != nil {
 		t.Fatalf("Failed to get body: %+v", err)
 	} else {
-		CheckSuccessfulStatusCode(resp, "Unable to get home: "+string(body), t)
+		integration.CheckSuccessfulStatusCode(resp, "Unable to get home: "+string(body), t)
 	}
 }
 
 func TestVisitCreatedNotification(t *testing.T) {
-	testData := SetupIntegrationTest(t)
-	defer TearDownIntegrationTest(t, testData)
+	testData := integration.SetupIntegrationTest(t)
+	defer integration.TearDownIntegrationTest(t, testData)
 
-	pr := SignupRandomTestPatient(t, testData.DataApi, testData.AuthApi)
+	pr := integration.SignupRandomTestPatient(t, testData.DataApi, testData.AuthApi)
 	patient := pr.Patient
 	patientId := patient.PatientId.Int64()
 
-	doctorId := GetDoctorIdOfCurrentPrimaryDoctor(testData, t)
+	doctorId := integration.GetDoctorIdOfCurrentPrimaryDoctor(testData, t)
 	doctor, err := testData.DataApi.GetDoctorFromId(doctorId)
 	if err != nil {
 		t.Fatalf("Error getting doctor from id: %s", err.Error())
 	}
 
-	visit := createPatientVisitForPatient(patientId, testData, t)
-	submitPatientVisitForPatient(patientId, visit.PatientVisitId, testData, t)
-	startReviewingPatientVisit(visit.PatientVisitId, doctor, testData, t)
-	submitPatientVisitBackToPatient(visit.PatientVisitId, doctor, testData, t)
+	visit := integration.CreatePatientVisitForPatient(patientId, testData, t)
+	integration.SubmitPatientVisitForPatient(patientId, visit.PatientVisitId, testData, t)
+	integration.StartReviewingPatientVisit(visit.PatientVisitId, doctor, testData, t)
+	integration.SubmitPatientVisitBackToPatient(visit.PatientVisitId, doctor, testData, t)
 
 	// make a call to get patient notifications
 	listNotificationsHandler := homelog.NewListHandler(testData.DataApi)
@@ -211,4 +216,53 @@ func TestVisitCreatedNotification(t *testing.T) {
 		t.Fatalf("Expected notification of type %s instead got %s", "visit_reviewed", notes[0].Data.TypeName())
 	}
 
+}
+
+func TestConversationStartedLogItem(t *testing.T) {
+	testData := integration.SetupIntegrationTest(t)
+	defer integration.TearDownIntegrationTest(t, testData)
+
+	pr := integration.SignupRandomTestPatient(t, testData.DataApi, testData.AuthApi)
+	patient := pr.Patient
+	patientId := patient.PatientId.Int64()
+
+	doctorId := integration.GetDoctorIdOfCurrentPrimaryDoctor(testData, t)
+	doctor, err := testData.DataApi.GetDoctorFromId(doctorId)
+	if err != nil {
+		t.Fatalf("Error getting doctor from id: %s", err.Error())
+	}
+
+	convId := integration.StartConversationFromDoctorToPatient(t, testData.DataApi, doctor.AccountId.Int64(), patientId, 0)
+	_ = convId
+
+	items, _, err := testData.DataApi.GetHealthLogForPatient(patientId, notificationTypes)
+	if err != nil {
+		t.Fatal(err)
+	} else if len(items) != 1 {
+		t.Fatalf("Expected 1 item. Got %d", len(items))
+	} else if items[0].Data.TypeName() != "title_subtitle" {
+		t.Fatalf("Expected data type of 'title_subtitle'. Got '%s'", items[0].Data.TypeName())
+	} else if items[0].Data.(*titleSubtitleItem).Subtitle != "1 message" {
+		t.Fatalf("Test item subtitle mismatch: %s", items[0].Data.(*titleSubtitleItem).Subtitle)
+	}
+	firstItem := items[0]
+
+	// Make sure time ticks so that comparing the timestamps is stable
+	time.Sleep(time.Second)
+
+	// Make sure a reply updates the log item
+	integration.PatientReplyToConversation(t, testData.DataApi, convId, patient.AccountId.Int64())
+
+	items, _, err = testData.DataApi.GetHealthLogForPatient(patientId, notificationTypes)
+	if err != nil {
+		t.Fatal(err)
+	} else if len(items) != 1 {
+		t.Fatalf("Expected 1 item. Got %d", len(items))
+	} else if items[0].Data.TypeName() != "title_subtitle" {
+		t.Fatalf("Expected data type of 'title_subtitle'. Got '%s'", items[0].Data.TypeName())
+	} else if items[0].Data.(*titleSubtitleItem).Subtitle != "2 messages" {
+		t.Fatalf("Test item subtitle mismatch: %s", items[0].Data.(*titleSubtitleItem).Subtitle)
+	} else if items[0].Timestamp.Sub(firstItem.Timestamp) == 0 {
+		t.Fatalf("Timestamp not updated")
+	}
 }

@@ -78,7 +78,7 @@ func getPatientVisitForPatient(patientId int64, testData TestData, t *testing.T)
 	return patientVisitResponse
 }
 
-func createPatientVisitForPatient(patientId int64, testData TestData, t *testing.T) *apiservice.PatientVisitResponse {
+func CreatePatientVisitForPatient(patientId int64, testData TestData, t *testing.T) *apiservice.PatientVisitResponse {
 	patientVisitHandler := apiservice.NewPatientVisitHandler(testData.DataApi, testData.AuthApi,
 		testData.CloudStorageService, testData.CloudStorageService)
 	patient, err := testData.DataApi.GetPatientFromId(patientId)
@@ -166,7 +166,7 @@ func prepareAnswersForQuestionsInPatientVisit(patientVisitResponse *apiservice.P
 	return &answerIntakeRequestBody
 }
 
-func submitAnswersIntakeForPatient(patientId, patientAccountId int64, answerIntakeRequestBody *apiservice.AnswerIntakeRequestBody, testData TestData, t *testing.T) {
+func SubmitAnswersIntakeForPatient(patientId, patientAccountId int64, answerIntakeRequestBody *apiservice.AnswerIntakeRequestBody, testData TestData, t *testing.T) {
 	answerIntakeHandler := &apiservice.AnswerIntakeHandler{
 		DataApi: testData.DataApi,
 	}
@@ -188,7 +188,7 @@ func submitAnswersIntakeForPatient(patientId, patientAccountId int64, answerInta
 	}
 }
 
-func submitPatientVisitForPatient(patientId, patientVisitId int64, testData TestData, t *testing.T) {
+func SubmitPatientVisitForPatient(patientId, patientVisitId int64, testData TestData, t *testing.T) {
 	patientVisitHandler := apiservice.NewPatientVisitHandler(testData.DataApi, testData.AuthApi,
 		testData.CloudStorageService, testData.CloudStorageService)
 	patient, err := testData.DataApi.GetPatientFromId(patientId)
