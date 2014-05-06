@@ -35,7 +35,7 @@ type getRequest struct {
 }
 
 type uploadResponse struct {
-	PhotoId int64 `json:"photo_id"`
+	PhotoId int64 `json:"photo_id,string"`
 }
 
 func NewHandler(dataAPI api.DataAPI, awsAuth aws.Auth, bucket, region string) *Handler {
