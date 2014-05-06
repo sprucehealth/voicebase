@@ -15,6 +15,7 @@ import (
 	"carefront/app_worker"
 	"carefront/common"
 	"carefront/common/config"
+	"carefront/demo"
 	"carefront/homelog"
 	"carefront/libs/address_validation"
 	"carefront/libs/aws"
@@ -27,6 +28,7 @@ import (
 	"carefront/libs/svcreg"
 	"carefront/messages"
 	"carefront/notify"
+	"carefront/patient"
 	"carefront/patient_treatment_plan"
 	"carefront/photos"
 	"carefront/services/auth"
@@ -253,9 +255,7 @@ func main() {
 
 	cloudStorageApi := api.NewCloudStorageService(awsAuth)
 	photoAnswerCloudStorageApi := api.NewCloudStorageService(awsAuth)
-	authHandler := &apiservice.AuthenticationHandler{AuthApi: authApi, DataApi: dataApi, PharmacySearchService: pharmacy.GooglePlacesPharmacySearchService(0), StaticContentBaseUrl: conf.StaticContentBaseUrl}
 	checkElligibilityHandler := &apiservice.CheckCareProvidingElligibilityHandler{DataApi: dataApi, AddressValidationApi: smartyStreetsService, StaticContentUrl: conf.StaticContentBaseUrl}
-	signupPatientHandler := &apiservice.SignupPatientHandler{DataApi: dataApi, AuthApi: authApi}
 	updatePatientBillingAddress := &apiservice.UpdatePatientAddressHandler{DataApi: dataApi, AddressType: apiservice.BILLING_ADDRESS_TYPE}
 	updatePatientPharmacyHandler := &apiservice.UpdatePatientPharmacyHandler{DataApi: dataApi, PharmacySearchService: pharmacy.GooglePlacesPharmacySearchService(0)}
 	authenticateDoctorHandler := &apiservice.DoctorAuthenticationHandler{DataApi: dataApi, AuthApi: authApi}
@@ -386,7 +386,7 @@ func main() {
 	mux := apiservice.NewAuthServeMux(authApi, metricsRegistry.Scope("restapi"))
 
 	mux.Handle("/v1/content", staticContentHandler)
-	mux.Handle("/v1/patient", signupPatientHandler)
+	mux.Handle("/v1/patient", patient.NewSignupHandler(dataApi, authApi))
 	mux.Handle("/v1/patient/address/billing", updatePatientBillingAddress)
 	mux.Handle("/v1/patient/pharmacy", updatePatientPharmacyHandler)
 	mux.Handle("/v1/patient/treatment/guide", patientTreatmentGuideHandler)
@@ -397,10 +397,8 @@ func main() {
 	mux.Handle("/v1/check_eligibility", checkElligibilityHandler)
 	mux.Handle("/v1/answer", answerIntakeHandler)
 	mux.Handle("/v1/answer/photo", photoAnswerIntakeHandler)
-	mux.Handle("/v1/signup", authHandler)
-	mux.Handle("/v1/authenticate", authHandler)
-	mux.Handle("/v1/isauthenticated", authHandler)
-	mux.Handle("/v1/logout", authHandler)
+	mux.Handle("/v1/authenticate", patient.NewAuthenticationHandler(dataApi, authApi, pharmacy.GooglePlacesPharmacySearchService(0), conf.StaticContentBaseUrl))
+	mux.Handle("/v1/logout", patient.NewAuthenticationHandler(dataApi, authApi, pharmacy.GooglePlacesPharmacySearchService(0), conf.StaticContentBaseUrl))
 	mux.Handle("/v1/ping", pingHandler)
 	mux.Handle("/v1/autocomplete", autocompleteHandler)
 	mux.Handle("/v1/pharmacy_search", pharmacySearchHandler)
@@ -453,12 +451,7 @@ func main() {
 
 	// add the api to create demo visits to every environment except production
 	if conf.Environment != "prod" {
-		createDemoPatientVisitHandler := &apiservice.CreateDemoPatientVisitHandler{
-			DataApi:         dataApi,
-			Environment:     conf.Environment,
-			CloudStorageApi: cloudStorageApi,
-		}
-		mux.Handle("/v1/doctor/demo/patient_visit", createDemoPatientVisitHandler)
+		mux.Handle("/v1/doctor/demo/patient_visit", demo.NewHandler(dataApi, cloudStorageApi, conf.AWSRegion, conf.Environment))
 	}
 
 	if conf.ERxRouting {

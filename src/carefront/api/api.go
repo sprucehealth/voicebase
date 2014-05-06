@@ -65,6 +65,7 @@ type PatientAPI interface {
 	GetPatientFromRefillRequestId(refillRequestId int64) (*common.Patient, error)
 	GetPatientFromTreatmentId(treatmentId int64) (*common.Patient, error)
 	RegisterPatient(patient *common.Patient) error
+	UpdatePatientInformation(patient *common.Patient, updateFromDoctor bool) error
 	CreateUnlinkedPatientFromRefillRequest(patient *common.Patient) error
 	UpdatePatientWithERxPatientId(patientId, erxPatientId int64) error
 	GetPatientIdFromAccountId(accountId int64) (int64, error)
@@ -202,7 +203,6 @@ type DoctorAPI interface {
 	GetTreatmentTemplates(doctorId int64) ([]*common.DoctorTreatmentTemplate, error)
 	DeleteTreatmentTemplates(doctorTreatmentTemplates []*common.DoctorTreatmentTemplate, doctorId int64) error
 	GetCompletedPrescriptionsForDoctor(from, to time.Time, doctorId int64) ([]*common.TreatmentPlan, error)
-	UpdatePatientInformationFromDoctor(patient *common.Patient) error
 	InsertItemIntoDoctorQueue(doctorQueueItem DoctorQueueItem) error
 	ReplaceItemInDoctorQueue(doctorQueueItem DoctorQueueItem, currentState string) error
 	MarkGenerationOfTreatmentPlanInVisitQueue(doctorId, patientVisitId, treatmentPlanId int64, currentState, updatedState string) error

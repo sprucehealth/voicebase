@@ -14,11 +14,12 @@ import (
 	"carefront/api"
 	"carefront/apiservice"
 	"carefront/info_intake"
+	patientApiService "carefront/patient"
 	thriftapi "carefront/thrift/api"
 )
 
-func signupRandomTestPatient(t *testing.T, dataApi api.DataAPI, authApi thriftapi.Auth) *apiservice.PatientSignedupResponse {
-	authHandler := &apiservice.SignupPatientHandler{AuthApi: authApi, DataApi: dataApi}
+func signupRandomTestPatient(t *testing.T, dataApi api.DataAPI, authApi thriftapi.Auth) *patientApiService.PatientSignedupResponse {
+	authHandler := &patientApiService.SignupPatientHandler{AuthApi: authApi, DataApi: dataApi}
 	ts := httptest.NewServer(authHandler)
 	defer ts.Close()
 
@@ -36,7 +37,7 @@ func signupRandomTestPatient(t *testing.T, dataApi api.DataAPI, authApi thriftap
 	}
 	CheckSuccessfulStatusCode(res, fmt.Sprintf("Unable to make success request to signup patient. Here's the code returned %d and here's the body of the request %s", res.StatusCode, body), t)
 
-	signedupPatientResponse := &apiservice.PatientSignedupResponse{}
+	signedupPatientResponse := &patientApiService.PatientSignedupResponse{}
 	err = json.Unmarshal(body, signedupPatientResponse)
 	if err != nil {
 		t.Fatal("Unable to parse response from patient signed up")

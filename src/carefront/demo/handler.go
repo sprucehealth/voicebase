@@ -1,12 +1,14 @@
-package apiservice
+package demo
 
 import (
 	"bytes"
 	"carefront/api"
+	"carefront/apiservice"
 	"carefront/common"
 	"carefront/encoding"
 	"carefront/libs/golog"
 	"carefront/libs/pharmacy"
+	patientApiService "carefront/patient"
 	"encoding/json"
 	"fmt"
 	"io"
@@ -20,11 +22,20 @@ import (
 	"github.com/gorilla/schema"
 )
 
-type CreateDemoPatientVisitHandler struct {
-	Environment     string
-	DataApi         api.DataAPI
-	CloudStorageApi api.CloudStorageAPI
-	AWSRegion       string
+type Handler struct {
+	environment     string
+	dataApi         api.DataAPI
+	cloudStorageApi api.CloudStorageAPI
+	awsRegion       string
+}
+
+func NewHandler(dataApi api.DataAPI, cloudStorageApi api.CloudStorageAPI, awsRegion, environment string) *Handler {
+	return &Handler{
+		environment:     environment,
+		dataApi:         dataApi,
+		cloudStorageApi: cloudStorageApi,
+		awsRegion:       awsRegion,
+	}
 }
 
 type questionTag int
@@ -171,108 +182,108 @@ const (
 	success                  = 1
 )
 
-func populatePatientIntake(questionIds map[questionTag]int64, answerIds map[potentialAnswerTag]int64) []*AnswerToQuestionItem {
+func populatePatientIntake(questionIds map[questionTag]int64, answerIds map[potentialAnswerTag]int64) []*apiservice.AnswerToQuestionItem {
 
-	return []*AnswerToQuestionItem{
-		&AnswerToQuestionItem{
+	return []*apiservice.AnswerToQuestionItem{
+		&apiservice.AnswerToQuestionItem{
 			QuestionId: questionIds[qAcneOnset],
-			AnswerIntakes: []*AnswerItem{
-				&AnswerItem{
+			AnswerIntakes: []*apiservice.AnswerItem{
+				&apiservice.AnswerItem{
 					PotentialAnswerId: answerIds[aSixToTwelveMonths],
 				},
 			},
 		},
-		&AnswerToQuestionItem{
+		&apiservice.AnswerToQuestionItem{
 			QuestionId: questionIds[qAcneWorse],
-			AnswerIntakes: []*AnswerItem{
-				&AnswerItem{
+			AnswerIntakes: []*apiservice.AnswerItem{
+				&apiservice.AnswerItem{
 					PotentialAnswerId: answerIds[aAcneWorseYes],
 				},
 			},
 		},
-		&AnswerToQuestionItem{
+		&apiservice.AnswerToQuestionItem{
 			QuestionId: questionIds[qAcneChangesWorse],
-			AnswerIntakes: []*AnswerItem{
-				&AnswerItem{
+			AnswerIntakes: []*apiservice.AnswerItem{
+				&apiservice.AnswerItem{
 					AnswerText: "This is a demo.",
 				},
 			},
 		},
-		&AnswerToQuestionItem{
+		&apiservice.AnswerToQuestionItem{
 			QuestionId: questionIds[qAcneSymptoms],
-			AnswerIntakes: []*AnswerItem{
-				&AnswerItem{
+			AnswerIntakes: []*apiservice.AnswerItem{
+				&apiservice.AnswerItem{
 					PotentialAnswerId: answerIds[aDiscoloration],
 				},
-				&AnswerItem{
+				&apiservice.AnswerItem{
 					PotentialAnswerId: answerIds[aScarring],
 				},
-				&AnswerItem{
+				&apiservice.AnswerItem{
 					PotentialAnswerId: answerIds[aCysts],
 				},
-				&AnswerItem{
+				&apiservice.AnswerItem{
 					PotentialAnswerId: answerIds[aPainfulToTouch],
 				},
 			},
 		},
-		&AnswerToQuestionItem{
+		&apiservice.AnswerToQuestionItem{
 			QuestionId: questionIds[qAcneWorsePeriod],
-			AnswerIntakes: []*AnswerItem{
-				&AnswerItem{
+			AnswerIntakes: []*apiservice.AnswerItem{
+				&apiservice.AnswerItem{
 					PotentialAnswerId: answerIds[aAcneWorsePeriodNo],
 				},
 			},
 		},
-		&AnswerToQuestionItem{
+		&apiservice.AnswerToQuestionItem{
 			QuestionId: questionIds[qSkinDescription],
-			AnswerIntakes: []*AnswerItem{
-				&AnswerItem{
+			AnswerIntakes: []*apiservice.AnswerItem{
+				&apiservice.AnswerItem{
 					PotentialAnswerId: answerIds[aSkinDescriptionOily],
 				},
 			},
 		},
-		&AnswerToQuestionItem{
+		&apiservice.AnswerToQuestionItem{
 			QuestionId: questionIds[qAcnePrevTreatmentTypes],
-			AnswerIntakes: []*AnswerItem{
-				&AnswerItem{
+			AnswerIntakes: []*apiservice.AnswerItem{
+				&apiservice.AnswerItem{
 					PotentialAnswerId: answerIds[aPrevTreatmentsTypeOTC],
 				},
 			},
 		},
-		&AnswerToQuestionItem{
+		&apiservice.AnswerToQuestionItem{
 			QuestionId: questionIds[qAcnePrevTreatmentList],
-			AnswerIntakes: []*AnswerItem{
-				&AnswerItem{
+			AnswerIntakes: []*apiservice.AnswerItem{
+				&apiservice.AnswerItem{
 					AnswerText: "Proactiv",
-					SubQuestionAnswerIntakes: []*SubQuestionAnswerIntake{
-						&SubQuestionAnswerIntake{
+					SubQuestionAnswerIntakes: []*apiservice.SubQuestionAnswerIntake{
+						&apiservice.SubQuestionAnswerIntake{
 							QuestionId: questionIds[qUsingTreatment],
-							AnswerIntakes: []*AnswerItem{
-								&AnswerItem{
+							AnswerIntakes: []*apiservice.AnswerItem{
+								&apiservice.AnswerItem{
 									PotentialAnswerId: answerIds[aUsingTreatmentYes],
 								},
 							},
 						},
-						&SubQuestionAnswerIntake{
+						&apiservice.SubQuestionAnswerIntake{
 							QuestionId: questionIds[qEffectiveTreatment],
-							AnswerIntakes: []*AnswerItem{
-								&AnswerItem{
+							AnswerIntakes: []*apiservice.AnswerItem{
+								&apiservice.AnswerItem{
 									PotentialAnswerId: answerIds[aSomewhatEffectiveTreatment],
 								},
 							},
 						},
-						&SubQuestionAnswerIntake{
+						&apiservice.SubQuestionAnswerIntake{
 							QuestionId: questionIds[qTreatmentIrritateSkin],
-							AnswerIntakes: []*AnswerItem{
-								&AnswerItem{
+							AnswerIntakes: []*apiservice.AnswerItem{
+								&apiservice.AnswerItem{
 									PotentialAnswerId: answerIds[aIrritateSkinYes],
 								},
 							},
 						},
-						&SubQuestionAnswerIntake{
+						&apiservice.SubQuestionAnswerIntake{
 							QuestionId: questionIds[qLengthTreatment],
-							AnswerIntakes: []*AnswerItem{
-								&AnswerItem{
+							AnswerIntakes: []*apiservice.AnswerItem{
+								&apiservice.AnswerItem{
 									PotentialAnswerId: answerIds[aLengthTreatmentLessThanMonth],
 								},
 							},
@@ -281,67 +292,67 @@ func populatePatientIntake(questionIds map[questionTag]int64, answerIds map[pote
 				},
 			},
 		},
-		&AnswerToQuestionItem{
+		&apiservice.AnswerToQuestionItem{
 			QuestionId: questionIds[qAnythingElseAcne],
-			AnswerIntakes: []*AnswerItem{
-				&AnswerItem{
+			AnswerIntakes: []*apiservice.AnswerItem{
+				&apiservice.AnswerItem{
 					AnswerText: "This is a demo. This is where patient will enter anything they'd like to share with us",
 				},
 			},
 		},
-		&AnswerToQuestionItem{
+		&apiservice.AnswerToQuestionItem{
 			QuestionId: questionIds[qAcneLocation],
-			AnswerIntakes: []*AnswerItem{
-				&AnswerItem{
+			AnswerIntakes: []*apiservice.AnswerItem{
+				&apiservice.AnswerItem{
 					PotentialAnswerId: answerIds[aAcneLocationChest],
 				},
-				&AnswerItem{
+				&apiservice.AnswerItem{
 					PotentialAnswerId: answerIds[aAcneLocationFace],
 				},
-				&AnswerItem{
+				&apiservice.AnswerItem{
 					PotentialAnswerId: answerIds[aAcneLocationNeck],
 				},
 			},
 		},
-		&AnswerToQuestionItem{
+		&apiservice.AnswerToQuestionItem{
 			QuestionId: questionIds[qPregnancyPlanning],
-			AnswerIntakes: []*AnswerItem{
-				&AnswerItem{
+			AnswerIntakes: []*apiservice.AnswerItem{
+				&apiservice.AnswerItem{
 					PotentialAnswerId: answerIds[aCurrentlyPregnant],
 				},
 			},
 		},
-		&AnswerToQuestionItem{
+		&apiservice.AnswerToQuestionItem{
 			QuestionId: questionIds[qCurrentMedications],
-			AnswerIntakes: []*AnswerItem{
-				&AnswerItem{
+			AnswerIntakes: []*apiservice.AnswerItem{
+				&apiservice.AnswerItem{
 					PotentialAnswerId: answerIds[aCurrentMedicationsYes],
 				},
 			},
 		},
-		&AnswerToQuestionItem{
+		&apiservice.AnswerToQuestionItem{
 			QuestionId: questionIds[qCurrentMedicationsEntry],
-			AnswerIntakes: []*AnswerItem{
-				&AnswerItem{
+			AnswerIntakes: []*apiservice.AnswerItem{
+				&apiservice.AnswerItem{
 					AnswerText: "Clyndamycin",
-					SubQuestionAnswerIntakes: []*SubQuestionAnswerIntake{
-						&SubQuestionAnswerIntake{
+					SubQuestionAnswerIntakes: []*apiservice.SubQuestionAnswerIntake{
+						&apiservice.SubQuestionAnswerIntake{
 							QuestionId: questionIds[qLengthCurrentMedication],
-							AnswerIntakes: []*AnswerItem{
-								&AnswerItem{
+							AnswerIntakes: []*apiservice.AnswerItem{
+								&apiservice.AnswerItem{
 									PotentialAnswerId: answerIds[aTwoToFiveMonthsLength],
 								},
 							},
 						},
 					},
 				},
-				&AnswerItem{
+				&apiservice.AnswerItem{
 					AnswerText: "Tretinoin Topical",
-					SubQuestionAnswerIntakes: []*SubQuestionAnswerIntake{
-						&SubQuestionAnswerIntake{
+					SubQuestionAnswerIntakes: []*apiservice.SubQuestionAnswerIntake{
+						&apiservice.SubQuestionAnswerIntake{
 							QuestionId: questionIds[qLengthCurrentMedication],
-							AnswerIntakes: []*AnswerItem{
-								&AnswerItem{
+							AnswerIntakes: []*apiservice.AnswerItem{
+								&apiservice.AnswerItem{
 									PotentialAnswerId: answerIds[aTwoToFiveMonthsLength],
 								},
 							},
@@ -350,37 +361,37 @@ func populatePatientIntake(questionIds map[questionTag]int64, answerIds map[pote
 				},
 			},
 		},
-		&AnswerToQuestionItem{
+		&apiservice.AnswerToQuestionItem{
 			QuestionId: questionIds[qAllergicMedications],
-			AnswerIntakes: []*AnswerItem{
-				&AnswerItem{
+			AnswerIntakes: []*apiservice.AnswerItem{
+				&apiservice.AnswerItem{
 					PotentialAnswerId: answerIds[aAllergicMedicationsNo],
 				},
 			},
 		},
-		&AnswerToQuestionItem{
+		&apiservice.AnswerToQuestionItem{
 			QuestionId: questionIds[qPrevSkinConditionDiagnosis],
-			AnswerIntakes: []*AnswerItem{
-				&AnswerItem{
+			AnswerIntakes: []*apiservice.AnswerItem{
+				&apiservice.AnswerItem{
 					PotentialAnswerId: answerIds[aPrevSkinConditionDiagnosisYes],
 				},
 			},
 		},
-		&AnswerToQuestionItem{
+		&apiservice.AnswerToQuestionItem{
 			QuestionId: questionIds[qListPrevSkinConditionDiagnosis],
-			AnswerIntakes: []*AnswerItem{
-				&AnswerItem{
+			AnswerIntakes: []*apiservice.AnswerItem{
+				&apiservice.AnswerItem{
 					PotentialAnswerId: answerIds[aListPrevSkinConditionDiagnosisAcne],
 				},
-				&AnswerItem{
+				&apiservice.AnswerItem{
 					PotentialAnswerId: answerIds[aListPrevSkinConditionDiagnosisPsoriasis],
 				},
 			},
 		},
-		&AnswerToQuestionItem{
+		&apiservice.AnswerToQuestionItem{
 			QuestionId: questionIds[qOtherConditionsAcne],
-			AnswerIntakes: []*AnswerItem{
-				&AnswerItem{
+			AnswerIntakes: []*apiservice.AnswerItem{
+				&apiservice.AnswerItem{
 					PotentialAnswerId: answerIds[aNoneOfTheAboveOtherConditions],
 				},
 			},
@@ -388,11 +399,11 @@ func populatePatientIntake(questionIds map[questionTag]int64, answerIds map[pote
 	}
 }
 
-func startPatientIntakeSubmission(answersToQuestions []*AnswerToQuestionItem, patientVisitId int64, patientAuthToken string, signal chan int) {
+func startPatientIntakeSubmission(answersToQuestions []*apiservice.AnswerToQuestionItem, patientVisitId int64, patientAuthToken string, signal chan int) {
 
 	go func() {
 
-		answerIntakeRequestBody := &AnswerIntakeRequestBody{
+		answerIntakeRequestBody := &apiservice.AnswerIntakeRequestBody{
 			PatientVisitId: patientVisitId,
 			Questions:      answersToQuestions,
 		}
@@ -412,11 +423,11 @@ func startPatientIntakeSubmission(answersToQuestions []*AnswerToQuestionItem, pa
 	}()
 }
 
-func (c *CreateDemoPatientVisitHandler) startPhotoSubmissionForPatient(questionId, answerId, patientVisitId int64, photoKey, patientAuthToken string, signal chan int) {
+func (c *Handler) startPhotoSubmissionForPatient(questionId, answerId, patientVisitId int64, photoKey, patientAuthToken string, signal chan int) {
 
 	go func() {
 		// get the image
-		imageData, _, err := c.CloudStorageApi.GetObjectAtLocation(fmt.Sprintf(demoPhotosBucketFormat, c.Environment), photoKey, c.AWSRegion)
+		imageData, _, err := c.cloudStorageApi.GetObjectAtLocation(fmt.Sprintf(demoPhotosBucketFormat, c.environment), photoKey, c.awsRegion)
 		if err != nil {
 			golog.Errorf("Error while getting picture at location: %+v", err)
 			signal <- failure
@@ -468,32 +479,32 @@ type CreateDemoPatientVisitRequestData struct {
 	ToCreateSurescriptsPatients bool `schema:"surescripts"`
 }
 
-func (c *CreateDemoPatientVisitHandler) ServeHTTP(w http.ResponseWriter, r *http.Request) {
-	if r.Method != HTTP_POST {
+func (c *Handler) ServeHTTP(w http.ResponseWriter, r *http.Request) {
+	if r.Method != apiservice.HTTP_POST {
 		w.WriteHeader(http.StatusNotFound)
 		return
 	}
 
-	doctorId, err := c.DataApi.GetDoctorIdFromAccountId(GetContext(r).AccountId)
+	doctorId, err := c.dataApi.GetDoctorIdFromAccountId(apiservice.GetContext(r).AccountId)
 	if err != nil {
-		WriteDeveloperError(w, http.StatusBadRequest, "Unable to get doctor based on the account id: "+err.Error())
+		apiservice.WriteDeveloperError(w, http.StatusBadRequest, "Unable to get doctor based on the account id: "+err.Error())
 		return
 	}
 
 	// ensure that are not working with a non-prod environment
-	if c.Environment == "prod" {
-		WriteDeveloperError(w, http.StatusBadRequest, "Cannot work in the production environment")
+	if c.environment == "prod" {
+		apiservice.WriteDeveloperError(w, http.StatusBadRequest, "Cannot work in the production environment")
 		return
 	}
 
 	if err := r.ParseForm(); err != nil {
-		WriteDeveloperError(w, http.StatusInternalServerError, "Unable to parse input parameters: "+err.Error())
+		apiservice.WriteDeveloperError(w, http.StatusInternalServerError, "Unable to parse input parameters: "+err.Error())
 		return
 	}
 
 	requestData := &CreateDemoPatientVisitRequestData{}
 	if err := schema.NewDecoder().Decode(requestData, r.Form); err != nil {
-		WriteDeveloperError(w, http.StatusInternalServerError, "Unable to parse input parameters: "+err.Error())
+		apiservice.WriteDeveloperError(w, http.StatusInternalServerError, "Unable to parse input parameters: "+err.Error())
 		return
 	}
 
@@ -828,7 +839,7 @@ func (c *CreateDemoPatientVisitHandler) ServeHTTP(w http.ResponseWriter, r *http
 		for numberPatientsWaitingFor > 0 {
 			result := <-topLevelSignal
 			if result == failure {
-				WriteDeveloperError(w, http.StatusInternalServerError, "Something went wrong while trying to create demo patient")
+				apiservice.WriteDeveloperError(w, http.StatusInternalServerError, "Something went wrong while trying to create demo patient")
 				return
 			}
 			numberPatientsWaitingFor--
@@ -871,15 +882,15 @@ func (c *CreateDemoPatientVisitHandler) ServeHTTP(w http.ResponseWriter, r *http
 		c.createNewDemoPatient(&demoPatientToCreate, doctorId, topLevelSignal)
 		result := <-topLevelSignal
 		if result == failure {
-			WriteDeveloperError(w, http.StatusInternalServerError, "Something went wrong while trying to create demo patient")
+			apiservice.WriteDeveloperError(w, http.StatusInternalServerError, "Something went wrong while trying to create demo patient")
 			return
 		}
 	}
 
-	WriteJSONToHTTPResponseWriter(w, http.StatusOK, SuccessfulGenericJSONResponse())
+	apiservice.WriteJSONToHTTPResponseWriter(w, http.StatusOK, apiservice.SuccessfulGenericJSONResponse())
 }
 
-func (c *CreateDemoPatientVisitHandler) createNewDemoPatient(patient *common.Patient, doctorId int64, topLevelSignal chan int) {
+func (c *Handler) createNewDemoPatient(patient *common.Patient, doctorId int64, topLevelSignal chan int) {
 	go func() {
 		// ********** CREATE RANDOM PATIENT **********
 		// Note that once this random patient is created, we will use the patientId and the accountId
@@ -918,7 +929,7 @@ func (c *CreateDemoPatientVisitHandler) createNewDemoPatient(patient *common.Pat
 			return
 		}
 
-		signupResponse := &PatientSignedupResponse{}
+		signupResponse := &patientApiService.PatientSignedupResponse{}
 		err = json.NewDecoder(resp.Body).Decode(&signupResponse)
 		defer resp.Body.Close()
 
@@ -932,14 +943,14 @@ func (c *CreateDemoPatientVisitHandler) createNewDemoPatient(patient *common.Pat
 		patient.PatientId = signupResponse.Patient.PatientId
 		patient.AccountId = signupResponse.Patient.AccountId
 		patient.Email = signupResponse.Patient.Email
-		err = c.DataApi.UpdatePatientInformationFromDoctor(patient)
+		err = c.dataApi.UpdatePatientInformation(patient, false)
 		if err != nil {
 			golog.Errorf("Unable to update patient information:%+v", err)
 			topLevelSignal <- failure
 			return
 		}
 
-		err = c.DataApi.UpdatePatientPharmacy(patient.PatientId.Int64(), patient.Pharmacy)
+		err = c.dataApi.UpdatePatientPharmacy(patient.PatientId.Int64(), patient.Pharmacy)
 		if err != nil {
 			golog.Errorf("Unable to update patients preferred pharmacy:%+v", err)
 			topLevelSignal <- failure
@@ -958,7 +969,7 @@ func (c *CreateDemoPatientVisitHandler) createNewDemoPatient(patient *common.Pat
 			return
 		}
 
-		patientVisitResponse := &PatientVisitResponse{}
+		patientVisitResponse := &apiservice.PatientVisitResponse{}
 		err = json.NewDecoder(resp.Body).Decode(&patientVisitResponse)
 		defer resp.Body.Close()
 		if err != nil {
@@ -975,7 +986,7 @@ func (c *CreateDemoPatientVisitHandler) createNewDemoPatient(patient *common.Pat
 			questionTagsForLookup = append(questionTagsForLookup, questionTagString)
 		}
 
-		questionInfos, err := c.DataApi.GetQuestionInfoForTags(questionTagsForLookup, api.EN_LANGUAGE_ID)
+		questionInfos, err := c.dataApi.GetQuestionInfoForTags(questionTagsForLookup, api.EN_LANGUAGE_ID)
 		if err != nil {
 			golog.Errorf("Unable to lookup ids based on question tags:%+v", err.Error())
 			topLevelSignal <- failure
@@ -991,7 +1002,7 @@ func (c *CreateDemoPatientVisitHandler) createNewDemoPatient(patient *common.Pat
 		for answerTagString, _ := range answerTags {
 			answerTagsForLookup = append(answerTagsForLookup, answerTagString)
 		}
-		answerInfos, err := c.DataApi.GetAnswerInfoForTags(answerTagsForLookup, api.EN_LANGUAGE_ID)
+		answerInfos, err := c.dataApi.GetAnswerInfoForTags(answerTagsForLookup, api.EN_LANGUAGE_ID)
 		if err != nil {
 			golog.Errorf("Unable to lookup answer infos based on tags:%+v", err.Error())
 			topLevelSignal <- failure

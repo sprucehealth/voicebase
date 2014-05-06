@@ -1,4 +1,4 @@
-// Package apiservice contains the AuthenticationHandler
+// Package patient contains the AuthenticationHandler
 //	Description:
 //		Authenticate an existing user using their email and password
 //
@@ -54,10 +54,11 @@
 //
 //	Response:
 // 		Content-Type: text/plain
-package apiservice
+package patient
 
 import (
 	"carefront/api"
+	"carefront/apiservice"
 	"carefront/common"
 	"carefront/libs/golog"
 	"carefront/libs/pharmacy"
@@ -69,16 +70,25 @@ import (
 )
 
 type AuthenticationHandler struct {
-	AuthApi               thriftapi.Auth
-	PharmacySearchService pharmacy.PharmacySearchAPI
-	DataApi               api.DataAPI
-	StaticContentBaseUrl  string
+	authApi               thriftapi.Auth
+	pharmacySearchService pharmacy.PharmacySearchAPI
+	dataApi               api.DataAPI
+	staticContentBaseUrl  string
 }
 
 type AuthenticationResponse struct {
 	Token   string          `json:"token"`
 	Patient *common.Patient `json:"patient,omitempty"`
 	Doctor  *common.Doctor  `json:"doctor,omitempty"`
+}
+
+func NewAuthenticationHandler(dataApi api.DataAPI, authApi thriftapi.Auth, pharmacySearchService pharmacy.PharmacySearchAPI, staticContentBaseUrl string) *AuthenticationHandler {
+	return &AuthenticationHandler{
+		authApi:               authApi,
+		pharmacySearchService: pharmacySearchService,
+		dataApi:               dataApi,
+		staticContentBaseUrl:  staticContentBaseUrl,
+	}
 }
 
 func (h *AuthenticationHandler) NonAuthenticated() bool {
@@ -90,21 +100,9 @@ type AuthRequestData struct {
 	Password string `schema:"password,required"`
 }
 
-type AuthEvent string
-
-const (
-	AuthEventNoSuchLogin     AuthEvent = "NoSuchLogin"
-	AuthEventInvalidPassword AuthEvent = "InvalidPassword"
-	AuthEventInvalidToken    AuthEvent = "InvalidToken"
-)
-
-type AuthLog struct {
-	Event AuthEvent
-}
-
 func (h *AuthenticationHandler) ServeHTTP(w http.ResponseWriter, r *http.Request) {
 	if err := r.ParseForm(); err != nil {
-		WriteDeveloperError(w, http.StatusBadRequest, "Unable to parse request data: "+err.Error())
+		apiservice.WriteDeveloperError(w, http.StatusBadRequest, "Unable to parse request data: "+err.Error())
 		return
 	}
 	action := strings.Split(r.URL.Path, "/")[2]
@@ -114,68 +112,50 @@ func (h *AuthenticationHandler) ServeHTTP(w http.ResponseWriter, r *http.Request
 	case "authenticate":
 		var requestData AuthRequestData
 		if err := schema.NewDecoder().Decode(&requestData, r.Form); err != nil {
-			WriteDeveloperError(w, http.StatusBadRequest, err.Error())
+			apiservice.WriteDeveloperError(w, http.StatusBadRequest, err.Error())
 			return
 		}
 
-		if res, err := h.AuthApi.LogIn(requestData.Login, requestData.Password); err != nil {
+		if res, err := h.authApi.LogIn(requestData.Login, requestData.Password); err != nil {
 			switch err.(type) {
 			case *thriftapi.NoSuchLogin:
-				golog.Log("auth", golog.WARN, &AuthLog{
-					Event: AuthEventNoSuchLogin,
+				golog.Log("auth", golog.WARN, &apiservice.AuthLog{
+					Event: apiservice.AuthEventNoSuchLogin,
 				})
-				WriteUserError(w, http.StatusForbidden, "Invalid email/password combination")
+				apiservice.WriteUserError(w, http.StatusForbidden, "Invalid email/password combination")
 				return
 			case *thriftapi.InvalidPassword:
-				golog.Log("auth", golog.WARN, &AuthLog{
-					Event: AuthEventInvalidPassword,
+				golog.Log("auth", golog.WARN, &apiservice.AuthLog{
+					Event: apiservice.AuthEventInvalidPassword,
 				})
-				WriteUserError(w, http.StatusForbidden, "Invalid email/password combination")
+				apiservice.WriteUserError(w, http.StatusForbidden, "Invalid email/password combination")
 				return
 			default:
 				// For now, treat all errors the same.
-				WriteDeveloperError(w, http.StatusInternalServerError, "Internal Server Error")
+				apiservice.WriteDeveloperError(w, http.StatusInternalServerError, "Internal Server Error")
 				return
 			}
 		} else {
-			patient, err := h.DataApi.GetPatientFromAccountId(res.AccountId)
+			patient, err := h.dataApi.GetPatientFromAccountId(res.AccountId)
 			if err != nil {
-				WriteDeveloperError(w, http.StatusInternalServerError, err.Error())
+				apiservice.WriteDeveloperError(w, http.StatusInternalServerError, err.Error())
 				return
 			}
-			doctor, err := GetPrimaryDoctorInfoBasedOnPatient(h.DataApi, patient, h.StaticContentBaseUrl)
+			doctor, err := apiservice.GetPrimaryDoctorInfoBasedOnPatient(h.dataApi, patient, h.staticContentBaseUrl)
 			if err != nil {
-				WriteDeveloperError(w, http.StatusInternalServerError, "Unable to get doctor based on patient: "+err.Error())
+				apiservice.WriteDeveloperError(w, http.StatusInternalServerError, "Unable to get doctor based on patient: "+err.Error())
 				return
 			}
-			WriteJSONToHTTPResponseWriter(w, http.StatusOK, &AuthenticationResponse{Token: res.Token, Patient: patient, Doctor: doctor})
+			apiservice.WriteJSONToHTTPResponseWriter(w, http.StatusOK, &AuthenticationResponse{Token: res.Token, Patient: patient, Doctor: doctor})
 		}
-	case "isauthenticated":
-		token, err := GetAuthTokenFromHeader(r)
-		if err != nil {
-			golog.Warningf("invalid auth token: %s", err.Error())
-			WriteAuthTimeoutError(w)
-			return
-		}
-		validTokenResponse, err := h.AuthApi.ValidateToken(token)
-		if err != nil {
-			WriteDeveloperError(w, http.StatusBadRequest, "unable to validate auth token: "+err.Error())
-			return
-		}
-
-		if validTokenResponse.IsValid == false {
-			WriteAuthTimeoutError(w)
-			return
-		}
-		WriteJSONToHTTPResponseWriter(w, http.StatusOK, SuccessfulGenericJSONResponse())
 	case "logout":
-		token, err := GetAuthTokenFromHeader(r)
+		token, err := apiservice.GetAuthTokenFromHeader(r)
 		if err != nil {
-			WriteDeveloperError(w, http.StatusBadRequest, "authorization token not correctly specified in header")
+			apiservice.WriteDeveloperError(w, http.StatusBadRequest, "authorization token not correctly specified in header")
 			return
 		}
-		if err := h.AuthApi.LogOut(token); err != nil {
-			WriteDeveloperError(w, http.StatusInternalServerError, "Internal Server Error")
+		if err := h.authApi.LogOut(token); err != nil {
+			apiservice.WriteDeveloperError(w, http.StatusInternalServerError, "Internal Server Error")
 			return
 		}
 		w.WriteHeader(http.StatusOK)

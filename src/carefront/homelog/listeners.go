@@ -7,6 +7,7 @@ import (
 	"carefront/libs/dispatch"
 	"carefront/libs/golog"
 	"carefront/messages"
+	patientApiService "carefront/patient"
 	"errors"
 	"fmt"
 )
@@ -94,7 +95,7 @@ func InitListeners(dataAPI api.DataAPI) {
 		return nil
 	})
 
-	dispatch.Default.Subscribe(func(ev *apiservice.CareTeamAssingmentEvent) error {
+	dispatch.Default.Subscribe(func(ev *patientApiService.CareTeamAssingmentEvent) error {
 		for _, a := range ev.Assignments {
 			if a.ProviderRole == api.DOCTOR_ROLE {
 				doctor, err := dataAPI.GetDoctorFromId(a.ProviderId)

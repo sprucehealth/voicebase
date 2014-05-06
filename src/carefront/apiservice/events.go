@@ -20,11 +20,6 @@ type VisitReviewSubmittedEvent struct {
 	Patient   *common.Patient // Setting Patient is an optional optimization. If this is nil then PatientId can be used.
 }
 
-type CareTeamAssingmentEvent struct {
-	PatientId   int64
-	Assignments []*common.PatientCareProviderAssignment
-}
-
 type TreatmentsAddedEvent struct {
 	PatientVisitId int64
 	DoctorId       int64
