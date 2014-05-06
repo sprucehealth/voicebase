@@ -29,6 +29,12 @@ type AuthServeMux struct {
 	statAuthFailure metrics.Counter
 }
 
+type AuthEvent string
+
+type AuthLog struct {
+	Event AuthEvent
+}
+
 type CustomResponseWriter struct {
 	WrappedResponseWriter http.ResponseWriter
 	StatusCode            int
@@ -51,6 +57,12 @@ func (c *CustomResponseWriter) Write(bytes []byte) (int, error) {
 	}
 	return (c.WrappedResponseWriter.Write(bytes))
 }
+
+const (
+	AuthEventNoSuchLogin     AuthEvent = "NoSuchLogin"
+	AuthEventInvalidPassword AuthEvent = "InvalidPassword"
+	AuthEventInvalidToken    AuthEvent = "InvalidToken"
+)
 
 func NewAuthServeMux(authApi api.Auth, statsRegistry metrics.Registry) *AuthServeMux {
 	mux := &AuthServeMux{

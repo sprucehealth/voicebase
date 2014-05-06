@@ -292,6 +292,16 @@ func NewDobFromTime(dobTime time.Time) Dob {
 	return dob
 }
 
+func NewDobFromString(dobString string) (Dob, error) {
+	var dob Dob
+	dobParts := strings.Split(dobString, "-")
+	if len(dobParts) != 3 {
+		return dob, fmt.Errorf("Required dob format is YYYY-MM-DD")
+	}
+
+	return NewDobFromComponents(dobParts[0], dobParts[1], dobParts[2])
+}
+
 func NewDobFromComponents(dobYear, dobMonth, dobDay string) (Dob, error) {
 	var dob Dob
 	var err error

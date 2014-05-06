@@ -1,7 +1,8 @@
-package apiservice
+package patient
 
 import (
 	"carefront/api"
+	"carefront/apiservice"
 	"carefront/common"
 	"carefront/encoding"
 	"carefront/libs/dispatch"
@@ -13,9 +14,9 @@ import (
 	"github.com/gorilla/schema"
 )
 
-type SignupPatientHandler struct {
-	DataApi api.DataAPI
-	AuthApi thriftapi.Auth
+type SignupHandler struct {
+	dataApi api.DataAPI
+	authApi thriftapi.Auth
 }
 
 type PatientSignedupResponse struct {
@@ -23,7 +24,7 @@ type PatientSignedupResponse struct {
 	Patient *common.Patient `json:"patient,omitempty"`
 }
 
-func (s *SignupPatientHandler) NonAuthenticated() bool {
+func (s *SignupHandler) NonAuthenticated() bool {
 	return true
 }
 
@@ -40,20 +41,27 @@ type SignupPatientRequestData struct {
 	DoctorId   int64  `schema:"doctor_id"`
 }
 
-func (s *SignupPatientHandler) ServeHTTP(w http.ResponseWriter, r *http.Request) {
-	if r.Method != HTTP_POST {
+func NewSignupHandler(dataApi api.DataAPI, authApi thriftapi.Auth) *SignupHandler {
+	return &SignupHandler{
+		dataApi: dataApi,
+		authApi: authApi,
+	}
+}
+
+func (s *SignupHandler) ServeHTTP(w http.ResponseWriter, r *http.Request) {
+	if r.Method != apiservice.HTTP_POST {
 		w.WriteHeader(http.StatusNotFound)
 		return
 	}
 
 	if err := r.ParseForm(); err != nil {
-		WriteDeveloperError(w, http.StatusBadRequest, "Unable to parse request data: "+err.Error())
+		apiservice.WriteDeveloperError(w, http.StatusBadRequest, "Unable to parse request data: "+err.Error())
 		return
 	}
 
 	var requestData SignupPatientRequestData
 	if err := schema.NewDecoder().Decode(&requestData, r.Form); err != nil {
-		WriteDeveloperError(w, http.StatusBadRequest, "Unable to parse input parameters: "+err.Error())
+		apiservice.WriteDeveloperError(w, http.StatusBadRequest, "Unable to parse input parameters: "+err.Error())
 		return
 	}
 
@@ -62,19 +70,19 @@ func (s *SignupPatientHandler) ServeHTTP(w http.ResponseWriter, r *http.Request)
 	dobParts := strings.Split(requestData.Dob, encoding.DOB_SEPARATOR)
 
 	if len(dobParts) < 3 {
-		WriteUserError(w, http.StatusBadRequest, "Unable to parse dob. Format should be "+encoding.DOB_FORMAT)
+		apiservice.WriteUserError(w, http.StatusBadRequest, "Unable to parse dob. Format should be "+encoding.DOB_FORMAT)
 		return
 	}
 
 	// first, create an account for the user
-	res, err := s.AuthApi.SignUp(requestData.Email, requestData.Password)
+	res, err := s.authApi.SignUp(requestData.Email, requestData.Password)
 	if _, ok := err.(*thriftapi.LoginAlreadyExists); ok {
-		WriteUserError(w, http.StatusBadRequest, "An account with the specified email address already exists.")
+		apiservice.WriteUserError(w, http.StatusBadRequest, "An account with the specified email address already exists.")
 		return
 	}
 
 	if err != nil {
-		WriteDeveloperError(w, http.StatusInternalServerError, "Internal Server Error. Unable to register patient")
+		apiservice.WriteDeveloperError(w, http.StatusInternalServerError, "Internal Server Error. Unable to register patient")
 		return
 	}
 
@@ -93,14 +101,14 @@ func (s *SignupPatientHandler) ServeHTTP(w http.ResponseWriter, r *http.Request)
 
 	newPatient.Dob, err = encoding.NewDobFromComponents(dobParts[0], dobParts[1], dobParts[2])
 	if err != nil {
-		WriteUserError(w, http.StatusBadRequest, "Unable to parse date of birth. Required format + "+encoding.DOB_FORMAT)
+		apiservice.WriteUserError(w, http.StatusBadRequest, "Unable to parse date of birth. Required format + "+encoding.DOB_FORMAT)
 		return
 	}
 
 	// then, register the signed up user as a patient
-	err = s.DataApi.RegisterPatient(newPatient)
+	err = s.dataApi.RegisterPatient(newPatient)
 	if err != nil {
-		WriteDeveloperError(w, http.StatusInternalServerError, "Unable to register patient: "+err.Error())
+		apiservice.WriteDeveloperError(w, http.StatusInternalServerError, "Unable to register patient: "+err.Error())
 		return
 	}
 
@@ -111,9 +119,9 @@ func (s *SignupPatientHandler) ServeHTTP(w http.ResponseWriter, r *http.Request)
 			patientAgreements[strings.TrimSpace(agreement)] = true
 		}
 
-		err = s.DataApi.TrackPatientAgreements(newPatient.PatientId.Int64(), patientAgreements)
+		err = s.dataApi.TrackPatientAgreements(newPatient.PatientId.Int64(), patientAgreements)
 		if err != nil {
-			WriteDeveloperError(w, http.StatusInternalServerError, "Unable to track patient agreements: "+err.Error())
+			apiservice.WriteDeveloperError(w, http.StatusInternalServerError, "Unable to track patient agreements: "+err.Error())
 			return
 		}
 	}
@@ -121,16 +129,16 @@ func (s *SignupPatientHandler) ServeHTTP(w http.ResponseWriter, r *http.Request)
 	// create care team for patient
 	var careProviderGroup *common.PatientCareProviderGroup
 	if requestData.DoctorId != 0 {
-		careProviderGroup, err = s.DataApi.CreateCareTeamForPatientWithPrimaryDoctor(newPatient.PatientId.Int64(), requestData.DoctorId)
+		careProviderGroup, err = s.dataApi.CreateCareTeamForPatientWithPrimaryDoctor(newPatient.PatientId.Int64(), requestData.DoctorId)
 		if err != nil {
-			WriteDeveloperError(w, http.StatusInternalServerError, "Unable to create care team with specified doctor for patient: "+err.Error())
+			apiservice.WriteDeveloperError(w, http.StatusInternalServerError, "Unable to create care team with specified doctor for patient: "+err.Error())
 			return
 		}
 	} else {
-		careProviderGroup, err = s.DataApi.CreateCareTeamForPatient(newPatient.PatientId.Int64())
+		careProviderGroup, err = s.dataApi.CreateCareTeamForPatient(newPatient.PatientId.Int64())
 		if err != nil {
 			golog.Errorf(err.Error())
-			WriteDeveloperError(w, http.StatusInternalServerError, "Unable to create care team for patient :"+err.Error())
+			apiservice.WriteDeveloperError(w, http.StatusInternalServerError, "Unable to create care team for patient :"+err.Error())
 			return
 		}
 	}
@@ -140,5 +148,5 @@ func (s *SignupPatientHandler) ServeHTTP(w http.ResponseWriter, r *http.Request)
 		Assignments: careProviderGroup.Assignments,
 	})
 
-	WriteJSONToHTTPResponseWriter(w, http.StatusOK, PatientSignedupResponse{Token: res.Token, Patient: newPatient})
+	apiservice.WriteJSONToHTTPResponseWriter(w, http.StatusOK, PatientSignedupResponse{Token: res.Token, Patient: newPatient})
 }

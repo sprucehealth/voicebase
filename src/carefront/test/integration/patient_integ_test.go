@@ -2,12 +2,14 @@ package integration
 
 import (
 	"bytes"
+	patientApiService "carefront/patient"
 	"encoding/json"
 	"io/ioutil"
 	"net/http"
 	"net/http/httptest"
 	"net/url"
 	"strconv"
+	"strings"
 	"testing"
 
 	"carefront/api"
@@ -186,5 +188,65 @@ func TestPatientAutocompleteForDrugs(t *testing.T) {
 
 	if len(autoCompleteResponse.Suggestions) == 0 {
 		t.Fatalf("Expected suggestions to be returned from the autocomplete api instead got 0")
+	}
+}
+
+func TestPatientInformationUpdate(t *testing.T) {
+	testData := setupIntegrationTest(t)
+	defer tearDownIntegrationTest(t, testData)
+
+	signedupPatientResponse := signupRandomTestPatient(t, testData.DataApi, testData.AuthApi)
+
+	// attempt to update all expected fields
+	expectedFirstName := "howard"
+	expectedLastName := "plower"
+	expectedPhone := "1234567890"
+	expectedGender := "other"
+	expectedDob := "1900-01-01"
+	params := url.Values{}
+	params.Set("first_name", expectedFirstName)
+	params.Set("last_name", expectedLastName)
+	params.Set("phone", expectedPhone)
+	params.Set("gender", expectedGender)
+	params.Set("dob", expectedDob)
+
+	patientUpdateHandler := patientApiService.NewUpdateHandler(testData.DataApi)
+	ts := httptest.NewServer(patientUpdateHandler)
+	defer ts.Close()
+
+	resp, err := authPut(ts.URL, "application/x-www-form-urlencoded", strings.NewReader(params.Encode()), signedupPatientResponse.Patient.AccountId.Int64())
+	if err != nil {
+		t.Fatalf("Unable to update patient information: %s", err)
+	} else if resp.StatusCode != http.StatusOK {
+		t.Fatalf("Expected status %d but got %d", http.StatusOK, resp.StatusCode)
+	}
+
+	patient, err := testData.DataApi.GetPatientFromId(signedupPatientResponse.Patient.PatientId.Int64())
+	if err != nil {
+		t.Fatalf("unable to get patient from id : %s", err)
+	}
+
+	if patient.FirstName != expectedFirstName {
+		t.Fatalf("Expected first name %s but got %s", expectedFirstName, patient.FirstName)
+	} else if patient.LastName != expectedLastName {
+		t.Fatalf("Expected last name %s but got %s", expectedLastName, patient.LastName)
+	} else if patient.Gender != expectedGender {
+		t.Fatalf("Expected gender %s but got %s", expectedGender, patient.Gender)
+	} else if patient.Dob.String() != expectedDob {
+		t.Fatalf("Expected dob %s but got %s", expectedDob, patient.Dob.String())
+	} else if len(patient.PhoneNumbers) != 1 {
+		t.Fatalf("Expected 1 phone number to exist instead got %d", len(patient.PhoneNumbers))
+	} else if patient.PhoneNumbers[0].Phone != expectedPhone {
+		t.Fatalf("Expected phone %s but got %s", expectedPhone, patient.PhoneNumbers[0].Phone)
+	}
+
+	// now attempt to update email or zipcode and it should return a bad request
+	params.Set("zipcode", "21345")
+	params.Set("email", "test@test.com")
+	resp, err = authPut(ts.URL, "application/x-www-form-urlencoded", strings.NewReader(params.Encode()), patient.AccountId.Int64())
+	if err != nil {
+		t.Fatalf("Unable to update patient information: %s", err)
+	} else if resp.StatusCode != http.StatusBadRequest {
+		t.Fatalf("Expected %d response code but got %d instead", http.StatusBadRequest, resp.StatusCode)
 	}
 }

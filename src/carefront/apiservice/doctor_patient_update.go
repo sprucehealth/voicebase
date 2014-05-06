@@ -156,7 +156,7 @@ func (d *DoctorPatientUpdateHandler) updatePatientInformation(w http.ResponseWri
 	}
 
 	// go ahead and udpate the doctor's information in our system now that dosespot has it
-	if err := d.DataApi.UpdatePatientInformationFromDoctor(requestData.Patient); err != nil {
+	if err := d.DataApi.UpdatePatientInformation(requestData.Patient, true); err != nil {
 		WriteDeveloperError(w, http.StatusInternalServerError, "Unable to update patient information on our databsae: "+err.Error())
 		return
 	}

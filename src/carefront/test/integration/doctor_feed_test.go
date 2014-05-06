@@ -3,6 +3,7 @@ package integration
 import (
 	"carefront/api"
 	"carefront/apiservice"
+	patientApiService "carefront/patient"
 	"carefront/settings"
 	"encoding/json"
 	"fmt"
@@ -26,7 +27,7 @@ func TestDoctorQueueWithPatientVisits(t *testing.T) {
 	}
 
 	patientVisitResponses := make([]*apiservice.PatientVisitResponse, 0)
-	signedUpPatients := make([]*apiservice.PatientSignedupResponse, 0)
+	signedUpPatients := make([]*patientApiService.PatientSignedupResponse, 0)
 
 	signedUpPatientResponse := signupRandomTestPatient(t, testData.DataApi, testData.AuthApi)
 	patientVisitResponse := createPatientVisitForPatient(signedUpPatientResponse.Patient.PatientId.Int64(), testData, t)
