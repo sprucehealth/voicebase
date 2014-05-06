@@ -81,7 +81,7 @@ func TestPatientVisitCreation(t *testing.T) {
 	defer TearDownIntegrationTest(t, testData)
 
 	signedupPatientResponse := SignupRandomTestPatient(t, testData.DataApi, testData.AuthApi)
-	patientVisitResponse := createPatientVisitForPatient(signedupPatientResponse.Patient.PatientId.Int64(), testData, t)
+	patientVisitResponse := CreatePatientVisitForPatient(signedupPatientResponse.Patient.PatientId.Int64(), testData, t)
 
 	if patientVisitResponse.PatientVisitId == 0 {
 		t.Fatal("Patient Visit Id not set when it should be.")
@@ -126,9 +126,9 @@ func TestPatientVisitSubmission(t *testing.T) {
 	defer TearDownIntegrationTest(t, testData)
 
 	signedupPatientResponse := SignupRandomTestPatient(t, testData.DataApi, testData.AuthApi)
-	patientVisitResponse := createPatientVisitForPatient(signedupPatientResponse.Patient.PatientId.Int64(), testData, t)
+	patientVisitResponse := CreatePatientVisitForPatient(signedupPatientResponse.Patient.PatientId.Int64(), testData, t)
 
-	submitPatientVisitForPatient(signedupPatientResponse.Patient.PatientId.Int64(), patientVisitResponse.PatientVisitId, testData, t)
+	SubmitPatientVisitForPatient(signedupPatientResponse.Patient.PatientId.Int64(), patientVisitResponse.PatientVisitId, testData, t)
 
 	// try submitting the exact same patient visit again, and it should come back with a 403 given that the case has already been submitted
 

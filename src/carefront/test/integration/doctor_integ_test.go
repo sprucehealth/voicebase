@@ -64,7 +64,6 @@ func TestDoctorAuthentication(t *testing.T) {
 }
 
 func TestDoctorDrugSearch(t *testing.T) {
-
 	testData := SetupIntegrationTest(t)
 	defer TearDownIntegrationTest(t, testData)
 
@@ -157,7 +156,7 @@ func TestDoctorDiagnosisOfPatientVisit(t *testing.T) {
 
 	// Now, actually diagnose the patient visit and check the response to ensure that the doctor diagnosis was returned in the response
 	// prepapre a response for the doctor
-	diagnosisQuestionId, severityQuestionId, acneTypeQuestionId := submitPatientVisitDiagnosis(patientVisitResponse.PatientVisitId, doctor, testData, t)
+	diagnosisQuestionId, severityQuestionId, acneTypeQuestionId := SubmitPatientVisitDiagnosis(patientVisitResponse.PatientVisitId, doctor, testData, t)
 
 	// now, get diagnosis layout again and check to ensure that the doctor successfully diagnosed the patient with the expected answers
 	resp, err = AuthGet(ts.URL+requestParams.String(), doctor.AccountId.Int64())
@@ -243,7 +242,7 @@ func TestDoctorDiagnosisOfPatientVisit(t *testing.T) {
 	}
 
 	// lets attempt to diagnose the patient again
-	submitPatientVisitDiagnosis(patientVisitResponse.PatientVisitId, doctor, testData, t)
+	SubmitPatientVisitDiagnosis(patientVisitResponse.PatientVisitId, doctor, testData, t)
 
 	// now get the diagnosis summary again to ensure that it did not change
 	resp, err = AuthGet(ts.URL+"?patient_visit_id="+strconv.FormatInt(patientVisitResponse.PatientVisitId, 10), doctor.AccountId.Int64())
@@ -260,7 +259,6 @@ func TestDoctorDiagnosisOfPatientVisit(t *testing.T) {
 }
 
 func TestDoctorSubmissionOfPatientVisitReview(t *testing.T) {
-
 	testData := SetupIntegrationTest(t)
 	defer TearDownIntegrationTest(t, testData)
 
@@ -269,7 +267,7 @@ func TestDoctorSubmissionOfPatientVisitReview(t *testing.T) {
 	doctorId := GetDoctorIdOfCurrentPrimaryDoctor(testData, t)
 
 	// get patient to start a visit
-	patientVisitResponse := createPatientVisitForPatient(patientSignedupResponse.Patient.PatientId.Int64(), testData, t)
+	patientVisitResponse := CreatePatientVisitForPatient(patientSignedupResponse.Patient.PatientId.Int64(), testData, t)
 
 	// submit answers to questions in patient visit
 	patient, err := testData.DataApi.GetPatientFromId(patientSignedupResponse.Patient.PatientId.Int64())
@@ -278,10 +276,10 @@ func TestDoctorSubmissionOfPatientVisitReview(t *testing.T) {
 	}
 
 	answerIntakeRequestBody := prepareAnswersForQuestionsInPatientVisit(patientVisitResponse, t)
-	submitAnswersIntakeForPatient(patient.PatientId.Int64(), patient.AccountId.Int64(), answerIntakeRequestBody, testData, t)
+	SubmitAnswersIntakeForPatient(patient.PatientId.Int64(), patient.AccountId.Int64(), answerIntakeRequestBody, testData, t)
 
 	// get patient to submit the visit
-	submitPatientVisitForPatient(patientSignedupResponse.Patient.PatientId.Int64(), patientVisitResponse.PatientVisitId, testData, t)
+	SubmitPatientVisitForPatient(patientSignedupResponse.Patient.PatientId.Int64(), patientVisitResponse.PatientVisitId, testData, t)
 
 	doctor, err := testData.DataApi.GetDoctorFromId(doctorId)
 	if err != nil {

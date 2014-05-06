@@ -127,6 +127,7 @@ func (n *newConversationNotification) makeView(dataAPI api.DataAPI, patientId, n
 		ButtonIconURL:   "spruce:///image/icon_reply",
 		ButtonText:      "Reply",
 		Text:            con.Messages[0].Body,
+		NotificationId:  notificationId,
 	}, nil
 }
 
@@ -148,6 +149,7 @@ func (n *conversationReplyNotification) makeView(dataAPI api.DataAPI, patientId,
 		IconURL:         fmt.Sprintf("spruce:///image/thumbnail_care_team_%d", n.DoctorId),
 		TapURL:          tapURL,
 		Text:            con.Messages[0].Body,
+		NotificationId:  notificationId,
 	}, nil
 }
 

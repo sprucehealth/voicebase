@@ -106,6 +106,7 @@ func (h *PatientConversationHandler) newConversation(w http.ResponseWriter, r *h
 
 	dispatch.Default.PublishAsync(&ConversationStartedEvent{
 		ConversationId: cid,
+		TopicId:        req.TopicId,
 		FromId:         personId,
 		ToId:           doctorPersonId,
 	})

@@ -181,9 +181,10 @@ func (d *DataService) UpdateRegimenStepForDoctor(regimenStep *common.DoctorInstr
 		return err
 	}
 
-	// lookup the sourceId for the current regimen step if it exists
+	// lookup the sourceId and status for the current regimen step if it exists
 	var sourceId sql.NullInt64
-	if err := tx.QueryRow(`select source_id from dr_regimen_step where id=? and doctor_id=?`, regimenStep.Id.Int64(), doctorId).Scan(&sourceId); err != nil {
+	var status string
+	if err := tx.QueryRow(`select source_id, status from dr_regimen_step where id=? and doctor_id=?`, regimenStep.Id.Int64(), doctorId).Scan(&sourceId, &status); err != nil {
 		return err
 	}
 
@@ -203,7 +204,7 @@ func (d *DataService) UpdateRegimenStepForDoctor(regimenStep *common.DoctorInstr
 	}
 
 	// insert a new active regimen step in its place
-	res, err := tx.Exec(`insert into dr_regimen_step (text, doctor_id, source_id, status) values (?, ?, ?, ?)`, regimenStep.Text, doctorId, sourceIdForUpdatedStep, STATUS_ACTIVE)
+	res, err := tx.Exec(`insert into dr_regimen_step (text, doctor_id, source_id, status) values (?, ?, ?, ?)`, regimenStep.Text, doctorId, sourceIdForUpdatedStep, status)
 	if err != nil {
 		tx.Rollback()
 		return err
@@ -272,7 +273,8 @@ func (d *DataService) UpdateAdvicePointForDoctor(advicePoint *common.DoctorInstr
 	}
 
 	var sourceId sql.NullInt64
-	if err := tx.QueryRow(`select source_id from dr_advice_point where id=? and doctor_id=?`, advicePoint.Id.Int64(), doctorId).Scan(&sourceId); err != nil {
+	var status string
+	if err := tx.QueryRow(`select source_id, status from dr_advice_point where id=? and doctor_id=?`, advicePoint.Id.Int64(), doctorId).Scan(&sourceId, &status); err != nil {
 		return err
 	}
 
@@ -291,7 +293,7 @@ func (d *DataService) UpdateAdvicePointForDoctor(advicePoint *common.DoctorInstr
 		return err
 	}
 
-	res, err := tx.Exec(`insert into dr_advice_point (text, doctor_id, source_id, status) values (?,?,?,?)`, advicePoint.Text, doctorId, sourceIdForUpdatedAdvicePoint, STATUS_ACTIVE)
+	res, err := tx.Exec(`insert into dr_advice_point (text, doctor_id, source_id, status) values (?,?,?,?)`, advicePoint.Text, doctorId, sourceIdForUpdatedAdvicePoint, status)
 	if err != nil {
 		tx.Rollback()
 		return err

@@ -127,58 +127,97 @@ func InitListeners(dataAPI api.DataAPI) {
 			return errors.New("failed to find person conversation is addressed to")
 		}
 
-		// TODO: currently only supporting patient notifications
-		if to.RoleType != api.PATIENT_ROLE || from.RoleType != api.DOCTOR_ROLE {
-			return nil
+		// Insert health log item for patient
+		var doctorPerson *common.Person
+		var patientPerson *common.Person
+		for _, p := range people {
+			switch p.RoleType {
+			case api.PATIENT_ROLE:
+				patientPerson = p
+			case api.DOCTOR_ROLE:
+				doctorPerson = p
+			}
+		}
+		if doctorPerson != nil && patientPerson != nil {
+			if _, err := dataAPI.InsertOrUpdatePatientHealthLogItem(patientPerson.RoleId, &common.HealthLogItem{
+				UID: fmt.Sprintf("conversation:%d", ev.ConversationId),
+				Data: &titledLogItem{
+					Title:    fmt.Sprintf("Conversation with Dr. %s", doctorPerson.Doctor.LastName),
+					Subtitle: fmt.Sprintf("1 message"),
+					IconURL:  "spruce:///image/icon_log_message",
+					TapURL:   fmt.Sprintf("spruce:///action/view_messages?conversation_id=%d", ev.ConversationId),
+				},
+			}); err != nil {
+				golog.Errorf("Failed to insert conversation item into health log for patient %d: %s", patientPerson.RoleId, err.Error())
+			}
 		}
 
-		_, err = dataAPI.InsertPatientNotification(to.RoleId, &common.Notification{
-			UID:             fmt.Sprintf("conversation:%d", ev.ConversationId),
-			Dismissible:     true,
-			DismissOnAction: true,
-			Priority:        1000,
-			Data: &newConversationNotification{
-				ConversationId: ev.ConversationId,
-				DoctorId:       from.RoleId,
-			},
-		})
-		return err
+		// Only notify the patient if the conversation is doctor->patient
+		if to.RoleType == api.PATIENT_ROLE && from.RoleType == api.DOCTOR_ROLE {
+			_, err = dataAPI.InsertPatientNotification(to.RoleId, &common.Notification{
+				UID:             fmt.Sprintf("conversation:%d", ev.ConversationId),
+				Dismissible:     true,
+				DismissOnAction: true,
+				Priority:        1000,
+				Data: &newConversationNotification{
+					ConversationId: ev.ConversationId,
+					DoctorId:       from.RoleId,
+				},
+			})
+			return err
+		}
+
+		return nil
 	})
 
 	dispatch.Default.Subscribe(func(ev *messages.ConversationReplyEvent) error {
-		people, err := dataAPI.GetPeople([]int64{ev.FromId})
-		if err != nil {
-			return err
-		}
-		from := people[ev.FromId]
-		if from == nil {
-			return errors.New("failed to find person conversation is from")
-		}
-
-		// TODO: currently only supporting patient notifications
-		if from.RoleType != api.DOCTOR_ROLE {
-			return nil
-		}
-
 		con, err := dataAPI.GetConversation(ev.ConversationId)
 		if err != nil {
 			return err
 		}
-		// Find the patient participant
+		from := con.Participants[ev.FromId]
+		if from == nil {
+			return errors.New("failed to find person conversation is from")
+		}
+
+		// Update health log item for patient
+		var doctorPerson *common.Person
+		var patientPerson *common.Person
 		for _, p := range con.Participants {
-			if p.RoleType == api.PATIENT_ROLE {
-				_, err = dataAPI.InsertPatientNotification(p.RoleId, &common.Notification{
-					UID:             fmt.Sprintf("conversation:%d", ev.ConversationId),
-					Dismissible:     true,
-					DismissOnAction: true,
-					Priority:        1000,
-					Data: &conversationReplyNotification{
-						ConversationId: ev.ConversationId,
-						DoctorId:       from.RoleId,
-					},
-				})
-				return err
+			switch p.RoleType {
+			case api.PATIENT_ROLE:
+				patientPerson = p
+			case api.DOCTOR_ROLE:
+				doctorPerson = p
 			}
+		}
+		if doctorPerson != nil && patientPerson != nil {
+			if _, err := dataAPI.InsertOrUpdatePatientHealthLogItem(patientPerson.RoleId, &common.HealthLogItem{
+				UID: fmt.Sprintf("conversation:%d", ev.ConversationId),
+				Data: &titledLogItem{
+					Title:    fmt.Sprintf("Conversation with Dr. %s", doctorPerson.Doctor.LastName),
+					Subtitle: fmt.Sprintf("%d messages", con.MessageCount),
+					IconURL:  "spruce:///image/icon_log_message",
+					TapURL:   fmt.Sprintf("spruce:///action/view_messages?conversation_id=%d", ev.ConversationId),
+				},
+			}); err != nil {
+				golog.Errorf("Failed to insert conversation item into health log for patient %d: %s", patientPerson.RoleId, err.Error())
+			}
+		}
+
+		// Only notify the patient if the reply is doctor->patient
+		if from.RoleType == api.DOCTOR_ROLE && patientPerson != nil {
+			_, err = dataAPI.InsertPatientNotification(patientPerson.RoleId, &common.Notification{
+				UID:             fmt.Sprintf("conversation:%d", ev.ConversationId),
+				Dismissible:     true,
+				DismissOnAction: true,
+				Priority:        1000,
+				Data: &conversationReplyNotification{
+					ConversationId: ev.ConversationId,
+					DoctorId:       from.RoleId,
+				},
+			})
+			return err
 		}
 		return nil
 	})

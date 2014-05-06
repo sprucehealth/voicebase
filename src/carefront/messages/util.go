@@ -8,6 +8,7 @@ import (
 	"carefront/libs/golog"
 	"fmt"
 	"net/http"
+	"net/url"
 	"strconv"
 	"time"
 
@@ -131,7 +132,7 @@ func peopleToParticipants(people map[int64]*common.Person) []*Participant {
 
 func messageList(msgs []*common.ConversationMessage, req *http.Request) []*message {
 	// TODO: don't hard code the photoURL
-	photoURL := fmt.Sprintf("https://%s/v1/photo/", req.Host)
+	photoURL := fmt.Sprintf("https://%s/v1/photo", req.Host)
 	mr := make([]*message, len(msgs))
 	for i, m := range msgs {
 		mr[i] = &message{
@@ -144,9 +145,14 @@ func messageList(msgs []*common.ConversationMessage, req *http.Request) []*messa
 		for j, a := range m.Attachments {
 			switch a.ItemType {
 			case common.AttachmentTypePhoto:
+				params := url.Values{
+					"photo_id":     []string{strconv.FormatInt(a.Id, 10)},
+					"claimer_type": []string{common.ClaimerTypeConversationMessage},
+					"claimer_id":   []string{strconv.FormatInt(m.Id, 10)},
+				}
 				mr[i].Attachments[j] = &attachment{
 					Type: "attachment:photo",
-					URL:  fmt.Sprintf("%s?photo_id=%d&claimer_type=%s&claimer_id=%d", photoURL, a.Id, common.ClaimerTypeConversationMessage, m.Id),
+					URL:  fmt.Sprintf("%s?%s", photoURL, params.Encode()),
 				}
 			default:
 				golog.Errorf("Unknown attachment type %s for message %d", a.ItemType, m.Id)

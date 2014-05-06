@@ -62,7 +62,7 @@ func TestNewRefillRequestForExistingPatientAndExistingTreatment(t *testing.T) {
 		t.Fatal("Unable to store pharmacy in db: " + err.Error())
 	}
 
-	patientVisitResponse := createPatientVisitForPatient(signedupPatientResponse.Patient.PatientId.Int64(), testData, t)
+	patientVisitResponse := CreatePatientVisitForPatient(signedupPatientResponse.Patient.PatientId.Int64(), testData, t)
 	// start a new treatemtn plan for the patient visit
 	treatmentPlanId, err := testData.DataApi.StartNewTreatmentPlanForPatientVisit(signedupPatientResponse.Patient.PatientId.Int64(),
 		patientVisitResponse.PatientVisitId, doctor.DoctorId.Int64(), 0)
@@ -1684,7 +1684,7 @@ func setUpDeniedRefillRequestWithDNTFForLinkedTreatment(t *testing.T, testData T
 		t.Fatal("Unable to store pharmacy in db: " + err.Error())
 	}
 
-	patientVisitResponse := createPatientVisitForPatient(signedupPatientResponse.Patient.PatientId.Int64(), testData, t)
+	patientVisitResponse := CreatePatientVisitForPatient(signedupPatientResponse.Patient.PatientId.Int64(), testData, t)
 	// start a new treatemtn plan for the patient visit
 	treatmentPlanId, err := testData.DataApi.StartNewTreatmentPlanForPatientVisit(signedupPatientResponse.Patient.PatientId.Int64(),
 		patientVisitResponse.PatientVisitId, doctor.DoctorId.Int64(), 0)
@@ -2447,7 +2447,7 @@ func TestRefillRequestComingFromDifferentPharmacyThanDispensedPrescription(t *te
 		t.Fatal("Unable to store pharmacy in db: " + err.Error())
 	}
 
-	patientVisitResponse := createPatientVisitForPatient(signedupPatientResponse.Patient.PatientId.Int64(), testData, t)
+	patientVisitResponse := CreatePatientVisitForPatient(signedupPatientResponse.Patient.PatientId.Int64(), testData, t)
 	// start a new treatemtn plan for the patient visit
 	treatmentPlanId, err := testData.DataApi.StartNewTreatmentPlanForPatientVisit(signedupPatientResponse.Patient.PatientId.Int64(),
 		patientVisitResponse.PatientVisitId, doctor.DoctorId.Int64(), 0)

@@ -667,7 +667,7 @@ func TestTreatmentTemplateWithDrugOutOfMarket(t *testing.T) {
 
 	// create random patient
 	patientSignedupResponse := SignupRandomTestPatient(t, testData.DataApi, testData.AuthApi)
-	patientVisitResponse := createPatientVisitForPatient(patientSignedupResponse.Patient.PatientId.Int64(), testData, t)
+	patientVisitResponse := CreatePatientVisitForPatient(patientSignedupResponse.Patient.PatientId.Int64(), testData, t)
 	// submit answers to questions in patient visit
 	patient, err := testData.DataApi.GetPatientFromId(patientSignedupResponse.Patient.PatientId.Int64())
 	if err != nil {
@@ -675,10 +675,10 @@ func TestTreatmentTemplateWithDrugOutOfMarket(t *testing.T) {
 	}
 
 	answerIntakeRequestBody := prepareAnswersForQuestionsInPatientVisit(patientVisitResponse, t)
-	submitAnswersIntakeForPatient(patient.PatientId.Int64(), patient.AccountId.Int64(), answerIntakeRequestBody, testData, t)
+	SubmitAnswersIntakeForPatient(patient.PatientId.Int64(), patient.AccountId.Int64(), answerIntakeRequestBody, testData, t)
 
-	submitPatientVisitForPatient(patientSignedupResponse.Patient.PatientId.Int64(), patientVisitResponse.PatientVisitId, testData, t)
-	startReviewingPatientVisit(patientVisitResponse.PatientVisitId, doctor, testData, t)
+	SubmitPatientVisitForPatient(patientSignedupResponse.Patient.PatientId.Int64(), patientVisitResponse.PatientVisitId, testData, t)
+	StartReviewingPatientVisit(patientVisitResponse.PatientVisitId, doctor, testData, t)
 
 	// doctor now attempts to favorite a treatment
 	treatment1 := &common.Treatment{

@@ -116,7 +116,7 @@ func TestPatientVisitReview(t *testing.T) {
 	//
 	//
 
-	submitPatientVisitDiagnosis(patientVisitResponse.PatientVisitId, doctor, testData, t)
+	SubmitPatientVisitDiagnosis(patientVisitResponse.PatientVisitId, doctor, testData, t)
 
 	//
 	//

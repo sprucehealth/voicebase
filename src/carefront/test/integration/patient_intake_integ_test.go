@@ -94,7 +94,7 @@ func TestSingleSelectIntake(t *testing.T) {
 
 	// signup a random test patient for which to answer questions
 	patientSignedUpResponse := SignupRandomTestPatient(t, testData.DataApi, testData.AuthApi)
-	patientVisitResponse := createPatientVisitForPatient(patientSignedUpResponse.Patient.PatientId.Int64(), testData, t)
+	patientVisitResponse := CreatePatientVisitForPatient(patientSignedUpResponse.Patient.PatientId.Int64(), testData, t)
 
 	// now lets go ahead and try and answer the question about the reason for visit given that it is
 	// single select
@@ -138,7 +138,7 @@ func TestMultipleChoiceIntake(t *testing.T) {
 
 	// signup a random test patient for which to answer questions
 	patientSignedUpResponse := SignupRandomTestPatient(t, testData.DataApi, testData.AuthApi)
-	patientVisitResponse := createPatientVisitForPatient(patientSignedUpResponse.Patient.PatientId.Int64(), testData, t)
+	patientVisitResponse := CreatePatientVisitForPatient(patientSignedUpResponse.Patient.PatientId.Int64(), testData, t)
 
 	// now lets go ahead and try and answer the question about the reason for visit given that it is
 	// single select
@@ -202,7 +202,7 @@ func TestSingleEntryIntake(t *testing.T) {
 
 	// signup a random test patient for which to answer questions
 	patientSignedUpResponse := SignupRandomTestPatient(t, testData.DataApi, testData.AuthApi)
-	patientVisitResponse := createPatientVisitForPatient(patientSignedUpResponse.Patient.PatientId.Int64(), testData, t)
+	patientVisitResponse := CreatePatientVisitForPatient(patientSignedUpResponse.Patient.PatientId.Int64(), testData, t)
 
 	questionId := getQuestionWithTagAndExpectedType("q_other_acne_location_entry", "q_type_single_entry", t, testData)
 	potentialAnswerId := getAnswerWithTagAndExpectedType("a_other_acne_location_entry", "a_type_single_entry", questionId, testData, t)
@@ -289,7 +289,7 @@ func TestFreeTextEntryIntake(t *testing.T) {
 
 	// signup a random test patient for which to answer questions
 	patientSignedUpResponse := SignupRandomTestPatient(t, testData.DataApi, testData.AuthApi)
-	patientVisitResponse := createPatientVisitForPatient(patientSignedUpResponse.Patient.PatientId.Int64(), testData, t)
+	patientVisitResponse := CreatePatientVisitForPatient(patientSignedUpResponse.Patient.PatientId.Int64(), testData, t)
 	freeTextResponse := "This is a free text response that should be accepted as a response for free text."
 	submitFreeTextResponseForPatient(patientVisitResponse, patientSignedUpResponse.Patient.PatientId.Int64(), freeTextResponse, testData, t)
 
@@ -316,7 +316,7 @@ func TestSubQuestionEntryIntake(t *testing.T) {
 
 	// signup a random test patient for which to answer questions
 	patientSignedUpResponse := SignupRandomTestPatient(t, testData.DataApi, testData.AuthApi)
-	patientVisitResponse := createPatientVisitForPatient(patientSignedUpResponse.Patient.PatientId.Int64(), testData, t)
+	patientVisitResponse := CreatePatientVisitForPatient(patientSignedUpResponse.Patient.PatientId.Int64(), testData, t)
 
 	// now lets go ahead and try and answer the question about the reason for visit given that it is
 	// single select
@@ -475,7 +475,7 @@ func TestPhotoAnswerIntake(t *testing.T) {
 
 	// signup a random test patient for which to answer questions
 	patientSignedUpResponse := SignupRandomTestPatient(t, testData.DataApi, testData.AuthApi)
-	patientVisitResponse := createPatientVisitForPatient(patientSignedUpResponse.Patient.PatientId.Int64(), testData, t)
+	patientVisitResponse := CreatePatientVisitForPatient(patientSignedUpResponse.Patient.PatientId.Int64(), testData, t)
 	questionId := getQuestionWithTagAndExpectedType("q_chest_photo_intake", "q_type_photo", t, testData)
 	potentialAnswerId := getAnswerWithTagAndExpectedType("a_chest_phota_intake", "a_type_photo_entry_chest", questionId, testData, t)
 

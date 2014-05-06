@@ -134,7 +134,7 @@ func TestRegimenForPatientVisit(t *testing.T) {
 
 	// get patient to start a visit
 	patientSignedupResponse := SignupRandomTestPatient(t, testData.DataApi, testData.AuthApi)
-	patientVisitResponse = createPatientVisitForPatient(patientSignedupResponse.Patient.PatientId.Int64(), testData, t)
+	patientVisitResponse = CreatePatientVisitForPatient(patientSignedupResponse.Patient.PatientId.Int64(), testData, t)
 
 	regimenPlan = getRegimenPlanForPatientVisit(testData, doctor, patientVisitResponse.PatientVisitId, t)
 	if len(regimenPlan.RegimenSections) > 0 {
@@ -357,6 +357,12 @@ func TestRegimenForPatientVisit_UpdatingItemLinkedToDeletedItem(t *testing.T) {
 	if regimenPlanResponse.RegimenSections[4].RegimenSteps[0].Text != updatedText {
 		t.Fatalf("Exepcted text to have updated for item linked to deleted item but it didn't")
 	}
+
+	// now lets go ahead and echo back the response to the server to ensure that it takes the list
+	// as it modified back without any issue. This is essentially to ensure that it passes the validation
+	// of text being modified for an item that is no longer active in the master list
+	regimenPlanRequest = regimenPlanResponse
+	regimenPlanResponse = createRegimenPlanForPatientVisit(regimenPlanRequest, testData, doctor, t)
 
 	// now lets go ahead and remove the item from the regimen section
 	regimenPlanRequest = regimenPlanResponse
