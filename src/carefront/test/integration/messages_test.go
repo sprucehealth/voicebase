@@ -335,11 +335,6 @@ func TestConversationHandlers(t *testing.T) {
 	defer tearDownIntegrationTest(t, testData)
 
 	pr := signupRandomTestPatient(t, testData.DataApi, testData.AuthApi)
-	drRes, _, _ := signupRandomTestDoctor(t, testData.DataApi, testData.AuthApi)
-	dr, err := testData.DataApi.GetDoctorFromId(drRes.DoctorId)
-	if err != nil {
-		t.Fatal(err)
-	}
 
 	topicId, err := testData.DataApi.AddConversationTopic("Foo", 100, true)
 	if err != nil {
@@ -376,8 +371,20 @@ func TestConversationHandlers(t *testing.T) {
 
 	// Make sure conversation was created
 
-	if _, err := testData.DataApi.GetConversation(newConvRes.ConversationId); err != nil {
+	var doctorPersonId int64
+	if c, err := testData.DataApi.GetConversation(newConvRes.ConversationId); err != nil {
 		t.Fatal(err)
+	} else {
+		doctorPersonId = c.OwnerId
+		for _, p := range c.Participants {
+			t.Logf("Participant: %+v", p)
+		}
+	}
+	var dr *common.Doctor
+	if p, err := testData.DataApi.GetPeople([]int64{doctorPersonId}); err != nil {
+		t.Fatal(err)
+	} else {
+		dr = p[doctorPersonId].Doctor
 	}
 
 	// List conversations
