@@ -3,6 +3,7 @@ package app_worker
 import (
 	"carefront/api"
 	"carefront/common"
+	"carefront/libs/dispatch"
 	"carefront/libs/erx"
 	"carefront/libs/golog"
 	"encoding/json"
@@ -193,17 +194,6 @@ func ConsumeMessageFromQueue(DataApi api.DataAPI, ERxApi erx.ERxAPI, ErxQueue *c
 						failed++
 						break
 					}
-					if err := DataApi.InsertItemIntoDoctorQueue(api.DoctorQueueItem{
-						DoctorId:  doctor.DoctorId.Int64(),
-						ItemId:    prescriptionStatus.ItemId,
-						Status:    api.STATUS_PENDING,
-						EventType: api.EVENT_TYPE_REFILL_TRANSMISSION_ERROR,
-					}); err != nil {
-						statFailure.Inc(1)
-						golog.Errorf("Unable to insert refill transmission error into doctor queue: %+v", err)
-						failed++
-						break
-					}
 				case common.UnlinkedDNTFTreatmentType:
 					if err := DataApi.AddErxStatusEventForDNTFTreatment(common.StatusEvent{
 						Status:            api.ERX_STATUS_ERROR,
@@ -216,19 +206,6 @@ func ConsumeMessageFromQueue(DataApi api.DataAPI, ERxApi erx.ERxAPI, ErxQueue *c
 						failed++
 						break
 					}
-
-					if err := DataApi.InsertItemIntoDoctorQueue(api.DoctorQueueItem{
-						DoctorId:  doctor.DoctorId.Int64(),
-						ItemId:    prescriptionStatus.ItemId,
-						Status:    api.STATUS_PENDING,
-						EventType: api.EVENT_TYPE_UNLINKED_DNTF_TRANSMISSION_ERROR,
-					}); err != nil {
-						statFailure.Inc(1)
-						golog.Errorf("Unable to insert refill transmission error into doctor queue: %+v", err)
-						failed++
-						break
-					}
-
 				case common.ERxType:
 					treatment, err := DataApi.GetTreatmentBasedOnPrescriptionId(prescriptionId)
 					if err != nil {
@@ -248,19 +225,12 @@ func ConsumeMessageFromQueue(DataApi api.DataAPI, ERxApi erx.ERxAPI, ErxQueue *c
 						failed++
 						break
 					}
-					// insert an item into the doctor's queue to notify the doctor of this error
-					if err := DataApi.InsertItemIntoDoctorQueue(api.DoctorQueueItem{
-						DoctorId:  doctor.DoctorId.Int64(),
-						ItemId:    treatment.Id.Int64(),
-						Status:    api.STATUS_PENDING,
-						EventType: api.EVENT_TYPE_TRANSMISSION_ERROR,
-					}); err != nil {
-						statFailure.Inc(1)
-						golog.Errorf("Unable to insert error into doctor queue: %s", err.Error())
-						failed++
-						break
-					}
 				}
+				dispatch.Default.Publish(&RxTransmissionErrorEvent{
+					DoctorId:  doctor.DoctorId.Int64(),
+					ItemId:    prescriptionStatus.ItemId,
+					EventType: statusCheckMessage.EventCheckType,
+				})
 			case api.ERX_STATUS_SENT:
 				switch statusCheckMessage.EventCheckType {
 				case common.RefillRxType:

@@ -3,6 +3,7 @@ package apiservice
 import (
 	"carefront/api"
 	"carefront/common"
+	"carefront/libs/dispatch"
 	"carefront/libs/erx"
 	"net/http"
 	"strconv"
@@ -44,6 +45,8 @@ func (d *DoctorPrescriptionErrorIgnoreHandler) ServeHTTP(w http.ResponseWriter, 
 		return
 	}
 
+	var itemId int64
+	var eventType common.StatusEventCheckType
 	if requestData.TreatmentId != "" {
 		treatmentId, err := strconv.ParseInt(requestData.TreatmentId, 10, 64)
 		if err != nil {
@@ -72,15 +75,8 @@ func (d *DoctorPrescriptionErrorIgnoreHandler) ServeHTTP(w http.ResponseWriter, 
 			return
 		}
 
-		if err := d.DataApi.ReplaceItemInDoctorQueue(api.DoctorQueueItem{
-			DoctorId:  doctor.DoctorId.Int64(),
-			ItemId:    treatment.Id.Int64(),
-			EventType: api.EVENT_TYPE_TRANSMISSION_ERROR,
-			Status:    api.QUEUE_ITEM_STATUS_COMPLETED,
-		}, api.QUEUE_ITEM_STATUS_PENDING); err != nil {
-			WriteDeveloperError(w, http.StatusInternalServerError, "Unable to refresh the doctor queue: "+err.Error())
-			return
-		}
+		itemId = treatment.Id.Int64()
+		eventType = common.ERxType
 	} else if requestData.RefillRequestId != "" {
 		refillRequestId, err := strconv.ParseInt(requestData.RefillRequestId, 10, 64)
 		if err != nil {
@@ -108,15 +104,8 @@ func (d *DoctorPrescriptionErrorIgnoreHandler) ServeHTTP(w http.ResponseWriter, 
 			return
 		}
 
-		if err := d.DataApi.ReplaceItemInDoctorQueue(api.DoctorQueueItem{
-			DoctorId:  doctor.DoctorId.Int64(),
-			ItemId:    refillRequest.Id,
-			EventType: api.EVENT_TYPE_REFILL_TRANSMISSION_ERROR,
-			Status:    api.QUEUE_ITEM_STATUS_COMPLETED,
-		}, api.QUEUE_ITEM_STATUS_PENDING); err != nil {
-			WriteDeveloperError(w, http.StatusInternalServerError, "Unable to refresh the doctor queue: "+err.Error())
-			return
-		}
+		itemId = refillRequest.Id
+		eventType = common.RefillRxType
 	} else if requestData.UnlinkedDNTFTreatmentId != "" {
 		unlinkedDNTFTreatmentId, err := strconv.ParseInt(requestData.UnlinkedDNTFTreatmentId, 10, 64)
 		if err != nil {
@@ -142,20 +131,18 @@ func (d *DoctorPrescriptionErrorIgnoreHandler) ServeHTTP(w http.ResponseWriter, 
 			WriteDeveloperError(w, http.StatusInternalServerError, "Unable to ignore transmission error for unlinked dntf treatment: "+err.Error())
 			return
 		}
-
-		if err := d.DataApi.ReplaceItemInDoctorQueue(api.DoctorQueueItem{
-			DoctorId:  doctor.DoctorId.Int64(),
-			ItemId:    unlinkedDNTFTreatmentId,
-			EventType: api.EVENT_TYPE_UNLINKED_DNTF_TRANSMISSION_ERROR,
-			Status:    api.QUEUE_ITEM_STATUS_COMPLETED,
-		}, api.QUEUE_ITEM_STATUS_PENDING); err != nil {
-			WriteDeveloperError(w, http.StatusInternalServerError, "Unable to refresh the doctor queue: "+err.Error())
-			return
-		}
+		itemId = unlinkedDNTFTreatmentId
+		eventType = common.UnlinkedDNTFTreatmentType
 	} else {
 		WriteDeveloperError(w, http.StatusBadRequest, "Require either the treatment id or the refill request id or the unlinked dntf treatment id to ignore a particular error")
 		return
 	}
+
+	dispatch.Default.Publish(&RxTransmissionErrorResolvedEvent{
+		DoctorId:  doctor.DoctorId.Int64(),
+		ItemId:    itemId,
+		EventType: eventType,
+	})
 
 	WriteJSONToHTTPResponseWriter(w, http.StatusOK, SuccessfulGenericJSONResponse())
 }

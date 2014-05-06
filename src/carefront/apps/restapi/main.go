@@ -16,6 +16,7 @@ import (
 	"carefront/common"
 	"carefront/common/config"
 	"carefront/demo"
+	"carefront/doctor_queue"
 	"carefront/homelog"
 	"carefront/libs/address_validation"
 	"carefront/libs/aws"
@@ -252,6 +253,7 @@ func main() {
 
 	homelog.InitListeners(dataApi)
 	treatment_plan.InitListeners(dataApi)
+	doctor_queue.InitListeners(dataApi)
 
 	cloudStorageApi := api.NewCloudStorageService(awsAuth)
 	photoAnswerCloudStorageApi := api.NewCloudStorageService(awsAuth)

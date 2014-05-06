@@ -6,6 +6,7 @@ import (
 	"carefront/apiservice"
 	"carefront/common"
 	"carefront/common/config"
+	"carefront/doctor_queue"
 	"carefront/homelog"
 	"carefront/libs/aws"
 	"carefront/libs/dispatch"
@@ -256,6 +257,7 @@ func setupIntegrationTest(t *testing.T) TestData {
 	dispatch.Default = dispatch.New()
 	homelog.InitListeners(testData.DataApi)
 	treatment_plan.InitListeners(testData.DataApi)
+	doctor_queue.InitListeners(testData.DataApi)
 
 	return testData
 }

@@ -60,11 +60,6 @@ func InitListeners(dataAPI api.DataAPI) {
 			return err
 		}
 
-		planID, err := dataAPI.GetActiveTreatmentPlanForPatientVisit(ev.DoctorId, ev.VisitId)
-		if err != nil {
-			return err
-		}
-
 		// Add "treatment plan created" notification
 		if _, err := dataAPI.InsertPatientNotification(ev.PatientId, &common.Notification{
 			UID:             visitReviewed,
@@ -81,12 +76,12 @@ func InitListeners(dataAPI api.DataAPI) {
 
 		// Add "treatment plan created" to health log
 		if _, err := dataAPI.InsertOrUpdatePatientHealthLogItem(ev.PatientId, &common.HealthLogItem{
-			UID: fmt.Sprintf("treatment_plan_created:%d", planID),
+			UID: fmt.Sprintf("treatment_plan_created:%d", ev.TreatmentPlanId),
 			Data: &titledLogItem{
 				Title:    "Treatment Plan",
 				Subtitle: fmt.Sprintf("Created By. %s", doctor.LastName),
 				IconURL:  "spruce:///image/icon_log_treatment_plan",
-				TapURL:   fmt.Sprintf("spruce:///action/view_treatment_plan?treatment_plan_id=%d", planID),
+				TapURL:   fmt.Sprintf("spruce:///action/view_treatment_plan?treatment_plan_id=%d", ev.TreatmentPlanId),
 			},
 		}); err != nil {
 			golog.Errorf("Failed to insert visit treatment plan created into health log for patient %d: %s", ev.PatientId, err.Error())
