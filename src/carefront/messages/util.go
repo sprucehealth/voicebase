@@ -146,7 +146,7 @@ func messageList(msgs []*common.ConversationMessage, req *http.Request) []*messa
 			switch a.ItemType {
 			case common.AttachmentTypePhoto:
 				params := url.Values{
-					"photo_id":     []string{strconv.FormatInt(a.Id, 10)},
+					"photo_id":     []string{strconv.FormatInt(a.ItemId, 10)},
 					"claimer_type": []string{common.ClaimerTypeConversationMessage},
 					"claimer_id":   []string{strconv.FormatInt(m.Id, 10)},
 				}
