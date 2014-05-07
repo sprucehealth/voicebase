@@ -148,7 +148,7 @@ func (n *conversationReplyNotification) makeView(dataAPI api.DataAPI, patientId,
 		Title:           fmt.Sprintf("Dr. %s replied to your message about %s.", doctor.LastName, con.Title),
 		IconURL:         fmt.Sprintf("spruce:///image/thumbnail_care_team_%d", n.DoctorId),
 		TapURL:          tapURL,
-		Text:            con.Messages[0].Body,
+		Text:            con.Messages[len(con.Messages)-1].Body,
 		NotificationId:  notificationId,
 	}, nil
 }
