@@ -109,7 +109,7 @@
                   "question": "q_length_treatment"
                 }
               ]
-            }
+            } 
           ]
         },
          {
@@ -127,7 +127,7 @@
               "condition": {
                 "op": "answer_equals",
                 "potential_answers": [
-                  "a_acne_prev_otc_treatments_yes"
+                  "a_acne_prev_otc_treatments_yes" 
                 ],
                 "question": "q_acne_prev_otc_treatments"
               },
