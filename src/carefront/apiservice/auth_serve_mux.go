@@ -143,7 +143,6 @@ func (mux *AuthServeMux) ServeHTTP(w http.ResponseWriter, r *http.Request) {
 		} else {
 			responseTime := time.Since(ctx.RequestStartTime).Nanoseconds() / 1e3
 			mux.statLatency.Update(responseTime)
-			DeleteContext(r)
 
 			remoteAddr := r.RemoteAddr
 			if idx := strings.LastIndex(remoteAddr, ":"); idx > 0 {
@@ -160,6 +159,7 @@ func (mux *AuthServeMux) ServeHTTP(w http.ResponseWriter, r *http.Request) {
 				ResponseTime: float64(responseTime) / 1000.0,
 			})
 		}
+		DeleteContext(r)
 	}()
 	if r.RequestURI == "*" {
 		customResponseWriter.Header().Set("Connection", "close")
