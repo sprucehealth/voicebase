@@ -199,7 +199,7 @@ func treatmentGuideResponse(dataAPI api.DataAPI, w http.ResponseWriter, treatmen
 				&TPSmallDividerView{},
 				&TPTextView{
 					Text:  "Precautions",
-					Style: sectionHeaderStyle,
+					Style: subheaderStyle,
 				},
 			)
 
