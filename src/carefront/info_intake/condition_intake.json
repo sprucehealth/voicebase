@@ -1,4 +1,4 @@
-{
+ {
   "health_condition": "health_condition_acne",
   "sections": [
     {
@@ -232,18 +232,25 @@
     {
       "screens": [
         {
-          "condition": {
-            "gender": "female",
-            "op": "gender_equals"
-          },
-          "description": "planning pregnancy",
+          "description": "allergies",
+          "questions": [
+            {
+              "question": "q_allergic_medications"
+            }
+          ]
+        },
+        {
+          "description": "allergy entry",
           "questions": [
             {
               "condition": {
-                "gender": "female",
-                "op": "gender_equals"
+                "op": "answer_equals",
+                "potential_answers": [
+                  "a_yes_allergic_medications"
+                ],
+                "question": "q_allergic_medications"
               },
-              "question": "q_pregnancy_planning"
+              "question": "q_allergic_medication_entry" 
             }
           ]
         },
@@ -252,7 +259,12 @@
           "questions": [
             {
               "question": "q_current_medications"
-            },
+            }
+          ]
+        },
+        {
+          "description": "current medications entry",
+          "questions": [
             {
               "condition": {
                 "op": "answer_equals",
@@ -271,20 +283,10 @@
           ]
         },
         {
-          "description": "allergies",
+          "description": "prescription preference",
           "questions": [
             {
-              "question": "q_allergic_medications"
-            },
-            {
-              "condition": {
-                "op": "answer_equals",
-                "potential_answers": [
-                  "a_yes_allergic_medications"
-                ],
-                "question": "q_allergic_medications"
-              },
-              "question": "q_allergic_medication_entry"
+              "question": "q_prescription_preference"
             }
           ]
         },
@@ -293,7 +295,12 @@
           "questions": [
             {
               "question": "q_prev_skin_condition_diagnosis"
-            },
+            }
+          ]
+        },
+        {
+          "description": "previous condition diagnosis",
+          "questions": [
             {
               "condition": {
                 "op": "answer_equals",
@@ -323,21 +330,25 @@
               "question": "q_other_conditions_acne"
             }
           ]
+        },
+        {
+          "condition": {
+            "gender": "female",
+            "op": "gender_equals"
+          },
+          "description": "planning pregnancy",
+          "questions": [
+            {
+              "condition": {
+                "gender": "female",
+                "op": "gender_equals"
+              },
+              "question": "q_pregnancy_planning"
+            }
+          ]
         }
       ],
-      "section": "section_medical_history",
-      "transition": {
-        "buttons": [
-          {
-            "button_text": "Continue",
-            "style": "filled",
-            "tap_url": "spruce:///action/checkout"
-          }
-        ],
-        "image_url": "spruce:///image/tickmark",
-        "message": "Next we'll review your visit info and check out.",
-        "title": "Medical History is complete!"
-      }
+      "section": "section_medical_history"
     }
   ]
 }
