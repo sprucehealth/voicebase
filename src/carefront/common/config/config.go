@@ -386,11 +386,20 @@ func (conf *BaseConfig) SendAlertEmail(subject, body string) error {
 	if err != nil {
 		return err
 	}
-	// TODO: should use a MIME email formatter
-	if _, err := wr.Write([]byte(fmt.Sprintf("From: %s\nTo: %s\nSubject: %s\n\n%s", conf.AlertEmail, conf.AlertEmail, subject, body))); err != nil {
+	defer wr.Close()
+	header := http.Header{}
+	header.Set("From", conf.AlertEmail)
+	header.Set("To", conf.AlertEmail)
+	header.Set("Subject", subject)
+	if err := header.Write(wr); err != nil {
 		return err
 	}
-	cn.Quit()
+	if _, err := wr.Write([]byte("\r\n")); err != nil {
+		return err
+	}
+	if _, err := wr.Write([]byte(body)); err != nil {
+		return err
+	}
 	return nil
 }
 
