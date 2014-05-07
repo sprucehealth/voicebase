@@ -434,5 +434,4 @@ func panicEmailFilter(conf *BaseConfig, out golog.Output) golog.Output {
 		}
 		return out.Log(logType, l, msg)
 	})
-	return nil
 }
