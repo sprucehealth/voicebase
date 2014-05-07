@@ -3,6 +3,14 @@
   "sections": [
     {
       "screens": [
+       {
+          "description": "describe your skin",
+          "questions": [
+            {
+              "question": "q_skin_description"
+            }
+          ]
+        },
         {
           "description": "length of acne symptoms",
           "questions": [
@@ -11,31 +19,35 @@
             }
           ]
         },
+       {
+          "description": "description of acne",
+          "questions": [
+            {
+              "question": "q_acne_symptoms"
+            }
+          ]
+        },
         {
           "description": "is acne getting worse",
           "questions": [
             {
               "question": "q_acne_worse"
-            },
-            {
+            }
+          ]
+        },
+        {
+          "description" : "changes making acne worse",
+          "questions" : [
+          {
               "condition": {
-                "op": "answer_equals",
+                "op": "answer_equals", 
                 "potential_answers": [
                   "a_yes_acne_worse"
                 ],
                 "question": "q_acne_worse"
               },
               "question": "q_changes_acne_worse"
-            }
-          ]
-        },
-        {
-          "description": "describe symtpoms of acne",
-          "questions": [
-            {
-              "question": "q_acne_symptoms"
-            }
-          ]
+            }]
         },
         {
           "description": "does acne get worse with period",
@@ -46,8 +58,13 @@
                 "op": "gender_equals"
               },
               "question": "q_acne_worse_period"
-            },
-            {
+            }
+          ]
+        },
+        {
+          "description" : "are periods regular",
+          "questions": [
+          {
               "condition": {
                 "op": "answer_equals",
                 "potential_answers": [
@@ -56,22 +73,13 @@
                 "question": "q_acne_worse_period"
               },
               "question": "q_periods_regular"
-            }
-          ]
+            }]
         },
         {
-          "description": "describe your skin",
-          "questions": [
+          "description": "have you been prescribed medications to treate acne",
+          "questions": [ 
             {
-              "question": "q_skin_description"
-            }
-          ]
-        },
-        {
-          "description": "what previous treatments have you tried for acne",
-          "questions": [
-            {
-              "question": "q_acne_prev_treatment_types"
+              "question": "q_acne_prev_prescriptions"
             }
           ]
         },
@@ -80,12 +88,11 @@
           "questions": [
             {
               "condition": {
-                "op": "answer_contains_any",
+                "op": "answer_equals",
                 "potential_answers": [
-                  "a_prescription_prev_treatment_type",
-                  "a_otc_prev_treatment_type"
+                  "a_acne_prev_prescriptions_yes"
                 ],
-                "question": "q_acne_prev_treatment_types"
+                "question": "q_acne_prev_prescriptions"
               },
               "question": "q_acne_prev_treatment_list",
               "questions": [
@@ -100,6 +107,43 @@
                 },
                 {
                   "question": "q_length_treatment"
+                }
+              ]
+            }
+          ]
+        },
+         {
+          "description": "have you been prescribed medications to treate acne",
+          "questions": [
+            {
+              "question": "q_acne_prev_otc_treatments"
+            }
+          ]
+        },
+        {
+          "description": "get otcs from user",
+          "questions": [
+            {
+              "condition": {
+                "op": "answer_equals",
+                "potential_answers": [
+                  "a_acne_prev_otc_treatments_yes"
+                ],
+                "question": "q_acne_prev_otc_treatments"
+              },
+              "question": "q_acne_prev_otc_list",
+              "questions": [
+                {
+                  "question": "q_using_otc"
+                },
+                {
+                  "question": "q_effective_otc"
+                },
+                {
+                  "question": "q_otc_irritate_skin"
+                },
+                {
+                  "question": "q_length_otc"
                 }
               ]
             }
