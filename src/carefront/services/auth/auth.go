@@ -141,7 +141,7 @@ func (m *AuthService) ValidateToken(token string) (*api.TokenValidationResponse,
 	var accountId int64
 	var expires *time.Time
 	if err := m.DB.QueryRow("SELECT account_id, expires FROM auth_token WHERE token = ?", token).Scan(&accountId, &expires); err == sql.ErrNoRows {
-		return &api.TokenValidationResponse{IsValid: false}, nil
+		return &api.TokenValidationResponse{IsValid: false, Reason: "token not found"}, nil
 	} else if err != nil {
 		return nil, &api.InternalServerError{Message: err.Error()}
 	}
@@ -150,15 +150,17 @@ func (m *AuthService) ValidateToken(token string) (*api.TokenValidationResponse,
 
 	// if the token exists, check the expiration to ensure that it is valid
 	left := (*expires).Sub(now)
+	reason := ""
 	if left <= 0 {
 		golog.Infof("Current time %s is after expiration time %s", now.String(), expires.String())
+		reason = "token expired"
 	} else if m.RenewDuration > 0 && left < m.RenewDuration {
 		if _, err := m.DB.Exec("UPDATE auth_token SET expires = ? WHERE token = ?", now.Add(m.ExpireDuration), token); err != nil {
 			golog.Errorf("services/auth: failed to extend token expiration: %s", err.Error())
 			// Don't return an error response because this doesn't prevent anything else from working
 		}
 	}
-	return &api.TokenValidationResponse{IsValid: left > 0, AccountId: &accountId}, nil
+	return &api.TokenValidationResponse{IsValid: left > 0, AccountId: &accountId, Reason: reason}, nil
 }
 
 func (m *AuthService) SetPassword(accountId int64, password string) error {

@@ -16,6 +16,7 @@ type AuthResponse struct {
 type TokenValidationResponse struct {
 	IsValid   bool   `thrift:"1,required" json:"is_valid"`
 	AccountId *int64 `thrift:"2" json:"account_id,omitempty"`
+	Reason    string `thrift:"3" json:"reason,omitempty"`
 }
 
 type InvalidPassword struct {

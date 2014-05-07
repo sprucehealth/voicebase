@@ -10,6 +10,7 @@ struct AuthResponse {
 struct TokenValidationResponse {
 	1: required bool is_valid
 	2: optional i64 account_id
+	3: optional string reason
 }
 
 exception NoSuchLogin {
