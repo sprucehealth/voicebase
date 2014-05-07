@@ -41,7 +41,6 @@ func (m *AuthService) SignUp(email, password string) (*api.AuthResponse, error) 
 	// begin transaction to create an account
 	tx, err := m.DB.Begin()
 	if err != nil {
-		tx.Rollback()
 		golog.Errorf("services/auth: %s", err.Error())
 		return nil, &api.InternalServerError{Message: err.Error()}
 	}
@@ -77,8 +76,7 @@ func (m *AuthService) SignUp(email, password string) (*api.AuthResponse, error) 
 		return nil, &api.InternalServerError{Message: err.Error()}
 	}
 
-	tx.Commit()
-	return &api.AuthResponse{Token: tok, AccountId: lastId}, nil
+	return &api.AuthResponse{Token: tok, AccountId: lastId}, tx.Commit()
 }
 
 func (m *AuthService) LogIn(email, password string) (*api.AuthResponse, error) {
@@ -107,7 +105,6 @@ func (m *AuthService) LogIn(email, password string) (*api.AuthResponse, error) {
 	// delete any existing token and create a new one
 	tx, err := m.DB.Begin()
 	if err != nil {
-		tx.Rollback()
 		return nil, &api.InternalServerError{Message: err.Error()}
 	}
 	// delete the token that exists (if one exists)
@@ -124,9 +121,8 @@ func (m *AuthService) LogIn(email, password string) (*api.AuthResponse, error) {
 		tx.Rollback()
 		return nil, &api.InternalServerError{Message: err.Error()}
 	}
-	tx.Commit()
 
-	return &api.AuthResponse{Token: token, AccountId: accountId}, nil
+	return &api.AuthResponse{Token: token, AccountId: accountId}, tx.Commit()
 }
 
 func (m *AuthService) LogOut(token string) error {
