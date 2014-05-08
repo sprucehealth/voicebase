@@ -204,8 +204,8 @@ func TestSingleEntryIntake(t *testing.T) {
 	patientSignedUpResponse := SignupRandomTestPatient(t, testData.DataApi, testData.AuthApi)
 	patientVisitResponse := CreatePatientVisitForPatient(patientSignedUpResponse.Patient.PatientId.Int64(), testData, t)
 
-	questionId := getQuestionWithTagAndExpectedType("q_other_acne_location_entry", "q_type_single_entry", t, testData)
-	potentialAnswerId := getAnswerWithTagAndExpectedType("a_other_acne_location_entry", "a_type_single_entry", questionId, testData, t)
+	questionId := getQuestionWithTagAndExpectedType("q_other_skin_condition_entry", "q_type_single_entry", t, testData)
+	potentialAnswerId := getAnswerWithTagAndExpectedType("a_other_skin_condition_entry", "a_type_single_entry", questionId, testData, t)
 	answerIntakeRequestBody := apiservice.AnswerIntakeRequestBody{}
 	answerIntakeRequestBody.PatientVisitId = patientVisitResponse.PatientVisitId
 
