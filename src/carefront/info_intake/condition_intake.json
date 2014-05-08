@@ -1,9 +1,9 @@
- {
+{
   "health_condition": "health_condition_acne",
   "sections": [
     {
       "screens": [
-       {
+        {
           "description": "describe your skin",
           "questions": [
             {
@@ -19,11 +19,11 @@
             }
           ]
         },
-       {
+        {
           "description": "description of acne",
           "questions": [
-            {
-              "question": "q_acne_symptoms"
+            { 
+              "question": "q_acne_symptoms" 
             }
           ]
         },
@@ -34,20 +34,21 @@
               "question": "q_acne_worse"
             }
           ]
-        },
+        }, 
         {
-          "description" : "changes making acne worse",
-          "questions" : [
-          {
+          "description": "changes making acne worse",
+          "questions": [
+            {
               "condition": {
-                "op": "answer_equals", 
+                "op": "answer_equals",
                 "potential_answers": [
                   "a_yes_acne_worse"
                 ],
                 "question": "q_acne_worse"
               },
               "question": "q_changes_acne_worse"
-            }]
+            }
+          ]
         },
         {
           "description": "does acne get worse with period",
@@ -62,9 +63,9 @@
           ]
         },
         {
-          "description" : "are periods regular",
+          "description": "are periods regular",
           "questions": [
-          {
+            {
               "condition": {
                 "op": "answer_equals",
                 "potential_answers": [
@@ -73,11 +74,12 @@
                 "question": "q_acne_worse_period"
               },
               "question": "q_periods_regular"
-            }]
+            }
+          ]
         },
         {
           "description": "have you been prescribed medications to treate acne",
-          "questions": [ 
+          "questions": [
             {
               "question": "q_acne_prev_prescriptions"
             }
@@ -109,10 +111,10 @@
                   "question": "q_length_treatment"
                 }
               ]
-            } 
+            }
           ]
         },
-         {
+        {
           "description": "have you been prescribed medications to treate acne",
           "questions": [
             {
@@ -127,7 +129,7 @@
               "condition": {
                 "op": "answer_equals",
                 "potential_answers": [
-                  "a_acne_prev_otc_treatments_yes" 
+                  "a_acne_prev_otc_treatments_yes"
                 ],
                 "question": "q_acne_prev_otc_treatments"
               },
@@ -179,16 +181,6 @@
           "questions": [
             {
               "question": "q_acne_location"
-            },
-            {
-              "condition": {
-                "op": "answer_equals",
-                "potential_answers": [
-                  "a_other_acne_location"
-                ],
-                "question": "q_acne_location"
-              },
-              "question": "q_other_acne_location_entry"
             }
           ]
         },
@@ -244,16 +236,6 @@
                 "question": "q_acne_location"
               },
               "question": "q_back_photo_intake"
-            },
-            {
-              "condition": {
-                "op": "answer_equals",
-                "potential_answers": [
-                  "a_other_acne_location"
-                ],
-                "question": "q_acne_location"
-              },
-              "question": "q_other_photo_intake"
             }
           ],
           "screen_type": "screen_type_photo"
@@ -294,7 +276,7 @@
                 ],
                 "question": "q_allergic_medications"
               },
-              "question": "q_allergic_medication_entry" 
+              "question": "q_allergic_medication_entry"
             }
           ]
         },
