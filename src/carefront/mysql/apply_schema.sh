@@ -3,7 +3,7 @@
 # This script makes it easy to apply changes to the development and production database once 
 # the schema has been validated. 
 
-RDS_INSTANCE="dev-db-2b.ckwporuc939i.us-east-1.rds.amazonaws.com"
+RDS_INSTANCE="127.0.0.1"
 RDS_USERNAME="carefront"
 DATABASE_NAME="carefront_db"
 

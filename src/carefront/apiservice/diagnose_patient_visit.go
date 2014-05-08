@@ -32,8 +32,7 @@ If you have questions or concerns, feel free to call me at (415) 202-6700.
 
 Dr. %s`
 
-	diagnosedSummaryTemplateNonProd = `--- For Demo Purposes Only ---
-Hi %s,
+	diagnosedSummaryTemplateNonProd = `Hi %s,
 
 Based on the photographs you have provided, it looks like you have %s.
 

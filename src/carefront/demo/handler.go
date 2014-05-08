@@ -60,6 +60,7 @@ const (
 	qCurrentMedicationsEntry
 	qLengthCurrentMedication
 	qAllergicMedications
+	qAllergicMedicationEntry
 	qPrevSkinConditionDiagnosis
 	qListPrevSkinConditionDiagnosis
 	qOtherConditionsAcne
@@ -89,6 +90,7 @@ var (
 		"q_current_medications_entry":          qCurrentMedicationsEntry,
 		"q_length_current_medication":          qLengthCurrentMedication,
 		"q_allergic_medications":               qAllergicMedications,
+		"q_allergic_medication_entry":          qAllergicMedicationEntry,
 		"q_prev_skin_condition_diagnosis":      qPrevSkinConditionDiagnosis,
 		"q_list_prev_skin_condition_diagnosis": qListPrevSkinConditionDiagnosis,
 		"q_other_conditions_acne":              qOtherConditionsAcne,
@@ -120,7 +122,7 @@ const (
 	aCurrentlyPregnant
 	aCurrentMedicationsYes
 	aTwoToFiveMonthsLength
-	aAllergicMedicationsNo
+	aAllergicMedicationsYes
 	aPrevSkinConditionDiagnosisYes
 	aListPrevSkinConditionDiagnosisAcne
 	aListPrevSkinConditionDiagnosisPsoriasis
@@ -153,7 +155,7 @@ var (
 		"a_pregnant":                                  aCurrentlyPregnant,
 		"a_current_medications_yes":                   aCurrentMedicationsYes,
 		"a_length_current_medication_two_five_months": aTwoToFiveMonthsLength,
-		"a_na_allergic_medications":                   aAllergicMedicationsNo,
+		"a_yes_allergic_medications":                  aAllergicMedicationsYes,
 		"a_yes_prev_skin_diagnosis":                   aPrevSkinConditionDiagnosisYes,
 		"a_acne_skin_diagnosis":                       aListPrevSkinConditionDiagnosisAcne,
 		"a_psoriasis_skin_diagnosis":                  aListPrevSkinConditionDiagnosisPsoriasis,
@@ -205,7 +207,7 @@ func populatePatientIntake(questionIds map[questionTag]int64, answerIds map[pote
 			QuestionId: questionIds[qAcneChangesWorse],
 			AnswerIntakes: []*apiservice.AnswerItem{
 				&apiservice.AnswerItem{
-					AnswerText: "This is a demo.",
+					AnswerText: "I've starting working out again so wonder if sweat could be a contributing factor?",
 				},
 			},
 		},
@@ -296,7 +298,7 @@ func populatePatientIntake(questionIds map[questionTag]int64, answerIds map[pote
 			QuestionId: questionIds[qAnythingElseAcne],
 			AnswerIntakes: []*apiservice.AnswerItem{
 				&apiservice.AnswerItem{
-					AnswerText: "This is a demo. This is where patient will enter anything they'd like to share with us",
+					AnswerText: "I've noticed that my acne flares up when I wait longer between changing razor blades. Also, my acne typically concentrates around my lips.",
 				},
 			},
 		},
@@ -311,14 +313,6 @@ func populatePatientIntake(questionIds map[questionTag]int64, answerIds map[pote
 				},
 				&apiservice.AnswerItem{
 					PotentialAnswerId: answerIds[aAcneLocationNeck],
-				},
-			},
-		},
-		&apiservice.AnswerToQuestionItem{
-			QuestionId: questionIds[qPregnancyPlanning],
-			AnswerIntakes: []*apiservice.AnswerItem{
-				&apiservice.AnswerItem{
-					PotentialAnswerId: answerIds[aCurrentlyPregnant],
 				},
 			},
 		},
@@ -365,7 +359,15 @@ func populatePatientIntake(questionIds map[questionTag]int64, answerIds map[pote
 			QuestionId: questionIds[qAllergicMedications],
 			AnswerIntakes: []*apiservice.AnswerItem{
 				&apiservice.AnswerItem{
-					PotentialAnswerId: answerIds[aAllergicMedicationsNo],
+					PotentialAnswerId: answerIds[aAllergicMedicationsYes],
+				},
+			},
+		},
+		&apiservice.AnswerToQuestionItem{
+			QuestionId: questionIds[qAllergicMedicationEntry],
+			AnswerIntakes: []*apiservice.AnswerItem{
+				&apiservice.AnswerItem{
+					AnswerText: "Penicillin",
 				},
 			},
 		},
@@ -847,9 +849,9 @@ func (c *Handler) ServeHTTP(w http.ResponseWriter, r *http.Request) {
 
 	} else {
 		demoPatientToCreate := common.Patient{
-			FirstName: "Demo",
-			LastName:  "User",
-			Gender:    "female",
+			FirstName: "Kunal",
+			LastName:  "Jham",
+			Gender:    "male",
 			Dob: encoding.Dob{
 				Year:  1987,
 				Month: 11,
