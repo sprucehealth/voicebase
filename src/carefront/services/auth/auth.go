@@ -135,7 +135,7 @@ func (m *AuthService) LogOut(token string) error {
 
 func (m *AuthService) ValidateToken(token string) (*api.TokenValidationResponse, error) {
 	var accountId int64
-	var expires *time.Time
+	var expires time.Time
 	if err := m.DB.QueryRow("SELECT account_id, expires FROM auth_token WHERE token = ?", token).Scan(&accountId, &expires); err == sql.ErrNoRows {
 		return &api.TokenValidationResponse{IsValid: false, Reason: "token not found"}, nil
 	} else if err != nil {
@@ -145,7 +145,7 @@ func (m *AuthService) ValidateToken(token string) (*api.TokenValidationResponse,
 	now := time.Now().UTC()
 
 	// if the token exists, check the expiration to ensure that it is valid
-	left := (*expires).Sub(now)
+	left := expires.Sub(now)
 	reason := ""
 	if left <= 0 {
 		golog.Infof("Current time %s is after expiration time %s", now.String(), expires.String())
