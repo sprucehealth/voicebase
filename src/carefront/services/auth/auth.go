@@ -41,7 +41,6 @@ func (m *AuthService) SignUp(email, password string) (*api.AuthResponse, error) 
 	// begin transaction to create an account
 	tx, err := m.DB.Begin()
 	if err != nil {
-		tx.Rollback()
 		golog.Errorf("services/auth: %s", err.Error())
 		return nil, &api.InternalServerError{Message: err.Error()}
 	}
@@ -77,8 +76,7 @@ func (m *AuthService) SignUp(email, password string) (*api.AuthResponse, error) 
 		return nil, &api.InternalServerError{Message: err.Error()}
 	}
 
-	tx.Commit()
-	return &api.AuthResponse{Token: tok, AccountId: lastId}, nil
+	return &api.AuthResponse{Token: tok, AccountId: lastId}, tx.Commit()
 }
 
 func (m *AuthService) LogIn(email, password string) (*api.AuthResponse, error) {
@@ -107,7 +105,6 @@ func (m *AuthService) LogIn(email, password string) (*api.AuthResponse, error) {
 	// delete any existing token and create a new one
 	tx, err := m.DB.Begin()
 	if err != nil {
-		tx.Rollback()
 		return nil, &api.InternalServerError{Message: err.Error()}
 	}
 	// delete the token that exists (if one exists)
@@ -124,9 +121,8 @@ func (m *AuthService) LogIn(email, password string) (*api.AuthResponse, error) {
 		tx.Rollback()
 		return nil, &api.InternalServerError{Message: err.Error()}
 	}
-	tx.Commit()
 
-	return &api.AuthResponse{Token: token, AccountId: accountId}, nil
+	return &api.AuthResponse{Token: token, AccountId: accountId}, tx.Commit()
 }
 
 func (m *AuthService) LogOut(token string) error {
@@ -139,9 +135,9 @@ func (m *AuthService) LogOut(token string) error {
 
 func (m *AuthService) ValidateToken(token string) (*api.TokenValidationResponse, error) {
 	var accountId int64
-	var expires *time.Time
+	var expires time.Time
 	if err := m.DB.QueryRow("SELECT account_id, expires FROM auth_token WHERE token = ?", token).Scan(&accountId, &expires); err == sql.ErrNoRows {
-		return &api.TokenValidationResponse{IsValid: false}, nil
+		return &api.TokenValidationResponse{IsValid: false, Reason: "token not found"}, nil
 	} else if err != nil {
 		return nil, &api.InternalServerError{Message: err.Error()}
 	}
@@ -149,16 +145,18 @@ func (m *AuthService) ValidateToken(token string) (*api.TokenValidationResponse,
 	now := time.Now().UTC()
 
 	// if the token exists, check the expiration to ensure that it is valid
-	left := (*expires).Sub(now)
+	left := expires.Sub(now)
+	reason := ""
 	if left <= 0 {
 		golog.Infof("Current time %s is after expiration time %s", now.String(), expires.String())
+		reason = "token expired"
 	} else if m.RenewDuration > 0 && left < m.RenewDuration {
 		if _, err := m.DB.Exec("UPDATE auth_token SET expires = ? WHERE token = ?", now.Add(m.ExpireDuration), token); err != nil {
 			golog.Errorf("services/auth: failed to extend token expiration: %s", err.Error())
 			// Don't return an error response because this doesn't prevent anything else from working
 		}
 	}
-	return &api.TokenValidationResponse{IsValid: left > 0, AccountId: &accountId}, nil
+	return &api.TokenValidationResponse{IsValid: left > 0, AccountId: &accountId, Reason: reason}, nil
 }
 
 func (m *AuthService) SetPassword(accountId int64, password string) error {

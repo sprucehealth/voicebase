@@ -33,6 +33,7 @@ type AuthEvent string
 
 type AuthLog struct {
 	Event AuthEvent
+	Msg   string
 }
 
 type CustomResponseWriter struct {
@@ -81,28 +82,28 @@ func NewAuthServeMux(authApi api.Auth, statsRegistry metrics.Registry) *AuthServ
 }
 
 // Parse the "Authorization: token xxx" header and check the token for validity
-func (mux *AuthServeMux) checkAuth(r *http.Request) (bool, int64, error) {
+func (mux *AuthServeMux) checkAuth(r *http.Request) (bool, int64, string, error) {
 	if Testing {
 		if idStr := r.Header.Get("AccountId"); idStr != "" {
 			id, err := strconv.ParseInt(idStr, 10, 64)
-			return true, id, err
+			return true, id, "", err
 		}
 	}
 
 	token, err := GetAuthTokenFromHeader(r)
 	if err == ErrBadAuthToken {
-		return false, 0, nil
+		return false, 0, "failed to parse Authorization header", nil
 	} else if err != nil {
-		return false, 0, err
+		return false, 0, "", err
 	}
 	if res, err := mux.AuthApi.ValidateToken(token); err != nil {
-		return false, 0, err
+		return false, 0, "", err
 	} else {
 		var accountId int64
 		if res.AccountId != nil {
 			accountId = *res.AccountId
 		}
-		return res.IsValid, accountId, nil
+		return res.IsValid, accountId, res.Reason, nil
 	}
 }
 
@@ -170,12 +171,13 @@ func (mux *AuthServeMux) ServeHTTP(w http.ResponseWriter, r *http.Request) {
 	}
 
 	if nonAuth, ok := h.(NonAuthenticated); !ok || !nonAuth.NonAuthenticated() {
-		if valid, accountId, err := mux.checkAuth(r); err != nil {
+		if valid, accountId, reason, err := mux.checkAuth(r); err != nil {
 			customResponseWriter.WriteHeader(http.StatusInternalServerError)
 			return
 		} else if !valid {
 			golog.Log("auth", golog.WARN, &AuthLog{
 				Event: AuthEventInvalidToken,
+				Msg:   reason,
 			})
 			mux.statAuthFailure.Inc(1)
 			WriteAuthTimeoutError(customResponseWriter)
