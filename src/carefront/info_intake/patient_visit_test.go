@@ -80,8 +80,12 @@ func TestPotentialAnswersParsing(t *testing.T) {
 	for _, section := range visit.Sections {
 		for _, screen := range section.Screens {
 			for _, question := range screen.Questions {
-				if (question.PotentialAnswers == nil || len(question.PotentialAnswers) == 0) && !(question.QuestionTypes[0] == "q_type_free_text" || question.QuestionTypes[0] == "q_type_autocomplete") {
-					t.Fatalf("No potential answers for question with id %d when there always should be one", question.QuestionId)
+				switch question.QuestionTypes[0] {
+				case "q_type_free_text", "q_type_autocomplete":
+				default:
+					if question.PotentialAnswers == nil || len(question.PotentialAnswers) == 0 {
+						t.Fatalf("No potential answers for question with id %d when there always should be one", question.QuestionId)
+					}
 				}
 				for _, potentialAnswer := range question.PotentialAnswers {
 					if potentialAnswer.AnswerId == 0 {
@@ -92,10 +96,13 @@ func TestPotentialAnswersParsing(t *testing.T) {
 						t.Fatalf("There should be an answer type for answer id %d when there isn't", potentialAnswer.AnswerId)
 					}
 
-					if potentialAnswer.Answer == "" {
-						t.Fatalf("There should be an answer when there isn't for answer id %d", potentialAnswer.AnswerId)
+					switch question.QuestionTypes[0] {
+					case "q_type_free_text", "q_type_single_entry":
+					default:
+						if potentialAnswer.Answer == "" {
+							t.Fatalf("There should be an answer when there isn't for answer id %d", potentialAnswer.AnswerId)
+						}
 					}
-
 				}
 			}
 		}
