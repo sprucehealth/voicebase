@@ -321,11 +321,11 @@
           "questions": [
             {
               "question": "q_prev_skin_condition_diagnosis"
-            }
+            } 
           ]
         },
         {
-          "description": "previous condition diagnosis",
+          "description": "previous condition diagnosis", 
           "questions": [
             {
               "condition": {

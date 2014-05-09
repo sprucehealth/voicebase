@@ -1,0 +1,1 @@
+update potential_answer set to_alert=1 where potential_answer_tag='a_yes_pregnancy_planning';

@@ -33,6 +33,10 @@ func init() {
 	patientQAPopulators[info_intake.QUESTION_TYPE_SINGLE_SELECT] = QAViewContextPopulator(PopulateSingleEntryAnswers)
 }
 
+const (
+	textReplacementIdentifier = "XXX"
+)
+
 type QAViewContextPopulator func([]*common.AnswerIntake, *info_intake.Question, *common.ViewContext, api.DataAPI, api.CloudStorageAPI) error
 type GenericViewContextPopulator func(map[int64][]*common.AnswerIntake, []*info_intake.Question, *common.ViewContext, api.DataAPI) error
 
@@ -76,7 +80,7 @@ func PopulateAlerts(patientAnswersToQuestions map[int64][]*common.AnswerIntake, 
 					enteredAnswers[i] = answerText
 				}
 				if len(enteredAnswers) > 0 {
-					alerts = append(alerts, fmt.Sprintf(question.AlertFormattedText, strings.Join(enteredAnswers, ", ")))
+					alerts = append(alerts, strings.Replace(question.AlertFormattedText, textReplacementIdentifier, strings.Join(enteredAnswers, ", "), -1))
 				}
 
 			case info_intake.QUESTION_TYPE_MULTIPLE_CHOICE, info_intake.QUESTION_TYPE_SINGLE_SELECT:
@@ -86,14 +90,18 @@ func PopulateAlerts(patientAnswersToQuestions map[int64][]*common.AnswerIntake, 
 						// populate all the selected answers to show in the alert
 						if patientAnswer.PotentialAnswerId.Int64() == potentialAnswer.AnswerId {
 							if potentialAnswer.ToAlert {
-								selectedAnswers = append(selectedAnswers, potentialAnswer.Answer)
+								if potentialAnswer.AnswerSummary != "" {
+									selectedAnswers = append(selectedAnswers, potentialAnswer.AnswerSummary)
+								} else {
+									selectedAnswers = append(selectedAnswers, potentialAnswer.Answer)
+								}
 								break
 							}
 						}
 					}
 				}
 				if len(selectedAnswers) > 0 {
-					alerts = append(alerts, fmt.Sprintf(question.AlertFormattedText, strings.Join(selectedAnswers, ", ")))
+					alerts = append(alerts, strings.Replace(question.AlertFormattedText, textReplacementIdentifier, strings.Join(selectedAnswers, ", "), -1))
 				}
 			}
 		}

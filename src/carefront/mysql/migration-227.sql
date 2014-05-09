@@ -1,0 +1,2 @@
+update localized_text set ltext = 'Currently XXX' where app_text_id = (select alert_app_text_id from question where question_tag='q_pregnancy_planning');
+update localized_text set ltext = 'Allergic to XXX' where app_text_id = (select alert_app_text_id from question where question_tag='q_allergic_medication_entry');
