@@ -208,7 +208,7 @@ func InitListeners(dataAPI api.DataAPI) {
 				Data: &titledLogItem{
 					Title:    fmt.Sprintf("Conversation with Dr. %s", doctorPerson.Doctor.LastName),
 					Subtitle: fmt.Sprintf("%d messages", con.MessageCount),
-					IconURL:  app_url.Asset(app_url.IconLogMessage),
+					IconURL:  app_url.Asset(app_url.IconMessage),
 					TapURL:   app_url.Action(app_url.ViewMessagesAction, params),
 				},
 			}); err != nil {

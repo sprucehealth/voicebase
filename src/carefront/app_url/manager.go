@@ -60,7 +60,6 @@ func init() {
 	registerSpruceAsset(IconHomeVisitNormal)
 	registerSpruceAsset(IconHomeTreatmentPlanNormal)
 	registerSpruceAsset(IconHomeConversationNormal)
-	registerSpruceAsset(IconLogMessage)
 	registerSpruceAsset(TmpSignature)
 	registerSpruceAsset(IconRX)
 	registerSpruceAsset(IconOTC)
