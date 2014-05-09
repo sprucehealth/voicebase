@@ -166,7 +166,7 @@ func (d *DataService) GetTreatmentsInFavoriteTreatmentPlan(favoriteTreatmentPlan
 		treatment.DrugRoute = drugRoute.String
 		treatment.OTC = medicationType == treatmentOTC
 
-		err = d.fillInDrugDBIdsForTreatment(&treatment, possibleTreatmentTables[doctorFavoriteTreatmentType])
+		err = d.fillInDrugDBIdsForTreatment(&treatment, treatment.Id.Int64(), possibleTreatmentTables[doctorFavoriteTreatmentType])
 		if err != nil {
 			return nil, err
 		}

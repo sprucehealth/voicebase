@@ -922,7 +922,7 @@ func (d *DataService) GetTreatmentTemplates(doctorId int64) ([]*common.DoctorTre
 			drTreatmenTemplate.Treatment.OTC = true
 		}
 
-		err = d.fillInDrugDBIdsForTreatment(drTreatmenTemplate.Treatment, "dr_treatment_template")
+		err = d.fillInDrugDBIdsForTreatment(drTreatmenTemplate.Treatment, drTreatmenTemplate.Id.Int64(), "dr_treatment_template")
 		if err != nil {
 			return nil, err
 		}
@@ -1011,7 +1011,7 @@ func (d *DataService) GetCompletedPrescriptionsForDoctor(from, to time.Time, doc
 			},
 		}
 
-		err = d.fillInDrugDBIdsForTreatment(treatment, possibleTreatmentTables[treatmentForPatientType])
+		err = d.fillInDrugDBIdsForTreatment(treatment, treatment.Id.Int64(), possibleTreatmentTables[treatmentForPatientType])
 		if err != nil {
 			return nil, err
 		}

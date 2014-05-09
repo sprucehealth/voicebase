@@ -343,6 +343,11 @@ func TestTreatmentTemplates(t *testing.T) {
 			treatmentTemplatesResponse.TreatmentTemplates[0].Treatment.DrugRoute, treatmentTemplatesResponse.TreatmentTemplates[0].Treatment.DrugForm)
 	}
 
+	// also ensure that drug db ids is not null or empty
+	if len(treatmentTemplatesResponse.TreatmentTemplates[0].Treatment.DrugDBIds) != 2 {
+		t.Fatalf("Expected 2 drug db ids to exist instead got %d", len(treatmentTemplatesResponse.TreatmentTemplates[0].Treatment.DrugDBIds))
+	}
+
 	treatment2 := &common.Treatment{
 		DrugInternalName: "DrugName2",
 		DosageStrength:   "10 mg",
@@ -392,17 +397,11 @@ func TestTreatmentTemplates(t *testing.T) {
 	err = json.Unmarshal(body, treatmentTemplatesResponse)
 	if err != nil {
 		t.Fatal("Unable to unmarshal response into object : " + err.Error())
-	}
-
-	if treatmentTemplatesResponse.TreatmentTemplates == nil || len(treatmentTemplatesResponse.TreatmentTemplates) != 2 {
+	} else if treatmentTemplatesResponse.TreatmentTemplates == nil || len(treatmentTemplatesResponse.TreatmentTemplates) != 2 {
 		t.Fatal("Expected 2 favorited treatments in response")
-	}
-
-	if treatmentTemplatesResponse.TreatmentTemplates[0].Name != treatmentTemplate.Name {
+	} else if treatmentTemplatesResponse.TreatmentTemplates[0].Name != treatmentTemplate.Name {
 		t.Fatal("Expected the same favorited treatment to be returned that was added")
-	}
-
-	if treatmentTemplatesResponse.TreatmentTemplates[1].Name != treatmentTemplate2.Name {
+	} else if treatmentTemplatesResponse.TreatmentTemplates[1].Name != treatmentTemplate2.Name {
 		t.Fatal("Expected the same favorited treatment to be returned that was added")
 	}
 

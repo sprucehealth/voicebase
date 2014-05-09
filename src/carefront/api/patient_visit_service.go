@@ -988,7 +988,7 @@ func (d *DataService) getTreatmentAndMetadataFromCurrentRow(rows *sql.Rows) (*co
 		treatment.ERx.ErxSentDate = &erxSentDate.Time
 	}
 
-	err = d.fillInDrugDBIdsForTreatment(treatment, possibleTreatmentTables[treatmentForPatientType])
+	err = d.fillInDrugDBIdsForTreatment(treatment, treatment.Id.Int64(), possibleTreatmentTables[treatmentForPatientType])
 	if err != nil {
 		return nil, err
 	}
@@ -1024,10 +1024,10 @@ func (d *DataService) getTreatmentAndMetadataFromCurrentRow(rows *sql.Rows) (*co
 	return treatment, nil
 }
 
-func (d *DataService) fillInDrugDBIdsForTreatment(treatment *common.Treatment, tableName string) error {
+func (d *DataService) fillInDrugDBIdsForTreatment(treatment *common.Treatment, id int64, tableName string) error {
 	// for each of the drugs, populate the drug db ids
 	drugDbIds := make(map[string]string)
-	drugRows, err := d.DB.Query(fmt.Sprintf(`select drug_db_id_tag, drug_db_id from %s_drug_db_id where %s_id = ? `, tableName, tableName), treatment.Id.Int64())
+	drugRows, err := d.DB.Query(fmt.Sprintf(`select drug_db_id_tag, drug_db_id from %s_drug_db_id where %s_id = ? `, tableName, tableName), id)
 	if err != nil {
 		return err
 	}
