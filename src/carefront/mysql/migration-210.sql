@@ -65,6 +65,12 @@ delete t.* from treatment t
 
 alter table treatment drop foreign key treatment_ibfk_4;
 alter table treatment modify column treatment_plan_id int unsigned not null;
+
+delete d.* from treatment_dr_template_selection d 
+	inner join treatment on treatment_id = treatment.id 
+	where treatment.treatment_plan_id = 0;
+delete from treatment where treatment_plan_id=0;
+
 alter table treatment add foreign key (treatment_plan_id) references treatment_plan(id);
 
 alter table dr_treatment_template drop column treatment_id;
