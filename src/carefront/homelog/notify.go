@@ -83,7 +83,7 @@ func (n *incompleteVisitNotification) makeView(dataAPI api.DataAPI, patientId, n
 		Title:          fmt.Sprintf("Complete your visit with Dr. %s.", doctor.LastName),
 		IconURL:        doctor.SmallThumbnailUrl,
 		ButtonText:     "Continue Your Visit",
-		TapURL:         app_url.GetSpruceActionUrl(app_url.ContinueVisitAction, params),
+		TapURL:         app_url.GetAction(app_url.ContinueVisitAction, params),
 		PatientVisitId: n.VisitId,
 		NotificationId: notificationId,
 	}, nil
@@ -100,7 +100,7 @@ func (n *visitReviewedNotification) makeView(dataAPI api.DataAPI, patientId, not
 	}
 	params := url.Values{}
 	params.Set("treatment_plan_id", strconv.FormatInt(planID, 10))
-	tapURL := app_url.GetSpruceActionUrl(app_url.ViewTreatmentPlanAction, params)
+	tapURL := app_url.GetAction(app_url.ViewTreatmentPlanAction, params)
 	return &bodyButtonView{
 		Dismissible:       true,
 		DismissOnAction:   true,
@@ -108,7 +108,7 @@ func (n *visitReviewedNotification) makeView(dataAPI api.DataAPI, patientId, not
 		Title:             fmt.Sprintf("Dr. %s created your treatment plan.", doctor.LastName),
 		IconURL:           doctor.SmallThumbnailUrl,
 		TapURL:            tapURL,
-		BodyButtonIconURL: app_url.GetSpruceAssetUrl(app_url.IconBlueTreatmentPlan),
+		BodyButtonIconURL: app_url.GetAsset(app_url.IconBlueTreatmentPlan),
 		BodyButtonText:    "Treatment Plan",
 		BodyButtonTapURL:  tapURL,
 		NotificationId:    notificationId,
@@ -126,7 +126,7 @@ func (n *newConversationNotification) makeView(dataAPI api.DataAPI, patientId, n
 	}
 	params := url.Values{}
 	params.Set("conversation_id", strconv.FormatInt(n.ConversationId, 10))
-	tapURL := app_url.GetSpruceActionUrl(app_url.ViewMessagesAction, params)
+	tapURL := app_url.GetAction(app_url.ViewMessagesAction, params)
 	return &messageView{
 		Dismissible:     true,
 		DismissOnAction: true,
@@ -134,7 +134,7 @@ func (n *newConversationNotification) makeView(dataAPI api.DataAPI, patientId, n
 		Title:           fmt.Sprintf("Dr. %s sent you a message.", doctor.LastName),
 		IconURL:         doctor.SmallThumbnailUrl,
 		TapURL:          tapURL,
-		ButtonIconURL:   app_url.GetSpruceAssetUrl(app_url.IconReply),
+		ButtonIconURL:   app_url.GetAsset(app_url.IconReply),
 		ButtonText:      "Reply",
 		Text:            con.Messages[0].Body,
 		NotificationId:  notificationId,
@@ -152,7 +152,7 @@ func (n *conversationReplyNotification) makeView(dataAPI api.DataAPI, patientId,
 	}
 	params := url.Values{}
 	params.Set("conversation_id", strconv.FormatInt(n.ConversationId, 10))
-	tapURL := app_url.GetSpruceActionUrl(app_url.ViewMessagesAction, params)
+	tapURL := app_url.GetAction(app_url.ViewMessagesAction, params)
 	return &messageView{
 		Dismissible:     true,
 		DismissOnAction: true,

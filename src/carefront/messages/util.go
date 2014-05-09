@@ -3,6 +3,7 @@ package messages
 import (
 	"carefront/api"
 	"carefront/apiservice"
+	"carefront/app_url"
 	"carefront/common"
 	"carefront/libs/dispatch"
 	"carefront/libs/golog"
@@ -39,11 +40,11 @@ type ConversationListItem struct {
 }
 
 type Participant struct {
-	Id           int64  `json:"participant_id,string"`
-	Name         string `json:"name"`
-	Subtitle     string `json:"subtitle,omitempty"`
-	ThumbnailURL string `json:"thumbnail_url,omitempty"`
-	Initials     string `json:"initials"`
+	Id           int64                `json:"participant_id,string"`
+	Name         string               `json:"name"`
+	Subtitle     string               `json:"subtitle,omitempty"`
+	ThumbnailURL *app_url.SpruceAsset `json:"thumbnail_url,omitempty"`
+	Initials     string               `json:"initials"`
 }
 
 type ConversationListResponse struct {
@@ -122,7 +123,7 @@ func peopleToParticipants(people map[int64]*common.Person) []*Participant {
 			if len(per.Doctor.LastName) > 0 {
 				p.Initials += per.Doctor.LastName[:1]
 			}
-			p.ThumbnailURL = per.Doctor.GetSmallThumbnailUrl
+			p.ThumbnailURL = per.Doctor.SmallThumbnailUrl
 			p.Subtitle = "Dermatologist"
 		}
 		parts = append(parts, p)

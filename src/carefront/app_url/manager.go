@@ -76,7 +76,7 @@ func registerSpruceAsset(name string) {
 	registeredSpruceAssets[name] = reflect.TypeOf(reflect.ValueOf(SpruceAsset{}).Interface())
 }
 
-func GetSpruceActionUrl(actionName string, params url.Values) *SpruceAction {
+func GetAction(actionName string, params url.Values) *SpruceAction {
 	s := registeredSpruceActions[actionName]
 	sAction := reflect.New(s).Interface().(*SpruceAction)
 	sAction.ActionName = actionName
@@ -84,7 +84,7 @@ func GetSpruceActionUrl(actionName string, params url.Values) *SpruceAction {
 	return sAction
 }
 
-func GetSpruceAssetUrl(assetName string) *SpruceAsset {
+func GetAsset(assetName string) *SpruceAsset {
 	s := registeredSpruceAssets[assetName]
 	sAsset := reflect.New(s).Interface().(*SpruceAsset)
 	sAsset.Name = assetName

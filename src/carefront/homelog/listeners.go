@@ -49,8 +49,8 @@ func InitListeners(dataAPI api.DataAPI) {
 			Data: &titledLogItem{
 				Title:    "Visit Submitted",
 				Subtitle: fmt.Sprintf("With Dr. %s", doctor.LastName),
-				IconURL:  app_url.GetSpruceAssetUrl(app_url.IconHomeVisitNormal),
-				TapURL:   app_url.GetSpruceActionUrl(app_url.ViewPatientVisitAction, params),
+				IconURL:  app_url.GetAsset(app_url.IconHomeVisitNormal),
+				TapURL:   app_url.GetAction(app_url.ViewPatientVisitAction, params),
 			},
 		}); err != nil {
 			golog.Errorf("Failed to insert visit submitted into health log for patient %d: %s", ev.PatientId, err.Error())
@@ -87,8 +87,8 @@ func InitListeners(dataAPI api.DataAPI) {
 			Data: &titledLogItem{
 				Title:    "Treatment Plan",
 				Subtitle: fmt.Sprintf("Created By. %s", doctor.LastName),
-				IconURL:  app_url.GetSpruceAssetUrl(app_url.IconHomeTreatmentPlanNormal),
-				TapURL:   app_url.GetSpruceActionUrl(app_url.ViewTreatmentPlanAction, params),
+				IconURL:  app_url.GetAsset(app_url.IconHomeTreatmentPlanNormal),
+				TapURL:   app_url.GetAction(app_url.ViewTreatmentPlanAction, params),
 			},
 		}); err != nil {
 			golog.Errorf("Failed to insert visit treatment plan created into health log for patient %d: %s", ev.PatientId, err.Error())
@@ -109,7 +109,7 @@ func InitListeners(dataAPI api.DataAPI) {
 						Data: &textLogItem{
 							Text:    fmt.Sprintf("%s %s, M.D., added to your care team.", doctor.FirstName, doctor.LastName),
 							IconURL: doctor.SmallThumbnailUrl,
-							TapURL:  app_url.GetSpruceActionUrl(app_url.ViewCareTeam, nil),
+							TapURL:  app_url.GetAction(app_url.ViewCareTeam, nil),
 						},
 					}); err != nil {
 						golog.Errorf("Failed to insert visit treatment plan created into health log for patient %d: %s", ev.PatientId, err.Error())
@@ -153,8 +153,8 @@ func InitListeners(dataAPI api.DataAPI) {
 				Data: &titledLogItem{
 					Title:    fmt.Sprintf("Conversation with Dr. %s", doctorPerson.Doctor.LastName),
 					Subtitle: fmt.Sprintf("1 message"),
-					IconURL:  app_url.GetSpruceAssetUrl(app_url.IconHomeConversationNormal),
-					TapURL:   app_url.GetSpruceActionUrl(app_url.ViewMessagesAction, params),
+					IconURL:  app_url.GetAsset(app_url.IconHomeConversationNormal),
+					TapURL:   app_url.GetAction(app_url.ViewMessagesAction, params),
 				},
 			}); err != nil {
 				golog.Errorf("Failed to insert conversation item into health log for patient %d: %s", patientPerson.RoleId, err.Error())
@@ -208,8 +208,8 @@ func InitListeners(dataAPI api.DataAPI) {
 				Data: &titledLogItem{
 					Title:    fmt.Sprintf("Conversation with Dr. %s", doctorPerson.Doctor.LastName),
 					Subtitle: fmt.Sprintf("%d messages", con.MessageCount),
-					IconURL:  app_url.GetSpruceAssetUrl(app_url.IconLogMessage),
-					TapURL:   app_url.GetSpruceActionUrl(app_url.ViewMessagesAction, params),
+					IconURL:  app_url.GetAsset(app_url.IconLogMessage),
+					TapURL:   app_url.GetAction(app_url.ViewMessagesAction, params),
 				},
 			}); err != nil {
 				golog.Errorf("Failed to insert conversation item into health log for patient %d: %s", patientPerson.RoleId, err.Error())
