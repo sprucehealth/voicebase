@@ -2,6 +2,7 @@ package doctor_queue
 
 import (
 	"carefront/api"
+	"carefront/app_url"
 	"time"
 )
 
@@ -11,12 +12,12 @@ type DisplayFeedSection struct {
 }
 
 type DisplayFeedItem struct {
-	Title        string     `json:"title"`
-	Subtitle     string     `json:"subtitle,omitempty"`
-	Timestamp    *time.Time `json:"timestamp,omitempty"`
-	ImageUrl     string     `json:"image_url,omitempty"`
-	ItemUrl      string     `json:"action_url,omitempty"`
-	DisplayTypes []string   `json:"display_types,omitempty"`
+	Title        string                `json:"title"`
+	Subtitle     string                `json:"subtitle,omitempty"`
+	Timestamp    *time.Time            `json:"timestamp,omitempty"`
+	ImageUrl     *app_url.SpruceAsset  `json:"image_url,omitempty"`
+	ActionUrl    *app_url.SpruceAction `json:"action_url,omitempty"`
+	DisplayTypes []string              `json:"display_types,omitempty"`
 }
 
 type DisplayFeed struct {
@@ -42,7 +43,7 @@ func converQueueItemToDisplayFeedItem(dataApi api.DataAPI, itemToDisplay api.Fee
 		Timestamp:    itemToDisplay.GetTimestamp(),
 	}
 
-	item.ItemUrl, err = itemToDisplay.GetActionUrl(dataApi)
+	item.ActionUrl, err = itemToDisplay.ActionUrl(dataApi)
 	if err != nil {
 		return nil, err
 	}

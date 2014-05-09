@@ -140,7 +140,6 @@ func GetDoctorInfo(dataApi api.DataAPI, doctorId int64, staticBaseContentUrl str
 		return nil, err
 	}
 
-	doctor.ThumbnailUrl = strings.ToLower(fmt.Sprintf("%sdoctor_photo_%s_%s", staticBaseContentUrl, doctor.FirstName, doctor.LastName))
 	return doctor, err
 }
 

@@ -3,6 +3,7 @@ package patient_treatment_plan
 import (
 	"carefront/api"
 	"carefront/apiservice"
+	"carefront/app_url"
 	"carefront/common"
 	"carefront/libs/erx"
 	"carefront/libs/golog"
@@ -69,7 +70,7 @@ func (h *PatientTreatmentGuideHandler) ServeHTTP(w http.ResponseWriter, r *http.
 		return
 	}
 
-	treatmentGuideResponse(h.DataAPI, w, treatment)
+	treatmentGuideResponse(h.DataAPI, treatment.Doctor, w, treatment)
 }
 
 func (h *DoctorTreatmentGuideHandler) ServeHTTP(w http.ResponseWriter, r *http.Request) {
@@ -89,12 +90,6 @@ func (h *DoctorTreatmentGuideHandler) ServeHTTP(w http.ResponseWriter, r *http.R
 		return
 	}
 
-	doctorID, err := h.DataAPI.GetDoctorIdFromAccountId(apiservice.GetContext(r).AccountId)
-	if err != nil {
-		apiservice.WriteDeveloperError(w, http.StatusInternalServerError, "Failed to get doctor: "+err.Error())
-		return
-	}
-
 	treatment, err := h.DataAPI.GetTreatmentFromId(requestData.TreatmentId)
 	if err != nil {
 		apiservice.WriteDeveloperError(w, http.StatusInternalServerError, "Failed to get treatment: "+err.Error())
@@ -105,15 +100,15 @@ func (h *DoctorTreatmentGuideHandler) ServeHTTP(w http.ResponseWriter, r *http.R
 	}
 
 	if err := apiservice.VerifyDoctorPatientRelationship(h.DataAPI, treatment.Doctor, treatment.Patient); err != nil {
-		golog.Warningf("Doctor %d does not have access to treatment %d: %s", doctorID, treatment.Id.Int64(), err.Error())
+		golog.Warningf("Doctor %d does not have access to treatment %d: %s", treatment.Doctor.DoctorId.Int64(), treatment.Id.Int64(), err.Error())
 		apiservice.WriteUserError(w, http.StatusForbidden, "Doctor does not have access to the given treatment")
 		return
 	}
 
-	treatmentGuideResponse(h.DataAPI, w, treatment)
+	treatmentGuideResponse(h.DataAPI, treatment.Doctor, w, treatment)
 }
 
-func treatmentGuideResponse(dataAPI api.DataAPI, w http.ResponseWriter, treatment *common.Treatment) {
+func treatmentGuideResponse(dataAPI api.DataAPI, doctor *common.Doctor, w http.ResponseWriter, treatment *common.Treatment) {
 	ndc := treatment.DrugDBIds[erx.NDC]
 	if ndc == "" {
 		apiservice.WriteUserError(w, http.StatusNotFound, "NDC unknown")
@@ -145,7 +140,7 @@ func treatmentGuideResponse(dataAPI api.DataAPI, w http.ResponseWriter, treatmen
 
 	views = append(views,
 		&TPIconTitleSubtitleView{
-			IconURL:  "spruce:///images/icon_rx",
+			IconURL:  app_url.Asset(app_url.IconRX),
 			Title:    details.Name,
 			Subtitle: "", // TODO: Not sure what to put here yet. Possibly details.Alternative.
 		},
@@ -157,7 +152,7 @@ func treatmentGuideResponse(dataAPI api.DataAPI, w http.ResponseWriter, treatmen
 		&TPLargeDividerView{},
 		&TPIconTextView{
 			// TODO: This icon info isn't robust or likely accurate
-			IconURL:    fmt.Sprintf("spruce:///image/thumbnail_care_team_%d", treatment.Doctor.DoctorId.Int64()),
+			IconURL:    doctor.LargeThumbnailUrl,
 			IconWidth:  32,
 			IconHeight: 32,
 			Text:       fmt.Sprintf("Dr. %s's Instructions", treatment.Doctor.LastName),
@@ -248,8 +243,8 @@ func treatmentGuideResponse(dataAPI api.DataAPI, w http.ResponseWriter, treatmen
 	views = append(views,
 		&TPButtonView{
 			Text:    "Message Dr. " + treatment.Doctor.LastName,
-			IconURL: "spruce:///images/icon_message",
-			TapURL:  "spruce:///action/message_doctor",
+			IconURL: app_url.Asset(app_url.IconMessage),
+			TapURL:  app_url.Action(app_url.MessageAction, nil),
 		},
 	)
 

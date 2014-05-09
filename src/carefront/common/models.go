@@ -1,6 +1,7 @@
 package common
 
 import (
+	"carefront/app_url"
 	"carefront/encoding"
 	"carefront/libs/pharmacy"
 	"time"
@@ -64,21 +65,22 @@ type Card struct {
 }
 
 type Doctor struct {
-	DoctorId            encoding.ObjectId `json:"id,omitempty"`
-	FirstName           string            `json:"first_name,omitempty"`
-	LastName            string            `json:"last_name,omitempty"`
-	MiddleName          string            `json:"middle_name,omitempty"`
-	Prefix              string            `json:"prefix,omitempty"`
-	Suffix              string            `json:"suffix,omitempty"`
-	Dob                 encoding.Dob      `json:"-"`
-	Gender              string            `json:"-"`
-	Status              string            `json:"-"`
-	AccountId           encoding.ObjectId `json:"-"`
-	CellPhone           string            `json:"phone"`
-	ThumbnailUrl        string            `json:"thumbnail_url,omitempty"`
-	DoseSpotClinicianId int64             `json:"-"`
-	DoctorAddress       *Address          `json:"address,omitempty"`
-	PersonId            int64             `json:"person_id"`
+	DoctorId            encoding.ObjectId    `json:"id,omitempty"`
+	FirstName           string               `json:"first_name,omitempty"`
+	LastName            string               `json:"last_name,omitempty"`
+	MiddleName          string               `json:"middle_name,omitempty"`
+	Prefix              string               `json:"prefix,omitempty"`
+	Suffix              string               `json:"suffix,omitempty"`
+	Dob                 encoding.Dob         `json:"-"`
+	Gender              string               `json:"-"`
+	Status              string               `json:"-"`
+	AccountId           encoding.ObjectId    `json:"-"`
+	CellPhone           string               `json:"phone"`
+	LargeThumbnailUrl   *app_url.SpruceAsset `json:"large_thumbnail_url,omitempty"`
+	SmallThumbnailUrl   *app_url.SpruceAsset `json:"small_thumbnail_url,omitempty"`
+	DoseSpotClinicianId int64                `json:"-"`
+	DoctorAddress       *Address             `json:"address,omitempty"`
+	PersonId            int64                `json:"person_id"`
 }
 
 type PatientVisit struct {

@@ -1,8 +1,11 @@
 package api
 
 import (
+	"carefront/app_url"
 	"carefront/settings"
 	"fmt"
+	"net/url"
+	"strconv"
 	"time"
 )
 
@@ -14,13 +17,6 @@ const (
 	EVENT_TYPE_UNLINKED_DNTF_TRANSMISSION_ERROR = "UNLINKED_DNTF_TRANSMISSION_ERROR"
 	EVENT_TYPE_REFILL_TRANSMISSION_ERROR        = "REFILL_TRANSMISSION_ERROR"
 	EVENT_TYPE_CONVERSATION                     = "CONVERSATION"
-	patientVisitImageTag                        = "patient_visit_queue_icon"
-	beginPatientVisitReviewAction               = "begin_patient_visit"
-	viewCompletedPatientVisitAction             = "view_completed_patient_visit"
-	viewRefillRequestAction                     = "view_refill_request"
-	viewTransmissionErrorAction                 = "view_transmission_error"
-	viewPatientTreatmentsAction                 = "view_patient_treatments"
-	viewPatientConversations                    = "view_patient_conversations"
 )
 
 type DoctorQueueItem struct {
@@ -164,12 +160,12 @@ func getRemainingTimeSubtitleForCaseToBeReviewed(enqueueDate time.Time) string {
 	return subtitle
 }
 
-func (d *DoctorQueueItem) GetImageUrl() string {
+func (d *DoctorQueueItem) GetImageUrl() *app_url.SpruceAsset {
 	switch d.EventType {
 	case EVENT_TYPE_PATIENT_VISIT:
-		return fmt.Sprintf("%s%s", SpruceImageBaseUrl, patientVisitImageTag)
+		return app_url.Asset(app_url.PatientVisitQueueIcon)
 	}
-	return ""
+	return nil
 }
 
 func (d *DoctorQueueItem) GetTimestamp() *time.Time {
@@ -199,15 +195,18 @@ func (d *DoctorQueueItem) GetDisplayTypes() []string {
 	return nil
 }
 
-func (d *DoctorQueueItem) GetActionUrl(dataApi DataAPI) (string, error) {
+func (d *DoctorQueueItem) ActionUrl(dataApi DataAPI) (*app_url.SpruceAction, error) {
 	switch d.EventType {
 	case EVENT_TYPE_PATIENT_VISIT:
 		switch d.Status {
 		case QUEUE_ITEM_STATUS_COMPLETED, QUEUE_ITEM_STATUS_TRIAGED:
-
-			return fmt.Sprintf("%s%s?patient_visit_id=%d", SpruceButtonBaseActionUrl, viewCompletedPatientVisitAction, d.ItemId), nil
+			params := url.Values{}
+			params.Set("patient_visit_id", strconv.FormatInt(d.ItemId, 10))
+			return app_url.Action(app_url.ViewCompletedPatientVisitAction, params), nil
 		case QUEUE_ITEM_STATUS_ONGOING, QUEUE_ITEM_STATUS_PENDING:
-			return fmt.Sprintf("%s%s?patient_visit_id=%d", SpruceButtonBaseActionUrl, beginPatientVisitReviewAction, d.ItemId), nil
+			params := url.Values{}
+			params.Set("patient_visit_id", strconv.FormatInt(d.ItemId, 10))
+			return app_url.Action(app_url.BeginPatientVisitReviewAction, params), nil
 		}
 	case EVENT_TYPE_TREATMENT_PLAN:
 
@@ -215,40 +214,53 @@ func (d *DoctorQueueItem) GetActionUrl(dataApi DataAPI) (string, error) {
 		case QUEUE_ITEM_STATUS_COMPLETED, QUEUE_ITEM_STATUS_TRIAGED:
 			patientVisitId, err := dataApi.GetPatientVisitIdFromTreatmentPlanId(d.ItemId)
 			if err != nil {
-				return "", err
+				return nil, err
 			}
 
-			return fmt.Sprintf("%s%s?patient_visit_id=%d", SpruceButtonBaseActionUrl, viewCompletedPatientVisitAction, patientVisitId), nil
+			params := url.Values{}
+			params.Set("patient_visit_id", strconv.FormatInt(patientVisitId, 10))
+			return app_url.Action(app_url.ViewCompletedPatientVisitAction, params), nil
 		}
 	case EVENT_TYPE_REFILL_TRANSMISSION_ERROR:
-		return fmt.Sprintf("%s%s?refill_request_id=%d", SpruceButtonBaseActionUrl, viewRefillRequestAction, d.ItemId), nil
+		params := url.Values{}
+		params.Set("refill_request_id", strconv.FormatInt(d.ItemId, 10))
+		return app_url.Action(app_url.ViewRefillRequestAction, params), nil
 	case EVENT_TYPE_REFILL_REQUEST:
 		switch d.Status {
 		case QUEUE_ITEM_STATUS_ONGOING, QUEUE_ITEM_STATUS_PENDING:
-			return fmt.Sprintf("%s%s?refill_request_id=%d", SpruceButtonBaseActionUrl, viewRefillRequestAction, d.ItemId), nil
+			params := url.Values{}
+			params.Set("refill_request_id", strconv.FormatInt(d.ItemId, 10))
+			return app_url.Action(app_url.ViewRefillRequestAction, params), nil
 		case QUEUE_ITEM_STATUS_COMPLETED, QUEUE_ITEM_STATUS_REFILL_APPROVED, QUEUE_ITEM_STATUS_REFILL_DENIED:
 			patient, err := dataApi.GetPatientFromRefillRequestId(d.ItemId)
 			if err != nil {
-				return "", err
+				return nil, err
 			}
-
-			return fmt.Sprintf("%s%s?patient_id=%d", SpruceButtonBaseActionUrl, viewPatientTreatmentsAction, patient.PatientId.Int64()), nil
+			params := url.Values{}
+			params.Set("patient_id", strconv.FormatInt(patient.PatientId.Int64(), 10))
+			return app_url.Action(app_url.ViewPatientTreatmentsAction, params), nil
 		}
 	case EVENT_TYPE_TRANSMISSION_ERROR:
-		return fmt.Sprintf("%s%s?treatment_id=%d", SpruceButtonBaseActionUrl, viewTransmissionErrorAction, d.ItemId), nil
+		params := url.Values{}
+		params.Set("treatment_id", strconv.FormatInt(d.ItemId, 10))
+		return app_url.Action(app_url.ViewTransmissionErrorAction, params), nil
 	case EVENT_TYPE_UNLINKED_DNTF_TRANSMISSION_ERROR:
-		return fmt.Sprintf("%s%s?unlinked_dntf_treatment_id=%d", SpruceButtonBaseActionUrl, viewTransmissionErrorAction, d.ItemId), nil
+		params := url.Values{}
+		params.Set("unlinked_dntf_treatment_id", strconv.FormatInt(d.ItemId, 10))
+		return app_url.Action(app_url.ViewTransmissionErrorAction, params), nil
 	case EVENT_TYPE_CONVERSATION:
 		conversation, err := dataApi.GetConversation(d.ItemId)
 		if err != nil {
-			return "", err
+			return nil, err
 		}
 		for _, person := range conversation.Participants {
 			if person.RoleType == PATIENT_ROLE {
-				return fmt.Sprintf("%s%s?patient_id=%d", SpruceButtonBaseActionUrl, viewPatientConversations, person.Patient.PatientId.Int64()), nil
+				params := url.Values{}
+				params.Set("patient_id", strconv.FormatInt(person.Patient.PatientId.Int64(), 10))
+				return app_url.Action(app_url.ViewPatientConversationsAction, params), nil
 			}
 		}
 	}
 
-	return "", nil
+	return nil, nil
 }

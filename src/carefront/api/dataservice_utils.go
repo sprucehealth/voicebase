@@ -46,8 +46,6 @@ const (
 	drugFormTable                      = "drug_form"
 	drugRouteTable                     = "drug_route"
 	doctorPhoneType                    = "MAIN"
-	SpruceButtonBaseActionUrl          = "spruce:///action/"
-	SpruceImageBaseUrl                 = "spruce:///image/"
 	treatmentTable                     = "treatment"
 	pharmacyDispensedTreatmentTable    = "pharmacy_dispensed_treatment"
 	requestedTreatmentTable            = "requested_treatment"
