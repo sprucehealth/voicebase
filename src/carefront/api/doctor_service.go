@@ -1,6 +1,7 @@
 package api
 
 import (
+	"carefront/app_url"
 	"carefront/common"
 	"carefront/encoding"
 	"database/sql"
@@ -127,6 +128,10 @@ func (d *DataService) queryDoctor(where string, queryParams ...interface{}) (*co
 		Dob:      encoding.Dob{Year: dobYear, Month: dobMonth, Day: dobDay},
 		PersonId: personId,
 	}
+
+	// populate the doctor url
+	doctor.LargeThumbnailUrl = app_url.GetLargeThumbnail(DOCTOR_ROLE, doctor.DoctorId.Int64())
+	doctor.SmallThumbnailUrl = app_url.GetSmallThumbnail(DOCTOR_ROLE, doctor.DoctorId.Int64())
 
 	return doctor, nil
 }

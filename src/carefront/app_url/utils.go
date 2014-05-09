@@ -8,6 +8,7 @@ import (
 type SpruceUrl interface {
 	unexportableInterface() bool
 	json.Marshaler
+	json.Unmarshaler
 }
 
 const (
@@ -16,15 +17,15 @@ const (
 	spruceActionUrl = spruceUrlScheme + "action/"
 )
 
-type spruceAsset struct {
+type SpruceAsset struct {
 	Name string
 }
 
-func (s spruceAsset) unexportableInterface() bool {
+func (s SpruceAsset) unexportableInterface() bool {
 	return true
 }
 
-func (s spruceAsset) MarshalJSON() ([]byte, error) {
+func (s SpruceAsset) MarshalJSON() ([]byte, error) {
 	b := make([]byte, 0)
 	b = append(b, '"')
 	b = append(b, []byte(spruceActionUrl)...)
@@ -35,16 +36,20 @@ func (s spruceAsset) MarshalJSON() ([]byte, error) {
 	return b, nil
 }
 
-type spruceAction struct {
+func (s SpruceAsset) UnmarshalJSON([]byte) error {
+	return nil
+}
+
+type SpruceAction struct {
 	ActionName string
 	params     url.Values
 }
 
-func (s spruceAction) unexportableInterface() bool {
+func (s SpruceAction) unexportableInterface() bool {
 	return true
 }
 
-func (s spruceAction) MarshalJSON() ([]byte, error) {
+func (s SpruceAction) MarshalJSON() ([]byte, error) {
 	b := make([]byte, 0)
 	b = append(b, '"')
 	b = append(b, []byte(spruceActionUrl)...)
@@ -58,4 +63,8 @@ func (s spruceAction) MarshalJSON() ([]byte, error) {
 	b = append(b, '"')
 
 	return b, nil
+}
+
+func (s SpruceAction) UnmarshalJSON([]byte) error {
+	return nil
 }

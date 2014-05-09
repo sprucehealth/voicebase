@@ -5,6 +5,7 @@ package homelog
 
 import (
 	"carefront/api"
+	"carefront/app_url"
 	"carefront/common"
 
 	"reflect"
@@ -21,15 +22,15 @@ type logItem interface {
 
 type textLogItem struct {
 	Text    string
-	IconURL string
-	TapURL  string
+	IconURL app_url.SpruceUrl
+	TapURL  app_url.SpruceUrl
 }
 
 type titledLogItem struct {
 	Title    string
 	Subtitle string
-	IconURL  string
-	TapURL   string
+	IconURL  app_url.SpruceUrl
+	TapURL   app_url.SpruceUrl
 }
 
 func (*textLogItem) TypeName() string {

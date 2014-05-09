@@ -21,8 +21,8 @@ const (
 
 type FeedDisplayInterface interface {
 	GetTitleAndSubtitle(dataApi DataAPI) (title, subtitle string, err error)
-	GetImageUrl() app_url.SpruceUrl
-	GetActionUrl(dataApi DataAPI) (app_url.SpruceUrl, error)
+	GetImageUrl() *app_url.SpruceAsset
+	GetActionUrl(dataApi DataAPI) (*app_url.SpruceAction, error)
 	GetDisplayTypes() []string
 	GetTimestamp() *time.Time
 }

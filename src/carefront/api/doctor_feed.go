@@ -160,7 +160,7 @@ func getRemainingTimeSubtitleForCaseToBeReviewed(enqueueDate time.Time) string {
 	return subtitle
 }
 
-func (d *DoctorQueueItem) GetImageUrl() app_url.SpruceUrl {
+func (d *DoctorQueueItem) GetImageUrl() *app_url.SpruceAsset {
 	switch d.EventType {
 	case EVENT_TYPE_PATIENT_VISIT:
 		return app_url.GetSpruceAssetUrl(app_url.PatientVisitQueueIcon)
@@ -195,7 +195,7 @@ func (d *DoctorQueueItem) GetDisplayTypes() []string {
 	return nil
 }
 
-func (d *DoctorQueueItem) GetActionUrl(dataApi DataAPI) (app_url.SpruceUrl, error) {
+func (d *DoctorQueueItem) GetActionUrl(dataApi DataAPI) (*app_url.SpruceAction, error) {
 	switch d.EventType {
 	case EVENT_TYPE_PATIENT_VISIT:
 		switch d.Status {
