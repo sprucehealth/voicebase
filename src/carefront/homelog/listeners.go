@@ -44,7 +44,7 @@ func InitListeners(dataAPI api.DataAPI) {
 			Data: &titledLogItem{
 				Title:    "Visit Submitted",
 				Subtitle: fmt.Sprintf("With Dr. %s", doctor.LastName),
-				IconURL:  "spruce:///image/icon_log_visit",
+				IconURL:  "spruce:///image/icon_home_visit_normal",
 				TapURL:   fmt.Sprintf("spruce:///action/view_visit?visit_id=%d", ev.VisitId),
 			},
 		}); err != nil {
@@ -80,7 +80,7 @@ func InitListeners(dataAPI api.DataAPI) {
 			Data: &titledLogItem{
 				Title:    "Treatment Plan",
 				Subtitle: fmt.Sprintf("Created By. %s", doctor.LastName),
-				IconURL:  "spruce:///image/icon_log_treatment_plan",
+				IconURL:  "spruce:///image/icon_home_treatmentplan_normal",
 				TapURL:   fmt.Sprintf("spruce:///action/view_treatment_plan?treatment_plan_id=%d", ev.TreatmentPlanId),
 			},
 		}); err != nil {
@@ -144,7 +144,7 @@ func InitListeners(dataAPI api.DataAPI) {
 				Data: &titledLogItem{
 					Title:    fmt.Sprintf("Conversation with Dr. %s", doctorPerson.Doctor.LastName),
 					Subtitle: fmt.Sprintf("1 message"),
-					IconURL:  "spruce:///image/icon_log_message",
+					IconURL:  "spruce:///image/icon_home_conversation_normal",
 					TapURL:   fmt.Sprintf("spruce:///action/view_messages?conversation_id=%d", ev.ConversationId),
 				},
 			}); err != nil {
