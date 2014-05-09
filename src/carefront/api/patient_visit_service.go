@@ -34,6 +34,9 @@ func (d *DataService) GetLastCreatedPatientVisitIdForPatient(patientId int64) (i
 func (d *DataService) GetPatientIdFromPatientVisitId(patientVisitId int64) (int64, error) {
 	var patientId int64
 	err := d.DB.QueryRow("select patient_id from patient_visit where id = ?", patientVisitId).Scan(&patientId)
+	if err == sql.ErrNoRows {
+		return 0, NoRowsError
+	}
 	return patientId, err
 }
 
@@ -77,6 +80,9 @@ func (d *DataService) GetLatestSubmittedPatientVisit() (*common.PatientVisit, er
 func (d *DataService) GetPatientVisitIdFromTreatmentPlanId(treatmentPlanId int64) (int64, error) {
 	var patientVisitId int64
 	err := d.DB.QueryRow(`select patient_visit_id from treatment_plan where id = ?`, treatmentPlanId).Scan(&patientVisitId)
+	if err == sql.ErrNoRows {
+		return 0, NoRowsError
+	}
 	return patientVisitId, err
 }
 

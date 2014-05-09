@@ -531,15 +531,14 @@ func (d *DataService) GetUnlinkedDNTFTreatment(treatmentId int64) (*common.Treat
 		return nil, err
 	}
 
-	if len(treatments) > 1 {
-		return nil, fmt.Errorf("Expected just one unlinked dntf treatment but got back %d", len(treatments))
+	switch l := len(treatments); {
+	case l == 1:
+		return treatments[0], err
+	case l == 0:
+		return nil, NoRowsError
 	}
 
-	if len(treatments) == 0 {
-		return nil, nil
-	}
-
-	return treatments[0], err
+	return nil, fmt.Errorf("Expected just one unlinked dntf treatment but got back %d", len(treatments))
 }
 
 func (d *DataService) GetUnlinkedDNTFTreatmentsForPatient(patientId int64) ([]*common.Treatment, error) {
