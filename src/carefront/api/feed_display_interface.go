@@ -1,6 +1,9 @@
 package api
 
-import "time"
+import (
+	"carefront/app_url"
+	"time"
+)
 
 const (
 	QUEUE_ITEM_STATUS_PENDING                 = "PENDING"
@@ -18,8 +21,8 @@ const (
 
 type FeedDisplayInterface interface {
 	GetTitleAndSubtitle(dataApi DataAPI) (title, subtitle string, err error)
-	GetImageUrl() string
-	GetActionUrl(dataApi DataAPI) (string, error)
+	GetImageUrl() app_url.SpruceUrl
+	GetActionUrl(dataApi DataAPI) (app_url.SpruceUrl, error)
 	GetDisplayTypes() []string
 	GetTimestamp() *time.Time
 }
