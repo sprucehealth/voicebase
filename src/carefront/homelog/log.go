@@ -22,15 +22,15 @@ type logItem interface {
 
 type textLogItem struct {
 	Text    string
-	IconURL app_url.SpruceUrl
-	TapURL  app_url.SpruceUrl
+	IconURL *app_url.SpruceAsset
+	TapURL  *app_url.SpruceAction
 }
 
 type titledLogItem struct {
 	Title    string
 	Subtitle string
-	IconURL  app_url.SpruceUrl
-	TapURL   app_url.SpruceUrl
+	IconURL  *app_url.SpruceAsset
+	TapURL   *app_url.SpruceAction
 }
 
 func (*textLogItem) TypeName() string {
