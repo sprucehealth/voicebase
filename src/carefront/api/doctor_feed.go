@@ -41,7 +41,7 @@ func (d *DoctorQueueItem) GetTitleAndSubtitle(dataApi DataAPI) (string, string, 
 
 		if d.EventType == EVENT_TYPE_TREATMENT_PLAN {
 			patientVisitId, err = dataApi.GetPatientVisitIdFromTreatmentPlanId(d.ItemId)
-			if err != NoRowsError {
+			if err == NoRowsError {
 				golog.Errorf("Did not get patient visit id from treatment plan id (%d)", d.ItemId)
 				return "", "", nil
 			} else if err != nil {
