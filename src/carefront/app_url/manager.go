@@ -30,10 +30,9 @@ const (
 	IconHomeVisitNormal         = "icon_home_visit_normal"
 	IconHomeTreatmentPlanNormal = "icon_home_treatmentplan_normal"
 	IconHomeConversationNormal  = "icon_home_conversation_normal"
-	IconLogMessage              = "icon_log_message"
 	TmpSignature                = "tmp_signature"
-	IconRX                      = "icon_rx"
-	IconOTC                     = "icon_otc"
+	IconRX                      = "icon_plan_rx"
+	IconOTC                     = "icon_plan_otc"
 	IconMessage                 = "icon_message"
 )
 
