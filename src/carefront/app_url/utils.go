@@ -48,7 +48,6 @@ func (s *SpruceAsset) UnmarshalJSON(data []byte) error {
 		return nil
 	}
 	incomingUrl := string(data[1 : len(data)-1])
-	fmt.Println("incoming url " + incomingUrl)
 	spruceUrlComponents, err := url.Parse(incomingUrl)
 	if err != nil {
 		golog.Errorf("Unable to parse url for spruce asset %s", err)
@@ -97,7 +96,6 @@ func (s *SpruceAction) UnmarshalJSON(data []byte) error {
 	}
 
 	incomingUrl := string(data[1 : len(data)-1])
-	fmt.Println("incoming url " + incomingUrl)
 	spruceUrlComponents, err := url.Parse(incomingUrl)
 	if err != nil {
 		golog.Errorf("Unable to parse url for spruce action %s", err)
@@ -114,6 +112,5 @@ func (s *SpruceAction) UnmarshalJSON(data []byte) error {
 	if err != nil {
 		return err
 	}
-	fmt.Printf("%#v\n", s)
 	return nil
 }
