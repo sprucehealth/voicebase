@@ -65,8 +65,15 @@ const (
 	qListPrevSkinConditionDiagnosis
 	qOtherConditionsAcne
 	qFacePhotoIntake
-	qNeckPhotoIntake
+	qFaceLeftPhotoIntake
+	qFaceRightPhotoIntake
 	qChestPhotoIntake
+	qPrescriptionPreference
+	qAcnePreviousOTCList
+	qUsingOTC
+	qEffectiveOTC
+	qOTCIrritateSkin
+	qLengthOTC
 )
 
 var (
@@ -95,8 +102,15 @@ var (
 		"q_list_prev_skin_condition_diagnosis": qListPrevSkinConditionDiagnosis,
 		"q_other_conditions_acne":              qOtherConditionsAcne,
 		"q_face_photo_intake":                  qFacePhotoIntake,
-		"q_neck_photo_intake":                  qNeckPhotoIntake,
 		"q_chest_photo_intake":                 qChestPhotoIntake,
+		"q_face_left_photo_intake":             qFaceLeftPhotoIntake,
+		"q_face_right_photo_intake":            qFaceRightPhotoIntake,
+		"q_prescription_preference":            qPrescriptionPreference,
+		"q_acne_prev_otc_list":                 qAcnePreviousOTCList,
+		"q_using_otc":                          qUsingOTC,
+		"q_effective_otc":                      qEffectiveOTC,
+		"q_otc_irritate_skin":                  qOTCIrritateSkin,
+		"q_length_otc":                         qLengthOTC,
 	}
 )
 
@@ -131,7 +145,13 @@ const (
 	aProfileRightPhotoIntake
 	aProfileLeftPhotoIntake
 	aChestPhotoIntake
-	aNeckPhotoIntake
+	aGenericRxOnly
+	aPickedOrSqueezed
+	aCreatedScars
+	aLengthOTCSixEleventMonths
+	aOTCIrritateSkinYes
+	aEffectiveOTCSomewhat
+	aUsingOTCNo
 )
 
 var (
@@ -161,10 +181,16 @@ var (
 		"a_psoriasis_skin_diagnosis":                  aListPrevSkinConditionDiagnosisPsoriasis,
 		"a_other_condition_acne_none":                 aNoneOfTheAboveOtherConditions,
 		"a_face_front_phota_intake":                   aFaceFrontPhotoIntake,
-		"a_face_right_phota_intake":                   aProfileRightPhotoIntake,
-		"a_face_left_phota_intake":                    aProfileLeftPhotoIntake,
+		"a_face_right_photo_intake":                   aProfileRightPhotoIntake,
+		"a_face_left_photo_intake":                    aProfileLeftPhotoIntake,
 		"a_chest_phota_intake":                        aChestPhotoIntake,
-		"a_neck_photo_intake":                         aNeckPhotoIntake,
+		"a_generic_only":                              aGenericRxOnly,
+		"a_picked_or_squeezed":                        aPickedOrSqueezed,
+		"a_created_scars":                             aCreatedScars,
+		"a_effective_otc_somewhat":                    aEffectiveOTCSomewhat,
+		"a_otc_irritate_skin_yes":                     aOTCIrritateSkinYes,
+		"a_length_otc_two_six_eleven_months":          aLengthOTCSixEleventMonths,
+		"a_using_otc_no":                              aUsingOTCNo,
 	}
 )
 
@@ -218,13 +244,16 @@ func populatePatientIntake(questionIds map[questionTag]int64, answerIds map[pote
 					PotentialAnswerId: answerIds[aDiscoloration],
 				},
 				&apiservice.AnswerItem{
-					PotentialAnswerId: answerIds[aScarring],
+					PotentialAnswerId: answerIds[aCreatedScars],
 				},
 				&apiservice.AnswerItem{
 					PotentialAnswerId: answerIds[aCysts],
 				},
 				&apiservice.AnswerItem{
 					PotentialAnswerId: answerIds[aPainfulToTouch],
+				},
+				&apiservice.AnswerItem{
+					PotentialAnswerId: answerIds[aPickedOrSqueezed],
 				},
 			},
 		},
@@ -253,10 +282,52 @@ func populatePatientIntake(questionIds map[questionTag]int64, answerIds map[pote
 			},
 		},
 		&apiservice.AnswerToQuestionItem{
-			QuestionId: questionIds[qAcnePrevTreatmentList],
+			QuestionId: questionIds[qAcnePreviousOTCList],
 			AnswerIntakes: []*apiservice.AnswerItem{
 				&apiservice.AnswerItem{
 					AnswerText: "Proactiv",
+					SubQuestionAnswerIntakes: []*apiservice.SubQuestionAnswerIntake{
+						&apiservice.SubQuestionAnswerIntake{
+							QuestionId: questionIds[qUsingOTC],
+							AnswerIntakes: []*apiservice.AnswerItem{
+								&apiservice.AnswerItem{
+									PotentialAnswerId: answerIds[aUsingOTCNo],
+								},
+							},
+						},
+						&apiservice.SubQuestionAnswerIntake{
+							QuestionId: questionIds[qEffectiveOTC],
+							AnswerIntakes: []*apiservice.AnswerItem{
+								&apiservice.AnswerItem{
+									PotentialAnswerId: answerIds[aEffectiveOTCSomewhat],
+								},
+							},
+						},
+						&apiservice.SubQuestionAnswerIntake{
+							QuestionId: questionIds[qOTCIrritateSkin],
+							AnswerIntakes: []*apiservice.AnswerItem{
+								&apiservice.AnswerItem{
+									PotentialAnswerId: answerIds[aOTCIrritateSkinYes],
+								},
+							},
+						},
+						&apiservice.SubQuestionAnswerIntake{
+							QuestionId: questionIds[qLengthOTC],
+							AnswerIntakes: []*apiservice.AnswerItem{
+								&apiservice.AnswerItem{
+									PotentialAnswerId: answerIds[aLengthOTCSixEleventMonths],
+								},
+							},
+						},
+					},
+				},
+			},
+		},
+		&apiservice.AnswerToQuestionItem{
+			QuestionId: questionIds[qAcnePrevTreatmentList],
+			AnswerIntakes: []*apiservice.AnswerItem{
+				&apiservice.AnswerItem{
+					AnswerText: "Benzoyl Peroxide 10% Wash",
 					SubQuestionAnswerIntakes: []*apiservice.SubQuestionAnswerIntake{
 						&apiservice.SubQuestionAnswerIntake{
 							QuestionId: questionIds[qUsingTreatment],
@@ -395,6 +466,14 @@ func populatePatientIntake(questionIds map[questionTag]int64, answerIds map[pote
 			AnswerIntakes: []*apiservice.AnswerItem{
 				&apiservice.AnswerItem{
 					PotentialAnswerId: answerIds[aNoneOfTheAboveOtherConditions],
+				},
+			},
+		},
+		&apiservice.AnswerToQuestionItem{
+			QuestionId: questionIds[qPrescriptionPreference],
+			AnswerIntakes: []*apiservice.AnswerItem{
+				&apiservice.AnswerItem{
+					PotentialAnswerId: answerIds[aGenericRxOnly],
 				},
 			},
 		},
@@ -1018,22 +1097,19 @@ func (c *Handler) createNewDemoPatient(patient *common.Patient, doctorId int64, 
 
 		// use a buffered channel so that the goroutines don't block
 		// until the receiver reads off the channel
-		signal := make(chan int, 6)
-		numRequestsWaitingFor := 6
+		signal := make(chan int, 5)
+		numRequestsWaitingFor := 5
 
 		startPatientIntakeSubmission(answersToQuestions, patientVisitResponse.PatientVisitId, signupResponse.Token, signal)
 
 		c.startPhotoSubmissionForPatient(questionIds[qFacePhotoIntake],
 			answerIds[aFaceFrontPhotoIntake], patientVisitResponse.PatientVisitId, frontPhoto, signupResponse.Token, signal)
 
-		c.startPhotoSubmissionForPatient(questionIds[qFacePhotoIntake],
+		c.startPhotoSubmissionForPatient(questionIds[qFaceRightPhotoIntake],
 			answerIds[aProfileRightPhotoIntake], patientVisitResponse.PatientVisitId, profileRightPhoto, signupResponse.Token, signal)
 
-		c.startPhotoSubmissionForPatient(questionIds[qFacePhotoIntake],
+		c.startPhotoSubmissionForPatient(questionIds[qFaceLeftPhotoIntake],
 			answerIds[aProfileLeftPhotoIntake], patientVisitResponse.PatientVisitId, profileLeftPhoto, signupResponse.Token, signal)
-
-		c.startPhotoSubmissionForPatient(questionIds[qNeckPhotoIntake],
-			answerIds[aNeckPhotoIntake], patientVisitResponse.PatientVisitId, neckPhoto, signupResponse.Token, signal)
 
 		c.startPhotoSubmissionForPatient(questionIds[qChestPhotoIntake],
 			answerIds[aChestPhotoIntake], patientVisitResponse.PatientVisitId, chestPhoto, signupResponse.Token, signal)
