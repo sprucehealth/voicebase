@@ -5,6 +5,7 @@ import (
 	"carefront/encoding"
 	"carefront/libs/pharmacy"
 	"database/sql"
+	"errors"
 	"fmt"
 	"log"
 	"strconv"
@@ -398,12 +399,15 @@ func (d *DataService) GetPatientFromId(patientId int64) (*common.Patient, error)
 		patient.id = ?
 			AND (phone IS NULL OR (patient_phone.status = 'ACTIVE'))
 			AND (patient_location.zip_code IS NULL OR patient_location.status = 'ACTIVE')`, patientId)
-	if len(patients) > 0 {
+
+	switch l := len(patients); {
+	case l == 1:
 		err = d.getAddressAndPhoneNumbersForPatient(patients[0])
 		return patients[0], err
+	case l == 0:
+		return nil, NoRowsError
 	}
-
-	return nil, err
+	return nil, errors.New("Got more than 1 patient when expected just 1")
 }
 
 func (d *DataService) GetPatientsForIds(patientIds []int64) ([]*common.Patient, error) {
@@ -467,12 +471,15 @@ func (d *DataService) GetPatientFromRefillRequestId(refillRequestId int64) (*com
 		`rx_refill_request.id = ?
 			AND (phone IS NULL OR (patient_phone.status='ACTIVE'))
 			AND (zip_code IS NULL OR patient_location.status = 'ACTIVE')`, refillRequestId)
-	if len(patients) > 0 {
+	switch l := len(patients); {
+	case l == 1:
 		err = d.getAddressAndPhoneNumbersForPatient(patients[0])
 		return patients[0], err
+	case l == 0:
+		return nil, NoRowsError
 	}
 
-	return nil, err
+	return nil, errors.New("Got more than 1 patient for refill request when expected just 1")
 }
 
 func (d *DataService) GetPatientFromTreatmentId(treatmentId int64) (*common.Patient, error) {

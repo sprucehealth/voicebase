@@ -2,6 +2,7 @@ package api
 
 import (
 	"carefront/app_url"
+	"carefront/libs/golog"
 	"carefront/settings"
 	"fmt"
 	"net/url"
@@ -40,7 +41,10 @@ func (d *DoctorQueueItem) GetTitleAndSubtitle(dataApi DataAPI) (string, string, 
 
 		if d.EventType == EVENT_TYPE_TREATMENT_PLAN {
 			patientVisitId, err = dataApi.GetPatientVisitIdFromTreatmentPlanId(d.ItemId)
-			if err != nil {
+			if err == NoRowsError {
+				golog.Errorf("Did not get patient visit id from treatment plan id (%d)", d.ItemId)
+				return "", "", nil
+			} else if err != nil {
 				return "", "", err
 			}
 		} else {
@@ -48,11 +52,18 @@ func (d *DoctorQueueItem) GetTitleAndSubtitle(dataApi DataAPI) (string, string, 
 		}
 
 		patientId, err := dataApi.GetPatientIdFromPatientVisitId(patientVisitId)
-		if err != nil {
+		if err == NoRowsError {
+			golog.Errorf("Unable to get patient id from patient visit id (%d)", patientVisitId)
+			return "", "", nil
+		} else if err != nil {
 			return "", "", err
 		}
+
 		patient, err := dataApi.GetPatientFromId(patientId)
-		if err != nil {
+		if err == NoRowsError {
+			golog.Errorf("Unable to get patient from id %d", patientId)
+			return "", "", nil
+		} else if err != nil {
 			return "", "", err
 		}
 
@@ -73,7 +84,10 @@ func (d *DoctorQueueItem) GetTitleAndSubtitle(dataApi DataAPI) (string, string, 
 
 	case EVENT_TYPE_REFILL_REQUEST:
 		patient, err := dataApi.GetPatientFromRefillRequestId(d.ItemId)
-		if err != nil || patient == nil {
+		if err == NoRowsError {
+			golog.Errorf("Unable to get patient from refill request id %d", d.ItemId)
+			return "", "", nil
+		} else if err != nil {
 			return "", "", err
 		}
 
@@ -88,12 +102,11 @@ func (d *DoctorQueueItem) GetTitleAndSubtitle(dataApi DataAPI) (string, string, 
 
 	case EVENT_TYPE_REFILL_TRANSMISSION_ERROR:
 		patient, err := dataApi.GetPatientFromRefillRequestId(d.ItemId)
-		if err != nil {
-			return "", "", err
-		}
-
-		if patient == nil {
+		if err == NoRowsError {
+			golog.Errorf("Unable to get patient from refill request id %d", d.ItemId)
 			return "", "", nil
+		} else if err != nil {
+			return "", "", err
 		}
 
 		switch d.Status {
@@ -105,7 +118,10 @@ func (d *DoctorQueueItem) GetTitleAndSubtitle(dataApi DataAPI) (string, string, 
 
 	case EVENT_TYPE_TRANSMISSION_ERROR:
 		patient, err := dataApi.GetPatientFromTreatmentId(d.ItemId)
-		if err != nil || patient == nil {
+		if err == NoRowsError {
+			golog.Errorf("Unable to get patient from treatment id %d", d.ItemId)
+			return "", "", nil
+		} else if err != nil {
 			return "", "", err
 		}
 
@@ -118,7 +134,10 @@ func (d *DoctorQueueItem) GetTitleAndSubtitle(dataApi DataAPI) (string, string, 
 
 	case EVENT_TYPE_UNLINKED_DNTF_TRANSMISSION_ERROR:
 		unlinkedTreatment, err := dataApi.GetUnlinkedDNTFTreatment(d.ItemId)
-		if err != nil {
+		if err == NoRowsError {
+			golog.Errorf("Unable to get unlinked dntf treatment from id %d", d.ItemId)
+			return "", "", nil
+		} else if err != nil {
 			return "", "", err
 		}
 
@@ -131,7 +150,10 @@ func (d *DoctorQueueItem) GetTitleAndSubtitle(dataApi DataAPI) (string, string, 
 
 	case EVENT_TYPE_CONVERSATION:
 		conversation, err := dataApi.GetConversation(d.ItemId)
-		if err != nil {
+		if err == NoRowsError {
+			golog.Errorf("Unable to get conversation from id %d", d.ItemId)
+			return "", "", nil
+		} else if err != nil {
 			return "", "", err
 		}
 
@@ -213,7 +235,10 @@ func (d *DoctorQueueItem) ActionUrl(dataApi DataAPI) (*app_url.SpruceAction, err
 		switch d.Status {
 		case QUEUE_ITEM_STATUS_COMPLETED, QUEUE_ITEM_STATUS_TRIAGED:
 			patientVisitId, err := dataApi.GetPatientVisitIdFromTreatmentPlanId(d.ItemId)
-			if err != nil {
+			if err == NoRowsError {
+				golog.Errorf("Unable to get patient visit id from treatment plan id %d", d.ItemId)
+				return "", nil
+			} else if err != nil {
 				return nil, err
 			}
 
@@ -233,7 +258,10 @@ func (d *DoctorQueueItem) ActionUrl(dataApi DataAPI) (*app_url.SpruceAction, err
 			return app_url.Action(app_url.ViewRefillRequestAction, params), nil
 		case QUEUE_ITEM_STATUS_COMPLETED, QUEUE_ITEM_STATUS_REFILL_APPROVED, QUEUE_ITEM_STATUS_REFILL_DENIED:
 			patient, err := dataApi.GetPatientFromRefillRequestId(d.ItemId)
-			if err != nil {
+			if err == NoRowsError {
+				golog.Errorf("Unable to get patient from refill request id %d", d.ItemId)
+				return nil, nil
+			} else if err != nil {
 				return nil, err
 			}
 			params := url.Values{}
@@ -250,7 +278,10 @@ func (d *DoctorQueueItem) ActionUrl(dataApi DataAPI) (*app_url.SpruceAction, err
 		return app_url.Action(app_url.ViewTransmissionErrorAction, params), nil
 	case EVENT_TYPE_CONVERSATION:
 		conversation, err := dataApi.GetConversation(d.ItemId)
-		if err != nil {
+		if err == NoRowsError {
+			golog.Errorf("Unable to get conversation from id %d", d.ItemId)
+			return nil, nil
+		} else if err != nil {
 			return nil, err
 		}
 		for _, person := range conversation.Participants {

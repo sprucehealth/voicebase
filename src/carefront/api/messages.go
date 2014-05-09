@@ -128,7 +128,9 @@ func (d *DataService) GetConversation(id int64) (*common.Conversation, error) {
 	if err := row.Scan(
 		&c.Time, &c.TopicId, &c.Title, &c.MessageCount, &c.CreatorId,
 		&c.OwnerId, &c.LastParticipantId, &c.LastMessageTime, &c.Unread,
-	); err != nil {
+	); err == sql.ErrNoRows {
+		return nil, NoRowsError
+	} else if err != nil {
 		return nil, err
 	}
 
