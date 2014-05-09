@@ -20,6 +20,8 @@ const (
 	ViewTreatmentPlanAction         = "view_treatment_plan"
 	ViewMessagesAction              = "view_messages"
 	ViewCareTeam                    = "view_care_team"
+	ViewTreatmentGuideAction        = "view_treatment_guide_action"
+	MessageAction                   = "message"
 
 	// asset names
 	PatientVisitQueueIcon       = "patient_visit_queue_icon"
@@ -29,6 +31,10 @@ const (
 	IconHomeTreatmentPlanNormal = "icon_home_treatmentplan_normal"
 	IconHomeConversationNormal  = "icon_home_conversation_normal"
 	IconLogMessage              = "icon_log_message"
+	TmpSignature                = "tmp_signature"
+	IconRX                      = "icon_rx"
+	IconOTC                     = "icon_otc"
+	IconMessage                 = "icon_message"
 )
 
 var registeredSpruceActions = map[string]reflect.Type{}
@@ -46,6 +52,8 @@ func init() {
 	registerSpruceAction(ViewPatientVisitAction)
 	registerSpruceAction(ViewCareTeam)
 	registerSpruceAction(ViewMessagesAction)
+	registerSpruceAction(ViewTreatmentGuideAction)
+	registerSpruceAction(MessageAction)
 
 	registerSpruceAsset(PatientVisitQueueIcon)
 	registerSpruceAsset(IconBlueTreatmentPlan)
@@ -54,6 +62,10 @@ func init() {
 	registerSpruceAsset(IconHomeTreatmentPlanNormal)
 	registerSpruceAsset(IconHomeConversationNormal)
 	registerSpruceAsset(IconLogMessage)
+	registerSpruceAsset(TmpSignature)
+	registerSpruceAsset(IconRX)
+	registerSpruceAsset(IconOTC)
+	registerSpruceAsset(IconMessage)
 }
 
 func registerSpruceAction(name string) {

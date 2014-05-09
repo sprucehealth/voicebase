@@ -2,11 +2,13 @@ package app_url
 
 import (
 	"encoding/json"
+	"fmt"
 	"net/url"
 )
 
 type SpruceUrl interface {
 	unexportableInterface() bool
+	String() string
 	json.Marshaler
 	json.Unmarshaler
 }
@@ -36,6 +38,10 @@ func (s SpruceAsset) MarshalJSON() ([]byte, error) {
 	return b, nil
 }
 
+func (s SpruceAsset) String() string {
+	return fmt.Sprintf("%s/%s", spruceImageUrl, s.Name)
+}
+
 func (s SpruceAsset) UnmarshalJSON([]byte) error {
 	return nil
 }
@@ -63,6 +69,10 @@ func (s SpruceAction) MarshalJSON() ([]byte, error) {
 	b = append(b, '"')
 
 	return b, nil
+}
+
+func (s SpruceAction) String() string {
+	return fmt.Sprintf("%s/%s?%s", spruceActionUrl, s.ActionName, s.params.Encode())
 }
 
 func (s SpruceAction) UnmarshalJSON([]byte) error {

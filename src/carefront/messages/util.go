@@ -122,8 +122,8 @@ func peopleToParticipants(people map[int64]*common.Person) []*Participant {
 			if len(per.Doctor.LastName) > 0 {
 				p.Initials += per.Doctor.LastName[:1]
 			}
-			p.ThumbnailURL = fmt.Sprintf("spruce:///image/thumbnail_care_team_%d", per.RoleId)
-			p.Subtitle = "Dermatologist" // TODO
+			p.ThumbnailURL = per.Doctor.GetSmallThumbnailUrl
+			p.Subtitle = "Dermatologist"
 		}
 		parts = append(parts, p)
 	}

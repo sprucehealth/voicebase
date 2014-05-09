@@ -1,6 +1,7 @@
 package patient_treatment_plan
 
 import (
+	"carefront/app_url"
 	"carefront/libs/pharmacy"
 	"errors"
 )
@@ -18,10 +19,10 @@ type TPView interface {
 }
 
 type TPVisitHeaderView struct {
-	Type     string `json:"type"`
-	ImageURL string `json:"image_url"`
-	Title    string `json:"title"`
-	Subtitle string `json:"subtitle"`
+	Type     string               `json:"type"`
+	ImageURL *app_url.SpruceAsset `json:"image_url"`
+	Title    string               `json:"title"`
+	Subtitle string               `json:"subtitle"`
 }
 
 func (v *TPVisitHeaderView) Validate() error {
@@ -61,10 +62,10 @@ func (v *TPImageView) Validate() error {
 }
 
 type TPIconTitleSubtitleView struct {
-	Type     string `json:"type"`
-	IconURL  string `json:"icon_url"`
-	Title    string `json:"title"`
-	Subtitle string `json:"subtitle"`
+	Type     string               `json:"type"`
+	IconURL  *app_url.SpruceAsset `json:"icon_url"`
+	Title    string               `json:"title"`
+	Subtitle string               `json:"subtitle"`
 }
 
 func (v *TPIconTitleSubtitleView) Validate() error {
@@ -84,13 +85,13 @@ func (v *TPTextView) Validate() error {
 }
 
 type TPIconTextView struct {
-	Type       string `json:"type"`
-	IconURL    string `json:"icon_url"`
-	IconWidth  int    `json:"icon_width,omitempty"`
-	IconHeight int    `json:"icon_height,omitempty"`
-	Style      string `json:"style,omitempty"`
-	Text       string `json:"text"`
-	TextStyle  string `json:"text_style,omitempty"`
+	Type       string               `json:"type"`
+	IconURL    *app_url.SpruceAsset `json:"icon_url"`
+	IconWidth  int                  `json:"icon_width,omitempty"`
+	IconHeight int                  `json:"icon_height,omitempty"`
+	Style      string               `json:"style,omitempty"`
+	Text       string               `json:"text"`
+	TextStyle  string               `json:"text_style,omitempty"`
 }
 
 func (v *TPIconTextView) Validate() error {
@@ -125,9 +126,9 @@ func (v *TPListElementView) Validate() error {
 }
 
 type TPPlainButtonView struct {
-	Type   string `json:"type"`
-	Text   string `json:"text"`
-	TapURL string `json:"tap_url"`
+	Type   string                `json:"type"`
+	Text   string                `json:"text"`
+	TapURL *app_url.SpruceAction `json:"tap_url"`
 }
 
 func (v *TPPlainButtonView) Validate() error {
@@ -136,10 +137,10 @@ func (v *TPPlainButtonView) Validate() error {
 }
 
 type TPButtonView struct {
-	Type    string `json:"type"`
-	Text    string `json:"text"`
-	TapURL  string `json:"tap_url"`
-	IconURL string `json:"icon_url"`
+	Type    string                `json:"type"`
+	Text    string                `json:"text"`
+	TapURL  *app_url.SpruceAction `json:"tap_url"`
+	IconURL *app_url.SpruceAsset  `json:"icon_url"`
 }
 
 func (v *TPButtonView) Validate() error {
@@ -148,12 +149,12 @@ func (v *TPButtonView) Validate() error {
 }
 
 type TPPrescriptionView struct {
-	Type        string `json:"type"`
-	IconURL     string `json:"icon_url"`
-	Title       string `json:"title"`
-	Description string `json:"description"`
-	ButtonTitle string `json:"button_title,omitempty"`
-	TapURL      string `json:"tap_url,omitempty"`
+	Type        string                `json:"type"`
+	IconURL     *app_url.SpruceAsset  `json:"icon_url"`
+	Title       string                `json:"title"`
+	Description string                `json:"description"`
+	ButtonTitle string                `json:"button_title,omitempty"`
+	TapURL      *app_url.SpruceAction `json:"tap_url,omitempty"`
 }
 
 func (v *TPPrescriptionView) Validate() error {
@@ -182,11 +183,11 @@ func (v *TPTreatmentListView) Validate() error {
 }
 
 type TPButtonFooterView struct {
-	Type       string `json:"type"`
-	FooterText string `json:"footer_text"`
-	ButtonText string `json:"button_text"`
-	IconURL    string `json:"icon_url"`
-	TapURL     string `json:"tap_url"`
+	Type       string                `json:"type"`
+	FooterText string                `json:"footer_text"`
+	ButtonText string                `json:"button_text"`
+	IconURL    *app_url.SpruceAsset  `json:"icon_url"`
+	TapURL     *app_url.SpruceAction `json:"tap_url"`
 }
 
 func (v *TPButtonFooterView) Validate() error {

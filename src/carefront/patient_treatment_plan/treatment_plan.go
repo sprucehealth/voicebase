@@ -3,11 +3,14 @@ package patient_treatment_plan
 import (
 	"carefront/api"
 	"carefront/apiservice"
+	"carefront/app_url"
 	"carefront/common"
 	"carefront/libs/erx"
 	"carefront/libs/golog"
 	"fmt"
 	"net/http"
+	"net/url"
+	"strconv"
 
 	"github.com/gorilla/schema"
 )
@@ -140,7 +143,7 @@ func (p *PatientVisitReviewHandler) ServeHTTP(w http.ResponseWriter, r *http.Req
 func (p *PatientVisitReviewHandler) treatmentPlanResponse(w http.ResponseWriter, r *http.Request, treatmentPlan *common.TreatmentPlan, patientVisit *common.PatientVisit, doctor *common.Doctor, patient *common.Patient) {
 	views := make([]TPView, 0)
 	views = append(views, &TPVisitHeaderView{
-		ImageURL: fmt.Sprintf("spruce:///images/doctor_photo_%d", doctor.DoctorId.Int64()),
+		ImageURL: doctor.LargeThumbnailUrl,
 		Title:    fmt.Sprintf("Dr. %s %s", doctor.FirstName, doctor.LastName),
 		Subtitle: "Dermatologist",
 	})
@@ -152,7 +155,7 @@ func (p *PatientVisitReviewHandler) treatmentPlanResponse(w http.ResponseWriter,
 	views = append(views, &TPImageView{
 		ImageWidth:  125,
 		ImageHeight: 45,
-		ImageURL:    "spruce:///images/tmp_signature",
+		ImageURL:    app_url.GetSpruceAssetUrl(app_url.TmpSignature).String(),
 	})
 
 	views = append(views, &TPLargeDividerView{})
@@ -166,18 +169,21 @@ func (p *PatientVisitReviewHandler) treatmentPlanResponse(w http.ResponseWriter,
 		for _, treatment := range treatmentPlan.Treatments {
 			views = append(views, &TPSmallDividerView{})
 
-			iconURL := "spruce:///image/icon_rx"
+			iconURL := app_url.GetSpruceAssetUrl(app_url.IconRX)
 			if treatment.OTC {
-				iconURL = "spruce:///image/icon_otc"
+				iconURL = app_url.GetSpruceAssetUrl(app_url.IconOTC)
 			}
 
 			// only include tapurl and buttontitle if drug details
 			// exist
-			var buttonTitle, tapUrl string
+			var buttonTitle string
+			var tapUrl *app_url.SpruceAction
 			if ndc := treatment.DrugDBIds[erx.NDC]; ndc != "" {
 				if exists, err := p.DataApi.DoesDrugDetailsExist(ndc); exists {
 					buttonTitle = "What to know about " + treatment.DrugName
-					tapUrl = fmt.Sprintf("spruce:///action/show_treatment_guide?treatment_id=%d", treatment.Id.Int64())
+					params := url.Values{}
+					params.Set("treatment_id", strconv.FormatInt(treatment.Id.Int64(), 10))
+					tapUrl = app_url.GetSpruceActionUrl(app_url.ViewTreatmentGuideAction, params)
 				} else if err != nil && err != api.NoRowsError {
 					golog.Errorf("Error when trying to check if drug details exist: %s", err)
 				}
@@ -281,7 +287,7 @@ func (p *PatientVisitReviewHandler) treatmentPlanResponse(w http.ResponseWriter,
 		treatmentListView.Treatments = make([]*TPIconTextView, len(rxTreatments))
 		for i, rxTreatment := range rxTreatments {
 			treatmentListView.Treatments[i] = &TPIconTextView{
-				IconURL:   "spruce:///images/icon_rx",
+				IconURL:   app_url.GetSpruceAssetUrl(app_url.IconRX),
 				Text:      fmt.Sprintf("%s %s", rxTreatment.DrugInternalName, rxTreatment.DosageStrength),
 				TextStyle: "bold",
 			}
@@ -292,8 +298,8 @@ func (p *PatientVisitReviewHandler) treatmentPlanResponse(w http.ResponseWriter,
 	views = append(views, &TPButtonFooterView{
 		FooterText: fmt.Sprintf("If you have any questions or concerns regarding your treatment plan, send Dr. %s a message.", doctor.LastName),
 		ButtonText: fmt.Sprintf("Message Dr. %s", doctor.LastName),
-		IconURL:    "spruce:///images/icon_message",
-		TapURL:     "spruce:///action/message",
+		IconURL:    app_url.GetSpruceAssetUrl(app_url.IconMessage),
+		TapURL:     app_url.GetSpruceActionUrl(app_url.MessageAction, nil),
 	})
 
 	for _, v := range views {
