@@ -22,20 +22,29 @@ var genericPopulators []GenericPatientViewContextPopulator = make([]GenericPatie
 var patientQAPopulators map[string]PatientQAViewContextPopulator = make(map[string]PatientQAViewContextPopulator, 0)
 
 func init() {
-	genericPopulators = append(genericPopulators, patientAlertsPopulator(0))
-	patientQAPopulators[info_intake.QUESTION_TYPE_PHOTO] = patientPhotosPopulator(0)
-	patientQAPopulators[info_intake.QUESTION_TYPE_MULTIPLE_PHOTO] = patientPhotosPopulator(0)
-	patientQAPopulators[info_intake.QUESTION_TYPE_SINGLE_PHOTO] = patientPhotosPopulator(0)
-	patientQAPopulators[info_intake.QUESTION_TYPE_AUTOCOMPLETE] = questionWithSubQuestionsAnswerPopulator(0)
-	patientQAPopulators[info_intake.QUESTION_TYPE_MULTIPLE_CHOICE] = multipleChoiceQAPopulator(0)
-	patientQAPopulators[info_intake.QUESTION_TYPE_SINGLE_ENTRY] = singleEntryAnswerPopulator(0)
-	patientQAPopulators[info_intake.QUESTION_TYPE_FREE_TEXT] = singleEntryAnswerPopulator(0)
-	patientQAPopulators[info_intake.QUESTION_TYPE_SINGLE_SELECT] = singleEntryAnswerPopulator(0)
+	genericPopulators = append(genericPopulators, GenericViewContextPopulator(PopulateAlerts))
+	patientQAPopulators[info_intake.QUESTION_TYPE_PHOTO] = QAViewContextPopulator(PopulatePatientPhotos)
+	patientQAPopulators[info_intake.QUESTION_TYPE_MULTIPLE_PHOTO] = QAViewContextPopulator(PopulatePatientPhotos)
+	patientQAPopulators[info_intake.QUESTION_TYPE_SINGLE_PHOTO] = QAViewContextPopulator(PopulatePatientPhotos)
+	patientQAPopulators[info_intake.QUESTION_TYPE_AUTOCOMPLETE] = QAViewContextPopulator(PopulateAnswersForQuestionsWithSubanswers)
+	patientQAPopulators[info_intake.QUESTION_TYPE_MULTIPLE_CHOICE] = QAViewContextPopulator(PopulateMultipleChoiceAnswers)
+	patientQAPopulators[info_intake.QUESTION_TYPE_SINGLE_ENTRY] = QAViewContextPopulator(PopulateSingleEntryAnswers)
+	patientQAPopulators[info_intake.QUESTION_TYPE_FREE_TEXT] = QAViewContextPopulator(PopulateSingleEntryAnswers)
+	patientQAPopulators[info_intake.QUESTION_TYPE_SINGLE_SELECT] = QAViewContextPopulator(PopulateSingleEntryAnswers)
 }
 
-type patientAlertsPopulator int64
+type QAViewContextPopulator func([]*common.AnswerIntake, *info_intake.Question, *common.ViewContext, api.DataAPI, api.CloudStorageAPI) error
+type GenericViewContextPopulator func(map[int64][]*common.AnswerIntake, []*info_intake.Question, *common.ViewContext, api.DataAPI) error
 
-func (patientAlertsPopulator) PopulateViewContextWithInfo(patientAnswersToQuestions map[int64][]*common.AnswerIntake, questions []*info_intake.Question, context *common.ViewContext, dataApi api.DataAPI) error {
+func (q QAViewContextPopulator) PopulateViewContextWithPatientQA(patientAnswers []*common.AnswerIntake, question *info_intake.Question, context *common.ViewContext, dataApi api.DataAPI, photoStorageService api.CloudStorageAPI) error {
+	return q(patientAnswers, question, context, dataApi, photoStorageService)
+}
+
+func (g GenericViewContextPopulator) PopulateViewContextWithInfo(patientAnswersToQuestions map[int64][]*common.AnswerIntake, questions []*info_intake.Question, context *common.ViewContext, dataApi api.DataAPI) error {
+	return g(patientAnswersToQuestions, questions, context, dataApi)
+}
+
+func PopulateAlerts(patientAnswersToQuestions map[int64][]*common.AnswerIntake, questions []*info_intake.Question, context *common.ViewContext, dataApi api.DataAPI) error {
 	questionIdToQuestion := make(map[int64]*info_intake.Question)
 	for _, question := range questions {
 		questionIdToQuestion[question.QuestionId] = question
@@ -99,9 +108,7 @@ func (patientAlertsPopulator) PopulateViewContextWithInfo(patientAnswersToQuesti
 	return nil
 }
 
-type multipleChoiceQAPopulator int64
-
-func (multipleChoiceQAPopulator) PopulateViewContextWithPatientQA(patientAnswers []*common.AnswerIntake, question *info_intake.Question, context *common.ViewContext, dataApi api.DataAPI, photoStorageService api.CloudStorageAPI) error {
+func PopulateMultipleChoiceAnswers(patientAnswers []*common.AnswerIntake, question *info_intake.Question, context *common.ViewContext, dataApi api.DataAPI, photoStorageService api.CloudStorageAPI) error {
 	if len(patientAnswers) == 0 {
 		populateEmptyStateTextIfPresent(question, context)
 		return nil
@@ -128,9 +135,7 @@ func (multipleChoiceQAPopulator) PopulateViewContextWithPatientQA(patientAnswers
 	return nil
 }
 
-type patientPhotosPopulator int64
-
-func (patientPhotosPopulator) PopulateViewContextWithPatientQA(patientAnswers []*common.AnswerIntake, question *info_intake.Question, context *common.ViewContext, dataApi api.DataAPI, photoStorageService api.CloudStorageAPI) error {
+func PopulatePatientPhotos(patientAnswers []*common.AnswerIntake, question *info_intake.Question, context *common.ViewContext, dataApi api.DataAPI, photoStorageService api.CloudStorageAPI) error {
 	var photos []info_intake.PhotoData
 	photoData, ok := context.Get("patient_visit_photos")
 
@@ -151,9 +156,7 @@ func (patientPhotosPopulator) PopulateViewContextWithPatientQA(patientAnswers []
 	return nil
 }
 
-type singleEntryAnswerPopulator int64
-
-func (singleEntryAnswerPopulator) PopulateViewContextWithPatientQA(patientAnswers []*common.AnswerIntake, question *info_intake.Question, context *common.ViewContext, dataApi api.DataAPI, photoStorageService api.CloudStorageAPI) error {
+func PopulateSingleEntryAnswers(patientAnswers []*common.AnswerIntake, question *info_intake.Question, context *common.ViewContext, dataApi api.DataAPI, photoStorageService api.CloudStorageAPI) error {
 	if len(patientAnswers) == 0 {
 		populateEmptyStateTextIfPresent(question, context)
 		return nil
@@ -176,9 +179,7 @@ func (singleEntryAnswerPopulator) PopulateViewContextWithPatientQA(patientAnswer
 	return nil
 }
 
-type questionWithSubQuestionsAnswerPopulator int64
-
-func (questionWithSubQuestionsAnswerPopulator) PopulateViewContextWithPatientQA(patientAnswers []*common.AnswerIntake, question *info_intake.Question, context *common.ViewContext, dataApi api.DataAPI, photoStorageService api.CloudStorageAPI) error {
+func PopulateAnswersForQuestionsWithSubanswers(patientAnswers []*common.AnswerIntake, question *info_intake.Question, context *common.ViewContext, dataApi api.DataAPI, photoStorageService api.CloudStorageAPI) error {
 	if len(patientAnswers) == 0 {
 		populateEmptyStateTextIfPresent(question, context)
 		return nil
