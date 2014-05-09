@@ -43,7 +43,7 @@ func converQueueItemToDisplayFeedItem(dataApi api.DataAPI, itemToDisplay api.Fee
 		Timestamp:    itemToDisplay.GetTimestamp(),
 	}
 
-	item.ActionUrl, err = itemToDisplay.GetActionUrl(dataApi)
+	item.ActionUrl, err = itemToDisplay.ActionUrl(dataApi)
 	if err != nil {
 		return nil, err
 	}

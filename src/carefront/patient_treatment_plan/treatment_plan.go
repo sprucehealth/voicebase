@@ -155,7 +155,7 @@ func (p *PatientVisitReviewHandler) treatmentPlanResponse(w http.ResponseWriter,
 	views = append(views, &TPImageView{
 		ImageWidth:  125,
 		ImageHeight: 45,
-		ImageURL:    app_url.GetAsset(app_url.TmpSignature).String(),
+		ImageURL:    app_url.Asset(app_url.TmpSignature).String(),
 	})
 
 	views = append(views, &TPLargeDividerView{})
@@ -169,9 +169,9 @@ func (p *PatientVisitReviewHandler) treatmentPlanResponse(w http.ResponseWriter,
 		for _, treatment := range treatmentPlan.Treatments {
 			views = append(views, &TPSmallDividerView{})
 
-			iconURL := app_url.GetAsset(app_url.IconRX)
+			iconURL := app_url.Asset(app_url.IconRX)
 			if treatment.OTC {
-				iconURL = app_url.GetAsset(app_url.IconOTC)
+				iconURL = app_url.Asset(app_url.IconOTC)
 			}
 
 			// only include tapurl and buttontitle if drug details
@@ -183,7 +183,7 @@ func (p *PatientVisitReviewHandler) treatmentPlanResponse(w http.ResponseWriter,
 					buttonTitle = "What to know about " + treatment.DrugName
 					params := url.Values{}
 					params.Set("treatment_id", strconv.FormatInt(treatment.Id.Int64(), 10))
-					tapUrl = app_url.GetAction(app_url.ViewTreatmentGuideAction, params)
+					tapUrl = app_url.Action(app_url.ViewTreatmentGuideAction, params)
 				} else if err != nil && err != api.NoRowsError {
 					golog.Errorf("Error when trying to check if drug details exist: %s", err)
 				}
@@ -287,7 +287,7 @@ func (p *PatientVisitReviewHandler) treatmentPlanResponse(w http.ResponseWriter,
 		treatmentListView.Treatments = make([]*TPIconTextView, len(rxTreatments))
 		for i, rxTreatment := range rxTreatments {
 			treatmentListView.Treatments[i] = &TPIconTextView{
-				IconURL:   app_url.GetAsset(app_url.IconRX),
+				IconURL:   app_url.Asset(app_url.IconRX),
 				Text:      fmt.Sprintf("%s %s", rxTreatment.DrugInternalName, rxTreatment.DosageStrength),
 				TextStyle: "bold",
 			}
@@ -298,8 +298,8 @@ func (p *PatientVisitReviewHandler) treatmentPlanResponse(w http.ResponseWriter,
 	views = append(views, &TPButtonFooterView{
 		FooterText: fmt.Sprintf("If you have any questions or concerns regarding your treatment plan, send Dr. %s a message.", doctor.LastName),
 		ButtonText: fmt.Sprintf("Message Dr. %s", doctor.LastName),
-		IconURL:    app_url.GetAsset(app_url.IconMessage),
-		TapURL:     app_url.GetAction(app_url.MessageAction, nil),
+		IconURL:    app_url.Asset(app_url.IconMessage),
+		TapURL:     app_url.Action(app_url.MessageAction, nil),
 	})
 
 	for _, v := range views {
