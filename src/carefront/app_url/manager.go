@@ -20,7 +20,7 @@ const (
 	ViewTreatmentPlanAction         = "view_treatment_plan"
 	ViewMessagesAction              = "view_messages"
 	ViewCareTeam                    = "view_care_team"
-	ViewTreatmentGuideAction        = "view_treatment_guide_action"
+	ViewTreatmentGuideAction        = "view_treatment_guide"
 	MessageAction                   = "message"
 
 	// asset names

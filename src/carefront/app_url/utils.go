@@ -31,7 +31,6 @@ func (s SpruceAsset) MarshalJSON() ([]byte, error) {
 	b := make([]byte, 0)
 	b = append(b, '"')
 	b = append(b, []byte(spruceImageUrl)...)
-	b = append(b, '/')
 	b = append(b, []byte(s.Name)...)
 	b = append(b, '"')
 
@@ -59,7 +58,6 @@ func (s SpruceAction) MarshalJSON() ([]byte, error) {
 	b := make([]byte, 0)
 	b = append(b, '"')
 	b = append(b, []byte(spruceActionUrl)...)
-	b = append(b, '/')
 	b = append(b, []byte(s.ActionName)...)
 	if len(s.params) == 0 {
 		b = append(b, '?')
