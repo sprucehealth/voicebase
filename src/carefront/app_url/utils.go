@@ -30,7 +30,7 @@ func (s SpruceAsset) unexportableInterface() bool {
 func (s SpruceAsset) MarshalJSON() ([]byte, error) {
 	b := make([]byte, 0)
 	b = append(b, '"')
-	b = append(b, []byte(spruceActionUrl)...)
+	b = append(b, []byte(spruceImageUrl)...)
 	b = append(b, '/')
 	b = append(b, []byte(s.Name)...)
 	b = append(b, '"')
