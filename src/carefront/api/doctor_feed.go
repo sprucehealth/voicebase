@@ -237,7 +237,7 @@ func (d *DoctorQueueItem) ActionUrl(dataApi DataAPI) (*app_url.SpruceAction, err
 			patientVisitId, err := dataApi.GetPatientVisitIdFromTreatmentPlanId(d.ItemId)
 			if err == NoRowsError {
 				golog.Errorf("Unable to get patient visit id from treatment plan id %d", d.ItemId)
-				return "", nil
+				return nil, nil
 			} else if err != nil {
 				return nil, err
 			}
