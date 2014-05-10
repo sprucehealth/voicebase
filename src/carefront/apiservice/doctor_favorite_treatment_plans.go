@@ -103,8 +103,8 @@ func (d *DoctorFavoriteTreatmentPlansHandler) addOrUpdateFavoriteTreatmentPlan(w
 	}
 
 	// ensure that favorite treatment plan has treatments
-	if len(requestData.FavoriteTreatmentPlan.Treatments) == 0 {
-		WriteDeveloperError(w, http.StatusBadRequest, "A favorite treatment plan has to have treamtents")
+	if len(requestData.FavoriteTreatmentPlan.Treatments) == 0 && len(requestData.FavoriteTreatmentPlan.RegimenPlan.RegimenSections) == 0 && len(requestData.FavoriteTreatmentPlan.Advice.SelectedAdvicePoints) == 0 {
+		WriteDeveloperError(w, http.StatusBadRequest, "A favorite treatment plan must have either a set of treatments, a regimen plan or list of advice to be added")
 		return
 	}
 

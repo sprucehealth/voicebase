@@ -262,6 +262,7 @@ func (d *DoctorQueueItem) ActionUrl(dataApi DataAPI) (*app_url.SpruceAction, err
 		patient, err := dataApi.GetPatientFromRefillRequestId(d.ItemId)
 		if err != nil {
 			golog.Errorf("Unable to get patient from refill request id: %s", err)
+			return nil, nil
 		}
 
 		params := url.Values{}
