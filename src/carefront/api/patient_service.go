@@ -490,12 +490,30 @@ func (d *DataService) GetPatientFromTreatmentId(treatmentId int64) (*common.Pati
 		`treatment.id = ?
 			AND (phone IS NULl OR (patient_phone.status = 'ACTIVE'))
 			AND (zip_code IS NULl OR patient_location.status = 'ACTIVE')`, treatmentId)
-	if len(patients) > 0 {
+	switch l := len(patients); {
+	case l == 1:
 		err = d.getAddressAndPhoneNumbersForPatient(patients[0])
 		return patients[0], err
+	case l == 0:
+		return nil, NoRowsError
 	}
 
-	return nil, err
+	return nil, errors.New("Got more than 1 patient for treatment when expected just 1")
+}
+
+func (d *DataService) GetPatientFromUnlinkedDNTFTreatment(unlinkedDNTFTreatmentId int64) (*common.Patient, error) {
+	patients, err := d.getPatientBasedOnQuery("unlinked_dntf_treatment",
+		`INNER JOIN patient ON patient_id = patient.id`,
+		`id = ?`, unlinkedDNTFTreatmentId)
+	switch l := len(patients); {
+	case l == 1:
+		err = d.getAddressAndPhoneNumbersForPatient(patients[0])
+		return patients[0], err
+	case l == 0:
+		return nil, NoRowsError
+	}
+
+	return nil, errors.New("Got more than 1 patient for treatment when expected just 1")
 }
 
 func (d *DataService) UpdatePatientAddress(patientId int64, addressLine1, addressLine2, city, state, zipCode, addressType string) error {

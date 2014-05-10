@@ -220,14 +220,18 @@ func (d *DoctorQueueItem) GetDisplayTypes() []string {
 func (d *DoctorQueueItem) ActionUrl(dataApi DataAPI) (*app_url.SpruceAction, error) {
 	switch d.EventType {
 	case EVENT_TYPE_PATIENT_VISIT:
+		patientId, err := dataApi.GetPatientIdFromPatientVisitId(d.ItemId)
+		if err != nil {
+			golog.Errorf("Unable to get patient id from patient visit id: %s", err)
+			return nil, nil
+		}
+		params := url.Values{}
+		params.Set("patient_visit_id", strconv.FormatInt(d.ItemId, 10))
+		params.Set("patient_id", strconv.FormatInt(patientId, 10))
 		switch d.Status {
 		case QUEUE_ITEM_STATUS_COMPLETED, QUEUE_ITEM_STATUS_TRIAGED:
-			params := url.Values{}
-			params.Set("patient_visit_id", strconv.FormatInt(d.ItemId, 10))
 			return app_url.Action(app_url.ViewCompletedPatientVisitAction, params), nil
 		case QUEUE_ITEM_STATUS_ONGOING, QUEUE_ITEM_STATUS_PENDING:
-			params := url.Values{}
-			params.Set("patient_visit_id", strconv.FormatInt(d.ItemId, 10))
 			return app_url.Action(app_url.BeginPatientVisitReviewAction, params), nil
 		}
 	case EVENT_TYPE_TREATMENT_PLAN:
@@ -235,6 +239,7 @@ func (d *DoctorQueueItem) ActionUrl(dataApi DataAPI) (*app_url.SpruceAction, err
 		switch d.Status {
 		case QUEUE_ITEM_STATUS_COMPLETED, QUEUE_ITEM_STATUS_TRIAGED:
 			patientVisitId, err := dataApi.GetPatientVisitIdFromTreatmentPlanId(d.ItemId)
+
 			if err == NoRowsError {
 				golog.Errorf("Unable to get patient visit id from treatment plan id %d", d.ItemId)
 				return nil, nil
@@ -242,39 +247,65 @@ func (d *DoctorQueueItem) ActionUrl(dataApi DataAPI) (*app_url.SpruceAction, err
 				return nil, err
 			}
 
+			patientId, err := dataApi.GetPatientIdFromPatientVisitId(patientVisitId)
+			if err != nil {
+				golog.Errorf("Unable to get patient id from patient visit id: %s", err)
+				return nil, nil
+			}
+
 			params := url.Values{}
 			params.Set("patient_visit_id", strconv.FormatInt(patientVisitId, 10))
+			params.Set("patient_id", strconv.FormatInt(patientId, 10))
 			return app_url.Action(app_url.ViewCompletedPatientVisitAction, params), nil
 		}
 	case EVENT_TYPE_REFILL_TRANSMISSION_ERROR:
+		patient, err := dataApi.GetPatientFromRefillRequestId(d.ItemId)
+		if err != nil {
+			golog.Errorf("Unable to get patient from refill request id: %s", err)
+		}
+
 		params := url.Values{}
 		params.Set("refill_request_id", strconv.FormatInt(d.ItemId, 10))
+		params.Set("patient_id", strconv.FormatInt(patient.PatientId.Int64(), 10))
 		return app_url.Action(app_url.ViewRefillRequestAction, params), nil
 	case EVENT_TYPE_REFILL_REQUEST:
+		patient, err := dataApi.GetPatientFromRefillRequestId(d.ItemId)
+		if err != nil {
+			golog.Errorf("Unable to get patient from refill request id %d", d.ItemId)
+			return nil, nil
+		}
+
 		switch d.Status {
 		case QUEUE_ITEM_STATUS_ONGOING, QUEUE_ITEM_STATUS_PENDING:
 			params := url.Values{}
 			params.Set("refill_request_id", strconv.FormatInt(d.ItemId, 10))
+			params.Set("patient_id", strconv.FormatInt(patient.PatientId.Int64(), 10))
 			return app_url.Action(app_url.ViewRefillRequestAction, params), nil
 		case QUEUE_ITEM_STATUS_COMPLETED, QUEUE_ITEM_STATUS_REFILL_APPROVED, QUEUE_ITEM_STATUS_REFILL_DENIED:
-			patient, err := dataApi.GetPatientFromRefillRequestId(d.ItemId)
-			if err == NoRowsError {
-				golog.Errorf("Unable to get patient from refill request id %d", d.ItemId)
-				return nil, nil
-			} else if err != nil {
-				return nil, err
-			}
 			params := url.Values{}
 			params.Set("patient_id", strconv.FormatInt(patient.PatientId.Int64(), 10))
 			return app_url.Action(app_url.ViewPatientTreatmentsAction, params), nil
 		}
 	case EVENT_TYPE_TRANSMISSION_ERROR:
+		patient, err := dataApi.GetPatientFromTreatmentId(d.ItemId)
+		if err != nil {
+			golog.Errorf("Unable to get patient from treatment id : %s", err)
+			return nil, nil
+		}
+
 		params := url.Values{}
 		params.Set("treatment_id", strconv.FormatInt(d.ItemId, 10))
+		params.Set("patient_id", strconv.FormatInt(patient.PatientId.Int64(), 10))
 		return app_url.Action(app_url.ViewTransmissionErrorAction, params), nil
 	case EVENT_TYPE_UNLINKED_DNTF_TRANSMISSION_ERROR:
+		patient, err := dataApi.GetPatientFromUnlinkedDNTFTreatment(d.ItemId)
+		if err != nil {
+			golog.Errorf("Unable to get patient from unlinked dntf treatment: %s", err)
+			return nil, nil
+		}
 		params := url.Values{}
 		params.Set("unlinked_dntf_treatment_id", strconv.FormatInt(d.ItemId, 10))
+		params.Set("patient_id", strconv.FormatInt(patient.PatientId.Int64(), 10))
 		return app_url.Action(app_url.ViewTransmissionErrorAction, params), nil
 	case EVENT_TYPE_CONVERSATION:
 		conversation, err := dataApi.GetConversation(d.ItemId)
@@ -288,6 +319,7 @@ func (d *DoctorQueueItem) ActionUrl(dataApi DataAPI) (*app_url.SpruceAction, err
 			if person.RoleType == PATIENT_ROLE {
 				params := url.Values{}
 				params.Set("patient_id", strconv.FormatInt(person.Patient.PatientId.Int64(), 10))
+				params.Set("conversation_id", strconv.FormatInt(d.ItemId, 10))
 				return app_url.Action(app_url.ViewPatientConversationsAction, params), nil
 			}
 		}
