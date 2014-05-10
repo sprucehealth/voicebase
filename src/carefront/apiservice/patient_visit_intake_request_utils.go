@@ -6,7 +6,7 @@ import (
 	"encoding/json"
 )
 
-func getClientLayoutForPatientVisit(patientVisitId, languageId int64, dataApi api.DataAPI, layoutStorageService api.CloudStorageAPI) (*info_intake.InfoIntakeLayout, int64, error) {
+func GetClientLayoutForPatientVisit(patientVisitId, languageId int64, dataApi api.DataAPI, layoutStorageService api.CloudStorageAPI) (*info_intake.InfoIntakeLayout, int64, error) {
 	layoutVersionId, err := dataApi.GetLayoutVersionIdForPatientVisit(patientVisitId)
 	if err != nil {
 		return nil, 0, err
@@ -17,11 +17,11 @@ func getClientLayoutForPatientVisit(patientVisitId, languageId int64, dataApi ap
 		return nil, 0, err
 	}
 
-	patientVisitLayout, err := getHealthConditionObjectAtLocation(bucket, key, region, layoutStorageService)
+	patientVisitLayout, err := GetHealthConditionObjectAtLocation(bucket, key, region, layoutStorageService)
 	return patientVisitLayout, layoutVersionId, err
 }
 
-func getHealthConditionObjectAtLocation(bucket, key, region string, layoutStorageService api.CloudStorageAPI) (*info_intake.InfoIntakeLayout, error) {
+func GetHealthConditionObjectAtLocation(bucket, key, region string, layoutStorageService api.CloudStorageAPI) (*info_intake.InfoIntakeLayout, error) {
 	data, _, err := layoutStorageService.GetObjectAtLocation(bucket, key, region)
 	if err != nil {
 		return nil, err
@@ -33,7 +33,7 @@ func getHealthConditionObjectAtLocation(bucket, key, region string, layoutStorag
 	return healthCondition, nil
 }
 
-func getQuestionIdsInPatientVisitLayout(patientVisitLayout *info_intake.InfoIntakeLayout) []int64 {
+func GetQuestionIdsInPatientVisitLayout(patientVisitLayout *info_intake.InfoIntakeLayout) []int64 {
 	questionIds := make([]int64, 0)
 	for _, section := range patientVisitLayout.Sections {
 		for _, screen := range section.Screens {
@@ -45,7 +45,7 @@ func getQuestionIdsInPatientVisitLayout(patientVisitLayout *info_intake.InfoInta
 	return questionIds
 }
 
-func getQuestionsInPatientVisitLayout(patientVisitLayout *info_intake.InfoIntakeLayout) []*info_intake.Question {
+func GetQuestionsInPatientVisitLayout(patientVisitLayout *info_intake.InfoIntakeLayout) []*info_intake.Question {
 	questions := make([]*info_intake.Question, 0)
 	for _, section := range patientVisitLayout.Sections {
 		for _, screen := range section.Screens {

@@ -187,7 +187,7 @@ func (s *PatientVisitHandler) returnLastCreatedPatientVisit(w http.ResponseWrite
 	// based on what is the current active layout because that may have potentially changed and we want to ensure
 	// to not confuse the patient by changing the question structure under their feet for this particular patient visit
 	// in other words, want to show them what they have already seen in terms of a flow.
-	patientVisitLayout, _, err := getClientLayoutForPatientVisit(patientVisitId, api.EN_LANGUAGE_ID, s.DataApi, s.LayoutStorageService)
+	patientVisitLayout, _, err := GetClientLayoutForPatientVisit(patientVisitId, api.EN_LANGUAGE_ID, s.DataApi, s.LayoutStorageService)
 	if err != nil {
 		WriteDeveloperError(w, http.StatusInternalServerError, "Unable to get client layout for existing patient visit: "+err.Error())
 		return
@@ -201,7 +201,7 @@ func (s *PatientVisitHandler) returnLastCreatedPatientVisit(w http.ResponseWrite
 
 	// get answers that the patient has previously entered for this particular patient visit
 	// and feed the answers into the layout
-	questionIdsInAllSections := getQuestionIdsInPatientVisitLayout(patientVisitLayout)
+	questionIdsInAllSections := GetQuestionIdsInPatientVisitLayout(patientVisitLayout)
 
 	patientAnswersForVisit, err := s.DataApi.GetPatientAnswersForQuestionsBasedOnQuestionIds(questionIdsInAllSections, patientId, patientVisitId)
 	if err != nil {
@@ -358,6 +358,6 @@ func (s *PatientVisitHandler) getCurrentActiveClientLayoutForHealthCondition(hea
 		return
 	}
 
-	healthCondition, err = getHealthConditionObjectAtLocation(bucket, key, region, s.LayoutStorageService)
+	healthCondition, err = GetHealthConditionObjectAtLocation(bucket, key, region, s.LayoutStorageService)
 	return
 }

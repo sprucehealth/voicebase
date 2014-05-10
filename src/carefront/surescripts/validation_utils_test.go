@@ -1,4 +1,4 @@
-package apiservice
+package surescripts
 
 import (
 	"carefront/encoding"
@@ -6,95 +6,95 @@ import (
 )
 
 func TestValidPhoneNumber(t *testing.T) {
-	if err := validatePhoneNumber("2068773590"); err != nil {
+	if err := ValidatePhoneNumber("2068773590"); err != nil {
 		t.Fatalf("Expected phone number to be valid: %+v", err)
 	}
 
-	if err := validatePhoneNumber("206-877-3590"); err != nil {
+	if err := ValidatePhoneNumber("206-877-3590"); err != nil {
 		t.Fatal("Expected phone number to be invalid")
 	}
 
 }
 
 func TestValidPhoneNumberWithExtension(t *testing.T) {
-	if err := validatePhoneNumber("2068773590x123"); err != nil {
+	if err := ValidatePhoneNumber("2068773590x123"); err != nil {
 		t.Fatalf("Expected phone number to be valid: %+v", err)
 	}
 
-	if err := validatePhoneNumber("2068773590X123"); err != nil {
+	if err := ValidatePhoneNumber("2068773590X123"); err != nil {
 		t.Fatalf("Expected phone number to be valid: %+v", err)
 	}
 
-	if err := validatePhoneNumber("206-877-3590x12345135315151"); err != nil {
+	if err := ValidatePhoneNumber("206-877-3590x12345135315151"); err != nil {
 		t.Fatal("Expected phone number to be invalid")
 	}
 
-	if err := validatePhoneNumber("206-877-3590X1243"); err != nil {
+	if err := ValidatePhoneNumber("206-877-3590X1243"); err != nil {
 		t.Fatal("Expected phone number to be invalid")
 	}
 }
 
 func TestInvalidPhoneNumberShort(t *testing.T) {
-	if err := validatePhoneNumber("206877359"); err == nil {
+	if err := ValidatePhoneNumber("206877359"); err == nil {
 		t.Fatal("Expected phone number to be invalid")
 	}
 }
 
 func TestInvalidPhoneNumberAlpha(t *testing.T) {
-	if err := validatePhoneNumber("a206877359"); err == nil {
+	if err := ValidatePhoneNumber("a206877359"); err == nil {
 		t.Fatal("Expected phone number to be invalid")
 	}
 
-	if err := validatePhoneNumber("206877359a"); err == nil {
+	if err := ValidatePhoneNumber("206877359a"); err == nil {
 		t.Fatal("Expected phone number to be invalid")
 	}
 
-	if err := validatePhoneNumber("2068a77359"); err == nil {
+	if err := ValidatePhoneNumber("2068a77359"); err == nil {
 		t.Fatal("Expected phone number to be invalid")
 	}
 
-	if err := validatePhoneNumber("206-a12-3590"); err == nil {
+	if err := ValidatePhoneNumber("206-a12-3590"); err == nil {
 		t.Fatal("Expected phone number to be invalid")
 	}
 
-	if err := validatePhoneNumber("206-123-3590xa24"); err == nil {
+	if err := ValidatePhoneNumber("206-123-3590xa24"); err == nil {
 		t.Fatal("Expected phone number to be invalid")
 	}
 
-	if err := validatePhoneNumber("a06-123-3590"); err == nil {
+	if err := ValidatePhoneNumber("a06-123-3590"); err == nil {
 		t.Fatal("Expected phone number to be invalid")
 	}
 }
 
 func TestInvalidPhoneNumberLength(t *testing.T) {
 
-	if err := validatePhoneNumber("206-1243-3590"); err == nil {
+	if err := ValidatePhoneNumber("206-1243-3590"); err == nil {
 		t.Fatal("Expected phone number to be invalid")
 	}
 
-	if err := validatePhoneNumber("2064-123-3590"); err == nil {
+	if err := ValidatePhoneNumber("2064-123-3590"); err == nil {
 		t.Fatal("Expected phone number to be invalid")
 	}
 
-	if err := validatePhoneNumber("206-123-35904"); err == nil {
+	if err := ValidatePhoneNumber("206-123-35904"); err == nil {
 		t.Fatal("Expected phone number to be invalid")
 	}
 }
 
 func TestInvalidPhoneNumberEmpty(t *testing.T) {
-	if err := validatePhoneNumber(""); err == nil {
+	if err := ValidatePhoneNumber(""); err == nil {
 		t.Fatal("Expected phone number to be invalid")
 	}
 }
 
 func TestInvalidPhoneNumberExtensionInvalid(t *testing.T) {
-	if err := validatePhoneNumber("2068773590x"); err == nil {
+	if err := ValidatePhoneNumber("2068773590x"); err == nil {
 		t.Fatal("Expected phone number to be invalid")
 	}
 }
 
 func TestInvalidPhoneNumberInvalidAreaCode(t *testing.T) {
-	if err := validatePhoneNumber("0008773590"); err == nil {
+	if err := ValidatePhoneNumber("0008773590"); err == nil {
 		t.Fatal("Expected phone number to be invalid")
 	}
 }

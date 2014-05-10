@@ -18,6 +18,7 @@ import (
 	"carefront/apiservice"
 	"carefront/common"
 	"carefront/libs/erx"
+	"carefront/patient_file"
 	thriftapi "carefront/thrift/api"
 )
 
@@ -133,8 +134,9 @@ func SubmitPatientVisitDiagnosis(PatientVisitId int64, doctor *common.Doctor, te
 	return
 }
 
-func StartReviewingPatientVisit(patientVisitId int64, doctor *common.Doctor, testData TestData, t *testing.T) *apiservice.DoctorPatientVisitReviewResponse {
-	doctorPatientVisitReviewHandler := &apiservice.DoctorPatientVisitReviewHandler{DataApi: testData.DataApi, LayoutStorageService: testData.CloudStorageService, PatientPhotoStorageService: testData.CloudStorageService}
+func StartReviewingPatientVisit(patientVisitId int64, doctor *common.Doctor, testData TestData, t *testing.T) {
+	doctorPatientVisitReviewHandler := patient_file.NewDoctorPatientVisitReviewHandler(testData.DataApi, nil, testData.CloudStorageService, testData.CloudStorageService)
+
 	ts := httptest.NewServer(doctorPatientVisitReviewHandler)
 	defer ts.Close()
 
@@ -143,14 +145,7 @@ func StartReviewingPatientVisit(patientVisitId int64, doctor *common.Doctor, tes
 		t.Fatal("Unable to make call to get patient visit review for patient: " + err.Error())
 	}
 
-	doctorPatientVisitReviewResponse := &apiservice.DoctorPatientVisitReviewResponse{}
-	err = json.NewDecoder(resp.Body).Decode(doctorPatientVisitReviewResponse)
-	if err != nil {
-		t.Fatal("Unable to unmarshal response body in to json object: " + err.Error())
-	}
 	CheckSuccessfulStatusCode(resp, "Unable to make successful call to get patient visit review: ", t)
-
-	return doctorPatientVisitReviewResponse
 }
 
 func pickATreatmentPlanForPatientVisit(patientVisitId int64, doctor *common.Doctor, favoriteTreatmentPlan *common.FavoriteTreatmentPlan, testData TestData, t *testing.T) *apiservice.DoctorTreatmentPlanResponse {

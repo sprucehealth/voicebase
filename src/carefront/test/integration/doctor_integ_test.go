@@ -17,6 +17,7 @@ import (
 	"carefront/api"
 	"carefront/apiservice"
 	"carefront/common"
+	"carefront/patient_file"
 )
 
 func TestDoctorRegistration(t *testing.T) {
@@ -306,7 +307,8 @@ func TestDoctorSubmissionOfPatientVisitReview(t *testing.T) {
 	}
 
 	// get the doctor to start reviewing the patient visit
-	doctorPatientVisitReviewHandler := &apiservice.DoctorPatientVisitReviewHandler{DataApi: testData.DataApi, LayoutStorageService: testData.CloudStorageService, PatientPhotoStorageService: testData.CloudStorageService}
+	doctorPatientVisitReviewHandler := patient_file.NewDoctorPatientVisitReviewHandler(testData.DataApi, nil, testData.CloudStorageService, testData.CloudStorageService)
+
 	ts2 := httptest.NewServer(doctorPatientVisitReviewHandler)
 	defer ts2.Close()
 

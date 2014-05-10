@@ -1,6 +1,6 @@
 // Using http://smartystreets.com/ for Address Validation and Zipcode lookup
 
-package address_validation
+package address
 
 import (
 	"encoding/json"

@@ -2,9 +2,9 @@ package integration
 
 import (
 	"bytes"
+	"carefront/address"
 	"carefront/apiservice"
 	"carefront/common"
-	"carefront/libs/address_validation"
 	"carefront/libs/payment"
 	"encoding/json"
 	"fmt"
@@ -36,8 +36,8 @@ func TestAddCardsForPatient(t *testing.T) {
 		CustomerToReturn: customerToAdd,
 	}
 
-	stubAddressValidationService := &address_validation.StubAddressValidationService{
-		CityStateToReturn: address_validation.CityState{
+	stubAddressValidationService := &address.StubAddressValidationService{
+		CityStateToReturn: address.CityState{
 			City:              "San Francisco",
 			State:             "California",
 			StateAbbreviation: "CA",

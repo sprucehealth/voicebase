@@ -3,6 +3,7 @@ package apiservice
 import (
 	"carefront/common"
 	"carefront/libs/erx"
+	"carefront/surescripts"
 	"errors"
 	"fmt"
 	"net/http"
@@ -37,7 +38,7 @@ func validateTreatment(treatment *common.Treatment) error {
 		return errors.New("Patient Instructions for treatment cannot be empty")
 	}
 
-	if len(treatment.PatientInstructions) > maxPatientInstructionsLength {
+	if len(treatment.PatientInstructions) > surescripts.MaxPatientInstructionsLength {
 		return errors.New("Patient instructions should not be greater than 140 characters")
 	}
 
@@ -45,7 +46,7 @@ func validateTreatment(treatment *common.Treatment) error {
 		return errors.New("Drug DB Ids for treatment cannot be empty")
 	}
 
-	if treatment.NumberRefills.Int64Value > maxNumberRefillsMaxValue {
+	if treatment.NumberRefills.Int64Value > surescripts.MaxNumberRefillsMaxValue {
 		return errors.New(("Number of refills has to be less than 99"))
 	}
 
@@ -53,11 +54,11 @@ func validateTreatment(treatment *common.Treatment) error {
 		return errors.New("Days Supply cannot be 0")
 	}
 
-	if treatment.DaysSupply.Int64Value > maxDaysSupplyMaxValue {
+	if treatment.DaysSupply.Int64Value > surescripts.MaxDaysSupplyMaxValue {
 		return errors.New("Days supply cannot be greater than 999")
 	}
 
-	if len(treatment.PharmacyNotes) > maxPharmacyNotesLength {
+	if len(treatment.PharmacyNotes) > surescripts.MaxPharmacyNotesLength {
 		return errors.New("Pharmacy notes should not be great than 210 characters")
 	}
 

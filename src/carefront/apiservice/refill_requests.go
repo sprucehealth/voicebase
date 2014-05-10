@@ -8,6 +8,7 @@ import (
 	"carefront/libs/erx"
 	"carefront/libs/golog"
 	"carefront/libs/pharmacy"
+	"carefront/surescripts"
 	"encoding/json"
 	"net/http"
 	"sort"
@@ -81,7 +82,7 @@ func (d *DoctorRefillRequestHandler) resolveRefillRequest(w http.ResponseWriter,
 		return
 	}
 
-	if len(requestData.Comments) > maxRefillRequestCommentLength {
+	if len(requestData.Comments) > surescripts.MaxRefillRequestCommentLength {
 		WriteUserError(w, http.StatusBadRequest, "Comments for refill request cannot be greater than 70 characters")
 		return
 	}

@@ -1,15 +1,7 @@
 package main
 
 import (
-	"crypto/tls"
-	"fmt"
-	"log"
-	"net"
-	"net/http"
-	"os"
-	"strconv"
-	"time"
-
+	"carefront/address"
 	"carefront/api"
 	"carefront/apiservice"
 	"carefront/app_worker"
@@ -18,7 +10,6 @@ import (
 	"carefront/demo"
 	"carefront/doctor_queue"
 	"carefront/homelog"
-	"carefront/libs/address_validation"
 	"carefront/libs/aws"
 	"carefront/libs/erx"
 	"carefront/libs/golog"
@@ -30,11 +21,20 @@ import (
 	"carefront/messages"
 	"carefront/notify"
 	"carefront/patient"
+	"carefront/patient_file"
 	"carefront/patient_treatment_plan"
 	"carefront/photos"
 	"carefront/services/auth"
 	thriftapi "carefront/thrift/api"
 	"carefront/treatment_plan"
+	"crypto/tls"
+	"fmt"
+	"log"
+	"net"
+	"net/http"
+	"os"
+	"strconv"
+	"time"
 
 	"github.com/SpruceHealth/go-proxy-protocol/proxyproto"
 	"github.com/samuel/go-metrics/metrics"
@@ -230,7 +230,7 @@ func main() {
 	mapsService := maps.NewGoogleMapsService(metricsRegistry.Scope("google_maps_api"))
 	doseSpotService := erx.NewDoseSpotService(conf.DoseSpot.ClinicId, conf.DoseSpot.UserId, conf.DoseSpot.ClinicKey, metricsRegistry.Scope("dosespot_api"))
 
-	smartyStreetsService := &address_validation.SmartyStreetsService{
+	smartyStreetsService := &address.SmartyStreetsService{
 		AuthId:    conf.SmartyStreets.AuthId,
 		AuthToken: conf.SmartyStreets.AuthToken,
 	}
@@ -310,12 +310,7 @@ func main() {
 		PatientLayoutBucket: conf.PatientLayoutBucket,
 		AWSRegion:           conf.AWSRegion,
 	}
-	doctorPatientVisitReviewHandler := &apiservice.DoctorPatientVisitReviewHandler{
-		DataApi:                    dataApi,
-		LayoutStorageService:       cloudStorageApi,
-		PharmacySearchService:      pharmacy.GooglePlacesPharmacySearchService(0),
-		PatientPhotoStorageService: photoAnswerCloudStorageApi,
-	}
+
 	staticContentHandler := &apiservice.StaticContentHandler{
 		DataApi:               dataApi,
 		ContentStorageService: cloudStorageApi,
@@ -363,18 +358,11 @@ func main() {
 	diagnosisSummaryHandler := &apiservice.DiagnosisSummaryHandler{DataApi: dataApi}
 	doctorRegimenHandler := apiservice.NewDoctorRegimenHandler(dataApi)
 	doctorAdviceHandler := apiservice.NewDoctorAdviceHandler(dataApi)
-	doctorPatientUpdateHandler := &apiservice.DoctorPatientUpdateHandler{
-		DataApi:              dataApi,
-		ErxApi:               doseSpotService,
-		AddressValidationApi: smartyStreetsService,
-	}
 
 	doctorUpdatePatientPharmacyHandler := &apiservice.DoctorUpdatePatientPharmacyHandler{
 		DataApi: dataApi,
 	}
-	doctorPatientTreatmentsHandler := &apiservice.DoctorPatientTreatmentsHandler{
-		DataApi: dataApi,
-	}
+
 	doctorPharmacySearchHandler := &apiservice.DoctorPharmacySearchHandler{
 		DataApi: dataApi,
 		ErxApi:  doseSpotService,
@@ -430,13 +418,13 @@ func main() {
 	mux.Handle("/v1/doctor/rx/error/resolve", doctorPrescriptionErrorIgnoreHandler)
 	mux.Handle("/v1/doctor/rx/refill/request", doctorRefillRequestHandler)
 	mux.Handle("/v1/doctor/rx/refill/denial_reasons", refillRequestDenialReasonsHandler)
-	mux.Handle("/v1/doctor/patient/treatments", doctorPatientTreatmentsHandler)
+	mux.Handle("/v1/doctor/patient/treatments", patient_file.NewDoctorPatientTreatmentsHandler(dataApi))
 
-	mux.Handle("/v1/doctor/patient", doctorPatientUpdateHandler)
+	mux.Handle("/v1/doctor/patient", patient_file.NewDoctorPatientHandler(dataApi, doseSpotService, smartyStreetsService))
 	mux.Handle("/v1/doctor/patient/pharmacy", doctorUpdatePatientPharmacyHandler)
 	mux.Handle("/v1/doctor/pharmacy", doctorPharmacySearchHandler)
 
-	mux.Handle("/v1/doctor/visit/review", doctorPatientVisitReviewHandler)
+	mux.Handle("/v1/doctor/visit/review", patient_file.NewDoctorPatientVisitReviewHandler(dataApi, pharmacy.GooglePlacesPharmacySearchService(0), cloudStorageApi, photoAnswerCloudStorageApi))
 	mux.Handle("/v1/doctor/visit/treatment_plan", doctorTreatmentPlanHandler)
 	mux.Handle("/v1/doctor/visit/diagnosis", diagnosePatientHandler)
 	mux.Handle("/v1/doctor/visit/diagnosis/summary", diagnosisSummaryHandler)

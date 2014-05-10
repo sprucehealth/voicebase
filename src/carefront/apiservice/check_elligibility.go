@@ -1,9 +1,9 @@
 package apiservice
 
 import (
+	"carefront/address"
 	"carefront/api"
 	"carefront/common"
-	"carefront/libs/address_validation"
 	"net/http"
 
 	"github.com/gorilla/schema"
@@ -11,7 +11,7 @@ import (
 
 type CheckCareProvidingElligibilityHandler struct {
 	DataApi              api.DataAPI
-	AddressValidationApi address_validation.AddressValidationAPI
+	AddressValidationApi address.AddressValidationAPI
 	StaticContentUrl     string
 }
 
@@ -51,7 +51,7 @@ func (c *CheckCareProvidingElligibilityHandler) ServeHTTP(w http.ResponseWriter,
 	// given the zipcode, cover to city and state info
 	cityStateInfo, err := c.AddressValidationApi.ZipcodeLookup(requestData.Zipcode)
 	if err != nil {
-		if err == address_validation.InvalidZipcodeError {
+		if err == address.InvalidZipcodeError {
 			WriteUserError(w, http.StatusBadRequest, "Please enter a valid zipcode")
 			return
 		}

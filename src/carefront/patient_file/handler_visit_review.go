@@ -1,7 +1,8 @@
-package apiservice
+package patient_file
 
 import (
 	"carefront/api"
+	"carefront/apiservice"
 	"carefront/common"
 	"carefront/info_intake"
 	"carefront/libs/pharmacy"
@@ -13,118 +14,127 @@ import (
 	"github.com/gorilla/schema"
 )
 
-type DoctorPatientVisitReviewHandler struct {
+type doctorPatientVisitReviewHandler struct {
 	DataApi                    api.DataAPI
 	PharmacySearchService      pharmacy.PharmacySearchAPI
 	LayoutStorageService       api.CloudStorageAPI
 	PatientPhotoStorageService api.CloudStorageAPI
 }
 
-type DoctorPatientVisitReviewRequestBody struct {
+func NewDoctorPatientVisitReviewHandler(dataApi api.DataAPI, pharmacySearchService pharmacy.PharmacySearchAPI, layoutStorageService api.CloudStorageAPI, patientPhotoStorageService api.CloudStorageAPI) *doctorPatientVisitReviewHandler {
+	return &doctorPatientVisitReviewHandler{
+		DataApi:                    dataApi,
+		PharmacySearchService:      pharmacySearchService,
+		LayoutStorageService:       layoutStorageService,
+		PatientPhotoStorageService: patientPhotoStorageService,
+	}
+}
+
+type visitReviewRequestData struct {
 	PatientVisitId  int64 `schema:"patient_visit_id"`
 	TreatmentPlanId int64 `schema:"treatment_plan_id"`
 }
 
-type DoctorPatientVisitReviewResponse struct {
+type doctorPatientVisitReviewResponse struct {
 	Patient            *common.Patient        `json:"patient"`
 	PatientVisit       *common.PatientVisit   `json:"patient_visit"`
 	PatientVisitReview map[string]interface{} `json:"visit_review"`
 }
 
-func (p *DoctorPatientVisitReviewHandler) ServeHTTP(w http.ResponseWriter, r *http.Request) {
-	if r.Method != HTTP_GET {
+func (p *doctorPatientVisitReviewHandler) ServeHTTP(w http.ResponseWriter, r *http.Request) {
+	if r.Method != apiservice.HTTP_GET {
 		w.WriteHeader(http.StatusNotFound)
 		return
 	}
 
 	if err := r.ParseForm(); err != nil {
-		WriteDeveloperError(w, http.StatusBadRequest, "Unable to parse request data: "+err.Error())
+		apiservice.WriteDeveloperError(w, http.StatusBadRequest, "Unable to parse request data: "+err.Error())
 		return
 	}
 
-	var requestData DoctorPatientVisitReviewRequestBody
+	var requestData visitReviewRequestData
 	if err := schema.NewDecoder().Decode(&requestData, r.Form); err != nil {
-		WriteDeveloperError(w, http.StatusBadRequest, err.Error())
+		apiservice.WriteDeveloperError(w, http.StatusBadRequest, err.Error())
 		return
 	}
 
 	patientVisitId := requestData.PatientVisitId
 	treatmentPlanId := requestData.TreatmentPlanId
-	if err := ensureTreatmentPlanOrPatientVisitIdPresent(p.DataApi, treatmentPlanId, &patientVisitId); err != nil {
-		WriteDeveloperError(w, http.StatusBadRequest, err.Error())
+	if err := apiservice.EnsureTreatmentPlanOrPatientVisitIdPresent(p.DataApi, treatmentPlanId, &patientVisitId); err != nil {
+		apiservice.WriteDeveloperError(w, http.StatusBadRequest, err.Error())
 		return
 	}
 
 	patientVisit, err := p.DataApi.GetPatientVisitFromId(patientVisitId)
 	if err != nil {
-		WriteDeveloperError(w, http.StatusBadRequest, "Unable to get patient visit information from database based on provided patient visit id : "+err.Error())
+		apiservice.WriteDeveloperError(w, http.StatusBadRequest, "Unable to get patient visit information from database based on provided patient visit id : "+err.Error())
 		return
 	}
 
 	// ensure that the doctor is authorized to work on this case
-	patientVisitReviewData, statusCode, err := ValidateDoctorAccessToPatientVisitAndGetRelevantData(patientVisit.PatientVisitId.Int64(), GetContext(r).AccountId, p.DataApi)
+	patientVisitReviewData, statusCode, err := apiservice.ValidateDoctorAccessToPatientVisitAndGetRelevantData(patientVisit.PatientVisitId.Int64(), apiservice.GetContext(r).AccountId, p.DataApi)
 	if err != nil {
-		WriteDeveloperError(w, statusCode, err.Error())
+		apiservice.WriteDeveloperError(w, statusCode, err.Error())
 		return
 	}
 
 	// udpate the status of the case and the item in the doctor's queue
 	if patientVisit.Status == api.CASE_STATUS_SUBMITTED {
 		if err := p.DataApi.UpdatePatientVisitStatus(patientVisitReviewData.PatientVisit.PatientVisitId.Int64(), "", api.CASE_STATUS_REVIEWING); err != nil {
-			WriteDeveloperError(w, http.StatusInternalServerError, "Unable to update status of patient visit: "+err.Error())
+			apiservice.WriteDeveloperError(w, http.StatusInternalServerError, "Unable to update status of patient visit: "+err.Error())
 			return
 		}
 
 		if err := p.DataApi.MarkPatientVisitAsOngoingInDoctorQueue(patientVisitReviewData.DoctorId, patientVisit.PatientVisitId.Int64()); err != nil {
-			WriteDeveloperError(w, http.StatusInternalServerError, "Unable to update the item in the queue for the doctor that speaks to this patient visit: "+err.Error())
+			apiservice.WriteDeveloperError(w, http.StatusInternalServerError, "Unable to update the item in the queue for the doctor that speaks to this patient visit: "+err.Error())
 			return
 		}
 
 		if err := p.DataApi.RecordDoctorAssignmentToPatientVisit(patientVisit.PatientVisitId.Int64(), patientVisitReviewData.DoctorId); err != nil {
-			WriteDeveloperError(w, http.StatusInternalServerError, "Unable to assign the patient visit to this doctor: "+err.Error())
+			apiservice.WriteDeveloperError(w, http.StatusInternalServerError, "Unable to assign the patient visit to this doctor: "+err.Error())
 			return
 		}
 	} else {
 		treatmentPlanId, err = p.DataApi.GetActiveTreatmentPlanForPatientVisit(patientVisitReviewData.DoctorId, patientVisit.PatientVisitId.Int64())
 		if err != nil {
-			WriteDeveloperError(w, http.StatusInternalServerError, "Unable to get treatment plan id for patient visit: "+err.Error())
+			apiservice.WriteDeveloperError(w, http.StatusInternalServerError, "Unable to get treatment plan id for patient visit: "+err.Error())
 			return
 		}
 	}
 
-	patientVisitLayout, _, err := getClientLayoutForPatientVisit(patientVisitId, api.EN_LANGUAGE_ID, p.DataApi, p.LayoutStorageService)
+	patientVisitLayout, _, err := apiservice.GetClientLayoutForPatientVisit(patientVisitId, api.EN_LANGUAGE_ID, p.DataApi, p.LayoutStorageService)
 	if err != nil {
-		WriteDeveloperError(w, http.StatusInternalServerError, "Unable to get patient visit layout: "+err.Error())
+		apiservice.WriteDeveloperError(w, http.StatusInternalServerError, "Unable to get patient visit layout: "+err.Error())
 		return
 	}
 
 	// get all questions presented to the patient in the patient visit layout
-	questions := getQuestionsInPatientVisitLayout(patientVisitLayout)
-	questionIds := getQuestionIdsInPatientVisitLayout(patientVisitLayout)
+	questions := apiservice.GetQuestionsInPatientVisitLayout(patientVisitLayout)
+	questionIds := apiservice.GetQuestionIdsInPatientVisitLayout(patientVisitLayout)
 
 	// get all the answers the patient entered for the questions (note that there may not be an answer for every question)
 	patientAnswersForQuestions, err := p.DataApi.GetPatientAnswersForQuestionsBasedOnQuestionIds(questionIds, patientVisit.PatientId.Int64(), patientVisit.PatientVisitId.Int64())
 	if err != nil {
-		WriteDeveloperError(w, http.StatusInternalServerError, "Unable to get patient answers for questions : "+err.Error())
+		apiservice.WriteDeveloperError(w, http.StatusInternalServerError, "Unable to get patient answers for questions : "+err.Error())
 		return
 	}
 
 	context, err := populateContextForRenderingLayout(patientAnswersForQuestions, questions, p.DataApi, p.PatientPhotoStorageService)
 	if err != nil {
-		WriteDeveloperError(w, http.StatusInternalServerError, "Unable to populate context for rendering layout: "+err.Error())
+		apiservice.WriteDeveloperError(w, http.StatusInternalServerError, "Unable to populate context for rendering layout: "+err.Error())
 		return
 	}
 
 	data, err := p.getLatestDoctorVisitReviewLayout(patientVisit)
 	if err != nil {
-		WriteDeveloperError(w, http.StatusInternalServerError, "Unable to get visit review template for doctor")
+		apiservice.WriteDeveloperError(w, http.StatusInternalServerError, "Unable to get visit review template for doctor")
 	}
 
 	// first we unmarshal the json into a generic map structure
 	var jsonData map[string]interface{}
 	err = json.Unmarshal(data, &jsonData)
 	if err != nil {
-		WriteDeveloperError(w, http.StatusInternalServerError, "Unbale to unmarshal file contents into map[string]interface{}: "+err.Error())
+		apiservice.WriteDeveloperError(w, http.StatusInternalServerError, "Unbale to unmarshal file contents into map[string]interface{}: "+err.Error())
 	}
 
 	// then we provide the registry from which to pick out the types of native structures
@@ -138,38 +148,38 @@ func (p *DoctorPatientVisitReviewHandler) ServeHTTP(w http.ResponseWriter, r *ht
 
 	d, err := mapstructure.NewDecoder(decoderConfig)
 	if err != nil {
-		WriteDeveloperError(w, http.StatusInternalServerError, "Unable to create new decoder: "+err.Error())
+		apiservice.WriteDeveloperError(w, http.StatusInternalServerError, "Unable to create new decoder: "+err.Error())
 		return
 	}
 
 	// assuming that the map structure has the visit_review section here.
 	err = d.Decode(jsonData["visit_review"])
 	if err != nil {
-		WriteDeveloperError(w, http.StatusInternalServerError, "Unable to parse template into structure: "+err.Error())
+		apiservice.WriteDeveloperError(w, http.StatusInternalServerError, "Unable to parse template into structure: "+err.Error())
 		return
 	}
 
 	renderedJsonData, err := sectionList.Render(context)
 	if err != nil {
-		WriteDeveloperError(w, http.StatusInternalServerError, "Unable to render template into expected view layout for doctor visit review: "+err.Error())
+		apiservice.WriteDeveloperError(w, http.StatusInternalServerError, "Unable to render template into expected view layout for doctor visit review: "+err.Error())
 		return
 	}
 
-	response := &DoctorPatientVisitReviewResponse{}
+	response := &doctorPatientVisitReviewResponse{}
 	response.PatientVisit = patientVisit
 	patient, err := p.DataApi.GetPatientFromId(patientVisit.PatientId.Int64())
 	if err != nil {
-		WriteDeveloperError(w, http.StatusInternalServerError, "Unable to get patient based on id: "+err.Error())
+		apiservice.WriteDeveloperError(w, http.StatusInternalServerError, "Unable to get patient based on id: "+err.Error())
 		return
 	}
 
 	response.Patient = patient
 	response.PatientVisitReview = renderedJsonData
 
-	WriteJSONToHTTPResponseWriter(w, http.StatusOK, response)
+	apiservice.WriteJSONToHTTPResponseWriter(w, http.StatusOK, response)
 }
 
-func (d *DoctorPatientVisitReviewHandler) getLatestDoctorVisitReviewLayout(patientVisit *common.PatientVisit) ([]byte, error) {
+func (d *doctorPatientVisitReviewHandler) getLatestDoctorVisitReviewLayout(patientVisit *common.PatientVisit) ([]byte, error) {
 	bucket, key, region, _, err := d.DataApi.GetStorageInfoOfCurrentActiveDoctorLayout(patientVisit.HealthConditionId.Int64())
 	if err != nil {
 		return nil, err
@@ -187,7 +197,7 @@ func populateContextForRenderingLayout(patientAnswersForQuestions map[int64][]*c
 	context := common.NewViewContext()
 
 	for _, contextPopulator := range genericPopulators {
-		if err := contextPopulator.PopulateViewContextWithInfo(patientAnswersForQuestions, questions, context, dataApi); err != nil {
+		if err := contextPopulator.populateViewContextWithInfo(patientAnswersForQuestions, questions, context, dataApi); err != nil {
 			return nil, err
 		}
 	}
@@ -199,7 +209,7 @@ func populateContextForRenderingLayout(patientAnswersForQuestions map[int64][]*c
 			return nil, fmt.Errorf("Context populator not found for question with type %s", question.QuestionTypes[0])
 		}
 
-		if err := contextPopulator.PopulateViewContextWithPatientQA(patientAnswersForQuestions[question.QuestionId], question, context, dataApi, photoStorageService); err != nil {
+		if err := contextPopulator.populateViewContextWithPatientQA(patientAnswersForQuestions[question.QuestionId], question, context, dataApi, photoStorageService); err != nil {
 			return nil, err
 		}
 	}

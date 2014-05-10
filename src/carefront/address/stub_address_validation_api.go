@@ -1,4 +1,4 @@
-package address_validation
+package address
 
 type StubAddressValidationService struct {
 	CityStateToReturn CityState

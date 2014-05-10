@@ -2,17 +2,22 @@ package integration
 
 import (
 	"bytes"
+	"carefront/address"
 	"carefront/apiservice"
 	"carefront/common"
 	"carefront/encoding"
-	"carefront/libs/address_validation"
 	"carefront/libs/erx"
 	"carefront/libs/pharmacy"
+	"carefront/patient_file"
 	"encoding/json"
 	"net/http"
 	"net/http/httptest"
 	"testing"
 )
+
+type requestData struct {
+	Patient *common.Patient `json:"patient"`
+}
 
 func TestDoctorUpdateToPatientAddress(t *testing.T) {
 
@@ -52,8 +57,8 @@ func TestDoctorUpdateToPatientAddress(t *testing.T) {
 
 	stubErxApi := &erx.StubErxService{}
 
-	stubAddressValidationService := address_validation.StubAddressValidationService{
-		CityStateToReturn: address_validation.CityState{
+	stubAddressValidationService := address.StubAddressValidationService{
+		CityStateToReturn: address.CityState{
 			City:              "San Francisco",
 			State:             "California",
 			StateAbbreviation: "CA",
@@ -61,17 +66,13 @@ func TestDoctorUpdateToPatientAddress(t *testing.T) {
 	}
 
 	// lets go ahead and add this address to the patient and we should get back an address when we get the patient information
-	doctorPatientHandler := &apiservice.DoctorPatientUpdateHandler{
-		DataApi:              testData.DataApi,
-		ErxApi:               stubErxApi,
-		AddressValidationApi: stubAddressValidationService,
-	}
+	doctorPatientHandler := patient_file.NewDoctorPatientHandler(testData.DataApi, stubErxApi, stubAddressValidationService)
 
 	ts := httptest.NewServer(doctorPatientHandler)
 	defer ts.Close()
 
 	jsonData, err := json.Marshal(
-		&apiservice.DoctorPatientUpdateHandlerRequestResponse{
+		&requestData{
 			Patient: signedupPatientResponse.Patient,
 		},
 	)
@@ -121,8 +122,8 @@ func TestDoctorFailedUpdate(t *testing.T) {
 	signedupPatientResponse := SignupRandomTestPatient(t, testData.DataApi, testData.AuthApi)
 	signedupPatientResponse.Patient.PhoneNumbers = nil
 	stubErxApi := &erx.StubErxService{}
-	stubAddressValidationService := address_validation.StubAddressValidationService{
-		CityStateToReturn: address_validation.CityState{
+	stubAddressValidationService := address.StubAddressValidationService{
+		CityStateToReturn: address.CityState{
 			City:              "San Francisco",
 			State:             "California",
 			StateAbbreviation: "CA",
@@ -130,17 +131,13 @@ func TestDoctorFailedUpdate(t *testing.T) {
 	}
 
 	// lets go ahead and add this address to the patient and we should get back an address when we get the patient information
-	doctorPatientHandler := &apiservice.DoctorPatientUpdateHandler{
-		DataApi:              testData.DataApi,
-		ErxApi:               stubErxApi,
-		AddressValidationApi: stubAddressValidationService,
-	}
+	doctorPatientHandler := patient_file.NewDoctorPatientHandler(testData.DataApi, stubErxApi, stubAddressValidationService)
 
 	ts := httptest.NewServer(doctorPatientHandler)
 	defer ts.Close()
 
 	jsonData, err := json.Marshal(
-		&apiservice.DoctorPatientUpdateHandlerRequestResponse{
+		&requestData{
 			Patient: signedupPatientResponse.Patient,
 		},
 	)
@@ -238,25 +235,25 @@ func TestDoctorUpdateToPhoneNumbers(t *testing.T) {
 	signedupPatientResponse.Patient.PhoneNumbers = phoneNumbers
 
 	stubErxApi := &erx.StubErxService{}
-	stubAddressValidationService := address_validation.StubAddressValidationService{
-		CityStateToReturn: address_validation.CityState{
+	stubAddressValidationService := address.StubAddressValidationService{
+		CityStateToReturn: address.CityState{
 			City:              "San Francisco",
 			State:             "California",
 			StateAbbreviation: "CA",
 		},
 	}
 	// lets go ahead and add this address to the patient and we should get back an address when we get the patient information
-	doctorPatientHandler := &apiservice.DoctorPatientUpdateHandler{
-		DataApi:              testData.DataApi,
-		ErxApi:               stubErxApi,
-		AddressValidationApi: stubAddressValidationService,
-	}
+	doctorPatientHandler := patient_file.NewDoctorPatientHandler(
+		testData.DataApi,
+		stubErxApi,
+		stubAddressValidationService,
+	)
 
 	ts := httptest.NewServer(doctorPatientHandler)
 	defer ts.Close()
 
 	jsonData, err := json.Marshal(
-		&apiservice.DoctorPatientUpdateHandlerRequestResponse{
+		&requestData{
 			Patient: signedupPatientResponse.Patient,
 		},
 	)
@@ -333,25 +330,25 @@ func TestDoctorUpdateToTopLevelInformation(t *testing.T) {
 	signedupPatientResponse.Patient.Dob = encoding.Dob{Day: 11, Month: 9, Year: 1987}
 
 	stubErxApi := &erx.StubErxService{}
-	stubAddressValidationService := address_validation.StubAddressValidationService{
-		CityStateToReturn: address_validation.CityState{
+	stubAddressValidationService := address.StubAddressValidationService{
+		CityStateToReturn: address.CityState{
 			City:              "San Francisco",
 			State:             "California",
 			StateAbbreviation: "CA",
 		},
 	}
 	// lets go ahead and add this address to the patient and we should get back an address when we get the patient information
-	doctorPatientHandler := &apiservice.DoctorPatientUpdateHandler{
-		DataApi:              testData.DataApi,
-		ErxApi:               stubErxApi,
-		AddressValidationApi: stubAddressValidationService,
-	}
+	doctorPatientHandler := patient_file.NewDoctorPatientHandler(
+		testData.DataApi,
+		stubErxApi,
+		stubAddressValidationService,
+	)
 
 	ts := httptest.NewServer(doctorPatientHandler)
 	defer ts.Close()
 
 	jsonData, err := json.Marshal(
-		&apiservice.DoctorPatientUpdateHandlerRequestResponse{
+		&requestData{
 			Patient: signedupPatientResponse.Patient,
 		},
 	)
@@ -402,24 +399,24 @@ func TestDoctorUpdatePatientInformationForbidden(t *testing.T) {
 	if err != nil {
 		t.Fatal("Unable to add patient's preferred pharmacy")
 	}
-	stubAddressValidationService := address_validation.StubAddressValidationService{
-		CityStateToReturn: address_validation.CityState{
+	stubAddressValidationService := address.StubAddressValidationService{
+		CityStateToReturn: address.CityState{
 			City:              "San Francisco",
 			State:             "California",
 			StateAbbreviation: "CA",
 		},
 	}
-	doctorPatientHandler := &apiservice.DoctorPatientUpdateHandler{
-		DataApi:              testData.DataApi,
-		ErxApi:               &erx.StubErxService{},
-		AddressValidationApi: stubAddressValidationService,
-	}
+	doctorPatientHandler := patient_file.NewDoctorPatientHandler(
+		testData.DataApi,
+		&erx.StubErxService{},
+		stubAddressValidationService,
+	)
 
 	ts := httptest.NewServer(doctorPatientHandler)
 	defer ts.Close()
 
 	jsonData, err := json.Marshal(
-		&apiservice.DoctorPatientUpdateHandlerRequestResponse{
+		&requestData{
 			Patient: signedupPatientResponse.Patient,
 		},
 	)

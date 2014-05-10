@@ -4,6 +4,7 @@ import (
 	"carefront/api"
 	"carefront/common"
 	"carefront/libs/erx"
+	"carefront/surescripts"
 	"net/http"
 
 	"github.com/gorilla/schema"
@@ -41,7 +42,7 @@ func (m *NewTreatmentHandler) ServeHTTP(w http.ResponseWriter, r *http.Request) 
 		return
 	}
 
-	if (len(requestData.MedicationName) + len(requestData.MedicationStrength)) > maxMedicationDescriptionLength {
+	if (len(requestData.MedicationName) + len(requestData.MedicationStrength)) > surescripts.MaxMedicationDescriptionLength {
 		WriteUserError(w, HTTP_UNPROCESSABLE_ENTITY, "Any medication name + dosage strength longer than 105 characters cannot be sent electronically and instead must be called in. Please call in this prescription to the patient's preferred pharmacy if you would like to route it.")
 		return
 	}

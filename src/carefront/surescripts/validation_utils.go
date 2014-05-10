@@ -1,9 +1,10 @@
-package apiservice
+package surescripts
 
 import (
+	"carefront/address"
+	"carefront/api"
 	"carefront/common"
 	"carefront/encoding"
-	"carefront/libs/address_validation"
 	"errors"
 	"fmt"
 	"strconv"
@@ -38,16 +39,16 @@ var (
 const (
 	maxLongFieldLength             = 35
 	maxShortFieldLength            = 10
-	maxPhoneNumberLength           = 25
-	maxPharmacyNotesLength         = 210
-	maxPatientInstructionsLength   = 140
-	maxNumberRefillsMaxValue       = 99
-	maxDaysSupplyMaxValue          = 999
-	maxRefillRequestCommentLength  = 70
-	maxMedicationDescriptionLength = 105
+	MaxPhoneNumberLength           = 25
+	MaxPharmacyNotesLength         = 210
+	MaxPatientInstructionsLength   = 140
+	MaxNumberRefillsMaxValue       = 99
+	MaxDaysSupplyMaxValue          = 999
+	MaxRefillRequestCommentLength  = 70
+	MaxMedicationDescriptionLength = 105
 )
 
-func (d *DoctorPatientUpdateHandler) validatePatientInformationAccordingToSurescriptsRequirements(patient *common.Patient, addressValidationApi address_validation.AddressValidationAPI) error {
+func ValidatePatientInformation(patient *common.Patient, addressValidationApi address.AddressValidationAPI, dataApi api.DataAPI) error {
 
 	if patient.FirstName == "" {
 		return errors.New("First name is required")
@@ -114,17 +115,17 @@ func (d *DoctorPatientUpdateHandler) validatePatientInformationAccordingToSuresc
 	}
 
 	for _, phoneNumber := range patient.PhoneNumbers {
-		if len(phoneNumber.Phone) > 25 {
-			return fmt.Errorf("Phone numbers cannot be longer than %d digits", maxPhoneNumberLength)
+		if len(phoneNumber.Phone) > MaxPhoneNumberLength {
+			return fmt.Errorf("Phone numbers cannot be longer than %d digits", MaxPhoneNumberLength)
 		}
 	}
 
-	if err := validateAddress(d.DataApi, patient.PatientAddress, addressValidationApi); err != nil {
+	if err := address.ValidateAddress(dataApi, patient.PatientAddress, addressValidationApi); err != nil {
 		return err
 	}
 
 	for _, phoneNumber := range patient.PhoneNumbers {
-		if err := validatePhoneNumber(phoneNumber.Phone); err != nil {
+		if err := ValidatePhoneNumber(phoneNumber.Phone); err != nil {
 			return err
 		}
 	}
@@ -139,7 +140,7 @@ func is18YearsOfAge(dob encoding.Dob) bool {
 	return numYears >= 18
 }
 
-func trimSpacesFromPatientFields(patient *common.Patient) {
+func TrimSpacesFromPatientFields(patient *common.Patient) {
 	patient.FirstName = strings.TrimSpace(patient.FirstName)
 	patient.LastName = strings.TrimSpace(patient.LastName)
 	patient.MiddleName = strings.TrimSpace(patient.MiddleName)
@@ -151,7 +152,7 @@ func trimSpacesFromPatientFields(patient *common.Patient) {
 	patient.PatientAddress.State = strings.TrimSpace(patient.PatientAddress.State)
 }
 
-func validatePhoneNumber(phoneNumber string) error {
+func ValidatePhoneNumber(phoneNumber string) error {
 	// phone number has to be 10 digits long
 	if len(phoneNumber) < 10 {
 		return fmt.Errorf("Invalid phone number")

@@ -1,4 +1,4 @@
-package address_validation
+package address
 
 import "errors"
 
