@@ -516,6 +516,31 @@ func (d *DataService) GetPatientFromUnlinkedDNTFTreatment(unlinkedDNTFTreatmentI
 	return nil, errors.New("Got more than 1 patient for treatment when expected just 1")
 }
 
+func (d *DataService) GetPatientVisitsForPatient(patientId int64) ([]*common.PatientVisit, error) {
+	rows, err := d.DB.Query(`select id,patient_id, health_condition_id, layout_version_id, creation_date, submitted_date, closed_date, status 
+		from patient_visit where patient_id = ?`, patientId)
+	if err != nil {
+		return nil, err
+	}
+	defer rows.Close()
+
+	patientVisits := make([]*common.PatientVisit, 0)
+	for rows.Next() {
+		var patientVisit common.PatientVisit
+		var creationDate, submittedDate, closedDate mysql.NullTime
+		if err := rows.Scan(&patientVisit.PatientVisitId, &patientVisit.PatientId, &patientVisit.HealthConditionId, &patientVisit.LayoutVersionId,
+			&creationDate, &submittedDate, &closedDate,
+			&patientVisit.Status); err != nil {
+			return nil, err
+		}
+		patientVisit.CreationDate = creationDate.Time
+		patientVisit.SubmittedDate = submittedDate.Time
+		patientVisit.ClosedDate = closedDate.Time
+		patientVisits = append(patientVisits, &patientVisit)
+	}
+	return patientVisits, rows.Err()
+}
+
 func (d *DataService) UpdatePatientAddress(patientId int64, addressLine1, addressLine2, city, state, zipCode, addressType string) error {
 	tx, err := d.DB.Begin()
 	if err != nil {
