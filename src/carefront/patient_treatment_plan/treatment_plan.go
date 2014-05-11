@@ -70,7 +70,7 @@ func (p *PatientVisitReviewHandler) ServeHTTP(w http.ResponseWriter, r *http.Req
 		if err != nil {
 			if err == api.NoRowsError {
 				// no patient visit review to return
-				apiservice.WriteJSONToHTTPResponseWriter(w, http.StatusOK, &common.TreatmentPlan{})
+				apiservice.WriteJSONToHTTPResponseWriter(w, http.StatusNotFound, "No treatment plan exists for patient visit")
 				return
 			}
 
@@ -107,7 +107,8 @@ func (p *PatientVisitReviewHandler) ServeHTTP(w http.ResponseWriter, r *http.Req
 		return
 	}
 
-	treatmentPlan.Treatments, err = p.DataApi.GetTreatmentsBasedOnTreatmentPlanId(patientVisit.PatientVisitId.Int64(), treatmentPlanId)
+	treatmentPlan.TreatmentList = &common.TreatmentList{}
+	treatmentPlan.TreatmentList.Treatments, err = p.DataApi.GetTreatmentsBasedOnTreatmentPlanId(patientVisit.PatientVisitId.Int64(), treatmentPlanId)
 	if err != nil {
 		apiservice.WriteDeveloperError(w, http.StatusInternalServerError, "Unable to get treatment plan for this patient visit id: "+err.Error())
 		return
@@ -160,13 +161,13 @@ func (p *PatientVisitReviewHandler) treatmentPlanResponse(w http.ResponseWriter,
 
 	views = append(views, &TPLargeDividerView{})
 
-	if len(treatmentPlan.Treatments) > 0 {
+	if len(treatmentPlan.TreatmentList.Treatments) > 0 {
 		views = append(views, &TPTextView{
 			Text:  "Prescriptions",
 			Style: "section_header",
 		})
 
-		for _, treatment := range treatmentPlan.Treatments {
+		for _, treatment := range treatmentPlan.TreatmentList.Treatments {
 			views = append(views, &TPSmallDividerView{})
 
 			iconURL := app_url.Asset(app_url.IconRX)
@@ -269,8 +270,8 @@ func (p *PatientVisitReviewHandler) treatmentPlanResponse(w http.ResponseWriter,
 	}
 
 	// identify prescriptions to pickup
-	rxTreatments := make([]*common.Treatment, 0, len(treatmentPlan.Treatments))
-	for _, treatment := range treatmentPlan.Treatments {
+	rxTreatments := make([]*common.Treatment, 0, len(treatmentPlan.TreatmentList.Treatments))
+	for _, treatment := range treatmentPlan.TreatmentList.Treatments {
 		if !treatment.OTC {
 			rxTreatments = append(rxTreatments, treatment)
 		}

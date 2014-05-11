@@ -45,7 +45,8 @@ func (d *DataService) GetFavoriteTreatmentPlan(favoriteTreatmentPlanId int64) (*
 		return nil, err
 	}
 
-	favoriteTreatmentPlan.Treatments, err = d.GetTreatmentsInFavoriteTreatmentPlan(favoriteTreatmentPlanId)
+	favoriteTreatmentPlan.TreatmentList = &common.TreatmentList{}
+	favoriteTreatmentPlan.TreatmentList.Treatments, err = d.GetTreatmentsInFavoriteTreatmentPlan(favoriteTreatmentPlanId)
 	if err != nil {
 		return nil, err
 	}
@@ -96,7 +97,7 @@ func (d *DataService) CreateOrUpdateFavoriteTreatmentPlan(favoriteTreatmentPlan 
 	}
 
 	// Add all treatments
-	for _, treatment := range favoriteTreatmentPlan.Treatments {
+	for _, treatment := range favoriteTreatmentPlan.TreatmentList.Treatments {
 		params := make(map[string]interface{})
 		params["dr_favorite_treatment_plan_id"] = favoriteTreatmentPlan.Id.Int64()
 		err := d.addTreatment(doctorFavoriteTreatmentType, treatment, params, tx)

@@ -149,7 +149,7 @@ type TreatmentPlan struct {
 	Status           string            `json:"status,omitempty"`
 	CreationDate     *time.Time        `json:"creation_date,omitempty"`
 	SentDate         *time.Time        `json:"sent_date,omitempty"`
-	Treatments       []*Treatment      `json:"treatments,omitempty"`
+	TreatmentList    *TreatmentList    `json:"treatment_list,omitempty"`
 	Title            string            `json:"title,omitempty"`
 	DiagnosisSummary *DiagnosisSummary `json:"diagnosis_summary,omitempty"`
 	RegimenPlan      *RegimenPlan      `json:"regimen_plan,omitempty"`
@@ -158,13 +158,13 @@ type TreatmentPlan struct {
 }
 
 type FavoriteTreatmentPlan struct {
-	Id           encoding.ObjectId `json:"id"`
-	Name         string            `json:"name"`
-	ModifiedDate time.Time         `json:"modified_date,omitempty"`
-	DoctorId     int64             `json:"-"`
-	RegimenPlan  *RegimenPlan      `json:"regimen_plan,omitempty"`
-	Treatments   []*Treatment      `json:"treatments,omitempty"`
-	Advice       *Advice           `json:"advice,omitempty"`
+	Id            encoding.ObjectId `json:"id"`
+	Name          string            `json:"name"`
+	ModifiedDate  time.Time         `json:"modified_date,omitempty"`
+	DoctorId      int64             `json:"-"`
+	RegimenPlan   *RegimenPlan      `json:"regimen_plan,omitempty"`
+	TreatmentList *TreatmentList    `json:"treatment_list,omitempty"`
+	Advice        *Advice           `json:"advice,omitempty"`
 }
 
 func (f *FavoriteTreatmentPlan) EqualsDoctorTreatmentPlan(treatmentPlan *DoctorTreatmentPlan) bool {
@@ -172,8 +172,7 @@ func (f *FavoriteTreatmentPlan) EqualsDoctorTreatmentPlan(treatmentPlan *DoctorT
 		return false
 	}
 
-	favoriteTreatmentList := &TreatmentList{Treatments: f.Treatments}
-	if !favoriteTreatmentList.Equals(treatmentPlan.TreatmentList) {
+	if !f.TreatmentList.Equals(treatmentPlan.TreatmentList) {
 		return false
 	}
 

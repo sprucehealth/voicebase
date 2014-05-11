@@ -72,30 +72,32 @@ func TestFavoriteTreatmentPlan(t *testing.T) {
 	// lets go ahead and add another favorited treatment
 	favoriteTreatmentPlan2 := &common.FavoriteTreatmentPlan{
 		Name: "Test Treatment Plan #2",
-		Treatments: []*common.Treatment{&common.Treatment{
-			DrugDBIds: map[string]string{
-				erx.LexiDrugSynId:     "1234",
-				erx.LexiGenProductId:  "12345",
-				erx.LexiSynonymTypeId: "123556",
-				erx.NDC:               "2415",
+		TreatmentList: &common.TreatmentList{
+			Treatments: []*common.Treatment{&common.Treatment{
+				DrugDBIds: map[string]string{
+					erx.LexiDrugSynId:     "1234",
+					erx.LexiGenProductId:  "12345",
+					erx.LexiSynonymTypeId: "123556",
+					erx.NDC:               "2415",
+				},
+				DrugName:                "Teting (This - Drug)",
+				DosageStrength:          "10 mg",
+				DispenseValue:           5,
+				DispenseUnitDescription: "Tablet",
+				DispenseUnitId:          encoding.NewObjectId(19),
+				NumberRefills: encoding.NullInt64{
+					IsValid:    true,
+					Int64Value: 5,
+				},
+				SubstitutionsAllowed: false,
+				DaysSupply: encoding.NullInt64{
+					IsValid:    true,
+					Int64Value: 5,
+				},
+				PatientInstructions: "Take once daily",
+				OTC:                 false,
 			},
-			DrugName:                "Teting (This - Drug)",
-			DosageStrength:          "10 mg",
-			DispenseValue:           5,
-			DispenseUnitDescription: "Tablet",
-			DispenseUnitId:          encoding.NewObjectId(19),
-			NumberRefills: encoding.NullInt64{
-				IsValid:    true,
-				Int64Value: 5,
 			},
-			SubstitutionsAllowed: false,
-			DaysSupply: encoding.NullInt64{
-				IsValid:    true,
-				Int64Value: 5,
-			},
-			PatientInstructions: "Take once daily",
-			OTC:                 false,
-		},
 		},
 		RegimenPlan: originalRegimenPlan,
 		Advice:      originalAdvice,
@@ -294,8 +296,8 @@ func TestFavoriteTreatmentPlan_CommittedStateForTreatmentPlan(t *testing.T) {
 	}
 
 	// now lets go ahead and add a treatment to the treatment plan
-	favoriteTreamentPlan.Treatments[0].PatientVisitId = encoding.NewObjectId(patientVisitResponse.PatientVisitId)
-	addAndGetTreatmentsForPatientVisit(testData, favoriteTreamentPlan.Treatments, doctor.AccountId.Int64(), patientVisitResponse.PatientVisitId, t)
+	favoriteTreamentPlan.TreatmentList.Treatments[0].PatientVisitId = encoding.NewObjectId(patientVisitResponse.PatientVisitId)
+	addAndGetTreatmentsForPatientVisit(testData, favoriteTreamentPlan.TreatmentList.Treatments, doctor.AccountId.Int64(), patientVisitResponse.PatientVisitId, t)
 
 	// now the treatment section should also indicate that it has been committed
 	responseData = &apiservice.DoctorTreatmentPlanResponse{}
@@ -375,9 +377,9 @@ func TestFavoriteTreatmentPlan_BreakingMappingOnModify(t *testing.T) {
 	}
 
 	// modify treatment
-	favoriteTreamentPlan.Treatments[0].PatientVisitId = encoding.NewObjectId(patientVisitResponse.PatientVisitId)
-	favoriteTreamentPlan.Treatments[0].DispenseValue = encoding.HighPrecisionFloat64(123.12345)
-	addAndGetTreatmentsForPatientVisit(testData, favoriteTreamentPlan.Treatments, doctor.AccountId.Int64(), patientVisitResponse.PatientVisitId, t)
+	favoriteTreamentPlan.TreatmentList.Treatments[0].PatientVisitId = encoding.NewObjectId(patientVisitResponse.PatientVisitId)
+	favoriteTreamentPlan.TreatmentList.Treatments[0].DispenseValue = encoding.HighPrecisionFloat64(123.12345)
+	addAndGetTreatmentsForPatientVisit(testData, favoriteTreamentPlan.TreatmentList.Treatments, doctor.AccountId.Int64(), patientVisitResponse.PatientVisitId, t)
 
 	// linkage should now be broken
 	if resp, err := AuthGet(ts.URL+"?"+params.Encode(), doctor.AccountId.Int64()); err != nil {
@@ -488,30 +490,32 @@ func createFavoriteTreatmentPlan(patientVisitId int64, testData TestData, doctor
 	// lets add a favorite treatment plan for doctor
 	favoriteTreatmentPlan := &common.FavoriteTreatmentPlan{
 		Name: "Test Treatment Plan",
-		Treatments: []*common.Treatment{&common.Treatment{
-			DrugDBIds: map[string]string{
-				erx.LexiDrugSynId:     "1234",
-				erx.LexiGenProductId:  "12345",
-				erx.LexiSynonymTypeId: "123556",
-				erx.NDC:               "2415",
+		TreatmentList: &common.TreatmentList{
+			Treatments: []*common.Treatment{&common.Treatment{
+				DrugDBIds: map[string]string{
+					erx.LexiDrugSynId:     "1234",
+					erx.LexiGenProductId:  "12345",
+					erx.LexiSynonymTypeId: "123556",
+					erx.NDC:               "2415",
+				},
+				DrugInternalName:        "Teting (This - Drug)",
+				DosageStrength:          "10 mg",
+				DispenseValue:           5,
+				DispenseUnitDescription: "Tablet",
+				DispenseUnitId:          encoding.NewObjectId(19),
+				NumberRefills: encoding.NullInt64{
+					IsValid:    true,
+					Int64Value: 5,
+				},
+				SubstitutionsAllowed: false,
+				DaysSupply: encoding.NullInt64{
+					IsValid:    true,
+					Int64Value: 5,
+				},
+				PatientInstructions: "Take once daily",
+				OTC:                 false,
 			},
-			DrugInternalName:        "Teting (This - Drug)",
-			DosageStrength:          "10 mg",
-			DispenseValue:           5,
-			DispenseUnitDescription: "Tablet",
-			DispenseUnitId:          encoding.NewObjectId(19),
-			NumberRefills: encoding.NullInt64{
-				IsValid:    true,
-				Int64Value: 5,
 			},
-			SubstitutionsAllowed: false,
-			DaysSupply: encoding.NullInt64{
-				IsValid:    true,
-				Int64Value: 5,
-			},
-			PatientInstructions: "Take once daily",
-			OTC:                 false,
-		},
 		},
 		RegimenPlan: &common.RegimenPlan{
 			AllRegimenSteps: regimenPlanResponse.AllRegimenSteps,

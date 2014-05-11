@@ -250,8 +250,8 @@ func (d *DoctorTreatmentPlanHandler) populateFavoriteTreatmentPlanIntoTreatmentP
 	// populate treatments
 	if len(treatmentPlan.TreatmentList.Treatments) == 0 {
 
-		treatmentPlan.TreatmentList.Treatments = make([]*common.Treatment, len(favoriteTreatmentPlan.Treatments))
-		for i, treatment := range favoriteTreatmentPlan.Treatments {
+		treatmentPlan.TreatmentList.Treatments = make([]*common.Treatment, len(favoriteTreatmentPlan.TreatmentList.Treatments))
+		for i, treatment := range favoriteTreatmentPlan.TreatmentList.Treatments {
 			treatmentPlan.TreatmentList.Treatments[i] = &common.Treatment{
 				DrugDBIds:               treatment.DrugDBIds,
 				DrugInternalName:        treatment.DrugInternalName,

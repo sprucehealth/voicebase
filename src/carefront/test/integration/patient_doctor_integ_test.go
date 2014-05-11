@@ -21,7 +21,6 @@ import (
 	"net/http/httptest"
 	"strconv"
 	"testing"
-	"time"
 )
 
 func TestPatientVisitReview(t *testing.T) {
@@ -91,14 +90,6 @@ func TestPatientVisitReview(t *testing.T) {
 		t.Fatal("Unable to make call to close patient visit " + err.Error())
 	}
 	CheckSuccessfulStatusCode(resp, "Unable to make successful call to close the patient visit", t)
-
-	fromTime := time.Now().Add(-24 * time.Hour).Unix()
-	toTime := time.Now().Add(-10 * time.Minute).Unix()
-	treatmentPlans := getPrescriptionsForDoctor(testData.DataApi, t, doctor, fromTime, toTime)
-
-	if len(treatmentPlans) > 0 {
-		t.Fatal("Expected number of treatment plans to be 0")
-	}
 
 	// start a new patient visit
 	patientVisitResponse, treatmentPlan := signupAndSubmitPatientVisitForRandomPatient(t, testData, doctor)
@@ -278,17 +269,6 @@ func TestPatientVisitReview(t *testing.T) {
 		t.Fatal("Unable to get patient from database: " + err.Error())
 	}
 
-	// now, lets try again while including time
-	toTime = time.Now().Add(10 * time.Minute).Unix()
-	treatmentPlans = getPrescriptionsForDoctor(testData.DataApi, t, doctor, fromTime, toTime)
-	if len(treatmentPlans) != 1 {
-		t.Fatalf("Expected there to be 1 treatment plan for this doctor, instead we have %d", len(treatmentPlans))
-	}
-
-	if len(treatmentPlans[0].Treatments) != 2 {
-		t.Fatalf("Expected there to be 2 treatments in this treatment plan for this doctor, instead we have %d", len(treatmentPlans[0].Treatments))
-	}
-
 	prescriptionStatuses, err := testData.DataApi.GetPrescriptionStatusEventsForPatient(patient.ERxPatientId.Int64())
 	if err != nil {
 		t.Fatal("Unable to get prescription statuses for patient: " + err.Error())
@@ -327,22 +307,22 @@ func TestPatientVisitReview(t *testing.T) {
 		}
 	}
 
-	// number of prescriptions returned for doctor even after the prescription status update should be 2 total
-	if len(treatmentPlans) != 1 {
-		t.Fatal("Expected 1 treatment plan to be returned")
+	treatments, err = testData.DataApi.GetTreatmentsForPatient(patient.PatientId.Int64())
+	if err != nil {
+		t.Fatalf(err.Error())
 	}
 
-	if len(treatmentPlans[0].Treatments) != 2 {
+	if len(treatments) != 2 {
 		t.Fatal("Expected 2 treatments to be returned within treatment plan")
 	}
 
-	for _, treatment := range treatmentPlans[0].Treatments {
-		if treatment.Id.Int64() == 20 && (treatment.ERx.PrescriptionStatus != api.ERX_STATUS_ERROR || treatment.ERx.PrescriptionStatus != api.ERX_STATUS_SENDING) {
+	for _, treatment := range treatments {
+		if treatment.Id.Int64() == 20 && (treatment.ERx.RxHistory[0].Status != api.ERX_STATUS_ERROR) {
 			t.Fatal("Expected the prescription status to be error for 1 treatment")
 		}
 
-		if treatment.ERx.PrescriptionStatus != api.ERX_STATUS_SENT && treatment.ERx.PrescriptionStatus != api.ERX_STATUS_SENDING && treatment.ERx.PrescriptionStatus != api.ERX_STATUS_ERROR {
-			t.Fatal("Expected the prescription status to be either eRxSent, Sending, or Error")
+		if treatment.ERx.RxHistory[0].Status != api.ERX_STATUS_SENT && treatment.ERx.RxHistory[0].Status != api.ERX_STATUS_SENDING && treatment.ERx.RxHistory[0].Status != api.ERX_STATUS_ERROR {
+			t.Fatalf("Expected the prescription status to be either eRxSent, Sending, or Error. Instead it is %s", treatment.ERx.RxHistory[0].Status)
 		}
 	}
 
@@ -424,14 +404,4 @@ func getAdviceBasedOnTreatmentPlan(testData TestData, t *testing.T, treatmentPla
 		t.Fatal("Unable to parse response for advice based on treatment plan id: " + err.Error())
 	}
 	return getAdviceResponse
-}
-
-func getPrescriptionsForDoctor(dataApi api.DataAPI, t *testing.T, doctor *common.Doctor, fromTime, toTime int64) []*common.TreatmentPlan {
-
-	prescriptions, err := dataApi.GetCompletedPrescriptionsForDoctor(time.Unix(fromTime, 0), time.Unix(toTime, 0), doctor.DoctorId.Int64())
-	if err != nil {
-		t.Fatal("Unable to get prescriptions for doctor between time period: " + err.Error())
-	}
-
-	return prescriptions
 }
