@@ -7,7 +7,6 @@ import (
 	"carefront/encoding"
 	"database/sql"
 	"encoding/json"
-	"io/ioutil"
 	"net/http"
 	"net/http/httptest"
 	"strconv"
@@ -133,8 +132,8 @@ func TestRegimenForPatientVisit(t *testing.T) {
 	}
 
 	// get patient to start a visit
-	patientSignedupResponse := SignupRandomTestPatient(t, testData.DataApi, testData.AuthApi)
-	patientVisitResponse = CreatePatientVisitForPatient(patientSignedupResponse.Patient.PatientId.Int64(), testData, t)
+
+	patientVisitResponse, _ = signupAndSubmitPatientVisitForRandomPatient(t, testData, doctor)
 
 	regimenPlan = getRegimenPlanForPatientVisit(testData, doctor, patientVisitResponse.PatientVisitId, t)
 	if len(regimenPlan.RegimenSections) > 0 {
@@ -470,63 +469,6 @@ func setupTestForRegimenCreation(t *testing.T, testData TestData) (*apiservice.P
 	}
 	patientVisitResponse, _ := signupAndSubmitPatientVisitForRandomPatient(t, testData, doctor)
 	return patientVisitResponse, doctor
-}
-
-func getRegimenPlanForPatientVisit(testData TestData, doctor *common.Doctor, patientVisitId int64, t *testing.T) *common.RegimenPlan {
-	doctorRegimenHandler := apiservice.NewDoctorRegimenHandler(testData.DataApi)
-	ts := httptest.NewServer(doctorRegimenHandler)
-	defer ts.Close()
-
-	resp, err := AuthGet(ts.URL+"?patient_visit_id="+strconv.FormatInt(patientVisitId, 10), doctor.AccountId.Int64())
-	if err != nil {
-		t.Fatal("Unable to get regimen for patient visit: " + err.Error())
-	}
-
-	body, err := ioutil.ReadAll(resp.Body)
-	if err != nil {
-		t.Fatal("Unable to parse the body of the response for getting the regimen plan: " + err.Error())
-	}
-
-	CheckSuccessfulStatusCode(resp, "Unable to make successful call to get regimen plan for patient visit: "+string(body), t)
-
-	doctorRegimenResponse := &common.RegimenPlan{}
-	err = json.Unmarshal(body, doctorRegimenResponse)
-	if err != nil {
-		t.Fatal("Unable to unmarshal body into json object: " + err.Error())
-	}
-
-	return doctorRegimenResponse
-}
-
-func createRegimenPlanForPatientVisit(doctorRegimenRequest *common.RegimenPlan, testData TestData, doctor *common.Doctor, t *testing.T) *common.RegimenPlan {
-	doctorRegimenHandler := apiservice.NewDoctorRegimenHandler(testData.DataApi)
-	ts := httptest.NewServer(doctorRegimenHandler)
-	defer ts.Close()
-
-	requestBody, err := json.Marshal(doctorRegimenRequest)
-	if err != nil {
-		t.Fatal("Unable to marshal request body for adding regimen steps: " + err.Error())
-	}
-
-	resp, err := AuthPost(ts.URL, "application/json", bytes.NewBuffer(requestBody), doctor.AccountId.Int64())
-	if err != nil {
-		t.Fatal("Unable to make successful request to create regimen for patient visit")
-	}
-
-	body, err := ioutil.ReadAll(resp.Body)
-	if err != nil {
-		t.Fatal("Unable to read body of response after making call to create regimen plan")
-	}
-
-	CheckSuccessfulStatusCode(resp, "Unable to make successful call to create regimen plan for patient: "+string(body), t)
-
-	regimenPlanResponse := &common.RegimenPlan{}
-	err = json.Unmarshal(body, regimenPlanResponse)
-	if err != nil {
-		t.Fatal("Unable to unmarshal response into json object : " + err.Error())
-	}
-
-	return regimenPlanResponse
 }
 
 func validateRegimenRequestAgainstResponse(doctorRegimenRequest, doctorRegimenResponse *common.RegimenPlan, t *testing.T) {

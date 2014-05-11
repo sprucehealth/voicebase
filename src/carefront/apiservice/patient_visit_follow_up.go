@@ -31,60 +31,11 @@ func NewPatientVisitFollowUpHandler(dataApi api.DataAPI) *PatientVisitFollowUpHa
 
 func (p *PatientVisitFollowUpHandler) ServeHTTP(w http.ResponseWriter, r *http.Request) {
 	switch r.Method {
-	case HTTP_GET:
-		p.getFollowupForPatientVisit(w, r)
 	case HTTP_POST:
 		p.updatePatientVisitFollowup(w, r)
 	default:
 		w.WriteHeader(http.StatusNotFound)
 	}
-}
-
-func (p *PatientVisitFollowUpHandler) getFollowupForPatientVisit(w http.ResponseWriter, r *http.Request) {
-	if err := r.ParseForm(); err != nil {
-		WriteDeveloperError(w, http.StatusBadRequest, "Unable to parse request data: "+err.Error())
-		return
-	}
-
-	requestData := new(PatientVisitFollowUpRequestResponse)
-	if err := schema.NewDecoder().Decode(requestData, r.Form); err != nil {
-		WriteDeveloperError(w, http.StatusBadRequest, "Unable to parse patient visit followup request data: "+err.Error())
-		return
-	}
-
-	patientVisitId := requestData.PatientVisitId
-	treatmentPlanId := requestData.TreatmentPlanId
-	if err := EnsureTreatmentPlanOrPatientVisitIdPresent(p.DataApi, treatmentPlanId, &patientVisitId); err != nil {
-		WriteDeveloperError(w, http.StatusBadRequest, err.Error())
-		return
-	}
-
-	patientVisitReviewData, statusCode, err := ValidateDoctorAccessToPatientVisitAndGetRelevantData(patientVisitId, GetContext(r).AccountId, p.DataApi)
-	if err != nil {
-		WriteDeveloperError(w, statusCode, err.Error())
-		return
-	}
-
-	if treatmentPlanId == 0 {
-		treatmentPlanId, err = p.DataApi.GetActiveTreatmentPlanForPatientVisit(patientVisitReviewData.DoctorId, patientVisitId)
-		if err != nil {
-			WriteDeveloperError(w, http.StatusInternalServerError, "Unable to get active treatment plan information from patient visit: "+err.Error())
-			return
-		}
-	}
-
-	followup, err := p.DataApi.GetFollowUpTimeForTreatmentPlan(treatmentPlanId)
-	if err != nil {
-		WriteDeveloperError(w, http.StatusBadRequest, "Unable to get follow up for patient visit: "+err.Error())
-		return
-	}
-
-	response := &PatientVisitFollowupResponse{}
-	if followup != nil && followup.FollowUpValue != 0 && followup.FollowUpUnit != "" {
-		response.FollowUp = followup
-	}
-
-	WriteJSONToHTTPResponseWriter(w, http.StatusOK, response)
 }
 
 func (p *PatientVisitFollowUpHandler) updatePatientVisitFollowup(w http.ResponseWriter, r *http.Request) {

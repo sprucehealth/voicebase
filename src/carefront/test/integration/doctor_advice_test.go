@@ -4,7 +4,6 @@ import (
 	"bytes"
 	"database/sql"
 	"encoding/json"
-	"io/ioutil"
 	"net/http"
 	"net/http/httptest"
 	"strconv"
@@ -114,8 +113,7 @@ func TestAdvicePointsForPatientVisit(t *testing.T) {
 	}
 
 	// lets start a new patient visit and ensure that we still get back the advice points as added
-	patientSignedupResponse := SignupRandomTestPatient(t, testData.DataApi, testData.AuthApi)
-	patientVisitResponse2 := CreatePatientVisitForPatient(patientSignedupResponse.Patient.PatientId.Int64(), testData, t)
+	patientVisitResponse2, _ := signupAndSubmitPatientVisitForRandomPatient(t, testData, doctor)
 
 	// get the advice points for this patient visit
 	doctorAdviceResponse2 := getAdvicePointsInPatientVisit(testData, doctor, patientVisitResponse2.PatientVisitId, t)
@@ -436,63 +434,6 @@ func setupAdviceCreationTest(t *testing.T, testData TestData) (*apiservice.Patie
 	patientVisitResponse, _ := signupAndSubmitPatientVisitForRandomPatient(t, testData, doctor)
 
 	return patientVisitResponse, doctor
-}
-
-func getAdvicePointsInPatientVisit(testData TestData, doctor *common.Doctor, patientVisitId int64, t *testing.T) *common.Advice {
-	doctorAdviceHandler := apiservice.NewDoctorAdviceHandler(testData.DataApi)
-	ts := httptest.NewServer(doctorAdviceHandler)
-	defer ts.Close()
-
-	resp, err := AuthGet(ts.URL+"?patient_visit_id="+strconv.FormatInt(patientVisitId, 10), doctor.AccountId.Int64())
-	if err != nil {
-		t.Fatal("Unable to get advice points for patient visit: " + err.Error())
-	}
-
-	body, err := ioutil.ReadAll(resp.Body)
-	if err != nil {
-		t.Fatal("Unable to parse the body of the response for getting the advice points: " + err.Error())
-	}
-
-	CheckSuccessfulStatusCode(resp, "Unable to make a successful call to get advice points for patient visit : "+string(body), t)
-
-	doctorAdviceResponse := &common.Advice{}
-	err = json.Unmarshal(body, doctorAdviceResponse)
-	if err != nil {
-		t.Fatal("Unable to unmarshal the response body into the advice repsonse object: " + err.Error())
-	}
-
-	return doctorAdviceResponse
-}
-
-func updateAdvicePointsForPatientVisit(doctorAdviceRequest *common.Advice, testData TestData, doctor *common.Doctor, t *testing.T) *common.Advice {
-	doctorAdviceHandler := apiservice.NewDoctorAdviceHandler(testData.DataApi)
-	ts := httptest.NewServer(doctorAdviceHandler)
-	defer ts.Close()
-
-	requestBody, err := json.Marshal(doctorAdviceRequest)
-	if err != nil {
-		t.Fatal("Unable to marshal request body for adding advice points: " + err.Error())
-	}
-
-	resp, err := AuthPost(ts.URL, "application/json", bytes.NewBuffer(requestBody), doctor.AccountId.Int64())
-	if err != nil {
-		t.Fatal("Unable to make successful request to add advice points to patient visit " + err.Error())
-	}
-
-	body, err := ioutil.ReadAll(resp.Body)
-	if err != nil {
-		t.Fatal("Unable tp read body of the response after adding advice points to patient visit: " + err.Error())
-	}
-
-	CheckSuccessfulStatusCode(resp, "Unable to make successful call to add advice points : "+string(body), t)
-
-	doctorAdviceResponse := &common.Advice{}
-	err = json.Unmarshal(body, doctorAdviceResponse)
-	if err != nil {
-		t.Fatal("Unable to unmarshal response body into json object : " + err.Error())
-	}
-
-	return doctorAdviceResponse
 }
 
 func validateAdviceRequestAgainstResponse(doctorAdviceRequest, doctorAdviceResponse *common.Advice, t *testing.T) {

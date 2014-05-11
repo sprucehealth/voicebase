@@ -12,15 +12,14 @@ import (
 	"carefront/libs/pharmacy"
 	"carefront/patient_treatment_plan"
 
-	"github.com/samuel/go-metrics/metrics"
-
-	"encoding/json"
 	"fmt"
 	"io/ioutil"
 	"net/http"
 	"net/http/httptest"
 	"strconv"
 	"testing"
+
+	"github.com/samuel/go-metrics/metrics"
 )
 
 func TestPatientVisitReview(t *testing.T) {
@@ -167,10 +166,9 @@ func TestPatientVisitReview(t *testing.T) {
 	stubErxService.PrescriptionIdToPrescriptionStatuses[10] = []common.StatusEvent{common.StatusEvent{Status: api.ERX_STATUS_SENT}}
 	stubErxService.PrescriptionIdToPrescriptionStatuses[20] = []common.StatusEvent{common.StatusEvent{Status: api.ERX_STATUS_ERROR, StatusDetails: "error test"}}
 
-	addAndGetTreatmentsForPatientVisit(testData, treatments, doctor.AccountId.Int64(), patientVisitResponse.PatientVisitId, t)
-	getTreatmentsResponse := getTreatmentsForTreatmentPlan(testData, t, treatmentPlan.Id.Int64(), doctor)
-	if len(getTreatmentsResponse.Treatments) != 2 {
-		t.Fatalf("Expected 2 treatments to be returned, instead got back %d", len(getTreatmentsResponse.Treatments))
+	getTreatmentsResponse := addAndGetTreatmentsForPatientVisit(testData, treatments, doctor.AccountId.Int64(), patientVisitResponse.PatientVisitId, t)
+	if len(getTreatmentsResponse.TreatmentList.Treatments) != 2 {
+		t.Fatalf("Expected 2 treatments to be returned, instead got back %d", len(getTreatmentsResponse.TreatmentList.Treatments))
 	}
 
 	//
@@ -201,7 +199,7 @@ func TestPatientVisitReview(t *testing.T) {
 	regimenPlanRequest.RegimenSections = []*common.RegimenSection{regimenSection, regimenSection2}
 	regimenPlanResponse := createRegimenPlanForPatientVisit(regimenPlanRequest, testData, doctor, t)
 	validateRegimenRequestAgainstResponse(regimenPlanRequest, regimenPlanResponse, t)
-	getRegimenPlanResponse := getRegimenPlanForTreatmentPlan(testData, t, treatmentPlan.Id.Int64(), doctor)
+	getRegimenPlanResponse := getRegimenPlanForPatientVisit(testData, doctor, patientVisitResponse.PatientVisitId, t)
 	if len(getRegimenPlanResponse.RegimenSections) != 2 {
 		t.Fatal("Expected 2 regimen sections")
 	}
@@ -223,7 +221,7 @@ func TestPatientVisitReview(t *testing.T) {
 
 	doctorAdviceResponse := updateAdvicePointsForPatientVisit(doctorAdviceRequest, testData, doctor, t)
 	validateAdviceRequestAgainstResponse(doctorAdviceRequest, doctorAdviceResponse, t)
-	getAdviceResponse := getAdviceBasedOnTreatmentPlan(testData, t, treatmentPlan.Id.Int64(), doctor)
+	getAdviceResponse := getAdvicePointsInPatientVisit(testData, doctor, patientVisitResponse.PatientVisitId, t)
 	if len(getAdviceResponse.SelectedAdvicePoints) != len(doctorAdviceRequest.AllAdvicePoints) {
 		t.Fatal("Expected number of advice points not returned")
 	}
@@ -348,60 +346,4 @@ func TestPatientVisitReview(t *testing.T) {
 	if diagnosisSummary == nil || diagnosisSummary.Summary == "" {
 		t.Fatalf("Diagnosis summary expected to exist")
 	}
-}
-
-func getTreatmentsForTreatmentPlan(testData TestData, t *testing.T, treatmentPlanId int64, doctor *common.Doctor) *apiservice.GetTreatmentsResponse {
-	ts := httptest.NewServer(&apiservice.TreatmentsHandler{DataApi: testData.DataApi})
-	defer ts.Close()
-
-	resp, err := AuthGet(ts.URL+fmt.Sprintf("?treatment_plan_id=%d", treatmentPlanId), doctor.AccountId.Int64())
-	if err != nil {
-		t.Fatal("Unable to get treatments for patient based on treatment plan id: " + err.Error())
-	}
-
-	getTreatmentsResponse := &apiservice.GetTreatmentsResponse{}
-	err = json.NewDecoder(resp.Body).Decode(getTreatmentsResponse)
-	if err != nil {
-		t.Fatal("Unable to parse treatments for patient")
-	}
-
-	return getTreatmentsResponse
-}
-
-func getRegimenPlanForTreatmentPlan(testData TestData, t *testing.T, treatmentPlanId int64, doctor *common.Doctor) *common.RegimenPlan {
-	ts := httptest.NewServer(&apiservice.DoctorRegimenHandler{
-		DataApi: testData.DataApi,
-	})
-	defer ts.Close()
-
-	resp, err := AuthGet(ts.URL+fmt.Sprintf("?treatment_plan_id=%d", treatmentPlanId), doctor.AccountId.Int64())
-	if err != nil {
-		t.Fatal("Unable to get regimen plan based on treatment plan id: " + err.Error())
-	}
-
-	getRegimenPlanResponse := &common.RegimenPlan{}
-	err = json.NewDecoder(resp.Body).Decode(getRegimenPlanResponse)
-	if err != nil {
-		t.Fatal("Unable to parse response for regimen plan based on treatment plan id: " + err.Error())
-	}
-	return getRegimenPlanResponse
-}
-
-func getAdviceBasedOnTreatmentPlan(testData TestData, t *testing.T, treatmentPlanId int64, doctor *common.Doctor) *common.Advice {
-	ts := httptest.NewServer(&apiservice.DoctorAdviceHandler{
-		DataApi: testData.DataApi,
-	})
-	defer ts.Close()
-
-	resp, err := AuthGet(ts.URL+fmt.Sprintf("?treatment_plan_id=%d", treatmentPlanId), doctor.AccountId.Int64())
-	if err != nil {
-		t.Fatal("Unable to get regimen plan based on treatment plan id: " + err.Error())
-	}
-
-	getAdviceResponse := &common.Advice{}
-	err = json.NewDecoder(resp.Body).Decode(getAdviceResponse)
-	if err != nil {
-		t.Fatal("Unable to parse response for advice based on treatment plan id: " + err.Error())
-	}
-	return getAdviceResponse
 }

@@ -8,8 +8,6 @@ import (
 	"carefront/libs/erx"
 	"encoding/json"
 	"net/http"
-
-	"github.com/gorilla/schema"
 )
 
 type TreatmentsHandler struct {
@@ -18,7 +16,7 @@ type TreatmentsHandler struct {
 }
 
 type GetTreatmentsResponse struct {
-	Treatments []*common.Treatment `json:"treatments"`
+	TreatmentList *common.TreatmentList `json:"treatment_list"`
 }
 
 type AddTreatmentsResponse struct {
@@ -37,60 +35,11 @@ type GetTreatmentsRequestBody struct {
 
 func (t *TreatmentsHandler) ServeHTTP(w http.ResponseWriter, r *http.Request) {
 	switch r.Method {
-	case HTTP_GET:
-		t.getTreatments(w, r)
 	case HTTP_POST:
 		t.addTreatment(w, r)
 	default:
 		w.WriteHeader(http.StatusNotFound)
 	}
-}
-
-func (t *TreatmentsHandler) getTreatments(w http.ResponseWriter, r *http.Request) {
-	if err := r.ParseForm(); err != nil {
-		WriteDeveloperError(w, http.StatusBadRequest, "Unable to parse request data: "+err.Error())
-		return
-	}
-
-	var requestData GetTreatmentsRequestBody
-	if err := schema.NewDecoder().Decode(&requestData, r.Form); err != nil {
-		WriteDeveloperError(w, http.StatusBadRequest, "Unable to parse input parameters: "+err.Error())
-		return
-	}
-
-	patientVisitId := requestData.PatientVisitId
-	treatmentPlanId := requestData.TreatmentPlanId
-	if err := EnsureTreatmentPlanOrPatientVisitIdPresent(t.DataApi, treatmentPlanId, &patientVisitId); err != nil {
-		WriteDeveloperError(w, http.StatusBadRequest, err.Error())
-		return
-	}
-
-	patientVisitReviewData, httpStatusCode, err := ValidateDoctorAccessToPatientVisitAndGetRelevantData(patientVisitId, GetContext(r).AccountId, t.DataApi)
-	if err != nil {
-		WriteDeveloperError(w, httpStatusCode, "Doctor not authorized to get treatments for patient visit: "+err.Error())
-		return
-	}
-
-	if treatmentPlanId == 0 {
-		treatmentPlanId, err = t.DataApi.GetActiveTreatmentPlanForPatientVisit(patientVisitReviewData.DoctorId, patientVisitId)
-		if err != nil {
-			WriteDeveloperError(w, http.StatusInternalServerError, "Unable to get active treatment plan id based on patient visit id : "+err.Error())
-			return
-		}
-	}
-
-	treatments, err := t.DataApi.GetTreatmentsBasedOnTreatmentPlanId(patientVisitId, treatmentPlanId)
-	if err != nil {
-		WriteDeveloperError(w, http.StatusInternalServerError, "unable to get treatments for patient visit : "+err.Error())
-		return
-	}
-
-	// for each of the drugs, go ahead and fill in the drug name, route and form
-	for _, treatment := range treatments {
-		treatment.DrugName, treatment.DrugForm, treatment.DrugRoute = BreakDrugInternalNameIntoComponents(treatment.DrugInternalName)
-	}
-
-	WriteJSONToHTTPResponseWriter(w, http.StatusOK, &GetTreatmentsResponse{Treatments: treatments})
 }
 
 func (t *TreatmentsHandler) addTreatment(w http.ResponseWriter, r *http.Request) {
@@ -172,5 +121,10 @@ func (t *TreatmentsHandler) addTreatment(w http.ResponseWriter, r *http.Request)
 		Treatments:     treatments,
 	})
 
-	WriteJSONToHTTPResponseWriter(w, http.StatusOK, &GetTreatmentsResponse{Treatments: treatments})
+	treatmentList := &common.TreatmentList{
+		Treatments: treatments,
+		Status:     api.STATUS_COMMITTED,
+	}
+
+	WriteJSONToHTTPResponseWriter(w, http.StatusOK, &GetTreatmentsResponse{TreatmentList: treatmentList})
 }

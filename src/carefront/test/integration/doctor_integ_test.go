@@ -350,7 +350,7 @@ func TestDoctorAddingOfFollowUpForPatientVisit(t *testing.T) {
 		t.Fatal("Unable to get doctor from doctor id " + err.Error())
 	}
 
-	patientVisitResponse, _ := signupAndSubmitPatientVisitForRandomPatient(t, testData, doctor)
+	patientVisitResponse, treatmentPlan := signupAndSubmitPatientVisitForRandomPatient(t, testData, doctor)
 
 	// lets add a follow up time for 1 week from now
 	doctorFollowupHandler := apiservice.NewPatientVisitFollowUpHandler(testData.DataApi)
@@ -370,27 +370,14 @@ func TestDoctorAddingOfFollowUpForPatientVisit(t *testing.T) {
 	CheckSuccessfulStatusCode(resp, "Unable to make successful call to add follow up for patient visit: "+string(body), t)
 
 	// lets get the follow up time back
-	resp, err = AuthGet(ts.URL+"?patient_visit_id="+strconv.FormatInt(patientVisitResponse.PatientVisitId, 10), doctor.AccountId.Int64())
+	followup, err := testData.DataApi.GetFollowUpTimeForTreatmentPlan(treatmentPlan.Id.Int64())
 	if err != nil {
-		t.Fatal("Unable to make successful call to get follow up time for patient visit: " + err.Error())
-	}
-
-	body, err = ioutil.ReadAll(resp.Body)
-	if err != nil {
-		t.Fatal("Unable to parse body of the response to get follow up time for patient visit: " + err.Error())
-	}
-
-	CheckSuccessfulStatusCode(resp, "Unable to make successful call to get follow up time for patient visit: "+string(body), t)
-
-	patientVisitFollowupResponse := &apiservice.PatientVisitFollowupResponse{}
-	err = json.Unmarshal(body, patientVisitFollowupResponse)
-	if err != nil {
-		t.Fatal("Unable to unmarshal the response into a json object: " + err.Error())
+		t.Fatalf(err.Error())
 	}
 
 	oneWeekFromNow := time.Now().Add(7 * 24 * 60 * time.Minute)
 	year, month, day := oneWeekFromNow.Date()
-	year1, month1, day1 := patientVisitFollowupResponse.FollowUpTime.Date()
+	year1, month1, day1 := followup.FollowUpTime.Date()
 
 	if year != year1 || month1 != month || math.Abs(float64(day1-day)) > 2 {
 		t.Fatalf("Expected date to follow up time returned to be around %d/%d/%d, but got %d/%d/%d instead", year, month, day, year1, month1, day1)

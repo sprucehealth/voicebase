@@ -233,7 +233,7 @@ func TestAddTreatments(t *testing.T) {
 
 	getTreatmentsResponse := addAndGetTreatmentsForPatientVisit(testData, treatments, doctor.AccountId.Int64(), patientVisitResponse.PatientVisitId, t)
 
-	for _, treatment := range getTreatmentsResponse.Treatments {
+	for _, treatment := range getTreatmentsResponse.TreatmentList.Treatments {
 		switch treatment.DrugInternalName {
 		case treatment1.DrugInternalName:
 			compareTreatments(treatment, treatment1, t)
@@ -248,12 +248,12 @@ func TestAddTreatments(t *testing.T) {
 	getTreatmentsResponse = addAndGetTreatmentsForPatientVisit(testData, treatments, doctor.AccountId.Int64(), patientVisitResponse.PatientVisitId, t)
 
 	// there should be just one treatment and its name should be the name that we just set
-	if len(getTreatmentsResponse.Treatments) != 1 {
+	if len(getTreatmentsResponse.TreatmentList.Treatments) != 1 {
 		t.Fatal("Expected just 1 treatment to be returned after update")
 	}
 
 	// the dispense value should be set to 10
-	if getTreatmentsResponse.Treatments[0].DispenseValue != 10 {
+	if getTreatmentsResponse.TreatmentList.Treatments[0].DispenseValue != 10 {
 		t.Fatal("Expected the updated dispense value to be set to 10")
 	}
 
@@ -547,14 +547,14 @@ func TestTreatmentTemplatesInContextOfPatientVisit(t *testing.T) {
 	// lets add this as a treatment to the patient visit
 	getTreatmentsResponse := addAndGetTreatmentsForPatientVisit(testData, []*common.Treatment{treatment2}, doctor.AccountId.Int64(), patientVisitResponse.PatientVisitId, t)
 
-	if len(getTreatmentsResponse.Treatments) != 1 {
+	if len(getTreatmentsResponse.TreatmentList.Treatments) != 1 {
 		t.Fatal("Expected patient visit to have 1 treatment")
 	}
 
 	// now, lets favorite a treatment that exists for the patient visit
 	treatmentTemplate2 := &common.DoctorTreatmentTemplate{}
 	treatmentTemplate2.Name = "Favorite Treatment #2"
-	treatmentTemplate2.Treatment = getTreatmentsResponse.Treatments[0]
+	treatmentTemplate2.Treatment = getTreatmentsResponse.TreatmentList.Treatments[0]
 	treatmentTemplatesRequest.TreatmentTemplates[0] = treatmentTemplate2
 	treatmentTemplatesRequest.PatientVisitId = encoding.NewObjectId(patientVisitResponse.PatientVisitId)
 
@@ -606,16 +606,16 @@ func TestTreatmentTemplatesInContextOfPatientVisit(t *testing.T) {
 	treatment2.DoctorTreatmentTemplateId = encoding.NewObjectId(treatmentTemplatesResponse.TreatmentTemplates[1].Id.Int64())
 	getTreatmentsResponse = addAndGetTreatmentsForPatientVisit(testData, []*common.Treatment{treatment1, treatment2}, doctor.AccountId.Int64(), patientVisitResponse.PatientVisitId, t)
 
-	if len(getTreatmentsResponse.Treatments) != 2 {
+	if len(getTreatmentsResponse.TreatmentList.Treatments) != 2 {
 		t.Fatal("There should exist 2 treatments for the patient visit")
 	}
 
-	if getTreatmentsResponse.Treatments[0].DoctorTreatmentTemplateId.Int64() == 0 || getTreatmentsResponse.Treatments[1].DoctorTreatmentTemplateId.Int64() == 0 {
+	if getTreatmentsResponse.TreatmentList.Treatments[0].DoctorTreatmentTemplateId.Int64() == 0 || getTreatmentsResponse.TreatmentList.Treatments[1].DoctorTreatmentTemplateId.Int64() == 0 {
 		t.Fatal("Expected the doctorFavoriteId to be set for both treatments given that they were added from favorites")
 	}
 
-	treatmentTemplate.Id = encoding.NewObjectId(getTreatmentsResponse.Treatments[0].DoctorTreatmentTemplateId.Int64())
-	treatmentTemplate.Treatment = getTreatmentsResponse.Treatments[0]
+	treatmentTemplate.Id = encoding.NewObjectId(getTreatmentsResponse.TreatmentList.Treatments[0].DoctorTreatmentTemplateId.Int64())
+	treatmentTemplate.Treatment = getTreatmentsResponse.TreatmentList.Treatments[0]
 	treatmentTemplatesRequest.TreatmentTemplates = []*common.DoctorTreatmentTemplate{treatmentTemplate}
 
 	// lets delete a favorite that is also a treatment in the patient visit
@@ -765,45 +765,6 @@ func TestTreatmentTemplateWithDrugOutOfMarket(t *testing.T) {
 	if resp.StatusCode != http.StatusBadRequest {
 		t.Fatalf("Expected the call to add treatments to error out with bad request (400) because treatment is out of market, but instead got %d returned", resp.StatusCode)
 	}
-}
-
-func addAndGetTreatmentsForPatientVisit(testData TestData, treatments []*common.Treatment, doctorAccountId, PatientVisitId int64, t *testing.T) *apiservice.GetTreatmentsResponse {
-	stubErxApi := &erx.StubErxService{
-		SelectedMedicationToReturn: &common.Treatment{},
-	}
-
-	treatmentRequestBody := apiservice.AddTreatmentsRequestBody{PatientVisitId: encoding.NewObjectId(PatientVisitId), Treatments: treatments}
-	treatmentsHandler := &apiservice.TreatmentsHandler{
-		DataApi: testData.DataApi,
-		ErxApi:  stubErxApi,
-	}
-
-	ts := httptest.NewServer(treatmentsHandler)
-	defer ts.Close()
-
-	data, err := json.Marshal(&treatmentRequestBody)
-	if err != nil {
-		t.Fatal("Unable to marshal request body for adding treatments to patient visit")
-	}
-
-	resp, err := AuthPost(ts.URL, "application/json", bytes.NewBuffer(data), doctorAccountId)
-	if err != nil {
-		t.Fatal("Unable to make POST request to add treatments to patient visit " + err.Error())
-	}
-
-	addTreatmentsResponse := &apiservice.GetTreatmentsResponse{}
-	err = json.NewDecoder(resp.Body).Decode(addTreatmentsResponse)
-	if err != nil {
-		t.Fatal("Unable to unmarshal response into object : " + err.Error())
-	}
-
-	CheckSuccessfulStatusCode(resp, "Unsuccessful call made to add treatments for patient visit: ", t)
-
-	if addTreatmentsResponse.Treatments == nil || len(addTreatmentsResponse.Treatments) == 0 {
-		t.Fatal("Treatment ids expected to be returned for the treatments just added")
-	}
-
-	return addTreatmentsResponse
 }
 
 func compareTreatments(treatment *common.Treatment, treatment1 *common.Treatment, t *testing.T) {

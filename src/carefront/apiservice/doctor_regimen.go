@@ -8,8 +8,6 @@ import (
 	"encoding/json"
 	"errors"
 	"net/http"
-
-	"github.com/gorilla/schema"
 )
 
 type DoctorRegimenHandler struct {
@@ -33,67 +31,11 @@ func NewDoctorRegimenHandler(dataApi api.DataAPI) *DoctorRegimenHandler {
 
 func (d *DoctorRegimenHandler) ServeHTTP(w http.ResponseWriter, r *http.Request) {
 	switch r.Method {
-	case HTTP_GET:
-		d.getRegimenSteps(w, r)
 	case HTTP_POST:
 		d.updateRegimenSteps(w, r)
 	default:
 		w.WriteHeader(http.StatusNotFound)
 	}
-}
-
-func (d *DoctorRegimenHandler) getRegimenSteps(w http.ResponseWriter, r *http.Request) {
-	if err := r.ParseForm(); err != nil {
-		WriteDeveloperError(w, http.StatusBadRequest, "Unable to parse request data: "+err.Error())
-		return
-	}
-
-	requestData := new(GetDoctorRegimenRequestData)
-
-	if err := schema.NewDecoder().Decode(requestData, r.Form); err != nil {
-		WriteDeveloperError(w, http.StatusBadRequest, "Unable to parse input parameters: "+err.Error())
-		return
-	}
-
-	patientVisitId := requestData.PatientVisitId
-	treatmentPlanId := requestData.TreatmentPlanId
-	if err := EnsureTreatmentPlanOrPatientVisitIdPresent(d.DataApi, treatmentPlanId, &patientVisitId); err != nil {
-		WriteDeveloperError(w, http.StatusBadRequest, err.Error())
-		return
-	}
-
-	patientVisitReviewData, statusCode, err := ValidateDoctorAccessToPatientVisitAndGetRelevantData(patientVisitId, GetContext(r).AccountId, d.DataApi)
-	if err != nil {
-		WriteDeveloperError(w, statusCode, err.Error())
-		return
-	}
-
-	regimenSteps, err := d.DataApi.GetRegimenStepsForDoctor(patientVisitReviewData.DoctorId)
-	if err != nil {
-		WriteDeveloperError(w, http.StatusInternalServerError, "Unable to get regimen steps for doctor: "+err.Error())
-		return
-	}
-
-	if treatmentPlanId == 0 {
-		treatmentPlanId, err = d.DataApi.GetActiveTreatmentPlanForPatientVisit(patientVisitReviewData.DoctorId, patientVisitId)
-		if err != nil {
-			WriteDeveloperError(w, http.StatusInternalServerError, "Unable to get treatment plan for patient visit: "+err.Error())
-			return
-		}
-	}
-
-	regimenPlan, err := d.DataApi.GetRegimenPlanForTreatmentPlan(treatmentPlanId)
-	if err != nil {
-		WriteDeveloperError(w, http.StatusInternalServerError, "Unable to lookup regimen plan for patient visit: "+err.Error())
-		return
-	}
-
-	if regimenPlan == nil {
-		regimenPlan = &common.RegimenPlan{}
-	}
-	regimenPlan.AllRegimenSteps = regimenSteps
-
-	WriteJSONToHTTPResponseWriter(w, http.StatusOK, regimenPlan)
 }
 
 func (d *DoctorRegimenHandler) updateRegimenSteps(w http.ResponseWriter, r *http.Request) {
@@ -254,6 +196,7 @@ func (d *DoctorRegimenHandler) updateRegimenSteps(w http.ResponseWriter, r *http
 		AllRegimenSteps: allRegimenSteps,
 		TreatmentPlanId: encoding.NewObjectId(treatmentPlanId),
 		PatientVisitId:  requestData.PatientVisitId,
+		Status:          api.STATUS_COMMITTED,
 	}
 
 	dispatch.Default.PublishAsync(&RegimenPlanAddedEvent{
