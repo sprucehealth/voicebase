@@ -108,7 +108,7 @@ func (p *PatientVisitReviewHandler) ServeHTTP(w http.ResponseWriter, r *http.Req
 	}
 
 	treatmentPlan.TreatmentList = &common.TreatmentList{}
-	treatmentPlan.TreatmentList.Treatments, err = p.DataApi.GetTreatmentsBasedOnTreatmentPlanId(patientVisit.PatientVisitId.Int64(), treatmentPlanId)
+	treatmentPlan.TreatmentList.Treatments, err = p.DataApi.GetTreatmentsBasedOnTreatmentPlanId(treatmentPlanId)
 	if err != nil {
 		apiservice.WriteDeveloperError(w, http.StatusInternalServerError, "Unable to get treatment plan for this patient visit id: "+err.Error())
 		return

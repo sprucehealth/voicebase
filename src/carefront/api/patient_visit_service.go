@@ -166,7 +166,9 @@ func (d *DataService) CreateNewPatientVisit(patientId, healthConditionId, layout
 }
 
 func (d *DataService) GetAbbreviatedTreatmentPlanForPatientVisit(doctorId, patientVisitId int64) (*common.DoctorTreatmentPlan, error) {
-	drTreatmentPlan := common.DoctorTreatmentPlan{}
+	drTreatmentPlan := common.DoctorTreatmentPlan{
+		PatientVisitId: encoding.NewObjectId(patientVisitId),
+	}
 	err := d.DB.QueryRow(`select id from treatment_plan where patient_visit_id = ? and status =?`, patientVisitId, STATUS_ACTIVE).Scan(&drTreatmentPlan.Id)
 	if err == sql.ErrNoRows {
 		return nil, NoRowsError
@@ -618,7 +620,7 @@ func (d *DataService) AddTreatmentsForPatientVisit(treatments []*common.Treatmen
 	return tx.Commit()
 }
 
-func (d *DataService) GetTreatmentsBasedOnTreatmentPlanId(patientVisitId, treatmentPlanId int64) ([]*common.Treatment, error) {
+func (d *DataService) GetTreatmentsBasedOnTreatmentPlanId(treatmentPlanId int64) ([]*common.Treatment, error) {
 
 	// get treatment plan information
 	treatments := make([]*common.Treatment, 0)
@@ -634,7 +636,7 @@ func (d *DataService) GetTreatmentsBasedOnTreatmentPlanId(patientVisitId, treatm
 				left outer join drug_name on drug_name_id = drug_name.id
 				left outer join drug_route on drug_route_id = drug_route.id
 				left outer join drug_form on drug_form_id = drug_form.id
-				where (treatment_plan.patient_visit_id = ? or treatment_plan_id=?) and treatment.status=? and localized_text.language_id = ?`, patientVisitId, treatmentPlanId, STATUS_CREATED, EN_LANGUAGE_ID)
+				where treatment_plan_id=? and treatment.status=? and localized_text.language_id = ?`, treatmentPlanId, STATUS_CREATED, EN_LANGUAGE_ID)
 
 	if err != nil {
 		return nil, err

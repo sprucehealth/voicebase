@@ -64,7 +64,7 @@ func (d *DataService) GetFavoriteTreatmentPlan(favoriteTreatmentPlanId int64) (*
 	return &favoriteTreatmentPlan, err
 }
 
-func (d *DataService) CreateOrUpdateFavoriteTreatmentPlan(favoriteTreatmentPlan *common.FavoriteTreatmentPlan) error {
+func (d *DataService) CreateOrUpdateFavoriteTreatmentPlan(favoriteTreatmentPlan *common.FavoriteTreatmentPlan, treatmentPlanId int64) error {
 	tx, err := d.DB.Begin()
 	if err != nil {
 		return err
@@ -120,6 +120,14 @@ func (d *DataService) CreateOrUpdateFavoriteTreatmentPlan(favoriteTreatmentPlan 
 
 	for _, advicePoint := range favoriteTreatmentPlan.Advice.SelectedAdvicePoints {
 		_, err = tx.Exec(`insert into dr_favorite_advice (dr_favorite_treatment_plan_id, dr_advice_point_id, text, status) values (?, ?, ?, ?)`, favoriteTreatmentPlan.Id.Int64(), advicePoint.ParentId.Int64(), advicePoint.Text, STATUS_ACTIVE)
+		if err != nil {
+			tx.Rollback()
+			return err
+		}
+	}
+
+	if treatmentPlanId > 0 {
+		_, err := tx.Exec(`replace into treatment_plan_favorite_mapping (treatment_plan_id, dr_favorite_treatment_plan_id) values (?,?)`, treatmentPlanId, favoriteTreatmentPlan.Id.Int64())
 		if err != nil {
 			tx.Rollback()
 			return err

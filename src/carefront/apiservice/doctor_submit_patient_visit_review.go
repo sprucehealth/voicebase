@@ -134,7 +134,7 @@ func (d *DoctorSubmitPatientVisitReviewHandler) submitPatientVisitReview(w http.
 			}
 		}
 
-		treatments, err := d.DataApi.GetTreatmentsBasedOnTreatmentPlanId(requestData.PatientVisitId, treatmentPlanId)
+		treatments, err := d.DataApi.GetTreatmentsBasedOnTreatmentPlanId(treatmentPlanId)
 		if err != nil {
 			WriteDeveloperError(w, http.StatusInternalServerError, "Unable to get treatments based on active treatment plan: "+err.Error())
 			return

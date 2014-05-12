@@ -1976,7 +1976,7 @@ func setUpDeniedRefillRequestWithDNTFForLinkedTreatment(t *testing.T, testData T
 		t.Fatalf("Expected 1 entry in dntf mapping table instead got %d", dntfMappingCount)
 	}
 
-	treatments, err := testData.DataApi.GetTreatmentsBasedOnTreatmentPlanId(patientVisitResponse.PatientVisitId, treatmentPlanId)
+	treatments, err := testData.DataApi.GetTreatmentsBasedOnTreatmentPlanId(treatmentPlanId)
 	if err != nil {
 		t.Fatalf("Unable to get the treatmend based on prescription id: %+v", err)
 	}

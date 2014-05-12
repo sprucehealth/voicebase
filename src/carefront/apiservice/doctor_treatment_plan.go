@@ -85,33 +85,14 @@ func (d *DoctorTreatmentPlanHandler) getTreatmentPlanForPatientVisit(w http.Resp
 		return
 	}
 
-	drTreatmentPlan.TreatmentList = &common.TreatmentList{}
-	drTreatmentPlan.TreatmentList.Treatments, err = d.DataApi.GetTreatmentsBasedOnTreatmentPlanId(patientVisitId, drTreatmentPlan.Id.Int64())
-	if err != nil {
-		WriteJSONToHTTPResponseWriter(w, http.StatusInternalServerError, "Unable to get treatments for treatment plan: "+err.Error())
-		return
-	}
-
-	drTreatmentPlan.RegimenPlan, err = d.DataApi.GetRegimenPlanForTreatmentPlan(drTreatmentPlan.Id.Int64())
-	if err != nil {
-		WriteJSONToHTTPResponseWriter(w, http.StatusInternalServerError, "Unable to get regimen plan for treatment plan: "+err.Error())
+	if err := fillInTreatmentPlan(drTreatmentPlan, d.DataApi); err != nil {
+		WriteDeveloperError(w, http.StatusInternalServerError, err.Error())
 		return
 	}
 
 	drTreatmentPlan.RegimenPlan.AllRegimenSteps, err = d.DataApi.GetRegimenStepsForDoctor(patientVisitReviewData.DoctorId)
 	if err != nil {
-		WriteJSONToHTTPResponseWriter(w, http.StatusInternalServerError, "Unable to get all regimen steps for doctor")
-		return
-	}
-
-	drTreatmentPlan.Advice = &common.Advice{
-		TreatmentPlanId: drTreatmentPlan.Id,
-		PatientVisitId:  encoding.NewObjectId(patientVisitId),
-	}
-
-	drTreatmentPlan.Advice.SelectedAdvicePoints, err = d.DataApi.GetAdvicePointsForTreatmentPlan(drTreatmentPlan.Id.Int64())
-	if err != nil {
-		WriteJSONToHTTPResponseWriter(w, http.StatusInternalServerError, "Unable to get advice points for treatment plan")
+		WriteDeveloperError(w, http.StatusInternalServerError, "Unable to get all regimen steps for doctor")
 		return
 	}
 
@@ -226,6 +207,31 @@ func setCommittedStateForEachSection(drTreatmentPlan *common.DoctorTreatmentPlan
 	if len(drTreatmentPlan.Advice.SelectedAdvicePoints) > 0 {
 		drTreatmentPlan.Advice.Status = api.STATUS_COMMITTED
 	}
+}
+
+func fillInTreatmentPlan(drTreatmentPlan *common.DoctorTreatmentPlan, dataApi api.DataAPI) error {
+	var err error
+	drTreatmentPlan.TreatmentList = &common.TreatmentList{}
+	drTreatmentPlan.TreatmentList.Treatments, err = dataApi.GetTreatmentsBasedOnTreatmentPlanId(drTreatmentPlan.Id.Int64())
+	if err != nil {
+		return fmt.Errorf("Unable to get treatments for treatment plan: %s", err)
+	}
+
+	drTreatmentPlan.RegimenPlan, err = dataApi.GetRegimenPlanForTreatmentPlan(drTreatmentPlan.Id.Int64())
+	if err != nil {
+		return fmt.Errorf("Unable to get regimen plan for treatment plan: %s", err)
+	}
+
+	drTreatmentPlan.Advice = &common.Advice{
+		TreatmentPlanId: drTreatmentPlan.Id,
+		PatientVisitId:  drTreatmentPlan.PatientVisitId,
+	}
+
+	drTreatmentPlan.Advice.SelectedAdvicePoints, err = dataApi.GetAdvicePointsForTreatmentPlan(drTreatmentPlan.Id.Int64())
+	if err != nil {
+		return fmt.Errorf("Unable to get advice points for treatment plan")
+	}
+	return err
 }
 
 func (d *DoctorTreatmentPlanHandler) populateFavoriteTreatmentPlanIntoTreatmentPlan(treatmentPlan *common.DoctorTreatmentPlan, favoriteTreatmentPlanId int64) error {

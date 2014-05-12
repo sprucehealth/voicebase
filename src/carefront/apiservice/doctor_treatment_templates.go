@@ -97,7 +97,7 @@ func (t *DoctorTreatmentTemplatesHandler) deleteTreatmentTemplates(w http.Respon
 			}
 		}
 
-		treatmentsInTreatmentPlan, err = t.DataApi.GetTreatmentsBasedOnTreatmentPlanId(patientVisitId, treatmentPlanId)
+		treatmentsInTreatmentPlan, err = t.DataApi.GetTreatmentsBasedOnTreatmentPlanId(treatmentPlanId)
 		if err != nil {
 			WriteDeveloperError(w, http.StatusInternalServerError, "Unable to get treatments based on treatment plan id: "+err.Error())
 			return
@@ -164,7 +164,7 @@ func (t *DoctorTreatmentTemplatesHandler) addTreatmentTemplates(w http.ResponseW
 			}
 		}
 
-		treatmentsInTreatmentPlan, err = t.DataApi.GetTreatmentsBasedOnTreatmentPlanId(patientVisitId, treatmentPlanId)
+		treatmentsInTreatmentPlan, err = t.DataApi.GetTreatmentsBasedOnTreatmentPlanId(treatmentPlanId)
 		if err != nil {
 			WriteDeveloperError(w, http.StatusInternalServerError, "Unable to get treatments based on treatment plan id: "+err.Error())
 			return
