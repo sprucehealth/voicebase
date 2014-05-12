@@ -475,7 +475,7 @@ func TestTreatmentListEquals_DifferentLength(t *testing.T) {
 func TestTreatmentListEquals_EmptyLists(t *testing.T) {
 	treatmentList1 := &TreatmentList{}
 	treatmentList2 := &TreatmentList{}
-	if treatmentList2.Equals(treatmentList1) {
-		t.Fatalf("TreatmentLists expected to be unequal")
+	if !treatmentList2.Equals(treatmentList1) {
+		t.Fatalf("TreatmentLists expected to be equal")
 	}
 }
