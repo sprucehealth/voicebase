@@ -286,33 +286,52 @@ type RegimenPlan struct {
 }
 
 func (r *RegimenPlan) Equals(other *RegimenPlan) bool {
-	if r == nil || other == nil {
+	if r == nil && other == nil {
+		return true
+	} else if r == nil || other == nil {
 		return false
 	}
 
-	if len(r.RegimenSections) != len(other.RegimenSections) {
+	// only compare regimen sections with atleast one step in them, because
+	// the client currently sends regimen sections with no steps in them
+	// making it harder to truly compare the contents of two regimen plans.
+	rRegimenSections := getRegimenSectionsWithAtleastOneStep(r)
+	otherRegimenSections := getRegimenSectionsWithAtleastOneStep(other)
+
+	if len(rRegimenSections) != len(otherRegimenSections) {
 		return false
 	}
 
 	// the ordering of the regimen sections and its steps have to be
 	// exactly the same for the regimen plan to be considered equal
-	for i, regimenSection := range r.RegimenSections {
-		if regimenSection.RegimenName != other.RegimenSections[i].RegimenName {
+	for i, regimenSection := range rRegimenSections {
+		if regimenSection.RegimenName != otherRegimenSections[i].RegimenName {
 			return false
 		}
 
-		if len(regimenSection.RegimenSteps) != len(other.RegimenSections[i].RegimenSteps) {
+		if len(regimenSection.RegimenSteps) != len(otherRegimenSections[i].RegimenSteps) {
 			return false
 		}
 
 		for j, regimenStep := range regimenSection.RegimenSteps {
-			if !regimenStep.Equals(other.RegimenSections[i].RegimenSteps[j]) {
+			if !regimenStep.Equals(otherRegimenSections[i].RegimenSteps[j]) {
 				return false
 			}
 		}
 	}
 
 	return true
+}
+
+func getRegimenSectionsWithAtleastOneStep(r *RegimenPlan) []*RegimenSection {
+
+	regimenSections := make([]*RegimenSection, 0, len(r.RegimenSections))
+	for _, regimenSection := range r.RegimenSections {
+		if len(regimenSection.RegimenSteps) > 0 {
+			regimenSections = append(regimenSections, regimenSection)
+		}
+	}
+	return regimenSections
 }
 
 type FollowUp struct {
@@ -334,7 +353,9 @@ type Advice struct {
 }
 
 func (a *Advice) Equals(other *Advice) bool {
-	if a == nil || other == nil {
+	if a == nil && other == nil {
+		return true
+	} else if a == nil || other == nil {
 		return false
 	}
 
