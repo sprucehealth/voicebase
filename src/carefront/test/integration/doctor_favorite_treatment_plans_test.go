@@ -210,6 +210,8 @@ func TestFavoriteTreatmentPlan_PickingAFavoriteTreatmentPlan(t *testing.T) {
 		t.Fatalf("Expected there to exist 2 advice points in the master list instead got %d", len(responseData.TreatmentPlan.Advice.AllAdvicePoints))
 	} else if responseData.TreatmentPlan.Advice.Status != api.STATUS_UNCOMMITTED {
 		t.Fatalf("Status should indicate UNCOMMITTED for advice when the doctor has not committed the section")
+	} else if !favoriteTreamentPlan.EqualsDoctorTreatmentPlan(responseData.TreatmentPlan) {
+		t.Fatal("Expected the contents of the favorite treatment plan to be the same as that of the treatment plan but its not")
 	}
 
 	var count int64

@@ -306,7 +306,7 @@ func (d *DoctorTreatmentPlanHandler) populateFavoriteTreatmentPlanIntoTreatmentP
 			}
 
 			for j, regimenStep := range regimenSection.RegimenSteps {
-				regimenSection.RegimenSteps[j] = &common.DoctorInstructionItem{
+				treatmentPlan.RegimenPlan.RegimenSections[i].RegimenSteps[j] = &common.DoctorInstructionItem{
 					ParentId: regimenStep.ParentId,
 					Text:     regimenStep.Text,
 				}
