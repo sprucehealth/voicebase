@@ -64,8 +64,8 @@ func TestAdviceEquals_EmptyTest(t *testing.T) {
 	advice1 = &Advice{}
 	advice2 = &Advice{}
 
-	if advice1.Equals(advice2) {
-		t.Fatalf("advice1 and advice2 expected not to be equal")
+	if !advice1.Equals(advice2) {
+		t.Fatalf("advice1 and advice2 expected to be equal")
 	}
 }
 

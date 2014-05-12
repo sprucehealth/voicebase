@@ -88,8 +88,8 @@ func TestRegimenPlanEquals_EmptyTest(t *testing.T) {
 	regimenPlan1 := &RegimenPlan{}
 	regimenPlan2 := &RegimenPlan{}
 
-	if regimenPlan1.Equals(regimenPlan2) {
-		t.Fatalf("Expected the regimen plans to be unequal")
+	if !regimenPlan1.Equals(regimenPlan2) {
+		t.Fatalf("Expected the regimen plans to be equal")
 	}
 }
 
