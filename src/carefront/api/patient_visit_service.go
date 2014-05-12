@@ -1,6 +1,7 @@
 package api
 
 import (
+	"carefront/app_url"
 	"carefront/common"
 	"carefront/encoding"
 	pharmacyService "carefront/libs/pharmacy"
@@ -494,6 +495,7 @@ func (d *DataService) GetDoctorAssignedToPatientVisit(patientVisitId int64) (*co
 		return nil, err
 	}
 	doctor := &common.Doctor{
+		DoctorId:  doctorId,
 		FirstName: firstName,
 		LastName:  lastName,
 		Status:    status,
@@ -502,7 +504,9 @@ func (d *DataService) GetDoctorAssignedToPatientVisit(patientVisitId int64) (*co
 		AccountId: accountId,
 	}
 
-	doctor.DoctorId = doctorId
+	doctor.LargeThumbnailUrl = app_url.GetLargeThumbnail(DOCTOR_ROLE, doctor.DoctorId.Int64())
+	doctor.SmallThumbnailUrl = app_url.GetSmallThumbnail(DOCTOR_ROLE, doctor.DoctorId.Int64())
+
 	return doctor, nil
 }
 

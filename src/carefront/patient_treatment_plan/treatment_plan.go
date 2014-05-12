@@ -70,7 +70,7 @@ func (p *PatientVisitReviewHandler) ServeHTTP(w http.ResponseWriter, r *http.Req
 		if err != nil {
 			if err == api.NoRowsError {
 				// no patient visit review to return
-				apiservice.WriteJSONToHTTPResponseWriter(w, http.StatusNotFound, "No treatment plan exists for patient visit")
+				apiservice.WriteDeveloperErrorWithCode(w, apiservice.DEVELOPER_NO_TREATMENT_PLAN, http.StatusNotFound, "No treatment plan exists for this patient visit yet")
 				return
 			}
 

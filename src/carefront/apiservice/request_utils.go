@@ -25,6 +25,7 @@ const (
 	DEVELOPER_ERROR_NO_VISIT_EXISTS  = 10001
 	DEVELOPER_AUTH_TOKEN_EXPIRED     = 10002
 	DEVELOPER_TREATMENT_MISSING_DNTF = 10003
+	DEVELOPER_NO_TREATMENT_PLAN      = 10004
 	HTTP_GET                         = "GET"
 	HTTP_POST                        = "POST"
 	HTTP_PUT                         = "PUT"
