@@ -421,6 +421,422 @@ func TestFavoriteTreatmentPlan_BreakingMappingOnModify(t *testing.T) {
 
 }
 
+// This test ensures that the user can create a favorite treatment plan
+// in the context of treatment plan by specifying the treatment plan to associate the
+// favorite treatment plan with
+func TestFavoriteTreatmentPlan_InContextOfTreatmentPlan(t *testing.T) {
+	testData := SetupIntegrationTest(t)
+	defer TearDownIntegrationTest(t, testData)
+
+	doctorId := GetDoctorIdOfCurrentPrimaryDoctor(testData, t)
+	doctor, err := testData.DataApi.GetDoctorFromId(doctorId)
+	if err != nil {
+		t.Fatalf("Unable to get doctor from id: %s", err)
+	}
+
+	patientVisitResponse, treatmentPlan := signupAndSubmitPatientVisitForRandomPatient(t, testData, doctor)
+	regimenPlanRequest := &common.RegimenPlan{}
+	regimenPlanRequest.PatientVisitId = encoding.NewObjectId(patientVisitResponse.PatientVisitId)
+
+	regimenStep1 := &common.DoctorInstructionItem{}
+	regimenStep1.Text = "Regimen Step 1"
+	regimenStep1.State = common.STATE_ADDED
+
+	regimenStep2 := &common.DoctorInstructionItem{}
+	regimenStep2.Text = "Regimen Step 2"
+	regimenStep2.State = common.STATE_ADDED
+
+	regimenSection := &common.RegimenSection{}
+	regimenSection.RegimenName = "morning"
+	regimenSection.RegimenSteps = []*common.DoctorInstructionItem{&common.DoctorInstructionItem{
+		Text:  regimenStep1.Text,
+		State: common.STATE_ADDED,
+	},
+	}
+
+	regimenSection2 := &common.RegimenSection{}
+	regimenSection2.RegimenName = "night"
+	regimenSection2.RegimenSteps = []*common.DoctorInstructionItem{&common.DoctorInstructionItem{
+		Text:  regimenStep2.Text,
+		State: common.STATE_ADDED,
+	},
+	}
+
+	regimenPlanRequest.AllRegimenSteps = []*common.DoctorInstructionItem{regimenStep1, regimenStep2}
+	regimenPlanRequest.RegimenSections = []*common.RegimenSection{regimenSection, regimenSection2}
+	regimenPlanResponse := createRegimenPlanForPatientVisit(regimenPlanRequest, testData, doctor, t)
+	validateRegimenRequestAgainstResponse(regimenPlanRequest, regimenPlanResponse, t)
+
+	// lets submit advice for this patient
+	// lets go ahead and add a couple of advice points
+	// reason we do this is because the advice steps have to exist before treatment plan can be favorited,
+	// and the only way we can create advice steps today is in the context of a patient visit
+	advicePoint1 := &common.DoctorInstructionItem{Text: "Advice point 1", State: common.STATE_ADDED}
+	advicePoint2 := &common.DoctorInstructionItem{Text: "Advice point 2", State: common.STATE_ADDED}
+
+	// lets go ahead and create a request for this patient visit
+	doctorAdviceRequest := &common.Advice{}
+	doctorAdviceRequest.AllAdvicePoints = []*common.DoctorInstructionItem{advicePoint1, advicePoint2}
+	doctorAdviceRequest.SelectedAdvicePoints = doctorAdviceRequest.AllAdvicePoints
+	doctorAdviceRequest.PatientVisitId = encoding.NewObjectId(patientVisitResponse.PatientVisitId)
+
+	doctorAdviceResponse := updateAdvicePointsForPatientVisit(doctorAdviceRequest, testData, doctor, t)
+	validateAdviceRequestAgainstResponse(doctorAdviceRequest, doctorAdviceResponse, t)
+
+	// prepare the regimen steps and the advice points to be added into the sections
+	// after the global list for each has been updated to include items.
+	// the reason this is important is because favorite treatment plans require items to exist that are linked
+	// from the master list
+	regimenSection.RegimenSteps[0].ParentId = regimenPlanResponse.AllRegimenSteps[0].Id
+	regimenSection2.RegimenSteps[0].ParentId = regimenPlanResponse.AllRegimenSteps[1].Id
+	advicePoint1 = &common.DoctorInstructionItem{
+		Text:     advicePoint1.Text,
+		ParentId: doctorAdviceResponse.AllAdvicePoints[0].Id,
+	}
+	advicePoint2 = &common.DoctorInstructionItem{
+		Text:     advicePoint2.Text,
+		ParentId: doctorAdviceResponse.AllAdvicePoints[1].Id,
+	}
+
+	treatment1 := &common.Treatment{
+		DrugDBIds: map[string]string{
+			erx.LexiDrugSynId:     "1234",
+			erx.LexiGenProductId:  "12345",
+			erx.LexiSynonymTypeId: "123556",
+			erx.NDC:               "2415",
+		},
+		DrugInternalName:        "Teting (This - Drug)",
+		DosageStrength:          "10 mg",
+		DispenseValue:           5,
+		DispenseUnitDescription: "Tablet",
+		DispenseUnitId:          encoding.NewObjectId(19),
+		NumberRefills: encoding.NullInt64{
+			IsValid:    true,
+			Int64Value: 5,
+		},
+		SubstitutionsAllowed: false,
+		DaysSupply: encoding.NullInt64{
+			IsValid:    true,
+			Int64Value: 5,
+		},
+		PatientInstructions: "Take once daily",
+		OTC:                 false,
+	}
+
+	addAndGetTreatmentsForPatientVisit(testData, []*common.Treatment{treatment1}, doctor.AccountId.Int64(), patientVisitResponse.PatientVisitId, t)
+
+	// lets add a favorite treatment plan for doctor
+	favoriteTreatmentPlan := &common.FavoriteTreatmentPlan{
+		Name: "Test Treatment Plan",
+		TreatmentList: &common.TreatmentList{
+			Treatments: []*common.Treatment{treatment1},
+		},
+		RegimenPlan: &common.RegimenPlan{
+			AllRegimenSteps: regimenPlanResponse.AllRegimenSteps,
+			RegimenSections: []*common.RegimenSection{regimenSection, regimenSection2},
+		},
+		Advice: &common.Advice{
+			AllAdvicePoints:      doctorAdviceResponse.AllAdvicePoints,
+			SelectedAdvicePoints: []*common.DoctorInstructionItem{advicePoint1, advicePoint2},
+		},
+	}
+
+	ts := httptest.NewServer(&apiservice.DoctorFavoriteTreatmentPlansHandler{
+		DataApi: testData.DataApi,
+	})
+	defer ts.Close()
+
+	requestData := &apiservice.DoctorFavoriteTreatmentPlansRequestData{
+		FavoriteTreatmentPlan: favoriteTreatmentPlan,
+		TreatmentPlanId:       treatmentPlan.Id.Int64(),
+	}
+	jsonData, err := json.Marshal(&requestData)
+	if err != nil {
+		t.Fatalf("Unable to marshal json %s", err)
+	}
+
+	resp, err := AuthPost(ts.URL, "application/json", bytes.NewReader(jsonData), doctor.AccountId.Int64())
+	if err != nil {
+		t.Fatalf("Unable to add favorite treatment plan: %s", err)
+	}
+
+	responseData := &apiservice.DoctorFavoriteTreatmentPlansResponseData{}
+	if err := json.NewDecoder(resp.Body).Decode(responseData); err != nil {
+		t.Fatalf("Unable to unmarshal response into json %s", err)
+	} else if resp.StatusCode != http.StatusOK {
+		t.Fatalf("Expected 200 response for adding a favorite treatment plan but got %d instead", resp.StatusCode)
+	} else if responseData.FavoriteTreatmentPlan == nil {
+		t.Fatalf("Expected to get back the treatment plan added but got none")
+	} else if responseData.FavoriteTreatmentPlan.RegimenPlan == nil || len(responseData.FavoriteTreatmentPlan.RegimenPlan.RegimenSections) != 2 {
+		t.Fatalf("Expected to have a regimen plan or 2 items in the regimen section")
+	} else if len(responseData.FavoriteTreatmentPlan.Advice.SelectedAdvicePoints) != 2 {
+		t.Fatalf("Expected 2 items in the advice list")
+	}
+
+	abbreviatedTreatmentPlan, err := testData.DataApi.GetAbbreviatedTreatmentPlanForPatientVisit(doctorId, patientVisitResponse.PatientVisitId)
+	if err != nil {
+		t.Fatalf("Unable to get abbreviated favorite treatment plan: %s", err)
+	} else if abbreviatedTreatmentPlan.DoctorFavoriteTreatmentPlanId.Int64() != responseData.FavoriteTreatmentPlan.Id.Int64() {
+		t.Fatalf("Expected the link between treatmenet plan and favorite treatment plan to exist but it doesnt")
+	}
+
+}
+
+func TestFavoriteTreatmentPlan_InContextOfTreatmentPlan_EmptyRegimenAndAdvice(t *testing.T) {
+	testData := SetupIntegrationTest(t)
+	defer TearDownIntegrationTest(t, testData)
+
+	doctorId := GetDoctorIdOfCurrentPrimaryDoctor(testData, t)
+	doctor, err := testData.DataApi.GetDoctorFromId(doctorId)
+	if err != nil {
+		t.Fatalf("Unable to get doctor from id: %s", err)
+	}
+
+	patientVisitResponse, treatmentPlan := signupAndSubmitPatientVisitForRandomPatient(t, testData, doctor)
+	regimenPlanRequest := &common.RegimenPlan{}
+	regimenPlanRequest.PatientVisitId = encoding.NewObjectId(patientVisitResponse.PatientVisitId)
+
+	regimenStep1 := &common.DoctorInstructionItem{}
+	regimenStep1.Text = "Regimen Step 1"
+	regimenStep1.State = common.STATE_ADDED
+
+	regimenStep2 := &common.DoctorInstructionItem{}
+	regimenStep2.Text = "Regimen Step 2"
+	regimenStep2.State = common.STATE_ADDED
+
+	regimenPlanRequest.AllRegimenSteps = []*common.DoctorInstructionItem{regimenStep1, regimenStep2}
+	regimenPlanResponse := createRegimenPlanForPatientVisit(regimenPlanRequest, testData, doctor, t)
+	validateRegimenRequestAgainstResponse(regimenPlanRequest, regimenPlanResponse, t)
+
+	// lets submit advice for this patient
+	// lets go ahead and add a couple of advice points
+	// reason we do this is because the advice steps have to exist before treatment plan can be favorited,
+	// and the only way we can create advice steps today is in the context of a patient visit
+	advicePoint1 := &common.DoctorInstructionItem{Text: "Advice point 1", State: common.STATE_ADDED}
+	advicePoint2 := &common.DoctorInstructionItem{Text: "Advice point 2", State: common.STATE_ADDED}
+
+	// lets go ahead and create a request for this patient visit
+	doctorAdviceRequest := &common.Advice{}
+	doctorAdviceRequest.AllAdvicePoints = []*common.DoctorInstructionItem{advicePoint1, advicePoint2}
+	doctorAdviceRequest.PatientVisitId = encoding.NewObjectId(patientVisitResponse.PatientVisitId)
+
+	doctorAdviceResponse := updateAdvicePointsForPatientVisit(doctorAdviceRequest, testData, doctor, t)
+	validateAdviceRequestAgainstResponse(doctorAdviceRequest, doctorAdviceResponse, t)
+
+	advicePoint1 = &common.DoctorInstructionItem{
+		Text:     advicePoint1.Text,
+		ParentId: doctorAdviceResponse.AllAdvicePoints[0].Id,
+	}
+	advicePoint2 = &common.DoctorInstructionItem{
+		Text:     advicePoint2.Text,
+		ParentId: doctorAdviceResponse.AllAdvicePoints[1].Id,
+	}
+
+	treatment1 := &common.Treatment{
+		DrugDBIds: map[string]string{
+			erx.LexiDrugSynId:     "1234",
+			erx.LexiGenProductId:  "12345",
+			erx.LexiSynonymTypeId: "123556",
+			erx.NDC:               "2415",
+		},
+		DrugInternalName:        "Teting (This - Drug)",
+		DosageStrength:          "10 mg",
+		DispenseValue:           5,
+		DispenseUnitDescription: "Tablet",
+		DispenseUnitId:          encoding.NewObjectId(19),
+		NumberRefills: encoding.NullInt64{
+			IsValid:    true,
+			Int64Value: 5,
+		},
+		SubstitutionsAllowed: false,
+		DaysSupply: encoding.NullInt64{
+			IsValid:    true,
+			Int64Value: 5,
+		},
+		PatientInstructions: "Take once daily",
+		OTC:                 false,
+	}
+
+	addAndGetTreatmentsForPatientVisit(testData, []*common.Treatment{treatment1}, doctor.AccountId.Int64(), patientVisitResponse.PatientVisitId, t)
+
+	// lets add a favorite treatment plan for doctor
+	favoriteTreatmentPlan := &common.FavoriteTreatmentPlan{
+		Name: "Test Treatment Plan",
+		TreatmentList: &common.TreatmentList{
+			Treatments: []*common.Treatment{treatment1},
+		},
+		RegimenPlan: &common.RegimenPlan{
+			AllRegimenSteps: regimenPlanResponse.AllRegimenSteps,
+		},
+		Advice: &common.Advice{
+			AllAdvicePoints: doctorAdviceResponse.AllAdvicePoints,
+		},
+	}
+
+	ts := httptest.NewServer(&apiservice.DoctorFavoriteTreatmentPlansHandler{
+		DataApi: testData.DataApi,
+	})
+	defer ts.Close()
+
+	requestData := &apiservice.DoctorFavoriteTreatmentPlansRequestData{
+		FavoriteTreatmentPlan: favoriteTreatmentPlan,
+		TreatmentPlanId:       treatmentPlan.Id.Int64(),
+	}
+	jsonData, err := json.Marshal(&requestData)
+	if err != nil {
+		t.Fatalf("Unable to marshal json %s", err)
+	}
+
+	resp, err := AuthPost(ts.URL, "application/json", bytes.NewReader(jsonData), doctor.AccountId.Int64())
+	if err != nil {
+		t.Fatalf("Unable to add favorite treatment plan: %s", err)
+	}
+
+	responseData := &apiservice.DoctorFavoriteTreatmentPlansResponseData{}
+	if err := json.NewDecoder(resp.Body).Decode(responseData); err != nil {
+		t.Fatalf("Unable to unmarshal response into json %s", err)
+	} else if resp.StatusCode != http.StatusOK {
+		t.Fatalf("Expected 200 response for adding a favorite treatment plan but got %d instead", resp.StatusCode)
+	} else if responseData.FavoriteTreatmentPlan == nil {
+		t.Fatalf("Expected to get back the treatment plan added but got none")
+	}
+
+	abbreviatedTreatmentPlan, err := testData.DataApi.GetAbbreviatedTreatmentPlanForPatientVisit(doctorId, patientVisitResponse.PatientVisitId)
+	if err != nil {
+		t.Fatalf("Unable to get abbreviated favorite treatment plan: %s", err)
+	} else if abbreviatedTreatmentPlan.DoctorFavoriteTreatmentPlanId.Int64() != responseData.FavoriteTreatmentPlan.Id.Int64() {
+		t.Fatalf("Expected the link between treatmenet plan and favorite treatment plan to exist but it doesnt")
+	}
+
+}
+
+func TestFavoriteTreatmentPlan_InContextOfTreatmentPlan_TwoDontMatch(t *testing.T) {
+	testData := SetupIntegrationTest(t)
+	defer TearDownIntegrationTest(t, testData)
+
+	doctorId := GetDoctorIdOfCurrentPrimaryDoctor(testData, t)
+	doctor, err := testData.DataApi.GetDoctorFromId(doctorId)
+	if err != nil {
+		t.Fatalf("Unable to get doctor from id: %s", err)
+	}
+
+	patientVisitResponse, treatmentPlan := signupAndSubmitPatientVisitForRandomPatient(t, testData, doctor)
+	regimenPlanRequest := &common.RegimenPlan{}
+	regimenPlanRequest.PatientVisitId = encoding.NewObjectId(patientVisitResponse.PatientVisitId)
+
+	regimenStep1 := &common.DoctorInstructionItem{}
+	regimenStep1.Text = "Regimen Step 1"
+	regimenStep1.State = common.STATE_ADDED
+
+	regimenStep2 := &common.DoctorInstructionItem{}
+	regimenStep2.Text = "Regimen Step 2"
+	regimenStep2.State = common.STATE_ADDED
+
+	regimenPlanRequest.AllRegimenSteps = []*common.DoctorInstructionItem{regimenStep1, regimenStep2}
+	regimenPlanResponse := createRegimenPlanForPatientVisit(regimenPlanRequest, testData, doctor, t)
+	validateRegimenRequestAgainstResponse(regimenPlanRequest, regimenPlanResponse, t)
+
+	// lets submit advice for this patient
+	// lets go ahead and add a couple of advice points
+	// reason we do this is because the advice steps have to exist before treatment plan can be favorited,
+	// and the only way we can create advice steps today is in the context of a patient visit
+	advicePoint1 := &common.DoctorInstructionItem{Text: "Advice point 1", State: common.STATE_ADDED}
+	advicePoint2 := &common.DoctorInstructionItem{Text: "Advice point 2", State: common.STATE_ADDED}
+
+	// lets go ahead and create a request for this patient visit
+	doctorAdviceRequest := &common.Advice{}
+	doctorAdviceRequest.AllAdvicePoints = []*common.DoctorInstructionItem{advicePoint1, advicePoint2}
+	doctorAdviceRequest.SelectedAdvicePoints = doctorAdviceRequest.AllAdvicePoints
+	doctorAdviceRequest.PatientVisitId = encoding.NewObjectId(patientVisitResponse.PatientVisitId)
+
+	doctorAdviceResponse := updateAdvicePointsForPatientVisit(doctorAdviceRequest, testData, doctor, t)
+	validateAdviceRequestAgainstResponse(doctorAdviceRequest, doctorAdviceResponse, t)
+
+	advicePoint1 = &common.DoctorInstructionItem{
+		Text:     advicePoint1.Text,
+		ParentId: doctorAdviceResponse.AllAdvicePoints[0].Id,
+	}
+	advicePoint2 = &common.DoctorInstructionItem{
+		Text:     advicePoint2.Text,
+		ParentId: doctorAdviceResponse.AllAdvicePoints[1].Id,
+	}
+
+	treatment1 := &common.Treatment{
+		DrugDBIds: map[string]string{
+			erx.LexiDrugSynId:     "1234",
+			erx.LexiGenProductId:  "12345",
+			erx.LexiSynonymTypeId: "123556",
+			erx.NDC:               "2415",
+		},
+		DrugInternalName:        "Teting (This - Drug)",
+		DosageStrength:          "10 mg",
+		DispenseValue:           5,
+		DispenseUnitDescription: "Tablet",
+		DispenseUnitId:          encoding.NewObjectId(19),
+		NumberRefills: encoding.NullInt64{
+			IsValid:    true,
+			Int64Value: 5,
+		},
+		SubstitutionsAllowed: false,
+		DaysSupply: encoding.NullInt64{
+			IsValid:    true,
+			Int64Value: 5,
+		},
+		PatientInstructions: "Take once daily",
+		OTC:                 false,
+	}
+
+	addAndGetTreatmentsForPatientVisit(testData, []*common.Treatment{treatment1}, doctor.AccountId.Int64(), patientVisitResponse.PatientVisitId, t)
+
+	// lets add a favorite treatment plan for doctor
+	favoriteTreatmentPlan := &common.FavoriteTreatmentPlan{
+		Name: "Test Treatment Plan",
+		TreatmentList: &common.TreatmentList{
+			Treatments: []*common.Treatment{treatment1},
+		},
+		RegimenPlan: &common.RegimenPlan{
+			AllRegimenSteps: regimenPlanResponse.AllRegimenSteps,
+		},
+		Advice: &common.Advice{
+			AllAdvicePoints: doctorAdviceResponse.AllAdvicePoints,
+		},
+	}
+
+	ts := httptest.NewServer(&apiservice.DoctorFavoriteTreatmentPlansHandler{
+		DataApi: testData.DataApi,
+	})
+	defer ts.Close()
+
+	requestData := &apiservice.DoctorFavoriteTreatmentPlansRequestData{
+		FavoriteTreatmentPlan: favoriteTreatmentPlan,
+		TreatmentPlanId:       treatmentPlan.Id.Int64(),
+	}
+	jsonData, err := json.Marshal(&requestData)
+	if err != nil {
+		t.Fatalf("Unable to marshal json %s", err)
+	}
+
+	resp, err := AuthPost(ts.URL, "application/json", bytes.NewReader(jsonData), doctor.AccountId.Int64())
+	if err != nil {
+		t.Fatalf("Unable to add favorite treatment plan: %s", err)
+	}
+
+	responseData := &apiservice.DoctorFavoriteTreatmentPlansResponseData{}
+	if err := json.NewDecoder(resp.Body).Decode(responseData); err != nil {
+		t.Fatalf("Unable to unmarshal response into json %s", err)
+	} else if resp.StatusCode != http.StatusBadRequest {
+		t.Fatalf("Expected 400 response for adding a favorite treatment plan but got %d instead", resp.StatusCode)
+	}
+
+	abbreviatedTreatmentPlan, err := testData.DataApi.GetAbbreviatedTreatmentPlanForPatientVisit(doctorId, patientVisitResponse.PatientVisitId)
+	if err != nil {
+		t.Fatalf("Unable to get abbreviated favorite treatment plan: %s", err)
+	} else if abbreviatedTreatmentPlan.DoctorFavoriteTreatmentPlanId.Int64() != 0 {
+		t.Fatalf("Expected no linkage between treatment plan and favorite treatment plan")
+	}
+
+}
+
 func createFavoriteTreatmentPlan(patientVisitId int64, testData TestData, doctor *common.Doctor, t *testing.T) *common.FavoriteTreatmentPlan {
 
 	// lets submit a regimen plan for this patient

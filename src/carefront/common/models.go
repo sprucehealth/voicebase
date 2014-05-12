@@ -207,10 +207,6 @@ func (t *TreatmentList) Equals(other *TreatmentList) bool {
 		return false
 	}
 
-	if len(t.Treatments) == 0 || len(other.Treatments) == 0 {
-		return false
-	}
-
 	if len(t.Treatments) != len(other.Treatments) {
 		return false
 	}
@@ -294,10 +290,6 @@ func (r *RegimenPlan) Equals(other *RegimenPlan) bool {
 		return false
 	}
 
-	if r.RegimenSections == nil || other.RegimenSections == nil {
-		return false
-	}
-
 	if len(r.RegimenSections) != len(other.RegimenSections) {
 		return false
 	}
@@ -343,10 +335,6 @@ type Advice struct {
 
 func (a *Advice) Equals(other *Advice) bool {
 	if a == nil || other == nil {
-		return false
-	}
-
-	if a.SelectedAdvicePoints == nil || other.SelectedAdvicePoints == nil {
 		return false
 	}
 
