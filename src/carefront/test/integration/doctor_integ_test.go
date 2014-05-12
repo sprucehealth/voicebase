@@ -122,8 +122,17 @@ func TestDoctorDiagnosisOfPatientVisit(t *testing.T) {
 		t.Fatal("Unable to get doctor from doctor id " + err.Error())
 	}
 
-	// get patient to start a visit
-	patientVisitResponse, _ := signupAndSubmitPatientVisitForRandomPatient(t, testData, doctor)
+	// get patient to start a visit but don't pick a treatment plan yet.
+	patientSignedupResponse := SignupRandomTestPatient(t, testData.DataApi, testData.AuthApi)
+	patientVisitResponse := CreatePatientVisitForPatient(patientSignedupResponse.Patient.PatientId.Int64(), testData, t)
+	patient, err := testData.DataApi.GetPatientFromId(patientSignedupResponse.Patient.PatientId.Int64())
+	if err != nil {
+		t.Fatal("Unable to get patient from id: " + err.Error())
+	}
+	answerIntakeRequestBody := prepareAnswersForQuestionsInPatientVisit(patientVisitResponse, t)
+	SubmitAnswersIntakeForPatient(patient.PatientId.Int64(), patient.AccountId.Int64(), answerIntakeRequestBody, testData, t)
+	SubmitPatientVisitForPatient(patientSignedupResponse.Patient.PatientId.Int64(), patientVisitResponse.PatientVisitId, testData, t)
+	StartReviewingPatientVisit(patientVisitResponse.PatientVisitId, doctor, testData, t)
 
 	// doctor now attempts to diagnose patient visit
 	diagnosePatientHandler := apiservice.NewDiagnosePatientHandler(testData.DataApi, testData.AuthApi, testData.CloudStorageService)
@@ -132,27 +141,26 @@ func TestDoctorDiagnosisOfPatientVisit(t *testing.T) {
 
 	requestParams := bytes.NewBufferString("?patient_visit_id=")
 	requestParams.WriteString(strconv.FormatInt(patientVisitResponse.PatientVisitId, 10))
+	diagnosisResponse := apiservice.GetDiagnosisResponse{}
 
 	resp, err := AuthGet(ts.URL+requestParams.String(), doctor.AccountId.Int64())
 	if err != nil {
 		t.Fatal("Something went wrong when trying to get diagnoses layout for doctor to diagnose patient visit: " + err.Error())
-	}
-
-	data, err := ioutil.ReadAll(resp.Body)
-	if err != nil {
-		t.Fatal("Unable to read body of response for getting diagnosis layout for doctor to diagnose patient: " + err.Error())
-	}
-
-	CheckSuccessfulStatusCode(resp, "Unable to make successful request for doctor to get layout to diagnose  Reason: "+string(data), t)
-
-	diagnosisResponse := apiservice.GetDiagnosisResponse{}
-	err = json.Unmarshal(data, &diagnosisResponse)
-	if err != nil {
+	} else if resp.StatusCode != http.StatusOK {
+		t.Fatalf("Expected response code 200 instead got %d", resp.StatusCode)
+	} else if err = json.NewDecoder(resp.Body).Decode(&diagnosisResponse); err != nil {
 		t.Fatal("Unable to unmarshal response for diagnosis of patient visit: " + err.Error())
-	}
-
-	if diagnosisResponse.DiagnosisLayout == nil || diagnosisResponse.DiagnosisLayout.PatientVisitId != patientVisitResponse.PatientVisitId {
+	} else if diagnosisResponse.DiagnosisLayout == nil || diagnosisResponse.DiagnosisLayout.PatientVisitId != patientVisitResponse.PatientVisitId {
 		t.Fatal("Diagnosis response not as expected")
+	} else {
+		// no doctor answers should exist yet
+		for _, section := range diagnosisResponse.DiagnosisLayout.InfoIntakeLayout.Sections {
+			for _, question := range section.Questions {
+				if len(question.Answers) > 0 {
+					t.Fatalf("Expected no answers to exist yet given that diagnosis has not taken place yet answers exist!")
+				}
+			}
+		}
 	}
 
 	// Now, actually diagnose the patient visit and check the response to ensure that the doctor diagnosis was returned in the response
@@ -203,6 +211,9 @@ func TestDoctorDiagnosisOfPatientVisit(t *testing.T) {
 	}
 
 	// check if the diagnosis summary exists for the patient visit
+	// at this point NO diagnosis summary should exist because the doctor has not picked a treatment plan yet.
+	// given that the diagnosis summary gets associated with a treatment plan, the diagnosis summary is added only after
+	// a treatment plan is picked
 	diagnosisSummaryHandler := &apiservice.DiagnosisSummaryHandler{DataApi: testData.DataApi}
 	ts = httptest.NewServer(diagnosisSummaryHandler)
 	defer ts.Close()
@@ -214,8 +225,35 @@ func TestDoctorDiagnosisOfPatientVisit(t *testing.T) {
 		t.Fatalf("Expected status code %d but got %d", http.StatusOK, resp.StatusCode)
 	} else if err := json.NewDecoder(resp.Body).Decode(&getDiagnosisSummaryResponse); err != nil {
 		t.Fatal("Unable to unmarshal response into json object : " + err.Error())
+	} else if getDiagnosisSummaryResponse.Summary != "" {
+		t.Fatal("Expected no diagnosis summary to exist given that the treatment plan has not been picked. However, still got back diagnosis summary")
+	}
+
+	// now lets pick a tretament plan and then try to get the diagnosis summary again
+	pickATreatmentPlanForPatientVisit(patientVisitResponse.PatientVisitId, doctor, nil, testData, t)
+	resp, err = AuthGet(ts.URL+"?patient_visit_id="+strconv.FormatInt(patientVisitResponse.PatientVisitId, 10), doctor.AccountId.Int64())
+	if err != nil {
+		t.Fatal("Unable to make call to get diagnosis summary for patient visit: " + err.Error())
+	} else if resp.StatusCode != http.StatusOK {
+		t.Fatalf("Expected status code %d but got %d", http.StatusOK, resp.StatusCode)
+	} else if err := json.NewDecoder(resp.Body).Decode(&getDiagnosisSummaryResponse); err != nil {
+		t.Fatal("Unable to unmarshal response into json object : " + err.Error())
 	} else if getDiagnosisSummaryResponse.Summary == "" {
-		t.Fatal("Expected summary for patient visit to exist but instead got nothing")
+		t.Fatal("Expected diagnosis summary to exist but it doesnt")
+	}
+
+	// now lets pick a different treatment plan and ensure that the diagnosis summary gets linked to this new
+	// treatment plan.
+	pickATreatmentPlanForPatientVisit(patientVisitResponse.PatientVisitId, doctor, nil, testData, t)
+	resp, err = AuthGet(ts.URL+"?patient_visit_id="+strconv.FormatInt(patientVisitResponse.PatientVisitId, 10), doctor.AccountId.Int64())
+	if err != nil {
+		t.Fatal("Unable to make call to get diagnosis summary for patient visit: " + err.Error())
+	} else if resp.StatusCode != http.StatusOK {
+		t.Fatalf("Expected status code %d but got %d", http.StatusOK, resp.StatusCode)
+	} else if err := json.NewDecoder(resp.Body).Decode(&getDiagnosisSummaryResponse); err != nil {
+		t.Fatal("Unable to unmarshal response into json object : " + err.Error())
+	} else if getDiagnosisSummaryResponse.Summary == "" {
+		t.Fatal("Expected diagnosis summary to exist but it doesnt")
 	}
 
 	// now lets try and manually update the summary

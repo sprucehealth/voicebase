@@ -20,18 +20,6 @@ const (
 	question_acne_type      = "q_acne_type"
 	question_rosacea_type   = "q_acne_rosacea_type"
 
-	diagnoseSummaryTemplate = `Hi %s,
-
-Based on the photographs you have provided, it looks like you have %s.
-
-Acne is completely treatable but it will take consistent use of medication over time to see results. I've put together the best treatment plan for your skin and with regular application you should begin to see improvements in 1-3 months.
-
-Please keep in mind that your skin may get worse before it gets better.
-
-If you have questions or concerns, feel free to call me at (415) 202-6700.
-
-Dr. %s`
-
 	diagnosedSummaryTemplateNonProd = `Hi %s,
 
 Based on the photographs you have provided, it looks like you have %s.
@@ -119,7 +107,7 @@ func (d *DiagnosePatientHandler) getDiagnosis(w http.ResponseWriter, r *http.Req
 	questionIds := getQuestionIdsInDiagnosisLayout(diagnosisLayout)
 
 	// get the answers to the questions in the array
-	doctorAnswers, err := d.DataApi.GetDoctorAnswersForQuestionsInDiagnosisLayout(questionIds, patientVisitReviewData.DoctorId, treatmentPlanId)
+	doctorAnswers, err := d.DataApi.GetDoctorAnswersForQuestionsInDiagnosisLayout(questionIds, patientVisitReviewData.DoctorId, patientVisitId)
 	if err != nil {
 		WriteDeveloperError(w, http.StatusInternalServerError, "Unable to get answers for question: "+err.Error())
 		return
@@ -160,61 +148,63 @@ func (d *DiagnosePatientHandler) diagnosePatient(w http.ResponseWriter, r *http.
 		return
 	}
 
+	answersToStorePerQuestion := make(map[int64][]*common.AnswerIntake)
+	for _, questionItem := range answerIntakeRequestBody.Questions {
+		// enumerate the answers to store from the top level questions as well as the sub questions
+		answersToStorePerQuestion[questionItem.QuestionId] = populateAnswersToStoreForQuestion(api.DOCTOR_ROLE, questionItem, patientVisitReviewData.PatientVisit.PatientVisitId.Int64(), patientVisitReviewData.DoctorId, layoutVersionId)
+	}
+
+	if err := d.DataApi.DeactivatePreviousDiagnosisForPatientVisit(patientVisitReviewData.PatientVisit.PatientVisitId.Int64(), patientVisitReviewData.DoctorId); err != nil {
+		WriteDeveloperError(w, http.StatusInternalServerError, "Unable to deactivate responses from previous diagnosis of this patient visit: "+err.Error())
+		return
+	}
+
+	if err := d.DataApi.StoreAnswersForQuestion(api.DOCTOR_ROLE, patientVisitReviewData.DoctorId, patientVisitReviewData.PatientVisit.PatientVisitId.Int64(), layoutVersionId, answersToStorePerQuestion); err != nil {
+		WriteDeveloperError(w, http.StatusInternalServerError, "Unable to store the multiple choice answer to the question for the patient based on the parameters provided and the internal state of the system: "+err.Error())
+		return
+	}
+
 	treatmentPlanId, err := d.DataApi.GetActiveTreatmentPlanForPatientVisit(patientVisitReviewData.DoctorId, answerIntakeRequestBody.PatientVisitId)
 	if err != nil {
 		WriteDeveloperError(w, http.StatusInternalServerError, "Unable to get active treatment plan for patient visit: "+err.Error())
 		return
 	}
 
-	answersToStorePerQuestion := make(map[int64][]*common.AnswerIntake)
-	for _, questionItem := range answerIntakeRequestBody.Questions {
-		// enumerate the answers to store from the top level questions as well as the sub questions
-		answersToStorePerQuestion[questionItem.QuestionId] = populateAnswersToStoreForQuestion(api.DOCTOR_ROLE, questionItem, treatmentPlanId, patientVisitReviewData.DoctorId, layoutVersionId)
-	}
+	if treatmentPlanId != 0 {
+		diagnosisSummary, err := d.DataApi.GetDiagnosisSummaryForTreatmentPlan(treatmentPlanId)
+		if err != nil && err != api.NoRowsError {
+			golog.Errorf("Error trying to retreive diagnosis summary for patient visit: %s", err)
+		}
 
-	if err := d.DataApi.DeactivatePreviousDiagnosisForPatientVisit(treatmentPlanId, patientVisitReviewData.DoctorId); err != nil {
-		WriteDeveloperError(w, http.StatusInternalServerError, "Unable to deactivate responses from previous diagnosis of this patient visit: "+err.Error())
-		return
-	}
-
-	if err := d.DataApi.StoreAnswersForQuestion(api.DOCTOR_ROLE, patientVisitReviewData.DoctorId, treatmentPlanId, layoutVersionId, answersToStorePerQuestion); err != nil {
-		WriteDeveloperError(w, http.StatusInternalServerError, "Unable to store the multiple choice answer to the question for the patient based on the parameters provided and the internal state of the system: "+err.Error())
-		return
-	}
-
-	diagnosisSummary, err := d.DataApi.GetDiagnosisSummaryForTreatmentPlan(treatmentPlanId)
-	if err != nil && err != api.NoRowsError {
-		golog.Errorf("Error trying to retreive diagnosis summary for patient visit: %s", err)
-	}
-
-	if diagnosisSummary == nil || !diagnosisSummary.UpdatedByDoctor { // use what the doctor entered if the summary has been updated by the doctor
-		if err = d.addDiagnosisSummaryForPatientVisit(patientVisitReviewData.DoctorId, treatmentPlanId); err != nil {
-			WriteDeveloperError(w, http.StatusInternalServerError, "Something went wrong when trying to add and store the summary to the diagnosis of the patient visit: "+err.Error())
-			return
+		if diagnosisSummary == nil || !diagnosisSummary.UpdatedByDoctor { // use what the doctor entered if the summary has been updated by the doctor
+			if err = addDiagnosisSummaryForPatientVisit(d.DataApi, patientVisitReviewData.DoctorId, patientVisitReviewData.PatientVisit.PatientVisitId.Int64(), treatmentPlanId); err != nil {
+				WriteDeveloperError(w, http.StatusInternalServerError, "Something went wrong when trying to add and store the summary to the diagnosis of the patient visit: "+err.Error())
+				return
+			}
 		}
 	}
 
 	WriteJSONToHTTPResponseWriter(w, http.StatusOK, AnswerIntakeResponse{Result: "success"})
 }
 
-func (d *DiagnosePatientHandler) addDiagnosisSummaryForPatientVisit(doctorId, treatmentPlanId int64) error {
+func addDiagnosisSummaryForPatientVisit(dataApi api.DataAPI, doctorId, patientVisitId, treatmentPlanId int64) error {
 	// lookup answers for the following questions
-	acneDiagnosisAnswers, err := d.DataApi.GetDiagnosisResponseToQuestionWithTag(question_acne_diagnosis, doctorId, treatmentPlanId)
+	acneDiagnosisAnswers, err := dataApi.GetDiagnosisResponseToQuestionWithTag(question_acne_diagnosis, doctorId, patientVisitId)
 	if err != nil && err != api.NoDiagnosisResponseErr {
 		return err
 	}
 
-	acneSeverityAnswers, err := d.DataApi.GetDiagnosisResponseToQuestionWithTag(question_acne_severity, doctorId, treatmentPlanId)
+	acneSeverityAnswers, err := dataApi.GetDiagnosisResponseToQuestionWithTag(question_acne_severity, doctorId, patientVisitId)
 	if err != nil && err != api.NoDiagnosisResponseErr {
 		return err
 	}
 
-	acneTypeAnswers, err := d.DataApi.GetDiagnosisResponseToQuestionWithTag(question_acne_type, doctorId, treatmentPlanId)
+	acneTypeAnswers, err := dataApi.GetDiagnosisResponseToQuestionWithTag(question_acne_type, doctorId, patientVisitId)
 	if err != nil && err != api.NoDiagnosisResponseErr {
 		return err
 	}
 
-	rosaceaTypeAnswers, err := d.DataApi.GetDiagnosisResponseToQuestionWithTag(question_rosacea_type, doctorId, treatmentPlanId)
+	rosaceaTypeAnswers, err := dataApi.GetDiagnosisResponseToQuestionWithTag(question_rosacea_type, doctorId, patientVisitId)
 	if err != nil && err != api.NoDiagnosisResponseErr {
 		return err
 	}
@@ -238,25 +228,22 @@ func (d *DiagnosePatientHandler) addDiagnosisSummaryForPatientVisit(doctorId, tr
 		}
 	}
 
-	doctor, err := d.DataApi.GetDoctorFromId(doctorId)
+	doctor, err := dataApi.GetDoctorFromId(doctorId)
 	if err != nil {
 		return err
 	}
 
-	patient, err := d.DataApi.GetPatientFromTreatmentPlanId(treatmentPlanId)
+	patient, err := dataApi.GetPatientFromPatientVisitId(patientVisitId)
 	if err != nil {
 		return err
 	}
 
 	doctorFullName := fmt.Sprintf("%s %s", doctor.FirstName, doctor.LastName)
 
-	summaryTemplate := diagnoseSummaryTemplate
-	if d.Environment != "prod" {
-		summaryTemplate = diagnosedSummaryTemplateNonProd
-	}
+	summaryTemplate := diagnosedSummaryTemplateNonProd
 
 	diagnosisSummary := fmt.Sprintf(summaryTemplate, strings.Title(patient.FirstName), strings.ToLower(diagnosisMessage), strings.Title(doctorFullName))
-	return d.DataApi.AddDiagnosisSummaryForTreatmentPlan(diagnosisSummary, treatmentPlanId, doctorId)
+	return dataApi.AddDiagnosisSummaryForTreatmentPlan(diagnosisSummary, treatmentPlanId, doctorId)
 }
 
 func joinAcneTypesIntoString(acneTypeAnswers []*common.AnswerIntake) string {

@@ -372,13 +372,13 @@ func (d *DataService) GetFollowUpTimeForTreatmentPlan(treatmentPlanId int64) (*c
 	return followUp, nil
 }
 
-func (d *DataService) GetDiagnosisResponseToQuestionWithTag(questionTag string, doctorId, treatmentPlanId int64) ([]*common.AnswerIntake, error) {
+func (d *DataService) GetDiagnosisResponseToQuestionWithTag(questionTag string, doctorId, patientVisitId int64) ([]*common.AnswerIntake, error) {
 	rows, err := d.DB.Query(`select info_intake.id, info_intake.question_id, info_intake.potential_answer_id, info_intake.answer_text, l2.ltext, l1.ltext
 					from info_intake inner join question on question.id = question_id 
 					inner join potential_answer on potential_answer_id = potential_answer.id
 					inner join localized_text as l1 on answer_localized_text_id = l1.app_text_id
 					left outer join localized_text as l2 on answer_summary_text_id = l2.app_text_id
-					where info_intake.status='ACTIVE' and question_tag = ? and role_id = ? and role = 'DOCTOR' and info_intake.context_id = ? and l1.language_id = ?`, questionTag, doctorId, treatmentPlanId, EN_LANGUAGE_ID)
+					where info_intake.status='ACTIVE' and question_tag = ? and role_id = ? and role = 'DOCTOR' and info_intake.context_id = ? and l1.language_id = ?`, questionTag, doctorId, patientVisitId, EN_LANGUAGE_ID)
 	if err != nil {
 		return nil, err
 	}
@@ -402,7 +402,7 @@ func (d *DataService) GetDiagnosisResponseToQuestionWithTag(questionTag string, 
 		if answerText.Valid {
 			answerIntake.AnswerText = answerText.String
 		}
-		answerIntake.ContextId = encoding.NewObjectId(treatmentPlanId)
+		answerIntake.ContextId = encoding.NewObjectId(patientVisitId)
 
 		if answerSummary.Valid {
 			answerIntake.AnswerSummary = answerSummary.String

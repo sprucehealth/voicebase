@@ -70,6 +70,12 @@ func (d *DiagnosisSummaryHandler) ServeHTTP(w http.ResponseWriter, r *http.Reque
 		}
 		WriteJSONToHTTPResponseWriter(w, http.StatusOK, &common.DiagnosisSummary{Type: "text", Summary: summary})
 	} else if r.Method == HTTP_PUT {
+
+		if treatmentPlanId == 0 {
+			WriteDeveloperError(w, http.StatusNotFound, "Unable to update diagnosis summary because treatment plan doesn't exist yet")
+			return
+		}
+
 		if requestData.Summary == "" {
 			WriteDeveloperError(w, http.StatusBadRequest, "Summary to patient cannot be empty")
 			return
