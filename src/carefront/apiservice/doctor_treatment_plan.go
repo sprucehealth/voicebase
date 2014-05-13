@@ -4,7 +4,7 @@ import (
 	"carefront/api"
 	"carefront/common"
 	"carefront/encoding"
-	"carefront/libs/golog"
+	"carefront/libs/dispatch"
 	"errors"
 	"fmt"
 	"net/http"
@@ -189,19 +189,11 @@ func (d *DoctorTreatmentPlanHandler) pickATreatmentPlan(w http.ResponseWriter, r
 		return
 	}
 
-	// update the diagnosis summary on the picking of a treatment plan because the diagnosis summary
-	// is not created untl a treatment plan is picked
-	diagnosisSummary, err := d.DataApi.GetDiagnosisSummaryForTreatmentPlan(treatmentPlanId)
-	if err != nil && err != api.NoRowsError {
-		golog.Errorf("Error trying to retreive diagnosis summary for patient visit: %s", err)
-	}
-
-	if diagnosisSummary == nil || !diagnosisSummary.UpdatedByDoctor { // use what the doctor entered if the summary has been updated by the doctor
-		if err = addDiagnosisSummaryForPatientVisit(d.DataApi, patientVisitReviewData.DoctorId, patientVisitId, treatmentPlanId); err != nil {
-			WriteDeveloperError(w, http.StatusInternalServerError, "Something went wrong when trying to add and store the summary to the diagnosis of the patient visit: "+err.Error())
-			return
-		}
-	}
+	dispatch.Default.Publish(&NewTreatmentPlanStartedEvent{
+		DoctorId:        patientVisitReviewData.DoctorId,
+		PatientVisitId:  patientVisitId,
+		TreatmentPlanId: treatmentPlanId,
+	})
 
 	WriteJSONToHTTPResponseWriter(w, http.StatusOK, &DoctorTreatmentPlanResponse{TreatmentPlan: drTreatmentPlan})
 }

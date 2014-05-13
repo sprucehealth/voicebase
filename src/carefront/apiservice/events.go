@@ -51,3 +51,15 @@ type RefillRequestResolvedEvent struct {
 	RefillRequestId int64
 	Status          string
 }
+
+type DiagnosisModifiedEvent struct {
+	DoctorId        int64
+	PatientVisitId  int64
+	TreatmentPlanId int64
+}
+
+type NewTreatmentPlanStartedEvent struct {
+	DoctorId        int64
+	PatientVisitId  int64
+	TreatmentPlanId int64
+}
