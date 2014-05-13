@@ -414,32 +414,34 @@ func panicEmailFilter(conf *BaseConfig, out golog.Output) golog.Output {
 
 	return golog.OutputFunc(func(logType string, l golog.Level, msg []byte) error {
 		if l == golog.CRIT {
-			var body string
-			// Reindent JSON
-			var m map[string]interface{}
-			err := json.Unmarshal(msg, &m)
-			if err == nil {
-				var parts []string
-				for k, v := range m {
-					s, ok := v.(string)
-					if !ok {
-						b, err := json.MarshalIndent(v, "", "    ")
-						if err == nil {
-							parts = append(parts, fmt.Sprintf("%s: %s", k, string(b)))
-						}
-					} else {
-						if k == "@message" {
-							parts = append(parts, s)
+			go func() {
+				var body string
+				// Reindent JSON
+				var m map[string]interface{}
+				err := json.Unmarshal(msg, &m)
+				if err == nil {
+					var parts []string
+					for k, v := range m {
+						s, ok := v.(string)
+						if !ok {
+							b, err := json.MarshalIndent(v, "", "    ")
+							if err == nil {
+								parts = append(parts, fmt.Sprintf("%s: %s", k, string(b)))
+							}
 						} else {
-							parts = append(parts, fmt.Sprintf("%s: %s", k, s))
+							if k == "@message" {
+								parts = append(parts, s)
+							} else {
+								parts = append(parts, fmt.Sprintf("%s: %s", k, s))
+							}
 						}
 					}
+					body = strings.Join(parts, "\n\n")
+				} else {
+					body = string(msg)
 				}
-				body = strings.Join(parts, "\n\n")
-			} else {
-				body = string(msg)
-			}
-			conf.SendAlertEmail(fmt.Sprintf("PANIC: %s.%s", conf.AppName, conf.Environment), body)
+				conf.SendAlertEmail(fmt.Sprintf("PANIC: %s.%s", conf.AppName, conf.Environment), body)
+			}()
 		}
 		return out.Log(logType, l, msg)
 	})
