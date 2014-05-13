@@ -162,7 +162,12 @@ func (d *DoctorQueueItem) GetTitleAndSubtitle(dataApi DataAPI) (string, string, 
 				patient := person.Patient
 				switch d.Status {
 				case QUEUE_ITEM_STATUS_PENDING:
-					title = fmt.Sprintf("%s %s started a conversation about %s", patient.FirstName, patient.LastName, conversation.Title)
+					// if the message count > 1 this means that the patient replied to a conversation as opposed to started it
+					if conversation.MessageCount > 1 {
+						title = fmt.Sprintf("%s %s replied to a conversation about %s", patient.FirstName, patient.LastName, conversation.Title)
+					} else {
+						title = fmt.Sprintf("%s %s started a conversation about %s", patient.FirstName, patient.LastName, conversation.Title)
+					}
 				case QUEUE_ITEM_STATUS_READ:
 					title = fmt.Sprintf("Conversation with %s %s about %s", patient.FirstName, patient.LastName, conversation.Title)
 				case QUEUE_ITEM_STATUS_REPLIED:

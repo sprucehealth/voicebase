@@ -230,6 +230,14 @@ func InitListeners(dataAPI api.DataAPI) {
 			})
 			return err
 		}
+
+		if from.RoleType == api.PATIENT_ROLE {
+			// Remove the incomplete visit notification when the patient submits a visit
+			if err := dataAPI.DeletePatientNotificationByUID(from.RoleId, fmt.Sprintf("conversation:%d", ev.ConversationId)); err != nil {
+				golog.Errorf("Failed to remove conversation reply notification for patient %d: %s", from.RoleId, err.Error())
+			}
+
+		}
 		return nil
 	})
 }

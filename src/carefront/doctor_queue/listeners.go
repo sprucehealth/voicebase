@@ -146,13 +146,13 @@ func InitListeners(dataAPI api.DataAPI) {
 	})
 
 	dispatch.Default.Subscribe(func(ev *messages.ConversationReplyEvent) error {
-		people, err := dataAPI.GetPeople([]int64{ev.FromId})
+		conversation, err := dataAPI.GetConversation(ev.ConversationId)
 		if err != nil {
 			return err
 		}
 
-		// only act on this item if the doctor responded to a message
-		person := people[ev.FromId]
+		// clear the item from the doctor's queue once they respond to a message
+		person := conversation.Participants[ev.FromId]
 		if person.RoleType == api.DOCTOR_ROLE {
 			if err := dataAPI.ReplaceItemInDoctorQueue(api.DoctorQueueItem{
 				DoctorId:  person.Doctor.DoctorId.Int64(),
@@ -162,6 +162,24 @@ func InitListeners(dataAPI api.DataAPI) {
 			}, api.QUEUE_ITEM_STATUS_PENDING); err != nil {
 				golog.Errorf("Unable to replace item in doctor queue with a replied item: %s", err)
 				return err
+			}
+		}
+
+		// if in the event the patient initiates the reply, refresh an existing item in the doctor's queue
+		if person.RoleType == api.PATIENT_ROLE {
+			// find the doctor to insert item into their queue
+			for _, p := range conversation.Participants {
+				if p.RoleType == api.DOCTOR_ROLE {
+					if err := dataAPI.ReplaceItemInDoctorQueue(api.DoctorQueueItem{
+						DoctorId:  p.Doctor.DoctorId.Int64(),
+						ItemId:    ev.ConversationId,
+						EventType: api.EVENT_TYPE_CONVERSATION,
+						Status:    api.QUEUE_ITEM_STATUS_PENDING,
+					}, api.QUEUE_ITEM_STATUS_PENDING); err != nil {
+						golog.Errorf("Unable to replace item in doctor queue with a replied item: %s", err)
+						return err
+					}
+				}
 			}
 		}
 		return nil

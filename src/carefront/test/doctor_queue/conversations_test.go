@@ -132,6 +132,10 @@ func TestConversationItemsInDoctorQueue_DoctorInitiated(t *testing.T) {
 	res.Body.Close()
 
 	doctorId := integration.GetDoctorIdOfCurrentPrimaryDoctor(testData, t)
+	doctor, err := testData.DataApi.GetDoctorFromId(doctorId)
+	if err != nil {
+		t.Fatal(err.Error())
+	}
 
 	// ensure that an item is inserted into the doctor queue
 	pendingItems, err := testData.DataApi.GetPendingItemsInDoctorQueue(doctorId)
@@ -149,7 +153,7 @@ func TestConversationItemsInDoctorQueue_DoctorInitiated(t *testing.T) {
 	}); err != nil {
 		t.Fatal(err)
 	}
-	res, err = integration.AuthPost(patientMessageServer.URL, "application/json", body, pr.Patient.AccountId.Int64())
+	res, err = integration.AuthPost(patientMessageServer.URL, "application/json", body, doctor.AccountId.Int64())
 	if err != nil {
 		t.Fatal(err)
 	}
@@ -168,6 +172,60 @@ func TestConversationItemsInDoctorQueue_DoctorInitiated(t *testing.T) {
 	} else if len(completedItems) != 0 {
 		t.Fatalf("Expected no item in the completed tab instead got %d", len(completedItems))
 	}
+}
+
+func TestConversationItemsInDoctorQueue_PatientInitiated(t *testing.T) {
+	testData := integration.SetupIntegrationTest(t)
+	defer integration.TearDownIntegrationTest(t, testData)
+
+	pr := integration.SignupRandomTestPatient(t, testData.DataApi, testData.AuthApi)
+	patient := pr.Patient
+
+	doctorId := integration.GetDoctorIdOfCurrentPrimaryDoctor(testData, t)
+	doctor, err := testData.DataApi.GetDoctorFromId(doctorId)
+	if err != nil {
+		t.Fatalf(err.Error())
+	}
+
+	convId := integration.StartConversationFromPatientToDoctor(t, testData.DataApi, patient.AccountId.Int64(), 0)
+
+	pendingItems, err := testData.DataApi.GetPendingItemsInDoctorQueue(doctorId)
+	if err != nil {
+		t.Fatalf("Error getting pending items from doctor: %s", err)
+	} else if len(pendingItems) != 1 {
+		t.Fatalf("Expected 1 pending item in doctor queue instead got %d", len(pendingItems))
+	}
+
+	// get doctor to clear the notification (which should clear the notification)
+	integration.DoctorReplyToConversation(t, testData.DataApi, convId, doctor.AccountId.Int64())
+	pendingItems, err = testData.DataApi.GetPendingItemsInDoctorQueue(doctorId)
+	if err != nil {
+		t.Fatalf("Error getting pending items from doctor: %s", err)
+	} else if len(pendingItems) != 0 {
+		t.Fatalf("Expected no pending item in doctor queue instead got %d", len(pendingItems))
+	}
+
+	// no matter how many time the patient replies there should be just 1 pending item to represent the replied
+	// conversation
+
+	integration.PatientReplyToConversation(t, testData.DataApi, convId, patient.AccountId.Int64())
+
+	pendingItems, err = testData.DataApi.GetPendingItemsInDoctorQueue(doctorId)
+	if err != nil {
+		t.Fatalf("Error getting pending items from doctor: %s", err)
+	} else if len(pendingItems) != 1 {
+		t.Fatalf("Expected 1 pending item in doctor queue instead got %d", len(pendingItems))
+	}
+
+	integration.PatientReplyToConversation(t, testData.DataApi, convId, patient.AccountId.Int64())
+
+	pendingItems, err = testData.DataApi.GetPendingItemsInDoctorQueue(doctorId)
+	if err != nil {
+		t.Fatalf("Error getting pending items from doctor: %s", err)
+	} else if len(pendingItems) != 1 {
+		t.Fatalf("Expected 1 pending item in doctor queue instead got %d", len(pendingItems))
+	}
+
 }
 
 func TestMarkingConversationReadWithDoctorQueue(t *testing.T) {

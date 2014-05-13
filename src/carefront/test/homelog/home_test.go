@@ -321,11 +321,8 @@ func TestConversationNotifications(t *testing.T) {
 	} else if notes[0].Data.TypeName() != "new_conversation" {
 		t.Fatalf("Expected notification of type %s instead got %s", "new_conversation", notes[0].Data.TypeName())
 	}
-	if err := testData.DataApi.DeletePatientNotifications([]int64{notes[0].Id}); err != nil {
-		t.Fatalf("Failed to delete notification: %s", err.Error())
-	}
 
-	// Reply from patient to doctor MUST NOT create a notification
+	// Reply from patient to doctor MUST clear the original notification
 
 	integration.PatientReplyToConversation(t, testData.DataApi, convId, patient.AccountId.Int64())
 
