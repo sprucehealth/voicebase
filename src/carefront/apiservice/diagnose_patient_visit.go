@@ -20,13 +20,15 @@ const (
 	question_acne_type      = "q_acne_type"
 	question_rosacea_type   = "q_acne_rosacea_type"
 
-	diagnosedSummaryTemplateNonProd = `Hi %s,
+	diagnosedSummaryTemplateNonProd = `Dear %s,
 
-Based on the photographs you have provided, it looks like you have %s.
+I've taken a look at your pictures, and from what I can tell, you have %s. 
 
-Acne is completely treatable but it will take consistent use of medication over time to see results. I've put together the best treatment plan for your skin and with regular application you should begin to see improvements in 1-3 months.
+I've put together a treatment regimen for you that will take roughly 3 months to take full effect. Please stick with it as best as you can, unless you are having a concerning complications. Often times, acne gets slightly worse before it gets better.
 
-Please keep in mind that your skin may get worse before it gets better.
+Please keep in mind finding the right "recipe" to treat your acne may take some tweaking. As always, feel free to communicate any questions or issues you have along the way.  
+
+Sincerely,
 
 Dr. %s`
 )

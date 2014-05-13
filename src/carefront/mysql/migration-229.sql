@@ -1,0 +1,1 @@
+alter table diagnosis_summary modify column summary varchar(1000) not null;
