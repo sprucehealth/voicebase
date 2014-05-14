@@ -37,6 +37,8 @@ import (
 	"launchpad.net/goamz/s3"
 )
 
+var smtpConnectTimeout = time.Second * 5
+
 type BaseConfig struct {
 	AppName                 string `long:"app_name" description:"Application name (required)"`
 	AWSRegion               string `long:"aws_region" description:"AWS region"`
@@ -357,9 +359,13 @@ func ParseArgs(config interface{}, args []string) ([]string, error) {
 
 func (conf *BaseConfig) SMTPConnection() (*smtp.Client, error) {
 	host, _, _ := net.SplitHostPort(conf.SMTPAddr)
-	cn, err := smtp.Dial(conf.SMTPAddr)
+	c, err := net.DialTimeout("tcp", conf.SMTPAddr, smtpConnectTimeout)
 	if err != nil {
 		return nil, errors.New("failed to connect to SMTP server: " + err.Error())
+	}
+	cn, err := smtp.NewClient(c, host)
+	if err != nil {
+		return nil, errors.New("failed to create SMTP client: " + err.Error())
 	}
 	if err := cn.StartTLS(&tls.Config{ServerName: host}); err != nil {
 		return nil, errors.New("failed to StartTLS with SMTP server: " + err.Error())
