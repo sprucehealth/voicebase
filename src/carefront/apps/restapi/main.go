@@ -250,7 +250,7 @@ func main() {
 	var twilioCli *twilio.Client
 	if conf.Twilio != nil && conf.Twilio.AccountSid != "" && conf.Twilio.AuthToken != "" {
 		twilioCli = twilio.NewClient(conf.Twilio.AccountSid, conf.Twilio.AuthToken, nil)
-		notify.InitTwilio(dataApi, twilioCli, conf.Twilio.FromNumber, conf.IOSDeeplinkScheme)
+		notify.InitTwilio(dataApi, twilioCli, conf.Twilio.FromNumber, conf.IOSDeeplinkScheme, metricsRegistry.Scope("notify").Scope("twilio"))
 	}
 
 	homelog.InitListeners(dataApi)
