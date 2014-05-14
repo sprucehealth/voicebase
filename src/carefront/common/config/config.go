@@ -9,12 +9,17 @@ import (
 	"carefront/libs/golog"
 	"carefront/libs/svcreg"
 	"carefront/libs/svcreg/zksvcreg"
+	"crypto/tls"
+	"encoding/json"
+	"errors"
 	"expvar"
 	"fmt"
 	"io"
 	"io/ioutil"
 	"log"
+	"net"
 	"net/http"
+	"net/smtp"
 	"net/url"
 	"os"
 	"path"
@@ -32,6 +37,8 @@ import (
 	"launchpad.net/goamz/s3"
 )
 
+var smtpConnectTimeout = time.Second * 5
+
 type BaseConfig struct {
 	AppName                 string `long:"app_name" description:"Application name (required)"`
 	AWSRegion               string `long:"aws_region" description:"AWS region"`
@@ -44,6 +51,10 @@ type BaseConfig struct {
 	ZookeeperHosts          string `long:"zk_hosts" description:"Zookeeper host list (e.g. 127.0.0.1:2181,192.168.1.1:2181)"`
 	ZookeeperServicesPrefix string `long:"zk_svc_prefix" description:"Zookeeper svc registry prefix" default:"/services"`
 	Stats                   *Stats `group:"Stats" toml:"stats"`
+	SMTPAddr                string `long:"smtp_host" description:"SMTP host:port"`
+	SMTPUsername            string `long:"smtp_username" description:"Username for SMTP server"`
+	SMTPPassword            string `long:"smtp_password" description:"Password for SMTP server"`
+	AlertEmail              string `long:"alert_email" description:"Email address to which to send panics"`
 
 	Version bool `long:"version" description:"Show version and exit" toml:"-"`
 
@@ -328,13 +339,116 @@ func ParseArgs(config interface{}, args []string) ([]string, error) {
 		if out, err := golog.NewSyslogOutput(baseConfig.AppName); err != nil {
 			log.Fatal(err)
 		} else {
-			golog.SetOutput(out)
+			if baseConfig.SMTPAddr != "" && baseConfig.AlertEmail != "" {
+				golog.SetOutput(panicEmailFilter(baseConfig, out))
+			} else {
+				golog.SetOutput(out)
+			}
 		}
 		log.SetFlags(log.Lshortfile)
 	} else {
 		log.SetFlags(log.Lshortfile)
+		if baseConfig.SMTPAddr != "" && baseConfig.AlertEmail != "" {
+			golog.SetOutput(panicEmailFilter(baseConfig, golog.DefaultOutput))
+		}
 	}
 	log.SetOutput(golog.Writer)
 
 	return extraArgs, nil
+}
+
+func (conf *BaseConfig) SMTPConnection() (*smtp.Client, error) {
+	host, _, _ := net.SplitHostPort(conf.SMTPAddr)
+	c, err := net.DialTimeout("tcp", conf.SMTPAddr, smtpConnectTimeout)
+	if err != nil {
+		return nil, errors.New("failed to connect to SMTP server: " + err.Error())
+	}
+	cn, err := smtp.NewClient(c, host)
+	if err != nil {
+		return nil, errors.New("failed to create SMTP client: " + err.Error())
+	}
+	if err := cn.StartTLS(&tls.Config{ServerName: host}); err != nil {
+		return nil, errors.New("failed to StartTLS with SMTP server: " + err.Error())
+	}
+	if err := cn.Auth(smtp.PlainAuth("", conf.SMTPUsername, conf.SMTPPassword, host)); err != nil {
+		return nil, errors.New("smtp auth failed: " + err.Error())
+	}
+	return cn, err
+}
+
+func (conf *BaseConfig) SendAlertEmail(subject, body string) error {
+	cn, err := conf.SMTPConnection()
+	if err != nil {
+		return err
+	}
+	defer cn.Close()
+	if err := cn.Mail(conf.AlertEmail); err != nil {
+		return err
+	}
+	if err := cn.Rcpt(conf.AlertEmail); err != nil {
+		return err
+	}
+	wr, err := cn.Data()
+	if err != nil {
+		return err
+	}
+	defer wr.Close()
+	header := http.Header{}
+	header.Set("From", conf.AlertEmail)
+	header.Set("To", conf.AlertEmail)
+	header.Set("Subject", subject)
+	if err := header.Write(wr); err != nil {
+		return err
+	}
+	if _, err := wr.Write([]byte("\r\n")); err != nil {
+		return err
+	}
+	if _, err := wr.Write([]byte(body)); err != nil {
+		return err
+	}
+	return nil
+}
+
+func panicEmailFilter(conf *BaseConfig, out golog.Output) golog.Output {
+	// Validate that we can connect to the SMTP server but don't keep the connection open.
+	cn, err := conf.SMTPConnection()
+	if err != nil {
+		fmt.Fprintln(os.Stderr, err.Error())
+		os.Exit(1)
+	}
+	cn.Close()
+
+	return golog.OutputFunc(func(logType string, l golog.Level, msg []byte) error {
+		if l == golog.CRIT {
+			go func() {
+				var body string
+				// Reindent JSON
+				var m map[string]interface{}
+				err := json.Unmarshal(msg, &m)
+				if err == nil {
+					var parts []string
+					for k, v := range m {
+						s, ok := v.(string)
+						if !ok {
+							b, err := json.MarshalIndent(v, "", "    ")
+							if err == nil {
+								parts = append(parts, fmt.Sprintf("%s: %s", k, string(b)))
+							}
+						} else {
+							if k == "@message" {
+								parts = append(parts, s)
+							} else {
+								parts = append(parts, fmt.Sprintf("%s: %s", k, s))
+							}
+						}
+					}
+					body = strings.Join(parts, "\n\n")
+				} else {
+					body = string(msg)
+				}
+				conf.SendAlertEmail(fmt.Sprintf("PANIC: %s.%s", conf.AppName, conf.Environment), body)
+			}()
+		}
+		return out.Log(logType, l, msg)
+	})
 }

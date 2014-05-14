@@ -131,14 +131,18 @@ func (mux *AuthServeMux) ServeHTTP(w http.ResponseWriter, r *http.Request) {
 
 	defer func() {
 		if err := recover(); err != nil {
-			const size = 4096
+			const size = 64 << 10
 			buf := make([]byte, size)
 			buf = buf[:runtime.Stack(buf, false)]
 			golog.Criticalf("http: panic: %v\n%s", err, buf)
+
+			// The header may have already been written in which case
+			// this will fail, but it's likely it hasn't so it's
+			// good to tell the client something blew up.
+			w.WriteHeader(http.StatusInternalServerError)
 		} else {
 			responseTime := time.Since(ctx.RequestStartTime).Nanoseconds() / 1e3
 			mux.statLatency.Update(responseTime)
-			DeleteContext(r)
 
 			remoteAddr := r.RemoteAddr
 			if idx := strings.LastIndex(remoteAddr, ":"); idx > 0 {
@@ -155,6 +159,7 @@ func (mux *AuthServeMux) ServeHTTP(w http.ResponseWriter, r *http.Request) {
 				ResponseTime: float64(responseTime) / 1000.0,
 			})
 		}
+		DeleteContext(r)
 	}()
 	if r.RequestURI == "*" {
 		customResponseWriter.Header().Set("Connection", "close")
