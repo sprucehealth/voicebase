@@ -9,8 +9,6 @@ import (
 	"carefront/libs/golog"
 	"fmt"
 	"net/http"
-	"net/url"
-	"strconv"
 )
 
 type treatmentPlanHandler struct {
@@ -166,7 +164,7 @@ func treatmentPlanResponse(dataApi api.DataAPI, w http.ResponseWriter, r *http.R
 	views = append(views, &TPImageView{
 		ImageWidth:  125,
 		ImageHeight: 45,
-		ImageURL:    app_url.Asset(app_url.TmpSignature).String(),
+		ImageURL:    app_url.TmpSignature.String(),
 	})
 
 	views = append(views, &TPLargeDividerView{})
@@ -180,9 +178,9 @@ func treatmentPlanResponse(dataApi api.DataAPI, w http.ResponseWriter, r *http.R
 		for _, treatment := range treatmentPlan.TreatmentList.Treatments {
 			views = append(views, &TPSmallDividerView{})
 
-			iconURL := app_url.Asset(app_url.IconRX)
+			iconURL := app_url.IconRX
 			if treatment.OTC {
-				iconURL = app_url.Asset(app_url.IconOTC)
+				iconURL = app_url.IconOTC
 			}
 
 			// only include tapurl and buttontitle if drug details
@@ -192,9 +190,7 @@ func treatmentPlanResponse(dataApi api.DataAPI, w http.ResponseWriter, r *http.R
 			if ndc := treatment.DrugDBIds[erx.NDC]; ndc != "" {
 				if exists, err := dataApi.DoesDrugDetailsExist(ndc); exists {
 					buttonTitle = "What to know about " + treatment.DrugName
-					params := url.Values{}
-					params.Set("treatment_id", strconv.FormatInt(treatment.Id.Int64(), 10))
-					tapUrl = app_url.Action(app_url.ViewTreatmentGuideAction, params)
+					tapUrl = app_url.ViewTreatmentGuideAction(treatment.Id.Int64())
 				} else if err != nil && err != api.NoRowsError {
 					golog.Errorf("Error when trying to check if drug details exist: %s", err)
 				}
@@ -298,7 +294,7 @@ func treatmentPlanResponse(dataApi api.DataAPI, w http.ResponseWriter, r *http.R
 		treatmentListView.Treatments = make([]*TPIconTextView, len(rxTreatments))
 		for i, rxTreatment := range rxTreatments {
 			treatmentListView.Treatments[i] = &TPIconTextView{
-				IconURL:   app_url.Asset(app_url.IconRX),
+				IconURL:   app_url.IconRX,
 				Text:      fmt.Sprintf("%s %s", rxTreatment.DrugInternalName, rxTreatment.DosageStrength),
 				TextStyle: "bold",
 			}
@@ -309,8 +305,8 @@ func treatmentPlanResponse(dataApi api.DataAPI, w http.ResponseWriter, r *http.R
 	views = append(views, &TPButtonFooterView{
 		FooterText: fmt.Sprintf("If you have any questions or concerns regarding your treatment plan, send Dr. %s a message.", doctor.LastName),
 		ButtonText: fmt.Sprintf("Message Dr. %s", doctor.LastName),
-		IconURL:    app_url.Asset(app_url.IconMessage),
-		TapURL:     app_url.Action(app_url.MessageAction, nil),
+		IconURL:    app_url.IconMessage,
+		TapURL:     app_url.MessageAction(),
 	})
 
 	for _, v := range views {

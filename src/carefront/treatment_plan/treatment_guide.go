@@ -114,7 +114,7 @@ func treatmentGuideResponse(dataAPI api.DataAPI, doctor *common.Doctor, w http.R
 
 	views = append(views,
 		&TPIconTitleSubtitleView{
-			IconURL:  app_url.Asset(app_url.IconRX),
+			IconURL:  app_url.IconRX,
 			Title:    details.Name,
 			Subtitle: "", // TODO: Not sure what to put here yet. Possibly details.Alternative.
 		},
@@ -217,8 +217,8 @@ func treatmentGuideResponse(dataAPI api.DataAPI, doctor *common.Doctor, w http.R
 	views = append(views,
 		&TPButtonView{
 			Text:    "Message Dr. " + treatment.Doctor.LastName,
-			IconURL: app_url.Asset(app_url.IconMessage),
-			TapURL:  app_url.Action(app_url.MessageAction, nil),
+			IconURL: app_url.IconMessage,
+			TapURL:  app_url.MessageAction(),
 		},
 	)
 

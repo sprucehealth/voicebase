@@ -13,8 +13,6 @@ import (
 	"carefront/patient_visit"
 	"errors"
 	"fmt"
-	"net/url"
-	"strconv"
 )
 
 func InitListeners(dataAPI api.DataAPI, notificationManager *notify.NotificationManager) {
@@ -44,15 +42,13 @@ func InitListeners(dataAPI api.DataAPI, notificationManager *notify.Notification
 		}
 
 		// Add "visit submitted" to health log
-		params := url.Values{}
-		params.Set("visit_id", strconv.FormatInt(ev.VisitId, 10))
 		if _, err := dataAPI.InsertOrUpdatePatientHealthLogItem(ev.PatientId, &common.HealthLogItem{
 			UID: fmt.Sprintf("visit_submitted:%d", ev.VisitId),
 			Data: &titledLogItem{
 				Title:    "Visit Submitted",
 				Subtitle: fmt.Sprintf("With Dr. %s", doctor.LastName),
-				IconURL:  app_url.Asset(app_url.IconHomeVisitNormal),
-				TapURL:   app_url.Action(app_url.ViewPatientVisitAction, params),
+				IconURL:  app_url.IconHomeVisitNormal,
+				TapURL:   app_url.ViewPatientVisitAction(ev.VisitId),
 			},
 		}); err != nil {
 			golog.Errorf("Failed to insert visit submitted into health log for patient %d: %s", ev.PatientId, err.Error())
@@ -98,15 +94,13 @@ func InitListeners(dataAPI api.DataAPI, notificationManager *notify.Notification
 		}
 
 		// Add "treatment plan created" to health log
-		params := url.Values{}
-		params.Set("treatment_plan_id", strconv.FormatInt(ev.TreatmentPlanId, 10))
 		if _, err := dataAPI.InsertOrUpdatePatientHealthLogItem(ev.PatientId, &common.HealthLogItem{
 			UID: fmt.Sprintf("treatment_plan_created:%d", ev.TreatmentPlanId),
 			Data: &titledLogItem{
 				Title:    "Treatment Plan",
 				Subtitle: fmt.Sprintf("Created By. %s", doctor.LastName),
-				IconURL:  app_url.Asset(app_url.IconHomeTreatmentPlanNormal),
-				TapURL:   app_url.Action(app_url.ViewTreatmentPlanAction, params),
+				IconURL:  app_url.IconHomeTreatmentPlanNormal,
+				TapURL:   app_url.ViewTreatmentPlanAction(ev.TreatmentPlanId),
 			},
 		}); err != nil {
 			golog.Errorf("Failed to insert visit treatment plan created into health log for patient %d: %s", ev.PatientId, err.Error())
@@ -127,7 +121,7 @@ func InitListeners(dataAPI api.DataAPI, notificationManager *notify.Notification
 						Data: &textLogItem{
 							Text:    fmt.Sprintf("%s %s, M.D., added to your care team.", doctor.FirstName, doctor.LastName),
 							IconURL: doctor.SmallThumbnailUrl,
-							TapURL:  app_url.Action(app_url.ViewCareTeam, nil),
+							TapURL:  app_url.ViewCareTeam(),
 						},
 					}); err != nil {
 						golog.Errorf("Failed to insert visit treatment plan created into health log for patient %d: %s", ev.PatientId, err.Error())
@@ -164,15 +158,13 @@ func InitListeners(dataAPI api.DataAPI, notificationManager *notify.Notification
 			}
 		}
 		if doctorPerson != nil && patientPerson != nil {
-			params := url.Values{}
-			params.Set("conversation_id", strconv.FormatInt(ev.ConversationId, 10))
 			if _, err := dataAPI.InsertOrUpdatePatientHealthLogItem(patientPerson.RoleId, &common.HealthLogItem{
 				UID: fmt.Sprintf("conversation:%d", ev.ConversationId),
 				Data: &titledLogItem{
 					Title:    fmt.Sprintf("Conversation with Dr. %s", doctorPerson.Doctor.LastName),
 					Subtitle: fmt.Sprintf("1 message"),
-					IconURL:  app_url.Asset(app_url.IconHomeConversationNormal),
-					TapURL:   app_url.Action(app_url.ViewMessagesAction, params),
+					IconURL:  app_url.IconHomeConversationNormal,
+					TapURL:   app_url.ViewMessagesAction(ev.ConversationId),
 				},
 			}); err != nil {
 				golog.Errorf("Failed to insert conversation item into health log for patient %d: %s", patientPerson.RoleId, err.Error())
@@ -227,15 +219,13 @@ func InitListeners(dataAPI api.DataAPI, notificationManager *notify.Notification
 			}
 		}
 		if doctorPerson != nil && patientPerson != nil {
-			params := url.Values{}
-			params.Set("conversation_id", strconv.FormatInt(ev.ConversationId, 10))
 			if _, err := dataAPI.InsertOrUpdatePatientHealthLogItem(patientPerson.RoleId, &common.HealthLogItem{
 				UID: fmt.Sprintf("conversation:%d", ev.ConversationId),
 				Data: &titledLogItem{
 					Title:    fmt.Sprintf("Conversation with Dr. %s", doctorPerson.Doctor.LastName),
 					Subtitle: fmt.Sprintf("%d messages", con.MessageCount),
-					IconURL:  app_url.Asset(app_url.IconHomeConversationNormal),
-					TapURL:   app_url.Action(app_url.ViewMessagesAction, params),
+					IconURL:  app_url.IconHomeConversationNormal,
+					TapURL:   app_url.ViewMessagesAction(ev.ConversationId),
 				},
 			}); err != nil {
 				golog.Errorf("Failed to insert conversation item into health log for patient %d: %s", patientPerson.RoleId, err.Error())

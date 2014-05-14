@@ -9,8 +9,6 @@ import (
 	"carefront/app_url"
 	"carefront/common"
 	"fmt"
-	"net/url"
-	"strconv"
 
 	"reflect"
 )
@@ -75,15 +73,12 @@ func (n *incompleteVisitNotification) makeView(dataAPI api.DataAPI, patientId, n
 		return nil, err
 	}
 
-	params := url.Values{}
-	params.Set("visit_id", strconv.FormatInt(n.VisitId, 10))
-
 	return &incompleteVisitView{
 		Type:           patientNotificationNamespace + ":" + incompleteVisit,
 		Title:          fmt.Sprintf("Complete your visit with Dr. %s.", doctor.LastName),
 		IconURL:        doctor.SmallThumbnailUrl,
 		ButtonText:     "Continue Your Visit",
-		TapURL:         app_url.Action(app_url.ContinueVisitAction, params),
+		TapURL:         app_url.ContinueVisitAction(n.VisitId),
 		PatientVisitId: n.VisitId,
 		NotificationId: notificationId,
 	}, nil
@@ -98,19 +93,16 @@ func (n *visitReviewedNotification) makeView(dataAPI api.DataAPI, patientId, not
 	if err != nil {
 		return nil, err
 	}
-	params := url.Values{}
-	params.Set("treatment_plan_id", strconv.FormatInt(planID, 10))
-	tapURL := app_url.Action(app_url.ViewTreatmentPlanAction, params)
 	return &bodyButtonView{
 		Dismissible:       true,
 		DismissOnAction:   true,
 		Type:              patientNotificationNamespace + ":" + bodyButton,
 		Title:             fmt.Sprintf("Dr. %s created your treatment plan.", doctor.LastName),
 		IconURL:           doctor.SmallThumbnailUrl,
-		TapURL:            tapURL,
-		BodyButtonIconURL: app_url.Asset(app_url.IconBlueTreatmentPlan),
+		TapURL:            app_url.ViewTreatmentPlanAction(planID),
+		BodyButtonIconURL: app_url.IconBlueTreatmentPlan,
 		BodyButtonText:    "Treatment Plan",
-		BodyButtonTapURL:  tapURL,
+		BodyButtonTapURL:  app_url.ViewTreatmentPlanAction(planID),
 		NotificationId:    notificationId,
 	}, nil
 }
@@ -124,17 +116,14 @@ func (n *newConversationNotification) makeView(dataAPI api.DataAPI, patientId, n
 	if err != nil {
 		return nil, err
 	}
-	params := url.Values{}
-	params.Set("conversation_id", strconv.FormatInt(n.ConversationId, 10))
-	tapURL := app_url.Action(app_url.ViewMessagesAction, params)
 	return &messageView{
 		Dismissible:     true,
 		DismissOnAction: true,
 		Type:            patientNotificationNamespace + ":" + message,
 		Title:           fmt.Sprintf("Dr. %s sent you a message.", doctor.LastName),
 		IconURL:         doctor.SmallThumbnailUrl,
-		TapURL:          tapURL,
-		ButtonIconURL:   app_url.Asset(app_url.IconReply),
+		TapURL:          app_url.ViewMessagesAction(n.ConversationId),
+		ButtonIconURL:   app_url.IconReply,
 		ButtonText:      "Reply",
 		Text:            con.Messages[0].Body,
 		NotificationId:  notificationId,
@@ -150,16 +139,14 @@ func (n *conversationReplyNotification) makeView(dataAPI api.DataAPI, patientId,
 	if err != nil {
 		return nil, err
 	}
-	params := url.Values{}
-	params.Set("conversation_id", strconv.FormatInt(n.ConversationId, 10))
-	tapURL := app_url.Action(app_url.ViewMessagesAction, params)
+
 	return &messageView{
 		Dismissible:     true,
 		DismissOnAction: true,
 		Type:            patientNotificationNamespace + ":" + message,
 		Title:           fmt.Sprintf("Dr. %s replied to your message about %s.", doctor.LastName, con.Title),
 		IconURL:         doctor.SmallThumbnailUrl,
-		TapURL:          tapURL,
+		TapURL:          app_url.ViewMessagesAction(n.ConversationId),
 		Text:            con.Messages[len(con.Messages)-1].Body,
 		NotificationId:  notificationId,
 	}, nil
