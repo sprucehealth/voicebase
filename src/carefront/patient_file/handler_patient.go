@@ -43,7 +43,7 @@ func (d *doctorPatientHandler) ServeHTTP(w http.ResponseWriter, r *http.Request)
 
 type requestResponstData struct {
 	Patient   *common.Patient `json:"patient"`
-	PatientId string          `schema:"patient_id,required",json:"-"`
+	PatientId string          `schema:"patient_id,required" json:"-"`
 }
 
 func (d *doctorPatientHandler) getPatientInformation(w http.ResponseWriter, r *http.Request) {
