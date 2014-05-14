@@ -51,8 +51,9 @@ func (c *DB) Connect(bconf *BaseConfig) (*sql.DB, error) {
 		}
 		clientCert = append(clientCert, certs)
 		mysql.RegisterTLSConfig("custom", &tls.Config{
-			RootCAs:      rootCertPool,
-			Certificates: clientCert,
+			RootCAs:            rootCertPool,
+			Certificates:       clientCert,
+			InsecureSkipVerify: true,
 		})
 	}
 
