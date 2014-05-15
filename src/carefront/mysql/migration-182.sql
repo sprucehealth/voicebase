@@ -1,1 +1,0 @@
-alter table rx_refill_status_events add column event_details varchar(500) not null;

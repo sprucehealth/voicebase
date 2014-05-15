@@ -1,1 +1,0 @@
-alter table dr_favorite_treatment rename to dr_treatment_template;

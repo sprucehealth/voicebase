@@ -1,2 +1,0 @@
-alter table treatment_dr_favorite_selection rename to treatment_dr_template_selection;
-alter table treatment_dr_template_selection change column dr_favorite_treatment_id dr_treatment_template_id int unsigned not null; 

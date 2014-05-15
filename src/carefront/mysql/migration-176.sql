@@ -1,1 +1,0 @@
-alter table credit_card add creation_date timestamp default current_timestamp;

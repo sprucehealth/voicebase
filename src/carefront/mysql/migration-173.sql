@@ -1,1 +1,0 @@
-alter table patient add column payment_service_customer_id varchar(200);

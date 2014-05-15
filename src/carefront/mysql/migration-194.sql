@@ -1,1 +1,0 @@
-alter table rx_refill_request add column creation_date timestamp(6) not null default current_timestamp(6);

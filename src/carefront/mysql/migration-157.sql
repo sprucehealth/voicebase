@@ -1,1 +1,0 @@
-alter table erx_status_events add column event_details varchar(500);	
