@@ -489,12 +489,13 @@ func startPatientIntakeSubmission(answersToQuestions []*apiservice.AnswerToQuest
 	}()
 }
 
-func (c *Handler) startSendingMessageToDoctor(token, message string) {
+func (c *Handler) startSendingMessageToDoctor(token, message string, signal chan int) {
 	go func() {
-		newConversationRequest := &messages.NewConversationRequest{
+		requestData := &messages.NewConversationRequest{
 			Message: message,
+			TopicId: 1,
 		}
-		jsonData, _ := json.Marshal(answerIntakeRequestBody)
+		jsonData, _ := json.Marshal(requestData)
 		newConversationRequest, err := http.NewRequest("POST", conversationUrl, bytes.NewReader(jsonData))
 		newConversationRequest.Header.Set("Content-Type", "application/json")
 		newConversationRequest.Header.Set("Authorization", "token "+token)

@@ -79,9 +79,17 @@ func (c *Handler) ServeHTTP(w http.ResponseWriter, r *http.Request) {
 		}
 	}
 
+	numRemainingConversationsToStart := requestData.NumConversations
 	topLevelSignal := make(chan int, len(patients))
-	for _, patient := range patients {
-		c.createNewDemoPatient(patient, doctorId, topLevelSignal)
+	for i, patient := range patients {
+		if numRemainingConversationsToStart > 0 {
+			message := sampleMessages[i%3]
+			c.createNewDemoPatient(patient, doctorId, true, message, topLevelSignal)
+			numRemainingConversationsToStart--
+		} else {
+			c.createNewDemoPatient(patient, doctorId, false, "", topLevelSignal)
+		}
+
 		time.Sleep(500 * time.Millisecond)
 	}
 
@@ -98,7 +106,7 @@ func (c *Handler) ServeHTTP(w http.ResponseWriter, r *http.Request) {
 	apiservice.WriteJSONToHTTPResponseWriter(w, http.StatusOK, apiservice.SuccessfulGenericJSONResponse())
 }
 
-func (c *Handler) createNewDemoPatient(patients []*common.Patient, doctorId int64, toMessageDoctor bool, message string, topLevelSignal chan int) {
+func (c *Handler) createNewDemoPatient(patient *common.Patient, doctorId int64, toMessageDoctor bool, message string, topLevelSignal chan int) {
 	go func() {
 
 		// ********** CREATE RANDOM PATIENT **********
@@ -230,7 +238,7 @@ func (c *Handler) createNewDemoPatient(patients []*common.Patient, doctorId int6
 
 		// use a buffered channel so that the goroutines don't block
 		// until the receiver reads off the channel
-		signal := make(chan int, numRequests)
+		signal := make(chan int, numRequestsWaitingFor)
 
 		startPatientIntakeSubmission(answersToQuestions, patientVisitResponse.PatientVisitId, signupResponse.Token, signal)
 
@@ -247,7 +255,7 @@ func (c *Handler) createNewDemoPatient(patients []*common.Patient, doctorId int6
 			answerIds[aChestPhotoIntake], patientVisitResponse.PatientVisitId, chestPhoto, signupResponse.Token, signal)
 
 		if toMessageDoctor {
-			c.startSendingMessageToDoctor(signupResponse.Token, message)
+			c.startSendingMessageToDoctor(signupResponse.Token, message, signal)
 		}
 
 		// wait for all requests to finish
