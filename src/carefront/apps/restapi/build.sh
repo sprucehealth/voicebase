@@ -10,7 +10,7 @@ if [ "$BRANCH" = "" ]; then
 	BRANCH=$(git rev-parse --abbrev-ref HEAD)
 fi
 TIME=$(date)
-LATEST_MIGRATION=$(ls -r ../../mysql/migration-*.sql | cut -d- -f 2  | cut -d. -f1 | sort -nr | head -1)
+LATEST_MIGRATION=$(ls -r ../../mysql/snapshot-*.sql | cut -d- -f 2  | cut -d. -f1 | sort -nr | head -1)
 GOOS=linux GOARCH=amd64 \
 	go build -ldflags " \
 		-X carefront/common/config.GitRevision '$REV' \
