@@ -231,8 +231,7 @@ func (d *DataService) GetPatientIdFromAccountId(accountId int64) (int64, error) 
 func (d *DataService) CheckCareProvidingElligibility(shortState string, healthConditionId int64) (doctorId int64, err error) {
 	rows, err := d.dB.Query(`select provider_id from care_provider_state_elligibility 
 								inner join care_providing_state on care_providing_state_id = care_providing_state.id 
-								inner join role_type on role_type_id = role_type.id 
-									where state = ? and health_condition_id = ? and role_type_tag='DOCTOR'`, shortState, healthConditionId)
+									where state = ? and health_condition_id = ? and role_type_id = ?`, shortState, healthConditionId, d.roleTypeMapping[DOCTOR_ROLE])
 	if err != nil {
 		return 0, err
 	}
