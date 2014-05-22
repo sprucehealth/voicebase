@@ -6,7 +6,7 @@ import (
 )
 
 func (d *DataService) AddPhoto(uploaderId int64, url, mimetype string) (int64, error) {
-	res, err := d.dB.Exec(`
+	res, err := d.db.Exec(`
 		INSERT INTO photo (uploader_id, url, mimetype) VALUES (?, ?, ?)`,
 		uploaderId, url, mimetype)
 	if err != nil {
@@ -21,7 +21,7 @@ func (d *DataService) GetPhoto(photoId int64) (*common.Photo, error) {
 	}
 	var claimerType sql.NullString
 	var claimerId sql.NullInt64
-	if err := d.dB.QueryRow(`
+	if err := d.db.QueryRow(`
 		SELECT uploaded, uploader_id, url, mimetype, claimer_type, claimer_id
 		FROM photo
 		WHERE id = ?`, photoId,
@@ -39,7 +39,7 @@ func (d *DataService) GetPhoto(photoId int64) (*common.Photo, error) {
 }
 
 func (d *DataService) ClaimPhoto(photoId int64, claimerType string, claimerId int64) error {
-	return d.claimPhoto(d.dB, photoId, claimerType, claimerId)
+	return d.claimPhoto(d.db, photoId, claimerType, claimerId)
 }
 
 func (d *DataService) claimPhoto(db db, photoId int64, claimerType string, claimerId int64) error {

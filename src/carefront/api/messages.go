@@ -8,7 +8,7 @@ import (
 )
 
 func (d *DataService) GetPeople(id []int64) (map[int64]*common.Person, error) {
-	rows, err := d.dB.Query(fmt.Sprintf(`SELECT person.id, role_type_tag, role_id FROM person INNER JOIN role_type on role_type_id = role_type.id WHERE person.id IN (%s)`, nReplacements(len(id))), appendInt64sToInterfaceSlice(nil, id)...)
+	rows, err := d.db.Query(fmt.Sprintf(`SELECT person.id, role_type_tag, role_id FROM person INNER JOIN role_type on role_type_id = role_type.id WHERE person.id IN (%s)`, nReplacements(len(id))), appendInt64sToInterfaceSlice(nil, id)...)
 	if err != nil {
 		return nil, err
 	}
@@ -32,7 +32,7 @@ func (d *DataService) GetPeople(id []int64) (map[int64]*common.Person, error) {
 
 func (d *DataService) GetPersonIdByRole(roleType string, roleId int64) (int64, error) {
 	var id int64
-	err := d.dB.QueryRow(
+	err := d.db.QueryRow(
 		`SELECT person.id FROM person WHERE role_type_id = ? AND role_id = ?`,
 		d.roleTypeMapping[roleType], roleId).Scan(&id)
 	if err == sql.ErrNoRows {
@@ -51,7 +51,7 @@ func (d *DataService) GetConversationsWithParticipants(ids []int64) ([]*common.C
 	// of times the conversation_id appears in the results (# of rows) should equal the
 	// number of participants.
 	idvals := appendInt64sToInterfaceSlice(nil, ids)
-	rows, err := d.dB.Query(
+	rows, err := d.db.Query(
 		fmt.Sprintf(`SELECT conversation_id FROM conversation_participant WHERE person_id IN (%s)`, nReplacements(len(ids))),
 		idvals...)
 	if err != nil {
@@ -76,7 +76,7 @@ func (d *DataService) GetConversationsWithParticipants(ids []int64) ([]*common.C
 		return []*common.Conversation{}, nil, nil
 	}
 
-	rows, err = d.dB.Query(fmt.Sprintf(`
+	rows, err = d.db.Query(fmt.Sprintf(`
 		SELECT id, tstamp, topic_id, (SELECT title FROM conversation_topic WHERE id = topic_id),
 			message_count, creator_id, owner_id, last_participant_id, last_message_tstamp, unread
 		FROM conversation
@@ -120,7 +120,7 @@ func (d *DataService) GetConversation(id int64) (*common.Conversation, error) {
 	c := &common.Conversation{
 		Id: id,
 	}
-	row := d.dB.QueryRow(`
+	row := d.db.QueryRow(`
 		SELECT tstamp, topic_id, (SELECT title FROM conversation_topic WHERE id = topic_id),
 			message_count, creator_id, owner_id, last_participant_id, last_message_tstamp, unread
 		FROM conversation
@@ -136,7 +136,7 @@ func (d *DataService) GetConversation(id int64) (*common.Conversation, error) {
 
 	// Messages
 
-	rows, err := d.dB.Query(`SELECT id, tstamp, person_id, body FROM conversation_message WHERE conversation_id = ? ORDER BY tstamp`, id)
+	rows, err := d.db.Query(`SELECT id, tstamp, person_id, body FROM conversation_message WHERE conversation_id = ? ORDER BY tstamp`, id)
 	if err != nil {
 		return nil, err
 	}
@@ -163,7 +163,7 @@ func (d *DataService) GetConversation(id int64) (*common.Conversation, error) {
 	// Attachments
 
 	if len(messageIds) > 0 {
-		rows, err := d.dB.Query(fmt.Sprintf(`
+		rows, err := d.db.Query(fmt.Sprintf(`
 			SELECT id, item_type, item_id, message_id
 			FROM conversation_message_attachment
 			WHERE message_id IN (%s)`, nReplacements(len(messageIds))),
@@ -186,7 +186,7 @@ func (d *DataService) GetConversation(id int64) (*common.Conversation, error) {
 
 	// Participants
 
-	c.Participants, err = d.getConversationParticipants(d.dB, id)
+	c.Participants, err = d.getConversationParticipants(d.db, id)
 	if err != nil {
 		return nil, err
 	}
@@ -195,7 +195,7 @@ func (d *DataService) GetConversation(id int64) (*common.Conversation, error) {
 }
 
 func (d *DataService) GetConversationParticipantIds(conversationId int64) ([]int64, error) {
-	rows, err := d.dB.Query(`SELECT person_id FROM conversation_participant WHERE conversation_id = ?`, conversationId)
+	rows, err := d.db.Query(`SELECT person_id FROM conversation_participant WHERE conversation_id = ?`, conversationId)
 	if err != nil {
 		return nil, err
 	}
@@ -211,7 +211,7 @@ func (d *DataService) GetConversationParticipantIds(conversationId int64) ([]int
 }
 
 func (d *DataService) GetConversationTopics() ([]*common.ConversationTopic, error) {
-	rows, err := d.dB.Query(`SELECT id, title, ordinal, active FROM conversation_topic ORDER BY ordinal`)
+	rows, err := d.db.Query(`SELECT id, title, ordinal, active FROM conversation_topic ORDER BY ordinal`)
 	if err != nil {
 		return nil, err
 	}
@@ -227,7 +227,7 @@ func (d *DataService) GetConversationTopics() ([]*common.ConversationTopic, erro
 }
 
 func (d *DataService) AddConversationTopic(title string, ordinal int, active bool) (int64, error) {
-	res, err := d.dB.Exec(`INSERT INTO conversation_topic (title, ordinal, active) VALUES (?, ?, ?)`, title, ordinal, active)
+	res, err := d.db.Exec(`INSERT INTO conversation_topic (title, ordinal, active) VALUES (?, ?, ?)`, title, ordinal, active)
 	if err != nil {
 		return 0, err
 	}
@@ -235,12 +235,12 @@ func (d *DataService) AddConversationTopic(title string, ordinal int, active boo
 }
 
 func (d *DataService) MarkConversationAsRead(id int64) error {
-	_, err := d.dB.Exec("UPDATE conversation SET unread = false WHERE id = ?", id)
+	_, err := d.db.Exec("UPDATE conversation SET unread = false WHERE id = ?", id)
 	return err
 }
 
 func (d *DataService) CreateConversation(fromId, toId, topicId int64, message string, attachments []*common.ConversationAttachment) (int64, error) {
-	tx, err := d.dB.Begin()
+	tx, err := d.db.Begin()
 	if err != nil {
 		return 0, err
 	}
@@ -273,7 +273,7 @@ func (d *DataService) CreateConversation(fromId, toId, topicId int64, message st
 }
 
 func (d *DataService) ReplyToConversation(conversationId, fromId int64, message string, attachments []*common.ConversationAttachment) (int64, error) {
-	tx, err := d.dB.Begin()
+	tx, err := d.db.Begin()
 	if err != nil {
 		return 0, err
 	}

@@ -15,7 +15,7 @@ import (
 )
 
 func (d *DataService) RegisterPatient(patient *common.Patient) error {
-	tx, err := d.dB.Begin()
+	tx, err := d.db.Begin()
 	if err != nil {
 		return err
 	}
@@ -59,11 +59,11 @@ func (d *DataService) updateTopLevelPatientInformation(db db, patient *common.Pa
 }
 
 func (d *DataService) UpdateTopLevelPatientInformation(patient *common.Patient) error {
-	return d.updateTopLevelPatientInformation(d.dB, patient)
+	return d.updateTopLevelPatientInformation(d.db, patient)
 }
 
 func (d *DataService) UpdatePatientInformation(patient *common.Patient, updateFromDoctor bool) error {
-	tx, err := d.dB.Begin()
+	tx, err := d.db.Begin()
 	if err != nil {
 		return err
 	}
@@ -101,7 +101,7 @@ func (d *DataService) UpdatePatientInformation(patient *common.Patient, updateFr
 }
 
 func (d *DataService) CreateUnlinkedPatientFromRefillRequest(patient *common.Patient) error {
-	tx, err := d.dB.Begin()
+	tx, err := d.db.Begin()
 
 	// create an account with no email and password for the unmatched patient
 	lastId, err := tx.Exec(`insert into account (email, password, role_type_id) values (NULL,NULL, ?)`, d.roleTypeMapping[PATIENT_ROLE])
@@ -224,12 +224,12 @@ func (d *DataService) createPatientWithStatus(patient *common.Patient, status st
 
 func (d *DataService) GetPatientIdFromAccountId(accountId int64) (int64, error) {
 	var patientId int64
-	err := d.dB.QueryRow("select id from patient where account_id = ?", accountId).Scan(&patientId)
+	err := d.db.QueryRow("select id from patient where account_id = ?", accountId).Scan(&patientId)
 	return patientId, err
 }
 
 func (d *DataService) CheckCareProvidingElligibility(shortState string, healthConditionId int64) (doctorId int64, err error) {
-	rows, err := d.dB.Query(`select provider_id from care_provider_state_elligibility 
+	rows, err := d.db.Query(`select provider_id from care_provider_state_elligibility 
 								inner join care_providing_state on care_providing_state_id = care_providing_state.id 
 									where state = ? and health_condition_id = ? and role_type_id = ?`, shortState, healthConditionId, d.roleTypeMapping[DOCTOR_ROLE])
 	if err != nil {
@@ -257,12 +257,12 @@ func (d *DataService) CheckCareProvidingElligibility(shortState string, healthCo
 }
 
 func (d *DataService) UpdatePatientWithERxPatientId(patientId, erxPatientId int64) error {
-	_, err := d.dB.Exec(`update patient set erx_patient_id = ? where id = ? `, erxPatientId, patientId)
+	_, err := d.db.Exec(`update patient set erx_patient_id = ? where id = ? `, erxPatientId, patientId)
 	return err
 }
 
 func (d *DataService) GetCareTeamForPatient(patientId int64) (*common.PatientCareProviderGroup, error) {
-	rows, err := d.dB.Query(`select patient_care_provider_group.id as group_id, patient_care_provider_assignment.id as assignment_id, role_type_tag, 
+	rows, err := d.db.Query(`select patient_care_provider_group.id as group_id, patient_care_provider_assignment.id as assignment_id, role_type_tag, 
 								created_date, modified_date,provider_id, patient_care_provider_group.status as group_status, 
 								patient_care_provider_assignment.status as assignment_status from patient_care_provider_assignment 
 									inner join patient_care_provider_group on assignment_group_id = patient_care_provider_group.id 
@@ -317,7 +317,7 @@ func (d *DataService) CreateCareTeamForPatientWithPrimaryDoctor(patientId, docto
 func (d *DataService) createProviderAssignmentForPatient(patientId, providerId, providerRoleId int64) (*common.PatientCareProviderGroup, error) {
 
 	// create new group assignment for patient visit
-	tx, err := d.dB.Begin()
+	tx, err := d.db.Begin()
 	if err != nil {
 		return nil, err
 	}
@@ -361,7 +361,7 @@ func (d *DataService) CreateCareTeamForPatient(patientId int64) (*common.Patient
 	// multiple active doctors in how they will be assigned to the patient.
 	// TODO : Update care team formation when we have more than 1 doctor that we can have as active in our system
 	var providerId, providerRoleId int64
-	err := d.dB.QueryRow(`select provider_id, role_type_id from care_provider_state_elligibility 
+	err := d.db.QueryRow(`select provider_id, role_type_id from care_provider_state_elligibility 
 					inner join care_providing_state on care_providing_state_id = care_providing_state.id
 					where state = 'CA'`).Scan(&providerId, &providerRoleId)
 
@@ -510,7 +510,7 @@ func (d *DataService) GetPatientFromUnlinkedDNTFTreatment(unlinkedDNTFTreatmentI
 }
 
 func (d *DataService) GetPatientVisitsForPatient(patientId int64) ([]*common.PatientVisit, error) {
-	rows, err := d.dB.Query(`select id,patient_id, health_condition_id, layout_version_id, creation_date, submitted_date, closed_date, status 
+	rows, err := d.db.Query(`select id,patient_id, health_condition_id, layout_version_id, creation_date, submitted_date, closed_date, status 
 		from patient_visit where patient_id = ?`, patientId)
 	if err != nil {
 		return nil, err
@@ -535,7 +535,7 @@ func (d *DataService) GetPatientVisitsForPatient(patientId int64) ([]*common.Pat
 }
 
 func (d *DataService) UpdatePatientAddress(patientId int64, addressLine1, addressLine2, city, state, zipCode, addressType string) error {
-	tx, err := d.dB.Begin()
+	tx, err := d.db.Begin()
 	if err != nil {
 		return err
 	}
@@ -566,7 +566,7 @@ func (d *DataService) UpdatePatientAddress(patientId int64, addressLine1, addres
 }
 
 func (d *DataService) UpdatePatientPharmacy(patientId int64, pharmacyDetails *pharmacy.PharmacyData) error {
-	tx, err := d.dB.Begin()
+	tx, err := d.db.Begin()
 	if err != nil {
 		return err
 	}
@@ -604,7 +604,7 @@ func (d *DataService) UpdatePatientPharmacy(patientId int64, pharmacyDetails *ph
 }
 
 func (d *DataService) getPatientPharmacySelection(patientId int64) (pharmacySelection *pharmacy.PharmacyData, err error) {
-	rows, err := d.dB.Query(`select pharmacy_selection.id, patient_id, pharmacy_selection.pharmacy_id, source, name, address_line_1, address_line_2, city, state, zip_code, phone,lat,lng 
+	rows, err := d.db.Query(`select pharmacy_selection.id, patient_id, pharmacy_selection.pharmacy_id, source, name, address_line_1, address_line_2, city, state, zip_code, phone,lat,lng 
 		from patient_pharmacy_selection 
 			inner join pharmacy_selection on pharmacy_selection.id = pharmacy_selection_id 
 				where patient_id = ? and status=?`, patientId, STATUS_ACTIVE)
@@ -625,7 +625,7 @@ func (d *DataService) GetPharmacySelectionForPatients(patientIds []int64) ([]*ph
 		return nil, nil
 	}
 
-	rows, err := d.dB.Query(fmt.Sprintf(`select pharmacy_selection.id, patient_id,  pharmacy_selection.pharmacy_id, source, name, address_line_1, address_line_2, city, state, zip_code, phone,lat,lng 
+	rows, err := d.db.Query(fmt.Sprintf(`select pharmacy_selection.id, patient_id,  pharmacy_selection.pharmacy_id, source, name, address_line_1, address_line_2, city, state, zip_code, phone,lat,lng 
 			from patient_pharmacy_selection 
 			inner join pharmacy_selection on pharmacy_selection.id = pharmacy_selection_id where patient_id in (%s) and status=?`, enumerateItemsIntoString(patientIds)), STATUS_ACTIVE)
 	if err != nil {
@@ -648,7 +648,7 @@ func (d *DataService) GetPharmacySelectionForPatients(patientIds []int64) ([]*ph
 func (d *DataService) GetPharmacyBasedOnReferenceIdAndSource(pharmacyId, pharmacySource string) (*pharmacy.PharmacyData, error) {
 	var addressLine1, addressLine2, city, state, country, phone, zipCode, lat, lng, name sql.NullString
 	var id int64
-	err := d.dB.QueryRow(`select id, address_line_1, address_line_2, city, state, country, phone, zip_code, name, lat,lng
+	err := d.db.QueryRow(`select id, address_line_1, address_line_2, city, state, country, phone, zip_code, name, lat,lng
 		from pharmacy_selection where pharmacy_id = ? and source = ?`, pharmacyId, pharmacySource).
 		Scan(&id, &addressLine1, &addressLine2, &city, &state, &country, &phone, &zipCode, &name, &lat, &lng)
 	if err != nil {
@@ -688,7 +688,7 @@ func (d *DataService) GetPharmacyBasedOnReferenceIdAndSource(pharmacyId, pharmac
 func (d *DataService) GetPharmacyFromId(pharmacyLocalId int64) (*pharmacy.PharmacyData, error) {
 	var addressLine1, addressLine2, city, state, country, phone, zipCode, lat, lng, name sql.NullString
 	var source, pharmacyReferenceId string
-	err := d.dB.QueryRow(`select source, pharmacy_id, address_line_1, address_line_2, city, state, country, phone, zip_code, name, lat,lng
+	err := d.db.QueryRow(`select source, pharmacy_id, address_line_1, address_line_2, city, state, country, phone, zip_code, name, lat,lng
 		from pharmacy_selection where id = ?`, pharmacyLocalId).
 		Scan(&source, &pharmacyReferenceId, &addressLine1, &addressLine2, &city, &state, &country, &phone, &zipCode, &name, &lat, &lng)
 	if err != nil {
@@ -726,7 +726,7 @@ func (d *DataService) GetPharmacyFromId(pharmacyLocalId int64) (*pharmacy.Pharma
 }
 
 func (d *DataService) AddPharmacy(pharmacyDetails *pharmacy.PharmacyData) error {
-	tx, err := d.dB.Begin()
+	tx, err := d.db.Begin()
 	if err != nil {
 		return err
 	}
@@ -817,7 +817,7 @@ func getPharmacyFromCurrentRow(rows *sql.Rows) (*pharmacy.PharmacyData, error) {
 }
 
 func (d *DataService) TrackPatientAgreements(patientId int64, agreements map[string]bool) error {
-	tx, err := d.dB.Begin()
+	tx, err := d.db.Begin()
 	if err != nil {
 		return err
 	}
@@ -840,12 +840,12 @@ func (d *DataService) TrackPatientAgreements(patientId int64, agreements map[str
 }
 
 func (d *DataService) UpdatePatientWithPaymentCustomerId(patientId int64, paymentCustomerId string) error {
-	_, err := d.dB.Exec("update patient set payment_service_customer_id = ? where id = ?", paymentCustomerId, patientId)
+	_, err := d.db.Exec("update patient set payment_service_customer_id = ? where id = ?", paymentCustomerId, patientId)
 	return err
 }
 
 func (d *DataService) AddCardAndMakeDefaultForPatient(patientId int64, card *common.Card) error {
-	tx, err := d.dB.Begin()
+	tx, err := d.db.Begin()
 	if err != nil {
 		return err
 	}
@@ -885,7 +885,7 @@ func (d *DataService) AddCardAndMakeDefaultForPatient(patientId int64, card *com
 }
 
 func (d *DataService) MakeCardDefaultForPatient(patientId int64, card *common.Card) error {
-	tx, err := d.dB.Begin()
+	tx, err := d.db.Begin()
 	if err != nil {
 		return err
 	}
@@ -906,18 +906,18 @@ func (d *DataService) MakeCardDefaultForPatient(patientId int64, card *common.Ca
 }
 
 func (d *DataService) MarkCardInactiveForPatient(patientId int64, card *common.Card) error {
-	_, err := d.dB.Exec(`update credit_card set status =? where patient_id = ? and id = ?`, STATUS_DELETED, patientId, card.Id.Int64())
+	_, err := d.db.Exec(`update credit_card set status =? where patient_id = ? and id = ?`, STATUS_DELETED, patientId, card.Id.Int64())
 	return err
 }
 
 func (d *DataService) DeleteCardForPatient(patientId int64, card *common.Card) error {
-	_, err := d.dB.Exec(`delete from credit_card where patient_id = ? and id = ?`, patientId, card.Id.Int64())
+	_, err := d.db.Exec(`delete from credit_card where patient_id = ? and id = ?`, patientId, card.Id.Int64())
 	return err
 }
 
 func (d *DataService) MakeLatestCardDefaultForPatient(patientId int64) (*common.Card, error) {
 	var latestCardId int64
-	err := d.dB.QueryRow(`select id from credit_card where patient_id = ? and status = ? order by creation_date desc limit 1`, patientId, STATUS_ACTIVE).Scan(&latestCardId)
+	err := d.db.QueryRow(`select id from credit_card where patient_id = ? and status = ? order by creation_date desc limit 1`, patientId, STATUS_ACTIVE).Scan(&latestCardId)
 	if err != nil {
 		if err == sql.ErrNoRows {
 			return nil, nil
@@ -925,7 +925,7 @@ func (d *DataService) MakeLatestCardDefaultForPatient(patientId int64) (*common.
 		return nil, err
 	}
 
-	_, err = d.dB.Exec(`update credit_card set is_default = 1 where patient_id = ? and id = ?`, patientId, latestCardId)
+	_, err = d.db.Exec(`update credit_card set is_default = 1 where patient_id = ? and id = ?`, patientId, latestCardId)
 	if err != nil {
 		return nil, err
 	}
@@ -956,7 +956,7 @@ func (d *DataService) addAddress(tx *sql.Tx, address *common.Address) (int64, er
 func (d *DataService) GetCardsForPatient(patientId int64) ([]*common.Card, error) {
 	cards := make([]*common.Card, 0)
 
-	rows, err := d.dB.Query(`select id, third_party_card_id, fingerprint, type, is_default, creation_date from credit_card where patient_id = ? and status = ?`, patientId, STATUS_ACTIVE)
+	rows, err := d.db.Query(`select id, third_party_card_id, fingerprint, type, is_default, creation_date from credit_card where patient_id = ? and status = ?`, patientId, STATUS_ACTIVE)
 	if err != nil {
 		return nil, err
 	}
@@ -979,7 +979,7 @@ func (d *DataService) GetCardsForPatient(patientId int64) ([]*common.Card, error
 func (d *DataService) GetCardFromId(cardId int64) (*common.Card, error) {
 	var card common.Card
 	var addressId int64
-	err := d.dB.QueryRow(`select third_party_card_id, fingerprint, type, address_id, is_default, creation_date from credit_card where id = ?`,
+	err := d.db.QueryRow(`select third_party_card_id, fingerprint, type, address_id, is_default, creation_date from credit_card where id = ?`,
 		cardId).Scan(&card.ThirdPartyId, &card.Fingerprint, &card.Type, &addressId, &card.IsDefault, &card.CreationDate)
 	if err != nil {
 		if err == sql.ErrNoRows {
@@ -989,7 +989,7 @@ func (d *DataService) GetCardFromId(cardId int64) (*common.Card, error) {
 	}
 	card.Id = encoding.NewObjectId(cardId)
 	var addressLine1, addressLine2, city, state, country, zipCode sql.NullString
-	err = d.dB.QueryRow(`select address_line_1, address_line_2, city, state, zip_code, country from address where id = ?`, addressId).Scan(&addressLine1, &addressLine2, &city, &state, &zipCode, &country)
+	err = d.db.QueryRow(`select address_line_1, address_line_2, city, state, zip_code, country from address where id = ?`, addressId).Scan(&addressLine1, &addressLine2, &city, &state, &zipCode, &country)
 	if err != nil {
 		if err == sql.ErrNoRows {
 			return &card, nil
@@ -1009,7 +1009,7 @@ func (d *DataService) GetCardFromId(cardId int64) (*common.Card, error) {
 }
 
 func (d *DataService) UpdateDefaultAddressForPatient(patientId int64, address *common.Address) error {
-	tx, err := d.dB.Begin()
+	tx, err := d.db.Begin()
 	if err != nil {
 		return err
 	}
@@ -1037,12 +1037,12 @@ func (d *DataService) UpdateDefaultAddressForPatient(patientId int64, address *c
 }
 
 func (d *DataService) DeleteAddress(addressId int64) error {
-	_, err := d.dB.Exec(`delete from address where id = ?`, addressId)
+	_, err := d.db.Exec(`delete from address where id = ?`, addressId)
 	return err
 }
 
 func (d *DataService) CreatePendingTask(workType, status string, itemId int64) (int64, error) {
-	lastId, err := d.dB.Exec(`insert into pending_task (type, item_id, status) values (?,?,?)`, workType, itemId, status)
+	lastId, err := d.db.Exec(`insert into pending_task (type, item_id, status) values (?,?,?)`, workType, itemId, status)
 	if err != nil {
 		return 0, err
 	}
@@ -1056,13 +1056,13 @@ func (d *DataService) CreatePendingTask(workType, status string, itemId int64) (
 }
 
 func (d *DataService) DeletePendingTask(pendingTaskId int64) error {
-	_, err := d.dB.Exec(`delete from pending_task where id = ?`, pendingTaskId)
+	_, err := d.db.Exec(`delete from pending_task where id = ?`, pendingTaskId)
 	return err
 }
 
 func (d *DataService) GetFullNameForState(state string) (string, error) {
 	var fullName string
-	err := d.dB.QueryRow(`select full_name from state where full_name = ? or abbreviation = ?`, state, state).Scan(&fullName)
+	err := d.db.QueryRow(`select full_name from state where full_name = ? or abbreviation = ?`, state, state).Scan(&fullName)
 	if err != nil {
 		if err == sql.ErrNoRows {
 			return "", nil
@@ -1084,7 +1084,7 @@ func (d *DataService) getPatientBasedOnQuery(table, joins, where string, queryPa
 		LEFT OUTER JOIN patient_location ON patient_location.patient_id = patient.id
 		LEFT OUTER JOIN account ON account.id = patient.account_id
 		WHERE %s`, table, joins, d.roleTypeMapping[PATIENT_ROLE], where)
-	rows, err := d.dB.Query(queryStr, queryParams...)
+	rows, err := d.db.Query(queryStr, queryParams...)
 	if err != nil {
 		return nil, err
 	}
@@ -1143,7 +1143,7 @@ func (d *DataService) getAddressAndPhoneNumbersForPatient(patient *common.Patien
 	var defaultPatientAddress common.Address
 
 	// get default address information (if exists) for each patient
-	err := d.dB.QueryRow(`select address.id, address_line_1, address_line_2, city, state, zip_code, country from patient_address_selection
+	err := d.db.QueryRow(`select address.id, address_line_1, address_line_2, city, state, zip_code, country from patient_address_selection
 						inner join address on address_id = address.id
 						where patient_id = ? and is_default=1`, patient.PatientId.Int64()).Scan(&defaultPatientAddress.Id, &defaultPatientAddress.AddressLine1, &defaultPatientAddress.AddressLine2, &defaultPatientAddress.City, &defaultPatientAddress.State, &defaultPatientAddress.ZipCode, &defaultPatientAddress.Country)
 
@@ -1155,7 +1155,7 @@ func (d *DataService) getAddressAndPhoneNumbersForPatient(patient *common.Patien
 		patient.PatientAddress = &defaultPatientAddress
 	}
 
-	rows, err := d.dB.Query(`select phone, phone_type from patient_phone where patient_id = ? and status = ?`, patient.PatientId.Int64(), STATUS_INACTIVE)
+	rows, err := d.db.Query(`select phone, phone_type from patient_phone where patient_id = ? and status = ?`, patient.PatientId.Int64(), STATUS_INACTIVE)
 	if err != nil {
 		return err
 	}
