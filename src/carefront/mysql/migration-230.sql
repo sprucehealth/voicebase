@@ -13,7 +13,7 @@ update account set role_type_id = (select id from role_type where role_type_tag=
 alter table account add foreign key (role_type_id) references role_type(id);
 
 alter table account add registration_date timestamp(6) not null default current_timestamp(6);
-alter table auth_token add column last_opened_date timestamp(6) not null default current_timestamp(6);
+alter table account add column last_opened_date timestamp(6) not null default current_timestamp(6);
 
 alter table person add column role_type_id int unsigned not null;
 update person
@@ -23,4 +23,4 @@ alter table person add foreign key (role_type_id) references role_type(id);
 alter table person drop column role_type;	
 
 alter table auth_token add unique key (account_id);
-
+alter table auth_token modify column created timestamp(6) not null default current_timestamp(6);

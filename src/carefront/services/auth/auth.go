@@ -188,7 +188,7 @@ func (m *AuthService) SetPassword(accountId int64, password string) error {
 }
 
 func (m *AuthService) UpdateLastOpenedDate(accountId int64) error {
-	if res, err := m.DB.Exec(`update auth_token set last_opened_date = now(6) where account_id = ?`, accountId); err != nil {
+	if res, err := m.DB.Exec(`update account set last_opened_date = now(6) where id = ?`, accountId); err != nil {
 		return &api.InternalServerError{Message: err.Error()}
 	} else if n, err := res.RowsAffected(); err != nil {
 		return &api.InternalServerError{Message: err.Error()}

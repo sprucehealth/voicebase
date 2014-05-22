@@ -1,6 +1,6 @@
 -- MySQL dump 10.13  Distrib 5.6.17, for osx10.9 (x86_64)
 --
--- Host: 127.0.0.1    Database: database_22322
+-- Host: 127.0.0.1    Database: database_815
 -- ------------------------------------------------------
 -- Server version	5.6.17
 
@@ -28,6 +28,7 @@ CREATE TABLE `account` (
   `password` varbinary(250) DEFAULT NULL,
   `role_type_id` int(10) unsigned NOT NULL,
   `registration_date` timestamp(6) NOT NULL DEFAULT CURRENT_TIMESTAMP(6),
+  `last_opened_date` timestamp(6) NOT NULL DEFAULT CURRENT_TIMESTAMP(6),
   PRIMARY KEY (`id`),
   UNIQUE KEY `email` (`email`),
   KEY `role_type_id` (`role_type_id`),
@@ -133,9 +134,8 @@ DROP TABLE IF EXISTS `auth_token`;
 CREATE TABLE `auth_token` (
   `token` varbinary(250) NOT NULL DEFAULT '',
   `account_id` int(10) unsigned NOT NULL,
-  `created` timestamp NOT NULL DEFAULT CURRENT_TIMESTAMP ON UPDATE CURRENT_TIMESTAMP,
+  `created` timestamp(6) NOT NULL DEFAULT CURRENT_TIMESTAMP(6),
   `expires` timestamp NOT NULL DEFAULT '0000-00-00 00:00:00',
-  `last_opened_date` timestamp(6) NOT NULL DEFAULT CURRENT_TIMESTAMP(6),
   PRIMARY KEY (`token`),
   UNIQUE KEY `account_id_2` (`account_id`),
   KEY `account_id` (`account_id`),
@@ -2276,4 +2276,4 @@ CREATE TABLE `unlinked_dntf_treatment_status_events` (
 /*!40101 SET COLLATION_CONNECTION=@OLD_COLLATION_CONNECTION */;
 /*!40111 SET SQL_NOTES=@OLD_SQL_NOTES */;
 
--- Dump completed on 2014-05-22 11:14:13
+-- Dump completed on 2014-05-22 13:10:08
