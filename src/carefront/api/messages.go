@@ -33,8 +33,8 @@ func (d *DataService) GetPeople(id []int64) (map[int64]*common.Person, error) {
 func (d *DataService) GetPersonIdByRole(roleType string, roleId int64) (int64, error) {
 	var id int64
 	err := d.dB.QueryRow(
-		`SELECT person.id FROM person INNER JOIN role_type on role_type_id = role_type.id WHERE role_type_tag = ? AND role_id = ?`,
-		roleType, roleId).Scan(&id)
+		`SELECT person.id FROM person WHERE role_type_id = ? AND role_id = ?`,
+		d.roleTypeMapping[roleType], roleId).Scan(&id)
 	if err == sql.ErrNoRows {
 		return 0, NoRowsError
 	}
