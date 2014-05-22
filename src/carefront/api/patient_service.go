@@ -311,13 +311,7 @@ func (d *DataService) GetCareTeamForPatient(patientId int64) (*common.PatientCar
 }
 
 func (d *DataService) CreateCareTeamForPatientWithPrimaryDoctor(patientId, doctorId int64) (*common.PatientCareProviderGroup, error) {
-	var providerRoleId int64
-	err := d.dB.QueryRow(`select id from role_type where role_type_tag=?`, DOCTOR_ROLE).Scan(&providerRoleId)
-	if err != nil {
-		return nil, err
-	}
-
-	return d.createProviderAssignmentForPatient(patientId, doctorId, providerRoleId)
+	return d.createProviderAssignmentForPatient(patientId, doctorId, d.roleTypeMapping[DOCTOR_ROLE])
 }
 
 func (d *DataService) createProviderAssignmentForPatient(patientId, providerId, providerRoleId int64) (*common.PatientCareProviderGroup, error) {
