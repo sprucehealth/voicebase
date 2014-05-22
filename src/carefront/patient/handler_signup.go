@@ -75,7 +75,7 @@ func (s *SignupHandler) ServeHTTP(w http.ResponseWriter, r *http.Request) {
 	}
 
 	// first, create an account for the user
-	res, err := s.authApi.SignUp(requestData.Email, requestData.Password)
+	res, err := s.authApi.SignUp(requestData.Email, requestData.Password, api.PATIENT_ROLE)
 	if _, ok := err.(*thriftapi.LoginAlreadyExists); ok {
 		apiservice.WriteUserError(w, http.StatusBadRequest, "An account with the specified email address already exists.")
 		return

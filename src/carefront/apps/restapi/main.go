@@ -245,7 +245,10 @@ func main() {
 		log.Fatal("ERxQueue not configured but ERxRouting is enabled")
 	}
 
-	dataApi := &api.DataService{DB: db}
+	dataApi, err := api.NewDataService(db)
+	if err != nil {
+		log.Fatalf("Unable to initialize data service layer: %s", err)
+	}
 
 	var twilioCli *twilio.Client
 	if conf.Twilio != nil && conf.Twilio.AccountSid != "" && conf.Twilio.AuthToken != "" {

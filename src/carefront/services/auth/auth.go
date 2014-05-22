@@ -17,7 +17,7 @@ type AuthService struct {
 	Hasher         PasswordHasher
 }
 
-func (m *AuthService) SignUp(email, password string) (*api.AuthResponse, error) {
+func (m *AuthService) SignUp(email, password, roleType string) (*api.AuthResponse, error) {
 	if password == "" {
 		return nil, &api.InvalidPassword{}
 	}
@@ -38,6 +38,12 @@ func (m *AuthService) SignUp(email, password string) (*api.AuthResponse, error) 
 		return nil, &api.InternalServerError{Message: err.Error()}
 	}
 
+	var roleTypeId int64
+	if err := m.DB.QueryRow("SELECT id from role_type where role_type_tag = ?", roleType).Scan(&roleTypeId); err == sql.ErrNoRows {
+		golog.Errorf("services/auth: Invalid Role Type specified")
+		return nil, &api.InvalidRoleType{}
+	}
+
 	// begin transaction to create an account
 	tx, err := m.DB.Begin()
 	if err != nil {
@@ -46,7 +52,7 @@ func (m *AuthService) SignUp(email, password string) (*api.AuthResponse, error) 
 	}
 
 	// create a new account since the user does not exist on the platform
-	res, err := tx.Exec("INSERT INTO account (email, password) VALUES (?, ?)", email, string(hashedPassword))
+	res, err := tx.Exec("INSERT INTO account (email, password,role_type_id) VALUES (?, ?, ?)", email, string(hashedPassword), roleTypeId)
 	if err != nil {
 		tx.Rollback()
 		golog.Errorf("services/auth: INSERT account failed: %s", err.Error())

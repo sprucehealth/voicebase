@@ -49,11 +49,18 @@ func (e *NoSuchLogin) Error() string {
 	return "NoSuchLogin{}"
 }
 
+type InvalidRoleType struct {
+}
+
+func (e *InvalidRoleType) Error() string {
+	return "InvalidRoleType{}"
+}
+
 type Auth interface {
 	LogIn(login string, password string) (*AuthResponse, error)
 	LogOut(token string) error
 	SetPassword(accountId int64, password string) error
-	SignUp(login string, password string) (*AuthResponse, error)
+	SignUp(login string, password string, roleType string) (*AuthResponse, error)
 	ValidateToken(token string) (*TokenValidationResponse, error)
 }
 
@@ -123,7 +130,7 @@ func (s *AuthServer) SetPassword(req *AuthSetPasswordRequest, res *AuthSetPasswo
 }
 
 func (s *AuthServer) SignUp(req *AuthSignUpRequest, res *AuthSignUpResponse) error {
-	val, err := s.Implementation.SignUp(req.Login, req.Password)
+	val, err := s.Implementation.SignUp(req.Login, req.Password, req.RoleType)
 	switch e := err.(type) {
 	case *InternalServerError:
 		res.Error = e
@@ -202,6 +209,7 @@ type AuthSetPasswordResponse struct {
 type AuthSignUpRequest struct {
 	Login    string `thrift:"1,required" json:"login"`
 	Password string `thrift:"2,required" json:"password"`
+	RoleType string `thrift:"3,required" json:"role_type"`
 }
 
 type AuthSignUpResponse struct {
@@ -211,6 +219,7 @@ type AuthSignUpResponse struct {
 	OverCapacity    *OverCapacity        `thrift:"3" json:"over_capacity,omitempty"`
 	AlreadyExists   *LoginAlreadyExists  `thrift:"4" json:"already_exists,omitempty"`
 	InvalidPassword *InvalidPassword     `thrift:"5" json:"invalid_password,omitempty"`
+	InvalidRoleType *InvalidRoleType     `thrift:"6" json:"invalid_role_type,omitempty"`
 }
 
 type AuthValidateTokenRequest struct {
@@ -298,10 +307,11 @@ func (s *AuthClient) SetPassword(accountId int64, password string) (err error) {
 	return
 }
 
-func (s *AuthClient) SignUp(login string, password string) (ret *AuthResponse, err error) {
+func (s *AuthClient) SignUp(login string, password string, roleType string) (ret *AuthResponse, err error) {
 	req := &AuthSignUpRequest{
 		Login:    login,
 		Password: password,
+		RoleType: roleType,
 	}
 	res := &AuthSignUpResponse{}
 	err = s.Client.Call("sign_up", req, res)

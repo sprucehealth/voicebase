@@ -157,9 +157,9 @@ func GetDoctorIdOfCurrentPrimaryDoctor(testData TestData, t *testing.T) int64 {
 	// get the current primary doctor
 	var doctorId int64
 	err := testData.DB.QueryRow(`select provider_id from care_provider_state_elligibility 
-							inner join provider_role on provider_role_id = provider_role.id 
+							inner join role_type on role_type_id = role_type.id 
 							inner join care_providing_state on care_providing_state_id = care_providing_state.id
-							where provider_tag='DOCTOR' and care_providing_state.state = 'CA'`).Scan(&doctorId)
+							where role_type_tag='DOCTOR' and care_providing_state.state = 'CA'`).Scan(&doctorId)
 	if err != nil {
 		t.Fatal("Unable to query for doctor that is elligible to diagnose in CA: " + err.Error())
 	}
@@ -226,7 +226,6 @@ func SetupIntegrationTest(t *testing.T) TestData {
 		Hasher:         nullHasher{},
 	}
 	testData := TestData{
-		DataApi:             &api.DataService{DB: db},
 		AuthApi:             authApi,
 		DBConfig:            dbConfig,
 		CloudStorageService: cloudStorageService,
@@ -237,19 +236,24 @@ func SetupIntegrationTest(t *testing.T) TestData {
 	t.Logf("Created and connected to database with name: %s (%.3f seconds)", testData.DBConfig.DatabaseName, float64(time.Since(ts))/float64(time.Second))
 	testData.StartTime = time.Now()
 
-	// When setting up the database for each integration test, ensure to setup a doctor that is
-	// considered elligible to serve in the state of CA.
-	signedupDoctorResponse, _, _ := signupRandomTestDoctor(t, testData.DataApi, testData.AuthApi)
-
-	// create the role of a primary doctor
-	_, err = testData.DB.Exec(`insert into provider_role (provider_tag) values ('DOCTOR')`)
+	// create the role of a doctor and patient
+	_, err = testData.DB.Exec(`insert into role_type (role_type_tag) values ('DOCTOR'),('PATIENT')`)
 	if err != nil {
 		t.Fatal("Unable to create the provider role of DOCTOR " + err.Error())
 	}
 
+	testData.DataApi, err = api.NewDataService(db)
+	if err != nil {
+		t.Fatalf("Unable to initialize data service layer: %s", err)
+	}
+
+	// When setting up the database for each integration test, ensure to setup a doctor that is
+	// considered elligible to serve in the state of CA.
+	signedupDoctorResponse, _, _ := signupRandomTestDoctor(t, testData.DataApi, testData.AuthApi)
+
 	// make this doctor the primary doctor in the state of CA
-	_, err = testData.DB.Exec(`insert into care_provider_state_elligibility (provider_role_id, provider_id, care_providing_state_id) 
-					values ((select id from provider_role where provider_tag='DOCTOR'), ?, (select id from care_providing_state where state='CA'))`, signedupDoctorResponse.DoctorId)
+	_, err = testData.DB.Exec(`insert into care_provider_state_elligibility (role_type_id, provider_id, care_providing_state_id) 
+					values ((select id from role_type where role_type_tag='DOCTOR'), ?, (select id from care_providing_state where state='CA'))`, signedupDoctorResponse.DoctorId)
 	if err != nil {
 		t.Fatal("Unable to make the signed up doctor the primary doctor elligible in CA to diagnose patients: " + err.Error())
 	}

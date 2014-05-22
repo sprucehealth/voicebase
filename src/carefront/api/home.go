@@ -14,20 +14,20 @@ func (d *DataService) DeletePatientNotifications(ids []int64) error {
 	case 0:
 		return nil
 	case 1:
-		_, err := d.DB.Exec("DELETE FROM patient_notifications WHERE id = ?", ids[0])
+		_, err := d.dB.Exec("DELETE FROM patient_notifications WHERE id = ?", ids[0])
 		return err
 	}
-	_, err := d.DB.Exec("DELETE FROM patient_notifications WHERE id IN "+nReplacements(len(ids)), appendInt64sToInterfaceSlice(nil, ids)...)
+	_, err := d.dB.Exec("DELETE FROM patient_notifications WHERE id IN "+nReplacements(len(ids)), appendInt64sToInterfaceSlice(nil, ids)...)
 	return err
 }
 
 func (d *DataService) DeletePatientNotificationByUID(patientId int64, uid string) error {
-	_, err := d.DB.Exec("DELETE FROM patient_notifications WHERE patient_id = ? AND uid = ?", patientId, uid)
+	_, err := d.dB.Exec("DELETE FROM patient_notifications WHERE patient_id = ? AND uid = ?", patientId, uid)
 	return err
 }
 
 func (d *DataService) GetNotificationsForPatient(patientId int64, typeMap map[string]reflect.Type) ([]*common.Notification, []*common.Notification, error) {
-	rows, err := d.DB.Query(`
+	rows, err := d.dB.Query(`
 		SELECT id, uid, tstamp, expires, dismissible, dismiss_on_action, priority, type, data
 		FROM patient_notifications
 		WHERE patient_id = ?
@@ -93,7 +93,7 @@ func (d *DataService) InsertPatientNotification(patientId int64, note *common.No
 	if err != nil {
 		return 0, err
 	}
-	res, err := d.DB.Exec(`
+	res, err := d.dB.Exec(`
 		INSERT INTO patient_notifications (patient_id, uid, expires, dismissible, dismiss_on_action, priority, type, data)
 		VALUES (?, ?, ?, ?, ?, ?, ?, ?)`,
 		patientId, note.UID, note.Expires, note.Dismissible,
@@ -105,7 +105,7 @@ func (d *DataService) InsertPatientNotification(patientId int64, note *common.No
 }
 
 func (d *DataService) GetHealthLogForPatient(patientId int64, typeMap map[string]reflect.Type) ([]*common.HealthLogItem, []*common.HealthLogItem, error) {
-	rows, err := d.DB.Query(`
+	rows, err := d.dB.Query(`
 		SELECT id, uid, tstamp, type, data
 		FROM health_log
 		WHERE patient_id = ?
@@ -153,7 +153,7 @@ func (d *DataService) InsertOrUpdatePatientHealthLogItem(patientId int64, item *
 	if err != nil {
 		return 0, err
 	}
-	res, err := d.DB.Exec(`
+	res, err := d.dB.Exec(`
 		REPLACE INTO health_log (patient_id, uid, type, data)
 		VALUES (?, ?, ?, ?)`,
 		patientId, item.UID, item.Data.TypeName(), data)

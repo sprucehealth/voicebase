@@ -9,7 +9,7 @@ func TestAuth(t *testing.T) {
 
 	email, pass, pass2 := "someone@somewhere.com", "somepass", "newPass"
 
-	signup, err := testData.AuthApi.SignUp(email, pass)
+	signup, err := testData.AuthApi.SignUp(email, pass, "DOCTOR")
 	if err != nil {
 		t.Fatal(err)
 	}
