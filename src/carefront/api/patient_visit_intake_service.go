@@ -52,7 +52,7 @@ func (d *DataService) StoreAnswersForQuestion(role string, roleId, patientVisitI
 		return nil
 	}
 
-	tx, err := d.DB.Begin()
+	tx, err := d.db.Begin()
 	if err != nil {
 		return err
 	}
@@ -148,7 +148,7 @@ func (d *DataService) StoreAnswersForQuestion(role string, roleId, patientVisitI
 }
 
 func (d *DataService) CreatePhotoAnswerForQuestionRecord(role string, roleId, questionId, patientVisitId, potentialAnswerId, layoutVersionId int64) (int64, error) {
-	res, err := d.DB.Exec(`insert into info_intake (role, role_id, context_id, question_id, potential_answer_id, layout_version_id, status) 
+	res, err := d.db.Exec(`insert into info_intake (role, role_id, context_id, question_id, potential_answer_id, layout_version_id, status) 
 							values (?, ?, ?, ?, ?, ?, 'PENDING_UPLOAD')`, role, roleId, patientVisitId, questionId, potentialAnswerId, layoutVersionId)
 	if err != nil {
 		return 0, err
@@ -158,18 +158,18 @@ func (d *DataService) CreatePhotoAnswerForQuestionRecord(role string, roleId, qu
 }
 
 func (d *DataService) UpdatePhotoAnswerRecordWithObjectStorageId(patientInfoIntakeId, objectStorageId int64) error {
-	_, err := d.DB.Exec(`update info_intake set object_storage_id = ?, status='ACTIVE' where id = ?`, objectStorageId, patientInfoIntakeId)
+	_, err := d.db.Exec(`update info_intake set object_storage_id = ?, status='ACTIVE' where id = ?`, objectStorageId, patientInfoIntakeId)
 	return err
 }
 func (d *DataService) MakeCurrentPhotoAnswerInactive(role string, roleId, questionId, patientVisitId, potentialAnswerId, layoutVersionId int64) error {
-	_, err := d.DB.Exec(`update info_intake set status='INACTIVE' where role_id = ? and question_id = ? 
+	_, err := d.db.Exec(`update info_intake set status='INACTIVE' where role_id = ? and question_id = ? 
 							and context_id = ? and potential_answer_id = ? 
 							and layout_version_id = ? and role=?`, roleId, questionId, patientVisitId, potentialAnswerId, layoutVersionId, role)
 	return err
 }
 
 func (d *DataService) RejectPatientVisitPhotos(patientVisitId int64) error {
-	_, err := d.DB.Exec(`update info_intake 
+	_, err := d.db.Exec(`update info_intake 
 		inner join question on info_intake.question_id = question.id 
 		inner join question_type on question_type.id = question.qtype_id 
 		set info_intake.status='REJECTED' 
@@ -227,7 +227,7 @@ func insertAnswersForSubQuestions(tx *sql.Tx, answersToStore []*common.AnswerInt
 func (d *DataService) deleteAnswersWithId(role string, answerIds []int64) error {
 	// delete all ids that were in CREATING state since they were committed in that state
 	query := fmt.Sprintf("delete from info_intake where id in (%s) and role=?", enumerateItemsIntoString(answerIds))
-	_, err := d.DB.Exec(query, role)
+	_, err := d.db.Exec(query, role)
 	return err
 }
 
@@ -278,7 +278,7 @@ func (d *DataService) updatePatientInfoIntakesWithStatus(role string, questionId
 }
 
 func (d *DataService) getPatientAnswersForQuestionsBasedOnQuery(query string, args ...interface{}) (map[int64][]*common.AnswerIntake, error) {
-	rows, err := d.DB.Query(query, args...)
+	rows, err := d.db.Query(query, args...)
 	if err != nil {
 		return nil, err
 	}

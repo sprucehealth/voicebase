@@ -9,14 +9,14 @@ import (
 
 func (d *DataService) GetQuestionType(questionId int64) (string, error) {
 	var questionType string
-	err := d.DB.QueryRow(`select qtype from question
+	err := d.db.QueryRow(`select qtype from question
 						inner join question_type on question_type.id = qtype_id
 						where question.id = ?`, questionId).Scan(&questionType)
 	return questionType, err
 }
 
 func (d *DataService) GetActiveLayoutInfoForHealthCondition(healthConditionTag, role, purpose string) (bucket, key, region string, err error) {
-	err = d.DB.QueryRow(`select bucket, storage_key, region_tag from layout_version 
+	err = d.db.QueryRow(`select bucket, storage_key, region_tag from layout_version 
 								inner join object_storage on object_storage_id = object_storage.id 
 								inner join region on region_id=region.id 
 								inner join health_condition on health_condition_id = health_condition.id 
@@ -24,7 +24,7 @@ func (d *DataService) GetActiveLayoutInfoForHealthCondition(healthConditionTag, 
 	return
 }
 func (d *DataService) GetStorageInfoOfCurrentActivePatientLayout(languageId, healthConditionId int64) (bucket, storage, region string, layoutVersionId int64, err error) {
-	row := d.DB.QueryRow(`select bucket, storage_key, region_tag, layout_version_id from patient_layout_version 
+	row := d.db.QueryRow(`select bucket, storage_key, region_tag, layout_version_id from patient_layout_version 
 							inner join object_storage on object_storage_id=object_storage.id 
 							inner join region on region_id=region.id 
 								where patient_layout_version.status='ACTIVE' and health_condition_id = ? and language_id = ?`, healthConditionId, languageId)
@@ -33,7 +33,7 @@ func (d *DataService) GetStorageInfoOfCurrentActivePatientLayout(languageId, hea
 }
 
 func (d *DataService) GetStorageInfoOfCurrentActiveDoctorLayout(healthConditionId int64) (bucket, storage, region string, layoutVersionId int64, err error) {
-	row := d.DB.QueryRow(`select bucket, storage_key, region_tag, layout_version_id from dr_layout_version 
+	row := d.db.QueryRow(`select bucket, storage_key, region_tag, layout_version_id from dr_layout_version 
 							inner join layout_version on layout_version_id=layout_version.id 
 							inner join object_storage on dr_layout_version.object_storage_id=object_storage.id 
 							inner join region on region_id=region.id 
@@ -42,7 +42,7 @@ func (d *DataService) GetStorageInfoOfCurrentActiveDoctorLayout(healthConditionI
 	return
 }
 func (d *DataService) GetStorageInfoOfActiveDoctorDiagnosisLayout(healthConditionId int64) (bucket, storage, region string, layoutVersionId int64, err error) {
-	row := d.DB.QueryRow(`select bucket, storage_key, region_tag, layout_version_id from dr_layout_version
+	row := d.db.QueryRow(`select bucket, storage_key, region_tag, layout_version_id from dr_layout_version
 							inner join layout_version on layout_version_id=layout_version.id 
 							inner join object_storage on dr_layout_version.object_storage_id=object_storage.id 
 							inner join region on region_id=region.id 
@@ -53,12 +53,12 @@ func (d *DataService) GetStorageInfoOfActiveDoctorDiagnosisLayout(healthConditio
 }
 
 func (d *DataService) GetLayoutVersionIdForPatientVisit(patientVisitId int64) (layoutVersionId int64, err error) {
-	err = d.DB.QueryRow("select layout_version_id from patient_visit where id = ?", patientVisitId).Scan(&layoutVersionId)
+	err = d.db.QueryRow("select layout_version_id from patient_visit where id = ?", patientVisitId).Scan(&layoutVersionId)
 	return
 }
 
 func (d *DataService) GetStorageInfoForClientLayout(layoutVersionId, languageId int64) (bucket, key, region string, err error) {
-	err = d.DB.QueryRow(`select bucket, storage_key, region_tag from patient_layout_version 
+	err = d.db.QueryRow(`select bucket, storage_key, region_tag from patient_layout_version 
 							inner join object_storage on object_storage_id=object_storage.id 
 							inner join region on region_id=region.id 
 								where layout_version_id = ? and language_id = ?`, layoutVersionId, languageId).Scan(&bucket, &key, &region)
@@ -66,7 +66,7 @@ func (d *DataService) GetStorageInfoForClientLayout(layoutVersionId, languageId 
 }
 
 func (d *DataService) MarkNewLayoutVersionAsCreating(objectId int64, syntaxVersion int64, healthConditionId int64, role, purpose, comment string) (int64, error) {
-	res, err := d.DB.Exec(`insert into layout_version (object_storage_id, syntax_version, health_condition_id,role, layout_purpose, comment, status) 
+	res, err := d.db.Exec(`insert into layout_version (object_storage_id, syntax_version, health_condition_id,role, layout_purpose, comment, status) 
 							values (?, ?, ?, ?, ?, ?, 'CREATING')`, objectId, syntaxVersion, healthConditionId, role, purpose, comment)
 	if err != nil {
 		return 0, err
@@ -76,7 +76,7 @@ func (d *DataService) MarkNewLayoutVersionAsCreating(objectId int64, syntaxVersi
 }
 
 func (d *DataService) MarkNewPatientLayoutVersionAsCreating(objectId int64, languageId int64, layoutVersionId int64, healthConditionId int64) (int64, error) {
-	res, err := d.DB.Exec(`insert into patient_layout_version (object_storage_id, language_id, layout_version_id, health_condition_id, status) 
+	res, err := d.db.Exec(`insert into patient_layout_version (object_storage_id, language_id, layout_version_id, health_condition_id, status) 
 								values (?, ?, ?, ?, 'CREATING')`, objectId, languageId, layoutVersionId, healthConditionId)
 	if err != nil {
 		return 0, err
@@ -86,7 +86,7 @@ func (d *DataService) MarkNewPatientLayoutVersionAsCreating(objectId int64, lang
 }
 
 func (d *DataService) UpdatePatientActiveLayouts(layoutId int64, clientLayoutIds []int64, healthConditionId int64) error {
-	tx, _ := d.DB.Begin()
+	tx, _ := d.db.Begin()
 	// update the current active layouts to DEPRECATED
 	_, err := tx.Exec(`update layout_version set status='DEPCRECATED' where status='ACTIVE' and role = 'PATIENT' and health_condition_id = ?`, healthConditionId)
 	if err != nil {
@@ -119,7 +119,7 @@ func (d *DataService) UpdatePatientActiveLayouts(layoutId int64, clientLayoutIds
 }
 
 func (d *DataService) MarkNewDoctorLayoutAsCreating(objectId int64, layoutVersionId int64, healthConditionId int64) (int64, error) {
-	res, err := d.DB.Exec(`insert into dr_layout_version (object_storage_id, layout_version_id, health_condition_id, status) 
+	res, err := d.db.Exec(`insert into dr_layout_version (object_storage_id, layout_version_id, health_condition_id, status) 
 							values (?, ?, ?, 'CREATING')`, objectId, layoutVersionId, healthConditionId)
 	if err != nil {
 		return 0, err
@@ -129,7 +129,7 @@ func (d *DataService) MarkNewDoctorLayoutAsCreating(objectId int64, layoutVersio
 }
 
 func (d *DataService) UpdateDoctorActiveLayouts(layoutId int64, doctorLayoutId int64, healthConditionId int64, purpose string) error {
-	tx, _ := d.DB.Begin()
+	tx, _ := d.db.Begin()
 
 	// update the current client active layouts to DEPRECATED
 	_, err := tx.Exec(`update dr_layout_version set status='DEPCRECATED' where status='ACTIVE' and health_condition_id = ? and layout_version_id in (select id from layout_version where role = 'DOCTOR' and layout_purpose = ?)`, healthConditionId, purpose)
@@ -154,7 +154,7 @@ func (d *DataService) UpdateDoctorActiveLayouts(layoutId int64, doctorLayoutId i
 }
 
 func (d *DataService) GetGlobalSectionIds() ([]int64, error) {
-	rows, err := d.DB.Query(`select id from section where health_condition_id is null`)
+	rows, err := d.db.Query(`select id from section where health_condition_id is null`)
 	if err != nil {
 		return nil, err
 	}
@@ -172,7 +172,7 @@ func (d *DataService) GetGlobalSectionIds() ([]int64, error) {
 }
 
 func (d *DataService) GetSectionIdsForHealthCondition(healthConditionId int64) ([]int64, error) {
-	rows, err := d.DB.Query(`select id from section where health_condition_id = ?`, healthConditionId)
+	rows, err := d.db.Query(`select id from section where health_condition_id = ?`, healthConditionId)
 	if err != nil {
 		return nil, err
 	}
@@ -191,12 +191,12 @@ func (d *DataService) GetSectionIdsForHealthCondition(healthConditionId int64) (
 
 func (d *DataService) GetHealthConditionInfo(healthConditionTag string) (int64, error) {
 	var id int64
-	err := d.DB.QueryRow("select id from health_condition where comment = ? ", healthConditionTag).Scan(&id)
+	err := d.db.QueryRow("select id from health_condition where comment = ? ", healthConditionTag).Scan(&id)
 	return id, err
 }
 
 func (d *DataService) GetSectionInfo(sectionTag string, languageId int64) (id int64, title string, err error) {
-	err = d.DB.QueryRow(`select section.id, ltext from section 
+	err = d.db.QueryRow(`select section.id, ltext from section 
 					inner join app_text on section_title_app_text_id = app_text.id 
 					inner join localized_text on app_text_id = app_text.id 
 						where language_id = ? and section_tag = ?`, languageId, sectionTag).Scan(&id, &title)
@@ -219,7 +219,7 @@ func (d *DataService) GetQuestionInfoForTags(questionTags []string, languageId i
 	params = append(params, languageId)
 	params = append(params, languageId)
 
-	rows, err := d.DB.Query(fmt.Sprintf(
+	rows, err := d.db.Query(fmt.Sprintf(
 		`select question.question_tag, question.id, l1.ltext, qtype, parent_question_id, l2.ltext, l3.ltext, formatted_field_tags, required, to_alert, l4.ltext from question 
 			left outer join localized_text as l1 on l1.app_text_id=qtext_app_text_id
 			left outer join question_type on qtype_id=question_type.id
@@ -281,7 +281,7 @@ func (d *DataService) getQuestionInfoFromRows(rows *sql.Rows, languageId int64) 
 		}
 
 		// get any additional fields pertaining to the question from the database
-		rows, err := d.DB.Query(`select question_field, ltext from question_fields
+		rows, err := d.db.Query(`select question_field, ltext from question_fields
 								inner join localized_text on question_fields.app_text_id = localized_text.app_text_id
 								where question_id = ? and language_id = ?`, questionInfo.Id, languageId)
 		if err != nil {
@@ -308,7 +308,7 @@ func (d *DataService) getQuestionInfoFromRows(rows *sql.Rows, languageId int64) 
 }
 
 func (d *DataService) GetAnswerInfo(questionId int64, languageId int64) ([]PotentialAnswerInfo, error) {
-	rows, err := d.DB.Query(`select potential_answer.id, l1.ltext, l2.ltext, atype, potential_answer_tag, ordering, to_alert from potential_answer 
+	rows, err := d.db.Query(`select potential_answer.id, l1.ltext, l2.ltext, atype, potential_answer_tag, ordering, to_alert from potential_answer 
 								left outer join localized_text as l1 on answer_localized_text_id=l1.app_text_id 
 								left outer join answer_type on atype_id=answer_type.id 
 								left outer join localized_text as l2 on answer_summary_text_id=l2.app_text_id
@@ -351,7 +351,7 @@ func (d *DataService) GetAnswerInfoForTags(answerTags []string, languageId int64
 	params = appendStringsToInterfaceSlice(params, answerTags)
 	params = append(params, languageId)
 	params = append(params, languageId)
-	rows, err := d.DB.Query(fmt.Sprintf(`select potential_answer.id, l1.ltext, l2.ltext, atype, potential_answer_tag, ordering, to_alert from potential_answer 
+	rows, err := d.db.Query(fmt.Sprintf(`select potential_answer.id, l1.ltext, l2.ltext, atype, potential_answer_tag, ordering, to_alert from potential_answer 
 								left outer join localized_text as l1 on answer_localized_text_id=l1.app_text_id 
 								left outer join answer_type on atype_id=answer_type.id 
 								left outer join localized_text as l2 on answer_summary_text_id=l2.app_text_id
@@ -364,7 +364,7 @@ func (d *DataService) GetAnswerInfoForTags(answerTags []string, languageId int64
 }
 
 func (d *DataService) GetTipSectionInfo(tipSectionTag string, languageId int64) (id int64, tipSectionTitle string, tipSectionSubtext string, err error) {
-	err = d.DB.QueryRow(`select tips_section.id, ltext1.ltext, ltext2.ltext from tips_section 
+	err = d.db.QueryRow(`select tips_section.id, ltext1.ltext, ltext2.ltext from tips_section 
 								inner join localized_text as ltext1 on tips_title_text_id=ltext1.app_text_id 
 								inner join localized_text as ltext2 on tips_subtext_text_id=ltext2.app_text_id 
 									where ltext1.language_id = ? and tips_section_tag = ?`, languageId, tipSectionTag).Scan(&id, &tipSectionTitle, &tipSectionSubtext)
@@ -372,14 +372,14 @@ func (d *DataService) GetTipSectionInfo(tipSectionTag string, languageId int64) 
 }
 
 func (d *DataService) GetTipInfo(tipTag string, languageId int64) (id int64, tip string, err error) {
-	err = d.DB.QueryRow(`select tips.id, ltext from tips
+	err = d.db.QueryRow(`select tips.id, ltext from tips
 								inner join localized_text on app_text_id=tips_text_id 
 									where tips_tag = ? and language_id = ?`, tipTag, languageId).Scan(&id, &tip)
 	return
 }
 
 func (d *DataService) GetSupportedLanguages() (languagesSupported []string, languagesSupportedIds []int64, err error) {
-	rows, err := d.DB.Query(`select id,language from languages_supported`)
+	rows, err := d.db.Query(`select id,language from languages_supported`)
 	if err != nil {
 		return nil, nil, err
 	}

@@ -9,7 +9,7 @@ import (
 
 func (d *DataService) DoesDrugDetailsExist(ndc string) (bool, error) {
 	var id int64
-	if err := d.DB.QueryRow(`select id from drug_details where ndc=?`, ndc).Scan(&id); err == sql.ErrNoRows {
+	if err := d.db.QueryRow(`select id from drug_details where ndc=?`, ndc).Scan(&id); err == sql.ErrNoRows {
 		return false, nil
 	} else if err == sql.ErrNoRows {
 		return false, NoRowsError
@@ -22,7 +22,7 @@ func (d *DataService) DoesDrugDetailsExist(ndc string) (bool, error) {
 
 func (d *DataService) DrugDetails(ndc string) (*common.DrugDetails, error) {
 	var js []byte
-	if err := d.DB.QueryRow(`select json from drug_details where ndc = ?`, ndc).Scan(&js); err == sql.ErrNoRows {
+	if err := d.db.QueryRow(`select json from drug_details where ndc = ?`, ndc).Scan(&js); err == sql.ErrNoRows {
 		return nil, NoRowsError
 	} else if err != nil {
 		return nil, err
@@ -35,7 +35,7 @@ func (d *DataService) DrugDetails(ndc string) (*common.DrugDetails, error) {
 }
 
 func (d *DataService) SetDrugDetails(details map[string]*common.DrugDetails) error {
-	tx, err := d.DB.Begin()
+	tx, err := d.db.Begin()
 	if err != nil {
 		return err
 	}

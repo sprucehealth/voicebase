@@ -17,7 +17,7 @@ type AuthService struct {
 	Hasher         PasswordHasher
 }
 
-func (m *AuthService) SignUp(email, password string) (*api.AuthResponse, error) {
+func (m *AuthService) SignUp(email, password, roleType string) (*api.AuthResponse, error) {
 	if password == "" {
 		return nil, &api.InvalidPassword{}
 	}
@@ -38,6 +38,12 @@ func (m *AuthService) SignUp(email, password string) (*api.AuthResponse, error) 
 		return nil, &api.InternalServerError{Message: err.Error()}
 	}
 
+	var roleTypeId int64
+	if err := m.DB.QueryRow("SELECT id from role_type where role_type_tag = ?", roleType).Scan(&roleTypeId); err == sql.ErrNoRows {
+		golog.Errorf("services/auth: Invalid Role Type specified")
+		return nil, &api.InvalidRoleType{}
+	}
+
 	// begin transaction to create an account
 	tx, err := m.DB.Begin()
 	if err != nil {
@@ -46,7 +52,7 @@ func (m *AuthService) SignUp(email, password string) (*api.AuthResponse, error) 
 	}
 
 	// create a new account since the user does not exist on the platform
-	res, err := tx.Exec("INSERT INTO account (email, password) VALUES (?, ?)", email, string(hashedPassword))
+	res, err := tx.Exec("INSERT INTO account (email, password,role_type_id) VALUES (?, ?, ?)", email, string(hashedPassword), roleTypeId)
 	if err != nil {
 		tx.Rollback()
 		golog.Errorf("services/auth: INSERT account failed: %s", err.Error())
@@ -177,6 +183,17 @@ func (m *AuthService) SetPassword(accountId int64, password string) error {
 	// Log out any existing tokens for the account
 	if _, err := m.DB.Exec("DELETE FROM auth_token WHERE account_id = ?", accountId); err != nil {
 		return &api.InternalServerError{Message: err.Error()}
+	}
+	return nil
+}
+
+func (m *AuthService) UpdateLastOpenedDate(accountId int64) error {
+	if res, err := m.DB.Exec(`update account set last_opened_date = now(6) where id = ?`, accountId); err != nil {
+		return &api.InternalServerError{Message: err.Error()}
+	} else if n, err := res.RowsAffected(); err != nil {
+		return &api.InternalServerError{Message: err.Error()}
+	} else if n == 0 {
+		return &api.NoSuchAccount{}
 	}
 	return nil
 }

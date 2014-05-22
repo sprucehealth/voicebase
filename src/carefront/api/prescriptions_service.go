@@ -14,7 +14,7 @@ import (
 )
 
 func (d *DataService) AddRefillRequestStatusEvent(refillRequestStatus common.StatusEvent) error {
-	tx, err := d.DB.Begin()
+	tx, err := d.db.Begin()
 	if err != nil {
 		return err
 	}
@@ -47,7 +47,7 @@ func (d *DataService) AddRefillRequestStatusEvent(refillRequestStatus common.Sta
 }
 
 func (d *DataService) GetPendingRefillRequestStatusEventsForClinic() ([]common.StatusEvent, error) {
-	rows, err := d.DB.Query(`select rx_refill_request_id, rx_refill_status, rx_refill_status_date, 
+	rows, err := d.db.Query(`select rx_refill_request_id, rx_refill_status, rx_refill_status_date, 
 								event_details, erx_id  
 								from rx_refill_status_events 
 									inner join rx_refill_request on rx_refill_request_id = rx_refill_request.id
@@ -60,7 +60,7 @@ func (d *DataService) GetPendingRefillRequestStatusEventsForClinic() ([]common.S
 }
 
 func (d *DataService) GetApprovedOrDeniedRefillRequestsForPatient(patientId int64) ([]common.StatusEvent, error) {
-	rows, err := d.DB.Query(`select rx_refill_request_id, rx_refill_status, rx_refill_status_date, 
+	rows, err := d.db.Query(`select rx_refill_request_id, rx_refill_status, rx_refill_status_date, 
 									event_details, erx_id    
 									from rx_refill_status_events 
 										inner join rx_refill_request on rx_refill_request_id = rx_refill_request.id
@@ -76,7 +76,7 @@ func (d *DataService) GetApprovedOrDeniedRefillRequestsForPatient(patientId int6
 }
 
 func (d *DataService) GetRefillStatusEventsForRefillRequest(refillRequestId int64) ([]common.StatusEvent, error) {
-	rows, err := d.DB.Query(`select rx_refill_request_id,rx_refill_status, rx_refill_status_date, 
+	rows, err := d.db.Query(`select rx_refill_request_id,rx_refill_status, rx_refill_status_date, 
 									event_details, erx_id    
 									from rx_refill_status_events 
 										inner join rx_refill_request on rx_refill_request_id = rx_refill_request.id
@@ -120,7 +120,7 @@ func (d *DataService) LinkRequestedPrescriptionToOriginalTreatment(requestedTrea
 	halfDayAfter := requestedTreatment.ERx.ErxSentDate.Add(12 * time.Hour)
 
 	treatmentIds := make([]int64, 0)
-	rows, err := d.DB.Query(`select treatment_id from erx_status_events 
+	rows, err := d.db.Query(`select treatment_id from erx_status_events 
 								inner join treatment on treatment_id = treatment.id 
 								inner join treatment_plan on treatment_plan_id = treatment.treatment_plan_id
 								inner join patient_visit on patient_visit.id = treatment_plan.patient_visit_id
@@ -164,7 +164,7 @@ func (d *DataService) LinkRequestedPrescriptionToOriginalTreatment(requestedTrea
 }
 
 func (d *DataService) CreateRefillRequest(refillRequest *common.RefillRequestItem) error {
-	tx, err := d.DB.Begin()
+	tx, err := d.db.Begin()
 	if err != nil {
 		return err
 
@@ -221,7 +221,7 @@ func (d *DataService) CreateRefillRequest(refillRequest *common.RefillRequestIte
 
 func (d *DataService) GetRefillRequestFromId(refillRequestId int64) (*common.RefillRequestItem, error) {
 	// get the refill request
-	rows, err := d.DB.Query(`select rx_refill_request.id, rx_refill_request.erx_request_queue_item_id,rx_refill_request.reference_number, rx_refill_request.erx_id,
+	rows, err := d.db.Query(`select rx_refill_request.id, rx_refill_request.erx_request_queue_item_id,rx_refill_request.reference_number, rx_refill_request.erx_id,
 		approved_refill_amount, patient_id, request_date, doctor_id, requested_treatment_id, 
 		dispensed_treatment_id, comments, deny_refill_reason.reason from rx_refill_request
 				left outer join deny_refill_reason on deny_refill_reason.id = denial_reason_id
@@ -250,7 +250,7 @@ func (d *DataService) GetRefillRequestFromId(refillRequestId int64) (*common.Ref
 
 func (d *DataService) GetRefillRequestsForPatient(patientId int64) ([]*common.RefillRequestItem, error) {
 	// get the refill request
-	rows, err := d.DB.Query(`select rx_refill_request.id, rx_refill_request.erx_request_queue_item_id,rx_refill_request.reference_number, rx_refill_request.erx_id,
+	rows, err := d.db.Query(`select rx_refill_request.id, rx_refill_request.erx_request_queue_item_id,rx_refill_request.reference_number, rx_refill_request.erx_id,
 		approved_refill_amount, patient_id, request_date, doctor_id, requested_treatment_id, 
 		dispensed_treatment_id, comments, deny_refill_reason.reason from rx_refill_request
 				left outer join deny_refill_reason on deny_refill_reason.id = denial_reason_id
@@ -321,7 +321,7 @@ func (d *DataService) getRefillRequestsFromRow(rows *sql.Rows) ([]*common.Refill
 
 		var originatingTreatmentId sql.NullInt64
 		var originatingTreatmentPlanId encoding.ObjectId
-		err = d.DB.QueryRow(`select originating_treatment_id, treatment_plan_id from requested_treatment 
+		err = d.db.QueryRow(`select originating_treatment_id, treatment_plan_id from requested_treatment 
 							inner join treatment on originating_treatment_id = treatment.id
 								where requested_treatment.id = ?`, refillRequest.RequestedPrescription.Id.Int64()).Scan(&originatingTreatmentId, &originatingTreatmentPlanId)
 		if err != nil && err != sql.ErrNoRows {
@@ -353,7 +353,7 @@ func (d *DataService) getTreatmentForRefillRequest(tableName string, treatmentId
 	var treatmentType string
 	var drugName, drugForm, drugRoute sql.NullString
 
-	err := d.DB.QueryRow(fmt.Sprintf(`select erx_id, drug_internal_name, 
+	err := d.db.QueryRow(fmt.Sprintf(`select erx_id, drug_internal_name, 
 							dosage_strength, type, dispense_value, 
 							dispense_unit, refills, substitutions_allowed, 
 							pharmacy_id, days_supply, pharmacy_notes, 
@@ -400,7 +400,7 @@ func (d *DataService) getTreatmentForRefillRequest(tableName string, treatmentId
 }
 
 func (d *DataService) GetRefillRequestDenialReasons() ([]*RefillRequestDenialReason, error) {
-	rows, err := d.DB.Query(`select id, reason_code, reason from deny_refill_reason`)
+	rows, err := d.db.Query(`select id, reason_code, reason from deny_refill_reason`)
 	if err != nil {
 		return nil, err
 	}
@@ -420,7 +420,7 @@ func (d *DataService) GetRefillRequestDenialReasons() ([]*RefillRequestDenialRea
 }
 
 func (d *DataService) MarkRefillRequestAsApproved(prescriptionId, approvedRefillCount, rxRefillRequestId int64, comments string) error {
-	tx, err := d.DB.Begin()
+	tx, err := d.db.Begin()
 	if err != nil {
 		return err
 	}
@@ -447,7 +447,7 @@ func (d *DataService) MarkRefillRequestAsApproved(prescriptionId, approvedRefill
 }
 
 func (d *DataService) MarkRefillRequestAsDenied(prescriptionId, denialReasonId, rxRefillRequestId int64, comments string) error {
-	tx, err := d.DB.Begin()
+	tx, err := d.db.Begin()
 	if err != nil {
 		return err
 	}
@@ -475,7 +475,7 @@ func (d *DataService) MarkRefillRequestAsDenied(prescriptionId, denialReasonId, 
 
 func (d *DataService) UpdateUnlinkedDNTFTreatmentWithPharmacyAndErxId(treatment *common.Treatment, pharmacySentTo *pharmacy.PharmacyData, doctorId int64) error {
 	if treatment.ERx.PrescriptionId.Int64() != 0 {
-		_, err := d.DB.Exec(`update unlinked_dntf_treatment set erx_id = ?, pharmacy_id = ?, erx_sent_date=now() where id = ?`, treatment.ERx.PrescriptionId.Int64(), pharmacySentTo.LocalId, treatment.Id.Int64())
+		_, err := d.db.Exec(`update unlinked_dntf_treatment set erx_id = ?, pharmacy_id = ?, erx_sent_date=now() where id = ?`, treatment.ERx.PrescriptionId.Int64(), pharmacySentTo.LocalId, treatment.Id.Int64())
 		if err != nil {
 			return err
 		}
@@ -484,7 +484,7 @@ func (d *DataService) UpdateUnlinkedDNTFTreatmentWithPharmacyAndErxId(treatment 
 }
 
 func (d *DataService) AddUnlinkedTreatmentInEventOfDNTF(treatment *common.Treatment, refillRequestId int64) error {
-	tx, err := d.DB.Begin()
+	tx, err := d.db.Begin()
 	if err != nil {
 		return err
 	}
@@ -510,7 +510,7 @@ func (d *DataService) AddUnlinkedTreatmentInEventOfDNTF(treatment *common.Treatm
 }
 
 func (d *DataService) GetUnlinkedDNTFTreatment(treatmentId int64) (*common.Treatment, error) {
-	rows, err := d.DB.Query(`select unlinked_dntf_treatment.id, unlinked_dntf_treatment.erx_id, unlinked_dntf_treatment.drug_internal_name, unlinked_dntf_treatment.dosage_strength, unlinked_dntf_treatment.type,
+	rows, err := d.db.Query(`select unlinked_dntf_treatment.id, unlinked_dntf_treatment.erx_id, unlinked_dntf_treatment.drug_internal_name, unlinked_dntf_treatment.dosage_strength, unlinked_dntf_treatment.type,
 			unlinked_dntf_treatment.dispense_value, unlinked_dntf_treatment.dispense_unit_id, ltext, unlinked_dntf_treatment.refills, unlinked_dntf_treatment.substitutions_allowed, 
 			unlinked_dntf_treatment.days_supply, unlinked_dntf_treatment.pharmacy_id, unlinked_dntf_treatment.pharmacy_notes, unlinked_dntf_treatment.patient_instructions, unlinked_dntf_treatment.creation_date, unlinked_dntf_treatment.erx_sent_date,
 			unlinked_dntf_treatment.erx_last_filled_date, unlinked_dntf_treatment.status, drug_name.name, drug_route.name, drug_form.name,
@@ -542,7 +542,7 @@ func (d *DataService) GetUnlinkedDNTFTreatment(treatmentId int64) (*common.Treat
 }
 
 func (d *DataService) GetUnlinkedDNTFTreatmentsForPatient(patientId int64) ([]*common.Treatment, error) {
-	rows, err := d.DB.Query(`select unlinked_dntf_treatment.id, unlinked_dntf_treatment.erx_id, unlinked_dntf_treatment.drug_internal_name, unlinked_dntf_treatment.dosage_strength, unlinked_dntf_treatment.type,
+	rows, err := d.db.Query(`select unlinked_dntf_treatment.id, unlinked_dntf_treatment.erx_id, unlinked_dntf_treatment.drug_internal_name, unlinked_dntf_treatment.dosage_strength, unlinked_dntf_treatment.type,
 			unlinked_dntf_treatment.dispense_value, unlinked_dntf_treatment.dispense_unit_id, ltext, unlinked_dntf_treatment.refills, unlinked_dntf_treatment.substitutions_allowed, 
 			unlinked_dntf_treatment.days_supply, unlinked_dntf_treatment.pharmacy_id, unlinked_dntf_treatment.pharmacy_notes, unlinked_dntf_treatment.patient_instructions, unlinked_dntf_treatment.creation_date, unlinked_dntf_treatment.erx_sent_date,
 			unlinked_dntf_treatment.erx_last_filled_date, unlinked_dntf_treatment.status, drug_name.name, drug_route.name, drug_form.name,
@@ -640,7 +640,7 @@ func (d *DataService) getUnlinkedDNTFTreatmentsFromRow(rows *sql.Rows) ([]*commo
 }
 
 func (d *DataService) AddTreatmentToTreatmentPlanInEventOfDNTF(treatment *common.Treatment, refillRequestId int64) error {
-	tx, err := d.DB.Begin()
+	tx, err := d.db.Begin()
 	if err != nil {
 		return err
 	}
@@ -674,7 +674,7 @@ func (d *DataService) AddTreatmentToTreatmentPlanInEventOfDNTF(treatment *common
 }
 
 func (d *DataService) AddErxStatusEventForDNTFTreatment(statusEvent common.StatusEvent) error {
-	tx, err := d.DB.Begin()
+	tx, err := d.db.Begin()
 	if err != nil {
 		return err
 	}
@@ -711,7 +711,7 @@ func (d *DataService) AddErxStatusEventForDNTFTreatment(statusEvent common.Statu
 }
 
 func (d *DataService) GetErxStatusEventsForDNTFTreatment(treatmentId int64) ([]common.StatusEvent, error) {
-	rows, err := d.DB.Query(`select unlinked_dntf_treatment_status_events.unlinked_dntf_treatment_id, unlinked_dntf_treatment.erx_id, unlinked_dntf_treatment_status_events.erx_status, unlinked_dntf_treatment_status_events.event_details, unlinked_dntf_treatment_status_events.status, unlinked_dntf_treatment_status_events.creation_date from unlinked_dntf_treatment_status_events 
+	rows, err := d.db.Query(`select unlinked_dntf_treatment_status_events.unlinked_dntf_treatment_id, unlinked_dntf_treatment.erx_id, unlinked_dntf_treatment_status_events.erx_status, unlinked_dntf_treatment_status_events.event_details, unlinked_dntf_treatment_status_events.status, unlinked_dntf_treatment_status_events.creation_date from unlinked_dntf_treatment_status_events 
 								inner join unlinked_dntf_treatment on unlinked_dntf_treatment_id = unlinked_dntf_treatment.id
 									where unlinked_dntf_treatment.id = ? order by unlinked_dntf_treatment_status_events.creation_date desc`, treatmentId)
 	if err != nil {
@@ -733,7 +733,7 @@ func (d *DataService) GetErxStatusEventsForDNTFTreatment(treatmentId int64) ([]c
 }
 
 func (d *DataService) GetErxStatusEventsForDNTFTreatmentBasedOnPatientId(patientId int64) ([]common.StatusEvent, error) {
-	rows, err := d.DB.Query(`select unlinked_dntf_treatment_status_events.unlinked_dntf_treatment_id, unlinked_dntf_treatment.erx_id, unlinked_dntf_treatment_status_events.erx_status,unlinked_dntf_treatment_status_events.status, unlinked_dntf_treatment_status_events.creation_date from unlinked_dntf_treatment_status_events 
+	rows, err := d.db.Query(`select unlinked_dntf_treatment_status_events.unlinked_dntf_treatment_id, unlinked_dntf_treatment.erx_id, unlinked_dntf_treatment_status_events.erx_status,unlinked_dntf_treatment_status_events.status, unlinked_dntf_treatment_status_events.creation_date from unlinked_dntf_treatment_status_events 
 								inner join unlinked_dntf_treatment on unlinked_dntf_treatment_id = unlinked_dntf_treatment.id
 									where unlinked_dntf_treatment.patient_id = ? order by unlinked_dntf_treatment_status_events.creation_date desc`, patientId)
 	if err != nil {

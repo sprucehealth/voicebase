@@ -55,7 +55,31 @@ const (
 )
 
 type DataService struct {
-	DB *sql.DB
+	db              *sql.DB
+	roleTypeMapping map[string]int64
+}
+
+func NewDataService(DB *sql.DB) (*DataService, error) {
+	dataService := &DataService{db: DB}
+	dataService.roleTypeMapping = make(map[string]int64)
+
+	// get the role type mapping into memory for quick access
+	rows, err := dataService.db.Query(`select id, role_type_tag from role_type`)
+	if err != nil {
+		return nil, err
+	}
+	defer rows.Close()
+
+	for rows.Next() {
+		var id int64
+		var roleTypeTag string
+		if err := rows.Scan(&id, &roleTypeTag); err != nil {
+			return nil, err
+		}
+		dataService.roleTypeMapping[roleTypeTag] = id
+	}
+
+	return dataService, rows.Err()
 }
 
 func infoIdsFromMap(m map[int64]*common.AnswerIntake) []int64 {

@@ -15,7 +15,7 @@ import (
 )
 
 func (d *DataService) RegisterDoctor(doctor *common.Doctor) (int64, error) {
-	tx, err := d.DB.Begin()
+	tx, err := d.db.Begin()
 	if err != nil {
 		return 0, err
 	}
@@ -52,7 +52,7 @@ func (d *DataService) RegisterDoctor(doctor *common.Doctor) (int64, error) {
 		return 0, err
 	}
 
-	res, err = tx.Exec(`INSERT INTO person (role_type, role_id) VALUES (?, ?)`, DOCTOR_ROLE, lastId)
+	res, err = tx.Exec(`INSERT INTO person (role_type_id, role_id) VALUES (?, ?)`, d.roleTypeMapping[DOCTOR_ROLE], lastId)
 	if err != nil {
 		tx.Rollback()
 		return 0, err
@@ -79,17 +79,17 @@ func (d *DataService) GetDoctorFromDoseSpotClinicianId(clinicianId int64) (*comm
 }
 
 func (d *DataService) queryDoctor(where string, queryParams ...interface{}) (*common.Doctor, error) {
-	row := d.DB.QueryRow(fmt.Sprintf(`
+	row := d.db.QueryRow(fmt.Sprintf(`
 		SELECT doctor.id, account_id, phone, first_name, last_name, middle_name, suffix,
 			prefix, gender, dob_year, dob_month, dob_day, status, clinician_id,
 			address.address_line_1,	address.address_line_2, address.city, address.state,
 			address.zip_code, person.id
 		FROM doctor
-		INNER JOIN person ON person.role_type = '%s' AND person.role_id = doctor.id
+		INNER JOIN person ON person.role_type_id = %d AND person.role_id = doctor.id
 		LEFT OUTER JOIN doctor_phone ON doctor_phone.doctor_id = doctor.id
 		LEFT OUTER JOIN doctor_address_selection ON doctor_address_selection.doctor_id = doctor.id
 		LEFT OUTER JOIN address ON doctor_address_selection.address_id = address.id
-		WHERE %s`, DOCTOR_ROLE, where),
+		WHERE %s`, d.roleTypeMapping[DOCTOR_ROLE], where),
 		queryParams...)
 
 	var firstName, lastName, status, gender string
@@ -138,7 +138,7 @@ func (d *DataService) queryDoctor(where string, queryParams ...interface{}) (*co
 
 func (d *DataService) GetDoctorIdFromAccountId(accountId int64) (int64, error) {
 	var doctorId int64
-	err := d.DB.QueryRow("select id from doctor where account_id = ?", accountId).Scan(&doctorId)
+	err := d.db.QueryRow("select id from doctor where account_id = ?", accountId).Scan(&doctorId)
 	return doctorId, err
 }
 
@@ -157,7 +157,7 @@ func (d *DataService) GetRegimenStepsForDoctor(doctorId int64) (regimenSteps []*
 
 func (d *DataService) GetRegimenStepForDoctor(regimenStepId, doctorId int64) (*common.DoctorInstructionItem, error) {
 	var regimenStep common.DoctorInstructionItem
-	err := d.DB.QueryRow(`select id, text, status from dr_regimen_step where id=? and doctor_id=?`, regimenStepId, doctorId).Scan(&regimenStep.Id, &regimenStep.Text, &regimenStep.Status)
+	err := d.db.QueryRow(`select id, text, status from dr_regimen_step where id=? and doctor_id=?`, regimenStepId, doctorId).Scan(&regimenStep.Id, &regimenStep.Text, &regimenStep.Status)
 	if err == sql.ErrNoRows {
 		return &regimenStep, NoRowsError
 	}
@@ -166,7 +166,7 @@ func (d *DataService) GetRegimenStepForDoctor(regimenStepId, doctorId int64) (*c
 }
 
 func (d *DataService) AddRegimenStepForDoctor(regimenStep *common.DoctorInstructionItem, doctorId int64) error {
-	res, err := d.DB.Exec(`insert into dr_regimen_step (text, doctor_id,status) values (?,?,?)`, regimenStep.Text, doctorId, STATUS_ACTIVE)
+	res, err := d.db.Exec(`insert into dr_regimen_step (text, doctor_id,status) values (?,?,?)`, regimenStep.Text, doctorId, STATUS_ACTIVE)
 	if err != nil {
 		return err
 	}
@@ -181,7 +181,7 @@ func (d *DataService) AddRegimenStepForDoctor(regimenStep *common.DoctorInstruct
 }
 
 func (d *DataService) UpdateRegimenStepForDoctor(regimenStep *common.DoctorInstructionItem, doctorId int64) error {
-	tx, err := d.DB.Begin()
+	tx, err := d.db.Begin()
 	if err != nil {
 		return err
 	}
@@ -228,7 +228,7 @@ func (d *DataService) UpdateRegimenStepForDoctor(regimenStep *common.DoctorInstr
 
 func (d *DataService) MarkRegimenStepToBeDeleted(regimenStep *common.DoctorInstructionItem, doctorId int64) error {
 	// mark the regimen step to be deleted
-	_, err := d.DB.Exec(`update dr_regimen_step set status='DELETED' where id = ? and doctor_id = ?`, regimenStep.Id.Int64(), doctorId)
+	_, err := d.db.Exec(`update dr_regimen_step set status='DELETED' where id = ? and doctor_id = ?`, regimenStep.Id.Int64(), doctorId)
 	if err != nil {
 		return err
 	}
@@ -236,7 +236,7 @@ func (d *DataService) MarkRegimenStepToBeDeleted(regimenStep *common.DoctorInstr
 }
 
 func (d *DataService) MarkRegimenStepsToBeDeleted(regimenSteps []*common.DoctorInstructionItem, doctorId int64) error {
-	tx, err := d.DB.Begin()
+	tx, err := d.db.Begin()
 	if err != nil {
 		return err
 	}
@@ -264,7 +264,7 @@ func (d *DataService) GetAdvicePointsForDoctor(doctorId int64) ([]*common.Doctor
 
 func (d *DataService) GetAdvicePointForDoctor(advicePointId, doctorId int64) (*common.DoctorInstructionItem, error) {
 	var advicePoint common.DoctorInstructionItem
-	err := d.DB.QueryRow(`select id, text, status from dr_advice_point where id=? and doctor_id=?`, advicePointId, doctorId).Scan(&advicePoint.Id, &advicePoint.Text, &advicePoint.Status)
+	err := d.db.QueryRow(`select id, text, status from dr_advice_point where id=? and doctor_id=?`, advicePointId, doctorId).Scan(&advicePoint.Id, &advicePoint.Text, &advicePoint.Status)
 	if err == sql.ErrNoRows {
 		return &advicePoint, NoRowsError
 	}
@@ -272,7 +272,7 @@ func (d *DataService) GetAdvicePointForDoctor(advicePointId, doctorId int64) (*c
 }
 
 func (d *DataService) UpdateAdvicePointForDoctor(advicePoint *common.DoctorInstructionItem, doctorId int64) error {
-	tx, err := d.DB.Begin()
+	tx, err := d.db.Begin()
 	if err != nil {
 		return err
 	}
@@ -316,7 +316,7 @@ func (d *DataService) UpdateAdvicePointForDoctor(advicePoint *common.DoctorInstr
 }
 
 func (d *DataService) AddAdvicePointForDoctor(advicePoint *common.DoctorInstructionItem, doctorId int64) error {
-	tx, err := d.DB.Begin()
+	tx, err := d.db.Begin()
 	if err != nil {
 		return err
 	}
@@ -339,12 +339,12 @@ func (d *DataService) AddAdvicePointForDoctor(advicePoint *common.DoctorInstruct
 
 func (d *DataService) MarkAdvicePointToBeDeleted(advicePoint *common.DoctorInstructionItem, doctorId int64) error {
 	// mark the advice point to be deleted
-	_, err := d.DB.Exec(`update dr_advice_point set status='DELETED' where id = ? and doctor_id = ?`, advicePoint.Id.Int64(), doctorId)
+	_, err := d.db.Exec(`update dr_advice_point set status='DELETED' where id = ? and doctor_id = ?`, advicePoint.Id.Int64(), doctorId)
 	return err
 }
 
 func (d *DataService) MarkAdvicePointsToBeDeleted(advicePoints []*common.DoctorInstructionItem, doctorId int64) error {
-	tx, err := d.DB.Begin()
+	tx, err := d.db.Begin()
 	if err != nil {
 		return err
 	}
@@ -360,12 +360,12 @@ func (d *DataService) MarkAdvicePointsToBeDeleted(advicePoints []*common.DoctorI
 }
 
 func (d *DataService) InsertItemIntoDoctorQueue(doctorQueueItem DoctorQueueItem) error {
-	_, err := d.DB.Exec(`insert into doctor_queue (doctor_id, item_id, event_type, status) values (?,?,?,?)`, doctorQueueItem.DoctorId, doctorQueueItem.ItemId, doctorQueueItem.EventType, doctorQueueItem.Status)
+	_, err := d.db.Exec(`insert into doctor_queue (doctor_id, item_id, event_type, status) values (?,?,?,?)`, doctorQueueItem.DoctorId, doctorQueueItem.ItemId, doctorQueueItem.EventType, doctorQueueItem.Status)
 	return err
 }
 
 func (d *DataService) ReplaceItemInDoctorQueue(doctorQueueItem DoctorQueueItem, currentState string) error {
-	tx, err := d.DB.Begin()
+	tx, err := d.db.Begin()
 	if err != nil {
 		return err
 	}
@@ -383,17 +383,17 @@ func (d *DataService) ReplaceItemInDoctorQueue(doctorQueueItem DoctorQueueItem, 
 }
 
 func (d *DataService) DeleteItemFromDoctorQueue(doctorQueueItem DoctorQueueItem) error {
-	_, err := d.DB.Exec(`delete from doctor_queue where doctor_id = ? and item_id = ? and event_type = ? and status = ?`, doctorQueueItem.DoctorId, doctorQueueItem.ItemId, doctorQueueItem.EventType, doctorQueueItem.Status)
+	_, err := d.db.Exec(`delete from doctor_queue where doctor_id = ? and item_id = ? and event_type = ? and status = ?`, doctorQueueItem.DoctorId, doctorQueueItem.ItemId, doctorQueueItem.EventType, doctorQueueItem.Status)
 	return err
 }
 
 func (d *DataService) MarkPatientVisitAsOngoingInDoctorQueue(doctorId, patientVisitId int64) error {
-	_, err := d.DB.Exec(`update doctor_queue set status=? where event_type=? and item_id=? and doctor_id=?`, STATUS_ONGOING, EVENT_TYPE_PATIENT_VISIT, patientVisitId, doctorId)
+	_, err := d.db.Exec(`update doctor_queue set status=? where event_type=? and item_id=? and doctor_id=?`, STATUS_ONGOING, EVENT_TYPE_PATIENT_VISIT, patientVisitId, doctorId)
 	return err
 }
 
 func (d *DataService) MarkGenerationOfTreatmentPlanInVisitQueue(doctorId, patientVisitId, treatmentPlanId int64, currentState, updatedState string) error {
-	tx, err := d.DB.Begin()
+	tx, err := d.db.Begin()
 	if err != nil {
 		return err
 	}
@@ -413,7 +413,7 @@ func (d *DataService) MarkGenerationOfTreatmentPlanInVisitQueue(doctorId, patien
 func (d *DataService) GetPendingItemsInDoctorQueue(doctorId int64) ([]*DoctorQueueItem, error) {
 	params := []interface{}{doctorId}
 	params = appendStringsToInterfaceSlice(params, []string{STATUS_PENDING, STATUS_ONGOING})
-	rows, err := d.DB.Query(fmt.Sprintf(`select id, event_type, item_id, enqueue_date, completed_date, status from doctor_queue where doctor_id = ? and status in (%s) order by enqueue_date`, nReplacements(2)), params...)
+	rows, err := d.db.Query(fmt.Sprintf(`select id, event_type, item_id, enqueue_date, completed_date, status from doctor_queue where doctor_id = ? and status in (%s) order by enqueue_date`, nReplacements(2)), params...)
 	if err != nil {
 		return nil, err
 	}
@@ -425,7 +425,7 @@ func (d *DataService) GetCompletedItemsInDoctorQueue(doctorId int64) ([]*DoctorQ
 
 	params := []interface{}{doctorId}
 	params = appendStringsToInterfaceSlice(params, []string{STATUS_PENDING, STATUS_ONGOING})
-	rows, err := d.DB.Query(fmt.Sprintf(`select id, event_type, item_id, enqueue_date, completed_date, status from doctor_queue where doctor_id = ? and status not in (%s) order by enqueue_date desc`, nReplacements(2)), params...)
+	rows, err := d.db.Query(fmt.Sprintf(`select id, event_type, item_id, enqueue_date, completed_date, status from doctor_queue where doctor_id = ? and status not in (%s) order by enqueue_date desc`, nReplacements(2)), params...)
 	if err != nil {
 		return nil, err
 	}
@@ -460,7 +460,7 @@ func populateDoctorQueueFromRows(rows *sql.Rows) ([]*DoctorQueueItem, error) {
 }
 
 func (d *DataService) GetMedicationDispenseUnits(languageId int64) (dispenseUnitIds []int64, dispenseUnits []string, err error) {
-	rows, err := d.DB.Query(`select dispense_unit.id, ltext from dispense_unit inner join localized_text on app_text_id = dispense_unit_text_id where language_id=?`, languageId)
+	rows, err := d.db.Query(`select dispense_unit.id, ltext from dispense_unit inner join localized_text on app_text_id = dispense_unit_text_id where language_id=?`, languageId)
 	if err != nil {
 		return nil, nil, err
 	}
@@ -531,7 +531,7 @@ func (d *DataService) GetDrugInstructionsForDoctor(drugName, drugForm, drugRoute
 
 	// get the selected state for this drug
 	selectedInstructionIds := make(map[int64]bool, 0)
-	rows, err := d.DB.Query(`select dr_drug_supplemental_instruction_id from dr_drug_supplemental_instruction_selected_state 
+	rows, err := d.db.Query(`select dr_drug_supplemental_instruction_id from dr_drug_supplemental_instruction_selected_state 
 								inner join drug_name on drug_name_id = drug_name.id
 								inner join drug_form on drug_form_id = drug_form.id
 								inner join drug_route on drug_route_id = drug_route.id
@@ -563,7 +563,7 @@ func (d *DataService) GetDrugInstructionsForDoctor(drugName, drugForm, drugRoute
 }
 
 func (d *DataService) AddOrUpdateDrugInstructionForDoctor(drugName, drugForm, drugRoute string, drugInstructionToAdd *common.DoctorInstructionItem, doctorId int64) error {
-	tx, err := d.DB.Begin()
+	tx, err := d.db.Begin()
 	if err != nil {
 		return err
 	}
@@ -647,7 +647,7 @@ func (d *DataService) AddOrUpdateDrugInstructionForDoctor(drugName, drugForm, dr
 }
 
 func (d *DataService) DeleteDrugInstructionForDoctor(drugInstructionToDelete *common.DoctorInstructionItem, doctorId int64) error {
-	_, err := d.DB.Exec(`update dr_drug_supplemental_instruction set status=? where id = ? and doctor_id = ?`, STATUS_DELETED, drugInstructionToDelete.Id, doctorId)
+	_, err := d.db.Exec(`update dr_drug_supplemental_instruction set status=? where id = ? and doctor_id = ?`, STATUS_DELETED, drugInstructionToDelete.Id, doctorId)
 	return err
 }
 
@@ -669,7 +669,7 @@ func (d *DataService) AddDrugInstructionsToTreatment(drugName, drugForm, drugRou
 	}
 
 	// start a transaction
-	tx, err := d.DB.Begin()
+	tx, err := d.db.Begin()
 	if err != nil {
 		return err
 	}
@@ -718,7 +718,7 @@ func (d *DataService) AddDrugInstructionsToTreatment(drugName, drugForm, drugRou
 }
 
 func (d *DataService) AddTreatmentTemplates(doctorTreatmentTemplates []*common.DoctorTreatmentTemplate, doctorId int64) error {
-	tx, err := d.DB.Begin()
+	tx, err := d.db.Begin()
 	if err != nil {
 		return err
 	}
@@ -840,7 +840,7 @@ func (d *DataService) AddTreatmentTemplates(doctorTreatmentTemplates []*common.D
 }
 
 func (d *DataService) DeleteTreatmentTemplates(doctorTreatmentTemplates []*common.DoctorTreatmentTemplate, doctorId int64) error {
-	tx, err := d.DB.Begin()
+	tx, err := d.db.Begin()
 	if err != nil {
 		return err
 	}
@@ -863,7 +863,7 @@ func (d *DataService) DeleteTreatmentTemplates(doctorTreatmentTemplates []*commo
 }
 
 func (d *DataService) GetTreatmentTemplates(doctorId int64) ([]*common.DoctorTreatmentTemplate, error) {
-	rows, err := d.DB.Query(`select dr_treatment_template.id, dr_treatment_template.name, drug_internal_name, dosage_strength, type, 
+	rows, err := d.db.Query(`select dr_treatment_template.id, dr_treatment_template.name, drug_internal_name, dosage_strength, type, 
 				dispense_value, dispense_unit_id, ltext, refills, substitutions_allowed,
 				days_supply, pharmacy_notes, patient_instructions, creation_date, status,
 				 drug_name.name, drug_route.name, drug_form.name
@@ -933,7 +933,7 @@ func (d *DataService) GetTreatmentTemplates(doctorId int64) ([]*common.DoctorTre
 }
 
 func (d *DataService) getIdForNameFromTable(tableName, drugComponentName string) (nullId sql.NullInt64, err error) {
-	err = d.DB.QueryRow(fmt.Sprintf(`select id from %s where name=?`, tableName), drugComponentName).Scan(&nullId)
+	err = d.db.QueryRow(fmt.Sprintf(`select id from %s where name=?`, tableName), drugComponentName).Scan(&nullId)
 	return
 }
 
@@ -965,7 +965,7 @@ func getActiveInstructions(drugInstructions []*common.DoctorInstructionItem) []*
 }
 
 func (d *DataService) queryAndInsertPredefinedInstructionsForDoctor(drTableName string, queryStr string, doctorId int64, queryInstructionsFunc doctorInstructionQuery, insertInstructionsFunc insertDoctorInstructionFunc, drugComponents ...string) ([]*common.DoctorInstructionItem, error) {
-	drugInstructions, err := queryInstructionsFunc(d.DB, doctorId, drugComponents...)
+	drugInstructions, err := queryInstructionsFunc(d.db, doctorId, drugComponents...)
 	if err != nil {
 		return nil, err
 	}
@@ -979,7 +979,7 @@ func (d *DataService) queryAndInsertPredefinedInstructionsForDoctor(drTableName 
 	for _, drugComponent := range drugComponents {
 		queryParams = append(queryParams, interface{}(drugComponent))
 	}
-	rows, err := d.DB.Query(queryStr, queryParams...)
+	rows, err := d.db.Query(queryStr, queryParams...)
 	if err != nil {
 		return nil, err
 	}
@@ -995,11 +995,11 @@ func (d *DataService) queryAndInsertPredefinedInstructionsForDoctor(drTableName 
 		return drugInstructions, nil
 	}
 
-	if err := insertInstructionsFunc(d.DB, predefinedInstructions, doctorId); err != nil {
+	if err := insertInstructionsFunc(d.db, predefinedInstructions, doctorId); err != nil {
 		return nil, err
 	}
 
-	drugInstructions, err = queryInstructionsFunc(d.DB, doctorId, drugComponents...)
+	drugInstructions, err = queryInstructionsFunc(d.db, doctorId, drugComponents...)
 
 	return drugInstructions, nil
 }
