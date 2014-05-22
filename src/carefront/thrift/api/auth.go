@@ -355,6 +355,8 @@ func (s *AuthClient) SignUp(login string, password string, roleType string) (ret
 			err = res.AlreadyExists
 		case res.InvalidPassword != nil:
 			err = res.InvalidPassword
+		case res.InvalidRoleType != nil:
+			err = res.InvalidRoleType
 		}
 	}
 	if err == nil {
