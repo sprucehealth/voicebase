@@ -62,6 +62,7 @@ type Auth interface {
 	SetPassword(accountId int64, password string) error
 	SignUp(login string, password string, roleType string) (*AuthResponse, error)
 	ValidateToken(token string) (*TokenValidationResponse, error)
+	UpdateLastOpenedDate(accountId int64) error
 }
 
 type AuthServer struct {
@@ -169,6 +170,23 @@ func (s *AuthServer) ValidateToken(req *AuthValidateTokenRequest, res *AuthValid
 	return err
 }
 
+func (s *AuthServer) UpdateLastOpenedDate(req *UpdateLastOpenedDateRequest, res *UpdateLastOpenedDateResponse) error {
+
+	err := s.Implementation.UpdateLastOpenedDate(req.AccountId)
+	switch e := err.(type) {
+	case *InternalServerError:
+		res.Error = e
+		err = nil
+	case *NoSuchAccount:
+		res.NoSuchAccount = e
+		err = nil
+	case *OverCapacity:
+		res.OverCapacity = e
+		err = nil
+	}
+	return err
+}
+
 type AuthLogInRequest struct {
 	Login    string `thrift:"1,required" json:"login"`
 	Password string `thrift:"2,required" json:"password"`
@@ -231,6 +249,16 @@ type AuthValidateTokenResponse struct {
 	Error        *InternalServerError     `thrift:"1" json:"error,omitempty"`
 	AccessDenied *AccessDenied            `thrift:"2" json:"access_denied,omitempty"`
 	OverCapacity *OverCapacity            `thrift:"3" json:"over_capacity,omitempty"`
+}
+
+type UpdateLastOpenedDateRequest struct {
+	AccountId int64 `thrift:"2,required" json:"token"`
+}
+
+type UpdateLastOpenedDateResponse struct {
+	Error         *InternalServerError `thrift:"1" json:"error,omitempty"`
+	NoSuchAccount *NoSuchAccount       `thrift:"2" json:"access_denied,omitempty"`
+	OverCapacity  *OverCapacity        `thrift:"3" json:"over_capacity,omitempty"`
 }
 
 type AuthClient struct {
@@ -355,4 +383,24 @@ func (s *AuthClient) ValidateToken(token string) (ret *TokenValidationResponse, 
 		ret = res.Value
 	}
 	return
+}
+
+func (s *AuthClient) UpdateLastOpenedDate(accountId int64) error {
+	req := &UpdateLastOpenedDateRequest{
+		AccountId: accountId,
+	}
+	res := &UpdateLastOpenedDateResponse{}
+	err := s.Client.Call("update_last_opened_date", req, res)
+	if err == nil {
+		switch {
+		case res.Error != nil:
+			err = res.Error
+		case res.NoSuchAccount != nil:
+			err = res.NoSuchAccount
+		case res.OverCapacity != nil:
+			err = res.OverCapacity
+		}
+	}
+
+	return nil
 }

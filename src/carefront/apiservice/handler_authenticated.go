@@ -1,16 +1,30 @@
 package apiservice
 
-import "net/http"
+import (
+	"carefront/libs/golog"
+	thriftapi "carefront/thrift/api"
+	"net/http"
+)
 
-type isAuthenticatedHandler int64
+type isAuthenticatedHandler struct {
+	AuthApi thriftapi.Auth
+}
 
-func NewIsAuthenticatedHandler() *isAuthenticatedHandler {
-	handler := isAuthenticatedHandler(0)
-	return &handler
+func NewIsAuthenticatedHandler(authApi thriftapi.Auth) *isAuthenticatedHandler {
+	return &isAuthenticatedHandler{
+		AuthApi: authApi,
+	}
 }
 
 func (i *isAuthenticatedHandler) ServeHTTP(w http.ResponseWriter, r *http.Request) {
-	// nothing to do other than return a valid response because if the auth token in the request
-	// header was invalid or non-existent, then the request would be trapped higher in the chain and a 403 returned
+
+	// asyncrhonously update the last opened date for this account
+	accountId := GetContext(r).AccountId
+	go func() {
+		if err := i.AuthApi.UpdateLastOpenedDate(accountId); err != nil {
+			golog.Errorf("Unable to update last opened date for account: %s", err)
+		}
+	}()
+
 	WriteJSONToHTTPResponseWriter(w, http.StatusOK, SuccessfulGenericJSONResponse())
 }

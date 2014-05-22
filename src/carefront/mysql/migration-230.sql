@@ -22,3 +22,5 @@ update person
 alter table person add foreign key (role_type_id) references role_type(id);
 alter table person drop column role_type;	
 
+alter table auth_token add unique key (account_id);
+

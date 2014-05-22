@@ -387,7 +387,7 @@ func main() {
 	mux.Handle("/v1/patient/treatment/guide", patientTreatmentGuideHandler)
 	mux.Handle("/v1/patient/home", homelog.NewListHandler(dataApi))
 	mux.Handle("/v1/patient/home/dismiss", homelog.NewDismissHandler(dataApi))
-	mux.Handle("/v1/patient/isauthenticated", apiservice.NewIsAuthenticatedHandler())
+	mux.Handle("/v1/patient/isauthenticated", apiservice.NewIsAuthenticatedHandler(authApi))
 	mux.Handle("/v1/visit", patientVisitHandler)
 	mux.Handle("/v1/visit/review", patientVisitReviewHandler)
 	mux.Handle("/v1/check_eligibility", checkElligibilityHandler)
@@ -415,7 +415,7 @@ func main() {
 
 	mux.Handle("/v1/doctor/signup", signupDoctorHandler)
 	mux.Handle("/v1/doctor/authenticate", authenticateDoctorHandler)
-	mux.Handle("/v1/doctor/isauthenticated", apiservice.NewIsAuthenticatedHandler())
+	mux.Handle("/v1/doctor/isauthenticated", apiservice.NewIsAuthenticatedHandler(authApi))
 	mux.Handle("/v1/doctor/queue", doctor_queue.NewQueueHandler(dataApi))
 	mux.Handle("/v1/doctor/treatment/templates", doctorTreatmentTemplatesHandler)
 
