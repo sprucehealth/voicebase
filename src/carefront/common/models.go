@@ -500,3 +500,26 @@ type ConversationMessage struct {
 	Body           string
 	Attachments    []*ConversationAttachment
 }
+
+type CommunicationPreference struct {
+	Id                int64
+	AccountId         int64
+	CommunicationType string
+	CreationDate      time.Time
+	Status            string
+}
+
+type PushConfigData struct {
+	Id              int64
+	AccountId       int64
+	DeviceToken     string
+	PushEndpoint    string
+	Platform        string
+	PlatformVersion string
+	AppType         string
+	AppEnvironment  string
+	AppVersion      string
+	DeviceType      string
+	DeviceId        string
+	CreationDate    time.Time
+}

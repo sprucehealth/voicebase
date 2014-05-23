@@ -39,6 +39,11 @@ import (
 
 var smtpConnectTimeout = time.Second * 5
 
+type NotificationConfig struct {
+	SNSApplicationEndpoint string `long:"sns_application_endpoint" description:"SNS Application endpoint for push notification"`
+	URLScheme              string `long:"url_scheme" description:"URL scheme to include in communication for deep linking into app"`
+}
+
 type BaseConfig struct {
 	AppName                 string `long:"app_name" description:"Application name (required)"`
 	AWSRegion               string `long:"aws_region" description:"AWS region"`
