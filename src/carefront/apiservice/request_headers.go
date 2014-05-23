@@ -12,6 +12,8 @@ const (
 	spruceDeviceIDHeader = "S-Device-ID"
 )
 
+// See here for header definitions:
+// https://github.com/SpruceHealth/backend/issues/148
 type SpruceHeaders struct {
 	AppType          string
 	AppEnvironment   string
