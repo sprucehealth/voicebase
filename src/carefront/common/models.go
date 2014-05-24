@@ -24,6 +24,10 @@ type PhoneInformation struct {
 
 type PatientPromptStatus string
 
+func (p PatientPromptStatus) String() string {
+	return string(p)
+}
+
 var (
 	Unprompted PatientPromptStatus = "UNPROMPTED"
 	Accepted   PatientPromptStatus = "ACCEPTED"

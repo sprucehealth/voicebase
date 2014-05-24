@@ -27,7 +27,7 @@ func (p *patientPromptStatusHandler) ServeHTTP(w http.ResponseWriter, r *http.Re
 		return
 	}
 
-	rData := promptStatusRequestData{}
+	rData := &promptStatusRequestData{}
 	if err := apiservice.DecodeRequestData(rData, r); err != nil {
 		apiservice.WriteDeveloperError(w, http.StatusBadRequest, err.Error())
 		return

@@ -1,6 +1,6 @@
 -- MySQL dump 10.13  Distrib 5.6.17, for osx10.9 (x86_64)
 --
--- Host: 127.0.0.1    Database: database_9185
+-- Host: 127.0.0.1    Database: database_27657
 -- ------------------------------------------------------
 -- Server version	5.6.17
 
@@ -1423,7 +1423,7 @@ CREATE TABLE `patient_prompt_status` (
   `patient_id` int(10) unsigned NOT NULL,
   `creation_date` timestamp(6) NOT NULL DEFAULT CURRENT_TIMESTAMP(6),
   PRIMARY KEY (`id`),
-  KEY `patient_id` (`patient_id`),
+  UNIQUE KEY `patient_id` (`patient_id`),
   CONSTRAINT `patient_prompt_status_ibfk_1` FOREIGN KEY (`patient_id`) REFERENCES `patient` (`id`)
 ) ENGINE=InnoDB DEFAULT CHARSET=utf8;
 /*!40101 SET character_set_client = @saved_cs_client */;
@@ -2341,4 +2341,4 @@ CREATE TABLE `unlinked_dntf_treatment_status_events` (
 /*!40101 SET COLLATION_CONNECTION=@OLD_COLLATION_CONNECTION */;
 /*!40111 SET SQL_NOTES=@OLD_SQL_NOTES */;
 
--- Dump completed on 2014-05-24 13:27:27
+-- Dump completed on 2014-05-24 16:02:51

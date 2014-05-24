@@ -1073,7 +1073,7 @@ func (d *DataService) GetFullNameForState(state string) (string, error) {
 }
 
 func (d *DataService) SetPromptStatus(patientId int64, pStatus common.PatientPromptStatus) error {
-	_, err := d.db.Exec(`replace into patient_prompt_status (prompt_status, patient_id) values (?,?)`, pStatus, patientId)
+	_, err := d.db.Exec(`replace into patient_prompt_status (prompt_status, patient_id) values (?,?)`, pStatus.String(), patientId)
 	return err
 }
 
