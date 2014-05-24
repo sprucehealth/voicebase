@@ -15,7 +15,7 @@ import (
 type notificationHandler struct {
 	dataApi             api.DataAPI
 	notificationConfigs map[string]*config.NotificationConfig
-	snsClient           *sns.SNS
+	snsClient           sns.SNSService
 }
 
 type requestData struct {

@@ -5,6 +5,13 @@ import (
 	"net/url"
 )
 
+type SNSService interface {
+	CreatePlatformEndpoint(string, string) (string, error)
+	DeleteEndpoint(string) error
+	Publish(string, string) error
+	SubscribePlatformEndpointToTopic(string, string) error
+}
+
 type SNS struct {
 	aws.Region
 	Client *aws.Client
