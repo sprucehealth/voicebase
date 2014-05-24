@@ -1,4 +1,4 @@
-create table user_communication (
+create table communication_preference (
     id int unsigned not null auto_increment,
     account_id int unsigned not null,
     communication_type varchar(50) not null, 

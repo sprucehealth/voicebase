@@ -1,6 +1,6 @@
 -- MySQL dump 10.13  Distrib 5.6.17, for osx10.9 (x86_64)
 --
--- Host: 127.0.0.1    Database: database_9190
+-- Host: 127.0.0.1    Database: database_9185
 -- ------------------------------------------------------
 -- Server version	5.6.17
 
@@ -179,6 +179,25 @@ CREATE TABLE `care_providing_state` (
   KEY `health_condition_id` (`health_condition_id`),
   CONSTRAINT `care_providing_state_ibfk_1` FOREIGN KEY (`health_condition_id`) REFERENCES `health_condition` (`id`)
 ) ENGINE=InnoDB AUTO_INCREMENT=2 DEFAULT CHARSET=utf8;
+/*!40101 SET character_set_client = @saved_cs_client */;
+
+--
+-- Table structure for table `communication_preference`
+--
+
+DROP TABLE IF EXISTS `communication_preference`;
+/*!40101 SET @saved_cs_client     = @@character_set_client */;
+/*!40101 SET character_set_client = utf8 */;
+CREATE TABLE `communication_preference` (
+  `id` int(10) unsigned NOT NULL AUTO_INCREMENT,
+  `account_id` int(10) unsigned NOT NULL,
+  `communication_type` varchar(50) NOT NULL,
+  `creation_date` timestamp(6) NOT NULL DEFAULT CURRENT_TIMESTAMP(6),
+  `status` varchar(100) NOT NULL,
+  PRIMARY KEY (`id`),
+  UNIQUE KEY `account_id` (`account_id`,`communication_type`),
+  CONSTRAINT `communication_preference_ibfk_1` FOREIGN KEY (`account_id`) REFERENCES `account` (`id`)
+) ENGINE=InnoDB DEFAULT CHARSET=utf8;
 /*!40101 SET character_set_client = @saved_cs_client */;
 
 --
@@ -2312,25 +2331,6 @@ CREATE TABLE `unlinked_dntf_treatment_status_events` (
   CONSTRAINT `unlinked_dntf_treatment_status_events_ibfk_1` FOREIGN KEY (`unlinked_dntf_treatment_id`) REFERENCES `unlinked_dntf_treatment` (`id`)
 ) ENGINE=InnoDB DEFAULT CHARSET=utf8;
 /*!40101 SET character_set_client = @saved_cs_client */;
-
---
--- Table structure for table `user_communication`
---
-
-DROP TABLE IF EXISTS `user_communication`;
-/*!40101 SET @saved_cs_client     = @@character_set_client */;
-/*!40101 SET character_set_client = utf8 */;
-CREATE TABLE `user_communication` (
-  `id` int(10) unsigned NOT NULL AUTO_INCREMENT,
-  `account_id` int(10) unsigned NOT NULL,
-  `communication_type` varchar(50) NOT NULL,
-  `creation_date` timestamp(6) NOT NULL DEFAULT CURRENT_TIMESTAMP(6),
-  `status` varchar(100) NOT NULL,
-  PRIMARY KEY (`id`),
-  UNIQUE KEY `account_id` (`account_id`,`communication_type`),
-  CONSTRAINT `user_communication_ibfk_1` FOREIGN KEY (`account_id`) REFERENCES `account` (`id`)
-) ENGINE=InnoDB DEFAULT CHARSET=utf8;
-/*!40101 SET character_set_client = @saved_cs_client */;
 /*!40103 SET TIME_ZONE=@OLD_TIME_ZONE */;
 
 /*!40101 SET SQL_MODE=@OLD_SQL_MODE */;
@@ -2341,4 +2341,4 @@ CREATE TABLE `user_communication` (
 /*!40101 SET COLLATION_CONNECTION=@OLD_COLLATION_CONNECTION */;
 /*!40111 SET SQL_NOTES=@OLD_SQL_NOTES */;
 
--- Dump completed on 2014-05-24  9:35:32
+-- Dump completed on 2014-05-24 13:27:27

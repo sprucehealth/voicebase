@@ -131,6 +131,12 @@ func TestRegisteringToken_SameTokenDifferentUser(t *testing.T) {
 	} else if len(pushConfigDatas) != 0 {
 		t.Fatalf("Expected 0 item instead got %d", len(pushConfigDatas))
 	}
+
+	if communicationPreferences, err := testData.DataApi.GetCommunicationPreferencesForAccount(accountId); err != nil {
+		t.Fatal(err.Error())
+	} else if len(communicationPreferences) != 0 {
+		t.Fatalf("Expected 0 items instead got %d", len(communicationPreferences))
+	}
 }
 
 func TestRegisteringToken_DifferentToken(t *testing.T) {
@@ -263,7 +269,13 @@ func SetDeviceTokenForAccountId(accountId int64, deviceToken string, notificatio
 	} else if pConfigData.CreationDate.IsZero() {
 		t.Fatalf("Expected creation date to be set")
 	}
-}
 
-// Test registering with no headers
-// Test registering with empty device token
+	if communicationPreferences, err := dataApi.GetCommunicationPreferencesForAccount(accountId); err != nil {
+		t.Fatalf(err.Error())
+	} else if len(communicationPreferences) != 1 {
+		t.Fatalf("Expected 1 communication preference instead got %d", len(communicationPreferences))
+	} else if communicationPreferences[0].CommunicationType != "PUSH" {
+		t.Fatalf("Expected communication type to be PUSH")
+	}
+
+}

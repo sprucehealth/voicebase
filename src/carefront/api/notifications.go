@@ -50,6 +50,25 @@ func getPushConfigDataFromRows(rows *sql.Rows) ([]*common.PushConfigData, error)
 	return pushConfigs, rows.Err()
 }
 
+func (d *DataService) GetCommunicationPreferencesForAccount(accountId int64) ([]*common.CommunicationPreference, error) {
+	rows, err := d.db.Query(`select id, account_id, communication_type, creation_date, status from communication_preference where account_id=?`, accountId)
+	if err != nil {
+		return nil, err
+	}
+
+	communicationPreferences := make([]*common.CommunicationPreference, 0)
+	for rows.Next() {
+		var communicationPreference common.CommunicationPreference
+		if err := rows.Scan(&communicationPreference.Id, &communicationPreference.AccountId,
+			&communicationPreference.CommunicationType, &communicationPreference.CreationDate,
+			&communicationPreference.Status); err != nil {
+			return nil, err
+		}
+		communicationPreferences = append(communicationPreferences, &communicationPreference)
+	}
+	return communicationPreferences, nil
+}
+
 func (d *DataService) SetOrReplacePushConfigData(pushConfigData *common.PushConfigData) error {
 	// begin transaction
 	tx, err := d.db.Begin()
@@ -73,7 +92,7 @@ func (d *DataService) SetOrReplacePushConfigData(pushConfigData *common.PushConf
 
 		// delete push communication entry if there are no other device tokens associated with account
 		if count == 1 {
-			_, err = tx.Exec(`delete from user_communication where account_id = ? and communication_type = ?`, accountId, pushCommunicationType)
+			_, err = tx.Exec(`delete from communication_preference where account_id = ? and communication_type = ?`, accountId, pushCommunicationType)
 			if err != nil {
 				tx.Rollback()
 				return err
@@ -90,7 +109,7 @@ func (d *DataService) SetOrReplacePushConfigData(pushConfigData *common.PushConf
 		return err
 	}
 
-	_, err = tx.Exec(`replace into user_communication (account_id, communication_type, status) values (?,?,?)`, pushConfigData.AccountId, pushCommunicationType, STATUS_ACTIVE)
+	_, err = tx.Exec(`replace into communication_preference (account_id, communication_type, status) values (?,?,?)`, pushConfigData.AccountId, pushCommunicationType, STATUS_ACTIVE)
 	if err != nil {
 		tx.Rollback()
 		return err
