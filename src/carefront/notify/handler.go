@@ -22,7 +22,7 @@ type requestData struct {
 	DeviceToken string `schema:"device_token,required"`
 }
 
-func NewNotificationHandler(dataApi api.DataAPI, configs map[string]*config.NotificationConfig, snsClient *sns.SNS) *notificationHandler {
+func NewNotificationHandler(dataApi api.DataAPI, configs map[string]*config.NotificationConfig, snsClient sns.SNSService) *notificationHandler {
 	return &notificationHandler{
 		dataApi:             dataApi,
 		notificationConfigs: configs,
@@ -75,7 +75,11 @@ func (n *notificationHandler) ServeHTTP(w http.ResponseWriter, r *http.Request) 
 		return
 	}
 
-	pushEndpoint := existingPushConfigData.PushEndpoint
+	var pushEndpoint string
+	if existingPushConfigData != nil {
+		pushEndpoint = existingPushConfigData.PushEndpoint
+	}
+
 	// if the device token exists and has changed, register the device token for the user to get the application endpoint
 	if existingPushConfigData == nil || rData.DeviceToken != existingPushConfigData.DeviceToken {
 		pushEndpoint, err = n.snsClient.CreatePlatformEndpoint(notificationConfig.SNSApplicationEndpoint, rData.DeviceToken)

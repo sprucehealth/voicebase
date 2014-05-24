@@ -3,6 +3,7 @@ package api
 import (
 	"carefront/common"
 	"database/sql"
+	"fmt"
 )
 
 const (
@@ -10,17 +11,43 @@ const (
 )
 
 func (d *DataService) GetPushConfigData(deviceToken string) (*common.PushConfigData, error) {
-	var pushConfigData common.PushConfigData
-	err := d.db.QueryRow(`select id, account_id, device_token, push_endpoint, platform, platform_version, app_version, app_type, app_env, app_version, device, device_model, device_id, creation_date from push_notification where device_token = ?`, deviceToken).
-		Scan(&pushConfigData.Id, &pushConfigData.AccountId, &pushConfigData.DeviceToken, &pushConfigData.PushEndpoint, &pushConfigData.Platform, &pushConfigData.PlatformVersion, &pushConfigData.AppVersion, &pushConfigData.AppType, &pushConfigData.AppEnvironment,
-		&pushConfigData.AppVersion, &pushConfigData.Device, &pushConfigData.DeviceModel, &pushConfigData.DeviceID, &pushConfigData.CreationDate)
-	if err == sql.ErrNoRows {
-		return nil, NoRowsError
-	} else if err != nil {
+
+	rows, err := d.db.Query(`select id, account_id, device_token, push_endpoint, platform, platform_version, app_version, app_type, app_env, app_version, device, device_model, device_id, creation_date from push_config where device_token = ?`, deviceToken)
+	pushConfigDatas, err := getPushConfigDataFromRows(rows)
+	if err != nil {
 		return nil, err
 	}
 
-	return &pushConfigData, nil
+	switch l := len(pushConfigDatas); {
+	case l == 0:
+		return nil, NoRowsError
+	case l == 1:
+		return pushConfigDatas[0], nil
+	}
+
+	return nil, fmt.Errorf("Expected 1 push config data but got %d", len(pushConfigDatas))
+}
+
+func (d *DataService) GetPushConfigDataForAccount(accountId int64) ([]*common.PushConfigData, error) {
+	rows, err := d.db.Query(`select id, account_id, device_token, push_endpoint, platform, platform_version, app_version, app_type, app_env, app_version, device, device_model, device_id, creation_date from push_config where account_id = ?`, accountId)
+	if err != nil {
+		return nil, err
+	}
+	return getPushConfigDataFromRows(rows)
+}
+
+func getPushConfigDataFromRows(rows *sql.Rows) ([]*common.PushConfigData, error) {
+	pushConfigs := make([]*common.PushConfigData, 0)
+	for rows.Next() {
+		var pushConfigData common.PushConfigData
+		err := rows.Scan(&pushConfigData.Id, &pushConfigData.AccountId, &pushConfigData.DeviceToken, &pushConfigData.PushEndpoint, &pushConfigData.Platform, &pushConfigData.PlatformVersion, &pushConfigData.AppVersion, &pushConfigData.AppType, &pushConfigData.AppEnvironment,
+			&pushConfigData.AppVersion, &pushConfigData.Device, &pushConfigData.DeviceModel, &pushConfigData.DeviceID, &pushConfigData.CreationDate)
+		if err != nil {
+			return nil, err
+		}
+		pushConfigs = append(pushConfigs, &pushConfigData)
+	}
+	return pushConfigs, rows.Err()
 }
 
 func (d *DataService) SetOrReplacePushConfigData(pushConfigData *common.PushConfigData) error {
