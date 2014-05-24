@@ -13,6 +13,8 @@ import (
 	"net/http"
 	"strings"
 	"time"
+
+	"github.com/gorilla/schema"
 )
 
 var ErrBadAuthToken = errors.New("BadAuthToken")
@@ -207,6 +209,18 @@ func WriteAuthTimeoutError(w http.ResponseWriter) {
 		DeveloperError: authTokenExpiredMessage,
 	}
 	WriteJSONToHTTPResponseWriter(w, http.StatusForbidden, userError)
+}
+
+func DecodeRequestData(requestData interface{}, r *http.Request) error {
+	if err := r.ParseForm(); err != nil {
+		return fmt.Errorf("Unable to parse input parameters: %s", err)
+	}
+
+	if err := schema.NewDecoder().Decode(requestData, r.Form); err != nil {
+		return fmt.Errorf("Unable to parse input parameters: %s", err)
+	}
+
+	return nil
 }
 
 // this structure is present only if we are taking in answers to subquestions

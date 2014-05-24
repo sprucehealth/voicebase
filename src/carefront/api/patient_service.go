@@ -380,7 +380,7 @@ func (d *DataService) GetPatientFromAccountId(accountId int64) (*common.Patient,
 			AND (phone IS NULL OR (patient_phone.status = 'ACTIVE'))
 			AND (patient_location.zip_code IS NULL OR patient_location.status = 'ACTIVE')`, accountId)
 	if len(patients) > 0 {
-		err = d.getAddressAndPhoneNumbersForPatient(patients[0])
+		err = d.getOtherInfoForPatient(patients[0])
 		return patients[0], err
 	}
 
@@ -395,7 +395,7 @@ func (d *DataService) GetPatientFromId(patientId int64) (*common.Patient, error)
 
 	switch l := len(patients); {
 	case l == 1:
-		err = d.getAddressAndPhoneNumbersForPatient(patients[0])
+		err = d.getOtherInfoForPatient(patients[0])
 		return patients[0], err
 	case l == 0:
 		return nil, NoRowsError
@@ -424,7 +424,7 @@ func (d *DataService) GetPatientFromTreatmentPlanId(treatmentPlanId int64) (*com
 			AND (phone IS NULL OR (patient_phone.status = 'ACTIVE'))
 			AND (zip_code IS NULL OR patient_location.status = 'ACTIVE')`, treatmentPlanId)
 	if len(patients) > 0 {
-		err = d.getAddressAndPhoneNumbersForPatient(patients[0])
+		err = d.getOtherInfoForPatient(patients[0])
 		return patients[0], err
 	}
 
@@ -438,7 +438,7 @@ func (d *DataService) GetPatientFromPatientVisitId(patientVisitId int64) (*commo
 			AND (phone IS NULL OR (patient_phone.status = 'ACTIVE'))
 			AND (zip_code IS NULL OR patient_location.status = 'ACTIVE')`, patientVisitId)
 	if len(patients) > 0 {
-		err = d.getAddressAndPhoneNumbersForPatient(patients[0])
+		err = d.getOtherInfoForPatient(patients[0])
 		return patients[0], err
 	}
 
@@ -451,7 +451,7 @@ func (d *DataService) GetPatientFromErxPatientId(erxPatientId int64) (*common.Pa
 			AND (phone IS NULL OR (patient_phone.status = 'ACTIVE'))
 			AND (zip_code IS NULL OR patient_location.status = 'ACTIVE')`, erxPatientId)
 	if len(patients) > 0 {
-		err = d.getAddressAndPhoneNumbersForPatient(patients[0])
+		err = d.getOtherInfoForPatient(patients[0])
 		return patients[0], err
 	}
 
@@ -466,7 +466,7 @@ func (d *DataService) GetPatientFromRefillRequestId(refillRequestId int64) (*com
 			AND (zip_code IS NULL OR patient_location.status = 'ACTIVE')`, refillRequestId)
 	switch l := len(patients); {
 	case l == 1:
-		err = d.getAddressAndPhoneNumbersForPatient(patients[0])
+		err = d.getOtherInfoForPatient(patients[0])
 		return patients[0], err
 	case l == 0:
 		return nil, NoRowsError
@@ -485,7 +485,7 @@ func (d *DataService) GetPatientFromTreatmentId(treatmentId int64) (*common.Pati
 			AND (zip_code IS NULl OR patient_location.status = 'ACTIVE')`, treatmentId)
 	switch l := len(patients); {
 	case l == 1:
-		err = d.getAddressAndPhoneNumbersForPatient(patients[0])
+		err = d.getOtherInfoForPatient(patients[0])
 		return patients[0], err
 	case l == 0:
 		return nil, NoRowsError
@@ -500,7 +500,7 @@ func (d *DataService) GetPatientFromUnlinkedDNTFTreatment(unlinkedDNTFTreatmentI
 		`id = ?`, unlinkedDNTFTreatmentId)
 	switch l := len(patients); {
 	case l == 1:
-		err = d.getAddressAndPhoneNumbersForPatient(patients[0])
+		err = d.getOtherInfoForPatient(patients[0])
 		return patients[0], err
 	case l == 0:
 		return nil, NoRowsError
@@ -1072,6 +1072,21 @@ func (d *DataService) GetFullNameForState(state string) (string, error) {
 	return fullName, nil
 }
 
+func (d *DataService) SetPromptStatus(patientId int64, pStatus common.PatientPromptStatus) error {
+	_, err := d.db.Exec(`replace into patient_prompt_status (prompt_status, patient_id) values (?,?)`, pStatus, patientId)
+	return err
+}
+
+func (d *DataService) GetPromptStatus(patientId int64) (common.PatientPromptStatus, error) {
+	var pStatusString string
+	if err := d.db.QueryRow(`select prompt_status from patient_prompt_status where patient_id = ?`, patientId).Scan(&pStatusString); err == sql.ErrNoRows {
+		return common.Unprompted, nil
+	} else if err != nil {
+		return "", err
+	}
+	return common.GetPromptStatus(pStatusString)
+}
+
 func (d *DataService) getPatientBasedOnQuery(table, joins, where string, queryParams ...interface{}) ([]*common.Patient, error) {
 	queryStr := fmt.Sprintf(`
 		SELECT patient.id, patient.erx_patient_id, patient.payment_service_customer_id, account_id,
@@ -1139,7 +1154,7 @@ func (d *DataService) getPatientBasedOnQuery(table, joins, where string, queryPa
 	return patients, rows.Err()
 }
 
-func (d *DataService) getAddressAndPhoneNumbersForPatient(patient *common.Patient) error {
+func (d *DataService) getOtherInfoForPatient(patient *common.Patient) error {
 	var defaultPatientAddress common.Address
 
 	// get default address information (if exists) for each patient
@@ -1153,6 +1168,12 @@ func (d *DataService) getAddressAndPhoneNumbersForPatient(patient *common.Patien
 
 	if defaultPatientAddress.AddressLine1 != "" {
 		patient.PatientAddress = &defaultPatientAddress
+	}
+
+	// get prompt status
+	patient.PromptStatus, err = d.GetPromptStatus(patient.PatientId.Int64())
+	if err != nil {
+		return err
 	}
 
 	rows, err := d.db.Query(`select phone, phone_type from patient_phone where patient_id = ? and status = ?`, patient.PatientId.Int64(), STATUS_INACTIVE)

@@ -4,6 +4,7 @@ import (
 	"carefront/app_url"
 	"carefront/encoding"
 	"carefront/libs/pharmacy"
+	"errors"
 	"time"
 )
 
@@ -19,6 +20,26 @@ const (
 type PhoneInformation struct {
 	Phone     string `json:"phone,omitempty"`
 	PhoneType string `json:"phone_type,omitempty"`
+}
+
+type PatientPromptStatus string
+
+var (
+	Unprompted PatientPromptStatus = "UNPROMPTED"
+	Accepted   PatientPromptStatus = "ACCEPTED"
+	Declined   PatientPromptStatus = "DECLINED"
+)
+
+func GetPromptStatus(promptStatus string) (PatientPromptStatus, error) {
+	switch promptStatus {
+	case "UNPROMPTED":
+		return Unprompted, nil
+	case "ACCEPTED":
+		return Accepted, nil
+	case "DECLINED":
+		return Declined, nil
+	}
+	return PatientPromptStatus(""), errors.New("Unknown prompt status: " + promptStatus)
 }
 
 type Patient struct {
@@ -41,6 +62,7 @@ type Patient struct {
 	Pharmacy          *pharmacy.PharmacyData `json:"pharmacy,omitempty"`
 	PatientAddress    *Address               `json:"address,omitempty"`
 	PersonId          int64                  `json:"person_id"`
+	PromptStatus      PatientPromptStatus    `json:"prompt_status"`
 }
 
 type ByCreationDate []*Card

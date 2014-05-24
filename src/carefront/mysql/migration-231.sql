@@ -34,5 +34,6 @@ create table patient_prompt_status (
   patient_id int unsigned not null,
   creation_date timestamp(6) not null default current_timestamp(6),
   primary key (id),
-  foreign key (patient_id) references patient(id)
+  foreign key (patient_id) references patient(id), 
+  unique key (patient_id)
 ) character set utf8;

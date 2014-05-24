@@ -8,8 +8,6 @@ import (
 	"carefront/libs/aws/sns"
 	"fmt"
 	"net/http"
-
-	"github.com/gorilla/schema"
 )
 
 type notificationHandler struct {
@@ -36,14 +34,9 @@ func (n *notificationHandler) ServeHTTP(w http.ResponseWriter, r *http.Request) 
 		return
 	}
 
-	if err := r.ParseForm(); err != nil {
-		apiservice.WriteDeveloperError(w, http.StatusBadRequest, "Unable to parse input parameters:  "+err.Error())
-		return
-	}
-
 	rData := &requestData{}
-	if err := schema.NewDecoder().Decode(rData, r.Form); err != nil {
-		apiservice.WriteDeveloperError(w, http.StatusBadRequest, "Unable to parse input parameters: "+err.Error())
+	if err := apiservice.DecodeRequestData(rData, r); err != nil {
+		apiservice.WriteDeveloperError(w, http.StatusBadRequest, err.Error())
 		return
 	}
 
