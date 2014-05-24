@@ -519,7 +519,8 @@ type PushConfigData struct {
 	AppType         string
 	AppEnvironment  string
 	AppVersion      string
-	DeviceType      string
-	DeviceId        string
+	DeviceModel     string
+	Device          string
+	DeviceID        string
 	CreationDate    time.Time
 }

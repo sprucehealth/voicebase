@@ -30,7 +30,7 @@ func TestSpruceHeadersFromiOS(t *testing.T) {
 	req.Header.Set("S-Device", fmt.Sprintf("%s;%s;%s;%s;%s", device, deviceModel, screenWidth, screenHeight, resolution))
 	req.Header.Set("S-Device-ID", deviceID)
 
-	sHeaders := extractPushConfigDataFromRequest(req)
+	sHeaders := ExtractSpruceHeaders(req)
 
 	checkField(appType, sHeaders.AppType, t)
 	checkField(appEnvironment, sHeaders.AppEnvironment, t)

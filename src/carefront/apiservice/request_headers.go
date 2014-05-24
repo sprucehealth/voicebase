@@ -15,8 +15,8 @@ const (
 // See here for header definitions:
 // https://github.com/SpruceHealth/backend/issues/148
 type SpruceHeaders struct {
-	AppType          string
-	AppEnvironment   string
+	AppType          string // (Patient,Doctor,etc)
+	AppEnvironment   string // (Feature,Dev,Demo,Beta,etc)
 	AppVersion       string
 	Build            string
 	Platform         string
@@ -29,7 +29,7 @@ type SpruceHeaders struct {
 	DeviceResolution string
 }
 
-func extractPushConfigDataFromRequest(r *http.Request) *SpruceHeaders {
+func ExtractSpruceHeaders(r *http.Request) *SpruceHeaders {
 	sHeaders := SpruceHeaders{}
 
 	// S-Version

@@ -291,6 +291,11 @@ type MessageAPI interface {
 	ReplyToConversation(conversationId, fromId int64, message string, attachments []*common.ConversationAttachment) (int64, error)
 }
 
+type NotificationAPI interface {
+	GetPushConfigData(deviceToken string) (*common.PushConfigData, error)
+	SetOrReplacePushConfigData(pConfigData *common.PushConfigData) error
+}
+
 type PhotoAPI interface {
 	AddPhoto(uploaderId int64, url, mimetype string) (int64, error)
 	GetPhoto(photoID int64) (*common.Photo, error)
@@ -309,6 +314,7 @@ type DataAPI interface {
 	HomeAPI
 	PeopleAPI
 	MessageAPI
+	NotificationAPI
 	PhotoAPI
 	FavoriteTreatmentPlanAPI
 }
