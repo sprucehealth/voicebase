@@ -28,6 +28,15 @@ func (d *DataService) GetPushConfigData(deviceToken string) (*common.PushConfigD
 	return nil, fmt.Errorf("Expected 1 push config data but got %d", len(pushConfigDatas))
 }
 
+func (d *DataService) DeletePushCommunicationPreferenceForAccount(accountId int64) error {
+	_, err := d.db.Exec(`delete from push_config where account_id=?`, accountId)
+	if err != nil {
+		return err
+	}
+	_, err = d.db.Exec(`delete from communication_preference where communication_type = ? and account_id = ?`, pushCommunicationType, accountId)
+	return err
+}
+
 func (d *DataService) GetPushConfigDataForAccount(accountId int64) ([]*common.PushConfigData, error) {
 	rows, err := d.db.Query(`select id, account_id, device_token, push_endpoint, platform, platform_version, app_version, app_type, app_env, app_version, device, device_model, device_id, creation_date from push_config where account_id = ?`, accountId)
 	if err != nil {

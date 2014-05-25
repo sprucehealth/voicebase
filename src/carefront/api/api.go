@@ -294,6 +294,7 @@ type MessageAPI interface {
 
 type NotificationAPI interface {
 	GetPushConfigData(deviceToken string) (*common.PushConfigData, error)
+	DeletePushCommunicationPreferenceForAccount(accountId int64) error
 	GetPushConfigDataForAccount(accountId int64) ([]*common.PushConfigData, error)
 	SetOrReplacePushConfigData(pConfigData *common.PushConfigData) error
 	GetCommunicationPreferencesForAccount(accountId int64) ([]*common.CommunicationPreference, error)

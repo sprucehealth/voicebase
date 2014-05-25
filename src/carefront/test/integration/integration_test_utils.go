@@ -10,6 +10,7 @@ import (
 	"carefront/homelog"
 	"carefront/libs/aws"
 	"carefront/libs/dispatch"
+	"carefront/notify"
 	"carefront/services/auth"
 	thriftapi "carefront/thrift/api"
 	"carefront/treatment_plan"
@@ -262,6 +263,7 @@ func SetupIntegrationTest(t *testing.T) TestData {
 	homelog.InitListeners(testData.DataApi)
 	treatment_plan.InitListeners(testData.DataApi)
 	doctor_queue.InitListeners(testData.DataApi)
+	notify.InitListeners(testData.DataApi)
 
 	return testData
 }

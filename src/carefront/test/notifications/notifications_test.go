@@ -6,6 +6,7 @@ import (
 	"carefront/common/config"
 	"carefront/libs/aws/sns"
 	"carefront/notify"
+	patientApi "carefront/patient"
 	"carefront/test/integration"
 	"net/http"
 	"net/http/httptest"
@@ -165,6 +166,57 @@ func TestRegisteringToken_DifferentToken(t *testing.T) {
 		t.Fatalf(err.Error())
 	} else if len(pushConfigDatas) != 2 {
 		t.Fatalf("Expected 1 item instead got %d", len(pushConfigDatas))
+	}
+}
+
+func TestRegisteringToken_DeleteOnLogout(t *testing.T) {
+	testData := integration.SetupIntegrationTest(t)
+	defer integration.TearDownIntegrationTest(t, testData)
+
+	pr := integration.SignupRandomTestPatient(t, testData.DataApi, testData.AuthApi)
+	patient := pr.Patient
+	accountId := patient.AccountId.Int64()
+
+	deviceToken := "12345"
+	notificationConfigs := map[string]*config.NotificationConfig{
+		"iOS-Patient-Feature": &config.NotificationConfig{
+			SNSApplicationEndpoint: "endpoint",
+		},
+	}
+	mockSNSClient := &sns.MockSNS{
+		PushEndpointToReturn: "push_endpoint",
+	}
+
+	SetDeviceTokenForAccountId(accountId, deviceToken, notificationConfigs, mockSNSClient, testData.DataApi, t)
+	SetDeviceTokenForAccountId(accountId, "123456789", notificationConfigs, mockSNSClient, testData.DataApi, t)
+
+	// log the user out
+	authHandler := patientApi.NewAuthenticationHandler(testData.DataApi, testData.AuthApi, nil, "")
+	authServer := httptest.NewServer(authHandler)
+	request, err := http.NewRequest("POST", authServer.URL+"/v1/logout", nil)
+	if err != nil {
+		t.Fatalf(err.Error())
+	}
+	request.Header.Set("Authorization", "token "+pr.Token)
+	request.Header.Set("Content-Type", "application/x-www-form-urlencoded")
+
+	res, err := http.DefaultClient.Do(request)
+	if err != nil {
+		t.Fatalf(err.Error())
+	} else if res.StatusCode != http.StatusOK {
+		t.Fatalf("Expected status code %d but got %d instead", http.StatusOK, res.StatusCode)
+	}
+
+	// there should be no push communication preference or push config data for this patient
+	if pushConfigDatas, err := testData.DataApi.GetPushConfigDataForAccount(accountId); err != nil {
+		t.Fatalf(err.Error())
+	} else if len(pushConfigDatas) != 0 {
+		t.Fatalf("Expected 0 item instead got %d", len(pushConfigDatas))
+	}
+	if communicationPreferences, err := testData.DataApi.GetCommunicationPreferencesForAccount(accountId); err != nil {
+		t.Fatalf(err.Error())
+	} else if len(communicationPreferences) != 0 {
+		t.Fatalf("Expected 0 communication preference instead got %d", len(communicationPreferences))
 	}
 }
 

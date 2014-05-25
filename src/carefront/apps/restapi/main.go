@@ -11,6 +11,7 @@ import (
 	"carefront/doctor_queue"
 	"carefront/homelog"
 	"carefront/libs/aws"
+	"carefront/libs/aws/sns"
 	"carefront/libs/erx"
 	"carefront/libs/golog"
 	"carefront/libs/maps"
@@ -158,6 +159,7 @@ func main() {
 	homelog.InitListeners(dataApi)
 	treatment_plan.InitListeners(dataApi)
 	doctor_queue.InitListeners(dataApi)
+	notify.InitListeners(dataApi)
 
 	cloudStorageApi := api.NewCloudStorageService(awsAuth)
 	photoAnswerCloudStorageApi := api.NewCloudStorageService(awsAuth)
@@ -287,6 +289,7 @@ func main() {
 	mux.Handle("/v1/patient/home", homelog.NewListHandler(dataApi))
 	mux.Handle("/v1/patient/home/dismiss", homelog.NewDismissHandler(dataApi))
 	mux.Handle("/v1/patient/isauthenticated", apiservice.NewIsAuthenticatedHandler(authApi))
+	mux.Handle("/v1/patient/prompt_status", notify.NewPatientPromptStatusHandler(dataApi))
 	mux.Handle("/v1/visit", patientVisitHandler)
 	mux.Handle("/v1/visit/review", patientVisitReviewHandler)
 	mux.Handle("/v1/check_eligibility", checkElligibilityHandler)
@@ -302,6 +305,12 @@ func main() {
 	mux.Handle("/v1/client_model", generateModelIntakeHandler)
 	mux.Handle("/v1/credit_card", patientCardsHandler)
 	mux.Handle("/v1/credit_card/default", patientCardsHandler)
+	mux.Handle("/v1/notification/token", notify.NewNotificationHandler(dataApi, conf.NotifiyConfigs, &sns.SNS{
+		Region: aws.USEast,
+		Client: &aws.Client{
+			Auth: awsAuth,
+		},
+	}))
 
 	mux.Handle("/v1/photo", photos.NewHandler(dataApi, awsAuth, conf.PhotoBucket, conf.AWSRegion))
 	mux.Handle("/v1/patient/conversation", messages.NewPatientConversationHandler(dataApi))
