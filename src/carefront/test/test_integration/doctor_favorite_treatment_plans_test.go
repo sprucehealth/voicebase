@@ -1,4 +1,4 @@
-package integration
+package test_integration
 
 import (
 	"bytes"
@@ -25,7 +25,7 @@ func TestFavoriteTreatmentPlan(t *testing.T) {
 		t.Fatalf("Unable to get doctor from id: %s", err)
 	}
 
-	patientVisitResponse, _ := signupAndSubmitPatientVisitForRandomPatient(t, testData, doctor)
+	patientVisitResponse, _ := SignupAndSubmitPatientVisitForRandomPatient(t, testData, doctor)
 
 	favoriteTreatmentPlan := createFavoriteTreatmentPlan(patientVisitResponse.PatientVisitId, testData, doctor, t)
 
@@ -156,7 +156,7 @@ func TestFavoriteTreatmentPlan_PickingAFavoriteTreatmentPlan(t *testing.T) {
 		t.Fatalf("Unable to get doctor from id: %s", err)
 	}
 
-	patientVisitResponse, _ := signupAndSubmitPatientVisitForRandomPatient(t, testData, doctor)
+	patientVisitResponse, _ := SignupAndSubmitPatientVisitForRandomPatient(t, testData, doctor)
 
 	// create a favorite treatment plan
 	favoriteTreamentPlan := createFavoriteTreatmentPlan(patientVisitResponse.PatientVisitId, testData, doctor, t)
@@ -232,7 +232,7 @@ func TestFavoriteTreatmentPlan_CommittedStateForTreatmentPlan(t *testing.T) {
 		t.Fatalf("Unable to get doctor from id: %s", err)
 	}
 
-	patientVisitResponse, _ := signupAndSubmitPatientVisitForRandomPatient(t, testData, doctor)
+	patientVisitResponse, _ := SignupAndSubmitPatientVisitForRandomPatient(t, testData, doctor)
 
 	// create a favorite treatment plan
 	favoriteTreamentPlan := createFavoriteTreatmentPlan(patientVisitResponse.PatientVisitId, testData, doctor, t)
@@ -329,7 +329,7 @@ func TestFavoriteTreatmentPlan_BreakingMappingOnModify(t *testing.T) {
 		t.Fatalf("Unable to get doctor from id: %s", err)
 	}
 
-	patientVisitResponse, _ := signupAndSubmitPatientVisitForRandomPatient(t, testData, doctor)
+	patientVisitResponse, _ := SignupAndSubmitPatientVisitForRandomPatient(t, testData, doctor)
 
 	// create a favorite treatment plan
 	favoriteTreamentPlan := createFavoriteTreatmentPlan(patientVisitResponse.PatientVisitId, testData, doctor, t)
@@ -436,7 +436,7 @@ func TestFavoriteTreatmentPlan_InContextOfTreatmentPlan(t *testing.T) {
 		t.Fatalf("Unable to get doctor from id: %s", err)
 	}
 
-	patientVisitResponse, treatmentPlan := signupAndSubmitPatientVisitForRandomPatient(t, testData, doctor)
+	patientVisitResponse, treatmentPlan := SignupAndSubmitPatientVisitForRandomPatient(t, testData, doctor)
 	regimenPlanRequest := &common.RegimenPlan{}
 	regimenPlanRequest.PatientVisitId = encoding.NewObjectId(patientVisitResponse.PatientVisitId)
 
@@ -594,7 +594,7 @@ func TestFavoriteTreatmentPlan_InContextOfTreatmentPlan_EmptyRegimenAndAdvice(t 
 		t.Fatalf("Unable to get doctor from id: %s", err)
 	}
 
-	patientVisitResponse, treatmentPlan := signupAndSubmitPatientVisitForRandomPatient(t, testData, doctor)
+	patientVisitResponse, treatmentPlan := SignupAndSubmitPatientVisitForRandomPatient(t, testData, doctor)
 	regimenPlanRequest := &common.RegimenPlan{}
 	regimenPlanRequest.PatientVisitId = encoding.NewObjectId(patientVisitResponse.PatientVisitId)
 
@@ -722,7 +722,7 @@ func TestFavoriteTreatmentPlan_InContextOfTreatmentPlan_TwoDontMatch(t *testing.
 		t.Fatalf("Unable to get doctor from id: %s", err)
 	}
 
-	patientVisitResponse, treatmentPlan := signupAndSubmitPatientVisitForRandomPatient(t, testData, doctor)
+	patientVisitResponse, treatmentPlan := SignupAndSubmitPatientVisitForRandomPatient(t, testData, doctor)
 	regimenPlanRequest := &common.RegimenPlan{}
 	regimenPlanRequest.PatientVisitId = encoding.NewObjectId(patientVisitResponse.PatientVisitId)
 

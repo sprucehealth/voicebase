@@ -1,4 +1,4 @@
-package integration
+package test_integration
 
 import (
 	"bytes"
@@ -182,7 +182,7 @@ func TestAddTreatments(t *testing.T) {
 		t.Fatal("Unable to get doctor from doctor id " + err.Error())
 	}
 
-	patientVisitResponse, _ := signupAndSubmitPatientVisitForRandomPatient(t, testData, doctor)
+	patientVisitResponse, _ := SignupAndSubmitPatientVisitForRandomPatient(t, testData, doctor)
 
 	// doctor now attempts to add a couple treatments for patient
 	treatment1 := &common.Treatment{
@@ -448,7 +448,7 @@ func TestTreatmentTemplatesInContextOfPatientVisit(t *testing.T) {
 	}
 
 	// create random patient
-	patientVisitResponse, _ := signupAndSubmitPatientVisitForRandomPatient(t, testData, doctor)
+	patientVisitResponse, _ := SignupAndSubmitPatientVisitForRandomPatient(t, testData, doctor)
 
 	// doctor now attempts to favorite a treatment
 	treatment1 := &common.Treatment{

@@ -1,4 +1,4 @@
-package integration
+package test_integration
 
 import (
 	"bytes"
@@ -113,7 +113,7 @@ func TestAdvicePointsForPatientVisit(t *testing.T) {
 	}
 
 	// lets start a new patient visit and ensure that we still get back the advice points as added
-	patientVisitResponse2, _ := signupAndSubmitPatientVisitForRandomPatient(t, testData, doctor)
+	patientVisitResponse2, _ := SignupAndSubmitPatientVisitForRandomPatient(t, testData, doctor)
 
 	// get the advice points for this patient visit
 	doctorAdviceResponse2 := getAdvicePointsInPatientVisit(testData, doctor, patientVisitResponse2.PatientVisitId, t)
@@ -312,7 +312,7 @@ func TestAdvicePointsForPatientVisit_SelectAdviceFromDeletedAdvice(t *testing.T)
 
 	// lets go ahead and delete an advice point in the context of another patient's visit
 
-	patientVisitResponse2, _ := signupAndSubmitPatientVisitForRandomPatient(t, testData, doctor)
+	patientVisitResponse2, _ := SignupAndSubmitPatientVisitForRandomPatient(t, testData, doctor)
 	doctorAdviceResponse2 := getAdvicePointsInPatientVisit(testData, doctor, patientVisitResponse2.PatientVisitId, t)
 
 	doctorAdviceRequest = doctorAdviceResponse2
@@ -431,7 +431,7 @@ func setupAdviceCreationTest(t *testing.T, testData TestData) (*apiservice.Patie
 	}
 
 	// get patient to start a visit
-	patientVisitResponse, _ := signupAndSubmitPatientVisitForRandomPatient(t, testData, doctor)
+	patientVisitResponse, _ := SignupAndSubmitPatientVisitForRandomPatient(t, testData, doctor)
 
 	return patientVisitResponse, doctor
 }

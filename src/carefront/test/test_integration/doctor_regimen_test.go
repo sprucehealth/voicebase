@@ -1,4 +1,4 @@
-package integration
+package test_integration
 
 import (
 	"bytes"
@@ -133,7 +133,7 @@ func TestRegimenForPatientVisit(t *testing.T) {
 
 	// get patient to start a visit
 
-	patientVisitResponse, _ = signupAndSubmitPatientVisitForRandomPatient(t, testData, doctor)
+	patientVisitResponse, _ = SignupAndSubmitPatientVisitForRandomPatient(t, testData, doctor)
 
 	regimenPlan = getRegimenPlanForPatientVisit(testData, doctor, patientVisitResponse.PatientVisitId, t)
 	if len(regimenPlan.RegimenSections) > 0 {
@@ -322,7 +322,7 @@ func TestRegimenForPatientVisit_UpdatingItemLinkedToDeletedItem(t *testing.T) {
 	validateRegimenRequestAgainstResponse(regimenPlanRequest, regimenPlanResponse, t)
 
 	// now lets update the global set of regimen steps in the context of another patient's visit
-	patientVisitResponse2, _ := signupAndSubmitPatientVisitForRandomPatient(t, testData, doctor)
+	patientVisitResponse2, _ := SignupAndSubmitPatientVisitForRandomPatient(t, testData, doctor)
 	regimenPlanResponse = getRegimenPlanForPatientVisit(testData, doctor, patientVisitResponse2.PatientVisitId, t)
 
 	// lets go ahead and delete one of the items from the regimen step
@@ -467,7 +467,7 @@ func setupTestForRegimenCreation(t *testing.T, testData TestData) (*apiservice.P
 	if err != nil {
 		t.Fatal("Unable to get doctor from doctor id " + err.Error())
 	}
-	patientVisitResponse, _ := signupAndSubmitPatientVisitForRandomPatient(t, testData, doctor)
+	patientVisitResponse, _ := SignupAndSubmitPatientVisitForRandomPatient(t, testData, doctor)
 	return patientVisitResponse, doctor
 }
 

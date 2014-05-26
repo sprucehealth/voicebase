@@ -3,7 +3,7 @@ package notifications
 import (
 	"carefront/common"
 	"carefront/notify"
-	"carefront/test/integration"
+	"carefront/test/test_integration"
 	"net/http"
 	"net/http/httptest"
 	"net/url"
@@ -13,10 +13,10 @@ import (
 
 // Test prompt status on login and signup
 func TestPromptStatus_Signup(t *testing.T) {
-	testData := integration.SetupIntegrationTest(t)
-	defer integration.TearDownIntegrationTest(t, testData)
+	testData := test_integration.SetupIntegrationTest(t)
+	defer test_integration.TearDownIntegrationTest(t, testData)
 
-	pr := integration.SignupRandomTestPatient(t, testData.DataApi, testData.AuthApi)
+	pr := test_integration.SignupRandomTestPatient(t, testData.DataApi, testData.AuthApi)
 	patient := pr.Patient
 
 	if patient.PromptStatus != common.Unprompted {
@@ -25,10 +25,10 @@ func TestPromptStatus_Signup(t *testing.T) {
 }
 
 func TestPromptStatus_Login(t *testing.T) {
-	testData := integration.SetupIntegrationTest(t)
-	defer integration.TearDownIntegrationTest(t, testData)
+	testData := test_integration.SetupIntegrationTest(t)
+	defer test_integration.TearDownIntegrationTest(t, testData)
 
-	pr := integration.SignupRandomTestPatient(t, testData.DataApi, testData.AuthApi)
+	pr := test_integration.SignupRandomTestPatient(t, testData.DataApi, testData.AuthApi)
 	patient := pr.Patient
 
 	// this method would be called when trying to login so checking directly with data service layer
@@ -44,10 +44,10 @@ func TestPromptStatus_Login(t *testing.T) {
 
 // Test prompt status after being set
 func TestPromptStatus_OnModify(t *testing.T) {
-	testData := integration.SetupIntegrationTest(t)
-	defer integration.TearDownIntegrationTest(t, testData)
+	testData := test_integration.SetupIntegrationTest(t)
+	defer test_integration.TearDownIntegrationTest(t, testData)
 
-	pr := integration.SignupRandomTestPatient(t, testData.DataApi, testData.AuthApi)
+	pr := test_integration.SignupRandomTestPatient(t, testData.DataApi, testData.AuthApi)
 	patient := pr.Patient
 
 	promptStatusHandler := notify.NewPatientPromptStatusHandler(testData.DataApi)
@@ -55,7 +55,7 @@ func TestPromptStatus_OnModify(t *testing.T) {
 	params := url.Values{}
 	params.Set("prompt_status", "DECLINED")
 
-	res, err := integration.AuthPost(statusServer.URL, "application/x-www-form-urlencoded", strings.NewReader(params.Encode()), patient.AccountId.Int64())
+	res, err := test_integration.AuthPost(statusServer.URL, "application/x-www-form-urlencoded", strings.NewReader(params.Encode()), patient.AccountId.Int64())
 	if err != nil {
 		t.Fatal(err.Error())
 	} else if res.StatusCode != http.StatusOK {

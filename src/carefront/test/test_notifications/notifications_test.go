@@ -7,7 +7,7 @@ import (
 	"carefront/libs/aws/sns"
 	"carefront/notify"
 	patientApi "carefront/patient"
-	"carefront/test/integration"
+	"carefront/test/test_integration"
 	"net/http"
 	"net/http/httptest"
 	"net/url"
@@ -18,10 +18,10 @@ import (
 
 // Test registering device token for first time
 func TestRegisteringToken_Patient(t *testing.T) {
-	testData := integration.SetupIntegrationTest(t)
-	defer integration.TearDownIntegrationTest(t, testData)
+	testData := test_integration.SetupIntegrationTest(t)
+	defer test_integration.TearDownIntegrationTest(t, testData)
 
-	pr := integration.SignupRandomTestPatient(t, testData.DataApi, testData.AuthApi)
+	pr := test_integration.SignupRandomTestPatient(t, testData.DataApi, testData.AuthApi)
 	patient := pr.Patient
 	accountId := patient.AccountId.Int64()
 
@@ -40,10 +40,10 @@ func TestRegisteringToken_Patient(t *testing.T) {
 }
 
 func TestRegisteringToken_Doctor(t *testing.T) {
-	testData := integration.SetupIntegrationTest(t)
-	defer integration.TearDownIntegrationTest(t, testData)
+	testData := test_integration.SetupIntegrationTest(t)
+	defer test_integration.TearDownIntegrationTest(t, testData)
 
-	doctorId := integration.GetDoctorIdOfCurrentPrimaryDoctor(testData, t)
+	doctorId := test_integration.GetDoctorIdOfCurrentPrimaryDoctor(testData, t)
 	doctor, err := testData.DataApi.GetDoctorFromId(doctorId)
 	if err != nil {
 		t.Fatal(err.Error())
@@ -65,10 +65,10 @@ func TestRegisteringToken_Doctor(t *testing.T) {
 }
 
 func TestRegisteringToken_SameToken(t *testing.T) {
-	testData := integration.SetupIntegrationTest(t)
-	defer integration.TearDownIntegrationTest(t, testData)
+	testData := test_integration.SetupIntegrationTest(t)
+	defer test_integration.TearDownIntegrationTest(t, testData)
 
-	doctorId := integration.GetDoctorIdOfCurrentPrimaryDoctor(testData, t)
+	doctorId := test_integration.GetDoctorIdOfCurrentPrimaryDoctor(testData, t)
 	doctor, err := testData.DataApi.GetDoctorFromId(doctorId)
 	if err != nil {
 		t.Fatal(err.Error())
@@ -95,10 +95,10 @@ func TestRegisteringToken_SameToken(t *testing.T) {
 }
 
 func TestRegisteringToken_SameTokenDifferentUser(t *testing.T) {
-	testData := integration.SetupIntegrationTest(t)
-	defer integration.TearDownIntegrationTest(t, testData)
+	testData := test_integration.SetupIntegrationTest(t)
+	defer test_integration.TearDownIntegrationTest(t, testData)
 
-	pr := integration.SignupRandomTestPatient(t, testData.DataApi, testData.AuthApi)
+	pr := test_integration.SignupRandomTestPatient(t, testData.DataApi, testData.AuthApi)
 	patient := pr.Patient
 	accountId := patient.AccountId.Int64()
 
@@ -115,7 +115,7 @@ func TestRegisteringToken_SameTokenDifferentUser(t *testing.T) {
 	SetDeviceTokenForAccountId(accountId, deviceToken, notificationConfigs, mockSNSClient, testData.DataApi, t)
 
 	// new patient
-	pr = integration.SignupRandomTestPatient(t, testData.DataApi, testData.AuthApi)
+	pr = test_integration.SignupRandomTestPatient(t, testData.DataApi, testData.AuthApi)
 	patient = pr.Patient
 	accountId2 := patient.AccountId.Int64()
 
@@ -141,10 +141,10 @@ func TestRegisteringToken_SameTokenDifferentUser(t *testing.T) {
 }
 
 func TestRegisteringToken_DifferentToken(t *testing.T) {
-	testData := integration.SetupIntegrationTest(t)
-	defer integration.TearDownIntegrationTest(t, testData)
+	testData := test_integration.SetupIntegrationTest(t)
+	defer test_integration.TearDownIntegrationTest(t, testData)
 
-	doctorId := integration.GetDoctorIdOfCurrentPrimaryDoctor(testData, t)
+	doctorId := test_integration.GetDoctorIdOfCurrentPrimaryDoctor(testData, t)
 	doctor, err := testData.DataApi.GetDoctorFromId(doctorId)
 	if err != nil {
 		t.Fatal(err.Error())
@@ -170,10 +170,10 @@ func TestRegisteringToken_DifferentToken(t *testing.T) {
 }
 
 func TestRegisteringToken_DeleteOnLogout(t *testing.T) {
-	testData := integration.SetupIntegrationTest(t)
-	defer integration.TearDownIntegrationTest(t, testData)
+	testData := test_integration.SetupIntegrationTest(t)
+	defer test_integration.TearDownIntegrationTest(t, testData)
 
-	pr := integration.SignupRandomTestPatient(t, testData.DataApi, testData.AuthApi)
+	pr := test_integration.SignupRandomTestPatient(t, testData.DataApi, testData.AuthApi)
 	patient := pr.Patient
 	accountId := patient.AccountId.Int64()
 
@@ -222,10 +222,10 @@ func TestRegisteringToken_DeleteOnLogout(t *testing.T) {
 
 // Test using appropriate notification config based on spruce header
 func TestRegisteringToken_NoConfig(t *testing.T) {
-	testData := integration.SetupIntegrationTest(t)
-	defer integration.TearDownIntegrationTest(t, testData)
+	testData := test_integration.SetupIntegrationTest(t)
+	defer test_integration.TearDownIntegrationTest(t, testData)
 
-	doctorId := integration.GetDoctorIdOfCurrentPrimaryDoctor(testData, t)
+	doctorId := test_integration.GetDoctorIdOfCurrentPrimaryDoctor(testData, t)
 	doctor, err := testData.DataApi.GetDoctorFromId(doctorId)
 	if err != nil {
 		t.Fatal(err.Error())

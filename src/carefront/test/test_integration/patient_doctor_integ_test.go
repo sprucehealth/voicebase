@@ -1,4 +1,4 @@
-package integration
+package test_integration
 
 import (
 	"bytes"
@@ -32,7 +32,7 @@ func TestPatientVisitReview(t *testing.T) {
 		t.Fatal("Unable to get doctor from id: " + err.Error())
 	}
 
-	patientVisitResponse, _ := signupAndSubmitPatientVisitForRandomPatient(t, testData, doctor)
+	patientVisitResponse, _ := SignupAndSubmitPatientVisitForRandomPatient(t, testData, doctor)
 	patient, err := testData.DataApi.GetPatientFromPatientVisitId(patientVisitResponse.PatientVisitId)
 	if err != nil {
 		t.Fatalf("Unable to get patient from patient visit info: %s", err)
@@ -91,7 +91,7 @@ func TestPatientVisitReview(t *testing.T) {
 	CheckSuccessfulStatusCode(resp, "Unable to make successful call to close the patient visit", t)
 
 	// start a new patient visit
-	patientVisitResponse, treatmentPlan := signupAndSubmitPatientVisitForRandomPatient(t, testData, doctor)
+	patientVisitResponse, treatmentPlan := SignupAndSubmitPatientVisitForRandomPatient(t, testData, doctor)
 	patient, err = testData.DataApi.GetPatientFromPatientVisitId(patientVisitResponse.PatientVisitId)
 	if err != nil {
 		t.Fatalf("Unable to get patient from patient visit id: %s", err)

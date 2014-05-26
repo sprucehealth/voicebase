@@ -1,9 +1,9 @@
-package homelog
+package test_homelog
 
 import (
 	"carefront/common"
 	"carefront/homelog"
-	"carefront/test/integration"
+	"carefront/test/test_integration"
 	"io/ioutil"
 	"net/http/httptest"
 	"reflect"
@@ -66,10 +66,10 @@ var notificationTypes = map[string]reflect.Type{
 }
 
 func TestPatientNotificationsAPI(t *testing.T) {
-	testData := integration.SetupIntegrationTest(t)
-	defer integration.TearDownIntegrationTest(t, testData)
+	testData := test_integration.SetupIntegrationTest(t)
+	defer test_integration.TearDownIntegrationTest(t, testData)
 
-	pr := integration.SignupRandomTestPatient(t, testData.DataApi, testData.AuthApi)
+	pr := test_integration.SignupRandomTestPatient(t, testData.DataApi, testData.AuthApi)
 	patient := pr.Patient
 	patientId := patient.PatientId.Int64()
 
@@ -131,10 +131,10 @@ func TestPatientNotificationsAPI(t *testing.T) {
 }
 
 func TestHealthLogAPI(t *testing.T) {
-	testData := integration.SetupIntegrationTest(t)
-	defer integration.TearDownIntegrationTest(t, testData)
+	testData := test_integration.SetupIntegrationTest(t)
+	defer test_integration.TearDownIntegrationTest(t, testData)
 
-	pr := integration.SignupRandomTestPatient(t, testData.DataApi, testData.AuthApi)
+	pr := test_integration.SignupRandomTestPatient(t, testData.DataApi, testData.AuthApi)
 	patient := pr.Patient
 	patientId := patient.PatientId.Int64()
 
@@ -179,15 +179,15 @@ func TestHealthLogAPI(t *testing.T) {
 }
 
 func TestHealthLog(t *testing.T) {
-	testData := integration.SetupIntegrationTest(t)
-	defer integration.TearDownIntegrationTest(t, testData)
+	testData := test_integration.SetupIntegrationTest(t)
+	defer test_integration.TearDownIntegrationTest(t, testData)
 
-	pr := integration.SignupRandomTestPatient(t, testData.DataApi, testData.AuthApi)
+	pr := test_integration.SignupRandomTestPatient(t, testData.DataApi, testData.AuthApi)
 	patient := pr.Patient
 	patientId := patient.PatientId.Int64()
 
-	visit := integration.CreatePatientVisitForPatient(patientId, testData, t)
-	integration.SubmitPatientVisitForPatient(patientId, visit.PatientVisitId, testData, t)
+	visit := test_integration.CreatePatientVisitForPatient(patientId, testData, t)
+	test_integration.SubmitPatientVisitForPatient(patientId, visit.PatientVisitId, testData, t)
 
 	if items, _, err := testData.DataApi.GetHealthLogForPatient(patientId, notificationTypes); err != nil {
 		t.Fatal(err)
@@ -200,7 +200,7 @@ func TestHealthLog(t *testing.T) {
 	ts := httptest.NewServer(homelog.NewListHandler(testData.DataApi))
 	defer ts.Close()
 
-	resp, err := integration.AuthGet(ts.URL, patient.AccountId.Int64())
+	resp, err := test_integration.AuthGet(ts.URL, patient.AccountId.Int64())
 	if err != nil {
 		t.Fatal("Unable to get home")
 	}
@@ -209,28 +209,24 @@ func TestHealthLog(t *testing.T) {
 	if body, err := ioutil.ReadAll(resp.Body); err != nil {
 		t.Fatalf("Failed to get body: %+v", err)
 	} else {
-		integration.CheckSuccessfulStatusCode(resp, "Unable to get home: "+string(body), t)
+		test_integration.CheckSuccessfulStatusCode(resp, "Unable to get home: "+string(body), t)
 	}
 }
 
 func TestVisitCreatedNotification(t *testing.T) {
-	testData := integration.SetupIntegrationTest(t)
-	defer integration.TearDownIntegrationTest(t, testData)
+	testData := test_integration.SetupIntegrationTest(t)
+	defer test_integration.TearDownIntegrationTest(t, testData)
 
-	pr := integration.SignupRandomTestPatient(t, testData.DataApi, testData.AuthApi)
-	patient := pr.Patient
-	patientId := patient.PatientId.Int64()
-
-	doctorId := integration.GetDoctorIdOfCurrentPrimaryDoctor(testData, t)
+	doctorId := test_integration.GetDoctorIdOfCurrentPrimaryDoctor(testData, t)
 	doctor, err := testData.DataApi.GetDoctorFromId(doctorId)
 	if err != nil {
 		t.Fatalf("Error getting doctor from id: %s", err.Error())
 	}
 
-	visit := integration.CreatePatientVisitForPatient(patientId, testData, t)
-	integration.SubmitPatientVisitForPatient(patientId, visit.PatientVisitId, testData, t)
-	integration.StartReviewingPatientVisit(visit.PatientVisitId, doctor, testData, t)
-	integration.SubmitPatientVisitBackToPatient(visit.PatientVisitId, doctor, testData, t)
+	visit, _ := test_integration.SignupAndSubmitPatientVisitForRandomPatient(t, testData, doctor)
+	patient, err := testData.DataApi.GetPatientFromPatientVisitId(visit.PatientVisitId)
+	patientId := patient.PatientId.Int64()
+	test_integration.SubmitPatientVisitBackToPatient(visit.PatientVisitId, doctor, testData, t)
 
 	// make a call to get patient notifications
 	listNotificationsHandler := homelog.NewListHandler(testData.DataApi)
@@ -248,20 +244,20 @@ func TestVisitCreatedNotification(t *testing.T) {
 }
 
 func TestConversationLogItem(t *testing.T) {
-	testData := integration.SetupIntegrationTest(t)
-	defer integration.TearDownIntegrationTest(t, testData)
+	testData := test_integration.SetupIntegrationTest(t)
+	defer test_integration.TearDownIntegrationTest(t, testData)
 
-	pr := integration.SignupRandomTestPatient(t, testData.DataApi, testData.AuthApi)
+	pr := test_integration.SignupRandomTestPatient(t, testData.DataApi, testData.AuthApi)
 	patient := pr.Patient
 	patientId := patient.PatientId.Int64()
 
-	doctorId := integration.GetDoctorIdOfCurrentPrimaryDoctor(testData, t)
+	doctorId := test_integration.GetDoctorIdOfCurrentPrimaryDoctor(testData, t)
 	doctor, err := testData.DataApi.GetDoctorFromId(doctorId)
 	if err != nil {
 		t.Fatalf("Error getting doctor from id: %s", err.Error())
 	}
 
-	convId := integration.StartConversationFromDoctorToPatient(t, testData.DataApi, doctor.AccountId.Int64(), patientId, 0)
+	convId := test_integration.StartConversationFromDoctorToPatient(t, testData.DataApi, doctor.AccountId.Int64(), patientId, 0)
 
 	items, _, err := testData.DataApi.GetHealthLogForPatient(patientId, notificationTypes)
 	if err != nil {
@@ -279,7 +275,7 @@ func TestConversationLogItem(t *testing.T) {
 	time.Sleep(time.Second)
 
 	// Make sure a reply updates the log item
-	integration.PatientReplyToConversation(t, testData.DataApi, convId, patient.AccountId.Int64())
+	test_integration.PatientReplyToConversation(t, testData.DataApi, convId, patient.AccountId.Int64())
 
 	items, _, err = testData.DataApi.GetHealthLogForPatient(patientId, notificationTypes)
 	if err != nil {
@@ -296,14 +292,14 @@ func TestConversationLogItem(t *testing.T) {
 }
 
 func TestConversationNotifications(t *testing.T) {
-	testData := integration.SetupIntegrationTest(t)
-	defer integration.TearDownIntegrationTest(t, testData)
+	testData := test_integration.SetupIntegrationTest(t)
+	defer test_integration.TearDownIntegrationTest(t, testData)
 
-	pr := integration.SignupRandomTestPatient(t, testData.DataApi, testData.AuthApi)
+	pr := test_integration.SignupRandomTestPatient(t, testData.DataApi, testData.AuthApi)
 	patient := pr.Patient
 	patientId := patient.PatientId.Int64()
 
-	doctorId := integration.GetDoctorIdOfCurrentPrimaryDoctor(testData, t)
+	doctorId := test_integration.GetDoctorIdOfCurrentPrimaryDoctor(testData, t)
 	doctor, err := testData.DataApi.GetDoctorFromId(doctorId)
 	if err != nil {
 		t.Fatalf("Error getting doctor from id: %s", err.Error())
@@ -311,7 +307,7 @@ func TestConversationNotifications(t *testing.T) {
 
 	// New conversation from doctor to patient MUST create a notification
 
-	convId := integration.StartConversationFromDoctorToPatient(t, testData.DataApi, doctor.AccountId.Int64(), patientId, 0)
+	convId := test_integration.StartConversationFromDoctorToPatient(t, testData.DataApi, doctor.AccountId.Int64(), patientId, 0)
 
 	notes, _, err := testData.DataApi.GetNotificationsForPatient(patientId, notificationTypes)
 	if err != nil {
@@ -324,7 +320,7 @@ func TestConversationNotifications(t *testing.T) {
 
 	// Reply from patient to doctor MUST clear the original notification
 
-	integration.PatientReplyToConversation(t, testData.DataApi, convId, patient.AccountId.Int64())
+	test_integration.PatientReplyToConversation(t, testData.DataApi, convId, patient.AccountId.Int64())
 
 	notes, _, err = testData.DataApi.GetNotificationsForPatient(patientId, notificationTypes)
 	if err != nil {
@@ -335,7 +331,7 @@ func TestConversationNotifications(t *testing.T) {
 
 	// Reply from doctor to patient MUST create a notification
 
-	integration.DoctorReplyToConversation(t, testData.DataApi, convId, doctor.AccountId.Int64())
+	test_integration.DoctorReplyToConversation(t, testData.DataApi, convId, doctor.AccountId.Int64())
 
 	notes, _, err = testData.DataApi.GetNotificationsForPatient(patientId, notificationTypes)
 	if err != nil {
@@ -351,7 +347,7 @@ func TestConversationNotifications(t *testing.T) {
 
 	// New conversation from patient to doctor MUST NOT create a notification
 
-	integration.StartConversationFromPatientToDoctor(t, testData.DataApi, patient.AccountId.Int64(), 0)
+	test_integration.StartConversationFromPatientToDoctor(t, testData.DataApi, patient.AccountId.Int64(), 0)
 
 	notes, _, err = testData.DataApi.GetNotificationsForPatient(patientId, notificationTypes)
 	if err != nil {

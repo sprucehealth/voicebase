@@ -1,10 +1,10 @@
-package doctor_queue
+package test_doctor_queue
 
 import (
 	"bytes"
 	"carefront/api"
 	"carefront/messages"
-	"carefront/test/integration"
+	"carefront/test/test_integration"
 	"encoding/json"
 	"net/http/httptest"
 	"net/url"
@@ -14,10 +14,10 @@ import (
 )
 
 func TestConversationItemsInDoctorQueue(t *testing.T) {
-	testData := integration.SetupIntegrationTest(t)
-	defer integration.TearDownIntegrationTest(t, testData)
+	testData := test_integration.SetupIntegrationTest(t)
+	defer test_integration.TearDownIntegrationTest(t, testData)
 
-	pr := integration.SignupRandomTestPatient(t, testData.DataApi, testData.AuthApi)
+	pr := test_integration.SignupRandomTestPatient(t, testData.DataApi, testData.AuthApi)
 
 	topicId, err := testData.DataApi.AddConversationTopic("Foo", 100, true)
 	if err != nil {
@@ -36,7 +36,7 @@ func TestConversationItemsInDoctorQueue(t *testing.T) {
 	}); err != nil {
 		t.Fatal(err)
 	}
-	res, err := integration.AuthPost(patientConvoServer.URL, "application/json", body, pr.Patient.AccountId.Int64())
+	res, err := test_integration.AuthPost(patientConvoServer.URL, "application/json", body, pr.Patient.AccountId.Int64())
 	if err != nil {
 		t.Fatal(err)
 	}
@@ -46,7 +46,7 @@ func TestConversationItemsInDoctorQueue(t *testing.T) {
 	}
 	res.Body.Close()
 
-	doctorId := integration.GetDoctorIdOfCurrentPrimaryDoctor(testData, t)
+	doctorId := test_integration.GetDoctorIdOfCurrentPrimaryDoctor(testData, t)
 	doctor, err := testData.DataApi.GetDoctorFromId(doctorId)
 	if err != nil {
 		t.Fatal(err)
@@ -72,7 +72,7 @@ func TestConversationItemsInDoctorQueue(t *testing.T) {
 	}); err != nil {
 		t.Fatal(err)
 	}
-	res, err = integration.AuthPost(doctorMessageServer.URL, "application/json", body, doctor.AccountId.Int64())
+	res, err = test_integration.AuthPost(doctorMessageServer.URL, "application/json", body, doctor.AccountId.Int64())
 	if err != nil {
 		t.Fatal(err)
 	}
@@ -98,10 +98,10 @@ func TestConversationItemsInDoctorQueue(t *testing.T) {
 }
 
 func TestConversationItemsInDoctorQueue_DoctorInitiated(t *testing.T) {
-	testData := integration.SetupIntegrationTest(t)
-	defer integration.TearDownIntegrationTest(t, testData)
+	testData := test_integration.SetupIntegrationTest(t)
+	defer test_integration.TearDownIntegrationTest(t, testData)
 
-	pr := integration.SignupRandomTestPatient(t, testData.DataApi, testData.AuthApi)
+	pr := test_integration.SignupRandomTestPatient(t, testData.DataApi, testData.AuthApi)
 
 	topicId, err := testData.DataApi.AddConversationTopic("Foo", 100, true)
 	if err != nil {
@@ -121,7 +121,7 @@ func TestConversationItemsInDoctorQueue_DoctorInitiated(t *testing.T) {
 	}); err != nil {
 		t.Fatal(err)
 	}
-	res, err := integration.AuthPost(doctorConvoServer.URL, "application/json", body, pr.Patient.AccountId.Int64())
+	res, err := test_integration.AuthPost(doctorConvoServer.URL, "application/json", body, pr.Patient.AccountId.Int64())
 	if err != nil {
 		t.Fatal(err)
 	}
@@ -131,7 +131,7 @@ func TestConversationItemsInDoctorQueue_DoctorInitiated(t *testing.T) {
 	}
 	res.Body.Close()
 
-	doctorId := integration.GetDoctorIdOfCurrentPrimaryDoctor(testData, t)
+	doctorId := test_integration.GetDoctorIdOfCurrentPrimaryDoctor(testData, t)
 	doctor, err := testData.DataApi.GetDoctorFromId(doctorId)
 	if err != nil {
 		t.Fatal(err.Error())
@@ -153,7 +153,7 @@ func TestConversationItemsInDoctorQueue_DoctorInitiated(t *testing.T) {
 	}); err != nil {
 		t.Fatal(err)
 	}
-	res, err = integration.AuthPost(patientMessageServer.URL, "application/json", body, doctor.AccountId.Int64())
+	res, err = test_integration.AuthPost(patientMessageServer.URL, "application/json", body, doctor.AccountId.Int64())
 	if err != nil {
 		t.Fatal(err)
 	}
@@ -175,19 +175,19 @@ func TestConversationItemsInDoctorQueue_DoctorInitiated(t *testing.T) {
 }
 
 func TestConversationItemsInDoctorQueue_PatientInitiated(t *testing.T) {
-	testData := integration.SetupIntegrationTest(t)
-	defer integration.TearDownIntegrationTest(t, testData)
+	testData := test_integration.SetupIntegrationTest(t)
+	defer test_integration.TearDownIntegrationTest(t, testData)
 
-	pr := integration.SignupRandomTestPatient(t, testData.DataApi, testData.AuthApi)
+	pr := test_integration.SignupRandomTestPatient(t, testData.DataApi, testData.AuthApi)
 	patient := pr.Patient
 
-	doctorId := integration.GetDoctorIdOfCurrentPrimaryDoctor(testData, t)
+	doctorId := test_integration.GetDoctorIdOfCurrentPrimaryDoctor(testData, t)
 	doctor, err := testData.DataApi.GetDoctorFromId(doctorId)
 	if err != nil {
 		t.Fatalf(err.Error())
 	}
 
-	convId := integration.StartConversationFromPatientToDoctor(t, testData.DataApi, patient.AccountId.Int64(), 0)
+	convId := test_integration.StartConversationFromPatientToDoctor(t, testData.DataApi, patient.AccountId.Int64(), 0)
 
 	pendingItems, err := testData.DataApi.GetPendingItemsInDoctorQueue(doctorId)
 	if err != nil {
@@ -197,7 +197,7 @@ func TestConversationItemsInDoctorQueue_PatientInitiated(t *testing.T) {
 	}
 
 	// get doctor to clear the notification (which should clear the notification)
-	integration.DoctorReplyToConversation(t, testData.DataApi, convId, doctor.AccountId.Int64())
+	test_integration.DoctorReplyToConversation(t, testData.DataApi, convId, doctor.AccountId.Int64())
 	pendingItems, err = testData.DataApi.GetPendingItemsInDoctorQueue(doctorId)
 	if err != nil {
 		t.Fatalf("Error getting pending items from doctor: %s", err)
@@ -208,7 +208,7 @@ func TestConversationItemsInDoctorQueue_PatientInitiated(t *testing.T) {
 	// no matter how many time the patient replies there should be just 1 pending item to represent the replied
 	// conversation
 
-	integration.PatientReplyToConversation(t, testData.DataApi, convId, patient.AccountId.Int64())
+	test_integration.PatientReplyToConversation(t, testData.DataApi, convId, patient.AccountId.Int64())
 
 	pendingItems, err = testData.DataApi.GetPendingItemsInDoctorQueue(doctorId)
 	if err != nil {
@@ -217,7 +217,7 @@ func TestConversationItemsInDoctorQueue_PatientInitiated(t *testing.T) {
 		t.Fatalf("Expected 1 pending item in doctor queue instead got %d", len(pendingItems))
 	}
 
-	integration.PatientReplyToConversation(t, testData.DataApi, convId, patient.AccountId.Int64())
+	test_integration.PatientReplyToConversation(t, testData.DataApi, convId, patient.AccountId.Int64())
 
 	pendingItems, err = testData.DataApi.GetPendingItemsInDoctorQueue(doctorId)
 	if err != nil {
@@ -229,10 +229,10 @@ func TestConversationItemsInDoctorQueue_PatientInitiated(t *testing.T) {
 }
 
 func TestMarkingConversationReadWithDoctorQueue(t *testing.T) {
-	testData := integration.SetupIntegrationTest(t)
-	defer integration.TearDownIntegrationTest(t, testData)
+	testData := test_integration.SetupIntegrationTest(t)
+	defer test_integration.TearDownIntegrationTest(t, testData)
 
-	pr := integration.SignupRandomTestPatient(t, testData.DataApi, testData.AuthApi)
+	pr := test_integration.SignupRandomTestPatient(t, testData.DataApi, testData.AuthApi)
 
 	topicId, err := testData.DataApi.AddConversationTopic("Foo", 100, true)
 	if err != nil {
@@ -253,7 +253,7 @@ func TestMarkingConversationReadWithDoctorQueue(t *testing.T) {
 	}); err != nil {
 		t.Fatal(err)
 	}
-	res, err := integration.AuthPost(patientConvoServer.URL, "application/json", body, pr.Patient.AccountId.Int64())
+	res, err := test_integration.AuthPost(patientConvoServer.URL, "application/json", body, pr.Patient.AccountId.Int64())
 	if err != nil {
 		t.Fatal(err)
 	}
@@ -263,7 +263,7 @@ func TestMarkingConversationReadWithDoctorQueue(t *testing.T) {
 	}
 	res.Body.Close()
 
-	doctorId := integration.GetDoctorIdOfCurrentPrimaryDoctor(testData, t)
+	doctorId := test_integration.GetDoctorIdOfCurrentPrimaryDoctor(testData, t)
 	doctor, err := testData.DataApi.GetDoctorFromId(doctorId)
 	if err != nil {
 		t.Fatal(err)
@@ -271,7 +271,7 @@ func TestMarkingConversationReadWithDoctorQueue(t *testing.T) {
 
 	params := url.Values{}
 	params.Set("conversation_id", strconv.FormatInt(newConvRes.ConversationId, 10))
-	res, err = integration.AuthPost(doctorReadServer.URL, "application/x-www-form-urlencoded", strings.NewReader(params.Encode()), doctor.AccountId.Int64())
+	res, err = test_integration.AuthPost(doctorReadServer.URL, "application/x-www-form-urlencoded", strings.NewReader(params.Encode()), doctor.AccountId.Int64())
 	if err != nil {
 		t.Fatal(err)
 	}

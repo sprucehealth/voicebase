@@ -1,4 +1,4 @@
-package integration
+package test_integration
 
 import (
 	"bytes"
@@ -167,7 +167,7 @@ func GetDoctorIdOfCurrentPrimaryDoctor(testData TestData, t *testing.T) int64 {
 	return doctorId
 }
 
-func signupAndSubmitPatientVisitForRandomPatient(t *testing.T, testData TestData, doctor *common.Doctor) (*apiservice.PatientVisitResponse, *common.DoctorTreatmentPlan) {
+func SignupAndSubmitPatientVisitForRandomPatient(t *testing.T, testData TestData, doctor *common.Doctor) (*apiservice.PatientVisitResponse, *common.DoctorTreatmentPlan) {
 	patientSignedupResponse := SignupRandomTestPatient(t, testData.DataApi, testData.AuthApi)
 	patientVisitResponse := CreatePatientVisitForPatient(patientSignedupResponse.Patient.PatientId.Int64(), testData, t)
 
@@ -197,7 +197,7 @@ func SetupIntegrationTest(t *testing.T) TestData {
 	}
 
 	ts := time.Now()
-	setupScript := os.Getenv(carefrontProjectDirEnv) + "/src/carefront/test/integration/setup_integration_test.sh"
+	setupScript := os.Getenv(carefrontProjectDirEnv) + "/src/carefront/test/test_integration/setup_integration_test.sh"
 	cmd := exec.Command(setupScript)
 	var out bytes.Buffer
 	cmd.Stdout = &out
@@ -274,7 +274,7 @@ func TearDownIntegrationTest(t *testing.T, testData TestData) {
 	t.Logf("Time to run test: %.3f seconds", float64(time.Since(testData.StartTime))/float64(time.Second))
 	ts := time.Now()
 	// put anything here that is global to the teardown process for integration tests
-	teardownScript := os.Getenv(carefrontProjectDirEnv) + "/src/carefront/test/integration/teardown_integration_test.sh"
+	teardownScript := os.Getenv(carefrontProjectDirEnv) + "/src/carefront/test/test_integration/teardown_integration_test.sh"
 	cmd := exec.Command(teardownScript, testData.DBConfig.DatabaseName)
 	var out bytes.Buffer
 	cmd.Stdout = &out
