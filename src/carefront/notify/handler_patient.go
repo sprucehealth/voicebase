@@ -22,7 +22,7 @@ type promptStatusRequestData struct {
 }
 
 func (p *patientPromptStatusHandler) ServeHTTP(w http.ResponseWriter, r *http.Request) {
-	if r.Method != apiservice.HTTP_POST {
+	if r.Method != apiservice.HTTP_PUT {
 		w.WriteHeader(http.StatusNotFound)
 		return
 	}
