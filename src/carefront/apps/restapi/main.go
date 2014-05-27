@@ -2,6 +2,7 @@ package main
 
 import (
 	"carefront/address"
+	"carefront/analytics"
 	"carefront/api"
 	"carefront/apiservice"
 	"carefront/app_worker"
@@ -93,6 +94,7 @@ type Config struct {
 	DoseSpot                 *DosespotConfig      `group:"Dosespot" toml:"dosespot"`
 	SmartyStreets            *SmartyStreetsConfig `group:"smarty_streets" toml:"smarty_streets"`
 	StripeSecretKey          string               `long:"strip_secret_key" description:"Stripe secret key"`
+	AnalyticsLogPath         string               `long:"analytics_log_path" description:"Path to store analytics logs"`
 }
 
 var DefaultConfig = Config{
@@ -446,6 +448,21 @@ func main() {
 	mux.Handle("/v1/doctor/visit/followup", doctorFollowupHandler)
 	mux.Handle("/v1/doctor/visit/submit", doctorSubmitPatientVisitHandler)
 	mux.Handle("/v1/doctor/favorite_treatment_plans", doctorFavoriteTreatmentPlansHandler)
+
+	if conf.AnalyticsLogPath != "" {
+		logger, err := analytics.NewFileLogger(conf.AnalyticsLogPath, 0, 0)
+		if err != nil {
+			log.Fatal(err)
+		}
+		if err := logger.Start(); err != nil {
+			log.Fatal(err)
+		}
+		h, err := analytics.NewHandler(logger, metricsRegistry.Scope("analytics.event.client"))
+		if err != nil {
+			log.Fatal(err)
+		}
+		mux.Handle("/v1/event/client", h)
+	}
 
 	// add the api to create demo visits to every environment except production
 	if conf.Environment != "prod" {
