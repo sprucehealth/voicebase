@@ -4,9 +4,6 @@ import (
 	"carefront/app_url"
 	"carefront/encoding"
 	"carefront/libs/pharmacy"
-	"errors"
-	"fmt"
-	"reflect"
 	"time"
 )
 
@@ -22,30 +19,6 @@ const (
 type PhoneInformation struct {
 	Phone     string `json:"phone,omitempty"`
 	PhoneType string `json:"phone_type,omitempty"`
-}
-
-type PatientPromptStatus string
-
-func (p PatientPromptStatus) String() string {
-	return string(p)
-}
-
-var (
-	Unprompted PatientPromptStatus = "UNPROMPTED"
-	Accepted   PatientPromptStatus = "ACCEPTED"
-	Declined   PatientPromptStatus = "DECLINED"
-)
-
-func GetPromptStatus(promptStatus string) (PatientPromptStatus, error) {
-	switch promptStatus {
-	case "UNPROMPTED":
-		return Unprompted, nil
-	case "ACCEPTED":
-		return Accepted, nil
-	case "DECLINED":
-		return Declined, nil
-	}
-	return PatientPromptStatus(""), errors.New("Unknown prompt status: " + promptStatus)
 }
 
 type Patient struct {
@@ -70,12 +43,6 @@ type Patient struct {
 	PersonId          int64                  `json:"person_id"`
 	PromptStatus      PatientPromptStatus    `json:"prompt_status"`
 }
-
-type ByCreationDate []*Card
-
-func (c ByCreationDate) Len() int           { return len(c) }
-func (c ByCreationDate) Swap(i, j int)      { c[i], c[j] = c[j], c[i] }
-func (c ByCreationDate) Less(i, j int) bool { return c[i].CreationDate.Before(c[j].CreationDate) }
 
 type Card struct {
 	Id             encoding.ObjectId `json:"id,omitempty"`
@@ -422,14 +389,6 @@ type QuestionInfo struct {
 	AlertFormattedText string
 }
 
-type ByStatusTimestamp []StatusEvent
-
-func (a ByStatusTimestamp) Len() int      { return len(a) }
-func (a ByStatusTimestamp) Swap(i, j int) { a[i], a[j] = a[j], a[i] }
-func (a ByStatusTimestamp) Less(i, j int) bool {
-	return a[i].StatusTimestamp.Before(a[j].StatusTimestamp)
-}
-
 type StatusEvent struct {
 	ItemId            int64     `json:"-"`
 	PrescriptionId    int64     `json:"-"`
@@ -527,45 +486,6 @@ type ConversationMessage struct {
 	FromId         int64
 	Body           string
 	Attachments    []*ConversationAttachment
-}
-
-type CommunicationType struct {
-	cType string
-}
-
-var (
-	SMS   CommunicationType = CommunicationType{cType: "SMS"}
-	Email CommunicationType = CommunicationType{cType: "EMAIL"}
-	Push  CommunicationType = CommunicationType{cType: "PUSH"}
-)
-
-func (c CommunicationType) String() string {
-	return c.cType
-}
-
-func (c *CommunicationType) Scan(src interface{}) error {
-
-	str, ok := src.([]byte)
-	if !ok {
-		return fmt.Errorf("Cannot scan type %s into CommunicationType when string expected", reflect.TypeOf(src))
-	}
-
-	var err error
-	*c, err = GetCommunicationType(string(str))
-
-	return err
-}
-
-func GetCommunicationType(c string) (CommunicationType, error) {
-	switch c {
-	case "SMS":
-		return SMS, nil
-	case "EMAIL":
-		return Email, nil
-	case "PUSH":
-		return Push, nil
-	}
-	return CommunicationType{}, fmt.Errorf("Unable to determine communication type for %s", c)
 }
 
 type CommunicationPreference struct {

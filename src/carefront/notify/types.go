@@ -13,6 +13,23 @@ type notificationView interface {
 	renderPush(platform string, event interface{}, dataApi api.DataAPI) string
 }
 
+type snsNotification struct {
+	DefaultMessage string                   `json:"default"`
+	iosSandBox     *iOSPushNotification     `json:"APNS_SANDBOX,omitempty"`
+	ios            *iOSPushNotification     `json:"APNS,omitempty"`
+	android        *androidPushNotification `json:"GCM,omitempty"`
+}
+
+type iOSPushNotification struct {
+	Alert string `json:"alert"`
+	Badge int64  `json:"badge,omitempty"`
+}
+
+type androidPushNotification struct {
+	Message string `json:"message"`
+	Url     string `json:"url"`
+}
+
 type visitSubmittedNotificationView int64
 
 func (visitSubmittedNotificationView) renderEmail(event interface{}, dataApi api.DataAPI) string {

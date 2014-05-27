@@ -107,7 +107,7 @@ func (n *NotificationManager) NotifyPatient(patient *common.Patient, event inter
 func (n *NotificationManager) determineCommunicationPreferenceBasedOnDefaultConfig(accountId int64) (common.CommunicationType, error) {
 	communicationPreferences, err := n.dataApi.GetCommunicationPreferencesForAccount(accountId)
 	if err != nil {
-		return common.CommunicationType{}, err
+		return common.CommunicationType(""), err
 	}
 
 	// if there is no communication preference assume its best to communicate via SMS
