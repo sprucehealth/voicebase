@@ -41,7 +41,12 @@ var smtpConnectTimeout = time.Second * 5
 
 type NotificationConfig struct {
 	SNSApplicationEndpoint string `long:"sns_application_endpoint" description:"SNS Application endpoint for push notification"`
+	IsApnsSandbox          bool   `long:"apns_sandbox"`
 	URLScheme              string `long:"url_scheme" description:"URL scheme to include in communication for deep linking into app"`
+}
+
+func DetermineNotificationConfigName(platform common.Platform, appType, appEnvironment string) string {
+	return fmt.Sprintf("%s-%s-%s", platform.String(), appType, appEnvironment)
 }
 
 type BaseConfig struct {

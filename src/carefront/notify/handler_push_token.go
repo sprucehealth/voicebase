@@ -6,7 +6,6 @@ import (
 	"carefront/common"
 	"carefront/common/config"
 	"carefront/libs/aws/sns"
-	"fmt"
 	"net/http"
 )
 
@@ -54,7 +53,7 @@ func (n *notificationHandler) ServeHTTP(w http.ResponseWriter, r *http.Request) 
 	}
 
 	// lookup the application config for configuring push notifications
-	configName := fmt.Sprintf("%s-%s-%s", sHeaders.Platform, sHeaders.AppType, sHeaders.AppEnvironment)
+	configName := config.DetermineNotificationConfigName(sHeaders.Platform, sHeaders.AppType, sHeaders.AppEnvironment)
 	notificationConfig, ok := n.notificationConfigs[configName]
 	if !ok {
 		apiservice.WriteDeveloperError(w, http.StatusInternalServerError, "Unable to find right notification config for "+configName)

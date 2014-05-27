@@ -107,7 +107,7 @@ func (d *DataService) SetOrReplacePushConfigData(pushConfigData *common.PushConf
 
 	// replace entry with the new one
 	_, err = tx.Exec(`replace into push_config (account_id, device_token, push_endpoint, platform, platform_version, app_version, app_type, app_env, device, device_model, device_id) 
-		values (?,?,?,?,?,?,?,?,?,?,?)`, pushConfigData.AccountId, pushConfigData.DeviceToken, pushConfigData.PushEndpoint, pushConfigData.Platform,
+		values (?,?,?,?,?,?,?,?,?,?,?)`, pushConfigData.AccountId, pushConfigData.DeviceToken, pushConfigData.PushEndpoint, pushConfigData.Platform.String(),
 		pushConfigData.PlatformVersion, pushConfigData.AppVersion, pushConfigData.AppType, pushConfigData.AppEnvironment, pushConfigData.Device, pushConfigData.DeviceModel, pushConfigData.DeviceID)
 	if err != nil {
 		tx.Rollback()

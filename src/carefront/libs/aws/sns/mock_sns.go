@@ -12,7 +12,7 @@ func (m *MockSNS) DeleteEndpoint(endpointArn string) error {
 	return nil
 }
 
-func (m *MockSNS) Publish(message, targetArn string) error {
+func (m *MockSNS) Publish(message interface{}, targetArn string) error {
 	return nil
 }
 

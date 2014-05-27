@@ -497,11 +497,11 @@ type CommunicationPreference struct {
 }
 
 type PushConfigData struct {
-	Id              int64
-	AccountId       int64
-	DeviceToken     string
-	PushEndpoint    string
-	Platform        string
+	Id           int64
+	AccountId    int64
+	DeviceToken  string
+	PushEndpoint string
+	Platform
 	PlatformVersion string
 	AppType         string
 	AppEnvironment  string

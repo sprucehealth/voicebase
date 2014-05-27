@@ -2,13 +2,15 @@ package sns
 
 import (
 	"carefront/libs/aws"
+	"encoding/json"
 	"net/url"
+	"strconv"
 )
 
 type SNSService interface {
 	CreatePlatformEndpoint(string, string) (string, error)
 	DeleteEndpoint(string) error
-	Publish(string, string) error
+	Publish(interface{}, string) error
 	SubscribePlatformEndpointToTopic(string, string) error
 }
 
@@ -34,12 +36,18 @@ func (sns *SNS) DeleteEndpoint(endpointArn string) error {
 	return sns.makeRequest(deleteEndpoint, args, nil)
 }
 
-func (sns *SNS) Publish(message, targetArn string) error {
+func (sns *SNS) Publish(message interface{}, targetArn string) error {
 	args := url.Values{}
 	args.Set("TargetArn", "targetArn")
-	args.Set("Message", message)
+	args.Set("MessageStructure", "json")
 
-	err := sns.makeRequest(publish, args, nil)
+	jsonData, err := json.Marshal(message)
+	if err != nil {
+		return err
+	}
+	args.Set("Message", strconv.Quote(string(jsonData)))
+
+	err = sns.makeRequest(publish, args, nil)
 	return err
 }
 

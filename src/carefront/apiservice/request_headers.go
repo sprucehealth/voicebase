@@ -1,6 +1,8 @@
 package apiservice
 
 import (
+	"carefront/common"
+	"carefront/libs/golog"
 	"net/http"
 	"strings"
 )
@@ -15,11 +17,11 @@ const (
 // See here for header definitions:
 // https://github.com/SpruceHealth/backend/issues/148
 type SpruceHeaders struct {
-	AppType          string // (Patient,Doctor,etc)
-	AppEnvironment   string // (Feature,Dev,Demo,Beta,etc)
-	AppVersion       string
-	Build            string
-	Platform         string
+	AppType        string // (Patient,Doctor,etc)
+	AppEnvironment string // (Feature,Dev,Demo,Beta,etc)
+	AppVersion     string
+	Build          string
+	common.Platform
 	PlatformVersion  string
 	Device           string
 	DeviceModel      string
@@ -50,7 +52,12 @@ func ExtractSpruceHeaders(r *http.Request) *SpruceHeaders {
 	// S-OS
 	sOSDataComponents := strings.Split(r.Header.Get(spruceOSHeader), ";")
 	if len(sOSDataComponents) > 0 {
-		sHeaders.Platform = sOSDataComponents[0]
+		var err error
+		sHeaders.Platform, err = common.GetPlatform(sOSDataComponents[0])
+		if err != nil {
+			golog.Errorf("Unable to determine platfrom from request header. Ignoring error for now: %s", err)
+			sHeaders.Platform = ("")
+		}
 	}
 	if len(sOSDataComponents) > 1 {
 		sHeaders.PlatformVersion = sOSDataComponents[1]

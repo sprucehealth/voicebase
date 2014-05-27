@@ -81,13 +81,14 @@ func InitListeners(dataAPI api.DataAPI, notificationManager *notify.Notification
 		}
 
 		// Notify Patient
-		var patient *common.Patient
+		patient := ev.Patient
 		if ev.Patient == nil {
 			patient, err = dataAPI.GetPatientFromId(ev.PatientId)
 			if err != nil {
 				golog.Errorf("Unable to get patient from id: %s", err)
 				return err
 			}
+
 		}
 
 		if err := notificationManager.NotifyPatient(patient, ev); err != nil {

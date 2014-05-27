@@ -20,6 +20,40 @@ func (c ByCreationDate) Len() int           { return len(c) }
 func (c ByCreationDate) Swap(i, j int)      { c[i], c[j] = c[j], c[i] }
 func (c ByCreationDate) Less(i, j int) bool { return c[i].CreationDate.Before(c[j].CreationDate) }
 
+type Platform string
+
+var (
+	Android Platform = "Android"
+	IOS     Platform = "iOS"
+)
+
+func (p Platform) String() string {
+	return string(p)
+}
+
+func GetPlatform(p string) (Platform, error) {
+	switch p {
+	case "Android":
+		return Android, nil
+	case "iOS":
+		return IOS, nil
+	}
+	return Platform(""), fmt.Errorf("Unable to determine platform type from %s", p)
+}
+
+func (p *Platform) Scan(src interface{}) error {
+
+	str, ok := src.([]byte)
+	if !ok {
+		return fmt.Errorf("Cannot scan type %s into Platform when string expected", reflect.TypeOf(src))
+	}
+
+	var err error
+	*p, err = GetPlatform(string(str))
+
+	return err
+}
+
 var (
 	SMS   CommunicationType = "SMS"
 	Email CommunicationType = "EMAIL"

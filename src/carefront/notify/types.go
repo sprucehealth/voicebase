@@ -3,6 +3,7 @@ package notify
 import (
 	"carefront/api"
 	"carefront/apiservice"
+	"carefront/common"
 	"carefront/messages"
 	"reflect"
 )
@@ -10,7 +11,7 @@ import (
 type notificationView interface {
 	renderEmail(event interface{}, dataApi api.DataAPI) string
 	renderSMS(event interface{}, dataApi api.DataAPI) string
-	renderPush(platform string, event interface{}, dataApi api.DataAPI) string
+	renderPush(platform common.Platform, event interface{}, dataApi api.DataAPI, notificationCount int64) interface{}
 }
 
 type snsNotification struct {
@@ -41,12 +42,24 @@ func (visitSubmittedNotificationView) renderSMS(event interface{}, dataApi api.D
 	return "SPRUCE: You have a new patient visit waiting."
 }
 
-func (visitSubmittedNotificationView) renderPush(platform string, event interface{}, dataApi api.DataAPI) string {
-	switch platform {
-	case "Android":
-	case "iOS":
+func (v visitSubmittedNotificationView) renderPush(platform common.Platform, event interface{}, dataApi api.DataAPI, notificationCount int64) interface{} {
+	snsNote := &snsNotification{
+		DefaultMessage: v.renderSMS(event, dataApi),
 	}
-	return ""
+	switch platform {
+	case common.Android:
+		snsNote.android = &androidPushNotification{
+			Message: snsNote.DefaultMessage,
+		}
+
+	case common.IOS:
+		snsNote.iosSandBox = &iOSPushNotification{
+			Badge: notificationCount,
+			Alert: snsNote.DefaultMessage,
+		}
+	}
+
+	return snsNote
 }
 
 type visitReviewedNotificationView int64
@@ -60,12 +73,24 @@ func (visitReviewedNotificationView) renderSMS(event interface{}, dataApi api.Da
 	return "SPRUCE: There is an update to your case."
 }
 
-func (visitReviewedNotificationView) renderPush(platform string, event interface{}, dataApi api.DataAPI) string {
-	switch platform {
-	case "Android":
-	case "iOS":
+func (v visitReviewedNotificationView) renderPush(platform common.Platform, event interface{}, dataApi api.DataAPI, notificationCount int64) interface{} {
+	snsNote := &snsNotification{
+		DefaultMessage: v.renderSMS(event, dataApi),
 	}
-	return ""
+	switch platform {
+	case common.Android:
+		snsNote.android = &androidPushNotification{
+			Message: snsNote.DefaultMessage,
+		}
+
+	case common.IOS:
+		snsNote.iosSandBox = &iOSPushNotification{
+			Badge: notificationCount,
+			Alert: snsNote.DefaultMessage,
+		}
+	}
+
+	return snsNote
 }
 
 type newMessageNotificationView int64
@@ -79,15 +104,31 @@ func (newMessageNotificationView) renderSMS(event interface{}, dataApi api.DataA
 	return "SPRUCE: You have a new message."
 }
 
-func (newMessageNotificationView) renderPush(platform string, event interface{}, dataApi api.DataAPI) string {
-	switch platform {
-	case "Android":
-	case "iOS":
+func (n newMessageNotificationView) renderPush(platform common.Platform, event interface{}, dataApi api.DataAPI, notificationCount int64) interface{} {
+	snsNote := &snsNotification{
+		DefaultMessage: n.renderSMS(event, dataApi),
 	}
-	return ""
+	switch platform {
+	case common.Android:
+		snsNote.android = &androidPushNotification{
+			Message: snsNote.DefaultMessage,
+		}
+
+	case common.IOS:
+		snsNote.iosSandBox = &iOSPushNotification{
+			Badge: notificationCount,
+			Alert: snsNote.DefaultMessage,
+		}
+	}
+
+	return snsNote
 }
 
 var eventToNotificationViewMapping map[reflect.Type]notificationView
+
+func getNotificationViewForEvent(ev interface{}) notificationView {
+	return eventToNotificationViewMapping[reflect.TypeOf(ev)]
+}
 
 func init() {
 	eventToNotificationViewMapping = map[reflect.Type]notificationView{

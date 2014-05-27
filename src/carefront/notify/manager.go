@@ -6,7 +6,6 @@ import (
 	"carefront/common/config"
 	"carefront/libs/aws/sns"
 	"carefront/libs/golog"
-	"reflect"
 	"sort"
 
 	"github.com/samuel/go-metrics/metrics"
@@ -39,10 +38,12 @@ func NewManager(dataApi api.DataAPI, snsClient *sns.SNS, twilioClient *twilio.Cl
 		statPushFailed:      metrics.NewCounter(),
 	}
 
-	statsRegistry.Scope("twilio").Add("sms/sent", manager.statSMSSent)
-	statsRegistry.Scope("twilio").Add("sms/failed", manager.statSMSFailed)
-	statsRegistry.Scope("sns").Add("push/sent", manager.statPushSent)
-	statsRegistry.Scope("sns").Add("push/failed", manager.statPushFailed)
+	if statsRegistry != nil {
+		statsRegistry.Scope("twilio").Add("sms/sent", manager.statSMSSent)
+		statsRegistry.Scope("twilio").Add("sms/failed", manager.statSMSFailed)
+		statsRegistry.Scope("sns").Add("push/sent", manager.statPushSent)
+		statsRegistry.Scope("sns").Add("push/failed", manager.statPushFailed)
+	}
 
 	return manager
 
@@ -61,12 +62,12 @@ func (n *NotificationManager) NotifyDoctor(doctor *common.Doctor, event interfac
 			return err
 		}
 
-		if err := n.pushNotificationToUser(event, notificationCount); err != nil {
+		if err := n.pushNotificationToUser(doctor.AccountId.Int64(), event, notificationCount); err != nil {
 			golog.Errorf("Error sending push to user: %s", err)
 			return err
 		}
 	case common.SMS:
-		if err := n.sendSMSToUser(doctor.CellPhone, eventToNotificationViewMapping[reflect.TypeOf(event)].renderSMS(event, n.dataApi)); err != nil {
+		if err := n.sendSMSToUser(doctor.CellPhone, getNotificationViewForEvent(event).renderSMS(event, n.dataApi)); err != nil {
 			golog.Errorf("Error sending sms to user: %s", err)
 			return err
 		}
@@ -89,12 +90,12 @@ func (n *NotificationManager) NotifyPatient(patient *common.Patient, event inter
 			return err
 		}
 
-		if err := n.pushNotificationToUser(event, notificationCount); err != nil {
+		if err := n.pushNotificationToUser(patient.AccountId.Int64(), event, notificationCount); err != nil {
 			golog.Errorf("Error sending push to user: %s", err)
 			return err
 		}
 	case common.SMS:
-		if err := n.sendSMSToUser(phoneNumberForPatient(patient), eventToNotificationViewMapping[reflect.TypeOf(event)].renderSMS(event, n.dataApi)); err != nil {
+		if err := n.sendSMSToUser(phoneNumberForPatient(patient), getNotificationViewForEvent(event).renderSMS(event, n.dataApi)); err != nil {
 			golog.Errorf("Error sending sms to user: %s", err)
 			return err
 		}
