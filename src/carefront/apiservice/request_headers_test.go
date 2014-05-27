@@ -36,7 +36,7 @@ func TestSpruceHeadersFromiOS(t *testing.T) {
 	checkField(appEnvironment, sHeaders.AppEnvironment, t)
 	checkField(appVersion, sHeaders.AppVersion, t)
 	checkField(appBuild, sHeaders.Build, t)
-	checkField(platform, sHeaders.Platform, t)
+	checkField(platform, sHeaders.Platform.String(), t)
 	checkField(platformVersion, sHeaders.PlatformVersion, t)
 	checkField(device, sHeaders.Device, t)
 	checkField(deviceModel, sHeaders.DeviceModel, t)
