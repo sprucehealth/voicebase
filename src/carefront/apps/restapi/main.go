@@ -160,12 +160,13 @@ func main() {
 	var twilioCli *twilio.Client
 	if conf.Twilio != nil && conf.Twilio.AccountSid != "" && conf.Twilio.AuthToken != "" {
 		twilioCli = twilio.NewClient(conf.Twilio.AccountSid, conf.Twilio.AuthToken, nil)
-		notify.InitManager(dataApi, snsClient, twilioCli, conf.Twilio.FromNumber, conf.NotifiyConfigs, metricsRegistry.Scope("notify"))
 	}
 
-	homelog.InitListeners(dataApi)
+	notificationManager := notify.NewManager(dataApi, snsClient, twilioCli, conf.Twilio.FromNumber, conf.NotifiyConfigs, metricsRegistry.Scope("notify"))
+
+	homelog.InitListeners(dataApi, notificationManager)
+	doctor_queue.InitListeners(dataApi, notificationManager)
 	treatment_plan.InitListeners(dataApi)
-	doctor_queue.InitListeners(dataApi)
 	notify.InitListeners(dataApi)
 
 	cloudStorageApi := api.NewCloudStorageService(awsAuth)

@@ -2,22 +2,18 @@ package notify
 
 import (
 	"carefront/api"
-	"carefront/apiservice"
 	"carefront/common"
 	"carefront/common/config"
 	"carefront/libs/aws/sns"
-	"carefront/libs/dispatch"
 	"carefront/libs/golog"
-	"carefront/messages"
-	"errors"
+	"reflect"
+	"sort"
 
 	"github.com/samuel/go-metrics/metrics"
 	"github.com/subosito/twilio"
 )
 
-var manager notificationManager
-
-type notificationManager struct {
+type NotificationManager struct {
 	dataApi             api.DataAPI
 	snsClient           *sns.SNS
 	twilioClient        *twilio.Client
@@ -29,9 +25,9 @@ type notificationManager struct {
 	statPushFailed      metrics.Counter
 }
 
-func InitManager(dataApi api.DataAPI, snsClient *sns.SNS, twilioClient *twilio.Client, fromNumber string, notificationConfigs map[string]*config.NotificationConfig, statsRegistry metrics.Registry) {
+func NewManager(dataApi api.DataAPI, snsClient *sns.SNS, twilioClient *twilio.Client, fromNumber string, notificationConfigs map[string]*config.NotificationConfig, statsRegistry metrics.Registry) *NotificationManager {
 
-	manager = notificationManager{
+	manager := &NotificationManager{
 		dataApi:             dataApi,
 		snsClient:           snsClient,
 		twilioClient:        twilioClient,
@@ -48,95 +44,77 @@ func InitManager(dataApi api.DataAPI, snsClient *sns.SNS, twilioClient *twilio.C
 	statsRegistry.Scope("sns").Add("push/sent", manager.statPushSent)
 	statsRegistry.Scope("sns").Add("push/failed", manager.statPushFailed)
 
-	dispatch.Default.Subscribe(func(ev *apiservice.VisitSubmittedEvent) error {
-		doctor, err := dataApi.GetDoctorFromId(ev.DoctorId)
+	return manager
+
+}
+
+func (n *NotificationManager) NotifyDoctor(doctor *common.Doctor, event interface{}) error {
+
+	communicationPreference, err := n.determineCommunicationPreferenceBasedOnDefaultConfig(doctor.AccountId.Int64())
+	if err != nil {
+		return err
+	}
+	switch communicationPreference {
+	case common.Push:
+		notificationCount, err := n.dataApi.GetPendingItemCountForDoctorQueue(doctor.DoctorId.Int64())
 		if err != nil {
 			return err
 		}
 
-		if err := manager.notifyDoctor(doctor, ev); err != nil {
+		if err := n.pushNotificationToUser(event, notificationCount); err != nil {
+			golog.Errorf("Error sending push to user: %s", err)
 			return err
 		}
-
-		return nil
-	})
-
-	// Notify the patient when the doctor has reviewed the visit and submitted a treatment plan
-	dispatch.Default.Subscribe(func(ev *apiservice.VisitReviewSubmittedEvent) error {
-		patient := ev.Patient
-		if patient == nil {
-			var err error
-			patient, err = manager.dataApi.GetPatientFromId(ev.PatientId)
-			if err != nil {
-				golog.Errorf("notify: failed to get patient %d: %s", ev.PatientId, err.Error())
-				return err
-			}
-		}
-
-		if err := manager.notifyPatient(patient, ev); err != nil {
+	case common.SMS:
+		if err := n.sendSMSToUser(doctor.CellPhone, eventToNotificationViewMapping[reflect.TypeOf(event)].renderSMS(event, n.dataApi)); err != nil {
+			golog.Errorf("Error sending sms to user: %s", err)
 			return err
 		}
+	case common.Email:
+		// TODO
+	}
+	return nil
+}
 
-		return nil
-	})
+func (n *NotificationManager) NotifyPatient(patient *common.Patient, event interface{}) error {
 
-	dispatch.Default.Subscribe(func(ev *messages.ConversationStartedEvent) error {
-		people, err := manager.dataApi.GetPeople([]int64{ev.FromId, ev.ToId})
-		if err != nil {
-			return err
-		} else if len(people) != 2 {
-			return errors.New("failed to find person for conversation")
-		}
-
-		from := people[ev.FromId]
-		to := people[ev.ToId]
-
-		if to.RoleType == api.PATIENT_ROLE && from.RoleType == api.DOCTOR_ROLE {
-			if err := manager.notifyPatient(to.Patient, ev); err != nil {
-				return err
-			}
-		} else if to.RoleType == api.DOCTOR_ROLE && from.RoleType == api.DOCTOR_ROLE {
-			if err := manager.notifyDoctor(to.Doctor, ev); err != nil {
-				return err
-			}
-		}
-
-		return nil
-	})
-
-	dispatch.Default.Subscribe(func(ev *messages.ConversationReplyEvent) error {
-		con, err := manager.dataApi.GetConversation(ev.ConversationId)
+	communicationPreference, err := n.determineCommunicationPreferenceBasedOnDefaultConfig(patient.AccountId.Int64())
+	if err != nil {
+		return err
+	}
+	switch communicationPreference {
+	case common.Push:
+		notificationCount, err := n.dataApi.GetNotificationCountForPatient(patient.PatientId.Int64())
 		if err != nil {
 			return err
 		}
-		from := con.Participants[ev.FromId]
-		if from == nil {
-			return errors.New("failed to find person conversation is from")
-		}
 
-		var doctorPerson *common.Person
-		var patientPerson *common.Person
-		for _, p := range con.Participants {
-			switch p.RoleType {
-			case api.PATIENT_ROLE:
-				patientPerson = p
-			case api.DOCTOR_ROLE:
-				doctorPerson = p
-			}
+		if err := n.pushNotificationToUser(event, notificationCount); err != nil {
+			golog.Errorf("Error sending push to user: %s", err)
+			return err
 		}
-
-		if from.RoleType != api.PATIENT_ROLE && patientPerson != nil {
-			// Notify patient
-			if err := manager.notifyPatient(patientPerson.Patient, ev); err != nil {
-				return err
-			}
-		} else if from.RoleType != api.DOCTOR_ROLE && doctorPerson != nil {
-			// Notify doctor
-			if err := manager.notifyDoctor(doctorPerson.Doctor, ev); err != nil {
-				return err
-			}
+	case common.SMS:
+		if err := n.sendSMSToUser(phoneNumberForPatient(patient), eventToNotificationViewMapping[reflect.TypeOf(event)].renderSMS(event, n.dataApi)); err != nil {
+			golog.Errorf("Error sending sms to user: %s", err)
+			return err
 		}
+	case common.Email:
+		// TODO
+	}
+	return nil
+}
 
-		return nil
-	})
+func (n *NotificationManager) determineCommunicationPreferenceBasedOnDefaultConfig(accountId int64) (common.CommunicationType, error) {
+	communicationPreferences, err := n.dataApi.GetCommunicationPreferencesForAccount(accountId)
+	if err != nil {
+		return common.CommunicationType{}, err
+	}
+
+	// if there is no communication preference assume its best to communicate via SMS
+	if len(communicationPreferences) == 0 {
+		return common.SMS, nil
+	}
+
+	sort.Sort(sort.Reverse(ByCommunicationPreference(communicationPreferences)))
+	return communicationPreferences[0].CommunicationType, nil
 }

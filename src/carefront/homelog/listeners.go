@@ -8,6 +8,7 @@ import (
 	"carefront/libs/dispatch"
 	"carefront/libs/golog"
 	"carefront/messages"
+	"carefront/notify"
 	patientApiService "carefront/patient"
 	"errors"
 	"fmt"
@@ -15,7 +16,7 @@ import (
 	"strconv"
 )
 
-func InitListeners(dataAPI api.DataAPI) {
+func InitListeners(dataAPI api.DataAPI, notificationManager *notify.NotificationManager) {
 	dispatch.Default.Subscribe(func(ev *apiservice.VisitStartedEvent) error {
 		// Insert an incomplete notification when a patient starts a visit
 		_, err := dataAPI.InsertPatientNotification(ev.PatientId, &common.Notification{
@@ -77,6 +78,21 @@ func InitListeners(dataAPI api.DataAPI) {
 			},
 		}); err != nil {
 			golog.Errorf("Failed to insert treatment plan created into noficiation queue for patient %d: %s", ev.PatientId, err.Error())
+		}
+
+		// Notify Patient
+		var patient *common.Patient
+		if ev.Patient == nil {
+			patient, err = dataAPI.GetPatientFromId(ev.PatientId)
+			if err != nil {
+				golog.Errorf("Unable to get patient from id: %s", err)
+				return err
+			}
+		}
+
+		if err := notificationManager.NotifyPatient(patient, ev); err != nil {
+			golog.Errorf("Unable to notify patient: %s", err)
+			return err
 		}
 
 		// Add "treatment plan created" to health log
@@ -173,7 +189,15 @@ func InitListeners(dataAPI api.DataAPI) {
 					DoctorId:       from.RoleId,
 				},
 			})
-			return err
+			if err != nil {
+				return err
+			}
+
+			// Notify patient
+			if err := notificationManager.NotifyPatient(patientPerson.Patient, ev); err != nil {
+				golog.Errorf("Unable to notify patient of the conversation: %s", err)
+				return err
+			}
 		}
 
 		return nil
@@ -228,7 +252,16 @@ func InitListeners(dataAPI api.DataAPI) {
 					DoctorId:       from.RoleId,
 				},
 			})
-			return err
+			if err != nil {
+				golog.Errorf("Unable to insert notification for patient: %s", err)
+				return err
+			}
+
+			// Notify patient
+			if err := notificationManager.NotifyPatient(patientPerson.Patient, ev); err != nil {
+				golog.Errorf("Unable to notify patient of the conversation: %s", err)
+				return err
+			}
 		}
 
 		if from.RoleType == api.PATIENT_ROLE {

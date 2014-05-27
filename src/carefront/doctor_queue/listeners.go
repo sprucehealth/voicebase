@@ -8,10 +8,11 @@ import (
 	"carefront/libs/dispatch"
 	"carefront/libs/golog"
 	"carefront/messages"
+	"carefront/notify"
 	"errors"
 )
 
-func InitListeners(dataAPI api.DataAPI) {
+func InitListeners(dataAPI api.DataAPI, notificationManager *notify.NotificationManager) {
 	dispatch.Default.Subscribe(func(ev *apiservice.VisitSubmittedEvent) error {
 		// Insert into item appropriate doctor queue to make them aware of a new visit
 		// for them to diagnose
@@ -24,6 +25,8 @@ func InitListeners(dataAPI api.DataAPI) {
 			golog.Errorf("Unable to assign patient visit to doctor: %s", err)
 			return err
 		}
+
+		// TODO Notify Doctor
 		return nil
 	})
 

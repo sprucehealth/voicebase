@@ -433,6 +433,14 @@ func (d *DataService) GetCompletedItemsInDoctorQueue(doctorId int64) ([]*DoctorQ
 	return populateDoctorQueueFromRows(rows)
 }
 
+func (d *DataService) GetPendingItemCountForDoctorQueue(doctorId int64) (int64, error) {
+	var count int64
+	params := []interface{}{doctorId}
+	params = appendStringsToInterfaceSlice(params, []string{STATUS_PENDING, STATUS_ONGOING})
+	err := d.db.QueryRow(fmt.Sprintf(`select count(*) from doctor_queue where doctor_id = ? and status in (%s)`, nReplacements(2)), params).Scan(&count)
+	return count, err
+}
+
 func populateDoctorQueueFromRows(rows *sql.Rows) ([]*DoctorQueueItem, error) {
 	doctorQueue := make([]*DoctorQueueItem, 0)
 	for rows.Next() {
