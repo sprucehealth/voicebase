@@ -94,7 +94,13 @@ type Config struct {
 	DoseSpot                 *DosespotConfig      `group:"Dosespot" toml:"dosespot"`
 	SmartyStreets            *SmartyStreetsConfig `group:"smarty_streets" toml:"smarty_streets"`
 	StripeSecretKey          string               `long:"strip_secret_key" description:"Stripe secret key"`
-	AnalyticsLogPath         string               `long:"analytics_log_path" description:"Path to store analytics logs"`
+	Analytics                *AnalyticsConfig     `group:"Analytics" toml:"analytics"`
+}
+
+type AnalyticsConfig struct {
+	LogPath   string `long:"analytics_log_path" description:"Path to store analytics logs"`
+	MaxEvents int    `long:"analytics_max_events" description:"Max number of events per log file before rotating"`
+	MaxAge    int    `long:"analytics_max_age" description:"Max age of a log file in seconds before rotating"`
 }
 
 var DefaultConfig = Config{
@@ -115,6 +121,10 @@ var DefaultConfig = Config{
 	AuthTokenExpiration:   60 * 60 * 24 * 2,
 	AuthTokenRenew:        60 * 60 * 36,
 	IOSDeeplinkScheme:     "spruce",
+	Analytics: &AnalyticsConfig{
+		MaxEvents: 100 << 10,
+		MaxAge:    10 * 60, // seconds
+	},
 }
 
 func (c *Config) Validate() {
@@ -449,8 +459,8 @@ func main() {
 	mux.Handle("/v1/doctor/visit/submit", doctorSubmitPatientVisitHandler)
 	mux.Handle("/v1/doctor/favorite_treatment_plans", doctorFavoriteTreatmentPlansHandler)
 
-	if conf.AnalyticsLogPath != "" {
-		logger, err := analytics.NewFileLogger(conf.AnalyticsLogPath, 0, 0)
+	if conf.Analytics.LogPath != "" {
+		logger, err := analytics.NewFileLogger(conf.Analytics.LogPath, conf.Analytics.MaxEvents, time.Duration(conf.Analytics.MaxAge)*time.Second)
 		if err != nil {
 			log.Fatal(err)
 		}
