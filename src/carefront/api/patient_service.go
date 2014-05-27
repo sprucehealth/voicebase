@@ -1082,7 +1082,7 @@ func (d *DataService) GetPromptStatus(patientId int64) (common.PatientPromptStat
 	if err := d.db.QueryRow(`select prompt_status from patient_prompt_status where patient_id = ?`, patientId).Scan(&pStatusString); err == sql.ErrNoRows {
 		return common.Unprompted, nil
 	} else if err != nil {
-		return "", err
+		return common.PatientPromptStatus(""), err
 	}
 	return common.GetPromptStatus(pStatusString)
 }

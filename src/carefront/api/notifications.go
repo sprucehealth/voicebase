@@ -6,10 +6,6 @@ import (
 	"fmt"
 )
 
-const (
-	pushCommunicationType = "PUSH"
-)
-
 func (d *DataService) GetPushConfigData(deviceToken string) (*common.PushConfigData, error) {
 
 	rows, err := d.db.Query(`select id, account_id, device_token, push_endpoint, platform, platform_version, app_version, app_type, app_env, app_version, device, device_model, device_id, creation_date from push_config where device_token = ?`, deviceToken)
@@ -33,7 +29,7 @@ func (d *DataService) DeletePushCommunicationPreferenceForAccount(accountId int6
 	if err != nil {
 		return err
 	}
-	_, err = d.db.Exec(`delete from communication_preference where communication_type = ? and account_id = ?`, pushCommunicationType, accountId)
+	_, err = d.db.Exec(`delete from communication_preference where communication_type = ? and account_id = ?`, common.Push.String(), accountId)
 	return err
 }
 
@@ -101,7 +97,7 @@ func (d *DataService) SetOrReplacePushConfigData(pushConfigData *common.PushConf
 
 		// delete push communication entry if there are no other device tokens associated with account
 		if count == 1 {
-			_, err = tx.Exec(`delete from communication_preference where account_id = ? and communication_type = ?`, accountId, pushCommunicationType)
+			_, err = tx.Exec(`delete from communication_preference where account_id = ? and communication_type = ?`, accountId, common.Push.String())
 			if err != nil {
 				tx.Rollback()
 				return err
@@ -118,7 +114,7 @@ func (d *DataService) SetOrReplacePushConfigData(pushConfigData *common.PushConf
 		return err
 	}
 
-	_, err = tx.Exec(`replace into communication_preference (account_id, communication_type, status) values (?,?,?)`, pushConfigData.AccountId, pushCommunicationType, STATUS_ACTIVE)
+	_, err = tx.Exec(`replace into communication_preference (account_id, communication_type, status) values (?,?,?)`, pushConfigData.AccountId, common.Push.String(), STATUS_ACTIVE)
 	if err != nil {
 		tx.Rollback()
 		return err

@@ -3,6 +3,7 @@ package notifications
 import (
 	"carefront/api"
 	"carefront/apiservice"
+	"carefront/common"
 	"carefront/common/config"
 	"carefront/libs/aws/sns"
 	"carefront/notify"
@@ -326,7 +327,7 @@ func SetDeviceTokenForAccountId(accountId int64, deviceToken string, notificatio
 		t.Fatalf(err.Error())
 	} else if len(communicationPreferences) != 1 {
 		t.Fatalf("Expected 1 communication preference instead got %d", len(communicationPreferences))
-	} else if communicationPreferences[0].CommunicationType != "PUSH" {
+	} else if communicationPreferences[0].CommunicationType != common.Push {
 		t.Fatalf("Expected communication type to be PUSH")
 	}
 

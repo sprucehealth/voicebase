@@ -55,7 +55,7 @@ func TestPromptStatus_OnModify(t *testing.T) {
 	params := url.Values{}
 	params.Set("prompt_status", "DECLINED")
 
-	res, err := test_integration.AuthPost(statusServer.URL, "application/x-www-form-urlencoded", strings.NewReader(params.Encode()), patient.AccountId.Int64())
+	res, err := test_integration.AuthPut(statusServer.URL, "application/x-www-form-urlencoded", strings.NewReader(params.Encode()), patient.AccountId.Int64())
 	if err != nil {
 		t.Fatal(err.Error())
 	} else if res.StatusCode != http.StatusOK {

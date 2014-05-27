@@ -150,10 +150,17 @@ func main() {
 		log.Fatalf("Unable to initialize data service layer: %s", err)
 	}
 
+	snsClient := &sns.SNS{
+		Region: aws.USEast,
+		Client: &aws.Client{
+			Auth: awsAuth,
+		},
+	}
+
 	var twilioCli *twilio.Client
 	if conf.Twilio != nil && conf.Twilio.AccountSid != "" && conf.Twilio.AuthToken != "" {
 		twilioCli = twilio.NewClient(conf.Twilio.AccountSid, conf.Twilio.AuthToken, nil)
-		notify.InitTwilio(dataApi, twilioCli, conf.Twilio.FromNumber, conf.IOSDeeplinkScheme, metricsRegistry.Scope("notify").Scope("twilio"))
+		notify.InitManager(dataApi, snsClient, twilioCli, conf.Twilio.FromNumber, conf.NotifiyConfigs, metricsRegistry.Scope("notify"))
 	}
 
 	homelog.InitListeners(dataApi)
@@ -305,12 +312,7 @@ func main() {
 	mux.Handle("/v1/client_model", generateModelIntakeHandler)
 	mux.Handle("/v1/credit_card", patientCardsHandler)
 	mux.Handle("/v1/credit_card/default", patientCardsHandler)
-	mux.Handle("/v1/notification/token", notify.NewNotificationHandler(dataApi, conf.NotifiyConfigs, &sns.SNS{
-		Region: aws.USEast,
-		Client: &aws.Client{
-			Auth: awsAuth,
-		},
-	}))
+	mux.Handle("/v1/notification/token", notify.NewNotificationHandler(dataApi, conf.NotifiyConfigs, snsClient))
 
 	mux.Handle("/v1/photo", photos.NewHandler(dataApi, awsAuth, conf.PhotoBucket, conf.AWSRegion))
 	mux.Handle("/v1/patient/conversation", messages.NewPatientConversationHandler(dataApi))

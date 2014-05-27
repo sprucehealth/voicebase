@@ -5,6 +5,8 @@ import (
 	"carefront/encoding"
 	"carefront/libs/pharmacy"
 	"errors"
+	"fmt"
+	"reflect"
 	"time"
 )
 
@@ -527,12 +529,51 @@ type ConversationMessage struct {
 	Attachments    []*ConversationAttachment
 }
 
+type CommunicationType struct {
+	cType string
+}
+
+var (
+	SMS   CommunicationType = CommunicationType{cType: "SMS"}
+	Email CommunicationType = CommunicationType{cType: "EMAIL"}
+	Push  CommunicationType = CommunicationType{cType: "PUSH"}
+)
+
+func (c CommunicationType) String() string {
+	return c.cType
+}
+
+func (c *CommunicationType) Scan(src interface{}) error {
+
+	str, ok := src.([]byte)
+	if !ok {
+		return fmt.Errorf("Cannot scan type %s into CommunicationType when string expected", reflect.TypeOf(src))
+	}
+
+	var err error
+	*c, err = GetCommunicationType(string(str))
+
+	return err
+}
+
+func GetCommunicationType(c string) (CommunicationType, error) {
+	switch c {
+	case "SMS":
+		return SMS, nil
+	case "EMAIL":
+		return Email, nil
+	case "PUSH":
+		return Push, nil
+	}
+	return CommunicationType{}, fmt.Errorf("Unable to determine communication type for %s", c)
+}
+
 type CommunicationPreference struct {
-	Id                int64
-	AccountId         int64
-	CommunicationType string
-	CreationDate      time.Time
-	Status            string
+	CommunicationType
+	Id           int64
+	AccountId    int64
+	CreationDate time.Time
+	Status       string
 }
 
 type PushConfigData struct {
