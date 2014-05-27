@@ -11,7 +11,7 @@ import (
 
 type notificationHandler struct {
 	dataApi             api.DataAPI
-	notificationConfigs map[string]*config.NotificationConfig
+	notificationConfigs *config.NotificationConfigs
 	snsClient           sns.SNSService
 }
 
@@ -19,7 +19,7 @@ type requestData struct {
 	DeviceToken string `schema:"device_token,required"`
 }
 
-func NewNotificationHandler(dataApi api.DataAPI, configs map[string]*config.NotificationConfig, snsClient sns.SNSService) *notificationHandler {
+func NewNotificationHandler(dataApi api.DataAPI, configs *config.NotificationConfigs, snsClient sns.SNSService) *notificationHandler {
 	return &notificationHandler{
 		dataApi:             dataApi,
 		notificationConfigs: configs,
@@ -54,8 +54,8 @@ func (n *notificationHandler) ServeHTTP(w http.ResponseWriter, r *http.Request) 
 
 	// lookup the application config for configuring push notifications
 	configName := config.DetermineNotificationConfigName(sHeaders.Platform, sHeaders.AppType, sHeaders.AppEnvironment)
-	notificationConfig, ok := n.notificationConfigs[configName]
-	if !ok {
+	notificationConfig, err := n.notificationConfigs.Get(configName)
+	if err != nil {
 		apiservice.WriteDeveloperError(w, http.StatusInternalServerError, "Unable to find right notification config for "+configName)
 		return
 	}

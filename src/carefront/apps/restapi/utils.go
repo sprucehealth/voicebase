@@ -25,35 +25,35 @@ type SmartyStreetsConfig struct {
 
 type Config struct {
 	*config.BaseConfig
-	ProxyProtocol            bool                                  `long:"proxy_protocol" description:"Enable if behind a proxy that uses the PROXY protocol"`
-	ListenAddr               string                                `short:"l" long:"listen" description:"Address and port on which to listen (e.g. 127.0.0.1:8080)"`
-	TLSListenAddr            string                                `long:"tls_listen" description:"Address and port on which to listen (e.g. 127.0.0.1:8080)"`
-	TLSCert                  string                                `long:"tls_cert" description:"Path of SSL certificate"`
-	TLSKey                   string                                `long:"tls_key" description:"Path of SSL private key"`
-	InfoAddr                 string                                `long:"info_addr" description:"Address to listen on for the info server"`
-	DB                       *config.DB                            `group:"Database" toml:"database"`
-	MaxInMemoryForPhotoMB    int64                                 `long:"max_in_memory_photo" description:"Amount of data in MB to be held in memory when parsing multipart form data"`
-	ContentBucket            string                                `long:"content_bucket" description:"S3 Bucket name for all static content"`
-	CaseBucket               string                                `long:"case_bucket" description:"S3 Bucket name for case information"`
-	PatientLayoutBucket      string                                `long:"client_layout_bucket" description:"S3 Bucket name for client digestable layout for patient information intake"`
-	VisualLayoutBucket       string                                `long:"patient_layout_bucket" description:"S3 Bucket name for human readable layout for patient information intake"`
-	DoctorVisualLayoutBucket string                                `long:"doctor_visual_layout_bucket" description:"S3 Bucket name for patient overview for doctor's viewing"`
-	DoctorLayoutBucket       string                                `long:"doctor_layout_bucket" description:"S3 Bucket name for pre-processed patient overview for doctor's viewing"`
-	PhotoBucket              string                                `long:"photo_bucket" description:"S3 Bucket name for uploaded photos"`
-	Debug                    bool                                  `long:"debug" description:"Enable debugging"`
-	DoseSpotUserId           string                                `long:"dose_spot_user_id" description:"DoseSpot UserId for eRx integration"`
-	NoServices               bool                                  `long:"noservices" description:"Disable connecting to remote services"`
-	ERxRouting               bool                                  `long:"erx_routing" description:"Disable sending of prescriptions electronically"`
-	ERxQueue                 string                                `long:"erx_queue" description:"Erx queue name"`
-	AuthTokenExpiration      int                                   `long:"auth_token_expire" description:"Expiration time in seconds for the auth token"`
-	AuthTokenRenew           int                                   `long:"auth_token_renew" description:"Time left below which to renew the auth token"`
-	StaticContentBaseUrl     string                                `long:"static_content_base_url" description:"URL from which to serve static content"`
-	Twilio                   *TwilioConfig                         `group:"Twilio" toml:"twilio"`
-	DoseSpot                 *DosespotConfig                       `group:"Dosespot" toml:"dosespot"`
-	SmartyStreets            *SmartyStreetsConfig                  `group:"smarty_streets" toml:"smarty_streets"`
-	StripeSecretKey          string                                `long:"strip_secret_key" description:"Stripe secret key"`
-	IOSDeeplinkScheme        string                                `long:"ios_deeplink_scheme" description:"Scheme for iOS deep-links (e.g. spruce://)"`
-	NotifiyConfigs           map[string]*config.NotificationConfig `group:"notification" toml:"notification"`
+	ProxyProtocol            bool                        `long:"proxy_protocol" description:"Enable if behind a proxy that uses the PROXY protocol"`
+	ListenAddr               string                      `short:"l" long:"listen" description:"Address and port on which to listen (e.g. 127.0.0.1:8080)"`
+	TLSListenAddr            string                      `long:"tls_listen" description:"Address and port on which to listen (e.g. 127.0.0.1:8080)"`
+	TLSCert                  string                      `long:"tls_cert" description:"Path of SSL certificate"`
+	TLSKey                   string                      `long:"tls_key" description:"Path of SSL private key"`
+	InfoAddr                 string                      `long:"info_addr" description:"Address to listen on for the info server"`
+	DB                       *config.DB                  `group:"Database" toml:"database"`
+	MaxInMemoryForPhotoMB    int64                       `long:"max_in_memory_photo" description:"Amount of data in MB to be held in memory when parsing multipart form data"`
+	ContentBucket            string                      `long:"content_bucket" description:"S3 Bucket name for all static content"`
+	CaseBucket               string                      `long:"case_bucket" description:"S3 Bucket name for case information"`
+	PatientLayoutBucket      string                      `long:"client_layout_bucket" description:"S3 Bucket name for client digestable layout for patient information intake"`
+	VisualLayoutBucket       string                      `long:"patient_layout_bucket" description:"S3 Bucket name for human readable layout for patient information intake"`
+	DoctorVisualLayoutBucket string                      `long:"doctor_visual_layout_bucket" description:"S3 Bucket name for patient overview for doctor's viewing"`
+	DoctorLayoutBucket       string                      `long:"doctor_layout_bucket" description:"S3 Bucket name for pre-processed patient overview for doctor's viewing"`
+	PhotoBucket              string                      `long:"photo_bucket" description:"S3 Bucket name for uploaded photos"`
+	Debug                    bool                        `long:"debug" description:"Enable debugging"`
+	DoseSpotUserId           string                      `long:"dose_spot_user_id" description:"DoseSpot UserId for eRx integration"`
+	NoServices               bool                        `long:"noservices" description:"Disable connecting to remote services"`
+	ERxRouting               bool                        `long:"erx_routing" description:"Disable sending of prescriptions electronically"`
+	ERxQueue                 string                      `long:"erx_queue" description:"Erx queue name"`
+	AuthTokenExpiration      int                         `long:"auth_token_expire" description:"Expiration time in seconds for the auth token"`
+	AuthTokenRenew           int                         `long:"auth_token_renew" description:"Time left below which to renew the auth token"`
+	StaticContentBaseUrl     string                      `long:"static_content_base_url" description:"URL from which to serve static content"`
+	Twilio                   *TwilioConfig               `group:"Twilio" toml:"twilio"`
+	DoseSpot                 *DosespotConfig             `group:"Dosespot" toml:"dosespot"`
+	SmartyStreets            *SmartyStreetsConfig        `group:"smarty_streets" toml:"smarty_streets"`
+	StripeSecretKey          string                      `long:"strip_secret_key" description:"Stripe secret key"`
+	IOSDeeplinkScheme        string                      `long:"ios_deeplink_scheme" description:"Scheme for iOS deep-links (e.g. spruce://)"`
+	NotifiyConfigs           *config.NotificationConfigs `group:"notification" toml:"notification"`
 }
 
 var DefaultConfig = Config{

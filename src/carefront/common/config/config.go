@@ -40,13 +40,24 @@ import (
 var smtpConnectTimeout = time.Second * 5
 
 type NotificationConfig struct {
-	SNSApplicationEndpoint string `long:"sns_application_endpoint" description:"SNS Application endpoint for push notification"`
-	IsApnsSandbox          bool   `long:"apns_sandbox"`
-	URLScheme              string `long:"url_scheme" description:"URL scheme to include in communication for deep linking into app"`
+	SNSApplicationEndpoint string          `long:"sns_application_endpoint" description:"SNS Application endpoint for push notification"`
+	IsApnsSandbox          bool            `long:"apns_sandbox"`
+	Platform               common.Platform `long:"platform"`
+	URLScheme              string          `long:"url_scheme" description:"URL scheme to include in communication for deep linking into app"`
 }
 
 func DetermineNotificationConfigName(platform common.Platform, appType, appEnvironment string) string {
 	return fmt.Sprintf("%s-%s-%s", platform.String(), appType, appEnvironment)
+}
+
+type NotificationConfigs map[string]*NotificationConfig
+
+func (n NotificationConfigs) Get(configName string) (*NotificationConfig, error) {
+	notificationConfig, ok := n[configName]
+	if !ok {
+		return nil, fmt.Errorf("Unable to find notificationConfig for config name %s", configName)
+	}
+	return notificationConfig, nil
 }
 
 type BaseConfig struct {

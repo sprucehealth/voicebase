@@ -1,9 +1,6 @@
 package notify
 
-import (
-	"carefront/common/config"
-	"fmt"
-)
+import "carefront/common/config"
 
 func (n *NotificationManager) pushNotificationToUser(accountId int64, event interface{}, notificationCount int64) error {
 	if n.snsClient == nil {
@@ -21,12 +18,12 @@ func (n *NotificationManager) pushNotificationToUser(accountId int64, event inte
 
 		// lookup config to use to determine endpoint to push to
 		configName := config.DetermineNotificationConfigName(pushConfigData.Platform, pushConfigData.AppType, pushConfigData.AppEnvironment)
-		notificationConfig, ok := n.notificationConfigs[configName]
-		if !ok {
-			return fmt.Errorf("Unable to determine notification config to use")
+		notificationConfig, err := n.notificationConfigs.Get(configName)
+		if err != nil {
+			return err
 		}
 
-		err := n.snsClient.Publish(getNotificationViewForEvent(event).renderPush(pushConfigData.Platform, event, n.dataApi, notificationCount), notificationConfig.SNSApplicationEndpoint)
+		err = n.snsClient.Publish(getNotificationViewForEvent(event).renderPush(notificationConfig, event, n.dataApi, notificationCount), notificationConfig.SNSApplicationEndpoint)
 		if err != nil {
 			n.statPushFailed.Inc(1)
 			return err

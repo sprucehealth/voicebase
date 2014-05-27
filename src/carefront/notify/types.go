@@ -4,6 +4,7 @@ import (
 	"carefront/api"
 	"carefront/apiservice"
 	"carefront/common"
+	"carefront/common/config"
 	"carefront/messages"
 	"reflect"
 )
@@ -11,7 +12,7 @@ import (
 type notificationView interface {
 	renderEmail(event interface{}, dataApi api.DataAPI) string
 	renderSMS(event interface{}, dataApi api.DataAPI) string
-	renderPush(platform common.Platform, event interface{}, dataApi api.DataAPI, notificationCount int64) interface{}
+	renderPush(notificationConfig *config.NotificationConfig, event interface{}, dataApi api.DataAPI, notificationCount int64) interface{}
 }
 
 type snsNotification struct {
@@ -42,20 +43,25 @@ func (visitSubmittedNotificationView) renderSMS(event interface{}, dataApi api.D
 	return "SPRUCE: You have a new patient visit waiting."
 }
 
-func (v visitSubmittedNotificationView) renderPush(platform common.Platform, event interface{}, dataApi api.DataAPI, notificationCount int64) interface{} {
+func (v visitSubmittedNotificationView) renderPush(notificationConfig *config.NotificationConfig, event interface{}, dataApi api.DataAPI, notificationCount int64) interface{} {
 	snsNote := &snsNotification{
 		DefaultMessage: v.renderSMS(event, dataApi),
 	}
-	switch platform {
+	switch notificationConfig.Platform {
 	case common.Android:
 		snsNote.android = &androidPushNotification{
 			Message: snsNote.DefaultMessage,
 		}
 
 	case common.IOS:
-		snsNote.iosSandBox = &iOSPushNotification{
+		iosNotification := &iOSPushNotification{
 			Badge: notificationCount,
 			Alert: snsNote.DefaultMessage,
+		}
+		if notificationConfig.IsApnsSandbox {
+			snsNote.iosSandBox = iosNotification
+		} else {
+			snsNote.ios = iosNotification
 		}
 	}
 
@@ -73,20 +79,25 @@ func (visitReviewedNotificationView) renderSMS(event interface{}, dataApi api.Da
 	return "SPRUCE: There is an update to your case."
 }
 
-func (v visitReviewedNotificationView) renderPush(platform common.Platform, event interface{}, dataApi api.DataAPI, notificationCount int64) interface{} {
+func (v visitReviewedNotificationView) renderPush(notificationConfig *config.NotificationConfig, event interface{}, dataApi api.DataAPI, notificationCount int64) interface{} {
 	snsNote := &snsNotification{
 		DefaultMessage: v.renderSMS(event, dataApi),
 	}
-	switch platform {
+	switch notificationConfig.Platform {
 	case common.Android:
 		snsNote.android = &androidPushNotification{
 			Message: snsNote.DefaultMessage,
 		}
 
 	case common.IOS:
-		snsNote.iosSandBox = &iOSPushNotification{
+		iosNotification := &iOSPushNotification{
 			Badge: notificationCount,
 			Alert: snsNote.DefaultMessage,
+		}
+		if notificationConfig.IsApnsSandbox {
+			snsNote.iosSandBox = iosNotification
+		} else {
+			snsNote.ios = iosNotification
 		}
 	}
 
@@ -104,20 +115,25 @@ func (newMessageNotificationView) renderSMS(event interface{}, dataApi api.DataA
 	return "SPRUCE: You have a new message."
 }
 
-func (n newMessageNotificationView) renderPush(platform common.Platform, event interface{}, dataApi api.DataAPI, notificationCount int64) interface{} {
+func (n newMessageNotificationView) renderPush(notificationConfig *config.NotificationConfig, event interface{}, dataApi api.DataAPI, notificationCount int64) interface{} {
 	snsNote := &snsNotification{
 		DefaultMessage: n.renderSMS(event, dataApi),
 	}
-	switch platform {
+	switch notificationConfig.Platform {
 	case common.Android:
 		snsNote.android = &androidPushNotification{
 			Message: snsNote.DefaultMessage,
 		}
 
 	case common.IOS:
-		snsNote.iosSandBox = &iOSPushNotification{
+		iosNotification := &iOSPushNotification{
 			Badge: notificationCount,
 			Alert: snsNote.DefaultMessage,
+		}
+		if notificationConfig.IsApnsSandbox {
+			snsNote.iosSandBox = iosNotification
+		} else {
+			snsNote.ios = iosNotification
 		}
 	}
 

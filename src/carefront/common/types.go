@@ -23,7 +23,7 @@ func (c ByCreationDate) Less(i, j int) bool { return c[i].CreationDate.Before(c[
 type Platform string
 
 var (
-	Android Platform = "Android"
+	Android Platform = "android"
 	IOS     Platform = "iOS"
 )
 
@@ -33,12 +33,18 @@ func (p Platform) String() string {
 
 func GetPlatform(p string) (Platform, error) {
 	switch p {
-	case "Android":
+	case "android":
 		return Android, nil
 	case "iOS":
 		return IOS, nil
 	}
 	return Platform(""), fmt.Errorf("Unable to determine platform type from %s", p)
+}
+
+func (p *Platform) UnmarshalText(text []byte) error {
+	var err error
+	*p, err = GetPlatform(string(text))
+	return err
 }
 
 func (p *Platform) Scan(src interface{}) error {

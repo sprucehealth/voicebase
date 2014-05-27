@@ -17,14 +17,14 @@ type NotificationManager struct {
 	snsClient           *sns.SNS
 	twilioClient        *twilio.Client
 	fromNumber          string
-	notificationConfigs map[string]*config.NotificationConfig
+	notificationConfigs *config.NotificationConfigs
 	statSMSSent         metrics.Counter
 	statSMSFailed       metrics.Counter
 	statPushSent        metrics.Counter
 	statPushFailed      metrics.Counter
 }
 
-func NewManager(dataApi api.DataAPI, snsClient *sns.SNS, twilioClient *twilio.Client, fromNumber string, notificationConfigs map[string]*config.NotificationConfig, statsRegistry metrics.Registry) *NotificationManager {
+func NewManager(dataApi api.DataAPI, snsClient *sns.SNS, twilioClient *twilio.Client, fromNumber string, notificationConfigs *config.NotificationConfigs, statsRegistry metrics.Registry) *NotificationManager {
 
 	manager := &NotificationManager{
 		dataApi:             dataApi,
