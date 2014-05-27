@@ -3,6 +3,7 @@ package notify
 import (
 	"carefront/api"
 	"carefront/apiservice"
+	"carefront/app_worker"
 	"carefront/common"
 	"carefront/common/config"
 	"carefront/messages"
@@ -40,32 +41,11 @@ func (visitSubmittedNotificationView) renderEmail(event interface{}, dataApi api
 }
 
 func (visitSubmittedNotificationView) renderSMS(event interface{}, dataApi api.DataAPI) string {
-	return "SPRUCE: You have a new patient visit waiting."
+	return "You have a new patient visit waiting."
 }
 
 func (v visitSubmittedNotificationView) renderPush(notificationConfig *config.NotificationConfig, event interface{}, dataApi api.DataAPI, notificationCount int64) interface{} {
-	snsNote := &snsNotification{
-		DefaultMessage: v.renderSMS(event, dataApi),
-	}
-	switch notificationConfig.Platform {
-	case common.Android:
-		snsNote.android = &androidPushNotification{
-			Message: snsNote.DefaultMessage,
-		}
-
-	case common.IOS:
-		iosNotification := &iOSPushNotification{
-			Badge: notificationCount,
-			Alert: snsNote.DefaultMessage,
-		}
-		if notificationConfig.IsApnsSandbox {
-			snsNote.iosSandBox = iosNotification
-		} else {
-			snsNote.ios = iosNotification
-		}
-	}
-
-	return snsNote
+	return renderNotification(notificationConfig, v.renderSMS(event, dataApi), notificationCount)
 }
 
 type visitReviewedNotificationView int64
@@ -76,32 +56,11 @@ func (visitReviewedNotificationView) renderEmail(event interface{}, dataApi api.
 }
 
 func (visitReviewedNotificationView) renderSMS(event interface{}, dataApi api.DataAPI) string {
-	return "SPRUCE: There is an update to your case."
+	return "There is an update to your case."
 }
 
 func (v visitReviewedNotificationView) renderPush(notificationConfig *config.NotificationConfig, event interface{}, dataApi api.DataAPI, notificationCount int64) interface{} {
-	snsNote := &snsNotification{
-		DefaultMessage: v.renderSMS(event, dataApi),
-	}
-	switch notificationConfig.Platform {
-	case common.Android:
-		snsNote.android = &androidPushNotification{
-			Message: snsNote.DefaultMessage,
-		}
-
-	case common.IOS:
-		iosNotification := &iOSPushNotification{
-			Badge: notificationCount,
-			Alert: snsNote.DefaultMessage,
-		}
-		if notificationConfig.IsApnsSandbox {
-			snsNote.iosSandBox = iosNotification
-		} else {
-			snsNote.ios = iosNotification
-		}
-	}
-
-	return snsNote
+	return renderNotification(notificationConfig, v.renderSMS(event, dataApi), notificationCount)
 }
 
 type newMessageNotificationView int64
@@ -112,12 +71,62 @@ func (newMessageNotificationView) renderEmail(event interface{}, dataApi api.Dat
 }
 
 func (newMessageNotificationView) renderSMS(event interface{}, dataApi api.DataAPI) string {
-	return "SPRUCE: You have a new message."
+	return "You have a new message."
 }
 
 func (n newMessageNotificationView) renderPush(notificationConfig *config.NotificationConfig, event interface{}, dataApi api.DataAPI, notificationCount int64) interface{} {
+	return renderNotification(notificationConfig, n.renderSMS(event, dataApi), notificationCount)
+}
+
+type rxTransmissionErrorNotificationView int64
+
+func (rxTransmissionErrorNotificationView) renderEmail(event interface{}, dataApi api.DataAPI) string {
+	// TODO
+	return ""
+}
+
+func (rxTransmissionErrorNotificationView) renderSMS(event interface{}, dataApi api.DataAPI) string {
+	return "There was an error routing prescription to pharmacy"
+}
+
+func (r rxTransmissionErrorNotificationView) renderPush(notificationConfig *config.NotificationConfig, event interface{}, dataApi api.DataAPI, notificationCount int64) interface{} {
+	return renderNotification(notificationConfig, r.renderSMS(event, dataApi), notificationCount)
+}
+
+type refillRxCreatedNotificationView int64
+
+func (refillRxCreatedNotificationView) renderEmail(event interface{}, dataApi api.DataAPI) string {
+	// TODO
+	return ""
+}
+
+func (refillRxCreatedNotificationView) renderSMS(event interface{}, dataApi api.DataAPI) string {
+	return "You have a new refill request from a patient"
+}
+
+func (r refillRxCreatedNotificationView) renderPush(notificationConfig *config.NotificationConfig, event interface{}, dataApi api.DataAPI, notificationCount int64) interface{} {
+	return renderNotification(notificationConfig, r.renderSMS(event, dataApi), notificationCount)
+}
+
+var eventToNotificationViewMapping map[reflect.Type]notificationView
+
+func getNotificationViewForEvent(ev interface{}) notificationView {
+	return eventToNotificationViewMapping[reflect.TypeOf(ev)]
+}
+func init() {
+	eventToNotificationViewMapping = map[reflect.Type]notificationView{
+		reflect.TypeOf(&apiservice.VisitSubmittedEvent{}):       visitSubmittedNotificationView(0),
+		reflect.TypeOf(&apiservice.VisitReviewSubmittedEvent{}): visitReviewedNotificationView(0),
+		reflect.TypeOf(&messages.ConversationStartedEvent{}):    newMessageNotificationView(0),
+		reflect.TypeOf(&messages.ConversationReplyEvent{}):      newMessageNotificationView(0),
+		reflect.TypeOf(&app_worker.RefillRequestCreatedEvent{}): refillRxCreatedNotificationView(0),
+		reflect.TypeOf(&app_worker.RxTransmissionErrorEvent{}):  rxTransmissionErrorNotificationView(0),
+	}
+}
+
+func renderNotification(notificationConfig *config.NotificationConfig, message string, badgeCount int64) *snsNotification {
 	snsNote := &snsNotification{
-		DefaultMessage: n.renderSMS(event, dataApi),
+		DefaultMessage: message,
 	}
 	switch notificationConfig.Platform {
 	case common.Android:
@@ -127,7 +136,7 @@ func (n newMessageNotificationView) renderPush(notificationConfig *config.Notifi
 
 	case common.IOS:
 		iosNotification := &iOSPushNotification{
-			Badge: notificationCount,
+			Badge: badgeCount,
 			Alert: snsNote.DefaultMessage,
 		}
 		if notificationConfig.IsApnsSandbox {
@@ -138,19 +147,4 @@ func (n newMessageNotificationView) renderPush(notificationConfig *config.Notifi
 	}
 
 	return snsNote
-}
-
-var eventToNotificationViewMapping map[reflect.Type]notificationView
-
-func getNotificationViewForEvent(ev interface{}) notificationView {
-	return eventToNotificationViewMapping[reflect.TypeOf(ev)]
-}
-
-func init() {
-	eventToNotificationViewMapping = map[reflect.Type]notificationView{
-		reflect.TypeOf(&apiservice.VisitSubmittedEvent{}):       visitSubmittedNotificationView(0),
-		reflect.TypeOf(&apiservice.VisitReviewSubmittedEvent{}): visitReviewedNotificationView(0),
-		reflect.TypeOf(&messages.ConversationStartedEvent{}):    newMessageNotificationView(0),
-		reflect.TypeOf(&messages.ConversationReplyEvent{}):      newMessageNotificationView(0),
-	}
 }

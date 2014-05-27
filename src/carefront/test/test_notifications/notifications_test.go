@@ -27,16 +27,17 @@ func TestRegisteringToken_Patient(t *testing.T) {
 	accountId := patient.AccountId.Int64()
 
 	deviceToken := "12345"
-	notificationConfigs := map[string]*config.NotificationConfig{
+	notificationConfigs := config.NotificationConfigs(map[string]*config.NotificationConfig{
 		"iOS-Patient-Feature": &config.NotificationConfig{
 			SNSApplicationEndpoint: "endpoint",
 		},
-	}
+	})
+
 	mockSNSClient := &sns.MockSNS{
 		PushEndpointToReturn: "push_endpoint",
 	}
 
-	SetDeviceTokenForAccountId(accountId, deviceToken, notificationConfigs, mockSNSClient, testData.DataApi, t)
+	SetDeviceTokenForAccountId(accountId, deviceToken, &notificationConfigs, mockSNSClient, testData.DataApi, t)
 	// get user communication item and ensure that its all setup
 }
 
@@ -52,16 +53,16 @@ func TestRegisteringToken_Doctor(t *testing.T) {
 	accountId := doctor.AccountId.Int64()
 
 	deviceToken := "12345"
-	notificationConfigs := map[string]*config.NotificationConfig{
+	notificationConfigs := config.NotificationConfigs(map[string]*config.NotificationConfig{
 		"iOS-Patient-Feature": &config.NotificationConfig{
 			SNSApplicationEndpoint: "endpoint",
 		},
-	}
+	})
 	mockSNSClient := &sns.MockSNS{
 		PushEndpointToReturn: "push_endpoint",
 	}
 
-	SetDeviceTokenForAccountId(accountId, deviceToken, notificationConfigs, mockSNSClient, testData.DataApi, t)
+	SetDeviceTokenForAccountId(accountId, deviceToken, &notificationConfigs, mockSNSClient, testData.DataApi, t)
 	// get user communication item and ensure that its all setup
 }
 
@@ -77,17 +78,17 @@ func TestRegisteringToken_SameToken(t *testing.T) {
 	accountId := doctor.AccountId.Int64()
 
 	deviceToken := "12345"
-	notificationConfigs := map[string]*config.NotificationConfig{
+	notificationConfigs := config.NotificationConfigs(map[string]*config.NotificationConfig{
 		"iOS-Patient-Feature": &config.NotificationConfig{
 			SNSApplicationEndpoint: "endpoint",
 		},
-	}
+	})
 	mockSNSClient := &sns.MockSNS{
 		PushEndpointToReturn: "push_endpoint",
 	}
 
-	SetDeviceTokenForAccountId(accountId, deviceToken, notificationConfigs, mockSNSClient, testData.DataApi, t)
-	SetDeviceTokenForAccountId(accountId, deviceToken, notificationConfigs, mockSNSClient, testData.DataApi, t)
+	SetDeviceTokenForAccountId(accountId, deviceToken, &notificationConfigs, mockSNSClient, testData.DataApi, t)
+	SetDeviceTokenForAccountId(accountId, deviceToken, &notificationConfigs, mockSNSClient, testData.DataApi, t)
 	if pushConfigDatas, err := testData.DataApi.GetPushConfigDataForAccount(accountId); err != nil {
 		t.Fatalf(err.Error())
 	} else if len(pushConfigDatas) != 1 {
@@ -104,23 +105,23 @@ func TestRegisteringToken_SameTokenDifferentUser(t *testing.T) {
 	accountId := patient.AccountId.Int64()
 
 	deviceToken := "12345"
-	notificationConfigs := map[string]*config.NotificationConfig{
+	notificationConfigs := config.NotificationConfigs(map[string]*config.NotificationConfig{
 		"iOS-Patient-Feature": &config.NotificationConfig{
 			SNSApplicationEndpoint: "endpoint",
 		},
-	}
+	})
 	mockSNSClient := &sns.MockSNS{
 		PushEndpointToReturn: "push_endpoint",
 	}
 
-	SetDeviceTokenForAccountId(accountId, deviceToken, notificationConfigs, mockSNSClient, testData.DataApi, t)
+	SetDeviceTokenForAccountId(accountId, deviceToken, &notificationConfigs, mockSNSClient, testData.DataApi, t)
 
 	// new patient
 	pr = test_integration.SignupRandomTestPatient(t, testData.DataApi, testData.AuthApi)
 	patient = pr.Patient
 	accountId2 := patient.AccountId.Int64()
 
-	SetDeviceTokenForAccountId(accountId2, deviceToken, notificationConfigs, mockSNSClient, testData.DataApi, t)
+	SetDeviceTokenForAccountId(accountId2, deviceToken, &notificationConfigs, mockSNSClient, testData.DataApi, t)
 	if pushConfigDatas, err := testData.DataApi.GetPushConfigDataForAccount(accountId2); err != nil {
 		t.Fatalf(err.Error())
 	} else if len(pushConfigDatas) != 1 {
@@ -152,17 +153,17 @@ func TestRegisteringToken_DifferentToken(t *testing.T) {
 	}
 	accountId := doctor.AccountId.Int64()
 
-	notificationConfigs := map[string]*config.NotificationConfig{
+	notificationConfigs := config.NotificationConfigs(map[string]*config.NotificationConfig{
 		"iOS-Patient-Feature": &config.NotificationConfig{
 			SNSApplicationEndpoint: "endpoint",
 		},
-	}
+	})
 	mockSNSClient := &sns.MockSNS{
 		PushEndpointToReturn: "push_endpoint",
 	}
 
-	SetDeviceTokenForAccountId(accountId, "12345", notificationConfigs, mockSNSClient, testData.DataApi, t)
-	SetDeviceTokenForAccountId(accountId, "123456789", notificationConfigs, mockSNSClient, testData.DataApi, t)
+	SetDeviceTokenForAccountId(accountId, "12345", &notificationConfigs, mockSNSClient, testData.DataApi, t)
+	SetDeviceTokenForAccountId(accountId, "123456789", &notificationConfigs, mockSNSClient, testData.DataApi, t)
 	if pushConfigDatas, err := testData.DataApi.GetPushConfigDataForAccount(accountId); err != nil {
 		t.Fatalf(err.Error())
 	} else if len(pushConfigDatas) != 2 {
@@ -179,17 +180,17 @@ func TestRegisteringToken_DeleteOnLogout(t *testing.T) {
 	accountId := patient.AccountId.Int64()
 
 	deviceToken := "12345"
-	notificationConfigs := map[string]*config.NotificationConfig{
+	notificationConfigs := config.NotificationConfigs(map[string]*config.NotificationConfig{
 		"iOS-Patient-Feature": &config.NotificationConfig{
 			SNSApplicationEndpoint: "endpoint",
 		},
-	}
+	})
 	mockSNSClient := &sns.MockSNS{
 		PushEndpointToReturn: "push_endpoint",
 	}
 
-	SetDeviceTokenForAccountId(accountId, deviceToken, notificationConfigs, mockSNSClient, testData.DataApi, t)
-	SetDeviceTokenForAccountId(accountId, "123456789", notificationConfigs, mockSNSClient, testData.DataApi, t)
+	SetDeviceTokenForAccountId(accountId, deviceToken, &notificationConfigs, mockSNSClient, testData.DataApi, t)
+	SetDeviceTokenForAccountId(accountId, "123456789", &notificationConfigs, mockSNSClient, testData.DataApi, t)
 
 	// log the user out
 	authHandler := patientApi.NewAuthenticationHandler(testData.DataApi, testData.AuthApi, nil, "")
@@ -234,7 +235,7 @@ func TestRegisteringToken_NoConfig(t *testing.T) {
 	accountId := doctor.AccountId.Int64()
 
 	deviceToken := "12345"
-	notificationConfigs := map[string]*config.NotificationConfig{}
+	notificationConfigs := config.NotificationConfigs(map[string]*config.NotificationConfig{})
 	mockSNSClient := &sns.MockSNS{
 		PushEndpointToReturn: "push_endpoint",
 	}
@@ -242,7 +243,7 @@ func TestRegisteringToken_NoConfig(t *testing.T) {
 	params := url.Values{}
 	params.Set("device_token", deviceToken)
 
-	pNotificationHander := notify.NewNotificationHandler(testData.DataApi, notificationConfigs, mockSNSClient)
+	pNotificationHander := notify.NewNotificationHandler(testData.DataApi, &notificationConfigs, mockSNSClient)
 	notificationServer := httptest.NewServer(pNotificationHander)
 	request, err := http.NewRequest("POST", notificationServer.URL, strings.NewReader(params.Encode()))
 	if err != nil {
@@ -269,7 +270,7 @@ func setupRequestHeaders(r *http.Request) {
 	r.Header.Set("S-Device-ID", "68753A44-4D6F-1226-9C60-0050E4C00067")
 }
 
-func SetDeviceTokenForAccountId(accountId int64, deviceToken string, notificationConfigs map[string]*config.NotificationConfig, mockSNSClient *sns.MockSNS, dataApi api.DataAPI, t *testing.T) {
+func SetDeviceTokenForAccountId(accountId int64, deviceToken string, notificationConfigs *config.NotificationConfigs, mockSNSClient *sns.MockSNS, dataApi api.DataAPI, t *testing.T) {
 	params := url.Values{}
 	params.Set("device_token", deviceToken)
 

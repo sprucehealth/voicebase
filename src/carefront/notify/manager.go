@@ -57,6 +57,8 @@ func (n *NotificationManager) NotifyDoctor(doctor *common.Doctor, event interfac
 	}
 	switch communicationPreference {
 	case common.Push:
+		// currently basing the badge count on the doctor app on the total number of pending items
+		// in the doctor queue
 		notificationCount, err := n.dataApi.GetPendingItemCountForDoctorQueue(doctor.DoctorId.Int64())
 		if err != nil {
 			return err
@@ -78,13 +80,13 @@ func (n *NotificationManager) NotifyDoctor(doctor *common.Doctor, event interfac
 }
 
 func (n *NotificationManager) NotifyPatient(patient *common.Patient, event interface{}) error {
-
 	communicationPreference, err := n.determineCommunicationPreferenceBasedOnDefaultConfig(patient.AccountId.Int64())
 	if err != nil {
 		return err
 	}
 	switch communicationPreference {
 	case common.Push:
+		// currently basing the badge count on the number of notifications in the patient's health log.
 		notificationCount, err := n.dataApi.GetNotificationCountForPatient(patient.PatientId.Int64())
 		if err != nil {
 			return err
@@ -105,6 +107,10 @@ func (n *NotificationManager) NotifyPatient(patient *common.Patient, event inter
 	return nil
 }
 
+// we are currently determining the way to communicate with the user in a simple order of communication preference
+// there will come a point when we need something more complex where we employ different strategies of engagement with the user
+// for different notification events; or based on how the user interacts with the notification. We can evolve this over time, given that we
+// have the ability to make a decision for every event on how best to communicate with the user
 func (n *NotificationManager) determineCommunicationPreferenceBasedOnDefaultConfig(accountId int64) (common.CommunicationType, error) {
 	communicationPreferences, err := n.dataApi.GetCommunicationPreferencesForAccount(accountId)
 	if err != nil {
