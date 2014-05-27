@@ -51,8 +51,8 @@ func (p properties) popBoolPtr(name string) *bool {
 }
 
 type event struct {
-	Name       string `json:"event"`
-	Properties properties
+	Name       string     `json:"event"`
+	Properties properties `json:"properties"`
 }
 
 type Handler struct {
@@ -95,11 +95,10 @@ func (h *Handler) ServeHTTP(w http.ResponseWriter, r *http.Request) {
 		if ev.Name == "" || ev.Properties == nil {
 			continue
 		}
-		tm, ok := ev.Properties["time"].(int64)
-		if !ok || tm < nowUnix-invalidTimeThreshold {
+		tm := ev.Properties.popInt64("time")
+		if tm < nowUnix-invalidTimeThreshold {
 			continue
 		}
-		delete(ev.Properties, "time")
 		id, err := newID()
 		if err != nil {
 			apiservice.WriteDeveloperError(w, http.StatusInternalServerError, "Failed to generate ID: "+err.Error())
@@ -140,7 +139,7 @@ func (h *Handler) ServeHTTP(w http.ResponseWriter, r *http.Request) {
 			var err error
 			evo.ExtraJSON, err = json.Marshal(ev.Properties)
 			if err != nil {
-				golog.Errorf("Failed to marshal extra properties: %s", err.Error)
+				golog.Errorf("Failed to marshal extra properties: %s", err.Error())
 			}
 		}
 		eventsOut = append(eventsOut, evo)
