@@ -8,11 +8,11 @@ import (
 	"sort"
 )
 
-type byCommunicationPreference []*common.CommunicationPreference
+type ByCommunicationPreference []*common.CommunicationPreference
 
-func (b byCommunicationPreference) Len() int      { return len(b) }
-func (b byCommunicationPreference) Swap(i, j int) { b[i], b[j] = b[j], b[i] }
-func (b byCommunicationPreference) Less(i, j int) bool {
+func (b ByCommunicationPreference) Len() int      { return len(b) }
+func (b ByCommunicationPreference) Swap(i, j int) { b[i], b[j] = b[j], b[i] }
+func (b ByCommunicationPreference) Less(i, j int) bool {
 
 	if b[i].CommunicationType == common.Push {
 		return false
@@ -30,7 +30,7 @@ func (b byCommunicationPreference) Less(i, j int) bool {
 		return true
 	}
 
-	return false
+	return true
 }
 
 func phoneNumberForPatient(patient *common.Patient) string {
@@ -56,7 +56,7 @@ func (n *notificationManager) notifyDoctor(doctor *common.Doctor, ev interface{}
 		}
 	}
 
-	sort.Sort(byCommunicationPreference(communicationPreferences))
+	sort.Sort(sort.Reverse(ByCommunicationPreference(communicationPreferences)))
 	topCommunicationPreference := communicationPreferences[0]
 
 	switch topCommunicationPreference.CommunicationType {
@@ -90,7 +90,7 @@ func (n *notificationManager) notifyPatient(patient *common.Patient, ev interfac
 		}
 	}
 
-	sort.Sort(byCommunicationPreference(communicationPreferences))
+	sort.Sort(sort.Reverse(ByCommunicationPreference(communicationPreferences)))
 	topCommunicationPreference := communicationPreferences[0]
 
 	switch topCommunicationPreference.CommunicationType {

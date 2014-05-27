@@ -56,7 +56,7 @@ func getPushConfigDataFromRows(rows *sql.Rows) ([]*common.PushConfigData, error)
 }
 
 func (d *DataService) GetCommunicationPreferencesForAccount(accountId int64) ([]*common.CommunicationPreference, error) {
-	rows, err := d.db.Query(`select id, account_id, communication_type, creation_date, status from communication_preference where account_id=?`, accountId)
+	rows, err := d.db.Query(`select id, account_id, communication_type, creation_date, status from communication_preference where account_id=? and status=?`, accountId, STATUS_ACTIVE)
 	if err != nil {
 		return nil, err
 	}
