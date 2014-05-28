@@ -7,7 +7,7 @@ import (
 
 func (n *NotificationManager) pushNotificationToUser(accountId int64, event interface{}, notificationCount int64) error {
 	if n.snsClient == nil {
-		golog.Errorf("No sns client configured when one was expecte")
+		golog.Errorf("No sns client configured when one was expected")
 		return nil
 	}
 
