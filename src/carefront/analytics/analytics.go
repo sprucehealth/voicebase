@@ -124,13 +124,7 @@ func (h *Handler) ServeHTTP(w http.ResponseWriter, r *http.Request) {
 			continue
 		}
 		tm := time.Unix(tSec, int64(1e9*(tf-math.Floor(tf))))
-		id, err := newID()
-		if err != nil {
-			apiservice.WriteDeveloperError(w, http.StatusInternalServerError, "Failed to generate ID: "+err.Error())
-			return
-		}
 		evo := &ClientEvent{
-			ID:               id,
 			Event:            ev.Name,
 			Timestamp:        Time(tm),
 			Error:            ev.Properties.popString("error"),

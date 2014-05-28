@@ -37,7 +37,6 @@ type Event interface {
 }
 
 type ClientEvent struct {
-	ID               int64    `json:"id"`
 	Event            string   `json:"event"`
 	Timestamp        Time     `json:"time"`
 	Error            string   `json:"error,omitempty"`

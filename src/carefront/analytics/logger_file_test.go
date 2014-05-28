@@ -26,21 +26,21 @@ func TestFileLogger(t *testing.T) {
 	defer l.Stop()
 
 	l.WriteEvents([]Event{
-		&ClientEvent{ID: 1, Timestamp: Time(time.Now())},
-		&ClientEvent{ID: 2, Timestamp: Time(time.Now())},
+		&ClientEvent{Timestamp: Time(time.Now())},
+		&ClientEvent{Timestamp: Time(time.Now())},
 	})
 	l.WriteEvents([]Event{
-		&ClientEvent{ID: 3, Timestamp: Time(time.Now())},
-		&ClientEvent{ID: 4, Timestamp: Time(time.Now())},
-		&ClientEvent{ID: 5, Timestamp: Time(time.Now())},
+		&ClientEvent{Timestamp: Time(time.Now())},
+		&ClientEvent{Timestamp: Time(time.Now())},
+		&ClientEvent{Timestamp: Time(time.Now())},
 	})
 	l.WriteEvents([]Event{
-		&ClientEvent{ID: 6, Timestamp: Time(time.Now())},
-		&ClientEvent{ID: 7, Timestamp: Time(time.Now())},
+		&ClientEvent{Timestamp: Time(time.Now())},
+		&ClientEvent{Timestamp: Time(time.Now())},
 	})
 	l.WriteEvents([]Event{
-		&ClientEvent{ID: 8, Timestamp: Time(time.Now().AddDate(0, 0, -1))},
-		&ClientEvent{ID: 9, Timestamp: Time(time.Now().AddDate(0, 0, -1))},
+		&ClientEvent{Timestamp: Time(time.Now().AddDate(0, 0, -1))},
+		&ClientEvent{Timestamp: Time(time.Now().AddDate(0, 0, -1))},
 	})
 
 	time.Sleep(time.Millisecond * 10)
