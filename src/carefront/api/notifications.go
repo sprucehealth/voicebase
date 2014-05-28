@@ -65,6 +65,7 @@ func (d *DataService) GetCommunicationPreferencesForAccount(accountId int64) ([]
 		return nil, err
 	}
 	defer rows.Close()
+
 	communicationPreferences := make([]*common.CommunicationPreference, 0)
 	for rows.Next() {
 		var communicationPreference common.CommunicationPreference
@@ -88,6 +89,7 @@ func (d *DataService) SetOrReplacePushConfigData(pushConfigData *common.PushConf
 	// get account id of device token if one exists
 	var accountId int64
 	if err := d.db.QueryRow(`select account_id from push_config where device_token = ?`, pushConfigData.DeviceToken).Scan(&accountId); err != nil && err != sql.ErrNoRows {
+		tx.Rollback()
 		return err
 	}
 
@@ -96,6 +98,7 @@ func (d *DataService) SetOrReplacePushConfigData(pushConfigData *common.PushConf
 	if accountId > 0 && accountId != pushConfigData.AccountId {
 		var count int64
 		if err := d.db.QueryRow(`select count(*) from push_config where device_token = ?`, pushConfigData.DeviceToken).Scan(&count); err != nil && err != sql.ErrNoRows {
+			tx.Rollback()
 			return err
 		}
 
