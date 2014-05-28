@@ -20,7 +20,7 @@ type SpruceHeaders struct {
 	AppType        string // (Patient,Doctor,etc)
 	AppEnvironment string // (Feature,Dev,Demo,Beta,etc)
 	AppVersion     string
-	Build          string
+	AppBuild       string
 	common.Platform
 	PlatformVersion  string
 	Device           string
@@ -46,7 +46,7 @@ func ExtractSpruceHeaders(r *http.Request) *SpruceHeaders {
 		sHeaders.AppVersion = sVersionDataComponents[2]
 	}
 	if len(sVersionDataComponents) > 3 {
-		sHeaders.Build = sVersionDataComponents[3]
+		sHeaders.AppBuild = sVersionDataComponents[3]
 	}
 
 	// S-OS
