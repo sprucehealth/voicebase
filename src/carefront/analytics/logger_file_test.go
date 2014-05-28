@@ -25,22 +25,18 @@ func TestFileLogger(t *testing.T) {
 	}
 	defer l.Stop()
 
-	l.WriteEvents("cat1", []interface{}{
+	l.WriteEvents([]Event{
 		&ClientEvent{ID: 1},
 		&ClientEvent{ID: 2},
 	})
-	l.WriteEvents("cat1", []interface{}{
+	l.WriteEvents([]Event{
 		&ClientEvent{ID: 3},
 		&ClientEvent{ID: 4},
 		&ClientEvent{ID: 5},
 	})
-	l.WriteEvents("cat1", []interface{}{
+	l.WriteEvents([]Event{
 		&ClientEvent{ID: 6},
 		&ClientEvent{ID: 7},
-	})
-	l.WriteEvents("cat2", []interface{}{
-		&ClientEvent{ID: 8},
-		&ClientEvent{ID: 9},
 	})
 
 	time.Sleep(time.Millisecond * 10)
@@ -55,7 +51,7 @@ func TestFileLogger(t *testing.T) {
 
 	t.Log(files)
 
-	if len(files) != 3 {
-		t.Errorf("Expected 3 log files. Got %d", len(files))
+	if len(files) != 2 {
+		t.Errorf("Expected 2 log files. Got %d", len(files))
 	}
 }

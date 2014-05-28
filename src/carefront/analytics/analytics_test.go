@@ -13,14 +13,16 @@ import (
 )
 
 type testLogger struct {
-	events map[string][]interface{}
+	events map[string][]Event
 }
 
-func (l *testLogger) WriteEvents(category string, events []interface{}) {
+func (l *testLogger) WriteEvents(events []Event) {
 	if l.events == nil {
-		l.events = make(map[string][]interface{})
+		l.events = make(map[string][]Event)
 	}
-	l.events[category] = append(l.events[category], events...)
+	for _, e := range events {
+		l.events[e.Category()] = append(l.events[e.Category()], e)
+	}
 }
 
 func (l *testLogger) Start() error {

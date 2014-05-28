@@ -6,6 +6,7 @@ import (
 	"carefront/libs/golog"
 	"encoding/json"
 	"net/http"
+	"strconv"
 	"time"
 
 	"github.com/samuel/go-metrics/metrics"
@@ -31,6 +32,11 @@ func (p properties) popString(name string) string {
 func (p properties) popInt64(name string) int64 {
 	i, ok := p[name].(float64)
 	if !ok {
+		if s := p.popString(name); s != "" {
+			if i, err := strconv.ParseInt(s, 10, 64); err == nil {
+				return i
+			}
+		}
 		return 0
 	}
 	delete(p, name)
@@ -90,7 +96,7 @@ func (h *Handler) ServeHTTP(w http.ResponseWriter, r *http.Request) {
 
 	now := time.Now().UTC()
 	nowUnix := now.Unix()
-	var eventsOut []interface{}
+	var eventsOut []Event
 	for _, ev := range events {
 		if ev.Name == "" || ev.Properties == nil {
 			continue
@@ -108,10 +114,13 @@ func (h *Handler) ServeHTTP(w http.ResponseWriter, r *http.Request) {
 			ID:           id,
 			Event:        ev.Name,
 			Time:         Time(time.Unix(tm, 0)),
+			Error:        ev.Properties.popString("error"),
 			SessionID:    ev.Properties.popString("session_id"),
 			AccountID:    ev.Properties.popInt64("account_id"),
 			PatientID:    ev.Properties.popInt64("patient_id"),
 			VisitID:      ev.Properties.popInt64("visit_id"),
+			ScreenID:     ev.Properties.popString("screen_id"),
+			QuestionID:   ev.Properties.popString("question_id"),
 			TimeSpent:    ev.Properties.popInt("time_spent"),
 			DeviceID:     ch.DeviceID,
 			AppType:      ch.AppType,
@@ -150,5 +159,5 @@ func (h *Handler) ServeHTTP(w http.ResponseWriter, r *http.Request) {
 		return
 	}
 
-	h.logger.WriteEvents("client", eventsOut)
+	h.logger.WriteEvents(eventsOut)
 }

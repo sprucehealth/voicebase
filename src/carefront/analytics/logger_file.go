@@ -15,11 +15,6 @@ const (
 	DefaultMaxFileAge    = time.Minute * 10
 )
 
-type logItem struct {
-	category string
-	events   []interface{}
-}
-
 type logFile struct {
 	p string
 	f *os.File
@@ -30,7 +25,7 @@ type logFile struct {
 
 type fileLogger struct {
 	path      string
-	eventCh   chan logItem
+	eventCh   chan []Event
 	logFiles  map[string]*logFile
 	maxEvents int
 	maxAge    time.Duration
@@ -54,7 +49,7 @@ func NewFileLogger(path string, maxEvents int, maxAge time.Duration) (Logger, er
 }
 
 func (l *fileLogger) Start() error {
-	l.eventCh = make(chan logItem, 32)
+	l.eventCh = make(chan []Event, 32)
 	go l.loop()
 	return nil
 }
@@ -64,16 +59,16 @@ func (l *fileLogger) Stop() error {
 	return nil
 }
 
-func (l *fileLogger) WriteEvents(category string, events []interface{}) {
-	l.eventCh <- logItem{category: category, events: events}
+func (l *fileLogger) WriteEvents(events []Event) {
+	l.eventCh <- events
 }
 
 func (l *fileLogger) loop() {
 	if l.logFiles == nil {
 		l.logFiles = make(map[string]*logFile)
 	}
-	for it := range l.eventCh {
-		l.writeEvents(it.category, it.events)
+	for ev := range l.eventCh {
+		l.writeEvents(ev)
 	}
 	for _, f := range l.logFiles {
 		f.f.Close()
@@ -81,29 +76,40 @@ func (l *fileLogger) loop() {
 	l.logFiles = nil
 }
 
-func (l *fileLogger) writeEvents(category string, events []interface{}) {
-	lf := l.logFiles[category]
-	if lf == nil || lf.n > l.maxEvents || time.Now().Sub(lf.t) > l.maxAge {
-		var err error
-		lf, err = l.newFile(category)
-		if err != nil {
-			l.logFiles[category] = nil
-			return
-		}
-		l.logFiles[category] = lf
-	}
-
+func (l *fileLogger) writeEvents(events []Event) {
+	cats := make(map[string]bool)
 	for _, e := range events {
+		cat := e.Category()
+		lf := l.logFiles[cat]
+		if lf == nil || lf.n > l.maxEvents || time.Now().Sub(lf.t) > l.maxAge {
+			var err error
+			lf, err = l.newFile(cat)
+			if err != nil {
+				l.logFiles[cat] = nil
+				return
+			}
+			l.logFiles[cat] = lf
+		}
+
 		if err := lf.e.Encode(e); err != nil {
 			golog.Errorf("Failed to encode log event: %s", err.Error())
 		}
+
+		cats[cat] = true
+
+		lf.n++
 	}
 
-	lf.n += len(events)
-	if err := lf.f.Sync(); err != nil {
-		golog.Errorf("Failed to sync log file '%s': %s", lf.p, err.Error())
-		lf.f.Close()
-		l.logFiles[category] = nil
+	for cat := range cats {
+		lf := l.logFiles[cat]
+		if lf == nil {
+			continue
+		}
+		if err := lf.f.Sync(); err != nil {
+			golog.Errorf("Failed to sync log file '%s': %s", lf.p, err.Error())
+			lf.f.Close()
+			l.logFiles[cat] = nil
+		}
 	}
 }
 

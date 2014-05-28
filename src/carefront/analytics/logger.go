@@ -5,7 +5,7 @@ import "time"
 const timeFormat = "2006-01-02 15:04:05"
 
 type Logger interface {
-	WriteEvents(category string, events []interface{})
+	WriteEvents([]Event)
 	Start() error
 	Stop() error
 }
@@ -25,15 +25,22 @@ func (t *Time) UnmarshalText(data []byte) error {
 	return nil
 }
 
+type Event interface {
+	Category() string
+}
+
 type ClientEvent struct {
 	ID           int64   `json:"id"`
 	Event        string  `json:"event"`
 	Time         Time    `json:"time"`
+	Error        string  `json:"error,omitempty"`
 	SessionID    string  `json:"session_id"`
 	DeviceID     string  `json:"device_id"`
 	AccountID    int64   `json:"account_id,omitempty"`
 	PatientID    int64   `json:"patient_id,omitempty"`
 	VisitID      int64   `json:"visit_id,omitempty"`
+	ScreenID     string  `json:"screen_id,omitempty"`
+	QuestionID   string  `json:"question_id,omitempty"`
 	TimeSpent    int     `json:"time_spent,omitempty"`
 	AppType      string  `json:"app_type,omitempty"`
 	AppEnv       string  `json:"app_env,omitempty"`
@@ -48,4 +55,8 @@ type ClientEvent struct {
 	DPI          int     `json:"dpi,omitempty"`
 	Scale        float64 `json:"scale,omitempty"`
 	ExtraJSON    []byte  `json:"extra_json,omitempty"`
+}
+
+func (*ClientEvent) Category() string {
+	return "client"
 }
