@@ -64,7 +64,7 @@ func (d *DataService) GetCommunicationPreferencesForAccount(accountId int64) ([]
 	if err != nil {
 		return nil, err
 	}
-
+	defer rows.Close()
 	communicationPreferences := make([]*common.CommunicationPreference, 0)
 	for rows.Next() {
 		var communicationPreference common.CommunicationPreference
