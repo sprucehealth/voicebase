@@ -1,6 +1,9 @@
 package notify
 
-import "carefront/common/config"
+import (
+	"carefront/common/config"
+	"carefront/libs/golog"
+)
 
 func (n *NotificationManager) pushNotificationToUser(accountId int64, event interface{}, notificationCount int64) error {
 	if n.snsClient == nil {
@@ -23,13 +26,17 @@ func (n *NotificationManager) pushNotificationToUser(accountId int64, event inte
 			return err
 		}
 
-		err = n.snsClient.Publish(getNotificationViewForEvent(event).renderPush(notificationConfig, event, n.dataApi, notificationCount), notificationConfig.SNSApplicationEndpoint)
-		if err != nil {
-			n.statPushFailed.Inc(1)
-			return err
-		} else {
-			n.statPushSent.Inc(1)
-		}
+		// send push notifications in parallel
+		go func() {
+			err = n.snsClient.Publish(getNotificationViewForEvent(event).renderPush(notificationConfig, event, n.dataApi, notificationCount), pushConfigData.PushEndpoint)
+			if err != nil {
+				// don't return err so that we attempt to send push to as many devices as possible
+				n.statPushFailed.Inc(1)
+				golog.Errorf("Error sending push notification: %s", err)
+			} else {
+				n.statPushSent.Inc(1)
+			}
+		}()
 	}
 
 	return nil

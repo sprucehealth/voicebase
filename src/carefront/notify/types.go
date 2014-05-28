@@ -18,9 +18,9 @@ type notificationView interface {
 
 type snsNotification struct {
 	DefaultMessage string                   `json:"default"`
-	iosSandBox     *iOSPushNotification     `json:"APNS_SANDBOX,omitempty"`
-	ios            *iOSPushNotification     `json:"APNS,omitempty"`
-	android        *androidPushNotification `json:"GCM,omitempty"`
+	IOSSandBox     *iOSPushNotification     `json:"APNS_SANDBOX,omitempty"`
+	IOS            *iOSPushNotification     `json:"APNS,omitempty"`
+	Android        *androidPushNotification `json:"GCM,omitempty"`
 }
 
 type iOSPushNotification struct {
@@ -56,7 +56,7 @@ func (visitReviewedNotificationView) renderEmail(event interface{}, dataApi api.
 }
 
 func (visitReviewedNotificationView) renderSMS(event interface{}, dataApi api.DataAPI) string {
-	return "There is an update to your case."
+	return "Doctor has reviewed your case."
 }
 
 func (v visitReviewedNotificationView) renderPush(notificationConfig *config.NotificationConfig, event interface{}, dataApi api.DataAPI, notificationCount int64) interface{} {
@@ -130,7 +130,7 @@ func renderNotification(notificationConfig *config.NotificationConfig, message s
 	}
 	switch notificationConfig.Platform {
 	case common.Android:
-		snsNote.android = &androidPushNotification{
+		snsNote.Android = &androidPushNotification{
 			Message: snsNote.DefaultMessage,
 		}
 
@@ -140,9 +140,9 @@ func renderNotification(notificationConfig *config.NotificationConfig, message s
 			Alert: snsNote.DefaultMessage,
 		}
 		if notificationConfig.IsApnsSandbox {
-			snsNote.iosSandBox = iosNotification
+			snsNote.IOSSandBox = iosNotification
 		} else {
-			snsNote.ios = iosNotification
+			snsNote.IOS = iosNotification
 		}
 	}
 

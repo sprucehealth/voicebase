@@ -4,7 +4,6 @@ import (
 	"carefront/libs/aws"
 	"encoding/json"
 	"net/url"
-	"strconv"
 )
 
 type SNSService interface {
@@ -38,14 +37,14 @@ func (sns *SNS) DeleteEndpoint(endpointArn string) error {
 
 func (sns *SNS) Publish(message interface{}, targetArn string) error {
 	args := url.Values{}
-	args.Set("TargetArn", "targetArn")
+	args.Set("TargetArn", targetArn)
 	args.Set("MessageStructure", "json")
 
 	jsonData, err := json.Marshal(message)
 	if err != nil {
 		return err
 	}
-	args.Set("Message", strconv.Quote(string(jsonData)))
+	args.Set("Message", string(jsonData))
 
 	err = sns.makeRequest(publish, args, nil)
 	return err
