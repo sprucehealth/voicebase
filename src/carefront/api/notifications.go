@@ -45,6 +45,7 @@ func (d *DataService) GetPushConfigDataForAccount(accountId int64) ([]*common.Pu
 }
 
 func getPushConfigDataFromRows(rows *sql.Rows) ([]*common.PushConfigData, error) {
+	defer rows.Close()
 	pushConfigs := make([]*common.PushConfigData, 0)
 	for rows.Next() {
 		var pushConfigData common.PushConfigData
