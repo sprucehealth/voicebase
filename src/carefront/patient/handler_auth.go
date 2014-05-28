@@ -60,6 +60,7 @@ import (
 	"carefront/api"
 	"carefront/apiservice"
 	"carefront/common"
+	"carefront/libs/dispatch"
 	"carefront/libs/golog"
 	"carefront/libs/pharmacy"
 	thriftapi "carefront/thrift/api"
@@ -154,10 +155,16 @@ func (h *AuthenticationHandler) ServeHTTP(w http.ResponseWriter, r *http.Request
 			apiservice.WriteDeveloperError(w, http.StatusBadRequest, "authorization token not correctly specified in header")
 			return
 		}
+
 		if err := h.authApi.LogOut(token); err != nil {
 			apiservice.WriteDeveloperError(w, http.StatusInternalServerError, "Internal Server Error")
 			return
 		}
+
+		dispatch.Default.Publish(&AccountLoggedOutEvent{
+			AccountId: apiservice.GetContext(r).AccountId,
+		})
+
 		w.WriteHeader(http.StatusOK)
 	default:
 		w.WriteHeader(http.StatusNotFound)

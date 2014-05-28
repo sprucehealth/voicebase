@@ -26,6 +26,12 @@ func (d *DataService) DeletePatientNotificationByUID(patientId int64, uid string
 	return err
 }
 
+func (d *DataService) GetNotificationCountForPatient(patientId int64) (int64, error) {
+	var count int64
+	err := d.db.QueryRow(`select count(*) from patient_notifications where patient_id = ?`, patientId).Scan(&count)
+	return count, err
+}
+
 func (d *DataService) GetNotificationsForPatient(patientId int64, typeMap map[string]reflect.Type) ([]*common.Notification, []*common.Notification, error) {
 	rows, err := d.db.Query(`
 		SELECT id, uid, tstamp, expires, dismissible, dismiss_on_action, priority, type, data
