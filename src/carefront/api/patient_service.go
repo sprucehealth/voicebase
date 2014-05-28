@@ -1072,11 +1072,6 @@ func (d *DataService) GetFullNameForState(state string) (string, error) {
 	return fullName, nil
 }
 
-func (d *DataService) SetPushPromptStatus(patientId int64, pStatus common.PushPromptStatus) error {
-	_, err := d.db.Exec(`replace into patient_prompt_status (prompt_status, patient_id) values (?,?)`, pStatus.String(), patientId)
-	return err
-}
-
 func (d *DataService) GetPushPromptStatus(patientId int64) (common.PushPromptStatus, error) {
 	var pStatusString string
 	if err := d.db.QueryRow(`select prompt_status from patient_prompt_status where patient_id = ?`, patientId).Scan(&pStatusString); err == sql.ErrNoRows {

@@ -100,7 +100,6 @@ type PatientAPI interface {
 	UpdateDefaultAddressForPatient(patientId int64, address *common.Address) error
 	DeleteAddress(addressId int64) error
 	GetFullNameForState(state string) (string, error)
-	SetPushPromptStatus(patientId int64, pStatus common.PushPromptStatus) error
 }
 
 type PatientVisitAPI interface {
@@ -300,6 +299,7 @@ type NotificationAPI interface {
 	GetPushConfigDataForAccount(accountId int64) ([]*common.PushConfigData, error)
 	SetOrReplacePushConfigData(pConfigData *common.PushConfigData) error
 	GetCommunicationPreferencesForAccount(accountId int64) ([]*common.CommunicationPreference, error)
+	SetPushPromptStatus(patientId int64, pStatus common.PushPromptStatus) error
 }
 
 type PhotoAPI interface {

@@ -123,3 +123,8 @@ func (d *DataService) SetOrReplacePushConfigData(pushConfigData *common.PushConf
 	// commit transaction
 	return tx.Commit()
 }
+
+func (d *DataService) SetPushPromptStatus(patientId int64, pStatus common.PushPromptStatus) error {
+	_, err := d.db.Exec(`replace into patient_prompt_status (prompt_status, patient_id) values (?,?)`, pStatus.String(), patientId)
+	return err
+}
