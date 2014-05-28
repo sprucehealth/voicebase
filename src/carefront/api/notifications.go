@@ -71,7 +71,7 @@ func (d *DataService) GetCommunicationPreferencesForAccount(accountId int64) ([]
 		}
 		communicationPreferences = append(communicationPreferences, &communicationPreference)
 	}
-	return communicationPreferences, nil
+	return communicationPreferences, rows.Err()
 }
 
 func (d *DataService) SetOrReplacePushConfigData(pushConfigData *common.PushConfigData) error {

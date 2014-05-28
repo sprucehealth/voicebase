@@ -20,10 +20,11 @@ type SQSMessage struct {
 }
 
 type SNSError struct {
-	XMLName xml.Name `xml:"ErrorResponse"`
-	Type    string   `xml:"Error>Type"`
-	Code    string   `xml:"Error>Code"`
-	Message string   `xml:"Error>Message"`
+	XMLName   xml.Name `xml:"ErrorResponse"`
+	Type      string   `xml:"Error>Type"`
+	Code      string   `xml:"Error>Code"`
+	Message   string   `xml:"Error>Message"`
+	RequestId string   `xml:"Error>RequestId"`
 }
 
 func (s *SNSError) Error() string {

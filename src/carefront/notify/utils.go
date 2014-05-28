@@ -5,6 +5,8 @@ import (
 	"carefront/common"
 )
 
+// ByCommunicationPrefernce represents a sorting utility to sort communication preferences
+// in the following order of preference: PUSH, SMS, EMAIL
 type ByCommunicationPreference []*common.CommunicationPreference
 
 func (b ByCommunicationPreference) Len() int      { return len(b) }
@@ -37,4 +39,24 @@ func phoneNumberForPatient(patient *common.Patient) string {
 		}
 	}
 	return ""
+}
+
+// snsNotification represents the generic structure for sending notifications via sns
+// Amazon sns requires us to indicate when sending push notifications to APNS_SANDBOX
+// vs APNS vs GCM which is why there are individual variables to represent these objects
+type snsNotification struct {
+	DefaultMessage string                   `json:"default"`
+	IOSSandBox     *iOSPushNotification     `json:"APNS_SANDBOX,omitempty"`
+	IOS            *iOSPushNotification     `json:"APNS,omitempty"`
+	Android        *androidPushNotification `json:"GCM,omitempty"`
+}
+
+type iOSPushNotification struct {
+	Alert string `json:"alert,omitempty"`
+	Badge int64  `json:"badge,omitempty"`
+}
+
+type androidPushNotification struct {
+	Message string `json:"message"`
+	Url     string `json:"url"`
 }
