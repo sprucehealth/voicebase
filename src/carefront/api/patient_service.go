@@ -1072,16 +1072,6 @@ func (d *DataService) GetFullNameForState(state string) (string, error) {
 	return fullName, nil
 }
 
-func (d *DataService) GetPushPromptStatus(patientId int64) (common.PushPromptStatus, error) {
-	var pStatusString string
-	if err := d.db.QueryRow(`select prompt_status from patient_prompt_status where patient_id = ?`, patientId).Scan(&pStatusString); err == sql.ErrNoRows {
-		return common.Unprompted, nil
-	} else if err != nil {
-		return common.PushPromptStatus(""), err
-	}
-	return common.GetPushPromptStatus(pStatusString)
-}
-
 func (d *DataService) getPatientBasedOnQuery(table, joins, where string, queryParams ...interface{}) ([]*common.Patient, error) {
 	queryStr := fmt.Sprintf(`
 		SELECT patient.id, patient.erx_patient_id, patient.payment_service_customer_id, account_id,

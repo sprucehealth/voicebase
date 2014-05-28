@@ -137,3 +137,13 @@ func (d *DataService) SetPushPromptStatus(patientId int64, pStatus common.PushPr
 	_, err := d.db.Exec(`replace into patient_prompt_status (prompt_status, patient_id) values (?,?)`, pStatus.String(), patientId)
 	return err
 }
+
+func (d *DataService) GetPushPromptStatus(patientId int64) (common.PushPromptStatus, error) {
+	var pStatusString string
+	if err := d.db.QueryRow(`select prompt_status from patient_prompt_status where patient_id = ?`, patientId).Scan(&pStatusString); err == sql.ErrNoRows {
+		return common.Unprompted, nil
+	} else if err != nil {
+		return common.PushPromptStatus(""), err
+	}
+	return common.GetPushPromptStatus(pStatusString)
+}
