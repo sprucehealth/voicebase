@@ -16,4 +16,5 @@ func (n *NotificationManager) sendSMSToUser(toNumber, message string) error {
 		}
 		golog.Errorf("Error sending sms: %s", err)
 	}()
+	return nil
 }
