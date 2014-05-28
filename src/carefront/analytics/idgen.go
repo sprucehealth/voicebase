@@ -66,6 +66,12 @@ func now() int64 {
 	return time.Now().UnixNano() / 1e6 // ms
 }
 
+// newID returns a 64-bit signed globally unique ID. It does so by combining
+// the current time in milliseconds, datacenter ID, machine ID, and a sequence
+// number. The datacenter+machine ID must be globally unique. Checks are made
+// for time moving backwards and the sequence number wrapping. The IDs are
+// locally orderable and globally K-orderable in time (unordered within a
+// millisecond but strong ordering beyond a millisecond)
 func newID() (int64, error) {
 	mu.Lock()
 
