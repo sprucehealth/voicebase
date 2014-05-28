@@ -12,6 +12,8 @@ func (d *DataService) GetPushConfigData(deviceToken string) (*common.PushConfigD
 	if err != nil {
 		return nil, err
 	}
+	defer rows.Close()
+
 	pushConfigDataList, err := getPushConfigDataFromRows(rows)
 	if err != nil {
 		return nil, err
@@ -41,11 +43,11 @@ func (d *DataService) GetPushConfigDataForAccount(accountId int64) ([]*common.Pu
 	if err != nil {
 		return nil, err
 	}
+	defer rows.Close()
 	return getPushConfigDataFromRows(rows)
 }
 
 func getPushConfigDataFromRows(rows *sql.Rows) ([]*common.PushConfigData, error) {
-	defer rows.Close()
 	pushConfigs := make([]*common.PushConfigData, 0)
 	for rows.Next() {
 		var pushConfigData common.PushConfigData
