@@ -5,6 +5,7 @@ import (
 	"carefront/common"
 	"carefront/libs/golog"
 	"encoding/json"
+	"math"
 	"net/http"
 	"strconv"
 	"time"
@@ -36,6 +37,14 @@ func (p properties) popFloat64Ptr(name string) *float64 {
 	}
 	delete(p, name)
 	return &f
+}
+
+func (p properties) popFloat64(name string) float64 {
+	f := p.popFloat64Ptr(name)
+	if f == nil {
+		return 0.0
+	}
+	return *f
 }
 
 func (p properties) popInt64(name string) int64 {
@@ -110,10 +119,12 @@ func (h *Handler) ServeHTTP(w http.ResponseWriter, r *http.Request) {
 		if ev.Name == "" || ev.Properties == nil {
 			continue
 		}
-		tm := ev.Properties.popInt64("time")
-		if tm < nowUnix-invalidTimeThreshold {
+		tf := ev.Properties.popFloat64("time")
+		tSec := int64(math.Floor(tf))
+		if tSec < nowUnix-invalidTimeThreshold {
 			continue
 		}
+		tm := time.Unix(tSec, int64(1e9*(tf-math.Floor(tf))))
 		id, err := newID()
 		if err != nil {
 			apiservice.WriteDeveloperError(w, http.StatusInternalServerError, "Failed to generate ID: "+err.Error())
@@ -122,7 +133,7 @@ func (h *Handler) ServeHTTP(w http.ResponseWriter, r *http.Request) {
 		evo := &ClientEvent{
 			ID:           id,
 			Event:        ev.Name,
-			Timestamp:    Time(time.Unix(tm, 0)),
+			Timestamp:    Time(tm),
 			Error:        ev.Properties.popString("error"),
 			SessionID:    ev.Properties.popString("session_id"),
 			AccountID:    ev.Properties.popInt64("account_id"),
