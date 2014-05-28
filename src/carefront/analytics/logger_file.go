@@ -75,7 +75,7 @@ func (l *fileLogger) recover() {
 			// Rename the file to remove the .live suffix
 			newPath := path[:len(path)-len(liveSuffix)]
 			if err := os.Rename(path, newPath); err != nil {
-				golog.Errorf("Failed to rename '%s' to '%s': %s", path, newPath, err.Error())
+				golog.Errorf("Failed to rename analytics log: %s", err.Error())
 			}
 		}
 		return nil
@@ -143,7 +143,7 @@ func (l *fileLogger) closeFile(lf *logFile) {
 	// Rename the file to remove the .live suffix
 	newPath := lf.p[:len(lf.p)-len(liveSuffix)]
 	if err := os.Rename(lf.p, newPath); err != nil {
-		golog.Errorf("Failed to rename '%s' to '%s': %s", lf.p, newPath, err.Error())
+		golog.Errorf("Failed to rename analytics log: %s", err.Error())
 	}
 }
 

@@ -459,20 +459,24 @@ func main() {
 	mux.Handle("/v1/doctor/visit/submit", doctorSubmitPatientVisitHandler)
 	mux.Handle("/v1/doctor/favorite_treatment_plans", doctorFavoriteTreatmentPlansHandler)
 
+	var alog analytics.Logger
 	if conf.Analytics.LogPath != "" {
-		logger, err := analytics.NewFileLogger(conf.Analytics.LogPath, conf.Analytics.MaxEvents, time.Duration(conf.Analytics.MaxAge)*time.Second)
+		var err error
+		alog, err = analytics.NewFileLogger(conf.Analytics.LogPath, conf.Analytics.MaxEvents, time.Duration(conf.Analytics.MaxAge)*time.Second)
 		if err != nil {
 			log.Fatal(err)
 		}
-		if err := logger.Start(); err != nil {
+		if err := alog.Start(); err != nil {
 			log.Fatal(err)
 		}
-		h, err := analytics.NewHandler(logger, metricsRegistry.Scope("analytics.event.client"))
-		if err != nil {
-			log.Fatal(err)
-		}
-		mux.Handle("/v1/event/client", h)
+	} else {
+		alog = analytics.NullLogger{}
 	}
+	analyticsHandler, err := analytics.NewHandler(alog, metricsRegistry.Scope("analytics.event.client"))
+	if err != nil {
+		log.Fatal(err)
+	}
+	mux.Handle("/v1/event/client", analyticsHandler)
 
 	// add the api to create demo visits to every environment except production
 	if conf.Environment != "prod" {

@@ -10,6 +10,12 @@ type Logger interface {
 	Stop() error
 }
 
+type NullLogger struct{}
+
+func (NullLogger) WriteEvents([]Event) {}
+func (NullLogger) Start() error        { return nil }
+func (NullLogger) Stop() error         { return nil }
+
 type Time time.Time
 
 func (t Time) MarshalText() ([]byte, error) {
