@@ -4,6 +4,7 @@ import (
 	"carefront/common"
 	"carefront/libs/golog"
 	"net/http"
+	"strconv"
 	"strings"
 )
 
@@ -26,8 +27,8 @@ type SpruceHeaders struct {
 	Device           string
 	DeviceModel      string
 	DeviceID         string
-	ScreenWidth      string
-	ScreenHeight     string
+	ScreenWidth      int64
+	ScreenHeight     int64
 	DeviceResolution string
 }
 
@@ -71,11 +72,19 @@ func ExtractSpruceHeaders(r *http.Request) *SpruceHeaders {
 	if len(sDeviceComponents) > 1 {
 		sHeaders.DeviceModel = sDeviceComponents[1]
 	}
+
+	var err error
 	if len(sDeviceComponents) > 2 {
-		sHeaders.ScreenWidth = sDeviceComponents[2]
+		sHeaders.ScreenWidth, err = strconv.ParseInt(sDeviceComponents[2], 10, 64)
+		if err != nil {
+			golog.Errorf("Unable to parse screen width header value %s to integer type", sDeviceComponents[2])
+		}
 	}
 	if len(sDeviceComponents) > 3 {
-		sHeaders.ScreenHeight = sDeviceComponents[3]
+		sHeaders.ScreenHeight, err = strconv.ParseInt(sDeviceComponents[3], 10, 64)
+		if err != nil {
+			golog.Errorf("Unable to parse screen height header value %s to integer type", sDeviceComponents[3])
+		}
 	}
 	if len(sDeviceComponents) > 4 {
 		sHeaders.DeviceResolution = sDeviceComponents[4]

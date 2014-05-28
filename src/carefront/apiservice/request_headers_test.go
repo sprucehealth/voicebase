@@ -40,10 +40,17 @@ func TestSpruceHeadersFromiOS(t *testing.T) {
 	checkField(platformVersion, sHeaders.PlatformVersion, t)
 	checkField(device, sHeaders.Device, t)
 	checkField(deviceModel, sHeaders.DeviceModel, t)
-	checkField(screenWidth, sHeaders.ScreenWidth, t)
-	checkField(screenHeight, sHeaders.ScreenHeight, t)
 	checkField(resolution, sHeaders.DeviceResolution, t)
 	checkField(deviceID, sHeaders.DeviceID, t)
+
+	if sHeaders.ScreenHeight != 1136 {
+		t.Fatalf("Expected field value to be %d but was %d instead", 1136, sHeaders.ScreenHeight)
+	}
+
+	if sHeaders.ScreenWidth != 640 {
+		t.Fatalf("Expected field value to be %d but was %d instead", 640, sHeaders.ScreenWidth)
+	}
+
 }
 
 func checkField(expectedFieldValue, currentFieldValue string, t *testing.T) {
