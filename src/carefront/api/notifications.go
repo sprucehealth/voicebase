@@ -9,6 +9,9 @@ import (
 func (d *DataService) GetPushConfigData(deviceToken string) (*common.PushConfigData, error) {
 
 	rows, err := d.db.Query(`select id, account_id, device_token, push_endpoint, platform, platform_version, app_version, app_type, app_env, app_version, device, device_model, device_id, creation_date from push_config where device_token = ?`, deviceToken)
+	if err != nil {
+		return nil, err
+	}
 	pushConfigDataList, err := getPushConfigDataFromRows(rows)
 	if err != nil {
 		return nil, err
