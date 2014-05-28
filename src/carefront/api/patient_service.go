@@ -1072,19 +1072,19 @@ func (d *DataService) GetFullNameForState(state string) (string, error) {
 	return fullName, nil
 }
 
-func (d *DataService) SetPromptStatus(patientId int64, pStatus common.PatientPromptStatus) error {
+func (d *DataService) SetPushPromptStatus(patientId int64, pStatus common.PushPromptStatus) error {
 	_, err := d.db.Exec(`replace into patient_prompt_status (prompt_status, patient_id) values (?,?)`, pStatus.String(), patientId)
 	return err
 }
 
-func (d *DataService) GetPromptStatus(patientId int64) (common.PatientPromptStatus, error) {
+func (d *DataService) GetPushPromptStatus(patientId int64) (common.PushPromptStatus, error) {
 	var pStatusString string
 	if err := d.db.QueryRow(`select prompt_status from patient_prompt_status where patient_id = ?`, patientId).Scan(&pStatusString); err == sql.ErrNoRows {
 		return common.Unprompted, nil
 	} else if err != nil {
-		return common.PatientPromptStatus(""), err
+		return common.PushPromptStatus(""), err
 	}
-	return common.GetPromptStatus(pStatusString)
+	return common.GetPushPromptStatus(pStatusString)
 }
 
 func (d *DataService) getPatientBasedOnQuery(table, joins, where string, queryParams ...interface{}) ([]*common.Patient, error) {
@@ -1171,7 +1171,7 @@ func (d *DataService) getOtherInfoForPatient(patient *common.Patient) error {
 	}
 
 	// get prompt status
-	patient.PromptStatus, err = d.GetPromptStatus(patient.PatientId.Int64())
+	patient.PromptStatus, err = d.GetPushPromptStatus(patient.PatientId.Int64())
 	if err != nil {
 		return err
 	}

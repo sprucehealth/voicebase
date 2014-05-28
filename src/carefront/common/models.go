@@ -41,7 +41,7 @@ type Patient struct {
 	Pharmacy          *pharmacy.PharmacyData `json:"pharmacy,omitempty"`
 	PatientAddress    *Address               `json:"address,omitempty"`
 	PersonId          int64                  `json:"person_id"`
-	PromptStatus      PatientPromptStatus    `json:"prompt_status"`
+	PromptStatus      PushPromptStatus       `json:"prompt_status"`
 }
 
 type Card struct {

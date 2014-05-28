@@ -50,7 +50,7 @@ func TestPromptStatus_OnModify(t *testing.T) {
 	pr := test_integration.SignupRandomTestPatient(t, testData.DataApi, testData.AuthApi)
 	patient := pr.Patient
 
-	promptStatusHandler := notify.NewPatientPromptStatusHandler(testData.DataApi)
+	promptStatusHandler := notify.NewPushPromptStatusHandler(testData.DataApi)
 	statusServer := httptest.NewServer(promptStatusHandler)
 	params := url.Values{}
 	params.Set("prompt_status", "DECLINED")

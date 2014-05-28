@@ -100,7 +100,7 @@ type PatientAPI interface {
 	UpdateDefaultAddressForPatient(patientId int64, address *common.Address) error
 	DeleteAddress(addressId int64) error
 	GetFullNameForState(state string) (string, error)
-	SetPromptStatus(patientId int64, pStatus common.PatientPromptStatus) error
+	SetPushPromptStatus(patientId int64, pStatus common.PushPromptStatus) error
 }
 
 type PatientVisitAPI interface {

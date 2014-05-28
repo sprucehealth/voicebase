@@ -97,19 +97,19 @@ func GetCommunicationType(c string) (CommunicationType, error) {
 	return CommunicationType(""), fmt.Errorf("Unable to determine communication type for %s", c)
 }
 
-type PatientPromptStatus string
+type PushPromptStatus string
 
-func (p PatientPromptStatus) String() string {
+func (p PushPromptStatus) String() string {
 	return string(p)
 }
 
 var (
-	Unprompted PatientPromptStatus = "UNPROMPTED"
-	Accepted   PatientPromptStatus = "ACCEPTED"
-	Declined   PatientPromptStatus = "DECLINED"
+	Unprompted PushPromptStatus = "UNPROMPTED"
+	Accepted   PushPromptStatus = "ACCEPTED"
+	Declined   PushPromptStatus = "DECLINED"
 )
 
-func GetPromptStatus(promptStatus string) (PatientPromptStatus, error) {
+func GetPushPromptStatus(promptStatus string) (PushPromptStatus, error) {
 	switch promptStatus {
 	case "UNPROMPTED":
 		return Unprompted, nil
@@ -118,5 +118,5 @@ func GetPromptStatus(promptStatus string) (PatientPromptStatus, error) {
 	case "DECLINED":
 		return Declined, nil
 	}
-	return PatientPromptStatus(""), errors.New("Unknown prompt status: " + promptStatus)
+	return PushPromptStatus(""), errors.New("Unknown prompt status: " + promptStatus)
 }

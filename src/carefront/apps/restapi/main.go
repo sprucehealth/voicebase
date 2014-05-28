@@ -297,7 +297,7 @@ func main() {
 	mux.Handle("/v1/patient/home", homelog.NewListHandler(dataApi))
 	mux.Handle("/v1/patient/home/dismiss", homelog.NewDismissHandler(dataApi))
 	mux.Handle("/v1/patient/isauthenticated", apiservice.NewIsAuthenticatedHandler(authApi))
-	mux.Handle("/v1/patient/prompt_status", notify.NewPatientPromptStatusHandler(dataApi))
+	mux.Handle("/v1/patient/prompt_status", notify.NewPushPromptStatusHandler(dataApi))
 	mux.Handle("/v1/visit", patientVisitHandler)
 	mux.Handle("/v1/visit/review", patientVisitReviewHandler)
 	mux.Handle("/v1/check_eligibility", checkElligibilityHandler)

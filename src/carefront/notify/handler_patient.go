@@ -11,7 +11,7 @@ type patientPromptStatusHandler struct {
 	dataApi api.DataAPI
 }
 
-func NewPatientPromptStatusHandler(dataApi api.DataAPI) *patientPromptStatusHandler {
+func NewPushPromptStatusHandler(dataApi api.DataAPI) *patientPromptStatusHandler {
 	return &patientPromptStatusHandler{
 		dataApi: dataApi,
 	}
@@ -33,7 +33,7 @@ func (p *patientPromptStatusHandler) ServeHTTP(w http.ResponseWriter, r *http.Re
 		return
 	}
 
-	pStatus, err := common.GetPromptStatus(rData.PromptStatus)
+	pStatus, err := common.GetPushPromptStatus(rData.PromptStatus)
 	if err != nil {
 		apiservice.WriteDeveloperError(w, http.StatusBadRequest, err.Error())
 		return
@@ -45,7 +45,7 @@ func (p *patientPromptStatusHandler) ServeHTTP(w http.ResponseWriter, r *http.Re
 		return
 	}
 
-	if err := p.dataApi.SetPromptStatus(patient.PatientId.Int64(), pStatus); err != nil {
+	if err := p.dataApi.SetPushPromptStatus(patient.PatientId.Int64(), pStatus); err != nil {
 		apiservice.WriteDeveloperError(w, http.StatusInternalServerError, err.Error())
 		return
 	}
