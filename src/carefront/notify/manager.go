@@ -12,6 +12,9 @@ import (
 	"github.com/subosito/twilio"
 )
 
+// NotificationManager is responsible for determining how best to route a particular notification to the user based on
+// the user's communication preferences. The current default is to route to SMS in the event that the user has no
+// preference specified
 type NotificationManager struct {
 	dataApi             api.DataAPI
 	snsClient           *sns.SNS
