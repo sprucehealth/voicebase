@@ -3,7 +3,6 @@ package common
 import (
 	"errors"
 	"fmt"
-	"reflect"
 )
 
 type ByStatusTimestamp []StatusEvent
@@ -51,7 +50,7 @@ func (p *Platform) Scan(src interface{}) error {
 
 	str, ok := src.([]byte)
 	if !ok {
-		return fmt.Errorf("Cannot scan type %s into Platform when string expected", reflect.TypeOf(src))
+		return fmt.Errorf("Cannot scan type %T into Platform when string expected", src)
 	}
 
 	var err error
@@ -76,7 +75,7 @@ func (c *CommunicationType) Scan(src interface{}) error {
 
 	str, ok := src.([]byte)
 	if !ok {
-		return fmt.Errorf("Cannot scan type %s into CommunicationType when string expected", reflect.TypeOf(src))
+		return fmt.Errorf("Cannot scan type %T into CommunicationType when string expected", src)
 	}
 
 	var err error
