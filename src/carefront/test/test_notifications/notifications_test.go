@@ -89,10 +89,10 @@ func TestRegisteringToken_SameToken(t *testing.T) {
 
 	SetDeviceTokenForAccountId(accountId, deviceToken, &notificationConfigs, mockSNSClient, testData.DataApi, t)
 	SetDeviceTokenForAccountId(accountId, deviceToken, &notificationConfigs, mockSNSClient, testData.DataApi, t)
-	if pushConfigDatas, err := testData.DataApi.GetPushConfigDataForAccount(accountId); err != nil {
+	if pushConfigDataList, err := testData.DataApi.GetPushConfigDataForAccount(accountId); err != nil {
 		t.Fatalf(err.Error())
-	} else if len(pushConfigDatas) != 1 {
-		t.Fatalf("Expected 1 item instead got %d", len(pushConfigDatas))
+	} else if len(pushConfigDataList) != 1 {
+		t.Fatalf("Expected 1 item instead got %d", len(pushConfigDataList))
 	}
 }
 
@@ -122,17 +122,17 @@ func TestRegisteringToken_SameTokenDifferentUser(t *testing.T) {
 	accountId2 := patient.AccountId.Int64()
 
 	SetDeviceTokenForAccountId(accountId2, deviceToken, &notificationConfigs, mockSNSClient, testData.DataApi, t)
-	if pushConfigDatas, err := testData.DataApi.GetPushConfigDataForAccount(accountId2); err != nil {
+	if pushConfigDataList, err := testData.DataApi.GetPushConfigDataForAccount(accountId2); err != nil {
 		t.Fatalf(err.Error())
-	} else if len(pushConfigDatas) != 1 {
-		t.Fatalf("Expected 1 item instead got %d", len(pushConfigDatas))
+	} else if len(pushConfigDataList) != 1 {
+		t.Fatalf("Expected 1 item instead got %d", len(pushConfigDataList))
 	}
 
 	// older patient should have no tokens anymore
-	if pushConfigDatas, err := testData.DataApi.GetPushConfigDataForAccount(accountId); err != nil {
+	if pushConfigDataList, err := testData.DataApi.GetPushConfigDataForAccount(accountId); err != nil {
 		t.Fatalf(err.Error())
-	} else if len(pushConfigDatas) != 0 {
-		t.Fatalf("Expected 0 item instead got %d", len(pushConfigDatas))
+	} else if len(pushConfigDataList) != 0 {
+		t.Fatalf("Expected 0 item instead got %d", len(pushConfigDataList))
 	}
 
 	if communicationPreferences, err := testData.DataApi.GetCommunicationPreferencesForAccount(accountId); err != nil {
@@ -164,10 +164,10 @@ func TestRegisteringToken_DifferentToken(t *testing.T) {
 
 	SetDeviceTokenForAccountId(accountId, "12345", &notificationConfigs, mockSNSClient, testData.DataApi, t)
 	SetDeviceTokenForAccountId(accountId, "123456789", &notificationConfigs, mockSNSClient, testData.DataApi, t)
-	if pushConfigDatas, err := testData.DataApi.GetPushConfigDataForAccount(accountId); err != nil {
+	if pushConfigDataList, err := testData.DataApi.GetPushConfigDataForAccount(accountId); err != nil {
 		t.Fatalf(err.Error())
-	} else if len(pushConfigDatas) != 2 {
-		t.Fatalf("Expected 1 item instead got %d", len(pushConfigDatas))
+	} else if len(pushConfigDataList) != 2 {
+		t.Fatalf("Expected 1 item instead got %d", len(pushConfigDataList))
 	}
 }
 
@@ -210,10 +210,10 @@ func TestRegisteringToken_DeleteOnLogout(t *testing.T) {
 	}
 
 	// there should be no push communication preference or push config data for this patient
-	if pushConfigDatas, err := testData.DataApi.GetPushConfigDataForAccount(accountId); err != nil {
+	if pushConfigDataList, err := testData.DataApi.GetPushConfigDataForAccount(accountId); err != nil {
 		t.Fatalf(err.Error())
-	} else if len(pushConfigDatas) != 0 {
-		t.Fatalf("Expected 0 item instead got %d", len(pushConfigDatas))
+	} else if len(pushConfigDataList) != 0 {
+		t.Fatalf("Expected 0 item instead got %d", len(pushConfigDataList))
 	}
 	if communicationPreferences, err := testData.DataApi.GetCommunicationPreferencesForAccount(accountId); err != nil {
 		t.Fatalf(err.Error())

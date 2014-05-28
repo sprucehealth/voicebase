@@ -11,13 +11,13 @@ func (n *NotificationManager) pushNotificationToUser(accountId int64, event inte
 	}
 
 	// identify all devices associated with this user
-	pushConfigDatas, err := n.dataApi.GetPushConfigDataForAccount(accountId)
+	pushConfigDataList, err := n.dataApi.GetPushConfigDataForAccount(accountId)
 	if err != nil {
 		return err
 	}
 
 	// render the notification and push for each device and send to each device
-	for _, pushConfigData := range pushConfigDatas {
+	for _, pushConfigData := range pushConfigDataList {
 
 		// lookup config to use to determine endpoint to push to
 		configName := config.DetermineNotificationConfigName(pushConfigData.Platform, pushConfigData.AppType, pushConfigData.AppEnvironment)
