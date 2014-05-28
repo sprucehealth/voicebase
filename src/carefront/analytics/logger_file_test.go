@@ -41,17 +41,39 @@ func TestFileLogger(t *testing.T) {
 
 	time.Sleep(time.Millisecond * 10)
 
-	var files []string
+	var liveFiles int
+	var jsFiles int
 	filepath.Walk(tmpDir, func(path string, info os.FileInfo, err error) error {
 		if strings.HasSuffix(path, ".js") {
-			files = append(files, path)
+			jsFiles++
+		} else if strings.HasSuffix(path, ".live") {
+			liveFiles++
 		}
 		return nil
 	})
+	if liveFiles != 1 {
+		t.Errorf("Expected 1 live file. Got %d", liveFiles)
+	}
+	if jsFiles != 1 {
+		t.Errorf("Expected 1 js file. Got %d", jsFiles)
+	}
 
-	t.Log(files)
+	l.(*fileLogger).recover()
 
-	if len(files) != 2 {
-		t.Errorf("Expected 2 log files. Got %d", len(files))
+	liveFiles = 0
+	jsFiles = 0
+	filepath.Walk(tmpDir, func(path string, info os.FileInfo, err error) error {
+		if strings.HasSuffix(path, ".js") {
+			jsFiles++
+		} else if strings.HasSuffix(path, ".live") {
+			liveFiles++
+		}
+		return nil
+	})
+	if liveFiles != 0 {
+		t.Errorf("Expected 0 live files. Got %d", liveFiles)
+	}
+	if jsFiles != 2 {
+		t.Errorf("Expected 2 js files. Got %d", jsFiles)
 	}
 }

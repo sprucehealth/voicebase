@@ -7,12 +7,17 @@ import (
 	"os"
 	"path"
 	"path/filepath"
+	"strings"
 	"time"
 )
 
 const (
 	DefaultMaxFileEvents = 100 << 10
 	DefaultMaxFileAge    = time.Minute * 10
+)
+
+const (
+	liveSuffix = ".live"
 )
 
 type logFile struct {
@@ -63,15 +68,30 @@ func (l *fileLogger) WriteEvents(events []Event) {
 	l.eventCh <- events
 }
 
+func (l *fileLogger) recover() {
+	// Rename all files that were previously alive when server was stopped
+	filepath.Walk(l.path, func(path string, info os.FileInfo, err error) error {
+		if strings.HasSuffix(path, liveSuffix) {
+			// Rename the file to remove the .live suffix
+			newPath := path[:len(path)-len(liveSuffix)]
+			if err := os.Rename(path, newPath); err != nil {
+				golog.Errorf("Failed to rename '%s' to '%s': %s", path, newPath, err.Error())
+			}
+		}
+		return nil
+	})
+}
+
 func (l *fileLogger) loop() {
+	l.recover()
 	if l.logFiles == nil {
 		l.logFiles = make(map[string]*logFile)
 	}
 	for ev := range l.eventCh {
 		l.writeEvents(ev)
 	}
-	for _, f := range l.logFiles {
-		f.f.Close()
+	for _, lf := range l.logFiles {
+		l.closeFile(lf)
 	}
 	l.logFiles = nil
 }
@@ -82,6 +102,8 @@ func (l *fileLogger) writeEvents(events []Event) {
 		cat := e.Category()
 		lf := l.logFiles[cat]
 		if lf == nil || lf.n > l.maxEvents || time.Now().Sub(lf.t) > l.maxAge {
+			l.closeFile(lf)
+
 			var err error
 			lf, err = l.newFile(cat)
 			if err != nil {
@@ -107,9 +129,21 @@ func (l *fileLogger) writeEvents(events []Event) {
 		}
 		if err := lf.f.Sync(); err != nil {
 			golog.Errorf("Failed to sync log file '%s': %s", lf.p, err.Error())
-			lf.f.Close()
+			l.closeFile(lf)
 			l.logFiles[cat] = nil
 		}
+	}
+}
+
+func (l *fileLogger) closeFile(lf *logFile) {
+	if lf == nil {
+		return
+	}
+	lf.f.Close()
+	// Rename the file to remove the .live suffix
+	newPath := lf.p[:len(lf.p)-len(liveSuffix)]
+	if err := os.Rename(lf.p, newPath); err != nil {
+		golog.Errorf("Failed to rename '%s' to '%s': %s", lf.p, newPath, err.Error())
 	}
 }
 
@@ -119,7 +153,7 @@ func (l *fileLogger) newFile(category string) (*logFile, error) {
 	if err != nil {
 		return nil, err
 	}
-	name := fmt.Sprintf("%s-%d.js", now.UTC().Format("2006/01/02/150405"), id)
+	name := fmt.Sprintf("%s-%d.js%s", now.UTC().Format("2006/01/02/150405"), id, liveSuffix)
 	pth := filepath.Join(l.path, category, name)
 	if err := os.MkdirAll(path.Dir(pth), 0700); err != nil {
 		golog.Errorf("Failed to create a log path '%s': %s", path.Dir(pth), err.Error())
