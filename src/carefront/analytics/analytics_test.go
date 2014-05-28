@@ -2,6 +2,7 @@ package analytics
 
 import (
 	"bytes"
+	"encoding/json"
 	"fmt"
 	"net/http"
 	"net/http/httptest"
@@ -75,5 +76,9 @@ func TestHandler(t *testing.T) {
 	if n := len(lg.events["client"]); n != 1 {
 		t.Fatalf("Expected 1 event to be recorded. Got %d", n)
 	}
-	t.Logf("%+v", lg.events["client"][0])
+	b, err := json.Marshal(lg.events["client"][0])
+	if err != nil {
+		t.Fatal(err)
+	}
+	t.Log(string(b))
 }

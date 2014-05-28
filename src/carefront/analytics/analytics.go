@@ -107,7 +107,7 @@ func (h *Handler) ServeHTTP(w http.ResponseWriter, r *http.Request) {
 		evo := &ClientEvent{
 			ID:           id,
 			Event:        ev.Name,
-			Time:         time.Unix(tm, 0),
+			Time:         Time(time.Unix(tm, 0)),
 			SessionID:    ev.Properties.popString("session_id"),
 			AccountID:    ev.Properties.popInt64("account_id"),
 			PatientID:    ev.Properties.popInt64("patient_id"),
