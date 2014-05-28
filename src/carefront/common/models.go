@@ -41,13 +41,8 @@ type Patient struct {
 	Pharmacy          *pharmacy.PharmacyData `json:"pharmacy,omitempty"`
 	PatientAddress    *Address               `json:"address,omitempty"`
 	PersonId          int64                  `json:"person_id"`
+	PromptStatus      PushPromptStatus       `json:"prompt_status"`
 }
-
-type ByCreationDate []*Card
-
-func (c ByCreationDate) Len() int           { return len(c) }
-func (c ByCreationDate) Swap(i, j int)      { c[i], c[j] = c[j], c[i] }
-func (c ByCreationDate) Less(i, j int) bool { return c[i].CreationDate.Before(c[j].CreationDate) }
 
 type Card struct {
 	Id             encoding.ObjectId `json:"id,omitempty"`
@@ -394,14 +389,6 @@ type QuestionInfo struct {
 	AlertFormattedText string
 }
 
-type ByStatusTimestamp []StatusEvent
-
-func (a ByStatusTimestamp) Len() int      { return len(a) }
-func (a ByStatusTimestamp) Swap(i, j int) { a[i], a[j] = a[j], a[i] }
-func (a ByStatusTimestamp) Less(i, j int) bool {
-	return a[i].StatusTimestamp.Before(a[j].StatusTimestamp)
-}
-
 type StatusEvent struct {
 	ItemId            int64     `json:"-"`
 	PrescriptionId    int64     `json:"-"`
@@ -499,4 +486,28 @@ type ConversationMessage struct {
 	FromId         int64
 	Body           string
 	Attachments    []*ConversationAttachment
+}
+
+type CommunicationPreference struct {
+	CommunicationType
+	Id           int64
+	AccountId    int64
+	CreationDate time.Time
+	Status       string
+}
+
+type PushConfigData struct {
+	Id           int64
+	AccountId    int64
+	DeviceToken  string
+	PushEndpoint string
+	Platform
+	PlatformVersion string
+	AppType         string
+	AppEnvironment  string
+	AppVersion      string
+	DeviceModel     string
+	Device          string
+	DeviceID        string
+	CreationDate    time.Time
 }

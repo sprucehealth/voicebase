@@ -8,10 +8,11 @@ import (
 	"carefront/libs/dispatch"
 	"carefront/libs/golog"
 	"carefront/messages"
+	"carefront/notify"
 	"errors"
 )
 
-func InitListeners(dataAPI api.DataAPI) {
+func InitListeners(dataAPI api.DataAPI, notificationManager *notify.NotificationManager) {
 	dispatch.Default.Subscribe(func(ev *apiservice.VisitSubmittedEvent) error {
 		// Insert into item appropriate doctor queue to make them aware of a new visit
 		// for them to diagnose
@@ -24,6 +25,18 @@ func InitListeners(dataAPI api.DataAPI) {
 			golog.Errorf("Unable to assign patient visit to doctor: %s", err)
 			return err
 		}
+
+		doctor, err := dataAPI.GetDoctorFromId(ev.DoctorId)
+		if err != nil {
+			golog.Errorf("Unable to get doctor from id: %s", err)
+			return err
+		}
+
+		if err := notificationManager.NotifyDoctor(doctor, ev); err != nil {
+			golog.Errorf("Unable to notify doctor: %s", err)
+			return err
+		}
+
 		return nil
 	})
 
@@ -60,6 +73,18 @@ func InitListeners(dataAPI api.DataAPI) {
 			golog.Errorf("Unable to insert transmission error event into doctor queue: %s", err)
 			return err
 		}
+
+		doctor, err := dataAPI.GetDoctorFromId(ev.DoctorId)
+		if err != nil {
+			golog.Errorf("Unable to get doctor from id: %s", err)
+			return err
+		}
+
+		if err := notificationManager.NotifyDoctor(doctor, ev); err != nil {
+			golog.Errorf("Unable to notify doctor: %s", err)
+			return err
+		}
+
 		return nil
 	})
 
@@ -97,6 +122,18 @@ func InitListeners(dataAPI api.DataAPI) {
 			golog.Errorf("Unable to insert refill request item into doctor queue: %s", err)
 			return err
 		}
+
+		doctor, err := dataAPI.GetDoctorFromId(ev.DoctorId)
+		if err != nil {
+			golog.Errorf("Unable to get doctor from id: %s", err)
+			return err
+		}
+
+		if err := notificationManager.NotifyDoctor(doctor, ev); err != nil {
+			golog.Errorf("Unable to notify doctor: %s", err)
+			return err
+		}
+
 		return nil
 	})
 
@@ -142,6 +179,12 @@ func InitListeners(dataAPI api.DataAPI) {
 			golog.Errorf("Unable to insert conversation item into doctor queue: %s", err)
 			return err
 		}
+
+		if err := notificationManager.NotifyDoctor(to.Doctor, ev); err != nil {
+			golog.Errorf("Unable to notify doctor: %s", err)
+			return err
+		}
+
 		return nil
 	})
 
@@ -177,6 +220,11 @@ func InitListeners(dataAPI api.DataAPI) {
 						Status:    api.QUEUE_ITEM_STATUS_PENDING,
 					}, api.QUEUE_ITEM_STATUS_PENDING); err != nil {
 						golog.Errorf("Unable to replace item in doctor queue with a replied item: %s", err)
+						return err
+					}
+
+					if err := notificationManager.NotifyDoctor(p.Doctor, ev); err != nil {
+						golog.Errorf("Unable to notify doctor: %s", err)
 						return err
 					}
 				}

@@ -97,6 +97,7 @@ func (s *SignupHandler) ServeHTTP(w http.ResponseWriter, r *http.Request) {
 			PhoneType: api.PHONE_CELL,
 		},
 		},
+		PromptStatus: common.Unprompted,
 	}
 
 	newPatient.Dob, err = encoding.NewDobFromComponents(dobParts[0], dobParts[1], dobParts[2])

@@ -197,6 +197,7 @@ type DoctorAPI interface {
 	MarkPatientVisitAsOngoingInDoctorQueue(doctorId, patientVisitId int64) error
 	GetPendingItemsInDoctorQueue(doctorId int64) (doctorQueue []*DoctorQueueItem, err error)
 	GetCompletedItemsInDoctorQueue(doctorId int64) (doctorQueue []*DoctorQueueItem, err error)
+	GetPendingItemCountForDoctorQueue(doctorId int64) (int64, error)
 	GetMedicationDispenseUnits(languageId int64) (dispenseUnitIds []int64, dispenseUnits []string, err error)
 	GetDrugInstructionsForDoctor(drugName, drugForm, drugRoute string, doctorId int64) (drugInstructions []*common.DoctorInstructionItem, err error)
 	AddOrUpdateDrugInstructionForDoctor(drugName, drugForm, drugRoute string, drugInstructionToAdd *common.DoctorInstructionItem, doctorId int64) error
@@ -270,6 +271,7 @@ type HomeAPI interface {
 	DeletePatientNotificationByUID(patientId int64, uid string) error
 	GetNotificationsForPatient(patientId int64, typeMap map[string]reflect.Type) (notes []*common.Notification, badNotes []*common.Notification, err error)
 	InsertPatientNotification(patientId int64, note *common.Notification) (int64, error)
+	GetNotificationCountForPatient(patientId int64) (int64, error)
 	// Health Log
 	GetHealthLogForPatient(patientId int64, typeMap map[string]reflect.Type) (items []*common.HealthLogItem, badItems []*common.HealthLogItem, err error)
 	InsertOrUpdatePatientHealthLogItem(patientId int64, item *common.HealthLogItem) (int64, error)
@@ -291,6 +293,15 @@ type MessageAPI interface {
 	ReplyToConversation(conversationId, fromId int64, message string, attachments []*common.ConversationAttachment) (int64, error)
 }
 
+type NotificationAPI interface {
+	GetPushConfigData(deviceToken string) (*common.PushConfigData, error)
+	DeletePushCommunicationPreferenceForAccount(accountId int64) error
+	GetPushConfigDataForAccount(accountId int64) ([]*common.PushConfigData, error)
+	SetOrReplacePushConfigData(pConfigData *common.PushConfigData) error
+	GetCommunicationPreferencesForAccount(accountId int64) ([]*common.CommunicationPreference, error)
+	SetPushPromptStatus(patientId int64, pStatus common.PushPromptStatus) error
+}
+
 type PhotoAPI interface {
 	AddPhoto(uploaderId int64, url, mimetype string) (int64, error)
 	GetPhoto(photoID int64) (*common.Photo, error)
@@ -309,6 +320,7 @@ type DataAPI interface {
 	HomeAPI
 	PeopleAPI
 	MessageAPI
+	NotificationAPI
 	PhotoAPI
 	FavoriteTreatmentPlanAPI
 }
