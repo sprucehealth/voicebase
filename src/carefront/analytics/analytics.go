@@ -2,7 +2,6 @@ package analytics
 
 import (
 	"carefront/apiservice"
-	"carefront/common"
 	"carefront/libs/golog"
 	"encoding/json"
 	"math"
@@ -110,7 +109,7 @@ func (h *Handler) ServeHTTP(w http.ResponseWriter, r *http.Request) {
 
 	h.statEventsReceived.Inc(int64(len(events)))
 
-	ch := common.ParseClientHeaders(r)
+	ch := apiservice.ExtractSpruceHeaders(r)
 
 	now := time.Now().UTC()
 	nowUnix := now.Unix()
@@ -131,30 +130,29 @@ func (h *Handler) ServeHTTP(w http.ResponseWriter, r *http.Request) {
 			return
 		}
 		evo := &ClientEvent{
-			ID:           id,
-			Event:        ev.Name,
-			Timestamp:    Time(tm),
-			Error:        ev.Properties.popString("error"),
-			SessionID:    ev.Properties.popString("session_id"),
-			AccountID:    ev.Properties.popInt64("account_id"),
-			PatientID:    ev.Properties.popInt64("patient_id"),
-			VisitID:      ev.Properties.popInt64("visit_id"),
-			ScreenID:     ev.Properties.popString("screen_id"),
-			QuestionID:   ev.Properties.popString("question_id"),
-			TimeSpent:    ev.Properties.popFloat64Ptr("time_spent"),
-			DeviceID:     ch.DeviceID,
-			AppType:      ch.AppType,
-			AppEnv:       ch.AppEnv,
-			AppVersion:   ch.AppVersion,
-			AppBuild:     ch.AppBuild,
-			OS:           ch.OS,
-			OSVersion:    ch.OSVersion,
-			DeviceType:   ch.DeviceType,
-			DeviceModel:  ch.DeviceModel,
-			ScreenWidth:  ch.ScreenWidth,
-			ScreenHeight: ch.ScreenHeight,
-			DPI:          ch.DPI,
-			Scale:        ch.Scale,
+			ID:               id,
+			Event:            ev.Name,
+			Timestamp:        Time(tm),
+			Error:            ev.Properties.popString("error"),
+			SessionID:        ev.Properties.popString("session_id"),
+			AccountID:        ev.Properties.popInt64("account_id"),
+			PatientID:        ev.Properties.popInt64("patient_id"),
+			VisitID:          ev.Properties.popInt64("visit_id"),
+			ScreenID:         ev.Properties.popString("screen_id"),
+			QuestionID:       ev.Properties.popString("question_id"),
+			TimeSpent:        ev.Properties.popFloat64Ptr("time_spent"),
+			DeviceID:         ch.DeviceID,
+			AppType:          ch.AppType,
+			AppEnv:           ch.AppEnvironment,
+			AppVersion:       ch.AppVersion,
+			AppBuild:         ch.AppBuild,
+			Platform:         ch.Platform.String(),
+			PlatformVersion:  ch.PlatformVersion,
+			DeviceType:       ch.Device,
+			DeviceModel:      ch.DeviceModel,
+			ScreenWidth:      int(ch.ScreenWidth),
+			ScreenHeight:     int(ch.ScreenHeight),
+			ScreenResolution: ch.DeviceResolution,
 		}
 		// Put anything left over into ExtraJSON if it's a valid format
 		for k, v := range ev.Properties {
