@@ -29,6 +29,15 @@ func (p properties) popString(name string) string {
 	return s
 }
 
+func (p properties) popFloat64Ptr(name string) *float64 {
+	f, ok := p[name].(float64)
+	if !ok {
+		return nil
+	}
+	delete(p, name)
+	return &f
+}
+
 func (p properties) popInt64(name string) int64 {
 	i, ok := p[name].(float64)
 	if !ok {
@@ -121,7 +130,7 @@ func (h *Handler) ServeHTTP(w http.ResponseWriter, r *http.Request) {
 			VisitID:      ev.Properties.popInt64("visit_id"),
 			ScreenID:     ev.Properties.popString("screen_id"),
 			QuestionID:   ev.Properties.popString("question_id"),
-			TimeSpent:    ev.Properties.popInt("time_spent"),
+			TimeSpent:    ev.Properties.popFloat64Ptr("time_spent"),
 			DeviceID:     ch.DeviceID,
 			AppType:      ch.AppType,
 			AppEnv:       ch.AppEnv,
