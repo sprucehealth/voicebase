@@ -26,54 +26,62 @@ func TestFileLogger(t *testing.T) {
 	defer l.Stop()
 
 	l.WriteEvents([]Event{
-		&ClientEvent{ID: 1},
-		&ClientEvent{ID: 2},
+		&ClientEvent{ID: 1, Timestamp: Time(time.Now())},
+		&ClientEvent{ID: 2, Timestamp: Time(time.Now())},
 	})
 	l.WriteEvents([]Event{
-		&ClientEvent{ID: 3},
-		&ClientEvent{ID: 4},
-		&ClientEvent{ID: 5},
+		&ClientEvent{ID: 3, Timestamp: Time(time.Now())},
+		&ClientEvent{ID: 4, Timestamp: Time(time.Now())},
+		&ClientEvent{ID: 5, Timestamp: Time(time.Now())},
 	})
 	l.WriteEvents([]Event{
-		&ClientEvent{ID: 6},
-		&ClientEvent{ID: 7},
+		&ClientEvent{ID: 6, Timestamp: Time(time.Now())},
+		&ClientEvent{ID: 7, Timestamp: Time(time.Now())},
+	})
+	l.WriteEvents([]Event{
+		&ClientEvent{ID: 8, Timestamp: Time(time.Now().AddDate(0, 0, -1))},
+		&ClientEvent{ID: 9, Timestamp: Time(time.Now().AddDate(0, 0, -1))},
 	})
 
 	time.Sleep(time.Millisecond * 10)
 
-	var liveFiles int
-	var jsFiles int
+	var liveFiles []string
+	var jsFiles []string
 	filepath.Walk(tmpDir, func(path string, info os.FileInfo, err error) error {
 		if strings.HasSuffix(path, ".js") {
-			jsFiles++
+			jsFiles = append(jsFiles, path)
 		} else if strings.HasSuffix(path, ".live") {
-			liveFiles++
+			liveFiles = append(liveFiles, path)
 		}
 		return nil
 	})
-	if liveFiles != 1 {
-		t.Errorf("Expected 1 live file. Got %d", liveFiles)
+	if len(liveFiles) != 2 {
+		t.Log("Live files:", liveFiles)
+		t.Errorf("Expected 2 live files. Got %d", len(liveFiles))
 	}
-	if jsFiles != 1 {
-		t.Errorf("Expected 1 js file. Got %d", jsFiles)
+	if len(jsFiles) != 1 {
+		t.Log("JS Files:", jsFiles)
+		t.Errorf("Expected 1 js file. Got %d", len(jsFiles))
 	}
 
 	l.(*fileLogger).recover()
 
-	liveFiles = 0
-	jsFiles = 0
+	liveFiles = liveFiles[:0]
+	jsFiles = jsFiles[:0]
 	filepath.Walk(tmpDir, func(path string, info os.FileInfo, err error) error {
 		if strings.HasSuffix(path, ".js") {
-			jsFiles++
+			jsFiles = append(jsFiles, path)
 		} else if strings.HasSuffix(path, ".live") {
-			liveFiles++
+			liveFiles = append(liveFiles, path)
 		}
 		return nil
 	})
-	if liveFiles != 0 {
-		t.Errorf("Expected 0 live files. Got %d", liveFiles)
+	if len(liveFiles) != 0 {
+		t.Log("Live files:", liveFiles)
+		t.Errorf("Expected 0 live files. Got %d", len(liveFiles))
 	}
-	if jsFiles != 2 {
-		t.Errorf("Expected 2 js files. Got %d", jsFiles)
+	if len(jsFiles) != 3 {
+		t.Log("JS Files:", jsFiles)
+		t.Errorf("Expected 3 js files. Got %d", len(jsFiles))
 	}
 }

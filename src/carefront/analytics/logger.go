@@ -33,12 +33,13 @@ func (t *Time) UnmarshalText(data []byte) error {
 
 type Event interface {
 	Category() string
+	Time() time.Time
 }
 
 type ClientEvent struct {
 	ID           int64   `json:"id"`
 	Event        string  `json:"event"`
-	Time         Time    `json:"time"`
+	Timestamp    Time    `json:"time"`
 	Error        string  `json:"error,omitempty"`
 	SessionID    string  `json:"session_id"`
 	DeviceID     string  `json:"device_id"`
@@ -65,4 +66,8 @@ type ClientEvent struct {
 
 func (*ClientEvent) Category() string {
 	return "client"
+}
+
+func (e *ClientEvent) Time() time.Time {
+	return time.Time(e.Timestamp)
 }

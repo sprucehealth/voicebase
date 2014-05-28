@@ -113,7 +113,7 @@ func (h *Handler) ServeHTTP(w http.ResponseWriter, r *http.Request) {
 		evo := &ClientEvent{
 			ID:           id,
 			Event:        ev.Name,
-			Time:         Time(time.Unix(tm, 0)),
+			Timestamp:    Time(time.Unix(tm, 0)),
 			Error:        ev.Properties.popString("error"),
 			SessionID:    ev.Properties.popString("session_id"),
 			AccountID:    ev.Properties.popInt64("account_id"),

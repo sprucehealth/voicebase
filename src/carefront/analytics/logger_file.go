@@ -5,7 +5,6 @@ import (
 	"encoding/json"
 	"fmt"
 	"os"
-	"path"
 	"path/filepath"
 	"strings"
 	"time"
@@ -21,11 +20,12 @@ const (
 )
 
 type logFile struct {
-	p string
-	f *os.File
-	e *json.Encoder
-	t time.Time
-	n int
+	key  string
+	path string
+	f    *os.File
+	enc  *json.Encoder
+	t    time.Time
+	n    int
 }
 
 type fileLogger struct {
@@ -97,80 +97,84 @@ func (l *fileLogger) loop() {
 }
 
 func (l *fileLogger) writeEvents(events []Event) {
-	cats := make(map[string]bool)
 	for _, e := range events {
-		cat := e.Category()
-		lf := l.logFiles[cat]
-		if lf == nil || lf.n > l.maxEvents || time.Now().Sub(lf.t) > l.maxAge {
-			l.closeFile(lf)
-
-			var err error
-			lf, err = l.newFile(cat)
-			if err != nil {
-				l.logFiles[cat] = nil
-				return
-			}
-			l.logFiles[cat] = lf
-		}
-
-		if err := lf.e.Encode(e); err != nil {
-			golog.Errorf("Failed to encode log event: %s", err.Error())
-		}
-
-		cats[cat] = true
-
-		lf.n++
+		l.writeEvent(e)
 	}
 
-	for cat := range cats {
-		lf := l.logFiles[cat]
-		if lf == nil {
-			continue
-		}
-		if err := lf.f.Sync(); err != nil {
-			golog.Errorf("Failed to sync log file '%s': %s", lf.p, err.Error())
+	// Close files with max events or past max age, and flush/sync
+	// files that remain open.
+
+	now := time.Now()
+	for _, lf := range l.logFiles {
+		if lf.n > l.maxEvents || now.Sub(lf.t) > l.maxAge {
 			l.closeFile(lf)
-			l.logFiles[cat] = nil
+		} else if err := lf.f.Sync(); err != nil {
+			golog.Errorf("Failed to sync log file '%s': %s", lf.path, err.Error())
+			l.closeFile(lf)
 		}
 	}
+}
+
+func (l *fileLogger) writeEvent(ev Event) {
+	lf, err := l.fileForEvent(ev)
+	if err != nil {
+		golog.Errorf("Failed to get file for event: %s", err.Error())
+		return
+	}
+
+	if err := lf.enc.Encode(ev); err != nil {
+		golog.Errorf("Failed to encode log event: %s", err.Error())
+	}
+	lf.n++
 }
 
 func (l *fileLogger) closeFile(lf *logFile) {
 	if lf == nil {
 		return
 	}
+	delete(l.logFiles, lf.key)
 	lf.f.Close()
 	// Rename the file to remove the .live suffix
-	newPath := lf.p[:len(lf.p)-len(liveSuffix)]
-	if err := os.Rename(lf.p, newPath); err != nil {
+	newPath := lf.path[:len(lf.path)-len(liveSuffix)]
+	if err := os.Rename(lf.path, newPath); err != nil {
 		golog.Errorf("Failed to rename analytics log: %s", err.Error())
 	}
 }
 
-func (l *fileLogger) newFile(category string) (*logFile, error) {
-	now := time.Now()
+func (l *fileLogger) fileForEvent(ev Event) (*logFile, error) {
+	// Check for an existing file
+
+	pth := filepath.Join(l.path, ev.Category(), ev.Time().UTC().Format("2006/01/02"))
+	if lf := l.logFiles[pth]; lf != nil {
+		return lf, nil
+	}
+
+	// Create a new file
+
 	id, err := newID()
 	if err != nil {
 		return nil, err
 	}
-	name := fmt.Sprintf("%s-%d.js%s", now.UTC().Format("2006/01/02/150405"), id, liveSuffix)
-	pth := filepath.Join(l.path, category, name)
-	if err := os.MkdirAll(path.Dir(pth), 0700); err != nil {
-		golog.Errorf("Failed to create a log path '%s': %s", path.Dir(pth), err.Error())
+	if err := os.MkdirAll(pth, 0700); err != nil {
+		golog.Errorf("Failed to create a log path '%s': %s", pth, err.Error())
 		return nil, err
 	}
-	f, err := os.OpenFile(pth, os.O_RDWR|os.O_CREATE|os.O_EXCL, 0600)
+	fullPath := filepath.Join(pth, fmt.Sprintf("%d.js%s", id, liveSuffix))
+	f, err := os.OpenFile(fullPath, os.O_RDWR|os.O_CREATE|os.O_EXCL, 0600)
 	if err != nil {
-		golog.Errorf("Failed to create a new log file '%s': %s", pth, err.Error())
+		golog.Errorf("Failed to create a new log file '%s': %s", fullPath, err.Error())
 		return nil, err
 	}
-	return &logFile{
-		p: pth,
-		f: f,
-		e: json.NewEncoder(f),
-		t: now,
-		n: 0,
-	}, nil
+	lf := &logFile{
+		key:  pth,
+		path: fullPath,
+		f:    f,
+		enc:  json.NewEncoder(f),
+		t:    time.Now(),
+		n:    0,
+	}
+	l.logFiles[pth] = lf
+	return lf, nil
 }
 
 func validateLogPath(logPath string) bool {
