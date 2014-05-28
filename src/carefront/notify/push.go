@@ -26,9 +26,10 @@ func (n *NotificationManager) pushNotificationToUser(accountId int64, event inte
 			return err
 		}
 
+		pushEndpoint := pushConfigData.PushEndpoint
 		// send push notifications in parallel
 		go func() {
-			err = n.snsClient.Publish(getNotificationViewForEvent(event).renderPush(notificationConfig, event, n.dataApi, notificationCount), pushConfigData.PushEndpoint)
+			err = n.snsClient.Publish(getNotificationViewForEvent(event).renderPush(notificationConfig, event, n.dataApi, notificationCount), pushEndpoint)
 			if err != nil {
 				// don't return err so that we attempt to send push to as many devices as possible
 				n.statPushFailed.Inc(1)
