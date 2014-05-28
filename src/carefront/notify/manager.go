@@ -41,12 +41,10 @@ func NewManager(dataApi api.DataAPI, snsClient *sns.SNS, twilioClient *twilio.Cl
 		statPushFailed:      metrics.NewCounter(),
 	}
 
-	if statsRegistry != nil {
-		statsRegistry.Scope("twilio").Add("sms/sent", manager.statSMSSent)
-		statsRegistry.Scope("twilio").Add("sms/failed", manager.statSMSFailed)
-		statsRegistry.Scope("sns").Add("push/sent", manager.statPushSent)
-		statsRegistry.Scope("sns").Add("push/failed", manager.statPushFailed)
-	}
+	statsRegistry.Scope("twilio").Add("sms/sent", manager.statSMSSent)
+	statsRegistry.Scope("twilio").Add("sms/failed", manager.statSMSFailed)
+	statsRegistry.Scope("sns").Add("push/sent", manager.statPushSent)
+	statsRegistry.Scope("sns").Add("push/failed", manager.statPushFailed)
 
 	return manager
 

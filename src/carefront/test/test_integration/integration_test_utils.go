@@ -29,6 +29,7 @@ import (
 
 	"github.com/BurntSushi/toml"
 	_ "github.com/go-sql-driver/mysql"
+	"github.com/samuel/go-metrics/metrics"
 )
 
 var (
@@ -260,7 +261,7 @@ func SetupIntegrationTest(t *testing.T) TestData {
 	}
 
 	dispatch.Default = dispatch.New()
-	notificationManager := notify.NewManager(testData.DataApi, nil, nil, "", nil, nil)
+	notificationManager := notify.NewManager(testData.DataApi, nil, nil, "", nil, metrics.NewRegistry())
 
 	homelog.InitListeners(testData.DataApi, notificationManager)
 	treatment_plan.InitListeners(testData.DataApi)
