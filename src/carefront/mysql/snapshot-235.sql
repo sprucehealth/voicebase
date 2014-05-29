@@ -1,7 +1,6 @@
-create database database_5344_1401404252; use database_5344_1401404252;
 -- MySQL dump 10.13  Distrib 5.6.17, for osx10.9 (x86_64)
 --
--- Host: 127.0.0.1    Database: database_28124
+-- Host: 127.0.0.1    Database: database_19497
 -- ------------------------------------------------------
 -- Server version	5.6.17
 
@@ -1162,6 +1161,24 @@ CREATE TABLE `migrations` (
 /*!40101 SET character_set_client = @saved_cs_client */;
 
 --
+-- Table structure for table `notification_prompt_status`
+--
+
+DROP TABLE IF EXISTS `notification_prompt_status`;
+/*!40101 SET @saved_cs_client     = @@character_set_client */;
+/*!40101 SET character_set_client = utf8 */;
+CREATE TABLE `notification_prompt_status` (
+  `id` int(10) unsigned NOT NULL AUTO_INCREMENT,
+  `account_id` int(10) unsigned NOT NULL,
+  `prompt_status` varchar(100) NOT NULL,
+  `creation_date` timestamp NOT NULL DEFAULT CURRENT_TIMESTAMP,
+  PRIMARY KEY (`id`),
+  KEY `account_id` (`account_id`),
+  CONSTRAINT `notification_prompt_status_ibfk_1` FOREIGN KEY (`account_id`) REFERENCES `account` (`id`)
+) ENGINE=InnoDB DEFAULT CHARSET=utf8;
+/*!40101 SET character_set_client = @saved_cs_client */;
+
+--
 -- Table structure for table `object_storage`
 --
 
@@ -1432,24 +1449,6 @@ CREATE TABLE `patient_phone` (
   PRIMARY KEY (`id`),
   KEY `patient_id` (`patient_id`),
   CONSTRAINT `patient_phone_ibfk_1` FOREIGN KEY (`patient_id`) REFERENCES `patient` (`id`)
-) ENGINE=InnoDB DEFAULT CHARSET=utf8;
-/*!40101 SET character_set_client = @saved_cs_client */;
-
---
--- Table structure for table `patient_prompt_status`
---
-
-DROP TABLE IF EXISTS `patient_prompt_status`;
-/*!40101 SET @saved_cs_client     = @@character_set_client */;
-/*!40101 SET character_set_client = utf8 */;
-CREATE TABLE `patient_prompt_status` (
-  `id` int(10) unsigned NOT NULL AUTO_INCREMENT,
-  `prompt_status` varchar(100) NOT NULL,
-  `patient_id` int(10) unsigned NOT NULL,
-  `creation_date` timestamp(6) NOT NULL DEFAULT CURRENT_TIMESTAMP(6),
-  PRIMARY KEY (`id`),
-  UNIQUE KEY `patient_id` (`patient_id`),
-  CONSTRAINT `patient_prompt_status_ibfk_1` FOREIGN KEY (`patient_id`) REFERENCES `patient` (`id`)
 ) ENGINE=InnoDB DEFAULT CHARSET=utf8;
 /*!40101 SET character_set_client = @saved_cs_client */;
 
@@ -2366,4 +2365,4 @@ CREATE TABLE `unlinked_dntf_treatment_status_events` (
 /*!40101 SET COLLATION_CONNECTION=@OLD_COLLATION_CONNECTION */;
 /*!40111 SET SQL_NOTES=@OLD_SQL_NOTES */;
 
--- Dump completed on 2014-05-29 10:05:19
+-- Dump completed on 2014-05-29 16:09:36

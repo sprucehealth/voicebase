@@ -1,4 +1,3 @@
-use database_5344_1401404252;
 -- MySQL dump 10.13  Distrib 5.6.17, for osx10.9 (x86_64)
 --
 -- Host: localhost    Database: carefront_db
@@ -479,11 +478,11 @@ CREATE TABLE `patient_layout_version` (
   KEY `object_storage_id` (`object_storage_id`),
   KEY `treatment_id` (`health_condition_id`),
   KEY `layout_blob_storage_id` (`layout_blob_storage_id`),
-  CONSTRAINT `patient_layout_version_ibfk_6` FOREIGN KEY (`layout_blob_storage_id`) REFERENCES `layout_blob_storage` (`id`),
   CONSTRAINT `patient_layout_version_ibfk_1` FOREIGN KEY (`layout_version_id`) REFERENCES `layout_version` (`id`),
   CONSTRAINT `patient_layout_version_ibfk_2` FOREIGN KEY (`language_id`) REFERENCES `languages_supported` (`id`),
   CONSTRAINT `patient_layout_version_ibfk_4` FOREIGN KEY (`health_condition_id`) REFERENCES `health_condition` (`id`),
-  CONSTRAINT `patient_layout_version_ibfk_5` FOREIGN KEY (`object_storage_id`) REFERENCES `object_storage` (`id`)
+  CONSTRAINT `patient_layout_version_ibfk_5` FOREIGN KEY (`object_storage_id`) REFERENCES `object_storage` (`id`),
+  CONSTRAINT `patient_layout_version_ibfk_6` FOREIGN KEY (`layout_blob_storage_id`) REFERENCES `layout_blob_storage` (`id`)
 ) ENGINE=InnoDB AUTO_INCREMENT=137 DEFAULT CHARSET=utf8;
 /*!40101 SET character_set_client = @saved_cs_client */;
 
@@ -545,9 +544,9 @@ CREATE TABLE `layout_version` (
   UNIQUE KEY `object_storage_id` (`object_storage_id`,`syntax_version`,`health_condition_id`,`status`),
   KEY `treatment_id` (`health_condition_id`),
   KEY `layout_blob_storage_id` (`layout_blob_storage_id`),
-  CONSTRAINT `layout_version_ibfk_3` FOREIGN KEY (`layout_blob_storage_id`) REFERENCES `layout_blob_storage` (`id`),
   CONSTRAINT `layout_version_ibfk_1` FOREIGN KEY (`health_condition_id`) REFERENCES `health_condition` (`id`),
-  CONSTRAINT `layout_version_ibfk_2` FOREIGN KEY (`object_storage_id`) REFERENCES `object_storage` (`id`)
+  CONSTRAINT `layout_version_ibfk_2` FOREIGN KEY (`object_storage_id`) REFERENCES `object_storage` (`id`),
+  CONSTRAINT `layout_version_ibfk_3` FOREIGN KEY (`layout_blob_storage_id`) REFERENCES `layout_blob_storage` (`id`)
 ) ENGINE=InnoDB AUTO_INCREMENT=198 DEFAULT CHARSET=utf8;
 /*!40101 SET character_set_client = @saved_cs_client */;
 
@@ -582,10 +581,10 @@ CREATE TABLE `dr_layout_version` (
   KEY `object_storage_id` (`object_storage_id`),
   KEY `health_condition_id` (`health_condition_id`),
   KEY `layout_blob_storage_id` (`layout_blob_storage_id`),
-  CONSTRAINT `dr_layout_version_ibfk_5` FOREIGN KEY (`layout_blob_storage_id`) REFERENCES `layout_blob_storage` (`id`),
   CONSTRAINT `dr_layout_version_ibfk_1` FOREIGN KEY (`layout_version_id`) REFERENCES `layout_version` (`id`),
   CONSTRAINT `dr_layout_version_ibfk_3` FOREIGN KEY (`health_condition_id`) REFERENCES `health_condition` (`id`),
-  CONSTRAINT `dr_layout_version_ibfk_4` FOREIGN KEY (`object_storage_id`) REFERENCES `object_storage` (`id`)
+  CONSTRAINT `dr_layout_version_ibfk_4` FOREIGN KEY (`object_storage_id`) REFERENCES `object_storage` (`id`),
+  CONSTRAINT `dr_layout_version_ibfk_5` FOREIGN KEY (`layout_blob_storage_id`) REFERENCES `layout_blob_storage` (`id`)
 ) ENGINE=InnoDB AUTO_INCREMENT=47 DEFAULT CHARSET=utf8;
 /*!40101 SET character_set_client = @saved_cs_client */;
 
@@ -846,4 +845,4 @@ UNLOCK TABLES;
 /*!40101 SET COLLATION_CONNECTION=@OLD_COLLATION_CONNECTION */;
 /*!40111 SET SQL_NOTES=@OLD_SQL_NOTES */;
 
--- Dump completed on 2014-05-29 11:17:42
+-- Dump completed on 2014-05-29 16:09:52
