@@ -13,7 +13,7 @@ import (
 	"testing"
 )
 
-func getRegimenPlanForPatientVisit(testData TestData, doctor *common.Doctor, patientVisitId int64, t *testing.T) *common.RegimenPlan {
+func GetRegimenPlanForPatientVisit(testData TestData, doctor *common.Doctor, patientVisitId int64, t *testing.T) *common.RegimenPlan {
 	doctorTreatmentPlanHandler := &apiservice.DoctorTreatmentPlanHandler{
 		DataApi: testData.DataApi,
 	}
@@ -41,7 +41,7 @@ func getRegimenPlanForPatientVisit(testData TestData, doctor *common.Doctor, pat
 	return doctorTreatmentPlanResponse.TreatmentPlan.RegimenPlan
 }
 
-func createRegimenPlanForPatientVisit(doctorRegimenRequest *common.RegimenPlan, testData TestData, doctor *common.Doctor, t *testing.T) *common.RegimenPlan {
+func CreateRegimenPlanForPatientVisit(doctorRegimenRequest *common.RegimenPlan, testData TestData, doctor *common.Doctor, t *testing.T) *common.RegimenPlan {
 	doctorRegimenHandler := apiservice.NewDoctorRegimenHandler(testData.DataApi)
 	ts := httptest.NewServer(doctorRegimenHandler)
 	defer ts.Close()
@@ -72,7 +72,7 @@ func createRegimenPlanForPatientVisit(doctorRegimenRequest *common.RegimenPlan, 
 	return regimenPlanResponse
 }
 
-func getAdvicePointsInPatientVisit(testData TestData, doctor *common.Doctor, patientVisitId int64, t *testing.T) *common.Advice {
+func GetAdvicePointsInPatientVisit(testData TestData, doctor *common.Doctor, patientVisitId int64, t *testing.T) *common.Advice {
 	doctorTreatmentPlanHandler := &apiservice.DoctorTreatmentPlanHandler{
 		DataApi: testData.DataApi,
 	}
@@ -100,7 +100,7 @@ func getAdvicePointsInPatientVisit(testData TestData, doctor *common.Doctor, pat
 	return doctorTreatmentPlanResponse.TreatmentPlan.Advice
 }
 
-func updateAdvicePointsForPatientVisit(doctorAdviceRequest *common.Advice, testData TestData, doctor *common.Doctor, t *testing.T) *common.Advice {
+func UpdateAdvicePointsForPatientVisit(doctorAdviceRequest *common.Advice, testData TestData, doctor *common.Doctor, t *testing.T) *common.Advice {
 	doctorAdviceHandler := apiservice.NewDoctorAdviceHandler(testData.DataApi)
 	ts := httptest.NewServer(doctorAdviceHandler)
 	defer ts.Close()

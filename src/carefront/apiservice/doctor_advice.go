@@ -59,7 +59,7 @@ func (d *DoctorAdviceHandler) updateAdvicePoints(w http.ResponseWriter, r *http.
 
 	// ensure that all selected advice points are actually in the global list on the client side
 	for _, selectedAdvicePoint := range requestData.SelectedAdvicePoints {
-		if httpStatusCode, err := d.ensureAdvicePointExistsInMasterList(selectedAdvicePoint, &requestData, patientVisitReviewData.DoctorId); err != nil {
+		if httpStatusCode, err := d.ensureLinkedAdvicePointExistsInMasterList(selectedAdvicePoint, &requestData, patientVisitReviewData.DoctorId); err != nil {
 			WriteDeveloperError(w, httpStatusCode, err.Error())
 			return
 		}
@@ -131,27 +131,13 @@ func (d *DoctorAdviceHandler) updateAdvicePoints(w http.ResponseWriter, r *http.
 			// remove the id that was just used so as to assign a different id to the same text
 			// that could appear again
 			newPointToIdMapping[advicePoint.Text] = newIds[1:]
-		}
-		if updatedId, ok := updatedPointToIdMapping[advicePoint.ParentId.Int64()]; ok {
+		} else if updatedId, ok := updatedPointToIdMapping[advicePoint.ParentId.Int64()]; ok {
 			// update the parentId to point to the new updated item
 			advicePoint.ParentId = encoding.NewObjectId(updatedId)
-		} else if advicePoint.State == common.STATE_MODIFIED {
-			// if the step has been modified and is only included in the advice section of treatment plan and not in the master list,
-			// this means that it links to an older step that is no longer active in the doctor's master list
-			// go ahead and populate the fields of the parent advice point to update it in the database
-			parentAdvicePoint := &common.DoctorInstructionItem{
-				Id:   advicePoint.ParentId,
-				Text: advicePoint.Text,
-			}
-			// now lets go ahead and update this parent advice point
-			// (even though this point is considered inactice/deleted, updating it helps maintain the integrity
-			// of the system where the text in the treatment plan is linked to an item in the master list)
-			if err := d.DataApi.UpdateAdvicePointForDoctor(parentAdvicePoint, patientVisitReviewData.DoctorId); err != nil {
-				WriteDeveloperError(w, http.StatusInternalServerError, "Unable to update advice point for doctor: "+err.Error())
-				return
-			}
-			// update the parent id to reflect the linkage to the newly updated step
-			advicePoint.ParentId = parentAdvicePoint.Id
+		} else if advicePoint.State == common.STATE_MODIFIED || advicePoint.State == common.STATE_ADDED {
+			// break any existing linkage given that the text has been modified and is no longer the same as
+			// the parent step
+			advicePoint.ParentId = encoding.ObjectId{}
 		}
 	}
 
@@ -191,23 +177,24 @@ func (d *DoctorAdviceHandler) updateAdvicePoints(w http.ResponseWriter, r *http.
 	WriteJSONToHTTPResponseWriter(w, http.StatusOK, advice)
 }
 
-func (d *DoctorAdviceHandler) ensureAdvicePointExistsInMasterList(selectedAdvicePoint *common.DoctorInstructionItem, advice *common.Advice, doctorId int64) (int, error) {
-	advicePointFound := false
+func (d *DoctorAdviceHandler) ensureLinkedAdvicePointExistsInMasterList(selectedAdvicePoint *common.DoctorInstructionItem, advice *common.Advice, doctorId int64) (int, error) {
+	// nothing to do if the advice point does not exist in the master list
+	if !selectedAdvicePoint.ParentId.IsValid {
+		return 0, nil
+	}
+
 	for _, advicePoint := range advice.AllAdvicePoints {
-		if advicePoint.Id.Int64() == 0 && selectedAdvicePoint.ParentId.Int64() == 0 {
-			// compare text if this is a new item
-			if advicePoint.Text == selectedAdvicePoint.Text {
-				advicePointFound = true
-				break
-			}
-		} else if advicePoint.Id.Int64() == selectedAdvicePoint.ParentId.Int64() {
+		if !advicePoint.Id.IsValid {
+			continue
+		}
+
+		if advicePoint.Id.Int64() == selectedAdvicePoint.ParentId.Int64() {
 			// ensure that text matches up
 			if advicePoint.Text != selectedAdvicePoint.Text {
 				return http.StatusBadRequest, errors.New("Text of an item in the selected list that is linked to an item in the global list has to match up")
 			}
-			advicePointFound = true
 			break
-		} else if selectedAdvicePoint.ParentId.Int64() != 0 {
+		} else {
 			parentAdvicePoint, err := d.DataApi.GetAdvicePointForDoctor(selectedAdvicePoint.ParentId.Int64(), doctorId)
 			if err == api.NoRowsError {
 				return http.StatusBadRequest, errors.New("No parent advice point found for advice point in the selected list")
@@ -218,13 +205,9 @@ func (d *DoctorAdviceHandler) ensureAdvicePointExistsInMasterList(selectedAdvice
 			if parentAdvicePoint.Text != selectedAdvicePoint.Text && selectedAdvicePoint.State != common.STATE_MODIFIED {
 				return http.StatusBadRequest, errors.New("Cannot modify the text for a selected item linked to a parent advice point without indicating the intent to modify with STATE=MODIFIED")
 			}
-			advicePointFound = true
 			break
 		}
 	}
 
-	if !advicePointFound {
-		return http.StatusBadRequest, errors.New("There is an advice point in the selected list that is not in the global list")
-	}
 	return 0, nil
 }

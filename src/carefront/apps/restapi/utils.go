@@ -23,6 +23,12 @@ type SmartyStreetsConfig struct {
 	AuthToken string `long:"auth_token" description:"Auth token for smarty streets"`
 }
 
+type AnalyticsConfig struct {
+	LogPath   string `long:"analytics_log_path" description:"Path to store analytics logs"`
+	MaxEvents int    `long:"analytics_max_events" description:"Max number of events per log file before rotating"`
+	MaxAge    int    `long:"analytics_max_age" description:"Max age of a log file in seconds before rotating"`
+}
+
 type Config struct {
 	*config.BaseConfig
 	ProxyProtocol            bool                        `long:"proxy_protocol" description:"Enable if behind a proxy that uses the PROXY protocol"`
@@ -54,6 +60,7 @@ type Config struct {
 	StripeSecretKey          string                      `long:"strip_secret_key" description:"Stripe secret key"`
 	IOSDeeplinkScheme        string                      `long:"ios_deeplink_scheme" description:"Scheme for iOS deep-links (e.g. spruce://)"`
 	NotifiyConfigs           *config.NotificationConfigs `group:"notification" toml:"notification"`
+	Analytics                *AnalyticsConfig            `group:"Analytics" toml:"analytics"`
 }
 
 var DefaultConfig = Config{
@@ -74,6 +81,10 @@ var DefaultConfig = Config{
 	AuthTokenExpiration:   60 * 60 * 24 * 2,
 	AuthTokenRenew:        60 * 60 * 36,
 	IOSDeeplinkScheme:     "spruce",
+	Analytics: &AnalyticsConfig{
+		MaxEvents: 100 << 10,
+		MaxAge:    10 * 60, // seconds
+	},
 }
 
 func (c *Config) Validate() {
