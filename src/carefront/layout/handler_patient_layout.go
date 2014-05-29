@@ -66,7 +66,10 @@ func (l *patientLayoutHandler) ServeHTTP(w http.ResponseWriter, r *http.Request)
 
 	// get the healthConditionId
 	healthConditionId, err := l.dataApi.GetHealthConditionInfo(healthConditionTag)
-
+	if err != nil {
+		apiservice.WriteDeveloperError(w, http.StatusInternalServerError, "Unable to get healthconditiondid: "+err.Error())
+		return
+	}
 	modelId, err := l.dataApi.CreateLayoutVersion(data, layout_syntax_version, healthConditionId, api.PATIENT_ROLE, api.CONDITION_INTAKE_PURPOSE, "automatically generated")
 	if err != nil {
 		apiservice.WriteDeveloperError(w, http.StatusInternalServerError, "Error in creating new layout version: "+err.Error())
