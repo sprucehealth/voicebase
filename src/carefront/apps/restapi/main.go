@@ -238,13 +238,6 @@ func main() {
 		ErxStatusQueue: erxStatusQueue,
 		ERxRouting:     conf.ERxRouting}
 
-	diagnosePatientHandler := &apiservice.DiagnosePatientHandler{
-		DataApi:              dataApi,
-		AuthApi:              authApi,
-		LayoutStorageService: cloudStorageApi,
-		Environment:          conf.Environment,
-	}
-
 	diagnosisSummaryHandler := &apiservice.DiagnosisSummaryHandler{DataApi: dataApi}
 	doctorRegimenHandler := apiservice.NewDoctorRegimenHandler(dataApi)
 	doctorAdviceHandler := apiservice.NewDoctorAdviceHandler(dataApi)
@@ -321,7 +314,7 @@ func main() {
 
 	mux.Handle("/v1/doctor/visit/review", patient_file.NewDoctorPatientVisitReviewHandler(dataApi, pharmacy.GooglePlacesPharmacySearchService(0), cloudStorageApi, photoAnswerCloudStorageApi))
 	mux.Handle("/v1/doctor/visit/treatment_plan", doctorTreatmentPlanHandler)
-	mux.Handle("/v1/doctor/visit/diagnosis", diagnosePatientHandler)
+	mux.Handle("/v1/doctor/visit/diagnosis", apiservice.NewDiagnosePatientHandler(dataApi, authApi, conf.Environment))
 	mux.Handle("/v1/doctor/visit/diagnosis/summary", diagnosisSummaryHandler)
 	mux.Handle("/v1/doctor/visit/treatment/new", newTreatmentHandler)
 	mux.Handle("/v1/doctor/visit/treatment/treatments", treatmentsHandler)
