@@ -169,3 +169,178 @@ func addAndGetTreatmentsForPatientVisit(testData TestData, treatments []*common.
 
 	return addTreatmentsResponse
 }
+
+func ValidateRegimenRequestAgainstResponse(doctorRegimenRequest, doctorRegimenResponse *common.RegimenPlan, t *testing.T) {
+
+	// there should be the same number of sections in the request and the response
+	if len(doctorRegimenRequest.RegimenSections) != len(doctorRegimenResponse.RegimenSections) {
+		t.Fatalf("Number of regimen sections should be the same in the request and the response. Request = %d, response = %d", len(doctorRegimenRequest.RegimenSections), len(doctorRegimenResponse.RegimenSections))
+	}
+
+	// there should be the same number of steps in each section in the request and the response
+	if doctorRegimenRequest.RegimenSections != nil {
+		for i, regimenSection := range doctorRegimenRequest.RegimenSections {
+			if len(regimenSection.RegimenSteps) != len(doctorRegimenResponse.RegimenSections[i].RegimenSteps) {
+				t.Fatalf(`the number of regimen steps in the regimen section of the request and the response should be the same, 
+				regimen section = %s, request = %d, response = %d`, regimenSection.RegimenName, len(regimenSection.RegimenSteps), len(doctorRegimenResponse.RegimenSections[i].RegimenSteps))
+			}
+		}
+	}
+
+	// the number of steps in each regimen section should be the same across the request and response
+	for i, regimenSection := range doctorRegimenRequest.RegimenSections {
+		if len(regimenSection.RegimenSteps) != len(doctorRegimenResponse.RegimenSections[i].RegimenSteps) {
+			t.Fatalf("Expected have the same number of regimen steps for each section. Section %s has %d steps but expected %d steps", regimenSection.RegimenName, len(regimenSection.RegimenSteps), len(doctorRegimenResponse.RegimenSections[i].RegimenSteps))
+		}
+	}
+
+	// all regimen steps should have an id in the response
+	regimenStepsMapping := make(map[int64]bool)
+	for _, regimenStep := range doctorRegimenResponse.AllRegimenSteps {
+		if regimenStep.Id.Int64() == 0 {
+			t.Fatal("Regimen steps in the response are expected to have an id")
+		}
+		regimenStepsMapping[regimenStep.Id.Int64()] = true
+	}
+
+	// all regimen steps in the regimen sections should have an id in the response
+	// all regimen steps in the sections that have a parentId should also be present in the global list
+	for _, regimenSection := range doctorRegimenResponse.RegimenSections {
+		for _, regimenStep := range regimenSection.RegimenSteps {
+			if regimenStep.Id.Int64() == 0 {
+				t.Fatal("Regimen steps in each section are expected to have an id")
+			}
+			if regimenStep.ParentId.IsValid && regimenStepsMapping[regimenStep.ParentId.Int64()] == false {
+				t.Fatalf("There exists a regimen step in a section that is not present in the global list. Id of regimen step %d", regimenStep.Id.Int64Value)
+			}
+		}
+	}
+
+	// no two items should have the same id
+	idsFound := make(map[int64]bool)
+	for _, regimenStep := range doctorRegimenResponse.AllRegimenSteps {
+		if _, ok := idsFound[regimenStep.Id.Int64()]; ok {
+			t.Fatal("No two items can have the same id in the global list")
+		}
+		idsFound[regimenStep.Id.Int64()] = true
+	}
+
+	// no two items should have the same parent id in the regimen section
+	idsFound = make(map[int64]bool)
+	for _, regimenSection := range doctorRegimenResponse.RegimenSections {
+		for _, regimenStep := range regimenSection.RegimenSteps {
+			if _, ok := idsFound[regimenStep.ParentId.Int64()]; regimenStep.ParentId.IsValid && ok {
+				t.Fatalf("No two items can have the same parent id")
+			}
+			idsFound[regimenStep.ParentId.Int64()] = true
+		}
+	}
+
+	// deleted regimen steps should not show up in the response
+	deletedRegimenStepIds := make(map[int64]bool)
+	// updated regimen steps should have a different id in the response
+	updatedRegimenSteps := make(map[string][]int64)
+
+	for _, regimenStep := range doctorRegimenRequest.AllRegimenSteps {
+		switch regimenStep.State {
+		case common.STATE_MODIFIED:
+			updatedRegimenSteps[regimenStep.Text] = append(updatedRegimenSteps[regimenStep.Text], regimenStep.Id.Int64())
+		}
+	}
+
+	for _, regimenStep := range doctorRegimenResponse.AllRegimenSteps {
+		if updatedIds, ok := updatedRegimenSteps[regimenStep.Text]; ok {
+			for _, updatedId := range updatedIds {
+				if regimenStep.Id.Int64() == updatedId {
+					t.Fatalf("Expected an updated regimen step to have a different id in the response. Id = %d", regimenStep.Id.Int64())
+				}
+			}
+		}
+
+		if deletedRegimenStepIds[regimenStep.Id.Int64()] == true {
+			t.Fatalf("Expected regimen step %d to have been deleted and not in the response", regimenStep.Id.Int64())
+		}
+	}
+}
+func ValidateAdviceRequestAgainstResponse(doctorAdviceRequest, doctorAdviceResponse *common.Advice, t *testing.T) {
+	if len(doctorAdviceRequest.SelectedAdvicePoints) != len(doctorAdviceResponse.SelectedAdvicePoints) {
+		t.Fatalf("Expected the same number of selected advice points in request and response. Instead request has %d while response has %d", len(doctorAdviceRequest.SelectedAdvicePoints), len(doctorAdviceResponse.SelectedAdvicePoints))
+	}
+
+	// now two ids in the global list should be the same
+	idsFound := make(map[int64]bool)
+
+	// all advice points in the global list should have ids
+	for _, advicePoint := range doctorAdviceResponse.AllAdvicePoints {
+		if advicePoint.Id.Int64() == 0 {
+			t.Fatal("Advice point expected to have an id but it doesnt")
+		}
+		if advicePoint.Text == "" {
+			t.Fatal("Advice point text is empty when not expected to be")
+		}
+
+		if _, ok := idsFound[advicePoint.Id.Int64()]; ok {
+			t.Fatal("No two ids should be the same in the global list")
+		}
+		idsFound[advicePoint.Id.Int64()] = true
+
+	}
+
+	// now two ids should be the same in the selected list
+	idsFound = make(map[int64]bool)
+	parentIdsFound := make(map[int64]bool)
+	// all advice points in the selected list should have ids
+	for _, advicePoint := range doctorAdviceResponse.SelectedAdvicePoints {
+		if advicePoint.Id.Int64() == 0 {
+			t.Fatal("Selected Advice point expected to have an id but it doesnt")
+		}
+		if advicePoint.Text == "" {
+			t.Fatal("Selectd advice point text is empty when not expected to be")
+		}
+		if _, ok := idsFound[advicePoint.Id.Int64()]; ok {
+			t.Fatal("No two ids should be the same in the global list")
+		}
+		idsFound[advicePoint.Id.Int64()] = true
+
+		if _, ok := parentIdsFound[advicePoint.ParentId.Int64()]; advicePoint.ParentId.IsValid && ok {
+			t.Fatal("No two ids should be the same in the global list")
+		}
+		parentIdsFound[advicePoint.ParentId.Int64()] = true
+	}
+
+	// all updated texts should have different ids than the requests
+	// all deleted advice points should not exist in the response
+	// all newly added advice points should have ids
+	textToIdMapping := make(map[string][]int64)
+	deletedAdvicePointIds := make(map[int64]bool)
+	newAdvicePoints := make(map[string]bool)
+	for _, advicePoint := range doctorAdviceRequest.AllAdvicePoints {
+		switch advicePoint.State {
+		case common.STATE_MODIFIED:
+			textToIdMapping[advicePoint.Text] = append(textToIdMapping[advicePoint.Text], advicePoint.Id.Int64())
+
+		case common.STATE_ADDED:
+			newAdvicePoints[advicePoint.Text] = true
+		}
+	}
+
+	for _, advicePoint := range doctorAdviceResponse.AllAdvicePoints {
+		if updatedIds, ok := textToIdMapping[advicePoint.Text]; ok {
+			for _, updatedId := range updatedIds {
+				if updatedId == advicePoint.Id.Int64() {
+					t.Fatal("Updated advice points should have different ids")
+				}
+			}
+		}
+
+		if deletedAdvicePointIds[advicePoint.Id.Int64()] == true {
+			t.Fatal("Deleted advice point should not exist in the response")
+		}
+
+		if newAdvicePoints[advicePoint.Text] == true {
+			if advicePoint.Id.Int64() == 0 {
+				t.Fatal("Newly added advice point should have an id")
+			}
+		}
+	}
+}

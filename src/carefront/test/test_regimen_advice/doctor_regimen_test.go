@@ -46,7 +46,7 @@ func TestRegimenForPatientVisit(t *testing.T) {
 
 	regimenPlanRequest.AllRegimenSteps = []*common.DoctorInstructionItem{regimenStep1, regimenStep2}
 	regimenPlanResponse := test_integration.CreateRegimenPlanForPatientVisit(regimenPlanRequest, testData, doctor, t)
-	validateRegimenRequestAgainstResponse(regimenPlanRequest, regimenPlanResponse, t)
+	test_integration.ValidateRegimenRequestAgainstResponse(regimenPlanRequest, regimenPlanResponse, t)
 
 	if len(regimenPlanResponse.RegimenSections) > 0 {
 		t.Fatal("Regimen section should not exist even though regimen steps were created by doctor")
@@ -74,7 +74,7 @@ func TestRegimenForPatientVisit(t *testing.T) {
 
 	regimenPlanRequest.RegimenSections = []*common.RegimenSection{regimenSection, regimenSection2}
 	regimenPlanResponse = test_integration.CreateRegimenPlanForPatientVisit(regimenPlanRequest, testData, doctor, t)
-	validateRegimenRequestAgainstResponse(regimenPlanResponse, regimenPlanResponse, t)
+	test_integration.ValidateRegimenRequestAgainstResponse(regimenPlanResponse, regimenPlanResponse, t)
 
 	if len(regimenPlanResponse.RegimenSections) != 2 {
 		t.Fatalf("Expected the number of regimen sections to be 2 but there are %d instead", len(regimenPlanResponse.RegimenSections))
@@ -89,7 +89,7 @@ func TestRegimenForPatientVisit(t *testing.T) {
 	regimenPlanRequest.RegimenSections = []*common.RegimenSection{regimenPlanRequest.RegimenSections[0]}
 
 	regimenPlanResponse = test_integration.CreateRegimenPlanForPatientVisit(regimenPlanRequest, testData, doctor, t)
-	validateRegimenRequestAgainstResponse(regimenPlanRequest, regimenPlanResponse, t)
+	test_integration.ValidateRegimenRequestAgainstResponse(regimenPlanRequest, regimenPlanResponse, t)
 
 	if len(regimenPlanResponse.RegimenSections) != 1 {
 		t.Fatalf("Expected the number of regimen sections to be 2 but there are %d instead", len(regimenPlanResponse.RegimenSections))
@@ -101,14 +101,14 @@ func TestRegimenForPatientVisit(t *testing.T) {
 	regimenPlanRequest.AllRegimenSteps[0].State = common.STATE_MODIFIED
 	regimenPlanRequest.RegimenSections[0].RegimenSteps[0].Text = "UPDATED 1"
 	regimenPlanResponse = test_integration.CreateRegimenPlanForPatientVisit(regimenPlanRequest, testData, doctor, t)
-	validateRegimenRequestAgainstResponse(regimenPlanRequest, regimenPlanResponse, t)
+	test_integration.ValidateRegimenRequestAgainstResponse(regimenPlanRequest, regimenPlanResponse, t)
 
 	// lets delete a regimen step
 	regimenPlanRequest = regimenPlanResponse
 	regimenPlanRequest.AllRegimenSteps = []*common.DoctorInstructionItem{regimenPlanRequest.AllRegimenSteps[0]}
 	regimenPlanRequest.RegimenSections = []*common.RegimenSection{}
 	regimenPlanResponse = test_integration.CreateRegimenPlanForPatientVisit(regimenPlanRequest, testData, doctor, t)
-	validateRegimenRequestAgainstResponse(regimenPlanRequest, regimenPlanResponse, t)
+	test_integration.ValidateRegimenRequestAgainstResponse(regimenPlanRequest, regimenPlanResponse, t)
 	if len(regimenPlanResponse.AllRegimenSteps) != 1 {
 		t.Fatal("Should only have 1 regimen step given that we just deleted one from the list")
 	}
@@ -183,7 +183,7 @@ func TestRegimenForPatientVisit_AddOnlyToPatientVisit(t *testing.T) {
 
 	regimenPlanRequest.RegimenSections = []*common.RegimenSection{regimenSection, regimenSection2}
 	regimenPlanResponse := test_integration.CreateRegimenPlanForPatientVisit(regimenPlanRequest, testData, doctor, t)
-	validateRegimenRequestAgainstResponse(regimenPlanRequest, regimenPlanResponse, t)
+	test_integration.ValidateRegimenRequestAgainstResponse(regimenPlanRequest, regimenPlanResponse, t)
 
 	if len(regimenPlanResponse.RegimenSections) != 2 {
 		t.Fatalf("Expected 2 regimen sections but got %d", len(regimenPlanResponse.RegimenSections))
@@ -224,7 +224,7 @@ func TestRegimenForPatientVisit_AddingMultipleItemsWithSameText(t *testing.T) {
 	}
 
 	regimenPlanResponse := test_integration.CreateRegimenPlanForPatientVisit(regimenPlanRequest, testData, doctor, t)
-	validateRegimenRequestAgainstResponse(regimenPlanRequest, regimenPlanResponse, t)
+	test_integration.ValidateRegimenRequestAgainstResponse(regimenPlanRequest, regimenPlanResponse, t)
 
 }
 
@@ -260,7 +260,7 @@ func TestRegimenForPatientVisit_ErrorTextDifferentForLinkedItem(t *testing.T) {
 	}
 
 	regimenPlanResponse := test_integration.CreateRegimenPlanForPatientVisit(regimenPlanRequest, testData, doctor, t)
-	validateRegimenRequestAgainstResponse(regimenPlanRequest, regimenPlanResponse, t)
+	test_integration.ValidateRegimenRequestAgainstResponse(regimenPlanRequest, regimenPlanResponse, t)
 
 	// all steps in the response should have a parent id
 	for i := 0; i < 5; i++ {
@@ -331,7 +331,7 @@ func TestRegimenForPatientVisit_UpdatingMultipleItemsWithSameText(t *testing.T) 
 	}
 
 	regimenPlanResponse := test_integration.CreateRegimenPlanForPatientVisit(regimenPlanRequest, testData, doctor, t)
-	validateRegimenRequestAgainstResponse(regimenPlanRequest, regimenPlanResponse, t)
+	test_integration.ValidateRegimenRequestAgainstResponse(regimenPlanRequest, regimenPlanResponse, t)
 
 	regimenPlanRequest = regimenPlanResponse
 
@@ -345,7 +345,7 @@ func TestRegimenForPatientVisit_UpdatingMultipleItemsWithSameText(t *testing.T) 
 	}
 
 	regimenPlanResponse = test_integration.CreateRegimenPlanForPatientVisit(regimenPlanRequest, testData, doctor, t)
-	validateRegimenRequestAgainstResponse(regimenPlanRequest, regimenPlanResponse, t)
+	test_integration.ValidateRegimenRequestAgainstResponse(regimenPlanRequest, regimenPlanResponse, t)
 }
 
 func TestRegimenForPatientVisit_UpdatingItemLinkedToDeletedItem(t *testing.T) {
@@ -377,7 +377,7 @@ func TestRegimenForPatientVisit_UpdatingItemLinkedToDeletedItem(t *testing.T) {
 	}
 
 	regimenPlanResponse := test_integration.CreateRegimenPlanForPatientVisit(regimenPlanRequest, testData, doctor, t)
-	validateRegimenRequestAgainstResponse(regimenPlanRequest, regimenPlanResponse, t)
+	test_integration.ValidateRegimenRequestAgainstResponse(regimenPlanRequest, regimenPlanResponse, t)
 
 	// now lets update the global set of regimen steps in the context of another patient's visit
 	patientVisitResponse2, _ := test_integration.SignupAndSubmitPatientVisitForRandomPatient(t, testData, doctor)
@@ -425,7 +425,7 @@ func TestRegimenForPatientVisit_UpdatingItemLinkedToDeletedItem(t *testing.T) {
 	regimenPlanRequest = regimenPlanResponse
 	regimenPlanRequest.RegimenSections = regimenPlanRequest.RegimenSections[:4]
 	regimenPlanResponse = test_integration.CreateRegimenPlanForPatientVisit(regimenPlanRequest, testData, doctor, t)
-	validateRegimenRequestAgainstResponse(regimenPlanRequest, regimenPlanResponse, t)
+	test_integration.ValidateRegimenRequestAgainstResponse(regimenPlanRequest, regimenPlanResponse, t)
 }
 
 // The purpose of this test is to ensure that when regimen steps are updated,
@@ -451,7 +451,7 @@ func TestRegimenForPatientVisit_TrackingSourceId(t *testing.T) {
 
 	regimenPlanRequest.AllRegimenSteps = []*common.DoctorInstructionItem{regimenStep1, regimenStep2}
 	regimenPlanResponse := test_integration.CreateRegimenPlanForPatientVisit(regimenPlanRequest, testData, doctor, t)
-	validateRegimenRequestAgainstResponse(regimenPlanRequest, regimenPlanResponse, t)
+	test_integration.ValidateRegimenRequestAgainstResponse(regimenPlanRequest, regimenPlanResponse, t)
 
 	if len(regimenPlanResponse.RegimenSections) > 0 {
 		t.Fatal("Regimen section should not exist even though regimen steps were created by doctor")
@@ -468,7 +468,7 @@ func TestRegimenForPatientVisit_TrackingSourceId(t *testing.T) {
 	regimenPlanRequest.AllRegimenSteps[1].State = common.STATE_MODIFIED
 	regimenPlanRequest.AllRegimenSteps[1].Text = "Updated step 2"
 	regimenPlanResponse = test_integration.CreateRegimenPlanForPatientVisit(regimenPlanRequest, testData, doctor, t)
-	validateRegimenRequestAgainstResponse(regimenPlanRequest, regimenPlanResponse, t)
+	test_integration.ValidateRegimenRequestAgainstResponse(regimenPlanRequest, regimenPlanResponse, t)
 
 	// the source id of the two returned steps should match the source id of the original steps
 	var updatedItemSourceId1, updatedItemSourceId2 sql.NullInt64
@@ -495,7 +495,7 @@ func TestRegimenForPatientVisit_TrackingSourceId(t *testing.T) {
 	regimenPlanRequest.AllRegimenSteps[1].State = common.STATE_MODIFIED
 	regimenPlanRequest.AllRegimenSteps[1].Text = "Updated again step 2"
 	regimenPlanResponse = test_integration.CreateRegimenPlanForPatientVisit(regimenPlanRequest, testData, doctor, t)
-	validateRegimenRequestAgainstResponse(regimenPlanRequest, regimenPlanResponse, t)
+	test_integration.ValidateRegimenRequestAgainstResponse(regimenPlanRequest, regimenPlanResponse, t)
 
 	// the source id of the two returned steps should match the source id of the original steps
 	if err := testData.DB.QueryRow(`select source_id from dr_regimen_step where id=?`, regimenPlanResponse.AllRegimenSteps[0].Id.Int64()).Scan(&updatedItemSourceId1); err != nil {
@@ -527,97 +527,4 @@ func setupTestForRegimenCreation(t *testing.T, testData test_integration.TestDat
 	}
 	patientVisitResponse, _ := test_integration.SignupAndSubmitPatientVisitForRandomPatient(t, testData, doctor)
 	return patientVisitResponse, doctor
-}
-
-func validateRegimenRequestAgainstResponse(doctorRegimenRequest, doctorRegimenResponse *common.RegimenPlan, t *testing.T) {
-
-	// there should be the same number of sections in the request and the response
-	if len(doctorRegimenRequest.RegimenSections) != len(doctorRegimenResponse.RegimenSections) {
-		t.Fatalf("Number of regimen sections should be the same in the request and the response. Request = %d, response = %d", len(doctorRegimenRequest.RegimenSections), len(doctorRegimenResponse.RegimenSections))
-	}
-
-	// there should be the same number of steps in each section in the request and the response
-	if doctorRegimenRequest.RegimenSections != nil {
-		for i, regimenSection := range doctorRegimenRequest.RegimenSections {
-			if len(regimenSection.RegimenSteps) != len(doctorRegimenResponse.RegimenSections[i].RegimenSteps) {
-				t.Fatalf(`the number of regimen steps in the regimen section of the request and the response should be the same, 
-				regimen section = %s, request = %d, response = %d`, regimenSection.RegimenName, len(regimenSection.RegimenSteps), len(doctorRegimenResponse.RegimenSections[i].RegimenSteps))
-			}
-		}
-	}
-
-	// the number of steps in each regimen section should be the same across the request and response
-	for i, regimenSection := range doctorRegimenRequest.RegimenSections {
-		if len(regimenSection.RegimenSteps) != len(doctorRegimenResponse.RegimenSections[i].RegimenSteps) {
-			t.Fatalf("Expected have the same number of regimen steps for each section. Section %s has %d steps but expected %d steps", regimenSection.RegimenName, len(regimenSection.RegimenSteps), len(doctorRegimenResponse.RegimenSections[i].RegimenSteps))
-		}
-	}
-
-	// all regimen steps should have an id in the response
-	regimenStepsMapping := make(map[int64]bool)
-	for _, regimenStep := range doctorRegimenResponse.AllRegimenSteps {
-		if regimenStep.Id.Int64() == 0 {
-			t.Fatal("Regimen steps in the response are expected to have an id")
-		}
-		regimenStepsMapping[regimenStep.Id.Int64()] = true
-	}
-
-	// all regimen steps in the regimen sections should have an id in the response
-	// all regimen steps in the sections that have a parentId should also be present in the global list
-	for _, regimenSection := range doctorRegimenResponse.RegimenSections {
-		for _, regimenStep := range regimenSection.RegimenSteps {
-			if regimenStep.Id.Int64() == 0 {
-				t.Fatal("Regimen steps in each section are expected to have an id")
-			}
-			if regimenStep.ParentId.IsValid && regimenStepsMapping[regimenStep.ParentId.Int64()] == false {
-				t.Fatalf("There exists a regimen step in a section that is not present in the global list. Id of regimen step %d", regimenStep.Id.Int64Value)
-			}
-		}
-	}
-
-	// no two items should have the same id
-	idsFound := make(map[int64]bool)
-	for _, regimenStep := range doctorRegimenResponse.AllRegimenSteps {
-		if _, ok := idsFound[regimenStep.Id.Int64()]; ok {
-			t.Fatal("No two items can have the same id in the global list")
-		}
-		idsFound[regimenStep.Id.Int64()] = true
-	}
-
-	// no two items should have the same parent id in the regimen section
-	idsFound = make(map[int64]bool)
-	for _, regimenSection := range doctorRegimenResponse.RegimenSections {
-		for _, regimenStep := range regimenSection.RegimenSteps {
-			if _, ok := idsFound[regimenStep.ParentId.Int64()]; regimenStep.ParentId.IsValid && ok {
-				t.Fatalf("No two items can have the same parent id")
-			}
-			idsFound[regimenStep.ParentId.Int64()] = true
-		}
-	}
-
-	// deleted regimen steps should not show up in the response
-	deletedRegimenStepIds := make(map[int64]bool)
-	// updated regimen steps should have a different id in the response
-	updatedRegimenSteps := make(map[string][]int64)
-
-	for _, regimenStep := range doctorRegimenRequest.AllRegimenSteps {
-		switch regimenStep.State {
-		case common.STATE_MODIFIED:
-			updatedRegimenSteps[regimenStep.Text] = append(updatedRegimenSteps[regimenStep.Text], regimenStep.Id.Int64())
-		}
-	}
-
-	for _, regimenStep := range doctorRegimenResponse.AllRegimenSteps {
-		if updatedIds, ok := updatedRegimenSteps[regimenStep.Text]; ok {
-			for _, updatedId := range updatedIds {
-				if regimenStep.Id.Int64() == updatedId {
-					t.Fatalf("Expected an updated regimen step to have a different id in the response. Id = %d", regimenStep.Id.Int64())
-				}
-			}
-		}
-
-		if deletedRegimenStepIds[regimenStep.Id.Int64()] == true {
-			t.Fatalf("Expected regimen step %d to have been deleted and not in the response", regimenStep.Id.Int64())
-		}
-	}
 }

@@ -247,7 +247,7 @@ func TestFavoriteTreatmentPlan_CommittedStateForTreatmentPlan(t *testing.T) {
 		AllRegimenSteps: favoriteTreamentPlan.RegimenPlan.AllRegimenSteps,
 		RegimenSections: favoriteTreamentPlan.RegimenPlan.RegimenSections,
 	}
-	createRegimenPlanForPatientVisit(regimenPlanRequest, testData, doctor, t)
+	CreateRegimenPlanForPatientVisit(regimenPlanRequest, testData, doctor, t)
 
 	// now lets attempt to get the treatment plan for the patient visit
 	ts := httptest.NewServer(&apiservice.DoctorTreatmentPlanHandler{
@@ -278,7 +278,7 @@ func TestFavoriteTreatmentPlan_CommittedStateForTreatmentPlan(t *testing.T) {
 		AllAdvicePoints:      favoriteTreamentPlan.Advice.AllAdvicePoints,
 		SelectedAdvicePoints: favoriteTreamentPlan.Advice.SelectedAdvicePoints,
 	}
-	updateAdvicePointsForPatientVisit(doctorAdviceRequest, testData, doctor, t)
+	UpdateAdvicePointsForPatientVisit(doctorAdviceRequest, testData, doctor, t)
 
 	// now if we were to get the treatment plan again it should indicate that the
 	// advice and regimen sections are committed but not the treatment section
@@ -344,7 +344,7 @@ func TestFavoriteTreatmentPlan_BreakingMappingOnModify(t *testing.T) {
 		AllRegimenSteps: favoriteTreamentPlan.RegimenPlan.AllRegimenSteps,
 		RegimenSections: favoriteTreamentPlan.RegimenPlan.RegimenSections[:1],
 	}
-	createRegimenPlanForPatientVisit(regimenPlanRequest, testData, doctor, t)
+	CreateRegimenPlanForPatientVisit(regimenPlanRequest, testData, doctor, t)
 
 	// now lets attempt to get the abbreviated version of the treatment plan
 	ts := httptest.NewServer(&apiservice.DoctorTreatmentPlanHandler{
@@ -408,7 +408,7 @@ func TestFavoriteTreatmentPlan_BreakingMappingOnModify(t *testing.T) {
 		AllAdvicePoints:      favoriteTreamentPlan.Advice.AllAdvicePoints,
 		SelectedAdvicePoints: favoriteTreamentPlan.Advice.SelectedAdvicePoints[1:],
 	}
-	updateAdvicePointsForPatientVisit(doctorAdviceRequest, testData, doctor, t)
+	UpdateAdvicePointsForPatientVisit(doctorAdviceRequest, testData, doctor, t)
 
 	// linkage should now be broken
 	if resp, err := AuthGet(ts.URL+"?"+params.Encode(), doctor.AccountId.Int64()); err != nil {
@@ -466,8 +466,8 @@ func TestFavoriteTreatmentPlan_InContextOfTreatmentPlan(t *testing.T) {
 
 	regimenPlanRequest.AllRegimenSteps = []*common.DoctorInstructionItem{regimenStep1, regimenStep2}
 	regimenPlanRequest.RegimenSections = []*common.RegimenSection{regimenSection, regimenSection2}
-	regimenPlanResponse := createRegimenPlanForPatientVisit(regimenPlanRequest, testData, doctor, t)
-	validateRegimenRequestAgainstResponse(regimenPlanRequest, regimenPlanResponse, t)
+	regimenPlanResponse := CreateRegimenPlanForPatientVisit(regimenPlanRequest, testData, doctor, t)
+	ValidateRegimenRequestAgainstResponse(regimenPlanRequest, regimenPlanResponse, t)
 
 	// lets submit advice for this patient
 	// lets go ahead and add a couple of advice points
@@ -482,8 +482,8 @@ func TestFavoriteTreatmentPlan_InContextOfTreatmentPlan(t *testing.T) {
 	doctorAdviceRequest.SelectedAdvicePoints = doctorAdviceRequest.AllAdvicePoints
 	doctorAdviceRequest.PatientVisitId = encoding.NewObjectId(patientVisitResponse.PatientVisitId)
 
-	doctorAdviceResponse := updateAdvicePointsForPatientVisit(doctorAdviceRequest, testData, doctor, t)
-	validateAdviceRequestAgainstResponse(doctorAdviceRequest, doctorAdviceResponse, t)
+	doctorAdviceResponse := UpdateAdvicePointsForPatientVisit(doctorAdviceRequest, testData, doctor, t)
+	ValidateAdviceRequestAgainstResponse(doctorAdviceRequest, doctorAdviceResponse, t)
 
 	// prepare the regimen steps and the advice points to be added into the sections
 	// after the global list for each has been updated to include items.
@@ -607,8 +607,8 @@ func TestFavoriteTreatmentPlan_InContextOfTreatmentPlan_EmptyRegimenAndAdvice(t 
 	regimenStep2.State = common.STATE_ADDED
 
 	regimenPlanRequest.AllRegimenSteps = []*common.DoctorInstructionItem{regimenStep1, regimenStep2}
-	regimenPlanResponse := createRegimenPlanForPatientVisit(regimenPlanRequest, testData, doctor, t)
-	validateRegimenRequestAgainstResponse(regimenPlanRequest, regimenPlanResponse, t)
+	regimenPlanResponse := CreateRegimenPlanForPatientVisit(regimenPlanRequest, testData, doctor, t)
+	ValidateRegimenRequestAgainstResponse(regimenPlanRequest, regimenPlanResponse, t)
 
 	// lets submit advice for this patient
 	// lets go ahead and add a couple of advice points
@@ -622,8 +622,8 @@ func TestFavoriteTreatmentPlan_InContextOfTreatmentPlan_EmptyRegimenAndAdvice(t 
 	doctorAdviceRequest.AllAdvicePoints = []*common.DoctorInstructionItem{advicePoint1, advicePoint2}
 	doctorAdviceRequest.PatientVisitId = encoding.NewObjectId(patientVisitResponse.PatientVisitId)
 
-	doctorAdviceResponse := updateAdvicePointsForPatientVisit(doctorAdviceRequest, testData, doctor, t)
-	validateAdviceRequestAgainstResponse(doctorAdviceRequest, doctorAdviceResponse, t)
+	doctorAdviceResponse := UpdateAdvicePointsForPatientVisit(doctorAdviceRequest, testData, doctor, t)
+	ValidateAdviceRequestAgainstResponse(doctorAdviceRequest, doctorAdviceResponse, t)
 
 	advicePoint1 = &common.DoctorInstructionItem{
 		Text:     advicePoint1.Text,
@@ -735,8 +735,8 @@ func TestFavoriteTreatmentPlan_InContextOfTreatmentPlan_TwoDontMatch(t *testing.
 	regimenStep2.State = common.STATE_ADDED
 
 	regimenPlanRequest.AllRegimenSteps = []*common.DoctorInstructionItem{regimenStep1, regimenStep2}
-	regimenPlanResponse := createRegimenPlanForPatientVisit(regimenPlanRequest, testData, doctor, t)
-	validateRegimenRequestAgainstResponse(regimenPlanRequest, regimenPlanResponse, t)
+	regimenPlanResponse := CreateRegimenPlanForPatientVisit(regimenPlanRequest, testData, doctor, t)
+	ValidateRegimenRequestAgainstResponse(regimenPlanRequest, regimenPlanResponse, t)
 
 	// lets submit advice for this patient
 	// lets go ahead and add a couple of advice points
@@ -751,8 +751,8 @@ func TestFavoriteTreatmentPlan_InContextOfTreatmentPlan_TwoDontMatch(t *testing.
 	doctorAdviceRequest.SelectedAdvicePoints = doctorAdviceRequest.AllAdvicePoints
 	doctorAdviceRequest.PatientVisitId = encoding.NewObjectId(patientVisitResponse.PatientVisitId)
 
-	doctorAdviceResponse := updateAdvicePointsForPatientVisit(doctorAdviceRequest, testData, doctor, t)
-	validateAdviceRequestAgainstResponse(doctorAdviceRequest, doctorAdviceResponse, t)
+	doctorAdviceResponse := UpdateAdvicePointsForPatientVisit(doctorAdviceRequest, testData, doctor, t)
+	ValidateAdviceRequestAgainstResponse(doctorAdviceRequest, doctorAdviceResponse, t)
 
 	advicePoint1 = &common.DoctorInstructionItem{
 		Text:     advicePoint1.Text,
@@ -872,8 +872,8 @@ func createFavoriteTreatmentPlan(patientVisitId int64, testData TestData, doctor
 	}
 
 	regimenPlanRequest.AllRegimenSteps = []*common.DoctorInstructionItem{regimenStep1, regimenStep2}
-	regimenPlanResponse := createRegimenPlanForPatientVisit(regimenPlanRequest, testData, doctor, t)
-	validateRegimenRequestAgainstResponse(regimenPlanRequest, regimenPlanResponse, t)
+	regimenPlanResponse := CreateRegimenPlanForPatientVisit(regimenPlanRequest, testData, doctor, t)
+	ValidateRegimenRequestAgainstResponse(regimenPlanRequest, regimenPlanResponse, t)
 
 	// lets submit advice for this patient
 	// lets go ahead and add a couple of advice points
@@ -887,8 +887,8 @@ func createFavoriteTreatmentPlan(patientVisitId int64, testData TestData, doctor
 	doctorAdviceRequest.AllAdvicePoints = []*common.DoctorInstructionItem{advicePoint1, advicePoint2}
 	doctorAdviceRequest.PatientVisitId = encoding.NewObjectId(patientVisitId)
 
-	doctorAdviceResponse := updateAdvicePointsForPatientVisit(doctorAdviceRequest, testData, doctor, t)
-	validateAdviceRequestAgainstResponse(doctorAdviceRequest, doctorAdviceResponse, t)
+	doctorAdviceResponse := UpdateAdvicePointsForPatientVisit(doctorAdviceRequest, testData, doctor, t)
+	ValidateAdviceRequestAgainstResponse(doctorAdviceRequest, doctorAdviceResponse, t)
 
 	// prepare the regimen steps and the advice points to be added into the sections
 	// after the global list for each has been updated to include items.
