@@ -29,6 +29,7 @@ func RunTests() {
 			cmd.Stderr = os.Stderr
 			if err := cmd.Run(); err != nil {
 				fmt.Println("FAILED to run command successfully: " + err.Error())
+				os.Exit(1)
 			}
 		}
 	}
