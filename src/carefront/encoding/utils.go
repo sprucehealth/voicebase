@@ -187,6 +187,13 @@ func (id ObjectId) Int64() int64 {
 	return id.Int64Value
 }
 
+func (id ObjectId) Int64Ptr() *int64 {
+	if !id.IsValid {
+		return nil
+	}
+	return &id.Int64Value
+}
+
 func (id *ObjectId) Scan(src interface{}) error {
 	var nullInt64 sql.NullInt64
 	err := nullInt64.Scan(src)

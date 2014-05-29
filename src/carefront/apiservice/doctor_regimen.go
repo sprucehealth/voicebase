@@ -63,7 +63,7 @@ func (d *DoctorRegimenHandler) updateRegimenSteps(w http.ResponseWriter, r *http
 	// ensure that all regimen steps in the regimen sections actually exist in the client global list
 	for _, regimenSection := range requestData.RegimenSections {
 		for _, regimenStep := range regimenSection.RegimenSteps {
-			if httpStatusCode, err := d.ensureRegimenStepExistsInMasterList(regimenStep, requestData, patientVisitReviewData.DoctorId); err != nil {
+			if httpStatusCode, err := d.ensureLinkedRegimenStepExistsInMasterList(regimenStep, requestData, patientVisitReviewData.DoctorId); err != nil {
 				WriteDeveloperError(w, httpStatusCode, err.Error())
 				return
 			}
@@ -136,27 +136,13 @@ func (d *DoctorRegimenHandler) updateRegimenSteps(w http.ResponseWriter, r *http
 				regimenStep.ParentId = encoding.NewObjectId(newIds[0])
 				// update the list to remove the item just used
 				newStepToIdMapping[regimenStep.Text] = newIds[1:]
-			}
-
-			if updatedId, ok := updatedStepToIdMapping[regimenStep.ParentId.Int64()]; ok {
+			} else if updatedId, ok := updatedStepToIdMapping[regimenStep.ParentId.Int64()]; ok {
 				// update the parentId to point to the new updated regimen step
 				regimenStep.ParentId = encoding.NewObjectId(updatedId)
-			} else if regimenStep.State == common.STATE_MODIFIED {
-				// if the step has been modified and is only included in the regimen section and not in the master list,
-				// this means that it links to an older step that is no longer active in the doctor's master list
-				// go ahead and populate the fields of the parent regimen step to update it in the database
-				parentRegimenStep := &common.DoctorInstructionItem{
-					Id:   regimenStep.ParentId,
-					Text: regimenStep.Text,
-				}
-				// now lets go ahead and update this parent regimen step (even though its currently inactive, this helps maintain
-				// the integrity of the data between what is in the treamtent plan and what is in the master list)
-				if err := d.DataApi.UpdateRegimenStepForDoctor(parentRegimenStep, patientVisitReviewData.DoctorId); err != nil {
-					WriteDeveloperError(w, http.StatusInternalServerError, "Unable to update regimen step for doctor: "+err.Error())
-					return
-				}
-				// update the parent id to reflect the linkage to the newly updated step
-				regimenStep.ParentId = parentRegimenStep.Id
+			} else if regimenStep.State == common.STATE_MODIFIED || regimenStep.State == common.STATE_ADDED {
+				// break any linkage to the parent step because the text is no longer the same and the regimen step does
+				// not exist in the master list
+				regimenStep.ParentId = encoding.ObjectId{}
 			}
 		}
 	}
@@ -208,24 +194,24 @@ func (d *DoctorRegimenHandler) updateRegimenSteps(w http.ResponseWriter, r *http
 	WriteJSONToHTTPResponseWriter(w, http.StatusOK, regimenPlan)
 }
 
-func (d *DoctorRegimenHandler) ensureRegimenStepExistsInMasterList(regimenStep *common.DoctorInstructionItem, regimenPlan *common.RegimenPlan, doctorId int64) (int, error) {
-	regimenStepFound := false
+func (d *DoctorRegimenHandler) ensureLinkedRegimenStepExistsInMasterList(regimenStep *common.DoctorInstructionItem, regimenPlan *common.RegimenPlan, doctorId int64) (int, error) {
+	// no need to check if the regimen step does not indicate that it exists in the master list
+	if !regimenStep.ParentId.IsValid {
+		return 0, nil
+	}
 
 	for _, globalRegimenStep := range regimenPlan.AllRegimenSteps {
-		// if we are working with new items in the list do a text comparison to check for the existence of the step
-		if globalRegimenStep.Id.Int64() == 0 && regimenStep.ParentId.Int64() == 0 {
-			if globalRegimenStep.Text == regimenStep.Text {
-				regimenStepFound = true
-				break
-			}
-		} else if globalRegimenStep.Id.Int64() == regimenStep.ParentId.Int64() {
+
+		if !globalRegimenStep.Id.IsValid {
+			continue
+		}
+		if globalRegimenStep.Id.Int64() == regimenStep.ParentId.Int64() {
 			if globalRegimenStep.Text != regimenStep.Text {
 				// check the text to ensure that its the same
 				return http.StatusBadRequest, errors.New("The text of an item in the regimen section cannot be different from that in the global list if they are considered linked.")
 			}
-			regimenStepFound = true
 			break
-		} else if regimenStep.ParentId.Int64() != 0 {
+		} else {
 			// its possible that the step is not present in the active global list but exists as a
 			// step from the past
 			parentRegimenStep, err := d.DataApi.GetRegimenStepForDoctor(regimenStep.ParentId.Int64(), doctorId)
@@ -238,13 +224,8 @@ func (d *DoctorRegimenHandler) ensureRegimenStepExistsInMasterList(regimenStep *
 			if parentRegimenStep.Text != regimenStep.Text && regimenStep.State != common.STATE_MODIFIED {
 				return http.StatusBadRequest, errors.New("Cannot modify the text of a regimen step that is linked to a parent regimen step without indicating intent via STATE=MODIFIED")
 			}
-			regimenStepFound = true
 			break
 		}
-	}
-
-	if !regimenStepFound {
-		return http.StatusBadRequest, errors.New("Regimen step in the section for the patient visit not found in the global list of all regimen steps")
 	}
 
 	return 0, nil

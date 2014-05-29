@@ -1,4 +1,4 @@
-package test_integration
+package test_regimen_advice
 
 import (
 	"bytes"
@@ -12,16 +12,17 @@ import (
 	"carefront/apiservice"
 	"carefront/common"
 	"carefront/encoding"
+	"carefront/test/test_integration"
 )
 
 func TestAdvicePointsForPatientVisit(t *testing.T) {
-	testData := SetupIntegrationTest(t)
-	defer TearDownIntegrationTest(t, testData)
+	testData := test_integration.SetupIntegrationTest(t)
+	defer test_integration.TearDownIntegrationTest(t, testData)
 
 	patientVisitResponse, doctor := setupAdviceCreationTest(t, testData)
 
 	// attempt to get the advice points for this patient visit
-	doctorAdviceResponse := getAdvicePointsInPatientVisit(testData, doctor, patientVisitResponse.PatientVisitId, t)
+	doctorAdviceResponse := test_integration.GetAdvicePointsInPatientVisit(testData, doctor, patientVisitResponse.PatientVisitId, t)
 
 	if len(doctorAdviceResponse.AllAdvicePoints) > 0 {
 		t.Fatal("Expected there to be no advice points for the doctor ")
@@ -41,14 +42,16 @@ func TestAdvicePointsForPatientVisit(t *testing.T) {
 	doctorAdviceRequest.SelectedAdvicePoints = doctorAdviceRequest.AllAdvicePoints
 	doctorAdviceRequest.PatientVisitId = encoding.NewObjectId(patientVisitResponse.PatientVisitId)
 
-	doctorAdviceResponse = updateAdvicePointsForPatientVisit(doctorAdviceRequest, testData, doctor, t)
+	doctorAdviceResponse = test_integration.UpdateAdvicePointsForPatientVisit(doctorAdviceRequest, testData, doctor, t)
 
 	if len(doctorAdviceResponse.AllAdvicePoints) != 2 {
 		t.Fatal("Expected to get back the same number of advice points as were added: ")
-	}
-
-	if len(doctorAdviceResponse.SelectedAdvicePoints) != 2 {
+	} else if len(doctorAdviceResponse.SelectedAdvicePoints) != 2 {
 		t.Fatal("Expected to get back the same number of advice point for patient visit as were added: ")
+	} else if !doctorAdviceResponse.SelectedAdvicePoints[0].ParentId.IsValid {
+		t.Fatal("Expected advice point to have a parent id but it doesnt")
+	} else if !doctorAdviceResponse.SelectedAdvicePoints[1].ParentId.IsValid {
+		t.Fatal("Expected advice point to have a parent id but it doesnt")
 	}
 
 	validateAdviceRequestAgainstResponse(doctorAdviceRequest, doctorAdviceResponse, t)
@@ -57,7 +60,7 @@ func TestAdvicePointsForPatientVisit(t *testing.T) {
 	// note that the response now becomes the request since thats the updated view of the system
 	doctorAdviceRequest = doctorAdviceResponse
 	doctorAdviceRequest.SelectedAdvicePoints = []*common.DoctorInstructionItem{doctorAdviceRequest.SelectedAdvicePoints[0]}
-	doctorAdviceResponse = updateAdvicePointsForPatientVisit(doctorAdviceRequest, testData, doctor, t)
+	doctorAdviceResponse = test_integration.UpdateAdvicePointsForPatientVisit(doctorAdviceRequest, testData, doctor, t)
 	validateAdviceRequestAgainstResponse(doctorAdviceRequest, doctorAdviceResponse, t)
 	if len(doctorAdviceResponse.SelectedAdvicePoints) != 1 {
 		t.Fatalf("Expected there to exist just 1 advice points in the selection for the patient visit. Instead there are %d", len(doctorAdviceResponse.SelectedAdvicePoints))
@@ -77,7 +80,7 @@ func TestAdvicePointsForPatientVisit(t *testing.T) {
 	}
 	doctorAdviceRequest.SelectedAdvicePoints = selectedAdvicePoints
 
-	doctorAdviceResponse = updateAdvicePointsForPatientVisit(doctorAdviceRequest, testData, doctor, t)
+	doctorAdviceResponse = test_integration.UpdateAdvicePointsForPatientVisit(doctorAdviceRequest, testData, doctor, t)
 	validateAdviceRequestAgainstResponse(doctorAdviceRequest, doctorAdviceResponse, t)
 
 	// lets delete one of the advice points
@@ -88,11 +91,10 @@ func TestAdvicePointsForPatientVisit(t *testing.T) {
 		Text:     doctorAdviceRequest.AllAdvicePoints[0].Text,
 	},
 	}
-	doctorAdviceResponse = updateAdvicePointsForPatientVisit(doctorAdviceRequest, testData, doctor, t)
+	doctorAdviceResponse = test_integration.UpdateAdvicePointsForPatientVisit(doctorAdviceRequest, testData, doctor, t)
 	validateAdviceRequestAgainstResponse(doctorAdviceRequest, doctorAdviceResponse, t)
 
-	// lets test for a bad request if an advice point that does not exist in the global list is
-	// added to the patient visit
+	// lets test for the case an advice point being added to the list that does not exist in master
 	doctorAdviceRequest.SelectedAdvicePoints = append(doctorAdviceRequest.SelectedAdvicePoints, advicePoint1)
 	doctorAdviceHandler := apiservice.NewDoctorAdviceHandler(testData.DataApi)
 	ts := httptest.NewServer(doctorAdviceHandler)
@@ -103,20 +105,18 @@ func TestAdvicePointsForPatientVisit(t *testing.T) {
 		t.Fatal("Unable to marshal request body for adding advice points: " + err.Error())
 	}
 
-	resp, err := AuthPost(ts.URL, "application/json", bytes.NewBuffer(requestBody), doctor.AccountId.Int64())
+	resp, err := test_integration.AuthPost(ts.URL, "application/json", bytes.NewBuffer(requestBody), doctor.AccountId.Int64())
 	if err != nil {
 		t.Fatal("Unable to make successful request to add advice points to patient visit " + err.Error())
-	}
-
-	if resp.StatusCode != http.StatusBadRequest {
+	} else if resp.StatusCode != http.StatusOK {
 		t.Fatal("Expected a bad request for a request that contains advice points that don't exist in the global list")
 	}
 
 	// lets start a new patient visit and ensure that we still get back the advice points as added
-	patientVisitResponse2, _ := SignupAndSubmitPatientVisitForRandomPatient(t, testData, doctor)
+	patientVisitResponse2, _ := test_integration.SignupAndSubmitPatientVisitForRandomPatient(t, testData, doctor)
 
 	// get the advice points for this patient visit
-	doctorAdviceResponse2 := getAdvicePointsInPatientVisit(testData, doctor, patientVisitResponse2.PatientVisitId, t)
+	doctorAdviceResponse2 := test_integration.GetAdvicePointsInPatientVisit(testData, doctor, patientVisitResponse2.PatientVisitId, t)
 
 	// there should be no selected advice points, but there should be advice points in existence
 	if len(doctorAdviceResponse2.SelectedAdvicePoints) > 0 {
@@ -131,7 +131,7 @@ func TestAdvicePointsForPatientVisit(t *testing.T) {
 	doctorAdviceRequest = doctorAdviceResponse
 	doctorAdviceRequest.AllAdvicePoints = nil
 	doctorAdviceRequest.SelectedAdvicePoints = []*common.DoctorInstructionItem{}
-	doctorAdviceResponse = updateAdvicePointsForPatientVisit(doctorAdviceRequest, testData, doctor, t)
+	doctorAdviceResponse = test_integration.UpdateAdvicePointsForPatientVisit(doctorAdviceRequest, testData, doctor, t)
 	if len(doctorAdviceResponse.AllAdvicePoints) > 0 {
 		t.Fatal("Expected no advice points to exist given that all were deleted")
 	}
@@ -141,12 +141,42 @@ func TestAdvicePointsForPatientVisit(t *testing.T) {
 	}
 }
 
+func TestAdvicePointsForPatientVisit_AddAdviceOnlyToVisit(t *testing.T) {
+	testData := test_integration.SetupIntegrationTest(t)
+	defer test_integration.TearDownIntegrationTest(t, testData)
+
+	patientVisitResponse, doctor := setupAdviceCreationTest(t, testData)
+
+	// lets go ahead and add a couple of advice points
+	advicePoint1 := &common.DoctorInstructionItem{Text: "Advice point 1", State: common.STATE_ADDED}
+	advicePoint2 := &common.DoctorInstructionItem{Text: "Advice point 2", State: common.STATE_ADDED}
+
+	// lets go ahead and create a request for this patient visit
+	doctorAdviceRequest := &common.Advice{}
+	doctorAdviceRequest.SelectedAdvicePoints = []*common.DoctorInstructionItem{advicePoint1, advicePoint2}
+	doctorAdviceRequest.PatientVisitId = encoding.NewObjectId(patientVisitResponse.PatientVisitId)
+
+	doctorAdviceResponse := test_integration.UpdateAdvicePointsForPatientVisit(doctorAdviceRequest, testData, doctor, t)
+
+	if len(doctorAdviceResponse.AllAdvicePoints) != 0 {
+		t.Fatal("Expected to get back no advice points given none were added ")
+	} else if len(doctorAdviceResponse.SelectedAdvicePoints) != 2 {
+		t.Fatal("Expected to get back the same number of advice point for patient visit as were added: ")
+	} else if doctorAdviceRequest.SelectedAdvicePoints[0].ParentId.IsValid {
+		t.Fatal("Expected advice point to not have a parent id but it does")
+	} else if doctorAdviceRequest.SelectedAdvicePoints[1].ParentId.IsValid {
+		t.Fatal("Expected advice point to not have a parent id but it does")
+	}
+
+	validateAdviceRequestAgainstResponse(doctorAdviceRequest, doctorAdviceResponse, t)
+}
+
 // The purpose of this test is to ensure that we are tracking updated items
 // against the original item that was added in the first place via the source_id
 func TestAdvicePointsForPatientVisit_TrackingSourceId(t *testing.T) {
 
-	testData := SetupIntegrationTest(t)
-	defer TearDownIntegrationTest(t, testData)
+	testData := test_integration.SetupIntegrationTest(t)
+	defer test_integration.TearDownIntegrationTest(t, testData)
 
 	patientVisitResponse, doctor := setupAdviceCreationTest(t, testData)
 
@@ -159,7 +189,7 @@ func TestAdvicePointsForPatientVisit_TrackingSourceId(t *testing.T) {
 	doctorAdviceRequest.AllAdvicePoints = []*common.DoctorInstructionItem{advicePoint1, advicePoint2}
 	doctorAdviceRequest.PatientVisitId = encoding.NewObjectId(patientVisitResponse.PatientVisitId)
 
-	doctorAdviceResponse := updateAdvicePointsForPatientVisit(doctorAdviceRequest, testData, doctor, t)
+	doctorAdviceResponse := test_integration.UpdateAdvicePointsForPatientVisit(doctorAdviceRequest, testData, doctor, t)
 
 	// lets keep track of these two items as the source of a couple of updates
 	sourceId1 := doctorAdviceResponse.AllAdvicePoints[0].Id.Int64()
@@ -172,7 +202,7 @@ func TestAdvicePointsForPatientVisit_TrackingSourceId(t *testing.T) {
 	doctorAdviceRequest.AllAdvicePoints[1].State = common.STATE_MODIFIED
 	doctorAdviceRequest.AllAdvicePoints[1].Text = "updated Advice Point 2"
 
-	doctorAdviceResponse = updateAdvicePointsForPatientVisit(doctorAdviceRequest, testData, doctor, t)
+	doctorAdviceResponse = test_integration.UpdateAdvicePointsForPatientVisit(doctorAdviceRequest, testData, doctor, t)
 
 	// lets read the source id of the updated items and compare them
 	var updatedItemSourceId1, updatedItemSourceId2 sql.NullInt64
@@ -199,7 +229,7 @@ func TestAdvicePointsForPatientVisit_TrackingSourceId(t *testing.T) {
 	doctorAdviceRequest.AllAdvicePoints[1].State = common.STATE_MODIFIED
 	doctorAdviceRequest.AllAdvicePoints[1].Text = "updated again Advice Point 2"
 
-	doctorAdviceResponse = updateAdvicePointsForPatientVisit(doctorAdviceRequest, testData, doctor, t)
+	doctorAdviceResponse = test_integration.UpdateAdvicePointsForPatientVisit(doctorAdviceRequest, testData, doctor, t)
 
 	// lets read the source id of the updated items and compare them
 	if err := testData.DB.QueryRow(`select source_id from dr_advice_point where id=?`, doctorAdviceResponse.AllAdvicePoints[0].Id.Int64()).Scan(&updatedItemSourceId1); err != nil {
@@ -222,8 +252,8 @@ func TestAdvicePointsForPatientVisit_TrackingSourceId(t *testing.T) {
 
 func TestAdvicePointsForPatientVisit_AddingMultipleItemsWithSameText(t *testing.T) {
 
-	testData := SetupIntegrationTest(t)
-	defer TearDownIntegrationTest(t, testData)
+	testData := test_integration.SetupIntegrationTest(t)
+	defer test_integration.TearDownIntegrationTest(t, testData)
 
 	patientVisitResponse, doctor := setupAdviceCreationTest(t, testData)
 
@@ -243,14 +273,14 @@ func TestAdvicePointsForPatientVisit_AddingMultipleItemsWithSameText(t *testing.
 			State: common.STATE_ADDED,
 		})
 	}
-	doctorAdviceResponse := updateAdvicePointsForPatientVisit(doctorAdviceRequest, testData, doctor, t)
+	doctorAdviceResponse := test_integration.UpdateAdvicePointsForPatientVisit(doctorAdviceRequest, testData, doctor, t)
 	validateAdviceRequestAgainstResponse(doctorAdviceRequest, doctorAdviceResponse, t)
 }
 
 func TestAdvicePointsForPatientVisit_UpdatingMultipleItems(t *testing.T) {
 
-	testData := SetupIntegrationTest(t)
-	defer TearDownIntegrationTest(t, testData)
+	testData := test_integration.SetupIntegrationTest(t)
+	defer test_integration.TearDownIntegrationTest(t, testData)
 
 	patientVisitResponse, doctor := setupAdviceCreationTest(t, testData)
 
@@ -270,7 +300,7 @@ func TestAdvicePointsForPatientVisit_UpdatingMultipleItems(t *testing.T) {
 			State: common.STATE_ADDED,
 		})
 	}
-	doctorAdviceResponse := updateAdvicePointsForPatientVisit(doctorAdviceRequest, testData, doctor, t)
+	doctorAdviceResponse := test_integration.UpdateAdvicePointsForPatientVisit(doctorAdviceRequest, testData, doctor, t)
 	validateAdviceRequestAgainstResponse(doctorAdviceRequest, doctorAdviceResponse, t)
 
 	doctorAdviceRequest = doctorAdviceResponse
@@ -280,14 +310,14 @@ func TestAdvicePointsForPatientVisit_UpdatingMultipleItems(t *testing.T) {
 		doctorAdviceRequest.SelectedAdvicePoints[i].Text = "Updated text " + strconv.Itoa(i)
 		doctorAdviceRequest.SelectedAdvicePoints[i].State = common.STATE_MODIFIED
 	}
-	doctorAdviceResponse = updateAdvicePointsForPatientVisit(doctorAdviceRequest, testData, doctor, t)
+	doctorAdviceResponse = test_integration.UpdateAdvicePointsForPatientVisit(doctorAdviceRequest, testData, doctor, t)
 	validateAdviceRequestAgainstResponse(doctorAdviceRequest, doctorAdviceResponse, t)
 }
 
 func TestAdvicePointsForPatientVisit_SelectAdviceFromDeletedAdvice(t *testing.T) {
 
-	testData := SetupIntegrationTest(t)
-	defer TearDownIntegrationTest(t, testData)
+	testData := test_integration.SetupIntegrationTest(t)
+	defer test_integration.TearDownIntegrationTest(t, testData)
 
 	patientVisitResponse, doctor := setupAdviceCreationTest(t, testData)
 
@@ -307,21 +337,21 @@ func TestAdvicePointsForPatientVisit_SelectAdviceFromDeletedAdvice(t *testing.T)
 			State: common.STATE_ADDED,
 		})
 	}
-	doctorAdviceResponse := updateAdvicePointsForPatientVisit(doctorAdviceRequest, testData, doctor, t)
+	doctorAdviceResponse := test_integration.UpdateAdvicePointsForPatientVisit(doctorAdviceRequest, testData, doctor, t)
 	validateAdviceRequestAgainstResponse(doctorAdviceRequest, doctorAdviceResponse, t)
 
 	// lets go ahead and delete an advice point in the context of another patient's visit
 
-	patientVisitResponse2, _ := SignupAndSubmitPatientVisitForRandomPatient(t, testData, doctor)
-	doctorAdviceResponse2 := getAdvicePointsInPatientVisit(testData, doctor, patientVisitResponse2.PatientVisitId, t)
+	patientVisitResponse2, _ := test_integration.SignupAndSubmitPatientVisitForRandomPatient(t, testData, doctor)
+	doctorAdviceResponse2 := test_integration.GetAdvicePointsInPatientVisit(testData, doctor, patientVisitResponse2.PatientVisitId, t)
 
 	doctorAdviceRequest = doctorAdviceResponse2
 	doctorAdviceRequest.AllAdvicePoints = doctorAdviceRequest.AllAdvicePoints[:4]
-	doctorAdviceResponse = updateAdvicePointsForPatientVisit(doctorAdviceRequest, testData, doctor, t)
+	doctorAdviceResponse = test_integration.UpdateAdvicePointsForPatientVisit(doctorAdviceRequest, testData, doctor, t)
 	validateAdviceRequestAgainstResponse(doctorAdviceRequest, doctorAdviceResponse, t)
 
 	// now, lets open up the previous patient's adviceList
-	doctorAdviceResponse = getAdvicePointsInPatientVisit(testData, doctor, patientVisitResponse.PatientVisitId, t)
+	doctorAdviceResponse = test_integration.GetAdvicePointsInPatientVisit(testData, doctor, patientVisitResponse.PatientVisitId, t)
 
 	// this should have an item in the selected advice list that does not exist in the current active list
 	// Lets ensure that is true
@@ -331,7 +361,7 @@ func TestAdvicePointsForPatientVisit_SelectAdviceFromDeletedAdvice(t *testing.T)
 
 	// we should be able to submit the exact same list without having to modify anything
 	doctorAdviceRequest = doctorAdviceResponse
-	doctorAdviceResponse = updateAdvicePointsForPatientVisit(doctorAdviceRequest, testData, doctor, t)
+	doctorAdviceResponse = test_integration.UpdateAdvicePointsForPatientVisit(doctorAdviceRequest, testData, doctor, t)
 	if len(doctorAdviceResponse.AllAdvicePoints) != 4 && len(doctorAdviceResponse.SelectedAdvicePoints) != 5 {
 		t.Fatalf("Expected the global list to have 4 items and the selected list to have 5 items, instead there are %d items in the global list and %d items in the selected list", len(doctorAdviceResponse.AllAdvicePoints), len(doctorAdviceResponse.SelectedAdvicePoints))
 	}
@@ -340,7 +370,7 @@ func TestAdvicePointsForPatientVisit_SelectAdviceFromDeletedAdvice(t *testing.T)
 	doctorAdviceRequest = doctorAdviceResponse
 	doctorAdviceRequest.SelectedAdvicePoints[4].State = common.STATE_MODIFIED
 	doctorAdviceRequest.SelectedAdvicePoints[4].Text = "Updating text of deleted item"
-	doctorAdviceResponse = updateAdvicePointsForPatientVisit(doctorAdviceRequest, testData, doctor, t)
+	doctorAdviceResponse = test_integration.UpdateAdvicePointsForPatientVisit(doctorAdviceRequest, testData, doctor, t)
 
 	// now there should still be a disparate number of items between the global and the selected list, but the last item should still be updated
 	if len(doctorAdviceResponse.AllAdvicePoints) != 4 && len(doctorAdviceResponse.SelectedAdvicePoints) != 5 {
@@ -352,7 +382,7 @@ func TestAdvicePointsForPatientVisit_SelectAdviceFromDeletedAdvice(t *testing.T)
 	// validation on the server after modifying an item in the list that is no longer in the master
 	// list
 	doctorAdviceRequest = doctorAdviceResponse
-	doctorAdviceResponse = updateAdvicePointsForPatientVisit(doctorAdviceRequest, testData, doctor, t)
+	doctorAdviceResponse = test_integration.UpdateAdvicePointsForPatientVisit(doctorAdviceRequest, testData, doctor, t)
 
 	if doctorAdviceResponse.SelectedAdvicePoints[4].Text != "Updating text of deleted item" {
 		t.Fatalf("Expected text to have been updated for item that is referencing a deleted item from the global list of doctor")
@@ -361,14 +391,14 @@ func TestAdvicePointsForPatientVisit_SelectAdviceFromDeletedAdvice(t *testing.T)
 	// now lets go ahead and remove this last item from the list
 	doctorAdviceRequest = doctorAdviceResponse
 	doctorAdviceRequest.SelectedAdvicePoints = doctorAdviceRequest.SelectedAdvicePoints[:4]
-	doctorAdviceResponse = updateAdvicePointsForPatientVisit(doctorAdviceRequest, testData, doctor, t)
+	doctorAdviceResponse = test_integration.UpdateAdvicePointsForPatientVisit(doctorAdviceRequest, testData, doctor, t)
 	validateAdviceRequestAgainstResponse(doctorAdviceRequest, doctorAdviceResponse, t)
 }
 
 func TestAdvicePointsForPatientVisit_ErrorDifferentTextForLinkedItems(t *testing.T) {
 
-	testData := SetupIntegrationTest(t)
-	defer TearDownIntegrationTest(t, testData)
+	testData := test_integration.SetupIntegrationTest(t)
+	defer test_integration.TearDownIntegrationTest(t, testData)
 
 	patientVisitResponse, doctor := setupAdviceCreationTest(t, testData)
 
@@ -388,7 +418,7 @@ func TestAdvicePointsForPatientVisit_ErrorDifferentTextForLinkedItems(t *testing
 			State: common.STATE_ADDED,
 		})
 	}
-	doctorAdviceResponse := updateAdvicePointsForPatientVisit(doctorAdviceRequest, testData, doctor, t)
+	doctorAdviceResponse := test_integration.UpdateAdvicePointsForPatientVisit(doctorAdviceRequest, testData, doctor, t)
 	validateAdviceRequestAgainstResponse(doctorAdviceRequest, doctorAdviceResponse, t)
 
 	doctorAdviceRequest = doctorAdviceResponse
@@ -409,7 +439,7 @@ func TestAdvicePointsForPatientVisit_ErrorDifferentTextForLinkedItems(t *testing
 		t.Fatal("Unable to marshal request body for adding advice points: " + err.Error())
 	}
 
-	resp, err := AuthPost(ts.URL, "application/json", bytes.NewBuffer(requestBody), doctor.AccountId.Int64())
+	resp, err := test_integration.AuthPost(ts.URL, "application/json", bytes.NewBuffer(requestBody), doctor.AccountId.Int64())
 	if err != nil {
 		t.Fatal("Unable to make successful request to add advice points to patient visit " + err.Error())
 	}
@@ -420,10 +450,10 @@ func TestAdvicePointsForPatientVisit_ErrorDifferentTextForLinkedItems(t *testing
 
 }
 
-func setupAdviceCreationTest(t *testing.T, testData TestData) (*apiservice.PatientVisitResponse, *common.Doctor) {
+func setupAdviceCreationTest(t *testing.T, testData test_integration.TestData) (*apiservice.PatientVisitResponse, *common.Doctor) {
 
 	// get the current primary doctor
-	doctorId := GetDoctorIdOfCurrentPrimaryDoctor(testData, t)
+	doctorId := test_integration.GetDoctorIdOfCurrentPrimaryDoctor(testData, t)
 
 	doctor, err := testData.DataApi.GetDoctorFromId(doctorId)
 	if err != nil {
@@ -431,7 +461,7 @@ func setupAdviceCreationTest(t *testing.T, testData TestData) (*apiservice.Patie
 	}
 
 	// get patient to start a visit
-	patientVisitResponse, _ := SignupAndSubmitPatientVisitForRandomPatient(t, testData, doctor)
+	patientVisitResponse, _ := test_integration.SignupAndSubmitPatientVisitForRandomPatient(t, testData, doctor)
 
 	return patientVisitResponse, doctor
 }
@@ -476,10 +506,7 @@ func validateAdviceRequestAgainstResponse(doctorAdviceRequest, doctorAdviceRespo
 		}
 		idsFound[advicePoint.Id.Int64()] = true
 
-		if advicePoint.ParentId.Int64() == 0 {
-			t.Fatal("Expected parent Id to exist for the advice points but they dont")
-		}
-		if _, ok := parentIdsFound[advicePoint.ParentId.Int64()]; ok {
+		if _, ok := parentIdsFound[advicePoint.ParentId.Int64()]; advicePoint.ParentId.IsValid && ok {
 			t.Fatal("No two ids should be the same in the global list")
 		}
 		parentIdsFound[advicePoint.ParentId.Int64()] = true
