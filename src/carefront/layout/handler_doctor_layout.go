@@ -31,7 +31,7 @@ func (d *doctorLayoutHandler) ServeHTTP(w http.ResponseWriter, r *http.Request) 
 		return
 	}
 
-	if err := r.ParseMultipartForm(2); err != nil {
+	if err := r.ParseMultipartForm(maxMemory); err != nil {
 		apiservice.WriteDeveloperError(w, http.StatusBadRequest, "unable to parse input parameters: "+err.Error())
 		return
 	}
@@ -61,6 +61,10 @@ func (d *doctorLayoutHandler) ServeHTTP(w http.ResponseWriter, r *http.Request) 
 	}
 
 	healthConditionId, err := d.dataApi.GetHealthConditionInfo(healthConditionTag)
+	if err != nil {
+		apiservice.WriteDeveloperError(w, http.StatusInternalServerError, "unable to get health condition id: "+err.Error())
+		return
+	}
 
 	modelId, err := d.dataApi.CreateLayoutVersion(data, layout_syntax_version, healthConditionId, api.DOCTOR_ROLE, d.purpose, "automatically generated")
 	if err != nil {

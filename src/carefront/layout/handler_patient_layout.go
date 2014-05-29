@@ -33,7 +33,7 @@ func (l *patientLayoutHandler) ServeHTTP(w http.ResponseWriter, r *http.Request)
 		return
 	}
 
-	if err := r.ParseMultipartForm(2); err != nil {
+	if err := r.ParseMultipartForm(maxMemory); err != nil {
 		apiservice.WriteDeveloperError(w, http.StatusBadRequest, "unable to parse input parameters: "+err.Error())
 		return
 	}
@@ -60,7 +60,7 @@ func (l *patientLayoutHandler) ServeHTTP(w http.ResponseWriter, r *http.Request)
 	// determine the healthCondition tag so as to identify what healthCondition this layout belongs to
 	healthConditionTag := healthCondition.HealthConditionTag
 	if healthConditionTag == "" {
-		apiservice.WriteDeveloperError(w, http.StatusBadRequest, "health condition not specified or invalid in layout: "+err.Error())
+		apiservice.WriteDeveloperError(w, http.StatusBadRequest, "health condition not specified or invalid in layout")
 		return
 	}
 
