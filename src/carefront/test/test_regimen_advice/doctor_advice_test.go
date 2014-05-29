@@ -46,10 +46,12 @@ func TestAdvicePointsForPatientVisit(t *testing.T) {
 
 	if len(doctorAdviceResponse.AllAdvicePoints) != 2 {
 		t.Fatal("Expected to get back the same number of advice points as were added: ")
-	}
-
-	if len(doctorAdviceResponse.SelectedAdvicePoints) != 2 {
+	} else if len(doctorAdviceResponse.SelectedAdvicePoints) != 2 {
 		t.Fatal("Expected to get back the same number of advice point for patient visit as were added: ")
+	} else if !doctorAdviceResponse.SelectedAdvicePoints[0].ParentId.IsValid {
+		t.Fatal("Expected advice point to have a parent id but it doesnt")
+	} else if !doctorAdviceResponse.SelectedAdvicePoints[1].ParentId.IsValid {
+		t.Fatal("Expected advice point to have a parent id but it doesnt")
 	}
 
 	validateAdviceRequestAgainstResponse(doctorAdviceRequest, doctorAdviceResponse, t)
@@ -92,8 +94,7 @@ func TestAdvicePointsForPatientVisit(t *testing.T) {
 	doctorAdviceResponse = test_integration.UpdateAdvicePointsForPatientVisit(doctorAdviceRequest, testData, doctor, t)
 	validateAdviceRequestAgainstResponse(doctorAdviceRequest, doctorAdviceResponse, t)
 
-	// lets test for a bad request if an advice point that does not exist in the global list is
-	// added to the patient visit
+	// lets test for the case an advice point being added to the list that does not exist in master
 	doctorAdviceRequest.SelectedAdvicePoints = append(doctorAdviceRequest.SelectedAdvicePoints, advicePoint1)
 	doctorAdviceHandler := apiservice.NewDoctorAdviceHandler(testData.DataApi)
 	ts := httptest.NewServer(doctorAdviceHandler)
@@ -107,9 +108,7 @@ func TestAdvicePointsForPatientVisit(t *testing.T) {
 	resp, err := test_integration.AuthPost(ts.URL, "application/json", bytes.NewBuffer(requestBody), doctor.AccountId.Int64())
 	if err != nil {
 		t.Fatal("Unable to make successful request to add advice points to patient visit " + err.Error())
-	}
-
-	if resp.StatusCode != http.StatusBadRequest {
+	} else if resp.StatusCode != http.StatusOK {
 		t.Fatal("Expected a bad request for a request that contains advice points that don't exist in the global list")
 	}
 
@@ -140,6 +139,36 @@ func TestAdvicePointsForPatientVisit(t *testing.T) {
 	if len(doctorAdviceResponse.SelectedAdvicePoints) > 0 {
 		t.Fatal("Expected no advice points to exist for patient visit given that all were deleted")
 	}
+}
+
+func TestAdvicePointsForPatientVisit_AddAdviceOnlyToVisit(t *testing.T) {
+	testData := test_integration.SetupIntegrationTest(t)
+	defer test_integration.TearDownIntegrationTest(t, testData)
+
+	patientVisitResponse, doctor := setupAdviceCreationTest(t, testData)
+
+	// lets go ahead and add a couple of advice points
+	advicePoint1 := &common.DoctorInstructionItem{Text: "Advice point 1", State: common.STATE_ADDED}
+	advicePoint2 := &common.DoctorInstructionItem{Text: "Advice point 2", State: common.STATE_ADDED}
+
+	// lets go ahead and create a request for this patient visit
+	doctorAdviceRequest := &common.Advice{}
+	doctorAdviceRequest.SelectedAdvicePoints = []*common.DoctorInstructionItem{advicePoint1, advicePoint2}
+	doctorAdviceRequest.PatientVisitId = encoding.NewObjectId(patientVisitResponse.PatientVisitId)
+
+	doctorAdviceResponse := test_integration.UpdateAdvicePointsForPatientVisit(doctorAdviceRequest, testData, doctor, t)
+
+	if len(doctorAdviceResponse.AllAdvicePoints) != 0 {
+		t.Fatal("Expected to get back no advice points given none were added ")
+	} else if len(doctorAdviceResponse.SelectedAdvicePoints) != 2 {
+		t.Fatal("Expected to get back the same number of advice point for patient visit as were added: ")
+	} else if doctorAdviceRequest.SelectedAdvicePoints[0].ParentId.IsValid {
+		t.Fatal("Expected advice point to not have a parent id but it does")
+	} else if doctorAdviceRequest.SelectedAdvicePoints[1].ParentId.IsValid {
+		t.Fatal("Expected advice point to not have a parent id but it does")
+	}
+
+	validateAdviceRequestAgainstResponse(doctorAdviceRequest, doctorAdviceResponse, t)
 }
 
 // The purpose of this test is to ensure that we are tracking updated items
@@ -477,10 +506,7 @@ func validateAdviceRequestAgainstResponse(doctorAdviceRequest, doctorAdviceRespo
 		}
 		idsFound[advicePoint.Id.Int64()] = true
 
-		if advicePoint.ParentId.Int64() == 0 {
-			t.Fatal("Expected parent Id to exist for the advice points but they dont")
-		}
-		if _, ok := parentIdsFound[advicePoint.ParentId.Int64()]; ok {
+		if _, ok := parentIdsFound[advicePoint.ParentId.Int64()]; advicePoint.ParentId.IsValid && ok {
 			t.Fatal("No two ids should be the same in the global list")
 		}
 		parentIdsFound[advicePoint.ParentId.Int64()] = true
