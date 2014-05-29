@@ -102,7 +102,7 @@ func (p *doctorPatientVisitReviewHandler) ServeHTTP(w http.ResponseWriter, r *ht
 		}
 	}
 
-	patientVisitLayout, _, err := apiservice.GetClientLayoutForPatientVisit(patientVisitId, api.EN_LANGUAGE_ID, p.DataApi, p.LayoutStorageService)
+	patientVisitLayout, _, err := apiservice.GetPatientLayoutForPatientVisit(patientVisitId, api.EN_LANGUAGE_ID, p.DataApi, p.LayoutStorageService)
 	if err != nil {
 		apiservice.WriteDeveloperError(w, http.StatusInternalServerError, "Unable to get patient visit layout: "+err.Error())
 		return
@@ -127,7 +127,8 @@ func (p *doctorPatientVisitReviewHandler) ServeHTTP(w http.ResponseWriter, r *ht
 
 	data, err := p.getLatestDoctorVisitReviewLayout(patientVisit)
 	if err != nil {
-		apiservice.WriteDeveloperError(w, http.StatusInternalServerError, "Unable to get visit review template for doctor")
+		apiservice.WriteDeveloperError(w, http.StatusInternalServerError, "Unable to get visit review template for doctor: "+err.Error())
+		return
 	}
 
 	// first we unmarshal the json into a generic map structure
@@ -135,6 +136,7 @@ func (p *doctorPatientVisitReviewHandler) ServeHTTP(w http.ResponseWriter, r *ht
 	err = json.Unmarshal(data, &jsonData)
 	if err != nil {
 		apiservice.WriteDeveloperError(w, http.StatusInternalServerError, "Unbale to unmarshal file contents into map[string]interface{}: "+err.Error())
+		return
 	}
 
 	// then we provide the registry from which to pick out the types of native structures
@@ -180,12 +182,7 @@ func (p *doctorPatientVisitReviewHandler) ServeHTTP(w http.ResponseWriter, r *ht
 }
 
 func (d *doctorPatientVisitReviewHandler) getLatestDoctorVisitReviewLayout(patientVisit *common.PatientVisit) ([]byte, error) {
-	bucket, key, region, _, err := d.DataApi.GetStorageInfoOfCurrentActiveDoctorLayout(patientVisit.HealthConditionId.Int64())
-	if err != nil {
-		return nil, err
-	}
-
-	data, _, err := d.LayoutStorageService.GetObjectAtLocation(bucket, key, region)
+	data, _, err := d.DataApi.GetCurrentActiveDoctorLayout(patientVisit.HealthConditionId.Int64())
 	if err != nil {
 		return nil, err
 	}

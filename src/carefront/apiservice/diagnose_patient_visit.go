@@ -123,7 +123,7 @@ func (d *DiagnosePatientHandler) diagnosePatient(w http.ResponseWriter, r *http.
 		return
 	}
 
-	layoutVersionId, err := d.getLayoutVersionIdOfActiveDiagnosisLayout(HEALTH_CONDITION_ACNE_ID)
+	layoutVersionId, err := d.DataApi.GetLayoutVersionIdOfActiveDiagnosisLayout(HEALTH_CONDITION_ACNE_ID)
 	if err != nil {
 		WriteDeveloperError(w, http.StatusInternalServerError, "Unable to get the layout version id of the diagnosis layout "+err.Error())
 		return
@@ -186,12 +186,7 @@ func populateDiagnosisLayoutWithDoctorAnswers(diagnosisLayout *info_intake.Diagn
 }
 
 func (d *DiagnosePatientHandler) getCurrentActiveDiagnoseLayoutForHealthCondition(healthConditionId int64) (*info_intake.DiagnosisIntake, error) {
-	bucket, key, region, _, err := d.DataApi.GetStorageInfoOfActiveDoctorDiagnosisLayout(healthConditionId)
-	if err != nil {
-		return nil, err
-	}
-
-	data, _, err := d.LayoutStorageService.GetObjectAtLocation(bucket, key, region)
+	data, _, err := d.DataApi.GetActiveDoctorDiagnosisLayout(healthConditionId)
 	if err != nil {
 		return nil, err
 	}
@@ -202,9 +197,4 @@ func (d *DiagnosePatientHandler) getCurrentActiveDiagnoseLayoutForHealthConditio
 	}
 
 	return &diagnosisLayout, nil
-}
-
-func (d *DiagnosePatientHandler) getLayoutVersionIdOfActiveDiagnosisLayout(healthConditionId int64) (layoutVersionId int64, err error) {
-	_, _, _, layoutVersionId, err = d.DataApi.GetStorageInfoOfActiveDoctorDiagnosisLayout(healthConditionId)
-	return
 }

@@ -6,6 +6,7 @@ import (
 	"carefront/info_intake"
 	"carefront/libs/dispatch"
 	thriftapi "carefront/thrift/api"
+	"encoding/json"
 	"errors"
 	"fmt"
 	"net/http"
@@ -187,7 +188,7 @@ func (s *PatientVisitHandler) returnLastCreatedPatientVisit(w http.ResponseWrite
 	// based on what is the current active layout because that may have potentially changed and we want to ensure
 	// to not confuse the patient by changing the question structure under their feet for this particular patient visit
 	// in other words, want to show them what they have already seen in terms of a flow.
-	patientVisitLayout, _, err := GetClientLayoutForPatientVisit(patientVisitId, api.EN_LANGUAGE_ID, s.DataApi, s.LayoutStorageService)
+	patientVisitLayout, _, err := GetPatientLayoutForPatientVisit(patientVisitId, api.EN_LANGUAGE_ID, s.DataApi, s.LayoutStorageService)
 	if err != nil {
 		WriteDeveloperError(w, http.StatusInternalServerError, "Unable to get client layout for existing patient visit: "+err.Error())
 		return
@@ -350,14 +351,15 @@ func (s *PatientVisitHandler) populateHealthConditionWithPatientAnswers(healthCo
 	}
 }
 
-func (s *PatientVisitHandler) getCurrentActiveClientLayoutForHealthCondition(healthConditionId, languageId int64) (healthCondition *info_intake.InfoIntakeLayout, layoutVersionId int64, err error) {
-	var e error
-	bucket, key, region, layoutVersionId, e := s.DataApi.GetStorageInfoOfCurrentActivePatientLayout(languageId, healthConditionId)
-	if e != nil {
-		err = e
-		return
+func (s *PatientVisitHandler) getCurrentActiveClientLayoutForHealthCondition(healthConditionId, languageId int64) (*info_intake.InfoIntakeLayout, int64, error) {
+	data, layoutVersionId, err := s.DataApi.GetCurrentActivePatientLayout(languageId, healthConditionId)
+	if err != nil {
+		return nil, 0, err
 	}
 
-	healthCondition, err = GetHealthConditionObjectAtLocation(bucket, key, region, s.LayoutStorageService)
-	return
+	patientVisitLayout := &info_intake.InfoIntakeLayout{}
+	if err := json.Unmarshal(data, patientVisitLayout); err != nil {
+		return nil, 0, err
+	}
+	return patientVisitLayout, layoutVersionId, nil
 }

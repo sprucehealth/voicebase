@@ -15,41 +15,54 @@ func (d *DataService) GetQuestionType(questionId int64) (string, error) {
 	return questionType, err
 }
 
-func (d *DataService) GetActiveLayoutInfoForHealthCondition(healthConditionTag, role, purpose string) (bucket, key, region string, err error) {
-	err = d.db.QueryRow(`select bucket, storage_key, region_tag from layout_version 
-								inner join object_storage on object_storage_id = object_storage.id 
-								inner join region on region_id=region.id 
+func (d *DataService) GetActiveLayoutForHealthCondition(healthConditionTag, role, purpose string) ([]byte, error) {
+	var layoutBlob []byte
+	err := d.db.QueryRow(`select layout from layout_version 
+								inner join layout_blob_storage on layout_blob_storage_id = layout_blob_storage.id 
 								inner join health_condition on health_condition_id = health_condition.id 
-									where layout_version.status='ACTIVE' and role = ? and layout_purpose = ? and health_condition.health_condition_tag = ?`, role, purpose, healthConditionTag).Scan(&bucket, &key, &region)
-	return
+									where layout_version.status=? and role = ? and layout_purpose = ? 
+									and health_condition.health_condition_tag = ?`, STATUS_ACTIVE, role, purpose, healthConditionTag).Scan(&layoutBlob)
+	if err == sql.ErrNoRows {
+		return nil, NoRowsError
+	}
+	return layoutBlob, err
 }
-func (d *DataService) GetStorageInfoOfCurrentActivePatientLayout(languageId, healthConditionId int64) (bucket, storage, region string, layoutVersionId int64, err error) {
-	row := d.db.QueryRow(`select bucket, storage_key, region_tag, layout_version_id from patient_layout_version 
-							inner join object_storage on object_storage_id=object_storage.id 
-							inner join region on region_id=region.id 
-								where patient_layout_version.status='ACTIVE' and health_condition_id = ? and language_id = ?`, healthConditionId, languageId)
-	err = row.Scan(&bucket, &storage, &region, &layoutVersionId)
-	return
+func (d *DataService) GetCurrentActivePatientLayout(languageId, healthConditionId int64) ([]byte, int64, error) {
+	var layoutBlob []byte
+	var layoutVersionId int64
+	row := d.db.QueryRow(`select layout, layout_version_id from patient_layout_version 
+							inner join layout_blob_storage on layout_blob_storage_id=layout_blob_storage.id 
+								where patient_layout_version.status=? and health_condition_id = ? and language_id = ?`, STATUS_ACTIVE, healthConditionId, languageId)
+	err := row.Scan(&layoutBlob, &layoutVersionId)
+	return layoutBlob, layoutVersionId, err
 }
 
-func (d *DataService) GetStorageInfoOfCurrentActiveDoctorLayout(healthConditionId int64) (bucket, storage, region string, layoutVersionId int64, err error) {
-	row := d.db.QueryRow(`select bucket, storage_key, region_tag, layout_version_id from dr_layout_version 
-							inner join layout_version on layout_version_id=layout_version.id 
-							inner join object_storage on dr_layout_version.object_storage_id=object_storage.id 
-							inner join region on region_id=region.id 
-								where dr_layout_version.status='ACTIVE' and layout_purpose='REVIEW' and role='DOCTOR' and dr_layout_version.health_condition_id = ?`, healthConditionId)
-	err = row.Scan(&bucket, &storage, &region, &layoutVersionId)
-	return
+func (d *DataService) GetCurrentActiveDoctorLayout(healthConditionId int64) ([]byte, int64, error) {
+	return d.getActiveDoctorLayoutForPurpose(healthConditionId, REVIEW_PURPOSE)
 }
-func (d *DataService) GetStorageInfoOfActiveDoctorDiagnosisLayout(healthConditionId int64) (bucket, storage, region string, layoutVersionId int64, err error) {
-	row := d.db.QueryRow(`select bucket, storage_key, region_tag, layout_version_id from dr_layout_version
+func (d *DataService) GetActiveDoctorDiagnosisLayout(healthConditionId int64) ([]byte, int64, error) {
+	return d.getActiveDoctorLayoutForPurpose(healthConditionId, DIAGNOSE_PURPOSE)
+}
+
+func (d *DataService) GetLayoutVersionIdOfActiveDiagnosisLayout(healthConditionId int64) (int64, error) {
+	var layoutVersionId int64
+	err := d.db.QueryRow(`select layout_version_id from dr_layout_version 
+					inner join layout_version on layout_version_id=layout_version.id 
+						where dr_layout_version.status = ? and layout_purpose = ? and role = ? and dr_layout_version.health_condition_id = ?`, STATUS_ACTIVE, DIAGNOSE_PURPOSE, DOCTOR_ROLE, healthConditionId).Scan(&layoutVersionId)
+	return layoutVersionId, err
+
+}
+
+func (d *DataService) getActiveDoctorLayoutForPurpose(healthConditionId int64, purpose string) ([]byte, int64, error) {
+	var layoutBlob []byte
+	var layoutVersionId int64
+	row := d.db.QueryRow(`select layout, layout_version_id from dr_layout_version
 							inner join layout_version on layout_version_id=layout_version.id 
-							inner join object_storage on dr_layout_version.object_storage_id=object_storage.id 
-							inner join region on region_id=region.id 
-								where dr_layout_version.status='ACTIVE' and 
-								layout_purpose='DIAGNOSE' and role = 'DOCTOR' and dr_layout_version.health_condition_id = ?`, healthConditionId)
-	err = row.Scan(&bucket, &storage, &region, &layoutVersionId)
-	return
+							inner join layout_blob_storage on dr_layout_version.layout_blob_storage_id=layout_blob_storage.id 
+								where dr_layout_version.status=? and 
+								layout_purpose=? and role = ? and dr_layout_version.health_condition_id = ?`, STATUS_ACTIVE, purpose, DOCTOR_ROLE, healthConditionId)
+	err := row.Scan(&layoutBlob, &layoutVersionId)
+	return layoutBlob, layoutVersionId, err
 }
 
 func (d *DataService) GetLayoutVersionIdForPatientVisit(patientVisitId int64) (layoutVersionId int64, err error) {
@@ -57,32 +70,130 @@ func (d *DataService) GetLayoutVersionIdForPatientVisit(patientVisitId int64) (l
 	return
 }
 
-func (d *DataService) GetStorageInfoForClientLayout(layoutVersionId, languageId int64) (bucket, key, region string, err error) {
-	err = d.db.QueryRow(`select bucket, storage_key, region_tag from patient_layout_version 
-							inner join object_storage on object_storage_id=object_storage.id 
-							inner join region on region_id=region.id 
-								where layout_version_id = ? and language_id = ?`, layoutVersionId, languageId).Scan(&bucket, &key, &region)
-	return
+func (d *DataService) GetPatientLayout(layoutVersionId, languageId int64) ([]byte, error) {
+	var layoutBlob []byte
+	err := d.db.QueryRow(`select layout from patient_layout_version 
+							inner join layout_blob_storage on layout_blob_storage_id=layout_blob_storage.id 
+								where layout_version_id = ? and language_id = ?`, layoutVersionId, languageId).Scan(&layoutBlob)
+	return layoutBlob, err
 }
 
-func (d *DataService) MarkNewLayoutVersionAsCreating(objectId int64, syntaxVersion int64, healthConditionId int64, role, purpose, comment string) (int64, error) {
-	res, err := d.db.Exec(`insert into layout_version (object_storage_id, syntax_version, health_condition_id,role, layout_purpose, comment, status) 
-							values (?, ?, ?, ?, ?, ?, 'CREATING')`, objectId, syntaxVersion, healthConditionId, role, purpose, comment)
+func (d *DataService) CreateLayoutVersion(layout []byte, syntaxVersion int64, healthConditionId int64, role, purpose, comment string) (int64, error) {
+	tx, err := d.db.Begin()
 	if err != nil {
 		return 0, err
 	}
 
-	return res.LastInsertId()
+	insertId, err := tx.Exec(`insert into layout_blob_storage (layout) values (?)`, layout)
+	if err != nil {
+		tx.Rollback()
+		return 0, err
+	}
+
+	layoutBlobStorageId, err := insertId.LastInsertId()
+	if err != nil {
+		tx.Rollback()
+		return 0, err
+	}
+
+	res, err := tx.Exec(`insert into layout_version (layout_blob_storage_id, syntax_version, health_condition_id,role, layout_purpose, comment, status) 
+							values (?, ?, ?, ?, ?, ?, ?)`, layoutBlobStorageId, syntaxVersion, healthConditionId, role, purpose, comment, STATUS_CREATING)
+	if err != nil {
+		tx.Rollback()
+		return 0, err
+	}
+
+	layoutVersionId, err := res.LastInsertId()
+	if err != nil {
+		tx.Rollback()
+		return 0, err
+	}
+
+	if err := tx.Commit(); err != nil {
+		tx.Rollback()
+		return 0, err
+	}
+
+	return layoutVersionId, nil
 }
 
-func (d *DataService) MarkNewPatientLayoutVersionAsCreating(objectId int64, languageId int64, layoutVersionId int64, healthConditionId int64) (int64, error) {
-	res, err := d.db.Exec(`insert into patient_layout_version (object_storage_id, language_id, layout_version_id, health_condition_id, status) 
-								values (?, ?, ?, ?, 'CREATING')`, objectId, languageId, layoutVersionId, healthConditionId)
+func (d *DataService) CreatePatientLayout(layout []byte, languageId int64, layoutVersionId int64, healthConditionId int64) (int64, error) {
+	tx, err := d.db.Begin()
 	if err != nil {
 		return 0, err
 	}
 
-	return res.LastInsertId()
+	insertId, err := tx.Exec(`insert into layout_blob_storage (layout) values (?)`, layout)
+	if err != nil {
+		tx.Rollback()
+		return 0, err
+	}
+
+	layoutBlobStorageId, err := insertId.LastInsertId()
+	if err != nil {
+		tx.Rollback()
+		return 0, err
+	}
+
+	res, err := tx.Exec(`insert into patient_layout_version (layout_blob_storage_id, language_id, layout_version_id, health_condition_id, status) 
+								values (?, ?, ?, ?, ?)`, layoutBlobStorageId, languageId, layoutVersionId, healthConditionId, STATUS_CREATING)
+
+	if err != nil {
+		tx.Rollback()
+		return 0, err
+	}
+
+	patientLayoutVersionId, err := res.LastInsertId()
+	if err != nil {
+		tx.Rollback()
+		return 0, err
+	}
+
+	if err := tx.Commit(); err != nil {
+		tx.Rollback()
+		return 0, err
+	}
+
+	return patientLayoutVersionId, nil
+}
+
+func (d *DataService) CreateDoctorLayout(layout []byte, layoutVersionId int64, healthConditionId int64) (int64, error) {
+	tx, err := d.db.Begin()
+	if err != nil {
+		return 0, nil
+	}
+
+	lastInsertId, err := tx.Exec(`insert into layout_blob_storage (layout) values (?)`, layout)
+	if err != nil {
+		tx.Rollback()
+		return 0, nil
+	}
+
+	layoutBlobStorageId, err := lastInsertId.LastInsertId()
+	if err != nil {
+		tx.Rollback()
+		return 0, nil
+	}
+
+	res, err := tx.Exec(`insert into dr_layout_version (layout_blob_storage_id, layout_version_id, health_condition_id, status) 
+							values (?, ?, ?, 'CREATING')`, layoutBlobStorageId, layoutVersionId, healthConditionId)
+	if err != nil {
+		tx.Rollback()
+		return 0, err
+	}
+
+	drLayoutVersionId, err := res.LastInsertId()
+	if err != nil {
+		tx.Rollback()
+		return 0, nil
+	}
+
+	if err := tx.Commit(); err != nil {
+		tx.Rollback()
+		return 0, nil
+	}
+
+	return drLayoutVersionId, nil
 }
 
 func (d *DataService) UpdatePatientActiveLayouts(layoutId int64, clientLayoutIds []int64, healthConditionId int64) error {
@@ -116,16 +227,6 @@ func (d *DataService) UpdatePatientActiveLayouts(layoutId int64, clientLayoutIds
 	}
 
 	return tx.Commit()
-}
-
-func (d *DataService) MarkNewDoctorLayoutAsCreating(objectId int64, layoutVersionId int64, healthConditionId int64) (int64, error) {
-	res, err := d.db.Exec(`insert into dr_layout_version (object_storage_id, layout_version_id, health_condition_id, status) 
-							values (?, ?, ?, 'CREATING')`, objectId, layoutVersionId, healthConditionId)
-	if err != nil {
-		return 0, err
-	}
-
-	return res.LastInsertId()
 }
 
 func (d *DataService) UpdateDoctorActiveLayouts(layoutId int64, doctorLayoutId int64, healthConditionId int64, purpose string) error {

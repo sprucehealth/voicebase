@@ -12,4 +12,3 @@ insert into notification_prompt_status (account_id, prompt_status)
 		inner join patient on patient.id = patient_id;
 
 drop table patient_prompt_status;
-

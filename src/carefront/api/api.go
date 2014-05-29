@@ -236,16 +236,17 @@ type IntakeAPI interface {
 
 type IntakeLayoutAPI interface {
 	GetQuestionType(questionId int64) (questionType string, err error)
-	GetActiveLayoutInfoForHealthCondition(healthConditionTag, role, purpose string) (bucket, key, region string, err error)
-	GetStorageInfoOfCurrentActivePatientLayout(languageId, healthConditionId int64) (bucket, key, region string, layoutVersionId int64, err error)
-	GetStorageInfoOfCurrentActiveDoctorLayout(healthConditionId int64) (bucket, storage, region string, layoutVersionId int64, err error)
-	GetStorageInfoOfActiveDoctorDiagnosisLayout(healthConditionId int64) (bucket, storage, region string, layoutVersionId int64, err error)
+	GetActiveLayoutForHealthCondition(healthConditionTag, role, purpose string) ([]byte, error)
+	GetCurrentActivePatientLayout(languageId, healthConditionId int64) ([]byte, int64, error)
+	GetCurrentActiveDoctorLayout(healthConditionId int64) ([]byte, int64, error)
+	GetActiveDoctorDiagnosisLayout(healthConditionId int64) ([]byte, int64, error)
+	GetPatientLayout(layoutVersionId, languageId int64) ([]byte, error)
+	CreateLayoutVersion(layout []byte, syntaxVersion int64, healthConditionId int64, role, purpose, comment string) (int64, error)
+	CreatePatientLayout(layout []byte, languageId int64, layoutVersionId int64, healthConditionId int64) (int64, error)
+	CreateDoctorLayout(layout []byte, layoutVersionId int64, healthConditionId int64) (int64, error)
+	GetLayoutVersionIdOfActiveDiagnosisLayout(healthConditionId int64) (int64, error)
 	GetLayoutVersionIdForPatientVisit(patientVisitId int64) (layoutVersionId int64, err error)
-	GetStorageInfoForClientLayout(layoutVersionId, languageId int64) (bucket, key, region string, err error)
-	MarkNewLayoutVersionAsCreating(objectId int64, syntaxVersion int64, healthConditionId int64, role, purpose, comment string) (int64, error)
-	MarkNewPatientLayoutVersionAsCreating(objectId int64, languageId int64, layoutVersionId int64, healthConditionId int64) (int64, error)
 	UpdatePatientActiveLayouts(layoutId int64, clientLayoutIds []int64, healthConditionId int64) error
-	MarkNewDoctorLayoutAsCreating(objectId int64, layoutVersionId int64, healthConditionId int64) (int64, error)
 	UpdateDoctorActiveLayouts(layoutId, doctorLayoutId, healthConditionId int64, purpose string) error
 	GetGlobalSectionIds() ([]int64, error)
 	GetSectionIdsForHealthCondition(healthConditionId int64) ([]int64, error)
