@@ -33,6 +33,11 @@ func (l *patientLayoutHandler) ServeHTTP(w http.ResponseWriter, r *http.Request)
 		return
 	}
 
+	if err := r.ParseMultipartForm(d.maxInMemoryForPhoto); err != nil {
+		apiservice.WriteDeveloperError(w, http.StatusBadRequest, "unable to parse input parameters: "+err.Error())
+		return err
+	}
+
 	file, _, err := r.FormFile("layout")
 	if err != nil {
 		apiservice.WriteDeveloperError(w, http.StatusBadRequest, "No layout file or invalid layout file specified")
