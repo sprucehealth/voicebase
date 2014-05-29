@@ -33,9 +33,9 @@ func (l *patientLayoutHandler) ServeHTTP(w http.ResponseWriter, r *http.Request)
 		return
 	}
 
-	if err := r.ParseMultipartForm(d.maxInMemoryForPhoto); err != nil {
+	if err := r.ParseMultipartForm(2); err != nil {
 		apiservice.WriteDeveloperError(w, http.StatusBadRequest, "unable to parse input parameters: "+err.Error())
-		return err
+		return
 	}
 
 	file, _, err := r.FormFile("layout")
@@ -70,6 +70,7 @@ func (l *patientLayoutHandler) ServeHTTP(w http.ResponseWriter, r *http.Request)
 		apiservice.WriteDeveloperError(w, http.StatusInternalServerError, "Unable to get healthconditiondid: "+err.Error())
 		return
 	}
+
 	modelId, err := l.dataApi.CreateLayoutVersion(data, layout_syntax_version, healthConditionId, api.PATIENT_ROLE, api.CONDITION_INTAKE_PURPOSE, "automatically generated")
 	if err != nil {
 		apiservice.WriteDeveloperError(w, http.StatusInternalServerError, "Error in creating new layout version: "+err.Error())

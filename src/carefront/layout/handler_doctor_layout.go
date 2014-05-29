@@ -10,16 +10,14 @@ import (
 )
 
 type doctorLayoutHandler struct {
-	dataApi             api.DataAPI
-	maxInMemoryForPhoto int64
-	purpose             string
+	dataApi api.DataAPI
+	purpose string
 }
 
-func NewDoctorLayoutHandler(dataApi api.DataAPI, maxInMemoryForPhoto int64, purpose string) *doctorLayoutHandler {
+func NewDoctorLayoutHandler(dataApi api.DataAPI, purpose string) *doctorLayoutHandler {
 	return &doctorLayoutHandler{
-		dataApi:             dataApi,
-		maxInMemoryForPhoto: maxInMemoryForPhoto,
-		purpose:             purpose,
+		dataApi: dataApi,
+		purpose: purpose,
 	}
 }
 
@@ -33,10 +31,11 @@ func (d *doctorLayoutHandler) ServeHTTP(w http.ResponseWriter, r *http.Request) 
 		return
 	}
 
-	if err := r.ParseMultipartForm(d.maxInMemoryForPhoto); err != nil {
+	if err := r.ParseMultipartForm(2); err != nil {
 		apiservice.WriteDeveloperError(w, http.StatusBadRequest, "unable to parse input parameters: "+err.Error())
-		return err
+		return
 	}
+
 	file, _, err := r.FormFile("layout")
 	if err != nil {
 		apiservice.WriteDeveloperError(w, http.StatusBadRequest, "No layout file or invalid layout file specified: "+err.Error())
