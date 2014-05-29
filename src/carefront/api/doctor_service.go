@@ -133,6 +133,11 @@ func (d *DataService) queryDoctor(where string, queryParams ...interface{}) (*co
 	doctor.LargeThumbnailUrl = app_url.GetLargeThumbnail(DOCTOR_ROLE, doctor.DoctorId.Int64())
 	doctor.SmallThumbnailUrl = app_url.GetSmallThumbnail(DOCTOR_ROLE, doctor.DoctorId.Int64())
 
+	doctor.PromptStatus, err = d.GetPushPromptStatus(doctor.AccountId.Int64())
+	if err != nil {
+		return nil, err
+	}
+
 	return doctor, nil
 }
 

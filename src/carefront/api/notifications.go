@@ -133,14 +133,14 @@ func (d *DataService) SetOrReplacePushConfigData(pushConfigData *common.PushConf
 	return tx.Commit()
 }
 
-func (d *DataService) SetPushPromptStatus(patientId int64, pStatus common.PushPromptStatus) error {
-	_, err := d.db.Exec(`replace into patient_prompt_status (prompt_status, patient_id) values (?,?)`, pStatus.String(), patientId)
+func (d *DataService) SetPushPromptStatus(accountId int64, pStatus common.PushPromptStatus) error {
+	_, err := d.db.Exec(`replace into notification_prompt_status (prompt_status, account_id) values (?,?)`, pStatus.String(), accountId)
 	return err
 }
 
-func (d *DataService) GetPushPromptStatus(patientId int64) (common.PushPromptStatus, error) {
+func (d *DataService) GetPushPromptStatus(accountId int64) (common.PushPromptStatus, error) {
 	var pStatusString string
-	if err := d.db.QueryRow(`select prompt_status from patient_prompt_status where patient_id = ?`, patientId).Scan(&pStatusString); err == sql.ErrNoRows {
+	if err := d.db.QueryRow(`select prompt_status from notification_prompt_status where account_id = ?`, accountId).Scan(&pStatusString); err == sql.ErrNoRows {
 		return common.Unprompted, nil
 	} else if err != nil {
 		return common.PushPromptStatus(""), err

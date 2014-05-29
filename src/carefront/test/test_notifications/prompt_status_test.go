@@ -50,7 +50,7 @@ func TestPromptStatus_OnModify(t *testing.T) {
 	pr := test_integration.SignupRandomTestPatient(t, testData.DataApi, testData.AuthApi)
 	patient := pr.Patient
 
-	promptStatusHandler := notify.NewPushPromptStatusHandler(testData.DataApi)
+	promptStatusHandler := notify.NewPromptStatusHandler(testData.DataApi)
 	statusServer := httptest.NewServer(promptStatusHandler)
 	params := url.Values{}
 	params.Set("prompt_status", "DECLINED")
@@ -69,5 +69,53 @@ func TestPromptStatus_OnModify(t *testing.T) {
 
 	if patient.PromptStatus != common.Declined {
 		t.Fatalf("Expected prompt status %s instead got %s", common.Declined, patient.PromptStatus)
+	}
+}
+
+// Test prompt status for doctor
+func TestPromptStatus_DoctorSignup(t *testing.T) {
+	testData := test_integration.SetupIntegrationTest(t)
+	defer test_integration.TearDownIntegrationTest(t, testData)
+
+	doctorId := test_integration.GetDoctorIdOfCurrentPrimaryDoctor(testData, t)
+	doctor, err := testData.DataApi.GetDoctorFromId(doctorId)
+	if err != nil {
+		t.Fatalf(err.Error())
+	}
+
+	if doctor.PromptStatus != common.Unprompted {
+		t.Fatalf("Expected prompt status for doctor to be %s instead it was %s", common.Unprompted, doctor.PromptStatus)
+	}
+}
+
+func TestPromptStatus_DoctorOnModify(t *testing.T) {
+	testData := test_integration.SetupIntegrationTest(t)
+	defer test_integration.TearDownIntegrationTest(t, testData)
+
+	doctorId := test_integration.GetDoctorIdOfCurrentPrimaryDoctor(testData, t)
+	doctor, err := testData.DataApi.GetDoctorFromId(doctorId)
+	if err != nil {
+		t.Fatalf(err.Error())
+	}
+
+	promptStatusHandler := notify.NewPromptStatusHandler(testData.DataApi)
+	statusServer := httptest.NewServer(promptStatusHandler)
+	params := url.Values{}
+	params.Set("prompt_status", "DECLINED")
+
+	res, err := test_integration.AuthPut(statusServer.URL, "application/x-www-form-urlencoded", strings.NewReader(params.Encode()), doctor.AccountId.Int64())
+	if err != nil {
+		t.Fatal(err.Error())
+	} else if res.StatusCode != http.StatusOK {
+		t.Fatalf("Expected status code %d instead got %d", http.StatusOK, res.StatusCode)
+	}
+
+	doctor, err = testData.DataApi.GetDoctorFromId(doctor.DoctorId.Int64())
+	if err != nil {
+		t.Fatal(err.Error())
+	}
+
+	if doctor.PromptStatus != common.Declined {
+		t.Fatalf("Expected prompt status %s instead got %s", common.Declined, doctor.PromptStatus)
 	}
 }

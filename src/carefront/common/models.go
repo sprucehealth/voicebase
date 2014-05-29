@@ -76,6 +76,7 @@ type Doctor struct {
 	DoseSpotClinicianId int64                `json:"-"`
 	DoctorAddress       *Address             `json:"address,omitempty"`
 	PersonId            int64                `json:"person_id"`
+	PromptStatus        PushPromptStatus     `json:"prompt_status"`
 }
 
 type PatientVisit struct {

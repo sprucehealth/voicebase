@@ -113,6 +113,7 @@ func (d *SignupDoctorHandler) ServeHTTP(w http.ResponseWriter, r *http.Request) 
 			State:        requestData.State,
 			ZipCode:      requestData.ZipCode,
 		},
+		PromptStatus: common.Unprompted,
 	}
 
 	// then, register the signed up user as a patient

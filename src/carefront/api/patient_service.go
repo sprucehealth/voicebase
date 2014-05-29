@@ -1156,7 +1156,7 @@ func (d *DataService) getOtherInfoForPatient(patient *common.Patient) error {
 	}
 
 	// get prompt status
-	patient.PromptStatus, err = d.GetPushPromptStatus(patient.PatientId.Int64())
+	patient.PromptStatus, err = d.GetPushPromptStatus(patient.AccountId.Int64())
 	if err != nil {
 		return err
 	}

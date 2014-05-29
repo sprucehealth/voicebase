@@ -7,12 +7,12 @@ import (
 	"net/http"
 )
 
-type patientPromptStatusHandler struct {
+type promptStatusHandler struct {
 	dataApi api.DataAPI
 }
 
-func NewPushPromptStatusHandler(dataApi api.DataAPI) *patientPromptStatusHandler {
-	return &patientPromptStatusHandler{
+func NewPromptStatusHandler(dataApi api.DataAPI) *promptStatusHandler {
+	return &promptStatusHandler{
 		dataApi: dataApi,
 	}
 }
@@ -21,7 +21,7 @@ type promptStatusRequestData struct {
 	PromptStatus string `schema:"prompt_status"`
 }
 
-func (p *patientPromptStatusHandler) ServeHTTP(w http.ResponseWriter, r *http.Request) {
+func (p *promptStatusHandler) ServeHTTP(w http.ResponseWriter, r *http.Request) {
 	if r.Method != apiservice.HTTP_PUT {
 		w.WriteHeader(http.StatusNotFound)
 		return
@@ -39,13 +39,7 @@ func (p *patientPromptStatusHandler) ServeHTTP(w http.ResponseWriter, r *http.Re
 		return
 	}
 
-	patient, err := p.dataApi.GetPatientFromAccountId(apiservice.GetContext(r).AccountId)
-	if err != nil {
-		apiservice.WriteDeveloperError(w, http.StatusInternalServerError, err.Error())
-		return
-	}
-
-	if err := p.dataApi.SetPushPromptStatus(patient.PatientId.Int64(), pStatus); err != nil {
+	if err := p.dataApi.SetPushPromptStatus(apiservice.GetContext(r).AccountId, pStatus); err != nil {
 		apiservice.WriteDeveloperError(w, http.StatusInternalServerError, err.Error())
 		return
 	}
