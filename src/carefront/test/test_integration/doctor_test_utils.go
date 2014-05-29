@@ -97,7 +97,7 @@ func SubmitPatientVisitDiagnosis(PatientVisitId int64, doctor *common.Doctor, te
 		acneTypeQuestionId = qi.Id
 	}
 
-	diagnosePatientHandler := apiservice.NewDiagnosePatientHandler(testData.DataApi, testData.AuthApi, testData.CloudStorageService)
+	diagnosePatientHandler := apiservice.NewDiagnosePatientHandler(testData.DataApi, testData.AuthApi, "")
 	ts := httptest.NewServer(diagnosePatientHandler)
 	defer ts.Close()
 

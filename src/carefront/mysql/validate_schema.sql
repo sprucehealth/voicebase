@@ -78,7 +78,7 @@ fi
 
 dataSnapshotTables="app_text localized_text answer_type region health_condition languages_supported tips \
 	tips_section section screen_type question_type question question_fields potential_answer photo_tips \
-	patient_layout_version object_storage layout_version dr_layout_version care_providing_state dispense_unit \
+	patient_layout_version layout_blob_storage layout_version dr_layout_version care_providing_state dispense_unit \
 	drug_name drug_route drug_form drug_supplemental_instruction deny_refill_reason state conversation_topic"
 
 # If migration successful, snapshotting database again to generate new schema

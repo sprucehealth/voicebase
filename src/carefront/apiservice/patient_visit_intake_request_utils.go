@@ -6,31 +6,22 @@ import (
 	"encoding/json"
 )
 
-func GetClientLayoutForPatientVisit(patientVisitId, languageId int64, dataApi api.DataAPI, layoutStorageService api.CloudStorageAPI) (*info_intake.InfoIntakeLayout, int64, error) {
+func GetPatientLayoutForPatientVisit(patientVisitId, languageId int64, dataApi api.DataAPI, layoutStorageService api.CloudStorageAPI) (*info_intake.InfoIntakeLayout, int64, error) {
 	layoutVersionId, err := dataApi.GetLayoutVersionIdForPatientVisit(patientVisitId)
 	if err != nil {
 		return nil, 0, err
 	}
 
-	bucket, key, region, err := dataApi.GetStorageInfoForClientLayout(layoutVersionId, languageId)
+	data, err := dataApi.GetPatientLayout(layoutVersionId, languageId)
 	if err != nil {
 		return nil, 0, err
 	}
 
-	patientVisitLayout, err := GetHealthConditionObjectAtLocation(bucket, key, region, layoutStorageService)
+	patientVisitLayout := &info_intake.InfoIntakeLayout{}
+	if err := json.Unmarshal(data, patientVisitLayout); err != nil {
+		return nil, 0, err
+	}
 	return patientVisitLayout, layoutVersionId, err
-}
-
-func GetHealthConditionObjectAtLocation(bucket, key, region string, layoutStorageService api.CloudStorageAPI) (*info_intake.InfoIntakeLayout, error) {
-	data, _, err := layoutStorageService.GetObjectAtLocation(bucket, key, region)
-	if err != nil {
-		return nil, err
-	}
-	healthCondition := &info_intake.InfoIntakeLayout{}
-	if err := json.Unmarshal(data, healthCondition); err != nil {
-		return nil, err
-	}
-	return healthCondition, nil
 }
 
 func GetQuestionIdsInPatientVisitLayout(patientVisitLayout *info_intake.InfoIntakeLayout) []int64 {

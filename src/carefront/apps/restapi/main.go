@@ -11,6 +11,7 @@ import (
 	"carefront/demo"
 	"carefront/doctor_queue"
 	"carefront/homelog"
+	"carefront/layout"
 	"carefront/libs/aws"
 	"carefront/libs/aws/sns"
 	"carefront/libs/erx"
@@ -197,32 +198,8 @@ func main() {
 
 	photoAnswerIntakeHandler := apiservice.NewPhotoAnswerIntakeHandler(dataApi, photoAnswerCloudStorageApi, conf.CaseBucket, conf.AWSRegion, conf.MaxInMemoryForPhotoMB*1024*1024)
 	pharmacySearchHandler := &apiservice.PharmacyTextSearchHandler{PharmacySearchService: pharmacy.GooglePlacesPharmacySearchService(0), DataApi: dataApi, MapsService: mapsService}
-	generateDoctorLayoutHandler := &apiservice.GenerateDoctorLayoutHandler{
-		DataApi:                  dataApi,
-		CloudStorageApi:          cloudStorageApi,
-		DoctorLayoutBucket:       conf.DoctorLayoutBucket,
-		DoctorVisualLayoutBucket: conf.DoctorVisualLayoutBucket,
-		MaxInMemoryForPhoto:      conf.MaxInMemoryForPhotoMB,
-		AWSRegion:                conf.AWSRegion,
-		Purpose:                  api.REVIEW_PURPOSE,
-	}
-	generateDiagnoseLayoutHandler := &apiservice.GenerateDoctorLayoutHandler{
-		DataApi:                  dataApi,
-		CloudStorageApi:          cloudStorageApi,
-		DoctorLayoutBucket:       conf.DoctorLayoutBucket,
-		DoctorVisualLayoutBucket: conf.DoctorVisualLayoutBucket,
-		MaxInMemoryForPhoto:      conf.MaxInMemoryForPhotoMB,
-		AWSRegion:                conf.AWSRegion,
-		Purpose:                  api.DIAGNOSE_PURPOSE,
-	}
+
 	pingHandler := apiservice.PingHandler(0)
-	generateModelIntakeHandler := &apiservice.GenerateClientIntakeModelHandler{
-		DataApi:             dataApi,
-		CloudStorageApi:     cloudStorageApi,
-		VisualLayoutBucket:  conf.VisualLayoutBucket,
-		PatientLayoutBucket: conf.PatientLayoutBucket,
-		AWSRegion:           conf.AWSRegion,
-	}
 
 	staticContentHandler := &apiservice.StaticContentHandler{
 		DataApi:               dataApi,
@@ -260,13 +237,6 @@ func main() {
 		ERxApi:         doseSpotService,
 		ErxStatusQueue: erxStatusQueue,
 		ERxRouting:     conf.ERxRouting}
-
-	diagnosePatientHandler := &apiservice.DiagnosePatientHandler{
-		DataApi:              dataApi,
-		AuthApi:              authApi,
-		LayoutStorageService: cloudStorageApi,
-		Environment:          conf.Environment,
-	}
 
 	diagnosisSummaryHandler := &apiservice.DiagnosisSummaryHandler{DataApi: dataApi}
 	doctorRegimenHandler := apiservice.NewDoctorRegimenHandler(dataApi)
@@ -308,9 +278,9 @@ func main() {
 	mux.Handle("/v1/ping", pingHandler)
 	mux.Handle("/v1/autocomplete", autocompleteHandler)
 	mux.Handle("/v1/pharmacy_search", pharmacySearchHandler)
-	mux.Handle("/v1/doctor_layout", generateDoctorLayoutHandler)
-	mux.Handle("/v1/diagnose_layout", generateDiagnoseLayoutHandler)
-	mux.Handle("/v1/client_model", generateModelIntakeHandler)
+	mux.Handle("/v1/doctor_layout", layout.NewDoctorLayoutHandler(dataApi, api.REVIEW_PURPOSE))
+	mux.Handle("/v1/diagnose_layout", layout.NewDoctorLayoutHandler(dataApi, api.REVIEW_PURPOSE))
+	mux.Handle("/v1/client_model", layout.NewPatientLayoutHandler(dataApi))
 	mux.Handle("/v1/credit_card", patientCardsHandler)
 	mux.Handle("/v1/credit_card/default", patientCardsHandler)
 	mux.Handle("/v1/notification/token", notify.NewNotificationHandler(dataApi, conf.NotifiyConfigs, snsClient))
@@ -344,7 +314,7 @@ func main() {
 
 	mux.Handle("/v1/doctor/visit/review", patient_file.NewDoctorPatientVisitReviewHandler(dataApi, pharmacy.GooglePlacesPharmacySearchService(0), cloudStorageApi, photoAnswerCloudStorageApi))
 	mux.Handle("/v1/doctor/visit/treatment_plan", doctorTreatmentPlanHandler)
-	mux.Handle("/v1/doctor/visit/diagnosis", diagnosePatientHandler)
+	mux.Handle("/v1/doctor/visit/diagnosis", apiservice.NewDiagnosePatientHandler(dataApi, authApi, conf.Environment))
 	mux.Handle("/v1/doctor/visit/diagnosis/summary", diagnosisSummaryHandler)
 	mux.Handle("/v1/doctor/visit/treatment/new", newTreatmentHandler)
 	mux.Handle("/v1/doctor/visit/treatment/treatments", treatmentsHandler)
