@@ -44,18 +44,22 @@ func TestHandler(t *testing.T) {
 		t.Fatal(err)
 	}
 
+	now := float64(time.Now().UnixNano()) / 1e9
 	body := bytes.NewBuffer([]byte(fmt.Sprintf(`
-		[
-			{
-				"event": "click",
-				"properties": {
-					"time": %d,
-					"session_id": "123abc",
-					"extra": "foo"
+		{
+			"current_time": %f,
+			"events": [
+				{
+					"event": "click",
+					"properties": {
+						"time": %f,
+						"session_id": "123abc",
+						"extra": "foo"
+					}
 				}
-			}
-		]
-	`, time.Now().Unix())))
+			]
+		}
+	`, now, now-60)))
 	req, err := http.NewRequest("POST", "/", body)
 	if err != nil {
 		t.Fatal(err)

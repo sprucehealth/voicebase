@@ -73,6 +73,11 @@ func (p properties) popBoolPtr(name string) *bool {
 	return &b
 }
 
+type eventRequest struct {
+	CurrentTime float64 `json:"current_time"`
+	Events      []event `json:"events"`
+}
+
 type event struct {
 	Name       string     `json:"event"`
 	Properties properties `json:"properties"`
@@ -101,29 +106,31 @@ func (h *Handler) ServeHTTP(w http.ResponseWriter, r *http.Request) {
 		return
 	}
 
-	var events []event
-	if err := json.NewDecoder(r.Body).Decode(&events); err != nil {
+	var req eventRequest
+	if err := json.NewDecoder(r.Body).Decode(&req); err != nil {
 		apiservice.WriteDeveloperError(w, http.StatusBadRequest, "Failed to decode body: "+err.Error())
 		return
 	}
 
-	h.statEventsReceived.Inc(int64(len(events)))
+	h.statEventsReceived.Inc(int64(len(req.Events)))
 
 	ch := apiservice.ExtractSpruceHeaders(r)
 
-	now := time.Now().UTC()
-	nowUnix := now.Unix()
+	nowUnix := float64(time.Now().UTC().UnixNano()) / 1e9
 	var eventsOut []Event
-	for _, ev := range events {
+	for _, ev := range req.Events {
 		if ev.Name == "" || ev.Properties == nil {
 			continue
 		}
-		tf := ev.Properties.popFloat64("time")
-		tSec := int64(math.Floor(tf))
-		if tSec < nowUnix-invalidTimeThreshold {
+		// Calculate delta time for the event from the client provided current time.
+		// Use this delta to generate the absolute event time based on the server's time.
+		// This accounts for the client clock being off.
+		td := req.CurrentTime - ev.Properties.popFloat64("time")
+		if td > invalidTimeThreshold || td < 0 {
 			continue
 		}
-		tm := time.Unix(tSec, int64(1e9*(tf-math.Floor(tf))))
+		tf := nowUnix - td
+		tm := time.Unix(int64(math.Floor(tf)), int64(1e9*(tf-math.Floor(tf))))
 		evo := &ClientEvent{
 			Event:            ev.Name,
 			Timestamp:        Time(tm),
@@ -165,7 +172,7 @@ func (h *Handler) ServeHTTP(w http.ResponseWriter, r *http.Request) {
 		}
 		eventsOut = append(eventsOut, evo)
 	}
-	h.statEventsDropped.Inc(int64(len(events) - len(eventsOut)))
+	h.statEventsDropped.Inc(int64(len(req.Events) - len(eventsOut)))
 
 	if len(eventsOut) == 0 {
 		return
