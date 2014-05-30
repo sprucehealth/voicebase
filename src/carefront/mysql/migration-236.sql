@@ -45,9 +45,3 @@ insert into question_fields (question_field, question_id, app_text_id) values
 		('placeholder_text', 
 			(select id from question where question_tag='q_diagnosis_reason_not_suitable'), 
 			(select id from app_text where app_text_tag='txt_describe_why_not_able_to_treat'));
-
-
-
-
-
-
