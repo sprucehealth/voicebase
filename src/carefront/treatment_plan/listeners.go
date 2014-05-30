@@ -5,6 +5,7 @@ import (
 	"carefront/apiservice"
 	"carefront/common"
 	"carefront/libs/dispatch"
+	"carefront/visit"
 )
 
 func InitListeners(dataAPI api.DataAPI) {
@@ -95,7 +96,7 @@ func InitListeners(dataAPI api.DataAPI) {
 		return nil
 	})
 
-	dispatch.Default.Subscribe(func(ev *apiservice.DiagnosisModifiedEvent) error {
+	dispatch.Default.Subscribe(func(ev *visit.DiagnosisModifiedEvent) error {
 		return updateDiagnosisSummary(dataAPI, ev.DoctorId, ev.PatientVisitId, ev.TreatmentPlanId)
 	})
 

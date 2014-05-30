@@ -116,7 +116,8 @@ type PatientVisitAPI interface {
 	GetActiveTreatmentPlanForPatientVisit(doctorId, patientVisitId int64) (int64, error)
 	UpdatePatientVisitStatus(patientVisitId int64, message, event string) error
 	GetMessageForPatientVisitStatus(patientVisitId int64) (message string, err error)
-	ClosePatientVisit(patientVisitId, treatmentPlanId int64, event, message string) error
+	ClosePatientVisit(patientVisitId int64, event string) error
+	MarkTreatmentPlanAsSent(treatmentPlanId int64) error
 	SubmitPatientVisitWithId(patientVisitId int64) error
 	UpdateFollowUpTimeForPatientVisit(treatmentPlanId, doctorId, currentTimeSinceEpoch, followUpValue int64, followUpUnit string) error
 	GetFollowUpTimeForTreatmentPlan(treatmentPlanId int64) (followUp *common.FollowUp, err error)

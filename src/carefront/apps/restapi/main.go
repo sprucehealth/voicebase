@@ -30,6 +30,7 @@ import (
 	"carefront/services/auth"
 	thriftapi "carefront/thrift/api"
 	"carefront/treatment_plan"
+	"carefront/visit"
 	"crypto/tls"
 	"log"
 	"net"
@@ -279,7 +280,7 @@ func main() {
 	mux.Handle("/v1/autocomplete", autocompleteHandler)
 	mux.Handle("/v1/pharmacy_search", pharmacySearchHandler)
 	mux.Handle("/v1/doctor_layout", layout.NewDoctorLayoutHandler(dataApi, api.REVIEW_PURPOSE))
-	mux.Handle("/v1/diagnose_layout", layout.NewDoctorLayoutHandler(dataApi, api.REVIEW_PURPOSE))
+	mux.Handle("/v1/diagnose_layout", layout.NewDoctorLayoutHandler(dataApi, api.DIAGNOSE_PURPOSE))
 	mux.Handle("/v1/client_model", layout.NewPatientLayoutHandler(dataApi))
 	mux.Handle("/v1/credit_card", patientCardsHandler)
 	mux.Handle("/v1/credit_card/default", patientCardsHandler)
@@ -314,7 +315,7 @@ func main() {
 
 	mux.Handle("/v1/doctor/visit/review", patient_file.NewDoctorPatientVisitReviewHandler(dataApi, pharmacy.GooglePlacesPharmacySearchService(0), cloudStorageApi, photoAnswerCloudStorageApi))
 	mux.Handle("/v1/doctor/visit/treatment_plan", doctorTreatmentPlanHandler)
-	mux.Handle("/v1/doctor/visit/diagnosis", apiservice.NewDiagnosePatientHandler(dataApi, authApi, conf.Environment))
+	mux.Handle("/v1/doctor/visit/diagnosis", visit.NewDiagnosePatientHandler(dataApi, authApi, conf.Environment))
 	mux.Handle("/v1/doctor/visit/diagnosis/summary", diagnosisSummaryHandler)
 	mux.Handle("/v1/doctor/visit/treatment/new", newTreatmentHandler)
 	mux.Handle("/v1/doctor/visit/treatment/treatments", treatmentsHandler)

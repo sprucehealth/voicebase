@@ -252,7 +252,7 @@ type AnswerIntakeResponse struct {
 	Result string `json:"result"`
 }
 
-func validateRequestBody(answerIntakeRequestBody *AnswerIntakeRequestBody, w http.ResponseWriter) error {
+func ValidateRequestBody(answerIntakeRequestBody *AnswerIntakeRequestBody, w http.ResponseWriter) error {
 	if answerIntakeRequestBody.PatientVisitId == 0 {
 		return errors.New("patient_visit_id missing")
 	}
@@ -274,7 +274,7 @@ func validateRequestBody(answerIntakeRequestBody *AnswerIntakeRequestBody, w htt
 	return nil
 }
 
-func populateAnswersToStoreForQuestion(role string, answerToQuestionItem *AnswerToQuestionItem, contextId, roleId, layoutVersionId int64) []*common.AnswerIntake {
+func PopulateAnswersToStoreForQuestion(role string, answerToQuestionItem *AnswerToQuestionItem, contextId, roleId, layoutVersionId int64) []*common.AnswerIntake {
 	// get a list of top level answers to store for each of the quetions
 	answersToStore := createAnswersToStoreForQuestion(role, roleId, answerToQuestionItem.QuestionId,
 		contextId, layoutVersionId, answerToQuestionItem.AnswerIntakes)

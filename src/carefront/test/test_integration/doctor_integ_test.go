@@ -18,6 +18,7 @@ import (
 	"carefront/apiservice"
 	"carefront/common"
 	"carefront/patient_file"
+	"carefront/visit"
 )
 
 func TestDoctorRegistration(t *testing.T) {
@@ -135,13 +136,13 @@ func TestDoctorDiagnosisOfPatientVisit(t *testing.T) {
 	StartReviewingPatientVisit(patientVisitResponse.PatientVisitId, doctor, testData, t)
 
 	// doctor now attempts to diagnose patient visit
-	diagnosePatientHandler := apiservice.NewDiagnosePatientHandler(testData.DataApi, testData.AuthApi, "")
+	diagnosePatientHandler := visit.NewDiagnosePatientHandler(testData.DataApi, testData.AuthApi, "")
 	ts := httptest.NewServer(diagnosePatientHandler)
 	defer ts.Close()
 
 	requestParams := bytes.NewBufferString("?patient_visit_id=")
 	requestParams.WriteString(strconv.FormatInt(patientVisitResponse.PatientVisitId, 10))
-	diagnosisResponse := apiservice.GetDiagnosisResponse{}
+	diagnosisResponse := visit.GetDiagnosisResponse{}
 
 	resp, err := AuthGet(ts.URL+requestParams.String(), doctor.AccountId.Int64())
 	if err != nil {
