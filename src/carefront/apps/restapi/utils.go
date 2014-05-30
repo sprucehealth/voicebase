@@ -29,6 +29,11 @@ type AnalyticsConfig struct {
 	MaxAge    int    `long:"analytics_max_age" description:"Max age of a log file in seconds before rotating"`
 }
 
+type SupportConfig struct {
+	TechnicalSupportEmail string `long:"technical_support_email" description:"Email address for technical support"`
+	CustomerServiceEmail  string `long:"customer_service_email" description:"Customer service email address"`
+}
+
 type Config struct {
 	*config.BaseConfig
 	ProxyProtocol         bool                        `long:"proxy_protocol" description:"Enable if behind a proxy that uses the PROXY protocol"`
@@ -57,6 +62,7 @@ type Config struct {
 	IOSDeeplinkScheme     string                      `long:"ios_deeplink_scheme" description:"Scheme for iOS deep-links (e.g. spruce://)"`
 	NotifiyConfigs        *config.NotificationConfigs `group:"notification" toml:"notification"`
 	Analytics             *AnalyticsConfig            `group:"Analytics" toml:"analytics"`
+	Support               *SupportConfig              `group:"support" toml:"support"`
 }
 
 var DefaultConfig = Config{

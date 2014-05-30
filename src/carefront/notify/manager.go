@@ -20,6 +20,10 @@ type NotificationManager struct {
 	snsClient           *sns.SNS
 	twilioClient        *twilio.Client
 	fromNumber          string
+	fromEmailAddress    string
+	smtpAddress         string
+	smtpUsername        string
+	smtpPassword        string
 	notificationConfigs *config.NotificationConfigs
 	statSMSSent         metrics.Counter
 	statSMSFailed       metrics.Counter
@@ -27,13 +31,17 @@ type NotificationManager struct {
 	statPushFailed      metrics.Counter
 }
 
-func NewManager(dataApi api.DataAPI, snsClient *sns.SNS, twilioClient *twilio.Client, fromNumber string, notificationConfigs *config.NotificationConfigs, statsRegistry metrics.Registry) *NotificationManager {
+func NewManager(dataApi api.DataAPI, snsClient *sns.SNS, twilioClient *twilio.Client, fromNumber, fromEmailAddress, smtpAddress, smtpUsername, smtpPassword string, notificationConfigs *config.NotificationConfigs, statsRegistry metrics.Registry) *NotificationManager {
 
 	manager := &NotificationManager{
 		dataApi:             dataApi,
 		snsClient:           snsClient,
 		twilioClient:        twilioClient,
 		fromNumber:          fromNumber,
+		smtpAddress:         smtpAddress,
+		smtpUsername:        smtpUsername,
+		smtpPassword:        smtpPassword,
+		fromEmailAddress:    fromEmailAddress,
 		notificationConfigs: notificationConfigs,
 		statSMSSent:         metrics.NewCounter(),
 		statSMSFailed:       metrics.NewCounter(),
@@ -47,7 +55,21 @@ func NewManager(dataApi api.DataAPI, snsClient *sns.SNS, twilioClient *twilio.Cl
 	statsRegistry.Scope("sns").Add("push/failed", manager.statPushFailed)
 
 	return manager
+}
 
+func (n *NotificationManager) NotifySupport(toEmail string, event interface{}) error {
+
+	nView := getInternalNotificationViewForEvent(event)
+	if nView == nil {
+		golog.Errorf("Expected a view to be present for the event %T but it wasn't", event)
+		return nil
+	}
+
+	subject, body, err := nView.renderEmail(event)
+	if err != nil {
+		return err
+	}
+	return n.SendEmail(n.fromEmailAddress, toEmail, subject, body)
 }
 
 func (n *NotificationManager) NotifyDoctor(doctor *common.Doctor, event interface{}) error {
@@ -70,7 +92,7 @@ func (n *NotificationManager) NotifyDoctor(doctor *common.Doctor, event interfac
 			return err
 		}
 	case common.SMS:
-		if err := n.sendSMSToUser(doctor.CellPhone, getNotificationViewForEvent(event).renderSMS(event, n.dataApi)); err != nil {
+		if err := n.sendSMSToUser(doctor.CellPhone, getNotificationViewForEvent(event).renderSMS()); err != nil {
 			golog.Errorf("Error sending sms to user: %s", err)
 			return err
 		}
@@ -98,7 +120,7 @@ func (n *NotificationManager) NotifyPatient(patient *common.Patient, event inter
 			return err
 		}
 	case common.SMS:
-		if err := n.sendSMSToUser(phoneNumberForPatient(patient), getNotificationViewForEvent(event).renderSMS(event, n.dataApi)); err != nil {
+		if err := n.sendSMSToUser(phoneNumberForPatient(patient), getNotificationViewForEvent(event).renderSMS()); err != nil {
 			golog.Errorf("Error sending sms to user: %s", err)
 			return err
 		}

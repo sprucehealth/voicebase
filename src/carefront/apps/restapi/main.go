@@ -28,6 +28,7 @@ import (
 	"carefront/patient_treatment_plan"
 	"carefront/photos"
 	"carefront/services/auth"
+	"carefront/support"
 	thriftapi "carefront/thrift/api"
 	"carefront/treatment_plan"
 	"carefront/visit"
@@ -165,12 +166,14 @@ func main() {
 		twilioCli = twilio.NewClient(conf.Twilio.AccountSid, conf.Twilio.AuthToken, nil)
 	}
 
-	notificationManager := notify.NewManager(dataApi, snsClient, twilioCli, conf.Twilio.FromNumber, conf.NotifiyConfigs, metricsRegistry.Scope("notify"))
+	notificationManager := notify.NewManager(dataApi, snsClient, twilioCli, conf.Twilio.FromNumber, conf.AlertEmail,
+		conf.SMTPAddr, conf.SMTPUsername, conf.SMTPPassword, conf.NotifiyConfigs, metricsRegistry.Scope("notify"))
 
 	homelog.InitListeners(dataApi, notificationManager)
 	doctor_queue.InitListeners(dataApi, notificationManager)
 	treatment_plan.InitListeners(dataApi)
 	notify.InitListeners(dataApi)
+	support.InitListeners(conf.Support.TechnicalSupportEmail, conf.Support.CustomerServiceEmail, notificationManager)
 
 	cloudStorageApi := api.NewCloudStorageService(awsAuth)
 	photoAnswerCloudStorageApi := api.NewCloudStorageService(awsAuth)
