@@ -100,6 +100,10 @@ func NewHandler(logger Logger, statsRegistry metrics.Registry) (*Handler, error)
 	return h, nil
 }
 
+func (h *Handler) NonAuthenticated() bool {
+	return true
+}
+
 func (h *Handler) ServeHTTP(w http.ResponseWriter, r *http.Request) {
 	if r.Method != "POST" {
 		http.NotFound(w, r)
