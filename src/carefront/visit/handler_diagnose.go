@@ -216,7 +216,7 @@ func (d *diagnosePatientHandler) diagnosePatient(w http.ResponseWriter, r *http.
 		})
 	}
 
-	apiservice.WriteJSONToHTTPResponseWriter(w, http.StatusOK, apiservice.AnswerIntakeResponse{Result: "success"})
+	apiservice.WriteJSONToHTTPResponseWriter(w, http.StatusOK, apiservice.SuccessfulGenericJSONResponse())
 }
 
 func getQuestionIdsInDiagnosisLayout(diagnosisLayout *info_intake.DiagnosisIntake) []int64 {
