@@ -100,7 +100,7 @@ func InitListeners(dataAPI api.DataAPI) {
 		return updateDiagnosisSummary(dataAPI, ev.DoctorId, ev.PatientVisitId, ev.TreatmentPlanId)
 	})
 
-	dispatch.Default.Subscribe(func(ev *apiservice.NewTreatmentPlanStartedEvent) error {
+	dispatch.Default.Subscribe(func(ev *NewTreatmentPlanStartedEvent) error {
 		return updateDiagnosisSummary(dataAPI, ev.DoctorId, ev.PatientVisitId, ev.TreatmentPlanId)
 	})
 

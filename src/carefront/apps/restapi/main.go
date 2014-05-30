@@ -23,7 +23,6 @@ import (
 	"carefront/notify"
 	"carefront/patient"
 	"carefront/patient_file"
-	"carefront/patient_treatment_plan"
 	"carefront/photos"
 	"carefront/reslib"
 	"carefront/support"
@@ -164,8 +163,8 @@ func main() {
 	updatePatientPharmacyHandler := &apiservice.UpdatePatientPharmacyHandler{DataApi: dataApi, PharmacySearchService: pharmacy.GooglePlacesPharmacySearchService(0)}
 	authenticateDoctorHandler := &apiservice.DoctorAuthenticationHandler{DataApi: dataApi, AuthApi: authAPI}
 	signupDoctorHandler := &apiservice.SignupDoctorHandler{DataApi: dataApi, AuthApi: authAPI}
-	patientTreatmentGuideHandler := patient_treatment_plan.NewPatientTreatmentGuideHandler(dataApi)
-	doctorTreatmentGuideHandler := patient_treatment_plan.NewDoctorTreatmentGuideHandler(dataApi)
+	patientTreatmentGuideHandler := treatment_plan.NewPatientTreatmentGuideHandler(dataApi)
+	doctorTreatmentGuideHandler := treatment_plan.NewDoctorTreatmentGuideHandler(dataApi)
 	patientVisitHandler := apiservice.NewPatientVisitHandler(dataApi, authAPI, cloudStorageApi, photoAnswerCloudStorageApi)
 	patientVisitReviewHandler := &patient_treatment_plan.PatientVisitReviewHandler{DataApi: dataApi}
 	answerIntakeHandler := apiservice.NewAnswerIntakeHandler(dataApi)
@@ -236,12 +235,7 @@ func main() {
 		DataApi: dataApi,
 		ErxApi:  doseSpotService,
 	}
-	doctorFavoriteTreatmentPlansHandler := &apiservice.DoctorFavoriteTreatmentPlansHandler{
-		DataApi: dataApi,
-	}
-	doctorTreatmentPlanHandler := &apiservice.DoctorTreatmentPlanHandler{
-		DataApi: dataApi,
-	}
+	doctorFavoriteTreatmentPlansHandler := treatment_plan.NewDoctorFavoriteTreatmentPlansHandler(dataApi)
 
 	mux := apiservice.NewAuthServeMux(authAPI, metricsRegistry.Scope("restapi"))
 

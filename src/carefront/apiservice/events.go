@@ -52,7 +52,7 @@ type RefillRequestResolvedEvent struct {
 	Status          string
 }
 
-type NewTreatmentPlanStartedEvent struct {
+type DiagnosisModifiedEvent struct {
 	DoctorId        int64
 	PatientVisitId  int64
 	TreatmentPlanId int64
