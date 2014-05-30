@@ -26,7 +26,7 @@ type panicEventView int64
 func (panicEventView) renderEmail(event interface{}) (string, string, error) {
 	panicEvent, ok := event.(*config.PanicEvent)
 	if !ok {
-		return "", "", fmt.Errorf("Expected event type to be PanicEvent instead it was %T", event)
+		return "", "", fmt.Errorf("Unexpected type: %T", event)
 	}
 
 	subject := fmt.Sprintf("PANIC %s.%s", panicEvent.AppName, panicEvent.Environment)
@@ -39,7 +39,7 @@ type patientVisitUnsuitableView int64
 func (patientVisitUnsuitableView) renderEmail(event interface{}) (string, string, error) {
 	unsuitableVisit, ok := event.(*visit.PatientVisitMarkedUnsuitableEvent)
 	if !ok {
-		return "", "", fmt.Errorf("Expected event to be PatientVisitMarkedUnsuitableEvent instead it was %T", event)
+		return "", "", fmt.Errorf("Unexpected type: %T", event)
 	}
 
 	subject := fmt.Sprintf("Patient Visit %d marked unsuitable for Spruce", unsuitableVisit.PatientVisitId)
