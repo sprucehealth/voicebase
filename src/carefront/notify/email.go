@@ -1,6 +1,7 @@
 package notify
 
 import (
+	"carefront/libs/golog"
 	"crypto/tls"
 	"errors"
 	"net"
@@ -12,35 +13,52 @@ import (
 var smtpConnectTimeout = time.Second * 5
 
 func (n *NotificationManager) SendEmail(from, to, subject, body string) error {
-	cn, err := n.smtpConnection()
-	if err != nil {
-		return err
-	}
-	defer cn.Close()
-	if err := cn.Mail(from); err != nil {
-		return err
-	}
-	if err := cn.Rcpt(to); err != nil {
-		return err
-	}
-	wr, err := cn.Data()
-	if err != nil {
-		return err
-	}
-	defer wr.Close()
-	header := http.Header{}
-	header.Set("From", from)
-	header.Set("To", to)
-	header.Set("Subject", subject)
-	if err := header.Write(wr); err != nil {
-		return err
-	}
-	if _, err := wr.Write([]byte("\r\n")); err != nil {
-		return err
-	}
-	if _, err := wr.Write([]byte(body)); err != nil {
-		return err
-	}
+	go func() {
+		cn, err := n.smtpConnection()
+		if err != nil {
+			n.statEmailFailed.Inc(1)
+			golog.Errorf("Unable to establish smtp connection: %s", err)
+			return
+		}
+		defer cn.Close()
+		if err := cn.Mail(from); err != nil {
+			n.statEmailFailed.Inc(1)
+			golog.Errorf("Unable to issue mail command to server: %s", err)
+			return
+		}
+		if err := cn.Rcpt(to); err != nil {
+			n.statEmailFailed.Inc(1)
+			golog.Errorf("Unable to issue rcpt command to server: %s", err)
+			return
+		}
+		wr, err := cn.Data()
+		if err != nil {
+			n.statEmailFailed.Inc(1)
+			golog.Errorf("Unable to issue data command to server: %s", err)
+			return
+		}
+		defer wr.Close()
+		header := http.Header{}
+		header.Set("From", from)
+		header.Set("To", to)
+		header.Set("Subject", subject)
+		if err := header.Write(wr); err != nil {
+			n.statEmailFailed.Inc(1)
+			golog.Errorf("Unable to write header: %s", err)
+			return
+		}
+		if _, err := wr.Write([]byte("\r\n")); err != nil {
+			n.statEmailFailed.Inc(1)
+			golog.Errorf("Unable to write data : %s", err)
+			return
+		}
+		if _, err := wr.Write([]byte(body)); err != nil {
+			n.statEmailFailed.Inc(1)
+			golog.Errorf("Unable to write body of email: %s", err)
+			return
+		}
+		n.statEmailSent.Inc(1)
+	}()
 	return nil
 }
 

@@ -173,7 +173,7 @@ func main() {
 	doctor_queue.InitListeners(dataApi, notificationManager)
 	treatment_plan.InitListeners(dataApi)
 	notify.InitListeners(dataApi)
-	support.InitListeners(conf.Support.TechnicalSupportEmail, conf.Support.CustomerServiceEmail, notificationManager)
+	support.InitListeners(conf.Support.TechnicalSupportEmail, conf.Support.CustomerSupportEmail, notificationManager)
 
 	cloudStorageApi := api.NewCloudStorageService(awsAuth)
 	photoAnswerCloudStorageApi := api.NewCloudStorageService(awsAuth)

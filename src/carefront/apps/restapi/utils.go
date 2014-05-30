@@ -31,7 +31,7 @@ type AnalyticsConfig struct {
 
 type SupportConfig struct {
 	TechnicalSupportEmail string `long:"technical_support_email" description:"Email address for technical support"`
-	CustomerServiceEmail  string `long:"customer_service_email" description:"Customer service email address"`
+	CustomerSupportEmail  string `long:"customer_support_email" description:"Customer support email address"`
 }
 
 type Config struct {

@@ -29,6 +29,8 @@ type NotificationManager struct {
 	statSMSFailed       metrics.Counter
 	statPushSent        metrics.Counter
 	statPushFailed      metrics.Counter
+	statEmailSent       metrics.Counter
+	statEmailFailed     metrics.Counter
 }
 
 func NewManager(dataApi api.DataAPI, snsClient *sns.SNS, twilioClient *twilio.Client, fromNumber, fromEmailAddress, smtpAddress, smtpUsername, smtpPassword string, notificationConfigs *config.NotificationConfigs, statsRegistry metrics.Registry) *NotificationManager {
@@ -47,12 +49,16 @@ func NewManager(dataApi api.DataAPI, snsClient *sns.SNS, twilioClient *twilio.Cl
 		statSMSFailed:       metrics.NewCounter(),
 		statPushSent:        metrics.NewCounter(),
 		statPushFailed:      metrics.NewCounter(),
+		statEmailSent:       metrics.NewCounter(),
+		statEmailFailed:     metrics.NewCounter(),
 	}
 
-	statsRegistry.Scope("twilio").Add("sms/sent", manager.statSMSSent)
-	statsRegistry.Scope("twilio").Add("sms/failed", manager.statSMSFailed)
-	statsRegistry.Scope("sns").Add("push/sent", manager.statPushSent)
-	statsRegistry.Scope("sns").Add("push/failed", manager.statPushFailed)
+	statsRegistry.Scope("twilio").Add("sent", manager.statSMSSent)
+	statsRegistry.Scope("twilio").Add("failed", manager.statSMSFailed)
+	statsRegistry.Scope("sns").Add("sent", manager.statPushSent)
+	statsRegistry.Scope("sns").Add("failed", manager.statPushFailed)
+	statsRegistry.Scope("email").Add("sent", manager.statEmailSent)
+	statsRegistry.Scope("email").Add("failed", manager.statEmailFailed)
 
 	return manager
 }
