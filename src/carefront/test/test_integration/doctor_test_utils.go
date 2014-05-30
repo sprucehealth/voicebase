@@ -19,6 +19,7 @@ import (
 	"carefront/common"
 	"carefront/libs/erx"
 	"carefront/patient_file"
+	"carefront/treatment_plan"
 	"carefront/visit"
 )
 
@@ -148,10 +149,8 @@ func StartReviewingPatientVisit(patientVisitId int64, doctor *common.Doctor, tes
 	CheckSuccessfulStatusCode(resp, "Unable to make successful call to get patient visit review: ", t)
 }
 
-func pickATreatmentPlanForPatientVisit(patientVisitId int64, doctor *common.Doctor, favoriteTreatmentPlan *common.FavoriteTreatmentPlan, testData TestData, t *testing.T) *apiservice.DoctorTreatmentPlanResponse {
-	doctorPickTreatmentPlanHandler := &apiservice.DoctorTreatmentPlanHandler{
-		DataApi: testData.DataApi,
-	}
+func pickATreatmentPlanForPatientVisit(patientVisitId int64, doctor *common.Doctor, favoriteTreatmentPlan *common.FavoriteTreatmentPlan, testData TestData, t *testing.T) *treatment_plan.DoctorTreatmentPlanResponse {
+	doctorPickTreatmentPlanHandler := treatment_plan.NewDoctorTreatmentPlanHandler(testData.DataApi)
 
 	ts := httptest.NewServer(doctorPickTreatmentPlanHandler)
 	defer ts.Close()
@@ -171,7 +170,7 @@ func pickATreatmentPlanForPatientVisit(patientVisitId int64, doctor *common.Doct
 		t.Fatalf("Expected successful picking up of treatment plan instead got %d", resp.StatusCode)
 	}
 
-	responseData := &apiservice.DoctorTreatmentPlanResponse{}
+	responseData := &treatment_plan.DoctorTreatmentPlanResponse{}
 	if err := json.NewDecoder(resp.Body).Decode(responseData); err != nil {
 		t.Fatalf("Unable to unmarshal response into response json: %s", err)
 	}

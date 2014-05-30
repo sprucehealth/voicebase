@@ -166,7 +166,6 @@ func main() {
 	patientTreatmentGuideHandler := treatment_plan.NewPatientTreatmentGuideHandler(dataApi)
 	doctorTreatmentGuideHandler := treatment_plan.NewDoctorTreatmentGuideHandler(dataApi)
 	patientVisitHandler := apiservice.NewPatientVisitHandler(dataApi, authAPI, cloudStorageApi, photoAnswerCloudStorageApi)
-	patientVisitReviewHandler := &patient_treatment_plan.PatientVisitReviewHandler{DataApi: dataApi}
 	answerIntakeHandler := apiservice.NewAnswerIntakeHandler(dataApi)
 	autocompleteHandler := &apiservice.AutocompleteHandler{DataApi: dataApi, ERxApi: doseSpotService, Role: api.PATIENT_ROLE}
 	doctorTreatmentSuggestionHandler := &apiservice.AutocompleteHandler{DataApi: dataApi, ERxApi: doseSpotService, Role: api.DOCTOR_ROLE}
@@ -249,7 +248,7 @@ func main() {
 	mux.Handle("/v1/patient/home/dismiss", homelog.NewDismissHandler(dataApi))
 	mux.Handle("/v1/patient/isauthenticated", apiservice.NewIsAuthenticatedHandler(authAPI))
 	mux.Handle("/v1/visit", patientVisitHandler)
-	mux.Handle("/v1/visit/review", patientVisitReviewHandler)
+	mux.Handle("/v1/visit/review", treatment_plan.NewPatientTreatmentPlanHandler(dataApi))
 	mux.Handle("/v1/check_eligibility", checkElligibilityHandler)
 	mux.Handle("/v1/answer", answerIntakeHandler)
 	mux.Handle("/v1/answer/photo", photoAnswerIntakeHandler)

@@ -3,10 +3,10 @@ package test_integration
 import (
 	"bytes"
 	"carefront/api"
-	"carefront/apiservice"
 	"carefront/common"
 	"carefront/encoding"
 	"carefront/libs/erx"
+	"carefront/treatment_plan"
 	"encoding/json"
 	"net/http"
 	"net/http/httptest"
@@ -39,19 +39,17 @@ func TestFavoriteTreatmentPlan(t *testing.T) {
 	favoriteTreatmentPlan.RegimenPlan.RegimenSections = favoriteTreatmentPlan.RegimenPlan.RegimenSections[1:]
 	favoriteTreatmentPlan.Advice.SelectedAdvicePoints = favoriteTreatmentPlan.Advice.SelectedAdvicePoints[1:]
 
-	requestData := &apiservice.DoctorFavoriteTreatmentPlansRequestData{}
+	requestData := &treatment_plan.DoctorFavoriteTreatmentPlansRequestData{}
 	requestData.FavoriteTreatmentPlan = favoriteTreatmentPlan
 	jsonData, err := json.Marshal(requestData)
 	if err != nil {
 		t.Fatalf("Unable to marshal json data: %s", err)
 	}
 
-	ts := httptest.NewServer(&apiservice.DoctorFavoriteTreatmentPlansHandler{
-		DataApi: testData.DataApi,
-	})
+	ts := httptest.NewServer(treatment_plan.NewDoctorFavoriteTreatmentPlansHandler(testData.DataApi))
 	defer ts.Close()
 
-	responseData := &apiservice.DoctorFavoriteTreatmentPlansResponseData{}
+	responseData := &treatment_plan.DoctorFavoriteTreatmentPlansResponseData{}
 	resp, err := AuthPut(ts.URL, "application/json", bytes.NewReader(jsonData), doctor.AccountId.Int64())
 	if err != nil {
 		t.Fatalf("Unable to make call to update favorite treatment plan %s", err)
@@ -163,12 +161,10 @@ func TestFavoriteTreatmentPlan_PickingAFavoriteTreatmentPlan(t *testing.T) {
 
 	// lets attempt to get the treatment plan for the patient visit
 	// and ensure that its empty
-	ts := httptest.NewServer(&apiservice.DoctorTreatmentPlanHandler{
-		DataApi: testData.DataApi,
-	})
+	ts := httptest.NewServer(treatment_plan.NewDoctorTreatmentPlanHandler(testData.DataApi))
 	defer ts.Close()
 
-	responseData := &apiservice.DoctorTreatmentPlanResponse{}
+	responseData := &treatment_plan.DoctorTreatmentPlanResponse{}
 	if resp, err := AuthGet(ts.URL+"?patient_visit_id="+strconv.FormatInt(patientVisitResponse.PatientVisitId, 10), doctor.AccountId.Int64()); err != nil {
 		t.Fatalf("Unable to make call to get treatment plan for patient visit")
 	} else if resp.StatusCode != http.StatusOK {
@@ -250,14 +246,12 @@ func TestFavoriteTreatmentPlan_CommittedStateForTreatmentPlan(t *testing.T) {
 	CreateRegimenPlanForPatientVisit(regimenPlanRequest, testData, doctor, t)
 
 	// now lets attempt to get the treatment plan for the patient visit
-	ts := httptest.NewServer(&apiservice.DoctorTreatmentPlanHandler{
-		DataApi: testData.DataApi,
-	})
+	ts := httptest.NewServer(treatment_plan.NewDoctorTreatmentPlanHandler(testData.DataApi))
 	defer ts.Close()
 
 	// the regimen plan should indicate that it was committed while the rest of the sections
 	// should continue to be in the UNCOMMITTED state
-	responseData = &apiservice.DoctorTreatmentPlanResponse{}
+	responseData = &treatment_plan.DoctorTreatmentPlanResponse{}
 	if resp, err := AuthGet(ts.URL+"?patient_visit_id="+strconv.FormatInt(patientVisitResponse.PatientVisitId, 10), doctor.AccountId.Int64()); err != nil {
 		t.Fatalf("Unable to make call to get treatment plan for patient visit")
 	} else if resp.StatusCode != http.StatusOK {
@@ -282,7 +276,7 @@ func TestFavoriteTreatmentPlan_CommittedStateForTreatmentPlan(t *testing.T) {
 
 	// now if we were to get the treatment plan again it should indicate that the
 	// advice and regimen sections are committed but not the treatment section
-	responseData = &apiservice.DoctorTreatmentPlanResponse{}
+	responseData = &treatment_plan.DoctorTreatmentPlanResponse{}
 	if resp, err := AuthGet(ts.URL+"?patient_visit_id="+strconv.FormatInt(patientVisitResponse.PatientVisitId, 10), doctor.AccountId.Int64()); err != nil {
 		t.Fatalf("Unable to make call to get treatment plan for patient visit")
 	} else if resp.StatusCode != http.StatusOK {
@@ -302,7 +296,7 @@ func TestFavoriteTreatmentPlan_CommittedStateForTreatmentPlan(t *testing.T) {
 	addAndGetTreatmentsForPatientVisit(testData, favoriteTreamentPlan.TreatmentList.Treatments, doctor.AccountId.Int64(), patientVisitResponse.PatientVisitId, t)
 
 	// now the treatment section should also indicate that it has been committed
-	responseData = &apiservice.DoctorTreatmentPlanResponse{}
+	responseData = &treatment_plan.DoctorTreatmentPlanResponse{}
 	if resp, err := AuthGet(ts.URL+"?patient_visit_id="+strconv.FormatInt(patientVisitResponse.PatientVisitId, 10), doctor.AccountId.Int64()); err != nil {
 		t.Fatalf("Unable to make call to get treatment plan for patient visit")
 	} else if resp.StatusCode != http.StatusOK {
@@ -347,9 +341,7 @@ func TestFavoriteTreatmentPlan_BreakingMappingOnModify(t *testing.T) {
 	CreateRegimenPlanForPatientVisit(regimenPlanRequest, testData, doctor, t)
 
 	// now lets attempt to get the abbreviated version of the treatment plan
-	ts := httptest.NewServer(&apiservice.DoctorTreatmentPlanHandler{
-		DataApi: testData.DataApi,
-	})
+	ts := httptest.NewServer(treatment_plan.NewDoctorTreatmentPlanHandler(testData.DataApi))
 	defer ts.Close()
 
 	// the regimen plan should indicate that it was committed while the rest of the sections
@@ -357,7 +349,7 @@ func TestFavoriteTreatmentPlan_BreakingMappingOnModify(t *testing.T) {
 	params := url.Values{}
 	params.Set("patient_visit_id", strconv.FormatInt(patientVisitResponse.PatientVisitId, 10))
 	params.Set("abbreviated", "true")
-	responseData = &apiservice.DoctorTreatmentPlanResponse{}
+	responseData = &treatment_plan.DoctorTreatmentPlanResponse{}
 	if resp, err := AuthGet(ts.URL+"?"+params.Encode(), doctor.AccountId.Int64()); err != nil {
 		t.Fatalf("Unable to make call to get treatment plan for patient visit")
 	} else if resp.StatusCode != http.StatusOK {
@@ -543,12 +535,10 @@ func TestFavoriteTreatmentPlan_InContextOfTreatmentPlan(t *testing.T) {
 		},
 	}
 
-	ts := httptest.NewServer(&apiservice.DoctorFavoriteTreatmentPlansHandler{
-		DataApi: testData.DataApi,
-	})
+	ts := httptest.NewServer(treatment_plan.NewDoctorFavoriteTreatmentPlansHandler(testData.DataApi))
 	defer ts.Close()
 
-	requestData := &apiservice.DoctorFavoriteTreatmentPlansRequestData{
+	requestData := &treatment_plan.DoctorFavoriteTreatmentPlansRequestData{
 		FavoriteTreatmentPlan: favoriteTreatmentPlan,
 		TreatmentPlanId:       treatmentPlan.Id.Int64(),
 	}
@@ -562,7 +552,7 @@ func TestFavoriteTreatmentPlan_InContextOfTreatmentPlan(t *testing.T) {
 		t.Fatalf("Unable to add favorite treatment plan: %s", err)
 	}
 
-	responseData := &apiservice.DoctorFavoriteTreatmentPlansResponseData{}
+	responseData := &treatment_plan.DoctorFavoriteTreatmentPlansResponseData{}
 	if err := json.NewDecoder(resp.Body).Decode(responseData); err != nil {
 		t.Fatalf("Unable to unmarshal response into json %s", err)
 	} else if resp.StatusCode != http.StatusOK {
@@ -675,12 +665,10 @@ func TestFavoriteTreatmentPlan_InContextOfTreatmentPlan_EmptyRegimenAndAdvice(t 
 		},
 	}
 
-	ts := httptest.NewServer(&apiservice.DoctorFavoriteTreatmentPlansHandler{
-		DataApi: testData.DataApi,
-	})
+	ts := httptest.NewServer(treatment_plan.NewDoctorFavoriteTreatmentPlansHandler(testData.DataApi))
 	defer ts.Close()
 
-	requestData := &apiservice.DoctorFavoriteTreatmentPlansRequestData{
+	requestData := &treatment_plan.DoctorFavoriteTreatmentPlansRequestData{
 		FavoriteTreatmentPlan: favoriteTreatmentPlan,
 		TreatmentPlanId:       treatmentPlan.Id.Int64(),
 	}
@@ -694,7 +682,7 @@ func TestFavoriteTreatmentPlan_InContextOfTreatmentPlan_EmptyRegimenAndAdvice(t 
 		t.Fatalf("Unable to add favorite treatment plan: %s", err)
 	}
 
-	responseData := &apiservice.DoctorFavoriteTreatmentPlansResponseData{}
+	responseData := &treatment_plan.DoctorFavoriteTreatmentPlansResponseData{}
 	if err := json.NewDecoder(resp.Body).Decode(responseData); err != nil {
 		t.Fatalf("Unable to unmarshal response into json %s", err)
 	} else if resp.StatusCode != http.StatusOK {
@@ -804,12 +792,10 @@ func TestFavoriteTreatmentPlan_InContextOfTreatmentPlan_TwoDontMatch(t *testing.
 		},
 	}
 
-	ts := httptest.NewServer(&apiservice.DoctorFavoriteTreatmentPlansHandler{
-		DataApi: testData.DataApi,
-	})
+	ts := httptest.NewServer(treatment_plan.NewDoctorFavoriteTreatmentPlansHandler(testData.DataApi))
 	defer ts.Close()
 
-	requestData := &apiservice.DoctorFavoriteTreatmentPlansRequestData{
+	requestData := &treatment_plan.DoctorFavoriteTreatmentPlansRequestData{
 		FavoriteTreatmentPlan: favoriteTreatmentPlan,
 		TreatmentPlanId:       treatmentPlan.Id.Int64(),
 	}
@@ -823,7 +809,7 @@ func TestFavoriteTreatmentPlan_InContextOfTreatmentPlan_TwoDontMatch(t *testing.
 		t.Fatalf("Unable to add favorite treatment plan: %s", err)
 	}
 
-	responseData := &apiservice.DoctorFavoriteTreatmentPlansResponseData{}
+	responseData := &treatment_plan.DoctorFavoriteTreatmentPlansResponseData{}
 	if err := json.NewDecoder(resp.Body).Decode(responseData); err != nil {
 		t.Fatalf("Unable to unmarshal response into json %s", err)
 	} else if resp.StatusCode != http.StatusBadRequest {
@@ -945,12 +931,10 @@ func createFavoriteTreatmentPlan(patientVisitId int64, testData TestData, doctor
 		},
 	}
 
-	ts := httptest.NewServer(&apiservice.DoctorFavoriteTreatmentPlansHandler{
-		DataApi: testData.DataApi,
-	})
+	ts := httptest.NewServer(treatment_plan.NewDoctorFavoriteTreatmentPlansHandler(testData.DataApi))
 	defer ts.Close()
 
-	requestData := &apiservice.DoctorFavoriteTreatmentPlansRequestData{
+	requestData := &treatment_plan.DoctorFavoriteTreatmentPlansRequestData{
 		FavoriteTreatmentPlan: favoriteTreatmentPlan,
 	}
 	jsonData, err := json.Marshal(&requestData)
@@ -963,7 +947,7 @@ func createFavoriteTreatmentPlan(patientVisitId int64, testData TestData, doctor
 		t.Fatalf("Unable to add favorite treatment plan: %s", err)
 	}
 
-	responseData := &apiservice.DoctorFavoriteTreatmentPlansResponseData{}
+	responseData := &treatment_plan.DoctorFavoriteTreatmentPlansResponseData{}
 	if err := json.NewDecoder(resp.Body).Decode(responseData); err != nil {
 		t.Fatalf("Unable to unmarshal response into json %s", err)
 	} else if resp.StatusCode != http.StatusOK {

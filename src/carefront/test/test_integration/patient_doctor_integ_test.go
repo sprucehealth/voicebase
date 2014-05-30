@@ -10,7 +10,7 @@ import (
 	"carefront/libs/aws/sqs"
 	"carefront/libs/erx"
 	"carefront/libs/pharmacy"
-	"carefront/patient_treatment_plan"
+	"carefront/treatment_plan"
 
 	"fmt"
 	"io/ioutil"
@@ -52,7 +52,7 @@ func TestPatientVisitReview(t *testing.T) {
 	}
 
 	// try getting the patient visit review for this patient visit and it should fail
-	patientVisitReviewHandler := &patient_treatment_plan.PatientVisitReviewHandler{DataApi: testData.DataApi}
+	patientVisitReviewHandler := treatment_plan.NewPatientTreatmentPlanHandler(testData.DataApi)
 	ts := httptest.NewServer(patientVisitReviewHandler)
 	defer ts.Close()
 
