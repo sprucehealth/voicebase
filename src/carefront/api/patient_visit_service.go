@@ -279,18 +279,8 @@ func (d *DataService) GetMessageForPatientVisitStatus(patientVisitId int64) (mes
 }
 
 func (d *DataService) ClosePatientVisit(patientVisitId int64, event string) error {
-	tx, err := d.db.Begin()
-	if err != nil {
-		tx.Rollback()
-		return err
-	}
-
-	_, err = tx.Exec(`update patient_visit set status=?, closed_date=now() where id = ?`, event, patientVisitId)
-	if err != nil {
-		tx.Rollback()
-		return err
-	}
-	return tx.Commit()
+	_, err := d.db.Exec(`update patient_visit set status=?, closed_date=now() where id = ?`, event, patientVisitId)
+	return err
 }
 
 func (d *DataService) MarkTreatmentPlanAsSent(treatmentPlanId int64) error {
