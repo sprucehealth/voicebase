@@ -261,7 +261,7 @@ func SetupIntegrationTest(t *testing.T) TestData {
 	}
 
 	dispatch.Default = dispatch.New()
-	notificationManager := notify.NewManager(testData.DataApi, nil, nil, "", nil, metrics.NewRegistry())
+	notificationManager := notify.NewManager(testData.DataApi, nil, nil, "", "", "", "", "", nil, metrics.NewRegistry())
 
 	homelog.InitListeners(testData.DataApi, notificationManager)
 	treatment_plan.InitListeners(testData.DataApi)

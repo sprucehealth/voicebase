@@ -9,6 +9,7 @@ import (
 	"carefront/libs/golog"
 	"carefront/messages"
 	"carefront/notify"
+	"carefront/visit"
 	"errors"
 )
 
@@ -47,6 +48,21 @@ func InitListeners(dataAPI api.DataAPI, notificationManager *notify.Notification
 			ev.VisitId, ev.TreatmentPlanId, api.QUEUE_ITEM_STATUS_ONGOING, ev.Status)
 		if err != nil {
 			golog.Errorf("Unable to update the status of the patient visit in the doctor queue: " + err.Error())
+			return err
+		}
+		return nil
+	})
+
+	dispatch.Default.Subscribe(func(ev *visit.PatientVisitMarkedUnsuitableEvent) error {
+		// mark the visit as complete once the doctor submits a diagnosis to indicate that the
+		// patient was unsuitable for spruce
+		if err := dataAPI.ReplaceItemInDoctorQueue(api.DoctorQueueItem{
+			DoctorId:  ev.DoctorId,
+			ItemId:    ev.PatientVisitId,
+			EventType: api.EVENT_TYPE_PATIENT_VISIT,
+			Status:    api.QUEUE_ITEM_STATUS_TRIAGED,
+		}, api.QUEUE_ITEM_STATUS_ONGOING); err != nil {
+			golog.Errorf("Unable to insert transmission error resolved into doctor queue: %s", err)
 			return err
 		}
 		return nil

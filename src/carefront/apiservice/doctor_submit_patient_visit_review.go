@@ -214,15 +214,20 @@ func (d *DoctorSubmitPatientVisitReviewHandler) submitPatientVisitReview(w http.
 	}
 
 	switch requestData.Status {
-	case "", api.CASE_STATUS_CLOSED, api.CASE_STATUS_TREATED, api.CASE_STATUS_TRIAGED:
+	case "", api.CASE_STATUS_CLOSED, api.CASE_STATUS_TREATED:
 		// update the status of the patient visit
 		status := requestData.Status
 		if status == "" {
 			status = api.CASE_STATUS_TREATED
 		}
-		err = d.DataApi.ClosePatientVisit(requestData.PatientVisitId, treatmentPlanId, status, requestData.Message)
+		err := d.DataApi.ClosePatientVisit(requestData.PatientVisitId, status)
 		if err != nil {
 			WriteDeveloperError(w, http.StatusInternalServerError, "Unable to update the status of the visit to closed: "+err.Error())
+			return
+		}
+
+		if err := d.DataApi.MarkTreatmentPlanAsSent(treatmentPlanId); err != nil {
+			WriteDeveloperError(w, http.StatusInternalServerError, "Unable to update sent time of treatment plan "+err.Error())
 			return
 		}
 

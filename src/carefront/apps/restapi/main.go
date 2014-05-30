@@ -28,8 +28,10 @@ import (
 	"carefront/patient_treatment_plan"
 	"carefront/photos"
 	"carefront/services/auth"
+	"carefront/support"
 	thriftapi "carefront/thrift/api"
 	"carefront/treatment_plan"
+	"carefront/visit"
 	"crypto/tls"
 	"log"
 	"net"
@@ -164,12 +166,14 @@ func main() {
 		twilioCli = twilio.NewClient(conf.Twilio.AccountSid, conf.Twilio.AuthToken, nil)
 	}
 
-	notificationManager := notify.NewManager(dataApi, snsClient, twilioCli, conf.Twilio.FromNumber, conf.NotifiyConfigs, metricsRegistry.Scope("notify"))
+	notificationManager := notify.NewManager(dataApi, snsClient, twilioCli, conf.Twilio.FromNumber, conf.AlertEmail,
+		conf.SMTPAddr, conf.SMTPUsername, conf.SMTPPassword, conf.NotifiyConfigs, metricsRegistry.Scope("notify"))
 
 	homelog.InitListeners(dataApi, notificationManager)
 	doctor_queue.InitListeners(dataApi, notificationManager)
 	treatment_plan.InitListeners(dataApi)
 	notify.InitListeners(dataApi)
+	support.InitListeners(conf.Support.TechnicalSupportEmail, conf.Support.CustomerSupportEmail, notificationManager)
 
 	cloudStorageApi := api.NewCloudStorageService(awsAuth)
 	photoAnswerCloudStorageApi := api.NewCloudStorageService(awsAuth)
@@ -314,7 +318,7 @@ func main() {
 
 	mux.Handle("/v1/doctor/visit/review", patient_file.NewDoctorPatientVisitReviewHandler(dataApi, pharmacy.GooglePlacesPharmacySearchService(0), cloudStorageApi, photoAnswerCloudStorageApi))
 	mux.Handle("/v1/doctor/visit/treatment_plan", doctorTreatmentPlanHandler)
-	mux.Handle("/v1/doctor/visit/diagnosis", apiservice.NewDiagnosePatientHandler(dataApi, authApi, conf.Environment))
+	mux.Handle("/v1/doctor/visit/diagnosis", visit.NewDiagnosePatientHandler(dataApi, authApi, conf.Environment))
 	mux.Handle("/v1/doctor/visit/diagnosis/summary", diagnosisSummaryHandler)
 	mux.Handle("/v1/doctor/visit/treatment/new", newTreatmentHandler)
 	mux.Handle("/v1/doctor/visit/treatment/treatments", treatmentsHandler)
