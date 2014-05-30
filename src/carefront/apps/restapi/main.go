@@ -279,7 +279,7 @@ func main() {
 	mux.Handle("/v1/autocomplete", autocompleteHandler)
 	mux.Handle("/v1/pharmacy_search", pharmacySearchHandler)
 	mux.Handle("/v1/doctor_layout", layout.NewDoctorLayoutHandler(dataApi, api.REVIEW_PURPOSE))
-	mux.Handle("/v1/diagnose_layout", layout.NewDoctorLayoutHandler(dataApi, api.REVIEW_PURPOSE))
+	mux.Handle("/v1/diagnose_layout", layout.NewDoctorLayoutHandler(dataApi, api.DIAGNOSE_PURPOSE))
 	mux.Handle("/v1/client_model", layout.NewPatientLayoutHandler(dataApi))
 	mux.Handle("/v1/credit_card", patientCardsHandler)
 	mux.Handle("/v1/credit_card/default", patientCardsHandler)
