@@ -215,7 +215,7 @@ func (d *DataService) StartNewTreatmentPlanForPatientVisit(patientId, patientVis
 		return 0, err
 	}
 
-	lastId, err := tx.Exec(`insert into treatment_plan (patient_visit_id, doctor_id, status) values (?,?,?)`, patientVisitId, doctorId, STATUS_ACTIVE)
+	lastId, err := tx.Exec(`insert into treatment_plan (patient_visit_id, patient_id, doctor_id, status) values (?,?,?)`, patientVisitId, patientId, doctorId, STATUS_ACTIVE)
 	if err != nil {
 		tx.Rollback()
 		return 0, err
