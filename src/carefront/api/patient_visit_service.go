@@ -212,7 +212,7 @@ func (d *DataService) GetAbridgedTreatmentPlanListForPatient(patientId int64) ([
 
 func (d *DataService) GetActiveTreatmentPlanForPatientVisit(doctorId, patientVisitId int64) (int64, error) {
 	var treatmentPlanId int64
-	err := d.db.QueryRow(`select id from treatment_plan where patient_visit_id = ? and status = ?`, patientVisitId, STATUS_ACTIVE).Scan(&treatmentPlanId)
+	err := d.db.QueryRow(`select id from treatment_plan where patient_visit_id = ? and status in (?,?)`, patientVisitId, STATUS_ACTIVE, STATUS_DRAFT).Scan(&treatmentPlanId)
 	if err == sql.ErrNoRows {
 		return 0, nil
 	}
@@ -227,13 +227,13 @@ func (d *DataService) StartNewTreatmentPlanForPatientVisit(patientId, patientVis
 
 	// when starting a new treatment plan, ensure to delete any old treatment plan
 	// this will probably have to be handled more gracefully when we have versioning of treatment plans
-	_, err = tx.Exec(`delete from treatment_plan where patient_visit_id = ? and status = ?`, patientVisitId, STATUS_ACTIVE)
+	_, err = tx.Exec(`delete from treatment_plan where patient_visit_id = ? and status = ?`, patientVisitId, STATUS_DRAFT)
 	if err != nil {
 		tx.Rollback()
 		return 0, err
 	}
 
-	lastId, err := tx.Exec(`insert into treatment_plan (patient_visit_id, patient_id, doctor_id, status) values (?,?,?,?)`, patientVisitId, patientId, doctorId, STATUS_ACTIVE)
+	lastId, err := tx.Exec(`insert into treatment_plan (patient_visit_id, patient_id, doctor_id, status) values (?,?,?,?)`, patientVisitId, patientId, doctorId, STATUS_DRAFT)
 	if err != nil {
 		tx.Rollback()
 		return 0, err
