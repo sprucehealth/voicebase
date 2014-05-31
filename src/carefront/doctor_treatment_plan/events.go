@@ -1,4 +1,4 @@
-package treatment_plan
+package doctor_treatment_plan
 
 type NewTreatmentPlanStartedEvent struct {
 	DoctorId        int64

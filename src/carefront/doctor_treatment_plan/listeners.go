@@ -1,4 +1,4 @@
-package treatment_plan
+package doctor_treatment_plan
 
 import (
 	"carefront/api"

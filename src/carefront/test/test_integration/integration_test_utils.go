@@ -7,11 +7,11 @@ import (
 	"carefront/common"
 	"carefront/common/config"
 	"carefront/doctor_queue"
+	"carefront/doctor_treatment_plan"
 	"carefront/homelog"
 	"carefront/libs/aws"
 	"carefront/libs/dispatch"
 	"carefront/notify"
-	"carefront/treatment_plan"
 	"database/sql"
 	"errors"
 	"fmt"
@@ -263,7 +263,7 @@ func SetupIntegrationTest(t *testing.T) TestData {
 	notificationManager := notify.NewManager(testData.DataApi, nil, nil, "", "", "", "", "", nil, metrics.NewRegistry())
 
 	homelog.InitListeners(testData.DataApi, notificationManager)
-	treatment_plan.InitListeners(testData.DataApi)
+	doctor_treatment_plan.InitListeners(testData.DataApi)
 	doctor_queue.InitListeners(testData.DataApi, notificationManager)
 	notify.InitListeners(testData.DataApi)
 

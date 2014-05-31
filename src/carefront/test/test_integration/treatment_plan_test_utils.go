@@ -4,9 +4,9 @@ import (
 	"bytes"
 	"carefront/apiservice"
 	"carefront/common"
+	"carefront/doctor_treatment_plan"
 	"carefront/encoding"
 	"carefront/libs/erx"
-	"carefront/treatment_plan"
 	"encoding/json"
 	"io/ioutil"
 	"net/http/httptest"
@@ -15,7 +15,7 @@ import (
 )
 
 func GetRegimenPlanForTreatmentPlan(testData TestData, doctor *common.Doctor, treatmentPlanId int64, t *testing.T) *common.RegimenPlan {
-	doctorTreatmentPlanHandler := treatment_plan.NewDoctorTreatmentPlanHandler(testData.DataApi)
+	doctorTreatmentPlanHandler := doctor_treatment_plan.NewDoctorTreatmentPlanHandler(testData.DataApi)
 	ts := httptest.NewServer(doctorTreatmentPlanHandler)
 	defer ts.Close()
 
@@ -31,7 +31,7 @@ func GetRegimenPlanForTreatmentPlan(testData TestData, doctor *common.Doctor, tr
 
 	CheckSuccessfulStatusCode(resp, "Unable to make successful call to get regimen plan for patient visit: "+string(body), t)
 
-	doctorTreatmentPlanResponse := &treatment_plan.DoctorTreatmentPlanResponse{}
+	doctorTreatmentPlanResponse := &doctor_treatment_plan.DoctorTreatmentPlanResponse{}
 	err = json.Unmarshal(body, doctorTreatmentPlanResponse)
 	if err != nil {
 		t.Fatal("Unable to unmarshal body into json object: " + err.Error())
@@ -72,7 +72,7 @@ func CreateRegimenPlanForPatientVisit(doctorRegimenRequest *common.RegimenPlan, 
 }
 
 func GetAdvicePointsInTreatmentPlan(testData TestData, doctor *common.Doctor, treatmentPlanId int64, t *testing.T) *common.Advice {
-	doctorTreatmentPlanHandler := treatment_plan.NewDoctorTreatmentPlanHandler(testData.DataApi)
+	doctorTreatmentPlanHandler := doctor_treatment_plan.NewDoctorTreatmentPlanHandler(testData.DataApi)
 	ts := httptest.NewServer(doctorTreatmentPlanHandler)
 	defer ts.Close()
 
@@ -88,7 +88,7 @@ func GetAdvicePointsInTreatmentPlan(testData TestData, doctor *common.Doctor, tr
 
 	CheckSuccessfulStatusCode(resp, "Unable to make a successful call to get advice points for patient visit : "+string(body), t)
 
-	doctorTreatmentPlanResponse := &treatment_plan.DoctorTreatmentPlanResponse{}
+	doctorTreatmentPlanResponse := &doctor_treatment_plan.DoctorTreatmentPlanResponse{}
 	err = json.Unmarshal(body, doctorTreatmentPlanResponse)
 	if err != nil {
 		t.Fatal("Unable to unmarshal the response body into the advice repsonse object: " + err.Error())

@@ -10,6 +10,7 @@ import (
 	"carefront/common/config"
 	"carefront/demo"
 	"carefront/doctor_queue"
+	"carefront/doctor_treatment_plan"
 	"carefront/homelog"
 	"carefront/layout"
 	"carefront/libs/aws"
@@ -152,7 +153,7 @@ func main() {
 
 	homelog.InitListeners(dataApi, notificationManager)
 	doctor_queue.InitListeners(dataApi, notificationManager)
-	treatment_plan.InitListeners(dataApi)
+	doctor_treatment_plan.InitListeners(dataApi)
 	notify.InitListeners(dataApi)
 	support.InitListeners(conf.Support.TechnicalSupportEmail, conf.Support.CustomerSupportEmail, notificationManager)
 
@@ -234,7 +235,7 @@ func main() {
 		DataApi: dataApi,
 		ErxApi:  doseSpotService,
 	}
-	doctorFavoriteTreatmentPlansHandler := treatment_plan.NewDoctorFavoriteTreatmentPlansHandler(dataApi)
+	doctorFavoriteTreatmentPlansHandler := doctor_treatment_plan.NewDoctorFavoriteTreatmentPlansHandler(dataApi)
 
 	mux := apiservice.NewAuthServeMux(authAPI, metricsRegistry.Scope("restapi"))
 
@@ -292,10 +293,10 @@ func main() {
 	mux.Handle("/v1/doctor/patient", patient_file.NewDoctorPatientHandler(dataApi, doseSpotService, smartyStreetsService))
 	mux.Handle("/v1/doctor/patient/visits", patient_file.NewPatientVisitsHandler(dataApi))
 	mux.Handle("/v1/doctor/patient/pharmacy", doctorUpdatePatientPharmacyHandler)
+	mux.Handle("/v1/doctor/patient/treatment_plans", doctor_treatment_plan.NewDoctorTreatmentPlanHandler(dataApi))
 	mux.Handle("/v1/doctor/pharmacy", doctorPharmacySearchHandler)
 
 	mux.Handle("/v1/doctor/visit/review", patient_file.NewDoctorPatientVisitReviewHandler(dataApi, pharmacy.GooglePlacesPharmacySearchService(0), cloudStorageApi, photoAnswerCloudStorageApi))
-	mux.Handle("/v1/doctor/visit/treatment_plan", treatment_plan.NewDoctorTreatmentPlanHandler(dataApi))
 	mux.Handle("/v1/doctor/visit/diagnosis", visit.NewDiagnosePatientHandler(dataApi, authAPI, conf.Environment))
 	mux.Handle("/v1/doctor/visit/diagnosis/summary", diagnosisSummaryHandler)
 	mux.Handle("/v1/doctor/visit/treatment/new", newTreatmentHandler)
