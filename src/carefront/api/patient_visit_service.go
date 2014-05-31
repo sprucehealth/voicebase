@@ -191,8 +191,27 @@ func (d *DataService) GetAbridgedTreatmentPlan(treatmentPlanId, doctorId int64) 
 	return &drTreatmentPlan, nil
 }
 
-func (d *DataService) GetAbridgedTreatmentPlanListForPatient(patientId int64) ([]*common.DoctorTreatmentPlan, error) {
-	rows, err := d.db.Query(`select id, patient_visit_id, doctor_id, creation_date from treatment_plan where patient_id = ?`, patientId)
+func (d *DataService) GetAbridgedTreatmentPlanListForPatient(patientId int64, status string) ([]*common.DoctorTreatmentPlan, error) {
+	rows, err := d.db.Query(`select id, patient_visit_id, doctor_id, creation_date from treatment_plan where patient_id = ? AND status = ?`, patientId, status)
+	if err != nil {
+		return nil, err
+	}
+	defer rows.Close()
+
+	drTreatmentPlans := make([]*common.DoctorTreatmentPlan, 0)
+	for rows.Next() {
+		var drTreatmentPlan common.DoctorTreatmentPlan
+		if err := rows.Scan(&drTreatmentPlan.Id, &drTreatmentPlan.PatientVisitId, &drTreatmentPlan.DoctorId, &drTreatmentPlan.CreationDate); err != nil {
+			return nil, err
+		}
+		drTreatmentPlans = append(drTreatmentPlans, &drTreatmentPlan)
+	}
+
+	return drTreatmentPlans, rows.Err()
+}
+
+func (d *DataService) GetAbridgedTreatmentPlanListInDraftForDoctor(doctorId, patientId int64) ([]*common.DoctorTreatmentPlan, error) {
+	rows, err := d.db.Query(`select id, patient_visit_id, doctor_id, creation_date from treatment_plan where doctor_id = ?  and patient_id = ? and status = ?`, doctorId, patientId, STATUS_DRAFT)
 	if err != nil {
 		return nil, err
 	}
