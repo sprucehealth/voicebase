@@ -21,7 +21,7 @@ type treatmentPlansResponseData struct {
 	InactiveTreatmentPlans []*common.DoctorTreatmentPlan `json:"inactive_treatment_plans,omitempty"`
 }
 
-func NewListTreatmentPlansHandler(dataApi api.DataAPI) *listHandler {
+func NewListHandler(dataApi api.DataAPI) *listHandler {
 	return &listHandler{
 		dataApi: dataApi,
 	}
