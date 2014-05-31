@@ -166,11 +166,10 @@ func (d *DataService) CreateNewPatientVisit(patientId, healthConditionId, layout
 	return lastId, err
 }
 
-func (d *DataService) GetAbbreviatedTreatmentPlanForPatientVisit(doctorId, patientVisitId int64) (*common.DoctorTreatmentPlan, error) {
-	drTreatmentPlan := common.DoctorTreatmentPlan{
-		PatientVisitId: encoding.NewObjectId(patientVisitId),
-	}
-	err := d.db.QueryRow(`select id from treatment_plan where patient_visit_id = ? and status =?`, patientVisitId, STATUS_ACTIVE).Scan(&drTreatmentPlan.Id)
+func (d *DataService) GetAbridgedTreatmentPlanForDoctor(treatmentPlanId int64) (*common.DoctorTreatmentPlan, error) {
+	var drTreatmentPlan common.DoctorTreatmentPlan
+	err := d.db.QueryRow(`select id, patient_visit_id, doctor_id, creation_date from treatment_plan where id`, treatmentPlanId).
+		Scan(&drTreatmentPlan.Id, &drTreatmentPlan.PatientVisitId, &drTreatmentPlan.DoctorId, &drTreatmentPlan.CreationDate)
 	if err == sql.ErrNoRows {
 		return nil, NoRowsError
 	} else if err != nil {
@@ -190,6 +189,25 @@ func (d *DataService) GetAbbreviatedTreatmentPlanForPatientVisit(doctorId, patie
 	}
 
 	return &drTreatmentPlan, nil
+}
+
+func (d *DataService) GetAbridgedTreatmentPlanListForPatient(patientId int64) ([]*common.DoctorTreatmentPlan, error) {
+	rows, err := d.db.Query(`select id, patient_visit_id, doctor_id, creation_date from treatment_plan where patient_id = ?`, patientId)
+	if err != nil {
+		return nil, err
+	}
+	defer rows.Close()
+
+	drTreatmentPlans := make([]*common.DoctorTreatmentPlan, 0)
+	for rows.Next() {
+		var drTreatmentPlan common.DoctorTreatmentPlan
+		if err := rows.Scan(&drTreatmentPlan.Id, &drTreatmentPlan.PatientVisitId, &drTreatmentPlan.DoctorId, &drTreatmentPlan.CreationDate); err != nil {
+			return nil, err
+		}
+		drTreatmentPlans = append(drTreatmentPlans, drTreatmentPlan)
+	}
+
+	return drTreatmentPlans, rows.Err()
 }
 
 func (d *DataService) GetActiveTreatmentPlanForPatientVisit(doctorId, patientVisitId int64) (int64, error) {
@@ -215,7 +233,7 @@ func (d *DataService) StartNewTreatmentPlanForPatientVisit(patientId, patientVis
 		return 0, err
 	}
 
-	lastId, err := tx.Exec(`insert into treatment_plan (patient_visit_id, patient_id, doctor_id, status) values (?,?,?)`, patientVisitId, patientId, doctorId, STATUS_ACTIVE)
+	lastId, err := tx.Exec(`insert into treatment_plan (patient_visit_id, patient_id, doctor_id, status) values (?,?,?,?)`, patientVisitId, patientId, doctorId, STATUS_ACTIVE)
 	if err != nil {
 		tx.Rollback()
 		return 0, err
