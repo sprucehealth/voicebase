@@ -362,6 +362,8 @@ func main() {
 		app_worker.StartWorkerToCheckForRefillRequests(dataApi, doseSpotService, metricsRegistry.Scope("check_rx_refill_requests"), conf.Environment)
 	}
 
+	apiservice.IsDev = (conf.Environment == "dev")
+
 	s := &http.Server{
 		Addr:           conf.ListenAddr,
 		Handler:        mux,

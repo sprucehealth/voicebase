@@ -1,9 +1,9 @@
-package analytics
+package idgen
 
 import "testing"
 
 func TestIDGen(t *testing.T) {
-	id, err := newID()
+	id, err := NewID()
 	if err != nil {
 		t.Fatal(err)
 	}
@@ -12,7 +12,7 @@ func TestIDGen(t *testing.T) {
 
 func BenchmarkIDGen(b *testing.B) {
 	for i := 0; i < b.N; i++ {
-		newID()
+		NewID()
 	}
 	b.ReportAllocs()
 }

@@ -188,7 +188,7 @@ func (d *DoctorRefillRequestHandler) resolveRefillRequest(w http.ResponseWriter,
 
 			httpStatusCode, errorResponse := checkIfDrugInTreatmentFromTemplateIsOutOfMarket(requestData.Treatment, doctor, d.ErxApi)
 			if errorResponse != nil {
-				WriteError(w, httpStatusCode, *errorResponse)
+				WriteErrorResponse(w, httpStatusCode, *errorResponse)
 				return
 			}
 

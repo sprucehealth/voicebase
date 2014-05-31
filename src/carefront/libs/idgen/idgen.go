@@ -1,4 +1,4 @@
-package analytics
+package idgen
 
 import (
 	"errors"
@@ -73,7 +73,7 @@ func now() int64 {
 // is used for the time to give more headroom. The IDs are locally orderable
 // and globally K-orderable in time (unordered within a millisecond but strong
 // ordering beyond a millisecond)
-func newID() (int64, error) {
+func NewID() (int64, error) {
 	mu.Lock()
 
 	t := now()

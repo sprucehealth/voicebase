@@ -171,7 +171,7 @@ func WriteJSONToHTTPResponseWriter(w http.ResponseWriter, httpStatusCode int, v 
 	}
 }
 
-func WriteError(w http.ResponseWriter, httpStatusCode int, errorResponse ErrorResponse) {
+func WriteErrorResponse(w http.ResponseWriter, httpStatusCode int, errorResponse ErrorResponse) {
 	golog.Logf(2, golog.ERR, errorResponse.DeveloperError)
 	WriteJSONToHTTPResponseWriter(w, httpStatusCode, &errorResponse)
 }

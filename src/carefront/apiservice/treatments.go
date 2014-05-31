@@ -97,7 +97,7 @@ func (t *TreatmentsHandler) addTreatment(w http.ResponseWriter, r *http.Request)
 
 		httpStatusCode, errorResponse := checkIfDrugInTreatmentFromTemplateIsOutOfMarket(treatment, doctor, t.ErxApi)
 		if errorResponse != nil {
-			WriteError(w, httpStatusCode, *errorResponse)
+			WriteErrorResponse(w, httpStatusCode, *errorResponse)
 			return
 		}
 

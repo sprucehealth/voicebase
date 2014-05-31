@@ -2,6 +2,7 @@ package analytics
 
 import (
 	"carefront/libs/golog"
+	"carefront/libs/idgen"
 	"encoding/json"
 	"fmt"
 	"os"
@@ -151,7 +152,7 @@ func (l *fileLogger) fileForEvent(ev Event) (*logFile, error) {
 
 	// Create a new file
 
-	id, err := newID()
+	id, err := idgen.NewID()
 	if err != nil {
 		return nil, err
 	}
