@@ -233,7 +233,7 @@ func (d *DataService) StartNewTreatmentPlanForPatientVisit(patientId, patientVis
 		return 0, err
 	}
 
-	lastId, err := tx.Exec(`insert into treatment_plan (patient_visit_id, patient_id, doctor_id, status) values (?,?,?,?)`, patientVisitId, patientId, doctorId, STATUS_ACTIVE)
+	lastId, err := tx.Exec(`insert into treatment_plan (patient_visit_id, patient_id, doctor_id, status) values (?,?,?,?)`, patientVisitId, patientId, doctorId, STATUS_DRAFT)
 	if err != nil {
 		tx.Rollback()
 		return 0, err
@@ -302,7 +302,7 @@ func (d *DataService) ClosePatientVisit(patientVisitId int64, event string) erro
 }
 
 func (d *DataService) MarkTreatmentPlanAsSent(treatmentPlanId int64) error {
-	_, err := d.db.Exec(`update treatment_plan set sent_date=now() where id = ?`, treatmentPlanId)
+	_, err := d.db.Exec(`update treatment_plan set sent_date=now(), status=? where id = ?`, STATUS_ACTIVE, treatmentPlanId)
 	return err
 }
 
