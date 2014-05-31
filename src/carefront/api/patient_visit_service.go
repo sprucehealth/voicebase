@@ -166,9 +166,9 @@ func (d *DataService) CreateNewPatientVisit(patientId, healthConditionId, layout
 	return lastId, err
 }
 
-func (d *DataService) GetAbridgedTreatmentPlanForDoctor(treatmentPlanId int64) (*common.DoctorTreatmentPlan, error) {
+func (d *DataService) GetAbridgedTreatmentPlan(treatmentPlanId, doctorId int64) (*common.DoctorTreatmentPlan, error) {
 	var drTreatmentPlan common.DoctorTreatmentPlan
-	err := d.db.QueryRow(`select id, patient_visit_id, doctor_id, creation_date from treatment_plan where id`, treatmentPlanId).
+	err := d.db.QueryRow(`select id, patient_visit_id, doctor_id, creation_date from treatment_plan where id = ?`, treatmentPlanId).
 		Scan(&drTreatmentPlan.Id, &drTreatmentPlan.PatientVisitId, &drTreatmentPlan.DoctorId, &drTreatmentPlan.CreationDate)
 	if err == sql.ErrNoRows {
 		return nil, NoRowsError
@@ -176,10 +176,10 @@ func (d *DataService) GetAbridgedTreatmentPlanForDoctor(treatmentPlanId int64) (
 		return nil, err
 	}
 
-	// return the favorite treatment plan info as well if it exists
+	// return the favorite treatment plan info (only if owned by the doctor) as well if it exists
 	err = d.db.QueryRow(`select dr_favorite_treatment_plan_id, name from treatment_plan_favorite_mapping 
 							inner join dr_favorite_treatment_plan on dr_favorite_treatment_plan.id = dr_favorite_treatment_plan_id
-								where treatment_plan_id = ?`, drTreatmentPlan.Id.Int64()).Scan(
+								where treatment_plan_id = ? and doctor_id = ?`, drTreatmentPlan.Id.Int64(), doctorId).Scan(
 		&drTreatmentPlan.DoctorFavoriteTreatmentPlanId,
 		&drTreatmentPlan.DoctorFavoriteTreatmentPlanName)
 	if err == sql.ErrNoRows {
@@ -204,7 +204,7 @@ func (d *DataService) GetAbridgedTreatmentPlanListForPatient(patientId int64) ([
 		if err := rows.Scan(&drTreatmentPlan.Id, &drTreatmentPlan.PatientVisitId, &drTreatmentPlan.DoctorId, &drTreatmentPlan.CreationDate); err != nil {
 			return nil, err
 		}
-		drTreatmentPlans = append(drTreatmentPlans, drTreatmentPlan)
+		drTreatmentPlans = append(drTreatmentPlans, &drTreatmentPlan)
 	}
 
 	return drTreatmentPlans, rows.Err()
@@ -699,7 +699,7 @@ func (d *DataService) GetTreatmentsForPatient(patientId int64) ([]*common.Treatm
 				left outer join drug_name on drug_name_id = drug_name.id
 				left outer join drug_route on drug_route_id = drug_route.id
 				left outer join drug_form on drug_form_id = drug_form.id
-				where patient_id = ? and treatment.status=? and localized_text.language_id = ?`, patientId, STATUS_CREATED, EN_LANGUAGE_ID)
+				where patient_visit.patient_id = ? and treatment.status=? and localized_text.language_id = ?`, patientId, STATUS_CREATED, EN_LANGUAGE_ID)
 
 	if err != nil {
 		return nil, err

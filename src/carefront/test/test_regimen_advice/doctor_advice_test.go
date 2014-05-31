@@ -19,10 +19,10 @@ func TestAdvicePointsForPatientVisit(t *testing.T) {
 	testData := test_integration.SetupIntegrationTest(t)
 	defer test_integration.TearDownIntegrationTest(t, testData)
 
-	patientVisitResponse, doctor := setupAdviceCreationTest(t, testData)
+	patientVisitResponse, treatmentPlan, doctor := setupAdviceCreationTest(t, testData)
 
 	// attempt to get the advice points for this patient visit
-	doctorAdviceResponse := test_integration.GetAdvicePointsInPatientVisit(testData, doctor, patientVisitResponse.PatientVisitId, t)
+	doctorAdviceResponse := test_integration.GetAdvicePointsInTreatmentPlan(testData, doctor, treatmentPlan.Id.Int64(), t)
 
 	if len(doctorAdviceResponse.AllAdvicePoints) > 0 {
 		t.Fatal("Expected there to be no advice points for the doctor ")
@@ -113,10 +113,10 @@ func TestAdvicePointsForPatientVisit(t *testing.T) {
 	}
 
 	// lets start a new patient visit and ensure that we still get back the advice points as added
-	patientVisitResponse2, _ := test_integration.SignupAndSubmitPatientVisitForRandomPatient(t, testData, doctor)
+	_, treatmentPlan2 := test_integration.SignupAndSubmitPatientVisitForRandomPatient(t, testData, doctor)
 
 	// get the advice points for this patient visit
-	doctorAdviceResponse2 := test_integration.GetAdvicePointsInPatientVisit(testData, doctor, patientVisitResponse2.PatientVisitId, t)
+	doctorAdviceResponse2 := test_integration.GetAdvicePointsInTreatmentPlan(testData, doctor, treatmentPlan2.Id.Int64(), t)
 
 	// there should be no selected advice points, but there should be advice points in existence
 	if len(doctorAdviceResponse2.SelectedAdvicePoints) > 0 {
@@ -145,7 +145,7 @@ func TestAdvicePointsForPatientVisit_AddAdviceOnlyToVisit(t *testing.T) {
 	testData := test_integration.SetupIntegrationTest(t)
 	defer test_integration.TearDownIntegrationTest(t, testData)
 
-	patientVisitResponse, doctor := setupAdviceCreationTest(t, testData)
+	patientVisitResponse, _, doctor := setupAdviceCreationTest(t, testData)
 
 	// lets go ahead and add a couple of advice points
 	advicePoint1 := &common.DoctorInstructionItem{Text: "Advice point 1", State: common.STATE_ADDED}
@@ -178,7 +178,7 @@ func TestAdvicePointsForPatientVisit_TrackingSourceId(t *testing.T) {
 	testData := test_integration.SetupIntegrationTest(t)
 	defer test_integration.TearDownIntegrationTest(t, testData)
 
-	patientVisitResponse, doctor := setupAdviceCreationTest(t, testData)
+	patientVisitResponse, _, doctor := setupAdviceCreationTest(t, testData)
 
 	// lets go ahead and add a couple of advice points
 	advicePoint1 := &common.DoctorInstructionItem{Text: "Advice point 1", State: common.STATE_ADDED}
@@ -255,7 +255,7 @@ func TestAdvicePointsForPatientVisit_AddingMultipleItemsWithSameText(t *testing.
 	testData := test_integration.SetupIntegrationTest(t)
 	defer test_integration.TearDownIntegrationTest(t, testData)
 
-	patientVisitResponse, doctor := setupAdviceCreationTest(t, testData)
+	patientVisitResponse, _, doctor := setupAdviceCreationTest(t, testData)
 
 	// lets go ahead and create a request for this patient visit
 	doctorAdviceRequest := &common.Advice{}
@@ -282,7 +282,7 @@ func TestAdvicePointsForPatientVisit_UpdatingMultipleItems(t *testing.T) {
 	testData := test_integration.SetupIntegrationTest(t)
 	defer test_integration.TearDownIntegrationTest(t, testData)
 
-	patientVisitResponse, doctor := setupAdviceCreationTest(t, testData)
+	patientVisitResponse, _, doctor := setupAdviceCreationTest(t, testData)
 
 	// lets go ahead and create a request for this patient visit
 	doctorAdviceRequest := &common.Advice{}
@@ -319,7 +319,7 @@ func TestAdvicePointsForPatientVisit_SelectAdviceFromDeletedAdvice(t *testing.T)
 	testData := test_integration.SetupIntegrationTest(t)
 	defer test_integration.TearDownIntegrationTest(t, testData)
 
-	patientVisitResponse, doctor := setupAdviceCreationTest(t, testData)
+	patientVisitResponse, treatmentPlan, doctor := setupAdviceCreationTest(t, testData)
 
 	// lets go ahead and create a request for this patient visit
 	doctorAdviceRequest := &common.Advice{}
@@ -342,8 +342,8 @@ func TestAdvicePointsForPatientVisit_SelectAdviceFromDeletedAdvice(t *testing.T)
 
 	// lets go ahead and delete an advice point in the context of another patient's visit
 
-	patientVisitResponse2, _ := test_integration.SignupAndSubmitPatientVisitForRandomPatient(t, testData, doctor)
-	doctorAdviceResponse2 := test_integration.GetAdvicePointsInPatientVisit(testData, doctor, patientVisitResponse2.PatientVisitId, t)
+	_, treatmentPlan2 := test_integration.SignupAndSubmitPatientVisitForRandomPatient(t, testData, doctor)
+	doctorAdviceResponse2 := test_integration.GetAdvicePointsInTreatmentPlan(testData, doctor, treatmentPlan2.Id.Int64(), t)
 
 	doctorAdviceRequest = doctorAdviceResponse2
 	doctorAdviceRequest.AllAdvicePoints = doctorAdviceRequest.AllAdvicePoints[:4]
@@ -351,7 +351,7 @@ func TestAdvicePointsForPatientVisit_SelectAdviceFromDeletedAdvice(t *testing.T)
 	test_integration.ValidateAdviceRequestAgainstResponse(doctorAdviceRequest, doctorAdviceResponse, t)
 
 	// now, lets open up the previous patient's adviceList
-	doctorAdviceResponse = test_integration.GetAdvicePointsInPatientVisit(testData, doctor, patientVisitResponse.PatientVisitId, t)
+	doctorAdviceResponse = test_integration.GetAdvicePointsInTreatmentPlan(testData, doctor, treatmentPlan.Id.Int64(), t)
 
 	// this should have an item in the selected advice list that does not exist in the current active list
 	// Lets ensure that is true
@@ -400,7 +400,7 @@ func TestAdvicePointsForPatientVisit_ErrorDifferentTextForLinkedItems(t *testing
 	testData := test_integration.SetupIntegrationTest(t)
 	defer test_integration.TearDownIntegrationTest(t, testData)
 
-	patientVisitResponse, doctor := setupAdviceCreationTest(t, testData)
+	patientVisitResponse, _, doctor := setupAdviceCreationTest(t, testData)
 
 	// lets go ahead and create a request for this patient visit
 	doctorAdviceRequest := &common.Advice{}
@@ -450,7 +450,7 @@ func TestAdvicePointsForPatientVisit_ErrorDifferentTextForLinkedItems(t *testing
 
 }
 
-func setupAdviceCreationTest(t *testing.T, testData test_integration.TestData) (*apiservice.PatientVisitResponse, *common.Doctor) {
+func setupAdviceCreationTest(t *testing.T, testData test_integration.TestData) (*apiservice.PatientVisitResponse, *common.DoctorTreatmentPlan, *common.Doctor) {
 
 	// get the current primary doctor
 	doctorId := test_integration.GetDoctorIdOfCurrentPrimaryDoctor(testData, t)
@@ -461,7 +461,7 @@ func setupAdviceCreationTest(t *testing.T, testData test_integration.TestData) (
 	}
 
 	// get patient to start a visit
-	patientVisitResponse, _ := test_integration.SignupAndSubmitPatientVisitForRandomPatient(t, testData, doctor)
+	patientVisitResponse, treatmentPlan := test_integration.SignupAndSubmitPatientVisitForRandomPatient(t, testData, doctor)
 
-	return patientVisitResponse, doctor
+	return patientVisitResponse, treatmentPlan, doctor
 }

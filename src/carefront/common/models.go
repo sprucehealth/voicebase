@@ -185,7 +185,7 @@ func (f *FavoriteTreatmentPlan) EqualsDoctorTreatmentPlan(treatmentPlan *DoctorT
 
 type DoctorTreatmentPlan struct {
 	Id                              encoding.ObjectId `json:"id,omitempty"`
-	DoctorId                        encoding.ObjectId `json:"id,omitempty"`
+	DoctorId                        encoding.ObjectId `json:"doctor_id,omitempty"`
 	CreationDate                    time.Time         `json:"creation_date"`
 	PatientVisitId                  encoding.ObjectId `json:"patient_visit_id,omitempty"`
 	DoctorFavoriteTreatmentPlanId   encoding.ObjectId `json:"dr_favorite_treatment_plan_id"`

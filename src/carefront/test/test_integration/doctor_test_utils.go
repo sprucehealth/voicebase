@@ -102,17 +102,29 @@ func SubmitPatientVisitDiagnosis(PatientVisitId int64, doctor *common.Doctor, te
 	ts := httptest.NewServer(diagnosePatientHandler)
 	defer ts.Close()
 
+	answerInfo, err := testData.DataApi.GetAnswerInfoForTags([]string{"a_doctor_acne_vulgaris"}, api.EN_LANGUAGE_ID)
+	if err != nil {
+		t.Fatal(err.Error())
+	}
 	answerToQuestionItem := &apiservice.AnswerToQuestionItem{}
 	answerToQuestionItem.QuestionId = diagnosisQuestionId
-	answerToQuestionItem.AnswerIntakes = []*apiservice.AnswerItem{&apiservice.AnswerItem{PotentialAnswerId: 102}}
+	answerToQuestionItem.AnswerIntakes = []*apiservice.AnswerItem{&apiservice.AnswerItem{PotentialAnswerId: answerInfo[0].PotentialAnswerId}}
 
+	answerInfo, err = testData.DataApi.GetAnswerInfoForTags([]string{"a_doctor_acne_severity_severity"}, api.EN_LANGUAGE_ID)
+	if err != nil {
+		t.Fatal(err.Error())
+	}
 	answerToQuestionItem2 := &apiservice.AnswerToQuestionItem{}
 	answerToQuestionItem2.QuestionId = severityQuestionId
-	answerToQuestionItem2.AnswerIntakes = []*apiservice.AnswerItem{&apiservice.AnswerItem{PotentialAnswerId: 107}}
+	answerToQuestionItem2.AnswerIntakes = []*apiservice.AnswerItem{&apiservice.AnswerItem{PotentialAnswerId: answerInfo[0].PotentialAnswerId}}
 
+	answerInfo, err = testData.DataApi.GetAnswerInfoForTags([]string{"a_acne_inflammatory"}, api.EN_LANGUAGE_ID)
+	if err != nil {
+		t.Fatal(err.Error())
+	}
 	answerToQuestionItem3 := &apiservice.AnswerToQuestionItem{}
 	answerToQuestionItem3.QuestionId = acneTypeQuestionId
-	answerToQuestionItem3.AnswerIntakes = []*apiservice.AnswerItem{&apiservice.AnswerItem{PotentialAnswerId: 109}}
+	answerToQuestionItem3.AnswerIntakes = []*apiservice.AnswerItem{&apiservice.AnswerItem{PotentialAnswerId: answerInfo[0].PotentialAnswerId}}
 
 	answerIntakeRequestBody.Questions = []*apiservice.AnswerToQuestionItem{answerToQuestionItem, answerToQuestionItem2, answerToQuestionItem3}
 

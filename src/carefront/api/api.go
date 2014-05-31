@@ -112,7 +112,7 @@ type PatientVisitAPI interface {
 	GetPatientVisitFromId(patientVisitId int64) (patientVisit *common.PatientVisit, err error)
 	CreateNewPatientVisit(patientId, healthConditionId, layoutVersionId int64) (int64, error)
 	StartNewTreatmentPlanForPatientVisit(patientId, patientVisitId, doctorId, favoriteTreatmentPlanId int64) (int64, error)
-	GetAbridgedTreatmentPlan(treatmentPlanId int64) (*common.DoctorTreatmentPlan, error)
+	GetAbridgedTreatmentPlan(treatmentPlanId, doctorId int64) (*common.DoctorTreatmentPlan, error)
 	GetAbridgedTreatmentPlanListForPatient(patientId int64) ([]*common.DoctorTreatmentPlan, error)
 	GetActiveTreatmentPlanForPatientVisit(doctorId, patientVisitId int64) (int64, error)
 	UpdatePatientVisitStatus(patientVisitId int64, message, event string) error

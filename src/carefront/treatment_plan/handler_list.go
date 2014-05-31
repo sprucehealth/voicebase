@@ -1,7 +1,8 @@
-package patient_file
+package treatment_plan
 
 import (
 	"carefront/api"
+	"carefront/apiservice"
 	"carefront/common"
 	"net/http"
 )
@@ -21,15 +22,15 @@ type treatmentPlansResponseData struct {
 }
 
 func NewListTreatmentPlansHandler(dataApi api.DataAPI) *listHandler {
-	return *listHandler{
+	return &listHandler{
 		dataApi: dataApi,
 	}
 }
 
 func (l *listHandler) ServeHTTP(w http.ResponseWriter, r *http.Request) {
 	requestData := &listHandlerRequestData{}
-	if err := DecodeRequestData(requestData, r); err != nil {
-
+	if err := apiservice.DecodeRequestData(requestData, r); err != nil {
+		apiservice.WriteDeveloperError(w, http.StatusInternalServerError, err.Error())
 	}
 
 }

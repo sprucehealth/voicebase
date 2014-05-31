@@ -154,7 +154,7 @@ func TestFavoriteTreatmentPlan_PickingAFavoriteTreatmentPlan(t *testing.T) {
 		t.Fatalf("Unable to get doctor from id: %s", err)
 	}
 
-	patientVisitResponse, _ := SignupAndSubmitPatientVisitForRandomPatient(t, testData, doctor)
+	patientVisitResponse, treatmentPlan := SignupAndSubmitPatientVisitForRandomPatient(t, testData, doctor)
 
 	// create a favorite treatment plan
 	favoriteTreamentPlan := createFavoriteTreatmentPlan(patientVisitResponse.PatientVisitId, testData, doctor, t)
@@ -165,7 +165,7 @@ func TestFavoriteTreatmentPlan_PickingAFavoriteTreatmentPlan(t *testing.T) {
 	defer ts.Close()
 
 	responseData := &treatment_plan.DoctorTreatmentPlanResponse{}
-	if resp, err := AuthGet(ts.URL+"?patient_visit_id="+strconv.FormatInt(patientVisitResponse.PatientVisitId, 10), doctor.AccountId.Int64()); err != nil {
+	if resp, err := AuthGet(ts.URL+"?treatment_plan_id="+strconv.FormatInt(treatmentPlan.Id.Int64(), 10), doctor.AccountId.Int64()); err != nil {
 		t.Fatalf("Unable to make call to get treatment plan for patient visit")
 	} else if resp.StatusCode != http.StatusOK {
 		t.Fatalf("Expected %d response for getting treatment plan instead got %d", http.StatusOK, resp.StatusCode)
@@ -235,7 +235,7 @@ func TestFavoriteTreatmentPlan_CommittedStateForTreatmentPlan(t *testing.T) {
 
 	// pick this favorite treatment plan for the visit
 	responseData := pickATreatmentPlanForPatientVisit(patientVisitResponse.PatientVisitId, doctor, favoriteTreamentPlan, testData, t)
-
+	treatmentPlanId := responseData.TreatmentPlan.Id.Int64()
 	// lets attempt to submit regimen section for patient visit
 	regimenPlanRequest := &common.RegimenPlan{
 		TreatmentPlanId: responseData.TreatmentPlan.Id,
@@ -252,7 +252,7 @@ func TestFavoriteTreatmentPlan_CommittedStateForTreatmentPlan(t *testing.T) {
 	// the regimen plan should indicate that it was committed while the rest of the sections
 	// should continue to be in the UNCOMMITTED state
 	responseData = &treatment_plan.DoctorTreatmentPlanResponse{}
-	if resp, err := AuthGet(ts.URL+"?patient_visit_id="+strconv.FormatInt(patientVisitResponse.PatientVisitId, 10), doctor.AccountId.Int64()); err != nil {
+	if resp, err := AuthGet(ts.URL+"?treatment_plan_id="+strconv.FormatInt(treatmentPlanId, 10), doctor.AccountId.Int64()); err != nil {
 		t.Fatalf("Unable to make call to get treatment plan for patient visit")
 	} else if resp.StatusCode != http.StatusOK {
 		t.Fatalf("Expected %d response for getting treatment plan instead got %d", http.StatusOK, resp.StatusCode)
@@ -277,7 +277,7 @@ func TestFavoriteTreatmentPlan_CommittedStateForTreatmentPlan(t *testing.T) {
 	// now if we were to get the treatment plan again it should indicate that the
 	// advice and regimen sections are committed but not the treatment section
 	responseData = &treatment_plan.DoctorTreatmentPlanResponse{}
-	if resp, err := AuthGet(ts.URL+"?patient_visit_id="+strconv.FormatInt(patientVisitResponse.PatientVisitId, 10), doctor.AccountId.Int64()); err != nil {
+	if resp, err := AuthGet(ts.URL+"?treatment_plan_id="+strconv.FormatInt(treatmentPlanId, 10), doctor.AccountId.Int64()); err != nil {
 		t.Fatalf("Unable to make call to get treatment plan for patient visit")
 	} else if resp.StatusCode != http.StatusOK {
 		t.Fatalf("Expected %d response for getting treatment plan instead got %d", http.StatusOK, resp.StatusCode)
@@ -297,7 +297,7 @@ func TestFavoriteTreatmentPlan_CommittedStateForTreatmentPlan(t *testing.T) {
 
 	// now the treatment section should also indicate that it has been committed
 	responseData = &treatment_plan.DoctorTreatmentPlanResponse{}
-	if resp, err := AuthGet(ts.URL+"?patient_visit_id="+strconv.FormatInt(patientVisitResponse.PatientVisitId, 10), doctor.AccountId.Int64()); err != nil {
+	if resp, err := AuthGet(ts.URL+"?treatment_plan_id="+strconv.FormatInt(treatmentPlanId, 10), doctor.AccountId.Int64()); err != nil {
 		t.Fatalf("Unable to make call to get treatment plan for patient visit")
 	} else if resp.StatusCode != http.StatusOK {
 		t.Fatalf("Expected %d response for getting treatment plan instead got %d", http.StatusOK, resp.StatusCode)
@@ -347,7 +347,7 @@ func TestFavoriteTreatmentPlan_BreakingMappingOnModify(t *testing.T) {
 	// the regimen plan should indicate that it was committed while the rest of the sections
 	// should continue to be in the UNCOMMITTED state
 	params := url.Values{}
-	params.Set("patient_visit_id", strconv.FormatInt(patientVisitResponse.PatientVisitId, 10))
+	params.Set("treatment_plan_id", strconv.FormatInt(responseData.TreatmentPlan.Id.Int64(), 10))
 	params.Set("abbreviated", "true")
 	responseData = &treatment_plan.DoctorTreatmentPlanResponse{}
 	if resp, err := AuthGet(ts.URL+"?"+params.Encode(), doctor.AccountId.Int64()); err != nil {
@@ -376,6 +376,7 @@ func TestFavoriteTreatmentPlan_BreakingMappingOnModify(t *testing.T) {
 	addAndGetTreatmentsForPatientVisit(testData, favoriteTreamentPlan.TreatmentList.Treatments, doctor.AccountId.Int64(), patientVisitResponse.PatientVisitId, t)
 
 	// linkage should now be broken
+	params.Set("treatment_plan_id", strconv.FormatInt(responseData.TreatmentPlan.Id.Int64(), 10))
 	if resp, err := AuthGet(ts.URL+"?"+params.Encode(), doctor.AccountId.Int64()); err != nil {
 		t.Fatalf("Unable to make call to get treatment plan for patient visit")
 	} else if resp.StatusCode != http.StatusOK {
@@ -403,6 +404,7 @@ func TestFavoriteTreatmentPlan_BreakingMappingOnModify(t *testing.T) {
 	UpdateAdvicePointsForPatientVisit(doctorAdviceRequest, testData, doctor, t)
 
 	// linkage should now be broken
+	params.Set("treatment_plan_id", strconv.FormatInt(responseData.TreatmentPlan.Id.Int64(), 10))
 	if resp, err := AuthGet(ts.URL+"?"+params.Encode(), doctor.AccountId.Int64()); err != nil {
 		t.Fatalf("Unable to make call to get treatment plan for patient visit")
 	} else if resp.StatusCode != http.StatusOK {
@@ -565,7 +567,7 @@ func TestFavoriteTreatmentPlan_InContextOfTreatmentPlan(t *testing.T) {
 		t.Fatalf("Expected 2 items in the advice list")
 	}
 
-	abbreviatedTreatmentPlan, err := testData.DataApi.GetAbbreviatedTreatmentPlanForPatientVisit(doctorId, patientVisitResponse.PatientVisitId)
+	abbreviatedTreatmentPlan, err := testData.DataApi.GetAbridgedTreatmentPlan(treatmentPlan.Id.Int64(), doctorId)
 	if err != nil {
 		t.Fatalf("Unable to get abbreviated favorite treatment plan: %s", err)
 	} else if abbreviatedTreatmentPlan.DoctorFavoriteTreatmentPlanId.Int64() != responseData.FavoriteTreatmentPlan.Id.Int64() {
@@ -691,7 +693,7 @@ func TestFavoriteTreatmentPlan_InContextOfTreatmentPlan_EmptyRegimenAndAdvice(t 
 		t.Fatalf("Expected to get back the treatment plan added but got none")
 	}
 
-	abbreviatedTreatmentPlan, err := testData.DataApi.GetAbbreviatedTreatmentPlanForPatientVisit(doctorId, patientVisitResponse.PatientVisitId)
+	abbreviatedTreatmentPlan, err := testData.DataApi.GetAbridgedTreatmentPlan(treatmentPlan.Id.Int64(), doctorId)
 	if err != nil {
 		t.Fatalf("Unable to get abbreviated favorite treatment plan: %s", err)
 	} else if abbreviatedTreatmentPlan.DoctorFavoriteTreatmentPlanId.Int64() != responseData.FavoriteTreatmentPlan.Id.Int64() {
@@ -816,7 +818,7 @@ func TestFavoriteTreatmentPlan_InContextOfTreatmentPlan_TwoDontMatch(t *testing.
 		t.Fatalf("Expected 400 response for adding a favorite treatment plan but got %d instead", resp.StatusCode)
 	}
 
-	abbreviatedTreatmentPlan, err := testData.DataApi.GetAbbreviatedTreatmentPlanForPatientVisit(doctorId, patientVisitResponse.PatientVisitId)
+	abbreviatedTreatmentPlan, err := testData.DataApi.GetAbridgedTreatmentPlan(treatmentPlan.Id.Int64(), doctorId)
 	if err != nil {
 		t.Fatalf("Unable to get abbreviated favorite treatment plan: %s", err)
 	} else if abbreviatedTreatmentPlan.DoctorFavoriteTreatmentPlanId.Int64() != 0 {

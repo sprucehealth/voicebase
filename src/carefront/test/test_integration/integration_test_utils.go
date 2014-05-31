@@ -180,6 +180,7 @@ func SignupAndSubmitPatientVisitForRandomPatient(t *testing.T, testData TestData
 	// get the patient to start reviewing the case
 	StartReviewingPatientVisit(patientVisitResponse.PatientVisitId, doctor, testData, t)
 	doctorPickTreatmentPlanResponse := pickATreatmentPlanForPatientVisit(patientVisitResponse.PatientVisitId, doctor, nil, testData, t)
+
 	return patientVisitResponse, doctorPickTreatmentPlanResponse.TreatmentPlan
 }
 

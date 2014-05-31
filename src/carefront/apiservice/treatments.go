@@ -116,9 +116,9 @@ func (t *TreatmentsHandler) addTreatment(w http.ResponseWriter, r *http.Request)
 	}
 
 	dispatch.Default.PublishAsync(&TreatmentsAddedEvent{
-		PatientVisitId: patientVisitReviewData.PatientVisit.PatientVisitId.Int64(),
-		DoctorId:       doctor.DoctorId.Int64(),
-		Treatments:     treatments,
+		TreatmentPlanId: treatmentPlanId,
+		DoctorId:        doctor.DoctorId.Int64(),
+		Treatments:      treatments,
 	})
 
 	treatmentList := &common.TreatmentList{

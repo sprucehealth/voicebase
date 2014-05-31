@@ -6,12 +6,8 @@ import (
 	"carefront/common"
 	"carefront/encoding"
 	"carefront/libs/dispatch"
-	"errors"
 	"fmt"
 	"net/http"
-	"strconv"
-
-	"github.com/gorilla/schema"
 )
 
 type doctorTreatmentPlanHandler struct {
@@ -25,9 +21,10 @@ func NewDoctorTreatmentPlanHandler(dataApi api.DataAPI) *doctorTreatmentPlanHand
 }
 
 type DoctorTreatmentPlanRequestData struct {
-	DoctorFavoriteTreatmentPlanId string `schema:"dr_favorite_treatment_plan_id"`
-	PatientVisitId                string `schema:"patient_visit_id,required"`
-	Abbreviated                   bool   `schema:"abbreviated"`
+	DoctorFavoriteTreatmentPlanId int64 `schema:"dr_favorite_treatment_plan_id"`
+	TreatmentPlanId               int64 `schema:"treatment_plan_id"`
+	PatientVisitId                int64 `schema:"patient_visit_id"`
+	Abbreviated                   bool  `schema:"abbreviated"`
 }
 
 type DoctorTreatmentPlanResponse struct {
@@ -37,7 +34,7 @@ type DoctorTreatmentPlanResponse struct {
 func (d *doctorTreatmentPlanHandler) ServeHTTP(w http.ResponseWriter, r *http.Request) {
 	switch r.Method {
 	case apiservice.HTTP_GET:
-		d.getTreatmentPlanForPatientVisit(w, r)
+		d.getTreatmentPlan(w, r)
 	case apiservice.HTTP_PUT:
 		d.pickATreatmentPlan(w, r)
 	default:
@@ -45,42 +42,27 @@ func (d *doctorTreatmentPlanHandler) ServeHTTP(w http.ResponseWriter, r *http.Re
 	}
 }
 
-func getPatientVisitIdFromRequest(r *http.Request) (int64, *DoctorTreatmentPlanRequestData, error) {
-	if err := r.ParseForm(); err != nil {
-		return 0, nil, errors.New("Unable to parse input parameters: " + err.Error())
-	}
-
+func (d *doctorTreatmentPlanHandler) getTreatmentPlan(w http.ResponseWriter, r *http.Request) {
 	requestData := &DoctorTreatmentPlanRequestData{}
-	if err := schema.NewDecoder().Decode(requestData, r.Form); err != nil {
-		return 0, nil, errors.New("Unable to parse input parameters: " + err.Error())
-
-	}
-
-	patientVisitId, err := strconv.ParseInt(requestData.PatientVisitId, 10, 64)
-	if err != nil {
-		return 0, nil, errors.New("Unable to parse patient visit id: " + err.Error())
-	}
-
-	return patientVisitId, requestData, nil
-
-}
-
-func (d *doctorTreatmentPlanHandler) getTreatmentPlanForPatientVisit(w http.ResponseWriter, r *http.Request) {
-	patientVisitId, requestData, err := getPatientVisitIdFromRequest(r)
-	if err != nil {
+	if err := apiservice.DecodeRequestData(requestData, r); err != nil {
 		apiservice.WriteDeveloperError(w, http.StatusBadRequest, err.Error())
 		return
 	}
 
-	patientVisitReviewData, statusCode, err := apiservice.ValidateDoctorAccessToPatientVisitAndGetRelevantData(patientVisitId, apiservice.GetContext(r).AccountId, d.dataApi)
-	if err != nil {
-		apiservice.WriteDeveloperError(w, statusCode, err.Error())
+	if requestData.TreatmentPlanId == 0 {
+		apiservice.WriteDeveloperError(w, http.StatusBadRequest, "treatment_plan_id not specified")
 		return
 	}
 
-	drTreatmentPlan, err := d.dataApi.GetAbbreviatedTreatmentPlanForPatientVisit(patientVisitReviewData.DoctorId, patientVisitId)
+	doctorId, err := d.dataApi.GetDoctorIdFromAccountId(apiservice.GetContext(r).AccountId)
+	if err != nil {
+		apiservice.WriteDeveloperError(w, http.StatusInternalServerError, err.Error())
+		return
+	}
+
+	drTreatmentPlan, err := d.dataApi.GetAbridgedTreatmentPlan(requestData.TreatmentPlanId, doctorId)
 	if err == api.NoRowsError {
-		apiservice.WriteDeveloperError(w, http.StatusNotFound, "No treatment plan exists for patient visit")
+		http.NotFound(w, r)
 		return
 	} else if err != nil {
 		apiservice.WriteDeveloperError(w, http.StatusInternalServerError, "Unable to get treatment plan for patient visit: "+err.Error())
@@ -98,13 +80,13 @@ func (d *doctorTreatmentPlanHandler) getTreatmentPlanForPatientVisit(w http.Resp
 		return
 	}
 
-	drTreatmentPlan.RegimenPlan.AllRegimenSteps, err = d.dataApi.GetRegimenStepsForDoctor(patientVisitReviewData.DoctorId)
+	drTreatmentPlan.RegimenPlan.AllRegimenSteps, err = d.dataApi.GetRegimenStepsForDoctor(doctorId)
 	if err != nil {
 		apiservice.WriteDeveloperError(w, http.StatusInternalServerError, "Unable to get all regimen steps for doctor")
 		return
 	}
 
-	drTreatmentPlan.Advice.AllAdvicePoints, err = d.dataApi.GetAdvicePointsForDoctor(patientVisitReviewData.DoctorId)
+	drTreatmentPlan.Advice.AllAdvicePoints, err = d.dataApi.GetAdvicePointsForDoctor(doctorId)
 	if err != nil {
 		apiservice.WriteDeveloperError(w, http.StatusInternalServerError, "Unable to get advice points for doctor")
 		return
@@ -124,22 +106,16 @@ func (d *doctorTreatmentPlanHandler) getTreatmentPlanForPatientVisit(w http.Resp
 }
 
 func (d *doctorTreatmentPlanHandler) pickATreatmentPlan(w http.ResponseWriter, r *http.Request) {
-	patientVisitId, requestData, err := getPatientVisitIdFromRequest(r)
-	if err != nil {
+	requestData := &DoctorTreatmentPlanRequestData{}
+	if err := apiservice.DecodeRequestData(requestData, r); err != nil {
 		apiservice.WriteDeveloperError(w, http.StatusBadRequest, err.Error())
+		return
+	} else if requestData.PatientVisitId == 0 {
+		apiservice.WriteDeveloperError(w, http.StatusBadRequest, "PatientVisitId not specified")
 		return
 	}
 
-	var favoriteTreatmentPlanId int64
-	if requestData.DoctorFavoriteTreatmentPlanId != "" {
-		favoriteTreatmentPlanId, err = strconv.ParseInt(requestData.DoctorFavoriteTreatmentPlanId, 10, 64)
-		if err != nil {
-			apiservice.WriteDeveloperError(w, http.StatusBadRequest, "Unable to parse favorite treatment plan id: "+err.Error())
-			return
-		}
-	}
-
-	patientVisitReviewData, statusCode, err := apiservice.ValidateDoctorAccessToPatientVisitAndGetRelevantData(patientVisitId, apiservice.GetContext(r).AccountId, d.dataApi)
+	patientVisitReviewData, statusCode, err := apiservice.ValidateDoctorAccessToPatientVisitAndGetRelevantData(requestData.PatientVisitId, apiservice.GetContext(r).AccountId, d.dataApi)
 	if err != nil {
 		apiservice.WriteDeveloperError(w, statusCode, err.Error())
 		return
@@ -154,7 +130,7 @@ func (d *doctorTreatmentPlanHandler) pickATreatmentPlan(w http.ResponseWriter, r
 	// Start new treatment plan for patient visit (indicate favorite treatment plan if indicated)
 	// Note that this method deletes any pre-existing treatment plan
 	treatmentPlanId, err := d.dataApi.StartNewTreatmentPlanForPatientVisit(patientVisitReviewData.PatientVisit.PatientId.Int64(),
-		patientVisitReviewData.PatientVisit.PatientVisitId.Int64(), patientVisitReviewData.DoctorId, favoriteTreatmentPlanId)
+		patientVisitReviewData.PatientVisit.PatientVisitId.Int64(), patientVisitReviewData.DoctorId, requestData.DoctorFavoriteTreatmentPlanId)
 	if err != nil {
 		apiservice.WriteDeveloperError(w, http.StatusInternalServerError, "Unable to start new treatment plan for patient visit: "+err.Error())
 		return
@@ -188,7 +164,7 @@ func (d *doctorTreatmentPlanHandler) pickATreatmentPlan(w http.ResponseWriter, r
 
 	setCommittedStateForEachSection(drTreatmentPlan)
 
-	if err := d.populateFavoriteTreatmentPlanIntoTreatmentPlan(drTreatmentPlan, favoriteTreatmentPlanId); err == api.NoRowsError {
+	if err := d.populateFavoriteTreatmentPlanIntoTreatmentPlan(drTreatmentPlan, requestData.DoctorFavoriteTreatmentPlanId); err == api.NoRowsError {
 		apiservice.WriteDeveloperError(w, http.StatusNotFound, "No favorite treatment plan found")
 		return
 	} else if err != nil {
@@ -198,7 +174,7 @@ func (d *doctorTreatmentPlanHandler) pickATreatmentPlan(w http.ResponseWriter, r
 
 	dispatch.Default.Publish(&NewTreatmentPlanStartedEvent{
 		DoctorId:        patientVisitReviewData.DoctorId,
-		PatientVisitId:  patientVisitId,
+		PatientVisitId:  requestData.PatientVisitId,
 		TreatmentPlanId: treatmentPlanId,
 	})
 

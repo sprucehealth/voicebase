@@ -13,7 +13,7 @@ func InitListeners(dataAPI api.DataAPI) {
 	// subscribe to invalidate the link between a treatment plan and
 	// favorite treatment if the doctor modifies the treatments for the treatment plan
 	dispatch.Default.Subscribe(func(ev *apiservice.TreatmentsAddedEvent) error {
-		doctorTreatmentPlan, err := dataAPI.GetAbbreviatedTreatmentPlanForPatientVisit(ev.DoctorId, ev.PatientVisitId)
+		doctorTreatmentPlan, err := dataAPI.GetAbridgedTreatmentPlan(ev.TreatmentPlanId, ev.DoctorId)
 		if err != nil {
 			return err
 		}
@@ -45,7 +45,7 @@ func InitListeners(dataAPI api.DataAPI) {
 	// subscribe to invalidate the link between a treatment plan and
 	// favorite treatment if the doctor modifies the regimen section
 	dispatch.Default.Subscribe(func(ev *apiservice.RegimenPlanAddedEvent) error {
-		doctorTreatmentPlan, err := dataAPI.GetAbbreviatedTreatmentPlanForPatientVisit(ev.DoctorId, ev.PatientVisitId)
+		doctorTreatmentPlan, err := dataAPI.GetAbridgedTreatmentPlan(ev.TreatmentPlanId, ev.DoctorId)
 		if err != nil {
 			return err
 		}
@@ -72,7 +72,7 @@ func InitListeners(dataAPI api.DataAPI) {
 	// subscribe to invalidate the link between a treatment plan and
 	// favorite treatment if the doctor modifies the advice section
 	dispatch.Default.Subscribe(func(ev *apiservice.AdviceAddedEvent) error {
-		doctorTreatmentPlan, err := dataAPI.GetAbbreviatedTreatmentPlanForPatientVisit(ev.DoctorId, ev.PatientVisitId)
+		doctorTreatmentPlan, err := dataAPI.GetAbridgedTreatmentPlan(ev.TreatmentPlanId, ev.DoctorId)
 		if err != nil {
 			return err
 		}

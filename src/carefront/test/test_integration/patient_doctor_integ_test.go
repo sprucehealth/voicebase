@@ -199,7 +199,7 @@ func TestPatientVisitReview(t *testing.T) {
 	regimenPlanRequest.RegimenSections = []*common.RegimenSection{regimenSection, regimenSection2}
 	regimenPlanResponse := CreateRegimenPlanForPatientVisit(regimenPlanRequest, testData, doctor, t)
 	ValidateRegimenRequestAgainstResponse(regimenPlanRequest, regimenPlanResponse, t)
-	getRegimenPlanResponse := GetRegimenPlanForPatientVisit(testData, doctor, patientVisitResponse.PatientVisitId, t)
+	getRegimenPlanResponse := GetRegimenPlanForTreatmentPlan(testData, doctor, treatmentPlan.Id.Int64(), t)
 	if len(getRegimenPlanResponse.RegimenSections) != 2 {
 		t.Fatal("Expected 2 regimen sections")
 	}
@@ -221,7 +221,7 @@ func TestPatientVisitReview(t *testing.T) {
 
 	doctorAdviceResponse := UpdateAdvicePointsForPatientVisit(doctorAdviceRequest, testData, doctor, t)
 	ValidateAdviceRequestAgainstResponse(doctorAdviceRequest, doctorAdviceResponse, t)
-	getAdviceResponse := GetAdvicePointsInPatientVisit(testData, doctor, patientVisitResponse.PatientVisitId, t)
+	getAdviceResponse := GetAdvicePointsInTreatmentPlan(testData, doctor, treatmentPlan.Id.Int64(), t)
 	if len(getAdviceResponse.SelectedAdvicePoints) != len(doctorAdviceRequest.AllAdvicePoints) {
 		t.Fatal("Expected number of advice points not returned")
 	}

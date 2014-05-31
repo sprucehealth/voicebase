@@ -23,21 +23,21 @@ type VisitReviewSubmittedEvent struct {
 }
 
 type TreatmentsAddedEvent struct {
-	PatientVisitId int64
-	DoctorId       int64
-	Treatments     []*common.Treatment
+	TreatmentPlanId int64
+	DoctorId        int64
+	Treatments      []*common.Treatment
 }
 
 type RegimenPlanAddedEvent struct {
-	PatientVisitId int64
-	DoctorId       int64
-	RegimenPlan    *common.RegimenPlan
+	DoctorId        int64
+	TreatmentPlanId int64
+	RegimenPlan     *common.RegimenPlan
 }
 
 type AdviceAddedEvent struct {
-	PatientVisitId int64
-	DoctorId       int64
-	Advice         *common.Advice
+	DoctorId        int64
+	TreatmentPlanId int64
+	Advice          *common.Advice
 }
 
 type RxTransmissionErrorResolvedEvent struct {

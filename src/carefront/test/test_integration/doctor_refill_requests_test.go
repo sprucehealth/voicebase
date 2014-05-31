@@ -976,7 +976,7 @@ func TestDenyRefillRequestAndSuccessfulDelete(t *testing.T) {
 	}
 
 	if resp.StatusCode != http.StatusOK {
-		t.Fatal("Unable to make successful request to approve refill request: " + err.Error())
+		t.Fatal("Unable to make successful request to approve refill request: ")
 	}
 
 	refillRequest, err = testData.DataApi.GetRefillRequestFromId(refillRequest.Id)

@@ -19,10 +19,10 @@ func TestRegimenForPatientVisit(t *testing.T) {
 	testData := test_integration.SetupIntegrationTest(t)
 	defer test_integration.TearDownIntegrationTest(t, testData)
 
-	patientVisitResponse, doctor := setupTestForRegimenCreation(t, testData)
+	patientVisitResponse, treatmentPlan, doctor := setupTestForRegimenCreation(t, testData)
 
 	// attempt to get the regimen plan or a patient visit
-	regimenPlan := test_integration.GetRegimenPlanForPatientVisit(testData, doctor, patientVisitResponse.PatientVisitId, t)
+	regimenPlan := test_integration.GetRegimenPlanForTreatmentPlan(testData, doctor, treatmentPlan.Id.Int64(), t)
 
 	if len(regimenPlan.AllRegimenSteps) > 0 {
 		t.Fatal("There should be no regimen steps given that none have been created yet")
@@ -137,9 +137,9 @@ func TestRegimenForPatientVisit(t *testing.T) {
 
 	// get patient to start a visit
 
-	patientVisitResponse, _ = test_integration.SignupAndSubmitPatientVisitForRandomPatient(t, testData, doctor)
+	patientVisitResponse, treatmentPlan = test_integration.SignupAndSubmitPatientVisitForRandomPatient(t, testData, doctor)
 
-	regimenPlan = test_integration.GetRegimenPlanForPatientVisit(testData, doctor, patientVisitResponse.PatientVisitId, t)
+	regimenPlan = test_integration.GetRegimenPlanForTreatmentPlan(testData, doctor, treatmentPlan.Id.Int64(), t)
 	if len(regimenPlan.RegimenSections) > 0 {
 		t.Fatal("There should not be any regimen sections for a new patient visit")
 	}
@@ -153,7 +153,7 @@ func TestRegimenForPatientVisit_AddOnlyToPatientVisit(t *testing.T) {
 	testData := test_integration.SetupIntegrationTest(t)
 	defer test_integration.TearDownIntegrationTest(t, testData)
 
-	patientVisitResponse, doctor := setupTestForRegimenCreation(t, testData)
+	patientVisitResponse, _, doctor := setupTestForRegimenCreation(t, testData)
 
 	// add regimen steps only to section and not to master list
 	regimenPlanRequest := &common.RegimenPlan{}
@@ -200,7 +200,7 @@ func TestRegimenForPatientVisit_AddingMultipleItemsWithSameText(t *testing.T) {
 	testData := test_integration.SetupIntegrationTest(t)
 	defer test_integration.TearDownIntegrationTest(t, testData)
 
-	patientVisitResponse, doctor := setupTestForRegimenCreation(t, testData)
+	patientVisitResponse, _, doctor := setupTestForRegimenCreation(t, testData)
 
 	// add multiple items with the exact same text and ensure that they all get assigned new ids
 	regimenPlanRequest := &common.RegimenPlan{}
@@ -236,7 +236,7 @@ func TestRegimenForPatientVisit_ErrorTextDifferentForLinkedItem(t *testing.T) {
 	testData := test_integration.SetupIntegrationTest(t)
 	defer test_integration.TearDownIntegrationTest(t, testData)
 
-	patientVisitResponse, doctor := setupTestForRegimenCreation(t, testData)
+	patientVisitResponse, _, doctor := setupTestForRegimenCreation(t, testData)
 
 	// add multiple items with the exact same text and ensure that they all get assigned new ids
 	regimenPlanRequest := &common.RegimenPlan{}
@@ -307,7 +307,7 @@ func TestRegimenForPatientVisit_UpdatingMultipleItemsWithSameText(t *testing.T) 
 	testData := test_integration.SetupIntegrationTest(t)
 	defer test_integration.TearDownIntegrationTest(t, testData)
 
-	patientVisitResponse, doctor := setupTestForRegimenCreation(t, testData)
+	patientVisitResponse, _, doctor := setupTestForRegimenCreation(t, testData)
 
 	// add multiple items with the exact same text and ensure that they all get assigned new ids
 	regimenPlanRequest := &common.RegimenPlan{}
@@ -353,7 +353,7 @@ func TestRegimenForPatientVisit_UpdatingItemLinkedToDeletedItem(t *testing.T) {
 	testData := test_integration.SetupIntegrationTest(t)
 	defer test_integration.TearDownIntegrationTest(t, testData)
 
-	patientVisitResponse, doctor := setupTestForRegimenCreation(t, testData)
+	patientVisitResponse, treatmentPlan, doctor := setupTestForRegimenCreation(t, testData)
 
 	// add multiple items with the exact same text and ensure that they all get assigned new ids
 	regimenPlanRequest := &common.RegimenPlan{}
@@ -380,8 +380,8 @@ func TestRegimenForPatientVisit_UpdatingItemLinkedToDeletedItem(t *testing.T) {
 	test_integration.ValidateRegimenRequestAgainstResponse(regimenPlanRequest, regimenPlanResponse, t)
 
 	// now lets update the global set of regimen steps in the context of another patient's visit
-	patientVisitResponse2, _ := test_integration.SignupAndSubmitPatientVisitForRandomPatient(t, testData, doctor)
-	regimenPlanResponse = test_integration.GetRegimenPlanForPatientVisit(testData, doctor, patientVisitResponse2.PatientVisitId, t)
+	patientVisitResponse2, treatmentPlan2 := test_integration.SignupAndSubmitPatientVisitForRandomPatient(t, testData, doctor)
+	regimenPlanResponse = test_integration.GetRegimenPlanForTreatmentPlan(testData, doctor, treatmentPlan2.Id.Int64(), t)
 
 	// lets go ahead and delete one of the items from the regimen step
 	regimenPlanRequest = regimenPlanResponse
@@ -394,7 +394,7 @@ func TestRegimenForPatientVisit_UpdatingItemLinkedToDeletedItem(t *testing.T) {
 	}
 
 	// now, lets go back to the previous patient and attempt to get the regimen plan
-	regimenPlanResponse = test_integration.GetRegimenPlanForPatientVisit(testData, doctor, patientVisitResponse.PatientVisitId, t)
+	regimenPlanResponse = test_integration.GetRegimenPlanForTreatmentPlan(testData, doctor, treatmentPlan.Id.Int64(), t)
 	if len(regimenPlanResponse.AllRegimenSteps) != 4 && len(regimenPlanResponse.RegimenSections) != 5 {
 		t.Fatalf("Expected 4 items in the global regimen steps and 5 items in the regimen sections instead got %d in global regimen list and %d items in the regimen sections", len(regimenPlanRequest.AllRegimenSteps), len(regimenPlanRequest.RegimenSections))
 	}
@@ -435,7 +435,7 @@ func TestRegimenForPatientVisit_TrackingSourceId(t *testing.T) {
 	testData := test_integration.SetupIntegrationTest(t)
 	defer test_integration.TearDownIntegrationTest(t, testData)
 
-	patientVisitResponse, doctor := setupTestForRegimenCreation(t, testData)
+	patientVisitResponse, _, doctor := setupTestForRegimenCreation(t, testData)
 
 	// adding new regimen steps to the doctor but not to the patient visit
 	regimenPlanRequest := &common.RegimenPlan{}
@@ -516,7 +516,7 @@ func TestRegimenForPatientVisit_TrackingSourceId(t *testing.T) {
 
 }
 
-func setupTestForRegimenCreation(t *testing.T, testData test_integration.TestData) (*apiservice.PatientVisitResponse, *common.Doctor) {
+func setupTestForRegimenCreation(t *testing.T, testData test_integration.TestData) (*apiservice.PatientVisitResponse, *common.DoctorTreatmentPlan, *common.Doctor) {
 
 	// get the current primary doctor
 	doctorId := test_integration.GetDoctorIdOfCurrentPrimaryDoctor(testData, t)
@@ -525,6 +525,6 @@ func setupTestForRegimenCreation(t *testing.T, testData test_integration.TestDat
 	if err != nil {
 		t.Fatal("Unable to get doctor from doctor id " + err.Error())
 	}
-	patientVisitResponse, _ := test_integration.SignupAndSubmitPatientVisitForRandomPatient(t, testData, doctor)
-	return patientVisitResponse, doctor
+	patientVisitResponse, treatmentPlan := test_integration.SignupAndSubmitPatientVisitForRandomPatient(t, testData, doctor)
+	return patientVisitResponse, treatmentPlan, doctor
 }

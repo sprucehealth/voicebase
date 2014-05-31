@@ -122,13 +122,7 @@ func (d *doctorFavoriteTreatmentPlansHandler) addOrUpdateFavoriteTreatmentPlan(w
 	// this means that the favorite treatment plan was created
 	// in the context of a treatment plan so associate the two
 	if requestData.TreatmentPlanId != 0 {
-		patientVisitId, err := d.dataApi.GetPatientVisitIdFromTreatmentPlanId(requestData.TreatmentPlanId)
-		if err != nil {
-			apiservice.WriteDeveloperError(w, http.StatusInternalServerError, "Unable to get patient visit id from treatment plan id: "+err.Error())
-			return
-		}
-
-		drTreatmentPlan, err := d.dataApi.GetAbbreviatedTreatmentPlanForPatientVisit(doctor.DoctorId.Int64(), patientVisitId)
+		drTreatmentPlan, err := d.dataApi.GetAbridgedTreatmentPlan(requestData.TreatmentPlanId, doctor.DoctorId.Int64())
 		if err == api.NoRowsError {
 			apiservice.WriteDeveloperError(w, http.StatusNotFound, "No treatment plan exists for patient visit")
 			return
