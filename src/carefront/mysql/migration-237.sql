@@ -17,3 +17,4 @@ CREATE TABLE resource_guide (
 	FOREIGN KEY (section_id) REFERENCES resource_guide_section (id),
 	PRIMARY KEY (id)
 ) CHARACTER SET utf8;
+
