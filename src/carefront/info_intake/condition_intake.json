@@ -4,6 +4,43 @@
     {
       "screens": [
         {
+          "title": "Take photos of the areas where you have acne.",
+          "subtitle": "Your doctor will use these photos to make a diagnosis.",
+          "description": "photo taking experience",
+          "questions": [
+            {
+              "question": "q_face_photo_section"
+            },
+            {
+              "question": "q_chest_photo_section"
+            },
+            {
+              "question": "q_back_photo_section"
+            },
+            {
+              "question": "q_other_location_photo_section"
+            }
+          ],
+          "screen_type": "screen_type_photo"
+        }
+      ],
+      "section": "section_photo_diagnosis",
+      "transition": {
+        "buttons": [
+          {
+            "button_text": "On to Medical History",
+            "style": "filled",
+            "tap_url": "spruce:///action/view_next_visit_section"
+          }
+        ],
+        "image_url": "spruce:///image/tickmark",
+        "message": "Next up is medical history.",
+        "title": "Photos are complete!"
+      }
+    },
+    {
+      "screens": [
+        {
           "description": "describe your skin",
           "questions": [
             {
@@ -22,8 +59,8 @@
         {
           "description": "description of acne",
           "questions": [
-            { 
-              "question": "q_acne_symptoms" 
+            {
+              "question": "q_acne_symptoms"
             }
           ]
         },
@@ -34,7 +71,7 @@
               "question": "q_acne_worse"
             }
           ]
-        }, 
+        },
         {
           "description": "changes making acne worse",
           "questions": [
@@ -177,87 +214,6 @@
     {
       "screens": [
         {
-          "description": "options for places to take skin photo of",
-          "questions": [
-            {
-              "question": "q_acne_location"
-            }
-          ]
-        },
-        {
-          "description": "photo taking experience",
-          "questions": [
-            {
-              "condition": {
-                "op": "answer_equals",
-                "potential_answers": [
-                  "a_face_acne_location"
-                ],
-                "question": "q_acne_location"
-              },
-              "question": "q_face_photo_intake"
-            },
-            {
-              "condition": {
-                "op": "answer_equals",
-                "potential_answers": [
-                  "a_face_acne_location"
-                ],
-                "question": "q_acne_location"
-              },
-              "question": "q_face_left_photo_intake"
-            },
-            {
-              "condition": {
-                "op": "answer_equals",
-                "potential_answers": [
-                  "a_face_acne_location"
-                ],
-                "question": "q_acne_location"
-              },
-              "question": "q_face_right_photo_intake"
-            },
-            {
-              "condition": {
-                "op": "answer_equals",
-                "potential_answers": [
-                  "a_chest_acne_location"
-                ],
-                "question": "q_acne_location"
-              },
-              "question": "q_chest_photo_intake"
-            },
-            {
-              "condition": {
-                "op": "answer_equals",
-                "potential_answers": [
-                  "a_back_acne_location"
-                ],
-                "question": "q_acne_location"
-              },
-              "question": "q_back_photo_intake"
-            }
-          ],
-          "screen_type": "screen_type_photo"
-        }
-      ],
-      "section": "section_photo_diagnosis",
-      "transition": {
-        "buttons": [
-          {
-            "button_text": "On to Medical History",
-            "style": "filled",
-            "tap_url": "spruce:///action/view_next_visit_section"
-          }
-        ],
-        "image_url": "spruce:///image/tickmark",
-        "message": "Next up is medical history.",
-        "title": "Photos are complete!"
-      }
-    },
-    {
-      "screens": [
-        {
           "description": "allergies",
           "questions": [
             {
@@ -321,11 +277,11 @@
           "questions": [
             {
               "question": "q_prev_skin_condition_diagnosis"
-            } 
+            }
           ]
         },
         {
-          "description": "previous condition diagnosis", 
+          "description": "previous condition diagnosis",
           "questions": [
             {
               "condition": {
