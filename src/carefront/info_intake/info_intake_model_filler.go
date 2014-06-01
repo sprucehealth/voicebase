@@ -116,6 +116,28 @@ func (q *Question) FillInDatabaseInfo(dataApi api.DataAPI, languageId int64) err
 		q.PotentialAnswers = append(q.PotentialAnswers, potentialAnswer)
 	}
 
+	// fill in any photo slots into the question
+	// Note that this could be optimized to only query based on the question type
+	// but given the small number of questions currently coupled with the fact that we need to rewrite the implementation
+	// to better organize the structure in the future its not worth to base this off the question types currently
+	photoSlotInfoList, err := dataApi.GetPhotoSlots(questionInfo.Id, languageId)
+	if err != nil {
+		return err
+	}
+
+	if len(photoSlotInfoList) > 0 {
+		q.PhotoSlots = make([]*PhotoSlot, 0)
+		for _, photoSlotInfo := range photoSlotInfoList {
+			photoSlot := &PhotoSlot{
+				Id:       photoSlotInfo.Id,
+				Name:     photoSlotInfo.Name,
+				Required: photoSlotInfo.Required,
+				Type:     photoSlotInfo.Type,
+			}
+			q.PhotoSlots = append(q.PhotoSlots, photoSlot)
+		}
+	}
+
 	return nil
 }
 

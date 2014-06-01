@@ -121,6 +121,19 @@ type AnswerIntake struct {
 	ToAlert           bool              `json:"-"`
 }
 
+type PhotoIntakeSection struct {
+	Id     int64              `json:"-"`
+	Name   string             `json:"name,omitempty"`
+	Photos []*PhotoIntakeSlot `json:"photos,omitempty"`
+}
+
+type PhotoIntakeSlot struct {
+	Id           int64     `json:"-"`
+	CreationDate time.Time `json:"creation_date"`
+	PhotoUrl     string    `json:"photo_url"`
+	SlotId       int64     `json:"slot_id"`
+}
+
 type PatientCareProviderAssignment struct {
 	Id           int64
 	ProviderRole string

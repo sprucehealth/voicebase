@@ -237,6 +237,13 @@ type IntakeAPI interface {
 	RejectPatientVisitPhotos(patientVisitId int64) error
 }
 
+type PhotoSlotInfo struct {
+	Id       int64
+	Name     string
+	Type     string
+	Required bool
+}
+
 type IntakeLayoutAPI interface {
 	GetQuestionType(questionId int64) (questionType string, err error)
 	GetActiveLayoutForHealthCondition(healthConditionTag, role, purpose string) ([]byte, error)
@@ -262,6 +269,7 @@ type IntakeLayoutAPI interface {
 	GetTipSectionInfo(tipSectionTag string, languageId int64) (id int64, tipSectionTitle string, tipSectionSubtext string, err error)
 	GetTipInfo(tipTag string, languageId int64) (id int64, tip string, err error)
 	GetSupportedLanguages() (languagesSupported []string, languagesSupportedIds []int64, err error)
+	GetPhotoSlots(questionId, languageId int64) ([]*PhotoSlotInfo, error)
 }
 
 type ObjectStorageDBAPI interface {

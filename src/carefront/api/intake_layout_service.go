@@ -500,3 +500,23 @@ func (d *DataService) GetSupportedLanguages() (languagesSupported []string, lang
 	}
 	return languagesSupported, languagesSupportedIds, rows.Err()
 }
+
+func (d *DataService) GetPhotoSlots(questionId, languageId int64) ([]*PhotoSlotInfo, error) {
+	rows, err := d.db.Query(`select photo_slot.id, ltext, slot_type, required from photo_slot
+		inner join localized_text on app_text_id = slot_name_app_text_id
+		inner join photo_slot_type on photo_slot_type.id = slot_type_id
+		where question_id=? and language_id = ?`, questionId, languageId)
+	if err != nil {
+		return nil, err
+	}
+	defer rows.Close()
+	photoSlotInfoList := make([]*PhotoSlotInfo, 0)
+	for rows.Next() {
+		var pSlotInfo PhotoSlotInfo
+		if err := rows.Scan(&pSlotInfo.Id, &pSlotInfo.Name, &pSlotInfo.Type, &pSlotInfo.Required); err != nil {
+			return nil, err
+		}
+		photoSlotInfoList = append(photoSlotInfoList, &pSlotInfo)
+	}
+	return photoSlotInfoList, rows.Err()
+}
