@@ -135,6 +135,21 @@ func TestPatientAnswerParsing(t *testing.T) {
 	}
 }
 
+func TestPhotoSlotsParsing(t *testing.T) {
+	visit := parseFileToGetHealthCondition(t)
+	for _, section := range visit.Sections {
+		for _, screen := range section.Screens {
+			for _, question := range screen.Questions {
+				if question.QuestionTypes[0] == "q_type_photo_section" {
+					if len(question.PhotoSlots) == 0 {
+						t.Fatal("Expected photoslots to exist for question")
+					}
+				}
+			}
+		}
+	}
+}
+
 func TestSubQuestionsParsing(t *testing.T) {
 	visit := parseFileToGetHealthCondition(t)
 	for _, section := range visit.Sections {
