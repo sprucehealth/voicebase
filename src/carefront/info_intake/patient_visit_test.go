@@ -79,14 +79,14 @@ func TestPotentialAnswersParsing(t *testing.T) {
 	visit := parseFileToGetHealthCondition(t)
 	for _, section := range visit.Sections {
 		for _, screen := range section.Screens {
+
 			for _, question := range screen.Questions {
-				switch question.QuestionTypes[0] {
-				case "q_type_free_text", "q_type_autocomplete":
-				default:
+				if question.QuestionTypes[0] == "q_type_q_type_multiple_choice" {
 					if question.PotentialAnswers == nil || len(question.PotentialAnswers) == 0 {
 						t.Fatalf("No potential answers for question with id %d when there always should be one", question.QuestionId)
 					}
 				}
+
 				for _, potentialAnswer := range question.PotentialAnswers {
 					if potentialAnswer.AnswerId == 0 {
 						t.Fatal("There should be a potential answer id when there isnt")
