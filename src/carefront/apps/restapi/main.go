@@ -24,6 +24,7 @@ import (
 	"carefront/notify"
 	"carefront/patient"
 	"carefront/patient_file"
+	"carefront/patient_visit"
 	"carefront/photos"
 	"carefront/reslib"
 	"carefront/support"
@@ -179,7 +180,6 @@ func main() {
 		ErxApi:  doseSpotService,
 	}
 
-	photoAnswerIntakeHandler := apiservice.NewPhotoAnswerIntakeHandler(dataApi, photoAnswerCloudStorageApi, conf.CaseBucket, conf.AWSRegion, conf.MaxInMemoryForPhotoMB*1024*1024)
 	pharmacySearchHandler := &apiservice.PharmacyTextSearchHandler{PharmacySearchService: pharmacy.GooglePlacesPharmacySearchService(0), DataApi: dataApi, MapsService: mapsService}
 
 	pingHandler := apiservice.PingHandler(0)
@@ -248,10 +248,10 @@ func main() {
 	mux.Handle("/v1/treatment_guide", treatment_plan.NewTreatmentGuideHandler(dataApi))
 	mux.Handle("/v1/visit", patientVisitHandler)
 	mux.Handle("/v1/check_eligibility", checkElligibilityHandler)
-	mux.Handle("/v1/answer", answerIntakeHandler)
-	mux.Handle("/v1/answer/photo", photoAnswerIntakeHandler)
-	mux.Handle("/v1/authenticate", patient.NewAuthenticationHandler(dataApi, authAPI, pharmacy.GooglePlacesPharmacySearchService(0), conf.StaticContentBaseUrl))
-	mux.Handle("/v1/logout", patient.NewAuthenticationHandler(dataApi, authAPI, pharmacy.GooglePlacesPharmacySearchService(0), conf.StaticContentBaseUrl))
+	mux.Handle("/v1/answer", patient_visit.NewAnswerIntakeHandler(dataApi))
+	mux.Handle("/v1/answer/photo", patient_visit.NewPhotoAnswerIntakeHandler(dataApi, photoAnswerCloudStorageApi, conf.CaseBucket, conf.AWSRegion, conf.MaxInMemoryForPhotoMB*1024*1024))
+	mux.Handle("/v1/authenticate", patient.NewAuthenticationHandler(dataApi, authApi, pharmacy.GooglePlacesPharmacySearchService(0), conf.StaticContentBaseUrl))
+	mux.Handle("/v1/logout", patient.NewAuthenticationHandler(dataApi, authApi, pharmacy.GooglePlacesPharmacySearchService(0), conf.StaticContentBaseUrl))
 	mux.Handle("/v1/ping", pingHandler)
 	mux.Handle("/v1/autocomplete", autocompleteHandler)
 	mux.Handle("/v1/pharmacy_search", pharmacySearchHandler)

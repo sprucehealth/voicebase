@@ -14,6 +14,12 @@ import (
 	"net/http/httptest"
 	"strconv"
 	"testing"
+
+	"carefront/api"
+	"carefront/apiservice"
+	"carefront/info_intake"
+	patientApiService "carefront/patient"
+	"carefront/patient_visit"
 )
 
 func SignupRandomTestPatient(t *testing.T, dataApi api.DataAPI, authApi api.AuthAPI) *patientApiService.PatientSignedupResponse {
@@ -165,7 +171,7 @@ func prepareAnswersForQuestionsInPatientVisit(patientVisitResponse *apiservice.P
 }
 
 func SubmitAnswersIntakeForPatient(patientId, patientAccountId int64, answerIntakeRequestBody *apiservice.AnswerIntakeRequestBody, testData TestData, t *testing.T) {
-	answerIntakeHandler := &apiservice.AnswerIntakeHandler{
+	answerIntakeHandler := &patient_visit.AnswerIntakeHandler{
 		DataApi: testData.DataApi,
 	}
 

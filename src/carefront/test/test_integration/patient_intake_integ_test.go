@@ -15,6 +15,7 @@ import (
 
 	"carefront/api"
 	"carefront/apiservice"
+	"carefront/patient_visit"
 )
 
 type AnswerIntakeHandler struct {
@@ -66,7 +67,7 @@ func getAnswerWithTagAndExpectedType(answerTag, answerType string, questionId in
 }
 
 func submitPatientAnswerForVisit(PatientId int64, testData TestData, patientIntakeRequestData string, t *testing.T) {
-	answerIntakeHandler := apiservice.NewAnswerIntakeHandler(testData.DataApi)
+	answerIntakeHandler := patient_visit.NewAnswerIntakeHandler(testData.DataApi)
 	patient, err := testData.DataApi.GetPatientFromId(PatientId)
 	if err != nil {
 		t.Fatal("Unable to get patient information given the patient id when trying to enter patient intake: " + err.Error())
@@ -505,7 +506,7 @@ func TestPhotoAnswerIntake(t *testing.T) {
 		t.Fatal("Unable to create multi-form data. Error when trying to close writer: " + err.Error())
 	}
 
-	photoAnswerIntakeHandler := apiservice.NewPhotoAnswerIntakeHandler(testData.DataApi, testData.CloudStorageService, "dev-cases-bucket-integ", "us-east-1", 1*1024*1024)
+	photoAnswerIntakeHandler := patient_visit.NewPhotoAnswerIntakeHandler(testData.DataApi, testData.CloudStorageService, "dev-cases-bucket-integ", "us-east-1", 1*1024*1024)
 	patient, err := testData.DataApi.GetPatientFromId(patientSignedUpResponse.Patient.PatientId.Int64())
 	if err != nil {
 		t.Fatal("Unable to retrieve patient data given the patient id: " + err.Error())
