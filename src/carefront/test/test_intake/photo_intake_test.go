@@ -1,10 +1,14 @@
 package test_intake
 
 import (
+	"bytes"
 	"carefront/api"
 	"carefront/common"
 	"carefront/patient_visit"
 	"carefront/test/test_integration"
+	"encoding/json"
+	"net/http"
+	"net/http/httptest"
 	"testing"
 )
 
@@ -20,10 +24,9 @@ func TestPhotoIntake(t *testing.T) {
 	pr := test_integration.SignupRandomTestPatient(t, testData.DataApi, testData.AuthApi)
 	patient := pr.Patient
 	patientId := patient.PatientId.Int64()
-
 	patientVisitResponse := test_integration.CreatePatientVisitForPatient(patientId, testData, t)
 
-	// insert a photo item to simulate uploading of a photo
+	// simulate photo upload
 	photoId, err := testData.DataApi.AddPhoto(patient.PersonId, "http://localhost", "image/jpeg")
 	if err != nil {
 		t.Fatal(err.Error())
@@ -41,8 +44,6 @@ func TestPhotoIntake(t *testing.T) {
 		t.Fatal(err.Error())
 	}
 
-	// create a request to add 1 photo slot with a particular name for the section
-	// to the "Other Location" section
 	requestData := &patient_visit.PhotoAnswerIntakeRequestData{
 		PatientVisitId: patientVisitResponse.PatientVisitId,
 		PhotoQuestions: []*patient_visit.PhotoAnswerIntakeQuestionItem{
@@ -88,15 +89,13 @@ func TestPhotoIntake_MultipleSectionsForSameQuestion(t *testing.T) {
 	pr := test_integration.SignupRandomTestPatient(t, testData.DataApi, testData.AuthApi)
 	patient := pr.Patient
 	patientId := patient.PatientId.Int64()
-
 	patientVisitResponse := test_integration.CreatePatientVisitForPatient(patientId, testData, t)
 
-	// insert a photo item to simulate uploading of a photo
+	// simulate photo upload
 	photoId, err := testData.DataApi.AddPhoto(patient.PersonId, "http://localhost", "image/jpeg")
 	if err != nil {
 		t.Fatal(err.Error())
 	}
-
 	photoId2, err := testData.DataApi.AddPhoto(patient.PersonId, "http://localhost/2", "image/jpeg")
 	if err != nil {
 		t.Fatal(err.Error())
@@ -114,8 +113,6 @@ func TestPhotoIntake_MultipleSectionsForSameQuestion(t *testing.T) {
 		t.Fatal(err.Error())
 	}
 
-	// create a request to add 1 photo slot with a particular name for the section
-	// to the "Other Location" section
 	requestData := &patient_visit.PhotoAnswerIntakeRequestData{
 		PatientVisitId: patientVisitResponse.PatientVisitId,
 		PhotoQuestions: []*patient_visit.PhotoAnswerIntakeQuestionItem{
@@ -164,15 +161,13 @@ func TestPhotoIntake_MultiplePhotos(t *testing.T) {
 	pr := test_integration.SignupRandomTestPatient(t, testData.DataApi, testData.AuthApi)
 	patient := pr.Patient
 	patientId := patient.PatientId.Int64()
-
 	patientVisitResponse := test_integration.CreatePatientVisitForPatient(patientId, testData, t)
 
-	// insert a photo item to simulate uploading of a photo
+	// simulate photo upload
 	photoId, err := testData.DataApi.AddPhoto(patient.PersonId, "http://localhost", "image/jpeg")
 	if err != nil {
 		t.Fatal(err.Error())
 	}
-
 	photoId2, err := testData.DataApi.AddPhoto(patient.PersonId, "http://localhost/2", "image/jpeg")
 	if err != nil {
 		t.Fatal(err.Error())
@@ -190,8 +185,6 @@ func TestPhotoIntake_MultiplePhotos(t *testing.T) {
 		t.Fatal(err.Error())
 	}
 
-	// create a request to add 1 photo slot with a particular name for the section
-	// to the "Other Location" section
 	requestData := &patient_visit.PhotoAnswerIntakeRequestData{
 		PatientVisitId: patientVisitResponse.PatientVisitId,
 		PhotoQuestions: []*patient_visit.PhotoAnswerIntakeQuestionItem{
@@ -237,10 +230,9 @@ func TestPhotoIntake_AnswerInvalidation(t *testing.T) {
 	pr := test_integration.SignupRandomTestPatient(t, testData.DataApi, testData.AuthApi)
 	patient := pr.Patient
 	patientId := patient.PatientId.Int64()
-
 	patientVisitResponse := test_integration.CreatePatientVisitForPatient(patientId, testData, t)
 
-	// insert a photo item to simulate uploading of a photo
+	// simulate photo upload
 	photoId, err := testData.DataApi.AddPhoto(patient.PersonId, "http://localhost", "image/jpeg")
 	if err != nil {
 		t.Fatal(err.Error())
@@ -263,8 +255,6 @@ func TestPhotoIntake_AnswerInvalidation(t *testing.T) {
 		t.Fatal(err.Error())
 	}
 
-	// create a request to add 1 photo slot with a particular name for the section
-	// to the "Other Location" section
 	requestData := &patient_visit.PhotoAnswerIntakeRequestData{
 		PatientVisitId: patientVisitResponse.PatientVisitId,
 		PhotoQuestions: []*patient_visit.PhotoAnswerIntakeQuestionItem{
@@ -322,7 +312,6 @@ func TestPhotoIntake_AnswerInvalidation(t *testing.T) {
 
 	test_integration.SubmitPhotoSectionsForQuestionInPatientVisit(patient.AccountId.Int64(), requestData, testData, t)
 
-	// at this point the patient should have just 1 section with 1 image in there
 	photoIntakeSections, err := testData.DataApi.GetPhotoSectionsCreatedByPatientForQuestion(questionInfo.Id, patientId, patientVisitResponse.PatientVisitId)
 	if err != nil {
 		t.Fatal(err.Error())
@@ -342,43 +331,36 @@ func TestPhotoIntake_MultiplePhotoQuestions(t *testing.T) {
 	pr := test_integration.SignupRandomTestPatient(t, testData.DataApi, testData.AuthApi)
 	patient := pr.Patient
 	patientId := patient.PatientId.Int64()
-
 	patientVisitResponse := test_integration.CreatePatientVisitForPatient(patientId, testData, t)
 
+	// simulate photo upload
 	photoId, err := testData.DataApi.AddPhoto(patient.PersonId, "http://localhost", "image/jpeg")
 	if err != nil {
 		t.Fatal(err.Error())
 	}
-
 	photoId2, err := testData.DataApi.AddPhoto(patient.PersonId, "http://localhost", "image/jpeg")
 	if err != nil {
 		t.Fatal(err.Error())
 	}
 
-	// get the question that represents the other location photo section
 	questionInfo, err := testData.DataApi.GetQuestionInfo(otherLocationPhotoSectionTag, api.EN_LANGUAGE_ID)
 	if err != nil {
 		t.Fatal(err.Error())
 	}
-
 	questionInfo2, err := testData.DataApi.GetQuestionInfo(facePhotoSectionTag, api.EN_LANGUAGE_ID)
 	if err != nil {
 		t.Fatal(err.Error())
 	}
 
-	// get the photo slots associated with this question
 	photoSlots, err := testData.DataApi.GetPhotoSlots(questionInfo.Id, api.EN_LANGUAGE_ID)
 	if err != nil {
 		t.Fatal(err.Error())
 	}
-
 	photoSlots2, err := testData.DataApi.GetPhotoSlots(questionInfo2.Id, api.EN_LANGUAGE_ID)
 	if err != nil {
 		t.Fatal(err.Error())
 	}
 
-	// create a request to add 1 photo slot with a particular name for the section
-	// to the "Other Location" section
 	requestData := &patient_visit.PhotoAnswerIntakeRequestData{
 		PatientVisitId: patientVisitResponse.PatientVisitId,
 		PhotoQuestions: []*patient_visit.PhotoAnswerIntakeQuestionItem{
@@ -434,6 +416,74 @@ func TestPhotoIntake_MultiplePhotoQuestions(t *testing.T) {
 		t.Fatalf("Expected 1 photo section instead got back %d", len(photoIntakeSections))
 	} else if len(photoIntakeSections[0].Photos) != 1 {
 		t.Fatalf("Expected 1 photo in the section instead got %d", len(photoIntakeSections[0].Photos))
+	}
+}
+
+func TestPhotoIntake_MistmatchedSlotId(t *testing.T) {
+	testData := test_integration.SetupIntegrationTest(t)
+	defer test_integration.TearDownIntegrationTest(t, testData)
+
+	pr := test_integration.SignupRandomTestPatient(t, testData.DataApi, testData.AuthApi)
+	patient := pr.Patient
+	patientId := patient.PatientId.Int64()
+	patientVisitResponse := test_integration.CreatePatientVisitForPatient(patientId, testData, t)
+
+	// simulate photo upload
+	photoId, err := testData.DataApi.AddPhoto(patient.PersonId, "http://localhost", "image/jpeg")
+	if err != nil {
+		t.Fatal(err.Error())
+	}
+
+	questionInfo, err := testData.DataApi.GetQuestionInfo(otherLocationPhotoSectionTag, api.EN_LANGUAGE_ID)
+	if err != nil {
+		t.Fatal(err.Error())
+	}
+	questionInfo2, err := testData.DataApi.GetQuestionInfo(facePhotoSectionTag, api.EN_LANGUAGE_ID)
+	if err != nil {
+		t.Fatal(err.Error())
+	}
+
+	photoSlots2, err := testData.DataApi.GetPhotoSlots(questionInfo2.Id, api.EN_LANGUAGE_ID)
+	if err != nil {
+		t.Fatal(err.Error())
+	}
+
+	// this request is badly formed because the slot id represents that of the face photo section
+	requestData := &patient_visit.PhotoAnswerIntakeRequestData{
+		PatientVisitId: patientVisitResponse.PatientVisitId,
+		PhotoQuestions: []*patient_visit.PhotoAnswerIntakeQuestionItem{
+			&patient_visit.PhotoAnswerIntakeQuestionItem{
+				QuestionId: questionInfo.Id,
+				PhotoSections: []*common.PhotoIntakeSection{
+					&common.PhotoIntakeSection{
+						Name: "Testing",
+						Photos: []*common.PhotoIntakeSlot{
+							&common.PhotoIntakeSlot{
+								Name:    "Other",
+								PhotoId: photoId,
+								SlotId:  photoSlots2[0].Id,
+							},
+						},
+					},
+				},
+			},
+		},
+	}
+
+	photoIntakeHandler := patient_visit.NewPhotoAnswerIntakeHandler(testData.DataApi)
+	photoIntakeServer := httptest.NewServer(photoIntakeHandler)
+	defer photoIntakeServer.Close()
+
+	jsonData, err := json.Marshal(requestData)
+	if err != nil {
+		t.Fatal(err.Error())
+	}
+
+	resp, err := test_integration.AuthPost(photoIntakeServer.URL, "application/json", bytes.NewReader(jsonData), patient.AccountId.Int64())
+	if err != nil {
+		t.Fatal(err.Error())
+	} else if resp.StatusCode != http.StatusBadRequest {
+		t.Fatalf("Expected response code %d for photo intake but got %d", http.StatusBadRequest, resp.StatusCode)
 	}
 
 }

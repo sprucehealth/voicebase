@@ -6,6 +6,7 @@ import (
 	"carefront/common"
 	"carefront/info_intake"
 	"encoding/json"
+	"fmt"
 	"net/http"
 )
 
@@ -69,6 +70,28 @@ func (p *PhotoAnswerIntakeHandler) ServeHTTP(w http.ResponseWriter, r *http.Requ
 		} else if questionType != info_intake.QUESTION_TYPE_PHOTO_SECTION {
 			apiservice.WriteDeveloperError(w, http.StatusBadRequest, "only photo section question types acceptable for intake via this endpoint")
 			return
+		}
+
+		// get photo slots for the question and ensure that all slot ids in the request
+		// belong to this question
+		photoSlots, err := p.DataApi.GetPhotoSlots(photoIntake.QuestionId, api.EN_LANGUAGE_ID)
+		if err != nil {
+			apiservice.WriteDeveloperError(w, http.StatusInternalServerError, err.Error())
+			return
+		}
+
+		photoSlotIdMapping := make(map[int64]bool)
+		for _, photoSlot := range photoSlots {
+			photoSlotIdMapping[photoSlot.Id] = true
+		}
+
+		for _, photoSection := range photoIntake.PhotoSections {
+			for _, photo := range photoSection.Photos {
+				if !photoSlotIdMapping[photo.SlotId] {
+					apiservice.WriteUserError(w, http.StatusBadRequest, fmt.Sprintf("Slot id %d not associated with photo question id %d: ", photo.SlotId, photoIntake.QuestionId))
+					return
+				}
+			}
 		}
 
 		if err := p.DataApi.StorePhotoSectionsForQuestion(photoIntake.QuestionId, patientId, requestData.PatientVisitId, photoIntake.PhotoSections); err != nil {
