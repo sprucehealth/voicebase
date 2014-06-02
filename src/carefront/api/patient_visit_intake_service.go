@@ -223,19 +223,28 @@ func (d *DataService) StorePhotoSectionsForQuestion(questionId, patientId, patie
 	return tx.Commit()
 }
 
-func (d *DataService) GetPhotoSectionsCreatedByPatientForQuestion(questionId, patientId, patientVisitId int64) ([]*common.PhotoIntakeSection, error) {
-	// get all the top level information for photo sections
-	rows, err := d.db.Query(`select id, section_name, creation_date 
-		from photo_intake_section where patient_id=? and question_id=? and patient_visit_id = ? and status=?`, patientId, questionId, patientVisitId, STATUS_ACTIVE)
+func (d *DataService) GetPatientCreatedPhotoSectionsForQuestionId(questionId, patientId, patientVisitId int64) ([]*common.PhotoIntakeSection, error) {
+	photoSectionsByQuestion, err := d.GetPatientCreatedPhotoSectionsForQuestionIds([]int64{questionId}, patientId, patientVisitId)
+	return photoSectionsByQuestion[questionId], err
+}
+
+func (d *DataService) GetPatientCreatedPhotoSectionsForQuestionIds(questionIds []int64, patientId, patientVisitId int64) (map[int64][]*common.PhotoIntakeSection, error) {
+	photoSectionsByQuestion := make(map[int64][]*common.PhotoIntakeSection)
+	params := []interface{}{patientId}
+	params = appendInt64sToInterfaceSlice(params, questionIds)
+	params = append(params, patientVisitId)
+	params = append(params, STATUS_ACTIVE)
+
+	rows, err := d.db.Query(fmt.Sprintf(`select id, question_id, section_name, creation_date 
+		from photo_intake_section where patient_id=? and question_id in (%s) and patient_visit_id = ? and status=?`, nReplacements(len(questionIds))), params...)
 	if err != nil {
 		return nil, err
 	}
 	defer rows.Close()
 
-	photoIntakeSections := make([]*common.PhotoIntakeSection, 0)
 	for rows.Next() {
 		var photoIntakeSection common.PhotoIntakeSection
-		if err := rows.Scan(&photoIntakeSection.Id, &photoIntakeSection.Name, &photoIntakeSection.CreationDate); err != nil {
+		if err := rows.Scan(&photoIntakeSection.Id, &photoIntakeSection.QuestionId, &photoIntakeSection.Name, &photoIntakeSection.CreationDate); err != nil {
 			return nil, err
 		}
 
@@ -260,10 +269,16 @@ func (d *DataService) GetPhotoSectionsCreatedByPatientForQuestion(questionId, pa
 
 		photoIntakeSection.Photos = photoIntakeSlots
 
-		photoIntakeSections = append(photoIntakeSections, &photoIntakeSection)
+		photoSections := photoSectionsByQuestion[photoIntakeSection.QuestionId]
+		if len(photoSections) == 0 {
+			photoSections = []*common.PhotoIntakeSection{&photoIntakeSection}
+		} else {
+			photoSections = append(photoSections, &photoIntakeSection)
+		}
+		photoSectionsByQuestion[photoIntakeSection.QuestionId] = photoSections
 	}
 
-	return photoIntakeSections, rows.Err()
+	return photoSectionsByQuestion, rows.Err()
 }
 
 func insertAnswers(tx *sql.Tx, answersToStore []*common.AnswerIntake, status string) (res sql.Result, err error) {

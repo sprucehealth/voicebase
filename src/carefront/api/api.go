@@ -236,7 +236,8 @@ type IntakeAPI interface {
 	MakeCurrentPhotoAnswerInactive(role string, roleId, questionId, patientVisitId, potentialAnswerId, layoutVersionId int64) error
 	RejectPatientVisitPhotos(patientVisitId int64) error
 	StorePhotoSectionsForQuestion(questionId, patientId, patientVisitId int64, photoSections []*common.PhotoIntakeSection) error
-	GetPhotoSectionsCreatedByPatientForQuestion(questionId, patientId, patientVisitId int64) ([]*common.PhotoIntakeSection, error)
+	GetPatientCreatedPhotoSectionsForQuestionId(questionId, patientId, patientVisitId int64) ([]*common.PhotoIntakeSection, error)
+	GetPatientCreatedPhotoSectionsForQuestionIds(questionIds []int64, patientId, patientVisitId int64) (map[int64][]*common.PhotoIntakeSection, error)
 }
 
 type PhotoSlotInfo struct {
