@@ -223,6 +223,49 @@ func (d *DataService) StorePhotoSectionsForQuestion(questionId, patientId, patie
 	return tx.Commit()
 }
 
+func (d *DataService) GetPhotoSectionsCreatedByPatientForQuestion(questionId, patientId, patientVisitId int64) ([]*common.PhotoIntakeSection, error) {
+	// get all the top level information for photo sections
+	rows, err := d.db.Query(`select id, section_name, creation_date 
+		from photo_intake_section where patient_id=? and question_id=? and patient_visit_id = ? and status=?`, patientId, questionId, patientVisitId, STATUS_ACTIVE)
+	if err != nil {
+		return nil, err
+	}
+	defer rows.Close()
+
+	photoIntakeSections := make([]*common.PhotoIntakeSection, 0)
+	for rows.Next() {
+		var photoIntakeSection common.PhotoIntakeSection
+		if err := rows.Scan(&photoIntakeSection.Id, &photoIntakeSection.Name, &photoIntakeSection.CreationDate); err != nil {
+			return nil, err
+		}
+
+		// get photos associated with each section
+		rows2, err := d.db.Query(`select id, photo_slot_id, photo_id, photo_slot_name, creation_date from photo_intake_slot where photo_intake_section_id = ?`, photoIntakeSection.Id)
+		if err != nil {
+			return nil, err
+		}
+		defer rows2.Close()
+
+		photoIntakeSlots := make([]*common.PhotoIntakeSlot, 0)
+		for rows2.Next() {
+			var photoIntakeSlot common.PhotoIntakeSlot
+			if err := rows2.Scan(&photoIntakeSlot.Id, &photoIntakeSlot.SlotId, &photoIntakeSlot.PhotoId, &photoIntakeSlot.Name, &photoIntakeSlot.CreationDate); err != nil {
+				return nil, err
+			}
+			photoIntakeSlots = append(photoIntakeSlots, &photoIntakeSlot)
+		}
+		if rows2.Err() != nil {
+			return nil, err
+		}
+
+		photoIntakeSection.Photos = photoIntakeSlots
+
+		photoIntakeSections = append(photoIntakeSections, &photoIntakeSection)
+	}
+
+	return photoIntakeSections, rows.Err()
+}
+
 func insertAnswers(tx *sql.Tx, answersToStore []*common.AnswerIntake, status string) (res sql.Result, err error) {
 
 	for _, answerToStore := range answersToStore {

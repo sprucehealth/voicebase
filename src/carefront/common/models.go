@@ -123,9 +123,10 @@ type AnswerIntake struct {
 }
 
 type PhotoIntakeSection struct {
-	Id     int64              `json:"-"`
-	Name   string             `json:"name,omitempty"`
-	Photos []*PhotoIntakeSlot `json:"photos,omitempty"`
+	Id           int64              `json:"-"`
+	Name         string             `json:"name,omitempty"`
+	Photos       []*PhotoIntakeSlot `json:"photos,omitempty"`
+	CreationDate time.Time          `json:"creation_date"`
 }
 
 type PhotoIntakeSlot struct {
