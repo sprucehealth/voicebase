@@ -223,3 +223,21 @@ func SubmitPatientVisitForPatient(patientId, patientVisitId int64, testData Test
 		t.Fatalf("Case status should be submitted after the case was submitted to the doctor, but its not. It is %s instead.", patientVisit.Status)
 	}
 }
+
+func SubmitPhotoSectionsForQuestionInPatientVisit(accountId int64, requestData *patient_visit.PhotoAnswerIntakeRequestData, testData TestData, t *testing.T) {
+	photoIntakeHandler := patient_visit.NewPhotoAnswerIntakeHandler(testData.DataApi)
+	photoIntakeServer := httptest.NewServer(photoIntakeHandler)
+	defer photoIntakeServer.Close()
+
+	jsonData, err := json.Marshal(requestData)
+	if err != nil {
+		t.Fatal(err.Error())
+	}
+
+	resp, err := AuthPost(photoIntakeServer.URL, "application/json", bytes.NewReader(jsonData), accountId)
+	if err != nil {
+		t.Fatal(err.Error())
+	} else if resp.StatusCode != http.StatusOK {
+		t.Fatalf("Expected response code %d for photo intake but got %d", http.StatusOK, resp.StatusCode)
+	}
+}

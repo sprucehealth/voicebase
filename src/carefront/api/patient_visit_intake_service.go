@@ -177,6 +177,52 @@ func (d *DataService) RejectPatientVisitPhotos(patientVisitId int64) error {
 	return err
 }
 
+func (d *DataService) StorePhotoSectionsForQuestion(questionId, patientId, patientVisitId int64, photoSections []*common.PhotoIntakeSection) error {
+	tx, err := d.db.Begin()
+	if err != nil {
+		return err
+	}
+
+	// mark any preexisting photosections to this question as inactive
+	_, err = tx.Exec(`update photo_intake_section set status=? 
+		where question_id=? and patient_id=? and patient_visit_id=?`, STATUS_INACTIVE, questionId, patientId, patientVisitId)
+	if err != nil {
+		tx.Rollback()
+		return err
+	}
+
+	// iterate through the photo sections to create new ones
+	for _, photoSection := range photoSections {
+		res, err := tx.Exec(`insert into photo_intake_section (section_name, question_id, patient_id, patient_visit_id, status) values (?,?,?,?,?)`, photoSection.Name, questionId, patientId, patientVisitId, STATUS_ACTIVE)
+		if err != nil {
+			tx.Rollback()
+			return err
+		}
+
+		photoSectionId, err := res.LastInsertId()
+		if err != nil {
+			tx.Rollback()
+			return err
+		}
+
+		for _, photoSlot := range photoSection.Photos {
+			// lets go ahead and claim the photo
+			if err := d.claimPhoto(tx, photoSlot.PhotoId, common.ClaimerTypePhotoIntakeSlot, photoSlot.SlotId); err != nil {
+				tx.Rollback()
+				return err
+			}
+
+			_, err = tx.Exec(`insert into photo_intake_slot (photo_slot_id, photo_id, photo_slot_name, photo_intake_section_id) values (?,?,?,?)`, photoSlot.SlotId, photoSlot.PhotoId, photoSlot.Name, photoSectionId)
+			if err != nil {
+				tx.Rollback()
+				return err
+			}
+		}
+	}
+
+	return tx.Commit()
+}
+
 func insertAnswers(tx *sql.Tx, answersToStore []*common.AnswerIntake, status string) (res sql.Result, err error) {
 
 	for _, answerToStore := range answersToStore {

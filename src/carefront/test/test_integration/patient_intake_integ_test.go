@@ -4,12 +4,8 @@ import (
 	"bytes"
 	"encoding/json"
 	"fmt"
-	"io"
 	"io/ioutil"
-	"mime/multipart"
-	"net/http"
 	"net/http/httptest"
-	"os"
 	"strconv"
 	"testing"
 
@@ -465,118 +461,4 @@ func TestSubQuestionEntryIntake(t *testing.T) {
 	if questionNotFound {
 		t.Fatal("Question that is expected to have answers and sub answers not found")
 	}
-}
-
-func TestPhotoAnswerIntake(t *testing.T) {
-
-	fileToUpload := "../../info_intake/condition_intake.json"
-
-	testData := SetupIntegrationTest(t)
-	defer TearDownIntegrationTest(t, testData)
-
-	// signup a random test patient for which to answer questions
-	patientSignedUpResponse := SignupRandomTestPatient(t, testData.DataApi, testData.AuthApi)
-	patientVisitResponse := CreatePatientVisitForPatient(patientSignedUpResponse.Patient.PatientId.Int64(), testData, t)
-	questionId := getQuestionWithTagAndExpectedType("q_chest_photo_intake", "q_type_photo", t, testData)
-	potentialAnswerId := getAnswerWithTagAndExpectedType("a_chest_phota_intake", "a_type_photo_entry_chest", questionId, testData, t)
-
-	body := &bytes.Buffer{}
-	writer := multipart.NewWriter(body)
-	// uploading any file as a photo for now
-	part, err := writer.CreateFormFile("photo", "example.jpg")
-	if err != nil {
-		t.Fatal("Unable to create a form file with a sample file")
-	}
-
-	file, err := os.Open(fileToUpload)
-	if err != nil {
-		t.Fatal("Unable to open file for uploading: " + err.Error())
-	}
-	_, err = io.Copy(part, file)
-	if err != nil {
-		t.Fatal("Unable to copy contents of file into multipart form data: " + err.Error())
-	}
-
-	writer.WriteField("question_id", strconv.FormatInt(questionId, 10))
-	writer.WriteField("potential_answer_id", strconv.FormatInt(potentialAnswerId, 10))
-	writer.WriteField("patient_visit_id", strconv.FormatInt(patientVisitResponse.PatientVisitId, 10))
-
-	err = writer.Close()
-	if err != nil {
-		t.Fatal("Unable to create multi-form data. Error when trying to close writer: " + err.Error())
-	}
-
-	photoAnswerIntakeHandler := patient_visit.NewPhotoAnswerIntakeHandler(testData.DataApi, testData.CloudStorageService, "dev-cases-bucket-integ", "us-east-1", 1*1024*1024)
-	patient, err := testData.DataApi.GetPatientFromId(patientSignedUpResponse.Patient.PatientId.Int64())
-	if err != nil {
-		t.Fatal("Unable to retrieve patient data given the patient id: " + err.Error())
-	}
-	ts := httptest.NewServer(photoAnswerIntakeHandler)
-	defer ts.Close()
-
-	resp, err := AuthPost(ts.URL, writer.FormDataContentType(), body, patient.AccountId.Int64())
-	if err != nil {
-		t.Fatal("Unable to submit photo answer for patient: " + err.Error())
-	}
-
-	responseBody, err := ioutil.ReadAll(resp.Body)
-	if err != nil {
-		t.Fatal("Unable to read the body of the response when trying to submit photo answer for patient: " + err.Error())
-	}
-	CheckSuccessfulStatusCode(resp, "Unable to submit photo answer for patient: "+string(responseBody), t)
-
-	// get the patient visit again to get the patient answer in there
-	patientVisitResponse = getPatientVisitForPatient(patientSignedUpResponse.Patient.PatientId.Int64(), testData, t)
-	for _, section := range patientVisitResponse.ClientLayout.Sections {
-		for _, screen := range section.Screens {
-			for _, question := range screen.Questions {
-				if question.QuestionId == questionId {
-					if question.Answers == nil || len(question.Answers) == 0 {
-						t.Fatalf("Expected patient answer for question with id %d, but got none", questionId)
-					}
-					for _, patientAnswer := range question.Answers {
-						if patientAnswer.PotentialAnswerId.Int64() == potentialAnswerId &&
-							patientAnswer.ObjectUrl != "" {
-
-							// make sure that we can actually download the file that was just uploaded
-							res, err := AuthGet(patientAnswer.ObjectUrl, patient.AccountId.Int64())
-							if err != nil {
-								t.Fatal("Unable to get the file that was just uploaded : " + err.Error())
-							}
-							if res.StatusCode != http.StatusOK {
-								t.Fatalf("Error returned when trying to get the file that was just uplaoded. Status = %d", res.StatusCode)
-							}
-							downloadedData, err := ioutil.ReadAll(res.Body)
-
-							if err != nil {
-								t.Fatal("Error getting the body of the response: " + err.Error())
-							}
-
-							// compare the uploaded and downloaded file
-							uploadedFileData, err := ioutil.ReadFile(fileToUpload)
-							if err != nil {
-								t.Fatal("Unable to read file to upload: " + fileToUpload)
-							}
-
-							r := bytes.Compare(downloadedData, uploadedFileData)
-							if r != 0 {
-								t.Fatal("File uploaded not the same as file downloaded")
-							}
-
-							buffer := bytes.NewBufferString(strconv.FormatInt(patientVisitResponse.PatientVisitId, 10))
-							buffer.WriteString("/")
-							buffer.WriteString(strconv.FormatInt(patientAnswer.AnswerIntakeId.Int64(), 10))
-							buffer.WriteString(".jpg")
-							err = testData.CloudStorageService.DeleteObjectAtLocation("dev-cases-bucket-integ", buffer.String(), "us-east-1")
-							if err != nil {
-								t.Fatalf("Unable to delete object at location %s : %s ", patientAnswer.ObjectUrl, err.Error())
-							}
-							return
-						}
-					}
-				}
-			}
-		}
-	}
-	t.Fatal("Photo answer submitted not found as patient answer")
 }

@@ -14,6 +14,7 @@ const (
 
 const (
 	ClaimerTypeConversationMessage = "conversation_message"
+	ClaimerTypePhotoIntakeSlot     = "patient_intake_photo_slot"
 )
 
 type PhoneInformation struct {
@@ -131,7 +132,9 @@ type PhotoIntakeSlot struct {
 	Id           int64     `json:"-"`
 	CreationDate time.Time `json:"creation_date"`
 	PhotoUrl     string    `json:"photo_url"`
-	SlotId       int64     `json:"slot_id"`
+	PhotoId      int64     `json:"photo_id,string,omitempty"`
+	SlotId       int64     `json:"slot_id,string"`
+	Name         string    `json:"name"`
 }
 
 type PatientCareProviderAssignment struct {

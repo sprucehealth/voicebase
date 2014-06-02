@@ -235,6 +235,7 @@ type IntakeAPI interface {
 	UpdatePhotoAnswerRecordWithObjectStorageId(patientInfoIntakeId, objectStorageId int64) error
 	MakeCurrentPhotoAnswerInactive(role string, roleId, questionId, patientVisitId, potentialAnswerId, layoutVersionId int64) error
 	RejectPatientVisitPhotos(patientVisitId int64) error
+	StorePhotoSectionsForQuestion(questionId, patientId, patientVisitId int64, photoSections []*common.PhotoIntakeSection) error
 }
 
 type PhotoSlotInfo struct {

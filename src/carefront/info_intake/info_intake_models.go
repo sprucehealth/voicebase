@@ -19,6 +19,7 @@ const (
 	QUESTION_TYPE_SINGLE_ENTRY       = "q_type_single_entry"
 	QUESTION_TYPE_SINGLE_PHOTO       = "q_type_single_photo"
 	QUESTION_TYPE_SINGLE_SELECT      = "q_type_single_select"
+	QUESTION_TYPE_PHOTO_SECTION      = "q_type_photo_section"
 )
 
 type InfoIntakeModel interface {
