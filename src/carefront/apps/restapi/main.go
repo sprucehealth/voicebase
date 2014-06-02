@@ -27,6 +27,7 @@ import (
 	"carefront/patient_file"
 	"carefront/patient_treatment_plan"
 	"carefront/photos"
+	"carefront/reslib"
 	"carefront/services/auth"
 	"carefront/support"
 	thriftapi "carefront/thrift/api"
@@ -289,6 +290,9 @@ func main() {
 	mux.Handle("/v1/credit_card/default", patientCardsHandler)
 	mux.Handle("/v1/notification/token", notify.NewNotificationHandler(dataApi, conf.NotifiyConfigs, snsClient))
 	mux.Handle("/v1/notification/prompt_status", notify.NewPromptStatusHandler(dataApi))
+
+	mux.Handle("/v1/resourceguide", reslib.NewHandler(dataApi))
+	mux.Handle("/v1/resourceguide/list", reslib.NewListHandler(dataApi))
 
 	mux.Handle("/v1/photo", photos.NewHandler(dataApi, awsAuth, conf.PhotoBucket, conf.AWSRegion))
 	mux.Handle("/v1/patient/conversation", messages.NewPatientConversationHandler(dataApi))

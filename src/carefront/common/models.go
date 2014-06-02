@@ -512,3 +512,10 @@ type PushConfigData struct {
 	DeviceID        string
 	CreationDate    time.Time
 }
+
+type ResourceGuide struct {
+	Id       int64
+	Title    string
+	PhotoURL string
+	Layout   interface{}
+}
