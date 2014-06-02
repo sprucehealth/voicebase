@@ -6,6 +6,7 @@ import (
 	"carefront/common"
 	"carefront/common/config"
 	"carefront/messages"
+	"carefront/patient_visit"
 	"carefront/visit"
 	"fmt"
 	"reflect"
@@ -64,7 +65,7 @@ func getNotificationViewForEvent(ev interface{}) notificationView {
 
 func init() {
 	eventToNotificationViewMapping = map[reflect.Type]notificationView{
-		reflect.TypeOf(&apiservice.VisitSubmittedEvent{}):       visitSubmittedNotificationView(0),
+		reflect.TypeOf(&patient_visit.VisitSubmittedEvent{}):    visitSubmittedNotificationView(0),
 		reflect.TypeOf(&apiservice.VisitReviewSubmittedEvent{}): visitReviewedNotificationView(0),
 		reflect.TypeOf(&messages.ConversationStartedEvent{}):    newMessageNotificationView(0),
 		reflect.TypeOf(&messages.ConversationReplyEvent{}):      newMessageNotificationView(0),

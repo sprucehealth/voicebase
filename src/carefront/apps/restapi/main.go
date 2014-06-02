@@ -248,6 +248,7 @@ func main() {
 	mux.Handle("/v1/treatment_guide", treatment_plan.NewTreatmentGuideHandler(dataApi))
 	mux.Handle("/v1/visit", patientVisitHandler)
 	mux.Handle("/v1/check_eligibility", checkElligibilityHandler)
+	mux.Handle("/v1/patient/visit", patient_visit.NewPatientVisitHandler(dataApi, authApi))
 	mux.Handle("/v1/patient/visit/answer", patient_visit.NewAnswerIntakeHandler(dataApi))
 	mux.Handle("/v1/patient/visit/photo_answer", patient_visit.NewPhotoAnswerIntakeHandler(dataApi))
 	mux.Handle("/v1/authenticate", patient.NewAuthenticationHandler(dataApi, authApi, pharmacy.GooglePlacesPharmacySearchService(0), conf.StaticContentBaseUrl))

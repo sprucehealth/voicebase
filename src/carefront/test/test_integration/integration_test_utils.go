@@ -12,6 +12,7 @@ import (
 	"carefront/libs/aws"
 	"carefront/libs/dispatch"
 	"carefront/notify"
+	"carefront/patient_visit"
 	"database/sql"
 	"errors"
 	"fmt"
@@ -166,7 +167,7 @@ func GetDoctorIdOfCurrentPrimaryDoctor(testData TestData, t *testing.T) int64 {
 	return doctorId
 }
 
-func SignupAndSubmitPatientVisitForRandomPatient(t *testing.T, testData TestData, doctor *common.Doctor) (*apiservice.PatientVisitResponse, *common.DoctorTreatmentPlan) {
+func SignupAndSubmitPatientVisitForRandomPatient(t *testing.T, testData TestData, doctor *common.Doctor) (*patient_visit.PatientVisitResponse, *common.DoctorTreatmentPlan) {
 	patientSignedupResponse := SignupRandomTestPatient(t, testData.DataApi, testData.AuthApi)
 	patientVisitResponse := CreatePatientVisitForPatient(patientSignedupResponse.Patient.PatientId.Int64(), testData, t)
 

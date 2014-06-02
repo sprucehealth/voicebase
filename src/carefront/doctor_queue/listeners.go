@@ -9,12 +9,13 @@ import (
 	"carefront/libs/golog"
 	"carefront/messages"
 	"carefront/notify"
+	"carefront/patient_visit"
 	"carefront/visit"
 	"errors"
 )
 
 func InitListeners(dataAPI api.DataAPI, notificationManager *notify.NotificationManager) {
-	dispatch.Default.Subscribe(func(ev *apiservice.VisitSubmittedEvent) error {
+	dispatch.Default.Subscribe(func(ev *patient_visit.VisitSubmittedEvent) error {
 		// Insert into item appropriate doctor queue to make them aware of a new visit
 		// for them to diagnose
 		if err := dataAPI.InsertItemIntoDoctorQueue(api.DoctorQueueItem{

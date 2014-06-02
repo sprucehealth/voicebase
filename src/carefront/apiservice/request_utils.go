@@ -34,6 +34,7 @@ const (
 	HTTP_DELETE                      = "DELETE"
 	HTTP_UNPROCESSABLE_ENTITY        = 422
 	signedUrlAuthTimeout             = 10 * time.Minute
+	HEALTH_CONDITION_ACNE_ID         = 1
 )
 
 type GenericJsonResponse struct {

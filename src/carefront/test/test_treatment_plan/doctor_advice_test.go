@@ -12,6 +12,7 @@ import (
 	"carefront/apiservice"
 	"carefront/common"
 	"carefront/encoding"
+	"carefront/patient_visit"
 	"carefront/test/test_integration"
 )
 
@@ -450,7 +451,7 @@ func TestAdvicePointsForPatientVisit_ErrorDifferentTextForLinkedItems(t *testing
 
 }
 
-func setupAdviceCreationTest(t *testing.T, testData test_integration.TestData) (*apiservice.PatientVisitResponse, *common.DoctorTreatmentPlan, *common.Doctor) {
+func setupAdviceCreationTest(t *testing.T, testData test_integration.TestData) (*patient_visit.PatientVisitResponse, *common.Doctor) {
 
 	// get the current primary doctor
 	doctorId := test_integration.GetDoctorIdOfCurrentPrimaryDoctor(testData, t)

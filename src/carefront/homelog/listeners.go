@@ -10,6 +10,7 @@ import (
 	"carefront/messages"
 	"carefront/notify"
 	patientApiService "carefront/patient"
+	"carefront/patient_visit"
 	"errors"
 	"fmt"
 	"net/url"
@@ -17,7 +18,7 @@ import (
 )
 
 func InitListeners(dataAPI api.DataAPI, notificationManager *notify.NotificationManager) {
-	dispatch.Default.Subscribe(func(ev *apiservice.VisitStartedEvent) error {
+	dispatch.Default.Subscribe(func(ev *patient_visit.VisitStartedEvent) error {
 		// Insert an incomplete notification when a patient starts a visit
 		_, err := dataAPI.InsertPatientNotification(ev.PatientId, &common.Notification{
 			UID:             incompleteVisit,
@@ -31,7 +32,7 @@ func InitListeners(dataAPI api.DataAPI, notificationManager *notify.Notification
 		return err
 	})
 
-	dispatch.Default.Subscribe(func(ev *apiservice.VisitSubmittedEvent) error {
+	dispatch.Default.Subscribe(func(ev *patient_visit.VisitSubmittedEvent) error {
 		// Remove the incomplete visit notification when the patient submits a visit
 		if err := dataAPI.DeletePatientNotificationByUID(ev.PatientId, incompleteVisit); err != nil {
 			golog.Errorf("Failed to remove incomplete visit notification for patient %d: %s", ev.PatientId, err.Error())

@@ -5,6 +5,7 @@ import (
 	"carefront/apiservice"
 	"carefront/common"
 	"carefront/encoding"
+	"carefront/patient_visit"
 	"carefront/test/test_integration"
 	"database/sql"
 	"encoding/json"
@@ -516,7 +517,7 @@ func TestRegimenForPatientVisit_TrackingSourceId(t *testing.T) {
 
 }
 
-func setupTestForRegimenCreation(t *testing.T, testData test_integration.TestData) (*apiservice.PatientVisitResponse, *common.DoctorTreatmentPlan, *common.Doctor) {
+func setupTestForRegimenCreation(t *testing.T, testData test_integration.TestData) (*patient_visit.PatientVisitResponse, *common.Doctor) {
 
 	// get the current primary doctor
 	doctorId := test_integration.GetDoctorIdOfCurrentPrimaryDoctor(testData, t)

@@ -7,6 +7,7 @@ import (
 	"carefront/common"
 	"carefront/libs/golog"
 	patientApiService "carefront/patient"
+	"carefront/patient_visit"
 	"encoding/json"
 	"fmt"
 	"io/ioutil"
@@ -186,7 +187,7 @@ func (c *Handler) createNewDemoPatient(patient *common.Patient, doctorId int64, 
 			return
 		}
 
-		patientVisitResponse := &apiservice.PatientVisitResponse{}
+		patientVisitResponse := &patient_visit.PatientVisitResponse{}
 		err = json.NewDecoder(resp.Body).Decode(&patientVisitResponse)
 		defer resp.Body.Close()
 		if err != nil {

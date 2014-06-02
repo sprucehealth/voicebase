@@ -49,9 +49,8 @@ func SignupRandomTestPatient(t *testing.T, dataApi api.DataAPI, authApi api.Auth
 	return signedupPatientResponse
 }
 
-func getPatientVisitForPatient(patientId int64, testData TestData, t *testing.T) *apiservice.PatientVisitResponse {
-	patientVisitHandler := apiservice.NewPatientVisitHandler(testData.DataApi, testData.AuthApi,
-		testData.CloudStorageService, testData.CloudStorageService)
+func getPatientVisitForPatient(patientId int64, testData TestData, t *testing.T) *patient_visit.PatientVisitResponse {
+	patientVisitHandler := patient_visit.NewPatientVisitHandler(testData.DataApi, testData.AuthApi)
 	patient, err := testData.DataApi.GetPatientFromId(patientId)
 	if err != nil {
 		t.Fatal("Unable to get patient information given the patient id: " + err.Error())
@@ -73,7 +72,7 @@ func getPatientVisitForPatient(patientId int64, testData TestData, t *testing.T)
 
 	CheckSuccessfulStatusCode(resp, "Unsuccessful call to register new patient visit: "+string(body), t)
 
-	patientVisitResponse := &apiservice.PatientVisitResponse{}
+	patientVisitResponse := &patient_visit.PatientVisitResponse{}
 	err = json.Unmarshal(body, patientVisitResponse)
 	if err != nil {
 		t.Fatal("Unable to unmarshall response body into patient visit response: " + err.Error())
@@ -82,9 +81,8 @@ func getPatientVisitForPatient(patientId int64, testData TestData, t *testing.T)
 	return patientVisitResponse
 }
 
-func CreatePatientVisitForPatient(patientId int64, testData TestData, t *testing.T) *apiservice.PatientVisitResponse {
-	patientVisitHandler := apiservice.NewPatientVisitHandler(testData.DataApi, testData.AuthApi,
-		testData.CloudStorageService, testData.CloudStorageService)
+func CreatePatientVisitForPatient(patientId int64, testData TestData, t *testing.T) *patient_visit.PatientVisitResponse {
+	patientVisitHandler := patient_visit.NewPatientVisitHandler(testData.DataApi, testData.AuthApi)
 	patient, err := testData.DataApi.GetPatientFromId(patientId)
 	if err != nil {
 		t.Fatal("Unable to get patient information given the patient id: " + err.Error())
@@ -106,7 +104,7 @@ func CreatePatientVisitForPatient(patientId int64, testData TestData, t *testing
 
 	CheckSuccessfulStatusCode(resp, "Unsuccessful call to register new patient visit: "+string(body), t)
 
-	patientVisitResponse := &apiservice.PatientVisitResponse{}
+	patientVisitResponse := &patient_visit.PatientVisitResponse{}
 	err = json.Unmarshal(body, patientVisitResponse)
 	if err != nil {
 		t.Fatal("Unable to unmarshall response body into patient visit response: " + err.Error())
@@ -117,7 +115,7 @@ func CreatePatientVisitForPatient(patientId int64, testData TestData, t *testing
 
 // randomly answering all top level questions in the patient visit, regardless of the condition under which the questions are presented to the user.
 // the goal of this is to get all questions answered so as to render the views for the doctor layout, not to test the sanity of the answers the patient inputs.
-func prepareAnswersForQuestionsInPatientVisit(patientVisitResponse *apiservice.PatientVisitResponse, t *testing.T) *apiservice.AnswerIntakeRequestBody {
+func prepareAnswersForQuestionsInPatientVisit(patientVisitResponse *patient_visit.PatientVisitResponse, t *testing.T) *apiservice.AnswerIntakeRequestBody {
 	answerIntakeRequestBody := apiservice.AnswerIntakeRequestBody{}
 	answerIntakeRequestBody.PatientVisitId = patientVisitResponse.PatientVisitId
 	answerIntakeRequestBody.Questions = make([]*apiservice.AnswerToQuestionItem, 0)
@@ -193,8 +191,7 @@ func SubmitAnswersIntakeForPatient(patientId, patientAccountId int64, answerInta
 }
 
 func SubmitPatientVisitForPatient(patientId, patientVisitId int64, testData TestData, t *testing.T) {
-	patientVisitHandler := apiservice.NewPatientVisitHandler(testData.DataApi, testData.AuthApi,
-		testData.CloudStorageService, testData.CloudStorageService)
+	patientVisitHandler := patient_visit.NewPatientVisitHandler(testData.DataApi, testData.AuthApi)
 	patient, err := testData.DataApi.GetPatientFromId(patientId)
 	if err != nil {
 		t.Fatal("Unable to get patient information given the patient id: " + err.Error())

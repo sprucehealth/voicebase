@@ -6,7 +6,7 @@ import (
 	"encoding/json"
 )
 
-func GetPatientLayoutForPatientVisit(patientVisitId, languageId int64, dataApi api.DataAPI, layoutStorageService api.CloudStorageAPI) (*info_intake.InfoIntakeLayout, int64, error) {
+func GetPatientLayoutForPatientVisit(patientVisitId, languageId int64, dataApi api.DataAPI) (*info_intake.InfoIntakeLayout, int64, error) {
 	layoutVersionId, err := dataApi.GetLayoutVersionIdForPatientVisit(patientVisitId)
 	if err != nil {
 		return nil, 0, err

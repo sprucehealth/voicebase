@@ -2,9 +2,9 @@ package test_integration
 
 import (
 	"carefront/api"
-	"carefront/apiservice"
 	"carefront/doctor_queue"
 	patientApiService "carefront/patient"
+	"carefront/patient_visit"
 	"carefront/settings"
 	"encoding/json"
 	"fmt"
@@ -27,7 +27,7 @@ func TestDoctorQueueWithPatientVisits(t *testing.T) {
 		t.Fatal("Unable to get doctor from doctor id " + err.Error())
 	}
 
-	patientVisitResponses := make([]*apiservice.PatientVisitResponse, 0)
+	patientVisitResponses := make([]*patient_visit.PatientVisitResponse, 0)
 	signedUpPatients := make([]*patientApiService.PatientSignedupResponse, 0)
 
 	signedUpPatientResponse := SignupRandomTestPatient(t, testData.DataApi, testData.AuthApi)

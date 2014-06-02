@@ -238,7 +238,7 @@ func TestSingleEntryIntake(t *testing.T) {
 	t.Fatalf("While an answer for the expected question exists, unable to find the expected answer with id %d for single entry intake test", potentialAnswerId)
 }
 
-func submitFreeTextResponseForPatient(patientVisitResponse *apiservice.PatientVisitResponse, PatientId int64, freeTextResponse string, testData TestData, t *testing.T) {
+func submitFreeTextResponseForPatient(patientVisitResponse *patient_visit.PatientVisitResponse, PatientId int64, freeTextResponse string, testData TestData, t *testing.T) {
 	// now lets go ahead and try and answer the question about the reason for visit given that it is
 	// single select
 	questionId := getQuestionWithTagAndExpectedType("q_changes_acne_worse", "q_type_free_text", t, testData)
