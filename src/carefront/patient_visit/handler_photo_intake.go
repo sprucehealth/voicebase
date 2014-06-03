@@ -10,8 +10,8 @@ import (
 	"net/http"
 )
 
-type PhotoAnswerIntakeHandler struct {
-	DataApi api.DataAPI
+type photoAnswerIntakeHandler struct {
+	dataApi api.DataAPI
 }
 
 type PhotoAnswerIntakeResponse struct {
@@ -28,13 +28,13 @@ type PhotoAnswerIntakeRequestData struct {
 	PatientVisitId int64                            `json:"patient_visit_id,string"`
 }
 
-func NewPhotoAnswerIntakeHandler(dataApi api.DataAPI) *PhotoAnswerIntakeHandler {
-	return &PhotoAnswerIntakeHandler{
-		DataApi: dataApi,
+func NewPhotoAnswerIntakeHandler(dataApi api.DataAPI) *photoAnswerIntakeHandler {
+	return &photoAnswerIntakeHandler{
+		dataApi: dataApi,
 	}
 }
 
-func (p *PhotoAnswerIntakeHandler) ServeHTTP(w http.ResponseWriter, r *http.Request) {
+func (p *photoAnswerIntakeHandler) ServeHTTP(w http.ResponseWriter, r *http.Request) {
 	if r.Method != apiservice.HTTP_POST {
 		http.NotFound(w, r)
 		return
@@ -46,13 +46,13 @@ func (p *PhotoAnswerIntakeHandler) ServeHTTP(w http.ResponseWriter, r *http.Requ
 		return
 	}
 
-	patientId, err := p.DataApi.GetPatientIdFromAccountId(apiservice.GetContext(r).AccountId)
+	patientId, err := p.dataApi.GetPatientIdFromAccountId(apiservice.GetContext(r).AccountId)
 	if err != nil {
 		apiservice.WriteDeveloperError(w, http.StatusInternalServerError, err.Error())
 		return
 	}
 
-	patientIdFromPatientVisitId, err := p.DataApi.GetPatientIdFromPatientVisitId(requestData.PatientVisitId)
+	patientIdFromPatientVisitId, err := p.dataApi.GetPatientIdFromPatientVisitId(requestData.PatientVisitId)
 	if err != nil {
 		apiservice.WriteDeveloperError(w, http.StatusBadRequest, err.Error())
 		return
@@ -63,7 +63,7 @@ func (p *PhotoAnswerIntakeHandler) ServeHTTP(w http.ResponseWriter, r *http.Requ
 
 	for _, photoIntake := range requestData.PhotoQuestions {
 		// ensure that intake is for the right question type
-		questionType, err := p.DataApi.GetQuestionType(photoIntake.QuestionId)
+		questionType, err := p.dataApi.GetQuestionType(photoIntake.QuestionId)
 		if err != nil {
 			apiservice.WriteDeveloperError(w, http.StatusInternalServerError, err.Error())
 			return
@@ -74,7 +74,7 @@ func (p *PhotoAnswerIntakeHandler) ServeHTTP(w http.ResponseWriter, r *http.Requ
 
 		// get photo slots for the question and ensure that all slot ids in the request
 		// belong to this question
-		photoSlots, err := p.DataApi.GetPhotoSlots(photoIntake.QuestionId, api.EN_LANGUAGE_ID)
+		photoSlots, err := p.dataApi.GetPhotoSlots(photoIntake.QuestionId, api.EN_LANGUAGE_ID)
 		if err != nil {
 			apiservice.WriteDeveloperError(w, http.StatusInternalServerError, err.Error())
 			return
@@ -94,7 +94,7 @@ func (p *PhotoAnswerIntakeHandler) ServeHTTP(w http.ResponseWriter, r *http.Requ
 			}
 		}
 
-		if err := p.DataApi.StorePhotoSectionsForQuestion(photoIntake.QuestionId, patientId, requestData.PatientVisitId, photoIntake.PhotoSections); err != nil {
+		if err := p.dataApi.StorePhotoSectionsForQuestion(photoIntake.QuestionId, patientId, requestData.PatientVisitId, photoIntake.PhotoSections); err != nil {
 			apiservice.WriteDeveloperError(w, http.StatusInternalServerError, err.Error())
 			return
 		}
