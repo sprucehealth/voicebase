@@ -202,16 +202,16 @@ func (d *DataService) StorePhotoSectionsForQuestion(questionId, patientId, patie
 	return tx.Commit()
 }
 
-func (d *DataService) GetPatientCreatedPhotoSectionsForQuestionId(questionId, patientId, patientVisitId int64) ([]*common.PhotoIntakeSection, error) {
+func (d *DataService) GetPatientCreatedPhotoSectionsForQuestionId(questionId, patientId, patientVisitId int64) ([]common.Answer, error) {
 	photoSectionsByQuestion, err := d.GetPatientCreatedPhotoSectionsForQuestionIds([]int64{questionId}, patientId, patientVisitId)
 	return photoSectionsByQuestion[questionId], err
 }
 
-func (d *DataService) GetPatientCreatedPhotoSectionsForQuestionIds(questionIds []int64, patientId, patientVisitId int64) (map[int64][]*common.PhotoIntakeSection, error) {
+func (d *DataService) GetPatientCreatedPhotoSectionsForQuestionIds(questionIds []int64, patientId, patientVisitId int64) (map[int64][]common.Answer, error) {
 	if len(questionIds) == 0 {
 		return nil, nil
 	}
-	photoSectionsByQuestion := make(map[int64][]*common.PhotoIntakeSection)
+	photoSectionsByQuestion := make(map[int64][]common.Answer)
 	params := []interface{}{patientId}
 	params = appendInt64sToInterfaceSlice(params, questionIds)
 	params = append(params, patientVisitId)
@@ -253,7 +253,7 @@ func (d *DataService) GetPatientCreatedPhotoSectionsForQuestionIds(questionIds [
 
 		photoSections := photoSectionsByQuestion[photoIntakeSection.QuestionId]
 		if len(photoSections) == 0 {
-			photoSections = []*common.PhotoIntakeSection{&photoIntakeSection}
+			photoSections = []common.Answer{&photoIntakeSection}
 		} else {
 			photoSections = append(photoSections, &photoIntakeSection)
 		}

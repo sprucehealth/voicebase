@@ -37,7 +37,7 @@ func fillInFormattedFieldsForQuestions(healthCondition *info_intake.InfoIntakeLa
 	}
 }
 
-func populateGlobalSectionsWithPatientAnswers(dataApi api.DataAPI, healthCondition *info_intake.InfoIntakeLayout, patientId int64) error {
+func populateGlobalSectionsWithPatientAnswers(dataApi api.DataAPI, healthCondition *info_intake.InfoIntakeLayout, patientId int64, r *http.Request) error {
 	// identify sections that are global
 	globalSectionIds, err := dataApi.GetGlobalSectionIds()
 	if err != nil {
@@ -56,7 +56,7 @@ func populateGlobalSectionsWithPatientAnswers(dataApi api.DataAPI, healthConditi
 		return errors.New("Unable to get patient answers for global sections: " + err.Error())
 	}
 
-	populateIntakeLayoutWithPatientAnswers(healthCondition, globalSectionPatientAnswers)
+	populateIntakeLayoutWithPatientAnswers(healthCondition, globalSectionPatientAnswers, r)
 	return nil
 }
 
@@ -76,8 +76,8 @@ func populateSectionsWithPatientAnswers(dataApi api.DataAPI, patientId, patientV
 		return err
 	}
 
-	populateIntakeLayoutWithPatientAnswers(patientVisitLayout, patientAnswersForVisit)
-	populateIntakeLayoutWithPhotos(patientVisitLayout, photoSectionsByQuestion, r)
+	populateIntakeLayoutWithPatientAnswers(patientVisitLayout, patientAnswersForVisit, r)
+	populateIntakeLayoutWithPatientAnswers(patientVisitLayout, photoSectionsByQuestion, r)
 	return nil
 }
 
@@ -95,36 +95,29 @@ func getQuestionIdsInSectionInIntakeLayout(healthCondition *info_intake.InfoInta
 	return
 }
 
-func populateIntakeLayoutWithPatientAnswers(intake *info_intake.InfoIntakeLayout, patientAnswers map[int64][]common.Answer) {
+func populateIntakeLayoutWithPatientAnswers(intake *info_intake.InfoIntakeLayout, patientAnswers map[int64][]common.Answer, r *http.Request) {
 	for _, section := range intake.Sections {
 		for _, screen := range section.Screens {
 			for _, question := range screen.Questions {
 				// go through each question to see if there exists a patient answer for it
 				question.Answers = patientAnswers[question.QuestionId]
-			}
-		}
-	}
-}
-
-func populateIntakeLayoutWithPhotos(intake *info_intake.InfoIntakeLayout, photoSectionsByQuestion map[int64][]*common.PhotoIntakeSection, req *http.Request) {
-	for _, section := range intake.Sections {
-		for _, screen := range section.Screens {
-			for _, question := range screen.Questions {
-				photoSections := photoSectionsByQuestion[question.QuestionId]
-				if len(photoSections) > 0 {
-					question.Answers = make([]common.Answer, len(photoSections))
-					// go through each slot and populate the url for the photo
-					for i, photoSection := range photoSections {
-						for _, photoIntakeSlot := range photoSection.Photos {
-							photoIntakeSlot.PhotoUrl = apiservice.CreatePhotoUrl(photoIntakeSlot.PhotoId, photoIntakeSlot.Id, common.ClaimerTypePhotoIntakeSlot, req.Host)
+				if question.QuestionTypes[0] == info_intake.QUESTION_TYPE_PHOTO_SECTION {
+					if len(question.Answers) > 0 {
+						// go through each slot and populate the url for the photo
+						for _, answer := range question.Answers {
+							photoIntakeSection := answer.(*common.PhotoIntakeSection)
+							for _, photoIntakeSlot := range photoIntakeSection.Photos {
+								photoIntakeSlot.PhotoUrl = apiservice.CreatePhotoUrl(photoIntakeSlot.PhotoId, photoIntakeSlot.Id, common.ClaimerTypePhotoIntakeSlot, r.Host)
+							}
 						}
-						question.Answers[i] = photoSection
 					}
+
 				}
 			}
 		}
 	}
 }
+
 func getCurrentActiveClientLayoutForHealthCondition(dataApi api.DataAPI, healthConditionId, languageId int64) (*info_intake.InfoIntakeLayout, int64, error) {
 	data, layoutVersionId, err := dataApi.GetCurrentActivePatientLayout(languageId, healthConditionId)
 	if err != nil {

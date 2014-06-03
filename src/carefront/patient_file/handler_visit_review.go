@@ -101,22 +101,9 @@ func (p *doctorPatientVisitReviewHandler) ServeHTTP(w http.ResponseWriter, r *ht
 		return
 	}
 
-	// get all questions presented to the patient in the patient visit layout
-	questions := apiservice.GetQuestionsInPatientVisitLayout(patientVisitLayout)
-
-	questionIds := apiservice.GetNonPhotoQuestionIdsInPatientVisitLayout(patientVisitLayout)
-	// photoQuestionIds := apiservice.GetPhotoQuestionIdsInPatientVisitLayout(patientVisitLayout)
-
-	// get all the answers the patient entered for the questions (note that there may not be an answer for every question)
-	patientAnswersForQuestions, err := p.DataApi.GetPatientAnswersForQuestionsBasedOnQuestionIds(questionIds, patientVisit.PatientId.Int64(), patientVisit.PatientVisitId.Int64())
+	context, err := buildContext(p.DataApi, patientVisitLayout, patientVisit.PatientId.Int64(), patientVisitId, r)
 	if err != nil {
-		apiservice.WriteDeveloperError(w, http.StatusInternalServerError, "Unable to get patient answers for questions : "+err.Error())
-		return
-	}
-
-	context, err := populateContextForRenderingLayout(patientAnswersForQuestions, questions, p.DataApi, r)
-	if err != nil {
-		apiservice.WriteDeveloperError(w, http.StatusInternalServerError, "Unable to populate context for rendering layout: "+err.Error())
+		apiservice.WriteDeveloperError(w, http.StatusInternalServerError, err.Error())
 		return
 	}
 

@@ -241,3 +241,33 @@ func populatePatientPhotos(answeredPhotoSections []common.Answer, question *info
 	context.Set("patient_visit_photos", items)
 	return nil
 }
+
+func buildContext(dataApi api.DataAPI, patientVisitLayout *info_intake.InfoIntakeLayout, patientId, patientVisitId int64, req *http.Request) (common.ViewContext, error) {
+	questions := apiservice.GetQuestionsInPatientVisitLayout(patientVisitLayout)
+
+	questionIds := apiservice.GetNonPhotoQuestionIdsInPatientVisitLayout(patientVisitLayout)
+	photoQuestionIds := apiservice.GetPhotoQuestionIdsInPatientVisitLayout(patientVisitLayout)
+
+	// get all the answers the patient entered for the questions (note that there may not be an answer for every question)
+	patientAnswersForQuestions, err := dataApi.GetPatientAnswersForQuestionsBasedOnQuestionIds(questionIds, patientVisitId, patientVisitId)
+	if err != nil {
+		return nil, err
+	}
+
+	photoSectionsByQuestion, err := dataApi.GetPatientCreatedPhotoSectionsForQuestionIds(photoQuestionIds, patientId, patientVisitId)
+	if err != nil {
+		return nil, err
+	}
+
+	// combine photo sections into the patient answers
+	for questionId, photoSections := range photoSectionsByQuestion {
+		patientAnswersForQuestions[questionId] = photoSections
+	}
+
+	context, err := populateContextForRenderingLayout(patientAnswersForQuestions, questions, dataApi, req)
+	if err != nil {
+		return nil, err
+	}
+
+	return context, err
+}

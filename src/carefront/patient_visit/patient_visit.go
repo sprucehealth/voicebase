@@ -185,7 +185,7 @@ func GetPatientVisitLayout(dataApi api.DataAPI, patientId, patientVisitId int64,
 		return nil, err
 	}
 
-	err = populateGlobalSectionsWithPatientAnswers(dataApi, patientVisitLayout, patientId)
+	err = populateGlobalSectionsWithPatientAnswers(dataApi, patientVisitLayout, patientId, r)
 	if err != nil {
 		return nil, err
 	}
@@ -236,7 +236,7 @@ func (s *patientVisitHandler) createNewPatientVisitHandler(w http.ResponseWriter
 		return
 	}
 
-	err = populateGlobalSectionsWithPatientAnswers(s.dataApi, healthCondition, patient.PatientId.Int64())
+	err = populateGlobalSectionsWithPatientAnswers(s.dataApi, healthCondition, patient.PatientId.Int64(), r)
 	if err != nil {
 		apiservice.WriteDeveloperError(w, http.StatusInternalServerError, err.Error())
 		return
