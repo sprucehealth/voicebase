@@ -3,6 +3,10 @@ package info_intake
 // Step 1: DOCTOR VISIT REVIEW
 type DoctorVisitReviewLayout map[string]interface{}
 
+func NewDoctorVisitReviewLayout() DoctorVisitReviewLayout {
+	return DoctorVisitReviewLayout(map[string]interface{}{})
+}
+
 // Step 2: DIAGNOSIS INTAKE
 type DiagnosisIntake struct {
 	PatientVisitId   int64             `json:"patient_visit_id,string,omitempty"`

@@ -90,7 +90,7 @@ func (l *patientLayoutHandler) ServeHTTP(w http.ResponseWriter, r *http.Request)
 
 	for i, supportedLanguageId := range supportedLanguageIds {
 		clientModel := healthCondition
-		if err := FillIntakeLayout(clientModel, l.dataApi, supportedLanguageId); err != nil {
+		if err := api.FillIntakeLayout(clientModel, l.dataApi, supportedLanguageId); err != nil {
 			apiservice.WriteDeveloperError(w, http.StatusInternalServerError, "Unable to populate the layout as expected: "+err.Error())
 			return
 		}

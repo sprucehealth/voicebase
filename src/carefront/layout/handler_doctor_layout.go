@@ -65,21 +65,21 @@ func (d *doctorLayoutHandler) ServeHTTP(w http.ResponseWriter, r *http.Request) 
 			return
 		}
 
-		if err := FillDiagnosisIntake(doctorIntakeLayout, d.dataApi, api.EN_LANGUAGE_ID); err != nil {
+		if err := api.FillDiagnosisIntake(&diagnosisIntakeLayout, d.dataApi, api.EN_LANGUAGE_ID); err != nil {
 			apiservice.WriteDeveloperError(w, http.StatusInternalServerError, "unable to fill database info into doctor layout: "+err.Error())
 			return
 		}
 
 	case api.REVIEW_PURPOSE:
-		doctorReviewLayout := new(info_intake.DoctorVisitReviewLayout)
+		doctorReviewLayout := info_intake.NewDoctorVisitReviewLayout()
 		doctorIntakeLayout = doctorReviewLayout
 
-		if err = json.Unmarshal(data, diagnosisIntakeLayout); err != nil {
+		if err = json.Unmarshal(data, doctorIntakeLayout); err != nil {
 			apiservice.WriteDeveloperError(w, http.StatusBadRequest, err.Error())
 			return
 		}
 
-		healthConditionTag = doctorReviewLayout["health_condition"]
+		healthConditionTag = doctorReviewLayout["health_condition"].(string)
 		if healthConditionTag == "" {
 			apiservice.WriteDeveloperError(w, http.StatusBadRequest, "health condition not specified or invalid in layout")
 			return
