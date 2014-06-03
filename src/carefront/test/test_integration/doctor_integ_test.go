@@ -310,7 +310,7 @@ func TestDoctorDiagnosisOfPatientVisit(t *testing.T) {
 	}
 
 	// now lets pick a tretament plan and then try to get the diagnosis summary again
-	pickATreatmentPlanForPatientVisit(patientVisitResponse.PatientVisitId, doctor, nil, testData, t)
+	PickATreatmentPlanForPatientVisit(patientVisitResponse.PatientVisitId, doctor, nil, testData, t)
 	resp, err = AuthGet(ts.URL+"?patient_visit_id="+strconv.FormatInt(patientVisitResponse.PatientVisitId, 10), doctor.AccountId.Int64())
 	if err != nil {
 		t.Fatal("Unable to make call to get diagnosis summary for patient visit: " + err.Error())
@@ -324,7 +324,7 @@ func TestDoctorDiagnosisOfPatientVisit(t *testing.T) {
 
 	// now lets pick a different treatment plan and ensure that the diagnosis summary gets linked to this new
 	// treatment plan.
-	pickATreatmentPlanForPatientVisit(patientVisitResponse.PatientVisitId, doctor, nil, testData, t)
+	PickATreatmentPlanForPatientVisit(patientVisitResponse.PatientVisitId, doctor, nil, testData, t)
 	resp, err = AuthGet(ts.URL+"?patient_visit_id="+strconv.FormatInt(patientVisitResponse.PatientVisitId, 10), doctor.AccountId.Int64())
 	if err != nil {
 		t.Fatal("Unable to make call to get diagnosis summary for patient visit: " + err.Error())

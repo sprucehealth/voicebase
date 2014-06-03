@@ -161,7 +161,7 @@ func StartReviewingPatientVisit(patientVisitId int64, doctor *common.Doctor, tes
 	CheckSuccessfulStatusCode(resp, "Unable to make successful call to get patient visit review: ", t)
 }
 
-func pickATreatmentPlanForPatientVisit(patientVisitId int64, doctor *common.Doctor, favoriteTreatmentPlan *common.FavoriteTreatmentPlan, testData TestData, t *testing.T) *doctor_treatment_plan.DoctorTreatmentPlanResponse {
+func PickATreatmentPlanForPatientVisit(patientVisitId int64, doctor *common.Doctor, favoriteTreatmentPlan *common.FavoriteTreatmentPlan, testData TestData, t *testing.T) *doctor_treatment_plan.DoctorTreatmentPlanResponse {
 	doctorPickTreatmentPlanHandler := doctor_treatment_plan.NewDoctorTreatmentPlanHandler(testData.DataApi)
 
 	ts := httptest.NewServer(doctorPickTreatmentPlanHandler)

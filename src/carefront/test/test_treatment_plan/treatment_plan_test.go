@@ -114,3 +114,53 @@ func TestTreatmentPlanList_DraftTest(t *testing.T) {
 		t.Fatalf("Expected 1 treatment plan instead got %d", len(treatmentPlanResponse.ActiveTreatmentPlans))
 	}
 }
+
+func TestTreatmentPlanList_FavTP(t *testing.T) {
+	testData := test_integration.SetupIntegrationTest(t)
+	defer test_integration.TearDownIntegrationTest(t, testData)
+	doctorId := test_integration.GetDoctorIdOfCurrentPrimaryDoctor(testData, t)
+	doctor, err := testData.DataApi.GetDoctorFromId(doctorId)
+	if err != nil {
+		t.Fatal("Unable to get doctor from doctor id " + err.Error())
+	}
+
+	patientVisitResponse, treatmentPlan := test_integration.SignupAndSubmitPatientVisitForRandomPatient(t, testData, doctor)
+	patientId, err := testData.DataApi.GetPatientIdFromPatientVisitId(patientVisitResponse.PatientVisitId)
+	if err != nil {
+		t.Fatalf(err.Error())
+	}
+
+	favoriteTreatmentPlan := test_integration.CreateFavoriteTreatmentPlan(patientVisitResponse.PatientVisitId, treatmentPlan.Id.Int64(), testData, doctor, t)
+	test_integration.PickATreatmentPlanForPatientVisit(patientVisitResponse.PatientVisitId, doctor, favoriteTreatmentPlan, testData, t)
+
+	// favorite treatment plan information should be included in the list of treatment plans
+	treatmentPlanResponse := test_integration.GetListOfTreatmentPlansForPatient(patientId, doctor.AccountId.Int64(), testData, t)
+	if len(treatmentPlanResponse.DraftTreatmentPlans) != 1 {
+		t.Fatalf("Expected 1 treatment plan instead got %d", len(treatmentPlanResponse.DraftTreatmentPlans))
+	} else if len(treatmentPlanResponse.ActiveTreatmentPlans) != 0 {
+		t.Fatalf("Expected no treatment plans instead got %d", len(treatmentPlanResponse.ActiveTreatmentPlans))
+	}
+
+	// now lets attempt to get this treatment plan by id to ensure that its linked to favorite treatment plan
+	drTreatmentPlan := test_integration.GetDoctorTreatmentPlanById(treatmentPlanResponse.DraftTreatmentPlans[0].Id.Int64(), doctor.AccountId.Int64(), testData, t)
+	if drTreatmentPlan.DoctorFavoriteTreatmentPlanId.Int64() == 0 {
+		t.Fatalf("Expected link to favorite treatment plan to exist but it doesnt")
+	} else if drTreatmentPlan.DoctorFavoriteTreatmentPlanId.Int64() != favoriteTreatmentPlan.Id.Int64() {
+		t.Fatalf("Expected treatment plan to be linked to fav treatment plan id %d but instead it ewas linked to id %d", favoriteTreatmentPlan.Id.Int64(), drTreatmentPlan.DoctorFavoriteTreatmentPlanId.Int64())
+	}
+
+	// lets submit the treatment plan back to patient so that we can test whether or not favorite tretment plan information is shown to another doctor
+	// it shouldn't be
+	test_integration.SubmitPatientVisitBackToPatient(patientVisitResponse.PatientVisitId, doctor, testData, t)
+
+	signedUpDoctorResponse, _, _ := test_integration.SignupRandomTestDoctor(t, testData.DataApi, testData.AuthApi)
+	doctor2, err := testData.DataApi.GetDoctorFromId(signedUpDoctorResponse.DoctorId)
+	if err != nil {
+		t.Fatalf(err.Error())
+	}
+
+	drTreatmentPlan = test_integration.GetDoctorTreatmentPlanById(treatmentPlanResponse.DraftTreatmentPlans[0].Id.Int64(), doctor2.AccountId.Int64(), testData, t)
+	if drTreatmentPlan.DoctorFavoriteTreatmentPlanId.Int64() != 0 {
+		t.Fatalf("Expected no link to favorite treatment plan to exist but it does")
+	}
+}

@@ -58,7 +58,7 @@ func TestDoctorQueueWithPatientVisits(t *testing.T) {
 
 	// now go ahead and start reviewing the visit and the item should change to continue visiting
 	StartReviewingPatientVisit(patientVisitResponse.PatientVisitId, doctor, testData, t)
-	pickATreatmentPlanForPatientVisit(patientVisitResponse.PatientVisitId, doctor, nil, testData, t)
+	PickATreatmentPlanForPatientVisit(patientVisitResponse.PatientVisitId, doctor, nil, testData, t)
 
 	doctorDisplayFeedTabs = getDoctorQueue(testData, doctor.AccountId.Int64(), t)
 	doBasicCheckOfDoctorQueue(doctorDisplayFeedTabs, t)
