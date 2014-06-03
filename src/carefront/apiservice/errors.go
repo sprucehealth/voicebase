@@ -2,7 +2,7 @@ package apiservice
 
 import (
 	"carefront/libs/golog"
-	"encoding/json"
+	"fmt"
 	"net/http"
 )
 
@@ -26,16 +26,18 @@ func wrapInternalError(err error, r *http.Request) SpruceError {
 		DeveloperError: err.Error(),
 		UserError:      genericUserErrorMessage,
 		RequestID:      GetContext(r).RequestID,
+		HTTPStatusCode: http.StatusInternalServerError,
 	}
 }
 
 func (s SpruceError) Error() string {
-	jsonData, err := json.Marshal(&s)
-	if err != nil {
-		return s.DeveloperError
+	var msg string
+	if s.DeveloperErrorCode > 0 {
+		msg = fmt.Sprintf("RequestID: %d, Error: %s, ErrorCode: %d", s.RequestID, s.DeveloperError, s.DeveloperErrorCode)
 	} else {
-		return string(jsonData)
+		msg = fmt.Sprintf("RequestID: %d, Error: %s", s.RequestID, s.DeveloperError)
 	}
+	return msg
 }
 
 var IsDev = false
@@ -45,7 +47,6 @@ func WriteError(err error, w http.ResponseWriter, r *http.Request) {
 	case SpruceError:
 		err.RequestID = GetContext(r).RequestID
 		golog.Logf(2, golog.ERR, err.Error())
-
 		// remove the developer error information if we are not dealing with
 		// before sending information across the wire
 		if !IsDev {
@@ -53,6 +54,7 @@ func WriteError(err error, w http.ResponseWriter, r *http.Request) {
 		}
 		WriteJSONToHTTPResponseWriter(w, err.HTTPStatusCode, err)
 	default:
-		WriteJSONToHTTPResponseWriter(w, http.StatusInternalServerError, wrapInternalError(err, r))
+		WriteError(wrapInternalError(err, r), w, r)
 	}
+
 }
