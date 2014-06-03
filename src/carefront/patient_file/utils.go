@@ -61,7 +61,7 @@ func populateAlerts(patientAnswersToQuestions map[int64][]common.Answer, questio
 		// check if the alert flag is set on the question
 		question := questionIdToQuestion[questionId]
 		if question.ToAlert {
-			switch question.QuestionTypes[0] {
+			switch question.QuestionType {
 
 			case info_intake.QUESTION_TYPE_AUTOCOMPLETE:
 				// populate the answers to call out in the alert

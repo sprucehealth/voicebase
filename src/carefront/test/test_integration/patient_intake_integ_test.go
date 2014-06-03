@@ -47,7 +47,7 @@ func getAnswerWithTagAndExpectedType(answerTag, answerType string, questionId in
 	for _, potentialAnswer := range potentialAnswers {
 		if potentialAnswer.AnswerTag == expectedAnswerTag {
 			potentialAnswerId = potentialAnswer.AnswerId
-			potentialAnswerType = potentialAnswer.AnswerTypes[0]
+			potentialAnswerType = potentialAnswer.AnswerType
 		}
 	}
 

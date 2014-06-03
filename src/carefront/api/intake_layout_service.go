@@ -436,7 +436,7 @@ func createAnswerInfosFromRows(rows *sql.Rows) ([]*info_intake.PotentialAnswer, 
 			AnswerId:      id,
 			AnswerTag:     answerTag,
 			Ordering:      ordering,
-			AnswerTypes:   []string{answerType},
+			AnswerType:    answerType,
 			ToAlert:       toAlert.Bool,
 		}
 		answerInfos = append(answerInfos, potentialAnswerInfo)

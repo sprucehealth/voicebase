@@ -183,9 +183,9 @@ func populateContextForRenderingLayout(patientAnswersForQuestions map[int64][]co
 
 	// go through each question
 	for _, question := range questions {
-		contextPopulator, ok := patientQAPopulators[question.QuestionTypes[0]]
+		contextPopulator, ok := patientQAPopulators[question.QuestionType]
 		if !ok {
-			return nil, fmt.Errorf("Context populator not found for question with type %s", question.QuestionTypes[0])
+			return nil, fmt.Errorf("Context populator not found for question with type %s", question.QuestionType)
 		}
 
 		if err := contextPopulator.populateViewContextWithPatientQA(patientAnswersForQuestions[question.QuestionId], question, context, dataApi, r); err != nil {

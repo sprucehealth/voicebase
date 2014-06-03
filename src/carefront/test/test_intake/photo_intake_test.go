@@ -150,7 +150,7 @@ func TestPhotoIntake_AllSections(t *testing.T) {
 	for _, section := range patientVisitResponse.ClientLayout.Sections {
 		for _, screen := range section.Screens {
 			for _, question := range screen.Questions {
-				if question.QuestionTypes[0] == info_intake.QUESTION_TYPE_PHOTO_SECTION {
+				if question.QuestionType == info_intake.QUESTION_TYPE_PHOTO_SECTION {
 					if len(question.Answers) != 1 {
 						t.Fatalf("Expected question to have 1 answered section but instead it has %d", len(question.Answers))
 					} else if photoIntakeSection, ok := question.Answers[0].(*common.PhotoIntakeSection); !ok {

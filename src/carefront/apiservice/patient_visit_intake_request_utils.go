@@ -29,7 +29,7 @@ func GetNonPhotoQuestionIdsInPatientVisitLayout(patientVisitLayout *info_intake.
 	for _, section := range patientVisitLayout.Sections {
 		for _, screen := range section.Screens {
 			for _, question := range screen.Questions {
-				if question.QuestionTypes[0] != info_intake.QUESTION_TYPE_PHOTO_SECTION {
+				if question.QuestionType != info_intake.QUESTION_TYPE_PHOTO_SECTION {
 					questionIds = append(questionIds, question.QuestionId)
 				}
 			}
@@ -43,7 +43,7 @@ func GetPhotoQuestionIdsInPatientVisitLayout(patientVisitLayout *info_intake.Inf
 	for _, section := range patientVisitLayout.Sections {
 		for _, screen := range section.Screens {
 			for _, question := range screen.Questions {
-				if question.QuestionTypes[0] == info_intake.QUESTION_TYPE_PHOTO_SECTION {
+				if question.QuestionType == info_intake.QUESTION_TYPE_PHOTO_SECTION {
 					questionIds = append(questionIds, question.QuestionId)
 				}
 			}

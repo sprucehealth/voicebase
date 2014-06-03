@@ -40,20 +40,20 @@ type TipSection struct {
 }
 
 type PotentialAnswer struct {
-	AnswerId      int64    `json:"potential_answer_id,string,omitempty"`
-	Answer        string   `json:"potential_answer,omitempty"`
-	AnswerSummary string   `json:"potential_answer_summary,omitempty"`
-	AnswerTypes   []string `json:"answer_types,omitempty"`
-	Ordering      int64    `json:"ordering,string"`
-	ToAlert       bool     `json:"to_alert"`
-	AnswerTag     string   `json:"-"`
+	AnswerId      int64  `json:"potential_answer_id,string,omitempty"`
+	Answer        string `json:"potential_answer,omitempty"`
+	AnswerSummary string `json:"potential_answer_summary,omitempty"`
+	AnswerType    string `json:"answer_type,omitempty"`
+	Ordering      int64  `json:"ordering,string"`
+	ToAlert       bool   `json:"to_alert"`
+	AnswerTag     string `json:"-"`
 }
 
 type Question struct {
 	QuestionTag        string             `json:"question"`
 	QuestionId         int64              `json:"question_id,string,omitempty"`
 	QuestionTitle      string             `json:"question_title,omitempty"`
-	QuestionTypes      []string           `json:"question_types,omitempty"`
+	QuestionType       string             `json:"question_type,omitempty"`
 	FormattedFieldTags []string           `json:"formatted_field_tags,omitempty"`
 	QuestionSubText    string             `json:"question_subtext,omitempty"`
 	QuestionSummary    string             `json:"question_summary,omitempty"`

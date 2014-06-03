@@ -104,7 +104,7 @@ func populateIntakeLayoutWithPatientAnswers(intake *info_intake.InfoIntakeLayout
 			for _, question := range screen.Questions {
 				// go through each question to see if there exists a patient answer for it
 				question.Answers = patientAnswers[question.QuestionId]
-				if question.QuestionTypes[0] == info_intake.QUESTION_TYPE_PHOTO_SECTION {
+				if question.QuestionType == info_intake.QUESTION_TYPE_PHOTO_SECTION {
 					if len(question.Answers) > 0 {
 						// go through each slot and populate the url for the photo
 						for _, answer := range question.Answers {

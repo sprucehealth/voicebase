@@ -68,7 +68,7 @@ func FillQuestion(q *info_intake.Question, dataApi DataAPI, languageId int64) er
 	}
 	q.QuestionId = questionInfo.Id
 	q.QuestionTitle = questionInfo.Title
-	q.QuestionTypes = []string{questionInfo.Type}
+	q.QuestionType = questionInfo.Type
 	q.ParentQuestionId = questionInfo.ParentQuestionId
 	q.QuestionSummary = questionInfo.Summary
 	q.AdditionalFields = questionInfo.AdditionalFields

@@ -125,7 +125,7 @@ func prepareAnswersForQuestionsInPatientVisit(patientVisitResponse *patient_visi
 	for _, section := range patientVisitResponse.ClientLayout.Sections {
 		for _, screen := range section.Screens {
 			for _, question := range screen.Questions {
-				switch question.QuestionTypes[0] {
+				switch question.QuestionType {
 				case info_intake.QUESTION_TYPE_SINGLE_SELECT:
 					answerIntakeRequestBody.Questions = append(answerIntakeRequestBody.Questions, &apiservice.AnswerToQuestionItem{
 						QuestionId: question.QuestionId,
