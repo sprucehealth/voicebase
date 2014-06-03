@@ -2,6 +2,7 @@ package cmd
 
 import (
 	"bufio"
+	"log"
 	"net"
 	"os"
 	"path"
@@ -9,11 +10,12 @@ import (
 	"strings"
 
 	"code.google.com/p/go.crypto/ssh"
+	"code.google.com/p/go.crypto/ssh/agent"
 )
 
 type sshCommander struct {
-	conn        *ssh.ClientConn
-	bastionConn *ssh.ClientConn
+	conn        *ssh.Client
+	bastionConn *ssh.Client
 	proxyConn   net.Conn
 }
 
@@ -34,9 +36,13 @@ func NewSSHCommander(addr, bastionAddr string) (Commander, error) {
 
 	cm := &sshCommander{}
 
-	var auths []ssh.ClientAuth
-	if agent, err := net.Dial("unix", os.Getenv("SSH_AUTH_SOCK")); err == nil {
-		auths = append(auths, ssh.ClientAuthAgent(ssh.NewAgentClient(agent)))
+	var auths []ssh.AuthMethod
+	if authSock := os.Getenv("SSH_AUTH_SOCK"); authSock != "" {
+		if agentConn, err := net.Dial("unix", authSock); err == nil {
+			auths = append(auths, ssh.PublicKeysCallback(agent.NewClient(agentConn).Signers))
+		} else {
+			log.Printf("Failed to connect to SSH agent: %s", err.Error())
+		}
 	}
 
 	user, host := parseSSHAddr(addr, defUser)
@@ -63,12 +69,13 @@ func NewSSHCommander(addr, bastionAddr string) (Commander, error) {
 			return nil, err
 		}
 
-		c2, err := ssh.Client(cliConn, config)
+		cc, chans, reqs, err := ssh.NewClientConn(cliConn, host, config)
 		if err != nil {
 			cliConn.Close()
 			conn.Close()
 			return nil, err
 		}
+		c2 := ssh.NewClient(cc, chans, reqs)
 
 		cm.bastionConn = conn
 		cm.proxyConn = cliConn
