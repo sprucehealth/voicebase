@@ -249,7 +249,7 @@ func buildContext(dataApi api.DataAPI, patientVisitLayout *info_intake.InfoIntak
 	photoQuestionIds := apiservice.GetPhotoQuestionIdsInPatientVisitLayout(patientVisitLayout)
 
 	// get all the answers the patient entered for the questions (note that there may not be an answer for every question)
-	patientAnswersForQuestions, err := dataApi.GetPatientAnswersForQuestionsBasedOnQuestionIds(questionIds, patientVisitId, patientVisitId)
+	patientAnswersForQuestions, err := dataApi.GetPatientAnswersForQuestionsBasedOnQuestionIds(questionIds, patientId, patientVisitId)
 	if err != nil {
 		return nil, err
 	}
