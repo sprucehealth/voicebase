@@ -212,7 +212,7 @@ func (c *Handler) createNewDemoPatient(patient *common.Patient, doctorId int64, 
 		}
 
 		for _, questionInfoItem := range questionInfos {
-			questionIds[questionTags[questionInfoItem.QuestionTag]] = questionInfoItem.Id
+			questionIds[questionTags[questionInfoItem.QuestionTag]] = questionInfoItem.QuestionId
 		}
 
 		answerIds := make(map[potentialAnswerTag]int64)

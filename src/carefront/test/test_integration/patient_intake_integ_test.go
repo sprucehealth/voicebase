@@ -27,11 +27,11 @@ func getQuestionWithTagAndExpectedType(questionTag, questionType string, t *test
 
 	// need to ensure that the question we are trying to get the information for is a single select
 	// question type
-	if questionInfo.Type != questionType {
-		t.Fatalf("Expected q_reason_visit to be '%s' instead of '%s'", questionType, questionInfo.Type)
+	if questionInfo.QuestionType != questionType {
+		t.Fatalf("Expected q_reason_visit to be '%s' instead of '%s'", questionType, questionInfo.QuestionType)
 	}
 
-	return questionInfo.Id
+	return questionInfo.QuestionId
 }
 
 func getAnswerWithTagAndExpectedType(answerTag, answerType string, questionId int64, testData TestData, t *testing.T) int64 {

@@ -1,7 +1,6 @@
 package api
 
 import (
-	"carefront/common"
 	"carefront/info_intake"
 	"database/sql"
 	"fmt"
@@ -305,7 +304,7 @@ func (d *DataService) GetSectionInfo(sectionTag string, languageId int64) (id in
 	return
 }
 
-func (d *DataService) GetQuestionInfo(questionTag string, languageId int64) (*common.QuestionInfo, error) {
+func (d *DataService) GetQuestionInfo(questionTag string, languageId int64) (*info_intake.Question, error) {
 	questionInfos, err := d.GetQuestionInfoForTags([]string{questionTag}, languageId)
 	if len(questionInfos) > 0 {
 		return questionInfos[0], err
@@ -313,7 +312,7 @@ func (d *DataService) GetQuestionInfo(questionTag string, languageId int64) (*co
 	return nil, err
 }
 
-func (d *DataService) GetQuestionInfoForTags(questionTags []string, languageId int64) ([]*common.QuestionInfo, error) {
+func (d *DataService) GetQuestionInfoForTags(questionTags []string, languageId int64) ([]*info_intake.Question, error) {
 
 	params := make([]interface{}, 0)
 	params = appendStringsToInterfaceSlice(params, questionTags)
@@ -340,9 +339,9 @@ func (d *DataService) GetQuestionInfoForTags(questionTags []string, languageId i
 	return questionInfos, err
 }
 
-func (d *DataService) getQuestionInfoFromRows(rows *sql.Rows, languageId int64) ([]*common.QuestionInfo, error) {
+func (d *DataService) getQuestionInfoFromRows(rows *sql.Rows, languageId int64) ([]*info_intake.Question, error) {
 
-	questionInfos := make([]*common.QuestionInfo, 0)
+	questionInfos := make([]*info_intake.Question, 0)
 	for rows.Next() {
 		var id int64
 		var questionTag string
@@ -368,15 +367,15 @@ func (d *DataService) getQuestionInfoFromRows(rows *sql.Rows, languageId int64) 
 			return nil, err
 		}
 
-		questionInfo := &common.QuestionInfo{
-			Id:                 id,
+		questionInfo := &info_intake.Question{
+			QuestionId:         id,
 			ParentQuestionId:   nullParentQuestionId.Int64,
 			QuestionTag:        questionTag,
-			Title:              questionTitle.String,
-			Type:               questionType.String,
-			Summary:            questionSummary.String,
-			SubText:            questionSubText.String,
-			FormattedFieldTags: formattedFieldTagsNull.String,
+			QuestionTitle:      questionTitle.String,
+			QuestionType:       questionType.String,
+			QuestionSummary:    questionSummary.String,
+			QuestionSubText:    questionSubText.String,
+			FormattedFieldTags: []string{formattedFieldTagsNull.String},
 			Required:           requiredBit.Bool,
 			ToAlert:            toAlertBit.Bool,
 			AlertFormattedText: alertText.String,
@@ -385,7 +384,7 @@ func (d *DataService) getQuestionInfoFromRows(rows *sql.Rows, languageId int64) 
 		// get any additional fields pertaining to the question from the database
 		rows, err := d.db.Query(`select question_field, ltext from question_fields
 								inner join localized_text on question_fields.app_text_id = localized_text.app_text_id
-								where question_id = ? and language_id = ?`, questionInfo.Id, languageId)
+								where question_id = ? and language_id = ?`, questionInfo.QuestionId, languageId)
 		if err != nil {
 			return nil, err
 		}

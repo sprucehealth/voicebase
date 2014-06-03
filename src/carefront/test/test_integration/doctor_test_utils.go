@@ -85,17 +85,17 @@ func SubmitPatientVisitDiagnosis(PatientVisitId int64, doctor *common.Doctor, te
 	if qi, err := testData.DataApi.GetQuestionInfo("q_acne_diagnosis", 1); err != nil {
 		t.Fatalf("Unable to get the questionIds for the question tags requested for the doctor to diagnose patient visit: %s", err.Error())
 	} else {
-		diagnosisQuestionId = qi.Id
+		diagnosisQuestionId = qi.QuestionId
 	}
 	if qi, err := testData.DataApi.GetQuestionInfo("q_acne_severity", 1); err != nil {
 		t.Fatalf("Unable to get the questionIds for the question tags requested for the doctor to diagnose patient visit: %s", err.Error())
 	} else {
-		severityQuestionId = qi.Id
+		severityQuestionId = qi.QuestionId
 	}
 	if qi, err := testData.DataApi.GetQuestionInfo("q_acne_type", 1); err != nil {
 		t.Fatalf("Unable to get the questionIds for the question tags requested for the doctor to diagnose patient visit: %s", err.Error())
 	} else {
-		acneTypeQuestionId = qi.Id
+		acneTypeQuestionId = qi.QuestionId
 	}
 
 	diagnosePatientHandler := patient_visit.NewDiagnosePatientHandler(testData.DataApi, testData.AuthApi, "")

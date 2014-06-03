@@ -23,10 +23,10 @@ func fillConditionBlock(c *info_intake.Condition, dataApi DataAPI, languageId in
 	if err != nil {
 		return err
 	}
-	c.QuestionId = questionInfo.Id
+	c.QuestionId = questionInfo.QuestionId
 	c.PotentialAnswersId = make([]string, len(c.PotentialAnswersTags))
 	for i, tag := range c.PotentialAnswersTags {
-		answerInfos, err := dataApi.GetAnswerInfo(questionInfo.Id, languageId)
+		answerInfos, err := dataApi.GetAnswerInfo(questionInfo.QuestionId, languageId)
 		if err != nil {
 			return err
 		}
@@ -66,18 +66,18 @@ func fillQuestion(q *info_intake.Question, dataApi DataAPI, languageId int64) er
 	if err != nil {
 		return err
 	}
-	q.QuestionId = questionInfo.Id
-	q.QuestionTitle = questionInfo.Title
-	q.QuestionType = questionInfo.Type
+	q.QuestionId = questionInfo.QuestionId
+	q.QuestionTitle = questionInfo.QuestionTitle
+	q.QuestionType = questionInfo.QuestionType
 	q.ParentQuestionId = questionInfo.ParentQuestionId
-	q.QuestionSummary = questionInfo.Summary
+	q.QuestionSummary = questionInfo.QuestionSummary
 	q.AdditionalFields = questionInfo.AdditionalFields
-	q.QuestionSubText = questionInfo.SubText
+	q.QuestionSubText = questionInfo.QuestionSubText
 	q.Required = questionInfo.Required
 	q.ToAlert = questionInfo.ToAlert
 	q.AlertFormattedText = questionInfo.AlertFormattedText
-	if questionInfo.FormattedFieldTags != "" {
-		q.FormattedFieldTags = strings.Split(questionInfo.FormattedFieldTags, ",")
+	if questionInfo.FormattedFieldTags != nil {
+		q.FormattedFieldTags = strings.Split(questionInfo.FormattedFieldTags[0], ",")
 	}
 
 	if q.ConditionBlock != nil {
@@ -103,7 +103,7 @@ func fillQuestion(q *info_intake.Question, dataApi DataAPI, languageId int64) er
 		}
 	}
 	// go over the potential ansnwer tags to create potential outcome blocks
-	q.PotentialAnswers, err = dataApi.GetAnswerInfo(questionInfo.Id, languageId)
+	q.PotentialAnswers, err = dataApi.GetAnswerInfo(questionInfo.QuestionId, languageId)
 	if err != nil {
 		return err
 	}
@@ -112,7 +112,7 @@ func fillQuestion(q *info_intake.Question, dataApi DataAPI, languageId int64) er
 	// Note that this could be optimized to only query based on the question type
 	// but given the small number of questions currently coupled with the fact that we need to rewrite the implementation
 	// to better organize the structure in the future its not worth to base this off the question types currently
-	q.PhotoSlots, err = dataApi.GetPhotoSlots(questionInfo.Id, languageId)
+	q.PhotoSlots, err = dataApi.GetPhotoSlots(questionInfo.QuestionId, languageId)
 	if err != nil {
 		return err
 	}

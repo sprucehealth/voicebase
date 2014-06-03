@@ -42,7 +42,7 @@ func TestPhotoIntake(t *testing.T) {
 	}
 
 	// get the photo slots associated with this question
-	photoSlots, err := testData.DataApi.GetPhotoSlots(questionInfo.Id, api.EN_LANGUAGE_ID)
+	photoSlots, err := testData.DataApi.GetPhotoSlots(questionInfo.QuestionId, api.EN_LANGUAGE_ID)
 	if err != nil {
 		t.Fatal(err.Error())
 	}
@@ -51,7 +51,7 @@ func TestPhotoIntake(t *testing.T) {
 		PatientVisitId: patientVisitResponse.PatientVisitId,
 		PhotoQuestions: []*patient_visit.PhotoAnswerIntakeQuestionItem{
 			&patient_visit.PhotoAnswerIntakeQuestionItem{
-				QuestionId: questionInfo.Id,
+				QuestionId: questionInfo.QuestionId,
 				PhotoSections: []*common.PhotoIntakeSection{
 					&common.PhotoIntakeSection{
 						Name: "Testing",
@@ -71,7 +71,7 @@ func TestPhotoIntake(t *testing.T) {
 	test_integration.SubmitPhotoSectionsForQuestionInPatientVisit(patient.AccountId.Int64(), requestData, testData, t)
 
 	// ensure that the photos now exist for this question for the patient
-	photoIntakeSections, err := testData.DataApi.GetPatientCreatedPhotoSectionsForQuestionId(questionInfo.Id, patientId, patientVisitResponse.PatientVisitId)
+	photoIntakeSections, err := testData.DataApi.GetPatientCreatedPhotoSectionsForQuestionId(questionInfo.QuestionId, patientId, patientVisitResponse.PatientVisitId)
 	if err != nil {
 		t.Fatal(err.Error())
 	} else if len(photoIntakeSections) != 1 {
@@ -119,13 +119,13 @@ func TestPhotoIntake_AllSections(t *testing.T) {
 
 	for i, questionInfo := range questionInfos {
 		// get the photo slots associated with this question
-		photoSlots, err := testData.DataApi.GetPhotoSlots(questionInfo.Id, api.EN_LANGUAGE_ID)
+		photoSlots, err := testData.DataApi.GetPhotoSlots(questionInfo.QuestionId, api.EN_LANGUAGE_ID)
 		if err != nil {
 			t.Fatal(err.Error())
 		}
 
 		requestData.PhotoQuestions[i] = &patient_visit.PhotoAnswerIntakeQuestionItem{
-			QuestionId: questionInfo.Id,
+			QuestionId: questionInfo.QuestionId,
 			PhotoSections: []*common.PhotoIntakeSection{
 				&common.PhotoIntakeSection{
 					Name: "Testing",
@@ -192,7 +192,7 @@ func TestPhotoIntake_MultipleSectionsForSameQuestion(t *testing.T) {
 	}
 
 	// get the photo slots associated with this question
-	photoSlots, err := testData.DataApi.GetPhotoSlots(questionInfo.Id, api.EN_LANGUAGE_ID)
+	photoSlots, err := testData.DataApi.GetPhotoSlots(questionInfo.QuestionId, api.EN_LANGUAGE_ID)
 	if err != nil {
 		t.Fatal(err.Error())
 	}
@@ -201,7 +201,7 @@ func TestPhotoIntake_MultipleSectionsForSameQuestion(t *testing.T) {
 		PatientVisitId: patientVisitResponse.PatientVisitId,
 		PhotoQuestions: []*patient_visit.PhotoAnswerIntakeQuestionItem{
 			&patient_visit.PhotoAnswerIntakeQuestionItem{
-				QuestionId: questionInfo.Id,
+				QuestionId: questionInfo.QuestionId,
 				PhotoSections: []*common.PhotoIntakeSection{
 					&common.PhotoIntakeSection{
 						Name: "Testing",
@@ -230,7 +230,7 @@ func TestPhotoIntake_MultipleSectionsForSameQuestion(t *testing.T) {
 
 	test_integration.SubmitPhotoSectionsForQuestionInPatientVisit(patient.AccountId.Int64(), requestData, testData, t)
 
-	photoIntakeSections, err := testData.DataApi.GetPatientCreatedPhotoSectionsForQuestionId(questionInfo.Id, patientId, patientVisitResponse.PatientVisitId)
+	photoIntakeSections, err := testData.DataApi.GetPatientCreatedPhotoSectionsForQuestionId(questionInfo.QuestionId, patientId, patientVisitResponse.PatientVisitId)
 	if err != nil {
 		t.Fatal(err.Error())
 	} else if len(photoIntakeSections) != 2 {
@@ -264,7 +264,7 @@ func TestPhotoIntake_MultiplePhotos(t *testing.T) {
 	}
 
 	// get the photo slots associated with this question
-	photoSlots, err := testData.DataApi.GetPhotoSlots(questionInfo.Id, api.EN_LANGUAGE_ID)
+	photoSlots, err := testData.DataApi.GetPhotoSlots(questionInfo.QuestionId, api.EN_LANGUAGE_ID)
 	if err != nil {
 		t.Fatal(err.Error())
 	}
@@ -273,7 +273,7 @@ func TestPhotoIntake_MultiplePhotos(t *testing.T) {
 		PatientVisitId: patientVisitResponse.PatientVisitId,
 		PhotoQuestions: []*patient_visit.PhotoAnswerIntakeQuestionItem{
 			&patient_visit.PhotoAnswerIntakeQuestionItem{
-				QuestionId: questionInfo.Id,
+				QuestionId: questionInfo.QuestionId,
 				PhotoSections: []*common.PhotoIntakeSection{
 					&common.PhotoIntakeSection{
 						Name: "Testing",
@@ -297,7 +297,7 @@ func TestPhotoIntake_MultiplePhotos(t *testing.T) {
 
 	test_integration.SubmitPhotoSectionsForQuestionInPatientVisit(patient.AccountId.Int64(), requestData, testData, t)
 
-	photoIntakeSections, err := testData.DataApi.GetPatientCreatedPhotoSectionsForQuestionId(questionInfo.Id, patientId, patientVisitResponse.PatientVisitId)
+	photoIntakeSections, err := testData.DataApi.GetPatientCreatedPhotoSectionsForQuestionId(questionInfo.QuestionId, patientId, patientVisitResponse.PatientVisitId)
 	if err != nil {
 		t.Fatal(err.Error())
 	} else if len(photoIntakeSections) != 1 {
@@ -336,7 +336,7 @@ func TestPhotoIntake_AnswerInvalidation(t *testing.T) {
 	}
 
 	// get the photo slots associated with this question
-	photoSlots, err := testData.DataApi.GetPhotoSlots(questionInfo.Id, api.EN_LANGUAGE_ID)
+	photoSlots, err := testData.DataApi.GetPhotoSlots(questionInfo.QuestionId, api.EN_LANGUAGE_ID)
 	if err != nil {
 		t.Fatal(err.Error())
 	}
@@ -345,7 +345,7 @@ func TestPhotoIntake_AnswerInvalidation(t *testing.T) {
 		PatientVisitId: patientVisitResponse.PatientVisitId,
 		PhotoQuestions: []*patient_visit.PhotoAnswerIntakeQuestionItem{
 			&patient_visit.PhotoAnswerIntakeQuestionItem{
-				QuestionId: questionInfo.Id,
+				QuestionId: questionInfo.QuestionId,
 				PhotoSections: []*common.PhotoIntakeSection{
 					&common.PhotoIntakeSection{
 						Name: "Testing",
@@ -379,7 +379,7 @@ func TestPhotoIntake_AnswerInvalidation(t *testing.T) {
 		PatientVisitId: patientVisitResponse.PatientVisitId,
 		PhotoQuestions: []*patient_visit.PhotoAnswerIntakeQuestionItem{
 			&patient_visit.PhotoAnswerIntakeQuestionItem{
-				QuestionId: questionInfo.Id,
+				QuestionId: questionInfo.QuestionId,
 				PhotoSections: []*common.PhotoIntakeSection{
 					&common.PhotoIntakeSection{
 						Name: "Testing3",
@@ -398,7 +398,7 @@ func TestPhotoIntake_AnswerInvalidation(t *testing.T) {
 
 	test_integration.SubmitPhotoSectionsForQuestionInPatientVisit(patient.AccountId.Int64(), requestData, testData, t)
 
-	photoIntakeSections, err := testData.DataApi.GetPatientCreatedPhotoSectionsForQuestionId(questionInfo.Id, patientId, patientVisitResponse.PatientVisitId)
+	photoIntakeSections, err := testData.DataApi.GetPatientCreatedPhotoSectionsForQuestionId(questionInfo.QuestionId, patientId, patientVisitResponse.PatientVisitId)
 	if err != nil {
 		t.Fatal(err.Error())
 	} else if len(photoIntakeSections) != 1 {
@@ -440,11 +440,11 @@ func TestPhotoIntake_MultiplePhotoQuestions(t *testing.T) {
 		t.Fatal(err.Error())
 	}
 
-	photoSlots, err := testData.DataApi.GetPhotoSlots(questionInfo.Id, api.EN_LANGUAGE_ID)
+	photoSlots, err := testData.DataApi.GetPhotoSlots(questionInfo.QuestionId, api.EN_LANGUAGE_ID)
 	if err != nil {
 		t.Fatal(err.Error())
 	}
-	photoSlots2, err := testData.DataApi.GetPhotoSlots(questionInfo2.Id, api.EN_LANGUAGE_ID)
+	photoSlots2, err := testData.DataApi.GetPhotoSlots(questionInfo2.QuestionId, api.EN_LANGUAGE_ID)
 	if err != nil {
 		t.Fatal(err.Error())
 	}
@@ -453,7 +453,7 @@ func TestPhotoIntake_MultiplePhotoQuestions(t *testing.T) {
 		PatientVisitId: patientVisitResponse.PatientVisitId,
 		PhotoQuestions: []*patient_visit.PhotoAnswerIntakeQuestionItem{
 			&patient_visit.PhotoAnswerIntakeQuestionItem{
-				QuestionId: questionInfo.Id,
+				QuestionId: questionInfo.QuestionId,
 				PhotoSections: []*common.PhotoIntakeSection{
 					&common.PhotoIntakeSection{
 						Name: "Testing",
@@ -468,7 +468,7 @@ func TestPhotoIntake_MultiplePhotoQuestions(t *testing.T) {
 				},
 			},
 			&patient_visit.PhotoAnswerIntakeQuestionItem{
-				QuestionId: questionInfo2.Id,
+				QuestionId: questionInfo2.QuestionId,
 				PhotoSections: []*common.PhotoIntakeSection{
 					&common.PhotoIntakeSection{
 						Name: "Testing",
@@ -488,7 +488,7 @@ func TestPhotoIntake_MultiplePhotoQuestions(t *testing.T) {
 	test_integration.SubmitPhotoSectionsForQuestionInPatientVisit(patient.AccountId.Int64(), requestData, testData, t)
 
 	// ensure that the answers exist for both questions
-	photoIntakeSections, err := testData.DataApi.GetPatientCreatedPhotoSectionsForQuestionId(questionInfo.Id, patientId, patientVisitResponse.PatientVisitId)
+	photoIntakeSections, err := testData.DataApi.GetPatientCreatedPhotoSectionsForQuestionId(questionInfo.QuestionId, patientId, patientVisitResponse.PatientVisitId)
 	if err != nil {
 		t.Fatal(err.Error())
 	} else if len(photoIntakeSections) != 1 {
@@ -499,7 +499,7 @@ func TestPhotoIntake_MultiplePhotoQuestions(t *testing.T) {
 		t.Fatalf("Expected 1 photo in the section instead got %d", len(pIntakeSection.Photos))
 	}
 
-	photoIntakeSections, err = testData.DataApi.GetPatientCreatedPhotoSectionsForQuestionId(questionInfo2.Id, patientId, patientVisitResponse.PatientVisitId)
+	photoIntakeSections, err = testData.DataApi.GetPatientCreatedPhotoSectionsForQuestionId(questionInfo2.QuestionId, patientId, patientVisitResponse.PatientVisitId)
 	if err != nil {
 		t.Fatal(err.Error())
 	} else if len(photoIntakeSections) != 1 {
@@ -535,7 +535,7 @@ func TestPhotoIntake_MistmatchedSlotId(t *testing.T) {
 		t.Fatal(err.Error())
 	}
 
-	photoSlots2, err := testData.DataApi.GetPhotoSlots(questionInfo2.Id, api.EN_LANGUAGE_ID)
+	photoSlots2, err := testData.DataApi.GetPhotoSlots(questionInfo2.QuestionId, api.EN_LANGUAGE_ID)
 	if err != nil {
 		t.Fatal(err.Error())
 	}
@@ -545,7 +545,7 @@ func TestPhotoIntake_MistmatchedSlotId(t *testing.T) {
 		PatientVisitId: patientVisitResponse.PatientVisitId,
 		PhotoQuestions: []*patient_visit.PhotoAnswerIntakeQuestionItem{
 			&patient_visit.PhotoAnswerIntakeQuestionItem{
-				QuestionId: questionInfo.Id,
+				QuestionId: questionInfo.QuestionId,
 				PhotoSections: []*common.PhotoIntakeSection{
 					&common.PhotoIntakeSection{
 						Name: "Testing",

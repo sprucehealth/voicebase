@@ -51,7 +51,7 @@ func cacheInfoForUnsuitableVisit(dataApi api.DataAPI) {
 	if err != nil {
 		panic(err.Error())
 	}
-	acneDiagnosisQuestionId = question.Id
+	acneDiagnosisQuestionId = question.QuestionId
 }
 
 type GetDiagnosisResponse struct {

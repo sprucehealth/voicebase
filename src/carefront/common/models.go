@@ -358,21 +358,6 @@ type DiagnosisSummary struct {
 	UpdatedByDoctor bool   `json:"-"`
 }
 
-type QuestionInfo struct {
-	Id                 int64
-	QuestionTag        string
-	Title              string
-	Type               string
-	Summary            string
-	SubText            string
-	ParentQuestionId   int64
-	AdditionalFields   map[string]string
-	FormattedFieldTags string
-	Required           bool
-	ToAlert            bool
-	AlertFormattedText string
-}
-
 type StatusEvent struct {
 	ItemId            int64     `json:"-"`
 	PrescriptionId    int64     `json:"-"`
