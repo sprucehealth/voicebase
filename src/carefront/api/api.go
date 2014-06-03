@@ -1,6 +1,7 @@
 package api
 
 import (
+	"carefront/info_intake"
 	"carefront/libs/pharmacy"
 	"errors"
 	"net/http"
@@ -47,16 +48,6 @@ var (
 	NoElligibileProviderInState = errors.New("There are no providers elligible in the state the patient resides")
 	NoDiagnosisResponseErr      = errors.New("No diagnosis response exists to the question queried tag queried with")
 )
-
-type PotentialAnswerInfo struct {
-	PotentialAnswerId int64
-	AnswerType        string
-	Answer            string
-	AnswerSummary     string
-	AnswerTag         string
-	Ordering          int64
-	ToAlert           bool
-}
 
 type PatientAPI interface {
 	GetPatientFromId(patientId int64) (patient *common.Patient, err error)
@@ -230,19 +221,11 @@ type IntakeAPI interface {
 	GetPatientAnswersForQuestionsInGlobalSections(questionIds []int64, patientId int64) (map[int64][]common.Answer, error)
 	GetPatientAnswersForQuestionsBasedOnQuestionIds(questionIds []int64, patientId int64, patientVisitId int64) (map[int64][]common.Answer, error)
 	GetDoctorAnswersForQuestionsInDiagnosisLayout(questionIds []int64, roleId int64, patientVisitId int64) (map[int64][]common.Answer, error)
-
 	GetPatientCreatedPhotoSectionsForQuestionId(questionId, patientId, patientVisitId int64) ([]common.Answer, error)
 	GetPatientCreatedPhotoSectionsForQuestionIds(questionIds []int64, patientId, patientVisitId int64) (map[int64][]common.Answer, error)
 	StoreAnswersForQuestion(role string, roleId, patientVisitId, layoutVersionId int64, answersToStorePerQuestion map[int64][]*common.AnswerIntake) error
 	RejectPatientVisitPhotos(patientVisitId int64) error
 	StorePhotoSectionsForQuestion(questionId, patientId, patientVisitId int64, photoSections []*common.PhotoIntakeSection) error
-}
-
-type PhotoSlotInfo struct {
-	Id       int64
-	Name     string
-	Type     string
-	Required bool
 }
 
 type IntakeLayoutAPI interface {
@@ -265,12 +248,12 @@ type IntakeLayoutAPI interface {
 	GetSectionInfo(sectionTag string, languageId int64) (id int64, title string, err error)
 	GetQuestionInfo(questionTag string, languageId int64) (*common.QuestionInfo, error)
 	GetQuestionInfoForTags(questionTags []string, languageId int64) ([]*common.QuestionInfo, error)
-	GetAnswerInfo(questionId int64, languageId int64) (answerInfos []PotentialAnswerInfo, err error)
-	GetAnswerInfoForTags(answerTags []string, languageId int64) ([]PotentialAnswerInfo, error)
+	GetAnswerInfo(questionId int64, languageId int64) (answerInfos []*info_intake.PotentialAnswer, err error)
+	GetAnswerInfoForTags(answerTags []string, languageId int64) ([]*info_intake.PotentialAnswer, error)
 	GetTipSectionInfo(tipSectionTag string, languageId int64) (id int64, tipSectionTitle string, tipSectionSubtext string, err error)
 	GetTipInfo(tipTag string, languageId int64) (id int64, tip string, err error)
 	GetSupportedLanguages() (languagesSupported []string, languagesSupportedIds []int64, err error)
-	GetPhotoSlots(questionId, languageId int64) ([]*PhotoSlotInfo, error)
+	GetPhotoSlots(questionId, languageId int64) ([]*info_intake.PhotoSlot, error)
 }
 
 type ObjectStorageDBAPI interface {

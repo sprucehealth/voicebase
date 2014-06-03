@@ -2,6 +2,7 @@ package api
 
 import (
 	"carefront/common"
+	"carefront/info_intake"
 	"database/sql"
 	"fmt"
 	"log"
@@ -408,7 +409,7 @@ func (d *DataService) getQuestionInfoFromRows(rows *sql.Rows, languageId int64) 
 	return questionInfos, rows.Err()
 }
 
-func (d *DataService) GetAnswerInfo(questionId int64, languageId int64) ([]PotentialAnswerInfo, error) {
+func (d *DataService) GetAnswerInfo(questionId int64, languageId int64) ([]*info_intake.PotentialAnswer, error) {
 	rows, err := d.db.Query(`select potential_answer.id, l1.ltext, l2.ltext, atype, potential_answer_tag, ordering, to_alert from potential_answer 
 								left outer join localized_text as l1 on answer_localized_text_id=l1.app_text_id 
 								left outer join answer_type on atype_id=answer_type.id 
@@ -421,22 +422,22 @@ func (d *DataService) GetAnswerInfo(questionId int64, languageId int64) ([]Poten
 	return createAnswerInfosFromRows(rows)
 }
 
-func createAnswerInfosFromRows(rows *sql.Rows) ([]PotentialAnswerInfo, error) {
-	answerInfos := make([]PotentialAnswerInfo, 0)
+func createAnswerInfosFromRows(rows *sql.Rows) ([]*info_intake.PotentialAnswer, error) {
+	answerInfos := make([]*info_intake.PotentialAnswer, 0)
 	for rows.Next() {
 		var id, ordering int64
 		var answerType, answerTag string
 		var answer, answerSummary sql.NullString
 		var toAlert sql.NullBool
 		err := rows.Scan(&id, &answer, &answerSummary, &answerType, &answerTag, &ordering, &toAlert)
-		potentialAnswerInfo := PotentialAnswerInfo{
-			Answer:            answer.String,
-			AnswerSummary:     answerSummary.String,
-			PotentialAnswerId: id,
-			AnswerTag:         answerTag,
-			Ordering:          ordering,
-			AnswerType:        answerType,
-			ToAlert:           toAlert.Bool,
+		potentialAnswerInfo := &info_intake.PotentialAnswer{
+			Answer:        answer.String,
+			AnswerSummary: answerSummary.String,
+			AnswerId:      id,
+			AnswerTag:     answerTag,
+			Ordering:      ordering,
+			AnswerTypes:   []string{answerType},
+			ToAlert:       toAlert.Bool,
 		}
 		answerInfos = append(answerInfos, potentialAnswerInfo)
 		if err != nil {
@@ -446,7 +447,7 @@ func createAnswerInfosFromRows(rows *sql.Rows) ([]PotentialAnswerInfo, error) {
 	return answerInfos, rows.Err()
 }
 
-func (d *DataService) GetAnswerInfoForTags(answerTags []string, languageId int64) ([]PotentialAnswerInfo, error) {
+func (d *DataService) GetAnswerInfoForTags(answerTags []string, languageId int64) ([]*info_intake.PotentialAnswer, error) {
 
 	params := make([]interface{}, 0)
 	params = appendStringsToInterfaceSlice(params, answerTags)
@@ -501,7 +502,7 @@ func (d *DataService) GetSupportedLanguages() (languagesSupported []string, lang
 	return languagesSupported, languagesSupportedIds, rows.Err()
 }
 
-func (d *DataService) GetPhotoSlots(questionId, languageId int64) ([]*PhotoSlotInfo, error) {
+func (d *DataService) GetPhotoSlots(questionId, languageId int64) ([]*info_intake.PhotoSlot, error) {
 	rows, err := d.db.Query(`select photo_slot.id, ltext, slot_type, required from photo_slot
 		inner join localized_text on app_text_id = slot_name_app_text_id
 		inner join photo_slot_type on photo_slot_type.id = slot_type_id
@@ -510,9 +511,9 @@ func (d *DataService) GetPhotoSlots(questionId, languageId int64) ([]*PhotoSlotI
 		return nil, err
 	}
 	defer rows.Close()
-	photoSlotInfoList := make([]*PhotoSlotInfo, 0)
+	photoSlotInfoList := make([]*info_intake.PhotoSlot, 0)
 	for rows.Next() {
-		var pSlotInfo PhotoSlotInfo
+		var pSlotInfo info_intake.PhotoSlot
 		if err := rows.Scan(&pSlotInfo.Id, &pSlotInfo.Name, &pSlotInfo.Type, &pSlotInfo.Required); err != nil {
 			return nil, err
 		}

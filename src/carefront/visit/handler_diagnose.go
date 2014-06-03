@@ -43,7 +43,7 @@ func cacheInfoForUnsuitableVisit(dataApi api.DataAPI) {
 	} else if len(answerInfoList) != 1 {
 		panic("Expected 1 answer for not suitable for spruce tag")
 	} else {
-		notSuitableForSpruceAnswerId = answerInfoList[0].PotentialAnswerId
+		notSuitableForSpruceAnswerId = answerInfoList[0].AnswerId
 	}
 
 	// cache the question id of the question for which we expect answer option of not suitable for spruce

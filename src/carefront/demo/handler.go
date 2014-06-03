@@ -227,7 +227,7 @@ func (c *Handler) createNewDemoPatient(patient *common.Patient, doctorId int64, 
 			return
 		}
 		for _, answerInfoItem := range answerInfos {
-			answerIds[answerTags[answerInfoItem.AnswerTag]] = answerInfoItem.PotentialAnswerId
+			answerIds[answerTags[answerInfoItem.AnswerTag]] = answerInfoItem.AnswerId
 		}
 
 		answersToQuestions := populatePatientIntake(questionIds, answerIds)

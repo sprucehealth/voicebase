@@ -32,7 +32,7 @@ func FillConditionBlock(c *info_intake.Condition, dataApi DataAPI, languageId in
 		}
 		for _, answerInfo := range answerInfos {
 			if answerInfo.AnswerTag == tag {
-				c.PotentialAnswersId[i] = strconv.Itoa(int(answerInfo.PotentialAnswerId))
+				c.PotentialAnswersId[i] = strconv.Itoa(int(answerInfo.AnswerId))
 				break
 			}
 		}
@@ -103,44 +103,18 @@ func FillQuestion(q *info_intake.Question, dataApi DataAPI, languageId int64) er
 		}
 	}
 	// go over the potential ansnwer tags to create potential outcome blocks
-	q.PotentialAnswers = make([]*info_intake.PotentialAnswer, 0)
-	answerInfos, err := dataApi.GetAnswerInfo(questionInfo.Id, languageId)
+	q.PotentialAnswers, err = dataApi.GetAnswerInfo(questionInfo.Id, languageId)
 	if err != nil {
 		return err
-	}
-
-	for _, answerInfo := range answerInfos {
-		potentialAnswer := &info_intake.PotentialAnswer{AnswerId: answerInfo.PotentialAnswerId,
-			Answer:        answerInfo.Answer,
-			AnswerSummary: answerInfo.AnswerSummary,
-			AnswerTypes:   []string{answerInfo.AnswerType},
-			Ordering:      answerInfo.Ordering,
-			ToAlert:       answerInfo.ToAlert,
-		}
-
-		q.PotentialAnswers = append(q.PotentialAnswers, potentialAnswer)
 	}
 
 	// fill in any photo slots into the question
 	// Note that this could be optimized to only query based on the question type
 	// but given the small number of questions currently coupled with the fact that we need to rewrite the implementation
 	// to better organize the structure in the future its not worth to base this off the question types currently
-	photoSlotInfoList, err := dataApi.GetPhotoSlots(questionInfo.Id, languageId)
+	q.PhotoSlots, err = dataApi.GetPhotoSlots(questionInfo.Id, languageId)
 	if err != nil {
 		return err
-	}
-
-	if len(photoSlotInfoList) > 0 {
-		q.PhotoSlots = make([]*info_intake.PhotoSlot, 0)
-		for _, photoSlotInfo := range photoSlotInfoList {
-			photoSlot := &info_intake.PhotoSlot{
-				Id:       photoSlotInfo.Id,
-				Name:     photoSlotInfo.Name,
-				Required: photoSlotInfo.Required,
-				Type:     photoSlotInfo.Type,
-			}
-			q.PhotoSlots = append(q.PhotoSlots, photoSlot)
-		}
 	}
 
 	return nil

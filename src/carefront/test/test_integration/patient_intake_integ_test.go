@@ -46,8 +46,8 @@ func getAnswerWithTagAndExpectedType(answerTag, answerType string, questionId in
 	var potentialAnswerType string
 	for _, potentialAnswer := range potentialAnswers {
 		if potentialAnswer.AnswerTag == expectedAnswerTag {
-			potentialAnswerId = potentialAnswer.PotentialAnswerId
-			potentialAnswerType = potentialAnswer.AnswerType
+			potentialAnswerId = potentialAnswer.AnswerId
+			potentialAnswerType = potentialAnswer.AnswerTypes[0]
 		}
 	}
 
@@ -152,7 +152,7 @@ func TestMultipleChoiceIntake(t *testing.T) {
 	answerToQuestionItem.QuestionId = questionId
 	for _, potentialAnswer := range potentialAnswers {
 		if potentialAnswer.AnswerTag == "a_otc_prev_treatment_type" || potentialAnswer.AnswerTag == "a_prescription_prev_treatment_type" {
-			answerToQuestionItem.AnswerIntakes = append(answerToQuestionItem.AnswerIntakes, &apiservice.AnswerItem{PotentialAnswerId: potentialAnswer.PotentialAnswerId})
+			answerToQuestionItem.AnswerIntakes = append(answerToQuestionItem.AnswerIntakes, &apiservice.AnswerItem{PotentialAnswerId: potentialAnswer.AnswerId})
 		}
 	}
 	answerIntakeRequestBody.Questions = []*apiservice.AnswerToQuestionItem{answerToQuestionItem}

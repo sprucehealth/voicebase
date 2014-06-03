@@ -46,6 +46,7 @@ type PotentialAnswer struct {
 	AnswerTypes   []string `json:"answer_types,omitempty"`
 	Ordering      int64    `json:"ordering,string"`
 	ToAlert       bool     `json:"to_alert"`
+	AnswerTag     string   `json:"-"`
 }
 
 type Question struct {
