@@ -50,35 +50,38 @@ func SignupRandomTestPatient(t *testing.T, dataApi api.DataAPI, authApi api.Auth
 }
 
 func GetPatientVisitForPatient(patientId int64, testData TestData, t *testing.T) *patient_visit.PatientVisitResponse {
-	patientVisitHandler := patient_visit.NewPatientVisitHandler(testData.DataApi, testData.AuthApi)
 	patient, err := testData.DataApi.GetPatientFromId(patientId)
 	if err != nil {
 		t.Fatal("Unable to get patient information given the patient id: " + err.Error())
 	}
 
-	ts := httptest.NewServer(patientVisitHandler)
-	defer ts.Close()
-
-	// register a patient visit for this patient
-	resp, err := AuthGet(ts.URL, patient.AccountId.Int64())
+	doctorId := GetDoctorIdOfCurrentPrimaryDoctor(testData, t)
+	doctor, err := testData.DataApi.GetDoctorFromId(doctorId)
 	if err != nil {
-		t.Fatal("Unable to get the patient visit id")
+		t.Fatal(err.Error())
 	}
 
-	body, err := ioutil.ReadAll(resp.Body)
+	patientVisitId, err := testData.DataApi.GetLastCreatedPatientVisitIdForPatient(patientId)
 	if err != nil {
-		t.Fatal("Unable to read body of the response for the new patient visit call: " + err.Error())
+		t.Fatal(err.Error())
 	}
 
-	CheckSuccessfulStatusCode(resp, "Unsuccessful call to register new patient visit: "+string(body), t)
-
-	patientVisitResponse := &patient_visit.PatientVisitResponse{}
-	err = json.Unmarshal(body, patientVisitResponse)
+	patientVisit, err := testData.DataApi.GetPatientVisitFromId(patientVisitId)
 	if err != nil {
-		t.Fatal("Unable to unmarshall response body into patient visit response: " + err.Error())
+		t.Fatal(err.Error())
 	}
 
-	return patientVisitResponse
+	r, err := http.NewRequest("GET", "localhost", nil)
+	if err != nil {
+		t.Fatal(err.Error())
+	}
+
+	patientVisitLayout, err := patient_visit.GetPatientVisitLayout(testData.DataApi, patient.PatientId.Int64(), patientVisitId, r, doctor)
+	if err != nil {
+		t.Fatal(err.Error())
+	}
+
+	return &patient_visit.PatientVisitResponse{Status: patientVisit.Status, PatientVisitId: patientVisitId, ClientLayout: patientVisitLayout}
 }
 
 func CreatePatientVisitForPatient(patientId int64, testData TestData, t *testing.T) *patient_visit.PatientVisitResponse {

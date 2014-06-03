@@ -149,11 +149,13 @@ func TestPhotoIntake_AllSections(t *testing.T) {
 		for _, screen := range section.Screens {
 			for _, question := range screen.Questions {
 				if question.QuestionTypes[0] == info_intake.QUESTION_TYPE_PHOTO_SECTION {
-					if len(question.AnsweredPhotoSections) != 1 {
-						t.Fatalf("Expected question to have 1 answered section but instead it has %d", len(question.AnsweredPhotoSections))
-					} else if len(question.AnsweredPhotoSections[0].Photos) != 1 {
-						t.Fatalf("Expected question to have 1 photo in the section but instead it has %d", len(question.AnsweredPhotoSections[0].Photos))
-					} else if question.AnsweredPhotoSections[0].Photos[0].PhotoUrl == "" {
+					if len(question.Answers) != 1 {
+						t.Fatalf("Expected question to have 1 answered section but instead it has %d", len(question.Answers))
+					} else if photoIntakeSection, ok := question.Answers[0].(*common.PhotoIntakeSection); !ok {
+						t.Fatalf("Expected answer of type PhotoIntakeSection instead got type %T", question.Answers[0])
+					} else if len(photoIntakeSection.Photos) != 1 {
+						t.Fatalf("Expected question to have 1 photo in the section but instead it has %d", len(photoIntakeSection.Photos))
+					} else if photoIntakeSection.Photos[0].PhotoUrl == "" {
 						t.Fatalf("Expected photo url to exist instead it was empty")
 					}
 				}

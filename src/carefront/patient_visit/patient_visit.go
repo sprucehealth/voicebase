@@ -3,6 +3,7 @@ package patient_visit
 import (
 	"carefront/api"
 	"carefront/apiservice"
+	"carefront/common"
 	"carefront/info_intake"
 	"carefront/libs/dispatch"
 	thriftapi "carefront/thrift/api"
@@ -163,21 +164,30 @@ func (s *patientVisitHandler) returnLastCreatedPatientVisit(w http.ResponseWrite
 		return
 	}
 
-	// if there is an active patient visit record, then ensure to lookup the layout to send to the patient
-	// based on what layout was shown to the patient at the time of opening of the patient visit, NOT the current
-	// based on what is the current active layout because that may have potentially changed and we want to ensure
-	// to not confuse the patient by changing the question structure under their feet for this particular patient visit
-	// in other words, want to show them what they have already seen in terms of a flow.
-	patientVisitLayout, _, err := apiservice.GetPatientLayoutForPatientVisit(patientVisitId, api.EN_LANGUAGE_ID, s.dataApi)
+	patientVisitLayout, err := GetPatientVisitLayout(s.dataApi, patientId, patientVisitId, r, doctor)
 	if err != nil {
 		apiservice.WriteDeveloperError(w, http.StatusInternalServerError, err.Error())
 		return
 	}
 
-	err = s.populateGlobalSectionsWithPatientAnswers(patientVisitLayout, patientId)
+	apiservice.WriteJSONToHTTPResponseWriter(w, http.StatusOK, PatientVisitResponse{PatientVisitId: patientVisit.PatientVisitId.Int64(), Status: patientVisit.Status, ClientLayout: patientVisitLayout})
+}
+
+func GetPatientVisitLayout(dataApi api.DataAPI, patientId, patientVisitId int64, r *http.Request, doctor *common.Doctor) (*info_intake.InfoIntakeLayout, error) {
+
+	// if there is an active patient visit record, then ensure to lookup the layout to send to the patient
+	// based on what layout was shown to the patient at the time of opening of the patient visit, NOT the current
+	// based on what is the current active layout because that may have potentially changed and we want to ensure
+	// to not confuse the patient by changing the question structure under their feet for this particular patient visit
+	// in other words, want to show them what they have already seen in terms of a flow.
+	patientVisitLayout, _, err := apiservice.GetPatientLayoutForPatientVisit(patientVisitId, api.EN_LANGUAGE_ID, dataApi)
 	if err != nil {
-		apiservice.WriteDeveloperError(w, http.StatusInternalServerError, err.Error())
-		return
+		return nil, err
+	}
+
+	err = populateGlobalSectionsWithPatientAnswers(dataApi, patientVisitLayout, patientId)
+	if err != nil {
+		return nil, err
 	}
 
 	// get answers that the patient has previously entered for this particular patient visit
@@ -185,23 +195,20 @@ func (s *patientVisitHandler) returnLastCreatedPatientVisit(w http.ResponseWrite
 	questionIdsInAllSections := apiservice.GetNonPhotoQuestionIdsInPatientVisitLayout(patientVisitLayout)
 	photoQuestionIds := apiservice.GetPhotoQuestionIdsInPatientVisitLayout(patientVisitLayout)
 
-	patientAnswersForVisit, err := s.dataApi.GetPatientAnswersForQuestionsBasedOnQuestionIds(questionIdsInAllSections, patientId, patientVisitId)
+	patientAnswersForVisit, err := dataApi.GetPatientAnswersForQuestionsBasedOnQuestionIds(questionIdsInAllSections, patientId, patientVisitId)
 	if err != nil {
-		apiservice.WriteDeveloperError(w, http.StatusInternalServerError, "Unable to get patient answers for patient visit: "+err.Error())
-		return
+		return nil, err
 	}
 
-	photoSectionsByQuestion, err := s.dataApi.GetPatientCreatedPhotoSectionsForQuestionIds(photoQuestionIds, patientId, patientVisitId)
+	photoSectionsByQuestion, err := dataApi.GetPatientCreatedPhotoSectionsForQuestionIds(photoQuestionIds, patientId, patientVisitId)
 	if err != nil {
-		apiservice.WriteDeveloperError(w, http.StatusInternalServerError, err.Error())
-		return
+		return nil, err
 	}
 
-	s.populateIntakeLayoutWithPatientAnswers(patientVisitLayout, patientAnswersForVisit)
-	s.populateIntakeLayoutWithPhotos(patientVisitLayout, photoSectionsByQuestion, r)
-	s.fillInFormattedFieldsForQuestions(patientVisitLayout, doctor)
-
-	apiservice.WriteJSONToHTTPResponseWriter(w, http.StatusOK, PatientVisitResponse{PatientVisitId: patientVisitId, ClientLayout: patientVisitLayout, Status: patientVisit.Status})
+	populateIntakeLayoutWithPatientAnswers(patientVisitLayout, patientAnswersForVisit)
+	populateIntakeLayoutWithPhotos(patientVisitLayout, photoSectionsByQuestion, r)
+	fillInFormattedFieldsForQuestions(patientVisitLayout, doctor)
+	return patientVisitLayout, nil
 }
 
 func (s *patientVisitHandler) createNewPatientVisitHandler(w http.ResponseWriter, r *http.Request) {
@@ -224,7 +231,7 @@ func (s *patientVisitHandler) createNewPatientVisitHandler(w http.ResponseWriter
 	}
 
 	// if there isn't one, then pick the current active condition layout to send to the client for the patient to enter information
-	healthCondition, layoutVersionId, err := s.getCurrentActiveClientLayoutForHealthCondition(apiservice.HEALTH_CONDITION_ACNE_ID, api.EN_LANGUAGE_ID)
+	healthCondition, layoutVersionId, err := getCurrentActiveClientLayoutForHealthCondition(s.dataApi, apiservice.HEALTH_CONDITION_ACNE_ID, api.EN_LANGUAGE_ID)
 	if err != nil {
 		apiservice.WriteDeveloperError(w, http.StatusInternalServerError, err.Error())
 		return
@@ -242,12 +249,12 @@ func (s *patientVisitHandler) createNewPatientVisitHandler(w http.ResponseWriter
 		return
 	}
 
-	err = s.populateGlobalSectionsWithPatientAnswers(healthCondition, patient.PatientId.Int64())
+	err = populateGlobalSectionsWithPatientAnswers(s.dataApi, healthCondition, patient.PatientId.Int64())
 	if err != nil {
 		apiservice.WriteDeveloperError(w, http.StatusInternalServerError, err.Error())
 		return
 	}
-	s.fillInFormattedFieldsForQuestions(healthCondition, doctor)
+	fillInFormattedFieldsForQuestions(healthCondition, doctor)
 
 	dispatch.Default.PublishAsync(&VisitStartedEvent{
 		PatientId: patient.PatientId.Int64(),

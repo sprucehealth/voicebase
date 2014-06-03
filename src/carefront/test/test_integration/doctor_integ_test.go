@@ -248,41 +248,32 @@ func TestDoctorDiagnosisOfPatientVisit(t *testing.T) {
 	diagnosisQuestionId, severityQuestionId, acneTypeQuestionId := SubmitPatientVisitDiagnosis(patientVisitResponse.PatientVisitId, doctor, testData, t)
 
 	// now, get diagnosis layout again and check to ensure that the doctor successfully diagnosed the patient with the expected answers
-	resp, err = AuthGet(ts.URL+requestParams.String(), doctor.AccountId.Int64())
+	diagnosisLayout, err := visit.GetDiagnosisLayout(testData.DataApi, patientVisitResponse.PatientVisitId, 0, doctor.DoctorId.Int64())
 	if err != nil {
-		t.Fatal(err)
-	}
-	body, err := ioutil.ReadAll(resp.Body)
-	if err != nil {
-		t.Fatal("Unable to read body of request to get diagnosis layout after submitting diagnosis: " + err.Error())
+		t.Fatal(err.Error())
 	}
 
-	err = json.Unmarshal(body, &diagnosisResponse)
-	if err != nil {
-		t.Fatal("Unable to marshal response for diagnosis of patient visit after doctor submitted diagnosis: " + err.Error())
-	}
-
-	if diagnosisResponse.DiagnosisLayout == nil || diagnosisResponse.DiagnosisLayout.PatientVisitId != patientVisitResponse.PatientVisitId {
+	if diagnosisLayout == nil || diagnosisLayout.PatientVisitId != patientVisitResponse.PatientVisitId {
 		t.Fatal("Diagnosis response not as expected after doctor submitted diagnosis")
 	}
 
-	for _, section := range diagnosisResponse.DiagnosisLayout.InfoIntakeLayout.Sections {
+	for _, section := range diagnosisLayout.InfoIntakeLayout.Sections {
 		for _, question := range section.Questions {
 
-			for _, doctorResponse := range question.Answers {
-				switch doctorResponse.QuestionId.Int64() {
+			for _, response := range GetAnswerIntakesFromAnswers(question.Answers, t) {
+				switch response.QuestionId.Int64() {
 				case diagnosisQuestionId:
-					if doctorResponse.PotentialAnswerId.Int64() != 102 {
-						t.Fatalf("Doctor response to question id %d expectd to have id %d but has id %d", doctorResponse.QuestionId.Int64(), 102, doctorResponse.PotentialAnswerId.Int64())
+					if response.PotentialAnswerId.Int64() != 102 {
+						t.Fatalf("Doctor response to question id %d expectd to have id %d but has id %d", response.QuestionId.Int64(), 102, response.PotentialAnswerId.Int64())
 					}
 				case severityQuestionId:
-					if doctorResponse.PotentialAnswerId.Int64() != 107 {
-						t.Fatalf("Doctor response to question id %d expectd to have id %d but has id %d", doctorResponse.QuestionId.Int64(), 107, doctorResponse.PotentialAnswerId.Int64())
+					if response.PotentialAnswerId.Int64() != 107 {
+						t.Fatalf("Doctor response to question id %d expectd to have id %d but has id %d", response.QuestionId.Int64(), 107, response.PotentialAnswerId.Int64())
 					}
 
 				case acneTypeQuestionId:
-					if doctorResponse.PotentialAnswerId.Int64() != 109 && doctorResponse.PotentialAnswerId.Int64() != 114 && doctorResponse.PotentialAnswerId.Int64() != 113 {
-						t.Fatalf("Doctor response to question id %d expectd to have any of ids %s but instead has id %d", doctorResponse.QuestionId.Int64(), "(109,114,113)", doctorResponse.PotentialAnswerId.Int64())
+					if response.PotentialAnswerId.Int64() != 109 && response.PotentialAnswerId.Int64() != 114 && response.PotentialAnswerId.Int64() != 113 {
+						t.Fatalf("Doctor response to question id %d expectd to have any of ids %s but instead has id %d", response.QuestionId.Int64(), "(109,114,113)", response.PotentialAnswerId.Int64())
 					}
 
 				}
@@ -425,7 +416,7 @@ func TestDoctorSubmissionOfPatientVisitReview(t *testing.T) {
 	}
 
 	// get the doctor to start reviewing the patient visit
-	doctorPatientVisitReviewHandler := patient_file.NewDoctorPatientVisitReviewHandler(testData.DataApi, nil, testData.CloudStorageService, testData.CloudStorageService)
+	doctorPatientVisitReviewHandler := patient_file.NewDoctorPatientVisitReviewHandler(testData.DataApi)
 
 	ts2 := httptest.NewServer(doctorPatientVisitReviewHandler)
 	defer ts2.Close()

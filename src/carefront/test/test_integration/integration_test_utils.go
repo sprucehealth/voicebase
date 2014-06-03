@@ -299,3 +299,27 @@ func CheckSuccessfulStatusCode(resp *http.Response, errorMessage string, t *test
 		t.Fatal(errorMessage + "Response Status " + strconv.Itoa(resp.StatusCode))
 	}
 }
+
+func GetAnswerIntakesFromAnswers(aList []common.Answer, t *testing.T) []*common.AnswerIntake {
+	answers := make([]*common.AnswerIntake, len(aList))
+	for i, a := range aList {
+		answers[i] = GetAnswerIntakeFromAnswer(a, t)
+	}
+	return answers
+}
+
+func GetAnswerIntakeFromAnswer(a common.Answer, t *testing.T) *common.AnswerIntake {
+	answer, ok := a.(*common.AnswerIntake)
+	if !ok {
+		t.Fatalf("Expected type AnswerIntake instead got %T", a)
+	}
+	return answer
+}
+
+func GetPhotoIntakeSectionFromAnswer(a common.Answer, t *testing.T) *common.PhotoIntakeSection {
+	answer, ok := a.(*common.PhotoIntakeSection)
+	if !ok {
+		t.Fatalf("Expected type PhotoIntakeSection instead got %T", a)
+	}
+	return answer
+}

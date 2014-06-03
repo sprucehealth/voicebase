@@ -57,26 +57,25 @@ type PotentialAnswer struct {
 }
 
 type Question struct {
-	QuestionTag           string                       `json:"question"`
-	QuestionId            int64                        `json:"question_id,string,omitempty"`
-	QuestionTitle         string                       `json:"question_title,omitempty"`
-	QuestionTypes         []string                     `json:"question_types,omitempty"`
-	FormattedFieldTags    []string                     `json:"formatted_field_tags,omitempty"`
-	QuestionSubText       string                       `json:"question_subtext,omitempty"`
-	QuestionSummary       string                       `json:"question_summary,omitempty"`
-	AdditionalFields      map[string]string            `json:"additional_fields,omitempty"`
-	DisplayStyles         []string                     `json:"display_styles,omitempty"`
-	ParentQuestionId      int64                        `json:"parent_question_id,string,omitempty"`
-	PotentialAnswers      []*PotentialAnswer           `json:"potential_answers,omitempty"`
-	Answers               []*common.AnswerIntake       `json:"answers,omitempty"`
-	Questions             []*Question                  `json:"questions,omitempty"`
-	ConditionBlock        *Condition                   `json:"condition,omitempty"`
-	Tips                  *TipSection                  `json:"tips,omitempty"`
-	Required              bool                         `json:"required"`
-	ToAlert               bool                         `json:"to_alert"`
-	AlertFormattedText    string                       `json:"alert_text"`
-	PhotoSlots            []*PhotoSlot                 `json:"photo_slots,omitempty"`
-	AnsweredPhotoSections []*common.PhotoIntakeSection `json:"answered_photo_sections,omitempty"`
+	QuestionTag        string             `json:"question"`
+	QuestionId         int64              `json:"question_id,string,omitempty"`
+	QuestionTitle      string             `json:"question_title,omitempty"`
+	QuestionTypes      []string           `json:"question_types,omitempty"`
+	FormattedFieldTags []string           `json:"formatted_field_tags,omitempty"`
+	QuestionSubText    string             `json:"question_subtext,omitempty"`
+	QuestionSummary    string             `json:"question_summary,omitempty"`
+	AdditionalFields   map[string]string  `json:"additional_fields,omitempty"`
+	DisplayStyles      []string           `json:"display_styles,omitempty"`
+	ParentQuestionId   int64              `json:"parent_question_id,string,omitempty"`
+	PotentialAnswers   []*PotentialAnswer `json:"potential_answers,omitempty"`
+	Answers            []common.Answer    `json:"answers,omitempty"`
+	Questions          []*Question        `json:"questions,omitempty"`
+	ConditionBlock     *Condition         `json:"condition,omitempty"`
+	Tips               *TipSection        `json:"tips,omitempty"`
+	Required           bool               `json:"required"`
+	ToAlert            bool               `json:"to_alert"`
+	AlertFormattedText string             `json:"alert_text"`
+	PhotoSlots         []*PhotoSlot       `json:"photo_slots,omitempty"`
 }
 
 type PhotoSlot struct {

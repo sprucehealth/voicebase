@@ -148,7 +148,7 @@ func SubmitPatientVisitDiagnosis(PatientVisitId int64, doctor *common.Doctor, te
 }
 
 func StartReviewingPatientVisit(patientVisitId int64, doctor *common.Doctor, testData TestData, t *testing.T) {
-	doctorPatientVisitReviewHandler := patient_file.NewDoctorPatientVisitReviewHandler(testData.DataApi, nil, testData.CloudStorageService, testData.CloudStorageService)
+	doctorPatientVisitReviewHandler := patient_file.NewDoctorPatientVisitReviewHandler(testData.DataApi)
 
 	ts := httptest.NewServer(doctorPatientVisitReviewHandler)
 	defer ts.Close()

@@ -4,12 +4,10 @@ import (
 	"carefront/api"
 	"carefront/common"
 	"carefront/encoding"
-	"carefront/info_intake"
 	"carefront/libs/golog"
 	"encoding/json"
 	"errors"
 	"fmt"
-	"log"
 	"net/http"
 	"net/url"
 	"strconv"
@@ -92,34 +90,6 @@ func VerifyDoctorPatientRelationship(dataApi api.DataAPI, doctor *common.Doctor,
 		return fmt.Errorf("Unable to get the patient information by doctor when this doctor is not the primary doctor for patient")
 	}
 	return nil
-}
-
-func GetSignedUrlForAnswer(patientAnswer *common.AnswerIntake, photoStorageService api.CloudStorageAPI) string {
-	if patientAnswer.StorageKey != "" {
-		objectUrl, err := photoStorageService.GetSignedUrlForObjectAtLocation(patientAnswer.StorageBucket,
-			patientAnswer.StorageKey, patientAnswer.StorageRegion, time.Now().Add(signedUrlAuthTimeout))
-		if err != nil {
-			log.Fatal("Unable to get signed url for photo object: " + err.Error())
-			return ""
-		}
-		return objectUrl
-	}
-	return ""
-}
-
-func GetSignedUrlsForAnswersInQuestion(question *info_intake.Question, photoStorageService api.CloudStorageAPI) {
-	// go through each answer to get signed urls
-	for _, patientAnswer := range question.Answers {
-		if patientAnswer.StorageKey != "" {
-			objectUrl, err := photoStorageService.GetSignedUrlForObjectAtLocation(patientAnswer.StorageBucket,
-				patientAnswer.StorageKey, patientAnswer.StorageRegion, time.Now().Add(signedUrlAuthTimeout))
-			if err != nil {
-				log.Fatal("Unable to get signed url for photo object: " + err.Error())
-			} else {
-				patientAnswer.ObjectUrl = objectUrl
-			}
-		}
-	}
 }
 
 func GetPrimaryDoctorInfoBasedOnPatient(dataApi api.DataAPI, patient *common.Patient, staticBaseContentUrl string) (*common.Doctor, error) {

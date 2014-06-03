@@ -1,6 +1,7 @@
 package patient_visit
 
 import (
+	"carefront/api"
 	"carefront/apiservice"
 	"carefront/common"
 	"carefront/info_intake"
@@ -11,7 +12,7 @@ import (
 	"strings"
 )
 
-func (s *patientVisitHandler) fillInFormattedFieldsForQuestions(healthCondition *info_intake.InfoIntakeLayout, doctor *common.Doctor) {
+func fillInFormattedFieldsForQuestions(healthCondition *info_intake.InfoIntakeLayout, doctor *common.Doctor) {
 	for _, section := range healthCondition.Sections {
 		for _, screen := range section.Screens {
 			for _, question := range screen.Questions {
@@ -36,9 +37,9 @@ func (s *patientVisitHandler) fillInFormattedFieldsForQuestions(healthCondition 
 	}
 }
 
-func (s *patientVisitHandler) populateGlobalSectionsWithPatientAnswers(healthCondition *info_intake.InfoIntakeLayout, patientId int64) error {
+func populateGlobalSectionsWithPatientAnswers(dataApi api.DataAPI, healthCondition *info_intake.InfoIntakeLayout, patientId int64) error {
 	// identify sections that are global
-	globalSectionIds, err := s.dataApi.GetGlobalSectionIds()
+	globalSectionIds, err := dataApi.GetGlobalSectionIds()
 	if err != nil {
 		return errors.New("Unable to get global sections ids: " + err.Error())
 	}
@@ -50,12 +51,12 @@ func (s *patientVisitHandler) populateGlobalSectionsWithPatientAnswers(healthCon
 	}
 
 	// get the answers that the patient has previously entered for all sections that are considered global
-	globalSectionPatientAnswers, err := s.dataApi.GetPatientAnswersForQuestionsInGlobalSections(globalQuestionIds, patientId)
+	globalSectionPatientAnswers, err := dataApi.GetPatientAnswersForQuestionsInGlobalSections(globalQuestionIds, patientId)
 	if err != nil {
 		return errors.New("Unable to get patient answers for global sections: " + err.Error())
 	}
 
-	s.populateIntakeLayoutWithPatientAnswers(healthCondition, globalSectionPatientAnswers)
+	populateIntakeLayoutWithPatientAnswers(healthCondition, globalSectionPatientAnswers)
 	return nil
 }
 
@@ -73,39 +74,38 @@ func getQuestionIdsInSectionInIntakeLayout(healthCondition *info_intake.InfoInta
 	return
 }
 
-func (s *patientVisitHandler) populateIntakeLayoutWithPatientAnswers(intake *info_intake.InfoIntakeLayout, patientAnswers map[int64][]*common.AnswerIntake) {
+func populateIntakeLayoutWithPatientAnswers(intake *info_intake.InfoIntakeLayout, patientAnswers map[int64][]common.Answer) {
 	for _, section := range intake.Sections {
 		for _, screen := range section.Screens {
 			for _, question := range screen.Questions {
 				// go through each question to see if there exists a patient answer for it
-				if patientAnswers[question.QuestionId] != nil {
-					question.Answers = patientAnswers[question.QuestionId]
-				}
+				question.Answers = patientAnswers[question.QuestionId]
 			}
 		}
 	}
 }
 
-func (s *patientVisitHandler) populateIntakeLayoutWithPhotos(intake *info_intake.InfoIntakeLayout, photoSectionsByQuestion map[int64][]*common.PhotoIntakeSection, req *http.Request) {
+func populateIntakeLayoutWithPhotos(intake *info_intake.InfoIntakeLayout, photoSectionsByQuestion map[int64][]*common.PhotoIntakeSection, req *http.Request) {
 	for _, section := range intake.Sections {
 		for _, screen := range section.Screens {
 			for _, question := range screen.Questions {
 				photoSections := photoSectionsByQuestion[question.QuestionId]
 				if len(photoSections) > 0 {
+					question.Answers = make([]common.Answer, len(photoSections))
 					// go through each slot and populate the url for the photo
-					for _, photoSection := range photoSections {
+					for i, photoSection := range photoSections {
 						for _, photoIntakeSlot := range photoSection.Photos {
 							photoIntakeSlot.PhotoUrl = apiservice.CreatePhotoUrl(photoIntakeSlot.PhotoId, photoIntakeSlot.Id, common.ClaimerTypePhotoIntakeSlot, req.Host)
 						}
+						question.Answers[i] = photoSection
 					}
-					question.AnsweredPhotoSections = photoSections
 				}
 			}
 		}
 	}
 }
-func (s *patientVisitHandler) getCurrentActiveClientLayoutForHealthCondition(healthConditionId, languageId int64) (*info_intake.InfoIntakeLayout, int64, error) {
-	data, layoutVersionId, err := s.dataApi.GetCurrentActivePatientLayout(languageId, healthConditionId)
+func getCurrentActiveClientLayoutForHealthCondition(dataApi api.DataAPI, healthConditionId, languageId int64) (*info_intake.InfoIntakeLayout, int64, error) {
+	data, layoutVersionId, err := dataApi.GetCurrentActivePatientLayout(languageId, healthConditionId)
 	if err != nil {
 		return nil, 0, err
 	}

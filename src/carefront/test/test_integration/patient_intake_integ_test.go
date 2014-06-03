@@ -115,8 +115,8 @@ func TestSingleSelectIntake(t *testing.T) {
 					if question.Answers == nil || len(question.Answers) == 0 {
 						t.Fatalf("Expected patient answer for question with id %d, but got none", questionId)
 					}
-					for _, patientAnswer := range question.Answers {
-						if patientAnswer.PotentialAnswerId.Int64() == potentialAnswerId {
+					for _, answer := range GetAnswerIntakesFromAnswers(question.Answers, t) {
+						if answer.PotentialAnswerId.Int64() == potentialAnswerId {
 							return
 						}
 					}
@@ -173,11 +173,11 @@ func TestMultipleChoiceIntake(t *testing.T) {
 					if question.Answers == nil || len(question.Answers) == 0 {
 						t.Fatalf("Expected patient answer for question with id %d, but got none", questionId)
 					}
-					for _, patientAnswer := range question.Answers {
+					for _, answer := range GetAnswerIntakesFromAnswers(question.Answers, t) {
 						answerNotFound := true
 						for _, questionItem := range answerIntakeRequestBody.Questions {
 							for _, answerIntake := range questionItem.AnswerIntakes {
-								if answerIntake.PotentialAnswerId == patientAnswer.PotentialAnswerId.Int64() {
+								if answerIntake.PotentialAnswerId == answer.PotentialAnswerId.Int64() {
 									answerNotFound = false
 								}
 							}
@@ -226,8 +226,8 @@ func TestSingleEntryIntake(t *testing.T) {
 					if question.Answers == nil || len(question.Answers) == 0 {
 						t.Fatalf("Expected patient answer for question with id %d, but got none", questionId)
 					}
-					for _, patientAnswer := range question.Answers {
-						if patientAnswer.PotentialAnswerId.Int64() == potentialAnswerId && patientAnswer.AnswerText == "testAnswer" {
+					for _, answer := range GetAnswerIntakesFromAnswers(question.Answers, t) {
+						if answer.PotentialAnswerId.Int64() == potentialAnswerId && answer.AnswerText == "testAnswer" {
 							return
 						}
 					}
@@ -266,8 +266,8 @@ func submitFreeTextResponseForPatient(patientVisitResponse *patient_visit.Patien
 					if question.Answers == nil || len(question.Answers) == 0 {
 						t.Fatalf("Expected patient answer for question with id %d, but got none", questionId)
 					}
-					for _, patientAnswer := range question.Answers {
-						if patientAnswer.AnswerText == freeTextResponse {
+					for _, answer := range GetAnswerIntakesFromAnswers(question.Answers, t) {
+						if answer.AnswerText == freeTextResponse {
 							return
 						}
 					}
@@ -379,7 +379,7 @@ func TestSubQuestionEntryIntake(t *testing.T) {
 					if question.Answers == nil || len(question.Answers) == 0 {
 						t.Fatalf("Expected patient answer for question with id %d, but got none", questionId)
 					}
-					for _, patientAnswer := range question.Answers {
+					for _, patientAnswer := range GetAnswerIntakesFromAnswers(question.Answers, t) {
 						if !(patientAnswer.AnswerText == neutrogena || patientAnswer.AnswerText == benzoylPeroxide ||
 							patientAnswer.AnswerText == proactive) {
 							t.Fatal("Top level patient answers is not one of the expected answers")
@@ -442,7 +442,7 @@ func TestSubQuestionEntryIntake(t *testing.T) {
 					if question.Answers == nil || len(question.Answers) == 0 {
 						t.Fatalf("Expected patient answer for question with id %d, but got none", questionId)
 					}
-					for _, patientAnswer := range question.Answers {
+					for _, patientAnswer := range GetAnswerIntakesFromAnswers(question.Answers, t) {
 
 						if !(patientAnswer.AnswerText == neutrogena || patientAnswer.AnswerText == benzoylPeroxide ||
 							patientAnswer.AnswerText == proactive) {

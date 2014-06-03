@@ -99,18 +99,27 @@ func (d *diagnosePatientHandler) getDiagnosis(w http.ResponseWriter, r *http.Req
 		return
 	}
 
-	diagnosisLayout, err := d.getCurrentActiveDiagnoseLayoutForHealthCondition(apiservice.HEALTH_CONDITION_ACNE_ID)
+	diagnosisLayout, err := GetDiagnosisLayout(d.dataApi, patientVisitId, treatmentPlanId, patientVisitReviewData.DoctorId)
 	if err != nil {
-		apiservice.WriteDeveloperError(w, http.StatusInternalServerError, "Unable to get diagnosis layout for doctor to diagnose patient visit "+err.Error())
+		apiservice.WriteDeveloperError(w, http.StatusInternalServerError, err.Error())
 		return
+	}
+
+	apiservice.WriteJSONToHTTPResponseWriter(w, http.StatusOK, &GetDiagnosisResponse{DiagnosisLayout: diagnosisLayout})
+}
+
+func GetDiagnosisLayout(dataApi api.DataAPI, patientVisitId, treatmentPlanId, doctorId int64) (*info_intake.DiagnosisIntake, error) {
+
+	diagnosisLayout, err := getCurrentActiveDiagnoseLayoutForHealthCondition(dataApi, apiservice.HEALTH_CONDITION_ACNE_ID)
+	if err != nil {
+		return nil, err
 	}
 	diagnosisLayout.PatientVisitId = patientVisitId
 
 	if treatmentPlanId == 0 {
-		treatmentPlanId, err = d.dataApi.GetActiveTreatmentPlanForPatientVisit(patientVisitReviewData.DoctorId, patientVisitId)
+		treatmentPlanId, err = dataApi.GetActiveTreatmentPlanForPatientVisit(doctorId, patientVisitId)
 		if err != nil {
-			apiservice.WriteDeveloperError(w, http.StatusBadRequest, "Unable to get active treatment plan for patient visit: "+err.Error())
-			return
+			return nil, err
 		}
 	}
 	diagnosisLayout.TreatmentPlanId = treatmentPlanId
@@ -119,16 +128,14 @@ func (d *diagnosePatientHandler) getDiagnosis(w http.ResponseWriter, r *http.Req
 	questionIds := getQuestionIdsInDiagnosisLayout(diagnosisLayout)
 
 	// get the answers to the questions in the array
-	doctorAnswers, err := d.dataApi.GetDoctorAnswersForQuestionsInDiagnosisLayout(questionIds, patientVisitReviewData.DoctorId, patientVisitId)
+	doctorAnswers, err := dataApi.GetDoctorAnswersForQuestionsInDiagnosisLayout(questionIds, doctorId, patientVisitId)
 	if err != nil {
-		apiservice.WriteDeveloperError(w, http.StatusInternalServerError, "Unable to get answers for question: "+err.Error())
-		return
+		return nil, err
 	}
 
 	// populate the diagnosis layout with the answers to the questions
 	populateDiagnosisLayoutWithDoctorAnswers(diagnosisLayout, doctorAnswers)
-
-	apiservice.WriteJSONToHTTPResponseWriter(w, http.StatusOK, &GetDiagnosisResponse{DiagnosisLayout: diagnosisLayout})
+	return diagnosisLayout, nil
 }
 
 func (d *diagnosePatientHandler) diagnosePatient(w http.ResponseWriter, r *http.Request) {
@@ -229,22 +236,20 @@ func getQuestionIdsInDiagnosisLayout(diagnosisLayout *info_intake.DiagnosisIntak
 	return questionIds
 }
 
-func populateDiagnosisLayoutWithDoctorAnswers(diagnosisLayout *info_intake.DiagnosisIntake, doctorAnswers map[int64][]*common.AnswerIntake) []int64 {
+func populateDiagnosisLayoutWithDoctorAnswers(diagnosisLayout *info_intake.DiagnosisIntake, doctorAnswers map[int64][]common.Answer) []int64 {
 	questionIds := make([]int64, 0)
 	for _, section := range diagnosisLayout.InfoIntakeLayout.Sections {
 		for _, question := range section.Questions {
 			// go through each question to see if there exists a patient answer for it
-			if doctorAnswers[question.QuestionId] != nil {
-				question.Answers = doctorAnswers[question.QuestionId]
-			}
+			question.Answers = doctorAnswers[question.QuestionId]
 		}
 	}
 
 	return questionIds
 }
 
-func (d *diagnosePatientHandler) getCurrentActiveDiagnoseLayoutForHealthCondition(healthConditionId int64) (*info_intake.DiagnosisIntake, error) {
-	data, _, err := d.dataApi.GetActiveDoctorDiagnosisLayout(healthConditionId)
+func getCurrentActiveDiagnoseLayoutForHealthCondition(dataApi api.DataAPI, healthConditionId int64) (*info_intake.DiagnosisIntake, error) {
+	data, _, err := dataApi.GetActiveDoctorDiagnosisLayout(healthConditionId)
 	if err != nil {
 		return nil, err
 	}

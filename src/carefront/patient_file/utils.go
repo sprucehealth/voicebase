@@ -12,12 +12,12 @@ import (
 
 // This interface is used to populate the ViewContext with data pertaining to a single question
 type patientQAViewContextPopulator interface {
-	populateViewContextWithPatientQA(patientAnswers []*common.AnswerIntake, question *info_intake.Question, context *common.ViewContext, dataApi api.DataAPI) error
+	populateViewContextWithPatientQA(patientAnswers []common.Answer, question *info_intake.Question, context *common.ViewContext, dataApi api.DataAPI, r *http.Request) error
 }
 
 // This interface is used to populate the ViewContext with any global data or business logic
 type genericPatientViewContextPopulator interface {
-	populateViewContextWithInfo(patientAnswersToQuestions map[int64][]*common.AnswerIntake, questions []*info_intake.Question, context *common.ViewContext, dataApi api.DataAPI) error
+	populateViewContextWithInfo(patientAnswersToQuestions map[int64][]common.Answer, questions []*info_intake.Question, context *common.ViewContext, dataApi api.DataAPI) error
 }
 
 var genericPopulators []genericPatientViewContextPopulator = make([]genericPatientViewContextPopulator, 0)
@@ -30,24 +30,26 @@ func init() {
 	patientQAPopulators[info_intake.QUESTION_TYPE_SINGLE_ENTRY] = qaViewContextPopulator(populateSingleEntryAnswers)
 	patientQAPopulators[info_intake.QUESTION_TYPE_FREE_TEXT] = qaViewContextPopulator(populateSingleEntryAnswers)
 	patientQAPopulators[info_intake.QUESTION_TYPE_SINGLE_SELECT] = qaViewContextPopulator(populateSingleEntryAnswers)
+	patientQAPopulators[info_intake.QUESTION_TYPE_PHOTO_SECTION] = qaViewContextPopulator(populatePatientPhotos)
+	patientQAPopulators[info_intake.QUESTION_TYPE_PHOTO] = qaViewContextPopulator(populatePatientPhotos)
 }
 
 const (
 	textReplacementIdentifier = "XXX"
 )
 
-type qaViewContextPopulator func([]*common.AnswerIntake, *info_intake.Question, *common.ViewContext, api.DataAPI) error
-type genericViewContextPopulator func(map[int64][]*common.AnswerIntake, []*info_intake.Question, *common.ViewContext, api.DataAPI) error
+type qaViewContextPopulator func([]common.Answer, *info_intake.Question, *common.ViewContext, api.DataAPI, *http.Request) error
+type genericViewContextPopulator func(map[int64][]common.Answer, []*info_intake.Question, *common.ViewContext, api.DataAPI) error
 
-func (q qaViewContextPopulator) populateViewContextWithPatientQA(patientAnswers []*common.AnswerIntake, question *info_intake.Question, context *common.ViewContext, dataApi api.DataAPI) error {
-	return q(patientAnswers, question, context, dataApi)
+func (q qaViewContextPopulator) populateViewContextWithPatientQA(patientAnswers []common.Answer, question *info_intake.Question, context *common.ViewContext, dataApi api.DataAPI, r *http.Request) error {
+	return q(patientAnswers, question, context, dataApi, r)
 }
 
-func (g genericViewContextPopulator) populateViewContextWithInfo(patientAnswersToQuestions map[int64][]*common.AnswerIntake, questions []*info_intake.Question, context *common.ViewContext, dataApi api.DataAPI) error {
+func (g genericViewContextPopulator) populateViewContextWithInfo(patientAnswersToQuestions map[int64][]common.Answer, questions []*info_intake.Question, context *common.ViewContext, dataApi api.DataAPI) error {
 	return g(patientAnswersToQuestions, questions, context, dataApi)
 }
 
-func populateAlerts(patientAnswersToQuestions map[int64][]*common.AnswerIntake, questions []*info_intake.Question, context *common.ViewContext, dataApi api.DataAPI) error {
+func populateAlerts(patientAnswersToQuestions map[int64][]common.Answer, questions []*info_intake.Question, context *common.ViewContext, dataApi api.DataAPI) error {
 	questionIdToQuestion := make(map[int64]*info_intake.Question)
 	for _, question := range questions {
 		questionIdToQuestion[question.QuestionId] = question
@@ -65,18 +67,19 @@ func populateAlerts(patientAnswersToQuestions map[int64][]*common.AnswerIntake, 
 				// populate the answers to call out in the alert
 				enteredAnswers := make([]string, len(answers))
 				for i, answer := range answers {
+					if a, ok := answer.(*common.AnswerIntake); ok {
+						answerText := a.AnswerText
 
-					answerText := answer.AnswerText
+						if answerText == "" {
+							answerText = a.AnswerSummary
+						}
 
-					if answerText == "" {
-						answerText = answer.AnswerSummary
+						if answerText == "" {
+							answerText = a.PotentialAnswer
+						}
+
+						enteredAnswers[i] = answerText
 					}
-
-					if answerText == "" {
-						answerText = answer.PotentialAnswer
-					}
-
-					enteredAnswers[i] = answerText
 				}
 				if len(enteredAnswers) > 0 {
 					alerts = append(alerts, strings.Replace(question.AlertFormattedText, textReplacementIdentifier, strings.Join(enteredAnswers, ", "), -1))
@@ -86,8 +89,9 @@ func populateAlerts(patientAnswersToQuestions map[int64][]*common.AnswerIntake, 
 				selectedAnswers := make([]string, 0)
 				for _, potentialAnswer := range question.PotentialAnswers {
 					for _, patientAnswer := range answers {
+						pAnswer := patientAnswer.(*common.AnswerIntake)
 						// populate all the selected answers to show in the alert
-						if patientAnswer.PotentialAnswerId.Int64() == potentialAnswer.AnswerId {
+						if pAnswer.PotentialAnswerId.Int64() == potentialAnswer.AnswerId {
 							if potentialAnswer.ToAlert {
 								if potentialAnswer.AnswerSummary != "" {
 									selectedAnswers = append(selectedAnswers, potentialAnswer.AnswerSummary)
@@ -115,7 +119,7 @@ func populateAlerts(patientAnswersToQuestions map[int64][]*common.AnswerIntake, 
 	return nil
 }
 
-func populateMultipleChoiceAnswers(patientAnswers []*common.AnswerIntake, question *info_intake.Question, context *common.ViewContext, dataApi api.DataAPI) error {
+func populateMultipleChoiceAnswers(patientAnswers []common.Answer, question *info_intake.Question, context *common.ViewContext, dataApi api.DataAPI, r *http.Request) error {
 	if len(patientAnswers) == 0 {
 		populateEmptyStateTextIfPresent(question, context)
 		return nil
@@ -126,7 +130,8 @@ func populateMultipleChoiceAnswers(patientAnswers []*common.AnswerIntake, questi
 		answerSelected := false
 
 		for _, patientAnswer := range patientAnswers {
-			if patientAnswer.PotentialAnswerId.Int64() == potentialAnswer.AnswerId {
+			pAnswer := patientAnswer.(*common.AnswerIntake)
+			if pAnswer.PotentialAnswerId.Int64() == potentialAnswer.AnswerId {
 				answerSelected = true
 			}
 		}
@@ -142,7 +147,7 @@ func populateMultipleChoiceAnswers(patientAnswers []*common.AnswerIntake, questi
 	return nil
 }
 
-func populateSingleEntryAnswers(patientAnswers []*common.AnswerIntake, question *info_intake.Question, context *common.ViewContext, dataApi api.DataAPI) error {
+func populateSingleEntryAnswers(patientAnswers []common.Answer, question *info_intake.Question, context *common.ViewContext, dataApi api.DataAPI, r *http.Request) error {
 	if len(patientAnswers) == 0 {
 		populateEmptyStateTextIfPresent(question, context)
 		return nil
@@ -152,12 +157,13 @@ func populateSingleEntryAnswers(patientAnswers []*common.AnswerIntake, question 
 		return fmt.Errorf("Expected just one answer for question %s instead we have  %d", question.QuestionTag, len(patientAnswers))
 	}
 
-	answer := patientAnswers[0].AnswerText
+	pAnswer := patientAnswers[0].(*common.AnswerIntake)
+	answer := pAnswer.AnswerText
 	if answer == "" {
-		answer = patientAnswers[0].AnswerSummary
+		answer = pAnswer.AnswerSummary
 	}
 	if answer == "" {
-		answer = patientAnswers[0].PotentialAnswer
+		answer = pAnswer.PotentialAnswer
 	}
 
 	context.Set(fmt.Sprintf("%s:question_summary", question.QuestionTag), question.QuestionSummary)
@@ -165,7 +171,7 @@ func populateSingleEntryAnswers(patientAnswers []*common.AnswerIntake, question 
 	return nil
 }
 
-func populateAnswersForQuestionsWithSubanswers(patientAnswers []*common.AnswerIntake, question *info_intake.Question, context *common.ViewContext, dataApi api.DataAPI) error {
+func populateAnswersForQuestionsWithSubanswers(patientAnswers []common.Answer, question *info_intake.Question, context *common.ViewContext, dataApi api.DataAPI, r *http.Request) error {
 	if len(patientAnswers) == 0 {
 		populateEmptyStateTextIfPresent(question, context)
 		return nil
@@ -173,9 +179,9 @@ func populateAnswersForQuestionsWithSubanswers(patientAnswers []*common.AnswerIn
 
 	data := make([]info_intake.TitleSubtitleSubItemsData, len(patientAnswers))
 	for i, patientAnswer := range patientAnswers {
-
-		items := make([]string, len(patientAnswer.SubAnswers))
-		for j, subAnswer := range patientAnswer.SubAnswers {
+		pAnswer := patientAnswer.(*common.AnswerIntake)
+		items := make([]string, len(pAnswer.SubAnswers))
+		for j, subAnswer := range pAnswer.SubAnswers {
 			if subAnswer.AnswerSummary != "" {
 				items[j] = subAnswer.AnswerSummary
 			} else {
@@ -184,7 +190,7 @@ func populateAnswersForQuestionsWithSubanswers(patientAnswers []*common.AnswerIn
 		}
 
 		data[i] = info_intake.TitleSubtitleSubItemsData{
-			Title:    patientAnswer.AnswerText,
+			Title:    pAnswer.AnswerText,
 			SubItems: items,
 		}
 	}
@@ -206,7 +212,7 @@ func populateEmptyStateTextIfPresent(question *info_intake.Question, context *co
 	context.Set(fmt.Sprintf("%s:empty_state_text", question.QuestionTag), emptyStateText)
 }
 
-func populatePatientPhotos(answeredPhotoSections []*common.PhotoIntakeSection, question *info_intake.Question, context *common.ViewContext, dataApi api.DataAPI, r *http.Request) error {
+func populatePatientPhotos(answeredPhotoSections []common.Answer, question *info_intake.Question, context *common.ViewContext, dataApi api.DataAPI, r *http.Request) error {
 	var items []info_intake.TitlePhotoListData
 	photoData, ok := context.Get("patient_visit_photos")
 
@@ -217,12 +223,13 @@ func populatePatientPhotos(answeredPhotoSections []*common.PhotoIntakeSection, q
 	}
 
 	for _, photoSection := range answeredPhotoSections {
+		pIntakeSection := photoSection.(*common.PhotoIntakeSection)
 		item := info_intake.TitlePhotoListData{
-			Title:  photoSection.Name,
-			Photos: make([]info_intake.PhotoData, len(photoSection.Photos)),
+			Title:  pIntakeSection.Name,
+			Photos: make([]info_intake.PhotoData, len(pIntakeSection.Photos)),
 		}
 
-		for i, photoIntakeSlot := range photoSection.Photos {
+		for i, photoIntakeSlot := range pIntakeSection.Photos {
 			item.Photos[i] = info_intake.PhotoData{
 				Title:    photoIntakeSlot.Name,
 				PhotoUrl: apiservice.CreatePhotoUrl(photoIntakeSlot.PhotoId, photoIntakeSlot.Id, common.ClaimerTypePhotoIntakeSlot, r.Host),

@@ -7,7 +7,7 @@ import (
 	"strconv"
 )
 
-func (d *DataService) GetPatientAnswersForQuestionsInGlobalSections(questionIds []int64, patientId int64) (patientAnswers map[int64][]*common.AnswerIntake, err error) {
+func (d *DataService) GetPatientAnswersForQuestionsInGlobalSections(questionIds []int64, patientId int64) (patientAnswers map[int64][]common.Answer, err error) {
 	enumeratedStrings := enumerateItemsIntoString(questionIds)
 	queryStr := fmt.Sprintf(`select info_intake.id, info_intake.question_id, potential_answer_id, l1.ltext, l2.ltext, answer_text, object_storage.bucket, object_storage.storage_key, region_tag,
 								layout_version_id, parent_question_id, parent_info_intake_id from info_intake  
@@ -20,7 +20,7 @@ func (d *DataService) GetPatientAnswersForQuestionsInGlobalSections(questionIds 
 	return d.getPatientAnswersForQuestionsBasedOnQuery(queryStr, patientId)
 }
 
-func (d *DataService) GetPatientAnswersForQuestionsBasedOnQuestionIds(questionIds []int64, roleId int64, patientVisitId int64) (answerIntakes map[int64][]*common.AnswerIntake, err error) {
+func (d *DataService) GetPatientAnswersForQuestionsBasedOnQuestionIds(questionIds []int64, roleId int64, patientVisitId int64) (answerIntakes map[int64][]common.Answer, err error) {
 	enumeratedStrings := enumerateItemsIntoString(questionIds)
 	queryStr := fmt.Sprintf(`select info_intake.id, info_intake.question_id, potential_answer_id, l1.ltext, l2.ltext, answer_text, bucket, storage_key, region_tag,
 								layout_version_id, parent_question_id, parent_info_intake_id from info_intake  
@@ -33,7 +33,7 @@ func (d *DataService) GetPatientAnswersForQuestionsBasedOnQuestionIds(questionId
 	return d.getPatientAnswersForQuestionsBasedOnQuery(queryStr, roleId, patientVisitId)
 }
 
-func (d *DataService) GetDoctorAnswersForQuestionsInDiagnosisLayout(questionIds []int64, roleId int64, patientVisitId int64) (answerIntakes map[int64][]*common.AnswerIntake, err error) {
+func (d *DataService) GetDoctorAnswersForQuestionsInDiagnosisLayout(questionIds []int64, roleId int64, patientVisitId int64) (answerIntakes map[int64][]common.Answer, err error) {
 	enumeratedStrings := enumerateItemsIntoString(questionIds)
 	queryStr := fmt.Sprintf(`select info_intake.id, info_intake.question_id, potential_answer_id, l1.ltext, l2.ltext, answer_text, bucket, storage_key, region_tag,
 								layout_version_id, parent_question_id, parent_info_intake_id from info_intake  
@@ -384,14 +384,14 @@ func (d *DataService) updatePatientInfoIntakesWithStatus(role string, questionId
 	return err
 }
 
-func (d *DataService) getPatientAnswersForQuestionsBasedOnQuery(query string, args ...interface{}) (map[int64][]*common.AnswerIntake, error) {
+func (d *DataService) getPatientAnswersForQuestionsBasedOnQuery(query string, args ...interface{}) (map[int64][]common.Answer, error) {
 	rows, err := d.db.Query(query, args...)
 	if err != nil {
 		return nil, err
 	}
 	defer rows.Close()
-	patientAnswers := make(map[int64][]*common.AnswerIntake)
-	queriedAnswers := make([]*common.AnswerIntake, 0)
+	patientAnswers := make(map[int64][]common.Answer)
+	queriedAnswers := make([]common.Answer, 0)
 	for rows.Next() {
 		var patientAnswerToQuestion common.AnswerIntake
 		var answerText, answerSummaryText, storageBucket, storageKey, storageRegion, potentialAnswer sql.NullString
@@ -414,12 +414,13 @@ func (d *DataService) getPatientAnswersForQuestionsBasedOnQuery(query string, ar
 	}
 
 	// populate all top-level answers into the map
-	patientAnswers = make(map[int64][]*common.AnswerIntake)
+	patientAnswers = make(map[int64][]common.Answer)
 	for _, patientAnswerToQuestion := range queriedAnswers {
-		if patientAnswerToQuestion.ParentQuestionId.Int64() == 0 {
-			questionId := patientAnswerToQuestion.QuestionId.Int64()
+		answer := patientAnswerToQuestion.(*common.AnswerIntake)
+		if answer.ParentQuestionId.Int64() == 0 {
+			questionId := answer.QuestionId.Int64()
 			if patientAnswers[questionId] == nil {
-				patientAnswers[questionId] = make([]*common.AnswerIntake, 0)
+				patientAnswers[questionId] = make([]common.Answer, 0)
 			}
 			patientAnswers[questionId] = append(patientAnswers[questionId], patientAnswerToQuestion)
 		}
@@ -428,16 +429,18 @@ func (d *DataService) getPatientAnswersForQuestionsBasedOnQuery(query string, ar
 	// add all subanswers to the top-level answers by iterating through the queried answers
 	// to identify any sub answers
 	for _, patientAnswerToQuestion := range queriedAnswers {
-		if patientAnswerToQuestion.ParentQuestionId.Int64() != 0 {
-			questionId := patientAnswerToQuestion.ParentQuestionId.Int64()
+		answer := patientAnswerToQuestion.(*common.AnswerIntake)
+		if answer.ParentQuestionId.Int64() != 0 {
+			questionId := answer.ParentQuestionId.Int64()
 			// go through the list of answers to identify the particular answer we care about
 			for _, patientAnswer := range patientAnswers[questionId] {
-				if patientAnswer.AnswerIntakeId.Int64() == patientAnswerToQuestion.ParentAnswerId.Int64() {
+				pAnswer := patientAnswer.(*common.AnswerIntake)
+				if pAnswer.AnswerIntakeId.Int64() == answer.ParentAnswerId.Int64() {
 					// this is the top level answer to
-					if patientAnswer.SubAnswers == nil {
-						patientAnswer.SubAnswers = make([]*common.AnswerIntake, 0)
+					if pAnswer.SubAnswers == nil {
+						pAnswer.SubAnswers = make([]*common.AnswerIntake, 0)
 					}
-					patientAnswer.SubAnswers = append(patientAnswer.SubAnswers, patientAnswerToQuestion)
+					pAnswer.SubAnswers = append(pAnswer.SubAnswers, answer)
 				}
 			}
 		}

@@ -114,7 +114,7 @@ func (p *doctorPatientVisitReviewHandler) ServeHTTP(w http.ResponseWriter, r *ht
 		return
 	}
 
-	context, err := populateContextForRenderingLayout(patientAnswersForQuestions, questions, p.DataApi)
+	context, err := populateContextForRenderingLayout(patientAnswersForQuestions, questions, p.DataApi, r)
 	if err != nil {
 		apiservice.WriteDeveloperError(w, http.StatusInternalServerError, "Unable to populate context for rendering layout: "+err.Error())
 		return
@@ -185,7 +185,7 @@ func (d *doctorPatientVisitReviewHandler) getLatestDoctorVisitReviewLayout(patie
 	return data, nil
 }
 
-func populateContextForRenderingLayout(patientAnswersForQuestions map[int64][]*common.AnswerIntake, questions []*info_intake.Question, dataApi api.DataAPI) (common.ViewContext, error) {
+func populateContextForRenderingLayout(patientAnswersForQuestions map[int64][]common.Answer, questions []*info_intake.Question, dataApi api.DataAPI, r *http.Request) (common.ViewContext, error) {
 	context := common.NewViewContext()
 
 	for _, contextPopulator := range genericPopulators {
@@ -201,7 +201,7 @@ func populateContextForRenderingLayout(patientAnswersForQuestions map[int64][]*c
 			return nil, fmt.Errorf("Context populator not found for question with type %s", question.QuestionTypes[0])
 		}
 
-		if err := contextPopulator.populateViewContextWithPatientQA(patientAnswersForQuestions[question.QuestionId], question, context, dataApi); err != nil {
+		if err := contextPopulator.populateViewContextWithPatientQA(patientAnswersForQuestions[question.QuestionId], question, context, dataApi, r); err != nil {
 			return nil, err
 		}
 	}
