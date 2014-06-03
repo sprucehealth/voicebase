@@ -14,10 +14,11 @@ type SpruceError struct {
 	RequestID          int64  `json:"request_id,string,omitempty"`
 }
 
-func NewValidationError(msg string) SpruceError {
+func NewValidationError(msg string, r *http.Request) SpruceError {
 	return SpruceError{
 		UserError:      msg,
 		HTTPStatusCode: http.StatusBadRequest,
+		RequestID:      GetContext(r).RequestID,
 	}
 }
 
@@ -42,11 +43,11 @@ func (s SpruceError) Error() string {
 
 var IsDev = false
 
-func WriteError(err error, w http.ResponseWriter, r *http.Request) {
+func WriteError(err error, w http.ResponseWriter) {
 	switch err := err.(type) {
 	case SpruceError:
-		err.RequestID = GetContext(r).RequestID
 		golog.Logf(2, golog.ERR, err.Error())
+
 		// remove the developer error information if we are not dealing with
 		// before sending information across the wire
 		if !IsDev {
