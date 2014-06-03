@@ -67,7 +67,7 @@ func TestQuestionsParsing(t *testing.T) {
 					t.Fatal("No question tag present when it should be")
 				}
 
-				if question.QuestionTypes == nil || len(question.QuestionTypes) == 0 {
+				if question.QuestionType == "" {
 					t.Fatal("No question type present when it should be")
 				}
 
@@ -82,7 +82,7 @@ func TestPotentialAnswersParsing(t *testing.T) {
 		for _, screen := range section.Screens {
 
 			for _, question := range screen.Questions {
-				if question.QuestionTypes[0] == "q_type_q_type_multiple_choice" {
+				if question.QuestionType == "q_type_multiple_choice" {
 					if question.PotentialAnswers == nil || len(question.PotentialAnswers) == 0 {
 						t.Fatalf("No potential answers for question with id %d when there always should be one", question.QuestionId)
 					}
@@ -93,11 +93,11 @@ func TestPotentialAnswersParsing(t *testing.T) {
 						t.Fatal("There should be a potential answer id when there isnt")
 					}
 
-					if potentialAnswer.AnswerTypes == nil || len(potentialAnswer.AnswerTypes) == 0 {
+					if potentialAnswer.AnswerType == "" {
 						t.Fatalf("There should be an answer type for answer id %d when there isn't", potentialAnswer.AnswerId)
 					}
 
-					switch question.QuestionTypes[0] {
+					switch question.QuestionType {
 					case "q_type_free_text", "q_type_single_entry":
 					default:
 						if potentialAnswer.Answer == "" {
@@ -142,7 +142,7 @@ func TestPhotoSlotsParsing(t *testing.T) {
 	for _, section := range visit.Sections {
 		for _, screen := range section.Screens {
 			for _, question := range screen.Questions {
-				if question.QuestionTypes[0] == "q_type_photo_section" {
+				if question.QuestionType == "q_type_photo_section" {
 					if len(question.PhotoSlots) == 0 {
 						t.Fatal("Expected photoslots to exist for question")
 					}
@@ -168,7 +168,7 @@ func TestSubQuestionsParsing(t *testing.T) {
 							t.Fatal("Question tag not set for subquestion")
 						}
 
-						if subQuestion.QuestionTypes == nil || len(subQuestion.QuestionTypes) == 0 {
+						if subQuestion.QuestionType == "" {
 							t.Fatal("Question type not set for subquestion")
 						}
 					}
