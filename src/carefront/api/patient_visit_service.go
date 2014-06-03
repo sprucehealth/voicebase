@@ -191,7 +191,7 @@ func (d *DataService) GetAbridgedTreatmentPlan(treatmentPlanId, doctorId int64) 
 	return &drTreatmentPlan, nil
 }
 
-func (d *DataService) GetAbridgedTreatmentPlanListForPatient(patientId int64, status string) ([]*common.DoctorTreatmentPlan, error) {
+func (d *DataService) GetAbridgedTreatmentPlanList(patientId int64, status string) ([]*common.DoctorTreatmentPlan, error) {
 	rows, err := d.db.Query(`select id, patient_visit_id, doctor_id, creation_date from treatment_plan where patient_id = ? AND status = ?`, patientId, status)
 	if err != nil {
 		return nil, err

@@ -45,13 +45,13 @@ func (l *listHandler) ServeHTTP(w http.ResponseWriter, r *http.Request) {
 		return
 	}
 
-	activeTreatmentPlans, err := l.dataApi.GetAbridgedTreatmentPlanListForPatient(requestData.PatientId, api.STATUS_ACTIVE)
+	activeTreatmentPlans, err := l.dataApi.GetAbridgedTreatmentPlanList(requestData.PatientId, api.STATUS_ACTIVE)
 	if err != nil {
 		apiservice.WriteDeveloperError(w, http.StatusInternalServerError, err.Error())
 		return
 	}
 
-	inactiveTreatmentPlans, err := l.dataApi.GetAbridgedTreatmentPlanListForPatient(requestData.PatientId, api.STATUS_INACTIVE)
+	inactiveTreatmentPlans, err := l.dataApi.GetAbridgedTreatmentPlanList(requestData.PatientId, api.STATUS_INACTIVE)
 	if err != nil {
 		apiservice.WriteDeveloperError(w, http.StatusInternalServerError, err.Error())
 		return
