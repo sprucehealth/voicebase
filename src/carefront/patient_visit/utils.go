@@ -16,9 +16,7 @@ func fillInFormattedFieldsForQuestions(healthCondition *info_intake.InfoIntakeLa
 	for _, section := range healthCondition.Sections {
 		for _, screen := range section.Screens {
 			for _, question := range screen.Questions {
-
 				if question.FormattedFieldTags != nil {
-
 					// populate the values for each of the fields in order
 					for _, fieldTag := range question.FormattedFieldTags {
 						fieldTagComponents := strings.Split(fieldTag, ":")
