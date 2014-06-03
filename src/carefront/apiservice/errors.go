@@ -41,7 +41,7 @@ func WriteError(err error, w http.ResponseWriter, r *http.Request) {
 
 		// remove the developer error information if we are not dealing with
 		// before sending information across the wire
-		if IsDev {
+		if !IsDev {
 			err.DeveloperError = ""
 			err.DeveloperErrorCode = 0
 		}
