@@ -208,23 +208,23 @@ func DecodeRequestData(requestData interface{}, r *http.Request) error {
 // Note that the structure has been created to be flexible enough to have any kind of
 // question type as a subquestion; although we won't have subquestions to subquestions
 type SubQuestionAnswerIntake struct {
-	QuestionId    int64         `json:"question_id"`
+	QuestionId    int64         `json:"question_id,string"`
 	AnswerIntakes []*AnswerItem `json:"potential_answers,omitempty"`
 }
 
 type AnswerItem struct {
-	PotentialAnswerId        int64                      `json:"potential_answer_id"`
+	PotentialAnswerId        int64                      `json:"potential_answer_id,string"`
 	AnswerText               string                     `json:"answer_text"`
 	SubQuestionAnswerIntakes []*SubQuestionAnswerIntake `json:"answers,omitempty"`
 }
 
 type AnswerToQuestionItem struct {
-	QuestionId    int64         `json:"question_id"`
+	QuestionId    int64         `json:"question_id,string"`
 	AnswerIntakes []*AnswerItem `json:"potential_answers"`
 }
 
 type AnswerIntakeRequestBody struct {
-	PatientVisitId int64                   `json:"patient_visit_id"`
+	PatientVisitId int64                   `json:"patient_visit_id,string"`
 	Questions      []*AnswerToQuestionItem `json:"questions"`
 }
 

@@ -99,7 +99,7 @@ func TestSingleSelectIntake(t *testing.T) {
 	potentialAnswerId := getAnswerWithTagAndExpectedType("a_onset_six_months", "a_type_multiple_choice", questionId, testData, t)
 
 	// lets go ahead and populate a response for the question
-	patientIntakeRequestData := fmt.Sprintf(`{"patient_visit_id": %d, "questions": [{"potential_answers": [{"potential_answer_id": %d } ], "question_id": %d }] }`, patientVisitResponse.PatientVisitId, potentialAnswerId, questionId)
+	patientIntakeRequestData := fmt.Sprintf(`{"patient_visit_id": "%d", "questions": [{"potential_answers": [{"potential_answer_id": "%d" } ], "question_id": "%d" }] }`, patientVisitResponse.PatientVisitId, potentialAnswerId, questionId)
 
 	// now, lets go ahead and answer the question for the patient
 	submitPatientAnswerForVisit(patientSignedUpResponse.Patient.PatientId.Int64(), testData, patientIntakeRequestData, t)
