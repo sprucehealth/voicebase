@@ -147,27 +147,6 @@ func (d *DataService) StoreAnswersForQuestion(role string, roleId, patientVisitI
 	return tx.Commit()
 }
 
-func (d *DataService) CreatePhotoAnswerForQuestionRecord(role string, roleId, questionId, patientVisitId, potentialAnswerId, layoutVersionId int64) (int64, error) {
-	res, err := d.db.Exec(`insert into info_intake (role, role_id, context_id, question_id, potential_answer_id, layout_version_id, status) 
-							values (?, ?, ?, ?, ?, ?, 'PENDING_UPLOAD')`, role, roleId, patientVisitId, questionId, potentialAnswerId, layoutVersionId)
-	if err != nil {
-		return 0, err
-	}
-
-	return res.LastInsertId()
-}
-
-func (d *DataService) UpdatePhotoAnswerRecordWithObjectStorageId(patientInfoIntakeId, objectStorageId int64) error {
-	_, err := d.db.Exec(`update info_intake set object_storage_id = ?, status='ACTIVE' where id = ?`, objectStorageId, patientInfoIntakeId)
-	return err
-}
-func (d *DataService) MakeCurrentPhotoAnswerInactive(role string, roleId, questionId, patientVisitId, potentialAnswerId, layoutVersionId int64) error {
-	_, err := d.db.Exec(`update info_intake set status='INACTIVE' where role_id = ? and question_id = ? 
-							and context_id = ? and potential_answer_id = ? 
-							and layout_version_id = ? and role=?`, roleId, questionId, patientVisitId, potentialAnswerId, layoutVersionId, role)
-	return err
-}
-
 func (d *DataService) RejectPatientVisitPhotos(patientVisitId int64) error {
 	_, err := d.db.Exec(`update info_intake 
 		inner join question on info_intake.question_id = question.id 

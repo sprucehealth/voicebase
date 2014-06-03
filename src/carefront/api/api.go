@@ -231,14 +231,12 @@ type IntakeAPI interface {
 	GetPatientAnswersForQuestionsBasedOnQuestionIds(questionIds []int64, roleId int64, patientVisitId int64) (map[int64][]common.Answer, error)
 	GetDoctorAnswersForQuestionsInDiagnosisLayout(questionIds []int64, roleId int64, patientVisitId int64) (map[int64][]common.Answer, error)
 
-	StoreAnswersForQuestion(role string, roleId, patientVisitId, layoutVersionId int64, answersToStorePerQuestion map[int64][]*common.AnswerIntake) error
-	CreatePhotoAnswerForQuestionRecord(role string, roleId, questionId, patientVisitId, potentialAnswerId, layoutVersionId int64) (patientInfoIntakeId int64, err error)
-	UpdatePhotoAnswerRecordWithObjectStorageId(patientInfoIntakeId, objectStorageId int64) error
-	MakeCurrentPhotoAnswerInactive(role string, roleId, questionId, patientVisitId, potentialAnswerId, layoutVersionId int64) error
-	RejectPatientVisitPhotos(patientVisitId int64) error
-	StorePhotoSectionsForQuestion(questionId, patientId, patientVisitId int64, photoSections []*common.PhotoIntakeSection) error
 	GetPatientCreatedPhotoSectionsForQuestionId(questionId, patientId, patientVisitId int64) ([]*common.PhotoIntakeSection, error)
 	GetPatientCreatedPhotoSectionsForQuestionIds(questionIds []int64, patientId, patientVisitId int64) (map[int64][]*common.PhotoIntakeSection, error)
+
+	StoreAnswersForQuestion(role string, roleId, patientVisitId, layoutVersionId int64, answersToStorePerQuestion map[int64][]*common.AnswerIntake) error
+	RejectPatientVisitPhotos(patientVisitId int64) error
+	StorePhotoSectionsForQuestion(questionId, patientId, patientVisitId int64, photoSections []*common.PhotoIntakeSection) error
 }
 
 type PhotoSlotInfo struct {
