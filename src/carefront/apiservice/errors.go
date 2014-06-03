@@ -14,6 +14,13 @@ type SpruceError struct {
 	RequestID          int64  `json:"request_id,string,omitempty"`
 }
 
+func NewValidationError(msg string) SpruceError {
+	return SpruceError{
+		UserError:      msg,
+		HTTPStatusCode: http.StatusBadRequest,
+	}
+}
+
 func wrapInternalError(err error, r *http.Request) SpruceError {
 	return SpruceError{
 		DeveloperError: err.Error(),
