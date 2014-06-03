@@ -43,7 +43,6 @@ func WriteError(err error, w http.ResponseWriter, r *http.Request) {
 		// before sending information across the wire
 		if !IsDev {
 			err.DeveloperError = ""
-			err.DeveloperErrorCode = 0
 		}
 		WriteJSONToHTTPResponseWriter(w, err.HTTPStatusCode, err)
 	default:
