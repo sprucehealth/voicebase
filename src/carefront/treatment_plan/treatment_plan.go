@@ -15,21 +15,21 @@ import (
 	"github.com/gorilla/schema"
 )
 
-type patientTreatmentPlanHandler struct {
+type treatmentPlanHandler struct {
 	dataApi api.DataAPI
 }
 
-func NewPatientTreatmentPlanHandler(dataApi api.DataAPI) *patientTreatmentPlanHandler {
-	return &patientTreatmentPlanHandler{
+func NewTreatmentPlanHandler(dataApi api.DataAPI) *treatmentPlanHandler {
+	return &treatmentPlanHandler{
 		dataApi: dataApi,
 	}
 }
 
-type PatientVisitReviewRequest struct {
+type TreatmentPlanRequest struct {
 	PatientVisitId int64 `schema:"patient_visit_id"`
 }
 
-func (p *patientTreatmentPlanHandler) ServeHTTP(w http.ResponseWriter, r *http.Request) {
+func (p *treatmentPlanHandler) ServeHTTP(w http.ResponseWriter, r *http.Request) {
 	if r.Method != apiservice.HTTP_GET {
 		w.WriteHeader(http.StatusNotFound)
 		return
@@ -40,7 +40,7 @@ func (p *patientTreatmentPlanHandler) ServeHTTP(w http.ResponseWriter, r *http.R
 		return
 	}
 
-	var requestData PatientVisitReviewRequest
+	var requestData TreatmentPlanRequest
 	if err := schema.NewDecoder().Decode(&requestData, r.Form); err != nil {
 		apiservice.WriteDeveloperError(w, http.StatusBadRequest, "Unable to parse input parameters: "+err.Error())
 		return

@@ -164,9 +164,7 @@ func main() {
 	updatePatientPharmacyHandler := &apiservice.UpdatePatientPharmacyHandler{DataApi: dataApi, PharmacySearchService: pharmacy.GooglePlacesPharmacySearchService(0)}
 	authenticateDoctorHandler := &apiservice.DoctorAuthenticationHandler{DataApi: dataApi, AuthApi: authAPI}
 	signupDoctorHandler := &apiservice.SignupDoctorHandler{DataApi: dataApi, AuthApi: authAPI}
-	patientTreatmentGuideHandler := treatment_plan.NewPatientTreatmentGuideHandler(dataApi)
-	doctorTreatmentGuideHandler := treatment_plan.NewDoctorTreatmentGuideHandler(dataApi)
-	patientVisitHandler := apiservice.NewPatientVisitHandler(dataApi, authAPI, cloudStorageApi, photoAnswerCloudStorageApi)
+	patientVisitHandler := apiservice.NewPatientVisitHandler(dataApi, authApi, cloudStorageApi, photoAnswerCloudStorageApi)
 	answerIntakeHandler := apiservice.NewAnswerIntakeHandler(dataApi)
 	autocompleteHandler := &apiservice.AutocompleteHandler{DataApi: dataApi, ERxApi: doseSpotService, Role: api.PATIENT_ROLE}
 	doctorTreatmentSuggestionHandler := &apiservice.AutocompleteHandler{DataApi: dataApi, ERxApi: doseSpotService, Role: api.DOCTOR_ROLE}
@@ -244,12 +242,12 @@ func main() {
 	mux.Handle("/v1/patient/info", patient.NewUpdateHandler(dataApi))
 	mux.Handle("/v1/patient/address/billing", updatePatientBillingAddress)
 	mux.Handle("/v1/patient/pharmacy", updatePatientPharmacyHandler)
-	mux.Handle("/v1/patient/treatment/guide", patientTreatmentGuideHandler)
 	mux.Handle("/v1/patient/home", homelog.NewListHandler(dataApi))
 	mux.Handle("/v1/patient/home/dismiss", homelog.NewDismissHandler(dataApi))
 	mux.Handle("/v1/patient/isauthenticated", apiservice.NewIsAuthenticatedHandler(authAPI))
+	mux.Handle("/v1/treatment_plan", treatment_plan.NewTreatmentPlanHandler(dataApi))
+	mux.Handle("/v1/treatment_guide", treatment_plan.NewPatientTreatmentGuideHandler(dataApi))
 	mux.Handle("/v1/visit", patientVisitHandler)
-	mux.Handle("/v1/visit/review", treatment_plan.NewPatientTreatmentPlanHandler(dataApi))
 	mux.Handle("/v1/check_eligibility", checkElligibilityHandler)
 	mux.Handle("/v1/answer", answerIntakeHandler)
 	mux.Handle("/v1/answer/photo", photoAnswerIntakeHandler)
@@ -306,7 +304,6 @@ func main() {
 	mux.Handle("/v1/doctor/visit/treatment/medication_strengths", medicationStrengthSearchHandler)
 	mux.Handle("/v1/doctor/visit/treatment/medication_dispense_units", medicationDispenseUnitHandler)
 	mux.Handle("/v1/doctor/visit/treatment/supplemental_instructions", doctorInstructionsHandler)
-	mux.Handle("/v1/doctor/visit/treatment/guide", doctorTreatmentGuideHandler)
 	mux.Handle("/v1/doctor/visit/regimen", doctorRegimenHandler)
 	mux.Handle("/v1/doctor/visit/advice", doctorAdviceHandler)
 	mux.Handle("/v1/doctor/visit/followup", doctorFollowupHandler)
