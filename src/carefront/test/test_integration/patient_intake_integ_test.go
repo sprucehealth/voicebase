@@ -105,7 +105,7 @@ func TestSingleSelectIntake(t *testing.T) {
 	submitPatientAnswerForVisit(patientSignedUpResponse.Patient.PatientId.Int64(), testData, patientIntakeRequestData, t)
 
 	// now, get the patient visit again to ensure that a patient answer was registered for the intended question
-	patientVisitResponse = getPatientVisitForPatient(patientSignedUpResponse.Patient.PatientId.Int64(), testData, t)
+	patientVisitResponse = GetPatientVisitForPatient(patientSignedUpResponse.Patient.PatientId.Int64(), testData, t)
 
 	// lets go through the questions to find the one for which the patient answer should be present
 	for _, section := range patientVisitResponse.ClientLayout.Sections {
@@ -163,7 +163,7 @@ func TestMultipleChoiceIntake(t *testing.T) {
 	}
 	submitPatientAnswerForVisit(patientSignedUpResponse.Patient.PatientId.Int64(), testData, string(requestData), t)
 	// now, get the patient visit again to ensure that a patient answer was registered for the intended question
-	patientVisitResponse = getPatientVisitForPatient(patientSignedUpResponse.Patient.PatientId.Int64(), testData, t)
+	patientVisitResponse = GetPatientVisitForPatient(patientSignedUpResponse.Patient.PatientId.Int64(), testData, t)
 
 	// lets go through the questions to find the one for which the patient answer should be present
 	for _, section := range patientVisitResponse.ClientLayout.Sections {
@@ -216,7 +216,7 @@ func TestSingleEntryIntake(t *testing.T) {
 	}
 	submitPatientAnswerForVisit(patientSignedUpResponse.Patient.PatientId.Int64(), testData, string(requestData), t)
 	// now, get the patient visit again to ensure that a patient answer was registered for the intended question
-	patientVisitResponse = getPatientVisitForPatient(patientSignedUpResponse.Patient.PatientId.Int64(), testData, t)
+	patientVisitResponse = GetPatientVisitForPatient(patientSignedUpResponse.Patient.PatientId.Int64(), testData, t)
 
 	// lets go through the questions to find the one for which the patient answer should be present
 	for _, section := range patientVisitResponse.ClientLayout.Sections {
@@ -256,7 +256,7 @@ func submitFreeTextResponseForPatient(patientVisitResponse *patient_visit.Patien
 	}
 	submitPatientAnswerForVisit(PatientId, testData, string(requestData), t)
 	// now, get the patient visit again to ensure that a patient answer was registered for the intended question
-	patientVisitResponse = getPatientVisitForPatient(PatientId, testData, t)
+	patientVisitResponse = GetPatientVisitForPatient(PatientId, testData, t)
 
 	// lets go through the questions to find the one for which the patient answer should be present
 	for _, section := range patientVisitResponse.ClientLayout.Sections {
@@ -367,7 +367,7 @@ func TestSubQuestionEntryIntake(t *testing.T) {
 	}
 	submitPatientAnswerForVisit(patientSignedUpResponse.Patient.PatientId.Int64(), testData, string(requestData), t)
 	// now, get the patient visit again to ensure that a patient answer was registered for the intended question
-	patientVisitResponse = getPatientVisitForPatient(patientSignedUpResponse.Patient.PatientId.Int64(), testData, t)
+	patientVisitResponse = GetPatientVisitForPatient(patientSignedUpResponse.Patient.PatientId.Int64(), testData, t)
 
 	// lets go through the questions to find the one for which the patient answer should be present
 	questionNotFound := true
@@ -431,7 +431,7 @@ func TestSubQuestionEntryIntake(t *testing.T) {
 
 	submitPatientAnswerForVisit(patientSignedUpResponse.Patient.PatientId.Int64(), testData, string(requestData), t)
 	// now, get the patient visit again to ensure that a patient answer was registered for the intended question
-	patientVisitResponse = getPatientVisitForPatient(patientSignedUpResponse.Patient.PatientId.Int64(), testData, t)
+	patientVisitResponse = GetPatientVisitForPatient(patientSignedUpResponse.Patient.PatientId.Int64(), testData, t)
 	// lets go through the questions to find the one for which the patient answer should be present
 	questionNotFound = true
 	for _, section := range patientVisitResponse.ClientLayout.Sections {

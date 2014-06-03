@@ -49,7 +49,7 @@ func SignupRandomTestPatient(t *testing.T, dataApi api.DataAPI, authApi api.Auth
 	return signedupPatientResponse
 }
 
-func getPatientVisitForPatient(patientId int64, testData TestData, t *testing.T) *patient_visit.PatientVisitResponse {
+func GetPatientVisitForPatient(patientId int64, testData TestData, t *testing.T) *patient_visit.PatientVisitResponse {
 	patientVisitHandler := patient_visit.NewPatientVisitHandler(testData.DataApi, testData.AuthApi)
 	patient, err := testData.DataApi.GetPatientFromId(patientId)
 	if err != nil {

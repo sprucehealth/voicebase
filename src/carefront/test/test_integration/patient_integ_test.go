@@ -116,7 +116,7 @@ func TestPatientVisitCreation(t *testing.T) {
 
 	// getting the patient visit again as we should get back the same patient visit id
 	// since this patient visit has not been completed
-	anotherPatientVisitResponse := getPatientVisitForPatient(signedupPatientResponse.Patient.PatientId.Int64(), testData, t)
+	anotherPatientVisitResponse := GetPatientVisitForPatient(signedupPatientResponse.Patient.PatientId.Int64(), testData, t)
 	if anotherPatientVisitResponse.PatientVisitId != patientVisitResponse.PatientVisitId {
 		t.Fatal("The patient visit id for subsequent calls should be the same so long as we have not closed/submitted the case")
 	}

@@ -4,6 +4,7 @@ import (
 	"bytes"
 	"carefront/api"
 	"carefront/common"
+	"carefront/info_intake"
 	"carefront/patient_visit"
 	"carefront/test/test_integration"
 	"encoding/json"
@@ -15,6 +16,8 @@ import (
 var (
 	otherLocationPhotoSectionTag = "q_other_location_photo_section"
 	facePhotoSectionTag          = "q_face_photo_section"
+	chestPhotoSectionTag         = "q_chest_photo_section"
+	backPhotoSectionTag          = "q_back_photo_section"
 )
 
 func TestPhotoIntake(t *testing.T) {
@@ -79,6 +82,83 @@ func TestPhotoIntake(t *testing.T) {
 		t.Fatalf("Expected name %s for section instead got %s", "Testing", photoIntakeSections[0].Name)
 	} else if photoIntakeSections[0].Photos[0].Name != "Other" {
 		t.Fatalf("Expected name %s for photo slot in the answer instead got %s", "Other", photoIntakeSections[0].Photos[0].Name)
+	}
+}
+
+func TestPhotoIntake_AllSections(t *testing.T) {
+	testData := test_integration.SetupIntegrationTest(t)
+	defer test_integration.TearDownIntegrationTest(t, testData)
+
+	pr := test_integration.SignupRandomTestPatient(t, testData.DataApi, testData.AuthApi)
+	patient := pr.Patient
+	patientId := patient.PatientId.Int64()
+	patientVisitResponse := test_integration.CreatePatientVisitForPatient(patientId, testData, t)
+
+	// simulate photo upload
+	photoIds := make([]int64, 5)
+	var err error
+	for i := 0; i < 5; i++ {
+		photoIds[i], err = testData.DataApi.AddPhoto(patient.PersonId, "http://localhost", "image/jpeg")
+		if err != nil {
+			t.Fatal(err.Error())
+		}
+	}
+
+	// get the question that represents the other location photo section
+	questionInfos, err := testData.DataApi.GetQuestionInfoForTags([]string{otherLocationPhotoSectionTag, facePhotoSectionTag, chestPhotoSectionTag, backPhotoSectionTag}, api.EN_LANGUAGE_ID)
+	if err != nil {
+		t.Fatal(err.Error())
+	}
+
+	requestData := &patient_visit.PhotoAnswerIntakeRequestData{
+		PatientVisitId: patientVisitResponse.PatientVisitId,
+		PhotoQuestions: make([]*patient_visit.PhotoAnswerIntakeQuestionItem, 4),
+	}
+
+	for i, questionInfo := range questionInfos {
+		// get the photo slots associated with this question
+		photoSlots, err := testData.DataApi.GetPhotoSlots(questionInfo.Id, api.EN_LANGUAGE_ID)
+		if err != nil {
+			t.Fatal(err.Error())
+		}
+
+		requestData.PhotoQuestions[i] = &patient_visit.PhotoAnswerIntakeQuestionItem{
+			QuestionId: questionInfo.Id,
+			PhotoSections: []*common.PhotoIntakeSection{
+				&common.PhotoIntakeSection{
+					Name: "Testing",
+					Photos: []*common.PhotoIntakeSlot{
+						&common.PhotoIntakeSlot{
+							PhotoId: photoIds[i],
+							SlotId:  photoSlots[0].Id,
+							Name:    "Slot1",
+						},
+					},
+				},
+			},
+		}
+	}
+
+	test_integration.SubmitPhotoSectionsForQuestionInPatientVisit(patient.AccountId.Int64(), requestData, testData, t)
+
+	// now try to get the patient visit for this patient via the api to ensure that the photos are filled in
+	patientVisitResponse = test_integration.GetPatientVisitForPatient(patientId, testData, t)
+
+	// go through the visit intake layout to ensure that photos are present
+	for _, section := range patientVisitResponse.ClientLayout.Sections {
+		for _, screen := range section.Screens {
+			for _, question := range screen.Questions {
+				if question.QuestionTypes[0] == info_intake.QUESTION_TYPE_PHOTO_SECTION {
+					if len(question.AnsweredPhotoSections) != 1 {
+						t.Fatalf("Expected question to have 1 answered section but instead it has %d", len(question.AnsweredPhotoSections))
+					} else if len(question.AnsweredPhotoSections[0].Photos) != 1 {
+						t.Fatalf("Expected question to have 1 photo in the section but instead it has %d", len(question.AnsweredPhotoSections[0].Photos))
+					} else if question.AnsweredPhotoSections[0].Photos[0].PhotoUrl == "" {
+						t.Fatalf("Expected photo url to exist instead it was empty")
+					}
+				}
+			}
+		}
 	}
 }
 
@@ -485,5 +565,4 @@ func TestPhotoIntake_MistmatchedSlotId(t *testing.T) {
 	} else if resp.StatusCode != http.StatusBadRequest {
 		t.Fatalf("Expected response code %d for photo intake but got %d", http.StatusBadRequest, resp.StatusCode)
 	}
-
 }
