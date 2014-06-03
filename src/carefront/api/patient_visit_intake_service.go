@@ -229,6 +229,9 @@ func (d *DataService) GetPatientCreatedPhotoSectionsForQuestionId(questionId, pa
 }
 
 func (d *DataService) GetPatientCreatedPhotoSectionsForQuestionIds(questionIds []int64, patientId, patientVisitId int64) (map[int64][]*common.PhotoIntakeSection, error) {
+	if len(questionIds) == 0 {
+		return nil, nil
+	}
 	photoSectionsByQuestion := make(map[int64][]*common.PhotoIntakeSection)
 	params := []interface{}{patientId}
 	params = appendInt64sToInterfaceSlice(params, questionIds)
