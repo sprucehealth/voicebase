@@ -311,10 +311,13 @@ type PhotoAPI interface {
 }
 
 type ResourceLibraryAPI interface {
+	ListResourceGuideSections() ([]*common.ResourceGuideSection, error)
 	GetResourceGuide(id int64) (*common.ResourceGuide, error)
-	ListResourceGuides() ([]*common.ResourceGuide, error)
-	CreateResourceGuide(guide *common.ResourceGuide) (int64, error)
-	UpdateResourceGuide(guide *common.ResourceGuide) error
+	ListResourceGuides() ([]*common.ResourceGuideSection, map[int64][]*common.ResourceGuide, error)
+	CreateResourceGuideSection(*common.ResourceGuideSection) (int64, error)
+	UpdateResourceGuideSection(*common.ResourceGuideSection) error
+	CreateResourceGuide(*common.ResourceGuide) (int64, error)
+	UpdateResourceGuide(*common.ResourceGuide) error
 }
 
 type DataAPI interface {

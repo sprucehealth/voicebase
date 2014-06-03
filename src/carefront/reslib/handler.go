@@ -21,8 +21,14 @@ type Guide struct {
 	PhotoURL string `json:"photo_url"`
 }
 
+type Section struct {
+	Id     int64    `json:"id"`
+	Title  string   `json:"title"`
+	Guides []*Guide `json:"guides"`
+}
+
 type ListResponse struct {
-	Guides []*Guide
+	Sections []*Section `json:"sections"`
 }
 
 func NewHandler(dataAPI api.DataAPI) *Handler {
@@ -55,16 +61,30 @@ func (h *Handler) ServeHTTP(w http.ResponseWriter, r *http.Request) {
 }
 
 func (h *ListHandler) ServeHTTP(w http.ResponseWriter, r *http.Request) {
-	guides, err := h.dataAPI.ListResourceGuides()
+	sections, guides, err := h.dataAPI.ListResourceGuides()
 	if err != nil {
 		apiservice.WriteDeveloperError(w, http.StatusInternalServerError, "Failed to fetch resources: "+err.Error())
 		return
 	}
 	res := ListResponse{
-		Guides: make([]*Guide, len(guides)),
+		Sections: make([]*Section, len(sections)),
 	}
-	for i, g := range guides {
-		res.Guides[i] = &Guide{Id: g.Id, Title: g.Title, PhotoURL: g.PhotoURL}
+	for i, s := range sections {
+		if gs := guides[s.Id]; len(gs) != 0 {
+			sec := &Section{
+				Id:     s.Id,
+				Title:  s.Title,
+				Guides: make([]*Guide, len(gs)),
+			}
+			for j, g := range gs {
+				sec.Guides[j] = &Guide{
+					Id:       g.Id,
+					Title:    g.Title,
+					PhotoURL: g.PhotoURL,
+				}
+			}
+			res.Sections[i] = sec
+		}
 	}
 	apiservice.WriteJSONToHTTPResponseWriter(w, http.StatusOK, &res)
 }

@@ -513,9 +513,17 @@ type PushConfigData struct {
 	CreationDate    time.Time
 }
 
+type ResourceGuideSection struct {
+	Id      int64
+	Ordinal int
+	Title   string
+}
+
 type ResourceGuide struct {
-	Id       int64
-	Title    string
-	PhotoURL string
-	Layout   interface{}
+	Id        int64
+	SectionId int64
+	Ordinal   int
+	Title     string
+	PhotoURL  string
+	Layout    interface{}
 }
