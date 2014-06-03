@@ -15,7 +15,7 @@ type db interface {
 	Exec(query string, args ...interface{}) (sql.Result, error)
 }
 
-func FillConditionBlock(c *info_intake.Condition, dataApi DataAPI, languageId int64) error {
+func fillConditionBlock(c *info_intake.Condition, dataApi DataAPI, languageId int64) error {
 	if c.QuestionTag == "" {
 		return nil
 	}
@@ -40,7 +40,7 @@ func FillConditionBlock(c *info_intake.Condition, dataApi DataAPI, languageId in
 	return nil
 }
 
-func FillTipSection(t *info_intake.TipSection, dataApi DataAPI, languageId int64) error {
+func fillTipSection(t *info_intake.TipSection, dataApi DataAPI, languageId int64) error {
 	_, tipSectionTitle, tipSectionSubtext, err := dataApi.GetTipSectionInfo(t.TipsSectionTag, languageId)
 	if err != nil {
 		return err
@@ -61,7 +61,7 @@ func FillTipSection(t *info_intake.TipSection, dataApi DataAPI, languageId int64
 	return nil
 }
 
-func FillQuestion(q *info_intake.Question, dataApi DataAPI, languageId int64) error {
+func fillQuestion(q *info_intake.Question, dataApi DataAPI, languageId int64) error {
 	questionInfo, err := dataApi.GetQuestionInfo(q.QuestionTag, languageId)
 	if err != nil {
 		return err
@@ -81,14 +81,14 @@ func FillQuestion(q *info_intake.Question, dataApi DataAPI, languageId int64) er
 	}
 
 	if q.ConditionBlock != nil {
-		err := FillConditionBlock(q.ConditionBlock, dataApi, languageId)
+		err := fillConditionBlock(q.ConditionBlock, dataApi, languageId)
 		if err != nil {
 			return err
 		}
 	}
 
 	if q.Tips != nil {
-		err := FillTipSection(q.Tips, dataApi, languageId)
+		err := fillTipSection(q.Tips, dataApi, languageId)
 		if err != nil {
 			return err
 		}
@@ -96,7 +96,7 @@ func FillQuestion(q *info_intake.Question, dataApi DataAPI, languageId int64) er
 
 	if q.Questions != nil {
 		for _, question := range q.Questions {
-			err := FillQuestion(question, dataApi, languageId)
+			err := fillQuestion(question, dataApi, languageId)
 			if err != nil {
 				return err
 			}
@@ -120,9 +120,9 @@ func FillQuestion(q *info_intake.Question, dataApi DataAPI, languageId int64) er
 	return nil
 }
 
-func FillScreen(s *info_intake.Screen, dataApi DataAPI, languageId int64) error {
+func fillScreen(s *info_intake.Screen, dataApi DataAPI, languageId int64) error {
 	if s.ConditionBlock != nil {
-		err := FillConditionBlock(s.ConditionBlock, dataApi, languageId)
+		err := fillConditionBlock(s.ConditionBlock, dataApi, languageId)
 		if err != nil {
 			return err
 		}
@@ -130,7 +130,7 @@ func FillScreen(s *info_intake.Screen, dataApi DataAPI, languageId int64) error 
 
 	if s.Questions != nil {
 		for _, question := range s.Questions {
-			err := FillQuestion(question, dataApi, languageId)
+			err := fillQuestion(question, dataApi, languageId)
 			if err != nil {
 				return err
 			}
@@ -139,7 +139,7 @@ func FillScreen(s *info_intake.Screen, dataApi DataAPI, languageId int64) error 
 	return nil
 }
 
-func FillSection(s *info_intake.Section, dataApi DataAPI, languageId int64) error {
+func fillSection(s *info_intake.Section, dataApi DataAPI, languageId int64) error {
 	sectionId, sectionTitle, err := dataApi.GetSectionInfo(s.SectionTag, languageId)
 	if err != nil {
 		return err
@@ -147,7 +147,7 @@ func FillSection(s *info_intake.Section, dataApi DataAPI, languageId int64) erro
 	s.SectionId = sectionId
 	s.SectionTitle = sectionTitle
 	for _, screen := range s.Screens {
-		err := FillScreen(screen, dataApi, languageId)
+		err := fillScreen(screen, dataApi, languageId)
 		if err != nil {
 			return err
 		}
@@ -162,7 +162,7 @@ func FillIntakeLayout(t *info_intake.InfoIntakeLayout, dataApi DataAPI, language
 	}
 	t.HealthConditionId = healthConditionId
 	for _, section := range t.Sections {
-		err := FillSection(section, dataApi, languageId)
+		err := fillSection(section, dataApi, languageId)
 		if err != nil {
 			return err
 		}
@@ -174,7 +174,7 @@ func FillDiagnosisIntake(d *info_intake.DiagnosisIntake, dataApi DataAPI, langua
 	// fill in the questions from the database
 	for _, section := range d.InfoIntakeLayout.Sections {
 		for _, question := range section.Questions {
-			err := FillQuestion(question, dataApi, languageId)
+			err := fillQuestion(question, dataApi, languageId)
 			if err != nil {
 				return err
 			}
