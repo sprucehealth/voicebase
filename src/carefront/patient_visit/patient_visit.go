@@ -190,23 +190,10 @@ func GetPatientVisitLayout(dataApi api.DataAPI, patientId, patientVisitId int64,
 		return nil, err
 	}
 
-	// get answers that the patient has previously entered for this particular patient visit
-	// and feed the answers into the layout
-	questionIdsInAllSections := apiservice.GetNonPhotoQuestionIdsInPatientVisitLayout(patientVisitLayout)
-	photoQuestionIds := apiservice.GetPhotoQuestionIdsInPatientVisitLayout(patientVisitLayout)
-
-	patientAnswersForVisit, err := dataApi.GetPatientAnswersForQuestionsBasedOnQuestionIds(questionIdsInAllSections, patientId, patientVisitId)
+	err = populateSectionsWithPatientAnswers(dataApi, patientId, patientVisitId, patientVisitLayout, r)
 	if err != nil {
 		return nil, err
 	}
-
-	photoSectionsByQuestion, err := dataApi.GetPatientCreatedPhotoSectionsForQuestionIds(photoQuestionIds, patientId, patientVisitId)
-	if err != nil {
-		return nil, err
-	}
-
-	populateIntakeLayoutWithPatientAnswers(patientVisitLayout, patientAnswersForVisit)
-	populateIntakeLayoutWithPhotos(patientVisitLayout, photoSectionsByQuestion, r)
 	fillInFormattedFieldsForQuestions(patientVisitLayout, doctor)
 	return patientVisitLayout, nil
 }

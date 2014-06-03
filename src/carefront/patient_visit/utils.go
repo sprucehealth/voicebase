@@ -60,6 +60,27 @@ func populateGlobalSectionsWithPatientAnswers(dataApi api.DataAPI, healthConditi
 	return nil
 }
 
+func populateSectionsWithPatientAnswers(dataApi api.DataAPI, patientId, patientVisitId int64, patientVisitLayout *info_intake.InfoIntakeLayout, r *http.Request) error {
+	// get answers that the patient has previously entered for this particular patient visit
+	// and feed the answers into the layout
+	questionIdsInAllSections := apiservice.GetNonPhotoQuestionIdsInPatientVisitLayout(patientVisitLayout)
+	photoQuestionIds := apiservice.GetPhotoQuestionIdsInPatientVisitLayout(patientVisitLayout)
+
+	patientAnswersForVisit, err := dataApi.GetPatientAnswersForQuestionsBasedOnQuestionIds(questionIdsInAllSections, patientId, patientVisitId)
+	if err != nil {
+		return err
+	}
+
+	photoSectionsByQuestion, err := dataApi.GetPatientCreatedPhotoSectionsForQuestionIds(photoQuestionIds, patientId, patientVisitId)
+	if err != nil {
+		return err
+	}
+
+	populateIntakeLayoutWithPatientAnswers(patientVisitLayout, patientAnswersForVisit)
+	populateIntakeLayoutWithPhotos(patientVisitLayout, photoSectionsByQuestion, r)
+	return nil
+}
+
 func getQuestionIdsInSectionInIntakeLayout(healthCondition *info_intake.InfoIntakeLayout, sectionId int64) (questionIds []int64) {
 	questionIds = make([]int64, 0)
 	for _, section := range healthCondition.Sections {

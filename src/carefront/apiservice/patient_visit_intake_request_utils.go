@@ -29,7 +29,9 @@ func GetNonPhotoQuestionIdsInPatientVisitLayout(patientVisitLayout *info_intake.
 	for _, section := range patientVisitLayout.Sections {
 		for _, screen := range section.Screens {
 			for _, question := range screen.Questions {
-				questionIds = append(questionIds, question.QuestionId)
+				if question.QuestionTypes[0] != info_intake.QUESTION_TYPE_PHOTO_SECTION {
+					questionIds = append(questionIds, question.QuestionId)
+				}
 			}
 		}
 	}
