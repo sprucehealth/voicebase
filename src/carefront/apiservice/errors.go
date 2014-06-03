@@ -6,7 +6,7 @@ import (
 	"net/http"
 )
 
-type SpruceError struct {
+type spruceError struct {
 	DeveloperError     string `json:"developer_error,omitempty"`
 	UserError          string `json:"user_error,omitempty"`
 	DeveloperErrorCode int64  `json:"developer_code,string,omitempty"`
@@ -14,16 +14,16 @@ type SpruceError struct {
 	RequestID          int64  `json:"request_id,string,omitempty"`
 }
 
-func NewValidationError(msg string, r *http.Request) SpruceError {
-	return SpruceError{
+func NewValidationError(msg string, r *http.Request) spruceError {
+	return spruceError{
 		UserError:      msg,
 		HTTPStatusCode: http.StatusBadRequest,
 		RequestID:      GetContext(r).RequestID,
 	}
 }
 
-func wrapInternalError(err error, r *http.Request) SpruceError {
-	return SpruceError{
+func wrapInternalError(err error, r *http.Request) spruceError {
+	return spruceError{
 		DeveloperError: err.Error(),
 		UserError:      genericUserErrorMessage,
 		RequestID:      GetContext(r).RequestID,
@@ -31,7 +31,7 @@ func wrapInternalError(err error, r *http.Request) SpruceError {
 	}
 }
 
-func (s SpruceError) Error() string {
+func (s spruceError) Error() string {
 	var msg string
 	if s.DeveloperErrorCode > 0 {
 		msg = fmt.Sprintf("RequestID: %d, Error: %s, ErrorCode: %d", s.RequestID, s.DeveloperError, s.DeveloperErrorCode)
@@ -43,9 +43,9 @@ func (s SpruceError) Error() string {
 
 var IsDev = false
 
-func WriteError(err error, w http.ResponseWriter) {
+func WriteError(err error, w http.ResponseWriter, r *http.Request) {
 	switch err := err.(type) {
-	case SpruceError:
+	case spruceError:
 		golog.Logf(2, golog.ERR, err.Error())
 
 		// remove the developer error information if we are not dealing with
