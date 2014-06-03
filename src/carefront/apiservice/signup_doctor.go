@@ -4,11 +4,13 @@ import (
 	"carefront/api"
 	"carefront/common"
 	"carefront/encoding"
+	"carefront/libs/golog"
 	thriftapi "carefront/thrift/api"
 	"net/http"
 	"strconv"
 	"strings"
 
+	"github.com/dchest/validator"
 	"github.com/gorilla/schema"
 )
 
@@ -59,10 +61,16 @@ func (d *SignupDoctorHandler) ServeHTTP(w http.ResponseWriter, r *http.Request) 
 		WriteDeveloperError(w, http.StatusBadRequest, "Unable to parse input to signup doctor: "+err.Error())
 		return
 	}
+
+	if !validator.IsValidEmail(requestData.Email) {
+		WriteUserError(w, http.StatusBadRequest, "Please enter a valid email address")
+		golog.Infof("Invalid email during doctor signup: %s", requestData.Email)
+		return
+	}
+
 	// ensure that the date of birth can be correctly parsed
 	// Note that the date will be returned as MM/DD/YYYY
 	dobParts := strings.Split(requestData.Dob, encoding.DOB_SEPARATOR)
-
 	if len(dobParts) != 3 {
 		WriteUserError(w, http.StatusBadRequest, "Dob not valid. Required format "+encoding.DOB_FORMAT)
 		return
