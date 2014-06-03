@@ -48,16 +48,43 @@ func (d *doctorLayoutHandler) ServeHTTP(w http.ResponseWriter, r *http.Request) 
 		return
 	}
 
-	doctorIntakeLayout := info_intake.GetLayoutModelBasedOnPurpose(d.purpose)
-	if err = json.Unmarshal(data, doctorIntakeLayout); err != nil {
-		apiservice.WriteDeveloperError(w, http.StatusBadRequest, "Error parsing layout file: "+err.Error())
-		return
-	}
+	var healthConditionTag string
+	var doctorIntakeLayout interface{}
+	switch d.purpose {
+	case api.DIAGNOSE_PURPOSE:
+		diagnosisIntakeLayout := info_intake.DiagnosisIntake{}
+		doctorIntakeLayout = diagnosisIntakeLayout
+		if err = json.Unmarshal(data, diagnosisIntakeLayout); err != nil {
+			apiservice.WriteDeveloperError(w, http.StatusBadRequest, err.Error())
+			return
+		}
 
-	healthConditionTag := doctorIntakeLayout.GetHealthConditionTag()
-	if healthConditionTag == "" {
-		apiservice.WriteDeveloperError(w, http.StatusBadRequest, "health condition not specified or invalid in layout")
-		return
+		healthConditionTag = diagnosisIntakeLayout.InfoIntakeLayout.HealthConditionTag
+		if healthConditionTag == "" {
+			apiservice.WriteDeveloperError(w, http.StatusBadRequest, "health condition not specified or invalid in layout")
+			return
+		}
+
+		if err := FillDiagnosisIntake(doctorIntakeLayout, d.dataApi, api.EN_LANGUAGE_ID); err != nil {
+			apiservice.WriteDeveloperError(w, http.StatusInternalServerError, "unable to fill database info into doctor layout: "+err.Error())
+			return
+		}
+
+	case api.REVIEW_PURPOSE:
+		doctorReviewLayout := new(info_intake.DoctorVisitReviewLayout)
+		doctorIntakeLayout = doctorReviewLayout
+
+		if err = json.Unmarshal(data, diagnosisIntakeLayout); err != nil {
+			apiservice.WriteDeveloperError(w, http.StatusBadRequest, err.Error())
+			return
+		}
+
+		healthConditionTag = doctorReviewLayout["health_condition"]
+		if healthConditionTag == "" {
+			apiservice.WriteDeveloperError(w, http.StatusBadRequest, "health condition not specified or invalid in layout")
+			return
+		}
+
 	}
 
 	healthConditionId, err := d.dataApi.GetHealthConditionInfo(healthConditionTag)
@@ -69,11 +96,6 @@ func (d *doctorLayoutHandler) ServeHTTP(w http.ResponseWriter, r *http.Request) 
 	modelId, err := d.dataApi.CreateLayoutVersion(data, layout_syntax_version, healthConditionId, api.DOCTOR_ROLE, d.purpose, "automatically generated")
 	if err != nil {
 		apiservice.WriteDeveloperError(w, http.StatusInternalServerError, "Unable to create record for layout : "+err.Error())
-		return
-	}
-
-	if err := doctorIntakeLayout.FillInDatabaseInfo(d.dataApi, api.EN_LANGUAGE_ID); err != nil {
-		apiservice.WriteDeveloperError(w, http.StatusInternalServerError, "unable to fill database info into doctor layout: "+err.Error())
 		return
 	}
 

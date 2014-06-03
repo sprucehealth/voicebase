@@ -1,9 +1,6 @@
 package info_intake
 
-import (
-	"carefront/api"
-	"carefront/common"
-)
+import "carefront/common"
 
 const (
 	FORMATTED_FIELD_DOCTOR_LAST_NAME = "doctor_last_name"
@@ -20,11 +17,6 @@ const (
 	QUESTION_TYPE_SINGLE_SELECT      = "q_type_single_select"
 	QUESTION_TYPE_PHOTO_SECTION      = "q_type_photo_section"
 )
-
-type InfoIntakeModel interface {
-	FillInDatabaseInfo(dataApi api.DataAPI, languageId int64) error
-	GetHealthConditionTag() string
-}
 
 type Condition struct {
 	OperationTag         string   `json:"op,omitempty"`
