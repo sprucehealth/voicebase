@@ -76,12 +76,14 @@ func TestPhotoIntake(t *testing.T) {
 		t.Fatal(err.Error())
 	} else if len(photoIntakeSections) != 1 {
 		t.Fatalf("Expected 1 photo section instead got back %d", len(photoIntakeSections))
-	} else if len(photoIntakeSections[0].Photos) != 1 {
-		t.Fatalf("Expected 1 photo in the section instead got %d", len(photoIntakeSections[0].Photos))
-	} else if photoIntakeSections[0].Name != "Testing" {
-		t.Fatalf("Expected name %s for section instead got %s", "Testing", photoIntakeSections[0].Name)
-	} else if photoIntakeSections[0].Photos[0].Name != "Other" {
-		t.Fatalf("Expected name %s for photo slot in the answer instead got %s", "Other", photoIntakeSections[0].Photos[0].Name)
+	} else if pIntakeSection, ok := photoIntakeSections[0].(*common.PhotoIntakeSection); !ok {
+		t.Fatalf("Expected PhotoIntakeSection instead got type %T", photoIntakeSections[0])
+	} else if len(pIntakeSection.Photos) != 1 {
+		t.Fatalf("Expected 1 photo in the section instead got %d", len(pIntakeSection.Photos))
+	} else if pIntakeSection.Name != "Testing" {
+		t.Fatalf("Expected name %s for section instead got %s", "Testing", pIntakeSection.Name)
+	} else if pIntakeSection.Photos[0].Name != "Other" {
+		t.Fatalf("Expected name %s for photo slot in the answer instead got %s", "Other", pIntakeSection.Photos[0].Name)
 	}
 }
 
@@ -300,8 +302,10 @@ func TestPhotoIntake_MultiplePhotos(t *testing.T) {
 		t.Fatal(err.Error())
 	} else if len(photoIntakeSections) != 1 {
 		t.Fatalf("Expected 1 photo section instead got back %d", len(photoIntakeSections))
-	} else if len(photoIntakeSections[0].Photos) != 2 {
-		t.Fatalf("Expected 1 photo slot in the section instead got back %d", len(photoIntakeSections[0].Photos))
+	} else if pIntakeSection, ok := photoIntakeSections[0].(*common.PhotoIntakeSection); !ok {
+		t.Fatalf("Expected PhotoIntakeSection instead got type %T", pIntakeSection)
+	} else if len(pIntakeSection.Photos) != 2 {
+		t.Fatalf("Expected 1 photo slot in the section instead got back %d", len(pIntakeSection.Photos))
 	}
 }
 
@@ -399,10 +403,12 @@ func TestPhotoIntake_AnswerInvalidation(t *testing.T) {
 		t.Fatal(err.Error())
 	} else if len(photoIntakeSections) != 1 {
 		t.Fatalf("Expected 1 photo section instead got back %d", len(photoIntakeSections))
-	} else if len(photoIntakeSections[0].Photos) != 1 {
-		t.Fatalf("Expected 1 photo slot in the section instead got back %d", len(photoIntakeSections[0].Photos))
-	} else if photoIntakeSections[0].Photos[0].PhotoId != photoId3 {
-		t.Fatalf("Expected photo id %d for image but got back %d", photoId3, photoIntakeSections[0].Photos[0].PhotoId)
+	} else if pIntakeSection, ok := photoIntakeSections[0].(*common.PhotoIntakeSection); !ok {
+		t.Fatalf("Expected PhotoIntakeSection instead got type %T", pIntakeSection)
+	} else if len(pIntakeSection.Photos) != 1 {
+		t.Fatalf("Expected 1 photo slot in the section instead got back %d", len(pIntakeSection.Photos))
+	} else if pIntakeSection.Photos[0].PhotoId != photoId3 {
+		t.Fatalf("Expected photo id %d for image but got back %d", photoId3, pIntakeSection.Photos[0].PhotoId)
 	}
 }
 
@@ -487,8 +493,10 @@ func TestPhotoIntake_MultiplePhotoQuestions(t *testing.T) {
 		t.Fatal(err.Error())
 	} else if len(photoIntakeSections) != 1 {
 		t.Fatalf("Expected 1 photo section instead got back %d", len(photoIntakeSections))
-	} else if len(photoIntakeSections[0].Photos) != 1 {
-		t.Fatalf("Expected 1 photo in the section instead got %d", len(photoIntakeSections[0].Photos))
+	} else if pIntakeSection, ok := photoIntakeSections[0].(*common.PhotoIntakeSection); !ok {
+		t.Fatalf("Expected PhotoIntakeSection instead got type %T", photoIntakeSections[0])
+	} else if len(pIntakeSection.Photos) != 1 {
+		t.Fatalf("Expected 1 photo in the section instead got %d", len(pIntakeSection.Photos))
 	}
 
 	photoIntakeSections, err = testData.DataApi.GetPatientCreatedPhotoSectionsForQuestionId(questionInfo2.Id, patientId, patientVisitResponse.PatientVisitId)
@@ -496,8 +504,10 @@ func TestPhotoIntake_MultiplePhotoQuestions(t *testing.T) {
 		t.Fatal(err.Error())
 	} else if len(photoIntakeSections) != 1 {
 		t.Fatalf("Expected 1 photo section instead got back %d", len(photoIntakeSections))
-	} else if len(photoIntakeSections[0].Photos) != 1 {
-		t.Fatalf("Expected 1 photo in the section instead got %d", len(photoIntakeSections[0].Photos))
+	} else if pIntakeSection, ok := photoIntakeSections[0].(*common.PhotoIntakeSection); !ok {
+		t.Fatalf("Expected PhotoIntakeSection instead got type %T", photoIntakeSections[0])
+	} else if len(pIntakeSection.Photos) != 1 {
+		t.Fatalf("Expected 1 photo in the section instead got %d", len(pIntakeSection.Photos))
 	}
 }
 
