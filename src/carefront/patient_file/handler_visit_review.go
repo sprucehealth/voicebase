@@ -5,7 +5,6 @@ import (
 	"carefront/apiservice"
 	"carefront/common"
 	"carefront/info_intake"
-	"carefront/libs/pharmacy"
 	"encoding/json"
 	"fmt"
 	"net/http"
@@ -15,18 +14,12 @@ import (
 )
 
 type doctorPatientVisitReviewHandler struct {
-	DataApi                    api.DataAPI
-	PharmacySearchService      pharmacy.PharmacySearchAPI
-	LayoutStorageService       api.CloudStorageAPI
-	PatientPhotoStorageService api.CloudStorageAPI
+	DataApi api.DataAPI
 }
 
-func NewDoctorPatientVisitReviewHandler(dataApi api.DataAPI, pharmacySearchService pharmacy.PharmacySearchAPI, layoutStorageService api.CloudStorageAPI, patientPhotoStorageService api.CloudStorageAPI) *doctorPatientVisitReviewHandler {
+func NewDoctorPatientVisitReviewHandler(dataApi api.DataAPI) *doctorPatientVisitReviewHandler {
 	return &doctorPatientVisitReviewHandler{
-		DataApi:                    dataApi,
-		PharmacySearchService:      pharmacySearchService,
-		LayoutStorageService:       layoutStorageService,
-		PatientPhotoStorageService: patientPhotoStorageService,
+		DataApi: dataApi,
 	}
 }
 
@@ -110,7 +103,9 @@ func (p *doctorPatientVisitReviewHandler) ServeHTTP(w http.ResponseWriter, r *ht
 
 	// get all questions presented to the patient in the patient visit layout
 	questions := apiservice.GetQuestionsInPatientVisitLayout(patientVisitLayout)
+
 	questionIds := apiservice.GetNonPhotoQuestionIdsInPatientVisitLayout(patientVisitLayout)
+	// photoQuestionIds := apiservice.GetPhotoQuestionIdsInPatientVisitLayout(patientVisitLayout)
 
 	// get all the answers the patient entered for the questions (note that there may not be an answer for every question)
 	patientAnswersForQuestions, err := p.DataApi.GetPatientAnswersForQuestionsBasedOnQuestionIds(questionIds, patientVisit.PatientId.Int64(), patientVisit.PatientVisitId.Int64())
@@ -119,7 +114,7 @@ func (p *doctorPatientVisitReviewHandler) ServeHTTP(w http.ResponseWriter, r *ht
 		return
 	}
 
-	context, err := populateContextForRenderingLayout(patientAnswersForQuestions, questions, p.DataApi, p.PatientPhotoStorageService)
+	context, err := populateContextForRenderingLayout(patientAnswersForQuestions, questions, p.DataApi)
 	if err != nil {
 		apiservice.WriteDeveloperError(w, http.StatusInternalServerError, "Unable to populate context for rendering layout: "+err.Error())
 		return
@@ -190,7 +185,7 @@ func (d *doctorPatientVisitReviewHandler) getLatestDoctorVisitReviewLayout(patie
 	return data, nil
 }
 
-func populateContextForRenderingLayout(patientAnswersForQuestions map[int64][]*common.AnswerIntake, questions []*info_intake.Question, dataApi api.DataAPI, photoStorageService api.CloudStorageAPI) (common.ViewContext, error) {
+func populateContextForRenderingLayout(patientAnswersForQuestions map[int64][]*common.AnswerIntake, questions []*info_intake.Question, dataApi api.DataAPI) (common.ViewContext, error) {
 	context := common.NewViewContext()
 
 	for _, contextPopulator := range genericPopulators {
@@ -206,7 +201,7 @@ func populateContextForRenderingLayout(patientAnswersForQuestions map[int64][]*c
 			return nil, fmt.Errorf("Context populator not found for question with type %s", question.QuestionTypes[0])
 		}
 
-		if err := contextPopulator.populateViewContextWithPatientQA(patientAnswersForQuestions[question.QuestionId], question, context, dataApi, photoStorageService); err != nil {
+		if err := contextPopulator.populateViewContextWithPatientQA(patientAnswersForQuestions[question.QuestionId], question, context, dataApi); err != nil {
 			return nil, err
 		}
 	}

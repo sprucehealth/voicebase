@@ -3,7 +3,6 @@ package info_intake
 import (
 	"carefront/common"
 	"fmt"
-	"reflect"
 
 	"github.com/SpruceHealth/mapstructure"
 )
@@ -29,6 +28,7 @@ func init() {
 	DVisitReviewViewTypeRegistry.MustRegisterType(&DVisitReviewTitleSubtitleLabels{})
 	DVisitReviewViewTypeRegistry.MustRegisterType(&DVisitReviewEmptyLabelView{})
 	DVisitReviewViewTypeRegistry.MustRegisterType(&DVisitReviewEmptyTitleSubtitleLabelView{})
+	DVisitReviewViewTypeRegistry.MustRegisterType(&DVisitReviewTitlePhotosItemsListView{})
 }
 
 // View definitions
@@ -139,10 +139,41 @@ func (d *DVisitReviewStandardPhotosListView) Render(context common.ViewContext) 
 	var ok bool
 	d.Photos, ok = content.([]PhotoData)
 	if !ok {
-		return nil, common.NewViewRenderingError(fmt.Sprintf("Expected content in view context to be of type []PhotoData instead it was type %s", reflect.TypeOf(content)))
+		return nil, common.NewViewRenderingError(fmt.Sprintf("Expected content in view context to be of type []PhotoData instead it was type %T", content))
 	}
 
 	renderedView["photos"] = d.Photos
+	renderedView["type"] = d.TypeName()
+
+	return renderedView, nil
+}
+
+type DVisitReviewTitlePhotosItemsListView struct {
+	Items         []TitlePhotoListData `json:"items"`
+	ContentConfig struct {
+		Key string `json:"key"`
+	} `json:"content_config"`
+}
+
+func (d DVisitReviewTitlePhotosItemsListView) TypeName() string {
+	return wrapNamespace("title_photos_items_list")
+}
+
+func (d *DVisitReviewTitlePhotosItemsListView) Render(context common.ViewContext) (map[string]interface{}, error) {
+	renderedView := make(map[string]interface{})
+
+	content, err := getContentFromContextForView(d, d.ContentConfig.Key, context)
+	if err != nil {
+		return nil, err
+	}
+
+	var ok bool
+	d.Items, ok = content.([]TitlePhotoListData)
+	if !ok {
+		return nil, common.NewViewRenderingError(fmt.Sprintf("Expected content in view context to be of type []TitlePhotoListData instead it was type %T", content))
+	}
+
+	renderedView["items"] = d.Items
 	renderedView["type"] = d.TypeName()
 
 	return renderedView, nil
@@ -414,7 +445,7 @@ func (d *DVisitReviewContentLabelsList) Render(context common.ViewContext) (map[
 		}
 		d.Values = strItems
 	default:
-		return nil, common.NewViewRenderingError(fmt.Sprintf("Expected content to be either string, []string, []CheckedUnCheckedData or []TitleSubtitleSubitemsData for view type %s and key %s but was %s", d.TypeName(), d.ContentConfig.Key, reflect.TypeOf(content)))
+		return nil, common.NewViewRenderingError(fmt.Sprintf("Expected content to be either string, []string, []CheckedUnCheckedData or []TitleSubtitleSubitemsData for view type %s and key %s but was %T", d.TypeName(), d.ContentConfig.Key, content))
 	}
 
 	renderedView["type"] = d.TypeName()
@@ -598,7 +629,7 @@ func getStringFromContext(view common.View, key string, context common.ViewConte
 
 	str, ok := content.(string)
 	if !ok {
-		return "", common.NewViewRenderingError(fmt.Sprintf("Expected string for content of view type %s instead got %s for key %s", view.TypeName(), reflect.TypeOf(content), key))
+		return "", common.NewViewRenderingError(fmt.Sprintf("Expected string for content of view type %s instead got %T for key %s", view.TypeName(), content, key))
 	}
 
 	return str, nil
@@ -613,7 +644,7 @@ func getStringArrayFromContext(view common.View, key string, context common.View
 
 	stringArray, ok := content.([]string)
 	if !ok {
-		return nil, common.NewViewRenderingError(fmt.Sprintf("Expected []string for content of view type %s instead got %s", view.TypeName(), reflect.TypeOf(content)))
+		return nil, common.NewViewRenderingError(fmt.Sprintf("Expected []string for content of view type %s instead got %T", view.TypeName(), content))
 	}
 
 	return stringArray, nil

@@ -6,6 +6,10 @@ type PhotoData struct {
 	PlaceholderUrl string `json:"placeholder_url"`
 }
 
+type TitlePhotoListData struct {
+	Title  string      `json:"title"`
+	Photos []PhotoData `json:"photos"`
+}
 type CheckedUncheckedData struct {
 	Value     string `json:"value"`
 	IsChecked bool   `json:"is_checked"`
