@@ -76,8 +76,11 @@ func populateSectionsWithPatientAnswers(dataApi api.DataAPI, patientId, patientV
 		return err
 	}
 
+	for questionId, answers := range photoSectionsByQuestion {
+		patientAnswersForVisit[questionId] = answers
+	}
+
 	populateIntakeLayoutWithPatientAnswers(patientVisitLayout, patientAnswersForVisit, r)
-	populateIntakeLayoutWithPatientAnswers(patientVisitLayout, photoSectionsByQuestion, r)
 	return nil
 }
 
