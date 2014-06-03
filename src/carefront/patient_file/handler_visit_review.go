@@ -110,7 +110,7 @@ func (p *doctorPatientVisitReviewHandler) ServeHTTP(w http.ResponseWriter, r *ht
 
 	// get all questions presented to the patient in the patient visit layout
 	questions := apiservice.GetQuestionsInPatientVisitLayout(patientVisitLayout)
-	questionIds := apiservice.GetQuestionIdsInPatientVisitLayout(patientVisitLayout)
+	questionIds := apiservice.GetNonPhotoQuestionIdsInPatientVisitLayout(patientVisitLayout)
 
 	// get all the answers the patient entered for the questions (note that there may not be an answer for every question)
 	patientAnswersForQuestions, err := p.DataApi.GetPatientAnswersForQuestionsBasedOnQuestionIds(questionIds, patientVisit.PatientId.Int64(), patientVisit.PatientVisitId.Int64())

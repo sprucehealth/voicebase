@@ -3,7 +3,6 @@ package info_intake
 import (
 	"carefront/api"
 	"carefront/common"
-	"time"
 )
 
 const (
@@ -58,26 +57,26 @@ type PotentialAnswer struct {
 }
 
 type Question struct {
-	QuestionTag           string                 `json:"question"`
-	QuestionId            int64                  `json:"question_id,string,omitempty"`
-	QuestionTitle         string                 `json:"question_title,omitempty"`
-	QuestionTypes         []string               `json:"question_types,omitempty"`
-	FormattedFieldTags    []string               `json:"formatted_field_tags,omitempty"`
-	QuestionSubText       string                 `json:"question_subtext,omitempty"`
-	QuestionSummary       string                 `json:"question_summary,omitempty"`
-	AdditionalFields      map[string]string      `json:"additional_fields,omitempty"`
-	DisplayStyles         []string               `json:"display_styles,omitempty"`
-	ParentQuestionId      int64                  `json:"parent_question_id,string,omitempty"`
-	PotentialAnswers      []*PotentialAnswer     `json:"potential_answers,omitempty"`
-	Answers               []*common.AnswerIntake `json:"answers,omitempty"`
-	Questions             []*Question            `json:"questions,omitempty"`
-	ConditionBlock        *Condition             `json:"condition,omitempty"`
-	Tips                  *TipSection            `json:"tips,omitempty"`
-	Required              bool                   `json:"required"`
-	ToAlert               bool                   `json:"to_alert"`
-	AlertFormattedText    string                 `json:"alert_text"`
-	PhotoSlots            []*PhotoSlot           `json:"photo_slots,omitempty"`
-	AnsweredPhotoSections []*PhotoIntakeSection  `json:"answered_photo_sections,omitempty"`
+	QuestionTag           string                       `json:"question"`
+	QuestionId            int64                        `json:"question_id,string,omitempty"`
+	QuestionTitle         string                       `json:"question_title,omitempty"`
+	QuestionTypes         []string                     `json:"question_types,omitempty"`
+	FormattedFieldTags    []string                     `json:"formatted_field_tags,omitempty"`
+	QuestionSubText       string                       `json:"question_subtext,omitempty"`
+	QuestionSummary       string                       `json:"question_summary,omitempty"`
+	AdditionalFields      map[string]string            `json:"additional_fields,omitempty"`
+	DisplayStyles         []string                     `json:"display_styles,omitempty"`
+	ParentQuestionId      int64                        `json:"parent_question_id,string,omitempty"`
+	PotentialAnswers      []*PotentialAnswer           `json:"potential_answers,omitempty"`
+	Answers               []*common.AnswerIntake       `json:"answers,omitempty"`
+	Questions             []*Question                  `json:"questions,omitempty"`
+	ConditionBlock        *Condition                   `json:"condition,omitempty"`
+	Tips                  *TipSection                  `json:"tips,omitempty"`
+	Required              bool                         `json:"required"`
+	ToAlert               bool                         `json:"to_alert"`
+	AlertFormattedText    string                       `json:"alert_text"`
+	PhotoSlots            []*PhotoSlot                 `json:"photo_slots,omitempty"`
+	AnsweredPhotoSections []*common.PhotoIntakeSection `json:"answered_photo_sections,omitempty"`
 }
 
 type PhotoSlot struct {
@@ -85,19 +84,6 @@ type PhotoSlot struct {
 	Name     string `json:"name"`
 	Type     string `json:"type"`
 	Required bool   `json:"required"`
-}
-
-type PhotoIntakeSection struct {
-	Id     int64              `json:"-"`
-	Name   string             `json:"name,omitempty"`
-	Photos []*PhotoIntakeSlot `json:"photos,omitempty"`
-}
-
-type PhotoIntakeSlot struct {
-	Id           int64     `json:"-"`
-	CreationDate time.Time `json:"creation_date"`
-	PhotoUrl     string    `json:"photo_url"`
-	SlotId       int64     `json:"slot_id"`
 }
 
 type Screen struct {

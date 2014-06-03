@@ -24,12 +24,26 @@ func GetPatientLayoutForPatientVisit(patientVisitId, languageId int64, dataApi a
 	return patientVisitLayout, layoutVersionId, err
 }
 
-func GetQuestionIdsInPatientVisitLayout(patientVisitLayout *info_intake.InfoIntakeLayout) []int64 {
+func GetNonPhotoQuestionIdsInPatientVisitLayout(patientVisitLayout *info_intake.InfoIntakeLayout) []int64 {
 	questionIds := make([]int64, 0)
 	for _, section := range patientVisitLayout.Sections {
 		for _, screen := range section.Screens {
 			for _, question := range screen.Questions {
 				questionIds = append(questionIds, question.QuestionId)
+			}
+		}
+	}
+	return questionIds
+}
+
+func GetPhotoQuestionIdsInPatientVisitLayout(patientVisitLayout *info_intake.InfoIntakeLayout) []int64 {
+	questionIds := make([]int64, 0)
+	for _, section := range patientVisitLayout.Sections {
+		for _, screen := range section.Screens {
+			for _, question := range screen.Questions {
+				if question.QuestionTypes[0] == info_intake.QUESTION_TYPE_PHOTO_SECTION {
+					questionIds = append(questionIds, question.QuestionId)
+				}
 			}
 		}
 	}

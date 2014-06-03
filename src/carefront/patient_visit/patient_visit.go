@@ -187,7 +187,8 @@ func (s *patientVisitHandler) returnLastCreatedPatientVisit(w http.ResponseWrite
 
 	// get answers that the patient has previously entered for this particular patient visit
 	// and feed the answers into the layout
-	questionIdsInAllSections := apiservice.GetQuestionIdsInPatientVisitLayout(patientVisitLayout)
+	questionIdsInAllSections := apiservice.GetNonPhotoQuestionIdsInPatientVisitLayout(patientVisitLayout)
+	photoQuestionIds := apiservice.GetPhotoQuestionIdsInPatientVisitLayout(patientVisitLayout)
 
 	patientAnswersForVisit, err := s.dataApi.GetPatientAnswersForQuestionsBasedOnQuestionIds(questionIdsInAllSections, patientId, patientVisitId)
 	if err != nil {
@@ -195,7 +196,14 @@ func (s *patientVisitHandler) returnLastCreatedPatientVisit(w http.ResponseWrite
 		return
 	}
 
-	s.populateHealthConditionWithPatientAnswers(patientVisitLayout, patientAnswersForVisit)
+	photoSectionsByQuestion, err := s.dataApi.GetPatientCreatedPhotoSectionsForQuestionIds(photoQuestionIds, patientId, patientVisitId)
+	if err != nil {
+		apiservice.WriteDeveloperError(w, http.StatusInternalServerError, err.Error())
+		return
+	}
+
+	s.populateIntakeLayoutWithPatientAnswers(patientVisitLayout, patientAnswersForVisit)
+	s.populateIntakeLayoutWithPhotos(patientVisitLayout, photoSectionsByQuestion)
 	s.fillInFormattedFieldsForQuestions(patientVisitLayout, doctor)
 
 	apiservice.WriteJSONToHTTPResponseWriter(w, http.StatusOK, PatientVisitResponse{PatientVisitId: patientVisitId, ClientLayout: patientVisitLayout, Status: patientVisit.Status})
@@ -287,7 +295,7 @@ func (s *patientVisitHandler) populateGlobalSectionsWithPatientAnswers(healthCon
 
 	globalQuestionIds := make([]int64, 0)
 	for _, sectionId := range globalSectionIds {
-		questionIds := getQuestionIdsInSectionInHealthConditionLayout(healthCondition, sectionId)
+		questionIds := getQuestionIdsInSectionInIntakeLayout(healthCondition, sectionId)
 		globalQuestionIds = append(globalQuestionIds, questionIds...)
 	}
 
@@ -297,11 +305,11 @@ func (s *patientVisitHandler) populateGlobalSectionsWithPatientAnswers(healthCon
 		return errors.New("Unable to get patient answers for global sections: " + err.Error())
 	}
 
-	s.populateHealthConditionWithPatientAnswers(healthCondition, globalSectionPatientAnswers)
+	s.populateIntakeLayoutWithPatientAnswers(healthCondition, globalSectionPatientAnswers)
 	return nil
 }
 
-func getQuestionIdsInSectionInHealthConditionLayout(healthCondition *info_intake.InfoIntakeLayout, sectionId int64) (questionIds []int64) {
+func getQuestionIdsInSectionInIntakeLayout(healthCondition *info_intake.InfoIntakeLayout, sectionId int64) (questionIds []int64) {
 	questionIds = make([]int64, 0)
 	for _, section := range healthCondition.Sections {
 		if section.SectionId == sectionId {
@@ -315,20 +323,32 @@ func getQuestionIdsInSectionInHealthConditionLayout(healthCondition *info_intake
 	return
 }
 
-func (s *patientVisitHandler) populateHealthConditionWithPatientAnswers(healthCondition *info_intake.InfoIntakeLayout, patientAnswers map[int64][]*common.AnswerIntake) {
-	for _, section := range healthCondition.Sections {
+func (s *patientVisitHandler) populateIntakeLayoutWithPatientAnswers(intake *info_intake.InfoIntakeLayout, patientAnswers map[int64][]*common.AnswerIntake) {
+	for _, section := range intake.Sections {
 		for _, screen := range section.Screens {
 			for _, question := range screen.Questions {
 				// go through each question to see if there exists a patient answer for it
 				if patientAnswers[question.QuestionId] != nil {
 					question.Answers = patientAnswers[question.QuestionId]
-					// apiservice.GetSignedUrlsForAnswersInQuestion(question, s.PatientPhotoStorageService)
 				}
 			}
 		}
 	}
 }
 
+func (s *patientVisitHandler) populateIntakeLayoutWithPhotos(intake *info_intake.InfoIntakeLayout, photoSectionsByQuestion map[int64][]*common.PhotoIntakeSection) {
+	for _, section := range intake.Sections {
+		for _, screen := range section.Screens {
+			for _, question := range screen.Questions {
+				// go through each question to see if there exists a patient answer for it
+				photoSlots := photoSectionsByQuestion[question.QuestionId]
+				if len(photoSlots) > 0 {
+					question.AnsweredPhotoSections = photoSlots
+				}
+			}
+		}
+	}
+}
 func (s *patientVisitHandler) getCurrentActiveClientLayoutForHealthCondition(healthConditionId, languageId int64) (*info_intake.InfoIntakeLayout, int64, error) {
 	data, layoutVersionId, err := s.dataApi.GetCurrentActivePatientLayout(languageId, healthConditionId)
 	if err != nil {
