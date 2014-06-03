@@ -1,6 +1,7 @@
 package info_intake
 
 import (
+	"carefront/common"
 	"encoding/json"
 	"io/ioutil"
 	"testing"
@@ -118,15 +119,16 @@ func TestPatientAnswerParsing(t *testing.T) {
 					continue
 				}
 				for _, patientAnswer := range question.Answers {
-					if patientAnswer.AnswerIntakeId.Int64() == 0 {
+					answer := patientAnswer.(*common.AnswerIntake)
+					if answer.AnswerIntakeId.Int64() == 0 {
 						t.Fatal("Patient answer id is not set when it should be")
 					}
 
-					if patientAnswer.QuestionId.Int64() == 0 {
+					if answer.QuestionId.Int64() == 0 {
 						t.Fatal("question id not set for subquestion")
 					}
 
-					if patientAnswer.PotentialAnswerId.Int64() == 0 {
+					if answer.PotentialAnswerId.Int64() == 0 {
 						t.Fatal("potential answer id not set for subquestion")
 					}
 				}
