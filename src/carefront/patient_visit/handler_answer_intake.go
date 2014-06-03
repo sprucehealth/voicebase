@@ -102,5 +102,5 @@ func (a *AnswerIntakeHandler) ServeHTTP(w http.ResponseWriter, r *http.Request) 
 		}
 	}
 
-	apiservice.WriteJSONToHTTPResponseWriter(w, http.StatusOK, apiservice.AnswerIntakeResponse{Result: "success"})
+	apiservice.WriteJSONToHTTPResponseWriter(w, http.StatusOK, apiservice.SuccessfulGenericJSONResponse())
 }
