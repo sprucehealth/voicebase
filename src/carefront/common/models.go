@@ -193,6 +193,7 @@ type DoctorTreatmentPlan struct {
 	TreatmentList                   *TreatmentList    `json:"treatment_list"`
 	RegimenPlan                     *RegimenPlan      `json:"regimen_plan,omitempty"`
 	Advice                          *Advice           `json:"advice,omitempty"`
+	Status                          string            `json:"status,omitempty"`
 }
 
 type TreatmentList struct {

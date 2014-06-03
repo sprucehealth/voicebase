@@ -1,4 +1,4 @@
-package test_regimen_advice
+package test_treatment_plan
 
 import (
 	"bytes"

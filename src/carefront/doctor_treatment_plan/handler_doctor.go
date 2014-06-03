@@ -160,6 +160,7 @@ func (d *doctorTreatmentPlanHandler) pickATreatmentPlan(w http.ResponseWriter, r
 			AllRegimenSteps: allRegimenSteps,
 		},
 		TreatmentList: &common.TreatmentList{},
+		Status:        api.STATUS_DRAFT,
 	}
 
 	setCommittedStateForEachSection(drTreatmentPlan)
