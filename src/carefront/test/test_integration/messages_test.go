@@ -28,7 +28,7 @@ func TestPersonCreation(t *testing.T) {
 
 	// Make sure a person row is inserted when creating a doctor
 
-	dr, _, _ := signupRandomTestDoctor(t, testData.DataApi, testData.AuthApi)
+	dr, _, _ := SignupRandomTestDoctor(t, testData.DataApi, testData.AuthApi)
 	doctorId := dr.DoctorId
 	if pid, err := testData.DataApi.GetPersonIdByRole(api.DOCTOR_ROLE, doctorId); err != nil {
 		t.Fatalf("Failed to get person for role %s/%d: %s", api.DOCTOR_ROLE, doctorId, err.Error())
@@ -80,7 +80,7 @@ func TestCreateConversation(t *testing.T) {
 	if err != nil {
 		t.Fatal(err)
 	}
-	dr, _, _ := signupRandomTestDoctor(t, testData.DataApi, testData.AuthApi)
+	dr, _, _ := SignupRandomTestDoctor(t, testData.DataApi, testData.AuthApi)
 	doctorId, err := testData.DataApi.GetPersonIdByRole(api.DOCTOR_ROLE, dr.DoctorId)
 	if err != nil {
 		t.Fatal(err)
@@ -172,7 +172,7 @@ func TestReplyToConversation(t *testing.T) {
 	if err != nil {
 		t.Fatal(err)
 	}
-	dr, _, _ := signupRandomTestDoctor(t, testData.DataApi, testData.AuthApi)
+	dr, _, _ := SignupRandomTestDoctor(t, testData.DataApi, testData.AuthApi)
 	doctorId, err := testData.DataApi.GetPersonIdByRole(api.DOCTOR_ROLE, dr.DoctorId)
 	if err != nil {
 		t.Fatal(err)
@@ -240,7 +240,7 @@ func TestGetConversationsWithParticipants(t *testing.T) {
 	if err != nil {
 		t.Fatal(err)
 	}
-	dr, _, _ := signupRandomTestDoctor(t, testData.DataApi, testData.AuthApi)
+	dr, _, _ := SignupRandomTestDoctor(t, testData.DataApi, testData.AuthApi)
 	doctorId, err := testData.DataApi.GetPersonIdByRole(api.DOCTOR_ROLE, dr.DoctorId)
 	if err != nil {
 		t.Fatal(err)
@@ -276,7 +276,7 @@ func TestConversationReadFlag(t *testing.T) {
 	if err != nil {
 		t.Fatal(err)
 	}
-	drRes, _, _ := signupRandomTestDoctor(t, testData.DataApi, testData.AuthApi)
+	drRes, _, _ := SignupRandomTestDoctor(t, testData.DataApi, testData.AuthApi)
 	doctorId, err := testData.DataApi.GetPersonIdByRole(api.DOCTOR_ROLE, drRes.DoctorId)
 	if err != nil {
 		t.Fatal(err)

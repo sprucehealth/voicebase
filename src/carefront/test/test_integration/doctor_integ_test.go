@@ -26,7 +26,7 @@ func TestDoctorRegistration(t *testing.T) {
 	testData := SetupIntegrationTest(t)
 	defer TearDownIntegrationTest(t, testData)
 
-	signupRandomTestDoctor(t, testData.DataApi, testData.AuthApi)
+	SignupRandomTestDoctor(t, testData.DataApi, testData.AuthApi)
 }
 
 func TestDoctorAuthentication(t *testing.T) {
@@ -34,7 +34,7 @@ func TestDoctorAuthentication(t *testing.T) {
 	testData := SetupIntegrationTest(t)
 	defer TearDownIntegrationTest(t, testData)
 
-	_, email, password := signupRandomTestDoctor(t, testData.DataApi, testData.AuthApi)
+	_, email, password := SignupRandomTestDoctor(t, testData.DataApi, testData.AuthApi)
 
 	doctorAuthHandler := &apiservice.DoctorAuthenticationHandler{AuthApi: testData.AuthApi, DataApi: testData.DataApi}
 	ts := httptest.NewServer(doctorAuthHandler)

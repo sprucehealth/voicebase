@@ -9,6 +9,7 @@ import (
 	"carefront/libs/erx"
 	"encoding/json"
 	"io/ioutil"
+	"net/http"
 	"net/http/httptest"
 	"strconv"
 	"testing"
@@ -126,6 +127,24 @@ func UpdateAdvicePointsForPatientVisit(doctorAdviceRequest *common.Advice, testD
 	}
 
 	return doctorAdviceResponse
+}
+
+func GetListOfTreatmentPlansForPatient(patientId, doctorAccountId int64, testData TestData, t *testing.T) *doctor_treatment_plan.TreatmentPlansResponse {
+	listHandler := doctor_treatment_plan.NewListHandler(testData.DataApi)
+	doctorServer := httptest.NewServer(listHandler)
+	defer doctorServer.Close()
+
+	response := &doctor_treatment_plan.TreatmentPlansResponse{}
+	res, err := AuthGet(doctorServer.URL+"?patient_id="+strconv.FormatInt(patientId, 10), doctorAccountId)
+	if err != nil {
+		t.Fatalf(err.Error())
+	} else if res.StatusCode != http.StatusOK {
+		t.Fatalf("Expected status code %d but got %d instead", http.StatusOK, res.StatusCode)
+	} else if err := json.NewDecoder(res.Body).Decode(response); err != nil {
+		t.Fatalf(err.Error())
+	}
+
+	return response
 }
 
 func addAndGetTreatmentsForPatientVisit(testData TestData, treatments []*common.Treatment, doctorAccountId, PatientVisitId int64, t *testing.T) *apiservice.GetTreatmentsResponse {

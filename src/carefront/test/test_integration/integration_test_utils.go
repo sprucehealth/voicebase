@@ -250,7 +250,7 @@ func SetupIntegrationTest(t *testing.T) TestData {
 
 	// When setting up the database for each integration test, ensure to setup a doctor that is
 	// considered elligible to serve in the state of CA.
-	signedupDoctorResponse, _, _ := signupRandomTestDoctor(t, testData.DataApi, testData.AuthApi)
+	signedupDoctorResponse, _, _ := SignupRandomTestDoctor(t, testData.DataApi, testData.AuthApi)
 
 	// make this doctor the primary doctor in the state of CA
 	_, err = testData.DB.Exec(`insert into care_provider_state_elligibility (role_type_id, provider_id, care_providing_state_id) 

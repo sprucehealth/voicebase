@@ -23,7 +23,7 @@ import (
 	"carefront/visit"
 )
 
-func signupRandomTestDoctor(t *testing.T, dataApi api.DataAPI, authApi api.AuthAPI) (signedupDoctorResponse *apiservice.DoctorSignedupResponse, email, password string) {
+func SignupRandomTestDoctor(t *testing.T, dataApi api.DataAPI, authApi api.AuthAPI) (signedupDoctorResponse *apiservice.DoctorSignedupResponse, email, password string) {
 	authHandler := &apiservice.SignupDoctorHandler{AuthApi: authApi, DataApi: dataApi}
 	ts := httptest.NewServer(authHandler)
 	defer ts.Close()

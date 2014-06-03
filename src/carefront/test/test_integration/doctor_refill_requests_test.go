@@ -3020,7 +3020,7 @@ func TestNewRefillRequestWithUnlinkedTreatmentAndUnlinkedPatient(t *testing.T) {
 }
 
 func createDoctorWithClinicianId(testData TestData, t *testing.T) *common.Doctor {
-	signedupDoctorResponse, _, _ := signupRandomTestDoctor(t, testData.DataApi, testData.AuthApi)
+	signedupDoctorResponse, _, _ := SignupRandomTestDoctor(t, testData.DataApi, testData.AuthApi)
 	_, err := testData.DB.Exec(`update doctor set clinician_id = ? where id = ?`, clinicianId, signedupDoctorResponse.DoctorId)
 	if err != nil {
 		t.Fatal("Unable to assign a clinicianId to the doctor: " + err.Error())

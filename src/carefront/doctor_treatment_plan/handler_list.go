@@ -15,7 +15,7 @@ type listHandlerRequestData struct {
 	PatientId int64 `schema:"patient_id"`
 }
 
-type treatmentPlansResponseData struct {
+type TreatmentPlansResponse struct {
 	DraftTreatmentPlans    []*common.DoctorTreatmentPlan `json:"draft_treatment_plans,omitempty"`
 	ActiveTreatmentPlans   []*common.DoctorTreatmentPlan `json:"active_treatment_plans,omitempty"`
 	InactiveTreatmentPlans []*common.DoctorTreatmentPlan `json:"inactive_treatment_plans,omitempty"`
@@ -63,7 +63,7 @@ func (l *listHandler) ServeHTTP(w http.ResponseWriter, r *http.Request) {
 		return
 	}
 
-	apiservice.WriteJSONToHTTPResponseWriter(w, http.StatusOK, &treatmentPlansResponseData{
+	apiservice.WriteJSONToHTTPResponseWriter(w, http.StatusOK, &TreatmentPlansResponse{
 		DraftTreatmentPlans:    draftTreatmentPlans,
 		ActiveTreatmentPlans:   activeTreatmentPlans,
 		InactiveTreatmentPlans: inactiveTreatmentPlans,

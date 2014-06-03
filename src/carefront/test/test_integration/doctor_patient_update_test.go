@@ -383,7 +383,7 @@ func TestDoctorUpdatePatientInformationForbidden(t *testing.T) {
 	testData := SetupIntegrationTest(t)
 	defer TearDownIntegrationTest(t, testData)
 
-	signedupDoctorResponse, _, _ := signupRandomTestDoctor(t, testData.DataApi, testData.AuthApi)
+	signedupDoctorResponse, _, _ := SignupRandomTestDoctor(t, testData.DataApi, testData.AuthApi)
 
 	signedupPatientResponse := SignupRandomTestPatient(t, testData.DataApi, testData.AuthApi)
 	patientPharmacy := &pharmacy.PharmacyData{
@@ -517,7 +517,7 @@ func TestDoctorPharmacyUpdateForbidden(t *testing.T) {
 	testData := SetupIntegrationTest(t)
 	defer TearDownIntegrationTest(t, testData)
 
-	signedupDoctorResponse, _, _ := signupRandomTestDoctor(t, testData.DataApi, testData.AuthApi)
+	signedupDoctorResponse, _, _ := SignupRandomTestDoctor(t, testData.DataApi, testData.AuthApi)
 
 	signedupPatientResponse := SignupRandomTestPatient(t, testData.DataApi, testData.AuthApi)
 	patientPharmacy := &pharmacy.PharmacyData{
