@@ -1,4 +1,4 @@
-package visit
+package patient_visit
 
 import (
 	"carefront/api"

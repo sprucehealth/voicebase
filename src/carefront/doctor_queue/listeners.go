@@ -10,7 +10,6 @@ import (
 	"carefront/messages"
 	"carefront/notify"
 	"carefront/patient_visit"
-	"carefront/visit"
 	"errors"
 )
 
@@ -54,7 +53,7 @@ func InitListeners(dataAPI api.DataAPI, notificationManager *notify.Notification
 		return nil
 	})
 
-	dispatch.Default.Subscribe(func(ev *visit.PatientVisitMarkedUnsuitableEvent) error {
+	dispatch.Default.Subscribe(func(ev *patient_visit.PatientVisitMarkedUnsuitableEvent) error {
 		// mark the visit as complete once the doctor submits a diagnosis to indicate that the
 		// patient was unsuitable for spruce
 		if err := dataAPI.ReplaceItemInDoctorQueue(api.DoctorQueueItem{

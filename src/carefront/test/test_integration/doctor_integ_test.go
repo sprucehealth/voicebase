@@ -18,7 +18,7 @@ import (
 	"carefront/apiservice"
 	"carefront/common"
 	"carefront/patient_file"
-	"carefront/visit"
+	"carefront/patient_visit"
 )
 
 func TestDoctorRegistration(t *testing.T) {
@@ -149,7 +149,7 @@ func TestDoctorDiagnosisOfPatientVisit_Unsuitable(t *testing.T) {
 		t.Fatal(err.Error())
 	}
 
-	diagnosePatientHandler := visit.NewDiagnosePatientHandler(testData.DataApi, testData.AuthApi, "")
+	diagnosePatientHandler := patient_visit.NewDiagnosePatientHandler(testData.DataApi, testData.AuthApi, "")
 	ts := httptest.NewServer(diagnosePatientHandler)
 	defer ts.Close()
 
@@ -215,13 +215,13 @@ func TestDoctorDiagnosisOfPatientVisit(t *testing.T) {
 	StartReviewingPatientVisit(patientVisitResponse.PatientVisitId, doctor, testData, t)
 
 	// doctor now attempts to diagnose patient visit
-	diagnosePatientHandler := visit.NewDiagnosePatientHandler(testData.DataApi, testData.AuthApi, "")
+	diagnosePatientHandler := patient_visit.NewDiagnosePatientHandler(testData.DataApi, testData.AuthApi, "")
 	ts := httptest.NewServer(diagnosePatientHandler)
 	defer ts.Close()
 
 	requestParams := bytes.NewBufferString("?patient_visit_id=")
 	requestParams.WriteString(strconv.FormatInt(patientVisitResponse.PatientVisitId, 10))
-	diagnosisResponse := visit.GetDiagnosisResponse{}
+	diagnosisResponse := patient_visit.GetDiagnosisResponse{}
 
 	resp, err := AuthGet(ts.URL+requestParams.String(), doctor.AccountId.Int64())
 	if err != nil {
@@ -248,7 +248,7 @@ func TestDoctorDiagnosisOfPatientVisit(t *testing.T) {
 	diagnosisQuestionId, severityQuestionId, acneTypeQuestionId := SubmitPatientVisitDiagnosis(patientVisitResponse.PatientVisitId, doctor, testData, t)
 
 	// now, get diagnosis layout again and check to ensure that the doctor successfully diagnosed the patient with the expected answers
-	diagnosisLayout, err := visit.GetDiagnosisLayout(testData.DataApi, patientVisitResponse.PatientVisitId, 0, doctor.DoctorId.Int64())
+	diagnosisLayout, err := patient_visit.GetDiagnosisLayout(testData.DataApi, patientVisitResponse.PatientVisitId, 0, doctor.DoctorId.Int64())
 	if err != nil {
 		t.Fatal(err.Error())
 	}

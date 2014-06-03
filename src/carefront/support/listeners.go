@@ -5,7 +5,7 @@ import (
 	"carefront/libs/dispatch"
 	"carefront/libs/golog"
 	"carefront/notify"
-	"carefront/visit"
+	"carefront/patient_visit"
 )
 
 func InitListeners(technicalSupportEmail, customerSupportEmail string, notificationManager *notify.NotificationManager) {
@@ -17,7 +17,7 @@ func InitListeners(technicalSupportEmail, customerSupportEmail string, notificat
 		return nil
 	})
 
-	dispatch.Default.Subscribe(func(ev *visit.PatientVisitMarkedUnsuitableEvent) error {
+	dispatch.Default.Subscribe(func(ev *patient_visit.PatientVisitMarkedUnsuitableEvent) error {
 		if err := notificationManager.NotifySupport(customerSupportEmail, ev); err != nil {
 			golog.Errorf("Unable to notify support of a unsuitable visit: " + err.Error())
 			return err

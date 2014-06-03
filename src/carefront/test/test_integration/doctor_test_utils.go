@@ -20,7 +20,7 @@ import (
 	"carefront/doctor_treatment_plan"
 	"carefront/libs/erx"
 	"carefront/patient_file"
-	"carefront/visit"
+	"carefront/patient_visit"
 )
 
 func SignupRandomTestDoctor(t *testing.T, dataApi api.DataAPI, authApi api.AuthAPI) (signedupDoctorResponse *apiservice.DoctorSignedupResponse, email, password string) {
@@ -98,7 +98,7 @@ func SubmitPatientVisitDiagnosis(PatientVisitId int64, doctor *common.Doctor, te
 		acneTypeQuestionId = qi.Id
 	}
 
-	diagnosePatientHandler := visit.NewDiagnosePatientHandler(testData.DataApi, testData.AuthApi, "")
+	diagnosePatientHandler := patient_visit.NewDiagnosePatientHandler(testData.DataApi, testData.AuthApi, "")
 	ts := httptest.NewServer(diagnosePatientHandler)
 	defer ts.Close()
 

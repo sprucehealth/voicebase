@@ -7,7 +7,6 @@ import (
 	"carefront/common/config"
 	"carefront/messages"
 	"carefront/patient_visit"
-	"carefront/visit"
 	"fmt"
 	"reflect"
 )
@@ -38,7 +37,7 @@ func (panicEventView) renderEmail(event interface{}) (string, string, error) {
 type patientVisitUnsuitableView int64
 
 func (patientVisitUnsuitableView) renderEmail(event interface{}) (string, string, error) {
-	unsuitableVisit, ok := event.(*visit.PatientVisitMarkedUnsuitableEvent)
+	unsuitableVisit, ok := event.(*patient_visit.PatientVisitMarkedUnsuitableEvent)
 	if !ok {
 		return "", "", fmt.Errorf("Unexpected type: %T", event)
 	}
@@ -74,8 +73,8 @@ func init() {
 	}
 
 	eventToInternalNotificationMapping = map[reflect.Type]internalNotificationView{
-		reflect.TypeOf(&config.PanicEvent{}):                       panicEventView(0),
-		reflect.TypeOf(&visit.PatientVisitMarkedUnsuitableEvent{}): patientVisitUnsuitableView(0),
+		reflect.TypeOf(&config.PanicEvent{}):                               panicEventView(0),
+		reflect.TypeOf(&patient_visit.PatientVisitMarkedUnsuitableEvent{}): patientVisitUnsuitableView(0),
 	}
 }
 

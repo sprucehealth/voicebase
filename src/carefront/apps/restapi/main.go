@@ -294,7 +294,7 @@ func main() {
 	mux.Handle("/v1/doctor/treatment_plans/list", doctor_treatment_plan.NewListHandler(dataApi))
 	mux.Handle("/v1/doctor/pharmacy", doctorPharmacySearchHandler)
 
-	mux.Handle("/v1/doctor/visit/review", patient_file.NewDoctorPatientVisitReviewHandler(dataApi, pharmacy.GooglePlacesPharmacySearchService(0), cloudStorageApi, photoAnswerCloudStorageApi))
+	mux.Handle("/v1/doctor/visit/review", patient_file.NewDoctorPatientVisitReviewHandler(dataApi))
 	mux.Handle("/v1/doctor/visit/diagnosis", visit.NewDiagnosePatientHandler(dataApi, authAPI, conf.Environment))
 	mux.Handle("/v1/doctor/visit/diagnosis/summary", diagnosisSummaryHandler)
 	mux.Handle("/v1/doctor/visit/treatment/new", newTreatmentHandler)
