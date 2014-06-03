@@ -203,7 +203,7 @@ func (s *patientVisitHandler) returnLastCreatedPatientVisit(w http.ResponseWrite
 	}
 
 	s.populateIntakeLayoutWithPatientAnswers(patientVisitLayout, patientAnswersForVisit)
-	s.populateIntakeLayoutWithPhotos(patientVisitLayout, photoSectionsByQuestion)
+	s.populateIntakeLayoutWithPhotos(patientVisitLayout, photoSectionsByQuestion, r)
 	s.fillInFormattedFieldsForQuestions(patientVisitLayout, doctor)
 
 	apiservice.WriteJSONToHTTPResponseWriter(w, http.StatusOK, PatientVisitResponse{PatientVisitId: patientVisitId, ClientLayout: patientVisitLayout, Status: patientVisit.Status})
@@ -336,14 +336,19 @@ func (s *patientVisitHandler) populateIntakeLayoutWithPatientAnswers(intake *inf
 	}
 }
 
-func (s *patientVisitHandler) populateIntakeLayoutWithPhotos(intake *info_intake.InfoIntakeLayout, photoSectionsByQuestion map[int64][]*common.PhotoIntakeSection) {
+func (s *patientVisitHandler) populateIntakeLayoutWithPhotos(intake *info_intake.InfoIntakeLayout, photoSectionsByQuestion map[int64][]*common.PhotoIntakeSection, req *http.Request) {
 	for _, section := range intake.Sections {
 		for _, screen := range section.Screens {
 			for _, question := range screen.Questions {
-				// go through each question to see if there exists a patient answer for it
-				photoSlots := photoSectionsByQuestion[question.QuestionId]
-				if len(photoSlots) > 0 {
-					question.AnsweredPhotoSections = photoSlots
+				photoSections := photoSectionsByQuestion[question.QuestionId]
+				if len(photoSections) > 0 {
+					// go through each slot and populate the url for the photo
+					for _, photoSection := range photoSections {
+						for _, photoIntakeSlot := range photoSection.Photos {
+							photoIntakeSlot.PhotoUrl = apiservice.CreatePhotoUrl(photoIntakeSlot.PhotoId, photoIntakeSlot.Id, common.ClaimerTypePhotoIntakeSlot, req.Host)
+						}
+					}
+					question.AnsweredPhotoSections = photoSections
 				}
 			}
 		}
