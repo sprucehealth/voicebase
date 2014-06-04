@@ -30,7 +30,7 @@ type AnswerIntake struct {
 	ToAlert           bool              `json:"-"`
 }
 
-func (a AnswerIntake) getQuestionId() int64 {
+func (a *AnswerIntake) getQuestionId() int64 {
 	return a.QuestionId.Int64()
 }
 
@@ -42,7 +42,7 @@ type PhotoIntakeSection struct {
 	CreationDate time.Time          `json:"creation_date"`
 }
 
-func (p PhotoIntakeSection) getQuestionId() int64 {
+func (p *PhotoIntakeSection) getQuestionId() int64 {
 	return p.QuestionId
 }
 
