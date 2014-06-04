@@ -62,7 +62,7 @@ func (d *doctorTreatmentPlanHandler) getTreatmentPlan(w http.ResponseWriter, r *
 
 	drTreatmentPlan, err := d.dataApi.GetAbridgedTreatmentPlan(requestData.TreatmentPlanId, doctorId)
 	if err == api.NoRowsError {
-		http.NotFound(w, r)
+		apiservice.WriteDeveloperError(w, http.StatusNotFound, "No treatment plan exists for patient visit")
 		return
 	} else if err != nil {
 		apiservice.WriteDeveloperError(w, http.StatusInternalServerError, "Unable to get treatment plan for patient visit: "+err.Error())
