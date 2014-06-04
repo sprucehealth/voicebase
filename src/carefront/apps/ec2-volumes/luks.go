@@ -100,7 +100,7 @@ func luksMount() error {
 
 	// Vreate LVM volume group if necessary
 	if vgs, err := lv.VGDisplay(); err != nil {
-		return err
+		return fmt.Errorf("VGDisplay failed: %s", err.Error())
 	} else if vgs[vgName] == nil {
 		fmt.Println("Creating physical volumes...")
 		pvs, err := lv.PVDisplay()

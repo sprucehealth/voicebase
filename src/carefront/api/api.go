@@ -310,6 +310,16 @@ type PhotoAPI interface {
 	ClaimPhoto(photoId int64, claimerType string, claimerId int64) error
 }
 
+type ResourceLibraryAPI interface {
+	ListResourceGuideSections() ([]*common.ResourceGuideSection, error)
+	GetResourceGuide(id int64) (*common.ResourceGuide, error)
+	ListResourceGuides() ([]*common.ResourceGuideSection, map[int64][]*common.ResourceGuide, error)
+	CreateResourceGuideSection(*common.ResourceGuideSection) (int64, error)
+	UpdateResourceGuideSection(*common.ResourceGuideSection) error
+	CreateResourceGuide(*common.ResourceGuide) (int64, error)
+	UpdateResourceGuide(*common.ResourceGuide) error
+}
+
 type DataAPI interface {
 	PatientAPI
 	DoctorAPI
@@ -325,6 +335,7 @@ type DataAPI interface {
 	NotificationAPI
 	PhotoAPI
 	FavoriteTreatmentPlanAPI
+	ResourceLibraryAPI
 }
 
 type CloudStorageAPI interface {
