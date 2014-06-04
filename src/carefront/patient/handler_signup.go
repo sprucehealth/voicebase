@@ -11,6 +11,7 @@ import (
 	"net/http"
 	"strings"
 
+	"github.com/dchest/validator"
 	"github.com/gorilla/schema"
 )
 
@@ -65,10 +66,15 @@ func (s *SignupHandler) ServeHTTP(w http.ResponseWriter, r *http.Request) {
 		return
 	}
 
+	if !validator.IsValidEmail(requestData.Email) {
+		apiservice.WriteUserError(w, http.StatusBadRequest, "Please enter a valid email address")
+		golog.Infof("Invalid email during patient signup: %s", requestData.Email)
+		return
+	}
+
 	// ensure that the date of birth can be correctly parsed
 	// Note that the date will be returned as MM/DD/YYYY
 	dobParts := strings.Split(requestData.Dob, encoding.DOB_SEPARATOR)
-
 	if len(dobParts) < 3 {
 		apiservice.WriteUserError(w, http.StatusBadRequest, "Unable to parse dob. Format should be "+encoding.DOB_FORMAT)
 		return
