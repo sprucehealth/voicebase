@@ -46,16 +46,20 @@ var IsDev = false
 func WriteError(err error, w http.ResponseWriter, r *http.Request) {
 	switch err := err.(type) {
 	case spruceError:
-		golog.Logf(2, golog.ERR, err.Error())
-
-		// remove the developer error information if we are not dealing with
-		// before sending information across the wire
-		if !IsDev {
-			err.DeveloperError = ""
-		}
-		WriteJSONToHTTPResponseWriter(w, err.HTTPStatusCode, err)
+		writeSpruceError(err, w, r)
 	default:
-		WriteError(wrapInternalError(err, r), w, r)
+		writeSpruceError(wrapInternalError(err, r), w, r)
 	}
 
+}
+
+func writeSpruceError(err spruceError, w http.ResponseWriter, r *http.Request) {
+	golog.Logf(3, golog.ERR, err.Error())
+
+	// remove the developer error information if we are not dealing with
+	// before sending information across the wire
+	if !IsDev {
+		err.DeveloperError = ""
+	}
+	WriteJSONToHTTPResponseWriter(w, err.HTTPStatusCode, err)
 }
