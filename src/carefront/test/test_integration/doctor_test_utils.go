@@ -19,11 +19,10 @@ import (
 	"carefront/common"
 	"carefront/libs/erx"
 	"carefront/patient_file"
-	thriftapi "carefront/thrift/api"
 	"carefront/visit"
 )
 
-func signupRandomTestDoctor(t *testing.T, dataApi api.DataAPI, authApi thriftapi.Auth) (signedupDoctorResponse *apiservice.DoctorSignedupResponse, email, password string) {
+func signupRandomTestDoctor(t *testing.T, dataApi api.DataAPI, authApi api.AuthAPI) (signedupDoctorResponse *apiservice.DoctorSignedupResponse, email, password string) {
 	authHandler := &apiservice.SignupDoctorHandler{AuthApi: authApi, DataApi: dataApi}
 	ts := httptest.NewServer(authHandler)
 	defer ts.Close()

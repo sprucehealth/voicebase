@@ -2,6 +2,10 @@ package test_integration
 
 import (
 	"bytes"
+	"carefront/api"
+	"carefront/apiservice"
+	"carefront/info_intake"
+	patientApiService "carefront/patient"
 	"encoding/json"
 	"fmt"
 	"io/ioutil"
@@ -10,15 +14,9 @@ import (
 	"net/http/httptest"
 	"strconv"
 	"testing"
-
-	"carefront/api"
-	"carefront/apiservice"
-	"carefront/info_intake"
-	patientApiService "carefront/patient"
-	thriftapi "carefront/thrift/api"
 )
 
-func SignupRandomTestPatient(t *testing.T, dataApi api.DataAPI, authApi thriftapi.Auth) *patientApiService.PatientSignedupResponse {
+func SignupRandomTestPatient(t *testing.T, dataApi api.DataAPI, authApi api.AuthAPI) *patientApiService.PatientSignedupResponse {
 	authHandler := patientApiService.NewSignupHandler(dataApi, authApi)
 	ts := httptest.NewServer(authHandler)
 	defer ts.Close()

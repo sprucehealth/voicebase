@@ -6,7 +6,6 @@ import (
 	"carefront/common"
 	"carefront/info_intake"
 	"carefront/libs/dispatch"
-	thriftapi "carefront/thrift/api"
 	"encoding/json"
 	"net/http"
 
@@ -15,7 +14,7 @@ import (
 
 type diagnosePatientHandler struct {
 	dataApi     api.DataAPI
-	authApi     thriftapi.Auth
+	authApi     api.AuthAPI
 	environment string
 }
 
@@ -27,7 +26,7 @@ const (
 var notSuitableForSpruceAnswerId int64
 var acneDiagnosisQuestionId int64
 
-func NewDiagnosePatientHandler(dataApi api.DataAPI, authApi thriftapi.Auth, environment string) *diagnosePatientHandler {
+func NewDiagnosePatientHandler(dataApi api.DataAPI, authApi api.AuthAPI, environment string) *diagnosePatientHandler {
 	cacheInfoForUnsuitableVisit(dataApi)
 	return &diagnosePatientHandler{
 		dataApi:     dataApi,

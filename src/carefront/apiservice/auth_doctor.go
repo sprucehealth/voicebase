@@ -3,14 +3,13 @@ package apiservice
 import (
 	"carefront/api"
 	"carefront/common"
-	thriftapi "carefront/thrift/api"
 	"net/http"
 
 	"github.com/gorilla/schema"
 )
 
 type DoctorAuthenticationHandler struct {
-	AuthApi thriftapi.Auth
+	AuthApi api.AuthAPI
 	DataApi api.DataAPI
 }
 
@@ -46,8 +45,8 @@ func (d *DoctorAuthenticationHandler) ServeHTTP(w http.ResponseWriter, r *http.R
 	}
 
 	if res, err := d.AuthApi.LogIn(requestData.Email, requestData.Password); err != nil {
-		switch err.(type) {
-		case *thriftapi.NoSuchLogin, *thriftapi.InvalidPassword:
+		switch err {
+		case api.LoginDoesNotExist, api.InvalidPassword:
 			WriteUserError(w, http.StatusForbidden, "Invalid email/password combination")
 			return
 		default:

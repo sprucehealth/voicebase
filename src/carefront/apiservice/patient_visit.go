@@ -5,7 +5,6 @@ import (
 	"carefront/common"
 	"carefront/info_intake"
 	"carefront/libs/dispatch"
-	thriftapi "carefront/thrift/api"
 	"encoding/json"
 	"errors"
 	"fmt"
@@ -21,7 +20,7 @@ const (
 
 type PatientVisitHandler struct {
 	DataApi                    api.DataAPI
-	AuthApi                    thriftapi.Auth
+	AuthApi                    api.AuthAPI
 	LayoutStorageService       api.CloudStorageAPI
 	PatientPhotoStorageService api.CloudStorageAPI
 }
@@ -42,7 +41,7 @@ type PatientVisitSubmittedResponse struct {
 	Status         string `json:"status,omitempty"`
 }
 
-func NewPatientVisitHandler(dataApi api.DataAPI, authApi thriftapi.Auth, layoutStorageService api.CloudStorageAPI, patientPhotoStorageService api.CloudStorageAPI) *PatientVisitHandler {
+func NewPatientVisitHandler(dataApi api.DataAPI, authApi api.AuthAPI, layoutStorageService api.CloudStorageAPI, patientPhotoStorageService api.CloudStorageAPI) *PatientVisitHandler {
 	return &PatientVisitHandler{
 		DataApi:                    dataApi,
 		AuthApi:                    authApi,

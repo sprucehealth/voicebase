@@ -344,3 +344,12 @@ type CloudStorageAPI interface {
 	DeleteObjectAtLocation(bucket, key, region string) error
 	PutObjectToLocation(bucket, key, region, contentType string, rawData []byte, duration time.Time, dataApi DataAPI) (int64, string, error)
 }
+
+type AuthAPI interface {
+	SignUp(email, password, roleType string) (*AuthResponse, error)
+	LogIn(email, password string) (*AuthResponse, error)
+	LogOut(token string) error
+	ValidateToken(token string) (*TokenValidationResponse, error)
+	SetPassword(accountId int64, password string) error
+	UpdateLastOpenedDate(accountId int64) error
+}

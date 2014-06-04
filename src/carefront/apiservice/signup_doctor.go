@@ -5,7 +5,6 @@ import (
 	"carefront/common"
 	"carefront/encoding"
 	"carefront/libs/golog"
-	thriftapi "carefront/thrift/api"
 	"net/http"
 	"strconv"
 	"strings"
@@ -16,7 +15,7 @@ import (
 
 type SignupDoctorHandler struct {
 	DataApi api.DataAPI
-	AuthApi thriftapi.Auth
+	AuthApi api.AuthAPI
 }
 
 type DoctorSignedupResponse struct {
@@ -96,7 +95,7 @@ func (d *SignupDoctorHandler) ServeHTTP(w http.ResponseWriter, r *http.Request) 
 
 	// first, create an account for the user
 	res, err := d.AuthApi.SignUp(requestData.Email, requestData.Password, api.DOCTOR_ROLE)
-	if _, ok := err.(*thriftapi.LoginAlreadyExists); ok {
+	if err == api.LoginAlreadyExists {
 		WriteUserError(w, http.StatusBadRequest, "An account with the specified email address already exists.")
 		return
 	}
