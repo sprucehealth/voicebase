@@ -50,7 +50,7 @@ func (d *DataService) ListResourceGuideSections() ([]*common.ResourceGuideSectio
 		}
 		sections = append(sections, &sec)
 	}
-	return sections, nil
+	return sections, rows.Err()
 }
 
 func (d *DataService) ListResourceGuides() ([]*common.ResourceGuideSection, map[int64][]*common.ResourceGuide, error) {
@@ -79,7 +79,7 @@ func (d *DataService) ListResourceGuides() ([]*common.ResourceGuideSection, map[
 		}
 		guides[guide.SectionId] = append(guides[guide.SectionId], &guide)
 	}
-	return sections, guides, nil
+	return sections, guides, rows.Err()
 }
 
 func (d *DataService) CreateResourceGuideSection(sec *common.ResourceGuideSection) (int64, error) {

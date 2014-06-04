@@ -2,6 +2,7 @@ package lvm
 
 import (
 	"bytes"
+	"os"
 )
 
 type PhysicalVolume struct {
@@ -26,6 +27,7 @@ func (lvm *LVM) PVDisplay() (map[string]*PhysicalVolume, error) {
 	}
 	defer cm.Close()
 	cm.Stdout = buf
+	cm.Stderr = os.Stderr
 	if err := cm.Run(); err != nil {
 		return nil, err
 	}

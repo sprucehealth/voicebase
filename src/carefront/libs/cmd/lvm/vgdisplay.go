@@ -2,6 +2,7 @@ package lvm
 
 import (
 	"bytes"
+	"os"
 	"strconv"
 )
 
@@ -33,6 +34,7 @@ func (lvm *LVM) VGDisplay() (map[string]*VolumeGroup, error) {
 	}
 	defer cm.Close()
 	cm.Stdout = buf
+	cm.Stderr = os.Stderr
 	if err := cm.Run(); err != nil {
 		return nil, err
 	}
