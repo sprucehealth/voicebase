@@ -4,11 +4,8 @@ import (
 	"carefront/api"
 	"carefront/apiservice"
 	"carefront/common"
-	"encoding/json"
 	"net/http"
 	"strconv"
-
-	"github.com/gorilla/schema"
 )
 
 type doctorFavoriteTreatmentPlansHandler struct {
@@ -39,30 +36,26 @@ func (d *doctorFavoriteTreatmentPlansHandler) ServeHTTP(w http.ResponseWriter, r
 		return
 	}
 
+	requestData := &DoctorFavoriteTreatmentPlansRequestData{}
+	if err := apiservice.DecodeRequestData(requestData, r); err != nil {
+		apiservice.WriteDeveloperError(w, http.StatusBadRequest, "Unable to parse input parameters: "+err.Error())
+		return
+	}
+
 	switch r.Method {
 	case apiservice.HTTP_GET:
-		d.getFavoriteTreatmentPlans(w, r, doctor)
+		d.getFavoriteTreatmentPlans(w, r, doctor, requestData)
 	case apiservice.HTTP_POST, apiservice.HTTP_PUT:
-		d.addOrUpdateFavoriteTreatmentPlan(w, r, doctor)
+		d.addOrUpdateFavoriteTreatmentPlan(w, r, doctor, requestData)
 	case apiservice.HTTP_DELETE:
-		d.deleteFavoriteTreatmentPlan(w, r, doctor)
+		d.deleteFavoriteTreatmentPlan(w, r, doctor, requestData)
 	default:
-		w.WriteHeader(http.StatusNotFound)
+		http.NotFound(w, r)
 		return
 	}
 }
 
-func (d *doctorFavoriteTreatmentPlansHandler) getFavoriteTreatmentPlans(w http.ResponseWriter, r *http.Request, doctor *common.Doctor) {
-	if err := r.ParseForm(); err != nil {
-		apiservice.WriteDeveloperError(w, http.StatusBadRequest, "Unable to parse input parameters: "+err.Error())
-		return
-	}
-
-	requestData := DoctorFavoriteTreatmentPlansRequestData{}
-	if err := schema.NewDecoder().Decode(&requestData, r.Form); err != nil {
-		apiservice.WriteDeveloperError(w, http.StatusBadRequest, "Unable to parse input parameters: "+err.Error())
-		return
-	}
+func (d *doctorFavoriteTreatmentPlansHandler) getFavoriteTreatmentPlans(w http.ResponseWriter, r *http.Request, doctor *common.Doctor, requestData *DoctorFavoriteTreatmentPlansRequestData) {
 
 	// no favorite treatment plan id specified in which case return all
 	if requestData.FavoriteTreatmentPlanId == "" {
@@ -92,17 +85,7 @@ func (d *doctorFavoriteTreatmentPlansHandler) getFavoriteTreatmentPlans(w http.R
 	apiservice.WriteJSONToHTTPResponseWriter(w, http.StatusOK, &DoctorFavoriteTreatmentPlansResponseData{FavoriteTreatmentPlan: favoriteTreatmentPlan})
 }
 
-func (d *doctorFavoriteTreatmentPlansHandler) addOrUpdateFavoriteTreatmentPlan(w http.ResponseWriter, r *http.Request, doctor *common.Doctor) {
-	if err := r.ParseForm(); err != nil {
-		apiservice.WriteDeveloperError(w, http.StatusBadRequest, "Unable to parse input parameters: "+err.Error())
-		return
-	}
-
-	requestData := DoctorFavoriteTreatmentPlansRequestData{}
-	if err := json.NewDecoder(r.Body).Decode(&requestData); err != nil {
-		apiservice.WriteDeveloperError(w, http.StatusBadRequest, "Unable to parse input parameters: "+err.Error())
-		return
-	}
+func (d *doctorFavoriteTreatmentPlansHandler) addOrUpdateFavoriteTreatmentPlan(w http.ResponseWriter, r *http.Request, doctor *common.Doctor, requestData *DoctorFavoriteTreatmentPlansRequestData) {
 
 	// ensure that favorite treatment plan has a name
 	if requestData.FavoriteTreatmentPlan.Name == "" {
@@ -153,17 +136,7 @@ func (d *doctorFavoriteTreatmentPlansHandler) addOrUpdateFavoriteTreatmentPlan(w
 	apiservice.WriteJSONToHTTPResponseWriter(w, http.StatusOK, &DoctorFavoriteTreatmentPlansResponseData{FavoriteTreatmentPlan: requestData.FavoriteTreatmentPlan})
 }
 
-func (d *doctorFavoriteTreatmentPlansHandler) deleteFavoriteTreatmentPlan(w http.ResponseWriter, r *http.Request, doctor *common.Doctor) {
-	if err := r.ParseForm(); err != nil {
-		apiservice.WriteDeveloperError(w, http.StatusBadRequest, "Unable to parse input parameters: "+err.Error())
-		return
-	}
-
-	requestData := DoctorFavoriteTreatmentPlansRequestData{}
-	if err := schema.NewDecoder().Decode(&requestData, r.Form); err != nil {
-		apiservice.WriteDeveloperError(w, http.StatusBadRequest, "Unable to parse input parameters: "+err.Error())
-		return
-	}
+func (d *doctorFavoriteTreatmentPlansHandler) deleteFavoriteTreatmentPlan(w http.ResponseWriter, r *http.Request, doctor *common.Doctor, requestData *DoctorFavoriteTreatmentPlansRequestData) {
 
 	if requestData.FavoriteTreatmentPlanId == "" {
 		apiservice.WriteDeveloperError(w, http.StatusBadRequest, "FavoriteTreatmentPlanId required when attempting to delete a favorite treatment plan")

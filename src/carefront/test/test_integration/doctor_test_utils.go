@@ -167,13 +167,18 @@ func PickATreatmentPlanForPatientVisit(patientVisitId int64, doctor *common.Doct
 	ts := httptest.NewServer(doctorPickTreatmentPlanHandler)
 	defer ts.Close()
 
-	params := url.Values{}
-	params.Set("patient_visit_id", strconv.FormatInt(patientVisitId, 10))
+	params := make(map[string]interface{})
+	params["patient_visit_id"] = strconv.FormatInt(patientVisitId, 10)
 	if favoriteTreatmentPlan != nil {
-		params.Set("dr_favorite_treatment_plan_id", strconv.FormatInt(favoriteTreatmentPlan.Id.Int64(), 10))
+		params["dr_favorite_treatment_plan_id"] = strconv.FormatInt(favoriteTreatmentPlan.Id.Int64(), 10)
 	}
 
-	resp, err := AuthPut(ts.URL, "application/x-www-form-urlencoded", strings.NewReader(params.Encode()), doctor.AccountId.Int64())
+	jsonData, err := json.Marshal(params)
+	if err != nil {
+		t.Fatal(err)
+	}
+
+	resp, err := AuthPut(ts.URL, "application/json", bytes.NewReader(jsonData), doctor.AccountId.Int64())
 	if err != nil {
 		t.Fatalf("Unable to pick a treatment plan for the patient visit doctor %s", err)
 	}

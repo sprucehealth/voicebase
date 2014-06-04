@@ -21,10 +21,10 @@ func NewDoctorTreatmentPlanHandler(dataApi api.DataAPI) *doctorTreatmentPlanHand
 }
 
 type DoctorTreatmentPlanRequestData struct {
-	DoctorFavoriteTreatmentPlanId int64 `schema:"dr_favorite_treatment_plan_id"`
-	TreatmentPlanId               int64 `schema:"treatment_plan_id"`
-	PatientVisitId                int64 `schema:"patient_visit_id"`
-	Abbreviated                   bool  `schema:"abbreviated"`
+	DoctorFavoriteTreatmentPlanId int64 `schema:"dr_favorite_treatment_plan_id" json:"dr_favorite_treatment_plan_id,string"`
+	TreatmentPlanId               int64 `schema:"treatment_plan_id" json:"treatment_plan_id,string"`
+	PatientVisitId                int64 `schema:"patient_visit_id" json:"patient_visit_id,string"`
+	Abbreviated                   bool  `schema:"abbreviated" json:"abbreviated"`
 }
 
 type DoctorTreatmentPlanResponse struct {
@@ -107,6 +107,7 @@ func (d *doctorTreatmentPlanHandler) getTreatmentPlan(w http.ResponseWriter, r *
 
 func (d *doctorTreatmentPlanHandler) pickATreatmentPlan(w http.ResponseWriter, r *http.Request) {
 	requestData := &DoctorTreatmentPlanRequestData{}
+
 	if err := apiservice.DecodeRequestData(requestData, r); err != nil {
 		apiservice.WriteDeveloperError(w, http.StatusBadRequest, err.Error())
 		return

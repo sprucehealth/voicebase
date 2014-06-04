@@ -216,8 +216,15 @@ func DecodeRequestData(requestData interface{}, r *http.Request) error {
 		return fmt.Errorf("Unable to parse input parameters: %s", err)
 	}
 
-	if err := schema.NewDecoder().Decode(requestData, r.Form); err != nil {
-		return fmt.Errorf("Unable to parse input parameters: %s", err)
+	switch r.Header.Get("Content-Type") {
+	case "application/json":
+		if err := json.NewDecoder(r.Body).Decode(requestData); err != nil {
+			return fmt.Errorf("Unable to parse input parameters: %s", err)
+		}
+	default:
+		if err := schema.NewDecoder().Decode(requestData, r.Form); err != nil {
+			return fmt.Errorf("Unable to parse input parameters: %s", err)
+		}
 	}
 
 	return nil
