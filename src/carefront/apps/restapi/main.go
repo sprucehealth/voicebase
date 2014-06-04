@@ -101,6 +101,7 @@ func main() {
 	}
 
 	if conf.InfoAddr != "" {
+		http.Handle("/metrics", metrics.RegistryHandler(metricsRegistry))
 		go func() {
 			log.Fatal(http.ListenAndServe(conf.InfoAddr, nil))
 		}()
