@@ -233,7 +233,6 @@ func main() {
 		DataApi: dataApi,
 		ErxApi:  doseSpotService,
 	}
-	doctorFavoriteTreatmentPlansHandler := doctor_treatment_plan.NewDoctorFavoriteTreatmentPlansHandler(dataApi)
 
 	mux := apiservice.NewAuthServeMux(authAPI, metricsRegistry.Scope("restapi"))
 
@@ -308,7 +307,7 @@ func main() {
 	mux.Handle("/v1/doctor/visit/advice", doctorAdviceHandler)
 	mux.Handle("/v1/doctor/visit/followup", doctorFollowupHandler)
 	mux.Handle("/v1/doctor/visit/submit", doctorSubmitPatientVisitHandler)
-	mux.Handle("/v1/doctor/favorite_treatment_plans", doctorFavoriteTreatmentPlansHandler)
+	mux.Handle("/v1/doctor/favorite_treatment_plans", doctor_treatment_plan.NewDoctorFavoriteTreatmentPlansHandler(dataApi))
 
 	var alog analytics.Logger
 	if conf.Analytics.LogPath != "" {
