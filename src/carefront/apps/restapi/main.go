@@ -19,8 +19,6 @@ import (
 	"carefront/libs/maps"
 	"carefront/libs/payment/stripe"
 	"carefront/libs/pharmacy"
-	"carefront/libs/svcclient"
-	"carefront/libs/svcreg"
 	"carefront/messages"
 	"carefront/notify"
 	"carefront/patient"
@@ -28,19 +26,15 @@ import (
 	"carefront/patient_treatment_plan"
 	"carefront/photos"
 	"carefront/reslib"
-	"carefront/services/auth"
 	"carefront/support"
-	thriftapi "carefront/thrift/api"
 	"carefront/treatment_plan"
 	"carefront/visit"
-	"crypto/tls"
+	"database/sql"
 	"log"
-	"net"
 	"net/http"
 	"strconv"
 	"time"
 
-	"github.com/SpruceHealth/go-proxy-protocol/proxyproto"
 	"github.com/samuel/go-metrics/metrics"
 	"github.com/subosito/twilio"
 )
@@ -49,29 +43,11 @@ const (
 	defaultMaxInMemoryPhotoMB = 2
 )
 
-func main() {
-	conf := DefaultConfig
-	_, err := config.Parse(&conf)
-	if err != nil {
-		log.Fatal(err)
-	}
-
-	if conf.Debug {
-		golog.SetLevel(golog.DEBUG)
-	} else if conf.Environment == "dev" {
-		golog.SetLevel(golog.INFO)
-	}
-
-	conf.Validate()
-
+func connectDB(conf *Config) *sql.DB {
 	db, err := conf.DB.Connect(conf.BaseConfig)
 	if err != nil {
 		log.Fatal(err)
 	}
-	defer db.Close()
-
-	metricsRegistry := metrics.NewRegistry()
-	conf.StartReporters(metricsRegistry)
 
 	if num, err := strconv.Atoi(config.MigrationNumber); err == nil {
 		var latestMigration int
@@ -95,35 +71,33 @@ func main() {
 		golog.Errorf("MigrationNumber not set and not debug")
 	}
 
+	return db
+}
+
+func main() {
+	conf := DefaultConfig
+	_, err := config.Parse(&conf)
+	if err != nil {
+		log.Fatal(err)
+	}
+
+	if conf.Debug {
+		golog.SetLevel(golog.DEBUG)
+	} else if conf.Environment == "dev" {
+		golog.SetLevel(golog.INFO)
+	}
+
+	conf.Validate()
+
+	db := connectDB(&conf)
+	defer db.Close()
+
+	metricsRegistry := metrics.NewRegistry()
+	conf.StartReporters(metricsRegistry)
+
 	awsAuth, err := conf.AWSAuth()
 	if err != nil {
 		log.Fatalf("Failed to get AWS auth: %+v", err)
-	}
-
-	svcReg, err := conf.ServiceRegistry()
-	if err != nil {
-		log.Fatalf("Failed to create service registry: %+v", err)
-	}
-
-	var authApi thriftapi.Auth
-	if conf.NoServices || conf.BaseConfig.ZookeeperHosts == "" {
-		if conf.NoServices || conf.Debug {
-			authApi = &auth.AuthService{
-				DB:             db,
-				ExpireDuration: time.Duration(conf.AuthTokenExpiration) * time.Second,
-				RenewDuration:  time.Duration(conf.AuthTokenRenew) * time.Second,
-				Hasher:         auth.NewBcryptHasher(0),
-			}
-		} else {
-			log.Fatalf("No Zookeeper hosts defined and not running under debug")
-		}
-	} else {
-		secureSvcClientBuilder, err := svcclient.NewThriftServiceClientBuilder(svcReg, svcreg.ServiceId{Environment: conf.Environment, Name: "secure"})
-		if err != nil {
-			log.Fatalf("Failed to create client builder for secure service: %+v", err)
-		}
-		secureSvcClient := svcclient.NewClient("restapi", 4, secureSvcClientBuilder, metricsRegistry.Scope("securesvc-client"))
-		authApi = &thriftapi.AuthClient{Client: secureSvcClient}
 	}
 
 	if conf.InfoAddr != "" {
@@ -155,6 +129,13 @@ func main() {
 		log.Fatalf("Unable to initialize data service layer: %s", err)
 	}
 
+	authAPI := &api.Auth{
+		DB:             db,
+		ExpireDuration: time.Duration(conf.AuthTokenExpiration) * time.Second,
+		RenewDuration:  time.Duration(conf.AuthTokenRenew) * time.Second,
+		Hasher:         api.NewBcryptHasher(0),
+	}
+
 	snsClient := &sns.SNS{
 		Region: aws.USEast,
 		Client: &aws.Client{
@@ -181,11 +162,11 @@ func main() {
 	checkElligibilityHandler := &apiservice.CheckCareProvidingElligibilityHandler{DataApi: dataApi, AddressValidationApi: smartyStreetsService, StaticContentUrl: conf.StaticContentBaseUrl}
 	updatePatientBillingAddress := &apiservice.UpdatePatientAddressHandler{DataApi: dataApi, AddressType: apiservice.BILLING_ADDRESS_TYPE}
 	updatePatientPharmacyHandler := &apiservice.UpdatePatientPharmacyHandler{DataApi: dataApi, PharmacySearchService: pharmacy.GooglePlacesPharmacySearchService(0)}
-	authenticateDoctorHandler := &apiservice.DoctorAuthenticationHandler{DataApi: dataApi, AuthApi: authApi}
-	signupDoctorHandler := &apiservice.SignupDoctorHandler{DataApi: dataApi, AuthApi: authApi}
+	authenticateDoctorHandler := &apiservice.DoctorAuthenticationHandler{DataApi: dataApi, AuthApi: authAPI}
+	signupDoctorHandler := &apiservice.SignupDoctorHandler{DataApi: dataApi, AuthApi: authAPI}
 	patientTreatmentGuideHandler := patient_treatment_plan.NewPatientTreatmentGuideHandler(dataApi)
 	doctorTreatmentGuideHandler := patient_treatment_plan.NewDoctorTreatmentGuideHandler(dataApi)
-	patientVisitHandler := apiservice.NewPatientVisitHandler(dataApi, authApi, cloudStorageApi, photoAnswerCloudStorageApi)
+	patientVisitHandler := apiservice.NewPatientVisitHandler(dataApi, authAPI, cloudStorageApi, photoAnswerCloudStorageApi)
 	patientVisitReviewHandler := &patient_treatment_plan.PatientVisitReviewHandler{DataApi: dataApi}
 	answerIntakeHandler := apiservice.NewAnswerIntakeHandler(dataApi)
 	autocompleteHandler := &apiservice.AutocompleteHandler{DataApi: dataApi, ERxApi: doseSpotService, Role: api.PATIENT_ROLE}
@@ -262,24 +243,24 @@ func main() {
 		DataApi: dataApi,
 	}
 
-	mux := apiservice.NewAuthServeMux(authApi, metricsRegistry.Scope("restapi"))
+	mux := apiservice.NewAuthServeMux(authAPI, metricsRegistry.Scope("restapi"))
 
 	mux.Handle("/v1/content", staticContentHandler)
-	mux.Handle("/v1/patient", patient.NewSignupHandler(dataApi, authApi))
+	mux.Handle("/v1/patient", patient.NewSignupHandler(dataApi, authAPI))
 	mux.Handle("/v1/patient/info", patient.NewUpdateHandler(dataApi))
 	mux.Handle("/v1/patient/address/billing", updatePatientBillingAddress)
 	mux.Handle("/v1/patient/pharmacy", updatePatientPharmacyHandler)
 	mux.Handle("/v1/patient/treatment/guide", patientTreatmentGuideHandler)
 	mux.Handle("/v1/patient/home", homelog.NewListHandler(dataApi))
 	mux.Handle("/v1/patient/home/dismiss", homelog.NewDismissHandler(dataApi))
-	mux.Handle("/v1/patient/isauthenticated", apiservice.NewIsAuthenticatedHandler(authApi))
+	mux.Handle("/v1/patient/isauthenticated", apiservice.NewIsAuthenticatedHandler(authAPI))
 	mux.Handle("/v1/visit", patientVisitHandler)
 	mux.Handle("/v1/visit/review", patientVisitReviewHandler)
 	mux.Handle("/v1/check_eligibility", checkElligibilityHandler)
 	mux.Handle("/v1/answer", answerIntakeHandler)
 	mux.Handle("/v1/answer/photo", photoAnswerIntakeHandler)
-	mux.Handle("/v1/authenticate", patient.NewAuthenticationHandler(dataApi, authApi, pharmacy.GooglePlacesPharmacySearchService(0), conf.StaticContentBaseUrl))
-	mux.Handle("/v1/logout", patient.NewAuthenticationHandler(dataApi, authApi, pharmacy.GooglePlacesPharmacySearchService(0), conf.StaticContentBaseUrl))
+	mux.Handle("/v1/authenticate", patient.NewAuthenticationHandler(dataApi, authAPI, pharmacy.GooglePlacesPharmacySearchService(0), conf.StaticContentBaseUrl))
+	mux.Handle("/v1/logout", patient.NewAuthenticationHandler(dataApi, authAPI, pharmacy.GooglePlacesPharmacySearchService(0), conf.StaticContentBaseUrl))
 	mux.Handle("/v1/ping", pingHandler)
 	mux.Handle("/v1/autocomplete", autocompleteHandler)
 	mux.Handle("/v1/pharmacy_search", pharmacySearchHandler)
@@ -305,7 +286,7 @@ func main() {
 
 	mux.Handle("/v1/doctor/signup", signupDoctorHandler)
 	mux.Handle("/v1/doctor/authenticate", authenticateDoctorHandler)
-	mux.Handle("/v1/doctor/isauthenticated", apiservice.NewIsAuthenticatedHandler(authApi))
+	mux.Handle("/v1/doctor/isauthenticated", apiservice.NewIsAuthenticatedHandler(authAPI))
 	mux.Handle("/v1/doctor/queue", doctor_queue.NewQueueHandler(dataApi))
 	mux.Handle("/v1/doctor/treatment/templates", doctorTreatmentTemplatesHandler)
 
@@ -322,7 +303,7 @@ func main() {
 
 	mux.Handle("/v1/doctor/visit/review", patient_file.NewDoctorPatientVisitReviewHandler(dataApi, pharmacy.GooglePlacesPharmacySearchService(0), cloudStorageApi, photoAnswerCloudStorageApi))
 	mux.Handle("/v1/doctor/visit/treatment_plan", doctorTreatmentPlanHandler)
-	mux.Handle("/v1/doctor/visit/diagnosis", visit.NewDiagnosePatientHandler(dataApi, authApi, conf.Environment))
+	mux.Handle("/v1/doctor/visit/diagnosis", visit.NewDiagnosePatientHandler(dataApi, authAPI, conf.Environment))
 	mux.Handle("/v1/doctor/visit/diagnosis/summary", diagnosisSummaryHandler)
 	mux.Handle("/v1/doctor/visit/treatment/new", newTreatmentHandler)
 	mux.Handle("/v1/doctor/visit/treatment/treatments", treatmentsHandler)
@@ -368,66 +349,5 @@ func main() {
 
 	apiservice.IsDev = (conf.Environment == "dev")
 
-	s := &http.Server{
-		Addr:           conf.ListenAddr,
-		Handler:        mux,
-		ReadTimeout:    30 * time.Second,
-		WriteTimeout:   30 * time.Second,
-		MaxHeaderBytes: 1 << 20,
-	}
-
-	if conf.TLSCert != "" && conf.TLSKey != "" {
-		go func() {
-			s.TLSConfig = &tls.Config{
-				MinVersion:               tls.VersionTLS10,
-				PreferServerCipherSuites: true,
-				CipherSuites: []uint16{
-					// Do not include RC4 or 3DES
-					tls.TLS_ECDHE_RSA_WITH_AES_128_GCM_SHA256,
-					tls.TLS_ECDHE_ECDSA_WITH_AES_128_GCM_SHA256,
-					tls.TLS_ECDHE_RSA_WITH_AES_128_CBC_SHA,
-					tls.TLS_ECDHE_ECDSA_WITH_AES_128_CBC_SHA,
-					tls.TLS_ECDHE_RSA_WITH_AES_256_CBC_SHA,
-					tls.TLS_ECDHE_ECDSA_WITH_AES_256_CBC_SHA,
-					tls.TLS_RSA_WITH_AES_128_CBC_SHA,
-					tls.TLS_RSA_WITH_AES_256_CBC_SHA,
-				},
-			}
-			if s.TLSConfig.NextProtos == nil {
-				s.TLSConfig.NextProtos = []string{"http/1.1"}
-			}
-
-			cert, err := conf.ReadURI(conf.TLSCert)
-			if err != nil {
-				log.Fatal(err)
-			}
-			key, err := conf.ReadURI(conf.TLSKey)
-			if err != nil {
-				log.Fatal(err)
-			}
-			certs, err := tls.X509KeyPair(cert, key)
-			if err != nil {
-				log.Fatal(err)
-			}
-
-			s.TLSConfig.Certificates = []tls.Certificate{certs}
-
-			conn, err := net.Listen("tcp", conf.TLSListenAddr)
-			if err != nil {
-				log.Fatal(err)
-			}
-
-			if conf.ProxyProtocol {
-				conn = &proxyproto.Listener{Listener: conn}
-			}
-
-			ln := tls.NewListener(conn, s.TLSConfig)
-
-			golog.Infof("Starting SSL server on %s...", conf.TLSListenAddr)
-			log.Fatal(s.Serve(ln))
-		}()
-	}
-	golog.Infof("Starting server on %s...", conf.ListenAddr)
-
-	log.Fatal(s.ListenAndServe())
+	Serve(&conf, mux)
 }

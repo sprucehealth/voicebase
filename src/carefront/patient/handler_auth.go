@@ -63,7 +63,6 @@ import (
 	"carefront/libs/dispatch"
 	"carefront/libs/golog"
 	"carefront/libs/pharmacy"
-	thriftapi "carefront/thrift/api"
 	"net/http"
 	"strings"
 
@@ -71,7 +70,7 @@ import (
 )
 
 type AuthenticationHandler struct {
-	authApi               thriftapi.Auth
+	authApi               api.AuthAPI
 	pharmacySearchService pharmacy.PharmacySearchAPI
 	dataApi               api.DataAPI
 	staticContentBaseUrl  string
@@ -83,7 +82,7 @@ type AuthenticationResponse struct {
 	Doctor  *common.Doctor  `json:"doctor,omitempty"`
 }
 
-func NewAuthenticationHandler(dataApi api.DataAPI, authApi thriftapi.Auth, pharmacySearchService pharmacy.PharmacySearchAPI, staticContentBaseUrl string) *AuthenticationHandler {
+func NewAuthenticationHandler(dataApi api.DataAPI, authApi api.AuthAPI, pharmacySearchService pharmacy.PharmacySearchAPI, staticContentBaseUrl string) *AuthenticationHandler {
 	return &AuthenticationHandler{
 		authApi:               authApi,
 		pharmacySearchService: pharmacySearchService,
@@ -118,14 +117,14 @@ func (h *AuthenticationHandler) ServeHTTP(w http.ResponseWriter, r *http.Request
 		}
 
 		if res, err := h.authApi.LogIn(requestData.Login, requestData.Password); err != nil {
-			switch err.(type) {
-			case *thriftapi.NoSuchLogin:
+			switch err {
+			case api.LoginDoesNotExist:
 				golog.Log("auth", golog.WARN, &apiservice.AuthLog{
 					Event: apiservice.AuthEventNoSuchLogin,
 				})
 				apiservice.WriteUserError(w, http.StatusForbidden, "Invalid email/password combination")
 				return
-			case *thriftapi.InvalidPassword:
+			case api.InvalidPassword:
 				golog.Log("auth", golog.WARN, &apiservice.AuthLog{
 					Event: apiservice.AuthEventInvalidPassword,
 				})

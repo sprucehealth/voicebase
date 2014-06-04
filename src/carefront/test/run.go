@@ -5,6 +5,7 @@ import (
 	"io/ioutil"
 	"os"
 	"os/exec"
+	"path"
 	"strings"
 )
 
@@ -17,13 +18,14 @@ func main() {
 // folder with tests within it. Note that this method is currently setup to run tests from the top most level
 // of the repository because thats how Travis runs the tests
 func RunTests() {
-	files, _ := ioutil.ReadDir("./src/carefront/test")
+	testPath := "carefront/test"
+	files, _ := ioutil.ReadDir(path.Join(os.Getenv("GOPATH"), "src", testPath))
 	testDirs := make([]string, 0)
 	for _, f := range files {
 		if f.IsDir() && strings.HasPrefix(f.Name(), "test_") {
-			testDir := fmt.Sprintf("./src/carefront/test/%s", f.Name())
+			testDir := path.Join(testPath, f.Name())
 			testDirs = append(testDirs, testDir)
-			args := strings.Split(fmt.Sprintf("go test -v -race -test.timeout=50m %s", testDir), " ")
+			args := []string{"go", "test", "-v", "-race", "-test.timeout=50m", testDir}
 			cmd := exec.Command(args[0], args[1:]...)
 			cmd.Stdout = os.Stdout
 			cmd.Stderr = os.Stderr

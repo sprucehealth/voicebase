@@ -11,8 +11,6 @@ import (
 	"carefront/libs/aws"
 	"carefront/libs/dispatch"
 	"carefront/notify"
-	"carefront/services/auth"
-	thriftapi "carefront/thrift/api"
 	"carefront/treatment_plan"
 	"database/sql"
 	"errors"
@@ -50,7 +48,7 @@ type TestConf struct {
 
 type TestData struct {
 	DataApi             api.DataAPI
-	AuthApi             thriftapi.Auth
+	AuthApi             api.AuthAPI
 	DBConfig            *TestDBConfig
 	CloudStorageService api.CloudStorageAPI
 	DB                  *sql.DB
@@ -221,7 +219,7 @@ func SetupIntegrationTest(t *testing.T) TestData {
 	}
 	cloudStorageService := api.NewCloudStorageService(awsAuth)
 
-	authApi := &auth.AuthService{
+	authApi := &api.Auth{
 		ExpireDuration: time.Minute * 10,
 		RenewDuration:  time.Minute * 5,
 		DB:             db,

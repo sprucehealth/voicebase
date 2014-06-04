@@ -1,9 +1,9 @@
 package apiservice
 
 import (
+	"carefront/api"
 	"carefront/libs/golog"
 	"carefront/libs/idgen"
-	"carefront/thrift/api"
 	"net/http"
 	"runtime"
 	"strconv"
@@ -22,7 +22,7 @@ type NonAuthenticated interface {
 
 type AuthServeMux struct {
 	http.ServeMux
-	AuthApi api.Auth
+	AuthApi api.AuthAPI
 
 	statLatency      metrics.Histogram
 	statRequests     metrics.Counter
@@ -68,7 +68,7 @@ const (
 	AuthEventInvalidToken    AuthEvent = "InvalidToken"
 )
 
-func NewAuthServeMux(authApi api.Auth, statsRegistry metrics.Registry) *AuthServeMux {
+func NewAuthServeMux(authApi api.AuthAPI, statsRegistry metrics.Registry) *AuthServeMux {
 	mux := &AuthServeMux{
 		ServeMux:         *http.NewServeMux(),
 		AuthApi:          authApi,

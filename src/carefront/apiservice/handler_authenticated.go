@@ -1,16 +1,16 @@
 package apiservice
 
 import (
+	"carefront/api"
 	"carefront/libs/golog"
-	thriftapi "carefront/thrift/api"
 	"net/http"
 )
 
 type isAuthenticatedHandler struct {
-	AuthApi thriftapi.Auth
+	AuthApi api.AuthAPI
 }
 
-func NewIsAuthenticatedHandler(authApi thriftapi.Auth) *isAuthenticatedHandler {
+func NewIsAuthenticatedHandler(authApi api.AuthAPI) *isAuthenticatedHandler {
 	return &isAuthenticatedHandler{
 		AuthApi: authApi,
 	}

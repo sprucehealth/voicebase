@@ -4,7 +4,6 @@ import (
 	"strings"
 
 	"carefront/common"
-	"carefront/thrift/api"
 )
 
 type MockAccount struct {
