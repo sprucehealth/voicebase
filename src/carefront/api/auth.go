@@ -25,6 +25,7 @@ type TokenValidationResponse struct {
 	IsValid   bool   `json:"is_valid"`
 	AccountId *int64 `json:"account_id,omitempty"`
 	Reason    string `json:"reason,omitempty"`
+	Role      string `json:"role"`
 }
 
 type Auth struct {
@@ -174,10 +175,10 @@ func (m *Auth) ValidateToken(token string) (*TokenValidationResponse, error) {
 	}
 	// get the role of the account
 	if err := m.DB.QueryRow(`SELECT role_type_tag FROM account INNER JOIN role_type ON role_type_id = role_type.id WHERE account.id = ?`, accountId).Scan(&role); err != nil {
-		return nil, &api.InternalServerError{Message: err.Error()}
+		return nil, err
 	}
 
-	return &api.TokenValidationResponse{IsValid: left > 0, AccountId: &accountId, Reason: reason, Role: role}, nil
+	return &TokenValidationResponse{IsValid: left > 0, AccountId: &accountId, Reason: reason, Role: role}, nil
 }
 
 func (m *Auth) SetPassword(accountId int64, password string) error {
