@@ -1,6 +1,6 @@
 -- MySQL dump 10.13  Distrib 5.6.19, for osx10.9 (x86_64)
 --
--- Host: 127.0.0.1    Database: database_17624
+-- Host: 127.0.0.1    Database: database_20739
 -- ------------------------------------------------------
 -- Server version	5.6.19
 
@@ -1976,7 +1976,7 @@ CREATE TABLE `resource_guide` (
   `photo_url` varchar(256) NOT NULL,
   `layout` blob NOT NULL,
   `creation_date` timestamp NOT NULL DEFAULT CURRENT_TIMESTAMP,
-  `modified_date` timestamp NOT NULL DEFAULT CURRENT_TIMESTAMP,
+  `modified_date` timestamp NOT NULL DEFAULT CURRENT_TIMESTAMP ON UPDATE CURRENT_TIMESTAMP,
   PRIMARY KEY (`id`),
   KEY `section_id` (`section_id`),
   CONSTRAINT `resource_guide_ibfk_1` FOREIGN KEY (`section_id`) REFERENCES `resource_guide_section` (`id`)
@@ -2402,4 +2402,4 @@ CREATE TABLE `unlinked_dntf_treatment_status_events` (
 /*!40101 SET COLLATION_CONNECTION=@OLD_COLLATION_CONNECTION */;
 /*!40111 SET SQL_NOTES=@OLD_SQL_NOTES */;
 
--- Dump completed on 2014-06-02 17:39:48
+-- Dump completed on 2014-06-04 11:44:30
