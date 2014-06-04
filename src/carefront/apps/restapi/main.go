@@ -246,7 +246,7 @@ func main() {
 	mux.Handle("/v1/patient/home/dismiss", homelog.NewDismissHandler(dataApi))
 	mux.Handle("/v1/patient/isauthenticated", apiservice.NewIsAuthenticatedHandler(authAPI))
 	mux.Handle("/v1/treatment_plan", treatment_plan.NewTreatmentPlanHandler(dataApi))
-	mux.Handle("/v1/treatment_guide", treatment_plan.NewPatientTreatmentGuideHandler(dataApi))
+	mux.Handle("/v1/treatment_guide", treatment_plan.NewTreatmentGuideHandler(dataApi))
 	mux.Handle("/v1/visit", patientVisitHandler)
 	mux.Handle("/v1/check_eligibility", checkElligibilityHandler)
 	mux.Handle("/v1/answer", answerIntakeHandler)

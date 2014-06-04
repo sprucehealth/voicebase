@@ -6,57 +6,53 @@ import (
 	"carefront/app_url"
 	"carefront/common"
 	"carefront/libs/erx"
-	"carefront/libs/golog"
 	"fmt"
 	"net/http"
-
-	"github.com/gorilla/schema"
 )
 
 type TreatmentGuideRequestData struct {
 	TreatmentId int64 `schema:"treatment_id,required"`
 }
 
-type PatientTreatmentGuideHandler struct {
-	DataAPI api.DataAPI
+type treatmentGuideHandler struct {
+	dataAPI api.DataAPI
 }
 
-type DoctorTreatmentGuideHandler struct {
-	DataAPI api.DataAPI
+func NewTreatmentGuideHandler(dataAPI api.DataAPI) *treatmentGuideHandler {
+	return &treatmentGuideHandler{dataAPI: dataAPI}
 }
 
-func NewPatientTreatmentGuideHandler(dataAPI api.DataAPI) *PatientTreatmentGuideHandler {
-	return &PatientTreatmentGuideHandler{DataAPI: dataAPI}
-}
-
-func NewDoctorTreatmentGuideHandler(dataAPI api.DataAPI) *DoctorTreatmentGuideHandler {
-	return &DoctorTreatmentGuideHandler{DataAPI: dataAPI}
-}
-
-func (h *PatientTreatmentGuideHandler) ServeHTTP(w http.ResponseWriter, r *http.Request) {
+func (h *treatmentGuideHandler) ServeHTTP(w http.ResponseWriter, r *http.Request) {
 	if r.Method != apiservice.HTTP_GET {
-		w.WriteHeader(http.StatusNotFound)
-		return
-	}
-
-	if err := r.ParseForm(); err != nil {
-		apiservice.WriteDeveloperError(w, http.StatusBadRequest, "Unable to parse request data: "+err.Error())
+		http.NotFound(w, r)
 		return
 	}
 
 	requestData := new(TreatmentGuideRequestData)
-	if err := schema.NewDecoder().Decode(requestData, r.Form); err != nil {
+	if err := apiservice.DecodeRequestData(requestData, r); err != nil {
 		apiservice.WriteDeveloperError(w, http.StatusBadRequest, "Unable to parse input parameters: "+err.Error())
 		return
 	}
 
-	patientID, err := h.DataAPI.GetPatientIdFromAccountId(apiservice.GetContext(r).AccountId)
+	switch apiservice.GetContext(r).Role {
+	case api.PATIENT_ROLE:
+		h.processTreatmentGuideForPatient(requestData, w, r)
+	case api.DOCTOR_ROLE:
+		h.processTreatmentGuideForDoctor(requestData, w, r)
+	default:
+		apiservice.WriteDeveloperError(w, http.StatusInternalServerError, "Unable to determine role from auth token")
+	}
+
+}
+
+func (h *treatmentGuideHandler) processTreatmentGuideForPatient(requestData *TreatmentGuideRequestData, w http.ResponseWriter, r *http.Request) {
+	patientID, err := h.dataAPI.GetPatientIdFromAccountId(apiservice.GetContext(r).AccountId)
 	if err != nil {
 		apiservice.WriteDeveloperError(w, http.StatusInternalServerError, "Failed to get patient: "+err.Error())
 		return
 	}
 
-	treatment, err := h.DataAPI.GetTreatmentFromId(requestData.TreatmentId)
+	treatment, err := h.dataAPI.GetTreatmentFromId(requestData.TreatmentId)
 	if err != nil {
 		apiservice.WriteDeveloperError(w, http.StatusInternalServerError, "Failed to get treatment: "+err.Error())
 		return
@@ -70,27 +66,11 @@ func (h *PatientTreatmentGuideHandler) ServeHTTP(w http.ResponseWriter, r *http.
 		return
 	}
 
-	treatmentGuideResponse(h.DataAPI, treatment.Doctor, w, treatment)
+	treatmentGuideResponse(h.dataAPI, treatment.Doctor, w, treatment)
 }
 
-func (h *DoctorTreatmentGuideHandler) ServeHTTP(w http.ResponseWriter, r *http.Request) {
-	if r.Method != apiservice.HTTP_GET {
-		w.WriteHeader(http.StatusNotFound)
-		return
-	}
-
-	if err := r.ParseForm(); err != nil {
-		apiservice.WriteDeveloperError(w, http.StatusBadRequest, "Unable to parse request data: "+err.Error())
-		return
-	}
-
-	requestData := new(TreatmentGuideRequestData)
-	if err := schema.NewDecoder().Decode(requestData, r.Form); err != nil {
-		apiservice.WriteDeveloperError(w, http.StatusBadRequest, "Unable to parse input parameters: "+err.Error())
-		return
-	}
-
-	treatment, err := h.DataAPI.GetTreatmentFromId(requestData.TreatmentId)
+func (h *treatmentGuideHandler) processTreatmentGuideForDoctor(requestData *TreatmentGuideRequestData, w http.ResponseWriter, r *http.Request) {
+	treatment, err := h.dataAPI.GetTreatmentFromId(requestData.TreatmentId)
 	if err != nil {
 		apiservice.WriteDeveloperError(w, http.StatusInternalServerError, "Failed to get treatment: "+err.Error())
 		return
@@ -99,13 +79,7 @@ func (h *DoctorTreatmentGuideHandler) ServeHTTP(w http.ResponseWriter, r *http.R
 		return
 	}
 
-	if err := apiservice.VerifyDoctorPatientRelationship(h.DataAPI, treatment.Doctor, treatment.Patient); err != nil {
-		golog.Warningf("Doctor %d does not have access to treatment %d: %s", treatment.Doctor.DoctorId.Int64(), treatment.Id.Int64(), err.Error())
-		apiservice.WriteUserError(w, http.StatusForbidden, "Doctor does not have access to the given treatment")
-		return
-	}
-
-	treatmentGuideResponse(h.DataAPI, treatment.Doctor, w, treatment)
+	treatmentGuideResponse(h.dataAPI, treatment.Doctor, w, treatment)
 }
 
 func treatmentGuideResponse(dataAPI api.DataAPI, doctor *common.Doctor, w http.ResponseWriter, treatment *common.Treatment) {
