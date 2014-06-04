@@ -16,13 +16,13 @@ type ListHandler struct {
 }
 
 type Guide struct {
-	Id       int64  `json:"id"`
+	Id       int64  `json:"id,string"`
 	Title    string `json:"title"`
 	PhotoURL string `json:"photo_url"`
 }
 
 type Section struct {
-	Id     int64    `json:"id"`
+	Id     int64    `json:"id,string"`
 	Title  string   `json:"title"`
 	Guides []*Guide `json:"guides"`
 }
