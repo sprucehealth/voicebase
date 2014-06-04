@@ -52,7 +52,7 @@ func TestPatientVisitReview(t *testing.T) {
 	}
 
 	// try getting the patient visit review for this patient visit and it should fail
-	patientVisitReviewHandler := treatment_plan.NewPatientTreatmentPlanHandler(testData.DataApi)
+	patientVisitReviewHandler := treatment_plan.NewTreatmentPlanHandler(testData.DataApi)
 	ts := httptest.NewServer(patientVisitReviewHandler)
 	defer ts.Close()
 

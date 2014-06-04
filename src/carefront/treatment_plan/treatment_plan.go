@@ -11,8 +11,6 @@ import (
 	"net/http"
 	"net/url"
 	"strconv"
-
-	"github.com/gorilla/schema"
 )
 
 type treatmentPlanHandler struct {
@@ -26,7 +24,8 @@ func NewTreatmentPlanHandler(dataApi api.DataAPI) *treatmentPlanHandler {
 }
 
 type TreatmentPlanRequest struct {
-	PatientVisitId int64 `schema:"patient_visit_id"`
+	PatientVisitId  int64 `schema:"patient_visit_id"`
+	TreatmentPlanId int64 `schema:"treatment_plan_id"`
 }
 
 func (p *treatmentPlanHandler) ServeHTTP(w http.ResponseWriter, r *http.Request) {
@@ -35,17 +34,57 @@ func (p *treatmentPlanHandler) ServeHTTP(w http.ResponseWriter, r *http.Request)
 		return
 	}
 
-	if err := r.ParseForm(); err != nil {
-		apiservice.WriteDeveloperError(w, http.StatusBadRequest, "Unable to parse request data: "+err.Error())
-		return
-	}
-
-	var requestData TreatmentPlanRequest
-	if err := schema.NewDecoder().Decode(&requestData, r.Form); err != nil {
+	var requestData *TreatmentPlanRequest
+	if err := apiservice.DecodeRequestData(requestData, r); err != nil {
 		apiservice.WriteDeveloperError(w, http.StatusBadRequest, "Unable to parse input parameters: "+err.Error())
 		return
 	}
 
+	switch apiservice.GetContext(r).Role {
+	case api.PATIENT_ROLE:
+		p.processTreatmentPlanViewForPatient(requestData, w, r)
+	case api.DOCTOR_ROLE:
+		p.processTreatmentPlanViewForDoctor(requestData, w, r)
+	default:
+		apiservice.WriteDeveloperError(w, http.StatusBadRequest, "Unable to identify whether doctor or patient from auth token")
+	}
+
+}
+
+func (p *treatmentPlanHandler) processTreatmentPlanViewForDoctor(requestData *TreatmentPlanRequest, w http.ResponseWriter, r *http.Request) {
+	doctor, err := p.dataApi.GetDoctorFromAccountId(apiservice.GetContext(r).AccountId)
+	if err != nil {
+		apiservice.WriteDeveloperError(w, http.StatusInternalServerError, err.Error())
+		return
+	}
+
+	if requestData.TreatmentPlanId == 0 {
+		apiservice.WriteUserError(w, http.StatusBadRequest, "Treatment Plan needs to be specified")
+		return
+	}
+
+	patientVisitId, err := p.dataApi.GetPatientVisitIdFromTreatmentPlanId(requestData.TreatmentPlanId)
+	if err != nil {
+		apiservice.WriteDeveloperError(w, http.StatusInternalServerError, err.Error())
+		return
+	}
+
+	patient, err := p.dataApi.GetPatientFromPatientVisitId(patientVisitId)
+	if err != nil {
+		apiservice.WriteDeveloperError(w, http.StatusInternalServerError, err.Error())
+		return
+	}
+
+	treatmentPlan, err := populateTreatmentPlan(p.dataApi, patientVisitId, requestData.TreatmentPlanId)
+	if err != nil {
+		apiservice.WriteDeveloperError(w, http.StatusInternalServerError, err.Error())
+		return
+	}
+
+	treatmentPlanResponse(p.dataApi, w, r, treatmentPlan, doctor, patient)
+}
+
+func (p *treatmentPlanHandler) processTreatmentPlanViewForPatient(requestData *TreatmentPlanRequest, w http.ResponseWriter, r *http.Request) {
 	patient, err := p.dataApi.GetPatientFromAccountId(apiservice.GetContext(r).AccountId)
 	if err != nil {
 		apiservice.WriteDeveloperError(w, http.StatusInternalServerError, "Unable to get patientId from accountId retrieved from auth token: "+err.Error())
@@ -109,10 +148,10 @@ func (p *treatmentPlanHandler) ServeHTTP(w http.ResponseWriter, r *http.Request)
 		return
 	}
 
-	treatmentPlanResponse(p.dataApi, w, r, treatmentPlan, patientVisit, doctor, patient)
+	treatmentPlanResponse(p.dataApi, w, r, treatmentPlan, doctor, patient)
 }
 
-func treatmentPlanResponse(dataApi api.DataAPI, w http.ResponseWriter, r *http.Request, treatmentPlan *common.TreatmentPlan, patientVisit *common.PatientVisit, doctor *common.Doctor, patient *common.Patient) {
+func treatmentPlanResponse(dataApi api.DataAPI, w http.ResponseWriter, r *http.Request, treatmentPlan *common.TreatmentPlan, doctor *common.Doctor, patient *common.Patient) {
 	views := make([]TPView, 0)
 	views = append(views, &TPVisitHeaderView{
 		ImageURL: doctor.LargeThumbnailUrl,

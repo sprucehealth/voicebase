@@ -151,6 +151,7 @@ func (m *Auth) LogOut(token string) error {
 func (m *Auth) ValidateToken(token string) (*TokenValidationResponse, error) {
 	var accountId int64
 	var expires time.Time
+	var role string
 	if err := m.DB.QueryRow("SELECT account_id, expires FROM auth_token WHERE token = ?", token).Scan(&accountId, &expires); err == sql.ErrNoRows {
 		return &TokenValidationResponse{IsValid: false, Reason: "token not found"}, nil
 	} else if err != nil {
@@ -171,7 +172,12 @@ func (m *Auth) ValidateToken(token string) (*TokenValidationResponse, error) {
 			// Don't return an error response because this doesn't prevent anything else from working
 		}
 	}
-	return &TokenValidationResponse{IsValid: left > 0, AccountId: &accountId, Reason: reason}, nil
+	// get the role of the account
+	if err := m.DB.QueryRow(`SELECT role_type_tag FROM account INNER JOIN role_type ON role_type_id = role_type.id WHERE account.id = ?`, accountId).Scan(&role); err != nil {
+		return nil, &api.InternalServerError{Message: err.Error()}
+	}
+
+	return &api.TokenValidationResponse{IsValid: left > 0, AccountId: &accountId, Reason: reason, Role: role}, nil
 }
 
 func (m *Auth) SetPassword(accountId int64, password string) error {

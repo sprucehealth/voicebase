@@ -90,28 +90,28 @@ func NewAuthServeMux(authApi api.AuthAPI, statsRegistry metrics.Registry) *AuthS
 }
 
 // Parse the "Authorization: token xxx" header and check the token for validity
-func (mux *AuthServeMux) checkAuth(r *http.Request) (bool, int64, string, error) {
+func (mux *AuthServeMux) checkAuth(r *http.Request) (bool, int64, string, string, error) {
 	if Testing {
 		if idStr := r.Header.Get("AccountId"); idStr != "" {
 			id, err := strconv.ParseInt(idStr, 10, 64)
-			return true, id, "", err
+			return true, id, "", "", err
 		}
 	}
 
 	token, err := GetAuthTokenFromHeader(r)
 	if err == ErrBadAuthToken {
-		return false, 0, "failed to parse Authorization header", nil
+		return false, 0, "failed to parse Authorization header", "", nil
 	} else if err != nil {
-		return false, 0, "", err
+		return false, 0, "", "", err
 	}
 	if res, err := mux.AuthApi.ValidateToken(token); err != nil {
-		return false, 0, "", err
+		return false, 0, "", "", err
 	} else {
 		var accountId int64
 		if res.AccountId != nil {
 			accountId = *res.AccountId
 		}
-		return res.IsValid, accountId, res.Reason, nil
+		return res.IsValid, accountId, res.Role, res.Reason, nil
 	}
 }
 
@@ -194,7 +194,7 @@ func (mux *AuthServeMux) ServeHTTP(w http.ResponseWriter, r *http.Request) {
 	}
 
 	if nonAuth, ok := h.(NonAuthenticated); !ok || !nonAuth.NonAuthenticated() {
-		if valid, accountId, reason, err := mux.checkAuth(r); err != nil {
+		if valid, accountId, role, reason, err := mux.checkAuth(r); err != nil {
 			customResponseWriter.WriteHeader(http.StatusInternalServerError)
 			return
 		} else if !valid {
@@ -208,6 +208,7 @@ func (mux *AuthServeMux) ServeHTTP(w http.ResponseWriter, r *http.Request) {
 		} else {
 			mux.statAuthSuccess.Inc(1)
 			ctx.AccountId = accountId
+			ctx.Role = role
 		}
 	}
 	h.ServeHTTP(customResponseWriter, r)
