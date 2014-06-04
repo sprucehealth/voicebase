@@ -2,6 +2,7 @@ package apiservice
 
 import (
 	"carefront/libs/golog"
+	"carefront/libs/idgen"
 	"carefront/thrift/api"
 	"net/http"
 	"runtime"
@@ -23,10 +24,12 @@ type AuthServeMux struct {
 	http.ServeMux
 	AuthApi api.Auth
 
-	statLatency     metrics.Histogram
-	statRequests    metrics.Counter
-	statAuthSuccess metrics.Counter
-	statAuthFailure metrics.Counter
+	statLatency      metrics.Histogram
+	statRequests     metrics.Counter
+	statAuthSuccess  metrics.Counter
+	statAuthFailure  metrics.Counter
+	statIDGenFailure metrics.Counter
+	statIDGenSuccess metrics.Counter
 }
 
 type AuthEvent string
@@ -67,17 +70,22 @@ const (
 
 func NewAuthServeMux(authApi api.Auth, statsRegistry metrics.Registry) *AuthServeMux {
 	mux := &AuthServeMux{
-		ServeMux:        *http.NewServeMux(),
-		AuthApi:         authApi,
-		statLatency:     metrics.NewBiasedHistogram(),
-		statRequests:    metrics.NewCounter(),
-		statAuthSuccess: metrics.NewCounter(),
-		statAuthFailure: metrics.NewCounter(),
+		ServeMux:         *http.NewServeMux(),
+		AuthApi:          authApi,
+		statLatency:      metrics.NewBiasedHistogram(),
+		statRequests:     metrics.NewCounter(),
+		statAuthSuccess:  metrics.NewCounter(),
+		statAuthFailure:  metrics.NewCounter(),
+		statIDGenFailure: metrics.NewCounter(),
+		statIDGenSuccess: metrics.NewCounter(),
 	}
 	statsRegistry.Add("requests/latency", mux.statLatency)
 	statsRegistry.Add("requests/total", mux.statRequests)
 	statsRegistry.Add("requests/auth/success", mux.statAuthSuccess)
 	statsRegistry.Add("requests/auth/failure", mux.statAuthFailure)
+	statsRegistry.Add("requests/idgen/failure", mux.statIDGenFailure)
+	statsRegistry.Add("requests/idgen/success", mux.statIDGenSuccess)
+
 	return mux
 }
 
@@ -109,6 +117,7 @@ func (mux *AuthServeMux) checkAuth(r *http.Request) (bool, int64, string, error)
 
 type RequestLog struct {
 	RemoteAddr   string
+	RequestID    int64
 	Method       string
 	URL          string
 	StatusCode   int
@@ -122,6 +131,14 @@ func (mux *AuthServeMux) ServeHTTP(w http.ResponseWriter, r *http.Request) {
 
 	ctx := GetContext(r)
 	ctx.RequestStartTime = time.Now()
+	var err error
+	ctx.RequestID, err = idgen.NewID()
+	if err != nil {
+		golog.Errorf("Unable to generate a requestId: %s", err)
+		mux.statIDGenFailure.Inc(1)
+	} else {
+		mux.statIDGenSuccess.Inc(1)
+	}
 
 	customResponseWriter := &CustomResponseWriter{w, 0, false}
 
@@ -151,6 +168,7 @@ func (mux *AuthServeMux) ServeHTTP(w http.ResponseWriter, r *http.Request) {
 
 			golog.Log("webrequest", golog.INFO, &RequestLog{
 				RemoteAddr:   remoteAddr,
+				RequestID:    GetContext(r).RequestID,
 				Method:       r.Method,
 				URL:          r.URL.String(),
 				StatusCode:   customResponseWriter.StatusCode,
