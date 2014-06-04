@@ -88,3 +88,11 @@ func (h *ListHandler) ServeHTTP(w http.ResponseWriter, r *http.Request) {
 	}
 	apiservice.WriteJSONToHTTPResponseWriter(w, http.StatusOK, &res)
 }
+
+func (*Handler) NonAuthenticated() bool {
+	return true
+}
+
+func (*ListHandler) NonAuthenticated() bool {
+	return true
+}
