@@ -7,11 +7,11 @@ import (
 	"strconv"
 )
 
-type Handler struct {
+type handler struct {
 	dataAPI api.DataAPI
 }
 
-type ListHandler struct {
+type listHandler struct {
 	dataAPI api.DataAPI
 }
 
@@ -31,19 +31,19 @@ type ListResponse struct {
 	Sections []*Section `json:"sections"`
 }
 
-func NewHandler(dataAPI api.DataAPI) *Handler {
-	return &Handler{
+func NewHandler(dataAPI api.DataAPI) *handler {
+	return &handler{
 		dataAPI: dataAPI,
 	}
 }
 
-func NewListHandler(dataAPI api.DataAPI) *ListHandler {
-	return &ListHandler{
+func NewListHandler(dataAPI api.DataAPI) *listHandler {
+	return &listHandler{
 		dataAPI: dataAPI,
 	}
 }
 
-func (h *Handler) ServeHTTP(w http.ResponseWriter, r *http.Request) {
+func (h *handler) ServeHTTP(w http.ResponseWriter, r *http.Request) {
 	id, err := strconv.ParseInt(r.FormValue("resource_id"), 10, 64)
 	if err != nil {
 		apiservice.WriteDeveloperError(w, http.StatusBadRequest, "resource_id required and must be an integer")
@@ -60,7 +60,7 @@ func (h *Handler) ServeHTTP(w http.ResponseWriter, r *http.Request) {
 	apiservice.WriteJSONToHTTPResponseWriter(w, http.StatusOK, guide.Layout)
 }
 
-func (h *ListHandler) ServeHTTP(w http.ResponseWriter, r *http.Request) {
+func (h *listHandler) ServeHTTP(w http.ResponseWriter, r *http.Request) {
 	sections, guides, err := h.dataAPI.ListResourceGuides()
 	if err != nil {
 		apiservice.WriteDeveloperError(w, http.StatusInternalServerError, "Failed to fetch resources: "+err.Error())
@@ -89,10 +89,10 @@ func (h *ListHandler) ServeHTTP(w http.ResponseWriter, r *http.Request) {
 	apiservice.WriteJSONToHTTPResponseWriter(w, http.StatusOK, &res)
 }
 
-func (*Handler) NonAuthenticated() bool {
+func (*handler) NonAuthenticated() bool {
 	return true
 }
 
-func (*ListHandler) NonAuthenticated() bool {
+func (*listHandler) NonAuthenticated() bool {
 	return true
 }
