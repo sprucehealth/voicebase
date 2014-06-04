@@ -348,7 +348,7 @@ func TestFavoriteTreatmentPlan_BreakingMappingOnModify(t *testing.T) {
 	// should continue to be in the UNCOMMITTED state
 	params := url.Values{}
 	params.Set("treatment_plan_id", strconv.FormatInt(responseData.TreatmentPlan.Id.Int64(), 10))
-	params.Set("abbreviated", "true")
+	params.Set("abridged", "true")
 	responseData = &doctor_treatment_plan.DoctorTreatmentPlanResponse{}
 	if resp, err := AuthGet(ts.URL+"?"+params.Encode(), doctor.AccountId.Int64()); err != nil {
 		t.Fatalf("Unable to make call to get treatment plan for patient visit")

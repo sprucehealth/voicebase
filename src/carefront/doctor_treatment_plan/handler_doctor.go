@@ -24,7 +24,7 @@ type DoctorTreatmentPlanRequestData struct {
 	DoctorFavoriteTreatmentPlanId int64 `schema:"dr_favorite_treatment_plan_id" json:"dr_favorite_treatment_plan_id,string"`
 	TreatmentPlanId               int64 `schema:"treatment_plan_id" json:"treatment_plan_id,string"`
 	PatientVisitId                int64 `schema:"patient_visit_id" json:"patient_visit_id,string"`
-	Abbreviated                   bool  `schema:"abbreviated" json:"abbreviated"`
+	Abridged                      bool  `schema:"abridged" json:"abridged"`
 }
 
 type DoctorTreatmentPlanResponse struct {
@@ -70,7 +70,7 @@ func (d *doctorTreatmentPlanHandler) getTreatmentPlan(w http.ResponseWriter, r *
 	}
 
 	// only return the small amount of information retreived about the treatment plan
-	if requestData.Abbreviated {
+	if requestData.Abridged {
 		apiservice.WriteJSONToHTTPResponseWriter(w, http.StatusOK, &DoctorTreatmentPlanResponse{TreatmentPlan: drTreatmentPlan})
 		return
 	}
