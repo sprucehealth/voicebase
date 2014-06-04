@@ -217,7 +217,7 @@ func DecodeRequestData(requestData interface{}, r *http.Request) error {
 	}
 
 	switch r.Header.Get("Content-Type") {
-	case "application/json":
+	case "application/json", "text/json":
 		if err := json.NewDecoder(r.Body).Decode(requestData); err != nil {
 			return fmt.Errorf("Unable to parse input parameters: %s", err)
 		}
