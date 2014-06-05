@@ -518,6 +518,9 @@ func (c *Handler) startPhotoSubmissionForPatient(questionId, patientVisitId int6
 				// get the url of the image so as to add the photo to the photos table
 				url := fmt.Sprintf("s3://%s/%s/%s", c.awsRegion, fmt.Sprintf(demoPhotosBucketFormat, c.environment), photoKey)
 
+				// instead of uploading the image via the handler, short-circuiting the photo upload
+				// since we are using a small pool of images. This not only saves space but also makes the
+				// creation of a demo visit a lot quicker
 				if photoId, err := c.dataApi.AddPhoto(patient.PersonId, url, "image/jpeg"); err != nil {
 					golog.Errorf("Unable to add photo to photo table: %s ", err)
 					signal <- failure
