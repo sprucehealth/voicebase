@@ -5,6 +5,7 @@ import (
 	"carefront/api"
 	"carefront/apiservice"
 	"carefront/common"
+	"carefront/info_intake"
 	"carefront/libs/golog"
 	patientApiService "carefront/patient"
 	"carefront/patient_visit"
@@ -232,9 +233,30 @@ func (c *Handler) createNewDemoPatient(patient *common.Patient, doctorId int64, 
 
 		answersToQuestions := populatePatientIntake(questionIds, answerIds)
 
-		numRequestsWaitingFor := 5
+		// get the photo slots for each of the photo questions
+		questionIdToPhotoSlots := make(map[questionTag][]*info_intake.PhotoSlot)
+		questionIdToPhotoSlots[qFacePhotoSection], err = c.dataApi.GetPhotoSlots(questionIds[qFacePhotoSection], api.EN_LANGUAGE_ID)
+		if err != nil {
+			golog.Errorf("Unable to get photo slots for q_face_photo_section: %s", err)
+			topLevelSignal <- failure
+			return
+		}
+		questionIdToPhotoSlots[qChestPhotoSection], err = c.dataApi.GetPhotoSlots(questionIds[qChestPhotoSection], api.EN_LANGUAGE_ID)
+		if err != nil {
+			golog.Errorf("Unable to get photo slots for q_chest_photo_section: %s", err)
+			topLevelSignal <- failure
+			return
+		}
+		questionIdToPhotoSlots[qOtherLocationPhotoSection], err = c.dataApi.GetPhotoSlots(questionIds[qOtherLocationPhotoSection], api.EN_LANGUAGE_ID)
+		if err != nil {
+			golog.Errorf("Unable to get photo slots for q_other_location_photo_section: %s", err)
+			topLevelSignal <- failure
+			return
+		}
+
+		numRequestsWaitingFor := 4
 		if toMessageDoctor {
-			numRequestsWaitingFor = 6
+			numRequestsWaitingFor = 5
 		}
 
 		// use a buffered channel so that the goroutines don't block
@@ -243,17 +265,62 @@ func (c *Handler) createNewDemoPatient(patient *common.Patient, doctorId int64, 
 
 		startPatientIntakeSubmission(answersToQuestions, patientVisitResponse.PatientVisitId, signupResponse.Token, signal)
 
-		c.startPhotoSubmissionForPatient(questionIds[qFacePhotoIntake],
-			answerIds[aFaceFrontPhotoIntake], patientVisitResponse.PatientVisitId, frontPhoto, signupResponse.Token, signal)
+		c.startPhotoSubmissionForPatient(questionIds[qFacePhotoSection], patientVisitResponse.PatientVisitId, []*common.PhotoIntakeSection{
+			&common.PhotoIntakeSection{
+				QuestionId: questionIds[qFacePhotoSection],
+				Name:       "Face",
+				Photos: []*common.PhotoIntakeSlot{
+					&common.PhotoIntakeSlot{
+						PhotoUrl: frontPhoto,
+						SlotId:   questionIdToPhotoSlots[qFacePhotoSection][0].Id,
+						Name:     "Front",
+					},
+					&common.PhotoIntakeSlot{
+						PhotoUrl: profileLeftPhoto,
+						SlotId:   questionIdToPhotoSlots[qFacePhotoSection][1].Id,
+						Name:     "Profile Left",
+					},
+					&common.PhotoIntakeSlot{
+						PhotoUrl: profileRightPhoto,
+						SlotId:   questionIdToPhotoSlots[qFacePhotoSection][2].Id,
+						Name:     "Profile Right",
+					},
+				},
+			},
+		}, signupResponse.Token, signal)
 
-		c.startPhotoSubmissionForPatient(questionIds[qFaceRightPhotoIntake],
-			answerIds[aProfileRightPhotoIntake], patientVisitResponse.PatientVisitId, profileRightPhoto, signupResponse.Token, signal)
+		c.startPhotoSubmissionForPatient(questionIds[qChestPhotoSection], patientVisitResponse.PatientVisitId, []*common.PhotoIntakeSection{
+			&common.PhotoIntakeSection{
+				QuestionId: questionIds[qChestPhotoSection],
+				Name:       "Chest",
+				Photos: []*common.PhotoIntakeSlot{
+					&common.PhotoIntakeSlot{
+						PhotoUrl: chestPhoto,
+						SlotId:   questionIdToPhotoSlots[qChestPhotoSection][0].Id,
+						Name:     "Chest",
+					},
+				},
+			},
+		}, signupResponse.Token, signal)
 
-		c.startPhotoSubmissionForPatient(questionIds[qFaceLeftPhotoIntake],
-			answerIds[aProfileLeftPhotoIntake], patientVisitResponse.PatientVisitId, profileLeftPhoto, signupResponse.Token, signal)
-
-		c.startPhotoSubmissionForPatient(questionIds[qChestPhotoIntake],
-			answerIds[aChestPhotoIntake], patientVisitResponse.PatientVisitId, chestPhoto, signupResponse.Token, signal)
+		c.startPhotoSubmissionForPatient(questionIds[qOtherLocationPhotoSection], patientVisitResponse.PatientVisitId, []*common.PhotoIntakeSection{
+			&common.PhotoIntakeSection{
+				QuestionId: questionIds[qOtherLocationPhotoSection],
+				Name:       "Arm",
+				Photos: []*common.PhotoIntakeSlot{
+					&common.PhotoIntakeSlot{
+						PhotoUrl: frontPhoto,
+						SlotId:   questionIdToPhotoSlots[qOtherLocationPhotoSection][0].Id,
+						Name:     "Right Arm",
+					},
+					&common.PhotoIntakeSlot{
+						PhotoUrl: profileLeftPhoto,
+						SlotId:   questionIdToPhotoSlots[qOtherLocationPhotoSection][0].Id,
+						Name:     "Left Arm",
+					},
+				},
+			},
+		}, signupResponse.Token, signal)
 
 		if toMessageDoctor {
 			c.startSendingMessageToDoctor(signupResponse.Token, message, signal)
