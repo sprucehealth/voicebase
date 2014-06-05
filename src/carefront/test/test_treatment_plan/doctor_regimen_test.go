@@ -517,7 +517,7 @@ func TestRegimenForPatientVisit_TrackingSourceId(t *testing.T) {
 
 }
 
-func setupTestForRegimenCreation(t *testing.T, testData test_integration.TestData) (*patient_visit.PatientVisitResponse, *common.Doctor) {
+func setupTestForRegimenCreation(t *testing.T, testData test_integration.TestData) (*patient_visit.PatientVisitResponse, *common.DoctorTreatmentPlan, *common.Doctor) {
 
 	// get the current primary doctor
 	doctorId := test_integration.GetDoctorIdOfCurrentPrimaryDoctor(testData, t)

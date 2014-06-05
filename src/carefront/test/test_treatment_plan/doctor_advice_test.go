@@ -451,7 +451,7 @@ func TestAdvicePointsForPatientVisit_ErrorDifferentTextForLinkedItems(t *testing
 
 }
 
-func setupAdviceCreationTest(t *testing.T, testData test_integration.TestData) (*patient_visit.PatientVisitResponse, *common.Doctor) {
+func setupAdviceCreationTest(t *testing.T, testData test_integration.TestData) (*patient_visit.PatientVisitResponse, *common.DoctorTreatmentPlan, *common.Doctor) {
 
 	// get the current primary doctor
 	doctorId := test_integration.GetDoctorIdOfCurrentPrimaryDoctor(testData, t)
