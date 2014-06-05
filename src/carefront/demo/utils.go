@@ -516,14 +516,9 @@ func (c *Handler) startPhotoSubmissionForPatient(questionId, patientVisitId int6
 				photoKey := photo.PhotoUrl
 
 				// get the url of the image so as to add the photo to the photos table
-				imageUrl, err := c.cloudStorageApi.GetUnsignedUrlForObjectAtLocation(fmt.Sprintf(demoPhotosBucketFormat, c.environment), photoKey, c.awsRegion)
-				if err != nil {
-					golog.Errorf("Error while getting unsigned url for object at location: %s", err)
-					signal <- failure
-					return
-				}
+				url := fmt.Sprintf("s3://%s/%s/%s", c.awsRegion, demoPhotosBucketFormat, photoKey)
 
-				if photoId, err := c.dataApi.AddPhoto(patient.PersonId, imageUrl, "image/jpeg"); err != nil {
+				if photoId, err := c.dataApi.AddPhoto(patient.PersonId, url, "image/jpeg"); err != nil {
 					golog.Errorf("Unable to add photo to photo table: %s ", err)
 					signal <- failure
 					return
