@@ -52,7 +52,7 @@ func (d *doctorLayoutHandler) ServeHTTP(w http.ResponseWriter, r *http.Request) 
 	var doctorIntakeLayout interface{}
 	switch d.purpose {
 	case api.DIAGNOSE_PURPOSE:
-		diagnosisIntakeLayout := info_intake.DiagnosisIntake{}
+		diagnosisIntakeLayout := &info_intake.DiagnosisIntake{}
 		doctorIntakeLayout = diagnosisIntakeLayout
 		if err = json.Unmarshal(data, diagnosisIntakeLayout); err != nil {
 			apiservice.WriteDeveloperError(w, http.StatusBadRequest, err.Error())
@@ -65,7 +65,7 @@ func (d *doctorLayoutHandler) ServeHTTP(w http.ResponseWriter, r *http.Request) 
 			return
 		}
 
-		if err := api.FillDiagnosisIntake(&diagnosisIntakeLayout, d.dataApi, api.EN_LANGUAGE_ID); err != nil {
+		if err := api.FillDiagnosisIntake(diagnosisIntakeLayout, d.dataApi, api.EN_LANGUAGE_ID); err != nil {
 			apiservice.WriteDeveloperError(w, http.StatusInternalServerError, "unable to fill database info into doctor layout: "+err.Error())
 			return
 		}
@@ -74,12 +74,12 @@ func (d *doctorLayoutHandler) ServeHTTP(w http.ResponseWriter, r *http.Request) 
 		doctorReviewLayout := info_intake.NewDoctorVisitReviewLayout()
 		doctorIntakeLayout = doctorReviewLayout
 
-		if err = json.Unmarshal(data, &doctorIntakeLayout); err != nil {
+		if err = json.Unmarshal(data, doctorIntakeLayout); err != nil {
 			apiservice.WriteDeveloperError(w, http.StatusBadRequest, err.Error())
 			return
 		}
 
-		healthConditionTag = doctorReviewLayout["health_condition"].(string)
+		healthConditionTag = doctorReviewLayout.Get("health_condition").(string)
 		if healthConditionTag == "" {
 			apiservice.WriteDeveloperError(w, http.StatusBadRequest, "health condition not specified or invalid in layout")
 			return
