@@ -14,6 +14,7 @@ import (
 	"carefront/notify"
 	"carefront/patient_visit"
 	"database/sql"
+	"encoding/json"
 	"errors"
 	"fmt"
 	"io"
@@ -261,7 +262,7 @@ func SetupIntegrationTest(t *testing.T) TestData {
 	}
 
 	dispatch.Default = dispatch.New()
-	notificationManager := notify.NewManager(testData.DataApi, nil, nil, "", "", "", "", "", nil, metrics.NewRegistry())
+	notificationManager := notify.NewManager(testData.DataApi, nil, nil, nil, "", "", nil, metrics.NewRegistry())
 
 	homelog.InitListeners(testData.DataApi, notificationManager)
 	doctor_treatment_plan.InitListeners(testData.DataApi)
@@ -322,4 +323,17 @@ func GetPhotoIntakeSectionFromAnswer(a common.Answer, t *testing.T) *common.Phot
 		t.Fatalf("Expected type PhotoIntakeSection instead got %T", a)
 	}
 	return answer
+}
+
+func JSONPOSTRequest(t *testing.T, path string, v interface{}) *http.Request {
+	body := &bytes.Buffer{}
+	if err := json.NewEncoder(body).Encode(v); err != nil {
+		t.Fatal(err)
+	}
+	req, err := http.NewRequest("POST", "/", body)
+	if err != nil {
+		t.Fatal(err)
+	}
+	req.Header.Set("Content-Type", "application/json")
+	return req
 }

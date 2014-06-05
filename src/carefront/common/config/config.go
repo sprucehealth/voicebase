@@ -67,9 +67,6 @@ type BaseConfig struct {
 	ZookeeperHosts          string `long:"zk_hosts" description:"Zookeeper host list (e.g. 127.0.0.1:2181,192.168.1.1:2181)"`
 	ZookeeperServicesPrefix string `long:"zk_svc_prefix" description:"Zookeeper svc registry prefix" default:"/services"`
 	Stats                   *Stats `group:"Stats" toml:"stats"`
-	SMTPAddr                string `long:"smtp_host" description:"SMTP host:port"`
-	SMTPUsername            string `long:"smtp_username" description:"Username for SMTP server"`
-	SMTPPassword            string `long:"smtp_password" description:"Password for SMTP server"`
 	AlertEmail              string `long:"alert_email" description:"Email address to which to send panics"`
 
 	Version bool `long:"version" description:"Show version and exit" toml:"-"`
@@ -351,30 +348,30 @@ func ParseArgs(config interface{}, args []string) ([]string, error) {
 		os.Exit(1)
 	}
 
-	if baseConfig.Syslog {
-		if out, err := golog.NewSyslogOutput(baseConfig.AppName); err != nil {
+	return extraArgs, nil
+}
+
+func (c *BaseConfig) SetupLogging() {
+	log.SetFlags(log.Lshortfile)
+	if c.Syslog {
+		if out, err := golog.NewSyslogOutput(c.AppName); err != nil {
 			log.Fatal(err)
 		} else {
-			if baseConfig.SMTPAddr != "" && baseConfig.AlertEmail != "" {
-				golog.SetOutput(panicFilter(baseConfig, out))
+			if c.AlertEmail != "" {
+				golog.SetOutput(panicFilter(c, out))
 			} else {
 				golog.SetOutput(out)
 			}
 		}
-		log.SetFlags(log.Lshortfile)
 	} else {
-		log.SetFlags(log.Lshortfile)
-		if baseConfig.SMTPAddr != "" && baseConfig.AlertEmail != "" {
-			golog.SetOutput(panicFilter(baseConfig, golog.DefaultOutput))
+		if c.AlertEmail != "" {
+			golog.SetOutput(panicFilter(c, golog.DefaultOutput))
 		}
 	}
 	log.SetOutput(golog.Writer)
-
-	return extraArgs, nil
 }
 
 func panicFilter(conf *BaseConfig, out golog.Output) golog.Output {
-
 	return golog.OutputFunc(func(logType string, l golog.Level, msg []byte) error {
 		if l == golog.CRIT {
 			go func() {

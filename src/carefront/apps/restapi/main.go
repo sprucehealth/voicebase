@@ -11,6 +11,7 @@ import (
 	"carefront/demo"
 	"carefront/doctor_queue"
 	"carefront/doctor_treatment_plan"
+	"carefront/email"
 	"carefront/homelog"
 	"carefront/layout"
 	"carefront/libs/aws"
@@ -29,14 +30,15 @@ import (
 	"carefront/reslib"
 	"carefront/support"
 	"carefront/treatment_plan"
+	"carefront/www/router"
 	"database/sql"
 	"log"
 	"net/http"
 	"strconv"
 	"time"
 
+	"github.com/gorilla/mux"
 	"github.com/samuel/go-metrics/metrics"
-	"github.com/subosito/twilio"
 )
 
 const (
@@ -95,11 +97,6 @@ func main() {
 	metricsRegistry := metrics.NewRegistry()
 	conf.StartReporters(metricsRegistry)
 
-	awsAuth, err := conf.AWSAuth()
-	if err != nil {
-		log.Fatalf("Failed to get AWS auth: %+v", err)
-	}
-
 	if conf.InfoAddr != "" {
 		http.Handle("/metrics", metrics.RegistryHandler(metricsRegistry))
 		go func() {
@@ -107,29 +104,10 @@ func main() {
 		}()
 	}
 
-	mapsService := maps.NewGoogleMapsService(metricsRegistry.Scope("google_maps_api"))
-	doseSpotService := erx.NewDoseSpotService(conf.DoseSpot.ClinicId, conf.DoseSpot.UserId, conf.DoseSpot.ClinicKey, metricsRegistry.Scope("dosespot_api"))
-
-	smartyStreetsService := &address.SmartyStreetsService{
-		AuthId:    conf.SmartyStreets.AuthId,
-		AuthToken: conf.SmartyStreets.AuthToken,
-	}
-
-	var erxStatusQueue *common.SQSQueue
-	if conf.ERxQueue != "" {
-		erxStatusQueue, err = common.NewQueue(awsAuth, aws.Regions[conf.AWSRegion], conf.ERxQueue)
-		if err != nil {
-			log.Fatal("Unable to get erx queue for sending prescriptions to: " + err.Error())
-		}
-	} else if conf.ERxRouting {
-		log.Fatal("ERxQueue not configured but ERxRouting is enabled")
-	}
-
 	dataApi, err := api.NewDataService(db)
 	if err != nil {
 		log.Fatalf("Unable to initialize data service layer: %s", err)
 	}
-
 	authAPI := &api.Auth{
 		DB:             db,
 		ExpireDuration: time.Duration(conf.AuthTokenExpiration) * time.Second,
@@ -137,20 +115,73 @@ func main() {
 		Hasher:         api.NewBcryptHasher(0),
 	}
 
+	restAPIMux := buildRESTAPI(&conf, dataApi, authAPI, metricsRegistry)
+	webMux := buildWWW(&conf, dataApi, authAPI, metricsRegistry)
+
+	router := mux.NewRouter()
+	router.Host(conf.APISubdomain + ".{domain:.+}").Handler(restAPIMux)
+	router.Host(conf.WebSubdomain + ".{domain:.+}").Handler(webMux)
+
+	conf.SetupLogging()
+
+	serve(&conf, router)
+}
+
+func buildWWW(conf *Config, dataApi api.DataAPI, authAPI api.AuthAPI, metricsRegistry metrics.Registry) http.Handler {
+	twilioCli, err := conf.Twilio.Client()
+	if err != nil {
+		if conf.Debug {
+			log.Println(err.Error())
+		} else {
+			log.Fatal(err.Error())
+		}
+	}
+
+	return router.New(dataApi, authAPI, twilioCli, conf.Twilio.FromNumber, email.NewService(conf.Email, metricsRegistry.Scope("email")), "support@sprucehealth.com", metricsRegistry.Scope("www"))
+}
+
+func buildRESTAPI(conf *Config, dataApi api.DataAPI, authAPI api.AuthAPI, metricsRegistry metrics.Registry) http.Handler {
+	twilioCli, err := conf.Twilio.Client()
+	if err != nil {
+		if conf.Debug {
+			log.Println(err.Error())
+		} else {
+			log.Fatal(err.Error())
+		}
+	}
+
+	awsAuth, err := conf.AWSAuth()
+	if err != nil {
+		log.Fatalf("Failed to get AWS auth: %+v", err)
+	}
+
+	emailService := email.NewService(conf.Email, metricsRegistry.Scope("email"))
+
+	var erxStatusQueue *common.SQSQueue
+	if conf.ERxQueue != "" {
+		var err error
+		erxStatusQueue, err = common.NewQueue(awsAuth, aws.Regions[conf.AWSRegion], conf.ERxQueue)
+		if err != nil {
+			log.Fatal("Unable to get erx queue for sending prescriptions to: " + err.Error())
+		}
+	} else if conf.ERxRouting {
+		log.Fatal("ERxQueue not configured but ERxRouting is enabled")
+	}
 	snsClient := &sns.SNS{
 		Region: aws.USEast,
 		Client: &aws.Client{
 			Auth: awsAuth,
 		},
 	}
-
-	var twilioCli *twilio.Client
-	if conf.Twilio != nil && conf.Twilio.AccountSid != "" && conf.Twilio.AuthToken != "" {
-		twilioCli = twilio.NewClient(conf.Twilio.AccountSid, conf.Twilio.AuthToken, nil)
+	smartyStreetsService := &address.SmartyStreetsService{
+		AuthId:    conf.SmartyStreets.AuthId,
+		AuthToken: conf.SmartyStreets.AuthToken,
 	}
+	mapsService := maps.NewGoogleMapsService(metricsRegistry.Scope("google_maps_api"))
+	doseSpotService := erx.NewDoseSpotService(conf.DoseSpot.ClinicId, conf.DoseSpot.UserId, conf.DoseSpot.ClinicKey, metricsRegistry.Scope("dosespot_api"))
 
-	notificationManager := notify.NewManager(dataApi, snsClient, twilioCli, conf.Twilio.FromNumber, conf.AlertEmail,
-		conf.SMTPAddr, conf.SMTPUsername, conf.SMTPPassword, conf.NotifiyConfigs, metricsRegistry.Scope("notify"))
+	notificationManager := notify.NewManager(dataApi, snsClient, twilioCli, emailService,
+		conf.Twilio.FromNumber, conf.AlertEmail, conf.NotifiyConfigs, metricsRegistry.Scope("notify"))
 
 	homelog.InitListeners(dataApi, notificationManager)
 	doctor_queue.InitListeners(dataApi, notificationManager)
@@ -337,5 +368,5 @@ func main() {
 
 	apiservice.IsDev = (conf.Environment == "dev")
 
-	Serve(&conf, mux)
+	return mux
 }

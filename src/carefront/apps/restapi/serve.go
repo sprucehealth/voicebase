@@ -11,7 +11,7 @@ import (
 	"github.com/SpruceHealth/go-proxy-protocol/proxyproto"
 )
 
-func Serve(conf *Config, hand http.Handler) {
+func serve(conf *Config, hand http.Handler) {
 	s := &http.Server{
 		Addr:           conf.ListenAddr,
 		Handler:        hand,

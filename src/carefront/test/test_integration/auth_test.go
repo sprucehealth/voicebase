@@ -1,9 +1,14 @@
 package test_integration
 
-import "testing"
+import (
+	"carefront/email"
+	"carefront/passreset"
+	"net/http/httptest"
+	"strings"
+	"testing"
+)
 
 func TestAuth(t *testing.T) {
-
 	testData := SetupIntegrationTest(t)
 	defer TearDownIntegrationTest(t, testData)
 
@@ -87,4 +92,39 @@ func TestAuth(t *testing.T) {
 	} else if res.IsValid {
 		t.Fatalf("Token returned by Login still valid after Logout")
 	}
+}
+
+func TestLostPassword(t *testing.T) {
+	testData := SetupIntegrationTest(t)
+	defer TearDownIntegrationTest(t, testData)
+
+	em := &email.TestService{}
+
+	h := passreset.NewForgotPasswordHandler(testData.DataApi, testData.AuthApi, em, "support@sprucehealth.com")
+
+	req := JSONPOSTRequest(t, "/", &passreset.ForgotPasswordRequest{Email: "does-not-exist@nowhere.com"})
+	res := httptest.NewRecorder()
+	h.ServeHTTP(res, req)
+	if !strings.Contains(res.Body.String(), "No account with") {
+		t.Fatalf("Expected 'No account' error. Got '%s'", res.Body.String())
+	}
+
+	validEmail := "exists@somewhere.com"
+	_, err := testData.AuthApi.SignUp(validEmail, "xxx", "DOCTOR")
+	if err != nil {
+		t.Fatal(err)
+	}
+
+	req = JSONPOSTRequest(t, "/", &passreset.ForgotPasswordRequest{Email: validEmail})
+	res = httptest.NewRecorder()
+	h.ServeHTTP(res, req)
+	if body := strings.TrimSpace(res.Body.String()); body != `{"result":"success"}` {
+		t.Fatalf(`Expected '{"result":"success"}' got '%s'`, body)
+	}
+
+	if len(em.Email) != 1 {
+		t.Fatalf("Expected 1 sent email. Got %d", len(em.Email))
+	}
+
+	t.Log(em.Email[0].BodyText)
 }
