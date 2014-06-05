@@ -290,8 +290,8 @@ func main() {
 	mux.Handle("/v1/doctor/patient", patient_file.NewDoctorPatientHandler(dataApi, doseSpotService, smartyStreetsService))
 	mux.Handle("/v1/doctor/patient/visits", patient_file.NewPatientVisitsHandler(dataApi))
 	mux.Handle("/v1/doctor/patient/pharmacy", doctorUpdatePatientPharmacyHandler)
-	mux.Handle("/v1/doctor/patient/treatment_plans", doctor_treatment_plan.NewDoctorTreatmentPlanHandler(dataApi))
-	mux.Handle("/v1/doctor/patient/treatment_plans/list", doctor_treatment_plan.NewListHandler(dataApi))
+	mux.Handle("/v1/doctor/treatment_plans", doctor_treatment_plan.NewDoctorTreatmentPlanHandler(dataApi))
+	mux.Handle("/v1/doctor/treatment_plans/list", doctor_treatment_plan.NewListHandler(dataApi))
 	mux.Handle("/v1/doctor/pharmacy", doctorPharmacySearchHandler)
 
 	mux.Handle("/v1/doctor/visit/review", patient_file.NewDoctorPatientVisitReviewHandler(dataApi, pharmacy.GooglePlacesPharmacySearchService(0), cloudStorageApi, photoAnswerCloudStorageApi))
