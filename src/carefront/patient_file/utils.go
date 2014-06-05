@@ -232,7 +232,7 @@ func populatePatientPhotos(answeredPhotoSections []common.Answer, question *info
 		for i, photoIntakeSlot := range pIntakeSection.Photos {
 			item.Photos[i] = info_intake.PhotoData{
 				Title:    photoIntakeSlot.Name,
-				PhotoUrl: apiservice.CreatePhotoUrl(photoIntakeSlot.PhotoId, photoIntakeSlot.Id, common.ClaimerTypePhotoIntakeSlot, r.Host),
+				PhotoUrl: apiservice.CreatePhotoUrl(photoIntakeSlot.PhotoId, pIntakeSection.Id, common.ClaimerTypePhotoIntakeSection, r.Host),
 			}
 		}
 		items = append(items, item)

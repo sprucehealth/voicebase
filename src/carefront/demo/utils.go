@@ -8,12 +8,10 @@ import (
 	"carefront/libs/golog"
 	"carefront/libs/pharmacy"
 	"carefront/messages"
+	"carefront/patient_visit"
 	"encoding/json"
 	"fmt"
-	"io"
-	"mime/multipart"
 	"net/http"
-	"strconv"
 )
 
 type questionTag int
@@ -32,7 +30,6 @@ const (
 	qTreatmentIrritateSkin
 	qLengthTreatment
 	qAnythingElseAcne
-	qAcneLocation
 	qPregnancyPlanning
 	qCurrentMedications
 	qCurrentMedicationsEntry
@@ -42,10 +39,9 @@ const (
 	qPrevSkinConditionDiagnosis
 	qListPrevSkinConditionDiagnosis
 	qOtherConditionsAcne
-	qFacePhotoIntake
-	qFaceLeftPhotoIntake
-	qFaceRightPhotoIntake
-	qChestPhotoIntake
+	qFacePhotoSection
+	qChestPhotoSection
+	qOtherLocationPhotoSection
 	qPrescriptionPreference
 	qAcnePreviousOTCList
 	qUsingOTC
@@ -69,7 +65,6 @@ var (
 		"q_treatment_irritate_skin":            qTreatmentIrritateSkin,
 		"q_length_treatment":                   qLengthTreatment,
 		"q_anything_else_acne":                 qAnythingElseAcne,
-		"q_acne_location":                      qAcneLocation,
 		"q_pregnancy_planning":                 qPregnancyPlanning,
 		"q_current_medications":                qCurrentMedications,
 		"q_current_medications_entry":          qCurrentMedicationsEntry,
@@ -79,10 +74,9 @@ var (
 		"q_prev_skin_condition_diagnosis":      qPrevSkinConditionDiagnosis,
 		"q_list_prev_skin_condition_diagnosis": qListPrevSkinConditionDiagnosis,
 		"q_other_conditions_acne":              qOtherConditionsAcne,
-		"q_face_photo_intake":                  qFacePhotoIntake,
-		"q_chest_photo_intake":                 qChestPhotoIntake,
-		"q_face_left_photo_intake":             qFaceLeftPhotoIntake,
-		"q_face_right_photo_intake":            qFaceRightPhotoIntake,
+		"q_face_photo_section":                 qFacePhotoSection,
+		"q_chest_photo_section":                qChestPhotoSection,
+		"q_other_location_photo_section":       qOtherLocationPhotoSection,
 		"q_prescription_preference":            qPrescriptionPreference,
 		"q_acne_prev_otc_list":                 qAcnePreviousOTCList,
 		"q_using_otc":                          qUsingOTC,
@@ -108,9 +102,6 @@ const (
 	aSomewhatEffectiveTreatment
 	aIrritateSkinYes
 	aLengthTreatmentLessThanMonth
-	aAcneLocationChest
-	aAcneLocationNeck
-	aAcneLocationFace
 	aCurrentlyPregnant
 	aCurrentMedicationsYes
 	aTwoToFiveMonthsLength
@@ -119,10 +110,6 @@ const (
 	aListPrevSkinConditionDiagnosisAcne
 	aListPrevSkinConditionDiagnosisPsoriasis
 	aNoneOfTheAboveOtherConditions
-	aFaceFrontPhotoIntake
-	aProfileRightPhotoIntake
-	aProfileLeftPhotoIntake
-	aChestPhotoIntake
 	aGenericRxOnly
 	aPickedOrSqueezed
 	aCreatedScars
@@ -147,9 +134,6 @@ var (
 		"a_effective_treatment_somewhat":              aSomewhatEffectiveTreatment,
 		"a_irritate_skin_yes":                         aIrritateSkinYes,
 		"a_length_treatment_less_one":                 aLengthTreatmentLessThanMonth,
-		"a_chest_acne_location":                       aAcneLocationChest,
-		"a_neck_acne_location":                        aAcneLocationNeck,
-		"a_face_acne_location":                        aAcneLocationFace,
 		"a_pregnant":                                  aCurrentlyPregnant,
 		"a_current_medications_yes":                   aCurrentMedicationsYes,
 		"a_length_current_medication_two_five_months": aTwoToFiveMonthsLength,
@@ -158,10 +142,6 @@ var (
 		"a_acne_skin_diagnosis":                       aListPrevSkinConditionDiagnosisAcne,
 		"a_psoriasis_skin_diagnosis":                  aListPrevSkinConditionDiagnosisPsoriasis,
 		"a_other_condition_acne_none":                 aNoneOfTheAboveOtherConditions,
-		"a_face_front_phota_intake":                   aFaceFrontPhotoIntake,
-		"a_face_right_photo_intake":                   aProfileRightPhotoIntake,
-		"a_face_left_photo_intake":                    aProfileLeftPhotoIntake,
-		"a_chest_phota_intake":                        aChestPhotoIntake,
 		"a_generic_only":                              aGenericRxOnly,
 		"a_picked_or_squeezed":                        aPickedOrSqueezed,
 		"a_created_scars":                             aCreatedScars,
@@ -178,12 +158,34 @@ var (
 	}
 )
 
+type photoSlotType int
+
+const (
+	photoSlotFaceFront photoSlotType = iota
+	photoSlotFaceRight
+	photoSlotFaceLeft
+	photoSlotOther
+	photoSlotBack
+	photoSlotChest
+)
+
+var (
+	photoSlotTypes = map[string]photoSlotType{
+		"photo_slot_face_right": photoSlotFaceRight,
+		"photo_slot_face_left":  photoSlotFaceLeft,
+		"photo_slot_face_front": photoSlotFaceFront,
+		"photo_slot_other":      photoSlotOther,
+		"photo_slot_chest":      photoSlotChest,
+		"photo_slot_back":       photoSlotBack,
+	}
+)
+
 const (
 	signupPatientUrl         = "http://127.0.0.1:8080/v1/patient"
 	updatePatientPharmacyUrl = "http://127.0.0.1:8080/v1/patient/pharmacy"
-	patientVisitUrl          = "http://127.0.0.1:8080/v1/visit"
-	answerQuestionsUrl       = "http://127.0.0.1:8080/v1/answer"
-	photoIntakeUrl           = "http://127.0.0.1:8080/v1/answer/photo"
+	patientVisitUrl          = "http://127.0.0.1:8080/v1/patient/visit"
+	answerQuestionsUrl       = "http://127.0.0.1:8080/v1/patient/visit/answer"
+	photoIntakeUrl           = "http://127.0.0.1:8080/v1/patient/visit/photo_answer"
 	conversationUrl          = "http://127.0.0.1:8080/v1/patient/conversation"
 	demoPhotosBucketFormat   = "%s-carefront-demo"
 	frontPhoto               = "profile_front.jpg"
@@ -359,20 +361,6 @@ func populatePatientIntake(questionIds map[questionTag]int64, answerIds map[pote
 			},
 		},
 		&apiservice.AnswerToQuestionItem{
-			QuestionId: questionIds[qAcneLocation],
-			AnswerIntakes: []*apiservice.AnswerItem{
-				&apiservice.AnswerItem{
-					PotentialAnswerId: answerIds[aAcneLocationChest],
-				},
-				&apiservice.AnswerItem{
-					PotentialAnswerId: answerIds[aAcneLocationFace],
-				},
-				&apiservice.AnswerItem{
-					PotentialAnswerId: answerIds[aAcneLocationNeck],
-				},
-			},
-		},
-		&apiservice.AnswerToQuestionItem{
 			QuestionId: questionIds[qCurrentMedications],
 			AnswerIntakes: []*apiservice.AnswerItem{
 				&apiservice.AnswerItem{
@@ -510,47 +498,59 @@ func (c *Handler) startSendingMessageToDoctor(token, message string, signal chan
 	}()
 }
 
-func (c *Handler) startPhotoSubmissionForPatient(questionId, answerId, patientVisitId int64, photoKey, patientAuthToken string, signal chan int) {
+func (c *Handler) startPhotoSubmissionForPatient(questionId, patientVisitId int64, photoSections []*common.PhotoIntakeSection, patientAuthToken string, signal chan int) {
 
 	go func() {
-		// get the image
-		imageData, _, err := c.cloudStorageApi.GetObjectAtLocation(fmt.Sprintf(demoPhotosBucketFormat, c.environment), photoKey, c.awsRegion)
+
+		patient, err := c.dataApi.GetPatientFromPatientVisitId(patientVisitId)
 		if err != nil {
-			golog.Errorf("Error while getting picture at location: %+v", err)
+			golog.Errorf("Unable to get patient id from patient visit id: %s", err)
 			signal <- failure
 			return
 		}
 
-		body := &bytes.Buffer{}
-		writer := multipart.NewWriter(body)
-		// uploading any file as a photo for now
-		part, err := writer.CreateFormFile("photo", photoKey)
+		for _, photoSection := range photoSections {
+			for _, photo := range photoSection.Photos {
+				// get the key of the photo under the assumption that the caller of this method populated
+				// the photo key into the photo url
+				photoKey := photo.PhotoUrl
+
+				// get the url of the image so as to add the photo to the photos table
+				url := fmt.Sprintf("s3://%s/%s/%s", c.awsRegion, fmt.Sprintf(demoPhotosBucketFormat, c.environment), photoKey)
+
+				// instead of uploading the image via the handler, short-circuiting the photo upload
+				// since we are using a small pool of images. This not only saves space but also makes the
+				// creation of a demo visit a lot quicker
+				if photoId, err := c.dataApi.AddPhoto(patient.PersonId, url, "image/jpeg"); err != nil {
+					golog.Errorf("Unable to add photo to photo table: %s ", err)
+					signal <- failure
+					return
+				} else {
+					photo.PhotoId = photoId
+				}
+			}
+		}
+
+		// prepare the request to submit the photo sections
+		requestData := patient_visit.PhotoAnswerIntakeRequestData{
+			PatientVisitId: patientVisitId,
+			PhotoQuestions: []*patient_visit.PhotoAnswerIntakeQuestionItem{
+				&patient_visit.PhotoAnswerIntakeQuestionItem{
+					QuestionId:    questionId,
+					PhotoSections: photoSections,
+				},
+			},
+		}
+
+		jsonData, err := json.Marshal(&requestData)
 		if err != nil {
-			golog.Errorf("Error while trying to create form file for photo submission: %+v", err)
+			golog.Errorf("Unable to marshal json for photo intake: %s", err)
 			signal <- failure
 			return
 		}
 
-		_, err = io.Copy(part, bytes.NewReader(imageData))
-		if err != nil {
-			golog.Errorf("Error while trying to copy image data: %+v", err)
-			signal <- failure
-			return
-		}
-
-		writer.WriteField("question_id", strconv.FormatInt(questionId, 10))
-		writer.WriteField("potential_answer_id", strconv.FormatInt(answerId, 10))
-		writer.WriteField("patient_visit_id", strconv.FormatInt(patientVisitId, 10))
-
-		err = writer.Close()
-		if err != nil {
-			golog.Errorf("Error while trying to create form data for submission: %+v", err)
-			signal <- failure
-			return
-		}
-
-		photoIntakeRequest, err := http.NewRequest("POST", photoIntakeUrl, body)
-		photoIntakeRequest.Header.Set("Content-Type", writer.FormDataContentType())
+		photoIntakeRequest, err := http.NewRequest("POST", photoIntakeUrl, bytes.NewReader(jsonData))
+		photoIntakeRequest.Header.Set("Content-Type", "application/json")
 		photoIntakeRequest.Header.Set("Authorization", "token "+patientAuthToken)
 		resp, err := http.DefaultClient.Do(photoIntakeRequest)
 		if err != nil || resp.StatusCode != http.StatusOK {
