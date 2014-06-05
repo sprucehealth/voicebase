@@ -14,7 +14,7 @@ const (
 
 const (
 	ClaimerTypeConversationMessage = "conversation_message"
-	ClaimerTypePhotoIntakeSlot     = "patient_intake_photo_slot"
+	ClaimerTypePhotoIntakeSection  = "patient_intake_photo_section"
 )
 
 type PhoneInformation struct {
