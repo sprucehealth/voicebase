@@ -74,7 +74,7 @@ func (d *doctorLayoutHandler) ServeHTTP(w http.ResponseWriter, r *http.Request) 
 		doctorReviewLayout := info_intake.NewDoctorVisitReviewLayout()
 		doctorIntakeLayout = doctorReviewLayout
 
-		if err = json.Unmarshal(data, doctorIntakeLayout); err != nil {
+		if err = json.Unmarshal(data, &doctorIntakeLayout); err != nil {
 			apiservice.WriteDeveloperError(w, http.StatusBadRequest, err.Error())
 			return
 		}
