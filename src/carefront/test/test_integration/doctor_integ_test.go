@@ -245,41 +245,7 @@ func TestDoctorDiagnosisOfPatientVisit(t *testing.T) {
 
 	// Now, actually diagnose the patient visit and check the response to ensure that the doctor diagnosis was returned in the response
 	// prepapre a response for the doctor
-	diagnosisQuestionId, severityQuestionId, acneTypeQuestionId := SubmitPatientVisitDiagnosis(patientVisitResponse.PatientVisitId, doctor, testData, t)
-
-	// now, get diagnosis layout again and check to ensure that the doctor successfully diagnosed the patient with the expected answers
-	diagnosisLayout, err := patient_visit.GetDiagnosisLayout(testData.DataApi, patientVisitResponse.PatientVisitId, 0, doctor.DoctorId.Int64())
-	if err != nil {
-		t.Fatal(err.Error())
-	}
-
-	if diagnosisLayout == nil || diagnosisLayout.PatientVisitId != patientVisitResponse.PatientVisitId {
-		t.Fatal("Diagnosis response not as expected after doctor submitted diagnosis")
-	}
-
-	for _, section := range diagnosisLayout.InfoIntakeLayout.Sections {
-		for _, question := range section.Questions {
-
-			for _, response := range GetAnswerIntakesFromAnswers(question.Answers, t) {
-				switch response.QuestionId.Int64() {
-				case diagnosisQuestionId:
-					if response.PotentialAnswerId.Int64() != 102 {
-						t.Fatalf("Doctor response to question id %d expectd to have id %d but has id %d", response.QuestionId.Int64(), 102, response.PotentialAnswerId.Int64())
-					}
-				case severityQuestionId:
-					if response.PotentialAnswerId.Int64() != 107 {
-						t.Fatalf("Doctor response to question id %d expectd to have id %d but has id %d", response.QuestionId.Int64(), 107, response.PotentialAnswerId.Int64())
-					}
-
-				case acneTypeQuestionId:
-					if response.PotentialAnswerId.Int64() != 109 && response.PotentialAnswerId.Int64() != 114 && response.PotentialAnswerId.Int64() != 113 {
-						t.Fatalf("Doctor response to question id %d expectd to have any of ids %s but instead has id %d", response.QuestionId.Int64(), "(109,114,113)", response.PotentialAnswerId.Int64())
-					}
-
-				}
-			}
-		}
-	}
+	SubmitPatientVisitDiagnosis(patientVisitResponse.PatientVisitId, doctor, testData, t)
 
 	// check if the diagnosis summary exists for the patient visit
 	// at this point NO diagnosis summary should exist because the doctor has not picked a treatment plan yet.

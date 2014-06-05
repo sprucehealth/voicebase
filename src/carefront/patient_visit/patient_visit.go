@@ -6,13 +6,12 @@ import (
 	"carefront/common"
 	"carefront/info_intake"
 	"carefront/libs/dispatch"
-	thriftapi "carefront/thrift/api"
 	"net/http"
 )
 
 type patientVisitHandler struct {
 	dataApi api.DataAPI
-	authApi thriftapi.Auth
+	authApi api.AuthAPI
 }
 
 type patientVisitRequestData struct {
@@ -30,7 +29,7 @@ type PatientVisitSubmittedResponse struct {
 	Status         string `json:"status,omitempty"`
 }
 
-func NewPatientVisitHandler(dataApi api.DataAPI, authApi thriftapi.Auth) *patientVisitHandler {
+func NewPatientVisitHandler(dataApi api.DataAPI, authApi api.AuthAPI) *patientVisitHandler {
 	return &patientVisitHandler{
 		dataApi: dataApi,
 		authApi: authApi,
