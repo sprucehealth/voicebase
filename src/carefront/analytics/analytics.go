@@ -136,20 +136,24 @@ func (h *Handler) ServeHTTP(w http.ResponseWriter, r *http.Request) {
 		tf := nowUnix - td
 		tm := time.Unix(int64(math.Floor(tf)), int64(1e9*(tf-math.Floor(tf))))
 		evo := &ClientEvent{
-			Event:            ev.Name,
-			Timestamp:        Time(tm),
-			Error:            ev.Properties.popString("error"),
-			SessionID:        ev.Properties.popString("session_id"),
-			AccountID:        ev.Properties.popInt64("account_id"),
-			PatientID:        ev.Properties.popInt64("patient_id"),
-			VisitID:          ev.Properties.popInt64("visit_id"),
-			ScreenID:         ev.Properties.popString("screen_id"),
-			QuestionID:       ev.Properties.popString("question_id"),
-			TimeSpent:        ev.Properties.popFloat64Ptr("time_spent"),
-			DeviceID:         ch.DeviceID,
-			AppType:          ch.AppType,
-			AppEnv:           ch.AppEnvironment,
-			AppVersion:       ch.AppVersion,
+			Event:      ev.Name,
+			Timestamp:  Time(tm),
+			Error:      ev.Properties.popString("error"),
+			SessionID:  ev.Properties.popString("session_id"),
+			AccountID:  ev.Properties.popInt64("account_id"),
+			PatientID:  ev.Properties.popInt64("patient_id"),
+			VisitID:    ev.Properties.popInt64("visit_id"),
+			ScreenID:   ev.Properties.popString("screen_id"),
+			QuestionID: ev.Properties.popString("question_id"),
+			TimeSpent:  ev.Properties.popFloat64Ptr("time_spent"),
+			DeviceID:   ch.DeviceID,
+			AppType:    ch.AppType,
+			AppEnv:     ch.AppEnvironment,
+			// Use app_version from properties intead of relying on the HTTP headers
+			// because the events could be collected from a different version of
+			// the app then the version that's sending them (incase they get
+			// stored and later sent).
+			AppVersion:       ev.Properties.popString("app_version"),
 			AppBuild:         ch.AppBuild,
 			Platform:         ch.Platform.String(),
 			PlatformVersion:  ch.PlatformVersion,
