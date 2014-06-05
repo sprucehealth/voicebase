@@ -133,21 +133,32 @@
                 ],
                 "question": "q_acne_prev_prescriptions"
               },
-              "question": "q_acne_prev_treatment_list",
-              "questions": [
-                {
-                  "question": "q_using_treatment"
-                },
-                {
-                  "question": "q_effective_treatment"
-                },
-                {
-                  "question": "q_treatment_irritate_skin"
-                },
-                {
-                  "question": "q_length_treatment"
-                }
-              ]
+              "question": "q_acne_prev_prescriptions_select",
+              "subquestions_config": {
+                "screens": [
+                  {
+                    "title": "Tell us about <q_acne_prev_prescriptions_select:answer_text>",
+                    "title_has_tokens": "true",
+                    "questions": [
+                      {
+                        "question": "q_using_treatment"
+                      },
+                      {
+                        "question": "q_effective_treatment"
+                      },
+                      {
+                        "question": "q_usage_greater_than_three_months"
+                      },
+                      {
+                        "question": "q_treatment_irritate_skin"
+                      },
+                      {
+                        "question": "q_anything_else_prescription"
+                      }
+                    ],
+                  }
+                ]
+              }
             }
           ]
         },
@@ -170,21 +181,32 @@
                 ],
                 "question": "q_acne_prev_otc_treatments"
               },
-              "question": "q_acne_prev_otc_list",
-              "questions": [
-                {
-                  "question": "q_using_otc"
-                },
-                {
-                  "question": "q_effective_otc"
-                },
-                {
-                  "question": "q_otc_irritate_skin"
-                },
-                {
-                  "question": "q_length_otc"
-                }
-              ]
+              "question": "q_acne_prev_otc_select",
+              "subquestions_config": {
+                "screens": [
+                  {
+                    "title": "Tell us about <q_acne_prev_otc_select:answer_text>",
+                    "title_has_tokens": true,
+                    "questions": [
+                      {
+                        "question": "q_otc_based_products"
+                      },
+                      {
+                        "question": "q_using_otc"
+                      },
+                      {
+                        "question": "q_effective_otc"
+                      },
+                      {
+                        "question": "q_otc_irritate_skin"
+                      },
+                      {
+                        "question": "q_anything_else_otc"
+                      }
+                    ]
+                  }
+                ]
+              }
             }
           ]
         },

@@ -50,25 +50,32 @@ type PotentialAnswer struct {
 }
 
 type Question struct {
-	QuestionTag        string             `json:"question"`
-	QuestionId         int64              `json:"question_id,string,omitempty"`
-	QuestionTitle      string             `json:"question_title,omitempty"`
-	QuestionType       string             `json:"question_type,omitempty"`
-	FormattedFieldTags []string           `json:"formatted_field_tags,omitempty"`
-	QuestionSubText    string             `json:"question_subtext,omitempty"`
-	QuestionSummary    string             `json:"question_summary,omitempty"`
-	AdditionalFields   map[string]string  `json:"additional_fields,omitempty"`
-	DisplayStyles      []string           `json:"display_styles,omitempty"`
-	ParentQuestionId   int64              `json:"parent_question_id,string,omitempty"`
-	PotentialAnswers   []*PotentialAnswer `json:"potential_answers,omitempty"`
-	Answers            []common.Answer    `json:"answers,omitempty"`
-	Questions          []*Question        `json:"questions,omitempty"`
-	ConditionBlock     *Condition         `json:"condition,omitempty"`
-	Tips               *TipSection        `json:"tips,omitempty"`
-	Required           bool               `json:"required"`
-	ToAlert            bool               `json:"to_alert"`
-	AlertFormattedText string             `json:"alert_text"`
-	PhotoSlots         []*PhotoSlot       `json:"photo_slots,omitempty"`
+	QuestionTag            string              `json:"question"`
+	QuestionId             int64               `json:"question_id,string,omitempty"`
+	QuestionTitle          string              `json:"question_title,omitempty"`
+	QuestionTitleHasTokens *bool               `json:"question_title_has_tokens,omitempty"`
+	QuestionType           string              `json:"question_type,omitempty"`
+	FormattedFieldTags     []string            `json:"formatted_field_tags,omitempty"`
+	QuestionSubText        string              `json:"question_subtext,omitempty"`
+	QuestionSummary        string              `json:"question_summary,omitempty"`
+	AdditionalFields       map[string]string   `json:"additional_fields,omitempty"`
+	DisplayStyles          []string            `json:"display_styles,omitempty"`
+	ParentQuestionId       int64               `json:"parent_question_id,string,omitempty"`
+	PotentialAnswers       []*PotentialAnswer  `json:"potential_answers,omitempty"`
+	Answers                []common.Answer     `json:"answers,omitempty"`
+	Questions              []*Question         `json:"questions,omitempty"`
+	ConditionBlock         *Condition          `json:"condition,omitempty"`
+	Tips                   *TipSection         `json:"tips,omitempty"`
+	Required               bool                `json:"required"`
+	ToAlert                bool                `json:"to_alert"`
+	AlertFormattedText     string              `json:"alert_text"`
+	PhotoSlots             []*PhotoSlot        `json:"photo_slots,omitempty"`
+	SubQuestionsConfig     *SubQuestionsConfig `json:"subquestions_config,omitempty"`
+}
+
+type SubQuestionsConfig struct {
+	Screens   []*Screen   `json:"screens,omitempty"`
+	Questions []*Question `json:"question,omitempty"`
 }
 
 type PhotoSlot struct {
@@ -79,6 +86,8 @@ type PhotoSlot struct {
 }
 
 type Screen struct {
+	Title          string      `json:"title,omitempty"`
+	TitleHasTokens *bool       `json:"title_has_tokens,omitempty"`
 	Description    string      `json:"description,omitempty"`
 	Questions      []*Question `json:"questions"`
 	ScreenType     string      `json:"screen_type,omitempty"`
