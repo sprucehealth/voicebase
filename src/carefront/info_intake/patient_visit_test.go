@@ -152,7 +152,49 @@ func TestPhotoSlotsParsing(t *testing.T) {
 	}
 }
 
-func TestSubQuestionsParsing(t *testing.T) {
+func TestSubQuestionsInQuestionsParsing(t *testing.T) {
+	visit := parseFileToGetHealthCondition(t)
+
+	currentMedicationsEntryTag := "q_current_medications_entry"
+	currentMedicationsEntry := false
+
+	for _, section := range visit.Sections {
+		for _, screen := range section.Screens {
+			for _, question := range screen.Questions {
+
+				if question.QuestionTag == currentMedicationsEntryTag {
+					currentMedicationsEntry = true
+
+					// if question with subquestions found in this round of the loop check the contents
+					if question.SubQuestionsConfig == nil || len(question.SubQuestionsConfig.Questions) == 0 {
+						t.Fatalf("Expected subquestions to exist for question %s but they dont", question.QuestionTag)
+					}
+
+					for _, subQuestion := range question.SubQuestionsConfig.Questions {
+						if subQuestion.QuestionId == 0 {
+							t.Fatal("Id not set for subquestion")
+						}
+
+						if subQuestion.QuestionTag == "" {
+							t.Fatal("Question tag not set for subquestion")
+						}
+
+						if subQuestion.QuestionType == "" {
+							t.Fatal("Question type not set for subquestion")
+						}
+					}
+					break
+				}
+			}
+		}
+	}
+
+	if !currentMedicationsEntry {
+		t.Fatalf("Expected question %s to be found in the layout but it wasnt", currentMedicationsEntryTag)
+	}
+}
+
+func TestSubQuestionsInScreensParsing(t *testing.T) {
 	visit := parseFileToGetHealthCondition(t)
 
 	prevPrescriptionsListsFound := false

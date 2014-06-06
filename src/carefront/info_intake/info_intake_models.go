@@ -74,7 +74,7 @@ type Question struct {
 
 type SubQuestionsConfig struct {
 	Screens   []*Screen   `json:"screens,omitempty"`
-	Questions []*Question `json:"question,omitempty"`
+	Questions []*Question `json:"questions,omitempty"`
 }
 
 type PhotoSlot struct {
