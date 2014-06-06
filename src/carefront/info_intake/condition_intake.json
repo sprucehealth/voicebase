@@ -155,7 +155,7 @@
                       {
                         "question": "q_anything_else_prev_acne_prescription"
                       }
-                    ],
+                    ]
                   }
                 ]
               }
@@ -278,11 +278,13 @@
                 "question": "q_current_medications"
               },
               "question": "q_current_medications_entry",
-              "questions": [
-                {
-                  "question": "q_length_current_medication"
-                }
-              ]
+              "subquestions_config": {
+                "questions": [
+                  {
+                    "question": "q_length_current_medication"
+                  }
+                ]
+              }
             }
           ]
         },

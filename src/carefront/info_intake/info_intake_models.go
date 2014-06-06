@@ -63,7 +63,6 @@ type Question struct {
 	ParentQuestionId       int64               `json:"parent_question_id,string,omitempty"`
 	PotentialAnswers       []*PotentialAnswer  `json:"potential_answers,omitempty"`
 	Answers                []common.Answer     `json:"answers,omitempty"`
-	Questions              []*Question         `json:"questions,omitempty"`
 	ConditionBlock         *Condition          `json:"condition,omitempty"`
 	Tips                   *TipSection         `json:"tips,omitempty"`
 	Required               bool                `json:"required"`
