@@ -53,7 +53,7 @@ type Question struct {
 	QuestionTag            string              `json:"question"`
 	QuestionId             int64               `json:"question_id,string,omitempty"`
 	QuestionTitle          string              `json:"question_title,omitempty"`
-	QuestionTitleHasTokens *bool               `json:"question_title_has_tokens,omitempty"`
+	QuestionTitleHasTokens bool                `json:"question_title_has_tokens,omitempty"`
 	QuestionType           string              `json:"question_type,omitempty"`
 	FormattedFieldTags     []string            `json:"formatted_field_tags,omitempty"`
 	QuestionSubText        string              `json:"question_subtext,omitempty"`

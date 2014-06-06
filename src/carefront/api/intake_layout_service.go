@@ -321,7 +321,7 @@ func (d *DataService) GetQuestionInfoForTags(questionTags []string, languageId i
 	params = append(params, languageId)
 
 	rows, err := d.db.Query(fmt.Sprintf(
-		`select question.question_tag, question.id, l1.ltext, qtype, parent_question_id, l2.ltext, l3.ltext, formatted_field_tags, required, to_alert, l4.ltext from question 
+		`select question.question_tag, question.id, l1.ltext, qtext_has_tokens, qtype, parent_question_id, l2.ltext, l3.ltext, formatted_field_tags, required, to_alert, l4.ltext from question 
 			left outer join localized_text as l1 on l1.app_text_id=qtext_app_text_id
 			left outer join question_type on qtype_id=question_type.id
 			left outer join localized_text as l2 on qtext_short_text_id = l2.app_text_id
@@ -347,12 +347,13 @@ func (d *DataService) getQuestionInfoFromRows(rows *sql.Rows, languageId int64) 
 		var questionTag string
 		var questionTitle, questionType, questionSummary, questionSubText, formattedFieldTagsNull, alertText sql.NullString
 		var nullParentQuestionId sql.NullInt64
-		var requiredBit, toAlertBit sql.NullBool
+		var requiredBit, toAlertBit, titleHasTokens sql.NullBool
 
 		err := rows.Scan(
 			&questionTag,
 			&id,
 			&questionTitle,
+			&titleHasTokens,
 			&questionType,
 			&nullParentQuestionId,
 			&questionSummary,
@@ -368,17 +369,18 @@ func (d *DataService) getQuestionInfoFromRows(rows *sql.Rows, languageId int64) 
 		}
 
 		questionInfo := &info_intake.Question{
-			QuestionId:         id,
-			ParentQuestionId:   nullParentQuestionId.Int64,
-			QuestionTag:        questionTag,
-			QuestionTitle:      questionTitle.String,
-			QuestionType:       questionType.String,
-			QuestionSummary:    questionSummary.String,
-			QuestionSubText:    questionSubText.String,
-			FormattedFieldTags: []string{formattedFieldTagsNull.String},
-			Required:           requiredBit.Bool,
-			ToAlert:            toAlertBit.Bool,
-			AlertFormattedText: alertText.String,
+			QuestionId:             id,
+			ParentQuestionId:       nullParentQuestionId.Int64,
+			QuestionTag:            questionTag,
+			QuestionTitle:          questionTitle.String,
+			QuestionTitleHasTokens: titleHasTokens.Bool,
+			QuestionType:           questionType.String,
+			QuestionSummary:        questionSummary.String,
+			QuestionSubText:        questionSubText.String,
+			FormattedFieldTags:     []string{formattedFieldTagsNull.String},
+			Required:               requiredBit.Bool,
+			ToAlert:                toAlertBit.Bool,
+			AlertFormattedText:     alertText.String,
 		}
 
 		// get any additional fields pertaining to the question from the database

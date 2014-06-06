@@ -141,19 +141,19 @@
                     "title_has_tokens": "true",
                     "questions": [
                       {
-                        "question": "q_using_treatment"
+                        "question": "q_using_prev_acne_prescription"
                       },
                       {
-                        "question": "q_effective_treatment"
+                        "question": "q_effective_prev_acne_prescription"
                       },
                       {
-                        "question": "q_usage_greater_than_three_months"
+                        "question": "q_usage_greater_than_three_months_prev_acne_prescription"
                       },
                       {
-                        "question": "q_treatment_irritate_skin"
+                        "question": "q_irritate_skin_prev_acne_prescription"
                       },
                       {
-                        "question": "q_anything_else_prescription"
+                        "question": "q_anything_else_prev_acne_prescription"
                       }
                     ],
                   }
