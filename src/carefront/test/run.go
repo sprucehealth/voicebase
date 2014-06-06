@@ -26,7 +26,6 @@ func RunTests() {
 	for _, f := range files {
 		if f.IsDir() && strings.HasPrefix(f.Name(), "test_") {
 			testDir := path.Join(testPath, f.Name())
-			successfulTestDirs = append(successfulTestDirs, testDir)
 			args := []string{"go", "test", "-v", "-race", "-test.timeout=50m", testDir}
 			cmd := exec.Command(args[0], args[1:]...)
 			cmd.Stdout = os.Stdout
@@ -34,13 +33,15 @@ func RunTests() {
 			if err := cmd.Run(); err != nil {
 				failedTestDirs = append(failedTestDirs, testDir)
 				errors[testDir] = err
+			} else {
+				successfulTestDirs = append(successfulTestDirs, testDir)
 			}
 		}
 	}
 
 	fmt.Printf("Following test packages successfully ran:\n%s\n", strings.Join(successfulTestDirs, "\n"))
 	if len(failedTestDirs) > 0 {
-		fmt.Println("Following test packages had failed tests:")
+		fmt.Println("\nFollowing test packages had failed tests:")
 		for _, failedTestDir := range failedTestDirs {
 			fmt.Printf("FAIL %s error: %s\n", failedTestDir, errors[failedTestDir])
 		}
