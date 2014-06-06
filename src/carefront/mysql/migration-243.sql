@@ -133,7 +133,7 @@ insert into question (qtype_id, qtext_app_text_id, question_tag, parent_question
 insert into potential_answer (question_id, answer_localized_text_id, answer_summary_text_id, atype_id, potential_answer_tag, ordering, status) values (
 	(select id from question where question_tag='q_using_prev_acne_otc'),
 	(select id from app_text where app_text_tag='txt_yes'),
-	(select id from app_text where app_text_tag='txt_current_using'),
+	(select id from app_text where app_text_tag='txt_yes'),
 	(select id from answer_type where atype='a_type_segmented_control'),
 	'a_using_prev_otc_yes',
 	0,
@@ -142,7 +142,7 @@ insert into potential_answer (question_id, answer_localized_text_id, answer_summ
 insert into potential_answer (question_id, answer_localized_text_id, answer_summary_text_id, atype_id, potential_answer_tag, ordering, status) values (
 	(select id from question where question_tag='q_using_prev_acne_otc'),
 	(select id from app_text where app_text_tag='txt_no'),
-	(select id from app_text where app_text_tag='txt_not_currently_using'),
+	(select id from app_text where app_text_tag='txt_no'),
 	(select id from answer_type where atype='a_type_segmented_control'),
 	'a_using_prev_otc_no',
 	1	,
@@ -160,7 +160,7 @@ insert into question (qtype_id, qtext_app_text_id, question_tag, parent_question
 insert into potential_answer (question_id, answer_localized_text_id, answer_summary_text_id, atype_id, potential_answer_tag, ordering, status) values (
 	(select id from question where question_tag='q_how_effective_prev_acne_otc'),
 	(select id from app_text where app_text_tag='txt_not'),
-	(select id from app_text where app_text_tag='txt_not_effective'),
+	(select id from app_text where app_text_tag='txt_not'),
 	(select id from answer_type where atype='a_type_segmented_control'),
 	'a_how_effective_prev_acne_otc_not',
 	0	,
@@ -169,7 +169,7 @@ insert into potential_answer (question_id, answer_localized_text_id, answer_summ
 insert into potential_answer (question_id, answer_localized_text_id, answer_summary_text_id, atype_id, potential_answer_tag, ordering, status) values (
 	(select id from question where question_tag='q_how_effective_prev_acne_otc'),
 	(select id from app_text where app_text_tag='txt_somewhat'),
-	(select id from app_text where app_text_tag='txt_answer_summary_somewhat_effective'),
+	(select id from app_text where app_text_tag='txt_somewhat'),
 	(select id from answer_type where atype='a_type_segmented_control'),
 	'a_how_effective_prev_acne_otc_somewhat',
 	1	,
@@ -178,7 +178,7 @@ insert into potential_answer (question_id, answer_localized_text_id, answer_summ
 insert into potential_answer (question_id, answer_localized_text_id, answer_summary_text_id, atype_id, potential_answer_tag, ordering, status) values (
 	(select id from question where question_tag='q_how_effective_prev_acne_otc'),
 	(select id from app_text where app_text_tag='txt_very'),
-	(select id from app_text where app_text_tag='txt_answer_summary_very_effective'),
+	(select id from app_text where app_text_tag='txt_very'),
 	(select id from answer_type where atype='a_type_segmented_control'),
 	'a_how_effective_prev_acne_otc_very_effective',
 	2,
@@ -195,7 +195,7 @@ insert into question (qtype_id, qtext_app_text_id, question_tag, parent_question
 insert into potential_answer (question_id, answer_localized_text_id, answer_summary_text_id, atype_id, potential_answer_tag, ordering, status) values (
 	(select id from question where question_tag='q_irritate_skin_prev_acne_otc'),
 	(select id from app_text where app_text_tag='txt_yes'),
-	(select id from app_text where app_text_tag='txt_irritated_skin_summary'),
+	(select id from app_text where app_text_tag='txt_yes'),
 	(select id from answer_type where atype='a_type_segmented_control'),
 	'a_irritate_skin_prev_acne_otc_yes',
 	0,
@@ -205,7 +205,7 @@ insert into potential_answer (question_id, answer_localized_text_id, answer_summ
 insert into potential_answer (question_id, answer_localized_text_id, answer_summary_text_id, atype_id, potential_answer_tag, ordering, status) values (
 	(select id from question where question_tag='q_irritate_skin_prev_acne_otc'),
 	(select id from app_text where app_text_tag='txt_no'),
-	(select id from app_text where app_text_tag='txt_not_irritated_skin_summary'),
+	(select id from app_text where app_text_tag='txt_no'),
 	(select id from answer_type where atype='a_type_segmented_control'),
 	'a_irritate_skin_prev_acne_otc_no',
 	1,
