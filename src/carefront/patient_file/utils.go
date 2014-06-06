@@ -125,6 +125,11 @@ func populateMultipleChoiceAnswers(patientAnswers []common.Answer, question *inf
 		return nil
 	}
 
+	// if we are dealing with a question that has subquestions defined, populate the context appropriately
+	if question.SubQuestionsConfig != nil && (len(question.SubQuestionsConfig.Screens) > 0 || len(question.SubQuestionsConfig.Questions) > 0) {
+		return populateAnswersForQuestionsWithSubanswers(patientAnswers, question, context, dataApi, r)
+	}
+
 	checkedUncheckedItems := make([]info_intake.CheckedUncheckedData, len(question.PotentialAnswers))
 	for i, potentialAnswer := range question.PotentialAnswers {
 		answerSelected := false
