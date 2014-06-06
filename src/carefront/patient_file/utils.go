@@ -196,27 +196,27 @@ func populateAnswersForQuestionsWithSubanswers(patientAnswers []common.Answer, q
 		}
 	}
 
-	data := make([]info_intake.TitleSubItemsLabelContentData, len(patientAnswers))
+	data := make([]info_intake.TitleSubItemsDescriptionContentData, len(patientAnswers))
 	for i, patientAnswer := range patientAnswers {
 		pAnswer := patientAnswer.(*common.AnswerIntake)
-		items := make([]*info_intake.LabelContentData, 0, len(pAnswer.SubAnswers))
+		items := make([]*info_intake.DescriptionContentData, 0, len(pAnswer.SubAnswers))
 		for _, subAnswer := range pAnswer.SubAnswers {
 			// user-entered answer gets priority, then any summary for an answer, followed by the potential answer
 			// if it exists
 			if subAnswer.AnswerText != "" {
-				items = append(items, &info_intake.LabelContentData{
-					Label:   qMapping[subAnswer.QuestionId.Int64()].QuestionSummary,
-					Content: subAnswer.AnswerText,
+				items = append(items, &info_intake.DescriptionContentData{
+					Description: qMapping[subAnswer.QuestionId.Int64()].QuestionSummary,
+					Content:     subAnswer.AnswerText,
 				})
 			} else if subAnswer.AnswerSummary != "" {
-				items = append(items, &info_intake.LabelContentData{
-					Label:   qMapping[subAnswer.QuestionId.Int64()].QuestionSummary,
-					Content: subAnswer.AnswerSummary,
+				items = append(items, &info_intake.DescriptionContentData{
+					Description: qMapping[subAnswer.QuestionId.Int64()].QuestionSummary,
+					Content:     subAnswer.AnswerSummary,
 				})
 			} else if subAnswer.PotentialAnswer != "" {
-				items = append(items, &info_intake.LabelContentData{
-					Label:   qMapping[subAnswer.QuestionId.Int64()].QuestionSummary,
-					Content: subAnswer.PotentialAnswer,
+				items = append(items, &info_intake.DescriptionContentData{
+					Description: qMapping[subAnswer.QuestionId.Int64()].QuestionSummary,
+					Content:     subAnswer.PotentialAnswer,
 				})
 			}
 		}
@@ -227,7 +227,7 @@ func populateAnswersForQuestionsWithSubanswers(patientAnswers []common.Answer, q
 			title = pAnswer.PotentialAnswer
 		}
 
-		data[i] = info_intake.TitleSubItemsLabelContentData{
+		data[i] = info_intake.TitleSubItemsDescriptionContentData{
 			Title:    title,
 			SubItems: items,
 		}

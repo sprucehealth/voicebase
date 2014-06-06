@@ -436,9 +436,9 @@ func (d *DVisitReviewContentLabelsList) Render(context common.ViewContext) (map[
 			}
 		}
 		d.Values = strItems
-	case []TitleSubItemsLabelContentData:
+	case []TitleSubItemsDescriptionContentData:
 		// read the checked items to populate the content list
-		items := content.([]TitleSubItemsLabelContentData)
+		items := content.([]TitleSubItemsDescriptionContentData)
 		strItems := make([]string, 0)
 		for _, item := range items {
 			strItems = append(strItems, item.Title)
@@ -483,7 +483,7 @@ func (d *DVisitReviewCheckXItemsList) Render(context common.ViewContext) (map[st
 }
 
 type DVisitReviewTitleSubItemsLabelContentItemsList struct {
-	Items          []TitleSubItemsLabelContentData `json:"items"`
+	Items          []TitleSubItemsDescriptionContentData `json:"items"`
 	EmptyStateView common.View
 	ContentConfig  struct {
 		Key string `json:"key"`
@@ -491,7 +491,7 @@ type DVisitReviewTitleSubItemsLabelContentItemsList struct {
 }
 
 func (d *DVisitReviewTitleSubItemsLabelContentItemsList) TypeName() string {
-	return wrapNamespace("title_subitems_key_value_labels_divided_items_list")
+	return wrapNamespace("title_subitems_description_content_labels_divided_items_list")
 }
 
 func (d *DVisitReviewTitleSubItemsLabelContentItemsList) Render(context common.ViewContext) (map[string]interface{}, error) {
@@ -505,9 +505,9 @@ func (d *DVisitReviewTitleSubItemsLabelContentItemsList) Render(context common.V
 		return nil, err
 	}
 
-	items, ok := content.([]TitleSubItemsLabelContentData)
+	items, ok := content.([]TitleSubItemsDescriptionContentData)
 	if !ok {
-		return nil, common.NewViewRenderingError(fmt.Sprintf("Expected content of type []TitleSubItemsLabelContentData for view type %s", d.TypeName()))
+		return nil, common.NewViewRenderingError(fmt.Sprintf("Expected content of type []TitleSubItemsDescriptionContentData for view type %s", d.TypeName()))
 	}
 	d.Items = items
 	renderedView["items"] = items

@@ -94,11 +94,11 @@ func TestRenderingLayoutForDoctorVisitReview_ContentLabels(t *testing.T) {
 
 	// now change it to titlesubtitlesubtiems type with just the title set
 	viewContext.Set("q_skin_description:question_summary", "testing3")
-	viewContext.Set("q_skin_description:answers", []TitleSubItemsLabelContentData{
-		TitleSubItemsLabelContentData{
+	viewContext.Set("q_skin_description:answers", []TitleSubItemsDescriptionContentData{
+		TitleSubItemsDescriptionContentData{
 			Title: "testing3",
 		},
-		TitleSubItemsLabelContentData{
+		TitleSubItemsDescriptionContentData{
 			Title: "testing3",
 		},
 	})
@@ -158,42 +158,42 @@ func populateCompleteViewContext(viewContext common.ViewContext) {
 	})
 
 	viewContext.Set("q_current_medications_entry:question_summary", "testing3")
-	viewContext.Set("q_current_medications_entry:answers", []TitleSubItemsLabelContentData{
-		TitleSubItemsLabelContentData{
+	viewContext.Set("q_current_medications_entry:answers", []TitleSubItemsDescriptionContentData{
+		TitleSubItemsDescriptionContentData{
 			Title: "testing3",
-			SubItems: []*LabelContentData{
-				&LabelContentData{
-					Label:   "testing",
-					Content: "testing",
+			SubItems: []*DescriptionContentData{
+				&DescriptionContentData{
+					Description: "testing",
+					Content:     "testing",
 				},
-				&LabelContentData{
-					Label:   "testing",
-					Content: "testing",
+				&DescriptionContentData{
+					Description: "testing",
+					Content:     "testing",
 				},
-				&LabelContentData{
-					Label:   "testing",
-					Content: "testing",
+				&DescriptionContentData{
+					Description: "testing",
+					Content:     "testing",
 				},
-				&LabelContentData{
-					Label:   "testing",
-					Content: "testing",
+				&DescriptionContentData{
+					Description: "testing",
+					Content:     "testing",
 				},
 			},
 		},
-		TitleSubItemsLabelContentData{
+		TitleSubItemsDescriptionContentData{
 			Title: "testing3",
-			SubItems: []*LabelContentData{
-				&LabelContentData{
-					Label:   "testing",
-					Content: "testing",
+			SubItems: []*DescriptionContentData{
+				&DescriptionContentData{
+					Description: "testing",
+					Content:     "testing",
 				},
-				&LabelContentData{
-					Label:   "testing",
-					Content: "testing",
+				&DescriptionContentData{
+					Description: "testing",
+					Content:     "testing",
 				},
-				&LabelContentData{
-					Label:   "testing",
-					Content: "testing",
+				&DescriptionContentData{
+					Description: "testing",
+					Content:     "testing",
 				},
 			},
 		},
@@ -273,84 +273,84 @@ func populateCompleteViewContext(viewContext common.ViewContext) {
 	})
 
 	viewContext.Set("q_acne_prev_prescriptions_select:question_summary", "testing3")
-	viewContext.Set("q_acne_prev_prescriptions_select:answers", []TitleSubItemsLabelContentData{
-		TitleSubItemsLabelContentData{
+	viewContext.Set("q_acne_prev_prescriptions_select:answers", []TitleSubItemsDescriptionContentData{
+		TitleSubItemsDescriptionContentData{
 			Title: "testing3",
-			SubItems: []*LabelContentData{
-				&LabelContentData{
-					Label:   "testing3",
-					Content: "testing3",
+			SubItems: []*DescriptionContentData{
+				&DescriptionContentData{
+					Description: "testing3",
+					Content:     "testing3",
 				},
-				&LabelContentData{
-					Label:   "testing3",
-					Content: "testing3",
+				&DescriptionContentData{
+					Description: "testing3",
+					Content:     "testing3",
 				},
-				&LabelContentData{
-					Label:   "testing3",
-					Content: "testing3",
+				&DescriptionContentData{
+					Description: "testing3",
+					Content:     "testing3",
 				},
-				&LabelContentData{
-					Label:   "testing3",
-					Content: "testing3",
+				&DescriptionContentData{
+					Description: "testing3",
+					Content:     "testing3",
 				},
 			},
 		},
-		TitleSubItemsLabelContentData{
+		TitleSubItemsDescriptionContentData{
 			Title: "testing3",
-			SubItems: []*LabelContentData{
-				&LabelContentData{
-					Label:   "testing3",
-					Content: "testing3",
+			SubItems: []*DescriptionContentData{
+				&DescriptionContentData{
+					Description: "testing3",
+					Content:     "testing3",
 				},
-				&LabelContentData{
-					Label:   "testing3",
-					Content: "testing3",
+				&DescriptionContentData{
+					Description: "testing3",
+					Content:     "testing3",
 				},
-				&LabelContentData{
-					Label:   "testing3",
-					Content: "testing3",
+				&DescriptionContentData{
+					Description: "testing3",
+					Content:     "testing3",
 				},
-				&LabelContentData{
-					Label:   "testing3",
-					Content: "testing3",
+				&DescriptionContentData{
+					Description: "testing3",
+					Content:     "testing3",
 				},
 			},
 		},
 	})
 
 	viewContext.Set("q_acne_prev_otc_treatment_list:question_summary", "testing3")
-	viewContext.Set("q_acne_prev_otc_treatment_list:answers", []TitleSubItemsLabelContentData{
-		TitleSubItemsLabelContentData{
+	viewContext.Set("q_acne_prev_otc_treatment_list:answers", []TitleSubItemsDescriptionContentData{
+		TitleSubItemsDescriptionContentData{
 			Title: "testing3",
-			SubItems: []*LabelContentData{
-				&LabelContentData{
-					Label:   "testing3",
-					Content: "testing3",
+			SubItems: []*DescriptionContentData{
+				&DescriptionContentData{
+					Description: "testing3",
+					Content:     "testing3",
 				},
-				&LabelContentData{
-					Label:   "testing3",
-					Content: "testing3",
+				&DescriptionContentData{
+					Description: "testing3",
+					Content:     "testing3",
 				},
-				&LabelContentData{
-					Label:   "testing3",
-					Content: "testing3",
+				&DescriptionContentData{
+					Description: "testing3",
+					Content:     "testing3",
 				},
 			},
 		},
-		TitleSubItemsLabelContentData{
+		TitleSubItemsDescriptionContentData{
 			Title: "testing3",
-			SubItems: []*LabelContentData{
-				&LabelContentData{
-					Label:   "testing3",
-					Content: "testing3",
+			SubItems: []*DescriptionContentData{
+				&DescriptionContentData{
+					Description: "testing3",
+					Content:     "testing3",
 				},
-				&LabelContentData{
-					Label:   "testing3",
-					Content: "testing3",
+				&DescriptionContentData{
+					Description: "testing3",
+					Content:     "testing3",
 				},
-				&LabelContentData{
-					Label:   "testing3",
-					Content: "testing3",
+				&DescriptionContentData{
+					Description: "testing3",
+					Content:     "testing3",
 				},
 			},
 		},
