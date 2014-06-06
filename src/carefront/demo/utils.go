@@ -24,11 +24,6 @@ const (
 	qAcneWorsePeriod
 	qSkinDescription
 	qAcnePrevTreatmentTypes
-	qAcnePrevTreatmentList
-	qUsingTreatment
-	qEffectiveTreatment
-	qTreatmentIrritateSkin
-	qLengthTreatment
 	qAnythingElseAcne
 	qPregnancyPlanning
 	qCurrentMedications
@@ -43,46 +38,55 @@ const (
 	qChestPhotoSection
 	qOtherLocationPhotoSection
 	qPrescriptionPreference
-	qAcnePreviousOTCList
-	qUsingOTC
-	qEffectiveOTC
-	qOTCIrritateSkin
-	qLengthOTC
+	qAcnePrevPrescriptionsSelect
+	qAcnePrevPrescriptionsUsing
+	qAcnePrevPrescriptionsEffective
+	qAcnePrevPrescriptionsIrritate
+	qAcnePrevPrescriptionsUsedMoreThanThreeMonths
+	qAcnePrevPrescriptionsAnythingElse
+	qAcnePrevOTCSelect
+	qAcnePrevOTCUsing
+	qAcnePrevOTCEffective
+	qAcnePrevOTCIrritate
+	qAcnePrevOTCTried
+	qAcnePrevOTCAnythingElse
 )
 
 var (
 	questionTags = map[string]questionTag{
-		"q_onset_acne":                         qAcneOnset,
-		"q_acne_worse":                         qAcneWorse,
-		"q_changes_acne_worse":                 qAcneChangesWorse,
-		"q_acne_symptoms":                      qAcneSymptoms,
-		"q_acne_worse_period":                  qAcneWorsePeriod,
-		"q_skin_description":                   qSkinDescription,
-		"q_acne_prev_treatment_types":          qAcnePrevTreatmentTypes,
-		"q_acne_prev_treatment_list":           qAcnePrevTreatmentList,
-		"q_using_treatment":                    qUsingTreatment,
-		"q_effective_treatment":                qEffectiveTreatment,
-		"q_treatment_irritate_skin":            qTreatmentIrritateSkin,
-		"q_length_treatment":                   qLengthTreatment,
-		"q_anything_else_acne":                 qAnythingElseAcne,
-		"q_pregnancy_planning":                 qPregnancyPlanning,
-		"q_current_medications":                qCurrentMedications,
-		"q_current_medications_entry":          qCurrentMedicationsEntry,
-		"q_length_current_medication":          qLengthCurrentMedication,
-		"q_allergic_medications":               qAllergicMedications,
-		"q_allergic_medication_entry":          qAllergicMedicationEntry,
-		"q_prev_skin_condition_diagnosis":      qPrevSkinConditionDiagnosis,
-		"q_list_prev_skin_condition_diagnosis": qListPrevSkinConditionDiagnosis,
-		"q_other_conditions_acne":              qOtherConditionsAcne,
-		"q_face_photo_section":                 qFacePhotoSection,
-		"q_chest_photo_section":                qChestPhotoSection,
-		"q_other_location_photo_section":       qOtherLocationPhotoSection,
-		"q_prescription_preference":            qPrescriptionPreference,
-		"q_acne_prev_otc_list":                 qAcnePreviousOTCList,
-		"q_using_otc":                          qUsingOTC,
-		"q_effective_otc":                      qEffectiveOTC,
-		"q_otc_irritate_skin":                  qOTCIrritateSkin,
-		"q_length_otc":                         qLengthOTC,
+		"q_onset_acne":                                   qAcneOnset,
+		"q_acne_worse":                                   qAcneWorse,
+		"q_changes_acne_worse":                           qAcneChangesWorse,
+		"q_acne_symptoms":                                qAcneSymptoms,
+		"q_acne_worse_period":                            qAcneWorsePeriod,
+		"q_skin_description":                             qSkinDescription,
+		"q_acne_prev_treatment_types":                    qAcnePrevTreatmentTypes,
+		"q_anything_else_acne":                           qAnythingElseAcne,
+		"q_pregnancy_planning":                           qPregnancyPlanning,
+		"q_current_medications":                          qCurrentMedications,
+		"q_current_medications_entry":                    qCurrentMedicationsEntry,
+		"q_length_current_medication":                    qLengthCurrentMedication,
+		"q_allergic_medications":                         qAllergicMedications,
+		"q_allergic_medication_entry":                    qAllergicMedicationEntry,
+		"q_prev_skin_condition_diagnosis":                qPrevSkinConditionDiagnosis,
+		"q_list_prev_skin_condition_diagnosis":           qListPrevSkinConditionDiagnosis,
+		"q_other_conditions_acne":                        qOtherConditionsAcne,
+		"q_face_photo_section":                           qFacePhotoSection,
+		"q_chest_photo_section":                          qChestPhotoSection,
+		"q_other_location_photo_section":                 qOtherLocationPhotoSection,
+		"q_prescription_preference":                      qPrescriptionPreference,
+		"q_acne_prev_prescriptions_select":               qAcnePrevPrescriptionsSelect,
+		"q_using_prev_acne_prescription":                 qAcnePrevPrescriptionsUsing,
+		"q_how_effective_prev_acne_prescription":         qAcnePrevPrescriptionsEffective,
+		"q_use_more_three_months_prev_acne_prescription": qAcnePrevPrescriptionsUsedMoreThanThreeMonths,
+		"q_irritate_skin_prev_acne_prescription":         qAcnePrevPrescriptionsIrritate,
+		"q_anything_else_prev_acne_prescription":         qAcnePrevPrescriptionsAnythingElse,
+		"q_acne_prev_otc_select":                         qAcnePrevOTCSelect,
+		"q_acne_otc_product_tried":                       qAcnePrevOTCTried,
+		"q_using_prev_acne_otc":                          qAcnePrevOTCUsing,
+		"q_how_effective_prev_acne_otc":                  qAcnePrevOTCEffective,
+		"q_irritate_skin_prev_acne_otc":                  qAcnePrevOTCIrritate,
+		"q_anything_else_prev_acne_otc":                  qAcnePrevOTCAnythingElse,
 	}
 )
 
@@ -98,10 +102,6 @@ const (
 	aAcneWorsePeriodNo
 	aSkinDescriptionOily
 	aPrevTreatmentsTypeOTC
-	aUsingTreatmentYes
-	aSomewhatEffectiveTreatment
-	aIrritateSkinYes
-	aLengthTreatmentLessThanMonth
 	aCurrentlyPregnant
 	aCurrentMedicationsYes
 	aTwoToFiveMonthsLength
@@ -113,42 +113,50 @@ const (
 	aGenericRxOnly
 	aPickedOrSqueezed
 	aCreatedScars
-	aLengthOTCSixEleventMonths
-	aOTCIrritateSkinYes
-	aEffectiveOTCSomewhat
-	aUsingOTCNo
+	aBenzoylPeroxide
+	aBenzaClin
+	aAcnePrevPrescriptionUsingYes
+	aAcnePrevPrescriptionEffectiveSomewhat
+	aAcnePrevPrescriptionUseMoreThanThreeMonthsNo
+	aAcnePrevPrescriptionIrritateSkinNo
+	aProactiv
+	aAcnePrevOTCUsingNo
+	aAcnePrevOTCEffectiveNo
+	aAcnePrevOTCIrritateNo
 )
 
 var (
 	answerTags = map[string]potentialAnswerTag{
-		"a_six_twelve_months_ago":                     aSixToTwelveMonths,
-		"a_yes_acne_worse":                            aAcneWorseYes,
-		"a_discoloration":                             aDiscoloration,
-		"a_scarring":                                  aScarring,
-		"a_painful_touch":                             aPainfulToTouch,
-		"a_cysts":                                     aCysts,
-		"a_acne_worse_no":                             aAcneWorsePeriodNo,
-		"a_oil_skin":                                  aSkinDescriptionOily,
-		"a_otc_prev_treatment_type":                   aPrevTreatmentsTypeOTC,
-		"a_using_treatment_yes":                       aUsingTreatmentYes,
-		"a_effective_treatment_somewhat":              aSomewhatEffectiveTreatment,
-		"a_irritate_skin_yes":                         aIrritateSkinYes,
-		"a_length_treatment_less_one":                 aLengthTreatmentLessThanMonth,
-		"a_pregnant":                                  aCurrentlyPregnant,
-		"a_current_medications_yes":                   aCurrentMedicationsYes,
-		"a_length_current_medication_two_five_months": aTwoToFiveMonthsLength,
-		"a_yes_allergic_medications":                  aAllergicMedicationsYes,
-		"a_yes_prev_skin_diagnosis":                   aPrevSkinConditionDiagnosisYes,
-		"a_acne_skin_diagnosis":                       aListPrevSkinConditionDiagnosisAcne,
-		"a_psoriasis_skin_diagnosis":                  aListPrevSkinConditionDiagnosisPsoriasis,
-		"a_other_condition_acne_none":                 aNoneOfTheAboveOtherConditions,
-		"a_generic_only":                              aGenericRxOnly,
-		"a_picked_or_squeezed":                        aPickedOrSqueezed,
-		"a_created_scars":                             aCreatedScars,
-		"a_effective_otc_somewhat":                    aEffectiveOTCSomewhat,
-		"a_otc_irritate_skin_yes":                     aOTCIrritateSkinYes,
-		"a_length_otc_two_six_eleven_months":          aLengthOTCSixEleventMonths,
-		"a_using_otc_no":                              aUsingOTCNo,
+		"a_six_twelve_months_ago":                           aSixToTwelveMonths,
+		"a_yes_acne_worse":                                  aAcneWorseYes,
+		"a_discoloration":                                   aDiscoloration,
+		"a_scarring":                                        aScarring,
+		"a_painful_touch":                                   aPainfulToTouch,
+		"a_cysts":                                           aCysts,
+		"a_acne_worse_no":                                   aAcneWorsePeriodNo,
+		"a_oil_skin":                                        aSkinDescriptionOily,
+		"a_otc_prev_treatment_type":                         aPrevTreatmentsTypeOTC,
+		"a_pregnant":                                        aCurrentlyPregnant,
+		"a_current_medications_yes":                         aCurrentMedicationsYes,
+		"a_length_current_medication_two_five_months":       aTwoToFiveMonthsLength,
+		"a_yes_allergic_medications":                        aAllergicMedicationsYes,
+		"a_yes_prev_skin_diagnosis":                         aPrevSkinConditionDiagnosisYes,
+		"a_acne_skin_diagnosis":                             aListPrevSkinConditionDiagnosisAcne,
+		"a_psoriasis_skin_diagnosis":                        aListPrevSkinConditionDiagnosisPsoriasis,
+		"a_other_condition_acne_none":                       aNoneOfTheAboveOtherConditions,
+		"a_generic_only":                                    aGenericRxOnly,
+		"a_picked_or_squeezed":                              aPickedOrSqueezed,
+		"a_created_scars":                                   aCreatedScars,
+		"a_benzaclin":                                       aBenzaClin,
+		"a_benzoyl_peroxide":                                aBenzoylPeroxide,
+		"a_using_prev_prescription_yes":                     aAcnePrevPrescriptionUsingYes,
+		"a_how_effective_prev_acne_prescription_somewhat":   aAcnePrevPrescriptionEffectiveSomewhat,
+		"a_use_more_three_months_prev_acne_prescription_no": aAcnePrevPrescriptionUseMoreThanThreeMonthsNo,
+		"a_irritate_skin_prev_acne_prescription_no":         aAcnePrevPrescriptionIrritateSkinNo,
+		"a_proactiv":                                        aProactiv,
+		"a_using_prev_otc_no":                               aAcnePrevOTCUsingNo,
+		"a_how_effective_prev_acne_otc_not":                 aAcnePrevOTCEffectiveNo,
+		"a_irritate_skin_prev_acne_otc_no":                  aAcnePrevOTCIrritateNo,
 	}
 
 	sampleMessages = []string{
@@ -269,40 +277,85 @@ func populatePatientIntake(questionIds map[questionTag]int64, answerIds map[pote
 			},
 		},
 		&apiservice.AnswerToQuestionItem{
-			QuestionId: questionIds[qAcnePreviousOTCList],
+			QuestionId: questionIds[qAcnePrevPrescriptionsSelect],
 			AnswerIntakes: []*apiservice.AnswerItem{
 				&apiservice.AnswerItem{
-					AnswerText: "Proactiv",
+					PotentialAnswerId: answerIds[aBenzoylPeroxide],
 					SubQuestionAnswerIntakes: []*apiservice.SubQuestionAnswerIntake{
 						&apiservice.SubQuestionAnswerIntake{
-							QuestionId: questionIds[qUsingOTC],
+							QuestionId: questionIds[qAcnePrevPrescriptionsUsing],
 							AnswerIntakes: []*apiservice.AnswerItem{
 								&apiservice.AnswerItem{
-									PotentialAnswerId: answerIds[aUsingOTCNo],
+									PotentialAnswerId: answerIds[aAcnePrevPrescriptionUsingYes],
 								},
 							},
 						},
 						&apiservice.SubQuestionAnswerIntake{
-							QuestionId: questionIds[qEffectiveOTC],
+							QuestionId: questionIds[qAcnePrevPrescriptionsEffective],
 							AnswerIntakes: []*apiservice.AnswerItem{
 								&apiservice.AnswerItem{
-									PotentialAnswerId: answerIds[aEffectiveOTCSomewhat],
+									PotentialAnswerId: answerIds[aAcnePrevPrescriptionEffectiveSomewhat],
 								},
 							},
 						},
 						&apiservice.SubQuestionAnswerIntake{
-							QuestionId: questionIds[qOTCIrritateSkin],
+							QuestionId: questionIds[qAcnePrevPrescriptionsUsedMoreThanThreeMonths],
 							AnswerIntakes: []*apiservice.AnswerItem{
 								&apiservice.AnswerItem{
-									PotentialAnswerId: answerIds[aOTCIrritateSkinYes],
+									PotentialAnswerId: answerIds[aAcnePrevPrescriptionUseMoreThanThreeMonthsNo],
 								},
 							},
 						},
 						&apiservice.SubQuestionAnswerIntake{
-							QuestionId: questionIds[qLengthOTC],
+							QuestionId: questionIds[qAcnePrevPrescriptionsIrritate],
 							AnswerIntakes: []*apiservice.AnswerItem{
 								&apiservice.AnswerItem{
-									PotentialAnswerId: answerIds[aLengthOTCSixEleventMonths],
+									PotentialAnswerId: answerIds[aAcnePrevPrescriptionIrritateSkinNo],
+								},
+							},
+						},
+					},
+				},
+				&apiservice.AnswerItem{
+					PotentialAnswerId: answerIds[aBenzaClin],
+					SubQuestionAnswerIntakes: []*apiservice.SubQuestionAnswerIntake{
+						&apiservice.SubQuestionAnswerIntake{
+							QuestionId: questionIds[qAcnePrevPrescriptionsUsing],
+							AnswerIntakes: []*apiservice.AnswerItem{
+								&apiservice.AnswerItem{
+									PotentialAnswerId: answerIds[aAcnePrevPrescriptionUsingYes],
+								},
+							},
+						},
+						&apiservice.SubQuestionAnswerIntake{
+							QuestionId: questionIds[qAcnePrevPrescriptionsEffective],
+							AnswerIntakes: []*apiservice.AnswerItem{
+								&apiservice.AnswerItem{
+									PotentialAnswerId: answerIds[aAcnePrevPrescriptionEffectiveSomewhat],
+								},
+							},
+						},
+						&apiservice.SubQuestionAnswerIntake{
+							QuestionId: questionIds[qAcnePrevPrescriptionsUsedMoreThanThreeMonths],
+							AnswerIntakes: []*apiservice.AnswerItem{
+								&apiservice.AnswerItem{
+									PotentialAnswerId: answerIds[aAcnePrevPrescriptionUseMoreThanThreeMonthsNo],
+								},
+							},
+						},
+						&apiservice.SubQuestionAnswerIntake{
+							QuestionId: questionIds[qAcnePrevPrescriptionsIrritate],
+							AnswerIntakes: []*apiservice.AnswerItem{
+								&apiservice.AnswerItem{
+									PotentialAnswerId: answerIds[aAcnePrevPrescriptionIrritateSkinNo],
+								},
+							},
+						},
+						&apiservice.SubQuestionAnswerIntake{
+							QuestionId: questionIds[qAcnePrevPrescriptionsAnythingElse],
+							AnswerIntakes: []*apiservice.AnswerItem{
+								&apiservice.AnswerItem{
+									AnswerText: "My skin has started to clear up a bit after using benzaclin together with benzoyl peroxide.",
 								},
 							},
 						},
@@ -311,40 +364,40 @@ func populatePatientIntake(questionIds map[questionTag]int64, answerIds map[pote
 			},
 		},
 		&apiservice.AnswerToQuestionItem{
-			QuestionId: questionIds[qAcnePrevTreatmentList],
+			QuestionId: questionIds[qAcnePrevOTCSelect],
 			AnswerIntakes: []*apiservice.AnswerItem{
 				&apiservice.AnswerItem{
-					AnswerText: "Benzoyl Peroxide 10% Wash",
+					PotentialAnswerId: answerIds[aProactiv],
 					SubQuestionAnswerIntakes: []*apiservice.SubQuestionAnswerIntake{
 						&apiservice.SubQuestionAnswerIntake{
-							QuestionId: questionIds[qUsingTreatment],
+							QuestionId: questionIds[qAcnePrevOTCTried],
 							AnswerIntakes: []*apiservice.AnswerItem{
 								&apiservice.AnswerItem{
-									PotentialAnswerId: answerIds[aUsingTreatmentYes],
+									AnswerText: "30 Day Kit",
 								},
 							},
 						},
 						&apiservice.SubQuestionAnswerIntake{
-							QuestionId: questionIds[qEffectiveTreatment],
+							QuestionId: questionIds[qAcnePrevOTCUsing],
 							AnswerIntakes: []*apiservice.AnswerItem{
 								&apiservice.AnswerItem{
-									PotentialAnswerId: answerIds[aSomewhatEffectiveTreatment],
+									PotentialAnswerId: answerIds[aAcnePrevOTCUsingNo],
 								},
 							},
 						},
 						&apiservice.SubQuestionAnswerIntake{
-							QuestionId: questionIds[qTreatmentIrritateSkin],
+							QuestionId: questionIds[qAcnePrevOTCEffective],
 							AnswerIntakes: []*apiservice.AnswerItem{
 								&apiservice.AnswerItem{
-									PotentialAnswerId: answerIds[aIrritateSkinYes],
+									PotentialAnswerId: answerIds[aAcnePrevOTCEffectiveNo],
 								},
 							},
 						},
 						&apiservice.SubQuestionAnswerIntake{
-							QuestionId: questionIds[qLengthTreatment],
+							QuestionId: questionIds[qAcnePrevOTCIrritate],
 							AnswerIntakes: []*apiservice.AnswerItem{
 								&apiservice.AnswerItem{
-									PotentialAnswerId: answerIds[aLengthTreatmentLessThanMonth],
+									PotentialAnswerId: answerIds[aAcnePrevOTCIrritateNo],
 								},
 							},
 						},

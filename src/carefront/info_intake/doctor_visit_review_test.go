@@ -94,11 +94,11 @@ func TestRenderingLayoutForDoctorVisitReview_ContentLabels(t *testing.T) {
 
 	// now change it to titlesubtitlesubtiems type with just the title set
 	viewContext.Set("q_skin_description:question_summary", "testing3")
-	viewContext.Set("q_skin_description:answers", []TitleSubtitleSubItemsData{
-		TitleSubtitleSubItemsData{
+	viewContext.Set("q_skin_description:answers", []TitleSubItemsLabelContentData{
+		TitleSubItemsLabelContentData{
 			Title: "testing3",
 		},
-		TitleSubtitleSubItemsData{
+		TitleSubItemsLabelContentData{
 			Title: "testing3",
 		},
 	})
@@ -158,23 +158,43 @@ func populateCompleteViewContext(viewContext common.ViewContext) {
 	})
 
 	viewContext.Set("q_current_medications_entry:question_summary", "testing3")
-	viewContext.Set("q_current_medications_entry:answers", []TitleSubtitleSubItemsData{
-		TitleSubtitleSubItemsData{
-			Title:    "testing3",
-			Subtitle: "testing3",
-			SubItems: []string{
-				"testing3",
-				"testing3",
-				"testing3",
+	viewContext.Set("q_current_medications_entry:answers", []TitleSubItemsLabelContentData{
+		TitleSubItemsLabelContentData{
+			Title: "testing3",
+			SubItems: []*LabelContentData{
+				&LabelContentData{
+					Label:   "testing",
+					Content: "testing",
+				},
+				&LabelContentData{
+					Label:   "testing",
+					Content: "testing",
+				},
+				&LabelContentData{
+					Label:   "testing",
+					Content: "testing",
+				},
+				&LabelContentData{
+					Label:   "testing",
+					Content: "testing",
+				},
 			},
 		},
-		TitleSubtitleSubItemsData{
-			Title:    "testing3",
-			Subtitle: "testing3",
-			SubItems: []string{
-				"testing3",
-				"testing3",
-				"testing3",
+		TitleSubItemsLabelContentData{
+			Title: "testing3",
+			SubItems: []*LabelContentData{
+				&LabelContentData{
+					Label:   "testing",
+					Content: "testing",
+				},
+				&LabelContentData{
+					Label:   "testing",
+					Content: "testing",
+				},
+				&LabelContentData{
+					Label:   "testing",
+					Content: "testing",
+				},
 			},
 		},
 	})
@@ -252,46 +272,86 @@ func populateCompleteViewContext(viewContext common.ViewContext) {
 		},
 	})
 
-	viewContext.Set("q_acne_prev_treatment_list:question_summary", "testing3")
-	viewContext.Set("q_acne_prev_treatment_list:answers", []TitleSubtitleSubItemsData{
-		TitleSubtitleSubItemsData{
-			Title:    "testing3",
-			Subtitle: "testing3",
-			SubItems: []string{
-				"testing3",
-				"testing3",
-				"testing3",
+	viewContext.Set("q_acne_prev_prescriptions_select:question_summary", "testing3")
+	viewContext.Set("q_acne_prev_prescriptions_select:answers", []TitleSubItemsLabelContentData{
+		TitleSubItemsLabelContentData{
+			Title: "testing3",
+			SubItems: []*LabelContentData{
+				&LabelContentData{
+					Label:   "testing3",
+					Content: "testing3",
+				},
+				&LabelContentData{
+					Label:   "testing3",
+					Content: "testing3",
+				},
+				&LabelContentData{
+					Label:   "testing3",
+					Content: "testing3",
+				},
+				&LabelContentData{
+					Label:   "testing3",
+					Content: "testing3",
+				},
 			},
 		},
-		TitleSubtitleSubItemsData{
-			Title:    "testing3",
-			Subtitle: "testing3",
-			SubItems: []string{
-				"testing3",
-				"testing3",
-				"testing3",
+		TitleSubItemsLabelContentData{
+			Title: "testing3",
+			SubItems: []*LabelContentData{
+				&LabelContentData{
+					Label:   "testing3",
+					Content: "testing3",
+				},
+				&LabelContentData{
+					Label:   "testing3",
+					Content: "testing3",
+				},
+				&LabelContentData{
+					Label:   "testing3",
+					Content: "testing3",
+				},
+				&LabelContentData{
+					Label:   "testing3",
+					Content: "testing3",
+				},
 			},
 		},
 	})
 
 	viewContext.Set("q_acne_prev_otc_treatment_list:question_summary", "testing3")
-	viewContext.Set("q_acne_prev_otc_treatment_list:answers", []TitleSubtitleSubItemsData{
-		TitleSubtitleSubItemsData{
-			Title:    "testing3",
-			Subtitle: "testing3",
-			SubItems: []string{
-				"testing3",
-				"testing3",
-				"testing3",
+	viewContext.Set("q_acne_prev_otc_treatment_list:answers", []TitleSubItemsLabelContentData{
+		TitleSubItemsLabelContentData{
+			Title: "testing3",
+			SubItems: []*LabelContentData{
+				&LabelContentData{
+					Label:   "testing3",
+					Content: "testing3",
+				},
+				&LabelContentData{
+					Label:   "testing3",
+					Content: "testing3",
+				},
+				&LabelContentData{
+					Label:   "testing3",
+					Content: "testing3",
+				},
 			},
 		},
-		TitleSubtitleSubItemsData{
-			Title:    "testing3",
-			Subtitle: "testing3",
-			SubItems: []string{
-				"testing3",
-				"testing3",
-				"testing3",
+		TitleSubItemsLabelContentData{
+			Title: "testing3",
+			SubItems: []*LabelContentData{
+				&LabelContentData{
+					Label:   "testing3",
+					Content: "testing3",
+				},
+				&LabelContentData{
+					Label:   "testing3",
+					Content: "testing3",
+				},
+				&LabelContentData{
+					Label:   "testing3",
+					Content: "testing3",
+				},
 			},
 		},
 	})
