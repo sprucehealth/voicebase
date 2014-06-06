@@ -112,9 +112,9 @@ insert into question_fields (question_field, question_id, app_text_id) values (
 
 
 -- What drug name product have you tried
-set @parent_question_id = (select id from languages_supported where language='en');
+set @parent_question_id = (select id from question where question_tag='q_acne_prev_otc_select');
 insert into app_text (app_text_tag) values ('txt_formatted_name_product_tried');
-insert into localized_text (language_id, app_text_id, ltext) values (@language_id, (select id from app_text where app_text_tag='txt_formatted_name_product_tried'), "What <q_acne_prev_otc_select:answer_text> have you tried?");
+insert into localized_text (language_id, app_text_id, ltext) values (@language_id, (select id from app_text where app_text_tag='txt_formatted_name_product_tried'), "What <answer_text> have you tried?");
 insert into question (qtype_id, qtext_app_text_id, question_tag, parent_question_id, qtext_has_tokens, required) values (
 		(select id from question_type where qtype='q_type_free_text'),
 		(select id from app_text where app_text_tag='txt_formatted_name_product_tried'),
@@ -168,7 +168,7 @@ insert into potential_answer (question_id, answer_localized_text_id, answer_summ
 	);
 insert into potential_answer (question_id, answer_localized_text_id, answer_summary_text_id, atype_id, potential_answer_tag, ordering, status) values (
 	(select id from question where question_tag='q_how_effective_prev_acne_otc'),
-	(select id from app_text where app_text_tag='txt_somewhat_effective'),
+	(select id from app_text where app_text_tag='txt_somewhat'),
 	(select id from app_text where app_text_tag='txt_answer_summary_somewhat_effective'),
 	(select id from answer_type where atype='a_type_segmented_control'),
 	'a_how_effective_prev_acne_otc_somewhat',
@@ -177,7 +177,7 @@ insert into potential_answer (question_id, answer_localized_text_id, answer_summ
 	);
 insert into potential_answer (question_id, answer_localized_text_id, answer_summary_text_id, atype_id, potential_answer_tag, ordering, status) values (
 	(select id from question where question_tag='q_how_effective_prev_acne_otc'),
-	(select id from app_text where app_text_tag='txt_very_effective'),
+	(select id from app_text where app_text_tag='txt_very'),
 	(select id from app_text where app_text_tag='txt_answer_summary_very_effective'),
 	(select id from answer_type where atype='a_type_segmented_control'),
 	'a_how_effective_prev_acne_otc_very_effective',

@@ -137,17 +137,17 @@
               "subquestions_config": {
                 "screens": [
                   {
-                    "title": "Tell us about <q_acne_prev_prescriptions_select:answer_text>",
-                    "title_has_tokens": "true",
+                    "screen_title": "Tell us about <answer_text>",
+                    "screen_title_has_tokens": true,
                     "questions": [
                       {
                         "question": "q_using_prev_acne_prescription"
                       },
                       {
-                        "question": "q_effective_prev_acne_prescription"
+                        "question": "q_how_effective_prev_acne_prescription"
                       },
                       {
-                        "question": "q_usage_greater_than_three_months_prev_acne_prescription"
+                        "question": "q_use_more_three_months_prev_acne_prescription"
                       },
                       {
                         "question": "q_irritate_skin_prev_acne_prescription"
@@ -185,23 +185,23 @@
               "subquestions_config": {
                 "screens": [
                   {
-                    "title": "Tell us about <q_acne_prev_otc_select:answer_text>",
-                    "title_has_tokens": true,
+                    "screen_title": "Tell us about <answer_text>",
+                    "screen_title_has_tokens": true,
                     "questions": [
                       {
-                        "question": "q_otc_based_products"
+                        "question": "q_acne_otc_product_tried"
                       },
                       {
-                        "question": "q_using_otc"
+                        "question": "q_using_prev_acne_otc"
                       },
                       {
-                        "question": "q_effective_otc"
+                        "question": "q_how_effective_prev_acne_otc"
                       },
                       {
-                        "question": "q_otc_irritate_skin"
+                        "question": "q_irritate_skin_prev_acne_otc"
                       },
                       {
-                        "question": "q_anything_else_otc"
+                        "question": "q_anything_else_prev_acne_otc"
                       }
                     ]
                   }

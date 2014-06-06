@@ -154,26 +154,55 @@ func TestPhotoSlotsParsing(t *testing.T) {
 
 func TestSubQuestionsParsing(t *testing.T) {
 	visit := parseFileToGetHealthCondition(t)
+
+	prevPrescriptionsListsFound := false
+	prevPrescriptionsSelectTag := "q_acne_prev_prescriptions_select"
+
+	prevOtcProductsFound := false
+	prevOtcProductsSelectTag := "q_acne_prev_otc_select"
+
 	for _, section := range visit.Sections {
 		for _, screen := range section.Screens {
 			for _, question := range screen.Questions {
-				if question.Questions != nil {
-					for _, subQuestion := range question.Questions {
 
-						if subQuestion.QuestionId == 0 {
-							t.Fatal("Id not set for subquestion")
+				questionWithSubQuestionsExpectedFound := false
+				if question.QuestionTag == prevPrescriptionsSelectTag {
+					prevPrescriptionsListsFound = true
+				} else if question.QuestionTag == prevOtcProductsSelectTag {
+					prevOtcProductsFound = true
+				}
+
+				// if question with subquestions found in this round of the loop check the contents
+				if questionWithSubQuestionsExpectedFound {
+					if question.SubQuestionsConfig == nil || len(question.SubQuestionsConfig.Screens) == 0 {
+						t.Fatalf("Expected subquestions to exist for question %s but they dont", question.QuestionTag)
+					}
+
+					for _, screen := range question.SubQuestionsConfig.Screens {
+						if len(screen.Questions) == 0 {
+							t.Fatal("Expected screen within subquestion to contain questions but it doesnt")
 						}
 
-						if subQuestion.QuestionTag == "" {
-							t.Fatal("Question tag not set for subquestion")
-						}
+						for _, subQuestion := range screen.Questions {
+							if subQuestion.QuestionId == 0 {
+								t.Fatal("Id not set for subquestion")
+							}
 
-						if subQuestion.QuestionType == "" {
-							t.Fatal("Question type not set for subquestion")
+							if subQuestion.QuestionTag == "" {
+								t.Fatal("Question tag not set for subquestion")
+							}
+
+							if subQuestion.QuestionType == "" {
+								t.Fatal("Question type not set for subquestion")
+							}
 						}
 					}
 				}
 			}
 		}
+	}
+
+	if !(prevPrescriptionsListsFound && prevOtcProductsFound) {
+		t.Fatal("Expected both questions with subquestions config to be found but they werent")
 	}
 }

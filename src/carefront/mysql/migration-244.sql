@@ -1,0 +1,2 @@
+update localized_text set ltext = 'Somewhat' where app_text_id = (select id from app_text_tag='txt_somewhat_effective');
+update localized_text set ltext = "Very" where app_text_id = (select id from app_text_tag='txt_very_effective');

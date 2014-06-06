@@ -53,7 +53,7 @@ type Question struct {
 	QuestionTag            string              `json:"question"`
 	QuestionId             int64               `json:"question_id,string,omitempty"`
 	QuestionTitle          string              `json:"question_title,omitempty"`
-	QuestionTitleHasTokens bool                `json:"question_title_has_tokens,omitempty"`
+	QuestionTitleHasTokens bool                `json:"question_title_has_tokens"`
 	QuestionType           string              `json:"question_type,omitempty"`
 	FormattedFieldTags     []string            `json:"formatted_field_tags,omitempty"`
 	QuestionSubText        string              `json:"question_subtext,omitempty"`
@@ -85,8 +85,8 @@ type PhotoSlot struct {
 }
 
 type Screen struct {
-	Title          string      `json:"title,omitempty"`
-	TitleHasTokens *bool       `json:"title_has_tokens,omitempty"`
+	Title          string      `json:"screen_title,omitempty"`
+	TitleHasTokens *bool       `json:"screen_title_has_tokens,omitempty"`
 	Description    string      `json:"description,omitempty"`
 	Questions      []*Question `json:"questions"`
 	ScreenType     string      `json:"screen_type,omitempty"`
