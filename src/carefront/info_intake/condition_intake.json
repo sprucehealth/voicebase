@@ -137,8 +137,8 @@
               "subquestions_config": {
                 "screens": [
                   {
-                    "screen_title": "Tell us about <answer_text>",
-                    "screen_title_has_tokens": true,
+                    "header_title": "Tell us about <answer_text>",
+                    "header_title_has_tokens": true,
                     "questions": [
                       {
                         "question": "q_using_prev_acne_prescription"
@@ -185,8 +185,8 @@
               "subquestions_config": {
                 "screens": [
                   {
-                    "screen_title": "Tell us about <answer_text>",
-                    "screen_title_has_tokens": true,
+                    "header_title": "Tell us about <answer_text>",
+                    "header_title_has_tokens": true,
                     "questions": [
                       {
                         "question": "q_acne_otc_product_tried"

@@ -85,8 +85,8 @@ type PhotoSlot struct {
 }
 
 type Screen struct {
-	Title          string      `json:"screen_title,omitempty"`
-	TitleHasTokens *bool       `json:"screen_title_has_tokens,omitempty"`
+	Title          string      `json:"header_title,omitempty"`
+	TitleHasTokens *bool       `json:"header_title_has_tokens,omitempty"`
 	Description    string      `json:"description,omitempty"`
 	Questions      []*Question `json:"questions"`
 	ScreenType     string      `json:"screen_type,omitempty"`
