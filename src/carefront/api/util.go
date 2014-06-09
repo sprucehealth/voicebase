@@ -75,6 +75,7 @@ func fillQuestion(q *info_intake.Question, dataApi DataAPI, languageId int64) er
 	q.QuestionSubText = questionInfo.QuestionSubText
 	q.Required = questionInfo.Required
 	q.ToAlert = questionInfo.ToAlert
+	q.QuestionTitleHasTokens = questionInfo.QuestionTitleHasTokens
 	q.AlertFormattedText = questionInfo.AlertFormattedText
 	if questionInfo.FormattedFieldTags != nil {
 		q.FormattedFieldTags = strings.Split(questionInfo.FormattedFieldTags[0], ",")

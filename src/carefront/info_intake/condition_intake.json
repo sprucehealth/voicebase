@@ -137,7 +137,7 @@
               "subquestions_config": {
                 "screens": [
                   {
-                    "header_title": "Tell us about <answer_text>",
+                    "header_title": "Tell us about <parent_answer_text>",
                     "header_title_has_tokens": true,
                     "questions": [
                       {
@@ -185,7 +185,7 @@
               "subquestions_config": {
                 "screens": [
                   {
-                    "header_title": "Tell us about <answer_text>",
+                    "header_title": "Tell us about <parent_answer_text>",
                     "header_title_has_tokens": true,
                     "questions": [
                       {
