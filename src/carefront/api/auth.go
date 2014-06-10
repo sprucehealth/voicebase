@@ -249,9 +249,10 @@ func (m *Auth) CreateTempToken(accountId int64, expireSec int, purpose, token st
 func (m *Auth) ValidateTempToken(purpose, token string) (int64, string, error) {
 	row := m.DB.QueryRow(`
 		SELECT expires, account_id, role_type_tag
-		FROM temp_auth_token, account, role_type
-		WHERE account.id = account_id AND role_type.id = account.role_type_id
-		 AND purpose = ? AND token = ?`, purpose, token)
+		FROM temp_auth_token
+		LEFT JOIN account ON account.id = account_id
+		LEFT JOIN role_type ON role_type.id = account.role_type_id
+		WHERE purpose = ? AND token = ?`, purpose, token)
 	var expires time.Time
 	var accountId int64
 	var roleType string
