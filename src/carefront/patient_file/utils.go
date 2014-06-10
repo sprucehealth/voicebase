@@ -125,6 +125,11 @@ func populateMultipleChoiceAnswers(patientAnswers []common.Answer, question *inf
 		return nil
 	}
 
+	// if we are dealing with a question that has subquestions defined, populate the context appropriately
+	if question.SubQuestionsConfig != nil && (len(question.SubQuestionsConfig.Screens) > 0 || len(question.SubQuestionsConfig.Questions) > 0) {
+		return populateAnswersForQuestionsWithSubanswers(patientAnswers, question, context, dataApi, r)
+	}
+
 	checkedUncheckedItems := make([]info_intake.CheckedUncheckedData, len(question.PotentialAnswers))
 	for i, potentialAnswer := range question.PotentialAnswers {
 		answerSelected := false
@@ -177,20 +182,53 @@ func populateAnswersForQuestionsWithSubanswers(patientAnswers []common.Answer, q
 		return nil
 	}
 
-	data := make([]info_intake.TitleSubtitleSubItemsData, len(patientAnswers))
+	// creating a mapping of id to subquestion
+	qMapping := make(map[int64]*info_intake.Question)
+	if question.SubQuestionsConfig != nil {
+		for _, subQuestion := range question.SubQuestionsConfig.Questions {
+			qMapping[subQuestion.QuestionId] = subQuestion
+		}
+
+		for _, screen := range question.SubQuestionsConfig.Screens {
+			for _, subQuestion := range screen.Questions {
+				qMapping[subQuestion.QuestionId] = subQuestion
+			}
+		}
+	}
+
+	data := make([]info_intake.TitleSubItemsDescriptionContentData, len(patientAnswers))
 	for i, patientAnswer := range patientAnswers {
 		pAnswer := patientAnswer.(*common.AnswerIntake)
-		items := make([]string, len(pAnswer.SubAnswers))
-		for j, subAnswer := range pAnswer.SubAnswers {
-			if subAnswer.AnswerSummary != "" {
-				items[j] = subAnswer.AnswerSummary
-			} else {
-				items[j] = subAnswer.PotentialAnswer
+		items := make([]*info_intake.DescriptionContentData, 0, len(pAnswer.SubAnswers))
+		for _, subAnswer := range pAnswer.SubAnswers {
+			// user-entered answer gets priority, then any summary for an answer, followed by the potential answer
+			// if it exists
+			if subAnswer.AnswerText != "" {
+				items = append(items, &info_intake.DescriptionContentData{
+					Description: qMapping[subAnswer.QuestionId.Int64()].QuestionSummary,
+					Content:     subAnswer.AnswerText,
+				})
+			} else if subAnswer.AnswerSummary != "" {
+				items = append(items, &info_intake.DescriptionContentData{
+					Description: qMapping[subAnswer.QuestionId.Int64()].QuestionSummary,
+					Content:     subAnswer.AnswerSummary,
+				})
+			} else if subAnswer.PotentialAnswer != "" {
+				items = append(items, &info_intake.DescriptionContentData{
+					Description: qMapping[subAnswer.QuestionId.Int64()].QuestionSummary,
+					Content:     subAnswer.PotentialAnswer,
+				})
 			}
 		}
 
-		data[i] = info_intake.TitleSubtitleSubItemsData{
-			Title:    pAnswer.AnswerText,
+		// title is either a user-defined entry or the potential answer
+		title := pAnswer.AnswerText
+		if title == "" {
+			title = pAnswer.PotentialAnswer
+		}
+
+		data[i] = info_intake.TitleSubItemsDescriptionContentData{
+			Title:    title,
 			SubItems: items,
 		}
 	}

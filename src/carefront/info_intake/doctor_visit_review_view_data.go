@@ -15,8 +15,12 @@ type CheckedUncheckedData struct {
 	IsChecked bool   `json:"is_checked"`
 }
 
-type TitleSubtitleSubItemsData struct {
-	Title    string   `json:"title"`
-	Subtitle string   `json:"subtitle"`
-	SubItems []string `json:"subitems"`
+type TitleSubItemsDescriptionContentData struct {
+	Title    string                    `json:"title"`
+	SubItems []*DescriptionContentData `json:"subitems"`
+}
+
+type DescriptionContentData struct {
+	Description string `json:"description"`
+	Content     string `json:"content"`
 }

@@ -20,20 +20,34 @@ func main() {
 func RunTests() {
 	testPath := "carefront/test"
 	files, _ := ioutil.ReadDir(path.Join(os.Getenv("GOPATH"), "src", testPath))
-	testDirs := make([]string, 0)
+	successfulTestDirs := make([]string, 0)
+	failedTestDirs := make([]string, 0)
+	errors := make(map[string]error)
 	for _, f := range files {
 		if f.IsDir() && strings.HasPrefix(f.Name(), "test_") {
 			testDir := path.Join(testPath, f.Name())
-			testDirs = append(testDirs, testDir)
 			args := []string{"go", "test", "-v", "-race", "-test.timeout=50m", testDir}
 			cmd := exec.Command(args[0], args[1:]...)
 			cmd.Stdout = os.Stdout
 			cmd.Stderr = os.Stderr
 			if err := cmd.Run(); err != nil {
-				fmt.Println("FAILED to run command successfully: " + err.Error())
-				os.Exit(1)
+				failedTestDirs = append(failedTestDirs, testDir)
+				errors[testDir] = err
+			} else {
+				successfulTestDirs = append(successfulTestDirs, testDir)
 			}
 		}
 	}
-	fmt.Printf("Ran tests under:\n%s", strings.Join(testDirs, "\n"))
+
+	fmt.Printf("Following test packages successfully ran:\n%s\n", strings.Join(successfulTestDirs, "\n"))
+	if len(failedTestDirs) > 0 {
+		fmt.Println("\nFollowing test packages had failed tests:")
+		for _, failedTestDir := range failedTestDirs {
+			fmt.Printf("FAIL %s error: %s\n", failedTestDir, errors[failedTestDir])
+		}
+
+		// ensure to indicate the existence of failed test runs
+		os.Exit(1)
+	}
+
 }

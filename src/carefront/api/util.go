@@ -75,6 +75,7 @@ func fillQuestion(q *info_intake.Question, dataApi DataAPI, languageId int64) er
 	q.QuestionSubText = questionInfo.QuestionSubText
 	q.Required = questionInfo.Required
 	q.ToAlert = questionInfo.ToAlert
+	q.QuestionTitleHasTokens = questionInfo.QuestionTitleHasTokens
 	q.AlertFormattedText = questionInfo.AlertFormattedText
 	if questionInfo.FormattedFieldTags != nil {
 		q.FormattedFieldTags = strings.Split(questionInfo.FormattedFieldTags[0], ",")
@@ -94,14 +95,25 @@ func fillQuestion(q *info_intake.Question, dataApi DataAPI, languageId int64) er
 		}
 	}
 
-	if q.Questions != nil {
-		for _, question := range q.Questions {
-			err := fillQuestion(question, dataApi, languageId)
-			if err != nil {
-				return err
+	// the subquestion config can specify either a list of screens and/or questions
+	if q.SubQuestionsConfig != nil {
+		if q.SubQuestionsConfig.Questions != nil {
+			for _, question := range q.SubQuestionsConfig.Questions {
+				if err := fillQuestion(question, dataApi, languageId); err != nil {
+					return err
+				}
+			}
+		}
+
+		if q.SubQuestionsConfig.Screens != nil {
+			for _, screen := range q.SubQuestionsConfig.Screens {
+				if err := fillScreen(screen, dataApi, languageId); err != nil {
+					return err
+				}
 			}
 		}
 	}
+
 	// go over the potential ansnwer tags to create potential outcome blocks
 	q.PotentialAnswers, err = dataApi.GetAnswerInfo(questionInfo.QuestionId, languageId)
 	if err != nil {

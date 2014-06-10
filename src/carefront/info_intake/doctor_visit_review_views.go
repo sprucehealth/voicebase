@@ -24,11 +24,11 @@ func init() {
 	DVisitReviewViewTypeRegistry.MustRegisterType(&DVisitReviewTitleLabelsList{})
 	DVisitReviewViewTypeRegistry.MustRegisterType(&DVisitReviewContentLabelsList{})
 	DVisitReviewViewTypeRegistry.MustRegisterType(&DVisitReviewCheckXItemsList{})
-	DVisitReviewViewTypeRegistry.MustRegisterType(&DVisitReviewTitleSubtitleSubItemsDividedItemsList{})
 	DVisitReviewViewTypeRegistry.MustRegisterType(&DVisitReviewTitleSubtitleLabels{})
 	DVisitReviewViewTypeRegistry.MustRegisterType(&DVisitReviewEmptyLabelView{})
 	DVisitReviewViewTypeRegistry.MustRegisterType(&DVisitReviewEmptyTitleSubtitleLabelView{})
 	DVisitReviewViewTypeRegistry.MustRegisterType(&DVisitReviewTitlePhotosItemsListView{})
+	DVisitReviewViewTypeRegistry.MustRegisterType(&DVisitReviewTitleSubItemsLabelContentItemsList{})
 }
 
 // View definitions
@@ -37,7 +37,7 @@ type DVisitReviewSectionListView struct {
 	Sections []common.View `json:"sections"`
 }
 
-func (d DVisitReviewSectionListView) TypeName() string {
+func (d *DVisitReviewSectionListView) TypeName() string {
 	return wrapNamespace("sections_list")
 }
 
@@ -65,7 +65,7 @@ type DVisitReviewStandardPhotosSectionView struct {
 	Subsections []common.View `json:"subsections"`
 }
 
-func (d DVisitReviewStandardPhotosSectionView) TypeName() string {
+func (d *DVisitReviewStandardPhotosSectionView) TypeName() string {
 	return wrapNamespace("standard_photo_section")
 }
 
@@ -96,7 +96,7 @@ type DVisitReviewStandardPhotosSubsectionView struct {
 	SubsectionView common.View `json:"view"`
 }
 
-func (d DVisitReviewStandardPhotosSubsectionView) TypeName() string {
+func (d *DVisitReviewStandardPhotosSubsectionView) TypeName() string {
 	return wrapNamespace("standard_photo_subsection")
 }
 
@@ -124,7 +124,7 @@ type DVisitReviewStandardPhotosListView struct {
 	} `json:"content_config"`
 }
 
-func (d DVisitReviewStandardPhotosListView) TypeName() string {
+func (d *DVisitReviewStandardPhotosListView) TypeName() string {
 	return wrapNamespace("standard_photos_list")
 }
 
@@ -155,7 +155,7 @@ type DVisitReviewTitlePhotosItemsListView struct {
 	} `json:"content_config"`
 }
 
-func (d DVisitReviewTitlePhotosItemsListView) TypeName() string {
+func (d *DVisitReviewTitlePhotosItemsListView) TypeName() string {
 	return wrapNamespace("title_photos_items_list")
 }
 
@@ -184,7 +184,7 @@ type DVisitReviewStandardSectionView struct {
 	Subsections []common.View `json:"subsections"`
 }
 
-func (d DVisitReviewStandardSectionView) TypeName() string {
+func (d *DVisitReviewStandardSectionView) TypeName() string {
 	return wrapNamespace("standard_section")
 }
 
@@ -215,7 +215,7 @@ type DVisitReviewStandardSubsectionView struct {
 	} `json:"content_config"`
 }
 
-func (d DVisitReviewStandardSubsectionView) TypeName() string {
+func (d *DVisitReviewStandardSubsectionView) TypeName() string {
 	return wrapNamespace("standard_subsection")
 }
 
@@ -248,7 +248,7 @@ type DVisitReviewStandardOneColumnRowView struct {
 	SingleView common.View `json:"view"`
 }
 
-func (d DVisitReviewStandardOneColumnRowView) TypeName() string {
+func (d *DVisitReviewStandardOneColumnRowView) TypeName() string {
 	return wrapNamespace("standard_one_column_row")
 }
 
@@ -275,7 +275,7 @@ type DVisitReviewStandardTwoColumnRowView struct {
 	} `json:"content_config"`
 }
 
-func (d DVisitReviewStandardTwoColumnRowView) TypeName() string {
+func (d *DVisitReviewStandardTwoColumnRowView) TypeName() string {
 	return wrapNamespace("standard_two_column_row")
 }
 
@@ -313,7 +313,7 @@ type DVisitReviewDividedViewsList struct {
 	DividedViews []common.View `json:"views"`
 }
 
-func (d DVisitReviewDividedViewsList) TypeName() string {
+func (d *DVisitReviewDividedViewsList) TypeName() string {
 	return wrapNamespace("divided_views_list")
 }
 
@@ -342,7 +342,7 @@ type DVisitReviewAlertLabelsList struct {
 	} `json:"content_config"`
 }
 
-func (d DVisitReviewAlertLabelsList) TypeName() string {
+func (d *DVisitReviewAlertLabelsList) TypeName() string {
 	return wrapNamespace("alert_labels_list")
 }
 
@@ -371,7 +371,7 @@ type DVisitReviewTitleLabelsList struct {
 	} `json:"content_config"`
 }
 
-func (d DVisitReviewTitleLabelsList) TypeName() string {
+func (d *DVisitReviewTitleLabelsList) TypeName() string {
 	return wrapNamespace("title_labels_list")
 }
 
@@ -406,7 +406,7 @@ type DVisitReviewContentLabelsList struct {
 	} `json:"content_config"`
 }
 
-func (d DVisitReviewContentLabelsList) TypeName() string {
+func (d *DVisitReviewContentLabelsList) TypeName() string {
 	return wrapNamespace("content_labels_list")
 }
 
@@ -436,9 +436,9 @@ func (d *DVisitReviewContentLabelsList) Render(context common.ViewContext) (map[
 			}
 		}
 		d.Values = strItems
-	case []TitleSubtitleSubItemsData:
+	case []TitleSubItemsDescriptionContentData:
 		// read the checked items to populate the content list
-		items := content.([]TitleSubtitleSubItemsData)
+		items := content.([]TitleSubItemsDescriptionContentData)
 		strItems := make([]string, 0)
 		for _, item := range items {
 			strItems = append(strItems, item.Title)
@@ -460,7 +460,7 @@ type DVisitReviewCheckXItemsList struct {
 	} `json:"content_config"`
 }
 
-func (d DVisitReviewCheckXItemsList) TypeName() string {
+func (d *DVisitReviewCheckXItemsList) TypeName() string {
 	return wrapNamespace("check_x_items_list")
 }
 
@@ -482,19 +482,19 @@ func (d *DVisitReviewCheckXItemsList) Render(context common.ViewContext) (map[st
 	return renderedView, nil
 }
 
-type DVisitReviewTitleSubtitleSubItemsDividedItemsList struct {
-	Items          []TitleSubtitleSubItemsData `json:"items"`
-	EmptyStateView common.View                 `json:"empty_state_view"`
+type DVisitReviewTitleSubItemsLabelContentItemsList struct {
+	Items          []TitleSubItemsDescriptionContentData `json:"items"`
+	EmptyStateView common.View
 	ContentConfig  struct {
 		Key string `json:"key"`
 	} `json:"content_config"`
 }
 
-func (d DVisitReviewTitleSubtitleSubItemsDividedItemsList) TypeName() string {
-	return wrapNamespace("title_subtitle_subitems_divided_items_list")
+func (d *DVisitReviewTitleSubItemsLabelContentItemsList) TypeName() string {
+	return wrapNamespace("title_subitems_description_content_labels_divided_items_list")
 }
 
-func (d *DVisitReviewTitleSubtitleSubItemsDividedItemsList) Render(context common.ViewContext) (map[string]interface{}, error) {
+func (d *DVisitReviewTitleSubItemsLabelContentItemsList) Render(context common.ViewContext) (map[string]interface{}, error) {
 	renderedView := make(map[string]interface{})
 	content, err := getContentFromContextForView(d, d.ContentConfig.Key, context)
 	if err != nil {
@@ -505,9 +505,9 @@ func (d *DVisitReviewTitleSubtitleSubItemsDividedItemsList) Render(context commo
 		return nil, err
 	}
 
-	items, ok := content.([]TitleSubtitleSubItemsData)
+	items, ok := content.([]TitleSubItemsDescriptionContentData)
 	if !ok {
-		return nil, common.NewViewRenderingError(fmt.Sprintf("Expected content of type []TitleSubtitleSubItemsData for view type %s", d.TypeName()))
+		return nil, common.NewViewRenderingError(fmt.Sprintf("Expected content of type []TitleSubItemsDescriptionContentData for view type %s", d.TypeName()))
 	}
 	d.Items = items
 	renderedView["items"] = items
@@ -527,7 +527,7 @@ type DVisitReviewTitleSubtitleLabels struct {
 	} `json:"content_config"`
 }
 
-func (d DVisitReviewTitleSubtitleLabels) TypeName() string {
+func (d *DVisitReviewTitleSubtitleLabels) TypeName() string {
 	return wrapNamespace("title_subtitle_labels")
 }
 
@@ -570,7 +570,7 @@ type DVisitReviewEmptyLabelView struct {
 	} `json:"content_config"`
 }
 
-func (d DVisitReviewEmptyLabelView) TypeName() string {
+func (d *DVisitReviewEmptyLabelView) TypeName() string {
 	return wrapNamespace("empty_label")
 }
 
@@ -595,11 +595,11 @@ type DVisitReviewEmptyTitleSubtitleLabelView struct {
 	} `json:"content_config"`
 }
 
-func (d DVisitReviewEmptyTitleSubtitleLabelView) TypeName() string {
+func (d *DVisitReviewEmptyTitleSubtitleLabelView) TypeName() string {
 	return wrapNamespace("empty_title_subtitle_labels")
 }
 
-func (d DVisitReviewEmptyTitleSubtitleLabelView) Render(context common.ViewContext) (map[string]interface{}, error) {
+func (d *DVisitReviewEmptyTitleSubtitleLabelView) Render(context common.ViewContext) (map[string]interface{}, error) {
 	renderedView := make(map[string]interface{})
 	title, err := getStringFromContext(d, d.ContentConfig.TitleKey, context)
 	if err != nil {
