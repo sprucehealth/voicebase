@@ -3,6 +3,7 @@ package api
 import (
 	"carefront/info_intake"
 	"database/sql"
+	"encoding/json"
 	"fmt"
 	"log"
 )
@@ -369,6 +370,7 @@ func (d *DataService) getQuestionInfoFromRows(rows *sql.Rows, languageId int64) 
 		}
 
 		questionInfo := &info_intake.Question{
+<<<<<<< HEAD
 			QuestionId:             id,
 			ParentQuestionId:       nullParentQuestionId.Int64,
 			QuestionTag:            questionTag,
@@ -381,6 +383,21 @@ func (d *DataService) getQuestionInfoFromRows(rows *sql.Rows, languageId int64) 
 			Required:               requiredBit.Bool,
 			ToAlert:                toAlertBit.Bool,
 			AlertFormattedText:     alertText.String,
+=======
+			QuestionId:         id,
+			ParentQuestionId:   nullParentQuestionId.Int64,
+			QuestionTag:        questionTag,
+			QuestionTitle:      questionTitle.String,
+			QuestionType:       questionType.String,
+			QuestionSummary:    questionSummary.String,
+			QuestionSubText:    questionSubText.String,
+			Required:           requiredBit.Bool,
+			ToAlert:            toAlertBit.Bool,
+			AlertFormattedText: alertText.String,
+>>>>>>> - adding the ability to define custom fields for questions that are not
+		}
+		if formattedFieldTagsNull.Valid && formattedFieldTagsNull.String != "" {
+			questionInfo.FormattedFieldTags = []string{formattedFieldTagsNull.String}
 		}
 
 		// get any additional fields pertaining to the question from the database
@@ -397,13 +414,37 @@ func (d *DataService) getQuestionInfoFromRows(rows *sql.Rows, languageId int64) 
 				return nil, err
 			}
 			if questionInfo.AdditionalFields == nil {
-				questionInfo.AdditionalFields = make(map[string]string)
+				questionInfo.AdditionalFields = make(map[string]interface{})
 			}
 			questionInfo.AdditionalFields[questionField] = fieldText
 		}
 		if rows.Err() != nil {
 			return nil, rows.Err()
 		}
+
+		// get any extra fields defined as json, by ensuring that it can be unmarshaled
+		var jsonBytes []byte
+
+		err = d.db.QueryRow(`select json from extra_question_fields where question_id = ?`, questionInfo.QuestionId).Scan(&jsonBytes)
+		if err != sql.ErrNoRows {
+			if err != nil {
+				return nil, err
+			}
+
+			var extraJSON map[string]interface{}
+			if err := json.Unmarshal(jsonBytes, &extraJSON); err != nil {
+				return nil, err
+			}
+
+			if questionInfo.AdditionalFields == nil {
+				questionInfo.AdditionalFields = make(map[string]interface{})
+			}
+			// combine the extra fields with the other question fields
+			for key, value := range extraJSON {
+				questionInfo.AdditionalFields[key] = value
+			}
+		}
+
 		questionInfos = append(questionInfos, questionInfo)
 	}
 
