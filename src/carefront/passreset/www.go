@@ -112,6 +112,8 @@ func (h *promptHandler) ServeHTTP(w http.ResponseWriter, r *http.Request) {
 			})
 			return
 		}
+	} else if r.Method == "POST" {
+		invalidEmail = true
 	}
 
 	www.TemplateResponse(w, http.StatusOK, PromptTemplate, &PromptTemplateContext{
@@ -154,10 +156,11 @@ func (h *verifyHandler) ServeHTTP(w http.ResponseWriter, r *http.Request) {
 	}
 
 	if r.Method == "POST" {
-		contact := r.FormValue("method")
-		if contact != "" {
-			switch contact {
-			case "sms":
+		action := r.FormValue("action")
+		switch action {
+		case "send":
+			contact := r.FormValue("method")
+			if contact == "sms" {
 				bigCode, err := rand.Int(rand.Reader, big.NewInt(resetCodeMax))
 				if err != nil {
 					www.InternalServerError(w, r, err)
@@ -175,19 +178,16 @@ func (h *verifyHandler) ServeHTTP(w http.ResponseWriter, r *http.Request) {
 					www.InternalServerError(w, r, err)
 					return
 				}
-			case "voice":
-				// TODO
+				www.TemplateResponse(w, http.StatusOK, VerifyTemplate, &VerifyTemplateContext{
+					Token:         token,
+					Email:         emailAddress,
+					LastTwoDigits: lastDigits,
+					EnterCode:     true,
+				})
+				return
 			}
-			www.TemplateResponse(w, http.StatusOK, VerifyTemplate, &VerifyTemplateContext{
-				Token:         token,
-				Email:         emailAddress,
-				LastTwoDigits: lastDigits,
-				EnterCode:     true,
-			})
-			return
-		}
-		code := r.FormValue("code")
-		if code != "" {
+		case "validate":
+			code := r.FormValue("code")
 			codeToken := fmt.Sprintf("%d:%s", accountID, code)
 			_, _, err := h.authAPI.ValidateTempToken(api.LostPasswordCode, codeToken)
 			if err != nil {

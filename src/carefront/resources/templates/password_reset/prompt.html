@@ -4,18 +4,20 @@
 	{{if .Sent}}
 		<p>An email with a link to reset your password has been sent to <strong>{{.Email}}</strong>. Please check your inbox.</p>
 	{{else}}
-		<p>Please enter your email and click the button. We will email you a link which you
-		can use to reset your password.</p>
+		<p>Enter your email address, and we will email you a link which you	can use to reset your password.</p>
+
+		<hr>
 
 		{{if .InvalidEmail}}
 		<p class="error">There is no account with the provided email. Check that it is entered correctly.</p>
 		{{end}}
 
+		<p>Enter your email address:</p>
 		<form action="" method="POST">
-		Enter the email address of your account: <input type="text" name="email" value="{{.Email}}"><br>
-		<button>Send Reset Password Email</button>
+		<input type="text" name="email" value="{{.Email}}" autocapitalize="off"><br>
+		<button>Send Email</button>
 		</form>
 	{{end}}
 </div>
 
-<div id="footer">Need additional help? Contact <a href="mailto:support@sprucehealth.com">Spruce Support</a>.</div>
+<div id="footer">Need additional help? Contact <a href="mailto:support@sprucehealth.com">Spruce&nbsp;Support</a>.</div>

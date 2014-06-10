@@ -29,6 +29,7 @@
 			<p>Enter the verification code you receive:</p>
 
 			<form method="POST" action="">
+			<input type="hidden" name="action" value="validate">
 			<input type="hidden" name="token" value="{{.Token}}">
 			<input type="hidden" name="email" value="{{.Email}}">
 			<input type="text" name="code" value="{{.Code}}"><br>
@@ -46,14 +47,16 @@
 			<p>Select how you'd like to receive your access code:</p>
 
 			<form method="POST" action="">
+			<input type="hidden" name="action" value="send">
 			<input type="hidden" name="token" value="{{.Token}}">
 			<input type="hidden" name="email" value="{{.Email}}">
 			<input type="radio" name="method" value="sms" checked> Text message<br>
 			<input type="radio" name="method" value="voice"> Voice call<br>
-			<button class=>Send Code</button>
+			<button>Send Code</button>
 			</form>
 			{{else}}
 			<form method="POST" action="">
+			<input type="hidden" name="action" value="send">
 			<input type="hidden" name="token" value="{{.Token}}">
 			<input type="hidden" name="email" value="{{.Email}}">
 			<input type="hidden" name="method" value="sms" checked>
@@ -67,5 +70,5 @@
 	{{end}}
 </div>
 
-<div id="footer">Need additional help? Contact <a href="mailto:support@sprucehealth.com">Spruce Support</a>.</div>
+<div id="footer">Need additional help? Contact <a href="mailto:support@sprucehealth.com">Spruce&nbsp;Support</a>.</div>
 {{end}}
