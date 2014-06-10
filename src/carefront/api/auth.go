@@ -14,6 +14,8 @@ var (
 	InvalidRoleType    = errors.New("api: invalid role type")
 	LoginAlreadyExists = errors.New("api: login already exists")
 	LoginDoesNotExist  = errors.New("api: login does not exist")
+	TokenDoesNotExist  = errors.New("api: token does not exist")
+	TokenExpired       = errors.New("api: token expired")
 )
 
 type AuthResponse struct {
@@ -212,4 +214,65 @@ func (m *Auth) UpdateLastOpenedDate(accountId int64) error {
 		return NoRowsError
 	}
 	return nil
+}
+
+func (m *Auth) AccountIDForEmail(email string) (int64, error) {
+	email = strings.ToLower(email)
+
+	row := m.DB.QueryRow(`SELECT id FROM account WHERE email = ?`, email)
+	var id int64
+	if err := row.Scan(&id); err == sql.ErrNoRows {
+		return 0, NoRowsError
+	} else if err != nil {
+		return 0, err
+	}
+	return id, nil
+}
+
+func (m *Auth) CreateTempToken(accountId int64, expireSec int, purpose, token string) (string, error) {
+	if token == "" {
+		var err error
+		token, err = common.GenerateToken()
+		if err != nil {
+			return "", err
+		}
+	}
+	expires := time.Now().Add(time.Duration(expireSec) * time.Second)
+	_, err := m.DB.Exec(`INSERT INTO temp_auth_token (token, purpose, account_id, expires) VALUES (?, ?, ?, ?)`,
+		token, purpose, accountId, expires)
+	if err != nil {
+		return "", err
+	}
+	return token, nil
+}
+
+func (m *Auth) ValidateTempToken(purpose, token string) (int64, string, error) {
+	row := m.DB.QueryRow(`
+		SELECT expires, account_id, role_type_tag
+		FROM temp_auth_token
+		LEFT JOIN account ON account.id = account_id
+		LEFT JOIN role_type ON role_type.id = account.role_type_id
+		WHERE purpose = ? AND token = ?`, purpose, token)
+	var expires time.Time
+	var accountId int64
+	var roleType string
+	if err := row.Scan(&expires, &accountId, &roleType); err == sql.ErrNoRows {
+		return 0, "", TokenDoesNotExist
+	} else if err != nil {
+		return 0, "", err
+	}
+	if time.Now().After(expires) {
+		return 0, "", TokenExpired
+	}
+	return accountId, roleType, nil
+}
+
+func (m *Auth) DeleteTempToken(purpose, token string) error {
+	_, err := m.DB.Exec(`DELETE FROM temp_auth_token WHERE token = ? AND purpose = ?`, token, purpose)
+	return err
+}
+
+func (m *Auth) DeleteTempTokensForAccount(accountId int64) error {
+	_, err := m.DB.Exec(`DELETE FROM temp_auth_token WHERE account_id = ?`, accountId)
+	return err
 }

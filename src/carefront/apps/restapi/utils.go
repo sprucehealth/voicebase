@@ -2,14 +2,36 @@ package main
 
 import (
 	"carefront/common/config"
+	"carefront/email"
 	"fmt"
 	"os"
+
+	"github.com/subosito/twilio"
 )
 
 type TwilioConfig struct {
 	AccountSid string `long:"twilio_account_sid" description:"Twilio AccountSid"`
 	AuthToken  string `long:"twilio_auth_token" description:"Twilio AuthToken"`
 	FromNumber string `long:"twilio_from_number" description:"Twilio From Number for Messages"`
+
+	client *twilio.Client
+}
+
+func (c *TwilioConfig) Client() (*twilio.Client, error) {
+	if c.client != nil {
+		return c.client, nil
+	}
+	if c == nil {
+		return nil, fmt.Errorf("Twilio config does not exist")
+	}
+	if c.AccountSid == "" {
+		return nil, fmt.Errorf("Twilio.AccountSid not set")
+	}
+	if c.AuthToken == "" {
+		return nil, fmt.Errorf("Twilio.AuthToken not set")
+	}
+	c.client = twilio.NewClient(c.AccountSid, c.AuthToken, nil)
+	return c.client, nil
 }
 
 type DosespotConfig struct {
@@ -41,6 +63,8 @@ type Config struct {
 	TLSListenAddr         string                      `long:"tls_listen" description:"Address and port on which to listen (e.g. 127.0.0.1:8080)"`
 	TLSCert               string                      `long:"tls_cert" description:"Path of SSL certificate"`
 	TLSKey                string                      `long:"tls_key" description:"Path of SSL private key"`
+	APISubdomain          string                      `long:"api_subdomain" description:"Subdomain of REST API (default 'api')"`
+	WebSubdomain          string                      `long:"www_subdomain" description:"Subdomain of website (default 'www')"`
 	InfoAddr              string                      `long:"info_addr" description:"Address to listen on for the info server"`
 	DB                    *config.DB                  `group:"Database" toml:"database"`
 	MaxInMemoryForPhotoMB int64                       `long:"max_in_memory_photo" description:"Amount of data in MB to be held in memory when parsing multipart form data"`
@@ -63,6 +87,7 @@ type Config struct {
 	NotifiyConfigs        *config.NotificationConfigs `group:"notification" toml:"notification"`
 	Analytics             *AnalyticsConfig            `group:"Analytics" toml:"analytics"`
 	Support               *SupportConfig              `group:"support" toml:"support"`
+	Email                 *email.Config               `group:"email" toml:"email"`
 }
 
 var DefaultConfig = Config{
@@ -75,6 +100,8 @@ var DefaultConfig = Config{
 		Port: 3306,
 	},
 	Twilio:                &TwilioConfig{},
+	APISubdomain:          "api",
+	WebSubdomain:          "www",
 	ListenAddr:            ":8080",
 	TLSListenAddr:         ":8443",
 	InfoAddr:              ":9000",

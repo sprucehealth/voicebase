@@ -1,0 +1,70 @@
+<!DOCTYPE html>
+<html>
+<head>
+	<meta charset="utf-8">
+	<meta name="viewport" content="user-scalable=no,width=device-width">
+	<title>{{.Title}}</title>
+	<style type="text/css">
+	html, body {
+		color: #444;
+		background-color: #f7f7f7;
+		font-family: "Helvetica Neue Light", "Helvetica Neue", Helvetica, Arial;
+		font-size: 15px;
+	}
+	h1 {
+		text-align: center;
+		font-size: 34px;
+		padding: 0;
+		margin: 15px;
+	}
+	hr {
+		border: 0;
+		height: 0;
+		border-top: 1px solid rgba(0, 0, 0, 0.1);
+		border-bottom: 1px solid rgba(255, 255, 255, 0.3);
+	}
+	input {
+		border: 1px solid #cacaca;
+		width: 100%;
+		padding: 4px;
+	}
+	button {
+		font-size: 16px;
+		color: #fff;
+		background-color: #177efb;
+		margin-top: 15px;
+		padding: 15px 35px 15px 35px;
+		border: 0;
+		border-radius: 5px;
+		margin-left: auto;
+		margin-right: auto;
+		display: block;
+	}
+	.error {
+		color: red;
+	}
+	.phonenumber {
+		font-weight: bold;
+		font-size: 17px;
+	}
+	#footer {
+		text-align: center;
+		margin-top: 10px;
+	}
+	.box {
+		background-color: #fff;
+		border: 1px solid #ebebeb;
+		max-width: 500px;
+		margin: 0 auto 0 auto;
+		padding: 10px 28px 28px 28px;
+	}
+	</style>
+	{{.Head}}
+</head>
+<body>
+	<div id="content">
+	{{.Body}}
+	</div>
+	{{.Tail}}
+</body>
+</html>

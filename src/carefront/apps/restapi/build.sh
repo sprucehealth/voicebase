@@ -18,3 +18,11 @@ GOOS=linux GOARCH=amd64 \
 		-X carefront/common/config.BuildTime '$TIME' \
 		-X carefront/common/config.BuildNumber '$TRAVIS_BUILD_NUMBER' \
 		-X carefront/common/config.MigrationNumber '$LATEST_MIGRATION'" -o $APP
+
+# Embed resources in the binary
+
+RESOURCE_ZIP=`pwd`/resources.zip
+rm -f $RESOURCE_ZIP
+(cd ../../resources ; zip -r $RESOURCE_ZIP *)
+cat $RESOURCE_ZIP >> $APP
+zip -A $APP

@@ -339,6 +339,12 @@ type CloudStorageAPI interface {
 	PutObjectToLocation(bucket, key, region, contentType string, rawData []byte, duration time.Time, dataApi DataAPI) (int64, string, error)
 }
 
+const (
+	LostPassword     = "lost_password"
+	LostPasswordCode = "lost_password_code"
+	PasswordReset    = "password_reset"
+)
+
 type AuthAPI interface {
 	SignUp(email, password, roleType string) (*AuthResponse, error)
 	LogIn(email, password string) (*AuthResponse, error)
@@ -346,4 +352,10 @@ type AuthAPI interface {
 	ValidateToken(token string) (*TokenValidationResponse, error)
 	SetPassword(accountId int64, password string) error
 	UpdateLastOpenedDate(accountId int64) error
+	AccountIDForEmail(email string) (int64, error)
+	// Temporary auth tokens
+	CreateTempToken(accountId int64, expireSec int, purpose, token string) (string, error)
+	ValidateTempToken(purpose, token string) (int64, string, error)
+	DeleteTempToken(purpose, token string) error
+	DeleteTempTokensForAccount(accountId int64) error
 }

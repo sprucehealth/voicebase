@@ -379,12 +379,13 @@ func (d *DataService) GetPatientFromAccountId(accountId int64) (*common.Patient,
 		patient.account_id = ?
 			AND (phone IS NULL OR (patient_phone.status = 'ACTIVE'))
 			AND (patient_location.zip_code IS NULL OR patient_location.status = 'ACTIVE')`, accountId)
-	if len(patients) > 0 {
-		err = d.getOtherInfoForPatient(patients[0])
-		return patients[0], err
+	if err != nil {
+		return nil, err
 	}
-
-	return nil, err
+	if len(patients) > 0 {
+		return patients[0], d.getOtherInfoForPatient(patients[0])
+	}
+	return nil, NoRowsError
 }
 
 func (d *DataService) GetPatientFromId(patientId int64) (*common.Patient, error) {

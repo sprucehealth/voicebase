@@ -4,6 +4,7 @@ import (
 	"carefront/api"
 	"carefront/common"
 	"carefront/common/config"
+	"carefront/email"
 	"carefront/libs/aws/sns"
 	"carefront/libs/golog"
 	"sort"
@@ -19,11 +20,9 @@ type NotificationManager struct {
 	dataApi             api.DataAPI
 	snsClient           *sns.SNS
 	twilioClient        *twilio.Client
+	emailService        email.Service
 	fromNumber          string
 	fromEmailAddress    string
-	smtpAddress         string
-	smtpUsername        string
-	smtpPassword        string
 	notificationConfigs *config.NotificationConfigs
 	statSMSSent         metrics.Counter
 	statSMSFailed       metrics.Counter
@@ -33,16 +32,13 @@ type NotificationManager struct {
 	statEmailFailed     metrics.Counter
 }
 
-func NewManager(dataApi api.DataAPI, snsClient *sns.SNS, twilioClient *twilio.Client, fromNumber, fromEmailAddress, smtpAddress, smtpUsername, smtpPassword string, notificationConfigs *config.NotificationConfigs, statsRegistry metrics.Registry) *NotificationManager {
-
+func NewManager(dataApi api.DataAPI, snsClient *sns.SNS, twilioClient *twilio.Client, emailService email.Service, fromNumber, fromEmailAddress string, notificationConfigs *config.NotificationConfigs, statsRegistry metrics.Registry) *NotificationManager {
 	manager := &NotificationManager{
 		dataApi:             dataApi,
 		snsClient:           snsClient,
 		twilioClient:        twilioClient,
+		emailService:        emailService,
 		fromNumber:          fromNumber,
-		smtpAddress:         smtpAddress,
-		smtpUsername:        smtpUsername,
-		smtpPassword:        smtpPassword,
 		fromEmailAddress:    fromEmailAddress,
 		notificationConfigs: notificationConfigs,
 		statSMSSent:         metrics.NewCounter(),
@@ -75,7 +71,12 @@ func (n *NotificationManager) NotifySupport(toEmail string, event interface{}) e
 	if err != nil {
 		return err
 	}
-	return n.SendEmail(n.fromEmailAddress, toEmail, subject, body)
+	return n.SendEmail(&email.Email{
+		From:     n.fromEmailAddress,
+		To:       toEmail,
+		Subject:  subject,
+		BodyText: body,
+	})
 }
 
 func (n *NotificationManager) NotifyDoctor(doctor *common.Doctor, event interface{}) error {
