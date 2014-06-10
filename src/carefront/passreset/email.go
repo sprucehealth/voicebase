@@ -24,7 +24,7 @@ func SendPasswordResetEmail(authAPI api.AuthAPI, emailService email.Service, dom
 		"token": []string{token},
 		"email": []string{emailAddress},
 	}
-	resetURL := fmt.Sprintf("https://www.%s/reset-password/verify?%s", domain, params.Encode())
+	resetURL := fmt.Sprintf("https://%s/reset-password/verify?%s", domain, params.Encode())
 
 	em := &email.Email{
 		From:    supportEmail,

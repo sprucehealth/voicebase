@@ -100,7 +100,7 @@ func TestLostPassword(t *testing.T) {
 
 	em := &email.TestService{}
 
-	h := passreset.NewForgotPasswordHandler(testData.DataApi, testData.AuthApi, em, "support@sprucehealth.com")
+	h := passreset.NewForgotPasswordHandler(testData.DataApi, testData.AuthApi, em, "support@sprucehealth.com", "www")
 
 	req := JSONPOSTRequest(t, "/", &passreset.ForgotPasswordRequest{Email: "does-not-exist@nowhere.com"})
 	res := httptest.NewRecorder()

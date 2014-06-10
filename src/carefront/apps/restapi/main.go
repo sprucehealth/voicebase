@@ -23,6 +23,7 @@ import (
 	"carefront/libs/pharmacy"
 	"carefront/messages"
 	"carefront/notify"
+	"carefront/passreset"
 	"carefront/patient"
 	"carefront/patient_file"
 	"carefront/patient_visit"
@@ -137,7 +138,7 @@ func buildWWW(conf *Config, dataApi api.DataAPI, authAPI api.AuthAPI, metricsReg
 		}
 	}
 
-	return router.New(dataApi, authAPI, twilioCli, conf.Twilio.FromNumber, email.NewService(conf.Email, metricsRegistry.Scope("email")), conf.Support.CustomerSupportEmail, metricsRegistry.Scope("www"))
+	return router.New(dataApi, authAPI, twilioCli, conf.Twilio.FromNumber, email.NewService(conf.Email, metricsRegistry.Scope("email")), conf.Support.CustomerSupportEmail, conf.WebSubdomain, metricsRegistry.Scope("www"))
 }
 
 func buildRESTAPI(conf *Config, dataApi api.DataAPI, authAPI api.AuthAPI, metricsRegistry metrics.Registry) http.Handler {
@@ -280,6 +281,7 @@ func buildRESTAPI(conf *Config, dataApi api.DataAPI, authAPI api.AuthAPI, metric
 	mux.Handle("/v1/patient/visit/photo_answer", patient_visit.NewPhotoAnswerIntakeHandler(dataApi))
 	mux.Handle("/v1/authenticate", patient.NewAuthenticationHandler(dataApi, authAPI, pharmacy.GooglePlacesPharmacySearchService(0), conf.StaticContentBaseUrl))
 	mux.Handle("/v1/logout", patient.NewAuthenticationHandler(dataApi, authAPI, pharmacy.GooglePlacesPharmacySearchService(0), conf.StaticContentBaseUrl))
+	mux.Handle("/v1/reset_password", passreset.NewForgotPasswordHandler(dataApi, authAPI, emailService, conf.Support.CustomerSupportEmail, conf.WebSubdomain))
 	mux.Handle("/v1/ping", pingHandler)
 	mux.Handle("/v1/autocomplete", autocompleteHandler)
 	mux.Handle("/v1/pharmacy_search", pharmacySearchHandler)
