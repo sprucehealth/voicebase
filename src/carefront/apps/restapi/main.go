@@ -137,7 +137,7 @@ func buildWWW(conf *Config, dataApi api.DataAPI, authAPI api.AuthAPI, metricsReg
 		}
 	}
 
-	return router.New(dataApi, authAPI, twilioCli, conf.Twilio.FromNumber, email.NewService(conf.Email, metricsRegistry.Scope("email")), "support@sprucehealth.com", metricsRegistry.Scope("www"))
+	return router.New(dataApi, authAPI, twilioCli, conf.Twilio.FromNumber, email.NewService(conf.Email, metricsRegistry.Scope("email")), conf.Support.CustomerSupportEmail, metricsRegistry.Scope("www"))
 }
 
 func buildRESTAPI(conf *Config, dataApi api.DataAPI, authAPI api.AuthAPI, metricsRegistry metrics.Registry) http.Handler {

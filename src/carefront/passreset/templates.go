@@ -23,6 +23,7 @@ type PromptTemplateContext struct {
 	Email        string
 	InvalidEmail bool
 	Sent         bool
+	SupportEmail string
 }
 
 var PromptTemplate *promptTemplate
@@ -55,6 +56,7 @@ type VerifyTemplateContext struct {
 	EnterCode     bool
 	Code          string
 	Errors        []string
+	SupportEmail  string
 }
 
 var VerifyTemplate *verifyTemplate
@@ -88,10 +90,11 @@ type resetTemplate struct {
 }
 
 type ResetTemplateContext struct {
-	Token  string
-	Email  string
-	Done   bool
-	Errors []string
+	Token        string
+	Email        string
+	Done         bool
+	Errors       []string
+	SupportEmail string
 }
 
 var ResetTemplate *resetTemplate

@@ -28,7 +28,7 @@ type promptHandler struct {
 	dataAPI      api.DataAPI
 	authAPI      api.AuthAPI
 	emailService email.Service
-	fromEmail    string
+	supportEmail string
 }
 
 type verifyHandler struct {
@@ -37,6 +37,7 @@ type verifyHandler struct {
 	authAPI          api.AuthAPI
 	twilioCli        *twilio.Client
 	fromNumber       string
+	supportEmail     string
 	statInvalidToken metrics.Counter
 	statExpiredToken metrics.Counter
 }
@@ -46,18 +47,18 @@ type resetHandler struct {
 	dataAPI          api.DataAPI
 	authAPI          api.AuthAPI
 	emailService     email.Service
-	fromEmail        string
+	supportEmail     string
 	statInvalidToken metrics.Counter
 	statExpiredToken metrics.Counter
 }
 
-func RouteResetPassword(r *mux.Router, dataAPI api.DataAPI, authAPI api.AuthAPI, twilioCli *twilio.Client, fromNumber string, emailService email.Service, fromEmail string, metricsRegistry metrics.Registry) {
+func RouteResetPassword(r *mux.Router, dataAPI api.DataAPI, authAPI api.AuthAPI, twilioCli *twilio.Client, fromNumber string, emailService email.Service, supportEmail string, metricsRegistry metrics.Registry) {
 	ph := &promptHandler{
 		r:            r,
 		dataAPI:      dataAPI,
 		authAPI:      authAPI,
 		emailService: emailService,
-		fromEmail:    fromEmail,
+		supportEmail: supportEmail,
 	}
 
 	vh := &verifyHandler{
@@ -66,6 +67,7 @@ func RouteResetPassword(r *mux.Router, dataAPI api.DataAPI, authAPI api.AuthAPI,
 		authAPI:          authAPI,
 		twilioCli:        twilioCli,
 		fromNumber:       fromNumber,
+		supportEmail:     supportEmail,
 		statInvalidToken: metrics.NewCounter(),
 		statExpiredToken: metrics.NewCounter(),
 	}
@@ -77,7 +79,7 @@ func RouteResetPassword(r *mux.Router, dataAPI api.DataAPI, authAPI api.AuthAPI,
 		dataAPI:          dataAPI,
 		authAPI:          authAPI,
 		emailService:     emailService,
-		fromEmail:        fromEmail,
+		supportEmail:     supportEmail,
 		statInvalidToken: metrics.NewCounter(),
 		statExpiredToken: metrics.NewCounter(),
 	}
@@ -106,13 +108,14 @@ func (h *promptHandler) ServeHTTP(w http.ResponseWriter, r *http.Request) {
 			if idx := strings.IndexByte(domain, '.'); idx >= 0 {
 				domain = domain[idx+1:]
 			}
-			if err := SendPasswordResetEmail(h.authAPI, h.emailService, domain, accountID, email, h.fromEmail); err != nil {
+			if err := SendPasswordResetEmail(h.authAPI, h.emailService, domain, accountID, email, h.supportEmail); err != nil {
 				www.InternalServerError(w, r, err)
 				return
 			}
 			www.TemplateResponse(w, http.StatusOK, PromptTemplate, &PromptTemplateContext{
-				Email: email,
-				Sent:  true,
+				Email:        email,
+				Sent:         true,
+				SupportEmail: h.supportEmail,
 			})
 			return
 		}
@@ -123,6 +126,7 @@ func (h *promptHandler) ServeHTTP(w http.ResponseWriter, r *http.Request) {
 	www.TemplateResponse(w, http.StatusOK, PromptTemplate, &PromptTemplateContext{
 		Email:        email,
 		InvalidEmail: invalidEmail,
+		SupportEmail: h.supportEmail,
 	})
 }
 
@@ -187,6 +191,7 @@ func (h *verifyHandler) ServeHTTP(w http.ResponseWriter, r *http.Request) {
 					Email:         emailAddress,
 					LastTwoDigits: lastDigits,
 					EnterCode:     true,
+					SupportEmail:  h.supportEmail,
 				})
 				return
 			}
@@ -211,6 +216,7 @@ func (h *verifyHandler) ServeHTTP(w http.ResponseWriter, r *http.Request) {
 					EnterCode:     true,
 					Code:          code,
 					Errors:        []string{"Code is incorrect. Check to make sure it's typed correctly."},
+					SupportEmail:  h.supportEmail,
 				})
 				return
 			}
@@ -249,6 +255,7 @@ func (h *verifyHandler) ServeHTTP(w http.ResponseWriter, r *http.Request) {
 		Token:         token,
 		Email:         emailAddress,
 		LastTwoDigits: lastDigits,
+		SupportEmail:  h.supportEmail,
 	})
 }
 
@@ -277,16 +284,17 @@ func (h *resetHandler) ServeHTTP(w http.ResponseWriter, r *http.Request) {
 				golog.Errorf("Failed to delete password reset token: %s", err.Error())
 			}
 			done = true
-			if err := SendPasswordHasBeenResetEmail(h.emailService, emailAddress, h.fromEmail); err != nil {
+			if err := SendPasswordHasBeenResetEmail(h.emailService, emailAddress, h.supportEmail); err != nil {
 				golog.Errorf("Failed to send password reset success email: %s", err.Error())
 			}
 		}
 	}
 	www.TemplateResponse(w, http.StatusOK, ResetTemplate, &ResetTemplateContext{
-		Token:  token,
-		Email:  emailAddress,
-		Done:   done,
-		Errors: errors,
+		Token:        token,
+		Email:        emailAddress,
+		Done:         done,
+		Errors:       errors,
+		SupportEmail: h.supportEmail,
 	})
 }
 
