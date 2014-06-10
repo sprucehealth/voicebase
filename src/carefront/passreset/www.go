@@ -29,6 +29,7 @@ type promptHandler struct {
 	authAPI      api.AuthAPI
 	emailService email.Service
 	supportEmail string
+	webSubdomain string
 }
 
 type verifyHandler struct {
@@ -52,13 +53,14 @@ type resetHandler struct {
 	statExpiredToken metrics.Counter
 }
 
-func RouteResetPassword(r *mux.Router, dataAPI api.DataAPI, authAPI api.AuthAPI, twilioCli *twilio.Client, fromNumber string, emailService email.Service, supportEmail string, metricsRegistry metrics.Registry) {
+func RouteResetPassword(r *mux.Router, dataAPI api.DataAPI, authAPI api.AuthAPI, twilioCli *twilio.Client, fromNumber string, emailService email.Service, supportEmail, webSubdomain string, metricsRegistry metrics.Registry) {
 	ph := &promptHandler{
 		r:            r,
 		dataAPI:      dataAPI,
 		authAPI:      authAPI,
 		emailService: emailService,
 		supportEmail: supportEmail,
+		webSubdomain: webSubdomain,
 	}
 
 	vh := &verifyHandler{
@@ -108,6 +110,7 @@ func (h *promptHandler) ServeHTTP(w http.ResponseWriter, r *http.Request) {
 			if idx := strings.IndexByte(domain, '.'); idx >= 0 {
 				domain = domain[idx+1:]
 			}
+			domain = fmt.Sprintf("%s.%s", h.webSubdomain, domain)
 			if err := SendPasswordResetEmail(h.authAPI, h.emailService, domain, accountID, email, h.supportEmail); err != nil {
 				www.InternalServerError(w, r, err)
 				return

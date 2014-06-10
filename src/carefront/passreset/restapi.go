@@ -4,6 +4,7 @@ import (
 	"carefront/api"
 	"carefront/apiservice"
 	"carefront/email"
+	"fmt"
 	"net/http"
 	"strings"
 )
@@ -17,14 +18,16 @@ type forgotPasswordHandler struct {
 	authAPI      api.AuthAPI
 	emailService email.Service
 	fromEmail    string
+	webSubdomain string
 }
 
-func NewForgotPasswordHandler(dataAPI api.DataAPI, authAPI api.AuthAPI, emailService email.Service, fromEmail string) http.Handler {
+func NewForgotPasswordHandler(dataAPI api.DataAPI, authAPI api.AuthAPI, emailService email.Service, fromEmail, webSubdomain string) http.Handler {
 	return &forgotPasswordHandler{
 		dataAPI:      dataAPI,
 		authAPI:      authAPI,
 		emailService: emailService,
 		fromEmail:    fromEmail,
+		webSubdomain: webSubdomain,
 	}
 }
 
@@ -59,6 +62,7 @@ func (h *forgotPasswordHandler) ServeHTTP(w http.ResponseWriter, r *http.Request
 	if idx := strings.IndexByte(domain, '.'); idx >= 0 {
 		domain = domain[idx+1:]
 	}
+	domain = fmt.Sprintf("%s.%s", h.webSubdomain, domain)
 	if err := SendPasswordResetEmail(h.authAPI, h.emailService, domain, accountID, req.Email, h.fromEmail); err != nil {
 		apiservice.WriteDeveloperError(w, http.StatusInternalServerError, err.Error())
 		return
