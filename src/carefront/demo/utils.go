@@ -506,7 +506,7 @@ func populatePatientIntake(questionIds map[questionTag]int64, answerIds map[pote
 	}
 }
 
-func startPatientIntakeSubmission(answersToQuestions []*apiservice.AnswerToQuestionItem, patientVisitId int64, patientAuthToken string, signal chan int) {
+func startPatientIntakeSubmission(answersToQuestions []*apiservice.AnswerToQuestionItem, patientVisitId int64, patientAuthToken string, signal chan int, r *http.Request) {
 
 	go func() {
 
@@ -519,6 +519,7 @@ func startPatientIntakeSubmission(answersToQuestions []*apiservice.AnswerToQuest
 		answerQuestionsRequest, err := http.NewRequest("POST", answerQuestionsUrl, bytes.NewReader(jsonData))
 		answerQuestionsRequest.Header.Set("Content-Type", "application/json")
 		answerQuestionsRequest.Header.Set("Authorization", "token "+patientAuthToken)
+		answerQuestionsRequest.Host = r.Host
 
 		resp, err := http.DefaultClient.Do(answerQuestionsRequest)
 		if err != nil || resp.StatusCode != http.StatusOK {
@@ -530,7 +531,7 @@ func startPatientIntakeSubmission(answersToQuestions []*apiservice.AnswerToQuest
 	}()
 }
 
-func (c *Handler) startSendingMessageToDoctor(token, message string, signal chan int) {
+func (c *Handler) startSendingMessageToDoctor(token, message string, signal chan int, r *http.Request) {
 	go func() {
 		requestData := &messages.NewConversationRequest{
 			Message: message,
@@ -540,6 +541,7 @@ func (c *Handler) startSendingMessageToDoctor(token, message string, signal chan
 		newConversationRequest, err := http.NewRequest("POST", conversationUrl, bytes.NewReader(jsonData))
 		newConversationRequest.Header.Set("Content-Type", "application/json")
 		newConversationRequest.Header.Set("Authorization", "token "+token)
+		newConversationRequest.Host = r.Host
 
 		resp, err := http.DefaultClient.Do(newConversationRequest)
 		if err != nil || resp.StatusCode != http.StatusOK {
@@ -551,7 +553,7 @@ func (c *Handler) startSendingMessageToDoctor(token, message string, signal chan
 	}()
 }
 
-func (c *Handler) startPhotoSubmissionForPatient(questionId, patientVisitId int64, photoSections []*common.PhotoIntakeSection, patientAuthToken string, signal chan int) {
+func (c *Handler) startPhotoSubmissionForPatient(questionId, patientVisitId int64, photoSections []*common.PhotoIntakeSection, patientAuthToken string, signal chan int, r *http.Request) {
 
 	go func() {
 
@@ -605,6 +607,7 @@ func (c *Handler) startPhotoSubmissionForPatient(questionId, patientVisitId int6
 		photoIntakeRequest, err := http.NewRequest("POST", photoIntakeUrl, bytes.NewReader(jsonData))
 		photoIntakeRequest.Header.Set("Content-Type", "application/json")
 		photoIntakeRequest.Header.Set("Authorization", "token "+patientAuthToken)
+		photoIntakeRequest.Host = r.Host
 		resp, err := http.DefaultClient.Do(photoIntakeRequest)
 		if err != nil || resp.StatusCode != http.StatusOK {
 			golog.Errorf("Error while trying submit photo for intake: %+v", err)
