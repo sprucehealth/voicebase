@@ -422,7 +422,7 @@ func (d *DataService) getQuestionInfoFromRows(rows *sql.Rows, languageId int64) 
 			return nil, rows.Err()
 		}
 
-		// get any extra fields defined as json, by ensuring that it can be unmarshaled
+		// get any extra fields defined as json, after ensuring that json is valid (by unmarshaling)
 		var jsonBytes []byte
 
 		err = d.db.QueryRow(`select json from extra_question_fields where question_id = ?`, questionInfo.QuestionId).Scan(&jsonBytes)
