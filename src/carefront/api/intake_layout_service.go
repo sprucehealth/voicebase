@@ -370,20 +370,6 @@ func (d *DataService) getQuestionInfoFromRows(rows *sql.Rows, languageId int64) 
 		}
 
 		questionInfo := &info_intake.Question{
-<<<<<<< HEAD
-			QuestionId:             id,
-			ParentQuestionId:       nullParentQuestionId.Int64,
-			QuestionTag:            questionTag,
-			QuestionTitle:          questionTitle.String,
-			QuestionTitleHasTokens: titleHasTokens.Bool,
-			QuestionType:           questionType.String,
-			QuestionSummary:        questionSummary.String,
-			QuestionSubText:        questionSubText.String,
-			FormattedFieldTags:     []string{formattedFieldTagsNull.String},
-			Required:               requiredBit.Bool,
-			ToAlert:                toAlertBit.Bool,
-			AlertFormattedText:     alertText.String,
-=======
 			QuestionId:         id,
 			ParentQuestionId:   nullParentQuestionId.Int64,
 			QuestionTag:        questionTag,
@@ -394,7 +380,6 @@ func (d *DataService) getQuestionInfoFromRows(rows *sql.Rows, languageId int64) 
 			Required:           requiredBit.Bool,
 			ToAlert:            toAlertBit.Bool,
 			AlertFormattedText: alertText.String,
->>>>>>> - adding the ability to define custom fields for questions that are not
 		}
 		if formattedFieldTagsNull.Valid && formattedFieldTagsNull.String != "" {
 			questionInfo.FormattedFieldTags = []string{formattedFieldTagsNull.String}
