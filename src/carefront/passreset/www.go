@@ -175,7 +175,6 @@ func (h *verifyHandler) ServeHTTP(w http.ResponseWriter, r *http.Request) {
 					www.InternalServerError(w, r, err)
 					return
 				}
-				println(code)
 			case "voice":
 				// TODO
 			}
@@ -201,8 +200,15 @@ func (h *verifyHandler) ServeHTTP(w http.ResponseWriter, r *http.Request) {
 					www.InternalServerError(w, r, err)
 					return
 				}
-				// TODO: show "invalid code"
-				panic("TODO: INVALID CODE")
+				www.TemplateResponse(w, http.StatusOK, VerifyTemplate, &VerifyTemplateContext{
+					Token:         token,
+					Email:         emailAddress,
+					LastTwoDigits: lastDigits,
+					EnterCode:     true,
+					Code:          code,
+					Errors:        []string{"Code is incorrect. Check to make sure it's typed correctly."},
+				})
+				return
 			}
 
 			if err := h.authAPI.DeleteTempToken(api.LostPassword, token); err != nil {

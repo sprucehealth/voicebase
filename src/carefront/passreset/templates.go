@@ -5,14 +5,12 @@ import (
 	"carefront/www"
 	"html/template"
 	"io"
-	"path"
 )
 
 func init() {
-	templatePath := "../../www/templates"
-	PromptTemplate = &promptTemplate{template.Must(template.ParseFiles(path.Join(templatePath, "reset_password_prompt.html")))}
-	VerifyTemplate = &verifyTemplate{template.Must(template.ParseFiles(path.Join(templatePath, "reset_password_verify.html")))}
-	ResetTemplate = &resetTemplate{template.Must(template.ParseFiles(path.Join(templatePath, "reset_password.html")))}
+	PromptTemplate = &promptTemplate{www.MustLoadTemplate("", "password_reset/prompt.html")}
+	VerifyTemplate = &verifyTemplate{www.MustLoadTemplate("", "password_reset/verify.html")}
+	ResetTemplate = &resetTemplate{www.MustLoadTemplate("", "password_reset/reset.html")}
 }
 
 // Reset Prompt Template
@@ -55,6 +53,8 @@ type VerifyTemplateContext struct {
 	Email         string
 	LastTwoDigits string
 	EnterCode     bool
+	Code          string
+	Errors        []string
 }
 
 var VerifyTemplate *verifyTemplate
@@ -102,11 +102,18 @@ func (t *resetTemplate) Execute(w io.Writer, ctx interface{}) error {
 
 func (t *resetTemplate) Render(w io.Writer, ctx *ResetTemplateContext) error {
 	b := &bytes.Buffer{}
-	if err := t.Template.Execute(b, ctx); err != nil {
+	if err := t.Template.ExecuteTemplate(b, "head", ctx); err != nil {
 		return err
 	}
+	head := template.HTML(b.String())
+	b.Reset()
+	if err := t.Template.ExecuteTemplate(b, "body", ctx); err != nil {
+		return err
+	}
+	body := template.HTML(string(b.String()))
 	return www.SimpleBaseTemplate.Render(w, &www.SimpleBaseTemplateContext{
 		Title: "Password Reset",
-		Body:  template.HTML(string(b.String())),
+		Head:  head,
+		Body:  body,
 	})
 }

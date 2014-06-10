@@ -18,12 +18,20 @@
 
 			<hr>
 
+			{{if .Errors}}
+			<ul>
+				{{range .Errors}}
+				<li class="error">{{.}}</li>
+				{{end}}
+			</ul>
+			{{end}}
+
 			<p>Enter the verification code you receive:</p>
 
 			<form method="POST" action="">
 			<input type="hidden" name="token" value="{{.Token}}">
 			<input type="hidden" name="email" value="{{.Email}}">
-			<input type="text" name="code"><br>
+			<input type="text" name="code" value="{{.Code}}"><br>
 			<button>Verify</button>
 			</form>
 		{{else}}
@@ -31,8 +39,10 @@
 
 			{{template "phonenumber" .LastTwoDigits}}
 
+			{{if false}}
 			<hr>
 
+			<!-- Left here but disabled since we will want voice but it's not implemented yet -->
 			<p>Select how you'd like to receive your access code:</p>
 
 			<form method="POST" action="">
@@ -40,8 +50,16 @@
 			<input type="hidden" name="email" value="{{.Email}}">
 			<input type="radio" name="method" value="sms" checked> Text message<br>
 			<input type="radio" name="method" value="voice"> Voice call<br>
+			<button class=>Send Code</button>
+			</form>
+			{{else}}
+			<form method="POST" action="">
+			<input type="hidden" name="token" value="{{.Token}}">
+			<input type="hidden" name="email" value="{{.Email}}">
+			<input type="hidden" name="method" value="sms" checked>
 			<button>Send Code</button>
 			</form>
+			{{end}}
 		{{end}}
 	{{else}}
 		<p>There is no phone number associated with your account. Please contact support

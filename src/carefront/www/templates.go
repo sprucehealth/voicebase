@@ -4,7 +4,11 @@ import (
 	"bytes"
 	"html/template"
 	"io"
+	"io/ioutil"
+	"os"
 	"path"
+
+	"github.com/cookieo9/resources-go"
 )
 
 var (
@@ -13,11 +17,43 @@ var (
 	SimpleBaseTemplate *simpleBaseTemplate
 )
 
+var ResourceBundle resources.BundleSequence
+
 func init() {
-	templatePath := "../../www/templates"
-	BaseTemplate = &baseTemplate{template.Must(template.ParseFiles(path.Join(templatePath, "base.html")))}
-	IndexTemplate = &indexTemplate{template.Must(template.ParseFiles(path.Join(templatePath, "index.html")))}
-	SimpleBaseTemplate = &simpleBaseTemplate{template.Must(template.ParseFiles(path.Join(templatePath, "simple_base.html")))}
+	if p := os.Getenv("GOPATH"); p != "" {
+		ResourceBundle = append(ResourceBundle, resources.OpenFS(path.Join(p, "src", "carefront", "resources")))
+	}
+	if p := os.Getenv("RESOURCEPATH"); p != "" {
+		ResourceBundle = append(ResourceBundle, resources.OpenFS(p))
+	}
+	if exePath, err := resources.ExecutablePath(); err == nil {
+		if exe, err := resources.OpenZip(exePath); err == nil {
+			ResourceBundle = append(ResourceBundle, exe)
+		}
+	}
+
+	fi, err := ResourceBundle.Open("templates/base.html")
+	if err != nil {
+		panic(err)
+	}
+	_ = fi
+
+	BaseTemplate = &baseTemplate{MustLoadTemplate("", "base.html")}
+	IndexTemplate = &indexTemplate{MustLoadTemplate("", "index.html")}
+	SimpleBaseTemplate = &simpleBaseTemplate{MustLoadTemplate("", "simple_base.html")}
+}
+
+func MustLoadTemplate(name, pth string) *template.Template {
+	f, err := ResourceBundle.Open(path.Join("templates", pth))
+	if err != nil {
+		panic(err)
+	}
+	src, err := ioutil.ReadAll(f)
+	if err != nil {
+		panic(err)
+	}
+	f.Close()
+	return template.Must(template.New(name).Parse(string(src)))
 }
 
 // base

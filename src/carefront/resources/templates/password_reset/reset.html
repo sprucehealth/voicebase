@@ -1,3 +1,16 @@
+{{define "head"}}
+<style type="text/css">
+input[name=password1] {
+	margin-bottom: 0;
+}
+input[name=password2] {
+	border-top: 0;
+	margin-top: 0;
+}
+</style>
+{{end}}
+
+{{define "body"}}
 <h1>Spruce</h1>
 
 <div class="box">
@@ -19,10 +32,11 @@
 		<form method="POST" action="">
 		<input type="hidden" name="token" value="{{.Token}}">
 		<input type="hidden" name="email" value="{{.Email}}">
-		<input type="password" name="password1"><br>
-		<input type="password" name="password2"><br>
+		<input type="password" name="password1" placeholder="New Password"><br>
+		<input type="password" name="password2" placeholder="Confirm Password"><br>
 		<button>Reset Password</button>
 	{{end}}
 </div>
 
 <div id="footer">Need additional help? Contact <a href="mailto:support@sprucehealth.com">Spruce Support</a>.</div>
+{{end}}

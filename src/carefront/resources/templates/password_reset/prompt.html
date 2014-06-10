@@ -4,16 +4,16 @@
 	{{if .Sent}}
 		<p>An email with a link to reset your password has been sent to <strong>{{.Email}}</strong>. Please check your inbox.</p>
 	{{else}}
+		<p>Please enter your email and click the button. We will email you a link which you
+		can use to reset your password.</p>
+
 		{{if .InvalidEmail}}
 		<p class="error">There is no account with the provided email. Check that it is entered correctly.</p>
 		{{end}}
 
-		<p>Please enter your email and click the button. We will email you a link which you
-		can use to reset your password.</p>
-
 		<form action="" method="POST">
-		Email: <input type="text" name="email" value="{{.Email}}"><br>
-		<button>Send Reset Password Email</button><br>
+		Enter the email address of your account: <input type="text" name="email" value="{{.Email}}"><br>
+		<button>Send Reset Password Email</button>
 		</form>
 	{{end}}
 </div>
