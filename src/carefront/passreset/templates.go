@@ -39,7 +39,7 @@ func (t *promptTemplate) Render(w io.Writer, ctx *PromptTemplateContext) error {
 	}
 	return www.SimpleBaseTemplate.Render(w, &www.SimpleBaseTemplateContext{
 		Title: "Password Reset",
-		Body:  template.HTML(string(b.String())),
+		Body:  template.HTML(b.String()),
 	})
 }
 
@@ -113,7 +113,7 @@ func (t *resetTemplate) Render(w io.Writer, ctx *ResetTemplateContext) error {
 	if err := t.Template.ExecuteTemplate(b, "body", ctx); err != nil {
 		return err
 	}
-	body := template.HTML(string(b.String()))
+	body := template.HTML(b.String())
 	return www.SimpleBaseTemplate.Render(w, &www.SimpleBaseTemplateContext{
 		Title: "Password Reset",
 		Head:  head,
