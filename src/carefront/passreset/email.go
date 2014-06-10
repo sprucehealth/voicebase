@@ -13,7 +13,7 @@ const (
 	resetPasswordExpires    = 10 * 60 // 5 min
 )
 
-func SendPasswordResetEmail(authAPI api.AuthAPI, emailService email.Service, domain string, accountID int64, emailAddress, fromEmail string) error {
+func SendPasswordResetEmail(authAPI api.AuthAPI, emailService email.Service, domain string, accountID int64, emailAddress, supportEmail string) error {
 	// Generate a temporary token that allows access to the password reset page
 	token, err := authAPI.CreateTempToken(accountID, lostPasswordExpires, api.LostPassword, "")
 	if err != nil {
@@ -27,7 +27,7 @@ func SendPasswordResetEmail(authAPI api.AuthAPI, emailService email.Service, dom
 	resetURL := fmt.Sprintf("https://www.%s/reset-password/verify?%s", domain, params.Encode())
 
 	em := &email.Email{
-		From:    fromEmail,
+		From:    supportEmail,
 		To:      emailAddress,
 		Subject: "Reset your Spruce password",
 		BodyText: `Hello,
@@ -40,12 +40,12 @@ We've received a request to reset your password. To reset your password click th
 	return emailService.SendEmail(em)
 }
 
-func SendPasswordHasBeenResetEmail(emailService email.Service, emailAddress, fromEmail string) error {
+func SendPasswordHasBeenResetEmail(emailService email.Service, emailAddress, supportEmail string) error {
 	em := &email.Email{
-		From:    fromEmail,
+		From:    supportEmail,
 		To:      emailAddress,
 		Subject: "Reset your Spruce password",
-		BodyText: `Hello,
+		BodyText: fmt.Sprintf(`Hello,
 
 You've successfully changed your account password.
 
@@ -53,7 +53,7 @@ Thank you,
 The Spruce Team
 
 -
-Need help? Contact support@sprucehealth.com`,
+Need help? Contact %s`, supportEmail),
 	}
 	return emailService.SendEmail(em)
 }
