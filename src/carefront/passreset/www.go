@@ -45,6 +45,8 @@ type resetHandler struct {
 	r                *mux.Router
 	dataAPI          api.DataAPI
 	authAPI          api.AuthAPI
+	emailService     email.Service
+	fromEmail        string
 	statInvalidToken metrics.Counter
 	statExpiredToken metrics.Counter
 }
@@ -74,6 +76,8 @@ func RouteResetPassword(r *mux.Router, dataAPI api.DataAPI, authAPI api.AuthAPI,
 		r:                r,
 		dataAPI:          dataAPI,
 		authAPI:          authAPI,
+		emailService:     emailService,
+		fromEmail:        fromEmail,
 		statInvalidToken: metrics.NewCounter(),
 		statExpiredToken: metrics.NewCounter(),
 	}
@@ -273,6 +277,9 @@ func (h *resetHandler) ServeHTTP(w http.ResponseWriter, r *http.Request) {
 				golog.Errorf("Failed to delete password reset token: %s", err.Error())
 			}
 			done = true
+			if err := SendPasswordHasBeenResetEmail(h.emailService, emailAddress, h.fromEmail); err != nil {
+				golog.Errorf("Failed to send password reset success email: %s", err.Error())
+			}
 		}
 	}
 	www.TemplateResponse(w, http.StatusOK, ResetTemplate, &ResetTemplateContext{

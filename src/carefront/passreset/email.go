@@ -39,3 +39,21 @@ We've received a request to reset your password. To reset your password click th
 
 	return emailService.SendEmail(em)
 }
+
+func SendPasswordHasBeenResetEmail(emailService email.Service, emailAddress, fromEmail string) error {
+	em := &email.Email{
+		From:    fromEmail,
+		To:      emailAddress,
+		Subject: "Reset your Spruce password",
+		BodyText: `Hello,
+
+You've successfully changed your account password.
+
+Thank you,
+The Spruce Team
+
+-
+Need help? Contact support@sprucehealth.com`,
+	}
+	return emailService.SendEmail(em)
+}
