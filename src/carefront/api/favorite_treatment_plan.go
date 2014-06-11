@@ -97,20 +97,11 @@ func (d *DataService) CreateOrUpdateFavoriteTreatmentPlan(favoriteTreatmentPlan 
 	}
 
 	// Add all treatments
-	for _, treatment := range favoriteTreatmentPlan.TreatmentList.Treatments {
-		params := make(map[string]interface{})
-		params["dr_favorite_treatment_plan_id"] = favoriteTreatmentPlan.Id.Int64()
-		err := d.addTreatment(doctorFavoriteTreatmentType, treatment, params, tx)
-		if err != nil {
-			tx.Rollback()
-			return err
-		}
-	}
-
-	// Add regimen plan
-	for _, regimenSection := range favoriteTreatmentPlan.RegimenPlan.RegimenSections {
-		for _, regimenStep := range regimenSection.RegimenSteps {
-			_, err = tx.Exec(`insert into dr_favorite_regimen (dr_favorite_treatment_plan_id, regimen_type, dr_regimen_step_id, text, status) values (?,?,?,?,?)`, favoriteTreatmentPlan.Id.Int64(), regimenSection.RegimenName, regimenStep.ParentId.Int64(), regimenStep.Text, STATUS_ACTIVE)
+	if favoriteTreatmentPlan.TreatmentList != nil {
+		for _, treatment := range favoriteTreatmentPlan.TreatmentList.Treatments {
+			params := make(map[string]interface{})
+			params["dr_favorite_treatment_plan_id"] = favoriteTreatmentPlan.Id.Int64()
+			err := d.addTreatment(doctorFavoriteTreatmentType, treatment, params, tx)
 			if err != nil {
 				tx.Rollback()
 				return err
@@ -118,11 +109,27 @@ func (d *DataService) CreateOrUpdateFavoriteTreatmentPlan(favoriteTreatmentPlan 
 		}
 	}
 
-	for _, advicePoint := range favoriteTreatmentPlan.Advice.SelectedAdvicePoints {
-		_, err = tx.Exec(`insert into dr_favorite_advice (dr_favorite_treatment_plan_id, dr_advice_point_id, text, status) values (?, ?, ?, ?)`, favoriteTreatmentPlan.Id.Int64(), advicePoint.ParentId.Int64(), advicePoint.Text, STATUS_ACTIVE)
-		if err != nil {
-			tx.Rollback()
-			return err
+	// Add regimen plan
+	if favoriteTreatmentPlan.RegimenPlan != nil {
+		for _, regimenSection := range favoriteTreatmentPlan.RegimenPlan.RegimenSections {
+			for _, regimenStep := range regimenSection.RegimenSteps {
+				_, err = tx.Exec(`insert into dr_favorite_regimen (dr_favorite_treatment_plan_id, regimen_type, dr_regimen_step_id, text, status) values (?,?,?,?,?)`, favoriteTreatmentPlan.Id.Int64(), regimenSection.RegimenName, regimenStep.ParentId.Int64(), regimenStep.Text, STATUS_ACTIVE)
+				if err != nil {
+					tx.Rollback()
+					return err
+				}
+			}
+		}
+	}
+
+	// add avice
+	if favoriteTreatmentPlan.Advice != nil {
+		for _, advicePoint := range favoriteTreatmentPlan.Advice.SelectedAdvicePoints {
+			_, err = tx.Exec(`insert into dr_favorite_advice (dr_favorite_treatment_plan_id, dr_advice_point_id, text, status) values (?, ?, ?, ?)`, favoriteTreatmentPlan.Id.Int64(), advicePoint.ParentId.Int64(), advicePoint.Text, STATUS_ACTIVE)
+			if err != nil {
+				tx.Rollback()
+				return err
+			}
 		}
 	}
 

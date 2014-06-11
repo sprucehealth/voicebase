@@ -120,6 +120,12 @@ func main() {
 	webMux := buildWWW(&conf, dataApi, authAPI, metricsRegistry)
 
 	router := mux.NewRouter()
+
+	// make it possible to run server locally
+	if conf.Environment == "test" {
+		router.NewRoute().Handler(restAPIMux)
+	}
+
 	router.Host(conf.APISubdomain + ".{domain:.+}").Handler(restAPIMux)
 	router.Host(conf.WebSubdomain + ".{domain:.+}").Handler(webMux)
 
@@ -346,6 +352,7 @@ func buildRESTAPI(conf *Config, dataApi api.DataAPI, authAPI api.AuthAPI, metric
 	// add the api to create demo visits to every environment except production
 	if conf.Environment != "prod" {
 		mux.Handle("/v1/doctor/demo/patient_visit", demo.NewHandler(dataApi, cloudStorageApi, conf.AWSRegion, conf.Environment))
+		mux.Handle("/v1/doctor/demo/favorite_treatment_plan", demo.NewFavoriteTreatmentPlanHandler(dataApi))
 	}
 
 	if conf.ERxRouting {
@@ -353,6 +360,7 @@ func buildRESTAPI(conf *Config, dataApi api.DataAPI, authAPI api.AuthAPI, metric
 		app_worker.StartWorkerToCheckForRefillRequests(dataApi, doseSpotService, metricsRegistry.Scope("check_rx_refill_requests"), conf.Environment)
 	}
 
+	// This helps to ensure that we are only surfacing errors to client in the dev environment
 	apiservice.IsDev = (conf.Environment == "dev")
 
 	return mux

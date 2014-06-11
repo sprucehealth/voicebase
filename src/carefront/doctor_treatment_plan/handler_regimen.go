@@ -136,12 +136,14 @@ func (d *regimenHandler) updateRegimenSteps(w http.ResponseWriter, r *http.Reque
 
 	// go through regimen steps within the regimen sections to assign ids to the new steps that dont have them
 	for _, regimenSection := range requestData.RegimenSections {
+
 		for _, regimenStep := range regimenSection.RegimenSteps {
 
 			if newIds, ok := newStepToIdMapping[regimenStep.Text]; ok {
-				regimenStep.ParentId = encoding.NewObjectId(newIds[0])
-				// update the list to remove the item just used
-				newStepToIdMapping[regimenStep.Text] = newIds[1:]
+				id := newIds[0]
+				regimenStep.ParentId = encoding.NewObjectId(id)
+				// update the list to move the item just used to the back of the queue
+				newStepToIdMapping[regimenStep.Text] = append(newIds[1:], newIds[0])
 			} else if updatedId, ok := updatedStepToIdMapping[regimenStep.ParentId.Int64()]; ok {
 				// update the parentId to point to the new updated regimen step
 				regimenStep.ParentId = encoding.NewObjectId(updatedId)

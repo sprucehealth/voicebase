@@ -144,6 +144,10 @@ func WriteJSONToHTTPResponseWriter(w http.ResponseWriter, httpStatusCode int, v 
 	}
 }
 
+func WriteJSONSuccess(w http.ResponseWriter) {
+	WriteJSONToHTTPResponseWriter(w, http.StatusOK, SuccessfulGenericJSONResponse())
+}
+
 func WriteErrorResponse(w http.ResponseWriter, httpStatusCode int, errorResponse ErrorResponse) {
 	golog.Logf(2, golog.ERR, errorResponse.DeveloperError)
 	WriteJSONToHTTPResponseWriter(w, httpStatusCode, &errorResponse)

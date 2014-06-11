@@ -271,17 +271,6 @@ func ValidateRegimenRequestAgainstResponse(doctorRegimenRequest, doctorRegimenRe
 		idsFound[regimenStep.Id.Int64()] = true
 	}
 
-	// no two items should have the same parent id in the regimen section
-	idsFound = make(map[int64]bool)
-	for _, regimenSection := range doctorRegimenResponse.RegimenSections {
-		for _, regimenStep := range regimenSection.RegimenSteps {
-			if _, ok := idsFound[regimenStep.ParentId.Int64()]; regimenStep.ParentId.IsValid && ok {
-				t.Fatalf("No two items can have the same parent id")
-			}
-			idsFound[regimenStep.ParentId.Int64()] = true
-		}
-	}
-
 	// deleted regimen steps should not show up in the response
 	deletedRegimenStepIds := make(map[int64]bool)
 	// updated regimen steps should have a different id in the response

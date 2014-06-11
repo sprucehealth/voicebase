@@ -50,7 +50,10 @@ func WriteError(err error, w http.ResponseWriter, r *http.Request) {
 	default:
 		writeSpruceError(wrapInternalError(err, r), w, r)
 	}
+}
 
+func WriteValidationError(msg string, w http.ResponseWriter, r *http.Request) {
+	WriteError(NewValidationError(msg, r), w, r)
 }
 
 func WriteValidationError(msg string, w http.ResponseWriter, r *http.Request) {

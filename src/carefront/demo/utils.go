@@ -195,6 +195,11 @@ const (
 	answerQuestionsUrl       = "http://127.0.0.1:8080/v1/patient/visit/answer"
 	photoIntakeUrl           = "http://127.0.0.1:8080/v1/patient/visit/photo_answer"
 	conversationUrl          = "http://127.0.0.1:8080/v1/patient/conversation"
+	regimenUrl               = "http://127.0.0.1:8080/v1/doctor/visit/regimen"
+	dVisitReviewUrl          = "http://127.0.0.1:8080/v1/doctor/visit/review"
+	dVisitSubmitUrl          = "http://127.0.0.1:8080/v1/doctor/visit/submit"
+	dFavoriteTPUrl           = "http://127.0.0.1:8080/v1/doctor/favorite_treatment_plans"
+	dTPUrl                   = "http://127.0.0.1:8080/v1/doctor/treatment_plans"
 	demoPhotosBucketFormat   = "%s-carefront-demo"
 	frontPhoto               = "profile_front.jpg"
 	profileRightPhoto        = "profile_right.jpg"
@@ -970,4 +975,129 @@ func prepareDemoPatients(n int64) []*common.Patient {
 		}
 	}
 	return patients
+}
+
+var favoriteTreatmentPlans = map[string]*common.FavoriteTreatmentPlan{
+	"doxy_and_tretinoin": &common.FavoriteTreatmentPlan{
+		Name: "Doxy and Tretinoin",
+		TreatmentList: &common.TreatmentList{
+			Treatments: []*common.Treatment{
+				&common.Treatment{
+					DrugDBIds: map[string]string{
+						"ndc": "00245904519",
+						"lexi_gen_product_id":  "3162",
+						"lexi_synonym_type_id": "59",
+						"lexi_drug_syn_id":     "19573",
+					},
+					DrugInternalName: "Tretinoin Topical (topical - cream)",
+					DrugName:         "Tretinoin Topical",
+					DrugRoute:        "topical",
+					DrugForm:         "cream",
+					DosageStrength:   "0.025%",
+					DispenseValue:    encoding.HighPrecisionFloat64(1.0000000000),
+					DispenseUnitId:   encoding.NewObjectId(29),
+					NumberRefills: encoding.NullInt64{
+						IsValid:    true,
+						Int64Value: 2,
+					},
+					SubstitutionsAllowed: true,
+					PharmacyNotes:        "For the treatment of acne vulgaris (706.0)",
+					PatientInstructions:  "Apply pea-sized amount over affected area at night. Start every other night for 2-4 weeks and gradually increase id tolerated to every night",
+				},
+				&common.Treatment{
+					DrugDBIds: map[string]string{
+						"ndc": "00003081240",
+						"lexi_gen_product_id":  "1161",
+						"lexi_synonym_type_id": "59",
+						"lexi_drug_syn_id":     "23011",
+					},
+					DrugInternalName: "Doxycycline (oral - tablet)",
+					DrugName:         "Doxycycline",
+					DrugRoute:        "oral",
+					DrugForm:         "tablet",
+					DosageStrength:   "hyclate 100 mg",
+					DispenseValue:    encoding.HighPrecisionFloat64(180.0000000000),
+					DispenseUnitId:   encoding.NewObjectId(26),
+					NumberRefills: encoding.NullInt64{
+						IsValid:    true,
+						Int64Value: 0,
+					},
+					SubstitutionsAllowed: true,
+					PatientInstructions:  "Take twice daily with small amount of food. Remain upright for 30 minutes after taking.",
+				},
+			},
+		},
+		RegimenPlan: &common.RegimenPlan{
+			AllRegimenSteps: []*common.DoctorInstructionItem{
+				&common.DoctorInstructionItem{
+					Text:  "Wash your face with a gentle cleanser",
+					State: common.STATE_ADDED,
+				},
+				&common.DoctorInstructionItem{
+					Text:  "Apply a lightweight moisturizer with SPF 50.",
+					State: common.STATE_ADDED,
+				},
+				&common.DoctorInstructionItem{
+					Text:  "Take doxycycline 100mg with breakfast.",
+					State: common.STATE_ADDED,
+				},
+				&common.DoctorInstructionItem{
+					Text:  "Take doxycycline 100mg with dinner.",
+					State: common.STATE_ADDED,
+				},
+				&common.DoctorInstructionItem{
+					Text:  "Dry your face completely.",
+					State: common.STATE_ADDED,
+				},
+				&common.DoctorInstructionItem{
+					Text:  "Apply pea-sized amount of tretinoin cream to entire face.",
+					State: common.STATE_ADDED,
+				},
+				&common.DoctorInstructionItem{
+					Text:  "Apply pea-size amount of benzoyl peroxide cream to entire face.",
+					State: common.STATE_ADDED,
+				},
+				&common.DoctorInstructionItem{
+					Text:  "Apply nighttime moisturizer as needed.",
+					State: common.STATE_ADDED,
+				},
+			},
+			RegimenSections: []*common.RegimenSection{
+				&common.RegimenSection{
+					RegimenName: "Morning",
+					RegimenSteps: []*common.DoctorInstructionItem{
+						&common.DoctorInstructionItem{
+							Text: "Wash your face with a gentle cleanser",
+						},
+						&common.DoctorInstructionItem{
+							Text: "Apply a lightweight moisturizer with SPF 50.",
+						},
+						&common.DoctorInstructionItem{
+							Text: "Take doxycycline 100mg with breakfast.",
+						},
+					},
+				},
+				&common.RegimenSection{
+					RegimenName: "Night",
+					RegimenSteps: []*common.DoctorInstructionItem{
+						&common.DoctorInstructionItem{
+							Text: "Take doxycycline 100mg with dinner.",
+						},
+						&common.DoctorInstructionItem{
+							Text: "Wash your face with a gentle cleanser",
+						},
+						&common.DoctorInstructionItem{
+							Text: "Dry your face completely.",
+						},
+						&common.DoctorInstructionItem{
+							Text: "Apply pea-sized amount of tretinoin cream to entire face.",
+						},
+						&common.DoctorInstructionItem{
+							Text: "Apply nighttime moisturizer as needed.",
+						},
+					},
+				},
+			},
+		},
+	},
 }
