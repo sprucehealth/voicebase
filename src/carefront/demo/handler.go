@@ -86,10 +86,10 @@ func (c *Handler) ServeHTTP(w http.ResponseWriter, r *http.Request) {
 	for i, patient := range patients {
 		if numRemainingConversationsToStart > 0 {
 			message := sampleMessages[i%3]
-			c.createNewDemoPatient(patient, doctorId, true, message, topLevelSignal)
+			c.createNewDemoPatient(patient, doctorId, true, message, topLevelSignal, r)
 			numRemainingConversationsToStart--
 		} else {
-			c.createNewDemoPatient(patient, doctorId, false, "", topLevelSignal)
+			c.createNewDemoPatient(patient, doctorId, false, "", topLevelSignal, r)
 		}
 
 		time.Sleep(500 * time.Millisecond)
@@ -108,7 +108,7 @@ func (c *Handler) ServeHTTP(w http.ResponseWriter, r *http.Request) {
 	apiservice.WriteJSONToHTTPResponseWriter(w, http.StatusOK, apiservice.SuccessfulGenericJSONResponse())
 }
 
-func (c *Handler) createNewDemoPatient(patient *common.Patient, doctorId int64, toMessageDoctor bool, message string, topLevelSignal chan int) {
+func (c *Handler) createNewDemoPatient(patient *common.Patient, doctorId int64, toMessageDoctor bool, message string, topLevelSignal chan int, r *http.Request) {
 	go func() {
 
 		// ********** CREATE RANDOM PATIENT **********
@@ -128,6 +128,7 @@ func (c *Handler) createNewDemoPatient(patient *common.Patient, doctorId int64, 
 		urlValues.Set("doctor_id", fmt.Sprintf("%d", doctorId))
 		signupPatientRequest, err := http.NewRequest("POST", signupPatientUrl, bytes.NewBufferString(urlValues.Encode()))
 		signupPatientRequest.Header.Set("Content-Type", "application/x-www-form-urlencoded")
+		signupPatientRequest.Host = r.Host
 
 		resp, err := http.DefaultClient.Do(signupPatientRequest)
 		if err != nil {
@@ -181,6 +182,7 @@ func (c *Handler) createNewDemoPatient(patient *common.Patient, doctorId int64, 
 		// create patient visit
 		createPatientVisitRequest, err := http.NewRequest("POST", patientVisitUrl, nil)
 		createPatientVisitRequest.Header.Set("Authorization", "token "+signupResponse.Token)
+		createPatientVisitRequest.Host = r.Host
 		resp, err = http.DefaultClient.Do(createPatientVisitRequest)
 		if err != nil || resp.StatusCode != http.StatusOK {
 			golog.Errorf("Unable to create new patient visit: %+v", err)
@@ -263,7 +265,7 @@ func (c *Handler) createNewDemoPatient(patient *common.Patient, doctorId int64, 
 		// until the receiver reads off the channel
 		signal := make(chan int, numRequestsWaitingFor)
 
-		startPatientIntakeSubmission(answersToQuestions, patientVisitResponse.PatientVisitId, signupResponse.Token, signal)
+		startPatientIntakeSubmission(answersToQuestions, patientVisitResponse.PatientVisitId, signupResponse.Token, signal, r)
 
 		c.startPhotoSubmissionForPatient(questionIds[qFacePhotoSection], patientVisitResponse.PatientVisitId, []*common.PhotoIntakeSection{
 			&common.PhotoIntakeSection{
@@ -287,7 +289,7 @@ func (c *Handler) createNewDemoPatient(patient *common.Patient, doctorId int64, 
 					},
 				},
 			},
-		}, signupResponse.Token, signal)
+		}, signupResponse.Token, signal, r)
 
 		c.startPhotoSubmissionForPatient(questionIds[qChestPhotoSection], patientVisitResponse.PatientVisitId, []*common.PhotoIntakeSection{
 			&common.PhotoIntakeSection{
@@ -301,7 +303,7 @@ func (c *Handler) createNewDemoPatient(patient *common.Patient, doctorId int64, 
 					},
 				},
 			},
-		}, signupResponse.Token, signal)
+		}, signupResponse.Token, signal, r)
 
 		c.startPhotoSubmissionForPatient(questionIds[qOtherLocationPhotoSection], patientVisitResponse.PatientVisitId, []*common.PhotoIntakeSection{
 			&common.PhotoIntakeSection{
@@ -320,10 +322,10 @@ func (c *Handler) createNewDemoPatient(patient *common.Patient, doctorId int64, 
 					},
 				},
 			},
-		}, signupResponse.Token, signal)
+		}, signupResponse.Token, signal, r)
 
 		if toMessageDoctor {
-			c.startSendingMessageToDoctor(signupResponse.Token, message, signal)
+			c.startSendingMessageToDoctor(signupResponse.Token, message, signal, r)
 		}
 
 		// wait for all requests to finish
@@ -342,6 +344,7 @@ func (c *Handler) createNewDemoPatient(patient *common.Patient, doctorId int64, 
 		submitPatientVisitRequest, err := http.NewRequest("PUT", patientVisitUrl, bytes.NewBufferString(fmt.Sprintf("patient_visit_id=%d", patientVisitResponse.PatientVisitId)))
 		submitPatientVisitRequest.Header.Set("Content-Type", "application/x-www-form-urlencoded")
 		submitPatientVisitRequest.Header.Set("Authorization", "token "+signupResponse.Token)
+		submitPatientVisitRequest.Host = r.Host
 		if err != nil {
 			golog.Errorf("Unable to create new request to submit patient visit:%+v", err)
 			topLevelSignal <- failure
