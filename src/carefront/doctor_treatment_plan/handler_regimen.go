@@ -140,8 +140,7 @@ func (d *regimenHandler) updateRegimenSteps(w http.ResponseWriter, r *http.Reque
 		for _, regimenStep := range regimenSection.RegimenSteps {
 
 			if newIds, ok := newStepToIdMapping[regimenStep.Text]; ok {
-				id := newIds[0]
-				regimenStep.ParentId = encoding.NewObjectId(id)
+				regimenStep.ParentId = encoding.NewObjectId(newIds[0])
 				// update the list to move the item just used to the back of the queue
 				newStepToIdMapping[regimenStep.Text] = append(newIds[1:], newIds[0])
 			} else if updatedId, ok := updatedStepToIdMapping[regimenStep.ParentId.Int64()]; ok {
