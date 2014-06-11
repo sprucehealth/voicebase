@@ -20,8 +20,7 @@ type favoriteTreatmentPlanHandler struct {
 }
 
 type favoriteTreatmentPlanRequestData struct {
-	PatientVisitId           encoding.ObjectId `json:"patient_visit_id"`
-	FavoriteTreatmentPlanTag string            `json:"tag"`
+	FavoriteTreatmentPlanTag string `json:"tag"`
 }
 
 func NewFavoriteTreatmentPlanHandler(dataApi api.DataAPI) *favoriteTreatmentPlanHandler {
@@ -40,9 +39,6 @@ func (f *favoriteTreatmentPlanHandler) ServeHTTP(w http.ResponseWriter, r *http.
 	if err := apiservice.DecodeRequestData(requestData, r); err != nil {
 		apiservice.WriteError(err, w, r)
 		return
-	} else if requestData.PatientVisitId.Int64() == 0 {
-		apiservice.WriteValidationError("Patient Visit Id cannot be 0", w, r)
-		return
 	} else if requestData.FavoriteTreatmentPlanTag == "" {
 		apiservice.WriteValidationError("Favorite Treatment Plan Tag cannot be empty", w, r)
 		return
@@ -54,9 +50,35 @@ func (f *favoriteTreatmentPlanHandler) ServeHTTP(w http.ResponseWriter, r *http.
 		return
 	}
 
+	// ********** STEP 0: get the first pending visit from the doctors queue to use as context to create the FTP **********
+	doctorId, err := f.dataApi.GetDoctorIdFromAccountId(apiservice.GetContext(r).AccountId)
+	if err != nil {
+		apiservice.WriteError(err, w, r)
+		return
+	}
+
+	pendingItems, err := f.dataApi.GetPendingItemsInDoctorQueue(doctorId)
+	if err != nil {
+		apiservice.WriteError(err, w, r)
+		return
+	}
+
+	patientVisitId := int64(0)
+	for _, item := range pendingItems {
+		if item.EventType == api.EVENT_TYPE_PATIENT_VISIT {
+			patientVisitId = item.ItemId
+			break
+		}
+	}
+
+	if patientVisitId == 0 {
+		apiservice.WriteValidationError("Unable to find a pending patient visit for doctor", w, r)
+		return
+	}
+
 	// ********** STEP 1: first open the case to push it into REVIEWING mode **********
 
-	visitReviewRequest, err := http.NewRequest("GET", dVisitReviewUrl+"?patient_visit_id="+strconv.FormatInt(requestData.PatientVisitId.Int64(), 10), nil)
+	visitReviewRequest, err := http.NewRequest("GET", dVisitReviewUrl+"?patient_visit_id="+strconv.FormatInt(patientVisitId, 10), nil)
 	if err != nil {
 		apiservice.WriteError(err, w, r)
 		return
@@ -75,7 +97,7 @@ func (f *favoriteTreatmentPlanHandler) ServeHTTP(w http.ResponseWriter, r *http.
 	// ********** STEP 2: pick a treatment plan for the visit **********
 
 	jsonData, err := json.Marshal(&doctor_treatment_plan.DoctorTreatmentPlanRequestData{
-		PatientVisitId: requestData.PatientVisitId.Int64(),
+		PatientVisitId: patientVisitId,
 	})
 	if err != nil {
 		apiservice.WriteError(err, w, r)
@@ -107,7 +129,7 @@ func (f *favoriteTreatmentPlanHandler) ServeHTTP(w http.ResponseWriter, r *http.
 	// ********** STEP 3: first add the regimen steps in the context of a patient visit **********
 
 	favoriteTreatmentPlan.RegimenPlan.TreatmentPlanId = tpResponse.TreatmentPlan.Id
-	favoriteTreatmentPlan.RegimenPlan.PatientVisitId = requestData.PatientVisitId
+	favoriteTreatmentPlan.RegimenPlan.PatientVisitId = encoding.NewObjectId(patientVisitId)
 	jsonData, err = json.Marshal(favoriteTreatmentPlan.RegimenPlan)
 	addRegimenPlanRequest, err := http.NewRequest("POST", regimenUrl, bytes.NewReader(jsonData))
 	if err != nil {
@@ -163,7 +185,7 @@ func (f *favoriteTreatmentPlanHandler) ServeHTTP(w http.ResponseWriter, r *http.
 
 	// ********** STEP 5: go ahead and submit this treatment plan to clear this visit out of the doctor's queue **********
 	params := url.Values{}
-	params.Set("patient_visit_id", strconv.FormatInt(requestData.PatientVisitId.Int64(), 10))
+	params.Set("patient_visit_id", strconv.FormatInt(patientVisitId, 10))
 	params.Set("status", api.CASE_STATUS_TREATED)
 	submitTPREquest, err := http.NewRequest("POST", dVisitSubmitUrl, strings.NewReader(params.Encode()))
 	if err != nil {
