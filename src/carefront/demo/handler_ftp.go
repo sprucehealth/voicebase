@@ -131,6 +131,10 @@ func (f *favoriteTreatmentPlanHandler) ServeHTTP(w http.ResponseWriter, r *http.
 	favoriteTreatmentPlan.RegimenPlan.TreatmentPlanId = tpResponse.TreatmentPlan.Id
 	favoriteTreatmentPlan.RegimenPlan.PatientVisitId = encoding.NewObjectId(patientVisitId)
 	jsonData, err = json.Marshal(favoriteTreatmentPlan.RegimenPlan)
+	if err != nil {
+		apiservice.WriteError(err, w, r)
+		return
+	}
 	addRegimenPlanRequest, err := http.NewRequest("POST", regimenUrl, bytes.NewReader(jsonData))
 	if err != nil {
 		apiservice.WriteError(err, w, r)
