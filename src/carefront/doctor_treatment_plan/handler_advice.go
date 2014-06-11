@@ -123,8 +123,8 @@ func (d *adviceHandler) updateAdvicePoints(w http.ResponseWriter, r *http.Reques
 	for _, advicePoint := range requestData.SelectedAdvicePoints {
 		if newIds, ok := newPointToIdMapping[advicePoint.Text]; ok {
 			advicePoint.ParentId = encoding.NewObjectId(newIds[0])
-			// remove the id that was just used so as to assign a different id to the same text
-			// that could appear again
+			// move the id that was just used to the back of the queue
+			// so as to assign a different id to the same text that could appear again
 			newPointToIdMapping[advicePoint.Text] = append(newIds[1:], newIds[0])
 		} else if updatedId, ok := updatedPointToIdMapping[advicePoint.ParentId.Int64()]; ok {
 			// update the parentId to point to the new updated item
