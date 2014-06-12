@@ -4,7 +4,6 @@ import (
 	"carefront/api"
 	"carefront/common"
 	"carefront/encoding"
-	"encoding/json"
 	"net/http"
 )
 
@@ -13,8 +12,7 @@ type DoctorTreatmentTemplatesHandler struct {
 }
 
 type DoctorTreatmentTemplatesRequest struct {
-	TreatmentPlanId    encoding.ObjectId                 `json:"treamtent_plan_id"`
-	PatientVisitId     encoding.ObjectId                 `json:"patient_visit_id"`
+	TreatmentPlanId    encoding.ObjectId                 `json:"treatment_plan_id"`
 	TreatmentTemplates []*common.DoctorTreatmentTemplate `json:"treatment_templates"`
 }
 
@@ -54,15 +52,18 @@ func (t *DoctorTreatmentTemplatesHandler) getTreatmentTemplates(w http.ResponseW
 
 func (t *DoctorTreatmentTemplatesHandler) deleteTreatmentTemplates(w http.ResponseWriter, r *http.Request) {
 
-	doctorId, err := t.DataApi.GetDoctorIdFromAccountId(GetContext(r).AccountId)
-	if err != nil {
-		WriteDeveloperError(w, http.StatusInternalServerError, "Unable to get doctor from account id: "+err.Error())
+	var treatmentTemplateRequest DoctorTreatmentTemplatesRequest
+	if err := DecodeRequestData(&treatmentTemplateRequest, r); err != nil {
+		WriteError(err, w, r)
+		return
+	} else if treatmentTemplateRequest.TreatmentPlanId.Int64() == 0 {
+		WriteValidationError("treatment_plan_id must be specified", w, r)
 		return
 	}
 
-	var treatmentTemplateRequest DoctorTreatmentTemplatesRequest
-	if err := json.NewDecoder(r.Body).Decode(&treatmentTemplateRequest); err != nil {
-		WriteDeveloperError(w, http.StatusBadRequest, "Unable to parse treatment body: "+err.Error())
+	doctorId, err := t.DataApi.GetDoctorIdFromAccountId(GetContext(r).AccountId)
+	if err != nil {
+		WriteDeveloperError(w, http.StatusInternalServerError, "Unable to get doctor from account id: "+err.Error())
 		return
 	}
 
@@ -85,23 +86,10 @@ func (t *DoctorTreatmentTemplatesHandler) deleteTreatmentTemplates(w http.Respon
 		return
 	}
 
-	treatmentPlanId := treatmentTemplateRequest.TreatmentPlanId.Int64()
-	patientVisitId := treatmentTemplateRequest.PatientVisitId.Int64()
-	var treatmentsInTreatmentPlan []*common.Treatment
-	if patientVisitId != 0 {
-		if treatmentPlanId == 0 {
-			treatmentPlanId, err = t.DataApi.GetActiveTreatmentPlanForPatientVisit(doctorId, patientVisitId)
-			if err != nil {
-				WriteDeveloperError(w, http.StatusInternalServerError, "Unable to get active treatment plan from patient visit: "+err.Error())
-				return
-			}
-		}
-
-		treatmentsInTreatmentPlan, err = t.DataApi.GetTreatmentsBasedOnTreatmentPlanId(treatmentPlanId)
-		if err != nil {
-			WriteDeveloperError(w, http.StatusInternalServerError, "Unable to get treatments based on treatment plan id: "+err.Error())
-			return
-		}
+	treatmentsInTreatmentPlan, err := t.DataApi.GetTreatmentsBasedOnTreatmentPlanId(treatmentTemplateRequest.TreatmentPlanId.Int64())
+	if err != nil {
+		WriteDeveloperError(w, http.StatusInternalServerError, "Unable to get treatments based on treatment plan id: "+err.Error())
+		return
 	}
 
 	WriteJSONToHTTPResponseWriter(w, http.StatusOK, &DoctorTreatmentTemplatesResponse{
@@ -112,8 +100,11 @@ func (t *DoctorTreatmentTemplatesHandler) deleteTreatmentTemplates(w http.Respon
 
 func (t *DoctorTreatmentTemplatesHandler) addTreatmentTemplates(w http.ResponseWriter, r *http.Request) {
 	var treatmentTemplateRequest DoctorTreatmentTemplatesRequest
-	if err := json.NewDecoder(r.Body).Decode(&treatmentTemplateRequest); err != nil {
-		WriteDeveloperError(w, http.StatusBadRequest, "Unable to parse treatment body: "+err.Error())
+	if err := DecodeRequestData(&treatmentTemplateRequest, r); err != nil {
+		WriteError(err, w, r)
+		return
+	} else if treatmentTemplateRequest.TreatmentPlanId.Int64() == 0 {
+		WriteValidationError("treatment_plan_id must be specified", w, r)
 		return
 	}
 
@@ -152,23 +143,10 @@ func (t *DoctorTreatmentTemplatesHandler) addTreatmentTemplates(w http.ResponseW
 		return
 	}
 
-	treatmentPlanId := treatmentTemplateRequest.TreatmentPlanId.Int64()
-	patientVisitId := treatmentTemplateRequest.PatientVisitId.Int64()
-	var treatmentsInTreatmentPlan []*common.Treatment
-	if patientVisitId != 0 {
-		if treatmentPlanId == 0 {
-			treatmentPlanId, err = t.DataApi.GetActiveTreatmentPlanForPatientVisit(doctorId, patientVisitId)
-			if err != nil {
-				WriteDeveloperError(w, http.StatusInternalServerError, "Unable to get active treatment plan from patient visit: "+err.Error())
-				return
-			}
-		}
-
-		treatmentsInTreatmentPlan, err = t.DataApi.GetTreatmentsBasedOnTreatmentPlanId(treatmentPlanId)
-		if err != nil {
-			WriteDeveloperError(w, http.StatusInternalServerError, "Unable to get treatments based on treatment plan id: "+err.Error())
-			return
-		}
+	treatmentsInTreatmentPlan, err := t.DataApi.GetTreatmentsBasedOnTreatmentPlanId(treatmentTemplateRequest.TreatmentPlanId.Int64())
+	if err != nil {
+		WriteError(err, w, r)
+		return
 	}
 
 	WriteJSONToHTTPResponseWriter(w, http.StatusOK, &DoctorTreatmentTemplatesResponse{

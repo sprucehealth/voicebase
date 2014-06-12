@@ -22,13 +22,12 @@ func NewTreatmentPlanHandler(dataApi api.DataAPI) *treatmentPlanHandler {
 }
 
 type TreatmentPlanRequest struct {
-	PatientVisitId  int64 `schema:"patient_visit_id"`
 	TreatmentPlanId int64 `schema:"treatment_plan_id"`
 }
 
 func (p *treatmentPlanHandler) ServeHTTP(w http.ResponseWriter, r *http.Request) {
 	if r.Method != apiservice.HTTP_GET {
-		w.WriteHeader(http.StatusNotFound)
+		http.NotFound(w, r)
 		return
 	}
 
@@ -57,7 +56,7 @@ func (p *treatmentPlanHandler) processTreatmentPlanViewForDoctor(requestData *Tr
 	}
 
 	if requestData.TreatmentPlanId == 0 {
-		apiservice.WriteUserError(w, http.StatusBadRequest, "Treatment Plan needs to be specified")
+		apiservice.WriteUserError(w, http.StatusBadRequest, "treatment_plan_id must be specified")
 		return
 	}
 
@@ -89,37 +88,16 @@ func (p *treatmentPlanHandler) processTreatmentPlanViewForPatient(requestData *T
 		return
 	}
 
-	var patientVisit *common.PatientVisit
-
-	if requestData.PatientVisitId != 0 {
-		patientIdFromPatientVisitId, err := p.dataApi.GetPatientIdFromPatientVisitId(requestData.PatientVisitId)
-		if err != nil {
-			apiservice.WriteDeveloperError(w, http.StatusInternalServerError, "Unable to get patientId from patientVisitId: "+err.Error())
+	patientVisit, err := p.dataApi.GetLatestClosedPatientVisitForPatient(patient.PatientId.Int64())
+	if err != nil {
+		if err == api.NoRowsError {
+			// no patient visit review to return
+			apiservice.WriteDeveloperErrorWithCode(w, apiservice.DEVELOPER_NO_TREATMENT_PLAN, http.StatusNotFound, "No treatment plan exists for this patient visit yet")
 			return
 		}
 
-		if patient.PatientId.Int64() != patientIdFromPatientVisitId {
-			apiservice.WriteDeveloperError(w, http.StatusBadRequest, "PatientId from auth token and patient id from patient visit don't match")
-			return
-		}
-
-		patientVisit, err = p.dataApi.GetPatientVisitFromId(requestData.PatientVisitId)
-		if err != nil {
-			apiservice.WriteDeveloperError(w, http.StatusBadRequest, "Unable to get patient visit from id: "+err.Error())
-			return
-		}
-	} else {
-		patientVisit, err = p.dataApi.GetLatestClosedPatientVisitForPatient(patient.PatientId.Int64())
-		if err != nil {
-			if err == api.NoRowsError {
-				// no patient visit review to return
-				apiservice.WriteDeveloperErrorWithCode(w, apiservice.DEVELOPER_NO_TREATMENT_PLAN, http.StatusNotFound, "No treatment plan exists for this patient visit yet")
-				return
-			}
-
-			apiservice.WriteDeveloperError(w, http.StatusBadRequest, "Unable to get latest closed patient visit from id: "+err.Error())
-			return
-		}
+		apiservice.WriteDeveloperError(w, http.StatusBadRequest, "Unable to get latest closed patient visit from id: "+err.Error())
+		return
 	}
 
 	// do not support the submitting of a case that has already been submitted or is in another state
@@ -134,7 +112,7 @@ func (p *treatmentPlanHandler) processTreatmentPlanViewForPatient(requestData *T
 		return
 	}
 
-	treatmentPlanId, err := p.dataApi.GetActiveTreatmentPlanForPatientVisit(doctor.DoctorId.Int64(), patientVisit.PatientVisitId.Int64())
+	treatmentPlanId, err := p.dataApi.GetActiveTreatmentPlanIdForPatient(patient.PatientId.Int64())
 	if err != nil {
 		apiservice.WriteDeveloperError(w, http.StatusInternalServerError, "Unable to get treatment plan based on patient visit: "+err.Error())
 		return

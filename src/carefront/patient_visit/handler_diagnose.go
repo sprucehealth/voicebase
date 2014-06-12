@@ -8,8 +8,6 @@ import (
 	"carefront/libs/dispatch"
 	"encoding/json"
 	"net/http"
-
-	"github.com/gorilla/schema"
 )
 
 type diagnosePatientHandler struct {
@@ -59,8 +57,7 @@ type GetDiagnosisResponse struct {
 }
 
 type DiagnosePatientRequestData struct {
-	PatientVisitId  int64 `schema:"patient_visit_id,required"`
-	TreatmentPlanId int64 `schema:"treatment_plan_id"`
+	PatientVisitId int64 `schema:"patient_visit_id,required"`
 }
 
 func (d *diagnosePatientHandler) ServeHTTP(w http.ResponseWriter, r *http.Request) {
@@ -75,31 +72,23 @@ func (d *diagnosePatientHandler) ServeHTTP(w http.ResponseWriter, r *http.Reques
 }
 
 func (d *diagnosePatientHandler) getDiagnosis(w http.ResponseWriter, r *http.Request) {
-	if err := r.ParseForm(); err != nil {
-		apiservice.WriteDeveloperError(w, http.StatusBadRequest, "Unable to parse request data: "+err.Error())
-		return
-	}
 
 	requestData := new(DiagnosePatientRequestData)
-	if err := schema.NewDecoder().Decode(requestData, r.Form); err != nil {
+	if err := apiservice.DecodeRequestData(requestData, r); err != nil {
 		apiservice.WriteDeveloperError(w, http.StatusBadRequest, "Unable to parse input parameters: "+err.Error())
 		return
-	}
-
-	patientVisitId := requestData.PatientVisitId
-	treatmentPlanId := requestData.TreatmentPlanId
-	if err := apiservice.EnsureTreatmentPlanOrPatientVisitIdPresent(d.dataApi, treatmentPlanId, &patientVisitId); err != nil {
-		apiservice.WriteDeveloperError(w, http.StatusBadRequest, err.Error())
+	} else if requestData.PatientVisitId == 0 {
+		apiservice.WriteValidationError("patient_visit_id must be specified", w, r)
 		return
 	}
 
-	patientVisitReviewData, statusCode, err := apiservice.ValidateDoctorAccessToPatientVisitAndGetRelevantData(patientVisitId, apiservice.GetContext(r).AccountId, d.dataApi)
+	patientVisitReviewData, statusCode, err := apiservice.ValidateDoctorAccessToPatientVisitAndGetRelevantData(requestData.PatientVisitId, apiservice.GetContext(r).AccountId, d.dataApi)
 	if err != nil {
 		apiservice.WriteDeveloperError(w, statusCode, err.Error())
 		return
 	}
 
-	diagnosisLayout, err := GetDiagnosisLayout(d.dataApi, patientVisitId, treatmentPlanId, patientVisitReviewData.DoctorId)
+	diagnosisLayout, err := GetDiagnosisLayout(d.dataApi, requestData.PatientVisitId, patientVisitReviewData.DoctorId)
 	if err != nil {
 		apiservice.WriteDeveloperError(w, http.StatusInternalServerError, err.Error())
 		return
@@ -108,21 +97,13 @@ func (d *diagnosePatientHandler) getDiagnosis(w http.ResponseWriter, r *http.Req
 	apiservice.WriteJSONToHTTPResponseWriter(w, http.StatusOK, &GetDiagnosisResponse{DiagnosisLayout: diagnosisLayout})
 }
 
-func GetDiagnosisLayout(dataApi api.DataAPI, patientVisitId, treatmentPlanId, doctorId int64) (*info_intake.DiagnosisIntake, error) {
+func GetDiagnosisLayout(dataApi api.DataAPI, patientVisitId, doctorId int64) (*info_intake.DiagnosisIntake, error) {
 
 	diagnosisLayout, err := getCurrentActiveDiagnoseLayoutForHealthCondition(dataApi, apiservice.HEALTH_CONDITION_ACNE_ID)
 	if err != nil {
 		return nil, err
 	}
 	diagnosisLayout.PatientVisitId = patientVisitId
-
-	if treatmentPlanId == 0 {
-		treatmentPlanId, err = dataApi.GetActiveTreatmentPlanForPatientVisit(doctorId, patientVisitId)
-		if err != nil {
-			return nil, err
-		}
-	}
-	diagnosisLayout.TreatmentPlanId = treatmentPlanId
 
 	// get a list of question ids in ther diagnosis layout, so that we can look for answers from the doctor pertaining to this visit
 	questionIds := getQuestionIdsInDiagnosisLayout(diagnosisLayout)
@@ -140,8 +121,11 @@ func GetDiagnosisLayout(dataApi api.DataAPI, patientVisitId, treatmentPlanId, do
 
 func (d *diagnosePatientHandler) diagnosePatient(w http.ResponseWriter, r *http.Request) {
 	var answerIntakeRequestBody apiservice.AnswerIntakeRequestBody
-	if err := json.NewDecoder(r.Body).Decode(&answerIntakeRequestBody); err != nil {
-		apiservice.WriteDeveloperError(w, http.StatusBadRequest, "Unable to get answer intake parameters from request body "+err.Error())
+	if err := apiservice.DecodeRequestData(answerIntakeRequestBody, r); err != nil {
+		apiservice.WriteError(err, w, r)
+		return
+	} else if answerIntakeRequestBody.PatientVisitId == 0 {
+		apiservice.WriteValidationError("patient_visit_id must be specified", w, r)
 		return
 	}
 
@@ -170,16 +154,16 @@ func (d *diagnosePatientHandler) diagnosePatient(w http.ResponseWriter, r *http.
 	answersToStorePerQuestion := make(map[int64][]*common.AnswerIntake)
 	for _, questionItem := range answerIntakeRequestBody.Questions {
 		// enumerate the answers to store from the top level questions as well as the sub questions
-		answersToStorePerQuestion[questionItem.QuestionId] = apiservice.PopulateAnswersToStoreForQuestion(api.DOCTOR_ROLE, questionItem, patientVisitReviewData.PatientVisit.PatientVisitId.Int64(), patientVisitReviewData.DoctorId, layoutVersionId)
+		answersToStorePerQuestion[questionItem.QuestionId] = apiservice.PopulateAnswersToStoreForQuestion(api.DOCTOR_ROLE, questionItem, answerIntakeRequestBody.PatientVisitId, patientVisitReviewData.DoctorId, layoutVersionId)
 	}
 
-	if err := d.dataApi.DeactivatePreviousDiagnosisForPatientVisit(patientVisitReviewData.PatientVisit.PatientVisitId.Int64(), patientVisitReviewData.DoctorId); err != nil {
-		apiservice.WriteDeveloperError(w, http.StatusInternalServerError, "Unable to deactivate responses from previous diagnosis of this patient visit: "+err.Error())
+	if err := d.dataApi.DeactivatePreviousDiagnosisForPatientVisit(answerIntakeRequestBody.PatientVisitId, patientVisitReviewData.DoctorId); err != nil {
+		apiservice.WriteError(err, w, r)
 		return
 	}
 
-	if err := d.dataApi.StoreAnswersForQuestion(api.DOCTOR_ROLE, patientVisitReviewData.DoctorId, patientVisitReviewData.PatientVisit.PatientVisitId.Int64(), layoutVersionId, answersToStorePerQuestion); err != nil {
-		apiservice.WriteDeveloperError(w, http.StatusInternalServerError, "Unable to store the multiple choice answer to the question for the patient based on the parameters provided and the internal state of the system: "+err.Error())
+	if err := d.dataApi.StoreAnswersForQuestion(api.DOCTOR_ROLE, patientVisitReviewData.DoctorId, answerIntakeRequestBody.PatientVisitId, layoutVersionId, answersToStorePerQuestion); err != nil {
+		apiservice.WriteError(err, w, r)
 		return
 	}
 
@@ -197,7 +181,7 @@ func (d *diagnosePatientHandler) diagnosePatient(w http.ResponseWriter, r *http.
 	}
 
 	if unsuitableForSpruceVisit {
-		err = d.dataApi.ClosePatientVisit(patientVisitReviewData.PatientVisit.PatientVisitId.Int64(), api.CASE_STATUS_TRIAGED)
+		err = d.dataApi.ClosePatientVisit(answerIntakeRequestBody.PatientVisitId, api.CASE_STATUS_TRIAGED)
 		if err != nil {
 			apiservice.WriteDeveloperError(w, http.StatusInternalServerError, "Unable to update the status of the visit to closed: "+err.Error())
 			return
@@ -205,21 +189,9 @@ func (d *diagnosePatientHandler) diagnosePatient(w http.ResponseWriter, r *http.
 
 		dispatch.Default.Publish(&PatientVisitMarkedUnsuitableEvent{
 			DoctorId:       patientVisitReviewData.DoctorId,
-			PatientVisitId: patientVisitReviewData.PatientVisit.PatientVisitId.Int64(),
+			PatientVisitId: answerIntakeRequestBody.PatientVisitId,
 		})
 
-	} else {
-		treatmentPlanId, err := d.dataApi.GetActiveTreatmentPlanForPatientVisit(patientVisitReviewData.DoctorId, answerIntakeRequestBody.PatientVisitId)
-		if err != nil {
-			apiservice.WriteDeveloperError(w, http.StatusInternalServerError, "Unable to get active treatment plan for patient visit: "+err.Error())
-			return
-		}
-
-		dispatch.Default.Publish(&DiagnosisModifiedEvent{
-			DoctorId:        patientVisitReviewData.DoctorId,
-			PatientVisitId:  patientVisitReviewData.PatientVisit.PatientVisitId.Int64(),
-			TreatmentPlanId: treatmentPlanId,
-		})
 	}
 
 	apiservice.WriteJSONToHTTPResponseWriter(w, http.StatusOK, apiservice.SuccessfulGenericJSONResponse())

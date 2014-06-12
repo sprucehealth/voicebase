@@ -16,7 +16,7 @@ import (
 const (
 	bodyButton                   = "body_button"
 	incompleteVisit              = "incomplete_visit"
-	visitReviewed                = "visit_reviewed"
+	treatmentPlanCreated         = "treatment_plan_created"
 	patientNotificationNamespace = "patient_notification"
 	newConversation              = "new_conversation"
 	conversationReply            = "conversation_reply"
@@ -32,9 +32,10 @@ type incompleteVisitNotification struct {
 	VisitId int64
 }
 
-type visitReviewedNotification struct {
-	DoctorId int64
-	VisitId  int64
+type treatmentPlanCreatedNotification struct {
+	DoctorId        int64
+	VisitId         int64
+	TreatmentPlanId int64
 }
 
 type newConversationNotification struct {
@@ -51,8 +52,8 @@ func (*incompleteVisitNotification) TypeName() string {
 	return incompleteVisit
 }
 
-func (*visitReviewedNotification) TypeName() string {
-	return visitReviewed
+func (*treatmentPlanCreatedNotification) TypeName() string {
+	return treatmentPlanCreated
 }
 
 func (*newConversationNotification) TypeName() string {
@@ -84,25 +85,22 @@ func (n *incompleteVisitNotification) makeView(dataAPI api.DataAPI, patientId, n
 	}, nil
 }
 
-func (n *visitReviewedNotification) makeView(dataAPI api.DataAPI, patientId, notificationId int64) (view, error) {
+func (n *treatmentPlanCreatedNotification) makeView(dataAPI api.DataAPI, patientId, notificationId int64) (view, error) {
 	doctor, err := dataAPI.GetDoctorFromId(n.DoctorId)
 	if err != nil {
 		return nil, err
 	}
-	planID, err := dataAPI.GetActiveTreatmentPlanForPatientVisit(n.DoctorId, n.VisitId)
-	if err != nil {
-		return nil, err
-	}
+
 	return &bodyButtonView{
 		Dismissible:       true,
 		DismissOnAction:   true,
 		Type:              patientNotificationNamespace + ":" + bodyButton,
 		Title:             fmt.Sprintf("Dr. %s created your treatment plan.", doctor.LastName),
 		IconURL:           doctor.SmallThumbnailUrl,
-		TapURL:            app_url.ViewTreatmentPlanAction(planID),
+		TapURL:            app_url.ViewTreatmentPlanAction(n.TreatmentPlanId),
 		BodyButtonIconURL: app_url.IconBlueTreatmentPlan,
 		BodyButtonText:    "Treatment Plan",
-		BodyButtonTapURL:  app_url.ViewTreatmentPlanAction(planID),
+		BodyButtonTapURL:  app_url.ViewTreatmentPlanAction(n.TreatmentPlanId),
 		NotificationId:    notificationId,
 	}, nil
 }
@@ -156,7 +154,7 @@ var notifyTypes = map[string]reflect.Type{}
 
 func init() {
 	registerNotificationType(&incompleteVisitNotification{})
-	registerNotificationType(&visitReviewedNotification{})
+	registerNotificationType(&treatmentPlanCreatedNotification{})
 	registerNotificationType(&newConversationNotification{})
 	registerNotificationType(&conversationReplyNotification{})
 }

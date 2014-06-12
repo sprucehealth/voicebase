@@ -4,8 +4,6 @@ import (
 	"carefront/api"
 	"carefront/common"
 	"net/http"
-
-	"github.com/gorilla/schema"
 )
 
 type DiagnosisSummaryHandler struct {
@@ -13,7 +11,6 @@ type DiagnosisSummaryHandler struct {
 }
 
 type DiagnosisSummaryRequestData struct {
-	PatientVisitId  int64  `schema:"patient_visit_id"`
 	TreatmentPlanId int64  `schema:"treatment_plan_id"`
 	Summary         string `schema:"summary"`
 }
@@ -26,21 +23,18 @@ func (d *DiagnosisSummaryHandler) ServeHTTP(w http.ResponseWriter, r *http.Reque
 		w.WriteHeader(http.StatusNotFound)
 	}
 
-	if err := r.ParseForm(); err != nil {
-		WriteDeveloperError(w, http.StatusBadRequest, "Unable to parse request data: "+err.Error())
-		return
-	}
-
 	var requestData DiagnosisSummaryRequestData
-	if err := schema.NewDecoder().Decode(&requestData, r.Form); err != nil {
+	if err := DecodeRequestData(&requestData, r); err != nil {
 		WriteDeveloperError(w, http.StatusBadRequest, "Unable to parse input parameters: "+err.Error())
 		return
+	} else if requestData.TreatmentPlanId == 0 {
+		WriteValidationError("treatment_plan_id needs to be specified", w, r)
+		return
 	}
 
-	patientVisitId := requestData.PatientVisitId
-	treatmentPlanId := requestData.TreatmentPlanId
-	if err := EnsureTreatmentPlanOrPatientVisitIdPresent(d.DataApi, treatmentPlanId, &patientVisitId); err != nil {
-		WriteDeveloperError(w, http.StatusBadRequest, err.Error())
+	patientVisitId, err := d.DataApi.GetPatientVisitIdFromTreatmentPlanId(requestData.TreatmentPlanId)
+	if err != nil {
+		WriteError(err, w, r)
 		return
 	}
 
@@ -50,16 +44,8 @@ func (d *DiagnosisSummaryHandler) ServeHTTP(w http.ResponseWriter, r *http.Reque
 		return
 	}
 
-	if treatmentPlanId == 0 {
-		treatmentPlanId, err = d.DataApi.GetActiveTreatmentPlanForPatientVisit(patientVisitReviewData.DoctorId, patientVisitId)
-		if err != nil {
-			WriteDeveloperError(w, http.StatusInternalServerError, "Unable to get active treatment plan id based on patient visit id : "+err.Error())
-			return
-		}
-	}
-
 	if r.Method == HTTP_GET {
-		diagnosisSummary, err := d.DataApi.GetDiagnosisSummaryForTreatmentPlan(treatmentPlanId)
+		diagnosisSummary, err := d.DataApi.GetDiagnosisSummaryForTreatmentPlan(requestData.TreatmentPlanId)
 		if err != nil && err != api.NoRowsError {
 			WriteDeveloperError(w, http.StatusInternalServerError, "Unable to get diagnosis summary for patient visit: "+err.Error())
 			return
@@ -71,7 +57,7 @@ func (d *DiagnosisSummaryHandler) ServeHTTP(w http.ResponseWriter, r *http.Reque
 		WriteJSONToHTTPResponseWriter(w, http.StatusOK, &common.DiagnosisSummary{Type: "text", Summary: summary})
 	} else if r.Method == HTTP_PUT {
 
-		if treatmentPlanId == 0 {
+		if requestData.TreatmentPlanId == 0 {
 			WriteDeveloperError(w, http.StatusNotFound, "Unable to update diagnosis summary because treatment plan doesn't exist yet")
 			return
 		}
@@ -81,7 +67,7 @@ func (d *DiagnosisSummaryHandler) ServeHTTP(w http.ResponseWriter, r *http.Reque
 			return
 		}
 
-		if err := d.DataApi.AddOrUpdateDiagnosisSummaryForTreatmentPlan(requestData.Summary, treatmentPlanId, patientVisitReviewData.DoctorId, true); err != nil {
+		if err := d.DataApi.AddOrUpdateDiagnosisSummaryForTreatmentPlan(requestData.Summary, requestData.TreatmentPlanId, patientVisitReviewData.DoctorId, true); err != nil {
 			WriteDeveloperError(w, http.StatusInternalServerError, "Unable to update doctor diagnosis summary: "+err.Error())
 			return
 		}

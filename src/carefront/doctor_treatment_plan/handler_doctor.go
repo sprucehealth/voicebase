@@ -47,9 +47,7 @@ func (d *doctorTreatmentPlanHandler) getTreatmentPlan(w http.ResponseWriter, r *
 	if err := apiservice.DecodeRequestData(requestData, r); err != nil {
 		apiservice.WriteDeveloperError(w, http.StatusBadRequest, err.Error())
 		return
-	}
-
-	if requestData.TreatmentPlanId == 0 {
+	} else if requestData.TreatmentPlanId == 0 {
 		apiservice.WriteDeveloperError(w, http.StatusBadRequest, "treatment_plan_id not specified")
 		return
 	}
@@ -152,8 +150,7 @@ func (d *doctorTreatmentPlanHandler) pickATreatmentPlan(w http.ResponseWriter, r
 	}
 
 	drTreatmentPlan := &common.DoctorTreatmentPlan{
-		Id:             encoding.NewObjectId(treatmentPlanId),
-		PatientVisitId: patientVisitReviewData.PatientVisit.PatientVisitId,
+		Id: encoding.NewObjectId(treatmentPlanId),
 		Advice: &common.Advice{
 			AllAdvicePoints: allAdvicePoints,
 		},
@@ -216,7 +213,6 @@ func fillInTreatmentPlan(drTreatmentPlan *common.DoctorTreatmentPlan, dataApi ap
 
 	drTreatmentPlan.Advice = &common.Advice{
 		TreatmentPlanId: drTreatmentPlan.Id,
-		PatientVisitId:  drTreatmentPlan.PatientVisitId,
 	}
 
 	drTreatmentPlan.Advice.SelectedAdvicePoints, err = dataApi.GetAdvicePointsForTreatmentPlan(drTreatmentPlan.Id.Int64())
