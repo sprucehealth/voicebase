@@ -22,7 +22,7 @@ type incompleteVisitNotification struct {
 	VisitId int64
 }
 
-type visitReviewedNotification struct {
+type treatmentPlanCreatedNotification struct {
 	DoctorId int64
 	VisitId  int64
 }
@@ -45,8 +45,8 @@ func (*incompleteVisitNotification) TypeName() string {
 	return "incomplete_visit"
 }
 
-func (*visitReviewedNotification) TypeName() string {
-	return "visit_reviewed"
+func (*treatmentPlanCreatedNotification) TypeName() string {
+	return "treatment_plan_created"
 }
 
 func (*newConversationNotification) TypeName() string {
@@ -58,11 +58,11 @@ func (*conversationReplyNotification) TypeName() string {
 }
 
 var notificationTypes = map[string]reflect.Type{
-	(&titleSubtitleItem{}).TypeName():             reflect.TypeOf(titleSubtitleItem{}),
-	(&incompleteVisitNotification{}).TypeName():   reflect.TypeOf(incompleteVisitNotification{}),
-	(&visitReviewedNotification{}).TypeName():     reflect.TypeOf(visitReviewedNotification{}),
-	(&newConversationNotification{}).TypeName():   reflect.TypeOf(newConversationNotification{}),
-	(&conversationReplyNotification{}).TypeName(): reflect.TypeOf(conversationReplyNotification{}),
+	(&titleSubtitleItem{}).TypeName():                reflect.TypeOf(titleSubtitleItem{}),
+	(&incompleteVisitNotification{}).TypeName():      reflect.TypeOf(incompleteVisitNotification{}),
+	(&treatmentPlanCreatedNotification{}).TypeName(): reflect.TypeOf(treatmentPlanCreatedNotification{}),
+	(&newConversationNotification{}).TypeName():      reflect.TypeOf(newConversationNotification{}),
+	(&conversationReplyNotification{}).TypeName():    reflect.TypeOf(conversationReplyNotification{}),
 }
 
 func TestPatientNotificationsAPI(t *testing.T) {
@@ -238,7 +238,7 @@ func TestTreatmentPlanCreatedNotification(t *testing.T) {
 		t.Fatalf("Unable to get notifications for patient %s", err)
 	} else if len(notes) != 1 {
 		t.Fatalf("Expected 1 notification for patient instead got %d", len(notes))
-	} else if notes[0].Data.TypeName() != "visit_reviewed" {
+	} else if notes[0].Data.TypeName() != "treatment_plan_created" {
 		t.Fatalf("Expected notification of type %s instead got %s", "visit_reviewed", notes[0].Data.TypeName())
 	}
 }
