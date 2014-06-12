@@ -11,7 +11,6 @@ import (
 
 	"carefront/apiservice"
 	"carefront/common"
-	"carefront/encoding"
 	"carefront/patient_visit"
 	"carefront/test/test_integration"
 )
@@ -20,7 +19,7 @@ func TestAdvicePointsForPatientVisit(t *testing.T) {
 	testData := test_integration.SetupIntegrationTest(t)
 	defer test_integration.TearDownIntegrationTest(t, testData)
 
-	patientVisitResponse, treatmentPlan, doctor := setupAdviceCreationTest(t, testData)
+	_, treatmentPlan, doctor := setupAdviceCreationTest(t, testData)
 
 	// attempt to get the advice points for this patient visit
 	doctorAdviceResponse := test_integration.GetAdvicePointsInTreatmentPlan(testData, doctor, treatmentPlan.Id.Int64(), t)
@@ -41,7 +40,7 @@ func TestAdvicePointsForPatientVisit(t *testing.T) {
 	doctorAdviceRequest := &common.Advice{}
 	doctorAdviceRequest.AllAdvicePoints = []*common.DoctorInstructionItem{advicePoint1, advicePoint2}
 	doctorAdviceRequest.SelectedAdvicePoints = doctorAdviceRequest.AllAdvicePoints
-	doctorAdviceRequest.PatientVisitId = encoding.NewObjectId(patientVisitResponse.PatientVisitId)
+	doctorAdviceRequest.TreatmentPlanId = treatmentPlan.Id
 
 	doctorAdviceResponse = test_integration.UpdateAdvicePointsForPatientVisit(doctorAdviceRequest, testData, doctor, t)
 
@@ -60,6 +59,7 @@ func TestAdvicePointsForPatientVisit(t *testing.T) {
 	// now lets go ahead and remove one point from the selection
 	// note that the response now becomes the request since thats the updated view of the system
 	doctorAdviceRequest = doctorAdviceResponse
+	doctorAdviceRequest.TreatmentPlanId = treatmentPlan.Id
 	doctorAdviceRequest.SelectedAdvicePoints = []*common.DoctorInstructionItem{doctorAdviceRequest.SelectedAdvicePoints[0]}
 	doctorAdviceResponse = test_integration.UpdateAdvicePointsForPatientVisit(doctorAdviceRequest, testData, doctor, t)
 	test_integration.ValidateAdviceRequestAgainstResponse(doctorAdviceRequest, doctorAdviceResponse, t)
@@ -69,6 +69,7 @@ func TestAdvicePointsForPatientVisit(t *testing.T) {
 
 	// now lets go ahead and update the advice for the patient visit
 	doctorAdviceRequest = doctorAdviceResponse
+	doctorAdviceRequest.TreatmentPlanId = treatmentPlan.Id
 	selectedAdvicePoints := make([]*common.DoctorInstructionItem, len(doctorAdviceRequest.AllAdvicePoints))
 	for i, advicePoint := range doctorAdviceRequest.AllAdvicePoints {
 		advicePoint.State = common.STATE_MODIFIED
@@ -87,6 +88,7 @@ func TestAdvicePointsForPatientVisit(t *testing.T) {
 	// lets delete one of the advice points
 	doctorAdviceRequest = doctorAdviceResponse
 	doctorAdviceRequest.AllAdvicePoints = []*common.DoctorInstructionItem{doctorAdviceRequest.AllAdvicePoints[1]}
+	doctorAdviceRequest.TreatmentPlanId = treatmentPlan.Id
 	doctorAdviceRequest.SelectedAdvicePoints = []*common.DoctorInstructionItem{&common.DoctorInstructionItem{
 		ParentId: doctorAdviceRequest.AllAdvicePoints[0].Id,
 		Text:     doctorAdviceRequest.AllAdvicePoints[0].Text,
@@ -130,6 +132,7 @@ func TestAdvicePointsForPatientVisit(t *testing.T) {
 
 	// lets go ahead and delete all advice points
 	doctorAdviceRequest = doctorAdviceResponse
+	doctorAdviceRequest.TreatmentPlanId = treatmentPlan.Id
 	doctorAdviceRequest.AllAdvicePoints = nil
 	doctorAdviceRequest.SelectedAdvicePoints = []*common.DoctorInstructionItem{}
 	doctorAdviceResponse = test_integration.UpdateAdvicePointsForPatientVisit(doctorAdviceRequest, testData, doctor, t)
@@ -146,7 +149,7 @@ func TestAdvicePointsForPatientVisit_AddAdviceOnlyToVisit(t *testing.T) {
 	testData := test_integration.SetupIntegrationTest(t)
 	defer test_integration.TearDownIntegrationTest(t, testData)
 
-	patientVisitResponse, _, doctor := setupAdviceCreationTest(t, testData)
+	_, treatmentPlan, doctor := setupAdviceCreationTest(t, testData)
 
 	// lets go ahead and add a couple of advice points
 	advicePoint1 := &common.DoctorInstructionItem{Text: "Advice point 1", State: common.STATE_ADDED}
@@ -155,7 +158,7 @@ func TestAdvicePointsForPatientVisit_AddAdviceOnlyToVisit(t *testing.T) {
 	// lets go ahead and create a request for this patient visit
 	doctorAdviceRequest := &common.Advice{}
 	doctorAdviceRequest.SelectedAdvicePoints = []*common.DoctorInstructionItem{advicePoint1, advicePoint2}
-	doctorAdviceRequest.PatientVisitId = encoding.NewObjectId(patientVisitResponse.PatientVisitId)
+	doctorAdviceRequest.TreatmentPlanId = treatmentPlan.Id
 
 	doctorAdviceResponse := test_integration.UpdateAdvicePointsForPatientVisit(doctorAdviceRequest, testData, doctor, t)
 
@@ -179,7 +182,7 @@ func TestAdvicePointsForPatientVisit_TrackingSourceId(t *testing.T) {
 	testData := test_integration.SetupIntegrationTest(t)
 	defer test_integration.TearDownIntegrationTest(t, testData)
 
-	patientVisitResponse, _, doctor := setupAdviceCreationTest(t, testData)
+	_, treatmentPlan, doctor := setupAdviceCreationTest(t, testData)
 
 	// lets go ahead and add a couple of advice points
 	advicePoint1 := &common.DoctorInstructionItem{Text: "Advice point 1", State: common.STATE_ADDED}
@@ -188,7 +191,7 @@ func TestAdvicePointsForPatientVisit_TrackingSourceId(t *testing.T) {
 	// lets go ahead and create a request for this patient visit
 	doctorAdviceRequest := &common.Advice{}
 	doctorAdviceRequest.AllAdvicePoints = []*common.DoctorInstructionItem{advicePoint1, advicePoint2}
-	doctorAdviceRequest.PatientVisitId = encoding.NewObjectId(patientVisitResponse.PatientVisitId)
+	doctorAdviceRequest.TreatmentPlanId = treatmentPlan.Id
 
 	doctorAdviceResponse := test_integration.UpdateAdvicePointsForPatientVisit(doctorAdviceRequest, testData, doctor, t)
 
@@ -198,6 +201,7 @@ func TestAdvicePointsForPatientVisit_TrackingSourceId(t *testing.T) {
 
 	// lets go ahead and modify the items
 	doctorAdviceRequest = doctorAdviceResponse
+	doctorAdviceRequest.TreatmentPlanId = treatmentPlan.Id
 	doctorAdviceRequest.AllAdvicePoints[0].State = common.STATE_MODIFIED
 	doctorAdviceRequest.AllAdvicePoints[0].Text = "updated Advice Point 1"
 	doctorAdviceRequest.AllAdvicePoints[1].State = common.STATE_MODIFIED
@@ -225,6 +229,7 @@ func TestAdvicePointsForPatientVisit_TrackingSourceId(t *testing.T) {
 
 	// lets go ahead and modify items once more the source id should still remain the same
 	doctorAdviceRequest = doctorAdviceResponse
+	doctorAdviceRequest.TreatmentPlanId = treatmentPlan.Id
 	doctorAdviceRequest.AllAdvicePoints[0].State = common.STATE_MODIFIED
 	doctorAdviceRequest.AllAdvicePoints[0].Text = "updated again Advice Point 1"
 	doctorAdviceRequest.AllAdvicePoints[1].State = common.STATE_MODIFIED
@@ -256,13 +261,13 @@ func TestAdvicePointsForPatientVisit_AddingMultipleItemsWithSameText(t *testing.
 	testData := test_integration.SetupIntegrationTest(t)
 	defer test_integration.TearDownIntegrationTest(t, testData)
 
-	patientVisitResponse, _, doctor := setupAdviceCreationTest(t, testData)
+	_, treatmentPlan, doctor := setupAdviceCreationTest(t, testData)
 
 	// lets go ahead and create a request for this patient visit
 	doctorAdviceRequest := &common.Advice{}
 	doctorAdviceRequest.AllAdvicePoints = make([]*common.DoctorInstructionItem, 0)
 	doctorAdviceRequest.SelectedAdvicePoints = make([]*common.DoctorInstructionItem, 0)
-	doctorAdviceRequest.PatientVisitId = encoding.NewObjectId(patientVisitResponse.PatientVisitId)
+	doctorAdviceRequest.TreatmentPlanId = treatmentPlan.Id
 
 	for i := 0; i < 5; i++ {
 		doctorAdviceRequest.AllAdvicePoints = append(doctorAdviceRequest.AllAdvicePoints, &common.DoctorInstructionItem{
@@ -283,13 +288,13 @@ func TestAdvicePointsForPatientVisit_UpdatingMultipleItems(t *testing.T) {
 	testData := test_integration.SetupIntegrationTest(t)
 	defer test_integration.TearDownIntegrationTest(t, testData)
 
-	patientVisitResponse, _, doctor := setupAdviceCreationTest(t, testData)
+	_, treatmentPlan, doctor := setupAdviceCreationTest(t, testData)
 
 	// lets go ahead and create a request for this patient visit
 	doctorAdviceRequest := &common.Advice{}
 	doctorAdviceRequest.AllAdvicePoints = make([]*common.DoctorInstructionItem, 0)
 	doctorAdviceRequest.SelectedAdvicePoints = make([]*common.DoctorInstructionItem, 0)
-	doctorAdviceRequest.PatientVisitId = encoding.NewObjectId(patientVisitResponse.PatientVisitId)
+	doctorAdviceRequest.TreatmentPlanId = treatmentPlan.Id
 
 	for i := 0; i < 5; i++ {
 		doctorAdviceRequest.AllAdvicePoints = append(doctorAdviceRequest.AllAdvicePoints, &common.DoctorInstructionItem{
@@ -305,11 +310,13 @@ func TestAdvicePointsForPatientVisit_UpdatingMultipleItems(t *testing.T) {
 	test_integration.ValidateAdviceRequestAgainstResponse(doctorAdviceRequest, doctorAdviceResponse, t)
 
 	doctorAdviceRequest = doctorAdviceResponse
+	doctorAdviceRequest.TreatmentPlanId = treatmentPlan.Id
 	for i := 0; i < 5; i++ {
 		doctorAdviceRequest.AllAdvicePoints[i].Text = "Updated text " + strconv.Itoa(i)
 		doctorAdviceRequest.AllAdvicePoints[i].State = common.STATE_MODIFIED
 		doctorAdviceRequest.SelectedAdvicePoints[i].Text = "Updated text " + strconv.Itoa(i)
 		doctorAdviceRequest.SelectedAdvicePoints[i].State = common.STATE_MODIFIED
+
 	}
 	doctorAdviceResponse = test_integration.UpdateAdvicePointsForPatientVisit(doctorAdviceRequest, testData, doctor, t)
 	test_integration.ValidateAdviceRequestAgainstResponse(doctorAdviceRequest, doctorAdviceResponse, t)
@@ -320,13 +327,13 @@ func TestAdvicePointsForPatientVisit_SelectAdviceFromDeletedAdvice(t *testing.T)
 	testData := test_integration.SetupIntegrationTest(t)
 	defer test_integration.TearDownIntegrationTest(t, testData)
 
-	patientVisitResponse, treatmentPlan, doctor := setupAdviceCreationTest(t, testData)
+	_, treatmentPlan, doctor := setupAdviceCreationTest(t, testData)
 
 	// lets go ahead and create a request for this patient visit
 	doctorAdviceRequest := &common.Advice{}
 	doctorAdviceRequest.AllAdvicePoints = make([]*common.DoctorInstructionItem, 0)
 	doctorAdviceRequest.SelectedAdvicePoints = make([]*common.DoctorInstructionItem, 0)
-	doctorAdviceRequest.PatientVisitId = encoding.NewObjectId(patientVisitResponse.PatientVisitId)
+	doctorAdviceRequest.TreatmentPlanId = treatmentPlan.Id
 
 	for i := 0; i < 5; i++ {
 		doctorAdviceRequest.AllAdvicePoints = append(doctorAdviceRequest.AllAdvicePoints, &common.DoctorInstructionItem{
@@ -347,6 +354,7 @@ func TestAdvicePointsForPatientVisit_SelectAdviceFromDeletedAdvice(t *testing.T)
 	doctorAdviceResponse2 := test_integration.GetAdvicePointsInTreatmentPlan(testData, doctor, treatmentPlan2.Id.Int64(), t)
 
 	doctorAdviceRequest = doctorAdviceResponse2
+	doctorAdviceRequest.TreatmentPlanId = treatmentPlan2.Id
 	doctorAdviceRequest.AllAdvicePoints = doctorAdviceRequest.AllAdvicePoints[:4]
 	doctorAdviceResponse = test_integration.UpdateAdvicePointsForPatientVisit(doctorAdviceRequest, testData, doctor, t)
 	test_integration.ValidateAdviceRequestAgainstResponse(doctorAdviceRequest, doctorAdviceResponse, t)
@@ -362,6 +370,7 @@ func TestAdvicePointsForPatientVisit_SelectAdviceFromDeletedAdvice(t *testing.T)
 
 	// we should be able to submit the exact same list without having to modify anything
 	doctorAdviceRequest = doctorAdviceResponse
+	doctorAdviceRequest.TreatmentPlanId = treatmentPlan2.Id
 	doctorAdviceResponse = test_integration.UpdateAdvicePointsForPatientVisit(doctorAdviceRequest, testData, doctor, t)
 	if len(doctorAdviceResponse.AllAdvicePoints) != 4 && len(doctorAdviceResponse.SelectedAdvicePoints) != 5 {
 		t.Fatalf("Expected the global list to have 4 items and the selected list to have 5 items, instead there are %d items in the global list and %d items in the selected list", len(doctorAdviceResponse.AllAdvicePoints), len(doctorAdviceResponse.SelectedAdvicePoints))
@@ -369,6 +378,7 @@ func TestAdvicePointsForPatientVisit_SelectAdviceFromDeletedAdvice(t *testing.T)
 
 	// now, lets go ahead and attempt to modify the last selected item in the advice list
 	doctorAdviceRequest = doctorAdviceResponse
+	doctorAdviceRequest.TreatmentPlanId = treatmentPlan2.Id
 	doctorAdviceRequest.SelectedAdvicePoints[4].State = common.STATE_MODIFIED
 	doctorAdviceRequest.SelectedAdvicePoints[4].Text = "Updating text of deleted item"
 	doctorAdviceResponse = test_integration.UpdateAdvicePointsForPatientVisit(doctorAdviceRequest, testData, doctor, t)
@@ -383,6 +393,7 @@ func TestAdvicePointsForPatientVisit_SelectAdviceFromDeletedAdvice(t *testing.T)
 	// validation on the server after modifying an item in the list that is no longer in the master
 	// list
 	doctorAdviceRequest = doctorAdviceResponse
+	doctorAdviceRequest.TreatmentPlanId = treatmentPlan2.Id
 	doctorAdviceResponse = test_integration.UpdateAdvicePointsForPatientVisit(doctorAdviceRequest, testData, doctor, t)
 
 	if doctorAdviceResponse.SelectedAdvicePoints[4].Text != "Updating text of deleted item" {
@@ -391,6 +402,7 @@ func TestAdvicePointsForPatientVisit_SelectAdviceFromDeletedAdvice(t *testing.T)
 
 	// now lets go ahead and remove this last item from the list
 	doctorAdviceRequest = doctorAdviceResponse
+	doctorAdviceRequest.TreatmentPlanId = treatmentPlan2.Id
 	doctorAdviceRequest.SelectedAdvicePoints = doctorAdviceRequest.SelectedAdvicePoints[:4]
 	doctorAdviceResponse = test_integration.UpdateAdvicePointsForPatientVisit(doctorAdviceRequest, testData, doctor, t)
 	test_integration.ValidateAdviceRequestAgainstResponse(doctorAdviceRequest, doctorAdviceResponse, t)
@@ -401,13 +413,13 @@ func TestAdvicePointsForPatientVisit_ErrorDifferentTextForLinkedItems(t *testing
 	testData := test_integration.SetupIntegrationTest(t)
 	defer test_integration.TearDownIntegrationTest(t, testData)
 
-	patientVisitResponse, _, doctor := setupAdviceCreationTest(t, testData)
+	_, treatmentPlan, doctor := setupAdviceCreationTest(t, testData)
 
 	// lets go ahead and create a request for this patient visit
 	doctorAdviceRequest := &common.Advice{}
 	doctorAdviceRequest.AllAdvicePoints = make([]*common.DoctorInstructionItem, 0)
 	doctorAdviceRequest.SelectedAdvicePoints = make([]*common.DoctorInstructionItem, 0)
-	doctorAdviceRequest.PatientVisitId = encoding.NewObjectId(patientVisitResponse.PatientVisitId)
+	doctorAdviceRequest.TreatmentPlanId = treatmentPlan.Id
 
 	for i := 0; i < 5; i++ {
 		doctorAdviceRequest.AllAdvicePoints = append(doctorAdviceRequest.AllAdvicePoints, &common.DoctorInstructionItem{
