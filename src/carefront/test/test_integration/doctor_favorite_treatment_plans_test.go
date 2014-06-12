@@ -239,11 +239,10 @@ func TestFavoriteTreatmentPlan_CommittedStateForTreatmentPlan(t *testing.T) {
 	// lets attempt to submit regimen section for patient visit
 	regimenPlanRequest := &common.RegimenPlan{
 		TreatmentPlanId: responseData.TreatmentPlan.Id,
-		PatientVisitId:  encoding.NewObjectId(patientVisitResponse.PatientVisitId),
 		AllRegimenSteps: favoriteTreamentPlan.RegimenPlan.AllRegimenSteps,
 		RegimenSections: favoriteTreamentPlan.RegimenPlan.RegimenSections,
 	}
-	CreateRegimenPlanForPatientVisit(regimenPlanRequest, testData, doctor, t)
+	CreateRegimenPlanForTreatmentPlan(regimenPlanRequest, testData, doctor, t)
 
 	// now lets attempt to get the treatment plan for the patient visit
 	ts := httptest.NewServer(doctor_treatment_plan.NewDoctorTreatmentPlanHandler(testData.DataApi))
@@ -268,7 +267,7 @@ func TestFavoriteTreatmentPlan_CommittedStateForTreatmentPlan(t *testing.T) {
 
 	// now lets go ahead and submit the advice section
 	doctorAdviceRequest := &common.Advice{
-		PatientVisitId:       encoding.NewObjectId(patientVisitResponse.PatientVisitId),
+		TreatmentPlanId:      encoding.NewObjectId(treatmentPlanId),
 		AllAdvicePoints:      favoriteTreamentPlan.Advice.AllAdvicePoints,
 		SelectedAdvicePoints: favoriteTreamentPlan.Advice.SelectedAdvicePoints,
 	}
@@ -292,8 +291,7 @@ func TestFavoriteTreatmentPlan_CommittedStateForTreatmentPlan(t *testing.T) {
 	}
 
 	// now lets go ahead and add a treatment to the treatment plan
-	favoriteTreamentPlan.TreatmentList.Treatments[0].PatientVisitId = encoding.NewObjectId(patientVisitResponse.PatientVisitId)
-	addAndGetTreatmentsForPatientVisit(testData, favoriteTreamentPlan.TreatmentList.Treatments, doctor.AccountId.Int64(), patientVisitResponse.PatientVisitId, t)
+	addAndGetTreatmentsForPatientVisit(testData, favoriteTreamentPlan.TreatmentList.Treatments, doctor.AccountId.Int64(), treatmentPlanId, t)
 
 	// now the treatment section should also indicate that it has been committed
 	responseData = &doctor_treatment_plan.DoctorTreatmentPlanResponse{}
@@ -334,11 +332,10 @@ func TestFavoriteTreatmentPlan_BreakingMappingOnModify(t *testing.T) {
 	// lets attempt to modify and submit regimen section for patient visit
 	regimenPlanRequest := &common.RegimenPlan{
 		TreatmentPlanId: responseData.TreatmentPlan.Id,
-		PatientVisitId:  encoding.NewObjectId(patientVisitResponse.PatientVisitId),
 		AllRegimenSteps: favoriteTreamentPlan.RegimenPlan.AllRegimenSteps,
 		RegimenSections: favoriteTreamentPlan.RegimenPlan.RegimenSections[:1],
 	}
-	CreateRegimenPlanForPatientVisit(regimenPlanRequest, testData, doctor, t)
+	CreateRegimenPlanForTreatmentPlan(regimenPlanRequest, testData, doctor, t)
 
 	// now lets attempt to get the abbreviated version of the treatment plan
 	ts := httptest.NewServer(doctor_treatment_plan.NewDoctorTreatmentPlanHandler(testData.DataApi))
@@ -371,9 +368,8 @@ func TestFavoriteTreatmentPlan_BreakingMappingOnModify(t *testing.T) {
 	}
 
 	// modify treatment
-	favoriteTreamentPlan.TreatmentList.Treatments[0].PatientVisitId = encoding.NewObjectId(patientVisitResponse.PatientVisitId)
 	favoriteTreamentPlan.TreatmentList.Treatments[0].DispenseValue = encoding.HighPrecisionFloat64(123.12345)
-	addAndGetTreatmentsForPatientVisit(testData, favoriteTreamentPlan.TreatmentList.Treatments, doctor.AccountId.Int64(), patientVisitResponse.PatientVisitId, t)
+	addAndGetTreatmentsForPatientVisit(testData, favoriteTreamentPlan.TreatmentList.Treatments, doctor.AccountId.Int64(), responseData.TreatmentPlan.Id.Int64(), t)
 
 	// linkage should now be broken
 	params.Set("treatment_plan_id", strconv.FormatInt(responseData.TreatmentPlan.Id.Int64(), 10))
@@ -397,7 +393,7 @@ func TestFavoriteTreatmentPlan_BreakingMappingOnModify(t *testing.T) {
 
 	// modify advice
 	doctorAdviceRequest := &common.Advice{
-		PatientVisitId:       encoding.NewObjectId(patientVisitResponse.PatientVisitId),
+		TreatmentPlanId:      responseData.TreatmentPlan.Id,
 		AllAdvicePoints:      favoriteTreamentPlan.Advice.AllAdvicePoints,
 		SelectedAdvicePoints: favoriteTreamentPlan.Advice.SelectedAdvicePoints[1:],
 	}
@@ -430,9 +426,9 @@ func TestFavoriteTreatmentPlan_InContextOfTreatmentPlan(t *testing.T) {
 		t.Fatalf("Unable to get doctor from id: %s", err)
 	}
 
-	patientVisitResponse, treatmentPlan := SignupAndSubmitPatientVisitForRandomPatient(t, testData, doctor)
+	_, treatmentPlan := SignupAndSubmitPatientVisitForRandomPatient(t, testData, doctor)
 	regimenPlanRequest := &common.RegimenPlan{}
-	regimenPlanRequest.PatientVisitId = encoding.NewObjectId(patientVisitResponse.PatientVisitId)
+	regimenPlanRequest.TreatmentPlanId = treatmentPlan.Id
 
 	regimenStep1 := &common.DoctorInstructionItem{}
 	regimenStep1.Text = "Regimen Step 1"
@@ -460,7 +456,7 @@ func TestFavoriteTreatmentPlan_InContextOfTreatmentPlan(t *testing.T) {
 
 	regimenPlanRequest.AllRegimenSteps = []*common.DoctorInstructionItem{regimenStep1, regimenStep2}
 	regimenPlanRequest.RegimenSections = []*common.RegimenSection{regimenSection, regimenSection2}
-	regimenPlanResponse := CreateRegimenPlanForPatientVisit(regimenPlanRequest, testData, doctor, t)
+	regimenPlanResponse := CreateRegimenPlanForTreatmentPlan(regimenPlanRequest, testData, doctor, t)
 	ValidateRegimenRequestAgainstResponse(regimenPlanRequest, regimenPlanResponse, t)
 
 	// lets submit advice for this patient
@@ -474,7 +470,7 @@ func TestFavoriteTreatmentPlan_InContextOfTreatmentPlan(t *testing.T) {
 	doctorAdviceRequest := &common.Advice{}
 	doctorAdviceRequest.AllAdvicePoints = []*common.DoctorInstructionItem{advicePoint1, advicePoint2}
 	doctorAdviceRequest.SelectedAdvicePoints = doctorAdviceRequest.AllAdvicePoints
-	doctorAdviceRequest.PatientVisitId = encoding.NewObjectId(patientVisitResponse.PatientVisitId)
+	doctorAdviceRequest.TreatmentPlanId = treatmentPlan.Id
 
 	doctorAdviceResponse := UpdateAdvicePointsForPatientVisit(doctorAdviceRequest, testData, doctor, t)
 	ValidateAdviceRequestAgainstResponse(doctorAdviceRequest, doctorAdviceResponse, t)
@@ -519,7 +515,7 @@ func TestFavoriteTreatmentPlan_InContextOfTreatmentPlan(t *testing.T) {
 		OTC:                 false,
 	}
 
-	addAndGetTreatmentsForPatientVisit(testData, []*common.Treatment{treatment1}, doctor.AccountId.Int64(), patientVisitResponse.PatientVisitId, t)
+	addAndGetTreatmentsForPatientVisit(testData, []*common.Treatment{treatment1}, doctor.AccountId.Int64(), treatmentPlan.Id.Int64(), t)
 
 	// lets add a favorite treatment plan for doctor
 	favoriteTreatmentPlan := &common.FavoriteTreatmentPlan{
@@ -586,9 +582,9 @@ func TestFavoriteTreatmentPlan_InContextOfTreatmentPlan_EmptyRegimenAndAdvice(t 
 		t.Fatalf("Unable to get doctor from id: %s", err)
 	}
 
-	patientVisitResponse, treatmentPlan := SignupAndSubmitPatientVisitForRandomPatient(t, testData, doctor)
+	_, treatmentPlan := SignupAndSubmitPatientVisitForRandomPatient(t, testData, doctor)
 	regimenPlanRequest := &common.RegimenPlan{}
-	regimenPlanRequest.PatientVisitId = encoding.NewObjectId(patientVisitResponse.PatientVisitId)
+	regimenPlanRequest.TreatmentPlanId = treatmentPlan.Id
 
 	regimenStep1 := &common.DoctorInstructionItem{}
 	regimenStep1.Text = "Regimen Step 1"
@@ -599,7 +595,7 @@ func TestFavoriteTreatmentPlan_InContextOfTreatmentPlan_EmptyRegimenAndAdvice(t 
 	regimenStep2.State = common.STATE_ADDED
 
 	regimenPlanRequest.AllRegimenSteps = []*common.DoctorInstructionItem{regimenStep1, regimenStep2}
-	regimenPlanResponse := CreateRegimenPlanForPatientVisit(regimenPlanRequest, testData, doctor, t)
+	regimenPlanResponse := CreateRegimenPlanForTreatmentPlan(regimenPlanRequest, testData, doctor, t)
 	ValidateRegimenRequestAgainstResponse(regimenPlanRequest, regimenPlanResponse, t)
 
 	// lets submit advice for this patient
@@ -612,7 +608,7 @@ func TestFavoriteTreatmentPlan_InContextOfTreatmentPlan_EmptyRegimenAndAdvice(t 
 	// lets go ahead and create a request for this patient visit
 	doctorAdviceRequest := &common.Advice{}
 	doctorAdviceRequest.AllAdvicePoints = []*common.DoctorInstructionItem{advicePoint1, advicePoint2}
-	doctorAdviceRequest.PatientVisitId = encoding.NewObjectId(patientVisitResponse.PatientVisitId)
+	doctorAdviceRequest.TreatmentPlanId = treatmentPlan.Id
 
 	doctorAdviceResponse := UpdateAdvicePointsForPatientVisit(doctorAdviceRequest, testData, doctor, t)
 	ValidateAdviceRequestAgainstResponse(doctorAdviceRequest, doctorAdviceResponse, t)
@@ -651,7 +647,7 @@ func TestFavoriteTreatmentPlan_InContextOfTreatmentPlan_EmptyRegimenAndAdvice(t 
 		OTC:                 false,
 	}
 
-	addAndGetTreatmentsForPatientVisit(testData, []*common.Treatment{treatment1}, doctor.AccountId.Int64(), patientVisitResponse.PatientVisitId, t)
+	addAndGetTreatmentsForPatientVisit(testData, []*common.Treatment{treatment1}, doctor.AccountId.Int64(), treatmentPlan.Id.Int64(), t)
 
 	// lets add a favorite treatment plan for doctor
 	favoriteTreatmentPlan := &common.FavoriteTreatmentPlan{
@@ -712,9 +708,9 @@ func TestFavoriteTreatmentPlan_InContextOfTreatmentPlan_TwoDontMatch(t *testing.
 		t.Fatalf("Unable to get doctor from id: %s", err)
 	}
 
-	patientVisitResponse, treatmentPlan := SignupAndSubmitPatientVisitForRandomPatient(t, testData, doctor)
+	_, treatmentPlan := SignupAndSubmitPatientVisitForRandomPatient(t, testData, doctor)
 	regimenPlanRequest := &common.RegimenPlan{}
-	regimenPlanRequest.PatientVisitId = encoding.NewObjectId(patientVisitResponse.PatientVisitId)
+	regimenPlanRequest.TreatmentPlanId = treatmentPlan.Id
 
 	regimenStep1 := &common.DoctorInstructionItem{}
 	regimenStep1.Text = "Regimen Step 1"
@@ -725,7 +721,7 @@ func TestFavoriteTreatmentPlan_InContextOfTreatmentPlan_TwoDontMatch(t *testing.
 	regimenStep2.State = common.STATE_ADDED
 
 	regimenPlanRequest.AllRegimenSteps = []*common.DoctorInstructionItem{regimenStep1, regimenStep2}
-	regimenPlanResponse := CreateRegimenPlanForPatientVisit(regimenPlanRequest, testData, doctor, t)
+	regimenPlanResponse := CreateRegimenPlanForTreatmentPlan(regimenPlanRequest, testData, doctor, t)
 	ValidateRegimenRequestAgainstResponse(regimenPlanRequest, regimenPlanResponse, t)
 
 	// lets submit advice for this patient
@@ -739,7 +735,7 @@ func TestFavoriteTreatmentPlan_InContextOfTreatmentPlan_TwoDontMatch(t *testing.
 	doctorAdviceRequest := &common.Advice{}
 	doctorAdviceRequest.AllAdvicePoints = []*common.DoctorInstructionItem{advicePoint1, advicePoint2}
 	doctorAdviceRequest.SelectedAdvicePoints = doctorAdviceRequest.AllAdvicePoints
-	doctorAdviceRequest.PatientVisitId = encoding.NewObjectId(patientVisitResponse.PatientVisitId)
+	doctorAdviceRequest.TreatmentPlanId = treatmentPlan.Id
 
 	doctorAdviceResponse := UpdateAdvicePointsForPatientVisit(doctorAdviceRequest, testData, doctor, t)
 	ValidateAdviceRequestAgainstResponse(doctorAdviceRequest, doctorAdviceResponse, t)
@@ -778,7 +774,7 @@ func TestFavoriteTreatmentPlan_InContextOfTreatmentPlan_TwoDontMatch(t *testing.
 		OTC:                 false,
 	}
 
-	addAndGetTreatmentsForPatientVisit(testData, []*common.Treatment{treatment1}, doctor.AccountId.Int64(), patientVisitResponse.PatientVisitId, t)
+	addAndGetTreatmentsForPatientVisit(testData, []*common.Treatment{treatment1}, doctor.AccountId.Int64(), treatmentPlan.Id.Int64(), t)
 
 	// lets add a favorite treatment plan for doctor
 	favoriteTreatmentPlan := &common.FavoriteTreatmentPlan{

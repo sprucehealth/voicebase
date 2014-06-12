@@ -65,13 +65,14 @@ func InitListeners(dataAPI api.DataAPI, notificationManager *notify.Notification
 
 		// Add "treatment plan created" notification
 		if _, err := dataAPI.InsertPatientNotification(ev.PatientId, &common.Notification{
-			UID:             visitReviewed,
+			UID:             treatmentPlanCreated,
 			Dismissible:     true,
 			DismissOnAction: true,
 			Priority:        1000,
-			Data: &visitReviewedNotification{
-				VisitId:  ev.VisitId,
-				DoctorId: doctor.DoctorId.Int64(),
+			Data: &treatmentPlanCreatedNotification{
+				VisitId:         ev.VisitId,
+				DoctorId:        doctor.DoctorId.Int64(),
+				TreatmentPlanId: ev.TreatmentPlanId,
 			},
 		}); err != nil {
 			golog.Errorf("Failed to insert treatment plan created into noficiation queue for patient %d: %s", ev.PatientId, err.Error())

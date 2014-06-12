@@ -3,14 +3,11 @@ package treatment_plan
 import (
 	"carefront/api"
 	"carefront/common"
-	"carefront/encoding"
 	"fmt"
 )
 
 func populateTreatmentPlan(dataApi api.DataAPI, patientVisitId int64, treatmentPlanId int64) (*common.TreatmentPlan, error) {
-	treatmentPlan := &common.TreatmentPlan{
-		PatientVisitId: encoding.NewObjectId(patientVisitId),
-	}
+	treatmentPlan := &common.TreatmentPlan{}
 
 	var err error
 	treatmentPlan.DiagnosisSummary, err = dataApi.GetDiagnosisSummaryForTreatmentPlan(treatmentPlanId)
@@ -27,11 +24,6 @@ func populateTreatmentPlan(dataApi api.DataAPI, patientVisitId int64, treatmentP
 	treatmentPlan.RegimenPlan, err = dataApi.GetRegimenPlanForTreatmentPlan(treatmentPlanId)
 	if err != nil {
 		return nil, fmt.Errorf("Unable to get regimen plan for this patient visit id: %s", err)
-	}
-
-	treatmentPlan.Followup, err = dataApi.GetFollowUpTimeForTreatmentPlan(treatmentPlanId)
-	if err != nil {
-		return nil, fmt.Errorf("Unable to get follow up information for this patient visit: %s", err)
 	}
 
 	advicePoints, err := dataApi.GetAdvicePointsForTreatmentPlan(treatmentPlanId)

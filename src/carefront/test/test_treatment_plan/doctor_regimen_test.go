@@ -2,9 +2,8 @@ package test_treatment_plan
 
 import (
 	"bytes"
-	"carefront/apiservice"
 	"carefront/common"
-	"carefront/encoding"
+	"carefront/doctor_treatment_plan"
 	"carefront/patient_visit"
 	"carefront/test/test_integration"
 	"database/sql"
@@ -20,7 +19,7 @@ func TestRegimenForPatientVisit(t *testing.T) {
 	testData := test_integration.SetupIntegrationTest(t)
 	defer test_integration.TearDownIntegrationTest(t, testData)
 
-	patientVisitResponse, treatmentPlan, doctor := setupTestForRegimenCreation(t, testData)
+	_, treatmentPlan, doctor := setupTestForRegimenCreation(t, testData)
 
 	// attempt to get the regimen plan or a patient visit
 	regimenPlan := test_integration.GetRegimenPlanForTreatmentPlan(testData, doctor, treatmentPlan.Id.Int64(), t)
@@ -35,7 +34,7 @@ func TestRegimenForPatientVisit(t *testing.T) {
 
 	// adding new regimen steps to the doctor but not to the patient visit
 	regimenPlanRequest := &common.RegimenPlan{}
-	regimenPlanRequest.PatientVisitId = encoding.NewObjectId(patientVisitResponse.PatientVisitId)
+	regimenPlanRequest.TreatmentPlanId = treatmentPlan.Id
 
 	regimenStep1 := &common.DoctorInstructionItem{}
 	regimenStep1.Text = "Regimen Step 1"
@@ -46,7 +45,7 @@ func TestRegimenForPatientVisit(t *testing.T) {
 	regimenStep2.State = common.STATE_ADDED
 
 	regimenPlanRequest.AllRegimenSteps = []*common.DoctorInstructionItem{regimenStep1, regimenStep2}
-	regimenPlanResponse := test_integration.CreateRegimenPlanForPatientVisit(regimenPlanRequest, testData, doctor, t)
+	regimenPlanResponse := test_integration.CreateRegimenPlanForTreatmentPlan(regimenPlanRequest, testData, doctor, t)
 	test_integration.ValidateRegimenRequestAgainstResponse(regimenPlanRequest, regimenPlanResponse, t)
 
 	if len(regimenPlanResponse.RegimenSections) > 0 {
@@ -74,7 +73,7 @@ func TestRegimenForPatientVisit(t *testing.T) {
 	}
 
 	regimenPlanRequest.RegimenSections = []*common.RegimenSection{regimenSection, regimenSection2}
-	regimenPlanResponse = test_integration.CreateRegimenPlanForPatientVisit(regimenPlanRequest, testData, doctor, t)
+	regimenPlanResponse = test_integration.CreateRegimenPlanForTreatmentPlan(regimenPlanRequest, testData, doctor, t)
 	test_integration.ValidateRegimenRequestAgainstResponse(regimenPlanResponse, regimenPlanResponse, t)
 
 	if len(regimenPlanResponse.RegimenSections) != 2 {
@@ -89,7 +88,7 @@ func TestRegimenForPatientVisit(t *testing.T) {
 	regimenPlanRequest = regimenPlanResponse
 	regimenPlanRequest.RegimenSections = []*common.RegimenSection{regimenPlanRequest.RegimenSections[0]}
 
-	regimenPlanResponse = test_integration.CreateRegimenPlanForPatientVisit(regimenPlanRequest, testData, doctor, t)
+	regimenPlanResponse = test_integration.CreateRegimenPlanForTreatmentPlan(regimenPlanRequest, testData, doctor, t)
 	test_integration.ValidateRegimenRequestAgainstResponse(regimenPlanRequest, regimenPlanResponse, t)
 
 	if len(regimenPlanResponse.RegimenSections) != 1 {
@@ -101,14 +100,14 @@ func TestRegimenForPatientVisit(t *testing.T) {
 	regimenPlanRequest.AllRegimenSteps[0].Text = "UPDATED 1"
 	regimenPlanRequest.AllRegimenSteps[0].State = common.STATE_MODIFIED
 	regimenPlanRequest.RegimenSections[0].RegimenSteps[0].Text = "UPDATED 1"
-	regimenPlanResponse = test_integration.CreateRegimenPlanForPatientVisit(regimenPlanRequest, testData, doctor, t)
+	regimenPlanResponse = test_integration.CreateRegimenPlanForTreatmentPlan(regimenPlanRequest, testData, doctor, t)
 	test_integration.ValidateRegimenRequestAgainstResponse(regimenPlanRequest, regimenPlanResponse, t)
 
 	// lets delete a regimen step
 	regimenPlanRequest = regimenPlanResponse
 	regimenPlanRequest.AllRegimenSteps = []*common.DoctorInstructionItem{regimenPlanRequest.AllRegimenSteps[0]}
 	regimenPlanRequest.RegimenSections = []*common.RegimenSection{}
-	regimenPlanResponse = test_integration.CreateRegimenPlanForPatientVisit(regimenPlanRequest, testData, doctor, t)
+	regimenPlanResponse = test_integration.CreateRegimenPlanForTreatmentPlan(regimenPlanRequest, testData, doctor, t)
 	test_integration.ValidateRegimenRequestAgainstResponse(regimenPlanRequest, regimenPlanResponse, t)
 	if len(regimenPlanResponse.AllRegimenSteps) != 1 {
 		t.Fatal("Should only have 1 regimen step given that we just deleted one from the list")
@@ -118,7 +117,7 @@ func TestRegimenForPatientVisit(t *testing.T) {
 	regimenPlanRequest = regimenPlanResponse
 	regimenPlanRequest.AllRegimenSteps = []*common.DoctorInstructionItem{}
 	regimenPlanRequest.RegimenSections = []*common.RegimenSection{regimenSection}
-	doctorRegimenHandler := apiservice.NewDoctorRegimenHandler(testData.DataApi)
+	doctorRegimenHandler := doctor_treatment_plan.NewRegimenHandler(testData.DataApi)
 	ts := httptest.NewServer(doctorRegimenHandler)
 	defer ts.Close()
 
@@ -138,7 +137,7 @@ func TestRegimenForPatientVisit(t *testing.T) {
 
 	// get patient to start a visit
 
-	patientVisitResponse, treatmentPlan = test_integration.SignupAndSubmitPatientVisitForRandomPatient(t, testData, doctor)
+	_, treatmentPlan = test_integration.SignupAndSubmitPatientVisitForRandomPatient(t, testData, doctor)
 
 	regimenPlan = test_integration.GetRegimenPlanForTreatmentPlan(testData, doctor, treatmentPlan.Id.Int64(), t)
 	if len(regimenPlan.RegimenSections) > 0 {
@@ -154,11 +153,11 @@ func TestRegimenForPatientVisit_AddOnlyToPatientVisit(t *testing.T) {
 	testData := test_integration.SetupIntegrationTest(t)
 	defer test_integration.TearDownIntegrationTest(t, testData)
 
-	patientVisitResponse, _, doctor := setupTestForRegimenCreation(t, testData)
+	_, treatmentPlan, doctor := setupTestForRegimenCreation(t, testData)
 
 	// add regimen steps only to section and not to master list
 	regimenPlanRequest := &common.RegimenPlan{}
-	regimenPlanRequest.PatientVisitId = encoding.NewObjectId(patientVisitResponse.PatientVisitId)
+	regimenPlanRequest.TreatmentPlanId = treatmentPlan.Id
 
 	regimenStep1 := &common.DoctorInstructionItem{}
 	regimenStep1.Text = "Regimen Step 1"
@@ -183,7 +182,7 @@ func TestRegimenForPatientVisit_AddOnlyToPatientVisit(t *testing.T) {
 	}
 
 	regimenPlanRequest.RegimenSections = []*common.RegimenSection{regimenSection, regimenSection2}
-	regimenPlanResponse := test_integration.CreateRegimenPlanForPatientVisit(regimenPlanRequest, testData, doctor, t)
+	regimenPlanResponse := test_integration.CreateRegimenPlanForTreatmentPlan(regimenPlanRequest, testData, doctor, t)
 	test_integration.ValidateRegimenRequestAgainstResponse(regimenPlanRequest, regimenPlanResponse, t)
 
 	if len(regimenPlanResponse.RegimenSections) != 2 {
@@ -201,11 +200,11 @@ func TestRegimenForPatientVisit_AddingMultipleItemsWithSameText(t *testing.T) {
 	testData := test_integration.SetupIntegrationTest(t)
 	defer test_integration.TearDownIntegrationTest(t, testData)
 
-	patientVisitResponse, _, doctor := setupTestForRegimenCreation(t, testData)
+	_, treatmentPlan, doctor := setupTestForRegimenCreation(t, testData)
 
 	// add multiple items with the exact same text and ensure that they all get assigned new ids
 	regimenPlanRequest := &common.RegimenPlan{}
-	regimenPlanRequest.PatientVisitId = encoding.NewObjectId(patientVisitResponse.PatientVisitId)
+	regimenPlanRequest.TreatmentPlanId = treatmentPlan.Id
 	regimenPlanRequest.AllRegimenSteps = make([]*common.DoctorInstructionItem, 0)
 
 	for i := 0; i < 5; i++ {
@@ -224,7 +223,7 @@ func TestRegimenForPatientVisit_AddingMultipleItemsWithSameText(t *testing.T) {
 		})
 	}
 
-	regimenPlanResponse := test_integration.CreateRegimenPlanForPatientVisit(regimenPlanRequest, testData, doctor, t)
+	regimenPlanResponse := test_integration.CreateRegimenPlanForTreatmentPlan(regimenPlanRequest, testData, doctor, t)
 	test_integration.ValidateRegimenRequestAgainstResponse(regimenPlanRequest, regimenPlanResponse, t)
 
 }
@@ -237,11 +236,11 @@ func TestRegimenForPatientVisit_ErrorTextDifferentForLinkedItem(t *testing.T) {
 	testData := test_integration.SetupIntegrationTest(t)
 	defer test_integration.TearDownIntegrationTest(t, testData)
 
-	patientVisitResponse, _, doctor := setupTestForRegimenCreation(t, testData)
+	_, treatmentPlan, doctor := setupTestForRegimenCreation(t, testData)
 
 	// add multiple items with the exact same text and ensure that they all get assigned new ids
 	regimenPlanRequest := &common.RegimenPlan{}
-	regimenPlanRequest.PatientVisitId = encoding.NewObjectId(patientVisitResponse.PatientVisitId)
+	regimenPlanRequest.TreatmentPlanId = treatmentPlan.Id
 	regimenPlanRequest.AllRegimenSteps = make([]*common.DoctorInstructionItem, 0)
 
 	for i := 0; i < 5; i++ {
@@ -260,7 +259,7 @@ func TestRegimenForPatientVisit_ErrorTextDifferentForLinkedItem(t *testing.T) {
 		})
 	}
 
-	regimenPlanResponse := test_integration.CreateRegimenPlanForPatientVisit(regimenPlanRequest, testData, doctor, t)
+	regimenPlanResponse := test_integration.CreateRegimenPlanForTreatmentPlan(regimenPlanRequest, testData, doctor, t)
 	test_integration.ValidateRegimenRequestAgainstResponse(regimenPlanRequest, regimenPlanResponse, t)
 
 	// all steps in the response should have a parent id
@@ -283,7 +282,7 @@ func TestRegimenForPatientVisit_ErrorTextDifferentForLinkedItem(t *testing.T) {
 		regimenPlanRequest.RegimenSections[i].RegimenSteps[0].State = common.STATE_MODIFIED
 	}
 
-	doctorRegimenHandler := apiservice.NewDoctorRegimenHandler(testData.DataApi)
+	doctorRegimenHandler := doctor_treatment_plan.NewRegimenHandler(testData.DataApi)
 	ts := httptest.NewServer(doctorRegimenHandler)
 	defer ts.Close()
 
@@ -308,11 +307,11 @@ func TestRegimenForPatientVisit_UpdatingMultipleItemsWithSameText(t *testing.T) 
 	testData := test_integration.SetupIntegrationTest(t)
 	defer test_integration.TearDownIntegrationTest(t, testData)
 
-	patientVisitResponse, _, doctor := setupTestForRegimenCreation(t, testData)
+	_, treatmentPlan, doctor := setupTestForRegimenCreation(t, testData)
 
 	// add multiple items with the exact same text and ensure that they all get assigned new ids
 	regimenPlanRequest := &common.RegimenPlan{}
-	regimenPlanRequest.PatientVisitId = encoding.NewObjectId(patientVisitResponse.PatientVisitId)
+	regimenPlanRequest.TreatmentPlanId = treatmentPlan.Id
 	regimenPlanRequest.AllRegimenSteps = make([]*common.DoctorInstructionItem, 0)
 
 	for i := 0; i < 5; i++ {
@@ -331,7 +330,7 @@ func TestRegimenForPatientVisit_UpdatingMultipleItemsWithSameText(t *testing.T) 
 		})
 	}
 
-	regimenPlanResponse := test_integration.CreateRegimenPlanForPatientVisit(regimenPlanRequest, testData, doctor, t)
+	regimenPlanResponse := test_integration.CreateRegimenPlanForTreatmentPlan(regimenPlanRequest, testData, doctor, t)
 	test_integration.ValidateRegimenRequestAgainstResponse(regimenPlanRequest, regimenPlanResponse, t)
 
 	regimenPlanRequest = regimenPlanResponse
@@ -345,7 +344,7 @@ func TestRegimenForPatientVisit_UpdatingMultipleItemsWithSameText(t *testing.T) 
 		regimenPlanRequest.RegimenSections[i].RegimenSteps[0].State = common.STATE_MODIFIED
 	}
 
-	regimenPlanResponse = test_integration.CreateRegimenPlanForPatientVisit(regimenPlanRequest, testData, doctor, t)
+	regimenPlanResponse = test_integration.CreateRegimenPlanForTreatmentPlan(regimenPlanRequest, testData, doctor, t)
 	test_integration.ValidateRegimenRequestAgainstResponse(regimenPlanRequest, regimenPlanResponse, t)
 }
 
@@ -354,11 +353,11 @@ func TestRegimenForPatientVisit_UpdatingItemLinkedToDeletedItem(t *testing.T) {
 	testData := test_integration.SetupIntegrationTest(t)
 	defer test_integration.TearDownIntegrationTest(t, testData)
 
-	patientVisitResponse, treatmentPlan, doctor := setupTestForRegimenCreation(t, testData)
+	_, treatmentPlan, doctor := setupTestForRegimenCreation(t, testData)
 
 	// add multiple items with the exact same text and ensure that they all get assigned new ids
 	regimenPlanRequest := &common.RegimenPlan{}
-	regimenPlanRequest.PatientVisitId = encoding.NewObjectId(patientVisitResponse.PatientVisitId)
+	regimenPlanRequest.TreatmentPlanId = treatmentPlan.Id
 	regimenPlanRequest.AllRegimenSteps = make([]*common.DoctorInstructionItem, 0)
 
 	for i := 0; i < 5; i++ {
@@ -377,19 +376,19 @@ func TestRegimenForPatientVisit_UpdatingItemLinkedToDeletedItem(t *testing.T) {
 		})
 	}
 
-	regimenPlanResponse := test_integration.CreateRegimenPlanForPatientVisit(regimenPlanRequest, testData, doctor, t)
+	regimenPlanResponse := test_integration.CreateRegimenPlanForTreatmentPlan(regimenPlanRequest, testData, doctor, t)
 	test_integration.ValidateRegimenRequestAgainstResponse(regimenPlanRequest, regimenPlanResponse, t)
 
 	// now lets update the global set of regimen steps in the context of another patient's visit
-	patientVisitResponse2, treatmentPlan2 := test_integration.SignupAndSubmitPatientVisitForRandomPatient(t, testData, doctor)
+	_, treatmentPlan2 := test_integration.SignupAndSubmitPatientVisitForRandomPatient(t, testData, doctor)
 	regimenPlanResponse = test_integration.GetRegimenPlanForTreatmentPlan(testData, doctor, treatmentPlan2.Id.Int64(), t)
 
 	// lets go ahead and delete one of the items from the regimen step
 	regimenPlanRequest = regimenPlanResponse
-	regimenPlanRequest.PatientVisitId = encoding.NewObjectId(patientVisitResponse2.PatientVisitId)
+	regimenPlanRequest.TreatmentPlanId = treatmentPlan2.Id
 	regimenPlanRequest.AllRegimenSteps = regimenPlanRequest.AllRegimenSteps[0:4]
 
-	regimenPlanResponse = test_integration.CreateRegimenPlanForPatientVisit(regimenPlanRequest, testData, doctor, t)
+	regimenPlanResponse = test_integration.CreateRegimenPlanForTreatmentPlan(regimenPlanRequest, testData, doctor, t)
 	if len(regimenPlanResponse.AllRegimenSteps) != 4 {
 		t.Fatalf("Expected there to exist 4 items in the global regimen steps after deleting one of them instead got %d items ", len(regimenPlanResponse.AllRegimenSteps))
 	}
@@ -403,11 +402,11 @@ func TestRegimenForPatientVisit_UpdatingItemLinkedToDeletedItem(t *testing.T) {
 	// now lets go ahead and try and modify the item in the regimen section
 	regimenPlanRequest = regimenPlanResponse
 	regimenPlanRequest.RegimenSections[4].RegimenSteps[0].State = common.STATE_MODIFIED
-	regimenPlanRequest.PatientVisitId = encoding.NewObjectId(patientVisitResponse.PatientVisitId)
+	regimenPlanRequest.TreatmentPlanId = treatmentPlan2.Id
 	updatedText := "Updating text for an item linked to deleted item"
 	regimenPlanRequest.RegimenSections[4].RegimenSteps[0].Text = updatedText
 
-	regimenPlanResponse = test_integration.CreateRegimenPlanForPatientVisit(regimenPlanRequest, testData, doctor, t)
+	regimenPlanResponse = test_integration.CreateRegimenPlanForTreatmentPlan(regimenPlanRequest, testData, doctor, t)
 	if len(regimenPlanResponse.AllRegimenSteps) != 4 && len(regimenPlanResponse.RegimenSections) != 5 {
 		t.Fatalf("Expected 4 items in the global regimen steps and 5 items in the regimen sections instead got %d in global regimen list and %d items in the regimen sections", len(regimenPlanRequest.AllRegimenSteps), len(regimenPlanRequest.RegimenSections))
 	}
@@ -420,12 +419,12 @@ func TestRegimenForPatientVisit_UpdatingItemLinkedToDeletedItem(t *testing.T) {
 	// as it modified back without any issue. This is essentially to ensure that it passes the validation
 	// of text being modified for an item that is no longer active in the master list
 	regimenPlanRequest = regimenPlanResponse
-	regimenPlanResponse = test_integration.CreateRegimenPlanForPatientVisit(regimenPlanRequest, testData, doctor, t)
+	regimenPlanResponse = test_integration.CreateRegimenPlanForTreatmentPlan(regimenPlanRequest, testData, doctor, t)
 
 	// now lets go ahead and remove the item from the regimen section
 	regimenPlanRequest = regimenPlanResponse
 	regimenPlanRequest.RegimenSections = regimenPlanRequest.RegimenSections[:4]
-	regimenPlanResponse = test_integration.CreateRegimenPlanForPatientVisit(regimenPlanRequest, testData, doctor, t)
+	regimenPlanResponse = test_integration.CreateRegimenPlanForTreatmentPlan(regimenPlanRequest, testData, doctor, t)
 	test_integration.ValidateRegimenRequestAgainstResponse(regimenPlanRequest, regimenPlanResponse, t)
 }
 
@@ -436,11 +435,11 @@ func TestRegimenForPatientVisit_TrackingSourceId(t *testing.T) {
 	testData := test_integration.SetupIntegrationTest(t)
 	defer test_integration.TearDownIntegrationTest(t, testData)
 
-	patientVisitResponse, _, doctor := setupTestForRegimenCreation(t, testData)
+	_, treatmentPlan, doctor := setupTestForRegimenCreation(t, testData)
 
 	// adding new regimen steps to the doctor but not to the patient visit
 	regimenPlanRequest := &common.RegimenPlan{}
-	regimenPlanRequest.PatientVisitId = encoding.NewObjectId(patientVisitResponse.PatientVisitId)
+	regimenPlanRequest.TreatmentPlanId = treatmentPlan.Id
 
 	regimenStep1 := &common.DoctorInstructionItem{}
 	regimenStep1.Text = "Regimen Step 1"
@@ -451,7 +450,7 @@ func TestRegimenForPatientVisit_TrackingSourceId(t *testing.T) {
 	regimenStep2.State = common.STATE_ADDED
 
 	regimenPlanRequest.AllRegimenSteps = []*common.DoctorInstructionItem{regimenStep1, regimenStep2}
-	regimenPlanResponse := test_integration.CreateRegimenPlanForPatientVisit(regimenPlanRequest, testData, doctor, t)
+	regimenPlanResponse := test_integration.CreateRegimenPlanForTreatmentPlan(regimenPlanRequest, testData, doctor, t)
 	test_integration.ValidateRegimenRequestAgainstResponse(regimenPlanRequest, regimenPlanResponse, t)
 
 	if len(regimenPlanResponse.RegimenSections) > 0 {
@@ -468,7 +467,7 @@ func TestRegimenForPatientVisit_TrackingSourceId(t *testing.T) {
 	regimenPlanRequest.AllRegimenSteps[0].Text = "Updated step 1"
 	regimenPlanRequest.AllRegimenSteps[1].State = common.STATE_MODIFIED
 	regimenPlanRequest.AllRegimenSteps[1].Text = "Updated step 2"
-	regimenPlanResponse = test_integration.CreateRegimenPlanForPatientVisit(regimenPlanRequest, testData, doctor, t)
+	regimenPlanResponse = test_integration.CreateRegimenPlanForTreatmentPlan(regimenPlanRequest, testData, doctor, t)
 	test_integration.ValidateRegimenRequestAgainstResponse(regimenPlanRequest, regimenPlanResponse, t)
 
 	// the source id of the two returned steps should match the source id of the original steps
@@ -495,7 +494,7 @@ func TestRegimenForPatientVisit_TrackingSourceId(t *testing.T) {
 	regimenPlanRequest.AllRegimenSteps[0].Text = "Updated again step 1"
 	regimenPlanRequest.AllRegimenSteps[1].State = common.STATE_MODIFIED
 	regimenPlanRequest.AllRegimenSteps[1].Text = "Updated again step 2"
-	regimenPlanResponse = test_integration.CreateRegimenPlanForPatientVisit(regimenPlanRequest, testData, doctor, t)
+	regimenPlanResponse = test_integration.CreateRegimenPlanForTreatmentPlan(regimenPlanRequest, testData, doctor, t)
 	test_integration.ValidateRegimenRequestAgainstResponse(regimenPlanRequest, regimenPlanResponse, t)
 
 	// the source id of the two returned steps should match the source id of the original steps

@@ -121,7 +121,6 @@ type TreatmentPlan struct {
 	Id               encoding.ObjectId `json:"treatment_plan_id,omitempty"`
 	PatientId        encoding.ObjectId `json:"patient_id,omitempty"`
 	PatientInfo      *Patient          `json:"patient,omitempty"`
-	PatientVisitId   encoding.ObjectId `json:"patient_visit_id,omitempty"`
 	Status           string            `json:"status,omitempty"`
 	CreationDate     *time.Time        `json:"creation_date,omitempty"`
 	SentDate         *time.Time        `json:"sent_date,omitempty"`
@@ -167,7 +166,6 @@ type DoctorTreatmentPlan struct {
 	Id                              encoding.ObjectId `json:"id,omitempty"`
 	DoctorId                        encoding.ObjectId `json:"doctor_id,omitempty"`
 	CreationDate                    time.Time         `json:"creation_date"`
-	PatientVisitId                  encoding.ObjectId `json:"patient_visit_id,omitempty"`
 	DoctorFavoriteTreatmentPlanId   encoding.ObjectId `json:"dr_favorite_treatment_plan_id"`
 	DoctorFavoriteTreatmentPlanName string            `json:"dr_favorite_treatment_plan_name,omitempty"`
 	TreatmentList                   *TreatmentList    `json:"treatment_list"`
@@ -257,7 +255,6 @@ type RegimenSection struct {
 
 type RegimenPlan struct {
 	TreatmentPlanId encoding.ObjectId        `json:"treatment_plan_id,omitempty"`
-	PatientVisitId  encoding.ObjectId        `json:"patient_visit_id,omitempty"`
 	RegimenSections []*RegimenSection        `json:"regimen_sections"`
 	AllRegimenSteps []*DoctorInstructionItem `json:"all_regimen_steps,omitempty"`
 	Title           string                   `json:"title,omitempty"`
@@ -325,7 +322,6 @@ type FollowUp struct {
 type Advice struct {
 	AllAdvicePoints      []*DoctorInstructionItem `json:"all_advice_points,omitempty"`
 	SelectedAdvicePoints []*DoctorInstructionItem `json:"selected_advice_points,omitempty"`
-	PatientVisitId       encoding.ObjectId        `json:"patient_visit_id,omitempty"`
 	TreatmentPlanId      encoding.ObjectId        `json:"treatment_plan_id,omitempty"`
 	Title                string                   `json:"title,omitempty"`
 	Status               string                   `json:"status,omitempty"`

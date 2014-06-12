@@ -11,9 +11,6 @@ import (
 	"carefront/libs/erx"
 	"carefront/libs/pharmacy"
 	"carefront/treatment_plan"
-
-	"fmt"
-	"io/ioutil"
 	"net/http"
 	"net/http/httptest"
 	"strconv"
@@ -32,7 +29,7 @@ func TestPatientVisitReview(t *testing.T) {
 		t.Fatal("Unable to get doctor from id: " + err.Error())
 	}
 
-	patientVisitResponse, _ := SignupAndSubmitPatientVisitForRandomPatient(t, testData, doctor)
+	patientVisitResponse, treatmentPlan := SignupAndSubmitPatientVisitForRandomPatient(t, testData, doctor)
 	patient, err := testData.DataApi.GetPatientFromPatientVisitId(patientVisitResponse.PatientVisitId)
 	if err != nil {
 		t.Fatalf("Unable to get patient from patient visit info: %s", err)
@@ -56,12 +53,10 @@ func TestPatientVisitReview(t *testing.T) {
 	ts := httptest.NewServer(patientVisitReviewHandler)
 	defer ts.Close()
 
-	resp, err := AuthGet(ts.URL+"?patient_visit_id="+strconv.FormatInt(patientVisitResponse.PatientVisitId, 10), patient.AccountId.Int64())
+	resp, err := AuthGet(ts.URL+"?treatment_plan_id="+strconv.FormatInt(treatmentPlan.Id.Int64(), 10), patient.AccountId.Int64())
 	if err != nil {
 		t.Fatal("Unable to make call to get the patient visit review for patient visit: " + err.Error())
-	}
-
-	if resp.StatusCode != http.StatusBadRequest {
+	} else if resp.StatusCode != http.StatusBadRequest {
 		t.Fatalf("Expected to get %d for call to get patient visit review but instead got %d", http.StatusBadRequest, resp.StatusCode)
 	}
 
@@ -84,14 +79,14 @@ func TestPatientVisitReview(t *testing.T) {
 	ts3 := httptest.NewServer(doctorSubmitPatientVisitReviewHandler)
 	defer ts3.Close()
 
-	resp, err = AuthPost(ts3.URL, "application/x-www-form-urlencoded", bytes.NewBufferString("patient_visit_id="+strconv.FormatInt(patientVisitResponse.PatientVisitId, 10)), doctor.AccountId.Int64())
+	resp, err = AuthPost(ts3.URL, "application/x-www-form-urlencoded", bytes.NewBufferString("treatment_plan_id="+strconv.FormatInt(treatmentPlan.Id.Int64(), 10)), doctor.AccountId.Int64())
 	if err != nil {
 		t.Fatal("Unable to make call to close patient visit " + err.Error())
 	}
 	CheckSuccessfulStatusCode(resp, "Unable to make successful call to close the patient visit", t)
 
 	// start a new patient visit
-	patientVisitResponse, treatmentPlan := SignupAndSubmitPatientVisitForRandomPatient(t, testData, doctor)
+	patientVisitResponse, treatmentPlan = SignupAndSubmitPatientVisitForRandomPatient(t, testData, doctor)
 	patient, err = testData.DataApi.GetPatientFromPatientVisitId(patientVisitResponse.PatientVisitId)
 	if err != nil {
 		t.Fatalf("Unable to get patient from patient visit id: %s", err)
@@ -166,7 +161,7 @@ func TestPatientVisitReview(t *testing.T) {
 	stubErxService.PrescriptionIdToPrescriptionStatuses[10] = []common.StatusEvent{common.StatusEvent{Status: api.ERX_STATUS_SENT}}
 	stubErxService.PrescriptionIdToPrescriptionStatuses[20] = []common.StatusEvent{common.StatusEvent{Status: api.ERX_STATUS_ERROR, StatusDetails: "error test"}}
 
-	getTreatmentsResponse := addAndGetTreatmentsForPatientVisit(testData, treatments, doctor.AccountId.Int64(), patientVisitResponse.PatientVisitId, t)
+	getTreatmentsResponse := addAndGetTreatmentsForPatientVisit(testData, treatments, doctor.AccountId.Int64(), treatmentPlan.Id.Int64(), t)
 	if len(getTreatmentsResponse.TreatmentList.Treatments) != 2 {
 		t.Fatalf("Expected 2 treatments to be returned, instead got back %d", len(getTreatmentsResponse.TreatmentList.Treatments))
 	}
@@ -177,7 +172,7 @@ func TestPatientVisitReview(t *testing.T) {
 	//
 	//
 	regimenPlanRequest := &common.RegimenPlan{}
-	regimenPlanRequest.PatientVisitId = encoding.NewObjectId(patientVisitResponse.PatientVisitId)
+	regimenPlanRequest.TreatmentPlanId = treatmentPlan.Id
 
 	regimenStep1 := &common.DoctorInstructionItem{}
 	regimenStep1.Text = "Regimen Step 1"
@@ -197,7 +192,7 @@ func TestPatientVisitReview(t *testing.T) {
 	regimenSection2.RegimenSteps = []*common.DoctorInstructionItem{regimenPlanRequest.AllRegimenSteps[1]}
 
 	regimenPlanRequest.RegimenSections = []*common.RegimenSection{regimenSection, regimenSection2}
-	regimenPlanResponse := CreateRegimenPlanForPatientVisit(regimenPlanRequest, testData, doctor, t)
+	regimenPlanResponse := CreateRegimenPlanForTreatmentPlan(regimenPlanRequest, testData, doctor, t)
 	ValidateRegimenRequestAgainstResponse(regimenPlanRequest, regimenPlanResponse, t)
 	getRegimenPlanResponse := GetRegimenPlanForTreatmentPlan(testData, doctor, treatmentPlan.Id.Int64(), t)
 	if len(getRegimenPlanResponse.RegimenSections) != 2 {
@@ -217,7 +212,7 @@ func TestPatientVisitReview(t *testing.T) {
 	doctorAdviceRequest := &common.Advice{}
 	doctorAdviceRequest.AllAdvicePoints = []*common.DoctorInstructionItem{advicePoint1, advicePoint2}
 	doctorAdviceRequest.SelectedAdvicePoints = doctorAdviceRequest.AllAdvicePoints
-	doctorAdviceRequest.PatientVisitId = encoding.NewObjectId(patientVisitResponse.PatientVisitId)
+	doctorAdviceRequest.TreatmentPlanId = treatmentPlan.Id
 
 	doctorAdviceResponse := UpdateAdvicePointsForPatientVisit(doctorAdviceRequest, testData, doctor, t)
 	ValidateAdviceRequestAgainstResponse(doctorAdviceRequest, doctorAdviceResponse, t)
@@ -225,28 +220,6 @@ func TestPatientVisitReview(t *testing.T) {
 	if len(getAdviceResponse.SelectedAdvicePoints) != len(doctorAdviceRequest.AllAdvicePoints) {
 		t.Fatal("Expected number of advice points not returned")
 	}
-	//
-	//
-	// SUBMIT FOLLOW UP
-	//
-	//
-
-	// lets add a follow up time for 1 week from now
-	doctorFollowupHandler := apiservice.NewPatientVisitFollowUpHandler(testData.DataApi)
-	ts5 := httptest.NewServer(doctorFollowupHandler)
-	defer ts5.Close()
-
-	requestBody := fmt.Sprintf("patient_visit_id=%d&follow_up_unit=week&follow_up_value=1", patientVisitResponse.PatientVisitId)
-	resp, err = AuthPost(ts5.URL, "application/x-www-form-urlencoded", bytes.NewBufferString(requestBody), doctor.AccountId.Int64())
-	if err != nil {
-		t.Fatal("Unable to make successful call to add follow up time for patient visit: " + err.Error())
-	}
-	body, err := ioutil.ReadAll(resp.Body)
-	if err != nil {
-		t.Fatal("Unable to read the response body: " + err.Error())
-	}
-
-	CheckSuccessfulStatusCode(resp, "Unable to make successful call to add follow up for patient visit: "+string(body), t)
 
 	//
 	//
@@ -255,11 +228,12 @@ func TestPatientVisitReview(t *testing.T) {
 	//
 
 	// get doctor to submit the patient visit review
-	resp, err = AuthPost(ts3.URL, "application/x-www-form-urlencoded", bytes.NewBufferString("patient_visit_id="+strconv.FormatInt(patientVisitResponse.PatientVisitId, 10)), doctor.AccountId.Int64())
+	resp, err = AuthPost(ts3.URL, "application/x-www-form-urlencoded", bytes.NewBufferString("treatment_plan_id="+strconv.FormatInt(treatmentPlan.Id.Int64(), 10)), doctor.AccountId.Int64())
 	if err != nil {
 		t.Fatal("Unable to make call to close patient visit " + err.Error())
+	} else if resp.StatusCode != http.StatusOK {
+		t.Fatalf("Expected %d but got %d instead", http.StatusOK, resp.StatusCode)
 	}
-	CheckSuccessfulStatusCode(resp, "Unable to make successful call to close the patient visit", t)
 
 	// get an updated view of the patient informatio nfrom the database again given that weve assigned a prescription id to him
 	patient, err = testData.DataApi.GetPatientFromId(patient.PatientId.Int64())
@@ -333,17 +307,8 @@ func TestPatientVisitReview(t *testing.T) {
 	if err != nil {
 		t.Fatal("Unable to get the patient object given the id: " + err.Error())
 	}
-	resp, err = AuthGet(ts.URL+"?patient_visit_id="+strconv.FormatInt(patientVisitResponse.PatientVisitId, 10), patient.AccountId.Int64())
+	resp, err = AuthGet(ts.URL+"?treatment_plan_id="+strconv.FormatInt(treatmentPlan.Id.Int64(), 10), patient.AccountId.Int64())
 	if err != nil {
 		t.Fatal("Unable to make call to get patient visit review: " + err.Error())
-	}
-
-	diagnosisSummary, err := testData.DataApi.GetDiagnosisSummaryForTreatmentPlan(treatmentPlan.Id.Int64())
-	if err != nil {
-		t.Fatalf("Error while getting diagnosis summary %s", err)
-	}
-
-	if diagnosisSummary == nil || diagnosisSummary.Summary == "" {
-		t.Fatalf("Diagnosis summary expected to exist")
 	}
 }

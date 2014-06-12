@@ -141,7 +141,7 @@ func SubmitPatientVisitDiagnosis(PatientVisitId int64, doctor *common.Doctor, te
 	}
 
 	// now, get diagnosis layout again and check to ensure that the doctor successfully diagnosed the patient with the expected answers
-	diagnosisLayout, err := patient_visit.GetDiagnosisLayout(testData.DataApi, PatientVisitId, 0, doctor.DoctorId.Int64())
+	diagnosisLayout, err := patient_visit.GetDiagnosisLayout(testData.DataApi, PatientVisitId, doctor.DoctorId.Int64())
 	if err != nil {
 		t.Fatal(err.Error())
 	}
@@ -225,12 +225,12 @@ func PickATreatmentPlanForPatientVisit(patientVisitId int64, doctor *common.Doct
 	return responseData
 }
 
-func SubmitPatientVisitBackToPatient(patientVisitId int64, doctor *common.Doctor, testData TestData, t *testing.T) {
+func SubmitPatientVisitBackToPatient(treatmentPlanId int64, doctor *common.Doctor, testData TestData, t *testing.T) {
 	doctorSubmitPatientVisitReviewHandler := &apiservice.DoctorSubmitPatientVisitReviewHandler{DataApi: testData.DataApi}
 	ts := httptest.NewServer(doctorSubmitPatientVisitReviewHandler)
 	defer ts.Close()
 
-	resp, err := AuthPost(ts.URL, "application/x-www-form-urlencoded", bytes.NewBufferString("patient_visit_id="+strconv.FormatInt(patientVisitId, 10)), doctor.AccountId.Int64())
+	resp, err := AuthPost(ts.URL, "application/x-www-form-urlencoded", bytes.NewBufferString("treatment_plan_id="+strconv.FormatInt(treatmentPlanId, 10)), doctor.AccountId.Int64())
 	if err != nil {
 		t.Fatal("Unable to make call to close patient visit " + err.Error())
 	}

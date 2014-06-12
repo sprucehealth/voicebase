@@ -10,7 +10,6 @@ import (
 	"net/http"
 
 	"github.com/SpruceHealth/mapstructure"
-	"github.com/gorilla/schema"
 )
 
 type doctorPatientVisitReviewHandler struct {
@@ -24,8 +23,7 @@ func NewDoctorPatientVisitReviewHandler(dataApi api.DataAPI) *doctorPatientVisit
 }
 
 type visitReviewRequestData struct {
-	PatientVisitId  int64 `schema:"patient_visit_id"`
-	TreatmentPlanId int64 `schema:"treatment_plan_id"`
+	PatientVisitId int64 `schema:"patient_visit_id,required"`
 }
 
 type doctorPatientVisitReviewResponse struct {
@@ -36,29 +34,19 @@ type doctorPatientVisitReviewResponse struct {
 
 func (p *doctorPatientVisitReviewHandler) ServeHTTP(w http.ResponseWriter, r *http.Request) {
 	if r.Method != apiservice.HTTP_GET {
-		w.WriteHeader(http.StatusNotFound)
-		return
-	}
-
-	if err := r.ParseForm(); err != nil {
-		apiservice.WriteDeveloperError(w, http.StatusBadRequest, "Unable to parse request data: "+err.Error())
+		http.NotFound(w, r)
 		return
 	}
 
 	var requestData visitReviewRequestData
-	if err := schema.NewDecoder().Decode(&requestData, r.Form); err != nil {
+	if err := apiservice.DecodeRequestData(&requestData, r); err != nil {
 		apiservice.WriteDeveloperError(w, http.StatusBadRequest, err.Error())
 		return
+	} else if requestData.PatientVisitId == 0 {
+		apiservice.WriteValidationError("patient_visit_id must be specified", w, r)
 	}
 
-	patientVisitId := requestData.PatientVisitId
-	treatmentPlanId := requestData.TreatmentPlanId
-	if err := apiservice.EnsureTreatmentPlanOrPatientVisitIdPresent(p.DataApi, treatmentPlanId, &patientVisitId); err != nil {
-		apiservice.WriteDeveloperError(w, http.StatusBadRequest, err.Error())
-		return
-	}
-
-	patientVisit, err := p.DataApi.GetPatientVisitFromId(patientVisitId)
+	patientVisit, err := p.DataApi.GetPatientVisitFromId(requestData.PatientVisitId)
 	if err != nil {
 		apiservice.WriteDeveloperError(w, http.StatusBadRequest, "Unable to get patient visit information from database based on provided patient visit id : "+err.Error())
 		return
@@ -87,21 +75,15 @@ func (p *doctorPatientVisitReviewHandler) ServeHTTP(w http.ResponseWriter, r *ht
 			apiservice.WriteDeveloperError(w, http.StatusInternalServerError, "Unable to assign the patient visit to this doctor: "+err.Error())
 			return
 		}
-	} else {
-		treatmentPlanId, err = p.DataApi.GetActiveTreatmentPlanForPatientVisit(patientVisitReviewData.DoctorId, patientVisit.PatientVisitId.Int64())
-		if err != nil {
-			apiservice.WriteDeveloperError(w, http.StatusInternalServerError, "Unable to get treatment plan id for patient visit: "+err.Error())
-			return
-		}
 	}
 
-	patientVisitLayout, _, err := apiservice.GetPatientLayoutForPatientVisit(patientVisitId, api.EN_LANGUAGE_ID, p.DataApi)
+	patientVisitLayout, _, err := apiservice.GetPatientLayoutForPatientVisit(requestData.PatientVisitId, api.EN_LANGUAGE_ID, p.DataApi)
 	if err != nil {
 		apiservice.WriteDeveloperError(w, http.StatusInternalServerError, "Unable to get patient visit layout: "+err.Error())
 		return
 	}
 
-	context, err := buildContext(p.DataApi, patientVisitLayout, patientVisit.PatientId.Int64(), patientVisitId, r)
+	context, err := buildContext(p.DataApi, patientVisitLayout, patientVisit.PatientId.Int64(), requestData.PatientVisitId, r)
 	if err != nil {
 		apiservice.WriteDeveloperError(w, http.StatusInternalServerError, err.Error())
 		return

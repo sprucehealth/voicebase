@@ -2,7 +2,6 @@ package test_integration
 
 import (
 	"bytes"
-	"carefront/apiservice"
 	"carefront/common"
 	"carefront/doctor_treatment_plan"
 	"carefront/encoding"
@@ -41,8 +40,8 @@ func GetRegimenPlanForTreatmentPlan(testData TestData, doctor *common.Doctor, tr
 	return doctorTreatmentPlanResponse.TreatmentPlan.RegimenPlan
 }
 
-func CreateRegimenPlanForPatientVisit(doctorRegimenRequest *common.RegimenPlan, testData TestData, doctor *common.Doctor, t *testing.T) *common.RegimenPlan {
-	doctorRegimenHandler := apiservice.NewDoctorRegimenHandler(testData.DataApi)
+func CreateRegimenPlanForTreatmentPlan(doctorRegimenRequest *common.RegimenPlan, testData TestData, doctor *common.Doctor, t *testing.T) *common.RegimenPlan {
+	doctorRegimenHandler := doctor_treatment_plan.NewRegimenHandler(testData.DataApi)
 	ts := httptest.NewServer(doctorRegimenHandler)
 	defer ts.Close()
 
@@ -99,7 +98,7 @@ func GetAdvicePointsInTreatmentPlan(testData TestData, doctor *common.Doctor, tr
 }
 
 func UpdateAdvicePointsForPatientVisit(doctorAdviceRequest *common.Advice, testData TestData, doctor *common.Doctor, t *testing.T) *common.Advice {
-	doctorAdviceHandler := apiservice.NewDoctorAdviceHandler(testData.DataApi)
+	doctorAdviceHandler := doctor_treatment_plan.NewAdviceHandler(testData.DataApi)
 	ts := httptest.NewServer(doctorAdviceHandler)
 	defer ts.Close()
 
@@ -164,16 +163,13 @@ func GetDoctorTreatmentPlanById(treatmentPlanId, doctorAccountId int64, testData
 	return response.TreatmentPlan
 }
 
-func addAndGetTreatmentsForPatientVisit(testData TestData, treatments []*common.Treatment, doctorAccountId, PatientVisitId int64, t *testing.T) *apiservice.GetTreatmentsResponse {
+func addAndGetTreatmentsForPatientVisit(testData TestData, treatments []*common.Treatment, doctorAccountId, treatmentPlanId int64, t *testing.T) *doctor_treatment_plan.GetTreatmentsResponse {
 	stubErxApi := &erx.StubErxService{
 		SelectedMedicationToReturn: &common.Treatment{},
 	}
 
-	treatmentRequestBody := apiservice.AddTreatmentsRequestBody{PatientVisitId: encoding.NewObjectId(PatientVisitId), Treatments: treatments}
-	treatmentsHandler := &apiservice.TreatmentsHandler{
-		DataApi: testData.DataApi,
-		ErxApi:  stubErxApi,
-	}
+	treatmentRequestBody := doctor_treatment_plan.AddTreatmentsRequestBody{TreatmentPlanId: encoding.NewObjectId(treatmentPlanId), Treatments: treatments}
+	treatmentsHandler := doctor_treatment_plan.NewTreatmentsHandler(testData.DataApi, stubErxApi)
 
 	ts := httptest.NewServer(treatmentsHandler)
 	defer ts.Close()
@@ -188,7 +184,7 @@ func addAndGetTreatmentsForPatientVisit(testData TestData, treatments []*common.
 		t.Fatal("Unable to make POST request to add treatments to patient visit " + err.Error())
 	}
 
-	addTreatmentsResponse := &apiservice.GetTreatmentsResponse{}
+	addTreatmentsResponse := &doctor_treatment_plan.GetTreatmentsResponse{}
 	err = json.NewDecoder(resp.Body).Decode(addTreatmentsResponse)
 	if err != nil {
 		t.Fatal("Unable to unmarshal response into object : " + err.Error())
@@ -385,7 +381,6 @@ func CreateFavoriteTreatmentPlan(patientVisitId, treatmentPlanId int64, testData
 	// and the only way we can create regimen steps today is in the context of a patient visit
 	regimenPlanRequest := &common.RegimenPlan{}
 	regimenPlanRequest.TreatmentPlanId = encoding.NewObjectId(treatmentPlanId)
-	regimenPlanRequest.PatientVisitId = encoding.NewObjectId(patientVisitId)
 
 	regimenStep1 := &common.DoctorInstructionItem{}
 	regimenStep1.Text = "Regimen Step 1"
@@ -412,7 +407,7 @@ func CreateFavoriteTreatmentPlan(patientVisitId, treatmentPlanId int64, testData
 	}
 
 	regimenPlanRequest.AllRegimenSteps = []*common.DoctorInstructionItem{regimenStep1, regimenStep2}
-	regimenPlanResponse := CreateRegimenPlanForPatientVisit(regimenPlanRequest, testData, doctor, t)
+	regimenPlanResponse := CreateRegimenPlanForTreatmentPlan(regimenPlanRequest, testData, doctor, t)
 	ValidateRegimenRequestAgainstResponse(regimenPlanRequest, regimenPlanResponse, t)
 
 	// lets submit advice for this patient
@@ -426,7 +421,6 @@ func CreateFavoriteTreatmentPlan(patientVisitId, treatmentPlanId int64, testData
 	doctorAdviceRequest := &common.Advice{}
 	doctorAdviceRequest.AllAdvicePoints = []*common.DoctorInstructionItem{advicePoint1, advicePoint2}
 	doctorAdviceRequest.TreatmentPlanId = encoding.NewObjectId(treatmentPlanId)
-	doctorAdviceRequest.PatientVisitId = encoding.NewObjectId(patientVisitId)
 
 	doctorAdviceResponse := UpdateAdvicePointsForPatientVisit(doctorAdviceRequest, testData, doctor, t)
 	ValidateAdviceRequestAgainstResponse(doctorAdviceRequest, doctorAdviceResponse, t)

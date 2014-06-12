@@ -9,8 +9,6 @@ import (
 	"carefront/libs/pharmacy"
 	"fmt"
 	"net/http"
-
-	"github.com/gorilla/schema"
 )
 
 type DoctorSubmitPatientVisitReviewHandler struct {
@@ -21,10 +19,10 @@ type DoctorSubmitPatientVisitReviewHandler struct {
 }
 
 type SubmitPatientVisitReviewRequest struct {
-	PatientVisitId int64  `schema:"patient_visit_id"`
-	Status         string `schema:"status"`
-	Message        string `schema:"message"`
-	FailErxRouting bool   `schema:"fail_erx"`
+	TreatmentPlanId int64  `schema:"treatment_plan_id"`
+	Status          string `schema:"status"`
+	Message         string `schema:"message"`
+	FailErxRouting  bool   `schema:"fail_erx"`
 }
 
 type SubmitPatientVisitReviewResponse struct {
@@ -46,34 +44,31 @@ func (d *DoctorSubmitPatientVisitReviewHandler) ServeHTTP(w http.ResponseWriter,
 }
 
 func (d *DoctorSubmitPatientVisitReviewHandler) submitPatientVisitReview(w http.ResponseWriter, r *http.Request) {
-	if err := r.ParseForm(); err != nil {
-		WriteDeveloperError(w, http.StatusBadRequest, "Unable to parse request data: "+err.Error())
-		return
-	}
-
 	requestData := new(SubmitPatientVisitReviewRequest)
-	err := schema.NewDecoder().Decode(requestData, r.Form)
-	if err != nil {
-		WriteDeveloperError(w, http.StatusBadRequest, "Unable to parse input parameters: "+err.Error())
+	if err := DecodeRequestData(requestData, r); err != nil {
+		WriteError(err, w, r)
+		return
+	} else if requestData.TreatmentPlanId == 0 {
+		WriteValidationError("treatment_plan_id must be specified", w, r)
 		return
 	}
 
-	patientVisitReviewData, statusCode, err := ValidateDoctorAccessToPatientVisitAndGetRelevantData(requestData.PatientVisitId, GetContext(r).AccountId, d.DataApi)
+	patientVisitId, err := d.DataApi.GetPatientVisitIdFromTreatmentPlanId(requestData.TreatmentPlanId)
+	if err != nil {
+		WriteError(err, w, r)
+		return
+	}
+
+	patientVisitReviewData, statusCode, err := ValidateDoctorAccessToPatientVisitAndGetRelevantData(patientVisitId, GetContext(r).AccountId, d.DataApi)
 	if err != nil {
 		WriteDeveloperError(w, statusCode, err.Error())
-		return
-	}
-
-	treatmentPlanId, err := d.DataApi.GetActiveTreatmentPlanForPatientVisit(patientVisitReviewData.DoctorId, requestData.PatientVisitId)
-	if err != nil {
-		WriteDeveloperError(w, http.StatusInternalServerError, "Unable to get current active treatment plan for patient visit: "+err.Error())
 		return
 	}
 
 	// nothing to do if the visit is already in the completed state from the doctor's perspective
 	if patientVisitReviewData.PatientVisit.Status == api.CASE_STATUS_TREATED || patientVisitReviewData.PatientVisit.Status == api.CASE_STATUS_TRIAGED ||
 		patientVisitReviewData.PatientVisit.Status == api.CASE_STATUS_PHOTOS_REJECTED {
-		err = d.DataApi.MarkGenerationOfTreatmentPlanInVisitQueue(patientVisitReviewData.DoctorId, requestData.PatientVisitId, treatmentPlanId, api.QUEUE_ITEM_STATUS_ONGOING, requestData.Status)
+		err = d.DataApi.MarkGenerationOfTreatmentPlanInVisitQueue(patientVisitReviewData.DoctorId, patientVisitId, requestData.TreatmentPlanId, api.QUEUE_ITEM_STATUS_ONGOING, requestData.Status)
 		if err != nil {
 			WriteDeveloperError(w, http.StatusInternalServerError, "Unable to update the status of the patient visit in the doctor queue: "+err.Error())
 			return
@@ -83,13 +78,13 @@ func (d *DoctorSubmitPatientVisitReviewHandler) submitPatientVisitReview(w http.
 	}
 
 	// doctor can only update the state of a patient visit that is currently in REVIEWING state
-	err = EnsurePatientVisitInExpectedStatus(d.DataApi, requestData.PatientVisitId, api.CASE_STATUS_REVIEWING)
+	err = EnsurePatientVisitInExpectedStatus(d.DataApi, patientVisitId, api.CASE_STATUS_REVIEWING)
 	if err != nil {
 		WriteDeveloperError(w, http.StatusBadRequest, err.Error())
 		return
 	}
 
-	patient, err := d.DataApi.GetPatientFromPatientVisitId(requestData.PatientVisitId)
+	patient, err := d.DataApi.GetPatientFromPatientVisitId(patientVisitId)
 	if err != nil {
 		WriteDeveloperError(w, http.StatusInternalServerError, "Unable to get patient data from patient visit: "+err.Error())
 		return
@@ -134,7 +129,7 @@ func (d *DoctorSubmitPatientVisitReviewHandler) submitPatientVisitReview(w http.
 			}
 		}
 
-		treatments, err := d.DataApi.GetTreatmentsBasedOnTreatmentPlanId(treatmentPlanId)
+		treatments, err := d.DataApi.GetTreatmentsBasedOnTreatmentPlanId(requestData.TreatmentPlanId)
 		if err != nil {
 			WriteDeveloperError(w, http.StatusInternalServerError, "Unable to get treatments based on active treatment plan: "+err.Error())
 			return
@@ -220,27 +215,27 @@ func (d *DoctorSubmitPatientVisitReviewHandler) submitPatientVisitReview(w http.
 		if status == "" {
 			status = api.CASE_STATUS_TREATED
 		}
-		err := d.DataApi.ClosePatientVisit(requestData.PatientVisitId, status)
+		err := d.DataApi.ClosePatientVisit(patientVisitId, status)
 		if err != nil {
 			WriteDeveloperError(w, http.StatusInternalServerError, "Unable to update the status of the visit to closed: "+err.Error())
 			return
 		}
 
-		if err := d.DataApi.MarkTreatmentPlanAsSent(treatmentPlanId); err != nil {
+		if err := d.DataApi.MarkTreatmentPlanAsSent(requestData.TreatmentPlanId); err != nil {
 			WriteDeveloperError(w, http.StatusInternalServerError, "Unable to update sent time of treatment plan "+err.Error())
 			return
 		}
 
 	case api.CASE_STATUS_PHOTOS_REJECTED:
 		// reject the  patient photos
-		err = d.DataApi.RejectPatientVisitPhotos(requestData.PatientVisitId)
+		err = d.DataApi.RejectPatientVisitPhotos(patientVisitId)
 		if err != nil {
 			WriteDeveloperError(w, http.StatusInternalServerError, "Unable to reject patient photos: "+err.Error())
 			return
 		}
 
 		// mark the status on the patient visit to retake photos
-		err = d.DataApi.UpdatePatientVisitStatus(requestData.PatientVisitId, requestData.Message, api.CASE_STATUS_PHOTOS_REJECTED)
+		err = d.DataApi.UpdatePatientVisitStatus(patientVisitId, requestData.Message, api.CASE_STATUS_PHOTOS_REJECTED)
 		if err != nil {
 			WriteDeveloperError(w, http.StatusInternalServerError, "Unable to mark the status of the patient visit as rejected: "+err.Error())
 			return
@@ -253,8 +248,8 @@ func (d *DoctorSubmitPatientVisitReviewHandler) submitPatientVisitReview(w http.
 	dispatch.Default.PublishAsync(&VisitReviewSubmittedEvent{
 		PatientId:       patient.PatientId.Int64(),
 		DoctorId:        doctor.DoctorId.Int64(),
-		VisitId:         requestData.PatientVisitId,
-		TreatmentPlanId: treatmentPlanId,
+		VisitId:         patientVisitId,
+		TreatmentPlanId: requestData.TreatmentPlanId,
 		Patient:         patient,
 		Status:          requestData.Status,
 	})

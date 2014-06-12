@@ -2,7 +2,6 @@ package doctor_treatment_plan
 
 import (
 	"carefront/api"
-	"carefront/apiservice"
 	"carefront/common"
 	"carefront/libs/dispatch"
 	"carefront/patient_visit"
@@ -12,7 +11,7 @@ func InitListeners(dataAPI api.DataAPI) {
 
 	// subscribe to invalidate the link between a treatment plan and
 	// favorite treatment if the doctor modifies the treatments for the treatment plan
-	dispatch.Default.Subscribe(func(ev *apiservice.TreatmentsAddedEvent) error {
+	dispatch.Default.Subscribe(func(ev *TreatmentsAddedEvent) error {
 		doctorTreatmentPlan, err := dataAPI.GetAbridgedTreatmentPlan(ev.TreatmentPlanId, ev.DoctorId)
 		if err != nil {
 			return err
@@ -44,7 +43,7 @@ func InitListeners(dataAPI api.DataAPI) {
 
 	// subscribe to invalidate the link between a treatment plan and
 	// favorite treatment if the doctor modifies the regimen section
-	dispatch.Default.Subscribe(func(ev *apiservice.RegimenPlanAddedEvent) error {
+	dispatch.Default.Subscribe(func(ev *RegimenPlanAddedEvent) error {
 		doctorTreatmentPlan, err := dataAPI.GetAbridgedTreatmentPlan(ev.TreatmentPlanId, ev.DoctorId)
 		if err != nil {
 			return err
@@ -71,7 +70,7 @@ func InitListeners(dataAPI api.DataAPI) {
 
 	// subscribe to invalidate the link between a treatment plan and
 	// favorite treatment if the doctor modifies the advice section
-	dispatch.Default.Subscribe(func(ev *apiservice.AdviceAddedEvent) error {
+	dispatch.Default.Subscribe(func(ev *AdviceAddedEvent) error {
 		doctorTreatmentPlan, err := dataAPI.GetAbridgedTreatmentPlan(ev.TreatmentPlanId, ev.DoctorId)
 		if err != nil {
 			return err

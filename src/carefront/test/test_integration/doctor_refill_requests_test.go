@@ -6,6 +6,7 @@ import (
 	"carefront/apiservice"
 	"carefront/app_worker"
 	"carefront/common"
+	"carefront/doctor_treatment_plan"
 	"carefront/encoding"
 	"carefront/libs/aws/sqs"
 	"carefront/libs/erx"
@@ -106,7 +107,7 @@ func TestNewRefillRequestForExistingPatientAndExistingTreatment(t *testing.T) {
 	}
 
 	// add this treatment to the treatment plan
-	err = testData.DataApi.AddTreatmentsForPatientVisit([]*common.Treatment{treatment1}, doctor.DoctorId.Int64(), treatmentPlanId, signedupPatientResponse.Patient.PatientId.Int64())
+	err = testData.DataApi.AddTreatmentsForTreatmentPlan([]*common.Treatment{treatment1}, doctor.DoctorId.Int64(), treatmentPlanId, signedupPatientResponse.Patient.PatientId.Int64())
 	if err != nil {
 		t.Fatal("Unable to add treatment for patient visit: " + err.Error())
 	}
@@ -1292,15 +1293,26 @@ func setUpDeniedRefillRequestWithDNTF(t *testing.T, testData TestData, endErxSta
 
 	if toAddTemplatedTreatment {
 
+		doctorId := GetDoctorIdOfCurrentPrimaryDoctor(testData, t)
+		pDoctor, err := testData.DataApi.GetDoctorFromId(doctorId)
+		if err != nil {
+			t.Fatal(err)
+		}
+
+		_, treatmentPlan := SignupAndSubmitPatientVisitForRandomPatient(t, testData, pDoctor)
+
 		treatmentTemplate := &common.DoctorTreatmentTemplate{}
 		treatmentTemplate.Name = "Favorite Treatment #1"
 		treatmentTemplate.Treatment = &treatmentToAdd
 
-		doctorFavoriteTreatmentsHandler := &apiservice.DoctorTreatmentTemplatesHandler{DataApi: testData.DataApi}
+		doctorFavoriteTreatmentsHandler := doctor_treatment_plan.NewTreatmentTemplatesHandler(testData.DataApi)
 		ts := httptest.NewServer(doctorFavoriteTreatmentsHandler)
 		defer ts.Close()
 
-		treatmentTemplatesRequest := &apiservice.DoctorTreatmentTemplatesRequest{TreatmentTemplates: []*common.DoctorTreatmentTemplate{treatmentTemplate}}
+		treatmentTemplatesRequest := &doctor_treatment_plan.DoctorTreatmentTemplatesRequest{
+			TreatmentTemplates: []*common.DoctorTreatmentTemplate{treatmentTemplate},
+			TreatmentPlanId:    treatmentPlan.Id,
+		}
 		data, err := json.Marshal(&treatmentTemplatesRequest)
 		if err != nil {
 			t.Fatal("Unable to marshal request body for adding treatments to patient visit")
@@ -1309,13 +1321,11 @@ func setUpDeniedRefillRequestWithDNTF(t *testing.T, testData TestData, endErxSta
 		resp, err := AuthPost(ts.URL, "application/json", bytes.NewBuffer(data), doctor.AccountId.Int64())
 		if err != nil {
 			t.Fatal("Unable to make POST request to add treatments to patient visit " + err.Error())
-		}
-
-		if resp.StatusCode != http.StatusOK {
+		} else if resp.StatusCode != http.StatusOK {
 			t.Fatalf("Request to add treatments failed with http status code %d", resp.StatusCode)
 		}
 
-		treatmentTemplatesResponse := &apiservice.DoctorTreatmentTemplatesResponse{}
+		treatmentTemplatesResponse := &doctor_treatment_plan.DoctorTreatmentTemplatesResponse{}
 		err = json.NewDecoder(resp.Body).Decode(treatmentTemplatesResponse)
 		if err != nil {
 			t.Fatal("Unable to unmarshal response into object : " + err.Error())
@@ -1719,12 +1729,12 @@ func setUpDeniedRefillRequestWithDNTFForLinkedTreatment(t *testing.T, testData T
 		treatmentTemplate.Name = "Favorite Treatment #1"
 		treatmentTemplate.Treatment = &treatmentToAdd
 
-		doctorFavoriteTreatmentsHandler := &apiservice.DoctorTreatmentTemplatesHandler{DataApi: testData.DataApi}
+		doctorFavoriteTreatmentsHandler := doctor_treatment_plan.NewTreatmentTemplatesHandler(testData.DataApi)
 		ts := httptest.NewServer(doctorFavoriteTreatmentsHandler)
 		defer ts.Close()
 
-		treatmentTemplatesRequest := &apiservice.DoctorTreatmentTemplatesRequest{TreatmentTemplates: []*common.DoctorTreatmentTemplate{treatmentTemplate}}
-		treatmentTemplatesRequest.PatientVisitId = encoding.NewObjectId(patientVisitResponse.PatientVisitId)
+		treatmentTemplatesRequest := &doctor_treatment_plan.DoctorTreatmentTemplatesRequest{TreatmentTemplates: []*common.DoctorTreatmentTemplate{treatmentTemplate}}
+		treatmentTemplatesRequest.TreatmentPlanId = encoding.NewObjectId(treatmentPlanId)
 		data, err := json.Marshal(&treatmentTemplatesRequest)
 		if err != nil {
 			t.Fatal("Unable to marshal request body for adding treatments to patient visit")
@@ -1739,7 +1749,7 @@ func setUpDeniedRefillRequestWithDNTFForLinkedTreatment(t *testing.T, testData T
 			t.Fatalf("Request to add treatments failed with http status code %d", resp.StatusCode)
 		}
 
-		treatmentTemplatesResponse := &apiservice.DoctorTreatmentTemplatesResponse{}
+		treatmentTemplatesResponse := &doctor_treatment_plan.DoctorTreatmentTemplatesResponse{}
 		err = json.NewDecoder(resp.Body).Decode(treatmentTemplatesResponse)
 		if err != nil {
 			t.Fatal("Unable to unmarshal response into object : " + err.Error())
@@ -1780,7 +1790,7 @@ func setUpDeniedRefillRequestWithDNTFForLinkedTreatment(t *testing.T, testData T
 	}
 
 	// add this treatment to the treatment plan
-	err = testData.DataApi.AddTreatmentsForPatientVisit([]*common.Treatment{treatment1}, doctor.DoctorId.Int64(), treatmentPlanId, signedupPatientResponse.Patient.PatientId.Int64())
+	err = testData.DataApi.AddTreatmentsForTreatmentPlan([]*common.Treatment{treatment1}, doctor.DoctorId.Int64(), treatmentPlanId, signedupPatientResponse.Patient.PatientId.Int64())
 	if err != nil {
 		t.Fatal("Unable to add treatment for patient visit: " + err.Error())
 	}
@@ -2489,7 +2499,7 @@ func TestRefillRequestComingFromDifferentPharmacyThanDispensedPrescription(t *te
 	}
 
 	// add this treatment to the treatment plan
-	err = testData.DataApi.AddTreatmentsForPatientVisit([]*common.Treatment{treatment1}, doctor.DoctorId.Int64(), treatmentPlanId, signedupPatientResponse.Patient.PatientId.Int64())
+	err = testData.DataApi.AddTreatmentsForTreatmentPlan([]*common.Treatment{treatment1}, doctor.DoctorId.Int64(), treatmentPlanId, signedupPatientResponse.Patient.PatientId.Int64())
 	if err != nil {
 		t.Fatal("Unable to add treatment for patient visit: " + err.Error())
 	}
