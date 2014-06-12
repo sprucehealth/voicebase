@@ -192,7 +192,7 @@ func TestPatientVisitReview(t *testing.T) {
 	regimenSection2.RegimenSteps = []*common.DoctorInstructionItem{regimenPlanRequest.AllRegimenSteps[1]}
 
 	regimenPlanRequest.RegimenSections = []*common.RegimenSection{regimenSection, regimenSection2}
-	regimenPlanResponse := CreateRegimenPlanForPatientVisit(regimenPlanRequest, testData, doctor, t)
+	regimenPlanResponse := CreateRegimenPlanForTreatmentPlan(regimenPlanRequest, testData, doctor, t)
 	ValidateRegimenRequestAgainstResponse(regimenPlanRequest, regimenPlanResponse, t)
 	getRegimenPlanResponse := GetRegimenPlanForTreatmentPlan(testData, doctor, treatmentPlan.Id.Int64(), t)
 	if len(getRegimenPlanResponse.RegimenSections) != 2 {

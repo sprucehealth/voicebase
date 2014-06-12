@@ -136,7 +136,7 @@ func (d *adviceHandler) updateAdvicePoints(w http.ResponseWriter, r *http.Reques
 		}
 	}
 
-	err = d.dataAPI.CreateAdviceForPatientVisit(requestData.SelectedAdvicePoints, requestData.TreatmentPlanId.Int64())
+	err = d.dataAPI.CreateAdviceForTreatmentPlan(requestData.SelectedAdvicePoints, requestData.TreatmentPlanId.Int64())
 	if err != nil {
 		apiservice.WriteDeveloperError(w, http.StatusInternalServerError, "Unable to add advice for patient visit: "+err.Error())
 		return

@@ -101,7 +101,7 @@ func (t *treatmentsHandler) addTreatment(w http.ResponseWriter, r *http.Request)
 	}
 
 	// Add treatments to patient
-	if err := t.dataAPI.AddTreatmentsForPatientVisit(treatmentsRequestBody.Treatments, patientVisitReviewData.DoctorId, treatmentsRequestBody.TreatmentPlanId.Int64(), patientVisitReviewData.PatientVisit.PatientId.Int64()); err != nil {
+	if err := t.dataAPI.AddTreatmentsForTreatmentPlan(treatmentsRequestBody.Treatments, patientVisitReviewData.DoctorId, treatmentsRequestBody.TreatmentPlanId.Int64(), patientVisitReviewData.PatientVisit.PatientId.Int64()); err != nil {
 		apiservice.WriteDeveloperError(w, http.StatusInternalServerError, "Unable to add treatment to patient visit: "+err.Error())
 		return
 	}

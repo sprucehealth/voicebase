@@ -40,7 +40,7 @@ func GetRegimenPlanForTreatmentPlan(testData TestData, doctor *common.Doctor, tr
 	return doctorTreatmentPlanResponse.TreatmentPlan.RegimenPlan
 }
 
-func CreateRegimenPlanForPatientVisit(doctorRegimenRequest *common.RegimenPlan, testData TestData, doctor *common.Doctor, t *testing.T) *common.RegimenPlan {
+func CreateRegimenPlanForTreatmentPlan(doctorRegimenRequest *common.RegimenPlan, testData TestData, doctor *common.Doctor, t *testing.T) *common.RegimenPlan {
 	doctorRegimenHandler := doctor_treatment_plan.NewRegimenHandler(testData.DataApi)
 	ts := httptest.NewServer(doctorRegimenHandler)
 	defer ts.Close()
@@ -407,7 +407,7 @@ func CreateFavoriteTreatmentPlan(patientVisitId, treatmentPlanId int64, testData
 	}
 
 	regimenPlanRequest.AllRegimenSteps = []*common.DoctorInstructionItem{regimenStep1, regimenStep2}
-	regimenPlanResponse := CreateRegimenPlanForPatientVisit(regimenPlanRequest, testData, doctor, t)
+	regimenPlanResponse := CreateRegimenPlanForTreatmentPlan(regimenPlanRequest, testData, doctor, t)
 	ValidateRegimenRequestAgainstResponse(regimenPlanRequest, regimenPlanResponse, t)
 
 	// lets submit advice for this patient

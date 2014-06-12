@@ -298,14 +298,6 @@ func (d *DataService) UpdatePatientVisitStatus(patientVisitId int64, message, ev
 	return tx.Commit()
 }
 
-func (d *DataService) GetMessageForPatientVisitStatus(patientVisitId int64) (message string, err error) {
-	err = d.db.QueryRow(`select message from patient_visit_event where patient_visit_id = ? and status = ?`, patientVisitId, STATUS_ACTIVE).Scan(&message)
-	if err != nil && err == sql.ErrNoRows {
-		return "", nil
-	}
-	return
-}
-
 func (d *DataService) ClosePatientVisit(patientVisitId int64, event string) error {
 	_, err := d.db.Exec(`update patient_visit set status=?, closed_date=now() where id = ?`, event, patientVisitId)
 	return err
@@ -319,60 +311,6 @@ func (d *DataService) MarkTreatmentPlanAsSent(treatmentPlanId int64) error {
 func (d *DataService) SubmitPatientVisitWithId(patientVisitId int64) error {
 	_, err := d.db.Exec("update patient_visit set status='SUBMITTED', submitted_date=now() where id = ? and STATUS in ('OPEN', 'PHOTOS_REJECTED')", patientVisitId)
 	return err
-}
-
-func (d *DataService) UpdateFollowUpTimeForPatientVisit(treatmentPlanId, currentTimeSinceEpoch, doctorId, followUpValue int64, followUpUnit string) error {
-	// check if a follow up time already exists that we can update
-	var followupId int64
-	err := d.db.QueryRow(`select id from patient_visit_follow_up where treatment_plan_id = ?`, treatmentPlanId).Scan(&followupId)
-	if err != nil && err != sql.ErrNoRows {
-		return err
-	}
-
-	followUpTime := time.Unix(currentTimeSinceEpoch, 0)
-	switch followUpUnit {
-	case FOLLOW_UP_DAY:
-		followUpTime = followUpTime.Add(time.Duration(followUpValue) * 24 * 60 * time.Minute)
-	case FOLLOW_UP_MONTH:
-		followUpTime = followUpTime.Add(time.Duration(followUpValue) * 30 * 24 * 60 * time.Minute)
-	case FOLLOW_UP_WEEK:
-		followUpTime = followUpTime.Add(time.Duration(followUpValue) * 7 * 24 * 60 * time.Minute)
-	}
-
-	if followupId == 0 {
-		_, err = d.db.Exec(`insert into patient_visit_follow_up (treatment_plan_id, doctor_id, follow_up_date, follow_up_value, follow_up_unit, status) 
-				values (?,?,?,?,?, 'ADDED')`, treatmentPlanId, doctorId, followUpTime, followUpValue, followUpUnit)
-		if err != nil {
-			return err
-		}
-	} else {
-		_, err = d.db.Exec(`update patient_visit_follow_up set follow_up_date=?, follow_up_value=?, follow_up_unit=?, doctor_id=?, status='UPDATED' where treatment_plan_id = ?`, followUpTime, followUpValue, followUpUnit, doctorId, treatmentPlanId)
-		if err != nil {
-			return err
-		}
-	}
-	return nil
-}
-
-func (d *DataService) GetFollowUpTimeForTreatmentPlan(treatmentPlanId int64) (*common.FollowUp, error) {
-	var followupTime time.Time
-	var followupValue int64
-	var followupUnit string
-
-	err := d.db.QueryRow(`select follow_up_date, follow_up_value, follow_up_unit 
-							from patient_visit_follow_up where treatment_plan_id = ?`, treatmentPlanId).Scan(&followupTime, &followupValue, &followupUnit)
-	if err == sql.ErrNoRows {
-		return nil, nil
-	} else if err != nil {
-		return nil, err
-	}
-
-	followUp := &common.FollowUp{}
-	followUp.TreatmentPlanId = encoding.NewObjectId(treatmentPlanId)
-	followUp.FollowUpValue = followupValue
-	followUp.FollowUpUnit = followupUnit
-	followUp.FollowUpTime = followupTime
-	return followUp, nil
 }
 
 func (d *DataService) GetDiagnosisResponseToQuestionWithTag(questionTag string, doctorId, patientVisitId int64) ([]*common.AnswerIntake, error) {
@@ -522,7 +460,7 @@ func (d *DataService) GetAdvicePointsForTreatmentPlan(treatmentPlanId int64) ([]
 	return getAdvicePointsFromRows(rows)
 }
 
-func (d *DataService) CreateAdviceForPatientVisit(advicePoints []*common.DoctorInstructionItem, treatmentPlanId int64) error {
+func (d *DataService) CreateAdviceForTreatmentPlan(advicePoints []*common.DoctorInstructionItem, treatmentPlanId int64) error {
 	// begin tx
 	tx, err := d.db.Begin()
 	if err != nil {
@@ -546,7 +484,7 @@ func (d *DataService) CreateAdviceForPatientVisit(advicePoints []*common.DoctorI
 	return tx.Commit()
 }
 
-func (d *DataService) CreateRegimenPlanForPatientVisit(regimenPlan *common.RegimenPlan) error {
+func (d *DataService) CreateRegimenPlanForTreatmentPlan(regimenPlan *common.RegimenPlan) error {
 	// begin tx
 	tx, err := d.db.Begin()
 	if err != nil {
@@ -592,7 +530,7 @@ func (d *DataService) GetRegimenPlanForTreatmentPlan(treatmentPlanId int64) (*co
 	return regimenPlan, nil
 }
 
-func (d *DataService) AddTreatmentsForPatientVisit(treatments []*common.Treatment, doctorId, treatmentPlanId, patientId int64) error {
+func (d *DataService) AddTreatmentsForTreatmentPlan(treatments []*common.Treatment, doctorId, treatmentPlanId, patientId int64) error {
 	tx, err := d.db.Begin()
 	if err != nil {
 		return err

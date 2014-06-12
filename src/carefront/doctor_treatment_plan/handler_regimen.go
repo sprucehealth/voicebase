@@ -149,7 +149,7 @@ func (d *regimenHandler) updateRegimenSteps(w http.ResponseWriter, r *http.Reque
 		}
 	}
 
-	err = d.dataAPI.CreateRegimenPlanForPatientVisit(requestData)
+	err = d.dataAPI.CreateRegimenPlanForTreatmentPlan(requestData)
 	if err != nil {
 		apiservice.WriteDeveloperError(w, http.StatusInternalServerError, "Unable to create regimen plan for patient visit: "+err.Error())
 		return

@@ -242,7 +242,7 @@ func TestFavoriteTreatmentPlan_CommittedStateForTreatmentPlan(t *testing.T) {
 		AllRegimenSteps: favoriteTreamentPlan.RegimenPlan.AllRegimenSteps,
 		RegimenSections: favoriteTreamentPlan.RegimenPlan.RegimenSections,
 	}
-	CreateRegimenPlanForPatientVisit(regimenPlanRequest, testData, doctor, t)
+	CreateRegimenPlanForTreatmentPlan(regimenPlanRequest, testData, doctor, t)
 
 	// now lets attempt to get the treatment plan for the patient visit
 	ts := httptest.NewServer(doctor_treatment_plan.NewDoctorTreatmentPlanHandler(testData.DataApi))
@@ -335,7 +335,7 @@ func TestFavoriteTreatmentPlan_BreakingMappingOnModify(t *testing.T) {
 		AllRegimenSteps: favoriteTreamentPlan.RegimenPlan.AllRegimenSteps,
 		RegimenSections: favoriteTreamentPlan.RegimenPlan.RegimenSections[:1],
 	}
-	CreateRegimenPlanForPatientVisit(regimenPlanRequest, testData, doctor, t)
+	CreateRegimenPlanForTreatmentPlan(regimenPlanRequest, testData, doctor, t)
 
 	// now lets attempt to get the abbreviated version of the treatment plan
 	ts := httptest.NewServer(doctor_treatment_plan.NewDoctorTreatmentPlanHandler(testData.DataApi))
@@ -456,7 +456,7 @@ func TestFavoriteTreatmentPlan_InContextOfTreatmentPlan(t *testing.T) {
 
 	regimenPlanRequest.AllRegimenSteps = []*common.DoctorInstructionItem{regimenStep1, regimenStep2}
 	regimenPlanRequest.RegimenSections = []*common.RegimenSection{regimenSection, regimenSection2}
-	regimenPlanResponse := CreateRegimenPlanForPatientVisit(regimenPlanRequest, testData, doctor, t)
+	regimenPlanResponse := CreateRegimenPlanForTreatmentPlan(regimenPlanRequest, testData, doctor, t)
 	ValidateRegimenRequestAgainstResponse(regimenPlanRequest, regimenPlanResponse, t)
 
 	// lets submit advice for this patient
@@ -595,7 +595,7 @@ func TestFavoriteTreatmentPlan_InContextOfTreatmentPlan_EmptyRegimenAndAdvice(t 
 	regimenStep2.State = common.STATE_ADDED
 
 	regimenPlanRequest.AllRegimenSteps = []*common.DoctorInstructionItem{regimenStep1, regimenStep2}
-	regimenPlanResponse := CreateRegimenPlanForPatientVisit(regimenPlanRequest, testData, doctor, t)
+	regimenPlanResponse := CreateRegimenPlanForTreatmentPlan(regimenPlanRequest, testData, doctor, t)
 	ValidateRegimenRequestAgainstResponse(regimenPlanRequest, regimenPlanResponse, t)
 
 	// lets submit advice for this patient
@@ -721,7 +721,7 @@ func TestFavoriteTreatmentPlan_InContextOfTreatmentPlan_TwoDontMatch(t *testing.
 	regimenStep2.State = common.STATE_ADDED
 
 	regimenPlanRequest.AllRegimenSteps = []*common.DoctorInstructionItem{regimenStep1, regimenStep2}
-	regimenPlanResponse := CreateRegimenPlanForPatientVisit(regimenPlanRequest, testData, doctor, t)
+	regimenPlanResponse := CreateRegimenPlanForTreatmentPlan(regimenPlanRequest, testData, doctor, t)
 	ValidateRegimenRequestAgainstResponse(regimenPlanRequest, regimenPlanResponse, t)
 
 	// lets submit advice for this patient
