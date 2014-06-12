@@ -2,8 +2,8 @@ package test_treatment_plan
 
 import (
 	"bytes"
-	"carefront/apiservice"
 	"carefront/common"
+	"carefront/doctor_treatment_plan"
 	"carefront/patient_visit"
 	"carefront/test/test_integration"
 	"database/sql"
@@ -117,7 +117,7 @@ func TestRegimenForPatientVisit(t *testing.T) {
 	regimenPlanRequest = regimenPlanResponse
 	regimenPlanRequest.AllRegimenSteps = []*common.DoctorInstructionItem{}
 	regimenPlanRequest.RegimenSections = []*common.RegimenSection{regimenSection}
-	doctorRegimenHandler := apiservice.NewDoctorRegimenHandler(testData.DataApi)
+	doctorRegimenHandler := doctor_treatment_plan.NewRegimenHandler(testData.DataApi)
 	ts := httptest.NewServer(doctorRegimenHandler)
 	defer ts.Close()
 
@@ -282,7 +282,7 @@ func TestRegimenForPatientVisit_ErrorTextDifferentForLinkedItem(t *testing.T) {
 		regimenPlanRequest.RegimenSections[i].RegimenSteps[0].State = common.STATE_MODIFIED
 	}
 
-	doctorRegimenHandler := apiservice.NewDoctorRegimenHandler(testData.DataApi)
+	doctorRegimenHandler := doctor_treatment_plan.NewRegimenHandler(testData.DataApi)
 	ts := httptest.NewServer(doctorRegimenHandler)
 	defer ts.Close()
 

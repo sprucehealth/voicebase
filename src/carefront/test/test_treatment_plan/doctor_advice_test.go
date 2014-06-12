@@ -2,17 +2,16 @@ package test_treatment_plan
 
 import (
 	"bytes"
+	"carefront/common"
+	"carefront/doctor_treatment_plan"
+	"carefront/patient_visit"
+	"carefront/test/test_integration"
 	"database/sql"
 	"encoding/json"
 	"net/http"
 	"net/http/httptest"
 	"strconv"
 	"testing"
-
-	"carefront/apiservice"
-	"carefront/common"
-	"carefront/patient_visit"
-	"carefront/test/test_integration"
 )
 
 func TestAdvicePointsForPatientVisit(t *testing.T) {
@@ -99,7 +98,7 @@ func TestAdvicePointsForPatientVisit(t *testing.T) {
 
 	// lets test for the case an advice point being added to the list that does not exist in master
 	doctorAdviceRequest.SelectedAdvicePoints = append(doctorAdviceRequest.SelectedAdvicePoints, advicePoint1)
-	doctorAdviceHandler := apiservice.NewDoctorAdviceHandler(testData.DataApi)
+	doctorAdviceHandler := doctor_treatment_plan.NewAdviceHandler(testData.DataApi)
 	ts := httptest.NewServer(doctorAdviceHandler)
 	defer ts.Close()
 
@@ -443,7 +442,7 @@ func TestAdvicePointsForPatientVisit_ErrorDifferentTextForLinkedItems(t *testing
 		doctorAdviceRequest.SelectedAdvicePoints[i].State = common.STATE_MODIFIED
 	}
 
-	doctorAdviceHandler := apiservice.NewDoctorAdviceHandler(testData.DataApi)
+	doctorAdviceHandler := doctor_treatment_plan.NewAdviceHandler(testData.DataApi)
 	ts := httptest.NewServer(doctorAdviceHandler)
 	defer ts.Close()
 

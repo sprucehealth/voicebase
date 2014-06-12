@@ -4,6 +4,7 @@ import (
 	"bytes"
 	"carefront/apiservice"
 	"carefront/common"
+	"carefront/doctor_treatment_plan"
 	"carefront/encoding"
 	"carefront/libs/erx"
 	"encoding/json"
@@ -301,11 +302,11 @@ func TestTreatmentTemplates(t *testing.T) {
 	treatmentTemplate.Name = "Favorite Treatment #1"
 	treatmentTemplate.Treatment = treatment1
 
-	doctorTreatmentTemplatesHandler := &apiservice.DoctorTreatmentTemplatesHandler{DataApi: testData.DataApi}
+	doctorTreatmentTemplatesHandler := doctor_treatment_plan.NewTreatmentTemplatesHandler(testData.DataApi)
 	ts := httptest.NewServer(doctorTreatmentTemplatesHandler)
 	defer ts.Close()
 
-	treatmentTemplatesRequest := &apiservice.DoctorTreatmentTemplatesRequest{
+	treatmentTemplatesRequest := &doctor_treatment_plan.DoctorTreatmentTemplatesRequest{
 		TreatmentPlanId:    treatmentPlan.Id,
 		TreatmentTemplates: []*common.DoctorTreatmentTemplate{treatmentTemplate},
 	}
@@ -321,7 +322,7 @@ func TestTreatmentTemplates(t *testing.T) {
 		t.Fatalf("Expected %d but got %d instead", http.StatusOK, resp.StatusCode)
 	}
 
-	treatmentTemplatesResponse := &apiservice.DoctorTreatmentTemplatesResponse{}
+	treatmentTemplatesResponse := &doctor_treatment_plan.DoctorTreatmentTemplatesResponse{}
 	err = json.NewDecoder(resp.Body).Decode(treatmentTemplatesResponse)
 	if err != nil {
 		t.Fatal("Unable to unmarshal response into object : " + err.Error())
@@ -387,7 +388,7 @@ func TestTreatmentTemplates(t *testing.T) {
 		t.Fatalf("Expected %d but got %d instead", http.StatusOK, resp.StatusCode)
 	}
 
-	treatmentTemplatesResponse = &apiservice.DoctorTreatmentTemplatesResponse{}
+	treatmentTemplatesResponse = &doctor_treatment_plan.DoctorTreatmentTemplatesResponse{}
 	err = json.NewDecoder(resp.Body).Decode(treatmentTemplatesResponse)
 	if err != nil {
 		t.Fatal("Unable to unmarshal response into object : " + err.Error())
@@ -414,7 +415,7 @@ func TestTreatmentTemplates(t *testing.T) {
 		t.Fatalf("Expected %d but got %d instead", http.StatusOK, resp.StatusCode)
 	}
 
-	treatmentTemplatesResponse = &apiservice.DoctorTreatmentTemplatesResponse{}
+	treatmentTemplatesResponse = &doctor_treatment_plan.DoctorTreatmentTemplatesResponse{}
 	err = json.NewDecoder(resp.Body).Decode(treatmentTemplatesResponse)
 	if err != nil {
 		t.Fatal("Unable to unmarshal response into object : " + err.Error())
@@ -469,11 +470,11 @@ func TestTreatmentTemplatesInContextOfPatientVisit(t *testing.T) {
 	treatmentTemplate.Name = "Favorite Treatment #1"
 	treatmentTemplate.Treatment = treatment1
 
-	doctorFavoriteTreatmentsHandler := &apiservice.DoctorTreatmentTemplatesHandler{DataApi: testData.DataApi}
+	doctorFavoriteTreatmentsHandler := doctor_treatment_plan.NewTreatmentTemplatesHandler(testData.DataApi)
 	ts := httptest.NewServer(doctorFavoriteTreatmentsHandler)
 	defer ts.Close()
 
-	treatmentTemplatesRequest := &apiservice.DoctorTreatmentTemplatesRequest{TreatmentTemplates: []*common.DoctorTreatmentTemplate{treatmentTemplate}}
+	treatmentTemplatesRequest := &doctor_treatment_plan.DoctorTreatmentTemplatesRequest{TreatmentTemplates: []*common.DoctorTreatmentTemplate{treatmentTemplate}}
 	treatmentTemplatesRequest.TreatmentPlanId = treatmentPlan.Id
 	data, err := json.Marshal(&treatmentTemplatesRequest)
 	if err != nil {
@@ -492,7 +493,7 @@ func TestTreatmentTemplatesInContextOfPatientVisit(t *testing.T) {
 
 	CheckSuccessfulStatusCode(resp, "Unsuccessful call made to add favorite treatment for doctor "+string(body), t)
 
-	treatmentTemplatesResponse := &apiservice.DoctorTreatmentTemplatesResponse{}
+	treatmentTemplatesResponse := &doctor_treatment_plan.DoctorTreatmentTemplatesResponse{}
 	err = json.Unmarshal(body, treatmentTemplatesResponse)
 	if err != nil {
 		t.Fatal("Unable to unmarshal response into object : " + err.Error())
@@ -565,7 +566,7 @@ func TestTreatmentTemplatesInContextOfPatientVisit(t *testing.T) {
 	}
 	CheckSuccessfulStatusCode(resp2, "Unsuccessful call made to add favorite treatment for doctor ", t)
 
-	treatmentTemplatesResponse = &apiservice.DoctorTreatmentTemplatesResponse{}
+	treatmentTemplatesResponse = &doctor_treatment_plan.DoctorTreatmentTemplatesResponse{}
 	err = json.Unmarshal(body, treatmentTemplatesResponse)
 
 	if err != nil {
@@ -620,7 +621,7 @@ func TestTreatmentTemplatesInContextOfPatientVisit(t *testing.T) {
 		t.Fatal("Unable to make POST request to add treatments to patient visit " + err.Error())
 	}
 
-	treatmentTemplatesResponse = &apiservice.DoctorTreatmentTemplatesResponse{}
+	treatmentTemplatesResponse = &doctor_treatment_plan.DoctorTreatmentTemplatesResponse{}
 	err = json.NewDecoder(resp.Body).Decode(treatmentTemplatesResponse)
 	if err != nil {
 		t.Fatal("Unable to unmarshal response into object : " + err.Error())
@@ -683,11 +684,11 @@ func TestTreatmentTemplateWithDrugOutOfMarket(t *testing.T) {
 	treatmentTemplate.Name = "Favorite Treatment #1"
 	treatmentTemplate.Treatment = treatment1
 
-	doctorFavoriteTreatmentsHandler := &apiservice.DoctorTreatmentTemplatesHandler{DataApi: testData.DataApi}
+	doctorFavoriteTreatmentsHandler := doctor_treatment_plan.NewTreatmentTemplatesHandler(testData.DataApi)
 	ts := httptest.NewServer(doctorFavoriteTreatmentsHandler)
 	defer ts.Close()
 
-	treatmentTemplatesRequest := &apiservice.DoctorTreatmentTemplatesRequest{TreatmentTemplates: []*common.DoctorTreatmentTemplate{treatmentTemplate}}
+	treatmentTemplatesRequest := &doctor_treatment_plan.DoctorTreatmentTemplatesRequest{TreatmentTemplates: []*common.DoctorTreatmentTemplate{treatmentTemplate}}
 	treatmentTemplatesRequest.TreatmentPlanId = treatmentPlan.Id
 	data, err := json.Marshal(&treatmentTemplatesRequest)
 	if err != nil {
@@ -706,7 +707,7 @@ func TestTreatmentTemplateWithDrugOutOfMarket(t *testing.T) {
 
 	CheckSuccessfulStatusCode(resp, "Unsuccessful call made to add favorite treatment for doctor "+string(body), t)
 
-	treatmentTemplatesResponse := &apiservice.DoctorTreatmentTemplatesResponse{}
+	treatmentTemplatesResponse := &doctor_treatment_plan.DoctorTreatmentTemplatesResponse{}
 	err = json.Unmarshal(body, treatmentTemplatesResponse)
 	if err != nil {
 		t.Fatal("Unable to unmarshal response into object : " + err.Error())
@@ -716,15 +717,12 @@ func TestTreatmentTemplateWithDrugOutOfMarket(t *testing.T) {
 	// to return no medication to indicate drug is no longer in market
 	treatment1.DoctorTreatmentTemplateId = treatmentTemplatesResponse.TreatmentTemplates[0].Id
 	stubErxApi := &erx.StubErxService{}
-	treatmentRequestBody := apiservice.AddTreatmentsRequestBody{
+	treatmentRequestBody := doctor_treatment_plan.AddTreatmentsRequestBody{
 		TreatmentPlanId: treatmentPlan.Id,
 		Treatments:      []*common.Treatment{treatment1},
 	}
 
-	treatmentsHandler := &apiservice.TreatmentsHandler{
-		ErxApi:  stubErxApi,
-		DataApi: testData.DataApi,
-	}
+	treatmentsHandler := doctor_treatment_plan.NewTreatmentsHandler(testData.DataApi, stubErxApi)
 
 	ts = httptest.NewServer(treatmentsHandler)
 	defer ts.Close()

@@ -176,7 +176,7 @@ func (d *DoctorRefillRequestHandler) resolveRefillRequest(w http.ResponseWriter,
 			}
 
 			// validate the treatment
-			if err := validateTreatment(requestData.Treatment); err != nil {
+			if err := ValidateTreatment(requestData.Treatment); err != nil {
 				WriteUserError(w, http.StatusBadRequest, err.Error())
 				return
 			}
@@ -186,7 +186,7 @@ func (d *DoctorRefillRequestHandler) resolveRefillRequest(w http.ResponseWriter,
 			// break up the name in its components
 			requestData.Treatment.DrugName, requestData.Treatment.DrugForm, requestData.Treatment.DrugRoute = BreakDrugInternalNameIntoComponents(requestData.Treatment.DrugInternalName)
 
-			httpStatusCode, errorResponse := checkIfDrugInTreatmentFromTemplateIsOutOfMarket(requestData.Treatment, doctor, d.ErxApi)
+			httpStatusCode, errorResponse := CheckIfDrugInTreatmentFromTemplateIsOutOfMarket(requestData.Treatment, doctor, d.ErxApi)
 			if errorResponse != nil {
 				WriteErrorResponse(w, httpStatusCode, *errorResponse)
 				return

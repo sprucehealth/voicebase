@@ -1,66 +1,68 @@
-package apiservice
+package doctor_treatment_plan
 
 import (
 	"carefront/api"
+	"carefront/apiservice"
 	"carefront/common"
 	"carefront/encoding"
 	"carefront/libs/dispatch"
-	"encoding/json"
 	"errors"
 	"net/http"
 )
 
-type DoctorAdviceHandler struct {
-	DataApi api.DataAPI
+type adviceHandler struct {
+	dataAPI api.DataAPI
 }
 
-func NewDoctorAdviceHandler(dataApi api.DataAPI) *DoctorAdviceHandler {
-	return &DoctorAdviceHandler{DataApi: dataApi}
+func NewAdviceHandler(dataAPI api.DataAPI) *adviceHandler {
+	return &adviceHandler{
+		dataAPI: dataAPI,
+	}
 }
 
-func (d *DoctorAdviceHandler) ServeHTTP(w http.ResponseWriter, r *http.Request) {
+func (d *adviceHandler) ServeHTTP(w http.ResponseWriter, r *http.Request) {
 	switch r.Method {
-	case HTTP_POST:
+	case apiservice.HTTP_POST:
 		d.updateAdvicePoints(w, r)
 	default:
 		w.WriteHeader(http.StatusNotFound)
 	}
 }
 
-func (d *DoctorAdviceHandler) updateAdvicePoints(w http.ResponseWriter, r *http.Request) {
+func (d *adviceHandler) updateAdvicePoints(w http.ResponseWriter, r *http.Request) {
 	var requestData common.Advice
-	if err := json.NewDecoder(r.Body).Decode(&requestData); err != nil {
-		WriteDeveloperError(w, http.StatusBadRequest, "Unable to parse json request body for updating advice points: "+err.Error())
+	if err := apiservice.DecodeRequestData(&requestData, r); err != nil {
+		apiservice.WriteDeveloperError(w, http.StatusBadRequest, "Unable to parse json request body for updating advice points: "+err.Error())
 		return
 	} else if requestData.TreatmentPlanId.Int64() == 0 {
-		WriteValidationError("treatment plan id needs to be specified to know which treatment plan to add advice to", w, r)
+		apiservice.WriteValidationError("treatment plan id needs to be specified to know which treatment plan to add advice to", w, r)
 		return
 	}
 
 	// get patient id from treatment plan id
-	patientVisitId, err := d.DataApi.GetPatientVisitIdFromTreatmentPlanId(requestData.TreatmentPlanId.Int64())
+	patientVisitId, err := d.dataAPI.GetPatientVisitIdFromTreatmentPlanId(requestData.TreatmentPlanId.Int64())
 	if err != nil {
-		WriteError(err, w, r)
+		apiservice.WriteError(err, w, r)
 		return
 	}
 
-	patientVisitReviewData, statusCode, err := ValidateDoctorAccessToPatientVisitAndGetRelevantData(patientVisitId, GetContext(r).AccountId, d.DataApi)
+	patientVisitReviewData, statusCode, err := apiservice.ValidateDoctorAccessToPatientVisitAndGetRelevantData(patientVisitId, apiservice.GetContext(r).AccountId, d.dataAPI)
 	if err != nil {
-		WriteDeveloperError(w, statusCode, err.Error())
+		apiservice.WriteDeveloperError(w, statusCode, err.Error())
 		return
 	}
 
 	// ensure that all selected advice points are actually in the global list on the client side
 	for _, selectedAdvicePoint := range requestData.SelectedAdvicePoints {
 		if httpStatusCode, err := d.ensureLinkedAdvicePointExistsInMasterList(selectedAdvicePoint, &requestData, patientVisitReviewData.DoctorId); err != nil {
-			WriteDeveloperError(w, httpStatusCode, err.Error())
+			apiservice.WriteDeveloperError(w, httpStatusCode, err.Error())
 			return
 		}
 	}
 
-	currentActiveAdvicePoints, err := d.DataApi.GetAdvicePointsForDoctor(patientVisitReviewData.DoctorId)
+	currentActiveAdvicePoints, err := d.dataAPI.GetAdvicePointsForDoctor(patientVisitReviewData.DoctorId)
 	if err != nil {
-		WriteDeveloperError(w, http.StatusInternalServerError, "Unable to get active advice points for the doctor")
+		apiservice.WriteDeveloperError(w, http.StatusInternalServerError, "Unable to get active advice points for the doctor")
 		return
 	}
 
@@ -80,9 +82,9 @@ func (d *DoctorAdviceHandler) updateAdvicePoints(w http.ResponseWriter, r *http.
 	}
 
 	// mark all advice points that are not present in the list coming from the client to be deleted
-	err = d.DataApi.MarkAdvicePointsToBeDeleted(advicePointsToDelete, patientVisitReviewData.DoctorId)
+	err = d.dataAPI.MarkAdvicePointsToBeDeleted(advicePointsToDelete, patientVisitReviewData.DoctorId)
 	if err != nil {
-		WriteDeveloperError(w, http.StatusInternalServerError, "Unable to delete advice points: "+err.Error())
+		apiservice.WriteDeveloperError(w, http.StatusInternalServerError, "Unable to delete advice points: "+err.Error())
 		return
 	}
 
@@ -96,18 +98,18 @@ func (d *DoctorAdviceHandler) updateAdvicePoints(w http.ResponseWriter, r *http.
 	for _, advicePoint := range requestData.AllAdvicePoints {
 		switch advicePoint.State {
 		case common.STATE_ADDED:
-			err = d.DataApi.AddAdvicePointForDoctor(advicePoint, patientVisitReviewData.DoctorId)
+			err = d.dataAPI.AddAdvicePointForDoctor(advicePoint, patientVisitReviewData.DoctorId)
 			if err != nil {
-				WriteDeveloperError(w, http.StatusInternalServerError, "Unable to add or update advice point for doctor. Application may be left in inconsistent state. Error = "+err.Error())
+				apiservice.WriteDeveloperError(w, http.StatusInternalServerError, "Unable to add or update advice point for doctor. Application may be left in inconsistent state. Error = "+err.Error())
 				return
 			}
 			newPointToIdMapping[advicePoint.Text] = append(newPointToIdMapping[advicePoint.Text], advicePoint.Id.Int64())
 			updatedAdvicePoints = append(updatedAdvicePoints, advicePoint)
 		case common.STATE_MODIFIED:
 			previousAdvicePointId := advicePoint.Id.Int64()
-			err = d.DataApi.UpdateAdvicePointForDoctor(advicePoint, patientVisitReviewData.DoctorId)
+			err = d.dataAPI.UpdateAdvicePointForDoctor(advicePoint, patientVisitReviewData.DoctorId)
 			if err != nil {
-				WriteDeveloperError(w, http.StatusInternalServerError, "Unable to add or update advice point for doctor. Application may be left in inconsistent state. Error = "+err.Error())
+				apiservice.WriteDeveloperError(w, http.StatusInternalServerError, "Unable to add or update advice point for doctor. Application may be left in inconsistent state. Error = "+err.Error())
 				return
 			}
 			updatedPointToIdMapping[previousAdvicePointId] = advicePoint.Id.Int64()
@@ -134,23 +136,23 @@ func (d *DoctorAdviceHandler) updateAdvicePoints(w http.ResponseWriter, r *http.
 		}
 	}
 
-	err = d.DataApi.CreateAdviceForPatientVisit(requestData.SelectedAdvicePoints, requestData.TreatmentPlanId.Int64())
+	err = d.dataAPI.CreateAdviceForPatientVisit(requestData.SelectedAdvicePoints, requestData.TreatmentPlanId.Int64())
 	if err != nil {
-		WriteDeveloperError(w, http.StatusInternalServerError, "Unable to add advice for patient visit: "+err.Error())
+		apiservice.WriteDeveloperError(w, http.StatusInternalServerError, "Unable to add advice for patient visit: "+err.Error())
 		return
 	}
 
 	// fetch all advice points in the treatment plan and the global advice poitns to
 	// return an updated view of the world to the client
-	advicePoints, err := d.DataApi.GetAdvicePointsForTreatmentPlan(requestData.TreatmentPlanId.Int64())
+	advicePoints, err := d.dataAPI.GetAdvicePointsForTreatmentPlan(requestData.TreatmentPlanId.Int64())
 	if err != nil {
-		WriteDeveloperError(w, http.StatusInternalServerError, "Unable to get the advice points that were just created "+err.Error())
+		apiservice.WriteDeveloperError(w, http.StatusInternalServerError, "Unable to get the advice points that were just created "+err.Error())
 		return
 	}
 
-	allAdvicePoints, err := d.DataApi.GetAdvicePointsForDoctor(patientVisitReviewData.DoctorId)
+	allAdvicePoints, err := d.dataAPI.GetAdvicePointsForDoctor(patientVisitReviewData.DoctorId)
 	if err != nil {
-		WriteDeveloperError(w, http.StatusInternalServerError, "Unable to get all advice points for doctor: "+err.Error())
+		apiservice.WriteDeveloperError(w, http.StatusInternalServerError, "Unable to get all advice points for doctor: "+err.Error())
 		return
 	}
 
@@ -166,10 +168,10 @@ func (d *DoctorAdviceHandler) updateAdvicePoints(w http.ResponseWriter, r *http.
 		DoctorId:        patientVisitReviewData.DoctorId,
 	})
 
-	WriteJSONToHTTPResponseWriter(w, http.StatusOK, advice)
+	apiservice.WriteJSONToHTTPResponseWriter(w, http.StatusOK, advice)
 }
 
-func (d *DoctorAdviceHandler) ensureLinkedAdvicePointExistsInMasterList(selectedAdvicePoint *common.DoctorInstructionItem, advice *common.Advice, doctorId int64) (int, error) {
+func (d *adviceHandler) ensureLinkedAdvicePointExistsInMasterList(selectedAdvicePoint *common.DoctorInstructionItem, advice *common.Advice, doctorId int64) (int, error) {
 	// nothing to do if the advice point does not exist in the master list
 	if !selectedAdvicePoint.ParentId.IsValid {
 		return 0, nil
@@ -187,7 +189,7 @@ func (d *DoctorAdviceHandler) ensureLinkedAdvicePointExistsInMasterList(selected
 			}
 			break
 		} else {
-			parentAdvicePoint, err := d.DataApi.GetAdvicePointForDoctor(selectedAdvicePoint.ParentId.Int64(), doctorId)
+			parentAdvicePoint, err := d.dataAPI.GetAdvicePointForDoctor(selectedAdvicePoint.ParentId.Int64(), doctorId)
 			if err == api.NoRowsError {
 				return http.StatusBadRequest, errors.New("No parent advice point found for advice point in the selected list")
 			} else if err != nil {

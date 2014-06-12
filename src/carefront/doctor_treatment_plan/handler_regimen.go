@@ -1,17 +1,17 @@
-package apiservice
+package doctor_treatment_plan
 
 import (
 	"carefront/api"
+	"carefront/apiservice"
 	"carefront/common"
 	"carefront/encoding"
 	"carefront/libs/dispatch"
-	"encoding/json"
 	"errors"
 	"net/http"
 )
 
-type DoctorRegimenHandler struct {
-	DataApi api.DataAPI
+type regimenHandler struct {
+	dataAPI api.DataAPI
 }
 
 type DoctorRegimenRequestResponse struct {
@@ -19,47 +19,46 @@ type DoctorRegimenRequestResponse struct {
 	DrugInternalName string                          `json:"drug_internal_name,omitempty"`
 }
 
-func NewDoctorRegimenHandler(dataApi api.DataAPI) *DoctorRegimenHandler {
-	return &DoctorRegimenHandler{DataApi: dataApi}
+func NewRegimenHandler(dataAPI api.DataAPI) *regimenHandler {
+	return &regimenHandler{
+		dataAPI: dataAPI,
+	}
 }
 
-func (d *DoctorRegimenHandler) ServeHTTP(w http.ResponseWriter, r *http.Request) {
+func (d *regimenHandler) ServeHTTP(w http.ResponseWriter, r *http.Request) {
 	switch r.Method {
-	case HTTP_POST:
+	case apiservice.HTTP_POST:
 		d.updateRegimenSteps(w, r)
 	default:
 		w.WriteHeader(http.StatusNotFound)
 	}
 }
 
-func (d *DoctorRegimenHandler) updateRegimenSteps(w http.ResponseWriter, r *http.Request) {
-	jsonDecoder := json.NewDecoder(r.Body)
+func (d *regimenHandler) updateRegimenSteps(w http.ResponseWriter, r *http.Request) {
 	requestData := &common.RegimenPlan{}
-
-	err := jsonDecoder.Decode(requestData)
-	if err != nil {
-		WriteError(err, w, r)
+	if err := apiservice.DecodeRequestData(requestData, r); err != nil {
+		apiservice.WriteError(err, w, r)
 		return
 	} else if requestData.TreatmentPlanId.Int64() == 0 {
-		WriteValidationError("treatment_plan_id must be specified", w, r)
+		apiservice.WriteValidationError("treatment_plan_id must be specified", w, r)
 		return
 	}
 
-	patientVisitId, err := d.DataApi.GetPatientVisitIdFromTreatmentPlanId(requestData.TreatmentPlanId.Int64())
+	patientVisitId, err := d.dataAPI.GetPatientVisitIdFromTreatmentPlanId(requestData.TreatmentPlanId.Int64())
 	if err != nil {
-		WriteError(err, w, r)
+		apiservice.WriteError(err, w, r)
 		return
 	}
 
-	patientVisitReviewData, statusCode, err := ValidateDoctorAccessToPatientVisitAndGetRelevantData(patientVisitId, GetContext(r).AccountId, d.DataApi)
+	patientVisitReviewData, statusCode, err := apiservice.ValidateDoctorAccessToPatientVisitAndGetRelevantData(patientVisitId, apiservice.GetContext(r).AccountId, d.dataAPI)
 	if err != nil {
-		WriteDeveloperError(w, statusCode, err.Error())
+		apiservice.WriteDeveloperError(w, statusCode, err.Error())
 		return
 	}
 
-	err = EnsurePatientVisitInExpectedStatus(d.DataApi, patientVisitId, api.CASE_STATUS_REVIEWING)
+	err = apiservice.EnsurePatientVisitInExpectedStatus(d.dataAPI, patientVisitId, api.CASE_STATUS_REVIEWING)
 	if err != nil {
-		WriteError(err, w, r)
+		apiservice.WriteError(err, w, r)
 		return
 	}
 
@@ -67,7 +66,7 @@ func (d *DoctorRegimenHandler) updateRegimenSteps(w http.ResponseWriter, r *http
 	for _, regimenSection := range requestData.RegimenSections {
 		for _, regimenStep := range regimenSection.RegimenSteps {
 			if httpStatusCode, err := d.ensureLinkedRegimenStepExistsInMasterList(regimenStep, requestData, patientVisitReviewData.DoctorId); err != nil {
-				WriteDeveloperError(w, httpStatusCode, err.Error())
+				apiservice.WriteDeveloperError(w, httpStatusCode, err.Error())
 				return
 			}
 		}
@@ -75,9 +74,9 @@ func (d *DoctorRegimenHandler) updateRegimenSteps(w http.ResponseWriter, r *http
 
 	// compare the master list of regimen steps from the client with the active list
 	// that we have stored on the server
-	currentActiveRegimenSteps, err := d.DataApi.GetRegimenStepsForDoctor(patientVisitReviewData.DoctorId)
+	currentActiveRegimenSteps, err := d.dataAPI.GetRegimenStepsForDoctor(patientVisitReviewData.DoctorId)
 	if err != nil {
-		WriteError(err, w, r)
+		apiservice.WriteError(err, w, r)
 		return
 	}
 	regimenStepsToDelete := make([]*common.DoctorInstructionItem, 0, len(currentActiveRegimenSteps))
@@ -93,9 +92,9 @@ func (d *DoctorRegimenHandler) updateRegimenSteps(w http.ResponseWriter, r *http
 			regimenStepsToDelete = append(regimenStepsToDelete, currentRegimenStep)
 		}
 	}
-	err = d.DataApi.MarkRegimenStepsToBeDeleted(regimenStepsToDelete, patientVisitReviewData.DoctorId)
+	err = d.dataAPI.MarkRegimenStepsToBeDeleted(regimenStepsToDelete, patientVisitReviewData.DoctorId)
 	if err != nil {
-		WriteError(err, w, r)
+		apiservice.WriteError(err, w, r)
 		return
 	}
 
@@ -108,18 +107,18 @@ func (d *DoctorRegimenHandler) updateRegimenSteps(w http.ResponseWriter, r *http
 	for _, regimenStep := range requestData.AllRegimenSteps {
 		switch regimenStep.State {
 		case common.STATE_ADDED:
-			err = d.DataApi.AddRegimenStepForDoctor(regimenStep, patientVisitReviewData.DoctorId)
+			err = d.dataAPI.AddRegimenStepForDoctor(regimenStep, patientVisitReviewData.DoctorId)
 			if err != nil {
-				WriteDeveloperError(w, http.StatusInternalServerError, "Unable to add reigmen step to doctor. Application may be left in inconsistent state. Error = "+err.Error())
+				apiservice.WriteDeveloperError(w, http.StatusInternalServerError, "Unable to add reigmen step to doctor. Application may be left in inconsistent state. Error = "+err.Error())
 				return
 			}
 			newStepToIdMapping[regimenStep.Text] = append(newStepToIdMapping[regimenStep.Text], regimenStep.Id.Int64())
 			updatedAllRegimenSteps = append(updatedAllRegimenSteps, regimenStep)
 		case common.STATE_MODIFIED:
 			previousRegimenStepId := regimenStep.Id.Int64()
-			err = d.DataApi.UpdateRegimenStepForDoctor(regimenStep, patientVisitReviewData.DoctorId)
+			err = d.dataAPI.UpdateRegimenStepForDoctor(regimenStep, patientVisitReviewData.DoctorId)
 			if err != nil {
-				WriteDeveloperError(w, http.StatusInternalServerError, "Unable to update regimen step for doctor: "+err.Error())
+				apiservice.WriteDeveloperError(w, http.StatusInternalServerError, "Unable to update regimen step for doctor: "+err.Error())
 				return
 			}
 			// keep track of the new id for updated regimen steps so that we can update the regimen step in the
@@ -150,23 +149,23 @@ func (d *DoctorRegimenHandler) updateRegimenSteps(w http.ResponseWriter, r *http
 		}
 	}
 
-	err = d.DataApi.CreateRegimenPlanForPatientVisit(requestData)
+	err = d.dataAPI.CreateRegimenPlanForPatientVisit(requestData)
 	if err != nil {
-		WriteDeveloperError(w, http.StatusInternalServerError, "Unable to create regimen plan for patient visit: "+err.Error())
+		apiservice.WriteDeveloperError(w, http.StatusInternalServerError, "Unable to create regimen plan for patient visit: "+err.Error())
 		return
 	}
 
 	// fetch all regimen steps in the treatment plan and the global regimen steps to
 	// return an updated view of the world to the client
-	regimenPlan, err := d.DataApi.GetRegimenPlanForTreatmentPlan(requestData.TreatmentPlanId.Int64())
+	regimenPlan, err := d.dataAPI.GetRegimenPlanForTreatmentPlan(requestData.TreatmentPlanId.Int64())
 	if err != nil {
-		WriteDeveloperError(w, http.StatusInternalServerError, "Unable to get the regimen plan for treatment plan: "+err.Error())
+		apiservice.WriteDeveloperError(w, http.StatusInternalServerError, "Unable to get the regimen plan for treatment plan: "+err.Error())
 		return
 	}
 
-	allRegimenSteps, err := d.DataApi.GetRegimenStepsForDoctor(patientVisitReviewData.DoctorId)
+	allRegimenSteps, err := d.dataAPI.GetRegimenStepsForDoctor(patientVisitReviewData.DoctorId)
 	if err != nil {
-		WriteDeveloperError(w, http.StatusInternalServerError, "Unable to get the list of regimen steps for doctor: "+err.Error())
+		apiservice.WriteDeveloperError(w, http.StatusInternalServerError, "Unable to get the list of regimen steps for doctor: "+err.Error())
 		return
 	}
 
@@ -183,10 +182,10 @@ func (d *DoctorRegimenHandler) updateRegimenSteps(w http.ResponseWriter, r *http
 		DoctorId:        patientVisitReviewData.DoctorId,
 	})
 
-	WriteJSONToHTTPResponseWriter(w, http.StatusOK, regimenPlan)
+	apiservice.WriteJSONToHTTPResponseWriter(w, http.StatusOK, regimenPlan)
 }
 
-func (d *DoctorRegimenHandler) ensureLinkedRegimenStepExistsInMasterList(regimenStep *common.DoctorInstructionItem, regimenPlan *common.RegimenPlan, doctorId int64) (int, error) {
+func (d *regimenHandler) ensureLinkedRegimenStepExistsInMasterList(regimenStep *common.DoctorInstructionItem, regimenPlan *common.RegimenPlan, doctorId int64) (int, error) {
 	// no need to check if the regimen step does not indicate that it exists in the master list
 	if !regimenStep.ParentId.IsValid {
 		return 0, nil
@@ -206,7 +205,7 @@ func (d *DoctorRegimenHandler) ensureLinkedRegimenStepExistsInMasterList(regimen
 		} else {
 			// its possible that the step is not present in the active global list but exists as a
 			// step from the past
-			parentRegimenStep, err := d.DataApi.GetRegimenStepForDoctor(regimenStep.ParentId.Int64(), doctorId)
+			parentRegimenStep, err := d.dataAPI.GetRegimenStepForDoctor(regimenStep.ParentId.Int64(), doctorId)
 			if err == api.NoRowsError {
 				return http.StatusBadRequest, errors.New("Cannot have a step in a regimen section that does not link to a regimen step the doctor created at some point.")
 			} else if err != nil {

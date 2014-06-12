@@ -6,6 +6,7 @@ import (
 	"carefront/apiservice"
 	"carefront/app_worker"
 	"carefront/common"
+	"carefront/doctor_treatment_plan"
 	"carefront/encoding"
 	"carefront/libs/aws/sqs"
 	"carefront/libs/erx"
@@ -1304,11 +1305,11 @@ func setUpDeniedRefillRequestWithDNTF(t *testing.T, testData TestData, endErxSta
 		treatmentTemplate.Name = "Favorite Treatment #1"
 		treatmentTemplate.Treatment = &treatmentToAdd
 
-		doctorFavoriteTreatmentsHandler := &apiservice.DoctorTreatmentTemplatesHandler{DataApi: testData.DataApi}
+		doctorFavoriteTreatmentsHandler := doctor_treatment_plan.NewTreatmentTemplatesHandler(testData.DataApi)
 		ts := httptest.NewServer(doctorFavoriteTreatmentsHandler)
 		defer ts.Close()
 
-		treatmentTemplatesRequest := &apiservice.DoctorTreatmentTemplatesRequest{
+		treatmentTemplatesRequest := &doctor_treatment_plan.DoctorTreatmentTemplatesRequest{
 			TreatmentTemplates: []*common.DoctorTreatmentTemplate{treatmentTemplate},
 			TreatmentPlanId:    treatmentPlan.Id,
 		}
@@ -1324,7 +1325,7 @@ func setUpDeniedRefillRequestWithDNTF(t *testing.T, testData TestData, endErxSta
 			t.Fatalf("Request to add treatments failed with http status code %d", resp.StatusCode)
 		}
 
-		treatmentTemplatesResponse := &apiservice.DoctorTreatmentTemplatesResponse{}
+		treatmentTemplatesResponse := &doctor_treatment_plan.DoctorTreatmentTemplatesResponse{}
 		err = json.NewDecoder(resp.Body).Decode(treatmentTemplatesResponse)
 		if err != nil {
 			t.Fatal("Unable to unmarshal response into object : " + err.Error())
@@ -1728,11 +1729,11 @@ func setUpDeniedRefillRequestWithDNTFForLinkedTreatment(t *testing.T, testData T
 		treatmentTemplate.Name = "Favorite Treatment #1"
 		treatmentTemplate.Treatment = &treatmentToAdd
 
-		doctorFavoriteTreatmentsHandler := &apiservice.DoctorTreatmentTemplatesHandler{DataApi: testData.DataApi}
+		doctorFavoriteTreatmentsHandler := doctor_treatment_plan.NewTreatmentTemplatesHandler(testData.DataApi)
 		ts := httptest.NewServer(doctorFavoriteTreatmentsHandler)
 		defer ts.Close()
 
-		treatmentTemplatesRequest := &apiservice.DoctorTreatmentTemplatesRequest{TreatmentTemplates: []*common.DoctorTreatmentTemplate{treatmentTemplate}}
+		treatmentTemplatesRequest := &doctor_treatment_plan.DoctorTreatmentTemplatesRequest{TreatmentTemplates: []*common.DoctorTreatmentTemplate{treatmentTemplate}}
 		treatmentTemplatesRequest.TreatmentPlanId = encoding.NewObjectId(treatmentPlanId)
 		data, err := json.Marshal(&treatmentTemplatesRequest)
 		if err != nil {
@@ -1748,7 +1749,7 @@ func setUpDeniedRefillRequestWithDNTFForLinkedTreatment(t *testing.T, testData T
 			t.Fatalf("Request to add treatments failed with http status code %d", resp.StatusCode)
 		}
 
-		treatmentTemplatesResponse := &apiservice.DoctorTreatmentTemplatesResponse{}
+		treatmentTemplatesResponse := &doctor_treatment_plan.DoctorTreatmentTemplatesResponse{}
 		err = json.NewDecoder(resp.Body).Decode(treatmentTemplatesResponse)
 		if err != nil {
 			t.Fatal("Unable to unmarshal response into object : " + err.Error())

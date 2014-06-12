@@ -11,7 +11,7 @@ import (
 	"strings"
 )
 
-func validateTreatment(treatment *common.Treatment) error {
+func ValidateTreatment(treatment *common.Treatment) error {
 	if treatment.DrugInternalName == "" {
 		return errors.New("Drug Internal name for treatment cannot be empty")
 	}
@@ -67,7 +67,7 @@ func validateTreatment(treatment *common.Treatment) error {
 	return nil
 }
 
-func checkIfDrugInTreatmentFromTemplateIsOutOfMarket(treatment *common.Treatment, doctor *common.Doctor, erxApi erx.ERxAPI) (int, *ErrorResponse) {
+func CheckIfDrugInTreatmentFromTemplateIsOutOfMarket(treatment *common.Treatment, doctor *common.Doctor, erxApi erx.ERxAPI) (int, *ErrorResponse) {
 	if treatment.DoctorTreatmentTemplateId.Int64() != 0 {
 		// check to ensure that the drug is still in market; we do so by ensuring that we are still able
 		// to get back the drug db ids to identify this drug
