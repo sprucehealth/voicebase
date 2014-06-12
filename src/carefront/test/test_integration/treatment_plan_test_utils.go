@@ -164,12 +164,12 @@ func GetDoctorTreatmentPlanById(treatmentPlanId, doctorAccountId int64, testData
 	return response.TreatmentPlan
 }
 
-func addAndGetTreatmentsForPatientVisit(testData TestData, treatments []*common.Treatment, doctorAccountId, PatientVisitId int64, t *testing.T) *apiservice.GetTreatmentsResponse {
+func addAndGetTreatmentsForPatientVisit(testData TestData, treatments []*common.Treatment, doctorAccountId, treatmentPlanId int64, t *testing.T) *apiservice.GetTreatmentsResponse {
 	stubErxApi := &erx.StubErxService{
 		SelectedMedicationToReturn: &common.Treatment{},
 	}
 
-	treatmentRequestBody := apiservice.AddTreatmentsRequestBody{PatientVisitId: encoding.NewObjectId(PatientVisitId), Treatments: treatments}
+	treatmentRequestBody := apiservice.AddTreatmentsRequestBody{TreatmentPlanId: encoding.NewObjectId(treatmentPlanId), Treatments: treatments}
 	treatmentsHandler := &apiservice.TreatmentsHandler{
 		DataApi: testData.DataApi,
 		ErxApi:  stubErxApi,
@@ -385,7 +385,6 @@ func CreateFavoriteTreatmentPlan(patientVisitId, treatmentPlanId int64, testData
 	// and the only way we can create regimen steps today is in the context of a patient visit
 	regimenPlanRequest := &common.RegimenPlan{}
 	regimenPlanRequest.TreatmentPlanId = encoding.NewObjectId(treatmentPlanId)
-	regimenPlanRequest.PatientVisitId = encoding.NewObjectId(patientVisitId)
 
 	regimenStep1 := &common.DoctorInstructionItem{}
 	regimenStep1.Text = "Regimen Step 1"
@@ -426,7 +425,6 @@ func CreateFavoriteTreatmentPlan(patientVisitId, treatmentPlanId int64, testData
 	doctorAdviceRequest := &common.Advice{}
 	doctorAdviceRequest.AllAdvicePoints = []*common.DoctorInstructionItem{advicePoint1, advicePoint2}
 	doctorAdviceRequest.TreatmentPlanId = encoding.NewObjectId(treatmentPlanId)
-	doctorAdviceRequest.PatientVisitId = encoding.NewObjectId(patientVisitId)
 
 	doctorAdviceResponse := UpdateAdvicePointsForPatientVisit(doctorAdviceRequest, testData, doctor, t)
 	ValidateAdviceRequestAgainstResponse(doctorAdviceRequest, doctorAdviceResponse, t)

@@ -213,7 +213,7 @@ func TestHealthLog(t *testing.T) {
 	}
 }
 
-func TestVisitCreatedNotification(t *testing.T) {
+func TestTreatmentPlanCreatedNotification(t *testing.T) {
 	testData := test_integration.SetupIntegrationTest(t)
 	defer test_integration.TearDownIntegrationTest(t, testData)
 
@@ -223,10 +223,10 @@ func TestVisitCreatedNotification(t *testing.T) {
 		t.Fatalf("Error getting doctor from id: %s", err.Error())
 	}
 
-	visit, _ := test_integration.SignupAndSubmitPatientVisitForRandomPatient(t, testData, doctor)
+	visit, treatmentPlan := test_integration.SignupAndSubmitPatientVisitForRandomPatient(t, testData, doctor)
 	patient, err := testData.DataApi.GetPatientFromPatientVisitId(visit.PatientVisitId)
 	patientId := patient.PatientId.Int64()
-	test_integration.SubmitPatientVisitBackToPatient(visit.PatientVisitId, doctor, testData, t)
+	test_integration.SubmitPatientVisitBackToPatient(treatmentPlan.Id.Int64(), doctor, testData, t)
 
 	// make a call to get patient notifications
 	listNotificationsHandler := homelog.NewListHandler(testData.DataApi)

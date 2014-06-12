@@ -182,12 +182,12 @@ func TestAddTreatments(t *testing.T) {
 		t.Fatal("Unable to get doctor from doctor id " + err.Error())
 	}
 
-	patientVisitResponse, _ := SignupAndSubmitPatientVisitForRandomPatient(t, testData, doctor)
+	_, treatmentPlan := SignupAndSubmitPatientVisitForRandomPatient(t, testData, doctor)
 
 	// doctor now attempts to add a couple treatments for patient
 	treatment1 := &common.Treatment{
 		DrugInternalName: "Advil",
-		PatientVisitId:   encoding.NewObjectId(patientVisitResponse.PatientVisitId),
+		TreatmentPlanId:  treatmentPlan.Id,
 		DosageStrength:   "10 mg",
 		DispenseValue:    1,
 		DispenseUnitId:   encoding.NewObjectId(26),
@@ -211,7 +211,7 @@ func TestAddTreatments(t *testing.T) {
 
 	treatment2 := &common.Treatment{
 		DrugInternalName: "Advil 2",
-		PatientVisitId:   encoding.NewObjectId(patientVisitResponse.PatientVisitId),
+		TreatmentPlanId:  treatmentPlan.Id,
 		DosageStrength:   "100 mg",
 		DispenseValue:    2,
 		DispenseUnitId:   encoding.NewObjectId(27),
@@ -231,7 +231,7 @@ func TestAddTreatments(t *testing.T) {
 
 	treatments := []*common.Treatment{treatment1, treatment2}
 
-	getTreatmentsResponse := addAndGetTreatmentsForPatientVisit(testData, treatments, doctor.AccountId.Int64(), patientVisitResponse.PatientVisitId, t)
+	getTreatmentsResponse := addAndGetTreatmentsForPatientVisit(testData, treatments, doctor.AccountId.Int64(), treatmentPlan.Id.Int64(), t)
 
 	for _, treatment := range getTreatmentsResponse.TreatmentList.Treatments {
 		switch treatment.DrugInternalName {
@@ -245,7 +245,7 @@ func TestAddTreatments(t *testing.T) {
 	// now lets go ahead and post an update where we have just one treatment for the patient visit which was updated while the other was deleted
 	treatments[0].DispenseValue = 10
 	treatments = []*common.Treatment{treatments[0]}
-	getTreatmentsResponse = addAndGetTreatmentsForPatientVisit(testData, treatments, doctor.AccountId.Int64(), patientVisitResponse.PatientVisitId, t)
+	getTreatmentsResponse = addAndGetTreatmentsForPatientVisit(testData, treatments, doctor.AccountId.Int64(), treatmentPlan.Id.Int64(), t)
 
 	// there should be just one treatment and its name should be the name that we just set
 	if len(getTreatmentsResponse.TreatmentList.Treatments) != 1 {
@@ -271,6 +271,7 @@ func TestTreatmentTemplates(t *testing.T) {
 	if err != nil {
 		t.Fatal("Unable to get doctor from doctor id " + err.Error())
 	}
+	_, treatmentPlan := SignupAndSubmitPatientVisitForRandomPatient(t, testData, doctor)
 
 	// doctor now attempts to favorite a treatment
 	treatment1 := &common.Treatment{
@@ -304,7 +305,10 @@ func TestTreatmentTemplates(t *testing.T) {
 	ts := httptest.NewServer(doctorTreatmentTemplatesHandler)
 	defer ts.Close()
 
-	treatmentTemplatesRequest := &apiservice.DoctorTreatmentTemplatesRequest{TreatmentTemplates: []*common.DoctorTreatmentTemplate{treatmentTemplate}}
+	treatmentTemplatesRequest := &apiservice.DoctorTreatmentTemplatesRequest{
+		TreatmentPlanId:    treatmentPlan.Id,
+		TreatmentTemplates: []*common.DoctorTreatmentTemplate{treatmentTemplate},
+	}
 	data, err := json.Marshal(&treatmentTemplatesRequest)
 	if err != nil {
 		t.Fatal("Unable to marshal request body for adding treatments to patient visit")
@@ -313,17 +317,12 @@ func TestTreatmentTemplates(t *testing.T) {
 	resp, err := AuthPost(ts.URL, "application/json", bytes.NewBuffer(data), doctor.AccountId.Int64())
 	if err != nil {
 		t.Fatal("Unable to make POST request to add treatments to patient visit " + err.Error())
+	} else if resp.StatusCode != http.StatusOK {
+		t.Fatalf("Expected %d but got %d instead", http.StatusOK, resp.StatusCode)
 	}
-
-	body, err := ioutil.ReadAll(resp.Body)
-	if err != nil {
-		t.Fatal("Unable to read body of the post request made to add treatments to patient visit: " + err.Error())
-	}
-
-	CheckSuccessfulStatusCode(resp, "Unsuccessful call made to add favorite treatment for doctor "+string(body), t)
 
 	treatmentTemplatesResponse := &apiservice.DoctorTreatmentTemplatesResponse{}
-	err = json.Unmarshal(body, treatmentTemplatesResponse)
+	err = json.NewDecoder(resp.Body).Decode(treatmentTemplatesResponse)
 	if err != nil {
 		t.Fatal("Unable to unmarshal response into object : " + err.Error())
 	}
@@ -384,17 +383,12 @@ func TestTreatmentTemplates(t *testing.T) {
 	resp, err = AuthPost(ts.URL, "application/json", bytes.NewBuffer(data), doctor.AccountId.Int64())
 	if err != nil {
 		t.Fatal("Unable to make POST request to add treatments to patient visit " + err.Error())
+	} else if resp.StatusCode != http.StatusOK {
+		t.Fatalf("Expected %d but got %d instead", http.StatusOK, resp.StatusCode)
 	}
-
-	body, err = ioutil.ReadAll(resp.Body)
-	if err != nil {
-		t.Fatal("Unable to read body of the post request made to add treatments to patient visit: " + err.Error())
-	}
-
-	CheckSuccessfulStatusCode(resp, "Unsuccessful call made to add favorite treatment for doctor "+string(body), t)
 
 	treatmentTemplatesResponse = &apiservice.DoctorTreatmentTemplatesResponse{}
-	err = json.Unmarshal(body, treatmentTemplatesResponse)
+	err = json.NewDecoder(resp.Body).Decode(treatmentTemplatesResponse)
 	if err != nil {
 		t.Fatal("Unable to unmarshal response into object : " + err.Error())
 	} else if treatmentTemplatesResponse.TreatmentTemplates == nil || len(treatmentTemplatesResponse.TreatmentTemplates) != 2 {
@@ -406,7 +400,9 @@ func TestTreatmentTemplates(t *testing.T) {
 	}
 
 	// lets go ahead and delete each of the treatments
-	data, err = json.Marshal(&treatmentTemplatesResponse)
+	treatmentTemplatesRequest.TreatmentTemplates = treatmentTemplatesResponse.TreatmentTemplates
+	treatmentTemplatesRequest.TreatmentPlanId = treatmentPlan.Id
+	data, err = json.Marshal(&treatmentTemplatesRequest)
 	if err != nil {
 		t.Fatal("Unable to marshal request body for adding treatments to patient visit")
 	}
@@ -414,17 +410,12 @@ func TestTreatmentTemplates(t *testing.T) {
 	resp, err = AuthDelete(ts.URL, "application/json", bytes.NewBuffer(data), doctor.AccountId.Int64())
 	if err != nil {
 		t.Fatal("Unable to make POST request to add treatments to patient visit " + err.Error())
+	} else if resp.StatusCode != http.StatusOK {
+		t.Fatalf("Expected %d but got %d instead", http.StatusOK, resp.StatusCode)
 	}
-
-	body, err = ioutil.ReadAll(resp.Body)
-	if err != nil {
-		t.Fatal("Unable to read body of the post request made to add treatments to patient visit: " + err.Error())
-	}
-
-	CheckSuccessfulStatusCode(resp, "Unsuccessful call made to add favorite treatment for doctor "+string(body), t)
 
 	treatmentTemplatesResponse = &apiservice.DoctorTreatmentTemplatesResponse{}
-	err = json.Unmarshal(body, treatmentTemplatesResponse)
+	err = json.NewDecoder(resp.Body).Decode(treatmentTemplatesResponse)
 	if err != nil {
 		t.Fatal("Unable to unmarshal response into object : " + err.Error())
 	}
@@ -448,7 +439,7 @@ func TestTreatmentTemplatesInContextOfPatientVisit(t *testing.T) {
 	}
 
 	// create random patient
-	patientVisitResponse, _ := SignupAndSubmitPatientVisitForRandomPatient(t, testData, doctor)
+	_, treatmentPlan := SignupAndSubmitPatientVisitForRandomPatient(t, testData, doctor)
 
 	// doctor now attempts to favorite a treatment
 	treatment1 := &common.Treatment{
@@ -483,7 +474,7 @@ func TestTreatmentTemplatesInContextOfPatientVisit(t *testing.T) {
 	defer ts.Close()
 
 	treatmentTemplatesRequest := &apiservice.DoctorTreatmentTemplatesRequest{TreatmentTemplates: []*common.DoctorTreatmentTemplate{treatmentTemplate}}
-	treatmentTemplatesRequest.PatientVisitId = encoding.NewObjectId(patientVisitResponse.PatientVisitId)
+	treatmentTemplatesRequest.TreatmentPlanId = treatmentPlan.Id
 	data, err := json.Marshal(&treatmentTemplatesRequest)
 	if err != nil {
 		t.Fatal("Unable to marshal request body for adding treatments to patient visit")
@@ -545,7 +536,7 @@ func TestTreatmentTemplatesInContextOfPatientVisit(t *testing.T) {
 	}
 
 	// lets add this as a treatment to the patient visit
-	getTreatmentsResponse := addAndGetTreatmentsForPatientVisit(testData, []*common.Treatment{treatment2}, doctor.AccountId.Int64(), patientVisitResponse.PatientVisitId, t)
+	getTreatmentsResponse := addAndGetTreatmentsForPatientVisit(testData, []*common.Treatment{treatment2}, doctor.AccountId.Int64(), treatmentPlan.Id.Int64(), t)
 
 	if len(getTreatmentsResponse.TreatmentList.Treatments) != 1 {
 		t.Fatal("Expected patient visit to have 1 treatment")
@@ -556,7 +547,7 @@ func TestTreatmentTemplatesInContextOfPatientVisit(t *testing.T) {
 	treatmentTemplate2.Name = "Favorite Treatment #2"
 	treatmentTemplate2.Treatment = getTreatmentsResponse.TreatmentList.Treatments[0]
 	treatmentTemplatesRequest.TreatmentTemplates[0] = treatmentTemplate2
-	treatmentTemplatesRequest.PatientVisitId = encoding.NewObjectId(patientVisitResponse.PatientVisitId)
+	treatmentTemplatesRequest.TreatmentPlanId = treatmentPlan.Id
 
 	data, err = json.Marshal(&treatmentTemplatesRequest)
 	if err != nil {
@@ -604,7 +595,7 @@ func TestTreatmentTemplatesInContextOfPatientVisit(t *testing.T) {
 	// now, lets go ahead and add a treatment to the patient visit from a favorite treatment
 	treatment1.DoctorTreatmentTemplateId = encoding.NewObjectId(treatmentTemplatesResponse.TreatmentTemplates[0].Id.Int64())
 	treatment2.DoctorTreatmentTemplateId = encoding.NewObjectId(treatmentTemplatesResponse.TreatmentTemplates[1].Id.Int64())
-	getTreatmentsResponse = addAndGetTreatmentsForPatientVisit(testData, []*common.Treatment{treatment1, treatment2}, doctor.AccountId.Int64(), patientVisitResponse.PatientVisitId, t)
+	getTreatmentsResponse = addAndGetTreatmentsForPatientVisit(testData, []*common.Treatment{treatment1, treatment2}, doctor.AccountId.Int64(), treatmentPlan.Id.Int64(), t)
 
 	if len(getTreatmentsResponse.TreatmentList.Treatments) != 2 {
 		t.Fatal("There should exist 2 treatments for the patient visit")
@@ -617,7 +608,7 @@ func TestTreatmentTemplatesInContextOfPatientVisit(t *testing.T) {
 	treatmentTemplate.Id = encoding.NewObjectId(getTreatmentsResponse.TreatmentList.Treatments[0].DoctorTreatmentTemplateId.Int64())
 	treatmentTemplate.Treatment = getTreatmentsResponse.TreatmentList.Treatments[0]
 	treatmentTemplatesRequest.TreatmentTemplates = []*common.DoctorTreatmentTemplate{treatmentTemplate}
-
+	treatmentTemplatesRequest.TreatmentPlanId = treatmentPlan.Id
 	// lets delete a favorite that is also a treatment in the patient visit
 	data, err = json.Marshal(&treatmentTemplatesRequest)
 	if err != nil {
@@ -664,21 +655,7 @@ func TestTreatmentTemplateWithDrugOutOfMarket(t *testing.T) {
 		t.Fatal("Unable to get doctor from doctor id " + err.Error())
 	}
 
-	// create random patient
-	patientSignedupResponse := SignupRandomTestPatient(t, testData.DataApi, testData.AuthApi)
-	patientVisitResponse := CreatePatientVisitForPatient(patientSignedupResponse.Patient.PatientId.Int64(), testData, t)
-	// submit answers to questions in patient visit
-	patient, err := testData.DataApi.GetPatientFromId(patientSignedupResponse.Patient.PatientId.Int64())
-	if err != nil {
-		t.Fatal("Unable to get patient from id: " + err.Error())
-	}
-
-	answerIntakeRequestBody := prepareAnswersForQuestionsInPatientVisit(patientVisitResponse, t)
-	SubmitAnswersIntakeForPatient(patient.PatientId.Int64(), patient.AccountId.Int64(), answerIntakeRequestBody, testData, t)
-
-	SubmitPatientVisitForPatient(patientSignedupResponse.Patient.PatientId.Int64(), patientVisitResponse.PatientVisitId, testData, t)
-	StartReviewingPatientVisit(patientVisitResponse.PatientVisitId, doctor, testData, t)
-
+	_, treatmentPlan := SignupAndSubmitPatientVisitForRandomPatient(t, testData, doctor)
 	// doctor now attempts to favorite a treatment
 	treatment1 := &common.Treatment{
 		DrugInternalName: "DrugName (DrugRoute - DrugForm)",
@@ -711,7 +688,7 @@ func TestTreatmentTemplateWithDrugOutOfMarket(t *testing.T) {
 	defer ts.Close()
 
 	treatmentTemplatesRequest := &apiservice.DoctorTreatmentTemplatesRequest{TreatmentTemplates: []*common.DoctorTreatmentTemplate{treatmentTemplate}}
-	treatmentTemplatesRequest.PatientVisitId = encoding.NewObjectId(patientVisitResponse.PatientVisitId)
+	treatmentTemplatesRequest.TreatmentPlanId = treatmentPlan.Id
 	data, err := json.Marshal(&treatmentTemplatesRequest)
 	if err != nil {
 		t.Fatal("Unable to marshal request body for adding treatments to patient visit")
@@ -740,8 +717,8 @@ func TestTreatmentTemplateWithDrugOutOfMarket(t *testing.T) {
 	treatment1.DoctorTreatmentTemplateId = treatmentTemplatesResponse.TreatmentTemplates[0].Id
 	stubErxApi := &erx.StubErxService{}
 	treatmentRequestBody := apiservice.AddTreatmentsRequestBody{
-		PatientVisitId: encoding.NewObjectId(patientVisitResponse.PatientVisitId),
-		Treatments:     []*common.Treatment{treatment1},
+		TreatmentPlanId: treatmentPlan.Id,
+		Treatments:      []*common.Treatment{treatment1},
 	}
 
 	treatmentsHandler := &apiservice.TreatmentsHandler{

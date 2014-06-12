@@ -121,7 +121,7 @@ func GetDiagnosisLayout(dataApi api.DataAPI, patientVisitId, doctorId int64) (*i
 
 func (d *diagnosePatientHandler) diagnosePatient(w http.ResponseWriter, r *http.Request) {
 	var answerIntakeRequestBody apiservice.AnswerIntakeRequestBody
-	if err := apiservice.DecodeRequestData(answerIntakeRequestBody, r); err != nil {
+	if err := apiservice.DecodeRequestData(&answerIntakeRequestBody, r); err != nil {
 		apiservice.WriteError(err, w, r)
 		return
 	} else if answerIntakeRequestBody.PatientVisitId == 0 {

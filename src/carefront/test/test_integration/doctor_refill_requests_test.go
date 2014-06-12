@@ -1292,6 +1292,14 @@ func setUpDeniedRefillRequestWithDNTF(t *testing.T, testData TestData, endErxSta
 
 	if toAddTemplatedTreatment {
 
+		doctorId := GetDoctorIdOfCurrentPrimaryDoctor(testData, t)
+		pDoctor, err := testData.DataApi.GetDoctorFromId(doctorId)
+		if err != nil {
+			t.Fatal(err)
+		}
+
+		_, treatmentPlan := SignupAndSubmitPatientVisitForRandomPatient(t, testData, pDoctor)
+
 		treatmentTemplate := &common.DoctorTreatmentTemplate{}
 		treatmentTemplate.Name = "Favorite Treatment #1"
 		treatmentTemplate.Treatment = &treatmentToAdd
@@ -1300,7 +1308,10 @@ func setUpDeniedRefillRequestWithDNTF(t *testing.T, testData TestData, endErxSta
 		ts := httptest.NewServer(doctorFavoriteTreatmentsHandler)
 		defer ts.Close()
 
-		treatmentTemplatesRequest := &apiservice.DoctorTreatmentTemplatesRequest{TreatmentTemplates: []*common.DoctorTreatmentTemplate{treatmentTemplate}}
+		treatmentTemplatesRequest := &apiservice.DoctorTreatmentTemplatesRequest{
+			TreatmentTemplates: []*common.DoctorTreatmentTemplate{treatmentTemplate},
+			TreatmentPlanId:    treatmentPlan.Id,
+		}
 		data, err := json.Marshal(&treatmentTemplatesRequest)
 		if err != nil {
 			t.Fatal("Unable to marshal request body for adding treatments to patient visit")
@@ -1309,9 +1320,7 @@ func setUpDeniedRefillRequestWithDNTF(t *testing.T, testData TestData, endErxSta
 		resp, err := AuthPost(ts.URL, "application/json", bytes.NewBuffer(data), doctor.AccountId.Int64())
 		if err != nil {
 			t.Fatal("Unable to make POST request to add treatments to patient visit " + err.Error())
-		}
-
-		if resp.StatusCode != http.StatusOK {
+		} else if resp.StatusCode != http.StatusOK {
 			t.Fatalf("Request to add treatments failed with http status code %d", resp.StatusCode)
 		}
 
@@ -1724,7 +1733,7 @@ func setUpDeniedRefillRequestWithDNTFForLinkedTreatment(t *testing.T, testData T
 		defer ts.Close()
 
 		treatmentTemplatesRequest := &apiservice.DoctorTreatmentTemplatesRequest{TreatmentTemplates: []*common.DoctorTreatmentTemplate{treatmentTemplate}}
-		treatmentTemplatesRequest.PatientVisitId = encoding.NewObjectId(patientVisitResponse.PatientVisitId)
+		treatmentTemplatesRequest.TreatmentPlanId = encoding.NewObjectId(treatmentPlanId)
 		data, err := json.Marshal(&treatmentTemplatesRequest)
 		if err != nil {
 			t.Fatal("Unable to marshal request body for adding treatments to patient visit")
