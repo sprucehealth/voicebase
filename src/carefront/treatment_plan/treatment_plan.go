@@ -56,7 +56,7 @@ func (p *treatmentPlanHandler) processTreatmentPlanViewForDoctor(requestData *Tr
 	}
 
 	if requestData.TreatmentPlanId == 0 {
-		apiservice.WriteUserError(w, http.StatusBadRequest, "treatment_plan_id must be specified")
+		apiservice.WriteValidationError("treatment_plan_id must be specified", w, r)
 		return
 	}
 
