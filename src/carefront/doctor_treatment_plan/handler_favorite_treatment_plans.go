@@ -114,7 +114,7 @@ func (d *doctorFavoriteTreatmentPlansHandler) addOrUpdateFavoriteTreatmentPlan(w
 			return
 		}
 
-		if err := fillInTreatmentPlan(drTreatmentPlan, d.dataApi); err != nil {
+		if err := fillInTreatmentPlan(drTreatmentPlan, doctor.DoctorId.Int64(), d.dataApi); err != nil {
 			apiservice.WriteDeveloperError(w, http.StatusInternalServerError, err.Error())
 			return
 		}

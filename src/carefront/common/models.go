@@ -163,15 +163,44 @@ func (f *FavoriteTreatmentPlan) EqualsDoctorTreatmentPlan(treatmentPlan *DoctorT
 }
 
 type DoctorTreatmentPlan struct {
-	Id                              encoding.ObjectId `json:"id,omitempty"`
-	DoctorId                        encoding.ObjectId `json:"doctor_id,omitempty"`
-	CreationDate                    time.Time         `json:"creation_date"`
-	DoctorFavoriteTreatmentPlanId   encoding.ObjectId `json:"dr_favorite_treatment_plan_id"`
-	DoctorFavoriteTreatmentPlanName string            `json:"dr_favorite_treatment_plan_name,omitempty"`
-	TreatmentList                   *TreatmentList    `json:"treatment_list"`
-	RegimenPlan                     *RegimenPlan      `json:"regimen_plan,omitempty"`
-	Advice                          *Advice           `json:"advice,omitempty"`
-	Status                          string            `json:"status,omitempty"`
+	Id            encoding.ObjectId           `json:"id,omitempty"`
+	DoctorId      encoding.ObjectId           `json:"doctor_id,omitempty"`
+	CreationDate  time.Time                   `json:"creation_date"`
+	TreatmentList *TreatmentList              `json:"treatment_list"`
+	RegimenPlan   *RegimenPlan                `json:"regimen_plan,omitempty"`
+	Advice        *Advice                     `json:"advice,omitempty"`
+	Status        string                      `json:"status,omitempty"`
+	Parent        *TreatmentPlanParent        `json:"parent,omitempty"`
+	PatientId     int64                       `json:"-"`
+	ContentSource *TreatmentPlanContentSource `json:"content_source,omitempty"`
+}
+
+const (
+	TPParentTypeTreatmentPlan        = "TREATMENT_PLAN"
+	TPParentTypePatientVisit         = "PATIENT_VISIT"
+	TPContentSourceTypeFTP           = "FAVORITE_TREATMENT_PLAN"
+	TPContentSourceTypeTreatmentPlan = "TREATMENT_PLAN"
+)
+
+// TreatmentPlanParent keeps track of the parent (either patient visit or previous treatment plan)
+// so that we know how the treatment plan came into existence
+type TreatmentPlanParent struct {
+	ParentId           encoding.ObjectId `json:"parent_id"`
+	ParentType         string            `json:"parent_type"`
+	ParentCreationDate time.Time         `json:"parent_creation_date"`
+}
+
+// TreatmentPlanContentSource keeps track of the source of the content
+// for the treatment plan, given that doctor can start fresh with an empty treatment plan,
+// from a previous treatment plan or from a favorite treatment plan when generating one for a patient
+// Note that we indicate that the doctor started with an empty treatment plan by having nil for the
+// content source in the treatment plan object.
+// We also keep track of whether or not the treatment plan has deviated from the content source via the
+// has_deviated flag
+type TreatmentPlanContentSource struct {
+	ContentSourceId   encoding.ObjectId `json:"content_source_id"`
+	ContentSourceType string            `json:"content_source_type"`
+	HasDeviated       bool              `json:"has_deviated"`
 }
 
 type TreatmentList struct {

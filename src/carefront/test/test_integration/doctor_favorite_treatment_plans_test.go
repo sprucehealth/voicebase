@@ -211,7 +211,7 @@ func TestFavoriteTreatmentPlan_PickingAFavoriteTreatmentPlan(t *testing.T) {
 	}
 
 	var count int64
-	if err := testData.DB.QueryRow(`select count(*) from treatment_plan where patient_visit_id = ?`, patientVisitResponse.PatientVisitId).Scan(&count); err != nil {
+	if err := testData.DB.QueryRow(`select count(*) from treatment_plan inner join treatment_plan_patient_visit_mapping on treatment_plan_id = treatment_plan.id where patient_visit_id = ?`, patientVisitResponse.PatientVisitId).Scan(&count); err != nil {
 		t.Fatalf("Unable to query database to get number of treatment plans for patient visit: %s", err)
 	} else if count != 1 {
 		t.Fatalf("Expected 1 treatment plan for patient visit instead got %d", count)
@@ -353,18 +353,20 @@ func TestFavoriteTreatmentPlan_BreakingMappingOnModify(t *testing.T) {
 		t.Fatalf("Expected %d response for getting treatment plan instead got %d", http.StatusOK, resp.StatusCode)
 	} else if json.NewDecoder(resp.Body).Decode(responseData); err != nil {
 		t.Fatalf("Unable to unmarshal response into struct %s", err)
-	} else if responseData.TreatmentPlan.DoctorFavoriteTreatmentPlanId.Int64() != 0 {
-		t.Fatalf("Expected the treatment plan to no longer be connected to the favorite treatment plan")
+	} else if responseData.TreatmentPlan.ContentSource == nil || responseData.TreatmentPlan.ContentSource.ContentSourceType != common.TPContentSourceTypeFTP ||
+		responseData.TreatmentPlan.ContentSource.ContentSourceId.Int64() == 0 || !responseData.TreatmentPlan.ContentSource.HasDeviated {
+		t.Fatalf("Expected the treatment plan to indicate that it has deviated from the original content source (ftp) but it doesnt do so")
 	}
 
 	// lets try modfying treatments on a new treatment plan picked from favorites
 	responseData = PickATreatmentPlanForPatientVisit(patientVisitResponse.PatientVisitId, doctor, favoriteTreamentPlan, testData, t)
 
 	// lets make sure linkage exists
-	if responseData.TreatmentPlan.DoctorFavoriteTreatmentPlanId.Int64() == 0 {
+	if responseData.TreatmentPlan.ContentSource == nil || responseData.TreatmentPlan.ContentSource.ContentSourceType != common.TPContentSourceTypeFTP ||
+		responseData.TreatmentPlan.ContentSource.ContentSourceId.Int64() == 0 {
 		t.Fatalf("Expected the treatment plan to come from a favorite treatment plan")
-	} else if responseData.TreatmentPlan.DoctorFavoriteTreatmentPlanId.Int64() != favoriteTreamentPlan.Id.Int64() {
-		t.Fatalf("Got a different favorite treatment plan linking to the treatment plan. Expected %d got %d", favoriteTreamentPlan.Id.Int64(), responseData.TreatmentPlan.Id.Int64())
+	} else if responseData.TreatmentPlan.ContentSource.ContentSourceId.Int64() != favoriteTreamentPlan.Id.Int64() {
+		t.Fatalf("Got a different favorite treatment plan linking to the treatment plan. Expected %d got %d", favoriteTreamentPlan.Id.Int64(), responseData.TreatmentPlan.ContentSource.ContentSourceId.Int64())
 	}
 
 	// modify treatment
@@ -379,15 +381,16 @@ func TestFavoriteTreatmentPlan_BreakingMappingOnModify(t *testing.T) {
 		t.Fatalf("Expected %d response for getting treatment plan instead got %d", http.StatusOK, resp.StatusCode)
 	} else if json.NewDecoder(resp.Body).Decode(responseData); err != nil {
 		t.Fatalf("Unable to unmarshal response into struct %s", err)
-	} else if responseData.TreatmentPlan.DoctorFavoriteTreatmentPlanId.Int64() != 0 {
-		t.Fatalf("Expected the treatment plan to no longer be connected to the favorite treatment plan")
+	} else if responseData.TreatmentPlan.ContentSource == nil || responseData.TreatmentPlan.ContentSource.ContentSourceType != common.TPContentSourceTypeFTP ||
+		responseData.TreatmentPlan.ContentSource.ContentSourceId.Int64() == 0 || !responseData.TreatmentPlan.ContentSource.HasDeviated {
+		t.Fatalf("Expected the treatment plan to indicate that it has deviated from the original content source (ftp) but it doesnt do so")
 	}
 
 	// lets try modifying advice
 	responseData = PickATreatmentPlanForPatientVisit(patientVisitResponse.PatientVisitId, doctor, favoriteTreamentPlan, testData, t)
 
 	// lets make sure linkage exists
-	if responseData.TreatmentPlan.DoctorFavoriteTreatmentPlanId.Int64() == 0 {
+	if responseData.TreatmentPlan.ContentSource == nil || responseData.TreatmentPlan.ContentSource.ContentSourceId.Int64() == 0 || responseData.TreatmentPlan.ContentSource.ContentSourceType != common.TPContentSourceTypeFTP {
 		t.Fatalf("Expected the treatment plan to come from a favorite treatment plan")
 	}
 
@@ -407,8 +410,9 @@ func TestFavoriteTreatmentPlan_BreakingMappingOnModify(t *testing.T) {
 		t.Fatalf("Expected %d response for getting treatment plan instead got %d", http.StatusOK, resp.StatusCode)
 	} else if json.NewDecoder(resp.Body).Decode(responseData); err != nil {
 		t.Fatalf("Unable to unmarshal response into struct %s", err)
-	} else if responseData.TreatmentPlan.DoctorFavoriteTreatmentPlanId.Int64() != 0 {
-		t.Fatalf("Expected the treatment plan to no longer be connected to the favorite treatment plan")
+	} else if responseData.TreatmentPlan.ContentSource == nil || responseData.TreatmentPlan.ContentSource.ContentSourceType != common.TPContentSourceTypeFTP ||
+		responseData.TreatmentPlan.ContentSource.ContentSourceId.Int64() == 0 || !responseData.TreatmentPlan.ContentSource.HasDeviated {
+		t.Fatalf("Expected the treatment plan to indicate that it has deviated from the original content source (ftp) but it doesnt do so")
 	}
 
 }
@@ -566,7 +570,8 @@ func TestFavoriteTreatmentPlan_InContextOfTreatmentPlan(t *testing.T) {
 	abbreviatedTreatmentPlan, err := testData.DataApi.GetAbridgedTreatmentPlan(treatmentPlan.Id.Int64(), doctorId)
 	if err != nil {
 		t.Fatalf("Unable to get abbreviated favorite treatment plan: %s", err)
-	} else if abbreviatedTreatmentPlan.DoctorFavoriteTreatmentPlanId.Int64() != responseData.FavoriteTreatmentPlan.Id.Int64() {
+	} else if abbreviatedTreatmentPlan.ContentSource == nil || abbreviatedTreatmentPlan.ContentSource.ContentSourceType != common.TPContentSourceTypeFTP ||
+		abbreviatedTreatmentPlan.ContentSource.ContentSourceId.Int64() != responseData.FavoriteTreatmentPlan.Id.Int64() {
 		t.Fatalf("Expected the link between treatmenet plan and favorite treatment plan to exist but it doesnt")
 	}
 
@@ -692,7 +697,8 @@ func TestFavoriteTreatmentPlan_InContextOfTreatmentPlan_EmptyRegimenAndAdvice(t 
 	abbreviatedTreatmentPlan, err := testData.DataApi.GetAbridgedTreatmentPlan(treatmentPlan.Id.Int64(), doctorId)
 	if err != nil {
 		t.Fatalf("Unable to get abbreviated favorite treatment plan: %s", err)
-	} else if abbreviatedTreatmentPlan.DoctorFavoriteTreatmentPlanId.Int64() != responseData.FavoriteTreatmentPlan.Id.Int64() {
+	} else if abbreviatedTreatmentPlan.ContentSource == nil || abbreviatedTreatmentPlan.ContentSource.ContentSourceType != common.TPContentSourceTypeFTP ||
+		abbreviatedTreatmentPlan.ContentSource.ContentSourceId.Int64() != responseData.FavoriteTreatmentPlan.Id.Int64() {
 		t.Fatalf("Expected the link between treatmenet plan and favorite treatment plan to exist but it doesnt")
 	}
 
@@ -817,8 +823,8 @@ func TestFavoriteTreatmentPlan_InContextOfTreatmentPlan_TwoDontMatch(t *testing.
 	abbreviatedTreatmentPlan, err := testData.DataApi.GetAbridgedTreatmentPlan(treatmentPlan.Id.Int64(), doctorId)
 	if err != nil {
 		t.Fatalf("Unable to get abbreviated favorite treatment plan: %s", err)
-	} else if abbreviatedTreatmentPlan.DoctorFavoriteTreatmentPlanId.Int64() != 0 {
-		t.Fatalf("Expected no linkage between treatment plan and favorite treatment plan")
+	} else if abbreviatedTreatmentPlan.ContentSource != nil {
+		t.Fatalf("Expected the treatment plan to indicate that it has deviated from content source but it doesnt")
 	}
 
 }

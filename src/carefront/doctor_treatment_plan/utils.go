@@ -4,6 +4,7 @@ import (
 	"carefront/api"
 	"carefront/common"
 	"carefront/libs/golog"
+	"errors"
 	"fmt"
 	"strings"
 )
@@ -114,4 +115,153 @@ func joinAcneTypesIntoString(acneTypeAnswers []*common.AnswerIntake) string {
 	}
 
 	return strings.Join(acneTypes[:len(acneTypes)-1], ", ") + " and " + acneTypes[len(acneTypes)-1]
+}
+
+func fillInTreatmentPlan(drTreatmentPlan *common.DoctorTreatmentPlan, doctorId int64, dataApi api.DataAPI) error {
+	var err error
+
+	drTreatmentPlan.TreatmentList = &common.TreatmentList{}
+	drTreatmentPlan.TreatmentList.Treatments, err = dataApi.GetTreatmentsBasedOnTreatmentPlanId(drTreatmentPlan.Id.Int64())
+	if err != nil {
+		return fmt.Errorf("Unable to get treatments for treatment plan: %s", err)
+	}
+
+	drTreatmentPlan.RegimenPlan = &common.RegimenPlan{}
+	drTreatmentPlan.RegimenPlan, err = dataApi.GetRegimenPlanForTreatmentPlan(drTreatmentPlan.Id.Int64())
+	if err != nil {
+		return fmt.Errorf("Unable to get regimen plan for treatment plan: %s", err)
+	}
+
+	drTreatmentPlan.Advice = &common.Advice{}
+	drTreatmentPlan.Advice.SelectedAdvicePoints, err = dataApi.GetAdvicePointsForTreatmentPlan(drTreatmentPlan.Id.Int64())
+	if err != nil {
+		return fmt.Errorf("Unable to get advice points for treatment plan")
+	}
+
+	// only populate the draft state if we are dealing with a draft treatment plan and the same doctor
+	// that owns it is requesting the treatment plan (so that they can edit it)
+	if drTreatmentPlan.DoctorId.Int64() == doctorId && drTreatmentPlan.Status == api.STATUS_DRAFT {
+		drTreatmentPlan.RegimenPlan.AllRegimenSteps, err = dataApi.GetRegimenStepsForDoctor(drTreatmentPlan.DoctorId.Int64())
+		if err != nil {
+			return err
+		}
+
+		drTreatmentPlan.Advice.AllAdvicePoints, err = dataApi.GetAdvicePointsForDoctor(drTreatmentPlan.DoctorId.Int64())
+		if err != nil {
+			return err
+		}
+
+		setCommittedStateForEachSection(drTreatmentPlan)
+
+		if err := populateFavoriteTreatmentPlanIntoTreatmentPlan(drTreatmentPlan, dataApi); err == api.NoRowsError {
+			return errors.New("No treatment plan found")
+		} else if err != nil {
+			return err
+		}
+	}
+	return err
+}
+
+func setCommittedStateForEachSection(drTreatmentPlan *common.DoctorTreatmentPlan) {
+	// depending on which sections have data in them, mark them to be committed or uncommitted
+	// note that we intentionally treat a section with no data to be in the UNCOMMITTED state so as
+	// to ensure that the doctor actually wanted to leave a particular section blank
+
+	if len(drTreatmentPlan.TreatmentList.Treatments) > 0 {
+		drTreatmentPlan.TreatmentList.Status = api.STATUS_COMMITTED
+	} else {
+		drTreatmentPlan.TreatmentList.Status = api.STATUS_UNCOMMITTED
+	}
+
+	if len(drTreatmentPlan.RegimenPlan.RegimenSections) > 0 {
+		drTreatmentPlan.RegimenPlan.Status = api.STATUS_COMMITTED
+	} else {
+		drTreatmentPlan.RegimenPlan.Status = api.STATUS_UNCOMMITTED
+	}
+
+	if len(drTreatmentPlan.Advice.SelectedAdvicePoints) > 0 {
+		drTreatmentPlan.Advice.Status = api.STATUS_COMMITTED
+	} else {
+		drTreatmentPlan.Advice.Status = api.STATUS_UNCOMMITTED
+	}
+
+}
+
+func populateFavoriteTreatmentPlanIntoTreatmentPlan(treatmentPlan *common.DoctorTreatmentPlan, dataApi api.DataAPI) error {
+	// only continue if the content source of the treaetment plan is a favorite treatment plan
+	if treatmentPlan.ContentSource == nil || treatmentPlan.ContentSource.ContentSourceType != common.TPContentSourceTypeFTP {
+		return nil
+	}
+	favoriteTreatmentPlanId := treatmentPlan.ContentSource.ContentSourceId.Int64()
+
+	favoriteTreatmentPlan, err := dataApi.GetFavoriteTreatmentPlan(favoriteTreatmentPlanId)
+	if err != nil {
+		return err
+	}
+
+	// The assumption here is that all components of a treatment plan that are already populated
+	// match the items in the favorite treatment plan, if there exists a mapping to indicate that this
+	// treatment plan must be filled in from a favorite treatment plan. The reason that we don't just write over
+	// the items that do already belong in the treatment plan is to maintain the ids of the items that have been committed
+	// to the database as part of the treatment plan.
+
+	// populate treatments
+	if len(treatmentPlan.TreatmentList.Treatments) == 0 {
+
+		treatmentPlan.TreatmentList.Treatments = make([]*common.Treatment, len(favoriteTreatmentPlan.TreatmentList.Treatments))
+		for i, treatment := range favoriteTreatmentPlan.TreatmentList.Treatments {
+			treatmentPlan.TreatmentList.Treatments[i] = &common.Treatment{
+				DrugDBIds:               treatment.DrugDBIds,
+				DrugInternalName:        treatment.DrugInternalName,
+				DrugName:                treatment.DrugName,
+				DrugRoute:               treatment.DrugRoute,
+				DosageStrength:          treatment.DosageStrength,
+				DispenseValue:           treatment.DispenseValue,
+				DispenseUnitId:          treatment.DispenseUnitId,
+				DispenseUnitDescription: treatment.DispenseUnitDescription,
+				NumberRefills:           treatment.NumberRefills,
+				SubstitutionsAllowed:    treatment.SubstitutionsAllowed,
+				DaysSupply:              treatment.DaysSupply,
+				PharmacyNotes:           treatment.PharmacyNotes,
+				PatientInstructions:     treatment.PatientInstructions,
+				CreationDate:            treatment.CreationDate,
+				OTC:                     treatment.OTC,
+				IsControlledSubstance:    treatment.IsControlledSubstance,
+				SupplementalInstructions: treatment.SupplementalInstructions,
+			}
+		}
+	}
+
+	// populate regimen plan
+	if len(treatmentPlan.RegimenPlan.RegimenSections) == 0 {
+		treatmentPlan.RegimenPlan.RegimenSections = make([]*common.RegimenSection, len(favoriteTreatmentPlan.RegimenPlan.RegimenSections))
+
+		for i, regimenSection := range favoriteTreatmentPlan.RegimenPlan.RegimenSections {
+			treatmentPlan.RegimenPlan.RegimenSections[i] = &common.RegimenSection{
+				RegimenName:  regimenSection.RegimenName,
+				RegimenSteps: make([]*common.DoctorInstructionItem, len(regimenSection.RegimenSteps)),
+			}
+
+			for j, regimenStep := range regimenSection.RegimenSteps {
+				treatmentPlan.RegimenPlan.RegimenSections[i].RegimenSteps[j] = &common.DoctorInstructionItem{
+					ParentId: regimenStep.ParentId,
+					Text:     regimenStep.Text,
+				}
+			}
+		}
+	}
+
+	// populate advice
+	if len(treatmentPlan.Advice.SelectedAdvicePoints) == 0 {
+		treatmentPlan.Advice.SelectedAdvicePoints = make([]*common.DoctorInstructionItem, len(favoriteTreatmentPlan.Advice.SelectedAdvicePoints))
+		for i, advicePoint := range favoriteTreatmentPlan.Advice.SelectedAdvicePoints {
+			treatmentPlan.Advice.SelectedAdvicePoints[i] = &common.DoctorInstructionItem{
+				ParentId: advicePoint.ParentId,
+				Text:     advicePoint.Text,
+			}
+		}
+	}
+
+	return nil
+
 }

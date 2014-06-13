@@ -12,87 +12,19 @@ func InitListeners(dataAPI api.DataAPI) {
 	// subscribe to invalidate the link between a treatment plan and
 	// favorite treatment if the doctor modifies the treatments for the treatment plan
 	dispatch.Default.Subscribe(func(ev *TreatmentsAddedEvent) error {
-		doctorTreatmentPlan, err := dataAPI.GetAbridgedTreatmentPlan(ev.TreatmentPlanId, ev.DoctorId)
-		if err != nil {
-			return err
-		}
-
-		// nothing to do here if the treatment plan is not linked to a favorite treatment plan
-		if doctorTreatmentPlan.DoctorFavoriteTreatmentPlanId.Int64() == 0 {
-			return nil
-		}
-
-		// get the treatments from the favorite treatment plan to compare
-		favoritedTreatments, err := dataAPI.GetTreatmentsInFavoriteTreatmentPlan(doctorTreatmentPlan.DoctorFavoriteTreatmentPlanId.Int64())
-		if err != nil {
-			return err
-		}
-
-		// compare the treatments and if a difference is found, invalidate the linkage between treatment plan
-		// and favorite treatment plan
-		favoritedTreatmentList := &common.TreatmentList{Treatments: favoritedTreatments}
-		addedTreatmentList := &common.TreatmentList{Treatments: ev.Treatments}
-
-		if !favoritedTreatmentList.Equals(addedTreatmentList) {
-			return dataAPI.DeleteFavoriteTreatmentPlanMapping(doctorTreatmentPlan.Id.Int64(),
-				doctorTreatmentPlan.DoctorFavoriteTreatmentPlanId.Int64())
-		}
-
-		return nil
+		return markTPDeviatedIfContentChanged(ev.TreatmentPlanId, ev.DoctorId, dataAPI)
 	})
 
 	// subscribe to invalidate the link between a treatment plan and
 	// favorite treatment if the doctor modifies the regimen section
 	dispatch.Default.Subscribe(func(ev *RegimenPlanAddedEvent) error {
-		doctorTreatmentPlan, err := dataAPI.GetAbridgedTreatmentPlan(ev.TreatmentPlanId, ev.DoctorId)
-		if err != nil {
-			return err
-		}
-
-		// nothing to do here if the treatment plan is not linked to a favorite treatment plan
-		if doctorTreatmentPlan.DoctorFavoriteTreatmentPlanId.Int64() == 0 {
-			return nil
-		}
-
-		// get the treatments from the favorite treatment plan to compare
-		favoritedRegimenPlan, err := dataAPI.GetRegimenPlanInFavoriteTreatmentPlan(doctorTreatmentPlan.DoctorFavoriteTreatmentPlanId.Int64())
-		if err != nil {
-			return err
-		}
-
-		// compare the regimen plans and if they are unequal delete the mapping
-		if !favoritedRegimenPlan.Equals(ev.RegimenPlan) {
-			return dataAPI.DeleteFavoriteTreatmentPlanMapping(doctorTreatmentPlan.Id.Int64(),
-				doctorTreatmentPlan.DoctorFavoriteTreatmentPlanId.Int64())
-		}
-		return nil
+		return markTPDeviatedIfContentChanged(ev.TreatmentPlanId, ev.DoctorId, dataAPI)
 	})
 
 	// subscribe to invalidate the link between a treatment plan and
 	// favorite treatment if the doctor modifies the advice section
 	dispatch.Default.Subscribe(func(ev *AdviceAddedEvent) error {
-		doctorTreatmentPlan, err := dataAPI.GetAbridgedTreatmentPlan(ev.TreatmentPlanId, ev.DoctorId)
-		if err != nil {
-			return err
-		}
-
-		// nothing to do here if the treatment plan is not linked to a favorite treatment plan
-		if doctorTreatmentPlan.DoctorFavoriteTreatmentPlanId.Int64() == 0 {
-			return nil
-		}
-
-		// get the treatments from the favorite treatment plan to compare
-		favoritedAdvice, err := dataAPI.GetAdviceInFavoriteTreatmentPlan(doctorTreatmentPlan.DoctorFavoriteTreatmentPlanId.Int64())
-		if err != nil {
-			return err
-		}
-
-		// compare the regimen plans and if they are unequal delete the mapping
-		if !favoritedAdvice.Equals(ev.Advice) {
-			return dataAPI.DeleteFavoriteTreatmentPlanMapping(doctorTreatmentPlan.Id.Int64(),
-				doctorTreatmentPlan.DoctorFavoriteTreatmentPlanId.Int64())
-		}
-		return nil
+		return markTPDeviatedIfContentChanged(ev.TreatmentPlanId, ev.DoctorId, dataAPI)
 	})
 
 	dispatch.Default.Subscribe(func(ev *patient_visit.DiagnosisModifiedEvent) error {
@@ -103,4 +35,28 @@ func InitListeners(dataAPI api.DataAPI) {
 		return updateDiagnosisSummary(dataAPI, ev.DoctorId, ev.PatientVisitId, ev.TreatmentPlanId)
 	})
 
+}
+
+func markTPDeviatedIfContentChanged(treatmentPlanId, doctorId int64, dataAPI api.DataAPI) error {
+	doctorTreatmentPlan, err := dataAPI.GetAbridgedTreatmentPlan(treatmentPlanId, doctorId)
+	if err != nil {
+		return err
+	}
+
+	// nothing to do here if the treatment plan is not linked to a favorite treatment plan or if the content has already deviated from the source
+	if doctorTreatmentPlan.ContentSource == nil || doctorTreatmentPlan.ContentSource.ContentSourceType != common.TPContentSourceTypeFTP || doctorTreatmentPlan.ContentSource.HasDeviated {
+		return nil
+	}
+
+	// get favorite treatment plan to compare
+	favoriteTreatmentPlan, err := dataAPI.GetFavoriteTreatmentPlan(doctorTreatmentPlan.ContentSource.ContentSourceId.Int64())
+	if err != nil {
+		return err
+	}
+
+	// compare the treatment plan to the favorite treatment plan and mark as deviated if they are unequal
+	if !favoriteTreatmentPlan.EqualsDoctorTreatmentPlan(doctorTreatmentPlan) {
+		return dataAPI.MarkTPDeviatedFromContentSource(treatmentPlanId)
+	}
+	return nil
 }

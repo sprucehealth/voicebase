@@ -104,8 +104,9 @@ type PatientVisitAPI interface {
 	CreateNewPatientVisit(patientId, healthConditionId, layoutVersionId int64) (int64, error)
 	StartNewTreatmentPlanForPatientVisit(patientId, patientVisitId, doctorId, favoriteTreatmentPlanId int64) (int64, error)
 	GetAbridgedTreatmentPlan(treatmentPlanId, doctorId int64) (*common.DoctorTreatmentPlan, error)
-	GetAbridgedTreatmentPlanList(patientId int64, status string) ([]*common.DoctorTreatmentPlan, error)
+	GetAbridgedTreatmentPlanList(doctorId, patientId int64, status string) ([]*common.DoctorTreatmentPlan, error)
 	GetAbridgedTreatmentPlanListInDraftForDoctor(doctorId, patientId int64) ([]*common.DoctorTreatmentPlan, error)
+	GetPatientIdFromTreatmentPlanId(treatmentPlanId int64) (int64, error)
 	UpdatePatientVisitStatus(patientVisitId int64, message, event string) error
 	ClosePatientVisit(patientVisitId int64, event string) error
 	MarkTreatmentPlanAsSent(treatmentPlanId int64) error
@@ -131,6 +132,7 @@ type PatientVisitAPI interface {
 	AddErxStatusEvent(treatments []*common.Treatment, prescriptionStatus common.StatusEvent) error
 	GetPrescriptionStatusEventsForPatient(patientId int64) ([]common.StatusEvent, error)
 	GetPrescriptionStatusEventsForTreatment(treatmentId int64) ([]common.StatusEvent, error)
+	MarkTPDeviatedFromContentSource(treatmentPlanId int64) error
 }
 
 type RefillRequestDenialReason struct {
@@ -211,7 +213,6 @@ type FavoriteTreatmentPlanAPI interface {
 	GetTreatmentsInFavoriteTreatmentPlan(favoriteTreatmentPlanId int64) ([]*common.Treatment, error)
 	GetRegimenPlanInFavoriteTreatmentPlan(favoriteTreatmentPlanId int64) (*common.RegimenPlan, error)
 	GetAdviceInFavoriteTreatmentPlan(favoriteTreatmentPlanId int64) (*common.Advice, error)
-	DeleteFavoriteTreatmentPlanMapping(treatmentPlanId, favoriteTreatmentPlanId int64) error
 }
 
 type IntakeAPI interface {
