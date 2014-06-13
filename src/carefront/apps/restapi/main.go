@@ -120,12 +120,6 @@ func main() {
 	webMux := buildWWW(&conf, dataApi, authAPI, metricsRegistry)
 
 	router := mux.NewRouter()
-
-	// make it possible to run server locally
-	if conf.Environment == "test" {
-		router.NewRoute().Handler(restAPIMux)
-	}
-
 	router.Host(conf.APISubdomain + ".{domain:.+}").Handler(restAPIMux)
 	router.Host(conf.WebSubdomain + ".{domain:.+}").Handler(webMux)
 
