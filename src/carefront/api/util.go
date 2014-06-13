@@ -3,6 +3,7 @@ package api
 import (
 	"carefront/info_intake"
 	"database/sql"
+	"fmt"
 	"strconv"
 	"strings"
 )
@@ -35,6 +36,9 @@ func fillConditionBlock(c *info_intake.Condition, dataApi DataAPI, languageId in
 				c.PotentialAnswersId[i] = strconv.Itoa(int(answerInfo.AnswerId))
 				break
 			}
+		}
+		if c.PotentialAnswersId[i] == "" {
+			return fmt.Errorf("Unknown answer tag '%s' for question '%s'", tag, c.QuestionTag)
 		}
 	}
 	return nil

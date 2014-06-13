@@ -79,7 +79,7 @@ func (d *DataService) GetPatientLayout(layoutVersionId, languageId int64) ([]byt
 	return layoutBlob, err
 }
 
-func (d *DataService) CreateLayoutVersion(layout []byte, syntaxVersion int64, healthConditionId int64, role, purpose, comment string) (int64, error) {
+func (d *DataService) CreateLayoutVersion(layout []byte, syntaxVersion, healthConditionId int64, role, purpose, comment string) (int64, error) {
 	tx, err := d.db.Begin()
 	if err != nil {
 		return 0, err
@@ -118,7 +118,7 @@ func (d *DataService) CreateLayoutVersion(layout []byte, syntaxVersion int64, he
 	return layoutVersionId, nil
 }
 
-func (d *DataService) CreatePatientLayout(layout []byte, languageId int64, layoutVersionId int64, healthConditionId int64) (int64, error) {
+func (d *DataService) CreatePatientLayout(layout []byte, languageId, layoutVersionId, healthConditionId int64) (int64, error) {
 	tx, err := d.db.Begin()
 	if err != nil {
 		return 0, err
@@ -158,7 +158,7 @@ func (d *DataService) CreatePatientLayout(layout []byte, languageId int64, layou
 	return patientLayoutVersionId, nil
 }
 
-func (d *DataService) CreateDoctorLayout(layout []byte, layoutVersionId int64, healthConditionId int64) (int64, error) {
+func (d *DataService) CreateDoctorLayout(layout []byte, layoutVersionId, healthConditionId int64) (int64, error) {
 	tx, err := d.db.Begin()
 	if err != nil {
 		return 0, nil
