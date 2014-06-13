@@ -414,7 +414,56 @@ func TestFavoriteTreatmentPlan_BreakingMappingOnModify(t *testing.T) {
 		responseData.TreatmentPlan.ContentSource.ContentSourceId.Int64() == 0 || !responseData.TreatmentPlan.ContentSource.HasDeviated {
 		t.Fatalf("Expected the treatment plan to indicate that it has deviated from the original content source (ftp) but it doesnt do so")
 	}
+}
 
+// This test is to cover the scenario where if a doctor modifies,say, the treatment section after
+// starting from a favorite treatment plan, we ensure that the rest of the sections are still prefilled
+// with the contents of the favorite treatment plan
+func TestFavoriteTreatmentPlan_BreakingMappingOnModify_PrefillRestOfData(t *testing.T) {
+	testData := SetupIntegrationTest(t)
+	defer TearDownIntegrationTest(t, testData)
+
+	doctorId := GetDoctorIdOfCurrentPrimaryDoctor(testData, t)
+	doctor, err := testData.DataApi.GetDoctorFromId(doctorId)
+	if err != nil {
+		t.Fatalf("Unable to get doctor from id: %s", err)
+	}
+
+	patientVisitResponse, treatmentPlan := SignupAndSubmitPatientVisitForRandomPatient(t, testData, doctor)
+
+	// create a favorite treatment plan
+	favoriteTreamentPlan := CreateFavoriteTreatmentPlan(patientVisitResponse.PatientVisitId, treatmentPlan.Id.Int64(), testData, doctor, t)
+
+	// pick this favorite treatment plan for the visit
+	responseData := PickATreatmentPlanForPatientVisit(patientVisitResponse.PatientVisitId, doctor, favoriteTreamentPlan, testData, t)
+
+	// modify treatment
+	favoriteTreamentPlan.TreatmentList.Treatments[0].DispenseValue = encoding.HighPrecisionFloat64(123.12345)
+	addAndGetTreatmentsForPatientVisit(testData, favoriteTreamentPlan.TreatmentList.Treatments, doctor.AccountId.Int64(), responseData.TreatmentPlan.Id.Int64(), t)
+
+	// now lets attempt to get the abbreviated version of the treatment plan
+	ts := httptest.NewServer(doctor_treatment_plan.NewDoctorTreatmentPlanHandler(testData.DataApi))
+	defer ts.Close()
+
+	params := url.Values{}
+	params.Set("treatment_plan_id", strconv.FormatInt(responseData.TreatmentPlan.Id.Int64(), 10))
+	responseData = &doctor_treatment_plan.DoctorTreatmentPlanResponse{}
+	if resp, err := AuthGet(ts.URL+"?"+params.Encode(), doctor.AccountId.Int64()); err != nil {
+		t.Fatalf("Unable to make call to get treatment plan for patient visit")
+	} else if resp.StatusCode != http.StatusOK {
+		t.Fatalf("Expected %d response for getting treatment plan instead got %d", http.StatusOK, resp.StatusCode)
+	} else if json.NewDecoder(resp.Body).Decode(responseData); err != nil {
+		t.Fatalf("Unable to unmarshal response into struct %s", err)
+	}
+
+	// the treatments should be in the committed state while the regimen and advice should still be prefilled in the uncommitted state
+	if responseData.TreatmentPlan.TreatmentList == nil || len(responseData.TreatmentPlan.TreatmentList.Treatments) == 0 || responseData.TreatmentPlan.TreatmentList.Status != api.STATUS_COMMITTED {
+		t.Fatal("Expected treatments to exist and be in COMMITTED state")
+	} else if responseData.TreatmentPlan.RegimenPlan == nil || len(responseData.TreatmentPlan.RegimenPlan.RegimenSections) == 0 || responseData.TreatmentPlan.RegimenPlan.Status != api.STATUS_UNCOMMITTED {
+		t.Fatal("Expected regimen plan to be prefilled with FTP and be in UNCOMMITTED state")
+	} else if responseData.TreatmentPlan.Advice == nil || len(responseData.TreatmentPlan.Advice.SelectedAdvicePoints) == 0 || responseData.TreatmentPlan.Advice.Status != api.STATUS_UNCOMMITTED {
+		t.Fatal("Expected advice section to be prefilled with FTP and be in UNCOMMITTED state")
+	}
 }
 
 // This test ensures that the user can create a favorite treatment plan
@@ -824,7 +873,7 @@ func TestFavoriteTreatmentPlan_InContextOfTreatmentPlan_TwoDontMatch(t *testing.
 	if err != nil {
 		t.Fatalf("Unable to get abbreviated favorite treatment plan: %s", err)
 	} else if abbreviatedTreatmentPlan.ContentSource != nil {
-		t.Fatalf("Expected the treatment plan to indicate that it has deviated from content source but it doesnt")
+		t.Fatalf("Expected the treatment plan to not indicate that it was linked to another doctor's favorite treatment plan")
 	}
 
 }
