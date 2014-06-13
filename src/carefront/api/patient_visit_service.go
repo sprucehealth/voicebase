@@ -196,6 +196,24 @@ func (d *DataService) getAbridgedTreatmentPlanFromRows(rows *sql.Rows, doctorId 
 			return nil, err
 		}
 
+		// get the creation date of the parent since this information is useful for the client
+		var creationDate time.Time
+		switch drTreatmentPlan.Parent.ParentType {
+		case common.TPParentTypePatientVisit:
+			if err := d.db.QueryRow(`select creation_date from patient_visit where id = ?`, drTreatmentPlan.Parent.ParentId.Int64()).Scan(&creationDate); err == sql.ErrNoRows {
+				return nil, NoRowsError
+			} else if err != nil {
+				return nil, err
+			}
+		case common.TPParentTypeTreatmentPlan:
+			if err := d.db.QueryRow(`select creation_date from treatment_plan where id = ?`, drTreatmentPlan.Parent.ParentId.Int64()).Scan(&creationDate); err == sql.ErrNoRows {
+				return nil, NoRowsError
+			} else if err != nil {
+				return nil, err
+			}
+		}
+		drTreatmentPlan.Parent.CreationDate = creationDate
+
 		// only populate content source information if we are retrieving this information for the same doctor that created the treatment plan
 		drTreatmentPlan.ContentSource = &common.TreatmentPlanContentSource{}
 		err = d.db.QueryRow(`select content_source_id, content_source_type, has_deviated from treatment_plan_content_source where treatment_plan_id = ? and doctor_id = ?`, drTreatmentPlan.Id.Int64(), doctorId).Scan(&drTreatmentPlan.ContentSource.ContentSourceId, &drTreatmentPlan.ContentSource.ContentSourceType, &drTreatmentPlan.ContentSource.HasDeviated)

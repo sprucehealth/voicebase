@@ -185,9 +185,9 @@ const (
 // TreatmentPlanParent keeps track of the parent (either patient visit or previous treatment plan)
 // so that we know how the treatment plan came into existence
 type TreatmentPlanParent struct {
-	ParentId           encoding.ObjectId `json:"parent_id"`
-	ParentType         string            `json:"parent_type"`
-	ParentCreationDate time.Time         `json:"parent_creation_date"`
+	ParentId     encoding.ObjectId `json:"parent_id"`
+	ParentType   string            `json:"parent_type"`
+	CreationDate time.Time         `json:"parent_creation_date"`
 }
 
 // TreatmentPlanContentSource keeps track of the source of the content
