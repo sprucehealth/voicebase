@@ -66,7 +66,7 @@ func TestNewRefillRequestForExistingPatientAndExistingTreatment(t *testing.T) {
 	patientVisitResponse := CreatePatientVisitForPatient(signedupPatientResponse.Patient.PatientId.Int64(), testData, t)
 	// start a new treatemtn plan for the patient visit
 	treatmentPlanId, err := testData.DataApi.StartNewTreatmentPlanForPatientVisit(signedupPatientResponse.Patient.PatientId.Int64(),
-		patientVisitResponse.PatientVisitId, doctor.DoctorId.Int64(), 0)
+		patientVisitResponse.PatientVisitId, doctor.DoctorId.Int64(), nil)
 	if err != nil {
 		t.Fatal("Unable to start new treatment plan for patient visit " + err.Error())
 	}
@@ -1697,7 +1697,7 @@ func setUpDeniedRefillRequestWithDNTFForLinkedTreatment(t *testing.T, testData T
 	patientVisitResponse := CreatePatientVisitForPatient(signedupPatientResponse.Patient.PatientId.Int64(), testData, t)
 	// start a new treatemtn plan for the patient visit
 	treatmentPlanId, err := testData.DataApi.StartNewTreatmentPlanForPatientVisit(signedupPatientResponse.Patient.PatientId.Int64(),
-		patientVisitResponse.PatientVisitId, doctor.DoctorId.Int64(), 0)
+		patientVisitResponse.PatientVisitId, doctor.DoctorId.Int64(), nil)
 	if err != nil {
 		t.Fatal("Unable to start new treatment plan for patient visit " + err.Error())
 	}
@@ -2460,7 +2460,7 @@ func TestRefillRequestComingFromDifferentPharmacyThanDispensedPrescription(t *te
 	patientVisitResponse := CreatePatientVisitForPatient(signedupPatientResponse.Patient.PatientId.Int64(), testData, t)
 	// start a new treatemtn plan for the patient visit
 	treatmentPlanId, err := testData.DataApi.StartNewTreatmentPlanForPatientVisit(signedupPatientResponse.Patient.PatientId.Int64(),
-		patientVisitResponse.PatientVisitId, doctor.DoctorId.Int64(), 0)
+		patientVisitResponse.PatientVisitId, doctor.DoctorId.Int64(), nil)
 	if err != nil {
 		t.Fatal("Unable to start new treatment plan for patient visit " + err.Error())
 	}

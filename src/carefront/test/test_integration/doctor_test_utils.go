@@ -18,6 +18,7 @@ import (
 	"carefront/apiservice"
 	"carefront/common"
 	"carefront/doctor_treatment_plan"
+	"carefront/encoding"
 	"carefront/libs/erx"
 	"carefront/patient_file"
 	"carefront/patient_visit"
@@ -197,13 +198,21 @@ func PickATreatmentPlanForPatientVisit(patientVisitId int64, doctor *common.Doct
 	ts := httptest.NewServer(doctorPickTreatmentPlanHandler)
 	defer ts.Close()
 
-	params := make(map[string]interface{})
-	params["patient_visit_id"] = strconv.FormatInt(patientVisitId, 10)
-	if favoriteTreatmentPlan != nil {
-		params["dr_favorite_treatment_plan_id"] = strconv.FormatInt(favoriteTreatmentPlan.Id.Int64(), 10)
+	requestData := doctor_treatment_plan.PickTreatmentPlanRequestData{
+		TPParent: &common.TreatmentPlanParent{
+			ParentId:   encoding.NewObjectId(patientVisitId),
+			ParentType: common.TPParentTypePatientVisit,
+		},
 	}
 
-	jsonData, err := json.Marshal(params)
+	if favoriteTreatmentPlan != nil {
+		requestData.TPContentSource = &common.TreatmentPlanContentSource{
+			ContentSourceType: common.TPContentSourceTypeFTP,
+			ContentSourceId:   favoriteTreatmentPlan.Id,
+		}
+	}
+
+	jsonData, err := json.Marshal(requestData)
 	if err != nil {
 		t.Fatal(err)
 	}

@@ -26,6 +26,11 @@ type DoctorTreatmentPlanRequestData struct {
 	Abridged                      bool  `schema:"abridged" json:"abridged"`
 }
 
+type PickTreatmentPlanRequestData struct {
+	TPContentSource *common.TreatmentPlanContentSource `json:"content_source"`
+	TPParent        *common.TreatmentPlanParent        `json:"parent"`
+}
+
 type DoctorTreatmentPlanResponse struct {
 	TreatmentPlan *common.DoctorTreatmentPlan `json:"treatment_plan"`
 }
@@ -88,17 +93,30 @@ func (d *doctorTreatmentPlanHandler) getTreatmentPlan(w http.ResponseWriter, r *
 }
 
 func (d *doctorTreatmentPlanHandler) pickATreatmentPlan(w http.ResponseWriter, r *http.Request) {
-	requestData := &DoctorTreatmentPlanRequestData{}
+	requestData := &PickTreatmentPlanRequestData{}
 
 	if err := apiservice.DecodeRequestData(requestData, r); err != nil {
 		apiservice.WriteDeveloperError(w, http.StatusBadRequest, err.Error())
 		return
-	} else if requestData.PatientVisitId == 0 {
-		apiservice.WriteDeveloperError(w, http.StatusBadRequest, "PatientVisitId not specified")
+	} else if requestData.TPParent == nil || requestData.TPParent.ParentId.Int64() == 0 {
+		apiservice.WriteValidationError("Expected the parent id to be specified for the treatment plan", w, r)
+		return
+	} else if requestData.TPParent.ParentType != common.TPParentTypePatientVisit && requestData.TPParent.ParentType != common.TPParentTypeTreatmentPlan {
+		apiservice.WriteValidationError("Expected the parent type to either by PATIENT_VISIT or TREATMENT_PLAN", w, r)
 		return
 	}
 
-	patientVisitReviewData, statusCode, err := apiservice.ValidateDoctorAccessToPatientVisitAndGetRelevantData(requestData.PatientVisitId, apiservice.GetContext(r).AccountId, d.dataApi)
+	patientVisitId := requestData.TPParent.ParentId.Int64()
+	if requestData.TPParent.ParentType == common.TPParentTypeTreatmentPlan {
+		var err error
+		patientVisitId, err = d.dataApi.GetPatientVisitIdFromTreatmentPlanId(requestData.TPParent.ParentId.Int64())
+		if err != nil {
+			apiservice.WriteError(err, w, r)
+			return
+		}
+	}
+
+	patientVisitReviewData, statusCode, err := apiservice.ValidateDoctorAccessToPatientVisitAndGetRelevantData(patientVisitId, apiservice.GetContext(r).AccountId, d.dataApi)
 	if err != nil {
 		apiservice.WriteDeveloperError(w, statusCode, err.Error())
 		return
@@ -112,8 +130,9 @@ func (d *doctorTreatmentPlanHandler) pickATreatmentPlan(w http.ResponseWriter, r
 
 	// Start new treatment plan for patient visit (indicate favorite treatment plan if indicated)
 	// Note that this method deletes any pre-existing treatment plan
+
 	treatmentPlanId, err := d.dataApi.StartNewTreatmentPlanForPatientVisit(patientVisitReviewData.PatientVisit.PatientId.Int64(),
-		patientVisitReviewData.PatientVisit.PatientVisitId.Int64(), patientVisitReviewData.DoctorId, requestData.DoctorFavoriteTreatmentPlanId)
+		patientVisitReviewData.PatientVisit.PatientVisitId.Int64(), patientVisitReviewData.DoctorId, requestData.TPContentSource)
 	if err != nil {
 		apiservice.WriteDeveloperError(w, http.StatusInternalServerError, "Unable to start new treatment plan for patient visit: "+err.Error())
 		return
@@ -133,7 +152,7 @@ func (d *doctorTreatmentPlanHandler) pickATreatmentPlan(w http.ResponseWriter, r
 
 	dispatch.Default.Publish(&NewTreatmentPlanStartedEvent{
 		DoctorId:        patientVisitReviewData.DoctorId,
-		PatientVisitId:  requestData.PatientVisitId,
+		PatientVisitId:  patientVisitId,
 		TreatmentPlanId: treatmentPlanId,
 	})
 

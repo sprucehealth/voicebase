@@ -270,7 +270,7 @@ func (d *DataService) GetPatientVisitIdFromTreatmentPlanId(treatmentPlanId int64
 	return patientVisitId, nil
 }
 
-func (d *DataService) StartNewTreatmentPlanForPatientVisit(patientId, patientVisitId, doctorId, favoriteTreatmentPlanId int64) (int64, error) {
+func (d *DataService) StartNewTreatmentPlanForPatientVisit(patientId, patientVisitId, doctorId int64, contentSource *common.TreatmentPlanContentSource) (int64, error) {
 	tx, err := d.db.Begin()
 	if err != nil {
 		return 0, err
@@ -311,8 +311,8 @@ func (d *DataService) StartNewTreatmentPlanForPatientVisit(patientId, patientVis
 	}
 
 	// track the original content source for the treatment plan if it originates from a favorite treatment plan
-	if favoriteTreatmentPlanId != 0 {
-		_, err := tx.Exec(`insert into treatment_plan_content_source (treatment_plan_id, doctor_id, content_source_id, content_source_type) values (?,?,?,?)`, treatmentPlanId, doctorId, favoriteTreatmentPlanId, common.TPContentSourceTypeFTP)
+	if contentSource != nil && contentSource.ContentSourceType == common.TPContentSourceTypeFTP {
+		_, err := tx.Exec(`insert into treatment_plan_content_source (treatment_plan_id, doctor_id, content_source_id, content_source_type) values (?,?,?,?)`, treatmentPlanId, doctorId, contentSource.ContentSourceId.Int64(), common.TPContentSourceTypeFTP)
 		if err != nil {
 			tx.Rollback()
 			return 0, err
