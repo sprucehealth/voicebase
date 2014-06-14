@@ -217,7 +217,7 @@ func PickATreatmentPlanForPatientVisit(patientVisitId int64, doctor *common.Doct
 		t.Fatal(err)
 	}
 
-	resp, err := AuthPut(ts.URL, "application/json", bytes.NewReader(jsonData), doctor.AccountId.Int64())
+	resp, err := AuthPost(ts.URL, "application/json", bytes.NewReader(jsonData), doctor.AccountId.Int64())
 	if err != nil {
 		t.Fatalf("Unable to pick a treatment plan for the patient visit doctor %s", err)
 	}

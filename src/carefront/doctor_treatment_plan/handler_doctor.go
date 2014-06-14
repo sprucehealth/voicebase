@@ -39,7 +39,7 @@ func (d *doctorTreatmentPlanHandler) ServeHTTP(w http.ResponseWriter, r *http.Re
 	switch r.Method {
 	case apiservice.HTTP_GET:
 		d.getTreatmentPlan(w, r)
-	case apiservice.HTTP_PUT:
+	case apiservice.HTTP_POST:
 		d.pickATreatmentPlan(w, r)
 	default:
 		w.WriteHeader(http.StatusNotFound)
