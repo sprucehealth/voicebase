@@ -255,11 +255,32 @@ func (d *doctorTreatmentPlanHandler) pickATreatmentPlan(w http.ResponseWriter, r
 	} else if requestData.TPParent.ParentType != common.TPParentTypePatientVisit && requestData.TPParent.ParentType != common.TPParentTypeTreatmentPlan {
 		apiservice.WriteValidationError("Expected the parent type to either by PATIENT_VISIT or TREATMENT_PLAN", w, r)
 		return
+	} else if requestData.TPContentSource != nil {
+		if requestData.TPContentSource.ContentSourceType != common.TPContentSourceTypeFTP && requestData.TPContentSource.ContentSourceType != common.TPContentSourceTypeTreatmentPlan {
+			apiservice.WriteValidationError(fmt.Sprintf("Expected content source type be either FAVORITE_TREATMENT_PLAN or TREATMENT_PLAN but instead it was %s", requestData.TPContentSource.ContentSourceType), w, r)
+			return
+		}
+	}
+
+	doctorId, err := d.dataApi.GetDoctorIdFromAccountId(apiservice.GetContext(r).AccountId)
+	if err != nil {
+		apiservice.WriteError(err, w, r)
+		return
 	}
 
 	patientVisitId := requestData.TPParent.ParentId.Int64()
-	if requestData.TPParent.ParentType == common.TPParentTypeTreatmentPlan {
-		var err error
+	switch requestData.TPParent.ParentType {
+	case common.TPParentTypeTreatmentPlan:
+		// ensure that parent treatment plan is ACTIVE
+		parentTreatmentPlan, err := d.dataApi.GetAbridgedTreatmentPlan(requestData.TPParent.ParentId.Int64(), doctorId)
+		if err != nil {
+			apiservice.WriteError(err, w, r)
+			return
+		} else if parentTreatmentPlan.Status != api.STATUS_ACTIVE {
+			apiservice.WriteValidationError("parent treatment plan has to be ACTIVE", w, r)
+			return
+		}
+
 		patientVisitId, err = d.dataApi.GetPatientVisitIdFromTreatmentPlanId(requestData.TPParent.ParentId.Int64())
 		if err != nil {
 			apiservice.WriteError(err, w, r)
@@ -272,15 +293,6 @@ func (d *doctorTreatmentPlanHandler) pickATreatmentPlan(w http.ResponseWriter, r
 		apiservice.WriteDeveloperError(w, statusCode, err.Error())
 		return
 	}
-
-	patientVisitStatus := patientVisitReviewData.PatientVisit.Status
-	if patientVisitStatus != api.CASE_STATUS_REVIEWING && patientVisitStatus != api.CASE_STATUS_SUBMITTED {
-		apiservice.WriteDeveloperError(w, http.StatusForbidden, fmt.Sprintf("Unable to start a new treatment plan for a patient visit that is in the %s state", patientVisitReviewData.PatientVisit.Status))
-		return
-	}
-
-	// Start new treatment plan for patient visit (indicate favorite treatment plan if indicated)
-	// Note that this method deletes any pre-existing treatment plan
 
 	treatmentPlanId, err := d.dataApi.StartNewTreatmentPlan(patientVisitReviewData.PatientVisit.PatientId.Int64(),
 		patientVisitReviewData.PatientVisit.PatientVisitId.Int64(), patientVisitReviewData.DoctorId, requestData.TPParent, requestData.TPContentSource)
