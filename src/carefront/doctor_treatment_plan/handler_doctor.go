@@ -106,12 +106,12 @@ func (d *doctorTreatmentPlanHandler) submitTreatmentPlan(w http.ResponseWriter, 
 			apiservice.WriteError(err, w, r)
 			return
 		} else if treatmentPlan.Status != api.STATUS_ACTIVE {
-			apiservice.WriteValidationError(fmt.Sprintf("Expected the parent treatment plan to be in the active state but its in %s state"), w, r)
+			apiservice.WriteValidationError(fmt.Sprintf("Expected the parent treatment plan to be in the active state but its in %s state", treatmentPlan.Status), w, r)
 			return
 		}
 
 	default:
-		apiservice.WriteValidationError(fmt.Sprintf("Parent of treatment plan is unexpected parent of type %s"), w, r)
+		apiservice.WriteValidationError(fmt.Sprintf("Parent of treatment plan is unexpected parent of type %s", treatmentPlan.Parent.ParentType), w, r)
 		return
 	}
 

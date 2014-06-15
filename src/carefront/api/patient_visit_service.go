@@ -370,6 +370,8 @@ func (d *DataService) ActivateTreatmentPlan(treatmentPlanId, doctorId int64) err
 		return err
 	}
 
+	// Based on the parent of the treatment plan, ensure to "close" the patient visit
+	// or to inactivate previous treatment plan before marking the new one as ACTIVE
 	switch treatmentPlan.Parent.ParentType {
 	case common.TPParentTypePatientVisit:
 		// mark the patient visit as TREATED

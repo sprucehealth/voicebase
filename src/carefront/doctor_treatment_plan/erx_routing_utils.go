@@ -37,6 +37,7 @@ func routeRxInTreatmentPlanToPharmacy(treatmentPlanId int64, patient *common.Pat
 		return nil
 	}
 
+	// Send the patient information and new medications to be prescribed, to dosespot
 	if err := erxAPI.StartPrescribingPatient(doctor.DoseSpotClinicianId, patient, treatments, patient.Pharmacy.SourceId); err != nil {
 		return err
 	}
@@ -51,7 +52,7 @@ func routeRxInTreatmentPlanToPharmacy(treatmentPlanId int64, patient *common.Pat
 		return err
 	}
 
-	// Now, send the prescription to the pharmacy
+	// Now, request the medications to be sent to the patient's preferred pharmacy
 	unSuccessfulTreatmentIds, err := erxAPI.SendMultiplePrescriptions(doctor.DoseSpotClinicianId, patient, treatments)
 	if err != nil {
 		return err
