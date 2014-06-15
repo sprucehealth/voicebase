@@ -249,6 +249,11 @@ func (d *DataService) GetAbridgedTreatmentPlanListInDraftForDoctor(doctorId, pat
 	return d.getAbridgedTreatmentPlanFromRows(rows, doctorId)
 }
 
+func (d *DataService) DeleteTreatmentPlan(treatmentPlanId int64) error {
+	_, err := d.db.Exec(`delete from treatment_plan where id = ?`, treatmentPlanId)
+	return err
+}
+
 func (d *DataService) GetPatientIdFromTreatmentPlanId(treatmentPlanId int64) (int64, error) {
 	var patientId int64
 	err := d.db.QueryRow(`select patient_id from treatment_plan where id = ?`, treatmentPlanId).Scan(&patientId)

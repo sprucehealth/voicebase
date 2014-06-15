@@ -239,7 +239,7 @@ func SubmitPatientVisitBackToPatient(treatmentPlanId int64, doctor *common.Docto
 	ts := httptest.NewServer(doctorTreatmentPlanHandler)
 	defer ts.Close()
 
-	requestData := &doctor_treatment_plan.SubmitTreatmentPlanRequestData{
+	requestData := &doctor_treatment_plan.TreatmentPlanRequestData{
 		TreatmentPlanId: encoding.NewObjectId(treatmentPlanId),
 	}
 

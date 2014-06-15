@@ -356,7 +356,7 @@ func TestDoctorSubmissionOfPatientVisitReview(t *testing.T) {
 		t.Fatal("Unable to get doctor object from id: " + err.Error())
 	}
 
-	jsonData, err := json.Marshal(&doctor_treatment_plan.SubmitTreatmentPlanRequestData{})
+	jsonData, err := json.Marshal(&doctor_treatment_plan.TreatmentPlanRequestData{})
 	if err != nil {
 		t.Fatal(err)
 	}
@@ -377,7 +377,7 @@ func TestDoctorSubmissionOfPatientVisitReview(t *testing.T) {
 	StartReviewingPatientVisit(patientVisitResponse.PatientVisitId, doctor, testData, t)
 	responseData := PickATreatmentPlanForPatientVisit(patientVisitResponse.PatientVisitId, doctor, nil, testData, t)
 
-	jsonData, err = json.Marshal(doctor_treatment_plan.SubmitTreatmentPlanRequestData{
+	jsonData, err = json.Marshal(doctor_treatment_plan.TreatmentPlanRequestData{
 		TreatmentPlanId: responseData.TreatmentPlan.Id,
 	})
 

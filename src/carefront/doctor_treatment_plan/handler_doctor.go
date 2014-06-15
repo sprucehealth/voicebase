@@ -39,7 +39,7 @@ type PickTreatmentPlanRequestData struct {
 	TPParent        *common.TreatmentPlanParent        `json:"parent"`
 }
 
-type SubmitTreatmentPlanRequestData struct {
+type TreatmentPlanRequestData struct {
 	TreatmentPlanId encoding.ObjectId `json:"treatment_plan_id"`
 }
 
@@ -60,8 +60,51 @@ func (d *doctorTreatmentPlanHandler) ServeHTTP(w http.ResponseWriter, r *http.Re
 	}
 }
 
+func (d *doctorTreatmentPlanHandler) deleteTreatmentPlan(w http.ResponseWriter, r *http.Request) {
+	requestData := &TreatmentPlanRequestData{}
+	if err := apiservice.DecodeRequestData(requestData, r); err != nil {
+		apiservice.WriteError(err, w, r)
+		return
+	} else if requestData.TreatmentPlanId.Int64() == 0 {
+		apiservice.WriteValidationError("treatment_plan_id must be specified", w, r)
+		return
+	}
+
+	doctorId, err := d.dataApi.GetDoctorIdFromAccountId(apiservice.GetContext(r).AccountId)
+	if err != nil {
+		apiservice.WriteError(err, w, r)
+		return
+	}
+
+	treatmentPlan, err := d.dataApi.GetAbridgedTreatmentPlan(requestData.TreatmentPlanId.Int64(), doctorId)
+	if err != nil {
+		apiservice.WriteError(err, w, r)
+		return
+	}
+
+	// Ensure treatment plan is owned by this doctor
+	if doctorId != treatmentPlan.DoctorId.Int64() {
+		apiservice.WriteValidationError("Cannot delete treatment plan not owned by doctor", w, r)
+		return
+	}
+
+	// Ensure treatment plan is a draft
+	if treatmentPlan.Status != api.STATUS_DRAFT {
+		apiservice.WriteValidationError("only draft treatment plan can be deleted", w, r)
+		return
+	}
+
+	// Delete treatment plan
+	if err := d.dataApi.DeleteTreatmentPlan(treatmentPlan.Id.Int64()); err != nil {
+		apiservice.WriteError(err, w, r)
+		return
+	}
+
+	apiservice.WriteJSONToHTTPResponseWriter(w, http.StatusOK, apiservice.SuccessfulGenericJSONResponse())
+}
+
 func (d *doctorTreatmentPlanHandler) submitTreatmentPlan(w http.ResponseWriter, r *http.Request) {
-	var requestData SubmitTreatmentPlanRequestData
+	var requestData TreatmentPlanRequestData
 	if err := apiservice.DecodeRequestData(&requestData, r); err != nil {
 		apiservice.WriteError(err, w, r)
 		return
