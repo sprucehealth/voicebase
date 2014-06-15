@@ -282,8 +282,8 @@ func (d *doctorTreatmentPlanHandler) pickATreatmentPlan(w http.ResponseWriter, r
 	// Start new treatment plan for patient visit (indicate favorite treatment plan if indicated)
 	// Note that this method deletes any pre-existing treatment plan
 
-	treatmentPlanId, err := d.dataApi.StartNewTreatmentPlanForPatientVisit(patientVisitReviewData.PatientVisit.PatientId.Int64(),
-		patientVisitReviewData.PatientVisit.PatientVisitId.Int64(), patientVisitReviewData.DoctorId, requestData.TPContentSource)
+	treatmentPlanId, err := d.dataApi.StartNewTreatmentPlan(patientVisitReviewData.PatientVisit.PatientId.Int64(),
+		patientVisitReviewData.PatientVisit.PatientVisitId.Int64(), patientVisitReviewData.DoctorId, requestData.TPParent, requestData.TPContentSource)
 	if err != nil {
 		apiservice.WriteDeveloperError(w, http.StatusInternalServerError, "Unable to start new treatment plan for patient visit: "+err.Error())
 		return

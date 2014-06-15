@@ -275,15 +275,13 @@ func (d *DataService) GetPatientVisitIdFromTreatmentPlanId(treatmentPlanId int64
 	return patientVisitId, nil
 }
 
-func (d *DataService) StartNewTreatmentPlanForPatientVisit(patientId, patientVisitId, doctorId int64, contentSource *common.TreatmentPlanContentSource) (int64, error) {
+func (d *DataService) StartNewTreatmentPlan(patientId, patientVisitId, doctorId int64, parent *common.TreatmentPlanParent, contentSource *common.TreatmentPlanContentSource) (int64, error) {
 	tx, err := d.db.Begin()
 	if err != nil {
 		return 0, err
 	}
 
-	// when starting a new treatment plan, ensure to delete any old treatment plan
-	// this will probably have to be handled more gracefully when we have versioning of treatment plans
-	_, err = tx.Exec(`delete from treatment_plan where id = (select treatment_plan_id from treatment_plan_parent where parent_id = ? and parent_type = ?) and status = ?`, patientVisitId, common.TPParentTypePatientVisit, STATUS_DRAFT)
+	_, err = tx.Exec(`delete from treatment_plan where id = (select treatment_plan_id from treatment_plan_parent where parent_id = ? and parent_type = ?) and status = ?`, parent.ParentId.Int64(), parent.ParentType, STATUS_DRAFT)
 	if err != nil {
 		tx.Rollback()
 		return 0, err
@@ -308,16 +306,16 @@ func (d *DataService) StartNewTreatmentPlanForPatientVisit(patientId, patientVis
 		return 0, err
 	}
 
-	// track the parent information for treatment plan (right now its just a patient visit but with versioning it will be the previous treatment plan)
-	_, err = tx.Exec(`insert into treatment_plan_parent (treatment_plan_id,parent_id, parent_type) values (?,?,?)`, treatmentPlanId, patientVisitId, common.TPParentTypePatientVisit)
+	// track the parent information for treatment plan
+	_, err = tx.Exec(`insert into treatment_plan_parent (treatment_plan_id,parent_id, parent_type) values (?,?,?)`, treatmentPlanId, parent.ParentId.Int64(), parent.ParentType)
 	if err != nil {
 		tx.Rollback()
 		return 0, err
 	}
 
-	// track the original content source for the treatment plan if it originates from a favorite treatment plan
-	if contentSource != nil && contentSource.ContentSourceType == common.TPContentSourceTypeFTP {
-		_, err := tx.Exec(`insert into treatment_plan_content_source (treatment_plan_id, doctor_id, content_source_id, content_source_type) values (?,?,?,?)`, treatmentPlanId, doctorId, contentSource.ContentSourceId.Int64(), common.TPContentSourceTypeFTP)
+	// track the original content source for the treatment plan
+	if contentSource != nil {
+		_, err := tx.Exec(`insert into treatment_plan_content_source (treatment_plan_id, doctor_id, content_source_id, content_source_type) values (?,?,?,?)`, treatmentPlanId, doctorId, contentSource.ContentSourceId.Int64(), contentSource.ContentSourceType)
 		if err != nil {
 			tx.Rollback()
 			return 0, err
