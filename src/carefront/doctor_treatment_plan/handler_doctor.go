@@ -55,6 +55,8 @@ func (d *doctorTreatmentPlanHandler) ServeHTTP(w http.ResponseWriter, r *http.Re
 		d.pickATreatmentPlan(w, r)
 	case apiservice.HTTP_PUT:
 		d.submitTreatmentPlan(w, r)
+	case apiservice.HTTP_DELETE:
+		d.deleteTreatmentPlan(w, r)
 	default:
 		w.WriteHeader(http.StatusNotFound)
 	}

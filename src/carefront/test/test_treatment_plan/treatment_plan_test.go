@@ -1,8 +1,13 @@
 package test_treatment_plan
 
 import (
+	"bytes"
 	"carefront/api"
+	"carefront/doctor_treatment_plan"
 	"carefront/test/test_integration"
+	"encoding/json"
+	"net/http"
+	"net/http/httptest"
 	"testing"
 )
 
@@ -162,5 +167,121 @@ func TestTreatmentPlanList_FavTP(t *testing.T) {
 	drTreatmentPlan = test_integration.GetDoctorTreatmentPlanById(treatmentPlanResponse.DraftTreatmentPlans[0].Id.Int64(), doctor2.AccountId.Int64(), testData, t)
 	if drTreatmentPlan.ContentSource != nil && drTreatmentPlan.ContentSource.ContentSourceId.Int64() != 0 {
 		t.Fatalf("Expected content source to indicate that treatment plan deviated from original content source but it doesnt")
+	}
+}
+
+func TestTreatmentPlanDelete(t *testing.T) {
+	testData := test_integration.SetupIntegrationTest(t)
+	defer test_integration.TearDownIntegrationTest(t, testData)
+	doctorId := test_integration.GetDoctorIdOfCurrentPrimaryDoctor(testData, t)
+	doctor, err := testData.DataApi.GetDoctorFromId(doctorId)
+	if err != nil {
+		t.Fatal("Unable to get doctor from doctor id " + err.Error())
+	}
+
+	patientVisitResponse, treatmentPlan := test_integration.SignupAndSubmitPatientVisitForRandomPatient(t, testData, doctor)
+	patientId, err := testData.DataApi.GetPatientIdFromPatientVisitId(patientVisitResponse.PatientVisitId)
+	if err != nil {
+		t.Fatalf(err.Error())
+	}
+
+	// should be able to delete this treatment plan owned by doctor
+	test_integration.DeleteTreatmentPlanForDoctor(treatmentPlan.Id.Int64(), doctor.AccountId.Int64(), testData, t)
+
+	// there should be no drafts left given that we just deleted it
+	treatmentPlanResponse := test_integration.GetListOfTreatmentPlansForPatient(patientId, doctor.AccountId.Int64(), testData, t)
+	if len(treatmentPlanResponse.DraftTreatmentPlans) != 0 {
+		t.Fatalf("Expected no treatment plans instead got %d", len(treatmentPlanResponse.DraftTreatmentPlans))
+	} else if len(treatmentPlanResponse.ActiveTreatmentPlans) != 0 {
+		t.Fatalf("Expected no treatment plans instead got %d", len(treatmentPlanResponse.ActiveTreatmentPlans))
+	}
+}
+
+func TestTreatmentPlanDelete_ActiveTP(t *testing.T) {
+	testData := test_integration.SetupIntegrationTest(t)
+	defer test_integration.TearDownIntegrationTest(t, testData)
+	doctorId := test_integration.GetDoctorIdOfCurrentPrimaryDoctor(testData, t)
+	doctor, err := testData.DataApi.GetDoctorFromId(doctorId)
+	if err != nil {
+		t.Fatal("Unable to get doctor from doctor id " + err.Error())
+	}
+
+	patientVisitResponse, treatmentPlan := test_integration.SignupAndSubmitPatientVisitForRandomPatient(t, testData, doctor)
+	patientId, err := testData.DataApi.GetPatientIdFromPatientVisitId(patientVisitResponse.PatientVisitId)
+	if err != nil {
+		t.Fatalf(err.Error())
+	}
+
+	// submit treatment plan to patient to make it active
+	test_integration.SubmitPatientVisitBackToPatient(treatmentPlan.Id.Int64(), doctor, testData, t)
+
+	// attempting to delete the treatment plan should fail given that the treatment plan is active
+	doctorTreatmentPlanHandler := doctor_treatment_plan.NewDoctorTreatmentPlanHandler(testData.DataApi, nil, nil, false)
+	doctorServer := httptest.NewServer(doctorTreatmentPlanHandler)
+	defer doctorServer.Close()
+
+	jsonData, err := json.Marshal(&doctor_treatment_plan.TreatmentPlanRequestData{
+		TreatmentPlanId: treatmentPlan.Id,
+	})
+
+	res, err := test_integration.AuthDelete(doctorServer.URL, "application/json", bytes.NewReader(jsonData), doctor.AccountId.Int64())
+	if err != nil {
+		t.Fatal(err)
+	} else if res.StatusCode != http.StatusBadRequest {
+		t.Fatalf("Expected %d instead got %d", http.StatusBadRequest, res.StatusCode)
+	}
+
+	// there should still exist an active treatment plan
+	treatmentPlanResponse := test_integration.GetListOfTreatmentPlansForPatient(patientId, doctor.AccountId.Int64(), testData, t)
+	if len(treatmentPlanResponse.DraftTreatmentPlans) != 0 {
+		t.Fatalf("Expected no treatment plans instead got %d", len(treatmentPlanResponse.DraftTreatmentPlans))
+	} else if len(treatmentPlanResponse.ActiveTreatmentPlans) != 1 {
+		t.Fatalf("Expected 1 treatment plan instead got %d", len(treatmentPlanResponse.ActiveTreatmentPlans))
+	}
+}
+
+func TestTreatmentPlanDelete_DifferentDoctor(t *testing.T) {
+	testData := test_integration.SetupIntegrationTest(t)
+	defer test_integration.TearDownIntegrationTest(t, testData)
+	doctorId := test_integration.GetDoctorIdOfCurrentPrimaryDoctor(testData, t)
+	doctor, err := testData.DataApi.GetDoctorFromId(doctorId)
+	if err != nil {
+		t.Fatal("Unable to get doctor from doctor id " + err.Error())
+	}
+
+	patientVisitResponse, treatmentPlan := test_integration.SignupAndSubmitPatientVisitForRandomPatient(t, testData, doctor)
+	patientId, err := testData.DataApi.GetPatientIdFromPatientVisitId(patientVisitResponse.PatientVisitId)
+	if err != nil {
+		t.Fatalf(err.Error())
+	}
+
+	signedUpDoctorResponse, _, _ := test_integration.SignupRandomTestDoctor(t, testData.DataApi, testData.AuthApi)
+	doctor2, err := testData.DataApi.GetDoctorFromId(signedUpDoctorResponse.DoctorId)
+	if err != nil {
+		t.Fatal(err)
+	}
+
+	// attempting to delete the treatment plan should fail given that the treatment plan is active
+	doctorTreatmentPlanHandler := doctor_treatment_plan.NewDoctorTreatmentPlanHandler(testData.DataApi, nil, nil, false)
+	doctorServer := httptest.NewServer(doctorTreatmentPlanHandler)
+	defer doctorServer.Close()
+
+	jsonData, err := json.Marshal(&doctor_treatment_plan.TreatmentPlanRequestData{
+		TreatmentPlanId: treatmentPlan.Id,
+	})
+
+	res, err := test_integration.AuthDelete(doctorServer.URL, "application/json", bytes.NewReader(jsonData), doctor2.AccountId.Int64())
+	if err != nil {
+		t.Fatal(err)
+	} else if res.StatusCode != http.StatusBadRequest {
+		t.Fatalf("Expected %d instead got %d", http.StatusBadRequest, res.StatusCode)
+	}
+
+	// there should still exist an active treatment plan
+	treatmentPlanResponse := test_integration.GetListOfTreatmentPlansForPatient(patientId, doctor.AccountId.Int64(), testData, t)
+	if len(treatmentPlanResponse.DraftTreatmentPlans) != 1 {
+		t.Fatalf("Expected 1 treatment plan instead got %d", len(treatmentPlanResponse.DraftTreatmentPlans))
+	} else if len(treatmentPlanResponse.ActiveTreatmentPlans) != 0 {
+		t.Fatalf("Expected no treatment plans instead got %d", len(treatmentPlanResponse.ActiveTreatmentPlans))
 	}
 }
