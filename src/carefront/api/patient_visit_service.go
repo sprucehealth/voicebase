@@ -358,9 +358,44 @@ func (d *DataService) ClosePatientVisit(patientVisitId int64, event string) erro
 	return err
 }
 
-func (d *DataService) MarkTreatmentPlanAsSent(treatmentPlanId int64) error {
-	_, err := d.db.Exec(`update treatment_plan set sent_date=now(), status=? where id = ?`, STATUS_ACTIVE, treatmentPlanId)
-	return err
+func (d *DataService) ActivateTreatmentPlan(treatmentPlanId, doctorId int64) error {
+	tx, err := d.db.Begin()
+	if err != nil {
+		return err
+	}
+
+	treatmentPlan, err := d.GetAbridgedTreatmentPlan(treatmentPlanId, doctorId)
+	if err != nil {
+		tx.Rollback()
+		return err
+	}
+
+	switch treatmentPlan.Parent.ParentType {
+	case common.TPParentTypePatientVisit:
+		// mark the patient visit as TREATED
+		_, err = tx.Exec(`update patient_visit set status=?, closed_date=now(6) where id = ?`, CASE_STATUS_TREATED, treatmentPlan.Parent.ParentId.Int64())
+		if err != nil {
+			tx.Rollback()
+			return err
+		}
+
+	case common.TPParentTypeTreatmentPlan:
+		// mark the previous treatment plan as INACTIVE
+		_, err = tx.Exec(`update treatment_plan set status = ? where id = ?`, STATUS_INACTIVE, treatmentPlan.Parent.ParentId.Int64())
+		if err != nil {
+			tx.Rollback()
+			return err
+		}
+	}
+
+	// mark the treatment plan as ACTIVE
+	_, err = tx.Exec(`update treatment_plan set status = ? where id = ?`, STATUS_ACTIVE, treatmentPlan.Id.Int64())
+	if err != nil {
+		tx.Rollback()
+		return err
+	}
+
+	return tx.Commit()
 }
 
 func (d *DataService) SubmitPatientVisitWithId(patientVisitId int64) error {
@@ -854,22 +889,22 @@ func (d *DataService) UpdateTreatmentWithPharmacyAndErxId(treatments []*common.T
 	return tx.Commit()
 }
 
-func (d *DataService) AddErxStatusEvent(treatments []*common.Treatment, prescriptionStatus common.StatusEvent) error {
+func (d *DataService) AddErxStatusEvent(treatmentIds []int64, prescriptionStatus common.StatusEvent) error {
 	tx, err := d.db.Begin()
 	if err != nil {
 		return err
 	}
 
-	for _, treatment := range treatments {
+	for _, treatmentId := range treatmentIds {
 
-		_, err = tx.Exec(`update erx_status_events set status = ? where treatment_id = ? and status = ?`, STATUS_INACTIVE, treatment.Id.Int64(), STATUS_ACTIVE)
+		_, err = tx.Exec(`update erx_status_events set status = ? where treatment_id = ? and status = ?`, STATUS_INACTIVE, treatmentId, STATUS_ACTIVE)
 		if err != nil {
 			tx.Rollback()
 			return err
 		}
 
 		columnsAndData := make(map[string]interface{}, 0)
-		columnsAndData["treatment_id"] = treatment.Id.Int64()
+		columnsAndData["treatment_id"] = treatmentId
 		columnsAndData["erx_status"] = prescriptionStatus.Status
 		columnsAndData["status"] = STATUS_ACTIVE
 		if !prescriptionStatus.ReportedTimestamp.IsZero() {

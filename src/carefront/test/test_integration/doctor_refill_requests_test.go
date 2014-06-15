@@ -2458,7 +2458,7 @@ func TestRefillRequestComingFromDifferentPharmacyThanDispensedPrescription(t *te
 	}
 
 	patientVisitResponse := CreatePatientVisitForPatient(signedupPatientResponse.Patient.PatientId.Int64(), testData, t)
-	// start a new treatemtn plan for the patient visit
+	// start a new treatment plan for the patient visit
 	treatmentPlanId, err := testData.DataApi.StartNewTreatmentPlanForPatientVisit(signedupPatientResponse.Patient.PatientId.Int64(),
 		patientVisitResponse.PatientVisitId, doctor.DoctorId.Int64(), nil)
 	if err != nil {

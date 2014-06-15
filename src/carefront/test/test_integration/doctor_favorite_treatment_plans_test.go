@@ -161,7 +161,7 @@ func TestFavoriteTreatmentPlan_PickingAFavoriteTreatmentPlan(t *testing.T) {
 
 	// lets attempt to get the treatment plan for the patient visit
 	// and ensure that its empty
-	ts := httptest.NewServer(doctor_treatment_plan.NewDoctorTreatmentPlanHandler(testData.DataApi))
+	ts := httptest.NewServer(doctor_treatment_plan.NewDoctorTreatmentPlanHandler(testData.DataApi, nil, nil, false))
 	defer ts.Close()
 
 	responseData := &doctor_treatment_plan.DoctorTreatmentPlanResponse{}
@@ -245,7 +245,7 @@ func TestFavoriteTreatmentPlan_CommittedStateForTreatmentPlan(t *testing.T) {
 	CreateRegimenPlanForTreatmentPlan(regimenPlanRequest, testData, doctor, t)
 
 	// now lets attempt to get the treatment plan for the patient visit
-	ts := httptest.NewServer(doctor_treatment_plan.NewDoctorTreatmentPlanHandler(testData.DataApi))
+	ts := httptest.NewServer(doctor_treatment_plan.NewDoctorTreatmentPlanHandler(testData.DataApi, nil, nil, false))
 	defer ts.Close()
 
 	// the regimen plan should indicate that it was committed while the rest of the sections
@@ -338,7 +338,7 @@ func TestFavoriteTreatmentPlan_BreakingMappingOnModify(t *testing.T) {
 	CreateRegimenPlanForTreatmentPlan(regimenPlanRequest, testData, doctor, t)
 
 	// now lets attempt to get the abbreviated version of the treatment plan
-	ts := httptest.NewServer(doctor_treatment_plan.NewDoctorTreatmentPlanHandler(testData.DataApi))
+	ts := httptest.NewServer(doctor_treatment_plan.NewDoctorTreatmentPlanHandler(testData.DataApi, nil, nil, false))
 	defer ts.Close()
 
 	// the regimen plan should indicate that it was committed while the rest of the sections
@@ -442,7 +442,7 @@ func TestFavoriteTreatmentPlan_BreakingMappingOnModify_PrefillRestOfData(t *test
 	addAndGetTreatmentsForPatientVisit(testData, favoriteTreamentPlan.TreatmentList.Treatments, doctor.AccountId.Int64(), responseData.TreatmentPlan.Id.Int64(), t)
 
 	// now lets attempt to get the abbreviated version of the treatment plan
-	ts := httptest.NewServer(doctor_treatment_plan.NewDoctorTreatmentPlanHandler(testData.DataApi))
+	ts := httptest.NewServer(doctor_treatment_plan.NewDoctorTreatmentPlanHandler(testData.DataApi, nil, nil, false))
 	defer ts.Close()
 
 	params := url.Values{}

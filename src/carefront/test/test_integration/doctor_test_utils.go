@@ -193,7 +193,7 @@ func StartReviewingPatientVisit(patientVisitId int64, doctor *common.Doctor, tes
 }
 
 func PickATreatmentPlanForPatientVisit(patientVisitId int64, doctor *common.Doctor, favoriteTreatmentPlan *common.FavoriteTreatmentPlan, testData TestData, t *testing.T) *doctor_treatment_plan.DoctorTreatmentPlanResponse {
-	doctorPickTreatmentPlanHandler := doctor_treatment_plan.NewDoctorTreatmentPlanHandler(testData.DataApi)
+	doctorPickTreatmentPlanHandler := doctor_treatment_plan.NewDoctorTreatmentPlanHandler(testData.DataApi, nil, nil, false)
 
 	ts := httptest.NewServer(doctorPickTreatmentPlanHandler)
 	defer ts.Close()
@@ -235,11 +235,20 @@ func PickATreatmentPlanForPatientVisit(patientVisitId int64, doctor *common.Doct
 }
 
 func SubmitPatientVisitBackToPatient(treatmentPlanId int64, doctor *common.Doctor, testData TestData, t *testing.T) {
-	doctorSubmitPatientVisitReviewHandler := &apiservice.DoctorSubmitPatientVisitReviewHandler{DataApi: testData.DataApi}
-	ts := httptest.NewServer(doctorSubmitPatientVisitReviewHandler)
+	doctorTreatmentPlanHandler := doctor_treatment_plan.NewDoctorTreatmentPlanHandler(testData.DataApi, nil, nil, false)
+	ts := httptest.NewServer(doctorTreatmentPlanHandler)
 	defer ts.Close()
 
-	resp, err := AuthPost(ts.URL, "application/x-www-form-urlencoded", bytes.NewBufferString("treatment_plan_id="+strconv.FormatInt(treatmentPlanId, 10)), doctor.AccountId.Int64())
+	requestData := &doctor_treatment_plan.SubmitTreatmentPlanRequestData{
+		TreatmentPlanId: encoding.NewObjectId(treatmentPlanId),
+	}
+
+	jsonData, err := json.Marshal(requestData)
+	if err != nil {
+		t.Fatal(err)
+	}
+
+	resp, err := AuthPut(ts.URL, "application/json", bytes.NewReader(jsonData), doctor.AccountId.Int64())
 	if err != nil {
 		t.Fatal("Unable to make call to close patient visit " + err.Error())
 	}

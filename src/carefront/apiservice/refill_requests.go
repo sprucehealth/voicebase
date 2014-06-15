@@ -260,7 +260,7 @@ func (d *DoctorRefillRequestHandler) resolveRefillRequest(w http.ResponseWriter,
 			}
 
 			// queue up job for status checking
-			if err := queueUpJobForErxStatus(d.ErxStatusQueue, common.PrescriptionStatusCheckMessage{
+			if err := QueueUpJobForErxStatus(d.ErxStatusQueue, common.PrescriptionStatusCheckMessage{
 				PatientId:      refillRequest.Patient.PatientId.Int64(),
 				DoctorId:       doctor.DoctorId.Int64(),
 				EventCheckType: eventCheckType,
@@ -295,7 +295,7 @@ func (d *DoctorRefillRequestHandler) resolveRefillRequest(w http.ResponseWriter,
 
 	//  Queue up job to check for whether or not the response to this refill request
 	// was successfully transmitted to the pharmacy
-	if err := queueUpJobForErxStatus(d.ErxStatusQueue, common.PrescriptionStatusCheckMessage{
+	if err := QueueUpJobForErxStatus(d.ErxStatusQueue, common.PrescriptionStatusCheckMessage{
 		PatientId:      refillRequest.Patient.PatientId.Int64(),
 		DoctorId:       refillRequest.Doctor.DoctorId.Int64(),
 		EventCheckType: common.RefillRxType,
@@ -315,7 +315,7 @@ func (d *DoctorRefillRequestHandler) updateTreatmentWithPharmacyAndErxId(origina
 
 func (d *DoctorRefillRequestHandler) addStatusEvent(originatingTreatmentFound bool, treatment *common.Treatment, statusEvent common.StatusEvent) error {
 	if originatingTreatmentFound {
-		return d.DataApi.AddErxStatusEvent([]*common.Treatment{treatment}, statusEvent)
+		return d.DataApi.AddErxStatusEvent([]int64{treatment.Id.Int64()}, statusEvent)
 	}
 	return d.DataApi.AddErxStatusEventForDNTFTreatment(statusEvent)
 }

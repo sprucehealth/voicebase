@@ -4,18 +4,26 @@ import (
 	"carefront/api"
 	"carefront/apiservice"
 	"carefront/common"
+	"carefront/encoding"
 	"carefront/libs/dispatch"
+	"carefront/libs/erx"
 	"fmt"
 	"net/http"
 )
 
 type doctorTreatmentPlanHandler struct {
-	dataApi api.DataAPI
+	dataApi        api.DataAPI
+	erxAPI         erx.ERxAPI
+	erxStatusQueue *common.SQSQueue
+	routeErx       bool
 }
 
-func NewDoctorTreatmentPlanHandler(dataApi api.DataAPI) *doctorTreatmentPlanHandler {
+func NewDoctorTreatmentPlanHandler(dataApi api.DataAPI, erxAPI erx.ERxAPI, erxStatusQueue *common.SQSQueue, routeErx bool) *doctorTreatmentPlanHandler {
 	return &doctorTreatmentPlanHandler{
-		dataApi: dataApi,
+		dataApi:        dataApi,
+		erxAPI:         erxAPI,
+		erxStatusQueue: erxStatusQueue,
+		routeErx:       routeErx,
 	}
 }
 
@@ -31,6 +39,10 @@ type PickTreatmentPlanRequestData struct {
 	TPParent        *common.TreatmentPlanParent        `json:"parent"`
 }
 
+type SubmitTreatmentPlanRequestData struct {
+	TreatmentPlanId encoding.ObjectId `json:"treatment_plan_id"`
+}
+
 type DoctorTreatmentPlanResponse struct {
 	TreatmentPlan *common.DoctorTreatmentPlan `json:"treatment_plan"`
 }
@@ -41,9 +53,103 @@ func (d *doctorTreatmentPlanHandler) ServeHTTP(w http.ResponseWriter, r *http.Re
 		d.getTreatmentPlan(w, r)
 	case apiservice.HTTP_POST:
 		d.pickATreatmentPlan(w, r)
+	case apiservice.HTTP_PUT:
+		d.submitTreatmentPlan(w, r)
 	default:
 		w.WriteHeader(http.StatusNotFound)
 	}
+}
+
+func (d *doctorTreatmentPlanHandler) submitTreatmentPlan(w http.ResponseWriter, r *http.Request) {
+	var requestData SubmitTreatmentPlanRequestData
+	if err := apiservice.DecodeRequestData(&requestData, r); err != nil {
+		apiservice.WriteError(err, w, r)
+		return
+	} else if requestData.TreatmentPlanId.Int64() == 0 {
+		apiservice.WriteValidationError("treatment_plan_id must be specified", w, r)
+		return
+	}
+
+	doctor, err := d.dataApi.GetDoctorFromAccountId(apiservice.GetContext(r).AccountId)
+	if err != nil {
+		apiservice.WriteError(err, w, r)
+		return
+	}
+
+	treatmentPlan, err := d.dataApi.GetAbridgedTreatmentPlan(requestData.TreatmentPlanId.Int64(), doctor.DoctorId.Int64())
+	if err != nil {
+		apiservice.WriteError(err, w, r)
+		return
+	}
+
+	var patientVisitId int64
+	switch treatmentPlan.Parent.ParentType {
+	case common.TPParentTypePatientVisit:
+		// if the parent of this treatment plan is a patient visit, this means that this is the first
+		// treatment plan. In this case we expect the patient visit to be in the REVIEWING state.
+		patientVisitId = treatmentPlan.Parent.ParentId.Int64()
+		if err := apiservice.EnsurePatientVisitInExpectedStatus(d.dataApi, patientVisitId, api.CASE_STATUS_REVIEWING); err != nil {
+			apiservice.WriteError(err, w, r)
+			return
+		}
+	case common.TPParentTypeTreatmentPlan:
+		patientVisitId, err = d.dataApi.GetPatientVisitIdFromTreatmentPlanId(requestData.TreatmentPlanId.Int64())
+		if err != nil {
+			apiservice.WriteError(err, w, r)
+			return
+		}
+
+		// if the parent of the treatment plan is a previous version of a treatment plan, ensure that it is an ACTIVE
+		// treatment plan
+		treatmentPlan, err := d.dataApi.GetAbridgedTreatmentPlan(treatmentPlan.Parent.ParentId.Int64(), doctor.DoctorId.Int64())
+		if err != nil {
+			apiservice.WriteError(err, w, r)
+			return
+		} else if treatmentPlan.Status != api.STATUS_ACTIVE {
+			apiservice.WriteValidationError(fmt.Sprintf("Expected the parent treatment plan to be in the active state but its in %s state"), w, r)
+			return
+		}
+
+	default:
+		apiservice.WriteValidationError(fmt.Sprintf("Parent of treatment plan is unexpected parent of type %s"), w, r)
+		return
+	}
+
+	// Ensure that doctor is authorized to work on the case
+	_, _, err = apiservice.ValidateDoctorAccessToPatientVisitAndGetRelevantData(patientVisitId, apiservice.GetContext(r).AccountId, d.dataApi)
+	if err != nil {
+		apiservice.WriteError(err, w, r)
+		return
+	}
+
+	// get patient from treatment plan id
+	patient, err := d.dataApi.GetPatientFromId(treatmentPlan.PatientId)
+	if err != nil {
+		apiservice.WriteError(err, w, r)
+		return
+	}
+
+	// route treatments to patient pharmacy if any exist
+	if err := routeRxInTreatmentPlanToPharmacy(requestData.TreatmentPlanId.Int64(), patient, doctor, d.routeErx, d.dataApi, d.erxAPI, d.erxStatusQueue); err != nil {
+		apiservice.WriteError(err, w, r)
+		return
+	}
+
+	if err := d.dataApi.ActivateTreatmentPlan(requestData.TreatmentPlanId.Int64(), doctor.DoctorId.Int64()); err != nil {
+		apiservice.WriteError(err, w, r)
+		return
+	}
+
+	// Publish event that treamtent plan was created
+	dispatch.Default.PublishAsync(&TreatmentPlanCreatedEvent{
+		PatientId:       treatmentPlan.PatientId,
+		DoctorId:        doctor.DoctorId.Int64(),
+		VisitId:         patientVisitId,
+		TreatmentPlanId: requestData.TreatmentPlanId.Int64(),
+		Patient:         patient,
+	})
+
+	apiservice.WriteJSONToHTTPResponseWriter(w, http.StatusOK, apiservice.SuccessfulGenericJSONResponse())
 }
 
 func (d *doctorTreatmentPlanHandler) getTreatmentPlan(w http.ResponseWriter, r *http.Request) {

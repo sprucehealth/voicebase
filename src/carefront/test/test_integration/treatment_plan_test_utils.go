@@ -15,7 +15,7 @@ import (
 )
 
 func GetRegimenPlanForTreatmentPlan(testData TestData, doctor *common.Doctor, treatmentPlanId int64, t *testing.T) *common.RegimenPlan {
-	doctorTreatmentPlanHandler := doctor_treatment_plan.NewDoctorTreatmentPlanHandler(testData.DataApi)
+	doctorTreatmentPlanHandler := doctor_treatment_plan.NewDoctorTreatmentPlanHandler(testData.DataApi, nil, nil, false)
 	ts := httptest.NewServer(doctorTreatmentPlanHandler)
 	defer ts.Close()
 
@@ -72,7 +72,7 @@ func CreateRegimenPlanForTreatmentPlan(doctorRegimenRequest *common.RegimenPlan,
 }
 
 func GetAdvicePointsInTreatmentPlan(testData TestData, doctor *common.Doctor, treatmentPlanId int64, t *testing.T) *common.Advice {
-	doctorTreatmentPlanHandler := doctor_treatment_plan.NewDoctorTreatmentPlanHandler(testData.DataApi)
+	doctorTreatmentPlanHandler := doctor_treatment_plan.NewDoctorTreatmentPlanHandler(testData.DataApi, nil, nil, false)
 	ts := httptest.NewServer(doctorTreatmentPlanHandler)
 	defer ts.Close()
 
@@ -147,7 +147,7 @@ func GetListOfTreatmentPlansForPatient(patientId, doctorAccountId int64, testDat
 }
 
 func GetDoctorTreatmentPlanById(treatmentPlanId, doctorAccountId int64, testData TestData, t *testing.T) *common.DoctorTreatmentPlan {
-	drTreatmentPlanHandler := doctor_treatment_plan.NewDoctorTreatmentPlanHandler(testData.DataApi)
+	drTreatmentPlanHandler := doctor_treatment_plan.NewDoctorTreatmentPlanHandler(testData.DataApi, nil, nil, false)
 	doctorServer := httptest.NewServer(drTreatmentPlanHandler)
 	defer doctorServer.Close()
 

@@ -272,7 +272,7 @@ func PopulateAnswersToStoreForQuestion(role string, answerToQuestionItem *Answer
 	return answersToStore
 }
 
-func queueUpJobForErxStatus(erxStatusQueue *common.SQSQueue, prescriptionStatusCheckMessage common.PrescriptionStatusCheckMessage) error {
+func QueueUpJobForErxStatus(erxStatusQueue *common.SQSQueue, prescriptionStatusCheckMessage common.PrescriptionStatusCheckMessage) error {
 	jsonData, err := json.Marshal(prescriptionStatusCheckMessage)
 	if err != nil {
 		return err

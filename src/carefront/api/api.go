@@ -109,7 +109,7 @@ type PatientVisitAPI interface {
 	GetPatientIdFromTreatmentPlanId(treatmentPlanId int64) (int64, error)
 	UpdatePatientVisitStatus(patientVisitId int64, message, event string) error
 	ClosePatientVisit(patientVisitId int64, event string) error
-	MarkTreatmentPlanAsSent(treatmentPlanId int64) error
+	ActivateTreatmentPlan(treatmentPlanId, doctorId int64) error
 	SubmitPatientVisitWithId(patientVisitId int64) error
 	GetDiagnosisResponseToQuestionWithTag(questionTag string, doctorId, patientVisitId int64) ([]*common.AnswerIntake, error)
 	AddDiagnosisSummaryForTreatmentPlan(summary string, treatmentPlanId, doctorId int64) error
@@ -129,7 +129,7 @@ type PatientVisitAPI interface {
 	GetTreatmentFromId(treatmentId int64) (*common.Treatment, error)
 	GetActiveTreatmentPlanIdForPatient(patientId int64) (int64, error)
 	UpdateTreatmentWithPharmacyAndErxId(treatments []*common.Treatment, pharmacySentTo *pharmacy.PharmacyData, doctorId int64) error
-	AddErxStatusEvent(treatments []*common.Treatment, prescriptionStatus common.StatusEvent) error
+	AddErxStatusEvent(treatmentIds []int64, prescriptionStatus common.StatusEvent) error
 	GetPrescriptionStatusEventsForPatient(patientId int64) ([]common.StatusEvent, error)
 	GetPrescriptionStatusEventsForTreatment(treatmentId int64) ([]common.StatusEvent, error)
 	MarkTPDeviatedFromContentSource(treatmentPlanId int64) error
