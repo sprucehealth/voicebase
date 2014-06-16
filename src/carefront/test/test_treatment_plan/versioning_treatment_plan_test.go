@@ -388,3 +388,34 @@ func TestVersionTreatmentPlan_PickingFromInactiveTP(t *testing.T) {
 	}
 
 }
+
+func TestVersionTreatmentPlan_PickFromFTP(t *testing.T) {
+	testData := test_integration.SetupIntegrationTest(t)
+	defer test_integration.TearDownIntegrationTest(t, testData)
+	doctorId := test_integration.GetDoctorIdOfCurrentPrimaryDoctor(testData, t)
+	doctor, err := testData.DataApi.GetDoctorFromId(doctorId)
+	if err != nil {
+		t.Fatal("Unable to get doctor from doctor id " + err.Error())
+	}
+
+	// get patient to start a visit and doctor to pick treatment plan
+	patientVisitResponse, treatmentPlan := test_integration.SignupAndSubmitPatientVisitForRandomPatient(t, testData, doctor)
+
+	favoriteTreatmentPlan := test_integration.CreateFavoriteTreatmentPlan(patientVisitResponse.PatientVisitId, treatmentPlan.Id.Int64(), testData, doctor, t)
+
+	test_integration.SubmitPatientVisitBackToPatient(treatmentPlan.Id.Int64(), doctor, testData, t)
+
+	// now try to start a new treatment plan from an FTP
+	tpResponse := test_integration.PickATreatmentPlan(&common.TreatmentPlanParent{
+		ParentId:   treatmentPlan.Id,
+		ParentType: common.TPParentTypeTreatmentPlan,
+	}, &common.TreatmentPlanContentSource{
+		ContentSourceType: common.TPContentSourceTypeFTP,
+		ContentSourceId:   favoriteTreatmentPlan.Id,
+	}, doctor, testData, t)
+
+	if !favoriteTreatmentPlan.EqualsDoctorTreatmentPlan(tpResponse.TreatmentPlan) {
+		t.Fatal("Expected contents of favorite treatment plan to be the same as that of the treatment plan")
+	}
+
+}
