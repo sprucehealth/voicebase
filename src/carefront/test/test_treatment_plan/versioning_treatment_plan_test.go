@@ -1,10 +1,15 @@
 package test_treatment_plan
 
 import (
+	"bytes"
 	"carefront/api"
 	"carefront/common"
+	"carefront/doctor_treatment_plan"
 	"carefront/encoding"
 	"carefront/test/test_integration"
+	"encoding/json"
+	"net/http"
+	"net/http/httptest"
 	"testing"
 )
 
@@ -216,6 +221,156 @@ func TestVersionTreatmentPlan_PrevTP(t *testing.T) {
 
 	if !currentTreatmentPlan.ContentSource.HasDeviated {
 		t.Fatal("Expected the treatment plan to have deviated from the content source but it hasnt")
+	}
+}
+
+func TestVersionTreatmentPlan_MultipleRevs(t *testing.T) {
+	testData := test_integration.SetupIntegrationTest(t)
+	defer test_integration.TearDownIntegrationTest(t, testData)
+	doctorId := test_integration.GetDoctorIdOfCurrentPrimaryDoctor(testData, t)
+	doctor, err := testData.DataApi.GetDoctorFromId(doctorId)
+	if err != nil {
+		t.Fatal("Unable to get doctor from doctor id " + err.Error())
+	}
+
+	// get patient to start a visit and doctor to pick treatment plan
+	_, treatmentPlan := test_integration.SignupAndSubmitPatientVisitForRandomPatient(t, testData, doctor)
+
+	// submit the treatment plan
+	test_integration.SubmitPatientVisitBackToPatient(treatmentPlan.Id.Int64(), doctor, testData, t)
+
+	// now try to start a new treatment plan from scratch
+	tpResponse := test_integration.PickATreatmentPlan(&common.TreatmentPlanParent{
+		ParentId:   treatmentPlan.Id,
+		ParentType: common.TPParentTypeTreatmentPlan,
+	}, nil, doctor, testData, t)
+
+	// add treatments
+	treatment1 := &common.Treatment{
+		DrugInternalName: "Advil",
+		TreatmentPlanId:  tpResponse.TreatmentPlan.Id,
+		DosageStrength:   "10 mg",
+		DispenseValue:    1,
+		DispenseUnitId:   encoding.NewObjectId(26),
+		NumberRefills: encoding.NullInt64{
+			IsValid:    true,
+			Int64Value: 1,
+		},
+		SubstitutionsAllowed: true,
+		DaysSupply: encoding.NullInt64{
+			IsValid:    true,
+			Int64Value: 1,
+		},
+		OTC:                 true,
+		PharmacyNotes:       "testing pharmacy notes",
+		PatientInstructions: "patient instructions",
+		DrugDBIds: map[string]string{
+			"drug_db_id_1": "12315",
+			"drug_db_id_2": "124",
+		},
+	}
+	test_integration.AddAndGetTreatmentsForPatientVisit(testData, []*common.Treatment{treatment1}, doctor.AccountId.Int64(), tpResponse.TreatmentPlan.Id.Int64(), t)
+
+	// add advice
+	advicePoint1 := &common.DoctorInstructionItem{Text: "Advice point 1", State: common.STATE_ADDED}
+	advicePoint2 := &common.DoctorInstructionItem{Text: "Advice point 2", State: common.STATE_ADDED}
+	doctorAdviceRequest := &common.Advice{}
+	doctorAdviceRequest.AllAdvicePoints = []*common.DoctorInstructionItem{advicePoint1, advicePoint2}
+	doctorAdviceRequest.SelectedAdvicePoints = doctorAdviceRequest.AllAdvicePoints
+	doctorAdviceRequest.TreatmentPlanId = tpResponse.TreatmentPlan.Id
+	test_integration.UpdateAdvicePointsForPatientVisit(doctorAdviceRequest, testData, doctor, t)
+
+	// add regimen steps
+	regimenPlanRequest := &common.RegimenPlan{}
+	regimenPlanRequest.TreatmentPlanId = tpResponse.TreatmentPlan.Id
+	regimenStep1 := &common.DoctorInstructionItem{}
+	regimenStep1.Text = "Regimen Step 1"
+	regimenStep1.State = common.STATE_ADDED
+	regimenStep2 := &common.DoctorInstructionItem{}
+	regimenStep2.Text = "Regimen Step 2"
+	regimenStep2.State = common.STATE_ADDED
+	regimenPlanRequest.AllRegimenSteps = []*common.DoctorInstructionItem{regimenStep1, regimenStep2}
+	regimenSection := &common.RegimenSection{}
+	regimenSection.RegimenName = "morning"
+	regimenSection.RegimenSteps = []*common.DoctorInstructionItem{&common.DoctorInstructionItem{
+		ParentId: regimenPlanRequest.AllRegimenSteps[0].Id,
+		Text:     regimenPlanRequest.AllRegimenSteps[0].Text,
+	},
+	}
+	regimenSection2 := &common.RegimenSection{}
+	regimenSection2.RegimenName = "night"
+	regimenSection2.RegimenSteps = []*common.DoctorInstructionItem{&common.DoctorInstructionItem{
+		ParentId: regimenPlanRequest.AllRegimenSteps[1].Id,
+		Text:     regimenPlanRequest.AllRegimenSteps[1].Text,
+	},
+	}
+	regimenPlanRequest.RegimenSections = []*common.RegimenSection{regimenSection, regimenSection2}
+	test_integration.CreateRegimenPlanForTreatmentPlan(regimenPlanRequest, testData, doctor, t)
+
+	// submit the treatment plan
+	test_integration.SubmitPatientVisitBackToPatient(tpResponse.TreatmentPlan.Id.Int64(), doctor, testData, t)
+
+	// start yet another treatment plan, this time from the previous treatment plan
+	tpResponse2 := test_integration.PickATreatmentPlan(&common.TreatmentPlanParent{
+		ParentId:   tpResponse.TreatmentPlan.Id,
+		ParentType: common.TPParentTypeTreatmentPlan,
+	}, &common.TreatmentPlanContentSource{
+		ContentSourceType: common.TPContentSourceTypeTreatmentPlan,
+		ContentSourceId:   tpResponse.TreatmentPlan.Id,
+	}, doctor, testData, t)
+
+	parentTreatmentPlan, err := testData.DataApi.GetTreatmentPlan(tpResponse.TreatmentPlan.Id.Int64(), doctorId)
+	if err != nil {
+		t.Fatal(err)
+	}
+
+	if !parentTreatmentPlan.Equals(tpResponse2.TreatmentPlan) {
+		t.Fatal("Expected the parent and the newly versioned treatment plan to be equal but they are not")
+	}
+}
+
+func TestVersionTreatmentPlan_PickingFromInactiveTP(t *testing.T) {
+	testData := test_integration.SetupIntegrationTest(t)
+	defer test_integration.TearDownIntegrationTest(t, testData)
+	doctorId := test_integration.GetDoctorIdOfCurrentPrimaryDoctor(testData, t)
+	doctor, err := testData.DataApi.GetDoctorFromId(doctorId)
+	if err != nil {
+		t.Fatal("Unable to get doctor from doctor id " + err.Error())
+	}
+
+	// get patient to start a visit and doctor to pick treatment plan
+	_, treatmentPlan := test_integration.SignupAndSubmitPatientVisitForRandomPatient(t, testData, doctor)
+
+	// submit the treatment plan
+	test_integration.SubmitPatientVisitBackToPatient(treatmentPlan.Id.Int64(), doctor, testData, t)
+
+	// now try to start a new treatment plan from scratch
+	tpResponse := test_integration.PickATreatmentPlan(&common.TreatmentPlanParent{
+		ParentId:   treatmentPlan.Id,
+		ParentType: common.TPParentTypeTreatmentPlan,
+	}, nil, doctor, testData, t)
+
+	// submit the treatment plan
+	test_integration.SubmitPatientVisitBackToPatient(tpResponse.TreatmentPlan.Id.Int64(), doctor, testData, t)
+
+	// attempt to start yet another treatment plan but this time trying to pick from
+	// an inactive treatment plan. this should fail
+	doctorTretmentPlanHandler := doctor_treatment_plan.NewDoctorTreatmentPlanHandler(testData.DataApi, nil, nil, false)
+	doctorServer := httptest.NewServer(doctorTretmentPlanHandler)
+	defer doctorServer.Close()
+
+	jsonData, err := json.Marshal(&doctor_treatment_plan.PickTreatmentPlanRequestData{
+		TPParent: &common.TreatmentPlanParent{
+			ParentId:   treatmentPlan.Id,
+			ParentType: common.TPParentTypeTreatmentPlan,
+		},
+	})
+
+	res, err := test_integration.AuthPut(doctorServer.URL, "application/json", bytes.NewReader(jsonData), doctor.AccountId.Int64())
+	if err != nil {
+		t.Fatal(err)
+	} else if res.StatusCode != http.StatusBadRequest {
+		t.Fatalf("Expected %d but got %d", http.StatusBadRequest, res.StatusCode)
 	}
 
 }
