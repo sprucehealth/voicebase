@@ -526,3 +526,63 @@ func TestVersionTreatmentPlan_DeviationFromFTP(t *testing.T) {
 		t.Fatal("Did not expect treatment plan to deviate from source but it did")
 	}
 }
+
+func TestVersionTreatmentPlan_DeleteOlderDraft(t *testing.T) {
+	testData := test_integration.SetupIntegrationTest(t)
+	defer test_integration.TearDownIntegrationTest(t, testData)
+	doctorId := test_integration.GetDoctorIdOfCurrentPrimaryDoctor(testData, t)
+	doctor, err := testData.DataApi.GetDoctorFromId(doctorId)
+	if err != nil {
+		t.Fatal("Unable to get doctor from doctor id " + err.Error())
+	}
+	patientVisitResponse, treatmentPlan := test_integration.SignupAndSubmitPatientVisitForRandomPatient(t, testData, doctor)
+	test_integration.SubmitPatientVisitBackToPatient(treatmentPlan.Id.Int64(), doctor, testData, t)
+	patientId, err := testData.DataApi.GetPatientIdFromPatientVisitId(patientVisitResponse.PatientVisitId)
+	if err != nil {
+		t.Fatalf(err.Error())
+	}
+
+	// attempt to version treatment plan
+	tpResponse := test_integration.PickATreatmentPlan(&common.TreatmentPlanParent{
+		ParentId:   treatmentPlan.Id,
+		ParentType: common.TPParentTypeTreatmentPlan,
+	}, nil, doctor, testData, t)
+
+	// attempt to version again
+	tpResponse2 := test_integration.PickATreatmentPlan(&common.TreatmentPlanParent{
+		ParentId:   treatmentPlan.Id,
+		ParentType: common.TPParentTypeTreatmentPlan,
+	}, nil, doctor, testData, t)
+
+	// two treatment plans should be different given that older one should be deleted
+	if tpResponse.TreatmentPlan.Id.Int64() == tpResponse2.TreatmentPlan.Id.Int64() {
+		t.Fatal("Expected a new treatment plan to be created if the user attempts to pick again")
+	}
+
+	// attempt to create FTP under the new versioned treatment plan
+	favoriteTreatmentPlan := test_integration.CreateFavoriteTreatmentPlan(patientVisitResponse.PatientVisitId, tpResponse2.TreatmentPlan.Id.Int64(), testData, doctor, t)
+
+	// attempt to start a new TP now with this FTP
+	tpResponse3 := test_integration.PickATreatmentPlan(&common.TreatmentPlanParent{
+		ParentId:   treatmentPlan.Id,
+		ParentType: common.TPParentTypeTreatmentPlan,
+	}, &common.TreatmentPlanContentSource{
+		ContentSourceType: common.TPContentSourceTypeFTP,
+		ContentSourceId:   favoriteTreatmentPlan.Id,
+	}, doctor, testData, t)
+
+	if tpResponse3.TreatmentPlan.Id.Int64() == tpResponse2.TreatmentPlan.Id.Int64() {
+		t.Fatal("Expected the newly created treatment plan to have a different id than the previous one")
+	}
+
+	// there should only exist 1 draft and 1 active treatment plan
+	treatmentPlanResponse := test_integration.GetListOfTreatmentPlansForPatient(patientId, doctor.AccountId.Int64(), testData, t)
+	if len(treatmentPlanResponse.DraftTreatmentPlans) != 1 {
+		t.Fatalf("Expected 1 treamtent plans in draft instead got %d", len(treatmentPlanResponse.DraftTreatmentPlans))
+	} else if len(treatmentPlanResponse.ActiveTreatmentPlans) != 1 {
+		t.Fatalf("Expected 1 treatment plan in active mode instead got %d", len(treatmentPlanResponse.ActiveTreatmentPlans))
+	} else if len(treatmentPlanResponse.InactiveTreatmentPlans) != 0 {
+		t.Fatalf("Expected 0 inactive treatment plans instead got %d", len(treatmentPlanResponse.InactiveTreatmentPlans))
+	}
+
+}
