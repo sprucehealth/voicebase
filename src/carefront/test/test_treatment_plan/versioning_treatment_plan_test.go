@@ -13,6 +13,8 @@ import (
 	"testing"
 )
 
+// This test is to ensure that treatment plans can be versioned
+// and that the content source and the parent are created as expected
 func TestVersionTreatmentPlan_NewTP(t *testing.T) {
 	testData := test_integration.SetupIntegrationTest(t)
 	defer test_integration.TearDownIntegrationTest(t, testData)
@@ -94,6 +96,8 @@ func TestVersionTreatmentPlan_NewTP(t *testing.T) {
 	}
 }
 
+// This test is to ensure that we can start with a previous treatment plan
+// when versioning a treatment plan
 func TestVersionTreatmentPlan_PrevTP(t *testing.T) {
 	testData := test_integration.SetupIntegrationTest(t)
 	defer test_integration.TearDownIntegrationTest(t, testData)
@@ -224,6 +228,8 @@ func TestVersionTreatmentPlan_PrevTP(t *testing.T) {
 	}
 }
 
+// This test is to ensure that we can create multiple versions of treatment plans
+// and submit them with no problem
 func TestVersionTreatmentPlan_MultipleRevs(t *testing.T) {
 	testData := test_integration.SetupIntegrationTest(t)
 	defer test_integration.TearDownIntegrationTest(t, testData)
@@ -343,6 +349,7 @@ func TestVersionTreatmentPlan_MultipleRevs(t *testing.T) {
 	}
 }
 
+// This test is to ensure that we don't allow versioning from an inactive treatment plan
 func TestVersionTreatmentPlan_PickingFromInactiveTP(t *testing.T) {
 	testData := test_integration.SetupIntegrationTest(t)
 	defer test_integration.TearDownIntegrationTest(t, testData)
@@ -389,6 +396,8 @@ func TestVersionTreatmentPlan_PickingFromInactiveTP(t *testing.T) {
 
 }
 
+// This test is to ensure that doctor can pick from a favorite treatment plan to
+// version a treatment plan
 func TestVersionTreatmentPlan_PickFromFTP(t *testing.T) {
 	testData := test_integration.SetupIntegrationTest(t)
 	defer test_integration.TearDownIntegrationTest(t, testData)
@@ -419,6 +428,7 @@ func TestVersionTreatmentPlan_PickFromFTP(t *testing.T) {
 	}
 }
 
+// This test is to ensure that the most active treatment plan is shared with the patient
 func TestVersionTreatmentPlan_TPForPatient(t *testing.T) {
 	testData := test_integration.SetupIntegrationTest(t)
 	defer test_integration.TearDownIntegrationTest(t, testData)
@@ -453,6 +463,8 @@ func TestVersionTreatmentPlan_TPForPatient(t *testing.T) {
 	}
 }
 
+// This test is to ensure that we don't deviate the treatment plan
+// unless the data has actually changed
 func TestVersionTreatmentPlan_DeviationFromFTP(t *testing.T) {
 	testData := test_integration.SetupIntegrationTest(t)
 	defer test_integration.TearDownIntegrationTest(t, testData)
