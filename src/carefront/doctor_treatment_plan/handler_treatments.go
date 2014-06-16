@@ -71,8 +71,12 @@ func (t *treatmentsHandler) addTreatment(w http.ResponseWriter, r *http.Request)
 		return
 	}
 
-	if err := apiservice.EnsurePatientVisitInExpectedStatus(t.dataAPI, patientVisitId, api.CASE_STATUS_REVIEWING); err != nil {
-		apiservice.WriteDeveloperError(w, http.StatusBadRequest, err.Error())
+	treatmentPlan, err := t.dataAPI.GetAbridgedTreatmentPlan(treatmentsRequestBody.TreatmentPlanId.Int64(), patientVisitReviewData.DoctorId)
+	if err != nil {
+		apiservice.WriteError(err, w, r)
+		return
+	} else if treatmentPlan.Status != api.STATUS_DRAFT {
+		apiservice.WriteValidationError("treatment plan must be in draft mode", w, r)
 		return
 	}
 

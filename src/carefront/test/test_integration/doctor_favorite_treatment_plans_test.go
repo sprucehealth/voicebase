@@ -291,7 +291,7 @@ func TestFavoriteTreatmentPlan_CommittedStateForTreatmentPlan(t *testing.T) {
 	}
 
 	// now lets go ahead and add a treatment to the treatment plan
-	addAndGetTreatmentsForPatientVisit(testData, favoriteTreamentPlan.TreatmentList.Treatments, doctor.AccountId.Int64(), treatmentPlanId, t)
+	AddAndGetTreatmentsForPatientVisit(testData, favoriteTreamentPlan.TreatmentList.Treatments, doctor.AccountId.Int64(), treatmentPlanId, t)
 
 	// now the treatment section should also indicate that it has been committed
 	responseData = &doctor_treatment_plan.DoctorTreatmentPlanResponse{}
@@ -371,7 +371,7 @@ func TestFavoriteTreatmentPlan_BreakingMappingOnModify(t *testing.T) {
 
 	// modify treatment
 	favoriteTreamentPlan.TreatmentList.Treatments[0].DispenseValue = encoding.HighPrecisionFloat64(123.12345)
-	addAndGetTreatmentsForPatientVisit(testData, favoriteTreamentPlan.TreatmentList.Treatments, doctor.AccountId.Int64(), responseData.TreatmentPlan.Id.Int64(), t)
+	AddAndGetTreatmentsForPatientVisit(testData, favoriteTreamentPlan.TreatmentList.Treatments, doctor.AccountId.Int64(), responseData.TreatmentPlan.Id.Int64(), t)
 
 	// linkage should now be broken
 	params.Set("treatment_plan_id", strconv.FormatInt(responseData.TreatmentPlan.Id.Int64(), 10))
@@ -439,7 +439,7 @@ func TestFavoriteTreatmentPlan_BreakingMappingOnModify_PrefillRestOfData(t *test
 
 	// modify treatment
 	favoriteTreamentPlan.TreatmentList.Treatments[0].DispenseValue = encoding.HighPrecisionFloat64(123.12345)
-	addAndGetTreatmentsForPatientVisit(testData, favoriteTreamentPlan.TreatmentList.Treatments, doctor.AccountId.Int64(), responseData.TreatmentPlan.Id.Int64(), t)
+	AddAndGetTreatmentsForPatientVisit(testData, favoriteTreamentPlan.TreatmentList.Treatments, doctor.AccountId.Int64(), responseData.TreatmentPlan.Id.Int64(), t)
 
 	// now lets attempt to get the abbreviated version of the treatment plan
 	ts := httptest.NewServer(doctor_treatment_plan.NewDoctorTreatmentPlanHandler(testData.DataApi, nil, nil, false))
@@ -568,7 +568,7 @@ func TestFavoriteTreatmentPlan_InContextOfTreatmentPlan(t *testing.T) {
 		OTC:                 false,
 	}
 
-	addAndGetTreatmentsForPatientVisit(testData, []*common.Treatment{treatment1}, doctor.AccountId.Int64(), treatmentPlan.Id.Int64(), t)
+	AddAndGetTreatmentsForPatientVisit(testData, []*common.Treatment{treatment1}, doctor.AccountId.Int64(), treatmentPlan.Id.Int64(), t)
 
 	// lets add a favorite treatment plan for doctor
 	favoriteTreatmentPlan := &common.FavoriteTreatmentPlan{
@@ -701,7 +701,7 @@ func TestFavoriteTreatmentPlan_InContextOfTreatmentPlan_EmptyRegimenAndAdvice(t 
 		OTC:                 false,
 	}
 
-	addAndGetTreatmentsForPatientVisit(testData, []*common.Treatment{treatment1}, doctor.AccountId.Int64(), treatmentPlan.Id.Int64(), t)
+	AddAndGetTreatmentsForPatientVisit(testData, []*common.Treatment{treatment1}, doctor.AccountId.Int64(), treatmentPlan.Id.Int64(), t)
 
 	// lets add a favorite treatment plan for doctor
 	favoriteTreatmentPlan := &common.FavoriteTreatmentPlan{
@@ -829,7 +829,7 @@ func TestFavoriteTreatmentPlan_InContextOfTreatmentPlan_TwoDontMatch(t *testing.
 		OTC:                 false,
 	}
 
-	addAndGetTreatmentsForPatientVisit(testData, []*common.Treatment{treatment1}, doctor.AccountId.Int64(), treatmentPlan.Id.Int64(), t)
+	AddAndGetTreatmentsForPatientVisit(testData, []*common.Treatment{treatment1}, doctor.AccountId.Int64(), treatmentPlan.Id.Int64(), t)
 
 	// lets add a favorite treatment plan for doctor
 	favoriteTreatmentPlan := &common.FavoriteTreatmentPlan{

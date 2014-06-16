@@ -56,9 +56,13 @@ func (d *regimenHandler) updateRegimenSteps(w http.ResponseWriter, r *http.Reque
 		return
 	}
 
-	err = apiservice.EnsurePatientVisitInExpectedStatus(d.dataAPI, patientVisitId, api.CASE_STATUS_REVIEWING)
+	// can only add regimen for a treatment that is a draft
+	treatmentPlan, err := d.dataAPI.GetAbridgedTreatmentPlan(requestData.TreatmentPlanId.Int64(), patientVisitReviewData.DoctorId)
 	if err != nil {
 		apiservice.WriteError(err, w, r)
+		return
+	} else if treatmentPlan.Status != api.STATUS_DRAFT {
+		apiservice.WriteValidationError("treatment plan must be in draft mode", w, r)
 		return
 	}
 

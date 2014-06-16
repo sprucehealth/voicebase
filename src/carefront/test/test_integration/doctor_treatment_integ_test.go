@@ -232,7 +232,7 @@ func TestAddTreatments(t *testing.T) {
 
 	treatments := []*common.Treatment{treatment1, treatment2}
 
-	getTreatmentsResponse := addAndGetTreatmentsForPatientVisit(testData, treatments, doctor.AccountId.Int64(), treatmentPlan.Id.Int64(), t)
+	getTreatmentsResponse := AddAndGetTreatmentsForPatientVisit(testData, treatments, doctor.AccountId.Int64(), treatmentPlan.Id.Int64(), t)
 
 	for _, treatment := range getTreatmentsResponse.TreatmentList.Treatments {
 		switch treatment.DrugInternalName {
@@ -246,7 +246,7 @@ func TestAddTreatments(t *testing.T) {
 	// now lets go ahead and post an update where we have just one treatment for the patient visit which was updated while the other was deleted
 	treatments[0].DispenseValue = 10
 	treatments = []*common.Treatment{treatments[0]}
-	getTreatmentsResponse = addAndGetTreatmentsForPatientVisit(testData, treatments, doctor.AccountId.Int64(), treatmentPlan.Id.Int64(), t)
+	getTreatmentsResponse = AddAndGetTreatmentsForPatientVisit(testData, treatments, doctor.AccountId.Int64(), treatmentPlan.Id.Int64(), t)
 
 	// there should be just one treatment and its name should be the name that we just set
 	if len(getTreatmentsResponse.TreatmentList.Treatments) != 1 {
@@ -537,7 +537,7 @@ func TestTreatmentTemplatesInContextOfPatientVisit(t *testing.T) {
 	}
 
 	// lets add this as a treatment to the patient visit
-	getTreatmentsResponse := addAndGetTreatmentsForPatientVisit(testData, []*common.Treatment{treatment2}, doctor.AccountId.Int64(), treatmentPlan.Id.Int64(), t)
+	getTreatmentsResponse := AddAndGetTreatmentsForPatientVisit(testData, []*common.Treatment{treatment2}, doctor.AccountId.Int64(), treatmentPlan.Id.Int64(), t)
 
 	if len(getTreatmentsResponse.TreatmentList.Treatments) != 1 {
 		t.Fatal("Expected patient visit to have 1 treatment")
@@ -596,7 +596,7 @@ func TestTreatmentTemplatesInContextOfPatientVisit(t *testing.T) {
 	// now, lets go ahead and add a treatment to the patient visit from a favorite treatment
 	treatment1.DoctorTreatmentTemplateId = encoding.NewObjectId(treatmentTemplatesResponse.TreatmentTemplates[0].Id.Int64())
 	treatment2.DoctorTreatmentTemplateId = encoding.NewObjectId(treatmentTemplatesResponse.TreatmentTemplates[1].Id.Int64())
-	getTreatmentsResponse = addAndGetTreatmentsForPatientVisit(testData, []*common.Treatment{treatment1, treatment2}, doctor.AccountId.Int64(), treatmentPlan.Id.Int64(), t)
+	getTreatmentsResponse = AddAndGetTreatmentsForPatientVisit(testData, []*common.Treatment{treatment1, treatment2}, doctor.AccountId.Int64(), treatmentPlan.Id.Int64(), t)
 
 	if len(getTreatmentsResponse.TreatmentList.Treatments) != 2 {
 		t.Fatal("There should exist 2 treatments for the patient visit")

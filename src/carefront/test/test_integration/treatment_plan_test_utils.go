@@ -180,7 +180,7 @@ func GetDoctorTreatmentPlanById(treatmentPlanId, doctorAccountId int64, testData
 	return response.TreatmentPlan
 }
 
-func addAndGetTreatmentsForPatientVisit(testData TestData, treatments []*common.Treatment, doctorAccountId, treatmentPlanId int64, t *testing.T) *doctor_treatment_plan.GetTreatmentsResponse {
+func AddAndGetTreatmentsForPatientVisit(testData TestData, treatments []*common.Treatment, doctorAccountId, treatmentPlanId int64, t *testing.T) *doctor_treatment_plan.GetTreatmentsResponse {
 	stubErxApi := &erx.StubErxService{
 		SelectedMedicationToReturn: &common.Treatment{},
 	}
