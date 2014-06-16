@@ -203,6 +203,28 @@ type TreatmentPlanContentSource struct {
 	HasDeviated       bool              `json:"has_deviated"`
 }
 
+func (d *DoctorTreatmentPlan) Equals(other *DoctorTreatmentPlan) bool {
+	if d == nil && other == nil {
+		return true
+	} else if d == nil || other == nil {
+		return false
+	}
+
+	if !d.TreatmentList.Equals(other.TreatmentList) {
+		return false
+	}
+
+	if !d.RegimenPlan.Equals(other.RegimenPlan) {
+		return false
+	}
+
+	if !d.Advice.Equals(other.Advice) {
+		return false
+	}
+
+	return true
+}
+
 type TreatmentList struct {
 	Treatments []*Treatment `json:"treatments,omitempty"`
 	Status     string       `json:"status,omitempty"`

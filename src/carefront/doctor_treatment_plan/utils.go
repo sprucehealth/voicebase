@@ -153,7 +153,7 @@ func fillInTreatmentPlan(drTreatmentPlan *common.DoctorTreatmentPlan, doctorId i
 
 		setCommittedStateForEachSection(drTreatmentPlan)
 
-		if err := populateFavoriteTreatmentPlanIntoTreatmentPlan(drTreatmentPlan, dataApi); err == api.NoRowsError {
+		if err := populateContentSourceIntoTreatmentPlan(drTreatmentPlan, dataApi, doctorId); err == api.NoRowsError {
 			return errors.New("No treatment plan found")
 		} else if err != nil {
 			return err
@@ -187,81 +187,114 @@ func setCommittedStateForEachSection(drTreatmentPlan *common.DoctorTreatmentPlan
 
 }
 
-func populateFavoriteTreatmentPlanIntoTreatmentPlan(treatmentPlan *common.DoctorTreatmentPlan, dataApi api.DataAPI) error {
+func populateContentSourceIntoTreatmentPlan(treatmentPlan *common.DoctorTreatmentPlan, dataApi api.DataAPI, doctorId int64) error {
 	// only continue if the content source of the treaetment plan is a favorite treatment plan
-	if treatmentPlan.ContentSource == nil || treatmentPlan.ContentSource.ContentSourceType != common.TPContentSourceTypeFTP {
+	if treatmentPlan.ContentSource == nil {
 		return nil
 	}
-	favoriteTreatmentPlanId := treatmentPlan.ContentSource.ContentSourceId.Int64()
 
-	favoriteTreatmentPlan, err := dataApi.GetFavoriteTreatmentPlan(favoriteTreatmentPlanId)
-	if err != nil {
-		return err
-	}
-
-	// The assumption here is that all components of a treatment plan that are already populated
-	// match the items in the favorite treatment plan, if there exists a mapping to indicate that this
-	// treatment plan must be filled in from a favorite treatment plan. The reason that we don't just write over
-	// the items that do already belong in the treatment plan is to maintain the ids of the items that have been committed
-	// to the database as part of the treatment plan.
-
-	// populate treatments
-	if len(treatmentPlan.TreatmentList.Treatments) == 0 {
-
-		treatmentPlan.TreatmentList.Treatments = make([]*common.Treatment, len(favoriteTreatmentPlan.TreatmentList.Treatments))
-		for i, treatment := range favoriteTreatmentPlan.TreatmentList.Treatments {
-			treatmentPlan.TreatmentList.Treatments[i] = &common.Treatment{
-				DrugDBIds:               treatment.DrugDBIds,
-				DrugInternalName:        treatment.DrugInternalName,
-				DrugName:                treatment.DrugName,
-				DrugRoute:               treatment.DrugRoute,
-				DosageStrength:          treatment.DosageStrength,
-				DispenseValue:           treatment.DispenseValue,
-				DispenseUnitId:          treatment.DispenseUnitId,
-				DispenseUnitDescription: treatment.DispenseUnitDescription,
-				NumberRefills:           treatment.NumberRefills,
-				SubstitutionsAllowed:    treatment.SubstitutionsAllowed,
-				DaysSupply:              treatment.DaysSupply,
-				PharmacyNotes:           treatment.PharmacyNotes,
-				PatientInstructions:     treatment.PatientInstructions,
-				CreationDate:            treatment.CreationDate,
-				OTC:                     treatment.OTC,
-				IsControlledSubstance:    treatment.IsControlledSubstance,
-				SupplementalInstructions: treatment.SupplementalInstructions,
-			}
+	switch treatmentPlan.ContentSource.ContentSourceType {
+	case common.TPContentSourceTypeTreatmentPlan:
+		previousTreatmentPlan, err := dataApi.GetTreatmentPlan(treatmentPlan.ContentSource.ContentSourceId.Int64(), doctorId)
+		if err != nil {
+			return err
 		}
-	}
 
-	// populate regimen plan
-	if len(treatmentPlan.RegimenPlan.RegimenSections) == 0 {
-		treatmentPlan.RegimenPlan.RegimenSections = make([]*common.RegimenSection, len(favoriteTreatmentPlan.RegimenPlan.RegimenSections))
-
-		for i, regimenSection := range favoriteTreatmentPlan.RegimenPlan.RegimenSections {
-			treatmentPlan.RegimenPlan.RegimenSections[i] = &common.RegimenSection{
-				RegimenName:  regimenSection.RegimenName,
-				RegimenSteps: make([]*common.DoctorInstructionItem, len(regimenSection.RegimenSteps)),
-			}
-
-			for j, regimenStep := range regimenSection.RegimenSteps {
-				treatmentPlan.RegimenPlan.RegimenSections[i].RegimenSteps[j] = &common.DoctorInstructionItem{
-					ParentId: regimenStep.ParentId,
-					Text:     regimenStep.Text,
-				}
-			}
+		if len(treatmentPlan.TreatmentList.Treatments) == 0 {
+			fillTreatmentsIntoTreatmentPlan(previousTreatmentPlan.TreatmentList.Treatments, treatmentPlan)
 		}
-	}
 
-	// populate advice
-	if len(treatmentPlan.Advice.SelectedAdvicePoints) == 0 {
-		treatmentPlan.Advice.SelectedAdvicePoints = make([]*common.DoctorInstructionItem, len(favoriteTreatmentPlan.Advice.SelectedAdvicePoints))
-		for i, advicePoint := range favoriteTreatmentPlan.Advice.SelectedAdvicePoints {
-			treatmentPlan.Advice.SelectedAdvicePoints[i] = &common.DoctorInstructionItem{
-				ParentId: advicePoint.ParentId,
-				Text:     advicePoint.Text,
-			}
+		if len(treatmentPlan.RegimenPlan.RegimenSections) == 0 {
+			fillRegimenSectionsIntoTreatmentPlan(previousTreatmentPlan.RegimenPlan.RegimenSections, treatmentPlan)
+		}
+
+		if len(treatmentPlan.Advice.SelectedAdvicePoints) == 0 {
+			fillAdvicePointsIntoTreatmentPlan(previousTreatmentPlan.Advice.SelectedAdvicePoints, treatmentPlan)
+		}
+
+	case common.TPContentSourceTypeFTP:
+		favoriteTreatmentPlanId := treatmentPlan.ContentSource.ContentSourceId.Int64()
+
+		favoriteTreatmentPlan, err := dataApi.GetFavoriteTreatmentPlan(favoriteTreatmentPlanId)
+		if err != nil {
+			return err
+		}
+
+		// The assumption here is that all components of a treatment plan that are already populated
+		// match the items in the favorite treatment plan, if there exists a mapping to indicate that this
+		// treatment plan must be filled in from a favorite treatment plan. The reason that we don't just write over
+		// the items that do already belong in the treatment plan is to maintain the ids of the items that have been committed
+		// to the database as part of the treatment plan.
+
+		// populate treatments
+		if len(treatmentPlan.TreatmentList.Treatments) == 0 {
+			fillTreatmentsIntoTreatmentPlan(favoriteTreatmentPlan.TreatmentList.Treatments, treatmentPlan)
+		}
+
+		// populate regimen plan
+		if len(treatmentPlan.RegimenPlan.RegimenSections) == 0 {
+			fillRegimenSectionsIntoTreatmentPlan(favoriteTreatmentPlan.RegimenPlan.RegimenSections, treatmentPlan)
+		}
+
+		// populate advice
+		if len(treatmentPlan.Advice.SelectedAdvicePoints) == 0 {
+			fillAdvicePointsIntoTreatmentPlan(favoriteTreatmentPlan.Advice.SelectedAdvicePoints, treatmentPlan)
 		}
 	}
 
 	return nil
 
+}
+
+func fillAdvicePointsIntoTreatmentPlan(sourceAdvicePoints []*common.DoctorInstructionItem, treatmentPlan *common.DoctorTreatmentPlan) {
+	treatmentPlan.Advice.SelectedAdvicePoints = make([]*common.DoctorInstructionItem, len(sourceAdvicePoints))
+	for i, advicePoint := range sourceAdvicePoints {
+		treatmentPlan.Advice.SelectedAdvicePoints[i] = &common.DoctorInstructionItem{
+			ParentId: advicePoint.ParentId,
+			Text:     advicePoint.Text,
+		}
+	}
+}
+
+func fillRegimenSectionsIntoTreatmentPlan(sourceRegimenSections []*common.RegimenSection, treatmentPlan *common.DoctorTreatmentPlan) {
+	treatmentPlan.RegimenPlan.RegimenSections = make([]*common.RegimenSection, len(sourceRegimenSections))
+
+	for i, regimenSection := range sourceRegimenSections {
+		treatmentPlan.RegimenPlan.RegimenSections[i] = &common.RegimenSection{
+			RegimenName:  regimenSection.RegimenName,
+			RegimenSteps: make([]*common.DoctorInstructionItem, len(regimenSection.RegimenSteps)),
+		}
+
+		for j, regimenStep := range regimenSection.RegimenSteps {
+			treatmentPlan.RegimenPlan.RegimenSections[i].RegimenSteps[j] = &common.DoctorInstructionItem{
+				ParentId: regimenStep.ParentId,
+				Text:     regimenStep.Text,
+			}
+		}
+	}
+}
+
+func fillTreatmentsIntoTreatmentPlan(sourceTreatments []*common.Treatment, treatmentPlan *common.DoctorTreatmentPlan) {
+	treatmentPlan.TreatmentList.Treatments = make([]*common.Treatment, len(sourceTreatments))
+	for i, treatment := range sourceTreatments {
+		treatmentPlan.TreatmentList.Treatments[i] = &common.Treatment{
+			DrugDBIds:               treatment.DrugDBIds,
+			DrugInternalName:        treatment.DrugInternalName,
+			DrugName:                treatment.DrugName,
+			DrugRoute:               treatment.DrugRoute,
+			DosageStrength:          treatment.DosageStrength,
+			DispenseValue:           treatment.DispenseValue,
+			DispenseUnitId:          treatment.DispenseUnitId,
+			DispenseUnitDescription: treatment.DispenseUnitDescription,
+			NumberRefills:           treatment.NumberRefills,
+			SubstitutionsAllowed:    treatment.SubstitutionsAllowed,
+			DaysSupply:              treatment.DaysSupply,
+			PharmacyNotes:           treatment.PharmacyNotes,
+			PatientInstructions:     treatment.PatientInstructions,
+			CreationDate:            treatment.CreationDate,
+			OTC:                     treatment.OTC,
+			IsControlledSubstance:    treatment.IsControlledSubstance,
+			SupplementalInstructions: treatment.SupplementalInstructions,
+		}
+	}
 }

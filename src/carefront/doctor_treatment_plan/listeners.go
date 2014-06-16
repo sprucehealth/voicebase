@@ -38,25 +38,42 @@ func InitListeners(dataAPI api.DataAPI) {
 }
 
 func markTPDeviatedIfContentChanged(treatmentPlanId, doctorId int64, dataAPI api.DataAPI) error {
-	doctorTreatmentPlan, err := dataAPI.GetAbridgedTreatmentPlan(treatmentPlanId, doctorId)
+	doctorTreatmentPlan, err := dataAPI.GetTreatmentPlan(treatmentPlanId, doctorId)
 	if err != nil {
 		return err
 	}
 
-	// nothing to do here if the treatment plan is not linked to a favorite treatment plan or if the content has already deviated from the source
-	if doctorTreatmentPlan.ContentSource == nil || doctorTreatmentPlan.ContentSource.ContentSourceType != common.TPContentSourceTypeFTP || doctorTreatmentPlan.ContentSource.HasDeviated {
+	// nothing to do here if the content source doesn't exist or has already deviated from the source
+	if doctorTreatmentPlan.ContentSource == nil || doctorTreatmentPlan.ContentSource.HasDeviated {
 		return nil
 	}
 
-	// get favorite treatment plan to compare
-	favoriteTreatmentPlan, err := dataAPI.GetFavoriteTreatmentPlan(doctorTreatmentPlan.ContentSource.ContentSourceId.Int64())
-	if err != nil {
-		return err
+	switch doctorTreatmentPlan.ContentSource.ContentSourceType {
+
+	case common.TPContentSourceTypeFTP:
+		// get favorite treatment plan to compare
+		favoriteTreatmentPlan, err := dataAPI.GetFavoriteTreatmentPlan(doctorTreatmentPlan.ContentSource.ContentSourceId.Int64())
+		if err != nil {
+			return err
+		}
+
+		// compare the treatment plan to the favorite treatment plan and mark as deviated if they are unequal
+		if !favoriteTreatmentPlan.EqualsDoctorTreatmentPlan(doctorTreatmentPlan) {
+			return dataAPI.MarkTPDeviatedFromContentSource(treatmentPlanId)
+		}
+
+	case common.TPContentSourceTypeTreatmentPlan:
+		// get parent treatment plan to compare
+		parentTreatmentPlan, err := dataAPI.GetTreatmentPlan(doctorTreatmentPlan.Parent.ParentId.Int64(), doctorId)
+		if err != nil {
+			return err
+		}
+
+		// mark the treatment plan has having deviated if the content is no longer the same as the parent
+		if !parentTreatmentPlan.Equals(doctorTreatmentPlan) {
+			return dataAPI.MarkTPDeviatedFromContentSource(doctorTreatmentPlan.Id.Int64())
+		}
 	}
 
-	// compare the treatment plan to the favorite treatment plan and mark as deviated if they are unequal
-	if !favoriteTreatmentPlan.EqualsDoctorTreatmentPlan(doctorTreatmentPlan) {
-		return dataAPI.MarkTPDeviatedFromContentSource(treatmentPlanId)
-	}
 	return nil
 }

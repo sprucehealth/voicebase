@@ -179,6 +179,36 @@ func (d *DataService) GetAbridgedTreatmentPlan(treatmentPlanId, doctorId int64) 
 	return nil, fmt.Errorf("Expected 1 drTreatmentPlan instead got %d", len(drTreatmentPlans))
 }
 
+func (d *DataService) GetTreatmentPlan(treatmentPlanId, doctorId int64) (*common.DoctorTreatmentPlan, error) {
+	treatmentPlan, err := d.GetAbridgedTreatmentPlan(treatmentPlanId, doctorId)
+	if err != nil {
+		return nil, err
+	}
+
+	// get treatments
+	treatmentPlan.TreatmentList = &common.TreatmentList{}
+	treatmentPlan.TreatmentList.Treatments, err = d.GetTreatmentsBasedOnTreatmentPlanId(treatmentPlanId)
+	if err != nil {
+		return nil, err
+	}
+
+	// get advice
+	treatmentPlan.Advice = &common.Advice{}
+	treatmentPlan.Advice.SelectedAdvicePoints, err = d.GetAdvicePointsForTreatmentPlan(treatmentPlanId)
+	if err != nil {
+		return nil, err
+	}
+
+	// get regimen
+	treatmentPlan.RegimenPlan = &common.RegimenPlan{}
+	treatmentPlan.RegimenPlan, err = d.GetRegimenPlanForTreatmentPlan(treatmentPlanId)
+	if err != nil {
+		return nil, err
+	}
+
+	return treatmentPlan, nil
+}
+
 func (d *DataService) getAbridgedTreatmentPlanFromRows(rows *sql.Rows, doctorId int64) ([]*common.DoctorTreatmentPlan, error) {
 	drTreatmentPlans := make([]*common.DoctorTreatmentPlan, 0)
 	for rows.Next() {
