@@ -108,7 +108,7 @@ func populateIntakeLayoutWithPatientAnswers(intake *info_intake.InfoIntakeLayout
 						for _, answer := range question.Answers {
 							photoIntakeSection := answer.(*common.PhotoIntakeSection)
 							for _, photoIntakeSlot := range photoIntakeSection.Photos {
-								photoIntakeSlot.PhotoUrl = apiservice.CreatePhotoUrl(photoIntakeSlot.PhotoId, photoIntakeSlot.Id, common.ClaimerTypePhotoIntakeSection, r.Host)
+								photoIntakeSlot.PhotoUrl = apiservice.CreatePhotoUrl(photoIntakeSlot.PhotoId, photoIntakeSection.Id, common.ClaimerTypePhotoIntakeSection, r.Host)
 							}
 						}
 					}
