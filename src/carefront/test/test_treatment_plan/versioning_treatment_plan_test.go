@@ -234,7 +234,12 @@ func TestVersionTreatmentPlan_MultipleRevs(t *testing.T) {
 	}
 
 	// get patient to start a visit and doctor to pick treatment plan
-	_, treatmentPlan := test_integration.SignupAndSubmitPatientVisitForRandomPatient(t, testData, doctor)
+	patientVisitResponse, treatmentPlan := test_integration.SignupAndSubmitPatientVisitForRandomPatient(t, testData, doctor)
+
+	patientId, err := testData.DataApi.GetPatientIdFromPatientVisitId(patientVisitResponse.PatientVisitId)
+	if err != nil {
+		t.Fatalf(err.Error())
+	}
 
 	// submit the treatment plan
 	test_integration.SubmitPatientVisitBackToPatient(treatmentPlan.Id.Int64(), doctor, testData, t)
@@ -326,6 +331,15 @@ func TestVersionTreatmentPlan_MultipleRevs(t *testing.T) {
 
 	if !parentTreatmentPlan.Equals(tpResponse2.TreatmentPlan) {
 		t.Fatal("Expected the parent and the newly versioned treatment plan to be equal but they are not")
+	}
+
+	treatmentPlanResponse := test_integration.GetListOfTreatmentPlansForPatient(patientId, doctor.AccountId.Int64(), testData, t)
+	if len(treatmentPlanResponse.DraftTreatmentPlans) != 1 {
+		t.Fatalf("Expected 1 treamtent plans in draft instead got %d", len(treatmentPlanResponse.DraftTreatmentPlans))
+	} else if len(treatmentPlanResponse.ActiveTreatmentPlans) != 1 {
+		t.Fatalf("Expected 1 treatment plan in active mode instead got %d", len(treatmentPlanResponse.ActiveTreatmentPlans))
+	} else if len(treatmentPlanResponse.InactiveTreatmentPlans) != 1 {
+		t.Fatalf("Expected 1 inactive treatment plan instead got %d", len(treatmentPlanResponse.InactiveTreatmentPlans))
 	}
 }
 
