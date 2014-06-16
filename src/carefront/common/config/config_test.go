@@ -1,10 +1,6 @@
 package config
 
-import (
-	"strings"
-	"testing"
-	"time"
-)
+import "testing"
 
 type TestConfig struct {
 	*BaseConfig
@@ -30,19 +26,5 @@ func TestBasic(t *testing.T) {
 	}
 	if config.BaseConfig.AWSRegion != "test-region" {
 		t.Fatal("Failed to set BaseConfig.AWSRegion")
-	}
-}
-
-func TestSMTPTimeout(t *testing.T) {
-	smtpConnectTimeout = time.Millisecond * 200
-	config := &BaseConfig{
-		SMTPAddr:   "127.0.0.123:25",
-		AlertEmail: "noone@nowhere.com'",
-	}
-	_, err := config.SMTPConnection()
-	if err == nil {
-		t.Fatal("Expected a timeout error")
-	} else if !strings.Contains(err.Error(), "timeout") {
-		t.Fatalf("Expected timeout. Got '%s'", err.Error())
 	}
 }

@@ -417,5 +417,100 @@ func TestVersionTreatmentPlan_PickFromFTP(t *testing.T) {
 	if !favoriteTreatmentPlan.EqualsDoctorTreatmentPlan(tpResponse.TreatmentPlan) {
 		t.Fatal("Expected contents of favorite treatment plan to be the same as that of the treatment plan")
 	}
+}
 
+func TestVersionTreatmentPlan_TPForPatient(t *testing.T) {
+	testData := test_integration.SetupIntegrationTest(t)
+	defer test_integration.TearDownIntegrationTest(t, testData)
+	doctorId := test_integration.GetDoctorIdOfCurrentPrimaryDoctor(testData, t)
+	doctor, err := testData.DataApi.GetDoctorFromId(doctorId)
+	if err != nil {
+		t.Fatal("Unable to get doctor from doctor id " + err.Error())
+	}
+	patientVisitResponse, treatmentPlan := test_integration.SignupAndSubmitPatientVisitForRandomPatient(t, testData, doctor)
+	test_integration.SubmitPatientVisitBackToPatient(treatmentPlan.Id.Int64(), doctor, testData, t)
+	patientId, err := testData.DataApi.GetPatientIdFromPatientVisitId(patientVisitResponse.PatientVisitId)
+	if err != nil {
+		t.Fatalf(err.Error())
+	}
+
+	// version treatment plan
+	tpResponse := test_integration.PickATreatmentPlan(&common.TreatmentPlanParent{
+		ParentId:   treatmentPlan.Id,
+		ParentType: common.TPParentTypeTreatmentPlan,
+	}, nil, doctor, testData, t)
+
+	// submit version to make it active
+	test_integration.SubmitPatientVisitBackToPatient(tpResponse.TreatmentPlan.Id.Int64(), doctor, testData, t)
+
+	treatmentPlanIdForPatient, err := testData.DataApi.GetActiveTreatmentPlanIdForPatient(patientId)
+	if err != nil {
+		t.Fatal(err)
+	}
+
+	if treatmentPlanIdForPatient != tpResponse.TreatmentPlan.Id.Int64() {
+		t.Fatal("Expected the latest treatment plan to be the one considered active for patient but it wasnt the case")
+	}
+}
+
+func TestVersionTreatmentPlan_DeviationFromFTP(t *testing.T) {
+	testData := test_integration.SetupIntegrationTest(t)
+	defer test_integration.TearDownIntegrationTest(t, testData)
+	doctorId := test_integration.GetDoctorIdOfCurrentPrimaryDoctor(testData, t)
+	doctor, err := testData.DataApi.GetDoctorFromId(doctorId)
+	if err != nil {
+		t.Fatal("Unable to get doctor from doctor id " + err.Error())
+	}
+
+	// get patient to start a visit and doctor to pick treatment plan
+	patientVisitResponse, treatmentPlan := test_integration.SignupAndSubmitPatientVisitForRandomPatient(t, testData, doctor)
+
+	favoriteTreatmentPlan := test_integration.CreateFavoriteTreatmentPlan(patientVisitResponse.PatientVisitId, treatmentPlan.Id.Int64(), testData, doctor, t)
+
+	test_integration.SubmitPatientVisitBackToPatient(treatmentPlan.Id.Int64(), doctor, testData, t)
+
+	// now try to start a new treatment plan from an FTP
+	tpResponse := test_integration.PickATreatmentPlan(&common.TreatmentPlanParent{
+		ParentId:   treatmentPlan.Id,
+		ParentType: common.TPParentTypeTreatmentPlan,
+	}, &common.TreatmentPlanContentSource{
+		ContentSourceType: common.TPContentSourceTypeFTP,
+		ContentSourceId:   favoriteTreatmentPlan.Id,
+	}, doctor, testData, t)
+
+	// now, submit the exact same treatments to commit it
+	test_integration.AddAndGetTreatmentsForPatientVisit(testData, favoriteTreatmentPlan.TreatmentList.Treatments, doctor.AccountId.Int64(), tpResponse.TreatmentPlan.Id.Int64(), t)
+
+	currentTreatmentPlan, err := testData.DataApi.GetAbridgedTreatmentPlan(tpResponse.TreatmentPlan.Id.Int64(), doctorId)
+	if err != nil {
+		t.Fatal(err)
+	} else if currentTreatmentPlan.ContentSource.HasDeviated {
+		t.Fatal("Did not expect treatment plan to deviate from source but it did")
+	}
+
+	// submit the exact same regimen
+	regimenPlanRequest := &common.RegimenPlan{}
+	regimenPlanRequest.TreatmentPlanId = tpResponse.TreatmentPlan.Id
+	regimenPlanRequest.RegimenSections = favoriteTreatmentPlan.RegimenPlan.RegimenSections
+	test_integration.CreateRegimenPlanForTreatmentPlan(regimenPlanRequest, testData, doctor, t)
+
+	currentTreatmentPlan, err = testData.DataApi.GetAbridgedTreatmentPlan(tpResponse.TreatmentPlan.Id.Int64(), doctorId)
+	if err != nil {
+		t.Fatal(err)
+	} else if currentTreatmentPlan.ContentSource.HasDeviated {
+		t.Fatal("Did not expect treatment plan to deviate from source but it did")
+	}
+
+	// submit the exact same advice
+	doctorAdviceRequest := &common.Advice{}
+	doctorAdviceRequest.SelectedAdvicePoints = favoriteTreatmentPlan.Advice.SelectedAdvicePoints
+	doctorAdviceRequest.TreatmentPlanId = tpResponse.TreatmentPlan.Id
+	test_integration.UpdateAdvicePointsForPatientVisit(doctorAdviceRequest, testData, doctor, t)
+
+	currentTreatmentPlan, err = testData.DataApi.GetAbridgedTreatmentPlan(tpResponse.TreatmentPlan.Id.Int64(), doctorId)
+	if err != nil {
+		t.Fatal(err)
+	} else if currentTreatmentPlan.ContentSource.HasDeviated {
+		t.Fatal("Did not expect treatment plan to deviate from source but it did")
+	}
 }

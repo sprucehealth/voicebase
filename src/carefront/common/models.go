@@ -296,7 +296,7 @@ func (d *DoctorInstructionItem) Equals(other *DoctorInstructionItem) bool {
 		return false
 	}
 
-	return d.Text == other.Text && d.ParentId.Int64() == other.ParentId.Int64()
+	return d.Text == other.Text
 }
 
 type RegimenSection struct {

@@ -7,24 +7,30 @@ import (
 	"carefront/patient_visit"
 )
 
+const (
+	checkTreatments  = "treatments"
+	checkRegimenPlan = "regimenPlan"
+	checkAdvice      = "advice"
+)
+
 func InitListeners(dataAPI api.DataAPI) {
 
 	// subscribe to invalidate the link between a treatment plan and
 	// favorite treatment if the doctor modifies the treatments for the treatment plan
 	dispatch.Default.Subscribe(func(ev *TreatmentsAddedEvent) error {
-		return markTPDeviatedIfContentChanged(ev.TreatmentPlanId, ev.DoctorId, dataAPI)
+		return markTPDeviatedIfContentChanged(ev.TreatmentPlanId, ev.DoctorId, dataAPI, checkTreatments)
 	})
 
 	// subscribe to invalidate the link between a treatment plan and
 	// favorite treatment if the doctor modifies the regimen section
 	dispatch.Default.Subscribe(func(ev *RegimenPlanAddedEvent) error {
-		return markTPDeviatedIfContentChanged(ev.TreatmentPlanId, ev.DoctorId, dataAPI)
+		return markTPDeviatedIfContentChanged(ev.TreatmentPlanId, ev.DoctorId, dataAPI, checkRegimenPlan)
 	})
 
 	// subscribe to invalidate the link between a treatment plan and
 	// favorite treatment if the doctor modifies the advice section
 	dispatch.Default.Subscribe(func(ev *AdviceAddedEvent) error {
-		return markTPDeviatedIfContentChanged(ev.TreatmentPlanId, ev.DoctorId, dataAPI)
+		return markTPDeviatedIfContentChanged(ev.TreatmentPlanId, ev.DoctorId, dataAPI, checkAdvice)
 	})
 
 	dispatch.Default.Subscribe(func(ev *patient_visit.DiagnosisModifiedEvent) error {
@@ -37,8 +43,8 @@ func InitListeners(dataAPI api.DataAPI) {
 
 }
 
-func markTPDeviatedIfContentChanged(treatmentPlanId, doctorId int64, dataAPI api.DataAPI) error {
-	doctorTreatmentPlan, err := dataAPI.GetTreatmentPlan(treatmentPlanId, doctorId)
+func markTPDeviatedIfContentChanged(treatmentPlanId, doctorId int64, dataAPI api.DataAPI, sectionToCheck string) error {
+	doctorTreatmentPlan, err := dataAPI.GetAbridgedTreatmentPlan(treatmentPlanId, doctorId)
 	if err != nil {
 		return err
 	}
@@ -48,6 +54,9 @@ func markTPDeviatedIfContentChanged(treatmentPlanId, doctorId int64, dataAPI api
 		return nil
 	}
 
+	var regimenPlanToCompare *common.RegimenPlan
+	var treatmentsToCompare *common.TreatmentList
+	var adviceToCompare *common.Advice
 	switch doctorTreatmentPlan.ContentSource.ContentSourceType {
 
 	case common.TPContentSourceTypeFTP:
@@ -57,10 +66,9 @@ func markTPDeviatedIfContentChanged(treatmentPlanId, doctorId int64, dataAPI api
 			return err
 		}
 
-		// compare the treatment plan to the favorite treatment plan and mark as deviated if they are unequal
-		if !favoriteTreatmentPlan.EqualsDoctorTreatmentPlan(doctorTreatmentPlan) {
-			return dataAPI.MarkTPDeviatedFromContentSource(treatmentPlanId)
-		}
+		regimenPlanToCompare = favoriteTreatmentPlan.RegimenPlan
+		treatmentsToCompare = favoriteTreatmentPlan.TreatmentList
+		adviceToCompare = favoriteTreatmentPlan.Advice
 
 	case common.TPContentSourceTypeTreatmentPlan:
 		// get parent treatment plan to compare
@@ -69,9 +77,39 @@ func markTPDeviatedIfContentChanged(treatmentPlanId, doctorId int64, dataAPI api
 			return err
 		}
 
-		// mark the treatment plan has having deviated if the content is no longer the same as the parent
-		if !parentTreatmentPlan.Equals(doctorTreatmentPlan) {
-			return dataAPI.MarkTPDeviatedFromContentSource(doctorTreatmentPlan.Id.Int64())
+		regimenPlanToCompare = parentTreatmentPlan.RegimenPlan
+		treatmentsToCompare = parentTreatmentPlan.TreatmentList
+		adviceToCompare = parentTreatmentPlan.Advice
+	}
+
+	switch sectionToCheck {
+
+	case checkTreatments:
+		treatments, err := dataAPI.GetTreatmentsBasedOnTreatmentPlanId(doctorTreatmentPlan.Id.Int64())
+		if err != nil {
+			return err
+		}
+
+		if !treatmentsToCompare.Equals(&common.TreatmentList{Treatments: treatments}) {
+			return dataAPI.MarkTPDeviatedFromContentSource(treatmentPlanId)
+		}
+	case checkRegimenPlan:
+		regimenPlan, err := dataAPI.GetRegimenPlanForTreatmentPlan(treatmentPlanId)
+		if err != nil {
+			return err
+		}
+
+		if !regimenPlanToCompare.Equals(regimenPlan) {
+			return dataAPI.MarkTPDeviatedFromContentSource(treatmentPlanId)
+		}
+	case checkAdvice:
+		advice, err := dataAPI.GetAdvicePointsForTreatmentPlan(treatmentPlanId)
+		if err != nil {
+			return err
+		}
+
+		if !adviceToCompare.Equals(&common.Advice{SelectedAdvicePoints: advice}) {
+			return dataAPI.MarkTPDeviatedFromContentSource(treatmentPlanId)
 		}
 	}
 
