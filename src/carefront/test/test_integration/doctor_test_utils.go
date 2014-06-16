@@ -192,6 +192,42 @@ func StartReviewingPatientVisit(patientVisitId int64, doctor *common.Doctor, tes
 	CheckSuccessfulStatusCode(resp, "Unable to make successful call to get patient visit review: ", t)
 }
 
+func PickATreatmentPlan(parent *common.TreatmentPlanParent, contentSource *common.TreatmentPlanContentSource, doctor *common.Doctor, testData TestData, t *testing.T) *doctor_treatment_plan.DoctorTreatmentPlanResponse {
+	doctorPickTreatmentPlanHandler := doctor_treatment_plan.NewDoctorTreatmentPlanHandler(testData.DataApi, nil, nil, false)
+
+	ts := httptest.NewServer(doctorPickTreatmentPlanHandler)
+	defer ts.Close()
+
+	requestData := doctor_treatment_plan.PickTreatmentPlanRequestData{
+		TPParent: parent,
+	}
+
+	if contentSource != nil {
+		requestData.TPContentSource = contentSource
+	}
+
+	jsonData, err := json.Marshal(requestData)
+	if err != nil {
+		t.Fatal(err)
+	}
+
+	resp, err := AuthPost(ts.URL, "application/json", bytes.NewReader(jsonData), doctor.AccountId.Int64())
+	if err != nil {
+		t.Fatalf("Unable to pick a treatment plan for the patient visit doctor %s", err)
+	}
+
+	if resp.StatusCode != http.StatusOK {
+		t.Fatalf("Expected successful picking up of treatment plan instead got %d", resp.StatusCode)
+	}
+
+	responseData := &doctor_treatment_plan.DoctorTreatmentPlanResponse{}
+	if err := json.NewDecoder(resp.Body).Decode(responseData); err != nil {
+		t.Fatalf("Unable to unmarshal response into response json: %s", err)
+	}
+
+	return responseData
+}
+
 func PickATreatmentPlanForPatientVisit(patientVisitId int64, doctor *common.Doctor, favoriteTreatmentPlan *common.FavoriteTreatmentPlan, testData TestData, t *testing.T) *doctor_treatment_plan.DoctorTreatmentPlanResponse {
 	doctorPickTreatmentPlanHandler := doctor_treatment_plan.NewDoctorTreatmentPlanHandler(testData.DataApi, nil, nil, false)
 

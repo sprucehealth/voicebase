@@ -63,6 +63,11 @@ func InitListeners(dataAPI api.DataAPI, notificationManager *notify.Notification
 			return err
 		}
 
+		// Remove the any previous treatment plan created notifications
+		if err := dataAPI.DeletePatientNotificationByUID(ev.PatientId, treatmentPlanCreated); err != nil {
+			golog.Errorf("Failed to remove treatment plan created notification for patient %d: %s", ev.PatientId, err.Error())
+		}
+
 		// Add "treatment plan created" notification
 		if _, err := dataAPI.InsertPatientNotification(ev.PatientId, &common.Notification{
 			UID:             treatmentPlanCreated,
