@@ -6,17 +6,24 @@ import (
 	"carefront/common"
 	"carefront/encoding"
 	"carefront/libs/dispatch"
+	"carefront/libs/erx"
 	"fmt"
 	"net/http"
 )
 
 type doctorTreatmentPlanHandler struct {
-	dataApi api.DataAPI
+	dataApi        api.DataAPI
+	erxAPI         erx.ERxAPI
+	erxStatusQueue *common.SQSQueue
+	routeErx       bool
 }
 
-func NewDoctorTreatmentPlanHandler(dataApi api.DataAPI) *doctorTreatmentPlanHandler {
+func NewDoctorTreatmentPlanHandler(dataApi api.DataAPI, erxAPI erx.ERxAPI, erxStatusQueue *common.SQSQueue, routeErx bool) *doctorTreatmentPlanHandler {
 	return &doctorTreatmentPlanHandler{
-		dataApi: dataApi,
+		dataApi:        dataApi,
+		erxAPI:         erxAPI,
+		erxStatusQueue: erxStatusQueue,
+		routeErx:       routeErx,
 	}
 }
 
@@ -27,6 +34,15 @@ type DoctorTreatmentPlanRequestData struct {
 	Abridged                      bool  `schema:"abridged" json:"abridged"`
 }
 
+type PickTreatmentPlanRequestData struct {
+	TPContentSource *common.TreatmentPlanContentSource `json:"content_source"`
+	TPParent        *common.TreatmentPlanParent        `json:"parent"`
+}
+
+type TreatmentPlanRequestData struct {
+	TreatmentPlanId encoding.ObjectId `json:"treatment_plan_id"`
+}
+
 type DoctorTreatmentPlanResponse struct {
 	TreatmentPlan *common.DoctorTreatmentPlan `json:"treatment_plan"`
 }
@@ -35,11 +51,150 @@ func (d *doctorTreatmentPlanHandler) ServeHTTP(w http.ResponseWriter, r *http.Re
 	switch r.Method {
 	case apiservice.HTTP_GET:
 		d.getTreatmentPlan(w, r)
-	case apiservice.HTTP_PUT:
+	case apiservice.HTTP_POST:
 		d.pickATreatmentPlan(w, r)
+	case apiservice.HTTP_PUT:
+		d.submitTreatmentPlan(w, r)
+	case apiservice.HTTP_DELETE:
+		d.deleteTreatmentPlan(w, r)
 	default:
 		w.WriteHeader(http.StatusNotFound)
 	}
+}
+
+func (d *doctorTreatmentPlanHandler) deleteTreatmentPlan(w http.ResponseWriter, r *http.Request) {
+	requestData := &TreatmentPlanRequestData{}
+	if err := apiservice.DecodeRequestData(requestData, r); err != nil {
+		apiservice.WriteError(err, w, r)
+		return
+	} else if requestData.TreatmentPlanId.Int64() == 0 {
+		apiservice.WriteValidationError("treatment_plan_id must be specified", w, r)
+		return
+	}
+
+	doctorId, err := d.dataApi.GetDoctorIdFromAccountId(apiservice.GetContext(r).AccountId)
+	if err != nil {
+		apiservice.WriteError(err, w, r)
+		return
+	}
+
+	treatmentPlan, err := d.dataApi.GetAbridgedTreatmentPlan(requestData.TreatmentPlanId.Int64(), doctorId)
+	if err != nil {
+		apiservice.WriteError(err, w, r)
+		return
+	}
+
+	// Ensure treatment plan is owned by this doctor
+	if doctorId != treatmentPlan.DoctorId.Int64() {
+		apiservice.WriteValidationError("Cannot delete treatment plan not owned by doctor", w, r)
+		return
+	}
+
+	// Ensure treatment plan is a draft
+	if treatmentPlan.Status != api.STATUS_DRAFT {
+		apiservice.WriteValidationError("only draft treatment plan can be deleted", w, r)
+		return
+	}
+
+	// Delete treatment plan
+	if err := d.dataApi.DeleteTreatmentPlan(treatmentPlan.Id.Int64()); err != nil {
+		apiservice.WriteError(err, w, r)
+		return
+	}
+
+	apiservice.WriteJSONToHTTPResponseWriter(w, http.StatusOK, apiservice.SuccessfulGenericJSONResponse())
+}
+
+func (d *doctorTreatmentPlanHandler) submitTreatmentPlan(w http.ResponseWriter, r *http.Request) {
+	var requestData TreatmentPlanRequestData
+	if err := apiservice.DecodeRequestData(&requestData, r); err != nil {
+		apiservice.WriteError(err, w, r)
+		return
+	} else if requestData.TreatmentPlanId.Int64() == 0 {
+		apiservice.WriteValidationError("treatment_plan_id must be specified", w, r)
+		return
+	}
+
+	doctor, err := d.dataApi.GetDoctorFromAccountId(apiservice.GetContext(r).AccountId)
+	if err != nil {
+		apiservice.WriteError(err, w, r)
+		return
+	}
+
+	treatmentPlan, err := d.dataApi.GetAbridgedTreatmentPlan(requestData.TreatmentPlanId.Int64(), doctor.DoctorId.Int64())
+	if err != nil {
+		apiservice.WriteError(err, w, r)
+		return
+	}
+
+	var patientVisitId int64
+	switch treatmentPlan.Parent.ParentType {
+	case common.TPParentTypePatientVisit:
+		// if the parent of this treatment plan is a patient visit, this means that this is the first
+		// treatment plan. In this case we expect the patient visit to be in the REVIEWING state.
+		patientVisitId = treatmentPlan.Parent.ParentId.Int64()
+		if err := apiservice.EnsurePatientVisitInExpectedStatus(d.dataApi, patientVisitId, api.CASE_STATUS_REVIEWING); err != nil {
+			apiservice.WriteError(err, w, r)
+			return
+		}
+	case common.TPParentTypeTreatmentPlan:
+		patientVisitId, err = d.dataApi.GetPatientVisitIdFromTreatmentPlanId(requestData.TreatmentPlanId.Int64())
+		if err != nil {
+			apiservice.WriteError(err, w, r)
+			return
+		}
+
+		// if the parent of the treatment plan is a previous version of a treatment plan, ensure that it is an ACTIVE
+		// treatment plan
+		treatmentPlan, err := d.dataApi.GetAbridgedTreatmentPlan(treatmentPlan.Parent.ParentId.Int64(), doctor.DoctorId.Int64())
+		if err != nil {
+			apiservice.WriteError(err, w, r)
+			return
+		} else if treatmentPlan.Status != api.STATUS_ACTIVE {
+			apiservice.WriteValidationError(fmt.Sprintf("Expected the parent treatment plan to be in the active state but its in %s state", treatmentPlan.Status), w, r)
+			return
+		}
+
+	default:
+		apiservice.WriteValidationError(fmt.Sprintf("Parent of treatment plan is unexpected parent of type %s", treatmentPlan.Parent.ParentType), w, r)
+		return
+	}
+
+	// Ensure that doctor is authorized to work on the case
+	_, _, err = apiservice.ValidateDoctorAccessToPatientVisitAndGetRelevantData(patientVisitId, apiservice.GetContext(r).AccountId, d.dataApi)
+	if err != nil {
+		apiservice.WriteError(err, w, r)
+		return
+	}
+
+	// get patient from treatment plan id
+	patient, err := d.dataApi.GetPatientFromId(treatmentPlan.PatientId)
+	if err != nil {
+		apiservice.WriteError(err, w, r)
+		return
+	}
+
+	// route treatments to patient pharmacy if any exist
+	if err := routeRxInTreatmentPlanToPharmacy(requestData.TreatmentPlanId.Int64(), patient, doctor, d.routeErx, d.dataApi, d.erxAPI, d.erxStatusQueue); err != nil {
+		apiservice.WriteError(err, w, r)
+		return
+	}
+
+	if err := d.dataApi.ActivateTreatmentPlan(requestData.TreatmentPlanId.Int64(), doctor.DoctorId.Int64()); err != nil {
+		apiservice.WriteError(err, w, r)
+		return
+	}
+
+	// Publish event that treamtent plan was created
+	dispatch.Default.PublishAsync(&TreatmentPlanCreatedEvent{
+		PatientId:       treatmentPlan.PatientId,
+		DoctorId:        doctor.DoctorId.Int64(),
+		VisitId:         patientVisitId,
+		TreatmentPlanId: requestData.TreatmentPlanId.Int64(),
+		Patient:         patient,
+	})
+
+	apiservice.WriteJSONToHTTPResponseWriter(w, http.StatusOK, apiservice.SuccessfulGenericJSONResponse())
 }
 
 func (d *doctorTreatmentPlanHandler) getTreatmentPlan(w http.ResponseWriter, r *http.Request) {
@@ -67,36 +222,21 @@ func (d *doctorTreatmentPlanHandler) getTreatmentPlan(w http.ResponseWriter, r *
 		return
 	}
 
+	// if we are dealing with a draft, and the owner of the treatment plan does not match the doctor requesting it,
+	// return an error because this should never be the case
+	if drTreatmentPlan.Status == api.STATUS_DRAFT && drTreatmentPlan.DoctorId.Int64() != doctorId {
+		apiservice.WriteValidationError("Cannot retrieve draft treatment plan owned by different doctor", w, r)
+		return
+	}
+
 	// only return the small amount of information retreived about the treatment plan
 	if requestData.Abridged {
 		apiservice.WriteJSONToHTTPResponseWriter(w, http.StatusOK, &DoctorTreatmentPlanResponse{TreatmentPlan: drTreatmentPlan})
 		return
 	}
 
-	if err := fillInTreatmentPlan(drTreatmentPlan, d.dataApi); err != nil {
+	if err := fillInTreatmentPlan(drTreatmentPlan, doctorId, d.dataApi); err != nil {
 		apiservice.WriteDeveloperError(w, http.StatusInternalServerError, err.Error())
-		return
-	}
-
-	drTreatmentPlan.RegimenPlan.AllRegimenSteps, err = d.dataApi.GetRegimenStepsForDoctor(doctorId)
-	if err != nil {
-		apiservice.WriteDeveloperError(w, http.StatusInternalServerError, "Unable to get all regimen steps for doctor")
-		return
-	}
-
-	drTreatmentPlan.Advice.AllAdvicePoints, err = d.dataApi.GetAdvicePointsForDoctor(doctorId)
-	if err != nil {
-		apiservice.WriteDeveloperError(w, http.StatusInternalServerError, "Unable to get advice points for doctor")
-		return
-	}
-
-	setCommittedStateForEachSection(drTreatmentPlan)
-
-	if err := d.populateFavoriteTreatmentPlanIntoTreatmentPlan(drTreatmentPlan, drTreatmentPlan.DoctorFavoriteTreatmentPlanId.Int64()); err == api.NoRowsError {
-		apiservice.WriteDeveloperError(w, http.StatusNotFound, "Favorite treatment plan not found")
-		return
-	} else if err != nil {
-		apiservice.WriteDeveloperError(w, http.StatusInternalServerError, "Unable to get favorite treatment plan "+err.Error())
 		return
 	}
 
@@ -104,200 +244,80 @@ func (d *doctorTreatmentPlanHandler) getTreatmentPlan(w http.ResponseWriter, r *
 }
 
 func (d *doctorTreatmentPlanHandler) pickATreatmentPlan(w http.ResponseWriter, r *http.Request) {
-	requestData := &DoctorTreatmentPlanRequestData{}
+	requestData := &PickTreatmentPlanRequestData{}
 
 	if err := apiservice.DecodeRequestData(requestData, r); err != nil {
 		apiservice.WriteDeveloperError(w, http.StatusBadRequest, err.Error())
 		return
-	} else if requestData.PatientVisitId == 0 {
-		apiservice.WriteDeveloperError(w, http.StatusBadRequest, "PatientVisitId not specified")
+	} else if requestData.TPParent == nil || requestData.TPParent.ParentId.Int64() == 0 {
+		apiservice.WriteValidationError("Expected the parent id to be specified for the treatment plan", w, r)
+		return
+	} else if requestData.TPParent.ParentType != common.TPParentTypePatientVisit && requestData.TPParent.ParentType != common.TPParentTypeTreatmentPlan {
+		apiservice.WriteValidationError("Expected the parent type to either by PATIENT_VISIT or TREATMENT_PLAN", w, r)
+		return
+	} else if requestData.TPContentSource != nil {
+		if requestData.TPContentSource.ContentSourceType != common.TPContentSourceTypeFTP && requestData.TPContentSource.ContentSourceType != common.TPContentSourceTypeTreatmentPlan {
+			apiservice.WriteValidationError(fmt.Sprintf("Expected content source type be either FAVORITE_TREATMENT_PLAN or TREATMENT_PLAN but instead it was %s", requestData.TPContentSource.ContentSourceType), w, r)
+			return
+		}
+	}
+
+	doctorId, err := d.dataApi.GetDoctorIdFromAccountId(apiservice.GetContext(r).AccountId)
+	if err != nil {
+		apiservice.WriteError(err, w, r)
 		return
 	}
 
-	patientVisitReviewData, statusCode, err := apiservice.ValidateDoctorAccessToPatientVisitAndGetRelevantData(requestData.PatientVisitId, apiservice.GetContext(r).AccountId, d.dataApi)
+	patientVisitId := requestData.TPParent.ParentId.Int64()
+	switch requestData.TPParent.ParentType {
+	case common.TPParentTypeTreatmentPlan:
+		// ensure that parent treatment plan is ACTIVE
+		parentTreatmentPlan, err := d.dataApi.GetAbridgedTreatmentPlan(requestData.TPParent.ParentId.Int64(), doctorId)
+		if err != nil {
+			apiservice.WriteError(err, w, r)
+			return
+		} else if parentTreatmentPlan.Status != api.STATUS_ACTIVE {
+			apiservice.WriteValidationError("parent treatment plan has to be ACTIVE", w, r)
+			return
+		}
+
+		patientVisitId, err = d.dataApi.GetPatientVisitIdFromTreatmentPlanId(requestData.TPParent.ParentId.Int64())
+		if err != nil {
+			apiservice.WriteError(err, w, r)
+			return
+		}
+	}
+
+	patientVisitReviewData, statusCode, err := apiservice.ValidateDoctorAccessToPatientVisitAndGetRelevantData(patientVisitId, apiservice.GetContext(r).AccountId, d.dataApi)
 	if err != nil {
 		apiservice.WriteDeveloperError(w, statusCode, err.Error())
 		return
 	}
 
-	patientVisitStatus := patientVisitReviewData.PatientVisit.Status
-	if patientVisitStatus != api.CASE_STATUS_REVIEWING && patientVisitStatus != api.CASE_STATUS_SUBMITTED {
-		apiservice.WriteDeveloperError(w, http.StatusForbidden, fmt.Sprintf("Unable to start a new treatment plan for a patient visit that is in the %s state", patientVisitReviewData.PatientVisit.Status))
-		return
-	}
-
-	// Start new treatment plan for patient visit (indicate favorite treatment plan if indicated)
-	// Note that this method deletes any pre-existing treatment plan
-	treatmentPlanId, err := d.dataApi.StartNewTreatmentPlanForPatientVisit(patientVisitReviewData.PatientVisit.PatientId.Int64(),
-		patientVisitReviewData.PatientVisit.PatientVisitId.Int64(), patientVisitReviewData.DoctorId, requestData.DoctorFavoriteTreatmentPlanId)
+	treatmentPlanId, err := d.dataApi.StartNewTreatmentPlan(patientVisitReviewData.PatientVisit.PatientId.Int64(),
+		patientVisitReviewData.PatientVisit.PatientVisitId.Int64(), patientVisitReviewData.DoctorId, requestData.TPParent, requestData.TPContentSource)
 	if err != nil {
 		apiservice.WriteDeveloperError(w, http.StatusInternalServerError, "Unable to start new treatment plan for patient visit: "+err.Error())
 		return
 	}
 
-	// populate the regimen steps and the advice steps for now until we figure out a cleaner way to handle
-	// the client getting the master list of regimen and advice
-	allRegimenSteps, err := d.dataApi.GetRegimenStepsForDoctor(patientVisitReviewData.DoctorId)
+	// get the treatment plan just created
+	drTreatmentPlan, err := d.dataApi.GetAbridgedTreatmentPlan(treatmentPlanId, patientVisitReviewData.DoctorId)
 	if err != nil {
-		apiservice.WriteDeveloperError(w, http.StatusInternalServerError, "Unable to get regimen steps for doctor: "+err.Error())
+		apiservice.WriteError(err, w, r)
 		return
 	}
 
-	allAdvicePoints, err := d.dataApi.GetAdvicePointsForDoctor(patientVisitReviewData.DoctorId)
-	if err != nil {
-		apiservice.WriteDeveloperError(w, http.StatusInternalServerError, "Unable to get advice poitns for doctor: "+err.Error())
-		return
-	}
-
-	drTreatmentPlan := &common.DoctorTreatmentPlan{
-		Id: encoding.NewObjectId(treatmentPlanId),
-		Advice: &common.Advice{
-			AllAdvicePoints: allAdvicePoints,
-		},
-		RegimenPlan: &common.RegimenPlan{
-			AllRegimenSteps: allRegimenSteps,
-		},
-		TreatmentList: &common.TreatmentList{},
-		Status:        api.STATUS_DRAFT,
-	}
-
-	setCommittedStateForEachSection(drTreatmentPlan)
-
-	if err := d.populateFavoriteTreatmentPlanIntoTreatmentPlan(drTreatmentPlan, requestData.DoctorFavoriteTreatmentPlanId); err == api.NoRowsError {
-		apiservice.WriteDeveloperError(w, http.StatusNotFound, "No favorite treatment plan found")
-		return
-	} else if err != nil {
-		apiservice.WriteDeveloperError(w, http.StatusInternalServerError, "Unable to get favorite treatment plan: "+err.Error())
+	if err := fillInTreatmentPlan(drTreatmentPlan, patientVisitReviewData.DoctorId, d.dataApi); err != nil {
+		apiservice.WriteError(err, w, r)
 		return
 	}
 
 	dispatch.Default.Publish(&NewTreatmentPlanStartedEvent{
 		DoctorId:        patientVisitReviewData.DoctorId,
-		PatientVisitId:  requestData.PatientVisitId,
+		PatientVisitId:  patientVisitId,
 		TreatmentPlanId: treatmentPlanId,
 	})
 
 	apiservice.WriteJSONToHTTPResponseWriter(w, http.StatusOK, &DoctorTreatmentPlanResponse{TreatmentPlan: drTreatmentPlan})
-}
-
-func setCommittedStateForEachSection(drTreatmentPlan *common.DoctorTreatmentPlan) {
-	// depending on which sections have data in them, mark them to be committed or uncommitted
-	// note that we intentionally treat a section with no data to be in the UNCOMMITTED state so as
-	// to ensure that the doctor actually wanted to leave a particular section blank
-	drTreatmentPlan.TreatmentList.Status = api.STATUS_UNCOMMITTED
-	drTreatmentPlan.RegimenPlan.Status = api.STATUS_UNCOMMITTED
-	drTreatmentPlan.Advice.Status = api.STATUS_UNCOMMITTED
-	if len(drTreatmentPlan.TreatmentList.Treatments) > 0 {
-		drTreatmentPlan.TreatmentList.Status = api.STATUS_COMMITTED
-	}
-	if len(drTreatmentPlan.RegimenPlan.RegimenSections) > 0 {
-		drTreatmentPlan.RegimenPlan.Status = api.STATUS_COMMITTED
-	}
-	if len(drTreatmentPlan.Advice.SelectedAdvicePoints) > 0 {
-		drTreatmentPlan.Advice.Status = api.STATUS_COMMITTED
-	}
-}
-
-func fillInTreatmentPlan(drTreatmentPlan *common.DoctorTreatmentPlan, dataApi api.DataAPI) error {
-	var err error
-	drTreatmentPlan.TreatmentList = &common.TreatmentList{}
-	drTreatmentPlan.TreatmentList.Treatments, err = dataApi.GetTreatmentsBasedOnTreatmentPlanId(drTreatmentPlan.Id.Int64())
-	if err != nil {
-		return fmt.Errorf("Unable to get treatments for treatment plan: %s", err)
-	}
-
-	drTreatmentPlan.RegimenPlan, err = dataApi.GetRegimenPlanForTreatmentPlan(drTreatmentPlan.Id.Int64())
-	if err != nil {
-		return fmt.Errorf("Unable to get regimen plan for treatment plan: %s", err)
-	}
-
-	drTreatmentPlan.Advice = &common.Advice{
-		TreatmentPlanId: drTreatmentPlan.Id,
-	}
-
-	drTreatmentPlan.Advice.SelectedAdvicePoints, err = dataApi.GetAdvicePointsForTreatmentPlan(drTreatmentPlan.Id.Int64())
-	if err != nil {
-		return fmt.Errorf("Unable to get advice points for treatment plan")
-	}
-	return err
-}
-
-func (d *doctorTreatmentPlanHandler) populateFavoriteTreatmentPlanIntoTreatmentPlan(treatmentPlan *common.DoctorTreatmentPlan, favoriteTreatmentPlanId int64) error {
-	// Populate treatment plan with favorite treatment plan data if favorite treatment plan specified
-	if favoriteTreatmentPlanId == 0 {
-		return nil
-	}
-
-	favoriteTreatmentPlan, err := d.dataApi.GetFavoriteTreatmentPlan(favoriteTreatmentPlanId)
-	if err != nil {
-		return err
-	}
-	treatmentPlan.DoctorFavoriteTreatmentPlanName = favoriteTreatmentPlan.Name
-	treatmentPlan.DoctorFavoriteTreatmentPlanId = favoriteTreatmentPlan.Id
-
-	// The assumption here is that all components of a treatment plan that are already populated
-	// match the items in the favorite treatment plan, if there exists a mapping to indicate that this
-	// treatment plan must be filled in from a favorite treatment plan. The reason that we don't just write over
-	// the items that do already belong in the treatment plan is to maintain the ids of the items that have been committed
-	// to the database as part of the treatment plan.
-
-	// populate treatments
-	if len(treatmentPlan.TreatmentList.Treatments) == 0 {
-
-		treatmentPlan.TreatmentList.Treatments = make([]*common.Treatment, len(favoriteTreatmentPlan.TreatmentList.Treatments))
-		for i, treatment := range favoriteTreatmentPlan.TreatmentList.Treatments {
-			treatmentPlan.TreatmentList.Treatments[i] = &common.Treatment{
-				DrugDBIds:               treatment.DrugDBIds,
-				DrugInternalName:        treatment.DrugInternalName,
-				DrugName:                treatment.DrugName,
-				DrugRoute:               treatment.DrugRoute,
-				DosageStrength:          treatment.DosageStrength,
-				DispenseValue:           treatment.DispenseValue,
-				DispenseUnitId:          treatment.DispenseUnitId,
-				DispenseUnitDescription: treatment.DispenseUnitDescription,
-				NumberRefills:           treatment.NumberRefills,
-				SubstitutionsAllowed:    treatment.SubstitutionsAllowed,
-				DaysSupply:              treatment.DaysSupply,
-				PharmacyNotes:           treatment.PharmacyNotes,
-				PatientInstructions:     treatment.PatientInstructions,
-				CreationDate:            treatment.CreationDate,
-				OTC:                     treatment.OTC,
-				IsControlledSubstance:    treatment.IsControlledSubstance,
-				SupplementalInstructions: treatment.SupplementalInstructions,
-			}
-		}
-	}
-
-	// populate regimen plan
-	if len(treatmentPlan.RegimenPlan.RegimenSections) == 0 {
-		treatmentPlan.RegimenPlan.RegimenSections = make([]*common.RegimenSection, len(favoriteTreatmentPlan.RegimenPlan.RegimenSections))
-
-		for i, regimenSection := range favoriteTreatmentPlan.RegimenPlan.RegimenSections {
-			treatmentPlan.RegimenPlan.RegimenSections[i] = &common.RegimenSection{
-				RegimenName:  regimenSection.RegimenName,
-				RegimenSteps: make([]*common.DoctorInstructionItem, len(regimenSection.RegimenSteps)),
-			}
-
-			for j, regimenStep := range regimenSection.RegimenSteps {
-				treatmentPlan.RegimenPlan.RegimenSections[i].RegimenSteps[j] = &common.DoctorInstructionItem{
-					ParentId: regimenStep.ParentId,
-					Text:     regimenStep.Text,
-				}
-			}
-		}
-	}
-
-	// populate advice
-	if len(treatmentPlan.Advice.SelectedAdvicePoints) == 0 {
-		treatmentPlan.Advice.SelectedAdvicePoints = make([]*common.DoctorInstructionItem, len(favoriteTreatmentPlan.Advice.SelectedAdvicePoints))
-		for i, advicePoint := range favoriteTreatmentPlan.Advice.SelectedAdvicePoints {
-			treatmentPlan.Advice.SelectedAdvicePoints[i] = &common.DoctorInstructionItem{
-				ParentId: advicePoint.ParentId,
-				Text:     advicePoint.Text,
-			}
-		}
-	}
-
-	return nil
-
 }

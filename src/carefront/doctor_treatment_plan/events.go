@@ -25,3 +25,11 @@ type AdviceAddedEvent struct {
 	TreatmentPlanId int64
 	Advice          *common.Advice
 }
+
+type TreatmentPlanCreatedEvent struct {
+	PatientId       int64
+	DoctorId        int64
+	VisitId         int64
+	TreatmentPlanId int64
+	Patient         *common.Patient // Setting Patient is an optional optimization. If this is nil then PatientId can be used.
+}

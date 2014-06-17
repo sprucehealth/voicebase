@@ -15,6 +15,7 @@ import (
 	"carefront/api"
 	"carefront/apiservice"
 	"carefront/common"
+	"carefront/doctor_treatment_plan"
 	"carefront/patient_visit"
 )
 
@@ -355,12 +356,17 @@ func TestDoctorSubmissionOfPatientVisitReview(t *testing.T) {
 		t.Fatal("Unable to get doctor object from id: " + err.Error())
 	}
 
-	// attempt to submit the patient visit review here. It should fail
-	doctorSubmitPatientVisitReviewHandler := &apiservice.DoctorSubmitPatientVisitReviewHandler{DataApi: testData.DataApi}
-	ts := httptest.NewServer(doctorSubmitPatientVisitReviewHandler)
+	jsonData, err := json.Marshal(&doctor_treatment_plan.TreatmentPlanRequestData{})
+	if err != nil {
+		t.Fatal(err)
+	}
+
+	// attempt to submit the treatment plan here. It should fail
+	doctorTreatmentPlanHandler := doctor_treatment_plan.NewDoctorTreatmentPlanHandler(testData.DataApi, nil, nil, false)
+	ts := httptest.NewServer(doctorTreatmentPlanHandler)
 	defer ts.Close()
 
-	resp, err := AuthPost(ts.URL, "application/x-www-form-urlencoded", bytes.NewBufferString("treatment_plan_id=0"), doctor.AccountId.Int64())
+	resp, err := AuthPut(ts.URL, "application/json", bytes.NewReader(jsonData), doctor.AccountId.Int64())
 	if err != nil {
 		t.Fatal("Unable to make a call to submit the patient visit review : " + err.Error())
 	} else if resp.StatusCode != http.StatusBadRequest {
@@ -371,8 +377,12 @@ func TestDoctorSubmissionOfPatientVisitReview(t *testing.T) {
 	StartReviewingPatientVisit(patientVisitResponse.PatientVisitId, doctor, testData, t)
 	responseData := PickATreatmentPlanForPatientVisit(patientVisitResponse.PatientVisitId, doctor, nil, testData, t)
 
+	jsonData, err = json.Marshal(doctor_treatment_plan.TreatmentPlanRequestData{
+		TreatmentPlanId: responseData.TreatmentPlan.Id,
+	})
+
 	// attempt to submit the patient visit review here. It should work
-	resp, err = AuthPost(ts.URL, "application/x-www-form-urlencoded", bytes.NewBufferString("treatment_plan_id="+strconv.FormatInt(responseData.TreatmentPlan.Id.Int64(), 10)), doctor.AccountId.Int64())
+	resp, err = AuthPut(ts.URL, "application/json", bytes.NewReader(jsonData), doctor.AccountId.Int64())
 	if err != nil {
 		t.Fatal("Unable to make successful call to submit patient visit review")
 	} else if resp.StatusCode != http.StatusOK {

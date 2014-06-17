@@ -1,10 +1,10 @@
 package notify
 
 import (
-	"carefront/apiservice"
 	"carefront/app_worker"
 	"carefront/common"
 	"carefront/common/config"
+	"carefront/doctor_treatment_plan"
 	"carefront/messages"
 	"carefront/patient_visit"
 	"fmt"
@@ -64,12 +64,12 @@ func getNotificationViewForEvent(ev interface{}) notificationView {
 
 func init() {
 	eventToNotificationViewMapping = map[reflect.Type]notificationView{
-		reflect.TypeOf(&patient_visit.VisitSubmittedEvent{}):    visitSubmittedNotificationView(0),
-		reflect.TypeOf(&apiservice.VisitReviewSubmittedEvent{}): visitReviewedNotificationView(0),
-		reflect.TypeOf(&messages.ConversationStartedEvent{}):    newMessageNotificationView(0),
-		reflect.TypeOf(&messages.ConversationReplyEvent{}):      newMessageNotificationView(0),
-		reflect.TypeOf(&app_worker.RefillRequestCreatedEvent{}): refillRxCreatedNotificationView(0),
-		reflect.TypeOf(&app_worker.RxTransmissionErrorEvent{}):  rxTransmissionErrorNotificationView(0),
+		reflect.TypeOf(&patient_visit.VisitSubmittedEvent{}):               visitSubmittedNotificationView(0),
+		reflect.TypeOf(&doctor_treatment_plan.TreatmentPlanCreatedEvent{}): treatmentPlanCreatedNotificationView(0),
+		reflect.TypeOf(&messages.ConversationStartedEvent{}):               newMessageNotificationView(0),
+		reflect.TypeOf(&messages.ConversationReplyEvent{}):                 newMessageNotificationView(0),
+		reflect.TypeOf(&app_worker.RefillRequestCreatedEvent{}):            refillRxCreatedNotificationView(0),
+		reflect.TypeOf(&app_worker.RxTransmissionErrorEvent{}):             rxTransmissionErrorNotificationView(0),
 	}
 
 	eventToInternalNotificationMapping = map[reflect.Type]internalNotificationView{
@@ -93,18 +93,18 @@ func (v visitSubmittedNotificationView) renderPush(notificationConfig *config.No
 	return renderNotification(notificationConfig, v.renderSMS(), notificationCount)
 }
 
-type visitReviewedNotificationView int64
+type treatmentPlanCreatedNotificationView int64
 
-func (visitReviewedNotificationView) renderEmail() string {
+func (treatmentPlanCreatedNotificationView) renderEmail() string {
 	// TODO
 	return ""
 }
 
-func (visitReviewedNotificationView) renderSMS() string {
+func (treatmentPlanCreatedNotificationView) renderSMS() string {
 	return "Doctor has reviewed your case."
 }
 
-func (v visitReviewedNotificationView) renderPush(notificationConfig *config.NotificationConfig, notificationCount int64) interface{} {
+func (v treatmentPlanCreatedNotificationView) renderPush(notificationConfig *config.NotificationConfig, notificationCount int64) interface{} {
 	return renderNotification(notificationConfig, v.renderSMS(), notificationCount)
 }
 

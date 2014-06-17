@@ -2,6 +2,7 @@ package api
 
 import (
 	"carefront/app_url"
+	"carefront/common"
 	"carefront/libs/golog"
 	"carefront/settings"
 	"fmt"
@@ -34,35 +35,25 @@ func (d *DoctorQueueItem) GetTitleAndSubtitle(dataApi DataAPI) (string, string, 
 
 	switch d.EventType {
 	case EVENT_TYPE_PATIENT_VISIT, EVENT_TYPE_TREATMENT_PLAN:
-		var patientVisitId int64
+		var patient *common.Patient
 		var err error
 
 		if d.EventType == EVENT_TYPE_TREATMENT_PLAN {
-			patientVisitId, err = dataApi.GetPatientVisitIdFromTreatmentPlanId(d.ItemId)
+			patient, err = dataApi.GetPatientFromTreatmentPlanId(d.ItemId)
 			if err == NoRowsError {
-				golog.Errorf("Did not get patient visit id from treatment plan id (%d)", d.ItemId)
+				golog.Errorf("Did not get patient from treatment plan id (%d)", d.ItemId)
 				return "", "", nil
 			} else if err != nil {
 				return "", "", err
 			}
 		} else {
-			patientVisitId = d.ItemId
-		}
-
-		patientId, err := dataApi.GetPatientIdFromPatientVisitId(patientVisitId)
-		if err == NoRowsError {
-			golog.Errorf("Unable to get patient id from patient visit id (%d)", patientVisitId)
-			return "", "", nil
-		} else if err != nil {
-			return "", "", err
-		}
-
-		patient, err := dataApi.GetPatientFromId(patientId)
-		if err == NoRowsError {
-			golog.Errorf("Unable to get patient from id %d", patientId)
-			return "", "", nil
-		} else if err != nil {
-			return "", "", err
+			patient, err = dataApi.GetPatientFromPatientVisitId(d.ItemId)
+			if err == NoRowsError {
+				golog.Errorf("Did not get patient from patient visit id (%d)", d.ItemId)
+				return "", "", nil
+			} else if err != nil {
+				return "", "", err
+			}
 		}
 
 		switch d.Status {

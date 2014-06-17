@@ -102,13 +102,16 @@ type PatientVisitAPI interface {
 	GetLatestClosedPatientVisitForPatient(patientId int64) (*common.PatientVisit, error)
 	GetPatientVisitFromId(patientVisitId int64) (patientVisit *common.PatientVisit, err error)
 	CreateNewPatientVisit(patientId, healthConditionId, layoutVersionId int64) (int64, error)
-	StartNewTreatmentPlanForPatientVisit(patientId, patientVisitId, doctorId, favoriteTreatmentPlanId int64) (int64, error)
+	StartNewTreatmentPlan(patientId, patientVisitId, doctorId int64, parent *common.TreatmentPlanParent, contentSource *common.TreatmentPlanContentSource) (int64, error)
 	GetAbridgedTreatmentPlan(treatmentPlanId, doctorId int64) (*common.DoctorTreatmentPlan, error)
-	GetAbridgedTreatmentPlanList(patientId int64, status string) ([]*common.DoctorTreatmentPlan, error)
+	GetTreatmentPlan(treatmentPlanId, doctorId int64) (*common.DoctorTreatmentPlan, error)
+	GetAbridgedTreatmentPlanList(doctorId, patientId int64, status string) ([]*common.DoctorTreatmentPlan, error)
 	GetAbridgedTreatmentPlanListInDraftForDoctor(doctorId, patientId int64) ([]*common.DoctorTreatmentPlan, error)
+	DeleteTreatmentPlan(treatmentPlanId int64) error
+	GetPatientIdFromTreatmentPlanId(treatmentPlanId int64) (int64, error)
 	UpdatePatientVisitStatus(patientVisitId int64, message, event string) error
 	ClosePatientVisit(patientVisitId int64, event string) error
-	MarkTreatmentPlanAsSent(treatmentPlanId int64) error
+	ActivateTreatmentPlan(treatmentPlanId, doctorId int64) error
 	SubmitPatientVisitWithId(patientVisitId int64) error
 	GetDiagnosisResponseToQuestionWithTag(questionTag string, doctorId, patientVisitId int64) ([]*common.AnswerIntake, error)
 	AddDiagnosisSummaryForTreatmentPlan(summary string, treatmentPlanId, doctorId int64) error
@@ -128,9 +131,10 @@ type PatientVisitAPI interface {
 	GetTreatmentFromId(treatmentId int64) (*common.Treatment, error)
 	GetActiveTreatmentPlanIdForPatient(patientId int64) (int64, error)
 	UpdateTreatmentWithPharmacyAndErxId(treatments []*common.Treatment, pharmacySentTo *pharmacy.PharmacyData, doctorId int64) error
-	AddErxStatusEvent(treatments []*common.Treatment, prescriptionStatus common.StatusEvent) error
+	AddErxStatusEvent(treatmentIds []int64, prescriptionStatus common.StatusEvent) error
 	GetPrescriptionStatusEventsForPatient(patientId int64) ([]common.StatusEvent, error)
 	GetPrescriptionStatusEventsForTreatment(treatmentId int64) ([]common.StatusEvent, error)
+	MarkTPDeviatedFromContentSource(treatmentPlanId int64) error
 }
 
 type RefillRequestDenialReason struct {
@@ -211,7 +215,6 @@ type FavoriteTreatmentPlanAPI interface {
 	GetTreatmentsInFavoriteTreatmentPlan(favoriteTreatmentPlanId int64) ([]*common.Treatment, error)
 	GetRegimenPlanInFavoriteTreatmentPlan(favoriteTreatmentPlanId int64) (*common.RegimenPlan, error)
 	GetAdviceInFavoriteTreatmentPlan(favoriteTreatmentPlanId int64) (*common.Advice, error)
-	DeleteFavoriteTreatmentPlanMapping(treatmentPlanId, favoriteTreatmentPlanId int64) error
 }
 
 type IntakeAPI interface {

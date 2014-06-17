@@ -3,14 +3,15 @@ package test_integration
 import (
 	"bytes"
 	"carefront/api"
-	"carefront/apiservice"
 	"carefront/app_worker"
 	"carefront/common"
+	"carefront/doctor_treatment_plan"
 	"carefront/encoding"
 	"carefront/libs/aws/sqs"
 	"carefront/libs/erx"
 	"carefront/libs/pharmacy"
 	"carefront/treatment_plan"
+	"encoding/json"
 	"net/http"
 	"net/http/httptest"
 	"strconv"
@@ -70,20 +71,28 @@ func TestPatientVisitReview(t *testing.T) {
 	erxStatusQueue := &common.SQSQueue{}
 	erxStatusQueue.QueueService = &sqs.StubSQS{}
 	erxStatusQueue.QueueUrl = "local-erx"
-	doctorSubmitPatientVisitReviewHandler := &apiservice.DoctorSubmitPatientVisitReviewHandler{
-		DataApi:        testData.DataApi,
-		ERxApi:         stubErxService,
-		ErxStatusQueue: erxStatusQueue,
-		ERxRouting:     true,
-	}
-	ts3 := httptest.NewServer(doctorSubmitPatientVisitReviewHandler)
+	submitTreatmentPlanHandler := doctor_treatment_plan.NewDoctorTreatmentPlanHandler(
+		testData.DataApi,
+		stubErxService,
+		erxStatusQueue,
+		true)
+	ts3 := httptest.NewServer(submitTreatmentPlanHandler)
 	defer ts3.Close()
 
-	resp, err = AuthPost(ts3.URL, "application/x-www-form-urlencoded", bytes.NewBufferString("treatment_plan_id="+strconv.FormatInt(treatmentPlan.Id.Int64(), 10)), doctor.AccountId.Int64())
+	jsonData, err := json.Marshal(&doctor_treatment_plan.TreatmentPlanRequestData{
+		TreatmentPlanId: treatmentPlan.Id,
+	})
+
+	if err != nil {
+		t.Fatal(err)
+	}
+
+	resp, err = AuthPut(ts3.URL, "application/json", bytes.NewReader(jsonData), doctor.AccountId.Int64())
 	if err != nil {
 		t.Fatal("Unable to make call to close patient visit " + err.Error())
+	} else if resp.StatusCode != http.StatusOK {
+		t.Fatalf("Expected %d but got %d", http.StatusOK, resp.StatusCode)
 	}
-	CheckSuccessfulStatusCode(resp, "Unable to make successful call to close the patient visit", t)
 
 	// start a new patient visit
 	patientVisitResponse, treatmentPlan = SignupAndSubmitPatientVisitForRandomPatient(t, testData, doctor)
@@ -161,7 +170,7 @@ func TestPatientVisitReview(t *testing.T) {
 	stubErxService.PrescriptionIdToPrescriptionStatuses[10] = []common.StatusEvent{common.StatusEvent{Status: api.ERX_STATUS_SENT}}
 	stubErxService.PrescriptionIdToPrescriptionStatuses[20] = []common.StatusEvent{common.StatusEvent{Status: api.ERX_STATUS_ERROR, StatusDetails: "error test"}}
 
-	getTreatmentsResponse := addAndGetTreatmentsForPatientVisit(testData, treatments, doctor.AccountId.Int64(), treatmentPlan.Id.Int64(), t)
+	getTreatmentsResponse := AddAndGetTreatmentsForPatientVisit(testData, treatments, doctor.AccountId.Int64(), treatmentPlan.Id.Int64(), t)
 	if len(getTreatmentsResponse.TreatmentList.Treatments) != 2 {
 		t.Fatalf("Expected 2 treatments to be returned, instead got back %d", len(getTreatmentsResponse.TreatmentList.Treatments))
 	}
@@ -228,7 +237,15 @@ func TestPatientVisitReview(t *testing.T) {
 	//
 
 	// get doctor to submit the patient visit review
-	resp, err = AuthPost(ts3.URL, "application/x-www-form-urlencoded", bytes.NewBufferString("treatment_plan_id="+strconv.FormatInt(treatmentPlan.Id.Int64(), 10)), doctor.AccountId.Int64())
+
+	jsonData, err = json.Marshal(&doctor_treatment_plan.TreatmentPlanRequestData{
+		TreatmentPlanId: treatmentPlan.Id,
+	})
+	if err != nil {
+		t.Fatal(err)
+	}
+
+	resp, err = AuthPut(ts3.URL, "application/json", bytes.NewReader(jsonData), doctor.AccountId.Int64())
 	if err != nil {
 		t.Fatal("Unable to make call to close patient visit " + err.Error())
 	} else if resp.StatusCode != http.StatusOK {

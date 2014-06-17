@@ -127,7 +127,7 @@ func (d *DataService) CreateOrUpdateFavoriteTreatmentPlan(favoriteTreatmentPlan 
 	}
 
 	if treatmentPlanId > 0 {
-		_, err := tx.Exec(`replace into treatment_plan_favorite_mapping (treatment_plan_id, dr_favorite_treatment_plan_id) values (?,?)`, treatmentPlanId, favoriteTreatmentPlan.Id.Int64())
+		_, err := tx.Exec(`replace into treatment_plan_content_source (treatment_plan_id, content_source_id, content_source_type, doctor_id) values (?,?,?,?)`, treatmentPlanId, favoriteTreatmentPlan.Id.Int64(), common.TPContentSourceTypeFTP, favoriteTreatmentPlan.DoctorId)
 		if err != nil {
 			tx.Rollback()
 			return err
@@ -212,11 +212,6 @@ func (d *DataService) GetAdviceInFavoriteTreatmentPlan(favoriteTreatmentPlanId i
 	return &common.Advice{
 		SelectedAdvicePoints: selectedAdvicePoints,
 	}, nil
-}
-
-func (d *DataService) DeleteFavoriteTreatmentPlanMapping(treatmentPlanId, favoriteTreatmentPlanId int64) error {
-	_, err := d.db.Exec(`delete from treatment_plan_favorite_mapping where treatment_plan_id = ? and dr_favorite_treatment_plan_id = ?`, treatmentPlanId, favoriteTreatmentPlanId)
-	return err
 }
 
 func deleteComponentsOfFavoriteTreatmentPlan(tx *sql.Tx, favoriteTreatmentPlanId int64) error {

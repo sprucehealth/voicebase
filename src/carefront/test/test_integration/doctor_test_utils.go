@@ -18,6 +18,7 @@ import (
 	"carefront/apiservice"
 	"carefront/common"
 	"carefront/doctor_treatment_plan"
+	"carefront/encoding"
 	"carefront/libs/erx"
 	"carefront/patient_file"
 	"carefront/patient_visit"
@@ -191,24 +192,68 @@ func StartReviewingPatientVisit(patientVisitId int64, doctor *common.Doctor, tes
 	CheckSuccessfulStatusCode(resp, "Unable to make successful call to get patient visit review: ", t)
 }
 
-func PickATreatmentPlanForPatientVisit(patientVisitId int64, doctor *common.Doctor, favoriteTreatmentPlan *common.FavoriteTreatmentPlan, testData TestData, t *testing.T) *doctor_treatment_plan.DoctorTreatmentPlanResponse {
-	doctorPickTreatmentPlanHandler := doctor_treatment_plan.NewDoctorTreatmentPlanHandler(testData.DataApi)
+func PickATreatmentPlan(parent *common.TreatmentPlanParent, contentSource *common.TreatmentPlanContentSource, doctor *common.Doctor, testData TestData, t *testing.T) *doctor_treatment_plan.DoctorTreatmentPlanResponse {
+	doctorPickTreatmentPlanHandler := doctor_treatment_plan.NewDoctorTreatmentPlanHandler(testData.DataApi, nil, nil, false)
 
 	ts := httptest.NewServer(doctorPickTreatmentPlanHandler)
 	defer ts.Close()
 
-	params := make(map[string]interface{})
-	params["patient_visit_id"] = strconv.FormatInt(patientVisitId, 10)
-	if favoriteTreatmentPlan != nil {
-		params["dr_favorite_treatment_plan_id"] = strconv.FormatInt(favoriteTreatmentPlan.Id.Int64(), 10)
+	requestData := doctor_treatment_plan.PickTreatmentPlanRequestData{
+		TPParent: parent,
 	}
 
-	jsonData, err := json.Marshal(params)
+	if contentSource != nil {
+		requestData.TPContentSource = contentSource
+	}
+
+	jsonData, err := json.Marshal(requestData)
 	if err != nil {
 		t.Fatal(err)
 	}
 
-	resp, err := AuthPut(ts.URL, "application/json", bytes.NewReader(jsonData), doctor.AccountId.Int64())
+	resp, err := AuthPost(ts.URL, "application/json", bytes.NewReader(jsonData), doctor.AccountId.Int64())
+	if err != nil {
+		t.Fatalf("Unable to pick a treatment plan for the patient visit doctor %s", err)
+	}
+
+	if resp.StatusCode != http.StatusOK {
+		t.Fatalf("Expected successful picking up of treatment plan instead got %d", resp.StatusCode)
+	}
+
+	responseData := &doctor_treatment_plan.DoctorTreatmentPlanResponse{}
+	if err := json.NewDecoder(resp.Body).Decode(responseData); err != nil {
+		t.Fatalf("Unable to unmarshal response into response json: %s", err)
+	}
+
+	return responseData
+}
+
+func PickATreatmentPlanForPatientVisit(patientVisitId int64, doctor *common.Doctor, favoriteTreatmentPlan *common.FavoriteTreatmentPlan, testData TestData, t *testing.T) *doctor_treatment_plan.DoctorTreatmentPlanResponse {
+	doctorPickTreatmentPlanHandler := doctor_treatment_plan.NewDoctorTreatmentPlanHandler(testData.DataApi, nil, nil, false)
+
+	ts := httptest.NewServer(doctorPickTreatmentPlanHandler)
+	defer ts.Close()
+
+	requestData := doctor_treatment_plan.PickTreatmentPlanRequestData{
+		TPParent: &common.TreatmentPlanParent{
+			ParentId:   encoding.NewObjectId(patientVisitId),
+			ParentType: common.TPParentTypePatientVisit,
+		},
+	}
+
+	if favoriteTreatmentPlan != nil {
+		requestData.TPContentSource = &common.TreatmentPlanContentSource{
+			ContentSourceType: common.TPContentSourceTypeFTP,
+			ContentSourceId:   favoriteTreatmentPlan.Id,
+		}
+	}
+
+	jsonData, err := json.Marshal(requestData)
+	if err != nil {
+		t.Fatal(err)
+	}
+
+	resp, err := AuthPost(ts.URL, "application/json", bytes.NewReader(jsonData), doctor.AccountId.Int64())
 	if err != nil {
 		t.Fatalf("Unable to pick a treatment plan for the patient visit doctor %s", err)
 	}
@@ -226,11 +271,20 @@ func PickATreatmentPlanForPatientVisit(patientVisitId int64, doctor *common.Doct
 }
 
 func SubmitPatientVisitBackToPatient(treatmentPlanId int64, doctor *common.Doctor, testData TestData, t *testing.T) {
-	doctorSubmitPatientVisitReviewHandler := &apiservice.DoctorSubmitPatientVisitReviewHandler{DataApi: testData.DataApi}
-	ts := httptest.NewServer(doctorSubmitPatientVisitReviewHandler)
+	doctorTreatmentPlanHandler := doctor_treatment_plan.NewDoctorTreatmentPlanHandler(testData.DataApi, nil, nil, false)
+	ts := httptest.NewServer(doctorTreatmentPlanHandler)
 	defer ts.Close()
 
-	resp, err := AuthPost(ts.URL, "application/x-www-form-urlencoded", bytes.NewBufferString("treatment_plan_id="+strconv.FormatInt(treatmentPlanId, 10)), doctor.AccountId.Int64())
+	requestData := &doctor_treatment_plan.TreatmentPlanRequestData{
+		TreatmentPlanId: encoding.NewObjectId(treatmentPlanId),
+	}
+
+	jsonData, err := json.Marshal(requestData)
+	if err != nil {
+		t.Fatal(err)
+	}
+
+	resp, err := AuthPut(ts.URL, "application/json", bytes.NewReader(jsonData), doctor.AccountId.Int64())
 	if err != nil {
 		t.Fatal("Unable to make call to close patient visit " + err.Error())
 	}

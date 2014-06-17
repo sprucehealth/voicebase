@@ -419,8 +419,7 @@ func (d *DataService) GetPatientsForIds(patientIds []int64) ([]*common.Patient, 
 
 func (d *DataService) GetPatientFromTreatmentPlanId(treatmentPlanId int64) (*common.Patient, error) {
 	patients, err := d.getPatientBasedOnQuery("treatment_plan",
-		`INNER JOIN patient_visit ON patient_visit_id = patient_visit.id
-		INNER JOIN patient ON patient.id = patient_visit.patient_id`,
+		`INNER JOIN patient ON patient.id = treatment_plan.patient_id`,
 		`treatment_plan.id = ?
 			AND (phone IS NULL OR (patient_phone.status = 'ACTIVE'))
 			AND (zip_code IS NULL OR patient_location.status = 'ACTIVE')`, treatmentPlanId)

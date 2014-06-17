@@ -161,7 +161,7 @@ func TestFavoriteTreatmentPlan_PickingAFavoriteTreatmentPlan(t *testing.T) {
 
 	// lets attempt to get the treatment plan for the patient visit
 	// and ensure that its empty
-	ts := httptest.NewServer(doctor_treatment_plan.NewDoctorTreatmentPlanHandler(testData.DataApi))
+	ts := httptest.NewServer(doctor_treatment_plan.NewDoctorTreatmentPlanHandler(testData.DataApi, nil, nil, false))
 	defer ts.Close()
 
 	responseData := &doctor_treatment_plan.DoctorTreatmentPlanResponse{}
@@ -211,7 +211,7 @@ func TestFavoriteTreatmentPlan_PickingAFavoriteTreatmentPlan(t *testing.T) {
 	}
 
 	var count int64
-	if err := testData.DB.QueryRow(`select count(*) from treatment_plan where patient_visit_id = ?`, patientVisitResponse.PatientVisitId).Scan(&count); err != nil {
+	if err := testData.DB.QueryRow(`select count(*) from treatment_plan inner join treatment_plan_patient_visit_mapping on treatment_plan_id = treatment_plan.id where patient_visit_id = ?`, patientVisitResponse.PatientVisitId).Scan(&count); err != nil {
 		t.Fatalf("Unable to query database to get number of treatment plans for patient visit: %s", err)
 	} else if count != 1 {
 		t.Fatalf("Expected 1 treatment plan for patient visit instead got %d", count)
@@ -245,7 +245,7 @@ func TestFavoriteTreatmentPlan_CommittedStateForTreatmentPlan(t *testing.T) {
 	CreateRegimenPlanForTreatmentPlan(regimenPlanRequest, testData, doctor, t)
 
 	// now lets attempt to get the treatment plan for the patient visit
-	ts := httptest.NewServer(doctor_treatment_plan.NewDoctorTreatmentPlanHandler(testData.DataApi))
+	ts := httptest.NewServer(doctor_treatment_plan.NewDoctorTreatmentPlanHandler(testData.DataApi, nil, nil, false))
 	defer ts.Close()
 
 	// the regimen plan should indicate that it was committed while the rest of the sections
@@ -291,7 +291,7 @@ func TestFavoriteTreatmentPlan_CommittedStateForTreatmentPlan(t *testing.T) {
 	}
 
 	// now lets go ahead and add a treatment to the treatment plan
-	addAndGetTreatmentsForPatientVisit(testData, favoriteTreamentPlan.TreatmentList.Treatments, doctor.AccountId.Int64(), treatmentPlanId, t)
+	AddAndGetTreatmentsForPatientVisit(testData, favoriteTreamentPlan.TreatmentList.Treatments, doctor.AccountId.Int64(), treatmentPlanId, t)
 
 	// now the treatment section should also indicate that it has been committed
 	responseData = &doctor_treatment_plan.DoctorTreatmentPlanResponse{}
@@ -338,7 +338,7 @@ func TestFavoriteTreatmentPlan_BreakingMappingOnModify(t *testing.T) {
 	CreateRegimenPlanForTreatmentPlan(regimenPlanRequest, testData, doctor, t)
 
 	// now lets attempt to get the abbreviated version of the treatment plan
-	ts := httptest.NewServer(doctor_treatment_plan.NewDoctorTreatmentPlanHandler(testData.DataApi))
+	ts := httptest.NewServer(doctor_treatment_plan.NewDoctorTreatmentPlanHandler(testData.DataApi, nil, nil, false))
 	defer ts.Close()
 
 	// the regimen plan should indicate that it was committed while the rest of the sections
@@ -353,23 +353,25 @@ func TestFavoriteTreatmentPlan_BreakingMappingOnModify(t *testing.T) {
 		t.Fatalf("Expected %d response for getting treatment plan instead got %d", http.StatusOK, resp.StatusCode)
 	} else if json.NewDecoder(resp.Body).Decode(responseData); err != nil {
 		t.Fatalf("Unable to unmarshal response into struct %s", err)
-	} else if responseData.TreatmentPlan.DoctorFavoriteTreatmentPlanId.Int64() != 0 {
-		t.Fatalf("Expected the treatment plan to no longer be connected to the favorite treatment plan")
+	} else if responseData.TreatmentPlan.ContentSource == nil || responseData.TreatmentPlan.ContentSource.ContentSourceType != common.TPContentSourceTypeFTP ||
+		responseData.TreatmentPlan.ContentSource.ContentSourceId.Int64() == 0 || !responseData.TreatmentPlan.ContentSource.HasDeviated {
+		t.Fatalf("Expected the treatment plan to indicate that it has deviated from the original content source (ftp) but it doesnt do so")
 	}
 
 	// lets try modfying treatments on a new treatment plan picked from favorites
 	responseData = PickATreatmentPlanForPatientVisit(patientVisitResponse.PatientVisitId, doctor, favoriteTreamentPlan, testData, t)
 
 	// lets make sure linkage exists
-	if responseData.TreatmentPlan.DoctorFavoriteTreatmentPlanId.Int64() == 0 {
+	if responseData.TreatmentPlan.ContentSource == nil || responseData.TreatmentPlan.ContentSource.ContentSourceType != common.TPContentSourceTypeFTP ||
+		responseData.TreatmentPlan.ContentSource.ContentSourceId.Int64() == 0 {
 		t.Fatalf("Expected the treatment plan to come from a favorite treatment plan")
-	} else if responseData.TreatmentPlan.DoctorFavoriteTreatmentPlanId.Int64() != favoriteTreamentPlan.Id.Int64() {
-		t.Fatalf("Got a different favorite treatment plan linking to the treatment plan. Expected %d got %d", favoriteTreamentPlan.Id.Int64(), responseData.TreatmentPlan.Id.Int64())
+	} else if responseData.TreatmentPlan.ContentSource.ContentSourceId.Int64() != favoriteTreamentPlan.Id.Int64() {
+		t.Fatalf("Got a different favorite treatment plan linking to the treatment plan. Expected %d got %d", favoriteTreamentPlan.Id.Int64(), responseData.TreatmentPlan.ContentSource.ContentSourceId.Int64())
 	}
 
 	// modify treatment
 	favoriteTreamentPlan.TreatmentList.Treatments[0].DispenseValue = encoding.HighPrecisionFloat64(123.12345)
-	addAndGetTreatmentsForPatientVisit(testData, favoriteTreamentPlan.TreatmentList.Treatments, doctor.AccountId.Int64(), responseData.TreatmentPlan.Id.Int64(), t)
+	AddAndGetTreatmentsForPatientVisit(testData, favoriteTreamentPlan.TreatmentList.Treatments, doctor.AccountId.Int64(), responseData.TreatmentPlan.Id.Int64(), t)
 
 	// linkage should now be broken
 	params.Set("treatment_plan_id", strconv.FormatInt(responseData.TreatmentPlan.Id.Int64(), 10))
@@ -379,15 +381,16 @@ func TestFavoriteTreatmentPlan_BreakingMappingOnModify(t *testing.T) {
 		t.Fatalf("Expected %d response for getting treatment plan instead got %d", http.StatusOK, resp.StatusCode)
 	} else if json.NewDecoder(resp.Body).Decode(responseData); err != nil {
 		t.Fatalf("Unable to unmarshal response into struct %s", err)
-	} else if responseData.TreatmentPlan.DoctorFavoriteTreatmentPlanId.Int64() != 0 {
-		t.Fatalf("Expected the treatment plan to no longer be connected to the favorite treatment plan")
+	} else if responseData.TreatmentPlan.ContentSource == nil || responseData.TreatmentPlan.ContentSource.ContentSourceType != common.TPContentSourceTypeFTP ||
+		responseData.TreatmentPlan.ContentSource.ContentSourceId.Int64() == 0 || !responseData.TreatmentPlan.ContentSource.HasDeviated {
+		t.Fatalf("Expected the treatment plan to indicate that it has deviated from the original content source (ftp) but it doesnt do so")
 	}
 
 	// lets try modifying advice
 	responseData = PickATreatmentPlanForPatientVisit(patientVisitResponse.PatientVisitId, doctor, favoriteTreamentPlan, testData, t)
 
 	// lets make sure linkage exists
-	if responseData.TreatmentPlan.DoctorFavoriteTreatmentPlanId.Int64() == 0 {
+	if responseData.TreatmentPlan.ContentSource == nil || responseData.TreatmentPlan.ContentSource.ContentSourceId.Int64() == 0 || responseData.TreatmentPlan.ContentSource.ContentSourceType != common.TPContentSourceTypeFTP {
 		t.Fatalf("Expected the treatment plan to come from a favorite treatment plan")
 	}
 
@@ -407,10 +410,60 @@ func TestFavoriteTreatmentPlan_BreakingMappingOnModify(t *testing.T) {
 		t.Fatalf("Expected %d response for getting treatment plan instead got %d", http.StatusOK, resp.StatusCode)
 	} else if json.NewDecoder(resp.Body).Decode(responseData); err != nil {
 		t.Fatalf("Unable to unmarshal response into struct %s", err)
-	} else if responseData.TreatmentPlan.DoctorFavoriteTreatmentPlanId.Int64() != 0 {
-		t.Fatalf("Expected the treatment plan to no longer be connected to the favorite treatment plan")
+	} else if responseData.TreatmentPlan.ContentSource == nil || responseData.TreatmentPlan.ContentSource.ContentSourceType != common.TPContentSourceTypeFTP ||
+		responseData.TreatmentPlan.ContentSource.ContentSourceId.Int64() == 0 || !responseData.TreatmentPlan.ContentSource.HasDeviated {
+		t.Fatalf("Expected the treatment plan to indicate that it has deviated from the original content source (ftp) but it doesnt do so")
+	}
+}
+
+// This test is to cover the scenario where if a doctor modifies,say, the treatment section after
+// starting from a favorite treatment plan, we ensure that the rest of the sections are still prefilled
+// with the contents of the favorite treatment plan
+func TestFavoriteTreatmentPlan_BreakingMappingOnModify_PrefillRestOfData(t *testing.T) {
+	testData := SetupIntegrationTest(t)
+	defer TearDownIntegrationTest(t, testData)
+
+	doctorId := GetDoctorIdOfCurrentPrimaryDoctor(testData, t)
+	doctor, err := testData.DataApi.GetDoctorFromId(doctorId)
+	if err != nil {
+		t.Fatalf("Unable to get doctor from id: %s", err)
 	}
 
+	patientVisitResponse, treatmentPlan := SignupAndSubmitPatientVisitForRandomPatient(t, testData, doctor)
+
+	// create a favorite treatment plan
+	favoriteTreamentPlan := CreateFavoriteTreatmentPlan(patientVisitResponse.PatientVisitId, treatmentPlan.Id.Int64(), testData, doctor, t)
+
+	// pick this favorite treatment plan for the visit
+	responseData := PickATreatmentPlanForPatientVisit(patientVisitResponse.PatientVisitId, doctor, favoriteTreamentPlan, testData, t)
+
+	// modify treatment
+	favoriteTreamentPlan.TreatmentList.Treatments[0].DispenseValue = encoding.HighPrecisionFloat64(123.12345)
+	AddAndGetTreatmentsForPatientVisit(testData, favoriteTreamentPlan.TreatmentList.Treatments, doctor.AccountId.Int64(), responseData.TreatmentPlan.Id.Int64(), t)
+
+	// now lets attempt to get the abbreviated version of the treatment plan
+	ts := httptest.NewServer(doctor_treatment_plan.NewDoctorTreatmentPlanHandler(testData.DataApi, nil, nil, false))
+	defer ts.Close()
+
+	params := url.Values{}
+	params.Set("treatment_plan_id", strconv.FormatInt(responseData.TreatmentPlan.Id.Int64(), 10))
+	responseData = &doctor_treatment_plan.DoctorTreatmentPlanResponse{}
+	if resp, err := AuthGet(ts.URL+"?"+params.Encode(), doctor.AccountId.Int64()); err != nil {
+		t.Fatalf("Unable to make call to get treatment plan for patient visit")
+	} else if resp.StatusCode != http.StatusOK {
+		t.Fatalf("Expected %d response for getting treatment plan instead got %d", http.StatusOK, resp.StatusCode)
+	} else if json.NewDecoder(resp.Body).Decode(responseData); err != nil {
+		t.Fatalf("Unable to unmarshal response into struct %s", err)
+	}
+
+	// the treatments should be in the committed state while the regimen and advice should still be prefilled in the uncommitted state
+	if responseData.TreatmentPlan.TreatmentList == nil || len(responseData.TreatmentPlan.TreatmentList.Treatments) == 0 || responseData.TreatmentPlan.TreatmentList.Status != api.STATUS_COMMITTED {
+		t.Fatal("Expected treatments to exist and be in COMMITTED state")
+	} else if responseData.TreatmentPlan.RegimenPlan == nil || len(responseData.TreatmentPlan.RegimenPlan.RegimenSections) == 0 || responseData.TreatmentPlan.RegimenPlan.Status != api.STATUS_UNCOMMITTED {
+		t.Fatal("Expected regimen plan to be prefilled with FTP and be in UNCOMMITTED state")
+	} else if responseData.TreatmentPlan.Advice == nil || len(responseData.TreatmentPlan.Advice.SelectedAdvicePoints) == 0 || responseData.TreatmentPlan.Advice.Status != api.STATUS_UNCOMMITTED {
+		t.Fatal("Expected advice section to be prefilled with FTP and be in UNCOMMITTED state")
+	}
 }
 
 // This test ensures that the user can create a favorite treatment plan
@@ -515,7 +568,7 @@ func TestFavoriteTreatmentPlan_InContextOfTreatmentPlan(t *testing.T) {
 		OTC:                 false,
 	}
 
-	addAndGetTreatmentsForPatientVisit(testData, []*common.Treatment{treatment1}, doctor.AccountId.Int64(), treatmentPlan.Id.Int64(), t)
+	AddAndGetTreatmentsForPatientVisit(testData, []*common.Treatment{treatment1}, doctor.AccountId.Int64(), treatmentPlan.Id.Int64(), t)
 
 	// lets add a favorite treatment plan for doctor
 	favoriteTreatmentPlan := &common.FavoriteTreatmentPlan{
@@ -566,7 +619,8 @@ func TestFavoriteTreatmentPlan_InContextOfTreatmentPlan(t *testing.T) {
 	abbreviatedTreatmentPlan, err := testData.DataApi.GetAbridgedTreatmentPlan(treatmentPlan.Id.Int64(), doctorId)
 	if err != nil {
 		t.Fatalf("Unable to get abbreviated favorite treatment plan: %s", err)
-	} else if abbreviatedTreatmentPlan.DoctorFavoriteTreatmentPlanId.Int64() != responseData.FavoriteTreatmentPlan.Id.Int64() {
+	} else if abbreviatedTreatmentPlan.ContentSource == nil || abbreviatedTreatmentPlan.ContentSource.ContentSourceType != common.TPContentSourceTypeFTP ||
+		abbreviatedTreatmentPlan.ContentSource.ContentSourceId.Int64() != responseData.FavoriteTreatmentPlan.Id.Int64() {
 		t.Fatalf("Expected the link between treatmenet plan and favorite treatment plan to exist but it doesnt")
 	}
 
@@ -647,7 +701,7 @@ func TestFavoriteTreatmentPlan_InContextOfTreatmentPlan_EmptyRegimenAndAdvice(t 
 		OTC:                 false,
 	}
 
-	addAndGetTreatmentsForPatientVisit(testData, []*common.Treatment{treatment1}, doctor.AccountId.Int64(), treatmentPlan.Id.Int64(), t)
+	AddAndGetTreatmentsForPatientVisit(testData, []*common.Treatment{treatment1}, doctor.AccountId.Int64(), treatmentPlan.Id.Int64(), t)
 
 	// lets add a favorite treatment plan for doctor
 	favoriteTreatmentPlan := &common.FavoriteTreatmentPlan{
@@ -692,7 +746,8 @@ func TestFavoriteTreatmentPlan_InContextOfTreatmentPlan_EmptyRegimenAndAdvice(t 
 	abbreviatedTreatmentPlan, err := testData.DataApi.GetAbridgedTreatmentPlan(treatmentPlan.Id.Int64(), doctorId)
 	if err != nil {
 		t.Fatalf("Unable to get abbreviated favorite treatment plan: %s", err)
-	} else if abbreviatedTreatmentPlan.DoctorFavoriteTreatmentPlanId.Int64() != responseData.FavoriteTreatmentPlan.Id.Int64() {
+	} else if abbreviatedTreatmentPlan.ContentSource == nil || abbreviatedTreatmentPlan.ContentSource.ContentSourceType != common.TPContentSourceTypeFTP ||
+		abbreviatedTreatmentPlan.ContentSource.ContentSourceId.Int64() != responseData.FavoriteTreatmentPlan.Id.Int64() {
 		t.Fatalf("Expected the link between treatmenet plan and favorite treatment plan to exist but it doesnt")
 	}
 
@@ -774,7 +829,7 @@ func TestFavoriteTreatmentPlan_InContextOfTreatmentPlan_TwoDontMatch(t *testing.
 		OTC:                 false,
 	}
 
-	addAndGetTreatmentsForPatientVisit(testData, []*common.Treatment{treatment1}, doctor.AccountId.Int64(), treatmentPlan.Id.Int64(), t)
+	AddAndGetTreatmentsForPatientVisit(testData, []*common.Treatment{treatment1}, doctor.AccountId.Int64(), treatmentPlan.Id.Int64(), t)
 
 	// lets add a favorite treatment plan for doctor
 	favoriteTreatmentPlan := &common.FavoriteTreatmentPlan{
@@ -817,8 +872,8 @@ func TestFavoriteTreatmentPlan_InContextOfTreatmentPlan_TwoDontMatch(t *testing.
 	abbreviatedTreatmentPlan, err := testData.DataApi.GetAbridgedTreatmentPlan(treatmentPlan.Id.Int64(), doctorId)
 	if err != nil {
 		t.Fatalf("Unable to get abbreviated favorite treatment plan: %s", err)
-	} else if abbreviatedTreatmentPlan.DoctorFavoriteTreatmentPlanId.Int64() != 0 {
-		t.Fatalf("Expected no linkage between treatment plan and favorite treatment plan")
+	} else if abbreviatedTreatmentPlan.ContentSource != nil {
+		t.Fatalf("Expected the treatment plan to not indicate that it was linked to another doctor's favorite treatment plan")
 	}
 
 }

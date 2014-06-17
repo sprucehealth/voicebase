@@ -15,7 +15,7 @@ import (
 )
 
 func GetRegimenPlanForTreatmentPlan(testData TestData, doctor *common.Doctor, treatmentPlanId int64, t *testing.T) *common.RegimenPlan {
-	doctorTreatmentPlanHandler := doctor_treatment_plan.NewDoctorTreatmentPlanHandler(testData.DataApi)
+	doctorTreatmentPlanHandler := doctor_treatment_plan.NewDoctorTreatmentPlanHandler(testData.DataApi, nil, nil, false)
 	ts := httptest.NewServer(doctorTreatmentPlanHandler)
 	defer ts.Close()
 
@@ -72,7 +72,7 @@ func CreateRegimenPlanForTreatmentPlan(doctorRegimenRequest *common.RegimenPlan,
 }
 
 func GetAdvicePointsInTreatmentPlan(testData TestData, doctor *common.Doctor, treatmentPlanId int64, t *testing.T) *common.Advice {
-	doctorTreatmentPlanHandler := doctor_treatment_plan.NewDoctorTreatmentPlanHandler(testData.DataApi)
+	doctorTreatmentPlanHandler := doctor_treatment_plan.NewDoctorTreatmentPlanHandler(testData.DataApi, nil, nil, false)
 	ts := httptest.NewServer(doctorTreatmentPlanHandler)
 	defer ts.Close()
 
@@ -146,8 +146,25 @@ func GetListOfTreatmentPlansForPatient(patientId, doctorAccountId int64, testDat
 	return response
 }
 
+func DeleteTreatmentPlanForDoctor(treatmentPlanId, doctorAccountId int64, testData TestData, t *testing.T) {
+	doctorTreatmentPlanHandler := doctor_treatment_plan.NewDoctorTreatmentPlanHandler(testData.DataApi, nil, nil, false)
+	doctorServer := httptest.NewServer(doctorTreatmentPlanHandler)
+	defer doctorServer.Close()
+
+	jsonData, err := json.Marshal(&doctor_treatment_plan.TreatmentPlanRequestData{
+		TreatmentPlanId: encoding.NewObjectId(treatmentPlanId),
+	})
+
+	res, err := AuthDelete(doctorServer.URL, "application/json", bytes.NewReader(jsonData), doctorAccountId)
+	if err != nil {
+		t.Fatal(err)
+	} else if res.StatusCode != http.StatusOK {
+		t.Fatalf("Expected %d but got %d instead", http.StatusOK, res.StatusCode)
+	}
+}
+
 func GetDoctorTreatmentPlanById(treatmentPlanId, doctorAccountId int64, testData TestData, t *testing.T) *common.DoctorTreatmentPlan {
-	drTreatmentPlanHandler := doctor_treatment_plan.NewDoctorTreatmentPlanHandler(testData.DataApi)
+	drTreatmentPlanHandler := doctor_treatment_plan.NewDoctorTreatmentPlanHandler(testData.DataApi, nil, nil, false)
 	doctorServer := httptest.NewServer(drTreatmentPlanHandler)
 	defer doctorServer.Close()
 
@@ -163,7 +180,7 @@ func GetDoctorTreatmentPlanById(treatmentPlanId, doctorAccountId int64, testData
 	return response.TreatmentPlan
 }
 
-func addAndGetTreatmentsForPatientVisit(testData TestData, treatments []*common.Treatment, doctorAccountId, treatmentPlanId int64, t *testing.T) *doctor_treatment_plan.GetTreatmentsResponse {
+func AddAndGetTreatmentsForPatientVisit(testData TestData, treatments []*common.Treatment, doctorAccountId, treatmentPlanId int64, t *testing.T) *doctor_treatment_plan.GetTreatmentsResponse {
 	stubErxApi := &erx.StubErxService{
 		SelectedMedicationToReturn: &common.Treatment{},
 	}
