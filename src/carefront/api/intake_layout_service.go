@@ -370,16 +370,17 @@ func (d *DataService) getQuestionInfoFromRows(rows *sql.Rows, languageId int64) 
 		}
 
 		questionInfo := &info_intake.Question{
-			QuestionId:         id,
-			ParentQuestionId:   nullParentQuestionId.Int64,
-			QuestionTag:        questionTag,
-			QuestionTitle:      questionTitle.String,
-			QuestionType:       questionType.String,
-			QuestionSummary:    questionSummary.String,
-			QuestionSubText:    questionSubText.String,
-			Required:           requiredBit.Bool,
-			ToAlert:            toAlertBit.Bool,
-			AlertFormattedText: alertText.String,
+			QuestionId:             id,
+			ParentQuestionId:       nullParentQuestionId.Int64,
+			QuestionTag:            questionTag,
+			QuestionTitle:          questionTitle.String,
+			QuestionTitleHasTokens: titleHasTokens.Bool,
+			QuestionType:           questionType.String,
+			QuestionSummary:        questionSummary.String,
+			QuestionSubText:        questionSubText.String,
+			Required:               requiredBit.Bool,
+			ToAlert:                toAlertBit.Bool,
+			AlertFormattedText:     alertText.String,
 		}
 		if formattedFieldTagsNull.Valid && formattedFieldTagsNull.String != "" {
 			questionInfo.FormattedFieldTags = []string{formattedFieldTagsNull.String}
@@ -533,7 +534,7 @@ func (d *DataService) GetPhotoSlots(questionId, languageId int64) ([]*info_intak
 	rows, err := d.db.Query(`select photo_slot.id, ltext, slot_type, required from photo_slot
 		inner join localized_text on app_text_id = slot_name_app_text_id
 		inner join photo_slot_type on photo_slot_type.id = slot_type_id
-		where question_id=? and language_id = ?`, questionId, languageId)
+		where question_id=? and language_id = ? order by ordering`, questionId, languageId)
 	if err != nil {
 		return nil, err
 	}
