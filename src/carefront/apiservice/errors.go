@@ -56,10 +56,6 @@ func WriteValidationError(msg string, w http.ResponseWriter, r *http.Request) {
 	WriteError(NewValidationError(msg, r), w, r)
 }
 
-func WriteValidationError(msg string, w http.ResponseWriter, r *http.Request) {
-	WriteError(NewValidationError(msg, r), w, r)
-}
-
 func writeSpruceError(err spruceError, w http.ResponseWriter, r *http.Request) {
 	golog.Logf(3, golog.ERR, err.Error())
 
