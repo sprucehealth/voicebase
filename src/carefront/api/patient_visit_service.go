@@ -311,7 +311,7 @@ func (d *DataService) StartNewTreatmentPlan(patientId, patientVisitId, doctorId 
 		return 0, err
 	}
 
-	_, err = tx.Exec(`delete from treatment_plan where id = (select treatment_plan_id from treatment_plan_parent where parent_id = ? and parent_type = ?) and status = ?`, parent.ParentId.Int64(), parent.ParentType, STATUS_DRAFT)
+	_, err = tx.Exec(`delete from treatment_plan where id = (select treatment_plan_id from treatment_plan_parent where parent_id = ? and parent_type = ?) and status = ? and doctor_id = ?`, parent.ParentId.Int64(), parent.ParentType, STATUS_DRAFT, doctorId)
 	if err != nil {
 		tx.Rollback()
 		return 0, err
