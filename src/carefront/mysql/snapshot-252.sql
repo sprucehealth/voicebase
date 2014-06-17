@@ -1,6 +1,6 @@
 -- MySQL dump 10.13  Distrib 5.6.17, for osx10.9 (x86_64)
 --
--- Host: 127.0.0.1    Database: database_28450
+-- Host: 127.0.0.1    Database: database_8927
 -- ------------------------------------------------------
 -- Server version	5.6.17
 
@@ -2423,9 +2423,13 @@ CREATE TABLE `treatment_plan_content_source` (
   `treatment_plan_id` int(10) unsigned NOT NULL,
   `content_source_id` int(10) unsigned NOT NULL,
   `content_source_type` varchar(100) NOT NULL,
-  `has_deviated` tinyint(1) DEFAULT NULL,
+  `doctor_id` int(10) unsigned NOT NULL,
+  `has_deviated` tinyint(1) NOT NULL DEFAULT '0',
+  `deviated_date` timestamp(6) NOT NULL DEFAULT CURRENT_TIMESTAMP(6) ON UPDATE CURRENT_TIMESTAMP(6),
   PRIMARY KEY (`treatment_plan_id`),
-  CONSTRAINT `treatment_plan_content_source_ibfk_1` FOREIGN KEY (`treatment_plan_id`) REFERENCES `treatment_plan` (`id`) ON DELETE CASCADE
+  KEY `doctor_id` (`doctor_id`),
+  CONSTRAINT `treatment_plan_content_source_ibfk_1` FOREIGN KEY (`treatment_plan_id`) REFERENCES `treatment_plan` (`id`) ON DELETE CASCADE,
+  CONSTRAINT `treatment_plan_content_source_ibfk_2` FOREIGN KEY (`doctor_id`) REFERENCES `doctor` (`id`)
 ) ENGINE=InnoDB DEFAULT CHARSET=utf8;
 /*!40101 SET character_set_client = @saved_cs_client */;
 
@@ -2442,6 +2446,23 @@ CREATE TABLE `treatment_plan_parent` (
   `parent_type` varchar(100) NOT NULL,
   PRIMARY KEY (`treatment_plan_id`),
   CONSTRAINT `treatment_plan_parent_ibfk_1` FOREIGN KEY (`treatment_plan_id`) REFERENCES `treatment_plan` (`id`) ON DELETE CASCADE
+) ENGINE=InnoDB DEFAULT CHARSET=utf8;
+/*!40101 SET character_set_client = @saved_cs_client */;
+
+--
+-- Table structure for table `treatment_plan_patient_visit_mapping`
+--
+
+DROP TABLE IF EXISTS `treatment_plan_patient_visit_mapping`;
+/*!40101 SET @saved_cs_client     = @@character_set_client */;
+/*!40101 SET character_set_client = utf8 */;
+CREATE TABLE `treatment_plan_patient_visit_mapping` (
+  `treatment_plan_id` int(10) unsigned NOT NULL,
+  `patient_visit_id` int(10) unsigned NOT NULL,
+  PRIMARY KEY (`treatment_plan_id`,`patient_visit_id`),
+  KEY `patient_visit_id` (`patient_visit_id`),
+  CONSTRAINT `treatment_plan_patient_visit_mapping_ibfk_1` FOREIGN KEY (`treatment_plan_id`) REFERENCES `treatment_plan` (`id`) ON DELETE CASCADE,
+  CONSTRAINT `treatment_plan_patient_visit_mapping_ibfk_2` FOREIGN KEY (`patient_visit_id`) REFERENCES `patient_visit` (`id`)
 ) ENGINE=InnoDB DEFAULT CHARSET=utf8;
 /*!40101 SET character_set_client = @saved_cs_client */;
 
@@ -2541,4 +2562,4 @@ CREATE TABLE `unlinked_dntf_treatment_status_events` (
 /*!40101 SET COLLATION_CONNECTION=@OLD_COLLATION_CONNECTION */;
 /*!40111 SET SQL_NOTES=@OLD_SQL_NOTES */;
 
--- Dump completed on 2014-06-16 19:16:20
+-- Dump completed on 2014-06-16 19:33:23
