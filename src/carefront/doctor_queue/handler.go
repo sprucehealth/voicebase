@@ -128,28 +128,16 @@ func (d *QueueHandler) convertDoctorQueueIntoDisplayQueue(pendingItems, complete
 	}
 
 	if len(completedItems) > 0 {
-		// cluster feed items based on day
-		displaySections := make([]*DisplayFeedSection, 0)
 		currentDisplaySection := &DisplayFeedSection{}
-		lastSeenDay := ""
 		for i, completedItem := range completedItems {
 			completedItem.PositionInQueue = i
-			day := fmt.Sprintf("%s %d %d", completedItem.EnqueueDate.Month().String(), completedItem.EnqueueDate.Day(), completedItem.EnqueueDate.Year())
-			if lastSeenDay != day {
-				currentDisplaySection = &DisplayFeedSection{
-					Title: day,
-					Items: make([]*DisplayFeedItem, 0),
-				}
-				displaySections = append(displaySections, currentDisplaySection)
-				lastSeenDay = day
-			}
 			displayItem, err := converQueueItemToDisplayFeedItem(d.dataApi, completedItem)
 			if err != nil {
 				return nil, err
 			}
 			currentDisplaySection.Items = append(currentDisplaySection.Items, displayItem)
 		}
-		completedDisplayFeed.Sections = displaySections
+		completedDisplayFeed.Sections = []*DisplayFeedSection{currentDisplaySection}
 	}
 
 	return &doctorDisplayFeedTabs, nil

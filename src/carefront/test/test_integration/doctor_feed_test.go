@@ -216,74 +216,13 @@ func TestDoctorFeed(t *testing.T) {
 		}
 	}
 
-	// test the clustering of completed tasks to ensure it is working as expected
-	queueItems := make([]*api.DoctorQueueItem, 0)
-	for i := 0; i < 10; i++ {
-		queueItem := &api.DoctorQueueItem{}
-		queueItem.DoctorId = doctor.DoctorId.Int64()
-		queueItem.ItemId = patientVisitResponse.PatientVisitId
-		queueItem.Status = api.QUEUE_ITEM_STATUS_COMPLETED
-		queueItem.EnqueueDate = time.Date(2013, 1, i, 0, 0, 0, 0, time.UTC)
-		queueItems = append(queueItems, queueItem)
-		insertIntoDoctorQueueWithEnqueuedDate(testData, queueItem, t)
-	}
-
-	queueItem := &api.DoctorQueueItem{}
-	queueItem.DoctorId = doctor.DoctorId.Int64()
-	queueItem.ItemId = patientVisitResponse.PatientVisitId
-	queueItem.Status = api.QUEUE_ITEM_STATUS_PHOTOS_REJECTED
-	queueItem.EnqueueDate = time.Date(2013, 1, 10, 0, 0, 0, 0, time.UTC)
-	queueItems = append(queueItems, queueItem)
-	insertIntoDoctorQueueWithEnqueuedDate(testData, queueItem, t)
-
-	doctorDisplayFeedTabs = getDoctorQueue(testData, doctor.AccountId.Int64(), t)
-
-	// now there should be items in the pending and completed tabs
-
-	// ensure that there are two tabs as required
-	if len(doctorDisplayFeedTabs.Tabs) != 2 {
-		t.Fatalf("Expected two tabs but got %d", len(doctorDisplayFeedTabs.Tabs))
-	}
-
-	// ensure that all the items are in the pending tab
-	for _, tab := range doctorDisplayFeedTabs.Tabs {
-		switch tab.Title {
-		case "Pending":
-			if len(tab.Sections) != 2 {
-				t.Fatal("Expect there to be 2 sections, one for upcoming visit and another for the rest of the visits")
-			}
-		case "Completed":
-			if len(tab.Sections) != 11 {
-				t.Fatalf("Expected there to be 10 completed sections. Instead there were %d", len(tab.Sections))
-			}
-
-			// in each of the sections there should be 1 item
-			for i, section := range tab.Sections {
-				if section.Items == nil {
-					t.Fatal("Expected there to be 1 completed item in the section instead there were none")
-				}
-
-				if len(section.Items) != 1 {
-					t.Fatalf("Expected there to be 1 completed item in the section, instead there were %d", len(section.Items))
-				}
-
-				// ensure that all items in the pending section have the display type set as needed
-				if section.Items[0].DisplayTypes == nil || len(section.Items[0].DisplayTypes) == 0 {
-					t.Fatal("Expected there to exist a list of display types for the item but there arent any")
-				} else if i != 0 && section.Items[0].DisplayTypes[0] != api.DISPLAY_TYPE_TITLE_SUBTITLE_ACTIONABLE {
-					t.Fatalf("Expected the display type to be %s for this item in the queue.", api.DISPLAY_TYPE_TITLE_SUBTITLE_ACTIONABLE)
-				} else if i == 0 && section.Items[0].DisplayTypes[0] != api.DISPLAY_TYPE_TITLE_SUBTITLE_NONACTIONABLE {
-					t.Fatalf("Expected the display type to be %s for this item in the queue.", api.DISPLAY_TYPE_TITLE_SUBTITLE_NONACTIONABLE)
-				}
-			}
-		}
-	}
-
 	// lets go ahead and remove all items from the doctor queue
 	_, err = testData.DB.Exec(`delete from doctor_queue`)
 	if err != nil {
 		t.Fatal("Unable to delete items from doctor queue")
 	}
+
+	queueItems := make([]*api.DoctorQueueItem, 0)
 
 	// now, lets insert items to test the time left
 	startingTime := time.Now().Add(-12 * time.Hour)

@@ -65,8 +65,6 @@ func (d *DoctorQueueItem) GetTitleAndSubtitle(dataApi DataAPI) (string, string, 
 		case QUEUE_ITEM_STATUS_ONGOING:
 			title = fmt.Sprintf("Continue reviewing visit with %s %s", patient.FirstName, patient.LastName)
 			subtitle = getRemainingTimeSubtitleForCaseToBeReviewed(d.EnqueueDate)
-		case QUEUE_ITEM_STATUS_PHOTOS_REJECTED:
-			title = fmt.Sprintf("Photos rejected for visit with %s %s", patient.FirstName, patient.LastName)
 		case QUEUE_ITEM_STATUS_TRIAGED:
 			title = fmt.Sprintf("Completed and triaged visit for %s %s", patient.FirstName, patient.LastName)
 		}
@@ -184,22 +182,7 @@ func (d *DoctorQueueItem) GetTimestamp() *time.Time {
 }
 
 func (d *DoctorQueueItem) GetDisplayTypes() []string {
-	switch d.EventType {
-	case EVENT_TYPE_PATIENT_VISIT, EVENT_TYPE_TREATMENT_PLAN:
-		switch d.Status {
-		case QUEUE_ITEM_STATUS_PHOTOS_REJECTED:
-			return []string{DISPLAY_TYPE_TITLE_SUBTITLE_NONACTIONABLE}
-		default:
-			return []string{DISPLAY_TYPE_TITLE_SUBTITLE_ACTIONABLE}
-		}
-	case EVENT_TYPE_REFILL_REQUEST, EVENT_TYPE_REFILL_TRANSMISSION_ERROR:
-		return []string{DISPLAY_TYPE_TITLE_SUBTITLE_ACTIONABLE}
-	case EVENT_TYPE_TRANSMISSION_ERROR, EVENT_TYPE_UNLINKED_DNTF_TRANSMISSION_ERROR:
-		return []string{DISPLAY_TYPE_TITLE_SUBTITLE_ACTIONABLE}
-	case EVENT_TYPE_CASE_MESSAGE:
-		return []string{DISPLAY_TYPE_TITLE_SUBTITLE_ACTIONABLE}
-	}
-	return nil
+	return []string{DISPLAY_TYPE_TITLE_SUBTITLE_ACTIONABLE}
 }
 
 func (d *DoctorQueueItem) ActionUrl(dataApi DataAPI) (*app_url.SpruceAction, error) {
