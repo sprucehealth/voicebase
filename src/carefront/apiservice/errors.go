@@ -64,6 +64,15 @@ func WriteError(err error, w http.ResponseWriter, r *http.Request) {
 	}
 }
 
+func WriteErrorWithCode(err error, httpStatusCode int, w http.ResponseWriter, r *http.Request) {
+	writeSpruceError(spruceError{
+		RequestID:      GetContext(r).RequestID,
+		HTTPStatusCode: httpStatusCode,
+		DeveloperError: err.Error(),
+		UserError:      genericUserErrorMessage,
+	}, w, r)
+}
+
 func WriteValidationError(msg string, w http.ResponseWriter, r *http.Request) {
 	writeSpruceError(NewValidationError(msg, r), w, r)
 }

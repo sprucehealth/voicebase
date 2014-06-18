@@ -77,6 +77,34 @@ func EnsureTreatmentPlanOrPatientVisitIdPresent(dataApi api.DataAPI, treatmentPl
 	return nil
 }
 
+func ValidateDoctorAccessToPatientFile(doctorId, patientId int64, DataApi api.DataAPI) (int, error) {
+	httpStatusCode := http.StatusOK
+
+	careTeam, err := DataApi.GetCareTeamForPatient(patientId)
+	if err != nil {
+		httpStatusCode = http.StatusInternalServerError
+		err = errors.New("Unable to get care team for patient visit id " + err.Error())
+		return httpStatusCode, err
+	}
+
+	if careTeam == nil {
+		httpStatusCode = http.StatusForbidden
+		err = errors.New("No care team assigned to patient visit so cannot diagnose patient visit")
+		return httpStatusCode, err
+	}
+
+	// ensure that the doctor is part of the patient's care team
+	for _, assignment := range careTeam.Assignments {
+		if assignment.ProviderRole == api.DOCTOR_ROLE && assignment.ProviderId != doctorId {
+			httpStatusCode = http.StatusForbidden
+			err = errors.New("Doctor is unable to diagnose patient because he/she is not the primary doctor")
+			return httpStatusCode, err
+		}
+	}
+
+	return http.StatusOK, nil
+}
+
 func VerifyDoctorPatientRelationship(dataApi api.DataAPI, doctor *common.Doctor, patient *common.Patient) error {
 	// nothing to verify for an unlinked patient since they dont have a care team
 	if patient.IsUnlinked {
