@@ -44,7 +44,7 @@ func (d *DoctorAuthenticationHandler) ServeHTTP(w http.ResponseWriter, r *http.R
 		return
 	}
 
-	if res, err := d.AuthApi.LogIn(requestData.Email, requestData.Password); err != nil {
+	if account, token, err := d.AuthApi.LogIn(requestData.Email, requestData.Password); err != nil {
 		switch err {
 		case api.LoginDoesNotExist, api.InvalidPassword:
 			WriteUserError(w, http.StatusForbidden, "Invalid email/password combination")
@@ -54,13 +54,12 @@ func (d *DoctorAuthenticationHandler) ServeHTTP(w http.ResponseWriter, r *http.R
 			return
 		}
 	} else {
-		doctor, err := d.DataApi.GetDoctorFromAccountId(res.AccountId)
+		doctor, err := d.DataApi.GetDoctorFromAccountId(account.ID)
 		if err != nil {
 			WriteDeveloperError(w, http.StatusInternalServerError, "Unable to get doctor id from account id "+err.Error())
 			return
 		}
 
-		WriteJSONToHTTPResponseWriter(w, http.StatusOK, DoctorAuthenticationResponse{Token: res.Token, Doctor: doctor})
+		WriteJSONToHTTPResponseWriter(w, http.StatusOK, DoctorAuthenticationResponse{Token: token, Doctor: doctor})
 	}
-
 }

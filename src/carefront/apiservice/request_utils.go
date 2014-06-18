@@ -17,7 +17,10 @@ import (
 	"github.com/gorilla/schema"
 )
 
-var ErrBadAuthToken = errors.New("BadAuthToken")
+var (
+	ErrBadAuthHeader = errors.New("bad authorization header")
+	ErrNoAuthHeader  = errors.New("no authorization header")
+)
 
 var Testing = false
 
@@ -44,12 +47,12 @@ type GenericJsonResponse struct {
 func GetAuthTokenFromHeader(r *http.Request) (string, error) {
 	auth := r.Header.Get("Authorization")
 	if auth == "" {
-		return "", ErrBadAuthToken
+		return "", ErrNoAuthHeader
 	}
 
 	parts := strings.Split(auth, " ")
 	if len(parts) != 2 || parts[0] != "token" {
-		return "", ErrBadAuthToken
+		return "", ErrBadAuthHeader
 	}
 	return parts[1], nil
 }

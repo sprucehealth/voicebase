@@ -99,8 +99,8 @@ func (h *promptHandler) ServeHTTP(w http.ResponseWriter, r *http.Request) {
 	email := r.FormValue("email")
 	invalidEmail := false
 	if email != "" {
-		accountID, err := h.authAPI.AccountIDForEmail(email)
-		if err == api.NoRowsError {
+		account, err := h.authAPI.AccountForEmail(email)
+		if err == api.LoginDoesNotExist {
 			invalidEmail = true
 		} else if err != nil {
 			www.InternalServerError(w, r, err)
@@ -111,7 +111,7 @@ func (h *promptHandler) ServeHTTP(w http.ResponseWriter, r *http.Request) {
 				domain = domain[idx+1:]
 			}
 			domain = fmt.Sprintf("%s.%s", h.webSubdomain, domain)
-			if err := SendPasswordResetEmail(h.authAPI, h.emailService, domain, accountID, email, h.supportEmail); err != nil {
+			if err := SendPasswordResetEmail(h.authAPI, h.emailService, domain, account.ID, email, h.supportEmail); err != nil {
 				www.InternalServerError(w, r, err)
 				return
 			}

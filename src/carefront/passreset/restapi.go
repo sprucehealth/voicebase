@@ -49,8 +49,8 @@ func (h *forgotPasswordHandler) ServeHTTP(w http.ResponseWriter, r *http.Request
 
 	// TODO: ratelimit this endpoint
 
-	accountID, err := h.authAPI.AccountIDForEmail(req.Email)
-	if err == api.NoRowsError {
+	account, err := h.authAPI.AccountForEmail(req.Email)
+	if err == api.LoginDoesNotExist {
 		apiservice.WriteUserError(w, http.StatusOK, "No account with the given email")
 		return
 	} else if err != nil {
@@ -63,7 +63,7 @@ func (h *forgotPasswordHandler) ServeHTTP(w http.ResponseWriter, r *http.Request
 		domain = domain[idx+1:]
 	}
 	domain = fmt.Sprintf("%s.%s", h.webSubdomain, domain)
-	if err := SendPasswordResetEmail(h.authAPI, h.emailService, domain, accountID, req.Email, h.fromEmail); err != nil {
+	if err := SendPasswordResetEmail(h.authAPI, h.emailService, domain, account.ID, req.Email, h.fromEmail); err != nil {
 		apiservice.WriteDeveloperError(w, http.StatusInternalServerError, err.Error())
 		return
 	}

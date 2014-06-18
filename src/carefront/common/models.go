@@ -545,3 +545,8 @@ type ResourceGuide struct {
 	PhotoURL  string
 	Layout    interface{}
 }
+
+type Account struct {
+	ID   int64
+	Role string
+}

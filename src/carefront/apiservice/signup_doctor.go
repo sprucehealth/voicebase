@@ -94,19 +94,17 @@ func (d *SignupDoctorHandler) ServeHTTP(w http.ResponseWriter, r *http.Request) 
 	}
 
 	// first, create an account for the user
-	res, err := d.AuthApi.SignUp(requestData.Email, requestData.Password, api.DOCTOR_ROLE)
+	accountID, token, err := d.AuthApi.SignUp(requestData.Email, requestData.Password, api.DOCTOR_ROLE)
 	if err == api.LoginAlreadyExists {
 		WriteUserError(w, http.StatusBadRequest, "An account with the specified email address already exists.")
 		return
-	}
-
-	if err != nil {
+	} else if err != nil {
 		WriteDeveloperError(w, http.StatusInternalServerError, "Internal Servier Error. Unable to register doctor: "+err.Error())
 		return
 	}
 
 	doctorToRegister := &common.Doctor{
-		AccountId:           encoding.NewObjectId(res.AccountId),
+		AccountId:           encoding.NewObjectId(accountID),
 		FirstName:           requestData.FirstName,
 		LastName:            requestData.LastName,
 		Gender:              requestData.Gender,
@@ -131,7 +129,7 @@ func (d *SignupDoctorHandler) ServeHTTP(w http.ResponseWriter, r *http.Request) 
 	}
 
 	WriteJSONToHTTPResponseWriter(w, http.StatusOK, &DoctorSignedupResponse{
-		Token:    res.Token,
+		Token:    token,
 		DoctorId: doctorId,
 		PersonId: doctorToRegister.PersonId,
 	})
