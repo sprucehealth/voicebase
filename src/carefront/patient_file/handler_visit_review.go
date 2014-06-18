@@ -52,8 +52,20 @@ func (p *doctorPatientVisitReviewHandler) ServeHTTP(w http.ResponseWriter, r *ht
 		return
 	}
 
+	patient, err := p.DataApi.GetPatientFromId(patientVisit.PatientId.Int64())
+	if err != nil {
+		apiservice.WriteDeveloperError(w, http.StatusInternalServerError, "Unable to get patient based on id: "+err.Error())
+		return
+	}
+
+	doctorId, err := p.DataApi.GetDoctorIdFromAccountId(apiservice.GetContext(r).AccountId)
+	if err != nil {
+		apiservice.WriteError(err, w, r)
+		return
+	}
+
 	// ensure that the doctor is authorized to work on this case
-	patientVisitReviewData, err := apiservice.ValidateDoctorAccessToPatientVisitAndGetRelevantData(patientVisit.PatientVisitId.Int64(), apiservice.GetContext(r).AccountId, p.DataApi)
+	statusCode, err := apiservice.ValidateDoctorAccessToPatientFile(doctorId, patientVisit.PatientId.Int64(), p.DataApi)
 	if err != nil {
 		apiservice.WriteError(err, w, r)
 		return
@@ -61,17 +73,17 @@ func (p *doctorPatientVisitReviewHandler) ServeHTTP(w http.ResponseWriter, r *ht
 
 	// udpate the status of the case and the item in the doctor's queue
 	if patientVisit.Status == api.CASE_STATUS_SUBMITTED {
-		if err := p.DataApi.UpdatePatientVisitStatus(patientVisitReviewData.PatientVisit.PatientVisitId.Int64(), "", api.CASE_STATUS_REVIEWING); err != nil {
+		if err := p.DataApi.UpdatePatientVisitStatus(patientVisit.PatientVisitId.Int64(), "", api.CASE_STATUS_REVIEWING); err != nil {
 			apiservice.WriteDeveloperError(w, http.StatusInternalServerError, "Unable to update status of patient visit: "+err.Error())
 			return
 		}
 
-		if err := p.DataApi.MarkPatientVisitAsOngoingInDoctorQueue(patientVisitReviewData.DoctorId, patientVisit.PatientVisitId.Int64()); err != nil {
+		if err := p.DataApi.MarkPatientVisitAsOngoingInDoctorQueue(doctorId, patientVisit.PatientVisitId.Int64()); err != nil {
 			apiservice.WriteDeveloperError(w, http.StatusInternalServerError, "Unable to update the item in the queue for the doctor that speaks to this patient visit: "+err.Error())
 			return
 		}
 
-		if err := p.DataApi.RecordDoctorAssignmentToPatientVisit(patientVisit.PatientVisitId.Int64(), patientVisitReviewData.DoctorId); err != nil {
+		if err := p.DataApi.RecordDoctorAssignmentToPatientVisit(patientVisit.PatientVisitId.Int64(), doctorId); err != nil {
 			apiservice.WriteDeveloperError(w, http.StatusInternalServerError, "Unable to assign the patient visit to this doctor: "+err.Error())
 			return
 		}
@@ -133,12 +145,6 @@ func (p *doctorPatientVisitReviewHandler) ServeHTTP(w http.ResponseWriter, r *ht
 
 	response := &doctorPatientVisitReviewResponse{}
 	response.PatientVisit = patientVisit
-	patient, err := p.DataApi.GetPatientFromId(patientVisit.PatientId.Int64())
-	if err != nil {
-		apiservice.WriteDeveloperError(w, http.StatusInternalServerError, "Unable to get patient based on id: "+err.Error())
-		return
-	}
-
 	response.Patient = patient
 	response.PatientVisitReview = renderedJsonData
 

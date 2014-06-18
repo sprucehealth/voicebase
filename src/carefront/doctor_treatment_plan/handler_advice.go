@@ -39,14 +39,19 @@ func (d *adviceHandler) updateAdvicePoints(w http.ResponseWriter, r *http.Reques
 		return
 	}
 
-	// get patient id from treatment plan id
-	patientVisitId, err := d.dataAPI.GetPatientVisitIdFromTreatmentPlanId(requestData.TreatmentPlanId.Int64())
+	patientId, err := d.dataAPI.GetPatientIdFromTreatmentPlanId(requestData.TreatmentPlanId.Int64())
 	if err != nil {
 		apiservice.WriteError(err, w, r)
 		return
 	}
 
-	patientVisitReviewData, err := apiservice.ValidateDoctorAccessToPatientVisitAndGetRelevantData(patientVisitId, apiservice.GetContext(r).AccountId, d.dataAPI)
+	doctorId, err := d.dataAPI.GetDoctorIdFromAccountId(apiservice.GetContext(r).AccountId)
+	if err != nil {
+		apiservice.WriteError(err, w, r)
+		return
+	}
+
+	statusCode, err := apiservice.ValidateDoctorAccessToPatientFile(doctorId, patientId, d.dataAPI)
 	if err != nil {
 		apiservice.WriteError(err, w, r)
 		return
@@ -54,13 +59,13 @@ func (d *adviceHandler) updateAdvicePoints(w http.ResponseWriter, r *http.Reques
 
 	// ensure that all selected advice points are actually in the global list on the client side
 	for _, selectedAdvicePoint := range requestData.SelectedAdvicePoints {
-		if httpStatusCode, err := d.ensureLinkedAdvicePointExistsInMasterList(selectedAdvicePoint, &requestData, patientVisitReviewData.DoctorId); err != nil {
+		if httpStatusCode, err := d.ensureLinkedAdvicePointExistsInMasterList(selectedAdvicePoint, &requestData, doctorId); err != nil {
 			apiservice.WriteDeveloperError(w, httpStatusCode, err.Error())
 			return
 		}
 	}
 
-	currentActiveAdvicePoints, err := d.dataAPI.GetAdvicePointsForDoctor(patientVisitReviewData.DoctorId)
+	currentActiveAdvicePoints, err := d.dataAPI.GetAdvicePointsForDoctor(doctorId)
 	if err != nil {
 		apiservice.WriteDeveloperError(w, http.StatusInternalServerError, "Unable to get active advice points for the doctor")
 		return
@@ -82,7 +87,7 @@ func (d *adviceHandler) updateAdvicePoints(w http.ResponseWriter, r *http.Reques
 	}
 
 	// mark all advice points that are not present in the list coming from the client to be deleted
-	err = d.dataAPI.MarkAdvicePointsToBeDeleted(advicePointsToDelete, patientVisitReviewData.DoctorId)
+	err = d.dataAPI.MarkAdvicePointsToBeDeleted(advicePointsToDelete, doctorId)
 	if err != nil {
 		apiservice.WriteDeveloperError(w, http.StatusInternalServerError, "Unable to delete advice points: "+err.Error())
 		return
@@ -98,7 +103,7 @@ func (d *adviceHandler) updateAdvicePoints(w http.ResponseWriter, r *http.Reques
 	for _, advicePoint := range requestData.AllAdvicePoints {
 		switch advicePoint.State {
 		case common.STATE_ADDED:
-			err = d.dataAPI.AddAdvicePointForDoctor(advicePoint, patientVisitReviewData.DoctorId)
+			err = d.dataAPI.AddAdvicePointForDoctor(advicePoint, doctorId)
 			if err != nil {
 				apiservice.WriteDeveloperError(w, http.StatusInternalServerError, "Unable to add or update advice point for doctor. Application may be left in inconsistent state. Error = "+err.Error())
 				return
@@ -107,7 +112,7 @@ func (d *adviceHandler) updateAdvicePoints(w http.ResponseWriter, r *http.Reques
 			updatedAdvicePoints = append(updatedAdvicePoints, advicePoint)
 		case common.STATE_MODIFIED:
 			previousAdvicePointId := advicePoint.Id.Int64()
-			err = d.dataAPI.UpdateAdvicePointForDoctor(advicePoint, patientVisitReviewData.DoctorId)
+			err = d.dataAPI.UpdateAdvicePointForDoctor(advicePoint, doctorId)
 			if err != nil {
 				apiservice.WriteDeveloperError(w, http.StatusInternalServerError, "Unable to add or update advice point for doctor. Application may be left in inconsistent state. Error = "+err.Error())
 				return
@@ -150,7 +155,7 @@ func (d *adviceHandler) updateAdvicePoints(w http.ResponseWriter, r *http.Reques
 		return
 	}
 
-	allAdvicePoints, err := d.dataAPI.GetAdvicePointsForDoctor(patientVisitReviewData.DoctorId)
+	allAdvicePoints, err := d.dataAPI.GetAdvicePointsForDoctor(doctorId)
 	if err != nil {
 		apiservice.WriteDeveloperError(w, http.StatusInternalServerError, "Unable to get all advice points for doctor: "+err.Error())
 		return
@@ -165,7 +170,7 @@ func (d *adviceHandler) updateAdvicePoints(w http.ResponseWriter, r *http.Reques
 	dispatch.Default.PublishAsync(&AdviceAddedEvent{
 		TreatmentPlanId: requestData.TreatmentPlanId.Int64(),
 		Advice:          &requestData,
-		DoctorId:        patientVisitReviewData.DoctorId,
+		DoctorId:        doctorId,
 	})
 
 	apiservice.WriteJSONToHTTPResponseWriter(w, http.StatusOK, advice)

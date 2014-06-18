@@ -2,67 +2,41 @@ package apiservice
 
 import (
 	"carefront/api"
-	"carefront/common"
-	"database/sql"
 	"errors"
 	"fmt"
+	"net/http"
 )
 
 var (
 	NoPatientVisitFound = errors.New("No patient visit found when trying to validate that the doctor is authorized to work on this patient visit")
 )
 
-type doctorPatientVisitReviewData struct {
-	DoctorId     int64
-	PatientVisit *common.PatientVisit
-	CareTeam     *common.PatientCareTeam
-}
+func ValidateDoctorAccessToPatientFile(doctorId, patientId int64, DataApi api.DataAPI) (int, error) {
+	httpStatusCode := http.StatusOK
 
-func ValidateDoctorHasAccessToPatient(doctorID, patientID int64, dataAPI api.DataAPI) (*common.PatientCareProviderGroup, error) {
-	careTeam, err := dataAPI.GetCareTeamForPatient(patientID)
+	careTeam, err := DataApi.GetCareTeamForPatient(patientId)
 	if err != nil {
-		return nil, errors.New("Unable to get care team for patient " + err.Error())
+		httpStatusCode = http.StatusInternalServerError
+		err = errors.New("Unable to get care team for patient visit id " + err.Error())
+		return httpStatusCode, err
 	}
 
 	if careTeam == nil {
-		return nil, NotAuthorizedError("No care team assigned to patient")
+		httpStatusCode = http.StatusForbidden
+		err = errors.New("No care team assigned to patient visit so cannot diagnose patient visit")
+		return httpStatusCode, err
 	}
 
-	// ensure that the doctor is the current primary doctor for this patient
+	// ensure that the doctor is part of the patient's care team
 	for _, assignment := range careTeam.Assignments {
-		if assignment.ProviderRole == api.DOCTOR_ROLE && assignment.ProviderId != doctorID {
-			return nil, NotAuthorizedError("Doctor is unable to diagnose patient because he/she is not the primary doctor")
+		if assignment.ProviderRole == api.DOCTOR_ROLE && assignment.ProviderId != doctorId {
+			httpStatusCode = http.StatusForbidden
+			err = errors.New("Doctor is unable to diagnose patient because he/she is not the primary doctor")
+			return httpStatusCode, err
 		}
 	}
 
-	return careTeam, nil
-}
-
-func ValidateDoctorAccessToPatientVisitAndGetRelevantData(patientVisitId, accountIdForDoctor int64, dataAPI api.DataAPI) (*doctorPatientVisitReviewData, error) {
-	doctorId, err := dataAPI.GetDoctorIdFromAccountId(accountIdForDoctor)
-	if err != nil {
-		return nil, errors.New("Unable to get doctor id from account id " + err.Error())
-	}
-
-	patientVisit, err := dataAPI.GetPatientVisitFromId(patientVisitId)
-	if err != nil {
-		if err == sql.ErrNoRows {
-			return nil, NoPatientVisitFound
-		}
-		return nil, errors.New("Unable to get patient visit from id : " + err.Error())
-	}
-
-	careTeam, err := ValidateDoctorHasAccessToPatient(doctorId, patientVisit.PatientId.Int64(), dataAPI)
-	if err != nil {
-		return nil, err
-	}
-
-	reviewData := &doctorPatientVisitReviewData{
-		DoctorId:     doctorId,
-		PatientVisit: patientVisit,
-		CareTeam:     careTeam,
-	}
-	return reviewData, nil
+	return http.StatusOK, nil
 }
 
 func EnsurePatientVisitInExpectedStatus(dataAPI api.DataAPI, patientVisitId int64, expectedState string) error {

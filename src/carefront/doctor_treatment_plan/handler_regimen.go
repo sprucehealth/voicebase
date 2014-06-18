@@ -44,20 +44,26 @@ func (d *regimenHandler) updateRegimenSteps(w http.ResponseWriter, r *http.Reque
 		return
 	}
 
-	patientVisitId, err := d.dataAPI.GetPatientVisitIdFromTreatmentPlanId(requestData.TreatmentPlanId.Int64())
+	doctorId, err := d.dataAPI.GetDoctorIdFromAccountId(apiservice.GetContext(r).AccountId)
 	if err != nil {
 		apiservice.WriteError(err, w, r)
 		return
 	}
 
-	patientVisitReviewData, err := apiservice.ValidateDoctorAccessToPatientVisitAndGetRelevantData(patientVisitId, apiservice.GetContext(r).AccountId, d.dataAPI)
+	patientId, err := d.dataAPI.GetPatientIdFromTreatmentPlanId(requestData.TreatmentPlanId.Int64())
+	if err != nil {
+		apiservice.WriteError(err, w, r)
+		return
+	}
+
+	statusCode, err := apiservice.ValidateDoctorAccessToPatientFile(doctorId, patientId, d.dataAPI)
 	if err != nil {
 		apiservice.WriteError(err, w, r)
 		return
 	}
 
 	// can only add regimen for a treatment that is a draft
-	treatmentPlan, err := d.dataAPI.GetAbridgedTreatmentPlan(requestData.TreatmentPlanId.Int64(), patientVisitReviewData.DoctorId)
+	treatmentPlan, err := d.dataAPI.GetAbridgedTreatmentPlan(requestData.TreatmentPlanId.Int64(), doctorId)
 	if err != nil {
 		apiservice.WriteError(err, w, r)
 		return
@@ -69,7 +75,7 @@ func (d *regimenHandler) updateRegimenSteps(w http.ResponseWriter, r *http.Reque
 	// ensure that all regimen steps in the regimen sections actually exist in the client global list
 	for _, regimenSection := range requestData.RegimenSections {
 		for _, regimenStep := range regimenSection.RegimenSteps {
-			if httpStatusCode, err := d.ensureLinkedRegimenStepExistsInMasterList(regimenStep, requestData, patientVisitReviewData.DoctorId); err != nil {
+			if httpStatusCode, err := d.ensureLinkedRegimenStepExistsInMasterList(regimenStep, requestData, doctorId); err != nil {
 				apiservice.WriteDeveloperError(w, httpStatusCode, err.Error())
 				return
 			}
@@ -78,7 +84,7 @@ func (d *regimenHandler) updateRegimenSteps(w http.ResponseWriter, r *http.Reque
 
 	// compare the master list of regimen steps from the client with the active list
 	// that we have stored on the server
-	currentActiveRegimenSteps, err := d.dataAPI.GetRegimenStepsForDoctor(patientVisitReviewData.DoctorId)
+	currentActiveRegimenSteps, err := d.dataAPI.GetRegimenStepsForDoctor(doctorId)
 	if err != nil {
 		apiservice.WriteError(err, w, r)
 		return
@@ -96,7 +102,7 @@ func (d *regimenHandler) updateRegimenSteps(w http.ResponseWriter, r *http.Reque
 			regimenStepsToDelete = append(regimenStepsToDelete, currentRegimenStep)
 		}
 	}
-	err = d.dataAPI.MarkRegimenStepsToBeDeleted(regimenStepsToDelete, patientVisitReviewData.DoctorId)
+	err = d.dataAPI.MarkRegimenStepsToBeDeleted(regimenStepsToDelete, doctorId)
 	if err != nil {
 		apiservice.WriteError(err, w, r)
 		return
@@ -111,7 +117,7 @@ func (d *regimenHandler) updateRegimenSteps(w http.ResponseWriter, r *http.Reque
 	for _, regimenStep := range requestData.AllRegimenSteps {
 		switch regimenStep.State {
 		case common.STATE_ADDED:
-			err = d.dataAPI.AddRegimenStepForDoctor(regimenStep, patientVisitReviewData.DoctorId)
+			err = d.dataAPI.AddRegimenStepForDoctor(regimenStep, doctorId)
 			if err != nil {
 				apiservice.WriteDeveloperError(w, http.StatusInternalServerError, "Unable to add reigmen step to doctor. Application may be left in inconsistent state. Error = "+err.Error())
 				return
@@ -120,7 +126,7 @@ func (d *regimenHandler) updateRegimenSteps(w http.ResponseWriter, r *http.Reque
 			updatedAllRegimenSteps = append(updatedAllRegimenSteps, regimenStep)
 		case common.STATE_MODIFIED:
 			previousRegimenStepId := regimenStep.Id.Int64()
-			err = d.dataAPI.UpdateRegimenStepForDoctor(regimenStep, patientVisitReviewData.DoctorId)
+			err = d.dataAPI.UpdateRegimenStepForDoctor(regimenStep, doctorId)
 			if err != nil {
 				apiservice.WriteDeveloperError(w, http.StatusInternalServerError, "Unable to update regimen step for doctor: "+err.Error())
 				return
@@ -168,7 +174,7 @@ func (d *regimenHandler) updateRegimenSteps(w http.ResponseWriter, r *http.Reque
 		return
 	}
 
-	allRegimenSteps, err := d.dataAPI.GetRegimenStepsForDoctor(patientVisitReviewData.DoctorId)
+	allRegimenSteps, err := d.dataAPI.GetRegimenStepsForDoctor(doctorId)
 	if err != nil {
 		apiservice.WriteDeveloperError(w, http.StatusInternalServerError, "Unable to get the list of regimen steps for doctor: "+err.Error())
 		return
@@ -184,7 +190,7 @@ func (d *regimenHandler) updateRegimenSteps(w http.ResponseWriter, r *http.Reque
 	dispatch.Default.PublishAsync(&RegimenPlanAddedEvent{
 		TreatmentPlanId: requestData.TreatmentPlanId.Int64(),
 		RegimenPlan:     requestData,
-		DoctorId:        patientVisitReviewData.DoctorId,
+		DoctorId:        doctorId,
 	})
 
 	apiservice.WriteJSONToHTTPResponseWriter(w, http.StatusOK, regimenPlan)

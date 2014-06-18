@@ -82,13 +82,25 @@ func (d *diagnosePatientHandler) getDiagnosis(w http.ResponseWriter, r *http.Req
 		return
 	}
 
-	patientVisitReviewData, err := apiservice.ValidateDoctorAccessToPatientVisitAndGetRelevantData(requestData.PatientVisitId, apiservice.GetContext(r).AccountId, d.dataApi)
+	patientId, err := d.dataApi.GetPatientIdFromPatientVisitId(requestData.PatientVisitId)
 	if err != nil {
 		apiservice.WriteError(err, w, r)
 		return
 	}
 
-	diagnosisLayout, err := GetDiagnosisLayout(d.dataApi, requestData.PatientVisitId, patientVisitReviewData.DoctorId)
+	doctorId, err := d.dataApi.GetDoctorIdFromAccountId(apiservice.GetContext(r).AccountId)
+	if err != nil {
+		apiservice.WriteError(err, w, r)
+		return
+	}
+
+	statusCode, err := apiservice.ValidateDoctorAccessToPatientFile(doctorId, patientId, d.dataApi)
+	if err != nil {
+		apiservice.WriteError(err, w, r)
+		return
+	}
+
+	diagnosisLayout, err := GetDiagnosisLayout(d.dataApi, requestData.PatientVisitId, doctorId)
 	if err != nil {
 		apiservice.WriteDeveloperError(w, http.StatusInternalServerError, err.Error())
 		return
@@ -127,14 +139,24 @@ func (d *diagnosePatientHandler) diagnosePatient(w http.ResponseWriter, r *http.
 	} else if answerIntakeRequestBody.PatientVisitId == 0 {
 		apiservice.WriteValidationError("patient_visit_id must be specified", w, r)
 		return
-	}
-
-	if err := apiservice.ValidateRequestBody(&answerIntakeRequestBody, w); err != nil {
+	} else if err := apiservice.ValidateRequestBody(&answerIntakeRequestBody, w); err != nil {
 		apiservice.WriteDeveloperError(w, http.StatusBadRequest, "Bad parameters for question intake to diagnose patient: "+err.Error())
 		return
 	}
 
-	patientVisitReviewData, err := apiservice.ValidateDoctorAccessToPatientVisitAndGetRelevantData(answerIntakeRequestBody.PatientVisitId, apiservice.GetContext(r).AccountId, d.dataApi)
+	patientId, err := d.dataApi.GetPatientIdFromPatientVisitId(answerIntakeRequestBody.PatientVisitId)
+	if err != nil {
+		apiservice.WriteError(err, w, r)
+		return
+	}
+
+	doctorId, err := d.dataApi.GetDoctorIdFromAccountId(apiservice.GetContext(r).AccountId)
+	if err != nil {
+		apiservice.WriteError(err, w, r)
+		return
+	}
+
+	httpStatusCode, err := apiservice.ValidateDoctorAccessToPatientFile(doctorId, patientId, d.dataApi)
 	if err != nil {
 		apiservice.WriteError(err, w, r)
 		return
@@ -154,15 +176,15 @@ func (d *diagnosePatientHandler) diagnosePatient(w http.ResponseWriter, r *http.
 	answersToStorePerQuestion := make(map[int64][]*common.AnswerIntake)
 	for _, questionItem := range answerIntakeRequestBody.Questions {
 		// enumerate the answers to store from the top level questions as well as the sub questions
-		answersToStorePerQuestion[questionItem.QuestionId] = apiservice.PopulateAnswersToStoreForQuestion(api.DOCTOR_ROLE, questionItem, answerIntakeRequestBody.PatientVisitId, patientVisitReviewData.DoctorId, layoutVersionId)
+		answersToStorePerQuestion[questionItem.QuestionId] = apiservice.PopulateAnswersToStoreForQuestion(api.DOCTOR_ROLE, questionItem, answerIntakeRequestBody.PatientVisitId, doctorId, layoutVersionId)
 	}
 
-	if err := d.dataApi.DeactivatePreviousDiagnosisForPatientVisit(answerIntakeRequestBody.PatientVisitId, patientVisitReviewData.DoctorId); err != nil {
+	if err := d.dataApi.DeactivatePreviousDiagnosisForPatientVisit(answerIntakeRequestBody.PatientVisitId, doctorId); err != nil {
 		apiservice.WriteError(err, w, r)
 		return
 	}
 
-	if err := d.dataApi.StoreAnswersForQuestion(api.DOCTOR_ROLE, patientVisitReviewData.DoctorId, answerIntakeRequestBody.PatientVisitId, layoutVersionId, answersToStorePerQuestion); err != nil {
+	if err := d.dataApi.StoreAnswersForQuestion(api.DOCTOR_ROLE, doctorId, answerIntakeRequestBody.PatientVisitId, layoutVersionId, answersToStorePerQuestion); err != nil {
 		apiservice.WriteError(err, w, r)
 		return
 	}
@@ -188,7 +210,7 @@ func (d *diagnosePatientHandler) diagnosePatient(w http.ResponseWriter, r *http.
 		}
 
 		dispatch.Default.Publish(&PatientVisitMarkedUnsuitableEvent{
-			DoctorId:       patientVisitReviewData.DoctorId,
+			DoctorId:       doctorId,
 			PatientVisitId: answerIntakeRequestBody.PatientVisitId,
 		})
 
