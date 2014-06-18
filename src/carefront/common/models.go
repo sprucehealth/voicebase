@@ -82,6 +82,7 @@ type Doctor struct {
 
 type PatientVisit struct {
 	PatientVisitId    encoding.ObjectId `json:"patient_visit_id,omitempty"`
+	PatientCaseId     encoding.ObjectId `json:"patient_case_id"`
 	PatientId         encoding.ObjectId `json:"patient_id,omitempty"`
 	CreationDate      time.Time         `json:"creation_date,omitempty"`
 	SubmittedDate     time.Time         `json:"submitted_date,omitempty"`
@@ -119,6 +120,7 @@ type PatientCareProviderGroup struct {
 
 type TreatmentPlan struct {
 	Id               encoding.ObjectId `json:"treatment_plan_id,omitempty"`
+	PatientCaseId    encoding.ObjectId `json:"patient_case_id"`
 	PatientId        encoding.ObjectId `json:"patient_id,omitempty"`
 	PatientInfo      *Patient          `json:"patient,omitempty"`
 	Status           string            `json:"status,omitempty"`
@@ -172,6 +174,7 @@ type DoctorTreatmentPlan struct {
 	Status        string                      `json:"status,omitempty"`
 	Parent        *TreatmentPlanParent        `json:"parent,omitempty"`
 	PatientId     int64                       `json:"-"`
+	PatientCaseId encoding.ObjectId           `json:"patient_case_id"`
 	ContentSource *TreatmentPlanContentSource `json:"content_source,omitempty"`
 }
 
