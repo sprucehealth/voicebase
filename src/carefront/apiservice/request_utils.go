@@ -120,7 +120,7 @@ func GetDoctorInfo(dataApi api.DataAPI, doctorId int64, staticBaseContentUrl str
 	return doctor, err
 }
 
-func GetPrimaryDoctorIdFromCareTeam(careTeam *common.PatientCareProviderGroup) int64 {
+func GetPrimaryDoctorIdFromCareTeam(careTeam *common.PatientCareTeam) int64 {
 	for _, assignment := range careTeam.Assignments {
 		if assignment.ProviderRole == api.DOCTOR_ROLE && assignment.Status == api.PRIMARY_DOCTOR_STATUS {
 			return assignment.ProviderId

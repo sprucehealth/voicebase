@@ -103,19 +103,15 @@ type Address struct {
 }
 
 type PatientCareProviderAssignment struct {
-	Id           int64
 	ProviderRole string
 	ProviderId   int64
+	PatientId    int64
 	Status       string
+	CreationDate time.Time
 }
 
-type PatientCareProviderGroup struct {
-	Id           int64
-	PatientId    int64
-	CreationDate time.Time
-	ModifiedDate time.Time
-	Status       string
-	Assignments  []*PatientCareProviderAssignment
+type PatientCareTeam struct {
+	Assignments []*PatientCareProviderAssignment
 }
 
 type TreatmentPlan struct {

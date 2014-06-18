@@ -64,9 +64,9 @@ type PatientAPI interface {
 	CreateUnlinkedPatientFromRefillRequest(patient *common.Patient) error
 	UpdatePatientWithERxPatientId(patientId, erxPatientId int64) error
 	GetPatientIdFromAccountId(accountId int64) (int64, error)
-	CreateCareTeamForPatient(patientId int64) (careTeam *common.PatientCareProviderGroup, err error)
-	CreateCareTeamForPatientWithPrimaryDoctor(patientId, doctorId int64) (careTeam *common.PatientCareProviderGroup, err error)
-	GetCareTeamForPatient(patientId int64) (careTeam *common.PatientCareProviderGroup, err error)
+	CreateCareTeamForPatient(patientId int64) (careTeam *common.PatientCareTeam, err error)
+	CreateCareTeamForPatientWithPrimaryDoctor(patientId, doctorId int64) (careTeam *common.PatientCareTeam, err error)
+	GetCareTeamForPatient(patientId int64) (careTeam *common.PatientCareTeam, err error)
 	CheckCareProvidingElligibility(shortState string, healthConditionId int64) (doctorId int64, err error)
 
 	UpdatePatientAddress(patientId int64, addressLine1, addressLine2, city, state, zipCode, addressType string) error

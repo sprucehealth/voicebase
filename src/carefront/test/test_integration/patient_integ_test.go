@@ -98,7 +98,7 @@ func TestPatientVisitCreation(t *testing.T) {
 		t.Fatal("Unable to get care team for patient visit: " + err.Error())
 	}
 
-	if !(careTeam == nil || careTeam.PatientId == signedupPatientResponse.Patient.PatientId.Int64()) {
+	if !(careTeam == nil || careTeam.Assignments[0].PatientId == signedupPatientResponse.Patient.PatientId.Int64()) {
 		t.Fatal("Unable to get patient visit id for care team")
 	}
 

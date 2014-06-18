@@ -261,101 +261,47 @@ func (d *DataService) UpdatePatientWithERxPatientId(patientId, erxPatientId int6
 	return err
 }
 
-func (d *DataService) GetCareTeamForPatient(patientId int64) (*common.PatientCareProviderGroup, error) {
-	rows, err := d.db.Query(`select patient_care_provider_group.id as group_id, patient_care_provider_assignment.id as assignment_id, role_type_tag, 
-								created_date, modified_date,provider_id, patient_care_provider_group.status as group_status, 
-								patient_care_provider_assignment.status as assignment_status from patient_care_provider_assignment 
-									inner join patient_care_provider_group on assignment_group_id = patient_care_provider_group.id 
+func (d *DataService) GetCareTeamForPatient(patientId int64) (*common.PatientCareTeam, error) {
+	rows, err := d.db.Query(`select role_type_tag, creation_date, provider_id, status, patient_id
+								from patient_care_provider_assignment 
 									inner join role_type on role_type.id = role_type_id 
-									where patient_care_provider_group.patient_id=?`, patientId)
+									where patient_id=?`, patientId)
 
 	if err != nil {
 		return nil, err
 	}
 	defer rows.Close()
 
-	var careTeam *common.PatientCareProviderGroup
+	var careTeam common.PatientCareTeam
+	careTeam.Assignments = make([]*common.PatientCareProviderAssignment, 0)
 	for rows.Next() {
-		var groupId, assignmentId, providerId int64
-		var providerTag, groupStatus, assignmentStatus string
-		var createdDate, modifiedDate mysql.NullTime
-		err := rows.Scan(&groupId, &assignmentId, &providerTag, &createdDate, &modifiedDate, &providerId, &groupStatus, &assignmentStatus)
+		var assignment common.PatientCareProviderAssignment
+		err := rows.Scan(&assignment.ProviderRole, &assignment.CreationDate, &assignment.ProviderId, &assignment.Status, &assignment.PatientId)
 		if err != nil {
 			return nil, err
 		}
-		if careTeam == nil {
-			careTeam = &common.PatientCareProviderGroup{}
-			careTeam.Id = groupId
-			careTeam.PatientId = patientId
-			if createdDate.Valid {
-				careTeam.CreationDate = createdDate.Time
-			}
-			if modifiedDate.Valid {
-				careTeam.ModifiedDate = modifiedDate.Time
-			}
-			careTeam.Status = groupStatus
-			careTeam.Assignments = make([]*common.PatientCareProviderAssignment, 0)
-		}
-
-		patientCareProviderAssignment := &common.PatientCareProviderAssignment{
-			Id:           assignmentId,
-			ProviderRole: providerTag,
-			ProviderId:   providerId,
-			Status:       assignmentStatus,
-		}
-
-		careTeam.Assignments = append(careTeam.Assignments, patientCareProviderAssignment)
+		careTeam.Assignments = append(careTeam.Assignments, &assignment)
 	}
 
-	return careTeam, rows.Err()
+	return &careTeam, rows.Err()
 }
 
-func (d *DataService) CreateCareTeamForPatientWithPrimaryDoctor(patientId, doctorId int64) (*common.PatientCareProviderGroup, error) {
+func (d *DataService) CreateCareTeamForPatientWithPrimaryDoctor(patientId, doctorId int64) (*common.PatientCareTeam, error) {
 	return d.createProviderAssignmentForPatient(patientId, doctorId, d.roleTypeMapping[DOCTOR_ROLE])
 }
 
-func (d *DataService) createProviderAssignmentForPatient(patientId, providerId, providerRoleId int64) (*common.PatientCareProviderGroup, error) {
-
-	// create new group assignment for patient visit
-	tx, err := d.db.Begin()
-	if err != nil {
-		return nil, err
-	}
-
-	res, err := tx.Exec(`insert into patient_care_provider_group (patient_id, status) values (?, ?)`, patientId, STATUS_CREATING)
-	if err != nil {
-		tx.Rollback()
-		return nil, err
-	}
-
-	lastInsertId, err := res.LastInsertId()
-	if err != nil {
-		tx.Rollback()
-		return nil, err
-	}
+func (d *DataService) createProviderAssignmentForPatient(patientId, providerId, providerRoleId int64) (*common.PatientCareTeam, error) {
 
 	// create new assignment for patient
-	_, err = tx.Exec("insert into patient_care_provider_assignment (patient_id, role_type_id, provider_id, assignment_group_id, status) values (?, ?, ?, ?, 'PRIMARY')", patientId, providerRoleId, providerId, lastInsertId)
+	_, err := d.db.Exec("insert into patient_care_provider_assignment (patient_id, role_type_id, provider_id, status) values (?, ?, ?, 'PRIMARY')", patientId, providerRoleId, providerId)
 	if err != nil {
-		tx.Rollback()
-		return nil, err
-	}
-
-	// update group assignment to be the active group assignment for this patient visit
-	_, err = tx.Exec(`update patient_care_provider_group set status='ACTIVE' where id=?`, lastInsertId)
-	if err != nil {
-		tx.Rollback()
-		return nil, err
-	}
-
-	if err := tx.Commit(); err != nil {
 		return nil, err
 	}
 
 	return d.GetCareTeamForPatient(patientId)
 }
 
-func (d *DataService) CreateCareTeamForPatient(patientId int64) (*common.PatientCareProviderGroup, error) {
+func (d *DataService) CreateCareTeamForPatient(patientId int64) (*common.PatientCareTeam, error) {
 	// identify providers in the state required. Assuming for now that we can only have one provider in the
 	// state of CA. The reason for this assumption is that we have not yet figured out how best to deal with
 	// multiple active doctors in how they will be assigned to the patient.

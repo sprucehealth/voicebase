@@ -15,7 +15,7 @@ var (
 type doctorPatientVisitReviewData struct {
 	DoctorId     int64
 	PatientVisit *common.PatientVisit
-	CareTeam     *common.PatientCareProviderGroup
+	CareTeam     *common.PatientCareTeam
 }
 
 func ValidateDoctorHasAccessToPatient(doctorID, patientID int64, dataAPI api.DataAPI) (*common.PatientCareProviderGroup, error) {
