@@ -6,7 +6,6 @@ import (
 	"carefront/apiservice"
 	"carefront/common"
 	"carefront/doctor_treatment_plan"
-	"carefront/encoding"
 	"encoding/json"
 	"fmt"
 	"net/http"
@@ -129,7 +128,6 @@ func (f *favoriteTreatmentPlanHandler) ServeHTTP(w http.ResponseWriter, r *http.
 	// ********** STEP 3: first add the regimen steps in the context of a patient visit **********
 
 	favoriteTreatmentPlan.RegimenPlan.TreatmentPlanId = tpResponse.TreatmentPlan.Id
-	favoriteTreatmentPlan.RegimenPlan.PatientVisitId = encoding.NewObjectId(patientVisitId)
 	jsonData, err = json.Marshal(favoriteTreatmentPlan.RegimenPlan)
 	if err != nil {
 		apiservice.WriteError(err, w, r)
