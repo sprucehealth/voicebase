@@ -302,15 +302,21 @@ func (d *DataService) GetSectionInfo(sectionTag string, languageId int64) (id in
 					inner join app_text on section_title_app_text_id = app_text.id 
 					inner join localized_text on app_text_id = app_text.id 
 						where language_id = ? and section_tag = ?`, languageId, sectionTag).Scan(&id, &title)
+	if err == sql.ErrNoRows {
+		err = NoRowsError
+	}
 	return
 }
 
 func (d *DataService) GetQuestionInfo(questionTag string, languageId int64) (*info_intake.Question, error) {
 	questionInfos, err := d.GetQuestionInfoForTags([]string{questionTag}, languageId)
-	if len(questionInfos) > 0 {
-		return questionInfos[0], err
+	if err != nil {
+		return nil, err
 	}
-	return nil, err
+	if len(questionInfos) > 0 {
+		return questionInfos[0], nil
+	}
+	return nil, NoRowsError
 }
 
 func (d *DataService) GetQuestionInfoForTags(questionTags []string, languageId int64) ([]*info_intake.Question, error) {
