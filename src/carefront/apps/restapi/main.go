@@ -33,10 +33,8 @@ import (
 	"carefront/treatment_plan"
 	"carefront/www/router"
 	"database/sql"
-	"fmt"
 	"log"
 	"net/http"
-	"os"
 	"strconv"
 	"time"
 
@@ -81,7 +79,7 @@ func connectDB(conf *Config) *sql.DB {
 
 func main() {
 	conf := DefaultConfig
-	args, err := config.Parse(&conf)
+	_, err := config.Parse(&conf)
 	if err != nil {
 		log.Fatal(err)
 	}
@@ -100,22 +98,6 @@ func main() {
 	dataApi, err := api.NewDataService(db)
 	if err != nil {
 		log.Fatalf("Unable to initialize data service layer: %s", err)
-	}
-
-	if len(args) > 0 {
-		switch args[0] {
-		case "validate-patient-layout":
-			if len(args) < 2 {
-				log.Fatal("Expected layout json file as argument")
-			}
-			if err := validateLayouts(dataApi, args[1], args[2]); err != nil {
-				log.Fatal(err)
-			}
-		default:
-			fmt.Fprintf(os.Stderr, "Unknown command '%s'\n", args[0])
-			os.Exit(1)
-		}
-		return
 	}
 
 	metricsRegistry := metrics.NewRegistry()
