@@ -19,7 +19,7 @@ create table patient_case_care_provider_assignment (
   foreign key (patient_case_id) references patient_case(id),
   foreign key (role_type_id) references role_type(id),
   primary key (id),
-  unique key (patient_case_id, provider_id, role_type_id, status)
+  unique key (patient_case_id, provider_id, role_type_id)
 ) character set utf8;
 
 -- Tie the patient visit to the case

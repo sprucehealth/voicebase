@@ -1,6 +1,6 @@
 -- MySQL dump 10.13  Distrib 5.6.17, for osx10.9 (x86_64)
 --
--- Host: 127.0.0.1    Database: database_11312
+-- Host: 127.0.0.1    Database: database_30204
 -- ------------------------------------------------------
 -- Server version	5.6.17
 
@@ -1365,7 +1365,7 @@ CREATE TABLE `patient_case_care_provider_assignment` (
   `creation_date` timestamp(6) NOT NULL DEFAULT CURRENT_TIMESTAMP(6),
   `status` varchar(100) NOT NULL,
   PRIMARY KEY (`id`),
-  UNIQUE KEY `patient_case_id` (`patient_case_id`,`provider_id`,`role_type_id`,`status`),
+  UNIQUE KEY `patient_case_id` (`patient_case_id`,`provider_id`,`role_type_id`),
   KEY `role_type_id` (`role_type_id`),
   CONSTRAINT `patient_case_care_provider_assignment_ibfk_1` FOREIGN KEY (`patient_case_id`) REFERENCES `patient_case` (`id`),
   CONSTRAINT `patient_case_care_provider_assignment_ibfk_2` FOREIGN KEY (`role_type_id`) REFERENCES `role_type` (`id`)
@@ -2607,4 +2607,4 @@ CREATE TABLE `unlinked_dntf_treatment_status_events` (
 /*!40101 SET COLLATION_CONNECTION=@OLD_COLLATION_CONNECTION */;
 /*!40111 SET SQL_NOTES=@OLD_SQL_NOTES */;
 
--- Dump completed on 2014-06-17 17:59:10
+-- Dump completed on 2014-06-19 14:39:29
