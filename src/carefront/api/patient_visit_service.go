@@ -119,10 +119,11 @@ func (d *DataService) GetLatestClosedPatientVisitForPatient(patientId int64) (*c
 func (d *DataService) GetPatientVisitFromId(patientVisitId int64) (*common.PatientVisit, error) {
 	patientVisit := common.PatientVisit{PatientVisitId: encoding.NewObjectId(patientVisitId)}
 	var creationDateBytes, submittedDateBytes, closedDateBytes mysql.NullTime
-	err := d.db.QueryRow(`select patient_id, health_condition_id, layout_version_id, 
+	err := d.db.QueryRow(`select patient_id, patient_case_id, health_condition_id, layout_version_id, 
 		creation_date, submitted_date, closed_date, status from patient_visit where id = ?`, patientVisitId,
 	).Scan(
 		&patientVisit.PatientId,
+		&patientVisit.PatientCaseId,
 		&patientVisit.HealthConditionId,
 		&patientVisit.LayoutVersionId, &creationDateBytes, &submittedDateBytes, &closedDateBytes, &patientVisit.Status)
 	if err != nil {
@@ -142,23 +143,58 @@ func (d *DataService) GetPatientVisitFromId(patientVisitId int64) (*common.Patie
 	return &patientVisit, err
 }
 
+func (d *DataService) GetPatientCaseIdFromPatientVisitId(patientVisitId int64) (int64, error) {
+	var patientCaseId int64
+	if err := d.db.QueryRow(`select patient_case_id from patient_visit where id=?`, patientVisitId).Scan(&patientCaseId); err == sql.ErrNoRows {
+		return 0, NoRowsError
+	} else if err != nil {
+		return 0, err
+	}
+	return patientCaseId, nil
+}
+
 func (d *DataService) CreateNewPatientVisit(patientId, healthConditionId, layoutVersionId int64) (int64, error) {
-	res, err := d.db.Exec(`insert into patient_visit (patient_id, health_condition_id, layout_version_id, status) 
-								values (?, ?, ?, 'OPEN')`, patientId, healthConditionId, layoutVersionId)
+	tx, err := d.db.Begin()
 	if err != nil {
+		return 0, err
+	}
+
+	// implicitly create a new case when creating a new visit for now
+	res, err := tx.Exec(`insert into patient_case (patient_id, health_condition_id, status) values (?,?,?)`, patientId, healthConditionId, STATUS_ACTIVE)
+	if err != nil {
+		tx.Rollback()
+		return 0, err
+	}
+
+	patientCaseId, err := res.LastInsertId()
+	if err != nil {
+		tx.Rollback()
+		return 0, err
+	}
+
+	res, err = tx.Exec(`insert into patient_visit (patient_id, health_condition_id, layout_version_id, patient_case_id, status) 
+								values (?, ?, ?, ?, 'OPEN')`, patientId, healthConditionId, layoutVersionId, patientCaseId)
+	if err != nil {
+		tx.Rollback()
 		return 0, err
 	}
 
 	lastId, err := res.LastInsertId()
 	if err != nil {
+		tx.Rollback()
 		log.Fatal("Unable to return id of inserted item as error was returned when trying to return id", err)
 		return 0, err
 	}
-	return lastId, err
+
+	if err := tx.Commit(); err != nil {
+		return 0, err
+	}
+
+	return lastId, nil
 }
 
 func (d *DataService) GetAbridgedTreatmentPlan(treatmentPlanId, doctorId int64) (*common.DoctorTreatmentPlan, error) {
-	rows, err := d.db.Query(`select id, doctor_id, patient_id, status, creation_date from treatment_plan where id = ?`, treatmentPlanId)
+	rows, err := d.db.Query(`select id, doctor_id, patient_id, patient_case_id, status, creation_date from treatment_plan where id = ?`, treatmentPlanId)
 	if err != nil {
 		return nil, err
 	}
@@ -213,7 +249,7 @@ func (d *DataService) getAbridgedTreatmentPlanFromRows(rows *sql.Rows, doctorId 
 	drTreatmentPlans := make([]*common.DoctorTreatmentPlan, 0)
 	for rows.Next() {
 		var drTreatmentPlan common.DoctorTreatmentPlan
-		if err := rows.Scan(&drTreatmentPlan.Id, &drTreatmentPlan.DoctorId, &drTreatmentPlan.PatientId, &drTreatmentPlan.Status, &drTreatmentPlan.CreationDate); err != nil {
+		if err := rows.Scan(&drTreatmentPlan.Id, &drTreatmentPlan.DoctorId, &drTreatmentPlan.PatientId, &drTreatmentPlan.PatientCaseId, &drTreatmentPlan.Status, &drTreatmentPlan.CreationDate); err != nil {
 			return nil, err
 		}
 
@@ -260,7 +296,7 @@ func (d *DataService) getAbridgedTreatmentPlanFromRows(rows *sql.Rows, doctorId 
 }
 
 func (d *DataService) GetAbridgedTreatmentPlanList(doctorId, patientId int64, status string) ([]*common.DoctorTreatmentPlan, error) {
-	rows, err := d.db.Query(`select id, doctor_id, patient_id, status, creation_date from treatment_plan where patient_id = ? AND status = ?`, patientId, status)
+	rows, err := d.db.Query(`select id, doctor_id, patient_id, patient_case_id, status, creation_date from treatment_plan where patient_id = ? AND status = ?`, patientId, status)
 	if err != nil {
 		return nil, err
 	}
@@ -270,7 +306,7 @@ func (d *DataService) GetAbridgedTreatmentPlanList(doctorId, patientId int64, st
 }
 
 func (d *DataService) GetAbridgedTreatmentPlanListInDraftForDoctor(doctorId, patientId int64) ([]*common.DoctorTreatmentPlan, error) {
-	rows, err := d.db.Query(`select id, doctor_id, patient_id, status, creation_date from treatment_plan where doctor_id = ?  and patient_id = ? and status = ?`, doctorId, patientId, STATUS_DRAFT)
+	rows, err := d.db.Query(`select id, doctor_id, patient_id, patient_case_id, status, creation_date from treatment_plan where doctor_id = ?  and patient_id = ? and status = ?`, doctorId, patientId, STATUS_DRAFT)
 	if err != nil {
 		return nil, err
 	}
@@ -317,7 +353,14 @@ func (d *DataService) StartNewTreatmentPlan(patientId, patientVisitId, doctorId 
 		return 0, err
 	}
 
-	lastId, err := tx.Exec(`insert into treatment_plan (patient_id, doctor_id, status) values (?,?,?)`, patientId, doctorId, STATUS_DRAFT)
+	// get the case the treatment plan belongs to from the patient visit
+	patientCaseId, err := d.GetPatientCaseIdFromPatientVisitId(patientVisitId)
+	if err != nil {
+		tx.Rollback()
+		return 0, err
+	}
+
+	lastId, err := tx.Exec(`insert into treatment_plan (patient_id, doctor_id, patient_case_id, status) values (?,?,?,?)`, patientId, doctorId, patientCaseId, STATUS_DRAFT)
 	if err != nil {
 		tx.Rollback()
 		return 0, err
@@ -539,6 +582,18 @@ func (d *DataService) RecordDoctorAssignmentToPatientVisit(patientVisitId, docto
 	// insert an assignment into table
 	_, err = tx.Exec(`insert into patient_visit_care_provider_assignment (role_type_id, provider_id, patient_visit_id, status) 
 							values (?, ?, ?, ?)`, d.roleTypeMapping[DOCTOR_ROLE], doctorId, patientVisitId, STATUS_ACTIVE)
+	if err != nil {
+		tx.Rollback()
+		return err
+	}
+
+	// currently assign case to the same doctor until we have a better way to manage when a case is assigned to a doctor
+	patientCaseId, err := d.GetPatientCaseIdFromPatientVisitId(patientVisitId)
+	if err != nil {
+		tx.Rollback()
+		return err
+	}
+	_, err = tx.Exec(`insert into patient_case_care_provider_assignment (patient_case_id, provider_id, role_type_id, status) values (?,?,?,?)`, patientCaseId, doctorId, d.roleTypeMapping[DOCTOR_ROLE], STATUS_ACTIVE)
 	if err != nil {
 		tx.Rollback()
 		return err
