@@ -94,12 +94,19 @@ func ValidateDoctorAccessToPatientFile(doctorId, patientId int64, DataApi api.Da
 	}
 
 	// ensure that the doctor is part of the patient's care team
+	doctorFound := false
 	for _, assignment := range careTeam.Assignments {
-		if assignment.ProviderRole == api.DOCTOR_ROLE && assignment.ProviderId != doctorId {
-			httpStatusCode = http.StatusForbidden
-			err = errors.New("Doctor is unable to diagnose patient because he/she is not the primary doctor")
-			return httpStatusCode, err
+		if assignment.ProviderRole == api.DOCTOR_ROLE && assignment.ProviderId == doctorId {
+			doctorFound = true
+			break
 		}
+	}
+
+	if !doctorFound {
+		httpStatusCode = http.StatusForbidden
+		err = errors.New("Doctor is unable to diagnose patient because he/she is not the primary doctor")
+		return httpStatusCode, err
+
 	}
 
 	return http.StatusOK, nil

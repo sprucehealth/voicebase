@@ -3,7 +3,6 @@ package test_integration
 import (
 	"bytes"
 	"carefront/address"
-	"carefront/apiservice"
 	"carefront/common"
 	"carefront/encoding"
 	"carefront/libs/erx"
@@ -475,11 +474,11 @@ func TestDoctorPatientPharmacyUpdateHandler(t *testing.T) {
 		Postal:       "94115325151",
 	}
 
-	doctorUpdatePatientPharmacy := &apiservice.DoctorUpdatePatientPharmacyHandler{DataApi: testData.DataApi}
+	doctorUpdatePatientPharmacy := patient_file.NewDoctorUpdatePatientPharmacyHandler(testData.DataApi)
 	ts := httptest.NewServer(doctorUpdatePatientPharmacy)
 	defer ts.Close()
 
-	requestData := &apiservice.DoctorUpdatePatientPharmacyRequestData{
+	requestData := &patient_file.DoctorUpdatePatientPharmacyRequestData{
 		PatientId: signedupPatientResponse.Patient.PatientId,
 		Pharmacy:  updatedPatientPharmacy,
 	}
@@ -534,11 +533,11 @@ func TestDoctorPharmacyUpdateForbidden(t *testing.T) {
 		t.Fatal("Unable to add patient's preferred pharmacy")
 	}
 
-	doctorUpdatePatientPharmacy := &apiservice.DoctorUpdatePatientPharmacyHandler{DataApi: testData.DataApi}
+	doctorUpdatePatientPharmacy := patient_file.NewDoctorUpdatePatientPharmacyHandler(testData.DataApi)
 	ts := httptest.NewServer(doctorUpdatePatientPharmacy)
 	defer ts.Close()
 
-	requestData := &apiservice.DoctorUpdatePatientPharmacyRequestData{
+	requestData := &patient_file.DoctorUpdatePatientPharmacyRequestData{
 		PatientId: signedupPatientResponse.Patient.PatientId,
 		Pharmacy:  patientPharmacy,
 	}

@@ -320,6 +320,11 @@ func (d *DataService) CreateCareTeamForPatient(patientId int64) (*common.Patient
 	return d.createProviderAssignmentForPatient(patientId, providerId, providerRoleId)
 }
 
+func (d *DataService) AddDoctorToCareTeamForPatient(patientId, doctorId int64) error {
+	_, err := d.db.Exec(`insert into patient_care_provider_assignment (patient_id, provider_id, role_type_id, status) values (?,?,?,?)`, patientId, doctorId, d.roleTypeMapping[DOCTOR_ROLE], STATUS_ACTIVE)
+	return err
+}
+
 func (d *DataService) GetPatientFromAccountId(accountId int64) (*common.Patient, error) {
 	patients, err := d.getPatientBasedOnQuery("patient", "", `
 		patient.account_id = ?

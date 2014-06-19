@@ -101,6 +101,11 @@ func TestTreatmentPlanList_DraftTest(t *testing.T) {
 		t.Fatalf(err.Error())
 	}
 
+	// add doctor2 to the care team of the patient
+	if err := testData.DataApi.AddDoctorToCareTeamForPatient(patientId, doctor2.DoctorId.Int64()); err != nil {
+		t.Fatal(err)
+	}
+
 	// doctor2 should not be able to see previous doctor's draft
 	treatmentPlanResponse := test_integration.GetListOfTreatmentPlansForPatient(patientId, doctor2.AccountId.Int64(), testData, t)
 	if len(treatmentPlanResponse.DraftTreatmentPlans) != 0 {
