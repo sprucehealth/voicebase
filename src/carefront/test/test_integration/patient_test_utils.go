@@ -2,6 +2,7 @@ package test_integration
 
 import (
 	"bytes"
+	"carefront/address"
 	"carefront/apiservice"
 	"carefront/info_intake"
 	patientApiService "carefront/patient"
@@ -17,7 +18,8 @@ import (
 )
 
 func SignupRandomTestPatient(t *testing.T, testData *TestData) *patientApiService.PatientSignedupResponse {
-	authHandler := patientApiService.NewSignupHandler(testData.DataApi, testData.AuthApi)
+	addressValidatonStub := &address.StubAddressValidationService{}
+	authHandler := patientApiService.NewSignupHandler(testData.DataApi, testData.AuthApi, addressValidatonStub)
 	ts := httptest.NewServer(authHandler)
 	defer ts.Close()
 
@@ -49,12 +51,6 @@ func GetPatientVisitForPatient(patientId int64, testData *TestData, t *testing.T
 		t.Fatal("Unable to get patient information given the patient id: " + err.Error())
 	}
 
-	doctorId := GetDoctorIdOfCurrentPrimaryDoctor(testData, t)
-	doctor, err := testData.DataApi.GetDoctorFromId(doctorId)
-	if err != nil {
-		t.Fatal(err.Error())
-	}
-
 	patientVisitId, err := testData.DataApi.GetLastCreatedPatientVisitIdForPatient(patientId)
 	if err != nil {
 		t.Fatal(err.Error())
@@ -70,7 +66,7 @@ func GetPatientVisitForPatient(patientId int64, testData *TestData, t *testing.T
 		t.Fatal(err.Error())
 	}
 
-	patientVisitLayout, err := patient_visit.GetPatientVisitLayout(testData.DataApi, patient.PatientId.Int64(), patientVisitId, r, doctor)
+	patientVisitLayout, err := patient_visit.GetPatientVisitLayout(testData.DataApi, patient.PatientId.Int64(), patientVisitId, r)
 	if err != nil {
 		t.Fatal(err.Error())
 	}

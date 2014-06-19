@@ -26,7 +26,7 @@ func (d *DataService) GetDoctorsAssignedToPatientCase(patientCaseId int64) ([]*c
 
 func (d *DataService) GetPatientCaseFromPatientVisitId(patientVisitId int64) (*common.PatientCase, error) {
 	var patientCase common.PatientCase
-	err := d.db.QueryRow(`select patient_case.id, patient_case.patient_id, patient_case.health_condition_id, patient_case.creation_date, patient_case.status 
+	err := d.db.QueryRow(`select patient_case.id, patient_case.patient_id, patient_case.health_condition_id, patient_case.creation_date, patient_case.status from patient_case
 							inner join patient_visit on patient_case_id = patient_case.id
 							where patient_visit.id = ?`, patientVisitId).Scan(
 		&patientCase.Id,

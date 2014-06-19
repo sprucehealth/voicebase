@@ -2,6 +2,7 @@ package test_integration
 
 import (
 	"bytes"
+	"carefront/address"
 	"carefront/patient"
 	"math/rand"
 	"net/http"
@@ -14,7 +15,8 @@ func TestPatientSignupInvalidEmail(t *testing.T) {
 	testData := SetupIntegrationTest(t)
 	defer TearDownIntegrationTest(t, testData)
 
-	authHandler := patient.NewSignupHandler(testData.DataApi, testData.AuthApi)
+	addressValidationStub := &address.StubAddressValidationService{}
+	authHandler := patient.NewSignupHandler(testData.DataApi, testData.AuthApi, addressValidationStub)
 	ts := httptest.NewServer(authHandler)
 	defer ts.Close()
 
