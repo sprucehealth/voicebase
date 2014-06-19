@@ -6,7 +6,6 @@ import (
 	"carefront/apiservice"
 	"carefront/common"
 	"carefront/encoding"
-	"carefront/libs/dispatch"
 	"carefront/libs/golog"
 	"net/http"
 	"strings"
@@ -143,27 +142,5 @@ func (s *SignupHandler) ServeHTTP(w http.ResponseWriter, r *http.Request) {
 		}
 	}
 
-	// create care team for patient
-	var careTeam *common.PatientCareTeam
-	if requestData.DoctorId != 0 {
-		careTeam, err = s.dataApi.CreateCareTeamForPatientWithPrimaryDoctor(newPatient.PatientId.Int64(), requestData.DoctorId)
-		if err != nil {
-			apiservice.WriteDeveloperError(w, http.StatusInternalServerError, "Unable to create care team with specified doctor for patient: "+err.Error())
-			return
-		}
-	} else {
-		careTeam, err = s.dataApi.CreateCareTeamForPatient(newPatient.PatientId.Int64())
-		if err != nil {
-			golog.Errorf(err.Error())
-			apiservice.WriteDeveloperError(w, http.StatusInternalServerError, "Unable to create care team for patient :"+err.Error())
-			return
-		}
-	}
-
-	dispatch.Default.PublishAsync(&CareTeamAssingmentEvent{
-		PatientId:   newPatient.PatientId.Int64(),
-		Assignments: careTeam.Assignments,
-	})
-
-	apiservice.WriteJSONToHTTPResponseWriter(w, http.StatusOK, PatientSignedupResponse{Token: token, Patient: newPatient})
+	apiservice.WriteJSONToHTTPResponseWriter(w, http.StatusOK, PatientSignedupResponse{Token: res.Token, Patient: newPatient})
 }
