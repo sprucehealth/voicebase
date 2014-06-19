@@ -34,19 +34,13 @@ func InitListeners(dataAPI api.DataAPI, notificationManager *notify.Notification
 			golog.Errorf("Failed to remove incomplete visit notification for patient %d: %s", ev.PatientId, err.Error())
 		}
 
-		doctor, err := dataAPI.GetDoctorFromId(ev.DoctorId)
-		if err != nil {
-			return err
-		}
-
 		// Add "visit submitted" to health log
 		if _, err := dataAPI.InsertOrUpdatePatientHealthLogItem(ev.PatientId, &common.HealthLogItem{
 			UID: fmt.Sprintf("visit_submitted:%d", ev.VisitId),
 			Data: &titledLogItem{
-				Title:    "Visit Submitted",
-				Subtitle: fmt.Sprintf("With Dr. %s", doctor.LastName),
-				IconURL:  app_url.IconHomeVisitNormal,
-				TapURL:   app_url.ViewPatientVisitAction(ev.VisitId),
+				Title:   "Visit Submitted",
+				IconURL: app_url.IconHomeVisitNormal,
+				TapURL:  app_url.ViewPatientVisitAction(ev.VisitId),
 			},
 		}); err != nil {
 			golog.Errorf("Failed to insert visit submitted into health log for patient %d: %s", ev.PatientId, err.Error())

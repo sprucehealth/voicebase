@@ -95,6 +95,12 @@ type PatientAPI interface {
 	GetFullNameForState(state string) (string, error)
 }
 
+type PatientCaseAPI interface {
+	GetDoctorsAssignedToPatientCase(patientCaseId int64) ([]*common.CareProviderAssignment, error)
+	GetPatientCaseFromPatientVisitId(patientVisitId int64) (*common.PatientCase, error)
+	GetCareProvidingStateId(stateAbbreviation string, healthConditionId int64) (int64, error)
+}
+
 type PatientVisitAPI interface {
 	GetActivePatientVisitIdForHealthCondition(patientId, healthConditionId int64) (int64, error)
 	GetLastCreatedPatientVisitIdForPatient(patientId int64) (int64, error)
@@ -203,6 +209,7 @@ type DoctorAPI interface {
 	GetTreatmentTemplates(doctorId int64) ([]*common.DoctorTreatmentTemplate, error)
 	DeleteTreatmentTemplates(doctorTreatmentTemplates []*common.DoctorTreatmentTemplate, doctorId int64) error
 	InsertItemIntoDoctorQueue(doctorQueueItem DoctorQueueItem) error
+	InsertUnclaimedItemIntoQueue(doctorQueueItem *DoctorQueueItem) error
 	ReplaceItemInDoctorQueue(doctorQueueItem DoctorQueueItem, currentState string) error
 	DeleteItemFromDoctorQueue(doctorQueueItem DoctorQueueItem) error
 	MarkGenerationOfTreatmentPlanInVisitQueue(doctorId, patientVisitId, treatmentPlanId int64, currentState, updatedState string) error
@@ -317,6 +324,7 @@ type DataAPI interface {
 	PatientAPI
 	DoctorAPI
 	PatientVisitAPI
+	PatientCaseAPI
 	IntakeLayoutAPI
 	ObjectStorageDBAPI
 	IntakeAPI

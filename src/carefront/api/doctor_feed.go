@@ -20,14 +20,15 @@ const (
 )
 
 type DoctorQueueItem struct {
-	Id              int64
-	DoctorId        int64
-	EventType       string
-	EnqueueDate     time.Time
-	CompletedDate   time.Time
-	ItemId          int64
-	Status          string
-	PositionInQueue int
+	Id                   int64
+	DoctorId             int64
+	EventType            string
+	EnqueueDate          time.Time
+	CompletedDate        time.Time
+	ItemId               int64
+	Status               string
+	PositionInQueue      int
+	CareProvidingStateId int64
 }
 
 func (d *DoctorQueueItem) GetTitleAndSubtitle(dataApi DataAPI) (string, string, error) {

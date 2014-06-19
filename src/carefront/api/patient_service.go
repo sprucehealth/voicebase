@@ -203,8 +203,8 @@ func (d *DataService) createPatientWithStatus(patient *common.Patient, status st
 		}
 	}
 
-	_, err = tx.Exec(`insert into patient_location (patient_id, zip_code, status) 
-									values (?, ?, 'ACTIVE')`, lastId, patient.ZipCode)
+	_, err = tx.Exec(`insert into patient_location (patient_id, zip_code, city, state status) 
+									values (?, ?, ?, ?, ?)`, lastId, patient.ZipCode, patient.CityFromZipCode, patient.StateFromZipCode, STATUS_ACTIVE)
 	if err != nil {
 		return err
 	}
@@ -273,9 +273,9 @@ func (d *DataService) GetCareTeamForPatient(patientId int64) (*common.PatientCar
 	defer rows.Close()
 
 	var careTeam common.PatientCareTeam
-	careTeam.Assignments = make([]*common.PatientCareProviderAssignment, 0)
+	careTeam.Assignments = make([]*common.CareProviderAssignment, 0)
 	for rows.Next() {
-		var assignment common.PatientCareProviderAssignment
+		var assignment common.CareProviderAssignment
 		err := rows.Scan(&assignment.ProviderRole, &assignment.CreationDate, &assignment.ProviderId, &assignment.Status, &assignment.PatientId)
 		if err != nil {
 			return nil, err
@@ -1026,7 +1026,7 @@ func (d *DataService) GetFullNameForState(state string) (string, error) {
 func (d *DataService) getPatientBasedOnQuery(table, joins, where string, queryParams ...interface{}) ([]*common.Patient, error) {
 	queryStr := fmt.Sprintf(`
 		SELECT patient.id, patient.erx_patient_id, patient.payment_service_customer_id, account_id,
-			account.email, first_name, middle_name, last_name, suffix, prefix, zip_code, phone,
+			account.email, first_name, middle_name, last_name, suffix, prefix, zip_code, city, state, phone,
 			phone_type, gender, dob_year, dob_month, dob_day, patient.status, person.id
 		FROM %s
 		%s
@@ -1044,12 +1044,12 @@ func (d *DataService) getPatientBasedOnQuery(table, joins, where string, queryPa
 	patients := make([]*common.Patient, 0)
 	for rows.Next() {
 		var firstName, lastName, status, gender string
-		var phone, phoneType, zipCode, email, paymentServiceCustomerId, suffix, prefix, middleName sql.NullString
+		var phone, phoneType, zipCode, city, state, email, paymentServiceCustomerId, suffix, prefix, middleName sql.NullString
 		var patientId, accountId, erxPatientId encoding.ObjectId
 		var dobMonth, dobYear, dobDay int
 		var personId int64
 		err = rows.Scan(&patientId, &erxPatientId, &paymentServiceCustomerId, &accountId, &email, &firstName, &middleName, &lastName, &suffix, &prefix,
-			&zipCode, &phone, &phoneType, &gender, &dobYear, &dobMonth, &dobDay, &status, &personId)
+			&zipCode, &city, &state, &phone, &phoneType, &gender, &dobYear, &dobMonth, &dobDay, &status, &personId)
 		if err != nil {
 			return nil, err
 		}
@@ -1067,6 +1067,8 @@ func (d *DataService) getPatientBasedOnQuery(table, joins, where string, queryPa
 			Gender:            gender,
 			AccountId:         accountId,
 			ZipCode:           zipCode.String,
+			CityFromZipCode:   city.String,
+			StateFromZipCode:  state.String,
 			ERxPatientId:      erxPatientId,
 			Dob:               encoding.Dob{Year: dobYear, Month: dobMonth, Day: dobDay},
 			PhoneNumbers: []*common.PhoneInformation{

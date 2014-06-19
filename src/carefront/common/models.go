@@ -34,6 +34,8 @@ type Patient struct {
 	Email             string                 `json:"email,omitempty"`
 	Gender            string                 `json:"gender,omitempty"`
 	ZipCode           string                 `json:"zip_code,omitempty"`
+	CityFromZipCode   string                 `json:"-"`
+	StateFromZipCode  string                 `json:"-"`
 	PhoneNumbers      []*PhoneInformation    `json:"phone_numbers,omitempty"`
 	Status            string                 `json:"-"`
 	AccountId         encoding.ObjectId      `json:"account_id,omitempty"`
@@ -92,6 +94,14 @@ type PatientVisit struct {
 	LayoutVersionId   encoding.ObjectId `json:"layout_version_id,omitempty"`
 }
 
+type PatientCase struct {
+	Id                encoding.ObjectId `json:"patient_case_id"`
+	PatientId         encoding.ObjectId `json:"patient_id"`
+	HealthConditionId encoding.ObjectId `json:"health_condition_id"`
+	CreationDate      time.Time         `json:"creation_date"`
+	Status            string            `json:"status"`
+}
+
 type Address struct {
 	Id           int64  `json:"-"`
 	AddressLine1 string `json:"address_line_1"`
@@ -102,7 +112,7 @@ type Address struct {
 	Country      string `json:"country"`
 }
 
-type PatientCareProviderAssignment struct {
+type CareProviderAssignment struct {
 	ProviderRole string
 	ProviderId   int64
 	PatientId    int64
@@ -111,7 +121,7 @@ type PatientCareProviderAssignment struct {
 }
 
 type PatientCareTeam struct {
-	Assignments []*PatientCareProviderAssignment
+	Assignments []*CareProviderAssignment
 }
 
 type TreatmentPlan struct {

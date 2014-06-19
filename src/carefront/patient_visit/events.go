@@ -7,7 +7,6 @@ type VisitStartedEvent struct {
 
 type VisitSubmittedEvent struct {
 	PatientId int64
-	DoctorId  int64
 	VisitId   int64
 }
 

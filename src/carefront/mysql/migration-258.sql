@@ -1,0 +1,1 @@
+drop table patient_visit_care_provider_assignment;

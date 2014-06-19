@@ -80,7 +80,7 @@ func (s *patientVisitHandler) submitPatientVisit(w http.ResponseWriter, r *http.
 	}
 
 	// do not support the submitting of a case that has already been submitted or is in another state
-	if patientVisit.Status != api.CASE_STATUS_OPEN && patientVisit.Status != api.CASE_STATUS_PHOTOS_REJECTED {
+	if patientVisit.Status != api.CASE_STATUS_OPEN {
 		apiservice.WriteDeveloperError(w, http.StatusBadRequest, "Cannot submit a case that is not in the open state. Current status of case = "+patientVisit.Status)
 		return
 	}
@@ -91,30 +91,9 @@ func (s *patientVisitHandler) submitPatientVisit(w http.ResponseWriter, r *http.
 		return
 	}
 
-	patientVisit, err = s.dataApi.GetPatientVisitFromId(requestData.PatientVisitId)
-	if err != nil {
-		apiservice.WriteDeveloperError(w, http.StatusInternalServerError, err.Error())
-		return
-	}
-
-	careTeam, err := s.dataApi.GetCareTeamForPatient(patientId)
-	if err != nil {
-		apiservice.WriteDeveloperError(w, http.StatusInternalServerError, err.Error())
-		return
-	}
-
-	var doctorId int64
-	for _, assignment := range careTeam.Assignments {
-		if assignment.ProviderRole == api.DOCTOR_ROLE {
-			doctorId = assignment.ProviderId
-			break
-		}
-	}
-
 	dispatch.Default.Publish(&VisitSubmittedEvent{
 		PatientId: patientId,
-		DoctorId:  doctorId,
-		VisitId:   patientVisit.PatientVisitId.Int64(),
+		VisitId:   requestData.PatientVisitId,
 	})
 
 	apiservice.WriteJSONToHTTPResponseWriter(w, http.StatusOK, PatientVisitSubmittedResponse{PatientVisitId: patientVisit.PatientVisitId.Int64(), Status: patientVisit.Status})

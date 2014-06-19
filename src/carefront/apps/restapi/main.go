@@ -253,7 +253,7 @@ func buildRESTAPI(conf *Config, dataApi api.DataAPI, authAPI api.AuthAPI, metric
 	mux.Handle("/v1/notification/prompt_status", notify.NewPromptStatusHandler(dataApi))
 
 	// Patient: Account related APIs
-	mux.Handle("/v1/patient", patient.NewSignupHandler(dataApi, authAPI))
+	mux.Handle("/v1/patient", patient.NewSignupHandler(dataApi, authAPI, smartyStreetsService))
 	mux.Handle("/v1/patient/info", patient.NewUpdateHandler(dataApi))
 	mux.Handle("/v1/patient/address/billing", updatePatientBillingAddress)
 	mux.Handle("/v1/patient/pharmacy", updatePatientPharmacyHandler)

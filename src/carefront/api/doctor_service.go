@@ -369,6 +369,11 @@ func (d *DataService) InsertItemIntoDoctorQueue(doctorQueueItem DoctorQueueItem)
 	return err
 }
 
+func (d *DataService) InsertUnclaimedItemIntoQueue(queueItem *DoctorQueueItem) error {
+	_, err := d.db.Exec(`insert into unclaimed_item_queue (care_providing_state_id, item_id, event_type, status) values (?,?,?,?)`, queueItem.CareProvidingStateId, queueItem.CareProvidingStateId, queueItem.ItemId, queueItem.EventType, queueItem.Status)
+	return err
+}
+
 func (d *DataService) ReplaceItemInDoctorQueue(doctorQueueItem DoctorQueueItem, currentState string) error {
 	tx, err := d.db.Begin()
 	if err != nil {

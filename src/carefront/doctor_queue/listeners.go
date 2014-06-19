@@ -16,29 +16,11 @@ import (
 
 func InitListeners(dataAPI api.DataAPI, notificationManager *notify.NotificationManager) {
 	dispatch.Default.Subscribe(func(ev *patient_visit.VisitSubmittedEvent) error {
-		// Insert into item appropriate doctor queue to make them aware of a new visit
-		// for them to diagnose
-		if err := dataAPI.InsertItemIntoDoctorQueue(api.DoctorQueueItem{
-			DoctorId:  ev.DoctorId,
-			ItemId:    ev.VisitId,
-			Status:    api.STATUS_PENDING,
-			EventType: api.EVENT_TYPE_PATIENT_VISIT,
-		}); err != nil {
-			golog.Errorf("Unable to assign patient visit to doctor: %s", err)
+		// route the incoming visit to a doctor queue
+		if err := routeIncomingPatientVisit(ev, dataAPI); err != nil {
+			golog.Errorf("Unable to route incoming patient visit: %s", err)
 			return err
 		}
-
-		doctor, err := dataAPI.GetDoctorFromId(ev.DoctorId)
-		if err != nil {
-			golog.Errorf("Unable to get doctor from id: %s", err)
-			return err
-		}
-
-		if err := notificationManager.NotifyDoctor(doctor, ev); err != nil {
-			golog.Errorf("Unable to notify doctor: %s", err)
-			return err
-		}
-
 		return nil
 	})
 

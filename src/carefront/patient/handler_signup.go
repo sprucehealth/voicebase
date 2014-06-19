@@ -1,6 +1,7 @@
 package patient
 
 import (
+	"carefront/address"
 	"carefront/api"
 	"carefront/apiservice"
 	"carefront/common"
@@ -15,8 +16,9 @@ import (
 )
 
 type SignupHandler struct {
-	dataApi api.DataAPI
-	authApi api.AuthAPI
+	dataApi    api.DataAPI
+	authApi    api.AuthAPI
+	addressAPI address.AddressValidationAPI
 }
 
 type PatientSignedupResponse struct {
@@ -41,10 +43,11 @@ type SignupPatientRequestData struct {
 	DoctorId   int64  `schema:"doctor_id"`
 }
 
-func NewSignupHandler(dataApi api.DataAPI, authApi api.AuthAPI) *SignupHandler {
+func NewSignupHandler(dataApi api.DataAPI, authApi api.AuthAPI, addressAPI address.AddressValidationAPI) *SignupHandler {
 	return &SignupHandler{
-		dataApi: dataApi,
-		authApi: authApi,
+		dataApi:    dataApi,
+		authApi:    authApi,
+		addressAPI: addressAPI,
 	}
 }
 
@@ -79,6 +82,12 @@ func (s *SignupHandler) ServeHTTP(w http.ResponseWriter, r *http.Request) {
 		return
 	}
 
+	cityState, err := s.addressAPI.ZipcodeLookup(requestData.Zipcode)
+	if err != nil {
+		apiservice.WriteError(err, w, r)
+		return
+	}
+
 	// first, create an account for the user
 	accountID, token, err := s.authApi.SignUp(requestData.Email, requestData.Password, api.PATIENT_ROLE)
 	if err == api.LoginAlreadyExists {
@@ -92,11 +101,13 @@ func (s *SignupHandler) ServeHTTP(w http.ResponseWriter, r *http.Request) {
 	}
 
 	newPatient := &common.Patient{
-		AccountId: encoding.NewObjectId(accountID),
-		FirstName: requestData.FirstName,
-		LastName:  requestData.LastName,
-		Gender:    requestData.Gender,
-		ZipCode:   requestData.Zipcode,
+		AccountId:        encoding.NewObjectId(accountID),
+		FirstName:        requestData.FirstName,
+		LastName:         requestData.LastName,
+		Gender:           requestData.Gender,
+		ZipCode:          requestData.Zipcode,
+		CityFromZipCode:  cityState.City,
+		StateFromZipCode: cityState.StateAbbreviation,
 		PhoneNumbers: []*common.PhoneInformation{&common.PhoneInformation{
 			Phone:     requestData.Phone,
 			PhoneType: api.PHONE_CELL,
