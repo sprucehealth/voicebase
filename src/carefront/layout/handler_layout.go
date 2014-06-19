@@ -32,6 +32,11 @@ func (h *layoutUploadHandler) ServeHTTP(w http.ResponseWriter, r *http.Request) 
 		return
 	}
 
+	if apiservice.GetContext(r).Role != api.ADMIN_ROLE {
+		apiservice.WriteAccessNotAllowedError(w, r)
+		return
+	}
+
 	if err := r.ParseMultipartForm(maxMemory); err != nil {
 		apiservice.WriteBadRequestError(err, w, r)
 		return

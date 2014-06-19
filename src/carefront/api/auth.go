@@ -97,7 +97,7 @@ func (m *Auth) LogIn(email, password string) (*common.Account, string, error) {
 
 	// use the email address to lookup the Account from the table
 	if err := m.DB.QueryRow(`
-		SELECT account_id, role_type_tag, password
+		SELECT account.id, role_type_tag, password
 		FROM account
 		INNER JOIN role_type ON role_type_id = role_type.id
 		WHERE email = ?`, email,
@@ -218,7 +218,7 @@ func (m *Auth) AccountForEmail(email string) (*common.Account, error) {
 	email = normalizeEmail(email)
 	var account common.Account
 	if err := m.DB.QueryRow(`
-		SELECT account_id, role_type_tag
+		SELECT account.id, role_type_tag
 		FROM account
 		INNER JOIN role_type ON role_type_id = role_type.id
 		WHERE email = ?`, email,
