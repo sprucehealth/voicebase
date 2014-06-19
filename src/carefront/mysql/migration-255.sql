@@ -1,5 +1,4 @@
 -- Link messages to cases
-
 ALTER TABLE conversation_message ADD COLUMN patient_case_id INT UNSIGNED NOT NULL;
 
 UPDATE conversation_message AS m

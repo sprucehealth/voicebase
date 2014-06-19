@@ -51,12 +51,18 @@ func (d *QueueHandler) ServeHTTP(w http.ResponseWriter, r *http.Request) {
 		return
 	}
 
-	var pendingItemsDoctorQueue, completedItemsDoctorQueue []*api.DoctorQueueItem
+	var pendingItemsDoctorQueue, elligibleUnclaimedItemsDoctorQueue, completedItemsDoctorQueue []*api.DoctorQueueItem
 
 	if requestData.State == "" || requestData.State == state_pending {
 		pendingItemsDoctorQueue, err = d.dataApi.GetPendingItemsInDoctorQueue(doctorId)
 		if err != nil {
-			apiservice.WriteDeveloperError(w, http.StatusInternalServerError, "Unable to get doctor queue for doctor: "+err.Error())
+			apiservice.WriteError(err, w, r)
+			return
+		}
+
+		elligibleUnclaimedItemsDoctorQueue, err = d.dataApi.GetElligibleItemsInUnclaimedQueue(doctorId)
+		if err != nil {
+			apiservice.WriteError(err, w, r)
 			return
 		}
 	}
@@ -64,31 +70,38 @@ func (d *QueueHandler) ServeHTTP(w http.ResponseWriter, r *http.Request) {
 	if requestData.State == "" || requestData.State == state_completed {
 		completedItemsDoctorQueue, err = d.dataApi.GetCompletedItemsInDoctorQueue(doctorId)
 		if err != nil {
-			apiservice.WriteDeveloperError(w, http.StatusInternalServerError, "Unable to get doctor queue for doctor: "+err.Error())
+			apiservice.WriteError(err, w, r)
 			return
 		}
 	}
 
-	doctorDisplayFeed, err := d.convertDoctorQueueIntoDisplayQueue(pendingItemsDoctorQueue, completedItemsDoctorQueue)
+	doctorDisplayFeed, err := d.convertDoctorQueueIntoDisplayQueue(pendingItemsDoctorQueue, elligibleUnclaimedItemsDoctorQueue, completedItemsDoctorQueue)
 	if err != nil {
-		apiservice.WriteDeveloperError(w, http.StatusInternalServerError, "Unable to convert doctor queue into a display feed: "+err.Error())
+		apiservice.WriteError(err, w, r)
 		return
 	}
 
 	apiservice.WriteJSONToHTTPResponseWriter(w, http.StatusOK, &doctorDisplayFeed)
 }
 
-func (d *QueueHandler) convertDoctorQueueIntoDisplayQueue(pendingItems, completedItems []*api.DoctorQueueItem) (*DisplayFeedTabs, error) {
+func (d *QueueHandler) convertDoctorQueueIntoDisplayQueue(pendingItems, unclaimedItems, completedItems []*api.DoctorQueueItem) (*DisplayFeedTabs, error) {
 	var doctorDisplayFeedTabs DisplayFeedTabs
 
-	var pendingOrOngoingDisplayFeed, completedDisplayFeed *DisplayFeed
-	doctorDisplayFeedTabs.Tabs = make([]*DisplayFeed, 0)
+	var pendingOrOngoingDisplayFeed, completedDisplayFeed, unclaimedDisplayFeed *DisplayFeed
+	doctorDisplayFeedTabs.Tabs = make([]*DisplayFeed, 0, 3)
 
 	if pendingItems != nil {
 		pendingOrOngoingDisplayFeed = &DisplayFeed{
 			Title: "Pending",
 		}
 		doctorDisplayFeedTabs.Tabs = append(doctorDisplayFeedTabs.Tabs, pendingOrOngoingDisplayFeed)
+	}
+
+	if unclaimedItems != nil {
+		unclaimedDisplayFeed = &DisplayFeed{
+			Title: "Unclaimed",
+		}
+		doctorDisplayFeedTabs.Tabs = append(doctorDisplayFeedTabs.Tabs, unclaimedDisplayFeed)
 	}
 
 	if completedItems != nil {
@@ -125,6 +138,19 @@ func (d *QueueHandler) convertDoctorQueueIntoDisplayQueue(pendingItems, complete
 		}
 
 		pendingOrOngoingDisplayFeed.Sections = []*DisplayFeedSection{upcomingVisitSection, nextVisitsSection}
+	}
+
+	if len(unclaimedItems) > 0 {
+		currentDisplaySection := &DisplayFeedSection{}
+		for i, unclaimedItem := range unclaimedItems {
+			unclaimedItem.PositionInQueue = i
+			displayItem, err := converQueueItemToDisplayFeedItem(d.dataApi, unclaimedItem)
+			if err != nil {
+				return nil, err
+			}
+			currentDisplaySection.Items = append(currentDisplaySection.Items, displayItem)
+		}
+		completedDisplayFeed.Sections = []*DisplayFeedSection{currentDisplaySection}
 	}
 
 	if len(completedItems) > 0 {
