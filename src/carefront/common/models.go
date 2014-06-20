@@ -84,7 +84,6 @@ type Doctor struct {
 
 const (
 	PVStatusOpen      = "OPEN"
-	PVStatusClosed    = "CLOSED"
 	PVStatusSubmitted = "SUBMITTED"
 	PVStatusReviewing = "REVIEWING"
 	PVStatusTriaged   = "TRIAGED"

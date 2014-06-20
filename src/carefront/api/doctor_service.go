@@ -405,7 +405,7 @@ func (d *DataService) DeleteItemFromDoctorQueue(doctorQueueItem DoctorQueueItem)
 }
 
 func (d *DataService) MarkPatientVisitAsOngoingInDoctorQueue(doctorId, patientVisitId int64) error {
-	_, err := d.db.Exec(`update doctor_queue set status=? where event_type=? and item_id=? and doctor_id=?`, STATUS_ONGOING, EVENT_TYPE_PATIENT_VISIT, patientVisitId, doctorId)
+	_, err := d.db.Exec(`update doctor_queue set status=? where event_type=? and item_id=? and doctor_id=?`, STATUS_ONGOING, DQEventTypePatientVisit, patientVisitId, doctorId)
 	return err
 }
 
@@ -414,12 +414,12 @@ func (d *DataService) MarkGenerationOfTreatmentPlanInVisitQueue(doctorId, patien
 	if err != nil {
 		return err
 	}
-	_, err = tx.Exec(`delete from doctor_queue where status = ? and doctor_id = ? and event_type = ? and item_id = ?`, currentState, doctorId, EVENT_TYPE_PATIENT_VISIT, patientVisitId)
+	_, err = tx.Exec(`delete from doctor_queue where status = ? and doctor_id = ? and event_type = ? and item_id = ?`, currentState, doctorId, DQEventTypePatientVisit, patientVisitId)
 	if err != nil {
 		tx.Rollback()
 		return err
 	}
-	_, err = tx.Exec(`insert into doctor_queue (doctor_id, status, event_type, item_id) values (?, ?, ?, ?)`, doctorId, updatedState, EVENT_TYPE_TREATMENT_PLAN, treatmentPlanId)
+	_, err = tx.Exec(`insert into doctor_queue (doctor_id, status, event_type, item_id) values (?, ?, ?, ?)`, doctorId, updatedState, DQEventTypeTreatmentPlan, treatmentPlanId)
 	if err != nil {
 		tx.Rollback()
 		return err

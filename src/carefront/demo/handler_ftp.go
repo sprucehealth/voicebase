@@ -64,7 +64,7 @@ func (f *favoriteTreatmentPlanHandler) ServeHTTP(w http.ResponseWriter, r *http.
 
 	patientVisitId := int64(0)
 	for _, item := range pendingItems {
-		if item.EventType == api.EVENT_TYPE_PATIENT_VISIT {
+		if item.EventType == api.DQEventTypePatientVisit {
 			patientVisitId = item.ItemId
 			break
 		}

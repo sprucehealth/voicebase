@@ -42,7 +42,7 @@ func InitListeners(dataAPI api.DataAPI, notificationManager *notify.Notification
 		// mark the status on the visit in the doctor's queue to move it to the completed tab
 		// so that the visit is no longer in the hands of the doctor
 		err := dataAPI.MarkGenerationOfTreatmentPlanInVisitQueue(ev.DoctorId,
-			ev.VisitId, ev.TreatmentPlanId, api.QUEUE_ITEM_STATUS_ONGOING, api.QUEUE_ITEM_STATUS_COMPLETED)
+			ev.VisitId, ev.TreatmentPlanId, api.DQItemStatusOngoing, api.DQItemStatusTreated)
 		if err != nil {
 			golog.Errorf("Unable to update the status of the patient visit in the doctor queue: " + err.Error())
 			return err
@@ -56,9 +56,9 @@ func InitListeners(dataAPI api.DataAPI, notificationManager *notify.Notification
 		if err := dataAPI.ReplaceItemInDoctorQueue(api.DoctorQueueItem{
 			DoctorId:  ev.DoctorId,
 			ItemId:    ev.PatientVisitId,
-			EventType: api.EVENT_TYPE_PATIENT_VISIT,
-			Status:    api.QUEUE_ITEM_STATUS_TRIAGED,
-		}, api.QUEUE_ITEM_STATUS_ONGOING); err != nil {
+			EventType: api.DQEventTypePatientVisit,
+			Status:    api.DQItemStatusTriaged,
+		}, api.DQItemStatusOngoing); err != nil {
 			golog.Errorf("Unable to insert transmission error resolved into doctor queue: %s", err)
 			return err
 		}
@@ -71,11 +71,11 @@ func InitListeners(dataAPI api.DataAPI, notificationManager *notify.Notification
 		var eventTypeString string
 		switch ev.EventType {
 		case common.RefillRxType:
-			eventTypeString = api.EVENT_TYPE_REFILL_TRANSMISSION_ERROR
+			eventTypeString = api.DQEventTypeRefillTransmissionError
 		case common.UnlinkedDNTFTreatmentType:
-			eventTypeString = api.EVENT_TYPE_UNLINKED_DNTF_TRANSMISSION_ERROR
+			eventTypeString = api.DQEventTypeUnlinkedDNTFTransmissionError
 		case common.ERxType:
-			eventTypeString = api.EVENT_TYPE_TRANSMISSION_ERROR
+			eventTypeString = api.DQEventTypeTransmissionError
 		}
 		if err := dataAPI.InsertItemIntoDoctorQueue(api.DoctorQueueItem{
 			DoctorId:  ev.DoctorId,
@@ -106,18 +106,18 @@ func InitListeners(dataAPI api.DataAPI, notificationManager *notify.Notification
 		var eventType string
 		switch ev.EventType {
 		case common.ERxType:
-			eventType = api.EVENT_TYPE_TRANSMISSION_ERROR
+			eventType = api.DQEventTypeTransmissionError
 		case common.RefillRxType:
-			eventType = api.EVENT_TYPE_REFILL_TRANSMISSION_ERROR
+			eventType = api.DQEventTypeRefillTransmissionError
 		case common.UnlinkedDNTFTreatmentType:
-			eventType = api.EVENT_TYPE_UNLINKED_DNTF_TRANSMISSION_ERROR
+			eventType = api.DQEventTypeUnlinkedDNTFTransmissionError
 		}
 		if err := dataAPI.ReplaceItemInDoctorQueue(api.DoctorQueueItem{
 			DoctorId:  ev.DoctorId,
 			ItemId:    ev.ItemId,
 			EventType: eventType,
-			Status:    api.QUEUE_ITEM_STATUS_COMPLETED,
-		}, api.QUEUE_ITEM_STATUS_PENDING); err != nil {
+			Status:    api.DQItemStatusTreated,
+		}, api.DQItemStatusPending); err != nil {
 			golog.Errorf("Unable to insert transmission error resolved into doctor queue: %s", err)
 			return err
 		}
@@ -129,7 +129,7 @@ func InitListeners(dataAPI api.DataAPI, notificationManager *notify.Notification
 		if err := dataAPI.InsertItemIntoDoctorQueue(api.DoctorQueueItem{
 			DoctorId:  ev.DoctorId,
 			ItemId:    ev.RefillRequestId,
-			EventType: api.EVENT_TYPE_REFILL_REQUEST,
+			EventType: api.DQEventTypeRefillRequest,
 			Status:    api.STATUS_PENDING,
 		}); err != nil {
 			golog.Errorf("Unable to insert refill request item into doctor queue: %s", err)
@@ -155,9 +155,9 @@ func InitListeners(dataAPI api.DataAPI, notificationManager *notify.Notification
 		if err := dataAPI.ReplaceItemInDoctorQueue(api.DoctorQueueItem{
 			DoctorId:  ev.DoctorId,
 			ItemId:    ev.RefillRequestId,
-			EventType: api.EVENT_TYPE_REFILL_REQUEST,
+			EventType: api.DQEventTypeRefillRequest,
 			Status:    ev.Status,
-		}, api.QUEUE_ITEM_STATUS_PENDING); err != nil {
+		}, api.DQItemStatusPending); err != nil {
 			golog.Errorf("Unable to insert refill request resolved error into doctor queue: %s", err)
 			return err
 		}
@@ -170,9 +170,9 @@ func InitListeners(dataAPI api.DataAPI, notificationManager *notify.Notification
 			if err := dataAPI.ReplaceItemInDoctorQueue(api.DoctorQueueItem{
 				DoctorId:  ev.Person.RoleId,
 				ItemId:    ev.Case.Id,
-				EventType: api.EVENT_TYPE_CASE_MESSAGE,
-				Status:    api.QUEUE_ITEM_STATUS_REPLIED,
-			}, api.QUEUE_ITEM_STATUS_PENDING); err != nil {
+				EventType: api.DQEventTypeCaseMessage,
+				Status:    api.DQItemStatusReplied,
+			}, api.DQItemStatusPending); err != nil {
 				golog.Errorf("Unable to replace item in doctor queue with a replied item: %s", err)
 				return err
 			}
@@ -237,9 +237,9 @@ func InitListeners(dataAPI api.DataAPI, notificationManager *notify.Notification
 			if err := dataAPI.ReplaceItemInDoctorQueue(api.DoctorQueueItem{
 				DoctorId:  ev.Person.Doctor.DoctorId.Int64(),
 				ItemId:    ev.CaseID,
-				EventType: api.EVENT_TYPE_CASE_MESSAGE,
-				Status:    api.QUEUE_ITEM_STATUS_READ,
-			}, api.QUEUE_ITEM_STATUS_PENDING); err != nil {
+				EventType: api.DQEventTypeCasemessage,
+				Status:    api.DQItemStatusRead,
+			}, api.DQItemStatusPending); err != nil {
 				golog.Errorf("Unable to replace item in doctor queue with a replied item: %s", err)
 				return err
 			}

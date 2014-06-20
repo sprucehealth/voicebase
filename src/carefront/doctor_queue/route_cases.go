@@ -26,7 +26,7 @@ func routeIncomingPatientVisit(ev *patient_visit.VisitSubmittedEvent, dataAPI ap
 					DoctorId:  assignment.ProviderId,
 					ItemId:    ev.VisitId,
 					Status:    api.STATUS_PENDING,
-					EventType: api.EVENT_TYPE_PATIENT_VISIT,
+					EventType: api.DQEventTypePatientVisit,
 				}); err != nil {
 					return err
 				}
@@ -47,7 +47,7 @@ func routeIncomingPatientVisit(ev *patient_visit.VisitSubmittedEvent, dataAPI ap
 		if err := dataAPI.InsertUnclaimedItemIntoQueue(&api.DoctorQueueItem{
 			CareProvidingStateId: careProvidingStateId,
 			ItemId:               ev.VisitId,
-			EventType:            api.EVENT_TYPE_PATIENT_VISIT,
+			EventType:            api.DQEventTypePatientVisit,
 			Status:               api.STATUS_PENDING,
 		}); err != nil {
 			return err

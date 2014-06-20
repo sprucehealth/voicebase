@@ -168,8 +168,8 @@ func TestDoctorDiagnosisOfPatientVisit_Unsuitable(t *testing.T) {
 	patientVisit, err := testData.DataApi.GetPatientVisitFromId(patientVisitResponse.PatientVisitId)
 	if err != nil {
 		t.Fatal(err.Error())
-	} else if patientVisit.Status != api.CASE_STATUS_TRIAGED {
-		t.Fatalf("Expected status to be %s but it was %s instead", api.CASE_STATUS_TRIAGED, patientVisit.Status)
+	} else if patientVisit.Status != common.PVStatusTriaged {
+		t.Fatalf("Expected status to be %s but it was %s instead", common.PVStatusTriaged, patientVisit.Status)
 	}
 
 	// ensure that there is no longer a pending item in the doctor queue
@@ -330,8 +330,8 @@ func TestDoctorSubmissionOfPatientVisitReview(t *testing.T) {
 		t.Fatal("Unable to get patient visit given id: " + err.Error())
 	}
 
-	if patientVisit.Status != api.CASE_STATUS_TREATED {
-		t.Fatalf("Expected the status to be %s but status is %s", api.CASE_STATUS_TREATED, patientVisit.Status)
+	if patientVisit.Status != common.PVStatusTreated {
+		t.Fatalf("Expected the status to be %s but status is %s", common.PVStatusTreated, patientVisit.Status)
 	}
 
 	// Shouldn't be any messages yet

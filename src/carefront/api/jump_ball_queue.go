@@ -47,7 +47,7 @@ func (d *DataService) TemporarilyClaimCaseAndAssignDoctorToCaseAndPatient(doctor
 func (d *DataService) ExtendClaimForDoctor(doctorId, itemId int64, eventType string, duration time.Duration) error {
 	// ensure that the current doctor is the one holding on to the lock in the queue
 	var currentLockHolder int64
-	if err := d.db.QueryRow(`select provider_id from unclaimed_item_queue where item_id = ? and event_type = ? and locked = ?`, itemId, eventType, true).Scan(&currentLockHolder); err != nil {
+	if err := d.db.QueryRow(`select doctor_id from unclaimed_item_queue where item_id = ? and event_type = ? and locked = ?`, itemId, eventType, true).Scan(&currentLockHolder); err != nil {
 		return err
 	}
 
@@ -57,7 +57,7 @@ func (d *DataService) ExtendClaimForDoctor(doctorId, itemId int64, eventType str
 
 	// extend the claim of the doctor on the case
 	expires := time.Now().Add(duration)
-	_, err := d.db.Exec(`update expires = ? unclaimed_item_queue where doctor_id = ? and item_id = ? and event_type = ? and locked  ?`, expires, doctorId, itemId, eventType, true)
+	_, err := d.db.Exec(`update unclaimed_item_queue set expires = ? where doctor_id = ? and item_id = ? and event_type = ? and locked = ?`, expires, doctorId, itemId, eventType, true)
 
 	return err
 }

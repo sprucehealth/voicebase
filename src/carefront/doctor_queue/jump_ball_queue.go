@@ -30,7 +30,7 @@ func initJumpBallCaseQueueListeners(dataAPI api.DataAPI) {
 		// go ahead and claim case if no doctors are assigned to it
 		if patientCase.Status == common.PCStatusUnclaimed {
 			if err := dataAPI.TemporarilyClaimCaseAndAssignDoctorToCaseAndPatient(ev.DoctorId, ev.PatientVisit.PatientCaseId.Int64(),
-				ev.PatientVisit.PatientId.Int64(), ev.PatientVisit.PatientVisitId.Int64(), api.EVENT_TYPE_PATIENT_VISIT, ExpireDuration); err != nil {
+				ev.PatientVisit.PatientId.Int64(), ev.PatientVisit.PatientVisitId.Int64(), api.DQEventTypePatientVisit, ExpireDuration); err != nil {
 				golog.Errorf("Unable to temporarily assign the patient visit to the doctor: %s", err)
 				return err
 			}
@@ -49,7 +49,7 @@ func initJumpBallCaseQueueListeners(dataAPI api.DataAPI) {
 		}
 
 		if patientCase.Status == common.PCStatusTempClaimed {
-			if err := dataAPI.ExtendClaimForDoctor(ev.DoctorId, ev.PatientVisitId, api.EVENT_TYPE_PATIENT_VISIT, ExpireDuration); err != nil {
+			if err := dataAPI.ExtendClaimForDoctor(ev.DoctorId, ev.PatientVisitId, api.DQEventTypePatientVisit, ExpireDuration); err != nil {
 				golog.Errorf("Unable to extend the claim on the case for the doctor: %s", err)
 				return err
 			}
@@ -80,7 +80,7 @@ func initJumpBallCaseQueueListeners(dataAPI api.DataAPI) {
 
 		if patientCase.Status == common.PCStatusTempClaimed {
 			if err := dataAPI.PermanentlyAssignDoctorToCaseAndPatient(ev.DoctorId, patientCase.Id.Int64(),
-				ev.PatientId, ev.VisitId, api.EVENT_TYPE_PATIENT_VISIT); err != nil {
+				ev.PatientId, ev.VisitId, api.DQEventTypePatientVisit); err != nil {
 				golog.Errorf("Unable to permanently assign doctor to case and patient: %s", err)
 				return err
 			}
@@ -98,7 +98,7 @@ func initJumpBallCaseQueueListeners(dataAPI api.DataAPI) {
 
 		if patientCase.Status == common.PCStatusTempClaimed {
 			if err := dataAPI.PermanentlyAssignDoctorToCaseAndPatient(ev.DoctorId, patientCase.Id.Int64(),
-				patientCase.PatientId.Int64(), ev.PatientVisitId, api.EVENT_TYPE_PATIENT_VISIT); err != nil {
+				patientCase.PatientId.Int64(), ev.PatientVisitId, api.DQEventTypePatientVisit); err != nil {
 				golog.Errorf("Unable to permanently assign doctor to case and patient: %s", err)
 				return err
 			}
@@ -121,7 +121,7 @@ func extendClaimOnTreatmentPlanModification(treatmentPlanId, doctorId int64, dat
 	}
 
 	if patientCase.Status == common.PCStatusTempClaimed {
-		if err := dataAPI.ExtendClaimForDoctor(doctorId, patientVisitId, api.EVENT_TYPE_PATIENT_VISIT, ExpireDuration); err != nil {
+		if err := dataAPI.ExtendClaimForDoctor(doctorId, patientVisitId, api.DQEventTypePatientVisit, ExpireDuration); err != nil {
 			golog.Errorf("Unable to extend claim on the case for the doctor: %s", err)
 			return err
 		}
