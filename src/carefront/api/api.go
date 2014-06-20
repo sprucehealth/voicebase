@@ -104,7 +104,7 @@ type PatientCaseAPI interface {
 
 type JumpBallQueueAPI interface {
 	TemporarilyClaimCaseAndAssignDoctorToCaseAndPatient(doctorId, patientCaseId, patientId, itemId int64, eventType string, duration time.Duration) error
-	PermanentlyAssignDoctorToCaseAndPatient(doctorId, patientCaseId, patientId, itemId int64, eventType string, itemToPlaceInDoctorQueue *DoctorQueueItem) error
+	PermanentlyAssignDoctorToCaseAndPatient(doctorId, patientCaseId, patientId, itemId int64, eventType string) error
 	ExtendClaimForDoctor(doctorId, itemId int64, eventType string, duration time.Duration) error
 }
 

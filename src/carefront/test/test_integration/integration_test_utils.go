@@ -9,7 +9,6 @@ import (
 	"carefront/doctor_queue"
 	"carefront/doctor_treatment_plan"
 	"carefront/homelog"
-	"carefront/jump_ball_queue"
 	"carefront/libs/aws"
 	"carefront/libs/dispatch"
 	"carefront/notify"
@@ -297,7 +296,6 @@ func SetupIntegrationTest(t *testing.T) *TestData {
 	doctor_treatment_plan.InitListeners(testData.DataApi)
 	doctor_queue.InitListeners(testData.DataApi, notificationManager)
 	notify.InitListeners(testData.DataApi)
-	jump_ball_queue.InitListeners(testData.DataApi)
 
 	return testData
 }

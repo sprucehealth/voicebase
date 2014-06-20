@@ -47,6 +47,14 @@ func TestDoctorQueueWithPatientVisits(t *testing.T) {
 	} else if len(elligibleItems) != 5 {
 		t.Fatalf("Expected 5 items in the queue but got %d", len(elligibleItems))
 	}
+
+	// ensure that there is 1 completed item in the doctor queue
+	completedItems, err := testData.DataApi.GetCompletedItemsInDoctorQueue(doctor.DoctorId.Int64())
+	if err != nil {
+		t.Fatal(err)
+	} else if len(completedItems) != 1 {
+		t.Fatalf("Expected 1 item in the completed section but got %d", len(completedItems))
+	}
 }
 
 func insertIntoDoctorQueue(testData *TestData, doctorQueueItem *api.DoctorQueueItem, t *testing.T) {

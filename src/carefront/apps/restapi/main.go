@@ -13,7 +13,6 @@ import (
 	"carefront/doctor_treatment_plan"
 	"carefront/email"
 	"carefront/homelog"
-	"carefront/jump_ball_queue"
 	"carefront/layout"
 	"carefront/libs/aws"
 	"carefront/libs/aws/sns"
@@ -192,7 +191,6 @@ func buildRESTAPI(conf *Config, dataApi api.DataAPI, authAPI api.AuthAPI, metric
 	doctor_treatment_plan.InitListeners(dataApi)
 	notify.InitListeners(dataApi)
 	support.InitListeners(conf.Support.TechnicalSupportEmail, conf.Support.CustomerSupportEmail, notificationManager)
-	jump_ball_queue.InitListeners(dataApi)
 
 	cloudStorageApi := api.NewCloudStorageService(awsAuth)
 	checkElligibilityHandler := &apiservice.CheckCareProvidingElligibilityHandler{DataApi: dataApi, AddressValidationApi: smartyStreetsService, StaticContentUrl: conf.StaticContentBaseUrl}

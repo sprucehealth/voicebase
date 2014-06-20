@@ -15,6 +15,8 @@ import (
 )
 
 func InitListeners(dataAPI api.DataAPI, notificationManager *notify.NotificationManager) {
+	initJumpBallCaseQueueListeners(dataAPI)
+
 	dispatch.Default.Subscribe(func(ev *patient_visit.VisitSubmittedEvent) error {
 		// route the incoming visit to a doctor queue
 		if err := routeIncomingPatientVisit(ev, dataAPI); err != nil {

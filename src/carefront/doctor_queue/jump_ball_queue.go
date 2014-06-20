@@ -1,4 +1,4 @@
-package jump_ball_queue
+package doctor_queue
 
 import (
 	"carefront/api"
@@ -15,7 +15,7 @@ var (
 	ExpireDuration = 15 * time.Minute
 )
 
-func InitListeners(dataAPI api.DataAPI) {
+func initJumpBallCaseQueueListeners(dataAPI api.DataAPI) {
 
 	// As a result of a doctor opening the patient visit information for an unclaimed patient case,
 	// the doctor claims the case for a short period of time.
@@ -80,12 +80,7 @@ func InitListeners(dataAPI api.DataAPI) {
 
 		if patientCase.Status == common.PCStatusTempClaimed {
 			if err := dataAPI.PermanentlyAssignDoctorToCaseAndPatient(ev.DoctorId, patientCase.Id.Int64(),
-				ev.PatientId, ev.VisitId, api.EVENT_TYPE_PATIENT_VISIT, &api.DoctorQueueItem{
-					ItemId:    ev.TreatmentPlanId,
-					EventType: api.EVENT_TYPE_TREATMENT_PLAN,
-					Status:    api.QUEUE_ITEM_STATUS_COMPLETED,
-					DoctorId:  ev.DoctorId,
-				}); err != nil {
+				ev.PatientId, ev.VisitId, api.EVENT_TYPE_PATIENT_VISIT); err != nil {
 				golog.Errorf("Unable to permanently assign doctor to case and patient: %s", err)
 				return err
 			}
@@ -93,6 +88,23 @@ func InitListeners(dataAPI api.DataAPI) {
 		return nil
 	})
 
+	// If the doctor marks a case unsuitable for spruce, it is also considered claimed by the doctor
+	// with the doctor permanently being assigned to the case and patient
+	dispatch.Default.Subscribe(func(ev *patient_visit.PatientVisitMarkedUnsuitableEvent) error {
+		patientCase, err := dataAPI.GetPatientCaseFromPatientVisitId(ev.PatientVisitId)
+		if err != nil {
+			return err
+		}
+
+		if patientCase.Status == common.PCStatusTempClaimed {
+			if err := dataAPI.PermanentlyAssignDoctorToCaseAndPatient(ev.DoctorId, patientCase.Id.Int64(),
+				patientCase.PatientId.Int64(), ev.PatientVisitId, api.EVENT_TYPE_PATIENT_VISIT); err != nil {
+				golog.Errorf("Unable to permanently assign doctor to case and patient: %s", err)
+				return err
+			}
+		}
+		return nil
+	})
 }
 
 func extendClaimOnTreatmentPlanModification(treatmentPlanId, doctorId int64, dataAPI api.DataAPI) error {

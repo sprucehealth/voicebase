@@ -62,7 +62,7 @@ func (d *DataService) ExtendClaimForDoctor(doctorId, itemId int64, eventType str
 	return err
 }
 
-func (d *DataService) PermanentlyAssignDoctorToCaseAndPatient(doctorId, patientCaseId, patientId, itemId int64, eventType string, itemToPlaceInDoctorQueue *DoctorQueueItem) error {
+func (d *DataService) PermanentlyAssignDoctorToCaseAndPatient(doctorId, patientCaseId, patientId, itemId int64, eventType string) error {
 	tx, err := d.db.Begin()
 	if err != nil {
 		tx.Rollback()
@@ -86,12 +86,6 @@ func (d *DataService) PermanentlyAssignDoctorToCaseAndPatient(doctorId, patientC
 	// permanent assign doctor to case
 	_, err = tx.Exec(`update patient_case_care_provider_assignment set status = ? where provider_id = ? and role_type_id = ? and patient_case_id = ?`, STATUS_ACTIVE, doctorId, d.roleTypeMapping[DOCTOR_ROLE], patientCaseId)
 	if err != nil {
-		tx.Rollback()
-		return err
-	}
-
-	// insert given item into doctor queue
-	if err := insertItemIntoDoctorQueue(tx, itemToPlaceInDoctorQueue); err != nil {
 		tx.Rollback()
 		return err
 	}
