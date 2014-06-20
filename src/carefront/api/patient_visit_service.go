@@ -160,7 +160,9 @@ func (d *DataService) CreateNewPatientVisit(patientId, healthConditionId, layout
 	}
 
 	// implicitly create a new case when creating a new visit for now
-	res, err := tx.Exec(`insert into patient_case (patient_id, health_condition_id, status) values (?,?,?)`, patientId, healthConditionId, STATUS_ACTIVE)
+	// for now treating the creation of every new case as an unclaimed case because we don't have a notion of a
+	// new case for which the patient returns (and thus can be potentially claimed)
+	res, err := tx.Exec(`insert into patient_case (patient_id, health_condition_id, status) values (?,?,?)`, patientId, healthConditionId, common.PCStatusUnclaimed)
 	if err != nil {
 		tx.Rollback()
 		return 0, err
@@ -173,7 +175,7 @@ func (d *DataService) CreateNewPatientVisit(patientId, healthConditionId, layout
 	}
 
 	res, err = tx.Exec(`insert into patient_visit (patient_id, health_condition_id, layout_version_id, patient_case_id, status) 
-								values (?, ?, ?, ?, 'OPEN')`, patientId, healthConditionId, layoutVersionId, patientCaseId)
+								values (?, ?, ?, ?, ?)`, patientId, healthConditionId, layoutVersionId, patientCaseId, CASE_STATUS_OPEN)
 	if err != nil {
 		tx.Rollback()
 		return 0, err

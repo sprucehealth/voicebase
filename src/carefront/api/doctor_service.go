@@ -366,12 +366,16 @@ func (d *DataService) MarkAdvicePointsToBeDeleted(advicePoints []*common.DoctorI
 }
 
 func (d *DataService) InsertItemIntoDoctorQueue(doctorQueueItem DoctorQueueItem) error {
-	_, err := d.db.Exec(`insert into doctor_queue (doctor_id, item_id, event_type, status) values (?,?,?,?)`, doctorQueueItem.DoctorId, doctorQueueItem.ItemId, doctorQueueItem.EventType, doctorQueueItem.Status)
+	return insertItemIntoDoctorQueue(d.db, &doctorQueueItem)
+}
+
+func insertItemIntoDoctorQueue(d db, doctorQueueItem *DoctorQueueItem) error {
+	_, err := d.Exec(`insert into doctor_queue (doctor_id, item_id, event_type, status) values (?,?,?,?)`, doctorQueueItem.DoctorId, doctorQueueItem.ItemId, doctorQueueItem.EventType, doctorQueueItem.Status)
 	return err
 }
 
 func (d *DataService) InsertUnclaimedItemIntoQueue(queueItem *DoctorQueueItem) error {
-	_, err := d.db.Exec(`insert into unclaimed_item_queue (care_providing_state_id, item_id, event_type, status) values (?,?,?,?)`, queueItem.CareProvidingStateId, queueItem.CareProvidingStateId, queueItem.ItemId, queueItem.EventType, queueItem.Status)
+	_, err := d.db.Exec(`insert into unclaimed_item_queue (care_providing_state_id, item_id, event_type, status) values (?,?,?,?)`, queueItem.CareProvidingStateId, queueItem.ItemId, queueItem.EventType, queueItem.Status)
 	return err
 }
 
@@ -436,7 +440,7 @@ func (d *DataService) GetPendingItemsInDoctorQueue(doctorId int64) ([]*DoctorQue
 
 func (d *DataService) GetElligibleItemsInUnclaimedQueue(doctorId int64) ([]*DoctorQueueItem, error) {
 	// first get the list of care providing state ids where the doctor is registered to serve
-	rows, err := d.db.Query(`select care_providing_state_id from care_providing_state_elligibility where provider_id = ? and role_type_id = ?`, doctorId, d.roleTypeMapping[DOCTOR_ROLE])
+	rows, err := d.db.Query(`select care_providing_state_id from care_provider_state_elligibility where provider_id = ? and role_type_id = ?`, doctorId, d.roleTypeMapping[DOCTOR_ROLE])
 	if err != nil {
 		return nil, err
 	}
@@ -458,10 +462,10 @@ func (d *DataService) GetElligibleItemsInUnclaimedQueue(doctorId int64) ([]*Doct
 		return nil, errors.New("Doctor is not elligible to provide care for any health condition in any state")
 	}
 
-	// then get the items in the unclaimed queue that are not currently locked
+	// then get the items in the unclaimed queue that are not currently locked by another doctor
 	params := appendInt64sToInterfaceSlice(nil, careProvidingStateIds)
-	params = append(params, false)
-	rows, err = d.db.Query(fmt.Sprintf(`select id, event_type, item_id, enqueue_date, status from unclaimed_item_queue where care_providing_state_id in (%s) and locked = ? order by enqueue_date`, nReplacements(len(careProvidingStateIds))), params...)
+	params = append(params, []interface{}{false, true, doctorId}...)
+	rows, err = d.db.Query(fmt.Sprintf(`select id, event_type, item_id, enqueue_date, status from unclaimed_item_queue where care_providing_state_id in (%s) and locked = ? or (locked = ? and doctor_id = ?) order by enqueue_date`, nReplacements(len(careProvidingStateIds))), params...)
 	if err != nil {
 		return nil, err
 	}

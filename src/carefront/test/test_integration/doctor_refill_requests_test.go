@@ -1296,7 +1296,7 @@ func setUpDeniedRefillRequestWithDNTF(t *testing.T, testData *TestData, endErxSt
 
 	if toAddTemplatedTreatment {
 
-		doctorId := GetDoctorIdOfCurrentPrimaryDoctor(testData, t)
+		doctorId := GetDoctorIdOfCurrentDoctor(testData, t)
 		pDoctor, err := testData.DataApi.GetDoctorFromId(doctorId)
 		if err != nil {
 			t.Fatal(err)

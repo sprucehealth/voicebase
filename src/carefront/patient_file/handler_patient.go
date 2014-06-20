@@ -76,9 +76,11 @@ func (d *doctorPatientHandler) getPatientInformation(w http.ResponseWriter, r *h
 		return
 	}
 
-	if err := apiservice.VerifyDoctorPatientRelationship(d.DataApi, currentDoctor, patient); err != nil {
-		apiservice.WriteDeveloperError(w, http.StatusForbidden, "Unable to verify doctor-patient relationship: "+err.Error())
-		return
+	if !patient.IsUnlinked {
+		if httpStatusCode, err := apiservice.ValidateDoctorAccessToPatientFile(currentDoctor.DoctorId.Int64(), patient.PatientId.Int64(), d.DataApi); err != nil {
+			apiservice.WriteErrorWithCode(err, httpStatusCode, w, r)
+			return
+		}
 	}
 
 	apiservice.WriteJSONToHTTPResponseWriter(w, http.StatusOK, &requestResponstData{Patient: patient})
@@ -128,9 +130,11 @@ func (d *doctorPatientHandler) updatePatientInformation(w http.ResponseWriter, r
 		return
 	}
 
-	if err := apiservice.VerifyDoctorPatientRelationship(d.DataApi, currentDoctor, requestData.Patient); err != nil {
-		apiservice.WriteDeveloperError(w, http.StatusForbidden, "Unable to verify doctor-patient relationship: "+err.Error())
-		return
+	if !existingPatientInfo.IsUnlinked {
+		if httpStatusCode, err := apiservice.ValidateDoctorAccessToPatientFile(currentDoctor.DoctorId.Int64(), requestData.Patient.PatientId.Int64(), d.DataApi); err != nil {
+			apiservice.WriteErrorWithCode(err, httpStatusCode, w, r)
+			return
+		}
 	}
 
 	requestData.Patient.ERxPatientId = existingPatientInfo.ERxPatientId

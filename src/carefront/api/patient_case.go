@@ -24,11 +24,26 @@ func (d *DataService) GetDoctorsAssignedToPatientCase(patientCaseId int64) ([]*c
 	return assignments, rows.Err()
 }
 
+func (d *DataService) GetPatientCaseFromTreatmentPlanId(treatmentPlanId int64) (*common.PatientCase, error) {
+	row := d.db.QueryRow(`select patient_case.id, patient_case.patient_id, patient_case.health_condition_id, patient_case.creation_date, patient_case.status from patient_case
+							inner join treatment_plan on treatment_plan.patient_case_id = patient_case.id
+							where treatment_plan.id = ?`, treatmentPlanId)
+	return getPatientCaseFromRow(row)
+}
+
 func (d *DataService) GetPatientCaseFromPatientVisitId(patientVisitId int64) (*common.PatientCase, error) {
-	var patientCase common.PatientCase
-	err := d.db.QueryRow(`select patient_case.id, patient_case.patient_id, patient_case.health_condition_id, patient_case.creation_date, patient_case.status from patient_case
+	row := d.db.QueryRow(`select patient_case.id, patient_case.patient_id, patient_case.health_condition_id, patient_case.creation_date, patient_case.status from patient_case
 							inner join patient_visit on patient_case_id = patient_case.id
-							where patient_visit.id = ?`, patientVisitId).Scan(
+							where patient_visit.id = ?`, patientVisitId)
+
+	return getPatientCaseFromRow(row)
+
+}
+
+func getPatientCaseFromRow(row *sql.Row) (*common.PatientCase, error) {
+	var patientCase common.PatientCase
+
+	err := row.Scan(
 		&patientCase.Id,
 		&patientCase.PatientId,
 		&patientCase.HealthConditionId,

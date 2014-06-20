@@ -9,6 +9,7 @@ import (
 	"carefront/doctor_queue"
 	"carefront/doctor_treatment_plan"
 	"carefront/homelog"
+	"carefront/jump_ball_queue"
 	"carefront/libs/aws"
 	"carefront/libs/dispatch"
 	"carefront/notify"
@@ -183,7 +184,7 @@ func CheckIfRunningLocally(t *testing.T) {
 	}
 }
 
-func GetDoctorIdOfCurrentPrimaryDoctor(testData *TestData, t *testing.T) int64 {
+func GetDoctorIdOfCurrentDoctor(testData TestData, t *testing.T) int64 {
 	// get the current primary doctor
 	var doctorId int64
 	err := testData.DB.QueryRow(`select provider_id from care_provider_state_elligibility 
@@ -296,6 +297,7 @@ func SetupIntegrationTest(t *testing.T) *TestData {
 	doctor_treatment_plan.InitListeners(testData.DataApi)
 	doctor_queue.InitListeners(testData.DataApi, notificationManager)
 	notify.InitListeners(testData.DataApi)
+	jump_ball_queue.InitListeners(testData.DataApi)
 
 	return testData
 }

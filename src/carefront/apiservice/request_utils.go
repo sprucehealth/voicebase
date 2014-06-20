@@ -112,24 +112,6 @@ func ValidateDoctorAccessToPatientFile(doctorId, patientId int64, DataApi api.Da
 	return http.StatusOK, nil
 }
 
-func VerifyDoctorPatientRelationship(dataApi api.DataAPI, doctor *common.Doctor, patient *common.Patient) error {
-	// nothing to verify for an unlinked patient since they dont have a care team
-	if patient.IsUnlinked {
-		return nil
-	}
-
-	careTeam, err := dataApi.GetCareTeamForPatient(patient.PatientId.Int64())
-	if err != nil {
-		return fmt.Errorf("Unable to get care team based on patient id: %+v", err)
-	}
-
-	primaryDoctorId := GetPrimaryDoctorIdFromCareTeam(careTeam)
-	if doctor.DoctorId.Int64() != primaryDoctorId {
-		return fmt.Errorf("Unable to get the patient information by doctor when this doctor is not the primary doctor for patient")
-	}
-	return nil
-}
-
 func GetPrimaryDoctorInfoBasedOnPatient(dataApi api.DataAPI, patient *common.Patient, staticBaseContentUrl string) (*common.Doctor, error) {
 	careTeam, err := dataApi.GetCareTeamForPatient(patient.PatientId.Int64())
 	if err != nil {

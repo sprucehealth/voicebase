@@ -46,8 +46,8 @@ func (d *doctorUpdatePatientPharmacyHandler) ServeHTTP(w http.ResponseWriter, r 
 		apiservice.WriteError(err, w, r)
 		return
 	}
-	if err := apiservice.VerifyDoctorPatientRelationship(d.dataAPI, doctor, patient); err != nil {
-		apiservice.WriteDeveloperError(w, http.StatusForbidden, "Unable to verify doctor-patient relationship: "+err.Error())
+	if httpStatusCode, err := apiservice.ValidateDoctorAccessToPatientFile(doctor.DoctorId.Int64(), patient.PatientId.Int64(), d.dataAPI); err != nil {
+		apiservice.WriteErrorWithCode(err, httpStatusCode, w, r)
 		return
 	}
 

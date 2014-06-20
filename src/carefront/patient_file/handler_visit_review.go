@@ -5,6 +5,7 @@ import (
 	"carefront/apiservice"
 	"carefront/common"
 	"carefront/info_intake"
+	"carefront/libs/dispatch"
 	"encoding/json"
 	"fmt"
 	"net/http"
@@ -82,6 +83,19 @@ func (p *doctorPatientVisitReviewHandler) ServeHTTP(w http.ResponseWriter, r *ht
 			apiservice.WriteDeveloperError(w, http.StatusInternalServerError, "Unable to update the item in the queue for the doctor that speaks to this patient visit: "+err.Error())
 			return
 		}
+
+		dispatch.Default.Publish(&PatientVisitOpenedEvent{
+			PatientVisit: patientVisit,
+			PatientId:    patient.PatientId.Int64(),
+			DoctorId:     doctorId,
+		})
+	}
+
+	// ensure that the doctor is authorized to work on this case
+	statusCode, err := apiservice.ValidateDoctorAccessToPatientFile(doctorId, patientVisit.PatientId.Int64(), p.DataApi)
+	if err != nil {
+		apiservice.WriteDeveloperError(w, statusCode, err.Error())
+		return
 	}
 
 	patientVisitLayout, _, err := apiservice.GetPatientLayoutForPatientVisit(requestData.PatientVisitId, api.EN_LANGUAGE_ID, p.DataApi)

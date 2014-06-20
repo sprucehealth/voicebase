@@ -18,8 +18,14 @@ import (
 )
 
 func SignupRandomTestPatient(t *testing.T, testData *TestData) *patientApiService.PatientSignedupResponse {
-	addressValidatonStub := &address.StubAddressValidationService{}
-	authHandler := patientApiService.NewSignupHandler(testData.DataApi, testData.AuthApi, addressValidatonStub)
+	stubAddressValidationService := address.StubAddressValidationService{
+		CityStateToReturn: address.CityState{
+			City:              "San Francisco",
+			State:             "California",
+			StateAbbreviation: "CA",
+		},
+	}
+	authHandler := patientApiService.NewSignupHandler(testData.DataApi, testData.AuthApi, stubAddressValidationService)
 	ts := httptest.NewServer(authHandler)
 	defer ts.Close()
 

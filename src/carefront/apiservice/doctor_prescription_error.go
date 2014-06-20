@@ -67,9 +67,9 @@ func (d *DoctorPrescriptionErrorHandler) ServeHTTP(w http.ResponseWriter, r *htt
 		}
 	}
 
-	if treatment != nil {
-		if err := VerifyDoctorPatientRelationship(d.DataApi, treatment.Doctor, treatment.Patient); err != nil {
-			WriteDeveloperError(w, http.StatusForbidden, "Unable to verify patient-doctor relationship: "+err.Error())
+	if treatment != nil && !treatment.Patient.IsUnlinked {
+		if httpStatusCode, err := ValidateDoctorAccessToPatientFile(treatment.Doctor.DoctorId.Int64(), treatment.PatientId.Int64(), d.DataApi); err != nil {
+			WriteErrorWithCode(err, httpStatusCode, w, r)
 			return
 		}
 	}

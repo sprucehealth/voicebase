@@ -3,7 +3,6 @@ package doctor_queue
 import (
 	"carefront/api"
 	"carefront/apiservice"
-	"fmt"
 	"net/http"
 
 	"github.com/gorilla/schema"
@@ -51,7 +50,7 @@ func (d *QueueHandler) ServeHTTP(w http.ResponseWriter, r *http.Request) {
 		return
 	}
 
-	var pendingItemsDoctorQueue, elligibleUnclaimedItemsDoctorQueue, completedItemsDoctorQueue []*api.DoctorQueueItem
+	var pendingItemsDoctorQueue, unclaimedItemsDoctorQueue, completedItemsDoctorQueue []*api.DoctorQueueItem
 
 	if requestData.State == "" || requestData.State == state_pending {
 		pendingItemsDoctorQueue, err = d.dataApi.GetPendingItemsInDoctorQueue(doctorId)
@@ -60,7 +59,7 @@ func (d *QueueHandler) ServeHTTP(w http.ResponseWriter, r *http.Request) {
 			return
 		}
 
-		elligibleUnclaimedItemsDoctorQueue, err = d.dataApi.GetElligibleItemsInUnclaimedQueue(doctorId)
+		unclaimedItemsDoctorQueue, err = d.dataApi.GetElligibleItemsInUnclaimedQueue(doctorId)
 		if err != nil {
 			apiservice.WriteError(err, w, r)
 			return
@@ -75,7 +74,7 @@ func (d *QueueHandler) ServeHTTP(w http.ResponseWriter, r *http.Request) {
 		}
 	}
 
-	doctorDisplayFeed, err := d.convertDoctorQueueIntoDisplayQueue(pendingItemsDoctorQueue, elligibleUnclaimedItemsDoctorQueue, completedItemsDoctorQueue)
+	doctorDisplayFeed, err := d.convertDoctorQueueIntoDisplayQueue(pendingItemsDoctorQueue, unclaimedItemsDoctorQueue, completedItemsDoctorQueue)
 	if err != nil {
 		apiservice.WriteError(err, w, r)
 		return
@@ -114,30 +113,17 @@ func (d *QueueHandler) convertDoctorQueueIntoDisplayQueue(pendingItems, unclaime
 	if len(pendingItems) > 0 {
 
 		// put the first item in the queue into the first section of the display feed
-		upcomingVisitSection := &DisplayFeedSection{}
-		upcomingVisitSection.Title = "Next Visit"
-
-		pendingItems[0].PositionInQueue = 0
-		item, err := converQueueItemToDisplayFeedItem(d.dataApi, pendingItems[0])
-		if err != nil {
-			return nil, err
-		}
-		upcomingVisitSection.Items = []*DisplayFeedItem{item}
-
-		nextVisitsSection := &DisplayFeedSection{
-			Title: fmt.Sprintf("%d Upcoming Visits", len(pendingItems)-1),
-			Items: make([]*DisplayFeedItem, 0),
-		}
-		for i, doctorQueueItem := range pendingItems[1:] {
-			doctorQueueItem.PositionInQueue = i + 1
-			item, err = converQueueItemToDisplayFeedItem(d.dataApi, doctorQueueItem)
+		visitsSection := &DisplayFeedSection{}
+		for i, doctorQueueItem := range pendingItems {
+			doctorQueueItem.PositionInQueue = i
+			item, err := converQueueItemToDisplayFeedItem(d.dataApi, doctorQueueItem)
 			if err != nil {
 				return nil, err
 			}
-			nextVisitsSection.Items = append(nextVisitsSection.Items, item)
+			visitsSection.Items = append(visitsSection.Items, item)
 		}
 
-		pendingOrOngoingDisplayFeed.Sections = []*DisplayFeedSection{upcomingVisitSection, nextVisitsSection}
+		pendingOrOngoingDisplayFeed.Sections = []*DisplayFeedSection{visitsSection}
 	}
 
 	if len(unclaimedItems) > 0 {
@@ -150,7 +136,7 @@ func (d *QueueHandler) convertDoctorQueueIntoDisplayQueue(pendingItems, unclaime
 			}
 			currentDisplaySection.Items = append(currentDisplaySection.Items, displayItem)
 		}
-		completedDisplayFeed.Sections = []*DisplayFeedSection{currentDisplaySection}
+		unclaimedDisplayFeed.Sections = []*DisplayFeedSection{currentDisplaySection}
 	}
 
 	if len(completedItems) > 0 {

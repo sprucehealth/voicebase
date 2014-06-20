@@ -94,6 +94,12 @@ type PatientVisit struct {
 	LayoutVersionId   encoding.ObjectId `json:"layout_version_id,omitempty"`
 }
 
+const (
+	PCStatusUnclaimed   = "UNCLAIMED"
+	PCStatusTempClaimed = "TEMP_CLAIMED"
+	PCStatusClaimed     = "CLAIMED"
+)
+
 type PatientCase struct {
 	Id                encoding.ObjectId `json:"patient_case_id"`
 	PatientId         encoding.ObjectId `json:"patient_id"`

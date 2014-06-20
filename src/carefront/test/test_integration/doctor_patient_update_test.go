@@ -23,13 +23,15 @@ func TestDoctorUpdateToPatientAddress(t *testing.T) {
 	testData := SetupIntegrationTest(t)
 	defer TearDownIntegrationTest(t, testData)
 
-	doctorId := GetDoctorIdOfCurrentPrimaryDoctor(testData, t)
+	doctorId := GetDoctorIdOfCurrentDoctor(testData, t)
 	doctor, err := testData.DataApi.GetDoctorFromId(doctorId)
 	if err != nil {
 		t.Fatal("Unable to read doctor information")
 	}
 
-	signedupPatientResponse := SignupRandomTestPatient(t, testData)
+	// the only way a doctor can update a patient's information is if they are assigned to them. and the only way
+	// to currently be assigned to them is to grab the item from the unclaimed queue by opening the patient visit
+	patientVisitResponse, _ := SignupAndSubmitPatientVisitForRandomPatient(t, testData, doctor)
 
 	patientPharmacy := &pharmacy.PharmacyData{
 		Source:       pharmacy.PHARMACY_SOURCE_SURESCRIPTS,
@@ -40,7 +42,12 @@ func TestDoctorUpdateToPatientAddress(t *testing.T) {
 		Postal:       "94115",
 	}
 
-	err = testData.DataApi.UpdatePatientPharmacy(signedupPatientResponse.Patient.PatientId.Int64(), patientPharmacy)
+	patient, err := testData.DataApi.GetPatientFromPatientVisitId(patientVisitResponse.PatientVisitId)
+	if err != nil {
+		t.Fatal(err)
+	}
+
+	err = testData.DataApi.UpdatePatientPharmacy(patient.PatientId.Int64(), patientPharmacy)
 	if err != nil {
 		t.Fatal("Unable to add patient's preferred pharmacy")
 	}
@@ -52,7 +59,7 @@ func TestDoctorUpdateToPatientAddress(t *testing.T) {
 		State:        "CA",
 		ZipCode:      "94115",
 	}
-	signedupPatientResponse.Patient.PatientAddress = patientAddress
+	patient.PatientAddress = patientAddress
 
 	stubErxApi := &erx.StubErxService{}
 
@@ -72,7 +79,7 @@ func TestDoctorUpdateToPatientAddress(t *testing.T) {
 
 	jsonData, err := json.Marshal(
 		&requestData{
-			Patient: signedupPatientResponse.Patient,
+			Patient: patient,
 		},
 	)
 	if err != nil {
@@ -88,7 +95,7 @@ func TestDoctorUpdateToPatientAddress(t *testing.T) {
 		t.Fatal("Unable to make successfull call to update patient information")
 	}
 
-	patient, err := testData.DataApi.GetPatientFromId(signedupPatientResponse.Patient.PatientId.Int64())
+	patient, err = testData.DataApi.GetPatientFromId(patient.PatientId.Int64())
 	if err != nil {
 		t.Fatal("Unable to get back patient information from database: " + err.Error())
 	}
@@ -110,7 +117,7 @@ func TestDoctorFailedUpdate(t *testing.T) {
 	testData := SetupIntegrationTest(t)
 	defer TearDownIntegrationTest(t, testData)
 
-	doctorId := GetDoctorIdOfCurrentPrimaryDoctor(testData, t)
+	doctorId := GetDoctorIdOfCurrentDoctor(testData, t)
 	doctor, err := testData.DataApi.GetDoctorFromId(doctorId)
 	if err != nil {
 		t.Fatal("Unable to read doctor information")
@@ -186,7 +193,7 @@ func TestDoctorUpdateToPhoneNumbers(t *testing.T) {
 	testData := SetupIntegrationTest(t)
 	defer TearDownIntegrationTest(t, testData)
 
-	doctorId := GetDoctorIdOfCurrentPrimaryDoctor(testData, t)
+	doctorId := GetDoctorIdOfCurrentDoctor(testData, t)
 	doctor, err := testData.DataApi.GetDoctorFromId(doctorId)
 	if err != nil {
 		t.Fatal("Unable to read doctor information")
@@ -202,7 +209,7 @@ func TestDoctorUpdateToPhoneNumbers(t *testing.T) {
 		Postal:       "94115",
 	}
 
-	err = testData.DataApi.UpdatePatientPharmacy(signedupPatientResponse.Patient.PatientId.Int64(), patientPharmacy)
+	err = testData.DataApi.UpdatePatientPharmacy(patient.PatientId.Int64(), patientPharmacy)
 	if err != nil {
 		t.Fatal("Unable to add patient's preferred pharmacy")
 	}
@@ -214,7 +221,7 @@ func TestDoctorUpdateToPhoneNumbers(t *testing.T) {
 		State:        "CA",
 		ZipCode:      "94115",
 	}
-	signedupPatientResponse.Patient.PatientAddress = patientAddress
+	patient.PatientAddress = patientAddress
 
 	// lets go ahead and modify current phone number list
 
@@ -231,7 +238,7 @@ func TestDoctorUpdateToPhoneNumbers(t *testing.T) {
 			PhoneType: "Work",
 		},
 	}
-	signedupPatientResponse.Patient.PhoneNumbers = phoneNumbers
+	patient.PhoneNumbers = phoneNumbers
 
 	stubErxApi := &erx.StubErxService{}
 	stubAddressValidationService := address.StubAddressValidationService{
@@ -253,7 +260,7 @@ func TestDoctorUpdateToPhoneNumbers(t *testing.T) {
 
 	jsonData, err := json.Marshal(
 		&requestData{
-			Patient: signedupPatientResponse.Patient,
+			Patient: patient,
 		},
 	)
 	if err != nil {
@@ -269,7 +276,7 @@ func TestDoctorUpdateToPhoneNumbers(t *testing.T) {
 		t.Fatal("Unable to make successfull call to update patient information")
 	}
 
-	patient, err := testData.DataApi.GetPatientFromId(signedupPatientResponse.Patient.PatientId.Int64())
+	patient, err = testData.DataApi.GetPatientFromId(patient.PatientId.Int64())
 	if err != nil {
 		t.Fatal("Unable to get back patient information from database: " + err.Error())
 	}
@@ -290,13 +297,19 @@ func TestDoctorUpdateToTopLevelInformation(t *testing.T) {
 	testData := SetupIntegrationTest(t)
 	defer TearDownIntegrationTest(t, testData)
 
-	doctorId := GetDoctorIdOfCurrentPrimaryDoctor(testData, t)
+	doctorId := GetDoctorIdOfCurrentDoctor(testData, t)
 	doctor, err := testData.DataApi.GetDoctorFromId(doctorId)
 	if err != nil {
 		t.Fatal("Unable to read doctor information")
 	}
 
-	signedupPatientResponse := SignupRandomTestPatient(t, testData)
+	patientVisitResponse, _ := SignupAndSubmitPatientVisitForRandomPatient(t, testData, doctor)
+
+	patient, err := testData.DataApi.GetPatientFromPatientVisitId(patientVisitResponse.PatientVisitId)
+	if err != nil {
+		t.Fatal(err)
+	}
+
 	patientPharmacy := &pharmacy.PharmacyData{
 		Source:       pharmacy.PHARMACY_SOURCE_SURESCRIPTS,
 		SourceId:     "1234",
@@ -306,7 +319,7 @@ func TestDoctorUpdateToTopLevelInformation(t *testing.T) {
 		Postal:       "94115",
 	}
 
-	err = testData.DataApi.UpdatePatientPharmacy(signedupPatientResponse.Patient.PatientId.Int64(), patientPharmacy)
+	err = testData.DataApi.UpdatePatientPharmacy(patient.PatientId.Int64(), patientPharmacy)
 	if err != nil {
 		t.Fatal("Unable to add patient's preferred pharmacy")
 	}
@@ -318,15 +331,15 @@ func TestDoctorUpdateToTopLevelInformation(t *testing.T) {
 		State:        "CA",
 		ZipCode:      "94115",
 	}
-	signedupPatientResponse.Patient.PatientAddress = patientAddress
+	patient.PatientAddress = patientAddress
 
-	signedupPatientResponse.Patient.FirstName = "Test"
-	signedupPatientResponse.Patient.LastName = "Test again"
-	signedupPatientResponse.Patient.Suffix = "m"
-	signedupPatientResponse.Patient.Prefix = "n"
-	signedupPatientResponse.Patient.MiddleName = "aaaa"
-	signedupPatientResponse.Patient.Gender = "Unknown"
-	signedupPatientResponse.Patient.Dob = encoding.Dob{Day: 11, Month: 9, Year: 1987}
+	patient.FirstName = "Test"
+	patient.LastName = "Test again"
+	patient.Suffix = "m"
+	patient.Prefix = "n"
+	patient.MiddleName = "aaaa"
+	patient.Gender = "Unknown"
+	patient.Dob = encoding.Dob{Day: 11, Month: 9, Year: 1987}
 
 	stubErxApi := &erx.StubErxService{}
 	stubAddressValidationService := address.StubAddressValidationService{
@@ -348,7 +361,7 @@ func TestDoctorUpdateToTopLevelInformation(t *testing.T) {
 
 	jsonData, err := json.Marshal(
 		&requestData{
-			Patient: signedupPatientResponse.Patient,
+			Patient: patient,
 		},
 	)
 	resp, err := testData.AuthPut(ts.URL, "application/json", bytes.NewReader(jsonData), doctor.AccountId.Int64())
@@ -360,19 +373,19 @@ func TestDoctorUpdateToTopLevelInformation(t *testing.T) {
 		t.Fatal("Unable to make successfull call to update patient information")
 	}
 
-	patient, err := testData.DataApi.GetPatientFromId(signedupPatientResponse.Patient.PatientId.Int64())
+	updatedPatient, err := testData.DataApi.GetPatientFromId(patient.PatientId.Int64())
 	if err != nil {
 		t.Fatal("Unable to get back patient information from database: " + err.Error())
 	}
 
-	if patient.FirstName != signedupPatientResponse.Patient.FirstName ||
-		patient.LastName != signedupPatientResponse.Patient.LastName ||
-		patient.MiddleName != signedupPatientResponse.Patient.MiddleName ||
-		patient.Suffix != signedupPatientResponse.Patient.Suffix ||
-		patient.Prefix != signedupPatientResponse.Patient.Prefix ||
-		patient.Dob.Day != signedupPatientResponse.Patient.Dob.Day ||
-		patient.Dob.Year != signedupPatientResponse.Patient.Dob.Year ||
-		patient.Dob.Month != signedupPatientResponse.Patient.Dob.Month {
+	if patient.FirstName != updatedPatient.FirstName ||
+		patient.LastName != updatedPatient.LastName ||
+		patient.MiddleName != updatedPatient.MiddleName ||
+		patient.Suffix != updatedPatient.Suffix ||
+		patient.Prefix != updatedPatient.Prefix ||
+		patient.Dob.Day != updatedPatient.Dob.Day ||
+		patient.Dob.Year != updatedPatient.Dob.Year ||
+		patient.Dob.Month != updatedPatient.Dob.Month {
 		t.Fatal("Patient data incorrectly updated")
 	}
 }
@@ -444,12 +457,18 @@ func TestDoctorPatientPharmacyUpdateHandler(t *testing.T) {
 	testData := SetupIntegrationTest(t)
 	defer TearDownIntegrationTest(t, testData)
 
-	doctorId := GetDoctorIdOfCurrentPrimaryDoctor(testData, t)
+	doctorId := GetDoctorIdOfCurrentDoctor(testData, t)
 	doctor, err := testData.DataApi.GetDoctorFromId(doctorId)
 	if err != nil {
 		t.Fatal("Unable to read doctor information")
 	}
-	signedupPatientResponse := SignupRandomTestPatient(t, testData)
+
+	patientVisitResponse, _ := SignupAndSubmitPatientVisitForRandomPatient(t, testData, doctor)
+	patient, err := testData.DataApi.GetPatientFromPatientVisitId(patientVisitResponse.PatientVisitId)
+	if err != nil {
+		t.Fatal(err)
+	}
+
 	patientPharmacy := &pharmacy.PharmacyData{
 		Source:       pharmacy.PHARMACY_SOURCE_SURESCRIPTS,
 		SourceId:     "1234",
@@ -459,7 +478,7 @@ func TestDoctorPatientPharmacyUpdateHandler(t *testing.T) {
 		Postal:       "94115",
 	}
 
-	err = testData.DataApi.UpdatePatientPharmacy(signedupPatientResponse.Patient.PatientId.Int64(), patientPharmacy)
+	err = testData.DataApi.UpdatePatientPharmacy(patient.PatientId.Int64(), patientPharmacy)
 	if err != nil {
 		t.Fatal("Unable to add patient's preferred pharmacy")
 	}
@@ -479,7 +498,7 @@ func TestDoctorPatientPharmacyUpdateHandler(t *testing.T) {
 	defer ts.Close()
 
 	requestData := &patient_file.DoctorUpdatePatientPharmacyRequestData{
-		PatientId: signedupPatientResponse.Patient.PatientId,
+		PatientId: patient.PatientId,
 		Pharmacy:  updatedPatientPharmacy,
 	}
 
@@ -497,7 +516,7 @@ func TestDoctorPatientPharmacyUpdateHandler(t *testing.T) {
 		t.Fatal("Unable to make successful call to update patient information")
 	}
 
-	patient, err := testData.DataApi.GetPatientFromId(signedupPatientResponse.Patient.PatientId.Int64())
+	patient, err = testData.DataApi.GetPatientFromId(patient.PatientId.Int64())
 	if err != nil {
 		t.Fatal("Unable to get patient based on id: " + err.Error())
 	}

@@ -57,6 +57,16 @@ func (d *adviceHandler) updateAdvicePoints(w http.ResponseWriter, r *http.Reques
 		return
 	}
 
+	// can only add regimen for a treatment that is a draft
+	treatmentPlan, err := d.dataAPI.GetAbridgedTreatmentPlan(requestData.TreatmentPlanId.Int64(), doctorId)
+	if err != nil {
+		apiservice.WriteError(err, w, r)
+		return
+	} else if treatmentPlan.Status != api.STATUS_DRAFT {
+		apiservice.WriteValidationError("treatment plan must be in draft mode", w, r)
+		return
+	}
+
 	// ensure that all selected advice points are actually in the global list on the client side
 	for _, selectedAdvicePoint := range requestData.SelectedAdvicePoints {
 		if httpStatusCode, err := d.ensureLinkedAdvicePointExistsInMasterList(selectedAdvicePoint, &requestData, doctorId); err != nil {
