@@ -1,15 +1,9 @@
 package test_doctor_queue
 
 import (
-	"bytes"
 	"carefront/api"
 	"carefront/messages"
 	"carefront/test/test_integration"
-	"encoding/json"
-	"net/http/httptest"
-	"net/url"
-	"strconv"
-	"strings"
 	"testing"
 )
 
@@ -17,279 +11,66 @@ func TestConversationItemsInDoctorQueue(t *testing.T) {
 	testData := test_integration.SetupIntegrationTest(t)
 	defer test_integration.TearDownIntegrationTest(t, testData)
 
-	pr := test_integration.SignupRandomTestPatient(t, testData.DataApi, testData.AuthApi)
-
-	topicId, err := testData.DataApi.AddConversationTopic("Foo", 100, true)
+	doctorID := test_integration.GetDoctorIdOfCurrentPrimaryDoctor(testData, t)
+	doctor, err := testData.DataApi.GetDoctorFromId(doctorID)
 	if err != nil {
 		t.Fatal(err)
 	}
 
-	patientConvoServer := httptest.NewServer(messages.NewPatientConversationHandler(testData.DataApi))
-	defer patientConvoServer.Close()
-	doctorMessageServer := httptest.NewServer(messages.NewDoctorMessagesHandler(testData.DataApi))
-	defer doctorMessageServer.Close()
-
-	body := &bytes.Buffer{}
-	if err := json.NewEncoder(body).Encode(&messages.NewConversationRequest{
-		TopicId: topicId,
-		Message: "Foo",
-	}); err != nil {
-		t.Fatal(err)
-	}
-	res, err := test_integration.AuthPost(patientConvoServer.URL, "application/json", body, pr.Patient.AccountId.Int64())
+	visit, treatmentPlan := test_integration.SignupAndSubmitPatientVisitForRandomPatient(t, testData, doctor)
+	patient, err := testData.DataApi.GetPatientFromPatientVisitId(visit.PatientVisitId)
 	if err != nil {
 		t.Fatal(err)
 	}
-	newConvRes := &messages.NewConversationResponse{}
-	if err := json.NewDecoder(res.Body).Decode(newConvRes); err != nil {
-		t.Fatal(err)
-	}
-	res.Body.Close()
+	test_integration.SubmitPatientVisitBackToPatient(treatmentPlan.Id.Int64(), doctor, testData, t)
 
-	doctorId := test_integration.GetDoctorIdOfCurrentPrimaryDoctor(testData, t)
-	doctor, err := testData.DataApi.GetDoctorFromId(doctorId)
+	caseID, err := testData.DataApi.GetPatientCaseIdFromPatientVisitId(visit.PatientVisitId)
 	if err != nil {
 		t.Fatal(err)
 	}
+
+	test_integration.PostCaseMessage(t, testData, patient.AccountId.Int64(), &messages.PostMessageRequest{
+		CaseID:  caseID,
+		Message: "foo",
+	})
 
 	// ensure that an item is inserted into the doctor queue
-	pendingItems, err := testData.DataApi.GetPendingItemsInDoctorQueue(doctorId)
+	pendingItems, err := testData.DataApi.GetPendingItemsInDoctorQueue(doctorID)
 	if err != nil {
 		t.Fatalf("Unable to get doctor queue: %s", err)
 	} else if len(pendingItems) != 1 {
 		t.Fatalf("Expected 1 item in the pending items but got %d instead", len(pendingItems))
-	} else if pendingItems[0].EventType != api.EVENT_TYPE_CONVERSATION {
-		t.Fatalf("Expected item type to be %s instead it was %s", api.EVENT_TYPE_CONVERSATION, pendingItems[0].EventType)
+	} else if pendingItems[0].EventType != api.EVENT_TYPE_CASE_MESSAGE {
+		t.Fatalf("Expected item type to be %s instead it was %s", api.EVENT_TYPE_CASE_MESSAGE, pendingItems[0].EventType)
 	} else if pendingItems[0].Status != api.QUEUE_ITEM_STATUS_PENDING {
 		t.Fatalf("Expected item to have status %s instead it has %s", api.QUEUE_ITEM_STATUS_COMPLETED, pendingItems[0].Status)
 	}
 
 	// Reply
-	body = &bytes.Buffer{}
-	if err := json.NewEncoder(body).Encode(&messages.ReplyRequest{
-		ConversationId: newConvRes.ConversationId,
-		Message:        "Foo",
-	}); err != nil {
-		t.Fatal(err)
-	}
-	res, err = test_integration.AuthPost(doctorMessageServer.URL, "application/json", body, doctor.AccountId.Int64())
-	if err != nil {
-		t.Fatal(err)
-	}
+	test_integration.PostCaseMessage(t, testData, doctor.AccountId.Int64(), &messages.PostMessageRequest{
+		CaseID:  caseID,
+		Message: "bar",
+	})
 
 	// ensure that the item is marked as completed for the doctor
-	pendingItems, err = testData.DataApi.GetPendingItemsInDoctorQueue(doctorId)
+	pendingItems, err = testData.DataApi.GetPendingItemsInDoctorQueue(doctorID)
 	if err != nil {
 		t.Fatalf("Unable to get doctor queue: %s", err)
 	} else if len(pendingItems) != 0 {
 		t.Fatalf("Expected no item in the pending items but got %d instead", len(pendingItems))
 	}
 
-	completedItems, err := testData.DataApi.GetCompletedItemsInDoctorQueue(doctorId)
+	completedItems, err := testData.DataApi.GetCompletedItemsInDoctorQueue(doctorID)
 	if err != nil {
 		t.Fatalf("Unable to get completed items in the doctor queue: %s", err)
-	} else if len(completedItems) != 1 {
-		t.Fatalf("Expected 1 item in the completed tab instead got %d", len(completedItems))
-	} else if completedItems[0].EventType != api.EVENT_TYPE_CONVERSATION {
-		t.Fatalf("Expected item of type %s instead got %s", api.EVENT_TYPE_CONVERSATION, completedItems[0].EventType)
+	} else if len(completedItems) != 2 { // one for message, one for treatment plan
+		for _, item := range completedItems {
+			t.Logf("%+v", item)
+		}
+		t.Fatalf("Expected 2 items in the completed tab instead got %d", len(completedItems))
+	} else if completedItems[0].EventType != api.EVENT_TYPE_CASE_MESSAGE {
+		t.Fatalf("Expected item of type %s instead got %s", api.EVENT_TYPE_CASE_MESSAGE, completedItems[0].EventType)
 	} else if completedItems[0].Status != api.QUEUE_ITEM_STATUS_REPLIED {
 		t.Fatalf("Expecte item to have status %s instead it has %s", api.QUEUE_ITEM_STATUS_REPLIED, completedItems[0].Status)
-	}
-}
-
-func TestConversationItemsInDoctorQueue_DoctorInitiated(t *testing.T) {
-	testData := test_integration.SetupIntegrationTest(t)
-	defer test_integration.TearDownIntegrationTest(t, testData)
-
-	pr := test_integration.SignupRandomTestPatient(t, testData.DataApi, testData.AuthApi)
-
-	topicId, err := testData.DataApi.AddConversationTopic("Foo", 100, true)
-	if err != nil {
-		t.Fatal(err)
-	}
-
-	doctorConvoServer := httptest.NewServer(messages.NewDoctorConversationHandler(testData.DataApi))
-	defer doctorConvoServer.Close()
-	patientMessageServer := httptest.NewServer(messages.NewPatientMessagesHandler(testData.DataApi))
-	defer patientMessageServer.Close()
-
-	body := &bytes.Buffer{}
-	if err := json.NewEncoder(body).Encode(&messages.NewConversationRequest{
-		TopicId:   topicId,
-		Message:   "Foo",
-		PatientId: pr.Patient.PatientId.Int64(),
-	}); err != nil {
-		t.Fatal(err)
-	}
-	res, err := test_integration.AuthPost(doctorConvoServer.URL, "application/json", body, pr.Patient.AccountId.Int64())
-	if err != nil {
-		t.Fatal(err)
-	}
-	newConvRes := &messages.NewConversationResponse{}
-	if err := json.NewDecoder(res.Body).Decode(newConvRes); err != nil {
-		t.Fatal(err)
-	}
-	res.Body.Close()
-
-	doctorId := test_integration.GetDoctorIdOfCurrentPrimaryDoctor(testData, t)
-	doctor, err := testData.DataApi.GetDoctorFromId(doctorId)
-	if err != nil {
-		t.Fatal(err.Error())
-	}
-
-	// ensure that an item is inserted into the doctor queue
-	pendingItems, err := testData.DataApi.GetPendingItemsInDoctorQueue(doctorId)
-	if err != nil {
-		t.Fatalf("Unable to get doctor queue: %s", err)
-	} else if len(pendingItems) != 0 {
-		t.Fatalf("Expected no item in the pending items but got %d instead", len(pendingItems))
-	}
-
-	// Reply
-	body = &bytes.Buffer{}
-	if err := json.NewEncoder(body).Encode(&messages.ReplyRequest{
-		ConversationId: newConvRes.ConversationId,
-		Message:        "Foo",
-	}); err != nil {
-		t.Fatal(err)
-	}
-	res, err = test_integration.AuthPost(patientMessageServer.URL, "application/json", body, doctor.AccountId.Int64())
-	if err != nil {
-		t.Fatal(err)
-	}
-
-	// ensure that the item is marked as completed for the doctor
-	pendingItems, err = testData.DataApi.GetPendingItemsInDoctorQueue(doctorId)
-	if err != nil {
-		t.Fatalf("Unable to get doctor queue: %s", err)
-	} else if len(pendingItems) != 0 {
-		t.Fatalf("Expected no item in the pending items but got %d instead", len(pendingItems))
-	}
-
-	completedItems, err := testData.DataApi.GetCompletedItemsInDoctorQueue(doctorId)
-	if err != nil {
-		t.Fatalf("Unable to get completed items in the doctor queue: %s", err)
-	} else if len(completedItems) != 0 {
-		t.Fatalf("Expected no item in the completed tab instead got %d", len(completedItems))
-	}
-}
-
-func TestConversationItemsInDoctorQueue_PatientInitiated(t *testing.T) {
-	testData := test_integration.SetupIntegrationTest(t)
-	defer test_integration.TearDownIntegrationTest(t, testData)
-
-	pr := test_integration.SignupRandomTestPatient(t, testData.DataApi, testData.AuthApi)
-	patient := pr.Patient
-
-	doctorId := test_integration.GetDoctorIdOfCurrentPrimaryDoctor(testData, t)
-	doctor, err := testData.DataApi.GetDoctorFromId(doctorId)
-	if err != nil {
-		t.Fatalf(err.Error())
-	}
-
-	convId := test_integration.StartConversationFromPatientToDoctor(t, testData.DataApi, patient.AccountId.Int64(), 0)
-
-	pendingItems, err := testData.DataApi.GetPendingItemsInDoctorQueue(doctorId)
-	if err != nil {
-		t.Fatalf("Error getting pending items from doctor: %s", err)
-	} else if len(pendingItems) != 1 {
-		t.Fatalf("Expected 1 pending item in doctor queue instead got %d", len(pendingItems))
-	}
-
-	// get doctor to clear the notification (which should clear the notification)
-	test_integration.DoctorReplyToConversation(t, testData.DataApi, convId, doctor.AccountId.Int64())
-	pendingItems, err = testData.DataApi.GetPendingItemsInDoctorQueue(doctorId)
-	if err != nil {
-		t.Fatalf("Error getting pending items from doctor: %s", err)
-	} else if len(pendingItems) != 0 {
-		t.Fatalf("Expected no pending item in doctor queue instead got %d", len(pendingItems))
-	}
-
-	// no matter how many time the patient replies there should be just 1 pending item to represent the replied
-	// conversation
-
-	test_integration.PatientReplyToConversation(t, testData.DataApi, convId, patient.AccountId.Int64())
-
-	pendingItems, err = testData.DataApi.GetPendingItemsInDoctorQueue(doctorId)
-	if err != nil {
-		t.Fatalf("Error getting pending items from doctor: %s", err)
-	} else if len(pendingItems) != 1 {
-		t.Fatalf("Expected 1 pending item in doctor queue instead got %d", len(pendingItems))
-	}
-
-	test_integration.PatientReplyToConversation(t, testData.DataApi, convId, patient.AccountId.Int64())
-
-	pendingItems, err = testData.DataApi.GetPendingItemsInDoctorQueue(doctorId)
-	if err != nil {
-		t.Fatalf("Error getting pending items from doctor: %s", err)
-	} else if len(pendingItems) != 1 {
-		t.Fatalf("Expected 1 pending item in doctor queue instead got %d", len(pendingItems))
-	}
-
-}
-
-func TestMarkingConversationReadWithDoctorQueue(t *testing.T) {
-	testData := test_integration.SetupIntegrationTest(t)
-	defer test_integration.TearDownIntegrationTest(t, testData)
-
-	pr := test_integration.SignupRandomTestPatient(t, testData.DataApi, testData.AuthApi)
-
-	topicId, err := testData.DataApi.AddConversationTopic("Foo", 100, true)
-	if err != nil {
-		t.Fatal(err)
-	}
-
-	patientConvoServer := httptest.NewServer(messages.NewPatientConversationHandler(testData.DataApi))
-	defer patientConvoServer.Close()
-	doctorMessageServer := httptest.NewServer(messages.NewDoctorMessagesHandler(testData.DataApi))
-	defer doctorMessageServer.Close()
-	doctorReadServer := httptest.NewServer(messages.NewDoctorReadHandler(testData.DataApi))
-	defer doctorReadServer.Close()
-
-	body := &bytes.Buffer{}
-	if err := json.NewEncoder(body).Encode(&messages.NewConversationRequest{
-		TopicId: topicId,
-		Message: "Foo",
-	}); err != nil {
-		t.Fatal(err)
-	}
-	res, err := test_integration.AuthPost(patientConvoServer.URL, "application/json", body, pr.Patient.AccountId.Int64())
-	if err != nil {
-		t.Fatal(err)
-	}
-	newConvRes := &messages.NewConversationResponse{}
-	if err := json.NewDecoder(res.Body).Decode(newConvRes); err != nil {
-		t.Fatal(err)
-	}
-	res.Body.Close()
-
-	doctorId := test_integration.GetDoctorIdOfCurrentPrimaryDoctor(testData, t)
-	doctor, err := testData.DataApi.GetDoctorFromId(doctorId)
-	if err != nil {
-		t.Fatal(err)
-	}
-
-	params := url.Values{}
-	params.Set("conversation_id", strconv.FormatInt(newConvRes.ConversationId, 10))
-	res, err = test_integration.AuthPost(doctorReadServer.URL, "application/x-www-form-urlencoded", strings.NewReader(params.Encode()), doctor.AccountId.Int64())
-	if err != nil {
-		t.Fatal(err)
-	}
-
-	// ensure that the item is marked as completed for the doctor
-	pendingItems, err := testData.DataApi.GetPendingItemsInDoctorQueue(doctorId)
-	if err != nil {
-		t.Fatalf("Unable to get doctor queue: %s", err)
-	} else if len(pendingItems) != 0 {
-		t.Fatalf("Expected no item in the pending items but got %d instead", len(pendingItems))
-	}
-
-	completedItems, err := testData.DataApi.GetCompletedItemsInDoctorQueue(doctorId)
-	if err != nil {
-		t.Fatalf("Unable to get completed items in the doctor queue: %s", err)
-	} else if len(completedItems) != 1 {
-		t.Fatalf("Expected 1 item in the completed tab instead got %d", len(completedItems))
-	} else if completedItems[0].EventType != api.EVENT_TYPE_CONVERSATION {
-		t.Fatalf("Expected item to be of type %s instead got %s", api.EVENT_TYPE_CONVERSATION, completedItems[0].EventType)
 	}
 }

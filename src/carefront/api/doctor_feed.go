@@ -16,7 +16,7 @@ const (
 	EVENT_TYPE_TRANSMISSION_ERROR               = "TRANSMISSION_ERROR"
 	EVENT_TYPE_UNLINKED_DNTF_TRANSMISSION_ERROR = "UNLINKED_DNTF_TRANSMISSION_ERROR"
 	EVENT_TYPE_REFILL_TRANSMISSION_ERROR        = "REFILL_TRANSMISSION_ERROR"
-	EVENT_TYPE_CONVERSATION                     = "CONVERSATION"
+	EVENT_TYPE_CASE_MESSAGE                     = "CASE_MESSAGE"
 )
 
 type DoctorQueueItem struct {
@@ -136,31 +136,22 @@ func (d *DoctorQueueItem) GetTitleAndSubtitle(dataApi DataAPI) (string, string, 
 		case QUEUE_ITEM_STATUS_COMPLETED:
 			title = fmt.Sprintf("Error resolved for %s %s", unlinkedTreatment.Patient.FirstName, unlinkedTreatment.Patient.LastName)
 		}
-
-	case EVENT_TYPE_CONVERSATION:
-		conversation, err := dataApi.GetConversation(d.ItemId)
-		if err == NoRowsError {
-			golog.Errorf("Unable to get conversation from id %d", d.ItemId)
-			return "", "", nil
-		} else if err != nil {
+	case EVENT_TYPE_CASE_MESSAGE:
+		participants, err := dataApi.CaseMessageParticipants(d.ItemId, true)
+		if err != nil {
 			return "", "", err
 		}
-
-		for _, person := range conversation.Participants {
+		for _, par := range participants {
+			person := par.Person
 			if person.RoleType == PATIENT_ROLE {
 				patient := person.Patient
 				switch d.Status {
 				case QUEUE_ITEM_STATUS_PENDING:
-					// if the message count > 1 this means that the patient replied to a conversation as opposed to started it
-					if conversation.MessageCount > 1 {
-						title = fmt.Sprintf("%s %s replied to a conversation about %s", patient.FirstName, patient.LastName, conversation.Title)
-					} else {
-						title = fmt.Sprintf("%s %s started a conversation about %s", patient.FirstName, patient.LastName, conversation.Title)
-					}
+					title = fmt.Sprintf("Message from %s %s", patient.FirstName, patient.LastName)
 				case QUEUE_ITEM_STATUS_READ:
-					title = fmt.Sprintf("Conversation with %s %s about %s", patient.FirstName, patient.LastName, conversation.Title)
+					title = fmt.Sprintf("Conversation with %s %s", patient.FirstName, patient.LastName)
 				case QUEUE_ITEM_STATUS_REPLIED:
-					title = fmt.Sprintf("Replied to %s %s in conversation about %s", patient.FirstName, patient.LastName, conversation.Title)
+					title = fmt.Sprintf("Replied to %s %s", patient.FirstName, patient.LastName)
 				}
 				break
 			}
@@ -205,7 +196,7 @@ func (d *DoctorQueueItem) GetDisplayTypes() []string {
 		return []string{DISPLAY_TYPE_TITLE_SUBTITLE_ACTIONABLE}
 	case EVENT_TYPE_TRANSMISSION_ERROR, EVENT_TYPE_UNLINKED_DNTF_TRANSMISSION_ERROR:
 		return []string{DISPLAY_TYPE_TITLE_SUBTITLE_ACTIONABLE}
-	case EVENT_TYPE_CONVERSATION:
+	case EVENT_TYPE_CASE_MESSAGE:
 		return []string{DISPLAY_TYPE_TITLE_SUBTITLE_ACTIONABLE}
 	}
 	return nil
@@ -281,17 +272,14 @@ func (d *DoctorQueueItem) ActionUrl(dataApi DataAPI) (*app_url.SpruceAction, err
 			return nil, nil
 		}
 		return app_url.ViewTransmissionErrorAction(patient.PatientId.Int64(), d.ItemId), nil
-	case EVENT_TYPE_CONVERSATION:
-		conversation, err := dataApi.GetConversation(d.ItemId)
-		if err == NoRowsError {
-			golog.Errorf("Unable to get conversation from id %d", d.ItemId)
-			return nil, nil
-		} else if err != nil {
+	case EVENT_TYPE_CASE_MESSAGE:
+		participants, err := dataApi.CaseMessageParticipants(d.ItemId, false)
+		if err != nil {
 			return nil, err
 		}
-		for _, person := range conversation.Participants {
-			if person.RoleType == PATIENT_ROLE {
-				return app_url.ViewPatientConversationsAction(person.Patient.PatientId.Int64(), d.ItemId), nil
+		for _, p := range participants {
+			if p.Person.RoleType == PATIENT_ROLE {
+				return app_url.ViewPatientConversationsAction(p.Person.RoleId, d.ItemId), nil
 			}
 		}
 	}

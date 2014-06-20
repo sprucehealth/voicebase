@@ -82,9 +82,9 @@ func (d *diagnosePatientHandler) getDiagnosis(w http.ResponseWriter, r *http.Req
 		return
 	}
 
-	patientVisitReviewData, statusCode, err := apiservice.ValidateDoctorAccessToPatientVisitAndGetRelevantData(requestData.PatientVisitId, apiservice.GetContext(r).AccountId, d.dataApi)
+	patientVisitReviewData, err := apiservice.ValidateDoctorAccessToPatientVisitAndGetRelevantData(requestData.PatientVisitId, apiservice.GetContext(r).AccountId, d.dataApi)
 	if err != nil {
-		apiservice.WriteDeveloperError(w, statusCode, err.Error())
+		apiservice.WriteError(err, w, r)
 		return
 	}
 
@@ -134,9 +134,9 @@ func (d *diagnosePatientHandler) diagnosePatient(w http.ResponseWriter, r *http.
 		return
 	}
 
-	patientVisitReviewData, httpStatusCode, err := apiservice.ValidateDoctorAccessToPatientVisitAndGetRelevantData(answerIntakeRequestBody.PatientVisitId, apiservice.GetContext(r).AccountId, d.dataApi)
+	patientVisitReviewData, err := apiservice.ValidateDoctorAccessToPatientVisitAndGetRelevantData(answerIntakeRequestBody.PatientVisitId, apiservice.GetContext(r).AccountId, d.dataApi)
 	if err != nil {
-		apiservice.WriteDeveloperError(w, httpStatusCode, err.Error())
+		apiservice.WriteError(err, w, r)
 		return
 	}
 

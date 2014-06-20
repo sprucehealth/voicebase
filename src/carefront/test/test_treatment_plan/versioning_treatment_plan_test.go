@@ -387,7 +387,7 @@ func TestVersionTreatmentPlan_PickingFromInactiveTP(t *testing.T) {
 		},
 	})
 
-	res, err := test_integration.AuthPut(doctorServer.URL, "application/json", bytes.NewReader(jsonData), doctor.AccountId.Int64())
+	res, err := testData.AuthPut(doctorServer.URL, "application/json", bytes.NewReader(jsonData), doctor.AccountId.Int64())
 	if err != nil {
 		t.Fatal(err)
 	} else if res.StatusCode != http.StatusBadRequest {

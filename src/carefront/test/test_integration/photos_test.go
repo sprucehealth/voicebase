@@ -16,7 +16,7 @@ type photoUploadResponse struct {
 	PhotoID int64 `json:"photo_id,string"`
 }
 
-func uploadPhoto(t *testing.T, testData TestData, accountID int64) int64 {
+func uploadPhoto(t *testing.T, testData *TestData, accountID int64) int64 {
 	h := photos.NewHandler(testData.DataApi, testData.AWSAuth, "dev-carefront-test", "us-east-1")
 	ts := httptest.NewServer(h)
 	defer ts.Close()
@@ -34,7 +34,7 @@ func uploadPhoto(t *testing.T, testData TestData, accountID int64) int64 {
 		t.Fatal(err)
 	}
 
-	res, err := AuthPost(ts.URL, writer.FormDataContentType(), body, accountID)
+	res, err := testData.AuthPost(ts.URL, writer.FormDataContentType(), body, accountID)
 	if err != nil {
 		t.Fatal(err)
 	}
@@ -54,7 +54,7 @@ func TestPhotoUpload(t *testing.T) {
 	testData := SetupIntegrationTest(t)
 	defer TearDownIntegrationTest(t, testData)
 
-	pr := SignupRandomTestPatient(t, testData.DataApi, testData.AuthApi)
+	pr := SignupRandomTestPatient(t, testData)
 
 	photoID := uploadPhoto(t, testData, pr.Patient.AccountId.Int64())
 
@@ -62,7 +62,7 @@ func TestPhotoUpload(t *testing.T) {
 	ts := httptest.NewServer(h)
 	defer ts.Close()
 
-	res, err := AuthGet(fmt.Sprintf("%s?photo_id=%d&claimer_type=&claimer_id=0", ts.URL, photoID), pr.Patient.AccountId.Int64())
+	res, err := testData.AuthGet(fmt.Sprintf("%s?photo_id=%d&claimer_type=&claimer_id=0", ts.URL, photoID), pr.Patient.AccountId.Int64())
 	if err != nil {
 		t.Fatal(err)
 	}

@@ -50,7 +50,7 @@ func TestFavoriteTreatmentPlan(t *testing.T) {
 	defer ts.Close()
 
 	responseData := &doctor_treatment_plan.DoctorFavoriteTreatmentPlansResponseData{}
-	resp, err := AuthPut(ts.URL, "application/json", bytes.NewReader(jsonData), doctor.AccountId.Int64())
+	resp, err := testData.AuthPut(ts.URL, "application/json", bytes.NewReader(jsonData), doctor.AccountId.Int64())
 	if err != nil {
 		t.Fatalf("Unable to make call to update favorite treatment plan %s", err)
 	} else if err := json.NewDecoder(resp.Body).Decode(responseData); err != nil {
@@ -107,14 +107,14 @@ func TestFavoriteTreatmentPlan(t *testing.T) {
 		t.Fatalf("Unable to marshal favorited treatment plan %s", err)
 	}
 
-	resp, err = AuthPost(ts.URL, "application/json", bytes.NewReader(jsonData), doctor.AccountId.Int64())
+	resp, err = testData.AuthPost(ts.URL, "application/json", bytes.NewReader(jsonData), doctor.AccountId.Int64())
 	if err != nil {
 		t.Fatalf("Unable to add another favorite treatment plan %s", err)
 	}
 
 	CheckSuccessfulStatusCode(resp, "unable to add another favorite treatment plan", t)
 
-	resp, err = AuthGet(ts.URL, doctor.AccountId.Int64())
+	resp, err = testData.AuthGet(ts.URL, doctor.AccountId.Int64())
 	if err != nil {
 		t.Fatalf("Unabke to get list of favorite treatment plans %s", err)
 	} else if err := json.NewDecoder(resp.Body).Decode(responseData); err != nil {
@@ -136,7 +136,7 @@ func TestFavoriteTreatmentPlan(t *testing.T) {
 	// lets go ahead and delete favorite treatment plan
 	params := url.Values{}
 	params.Set("favorite_treatment_plan_id", strconv.FormatInt(responseData.FavoriteTreatmentPlans[0].Id.Int64(), 10))
-	resp, err = AuthDelete(ts.URL+"?"+params.Encode(), "application/x-www-form-urlencoded", nil, doctor.AccountId.Int64())
+	resp, err = testData.AuthDelete(ts.URL+"?"+params.Encode(), "application/x-www-form-urlencoded", nil, doctor.AccountId.Int64())
 	if err != nil {
 		t.Fatalf("Unable to delete favorite treatment plan %s", err)
 	}
@@ -309,7 +309,7 @@ func TestFavoriteTreatmentPlan_PickingAFavoriteTreatmentPlan(t *testing.T) {
 	defer ts.Close()
 
 	responseData := &doctor_treatment_plan.DoctorTreatmentPlanResponse{}
-	if resp, err := AuthGet(ts.URL+"?treatment_plan_id="+strconv.FormatInt(treatmentPlan.Id.Int64(), 10), doctor.AccountId.Int64()); err != nil {
+	if resp, err := testData.AuthGet(ts.URL+"?treatment_plan_id="+strconv.FormatInt(treatmentPlan.Id.Int64(), 10), doctor.AccountId.Int64()); err != nil {
 		t.Fatalf("Unable to make call to get treatment plan for patient visit")
 	} else if resp.StatusCode != http.StatusOK {
 		t.Fatalf("Expected %d response for getting treatment plan instead got %d", http.StatusOK, resp.StatusCode)
@@ -395,7 +395,7 @@ func TestFavoriteTreatmentPlan_CommittedStateForTreatmentPlan(t *testing.T) {
 	// the regimen plan should indicate that it was committed while the rest of the sections
 	// should continue to be in the UNCOMMITTED state
 	responseData = &doctor_treatment_plan.DoctorTreatmentPlanResponse{}
-	if resp, err := AuthGet(ts.URL+"?treatment_plan_id="+strconv.FormatInt(treatmentPlanId, 10), doctor.AccountId.Int64()); err != nil {
+	if resp, err := testData.AuthGet(ts.URL+"?treatment_plan_id="+strconv.FormatInt(treatmentPlanId, 10), doctor.AccountId.Int64()); err != nil {
 		t.Fatalf("Unable to make call to get treatment plan for patient visit")
 	} else if resp.StatusCode != http.StatusOK {
 		t.Fatalf("Expected %d response for getting treatment plan instead got %d", http.StatusOK, resp.StatusCode)
@@ -420,7 +420,7 @@ func TestFavoriteTreatmentPlan_CommittedStateForTreatmentPlan(t *testing.T) {
 	// now if we were to get the treatment plan again it should indicate that the
 	// advice and regimen sections are committed but not the treatment section
 	responseData = &doctor_treatment_plan.DoctorTreatmentPlanResponse{}
-	if resp, err := AuthGet(ts.URL+"?treatment_plan_id="+strconv.FormatInt(treatmentPlanId, 10), doctor.AccountId.Int64()); err != nil {
+	if resp, err := testData.AuthGet(ts.URL+"?treatment_plan_id="+strconv.FormatInt(treatmentPlanId, 10), doctor.AccountId.Int64()); err != nil {
 		t.Fatalf("Unable to make call to get treatment plan for patient visit")
 	} else if resp.StatusCode != http.StatusOK {
 		t.Fatalf("Expected %d response for getting treatment plan instead got %d", http.StatusOK, resp.StatusCode)
@@ -439,7 +439,7 @@ func TestFavoriteTreatmentPlan_CommittedStateForTreatmentPlan(t *testing.T) {
 
 	// now the treatment section should also indicate that it has been committed
 	responseData = &doctor_treatment_plan.DoctorTreatmentPlanResponse{}
-	if resp, err := AuthGet(ts.URL+"?treatment_plan_id="+strconv.FormatInt(treatmentPlanId, 10), doctor.AccountId.Int64()); err != nil {
+	if resp, err := testData.AuthGet(ts.URL+"?treatment_plan_id="+strconv.FormatInt(treatmentPlanId, 10), doctor.AccountId.Int64()); err != nil {
 		t.Fatalf("Unable to make call to get treatment plan for patient visit")
 	} else if resp.StatusCode != http.StatusOK {
 		t.Fatalf("Expected %d response for getting treatment plan instead got %d", http.StatusOK, resp.StatusCode)
@@ -491,7 +491,7 @@ func TestFavoriteTreatmentPlan_BreakingMappingOnModify(t *testing.T) {
 	params.Set("treatment_plan_id", strconv.FormatInt(responseData.TreatmentPlan.Id.Int64(), 10))
 	params.Set("abridged", "true")
 	responseData = &doctor_treatment_plan.DoctorTreatmentPlanResponse{}
-	if resp, err := AuthGet(ts.URL+"?"+params.Encode(), doctor.AccountId.Int64()); err != nil {
+	if resp, err := testData.AuthGet(ts.URL+"?"+params.Encode(), doctor.AccountId.Int64()); err != nil {
 		t.Fatalf("Unable to make call to get treatment plan for patient visit")
 	} else if resp.StatusCode != http.StatusOK {
 		t.Fatalf("Expected %d response for getting treatment plan instead got %d", http.StatusOK, resp.StatusCode)
@@ -519,7 +519,7 @@ func TestFavoriteTreatmentPlan_BreakingMappingOnModify(t *testing.T) {
 
 	// linkage should now be broken
 	params.Set("treatment_plan_id", strconv.FormatInt(responseData.TreatmentPlan.Id.Int64(), 10))
-	if resp, err := AuthGet(ts.URL+"?"+params.Encode(), doctor.AccountId.Int64()); err != nil {
+	if resp, err := testData.AuthGet(ts.URL+"?"+params.Encode(), doctor.AccountId.Int64()); err != nil {
 		t.Fatalf("Unable to make call to get treatment plan for patient visit")
 	} else if resp.StatusCode != http.StatusOK {
 		t.Fatalf("Expected %d response for getting treatment plan instead got %d", http.StatusOK, resp.StatusCode)
@@ -548,7 +548,7 @@ func TestFavoriteTreatmentPlan_BreakingMappingOnModify(t *testing.T) {
 
 	// linkage should now be broken
 	params.Set("treatment_plan_id", strconv.FormatInt(responseData.TreatmentPlan.Id.Int64(), 10))
-	if resp, err := AuthGet(ts.URL+"?"+params.Encode(), doctor.AccountId.Int64()); err != nil {
+	if resp, err := testData.AuthGet(ts.URL+"?"+params.Encode(), doctor.AccountId.Int64()); err != nil {
 		t.Fatalf("Unable to make call to get treatment plan for patient visit")
 	} else if resp.StatusCode != http.StatusOK {
 		t.Fatalf("Expected %d response for getting treatment plan instead got %d", http.StatusOK, resp.StatusCode)
@@ -592,7 +592,7 @@ func TestFavoriteTreatmentPlan_BreakingMappingOnModify_PrefillRestOfData(t *test
 	params := url.Values{}
 	params.Set("treatment_plan_id", strconv.FormatInt(responseData.TreatmentPlan.Id.Int64(), 10))
 	responseData = &doctor_treatment_plan.DoctorTreatmentPlanResponse{}
-	if resp, err := AuthGet(ts.URL+"?"+params.Encode(), doctor.AccountId.Int64()); err != nil {
+	if resp, err := testData.AuthGet(ts.URL+"?"+params.Encode(), doctor.AccountId.Int64()); err != nil {
 		t.Fatalf("Unable to make call to get treatment plan for patient visit")
 	} else if resp.StatusCode != http.StatusOK {
 		t.Fatalf("Expected %d response for getting treatment plan instead got %d", http.StatusOK, resp.StatusCode)
@@ -742,7 +742,7 @@ func TestFavoriteTreatmentPlan_InContextOfTreatmentPlan(t *testing.T) {
 		t.Fatalf("Unable to marshal json %s", err)
 	}
 
-	resp, err := AuthPost(ts.URL, "application/json", bytes.NewReader(jsonData), doctor.AccountId.Int64())
+	resp, err := testData.AuthPost(ts.URL, "application/json", bytes.NewReader(jsonData), doctor.AccountId.Int64())
 	if err != nil {
 		t.Fatalf("Unable to add favorite treatment plan: %s", err)
 	}
@@ -872,7 +872,7 @@ func TestFavoriteTreatmentPlan_InContextOfTreatmentPlan_EmptyRegimenAndAdvice(t 
 		t.Fatalf("Unable to marshal json %s", err)
 	}
 
-	resp, err := AuthPost(ts.URL, "application/json", bytes.NewReader(jsonData), doctor.AccountId.Int64())
+	resp, err := testData.AuthPost(ts.URL, "application/json", bytes.NewReader(jsonData), doctor.AccountId.Int64())
 	if err != nil {
 		t.Fatalf("Unable to add favorite treatment plan: %s", err)
 	}
@@ -1000,7 +1000,7 @@ func TestFavoriteTreatmentPlan_InContextOfTreatmentPlan_TwoDontMatch(t *testing.
 		t.Fatalf("Unable to marshal json %s", err)
 	}
 
-	resp, err := AuthPost(ts.URL, "application/json", bytes.NewReader(jsonData), doctor.AccountId.Int64())
+	resp, err := testData.AuthPost(ts.URL, "application/json", bytes.NewReader(jsonData), doctor.AccountId.Int64())
 	if err != nil {
 		t.Fatalf("Unable to add favorite treatment plan: %s", err)
 	}

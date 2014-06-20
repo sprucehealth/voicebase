@@ -38,9 +38,9 @@ func (d *DiagnosisSummaryHandler) ServeHTTP(w http.ResponseWriter, r *http.Reque
 		return
 	}
 
-	patientVisitReviewData, statusCode, err := ValidateDoctorAccessToPatientVisitAndGetRelevantData(patientVisitId, GetContext(r).AccountId, d.DataApi)
+	patientVisitReviewData, err := ValidateDoctorAccessToPatientVisitAndGetRelevantData(patientVisitId, GetContext(r).AccountId, d.DataApi)
 	if err != nil {
-		WriteDeveloperError(w, statusCode, err.Error())
+		WriteError(err, w, r)
 		return
 	}
 

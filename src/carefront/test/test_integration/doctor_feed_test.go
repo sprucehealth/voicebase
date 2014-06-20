@@ -25,7 +25,7 @@ func TestDoctorQueueWithPatientVisits(t *testing.T) {
 		t.Fatal("Unable to get doctor from doctor id " + err.Error())
 	}
 
-	signedUpPatientResponse := SignupRandomTestPatient(t, testData.DataApi, testData.AuthApi)
+	signedUpPatientResponse := SignupRandomTestPatient(t, testData)
 	patientVisitResponse := CreatePatientVisitForPatient(signedUpPatientResponse.Patient.PatientId.Int64(), testData, t)
 	patient, err := testData.DataApi.GetPatientFromId(signedUpPatientResponse.Patient.PatientId.Int64())
 	if err != nil {
@@ -155,7 +155,7 @@ func TestDoctorFeed(t *testing.T) {
 		}
 	}
 
-	patientSignedupResponse := SignupRandomTestPatient(t, testData.DataApi, testData.AuthApi)
+	patientSignedupResponse := SignupRandomTestPatient(t, testData)
 	// get patient to start a visit
 	patientVisitResponse := CreatePatientVisitForPatient(patientSignedupResponse.Patient.PatientId.Int64(), testData, t)
 
@@ -321,12 +321,12 @@ func TestDoctorFeed(t *testing.T) {
 
 }
 
-func getDoctorQueue(testData TestData, doctorAccountId int64, t *testing.T) *doctor_queue.DisplayFeedTabs {
+func getDoctorQueue(testData *TestData, doctorAccountId int64, t *testing.T) *doctor_queue.DisplayFeedTabs {
 	doctorQueueHandler := doctor_queue.NewQueueHandler(testData.DataApi)
 	ts := httptest.NewServer(doctorQueueHandler)
 	defer ts.Close()
 
-	resp, err := AuthGet(ts.URL, doctorAccountId)
+	resp, err := testData.AuthGet(ts.URL, doctorAccountId)
 	if err != nil {
 		t.Fatal("Unable to get doctor feed for doctor: " + err.Error())
 	}
@@ -347,7 +347,7 @@ func getDoctorQueue(testData TestData, doctorAccountId int64, t *testing.T) *doc
 	return doctorDisplayFeedTabs
 }
 
-func insertIntoDoctorQueue(testData TestData, doctorQueueItem *api.DoctorQueueItem, t *testing.T) {
+func insertIntoDoctorQueue(testData *TestData, doctorQueueItem *api.DoctorQueueItem, t *testing.T) {
 	_, err := testData.DB.Exec(fmt.Sprintf(`insert into doctor_queue (doctor_id, event_type, item_id, status) 
 												values (?, 'PATIENT_VISIT', ?, '%s')`, doctorQueueItem.Status), doctorQueueItem.DoctorId, doctorQueueItem.ItemId)
 	if err != nil {
@@ -355,7 +355,7 @@ func insertIntoDoctorQueue(testData TestData, doctorQueueItem *api.DoctorQueueIt
 	}
 }
 
-func insertIntoDoctorQueueWithEnqueuedDate(testData TestData, doctorQueueItem *api.DoctorQueueItem, t *testing.T) {
+func insertIntoDoctorQueueWithEnqueuedDate(testData *TestData, doctorQueueItem *api.DoctorQueueItem, t *testing.T) {
 	_, err := testData.DB.Exec(fmt.Sprintf(`insert into doctor_queue (doctor_id, event_type, item_id, status, enqueue_date) 
 												values (?, 'PATIENT_VISIT', ?, '%s', ?)`, doctorQueueItem.Status), doctorQueueItem.DoctorId, doctorQueueItem.ItemId, doctorQueueItem.EnqueueDate)
 	if err != nil {

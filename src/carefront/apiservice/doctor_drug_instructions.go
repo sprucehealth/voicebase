@@ -55,9 +55,9 @@ func (d *DoctorDrugInstructionsHandler) addDrugInstructions(w http.ResponseWrite
 
 	drugName, drugForm, drugRoute := BreakDrugInternalNameIntoComponents(addInstructionsRequestBody.DrugInternalName)
 
-	patientVisitReviewData, statusCode, err := ValidateDoctorAccessToPatientVisitAndGetRelevantData(addInstructionsRequestBody.PatientVisitId, GetContext(r).AccountId, d.DataApi)
+	patientVisitReviewData, err := ValidateDoctorAccessToPatientVisitAndGetRelevantData(addInstructionsRequestBody.PatientVisitId, GetContext(r).AccountId, d.DataApi)
 	if err != nil {
-		WriteDeveloperError(w, statusCode, err.Error())
+		WriteError(err, w, r)
 		return
 	}
 

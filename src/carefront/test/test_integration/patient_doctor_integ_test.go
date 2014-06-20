@@ -54,7 +54,7 @@ func TestPatientVisitReview(t *testing.T) {
 	ts := httptest.NewServer(patientVisitReviewHandler)
 	defer ts.Close()
 
-	resp, err := AuthGet(ts.URL+"?treatment_plan_id="+strconv.FormatInt(treatmentPlan.Id.Int64(), 10), patient.AccountId.Int64())
+	resp, err := testData.AuthGet(ts.URL+"?treatment_plan_id="+strconv.FormatInt(treatmentPlan.Id.Int64(), 10), patient.AccountId.Int64())
 	if err != nil {
 		t.Fatal("Unable to make call to get the patient visit review for patient visit: " + err.Error())
 	} else if resp.StatusCode != http.StatusBadRequest {
@@ -87,7 +87,7 @@ func TestPatientVisitReview(t *testing.T) {
 		t.Fatal(err)
 	}
 
-	resp, err = AuthPut(ts3.URL, "application/json", bytes.NewReader(jsonData), doctor.AccountId.Int64())
+	resp, err = testData.AuthPut(ts3.URL, "application/json", bytes.NewReader(jsonData), doctor.AccountId.Int64())
 	if err != nil {
 		t.Fatal("Unable to make call to close patient visit " + err.Error())
 	} else if resp.StatusCode != http.StatusOK {
@@ -245,7 +245,7 @@ func TestPatientVisitReview(t *testing.T) {
 		t.Fatal(err)
 	}
 
-	resp, err = AuthPut(ts3.URL, "application/json", bytes.NewReader(jsonData), doctor.AccountId.Int64())
+	resp, err = testData.AuthPut(ts3.URL, "application/json", bytes.NewReader(jsonData), doctor.AccountId.Int64())
 	if err != nil {
 		t.Fatal("Unable to make call to close patient visit " + err.Error())
 	} else if resp.StatusCode != http.StatusOK {
@@ -324,7 +324,7 @@ func TestPatientVisitReview(t *testing.T) {
 	if err != nil {
 		t.Fatal("Unable to get the patient object given the id: " + err.Error())
 	}
-	resp, err = AuthGet(ts.URL+"?treatment_plan_id="+strconv.FormatInt(treatmentPlan.Id.Int64(), 10), patient.AccountId.Int64())
+	resp, err = testData.AuthGet(ts.URL+"?treatment_plan_id="+strconv.FormatInt(treatmentPlan.Id.Int64(), 10), patient.AccountId.Int64())
 	if err != nil {
 		t.Fatal("Unable to make call to get patient visit review: " + err.Error())
 	}

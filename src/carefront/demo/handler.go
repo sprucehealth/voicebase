@@ -324,7 +324,12 @@ func (c *Handler) createNewDemoPatient(patient *common.Patient, doctorId int64, 
 		}, signupResponse.Token, signal, r)
 
 		if toMessageDoctor {
-			c.startSendingMessageToDoctor(signupResponse.Token, message, signal, r)
+			caseID, err := c.dataApi.GetPatientCaseIdFromPatientVisitId(patientVisitResponse.PatientVisitId)
+			if err != nil {
+				golog.Errorf("Failed to get case ID for visit")
+			} else {
+				c.startSendingMessageToDoctor(signupResponse.Token, message, caseID, signal, r)
+			}
 		}
 
 		// wait for all requests to finish

@@ -168,36 +168,65 @@ func InitListeners(dataAPI api.DataAPI, notificationManager *notify.Notification
 		return nil
 	})
 
-	dispatch.Default.Subscribe(func(ev *messages.ConversationStartedEvent) error {
-		people, err := dataAPI.GetPeople([]int64{ev.FromId, ev.ToId})
-		if err != nil {
-			return err
-		}
-		from := people[ev.FromId]
-		if from == nil {
-			return errors.New("failed to find person conversation is from")
-		}
-		to := people[ev.ToId]
-		if to == nil {
-			return errors.New("failed to find person conversation is addressed to")
-		}
-
-		// only act on event if the message goes from patient->doctor
-		if to.RoleType != api.DOCTOR_ROLE || from.RoleType != api.PATIENT_ROLE {
+	dispatch.Default.Subscribe(func(ev *messages.PostEvent) error {
+		// clear the item from the doctor's queue once they respond to a message
+		if ev.Person.RoleType == api.DOCTOR_ROLE {
+			if err := dataAPI.ReplaceItemInDoctorQueue(api.DoctorQueueItem{
+				DoctorId:  ev.Person.RoleId,
+				ItemId:    ev.Case.Id,
+				EventType: api.EVENT_TYPE_CASE_MESSAGE,
+				Status:    api.QUEUE_ITEM_STATUS_REPLIED,
+			}, api.QUEUE_ITEM_STATUS_PENDING); err != nil {
+				golog.Errorf("Unable to replace item in doctor queue with a replied item: %s", err)
+				return err
+			}
 			return nil
 		}
 
-		if err := dataAPI.InsertItemIntoDoctorQueue(api.DoctorQueueItem{
-			DoctorId:  to.Doctor.DoctorId.Int64(),
-			ItemId:    ev.ConversationId,
-			EventType: api.EVENT_TYPE_CONVERSATION,
-			Status:    api.STATUS_PENDING,
-		}); err != nil {
+		// only act on event if the message goes from patient->doctor
+		if ev.Person.RoleType != api.PATIENT_ROLE {
+			return nil
+		}
+
+		// TODO: Once possible, use doctor assigned to the case instead of
+		// using the patient's primary.
+
+		careTeam, err := dataAPI.GetCareTeamForPatient(ev.Person.RoleId)
+		if err != nil {
+			return err
+		}
+		if careTeam == nil {
+			return errors.New("No care team assigned to patient")
+		}
+
+		var doctorID int64
+		for _, a := range careTeam.Assignments {
+			if a.ProviderRole == api.DOCTOR_ROLE {
+				doctorID = a.ProviderId
+				break
+			}
+		}
+		if doctorID == 0 {
+			// No doctor assigned to patient
+			return errors.New("No doctor assigned to patient")
+		}
+
+		if err := dataAPI.ReplaceItemInDoctorQueue(api.DoctorQueueItem{
+			DoctorId:  doctorID,
+			ItemId:    ev.Message.CaseID,
+			EventType: api.EVENT_TYPE_CASE_MESSAGE,
+			Status:    api.QUEUE_ITEM_STATUS_PENDING,
+		}, api.QUEUE_ITEM_STATUS_REPLIED); err != nil {
 			golog.Errorf("Unable to insert conversation item into doctor queue: %s", err)
 			return err
 		}
 
-		if err := notificationManager.NotifyDoctor(to.Doctor, ev); err != nil {
+		doctor, err := dataAPI.GetDoctorFromId(doctorID)
+		if err != nil {
+			return err
+		}
+
+		if err := notificationManager.NotifyDoctor(doctor, ev); err != nil {
 			golog.Errorf("Unable to notify doctor: %s", err)
 			return err
 		}
@@ -205,65 +234,14 @@ func InitListeners(dataAPI api.DataAPI, notificationManager *notify.Notification
 		return nil
 	})
 
-	dispatch.Default.Subscribe(func(ev *messages.ConversationReplyEvent) error {
-		conversation, err := dataAPI.GetConversation(ev.ConversationId)
-		if err != nil {
-			return err
-		}
-
-		// clear the item from the doctor's queue once they respond to a message
-		person := conversation.Participants[ev.FromId]
-		if person.RoleType == api.DOCTOR_ROLE {
-			if err := dataAPI.ReplaceItemInDoctorQueue(api.DoctorQueueItem{
-				DoctorId:  person.Doctor.DoctorId.Int64(),
-				ItemId:    ev.ConversationId,
-				EventType: api.EVENT_TYPE_CONVERSATION,
-				Status:    api.QUEUE_ITEM_STATUS_REPLIED,
-			}, api.QUEUE_ITEM_STATUS_PENDING); err != nil {
-				golog.Errorf("Unable to replace item in doctor queue with a replied item: %s", err)
-				return err
-			}
-		}
-
-		// if in the event the patient initiates the reply, refresh an existing item in the doctor's queue
-		if person.RoleType == api.PATIENT_ROLE {
-			// find the doctor to insert item into their queue
-			for _, p := range conversation.Participants {
-				if p.RoleType == api.DOCTOR_ROLE {
-					if err := dataAPI.ReplaceItemInDoctorQueue(api.DoctorQueueItem{
-						DoctorId:  p.Doctor.DoctorId.Int64(),
-						ItemId:    ev.ConversationId,
-						EventType: api.EVENT_TYPE_CONVERSATION,
-						Status:    api.QUEUE_ITEM_STATUS_PENDING,
-					}, api.QUEUE_ITEM_STATUS_PENDING); err != nil {
-						golog.Errorf("Unable to replace item in doctor queue with a replied item: %s", err)
-						return err
-					}
-
-					if err := notificationManager.NotifyDoctor(p.Doctor, ev); err != nil {
-						golog.Errorf("Unable to notify doctor: %s", err)
-						return err
-					}
-				}
-			}
-		}
-		return nil
-	})
-
-	dispatch.Default.Subscribe(func(ev *messages.ConversationReadEvent) error {
+	dispatch.Default.Subscribe(func(ev *messages.ReadEvent) error {
 		// delete the item from the queue when the doctor marks the conversation
 		// as being read
-		people, err := dataAPI.GetPeople([]int64{ev.FromId})
-		if err != nil {
-			return err
-		}
-
-		person := people[ev.FromId]
-		if person.RoleType == api.DOCTOR_ROLE {
+		if ev.Person.RoleType == api.DOCTOR_ROLE {
 			if err := dataAPI.ReplaceItemInDoctorQueue(api.DoctorQueueItem{
-				DoctorId:  person.Doctor.DoctorId.Int64(),
-				ItemId:    ev.ConversationId,
-				EventType: api.EVENT_TYPE_CONVERSATION,
+				DoctorId:  ev.Person.Doctor.DoctorId.Int64(),
+				ItemId:    ev.CaseID,
+				EventType: api.EVENT_TYPE_CASE_MESSAGE,
 				Status:    api.QUEUE_ITEM_STATUS_READ,
 			}, api.QUEUE_ITEM_STATUS_PENDING); err != nil {
 				golog.Errorf("Unable to replace item in doctor queue with a replied item: %s", err)
@@ -272,5 +250,4 @@ func InitListeners(dataAPI api.DataAPI, notificationManager *notify.Notification
 		}
 		return nil
 	})
-
 }

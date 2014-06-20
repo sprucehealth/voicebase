@@ -31,7 +31,7 @@ func TestMedicationStrengthSearch(t *testing.T) {
 	ts := httptest.NewServer(medicationStrengthSearchHandler)
 	defer ts.Close()
 
-	resp, err := AuthGet(ts.URL+"?drug_internal_name="+url.QueryEscape("Benzoyl Peroxide Topical (topical - cream)"), doctor.AccountId.Int64())
+	resp, err := testData.AuthGet(ts.URL+"?drug_internal_name="+url.QueryEscape("Benzoyl Peroxide Topical (topical - cream)"), doctor.AccountId.Int64())
 	if err != nil {
 		t.Fatal("Unable to make a successful query to the medication strength api: " + err.Error())
 	}
@@ -64,7 +64,7 @@ func TestNewTreatmentSelection(t *testing.T) {
 	ts := httptest.NewServer(newTreatmentHandler)
 	defer ts.Close()
 
-	resp, err := AuthGet(ts.URL+"?drug_internal_name="+url.QueryEscape("Lisinopril (oral - tablet)")+"&medication_strength="+url.QueryEscape("10 mg"), doctor.AccountId.Int64())
+	resp, err := testData.AuthGet(ts.URL+"?drug_internal_name="+url.QueryEscape("Lisinopril (oral - tablet)")+"&medication_strength="+url.QueryEscape("10 mg"), doctor.AccountId.Int64())
 	if err != nil {
 		t.Fatal("Unable to make a successful query to the medication strength api: " + err.Error())
 	}
@@ -89,7 +89,7 @@ func TestNewTreatmentSelection(t *testing.T) {
 	}
 
 	// Let's run a test for an OTC product to ensure that the OTC flag is set as expected
-	resp, err = AuthGet(ts.URL+"?drug_internal_name="+url.QueryEscape("Fish Oil (oral - capsule)")+"&medication_strength="+url.QueryEscape("500 mg"), doctor.AccountId.Int64())
+	resp, err = testData.AuthGet(ts.URL+"?drug_internal_name="+url.QueryEscape("Fish Oil (oral - capsule)")+"&medication_strength="+url.QueryEscape("500 mg"), doctor.AccountId.Int64())
 	if err != nil {
 		t.Fatal("Unable to make a successful query to the medication strength api: " + err.Error())
 	}
@@ -110,7 +110,7 @@ func TestNewTreatmentSelection(t *testing.T) {
 	urlValues := url.Values{}
 	urlValues.Set("drug_internal_name", "Testosterone (buccal - film, extended release)")
 	urlValues.Set("medication_strength", "30 mg/12 hr")
-	resp, err = AuthGet(ts.URL+"?"+urlValues.Encode(), doctor.AccountId.Int64())
+	resp, err = testData.AuthGet(ts.URL+"?"+urlValues.Encode(), doctor.AccountId.Int64())
 	if err != nil {
 		t.Fatal("Unable to make successful call to selected a controlled substance as a medication: " + err.Error())
 	}
@@ -123,7 +123,7 @@ func TestNewTreatmentSelection(t *testing.T) {
 	urlValues = url.Values{}
 	urlValues.Set("drug_internal_name", "Clinimix E Sulfite-Free 2.75% with 10% Dextrose and Electrolytes (intravenous - solution)")
 	urlValues.Set("medication_strength", "Amino Acids 2.75% with 10% Dextrose and Electrolytes (Clinimix E Sulfite-Free)")
-	resp, err = AuthGet(ts.URL+"?"+urlValues.Encode(), doctor.AccountId.Int64())
+	resp, err = testData.AuthGet(ts.URL+"?"+urlValues.Encode(), doctor.AccountId.Int64())
 	if err != nil {
 		t.Fatal("Unable to make successfull call to select a drug whose description is longer than the limit" + err.Error())
 	}
@@ -141,7 +141,7 @@ func TestDispenseUnitIds(t *testing.T) {
 	ts := httptest.NewServer(medicationDispenseUnitsHandler)
 	defer ts.Close()
 
-	resp, err := AuthGet(ts.URL, 0)
+	resp, err := testData.AuthGet(ts.URL, 0)
 	if err != nil {
 		t.Fatal("Unable to make a successful query to the medication dispense units api: " + err.Error())
 	}
@@ -315,7 +315,7 @@ func TestTreatmentTemplates(t *testing.T) {
 		t.Fatal("Unable to marshal request body for adding treatments to patient visit")
 	}
 
-	resp, err := AuthPost(ts.URL, "application/json", bytes.NewBuffer(data), doctor.AccountId.Int64())
+	resp, err := testData.AuthPost(ts.URL, "application/json", bytes.NewBuffer(data), doctor.AccountId.Int64())
 	if err != nil {
 		t.Fatal("Unable to make POST request to add treatments to patient visit " + err.Error())
 	} else if resp.StatusCode != http.StatusOK {
@@ -381,7 +381,7 @@ func TestTreatmentTemplates(t *testing.T) {
 		t.Fatal("Unable to marshal request body for adding treatments to patient visit")
 	}
 
-	resp, err = AuthPost(ts.URL, "application/json", bytes.NewBuffer(data), doctor.AccountId.Int64())
+	resp, err = testData.AuthPost(ts.URL, "application/json", bytes.NewBuffer(data), doctor.AccountId.Int64())
 	if err != nil {
 		t.Fatal("Unable to make POST request to add treatments to patient visit " + err.Error())
 	} else if resp.StatusCode != http.StatusOK {
@@ -408,7 +408,7 @@ func TestTreatmentTemplates(t *testing.T) {
 		t.Fatal("Unable to marshal request body for adding treatments to patient visit")
 	}
 
-	resp, err = AuthDelete(ts.URL, "application/json", bytes.NewBuffer(data), doctor.AccountId.Int64())
+	resp, err = testData.AuthDelete(ts.URL, "application/json", bytes.NewBuffer(data), doctor.AccountId.Int64())
 	if err != nil {
 		t.Fatal("Unable to make POST request to add treatments to patient visit " + err.Error())
 	} else if resp.StatusCode != http.StatusOK {
@@ -481,7 +481,7 @@ func TestTreatmentTemplatesInContextOfPatientVisit(t *testing.T) {
 		t.Fatal("Unable to marshal request body for adding treatments to patient visit")
 	}
 
-	resp, err := AuthPost(ts.URL, "application/json", bytes.NewBuffer(data), doctor.AccountId.Int64())
+	resp, err := testData.AuthPost(ts.URL, "application/json", bytes.NewBuffer(data), doctor.AccountId.Int64())
 	if err != nil {
 		t.Fatal("Unable to make POST request to add treatments to patient visit " + err.Error())
 	}
@@ -555,7 +555,7 @@ func TestTreatmentTemplatesInContextOfPatientVisit(t *testing.T) {
 		t.Fatal("Unable to marshal request body for adding treatments to patient visit")
 	}
 
-	resp2, err := AuthPost(ts.URL, "application/json", bytes.NewBuffer(data), doctor.AccountId.Int64())
+	resp2, err := testData.AuthPost(ts.URL, "application/json", bytes.NewBuffer(data), doctor.AccountId.Int64())
 	if err != nil {
 		t.Fatal("Unable to make POST request to add treatments to patient visit " + err.Error())
 	}
@@ -616,7 +616,7 @@ func TestTreatmentTemplatesInContextOfPatientVisit(t *testing.T) {
 		t.Fatal("Unable to marshal request body for adding treatments to patient visit")
 	}
 
-	resp, err = AuthDelete(ts.URL, "application/json", bytes.NewBuffer(data), doctor.AccountId.Int64())
+	resp, err = testData.AuthDelete(ts.URL, "application/json", bytes.NewBuffer(data), doctor.AccountId.Int64())
 	if err != nil {
 		t.Fatal("Unable to make POST request to add treatments to patient visit " + err.Error())
 	}
@@ -695,7 +695,7 @@ func TestTreatmentTemplateWithDrugOutOfMarket(t *testing.T) {
 		t.Fatal("Unable to marshal request body for adding treatments to patient visit")
 	}
 
-	resp, err := AuthPost(ts.URL, "application/json", bytes.NewBuffer(data), doctor.AccountId.Int64())
+	resp, err := testData.AuthPost(ts.URL, "application/json", bytes.NewBuffer(data), doctor.AccountId.Int64())
 	if err != nil {
 		t.Fatal("Unable to make POST request to add treatments to patient visit " + err.Error())
 	}
@@ -732,7 +732,7 @@ func TestTreatmentTemplateWithDrugOutOfMarket(t *testing.T) {
 		t.Fatal("Unable to marshal request body for adding treatments to patient visit")
 	}
 
-	resp, err = AuthPost(ts.URL, "application/json", bytes.NewBuffer(data), doctor.AccountId.Int64())
+	resp, err = testData.AuthPost(ts.URL, "application/json", bytes.NewBuffer(data), doctor.AccountId.Int64())
 	if err != nil {
 		t.Fatal("Unable to add treatments to patient visit: " + err.Error())
 	}

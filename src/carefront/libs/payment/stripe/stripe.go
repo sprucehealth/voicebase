@@ -57,13 +57,8 @@ func (s *StripeService) CreateCustomerWithDefaultCard(token string) (*payment.Cu
 	params := url.Values{}
 	params.Set("card", token)
 
-	resp, err := s.query("POST", stripeCustomersUrl, params)
-	if err != nil {
-		return nil, err
-	}
-
 	sCustomer := &stripeCustomer{}
-	if err := json.NewDecoder(resp.Body).Decode(sCustomer); err != nil {
+	if err := s.query("POST", stripeCustomersUrl, params, sCustomer); err != nil {
 		return nil, err
 	}
 
@@ -82,13 +77,8 @@ func (s *StripeService) CreateCustomerWithDefaultCard(token string) (*payment.Cu
 }
 
 func (s *StripeService) GetCardsForCustomer(customerId string) ([]*common.Card, error) {
-	resp, err := s.query("GET", fmt.Sprintf("%s/%s/cards", stripeCustomersUrl, customerId), nil)
-	if err != nil {
-		return nil, err
-	}
-
 	sCardData := &stripeCardData{}
-	if err := json.NewDecoder(resp.Body).Decode(sCardData); err != nil {
+	if err := s.query("GET", fmt.Sprintf("%s/%s/cards", stripeCustomersUrl, customerId), nil, sCardData); err != nil {
 		return nil, err
 	}
 
@@ -106,18 +96,13 @@ func (s *StripeService) GetCardsForCustomer(customerId string) ([]*common.Card, 
 	return cards, nil
 }
 
-func (s *StripeService) AddCardForCustomer(cardToken string, customerId string) (*common.Card, error) {
+func (s *StripeService) AddCardForCustomer(cardToken, customerId string) (*common.Card, error) {
 	params := url.Values{}
 	params.Set("card", cardToken)
 
 	customerCardEndpoint := fmt.Sprintf("%s/%s/cards", stripeCustomersUrl, customerId)
-	resp, err := s.query("POST", customerCardEndpoint, params)
-	if err != nil {
-		return nil, err
-	}
-
 	sCard := &stripeCard{}
-	if err := json.NewDecoder(resp.Body).Decode(sCard); err != nil {
+	if err := s.query("POST", customerCardEndpoint, params, sCard); err != nil {
 		return nil, err
 	}
 
@@ -127,25 +112,23 @@ func (s *StripeService) AddCardForCustomer(cardToken string, customerId string) 
 	}, nil
 }
 
-func (s *StripeService) MakeCardDefaultForCustomer(cardId string, customerId string) error {
+func (s *StripeService) MakeCardDefaultForCustomer(cardId, customerId string) error {
 	params := url.Values{}
 	params.Set("default_card", cardId)
 
 	customerUpdateEndpoint := fmt.Sprintf("%s/%s", stripeCustomersUrl, customerId)
-	_, err := s.query("POST", customerUpdateEndpoint, params)
-	return err
+	return s.query("POST", customerUpdateEndpoint, params, nil)
 }
 
 func (s *StripeService) DeleteCardForCustomer(customerId string, cardId string) error {
 	deleteCustomerCardEndpoint := fmt.Sprintf("%s/%s/cards/%s", stripeCustomersUrl, customerId, cardId)
-	_, err := s.query("DELETE", deleteCustomerCardEndpoint, nil)
-	return err
+	return s.query("DELETE", deleteCustomerCardEndpoint, nil, nil)
 }
 
-func (s *StripeService) query(httpVerb string, endPointUrl string, parameters url.Values) (*http.Response, error) {
+func (s *StripeService) query(httpVerb, endPointUrl string, parameters url.Values, res interface{}) error {
 	endPoint, err := url.Parse(endPointUrl)
 	if err != nil {
-		return nil, err
+		return err
 	}
 
 	endPoint.User = url.User(s.SecretKey)
@@ -162,23 +145,27 @@ func (s *StripeService) query(httpVerb string, endPointUrl string, parameters ur
 
 	request, err := http.NewRequest(httpVerb, endPoint.String(), body)
 	if err != nil {
-		return nil, err
+		return err
 	}
 	request.Header.Set("Stripe-Version", apiVersion)
 	request.Header.Set("Content-Type", "application/x-www-form-urlencoded")
 	resp, err := http.DefaultClient.Do(request)
-
 	if err != nil {
-		return nil, err
+		return err
 	}
+	defer resp.Body.Close()
 
 	if resp.StatusCode != http.StatusOK {
 		sError := &StripeError{}
 		if err := json.NewDecoder(resp.Body).Decode(sError); err != nil {
-			return nil, err
+			return err
 		}
-		return nil, sError
+		return sError
+	} else if res != nil {
+		if err := json.NewDecoder(resp.Body).Decode(res); err != nil {
+			return err
+		}
 	}
 
-	return resp, err
+	return nil
 }

@@ -109,8 +109,7 @@ func (mux *AuthServeMux) checkAuth(r *http.Request) (*common.Account, error) {
 			if err != nil {
 				return nil, err
 			}
-			// TODO: maybe should encode the role in the header as well
-			return &common.Account{ID: id, Role: "testing"}, nil
+			return mux.AuthApi.GetAccount(id)
 		}
 	}
 

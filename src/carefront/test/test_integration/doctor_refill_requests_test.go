@@ -37,7 +37,7 @@ func TestNewRefillRequestForExistingPatientAndExistingTreatment(t *testing.T) {
 	// create doctor with clinicianId specicified
 	doctor := createDoctorWithClinicianId(testData, t)
 
-	signedupPatientResponse := SignupRandomTestPatient(t, testData.DataApi, testData.AuthApi)
+	signedupPatientResponse := SignupRandomTestPatient(t, testData)
 	erxPatientId := int64(60)
 
 	// add an erx patient id to the patient
@@ -428,7 +428,7 @@ func TestApproveRefillRequestAndSuccessfulSendToPharmacy(t *testing.T) {
 		t.Fatal("Unable to marshal json object: " + err.Error())
 	}
 
-	resp, err := AuthPut(ts.URL, "application/json", bytes.NewReader(jsonData), doctor.AccountId.Int64())
+	resp, err := testData.AuthPut(ts.URL, "application/json", bytes.NewReader(jsonData), doctor.AccountId.Int64())
 	if err != nil {
 		t.Fatal("Unable to make successful request to approve refill request: " + err.Error())
 	}
@@ -669,7 +669,7 @@ func TestApproveRefillRequestAndErrorSendingToPharmacy(t *testing.T) {
 		t.Fatal("Unable to marshal json object: " + err.Error())
 	}
 
-	resp, err := AuthPut(ts.URL, "application/json", bytes.NewReader(jsonData), doctor.AccountId.Int64())
+	resp, err := testData.AuthPut(ts.URL, "application/json", bytes.NewReader(jsonData), doctor.AccountId.Int64())
 	if err != nil {
 		t.Fatal("Unable to make successful request to approve refill request: " + err.Error())
 	}
@@ -780,7 +780,7 @@ func TestApproveRefillRequestAndErrorSendingToPharmacy(t *testing.T) {
 	params.Set("refill_request_id", fmt.Sprintf("%d", refillRequest.Id))
 
 	errorIgnoreTs := httptest.NewServer(doctorPrescriptionErrorIgnoreHandler)
-	resp, err = AuthPost(errorIgnoreTs.URL, "application/x-www-form-urlencoded", strings.NewReader(params.Encode()), doctor.AccountId.Int64())
+	resp, err = testData.AuthPost(errorIgnoreTs.URL, "application/x-www-form-urlencoded", strings.NewReader(params.Encode()), doctor.AccountId.Int64())
 	if err != nil {
 		t.Fatalf("Unable to resolve refill request transmission error: %+v", err.Error())
 	}
@@ -974,7 +974,7 @@ func TestDenyRefillRequestAndSuccessfulDelete(t *testing.T) {
 		t.Fatal("Unable to marshal json into object: " + err.Error())
 	}
 
-	resp, err := AuthPut(ts.URL, "application/json", bytes.NewReader(jsonData), doctor.AccountId.Int64())
+	resp, err := testData.AuthPut(ts.URL, "application/json", bytes.NewReader(jsonData), doctor.AccountId.Int64())
 	if err != nil {
 		t.Fatal("Unable to make successful request to approve refill request: " + err.Error())
 	}
@@ -1220,7 +1220,7 @@ func TestDenyRefillRequestWithDNTFWithoutTreatment(t *testing.T) {
 		t.Fatal("Unable to marshal json into object: " + err.Error())
 	}
 
-	resp, err := AuthPut(ts.URL, "application/json", bytes.NewReader(jsonData), doctor.AccountId.Int64())
+	resp, err := testData.AuthPut(ts.URL, "application/json", bytes.NewReader(jsonData), doctor.AccountId.Int64())
 	if err != nil {
 		t.Fatal("Unable to make successful request to approve refill request: " + err.Error())
 	}
@@ -1240,7 +1240,7 @@ func TestDenyRefillRequestWithDNTFWithoutTreatment(t *testing.T) {
 
 }
 
-func setUpDeniedRefillRequestWithDNTF(t *testing.T, testData TestData, endErxStatus common.StatusEvent, toAddTemplatedTreatment bool) *common.Treatment {
+func setUpDeniedRefillRequestWithDNTF(t *testing.T, testData *TestData, endErxStatus common.StatusEvent, toAddTemplatedTreatment bool) *common.Treatment {
 
 	// create doctor with clinicianId specicified
 	doctor := createDoctorWithClinicianId(testData, t)
@@ -1321,7 +1321,7 @@ func setUpDeniedRefillRequestWithDNTF(t *testing.T, testData TestData, endErxSta
 			t.Fatal("Unable to marshal request body for adding treatments to patient visit")
 		}
 
-		resp, err := AuthPost(ts.URL, "application/json", bytes.NewBuffer(data), doctor.AccountId.Int64())
+		resp, err := testData.AuthPost(ts.URL, "application/json", bytes.NewBuffer(data), doctor.AccountId.Int64())
 		if err != nil {
 			t.Fatal("Unable to make POST request to add treatments to patient visit " + err.Error())
 		} else if resp.StatusCode != http.StatusOK {
@@ -1474,7 +1474,7 @@ func setUpDeniedRefillRequestWithDNTF(t *testing.T, testData TestData, endErxSta
 		t.Fatal("Unable to marshal json into object: " + err.Error())
 	}
 
-	resp, err := AuthPut(ts.URL, "application/json", bytes.NewReader(jsonData), doctor.AccountId.Int64())
+	resp, err := testData.AuthPut(ts.URL, "application/json", bytes.NewReader(jsonData), doctor.AccountId.Int64())
 	if err != nil {
 		t.Fatal("Unable to make successful request to deny refill request: " + err.Error())
 	}
@@ -1641,7 +1641,7 @@ func TestDenyRefillRequestWithDNTFUnlinkedTreatmentErrorSending(t *testing.T) {
 	ignoreErrorTs := httptest.NewServer(doctorPrescriptionErrorIgnoreHandler)
 	defer ignoreErrorTs.Close()
 
-	resp, err := AuthPost(ignoreErrorTs.URL, "application/x-www-form-urlencoded", strings.NewReader(params.Encode()), unlinkedTreatment.Doctor.AccountId.Int64())
+	resp, err := testData.AuthPost(ignoreErrorTs.URL, "application/x-www-form-urlencoded", strings.NewReader(params.Encode()), unlinkedTreatment.Doctor.AccountId.Int64())
 	if err != nil {
 		t.Fatalf("Unable to successfully resolve error pertaining to unlinked dntf treatment: %+v", err)
 	}
@@ -1667,11 +1667,11 @@ func TestDenyRefillRequestWithDNTFUnlinkedTreatmentErrorSending(t *testing.T) {
 	CheckSuccessfulStatusCode(resp, "Unable to successfully resolve error pertaining to unlinked dntf treatment", t)
 }
 
-func setUpDeniedRefillRequestWithDNTFForLinkedTreatment(t *testing.T, testData TestData, endErxStatus common.StatusEvent, toAddTemplatedTreatment bool) *common.Treatment {
+func setUpDeniedRefillRequestWithDNTFForLinkedTreatment(t *testing.T, testData *TestData, endErxStatus common.StatusEvent, toAddTemplatedTreatment bool) *common.Treatment {
 	// create doctor with clinicianId specicified
 	doctor := createDoctorWithClinicianId(testData, t)
 
-	signedupPatientResponse := SignupRandomTestPatient(t, testData.DataApi, testData.AuthApi)
+	signedupPatientResponse := SignupRandomTestPatient(t, testData)
 	erxPatientId := int64(60)
 
 	// add an erx patient id to the patient
@@ -1746,7 +1746,7 @@ func setUpDeniedRefillRequestWithDNTFForLinkedTreatment(t *testing.T, testData T
 			t.Fatal("Unable to marshal request body for adding treatments to patient visit")
 		}
 
-		resp, err := AuthPost(ts.URL, "application/json", bytes.NewBuffer(data), doctor.AccountId.Int64())
+		resp, err := testData.AuthPost(ts.URL, "application/json", bytes.NewBuffer(data), doctor.AccountId.Int64())
 		if err != nil {
 			t.Fatal("Unable to make POST request to add treatments to patient visit " + err.Error())
 		}
@@ -1946,7 +1946,7 @@ func setUpDeniedRefillRequestWithDNTFForLinkedTreatment(t *testing.T, testData T
 		t.Fatal("Unable to marshal json into object: " + err.Error())
 	}
 
-	resp, err := AuthPut(ts.URL, "application/json", bytes.NewReader(jsonData), doctor.AccountId.Int64())
+	resp, err := testData.AuthPut(ts.URL, "application/json", bytes.NewReader(jsonData), doctor.AccountId.Int64())
 	if err != nil {
 		t.Fatal("Unable to make successful request to deny refill request: " + err.Error())
 	}
@@ -2286,7 +2286,7 @@ func TestCheckingStatusOfMultipleRefillRequestsAtOnce(t *testing.T) {
 		t.Fatalf("Unable to marshal json object: %+v", err)
 	}
 
-	resp, err := AuthPut(ts.URL, "application/json", bytes.NewReader(jsonData), doctor.AccountId.Int64())
+	resp, err := testData.AuthPut(ts.URL, "application/json", bytes.NewReader(jsonData), doctor.AccountId.Int64())
 	if err != nil {
 		t.Fatal("Unable to make successful request to approve refill request: " + err.Error())
 	}
@@ -2354,7 +2354,7 @@ func TestCheckingStatusOfMultipleRefillRequestsAtOnce(t *testing.T) {
 			t.Fatalf("Unable to marshal json object: %+v", err)
 		}
 
-		resp, err = AuthPut(ts.URL, "application/x-www-form-urlencoded", bytes.NewReader(jsonData), doctor.AccountId.Int64())
+		resp, err = testData.AuthPut(ts.URL, "application/x-www-form-urlencoded", bytes.NewReader(jsonData), doctor.AccountId.Int64())
 		if err != nil {
 			t.Fatal("Unable to make successful request to approve refill request: " + err.Error())
 		}
@@ -2422,7 +2422,7 @@ func TestRefillRequestComingFromDifferentPharmacyThanDispensedPrescription(t *te
 	// create doctor with clinicianId specicified
 	doctor := createDoctorWithClinicianId(testData, t)
 
-	signedupPatientResponse := SignupRandomTestPatient(t, testData.DataApi, testData.AuthApi)
+	signedupPatientResponse := SignupRandomTestPatient(t, testData)
 	erxPatientId := int64(60)
 
 	// add an erx patient id to the patient
@@ -2673,7 +2673,7 @@ func TestNewRefillRequestWithUnlinkedTreatmentAndLinkedPatient(t *testing.T) {
 	// create doctor with clinicianId specicified
 	doctor := createDoctorWithClinicianId(testData, t)
 
-	signedupPatientResponse := SignupRandomTestPatient(t, testData.DataApi, testData.AuthApi)
+	signedupPatientResponse := SignupRandomTestPatient(t, testData)
 	erxPatientId := int64(60)
 
 	// add an erx patient id to the patient
@@ -3038,8 +3038,8 @@ func TestNewRefillRequestWithUnlinkedTreatmentAndUnlinkedPatient(t *testing.T) {
 
 }
 
-func createDoctorWithClinicianId(testData TestData, t *testing.T) *common.Doctor {
-	signedupDoctorResponse, _, _ := SignupRandomTestDoctor(t, testData.DataApi, testData.AuthApi)
+func createDoctorWithClinicianId(testData *TestData, t *testing.T) *common.Doctor {
+	signedupDoctorResponse, _, _ := SignupRandomTestDoctor(t, testData)
 	_, err := testData.DB.Exec(`update doctor set clinician_id = ? where id = ?`, clinicianId, signedupDoctorResponse.DoctorId)
 	if err != nil {
 		t.Fatal("Unable to assign a clinicianId to the doctor: " + err.Error())

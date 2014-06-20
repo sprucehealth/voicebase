@@ -194,7 +194,7 @@ const (
 	patientVisitUrl          = "http://127.0.0.1:8080/v1/patient/visit"
 	answerQuestionsUrl       = "http://127.0.0.1:8080/v1/patient/visit/answer"
 	photoIntakeUrl           = "http://127.0.0.1:8080/v1/patient/visit/photo_answer"
-	conversationUrl          = "http://127.0.0.1:8080/v1/patient/conversation"
+	messagesUrl              = "http://127.0.0.1:8080/v1/case/messages"
 	regimenUrl               = "http://127.0.0.1:8080/v1/doctor/visit/regimen"
 	dVisitReviewUrl          = "http://127.0.0.1:8080/v1/doctor/visit/review"
 	dVisitSubmitUrl          = "http://127.0.0.1:8080/v1/doctor/visit/submit"
@@ -536,14 +536,14 @@ func startPatientIntakeSubmission(answersToQuestions []*apiservice.AnswerToQuest
 	}()
 }
 
-func (c *Handler) startSendingMessageToDoctor(token, message string, signal chan int, r *http.Request) {
+func (c *Handler) startSendingMessageToDoctor(token, message string, caseID int64, signal chan int, r *http.Request) {
 	go func() {
-		requestData := &messages.NewConversationRequest{
+		requestData := &messages.PostMessageRequest{
 			Message: message,
-			TopicId: 1,
+			CaseID:  caseID,
 		}
 		jsonData, _ := json.Marshal(requestData)
-		newConversationRequest, err := http.NewRequest("POST", conversationUrl, bytes.NewReader(jsonData))
+		newConversationRequest, err := http.NewRequest("POST", messagesUrl, bytes.NewReader(jsonData))
 		newConversationRequest.Header.Set("Content-Type", "application/json")
 		newConversationRequest.Header.Set("Authorization", "token "+token)
 		newConversationRequest.Host = r.Host

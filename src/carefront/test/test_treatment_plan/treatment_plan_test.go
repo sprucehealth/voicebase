@@ -94,7 +94,7 @@ func TestTreatmentPlanList_DraftTest(t *testing.T) {
 		t.Fatalf(err.Error())
 	}
 
-	signedUpDoctorResponse, _, _ := test_integration.SignupRandomTestDoctor(t, testData.DataApi, testData.AuthApi)
+	signedUpDoctorResponse, _, _ := test_integration.SignupRandomTestDoctor(t, testData)
 
 	doctor2, err := testData.DataApi.GetDoctorFromId(signedUpDoctorResponse.DoctorId)
 	if err != nil {
@@ -158,7 +158,7 @@ func TestTreatmentPlanList_FavTP(t *testing.T) {
 	// it shouldn't be
 	test_integration.SubmitPatientVisitBackToPatient(responseData.TreatmentPlan.Id.Int64(), doctor, testData, t)
 
-	signedUpDoctorResponse, _, _ := test_integration.SignupRandomTestDoctor(t, testData.DataApi, testData.AuthApi)
+	signedUpDoctorResponse, _, _ := test_integration.SignupRandomTestDoctor(t, testData)
 	doctor2, err := testData.DataApi.GetDoctorFromId(signedUpDoctorResponse.DoctorId)
 	if err != nil {
 		t.Fatalf(err.Error())
@@ -224,7 +224,7 @@ func TestTreatmentPlanDelete_ActiveTP(t *testing.T) {
 		TreatmentPlanId: treatmentPlan.Id,
 	})
 
-	res, err := test_integration.AuthDelete(doctorServer.URL, "application/json", bytes.NewReader(jsonData), doctor.AccountId.Int64())
+	res, err := testData.AuthDelete(doctorServer.URL, "application/json", bytes.NewReader(jsonData), doctor.AccountId.Int64())
 	if err != nil {
 		t.Fatal(err)
 	} else if res.StatusCode != http.StatusBadRequest {
@@ -255,7 +255,7 @@ func TestTreatmentPlanDelete_DifferentDoctor(t *testing.T) {
 		t.Fatalf(err.Error())
 	}
 
-	signedUpDoctorResponse, _, _ := test_integration.SignupRandomTestDoctor(t, testData.DataApi, testData.AuthApi)
+	signedUpDoctorResponse, _, _ := test_integration.SignupRandomTestDoctor(t, testData)
 	doctor2, err := testData.DataApi.GetDoctorFromId(signedUpDoctorResponse.DoctorId)
 	if err != nil {
 		t.Fatal(err)
@@ -270,7 +270,7 @@ func TestTreatmentPlanDelete_DifferentDoctor(t *testing.T) {
 		TreatmentPlanId: treatmentPlan.Id,
 	})
 
-	res, err := test_integration.AuthDelete(doctorServer.URL, "application/json", bytes.NewReader(jsonData), doctor2.AccountId.Int64())
+	res, err := testData.AuthDelete(doctorServer.URL, "application/json", bytes.NewReader(jsonData), doctor2.AccountId.Int64())
 	if err != nil {
 		t.Fatal(err)
 	} else if res.StatusCode != http.StatusBadRequest {
