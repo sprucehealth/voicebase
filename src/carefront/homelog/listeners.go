@@ -49,7 +49,7 @@ func InitListeners(dataAPI api.DataAPI, notificationManager *notify.Notification
 		return nil
 	})
 
-	dispatch.Default.Subscribe(func(ev *doctor_treatment_plan.TreatmentPlanCreatedEvent) error {
+	dispatch.Default.Subscribe(func(ev *doctor_treatment_plan.TreatmentPlanActivatedEvent) error {
 		doctor, err := dataAPI.GetDoctorFromId(ev.DoctorId)
 		if err != nil {
 			return err

@@ -26,7 +26,7 @@ type AdviceAddedEvent struct {
 	Advice          *common.Advice
 }
 
-type TreatmentPlanCreatedEvent struct {
+type TreatmentPlanActivatedEvent struct {
 	PatientId       int64
 	DoctorId        int64
 	VisitId         int64

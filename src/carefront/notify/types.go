@@ -64,11 +64,11 @@ func getNotificationViewForEvent(ev interface{}) notificationView {
 
 func init() {
 	eventToNotificationViewMapping = map[reflect.Type]notificationView{
-		reflect.TypeOf(&patient_visit.VisitSubmittedEvent{}):               visitSubmittedNotificationView(0),
-		reflect.TypeOf(&doctor_treatment_plan.TreatmentPlanCreatedEvent{}): treatmentPlanCreatedNotificationView(0),
-		reflect.TypeOf(&messages.PostEvent{}):                              newMessageNotificationView(0),
-		reflect.TypeOf(&app_worker.RefillRequestCreatedEvent{}):            refillRxCreatedNotificationView(0),
-		reflect.TypeOf(&app_worker.RxTransmissionErrorEvent{}):             rxTransmissionErrorNotificationView(0),
+		reflect.TypeOf(&patient_visit.VisitSubmittedEvent{}):                 visitSubmittedNotificationView(0),
+		reflect.TypeOf(&doctor_treatment_plan.TreatmentPlanActivatedEvent{}): treatmentPlanCreatedNotificationView(0),
+		reflect.TypeOf(&messages.PostEvent{}):                                newMessageNotificationView(0),
+		reflect.TypeOf(&app_worker.RefillRequestCreatedEvent{}):              refillRxCreatedNotificationView(0),
+		reflect.TypeOf(&app_worker.RxTransmissionErrorEvent{}):               rxTransmissionErrorNotificationView(0),
 	}
 
 	eventToInternalNotificationMapping = map[reflect.Type]internalNotificationView{

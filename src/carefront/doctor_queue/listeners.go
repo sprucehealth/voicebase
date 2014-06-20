@@ -38,7 +38,7 @@ func InitListeners(dataAPI api.DataAPI, notificationManager *notify.Notification
 		return nil
 	})
 
-	dispatch.Default.Subscribe(func(ev *doctor_treatment_plan.TreatmentPlanCreatedEvent) error {
+	dispatch.Default.Subscribe(func(ev *doctor_treatment_plan.TreatmentPlanActivatedEvent) error {
 		// mark the status on the visit in the doctor's queue to move it to the completed tab
 		// so that the visit is no longer in the hands of the doctor
 		err := dataAPI.MarkGenerationOfTreatmentPlanInVisitQueue(ev.DoctorId,

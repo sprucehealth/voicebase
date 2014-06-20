@@ -212,7 +212,7 @@ func (d *doctorTreatmentPlanHandler) submitTreatmentPlan(w http.ResponseWriter, 
 	}
 
 	// Publish event that treamtent plan was created
-	dispatch.Default.PublishAsync(&TreatmentPlanCreatedEvent{
+	dispatch.Default.Publish(&TreatmentPlanActivatedEvent{
 		PatientId:       treatmentPlan.PatientId,
 		DoctorId:        doctor.DoctorId.Int64(),
 		VisitId:         patientVisitId,

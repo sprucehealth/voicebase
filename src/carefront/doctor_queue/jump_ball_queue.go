@@ -72,7 +72,7 @@ func initJumpBallCaseQueueListeners(dataAPI api.DataAPI) {
 
 	// If the doctor successfully submits a treatment plan for an unclaimed case, the case is then considered
 	// claimed by the doctor and the doctor is assigned to the case and made part of the patient's care team
-	dispatch.Default.Subscribe(func(ev *doctor_treatment_plan.TreatmentPlanCreatedEvent) error {
+	dispatch.Default.Subscribe(func(ev *doctor_treatment_plan.TreatmentPlanActivatedEvent) error {
 		patientCase, err := dataAPI.GetPatientCaseFromTreatmentPlanId(ev.TreatmentPlanId)
 		if err != nil {
 			return err
