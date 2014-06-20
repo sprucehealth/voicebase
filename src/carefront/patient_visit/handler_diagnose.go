@@ -162,7 +162,7 @@ func (d *diagnosePatientHandler) diagnosePatient(w http.ResponseWriter, r *http.
 		return
 	}
 
-	if err := apiservice.EnsurePatientVisitInExpectedStatus(d.dataApi, answerIntakeRequestBody.PatientVisitId, api.CASE_STATUS_REVIEWING); err != nil {
+	if err := apiservice.EnsurePatientVisitInExpectedStatus(d.dataApi, answerIntakeRequestBody.PatientVisitId, common.PVStatusReviewing); err != nil {
 		apiservice.WriteDeveloperError(w, http.StatusBadRequest, err.Error())
 		return
 	}
@@ -203,7 +203,7 @@ func (d *diagnosePatientHandler) diagnosePatient(w http.ResponseWriter, r *http.
 	}
 
 	if unsuitableForSpruceVisit {
-		err = d.dataApi.ClosePatientVisit(answerIntakeRequestBody.PatientVisitId, api.CASE_STATUS_TRIAGED)
+		err = d.dataApi.ClosePatientVisit(answerIntakeRequestBody.PatientVisitId, common.PVStatusTriaged)
 		if err != nil {
 			apiservice.WriteDeveloperError(w, http.StatusInternalServerError, "Unable to update the status of the visit to closed: "+err.Error())
 			return

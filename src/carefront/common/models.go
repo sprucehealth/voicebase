@@ -82,6 +82,15 @@ type Doctor struct {
 	PromptStatus        PushPromptStatus     `json:"prompt_status"`
 }
 
+const (
+	PVStatusOpen      = "OPEN"
+	PVStatusClosed    = "CLOSED"
+	PVStatusSubmitted = "SUBMITTED"
+	PVStatusReviewing = "REVIEWING"
+	PVStatusTriaged   = "TRIAGED"
+	PVStatusTreated   = "TREATED"
+)
+
 type PatientVisit struct {
 	PatientVisitId    encoding.ObjectId `json:"patient_visit_id,omitempty"`
 	PatientCaseId     encoding.ObjectId `json:"patient_case_id"`

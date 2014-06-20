@@ -73,17 +73,7 @@ func (p *doctorPatientVisitReviewHandler) ServeHTTP(w http.ResponseWriter, r *ht
 	}
 
 	// udpate the status of the case and the item in the doctor's queue
-	if patientVisit.Status == api.CASE_STATUS_SUBMITTED {
-		if err := p.DataApi.UpdatePatientVisitStatus(patientVisit.PatientVisitId.Int64(), "", api.CASE_STATUS_REVIEWING); err != nil {
-			apiservice.WriteDeveloperError(w, http.StatusInternalServerError, "Unable to update status of patient visit: "+err.Error())
-			return
-		}
-
-		if err := p.DataApi.MarkPatientVisitAsOngoingInDoctorQueue(doctorId, patientVisit.PatientVisitId.Int64()); err != nil {
-			apiservice.WriteDeveloperError(w, http.StatusInternalServerError, "Unable to update the item in the queue for the doctor that speaks to this patient visit: "+err.Error())
-			return
-		}
-
+	if patientVisit.Status == common.PVStatusSubmitted {
 		dispatch.Default.Publish(&PatientVisitOpenedEvent{
 			PatientVisit: patientVisit,
 			PatientId:    patient.PatientId.Int64(),

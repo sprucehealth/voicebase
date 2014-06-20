@@ -137,7 +137,7 @@ func (d *doctorTreatmentPlanHandler) submitTreatmentPlan(w http.ResponseWriter, 
 		// if the parent of this treatment plan is a patient visit, this means that this is the first
 		// treatment plan. In this case we expect the patient visit to be in the REVIEWING state.
 		patientVisitId = treatmentPlan.Parent.ParentId.Int64()
-		if err := apiservice.EnsurePatientVisitInExpectedStatus(d.dataApi, patientVisitId, api.CASE_STATUS_REVIEWING); err != nil {
+		if err := apiservice.EnsurePatientVisitInExpectedStatus(d.dataApi, patientVisitId, common.PVStatusReviewing); err != nil {
 			apiservice.WriteError(err, w, r)
 			return
 		}

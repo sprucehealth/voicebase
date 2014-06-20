@@ -175,7 +175,7 @@ func (d *DataService) CreateNewPatientVisit(patientId, healthConditionId, layout
 	}
 
 	res, err = tx.Exec(`insert into patient_visit (patient_id, health_condition_id, layout_version_id, patient_case_id, status) 
-								values (?, ?, ?, ?, ?)`, patientId, healthConditionId, layoutVersionId, patientCaseId, CASE_STATUS_OPEN)
+								values (?, ?, ?, ?, ?)`, patientId, healthConditionId, layoutVersionId, patientCaseId, common.PVStatusOpen)
 	if err != nil {
 		tx.Rollback()
 		return 0, err
@@ -453,7 +453,7 @@ func (d *DataService) ActivateTreatmentPlan(treatmentPlanId, doctorId int64) err
 	switch treatmentPlan.Parent.ParentType {
 	case common.TPParentTypePatientVisit:
 		// mark the patient visit as TREATED
-		_, err = tx.Exec(`update patient_visit set status=?, closed_date=now(6) where id = ?`, CASE_STATUS_TREATED, treatmentPlan.Parent.ParentId.Int64())
+		_, err = tx.Exec(`update patient_visit set status=?, closed_date=now(6) where id = ?`, common.PVStatusTreated, treatmentPlan.Parent.ParentId.Int64())
 		if err != nil {
 			tx.Rollback()
 			return err

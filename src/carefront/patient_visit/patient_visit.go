@@ -3,6 +3,7 @@ package patient_visit
 import (
 	"carefront/api"
 	"carefront/apiservice"
+	"carefront/common"
 	"carefront/info_intake"
 	"carefront/libs/dispatch"
 	"net/http"
@@ -79,7 +80,7 @@ func (s *patientVisitHandler) submitPatientVisit(w http.ResponseWriter, r *http.
 	}
 
 	// do not support the submitting of a case that has already been submitted or is in another state
-	if patientVisit.Status != api.CASE_STATUS_OPEN {
+	if patientVisit.Status != common.PVStatusOpen {
 		apiservice.WriteDeveloperError(w, http.StatusBadRequest, "Cannot submit a case that is not in the open state. Current status of case = "+patientVisit.Status)
 		return
 	}

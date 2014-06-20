@@ -188,7 +188,7 @@ func (f *favoriteTreatmentPlanHandler) ServeHTTP(w http.ResponseWriter, r *http.
 	// ********** STEP 5: go ahead and submit this treatment plan to clear this visit out of the doctor's queue **********
 	params := url.Values{}
 	params.Set("patient_visit_id", strconv.FormatInt(patientVisitId, 10))
-	params.Set("status", api.CASE_STATUS_TREATED)
+	params.Set("status", common.PVStatusTreated)
 	submitTPREquest, err := http.NewRequest("POST", dVisitSubmitUrl, strings.NewReader(params.Encode()))
 	if err != nil {
 		apiservice.WriteError(err, w, r)

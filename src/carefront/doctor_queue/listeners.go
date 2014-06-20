@@ -10,6 +10,7 @@ import (
 	"carefront/libs/golog"
 	"carefront/messages"
 	"carefront/notify"
+	"carefront/patient_file"
 	"carefront/patient_visit"
 	"errors"
 )
@@ -26,11 +27,22 @@ func InitListeners(dataAPI api.DataAPI, notificationManager *notify.Notification
 		return nil
 	})
 
+	dispatch.Default.Subscribe(func(ev *patient_file.PatientVisitOpenedEvent) error {
+		if err := dataAPI.UpdatePatientVisitStatus(ev.PatientVisit.PatientVisitId.Int64(), "", common.PVStatusReviewing); err != nil {
+			return err
+		}
+
+		if err := dataAPI.MarkPatientVisitAsOngoingInDoctorQueue(ev.DoctorId, ev.PatientVisit.PatientVisitId.Int64()); err != nil {
+			return err
+		}
+		return nil
+	})
+
 	dispatch.Default.Subscribe(func(ev *doctor_treatment_plan.TreatmentPlanCreatedEvent) error {
 		// mark the status on the visit in the doctor's queue to move it to the completed tab
 		// so that the visit is no longer in the hands of the doctor
 		err := dataAPI.MarkGenerationOfTreatmentPlanInVisitQueue(ev.DoctorId,
-			ev.VisitId, ev.TreatmentPlanId, api.QUEUE_ITEM_STATUS_ONGOING, api.CASE_STATUS_TREATED)
+			ev.VisitId, ev.TreatmentPlanId, api.QUEUE_ITEM_STATUS_ONGOING, api.QUEUE_ITEM_STATUS_COMPLETED)
 		if err != nil {
 			golog.Errorf("Unable to update the status of the patient visit in the doctor queue: " + err.Error())
 			return err
