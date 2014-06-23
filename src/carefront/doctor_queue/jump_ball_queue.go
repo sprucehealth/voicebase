@@ -8,11 +8,13 @@ import (
 	"carefront/libs/golog"
 	"carefront/patient_file"
 	"carefront/patient_visit"
+	"sync"
 	"time"
 )
 
 var (
 	ExpireDuration = 15 * time.Minute
+	claimCaseMutex = sync.Mutex
 )
 
 func initJumpBallCaseQueueListeners(dataAPI api.DataAPI) {
@@ -20,6 +22,11 @@ func initJumpBallCaseQueueListeners(dataAPI api.DataAPI) {
 	// As a result of a doctor opening the patient visit information for an unclaimed patient case,
 	// the doctor claims the case for a short period of time.
 	dispatch.Default.Subscribe(func(ev *patient_file.PatientVisitOpenedEvent) error {
+		// synchronize on the check and claiming of case so that only 1 doctor is able
+		// to claim the case
+		claimCaseMutex.Lock()
+		defer claimCaseMutex.Unlock()
+
 		// check if the visit is unclaimed and if so, claim it by updating the item in the jump ball queue
 		// and temporarily assigning the doctor to the patient
 		patientCase, err := dataAPI.GetPatientCaseFromPatientVisitId(ev.PatientVisit.PatientVisitId.Int64())
