@@ -41,7 +41,8 @@ update treatment_plan
 insert into patient_case_care_provider_assignment (patient_case_id, provider_id, role_type_id, status)
 	select patient_case_id, provider_id, role_type_id, patient_visit_care_provider_assignment.status
 		from patient_visit_care_provider_assignment
-		inner join patient_visit on patient_visit_care_provider_assignment.patient_visit_id = patient_visit.id;
+		inner join patient_visit on patient_visit_care_provider_assignment.patient_visit_id = patient_visit.id
+		where patient_visit_care_provider_assignment.status != "INACTIVE";
 
 
 
