@@ -144,6 +144,68 @@ func TestFavoriteTreatmentPlan(t *testing.T) {
 	CheckSuccessfulStatusCode(resp, "Unable to delete favorite treatment plan", t)
 }
 
+// This test ensures to check that after deleting a FTP, the TP that was created
+// from the FTP has its content source deleted and getting the TP still works
+func TestFavoriteTreatmentPlan_DeletingFavoritedTP(t *testing.T) {
+	testData := SetupIntegrationTest(t)
+	defer TearDownIntegrationTest(t, testData)
+
+	doctorId := GetDoctorIdOfCurrentPrimaryDoctor(testData, t)
+	doctor, err := testData.DataApi.GetDoctorFromId(doctorId)
+	if err != nil {
+		t.Fatalf("Unable to get doctor from id: %s", err)
+	}
+
+	patientVisitResponse, treatmentPlan := SignupAndSubmitPatientVisitForRandomPatient(t, testData, doctor)
+
+	favoriteTreatmentPlan := CreateFavoriteTreatmentPlan(patientVisitResponse.PatientVisitId, treatmentPlan.Id.Int64(), testData, doctor, t)
+
+	// lets start a new TP based on FTP
+	responseData := PickATreatmentPlan(&common.TreatmentPlanParent{
+		ParentType: common.TPParentTypePatientVisit,
+		ParentId:   encoding.NewObjectId(patientVisitResponse.PatientVisitId),
+	}, &common.TreatmentPlanContentSource{
+		ContentSourceType: common.TPContentSourceTypeFTP,
+		ContentSourceId:   favoriteTreatmentPlan.Id,
+	}, doctor, testData, t)
+
+	// ensure that this TP has the FTP as its content source
+	if responseData.TreatmentPlan.ContentSource == nil ||
+		responseData.TreatmentPlan.ContentSource.ContentSourceType != common.TPContentSourceTypeFTP ||
+		responseData.TreatmentPlan.ContentSource.ContentSourceId.Int64() != favoriteTreatmentPlan.Id.Int64() {
+		t.Fatal("Expected the newly created Treatment plan to have the FTP as its source")
+	}
+
+	// now lets go ahead and delete the FTP
+	ts := httptest.NewServer(doctor_treatment_plan.NewDoctorFavoriteTreatmentPlansHandler(testData.DataApi))
+	defer ts.Close()
+
+	params := url.Values{}
+	params.Set("favorite_treatment_plan_id", strconv.FormatInt(favoriteTreatmentPlan.Id.Int64(), 10))
+	resp, err := AuthDelete(ts.URL+"?"+params.Encode(), "application/x-www-form-urlencoded", nil, doctor.AccountId.Int64())
+	if err != nil {
+		t.Fatalf("Unable to delete favorite treatment plan %s", err)
+	}
+
+	// now if we try to get the TP initially created from the FTP, the content source should not exist
+	doctorTreatmentPlanHandler := doctor_treatment_plan.NewDoctorTreatmentPlanHandler(testData.DataApi, nil, nil, false)
+	doctorTPServer := httptest.NewServer(doctorTreatmentPlanHandler)
+	defer doctorTPServer.Close()
+
+	doctorTreatmentPlanResponse := doctor_treatment_plan.DoctorTreatmentPlanResponse{}
+	resp, err = AuthGet(doctorTPServer.URL+"?treatment_plan_id="+strconv.FormatInt(responseData.TreatmentPlan.Id.Int64(), 10), doctor.AccountId.Int64())
+	if err != nil {
+		t.Fatal(err)
+	} else if resp.StatusCode != http.StatusOK {
+		t.Fatalf("Expected status code %d  but got %d", http.StatusOK, resp.StatusCode)
+	} else if err := json.NewDecoder(resp.Body).Decode(&doctorTreatmentPlanResponse); err != nil {
+		t.Fatal(err)
+	} else if doctorTreatmentPlanResponse.TreatmentPlan.ContentSource != nil {
+		t.Fatal("Expected nil content source for treatment plan after deleting FTP from which the TP was started")
+	}
+
+}
+
 func TestFavoriteTreatmentPlan_PickingAFavoriteTreatmentPlan(t *testing.T) {
 	testData := SetupIntegrationTest(t)
 	defer TearDownIntegrationTest(t, testData)
@@ -623,7 +685,6 @@ func TestFavoriteTreatmentPlan_InContextOfTreatmentPlan(t *testing.T) {
 		abbreviatedTreatmentPlan.ContentSource.ContentSourceId.Int64() != responseData.FavoriteTreatmentPlan.Id.Int64() {
 		t.Fatalf("Expected the link between treatmenet plan and favorite treatment plan to exist but it doesnt")
 	}
-
 }
 
 func TestFavoriteTreatmentPlan_InContextOfTreatmentPlan_EmptyRegimenAndAdvice(t *testing.T) {

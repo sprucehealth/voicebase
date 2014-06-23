@@ -145,8 +145,26 @@ func (d *DataService) CreateOrUpdateFavoriteTreatmentPlan(favoriteTreatmentPlan 
 }
 
 func (d *DataService) DeleteFavoriteTreatmentPlan(favoriteTreatmentPlanId int64) error {
-	_, err := d.db.Exec(`delete from dr_favorite_treatment_plan where id=?`, favoriteTreatmentPlanId)
-	return err
+	tx, err := d.db.Begin()
+	if err != nil {
+		return err
+	}
+
+	// delete any content source information for treatment plans that may have selected this treatment plan as its
+	// content source
+	_, err = tx.Exec(`delete from treatment_plan_content_source where content_source_type = ? and content_source_id = ?`, common.TPContentSourceTypeFTP, favoriteTreatmentPlanId)
+	if err != nil {
+		tx.Rollback()
+		return err
+	}
+
+	_, err = tx.Exec(`delete from dr_favorite_treatment_plan where id=?`, favoriteTreatmentPlanId)
+	if err != nil {
+		tx.Rollback()
+		return err
+	}
+
+	return tx.Commit()
 }
 
 func (d *DataService) GetTreatmentsInFavoriteTreatmentPlan(favoriteTreatmentPlanId int64) ([]*common.Treatment, error) {
