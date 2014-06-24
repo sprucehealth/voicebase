@@ -1,6 +1,7 @@
 package doctor_treatment_plan
 
 import (
+	"carefront/accessmgmt"
 	"carefront/api"
 	"carefront/apiservice"
 	"carefront/common"
@@ -71,7 +72,7 @@ func (t *treatmentsHandler) addTreatment(w http.ResponseWriter, r *http.Request)
 		return
 	}
 
-	httpStatusCode, err := apiservice.ValidateDoctorAccessToPatientFile(doctor.DoctorId.Int64(), patientId, t.dataAPI)
+	httpStatusCode, err := accessmgmt.ValidateDoctorAccessToPatientFile(doctor.DoctorId.Int64(), patientId, t.dataAPI)
 	if err != nil {
 		apiservice.WriteError(err, w, r)
 		return

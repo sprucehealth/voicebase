@@ -1,6 +1,7 @@
 package apiservice
 
 import (
+	"carefront/accessmgmt"
 	"carefront/api"
 	"carefront/common"
 	"carefront/libs/dispatch"
@@ -61,7 +62,7 @@ func (d *DoctorPrescriptionErrorIgnoreHandler) ServeHTTP(w http.ResponseWriter, 
 		}
 
 		if !treatment.Patient.IsUnlinked {
-			if httpStatusCode, err := ValidateDoctorAccessToPatientFile(treatment.Doctor.DoctorId.Int64(), treatment.Patient.PatientId.Int64(), d.DataApi); err != nil {
+			if httpStatusCode, err := accessmgmt.ValidateDoctorAccessToPatientFile(treatment.Doctor.DoctorId.Int64(), treatment.Patient.PatientId.Int64(), d.DataApi); err != nil {
 				WriteErrorWithCode(err, httpStatusCode, w, r)
 				return
 			}
@@ -93,7 +94,7 @@ func (d *DoctorPrescriptionErrorIgnoreHandler) ServeHTTP(w http.ResponseWriter, 
 		}
 
 		if !refillRequest.Patient.IsUnlinked {
-			if httpStatusCode, err := ValidateDoctorAccessToPatientFile(refillRequest.Doctor.DoctorId.Int64(), refillRequest.Patient.PatientId.Int64(), d.DataApi); err != nil {
+			if httpStatusCode, err := accessmgmt.ValidateDoctorAccessToPatientFile(refillRequest.Doctor.DoctorId.Int64(), refillRequest.Patient.PatientId.Int64(), d.DataApi); err != nil {
 				WriteErrorWithCode(err, httpStatusCode, w, r)
 				return
 			}

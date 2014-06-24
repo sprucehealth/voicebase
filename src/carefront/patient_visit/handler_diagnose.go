@@ -1,6 +1,7 @@
 package patient_visit
 
 import (
+	"carefront/accessmgmt"
 	"carefront/api"
 	"carefront/apiservice"
 	"carefront/common"
@@ -94,7 +95,7 @@ func (d *diagnosePatientHandler) getDiagnosis(w http.ResponseWriter, r *http.Req
 		return
 	}
 
-	statusCode, err := apiservice.ValidateDoctorAccessToPatientFile(doctorId, patientId, d.dataApi)
+	statusCode, err := accessmgmt.ValidateDoctorAccessToPatientFile(doctorId, patientId, d.dataApi)
 	if err != nil {
 		apiservice.WriteError(err, w, r)
 		return
@@ -156,7 +157,7 @@ func (d *diagnosePatientHandler) diagnosePatient(w http.ResponseWriter, r *http.
 		return
 	}
 
-	httpStatusCode, err := apiservice.ValidateDoctorAccessToPatientFile(doctorId, patientId, d.dataApi)
+	httpStatusCode, err := accessmgmt.ValidateDoctorAccessToPatientFile(doctorId, patientId, d.dataApi)
 	if err != nil {
 		apiservice.WriteError(err, w, r)
 		return

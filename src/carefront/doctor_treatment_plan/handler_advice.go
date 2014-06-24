@@ -1,6 +1,7 @@
 package doctor_treatment_plan
 
 import (
+	"carefront/accessmgmt"
 	"carefront/api"
 	"carefront/apiservice"
 	"carefront/common"
@@ -51,7 +52,7 @@ func (d *adviceHandler) updateAdvicePoints(w http.ResponseWriter, r *http.Reques
 		return
 	}
 
-	statusCode, err := apiservice.ValidateDoctorAccessToPatientFile(doctorId, patientId, d.dataAPI)
+	statusCode, err := accessmgmt.ValidateDoctorAccessToPatientFile(doctorId, patientId, d.dataAPI)
 	if err != nil {
 		apiservice.WriteError(err, w, r)
 		return

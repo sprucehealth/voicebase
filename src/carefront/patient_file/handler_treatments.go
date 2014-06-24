@@ -1,6 +1,7 @@
 package patient_file
 
 import (
+	"carefront/accessmgmt"
 	"carefront/api"
 	"carefront/apiservice"
 	"carefront/common"
@@ -52,7 +53,7 @@ func (d *doctorPatientTreatmentsHandler) ServeHTTP(w http.ResponseWriter, r *htt
 		return
 	}
 
-	httpStatus, err := apiservice.ValidateDoctorAccessToPatientFile(currentDoctor.DoctorId.Int64(), requestData.PatientId, d.DataApi)
+	httpStatus, err := accessmgmt.ValidateDoctorAccessToPatientFile(currentDoctor.DoctorId.Int64(), requestData.PatientId, d.DataApi)
 	if err != nil {
 		apiservice.WriteErrorWithCode(err, httpStatus, w, r)
 		return

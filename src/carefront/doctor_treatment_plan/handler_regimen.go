@@ -1,6 +1,7 @@
 package doctor_treatment_plan
 
 import (
+	"carefront/accessmgmt"
 	"carefront/api"
 	"carefront/apiservice"
 	"carefront/common"
@@ -56,7 +57,7 @@ func (d *regimenHandler) updateRegimenSteps(w http.ResponseWriter, r *http.Reque
 		return
 	}
 
-	statusCode, err := apiservice.ValidateDoctorAccessToPatientFile(doctorId, patientId, d.dataAPI)
+	statusCode, err := accessmgmt.ValidateDoctorAccessToPatientFile(doctorId, patientId, d.dataAPI)
 	if err != nil {
 		apiservice.WriteError(err, w, r)
 		return
