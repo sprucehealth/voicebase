@@ -37,7 +37,13 @@ func (d *DataService) GetPatientCaseFromPatientVisitId(patientVisitId int64) (*c
 							where patient_visit.id = ?`, patientVisitId)
 
 	return getPatientCaseFromRow(row)
+}
 
+func (d *DataService) GetPatientCaseFromId(patientCaseId int64) (*common.PatientCase, error) {
+	row := d.db.QueryRow(`select id, patient_id, health_condition_id, creation_date, status from patient_case
+							where id = ?`, patientCaseId)
+
+	return getPatientCaseFromRow(row)
 }
 
 func getPatientCaseFromRow(row *sql.Row) (*common.PatientCase, error) {

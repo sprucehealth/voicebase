@@ -6,10 +6,10 @@ import (
 	"net/http"
 )
 
-func ValidateDoctorAccessToPatientFile(doctorId, patientId int64, DataApi api.DataAPI) (int, error) {
+func ValidateDoctorAccessToPatientFile(doctorId, patientId int64, dataAPI api.DataAPI) (int, error) {
 	httpStatusCode := http.StatusOK
 
-	careTeam, err := DataApi.GetCareTeamForPatient(patientId)
+	careTeam, err := dataAPI.GetCareTeamForPatient(patientId)
 	if err != nil {
 		httpStatusCode = http.StatusInternalServerError
 		err = errors.New("Unable to get care team for patient visit id " + err.Error())
@@ -39,4 +39,12 @@ func ValidateDoctorAccessToPatientFile(doctorId, patientId int64, DataApi api.Da
 	}
 
 	return http.StatusOK, nil
+}
+
+func ValidateReadAccessToPatientCase(doctorId, patientId, patientCaseId int64, dataAPI api.DataAPI) (int, error) {
+	return 0, nil
+}
+
+func ValidateWriteAccessToPatientCase(doctorId, patientId, patientCaseId int64, dataAPI api.DataAPI) (int, error) {
+	return 0, nil
 }

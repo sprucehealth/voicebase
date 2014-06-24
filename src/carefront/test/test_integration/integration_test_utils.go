@@ -291,11 +291,10 @@ func SetupIntegrationTest(t *testing.T) *TestData {
 
 	dispatch.Default = dispatch.New()
 	notificationManager := notify.NewManager(testData.DataApi, nil, nil, nil, "", "", nil, metrics.NewRegistry())
-	jbcqManager := api.NewJBCQManager(testData.DataApi)
 
 	homelog.InitListeners(testData.DataApi, notificationManager)
 	doctor_treatment_plan.InitListeners(testData.DataApi)
-	doctor_queue.InitListeners(testData.DataApi, notificationManager, jbcqManager)
+	doctor_queue.InitListeners(testData.DataApi, notificationManager)
 	notify.InitListeners(testData.DataApi)
 
 	return testData

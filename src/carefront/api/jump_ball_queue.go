@@ -12,7 +12,7 @@ func (j JBCQItemClaimForbidden) Error() string {
 	return string(j)
 }
 
-func (d *DataService) temporarilyClaimCaseAndAssignDoctorToCaseAndPatient(doctorId, patientCaseId, patientId, itemId int64, eventType string, duration time.Duration) error {
+func (d *DataService) TemporarilyClaimCaseAndAssignDoctorToCaseAndPatient(doctorId, patientCaseId, patientId, itemId int64, eventType string, duration time.Duration) error {
 	tx, err := d.db.Begin()
 	if err != nil {
 		return nil
@@ -50,7 +50,7 @@ func (d *DataService) temporarilyClaimCaseAndAssignDoctorToCaseAndPatient(doctor
 	return tx.Commit()
 }
 
-func (d *DataService) extendClaimForDoctor(doctorId, itemId int64, eventType string, duration time.Duration) error {
+func (d *DataService) ExtendClaimForDoctor(doctorId, itemId int64, eventType string, duration time.Duration) error {
 	// ensure that the current doctor is the one holding on to the lock in the queue
 	var currentLockHolder int64
 	if err := d.db.QueryRow(`select doctor_id from unclaimed_item_queue where item_id = ? and event_type = ? and locked = ?`, itemId, eventType, true).Scan(&currentLockHolder); err == sql.ErrNoRows {
@@ -70,7 +70,7 @@ func (d *DataService) extendClaimForDoctor(doctorId, itemId int64, eventType str
 	return err
 }
 
-func (d *DataService) permanentlyAssignDoctorToCaseAndPatient(doctorId, patientCaseId, patientId, itemId int64, eventType string) error {
+func (d *DataService) PermanentlyAssignDoctorToCaseAndPatient(doctorId, patientCaseId, patientId, itemId int64, eventType string) error {
 	tx, err := d.db.Begin()
 	if err != nil {
 		tx.Rollback()

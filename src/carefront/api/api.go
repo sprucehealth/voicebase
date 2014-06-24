@@ -92,13 +92,14 @@ type PatientCaseAPI interface {
 	GetDoctorsAssignedToPatientCase(patientCaseId int64) ([]*common.CareProviderAssignment, error)
 	GetPatientCaseFromPatientVisitId(patientVisitId int64) (*common.PatientCase, error)
 	GetPatientCaseFromTreatmentPlanId(treatmentPlanId int64) (*common.PatientCase, error)
+	GetPatientCaseFromId(patientCaseId int64) (*common.PatientCase, error)
 	GetCareProvidingStateId(stateAbbreviation string, healthConditionId int64) (int64, error)
 }
 
 type JumpBallQueueAPI interface {
-	temporarilyClaimCaseAndAssignDoctorToCaseAndPatient(doctorId, patientCaseId, patientId, itemId int64, eventType string, duration time.Duration) error
-	permanentlyAssignDoctorToCaseAndPatient(doctorId, patientCaseId, patientId, itemId int64, eventType string) error
-	extendClaimForDoctor(doctorId, itemId int64, eventType string, duration time.Duration) error
+	TemporarilyClaimCaseAndAssignDoctorToCaseAndPatient(doctorId, patientCaseId, patientId, itemId int64, eventType string, duration time.Duration) error
+	PermanentlyAssignDoctorToCaseAndPatient(doctorId, patientCaseId, patientId, itemId int64, eventType string) error
+	ExtendClaimForDoctor(doctorId, itemId int64, eventType string, duration time.Duration) error
 }
 
 type PatientVisitAPI interface {
