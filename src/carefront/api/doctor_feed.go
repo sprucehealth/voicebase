@@ -197,37 +197,32 @@ func (d *DoctorQueueItem) GetDisplayTypes() []string {
 func (d *DoctorQueueItem) ActionUrl(dataApi DataAPI) (*app_url.SpruceAction, error) {
 	switch d.EventType {
 	case DQEventTypePatientVisit:
-		patientId, err := dataApi.GetPatientIdFromPatientVisitId(d.ItemId)
+		patientVisit, err := dataApi.GetPatientVisitFromId(d.ItemId)
 		if err != nil {
-			golog.Errorf("Unable to get patient id from patient visit id: %s", err)
-			return nil, nil
+			golog.Errorf("Unable to get patient visit based on id: %s", err)
+			return nil, err
 		}
+
 		switch d.Status {
 		case DQItemStatusTreated, DQItemStatusTriaged:
-			return app_url.ViewCompletedPatientVisitAction(patientId, d.ItemId), nil
+			return app_url.ViewCompletedPatientVisitAction(patientVisit.PatientId.Int64(), d.ItemId, patientVisit.PatientCaseId.Int64()), nil
 		case DQItemStatusOngoing, DQItemStatusPending:
-			return app_url.BeginPatientVisitReviewAction(patientId, d.ItemId), nil
+			return app_url.BeginPatientVisitReviewAction(patientVisit.PatientId.Int64(), d.ItemId, patientVisit.PatientCaseId.Int64()), nil
 		}
 	case DQEventTypeTreatmentPlan:
 
 		switch d.Status {
 		case DQItemStatusTreated, DQItemStatusTriaged:
-			patientVisitId, err := dataApi.GetPatientVisitIdFromTreatmentPlanId(d.ItemId)
+			patientVisit, err := dataApi.GetPatientVisitFromTreatmentPlanId(d.ItemId)
 
 			if err == NoRowsError {
-				golog.Errorf("Unable to get patient visit id from treatment plan id %d", d.ItemId)
+				golog.Errorf("Unable to get patient visit  from treatment plan id %d", d.ItemId)
 				return nil, nil
 			} else if err != nil {
 				return nil, err
 			}
 
-			patientId, err := dataApi.GetPatientIdFromPatientVisitId(patientVisitId)
-			if err != nil {
-				golog.Errorf("Unable to get patient id from patient visit id: %s", err)
-				return nil, nil
-			}
-
-			return app_url.ViewCompletedPatientVisitAction(patientId, patientVisitId), nil
+			return app_url.ViewCompletedPatientVisitAction(patientVisit.PatientId.Int64(), patientVisit.PatientVisitId.Int64(), patientVisit.PatientCaseId.Int64()), nil
 		}
 	case DQEventTypeRefillTransmissionError:
 		patient, err := dataApi.GetPatientFromRefillRequestId(d.ItemId)

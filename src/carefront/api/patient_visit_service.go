@@ -117,11 +117,24 @@ func (d *DataService) GetLatestClosedPatientVisitForPatient(patientId int64) (*c
 }
 
 func (d *DataService) GetPatientVisitFromId(patientVisitId int64) (*common.PatientVisit, error) {
-	patientVisit := common.PatientVisit{PatientVisitId: encoding.NewObjectId(patientVisitId)}
+	row := d.db.QueryRow(`select id, patient_id, patient_case_id, health_condition_id, layout_version_id, 
+		creation_date, submitted_date, closed_date, status from patient_visit where id = ?`, patientVisitId)
+	return getPatientVisitFromRow(row)
+}
+
+func (d *DataService) GetPatientVisitFromTreatmentPlanId(treatmentPlanId int64) (*common.PatientVisit, error) {
+	row := d.db.QueryRow(`select patient_visit.id, patient_visit.patient_id, patient_visit.patient_case_id, patient_visit.health_condition_id, patient_visit.layout_version_id, 
+		patient_visit.creation_date, patient_visit.submitted_date, patient_visit.closed_date, patient_visit.status from patient_visit 
+			inner join treatment_plan_patient_visit_mapping on treatment_plan_patient_visit_mapping.patient_visit_id = patient_visit.id
+			where treatment_plan_id = ?`, treatmentPlanId)
+	return getPatientVisitFromRow(row)
+}
+
+func getPatientVisitFromRow(row *sql.Row) (*common.PatientVisit, error) {
+	patientVisit := common.PatientVisit{}
 	var creationDateBytes, submittedDateBytes, closedDateBytes mysql.NullTime
-	err := d.db.QueryRow(`select patient_id, patient_case_id, health_condition_id, layout_version_id, 
-		creation_date, submitted_date, closed_date, status from patient_visit where id = ?`, patientVisitId,
-	).Scan(
+	err := row.Scan(
+		&patientVisit.PatientVisitId,
 		&patientVisit.PatientId,
 		&patientVisit.PatientCaseId,
 		&patientVisit.HealthConditionId,
@@ -129,17 +142,9 @@ func (d *DataService) GetPatientVisitFromId(patientVisitId int64) (*common.Patie
 	if err != nil {
 		return nil, err
 	}
-
-	if creationDateBytes.Valid {
-		patientVisit.CreationDate = creationDateBytes.Time
-	}
-	if submittedDateBytes.Valid {
-		patientVisit.SubmittedDate = submittedDateBytes.Time
-	}
-	if closedDateBytes.Valid {
-		patientVisit.ClosedDate = closedDateBytes.Time
-	}
-
+	patientVisit.CreationDate = creationDateBytes.Time
+	patientVisit.SubmittedDate = submittedDateBytes.Time
+	patientVisit.ClosedDate = closedDateBytes.Time
 	return &patientVisit, err
 }
 

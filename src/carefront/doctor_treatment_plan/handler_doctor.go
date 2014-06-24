@@ -248,7 +248,7 @@ func (d *doctorTreatmentPlanHandler) getTreatmentPlan(w http.ResponseWriter, r *
 		return
 	}
 
-	if err := apiservice.ValidateReadAccessToPatientCase(doctorId, patientId, drTreatmentPlan.PatientCaseId.Int64(), d.dataApi, r); err != nil {
+	if err := apiservice.ValidateReadAccessToPatientCase(doctorId, drTreatmentPlan.PatientId, drTreatmentPlan.PatientCaseId.Int64(), d.dataApi, r); err != nil {
 		apiservice.WriteError(err, w, r)
 		return
 	}

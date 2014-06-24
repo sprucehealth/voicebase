@@ -35,7 +35,7 @@ func ValidateDoctorAccessToPatientFile(doctorId, patientId int64, dataAPI api.Da
 
 // apiservice.ValidateReadAccessToPatientCase checks to ensure that the doctor has read access to the patient case. A doctor
 // has read access so long as the case is not temporarily claimed by another doctor for exclusive access
-func apiservice.ValidateReadAccessToPatientCase(doctorId, patientId, patientCaseId int64, dataAPI api.DataAPI, r *http.Request) error {
+func ValidateReadAccessToPatientCase(doctorId, patientId, patientCaseId int64, dataAPI api.DataAPI, r *http.Request) error {
 	patientCase, err := dataAPI.GetPatientCaseFromId(patientCaseId)
 	if err != nil {
 		return err
