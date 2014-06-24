@@ -102,7 +102,7 @@ func (h *handler) ServeHTTP(w http.ResponseWriter, r *http.Request) {
 					return
 				}
 				if tp.PatientCaseId.Int64() != req.CaseID {
-					apiservice.WriteDeveloperError(w, http.StatusBadRequest, "Treatment plan does not belong to the case")
+					apiservice.WriteValidationError("Treatment plan does not belong to the case", w, r)
 					return
 				}
 			case common.AttachmentTypePhoto:
@@ -113,7 +113,7 @@ func (h *handler) ServeHTTP(w http.ResponseWriter, r *http.Request) {
 					return
 				}
 				if photo.UploaderId != personID || photo.ClaimerType != "" {
-					apiservice.WriteDeveloperError(w, http.StatusBadRequest, "Invalid attachment")
+					apiservice.WriteValidationError("Invalid attachment", w, r)
 					return
 				}
 			}

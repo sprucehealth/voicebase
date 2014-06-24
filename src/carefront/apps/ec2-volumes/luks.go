@@ -1,6 +1,11 @@
 package main
 
 import (
+	"carefront/libs/cmd"
+	"carefront/libs/cmd/cryptsetup"
+	"carefront/libs/cmd/lvm"
+	"carefront/libs/cmd/mount"
+	"carefront/libs/cmd/xfs"
 	"flag"
 	"fmt"
 	"io/ioutil"
@@ -8,11 +13,6 @@ import (
 	"os"
 	"sort"
 	"strconv"
-	"carefront/libs/cmd"
-	"carefront/libs/cmd/cryptsetup"
-	"carefront/libs/cmd/lvm"
-	"carefront/libs/cmd/mount"
-	"carefront/libs/cmd/xfs"
 )
 
 func luksMount() error {
