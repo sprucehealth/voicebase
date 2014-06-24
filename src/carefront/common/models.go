@@ -92,7 +92,7 @@ const (
 
 type PatientVisit struct {
 	PatientVisitId    encoding.ObjectId `json:"patient_visit_id,omitempty"`
-	PatientCaseId     encoding.ObjectId `json:"patient_case_id"`
+	PatientCaseId     encoding.ObjectId `json:"case_id"`
 	PatientId         encoding.ObjectId `json:"patient_id,omitempty"`
 	CreationDate      time.Time         `json:"creation_date,omitempty"`
 	SubmittedDate     time.Time         `json:"submitted_date,omitempty"`
@@ -109,7 +109,7 @@ const (
 )
 
 type PatientCase struct {
-	Id                encoding.ObjectId `json:"patient_case_id"`
+	Id                encoding.ObjectId `json:"case_id"`
 	PatientId         encoding.ObjectId `json:"patient_id"`
 	HealthConditionId encoding.ObjectId `json:"health_condition_id"`
 	CreationDate      time.Time         `json:"creation_date"`
@@ -140,7 +140,7 @@ type PatientCareTeam struct {
 
 type TreatmentPlan struct {
 	Id            encoding.ObjectId `json:"treatment_plan_id,omitempty"`
-	PatientCaseId encoding.ObjectId `json:"patient_case_id"`
+	PatientCaseId encoding.ObjectId `json:"case_id"`
 	PatientId     encoding.ObjectId `json:"patient_id,omitempty"`
 	PatientInfo   *Patient          `json:"patient,omitempty"`
 	Status        string            `json:"status,omitempty"`
@@ -545,12 +545,4 @@ type ResourceGuide struct {
 type Account struct {
 	ID   int64
 	Role string
-}
-
-type PatientCase struct {
-	Id                int64
-	PatientId         int64
-	HealthConditionId int64
-	Status            string
-	CreationDate      time.Time
 }

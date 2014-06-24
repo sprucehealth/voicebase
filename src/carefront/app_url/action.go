@@ -64,7 +64,7 @@ func BeginPatientVisitReviewAction(patientId, patientVisitId, patientCaseId int6
 	params := url.Values{}
 	params.Set("patient_visit_id", strconv.FormatInt(patientVisitId, 10))
 	params.Set("patient_id", strconv.FormatInt(patientId, 10))
-	params.Set("patient_case_id", strconv.FormatInt(patientCaseId, 10))
+	params.Set("case_id", strconv.FormatInt(patientCaseId, 10))
 	return &SpruceAction{
 		name:   "begin_patient_visit",
 		params: params,
@@ -75,7 +75,7 @@ func ViewCompletedPatientVisitAction(patientId, patientVisitId, patientCaseId in
 	params := url.Values{}
 	params.Set("patient_visit_id", strconv.FormatInt(patientVisitId, 10))
 	params.Set("patient_id", strconv.FormatInt(patientId, 10))
-	params.Set("patient_case_id", strconv.FormatInt(patientCaseId, 10))
+	params.Set("case_id", strconv.FormatInt(patientCaseId, 10))
 	return &SpruceAction{
 		name:   "view_completed_patient_visit",
 		params: params,
