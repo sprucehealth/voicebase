@@ -24,7 +24,6 @@ const (
 	STATUS_COMMITTED                   = "COMMITTED"
 	STATUS_DRAFT                       = "DRAFT"
 	STATUS_TEMP                        = "TEMP"
-	STATUS_TEMP_INACTIVE               = "TEMP_INACTIVE"
 	ERX_STATUS_SENDING                 = "Sending"
 	ERX_STATUS_SENT                    = "eRxSent"
 	ERX_STATUS_ERROR                   = "Error"

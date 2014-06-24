@@ -259,15 +259,15 @@ func (d *DataService) RevokeDoctorAccessToCase(patientCaseId, doctorId int64) er
 		return err
 	}
 
-	// revoke doctor access to patient case (transition from TEMP -> TEMP_INACTIVE)
-	_, err = tx.Exec(`update patient_care_provider_assignment set status = ?, expires = NULL where provider_id = ? and role_type_id = ? and status = ?`, STATUS_TEMP_INACTIVE, doctorId, d.roleTypeMapping[DOCTOR_ROLE], STATUS_TEMP)
+	// revoke doctor access to patient case
+	_, err = tx.Exec(`delete from patient_care_provider_assignment where provider_id = ? and role_type_id = ? and status = ?`, doctorId, d.roleTypeMapping[DOCTOR_ROLE], STATUS_TEMP)
 	if err != nil {
 		tx.Rollback()
 		return err
 	}
 
 	// revoke doctor access to patient file
-	_, err = tx.Exec(`update patient_case_care_provider_assignment set status = ?, expires = NULL where provider_id = ? and role_type_id = ? and status = ?`, STATUS_TEMP_INACTIVE, doctorId, d.roleTypeMapping[DOCTOR_ROLE], STATUS_TEMP)
+	_, err = tx.Exec(`delete from patient_case_care_provider_assignment where provider_id = ? and role_type_id = ? and status = ?`, doctorId, d.roleTypeMapping[DOCTOR_ROLE], STATUS_TEMP)
 	if err != nil {
 		tx.Rollback()
 		return err

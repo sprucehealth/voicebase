@@ -89,10 +89,6 @@ func ValidateWriteAccessToPatientCase(doctorId, patientId, patientCaseId int64, 
 				assignment.Expires != nil && !assignment.Expires.Before(time.Now()) {
 				return nil
 			}
-		case api.STATUS_TEMP_INACTIVE:
-			if assignment.ProviderRole == api.DOCTOR_ROLE && assignment.ProviderId == doctorId {
-				return NewJBCQForbiddenAccessError(r)
-			}
 		}
 	}
 
@@ -100,7 +96,10 @@ func ValidateWriteAccessToPatientCase(doctorId, patientId, patientCaseId int64, 
 	patientCase, err := dataAPI.GetPatientCaseFromId(patientCaseId)
 	if err != nil {
 		return err
-	} else if patientCase.Status == common.PCStatusTempClaimed {
+	}
+
+	switch patientCase.Status {
+	case common.PCStatusUnclaimed, common.PCStatusTempClaimed:
 		return NewJBCQForbiddenAccessError(r)
 	}
 
