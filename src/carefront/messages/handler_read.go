@@ -22,7 +22,7 @@ func (h *readHandler) ServeHTTP(w http.ResponseWriter, r *http.Request) {
 		return
 	}
 
-	caseID, err := strconv.ParseInt(r.FormValue("case_id"), 10, 46)
+	caseID, err := strconv.ParseInt(r.FormValue("case_id"), 10, 64)
 	if err != nil {
 		http.NotFound(w, r)
 		return
