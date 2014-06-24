@@ -1,7 +1,6 @@
 package doctor_treatment_plan
 
 import (
-	"carefront/accessmgmt"
 	"carefront/api"
 	"carefront/apiservice"
 	"carefront/common"
@@ -166,9 +165,8 @@ func (d *doctorTreatmentPlanHandler) submitTreatmentPlan(w http.ResponseWriter, 
 	}
 
 	// Ensure that doctor is authorized to work on the case
-	httpStatus, err := accessmgmt.ValidateDoctorAccessToPatientFile(doctor.DoctorId.Int64(), treatmentPlan.PatientId, d.dataApi)
-	if err != nil {
-		apiservice.WriteDeveloperError(w, httpStatus, err.Error())
+	if err := apiservice.ValidateWriteAccessToPatientCase(doctor.DoctorId.Int64(), treatmentPlan.PatientId, treatmentPlan.PatientCaseId.Int64(), d.dataApi, r); err != nil {
+		apiservice.WriteError(err, w, r)
 		return
 	}
 
@@ -250,6 +248,11 @@ func (d *doctorTreatmentPlanHandler) getTreatmentPlan(w http.ResponseWriter, r *
 		return
 	}
 
+	if err := apiservice.ValidateReadAccessToPatientCase(doctorId, patientId, drTreatmentPlan.PatientCaseId.Int64(), d.dataApi, r); err != nil {
+		apiservice.WriteError(err, w, r)
+		return
+	}
+
 	// if we are dealing with a draft, and the owner of the treatment plan does not match the doctor requesting it,
 	// return an error because this should never be the case
 	if drTreatmentPlan.Status == api.STATUS_DRAFT && drTreatmentPlan.DoctorId.Int64() != doctorId {
@@ -316,14 +319,19 @@ func (d *doctorTreatmentPlanHandler) pickATreatmentPlan(w http.ResponseWriter, r
 		}
 	}
 
+	patientCase, err := d.dataApi.GetPatientCaseFromPatientVisitId(patientVisitId)
+	if err != nil {
+		apiservice.WriteError(err, w, r)
+		return
+	}
+
 	patientId, err := d.dataApi.GetPatientIdFromPatientVisitId(patientVisitId)
 	if err != nil {
 		apiservice.WriteError(err, w, r)
 		return
 	}
 
-	statusCode, err := accessmgmt.ValidateDoctorAccessToPatientFile(doctorId, patientId, d.dataApi)
-	if err != nil {
+	if err := apiservice.ValidateWriteAccessToPatientCase(doctorId, patientId, patientCase.Id.Int64(), d.dataApi, r); err != nil {
 		apiservice.WriteError(err, w, r)
 		return
 	}

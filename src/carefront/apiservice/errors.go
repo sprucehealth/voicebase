@@ -28,6 +28,23 @@ func NewValidationError(msg string, r *http.Request) *spruceError {
 	}
 }
 
+func NewJBCQForbiddenAccessError(r *http.Request) *spruceError {
+	return &spruceError{
+		UserError:          "Doctor cannot access case because someone else is accessing it.",
+		DeveloperErrorCode: DEVELOPER_JBCQ_FORBIDDEN,
+		HTTPStatusCode:     http.StatusForbidden,
+		RequestID:          GetContext(r).RequestID,
+	}
+}
+
+func NewAccessForbiddenError(r *http.Request) *spruceError {
+	return &spruceError{
+		UserError:      "Access not permitted for information",
+		HTTPStatusCode: http.StatusForbidden,
+		RequestID:      GetContext(r).RequestID,
+	}
+}
+
 func wrapInternalError(err error, code int, r *http.Request) *spruceError {
 	return &spruceError{
 		DeveloperError: err.Error(),
@@ -62,15 +79,6 @@ func WriteError(err error, w http.ResponseWriter, r *http.Request) {
 	default:
 		writeSpruceError(wrapInternalError(err, http.StatusInternalServerError, r), w, r)
 	}
-}
-
-func WriteErrorWithCode(err error, httpStatusCode int, w http.ResponseWriter, r *http.Request) {
-	writeSpruceError(spruceError{
-		RequestID:      GetContext(r).RequestID,
-		HTTPStatusCode: httpStatusCode,
-		DeveloperError: err.Error(),
-		UserError:      genericUserErrorMessage,
-	}, w, r)
 }
 
 func WriteValidationError(msg string, w http.ResponseWriter, r *http.Request) {

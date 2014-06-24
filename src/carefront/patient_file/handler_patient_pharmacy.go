@@ -1,7 +1,6 @@
 package patient_file
 
 import (
-	"carefront/accessmgmt"
 	"carefront/api"
 	"carefront/apiservice"
 	"carefront/encoding"
@@ -47,8 +46,8 @@ func (d *doctorUpdatePatientPharmacyHandler) ServeHTTP(w http.ResponseWriter, r 
 		apiservice.WriteError(err, w, r)
 		return
 	}
-	if httpStatusCode, err := accessmgmt.ValidateDoctorAccessToPatientFile(doctor.DoctorId.Int64(), patient.PatientId.Int64(), d.dataAPI); err != nil {
-		apiservice.WriteErrorWithCode(err, httpStatusCode, w, r)
+	if err := apiservice.ValidateDoctorAccessToPatientFile(doctor.DoctorId.Int64(), patient.PatientId.Int64(), d.dataAPI, r); err != nil {
+		apiservice.WriteError(err, w, r)
 		return
 	}
 

@@ -1,7 +1,6 @@
 package patient_visit
 
 import (
-	"carefront/accessmgmt"
 	"carefront/api"
 	"carefront/apiservice"
 	"carefront/common"
@@ -83,7 +82,7 @@ func (d *diagnosePatientHandler) getDiagnosis(w http.ResponseWriter, r *http.Req
 		return
 	}
 
-	patientId, err := d.dataApi.GetPatientIdFromPatientVisitId(requestData.PatientVisitId)
+	patientVisit, err := d.dataApi.GetPatientVisitFromId(requestData.PatientVisitId)
 	if err != nil {
 		apiservice.WriteError(err, w, r)
 		return
@@ -95,8 +94,7 @@ func (d *diagnosePatientHandler) getDiagnosis(w http.ResponseWriter, r *http.Req
 		return
 	}
 
-	statusCode, err := accessmgmt.ValidateDoctorAccessToPatientFile(doctorId, patientId, d.dataApi)
-	if err != nil {
+	if err := apiservice.ValidateReadAccessToPatientCase(doctorId, patientVisit.PatientId.Int64(), patientVisit.PatientCaseId.Int64(), d.dataApi, r); err != nil {
 		apiservice.WriteError(err, w, r)
 		return
 	}
@@ -145,7 +143,7 @@ func (d *diagnosePatientHandler) diagnosePatient(w http.ResponseWriter, r *http.
 		return
 	}
 
-	patientId, err := d.dataApi.GetPatientIdFromPatientVisitId(answerIntakeRequestBody.PatientVisitId)
+	patientVisit, err := d.dataApi.GetPatientVisitFromId(answerIntakeRequestBody.PatientVisitId)
 	if err != nil {
 		apiservice.WriteError(err, w, r)
 		return
@@ -157,8 +155,7 @@ func (d *diagnosePatientHandler) diagnosePatient(w http.ResponseWriter, r *http.
 		return
 	}
 
-	httpStatusCode, err := accessmgmt.ValidateDoctorAccessToPatientFile(doctorId, patientId, d.dataApi)
-	if err != nil {
+	if err := apiservice.ValidateWriteAccessToPatientCase(doctorId, patientVisit.PatientId.Int64(), patientVisit.PatientCaseId.Int64(), d.dataApi, r); err != nil {
 		apiservice.WriteError(err, w, r)
 		return
 	}

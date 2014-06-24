@@ -1,7 +1,6 @@
 package patient_file
 
 import (
-	"carefront/accessmgmt"
 	"carefront/api"
 	"carefront/apiservice"
 	"carefront/common"
@@ -83,9 +82,8 @@ func (p *doctorPatientVisitReviewHandler) ServeHTTP(w http.ResponseWriter, r *ht
 	}
 
 	// ensure that the doctor is authorized to work on this case
-	statusCode, err := accessmgmt.ValidateDoctorAccessToPatientFile(doctorId, patientVisit.PatientId.Int64(), p.DataApi)
-	if err != nil {
-		apiservice.WriteDeveloperError(w, statusCode, err.Error())
+	if err := apiservice.ValidateReadAccessToPatientCase(doctorId, patientVisit.PatientId.Int64(), patientVisit.PatientCaseId.Int64(), p.DataApi, r); err != nil {
+		apiservice.WriteError(err, w, r)
 		return
 	}
 

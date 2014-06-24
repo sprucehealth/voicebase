@@ -1,7 +1,6 @@
 package patient_file
 
 import (
-	"carefront/accessmgmt"
 	"carefront/address"
 	"carefront/api"
 	"carefront/apiservice"
@@ -78,8 +77,8 @@ func (d *doctorPatientHandler) getPatientInformation(w http.ResponseWriter, r *h
 	}
 
 	if !patient.IsUnlinked {
-		if httpStatusCode, err := accessmgmt.ValidateDoctorAccessToPatientFile(currentDoctor.DoctorId.Int64(), patient.PatientId.Int64(), d.DataApi); err != nil {
-			apiservice.WriteErrorWithCode(err, httpStatusCode, w, r)
+		if err := apiservice.ValidateDoctorAccessToPatientFile(currentDoctor.DoctorId.Int64(), patient.PatientId.Int64(), d.DataApi, r); err != nil {
+			apiservice.WriteError(err, w, r)
 			return
 		}
 	}
@@ -132,8 +131,8 @@ func (d *doctorPatientHandler) updatePatientInformation(w http.ResponseWriter, r
 	}
 
 	if !existingPatientInfo.IsUnlinked {
-		if httpStatusCode, err := accessmgmt.ValidateDoctorAccessToPatientFile(currentDoctor.DoctorId.Int64(), requestData.Patient.PatientId.Int64(), d.DataApi); err != nil {
-			apiservice.WriteErrorWithCode(err, httpStatusCode, w, r)
+		if err := apiservice.ValidateDoctorAccessToPatientFile(currentDoctor.DoctorId.Int64(), requestData.Patient.PatientId.Int64(), d.DataApi, r); err != nil {
+			apiservice.WriteError(err, w, r)
 			return
 		}
 	}

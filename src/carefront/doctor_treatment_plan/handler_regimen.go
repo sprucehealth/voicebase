@@ -1,7 +1,6 @@
 package doctor_treatment_plan
 
 import (
-	"carefront/accessmgmt"
 	"carefront/api"
 	"carefront/apiservice"
 	"carefront/common"
@@ -57,12 +56,6 @@ func (d *regimenHandler) updateRegimenSteps(w http.ResponseWriter, r *http.Reque
 		return
 	}
 
-	statusCode, err := accessmgmt.ValidateDoctorAccessToPatientFile(doctorId, patientId, d.dataAPI)
-	if err != nil {
-		apiservice.WriteError(err, w, r)
-		return
-	}
-
 	// can only add regimen for a treatment that is a draft
 	treatmentPlan, err := d.dataAPI.GetAbridgedTreatmentPlan(requestData.TreatmentPlanId.Int64(), doctorId)
 	if err != nil {
@@ -70,6 +63,11 @@ func (d *regimenHandler) updateRegimenSteps(w http.ResponseWriter, r *http.Reque
 		return
 	} else if treatmentPlan.Status != api.STATUS_DRAFT {
 		apiservice.WriteValidationError("treatment plan must be in draft mode", w, r)
+		return
+	}
+
+	if err := apiservice.ValidateWriteAccessToPatientCase(doctorId, patientId, treatmentPlan.PatientCaseId.Int64(), d.dataAPI, r); err != nil {
+		apiservice.WriteError(err, w, r)
 		return
 	}
 

@@ -1,7 +1,6 @@
 package apiservice
 
 import (
-	"carefront/accessmgmt"
 	"carefront/api"
 	"carefront/common"
 	"net/http"
@@ -69,8 +68,8 @@ func (d *DoctorPrescriptionErrorHandler) ServeHTTP(w http.ResponseWriter, r *htt
 	}
 
 	if treatment != nil && !treatment.Patient.IsUnlinked {
-		if httpStatusCode, err := accessmgmt.ValidateDoctorAccessToPatientFile(treatment.Doctor.DoctorId.Int64(), treatment.PatientId.Int64(), d.DataApi); err != nil {
-			WriteErrorWithCode(err, httpStatusCode, w, r)
+		if err := ValidateDoctorAccessToPatientFile(treatment.Doctor.DoctorId.Int64(), treatment.PatientId.Int64(), d.DataApi, r); err != nil {
+			WriteError(err, w, r)
 			return
 		}
 	}

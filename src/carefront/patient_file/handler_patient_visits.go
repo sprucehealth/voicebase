@@ -1,7 +1,6 @@
 package patient_file
 
 import (
-	"carefront/accessmgmt"
 	"carefront/api"
 	"carefront/apiservice"
 	"carefront/common"
@@ -65,8 +64,8 @@ func (p *patientVisitsHandler) ServeHTTP(w http.ResponseWriter, r *http.Request)
 	}
 
 	if !patient.IsUnlinked {
-		if httpStatusCode, err := accessmgmt.ValidateDoctorAccessToPatientFile(doctor.DoctorId.Int64(), patient.PatientId.Int64(), p.DataApi); err != nil {
-			apiservice.WriteErrorWithCode(err, httpStatusCode, w, r)
+		if err := apiservice.ValidateDoctorAccessToPatientFile(doctor.DoctorId.Int64(), patient.PatientId.Int64(), p.DataApi, r); err != nil {
+			apiservice.WriteError(err, w, r)
 			return
 		}
 	}

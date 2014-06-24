@@ -31,6 +31,7 @@ const (
 	DEVELOPER_AUTH_TOKEN_EXPIRED     = 10002
 	DEVELOPER_TREATMENT_MISSING_DNTF = 10003
 	DEVELOPER_NO_TREATMENT_PLAN      = 10004
+	DEVELOPER_JBCQ_FORBIDDEN         = 10005
 	HTTP_GET                         = "GET"
 	HTTP_POST                        = "POST"
 	HTTP_PUT                         = "PUT"
