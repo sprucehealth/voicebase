@@ -93,7 +93,7 @@ func reviewContext(patientLayout *info_intake.InfoIntakeLayout) (map[string]inte
 		for _, scr := range sec.Screens {
 			for _, que := range scr.Questions {
 				switch que.QuestionType {
-				case "q_type_photo_section":
+				case info_intake.QUESTION_TYPE_PHOTO_SECTION:
 					photoList := make([]info_intake.TitlePhotoListData, len(que.PhotoSlots))
 					for i, slot := range que.PhotoSlots {
 						photoList[i] = info_intake.TitlePhotoListData{
@@ -102,10 +102,13 @@ func reviewContext(patientLayout *info_intake.InfoIntakeLayout) (map[string]inte
 						}
 					}
 					context["patient_visit_photos"] = photoList
-				case "q_type_single_select", "q_type_single_entry", "q_type_free_text":
+				case info_intake.QUESTION_TYPE_SINGLE_SELECT,
+					info_intake.QUESTION_TYPE_SINGLE_ENTRY,
+					info_intake.QUESTION_TYPE_FREE_TEXT:
+
 					context[que.QuestionTag+":question_summary"] = "Summary"
 					context[que.QuestionTag+":answers"] = "Answer"
-				case "q_type_multiple_choice":
+				case info_intake.QUESTION_TYPE_MULTIPLE_CHOICE:
 					if sub := que.SubQuestionsConfig; sub != nil {
 						data := []info_intake.TitleSubItemsDescriptionContentData{
 							info_intake.TitleSubItemsDescriptionContentData{
@@ -126,7 +129,7 @@ func reviewContext(patientLayout *info_intake.InfoIntakeLayout) (map[string]inte
 							{Value: "Value", IsChecked: true},
 						}
 					}
-				case "q_type_autocomplete":
+				case info_intake.QUESTION_TYPE_AUTOCOMPLETE:
 					data := []info_intake.TitleSubItemsDescriptionContentData{
 						info_intake.TitleSubItemsDescriptionContentData{
 							Title: "Title",
