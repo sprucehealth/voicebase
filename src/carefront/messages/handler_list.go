@@ -41,7 +41,7 @@ func NewListHandler(dataAPI api.DataAPI) http.Handler {
 }
 
 func (h *listHandler) ServeHTTP(w http.ResponseWriter, r *http.Request) {
-	if r.Method != apiservice.HTTP_POST {
+	if r.Method != apiservice.HTTP_GET {
 		http.NotFound(w, r)
 		return
 	}

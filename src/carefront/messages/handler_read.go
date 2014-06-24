@@ -5,8 +5,11 @@ import (
 	"carefront/apiservice"
 	"carefront/libs/dispatch"
 	"net/http"
-	"strconv"
 )
+
+type ReadRequest struct {
+	CaseID int64 `json:"case_id,string"`
+}
 
 type readHandler struct {
 	dataAPI api.DataAPI
@@ -22,13 +25,13 @@ func (h *readHandler) ServeHTTP(w http.ResponseWriter, r *http.Request) {
 		return
 	}
 
-	caseID, err := strconv.ParseInt(r.FormValue("case_id"), 10, 64)
-	if err != nil {
-		http.NotFound(w, r)
+	var req ReadRequest
+	if err := apiservice.DecodeRequestData(&req, r); err != nil {
+		apiservice.WriteValidationError(err.Error(), w, r)
 		return
 	}
 
-	cas, err := h.dataAPI.GetPatientCase(caseID)
+	cas, err := h.dataAPI.GetPatientCase(req.CaseID)
 	if err == api.NoRowsError {
 		apiservice.WriteDeveloperError(w, http.StatusNotFound, "Case with the given ID does not exist")
 		return
@@ -40,7 +43,7 @@ func (h *readHandler) ServeHTTP(w http.ResponseWriter, r *http.Request) {
 		return
 	}
 
-	if err := h.dataAPI.MarkCaseMessagesAsRead(caseID, personID); err != nil {
+	if err := h.dataAPI.MarkCaseMessagesAsRead(req.CaseID, personID); err != nil {
 		apiservice.WriteError(err, w, r)
 		return
 	}
@@ -52,7 +55,7 @@ func (h *readHandler) ServeHTTP(w http.ResponseWriter, r *http.Request) {
 	}
 
 	dispatch.Default.Publish(&ReadEvent{
-		CaseID: caseID,
+		CaseID: req.CaseID,
 		Person: people[personID],
 	})
 
