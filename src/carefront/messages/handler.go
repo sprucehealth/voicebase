@@ -52,7 +52,7 @@ func (h *handler) ServeHTTP(w http.ResponseWriter, r *http.Request) {
 
 	var req PostMessageRequest
 	if err := apiservice.DecodeRequestData(&req, r); err != nil {
-		apiservice.WriteDeveloperError(w, http.StatusBadRequest, err.Error())
+		apiservice.WriteValidationError(err.Error(), w, r)
 		return
 	}
 	if err := req.Validate(); err != nil {
