@@ -12,6 +12,53 @@ func (e errorList) Error() string {
 	return "layout.validate: " + strings.Join([]string(e), ", ")
 }
 
+func validateQuestion(que *info_intake.Question, path string, errors errorList) {
+	if que.QuestionTag == "" {
+		errors = append(errors, fmt.Sprintf("%s missing 'question'", path))
+	}
+	switch que.QuestionType {
+	case info_intake.QUESTION_TYPE_MULTIPLE_CHOICE,
+		info_intake.QUESTION_TYPE_SINGLE_SELECT,
+		info_intake.QUESTION_TYPE_SEGMENTED_CONTROL:
+		if len(que.PotentialAnswers) == 0 {
+			errors = append(errors, fmt.Sprintf("%s missing potential answers", path))
+		}
+	case info_intake.QUESTION_TYPE_PHOTO_SECTION:
+		if len(que.PhotoSlots) == 0 {
+			errors = append(errors, fmt.Sprintf("%s missing photo slots", path))
+		}
+	case info_intake.QUESTION_TYPE_FREE_TEXT,
+		info_intake.QUESTION_TYPE_AUTOCOMPLETE:
+		if len(que.PotentialAnswers) != 0 {
+			errors = append(errors, fmt.Sprintf("%s should not have potential answers", path))
+		}
+	}
+	if c := que.SubQuestionsConfig; c != nil {
+		for i, q := range c.Questions {
+			validateQuestion(q, fmt.Sprintf("%s.subquestion[%d]", path, i), errors)
+		}
+	}
+	if que.ConditionBlock != nil {
+		switch que.ConditionBlock.OperationTag {
+		case "":
+			errors = append(errors, fmt.Sprintf("%s missing op in condition", path))
+		case "answer_contains_any", "answer_equals":
+			if que.ConditionBlock.QuestionTag == "" {
+				errors = append(errors, fmt.Sprintf("%s missing question for '%s' condition", path, que.ConditionBlock.OperationTag))
+			}
+			if len(que.ConditionBlock.PotentialAnswersTags) == 0 {
+				errors = append(errors, fmt.Sprintf("%s missing potential answers for '%s' condition", path, que.ConditionBlock.OperationTag))
+			}
+		case "gender_equals":
+			if que.ConditionBlock.GenderField == "" {
+				errors = append(errors, fmt.Sprintf("%s missing gender for '%s' condition", path, que.ConditionBlock.OperationTag))
+			}
+		default:
+			errors = append(errors, fmt.Sprintf("%s unknown condition op '%s'", path, que.ConditionBlock.OperationTag))
+		}
+	}
+}
+
 func validatePatientLayout(layout *info_intake.InfoIntakeLayout) error {
 	var errors errorList
 	if len(layout.Sections) == 0 {
@@ -21,39 +68,20 @@ func validatePatientLayout(layout *info_intake.InfoIntakeLayout) error {
 		errors = append(errors, "health condition tag not set")
 	}
 	for secIdx, sec := range layout.Sections {
+		path := fmt.Sprintf("section[%d]", secIdx)
 		if sec.SectionTag == "" {
-			errors = append(errors, fmt.Sprintf("section %d missing 'section'", secIdx))
+			errors = append(errors, fmt.Sprintf("%s missing 'section'", path))
 		}
 		if len(sec.Screens) == 0 {
-			errors = append(errors, fmt.Sprintf("section %d has no screens", secIdx))
+			errors = append(errors, fmt.Sprintf("%s has no screens", path))
 		}
 		for scrIdx, scr := range sec.Screens {
+			path = fmt.Sprintf("%s.screen[%d]", path, scrIdx)
 			if len(scr.Questions) == 0 {
-				errors = append(errors, fmt.Sprintf("screen %d in section %d has no questions", scrIdx, secIdx))
+				errors = append(errors, fmt.Sprintf("%s has no questions", path))
 			}
 			for queIdx, que := range scr.Questions {
-				if que.QuestionTag == "" {
-					errors = append(errors, fmt.Sprintf("question %d on screen %d in section %d missing 'question'", queIdx, scrIdx, secIdx))
-				}
-				if que.ConditionBlock != nil {
-					switch que.ConditionBlock.OperationTag {
-					case "":
-						errors = append(errors, fmt.Sprintf("question %d on screen %d in section %d missing op in condition", queIdx, scrIdx, secIdx))
-					case "answer_contains_any", "answer_equals":
-						if que.ConditionBlock.QuestionTag == "" {
-							errors = append(errors, fmt.Sprintf("question %d on screen %d in section %d missing question for '%s' condition", queIdx, scrIdx, secIdx, que.ConditionBlock.OperationTag))
-						}
-						if len(que.ConditionBlock.PotentialAnswersTags) == 0 {
-							errors = append(errors, fmt.Sprintf("question %d on screen %d in section %d missing potential answers for '%s' condition", queIdx, scrIdx, secIdx, que.ConditionBlock.OperationTag))
-						}
-					case "gender_equals":
-						if que.ConditionBlock.GenderField == "" {
-							errors = append(errors, fmt.Sprintf("question %d on screen %d in section %d missing gender for '%s' condition", queIdx, scrIdx, secIdx, que.ConditionBlock.OperationTag))
-						}
-					default:
-						errors = append(errors, fmt.Sprintf("question %d on screen %d in section %d unknown condition op '%s'", queIdx, scrIdx, secIdx, que.ConditionBlock.OperationTag))
-					}
-				}
+				validateQuestion(que, fmt.Sprintf("%s.question[%d]", path, queIdx), errors)
 			}
 		}
 	}

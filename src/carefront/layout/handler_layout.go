@@ -173,14 +173,14 @@ func (h *layoutUploadHandler) ServeHTTP(w http.ResponseWriter, r *http.Request) 
 
 	// Validate layouts
 
-	if err := validatePatientLayout(intakeLayout); err != nil {
-		apiservice.WriteValidationError(err.Error(), w, r)
-		return
-	}
 	if err := api.FillIntakeLayout(intakeLayout, h.dataAPI, api.EN_LANGUAGE_ID); err != nil {
 		// TODO: this could be a validation error (unknown question or answer) or an internal error.
 		// There's currently no easy way to tell the difference. This is ok for now since this is
 		// an admin endpoint.
+		apiservice.WriteValidationError(err.Error(), w, r)
+		return
+	}
+	if err := validatePatientLayout(intakeLayout); err != nil {
 		apiservice.WriteValidationError(err.Error(), w, r)
 		return
 	}
