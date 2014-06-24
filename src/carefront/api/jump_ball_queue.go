@@ -216,7 +216,7 @@ func (d *DataService) GetElligibleItemsInUnclaimedQueue(doctorId int64) ([]*Doct
 	// then get the items in the unclaimed queue that are not currently locked by another doctor
 	params := appendInt64sToInterfaceSlice(nil, careProvidingStateIds)
 	params = append(params, []interface{}{false, true, doctorId}...)
-	rows, err = d.db.Query(fmt.Sprintf(`select id, event_type, item_id, enqueue_date, status from unclaimed_case_queue where care_providing_state_id in (%s) and locked = ? or (locked = ? and doctor_id = ?) order by enqueue_date`, nReplacements(len(careProvidingStateIds))), params...)
+	rows, err = d.db.Query(fmt.Sprintf(`select id, event_type, item_id, patient_case_id, enqueue_date, status from unclaimed_case_queue where care_providing_state_id in (%s) and locked = ? or (locked = ? and doctor_id = ?) order by enqueue_date`, nReplacements(len(careProvidingStateIds))), params...)
 	if err != nil {
 		return nil, err
 	}
@@ -229,6 +229,7 @@ func (d *DataService) GetElligibleItemsInUnclaimedQueue(doctorId int64) ([]*Doct
 			&queueItem.Id,
 			&queueItem.EventType,
 			&queueItem.ItemId,
+			&queueItem.PatientCaseId,
 			&queueItem.EnqueueDate,
 			&queueItem.Status); err != nil {
 			return nil, err

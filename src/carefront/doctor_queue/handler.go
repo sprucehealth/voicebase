@@ -3,6 +3,7 @@ package doctor_queue
 import (
 	"carefront/api"
 	"carefront/apiservice"
+	"carefront/app_url"
 	"net/http"
 )
 
@@ -51,9 +52,11 @@ func (d *queueHandler) ServeHTTP(w http.ResponseWriter, r *http.Request) {
 		return
 	}
 
+	// only add auth url for items in global queue so that
+	// the doctor can first be granted acess to the case before opening the case
+	var addAuthUrl bool
 	var queueItems []*api.DoctorQueueItem
 	switch requestData.State {
-
 	case stateLocal:
 		queueItems, err = d.dataAPI.GetPendingItemsInDoctorQueue(doctorId)
 		if err != nil {
@@ -61,6 +64,7 @@ func (d *queueHandler) ServeHTTP(w http.ResponseWriter, r *http.Request) {
 			return
 		}
 	case stateGlobal:
+		addAuthUrl = true
 		queueItems, err = d.dataAPI.GetElligibleItemsInUnclaimedQueue(doctorId)
 		if err != nil {
 			apiservice.WriteError(err, w, r)
@@ -80,12 +84,14 @@ func (d *queueHandler) ServeHTTP(w http.ResponseWriter, r *http.Request) {
 	feedItems := make([]*DisplayFeedItem, len(queueItems))
 	for i, doctorQueueItem := range queueItems {
 		doctorQueueItem.PositionInQueue = i
-		item, err := converQueueItemToDisplayFeedItem(d.dataAPI, doctorQueueItem)
+		feedItems[i], err = converQueueItemToDisplayFeedItem(d.dataAPI, doctorQueueItem)
 		if err != nil {
 			apiservice.WriteError(err, w, r)
 			return
 		}
-		feedItems[i] = item
+		if addAuthUrl {
+			feedItems[i].AuthUrl = app_url.GrantPatientFileAccessAction(doctorQueueItem.PatientCaseId)
+		}
 	}
 	apiservice.WriteJSONToHTTPResponseWriter(w, http.StatusOK, &DoctorQueueItemsResponseData{Items: feedItems})
 }

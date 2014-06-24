@@ -12,6 +12,7 @@ type DisplayFeedItem struct {
 	Timestamp    *time.Time            `json:"timestamp,omitempty"`
 	ImageUrl     *app_url.SpruceAsset  `json:"image_url,omitempty"`
 	ActionUrl    *app_url.SpruceAction `json:"action_url,omitempty"`
+	AuthUrl      *app_url.SpruceAction `json:"auth_url,omitempty"`
 	DisplayTypes []string              `json:"display_types,omitempty"`
 }
 
