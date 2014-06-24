@@ -23,7 +23,7 @@ func TestPatientSignupInvalidEmail(t *testing.T) {
 	requestBody := bytes.NewBufferString("first_name=Test&last_name=Test&email=")
 	requestBody.WriteString(strconv.FormatInt(rand.Int63(), 10))
 	requestBody.WriteString(email + "&password=12345&dob=1987-11-08&zip_code=94115&phone=7348465522&gender=male")
-	res, err := AuthPost(ts.URL, "application/x-www-form-urlencoded", requestBody, 0)
+	res, err := testData.AuthPost(ts.URL, "application/x-www-form-urlencoded", requestBody, 0)
 	if err != nil {
 		t.Fatal(err)
 	}

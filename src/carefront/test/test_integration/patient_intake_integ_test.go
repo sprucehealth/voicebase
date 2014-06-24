@@ -19,7 +19,7 @@ type AnswerIntakeHandler struct {
 	accountId int64
 }
 
-func getQuestionWithTagAndExpectedType(questionTag, questionType string, t *testing.T, testData TestData) int64 {
+func getQuestionWithTagAndExpectedType(questionTag, questionType string, t *testing.T, testData *TestData) int64 {
 	questionInfo, err := testData.DataApi.GetQuestionInfo(questionTag, 1)
 	if err != nil {
 		t.Fatalf("Unable to query for question q_reason_visit from database: %s", err.Error())
@@ -34,7 +34,7 @@ func getQuestionWithTagAndExpectedType(questionTag, questionType string, t *test
 	return questionInfo.QuestionId
 }
 
-func getAnswerWithTagAndExpectedType(answerTag, answerType string, questionId int64, testData TestData, t *testing.T) int64 {
+func getAnswerWithTagAndExpectedType(answerTag, answerType string, questionId int64, testData *TestData, t *testing.T) int64 {
 
 	potentialAnswers, err := testData.DataApi.GetAnswerInfo(questionId, 1)
 	if err != nil {
@@ -62,7 +62,7 @@ func getAnswerWithTagAndExpectedType(answerTag, answerType string, questionId in
 	return potentialAnswerId
 }
 
-func submitPatientAnswerForVisit(PatientId int64, testData TestData, patientIntakeRequestData string, t *testing.T) {
+func submitPatientAnswerForVisit(PatientId int64, testData *TestData, patientIntakeRequestData string, t *testing.T) {
 	answerIntakeHandler := patient_visit.NewAnswerIntakeHandler(testData.DataApi)
 	patient, err := testData.DataApi.GetPatientFromId(PatientId)
 	if err != nil {
@@ -72,7 +72,7 @@ func submitPatientAnswerForVisit(PatientId int64, testData TestData, patientInta
 	ts := httptest.NewServer(answerIntakeHandler)
 	defer ts.Close()
 
-	resp, err := AuthPost(ts.URL, "application/json", bytes.NewBufferString(patientIntakeRequestData), patient.AccountId.Int64())
+	resp, err := testData.AuthPost(ts.URL, "application/json", bytes.NewBufferString(patientIntakeRequestData), patient.AccountId.Int64())
 	if err != nil {
 		t.Fatal("Unable to get the patient visit id")
 	}
@@ -90,7 +90,7 @@ func TestSingleSelectIntake(t *testing.T) {
 	defer TearDownIntegrationTest(t, testData)
 
 	// signup a random test patient for which to answer questions
-	patientSignedUpResponse := SignupRandomTestPatient(t, testData.DataApi, testData.AuthApi)
+	patientSignedUpResponse := SignupRandomTestPatient(t, testData)
 	patientVisitResponse := CreatePatientVisitForPatient(patientSignedUpResponse.Patient.PatientId.Int64(), testData, t)
 
 	// now lets go ahead and try and answer the question about the reason for visit given that it is
@@ -134,7 +134,7 @@ func TestMultipleChoiceIntake(t *testing.T) {
 	defer TearDownIntegrationTest(t, testData)
 
 	// signup a random test patient for which to answer questions
-	patientSignedUpResponse := SignupRandomTestPatient(t, testData.DataApi, testData.AuthApi)
+	patientSignedUpResponse := SignupRandomTestPatient(t, testData)
 	patientVisitResponse := CreatePatientVisitForPatient(patientSignedUpResponse.Patient.PatientId.Int64(), testData, t)
 
 	// now lets go ahead and try and answer the question about the reason for visit given that it is
@@ -198,7 +198,7 @@ func TestSingleEntryIntake(t *testing.T) {
 	defer TearDownIntegrationTest(t, testData)
 
 	// signup a random test patient for which to answer questions
-	patientSignedUpResponse := SignupRandomTestPatient(t, testData.DataApi, testData.AuthApi)
+	patientSignedUpResponse := SignupRandomTestPatient(t, testData)
 	patientVisitResponse := CreatePatientVisitForPatient(patientSignedUpResponse.Patient.PatientId.Int64(), testData, t)
 
 	questionId := getQuestionWithTagAndExpectedType("q_other_skin_condition_entry", "q_type_single_entry", t, testData)
@@ -238,7 +238,7 @@ func TestSingleEntryIntake(t *testing.T) {
 	t.Fatalf("While an answer for the expected question exists, unable to find the expected answer with id %d for single entry intake test", potentialAnswerId)
 }
 
-func submitFreeTextResponseForPatient(patientVisitResponse *patient_visit.PatientVisitResponse, PatientId int64, freeTextResponse string, testData TestData, t *testing.T) {
+func submitFreeTextResponseForPatient(patientVisitResponse *patient_visit.PatientVisitResponse, PatientId int64, freeTextResponse string, testData *TestData, t *testing.T) {
 	// now lets go ahead and try and answer the question about the reason for visit given that it is
 	// single select
 	questionId := getQuestionWithTagAndExpectedType("q_changes_acne_worse", "q_type_free_text", t, testData)
@@ -285,7 +285,7 @@ func TestFreeTextEntryIntake(t *testing.T) {
 	defer TearDownIntegrationTest(t, testData)
 
 	// signup a random test patient for which to answer questions
-	patientSignedUpResponse := SignupRandomTestPatient(t, testData.DataApi, testData.AuthApi)
+	patientSignedUpResponse := SignupRandomTestPatient(t, testData)
 	patientVisitResponse := CreatePatientVisitForPatient(patientSignedUpResponse.Patient.PatientId.Int64(), testData, t)
 	freeTextResponse := "This is a free text response that should be accepted as a response for free text."
 	submitFreeTextResponseForPatient(patientVisitResponse, patientSignedUpResponse.Patient.PatientId.Int64(), freeTextResponse, testData, t)

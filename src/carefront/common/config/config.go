@@ -22,6 +22,7 @@ import (
 	"path"
 	"path/filepath"
 	"reflect"
+	"runtime"
 	"strconv"
 	"strings"
 	"sync"
@@ -116,6 +117,7 @@ func init() {
 		"BuildTime":       BuildTime,
 		"BuildNumber":     BuildNumber,
 		"MigrationNumber": MigrationNumber,
+		"GoVersion":       runtime.Version(),
 	}
 
 	expvar.Publish("version", expvar.Func(func() interface{} {

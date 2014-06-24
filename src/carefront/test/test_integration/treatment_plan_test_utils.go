@@ -14,12 +14,12 @@ import (
 	"testing"
 )
 
-func GetRegimenPlanForTreatmentPlan(testData TestData, doctor *common.Doctor, treatmentPlanId int64, t *testing.T) *common.RegimenPlan {
+func GetRegimenPlanForTreatmentPlan(testData *TestData, doctor *common.Doctor, treatmentPlanId int64, t *testing.T) *common.RegimenPlan {
 	doctorTreatmentPlanHandler := doctor_treatment_plan.NewDoctorTreatmentPlanHandler(testData.DataApi, nil, nil, false)
 	ts := httptest.NewServer(doctorTreatmentPlanHandler)
 	defer ts.Close()
 
-	resp, err := AuthGet(ts.URL+"?treatment_plan_id="+strconv.FormatInt(treatmentPlanId, 10), doctor.AccountId.Int64())
+	resp, err := testData.AuthGet(ts.URL+"?treatment_plan_id="+strconv.FormatInt(treatmentPlanId, 10), doctor.AccountId.Int64())
 	if err != nil {
 		t.Fatal("Unable to get regimen for patient visit: " + err.Error())
 	}
@@ -40,7 +40,7 @@ func GetRegimenPlanForTreatmentPlan(testData TestData, doctor *common.Doctor, tr
 	return doctorTreatmentPlanResponse.TreatmentPlan.RegimenPlan
 }
 
-func CreateRegimenPlanForTreatmentPlan(doctorRegimenRequest *common.RegimenPlan, testData TestData, doctor *common.Doctor, t *testing.T) *common.RegimenPlan {
+func CreateRegimenPlanForTreatmentPlan(doctorRegimenRequest *common.RegimenPlan, testData *TestData, doctor *common.Doctor, t *testing.T) *common.RegimenPlan {
 	doctorRegimenHandler := doctor_treatment_plan.NewRegimenHandler(testData.DataApi)
 	ts := httptest.NewServer(doctorRegimenHandler)
 	defer ts.Close()
@@ -50,7 +50,7 @@ func CreateRegimenPlanForTreatmentPlan(doctorRegimenRequest *common.RegimenPlan,
 		t.Fatal("Unable to marshal request body for adding regimen steps: " + err.Error())
 	}
 
-	resp, err := AuthPost(ts.URL, "application/json", bytes.NewBuffer(requestBody), doctor.AccountId.Int64())
+	resp, err := testData.AuthPost(ts.URL, "application/json", bytes.NewBuffer(requestBody), doctor.AccountId.Int64())
 	if err != nil {
 		t.Fatal("Unable to make successful request to create regimen for patient visit")
 	}
@@ -71,12 +71,12 @@ func CreateRegimenPlanForTreatmentPlan(doctorRegimenRequest *common.RegimenPlan,
 	return regimenPlanResponse
 }
 
-func GetAdvicePointsInTreatmentPlan(testData TestData, doctor *common.Doctor, treatmentPlanId int64, t *testing.T) *common.Advice {
+func GetAdvicePointsInTreatmentPlan(testData *TestData, doctor *common.Doctor, treatmentPlanId int64, t *testing.T) *common.Advice {
 	doctorTreatmentPlanHandler := doctor_treatment_plan.NewDoctorTreatmentPlanHandler(testData.DataApi, nil, nil, false)
 	ts := httptest.NewServer(doctorTreatmentPlanHandler)
 	defer ts.Close()
 
-	resp, err := AuthGet(ts.URL+"?treatment_plan_id="+strconv.FormatInt(treatmentPlanId, 10), doctor.AccountId.Int64())
+	resp, err := testData.AuthGet(ts.URL+"?treatment_plan_id="+strconv.FormatInt(treatmentPlanId, 10), doctor.AccountId.Int64())
 	if err != nil {
 		t.Fatal("Unable to get advice points for patient visit: " + err.Error())
 	}
@@ -97,7 +97,7 @@ func GetAdvicePointsInTreatmentPlan(testData TestData, doctor *common.Doctor, tr
 	return doctorTreatmentPlanResponse.TreatmentPlan.Advice
 }
 
-func UpdateAdvicePointsForPatientVisit(doctorAdviceRequest *common.Advice, testData TestData, doctor *common.Doctor, t *testing.T) *common.Advice {
+func UpdateAdvicePointsForPatientVisit(doctorAdviceRequest *common.Advice, testData *TestData, doctor *common.Doctor, t *testing.T) *common.Advice {
 	doctorAdviceHandler := doctor_treatment_plan.NewAdviceHandler(testData.DataApi)
 	ts := httptest.NewServer(doctorAdviceHandler)
 	defer ts.Close()
@@ -107,7 +107,7 @@ func UpdateAdvicePointsForPatientVisit(doctorAdviceRequest *common.Advice, testD
 		t.Fatal("Unable to marshal request body for adding advice points: " + err.Error())
 	}
 
-	resp, err := AuthPost(ts.URL, "application/json", bytes.NewBuffer(requestBody), doctor.AccountId.Int64())
+	resp, err := testData.AuthPost(ts.URL, "application/json", bytes.NewBuffer(requestBody), doctor.AccountId.Int64())
 	if err != nil {
 		t.Fatal("Unable to make successful request to add advice points to patient visit " + err.Error())
 	}
@@ -128,13 +128,13 @@ func UpdateAdvicePointsForPatientVisit(doctorAdviceRequest *common.Advice, testD
 	return doctorAdviceResponse
 }
 
-func GetListOfTreatmentPlansForPatient(patientId, doctorAccountId int64, testData TestData, t *testing.T) *doctor_treatment_plan.TreatmentPlansResponse {
+func GetListOfTreatmentPlansForPatient(patientId, doctorAccountId int64, testData *TestData, t *testing.T) *doctor_treatment_plan.TreatmentPlansResponse {
 	listHandler := doctor_treatment_plan.NewListHandler(testData.DataApi)
 	doctorServer := httptest.NewServer(listHandler)
 	defer doctorServer.Close()
 
 	response := &doctor_treatment_plan.TreatmentPlansResponse{}
-	res, err := AuthGet(doctorServer.URL+"?patient_id="+strconv.FormatInt(patientId, 10), doctorAccountId)
+	res, err := testData.AuthGet(doctorServer.URL+"?patient_id="+strconv.FormatInt(patientId, 10), doctorAccountId)
 	if err != nil {
 		t.Fatalf(err.Error())
 	} else if res.StatusCode != http.StatusOK {
@@ -146,7 +146,7 @@ func GetListOfTreatmentPlansForPatient(patientId, doctorAccountId int64, testDat
 	return response
 }
 
-func DeleteTreatmentPlanForDoctor(treatmentPlanId, doctorAccountId int64, testData TestData, t *testing.T) {
+func DeleteTreatmentPlanForDoctor(treatmentPlanId, doctorAccountId int64, testData *TestData, t *testing.T) {
 	doctorTreatmentPlanHandler := doctor_treatment_plan.NewDoctorTreatmentPlanHandler(testData.DataApi, nil, nil, false)
 	doctorServer := httptest.NewServer(doctorTreatmentPlanHandler)
 	defer doctorServer.Close()
@@ -155,7 +155,7 @@ func DeleteTreatmentPlanForDoctor(treatmentPlanId, doctorAccountId int64, testDa
 		TreatmentPlanId: encoding.NewObjectId(treatmentPlanId),
 	})
 
-	res, err := AuthDelete(doctorServer.URL, "application/json", bytes.NewReader(jsonData), doctorAccountId)
+	res, err := testData.AuthDelete(doctorServer.URL, "application/json", bytes.NewReader(jsonData), doctorAccountId)
 	if err != nil {
 		t.Fatal(err)
 	} else if res.StatusCode != http.StatusOK {
@@ -163,13 +163,13 @@ func DeleteTreatmentPlanForDoctor(treatmentPlanId, doctorAccountId int64, testDa
 	}
 }
 
-func GetDoctorTreatmentPlanById(treatmentPlanId, doctorAccountId int64, testData TestData, t *testing.T) *common.DoctorTreatmentPlan {
+func GetDoctorTreatmentPlanById(treatmentPlanId, doctorAccountId int64, testData *TestData, t *testing.T) *common.DoctorTreatmentPlan {
 	drTreatmentPlanHandler := doctor_treatment_plan.NewDoctorTreatmentPlanHandler(testData.DataApi, nil, nil, false)
 	doctorServer := httptest.NewServer(drTreatmentPlanHandler)
 	defer doctorServer.Close()
 
 	response := &doctor_treatment_plan.DoctorTreatmentPlanResponse{}
-	res, err := AuthGet(doctorServer.URL+"?treatment_plan_id="+strconv.FormatInt(treatmentPlanId, 10), doctorAccountId)
+	res, err := testData.AuthGet(doctorServer.URL+"?treatment_plan_id="+strconv.FormatInt(treatmentPlanId, 10), doctorAccountId)
 	if err != nil {
 		t.Fatalf(err.Error())
 	} else if res.StatusCode != http.StatusOK {
@@ -180,7 +180,7 @@ func GetDoctorTreatmentPlanById(treatmentPlanId, doctorAccountId int64, testData
 	return response.TreatmentPlan
 }
 
-func AddAndGetTreatmentsForPatientVisit(testData TestData, treatments []*common.Treatment, doctorAccountId, treatmentPlanId int64, t *testing.T) *doctor_treatment_plan.GetTreatmentsResponse {
+func AddAndGetTreatmentsForPatientVisit(testData *TestData, treatments []*common.Treatment, doctorAccountId, treatmentPlanId int64, t *testing.T) *doctor_treatment_plan.GetTreatmentsResponse {
 	stubErxApi := &erx.StubErxService{
 		SelectedMedicationToReturn: &common.Treatment{},
 	}
@@ -196,7 +196,7 @@ func AddAndGetTreatmentsForPatientVisit(testData TestData, treatments []*common.
 		t.Fatal("Unable to marshal request body for adding treatments to patient visit")
 	}
 
-	resp, err := AuthPost(ts.URL, "application/json", bytes.NewBuffer(data), doctorAccountId)
+	resp, err := testData.AuthPost(ts.URL, "application/json", bytes.NewBuffer(data), doctorAccountId)
 	if err != nil {
 		t.Fatal("Unable to make POST request to add treatments to patient visit " + err.Error())
 	}
@@ -380,7 +380,7 @@ func ValidateAdviceRequestAgainstResponse(doctorAdviceRequest, doctorAdviceRespo
 	}
 }
 
-func CreateFavoriteTreatmentPlan(patientVisitId, treatmentPlanId int64, testData TestData, doctor *common.Doctor, t *testing.T) *common.FavoriteTreatmentPlan {
+func CreateFavoriteTreatmentPlan(patientVisitId, treatmentPlanId int64, testData *TestData, doctor *common.Doctor, t *testing.T) *common.FavoriteTreatmentPlan {
 
 	// lets submit a regimen plan for this patient
 	// reason we do this is because the regimen steps have to exist before treatment plan can be favorited,
@@ -497,7 +497,7 @@ func CreateFavoriteTreatmentPlan(patientVisitId, treatmentPlanId int64, testData
 		t.Fatalf("Unable to marshal json %s", err)
 	}
 
-	resp, err := AuthPost(ts.URL, "application/json", bytes.NewReader(jsonData), doctor.AccountId.Int64())
+	resp, err := testData.AuthPost(ts.URL, "application/json", bytes.NewReader(jsonData), doctor.AccountId.Int64())
 	if err != nil {
 		t.Fatalf("Unable to add favorite treatment plan: %s", err)
 	}

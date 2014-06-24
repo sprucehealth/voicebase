@@ -1,4 +1,4 @@
-package notifications
+package test_notifications
 
 import (
 	"carefront/common"
@@ -16,7 +16,7 @@ func TestPromptStatus_Signup(t *testing.T) {
 	testData := test_integration.SetupIntegrationTest(t)
 	defer test_integration.TearDownIntegrationTest(t, testData)
 
-	pr := test_integration.SignupRandomTestPatient(t, testData.DataApi, testData.AuthApi)
+	pr := test_integration.SignupRandomTestPatient(t, testData)
 	patient := pr.Patient
 
 	if patient.PromptStatus != common.Unprompted {
@@ -28,7 +28,7 @@ func TestPromptStatus_Login(t *testing.T) {
 	testData := test_integration.SetupIntegrationTest(t)
 	defer test_integration.TearDownIntegrationTest(t, testData)
 
-	pr := test_integration.SignupRandomTestPatient(t, testData.DataApi, testData.AuthApi)
+	pr := test_integration.SignupRandomTestPatient(t, testData)
 	patient := pr.Patient
 
 	// this method would be called when trying to login so checking directly with data service layer
@@ -47,7 +47,7 @@ func TestPromptStatus_OnModify(t *testing.T) {
 	testData := test_integration.SetupIntegrationTest(t)
 	defer test_integration.TearDownIntegrationTest(t, testData)
 
-	pr := test_integration.SignupRandomTestPatient(t, testData.DataApi, testData.AuthApi)
+	pr := test_integration.SignupRandomTestPatient(t, testData)
 	patient := pr.Patient
 
 	promptStatusHandler := notify.NewPromptStatusHandler(testData.DataApi)
@@ -55,7 +55,7 @@ func TestPromptStatus_OnModify(t *testing.T) {
 	params := url.Values{}
 	params.Set("prompt_status", "DECLINED")
 
-	res, err := test_integration.AuthPut(statusServer.URL, "application/x-www-form-urlencoded", strings.NewReader(params.Encode()), patient.AccountId.Int64())
+	res, err := testData.AuthPut(statusServer.URL, "application/x-www-form-urlencoded", strings.NewReader(params.Encode()), patient.AccountId.Int64())
 	if err != nil {
 		t.Fatal(err.Error())
 	} else if res.StatusCode != http.StatusOK {
@@ -103,7 +103,7 @@ func TestPromptStatus_DoctorOnModify(t *testing.T) {
 	params := url.Values{}
 	params.Set("prompt_status", "DECLINED")
 
-	res, err := test_integration.AuthPut(statusServer.URL, "application/x-www-form-urlencoded", strings.NewReader(params.Encode()), doctor.AccountId.Int64())
+	res, err := testData.AuthPut(statusServer.URL, "application/x-www-form-urlencoded", strings.NewReader(params.Encode()), doctor.AccountId.Int64())
 	if err != nil {
 		t.Fatal(err.Error())
 	} else if res.StatusCode != http.StatusOK {

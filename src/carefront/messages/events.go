@@ -1,19 +1,14 @@
 package messages
 
-type ConversationStartedEvent struct {
-	ConversationId int64
-	TopicId        int64
-	FromId         int64
-	ToId           int64
+import "carefront/common"
+
+type PostEvent struct {
+	Message *common.CaseMessage
+	Person  *common.Person
+	Case    *common.PatientCase
 }
 
-type ConversationReplyEvent struct {
-	ConversationId int64
-	MessageId      int64
-	FromId         int64
-}
-
-type ConversationReadEvent struct {
-	ConversationId int64
-	FromId         int64
+type ReadEvent struct {
+	CaseID int64
+	Person *common.Person
 }

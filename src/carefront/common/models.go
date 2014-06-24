@@ -469,42 +469,26 @@ type Person struct {
 	Doctor  *Doctor
 }
 
-type Conversation struct {
-	Id                int64
-	Time              time.Time
-	Title             string
-	TopicId           int64
-	MessageCount      int
-	CreatorId         int64
-	OwnerId           int64
-	LastParticipantId int64
-	LastMessageTime   time.Time
-	Unread            bool
-
-	Messages     []*ConversationMessage
-	Participants map[int64]*Person
+type CaseMessage struct {
+	ID          int64
+	CaseID      int64
+	PersonID    int64
+	Time        time.Time
+	Body        string
+	Attachments []*CaseMessageAttachment
 }
 
-type ConversationTopic struct {
-	Id      int64
-	Title   string
-	Ordinal int
-	Active  bool
-}
-
-type ConversationAttachment struct {
-	Id       int64
+type CaseMessageAttachment struct {
+	ID       int64
 	ItemType string
-	ItemId   int64
+	ItemID   int64
 }
 
-type ConversationMessage struct {
-	Id             int64
-	ConversationId int64
-	Time           time.Time
-	FromId         int64
-	Body           string
-	Attachments    []*ConversationAttachment
+type CaseMessageParticipant struct {
+	CaseID   int64
+	Unread   bool
+	LastRead time.Time
+	Person   *Person
 }
 
 type CommunicationPreference struct {
@@ -549,4 +533,12 @@ type ResourceGuide struct {
 type Account struct {
 	ID   int64
 	Role string
+}
+
+type PatientCase struct {
+	Id                int64
+	PatientId         int64
+	HealthConditionId int64
+	Status            string
+	CreationDate      time.Time
 }

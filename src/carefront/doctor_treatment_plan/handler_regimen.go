@@ -50,9 +50,9 @@ func (d *regimenHandler) updateRegimenSteps(w http.ResponseWriter, r *http.Reque
 		return
 	}
 
-	patientVisitReviewData, statusCode, err := apiservice.ValidateDoctorAccessToPatientVisitAndGetRelevantData(patientVisitId, apiservice.GetContext(r).AccountId, d.dataAPI)
+	patientVisitReviewData, err := apiservice.ValidateDoctorAccessToPatientVisitAndGetRelevantData(patientVisitId, apiservice.GetContext(r).AccountId, d.dataAPI)
 	if err != nil {
-		apiservice.WriteDeveloperError(w, statusCode, err.Error())
+		apiservice.WriteError(err, w, r)
 		return
 	}
 

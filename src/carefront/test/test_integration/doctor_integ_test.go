@@ -24,7 +24,7 @@ func TestDoctorRegistration(t *testing.T) {
 	testData := SetupIntegrationTest(t)
 	defer TearDownIntegrationTest(t, testData)
 
-	SignupRandomTestDoctor(t, testData.DataApi, testData.AuthApi)
+	SignupRandomTestDoctor(t, testData)
 }
 
 func TestDoctorAuthentication(t *testing.T) {
@@ -32,7 +32,7 @@ func TestDoctorAuthentication(t *testing.T) {
 	testData := SetupIntegrationTest(t)
 	defer TearDownIntegrationTest(t, testData)
 
-	_, email, password := SignupRandomTestDoctor(t, testData.DataApi, testData.AuthApi)
+	_, email, password := SignupRandomTestDoctor(t, testData)
 
 	doctorAuthHandler := &apiservice.DoctorAuthenticationHandler{AuthApi: testData.AuthApi, DataApi: testData.DataApi}
 	ts := httptest.NewServer(doctorAuthHandler)
@@ -41,7 +41,7 @@ func TestDoctorAuthentication(t *testing.T) {
 	requestBody.WriteString(email)
 	requestBody.WriteString("&password=")
 	requestBody.WriteString(password)
-	res, err := AuthPost(ts.URL, "application/x-www-form-urlencoded", requestBody, 0)
+	res, err := testData.AuthPost(ts.URL, "application/x-www-form-urlencoded", requestBody, 0)
 	if err != nil {
 		t.Fatal("Unable to authenticate doctor " + err.Error())
 	}
@@ -80,7 +80,7 @@ func TestDoctorDrugSearch(t *testing.T) {
 	ts := httptest.NewServer(autocompleteHandler)
 	defer ts.Close()
 
-	resp, err := AuthGet(ts.URL+"?query=pro", doctor.AccountId.Int64())
+	resp, err := testData.AuthGet(ts.URL+"?query=pro", doctor.AccountId.Int64())
 	if err != nil {
 		t.Fatal("Unable to make a successful query to the autocomplete API")
 	}
@@ -121,7 +121,7 @@ func TestDoctorDiagnosisOfPatientVisit_Unsuitable(t *testing.T) {
 	}
 
 	// get patient to start a visit but don't pick a treatment plan yet.
-	patientSignedupResponse := SignupRandomTestPatient(t, testData.DataApi, testData.AuthApi)
+	patientSignedupResponse := SignupRandomTestPatient(t, testData)
 	patientVisitResponse := CreatePatientVisitForPatient(patientSignedupResponse.Patient.PatientId.Int64(), testData, t)
 	patient, err := testData.DataApi.GetPatientFromId(patientSignedupResponse.Patient.PatientId.Int64())
 	if err != nil {
@@ -162,7 +162,7 @@ func TestDoctorDiagnosisOfPatientVisit_Unsuitable(t *testing.T) {
 		t.Fatal("Unable to marshal request body")
 	}
 
-	resp, err := AuthPost(ts.URL, "application/json", bytes.NewBuffer(requestData), doctor.AccountId.Int64())
+	resp, err := testData.AuthPost(ts.URL, "application/json", bytes.NewBuffer(requestData), doctor.AccountId.Int64())
 	if err != nil {
 		t.Fatal("Unable to successfully submit the diagnosis of a patient visit: " + err.Error())
 	} else if resp.StatusCode != http.StatusOK {
@@ -201,7 +201,7 @@ func TestDoctorDiagnosisOfPatientVisit(t *testing.T) {
 	}
 
 	// get patient to start a visit but don't pick a treatment plan yet.
-	patientSignedupResponse := SignupRandomTestPatient(t, testData.DataApi, testData.AuthApi)
+	patientSignedupResponse := SignupRandomTestPatient(t, testData)
 	patientVisitResponse := CreatePatientVisitForPatient(patientSignedupResponse.Patient.PatientId.Int64(), testData, t)
 	patient, err := testData.DataApi.GetPatientFromId(patientSignedupResponse.Patient.PatientId.Int64())
 	if err != nil {
@@ -221,7 +221,7 @@ func TestDoctorDiagnosisOfPatientVisit(t *testing.T) {
 	requestParams.WriteString(strconv.FormatInt(patientVisitResponse.PatientVisitId, 10))
 	diagnosisResponse := patient_visit.GetDiagnosisResponse{}
 
-	resp, err := AuthGet(ts.URL+requestParams.String(), doctor.AccountId.Int64())
+	resp, err := testData.AuthGet(ts.URL+requestParams.String(), doctor.AccountId.Int64())
 	if err != nil {
 		t.Fatal("Something went wrong when trying to get diagnoses layout for doctor to diagnose patient visit: " + err.Error())
 	} else if resp.StatusCode != http.StatusOK {
@@ -253,7 +253,7 @@ func TestDoctorDiagnosisOfPatientVisit(t *testing.T) {
 	ts = httptest.NewServer(diagnosisSummaryHandler)
 	defer ts.Close()
 	getDiagnosisSummaryResponse := &common.DiagnosisSummary{}
-	resp, err = AuthGet(ts.URL, doctor.AccountId.Int64())
+	resp, err = testData.AuthGet(ts.URL, doctor.AccountId.Int64())
 	if err != nil {
 		t.Fatal("Unable to make call to get diagnosis summary for patient visit: " + err.Error())
 	} else if resp.StatusCode != http.StatusBadRequest {
@@ -262,7 +262,7 @@ func TestDoctorDiagnosisOfPatientVisit(t *testing.T) {
 
 	// now lets pick a tretament plan and then try to get the diagnosis summary again
 	responseData := PickATreatmentPlanForPatientVisit(patientVisitResponse.PatientVisitId, doctor, nil, testData, t)
-	resp, err = AuthGet(ts.URL+"?treatment_plan_id="+strconv.FormatInt(responseData.TreatmentPlan.Id.Int64(), 10), doctor.AccountId.Int64())
+	resp, err = testData.AuthGet(ts.URL+"?treatment_plan_id="+strconv.FormatInt(responseData.TreatmentPlan.Id.Int64(), 10), doctor.AccountId.Int64())
 	if err != nil {
 		t.Fatal("Unable to make call to get diagnosis summary for patient visit: " + err.Error())
 	} else if resp.StatusCode != http.StatusOK {
@@ -276,7 +276,7 @@ func TestDoctorDiagnosisOfPatientVisit(t *testing.T) {
 	// now lets pick a different treatment plan and ensure that the diagnosis summary gets linked to this new
 	// treatment plan.
 	responseData = PickATreatmentPlanForPatientVisit(patientVisitResponse.PatientVisitId, doctor, nil, testData, t)
-	resp, err = AuthGet(ts.URL+"?treatment_plan_id="+strconv.FormatInt(responseData.TreatmentPlan.Id.Int64(), 10), doctor.AccountId.Int64())
+	resp, err = testData.AuthGet(ts.URL+"?treatment_plan_id="+strconv.FormatInt(responseData.TreatmentPlan.Id.Int64(), 10), doctor.AccountId.Int64())
 	if err != nil {
 		t.Fatal("Unable to make call to get diagnosis summary for patient visit: " + err.Error())
 	} else if resp.StatusCode != http.StatusOK {
@@ -292,7 +292,7 @@ func TestDoctorDiagnosisOfPatientVisit(t *testing.T) {
 	params := url.Values{}
 	params.Set("treatment_plan_id", strconv.FormatInt(responseData.TreatmentPlan.Id.Int64(), 10))
 	params.Set("summary", updatedSummary)
-	resp, err = AuthPut(ts.URL, "application/x-www-form-urlencoded", strings.NewReader(params.Encode()), doctor.AccountId.Int64())
+	resp, err = testData.AuthPut(ts.URL, "application/x-www-form-urlencoded", strings.NewReader(params.Encode()), doctor.AccountId.Int64())
 	if err != nil {
 		t.Fatalf("Unable to make call to update diagnosis summary %s", err)
 	} else if resp.StatusCode != http.StatusOK {
@@ -300,7 +300,7 @@ func TestDoctorDiagnosisOfPatientVisit(t *testing.T) {
 	}
 
 	// lets get the diagnosis summary again to compare
-	resp, err = AuthGet(ts.URL+"?treatment_plan_id="+strconv.FormatInt(responseData.TreatmentPlan.Id.Int64(), 10), doctor.AccountId.Int64())
+	resp, err = testData.AuthGet(ts.URL+"?treatment_plan_id="+strconv.FormatInt(responseData.TreatmentPlan.Id.Int64(), 10), doctor.AccountId.Int64())
 	if err != nil {
 		t.Fatal("Unable to make call to get diagnosis summary for patient visit: " + err.Error())
 	} else if resp.StatusCode != http.StatusOK {
@@ -315,7 +315,7 @@ func TestDoctorDiagnosisOfPatientVisit(t *testing.T) {
 	SubmitPatientVisitDiagnosis(patientVisitResponse.PatientVisitId, doctor, testData, t)
 
 	// now get the diagnosis summary again to ensure that it did not change
-	resp, err = AuthGet(ts.URL+"?treatment_plan_id="+strconv.FormatInt(responseData.TreatmentPlan.Id.Int64(), 10), doctor.AccountId.Int64())
+	resp, err = testData.AuthGet(ts.URL+"?treatment_plan_id="+strconv.FormatInt(responseData.TreatmentPlan.Id.Int64(), 10), doctor.AccountId.Int64())
 	if err != nil {
 		t.Fatal("Unable to make call to get diagnosis summary for patient visit: " + err.Error())
 	} else if resp.StatusCode != http.StatusOK {
@@ -332,7 +332,7 @@ func TestDoctorSubmissionOfPatientVisitReview(t *testing.T) {
 	testData := SetupIntegrationTest(t)
 	defer TearDownIntegrationTest(t, testData)
 
-	patientSignedupResponse := SignupRandomTestPatient(t, testData.DataApi, testData.AuthApi)
+	patientSignedupResponse := SignupRandomTestPatient(t, testData)
 
 	doctorId := GetDoctorIdOfCurrentPrimaryDoctor(testData, t)
 
@@ -366,7 +366,7 @@ func TestDoctorSubmissionOfPatientVisitReview(t *testing.T) {
 	ts := httptest.NewServer(doctorTreatmentPlanHandler)
 	defer ts.Close()
 
-	resp, err := AuthPut(ts.URL, "application/json", bytes.NewReader(jsonData), doctor.AccountId.Int64())
+	resp, err := testData.AuthPut(ts.URL, "application/json", bytes.NewReader(jsonData), doctor.AccountId.Int64())
 	if err != nil {
 		t.Fatal("Unable to make a call to submit the patient visit review : " + err.Error())
 	} else if resp.StatusCode != http.StatusBadRequest {
@@ -382,7 +382,7 @@ func TestDoctorSubmissionOfPatientVisitReview(t *testing.T) {
 	})
 
 	// attempt to submit the patient visit review here. It should work
-	resp, err = AuthPut(ts.URL, "application/json", bytes.NewReader(jsonData), doctor.AccountId.Int64())
+	resp, err = testData.AuthPut(ts.URL, "application/json", bytes.NewReader(jsonData), doctor.AccountId.Int64())
 	if err != nil {
 		t.Fatal("Unable to make successful call to submit patient visit review")
 	} else if resp.StatusCode != http.StatusOK {

@@ -29,7 +29,7 @@ func TestPrevPrescriptions(t *testing.T) {
 	testData := test_integration.SetupIntegrationTest(t)
 	defer test_integration.TearDownIntegrationTest(t, testData)
 
-	pr := test_integration.SignupRandomTestPatient(t, testData.DataApi, testData.AuthApi)
+	pr := test_integration.SignupRandomTestPatient(t, testData)
 	patient := pr.Patient
 	patientId := patient.PatientId.Int64()
 	patientVisitResponse := test_integration.CreatePatientVisitForPatient(patientId, testData, t)
@@ -263,7 +263,7 @@ func TestPrevAcne(t *testing.T) {
 	testData := test_integration.SetupIntegrationTest(t)
 	defer test_integration.TearDownIntegrationTest(t, testData)
 
-	pr := test_integration.SignupRandomTestPatient(t, testData.DataApi, testData.AuthApi)
+	pr := test_integration.SignupRandomTestPatient(t, testData)
 	patient := pr.Patient
 	patientId := patient.PatientId.Int64()
 	patientVisitResponse := test_integration.CreatePatientVisitForPatient(patientId, testData, t)

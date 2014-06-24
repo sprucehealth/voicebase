@@ -8,7 +8,6 @@ import (
 	"net/http/httptest"
 	"reflect"
 	"testing"
-	"time"
 )
 
 type titleSubtitleItem struct {
@@ -69,7 +68,7 @@ func TestPatientNotificationsAPI(t *testing.T) {
 	testData := test_integration.SetupIntegrationTest(t)
 	defer test_integration.TearDownIntegrationTest(t, testData)
 
-	pr := test_integration.SignupRandomTestPatient(t, testData.DataApi, testData.AuthApi)
+	pr := test_integration.SignupRandomTestPatient(t, testData)
 	patient := pr.Patient
 	patientId := patient.PatientId.Int64()
 
@@ -134,7 +133,7 @@ func TestHealthLogAPI(t *testing.T) {
 	testData := test_integration.SetupIntegrationTest(t)
 	defer test_integration.TearDownIntegrationTest(t, testData)
 
-	pr := test_integration.SignupRandomTestPatient(t, testData.DataApi, testData.AuthApi)
+	pr := test_integration.SignupRandomTestPatient(t, testData)
 	patient := pr.Patient
 	patientId := patient.PatientId.Int64()
 
@@ -182,7 +181,7 @@ func TestHealthLog(t *testing.T) {
 	testData := test_integration.SetupIntegrationTest(t)
 	defer test_integration.TearDownIntegrationTest(t, testData)
 
-	pr := test_integration.SignupRandomTestPatient(t, testData.DataApi, testData.AuthApi)
+	pr := test_integration.SignupRandomTestPatient(t, testData)
 	patient := pr.Patient
 	patientId := patient.PatientId.Int64()
 
@@ -200,7 +199,7 @@ func TestHealthLog(t *testing.T) {
 	ts := httptest.NewServer(homelog.NewListHandler(testData.DataApi))
 	defer ts.Close()
 
-	resp, err := test_integration.AuthGet(ts.URL, patient.AccountId.Int64())
+	resp, err := testData.AuthGet(ts.URL, patient.AccountId.Int64())
 	if err != nil {
 		t.Fatal("Unable to get home")
 	}
@@ -240,119 +239,5 @@ func TestTreatmentPlanCreatedNotification(t *testing.T) {
 		t.Fatalf("Expected 1 notification for patient instead got %d", len(notes))
 	} else if notes[0].Data.TypeName() != "treatment_plan_created" {
 		t.Fatalf("Expected notification of type %s instead got %s", "visit_reviewed", notes[0].Data.TypeName())
-	}
-}
-
-func TestConversationLogItem(t *testing.T) {
-	testData := test_integration.SetupIntegrationTest(t)
-	defer test_integration.TearDownIntegrationTest(t, testData)
-
-	pr := test_integration.SignupRandomTestPatient(t, testData.DataApi, testData.AuthApi)
-	patient := pr.Patient
-	patientId := patient.PatientId.Int64()
-
-	doctorId := test_integration.GetDoctorIdOfCurrentPrimaryDoctor(testData, t)
-	doctor, err := testData.DataApi.GetDoctorFromId(doctorId)
-	if err != nil {
-		t.Fatalf("Error getting doctor from id: %s", err.Error())
-	}
-
-	convId := test_integration.StartConversationFromDoctorToPatient(t, testData.DataApi, doctor.AccountId.Int64(), patientId, 0)
-
-	items, _, err := testData.DataApi.GetHealthLogForPatient(patientId, notificationTypes)
-	if err != nil {
-		t.Fatal(err)
-	} else if len(items) != 1 {
-		t.Fatalf("Expected 1 item. Got %d", len(items))
-	} else if items[0].Data.TypeName() != "title_subtitle" {
-		t.Fatalf("Expected data type of 'title_subtitle'. Got '%s'", items[0].Data.TypeName())
-	} else if items[0].Data.(*titleSubtitleItem).Subtitle != "1 message" {
-		t.Fatalf("Test item subtitle mismatch: %s", items[0].Data.(*titleSubtitleItem).Subtitle)
-	}
-	firstItem := items[0]
-
-	// Make sure time ticks so that comparing the timestamps is stable
-	time.Sleep(time.Second)
-
-	// Make sure a reply updates the log item
-	test_integration.PatientReplyToConversation(t, testData.DataApi, convId, patient.AccountId.Int64())
-
-	items, _, err = testData.DataApi.GetHealthLogForPatient(patientId, notificationTypes)
-	if err != nil {
-		t.Fatal(err)
-	} else if len(items) != 1 {
-		t.Fatalf("Expected 1 item. Got %d", len(items))
-	} else if items[0].Data.TypeName() != "title_subtitle" {
-		t.Fatalf("Expected data type of 'title_subtitle'. Got '%s'", items[0].Data.TypeName())
-	} else if items[0].Data.(*titleSubtitleItem).Subtitle != "2 messages" {
-		t.Fatalf("Test item subtitle mismatch: %s", items[0].Data.(*titleSubtitleItem).Subtitle)
-	} else if items[0].Timestamp.Sub(firstItem.Timestamp) == 0 {
-		t.Fatalf("Timestamp not updated")
-	}
-}
-
-func TestConversationNotifications(t *testing.T) {
-	testData := test_integration.SetupIntegrationTest(t)
-	defer test_integration.TearDownIntegrationTest(t, testData)
-
-	pr := test_integration.SignupRandomTestPatient(t, testData.DataApi, testData.AuthApi)
-	patient := pr.Patient
-	patientId := patient.PatientId.Int64()
-
-	doctorId := test_integration.GetDoctorIdOfCurrentPrimaryDoctor(testData, t)
-	doctor, err := testData.DataApi.GetDoctorFromId(doctorId)
-	if err != nil {
-		t.Fatalf("Error getting doctor from id: %s", err.Error())
-	}
-
-	// New conversation from doctor to patient MUST create a notification
-
-	convId := test_integration.StartConversationFromDoctorToPatient(t, testData.DataApi, doctor.AccountId.Int64(), patientId, 0)
-
-	notes, _, err := testData.DataApi.GetNotificationsForPatient(patientId, notificationTypes)
-	if err != nil {
-		t.Fatalf("Unable to get notifications for patient %s", err)
-	} else if len(notes) != 1 {
-		t.Fatalf("Expected 1 notification for patient instead got %d", len(notes))
-	} else if notes[0].Data.TypeName() != "new_conversation" {
-		t.Fatalf("Expected notification of type %s instead got %s", "new_conversation", notes[0].Data.TypeName())
-	}
-
-	// Reply from patient to doctor MUST clear the original notification
-
-	test_integration.PatientReplyToConversation(t, testData.DataApi, convId, patient.AccountId.Int64())
-
-	notes, _, err = testData.DataApi.GetNotificationsForPatient(patientId, notificationTypes)
-	if err != nil {
-		t.Fatalf("Unable to get notifications for patient %s", err)
-	} else if len(notes) != 0 {
-		t.Fatalf("Expected 0 notifications for patient instead got %d", len(notes))
-	}
-
-	// Reply from doctor to patient MUST create a notification
-
-	test_integration.DoctorReplyToConversation(t, testData.DataApi, convId, doctor.AccountId.Int64())
-
-	notes, _, err = testData.DataApi.GetNotificationsForPatient(patientId, notificationTypes)
-	if err != nil {
-		t.Fatalf("Unable to get notifications for patient %s", err)
-	} else if len(notes) != 1 {
-		t.Fatalf("Expected 1 notification for patient instead got %d", len(notes))
-	} else if notes[0].Data.TypeName() != "conversation_reply" {
-		t.Fatalf("Expected notification of type %s instead got %s", "conversation_reply", notes[0].Data.TypeName())
-	}
-	if err := testData.DataApi.DeletePatientNotifications([]int64{notes[0].Id}); err != nil {
-		t.Fatalf("Failed to delete notification: %s", err.Error())
-	}
-
-	// New conversation from patient to doctor MUST NOT create a notification
-
-	test_integration.StartConversationFromPatientToDoctor(t, testData.DataApi, patient.AccountId.Int64(), 0)
-
-	notes, _, err = testData.DataApi.GetNotificationsForPatient(patientId, notificationTypes)
-	if err != nil {
-		t.Fatalf("Unable to get notifications for patient %s", err)
-	} else if len(notes) != 0 {
-		t.Fatalf("Expected 0 notifications for patient instead got %d", len(notes))
 	}
 }

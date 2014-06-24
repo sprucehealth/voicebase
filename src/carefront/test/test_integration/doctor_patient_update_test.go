@@ -30,7 +30,7 @@ func TestDoctorUpdateToPatientAddress(t *testing.T) {
 		t.Fatal("Unable to read doctor information")
 	}
 
-	signedupPatientResponse := SignupRandomTestPatient(t, testData.DataApi, testData.AuthApi)
+	signedupPatientResponse := SignupRandomTestPatient(t, testData)
 
 	patientPharmacy := &pharmacy.PharmacyData{
 		Source:       pharmacy.PHARMACY_SOURCE_SURESCRIPTS,
@@ -80,7 +80,7 @@ func TestDoctorUpdateToPatientAddress(t *testing.T) {
 		t.Fatal("Unable to marshal patient object: " + err.Error())
 	}
 
-	resp, err := AuthPut(ts.URL, "application/json", bytes.NewReader(jsonData), doctor.AccountId.Int64())
+	resp, err := testData.AuthPut(ts.URL, "application/json", bytes.NewReader(jsonData), doctor.AccountId.Int64())
 	if err != nil {
 		t.Fatal("Unable to make successful call to update patient information: " + err.Error())
 	}
@@ -119,7 +119,7 @@ func TestDoctorFailedUpdate(t *testing.T) {
 
 	// ensure that an update does not go through if we remove the patient address
 	// or the dob or phone numbers
-	signedupPatientResponse := SignupRandomTestPatient(t, testData.DataApi, testData.AuthApi)
+	signedupPatientResponse := SignupRandomTestPatient(t, testData)
 	signedupPatientResponse.Patient.PhoneNumbers = nil
 	stubErxApi := &erx.StubErxService{}
 	stubAddressValidationService := address.StubAddressValidationService{
@@ -145,7 +145,7 @@ func TestDoctorFailedUpdate(t *testing.T) {
 		t.Fatal("Unable to marshal patient object: " + err.Error())
 	}
 
-	resp, err := AuthPut(ts.URL, "application/json", bytes.NewReader(jsonData), doctor.AccountId.Int64())
+	resp, err := testData.AuthPut(ts.URL, "application/json", bytes.NewReader(jsonData), doctor.AccountId.Int64())
 	if err != nil {
 		t.Fatal("Unable to make successful call to update patient information: " + err.Error())
 	}
@@ -160,7 +160,7 @@ func TestDoctorFailedUpdate(t *testing.T) {
 	}}
 
 	// now lets try no address
-	resp, err = AuthPut(ts.URL, "application/json", bytes.NewReader(jsonData), doctor.AccountId.Int64())
+	resp, err = testData.AuthPut(ts.URL, "application/json", bytes.NewReader(jsonData), doctor.AccountId.Int64())
 	if err != nil {
 		t.Fatal("Unable to make successful call to update patient information: " + err.Error())
 	}
@@ -171,7 +171,7 @@ func TestDoctorFailedUpdate(t *testing.T) {
 
 	// now lets try no dob
 	signedupPatientResponse.Patient.Dob = encoding.Dob{Month: 11, Day: 8, Year: 1987}
-	resp, err = AuthPut(ts.URL, "application/json", bytes.NewReader(jsonData), doctor.AccountId.Int64())
+	resp, err = testData.AuthPut(ts.URL, "application/json", bytes.NewReader(jsonData), doctor.AccountId.Int64())
 	if err != nil {
 		t.Fatal("Unable to make successful call to update patient information: " + err.Error())
 	}
@@ -193,7 +193,7 @@ func TestDoctorUpdateToPhoneNumbers(t *testing.T) {
 		t.Fatal("Unable to read doctor information")
 	}
 
-	signedupPatientResponse := SignupRandomTestPatient(t, testData.DataApi, testData.AuthApi)
+	signedupPatientResponse := SignupRandomTestPatient(t, testData)
 	patientPharmacy := &pharmacy.PharmacyData{
 		Source:       pharmacy.PHARMACY_SOURCE_SURESCRIPTS,
 		SourceId:     "1234",
@@ -261,7 +261,7 @@ func TestDoctorUpdateToPhoneNumbers(t *testing.T) {
 		t.Fatal("Unable to marshal patient object: " + err.Error())
 	}
 
-	resp, err := AuthPut(ts.URL, "application/json", bytes.NewReader(jsonData), doctor.AccountId.Int64())
+	resp, err := testData.AuthPut(ts.URL, "application/json", bytes.NewReader(jsonData), doctor.AccountId.Int64())
 	if err != nil {
 		t.Fatal("Unable to make successful call to update patient information: " + err.Error())
 	}
@@ -297,7 +297,7 @@ func TestDoctorUpdateToTopLevelInformation(t *testing.T) {
 		t.Fatal("Unable to read doctor information")
 	}
 
-	signedupPatientResponse := SignupRandomTestPatient(t, testData.DataApi, testData.AuthApi)
+	signedupPatientResponse := SignupRandomTestPatient(t, testData)
 	patientPharmacy := &pharmacy.PharmacyData{
 		Source:       pharmacy.PHARMACY_SOURCE_SURESCRIPTS,
 		SourceId:     "1234",
@@ -352,7 +352,7 @@ func TestDoctorUpdateToTopLevelInformation(t *testing.T) {
 			Patient: signedupPatientResponse.Patient,
 		},
 	)
-	resp, err := AuthPut(ts.URL, "application/json", bytes.NewReader(jsonData), doctor.AccountId.Int64())
+	resp, err := testData.AuthPut(ts.URL, "application/json", bytes.NewReader(jsonData), doctor.AccountId.Int64())
 	if err != nil {
 		t.Fatal("Unable to make successful call to update patient information: " + err.Error())
 	}
@@ -383,9 +383,9 @@ func TestDoctorUpdatePatientInformationForbidden(t *testing.T) {
 	testData := SetupIntegrationTest(t)
 	defer TearDownIntegrationTest(t, testData)
 
-	signedupDoctorResponse, _, _ := SignupRandomTestDoctor(t, testData.DataApi, testData.AuthApi)
+	signedupDoctorResponse, _, _ := SignupRandomTestDoctor(t, testData)
 
-	signedupPatientResponse := SignupRandomTestPatient(t, testData.DataApi, testData.AuthApi)
+	signedupPatientResponse := SignupRandomTestPatient(t, testData)
 	patientPharmacy := &pharmacy.PharmacyData{
 		Source:       pharmacy.PHARMACY_SOURCE_SURESCRIPTS,
 		SourceId:     "1234",
@@ -429,7 +429,7 @@ func TestDoctorUpdatePatientInformationForbidden(t *testing.T) {
 		t.Fatal("unable to get doctor from id: " + err.Error())
 	}
 
-	resp, err := AuthPut(ts.URL, "application/json", bytes.NewReader(jsonData), doctor.AccountId.Int64())
+	resp, err := testData.AuthPut(ts.URL, "application/json", bytes.NewReader(jsonData), doctor.AccountId.Int64())
 	if err != nil {
 		t.Fatal("Unable to make successfull call to upte patient information: " + err.Error())
 	}
@@ -450,7 +450,7 @@ func TestDoctorPatientPharmacyUpdateHandler(t *testing.T) {
 	if err != nil {
 		t.Fatal("Unable to read doctor information")
 	}
-	signedupPatientResponse := SignupRandomTestPatient(t, testData.DataApi, testData.AuthApi)
+	signedupPatientResponse := SignupRandomTestPatient(t, testData)
 	patientPharmacy := &pharmacy.PharmacyData{
 		Source:       pharmacy.PHARMACY_SOURCE_SURESCRIPTS,
 		SourceId:     "1234",
@@ -489,7 +489,7 @@ func TestDoctorPatientPharmacyUpdateHandler(t *testing.T) {
 		t.Fatal("Unable to marhsal data: " + err.Error())
 	}
 
-	resp, err := AuthPut(ts.URL, "application/json", bytes.NewReader(jsonData), doctor.AccountId.Int64())
+	resp, err := testData.AuthPut(ts.URL, "application/json", bytes.NewReader(jsonData), doctor.AccountId.Int64())
 	if err != nil {
 		t.Fatal("Unable to make successfull call to update patient information")
 	}
@@ -517,9 +517,9 @@ func TestDoctorPharmacyUpdateForbidden(t *testing.T) {
 	testData := SetupIntegrationTest(t)
 	defer TearDownIntegrationTest(t, testData)
 
-	signedupDoctorResponse, _, _ := SignupRandomTestDoctor(t, testData.DataApi, testData.AuthApi)
+	signedupDoctorResponse, _, _ := SignupRandomTestDoctor(t, testData)
 
-	signedupPatientResponse := SignupRandomTestPatient(t, testData.DataApi, testData.AuthApi)
+	signedupPatientResponse := SignupRandomTestPatient(t, testData)
 	patientPharmacy := &pharmacy.PharmacyData{
 		Source:       pharmacy.PHARMACY_SOURCE_SURESCRIPTS,
 		SourceId:     "1234",
@@ -553,7 +553,7 @@ func TestDoctorPharmacyUpdateForbidden(t *testing.T) {
 		t.Fatal("unable to get doctor from id: " + err.Error())
 	}
 
-	resp, err := AuthPut(ts.URL, "application/json", bytes.NewReader(jsonData), doctor.AccountId.Int64())
+	resp, err := testData.AuthPut(ts.URL, "application/json", bytes.NewReader(jsonData), doctor.AccountId.Int64())
 	if err != nil {
 		t.Fatal("Unable to make successfull call to upte patient information: " + err.Error())
 	}

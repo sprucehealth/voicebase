@@ -76,46 +76,74 @@ func init() {
 	dispatch.Testing = true
 }
 
-func AuthGet(url string, accountId int64) (*http.Response, error) {
+func (d *TestData) AuthGet(url string, accountID int64) (*http.Response, error) {
 	req, err := http.NewRequest("GET", url, nil)
 	if err != nil {
 		return nil, err
 	}
-	req.Header.Set("AccountId", strconv.FormatInt(accountId, 10))
-	apiservice.TestingContext.AccountId = accountId
+	req.Header.Set("AccountID", strconv.FormatInt(accountID, 10))
+	apiservice.TestingContext.AccountId = accountID
+	if accountID != 0 {
+		account, err := d.AuthApi.GetAccount(accountID)
+		if err != nil {
+			return nil, err
+		}
+		apiservice.TestingContext.Role = account.Role
+	}
 	return http.DefaultClient.Do(req)
 }
 
-func AuthPost(url, bodyType string, body io.Reader, accountId int64) (*http.Response, error) {
+func (d *TestData) AuthPost(url, bodyType string, body io.Reader, accountID int64) (*http.Response, error) {
 	req, err := http.NewRequest("POST", url, body)
 	if err != nil {
 		return nil, err
 	}
 	req.Header.Set("Content-Type", bodyType)
-	req.Header.Set("AccountId", strconv.FormatInt(accountId, 10))
-	apiservice.TestingContext.AccountId = accountId
+	req.Header.Set("AccountID", strconv.FormatInt(accountID, 10))
+	apiservice.TestingContext.AccountId = accountID
+	if accountID != 0 {
+		account, err := d.AuthApi.GetAccount(accountID)
+		if err != nil {
+			return nil, err
+		}
+		apiservice.TestingContext.Role = account.Role
+	}
 	return http.DefaultClient.Do(req)
 }
 
-func AuthPut(url, bodyType string, body io.Reader, accountId int64) (*http.Response, error) {
+func (d *TestData) AuthPut(url, bodyType string, body io.Reader, accountID int64) (*http.Response, error) {
 	req, err := http.NewRequest("PUT", url, body)
 	if err != nil {
 		return nil, err
 	}
 	req.Header.Set("Content-Type", bodyType)
-	req.Header.Set("AccountId", strconv.FormatInt(accountId, 10))
-	apiservice.TestingContext.AccountId = accountId
+	req.Header.Set("AccountID", strconv.FormatInt(accountID, 10))
+	apiservice.TestingContext.AccountId = accountID
+	if accountID != 0 {
+		account, err := d.AuthApi.GetAccount(accountID)
+		if err != nil {
+			return nil, err
+		}
+		apiservice.TestingContext.Role = account.Role
+	}
 	return http.DefaultClient.Do(req)
 }
 
-func AuthDelete(url, bodyType string, body io.Reader, accountId int64) (*http.Response, error) {
+func (d *TestData) AuthDelete(url, bodyType string, body io.Reader, accountID int64) (*http.Response, error) {
 	req, err := http.NewRequest("DELETE", url, body)
 	if err != nil {
 		return nil, err
 	}
 	req.Header.Set("Content-Type", bodyType)
-	req.Header.Set("AccountId", strconv.FormatInt(accountId, 10))
-	apiservice.TestingContext.AccountId = accountId
+	req.Header.Set("AccountID", strconv.FormatInt(accountID, 10))
+	apiservice.TestingContext.AccountId = accountID
+	if accountID != 0 {
+		account, err := d.AuthApi.GetAccount(accountID)
+		if err != nil {
+			return nil, err
+		}
+		apiservice.TestingContext.Role = account.Role
+	}
 	return http.DefaultClient.Do(req)
 }
 
@@ -155,7 +183,7 @@ func CheckIfRunningLocally(t *testing.T) {
 	}
 }
 
-func GetDoctorIdOfCurrentPrimaryDoctor(testData TestData, t *testing.T) int64 {
+func GetDoctorIdOfCurrentPrimaryDoctor(testData *TestData, t *testing.T) int64 {
 	// get the current primary doctor
 	var doctorId int64
 	err := testData.DB.QueryRow(`select provider_id from care_provider_state_elligibility 
@@ -168,8 +196,8 @@ func GetDoctorIdOfCurrentPrimaryDoctor(testData TestData, t *testing.T) int64 {
 	return doctorId
 }
 
-func SignupAndSubmitPatientVisitForRandomPatient(t *testing.T, testData TestData, doctor *common.Doctor) (*patient_visit.PatientVisitResponse, *common.DoctorTreatmentPlan) {
-	patientSignedupResponse := SignupRandomTestPatient(t, testData.DataApi, testData.AuthApi)
+func SignupAndSubmitPatientVisitForRandomPatient(t *testing.T, testData *TestData, doctor *common.Doctor) (*patient_visit.PatientVisitResponse, *common.DoctorTreatmentPlan) {
+	patientSignedupResponse := SignupRandomTestPatient(t, testData)
 	patientVisitResponse := CreatePatientVisitForPatient(patientSignedupResponse.Patient.PatientId.Int64(), testData, t)
 
 	patient, err := testData.DataApi.GetPatientFromId(patientSignedupResponse.Patient.PatientId.Int64())
@@ -186,7 +214,7 @@ func SignupAndSubmitPatientVisitForRandomPatient(t *testing.T, testData TestData
 	return patientVisitResponse, doctorPickTreatmentPlanResponse.TreatmentPlan
 }
 
-func SetupIntegrationTest(t *testing.T) TestData {
+func SetupIntegrationTest(t *testing.T) *TestData {
 	CheckIfRunningLocally(t)
 
 	dbConfig := GetDBConfig(t)
@@ -228,7 +256,7 @@ func SetupIntegrationTest(t *testing.T) TestData {
 		DB:             db,
 		Hasher:         nullHasher{},
 	}
-	testData := TestData{
+	testData := &TestData{
 		AuthApi:             authApi,
 		DBConfig:            dbConfig,
 		CloudStorageService: cloudStorageService,
@@ -252,7 +280,7 @@ func SetupIntegrationTest(t *testing.T) TestData {
 
 	// When setting up the database for each integration test, ensure to setup a doctor that is
 	// considered elligible to serve in the state of CA.
-	signedupDoctorResponse, _, _ := SignupRandomTestDoctor(t, testData.DataApi, testData.AuthApi)
+	signedupDoctorResponse, _, _ := SignupRandomTestDoctor(t, testData)
 
 	// make this doctor the primary doctor in the state of CA
 	_, err = testData.DB.Exec(`insert into care_provider_state_elligibility (role_type_id, provider_id, care_providing_state_id) 
@@ -272,7 +300,7 @@ func SetupIntegrationTest(t *testing.T) TestData {
 	return testData
 }
 
-func TearDownIntegrationTest(t *testing.T, testData TestData) {
+func TearDownIntegrationTest(t *testing.T, testData *TestData) {
 	testData.DB.Close()
 
 	t.Logf("Time to run test: %.3f seconds", float64(time.Since(testData.StartTime))/float64(time.Second))

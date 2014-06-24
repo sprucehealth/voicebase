@@ -1,4 +1,4 @@
-package notifications
+package test_notifications
 
 import (
 	"carefront/api"
@@ -22,7 +22,7 @@ func TestRegisteringToken_Patient(t *testing.T) {
 	testData := test_integration.SetupIntegrationTest(t)
 	defer test_integration.TearDownIntegrationTest(t, testData)
 
-	pr := test_integration.SignupRandomTestPatient(t, testData.DataApi, testData.AuthApi)
+	pr := test_integration.SignupRandomTestPatient(t, testData)
 	patient := pr.Patient
 	accountId := patient.AccountId.Int64()
 
@@ -100,7 +100,7 @@ func TestRegisteringToken_SameTokenDifferentUser(t *testing.T) {
 	testData := test_integration.SetupIntegrationTest(t)
 	defer test_integration.TearDownIntegrationTest(t, testData)
 
-	pr := test_integration.SignupRandomTestPatient(t, testData.DataApi, testData.AuthApi)
+	pr := test_integration.SignupRandomTestPatient(t, testData)
 	patient := pr.Patient
 	accountId := patient.AccountId.Int64()
 
@@ -117,7 +117,7 @@ func TestRegisteringToken_SameTokenDifferentUser(t *testing.T) {
 	SetDeviceTokenForAccountId(accountId, deviceToken, &notificationConfigs, mockSNSClient, testData.DataApi, t)
 
 	// new patient
-	pr = test_integration.SignupRandomTestPatient(t, testData.DataApi, testData.AuthApi)
+	pr = test_integration.SignupRandomTestPatient(t, testData)
 	patient = pr.Patient
 	accountId2 := patient.AccountId.Int64()
 
@@ -175,7 +175,7 @@ func TestRegisteringToken_DeleteOnLogout(t *testing.T) {
 	testData := test_integration.SetupIntegrationTest(t)
 	defer test_integration.TearDownIntegrationTest(t, testData)
 
-	pr := test_integration.SignupRandomTestPatient(t, testData.DataApi, testData.AuthApi)
+	pr := test_integration.SignupRandomTestPatient(t, testData)
 	patient := pr.Patient
 	accountId := patient.AccountId.Int64()
 

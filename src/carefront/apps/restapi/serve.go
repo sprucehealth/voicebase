@@ -12,7 +12,7 @@ import (
 )
 
 func serve(conf *Config, hand http.Handler) {
-	s := &http.Server{
+	server := &http.Server{
 		Addr:           conf.ListenAddr,
 		Handler:        hand,
 		ReadTimeout:    30 * time.Second,
@@ -22,7 +22,10 @@ func serve(conf *Config, hand http.Handler) {
 
 	if conf.TLSCert != "" && conf.TLSKey != "" {
 		go func() {
-			s.TLSConfig = &tls.Config{
+			// Make a copy of the server to avoid sharing internal state
+			// (currently there is none but it's safer not to assume that)
+			tlsServer := *server
+			tlsServer.TLSConfig = &tls.Config{
 				MinVersion:               tls.VersionTLS10,
 				PreferServerCipherSuites: true,
 				CipherSuites: []uint16{
@@ -37,8 +40,8 @@ func serve(conf *Config, hand http.Handler) {
 					tls.TLS_RSA_WITH_AES_256_CBC_SHA,
 				},
 			}
-			if s.TLSConfig.NextProtos == nil {
-				s.TLSConfig.NextProtos = []string{"http/1.1"}
+			if tlsServer.TLSConfig.NextProtos == nil {
+				tlsServer.TLSConfig.NextProtos = []string{"http/1.1"}
 			}
 
 			cert, err := conf.ReadURI(conf.TLSCert)
@@ -54,7 +57,7 @@ func serve(conf *Config, hand http.Handler) {
 				log.Fatal(err)
 			}
 
-			s.TLSConfig.Certificates = []tls.Certificate{certs}
+			tlsServer.TLSConfig.Certificates = []tls.Certificate{certs}
 
 			conn, err := net.Listen("tcp", conf.TLSListenAddr)
 			if err != nil {
@@ -65,13 +68,13 @@ func serve(conf *Config, hand http.Handler) {
 				conn = &proxyproto.Listener{Listener: conn}
 			}
 
-			ln := tls.NewListener(conn, s.TLSConfig)
+			ln := tls.NewListener(conn, tlsServer.TLSConfig)
 
 			golog.Infof("Starting SSL server on %s...", conf.TLSListenAddr)
-			log.Fatal(s.Serve(ln))
+			log.Fatal(tlsServer.Serve(ln))
 		}()
 	}
 	golog.Infof("Starting server on %s...", conf.ListenAddr)
 
-	log.Fatal(s.ListenAndServe())
+	log.Fatal(server.ListenAndServe())
 }

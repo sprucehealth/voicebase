@@ -21,7 +21,7 @@ func TestAddCardsForPatient(t *testing.T) {
 	testData := SetupIntegrationTest(t)
 	defer TearDownIntegrationTest(t, testData)
 
-	signedupPatientResponse := SignupRandomTestPatient(t, testData.DataApi, testData.AuthApi)
+	signedupPatientResponse := SignupRandomTestPatient(t, testData)
 
 	customerToAdd := &payment.Customer{
 		Id: "test_customer_id",
@@ -119,7 +119,7 @@ func TestAddCardsForPatient(t *testing.T) {
 
 	params := url.Values{}
 	params.Set("card_id", strconv.FormatInt(cardToMakeDefault.Id.Int64(), 10))
-	resp, err := AuthPut(ts.URL, "application/x-www-form-urlencoded", strings.NewReader(params.Encode()),
+	resp, err := testData.AuthPut(ts.URL, "application/x-www-form-urlencoded", strings.NewReader(params.Encode()),
 		patient.AccountId.Int64())
 	if err != nil {
 		t.Fatal("Unable to make previous card default: " + err.Error())
@@ -284,7 +284,7 @@ func TestAddCardsForPatient(t *testing.T) {
 	}
 }
 
-func deleteCard(t *testing.T, TestData TestData, patient *common.Patient, cardToDelete *common.Card, stubPaymentsService *payment.StubPaymentService, patientCardsHandler *apiservice.PatientCardsHandler, currentCards []*common.Card) []*common.Card {
+func deleteCard(t *testing.T, testData *TestData, patient *common.Patient, cardToDelete *common.Card, stubPaymentsService *payment.StubPaymentService, patientCardsHandler *apiservice.PatientCardsHandler, currentCards []*common.Card) []*common.Card {
 	params := url.Values{}
 	params.Set("card_id", strconv.FormatInt(cardToDelete.Id.Int64(), 10))
 
@@ -299,7 +299,7 @@ func deleteCard(t *testing.T, TestData TestData, patient *common.Patient, cardTo
 	ts := httptest.NewServer(patientCardsHandler)
 	defer ts.Close()
 
-	resp, err := AuthDelete(ts.URL+"?"+params.Encode(), "application/x-www-form-urlencoded", nil, patient.AccountId.Int64())
+	resp, err := testData.AuthDelete(ts.URL+"?"+params.Encode(), "application/x-www-form-urlencoded", nil, patient.AccountId.Int64())
 	if err != nil {
 		t.Fatal("Unable to delete card: " + err.Error())
 	}
@@ -314,7 +314,7 @@ func deleteCard(t *testing.T, TestData TestData, patient *common.Patient, cardTo
 	return patientCardsResponse.Cards
 }
 
-func addCard(t *testing.T, testData TestData, patientAccountId int64, patientCardsHandler *apiservice.PatientCardsHandler, stubPaymentsService *payment.StubPaymentService, currentCards []*common.Card) (*common.Card, []*common.Card) {
+func addCard(t *testing.T, testData *TestData, patientAccountId int64, patientCardsHandler *apiservice.PatientCardsHandler, stubPaymentsService *payment.StubPaymentService, currentCards []*common.Card) (*common.Card, []*common.Card) {
 
 	ts := httptest.NewServer(patientCardsHandler)
 	defer ts.Close()
@@ -354,7 +354,7 @@ func addCard(t *testing.T, testData TestData, patientAccountId int64, patientCar
 		t.Fatal("Unable to marshal card object: " + err.Error())
 	}
 
-	resp, err := AuthPost(ts.URL, "application/json", bytes.NewReader(jsonData), patientAccountId)
+	resp, err := testData.AuthPost(ts.URL, "application/json", bytes.NewReader(jsonData), patientAccountId)
 	if err != nil {
 		t.Fatal("Unable to make successful call to add cards to patient: " + err.Error())
 	}
@@ -373,7 +373,7 @@ func addCard(t *testing.T, testData TestData, patientAccountId int64, patientCar
 	return card, patientCardsResponse.Cards
 }
 
-func checkPendingTaskCount(t *testing.T, testData TestData, patientId int64) {
+func checkPendingTaskCount(t *testing.T, testData *TestData, patientId int64) {
 	var pendingTaskCount int64
 	err := testData.DB.QueryRow(`select count(*) from pending_task where item_id = ?`, patientId).Scan(&pendingTaskCount)
 	if err != nil {

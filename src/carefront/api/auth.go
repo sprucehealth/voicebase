@@ -214,7 +214,7 @@ func (m *Auth) UpdateLastOpenedDate(accountID int64) error {
 	return nil
 }
 
-func (m *Auth) AccountForEmail(email string) (*common.Account, error) {
+func (m *Auth) GetAccountForEmail(email string) (*common.Account, error) {
 	email = normalizeEmail(email)
 	var account common.Account
 	if err := m.DB.QueryRow(`
@@ -228,6 +228,23 @@ func (m *Auth) AccountForEmail(email string) (*common.Account, error) {
 		return nil, err
 	}
 	return &account, nil
+}
+
+func (m *Auth) GetAccount(id int64) (*common.Account, error) {
+	account := &common.Account{
+		ID: id,
+	}
+	if err := m.DB.QueryRow(`
+		SELECT role_type_tag
+		FROM account
+		INNER JOIN role_type ON role_type_id = role_type.id
+		WHERE account.id = ?`, id,
+	).Scan(&account.Role); err == sql.ErrNoRows {
+		return nil, NoRowsError
+	} else if err != nil {
+		return nil, err
+	}
+	return account, nil
 }
 
 func (m *Auth) CreateTempToken(accountID int64, expireSec int, purpose, token string) (string, error) {

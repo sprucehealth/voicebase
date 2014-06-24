@@ -14,16 +14,22 @@ type spruceError struct {
 	RequestID          int64  `json:"request_id,string,omitempty"`
 }
 
-func NewValidationError(msg string, r *http.Request) spruceError {
-	return spruceError{
+type NotAuthorizedError string
+
+func (e NotAuthorizedError) Error() string {
+	return fmt.Sprintf("not authorized: %s", string(e))
+}
+
+func NewValidationError(msg string, r *http.Request) *spruceError {
+	return &spruceError{
 		UserError:      msg,
 		HTTPStatusCode: http.StatusBadRequest,
 		RequestID:      GetContext(r).RequestID,
 	}
 }
 
-func wrapInternalError(err error, code int, r *http.Request) spruceError {
-	return spruceError{
+func wrapInternalError(err error, code int, r *http.Request) *spruceError {
+	return &spruceError{
 		DeveloperError: err.Error(),
 		UserError:      genericUserErrorMessage,
 		RequestID:      GetContext(r).RequestID,
@@ -31,7 +37,7 @@ func wrapInternalError(err error, code int, r *http.Request) spruceError {
 	}
 }
 
-func (s spruceError) Error() string {
+func (s *spruceError) Error() string {
 	var msg string
 	if s.DeveloperErrorCode > 0 {
 		msg = fmt.Sprintf("RequestID: %d, Error: %s, ErrorCode: %d", s.RequestID, s.DeveloperError, s.DeveloperErrorCode)
@@ -45,8 +51,14 @@ var IsDev = false
 
 func WriteError(err error, w http.ResponseWriter, r *http.Request) {
 	switch err := err.(type) {
-	case spruceError:
+	case *spruceError:
 		writeSpruceError(err, w, r)
+	case NotAuthorizedError:
+		writeSpruceError(&spruceError{
+			UserError:      string(err),
+			HTTPStatusCode: http.StatusForbidden,
+			RequestID:      GetContext(r).RequestID,
+		}, w, r)
 	default:
 		writeSpruceError(wrapInternalError(err, http.StatusInternalServerError, r), w, r)
 	}
@@ -65,14 +77,14 @@ func WriteBadRequestError(err error, w http.ResponseWriter, r *http.Request) {
 // authorized to access a given resource. Hopefully the user will never see
 // this since the client shouldn't present the option to begin with.
 func WriteAccessNotAllowedError(w http.ResponseWriter, r *http.Request) {
-	writeSpruceError(spruceError{
+	writeSpruceError(&spruceError{
 		UserError:      "Access not permitted",
 		RequestID:      GetContext(r).RequestID,
 		HTTPStatusCode: http.StatusForbidden,
 	}, w, r)
 }
 
-func writeSpruceError(err spruceError, w http.ResponseWriter, r *http.Request) {
+func writeSpruceError(err *spruceError, w http.ResponseWriter, r *http.Request) {
 	golog.Logf(3, golog.ERR, err.Error())
 
 	// remove the developer error information if we are not dealing with

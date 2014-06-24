@@ -283,13 +283,9 @@ func buildRESTAPI(conf *Config, dataApi api.DataAPI, authAPI api.AuthAPI, metric
 	mux.Handle("/v1/resourceguide/list", reslib.NewListHandler(dataApi))
 
 	mux.Handle("/v1/photo", photos.NewHandler(dataApi, awsAuth, conf.PhotoBucket, conf.AWSRegion))
-	mux.Handle("/v1/patient/conversation", messages.NewPatientConversationHandler(dataApi))
-	mux.Handle("/v1/doctor/conversation", messages.NewDoctorConversationHandler(dataApi))
-	mux.Handle("/v1/patient/conversation/messages", messages.NewPatientMessagesHandler(dataApi))
-	mux.Handle("/v1/doctor/conversation/messages", messages.NewDoctorMessagesHandler(dataApi))
-	mux.Handle("/v1/patient/conversation/read", messages.NewPatientReadHandler(dataApi))
-	mux.Handle("/v1/doctor/conversation/read", messages.NewDoctorReadHandler(dataApi))
-	mux.Handle("/v1/conversation/topics", messages.NewTopicsHandler(dataApi))
+	mux.Handle("/v1/case/messages", messages.NewHandler(dataApi))
+	mux.Handle("/v1/case/messages/list", messages.NewListHandler(dataApi))
+	mux.Handle("/v1/case/messages/read", messages.NewReadHandler(dataApi))
 
 	mux.Handle("/v1/doctor/signup", signupDoctorHandler)
 	mux.Handle("/v1/doctor/authenticate", authenticateDoctorHandler)

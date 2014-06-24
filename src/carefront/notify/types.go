@@ -66,8 +66,7 @@ func init() {
 	eventToNotificationViewMapping = map[reflect.Type]notificationView{
 		reflect.TypeOf(&patient_visit.VisitSubmittedEvent{}):               visitSubmittedNotificationView(0),
 		reflect.TypeOf(&doctor_treatment_plan.TreatmentPlanCreatedEvent{}): treatmentPlanCreatedNotificationView(0),
-		reflect.TypeOf(&messages.ConversationStartedEvent{}):               newMessageNotificationView(0),
-		reflect.TypeOf(&messages.ConversationReplyEvent{}):                 newMessageNotificationView(0),
+		reflect.TypeOf(&messages.PostEvent{}):                              newMessageNotificationView(0),
 		reflect.TypeOf(&app_worker.RefillRequestCreatedEvent{}):            refillRxCreatedNotificationView(0),
 		reflect.TypeOf(&app_worker.RxTransmissionErrorEvent{}):             rxTransmissionErrorNotificationView(0),
 	}

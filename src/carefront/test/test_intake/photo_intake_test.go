@@ -24,7 +24,7 @@ func TestPhotoIntake(t *testing.T) {
 	testData := test_integration.SetupIntegrationTest(t)
 	defer test_integration.TearDownIntegrationTest(t, testData)
 
-	pr := test_integration.SignupRandomTestPatient(t, testData.DataApi, testData.AuthApi)
+	pr := test_integration.SignupRandomTestPatient(t, testData)
 	patient := pr.Patient
 	patientId := patient.PatientId.Int64()
 	patientVisitResponse := test_integration.CreatePatientVisitForPatient(patientId, testData, t)
@@ -91,7 +91,7 @@ func TestPhotoIntake_AllSections(t *testing.T) {
 	testData := test_integration.SetupIntegrationTest(t)
 	defer test_integration.TearDownIntegrationTest(t, testData)
 
-	pr := test_integration.SignupRandomTestPatient(t, testData.DataApi, testData.AuthApi)
+	pr := test_integration.SignupRandomTestPatient(t, testData)
 	patient := pr.Patient
 	patientId := patient.PatientId.Int64()
 	patientVisitResponse := test_integration.CreatePatientVisitForPatient(patientId, testData, t)
@@ -170,7 +170,7 @@ func TestPhotoIntake_MultipleSectionsForSameQuestion(t *testing.T) {
 	testData := test_integration.SetupIntegrationTest(t)
 	defer test_integration.TearDownIntegrationTest(t, testData)
 
-	pr := test_integration.SignupRandomTestPatient(t, testData.DataApi, testData.AuthApi)
+	pr := test_integration.SignupRandomTestPatient(t, testData)
 	patient := pr.Patient
 	patientId := patient.PatientId.Int64()
 	patientVisitResponse := test_integration.CreatePatientVisitForPatient(patientId, testData, t)
@@ -242,7 +242,7 @@ func TestPhotoIntake_MultiplePhotos(t *testing.T) {
 	testData := test_integration.SetupIntegrationTest(t)
 	defer test_integration.TearDownIntegrationTest(t, testData)
 
-	pr := test_integration.SignupRandomTestPatient(t, testData.DataApi, testData.AuthApi)
+	pr := test_integration.SignupRandomTestPatient(t, testData)
 	patient := pr.Patient
 	patientId := patient.PatientId.Int64()
 	patientVisitResponse := test_integration.CreatePatientVisitForPatient(patientId, testData, t)
@@ -313,7 +313,7 @@ func TestPhotoIntake_AnswerInvalidation(t *testing.T) {
 	testData := test_integration.SetupIntegrationTest(t)
 	defer test_integration.TearDownIntegrationTest(t, testData)
 
-	pr := test_integration.SignupRandomTestPatient(t, testData.DataApi, testData.AuthApi)
+	pr := test_integration.SignupRandomTestPatient(t, testData)
 	patient := pr.Patient
 	patientId := patient.PatientId.Int64()
 	patientVisitResponse := test_integration.CreatePatientVisitForPatient(patientId, testData, t)
@@ -416,7 +416,7 @@ func TestPhotoIntake_MultiplePhotoQuestions(t *testing.T) {
 	testData := test_integration.SetupIntegrationTest(t)
 	defer test_integration.TearDownIntegrationTest(t, testData)
 
-	pr := test_integration.SignupRandomTestPatient(t, testData.DataApi, testData.AuthApi)
+	pr := test_integration.SignupRandomTestPatient(t, testData)
 	patient := pr.Patient
 	patientId := patient.PatientId.Int64()
 	patientVisitResponse := test_integration.CreatePatientVisitForPatient(patientId, testData, t)
@@ -515,7 +515,7 @@ func TestPhotoIntake_MistmatchedSlotId(t *testing.T) {
 	testData := test_integration.SetupIntegrationTest(t)
 	defer test_integration.TearDownIntegrationTest(t, testData)
 
-	pr := test_integration.SignupRandomTestPatient(t, testData.DataApi, testData.AuthApi)
+	pr := test_integration.SignupRandomTestPatient(t, testData)
 	patient := pr.Patient
 	patientId := patient.PatientId.Int64()
 	patientVisitResponse := test_integration.CreatePatientVisitForPatient(patientId, testData, t)
@@ -571,7 +571,7 @@ func TestPhotoIntake_MistmatchedSlotId(t *testing.T) {
 		t.Fatal(err.Error())
 	}
 
-	resp, err := test_integration.AuthPost(photoIntakeServer.URL, "application/json", bytes.NewReader(jsonData), patient.AccountId.Int64())
+	resp, err := testData.AuthPost(photoIntakeServer.URL, "application/json", bytes.NewReader(jsonData), patient.AccountId.Int64())
 	if err != nil {
 		t.Fatal(err.Error())
 	} else if resp.StatusCode != http.StatusBadRequest {

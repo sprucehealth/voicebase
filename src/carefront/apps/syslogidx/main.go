@@ -19,6 +19,7 @@ import (
 
 var (
 	flagArchiveLogs = flag.Bool("archive", false, "Enable log archiving to S3")
+	flagCleanup     = flag.Bool("cleanup", false, "Delete old indexes and exit")
 	flagCloudTrail  = flag.Bool("cloudtrail", false, "Enable CloudTrail log indexing")
 	flagRetainDays  = flag.Int("retaindays", 60, "Number of days of indexes to retain")
 )
@@ -217,31 +218,35 @@ func (h *handler) Handle(parts syslogparser.LogParts) {
 	}
 }
 
+func cleanupIndexes(es *ElasticSearch, days int) {
+	aliases, err := es.Aliases()
+	if err != nil {
+		log.Printf("Failed to get index aliases: %s", err.Error())
+	} else {
+		var indexList []string
+		for index := range aliases {
+			if len(index) == 14 && strings.HasPrefix(index, "log-") {
+				indexList = append(indexList, index)
+			}
+		}
+		sort.Strings(indexList)
+		if len(indexList) > days {
+			for _, index := range indexList[:len(indexList)-days] {
+				if err := es.DeleteIndex(index); err != nil {
+					log.Printf("Failed to delete index %s: %s", index, err.Error())
+				}
+			}
+		}
+	}
+}
+
 func startPeriodicCleanup(es *ElasticSearch, days int) {
 	go func() {
 		// Sleep a random duration so that if there's multiple of these processes
 		// they don't try to run at the same time.
 		time.Sleep(time.Duration(rand.Intn(2*60*60)) * time.Second)
 		for {
-			aliases, err := es.Aliases()
-			if err != nil {
-				log.Printf("Failed to get index aliases: %s", err.Error())
-			} else {
-				var indexList []string
-				for index := range aliases {
-					if len(index) == 14 && strings.HasPrefix(index, "log-") {
-						indexList = append(indexList, index)
-					}
-				}
-				sort.Strings(indexList)
-				if len(indexList) > days {
-					for _, index := range indexList[:len(indexList)-days] {
-						if err := es.DeleteIndex(index); err != nil {
-							log.Printf("Failed to delete index %s: %s", index, err.Error())
-						}
-					}
-				}
-			}
+			cleanupIndexes(es, days)
 			time.Sleep(time.Hour * 24)
 		}
 	}()
@@ -260,6 +265,10 @@ func main() {
 		Endpoint: "http://127.0.0.1:9200",
 	}
 
+	if *flagCleanup {
+		cleanupIndexes(es, *flagRetainDays)
+		return
+	}
 	if *flagRetainDays > 0 {
 		startPeriodicCleanup(es, *flagRetainDays)
 	}

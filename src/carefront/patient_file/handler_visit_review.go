@@ -53,9 +53,9 @@ func (p *doctorPatientVisitReviewHandler) ServeHTTP(w http.ResponseWriter, r *ht
 	}
 
 	// ensure that the doctor is authorized to work on this case
-	patientVisitReviewData, statusCode, err := apiservice.ValidateDoctorAccessToPatientVisitAndGetRelevantData(patientVisit.PatientVisitId.Int64(), apiservice.GetContext(r).AccountId, p.DataApi)
+	patientVisitReviewData, err := apiservice.ValidateDoctorAccessToPatientVisitAndGetRelevantData(patientVisit.PatientVisitId.Int64(), apiservice.GetContext(r).AccountId, p.DataApi)
 	if err != nil {
-		apiservice.WriteDeveloperError(w, statusCode, err.Error())
+		apiservice.WriteError(err, w, r)
 		return
 	}
 

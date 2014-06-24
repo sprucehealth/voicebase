@@ -101,7 +101,8 @@ type PatientVisitAPI interface {
 	GetLatestSubmittedPatientVisit() (*common.PatientVisit, error)
 	GetPatientVisitIdFromTreatmentPlanId(treatmentPlanId int64) (int64, error)
 	GetLatestClosedPatientVisitForPatient(patientId int64) (*common.PatientVisit, error)
-	GetPatientVisitFromId(patientVisitId int64) (patientVisit *common.PatientVisit, err error)
+	GetPatientVisitFromId(patientVisitId int64) (*common.PatientVisit, error)
+	GetPatientCase(caseId int64) (*common.PatientCase, error)
 	GetPatientCaseIdFromPatientVisitId(patientVisitId int64) (int64, error)
 	CreateNewPatientVisit(patientId, healthConditionId, layoutVersionId int64) (int64, error)
 	StartNewTreatmentPlan(patientId, patientVisitId, doctorId int64, parent *common.TreatmentPlanParent, contentSource *common.TreatmentPlanContentSource) (int64, error)
@@ -280,15 +281,11 @@ type PeopleAPI interface {
 	GetPersonIdByRole(roleType string, roleId int64) (int64, error)
 }
 
-type MessageAPI interface {
-	GetConversationParticipantIds(conversationId int64) ([]int64, error)
-	GetConversationTopics() ([]*common.ConversationTopic, error)
-	AddConversationTopic(title string, ordinal int, active bool) (int64, error)
-	GetConversationsWithParticipants(ids []int64) ([]*common.Conversation, map[int64]*common.Person, error)
-	GetConversation(id int64) (*common.Conversation, error)
-	MarkConversationAsRead(id int64) error
-	CreateConversation(fromId, toId, topicId int64, message string, attachments []*common.ConversationAttachment) (int64, error)
-	ReplyToConversation(conversationId, fromId int64, message string, attachments []*common.ConversationAttachment) (int64, error)
+type CaseMessageAPI interface {
+	CreateCaseMessage(msg *common.CaseMessage) (int64, error)
+	ListCaseMessages(caseID int64) ([]*common.CaseMessage, error)
+	CaseMessageParticipants(caseID int64, withRoleObjects bool) (map[int64]*common.CaseMessageParticipant, error)
+	MarkCaseMessagesAsRead(caseID, personID int64) error
 }
 
 type NotificationAPI interface {
@@ -327,7 +324,7 @@ type DataAPI interface {
 	DrugAPI
 	HomeAPI
 	PeopleAPI
-	MessageAPI
+	CaseMessageAPI
 	NotificationAPI
 	PhotoAPI
 	FavoriteTreatmentPlanAPI
@@ -354,7 +351,8 @@ type AuthAPI interface {
 	ValidateToken(token string) (*common.Account, error)
 	SetPassword(accountId int64, password string) error
 	UpdateLastOpenedDate(accountId int64) error
-	AccountForEmail(email string) (*common.Account, error)
+	GetAccountForEmail(email string) (*common.Account, error)
+	GetAccount(id int64) (*common.Account, error)
 	// Temporary auth tokens
 	CreateTempToken(accountId int64, expireSec int, purpose, token string) (string, error)
 	ValidateTempToken(purpose, token string) (int64, string, error)
