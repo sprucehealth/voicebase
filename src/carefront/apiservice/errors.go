@@ -22,12 +22,12 @@ func NewValidationError(msg string, r *http.Request) spruceError {
 	}
 }
 
-func wrapInternalError(err error, r *http.Request) spruceError {
+func wrapInternalError(err error, code int, r *http.Request) spruceError {
 	return spruceError{
 		DeveloperError: err.Error(),
 		UserError:      genericUserErrorMessage,
 		RequestID:      GetContext(r).RequestID,
-		HTTPStatusCode: http.StatusInternalServerError,
+		HTTPStatusCode: code,
 	}
 }
 
@@ -48,12 +48,28 @@ func WriteError(err error, w http.ResponseWriter, r *http.Request) {
 	case spruceError:
 		writeSpruceError(err, w, r)
 	default:
-		writeSpruceError(wrapInternalError(err, r), w, r)
+		writeSpruceError(wrapInternalError(err, http.StatusInternalServerError, r), w, r)
 	}
 }
 
 func WriteValidationError(msg string, w http.ResponseWriter, r *http.Request) {
-	WriteError(NewValidationError(msg, r), w, r)
+	writeSpruceError(NewValidationError(msg, r), w, r)
+}
+
+// WriteBadRequestError is used for errors that occur during parsing of the HTTP request.
+func WriteBadRequestError(err error, w http.ResponseWriter, r *http.Request) {
+	writeSpruceError(wrapInternalError(err, http.StatusBadRequest, r), w, r)
+}
+
+// WriteAccessNotAllowedError is used when the user is authenticated but not
+// authorized to access a given resource. Hopefully the user will never see
+// this since the client shouldn't present the option to begin with.
+func WriteAccessNotAllowedError(w http.ResponseWriter, r *http.Request) {
+	writeSpruceError(spruceError{
+		UserError:      "Access not permitted",
+		RequestID:      GetContext(r).RequestID,
+		HTTPStatusCode: http.StatusForbidden,
+	}, w, r)
 }
 
 func writeSpruceError(err spruceError, w http.ResponseWriter, r *http.Request) {

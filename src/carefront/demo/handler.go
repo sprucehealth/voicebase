@@ -151,8 +151,7 @@ func (c *Handler) createNewDemoPatient(patient *common.Patient, doctorId int64, 
 
 		signupResponse := &patientApiService.PatientSignedupResponse{}
 		err = json.NewDecoder(resp.Body).Decode(&signupResponse)
-		defer resp.Body.Close()
-
+		resp.Body.Close()
 		if err != nil {
 			golog.Errorf("Unable to unmarshal response body into object: %+v", err)
 			topLevelSignal <- failure
@@ -192,7 +191,7 @@ func (c *Handler) createNewDemoPatient(patient *common.Patient, doctorId int64, 
 
 		patientVisitResponse := &patient_visit.PatientVisitResponse{}
 		err = json.NewDecoder(resp.Body).Decode(&patientVisitResponse)
-		defer resp.Body.Close()
+		resp.Body.Close()
 		if err != nil {
 			golog.Errorf("Unable to unmarshal response into patient visit response: %+v", err.Error())
 			topLevelSignal <- failure

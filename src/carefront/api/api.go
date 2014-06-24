@@ -13,6 +13,7 @@ import (
 
 const (
 	EN_LANGUAGE_ID                 = 1
+	ADMIN_ROLE                     = "ADMIN"
 	DOCTOR_ROLE                    = "DOCTOR"
 	PRIMARY_DOCTOR_STATUS          = "PRIMARY"
 	PATIENT_ROLE                   = "PATIENT"
@@ -347,13 +348,13 @@ const (
 )
 
 type AuthAPI interface {
-	SignUp(email, password, roleType string) (*AuthResponse, error)
-	LogIn(email, password string) (*AuthResponse, error)
+	SignUp(email, password, roleType string) (int64, string, error)
+	LogIn(email, password string) (*common.Account, string, error)
 	LogOut(token string) error
-	ValidateToken(token string) (*TokenValidationResponse, error)
+	ValidateToken(token string) (*common.Account, error)
 	SetPassword(accountId int64, password string) error
 	UpdateLastOpenedDate(accountId int64) error
-	AccountIDForEmail(email string) (int64, error)
+	AccountForEmail(email string) (*common.Account, error)
 	// Temporary auth tokens
 	CreateTempToken(accountId int64, expireSec int, purpose, token string) (string, error)
 	ValidateTempToken(purpose, token string) (int64, string, error)

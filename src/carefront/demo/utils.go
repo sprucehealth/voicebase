@@ -554,6 +554,7 @@ func (c *Handler) startSendingMessageToDoctor(token, message string, signal chan
 			signal <- failure
 			return
 		}
+		resp.Body.Close()
 		signal <- success
 	}()
 }
@@ -619,6 +620,7 @@ func (c *Handler) startPhotoSubmissionForPatient(questionId, patientVisitId int6
 			signal <- failure
 			return
 		}
+		resp.Body.Close()
 		signal <- success
 	}()
 }

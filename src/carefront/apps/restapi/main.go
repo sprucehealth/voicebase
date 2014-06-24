@@ -95,6 +95,11 @@ func main() {
 	db := connectDB(&conf)
 	defer db.Close()
 
+	dataApi, err := api.NewDataService(db)
+	if err != nil {
+		log.Fatalf("Unable to initialize data service layer: %s", err)
+	}
+
 	metricsRegistry := metrics.NewRegistry()
 	conf.StartReporters(metricsRegistry)
 
@@ -105,10 +110,6 @@ func main() {
 		}()
 	}
 
-	dataApi, err := api.NewDataService(db)
-	if err != nil {
-		log.Fatalf("Unable to initialize data service layer: %s", err)
-	}
 	authAPI := &api.Auth{
 		DB:             db,
 		ExpireDuration: time.Duration(conf.AuthTokenExpiration) * time.Second,
@@ -272,13 +273,11 @@ func buildRESTAPI(conf *Config, dataApi api.DataAPI, authAPI api.AuthAPI, metric
 	mux.Handle("/v1/ping", pingHandler)
 	mux.Handle("/v1/autocomplete", autocompleteHandler)
 	mux.Handle("/v1/pharmacy_search", pharmacySearchHandler)
-	mux.Handle("/v1/doctor_layout", layout.NewDoctorLayoutHandler(dataApi, api.REVIEW_PURPOSE))
-	mux.Handle("/v1/diagnose_layout", layout.NewDoctorLayoutHandler(dataApi, api.DIAGNOSE_PURPOSE))
-	mux.Handle("/v1/client_model", layout.NewPatientLayoutHandler(dataApi))
 	mux.Handle("/v1/credit_card", patientCardsHandler)
 	mux.Handle("/v1/credit_card/default", patientCardsHandler)
 	mux.Handle("/v1/notification/token", notify.NewNotificationHandler(dataApi, conf.NotifiyConfigs, snsClient))
 	mux.Handle("/v1/notification/prompt_status", notify.NewPromptStatusHandler(dataApi))
+	mux.Handle("/v1/layouts/upload", layout.NewLayoutUploadHandler(dataApi))
 
 	mux.Handle("/v1/resourceguide", reslib.NewHandler(dataApi))
 	mux.Handle("/v1/resourceguide/list", reslib.NewListHandler(dataApi))

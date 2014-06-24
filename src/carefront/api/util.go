@@ -3,6 +3,7 @@ package api
 import (
 	"carefront/info_intake"
 	"database/sql"
+	"fmt"
 	"strconv"
 	"strings"
 )
@@ -36,6 +37,9 @@ func fillConditionBlock(c *info_intake.Condition, dataApi DataAPI, languageId in
 				break
 			}
 		}
+		if c.PotentialAnswersId[i] == "" {
+			return fmt.Errorf("Unknown answer tag '%s' for question '%s'", tag, c.QuestionTag)
+		}
 	}
 	return nil
 }
@@ -63,7 +67,9 @@ func fillTipSection(t *info_intake.TipSection, dataApi DataAPI, languageId int64
 
 func fillQuestion(q *info_intake.Question, dataApi DataAPI, languageId int64) error {
 	questionInfo, err := dataApi.GetQuestionInfo(q.QuestionTag, languageId)
-	if err != nil {
+	if err == NoRowsError {
+		return fmt.Errorf("no question with tag '%s'", q.QuestionTag)
+	} else if err != nil {
 		return err
 	}
 	q.QuestionId = questionInfo.QuestionId
@@ -153,7 +159,9 @@ func fillScreen(s *info_intake.Screen, dataApi DataAPI, languageId int64) error 
 
 func fillSection(s *info_intake.Section, dataApi DataAPI, languageId int64) error {
 	sectionId, sectionTitle, err := dataApi.GetSectionInfo(s.SectionTag, languageId)
-	if err != nil {
+	if err == NoRowsError {
+		return fmt.Errorf("no section with tag '%s'", s.SectionTag)
+	} else if err != nil {
 		return err
 	}
 	s.SectionId = sectionId

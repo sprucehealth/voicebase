@@ -116,7 +116,7 @@ func (h *AuthenticationHandler) ServeHTTP(w http.ResponseWriter, r *http.Request
 			return
 		}
 
-		if res, err := h.authApi.LogIn(requestData.Login, requestData.Password); err != nil {
+		if account, token, err := h.authApi.LogIn(requestData.Login, requestData.Password); err != nil {
 			switch err {
 			case api.LoginDoesNotExist:
 				golog.Log("auth", golog.WARN, &apiservice.AuthLog{
@@ -136,7 +136,7 @@ func (h *AuthenticationHandler) ServeHTTP(w http.ResponseWriter, r *http.Request
 				return
 			}
 		} else {
-			patient, err := h.dataApi.GetPatientFromAccountId(res.AccountId)
+			patient, err := h.dataApi.GetPatientFromAccountId(account.ID)
 			if err != nil {
 				apiservice.WriteDeveloperError(w, http.StatusInternalServerError, err.Error())
 				return
@@ -146,7 +146,7 @@ func (h *AuthenticationHandler) ServeHTTP(w http.ResponseWriter, r *http.Request
 				apiservice.WriteDeveloperError(w, http.StatusInternalServerError, "Unable to get doctor based on patient: "+err.Error())
 				return
 			}
-			apiservice.WriteJSONToHTTPResponseWriter(w, http.StatusOK, &AuthenticationResponse{Token: res.Token, Patient: patient, Doctor: doctor})
+			apiservice.WriteJSONToHTTPResponseWriter(w, http.StatusOK, &AuthenticationResponse{Token: token, Patient: patient, Doctor: doctor})
 		}
 	case "logout":
 		token, err := apiservice.GetAuthTokenFromHeader(r)

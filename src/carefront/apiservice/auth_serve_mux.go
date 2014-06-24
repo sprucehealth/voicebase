@@ -2,6 +2,7 @@ package apiservice
 
 import (
 	"carefront/api"
+	"carefront/common"
 	"carefront/libs/golog"
 	"carefront/libs/idgen"
 	"net/http"
@@ -68,6 +69,17 @@ const (
 	AuthEventInvalidToken    AuthEvent = "InvalidToken"
 )
 
+type RequestLog struct {
+	RemoteAddr   string
+	RequestID    int64
+	Method       string
+	URL          string
+	StatusCode   int
+	ContentType  string
+	UserAgent    string
+	ResponseTime float64
+}
+
 func NewAuthServeMux(authApi api.AuthAPI, statsRegistry metrics.Registry) *AuthServeMux {
 	mux := &AuthServeMux{
 		ServeMux:         *http.NewServeMux(),
@@ -90,40 +102,23 @@ func NewAuthServeMux(authApi api.AuthAPI, statsRegistry metrics.Registry) *AuthS
 }
 
 // Parse the "Authorization: token xxx" header and check the token for validity
-func (mux *AuthServeMux) checkAuth(r *http.Request) (bool, int64, string, string, error) {
+func (mux *AuthServeMux) checkAuth(r *http.Request) (*common.Account, error) {
 	if Testing {
 		if idStr := r.Header.Get("AccountId"); idStr != "" {
 			id, err := strconv.ParseInt(idStr, 10, 64)
-			return true, id, "", "", err
+			if err != nil {
+				return nil, err
+			}
+			// TODO: maybe should encode the role in the header as well
+			return &common.Account{ID: id, Role: "testing"}, nil
 		}
 	}
 
 	token, err := GetAuthTokenFromHeader(r)
-	if err == ErrBadAuthToken {
-		return false, 0, "failed to parse Authorization header", "", nil
-	} else if err != nil {
-		return false, 0, "", "", err
+	if err != nil {
+		return nil, err
 	}
-	if res, err := mux.AuthApi.ValidateToken(token); err != nil {
-		return false, 0, "", "", err
-	} else {
-		var accountId int64
-		if res.AccountId != nil {
-			accountId = *res.AccountId
-		}
-		return res.IsValid, accountId, res.Role, res.Reason, nil
-	}
-}
-
-type RequestLog struct {
-	RemoteAddr   string
-	RequestID    int64
-	Method       string
-	URL          string
-	StatusCode   int
-	ContentType  string
-	UserAgent    string
-	ResponseTime float64
+	return mux.AuthApi.ValidateToken(token)
 }
 
 func (mux *AuthServeMux) ServeHTTP(w http.ResponseWriter, r *http.Request) {
@@ -194,21 +189,24 @@ func (mux *AuthServeMux) ServeHTTP(w http.ResponseWriter, r *http.Request) {
 	}
 
 	if nonAuth, ok := h.(NonAuthenticated); !ok || !nonAuth.NonAuthenticated() {
-		if valid, accountId, role, reason, err := mux.checkAuth(r); err != nil {
-			customResponseWriter.WriteHeader(http.StatusInternalServerError)
-			return
-		} else if !valid {
-			golog.Log("auth", golog.WARN, &AuthLog{
-				Event: AuthEventInvalidToken,
-				Msg:   reason,
-			})
-			mux.statAuthFailure.Inc(1)
-			WriteAuthTimeoutError(customResponseWriter)
-			return
-		} else {
+		account, err := mux.checkAuth(r)
+		if err == nil {
 			mux.statAuthSuccess.Inc(1)
-			ctx.AccountId = accountId
-			ctx.Role = role
+			ctx.AccountId = account.ID
+			ctx.Role = account.Role
+		} else {
+			mux.statAuthFailure.Inc(1)
+			switch err {
+			case ErrBadAuthHeader, ErrNoAuthHeader, api.TokenExpired, api.TokenDoesNotExist:
+				golog.Log("auth", golog.WARN, &AuthLog{
+					Event: AuthEventInvalidToken,
+					Msg:   err.Error(),
+				})
+				WriteAuthTimeoutError(customResponseWriter)
+			default:
+				customResponseWriter.WriteHeader(http.StatusInternalServerError)
+			}
+			return
 		}
 	}
 	h.ServeHTTP(customResponseWriter, r)

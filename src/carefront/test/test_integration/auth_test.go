@@ -1,6 +1,7 @@
 package test_integration
 
 import (
+	"carefront/api"
 	"carefront/email"
 	"carefront/passreset"
 	"net/http/httptest"
@@ -14,82 +15,84 @@ func TestAuth(t *testing.T) {
 
 	email, pass, pass2 := "someone@somewhere.com", "somepass", "newPass"
 
-	signup, err := testData.AuthApi.SignUp(email, pass, "DOCTOR")
+	sAccountID, sToken, err := testData.AuthApi.SignUp(email, pass, "DOCTOR")
 	if err != nil {
 		t.Fatal(err)
 	}
-	if signup.AccountId <= 0 {
-		t.Fatalf("Signup returned invalid AccountId: %d", signup.AccountId)
+	if sAccountID <= 0 {
+		t.Fatalf("Signup returned invalid AccountId: %d", sAccountID)
 	}
-	if signup.Token == "" {
+	if sToken == "" {
 		t.Fatalf("Signup returned a blank Token")
 	}
 
 	// Make sure token is valid
-	if res, err := testData.AuthApi.ValidateToken(signup.Token); err != nil {
+	if account, err := testData.AuthApi.ValidateToken(sToken); err != nil {
 		t.Fatal(err)
-	} else if !res.IsValid {
-		t.Fatalf("ValidateToken failed for token returned from Signup")
-	} else if *res.AccountId != signup.AccountId {
+	} else if account.ID != sAccountID {
 		t.Fatalf("ValidateToken returned differnet AccountId")
+	} else if account.Role != "DOCTOR" {
+		t.Fatalf("ValidateToken returned role '%s', expected 'DOCTOR'", account.Role)
 	}
-	login, err := testData.AuthApi.LogIn(email, pass)
+	lAccount, token, err := testData.AuthApi.LogIn(email, pass)
 	if err != nil {
 		t.Fatal(err)
 	}
 
-	if signup.AccountId != login.AccountId {
+	if sAccountID != lAccount.ID {
 		t.Fatalf("AccountId doesn't match between login and singup")
 	}
 	// Make sure token from Signup is no longer valid
-	if res, err := testData.AuthApi.ValidateToken(signup.Token); err != nil {
+	if _, err := testData.AuthApi.ValidateToken(sToken); err == api.TokenDoesNotExist {
+		// Expected
+	} else if err != nil {
 		t.Fatal(err)
-	} else if res.IsValid {
-		t.Fatalf("Token returned by Signup still valid after new Login")
+	} else {
+		t.Fatalf("Token returned by Signup still valid after Login")
 	}
 	// Make sure login token is valid
-	if res, err := testData.AuthApi.ValidateToken(login.Token); err != nil {
+	if a, err := testData.AuthApi.ValidateToken(token); err != nil {
 		t.Fatal(err)
-	} else if !res.IsValid {
-		t.Fatalf("ValidateToken failed for token returned from Login")
-	} else if *res.AccountId != login.AccountId {
+	} else if a.ID != lAccount.ID {
 		t.Fatalf("ValidateToken returned differnet AccountId")
 	}
-	if err := testData.AuthApi.SetPassword(login.AccountId, pass2); err != nil {
+	if err := testData.AuthApi.SetPassword(lAccount.ID, pass2); err != nil {
 		t.Fatal(err)
 	}
 	// Make sure token from Signup is no longer valid
-	if res, err := testData.AuthApi.ValidateToken(signup.Token); err != nil {
+	if _, err := testData.AuthApi.ValidateToken(sToken); err == api.TokenDoesNotExist {
+		// Expected
+	} else if err != nil {
 		t.Fatal(err)
-	} else if res.IsValid {
+	} else {
 		t.Fatalf("Token returned by Login still valid after SetPassword")
 	}
 	// Try to login with new password
-	login, err = testData.AuthApi.LogIn(email, pass2)
+	lAccount, token, err = testData.AuthApi.LogIn(email, pass2)
 	if err != nil {
 		t.Fatal(err)
 	}
 
-	if signup.AccountId != login.AccountId {
+	if sAccountID != lAccount.ID {
 		t.Fatalf("AccountId doesn't match between login and singup")
 	}
 
 	// Make sure login token is valid
-	if res, err := testData.AuthApi.ValidateToken(login.Token); err != nil {
+	if a, err := testData.AuthApi.ValidateToken(token); err != nil {
 		t.Fatal(err)
-	} else if !res.IsValid {
-		t.Fatalf("ValidateToken failed for token returned from Login")
-	} else if *res.AccountId != login.AccountId {
+	} else if a.ID != lAccount.ID {
 		t.Fatalf("ValidateToken returned differnet AccountId")
 	}
 
-	if err := testData.AuthApi.LogOut(login.Token); err != nil {
+	if err := testData.AuthApi.LogOut(token); err != nil {
 		t.Fatal(err)
 	}
 	// Make sure token is no longer valid
-	if res, err := testData.AuthApi.ValidateToken(login.Token); err != nil {
+	if _, err := testData.AuthApi.ValidateToken(token); err == api.TokenDoesNotExist {
+		// Expected
+	} else if err != nil {
 		t.Fatal(err)
-	} else if res.IsValid {
+	} else {
 		t.Fatalf("Token returned by Login still valid after Logout")
 	}
 }
@@ -110,7 +113,7 @@ func TestLostPassword(t *testing.T) {
 	}
 
 	validEmail := "exists@somewhere.com"
-	_, err := testData.AuthApi.SignUp(validEmail, "xxx", "DOCTOR")
+	_, _, err := testData.AuthApi.SignUp(validEmail, "xxx", "DOCTOR")
 	if err != nil {
 		t.Fatal(err)
 	}
