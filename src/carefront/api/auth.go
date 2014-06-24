@@ -238,7 +238,7 @@ func (m *Auth) GetAccount(id int64) (*common.Account, error) {
 		SELECT role_type_tag
 		FROM account
 		INNER JOIN role_type ON role_type_id = role_type.id
-		WHERE id = ?`, id,
+		WHERE account.id = ?`, id,
 	).Scan(&account.Role); err == sql.ErrNoRows {
 		return nil, NoRowsError
 	} else if err != nil {

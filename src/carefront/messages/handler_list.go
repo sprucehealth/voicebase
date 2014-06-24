@@ -93,8 +93,7 @@ func (h *listHandler) ServeHTTP(w http.ResponseWriter, r *http.Request) {
 			case common.AttachmentTypePhoto:
 				a.URL = apiservice.CreatePhotoUrl(att.ItemID, msg.ID, common.ClaimerTypeConversationMessage, r.Host)
 			case common.AttachmentTypeTreatmentPlan:
-				// TODO: do we have a place that generates these URLs?
-				a.URL = fmt.Sprintf("spruce:///treatment_plan/%d", att.ItemID)
+				a.URL = app_url.ViewTreatmentPlanAction(att.ItemID).String()
 			}
 
 			m.Attachments = append(m.Attachments, a)
