@@ -73,3 +73,8 @@ func (d *DataService) GetCareProvidingStateId(stateAbbreviation string, healthCo
 
 	return careProvidingStateId, nil
 }
+
+func (d *DataService) DeleteDraftTreatmentPlanByDoctorForCase(doctorId, patientCaseId int64) error {
+	_, err := d.db.Exec(`delete from treatment_plan where doctor_id = ? and status = ? and patient_case_id = ?`, doctorId, STATUS_DRAFT, patientCaseId)
+	return err
+}

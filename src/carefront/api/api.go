@@ -62,7 +62,6 @@ type PatientAPI interface {
 	CreateCareTeamForPatientWithPrimaryDoctor(patientId, doctorId int64) (careTeam *common.PatientCareTeam, err error)
 	GetCareTeamForPatient(patientId int64) (careTeam *common.PatientCareTeam, err error)
 	CheckCareProvidingElligibility(shortState string, healthConditionId int64) (doctorId int64, err error)
-
 	UpdatePatientAddress(patientId int64, addressLine1, addressLine2, city, state, zipCode, addressType string) error
 	UpdatePatientPharmacy(patientId int64, pharmacyDetails *pharmacy.PharmacyData) error
 	TrackPatientAgreements(patientId int64, agreements map[string]bool) error
@@ -94,6 +93,7 @@ type PatientCaseAPI interface {
 	GetPatientCaseFromTreatmentPlanId(treatmentPlanId int64) (*common.PatientCase, error)
 	GetPatientCaseFromId(patientCaseId int64) (*common.PatientCase, error)
 	GetCareProvidingStateId(stateAbbreviation string, healthConditionId int64) (int64, error)
+	DeleteDraftTreatmentPlanByDoctorForCase(doctorId, patientCaseId int64) error
 }
 
 type JumpBallQueueAPI interface {
@@ -103,6 +103,7 @@ type JumpBallQueueAPI interface {
 	GetClaimedItemsInQueue() ([]*DoctorQueueItem, error)
 	GetElligibleItemsInUnclaimedQueue(doctorId int64) ([]*DoctorQueueItem, error)
 	InsertUnclaimedItemIntoQueue(doctorQueueItem *DoctorQueueItem) error
+	RevokeDoctorAccessToCase(patientCaseId, doctorId int64) error
 }
 
 type PatientVisitAPI interface {

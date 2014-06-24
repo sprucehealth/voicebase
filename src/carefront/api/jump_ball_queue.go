@@ -15,7 +15,7 @@ func (j JBCQItemClaimForbidden) Error() string {
 }
 
 func (d *DataService) InsertUnclaimedItemIntoQueue(queueItem *DoctorQueueItem) error {
-	_, err := d.db.Exec(`insert into unclaimed_item_queue (care_providing_state_id, item_id, patient_case_id, event_type, status) values (?,?,?,?,?)`, queueItem.CareProvidingStateId, queueItem.ItemId, queueItem.PatientCaseId, queueItem.EventType, queueItem.Status)
+	_, err := d.db.Exec(`insert into unclaimed_case_queue (care_providing_state_id, item_id, patient_case_id, event_type, status) values (?,?,?,?,?)`, queueItem.CareProvidingStateId, queueItem.ItemId, queueItem.PatientCaseId, queueItem.EventType, queueItem.Status)
 	return err
 }
 
@@ -33,15 +33,15 @@ func (d *DataService) TemporarilyClaimCaseAndAssignDoctorToCaseAndPatient(doctor
 	}
 
 	// lock the visit in the unclaimed item queue
-	_, err = tx.Exec(`update unclaimed_item_queue set locked = 1, doctor_id = ? where patient_case_id = ?`, doctorId, patientCaseId)
+	expiresTime := time.Now().Add(duration)
+
+	_, err = tx.Exec(`update unclaimed_case_queue set locked = 1, doctor_id = ?, expires = ? where patient_case_id = ?`, doctorId, expiresTime, patientCaseId)
 	if err != nil {
 		tx.Rollback()
 		return err
 	}
 
 	// temporarily assign the doctor to the patient
-	expiresTime := time.Now().Add(duration)
-
 	var count int64
 	if err := tx.QueryRow(`select count(*) from patient_care_provider_assignment where provider_id = ?  and role_type_id = ? and patient_id=?`, doctorId, d.roleTypeMapping[DOCTOR_ROLE], patientId).Scan(&count); err != nil {
 		tx.Rollback()
@@ -75,7 +75,7 @@ func (d *DataService) ExtendClaimForDoctor(doctorId, patientCaseId int64, durati
 
 	// ensure that the current doctor is the one holding on to the lock in the queue
 	var currentLockHolder int64
-	if err := tx.QueryRow(`select doctor_id from unclaimed_item_queue where patient_case_id = ? and locked = ?`, patientCaseId, true).Scan(&currentLockHolder); err == sql.ErrNoRows {
+	if err := tx.QueryRow(`select doctor_id from unclaimed_case_queue where patient_case_id = ? and locked = ?`, patientCaseId, true).Scan(&currentLockHolder); err == sql.ErrNoRows {
 		tx.Rollback()
 		return JBCQItemClaimForbidden("Doctor no longer listed as current claimer of case")
 	} else if err != nil {
@@ -89,6 +89,13 @@ func (d *DataService) ExtendClaimForDoctor(doctorId, patientCaseId int64, durati
 
 	// extend the claim of the doctor on the case and the patient file
 	expires := time.Now().Add(duration)
+
+	_, err = tx.Exec(`update unclaimed_case_queue set expires = ? where doctor_id = ? and patient_case_id = ?`, expires, doctorId, patientCaseId)
+	if err != nil {
+		tx.Rollback()
+		return err
+	}
+
 	_, err = tx.Exec(`update patient_care_provider_assignment set expires = ? where provider_id = ? and role_type_id = ? and status = ?`, expires, doctorId, d.roleTypeMapping[DOCTOR_ROLE], STATUS_TEMP)
 	if err != nil {
 		tx.Rollback()
@@ -127,7 +134,7 @@ func (d *DataService) PermanentlyAssignDoctorToCaseAndPatient(doctorId, patientC
 	}
 
 	// delete item from unclaimed queue
-	_, err = tx.Exec(`delete from unclaimed_item_queue where patient_case_id = ? and doctor_id = ? and locked = ?`, patientCaseId, doctorId, true)
+	_, err = tx.Exec(`delete from unclaimed_case_queue where patient_case_id = ? and doctor_id = ? and locked = ?`, patientCaseId, doctorId, true)
 	if err != nil {
 		tx.Rollback()
 		return err
@@ -151,7 +158,7 @@ func (d *DataService) PermanentlyAssignDoctorToCaseAndPatient(doctorId, patientC
 }
 
 func (d *DataService) GetClaimedItemsInQueue() ([]*DoctorQueueItem, error) {
-	rows, err := d.db.Query(`select id, event_type, item_id, patient_case_id, enqueue_date, status from unclaimed_item_queue where locked = ?`, true)
+	rows, err := d.db.Query(`select id, event_type, item_id, patient_case_id, enqueue_date, status, doctor_id, expires from unclaimed_case_queue where locked = ?`, true)
 	if err != nil {
 		return nil, err
 	}
@@ -165,7 +172,9 @@ func (d *DataService) GetClaimedItemsInQueue() ([]*DoctorQueueItem, error) {
 			&queueItem.ItemId,
 			&queueItem.PatientCaseId,
 			&queueItem.EnqueueDate,
-			&queueItem.Status); err != nil {
+			&queueItem.Status,
+			&queueItem.DoctorId,
+			&queueItem.Expires); err != nil {
 			return nil, err
 		}
 		claimedItemsQueue = append(claimedItemsQueue, &queueItem)
@@ -200,7 +209,7 @@ func (d *DataService) GetElligibleItemsInUnclaimedQueue(doctorId int64) ([]*Doct
 	// then get the items in the unclaimed queue that are not currently locked by another doctor
 	params := appendInt64sToInterfaceSlice(nil, careProvidingStateIds)
 	params = append(params, []interface{}{false, true, doctorId}...)
-	rows, err = d.db.Query(fmt.Sprintf(`select id, event_type, item_id, enqueue_date, status from unclaimed_item_queue where care_providing_state_id in (%s) and locked = ? or (locked = ? and doctor_id = ?) order by enqueue_date`, nReplacements(len(careProvidingStateIds))), params...)
+	rows, err = d.db.Query(fmt.Sprintf(`select id, event_type, item_id, enqueue_date, status from unclaimed_case_queue where care_providing_state_id in (%s) and locked = ? or (locked = ? and doctor_id = ?) order by enqueue_date`, nReplacements(len(careProvidingStateIds))), params...)
 	if err != nil {
 		return nil, err
 	}
@@ -221,4 +230,41 @@ func (d *DataService) GetElligibleItemsInUnclaimedQueue(doctorId int64) ([]*Doct
 	}
 
 	return queueItems, rows.Err()
+}
+
+func (d *DataService) RevokeDoctorAccessToCase(patientCaseId, doctorId int64) error {
+	tx, err := d.db.Begin()
+	if err != nil {
+		return err
+	}
+
+	// unclaim the item in the case queue
+	_, err = tx.Exec(`update unclaimed_case_queue set doctor_id = NULL, expires = NULL, locked = 0 where doctor_id = ? and patient_case_id = ? and locked = 1`, doctorId, patientCaseId)
+	if err != nil {
+		tx.Rollback()
+		return err
+	}
+
+	// mark the patient case as unclaimed
+	_, err = tx.Exec(`update patient_case set status = ? where id = ?`, common.PCStatusUnclaimed, patientCaseId)
+	if err != nil {
+		tx.Rollback()
+		return err
+	}
+
+	// revoke doctor access to patient case (transition from TEMP -> TEMP_INACTIVE)
+	_, err = tx.Exec(`update patient_care_provider_assignment set status = ?, expires = NULL where provider_id = ? and role_type_id = ? and status = ?`, STATUS_TEMP_INACTIVE, doctorId, d.roleTypeMapping[DOCTOR_ROLE], STATUS_TEMP)
+	if err != nil {
+		tx.Rollback()
+		return err
+	}
+
+	// revoke doctor access to patient file
+	_, err = tx.Exec(`update patient_case_care_provider_assignment set status = ?, expires = NULL where provider_id = ? and role_type_id = ? and status = ?`, STATUS_TEMP_INACTIVE, doctorId, d.roleTypeMapping[DOCTOR_ROLE], STATUS_TEMP)
+	if err != nil {
+		tx.Rollback()
+		return err
+	}
+
+	return tx.Commit()
 }

@@ -33,7 +33,7 @@ type DoctorQueueItem struct {
 	EventType            string
 	EnqueueDate          time.Time
 	CompletedDate        time.Time
-	Expires              time.Time
+	Expires              *time.Time
 	ItemId               int64
 	Status               string
 	PatientCaseId        int64
