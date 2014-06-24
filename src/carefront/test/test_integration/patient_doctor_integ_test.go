@@ -57,8 +57,8 @@ func TestPatientVisitReview(t *testing.T) {
 	resp, err := testData.AuthGet(ts.URL+"?treatment_plan_id="+strconv.FormatInt(treatmentPlan.Id.Int64(), 10), patient.AccountId.Int64())
 	if err != nil {
 		t.Fatal("Unable to make call to get the patient visit review for patient visit: " + err.Error())
-	} else if resp.StatusCode != http.StatusBadRequest {
-		t.Fatalf("Expected to get %d for call to get patient visit review but instead got %d", http.StatusBadRequest, resp.StatusCode)
+	} else if resp.StatusCode != http.StatusNotFound {
+		t.Fatalf("Expected to get %d for call to get patient visit review but instead got %d", http.StatusNotFound, resp.StatusCode)
 	}
 
 	// once the doctor has started reviewing the case, lets go ahead and get the doctor to close the case with no diagnosis
