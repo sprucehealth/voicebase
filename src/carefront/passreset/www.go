@@ -99,7 +99,7 @@ func (h *promptHandler) ServeHTTP(w http.ResponseWriter, r *http.Request) {
 	email := r.FormValue("email")
 	invalidEmail := false
 	if email != "" {
-		account, err := h.authAPI.AccountForEmail(email)
+		account, err := h.authAPI.GetAccountForEmail(email)
 		if err == api.LoginDoesNotExist {
 			invalidEmail = true
 		} else if err != nil {

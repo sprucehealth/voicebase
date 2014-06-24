@@ -86,6 +86,7 @@ func (d *DataService) ListCaseMessages(caseID int64) ([]*common.CaseMessage, err
 		if err != nil {
 			return nil, err
 		}
+		defer rows.Close()
 		for rows.Next() {
 			var mid int64
 			a := &common.CaseMessageAttachment{}

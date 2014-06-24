@@ -49,7 +49,7 @@ func (h *forgotPasswordHandler) ServeHTTP(w http.ResponseWriter, r *http.Request
 
 	// TODO: ratelimit this endpoint
 
-	account, err := h.authAPI.AccountForEmail(req.Email)
+	account, err := h.authAPI.GetAccountForEmail(req.Email)
 	if err == api.LoginDoesNotExist {
 		apiservice.WriteUserError(w, http.StatusOK, "No account with the given email")
 		return
