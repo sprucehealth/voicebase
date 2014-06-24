@@ -2,6 +2,7 @@ package doctor_queue
 
 import (
 	"carefront/api"
+	"carefront/common"
 	"carefront/patient_visit"
 )
 
@@ -12,27 +13,7 @@ func routeIncomingPatientVisit(ev *patient_visit.VisitSubmittedEvent, dataAPI ap
 		return err
 	}
 
-	// determine whether the case is claimed or unclaimed by whether or not a doctor has been assigned to the case
-	doctorAssignments, err := dataAPI.GetDoctorsAssignedToPatientCase(patientCase.Id.Int64())
-	if err != nil {
-		return err
-	}
-
-	if len(doctorAssignments) > 0 {
-		// route it to the active doctor under the case
-		for _, assignment := range doctorAssignments {
-			if assignment.Status == api.STATUS_ACTIVE {
-				if err := dataAPI.InsertItemIntoDoctorQueue(api.DoctorQueueItem{
-					DoctorId:  assignment.ProviderId,
-					ItemId:    ev.VisitId,
-					Status:    api.STATUS_PENDING,
-					EventType: api.DQEventTypePatientVisit,
-				}); err != nil {
-					return err
-				}
-			}
-		}
-	} else {
+	if patientCase.Status == common.PCStatusUnclaimed {
 		// insert item into the unclaimed item queue given that it has not been claimed by a doctor yet
 		patient, err := dataAPI.GetPatientFromId(ev.PatientId)
 		if err != nil {
@@ -49,8 +30,27 @@ func routeIncomingPatientVisit(ev *patient_visit.VisitSubmittedEvent, dataAPI ap
 			ItemId:               ev.VisitId,
 			EventType:            api.DQEventTypePatientVisit,
 			Status:               api.STATUS_PENDING,
+			PatientCaseId:        patientCase.Id.Int64(),
 		}); err != nil {
 			return err
+		}
+	} else {
+		doctorAssignments, err := dataAPI.GetDoctorsAssignedToPatientCase(patientCase.Id.Int64())
+		if err != nil {
+			return err
+		}
+		// route it to the active doctor under the case
+		for _, assignment := range doctorAssignments {
+			if assignment.Status == api.STATUS_ACTIVE {
+				if err := dataAPI.InsertItemIntoDoctorQueue(api.DoctorQueueItem{
+					DoctorId:  assignment.ProviderId,
+					ItemId:    ev.VisitId,
+					Status:    api.STATUS_PENDING,
+					EventType: api.DQEventTypePatientVisit,
+				}); err != nil {
+					return err
+				}
+			}
 		}
 	}
 

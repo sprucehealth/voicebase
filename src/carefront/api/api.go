@@ -97,9 +97,12 @@ type PatientCaseAPI interface {
 }
 
 type JumpBallQueueAPI interface {
-	TemporarilyClaimCaseAndAssignDoctorToCaseAndPatient(doctorId, patientCaseId, patientId, itemId int64, eventType string, duration time.Duration) error
-	PermanentlyAssignDoctorToCaseAndPatient(doctorId, patientCaseId, patientId, itemId int64, eventType string) error
-	ExtendClaimForDoctor(doctorId, itemId int64, eventType string, duration time.Duration) error
+	TemporarilyClaimCaseAndAssignDoctorToCaseAndPatient(doctorId, patientCaseId, patientId int64, duration time.Duration) error
+	PermanentlyAssignDoctorToCaseAndPatient(doctorId, patientCaseId, patientId int64) error
+	ExtendClaimForDoctor(doctorId, patientCaseId int64, duration time.Duration) error
+	GetClaimedItemsInQueue() ([]*DoctorQueueItem, error)
+	GetElligibleItemsInUnclaimedQueue(doctorId int64) ([]*DoctorQueueItem, error)
+	InsertUnclaimedItemIntoQueue(doctorQueueItem *DoctorQueueItem) error
 }
 
 type PatientVisitAPI interface {
@@ -199,7 +202,6 @@ type DoctorAPI interface {
 	MarkAdvicePointsToBeDeleted(advicePoints []*common.DoctorInstructionItem, doctorId int64) error
 	MarkPatientVisitAsOngoingInDoctorQueue(doctorId, patientVisitId int64) error
 	GetPendingItemsInDoctorQueue(doctorId int64) (doctorQueue []*DoctorQueueItem, err error)
-	GetElligibleItemsInUnclaimedQueue(doctorId int64) ([]*DoctorQueueItem, error)
 	GetCompletedItemsInDoctorQueue(doctorId int64) (doctorQueue []*DoctorQueueItem, err error)
 	GetPendingItemCountForDoctorQueue(doctorId int64) (int64, error)
 	GetMedicationDispenseUnits(languageId int64) (dispenseUnitIds []int64, dispenseUnits []string, err error)
@@ -211,7 +213,6 @@ type DoctorAPI interface {
 	GetTreatmentTemplates(doctorId int64) ([]*common.DoctorTreatmentTemplate, error)
 	DeleteTreatmentTemplates(doctorTreatmentTemplates []*common.DoctorTreatmentTemplate, doctorId int64) error
 	InsertItemIntoDoctorQueue(doctorQueueItem DoctorQueueItem) error
-	InsertUnclaimedItemIntoQueue(doctorQueueItem *DoctorQueueItem) error
 	ReplaceItemInDoctorQueue(doctorQueueItem DoctorQueueItem, currentState string) error
 	DeleteItemFromDoctorQueue(doctorQueueItem DoctorQueueItem) error
 	MarkGenerationOfTreatmentPlanInVisitQueue(doctorId, patientVisitId, treatmentPlanId int64, currentState, updatedState string) error

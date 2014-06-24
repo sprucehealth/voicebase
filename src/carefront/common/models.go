@@ -132,6 +132,7 @@ type CareProviderAssignment struct {
 	PatientId    int64
 	Status       string
 	CreationDate time.Time
+	Expires      *time.Time
 }
 
 type PatientCareTeam struct {

@@ -6,7 +6,7 @@ import (
 )
 
 func (d *DataService) GetDoctorsAssignedToPatientCase(patientCaseId int64) ([]*common.CareProviderAssignment, error) {
-	rows, err := d.db.Query(`select provider_id, status, creation_date from patient_case_care_provider_assignment where patient_case_id = ? and role_type_id = ?`, patientCaseId, d.roleTypeMapping[DOCTOR_ROLE])
+	rows, err := d.db.Query(`select provider_id, status, creation_date, expires from patient_case_care_provider_assignment where patient_case_id = ? and role_type_id = ?`, patientCaseId, d.roleTypeMapping[DOCTOR_ROLE])
 	if err != nil {
 		return nil, err
 	}
@@ -15,7 +15,7 @@ func (d *DataService) GetDoctorsAssignedToPatientCase(patientCaseId int64) ([]*c
 	var assignments []*common.CareProviderAssignment
 	for rows.Next() {
 		var assignment common.CareProviderAssignment
-		if err := rows.Scan(&assignment.ProviderId, &assignment.Status, &assignment.CreationDate); err != nil {
+		if err := rows.Scan(&assignment.ProviderId, &assignment.Status, &assignment.CreationDate, &assignment.Expires); err != nil {
 			return nil, err
 		}
 		assignment.ProviderRole = DOCTOR_ROLE

@@ -207,7 +207,6 @@ func SignupAndSubmitPatientVisitForRandomPatient(t *testing.T, testData *TestDat
 	answerIntakeRequestBody := prepareAnswersForQuestionsInPatientVisit(patientVisitResponse, t)
 	SubmitAnswersIntakeForPatient(patient.PatientId.Int64(), patient.AccountId.Int64(), answerIntakeRequestBody, testData, t)
 	SubmitPatientVisitForPatient(patientSignedupResponse.Patient.PatientId.Int64(), patientVisitResponse.PatientVisitId, testData, t)
-	// get the patient to start reviewing the case
 	StartReviewingPatientVisit(patientVisitResponse.PatientVisitId, doctor, testData, t)
 	doctorPickTreatmentPlanResponse := PickATreatmentPlanForPatientVisit(patientVisitResponse.PatientVisitId, doctor, nil, testData, t)
 

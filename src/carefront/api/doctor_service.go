@@ -5,7 +5,6 @@ import (
 	"carefront/common"
 	"carefront/encoding"
 	"database/sql"
-	"errors"
 	"fmt"
 	"log"
 	"strconv"
@@ -374,11 +373,6 @@ func insertItemIntoDoctorQueue(d db, doctorQueueItem *DoctorQueueItem) error {
 	return err
 }
 
-func (d *DataService) InsertUnclaimedItemIntoQueue(queueItem *DoctorQueueItem) error {
-	_, err := d.db.Exec(`insert into unclaimed_item_queue (care_providing_state_id, item_id, event_type, status) values (?,?,?,?)`, queueItem.CareProvidingStateId, queueItem.ItemId, queueItem.EventType, queueItem.Status)
-	return err
-}
-
 func (d *DataService) ReplaceItemInDoctorQueue(doctorQueueItem DoctorQueueItem, currentState string) error {
 	tx, err := d.db.Begin()
 	if err != nil {
@@ -436,56 +430,6 @@ func (d *DataService) GetPendingItemsInDoctorQueue(doctorId int64) ([]*DoctorQue
 	}
 	defer rows.Close()
 	return populateDoctorQueueFromRows(rows)
-}
-
-func (d *DataService) GetElligibleItemsInUnclaimedQueue(doctorId int64) ([]*DoctorQueueItem, error) {
-	// first get the list of care providing state ids where the doctor is registered to serve
-	rows, err := d.db.Query(`select care_providing_state_id from care_provider_state_elligibility where provider_id = ? and role_type_id = ?`, doctorId, d.roleTypeMapping[DOCTOR_ROLE])
-	if err != nil {
-		return nil, err
-	}
-
-	var careProvidingStateIds []int64
-	for rows.Next() {
-		var careProvidingStateId int64
-		if err := rows.Scan(&careProvidingStateId); err != nil {
-			return nil, err
-		}
-		careProvidingStateIds = append(careProvidingStateIds, careProvidingStateId)
-	}
-	if rows.Err() != nil {
-		return nil, rows.Err()
-	}
-	rows.Close()
-
-	if len(careProvidingStateIds) == 0 {
-		return nil, errors.New("Doctor is not elligible to provide care for any health condition in any state")
-	}
-
-	// then get the items in the unclaimed queue that are not currently locked by another doctor
-	params := appendInt64sToInterfaceSlice(nil, careProvidingStateIds)
-	params = append(params, []interface{}{false, true, doctorId}...)
-	rows, err = d.db.Query(fmt.Sprintf(`select id, event_type, item_id, enqueue_date, status from unclaimed_item_queue where care_providing_state_id in (%s) and locked = ? or (locked = ? and doctor_id = ?) order by enqueue_date`, nReplacements(len(careProvidingStateIds))), params...)
-	if err != nil {
-		return nil, err
-	}
-	defer rows.Close()
-
-	var queueItems []*DoctorQueueItem
-	for rows.Next() {
-		var queueItem DoctorQueueItem
-		if err := rows.Scan(
-			&queueItem.Id,
-			&queueItem.EventType,
-			&queueItem.ItemId,
-			&queueItem.EnqueueDate,
-			&queueItem.Status); err != nil {
-			return nil, err
-		}
-		queueItems = append(queueItems, &queueItem)
-	}
-
-	return queueItems, rows.Err()
 }
 
 func (d *DataService) GetCompletedItemsInDoctorQueue(doctorId int64) ([]*DoctorQueueItem, error) {
