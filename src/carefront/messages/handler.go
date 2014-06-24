@@ -96,7 +96,7 @@ func (h *handler) ServeHTTP(w http.ResponseWriter, r *http.Request) {
 					apiservice.WriteDeveloperError(w, http.StatusBadRequest, "Only a doctor is allowed to attach a treatment plan")
 					return
 				}
-				tp, err := h.dataAPI.GetTreatmentPlan(att.ID, doctorID)
+				tp, err := h.dataAPI.GetAbridgedTreatmentPlan(att.ID, doctorID)
 				if err != nil {
 					apiservice.WriteError(err, w, r)
 					return
