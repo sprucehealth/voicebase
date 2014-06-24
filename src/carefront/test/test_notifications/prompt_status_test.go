@@ -1,4 +1,4 @@
-package notifications
+package test_notifications
 
 import (
 	"carefront/common"

@@ -182,7 +182,7 @@ func TestFavoriteTreatmentPlan_DeletingFTP(t *testing.T) {
 
 	params := url.Values{}
 	params.Set("favorite_treatment_plan_id", strconv.FormatInt(favoriteTreatmentPlan.Id.Int64(), 10))
-	resp, err := AuthDelete(ts.URL+"?"+params.Encode(), "application/x-www-form-urlencoded", nil, doctor.AccountId.Int64())
+	resp, err := testData.AuthDelete(ts.URL+"?"+params.Encode(), "application/x-www-form-urlencoded", nil, doctor.AccountId.Int64())
 	if err != nil {
 		t.Fatalf("Unable to delete favorite treatment plan %s", err)
 	}
@@ -193,7 +193,7 @@ func TestFavoriteTreatmentPlan_DeletingFTP(t *testing.T) {
 	defer doctorTPServer.Close()
 
 	doctorTreatmentPlanResponse := doctor_treatment_plan.DoctorTreatmentPlanResponse{}
-	resp, err = AuthGet(doctorTPServer.URL+"?treatment_plan_id="+strconv.FormatInt(responseData.TreatmentPlan.Id.Int64(), 10), doctor.AccountId.Int64())
+	resp, err = testData.AuthGet(doctorTPServer.URL+"?treatment_plan_id="+strconv.FormatInt(responseData.TreatmentPlan.Id.Int64(), 10), doctor.AccountId.Int64())
 	if err != nil {
 		t.Fatal(err)
 	} else if resp.StatusCode != http.StatusOK {
@@ -261,7 +261,7 @@ func TestFavoriteTreatmentPlan_DeletingFTP_ActiveTP(t *testing.T) {
 
 	params := url.Values{}
 	params.Set("favorite_treatment_plan_id", strconv.FormatInt(favoriteTreatmentPlan.Id.Int64(), 10))
-	resp, err := AuthDelete(ts.URL+"?"+params.Encode(), "application/x-www-form-urlencoded", nil, doctor.AccountId.Int64())
+	resp, err := testData.AuthDelete(ts.URL+"?"+params.Encode(), "application/x-www-form-urlencoded", nil, doctor.AccountId.Int64())
 	if err != nil {
 		t.Fatalf("Unable to delete favorite treatment plan %s", err)
 	}
@@ -272,7 +272,7 @@ func TestFavoriteTreatmentPlan_DeletingFTP_ActiveTP(t *testing.T) {
 	defer doctorTPServer.Close()
 
 	doctorTreatmentPlanResponse := doctor_treatment_plan.DoctorTreatmentPlanResponse{}
-	resp, err = AuthGet(doctorTPServer.URL+"?treatment_plan_id="+strconv.FormatInt(responseData.TreatmentPlan.Id.Int64(), 10), doctor.AccountId.Int64())
+	resp, err = testData.AuthGet(doctorTPServer.URL+"?treatment_plan_id="+strconv.FormatInt(responseData.TreatmentPlan.Id.Int64(), 10), doctor.AccountId.Int64())
 	if err != nil {
 		t.Fatal(err)
 	} else if resp.StatusCode != http.StatusOK {
