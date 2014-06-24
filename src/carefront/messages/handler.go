@@ -30,8 +30,7 @@ func (r *PostMessageRequest) Validate() error {
 }
 
 type PostMessageResponse struct {
-	MessageID int64  `json:"message_id,string"`
-	Result    string `json:"result"`
+	MessageID int64 `json:"message_id,string"`
 }
 
 type Attachment struct {
@@ -105,6 +104,10 @@ func (h *handler) ServeHTTP(w http.ResponseWriter, r *http.Request) {
 					apiservice.WriteValidationError("Treatment plan does not belong to the case", w, r)
 					return
 				}
+				if tp.DoctorId.Int64() != doctorID {
+					apiservice.WriteValidationError("Treatment plan not created by the requesting doctor", w, r)
+					return
+				}
 			case common.AttachmentTypePhoto:
 				// Make sure the photo is uploaded by the same person and is unclaimed
 				photo, err := h.dataAPI.GetPhoto(att.ID)
@@ -138,7 +141,6 @@ func (h *handler) ServeHTTP(w http.ResponseWriter, r *http.Request) {
 
 	res := &PostMessageResponse{
 		MessageID: msgID,
-		Result:    "success",
 	}
 	apiservice.WriteJSONToHTTPResponseWriter(w, http.StatusOK, res)
 }
