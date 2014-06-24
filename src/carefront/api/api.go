@@ -89,6 +89,7 @@ type PatientAPI interface {
 
 type PatientCaseAPI interface {
 	GetDoctorsAssignedToPatientCase(patientCaseId int64) ([]*common.CareProviderAssignment, error)
+	AssignDoctorToPatientFileAndCase(doctorId, patientId, patientCaseId int64) error
 	GetPatientCaseFromPatientVisitId(patientVisitId int64) (*common.PatientCase, error)
 	GetPatientCaseFromTreatmentPlanId(treatmentPlanId int64) (*common.PatientCase, error)
 	GetPatientCaseFromId(patientCaseId int64) (*common.PatientCase, error)

@@ -24,6 +24,27 @@ func (d *DataService) GetDoctorsAssignedToPatientCase(patientCaseId int64) ([]*c
 	return assignments, rows.Err()
 }
 
+func (d *DataService) AssignDoctorToPatientFileAndCase(doctorId, patientId, patientCaseId int64) error {
+	tx, err := d.db.Begin()
+	if err != nil {
+		return err
+	}
+
+	_, err = tx.Exec(`replace into patient_care_provider_assignment (provider_id, role_type_id, patient_id, status) values (?,?,?,?)`, doctorId, d.roleTypeMapping[DOCTOR_ROLE], patientId, STATUS_ACTIVE)
+	if err != nil {
+		tx.Rollback()
+		return err
+	}
+
+	_, err = tx.Exec(`replace into patient_case_care_provider_assignment (provider_id, role_type_id, patient_case_id, status) values (?,?,?,?)`, doctorId, d.roleTypeMapping[DOCTOR_ROLE], patientCaseId, STATUS_ACTIVE)
+	if err != nil {
+		tx.Rollback()
+		return err
+	}
+
+	return tx.Commit()
+}
+
 func (d *DataService) GetPatientCaseFromTreatmentPlanId(treatmentPlanId int64) (*common.PatientCase, error) {
 	row := d.db.QueryRow(`select patient_case.id, patient_case.patient_id, patient_case.health_condition_id, patient_case.creation_date, patient_case.status from patient_case
 							inner join treatment_plan on treatment_plan.patient_case_id = patient_case.id

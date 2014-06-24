@@ -141,7 +141,7 @@ func (d *DataService) PermanentlyAssignDoctorToCaseAndPatient(doctorId, patientC
 	}
 
 	// update patient case to indicate that its now claimed
-	_, err = tx.Exec(`update patient_case set status = ? where patient_case_id = ?`, common.PCStatusClaimed, patientCaseId)
+	_, err = tx.Exec(`update patient_case set status = ? where id = ?`, common.PCStatusClaimed, patientCaseId)
 	if err != nil {
 		tx.Rollback()
 		return err
@@ -155,7 +155,7 @@ func (d *DataService) PermanentlyAssignDoctorToCaseAndPatient(doctorId, patientC
 	}
 
 	// permanent assign doctor to case
-	_, err = tx.Exec(`update patient_case_care_provider_assignment set status = ?, expires = NULL where provider_id = ? and role_type_id = ? and patient_case_id = ?`, STATUS_ACTIVE, doctorId, d.roleTypeMapping[DOCTOR_ROLE], patientCaseId, STATUS_TEMP)
+	_, err = tx.Exec(`update patient_case_care_provider_assignment set status = ?, expires = NULL where provider_id = ? and role_type_id = ? and patient_case_id = ? and status = ?`, STATUS_ACTIVE, doctorId, d.roleTypeMapping[DOCTOR_ROLE], patientCaseId, STATUS_TEMP)
 	if err != nil {
 		tx.Rollback()
 		return err

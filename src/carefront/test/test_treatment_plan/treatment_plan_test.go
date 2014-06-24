@@ -169,6 +169,13 @@ func TestTreatmentPlanList_FavTP(t *testing.T) {
 		t.Fatalf(err.Error())
 	}
 
+	// assign the doctor to the patient case
+	if err := testData.DataApi.AssignDoctorToPatientFileAndCase(doctor2.DoctorId.Int64(),
+		patientId,
+		treatmentPlanResponse.DraftTreatmentPlans[0].PatientCaseId.Int64()); err != nil {
+		t.Fatal(err)
+	}
+
 	drTreatmentPlan = test_integration.GetDoctorTreatmentPlanById(treatmentPlanResponse.DraftTreatmentPlans[0].Id.Int64(), doctor2.AccountId.Int64(), testData, t)
 	if drTreatmentPlan.ContentSource != nil && drTreatmentPlan.ContentSource.ContentSourceId.Int64() != 0 {
 		t.Fatalf("Expected content source to indicate that treatment plan deviated from original content source but it doesnt")
