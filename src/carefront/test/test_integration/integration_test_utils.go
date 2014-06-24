@@ -76,69 +76,73 @@ func init() {
 	dispatch.Testing = true
 }
 
-func (d *TestData) AuthGet(url string, accountId int64) (*http.Response, error) {
+func (d *TestData) AuthGet(url string, accountID int64) (*http.Response, error) {
 	req, err := http.NewRequest("GET", url, nil)
 	if err != nil {
 		return nil, err
 	}
-	req.Header.Set("AccountId", strconv.FormatInt(accountId, 10))
-	apiservice.TestingContext.AccountId = accountId
-	if accountId != 0 {
-		apiservice.TestingContext.Role, err = d.AuthApi.RoleForAccount(accountId)
+	req.Header.Set("AccountID", strconv.FormatInt(accountID, 10))
+	apiservice.TestingContext.AccountId = accountID
+	if accountID != 0 {
+		account, err := d.AuthApi.GetAccount(accountID)
 		if err != nil {
 			return nil, err
 		}
+		apiservice.TestingContext.Role = account.Role
 	}
 	return http.DefaultClient.Do(req)
 }
 
-func (d *TestData) AuthPost(url, bodyType string, body io.Reader, accountId int64) (*http.Response, error) {
+func (d *TestData) AuthPost(url, bodyType string, body io.Reader, accountID int64) (*http.Response, error) {
 	req, err := http.NewRequest("POST", url, body)
 	if err != nil {
 		return nil, err
 	}
 	req.Header.Set("Content-Type", bodyType)
-	req.Header.Set("AccountId", strconv.FormatInt(accountId, 10))
-	apiservice.TestingContext.AccountId = accountId
-	if accountId != 0 {
-		apiservice.TestingContext.Role, err = d.AuthApi.RoleForAccount(accountId)
+	req.Header.Set("AccountID", strconv.FormatInt(accountID, 10))
+	apiservice.TestingContext.AccountId = accountID
+	if accountID != 0 {
+		account, err := d.AuthApi.GetAccount(accountID)
 		if err != nil {
 			return nil, err
 		}
+		apiservice.TestingContext.Role = account.Role
 	}
 	return http.DefaultClient.Do(req)
 }
 
-func (d *TestData) AuthPut(url, bodyType string, body io.Reader, accountId int64) (*http.Response, error) {
+func (d *TestData) AuthPut(url, bodyType string, body io.Reader, accountID int64) (*http.Response, error) {
 	req, err := http.NewRequest("PUT", url, body)
 	if err != nil {
 		return nil, err
 	}
 	req.Header.Set("Content-Type", bodyType)
-	req.Header.Set("AccountId", strconv.FormatInt(accountId, 10))
-	apiservice.TestingContext.AccountId = accountId
-	if accountId != 0 {
-		apiservice.TestingContext.Role, err = d.AuthApi.RoleForAccount(accountId)
+	req.Header.Set("AccountID", strconv.FormatInt(accountID, 10))
+	apiservice.TestingContext.AccountId = accountID
+	if accountID != 0 {
+		account, err := d.AuthApi.GetAccount(accountID)
 		if err != nil {
 			return nil, err
 		}
+		apiservice.TestingContext.Role = account.Role
 	}
 	return http.DefaultClient.Do(req)
 }
 
-func (d *TestData) AuthDelete(url, bodyType string, body io.Reader, accountId int64) (*http.Response, error) {
+func (d *TestData) AuthDelete(url, bodyType string, body io.Reader, accountID int64) (*http.Response, error) {
 	req, err := http.NewRequest("DELETE", url, body)
 	if err != nil {
 		return nil, err
 	}
 	req.Header.Set("Content-Type", bodyType)
-	req.Header.Set("AccountId", strconv.FormatInt(accountId, 10))
-	apiservice.TestingContext.AccountId = accountId
-	if accountId != 0 {
-		apiservice.TestingContext.Role, err = d.AuthApi.RoleForAccount(accountId)
+	req.Header.Set("AccountID", strconv.FormatInt(accountID, 10))
+	apiservice.TestingContext.AccountId = accountID
+	if accountID != 0 {
+		account, err := d.AuthApi.GetAccount(accountID)
 		if err != nil {
 			return nil, err
 		}
+		apiservice.TestingContext.Role = account.Role
 	}
 	return http.DefaultClient.Do(req)
 }

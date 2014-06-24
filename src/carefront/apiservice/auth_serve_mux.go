@@ -104,7 +104,7 @@ func NewAuthServeMux(authApi api.AuthAPI, statsRegistry metrics.Registry) *AuthS
 // Parse the "Authorization: token xxx" header and check the token for validity
 func (mux *AuthServeMux) checkAuth(r *http.Request) (*common.Account, error) {
 	if Testing {
-		if idStr := r.Header.Get("AccountId"); idStr != "" {
+		if idStr := r.Header.Get("AccountID"); idStr != "" {
 			id, err := strconv.ParseInt(idStr, 10, 64)
 			if err != nil {
 				return nil, err
