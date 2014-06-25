@@ -8,6 +8,8 @@ import (
 	"net/http"
 )
 
+// grantPatientFileAccesHandler is an API handler to grant temporary access to a patient file
+// for a doctor to claim the patient case
 type grantPatientFileAccessHandler struct {
 	dataAPI api.DataAPI
 }
