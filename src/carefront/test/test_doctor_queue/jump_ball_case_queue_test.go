@@ -315,6 +315,37 @@ func TestJBCQ_Claim(t *testing.T) {
 	}
 }
 
+// This test is to ensure that the doctor is permanently assigned to the
+// case in the event that the visit is marked as unsuitable for spruce
+func TestJBCQ_AssignOnMarkingUnsuitableForSpruce(t *testing.T) {
+	testData := test_integration.SetupIntegrationTest(t)
+	defer test_integration.TearDownIntegrationTest(t, testData)
+	doctor, err := testData.DataApi.GetDoctorFromId(test_integration.GetDoctorIdOfCurrentDoctor(testData, t))
+	if err != nil {
+		t.Fatal(err)
+	}
+
+	pr := test_integration.SignupRandomTestPatient(t, testData)
+	pv := test_integration.CreatePatientVisitForPatient(pr.Patient.PatientId.Int64(), testData, t)
+	answerIntakeRequestBody := test_integration.PrepareAnswersForQuestionsInPatientVisit(pv, t)
+	test_integration.SubmitAnswersIntakeForPatient(pr.Patient.PatientId.Int64(), pr.Patient.AccountId.Int64(),
+		answerIntakeRequestBody, testData, t)
+	test_integration.SubmitPatientVisitForPatient(pr.Patient.PatientId.Int64(), pv.PatientVisitId, testData, t)
+	test_integration.StartReviewingPatientVisit(pv.PatientVisitId, doctor, testData, t)
+
+	answerIntakeRequestBody = test_integration.PrepareAnswersForDiagnosingAsUnsuitableForSpruce(testData, t, pv.PatientVisitId)
+	test_integration.SubmitPatientVisitDiagnosisWithIntake(pv.PatientVisitId, doctor.AccountId.Int64(), answerIntakeRequestBody, testData, t)
+
+	// at this point the patient case should be considered claimed
+	patientCase, err := testData.DataApi.GetPatientCaseFromPatientVisitId(pv.PatientVisitId)
+	if err != nil {
+		t.Fatal(err)
+	} else if patientCase.Status != common.PCStatusClaimed {
+		t.Fatalf("Expected patient case to be %s but it was %s", common.PCStatusClaimed, patientCase.Status)
+	}
+
+}
+
 func getExpiresTimeFromDoctorForCase(testData *test_integration.TestData, t *testing.T, patientCaseId int64) *time.Time {
 	doctorAssignments, err := testData.DataApi.GetDoctorsAssignedToPatientCase(patientCaseId)
 	if err != nil {
