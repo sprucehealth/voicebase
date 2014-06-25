@@ -17,7 +17,7 @@ func TestConversationItemsInDoctorQueue(t *testing.T) {
 		t.Fatal(err)
 	}
 
-	visit, treatmentPlan := test_integration.SignupAndSubmitPatientVisitForRandomPatient(t, testData, doctor)
+	visit, treatmentPlan := test_integration.CreateRandomPatientVisitAndPickTP(t, testData, doctor)
 	patient, err := testData.DataApi.GetPatientFromPatientVisitId(visit.PatientVisitId)
 	if err != nil {
 		t.Fatal(err)

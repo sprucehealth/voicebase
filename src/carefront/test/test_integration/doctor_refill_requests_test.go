@@ -1302,7 +1302,7 @@ func setUpDeniedRefillRequestWithDNTF(t *testing.T, testData *TestData, endErxSt
 			t.Fatal(err)
 		}
 
-		_, treatmentPlan := SignupAndSubmitPatientVisitForRandomPatient(t, testData, pDoctor)
+		_, treatmentPlan := CreateRandomPatientVisitAndPickTP(t, testData, pDoctor)
 
 		treatmentTemplate := &common.DoctorTreatmentTemplate{}
 		treatmentTemplate.Name = "Favorite Treatment #1"

@@ -31,7 +31,7 @@ func TestDoctorUpdateToPatientAddress(t *testing.T) {
 
 	// the only way a doctor can update a patient's information is if they are assigned to them. and the only way
 	// to currently be assigned to them is to grab the item from the unclaimed queue by opening the patient visit
-	patientVisitResponse, _ := SignupAndSubmitPatientVisitForRandomPatient(t, testData, doctor)
+	patientVisitResponse, _ := CreateRandomPatientVisitAndPickTP(t, testData, doctor)
 
 	patientPharmacy := &pharmacy.PharmacyData{
 		Source:       pharmacy.PHARMACY_SOURCE_SURESCRIPTS,
@@ -199,7 +199,7 @@ func TestDoctorUpdateToPhoneNumbers(t *testing.T) {
 		t.Fatal("Unable to read doctor information")
 	}
 
-	patientVisitResponse, _ := SignupAndSubmitPatientVisitForRandomPatient(t, testData, doctor)
+	patientVisitResponse, _ := CreateRandomPatientVisitAndPickTP(t, testData, doctor)
 	patient, err := testData.DataApi.GetPatientFromPatientVisitId(patientVisitResponse.PatientVisitId)
 	if err != nil {
 		t.Fatal(err)
@@ -308,7 +308,7 @@ func TestDoctorUpdateToTopLevelInformation(t *testing.T) {
 		t.Fatal("Unable to read doctor information")
 	}
 
-	patientVisitResponse, _ := SignupAndSubmitPatientVisitForRandomPatient(t, testData, doctor)
+	patientVisitResponse, _ := CreateRandomPatientVisitAndPickTP(t, testData, doctor)
 
 	patient, err := testData.DataApi.GetPatientFromPatientVisitId(patientVisitResponse.PatientVisitId)
 	if err != nil {
@@ -468,7 +468,7 @@ func TestDoctorPatientPharmacyUpdateHandler(t *testing.T) {
 		t.Fatal("Unable to read doctor information")
 	}
 
-	patientVisitResponse, _ := SignupAndSubmitPatientVisitForRandomPatient(t, testData, doctor)
+	patientVisitResponse, _ := CreateRandomPatientVisitAndPickTP(t, testData, doctor)
 	patient, err := testData.DataApi.GetPatientFromPatientVisitId(patientVisitResponse.PatientVisitId)
 	if err != nil {
 		t.Fatal(err)

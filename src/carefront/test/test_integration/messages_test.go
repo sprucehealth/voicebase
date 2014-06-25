@@ -46,7 +46,7 @@ func TestCaseMessages(t *testing.T) {
 		t.Fatal(err)
 	}
 
-	visit, treatmentPlan := SignupAndSubmitPatientVisitForRandomPatient(t, testData, doctor)
+	visit, treatmentPlan := CreateRandomPatientVisitAndPickTP(t, testData, doctor)
 	patient, err := testData.DataApi.GetPatientFromPatientVisitId(visit.PatientVisitId)
 	if err != nil {
 		t.Fatal(err)

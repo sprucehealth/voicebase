@@ -19,7 +19,7 @@ func TestDoctorQueueWithPatientVisits(t *testing.T) {
 		t.Fatal("Unable to get doctor from doctor id " + err.Error())
 	}
 
-	_, treatmentPlan := SignupAndSubmitPatientVisitForRandomPatient(t, testData, doctor)
+	_, treatmentPlan := CreateRandomPatientVisitAndPickTP(t, testData, doctor)
 
 	// there should be 1 item in the global queue for the doctor to consume
 	elligibleItems, err := testData.DataApi.GetElligibleItemsInUnclaimedQueue(doctor.DoctorId.Int64())
@@ -28,7 +28,7 @@ func TestDoctorQueueWithPatientVisits(t *testing.T) {
 	}
 
 	for i := 0; i < 5; i++ {
-		SignupAndSubmitPatientVisitForRandomPatient(t, testData, doctor)
+		CreateRandomPatientVisitAndPickTP(t, testData, doctor)
 	}
 
 	elligibleItems, err = testData.DataApi.GetElligibleItemsInUnclaimedQueue(doctor.DoctorId.Int64())

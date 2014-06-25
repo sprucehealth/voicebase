@@ -196,7 +196,17 @@ func GetDoctorIdOfCurrentDoctor(testData *TestData, t *testing.T) int64 {
 	return doctorId
 }
 
-func SignupAndSubmitPatientVisitForRandomPatient(t *testing.T, testData *TestData, doctor *common.Doctor) (*patient_visit.PatientVisitResponse, *common.DoctorTreatmentPlan) {
+func CreateRandomPatientVisitInState(state string, t *testing.T, testData *TestData) *patient_visit.PatientVisitResponse {
+	pr := SignupRandomTestPatientInState(state, t, testData)
+	pv := CreatePatientVisitForPatient(pr.Patient.PatientId.Int64(), testData, t)
+	answerIntakeRequestBody := PrepareAnswersForQuestionsInPatientVisit(pv, t)
+	SubmitAnswersIntakeForPatient(pr.Patient.PatientId.Int64(), pr.Patient.AccountId.Int64(),
+		answerIntakeRequestBody, testData, t)
+	SubmitPatientVisitForPatient(pr.Patient.PatientId.Int64(), pv.PatientVisitId, testData, t)
+	return pv
+}
+
+func CreateRandomPatientVisitAndPickTP(t *testing.T, testData *TestData, doctor *common.Doctor) (*patient_visit.PatientVisitResponse, *common.DoctorTreatmentPlan) {
 	patientSignedupResponse := SignupRandomTestPatient(t, testData)
 	patientVisitResponse := CreatePatientVisitForPatient(patientSignedupResponse.Patient.PatientId.Int64(), testData, t)
 

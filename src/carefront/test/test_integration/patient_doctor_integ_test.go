@@ -31,7 +31,7 @@ func TestPatientVisitReview(t *testing.T) {
 		t.Fatal("Unable to get doctor from id: " + err.Error())
 	}
 
-	patientVisitResponse, treatmentPlan := SignupAndSubmitPatientVisitForRandomPatient(t, testData, doctor)
+	patientVisitResponse, treatmentPlan := CreateRandomPatientVisitAndPickTP(t, testData, doctor)
 	patient, err := testData.DataApi.GetPatientFromPatientVisitId(patientVisitResponse.PatientVisitId)
 	if err != nil {
 		t.Fatalf("Unable to get patient from patient visit info: %s", err)
@@ -98,7 +98,7 @@ func TestPatientVisitReview(t *testing.T) {
 	}
 
 	// start a new patient visit
-	patientVisitResponse, treatmentPlan = SignupAndSubmitPatientVisitForRandomPatient(t, testData, doctor)
+	patientVisitResponse, treatmentPlan = CreateRandomPatientVisitAndPickTP(t, testData, doctor)
 	patient, err = testData.DataApi.GetPatientFromPatientVisitId(patientVisitResponse.PatientVisitId)
 	if err != nil {
 		t.Fatalf("Unable to get patient from patient visit id: %s", err)

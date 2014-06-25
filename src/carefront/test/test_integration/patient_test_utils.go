@@ -25,7 +25,11 @@ func SignupRandomTestPatient(t *testing.T, testData *TestData) *patientApiServic
 			StateAbbreviation: "CA",
 		},
 	}
-	authHandler := patientApiService.NewSignupHandler(testData.DataApi, testData.AuthApi, stubAddressValidationService)
+	return signupRandomTestPatient(stubAddressValidationService, t, testData)
+}
+
+func signupRandomTestPatient(addressAPI address.AddressValidationAPI, t *testing.T, testData *TestData) *patientApiService.PatientSignedupResponse {
+	authHandler := patientApiService.NewSignupHandler(testData.DataApi, testData.AuthApi, addressAPI)
 	ts := httptest.NewServer(authHandler)
 	defer ts.Close()
 
@@ -49,6 +53,17 @@ func SignupRandomTestPatient(t *testing.T, testData *TestData) *patientApiServic
 		t.Fatal("Unable to parse response from patient signed up")
 	}
 	return signedupPatientResponse
+}
+
+func SignupRandomTestPatientInState(state string, t *testing.T, testData *TestData) *patientApiService.PatientSignedupResponse {
+	stubAddressValidationService := address.StubAddressValidationService{
+		CityStateToReturn: address.CityState{
+			City:              "TestCity",
+			State:             state,
+			StateAbbreviation: state,
+		},
+	}
+	return signupRandomTestPatient(stubAddressValidationService, t, testData)
 }
 
 func GetPatientVisitForPatient(patientId int64, testData *TestData, t *testing.T) *patient_visit.PatientVisitResponse {

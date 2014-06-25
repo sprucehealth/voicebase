@@ -185,7 +185,7 @@ type DrugAPI interface {
 
 type DoctorManagementAPI interface {
 	GetCareProvidingStateId(stateAbbreviation string, healthConditionId int64) (int64, error)
-	AddCareProvidingState(stateAbbreviation string, healthConditionId int64) (int64, error)
+	AddCareProvidingState(stateAbbreviation, fullStateName string, healthConditionId int64) (int64, error)
 	MakeDoctorElligibleinCareProvidingState(careProvidingStateId, doctorId int64) error
 }
 

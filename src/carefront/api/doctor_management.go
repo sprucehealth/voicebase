@@ -13,8 +13,8 @@ func (d *DataService) GetCareProvidingStateId(stateAbbreviation string, healthCo
 	return careProvidingStateId, nil
 }
 
-func (d *DataService) AddCareProvidingState(stateAbbreviation string, healthConditionId int64) (int64, error) {
-	res, err := d.db.Exec(`insert into care_providing_state (state, health_condition_id) values (?,?)`, stateAbbreviation, healthConditionId)
+func (d *DataService) AddCareProvidingState(stateAbbreviation, fullStateName string, healthConditionId int64) (int64, error) {
+	res, err := d.db.Exec(`insert into care_providing_state (state,long_state, health_condition_id) values (?,?,?)`, stateAbbreviation, fullStateName, healthConditionId)
 	if err != nil {
 		return 0, err
 	}

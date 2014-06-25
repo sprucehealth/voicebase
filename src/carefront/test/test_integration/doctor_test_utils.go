@@ -76,7 +76,7 @@ func SignupRandomTestDoctorInState(state string, t *testing.T, testData *TestDat
 	careProvidingStateId, err := testData.DataApi.GetCareProvidingStateId(state, apiservice.HEALTH_CONDITION_ACNE_ID)
 	if err == api.NoRowsError {
 		// this means that the state does not exist and we need to add it
-		careProvidingStateId, err = testData.DataApi.AddCareProvidingState(state, apiservice.HEALTH_CONDITION_ACNE_ID)
+		careProvidingStateId, err = testData.DataApi.AddCareProvidingState(state, state, apiservice.HEALTH_CONDITION_ACNE_ID)
 		if err != nil {
 			t.Fatal(err)
 		}

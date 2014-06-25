@@ -115,7 +115,7 @@ func TestAdvicePointsForPatientVisit(t *testing.T) {
 	}
 
 	// lets start a new patient visit and ensure that we still get back the advice points as added
-	_, treatmentPlan2 := test_integration.SignupAndSubmitPatientVisitForRandomPatient(t, testData, doctor)
+	_, treatmentPlan2 := test_integration.CreateRandomPatientVisitAndPickTP(t, testData, doctor)
 
 	// get the advice points for this patient visit
 	doctorAdviceResponse2 := test_integration.GetAdvicePointsInTreatmentPlan(testData, doctor, treatmentPlan2.Id.Int64(), t)
@@ -349,7 +349,7 @@ func TestAdvicePointsForPatientVisit_SelectAdviceFromDeletedAdvice(t *testing.T)
 
 	// lets go ahead and delete an advice point in the context of another patient's visit
 
-	_, treatmentPlan2 := test_integration.SignupAndSubmitPatientVisitForRandomPatient(t, testData, doctor)
+	_, treatmentPlan2 := test_integration.CreateRandomPatientVisitAndPickTP(t, testData, doctor)
 	doctorAdviceResponse2 := test_integration.GetAdvicePointsInTreatmentPlan(testData, doctor, treatmentPlan2.Id.Int64(), t)
 
 	doctorAdviceRequest = doctorAdviceResponse2
@@ -473,7 +473,7 @@ func setupAdviceCreationTest(t *testing.T, testData *test_integration.TestData) 
 	}
 
 	// get patient to start a visit
-	patientVisitResponse, treatmentPlan := test_integration.SignupAndSubmitPatientVisitForRandomPatient(t, testData, doctor)
+	patientVisitResponse, treatmentPlan := test_integration.CreateRandomPatientVisitAndPickTP(t, testData, doctor)
 
 	return patientVisitResponse, treatmentPlan, doctor
 }

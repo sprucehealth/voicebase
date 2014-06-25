@@ -25,7 +25,7 @@ func TestFavoriteTreatmentPlan(t *testing.T) {
 		t.Fatalf("Unable to get doctor from id: %s", err)
 	}
 
-	patientVisitResponse, treatmentPlan := SignupAndSubmitPatientVisitForRandomPatient(t, testData, doctor)
+	patientVisitResponse, treatmentPlan := CreateRandomPatientVisitAndPickTP(t, testData, doctor)
 
 	favoriteTreatmentPlan := CreateFavoriteTreatmentPlan(patientVisitResponse.PatientVisitId, treatmentPlan.Id.Int64(), testData, doctor, t)
 
@@ -156,7 +156,7 @@ func TestFavoriteTreatmentPlan_DeletingFTP(t *testing.T) {
 		t.Fatalf("Unable to get doctor from id: %s", err)
 	}
 
-	patientVisitResponse, treatmentPlan := SignupAndSubmitPatientVisitForRandomPatient(t, testData, doctor)
+	patientVisitResponse, treatmentPlan := CreateRandomPatientVisitAndPickTP(t, testData, doctor)
 
 	favoriteTreatmentPlan := CreateFavoriteTreatmentPlan(patientVisitResponse.PatientVisitId, treatmentPlan.Id.Int64(), testData, doctor, t)
 
@@ -217,7 +217,7 @@ func TestFavoriteTreatmentPlan_DeletingFTP_ActiveTP(t *testing.T) {
 		t.Fatalf("Unable to get doctor from id: %s", err)
 	}
 
-	patientVisitResponse, treatmentPlan := SignupAndSubmitPatientVisitForRandomPatient(t, testData, doctor)
+	patientVisitResponse, treatmentPlan := CreateRandomPatientVisitAndPickTP(t, testData, doctor)
 
 	favoriteTreatmentPlan := CreateFavoriteTreatmentPlan(patientVisitResponse.PatientVisitId, treatmentPlan.Id.Int64(), testData, doctor, t)
 
@@ -298,7 +298,7 @@ func TestFavoriteTreatmentPlan_PickingAFavoriteTreatmentPlan(t *testing.T) {
 		t.Fatalf("Unable to get doctor from id: %s", err)
 	}
 
-	patientVisitResponse, treatmentPlan := SignupAndSubmitPatientVisitForRandomPatient(t, testData, doctor)
+	patientVisitResponse, treatmentPlan := CreateRandomPatientVisitAndPickTP(t, testData, doctor)
 
 	// create a favorite treatment plan
 	favoriteTreamentPlan := CreateFavoriteTreatmentPlan(patientVisitResponse.PatientVisitId, treatmentPlan.Id.Int64(), testData, doctor, t)
@@ -372,7 +372,7 @@ func TestFavoriteTreatmentPlan_CommittedStateForTreatmentPlan(t *testing.T) {
 		t.Fatalf("Unable to get doctor from id: %s", err)
 	}
 
-	patientVisitResponse, treatmentPlan := SignupAndSubmitPatientVisitForRandomPatient(t, testData, doctor)
+	patientVisitResponse, treatmentPlan := CreateRandomPatientVisitAndPickTP(t, testData, doctor)
 
 	// create a favorite treatment plan
 	favoriteTreamentPlan := CreateFavoriteTreatmentPlan(patientVisitResponse.PatientVisitId, treatmentPlan.Id.Int64(), testData, doctor, t)
@@ -465,7 +465,7 @@ func TestFavoriteTreatmentPlan_BreakingMappingOnModify(t *testing.T) {
 		t.Fatalf("Unable to get doctor from id: %s", err)
 	}
 
-	patientVisitResponse, treatmentPlan := SignupAndSubmitPatientVisitForRandomPatient(t, testData, doctor)
+	patientVisitResponse, treatmentPlan := CreateRandomPatientVisitAndPickTP(t, testData, doctor)
 
 	// create a favorite treatment plan
 	favoriteTreamentPlan := CreateFavoriteTreatmentPlan(patientVisitResponse.PatientVisitId, treatmentPlan.Id.Int64(), testData, doctor, t)
@@ -573,7 +573,7 @@ func TestFavoriteTreatmentPlan_BreakingMappingOnModify_PrefillRestOfData(t *test
 		t.Fatalf("Unable to get doctor from id: %s", err)
 	}
 
-	patientVisitResponse, treatmentPlan := SignupAndSubmitPatientVisitForRandomPatient(t, testData, doctor)
+	patientVisitResponse, treatmentPlan := CreateRandomPatientVisitAndPickTP(t, testData, doctor)
 
 	// create a favorite treatment plan
 	favoriteTreamentPlan := CreateFavoriteTreatmentPlan(patientVisitResponse.PatientVisitId, treatmentPlan.Id.Int64(), testData, doctor, t)
@@ -623,7 +623,7 @@ func TestFavoriteTreatmentPlan_InContextOfTreatmentPlan(t *testing.T) {
 		t.Fatalf("Unable to get doctor from id: %s", err)
 	}
 
-	_, treatmentPlan := SignupAndSubmitPatientVisitForRandomPatient(t, testData, doctor)
+	_, treatmentPlan := CreateRandomPatientVisitAndPickTP(t, testData, doctor)
 	regimenPlanRequest := &common.RegimenPlan{}
 	regimenPlanRequest.TreatmentPlanId = treatmentPlan.Id
 
@@ -779,7 +779,7 @@ func TestFavoriteTreatmentPlan_InContextOfTreatmentPlan_EmptyRegimenAndAdvice(t 
 		t.Fatalf("Unable to get doctor from id: %s", err)
 	}
 
-	_, treatmentPlan := SignupAndSubmitPatientVisitForRandomPatient(t, testData, doctor)
+	_, treatmentPlan := CreateRandomPatientVisitAndPickTP(t, testData, doctor)
 	regimenPlanRequest := &common.RegimenPlan{}
 	regimenPlanRequest.TreatmentPlanId = treatmentPlan.Id
 
@@ -906,7 +906,7 @@ func TestFavoriteTreatmentPlan_InContextOfTreatmentPlan_TwoDontMatch(t *testing.
 		t.Fatalf("Unable to get doctor from id: %s", err)
 	}
 
-	_, treatmentPlan := SignupAndSubmitPatientVisitForRandomPatient(t, testData, doctor)
+	_, treatmentPlan := CreateRandomPatientVisitAndPickTP(t, testData, doctor)
 	regimenPlanRequest := &common.RegimenPlan{}
 	regimenPlanRequest.TreatmentPlanId = treatmentPlan.Id
 

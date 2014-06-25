@@ -31,7 +31,7 @@ func TestJBCQ_TempCaseClaim(t *testing.T) {
 		t.Fatal(err)
 	}
 
-	vp, _ := test_integration.SignupAndSubmitPatientVisitForRandomPatient(t, testData, doctor)
+	vp, _ := test_integration.CreateRandomPatientVisitAndPickTP(t, testData, doctor)
 
 	// ensure that the test is temporarily claimed
 	patientCase, err := testData.DataApi.GetPatientCaseFromPatientVisitId(vp.PatientVisitId)
@@ -98,7 +98,7 @@ func TestJBCQ_ForbiddenClaimAttempt(t *testing.T) {
 		t.Fatal(err)
 	}
 
-	vp, _ := test_integration.SignupAndSubmitPatientVisitForRandomPatient(t, testData, doctor)
+	vp, _ := test_integration.CreateRandomPatientVisitAndPickTP(t, testData, doctor)
 
 	// now lets sign up a second doctor in CA and get the doctor to attempt to claim the case
 	d2 := test_integration.SignupRandomTestDoctorInState("CA", t, testData)
@@ -193,12 +193,7 @@ func TestJBCQ_Claim(t *testing.T) {
 		t.Fatal(err)
 	}
 
-	pr := test_integration.SignupRandomTestPatient(t, testData)
-	pv := test_integration.CreatePatientVisitForPatient(pr.Patient.PatientId.Int64(), testData, t)
-	answerIntakeRequestBody := test_integration.PrepareAnswersForQuestionsInPatientVisit(pv, t)
-	test_integration.SubmitAnswersIntakeForPatient(pr.Patient.PatientId.Int64(), pr.Patient.AccountId.Int64(),
-		answerIntakeRequestBody, testData, t)
-	test_integration.SubmitPatientVisitForPatient(pr.Patient.PatientId.Int64(), pv.PatientVisitId, testData, t)
+	pv := test_integration.CreateRandomPatientVisitInState("CA", t, testData)
 
 	// at this point check to ensure that the patient case is the unclaimed state
 	patientCase, err := testData.DataApi.GetPatientCaseFromPatientVisitId(pv.PatientVisitId)
@@ -326,15 +321,10 @@ func TestJBCQ_AssignOnMarkingUnsuitableForSpruce(t *testing.T) {
 		t.Fatal(err)
 	}
 
-	pr := test_integration.SignupRandomTestPatient(t, testData)
-	pv := test_integration.CreatePatientVisitForPatient(pr.Patient.PatientId.Int64(), testData, t)
-	answerIntakeRequestBody := test_integration.PrepareAnswersForQuestionsInPatientVisit(pv, t)
-	test_integration.SubmitAnswersIntakeForPatient(pr.Patient.PatientId.Int64(), pr.Patient.AccountId.Int64(),
-		answerIntakeRequestBody, testData, t)
-	test_integration.SubmitPatientVisitForPatient(pr.Patient.PatientId.Int64(), pv.PatientVisitId, testData, t)
+	pv := test_integration.CreateRandomPatientVisitInState("CA", t, testData)
 	test_integration.StartReviewingPatientVisit(pv.PatientVisitId, doctor, testData, t)
 
-	answerIntakeRequestBody = test_integration.PrepareAnswersForDiagnosingAsUnsuitableForSpruce(testData, t, pv.PatientVisitId)
+	answerIntakeRequestBody := test_integration.PrepareAnswersForDiagnosingAsUnsuitableForSpruce(testData, t, pv.PatientVisitId)
 	test_integration.SubmitPatientVisitDiagnosisWithIntake(pv.PatientVisitId, doctor.AccountId.Int64(), answerIntakeRequestBody, testData, t)
 
 	// at this point the patient case should be considered claimed
@@ -359,7 +349,7 @@ func TestJBCQ_RevokingAccessOnClaimExpiration(t *testing.T) {
 	// set the expiration duration to 4 seconds so that we can easily test access revoking
 	doctor_queue.ExpireDuration = 4 * time.Second
 
-	pv, _ := test_integration.SignupAndSubmitPatientVisitForRandomPatient(t, testData, doctor)
+	pv, _ := test_integration.CreateRandomPatientVisitAndPickTP(t, testData, doctor)
 	doctor_queue.CheckForExpiredClaimedItems(testData.DataApi)
 
 	// because of the grace period, the doctor's claim should not have been revoked
