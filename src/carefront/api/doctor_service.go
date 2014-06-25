@@ -946,6 +946,22 @@ func (d *DataService) GetTreatmentTemplates(doctorId int64) ([]*common.DoctorTre
 	return treatmentTemplates, rows.Err()
 }
 
+func (d *DataService) GetSavedMessageForDoctor(doctorID int64) (string, error) {
+	var message string
+	row := d.db.QueryRow(`SELECT message FROM doctor_saved_case_message WHERE doctor_id = ?`, doctorID)
+	if err := row.Scan(&message); err == sql.ErrNoRows {
+		return "", nil
+	} else if err != nil {
+		return "", err
+	}
+	return message, nil
+}
+
+func (d *DataService) SetSavedMessageForDoctor(doctorID int64, message string) error {
+	_, err := d.db.Exec(`REPLACE INTO doctor_saved_case_message (doctor_id, message) VALUES (?, ?)`, doctorID, message)
+	return err
+}
+
 func (d *DataService) getIdForNameFromTable(tableName, drugComponentName string) (nullId sql.NullInt64, err error) {
 	err = d.db.QueryRow(fmt.Sprintf(`select id from %s where name=?`, tableName), drugComponentName).Scan(&nullId)
 	return
