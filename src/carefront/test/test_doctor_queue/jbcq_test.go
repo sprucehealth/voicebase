@@ -356,8 +356,8 @@ func TestJBCQ_RevokingAccessOnClaimExpiration(t *testing.T) {
 		t.Fatal(err)
 	}
 
-	// set the expiration duration to 1 second so that we can easily test access revoking
-	doctor_queue.ExpireDuration = time.Second
+	// set the expiration duration to 4 seconds so that we can easily test access revoking
+	doctor_queue.ExpireDuration = 4 * time.Second
 
 	pv, _ := test_integration.SignupAndSubmitPatientVisitForRandomPatient(t, testData, doctor)
 	doctor_queue.CheckForExpiredClaimedItems(testData.DataApi)
@@ -372,7 +372,7 @@ func TestJBCQ_RevokingAccessOnClaimExpiration(t *testing.T) {
 
 	// now lets set the grace period to 0 and try again after sleeping for a second
 	doctor_queue.GracePeriod = 0
-	time.Sleep(2 * time.Second)
+	time.Sleep(5 * time.Second)
 	doctor_queue.CheckForExpiredClaimedItems(testData.DataApi)
 
 	// at this point the access should have been revoked
