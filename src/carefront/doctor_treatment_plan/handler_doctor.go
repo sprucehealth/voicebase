@@ -41,6 +41,7 @@ type PickTreatmentPlanRequestData struct {
 
 type TreatmentPlanRequestData struct {
 	TreatmentPlanId encoding.ObjectId `json:"treatment_plan_id"`
+	Message         string            `json:"message"`
 }
 
 type DoctorTreatmentPlanResponse struct {
@@ -185,6 +186,28 @@ func (d *doctorTreatmentPlanHandler) submitTreatmentPlan(w http.ResponseWriter, 
 		return
 	}
 
+	caseID, err := d.dataApi.GetPatientCaseIdFromPatientVisitId(patientVisitId)
+	if err != nil {
+		apiservice.WriteError(err, w, r)
+		return
+	}
+
+	msg := &common.CaseMessage{
+		CaseID:   caseID,
+		PersonID: doctor.PersonId,
+		Body:     requestData.Message,
+		Attachments: []*common.CaseMessageAttachment{
+			&common.CaseMessageAttachment{
+				ItemType: common.AttachmentTypeTreatmentPlan,
+				ItemID:   treatmentPlan.Id.Int64(),
+			},
+		},
+	}
+	if _, err := d.dataApi.CreateCaseMessage(msg); err != nil {
+		apiservice.WriteError(err, w, r)
+		return
+	}
+
 	// Publish event that treamtent plan was created
 	dispatch.Default.PublishAsync(&TreatmentPlanCreatedEvent{
 		PatientId:       treatmentPlan.PatientId,
@@ -192,6 +215,7 @@ func (d *doctorTreatmentPlanHandler) submitTreatmentPlan(w http.ResponseWriter, 
 		VisitId:         patientVisitId,
 		TreatmentPlanId: requestData.TreatmentPlanId.Int64(),
 		Patient:         patient,
+		Message:         msg,
 	})
 
 	apiservice.WriteJSONToHTTPResponseWriter(w, http.StatusOK, apiservice.SuccessfulGenericJSONResponse())

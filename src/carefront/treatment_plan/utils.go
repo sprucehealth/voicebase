@@ -10,11 +10,6 @@ func populateTreatmentPlan(dataApi api.DataAPI, patientVisitId int64, treatmentP
 	treatmentPlan := &common.TreatmentPlan{}
 
 	var err error
-	treatmentPlan.DiagnosisSummary, err = dataApi.GetDiagnosisSummaryForTreatmentPlan(treatmentPlanId)
-	if err != nil {
-		return nil, fmt.Errorf("Unable to get diagnosis summary for patient visit: %s", err)
-	}
-
 	treatmentPlan.TreatmentList = &common.TreatmentList{}
 	treatmentPlan.TreatmentList.Treatments, err = dataApi.GetTreatmentsBasedOnTreatmentPlanId(treatmentPlanId)
 	if err != nil {
