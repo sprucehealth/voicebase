@@ -8,29 +8,35 @@ import (
 	"net/http"
 )
 
-// grantPatientFileAccesHandler is an API handler to grant temporary access to a patient file
+// claimPatientCaseAccessHandler is an API handler to grant temporary access to a patient file
 // for a doctor to claim the patient case
-type grantPatientFileAccessHandler struct {
+type claimPatientCaseAccessHandler struct {
 	dataAPI api.DataAPI
 }
 
-type GrantPatientFileRequestData struct {
+type ClaimPatientCaseRequestData struct {
 	PatientCaseId encoding.ObjectId `json:"case_id"`
 }
 
-func NewGrantPatientFileAccessHandler(dataAPI api.DataAPI) *grantPatientFileAccessHandler {
-	return &grantPatientFileAccessHandler{
+func NewClaimPatientCaseAccessHandler(dataAPI api.DataAPI) *claimPatientCaseAccessHandler {
+	return &claimPatientCaseAccessHandler{
 		dataAPI: dataAPI,
 	}
 }
 
-func (g *grantPatientFileAccessHandler) ServeHTTP(w http.ResponseWriter, r *http.Request) {
+func (c *claimPatientCaseAccessHandler) ServeHTTP(w http.ResponseWriter, r *http.Request) {
 	if r.Method != apiservice.HTTP_POST {
 		http.NotFound(w, r)
 		return
 	}
 
-	requestData := GrantPatientFileRequestData{}
+	// only the doctor is authorized to claim the ase
+	if apiservice.GetContext(r).Role != api.DOCTOR_ROLE {
+		apiservice.WriteAccessNotAllowedError(w, r)
+		return
+	}
+
+	requestData := ClaimPatientCaseRequestData{}
 	if err := apiservice.DecodeRequestData(&requestData, r); err != nil {
 		apiservice.WriteValidationError("Unable to parse input parameters", w, r)
 		return
@@ -39,19 +45,19 @@ func (g *grantPatientFileAccessHandler) ServeHTTP(w http.ResponseWriter, r *http
 		return
 	}
 
-	doctorId, err := g.dataAPI.GetDoctorIdFromAccountId(apiservice.GetContext(r).AccountId)
+	doctorId, err := c.dataAPI.GetDoctorIdFromAccountId(apiservice.GetContext(r).AccountId)
 	if err != nil {
 		apiservice.WriteError(err, w, r)
 		return
 	}
 
-	patientCase, err := g.dataAPI.GetPatientCaseFromId(requestData.PatientCaseId.Int64())
+	patientCase, err := c.dataAPI.GetPatientCaseFromId(requestData.PatientCaseId.Int64())
 	if err != nil {
 		apiservice.WriteError(err, w, r)
 		return
 	}
 
-	err = apiservice.ValidateWriteAccessToPatientCase(doctorId, patientCase.PatientId.Int64(), patientCase.Id.Int64(), g.dataAPI)
+	err = apiservice.ValidateWriteAccessToPatientCase(doctorId, patientCase.PatientId.Int64(), patientCase.Id.Int64(), c.dataAPI)
 	if err == nil {
 		// doctor already has access, in which case we return success
 		apiservice.WriteJSONSuccess(w)
@@ -71,7 +77,7 @@ func (g *grantPatientFileAccessHandler) ServeHTTP(w http.ResponseWriter, r *http
 	if patientCase.Status != common.PCStatusUnclaimed {
 		apiservice.WriteValidationError("Expected patient case to be in the unclaimed state but it wasnt", w, r)
 		return
-	} else if err := g.dataAPI.TemporarilyClaimCaseAndAssignDoctorToCaseAndPatient(doctorId, patientCase.Id.Int64(),
+	} else if err := c.dataAPI.TemporarilyClaimCaseAndAssignDoctorToCaseAndPatient(doctorId, patientCase.Id.Int64(),
 		patientCase.PatientId.Int64(), ExpireDuration); err != nil {
 		apiservice.WriteError(err, w, r)
 		return

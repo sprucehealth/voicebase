@@ -90,7 +90,7 @@ func (d *queueHandler) ServeHTTP(w http.ResponseWriter, r *http.Request) {
 			return
 		}
 		if addAuthUrl {
-			feedItems[i].AuthUrl = app_url.GrantPatientFileAccessAction(doctorQueueItem.PatientCaseId)
+			feedItems[i].AuthUrl = app_url.ClaimPatientCaseAction(doctorQueueItem.PatientCaseId)
 		}
 	}
 	apiservice.WriteJSONToHTTPResponseWriter(w, http.StatusOK, &DoctorQueueItemsResponseData{Items: feedItems})

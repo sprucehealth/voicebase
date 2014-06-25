@@ -60,11 +60,11 @@ func (s *SpruceAction) UnmarshalJSON(data []byte) error {
 	return nil
 }
 
-func GrantPatientFileAccessAction(patientCaseId int64) *SpruceAction {
+func ClaimPatientCaseAction(patientCaseId int64) *SpruceAction {
 	params := url.Values{}
 	params.Set("case_id", strconv.FormatInt(patientCaseId, 10))
 	return &SpruceAction{
-		name:   "grant_patient_file_access",
+		name:   "claim_patient_case",
 		params: params,
 	}
 }
