@@ -84,17 +84,6 @@ func getPatientCaseFromRow(row *sql.Row) (*common.PatientCase, error) {
 	return &patientCase, nil
 }
 
-func (d *DataService) GetCareProvidingStateId(stateAbbreviation string, healthConditionId int64) (int64, error) {
-	var careProvidingStateId int64
-	if err := d.db.QueryRow(`select id from care_providing_state where state = ? and health_condition_id = ?`, stateAbbreviation, healthConditionId).Scan(&careProvidingStateId); err == sql.ErrNoRows {
-		return 0, NoRowsError
-	} else if err != nil {
-		return 0, err
-	}
-
-	return careProvidingStateId, nil
-}
-
 func (d *DataService) DeleteDraftTreatmentPlanByDoctorForCase(doctorId, patientCaseId int64) error {
 	_, err := d.db.Exec(`delete from treatment_plan where doctor_id = ? and status = ? and patient_case_id = ?`, doctorId, STATUS_DRAFT, patientCaseId)
 	return err

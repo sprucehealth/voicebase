@@ -93,7 +93,6 @@ type PatientCaseAPI interface {
 	GetPatientCaseFromPatientVisitId(patientVisitId int64) (*common.PatientCase, error)
 	GetPatientCaseFromTreatmentPlanId(treatmentPlanId int64) (*common.PatientCase, error)
 	GetPatientCaseFromId(patientCaseId int64) (*common.PatientCase, error)
-	GetCareProvidingStateId(stateAbbreviation string, healthConditionId int64) (int64, error)
 	DeleteDraftTreatmentPlanByDoctorForCase(doctorId, patientCaseId int64) error
 }
 
@@ -182,6 +181,12 @@ type DrugAPI interface {
 	DoesDrugDetailsExist(ndc string) (bool, error)
 	DrugDetails(ndc string) (*common.DrugDetails, error)
 	SetDrugDetails(ndcToDrugDetails map[string]*common.DrugDetails) error
+}
+
+type DoctorManagementAPI interface {
+	GetCareProvidingStateId(stateAbbreviation string, healthConditionId int64) (int64, error)
+	AddCareProvidingState(stateAbbreviation string, healthConditionId int64) (int64, error)
+	MakeDoctorElligibleinCareProvidingState(careProvidingStateId, doctorId int64) error
 }
 
 type DoctorAPI interface {
@@ -328,6 +333,7 @@ type ResourceLibraryAPI interface {
 type DataAPI interface {
 	PatientAPI
 	DoctorAPI
+	DoctorManagementAPI
 	PatientVisitAPI
 	PatientCaseAPI
 	IntakeLayoutAPI

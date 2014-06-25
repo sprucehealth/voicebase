@@ -282,10 +282,14 @@ func SetupIntegrationTest(t *testing.T) *TestData {
 	signedupDoctorResponse, _, _ := SignupRandomTestDoctor(t, testData)
 
 	// make this doctor the primary doctor in the state of CA
-	_, err = testData.DB.Exec(`insert into care_provider_state_elligibility (role_type_id, provider_id, care_providing_state_id) 
-					values ((select id from role_type where role_type_tag='DOCTOR'), ?, (select id from care_providing_state where state='CA'))`, signedupDoctorResponse.DoctorId)
+	careProvidingStateId, err := testData.DataApi.GetCareProvidingStateId("CA", apiservice.HEALTH_CONDITION_ACNE_ID)
 	if err != nil {
-		t.Fatal("Unable to make the signed up doctor the primary doctor elligible in CA to diagnose patients: " + err.Error())
+		t.Fatal(err)
+	}
+
+	err = testData.DataApi.MakeDoctorElligibleinCareProvidingState(careProvidingStateId, signedupDoctorResponse.DoctorId)
+	if err != nil {
+		t.Fatal(err)
 	}
 
 	dispatch.Default = dispatch.New()

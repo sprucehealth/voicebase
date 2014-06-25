@@ -25,12 +25,16 @@ import (
 )
 
 func SignupRandomTestDoctor(t *testing.T, testData *TestData) (signedupDoctorResponse *apiservice.DoctorSignedupResponse, email, password string) {
+	return signupDoctor(t, testData)
+}
+
+func signupDoctor(t *testing.T, testData *TestData) (*apiservice.DoctorSignedupResponse, string, string) {
 	authHandler := &apiservice.SignupDoctorHandler{AuthApi: testData.AuthApi, DataApi: testData.DataApi}
 	ts := httptest.NewServer(authHandler)
 	defer ts.Close()
 
-	email = strconv.FormatInt(time.Now().UnixNano(), 10) + "@example.com"
-	password = "12345"
+	email := strconv.FormatInt(time.Now().UnixNano(), 10) + "@example.com"
+	password := "12345"
 	params := &url.Values{}
 	params.Set("first_name", "Test")
 	params.Set("last_name", "Test")
@@ -57,12 +61,35 @@ func SignupRandomTestDoctor(t *testing.T, testData *TestData) (signedupDoctorRes
 	}
 	CheckSuccessfulStatusCode(res, fmt.Sprintf("Unable to make success request to signup patient. Here's the code returned %d and here's the body of the request %s", res.StatusCode, body), t)
 
-	signedupDoctorResponse = &apiservice.DoctorSignedupResponse{}
+	signedupDoctorResponse := &apiservice.DoctorSignedupResponse{}
 	err = json.Unmarshal(body, signedupDoctorResponse)
 	if err != nil {
 		t.Fatal("Unable to parse response from patient signed up")
 	}
 	return signedupDoctorResponse, email, password
+}
+
+func SignupRandomTestDoctorInState(state string, t *testing.T, testData *TestData) *apiservice.DoctorSignedupResponse {
+	doctorSignedupResponse, _, _ := signupDoctor(t, testData)
+
+	// check to see if the state already exists in the system
+	careProvidingStateId, err := testData.DataApi.GetCareProvidingStateId(state, apiservice.HEALTH_CONDITION_ACNE_ID)
+	if err == api.NoRowsError {
+		// this means that the state does not exist and we need to add it
+		careProvidingStateId, err = testData.DataApi.AddCareProvidingState(state, apiservice.HEALTH_CONDITION_ACNE_ID)
+		if err != nil {
+			t.Fatal(err)
+		}
+	} else if err != nil {
+		t.Fatal(err)
+	}
+
+	// add doctor as elligible to serve in this state for the default condition of acne
+	err = testData.DataApi.MakeDoctorElligibleinCareProvidingState(careProvidingStateId, doctorSignedupResponse.DoctorId)
+	if err != nil {
+		t.Fatal(err)
+	}
+	return doctorSignedupResponse
 }
 
 func setupErxAPI(t *testing.T) *erx.DoseSpotService {
