@@ -11,7 +11,7 @@ func TestConversationItemsInDoctorQueue(t *testing.T) {
 	testData := test_integration.SetupIntegrationTest(t)
 	defer test_integration.TearDownIntegrationTest(t, testData)
 
-	doctorID := test_integration.GetDoctorIdOfCurrentPrimaryDoctor(testData, t)
+	doctorID := test_integration.GetDoctorIdOfCurrentDoctor(testData, t)
 	doctor, err := testData.DataApi.GetDoctorFromId(doctorID)
 	if err != nil {
 		t.Fatal(err)
