@@ -69,19 +69,13 @@ func TestJBCQ_TempCaseClaim(t *testing.T) {
 
 	// ensure that item is still returned in the global case queue for this doctor
 	// given that it is currently claimed by this doctor
-	unclaimedItems, err := testData.DataApi.GetElligibleItemsInUnclaimedQueue(doctorID)
-	if err != nil {
-		t.Fatal(err)
-	} else if len(unclaimedItems) != 1 {
+	if unclaimedItems := getUnclaimedItemsForDoctor(doctorID, t, testData); len(unclaimedItems) != 1 {
 		t.Fatalf("Expected 1 item in the global queue for doctor instead got %d", len(unclaimedItems))
 	}
 
 	// for any other doctor also registered in CA, there should be no elligible item
 	doctor2 := test_integration.SignupRandomTestDoctorInState("CA", t, testData)
-	unclaimedItems, err = testData.DataApi.GetElligibleItemsInUnclaimedQueue(doctor2.DoctorId)
-	if err != nil {
-		t.Fatal(err)
-	} else if len(unclaimedItems) != 0 {
+	if unclaimedItems := getUnclaimedItemsForDoctor(doctor2.DoctorId, t, testData); len(unclaimedItems) != 0 {
 		t.Fatalf("Expected no elligible items in the queue given that it is currently claimed by other doctor instead got %d", len(unclaimedItems))
 	}
 }
@@ -303,10 +297,7 @@ func TestJBCQ_Claim(t *testing.T) {
 	}
 
 	// There should no longer be an unclaimed item in the doctor queue
-	unclaimedItems, err := testData.DataApi.GetElligibleItemsInUnclaimedQueue(doctor.DoctorId.Int64())
-	if err != nil {
-		t.Fatal(err)
-	} else if len(unclaimedItems) != 0 {
+	if unclaimedItems := getUnclaimedItemsForDoctor(doctor.DoctorId.Int64(), t, testData); len(unclaimedItems) != 0 {
 		t.Fatalf("Expected 0 items in the global queue but got %d", len(unclaimedItems))
 	}
 }
@@ -402,12 +393,4 @@ func TestJBCQ_RevokingAccessOnClaimExpiration(t *testing.T) {
 	} else if patientCase.Status != common.PCStatusTempClaimed {
 		t.Fatalf("Expected the status to be %s but it was %s", common.PCStatusTempClaimed, patientCase.Status)
 	}
-}
-
-func getExpiresTimeFromDoctorForCase(testData *test_integration.TestData, t *testing.T, patientCaseId int64) *time.Time {
-	doctorAssignments, err := testData.DataApi.GetDoctorsAssignedToPatientCase(patientCaseId)
-	if err != nil {
-		t.Fatal(err)
-	}
-	return doctorAssignments[0].Expires
 }
