@@ -331,7 +331,7 @@ func SetupIntegrationTest(t *testing.T) *TestData {
 
 	homelog.InitListeners(testData.DataApi, notificationManager)
 	doctor_treatment_plan.InitListeners(testData.DataApi)
-	doctor_queue.InitListeners(testData.DataApi, notificationManager)
+	doctor_queue.InitListeners(testData.DataApi, notificationManager, metrics.NewRegistry())
 	notify.InitListeners(testData.DataApi)
 
 	return testData

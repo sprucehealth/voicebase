@@ -17,6 +17,8 @@ import (
 	"strconv"
 	"testing"
 	"time"
+
+	"github.com/samuel/go-metrics/metrics"
 )
 
 // This test is to ensure that the a case is correctly
@@ -341,7 +343,7 @@ func TestJBCQ_RevokingAccessOnClaimExpiration(t *testing.T) {
 	doctor_queue.ExpireDuration = 4 * time.Second
 
 	pv, _ := test_integration.CreateRandomPatientVisitAndPickTP(t, testData, doctor)
-	doctor_queue.CheckForExpiredClaimedItems(testData.DataApi)
+	doctor_queue.CheckForExpiredClaimedItems(testData.DataApi, metrics.NewCounter(), metrics.NewCounter())
 
 	// because of the grace period, the doctor's claim should not have been revoked
 	patientCase, err := testData.DataApi.GetPatientCaseFromPatientVisitId(pv.PatientVisitId)
@@ -354,7 +356,7 @@ func TestJBCQ_RevokingAccessOnClaimExpiration(t *testing.T) {
 	// now lets set the grace period to 0 and try again after sleeping for a second
 	doctor_queue.GracePeriod = 0
 	time.Sleep(5 * time.Second)
-	doctor_queue.CheckForExpiredClaimedItems(testData.DataApi)
+	doctor_queue.CheckForExpiredClaimedItems(testData.DataApi, metrics.NewCounter(), metrics.NewCounter())
 
 	// at this point the access should have been revoked
 	patientCase, err = testData.DataApi.GetPatientCaseFromPatientVisitId(pv.PatientVisitId)

@@ -4,6 +4,8 @@ import (
 	"carefront/api"
 	"carefront/libs/golog"
 	"time"
+
+	"github.com/samuel/go-metrics/metrics"
 )
 
 var (
@@ -24,16 +26,22 @@ var (
 // to any temporarily claimed cases where the doctor has remained inactive for
 // an extended period of time. In such a sitution, the exclusive access to the case
 // is revoked and the item is placed back into the global queue for any elligible doctor to claim
-func StartClaimedItemsExpirationChecker(dataAPI api.DataAPI) {
+func StartClaimedItemsExpirationChecker(dataAPI api.DataAPI, statsRegistry metrics.Registry) {
 	go func() {
+
+		claimExpirationSuccess := metrics.NewCounter()
+		claimExpirationFailure := metrics.NewCounter()
+		statsRegistry.Add("claim_expiration/failure", claimExpirationFailure)
+		statsRegistry.Add("claim_expiration/success", claimExpirationSuccess)
+
 		for {
-			CheckForExpiredClaimedItems(dataAPI)
+			CheckForExpiredClaimedItems(dataAPI, claimExpirationSuccess, claimExpirationFailure)
 			time.Sleep(timePeriodBetweenChecks)
 		}
 	}()
 }
 
-func CheckForExpiredClaimedItems(dataAPI api.DataAPI) {
+func CheckForExpiredClaimedItems(dataAPI api.DataAPI, claimExpirationSuccess, claimExpirationFailure metrics.Counter) {
 	// get currently claimed items in global queue
 	claimedItems, err := dataAPI.GetClaimedItemsInQueue()
 	if err != nil {
@@ -44,8 +52,10 @@ func CheckForExpiredClaimedItems(dataAPI api.DataAPI) {
 	for _, item := range claimedItems {
 		if item.Expires.Add(GracePeriod).Before(time.Now()) {
 			if err := revokeAccesstoCaseFromDoctor(item.PatientCaseId, item.DoctorId, dataAPI); err != nil {
+				claimExpirationFailure.Inc(1)
 				golog.Errorf("Unable to revoke access of case from doctor: %s", err)
 			}
+			claimExpirationSuccess.Inc(1)
 		}
 	}
 }

@@ -12,10 +12,12 @@ import (
 	"carefront/notify"
 	"carefront/patient_visit"
 	"errors"
+
+	"github.com/samuel/go-metrics/metrics"
 )
 
-func InitListeners(dataAPI api.DataAPI, notificationManager *notify.NotificationManager) {
-	initJumpBallCaseQueueListeners(dataAPI)
+func InitListeners(dataAPI api.DataAPI, notificationManager *notify.NotificationManager, statsRegistry metrics.Registry) {
+	initJumpBallCaseQueueListeners(dataAPI, statsRegistry)
 
 	dispatch.Default.Subscribe(func(ev *patient_visit.VisitSubmittedEvent) error {
 		// route the incoming visit to a doctor queue
