@@ -67,12 +67,21 @@ func (p *doctorPatientVisitReviewHandler) ServeHTTP(w http.ResponseWriter, r *ht
 
 	// udpate the status of the case and the item in the doctor's queue
 	if patientVisit.Status == common.PVStatusSubmitted {
-		dispatch.Default.Publish(&PatientVisitOpenedEvent{
-			PatientVisit: patientVisit,
-			PatientId:    patient.PatientId.Int64(),
-			DoctorId:     doctorId,
-		})
+		if err := p.DataApi.UpdatePatientVisitStatus(requestData.PatientVisitId, "", common.PVStatusReviewing); err != nil {
+			apiservice.WriteError(err, w, r)
+			return
+		}
+		if err := p.DataApi.MarkPatientVisitAsOngoingInDoctorQueue(doctorId, requestData.PatientVisitId); err != nil {
+			apiservice.WriteError(err, w, r)
+			return
+		}
 	}
+
+	dispatch.Default.Publish(&PatientVisitOpenedEvent{
+		PatientVisit: patientVisit,
+		PatientId:    patient.PatientId.Int64(),
+		DoctorId:     doctorId,
+	})
 
 	// ensure that the doctor is authorized to work on this case
 	if err := apiservice.ValidateReadAccessToPatientCase(doctorId, patientVisit.PatientId.Int64(), patientVisit.PatientCaseId.Int64(), p.DataApi); err != nil {

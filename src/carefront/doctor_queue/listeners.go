@@ -10,7 +10,6 @@ import (
 	"carefront/libs/golog"
 	"carefront/messages"
 	"carefront/notify"
-	"carefront/patient_file"
 	"carefront/patient_visit"
 	"errors"
 )
@@ -22,17 +21,6 @@ func InitListeners(dataAPI api.DataAPI, notificationManager *notify.Notification
 		// route the incoming visit to a doctor queue
 		if err := routeIncomingPatientVisit(ev, dataAPI); err != nil {
 			golog.Errorf("Unable to route incoming patient visit: %s", err)
-			return err
-		}
-		return nil
-	})
-
-	dispatch.Default.Subscribe(func(ev *patient_file.PatientVisitOpenedEvent) error {
-		if err := dataAPI.UpdatePatientVisitStatus(ev.PatientVisit.PatientVisitId.Int64(), "", common.PVStatusReviewing); err != nil {
-			return err
-		}
-
-		if err := dataAPI.MarkPatientVisitAsOngoingInDoctorQueue(ev.DoctorId, ev.PatientVisit.PatientVisitId.Int64()); err != nil {
 			return err
 		}
 		return nil

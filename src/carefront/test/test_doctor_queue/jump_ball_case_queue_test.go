@@ -5,6 +5,7 @@ import (
 	"carefront/api"
 	"carefront/apiservice"
 	"carefront/common"
+	"carefront/doctor_queue"
 	"carefront/doctor_treatment_plan"
 	"carefront/encoding"
 	"carefront/patient_file"
@@ -343,7 +344,74 @@ func TestJBCQ_AssignOnMarkingUnsuitableForSpruce(t *testing.T) {
 	} else if patientCase.Status != common.PCStatusClaimed {
 		t.Fatalf("Expected patient case to be %s but it was %s", common.PCStatusClaimed, patientCase.Status)
 	}
+}
 
+// This test is to ensure that the doctor's claim on a case is revoked after a
+// period of inactivity has elapsed
+func TestJBCQ_RevokingAccessOnClaimExpiration(t *testing.T) {
+	testData := test_integration.SetupIntegrationTest(t)
+	defer test_integration.TearDownIntegrationTest(t, testData)
+	doctor, err := testData.DataApi.GetDoctorFromId(test_integration.GetDoctorIdOfCurrentDoctor(testData, t))
+	if err != nil {
+		t.Fatal(err)
+	}
+
+	// set the expiration duration to 1 second so that we can easily test access revoking
+	doctor_queue.ExpireDuration = time.Second
+
+	pv, _ := test_integration.SignupAndSubmitPatientVisitForRandomPatient(t, testData, doctor)
+	doctor_queue.CheckForExpiredClaimedItems(testData.DataApi)
+
+	// because of the grace period, the doctor's claim should not have been revoked
+	patientCase, err := testData.DataApi.GetPatientCaseFromPatientVisitId(pv.PatientVisitId)
+	if err != nil {
+		t.Fatal(err)
+	} else if patientCase.Status != common.PCStatusTempClaimed {
+		t.Fatalf("Expected the status to be %s but it was %s", common.PCStatusTempClaimed, patientCase.Status)
+	}
+
+	// now lets set the grace period to 0 and try again after sleeping for a second
+	doctor_queue.GracePeriod = 0
+	time.Sleep(2 * time.Second)
+	doctor_queue.CheckForExpiredClaimedItems(testData.DataApi)
+
+	// at this point the access should have been revoked
+	patientCase, err = testData.DataApi.GetPatientCaseFromPatientVisitId(pv.PatientVisitId)
+	if err != nil {
+		t.Fatal(err)
+	} else if patientCase.Status != common.PCStatusUnclaimed {
+		t.Fatalf("Expected the status to be %s but it was %s", common.PCStatusUnclaimed, patientCase.Status)
+	}
+
+	// now that the access is revoked, the patient case or file should not have a doctor assigned to it
+	doctorAssignments, err := testData.DataApi.GetDoctorsAssignedToPatientCase(patientCase.Id.Int64())
+	if err != nil {
+		t.Fatal(err)
+	} else if len(doctorAssignments) != 0 {
+		t.Fatalf("Expected 0 doctors assigned to case instead got %d", len(doctorAssignments))
+	}
+	careTeam, err := testData.DataApi.GetCareTeamForPatient(patientCase.PatientId.Int64())
+	if err != nil {
+		t.Fatal(err)
+	} else if len(careTeam.Assignments) != 0 {
+		t.Fatalf("Expected 0 doctors as part of the patient's care team instead got %d", len(careTeam.Assignments))
+	}
+
+	// now let's try and get another doctor to claim the item
+	d2 := test_integration.SignupRandomTestDoctorInState("CA", t, testData)
+	doctor2, err := testData.DataApi.GetDoctorFromId(d2.DoctorId)
+	if err != nil {
+		t.Fatal(err)
+	}
+	test_integration.StartReviewingPatientVisit(pv.PatientVisitId, doctor2, testData, t)
+
+	// the patient case should now be claimed by this doctor
+	patientCase, err = testData.DataApi.GetPatientCaseFromPatientVisitId(pv.PatientVisitId)
+	if err != nil {
+		t.Fatal(err)
+	} else if patientCase.Status != common.PCStatusTempClaimed {
+		t.Fatalf("Expected the status to be %s but it was %s", common.PCStatusTempClaimed, patientCase.Status)
+	}
 }
 
 func getExpiresTimeFromDoctorForCase(testData *test_integration.TestData, t *testing.T, patientCaseId int64) *time.Time {
