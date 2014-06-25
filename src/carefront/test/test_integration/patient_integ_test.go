@@ -113,7 +113,7 @@ func TestPatientVisitCreation(t *testing.T) {
 	if err != nil {
 		t.Fatal(err)
 	} else if len(doctorAssignments) != 0 {
-		t.Fatal("Expected 0 doctors assigned to patient case instead got %d", len(doctorAssignments))
+		t.Fatalf("Expected 0 doctors assigned to patient case instead got %d", len(doctorAssignments))
 	}
 }
 
