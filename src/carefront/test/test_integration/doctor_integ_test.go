@@ -128,17 +128,7 @@ func TestDoctorDiagnosisOfPatientVisit_Unsuitable(t *testing.T) {
 	StartReviewingPatientVisit(patientVisitResponse.PatientVisitId, doctor, testData, t)
 
 	answerIntakeRequestBody = PrepareAnswersForDiagnosingAsUnsuitableForSpruce(testData, t, patientVisitResponse.PatientVisitId)
-	requestData, err := json.Marshal(answerIntakeRequestBody)
-	if err != nil {
-		t.Fatal("Unable to marshal request body")
-	}
-
-	resp, err := testData.AuthPost(ts.URL, "application/json", bytes.NewBuffer(requestData), doctor.AccountId.Int64())
-	if err != nil {
-		t.Fatal("Unable to successfully submit the diagnosis of a patient visit: " + err.Error())
-	} else if resp.StatusCode != http.StatusOK {
-		t.Fatalf("Expected to get a %d response but got %d", http.StatusOK, resp.StatusCode)
-	}
+	SubmitPatientVisitDiagnosisWithIntake(patientVisitResponse.PatientVisitId, doctor.AccountId.Int64(), answerIntakeRequestBody, testData, t)
 
 	// the patient visit should have its state set to TRIAGED
 	patientVisit, err := testData.DataApi.GetPatientVisitFromId(patientVisitResponse.PatientVisitId)
