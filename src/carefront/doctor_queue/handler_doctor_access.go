@@ -83,5 +83,5 @@ func (c *claimPatientCaseAccessHandler) ServeHTTP(w http.ResponseWriter, r *http
 		return
 	}
 
-	apiservice.WriteError(err, w, r)
+	apiservice.WriteJSONSuccess(w)
 }

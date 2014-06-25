@@ -74,6 +74,11 @@ func ValidateWriteAccessToPatientCase(doctorId, patientId, patientCaseId int64, 
 		return err
 	}
 
+	// no assignments to the case, in which case the doctor does not have write access to the patient case
+	if len(doctorAssignments) == 0 {
+		return NewAccessForbiddenError()
+	}
+
 	// check to ensure that the doctor has temporary or complete access to the case
 	for _, assignment := range doctorAssignments {
 		switch assignment.Status {
@@ -93,7 +98,8 @@ func ValidateWriteAccessToPatientCase(doctorId, patientId, patientCaseId int64, 
 		}
 	}
 
-	// if at this point the doctor does not have access to the case, then this means the doctor cannot write to the patient case
+	// if at this point the doctor does not have access to the case,
+	// then this means the doctor cannot write to the patient case
 	patientCase, err := dataAPI.GetPatientCaseFromId(patientCaseId)
 	if err != nil {
 		return err

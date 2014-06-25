@@ -8,6 +8,7 @@ import (
 	"carefront/common/config"
 	"carefront/doctor_queue"
 	"carefront/doctor_treatment_plan"
+	"carefront/encoding"
 	"carefront/homelog"
 	"carefront/libs/aws"
 	"carefront/libs/dispatch"
@@ -20,6 +21,7 @@ import (
 	"io"
 	"io/ioutil"
 	"net/http"
+	"net/http/httptest"
 	"os"
 	"os/exec"
 	"strconv"
@@ -206,6 +208,23 @@ func CreateRandomPatientVisitInState(state string, t *testing.T, testData *TestD
 	return pv
 }
 
+func GrantDoctorAccessToPatientCase(t *testing.T, testData *TestData, doctor *common.Doctor, patientCaseId int64) {
+	grantAccessHandler := doctor_queue.NewClaimPatientCaseAccessHandler(testData.DataApi)
+	doctorServer := httptest.NewServer(grantAccessHandler)
+
+	jsonData, err := json.Marshal(&doctor_queue.ClaimPatientCaseRequestData{
+		PatientCaseId: encoding.NewObjectId(patientCaseId),
+	})
+
+	resp, err := testData.AuthPost(doctorServer.URL, "application/json", bytes.NewReader(jsonData), doctor.AccountId.Int64())
+	defer resp.Body.Close()
+	if err != nil {
+		t.Fatal(err)
+	} else if resp.StatusCode != http.StatusOK {
+		t.Fatalf("Expected response %d instead got %d", http.StatusOK, resp.StatusCode)
+	}
+}
+
 func CreateRandomPatientVisitAndPickTP(t *testing.T, testData *TestData, doctor *common.Doctor) (*patient_visit.PatientVisitResponse, *common.DoctorTreatmentPlan) {
 	patientSignedupResponse := SignupRandomTestPatient(t, testData)
 	patientVisitResponse := CreatePatientVisitForPatient(patientSignedupResponse.Patient.PatientId.Int64(), testData, t)
@@ -217,6 +236,11 @@ func CreateRandomPatientVisitAndPickTP(t *testing.T, testData *TestData, doctor 
 	answerIntakeRequestBody := PrepareAnswersForQuestionsInPatientVisit(patientVisitResponse, t)
 	SubmitAnswersIntakeForPatient(patient.PatientId.Int64(), patient.AccountId.Int64(), answerIntakeRequestBody, testData, t)
 	SubmitPatientVisitForPatient(patientSignedupResponse.Patient.PatientId.Int64(), patientVisitResponse.PatientVisitId, testData, t)
+	patientCase, err := testData.DataApi.GetPatientCaseFromPatientVisitId(patientVisitResponse.PatientVisitId)
+	if err != nil {
+		t.Fatal(err)
+	}
+	GrantDoctorAccessToPatientCase(t, testData, doctor, patientCase.Id.Int64())
 	StartReviewingPatientVisit(patientVisitResponse.PatientVisitId, doctor, testData, t)
 	doctorPickTreatmentPlanResponse := PickATreatmentPlanForPatientVisit(patientVisitResponse.PatientVisitId, doctor, nil, testData, t)
 
