@@ -275,9 +275,6 @@ func buildRESTAPI(conf *Config, dataApi api.DataAPI, authAPI api.AuthAPI, metric
 	mux.Handle("/v1/patient/visit/answer", patient_visit.NewAnswerIntakeHandler(dataApi))
 	mux.Handle("/v1/patient/visit/photo_answer", patient_visit.NewPhotoAnswerIntakeHandler(dataApi))
 
-	// Patient: Patient Case APIs
-	mux.Handle("v1/patient/case/claim", doctor_queue.NewClaimPatientCaseAccessHandler(dataApi))
-
 	mux.Handle("/v1/treatment_plan", treatment_plan.NewTreatmentPlanHandler(dataApi))
 	mux.Handle("/v1/treatment_guide", treatment_plan.NewTreatmentGuideHandler(dataApi))
 	mux.Handle("/v1/autocomplete", autocompleteHandler)
@@ -325,6 +322,7 @@ func buildRESTAPI(conf *Config, dataApi api.DataAPI, authAPI api.AuthAPI, metric
 	mux.Handle("/v1/doctor/visit/regimen", doctor_treatment_plan.NewRegimenHandler(dataApi))
 	mux.Handle("/v1/doctor/visit/advice", doctor_treatment_plan.NewAdviceHandler(dataApi))
 	mux.Handle("/v1/doctor/saved_messages", apiservice.NewDoctorSavedMessageHandler(dataApi))
+	mux.Handle("v1/doctor/patient/case/claim", doctor_queue.NewClaimPatientCaseAccessHandler(dataApi))
 
 	// Miscellaneous APIs
 	mux.Handle("/v1/content", staticContentHandler)
