@@ -106,9 +106,9 @@ func setupErxAPI(t *testing.T) *erx.DoseSpotService {
 	return erx
 }
 
-func SubmitPatientVisitDiagnosis(PatientVisitId int64, doctor *common.Doctor, testData *TestData, t *testing.T) {
+func PrepareAnswersForDiagnosis(testData *TestData, t *testing.T, patientVisitId int64) *apiservice.AnswerIntakeRequestBody {
 	answerIntakeRequestBody := &apiservice.AnswerIntakeRequestBody{}
-	answerIntakeRequestBody.PatientVisitId = PatientVisitId
+	answerIntakeRequestBody.PatientVisitId = patientVisitId
 	var diagnosisQuestionId, severityQuestionId, acneTypeQuestionId int64
 	if qi, err := testData.DataApi.GetQuestionInfo("q_acne_diagnosis", 1); err != nil {
 		t.Fatalf("Unable to get the questionIds for the question tags requested for the doctor to diagnose patient visit: %s", err.Error())
@@ -125,10 +125,6 @@ func SubmitPatientVisitDiagnosis(PatientVisitId int64, doctor *common.Doctor, te
 	} else {
 		acneTypeQuestionId = qi.QuestionId
 	}
-
-	diagnosePatientHandler := patient_visit.NewDiagnosePatientHandler(testData.DataApi, testData.AuthApi, "")
-	ts := httptest.NewServer(diagnosePatientHandler)
-	defer ts.Close()
 
 	answerInfo, err := testData.DataApi.GetAnswerInfoForTags([]string{"a_doctor_acne_vulgaris"}, api.EN_LANGUAGE_ID)
 	if err != nil {
@@ -156,6 +152,22 @@ func SubmitPatientVisitDiagnosis(PatientVisitId int64, doctor *common.Doctor, te
 
 	answerIntakeRequestBody.Questions = []*apiservice.AnswerToQuestionItem{answerToQuestionItem, answerToQuestionItem2, answerToQuestionItem3}
 
+	return answerIntakeRequestBody
+}
+
+func SubmitPatientVisitDiagnosis(patientVisitId int64, doctor *common.Doctor, testData *TestData, t *testing.T) {
+
+	diagnosePatientHandler := patient_visit.NewDiagnosePatientHandler(testData.DataApi, testData.AuthApi, "")
+	ts := httptest.NewServer(diagnosePatientHandler)
+	defer ts.Close()
+
+	answerIntakeRequestBody := PrepareAnswersForDiagnosis(testData, t, patientVisitId)
+	// create a mapping of question to expected answer
+	questionToAnswerMapping := make(map[int64]int64)
+	for _, item := range answerIntakeRequestBody.Questions {
+		questionToAnswerMapping[item.QuestionId] = item.AnswerIntakes[0].PotentialAnswerId
+	}
+
 	requestData, err := json.Marshal(answerIntakeRequestBody)
 	if err != nil {
 		t.Fatal("Unable to marshal request body")
@@ -169,7 +181,7 @@ func SubmitPatientVisitDiagnosis(PatientVisitId int64, doctor *common.Doctor, te
 	}
 
 	// now, get diagnosis layout again and check to ensure that the doctor successfully diagnosed the patient with the expected answers
-	diagnosisLayout, err := patient_visit.GetDiagnosisLayout(testData.DataApi, PatientVisitId, doctor.DoctorId.Int64())
+	diagnosisLayout, err := patient_visit.GetDiagnosisLayout(testData.DataApi, patientVisitId, doctor.DoctorId.Int64())
 	if err != nil {
 		t.Fatal(err.Error())
 	}
@@ -182,21 +194,8 @@ func SubmitPatientVisitDiagnosis(PatientVisitId int64, doctor *common.Doctor, te
 		for _, question := range section.Questions {
 
 			for _, response := range GetAnswerIntakesFromAnswers(question.Answers, t) {
-				switch response.QuestionId.Int64() {
-				case diagnosisQuestionId:
-					if response.PotentialAnswerId.Int64() != answerToQuestionItem.AnswerIntakes[0].PotentialAnswerId {
-						t.Fatalf("Doctor response to question id %d expectd to have id %d but has id %d", response.QuestionId.Int64(), 102, response.PotentialAnswerId.Int64())
-					}
-				case severityQuestionId:
-					if response.PotentialAnswerId.Int64() != answerToQuestionItem2.AnswerIntakes[0].PotentialAnswerId {
-						t.Fatalf("Doctor response to question id %d expectd to have id %d but has id %d", response.QuestionId.Int64(), 107, response.PotentialAnswerId.Int64())
-					}
-
-				case acneTypeQuestionId:
-					if response.PotentialAnswerId.Int64() != answerToQuestionItem3.AnswerIntakes[0].PotentialAnswerId {
-						t.Fatalf("Doctor response to question id %d expectd to have any of ids %s but instead has id %d", response.QuestionId.Int64(), "(109,114,113)", response.PotentialAnswerId.Int64())
-					}
-
+				if questionToAnswerMapping[response.QuestionId.Int64()] != response.PotentialAnswerId.Int64() {
+					t.Fatal("Answer returned for question does not match what was supplied")
 				}
 			}
 		}
