@@ -184,27 +184,27 @@ func InitListeners(dataAPI api.DataAPI, notificationManager *notify.Notification
 			return nil
 		}
 
-		// TODO: Once possible, use doctor assigned to the case instead of
-		// using the patient's primary.
-
-		careTeam, err := dataAPI.GetCareTeamForPatient(ev.Person.RoleId)
+		// get the doctor assigned to the case to send this message to
+		assignments, err := dataAPI.GetDoctorsAssignedToPatientCase(ev.Case.Id.Int64())
 		if err != nil {
+			golog.Errorf("Unable to get doctors assignend to case: %s", err)
 			return err
-		}
-		if careTeam == nil {
-			return errors.New("No care team assigned to patient")
 		}
 
 		var doctorID int64
-		for _, a := range careTeam.Assignments {
-			if a.ProviderRole == api.DOCTOR_ROLE {
-				doctorID = a.ProviderId
-				break
+		for _, assignment := range assignments {
+			if assignment.ProviderRole == api.DOCTOR_ROLE {
+				switch assignment.Status {
+				case api.STATUS_ACTIVE, api.STATUS_TEMP:
+					doctorID = assignment.ProviderId
+					break
+				}
 			}
 		}
+
 		if doctorID == 0 {
 			// No doctor assigned to patient
-			return errors.New("No doctor assigned to patient")
+			return errors.New("No doctor assigned to patient case")
 		}
 
 		if err := dataAPI.ReplaceItemInDoctorQueue(api.DoctorQueueItem{
