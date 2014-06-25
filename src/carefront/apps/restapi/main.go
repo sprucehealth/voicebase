@@ -192,6 +192,9 @@ func buildRESTAPI(conf *Config, dataApi api.DataAPI, authAPI api.AuthAPI, metric
 	notify.InitListeners(dataApi)
 	support.InitListeners(conf.Support.TechnicalSupportEmail, conf.Support.CustomerSupportEmail, notificationManager)
 
+	// Start worker to check for expired items in the global case queue
+	doctor_queue.StartClaimedItemsExpirationChecker(dataApi)
+
 	cloudStorageApi := api.NewCloudStorageService(awsAuth)
 	checkElligibilityHandler := &apiservice.CheckCareProvidingElligibilityHandler{DataApi: dataApi, AddressValidationApi: smartyStreetsService, StaticContentUrl: conf.StaticContentBaseUrl}
 	updatePatientBillingAddress := &apiservice.UpdatePatientAddressHandler{DataApi: dataApi, AddressType: apiservice.BILLING_ADDRESS_TYPE}

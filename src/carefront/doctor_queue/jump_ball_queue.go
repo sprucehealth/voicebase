@@ -12,8 +12,6 @@ import (
 
 func initJumpBallCaseQueueListeners(dataAPI api.DataAPI) {
 
-	StartClaimedItemsExpirationChecker(dataAPI)
-
 	// Grant temporary access to the patient case for an unclaimed case to the doctor requesting access to the case
 	dispatch.Default.Subscribe(func(ev *patient_file.PatientVisitOpenedEvent) error {
 		// check if the visit is unclaimed and if so, claim it by updating the item in the jump ball queue
