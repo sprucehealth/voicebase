@@ -212,6 +212,11 @@ func (d *diagnosePatientHandler) diagnosePatient(w http.ResponseWriter, r *http.
 			PatientVisitId: answerIntakeRequestBody.PatientVisitId,
 		})
 
+	} else {
+		dispatch.Default.Publish(&DiagnosisModifiedEvent{
+			DoctorId:       doctorId,
+			PatientVisitId: answerIntakeRequestBody.PatientVisitId,
+		})
 	}
 
 	apiservice.WriteJSONToHTTPResponseWriter(w, http.StatusOK, apiservice.SuccessfulGenericJSONResponse())

@@ -262,7 +262,7 @@ func (d *DataService) UpdatePatientWithERxPatientId(patientId, erxPatientId int6
 }
 
 func (d *DataService) GetCareTeamForPatient(patientId int64) (*common.PatientCareTeam, error) {
-	rows, err := d.db.Query(`select role_type_tag, creation_date, provider_id, status, patient_id
+	rows, err := d.db.Query(`select role_type_tag, creation_date, expires, provider_id, status, patient_id
 								from patient_care_provider_assignment 
 									inner join role_type on role_type.id = role_type_id 
 									where patient_id=?`, patientId)
@@ -276,7 +276,12 @@ func (d *DataService) GetCareTeamForPatient(patientId int64) (*common.PatientCar
 	careTeam.Assignments = make([]*common.CareProviderAssignment, 0)
 	for rows.Next() {
 		var assignment common.CareProviderAssignment
-		err := rows.Scan(&assignment.ProviderRole, &assignment.CreationDate, &assignment.ProviderId, &assignment.Status, &assignment.PatientId)
+		err := rows.Scan(&assignment.ProviderRole,
+			&assignment.CreationDate,
+			&assignment.Expires,
+			&assignment.ProviderId,
+			&assignment.Status,
+			&assignment.PatientId)
 		if err != nil {
 			return nil, err
 		}

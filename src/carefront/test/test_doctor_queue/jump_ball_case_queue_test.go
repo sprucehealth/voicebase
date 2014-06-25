@@ -15,6 +15,7 @@ import (
 	"net/http/httptest"
 	"strconv"
 	"testing"
+	"time"
 )
 
 // This test is to ensure that the a case is correctly
@@ -179,5 +180,145 @@ func TestJBCQ_ForbiddenClaimAttempt(t *testing.T) {
 		t.Fatalf("Expected developer code to be %s but it was %s instead", apiservice.DEVELOPER_JBCQ_FORBIDDEN, developerErrorCode)
 	}
 	resp.Body.Close()
+}
 
+// This test is to ensure that the claim works as expected where it doesn't exist at the time of visit/case creation
+// and then once a doctor temporarily claims the case, the claim can be extended as expected
+func TestJBCQ_Claim(t *testing.T) {
+	testData := test_integration.SetupIntegrationTest(t)
+	defer test_integration.TearDownIntegrationTest(t, testData)
+	doctor, err := testData.DataApi.GetDoctorFromId(test_integration.GetDoctorIdOfCurrentDoctor(testData, t))
+	if err != nil {
+		t.Fatal(err)
+	}
+
+	pr := test_integration.SignupRandomTestPatient(t, testData)
+	pv := test_integration.CreatePatientVisitForPatient(pr.Patient.PatientId.Int64(), testData, t)
+	answerIntakeRequestBody := test_integration.PrepareAnswersForQuestionsInPatientVisit(pv, t)
+	test_integration.SubmitAnswersIntakeForPatient(pr.Patient.PatientId.Int64(), pr.Patient.AccountId.Int64(),
+		answerIntakeRequestBody, testData, t)
+	test_integration.SubmitPatientVisitForPatient(pr.Patient.PatientId.Int64(), pv.PatientVisitId, testData, t)
+
+	// at this point check to ensure that the patient case is the unclaimed state
+	patientCase, err := testData.DataApi.GetPatientCaseFromPatientVisitId(pv.PatientVisitId)
+	if err != nil {
+		t.Fatal(err)
+	} else if patientCase.Status != common.PCStatusUnclaimed {
+		t.Fatalf("Expected patient case to be %s but it waas %s", common.PCStatusUnclaimed, patientCase.Status)
+	}
+
+	test_integration.StartReviewingPatientVisit(pv.PatientVisitId, doctor, testData, t)
+
+	// at this point check to ensure that the patient case has been claimed
+	patientCase, err = testData.DataApi.GetPatientCaseFromPatientVisitId(pv.PatientVisitId)
+	if err != nil {
+		t.Fatal(err)
+	} else if patientCase.Status != common.PCStatusTempClaimed {
+		t.Fatalf("Expected patient case to be %s but it waas %s", common.PCStatusTempClaimed, patientCase.Status)
+	}
+
+	// at this point the claim should exist
+	claimExpirationTime := getExpiresTimeFromDoctorForCase(testData, t, patientCase.Id.Int64())
+	if claimExpirationTime == nil {
+		t.Fatal("Expected claim expiration time to exist")
+	}
+
+	// CHECK CLAIM EXTENSION AFTER DIAGNOSING PATIENT
+	time.Sleep(time.Second)
+	test_integration.SubmitPatientVisitDiagnosis(pv.PatientVisitId, doctor, testData, t)
+	claimExpirationTime2 := getExpiresTimeFromDoctorForCase(testData, t, patientCase.Id.Int64())
+	if claimExpirationTime2 == nil || !claimExpirationTime.Before(*claimExpirationTime2) {
+		t.Fatal("Expected the claim to have been extended but it wasn't")
+	}
+	claimExpirationTime = claimExpirationTime2
+
+	// CHECK CLAIM EXTENSION AFTER PICKING TREATMENT PLAN
+	time.Sleep(time.Second)
+	tp := test_integration.PickATreatmentPlanForPatientVisit(pv.PatientVisitId, doctor, nil, testData, t).TreatmentPlan
+	claimExpirationTime2 = getExpiresTimeFromDoctorForCase(testData, t, tp.PatientCaseId.Int64())
+	// ensure that the time is not null
+	if claimExpirationTime == nil {
+		t.Fatal("Expected to have a claim expiration time")
+	}
+	claimExpirationTime = claimExpirationTime2
+
+	// CHECK CLAIM EXTENSION AFTER ADDING TREATMENTS
+	time.Sleep(time.Second)
+	test_integration.AddAndGetTreatmentsForPatientVisit(testData, []*common.Treatment{}, doctor.AccountId.Int64(), tp.Id.Int64(), t)
+	claimExpirationTime2 = getExpiresTimeFromDoctorForCase(testData, t, tp.PatientCaseId.Int64())
+	if claimExpirationTime2 == nil || !claimExpirationTime.Before(*claimExpirationTime2) {
+		t.Fatal("Expected the claim to have been extended but it wasn't")
+	}
+	claimExpirationTime = claimExpirationTime2
+
+	// CHECK CLAIM EXTENSION AFTER CREATING REGIMEN PLAN
+	time.Sleep(time.Second)
+	test_integration.CreateRegimenPlanForTreatmentPlan(&common.RegimenPlan{
+		TreatmentPlanId: tp.Id,
+	}, testData, doctor, t)
+
+	claimExpirationTime2 = getExpiresTimeFromDoctorForCase(testData, t, tp.PatientCaseId.Int64())
+	if claimExpirationTime2 == nil || !claimExpirationTime.Before(*claimExpirationTime2) {
+		t.Fatal("Expected the claim to have been extended but it wasn't")
+	}
+	claimExpirationTime = claimExpirationTime2
+
+	// CHECK CLAIM EXTENSION AFTER ADDING ADVICE
+	time.Sleep(time.Second)
+	test_integration.UpdateAdvicePointsForPatientVisit(&common.Advice{
+		TreatmentPlanId: tp.Id,
+	}, testData, doctor, t)
+
+	claimExpirationTime2 = getExpiresTimeFromDoctorForCase(testData, t, tp.PatientCaseId.Int64())
+	if claimExpirationTime2 == nil || !claimExpirationTime.Before(*claimExpirationTime2) {
+		t.Fatal("Expected the claim to have been extended but it wasn't")
+	}
+
+	// CHECK CLAIM COMPLETION ON SUBMISSION OF TREATMENT PLAN
+	// Now, the doctor should've permenantly claimed the case
+	test_integration.SubmitPatientVisitBackToPatient(tp.Id.Int64(), doctor, testData, t)
+
+	// patient case should be in claimed state
+	patientCase, err = testData.DataApi.GetPatientCaseFromId(tp.PatientCaseId.Int64())
+	if err != nil {
+		t.Fatal(err)
+	} else if patientCase.Status != common.PCStatusClaimed {
+		t.Fatalf("Expected patietn case to be in %s state instead it was in %s state", common.PCStatusClaimed, patientCase.Status)
+	}
+
+	// doctor should be permenantly assigned to the case
+	doctorAssignments, err := testData.DataApi.GetDoctorsAssignedToPatientCase(patientCase.Id.Int64())
+	if err != nil {
+		t.Fatal(err)
+	} else if doctorAssignments[0].Status != api.STATUS_ACTIVE {
+		t.Fatal("Expected the doctor to be permanently assigned to the patient case but it wasnt")
+	} else if doctorAssignments[0].Expires != nil {
+		t.Fatal("Expected no expiration date to be set on the assignment but there was one")
+	}
+
+	// The doctor should also be permenanently assigned to the careteam of the patient
+	careTeam, err := testData.DataApi.GetCareTeamForPatient(patientCase.PatientId.Int64())
+	if err != nil {
+		t.Fatal(err)
+	} else if careTeam.Assignments[0].Status != api.STATUS_ACTIVE {
+		t.Fatal("Expected the doctor to be permanently assigned to the care team but it wasn't")
+	} else if careTeam.Assignments[0].Expires != nil {
+		t.Fatal("Expected there to be no expiration time on the assignment but there was")
+	}
+
+	// There should no longer be an unclaimed item in the doctor queue
+	unclaimedItems, err := testData.DataApi.GetElligibleItemsInUnclaimedQueue(doctor.DoctorId.Int64())
+	if err != nil {
+		t.Fatal(err)
+	} else if len(unclaimedItems) != 0 {
+		t.Fatalf("Expected 0 items in the global queue but got %d", len(unclaimedItems))
+	}
+}
+
+func getExpiresTimeFromDoctorForCase(testData *test_integration.TestData, t *testing.T, patientCaseId int64) *time.Time {
+	doctorAssignments, err := testData.DataApi.GetDoctorsAssignedToPatientCase(patientCaseId)
+	if err != nil {
+		t.Fatal(err)
+	}
+	return doctorAssignments[0].Expires
 }

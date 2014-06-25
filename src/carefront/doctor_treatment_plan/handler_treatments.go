@@ -115,7 +115,7 @@ func (t *treatmentsHandler) addTreatment(w http.ResponseWriter, r *http.Request)
 		return
 	}
 
-	dispatch.Default.PublishAsync(&TreatmentsAddedEvent{
+	dispatch.Default.Publish(&TreatmentsAddedEvent{
 		TreatmentPlanId: treatmentsRequestBody.TreatmentPlanId.Int64(),
 		DoctorId:        doctor.DoctorId.Int64(),
 		Treatments:      treatments,

@@ -204,7 +204,7 @@ func SignupAndSubmitPatientVisitForRandomPatient(t *testing.T, testData *TestDat
 	if err != nil {
 		t.Fatal("Unable to get patient from id: " + err.Error())
 	}
-	answerIntakeRequestBody := prepareAnswersForQuestionsInPatientVisit(patientVisitResponse, t)
+	answerIntakeRequestBody := PrepareAnswersForQuestionsInPatientVisit(patientVisitResponse, t)
 	SubmitAnswersIntakeForPatient(patient.PatientId.Int64(), patient.AccountId.Int64(), answerIntakeRequestBody, testData, t)
 	SubmitPatientVisitForPatient(patientSignedupResponse.Patient.PatientId.Int64(), patientVisitResponse.PatientVisitId, testData, t)
 	StartReviewingPatientVisit(patientVisitResponse.PatientVisitId, doctor, testData, t)

@@ -102,7 +102,7 @@ func (d *DataService) ExtendClaimForDoctor(doctorId, patientCaseId int64, durati
 		return err
 	}
 
-	_, err = tx.Exec(`update patient_case_care_provider_assignment set expires = ? where provider_id = ? and role_type_id = ? and status = ?`, expires, doctorId, d.roleTypeMapping[DOCTOR_ROLE], STATUS_TEMP)
+	_, err = tx.Exec(`update patient_case_care_provider_assignment set expires = ? where provider_id = ? and role_type_id = ? and status = ? and patient_case_id = ?`, expires, doctorId, d.roleTypeMapping[DOCTOR_ROLE], STATUS_TEMP, patientCaseId)
 	if err != nil {
 		tx.Rollback()
 		return err
@@ -128,8 +128,10 @@ func (d *DataService) PermanentlyAssignDoctorToCaseAndPatient(doctorId, patientC
 
 	var currentDoctorOnCase int64
 	if err := tx.QueryRow(`select provider_id from patient_case_care_provider_assignment where role_type_id = ? and provider_id = ? and patient_case_id = ? and status = ?`, d.roleTypeMapping[DOCTOR_ROLE], doctorId, patientCaseId, STATUS_TEMP).Scan(&currentDoctorOnCase); err == sql.ErrNoRows {
+		tx.Rollback()
 		return JBCQItemClaimForbidden("Expected doctor to be temporarily assigned to patient case but wasnt")
 	} else if err != nil {
+		tx.Rollback()
 		return err
 	}
 

@@ -114,7 +114,7 @@ func CreatePatientVisitForPatient(patientId int64, testData *TestData, t *testin
 
 // randomly answering all top level questions in the patient visit, regardless of the condition under which the questions are presented to the user.
 // the goal of this is to get all questions answered so as to render the views for the doctor layout, not to test the sanity of the answers the patient inputs.
-func prepareAnswersForQuestionsInPatientVisit(patientVisitResponse *patient_visit.PatientVisitResponse, t *testing.T) *apiservice.AnswerIntakeRequestBody {
+func PrepareAnswersForQuestionsInPatientVisit(patientVisitResponse *patient_visit.PatientVisitResponse, t *testing.T) *apiservice.AnswerIntakeRequestBody {
 	answerIntakeRequestBody := apiservice.AnswerIntakeRequestBody{}
 	answerIntakeRequestBody.PatientVisitId = patientVisitResponse.PatientVisitId
 	answerIntakeRequestBody.Questions = make([]*apiservice.AnswerToQuestionItem, 0)
