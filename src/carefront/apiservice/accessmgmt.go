@@ -3,11 +3,10 @@ package apiservice
 import (
 	"carefront/api"
 	"carefront/common"
-	"net/http"
 	"time"
 )
 
-func ValidateDoctorAccessToPatientFile(doctorId, patientId int64, dataAPI api.DataAPI, r *http.Request) error {
+func ValidateDoctorAccessToPatientFile(doctorId, patientId int64, dataAPI api.DataAPI) error {
 
 	careTeam, err := dataAPI.GetCareTeamForPatient(patientId)
 	if err != nil {
@@ -15,7 +14,7 @@ func ValidateDoctorAccessToPatientFile(doctorId, patientId int64, dataAPI api.Da
 	}
 
 	if careTeam == nil {
-		return NewAccessForbiddenError(r)
+		return NewAccessForbiddenError()
 	}
 
 	// ensure that the doctor is part of the patient's care team
@@ -28,7 +27,7 @@ func ValidateDoctorAccessToPatientFile(doctorId, patientId int64, dataAPI api.Da
 	}
 
 	if !doctorFound {
-		return NewAccessForbiddenError(r)
+		return NewAccessForbiddenError()
 	}
 
 	return nil
@@ -36,7 +35,7 @@ func ValidateDoctorAccessToPatientFile(doctorId, patientId int64, dataAPI api.Da
 
 // ValidateReadAccessToPatientCase checks to ensure that the doctor has read access to the patient case. A doctor
 // has read access so long as the case is not temporarily claimed by another doctor for exclusive access
-func ValidateReadAccessToPatientCase(doctorId, patientId, patientCaseId int64, dataAPI api.DataAPI, r *http.Request) error {
+func ValidateReadAccessToPatientCase(doctorId, patientId, patientCaseId int64, dataAPI api.DataAPI) error {
 	patientCase, err := dataAPI.GetPatientCaseFromId(patientCaseId)
 	if err != nil {
 		return err
@@ -59,17 +58,17 @@ func ValidateReadAccessToPatientCase(doctorId, patientId, patientCaseId int64, d
 			}
 		}
 
-		return NewJBCQForbiddenAccessError(r)
+		return NewJBCQForbiddenAccessError()
 	}
 
 	// if there is no exclusive access on the patient case, then the doctor can access case for
 	// reading so long as doctor can patient information
-	return ValidateDoctorAccessToPatientFile(doctorId, patientId, dataAPI, r)
+	return ValidateDoctorAccessToPatientFile(doctorId, patientId, dataAPI)
 }
 
 // ValidateWriteAccessToPatientCase checks to ensure that the doctor has write access to the patient case. A doctor
 // has write access so long as the doctor is assigned to the case, and the access has not expired if the doctor is granted temporary access
-func ValidateWriteAccessToPatientCase(doctorId, patientId, patientCaseId int64, dataAPI api.DataAPI, r *http.Request) error {
+func ValidateWriteAccessToPatientCase(doctorId, patientId, patientCaseId int64, dataAPI api.DataAPI) error {
 	doctorAssignments, err := dataAPI.GetDoctorsAssignedToPatientCase(patientCaseId)
 	if err != nil {
 		return err
@@ -81,13 +80,15 @@ func ValidateWriteAccessToPatientCase(doctorId, patientId, patientCaseId int64, 
 		case api.STATUS_ACTIVE:
 			if assignment.ProviderRole == api.DOCTOR_ROLE &&
 				assignment.ProviderId == doctorId {
-				return nil
+				// doctor has access so long as they have access to both patient file and patient information
+				return ValidateDoctorAccessToPatientFile(doctorId, patientId, dataAPI)
 			}
 		case api.STATUS_TEMP:
 			if assignment.ProviderRole == api.DOCTOR_ROLE &&
 				assignment.ProviderId == doctorId &&
 				assignment.Expires != nil && !assignment.Expires.Before(time.Now()) {
-				return nil
+				// doctor has access so long as they have access to both patient file and patient information
+				return ValidateDoctorAccessToPatientFile(doctorId, patientId, dataAPI)
 			}
 		}
 	}
@@ -100,8 +101,8 @@ func ValidateWriteAccessToPatientCase(doctorId, patientId, patientCaseId int64, 
 
 	switch patientCase.Status {
 	case common.PCStatusUnclaimed, common.PCStatusTempClaimed:
-		return NewJBCQForbiddenAccessError(r)
+		return NewJBCQForbiddenAccessError()
 	}
 
-	return NewAccessForbiddenError(r)
+	return NewAccessForbiddenError()
 }

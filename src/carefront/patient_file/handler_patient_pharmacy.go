@@ -46,7 +46,7 @@ func (d *doctorUpdatePatientPharmacyHandler) ServeHTTP(w http.ResponseWriter, r 
 		apiservice.WriteError(err, w, r)
 		return
 	}
-	if err := apiservice.ValidateDoctorAccessToPatientFile(doctor.DoctorId.Int64(), patient.PatientId.Int64(), d.dataAPI, r); err != nil {
+	if err := apiservice.ValidateDoctorAccessToPatientFile(doctor.DoctorId.Int64(), patient.PatientId.Int64(), d.dataAPI); err != nil {
 		apiservice.WriteError(err, w, r)
 		return
 	}

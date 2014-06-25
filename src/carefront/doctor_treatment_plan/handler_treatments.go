@@ -80,7 +80,7 @@ func (t *treatmentsHandler) addTreatment(w http.ResponseWriter, r *http.Request)
 		return
 	}
 
-	if err := apiservice.ValidateWriteAccessToPatientCase(doctor.DoctorId.Int64(), patientId, treatmentPlan.PatientCaseId.Int64(), t.dataAPI, r); err != nil {
+	if err := apiservice.ValidateWriteAccessToPatientCase(doctor.DoctorId.Int64(), patientId, treatmentPlan.PatientCaseId.Int64(), t.dataAPI); err != nil {
 		apiservice.WriteError(err, w, r)
 		return
 	}

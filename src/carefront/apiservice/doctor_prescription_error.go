@@ -68,7 +68,7 @@ func (d *DoctorPrescriptionErrorHandler) ServeHTTP(w http.ResponseWriter, r *htt
 	}
 
 	if treatment != nil && !treatment.Patient.IsUnlinked {
-		if err := ValidateDoctorAccessToPatientFile(treatment.Doctor.DoctorId.Int64(), treatment.PatientId.Int64(), d.DataApi, r); err != nil {
+		if err := ValidateDoctorAccessToPatientFile(treatment.Doctor.DoctorId.Int64(), treatment.PatientId.Int64(), d.DataApi); err != nil {
 			WriteError(err, w, r)
 			return
 		}

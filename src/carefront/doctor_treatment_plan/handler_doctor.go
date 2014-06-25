@@ -165,7 +165,7 @@ func (d *doctorTreatmentPlanHandler) submitTreatmentPlan(w http.ResponseWriter, 
 	}
 
 	// Ensure that doctor is authorized to work on the case
-	if err := apiservice.ValidateWriteAccessToPatientCase(doctor.DoctorId.Int64(), treatmentPlan.PatientId, treatmentPlan.PatientCaseId.Int64(), d.dataApi, r); err != nil {
+	if err := apiservice.ValidateWriteAccessToPatientCase(doctor.DoctorId.Int64(), treatmentPlan.PatientId, treatmentPlan.PatientCaseId.Int64(), d.dataApi); err != nil {
 		apiservice.WriteError(err, w, r)
 		return
 	}
@@ -248,7 +248,7 @@ func (d *doctorTreatmentPlanHandler) getTreatmentPlan(w http.ResponseWriter, r *
 		return
 	}
 
-	if err := apiservice.ValidateReadAccessToPatientCase(doctorId, drTreatmentPlan.PatientId, drTreatmentPlan.PatientCaseId.Int64(), d.dataApi, r); err != nil {
+	if err := apiservice.ValidateReadAccessToPatientCase(doctorId, drTreatmentPlan.PatientId, drTreatmentPlan.PatientCaseId.Int64(), d.dataApi); err != nil {
 		apiservice.WriteError(err, w, r)
 		return
 	}
@@ -331,7 +331,7 @@ func (d *doctorTreatmentPlanHandler) pickATreatmentPlan(w http.ResponseWriter, r
 		return
 	}
 
-	if err := apiservice.ValidateWriteAccessToPatientCase(doctorId, patientId, patientCase.Id.Int64(), d.dataApi, r); err != nil {
+	if err := apiservice.ValidateWriteAccessToPatientCase(doctorId, patientId, patientCase.Id.Int64(), d.dataApi); err != nil {
 		apiservice.WriteError(err, w, r)
 		return
 	}

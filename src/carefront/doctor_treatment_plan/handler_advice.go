@@ -61,7 +61,7 @@ func (d *adviceHandler) updateAdvicePoints(w http.ResponseWriter, r *http.Reques
 		return
 	}
 
-	if err := apiservice.ValidateWriteAccessToPatientCase(doctorId, patientId, treatmentPlan.PatientCaseId.Int64(), d.dataAPI, r); err != nil {
+	if err := apiservice.ValidateWriteAccessToPatientCase(doctorId, patientId, treatmentPlan.PatientCaseId.Int64(), d.dataAPI); err != nil {
 		apiservice.WriteError(err, w, r)
 		return
 	}

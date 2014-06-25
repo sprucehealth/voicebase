@@ -77,7 +77,7 @@ func (d *doctorPatientHandler) getPatientInformation(w http.ResponseWriter, r *h
 	}
 
 	if !patient.IsUnlinked {
-		if err := apiservice.ValidateDoctorAccessToPatientFile(currentDoctor.DoctorId.Int64(), patient.PatientId.Int64(), d.DataApi, r); err != nil {
+		if err := apiservice.ValidateDoctorAccessToPatientFile(currentDoctor.DoctorId.Int64(), patient.PatientId.Int64(), d.DataApi); err != nil {
 			apiservice.WriteError(err, w, r)
 			return
 		}
@@ -131,7 +131,7 @@ func (d *doctorPatientHandler) updatePatientInformation(w http.ResponseWriter, r
 	}
 
 	if !existingPatientInfo.IsUnlinked {
-		if err := apiservice.ValidateDoctorAccessToPatientFile(currentDoctor.DoctorId.Int64(), requestData.Patient.PatientId.Int64(), d.DataApi, r); err != nil {
+		if err := apiservice.ValidateDoctorAccessToPatientFile(currentDoctor.DoctorId.Int64(), requestData.Patient.PatientId.Int64(), d.DataApi); err != nil {
 			apiservice.WriteError(err, w, r)
 			return
 		}

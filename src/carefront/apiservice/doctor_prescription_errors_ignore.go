@@ -61,7 +61,7 @@ func (d *DoctorPrescriptionErrorIgnoreHandler) ServeHTTP(w http.ResponseWriter, 
 		}
 
 		if !treatment.Patient.IsUnlinked {
-			if err := ValidateDoctorAccessToPatientFile(treatment.Doctor.DoctorId.Int64(), treatment.Patient.PatientId.Int64(), d.DataApi, r); err != nil {
+			if err := ValidateDoctorAccessToPatientFile(treatment.Doctor.DoctorId.Int64(), treatment.Patient.PatientId.Int64(), d.DataApi); err != nil {
 				WriteError(err, w, r)
 				return
 			}
@@ -93,7 +93,7 @@ func (d *DoctorPrescriptionErrorIgnoreHandler) ServeHTTP(w http.ResponseWriter, 
 		}
 
 		if !refillRequest.Patient.IsUnlinked {
-			if err := ValidateDoctorAccessToPatientFile(refillRequest.Doctor.DoctorId.Int64(), refillRequest.Patient.PatientId.Int64(), d.DataApi, r); err != nil {
+			if err := ValidateDoctorAccessToPatientFile(refillRequest.Doctor.DoctorId.Int64(), refillRequest.Patient.PatientId.Int64(), d.DataApi); err != nil {
 				WriteError(err, w, r)
 				return
 			}
