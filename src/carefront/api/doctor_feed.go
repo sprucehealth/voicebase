@@ -193,7 +193,7 @@ func (d *DoctorQueueItem) GetTimestamp() *time.Time {
 }
 
 func (d *DoctorQueueItem) GetDisplayTypes() []string {
-	return []string{DISPLAY_TYPE_TITLE_SUBTITLE_ACTIONABLE}
+	return []string{DisplayTypeTitleSubtitleActionable}
 }
 
 func (d *DoctorQueueItem) ActionUrl(dataApi DataAPI) (*app_url.SpruceAction, error) {
