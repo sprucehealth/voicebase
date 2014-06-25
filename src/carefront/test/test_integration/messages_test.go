@@ -8,7 +8,6 @@ import (
 )
 
 func TestPersonCreation(t *testing.T) {
-	t.Skip("Skipping for now since this has been fixed in another branch")
 	testData := SetupIntegrationTest(t)
 	defer TearDownIntegrationTest(t, testData)
 
@@ -37,7 +36,7 @@ func TestCaseMessages(t *testing.T) {
 	testData := SetupIntegrationTest(t)
 	defer TearDownIntegrationTest(t, testData)
 
-	doctorID := GetDoctorIdOfCurrentPrimaryDoctor(testData, t)
+	doctorID := GetDoctorIdOfCurrentDoctor(testData, t)
 	doctor, err := testData.DataApi.GetDoctorFromId(doctorID)
 	if err != nil {
 		t.Fatal(err)

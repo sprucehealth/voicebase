@@ -65,13 +65,6 @@ func (p *doctorPatientVisitReviewHandler) ServeHTTP(w http.ResponseWriter, r *ht
 		return
 	}
 
-	// ensure that the doctor is authorized to work on this case
-	statusCode, err := apiservice.ValidateDoctorAccessToPatientFile(doctorId, patientVisit.PatientId.Int64(), p.DataApi)
-	if err != nil {
-		apiservice.WriteError(err, w, r)
-		return
-	}
-
 	// udpate the status of the case and the item in the doctor's queue
 	if patientVisit.Status == common.PVStatusSubmitted {
 		dispatch.Default.Publish(&PatientVisitOpenedEvent{

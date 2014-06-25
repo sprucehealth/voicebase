@@ -1,6 +1,6 @@
 -- MySQL dump 10.13  Distrib 5.6.17, for osx10.9 (x86_64)
 --
--- Host: 127.0.0.1    Database: database_10457
+-- Host: 127.0.0.1    Database: database_5315
 -- ------------------------------------------------------
 -- Server version	5.6.17
 
@@ -198,108 +198,6 @@ CREATE TABLE `communication_preference` (
   UNIQUE KEY `account_id` (`account_id`,`communication_type`),
   CONSTRAINT `communication_preference_ibfk_1` FOREIGN KEY (`account_id`) REFERENCES `account` (`id`)
 ) ENGINE=InnoDB DEFAULT CHARSET=utf8;
-/*!40101 SET character_set_client = @saved_cs_client */;
-
---
--- Table structure for table `conversation`
---
-
-DROP TABLE IF EXISTS `conversation`;
-/*!40101 SET @saved_cs_client     = @@character_set_client */;
-/*!40101 SET character_set_client = utf8 */;
-CREATE TABLE `conversation` (
-  `id` bigint(20) unsigned NOT NULL AUTO_INCREMENT,
-  `tstamp` timestamp NOT NULL DEFAULT CURRENT_TIMESTAMP,
-  `topic_id` int(10) unsigned NOT NULL,
-  `message_count` int(11) NOT NULL,
-  `creator_id` bigint(20) unsigned NOT NULL,
-  `owner_id` bigint(20) unsigned NOT NULL,
-  `last_participant_id` bigint(20) unsigned NOT NULL,
-  `last_message_tstamp` timestamp NOT NULL DEFAULT '0000-00-00 00:00:00',
-  `unread` tinyint(1) NOT NULL,
-  PRIMARY KEY (`id`),
-  KEY `topic_id` (`topic_id`),
-  KEY `creator_id` (`creator_id`),
-  KEY `owner_id` (`owner_id`),
-  KEY `last_participant_id` (`last_participant_id`),
-  CONSTRAINT `conversation_ibfk_1` FOREIGN KEY (`topic_id`) REFERENCES `conversation_topic` (`id`),
-  CONSTRAINT `conversation_ibfk_2` FOREIGN KEY (`creator_id`) REFERENCES `person` (`id`),
-  CONSTRAINT `conversation_ibfk_3` FOREIGN KEY (`owner_id`) REFERENCES `person` (`id`),
-  CONSTRAINT `conversation_ibfk_4` FOREIGN KEY (`last_participant_id`) REFERENCES `person` (`id`)
-) ENGINE=InnoDB DEFAULT CHARSET=utf8;
-/*!40101 SET character_set_client = @saved_cs_client */;
-
---
--- Table structure for table `conversation_message`
---
-
-DROP TABLE IF EXISTS `conversation_message`;
-/*!40101 SET @saved_cs_client     = @@character_set_client */;
-/*!40101 SET character_set_client = utf8 */;
-CREATE TABLE `conversation_message` (
-  `id` bigint(20) unsigned NOT NULL AUTO_INCREMENT,
-  `tstamp` timestamp NOT NULL DEFAULT CURRENT_TIMESTAMP,
-  `conversation_id` bigint(20) unsigned NOT NULL,
-  `person_id` bigint(20) unsigned NOT NULL,
-  `body` text NOT NULL,
-  PRIMARY KEY (`id`),
-  KEY `person_id` (`person_id`),
-  KEY `conversation_id` (`conversation_id`,`tstamp`),
-  CONSTRAINT `conversation_message_ibfk_1` FOREIGN KEY (`conversation_id`) REFERENCES `conversation` (`id`),
-  CONSTRAINT `conversation_message_ibfk_2` FOREIGN KEY (`person_id`) REFERENCES `person` (`id`)
-) ENGINE=InnoDB DEFAULT CHARSET=utf8;
-/*!40101 SET character_set_client = @saved_cs_client */;
-
---
--- Table structure for table `conversation_message_attachment`
---
-
-DROP TABLE IF EXISTS `conversation_message_attachment`;
-/*!40101 SET @saved_cs_client     = @@character_set_client */;
-/*!40101 SET character_set_client = utf8 */;
-CREATE TABLE `conversation_message_attachment` (
-  `id` bigint(20) unsigned NOT NULL AUTO_INCREMENT,
-  `message_id` bigint(20) unsigned DEFAULT NULL,
-  `item_type` varchar(64) NOT NULL,
-  `item_id` bigint(20) unsigned NOT NULL,
-  PRIMARY KEY (`id`),
-  KEY `message_id` (`message_id`),
-  CONSTRAINT `conversation_message_attachment_ibfk_1` FOREIGN KEY (`message_id`) REFERENCES `conversation_message` (`id`)
-) ENGINE=InnoDB DEFAULT CHARSET=utf8;
-/*!40101 SET character_set_client = @saved_cs_client */;
-
---
--- Table structure for table `conversation_participant`
---
-
-DROP TABLE IF EXISTS `conversation_participant`;
-/*!40101 SET @saved_cs_client     = @@character_set_client */;
-/*!40101 SET character_set_client = utf8 */;
-CREATE TABLE `conversation_participant` (
-  `person_id` bigint(20) unsigned NOT NULL,
-  `conversation_id` bigint(20) unsigned NOT NULL,
-  `joined` timestamp NOT NULL DEFAULT CURRENT_TIMESTAMP,
-  PRIMARY KEY (`person_id`,`conversation_id`),
-  KEY `conversation_id` (`conversation_id`),
-  CONSTRAINT `conversation_participant_ibfk_1` FOREIGN KEY (`person_id`) REFERENCES `person` (`id`),
-  CONSTRAINT `conversation_participant_ibfk_2` FOREIGN KEY (`conversation_id`) REFERENCES `conversation` (`id`)
-) ENGINE=InnoDB DEFAULT CHARSET=utf8;
-/*!40101 SET character_set_client = @saved_cs_client */;
-
---
--- Table structure for table `conversation_topic`
---
-
-DROP TABLE IF EXISTS `conversation_topic`;
-/*!40101 SET @saved_cs_client     = @@character_set_client */;
-/*!40101 SET character_set_client = utf8 */;
-CREATE TABLE `conversation_topic` (
-  `id` int(10) unsigned NOT NULL AUTO_INCREMENT,
-  `title` varchar(255) NOT NULL,
-  `ordinal` int(11) NOT NULL,
-  `active` tinyint(1) NOT NULL,
-  PRIMARY KEY (`id`)
-) ENGINE=InnoDB AUTO_INCREMENT=6 DEFAULT CHARSET=utf8;
 /*!40101 SET character_set_client = @saved_cs_client */;
 
 --
@@ -1297,35 +1195,15 @@ CREATE TABLE `patient_care_provider_assignment` (
   `id` int(10) unsigned NOT NULL AUTO_INCREMENT,
   `role_type_id` int(10) unsigned NOT NULL,
   `provider_id` int(10) unsigned NOT NULL,
-  `assignment_group_id` int(10) unsigned NOT NULL,
   `status` varchar(250) NOT NULL,
   `patient_id` int(10) unsigned NOT NULL,
+  `expires` timestamp(6) NOT NULL DEFAULT CURRENT_TIMESTAMP(6) ON UPDATE CURRENT_TIMESTAMP(6),
+  `creation_date` timestamp(6) NOT NULL DEFAULT CURRENT_TIMESTAMP(6),
   PRIMARY KEY (`id`),
-  KEY `assignment_group_id` (`assignment_group_id`),
   KEY `provider_role_id` (`role_type_id`),
   KEY `patient_id` (`patient_id`),
-  CONSTRAINT `patient_care_provider_assignment_ibfk_4` FOREIGN KEY (`patient_id`) REFERENCES `patient` (`id`),
-  CONSTRAINT `patient_care_provider_assignment_ibfk_2` FOREIGN KEY (`assignment_group_id`) REFERENCES `patient_care_provider_group` (`id`),
-  CONSTRAINT `patient_care_provider_assignment_ibfk_3` FOREIGN KEY (`role_type_id`) REFERENCES `role_type` (`id`)
-) ENGINE=InnoDB DEFAULT CHARSET=utf8;
-/*!40101 SET character_set_client = @saved_cs_client */;
-
---
--- Table structure for table `patient_care_provider_group`
---
-
-DROP TABLE IF EXISTS `patient_care_provider_group`;
-/*!40101 SET @saved_cs_client     = @@character_set_client */;
-/*!40101 SET character_set_client = utf8 */;
-CREATE TABLE `patient_care_provider_group` (
-  `id` int(10) unsigned NOT NULL AUTO_INCREMENT,
-  `created_date` timestamp(6) NULL DEFAULT CURRENT_TIMESTAMP(6),
-  `modified_date` timestamp NOT NULL DEFAULT '0000-00-00 00:00:00' ON UPDATE CURRENT_TIMESTAMP,
-  `status` varchar(250) NOT NULL,
-  `patient_id` int(10) unsigned NOT NULL,
-  PRIMARY KEY (`id`),
-  KEY `patient_id` (`patient_id`),
-  CONSTRAINT `patient_care_provider_group_ibfk_1` FOREIGN KEY (`patient_id`) REFERENCES `patient` (`id`)
+  CONSTRAINT `patient_care_provider_assignment_ibfk_3` FOREIGN KEY (`role_type_id`) REFERENCES `role_type` (`id`),
+  CONSTRAINT `patient_care_provider_assignment_ibfk_4` FOREIGN KEY (`patient_id`) REFERENCES `patient` (`id`)
 ) ENGINE=InnoDB DEFAULT CHARSET=utf8;
 /*!40101 SET character_set_client = @saved_cs_client */;
 
@@ -1364,11 +1242,72 @@ CREATE TABLE `patient_case_care_provider_assignment` (
   `role_type_id` int(10) unsigned NOT NULL,
   `creation_date` timestamp(6) NOT NULL DEFAULT CURRENT_TIMESTAMP(6),
   `status` varchar(100) NOT NULL,
+  `expires` timestamp(6) NOT NULL DEFAULT '0000-00-00 00:00:00.000000',
   PRIMARY KEY (`id`),
   UNIQUE KEY `patient_case_id` (`patient_case_id`,`provider_id`,`role_type_id`),
   KEY `role_type_id` (`role_type_id`),
   CONSTRAINT `patient_case_care_provider_assignment_ibfk_1` FOREIGN KEY (`patient_case_id`) REFERENCES `patient_case` (`id`),
   CONSTRAINT `patient_case_care_provider_assignment_ibfk_2` FOREIGN KEY (`role_type_id`) REFERENCES `role_type` (`id`)
+) ENGINE=InnoDB DEFAULT CHARSET=utf8;
+/*!40101 SET character_set_client = @saved_cs_client */;
+
+--
+-- Table structure for table `patient_case_message`
+--
+
+DROP TABLE IF EXISTS `patient_case_message`;
+/*!40101 SET @saved_cs_client     = @@character_set_client */;
+/*!40101 SET character_set_client = utf8 */;
+CREATE TABLE `patient_case_message` (
+  `id` bigint(20) unsigned NOT NULL AUTO_INCREMENT,
+  `tstamp` timestamp NOT NULL DEFAULT CURRENT_TIMESTAMP,
+  `person_id` bigint(20) unsigned NOT NULL,
+  `body` text NOT NULL,
+  `patient_case_id` int(10) unsigned NOT NULL,
+  PRIMARY KEY (`id`),
+  KEY `person_id` (`person_id`),
+  KEY `case_tstamp` (`patient_case_id`,`tstamp`),
+  CONSTRAINT `patient_case_message_ibfk_2` FOREIGN KEY (`person_id`) REFERENCES `person` (`id`),
+  CONSTRAINT `patient_case_message_ibfk_3` FOREIGN KEY (`patient_case_id`) REFERENCES `patient_case` (`id`)
+) ENGINE=InnoDB DEFAULT CHARSET=utf8;
+/*!40101 SET character_set_client = @saved_cs_client */;
+
+--
+-- Table structure for table `patient_case_message_attachment`
+--
+
+DROP TABLE IF EXISTS `patient_case_message_attachment`;
+/*!40101 SET @saved_cs_client     = @@character_set_client */;
+/*!40101 SET character_set_client = utf8 */;
+CREATE TABLE `patient_case_message_attachment` (
+  `id` bigint(20) unsigned NOT NULL AUTO_INCREMENT,
+  `message_id` bigint(20) unsigned DEFAULT NULL,
+  `item_type` varchar(64) NOT NULL,
+  `item_id` bigint(20) unsigned NOT NULL,
+  PRIMARY KEY (`id`),
+  KEY `message_id` (`message_id`),
+  CONSTRAINT `patient_case_message_attachment_ibfk_1` FOREIGN KEY (`message_id`) REFERENCES `patient_case_message` (`id`)
+) ENGINE=InnoDB DEFAULT CHARSET=utf8;
+/*!40101 SET character_set_client = @saved_cs_client */;
+
+--
+-- Table structure for table `patient_case_message_participant`
+--
+
+DROP TABLE IF EXISTS `patient_case_message_participant`;
+/*!40101 SET @saved_cs_client     = @@character_set_client */;
+/*!40101 SET character_set_client = utf8 */;
+CREATE TABLE `patient_case_message_participant` (
+  `id` bigint(20) unsigned NOT NULL AUTO_INCREMENT,
+  `patient_case_id` int(10) unsigned NOT NULL,
+  `person_id` bigint(20) unsigned NOT NULL,
+  `unread` tinyint(1) NOT NULL DEFAULT '0',
+  `last_read_tstamp` timestamp(6) NULL DEFAULT CURRENT_TIMESTAMP(6),
+  PRIMARY KEY (`id`),
+  UNIQUE KEY `patient_case_id` (`patient_case_id`,`person_id`),
+  KEY `person_id` (`person_id`),
+  CONSTRAINT `patient_case_message_participant_ibfk_1` FOREIGN KEY (`patient_case_id`) REFERENCES `patient_case` (`id`),
+  CONSTRAINT `patient_case_message_participant_ibfk_2` FOREIGN KEY (`person_id`) REFERENCES `person` (`id`)
 ) ENGINE=InnoDB DEFAULT CHARSET=utf8;
 /*!40101 SET character_set_client = @saved_cs_client */;
 
@@ -1537,28 +1476,6 @@ CREATE TABLE `patient_visit` (
   CONSTRAINT `patient_visit_ibfk_2` FOREIGN KEY (`health_condition_id`) REFERENCES `health_condition` (`id`),
   CONSTRAINT `patient_visit_ibfk_3` FOREIGN KEY (`layout_version_id`) REFERENCES `layout_version` (`id`)
 ) ENGINE=InnoDB AUTO_INCREMENT=89 DEFAULT CHARSET=utf8;
-/*!40101 SET character_set_client = @saved_cs_client */;
-
---
--- Table structure for table `patient_visit_care_provider_assignment`
---
-
-DROP TABLE IF EXISTS `patient_visit_care_provider_assignment`;
-/*!40101 SET @saved_cs_client     = @@character_set_client */;
-/*!40101 SET character_set_client = utf8 */;
-CREATE TABLE `patient_visit_care_provider_assignment` (
-  `id` int(10) unsigned NOT NULL AUTO_INCREMENT,
-  `patient_visit_id` int(10) unsigned NOT NULL,
-  `role_type_id` int(10) unsigned NOT NULL,
-  `provider_id` int(10) unsigned NOT NULL,
-  `status` varchar(100) NOT NULL,
-  `assignment_date` timestamp(6) NULL DEFAULT CURRENT_TIMESTAMP(6),
-  PRIMARY KEY (`id`),
-  KEY `patient_visit_id` (`patient_visit_id`),
-  KEY `provider_role` (`role_type_id`),
-  CONSTRAINT `patient_visit_care_provider_assignment_ibfk_1` FOREIGN KEY (`patient_visit_id`) REFERENCES `patient_visit` (`id`),
-  CONSTRAINT `patient_visit_care_provider_assignment_ibfk_2` FOREIGN KEY (`role_type_id`) REFERENCES `role_type` (`id`)
-) ENGINE=InnoDB DEFAULT CHARSET=utf8;
 /*!40101 SET character_set_client = @saved_cs_client */;
 
 --
@@ -2512,6 +2429,34 @@ CREATE TABLE `treatment_plan_patient_visit_mapping` (
 /*!40101 SET character_set_client = @saved_cs_client */;
 
 --
+-- Table structure for table `unclaimed_case_queue`
+--
+
+DROP TABLE IF EXISTS `unclaimed_case_queue`;
+/*!40101 SET @saved_cs_client     = @@character_set_client */;
+/*!40101 SET character_set_client = utf8 */;
+CREATE TABLE `unclaimed_case_queue` (
+  `id` int(10) unsigned NOT NULL AUTO_INCREMENT,
+  `care_providing_state_id` int(10) unsigned NOT NULL,
+  `event_type` varchar(100) NOT NULL,
+  `item_id` int(10) unsigned NOT NULL,
+  `patient_case_id` int(10) unsigned NOT NULL,
+  `status` varchar(100) NOT NULL,
+  `locked` tinyint(1) NOT NULL DEFAULT '0',
+  `doctor_id` int(10) unsigned DEFAULT NULL,
+  `enqueue_date` timestamp(6) NOT NULL DEFAULT CURRENT_TIMESTAMP(6),
+  `expires` timestamp(6) NOT NULL DEFAULT CURRENT_TIMESTAMP(6),
+  PRIMARY KEY (`id`),
+  UNIQUE KEY `patient_case_id` (`patient_case_id`),
+  KEY `doctor_id` (`doctor_id`),
+  KEY `care_providing_state_id` (`care_providing_state_id`),
+  CONSTRAINT `unclaimed_case_queue_ibfk_1` FOREIGN KEY (`care_providing_state_id`) REFERENCES `care_providing_state` (`id`),
+  CONSTRAINT `unclaimed_case_queue_ibfk_2` FOREIGN KEY (`patient_case_id`) REFERENCES `patient_case` (`id`),
+  CONSTRAINT `unclaimed_case_queue_ibfk_3` FOREIGN KEY (`doctor_id`) REFERENCES `doctor` (`id`)
+) ENGINE=InnoDB DEFAULT CHARSET=utf8;
+/*!40101 SET character_set_client = @saved_cs_client */;
+
+--
 -- Table structure for table `unlinked_dntf_treatment`
 --
 
@@ -2607,4 +2552,4 @@ CREATE TABLE `unlinked_dntf_treatment_status_events` (
 /*!40101 SET COLLATION_CONNECTION=@OLD_COLLATION_CONNECTION */;
 /*!40111 SET SQL_NOTES=@OLD_SQL_NOTES */;
 
--- Dump completed on 2014-06-24 19:06:41
+-- Dump completed on 2014-06-24 19:06:55

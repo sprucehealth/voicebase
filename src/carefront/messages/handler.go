@@ -59,7 +59,7 @@ func (h *handler) ServeHTTP(w http.ResponseWriter, r *http.Request) {
 		return
 	}
 
-	cas, err := h.dataAPI.GetPatientCase(req.CaseID)
+	cas, err := h.dataAPI.GetPatientCaseFromId(req.CaseID)
 	if err == api.NoRowsError {
 		apiservice.WriteDeveloperError(w, http.StatusNotFound, "Case with the given ID does not exist")
 		return

@@ -183,7 +183,7 @@ func CheckIfRunningLocally(t *testing.T) {
 	}
 }
 
-func GetDoctorIdOfCurrentDoctor(testData TestData, t *testing.T) int64 {
+func GetDoctorIdOfCurrentDoctor(testData *TestData, t *testing.T) int64 {
 	// get the current primary doctor
 	var doctorId int64
 	err := testData.DB.QueryRow(`select provider_id from care_provider_state_elligibility 

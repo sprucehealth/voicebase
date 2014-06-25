@@ -169,7 +169,7 @@ func InitListeners(dataAPI api.DataAPI, notificationManager *notify.Notification
 		if ev.Person.RoleType == api.DOCTOR_ROLE {
 			if err := dataAPI.ReplaceItemInDoctorQueue(api.DoctorQueueItem{
 				DoctorId:  ev.Person.RoleId,
-				ItemId:    ev.Case.Id,
+				ItemId:    ev.Case.Id.Int64(),
 				EventType: api.DQEventTypeCaseMessage,
 				Status:    api.DQItemStatusReplied,
 			}, api.DQItemStatusPending); err != nil {
@@ -210,9 +210,9 @@ func InitListeners(dataAPI api.DataAPI, notificationManager *notify.Notification
 		if err := dataAPI.ReplaceItemInDoctorQueue(api.DoctorQueueItem{
 			DoctorId:  doctorID,
 			ItemId:    ev.Message.CaseID,
-			EventType: api.EVENT_TYPE_CASE_MESSAGE,
-			Status:    api.QUEUE_ITEM_STATUS_PENDING,
-		}, api.QUEUE_ITEM_STATUS_REPLIED); err != nil {
+			EventType: api.DQEventTypeCaseMessage,
+			Status:    api.DQItemStatusPending,
+		}, api.DQItemStatusReplied); err != nil {
 			golog.Errorf("Unable to insert conversation item into doctor queue: %s", err)
 			return err
 		}
@@ -237,7 +237,7 @@ func InitListeners(dataAPI api.DataAPI, notificationManager *notify.Notification
 			if err := dataAPI.ReplaceItemInDoctorQueue(api.DoctorQueueItem{
 				DoctorId:  ev.Person.Doctor.DoctorId.Int64(),
 				ItemId:    ev.CaseID,
-				EventType: api.DQEventTypeCasemessage,
+				EventType: api.DQEventTypeCaseMessage,
 				Status:    api.DQItemStatusRead,
 			}, api.DQItemStatusPending); err != nil {
 				golog.Errorf("Unable to replace item in doctor queue with a replied item: %s", err)

@@ -1,8 +1,8 @@
--- MySQL dump 10.13  Distrib 5.6.19, for osx10.9 (x86_64)
+-- MySQL dump 10.13  Distrib 5.6.17, for osx10.9 (x86_64)
 --
--- Host: 127.0.0.1    Database: database_3260
+-- Host: 127.0.0.1    Database: database_10457
 -- ------------------------------------------------------
--- Server version	5.6.19
+-- Server version	5.6.17
 
 /*!40101 SET @OLD_CHARACTER_SET_CLIENT=@@CHARACTER_SET_CLIENT */;
 /*!40101 SET @OLD_CHARACTER_SET_RESULTS=@@CHARACTER_SET_RESULTS */;
@@ -839,32 +839,6 @@ INSERT INTO `state` VALUES (51,'Alabama','AL','USA'),(52,'Alaska','AK','USA'),(5
 UNLOCK TABLES;
 
 --
--- Table structure for table `conversation_topic`
---
-
-DROP TABLE IF EXISTS `conversation_topic`;
-/*!40101 SET @saved_cs_client     = @@character_set_client */;
-/*!40101 SET character_set_client = utf8 */;
-CREATE TABLE `conversation_topic` (
-  `id` int(10) unsigned NOT NULL AUTO_INCREMENT,
-  `title` varchar(255) NOT NULL,
-  `ordinal` int(11) NOT NULL,
-  `active` tinyint(1) NOT NULL,
-  PRIMARY KEY (`id`)
-) ENGINE=InnoDB AUTO_INCREMENT=6 DEFAULT CHARSET=utf8;
-/*!40101 SET character_set_client = @saved_cs_client */;
-
---
--- Dumping data for table `conversation_topic`
---
-
-LOCK TABLES `conversation_topic` WRITE;
-/*!40000 ALTER TABLE `conversation_topic` DISABLE KEYS */;
-INSERT INTO `conversation_topic` VALUES (1,'Acne Treatent Plan',100,1),(2,'Prescriptions',200,1),(3,'Side Effects',300,1),(4,'Not Seeing Results',400,1),(5,'Other',500,1);
-/*!40000 ALTER TABLE `conversation_topic` ENABLE KEYS */;
-UNLOCK TABLES;
-
---
 -- Table structure for table `photo_slot`
 --
 
@@ -933,4 +907,4 @@ UNLOCK TABLES;
 /*!40101 SET COLLATION_CONNECTION=@OLD_COLLATION_CONNECTION */;
 /*!40111 SET SQL_NOTES=@OLD_SQL_NOTES */;
 
--- Dump completed on 2014-06-19 14:41:34
+-- Dump completed on 2014-06-24 19:06:41

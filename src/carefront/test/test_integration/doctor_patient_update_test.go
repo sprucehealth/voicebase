@@ -199,7 +199,12 @@ func TestDoctorUpdateToPhoneNumbers(t *testing.T) {
 		t.Fatal("Unable to read doctor information")
 	}
 
-	signedupPatientResponse := SignupRandomTestPatient(t, testData)
+	patientVisitResponse, _ := SignupAndSubmitPatientVisitForRandomPatient(t, testData, doctor)
+	patient, err := testData.DataApi.GetPatientFromPatientVisitId(patientVisitResponse.PatientVisitId)
+	if err != nil {
+		t.Fatal(err)
+	}
+
 	patientPharmacy := &pharmacy.PharmacyData{
 		Source:       pharmacy.PHARMACY_SOURCE_SURESCRIPTS,
 		SourceId:     "1234",
