@@ -114,6 +114,9 @@ func (d *doctorTreatmentPlanHandler) submitTreatmentPlan(w http.ResponseWriter, 
 	} else if requestData.TreatmentPlanId.Int64() == 0 {
 		apiservice.WriteValidationError("treatment_plan_id must be specified", w, r)
 		return
+	} else if requestData.Message == "" {
+		apiservice.WriteValidationError("message must not be empty", w, r)
+		return
 	}
 
 	doctor, err := d.dataApi.GetDoctorFromAccountId(apiservice.GetContext(r).AccountId)

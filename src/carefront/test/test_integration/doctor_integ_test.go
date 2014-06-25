@@ -7,14 +7,11 @@ import (
 	"io/ioutil"
 	"net/http"
 	"net/http/httptest"
-	"net/url"
 	"strconv"
-	"strings"
 	"testing"
 
 	"carefront/api"
 	"carefront/apiservice"
-	"carefront/common"
 	"carefront/doctor_treatment_plan"
 	"carefront/patient_visit"
 )
@@ -188,7 +185,6 @@ func TestDoctorDiagnosisOfPatientVisit_Unsuitable(t *testing.T) {
 }
 
 func TestDoctorDiagnosisOfPatientVisit(t *testing.T) {
-
 	testData := SetupIntegrationTest(t)
 	defer TearDownIntegrationTest(t, testData)
 
@@ -245,87 +241,15 @@ func TestDoctorDiagnosisOfPatientVisit(t *testing.T) {
 	// prepapre a response for the doctor
 	SubmitPatientVisitDiagnosis(patientVisitResponse.PatientVisitId, doctor, testData, t)
 
-	// check if the diagnosis summary exists for the patient visit
-	// at this point NO diagnosis summary should exist because the doctor has not picked a treatment plan yet.
-	// given that the diagnosis summary gets associated with a treatment plan, the diagnosis summary is added only after
-	// a treatment plan is picked
-	diagnosisSummaryHandler := &apiservice.DiagnosisSummaryHandler{DataApi: testData.DataApi}
-	ts = httptest.NewServer(diagnosisSummaryHandler)
-	defer ts.Close()
-	getDiagnosisSummaryResponse := &common.DiagnosisSummary{}
-	resp, err = testData.AuthGet(ts.URL, doctor.AccountId.Int64())
-	if err != nil {
-		t.Fatal("Unable to make call to get diagnosis summary for patient visit: " + err.Error())
-	} else if resp.StatusCode != http.StatusBadRequest {
-		t.Fatalf("Expected status code %d but got %d", http.StatusBadRequest, resp.StatusCode)
-	}
-
 	// now lets pick a tretament plan and then try to get the diagnosis summary again
-	responseData := PickATreatmentPlanForPatientVisit(patientVisitResponse.PatientVisitId, doctor, nil, testData, t)
-	resp, err = testData.AuthGet(ts.URL+"?treatment_plan_id="+strconv.FormatInt(responseData.TreatmentPlan.Id.Int64(), 10), doctor.AccountId.Int64())
-	if err != nil {
-		t.Fatal("Unable to make call to get diagnosis summary for patient visit: " + err.Error())
-	} else if resp.StatusCode != http.StatusOK {
-		t.Fatalf("Expected status code %d but got %d", http.StatusOK, resp.StatusCode)
-	} else if err := json.NewDecoder(resp.Body).Decode(&getDiagnosisSummaryResponse); err != nil {
-		t.Fatal("Unable to unmarshal response into json object : " + err.Error())
-	} else if getDiagnosisSummaryResponse.Summary == "" {
-		t.Fatal("Expected diagnosis summary to exist but it doesnt")
-	}
+	PickATreatmentPlanForPatientVisit(patientVisitResponse.PatientVisitId, doctor, nil, testData, t)
 
 	// now lets pick a different treatment plan and ensure that the diagnosis summary gets linked to this new
 	// treatment plan.
-	responseData = PickATreatmentPlanForPatientVisit(patientVisitResponse.PatientVisitId, doctor, nil, testData, t)
-	resp, err = testData.AuthGet(ts.URL+"?treatment_plan_id="+strconv.FormatInt(responseData.TreatmentPlan.Id.Int64(), 10), doctor.AccountId.Int64())
-	if err != nil {
-		t.Fatal("Unable to make call to get diagnosis summary for patient visit: " + err.Error())
-	} else if resp.StatusCode != http.StatusOK {
-		t.Fatalf("Expected status code %d but got %d", http.StatusOK, resp.StatusCode)
-	} else if err := json.NewDecoder(resp.Body).Decode(&getDiagnosisSummaryResponse); err != nil {
-		t.Fatal("Unable to unmarshal response into json object : " + err.Error())
-	} else if getDiagnosisSummaryResponse.Summary == "" {
-		t.Fatal("Expected diagnosis summary to exist but it doesnt")
-	}
-
-	// now lets try and manually update the summary
-	updatedSummary := "This is the new value that the diagnosis summary should be updated to"
-	params := url.Values{}
-	params.Set("treatment_plan_id", strconv.FormatInt(responseData.TreatmentPlan.Id.Int64(), 10))
-	params.Set("summary", updatedSummary)
-	resp, err = testData.AuthPut(ts.URL, "application/x-www-form-urlencoded", strings.NewReader(params.Encode()), doctor.AccountId.Int64())
-	if err != nil {
-		t.Fatalf("Unable to make call to update diagnosis summary %s", err)
-	} else if resp.StatusCode != http.StatusOK {
-		t.Fatalf("Unable to make successfull call to update diagnosis summary")
-	}
-
-	// lets get the diagnosis summary again to compare
-	resp, err = testData.AuthGet(ts.URL+"?treatment_plan_id="+strconv.FormatInt(responseData.TreatmentPlan.Id.Int64(), 10), doctor.AccountId.Int64())
-	if err != nil {
-		t.Fatal("Unable to make call to get diagnosis summary for patient visit: " + err.Error())
-	} else if resp.StatusCode != http.StatusOK {
-		t.Fatalf("Expected status code %d but got %d", http.StatusOK, resp.StatusCode)
-	} else if err := json.NewDecoder(resp.Body).Decode(&getDiagnosisSummaryResponse); err != nil {
-		t.Fatal("Unable to unmarshal response into json object : " + err.Error())
-	} else if getDiagnosisSummaryResponse.Summary != updatedSummary {
-		t.Fatalf("Expected diagnosis summary %s instead got %s", updatedSummary, getDiagnosisSummaryResponse.Summary)
-	}
+	PickATreatmentPlanForPatientVisit(patientVisitResponse.PatientVisitId, doctor, nil, testData, t)
 
 	// lets attempt to diagnose the patient again
 	SubmitPatientVisitDiagnosis(patientVisitResponse.PatientVisitId, doctor, testData, t)
-
-	// now get the diagnosis summary again to ensure that it did not change
-	resp, err = testData.AuthGet(ts.URL+"?treatment_plan_id="+strconv.FormatInt(responseData.TreatmentPlan.Id.Int64(), 10), doctor.AccountId.Int64())
-	if err != nil {
-		t.Fatal("Unable to make call to get diagnosis summary for patient visit: " + err.Error())
-	} else if resp.StatusCode != http.StatusOK {
-		t.Fatalf("Expected status code %d but got %d", http.StatusOK, resp.StatusCode)
-	} else if err := json.NewDecoder(resp.Body).Decode(&getDiagnosisSummaryResponse); err != nil {
-		t.Fatal("Unable to unmarshal response into json object : " + err.Error())
-	} else if getDiagnosisSummaryResponse.Summary != updatedSummary {
-		t.Fatalf("Expected diagnosis summary %s instead got %s", updatedSummary, getDiagnosisSummaryResponse.Summary)
-	}
-
 }
 
 func TestDoctorSubmissionOfPatientVisitReview(t *testing.T) {
@@ -377,8 +301,21 @@ func TestDoctorSubmissionOfPatientVisitReview(t *testing.T) {
 	StartReviewingPatientVisit(patientVisitResponse.PatientVisitId, doctor, testData, t)
 	responseData := PickATreatmentPlanForPatientVisit(patientVisitResponse.PatientVisitId, doctor, nil, testData, t)
 
+	caseID, err := testData.DataApi.GetPatientCaseIdFromPatientVisitId(patientVisitResponse.PatientVisitId)
+	if err != nil {
+		t.Fatal(err)
+	}
+
+	// Shouldn't be any messages yet
+	if msgs, err := testData.DataApi.ListCaseMessages(caseID); err != nil {
+		t.Fatal(err)
+	} else if len(msgs) != 0 {
+		t.Fatalf("Expected no doctor message but got %d", len(msgs))
+	}
+
 	jsonData, err = json.Marshal(doctor_treatment_plan.TreatmentPlanRequestData{
 		TreatmentPlanId: responseData.TreatmentPlan.Id,
+		Message:         "Foo",
 	})
 
 	// attempt to submit the patient visit review here. It should work
@@ -386,7 +323,8 @@ func TestDoctorSubmissionOfPatientVisitReview(t *testing.T) {
 	if err != nil {
 		t.Fatal("Unable to make successful call to submit patient visit review")
 	} else if resp.StatusCode != http.StatusOK {
-		t.Fatalf("Expected %d but got %d", http.StatusOK, resp.StatusCode)
+		b, _ := ioutil.ReadAll(resp.Body)
+		t.Fatalf("Expected %d but got %d: %s", http.StatusOK, resp.StatusCode, string(b))
 	}
 
 	patientVisit, err := testData.DataApi.GetPatientVisitFromId(patientVisitResponse.PatientVisitId)
@@ -396,5 +334,12 @@ func TestDoctorSubmissionOfPatientVisitReview(t *testing.T) {
 
 	if patientVisit.Status != api.CASE_STATUS_TREATED {
 		t.Fatalf("Expected the status to be %s but status is %s", api.CASE_STATUS_TREATED, patientVisit.Status)
+	}
+
+	// Shouldn't be any messages yet
+	if msgs, err := testData.DataApi.ListCaseMessages(caseID); err != nil {
+		t.Fatal(err)
+	} else if len(msgs) != 1 {
+		t.Fatalf("Expected 1 doctor message but got %d", len(msgs))
 	}
 }
