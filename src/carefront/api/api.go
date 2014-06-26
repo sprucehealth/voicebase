@@ -103,7 +103,7 @@ type JumpBallQueueAPI interface {
 	GetClaimedItemsInQueue() ([]*DoctorQueueItem, error)
 	GetElligibleItemsInUnclaimedQueue(doctorId int64) ([]*DoctorQueueItem, error)
 	InsertUnclaimedItemIntoQueue(doctorQueueItem *DoctorQueueItem) error
-	RevokeDoctorAccessToCase(patientCaseId, doctorId int64) error
+	RevokeDoctorAccessToCase(patientCaseId, patientId, doctorId int64) error
 }
 
 type PatientVisitAPI interface {

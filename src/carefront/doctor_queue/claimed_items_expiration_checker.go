@@ -55,7 +55,14 @@ func CheckForExpiredClaimedItems(dataAPI api.DataAPI, claimExpirationSuccess, cl
 	// iterate through items to check if any of the claims have expired
 	for _, item := range claimedItems {
 		if item.Expires.Add(GracePeriod).Before(time.Now()) {
-			if err := revokeAccesstoCaseFromDoctor(item.PatientCaseId, item.DoctorId, dataAPI); err != nil {
+			patientCase, err := dataAPI.GetPatientCaseFromId(item.PatientCaseId)
+			if err != nil {
+				claimExpirationFailure.Inc(1)
+				golog.Errorf("Unable to get patient case from id :%s", err)
+				return
+			}
+
+			if err := revokeAccesstoCaseFromDoctor(item.PatientCaseId, patientCase.PatientId.Int64(), item.DoctorId, dataAPI); err != nil {
 				claimExpirationFailure.Inc(1)
 				golog.Errorf("Unable to revoke access of case from doctor: %s", err)
 			}
@@ -64,8 +71,8 @@ func CheckForExpiredClaimedItems(dataAPI api.DataAPI, claimExpirationSuccess, cl
 	}
 }
 
-func revokeAccesstoCaseFromDoctor(patientCaseId, doctorId int64, dataAPI api.DataAPI) error {
-	if err := dataAPI.RevokeDoctorAccessToCase(patientCaseId, doctorId); err != nil {
+func revokeAccesstoCaseFromDoctor(patientCaseId, patientId, doctorId int64, dataAPI api.DataAPI) error {
+	if err := dataAPI.RevokeDoctorAccessToCase(patientCaseId, patientId, doctorId); err != nil {
 		return err
 	}
 

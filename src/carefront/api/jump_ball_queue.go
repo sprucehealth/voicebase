@@ -200,6 +200,7 @@ func (d *DataService) GetElligibleItemsInUnclaimedQueue(doctorId int64) ([]*Doct
 	if err != nil {
 		return nil, err
 	}
+	defer rows.Close()
 
 	var careProvidingStateIds []int64
 	for rows.Next() {
@@ -212,7 +213,6 @@ func (d *DataService) GetElligibleItemsInUnclaimedQueue(doctorId int64) ([]*Doct
 	if rows.Err() != nil {
 		return nil, rows.Err()
 	}
-	rows.Close()
 
 	if len(careProvidingStateIds) == 0 {
 		return nil, errors.New("Doctor is not elligible to provide care for any health condition in any state")
@@ -221,16 +221,16 @@ func (d *DataService) GetElligibleItemsInUnclaimedQueue(doctorId int64) ([]*Doct
 	// then get the items in the unclaimed queue that are not currently locked by another doctor
 	params := appendInt64sToInterfaceSlice(nil, careProvidingStateIds)
 	params = append(params, []interface{}{false, true, doctorId}...)
-	rows, err = d.db.Query(fmt.Sprintf(`select id, event_type, item_id, patient_case_id, enqueue_date, status from unclaimed_case_queue where care_providing_state_id in (%s) and locked = ? or (locked = ? and doctor_id = ?) order by enqueue_date`, nReplacements(len(careProvidingStateIds))), params...)
+	rows2, err := d.db.Query(fmt.Sprintf(`select id, event_type, item_id, patient_case_id, enqueue_date, status from unclaimed_case_queue where care_providing_state_id in (%s) and locked = ? or (locked = ? and doctor_id = ?) order by enqueue_date`, nReplacements(len(careProvidingStateIds))), params...)
 	if err != nil {
 		return nil, err
 	}
-	defer rows.Close()
+	defer rows2.Close()
 
 	var queueItems []*DoctorQueueItem
-	for rows.Next() {
+	for rows2.Next() {
 		var queueItem DoctorQueueItem
-		if err := rows.Scan(
+		if err := rows2.Scan(
 			&queueItem.Id,
 			&queueItem.EventType,
 			&queueItem.ItemId,
@@ -242,10 +242,10 @@ func (d *DataService) GetElligibleItemsInUnclaimedQueue(doctorId int64) ([]*Doct
 		queueItems = append(queueItems, &queueItem)
 	}
 
-	return queueItems, rows.Err()
+	return queueItems, rows2.Err()
 }
 
-func (d *DataService) RevokeDoctorAccessToCase(patientCaseId, doctorId int64) error {
+func (d *DataService) RevokeDoctorAccessToCase(patientCaseId, patientId, doctorId int64) error {
 	tx, err := d.db.Begin()
 	if err != nil {
 		return err
@@ -266,14 +266,14 @@ func (d *DataService) RevokeDoctorAccessToCase(patientCaseId, doctorId int64) er
 	}
 
 	// revoke doctor access to patient case
-	_, err = tx.Exec(`delete from patient_care_provider_assignment where provider_id = ? and role_type_id = ? and status = ?`, doctorId, d.roleTypeMapping[DOCTOR_ROLE], STATUS_TEMP)
+	_, err = tx.Exec(`delete from patient_care_provider_assignment where provider_id = ? and role_type_id = ? and status = ? and patient_id = ?`, doctorId, d.roleTypeMapping[DOCTOR_ROLE], STATUS_TEMP, patientId)
 	if err != nil {
 		tx.Rollback()
 		return err
 	}
 
 	// revoke doctor access to patient file
-	_, err = tx.Exec(`delete from patient_case_care_provider_assignment where provider_id = ? and role_type_id = ? and status = ?`, doctorId, d.roleTypeMapping[DOCTOR_ROLE], STATUS_TEMP)
+	_, err = tx.Exec(`delete from patient_case_care_provider_assignment where provider_id = ? and role_type_id = ? and status = ? and patient_case_id = ?`, doctorId, d.roleTypeMapping[DOCTOR_ROLE], STATUS_TEMP, patientCaseId)
 	if err != nil {
 		tx.Rollback()
 		return err
