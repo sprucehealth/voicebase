@@ -35,25 +35,26 @@ env:
   - secure: gzt5DC2qHXU3gsMDOnGeiQfIV6Ao+gQKQ5v2fhDYYfdKNgEFYXRL7jGqpa5+Qg/cadz9Q5R39KB5ywXrpVJTri95IZJxIsU2Q6/D84IhOIl8Jm8FQFG042yLjT1eP/xlVZyixsI7RbG95xss4I1TLy/dlUOxA1uYcI1y3YGsAwM=
   - secure: Xu2RGDZcWL3YGUto8OI2FLaFq9iVT9yMAwuge3wDrhXeNVRj0+ZNDO1dqrfjIPp7z4072INzwZKXKvTLS2CrIDmkRo1i6S62fYCoUm33tcKEoBHNFrmy5yDuJgX8yNOlBEnVoDKbE4tmPdCGkOAsW/Dj0KTZik1me7dLcTMtEUA=
 script:
-- export GOPATH=$(pwd)
-- export CAREFRONT_PROJECT_DIR=$(pwd)
-- go build ./src/github.com/backend/...
-- go fmt ./src/github.com/backend/...
+- export CAREFRONT_PROJECT_DIR=$GOPATH
+- mv $GOPATH/src/github.com/SpruceHealth $GOPATH/src/github.com/sprucehealth
+- cd $GOPATH/src/github.com/sprucehealth
+- go build ./...
+- go fmt ./...
 - go get code.google.com/p/go.tools/cmd/vet
 - go get code.google.com/p/go.tools/cmd/cover
-- go vet ./src/carefront/...
-- go test -i -race ./src/github.com/backend/...
-- go test -v -race ./src/github.com/backend/apiservice
-- go test -v -race ./src/github.com/backend/apps/...
-- go test -v -race ./src/github.com/backend/common
-- go test -v -race ./src/github.com/backend/info_intake
-- go test -v -race ./src/github.com/backend/libs/...
-- go test -v -race ./src/github.com/backend/test/services
-- go run ./src/github.com/backend/test/run.go
+- go vet ./...
+- go test -i -race ./...
+- go test -v -race apiservice
+- go test -v -race apps/...
+- go test -v -race common
+- go test -v -race info_intake
+- go test -v -race libs/...
+- go test -v -race test/services
+- go run test/run.go
 before_deploy:
-- pushd ./src/github.com/backend/apps/restapi ; ./build.sh ; popd
+- pushd apps/restapi ; ./build.sh ; popd
 - mkdir build
-- cp src/github.com/backend/apps/restapi/restapi build/restapi-$TRAVIS_BRANCH-$TRAVIS_BUILD_NUMBER
+- cp apps/restapi/restapi build/restapi-$TRAVIS_BRANCH-$TRAVIS_BUILD_NUMBER
 - bzip2 build/restapi-$TRAVIS_BRANCH-$TRAVIS_BUILD_NUMBER
 - echo $TRAVIS_COMMIT > build/restapi-$TRAVIS_BRANCH-$TRAVIS_BUILD_NUMBER.revision
 deploy:
