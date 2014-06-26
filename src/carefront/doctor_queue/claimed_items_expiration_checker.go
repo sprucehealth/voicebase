@@ -50,6 +50,7 @@ func CheckForExpiredClaimedItems(dataAPI api.DataAPI, claimExpirationSuccess, cl
 	claimedItems, err := dataAPI.GetClaimedItemsInQueue()
 	if err != nil {
 		golog.Errorf("Unable to get claimed items from global queue")
+		return
 	}
 
 	// iterate through items to check if any of the claims have expired
