@@ -1,5 +1,5 @@
 [submodule "src/carefront/api-response-examples"]
-	path = src/carefront/api-response-examples
+	path = api-response-examples
 	url = git@github.com:CareFront/api-response-examples.git
 [submodule "src/github.com/SpruceHealth/mapstructure"]
 	path = src/github.com/SpruceHealth/mapstructure
