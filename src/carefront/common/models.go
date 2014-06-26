@@ -127,12 +127,13 @@ type Address struct {
 }
 
 type CareProviderAssignment struct {
-	ProviderRole string
-	ProviderId   int64
-	PatientId    int64
-	Status       string
-	CreationDate time.Time
-	Expires      *time.Time
+	ProviderRole      string
+	ProviderId        int64
+	PatientId         int64
+	HealthConditionId int64
+	Status            string
+	CreationDate      time.Time
+	Expires           *time.Time
 }
 
 type PatientCareTeam struct {
@@ -141,6 +142,7 @@ type PatientCareTeam struct {
 
 type TreatmentPlan struct {
 	Id            encoding.ObjectId `json:"treatment_plan_id,omitempty"`
+	DoctorId      encoding.ObjectId `json:"-"`
 	PatientCaseId encoding.ObjectId `json:"case_id"`
 	PatientId     encoding.ObjectId `json:"patient_id,omitempty"`
 	PatientInfo   *Patient          `json:"patient,omitempty"`

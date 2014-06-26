@@ -3,6 +3,7 @@ package test_treatment_plan
 import (
 	"bytes"
 	"carefront/api"
+	"carefront/apiservice"
 	"carefront/doctor_treatment_plan"
 	"carefront/test/test_integration"
 	"encoding/json"
@@ -102,7 +103,7 @@ func TestTreatmentPlanList_DraftTest(t *testing.T) {
 	}
 
 	// add doctor2 to the care team of the patient
-	if err := testData.DataApi.AddDoctorToCareTeamForPatient(patientId, doctor2.DoctorId.Int64()); err != nil {
+	if err := testData.DataApi.AddDoctorToCareTeamForPatient(patientId, apiservice.HEALTH_CONDITION_ACNE_ID, doctor2.DoctorId.Int64()); err != nil {
 		t.Fatal(err)
 	}
 
@@ -169,10 +170,14 @@ func TestTreatmentPlanList_FavTP(t *testing.T) {
 		t.Fatalf(err.Error())
 	}
 
+	patientCase, err := testData.DataApi.GetPatientCaseFromPatientVisitId(patientVisitResponse.PatientVisitId)
+	if err != nil {
+		t.Fatal(err)
+	}
+
 	// assign the doctor to the patient case
 	if err := testData.DataApi.AssignDoctorToPatientFileAndCase(doctor2.DoctorId.Int64(),
-		patientId,
-		treatmentPlanResponse.DraftTreatmentPlans[0].PatientCaseId.Int64()); err != nil {
+		patientCase); err != nil {
 		t.Fatal(err)
 	}
 

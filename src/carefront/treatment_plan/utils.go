@@ -6,24 +6,23 @@ import (
 	"fmt"
 )
 
-func populateTreatmentPlan(dataApi api.DataAPI, patientVisitId int64, treatmentPlanId int64) (*common.TreatmentPlan, error) {
-	treatmentPlan := &common.TreatmentPlan{}
+func populateTreatmentPlan(dataApi api.DataAPI, patientVisitId int64, treatmentPlan *common.TreatmentPlan) error {
 
 	var err error
 	treatmentPlan.TreatmentList = &common.TreatmentList{}
-	treatmentPlan.TreatmentList.Treatments, err = dataApi.GetTreatmentsBasedOnTreatmentPlanId(treatmentPlanId)
+	treatmentPlan.TreatmentList.Treatments, err = dataApi.GetTreatmentsBasedOnTreatmentPlanId(treatmentPlan.Id.Int64())
 	if err != nil {
-		return nil, fmt.Errorf("Unable to get treatment plan for this patient visit id: %s", err)
+		return fmt.Errorf("Unable to get treatment plan for this patient visit id: %s", err)
 	}
 
-	treatmentPlan.RegimenPlan, err = dataApi.GetRegimenPlanForTreatmentPlan(treatmentPlanId)
+	treatmentPlan.RegimenPlan, err = dataApi.GetRegimenPlanForTreatmentPlan(treatmentPlan.Id.Int64())
 	if err != nil {
-		return nil, fmt.Errorf("Unable to get regimen plan for this patient visit id: %s", err)
+		return fmt.Errorf("Unable to get regimen plan for this patient visit id: %s", err)
 	}
 
-	advicePoints, err := dataApi.GetAdvicePointsForTreatmentPlan(treatmentPlanId)
+	advicePoints, err := dataApi.GetAdvicePointsForTreatmentPlan(treatmentPlan.Id.Int64())
 	if err != nil {
-		return nil, fmt.Errorf("Unable to get advice for patient visit: %s", err)
+		return fmt.Errorf("Unable to get advice for patient visit: %s", err)
 	}
 
 	if advicePoints != nil && len(advicePoints) > 0 {
@@ -32,5 +31,5 @@ func populateTreatmentPlan(dataApi api.DataAPI, patientVisitId int64, treatmentP
 		}
 	}
 
-	return treatmentPlan, nil
+	return nil
 }

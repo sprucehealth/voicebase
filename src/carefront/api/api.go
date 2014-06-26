@@ -57,9 +57,8 @@ type PatientAPI interface {
 	CreateUnlinkedPatientFromRefillRequest(patient *common.Patient) error
 	UpdatePatientWithERxPatientId(patientId, erxPatientId int64) error
 	GetPatientIdFromAccountId(accountId int64) (int64, error)
-	CreateCareTeamForPatient(patientId int64) (careTeam *common.PatientCareTeam, err error)
-	AddDoctorToCareTeamForPatient(patientId, doctorId int64) error
-	CreateCareTeamForPatientWithPrimaryDoctor(patientId, doctorId int64) (careTeam *common.PatientCareTeam, err error)
+	AddDoctorToCareTeamForPatient(patientId, healthConditionId, doctorId int64) error
+	CreateCareTeamForPatientWithPrimaryDoctor(patientId, healthConditionId, doctorId int64) (careTeam *common.PatientCareTeam, err error)
 	GetCareTeamForPatient(patientId int64) (careTeam *common.PatientCareTeam, err error)
 	CheckCareProvidingElligibility(shortState string, healthConditionId int64) (doctorId int64, err error)
 	UpdatePatientAddress(patientId int64, addressLine1, addressLine2, city, state, zipCode, addressType string) error
@@ -89,7 +88,7 @@ type PatientAPI interface {
 
 type PatientCaseAPI interface {
 	GetDoctorsAssignedToPatientCase(patientCaseId int64) ([]*common.CareProviderAssignment, error)
-	AssignDoctorToPatientFileAndCase(doctorId, patientId, patientCaseId int64) error
+	AssignDoctorToPatientFileAndCase(doctorId int64, patientCase *common.PatientCase) error
 	GetPatientCaseFromPatientVisitId(patientVisitId int64) (*common.PatientCase, error)
 	GetPatientCaseFromTreatmentPlanId(treatmentPlanId int64) (*common.PatientCase, error)
 	GetPatientCaseFromId(patientCaseId int64) (*common.PatientCase, error)
@@ -97,8 +96,8 @@ type PatientCaseAPI interface {
 }
 
 type JumpBallQueueAPI interface {
-	TemporarilyClaimCaseAndAssignDoctorToCaseAndPatient(doctorId, patientCaseId, patientId int64, duration time.Duration) error
-	PermanentlyAssignDoctorToCaseAndPatient(doctorId, patientCaseId, patientId int64) error
+	TemporarilyClaimCaseAndAssignDoctorToCaseAndPatient(doctorId int64, patientCase *common.PatientCase, duration time.Duration) error
+	PermanentlyAssignDoctorToCaseAndPatient(doctorId int64, patientCase *common.PatientCase) error
 	ExtendClaimForDoctor(doctorId, patientId, patientCaseId int64, duration time.Duration) error
 	GetClaimedItemsInQueue() ([]*DoctorQueueItem, error)
 	GetElligibleItemsInUnclaimedQueue(doctorId int64) ([]*DoctorQueueItem, error)
@@ -130,8 +129,6 @@ type PatientVisitAPI interface {
 	SubmitPatientVisitWithId(patientVisitId int64) error
 	GetDiagnosisResponseToQuestionWithTag(questionTag string, doctorId, patientVisitId int64) ([]*common.AnswerIntake, error)
 	DeactivatePreviousDiagnosisForPatientVisit(treatmentPlanId int64, doctorId int64) error
-	RecordDoctorAssignmentToPatientVisit(patientVisitId, doctorId int64) error
-	GetDoctorAssignedToPatientVisit(patientVisitId int64) (doctor *common.Doctor, err error)
 	GetAdvicePointsForTreatmentPlan(treatmentPlanId int64) (advicePoints []*common.DoctorInstructionItem, err error)
 	CreateAdviceForTreatmentPlan(advicePoints []*common.DoctorInstructionItem, treatmentPlanId int64) error
 	CreateRegimenPlanForTreatmentPlan(regimenPlan *common.RegimenPlan) error
@@ -141,7 +138,7 @@ type PatientVisitAPI interface {
 	GetTreatmentBasedOnPrescriptionId(erxId int64) (*common.Treatment, error)
 	GetTreatmentsForPatient(patientId int64) ([]*common.Treatment, error)
 	GetTreatmentFromId(treatmentId int64) (*common.Treatment, error)
-	GetActiveTreatmentPlanIdForPatient(patientId int64) (int64, error)
+	GetActiveTreatmentPlanForPatient(patientId int64) (*common.TreatmentPlan, error)
 	UpdateTreatmentWithPharmacyAndErxId(treatments []*common.Treatment, pharmacySentTo *pharmacy.PharmacyData, doctorId int64) error
 	AddErxStatusEvent(treatmentIds []int64, prescriptionStatus common.StatusEvent) error
 	GetPrescriptionStatusEventsForPatient(patientId int64) ([]common.StatusEvent, error)

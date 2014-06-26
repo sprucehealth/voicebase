@@ -1,7 +1,6 @@
 package api
 
 import (
-	"carefront/app_url"
 	"carefront/common"
 	"carefront/encoding"
 	pharmacyService "carefront/libs/pharmacy"
@@ -535,69 +534,6 @@ func (d *DataService) DeactivatePreviousDiagnosisForPatientVisit(treatmentPlanId
 	return err
 }
 
-func (d *DataService) RecordDoctorAssignmentToPatientVisit(patientVisitId, doctorId int64) error {
-	tx, err := d.db.Begin()
-	if err != nil {
-		return err
-	}
-
-	// update any previous assignment to be inactive
-	_, err = tx.Exec(`update patient_visit_care_provider_assignment set status=? where patient_visit_id=?`, STATUS_INACTIVE, patientVisitId)
-	if err != nil {
-		tx.Rollback()
-		return err
-	}
-
-	// insert an assignment into table
-	_, err = tx.Exec(`insert into patient_visit_care_provider_assignment (role_type_id, provider_id, patient_visit_id, status) 
-							values (?, ?, ?, ?)`, d.roleTypeMapping[DOCTOR_ROLE], doctorId, patientVisitId, STATUS_ACTIVE)
-	if err != nil {
-		tx.Rollback()
-		return err
-	}
-
-	// currently assign case to the same doctor until we have a better way to manage when a case is assigned to a doctor
-	patientCaseId, err := d.GetPatientCaseIdFromPatientVisitId(patientVisitId)
-	if err != nil {
-		tx.Rollback()
-		return err
-	}
-	_, err = tx.Exec(`insert into patient_case_care_provider_assignment (patient_case_id, provider_id, role_type_id, status) values (?,?,?,?)`, patientCaseId, doctorId, d.roleTypeMapping[DOCTOR_ROLE], STATUS_ACTIVE)
-	if err != nil {
-		tx.Rollback()
-		return err
-	}
-
-	return tx.Commit()
-}
-
-func (d *DataService) GetDoctorAssignedToPatientVisit(patientVisitId int64) (*common.Doctor, error) {
-	var firstName, lastName, status, gender string
-	var doctorId, accountId encoding.ObjectId
-	var dobYear, dobMonth, dobDay int
-
-	err := d.db.QueryRow(`select doctor.id,account_id, first_name, last_name, gender, dob_year, dob_month, dob_day, doctor.status from doctor 
-		inner join patient_visit_care_provider_assignment on provider_id = doctor.id
-		where role_type_id = ? and patient_visit_id = ? and patient_visit_care_provider_assignment.status = 'ACTIVE'`, d.roleTypeMapping[DOCTOR_ROLE], patientVisitId).Scan(&doctorId, &accountId, &firstName, &lastName, &gender, &dobYear, &dobMonth, &dobDay, &status)
-	if err != nil {
-		return nil, err
-	}
-	doctor := &common.Doctor{
-		DoctorId:  doctorId,
-		FirstName: firstName,
-		LastName:  lastName,
-		Status:    status,
-		Gender:    gender,
-		Dob:       encoding.Dob{Year: dobYear, Month: dobMonth, Day: dobDay},
-		AccountId: accountId,
-	}
-
-	doctor.LargeThumbnailUrl = app_url.GetLargeThumbnail(DOCTOR_ROLE, doctor.DoctorId.Int64())
-	doctor.SmallThumbnailUrl = app_url.GetSmallThumbnail(DOCTOR_ROLE, doctor.DoctorId.Int64())
-
-	return doctor, nil
-}
-
 func (d *DataService) GetAdvicePointsForTreatmentPlan(treatmentPlanId int64) ([]*common.DoctorInstructionItem, error) {
 	rows, err := d.db.Query(`select id, dr_advice_point_id, advice.text from advice 
 			where treatment_plan_id = ?  and advice.status = ?`, treatmentPlanId, STATUS_ACTIVE)
@@ -815,33 +751,33 @@ func (d *DataService) GetTreatmentsForPatient(patientId int64) ([]*common.Treatm
 	return treatments, rows.Err()
 }
 
-func (d *DataService) GetActiveTreatmentPlanIdForPatient(patientId int64) (int64, error) {
-	var treatmentPlanIds []int64
-	rows, err := d.db.Query(`select id from treatment_plan where patient_id = ? and status = ?`, patientId, STATUS_ACTIVE)
+func (d *DataService) GetActiveTreatmentPlanForPatient(patientId int64) (*common.TreatmentPlan, error) {
+	var treatmentPlans []*common.TreatmentPlan
+	rows, err := d.db.Query(`select id, doctor_id from treatment_plan where patient_id = ? and status = ?`, patientId, STATUS_ACTIVE)
 	if err != nil {
-		return 0, err
+		return nil, err
 	}
 	defer rows.Close()
 
 	for rows.Next() {
-		var treatmentPlanId int64
-		if err := rows.Scan(&treatmentPlanId); err != nil {
-			return 0, err
+		var treatmentPlan common.TreatmentPlan
+		if err := rows.Scan(&treatmentPlan.Id, &treatmentPlan.DoctorId); err != nil {
+			return nil, err
 		}
-		treatmentPlanIds = append(treatmentPlanIds, treatmentPlanId)
+		treatmentPlans = append(treatmentPlans, &treatmentPlan)
 	}
 	if rows.Err() != nil {
-		return 0, rows.Err()
+		return nil, rows.Err()
 	}
 
-	switch l := len(treatmentPlanIds); {
+	switch l := len(treatmentPlans); {
 	case l == 0:
-		return 0, NoRowsError
+		return nil, NoRowsError
 	case l == 1:
-		return treatmentPlanIds[0], nil
+		return treatmentPlans[0], nil
 	}
 
-	return 0, fmt.Errorf("Expected 1 active treatment plan id instead got %d", len(treatmentPlanIds))
+	return nil, fmt.Errorf("Expected 1 active treatment plan  instead got %d", len(treatmentPlans))
 }
 
 func (d *DataService) GetTreatmentBasedOnPrescriptionId(erxId int64) (*common.Treatment, error) {

@@ -262,7 +262,7 @@ func (d *DataService) UpdatePatientWithERxPatientId(patientId, erxPatientId int6
 }
 
 func (d *DataService) GetCareTeamForPatient(patientId int64) (*common.PatientCareTeam, error) {
-	rows, err := d.db.Query(`select role_type_tag, creation_date, expires, provider_id, status, patient_id
+	rows, err := d.db.Query(`select role_type_tag, creation_date, expires, provider_id, status, patient_id, health_condition_id
 								from patient_care_provider_assignment 
 									inner join role_type on role_type.id = role_type_id 
 									where patient_id=?`, patientId)
@@ -281,7 +281,8 @@ func (d *DataService) GetCareTeamForPatient(patientId int64) (*common.PatientCar
 			&assignment.Expires,
 			&assignment.ProviderId,
 			&assignment.Status,
-			&assignment.PatientId)
+			&assignment.PatientId,
+			&assignment.HealthConditionId)
 		if err != nil {
 			return nil, err
 		}
@@ -291,14 +292,14 @@ func (d *DataService) GetCareTeamForPatient(patientId int64) (*common.PatientCar
 	return &careTeam, rows.Err()
 }
 
-func (d *DataService) CreateCareTeamForPatientWithPrimaryDoctor(patientId, doctorId int64) (*common.PatientCareTeam, error) {
-	return d.createProviderAssignmentForPatient(patientId, doctorId, d.roleTypeMapping[DOCTOR_ROLE])
+func (d *DataService) CreateCareTeamForPatientWithPrimaryDoctor(patientId, healthConditionId, doctorId int64) (*common.PatientCareTeam, error) {
+	return d.createProviderAssignmentForPatient(patientId, doctorId, d.roleTypeMapping[DOCTOR_ROLE], healthConditionId)
 }
 
-func (d *DataService) createProviderAssignmentForPatient(patientId, providerId, providerRoleId int64) (*common.PatientCareTeam, error) {
+func (d *DataService) createProviderAssignmentForPatient(patientId, providerId, providerRoleId, healthConditionId int64) (*common.PatientCareTeam, error) {
 
 	// create new assignment for patient
-	_, err := d.db.Exec("insert into patient_care_provider_assignment (patient_id, role_type_id, provider_id, status) values (?, ?, ?, 'PRIMARY')", patientId, providerRoleId, providerId)
+	_, err := d.db.Exec("insert into patient_care_provider_assignment (patient_id, health_condition_id, role_type_id, provider_id, status) values (?, ?, ?, ?, 'PRIMARY')", patientId, healthConditionId, providerRoleId, providerId)
 	if err != nil {
 		return nil, err
 	}
@@ -306,27 +307,8 @@ func (d *DataService) createProviderAssignmentForPatient(patientId, providerId, 
 	return d.GetCareTeamForPatient(patientId)
 }
 
-func (d *DataService) CreateCareTeamForPatient(patientId int64) (*common.PatientCareTeam, error) {
-	// identify providers in the state required. Assuming for now that we can only have one provider in the
-	// state of CA. The reason for this assumption is that we have not yet figured out how best to deal with
-	// multiple active doctors in how they will be assigned to the patient.
-	// TODO : Update care team formation when we have more than 1 doctor that we can have as active in our system
-	var providerId, providerRoleId int64
-	err := d.db.QueryRow(`select provider_id, role_type_id from care_provider_state_elligibility 
-					inner join care_providing_state on care_providing_state_id = care_providing_state.id
-					where state = 'CA'`).Scan(&providerId, &providerRoleId)
-
-	if err == sql.ErrNoRows {
-		return nil, NoElligibileProviderInState
-	} else if err != nil {
-		return nil, err
-	}
-
-	return d.createProviderAssignmentForPatient(patientId, providerId, providerRoleId)
-}
-
-func (d *DataService) AddDoctorToCareTeamForPatient(patientId, doctorId int64) error {
-	_, err := d.db.Exec(`insert into patient_care_provider_assignment (patient_id, provider_id, role_type_id, status) values (?,?,?,?)`, patientId, doctorId, d.roleTypeMapping[DOCTOR_ROLE], STATUS_ACTIVE)
+func (d *DataService) AddDoctorToCareTeamForPatient(patientId, healthConditionId, doctorId int64) error {
+	_, err := d.db.Exec(`insert into patient_care_provider_assignment (patient_id, health_condition_id, provider_id, role_type_id, status) values (?,?,?,?,?)`, patientId, healthConditionId, doctorId, d.roleTypeMapping[DOCTOR_ROLE], STATUS_ACTIVE)
 	return err
 }
 
