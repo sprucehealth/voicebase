@@ -326,7 +326,7 @@ func buildRESTAPI(conf *Config, dataApi api.DataAPI, authAPI api.AuthAPI, metric
 	mux.Handle("/v1/doctor/visit/regimen", doctor_treatment_plan.NewRegimenHandler(dataApi))
 	mux.Handle("/v1/doctor/visit/advice", doctor_treatment_plan.NewAdviceHandler(dataApi))
 	mux.Handle("/v1/doctor/saved_messages", apiservice.NewDoctorSavedMessageHandler(dataApi))
-	mux.Handle("v1/doctor/patient/case/claim", doctor_queue.NewClaimPatientCaseAccessHandler(dataApi))
+	mux.Handle("v1/doctor/patient/case/claim", doctor_queue.NewClaimPatientCaseAccessHandler(dataApi, metricsRegistry.Scope("doctor_queue")))
 
 	// Miscellaneous APIs
 	mux.Handle("/v1/content", staticContentHandler)

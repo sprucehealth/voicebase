@@ -209,7 +209,7 @@ func CreateRandomPatientVisitInState(state string, t *testing.T, testData *TestD
 }
 
 func GrantDoctorAccessToPatientCase(t *testing.T, testData *TestData, doctor *common.Doctor, patientCaseId int64) {
-	grantAccessHandler := doctor_queue.NewClaimPatientCaseAccessHandler(testData.DataApi)
+	grantAccessHandler := doctor_queue.NewClaimPatientCaseAccessHandler(testData.DataApi, metrics.NewRegistry())
 	doctorServer := httptest.NewServer(grantAccessHandler)
 
 	jsonData, err := json.Marshal(&doctor_queue.ClaimPatientCaseRequestData{

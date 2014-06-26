@@ -6,21 +6,33 @@ import (
 	"carefront/common"
 	"carefront/encoding"
 	"net/http"
+
+	"github.com/samuel/go-metrics/metrics"
 )
 
 // claimPatientCaseAccessHandler is an API handler to grant temporary access to a patient file
 // for a doctor to claim the patient case
 type claimPatientCaseAccessHandler struct {
-	dataAPI api.DataAPI
+	dataAPI          api.DataAPI
+	tempClaimSuccess metrics.Counter
+	tempClaimFailure metrics.Counter
 }
 
 type ClaimPatientCaseRequestData struct {
 	PatientCaseId encoding.ObjectId `json:"case_id"`
 }
 
-func NewClaimPatientCaseAccessHandler(dataAPI api.DataAPI) *claimPatientCaseAccessHandler {
+func NewClaimPatientCaseAccessHandler(dataAPI api.DataAPI, statsRegistry metrics.Registry) *claimPatientCaseAccessHandler {
+	tempClaimSuccess := metrics.NewCounter()
+	tempClaimFailure := metrics.NewCounter()
+
+	statsRegistry.Add("temp_claim/success", tempClaimSuccess)
+	statsRegistry.Add("temp_claim/failure", tempClaimFailure)
+
 	return &claimPatientCaseAccessHandler{
-		dataAPI: dataAPI,
+		dataAPI:          dataAPI,
+		tempClaimSuccess: tempClaimSuccess,
+		tempClaimFailure: tempClaimFailure,
 	}
 }
 
@@ -79,9 +91,11 @@ func (c *claimPatientCaseAccessHandler) ServeHTTP(w http.ResponseWriter, r *http
 		return
 	} else if err := c.dataAPI.TemporarilyClaimCaseAndAssignDoctorToCaseAndPatient(doctorId, patientCase.Id.Int64(),
 		patientCase.PatientId.Int64(), ExpireDuration); err != nil {
+		c.tempClaimFailure.Inc(1)
 		apiservice.WriteError(err, w, r)
 		return
 	}
 
+	c.tempClaimSuccess.Inc(1)
 	apiservice.WriteJSONSuccess(w)
 }
