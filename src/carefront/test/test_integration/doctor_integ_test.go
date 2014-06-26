@@ -17,7 +17,6 @@ import (
 )
 
 func TestDoctorRegistration(t *testing.T) {
-
 	testData := SetupIntegrationTest(t)
 	defer TearDownIntegrationTest(t, testData)
 
@@ -25,7 +24,6 @@ func TestDoctorRegistration(t *testing.T) {
 }
 
 func TestDoctorAuthentication(t *testing.T) {
-
 	testData := SetupIntegrationTest(t)
 	defer TearDownIntegrationTest(t, testData)
 

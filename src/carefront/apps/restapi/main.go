@@ -290,6 +290,7 @@ func buildRESTAPI(conf *Config, dataApi api.DataAPI, authAPI api.AuthAPI, metric
 	mux.Handle("/v1/doctor/isauthenticated", apiservice.NewIsAuthenticatedHandler(authAPI))
 	mux.Handle("/v1/doctor/queue", doctor_queue.NewQueueHandler(dataApi))
 	mux.Handle("/v1/doctor/treatment/templates", doctor_treatment_plan.NewTreatmentTemplatesHandler(dataApi))
+	mux.Handle("/v1/doctor/saved_messages", apiservice.NewDoctorSavedMessageHandler(dataApi))
 
 	mux.Handle("/v1/doctor/rx/error", doctorPrescriptionErrorHandler)
 	mux.Handle("/v1/doctor/rx/error/resolve", doctorPrescriptionErrorIgnoreHandler)
