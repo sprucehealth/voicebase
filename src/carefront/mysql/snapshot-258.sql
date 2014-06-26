@@ -1,6 +1,6 @@
 -- MySQL dump 10.13  Distrib 5.6.17, for osx10.9 (x86_64)
 --
--- Host: 127.0.0.1    Database: database_5315
+-- Host: 127.0.0.1    Database: database_24167
 -- ------------------------------------------------------
 -- Server version	5.6.17
 
@@ -265,30 +265,6 @@ CREATE TABLE `diagnosis_strength` (
 /*!40101 SET character_set_client = @saved_cs_client */;
 
 --
--- Table structure for table `diagnosis_summary`
---
-
-DROP TABLE IF EXISTS `diagnosis_summary`;
-/*!40101 SET @saved_cs_client     = @@character_set_client */;
-/*!40101 SET character_set_client = utf8 */;
-CREATE TABLE `diagnosis_summary` (
-  `id` int(10) unsigned NOT NULL AUTO_INCREMENT,
-  `doctor_id` int(10) unsigned NOT NULL,
-  `summary` varchar(1000) NOT NULL,
-  `status` varchar(100) NOT NULL,
-  `treatment_plan_id` int(10) unsigned NOT NULL,
-  `creation_date` timestamp NOT NULL DEFAULT CURRENT_TIMESTAMP ON UPDATE CURRENT_TIMESTAMP,
-  `updated_by_doctor` tinyint(4) NOT NULL DEFAULT '0',
-  PRIMARY KEY (`id`),
-  UNIQUE KEY `treatment_plan_id_2` (`treatment_plan_id`),
-  KEY `doctor_id` (`doctor_id`),
-  KEY `treatment_plan_id` (`treatment_plan_id`),
-  CONSTRAINT `diagnosis_summary_ibfk_2` FOREIGN KEY (`doctor_id`) REFERENCES `doctor` (`id`),
-  CONSTRAINT `diagnosis_summary_ibfk_3` FOREIGN KEY (`treatment_plan_id`) REFERENCES `treatment_plan` (`id`) ON DELETE CASCADE
-) ENGINE=InnoDB DEFAULT CHARSET=utf8;
-/*!40101 SET character_set_client = @saved_cs_client */;
-
---
 -- Table structure for table `diagnosis_type`
 --
 
@@ -430,6 +406,23 @@ CREATE TABLE `doctor_queue` (
   PRIMARY KEY (`id`),
   KEY `doctor_id` (`doctor_id`),
   CONSTRAINT `doctor_queue_ibfk_1` FOREIGN KEY (`doctor_id`) REFERENCES `doctor` (`id`)
+) ENGINE=InnoDB DEFAULT CHARSET=utf8;
+/*!40101 SET character_set_client = @saved_cs_client */;
+
+--
+-- Table structure for table `doctor_saved_case_message`
+--
+
+DROP TABLE IF EXISTS `doctor_saved_case_message`;
+/*!40101 SET @saved_cs_client     = @@character_set_client */;
+/*!40101 SET character_set_client = utf8 */;
+CREATE TABLE `doctor_saved_case_message` (
+  `doctor_id` int(10) unsigned NOT NULL,
+  `message` text NOT NULL,
+  `creation_date` timestamp NOT NULL DEFAULT CURRENT_TIMESTAMP,
+  `modified_date` timestamp NOT NULL DEFAULT CURRENT_TIMESTAMP ON UPDATE CURRENT_TIMESTAMP,
+  PRIMARY KEY (`doctor_id`),
+  CONSTRAINT `doctor_saved_case_message_ibfk_1` FOREIGN KEY (`doctor_id`) REFERENCES `doctor` (`id`)
 ) ENGINE=InnoDB DEFAULT CHARSET=utf8;
 /*!40101 SET character_set_client = @saved_cs_client */;
 
@@ -2552,4 +2545,4 @@ CREATE TABLE `unlinked_dntf_treatment_status_events` (
 /*!40101 SET COLLATION_CONNECTION=@OLD_COLLATION_CONNECTION */;
 /*!40111 SET SQL_NOTES=@OLD_SQL_NOTES */;
 
--- Dump completed on 2014-06-24 19:06:55
+-- Dump completed on 2014-06-26 14:14:51
