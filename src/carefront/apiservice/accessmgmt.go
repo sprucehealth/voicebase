@@ -28,7 +28,8 @@ func ValidateDoctorAccessToPatientFile(doctorId, patientId int64, dataAPI api.Da
 }
 
 // ValidateReadAccessToPatientCase checks to ensure that the doctor has read access to the patient case. A doctor
-// has read access so long as the case is not temporarily claimed by another doctor for exclusive access
+// has read access so long as the the doctor is assigned to the patient as one of their doctors, and
+// the case is not temporarily claimed by another doctor for exclusive access
 func ValidateReadAccessToPatientCase(doctorId, patientId, patientCaseId int64, dataAPI api.DataAPI) error {
 	patientCase, err := dataAPI.GetPatientCaseFromId(patientCaseId)
 	if err != nil {
