@@ -56,7 +56,7 @@ func ValidateReadAccessToPatientCase(doctorId, patientId, patientCaseId int64, d
 	}
 
 	// if there is no exclusive access on the patient case, then the doctor can access case for
-	// reading so long as doctor can patient information
+	// reading so long as doctor can access global patient information
 	return ValidateDoctorAccessToPatientFile(doctorId, patientId, dataAPI)
 }
 
