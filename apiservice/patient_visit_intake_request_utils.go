@@ -1,8 +1,8 @@
 package apiservice
 
 import (
-	"carefront/api"
-	"carefront/info_intake"
+	"github.com/sprucehealth/backend/api"
+	"github.com/sprucehealth/backend/info_intake"
 	"encoding/json"
 )
 

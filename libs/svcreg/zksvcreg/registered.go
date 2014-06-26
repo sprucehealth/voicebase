@@ -5,9 +5,9 @@ import (
 	"log"
 	"time"
 
-	"carefront/libs/svcreg"
+	"github.com/sprucehealth/backend/libs/svcreg"
 
-	"github.com/samuel/go-zookeeper/zk"
+	"github.com/sprucehealth/backend/third_party/github.com/samuel/go-zookeeper/zk"
 )
 
 type registeredService struct {

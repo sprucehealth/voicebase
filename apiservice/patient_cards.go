@@ -1,17 +1,17 @@
 package apiservice
 
 import (
-	"carefront/address"
-	"carefront/api"
-	"carefront/common"
-	"carefront/libs/golog"
-	"carefront/libs/payment"
+	"github.com/sprucehealth/backend/address"
+	"github.com/sprucehealth/backend/api"
+	"github.com/sprucehealth/backend/common"
+	"github.com/sprucehealth/backend/libs/golog"
+	"github.com/sprucehealth/backend/libs/payment"
 	"encoding/json"
 	"net/http"
 	"sort"
 	"strconv"
 
-	"github.com/gorilla/schema"
+	"github.com/sprucehealth/backend/third_party/github.com/gorilla/schema"
 )
 
 type PatientCardsHandler struct {

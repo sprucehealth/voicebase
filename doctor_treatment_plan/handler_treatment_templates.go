@@ -1,10 +1,10 @@
 package doctor_treatment_plan
 
 import (
-	"carefront/api"
-	"carefront/apiservice"
-	"carefront/common"
-	"carefront/encoding"
+	"github.com/sprucehealth/backend/api"
+	"github.com/sprucehealth/backend/apiservice"
+	"github.com/sprucehealth/backend/common"
+	"github.com/sprucehealth/backend/encoding"
 	"net/http"
 )
 

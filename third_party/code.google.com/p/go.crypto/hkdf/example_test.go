@@ -6,7 +6,7 @@ package hkdf_test
 
 import (
 	"bytes"
-	"code.google.com/p/go.crypto/hkdf"
+	"github.com/sprucehealth/backend/third_party/code.google.com/p/go.crypto/hkdf"
 	"crypto/rand"
 	"crypto/sha256"
 	"fmt"

@@ -1,7 +1,7 @@
 package flags_test
 
 import (
-	"github.com/jessevdk/go-flags"
+	"github.com/sprucehealth/backend/third_party/github.com/jessevdk/go-flags"
 	"testing"
 	"bytes"
 	"strings"

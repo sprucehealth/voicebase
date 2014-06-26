@@ -14,14 +14,14 @@ import (
 	"testing"
 	"time"
 
-	"carefront/api"
-	"carefront/apiservice"
-	"carefront/common"
-	"carefront/doctor_treatment_plan"
-	"carefront/encoding"
-	"carefront/libs/erx"
-	"carefront/patient_file"
-	"carefront/patient_visit"
+	"github.com/sprucehealth/backend/api"
+	"github.com/sprucehealth/backend/apiservice"
+	"github.com/sprucehealth/backend/common"
+	"github.com/sprucehealth/backend/doctor_treatment_plan"
+	"github.com/sprucehealth/backend/encoding"
+	"github.com/sprucehealth/backend/libs/erx"
+	"github.com/sprucehealth/backend/patient_file"
+	"github.com/sprucehealth/backend/patient_visit"
 )
 
 func SignupRandomTestDoctor(t *testing.T, testData *TestData) (signedupDoctorResponse *apiservice.DoctorSignedupResponse, email, password string) {

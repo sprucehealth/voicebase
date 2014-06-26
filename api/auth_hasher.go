@@ -1,7 +1,7 @@
 package api
 
 import (
-	"code.google.com/p/go.crypto/bcrypt"
+	"github.com/sprucehealth/backend/third_party/code.google.com/p/go.crypto/bcrypt"
 )
 
 const defaultBcryptCost = 10

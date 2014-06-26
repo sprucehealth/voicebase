@@ -5,10 +5,10 @@
 package openpgp
 
 import (
-	"code.google.com/p/go.crypto/openpgp/armor"
-	"code.google.com/p/go.crypto/openpgp/errors"
-	"code.google.com/p/go.crypto/openpgp/packet"
-	"code.google.com/p/go.crypto/openpgp/s2k"
+	"github.com/sprucehealth/backend/third_party/code.google.com/p/go.crypto/openpgp/armor"
+	"github.com/sprucehealth/backend/third_party/code.google.com/p/go.crypto/openpgp/errors"
+	"github.com/sprucehealth/backend/third_party/code.google.com/p/go.crypto/openpgp/packet"
+	"github.com/sprucehealth/backend/third_party/code.google.com/p/go.crypto/openpgp/s2k"
 	"crypto"
 	"hash"
 	"io"

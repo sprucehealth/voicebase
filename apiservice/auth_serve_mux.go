@@ -1,17 +1,17 @@
 package apiservice
 
 import (
-	"carefront/api"
-	"carefront/common"
-	"carefront/libs/golog"
-	"carefront/libs/idgen"
+	"github.com/sprucehealth/backend/api"
+	"github.com/sprucehealth/backend/common"
+	"github.com/sprucehealth/backend/libs/golog"
+	"github.com/sprucehealth/backend/libs/idgen"
 	"net/http"
 	"runtime"
 	"strconv"
 	"strings"
 	"time"
 
-	"github.com/samuel/go-metrics/metrics"
+	"github.com/sprucehealth/backend/third_party/github.com/samuel/go-metrics/metrics"
 )
 
 // If a handler conforms to this interface and returns true then

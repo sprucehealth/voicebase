@@ -5,7 +5,7 @@ import (
 	"net/rpc"
 	"sync"
 
-	"github.com/samuel/go-metrics/metrics"
+	"github.com/sprucehealth/backend/third_party/github.com/samuel/go-metrics/metrics"
 )
 
 type ClientBuilder interface {

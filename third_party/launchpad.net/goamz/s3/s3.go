@@ -16,7 +16,7 @@ import (
 	"fmt"
 	"io"
 	"io/ioutil"
-	"launchpad.net/goamz/aws"
+	"github.com/sprucehealth/backend/third_party/launchpad.net/goamz/aws"
 	"log"
 	"net"
 	"net/http"

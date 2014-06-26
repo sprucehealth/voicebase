@@ -6,7 +6,7 @@ import (
 	"bytes"
 	"encoding/json"
 	"fmt"
-	"github.com/bmizerany/aws4"
+	"github.com/sprucehealth/backend/third_party/github.com/bmizerany/aws4"
 	"net/http"
 	"strings"
 )

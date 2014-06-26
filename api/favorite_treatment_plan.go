@@ -1,8 +1,8 @@
 package api
 
 import (
-	"carefront/common"
-	"carefront/encoding"
+	"github.com/sprucehealth/backend/common"
+	"github.com/sprucehealth/backend/encoding"
 	"database/sql"
 )
 

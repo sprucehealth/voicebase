@@ -2,7 +2,7 @@ package passreset
 
 import (
 	"bytes"
-	"carefront/www"
+	"github.com/sprucehealth/backend/www"
 	"html/template"
 	"io"
 )

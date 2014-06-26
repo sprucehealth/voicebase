@@ -1,6 +1,6 @@
 package apiservice
 
-import "carefront/common"
+import "github.com/sprucehealth/backend/common"
 
 type RxTransmissionErrorResolvedEvent struct {
 	DoctorId  int64

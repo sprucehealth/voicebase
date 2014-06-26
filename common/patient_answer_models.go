@@ -1,7 +1,7 @@
 package common
 
 import (
-	"carefront/encoding"
+	"github.com/sprucehealth/backend/encoding"
 	"time"
 )
 

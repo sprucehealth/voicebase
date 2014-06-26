@@ -6,11 +6,11 @@ import (
 	"regexp"
 	"sort"
 
-	"launchpad.net/goamz/aws"
-	"launchpad.net/goamz/ec2"
-	"launchpad.net/goamz/ec2/ec2test"
-	"launchpad.net/goamz/testutil"
-	. "launchpad.net/gocheck"
+	"github.com/sprucehealth/backend/third_party/launchpad.net/goamz/aws"
+	"github.com/sprucehealth/backend/third_party/launchpad.net/goamz/ec2"
+	"github.com/sprucehealth/backend/third_party/launchpad.net/goamz/ec2/ec2test"
+	"github.com/sprucehealth/backend/third_party/launchpad.net/goamz/testutil"
+	. "github.com/sprucehealth/backend/third_party/launchpad.net/gocheck"
 )
 
 // LocalServer represents a local ec2test fake server.

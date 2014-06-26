@@ -57,16 +57,16 @@
 package patient
 
 import (
-	"carefront/api"
-	"carefront/apiservice"
-	"carefront/common"
-	"carefront/libs/dispatch"
-	"carefront/libs/golog"
-	"carefront/libs/pharmacy"
+	"github.com/sprucehealth/backend/api"
+	"github.com/sprucehealth/backend/apiservice"
+	"github.com/sprucehealth/backend/common"
+	"github.com/sprucehealth/backend/libs/dispatch"
+	"github.com/sprucehealth/backend/libs/golog"
+	"github.com/sprucehealth/backend/libs/pharmacy"
 	"net/http"
 	"strings"
 
-	"github.com/gorilla/schema"
+	"github.com/sprucehealth/backend/third_party/github.com/gorilla/schema"
 )
 
 type AuthenticationHandler struct {

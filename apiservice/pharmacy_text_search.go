@@ -1,16 +1,16 @@
 package apiservice
 
 import (
-	"carefront/api"
-	"carefront/libs/golog"
-	"carefront/libs/maps"
-	"carefront/libs/pharmacy"
+	"github.com/sprucehealth/backend/api"
+	"github.com/sprucehealth/backend/libs/golog"
+	"github.com/sprucehealth/backend/libs/maps"
+	"github.com/sprucehealth/backend/libs/pharmacy"
 	"net/http"
 	"strconv"
 	"strings"
 
-	"github.com/gorilla/schema"
-	"github.com/samuel/go-cache/cache"
+	"github.com/sprucehealth/backend/third_party/github.com/gorilla/schema"
+	"github.com/sprucehealth/backend/third_party/github.com/samuel/go-cache/cache"
 )
 
 var locationCache cache.Cache = cache.NewLFUCache(2048)

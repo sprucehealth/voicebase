@@ -4,7 +4,7 @@ import (
 	"crypto/hmac"
 	"crypto/sha1"
 	"encoding/base64"
-	"launchpad.net/goamz/aws"
+	"github.com/sprucehealth/backend/third_party/launchpad.net/goamz/aws"
 )
 
 var b64 = base64.StdEncoding

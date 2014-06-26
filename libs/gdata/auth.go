@@ -3,7 +3,7 @@ package gdata
 import (
 	"time"
 
-	"code.google.com/p/goauth2/oauth"
+	"github.com/sprucehealth/backend/third_party/code.google.com/p/goauth2/oauth"
 )
 
 const (

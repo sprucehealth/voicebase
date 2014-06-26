@@ -1,7 +1,7 @@
 package syslogparser
 
 import (
-	. "launchpad.net/gocheck"
+	. "github.com/sprucehealth/backend/third_party/launchpad.net/gocheck"
 	"testing"
 )
 

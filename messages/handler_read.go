@@ -1,9 +1,9 @@
 package messages
 
 import (
-	"carefront/api"
-	"carefront/apiservice"
-	"carefront/libs/dispatch"
+	"github.com/sprucehealth/backend/api"
+	"github.com/sprucehealth/backend/apiservice"
+	"github.com/sprucehealth/backend/libs/dispatch"
 	"net/http"
 )
 

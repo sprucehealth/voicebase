@@ -1,13 +1,13 @@
 package api
 
 import (
-	"carefront/common"
-	"carefront/libs/aws"
+	"github.com/sprucehealth/backend/common"
+	"github.com/sprucehealth/backend/libs/aws"
 	"net/http"
 	"time"
 
-	goamz "launchpad.net/goamz/aws"
-	"launchpad.net/goamz/s3"
+	goamz "github.com/sprucehealth/backend/third_party/launchpad.net/goamz/aws"
+	"github.com/sprucehealth/backend/third_party/launchpad.net/goamz/s3"
 )
 
 // TODO Need a better way of decentralizing access to different buckets

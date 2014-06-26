@@ -1,10 +1,10 @@
 package passreset
 
 import (
-	"carefront/api"
-	"carefront/email"
-	"carefront/libs/golog"
-	"carefront/www"
+	"github.com/sprucehealth/backend/api"
+	"github.com/sprucehealth/backend/email"
+	"github.com/sprucehealth/backend/libs/golog"
+	"github.com/sprucehealth/backend/www"
 	"crypto/rand"
 	"fmt"
 	"math/big"
@@ -12,9 +12,9 @@ import (
 	"net/url"
 	"strings"
 
-	"github.com/gorilla/mux"
-	"github.com/samuel/go-metrics/metrics"
-	"github.com/subosito/twilio"
+	"github.com/sprucehealth/backend/third_party/github.com/gorilla/mux"
+	"github.com/sprucehealth/backend/third_party/github.com/samuel/go-metrics/metrics"
+	"github.com/sprucehealth/backend/third_party/github.com/subosito/twilio"
 )
 
 const (

@@ -2,12 +2,12 @@ package test_integration
 
 import (
 	"bytes"
-	"carefront/address"
-	"carefront/common"
-	"carefront/encoding"
-	"carefront/libs/erx"
-	"carefront/libs/pharmacy"
-	"carefront/patient_file"
+	"github.com/sprucehealth/backend/address"
+	"github.com/sprucehealth/backend/common"
+	"github.com/sprucehealth/backend/encoding"
+	"github.com/sprucehealth/backend/libs/erx"
+	"github.com/sprucehealth/backend/libs/pharmacy"
+	"github.com/sprucehealth/backend/patient_file"
 	"encoding/json"
 	"net/http"
 	"net/http/httptest"

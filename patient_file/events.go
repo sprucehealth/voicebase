@@ -1,6 +1,6 @@
 package patient_file
 
-import "carefront/common"
+import "github.com/sprucehealth/backend/common"
 
 type PatientVisitOpenedEvent struct {
 	PatientVisit *common.PatientVisit

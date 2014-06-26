@@ -1,8 +1,8 @@
 package notify
 
 import (
-	"carefront/api"
-	"carefront/common"
+	"github.com/sprucehealth/backend/api"
+	"github.com/sprucehealth/backend/common"
 )
 
 // ByCommunicationPrefernce represents a sorting utility to sort communication preferences

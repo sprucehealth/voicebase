@@ -1,13 +1,13 @@
 package apiservice
 
 import (
-	"carefront/api"
-	"carefront/common"
-	"carefront/libs/erx"
-	"carefront/surescripts"
+	"github.com/sprucehealth/backend/api"
+	"github.com/sprucehealth/backend/common"
+	"github.com/sprucehealth/backend/libs/erx"
+	"github.com/sprucehealth/backend/surescripts"
 	"net/http"
 
-	"github.com/gorilla/schema"
+	"github.com/sprucehealth/backend/third_party/github.com/gorilla/schema"
 )
 
 type NewTreatmentHandler struct {

@@ -2,10 +2,10 @@ package test_treatment_plan
 
 import (
 	"bytes"
-	"carefront/api"
-	"carefront/apiservice"
-	"carefront/doctor_treatment_plan"
-	"carefront/test/test_integration"
+	"github.com/sprucehealth/backend/api"
+	"github.com/sprucehealth/backend/apiservice"
+	"github.com/sprucehealth/backend/doctor_treatment_plan"
+	"github.com/sprucehealth/backend/test/test_integration"
 	"encoding/json"
 	"net/http"
 	"net/http/httptest"

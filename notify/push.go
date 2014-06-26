@@ -1,8 +1,8 @@
 package notify
 
 import (
-	"carefront/common/config"
-	"carefront/libs/golog"
+	"github.com/sprucehealth/backend/common/config"
+	"github.com/sprucehealth/backend/libs/golog"
 )
 
 func (n *NotificationManager) pushNotificationToUser(accountId int64, event interface{}, notificationCount int64) error {

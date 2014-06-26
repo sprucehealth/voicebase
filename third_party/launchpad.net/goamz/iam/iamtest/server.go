@@ -7,7 +7,7 @@ import (
 	"encoding/json"
 	"encoding/xml"
 	"fmt"
-	"launchpad.net/goamz/iam"
+	"github.com/sprucehealth/backend/third_party/launchpad.net/goamz/iam"
 	"net"
 	"net/http"
 	"strings"

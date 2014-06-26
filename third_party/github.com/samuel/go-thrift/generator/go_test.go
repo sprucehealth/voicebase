@@ -6,7 +6,7 @@ package main
 
 // import (
 // 	"bytes"
-// 	"github.com/samuel/go-thrift/parser"
+// 	"github.com/sprucehealth/backend/third_party/github.com/samuel/go-thrift/parser"
 // 	"io"
 // 	"regexp"
 // 	"testing"

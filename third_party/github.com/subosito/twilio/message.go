@@ -2,7 +2,7 @@ package twilio
 
 import (
 	"errors"
-	un "github.com/subosito/underscore"
+	un "github.com/sprucehealth/backend/third_party/github.com/subosito/underscore"
 	"net/url"
 	"strings"
 )

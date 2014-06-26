@@ -1,8 +1,8 @@
 package apiservice
 
 import (
-	"carefront/common"
-	"carefront/libs/golog"
+	"github.com/sprucehealth/backend/common"
+	"github.com/sprucehealth/backend/libs/golog"
 	"net/http"
 	"strconv"
 	"strings"

@@ -1,10 +1,10 @@
 package info_intake
 
 import (
-	"carefront/common"
+	"github.com/sprucehealth/backend/common"
 	"fmt"
 
-	"github.com/SpruceHealth/mapstructure"
+	"github.com/sprucehealth/backend/third_party/github.com/SpruceHealth/mapstructure"
 )
 
 // This TypeRegistry contains all views pertaining to the DVisitReview namespace

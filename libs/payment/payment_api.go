@@ -1,6 +1,6 @@
 package payment
 
-import "carefront/common"
+import "github.com/sprucehealth/backend/common"
 
 type PaymentAPI interface {
 	CreateCustomerWithDefaultCard(token string) (*Customer, error)

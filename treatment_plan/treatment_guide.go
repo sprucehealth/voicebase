@@ -1,11 +1,11 @@
 package treatment_plan
 
 import (
-	"carefront/api"
-	"carefront/apiservice"
-	"carefront/app_url"
-	"carefront/common"
-	"carefront/libs/erx"
+	"github.com/sprucehealth/backend/api"
+	"github.com/sprucehealth/backend/apiservice"
+	"github.com/sprucehealth/backend/app_url"
+	"github.com/sprucehealth/backend/common"
+	"github.com/sprucehealth/backend/libs/erx"
 	"fmt"
 	"net/http"
 )

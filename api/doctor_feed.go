@@ -1,10 +1,10 @@
 package api
 
 import (
-	"carefront/app_url"
-	"carefront/common"
-	"carefront/libs/golog"
-	"carefront/settings"
+	"github.com/sprucehealth/backend/app_url"
+	"github.com/sprucehealth/backend/common"
+	"github.com/sprucehealth/backend/libs/golog"
+	"github.com/sprucehealth/backend/settings"
 	"fmt"
 	"time"
 )

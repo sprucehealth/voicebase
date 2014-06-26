@@ -1,14 +1,14 @@
 package main
 
 import (
-	"carefront/libs/golog"
+	"github.com/sprucehealth/backend/libs/golog"
 	"crypto/tls"
 	"log"
 	"net"
 	"net/http"
 	"time"
 
-	"github.com/SpruceHealth/go-proxy-protocol/proxyproto"
+	"github.com/sprucehealth/backend/third_party/github.com/SpruceHealth/go-proxy-protocol/proxyproto"
 )
 
 func serve(conf *Config, hand http.Handler) {

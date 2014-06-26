@@ -2,13 +2,13 @@ package demo
 
 import (
 	"bytes"
-	"carefront/api"
-	"carefront/apiservice"
-	"carefront/common"
-	"carefront/info_intake"
-	"carefront/libs/golog"
-	patientApiService "carefront/patient"
-	"carefront/patient_visit"
+	"github.com/sprucehealth/backend/api"
+	"github.com/sprucehealth/backend/apiservice"
+	"github.com/sprucehealth/backend/common"
+	"github.com/sprucehealth/backend/info_intake"
+	"github.com/sprucehealth/backend/libs/golog"
+	patientApiService "github.com/sprucehealth/backend/patient"
+	"github.com/sprucehealth/backend/patient_visit"
 	"encoding/json"
 	"fmt"
 	"io/ioutil"
@@ -16,7 +16,7 @@ import (
 	"net/url"
 	"time"
 
-	"github.com/gorilla/schema"
+	"github.com/sprucehealth/backend/third_party/github.com/gorilla/schema"
 )
 
 type Handler struct {

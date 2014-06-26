@@ -1,12 +1,12 @@
 package apiservice
 
 import (
-	"carefront/api"
-	"carefront/libs/erx"
-	"carefront/libs/pharmacy"
+	"github.com/sprucehealth/backend/api"
+	"github.com/sprucehealth/backend/libs/erx"
+	"github.com/sprucehealth/backend/libs/pharmacy"
 	"net/http"
 
-	"github.com/gorilla/schema"
+	"github.com/sprucehealth/backend/third_party/github.com/gorilla/schema"
 )
 
 type DoctorPharmacySearchHandler struct {

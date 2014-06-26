@@ -1,11 +1,11 @@
 package main
 
 import (
-	"carefront/libs/cmd"
-	"carefront/libs/cmd/cryptsetup"
-	"carefront/libs/cmd/lvm"
-	"carefront/libs/cmd/mount"
-	"carefront/libs/cmd/xfs"
+	"github.com/sprucehealth/backend/libs/cmd"
+	"github.com/sprucehealth/backend/libs/cmd/cryptsetup"
+	"github.com/sprucehealth/backend/libs/cmd/lvm"
+	"github.com/sprucehealth/backend/libs/cmd/mount"
+	"github.com/sprucehealth/backend/libs/cmd/xfs"
 	"flag"
 	"fmt"
 	"io/ioutil"

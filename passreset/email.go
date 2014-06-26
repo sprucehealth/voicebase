@@ -1,8 +1,8 @@
 package passreset
 
 import (
-	"carefront/api"
-	"carefront/email"
+	"github.com/sprucehealth/backend/api"
+	"github.com/sprucehealth/backend/email"
 	"fmt"
 	"net/url"
 )

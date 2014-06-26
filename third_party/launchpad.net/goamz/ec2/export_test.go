@@ -1,7 +1,7 @@
 package ec2
 
 import (
-	"launchpad.net/goamz/aws"
+	"github.com/sprucehealth/backend/third_party/launchpad.net/goamz/aws"
 	"time"
 )
 

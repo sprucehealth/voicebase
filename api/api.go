@@ -1,14 +1,14 @@
 package api
 
 import (
-	"carefront/info_intake"
-	"carefront/libs/pharmacy"
+	"github.com/sprucehealth/backend/info_intake"
+	"github.com/sprucehealth/backend/libs/pharmacy"
 	"errors"
 	"net/http"
 	"reflect"
 	"time"
 
-	"carefront/common"
+	"github.com/sprucehealth/backend/common"
 )
 
 const (

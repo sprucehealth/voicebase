@@ -12,7 +12,7 @@ import (
 	"appengine"
 	"appengine/memcache"
 
-	"code.google.com/p/goauth2/oauth"
+	"github.com/sprucehealth/backend/third_party/code.google.com/p/goauth2/oauth"
 )
 
 // cache implementss TokenCache using memcache to store AccessToken

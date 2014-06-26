@@ -1,10 +1,10 @@
 package erx
 
 import (
-	"carefront/common"
-	"carefront/encoding"
-	"carefront/libs/golog"
-	pharmacySearch "carefront/libs/pharmacy"
+	"github.com/sprucehealth/backend/common"
+	"github.com/sprucehealth/backend/encoding"
+	"github.com/sprucehealth/backend/libs/golog"
+	pharmacySearch "github.com/sprucehealth/backend/libs/pharmacy"
 	"errors"
 	"fmt"
 	"os"
@@ -12,7 +12,7 @@ import (
 	"strconv"
 	"strings"
 
-	"github.com/samuel/go-metrics/metrics"
+	"github.com/sprucehealth/backend/third_party/github.com/samuel/go-metrics/metrics"
 )
 
 type DoseSpotService struct {

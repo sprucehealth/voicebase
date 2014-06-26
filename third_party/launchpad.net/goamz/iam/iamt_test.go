@@ -1,10 +1,10 @@
 package iam_test
 
 import (
-	"launchpad.net/goamz/aws"
-	"launchpad.net/goamz/iam"
-	"launchpad.net/goamz/iam/iamtest"
-	. "launchpad.net/gocheck"
+	"github.com/sprucehealth/backend/third_party/launchpad.net/goamz/aws"
+	"github.com/sprucehealth/backend/third_party/launchpad.net/goamz/iam"
+	"github.com/sprucehealth/backend/third_party/launchpad.net/goamz/iam/iamtest"
+	. "github.com/sprucehealth/backend/third_party/launchpad.net/gocheck"
 )
 
 // LocalServer represents a local ec2test fake server.

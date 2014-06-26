@@ -1,7 +1,7 @@
 package homelog
 
 import (
-	"carefront/app_url"
+	"github.com/sprucehealth/backend/app_url"
 	"time"
 )
 

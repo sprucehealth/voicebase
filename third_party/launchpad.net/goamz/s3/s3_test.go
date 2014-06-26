@@ -6,10 +6,10 @@ import (
 	"net/http"
 	"testing"
 
-	"launchpad.net/goamz/aws"
-	"launchpad.net/goamz/s3"
-	"launchpad.net/goamz/testutil"
-	. "launchpad.net/gocheck"
+	"github.com/sprucehealth/backend/third_party/launchpad.net/goamz/aws"
+	"github.com/sprucehealth/backend/third_party/launchpad.net/goamz/s3"
+	"github.com/sprucehealth/backend/third_party/launchpad.net/goamz/testutil"
+	. "github.com/sprucehealth/backend/third_party/launchpad.net/gocheck"
 	"time"
 )
 

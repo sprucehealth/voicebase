@@ -2,7 +2,7 @@ package dydb_test
 
 import (
 	"fmt"
-	"github.com/bmizerany/aws4/dydb"
+	"github.com/sprucehealth/backend/third_party/github.com/bmizerany/aws4/dydb"
 	"log"
 )
 

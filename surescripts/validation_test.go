@@ -1,7 +1,7 @@
 package surescripts
 
 import (
-	"carefront/encoding"
+	"github.com/sprucehealth/backend/encoding"
 	"testing"
 )
 

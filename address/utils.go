@@ -1,8 +1,8 @@
 package address
 
 import (
-	"carefront/api"
-	"carefront/common"
+	"github.com/sprucehealth/backend/api"
+	"github.com/sprucehealth/backend/common"
 	"errors"
 	"fmt"
 	"strconv"

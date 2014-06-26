@@ -9,9 +9,9 @@ import (
 	"strconv"
 	"testing"
 
-	"carefront/api"
-	"carefront/apiservice"
-	"carefront/patient_visit"
+	"github.com/sprucehealth/backend/api"
+	"github.com/sprucehealth/backend/apiservice"
+	"github.com/sprucehealth/backend/patient_visit"
 )
 
 type AnswerIntakeHandler struct {

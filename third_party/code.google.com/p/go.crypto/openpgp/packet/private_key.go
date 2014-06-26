@@ -6,9 +6,9 @@ package packet
 
 import (
 	"bytes"
-	"code.google.com/p/go.crypto/openpgp/elgamal"
-	"code.google.com/p/go.crypto/openpgp/errors"
-	"code.google.com/p/go.crypto/openpgp/s2k"
+	"github.com/sprucehealth/backend/third_party/code.google.com/p/go.crypto/openpgp/elgamal"
+	"github.com/sprucehealth/backend/third_party/code.google.com/p/go.crypto/openpgp/errors"
+	"github.com/sprucehealth/backend/third_party/code.google.com/p/go.crypto/openpgp/s2k"
 	"crypto/cipher"
 	"crypto/dsa"
 	"crypto/rsa"

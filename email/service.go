@@ -1,7 +1,7 @@
 package email
 
 import (
-	"carefront/libs/golog"
+	"github.com/sprucehealth/backend/libs/golog"
 	"crypto/tls"
 	"errors"
 	"net"
@@ -9,7 +9,7 @@ import (
 	"net/smtp"
 	"time"
 
-	"github.com/samuel/go-metrics/metrics"
+	"github.com/sprucehealth/backend/third_party/github.com/samuel/go-metrics/metrics"
 )
 
 var (

@@ -1,11 +1,11 @@
 package apiservice
 
 import (
-	"carefront/api"
-	"carefront/common"
+	"github.com/sprucehealth/backend/api"
+	"github.com/sprucehealth/backend/common"
 	"net/http"
 
-	"github.com/gorilla/schema"
+	"github.com/sprucehealth/backend/third_party/github.com/gorilla/schema"
 )
 
 type DoctorAuthenticationHandler struct {

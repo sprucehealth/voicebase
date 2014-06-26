@@ -1,15 +1,15 @@
 package router
 
 import (
-	"carefront/api"
-	"carefront/email"
-	"carefront/passreset"
-	"carefront/www"
+	"github.com/sprucehealth/backend/api"
+	"github.com/sprucehealth/backend/email"
+	"github.com/sprucehealth/backend/passreset"
+	"github.com/sprucehealth/backend/www"
 	"net/http"
 
-	"github.com/gorilla/mux"
-	"github.com/samuel/go-metrics/metrics"
-	"github.com/subosito/twilio"
+	"github.com/sprucehealth/backend/third_party/github.com/gorilla/mux"
+	"github.com/sprucehealth/backend/third_party/github.com/samuel/go-metrics/metrics"
+	"github.com/sprucehealth/backend/third_party/github.com/subosito/twilio"
 )
 
 func New(dataAPI api.DataAPI, authAPI api.AuthAPI, twilioCli *twilio.Client, fromNumber string, emailService email.Service, fromEmail, webSubdomain string, metricsRegistry metrics.Registry) http.Handler {

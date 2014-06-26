@@ -8,7 +8,7 @@ import (
 	"os"
 	"path"
 
-	"github.com/cookieo9/resources-go"
+	"github.com/sprucehealth/backend/third_party/github.com/cookieo9/resources-go"
 )
 
 var (

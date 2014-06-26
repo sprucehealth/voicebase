@@ -2,15 +2,15 @@ package test_doctor_queue
 
 import (
 	"bytes"
-	"carefront/api"
-	"carefront/apiservice"
-	"carefront/common"
-	"carefront/doctor_queue"
-	"carefront/doctor_treatment_plan"
-	"carefront/encoding"
-	"carefront/patient_file"
-	"carefront/patient_visit"
-	"carefront/test/test_integration"
+	"github.com/sprucehealth/backend/api"
+	"github.com/sprucehealth/backend/apiservice"
+	"github.com/sprucehealth/backend/common"
+	"github.com/sprucehealth/backend/doctor_queue"
+	"github.com/sprucehealth/backend/doctor_treatment_plan"
+	"github.com/sprucehealth/backend/encoding"
+	"github.com/sprucehealth/backend/patient_file"
+	"github.com/sprucehealth/backend/patient_visit"
+	"github.com/sprucehealth/backend/test/test_integration"
 	"encoding/json"
 	"net/http"
 	"net/http/httptest"
@@ -18,7 +18,7 @@ import (
 	"testing"
 	"time"
 
-	"github.com/samuel/go-metrics/metrics"
+	"github.com/sprucehealth/backend/third_party/github.com/samuel/go-metrics/metrics"
 )
 
 // This test is to ensure that the a case is correctly

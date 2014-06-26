@@ -5,7 +5,7 @@ import (
 	"strings"
 	"testing"
 
-	"carefront/libs/aws"
+	"github.com/sprucehealth/backend/libs/aws"
 )
 
 func setupTest(t *testing.T) (*SQS, string) {

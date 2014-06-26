@@ -3,7 +3,7 @@ package flags_test
 import (
 	"bytes"
 	"fmt"
-	"github.com/jessevdk/go-flags"
+	"github.com/sprucehealth/backend/third_party/github.com/jessevdk/go-flags"
 	"io/ioutil"
 	"io"
 	"os"

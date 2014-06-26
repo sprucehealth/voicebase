@@ -2,15 +2,15 @@ package test_integration
 
 import (
 	"bytes"
-	"carefront/api"
-	"carefront/app_worker"
-	"carefront/common"
-	"carefront/doctor_treatment_plan"
-	"carefront/encoding"
-	"carefront/libs/aws/sqs"
-	"carefront/libs/erx"
-	"carefront/libs/pharmacy"
-	"carefront/treatment_plan"
+	"github.com/sprucehealth/backend/api"
+	"github.com/sprucehealth/backend/app_worker"
+	"github.com/sprucehealth/backend/common"
+	"github.com/sprucehealth/backend/doctor_treatment_plan"
+	"github.com/sprucehealth/backend/encoding"
+	"github.com/sprucehealth/backend/libs/aws/sqs"
+	"github.com/sprucehealth/backend/libs/erx"
+	"github.com/sprucehealth/backend/libs/pharmacy"
+	"github.com/sprucehealth/backend/treatment_plan"
 	"encoding/json"
 	"io/ioutil"
 	"net/http"
@@ -18,7 +18,7 @@ import (
 	"strconv"
 	"testing"
 
-	"github.com/samuel/go-metrics/metrics"
+	"github.com/sprucehealth/backend/third_party/github.com/samuel/go-metrics/metrics"
 )
 
 func TestPatientVisitReview(t *testing.T) {

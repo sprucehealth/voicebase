@@ -30,7 +30,7 @@ import (
 	"appengine"
 	"appengine/urlfetch"
 
-	"code.google.com/p/goauth2/oauth"
+	"github.com/sprucehealth/backend/third_party/code.google.com/p/goauth2/oauth"
 )
 
 // NewClient returns an *http.Client authorized for the

@@ -1,9 +1,9 @@
 package common
 
 import (
-	"carefront/app_url"
-	"carefront/encoding"
-	"carefront/libs/pharmacy"
+	"github.com/sprucehealth/backend/app_url"
+	"github.com/sprucehealth/backend/encoding"
+	"github.com/sprucehealth/backend/libs/pharmacy"
 	"time"
 )
 

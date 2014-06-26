@@ -5,7 +5,7 @@
 package packet
 
 import (
-	"code.google.com/p/go.crypto/openpgp/errors"
+	"github.com/sprucehealth/backend/third_party/code.google.com/p/go.crypto/openpgp/errors"
 	"io"
 )
 

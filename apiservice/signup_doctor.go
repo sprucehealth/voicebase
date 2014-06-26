@@ -1,15 +1,15 @@
 package apiservice
 
 import (
-	"carefront/api"
-	"carefront/common"
-	"carefront/encoding"
-	"carefront/libs/golog"
+	"github.com/sprucehealth/backend/api"
+	"github.com/sprucehealth/backend/common"
+	"github.com/sprucehealth/backend/encoding"
+	"github.com/sprucehealth/backend/libs/golog"
 	"net/http"
 	"strconv"
 	"strings"
 
-	"github.com/dchest/validator"
+	"github.com/sprucehealth/backend/third_party/github.com/dchest/validator"
 )
 
 type signupDoctorHandler struct {

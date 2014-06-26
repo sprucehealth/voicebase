@@ -8,7 +8,7 @@ import (
 	"fmt"
 	"io"
 	"io/ioutil"
-	"launchpad.net/goamz/s3"
+	"github.com/sprucehealth/backend/third_party/launchpad.net/goamz/s3"
 	"log"
 	"net"
 	"net/http"

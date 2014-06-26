@@ -1,10 +1,10 @@
 package s3_test
 
 import (
-	"launchpad.net/goamz/aws"
-	"launchpad.net/goamz/s3"
-	"launchpad.net/goamz/s3/s3test"
-	. "launchpad.net/gocheck"
+	"github.com/sprucehealth/backend/third_party/launchpad.net/goamz/aws"
+	"github.com/sprucehealth/backend/third_party/launchpad.net/goamz/s3"
+	"github.com/sprucehealth/backend/third_party/launchpad.net/goamz/s3/s3test"
+	. "github.com/sprucehealth/backend/third_party/launchpad.net/gocheck"
 )
 
 type LocalServer struct {

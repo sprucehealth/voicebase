@@ -4,12 +4,12 @@
 package config
 
 import (
-	"carefront/common"
-	"carefront/libs/aws"
-	"carefront/libs/dispatch"
-	"carefront/libs/golog"
-	"carefront/libs/svcreg"
-	"carefront/libs/svcreg/zksvcreg"
+	"github.com/sprucehealth/backend/common"
+	"github.com/sprucehealth/backend/libs/aws"
+	"github.com/sprucehealth/backend/libs/dispatch"
+	"github.com/sprucehealth/backend/libs/golog"
+	"github.com/sprucehealth/backend/libs/svcreg"
+	"github.com/sprucehealth/backend/libs/svcreg/zksvcreg"
 	"encoding/json"
 	"expvar"
 	"fmt"
@@ -28,11 +28,11 @@ import (
 	"sync"
 	"time"
 
-	"github.com/BurntSushi/toml"
-	flags "github.com/jessevdk/go-flags"
-	"github.com/samuel/go-zookeeper/zk"
-	goamz "launchpad.net/goamz/aws"
-	"launchpad.net/goamz/s3"
+	"github.com/sprucehealth/backend/third_party/github.com/BurntSushi/toml"
+	flags "github.com/sprucehealth/backend/third_party/github.com/jessevdk/go-flags"
+	"github.com/sprucehealth/backend/third_party/github.com/samuel/go-zookeeper/zk"
+	goamz "github.com/sprucehealth/backend/third_party/launchpad.net/goamz/aws"
+	"github.com/sprucehealth/backend/third_party/launchpad.net/goamz/s3"
 )
 
 type NotificationConfig struct {

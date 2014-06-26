@@ -1,14 +1,14 @@
 package apiservice
 
 import (
-	"carefront/api"
-	"carefront/common"
-	"carefront/libs/erx"
+	"github.com/sprucehealth/backend/api"
+	"github.com/sprucehealth/backend/common"
+	"github.com/sprucehealth/backend/libs/erx"
 	"net/http"
 	"strings"
 	"unicode"
 
-	"github.com/gorilla/schema"
+	"github.com/sprucehealth/backend/third_party/github.com/gorilla/schema"
 )
 
 type AutocompleteHandler struct {

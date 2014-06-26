@@ -1,11 +1,11 @@
 package support
 
 import (
-	"carefront/common/config"
-	"carefront/libs/dispatch"
-	"carefront/libs/golog"
-	"carefront/notify"
-	"carefront/patient_visit"
+	"github.com/sprucehealth/backend/common/config"
+	"github.com/sprucehealth/backend/libs/dispatch"
+	"github.com/sprucehealth/backend/libs/golog"
+	"github.com/sprucehealth/backend/notify"
+	"github.com/sprucehealth/backend/patient_visit"
 )
 
 func InitListeners(technicalSupportEmail, customerSupportEmail string, notificationManager *notify.NotificationManager) {

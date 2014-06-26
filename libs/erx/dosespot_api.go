@@ -1,7 +1,7 @@
 package erx
 
 import (
-	"carefront/encoding"
+	"github.com/sprucehealth/backend/encoding"
 	"encoding/xml"
 	"time"
 )

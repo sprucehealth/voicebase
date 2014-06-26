@@ -1,6 +1,6 @@
 package payment
 
-import "carefront/common"
+import "github.com/sprucehealth/backend/common"
 
 type StubPaymentService struct {
 	CustomerToReturn  *Customer

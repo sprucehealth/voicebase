@@ -5,8 +5,8 @@
 package packet
 
 import (
-	"code.google.com/p/go.crypto/openpgp/elgamal"
-	"code.google.com/p/go.crypto/openpgp/errors"
+	"github.com/sprucehealth/backend/third_party/code.google.com/p/go.crypto/openpgp/elgamal"
+	"github.com/sprucehealth/backend/third_party/code.google.com/p/go.crypto/openpgp/errors"
 	"crypto/rsa"
 	"encoding/binary"
 	"io"

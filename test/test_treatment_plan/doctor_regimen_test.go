@@ -2,10 +2,10 @@ package test_treatment_plan
 
 import (
 	"bytes"
-	"carefront/common"
-	"carefront/doctor_treatment_plan"
-	"carefront/patient_visit"
-	"carefront/test/test_integration"
+	"github.com/sprucehealth/backend/common"
+	"github.com/sprucehealth/backend/doctor_treatment_plan"
+	"github.com/sprucehealth/backend/patient_visit"
+	"github.com/sprucehealth/backend/test/test_integration"
 	"database/sql"
 	"encoding/json"
 	"net/http"

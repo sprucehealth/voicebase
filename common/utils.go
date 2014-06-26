@@ -1,12 +1,12 @@
 package common
 
 import (
-	"carefront/libs/aws"
-	"carefront/libs/aws/sqs"
+	"github.com/sprucehealth/backend/libs/aws"
+	"github.com/sprucehealth/backend/libs/aws/sqs"
 	"crypto/rand"
 	"encoding/base64"
 
-	goamz "launchpad.net/goamz/aws"
+	goamz "github.com/sprucehealth/backend/third_party/launchpad.net/goamz/aws"
 )
 
 // Any structure that implements the Typed interface

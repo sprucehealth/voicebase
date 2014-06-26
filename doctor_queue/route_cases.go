@@ -1,9 +1,9 @@
 package doctor_queue
 
 import (
-	"carefront/api"
-	"carefront/libs/golog"
-	"carefront/patient_visit"
+	"github.com/sprucehealth/backend/api"
+	"github.com/sprucehealth/backend/libs/golog"
+	"github.com/sprucehealth/backend/patient_visit"
 )
 
 func routeIncomingPatientVisit(ev *patient_visit.VisitSubmittedEvent, dataAPI api.DataAPI) error {

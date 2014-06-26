@@ -1,16 +1,16 @@
 package notify
 
 import (
-	"carefront/api"
-	"carefront/common"
-	"carefront/common/config"
-	"carefront/email"
-	"carefront/libs/aws/sns"
-	"carefront/libs/golog"
+	"github.com/sprucehealth/backend/api"
+	"github.com/sprucehealth/backend/common"
+	"github.com/sprucehealth/backend/common/config"
+	"github.com/sprucehealth/backend/email"
+	"github.com/sprucehealth/backend/libs/aws/sns"
+	"github.com/sprucehealth/backend/libs/golog"
 	"sort"
 
-	"github.com/samuel/go-metrics/metrics"
-	"github.com/subosito/twilio"
+	"github.com/sprucehealth/backend/third_party/github.com/samuel/go-metrics/metrics"
+	"github.com/sprucehealth/backend/third_party/github.com/subosito/twilio"
 )
 
 // NotificationManager is responsible for determining how best to route a particular notification to the user based on

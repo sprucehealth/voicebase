@@ -1,9 +1,9 @@
 package main
 
 import (
-	"carefront/libs/aws"
-	"carefront/libs/aws/ec2"
-	"carefront/libs/cmd/cryptsetup"
+	"github.com/sprucehealth/backend/libs/aws"
+	"github.com/sprucehealth/backend/libs/aws/ec2"
+	"github.com/sprucehealth/backend/libs/cmd/cryptsetup"
 	"flag"
 	"fmt"
 	"log"

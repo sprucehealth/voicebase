@@ -1,9 +1,9 @@
 package notify
 
 import (
-	"carefront/api"
-	"carefront/libs/dispatch"
-	"carefront/patient"
+	"github.com/sprucehealth/backend/api"
+	"github.com/sprucehealth/backend/libs/dispatch"
+	"github.com/sprucehealth/backend/patient"
 	"errors"
 )
 

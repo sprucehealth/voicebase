@@ -1,7 +1,7 @@
 package main
 
 import (
-	"carefront/libs/aws/s3"
+	"github.com/sprucehealth/backend/libs/aws/s3"
 	"compress/gzip"
 	"errors"
 	"flag"

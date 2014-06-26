@@ -1,12 +1,12 @@
 package config
 
 import (
-	"carefront/libs/svcreg"
+	"github.com/sprucehealth/backend/libs/svcreg"
 	"fmt"
 	"net"
 	"time"
 
-	"github.com/samuel/go-metrics/metrics"
+	"github.com/sprucehealth/backend/third_party/github.com/samuel/go-metrics/metrics"
 )
 
 type Server struct {

@@ -1,7 +1,7 @@
 package notify
 
 import (
-	"carefront/common"
+	"github.com/sprucehealth/backend/common"
 	"sort"
 	"testing"
 )

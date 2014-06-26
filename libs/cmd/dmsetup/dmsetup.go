@@ -5,7 +5,7 @@ import (
 	"fmt"
 	"strconv"
 
-	"carefront/libs/cmd"
+	"github.com/sprucehealth/backend/libs/cmd"
 )
 
 type DeviceInfo struct {

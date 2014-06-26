@@ -2,8 +2,8 @@ package rfc3164
 
 import (
 	"bytes"
-	"github.com/jeromer/syslogparser"
-	. "launchpad.net/gocheck"
+	"github.com/sprucehealth/backend/third_party/github.com/jeromer/syslogparser"
+	. "github.com/sprucehealth/backend/third_party/launchpad.net/gocheck"
 	"testing"
 	"time"
 )

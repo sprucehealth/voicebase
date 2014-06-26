@@ -1,11 +1,11 @@
 package patient_visit
 
 import (
-	"carefront/api"
-	"carefront/apiservice"
-	"carefront/common"
-	"carefront/info_intake"
-	"carefront/libs/dispatch"
+	"github.com/sprucehealth/backend/api"
+	"github.com/sprucehealth/backend/apiservice"
+	"github.com/sprucehealth/backend/common"
+	"github.com/sprucehealth/backend/info_intake"
+	"github.com/sprucehealth/backend/libs/dispatch"
 	"encoding/json"
 	"net/http"
 )

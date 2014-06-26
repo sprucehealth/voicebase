@@ -12,7 +12,7 @@ import (
 	"net"
 	"net/http"
 
-	"code.google.com/p/go.crypto/ssh/terminal"
+	"github.com/sprucehealth/backend/third_party/code.google.com/p/go.crypto/ssh/terminal"
 )
 
 func ExampleNewServerConn() {

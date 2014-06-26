@@ -1,7 +1,7 @@
 package sns
 
 import (
-	"carefront/libs/aws"
+	"github.com/sprucehealth/backend/libs/aws"
 	"encoding/json"
 	"net/url"
 )

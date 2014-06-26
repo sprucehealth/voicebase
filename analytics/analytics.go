@@ -1,15 +1,15 @@
 package analytics
 
 import (
-	"carefront/apiservice"
-	"carefront/libs/golog"
+	"github.com/sprucehealth/backend/apiservice"
+	"github.com/sprucehealth/backend/libs/golog"
 	"encoding/json"
 	"math"
 	"net/http"
 	"strconv"
 	"time"
 
-	"github.com/samuel/go-metrics/metrics"
+	"github.com/sprucehealth/backend/third_party/github.com/samuel/go-metrics/metrics"
 )
 
 const (

@@ -1,9 +1,9 @@
 package apiservice
 
 import (
-	"carefront/api"
-	"carefront/libs/golog"
-	"carefront/libs/pharmacy"
+	"github.com/sprucehealth/backend/api"
+	"github.com/sprucehealth/backend/libs/golog"
+	"github.com/sprucehealth/backend/libs/pharmacy"
 	"encoding/json"
 	"net/http"
 )

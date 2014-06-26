@@ -1,6 +1,6 @@
 package info_intake
 
-import "carefront/common"
+import "github.com/sprucehealth/backend/common"
 
 const (
 	FORMATTED_FIELD_DOCTOR_LAST_NAME = "doctor_last_name"

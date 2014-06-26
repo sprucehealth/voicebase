@@ -1,6 +1,6 @@
 package notify
 
-import "carefront/libs/golog"
+import "github.com/sprucehealth/backend/libs/golog"
 
 func (n *NotificationManager) sendSMSToUser(toNumber, message string) error {
 	if n.twilioClient == nil {

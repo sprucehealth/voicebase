@@ -1,7 +1,7 @@
 package services
 
 import (
-	"carefront/libs/maps"
+	"github.com/sprucehealth/backend/libs/maps"
 	"testing"
 )
 

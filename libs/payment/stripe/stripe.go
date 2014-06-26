@@ -1,8 +1,8 @@
 package stripe
 
 import (
-	"carefront/common"
-	"carefront/libs/payment"
+	"github.com/sprucehealth/backend/common"
+	"github.com/sprucehealth/backend/libs/payment"
 	"encoding/json"
 	"fmt"
 	"io"

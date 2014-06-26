@@ -7,8 +7,8 @@ import (
 	"regexp"
 	"time"
 
-	"github.com/samuel/go-metrics/metrics"
-	"github.com/samuel/go-metrics/reporter"
+	"github.com/sprucehealth/backend/third_party/github.com/samuel/go-metrics/metrics"
+	"github.com/sprucehealth/backend/third_party/github.com/samuel/go-metrics/reporter"
 )
 
 type Stats struct {

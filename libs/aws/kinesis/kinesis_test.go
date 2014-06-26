@@ -6,7 +6,7 @@ import (
 	"testing"
 	"time"
 
-	"carefront/libs/aws"
+	"github.com/sprucehealth/backend/libs/aws"
 )
 
 func TestKinesis(t *testing.T) {

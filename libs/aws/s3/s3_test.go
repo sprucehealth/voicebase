@@ -5,7 +5,7 @@ import (
 	"testing"
 	"time"
 
-	"carefront/libs/aws"
+	"github.com/sprucehealth/backend/libs/aws"
 )
 
 func TestS3(t *testing.T) {

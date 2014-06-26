@@ -1,8 +1,8 @@
 package treatment_plan
 
 import (
-	"carefront/app_url"
-	"carefront/libs/pharmacy"
+	"github.com/sprucehealth/backend/app_url"
+	"github.com/sprucehealth/backend/libs/pharmacy"
 	"errors"
 )
 

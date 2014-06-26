@@ -1,8 +1,8 @@
 package reslib
 
 import (
-	"carefront/api"
-	"carefront/apiservice"
+	"github.com/sprucehealth/backend/api"
+	"github.com/sprucehealth/backend/apiservice"
 	"net/http"
 	"strconv"
 )

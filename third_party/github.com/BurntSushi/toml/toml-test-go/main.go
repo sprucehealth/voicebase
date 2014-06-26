@@ -9,7 +9,7 @@ import (
 	"path"
 	"time"
 
-	"github.com/BurntSushi/toml"
+	"github.com/sprucehealth/backend/third_party/github.com/BurntSushi/toml"
 )
 
 func init() {

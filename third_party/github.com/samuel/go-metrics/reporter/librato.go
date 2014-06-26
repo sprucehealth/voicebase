@@ -9,8 +9,8 @@ import (
 	"strings"
 	"time"
 
-	"github.com/samuel/go-librato/librato"
-	"github.com/samuel/go-metrics/metrics"
+	"github.com/sprucehealth/backend/third_party/github.com/samuel/go-librato/librato"
+	"github.com/sprucehealth/backend/third_party/github.com/samuel/go-metrics/metrics"
 )
 
 type libratoReporter struct {

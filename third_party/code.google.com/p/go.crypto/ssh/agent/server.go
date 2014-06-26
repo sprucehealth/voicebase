@@ -12,7 +12,7 @@ import (
 	"log"
 	"math/big"
 
-	"code.google.com/p/go.crypto/ssh"
+	"github.com/sprucehealth/backend/third_party/code.google.com/p/go.crypto/ssh"
 )
 
 // Server wraps an Agent and uses it to implement the agent side of

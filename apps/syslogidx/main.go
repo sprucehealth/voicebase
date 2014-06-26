@@ -11,8 +11,8 @@ import (
 	"strings"
 	"time"
 
-	"github.com/jeromer/syslogparser"
-	"github.com/mcuadros/go-syslog"
+	"github.com/sprucehealth/backend/third_party/github.com/jeromer/syslogparser"
+	"github.com/sprucehealth/backend/third_party/github.com/mcuadros/go-syslog"
 )
 
 // http://tools.ietf.org/html/rfc5424

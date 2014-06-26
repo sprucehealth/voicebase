@@ -1,12 +1,12 @@
 package doctor_queue
 
 import (
-	"carefront/api"
-	"carefront/libs/golog"
+	"github.com/sprucehealth/backend/api"
+	"github.com/sprucehealth/backend/libs/golog"
 	"math/rand"
 	"time"
 
-	"github.com/samuel/go-metrics/metrics"
+	"github.com/sprucehealth/backend/third_party/github.com/samuel/go-metrics/metrics"
 )
 
 var (

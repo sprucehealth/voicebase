@@ -4,9 +4,9 @@ Package homelog provides the implementation of the home feed notifications and l
 package homelog
 
 import (
-	"carefront/api"
-	"carefront/app_url"
-	"carefront/common"
+	"github.com/sprucehealth/backend/api"
+	"github.com/sprucehealth/backend/app_url"
+	"github.com/sprucehealth/backend/common"
 
 	"reflect"
 )

@@ -2,7 +2,7 @@ package flags_test
 
 import (
 	"fmt"
-	"github.com/jessevdk/go-flags"
+	"github.com/sprucehealth/backend/third_party/github.com/jessevdk/go-flags"
 	"testing"
 )
 

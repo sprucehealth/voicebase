@@ -1,8 +1,8 @@
 package analytics
 
 import (
-	"carefront/libs/golog"
-	"carefront/libs/idgen"
+	"github.com/sprucehealth/backend/libs/golog"
+	"github.com/sprucehealth/backend/libs/idgen"
 	"encoding/json"
 	"fmt"
 	"os"

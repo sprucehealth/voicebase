@@ -8,7 +8,7 @@ import (
 	"sort"
 	"strings"
 
-	"carefront/libs/aws"
+	"github.com/sprucehealth/backend/libs/aws"
 )
 
 var b64 = base64.StdEncoding

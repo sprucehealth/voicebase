@@ -11,7 +11,7 @@ import (
 	"crypto/sha256"
 	"errors"
 
-	"code.google.com/p/go.crypto/pbkdf2"
+	"github.com/sprucehealth/backend/third_party/code.google.com/p/go.crypto/pbkdf2"
 )
 
 const maxInt = int(^uint(0) >> 1)

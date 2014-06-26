@@ -2,11 +2,11 @@ package test_intake
 
 import (
 	"bytes"
-	"carefront/api"
-	"carefront/common"
-	"carefront/info_intake"
-	"carefront/patient_visit"
-	"carefront/test/test_integration"
+	"github.com/sprucehealth/backend/api"
+	"github.com/sprucehealth/backend/common"
+	"github.com/sprucehealth/backend/info_intake"
+	"github.com/sprucehealth/backend/patient_visit"
+	"github.com/sprucehealth/backend/test/test_integration"
 	"encoding/json"
 	"net/http"
 	"net/http/httptest"

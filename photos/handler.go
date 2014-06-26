@@ -1,11 +1,11 @@
 package photos
 
 import (
-	"carefront/api"
-	"carefront/apiservice"
-	"carefront/common"
-	"carefront/libs/aws"
-	"carefront/libs/golog"
+	"github.com/sprucehealth/backend/api"
+	"github.com/sprucehealth/backend/apiservice"
+	"github.com/sprucehealth/backend/common"
+	"github.com/sprucehealth/backend/libs/aws"
+	"github.com/sprucehealth/backend/libs/golog"
 	"crypto/rand"
 	"encoding/hex"
 	"fmt"
@@ -15,10 +15,10 @@ import (
 	"net/url"
 	"strings"
 
-	"github.com/gorilla/schema"
+	"github.com/sprucehealth/backend/third_party/github.com/gorilla/schema"
 
-	goamz "launchpad.net/goamz/aws"
-	"launchpad.net/goamz/s3"
+	goamz "github.com/sprucehealth/backend/third_party/launchpad.net/goamz/aws"
+	"github.com/sprucehealth/backend/third_party/launchpad.net/goamz/s3"
 )
 
 type Handler struct {

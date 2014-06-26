@@ -1,7 +1,7 @@
 package api
 
 import (
-	"carefront/common"
+	"github.com/sprucehealth/backend/common"
 	"database/sql"
 )
 

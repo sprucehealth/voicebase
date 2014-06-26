@@ -1,6 +1,6 @@
 package app_worker
 
-import "carefront/common"
+import "github.com/sprucehealth/backend/common"
 
 type RxTransmissionErrorEvent struct {
 	DoctorId  int64

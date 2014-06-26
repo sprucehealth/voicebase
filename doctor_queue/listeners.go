@@ -1,19 +1,19 @@
 package doctor_queue
 
 import (
-	"carefront/api"
-	"carefront/apiservice"
-	"carefront/app_worker"
-	"carefront/common"
-	"carefront/doctor_treatment_plan"
-	"carefront/libs/dispatch"
-	"carefront/libs/golog"
-	"carefront/messages"
-	"carefront/notify"
-	"carefront/patient_visit"
+	"github.com/sprucehealth/backend/api"
+	"github.com/sprucehealth/backend/apiservice"
+	"github.com/sprucehealth/backend/app_worker"
+	"github.com/sprucehealth/backend/common"
+	"github.com/sprucehealth/backend/doctor_treatment_plan"
+	"github.com/sprucehealth/backend/libs/dispatch"
+	"github.com/sprucehealth/backend/libs/golog"
+	"github.com/sprucehealth/backend/messages"
+	"github.com/sprucehealth/backend/notify"
+	"github.com/sprucehealth/backend/patient_visit"
 	"errors"
 
-	"github.com/samuel/go-metrics/metrics"
+	"github.com/sprucehealth/backend/third_party/github.com/samuel/go-metrics/metrics"
 )
 
 func InitListeners(dataAPI api.DataAPI, notificationManager *notify.NotificationManager, statsRegistry metrics.Registry) {

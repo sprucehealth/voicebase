@@ -5,8 +5,8 @@ import (
 	"flag"
 	"os"
 
-	"carefront/libs/aws"
-	"carefront/libs/aws/s3"
+	"github.com/sprucehealth/backend/libs/aws"
+	"github.com/sprucehealth/backend/libs/aws/s3"
 )
 
 var (

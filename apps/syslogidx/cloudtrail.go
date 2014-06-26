@@ -7,9 +7,9 @@ import (
 	"log"
 	"time"
 
-	"carefront/libs/aws/cloudtrail"
-	"carefront/libs/aws/sns"
-	"carefront/libs/aws/sqs"
+	"github.com/sprucehealth/backend/libs/aws/cloudtrail"
+	"github.com/sprucehealth/backend/libs/aws/sns"
+	"github.com/sprucehealth/backend/libs/aws/sqs"
 )
 
 var (

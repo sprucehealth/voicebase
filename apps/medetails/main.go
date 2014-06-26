@@ -8,11 +8,11 @@ into sections which are defined by the labels in the second column of the spread
 
 import (
 	"bufio"
-	"carefront/api"
-	"carefront/common"
-	"carefront/common/config"
-	"carefront/libs/gdata"
-	"carefront/libs/golog"
+	"github.com/sprucehealth/backend/api"
+	"github.com/sprucehealth/backend/common"
+	"github.com/sprucehealth/backend/common/config"
+	"github.com/sprucehealth/backend/libs/gdata"
+	"github.com/sprucehealth/backend/libs/golog"
 	"encoding/json"
 	"fmt"
 	"log"

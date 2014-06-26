@@ -3,7 +3,7 @@ package ec2
 import (
 	"testing"
 
-	// "carefront/libs/aws"
+	// "github.com/sprucehealth/backend/libs/aws"
 )
 
 func TestDescribeSnapshots(t *testing.T) {

@@ -1,10 +1,10 @@
 package apiservice
 
 import (
-	"carefront/api"
+	"github.com/sprucehealth/backend/api"
 	"net/http"
 
-	"github.com/gorilla/schema"
+	"github.com/sprucehealth/backend/third_party/github.com/gorilla/schema"
 )
 
 const (

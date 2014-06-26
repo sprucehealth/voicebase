@@ -8,7 +8,7 @@ import (
 	"strconv"
 	"time"
 
-	"carefront/libs/aws"
+	"github.com/sprucehealth/backend/libs/aws"
 )
 
 const apiVersion = "2013-10-15"

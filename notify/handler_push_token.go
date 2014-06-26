@@ -1,11 +1,11 @@
 package notify
 
 import (
-	"carefront/api"
-	"carefront/apiservice"
-	"carefront/common"
-	"carefront/common/config"
-	"carefront/libs/aws/sns"
+	"github.com/sprucehealth/backend/api"
+	"github.com/sprucehealth/backend/apiservice"
+	"github.com/sprucehealth/backend/common"
+	"github.com/sprucehealth/backend/common/config"
+	"github.com/sprucehealth/backend/libs/aws/sns"
 	"net/http"
 )
 

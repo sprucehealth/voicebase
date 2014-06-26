@@ -1,9 +1,9 @@
 package api
 
 import (
-	"carefront/common"
-	"carefront/encoding"
-	"carefront/libs/pharmacy"
+	"github.com/sprucehealth/backend/common"
+	"github.com/sprucehealth/backend/encoding"
+	"github.com/sprucehealth/backend/libs/pharmacy"
 	"database/sql"
 	"errors"
 	"fmt"
@@ -11,7 +11,7 @@ import (
 	"strconv"
 	"strings"
 
-	"github.com/go-sql-driver/mysql"
+	"github.com/sprucehealth/backend/third_party/github.com/go-sql-driver/mysql"
 )
 
 func (d *DataService) RegisterPatient(patient *common.Patient) error {

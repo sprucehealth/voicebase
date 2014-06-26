@@ -18,9 +18,9 @@ This package is interoperable with NaCl: http://nacl.cr.yp.to/box.html.
 package box
 
 import (
-	"code.google.com/p/go.crypto/curve25519"
-	"code.google.com/p/go.crypto/nacl/secretbox"
-	"code.google.com/p/go.crypto/salsa20/salsa"
+	"github.com/sprucehealth/backend/third_party/code.google.com/p/go.crypto/curve25519"
+	"github.com/sprucehealth/backend/third_party/code.google.com/p/go.crypto/nacl/secretbox"
+	"github.com/sprucehealth/backend/third_party/code.google.com/p/go.crypto/salsa20/salsa"
 	"io"
 )
 

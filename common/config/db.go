@@ -7,7 +7,7 @@ import (
 	"errors"
 	"fmt"
 
-	"github.com/go-sql-driver/mysql"
+	"github.com/sprucehealth/backend/third_party/github.com/go-sql-driver/mysql"
 )
 
 type DB struct {

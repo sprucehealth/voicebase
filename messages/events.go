@@ -1,6 +1,6 @@
 package messages
 
-import "carefront/common"
+import "github.com/sprucehealth/backend/common"
 
 type PostEvent struct {
 	Message *common.CaseMessage

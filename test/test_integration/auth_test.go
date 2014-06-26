@@ -1,9 +1,9 @@
 package test_integration
 
 import (
-	"carefront/api"
-	"carefront/email"
-	"carefront/passreset"
+	"github.com/sprucehealth/backend/api"
+	"github.com/sprucehealth/backend/email"
+	"github.com/sprucehealth/backend/passreset"
 	"net/http/httptest"
 	"strings"
 	"testing"

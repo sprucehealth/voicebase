@@ -2,9 +2,9 @@ package test_integration
 
 import (
 	"bytes"
-	"carefront/common"
-	patientApiService "carefront/patient"
-	"carefront/patient_visit"
+	"github.com/sprucehealth/backend/common"
+	patientApiService "github.com/sprucehealth/backend/patient"
+	"github.com/sprucehealth/backend/patient_visit"
 	"encoding/json"
 	"io/ioutil"
 	"net/http"
@@ -14,11 +14,11 @@ import (
 	"strings"
 	"testing"
 
-	"carefront/address"
-	"carefront/api"
-	"carefront/apiservice"
+	"github.com/sprucehealth/backend/address"
+	"github.com/sprucehealth/backend/api"
+	"github.com/sprucehealth/backend/apiservice"
 
-	_ "github.com/go-sql-driver/mysql"
+	_ "github.com/sprucehealth/backend/third_party/github.com/go-sql-driver/mysql"
 )
 
 func TestPatientRegistration(t *testing.T) {

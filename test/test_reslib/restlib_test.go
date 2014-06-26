@@ -1,9 +1,9 @@
 package test_reslib
 
 import (
-	"carefront/common"
-	"carefront/reslib"
-	"carefront/test/test_integration"
+	"github.com/sprucehealth/backend/common"
+	"github.com/sprucehealth/backend/reslib"
+	"github.com/sprucehealth/backend/test/test_integration"
 	"encoding/json"
 	"fmt"
 	"net/http"

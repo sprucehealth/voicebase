@@ -1,13 +1,13 @@
 package main
 
 import (
-	"carefront/libs/aws"
-	"carefront/libs/aws/ec2"
-	"carefront/libs/cmd/cryptsetup"
-	"carefront/libs/cmd/dmsetup"
-	"carefront/libs/cmd/lvm"
-	"carefront/libs/cmd/mount"
-	"carefront/libs/cmd/xfs"
+	"github.com/sprucehealth/backend/libs/aws"
+	"github.com/sprucehealth/backend/libs/aws/ec2"
+	"github.com/sprucehealth/backend/libs/cmd/cryptsetup"
+	"github.com/sprucehealth/backend/libs/cmd/dmsetup"
+	"github.com/sprucehealth/backend/libs/cmd/lvm"
+	"github.com/sprucehealth/backend/libs/cmd/mount"
+	"github.com/sprucehealth/backend/libs/cmd/xfs"
 	"crypto/tls"
 	"crypto/x509"
 	"database/sql"
@@ -20,7 +20,7 @@ import (
 	"strings"
 	"time"
 
-	"github.com/go-sql-driver/mysql"
+	"github.com/sprucehealth/backend/third_party/github.com/go-sql-driver/mysql"
 )
 
 type freezeCmd interface {

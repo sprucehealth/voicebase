@@ -5,7 +5,7 @@ import (
 	"encoding/json"
 	"net/http"
 
-	"carefront/libs/aws"
+	"github.com/sprucehealth/backend/libs/aws"
 )
 
 const kinesisAPIVersion = "Kinesis_20131104."

@@ -1,16 +1,16 @@
 package api
 
 import (
-	"carefront/common"
-	"carefront/encoding"
-	pharmacyService "carefront/libs/pharmacy"
+	"github.com/sprucehealth/backend/common"
+	"github.com/sprucehealth/backend/encoding"
+	pharmacyService "github.com/sprucehealth/backend/libs/pharmacy"
 	"database/sql"
 	"fmt"
 	"log"
 	"strings"
 	"time"
 
-	"github.com/go-sql-driver/mysql"
+	"github.com/sprucehealth/backend/third_party/github.com/go-sql-driver/mysql"
 )
 
 func (d *DataService) GetActivePatientVisitIdForHealthCondition(patientId, healthConditionId int64) (int64, error) {

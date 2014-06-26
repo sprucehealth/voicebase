@@ -10,8 +10,8 @@ import (
 	"bytes"
 	"testing"
 
-	"code.google.com/p/go.crypto/ssh"
-	"code.google.com/p/go.crypto/ssh/agent"
+	"github.com/sprucehealth/backend/third_party/code.google.com/p/go.crypto/ssh"
+	"github.com/sprucehealth/backend/third_party/code.google.com/p/go.crypto/ssh/agent"
 )
 
 func TestAgentForward(t *testing.T) {

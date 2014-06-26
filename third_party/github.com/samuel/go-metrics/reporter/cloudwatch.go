@@ -11,8 +11,8 @@ import (
 	"strings"
 	"time"
 
-	"github.com/bmizerany/aws4"
-	"github.com/samuel/go-metrics/metrics"
+	"github.com/sprucehealth/backend/third_party/github.com/bmizerany/aws4"
+	"github.com/sprucehealth/backend/third_party/github.com/samuel/go-metrics/metrics"
 )
 
 type cloudWatchReporter struct {

@@ -1,7 +1,7 @@
 package api
 
 import (
-	"carefront/info_intake"
+	"github.com/sprucehealth/backend/info_intake"
 	"database/sql"
 	"encoding/json"
 	"fmt"

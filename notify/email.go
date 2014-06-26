@@ -1,6 +1,6 @@
 package notify
 
-import "carefront/email"
+import "github.com/sprucehealth/backend/email"
 
 func (n *NotificationManager) SendEmail(em *email.Email) error {
 	go func() {

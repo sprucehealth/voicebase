@@ -2,7 +2,7 @@ package test_integration
 
 import (
 	"bytes"
-	"carefront/messages"
+	"github.com/sprucehealth/backend/messages"
 	"encoding/json"
 	"net/http/httptest"
 	"testing"

@@ -2,11 +2,11 @@ package test_integration
 
 import (
 	"bytes"
-	"carefront/apiservice"
-	"carefront/common"
-	"carefront/doctor_treatment_plan"
-	"carefront/encoding"
-	"carefront/libs/erx"
+	"github.com/sprucehealth/backend/apiservice"
+	"github.com/sprucehealth/backend/common"
+	"github.com/sprucehealth/backend/doctor_treatment_plan"
+	"github.com/sprucehealth/backend/encoding"
+	"github.com/sprucehealth/backend/libs/erx"
 	"encoding/json"
 	"io/ioutil"
 	"net/http"

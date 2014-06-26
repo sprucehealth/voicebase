@@ -2,7 +2,7 @@ package test_integration
 
 import (
 	"bytes"
-	"carefront/photos"
+	"github.com/sprucehealth/backend/photos"
 	"encoding/json"
 	"fmt"
 	"io/ioutil"

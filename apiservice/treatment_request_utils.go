@@ -1,9 +1,9 @@
 package apiservice
 
 import (
-	"carefront/common"
-	"carefront/libs/erx"
-	"carefront/surescripts"
+	"github.com/sprucehealth/backend/common"
+	"github.com/sprucehealth/backend/libs/erx"
+	"github.com/sprucehealth/backend/surescripts"
 	"errors"
 	"fmt"
 	"net/http"

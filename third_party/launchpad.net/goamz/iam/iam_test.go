@@ -1,10 +1,10 @@
 package iam_test
 
 import (
-	"launchpad.net/goamz/aws"
-	"launchpad.net/goamz/iam"
-	"launchpad.net/goamz/testutil"
-	. "launchpad.net/gocheck"
+	"github.com/sprucehealth/backend/third_party/launchpad.net/goamz/aws"
+	"github.com/sprucehealth/backend/third_party/launchpad.net/goamz/iam"
+	"github.com/sprucehealth/backend/third_party/launchpad.net/goamz/testutil"
+	. "github.com/sprucehealth/backend/third_party/launchpad.net/gocheck"
 	"strings"
 	"testing"
 )

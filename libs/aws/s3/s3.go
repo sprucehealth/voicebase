@@ -9,7 +9,7 @@ import (
 	"io/ioutil"
 	"net/http"
 
-	"carefront/libs/aws"
+	"github.com/sprucehealth/backend/libs/aws"
 )
 
 type S3 struct {

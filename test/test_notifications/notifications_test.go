@@ -1,14 +1,14 @@
 package test_notifications
 
 import (
-	"carefront/api"
-	"carefront/apiservice"
-	"carefront/common"
-	"carefront/common/config"
-	"carefront/libs/aws/sns"
-	"carefront/notify"
-	patientApi "carefront/patient"
-	"carefront/test/test_integration"
+	"github.com/sprucehealth/backend/api"
+	"github.com/sprucehealth/backend/apiservice"
+	"github.com/sprucehealth/backend/common"
+	"github.com/sprucehealth/backend/common/config"
+	"github.com/sprucehealth/backend/libs/aws/sns"
+	"github.com/sprucehealth/backend/notify"
+	patientApi "github.com/sprucehealth/backend/patient"
+	"github.com/sprucehealth/backend/test/test_integration"
 	"net/http"
 	"net/http/httptest"
 	"net/url"

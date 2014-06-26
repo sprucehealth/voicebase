@@ -1,15 +1,15 @@
 package layout
 
 import (
-	"carefront/api"
-	"carefront/apiservice"
-	"carefront/info_intake"
+	"github.com/sprucehealth/backend/api"
+	"github.com/sprucehealth/backend/apiservice"
+	"github.com/sprucehealth/backend/info_intake"
 	"encoding/json"
 	"errors"
 	"io/ioutil"
 	"net/http"
 
-	"github.com/SpruceHealth/mapstructure"
+	"github.com/sprucehealth/backend/third_party/github.com/SpruceHealth/mapstructure"
 )
 
 const (

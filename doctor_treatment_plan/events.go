@@ -1,6 +1,6 @@
 package doctor_treatment_plan
 
-import "carefront/common"
+import "github.com/sprucehealth/backend/common"
 
 type NewTreatmentPlanStartedEvent struct {
 	DoctorId        int64

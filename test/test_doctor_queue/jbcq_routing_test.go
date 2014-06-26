@@ -1,9 +1,9 @@
 package test_doctor_queue
 
 import (
-	"carefront/apiservice"
-	"carefront/doctor_queue"
-	"carefront/test/test_integration"
+	"github.com/sprucehealth/backend/apiservice"
+	"github.com/sprucehealth/backend/doctor_queue"
+	"github.com/sprucehealth/backend/test/test_integration"
 	"encoding/json"
 	"net/http"
 	"net/http/httptest"

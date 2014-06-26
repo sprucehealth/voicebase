@@ -1,9 +1,9 @@
 package homelog
 
 import (
-	"carefront/api"
-	"carefront/apiservice"
-	"carefront/libs/golog"
+	"github.com/sprucehealth/backend/api"
+	"github.com/sprucehealth/backend/apiservice"
+	"github.com/sprucehealth/backend/libs/golog"
 	"fmt"
 	"net/http"
 	"strconv"

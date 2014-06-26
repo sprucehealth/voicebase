@@ -1,9 +1,9 @@
 package api
 
 import (
-	"carefront/app_url"
-	"carefront/common"
-	"carefront/encoding"
+	"github.com/sprucehealth/backend/app_url"
+	"github.com/sprucehealth/backend/common"
+	"github.com/sprucehealth/backend/encoding"
 	"database/sql"
 	"fmt"
 	"log"
@@ -11,7 +11,7 @@ import (
 	"strings"
 	"time"
 
-	"github.com/go-sql-driver/mysql"
+	"github.com/sprucehealth/backend/third_party/github.com/go-sql-driver/mysql"
 )
 
 func (d *DataService) RegisterDoctor(doctor *common.Doctor) (int64, error) {

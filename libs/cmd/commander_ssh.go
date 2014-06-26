@@ -9,8 +9,8 @@ import (
 	"regexp"
 	"strings"
 
-	"code.google.com/p/go.crypto/ssh"
-	"code.google.com/p/go.crypto/ssh/agent"
+	"github.com/sprucehealth/backend/third_party/code.google.com/p/go.crypto/ssh"
+	"github.com/sprucehealth/backend/third_party/code.google.com/p/go.crypto/ssh/agent"
 )
 
 type sshCommander struct {

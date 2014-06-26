@@ -1,10 +1,10 @@
 package patient_file
 
 import (
-	"carefront/api"
-	"carefront/apiservice"
-	"carefront/encoding"
-	"carefront/libs/pharmacy"
+	"github.com/sprucehealth/backend/api"
+	"github.com/sprucehealth/backend/apiservice"
+	"github.com/sprucehealth/backend/encoding"
+	"github.com/sprucehealth/backend/libs/pharmacy"
 	"net/http"
 )
 

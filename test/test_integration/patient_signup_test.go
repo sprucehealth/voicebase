@@ -2,8 +2,8 @@ package test_integration
 
 import (
 	"bytes"
-	"carefront/address"
-	"carefront/patient"
+	"github.com/sprucehealth/backend/address"
+	"github.com/sprucehealth/backend/patient"
 	"math/rand"
 	"net/http"
 	"net/http/httptest"

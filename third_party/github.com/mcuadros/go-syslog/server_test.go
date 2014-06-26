@@ -6,8 +6,8 @@ import (
 	"time"
 )
 
-import . "launchpad.net/gocheck"
-import "github.com/jeromer/syslogparser"
+import . "github.com/sprucehealth/backend/third_party/launchpad.net/gocheck"
+import "github.com/sprucehealth/backend/third_party/github.com/jeromer/syslogparser"
 
 func Test(t *testing.T) { TestingT(t) }
 

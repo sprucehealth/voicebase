@@ -7,9 +7,9 @@ import (
 	"net/rpc"
 	"sync"
 
-	"carefront/libs/svcreg"
+	"github.com/sprucehealth/backend/libs/svcreg"
 
-	"github.com/samuel/go-thrift/thrift"
+	"github.com/sprucehealth/backend/third_party/github.com/samuel/go-thrift/thrift"
 )
 
 type ThriftServiceClientBuilder struct {

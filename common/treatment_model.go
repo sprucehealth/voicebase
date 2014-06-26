@@ -1,8 +1,8 @@
 package common
 
 import (
-	"carefront/encoding"
-	"carefront/libs/pharmacy"
+	"github.com/sprucehealth/backend/encoding"
+	"github.com/sprucehealth/backend/libs/pharmacy"
 	"reflect"
 	"time"
 )

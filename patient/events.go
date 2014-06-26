@@ -1,6 +1,6 @@
 package patient
 
-import "carefront/common"
+import "github.com/sprucehealth/backend/common"
 
 type CareTeamAssingmentEvent struct {
 	PatientId   int64

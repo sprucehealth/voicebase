@@ -2,11 +2,11 @@ package test_integration
 
 import (
 	"bytes"
-	"carefront/api"
-	"carefront/apiservice"
-	"carefront/common"
-	"carefront/doctor_treatment_plan"
-	"carefront/patient_visit"
+	"github.com/sprucehealth/backend/api"
+	"github.com/sprucehealth/backend/apiservice"
+	"github.com/sprucehealth/backend/common"
+	"github.com/sprucehealth/backend/doctor_treatment_plan"
+	"github.com/sprucehealth/backend/patient_visit"
 	"encoding/json"
 	"fmt"
 	"io/ioutil"

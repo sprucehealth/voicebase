@@ -1,9 +1,9 @@
 package test_notifications
 
 import (
-	"carefront/common"
-	"carefront/notify"
-	"carefront/test/test_integration"
+	"github.com/sprucehealth/backend/common"
+	"github.com/sprucehealth/backend/notify"
+	"github.com/sprucehealth/backend/test/test_integration"
 	"net/http"
 	"net/http/httptest"
 	"net/url"

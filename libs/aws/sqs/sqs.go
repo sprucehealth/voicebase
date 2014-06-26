@@ -10,7 +10,7 @@ import (
 	"strings"
 	"time"
 
-	"carefront/libs/aws"
+	"github.com/sprucehealth/backend/libs/aws"
 )
 
 const version = "2012-11-05"

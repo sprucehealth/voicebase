@@ -7,9 +7,9 @@ import (
 	"sync"
 )
 
-import "github.com/jeromer/syslogparser"
-import "github.com/jeromer/syslogparser/rfc3164"
-import "github.com/jeromer/syslogparser/rfc5424"
+import "github.com/sprucehealth/backend/third_party/github.com/jeromer/syslogparser"
+import "github.com/sprucehealth/backend/third_party/github.com/jeromer/syslogparser/rfc3164"
+import "github.com/sprucehealth/backend/third_party/github.com/jeromer/syslogparser/rfc5424"
 
 type Format int
 

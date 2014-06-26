@@ -1,9 +1,9 @@
 package doctor_queue
 
 import (
-	"carefront/api"
-	"carefront/apiservice"
-	"carefront/app_url"
+	"github.com/sprucehealth/backend/api"
+	"github.com/sprucehealth/backend/apiservice"
+	"github.com/sprucehealth/backend/app_url"
 	"net/http"
 )
 

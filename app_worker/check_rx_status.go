@@ -1,14 +1,14 @@
 package app_worker
 
 import (
-	"carefront/api"
-	"carefront/common"
-	"carefront/libs/dispatch"
-	"carefront/libs/erx"
-	"carefront/libs/golog"
+	"github.com/sprucehealth/backend/api"
+	"github.com/sprucehealth/backend/common"
+	"github.com/sprucehealth/backend/libs/dispatch"
+	"github.com/sprucehealth/backend/libs/erx"
+	"github.com/sprucehealth/backend/libs/golog"
 	"encoding/json"
 
-	"github.com/samuel/go-metrics/metrics"
+	"github.com/sprucehealth/backend/third_party/github.com/samuel/go-metrics/metrics"
 
 	"time"
 )

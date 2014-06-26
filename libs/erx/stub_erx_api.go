@@ -1,9 +1,9 @@
 package erx
 
 import (
-	"carefront/common"
-	"carefront/encoding"
-	pharmacySearch "carefront/libs/pharmacy"
+	"github.com/sprucehealth/backend/common"
+	"github.com/sprucehealth/backend/encoding"
+	pharmacySearch "github.com/sprucehealth/backend/libs/pharmacy"
 	"fmt"
 	"time"
 )

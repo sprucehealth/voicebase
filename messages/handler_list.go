@@ -1,10 +1,10 @@
 package messages
 
 import (
-	"carefront/api"
-	"carefront/apiservice"
-	"carefront/app_url"
-	"carefront/common"
+	"github.com/sprucehealth/backend/api"
+	"github.com/sprucehealth/backend/apiservice"
+	"github.com/sprucehealth/backend/app_url"
+	"github.com/sprucehealth/backend/common"
 	"fmt"
 	"net/http"
 	"strconv"

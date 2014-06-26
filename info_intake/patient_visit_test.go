@@ -1,7 +1,7 @@
 package info_intake
 
 import (
-	"carefront/common"
+	"github.com/sprucehealth/backend/common"
 	"encoding/json"
 	"io/ioutil"
 	"testing"

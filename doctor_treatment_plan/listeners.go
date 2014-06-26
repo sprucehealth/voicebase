@@ -1,9 +1,9 @@
 package doctor_treatment_plan
 
 import (
-	"carefront/api"
-	"carefront/common"
-	"carefront/libs/dispatch"
+	"github.com/sprucehealth/backend/api"
+	"github.com/sprucehealth/backend/common"
+	"github.com/sprucehealth/backend/libs/dispatch"
 )
 
 const (

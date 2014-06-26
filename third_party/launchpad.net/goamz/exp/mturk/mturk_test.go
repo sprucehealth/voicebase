@@ -1,10 +1,10 @@
 package mturk_test
 
 import (
-	"launchpad.net/goamz/aws"
-	"launchpad.net/goamz/exp/mturk"
-	"launchpad.net/goamz/testutil"
-	. "launchpad.net/gocheck"
+	"github.com/sprucehealth/backend/third_party/launchpad.net/goamz/aws"
+	"github.com/sprucehealth/backend/third_party/launchpad.net/goamz/exp/mturk"
+	"github.com/sprucehealth/backend/third_party/launchpad.net/goamz/testutil"
+	. "github.com/sprucehealth/backend/third_party/launchpad.net/gocheck"
 	"net/url"
 	"testing"
 )

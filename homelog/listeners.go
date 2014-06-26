@@ -1,15 +1,15 @@
 package homelog
 
 import (
-	"carefront/api"
-	"carefront/app_url"
-	"carefront/common"
-	"carefront/doctor_treatment_plan"
-	"carefront/libs/dispatch"
-	"carefront/libs/golog"
-	"carefront/notify"
-	patientApiService "carefront/patient"
-	"carefront/patient_visit"
+	"github.com/sprucehealth/backend/api"
+	"github.com/sprucehealth/backend/app_url"
+	"github.com/sprucehealth/backend/common"
+	"github.com/sprucehealth/backend/doctor_treatment_plan"
+	"github.com/sprucehealth/backend/libs/dispatch"
+	"github.com/sprucehealth/backend/libs/golog"
+	"github.com/sprucehealth/backend/notify"
+	patientApiService "github.com/sprucehealth/backend/patient"
+	"github.com/sprucehealth/backend/patient_visit"
 	"fmt"
 )
 

@@ -1,8 +1,8 @@
 package aws_test
 
 import (
-	"launchpad.net/goamz/aws"
-	. "launchpad.net/gocheck"
+	"github.com/sprucehealth/backend/third_party/launchpad.net/goamz/aws"
+	. "github.com/sprucehealth/backend/third_party/launchpad.net/gocheck"
 	"time"
 )
 

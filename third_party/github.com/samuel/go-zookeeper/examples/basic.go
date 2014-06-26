@@ -4,7 +4,7 @@ import (
 	"fmt"
 	"time"
 
-	"github.com/samuel/go-zookeeper/zk"
+	"github.com/sprucehealth/backend/third_party/github.com/samuel/go-zookeeper/zk"
 )
 
 func main() {

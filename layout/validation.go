@@ -1,7 +1,7 @@
 package layout
 
 import (
-	"carefront/info_intake"
+	"github.com/sprucehealth/backend/info_intake"
 	"fmt"
 	"strings"
 )

@@ -1,12 +1,12 @@
 package info_intake
 
 import (
-	"carefront/common"
+	"github.com/sprucehealth/backend/common"
 	"encoding/json"
 	"io/ioutil"
 	"testing"
 
-	"github.com/SpruceHealth/mapstructure"
+	"github.com/sprucehealth/backend/third_party/github.com/SpruceHealth/mapstructure"
 )
 
 func TestParsingTemplateForDoctorVisitReview(t *testing.T) {

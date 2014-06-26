@@ -1,9 +1,9 @@
 package test_homelog
 
 import (
-	"carefront/common"
-	"carefront/homelog"
-	"carefront/test/test_integration"
+	"github.com/sprucehealth/backend/common"
+	"github.com/sprucehealth/backend/homelog"
+	"github.com/sprucehealth/backend/test/test_integration"
 	"io/ioutil"
 	"net/http/httptest"
 	"reflect"

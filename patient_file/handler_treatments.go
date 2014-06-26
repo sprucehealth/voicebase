@@ -1,12 +1,12 @@
 package patient_file
 
 import (
-	"carefront/api"
-	"carefront/apiservice"
-	"carefront/common"
+	"github.com/sprucehealth/backend/api"
+	"github.com/sprucehealth/backend/apiservice"
+	"github.com/sprucehealth/backend/common"
 	"net/http"
 
-	"github.com/gorilla/schema"
+	"github.com/sprucehealth/backend/third_party/github.com/gorilla/schema"
 )
 
 type doctorPatientTreatmentsHandler struct {

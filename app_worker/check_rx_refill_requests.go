@@ -1,18 +1,18 @@
 package app_worker
 
 import (
-	"carefront/api"
-	"carefront/common"
-	"carefront/encoding"
-	"carefront/libs/dispatch"
-	"carefront/libs/erx"
-	"carefront/libs/golog"
-	"carefront/libs/pharmacy"
+	"github.com/sprucehealth/backend/api"
+	"github.com/sprucehealth/backend/common"
+	"github.com/sprucehealth/backend/encoding"
+	"github.com/sprucehealth/backend/libs/dispatch"
+	"github.com/sprucehealth/backend/libs/erx"
+	"github.com/sprucehealth/backend/libs/golog"
+	"github.com/sprucehealth/backend/libs/pharmacy"
 	"fmt"
 	"strconv"
 	"time"
 
-	"github.com/samuel/go-metrics/metrics"
+	"github.com/sprucehealth/backend/third_party/github.com/samuel/go-metrics/metrics"
 )
 
 const (

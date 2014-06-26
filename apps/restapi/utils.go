@@ -1,12 +1,12 @@
 package main
 
 import (
-	"carefront/common/config"
-	"carefront/email"
+	"github.com/sprucehealth/backend/common/config"
+	"github.com/sprucehealth/backend/email"
 	"fmt"
 	"os"
 
-	"github.com/subosito/twilio"
+	"github.com/sprucehealth/backend/third_party/github.com/subosito/twilio"
 )
 
 type TwilioConfig struct {

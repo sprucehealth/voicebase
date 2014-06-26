@@ -2,7 +2,7 @@ package test_integration
 
 import (
 	"bytes"
-	"carefront/apiservice"
+	"github.com/sprucehealth/backend/apiservice"
 	"io/ioutil"
 	"net/http/httptest"
 	"strings"

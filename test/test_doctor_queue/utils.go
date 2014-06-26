@@ -1,8 +1,8 @@
 package test_doctor_queue
 
 import (
-	"carefront/api"
-	"carefront/test/test_integration"
+	"github.com/sprucehealth/backend/api"
+	"github.com/sprucehealth/backend/test/test_integration"
 	"testing"
 	"time"
 )

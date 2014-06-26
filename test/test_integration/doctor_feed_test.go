@@ -1,7 +1,7 @@
 package test_integration
 
 import (
-	"carefront/api"
+	"github.com/sprucehealth/backend/api"
 	"fmt"
 	"testing"
 )
