@@ -2,6 +2,11 @@ package test_integration
 
 import (
 	"bytes"
+	"carefront/api"
+	"carefront/apiservice"
+	"carefront/common"
+	"carefront/doctor_treatment_plan"
+	"carefront/patient_visit"
 	"encoding/json"
 	"fmt"
 	"io/ioutil"
@@ -9,11 +14,6 @@ import (
 	"net/http/httptest"
 	"strconv"
 	"testing"
-
-	"carefront/api"
-	"carefront/apiservice"
-	"carefront/doctor_treatment_plan"
-	"carefront/patient_visit"
 )
 
 func TestDoctorRegistration(t *testing.T) {

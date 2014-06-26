@@ -241,10 +241,6 @@ func buildRESTAPI(conf *Config, dataApi api.DataAPI, authAPI api.AuthAPI, metric
 		AddressValidationApi: smartyStreetsService,
 	}
 
-	doctorUpdatePatientPharmacyHandler := &apiservice.DoctorUpdatePatientPharmacyHandler{
-		DataApi: dataApi,
-	}
-
 	doctorPharmacySearchHandler := &apiservice.DoctorPharmacySearchHandler{
 		DataApi: dataApi,
 		ErxApi:  doseSpotService,
