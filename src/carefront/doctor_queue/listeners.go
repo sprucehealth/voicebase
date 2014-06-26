@@ -19,12 +19,19 @@ import (
 func InitListeners(dataAPI api.DataAPI, notificationManager *notify.NotificationManager, statsRegistry metrics.Registry) {
 	initJumpBallCaseQueueListeners(dataAPI, statsRegistry)
 
+	routeSuccess := metrics.NewCounter()
+	routeFailure := metrics.NewCounter()
+	statsRegistry.Add("route/success", routeSuccess)
+	statsRegistry.Add("route/failure", routeFailure)
+
 	dispatch.Default.Subscribe(func(ev *patient_visit.VisitSubmittedEvent) error {
 		// route the incoming visit to a doctor queue
 		if err := routeIncomingPatientVisit(ev, dataAPI); err != nil {
+			routeFailure.Inc(1)
 			golog.Errorf("Unable to route incoming patient visit: %s", err)
 			return err
 		}
+		routeSuccess.Inc(1)
 		return nil
 	})
 
@@ -73,9 +80,11 @@ func InitListeners(dataAPI api.DataAPI, notificationManager *notify.Notification
 			Status:    api.STATUS_PENDING,
 			EventType: eventTypeString,
 		}); err != nil {
+			routeFailure.Inc(1)
 			golog.Errorf("Unable to insert transmission error event into doctor queue: %s", err)
 			return err
 		}
+		routeSuccess.Inc(1)
 
 		doctor, err := dataAPI.GetDoctorFromId(ev.DoctorId)
 		if err != nil {
@@ -122,9 +131,11 @@ func InitListeners(dataAPI api.DataAPI, notificationManager *notify.Notification
 			EventType: api.DQEventTypeRefillRequest,
 			Status:    api.STATUS_PENDING,
 		}); err != nil {
+			routeFailure.Inc(1)
 			golog.Errorf("Unable to insert refill request item into doctor queue: %s", err)
 			return err
 		}
+		routeSuccess.Inc(1)
 
 		doctor, err := dataAPI.GetDoctorFromId(ev.DoctorId)
 		if err != nil {
@@ -203,9 +214,11 @@ func InitListeners(dataAPI api.DataAPI, notificationManager *notify.Notification
 			EventType: api.DQEventTypeCaseMessage,
 			Status:    api.DQItemStatusPending,
 		}, api.DQItemStatusReplied); err != nil {
+			routeFailure.Inc(1)
 			golog.Errorf("Unable to insert conversation item into doctor queue: %s", err)
 			return err
 		}
+		routeSuccess.Inc(1)
 
 		doctor, err := dataAPI.GetDoctorFromId(doctorID)
 		if err != nil {
