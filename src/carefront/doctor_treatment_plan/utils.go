@@ -5,7 +5,6 @@ import (
 	"carefront/common"
 	"errors"
 	"fmt"
-	"strings"
 )
 
 const (
@@ -14,20 +13,6 @@ const (
 	question_acne_type      = "q_acne_type"
 	question_rosacea_type   = "q_acne_rosacea_type"
 )
-
-func joinAcneTypesIntoString(acneTypeAnswers []*common.AnswerIntake) string {
-	acneTypes := make([]string, 0)
-
-	for _, acneTypeAnswer := range acneTypeAnswers {
-		acneTypes = append(acneTypes, acneTypeAnswer.AnswerSummary)
-	}
-
-	if len(acneTypes) == 1 {
-		return acneTypes[0]
-	}
-
-	return strings.Join(acneTypes[:len(acneTypes)-1], ", ") + " and " + acneTypes[len(acneTypes)-1]
-}
 
 func fillInTreatmentPlan(drTreatmentPlan *common.DoctorTreatmentPlan, doctorId int64, dataApi api.DataAPI) error {
 	var err error
