@@ -2,9 +2,46 @@ package test_doctor_queue
 
 import (
 	"carefront/apiservice"
+	"carefront/doctor_queue"
 	"carefront/test/test_integration"
+	"encoding/json"
+	"net/http"
+	"net/http/httptest"
 	"testing"
 )
+
+// This test is to ensure that the auth url is included in the
+// doctor queue information for the doctor app to know what to do
+// to claim access to the patient case
+func TestJBCQRouting_AuthUrlInDoctorQueue(t *testing.T) {
+	testData := test_integration.SetupIntegrationTest(t)
+	defer test_integration.TearDownIntegrationTest(t, testData)
+
+	d1 := test_integration.SignupRandomTestDoctorInState("CA", t, testData)
+	doctor, err := testData.DataApi.GetDoctorFromId(d1.DoctorId)
+	if err != nil {
+		t.Fatal(err)
+	}
+
+	doctorServer := httptest.NewServer(doctor_queue.NewQueueHandler(testData.DataApi))
+	defer doctorServer.Close()
+
+	test_integration.CreateRandomPatientVisitAndPickTP(t, testData, doctor)
+
+	responseData := &doctor_queue.DoctorQueueItemsResponseData{}
+	res, err := testData.AuthGet(doctorServer.URL+"?state=global", doctor.AccountId.Int64())
+	if err != nil {
+		t.Fatal(err)
+	} else if res.StatusCode != http.StatusOK {
+		t.Fatalf("Expected %d instead got %d", http.StatusOK, res.StatusCode)
+	} else if err := json.NewDecoder(res.Body).Decode(responseData); err != nil {
+		t.Fatal(err)
+	} else if len(responseData.Items) != 1 {
+		t.Fatalf("Expected 1 items instead got %d", len(responseData.Items))
+	} else if responseData.Items[0].AuthUrl == nil {
+		t.Fatal("Expected auth url instead got nothing")
+	}
+}
 
 // This test ensures that all doctors in the same state see
 // an elligible item
