@@ -135,10 +135,6 @@ func treatmentPlanResponse(dataApi api.DataAPI, w http.ResponseWriter, r *http.R
 		Subtitle: "Dermatologist",
 	})
 
-	views = append(views, &TPTextView{
-		Text: treatmentPlan.DiagnosisSummary.Summary,
-	})
-
 	views = append(views, &TPImageView{
 		ImageWidth:  125,
 		ImageHeight: 45,

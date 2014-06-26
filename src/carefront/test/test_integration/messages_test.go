@@ -79,11 +79,11 @@ func TestCaseMessages(t *testing.T) {
 	msgs, err := testData.DataApi.ListCaseMessages(caseID)
 	if err != nil {
 		t.Fatal(err)
-	} else if len(msgs) != 1 {
-		t.Fatalf("Expected 1 message. Got %d", len(msgs))
+	} else if len(msgs) != 2 { // one we just posted and one for the treatment plan submission
+		t.Fatalf("Expected 2 message. Got %d", len(msgs))
 	}
 
-	m := msgs[0]
+	m := msgs[len(msgs)-1]
 	if len(m.Attachments) != 1 {
 		t.Fatalf("Expected 1 attachment. Got %d", len(m.Attachments))
 	}
@@ -121,8 +121,8 @@ func TestCaseMessages(t *testing.T) {
 
 	if msgs, err = testData.DataApi.ListCaseMessages(caseID); err != nil {
 		t.Fatal(err)
-	} else if len(msgs) != 2 {
-		t.Fatalf("Expected 2 messages. Got %d", len(msgs))
+	} else if len(msgs) != 3 {
+		t.Fatalf("Expected 3 messages. Got %d", len(msgs))
 	}
 
 	if participants, err := testData.DataApi.CaseMessageParticipants(caseID, false); err != nil {

@@ -12,6 +12,7 @@ import (
 	"carefront/libs/pharmacy"
 	"carefront/treatment_plan"
 	"encoding/json"
+	"io/ioutil"
 	"net/http"
 	"net/http/httptest"
 	"strconv"
@@ -81,6 +82,7 @@ func TestPatientVisitReview(t *testing.T) {
 
 	jsonData, err := json.Marshal(&doctor_treatment_plan.TreatmentPlanRequestData{
 		TreatmentPlanId: treatmentPlan.Id,
+		Message:         "hello",
 	})
 
 	if err != nil {
@@ -91,7 +93,8 @@ func TestPatientVisitReview(t *testing.T) {
 	if err != nil {
 		t.Fatal("Unable to make call to close patient visit " + err.Error())
 	} else if resp.StatusCode != http.StatusOK {
-		t.Fatalf("Expected %d but got %d", http.StatusOK, resp.StatusCode)
+		b, _ := ioutil.ReadAll(resp.Body)
+		t.Fatalf("Expected %d but got %d: %s", http.StatusOK, resp.StatusCode, string(b))
 	}
 
 	// start a new patient visit
@@ -240,6 +243,7 @@ func TestPatientVisitReview(t *testing.T) {
 
 	jsonData, err = json.Marshal(&doctor_treatment_plan.TreatmentPlanRequestData{
 		TreatmentPlanId: treatmentPlan.Id,
+		Message:         "hello again",
 	})
 	if err != nil {
 		t.Fatal(err)
@@ -249,7 +253,8 @@ func TestPatientVisitReview(t *testing.T) {
 	if err != nil {
 		t.Fatal("Unable to make call to close patient visit " + err.Error())
 	} else if resp.StatusCode != http.StatusOK {
-		t.Fatalf("Expected %d but got %d instead", http.StatusOK, resp.StatusCode)
+		b, _ := ioutil.ReadAll(resp.Body)
+		t.Fatalf("Expected %d but got %d instead: %s", http.StatusOK, resp.StatusCode, string(b))
 	}
 
 	// get an updated view of the patient informatio nfrom the database again given that weve assigned a prescription id to him

@@ -4,7 +4,6 @@ import (
 	"carefront/api"
 	"carefront/common"
 	"carefront/libs/dispatch"
-	"carefront/patient_visit"
 )
 
 const (
@@ -14,7 +13,6 @@ const (
 )
 
 func InitListeners(dataAPI api.DataAPI) {
-
 	// subscribe to invalidate the link between a treatment plan and
 	// favorite treatment if the doctor modifies the treatments for the treatment plan
 	dispatch.Default.Subscribe(func(ev *TreatmentsAddedEvent) error {
@@ -32,15 +30,6 @@ func InitListeners(dataAPI api.DataAPI) {
 	dispatch.Default.Subscribe(func(ev *AdviceAddedEvent) error {
 		return markTPDeviatedIfContentChanged(ev.TreatmentPlanId, ev.DoctorId, dataAPI, checkAdvice)
 	})
-
-	dispatch.Default.Subscribe(func(ev *patient_visit.DiagnosisModifiedEvent) error {
-		return updateDiagnosisSummary(dataAPI, ev.DoctorId, ev.PatientVisitId, ev.TreatmentPlanId)
-	})
-
-	dispatch.Default.Subscribe(func(ev *NewTreatmentPlanStartedEvent) error {
-		return updateDiagnosisSummary(dataAPI, ev.DoctorId, ev.PatientVisitId, ev.TreatmentPlanId)
-	})
-
 }
 
 func markTPDeviatedIfContentChanged(treatmentPlanId, doctorId int64, dataAPI api.DataAPI, sectionToCheck string) error {

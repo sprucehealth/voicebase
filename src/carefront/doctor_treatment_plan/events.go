@@ -32,4 +32,5 @@ type TreatmentPlanCreatedEvent struct {
 	VisitId         int64
 	TreatmentPlanId int64
 	Patient         *common.Patient // Setting Patient is an optional optimization. If this is nil then PatientId can be used.
+	Message         *common.CaseMessage
 }

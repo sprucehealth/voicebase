@@ -119,19 +119,18 @@ type PatientCareProviderGroup struct {
 }
 
 type TreatmentPlan struct {
-	Id               encoding.ObjectId `json:"treatment_plan_id,omitempty"`
-	PatientCaseId    encoding.ObjectId `json:"patient_case_id"`
-	PatientId        encoding.ObjectId `json:"patient_id,omitempty"`
-	PatientInfo      *Patient          `json:"patient,omitempty"`
-	Status           string            `json:"status,omitempty"`
-	CreationDate     *time.Time        `json:"creation_date,omitempty"`
-	SentDate         *time.Time        `json:"sent_date,omitempty"`
-	TreatmentList    *TreatmentList    `json:"treatment_list,omitempty"`
-	Title            string            `json:"title,omitempty"`
-	DiagnosisSummary *DiagnosisSummary `json:"diagnosis_summary,omitempty"`
-	RegimenPlan      *RegimenPlan      `json:"regimen_plan,omitempty"`
-	Advice           *Advice           `json:"advice,omitempty"`
-	Followup         *FollowUp         `json:"follow_up,omitempty"`
+	Id            encoding.ObjectId `json:"treatment_plan_id,omitempty"`
+	PatientCaseId encoding.ObjectId `json:"patient_case_id"`
+	PatientId     encoding.ObjectId `json:"patient_id,omitempty"`
+	PatientInfo   *Patient          `json:"patient,omitempty"`
+	Status        string            `json:"status,omitempty"`
+	CreationDate  *time.Time        `json:"creation_date,omitempty"`
+	SentDate      *time.Time        `json:"sent_date,omitempty"`
+	TreatmentList *TreatmentList    `json:"treatment_list,omitempty"`
+	Title         string            `json:"title,omitempty"`
+	RegimenPlan   *RegimenPlan      `json:"regimen_plan,omitempty"`
+	Advice        *Advice           `json:"advice,omitempty"`
+	Followup      *FollowUp         `json:"follow_up,omitempty"`
 }
 
 type FavoriteTreatmentPlan struct {
@@ -399,13 +398,6 @@ func (a *Advice) Equals(other *Advice) bool {
 	}
 
 	return true
-}
-
-type DiagnosisSummary struct {
-	Type            string `json:"type"`
-	Summary         string `json:"text"`
-	Title           string `json:"title,omitempty"`
-	UpdatedByDoctor bool   `json:"-"`
 }
 
 type StatusEvent struct {

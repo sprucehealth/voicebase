@@ -523,44 +523,6 @@ func (d *DataService) GetDiagnosisResponseToQuestionWithTag(questionTag string, 
 	return answerIntakes, rows.Err()
 }
 
-func (d *DataService) AddDiagnosisSummaryForTreatmentPlan(summary string, treatmentPlanId, doctorId int64) error {
-	tx, err := d.db.Begin()
-	if err != nil {
-		return err
-	}
-
-	// inactivate any previous summaries for this patient visit
-	_, err = tx.Exec(`delete from diagnosis_summary where doctor_id = ? and treatment_plan_id = ? and status = ?`, doctorId, treatmentPlanId, STATUS_ACTIVE)
-	if err != nil {
-		tx.Rollback()
-		return err
-	}
-
-	_, err = tx.Exec(`insert into diagnosis_summary (summary, treatment_plan_id, doctor_id, status) values (?, ?, ?, ?)`, summary, treatmentPlanId, doctorId, STATUS_ACTIVE)
-	if err != nil {
-		tx.Rollback()
-		return err
-	}
-	return tx.Commit()
-}
-
-func (d *DataService) GetDiagnosisSummaryForTreatmentPlan(treatmentPlanId int64) (*common.DiagnosisSummary, error) {
-	var diagnosisSummary common.DiagnosisSummary
-	err := d.db.QueryRow(`select summary, updated_by_doctor from diagnosis_summary where treatment_plan_id = ? and status='ACTIVE'`, treatmentPlanId).Scan(&diagnosisSummary.Summary, &diagnosisSummary.UpdatedByDoctor)
-	if err == sql.ErrNoRows {
-		return nil, NoRowsError
-	} else if err != nil {
-		return nil, err
-	}
-
-	return &diagnosisSummary, nil
-}
-
-func (d *DataService) AddOrUpdateDiagnosisSummaryForTreatmentPlan(summary string, treatmentPlanId, doctorId int64, isUpdatedByDoctor bool) error {
-	_, err := d.db.Exec(`replace into diagnosis_summary (summary, treatment_plan_id, doctor_id, updated_by_doctor, status) values (?,?,?,?,?)`, summary, treatmentPlanId, doctorId, isUpdatedByDoctor, STATUS_ACTIVE)
-	return err
-}
-
 func (d *DataService) DeactivatePreviousDiagnosisForPatientVisit(treatmentPlanId int64, doctorId int64) error {
 	_, err := d.db.Exec(`update info_intake set status='INACTIVE' where context_id = ? and status = 'ACTIVE' and role = 'DOCTOR' and role_id = ?`, treatmentPlanId, doctorId)
 	return err
