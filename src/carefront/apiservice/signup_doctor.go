@@ -10,12 +10,20 @@ import (
 	"strings"
 
 	"github.com/dchest/validator"
-	"github.com/gorilla/schema"
 )
 
-type SignupDoctorHandler struct {
-	DataApi api.DataAPI
-	AuthApi api.AuthAPI
+type signupDoctorHandler struct {
+	dataAPI     api.DataAPI
+	authAPI     api.AuthAPI
+	environment string
+}
+
+func NewSignupDoctorHandler(dataAPI api.DataAPI, authAPI api.AuthAPI, environment string) *signupDoctorHandler {
+	return &signupDoctorHandler{
+		dataAPI:     dataAPI,
+		authAPI:     authAPI,
+		environment: environment,
+	}
 }
 
 type DoctorSignedupResponse struct {
@@ -24,7 +32,7 @@ type DoctorSignedupResponse struct {
 	PersonId int64  `json:"person_id,string"`
 }
 
-func (d *SignupDoctorHandler) NonAuthenticated() bool {
+func (d *signupDoctorHandler) NonAuthenticated() bool {
 	return true
 }
 
@@ -44,23 +52,18 @@ type SignupDoctorRequestData struct {
 	Phone        string `schema:"phone,required"`
 }
 
-func (d *SignupDoctorHandler) ServeHTTP(w http.ResponseWriter, r *http.Request) {
+func (d *signupDoctorHandler) ServeHTTP(w http.ResponseWriter, r *http.Request) {
 	if r.Method != HTTP_POST {
 		w.WriteHeader(http.StatusNotFound)
 		return
 	}
 
-	if err := r.ParseForm(); err != nil {
-		WriteDeveloperError(w, http.StatusBadRequest, "Unable to parse request data: "+err.Error())
-		return
-	}
-
 	var requestData SignupDoctorRequestData
-	if err := schema.NewDecoder().Decode(&requestData, r.Form); err != nil {
+	if err := DecodeRequestData(&requestData, r); err != nil {
 		WriteDeveloperError(w, http.StatusBadRequest, "Unable to parse input to signup doctor: "+err.Error())
 		return
-	}
 
+	}
 	if !validator.IsValidEmail(requestData.Email) {
 		WriteUserError(w, http.StatusBadRequest, "Please enter a valid email address")
 		golog.Infof("Invalid email during doctor signup: %s", requestData.Email)
@@ -94,7 +97,7 @@ func (d *SignupDoctorHandler) ServeHTTP(w http.ResponseWriter, r *http.Request) 
 	}
 
 	// first, create an account for the user
-	accountID, token, err := d.AuthApi.SignUp(requestData.Email, requestData.Password, api.DOCTOR_ROLE)
+	accountID, token, err := d.authAPI.SignUp(requestData.Email, requestData.Password, api.DOCTOR_ROLE)
 	if err == api.LoginAlreadyExists {
 		WriteUserError(w, http.StatusBadRequest, "An account with the specified email address already exists.")
 		return
@@ -121,11 +124,26 @@ func (d *SignupDoctorHandler) ServeHTTP(w http.ResponseWriter, r *http.Request) 
 		PromptStatus: common.Unprompted,
 	}
 
-	// then, register the signed up user as a patient
-	doctorId, err := d.DataApi.RegisterDoctor(doctorToRegister)
+	// then, register the signed up user as a doctor
+	doctorId, err := d.dataAPI.RegisterDoctor(doctorToRegister)
 	if err != nil {
 		WriteDeveloperError(w, http.StatusInternalServerError, "Something went wrong when trying to sign up doctor: "+err.Error())
 		return
+	}
+
+	// only add the doctor as being eligible in CA for non-prod environments
+	if d.environment != "prod" {
+
+		careProvidingStateId, err := d.dataAPI.GetCareProvidingStateId("CA", HEALTH_CONDITION_ACNE_ID)
+		if err != nil {
+			WriteError(err, w, r)
+			return
+		}
+
+		if err := d.dataAPI.MakeDoctorElligibleinCareProvidingState(careProvidingStateId, doctorId); err != nil {
+			WriteError(err, w, r)
+			return
+		}
 	}
 
 	WriteJSONToHTTPResponseWriter(w, http.StatusOK, &DoctorSignedupResponse{

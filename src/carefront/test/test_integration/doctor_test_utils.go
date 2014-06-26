@@ -29,7 +29,7 @@ func SignupRandomTestDoctor(t *testing.T, testData *TestData) (signedupDoctorRes
 }
 
 func signupDoctor(t *testing.T, testData *TestData) (*apiservice.DoctorSignedupResponse, string, string) {
-	authHandler := &apiservice.SignupDoctorHandler{AuthApi: testData.AuthApi, DataApi: testData.DataApi}
+	authHandler := apiservice.NewSignupDoctorHandler(testData.DataApi, testData.AuthApi, "test")
 	ts := httptest.NewServer(authHandler)
 	defer ts.Close()
 
