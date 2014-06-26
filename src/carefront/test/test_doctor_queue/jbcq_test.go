@@ -302,6 +302,14 @@ func TestJBCQ_Claim(t *testing.T) {
 	if unclaimedItems := getUnclaimedItemsForDoctor(doctor.DoctorId.Int64(), t, testData); len(unclaimedItems) != 0 {
 		t.Fatalf("Expected 0 items in the global queue but got %d", len(unclaimedItems))
 	}
+
+	// There should be 1 completed item in the doctor's queue
+	completedItems, err := testData.DataApi.GetCompletedItemsInDoctorQueue(doctor.DoctorId.Int64())
+	if err != nil {
+		t.Fatal(err)
+	} else if len(completedItems) != 1 {
+		t.Fatalf("Expected 1 completed item instead got %d", len(completedItems))
+	}
 }
 
 // This test is to ensure that the doctor is permanently assigned to the
