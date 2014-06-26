@@ -61,7 +61,8 @@ func ValidateReadAccessToPatientCase(doctorId, patientId, patientCaseId int64, d
 }
 
 // ValidateWriteAccessToPatientCase checks to ensure that the doctor has write access to the patient case. A doctor
-// has write access so long as the doctor is assigned to the case, and the access has not expired if the doctor is granted temporary access
+// has write access so long as the doctor is explicitly assigned to the case,
+// and the access has not expired if the doctor is granted temporary access
 func ValidateWriteAccessToPatientCase(doctorId, patientId, patientCaseId int64, dataAPI api.DataAPI) error {
 	doctorAssignments, err := dataAPI.GetDoctorsAssignedToPatientCase(patientCaseId)
 	if err != nil {
