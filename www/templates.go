@@ -21,7 +21,7 @@ var ResourceBundle resources.BundleSequence
 
 func init() {
 	if p := os.Getenv("GOPATH"); p != "" {
-		ResourceBundle = append(ResourceBundle, resources.OpenFS(path.Join(p, "src", "carefront", "resources")))
+		ResourceBundle = append(ResourceBundle, resources.OpenFS(path.Join(p, "src", "github.com", "sprucehealth", "backend", "resources")))
 	}
 	if p := os.Getenv("RESOURCEPATH"); p != "" {
 		ResourceBundle = append(ResourceBundle, resources.OpenFS(p))

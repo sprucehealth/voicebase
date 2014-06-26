@@ -56,7 +56,6 @@ type TestData struct {
 	DBConfig            *TestDBConfig
 	CloudStorageService api.CloudStorageAPI
 	DB                  *sql.DB
-	StartTime           time.Time
 	AWSAuth             aws.Auth
 }
 
@@ -151,9 +150,9 @@ func (d *TestData) AuthDelete(url, bodyType string, body io.Reader, accountID in
 
 func GetDBConfig(t *testing.T) *TestDBConfig {
 	dbConfig := TestConf{}
-	fileContents, err := ioutil.ReadFile(os.Getenv(spruceProjectDirEnv) + "/src/github.com/sprucehealth/backend/apps/restapi/dev.conf")
+	fileContents, err := ioutil.ReadFile(os.Getenv(spruceProjectDirEnv) + "/src/github.com/sprucehealth/backend/test/test.conf")
 	if err != nil {
-		t.Fatal("Unable to upload dev.conf to read database data from : " + err.Error())
+		t.Fatal("Unable to load test.conf to read database data from: " + err.Error())
 	}
 	_, err = toml.Decode(string(fileContents), &dbConfig)
 	if err != nil {
@@ -259,7 +258,6 @@ func SetupIntegrationTest(t *testing.T) *TestData {
 		dbConfig.Password = os.Getenv("RDS_PASSWORD")
 	}
 
-	ts := time.Now()
 	setupScript := os.Getenv(spruceProjectDirEnv) + "/src/github.com/sprucehealth/backend/test/test_integration/setup_integration_test.sh"
 	cmd := exec.Command(setupScript)
 	var out bytes.Buffer
@@ -271,7 +269,7 @@ func SetupIntegrationTest(t *testing.T) *TestData {
 		fmt.Sprintf("RDS_PASSWORD=%s", dbConfig.Password),
 	)
 	if err := cmd.Run(); err != nil {
-		t.Fatal("Unable to run the setup_database.sh script for integration tests: " + err.Error() + " " + out.String())
+		t.Fatalf("Unable to run the %s script for integration tests: %s %s", setupScript, err.Error(), out.String())
 	}
 
 	dbConfig.DatabaseName = strings.TrimSpace(out.String())
@@ -296,9 +294,6 @@ func SetupIntegrationTest(t *testing.T) *TestData {
 		DB:                  db,
 		AWSAuth:             awsAuth,
 	}
-
-	t.Logf("Created and connected to database with name: %s (%.3f seconds)", testData.DBConfig.DatabaseName, float64(time.Since(ts))/float64(time.Second))
-	testData.StartTime = time.Now()
 
 	// create the role of a doctor and patient
 	_, err = testData.DB.Exec(`insert into role_type (role_type_tag) values ('DOCTOR'),('PATIENT')`)
@@ -340,13 +335,12 @@ func SetupIntegrationTest(t *testing.T) *TestData {
 func TearDownIntegrationTest(t *testing.T, testData *TestData) {
 	testData.DB.Close()
 
-	t.Logf("Time to run test: %.3f seconds", float64(time.Since(testData.StartTime))/float64(time.Second))
-	ts := time.Now()
 	// put anything here that is global to the teardown process for integration tests
 	teardownScript := os.Getenv(spruceProjectDirEnv) + "/src/github.com/sprucehealth/backend/test/test_integration/teardown_integration_test.sh"
 	cmd := exec.Command(teardownScript, testData.DBConfig.DatabaseName)
 	var out bytes.Buffer
 	cmd.Stdout = &out
+	cmd.Stderr = os.Stderr
 	cmd.Env = append(os.Environ(),
 		fmt.Sprintf("RDS_INSTANCE=%s", testData.DBConfig.Host),
 		fmt.Sprintf("RDS_USERNAME=%s", testData.DBConfig.User),
@@ -356,7 +350,6 @@ func TearDownIntegrationTest(t *testing.T, testData *TestData) {
 	if err != nil {
 		t.Fatal("Unable to run the teardown integration script for integration tests: " + err.Error() + " " + out.String())
 	}
-	t.Logf("Tore down database with name: %s (%.3f seconds)", testData.DBConfig.DatabaseName, float64(time.Since(ts))/float64(time.Second))
 }
 
 func CheckSuccessfulStatusCode(resp *http.Response, errorMessage string, t *testing.T) {
