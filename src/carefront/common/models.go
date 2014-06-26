@@ -127,12 +127,13 @@ type Address struct {
 }
 
 type CareProviderAssignment struct {
-	ProviderRole string
-	ProviderId   int64
-	PatientId    int64
-	Status       string
-	CreationDate time.Time
-	Expires      *time.Time
+	ProviderRole      string
+	ProviderId        int64
+	PatientId         int64
+	HealthConditionId int64
+	Status            string
+	CreationDate      time.Time
+	Expires           *time.Time
 }
 
 type PatientCareTeam struct {

@@ -89,8 +89,7 @@ func (c *claimPatientCaseAccessHandler) ServeHTTP(w http.ResponseWriter, r *http
 	if patientCase.Status != common.PCStatusUnclaimed {
 		apiservice.WriteValidationError("Expected patient case to be in the unclaimed state but it wasnt", w, r)
 		return
-	} else if err := c.dataAPI.TemporarilyClaimCaseAndAssignDoctorToCaseAndPatient(doctorId, patientCase.Id.Int64(),
-		patientCase.PatientId.Int64(), ExpireDuration); err != nil {
+	} else if err := c.dataAPI.TemporarilyClaimCaseAndAssignDoctorToCaseAndPatient(doctorId, patientCase, ExpireDuration); err != nil {
 		c.tempClaimFailure.Inc(1)
 		apiservice.WriteError(err, w, r)
 		return

@@ -57,9 +57,8 @@ type PatientAPI interface {
 	CreateUnlinkedPatientFromRefillRequest(patient *common.Patient) error
 	UpdatePatientWithERxPatientId(patientId, erxPatientId int64) error
 	GetPatientIdFromAccountId(accountId int64) (int64, error)
-	CreateCareTeamForPatient(patientId int64) (careTeam *common.PatientCareTeam, err error)
-	AddDoctorToCareTeamForPatient(patientId, doctorId int64) error
-	CreateCareTeamForPatientWithPrimaryDoctor(patientId, doctorId int64) (careTeam *common.PatientCareTeam, err error)
+	AddDoctorToCareTeamForPatient(patientId, healthConditionId, doctorId int64) error
+	CreateCareTeamForPatientWithPrimaryDoctor(patientId, healthConditionId, doctorId int64) (careTeam *common.PatientCareTeam, err error)
 	GetCareTeamForPatient(patientId int64) (careTeam *common.PatientCareTeam, err error)
 	CheckCareProvidingElligibility(shortState string, healthConditionId int64) (doctorId int64, err error)
 	UpdatePatientAddress(patientId int64, addressLine1, addressLine2, city, state, zipCode, addressType string) error
@@ -97,8 +96,8 @@ type PatientCaseAPI interface {
 }
 
 type JumpBallQueueAPI interface {
-	TemporarilyClaimCaseAndAssignDoctorToCaseAndPatient(doctorId, patientCaseId, patientId int64, duration time.Duration) error
-	PermanentlyAssignDoctorToCaseAndPatient(doctorId, patientCaseId, patientId int64) error
+	TemporarilyClaimCaseAndAssignDoctorToCaseAndPatient(doctorId int64, patientCase *common.PatientCase, duration time.Duration) error
+	PermanentlyAssignDoctorToCaseAndPatient(doctorId int64, patientCase *common.PatientCase) error
 	ExtendClaimForDoctor(doctorId, patientId, patientCaseId int64, duration time.Duration) error
 	GetClaimedItemsInQueue() ([]*DoctorQueueItem, error)
 	GetElligibleItemsInUnclaimedQueue(doctorId int64) ([]*DoctorQueueItem, error)

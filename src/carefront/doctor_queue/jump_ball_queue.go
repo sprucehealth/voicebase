@@ -39,8 +39,7 @@ func initJumpBallCaseQueueListeners(dataAPI api.DataAPI, statsRegistry metrics.R
 
 		// go ahead and claim case if no doctors are assigned to it
 		if patientCase.Status == common.PCStatusUnclaimed {
-			if err := dataAPI.TemporarilyClaimCaseAndAssignDoctorToCaseAndPatient(ev.DoctorId, patientCase.Id.Int64(),
-				patientCase.PatientId.Int64(), ExpireDuration); err != nil {
+			if err := dataAPI.TemporarilyClaimCaseAndAssignDoctorToCaseAndPatient(ev.DoctorId, patientCase, ExpireDuration); err != nil {
 				tempClaimFailure.Inc(1)
 				golog.Errorf("Unable to temporarily assign the patient visit to the doctor: %s", err)
 				return err
@@ -101,7 +100,7 @@ func permanentlyAssignDoctorToCaseAndPatient(patientVisitId, doctorId int64, dat
 	}
 
 	if patientCase.Status == common.PCStatusTempClaimed {
-		if err := dataAPI.PermanentlyAssignDoctorToCaseAndPatient(doctorId, patientCase.Id.Int64(), patientCase.PatientId.Int64()); err != nil {
+		if err := dataAPI.PermanentlyAssignDoctorToCaseAndPatient(doctorId, patientCase); err != nil {
 			golog.Errorf("Unable to permanently assign doctor to case and patient: %s", err)
 			permClaimFailure.Inc(1)
 			return err

@@ -2,46 +2,31 @@ package doctor_queue
 
 import (
 	"carefront/api"
-	"carefront/common"
+	"carefront/libs/golog"
 	"carefront/patient_visit"
 )
 
 func routeIncomingPatientVisit(ev *patient_visit.VisitSubmittedEvent, dataAPI api.DataAPI) error {
+
+	// get the patient's care team
+	careTeam, err := dataAPI.GetCareTeamForPatient(ev.PatientId)
+	if err != nil {
+		golog.Errorf("Unable to get care team for patient: %s", err)
+		return err
+	}
+
 	// get the patient case that the visit belongs to
 	patientCase, err := dataAPI.GetPatientCaseFromPatientVisitId(ev.VisitId)
 	if err != nil {
 		return err
 	}
 
-	if patientCase.Status == common.PCStatusUnclaimed {
-		// insert item into the unclaimed item queue given that it has not been claimed by a doctor yet
-		patient, err := dataAPI.GetPatientFromId(ev.PatientId)
-		if err != nil {
-			return err
-		}
-
-		careProvidingStateId, err := dataAPI.GetCareProvidingStateId(patient.StateFromZipCode, patientCase.HealthConditionId.Int64())
-		if err != nil {
-			return err
-		}
-
-		if err := dataAPI.InsertUnclaimedItemIntoQueue(&api.DoctorQueueItem{
-			CareProvidingStateId: careProvidingStateId,
-			ItemId:               ev.VisitId,
-			EventType:            api.DQEventTypePatientVisit,
-			Status:               api.STATUS_PENDING,
-			PatientCaseId:        patientCase.Id.Int64(),
-		}); err != nil {
-			return err
-		}
-	} else {
-		doctorAssignments, err := dataAPI.GetDoctorsAssignedToPatientCase(patientCase.Id.Int64())
-		if err != nil {
-			return err
-		}
-		// route it to the active doctor under the case
-		for _, assignment := range doctorAssignments {
-			if assignment.Status == api.STATUS_ACTIVE {
+	// route the case to any doctor assigned to the patient for this condition,
+	// otherwise place in global unclaimed queue
+	if careTeam != nil {
+		for _, assignment := range careTeam.Assignments {
+			if assignment.ProviderRole == api.DOCTOR_ROLE && assignment.HealthConditionId == patientCase.HealthConditionId.Int64() {
+				// we identified a doctor the case can be routed to
 				if err := dataAPI.InsertItemIntoDoctorQueue(api.DoctorQueueItem{
 					DoctorId:  assignment.ProviderId,
 					ItemId:    ev.VisitId,
@@ -50,8 +35,31 @@ func routeIncomingPatientVisit(ev *patient_visit.VisitSubmittedEvent, dataAPI ap
 				}); err != nil {
 					return err
 				}
+				return nil
 			}
 		}
+	}
+
+	// no doctor could be identified; place the case in the globao queue
+	// insert item into the unclaimed item queue given that it has not been claimed by a doctor yet
+	patient, err := dataAPI.GetPatientFromId(ev.PatientId)
+	if err != nil {
+		return err
+	}
+
+	careProvidingStateId, err := dataAPI.GetCareProvidingStateId(patient.StateFromZipCode, patientCase.HealthConditionId.Int64())
+	if err != nil {
+		return err
+	}
+
+	if err := dataAPI.InsertUnclaimedItemIntoQueue(&api.DoctorQueueItem{
+		CareProvidingStateId: careProvidingStateId,
+		ItemId:               ev.VisitId,
+		EventType:            api.DQEventTypePatientVisit,
+		Status:               api.STATUS_PENDING,
+		PatientCaseId:        patientCase.Id.Int64(),
+	}); err != nil {
+		return err
 	}
 
 	return nil
