@@ -4,12 +4,6 @@
 package config
 
 import (
-	"github.com/sprucehealth/backend/common"
-	"github.com/sprucehealth/backend/libs/aws"
-	"github.com/sprucehealth/backend/libs/dispatch"
-	"github.com/sprucehealth/backend/libs/golog"
-	"github.com/sprucehealth/backend/libs/svcreg"
-	"github.com/sprucehealth/backend/libs/svcreg/zksvcreg"
 	"encoding/json"
 	"expvar"
 	"fmt"
@@ -26,11 +20,14 @@ import (
 	"strconv"
 	"strings"
 	"sync"
-	"time"
+
+	"github.com/sprucehealth/backend/common"
+	"github.com/sprucehealth/backend/libs/aws"
+	"github.com/sprucehealth/backend/libs/dispatch"
+	"github.com/sprucehealth/backend/libs/golog"
 
 	"github.com/sprucehealth/backend/third_party/github.com/BurntSushi/toml"
 	flags "github.com/sprucehealth/backend/third_party/github.com/jessevdk/go-flags"
-	"github.com/sprucehealth/backend/third_party/github.com/samuel/go-zookeeper/zk"
 	goamz "github.com/sprucehealth/backend/third_party/launchpad.net/goamz/aws"
 	"github.com/sprucehealth/backend/third_party/launchpad.net/goamz/s3"
 )
@@ -57,28 +54,21 @@ func (n NotificationConfigs) Get(configName string) (*NotificationConfig, error)
 }
 
 type BaseConfig struct {
-	AppName                 string `long:"app_name" description:"Application name (required)"`
-	AWSRegion               string `long:"aws_region" description:"AWS region"`
-	AWSRole                 string `long:"aws_role" description:"AWS role for fetching temporary credentials"`
-	AWSSecretKey            string `long:"aws_secret_key" description:"AWS secret key"`
-	AWSAccessKey            string `long:"aws_access_key" description:"AWS access key id"`
-	ConfigPath              string `short:"c" long:"config" description:"Path to config file. If not set then stderr is used."`
-	Environment             string `short:"e" long:"env" description:"Current environment (dev, stage, prod)"`
-	Syslog                  bool   `long:"syslog" description:"Log to syslog"`
-	ZookeeperHosts          string `long:"zk_hosts" description:"Zookeeper host list (e.g. 127.0.0.1:2181,192.168.1.1:2181)"`
-	ZookeeperServicesPrefix string `long:"zk_svc_prefix" description:"Zookeeper svc registry prefix" default:"/services"`
-	Stats                   *Stats `group:"Stats" toml:"stats"`
-	AlertEmail              string `long:"alert_email" description:"Email address to which to send panics"`
+	AppName      string `long:"app_name" description:"Application name (required)"`
+	AWSRegion    string `long:"aws_region" description:"AWS region"`
+	AWSRole      string `long:"aws_role" description:"AWS role for fetching temporary credentials"`
+	AWSSecretKey string `long:"aws_secret_key" description:"AWS secret key"`
+	AWSAccessKey string `long:"aws_access_key" description:"AWS access key id"`
+	ConfigPath   string `short:"c" long:"config" description:"Path to config file. If not set then stderr is used."`
+	Environment  string `short:"e" long:"env" description:"Current environment (dev, stage, prod)"`
+	Syslog       bool   `long:"syslog" description:"Log to syslog"`
+	Stats        *Stats `group:"Stats" toml:"stats"`
+	AlertEmail   string `long:"alert_email" description:"Email address to which to send panics"`
 
 	Version bool `long:"version" description:"Show version and exit" toml:"-"`
 
 	awsAuth     aws.Auth
 	awsAuthOnce sync.Once
-	zkConn      *zk.Conn
-	zkChan      <-chan zk.Event
-	zkOnce      sync.Once
-	reg         svcreg.Registry
-	regOnce     sync.Once
 }
 
 var (
@@ -149,34 +139,6 @@ func (c *BaseConfig) AWSAuth() (auth aws.Auth, err error) {
 		}
 	})
 	auth = c.awsAuth
-	return
-}
-
-func (c *BaseConfig) ZKClient() (conn *zk.Conn, err error) {
-	c.zkOnce.Do(func() {
-		if c.ZookeeperHosts != "" {
-			hosts := strings.Split(c.ZookeeperHosts, ",")
-			c.zkConn, c.zkChan, err = zk.Connect(hosts, time.Second*10)
-		}
-	})
-	conn = c.zkConn
-	return
-}
-
-func (c *BaseConfig) ServiceRegistry() (reg svcreg.Registry, err error) {
-	c.regOnce.Do(func() {
-		zk, e := c.ZKClient()
-		if e != nil {
-			err = e
-			return
-		}
-		if zk == nil {
-			c.reg = &svcreg.StaticRegistry{}
-		} else {
-			c.reg, err = zksvcreg.NewServiceRegistry(zk, c.ZookeeperServicesPrefix)
-		}
-	})
-	reg = c.reg
 	return
 }
 
