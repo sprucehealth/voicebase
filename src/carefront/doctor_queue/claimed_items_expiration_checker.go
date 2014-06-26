@@ -65,6 +65,7 @@ func CheckForExpiredClaimedItems(dataAPI api.DataAPI, claimExpirationSuccess, cl
 			if err := revokeAccesstoCaseFromDoctor(item.PatientCaseId, patientCase.PatientId.Int64(), item.DoctorId, dataAPI); err != nil {
 				claimExpirationFailure.Inc(1)
 				golog.Errorf("Unable to revoke access of case from doctor: %s", err)
+				return
 			}
 			claimExpirationSuccess.Inc(1)
 		}
