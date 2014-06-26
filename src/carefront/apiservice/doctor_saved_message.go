@@ -59,7 +59,7 @@ func (h *doctorSavedMessageHandler) get(w http.ResponseWriter, r *http.Request, 
 		var err error
 		doctorID, err = strconv.ParseInt(r.FormValue("doctor_id"), 10, 64)
 		if err != nil {
-			WriteUserError(w, http.StatusBadGateway, "doctor_id is required")
+			WriteUserError(w, http.StatusBadRequest, "doctor_id is required")
 			return
 		}
 	}
