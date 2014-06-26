@@ -68,6 +68,7 @@ func (h *doctorSavedMessageHandler) get(w http.ResponseWriter, r *http.Request, 
 		msg = ""
 	} else if err != nil {
 		WriteError(err, w, r)
+		return
 	}
 	WriteJSONToHTTPResponseWriter(w, http.StatusOK, &doctorSavedMessageGetResponse{Message: msg})
 }
