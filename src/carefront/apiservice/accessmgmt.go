@@ -21,16 +21,11 @@ func ValidateDoctorAccessToPatientFile(doctorId, patientId int64, dataAPI api.Da
 	doctorFound := false
 	for _, assignment := range careTeam.Assignments {
 		if assignment.ProviderRole == api.DOCTOR_ROLE && assignment.ProviderId == doctorId {
-			doctorFound = true
-			break
+			return nil
 		}
 	}
 
-	if !doctorFound {
-		return NewAccessForbiddenError()
-	}
-
-	return nil
+	return NewAccessForbiddenError()
 }
 
 // ValidateReadAccessToPatientCase checks to ensure that the doctor has read access to the patient case. A doctor
