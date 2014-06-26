@@ -5,6 +5,7 @@ import (
 	"carefront/apiservice"
 	"carefront/app_url"
 	"carefront/common"
+	"carefront/encoding"
 	"carefront/libs/erx"
 	"carefront/libs/golog"
 	"fmt"
@@ -72,7 +73,12 @@ func (p *treatmentPlanHandler) processTreatmentPlanViewForDoctor(requestData *Tr
 		return
 	}
 
-	treatmentPlan, err := populateTreatmentPlan(p.dataApi, patientVisitId, requestData.TreatmentPlanId)
+	treatmentPlan := &common.TreatmentPlan{
+		Id:       encoding.NewObjectId(requestData.TreatmentPlanId),
+		DoctorId: encoding.NewObjectId(doctor.DoctorId.Int64()),
+	}
+
+	err = populateTreatmentPlan(p.dataApi, patientVisitId, treatmentPlan)
 	if err != nil {
 		apiservice.WriteDeveloperError(w, http.StatusInternalServerError, err.Error())
 		return
@@ -106,21 +112,21 @@ func (p *treatmentPlanHandler) processTreatmentPlanViewForPatient(requestData *T
 		return
 	}
 
-	doctor, err := p.dataApi.GetDoctorAssignedToPatientVisit(patientVisit.PatientVisitId.Int64())
-	if err != nil {
-		apiservice.WriteDeveloperError(w, http.StatusInternalServerError, "Unable to get doctor assigned to patient visit: "+err.Error())
-		return
-	}
-
-	treatmentPlanId, err := p.dataApi.GetActiveTreatmentPlanIdForPatient(patient.PatientId.Int64())
+	treatmentPlan, err := p.dataApi.GetActiveTreatmentPlanForPatient(patient.PatientId.Int64())
 	if err != nil {
 		apiservice.WriteDeveloperError(w, http.StatusInternalServerError, "Unable to get treatment plan based on patient visit: "+err.Error())
 		return
 	}
 
-	treatmentPlan, err := populateTreatmentPlan(p.dataApi, patientVisit.PatientVisitId.Int64(), treatmentPlanId)
+	err = populateTreatmentPlan(p.dataApi, patientVisit.PatientVisitId.Int64(), treatmentPlan)
 	if err != nil {
 		apiservice.WriteDeveloperError(w, http.StatusInternalServerError, err.Error())
+		return
+	}
+
+	doctor, err := p.dataApi.GetDoctorFromId(treatmentPlan.DoctorId.Int64())
+	if err != nil {
+		apiservice.WriteError(err, w, r)
 		return
 	}
 

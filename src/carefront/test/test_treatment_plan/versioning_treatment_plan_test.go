@@ -453,12 +453,12 @@ func TestVersionTreatmentPlan_TPForPatient(t *testing.T) {
 	// submit version to make it active
 	test_integration.SubmitPatientVisitBackToPatient(tpResponse.TreatmentPlan.Id.Int64(), doctor, testData, t)
 
-	treatmentPlanIdForPatient, err := testData.DataApi.GetActiveTreatmentPlanIdForPatient(patientId)
+	treatmentPlanForPatient, err := testData.DataApi.GetActiveTreatmentPlanForPatient(patientId)
 	if err != nil {
 		t.Fatal(err)
 	}
 
-	if treatmentPlanIdForPatient != tpResponse.TreatmentPlan.Id.Int64() {
+	if treatmentPlanForPatient.Id.Int64() != tpResponse.TreatmentPlan.Id.Int64() {
 		t.Fatal("Expected the latest treatment plan to be the one considered active for patient but it wasnt the case")
 	}
 }

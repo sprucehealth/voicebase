@@ -39,6 +39,7 @@ type CreateDemoPatientVisitRequestData struct {
 	ToCreateSurescriptsPatients bool  `schema:"surescripts"`
 	NumPatients                 int64 `schema:"num_patients"`
 	NumConversations            int64 `schema:"num_conversations"`
+	RouteToGlobalQueue          bool  `schema:"route_global"`
 }
 
 func (c *Handler) ServeHTTP(w http.ResponseWriter, r *http.Request) {
@@ -86,10 +87,10 @@ func (c *Handler) ServeHTTP(w http.ResponseWriter, r *http.Request) {
 	for i, patient := range patients {
 		if numRemainingConversationsToStart > 0 {
 			message := sampleMessages[i%3]
-			c.createNewDemoPatient(patient, doctorId, true, message, topLevelSignal, r)
+			c.createNewDemoPatient(patient, doctorId, true, requestData.RouteToGlobalQueue, message, topLevelSignal, r)
 			numRemainingConversationsToStart--
 		} else {
-			c.createNewDemoPatient(patient, doctorId, false, "", topLevelSignal, r)
+			c.createNewDemoPatient(patient, doctorId, false, requestData.RouteToGlobalQueue, "", topLevelSignal, r)
 		}
 
 		time.Sleep(500 * time.Millisecond)
@@ -108,7 +109,7 @@ func (c *Handler) ServeHTTP(w http.ResponseWriter, r *http.Request) {
 	apiservice.WriteJSONToHTTPResponseWriter(w, http.StatusOK, apiservice.SuccessfulGenericJSONResponse())
 }
 
-func (c *Handler) createNewDemoPatient(patient *common.Patient, doctorId int64, toMessageDoctor bool, message string, topLevelSignal chan int, r *http.Request) {
+func (c *Handler) createNewDemoPatient(patient *common.Patient, doctorId int64, toMessageDoctor bool, routeToGlobalQueue bool, message string, topLevelSignal chan int, r *http.Request) {
 	go func() {
 
 		// ********** CREATE RANDOM PATIENT **********
@@ -125,7 +126,12 @@ func (c *Handler) createNewDemoPatient(patient *common.Patient, doctorId int64, 
 		urlValues.Set("phone", patient.PhoneNumbers[0].Phone)
 		urlValues.Set("password", "12345")
 		urlValues.Set("email", fmt.Sprintf("%d%d@example.com", time.Now().UnixNano(), doctorId))
-		urlValues.Set("doctor_id", fmt.Sprintf("%d", doctorId))
+
+		// only assign patient a doctor if wanting to route visit to doctor's local queue
+		if !routeToGlobalQueue {
+			urlValues.Set("doctor_id", fmt.Sprintf("%d", doctorId))
+		}
+
 		signupPatientRequest, err := http.NewRequest("POST", signupPatientUrl, bytes.NewBufferString(urlValues.Encode()))
 		signupPatientRequest.Header.Set("Content-Type", "application/x-www-form-urlencoded")
 		signupPatientRequest.Host = r.Host

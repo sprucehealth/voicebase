@@ -88,7 +88,7 @@ type PatientAPI interface {
 
 type PatientCaseAPI interface {
 	GetDoctorsAssignedToPatientCase(patientCaseId int64) ([]*common.CareProviderAssignment, error)
-	AssignDoctorToPatientFileAndCase(doctorId, patientId, patientCaseId int64) error
+	AssignDoctorToPatientFileAndCase(doctorId int64, patientCase *common.PatientCase) error
 	GetPatientCaseFromPatientVisitId(patientVisitId int64) (*common.PatientCase, error)
 	GetPatientCaseFromTreatmentPlanId(treatmentPlanId int64) (*common.PatientCase, error)
 	GetPatientCaseFromId(patientCaseId int64) (*common.PatientCase, error)
@@ -129,8 +129,6 @@ type PatientVisitAPI interface {
 	SubmitPatientVisitWithId(patientVisitId int64) error
 	GetDiagnosisResponseToQuestionWithTag(questionTag string, doctorId, patientVisitId int64) ([]*common.AnswerIntake, error)
 	DeactivatePreviousDiagnosisForPatientVisit(treatmentPlanId int64, doctorId int64) error
-	RecordDoctorAssignmentToPatientVisit(patientVisitId, doctorId int64) error
-	GetDoctorAssignedToPatientVisit(patientVisitId int64) (doctor *common.Doctor, err error)
 	GetAdvicePointsForTreatmentPlan(treatmentPlanId int64) (advicePoints []*common.DoctorInstructionItem, err error)
 	CreateAdviceForTreatmentPlan(advicePoints []*common.DoctorInstructionItem, treatmentPlanId int64) error
 	CreateRegimenPlanForTreatmentPlan(regimenPlan *common.RegimenPlan) error
@@ -140,7 +138,7 @@ type PatientVisitAPI interface {
 	GetTreatmentBasedOnPrescriptionId(erxId int64) (*common.Treatment, error)
 	GetTreatmentsForPatient(patientId int64) ([]*common.Treatment, error)
 	GetTreatmentFromId(treatmentId int64) (*common.Treatment, error)
-	GetActiveTreatmentPlanIdForPatient(patientId int64) (int64, error)
+	GetActiveTreatmentPlanForPatient(patientId int64) (*common.TreatmentPlan, error)
 	UpdateTreatmentWithPharmacyAndErxId(treatments []*common.Treatment, pharmacySentTo *pharmacy.PharmacyData, doctorId int64) error
 	AddErxStatusEvent(treatmentIds []int64, prescriptionStatus common.StatusEvent) error
 	GetPrescriptionStatusEventsForPatient(patientId int64) ([]common.StatusEvent, error)

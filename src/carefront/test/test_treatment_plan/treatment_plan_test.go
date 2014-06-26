@@ -170,10 +170,14 @@ func TestTreatmentPlanList_FavTP(t *testing.T) {
 		t.Fatalf(err.Error())
 	}
 
+	patientCase, err := testData.DataApi.GetPatientCaseFromPatientVisitId(patientVisitResponse.PatientVisitId)
+	if err != nil {
+		t.Fatal(err)
+	}
+
 	// assign the doctor to the patient case
 	if err := testData.DataApi.AssignDoctorToPatientFileAndCase(doctor2.DoctorId.Int64(),
-		patientId,
-		treatmentPlanResponse.DraftTreatmentPlans[0].PatientCaseId.Int64()); err != nil {
+		patientCase); err != nil {
 		t.Fatal(err)
 	}
 
