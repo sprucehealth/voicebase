@@ -3,6 +3,7 @@ package doctor_queue
 import (
 	"carefront/api"
 	"carefront/libs/golog"
+	"math/rand"
 	"time"
 
 	"github.com/samuel/go-metrics/metrics"
@@ -36,7 +37,10 @@ func StartClaimedItemsExpirationChecker(dataAPI api.DataAPI, statsRegistry metri
 
 		for {
 			CheckForExpiredClaimedItems(dataAPI, claimExpirationSuccess, claimExpirationFailure)
-			time.Sleep(timePeriodBetweenChecks)
+
+			// add a random number of seconds to the time period to further reduce the probability that the
+			// workers run on different systems in the same second, thereby introducing potential collision
+			time.Sleep(timePeriodBetweenChecks + (rand.Intn(30) * time.Second))
 		}
 	}()
 }
