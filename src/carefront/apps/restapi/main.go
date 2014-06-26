@@ -34,6 +34,7 @@ import (
 	"carefront/www/router"
 	"database/sql"
 	"log"
+	"math/rand"
 	"net/http"
 	"strconv"
 	"time"
@@ -365,6 +366,9 @@ func buildRESTAPI(conf *Config, dataApi api.DataAPI, authAPI api.AuthAPI, metric
 
 	// This helps to ensure that we are only surfacing errors to client in the dev environment
 	apiservice.IsDev = (conf.Environment == "dev")
+
+	// seeding random number generator based on time the main function runs
+	rand.Seed(time.Now().UTC().UnixNano())
 
 	return mux
 }
