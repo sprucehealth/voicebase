@@ -99,7 +99,7 @@ type PatientCaseAPI interface {
 type JumpBallQueueAPI interface {
 	TemporarilyClaimCaseAndAssignDoctorToCaseAndPatient(doctorId, patientCaseId, patientId int64, duration time.Duration) error
 	PermanentlyAssignDoctorToCaseAndPatient(doctorId, patientCaseId, patientId int64) error
-	ExtendClaimForDoctor(doctorId, patientCaseId int64, duration time.Duration) error
+	ExtendClaimForDoctor(doctorId, patientId, patientCaseId int64, duration time.Duration) error
 	GetClaimedItemsInQueue() ([]*DoctorQueueItem, error)
 	GetElligibleItemsInUnclaimedQueue(doctorId int64) ([]*DoctorQueueItem, error)
 	InsertUnclaimedItemIntoQueue(doctorQueueItem *DoctorQueueItem) error

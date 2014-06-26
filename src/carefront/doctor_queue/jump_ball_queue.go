@@ -59,7 +59,7 @@ func initJumpBallCaseQueueListeners(dataAPI api.DataAPI, statsRegistry metrics.R
 		}
 
 		if patientCase.Status == common.PCStatusTempClaimed {
-			if err := dataAPI.ExtendClaimForDoctor(ev.DoctorId, patientCase.Id.Int64(), ExpireDuration); err != nil {
+			if err := dataAPI.ExtendClaimForDoctor(ev.DoctorId, patientCase.PatientId.Int64(), patientCase.Id.Int64(), ExpireDuration); err != nil {
 				golog.Errorf("Unable to extend the claim on the case for the doctor: %s", err)
 				claimExtensionFailure.Inc(1)
 				return err
@@ -120,7 +120,7 @@ func extendClaimOnTreatmentPlanModification(treatmentPlanId, doctorId int64, dat
 	}
 
 	if patientCase.Status == common.PCStatusTempClaimed {
-		if err := dataAPI.ExtendClaimForDoctor(doctorId, patientCase.Id.Int64(), ExpireDuration); err != nil {
+		if err := dataAPI.ExtendClaimForDoctor(doctorId, patientCase.PatientId.Int64(), patientCase.Id.Int64(), ExpireDuration); err != nil {
 			golog.Errorf("Unable to extend claim on the case for the doctor: %s", err)
 			claimExtensionFailure.Inc(1)
 			return err

@@ -177,6 +177,7 @@ func InitListeners(dataAPI api.DataAPI, notificationManager *notify.Notification
 				golog.Errorf("Unable to replace item in doctor queue with a replied item: %s", err)
 				return err
 			}
+
 			return nil
 		}
 

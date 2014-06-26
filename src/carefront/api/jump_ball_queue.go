@@ -32,9 +32,9 @@ func (d *DataService) TemporarilyClaimCaseAndAssignDoctorToCaseAndPatient(doctor
 		return err
 	}
 
-	// lock the visit in the unclaimed item queue
 	expiresTime := time.Now().Add(duration)
 
+	// lock the visit in the unclaimed item queue
 	_, err = tx.Exec(`update unclaimed_case_queue set locked = 1, doctor_id = ?, expires = ? where patient_case_id = ?`, doctorId, expiresTime, patientCaseId)
 	if err != nil {
 		tx.Rollback()
@@ -67,7 +67,7 @@ func (d *DataService) TemporarilyClaimCaseAndAssignDoctorToCaseAndPatient(doctor
 	return tx.Commit()
 }
 
-func (d *DataService) ExtendClaimForDoctor(doctorId, patientCaseId int64, duration time.Duration) error {
+func (d *DataService) ExtendClaimForDoctor(doctorId, patientId, patientCaseId int64, duration time.Duration) error {
 	tx, err := d.db.Begin()
 	if err != nil {
 		return err
@@ -84,19 +84,20 @@ func (d *DataService) ExtendClaimForDoctor(doctorId, patientCaseId int64, durati
 	}
 
 	if currentLockHolder != doctorId {
+		tx.Rollback()
 		return JBCQItemClaimForbidden("Current lock holder is not the same as the doctor id provided")
 	}
 
-	// extend the claim of the doctor on the case and the patient file
 	expires := time.Now().Add(duration)
 
+	// extend the claim of the doctor on the case and the patient file
 	_, err = tx.Exec(`update unclaimed_case_queue set expires = ? where doctor_id = ? and patient_case_id = ?`, expires, doctorId, patientCaseId)
 	if err != nil {
 		tx.Rollback()
 		return err
 	}
 
-	_, err = tx.Exec(`update patient_care_provider_assignment set expires = ? where provider_id = ? and role_type_id = ? and status = ?`, expires, doctorId, d.roleTypeMapping[DOCTOR_ROLE], STATUS_TEMP)
+	_, err = tx.Exec(`update patient_care_provider_assignment set expires = ? where provider_id = ? and role_type_id = ? and status = ? and patient_id = ?`, expires, doctorId, d.roleTypeMapping[DOCTOR_ROLE], STATUS_TEMP, patientId)
 	if err != nil {
 		tx.Rollback()
 		return err
@@ -121,8 +122,10 @@ func (d *DataService) PermanentlyAssignDoctorToCaseAndPatient(doctorId, patientC
 	// first check to ensure that the doctor is currently temporarily assigned to patient case and file
 	var currentDoctorOnFile int64
 	if err := tx.QueryRow(`select provider_id from patient_care_provider_assignment where role_type_id = ? and provider_id = ? and patient_id = ? and status = ?`, d.roleTypeMapping[DOCTOR_ROLE], doctorId, patientId, STATUS_TEMP).Scan(&currentDoctorOnFile); err == sql.ErrNoRows {
+		tx.Rollback()
 		return JBCQItemClaimForbidden("Expected doctor to be temporarily assigned to patient file but wasnt")
 	} else if err != nil {
+		tx.Rollback()
 		return err
 	}
 
