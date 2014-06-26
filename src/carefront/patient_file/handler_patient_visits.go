@@ -63,9 +63,11 @@ func (p *patientVisitsHandler) ServeHTTP(w http.ResponseWriter, r *http.Request)
 		return
 	}
 
-	if err := apiservice.VerifyDoctorPatientRelationship(p.DataApi, doctor, patient); err != nil {
-		apiservice.WriteDeveloperError(w, http.StatusForbidden, "Unable to verify the patient-doctor relationship: "+err.Error())
-		return
+	if !patient.IsUnlinked {
+		if err := apiservice.ValidateDoctorAccessToPatientFile(doctor.DoctorId.Int64(), patient.PatientId.Int64(), p.DataApi); err != nil {
+			apiservice.WriteError(err, w, r)
+			return
+		}
 	}
 
 	patientVisits, err := p.DataApi.GetPatientVisitsForPatient(patient.PatientId.Int64())

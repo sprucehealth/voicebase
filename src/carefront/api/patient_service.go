@@ -203,8 +203,8 @@ func (d *DataService) createPatientWithStatus(patient *common.Patient, status st
 		}
 	}
 
-	_, err = tx.Exec(`insert into patient_location (patient_id, zip_code, status) 
-									values (?, ?, 'ACTIVE')`, lastId, patient.ZipCode)
+	_, err = tx.Exec(`insert into patient_location (patient_id, zip_code, city, state, status) 
+									values (?, ?, ?, ?, ?)`, lastId, patient.ZipCode, patient.CityFromZipCode, patient.StateFromZipCode, STATUS_ACTIVE)
 	if err != nil {
 		return err
 	}
@@ -261,101 +261,52 @@ func (d *DataService) UpdatePatientWithERxPatientId(patientId, erxPatientId int6
 	return err
 }
 
-func (d *DataService) GetCareTeamForPatient(patientId int64) (*common.PatientCareProviderGroup, error) {
-	rows, err := d.db.Query(`select patient_care_provider_group.id as group_id, patient_care_provider_assignment.id as assignment_id, role_type_tag, 
-								created_date, modified_date,provider_id, patient_care_provider_group.status as group_status, 
-								patient_care_provider_assignment.status as assignment_status from patient_care_provider_assignment 
-									inner join patient_care_provider_group on assignment_group_id = patient_care_provider_group.id 
+func (d *DataService) GetCareTeamForPatient(patientId int64) (*common.PatientCareTeam, error) {
+	rows, err := d.db.Query(`select role_type_tag, creation_date, expires, provider_id, status, patient_id
+								from patient_care_provider_assignment 
 									inner join role_type on role_type.id = role_type_id 
-									where patient_care_provider_group.patient_id=?`, patientId)
+									where patient_id=?`, patientId)
 
 	if err != nil {
 		return nil, err
 	}
 	defer rows.Close()
 
-	var careTeam *common.PatientCareProviderGroup
+	var careTeam common.PatientCareTeam
+	careTeam.Assignments = make([]*common.CareProviderAssignment, 0)
 	for rows.Next() {
-		var groupId, assignmentId, providerId int64
-		var providerTag, groupStatus, assignmentStatus string
-		var createdDate, modifiedDate mysql.NullTime
-		err := rows.Scan(&groupId, &assignmentId, &providerTag, &createdDate, &modifiedDate, &providerId, &groupStatus, &assignmentStatus)
+		var assignment common.CareProviderAssignment
+		err := rows.Scan(&assignment.ProviderRole,
+			&assignment.CreationDate,
+			&assignment.Expires,
+			&assignment.ProviderId,
+			&assignment.Status,
+			&assignment.PatientId)
 		if err != nil {
 			return nil, err
 		}
-		if careTeam == nil {
-			careTeam = &common.PatientCareProviderGroup{}
-			careTeam.Id = groupId
-			careTeam.PatientId = patientId
-			if createdDate.Valid {
-				careTeam.CreationDate = createdDate.Time
-			}
-			if modifiedDate.Valid {
-				careTeam.ModifiedDate = modifiedDate.Time
-			}
-			careTeam.Status = groupStatus
-			careTeam.Assignments = make([]*common.PatientCareProviderAssignment, 0)
-		}
-
-		patientCareProviderAssignment := &common.PatientCareProviderAssignment{
-			Id:           assignmentId,
-			ProviderRole: providerTag,
-			ProviderId:   providerId,
-			Status:       assignmentStatus,
-		}
-
-		careTeam.Assignments = append(careTeam.Assignments, patientCareProviderAssignment)
+		careTeam.Assignments = append(careTeam.Assignments, &assignment)
 	}
 
-	return careTeam, rows.Err()
+	return &careTeam, rows.Err()
 }
 
-func (d *DataService) CreateCareTeamForPatientWithPrimaryDoctor(patientId, doctorId int64) (*common.PatientCareProviderGroup, error) {
+func (d *DataService) CreateCareTeamForPatientWithPrimaryDoctor(patientId, doctorId int64) (*common.PatientCareTeam, error) {
 	return d.createProviderAssignmentForPatient(patientId, doctorId, d.roleTypeMapping[DOCTOR_ROLE])
 }
 
-func (d *DataService) createProviderAssignmentForPatient(patientId, providerId, providerRoleId int64) (*common.PatientCareProviderGroup, error) {
-
-	// create new group assignment for patient visit
-	tx, err := d.db.Begin()
-	if err != nil {
-		return nil, err
-	}
-
-	res, err := tx.Exec(`insert into patient_care_provider_group (patient_id, status) values (?, ?)`, patientId, STATUS_CREATING)
-	if err != nil {
-		tx.Rollback()
-		return nil, err
-	}
-
-	lastInsertId, err := res.LastInsertId()
-	if err != nil {
-		tx.Rollback()
-		return nil, err
-	}
+func (d *DataService) createProviderAssignmentForPatient(patientId, providerId, providerRoleId int64) (*common.PatientCareTeam, error) {
 
 	// create new assignment for patient
-	_, err = tx.Exec("insert into patient_care_provider_assignment (patient_id, role_type_id, provider_id, assignment_group_id, status) values (?, ?, ?, ?, 'PRIMARY')", patientId, providerRoleId, providerId, lastInsertId)
+	_, err := d.db.Exec("insert into patient_care_provider_assignment (patient_id, role_type_id, provider_id, status) values (?, ?, ?, 'PRIMARY')", patientId, providerRoleId, providerId)
 	if err != nil {
-		tx.Rollback()
-		return nil, err
-	}
-
-	// update group assignment to be the active group assignment for this patient visit
-	_, err = tx.Exec(`update patient_care_provider_group set status='ACTIVE' where id=?`, lastInsertId)
-	if err != nil {
-		tx.Rollback()
-		return nil, err
-	}
-
-	if err := tx.Commit(); err != nil {
 		return nil, err
 	}
 
 	return d.GetCareTeamForPatient(patientId)
 }
 
-func (d *DataService) CreateCareTeamForPatient(patientId int64) (*common.PatientCareProviderGroup, error) {
+func (d *DataService) CreateCareTeamForPatient(patientId int64) (*common.PatientCareTeam, error) {
 	// identify providers in the state required. Assuming for now that we can only have one provider in the
 	// state of CA. The reason for this assumption is that we have not yet figured out how best to deal with
 	// multiple active doctors in how they will be assigned to the patient.
@@ -372,6 +323,11 @@ func (d *DataService) CreateCareTeamForPatient(patientId int64) (*common.Patient
 	}
 
 	return d.createProviderAssignmentForPatient(patientId, providerId, providerRoleId)
+}
+
+func (d *DataService) AddDoctorToCareTeamForPatient(patientId, doctorId int64) error {
+	_, err := d.db.Exec(`insert into patient_care_provider_assignment (patient_id, provider_id, role_type_id, status) values (?,?,?,?)`, patientId, doctorId, d.roleTypeMapping[DOCTOR_ROLE], STATUS_ACTIVE)
+	return err
 }
 
 func (d *DataService) GetPatientFromAccountId(accountId int64) (*common.Patient, error) {
@@ -1075,7 +1031,7 @@ func (d *DataService) GetFullNameForState(state string) (string, error) {
 func (d *DataService) getPatientBasedOnQuery(table, joins, where string, queryParams ...interface{}) ([]*common.Patient, error) {
 	queryStr := fmt.Sprintf(`
 		SELECT patient.id, patient.erx_patient_id, patient.payment_service_customer_id, account_id,
-			account.email, first_name, middle_name, last_name, suffix, prefix, zip_code, phone,
+			account.email, first_name, middle_name, last_name, suffix, prefix, zip_code, city, state, phone,
 			phone_type, gender, dob_year, dob_month, dob_day, patient.status, person.id
 		FROM %s
 		%s
@@ -1093,12 +1049,12 @@ func (d *DataService) getPatientBasedOnQuery(table, joins, where string, queryPa
 	patients := make([]*common.Patient, 0)
 	for rows.Next() {
 		var firstName, lastName, status, gender string
-		var phone, phoneType, zipCode, email, paymentServiceCustomerId, suffix, prefix, middleName sql.NullString
+		var phone, phoneType, zipCode, city, state, email, paymentServiceCustomerId, suffix, prefix, middleName sql.NullString
 		var patientId, accountId, erxPatientId encoding.ObjectId
 		var dobMonth, dobYear, dobDay int
 		var personId int64
 		err = rows.Scan(&patientId, &erxPatientId, &paymentServiceCustomerId, &accountId, &email, &firstName, &middleName, &lastName, &suffix, &prefix,
-			&zipCode, &phone, &phoneType, &gender, &dobYear, &dobMonth, &dobDay, &status, &personId)
+			&zipCode, &city, &state, &phone, &phoneType, &gender, &dobYear, &dobMonth, &dobDay, &status, &personId)
 		if err != nil {
 			return nil, err
 		}
@@ -1116,6 +1072,8 @@ func (d *DataService) getPatientBasedOnQuery(table, joins, where string, queryPa
 			Gender:            gender,
 			AccountId:         accountId,
 			ZipCode:           zipCode.String,
+			CityFromZipCode:   city.String,
+			StateFromZipCode:  state.String,
 			ERxPatientId:      erxPatientId,
 			Dob:               encoding.Dob{Year: dobYear, Month: dobMonth, Day: dobDay},
 			PhoneNumbers: []*common.PhoneInformation{

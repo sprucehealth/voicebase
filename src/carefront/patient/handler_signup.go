@@ -1,11 +1,11 @@
 package patient
 
 import (
+	"carefront/address"
 	"carefront/api"
 	"carefront/apiservice"
 	"carefront/common"
 	"carefront/encoding"
-	"carefront/libs/dispatch"
 	"carefront/libs/golog"
 	"net/http"
 	"strings"
@@ -15,8 +15,9 @@ import (
 )
 
 type SignupHandler struct {
-	dataApi api.DataAPI
-	authApi api.AuthAPI
+	dataApi    api.DataAPI
+	authApi    api.AuthAPI
+	addressAPI address.AddressValidationAPI
 }
 
 type PatientSignedupResponse struct {
@@ -41,10 +42,11 @@ type SignupPatientRequestData struct {
 	DoctorId   int64  `schema:"doctor_id"`
 }
 
-func NewSignupHandler(dataApi api.DataAPI, authApi api.AuthAPI) *SignupHandler {
+func NewSignupHandler(dataApi api.DataAPI, authApi api.AuthAPI, addressAPI address.AddressValidationAPI) *SignupHandler {
 	return &SignupHandler{
-		dataApi: dataApi,
-		authApi: authApi,
+		dataApi:    dataApi,
+		authApi:    authApi,
+		addressAPI: addressAPI,
 	}
 }
 
@@ -79,6 +81,12 @@ func (s *SignupHandler) ServeHTTP(w http.ResponseWriter, r *http.Request) {
 		return
 	}
 
+	cityState, err := s.addressAPI.ZipcodeLookup(requestData.Zipcode)
+	if err != nil {
+		apiservice.WriteError(err, w, r)
+		return
+	}
+
 	// first, create an account for the user
 	accountID, token, err := s.authApi.SignUp(requestData.Email, requestData.Password, api.PATIENT_ROLE)
 	if err == api.LoginAlreadyExists {
@@ -92,11 +100,13 @@ func (s *SignupHandler) ServeHTTP(w http.ResponseWriter, r *http.Request) {
 	}
 
 	newPatient := &common.Patient{
-		AccountId: encoding.NewObjectId(accountID),
-		FirstName: requestData.FirstName,
-		LastName:  requestData.LastName,
-		Gender:    requestData.Gender,
-		ZipCode:   requestData.Zipcode,
+		AccountId:        encoding.NewObjectId(accountID),
+		FirstName:        requestData.FirstName,
+		LastName:         requestData.LastName,
+		Gender:           requestData.Gender,
+		ZipCode:          requestData.Zipcode,
+		CityFromZipCode:  cityState.City,
+		StateFromZipCode: cityState.StateAbbreviation,
 		PhoneNumbers: []*common.PhoneInformation{&common.PhoneInformation{
 			Phone:     requestData.Phone,
 			PhoneType: api.PHONE_CELL,
@@ -133,26 +143,13 @@ func (s *SignupHandler) ServeHTTP(w http.ResponseWriter, r *http.Request) {
 	}
 
 	// create care team for patient
-	var careProviderGroup *common.PatientCareProviderGroup
 	if requestData.DoctorId != 0 {
-		careProviderGroup, err = s.dataApi.CreateCareTeamForPatientWithPrimaryDoctor(newPatient.PatientId.Int64(), requestData.DoctorId)
+		_, err = s.dataApi.CreateCareTeamForPatientWithPrimaryDoctor(newPatient.PatientId.Int64(), requestData.DoctorId)
 		if err != nil {
-			apiservice.WriteDeveloperError(w, http.StatusInternalServerError, "Unable to create care team with specified doctor for patient: "+err.Error())
-			return
-		}
-	} else {
-		careProviderGroup, err = s.dataApi.CreateCareTeamForPatient(newPatient.PatientId.Int64())
-		if err != nil {
-			golog.Errorf(err.Error())
-			apiservice.WriteDeveloperError(w, http.StatusInternalServerError, "Unable to create care team for patient :"+err.Error())
+			apiservice.WriteError(err, w, r)
 			return
 		}
 	}
-
-	dispatch.Default.PublishAsync(&CareTeamAssingmentEvent{
-		PatientId:   newPatient.PatientId.Int64(),
-		Assignments: careProviderGroup.Assignments,
-	})
 
 	apiservice.WriteJSONToHTTPResponseWriter(w, http.StatusOK, PatientSignedupResponse{Token: token, Patient: newPatient})
 }

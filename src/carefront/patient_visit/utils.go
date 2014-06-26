@@ -7,33 +7,8 @@ import (
 	"carefront/info_intake"
 	"encoding/json"
 	"errors"
-	"fmt"
 	"net/http"
-	"strings"
 )
-
-func fillInFormattedFieldsForQuestions(healthCondition *info_intake.InfoIntakeLayout, doctor *common.Doctor) {
-	for _, section := range healthCondition.Sections {
-		for _, screen := range section.Screens {
-			for _, question := range screen.Questions {
-				if question.FormattedFieldTags != nil {
-					// populate the values for each of the fields in order
-					for _, fieldTag := range question.FormattedFieldTags {
-						fieldTagComponents := strings.Split(fieldTag, ":")
-						if fieldTagComponents[0] == info_intake.FORMATTED_TITLE_FIELD {
-							switch fieldTagComponents[1] {
-							case info_intake.FORMATTED_FIELD_DOCTOR_LAST_NAME:
-								// build the formatted string and assign it back to the question title
-								question.QuestionTitle = fmt.Sprintf(question.QuestionTitle, strings.Title(doctor.LastName))
-							}
-						}
-					}
-
-				}
-			}
-		}
-	}
-}
 
 func populateGlobalSectionsWithPatientAnswers(dataApi api.DataAPI, healthCondition *info_intake.InfoIntakeLayout, patientId int64, r *http.Request) error {
 	// identify sections that are global

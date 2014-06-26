@@ -136,7 +136,7 @@ func TestRegimenForPatientVisit(t *testing.T) {
 
 	// get patient to start a visit
 
-	_, treatmentPlan = test_integration.SignupAndSubmitPatientVisitForRandomPatient(t, testData, doctor)
+	_, treatmentPlan = test_integration.CreateRandomPatientVisitAndPickTP(t, testData, doctor)
 
 	regimenPlan = test_integration.GetRegimenPlanForTreatmentPlan(testData, doctor, treatmentPlan.Id.Int64(), t)
 	if len(regimenPlan.RegimenSections) > 0 {
@@ -378,7 +378,7 @@ func TestRegimenForPatientVisit_UpdatingItemLinkedToDeletedItem(t *testing.T) {
 	test_integration.ValidateRegimenRequestAgainstResponse(regimenPlanRequest, regimenPlanResponse, t)
 
 	// now lets update the global set of regimen steps in the context of another patient's visit
-	_, treatmentPlan2 := test_integration.SignupAndSubmitPatientVisitForRandomPatient(t, testData, doctor)
+	_, treatmentPlan2 := test_integration.CreateRandomPatientVisitAndPickTP(t, testData, doctor)
 	regimenPlanResponse = test_integration.GetRegimenPlanForTreatmentPlan(testData, doctor, treatmentPlan2.Id.Int64(), t)
 
 	// lets go ahead and delete one of the items from the regimen step
@@ -516,12 +516,12 @@ func TestRegimenForPatientVisit_TrackingSourceId(t *testing.T) {
 
 func setupTestForRegimenCreation(t *testing.T, testData *test_integration.TestData) (*patient_visit.PatientVisitResponse, *common.DoctorTreatmentPlan, *common.Doctor) {
 	// get the current primary doctor
-	doctorId := test_integration.GetDoctorIdOfCurrentPrimaryDoctor(testData, t)
+	doctorId := test_integration.GetDoctorIdOfCurrentDoctor(testData, t)
 
 	doctor, err := testData.DataApi.GetDoctorFromId(doctorId)
 	if err != nil {
 		t.Fatal("Unable to get doctor from doctor id " + err.Error())
 	}
-	patientVisitResponse, treatmentPlan := test_integration.SignupAndSubmitPatientVisitForRandomPatient(t, testData, doctor)
+	patientVisitResponse, treatmentPlan := test_integration.CreateRandomPatientVisitAndPickTP(t, testData, doctor)
 	return patientVisitResponse, treatmentPlan, doctor
 }

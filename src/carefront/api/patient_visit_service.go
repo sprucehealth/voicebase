@@ -117,11 +117,24 @@ func (d *DataService) GetLatestClosedPatientVisitForPatient(patientId int64) (*c
 }
 
 func (d *DataService) GetPatientVisitFromId(patientVisitId int64) (*common.PatientVisit, error) {
-	patientVisit := common.PatientVisit{PatientVisitId: encoding.NewObjectId(patientVisitId)}
+	row := d.db.QueryRow(`select id, patient_id, patient_case_id, health_condition_id, layout_version_id, 
+		creation_date, submitted_date, closed_date, status from patient_visit where id = ?`, patientVisitId)
+	return getPatientVisitFromRow(row)
+}
+
+func (d *DataService) GetPatientVisitFromTreatmentPlanId(treatmentPlanId int64) (*common.PatientVisit, error) {
+	row := d.db.QueryRow(`select patient_visit.id, patient_visit.patient_id, patient_visit.patient_case_id, patient_visit.health_condition_id, patient_visit.layout_version_id, 
+		patient_visit.creation_date, patient_visit.submitted_date, patient_visit.closed_date, patient_visit.status from patient_visit 
+			inner join treatment_plan_patient_visit_mapping on treatment_plan_patient_visit_mapping.patient_visit_id = patient_visit.id
+			where treatment_plan_id = ?`, treatmentPlanId)
+	return getPatientVisitFromRow(row)
+}
+
+func getPatientVisitFromRow(row *sql.Row) (*common.PatientVisit, error) {
+	patientVisit := common.PatientVisit{}
 	var creationDateBytes, submittedDateBytes, closedDateBytes mysql.NullTime
-	err := d.db.QueryRow(`select patient_id, patient_case_id, health_condition_id, layout_version_id, 
-		creation_date, submitted_date, closed_date, status from patient_visit where id = ?`, patientVisitId,
-	).Scan(
+	err := row.Scan(
+		&patientVisit.PatientVisitId,
 		&patientVisit.PatientId,
 		&patientVisit.PatientCaseId,
 		&patientVisit.HealthConditionId,
@@ -129,17 +142,9 @@ func (d *DataService) GetPatientVisitFromId(patientVisitId int64) (*common.Patie
 	if err != nil {
 		return nil, err
 	}
-
-	if creationDateBytes.Valid {
-		patientVisit.CreationDate = creationDateBytes.Time
-	}
-	if submittedDateBytes.Valid {
-		patientVisit.SubmittedDate = submittedDateBytes.Time
-	}
-	if closedDateBytes.Valid {
-		patientVisit.ClosedDate = closedDateBytes.Time
-	}
-
+	patientVisit.CreationDate = creationDateBytes.Time
+	patientVisit.SubmittedDate = submittedDateBytes.Time
+	patientVisit.ClosedDate = closedDateBytes.Time
 	return &patientVisit, err
 }
 
@@ -160,7 +165,9 @@ func (d *DataService) CreateNewPatientVisit(patientId, healthConditionId, layout
 	}
 
 	// implicitly create a new case when creating a new visit for now
-	res, err := tx.Exec(`insert into patient_case (patient_id, health_condition_id, status) values (?,?,?)`, patientId, healthConditionId, STATUS_ACTIVE)
+	// for now treating the creation of every new case as an unclaimed case because we don't have a notion of a
+	// new case for which the patient returns (and thus can be potentially claimed)
+	res, err := tx.Exec(`insert into patient_case (patient_id, health_condition_id, status) values (?,?,?)`, patientId, healthConditionId, common.PCStatusUnclaimed)
 	if err != nil {
 		tx.Rollback()
 		return 0, err
@@ -173,7 +180,7 @@ func (d *DataService) CreateNewPatientVisit(patientId, healthConditionId, layout
 	}
 
 	res, err = tx.Exec(`insert into patient_visit (patient_id, health_condition_id, layout_version_id, patient_case_id, status) 
-								values (?, ?, ?, ?, 'OPEN')`, patientId, healthConditionId, layoutVersionId, patientCaseId)
+								values (?, ?, ?, ?, ?)`, patientId, healthConditionId, layoutVersionId, patientCaseId, common.PVStatusOpen)
 	if err != nil {
 		tx.Rollback()
 		return 0, err
@@ -451,7 +458,7 @@ func (d *DataService) ActivateTreatmentPlan(treatmentPlanId, doctorId int64) err
 	switch treatmentPlan.Parent.ParentType {
 	case common.TPParentTypePatientVisit:
 		// mark the patient visit as TREATED
-		_, err = tx.Exec(`update patient_visit set status=?, closed_date=now(6) where id = ?`, CASE_STATUS_TREATED, treatmentPlan.Parent.ParentId.Int64())
+		_, err = tx.Exec(`update patient_visit set status=?, closed_date=now(6) where id = ?`, common.PVStatusTreated, treatmentPlan.Parent.ParentId.Int64())
 		if err != nil {
 			tx.Rollback()
 			return err

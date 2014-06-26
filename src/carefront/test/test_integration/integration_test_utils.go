@@ -8,6 +8,7 @@ import (
 	"carefront/common/config"
 	"carefront/doctor_queue"
 	"carefront/doctor_treatment_plan"
+	"carefront/encoding"
 	"carefront/homelog"
 	"carefront/libs/aws"
 	"carefront/libs/dispatch"
@@ -20,6 +21,7 @@ import (
 	"io"
 	"io/ioutil"
 	"net/http"
+	"net/http/httptest"
 	"os"
 	"os/exec"
 	"strconv"
@@ -183,7 +185,7 @@ func CheckIfRunningLocally(t *testing.T) {
 	}
 }
 
-func GetDoctorIdOfCurrentPrimaryDoctor(testData *TestData, t *testing.T) int64 {
+func GetDoctorIdOfCurrentDoctor(testData *TestData, t *testing.T) int64 {
 	// get the current primary doctor
 	var doctorId int64
 	err := testData.DB.QueryRow(`select provider_id from care_provider_state_elligibility 
@@ -196,7 +198,34 @@ func GetDoctorIdOfCurrentPrimaryDoctor(testData *TestData, t *testing.T) int64 {
 	return doctorId
 }
 
-func SignupAndSubmitPatientVisitForRandomPatient(t *testing.T, testData *TestData, doctor *common.Doctor) (*patient_visit.PatientVisitResponse, *common.DoctorTreatmentPlan) {
+func CreateRandomPatientVisitInState(state string, t *testing.T, testData *TestData) *patient_visit.PatientVisitResponse {
+	pr := SignupRandomTestPatientInState(state, t, testData)
+	pv := CreatePatientVisitForPatient(pr.Patient.PatientId.Int64(), testData, t)
+	answerIntakeRequestBody := PrepareAnswersForQuestionsInPatientVisit(pv, t)
+	SubmitAnswersIntakeForPatient(pr.Patient.PatientId.Int64(), pr.Patient.AccountId.Int64(),
+		answerIntakeRequestBody, testData, t)
+	SubmitPatientVisitForPatient(pr.Patient.PatientId.Int64(), pv.PatientVisitId, testData, t)
+	return pv
+}
+
+func GrantDoctorAccessToPatientCase(t *testing.T, testData *TestData, doctor *common.Doctor, patientCaseId int64) {
+	grantAccessHandler := doctor_queue.NewClaimPatientCaseAccessHandler(testData.DataApi, metrics.NewRegistry())
+	doctorServer := httptest.NewServer(grantAccessHandler)
+
+	jsonData, err := json.Marshal(&doctor_queue.ClaimPatientCaseRequestData{
+		PatientCaseId: encoding.NewObjectId(patientCaseId),
+	})
+
+	resp, err := testData.AuthPost(doctorServer.URL, "application/json", bytes.NewReader(jsonData), doctor.AccountId.Int64())
+	defer resp.Body.Close()
+	if err != nil {
+		t.Fatal(err)
+	} else if resp.StatusCode != http.StatusOK {
+		t.Fatalf("Expected response %d instead got %d", http.StatusOK, resp.StatusCode)
+	}
+}
+
+func CreateRandomPatientVisitAndPickTP(t *testing.T, testData *TestData, doctor *common.Doctor) (*patient_visit.PatientVisitResponse, *common.DoctorTreatmentPlan) {
 	patientSignedupResponse := SignupRandomTestPatient(t, testData)
 	patientVisitResponse := CreatePatientVisitForPatient(patientSignedupResponse.Patient.PatientId.Int64(), testData, t)
 
@@ -204,10 +233,14 @@ func SignupAndSubmitPatientVisitForRandomPatient(t *testing.T, testData *TestDat
 	if err != nil {
 		t.Fatal("Unable to get patient from id: " + err.Error())
 	}
-	answerIntakeRequestBody := prepareAnswersForQuestionsInPatientVisit(patientVisitResponse, t)
+	answerIntakeRequestBody := PrepareAnswersForQuestionsInPatientVisit(patientVisitResponse, t)
 	SubmitAnswersIntakeForPatient(patient.PatientId.Int64(), patient.AccountId.Int64(), answerIntakeRequestBody, testData, t)
 	SubmitPatientVisitForPatient(patientSignedupResponse.Patient.PatientId.Int64(), patientVisitResponse.PatientVisitId, testData, t)
-	// get the patient to start reviewing the case
+	patientCase, err := testData.DataApi.GetPatientCaseFromPatientVisitId(patientVisitResponse.PatientVisitId)
+	if err != nil {
+		t.Fatal(err)
+	}
+	GrantDoctorAccessToPatientCase(t, testData, doctor, patientCase.Id.Int64())
 	StartReviewingPatientVisit(patientVisitResponse.PatientVisitId, doctor, testData, t)
 	doctorPickTreatmentPlanResponse := PickATreatmentPlanForPatientVisit(patientVisitResponse.PatientVisitId, doctor, nil, testData, t)
 
@@ -283,10 +316,14 @@ func SetupIntegrationTest(t *testing.T) *TestData {
 	signedupDoctorResponse, _, _ := SignupRandomTestDoctor(t, testData)
 
 	// make this doctor the primary doctor in the state of CA
-	_, err = testData.DB.Exec(`insert into care_provider_state_elligibility (role_type_id, provider_id, care_providing_state_id) 
-					values ((select id from role_type where role_type_tag='DOCTOR'), ?, (select id from care_providing_state where state='CA'))`, signedupDoctorResponse.DoctorId)
+	careProvidingStateId, err := testData.DataApi.GetCareProvidingStateId("CA", apiservice.HEALTH_CONDITION_ACNE_ID)
 	if err != nil {
-		t.Fatal("Unable to make the signed up doctor the primary doctor elligible in CA to diagnose patients: " + err.Error())
+		t.Fatal(err)
+	}
+
+	err = testData.DataApi.MakeDoctorElligibleinCareProvidingState(careProvidingStateId, signedupDoctorResponse.DoctorId)
+	if err != nil {
+		t.Fatal(err)
 	}
 
 	dispatch.Default = dispatch.New()
@@ -294,7 +331,7 @@ func SetupIntegrationTest(t *testing.T) *TestData {
 
 	homelog.InitListeners(testData.DataApi, notificationManager)
 	doctor_treatment_plan.InitListeners(testData.DataApi)
-	doctor_queue.InitListeners(testData.DataApi, notificationManager)
+	doctor_queue.InitListeners(testData.DataApi, notificationManager, metrics.NewRegistry())
 	notify.InitListeners(testData.DataApi)
 
 	return testData

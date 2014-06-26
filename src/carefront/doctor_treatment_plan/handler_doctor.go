@@ -137,7 +137,7 @@ func (d *doctorTreatmentPlanHandler) submitTreatmentPlan(w http.ResponseWriter, 
 		// if the parent of this treatment plan is a patient visit, this means that this is the first
 		// treatment plan. In this case we expect the patient visit to be in the REVIEWING state.
 		patientVisitId = treatmentPlan.Parent.ParentId.Int64()
-		if err := apiservice.EnsurePatientVisitInExpectedStatus(d.dataApi, patientVisitId, api.CASE_STATUS_REVIEWING); err != nil {
+		if err := apiservice.EnsurePatientVisitInExpectedStatus(d.dataApi, patientVisitId, common.PVStatusReviewing); err != nil {
 			apiservice.WriteError(err, w, r)
 			return
 		}
@@ -165,8 +165,7 @@ func (d *doctorTreatmentPlanHandler) submitTreatmentPlan(w http.ResponseWriter, 
 	}
 
 	// Ensure that doctor is authorized to work on the case
-	_, err = apiservice.ValidateDoctorAccessToPatientVisitAndGetRelevantData(patientVisitId, apiservice.GetContext(r).AccountId, d.dataApi)
-	if err != nil {
+	if err := apiservice.ValidateWriteAccessToPatientCase(doctor.DoctorId.Int64(), treatmentPlan.PatientId, treatmentPlan.PatientCaseId.Int64(), d.dataApi); err != nil {
 		apiservice.WriteError(err, w, r)
 		return
 	}
@@ -212,7 +211,7 @@ func (d *doctorTreatmentPlanHandler) submitTreatmentPlan(w http.ResponseWriter, 
 	}
 
 	// Publish event that treamtent plan was created
-	dispatch.Default.PublishAsync(&TreatmentPlanCreatedEvent{
+	dispatch.Default.Publish(&TreatmentPlanActivatedEvent{
 		PatientId:       treatmentPlan.PatientId,
 		DoctorId:        doctor.DoctorId.Int64(),
 		VisitId:         patientVisitId,
@@ -246,6 +245,11 @@ func (d *doctorTreatmentPlanHandler) getTreatmentPlan(w http.ResponseWriter, r *
 		return
 	} else if err != nil {
 		apiservice.WriteDeveloperError(w, http.StatusInternalServerError, "Unable to get treatment plan for patient visit: "+err.Error())
+		return
+	}
+
+	if err := apiservice.ValidateReadAccessToPatientCase(doctorId, drTreatmentPlan.PatientId, drTreatmentPlan.PatientCaseId.Int64(), d.dataApi); err != nil {
+		apiservice.WriteError(err, w, r)
 		return
 	}
 
@@ -315,33 +319,44 @@ func (d *doctorTreatmentPlanHandler) pickATreatmentPlan(w http.ResponseWriter, r
 		}
 	}
 
-	patientVisitReviewData, err := apiservice.ValidateDoctorAccessToPatientVisitAndGetRelevantData(patientVisitId, apiservice.GetContext(r).AccountId, d.dataApi)
+	patientCase, err := d.dataApi.GetPatientCaseFromPatientVisitId(patientVisitId)
 	if err != nil {
 		apiservice.WriteError(err, w, r)
 		return
 	}
 
-	treatmentPlanId, err := d.dataApi.StartNewTreatmentPlan(patientVisitReviewData.PatientVisit.PatientId.Int64(),
-		patientVisitReviewData.PatientVisit.PatientVisitId.Int64(), patientVisitReviewData.DoctorId, requestData.TPParent, requestData.TPContentSource)
+	patientId, err := d.dataApi.GetPatientIdFromPatientVisitId(patientVisitId)
+	if err != nil {
+		apiservice.WriteError(err, w, r)
+		return
+	}
+
+	if err := apiservice.ValidateWriteAccessToPatientCase(doctorId, patientId, patientCase.Id.Int64(), d.dataApi); err != nil {
+		apiservice.WriteError(err, w, r)
+		return
+	}
+
+	treatmentPlanId, err := d.dataApi.StartNewTreatmentPlan(patientId,
+		patientVisitId, doctorId, requestData.TPParent, requestData.TPContentSource)
 	if err != nil {
 		apiservice.WriteDeveloperError(w, http.StatusInternalServerError, "Unable to start new treatment plan for patient visit: "+err.Error())
 		return
 	}
 
 	// get the treatment plan just created
-	drTreatmentPlan, err := d.dataApi.GetAbridgedTreatmentPlan(treatmentPlanId, patientVisitReviewData.DoctorId)
+	drTreatmentPlan, err := d.dataApi.GetAbridgedTreatmentPlan(treatmentPlanId, doctorId)
 	if err != nil {
 		apiservice.WriteError(err, w, r)
 		return
 	}
 
-	if err := fillInTreatmentPlan(drTreatmentPlan, patientVisitReviewData.DoctorId, d.dataApi); err != nil {
+	if err := fillInTreatmentPlan(drTreatmentPlan, doctorId, d.dataApi); err != nil {
 		apiservice.WriteError(err, w, r)
 		return
 	}
 
 	dispatch.Default.Publish(&NewTreatmentPlanStartedEvent{
-		DoctorId:        patientVisitReviewData.DoctorId,
+		DoctorId:        doctorId,
 		PatientVisitId:  patientVisitId,
 		TreatmentPlanId: treatmentPlanId,
 	})

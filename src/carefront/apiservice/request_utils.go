@@ -31,6 +31,7 @@ const (
 	DEVELOPER_AUTH_TOKEN_EXPIRED     = 10002
 	DEVELOPER_TREATMENT_MISSING_DNTF = 10003
 	DEVELOPER_NO_TREATMENT_PLAN      = 10004
+	DEVELOPER_JBCQ_FORBIDDEN         = 10005
 	HTTP_GET                         = "GET"
 	HTTP_POST                        = "POST"
 	HTTP_PUT                         = "PUT"
@@ -77,24 +78,6 @@ func EnsureTreatmentPlanOrPatientVisitIdPresent(dataApi api.DataAPI, treatmentPl
 	return nil
 }
 
-func VerifyDoctorPatientRelationship(dataApi api.DataAPI, doctor *common.Doctor, patient *common.Patient) error {
-	// nothing to verify for an unlinked patient since they dont have a care team
-	if patient.IsUnlinked {
-		return nil
-	}
-
-	careTeam, err := dataApi.GetCareTeamForPatient(patient.PatientId.Int64())
-	if err != nil {
-		return fmt.Errorf("Unable to get care team based on patient id: %+v", err)
-	}
-
-	primaryDoctorId := GetPrimaryDoctorIdFromCareTeam(careTeam)
-	if doctor.DoctorId.Int64() != primaryDoctorId {
-		return fmt.Errorf("Unable to get the patient information by doctor when this doctor is not the primary doctor for patient")
-	}
-	return nil
-}
-
 func GetPrimaryDoctorInfoBasedOnPatient(dataApi api.DataAPI, patient *common.Patient, staticBaseContentUrl string) (*common.Doctor, error) {
 	careTeam, err := dataApi.GetCareTeamForPatient(patient.PatientId.Int64())
 	if err != nil {
@@ -120,7 +103,7 @@ func GetDoctorInfo(dataApi api.DataAPI, doctorId int64, staticBaseContentUrl str
 	return doctor, err
 }
 
-func GetPrimaryDoctorIdFromCareTeam(careTeam *common.PatientCareProviderGroup) int64 {
+func GetPrimaryDoctorIdFromCareTeam(careTeam *common.PatientCareTeam) int64 {
 	for _, assignment := range careTeam.Assignments {
 		if assignment.ProviderRole == api.DOCTOR_ROLE && assignment.Status == api.PRIMARY_DOCTOR_STATUS {
 			return assignment.ProviderId

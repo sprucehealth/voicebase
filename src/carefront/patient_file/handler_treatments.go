@@ -5,7 +5,6 @@ import (
 	"carefront/apiservice"
 	"carefront/common"
 	"net/http"
-	"strconv"
 
 	"github.com/gorilla/schema"
 )
@@ -21,7 +20,7 @@ func NewDoctorPatientTreatmentsHandler(dataApi api.DataAPI) *doctorPatientTreatm
 }
 
 type requestData struct {
-	PatientId string `schema:"patient_id,required"`
+	PatientId int64 `schema:"patient_id,required"`
 }
 
 type doctorPatientTreatmentsResponse struct {
@@ -53,20 +52,19 @@ func (d *doctorPatientTreatmentsHandler) ServeHTTP(w http.ResponseWriter, r *htt
 		return
 	}
 
-	patientId, err := strconv.ParseInt(requestData.PatientId, 10, 64)
-	if err != nil {
-		apiservice.WriteDeveloperError(w, http.StatusBadRequest, "Unable to parse patient id: "+err.Error())
+	if err := apiservice.ValidateDoctorAccessToPatientFile(currentDoctor.DoctorId.Int64(), requestData.PatientId, d.DataApi); err != nil {
+		apiservice.WriteError(err, w, r)
 		return
 	}
 
-	patient, err := d.DataApi.GetPatientFromId(patientId)
+	patient, err := d.DataApi.GetPatientFromId(requestData.PatientId)
 	if err != nil {
 		apiservice.WriteDeveloperError(w, http.StatusInternalServerError, "Unable to get patient based on id: "+err.Error())
 		return
 	}
 
 	if !patient.IsUnlinked {
-		careTeam, err := d.DataApi.GetCareTeamForPatient(patientId)
+		careTeam, err := d.DataApi.GetCareTeamForPatient(requestData.PatientId)
 		if err != nil {
 			apiservice.WriteDeveloperError(w, http.StatusInternalServerError, "Unable to get care team based on patient id: "+err.Error())
 			return
@@ -80,19 +78,19 @@ func (d *doctorPatientTreatmentsHandler) ServeHTTP(w http.ResponseWriter, r *htt
 		}
 	}
 
-	treatments, err := d.DataApi.GetTreatmentsForPatient(patientId)
+	treatments, err := d.DataApi.GetTreatmentsForPatient(requestData.PatientId)
 	if err != nil {
 		apiservice.WriteDeveloperError(w, http.StatusInternalServerError, "Unable to get treatments for patient: "+err.Error())
 		return
 	}
 
-	refillRequests, err := d.DataApi.GetRefillRequestsForPatient(patientId)
+	refillRequests, err := d.DataApi.GetRefillRequestsForPatient(requestData.PatientId)
 	if err != nil {
 		apiservice.WriteDeveloperError(w, http.StatusInternalServerError, "Unable to get refill requests for patient: "+err.Error())
 		return
 	}
 
-	unlinkedDNTFTreatments, err := d.DataApi.GetUnlinkedDNTFTreatmentsForPatient(patientId)
+	unlinkedDNTFTreatments, err := d.DataApi.GetUnlinkedDNTFTreatmentsForPatient(requestData.PatientId)
 	if err != nil {
 		apiservice.WriteDeveloperError(w, http.StatusInternalServerError, "Unable to get unlinked dntf treatments for patient: "+err.Error())
 		return

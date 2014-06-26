@@ -101,8 +101,8 @@ func (p *treatmentPlanHandler) processTreatmentPlanViewForPatient(requestData *T
 	}
 
 	// do not support the submitting of a case that has already been submitted or is in another state
-	if patientVisit.Status != api.CASE_STATUS_TREATED && patientVisit.Status != api.CASE_STATUS_CLOSED {
-		apiservice.WriteDeveloperError(w, http.StatusBadRequest, "Cannot get the review for a case that is not in the closed state "+patientVisit.Status)
+	if patientVisit.Status != common.PVStatusTreated {
+		apiservice.WriteDeveloperError(w, http.StatusBadRequest, "Cannot get the treatment plan for a visit that is not in the closed state "+patientVisit.Status)
 		return
 	}
 

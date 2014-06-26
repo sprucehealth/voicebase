@@ -23,13 +23,6 @@ const (
 	FOLLOW_UP_WEEK                 = "week"
 	FOLLOW_UP_DAY                  = "day"
 	FOLLOW_UP_MONTH                = "month"
-	CASE_STATUS_OPEN               = "OPEN"
-	CASE_STATUS_SUBMITTED          = "SUBMITTED"
-	CASE_STATUS_REVIEWING          = "REVIEWING"
-	CASE_STATUS_CLOSED             = "CLOSED"
-	CASE_STATUS_TRIAGED            = "TRIAGED"
-	CASE_STATUS_TREATED            = "TREATED"
-	CASE_STATUS_PHOTOS_REJECTED    = "PHOTOS_REJECTED"
 	REFILL_REQUEST_STATUS_PENDING  = "PENDING"
 	REFILL_REQUEST_STATUS_SENDING  = "SENDING"
 	REFILL_REQUEST_STATUS_APPROVED = "APPROVED"
@@ -64,11 +57,11 @@ type PatientAPI interface {
 	CreateUnlinkedPatientFromRefillRequest(patient *common.Patient) error
 	UpdatePatientWithERxPatientId(patientId, erxPatientId int64) error
 	GetPatientIdFromAccountId(accountId int64) (int64, error)
-	CreateCareTeamForPatient(patientId int64) (careTeam *common.PatientCareProviderGroup, err error)
-	CreateCareTeamForPatientWithPrimaryDoctor(patientId, doctorId int64) (careTeam *common.PatientCareProviderGroup, err error)
-	GetCareTeamForPatient(patientId int64) (careTeam *common.PatientCareProviderGroup, err error)
+	CreateCareTeamForPatient(patientId int64) (careTeam *common.PatientCareTeam, err error)
+	AddDoctorToCareTeamForPatient(patientId, doctorId int64) error
+	CreateCareTeamForPatientWithPrimaryDoctor(patientId, doctorId int64) (careTeam *common.PatientCareTeam, err error)
+	GetCareTeamForPatient(patientId int64) (careTeam *common.PatientCareTeam, err error)
 	CheckCareProvidingElligibility(shortState string, healthConditionId int64) (doctorId int64, err error)
-
 	UpdatePatientAddress(patientId int64, addressLine1, addressLine2, city, state, zipCode, addressType string) error
 	UpdatePatientPharmacy(patientId int64, pharmacyDetails *pharmacy.PharmacyData) error
 	TrackPatientAgreements(patientId int64, agreements map[string]bool) error
@@ -94,6 +87,25 @@ type PatientAPI interface {
 	GetFullNameForState(state string) (string, error)
 }
 
+type PatientCaseAPI interface {
+	GetDoctorsAssignedToPatientCase(patientCaseId int64) ([]*common.CareProviderAssignment, error)
+	AssignDoctorToPatientFileAndCase(doctorId, patientId, patientCaseId int64) error
+	GetPatientCaseFromPatientVisitId(patientVisitId int64) (*common.PatientCase, error)
+	GetPatientCaseFromTreatmentPlanId(treatmentPlanId int64) (*common.PatientCase, error)
+	GetPatientCaseFromId(patientCaseId int64) (*common.PatientCase, error)
+	DeleteDraftTreatmentPlanByDoctorForCase(doctorId, patientCaseId int64) error
+}
+
+type JumpBallQueueAPI interface {
+	TemporarilyClaimCaseAndAssignDoctorToCaseAndPatient(doctorId, patientCaseId, patientId int64, duration time.Duration) error
+	PermanentlyAssignDoctorToCaseAndPatient(doctorId, patientCaseId, patientId int64) error
+	ExtendClaimForDoctor(doctorId, patientId, patientCaseId int64, duration time.Duration) error
+	GetClaimedItemsInQueue() ([]*DoctorQueueItem, error)
+	GetElligibleItemsInUnclaimedQueue(doctorId int64) ([]*DoctorQueueItem, error)
+	InsertUnclaimedItemIntoQueue(doctorQueueItem *DoctorQueueItem) error
+	RevokeDoctorAccessToCase(patientCaseId, patientId, doctorId int64) error
+}
+
 type PatientVisitAPI interface {
 	GetActivePatientVisitIdForHealthCondition(patientId, healthConditionId int64) (int64, error)
 	GetLastCreatedPatientVisitIdForPatient(patientId int64) (int64, error)
@@ -102,7 +114,7 @@ type PatientVisitAPI interface {
 	GetPatientVisitIdFromTreatmentPlanId(treatmentPlanId int64) (int64, error)
 	GetLatestClosedPatientVisitForPatient(patientId int64) (*common.PatientVisit, error)
 	GetPatientVisitFromId(patientVisitId int64) (*common.PatientVisit, error)
-	GetPatientCase(caseId int64) (*common.PatientCase, error)
+	GetPatientVisitFromTreatmentPlanId(treatmentPlanId int64) (*common.PatientVisit, error)
 	GetPatientCaseIdFromPatientVisitId(patientVisitId int64) (int64, error)
 	CreateNewPatientVisit(patientId, healthConditionId, layoutVersionId int64) (int64, error)
 	StartNewTreatmentPlan(patientId, patientVisitId, doctorId int64, parent *common.TreatmentPlanParent, contentSource *common.TreatmentPlanContentSource) (int64, error)
@@ -169,6 +181,12 @@ type DrugAPI interface {
 	DoesDrugDetailsExist(ndc string) (bool, error)
 	DrugDetails(ndc string) (*common.DrugDetails, error)
 	SetDrugDetails(ndcToDrugDetails map[string]*common.DrugDetails) error
+}
+
+type DoctorManagementAPI interface {
+	GetCareProvidingStateId(stateAbbreviation string, healthConditionId int64) (int64, error)
+	AddCareProvidingState(stateAbbreviation, fullStateName string, healthConditionId int64) (int64, error)
+	MakeDoctorElligibleinCareProvidingState(careProvidingStateId, doctorId int64) error
 }
 
 type DoctorAPI interface {
@@ -315,7 +333,9 @@ type ResourceLibraryAPI interface {
 type DataAPI interface {
 	PatientAPI
 	DoctorAPI
+	DoctorManagementAPI
 	PatientVisitAPI
+	PatientCaseAPI
 	IntakeLayoutAPI
 	ObjectStorageDBAPI
 	IntakeAPI
@@ -328,6 +348,7 @@ type DataAPI interface {
 	PhotoAPI
 	FavoriteTreatmentPlanAPI
 	ResourceLibraryAPI
+	JumpBallQueueAPI
 }
 
 type CloudStorageAPI interface {

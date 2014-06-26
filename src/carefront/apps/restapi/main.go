@@ -34,6 +34,7 @@ import (
 	"carefront/www/router"
 	"database/sql"
 	"log"
+	"math/rand"
 	"net/http"
 	"strconv"
 	"time"
@@ -185,27 +186,27 @@ func buildRESTAPI(conf *Config, dataApi api.DataAPI, authAPI api.AuthAPI, metric
 	notificationManager := notify.NewManager(dataApi, snsClient, twilioCli, emailService,
 		conf.Twilio.FromNumber, conf.AlertEmail, conf.NotifiyConfigs, metricsRegistry.Scope("notify"))
 
+	// Initialize listeneres
 	homelog.InitListeners(dataApi, notificationManager)
-	doctor_queue.InitListeners(dataApi, notificationManager)
+	doctor_queue.InitListeners(dataApi, notificationManager, metricsRegistry.Scope("doctor_queue"))
 	doctor_treatment_plan.InitListeners(dataApi)
 	notify.InitListeners(dataApi)
 	support.InitListeners(conf.Support.TechnicalSupportEmail, conf.Support.CustomerSupportEmail, notificationManager)
+
+	// Start worker to check for expired items in the global case queue
+	doctor_queue.StartClaimedItemsExpirationChecker(dataApi, metricsRegistry.Scope("doctor_queue"))
 
 	cloudStorageApi := api.NewCloudStorageService(awsAuth)
 	checkElligibilityHandler := &apiservice.CheckCareProvidingElligibilityHandler{DataApi: dataApi, AddressValidationApi: smartyStreetsService, StaticContentUrl: conf.StaticContentBaseUrl}
 	updatePatientBillingAddress := &apiservice.UpdatePatientAddressHandler{DataApi: dataApi, AddressType: apiservice.BILLING_ADDRESS_TYPE}
 	updatePatientPharmacyHandler := &apiservice.UpdatePatientPharmacyHandler{DataApi: dataApi, PharmacySearchService: pharmacy.GooglePlacesPharmacySearchService(0)}
 	authenticateDoctorHandler := &apiservice.DoctorAuthenticationHandler{DataApi: dataApi, AuthApi: authAPI}
-	signupDoctorHandler := &apiservice.SignupDoctorHandler{DataApi: dataApi, AuthApi: authAPI}
 	autocompleteHandler := &apiservice.AutocompleteHandler{DataApi: dataApi, ERxApi: doseSpotService, Role: api.PATIENT_ROLE}
 	doctorTreatmentSuggestionHandler := &apiservice.AutocompleteHandler{DataApi: dataApi, ERxApi: doseSpotService, Role: api.DOCTOR_ROLE}
-	doctorInstructionsHandler := apiservice.NewDoctorDrugInstructionsHandler(dataApi)
 	medicationStrengthSearchHandler := &apiservice.MedicationStrengthSearchHandler{DataApi: dataApi, ERxApi: doseSpotService}
 	newTreatmentHandler := &apiservice.NewTreatmentHandler{DataApi: dataApi, ERxApi: doseSpotService}
 	medicationDispenseUnitHandler := &apiservice.MedicationDispenseUnitsHandler{DataApi: dataApi}
-
 	pharmacySearchHandler := &apiservice.PharmacyTextSearchHandler{PharmacySearchService: pharmacy.GooglePlacesPharmacySearchService(0), DataApi: dataApi, MapsService: mapsService}
-
 	pingHandler := apiservice.PingHandler(0)
 
 	staticContentHandler := &apiservice.StaticContentHandler{
@@ -240,10 +241,6 @@ func buildRESTAPI(conf *Config, dataApi api.DataAPI, authAPI api.AuthAPI, metric
 		AddressValidationApi: smartyStreetsService,
 	}
 
-	doctorUpdatePatientPharmacyHandler := &apiservice.DoctorUpdatePatientPharmacyHandler{
-		DataApi: dataApi,
-	}
-
 	doctorPharmacySearchHandler := &apiservice.DoctorPharmacySearchHandler{
 		DataApi: dataApi,
 		ErxApi:  doseSpotService,
@@ -251,60 +248,69 @@ func buildRESTAPI(conf *Config, dataApi api.DataAPI, authAPI api.AuthAPI, metric
 
 	mux := apiservice.NewAuthServeMux(authAPI, metricsRegistry.Scope("restapi"))
 
-	mux.Handle("/v1/content", staticContentHandler)
-	mux.Handle("/v1/patient", patient.NewSignupHandler(dataApi, authAPI))
+	// Patient/Doctor: Push notification APIs
+	mux.Handle("/v1/notification/token", notify.NewNotificationHandler(dataApi, conf.NotifiyConfigs, snsClient))
+	mux.Handle("/v1/notification/prompt_status", notify.NewPromptStatusHandler(dataApi))
+
+	// Patient: Account related APIs
+	mux.Handle("/v1/patient", patient.NewSignupHandler(dataApi, authAPI, smartyStreetsService))
 	mux.Handle("/v1/patient/info", patient.NewUpdateHandler(dataApi))
 	mux.Handle("/v1/patient/address/billing", updatePatientBillingAddress)
 	mux.Handle("/v1/patient/pharmacy", updatePatientPharmacyHandler)
+	mux.Handle("/v1/patient/isauthenticated", apiservice.NewIsAuthenticatedHandler(authAPI))
+	mux.Handle("/v1/reset_password", passreset.NewForgotPasswordHandler(dataApi, authAPI, emailService, conf.Support.CustomerSupportEmail, conf.WebSubdomain))
+	mux.Handle("/v1/credit_card", patientCardsHandler)
+	mux.Handle("/v1/credit_card/default", patientCardsHandler)
+	mux.Handle("/v1/authenticate", patient.NewAuthenticationHandler(dataApi, authAPI, pharmacy.GooglePlacesPharmacySearchService(0), conf.StaticContentBaseUrl))
+	mux.Handle("/v1/logout", patient.NewAuthenticationHandler(dataApi, authAPI, pharmacy.GooglePlacesPharmacySearchService(0), conf.StaticContentBaseUrl))
+
+	// Patient: Home APIs
 	mux.Handle("/v1/patient/home", homelog.NewListHandler(dataApi))
 	mux.Handle("/v1/patient/home/dismiss", homelog.NewDismissHandler(dataApi))
-	mux.Handle("/v1/patient/isauthenticated", apiservice.NewIsAuthenticatedHandler(authAPI))
-	mux.Handle("/v1/treatment_plan", treatment_plan.NewTreatmentPlanHandler(dataApi))
-	mux.Handle("/v1/treatment_guide", treatment_plan.NewTreatmentGuideHandler(dataApi))
+
+	// Patient: Patient Visit APIs
 	mux.Handle("/v1/check_eligibility", checkElligibilityHandler)
 	mux.Handle("/v1/patient/visit", patient_visit.NewPatientVisitHandler(dataApi, authAPI))
 	mux.Handle("/v1/patient/visit/answer", patient_visit.NewAnswerIntakeHandler(dataApi))
 	mux.Handle("/v1/patient/visit/photo_answer", patient_visit.NewPhotoAnswerIntakeHandler(dataApi))
-	mux.Handle("/v1/authenticate", patient.NewAuthenticationHandler(dataApi, authAPI, pharmacy.GooglePlacesPharmacySearchService(0), conf.StaticContentBaseUrl))
-	mux.Handle("/v1/logout", patient.NewAuthenticationHandler(dataApi, authAPI, pharmacy.GooglePlacesPharmacySearchService(0), conf.StaticContentBaseUrl))
-	mux.Handle("/v1/reset_password", passreset.NewForgotPasswordHandler(dataApi, authAPI, emailService, conf.Support.CustomerSupportEmail, conf.WebSubdomain))
-	mux.Handle("/v1/ping", pingHandler)
+
+	mux.Handle("/v1/treatment_plan", treatment_plan.NewTreatmentPlanHandler(dataApi))
+	mux.Handle("/v1/treatment_guide", treatment_plan.NewTreatmentGuideHandler(dataApi))
 	mux.Handle("/v1/autocomplete", autocompleteHandler)
 	mux.Handle("/v1/pharmacy_search", pharmacySearchHandler)
-	mux.Handle("/v1/credit_card", patientCardsHandler)
-	mux.Handle("/v1/credit_card/default", patientCardsHandler)
-	mux.Handle("/v1/notification/token", notify.NewNotificationHandler(dataApi, conf.NotifiyConfigs, snsClient))
-	mux.Handle("/v1/notification/prompt_status", notify.NewPromptStatusHandler(dataApi))
-	mux.Handle("/v1/layouts/upload", layout.NewLayoutUploadHandler(dataApi))
 
+	// Patient/Doctor: Resource guide APIs
 	mux.Handle("/v1/resourceguide", reslib.NewHandler(dataApi))
 	mux.Handle("/v1/resourceguide/list", reslib.NewListHandler(dataApi))
 
-	mux.Handle("/v1/photo", photos.NewHandler(dataApi, awsAuth, conf.PhotoBucket, conf.AWSRegion))
+	// Patient/Doctor: Message APIs
 	mux.Handle("/v1/case/messages", messages.NewHandler(dataApi))
 	mux.Handle("/v1/case/messages/list", messages.NewListHandler(dataApi))
 	mux.Handle("/v1/case/messages/read", messages.NewReadHandler(dataApi))
 
-	mux.Handle("/v1/doctor/signup", signupDoctorHandler)
+	// Doctor: Account APIs
+	mux.Handle("/v1/doctor/signup", apiservice.NewSignupDoctorHandler(dataApi, authAPI, conf.Environment))
 	mux.Handle("/v1/doctor/authenticate", authenticateDoctorHandler)
 	mux.Handle("/v1/doctor/isauthenticated", apiservice.NewIsAuthenticatedHandler(authAPI))
 	mux.Handle("/v1/doctor/queue", doctor_queue.NewQueueHandler(dataApi))
-	mux.Handle("/v1/doctor/treatment/templates", doctor_treatment_plan.NewTreatmentTemplatesHandler(dataApi))
-	mux.Handle("/v1/doctor/saved_messages", apiservice.NewDoctorSavedMessageHandler(dataApi))
 
+	// Doctor: Prescription related APIs
 	mux.Handle("/v1/doctor/rx/error", doctorPrescriptionErrorHandler)
 	mux.Handle("/v1/doctor/rx/error/resolve", doctorPrescriptionErrorIgnoreHandler)
 	mux.Handle("/v1/doctor/rx/refill/request", doctorRefillRequestHandler)
 	mux.Handle("/v1/doctor/rx/refill/denial_reasons", refillRequestDenialReasonsHandler)
 
+	mux.Handle("/v1/doctor/favorite_treatment_plans", doctor_treatment_plan.NewDoctorFavoriteTreatmentPlansHandler(dataApi))
+	mux.Handle("/v1/doctor/treatment/templates", doctor_treatment_plan.NewTreatmentTemplatesHandler(dataApi))
+
+	// Doctor: Patient file APIs
 	mux.Handle("/v1/doctor/patient/treatments", patient_file.NewDoctorPatientTreatmentsHandler(dataApi))
 	mux.Handle("/v1/doctor/patient", patient_file.NewDoctorPatientHandler(dataApi, doseSpotService, smartyStreetsService))
 	mux.Handle("/v1/doctor/patient/visits", patient_file.NewPatientVisitsHandler(dataApi))
-	mux.Handle("/v1/doctor/patient/pharmacy", doctorUpdatePatientPharmacyHandler)
+	mux.Handle("/v1/doctor/patient/pharmacy", patient_file.NewDoctorUpdatePatientPharmacyHandler(dataApi))
 	mux.Handle("/v1/doctor/treatment_plans", doctor_treatment_plan.NewDoctorTreatmentPlanHandler(dataApi, doseSpotService, erxStatusQueue, conf.ERxRouting))
 	mux.Handle("/v1/doctor/treatment_plans/list", doctor_treatment_plan.NewListHandler(dataApi))
 	mux.Handle("/v1/doctor/pharmacy", doctorPharmacySearchHandler)
-
 	mux.Handle("/v1/doctor/visit/review", patient_file.NewDoctorPatientVisitReviewHandler(dataApi))
 	mux.Handle("/v1/doctor/visit/diagnosis", patient_visit.NewDiagnosePatientHandler(dataApi, authAPI, conf.Environment))
 	mux.Handle("/v1/doctor/visit/treatment/new", newTreatmentHandler)
@@ -312,10 +318,16 @@ func buildRESTAPI(conf *Config, dataApi api.DataAPI, authAPI api.AuthAPI, metric
 	mux.Handle("/v1/doctor/visit/treatment/medication_suggestions", doctorTreatmentSuggestionHandler)
 	mux.Handle("/v1/doctor/visit/treatment/medication_strengths", medicationStrengthSearchHandler)
 	mux.Handle("/v1/doctor/visit/treatment/medication_dispense_units", medicationDispenseUnitHandler)
-	mux.Handle("/v1/doctor/visit/treatment/supplemental_instructions", doctorInstructionsHandler)
 	mux.Handle("/v1/doctor/visit/regimen", doctor_treatment_plan.NewRegimenHandler(dataApi))
 	mux.Handle("/v1/doctor/visit/advice", doctor_treatment_plan.NewAdviceHandler(dataApi))
-	mux.Handle("/v1/doctor/favorite_treatment_plans", doctor_treatment_plan.NewDoctorFavoriteTreatmentPlansHandler(dataApi))
+	mux.Handle("/v1/doctor/saved_messages", apiservice.NewDoctorSavedMessageHandler(dataApi))
+	mux.Handle("/v1/doctor/patient/case/claim", doctor_queue.NewClaimPatientCaseAccessHandler(dataApi, metricsRegistry.Scope("doctor_queue")))
+
+	// Miscellaneous APIs
+	mux.Handle("/v1/content", staticContentHandler)
+	mux.Handle("/v1/ping", pingHandler)
+	mux.Handle("/v1/photo", photos.NewHandler(dataApi, awsAuth, conf.PhotoBucket, conf.AWSRegion))
+	mux.Handle("/v1/layouts/upload", layout.NewLayoutUploadHandler(dataApi))
 
 	var alog analytics.Logger
 	if conf.Analytics.LogPath != "" {
@@ -349,6 +361,9 @@ func buildRESTAPI(conf *Config, dataApi api.DataAPI, authAPI api.AuthAPI, metric
 
 	// This helps to ensure that we are only surfacing errors to client in the dev environment
 	apiservice.IsDev = (conf.Environment == "dev")
+
+	// seeding random number generator based on time the main function runs
+	rand.Seed(time.Now().UTC().UnixNano())
 
 	return mux
 }

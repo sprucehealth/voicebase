@@ -12,41 +12,34 @@ import (
 	"carefront/notify"
 	"carefront/patient_visit"
 	"errors"
+
+	"github.com/samuel/go-metrics/metrics"
 )
 
-func InitListeners(dataAPI api.DataAPI, notificationManager *notify.NotificationManager) {
+func InitListeners(dataAPI api.DataAPI, notificationManager *notify.NotificationManager, statsRegistry metrics.Registry) {
+	initJumpBallCaseQueueListeners(dataAPI, statsRegistry)
+
+	routeSuccess := metrics.NewCounter()
+	routeFailure := metrics.NewCounter()
+	statsRegistry.Add("route/success", routeSuccess)
+	statsRegistry.Add("route/failure", routeFailure)
+
 	dispatch.Default.Subscribe(func(ev *patient_visit.VisitSubmittedEvent) error {
-		// Insert into item appropriate doctor queue to make them aware of a new visit
-		// for them to diagnose
-		if err := dataAPI.InsertItemIntoDoctorQueue(api.DoctorQueueItem{
-			DoctorId:  ev.DoctorId,
-			ItemId:    ev.VisitId,
-			Status:    api.STATUS_PENDING,
-			EventType: api.EVENT_TYPE_PATIENT_VISIT,
-		}); err != nil {
-			golog.Errorf("Unable to assign patient visit to doctor: %s", err)
+		// route the incoming visit to a doctor queue
+		if err := routeIncomingPatientVisit(ev, dataAPI); err != nil {
+			routeFailure.Inc(1)
+			golog.Errorf("Unable to route incoming patient visit: %s", err)
 			return err
 		}
-
-		doctor, err := dataAPI.GetDoctorFromId(ev.DoctorId)
-		if err != nil {
-			golog.Errorf("Unable to get doctor from id: %s", err)
-			return err
-		}
-
-		if err := notificationManager.NotifyDoctor(doctor, ev); err != nil {
-			golog.Errorf("Unable to notify doctor: %s", err)
-			return err
-		}
-
+		routeSuccess.Inc(1)
 		return nil
 	})
 
-	dispatch.Default.Subscribe(func(ev *doctor_treatment_plan.TreatmentPlanCreatedEvent) error {
+	dispatch.Default.Subscribe(func(ev *doctor_treatment_plan.TreatmentPlanActivatedEvent) error {
 		// mark the status on the visit in the doctor's queue to move it to the completed tab
 		// so that the visit is no longer in the hands of the doctor
 		err := dataAPI.MarkGenerationOfTreatmentPlanInVisitQueue(ev.DoctorId,
-			ev.VisitId, ev.TreatmentPlanId, api.QUEUE_ITEM_STATUS_ONGOING, api.CASE_STATUS_TREATED)
+			ev.VisitId, ev.TreatmentPlanId, api.DQItemStatusOngoing, api.DQItemStatusTreated)
 		if err != nil {
 			golog.Errorf("Unable to update the status of the patient visit in the doctor queue: " + err.Error())
 			return err
@@ -60,9 +53,9 @@ func InitListeners(dataAPI api.DataAPI, notificationManager *notify.Notification
 		if err := dataAPI.ReplaceItemInDoctorQueue(api.DoctorQueueItem{
 			DoctorId:  ev.DoctorId,
 			ItemId:    ev.PatientVisitId,
-			EventType: api.EVENT_TYPE_PATIENT_VISIT,
-			Status:    api.QUEUE_ITEM_STATUS_TRIAGED,
-		}, api.QUEUE_ITEM_STATUS_ONGOING); err != nil {
+			EventType: api.DQEventTypePatientVisit,
+			Status:    api.DQItemStatusTriaged,
+		}, api.DQItemStatusOngoing); err != nil {
 			golog.Errorf("Unable to insert transmission error resolved into doctor queue: %s", err)
 			return err
 		}
@@ -75,11 +68,11 @@ func InitListeners(dataAPI api.DataAPI, notificationManager *notify.Notification
 		var eventTypeString string
 		switch ev.EventType {
 		case common.RefillRxType:
-			eventTypeString = api.EVENT_TYPE_REFILL_TRANSMISSION_ERROR
+			eventTypeString = api.DQEventTypeRefillTransmissionError
 		case common.UnlinkedDNTFTreatmentType:
-			eventTypeString = api.EVENT_TYPE_UNLINKED_DNTF_TRANSMISSION_ERROR
+			eventTypeString = api.DQEventTypeUnlinkedDNTFTransmissionError
 		case common.ERxType:
-			eventTypeString = api.EVENT_TYPE_TRANSMISSION_ERROR
+			eventTypeString = api.DQEventTypeTransmissionError
 		}
 		if err := dataAPI.InsertItemIntoDoctorQueue(api.DoctorQueueItem{
 			DoctorId:  ev.DoctorId,
@@ -87,9 +80,11 @@ func InitListeners(dataAPI api.DataAPI, notificationManager *notify.Notification
 			Status:    api.STATUS_PENDING,
 			EventType: eventTypeString,
 		}); err != nil {
+			routeFailure.Inc(1)
 			golog.Errorf("Unable to insert transmission error event into doctor queue: %s", err)
 			return err
 		}
+		routeSuccess.Inc(1)
 
 		doctor, err := dataAPI.GetDoctorFromId(ev.DoctorId)
 		if err != nil {
@@ -110,18 +105,18 @@ func InitListeners(dataAPI api.DataAPI, notificationManager *notify.Notification
 		var eventType string
 		switch ev.EventType {
 		case common.ERxType:
-			eventType = api.EVENT_TYPE_TRANSMISSION_ERROR
+			eventType = api.DQEventTypeTransmissionError
 		case common.RefillRxType:
-			eventType = api.EVENT_TYPE_REFILL_TRANSMISSION_ERROR
+			eventType = api.DQEventTypeRefillTransmissionError
 		case common.UnlinkedDNTFTreatmentType:
-			eventType = api.EVENT_TYPE_UNLINKED_DNTF_TRANSMISSION_ERROR
+			eventType = api.DQEventTypeUnlinkedDNTFTransmissionError
 		}
 		if err := dataAPI.ReplaceItemInDoctorQueue(api.DoctorQueueItem{
 			DoctorId:  ev.DoctorId,
 			ItemId:    ev.ItemId,
 			EventType: eventType,
-			Status:    api.QUEUE_ITEM_STATUS_COMPLETED,
-		}, api.QUEUE_ITEM_STATUS_PENDING); err != nil {
+			Status:    api.DQItemStatusTreated,
+		}, api.DQItemStatusPending); err != nil {
 			golog.Errorf("Unable to insert transmission error resolved into doctor queue: %s", err)
 			return err
 		}
@@ -133,12 +128,14 @@ func InitListeners(dataAPI api.DataAPI, notificationManager *notify.Notification
 		if err := dataAPI.InsertItemIntoDoctorQueue(api.DoctorQueueItem{
 			DoctorId:  ev.DoctorId,
 			ItemId:    ev.RefillRequestId,
-			EventType: api.EVENT_TYPE_REFILL_REQUEST,
+			EventType: api.DQEventTypeRefillRequest,
 			Status:    api.STATUS_PENDING,
 		}); err != nil {
+			routeFailure.Inc(1)
 			golog.Errorf("Unable to insert refill request item into doctor queue: %s", err)
 			return err
 		}
+		routeSuccess.Inc(1)
 
 		doctor, err := dataAPI.GetDoctorFromId(ev.DoctorId)
 		if err != nil {
@@ -159,9 +156,9 @@ func InitListeners(dataAPI api.DataAPI, notificationManager *notify.Notification
 		if err := dataAPI.ReplaceItemInDoctorQueue(api.DoctorQueueItem{
 			DoctorId:  ev.DoctorId,
 			ItemId:    ev.RefillRequestId,
-			EventType: api.EVENT_TYPE_REFILL_REQUEST,
+			EventType: api.DQEventTypeRefillRequest,
 			Status:    ev.Status,
-		}, api.QUEUE_ITEM_STATUS_PENDING); err != nil {
+		}, api.DQItemStatusPending); err != nil {
 			golog.Errorf("Unable to insert refill request resolved error into doctor queue: %s", err)
 			return err
 		}
@@ -173,13 +170,14 @@ func InitListeners(dataAPI api.DataAPI, notificationManager *notify.Notification
 		if ev.Person.RoleType == api.DOCTOR_ROLE {
 			if err := dataAPI.ReplaceItemInDoctorQueue(api.DoctorQueueItem{
 				DoctorId:  ev.Person.RoleId,
-				ItemId:    ev.Case.Id,
-				EventType: api.EVENT_TYPE_CASE_MESSAGE,
-				Status:    api.QUEUE_ITEM_STATUS_REPLIED,
-			}, api.QUEUE_ITEM_STATUS_PENDING); err != nil {
+				ItemId:    ev.Case.Id.Int64(),
+				EventType: api.DQEventTypeCaseMessage,
+				Status:    api.DQItemStatusReplied,
+			}, api.DQItemStatusPending); err != nil {
 				golog.Errorf("Unable to replace item in doctor queue with a replied item: %s", err)
 				return err
 			}
+
 			return nil
 		}
 
@@ -188,38 +186,40 @@ func InitListeners(dataAPI api.DataAPI, notificationManager *notify.Notification
 			return nil
 		}
 
-		// TODO: Once possible, use doctor assigned to the case instead of
-		// using the patient's primary.
-
-		careTeam, err := dataAPI.GetCareTeamForPatient(ev.Person.RoleId)
+		// get the doctor assigned to the case to send this message to
+		assignments, err := dataAPI.GetDoctorsAssignedToPatientCase(ev.Case.Id.Int64())
 		if err != nil {
+			golog.Errorf("Unable to get doctors assignend to case: %s", err)
 			return err
-		}
-		if careTeam == nil {
-			return errors.New("No care team assigned to patient")
 		}
 
 		var doctorID int64
-		for _, a := range careTeam.Assignments {
-			if a.ProviderRole == api.DOCTOR_ROLE {
-				doctorID = a.ProviderId
-				break
+		for _, assignment := range assignments {
+			if assignment.ProviderRole == api.DOCTOR_ROLE {
+				switch assignment.Status {
+				case api.STATUS_ACTIVE, api.STATUS_TEMP:
+					doctorID = assignment.ProviderId
+					break
+				}
 			}
 		}
+
 		if doctorID == 0 {
 			// No doctor assigned to patient
-			return errors.New("No doctor assigned to patient")
+			return errors.New("No doctor assigned to patient case")
 		}
 
 		if err := dataAPI.ReplaceItemInDoctorQueue(api.DoctorQueueItem{
 			DoctorId:  doctorID,
 			ItemId:    ev.Message.CaseID,
-			EventType: api.EVENT_TYPE_CASE_MESSAGE,
-			Status:    api.QUEUE_ITEM_STATUS_PENDING,
-		}, api.QUEUE_ITEM_STATUS_REPLIED); err != nil {
+			EventType: api.DQEventTypeCaseMessage,
+			Status:    api.DQItemStatusPending,
+		}, api.DQItemStatusReplied); err != nil {
+			routeFailure.Inc(1)
 			golog.Errorf("Unable to insert conversation item into doctor queue: %s", err)
 			return err
 		}
+		routeSuccess.Inc(1)
 
 		doctor, err := dataAPI.GetDoctorFromId(doctorID)
 		if err != nil {
@@ -241,9 +241,9 @@ func InitListeners(dataAPI api.DataAPI, notificationManager *notify.Notification
 			if err := dataAPI.ReplaceItemInDoctorQueue(api.DoctorQueueItem{
 				DoctorId:  ev.Person.Doctor.DoctorId.Int64(),
 				ItemId:    ev.CaseID,
-				EventType: api.EVENT_TYPE_CASE_MESSAGE,
-				Status:    api.QUEUE_ITEM_STATUS_READ,
-			}, api.QUEUE_ITEM_STATUS_PENDING); err != nil {
+				EventType: api.DQEventTypeCaseMessage,
+				Status:    api.DQItemStatusRead,
+			}, api.DQItemStatusPending); err != nil {
 				golog.Errorf("Unable to replace item in doctor queue with a replied item: %s", err)
 				return err
 			}

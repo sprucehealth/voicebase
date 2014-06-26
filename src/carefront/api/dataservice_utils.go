@@ -23,6 +23,7 @@ const (
 	STATUS_UNCOMMITTED                 = "UNCOMMITTED"
 	STATUS_COMMITTED                   = "COMMITTED"
 	STATUS_DRAFT                       = "DRAFT"
+	STATUS_TEMP                        = "TEMP"
 	ERX_STATUS_SENDING                 = "Sending"
 	ERX_STATUS_SENT                    = "eRxSent"
 	ERX_STATUS_ERROR                   = "Error"

@@ -25,12 +25,16 @@ import (
 )
 
 func SignupRandomTestDoctor(t *testing.T, testData *TestData) (signedupDoctorResponse *apiservice.DoctorSignedupResponse, email, password string) {
-	authHandler := &apiservice.SignupDoctorHandler{AuthApi: testData.AuthApi, DataApi: testData.DataApi}
+	return signupDoctor(t, testData)
+}
+
+func signupDoctor(t *testing.T, testData *TestData) (*apiservice.DoctorSignedupResponse, string, string) {
+	authHandler := apiservice.NewSignupDoctorHandler(testData.DataApi, testData.AuthApi, "test")
 	ts := httptest.NewServer(authHandler)
 	defer ts.Close()
 
-	email = strconv.FormatInt(time.Now().UnixNano(), 10) + "@example.com"
-	password = "12345"
+	email := strconv.FormatInt(time.Now().UnixNano(), 10) + "@example.com"
+	password := "12345"
 	params := &url.Values{}
 	params.Set("first_name", "Test")
 	params.Set("last_name", "Test")
@@ -57,12 +61,35 @@ func SignupRandomTestDoctor(t *testing.T, testData *TestData) (signedupDoctorRes
 	}
 	CheckSuccessfulStatusCode(res, fmt.Sprintf("Unable to make success request to signup patient. Here's the code returned %d and here's the body of the request %s", res.StatusCode, body), t)
 
-	signedupDoctorResponse = &apiservice.DoctorSignedupResponse{}
+	signedupDoctorResponse := &apiservice.DoctorSignedupResponse{}
 	err = json.Unmarshal(body, signedupDoctorResponse)
 	if err != nil {
 		t.Fatal("Unable to parse response from patient signed up")
 	}
 	return signedupDoctorResponse, email, password
+}
+
+func SignupRandomTestDoctorInState(state string, t *testing.T, testData *TestData) *apiservice.DoctorSignedupResponse {
+	doctorSignedupResponse, _, _ := signupDoctor(t, testData)
+
+	// check to see if the state already exists in the system
+	careProvidingStateId, err := testData.DataApi.GetCareProvidingStateId(state, apiservice.HEALTH_CONDITION_ACNE_ID)
+	if err == api.NoRowsError {
+		// this means that the state does not exist and we need to add it
+		careProvidingStateId, err = testData.DataApi.AddCareProvidingState(state, state, apiservice.HEALTH_CONDITION_ACNE_ID)
+		if err != nil {
+			t.Fatal(err)
+		}
+	} else if err != nil {
+		t.Fatal(err)
+	}
+
+	// add doctor as elligible to serve in this state for the default condition of acne
+	err = testData.DataApi.MakeDoctorElligibleinCareProvidingState(careProvidingStateId, doctorSignedupResponse.DoctorId)
+	if err != nil {
+		t.Fatal(err)
+	}
+	return doctorSignedupResponse
 }
 
 func setupErxAPI(t *testing.T) *erx.DoseSpotService {
@@ -79,9 +106,9 @@ func setupErxAPI(t *testing.T) *erx.DoseSpotService {
 	return erx
 }
 
-func SubmitPatientVisitDiagnosis(PatientVisitId int64, doctor *common.Doctor, testData *TestData, t *testing.T) {
+func PrepareAnswersForDiagnosis(testData *TestData, t *testing.T, patientVisitId int64) *apiservice.AnswerIntakeRequestBody {
 	answerIntakeRequestBody := &apiservice.AnswerIntakeRequestBody{}
-	answerIntakeRequestBody.PatientVisitId = PatientVisitId
+	answerIntakeRequestBody.PatientVisitId = patientVisitId
 	var diagnosisQuestionId, severityQuestionId, acneTypeQuestionId int64
 	if qi, err := testData.DataApi.GetQuestionInfo("q_acne_diagnosis", 1); err != nil {
 		t.Fatalf("Unable to get the questionIds for the question tags requested for the doctor to diagnose patient visit: %s", err.Error())
@@ -98,10 +125,6 @@ func SubmitPatientVisitDiagnosis(PatientVisitId int64, doctor *common.Doctor, te
 	} else {
 		acneTypeQuestionId = qi.QuestionId
 	}
-
-	diagnosePatientHandler := patient_visit.NewDiagnosePatientHandler(testData.DataApi, testData.AuthApi, "")
-	ts := httptest.NewServer(diagnosePatientHandler)
-	defer ts.Close()
 
 	answerInfo, err := testData.DataApi.GetAnswerInfoForTags([]string{"a_doctor_acne_vulgaris"}, api.EN_LANGUAGE_ID)
 	if err != nil {
@@ -129,20 +152,49 @@ func SubmitPatientVisitDiagnosis(PatientVisitId int64, doctor *common.Doctor, te
 
 	answerIntakeRequestBody.Questions = []*apiservice.AnswerToQuestionItem{answerToQuestionItem, answerToQuestionItem2, answerToQuestionItem3}
 
-	requestData, err := json.Marshal(answerIntakeRequestBody)
-	if err != nil {
-		t.Fatal("Unable to marshal request body")
+	return answerIntakeRequestBody
+}
+
+func PrepareAnswersForDiagnosingAsUnsuitableForSpruce(testData *TestData, t *testing.T, patientVisitId int64) *apiservice.AnswerIntakeRequestBody {
+	answerIntakeRequestBody := &apiservice.AnswerIntakeRequestBody{}
+	answerIntakeRequestBody.PatientVisitId = patientVisitId
+
+	var diagnosisQuestionId int64
+	if qi, err := testData.DataApi.GetQuestionInfo("q_acne_diagnosis", 1); err != nil {
+		t.Fatalf("Unable to get the questionIds for the question tags requested for the doctor to diagnose patient visit: %s", err.Error())
+	} else {
+		diagnosisQuestionId = qi.QuestionId
 	}
 
-	resp, err := testData.AuthPost(ts.URL, "application/json", bytes.NewBuffer(requestData), doctor.AccountId.Int64())
+	answerItemList, err := testData.DataApi.GetAnswerInfoForTags([]string{"a_doctor_acne_not_suitable_spruce"}, api.EN_LANGUAGE_ID)
 	if err != nil {
-		t.Fatal("Unable to successfully submit the diagnosis of a patient visit: " + err.Error())
-	} else if resp.StatusCode != http.StatusOK {
 		t.Fatal(err.Error())
 	}
 
+	diagnosePatientHandler := patient_visit.NewDiagnosePatientHandler(testData.DataApi, testData.AuthApi, "")
+	ts := httptest.NewServer(diagnosePatientHandler)
+	defer ts.Close()
+
+	answerToQuestionItem := &apiservice.AnswerToQuestionItem{}
+	answerToQuestionItem.QuestionId = diagnosisQuestionId
+	answerToQuestionItem.AnswerIntakes = []*apiservice.AnswerItem{&apiservice.AnswerItem{PotentialAnswerId: answerItemList[0].AnswerId}}
+	answerIntakeRequestBody.Questions = []*apiservice.AnswerToQuestionItem{answerToQuestionItem}
+	return answerIntakeRequestBody
+}
+
+func SubmitPatientVisitDiagnosis(patientVisitId int64, doctor *common.Doctor, testData *TestData, t *testing.T) {
+
+	answerIntakeRequestBody := PrepareAnswersForDiagnosis(testData, t, patientVisitId)
+	// create a mapping of question to expected answer
+	questionToAnswerMapping := make(map[int64]int64)
+	for _, item := range answerIntakeRequestBody.Questions {
+		questionToAnswerMapping[item.QuestionId] = item.AnswerIntakes[0].PotentialAnswerId
+	}
+
+	SubmitPatientVisitDiagnosisWithIntake(patientVisitId, doctor.AccountId.Int64(), answerIntakeRequestBody, testData, t)
+
 	// now, get diagnosis layout again and check to ensure that the doctor successfully diagnosed the patient with the expected answers
-	diagnosisLayout, err := patient_visit.GetDiagnosisLayout(testData.DataApi, PatientVisitId, doctor.DoctorId.Int64())
+	diagnosisLayout, err := patient_visit.GetDiagnosisLayout(testData.DataApi, patientVisitId, doctor.DoctorId.Int64())
 	if err != nil {
 		t.Fatal(err.Error())
 	}
@@ -155,27 +207,32 @@ func SubmitPatientVisitDiagnosis(PatientVisitId int64, doctor *common.Doctor, te
 		for _, question := range section.Questions {
 
 			for _, response := range GetAnswerIntakesFromAnswers(question.Answers, t) {
-				switch response.QuestionId.Int64() {
-				case diagnosisQuestionId:
-					if response.PotentialAnswerId.Int64() != answerToQuestionItem.AnswerIntakes[0].PotentialAnswerId {
-						t.Fatalf("Doctor response to question id %d expectd to have id %d but has id %d", response.QuestionId.Int64(), 102, response.PotentialAnswerId.Int64())
-					}
-				case severityQuestionId:
-					if response.PotentialAnswerId.Int64() != answerToQuestionItem2.AnswerIntakes[0].PotentialAnswerId {
-						t.Fatalf("Doctor response to question id %d expectd to have id %d but has id %d", response.QuestionId.Int64(), 107, response.PotentialAnswerId.Int64())
-					}
-
-				case acneTypeQuestionId:
-					if response.PotentialAnswerId.Int64() != answerToQuestionItem3.AnswerIntakes[0].PotentialAnswerId {
-						t.Fatalf("Doctor response to question id %d expectd to have any of ids %s but instead has id %d", response.QuestionId.Int64(), "(109,114,113)", response.PotentialAnswerId.Int64())
-					}
-
+				if questionToAnswerMapping[response.QuestionId.Int64()] != response.PotentialAnswerId.Int64() {
+					t.Fatal("Answer returned for question does not match what was supplied")
 				}
 			}
 		}
 	}
 
 	return
+}
+
+func SubmitPatientVisitDiagnosisWithIntake(patientVisitId, doctorAccountId int64, answerIntakeRequestBody *apiservice.AnswerIntakeRequestBody, testData *TestData, t *testing.T) {
+	diagnosePatientHandler := patient_visit.NewDiagnosePatientHandler(testData.DataApi, testData.AuthApi, "")
+	ts := httptest.NewServer(diagnosePatientHandler)
+	defer ts.Close()
+
+	requestData, err := json.Marshal(answerIntakeRequestBody)
+	if err != nil {
+		t.Fatal("Unable to marshal request body")
+	}
+
+	resp, err := testData.AuthPost(ts.URL, "application/json", bytes.NewBuffer(requestData), doctorAccountId)
+	if err != nil {
+		t.Fatal("Unable to successfully submit the diagnosis of a patient visit: " + err.Error())
+	} else if resp.StatusCode != http.StatusOK {
+		t.Fatal(err.Error())
+	}
 }
 
 func StartReviewingPatientVisit(patientVisitId int64, doctor *common.Doctor, testData *TestData, t *testing.T) {

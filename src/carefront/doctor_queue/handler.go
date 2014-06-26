@@ -3,24 +3,27 @@ package doctor_queue
 import (
 	"carefront/api"
 	"carefront/apiservice"
-	"fmt"
+	"carefront/app_url"
 	"net/http"
-
-	"github.com/gorilla/schema"
 )
 
 const (
-	state_completed = "completed"
-	state_pending   = "pending"
+	stateCompleted = "completed"
+	stateLocal     = "local"
+	stateGlobal    = "global"
 )
 
-type QueueHandler struct {
-	dataApi api.DataAPI
+type queueHandler struct {
+	dataAPI api.DataAPI
 }
 
-func NewQueueHandler(dataApi api.DataAPI) *QueueHandler {
-	return &QueueHandler{
-		dataApi: dataApi,
+type DoctorQueueItemsResponseData struct {
+	Items []*DisplayFeedItem `json:"items"`
+}
+
+func NewQueueHandler(dataAPI api.DataAPI) *queueHandler {
+	return &queueHandler{
+		dataAPI: dataAPI,
 	}
 }
 
@@ -28,129 +31,67 @@ type DoctorQueueRequestData struct {
 	State string `schema:"state"`
 }
 
-func (d *QueueHandler) ServeHTTP(w http.ResponseWriter, r *http.Request) {
+func (d *queueHandler) ServeHTTP(w http.ResponseWriter, r *http.Request) {
 	if r.Method != apiservice.HTTP_GET {
-		w.WriteHeader(http.StatusNotFound)
+		http.NotFound(w, r)
 		return
 	}
 
-	if err := r.ParseForm(); err != nil {
-		apiservice.WriteDeveloperError(w, http.StatusBadRequest, "Unable to parse request data: "+err.Error())
+	requestData := &DoctorQueueRequestData{}
+	if err := apiservice.DecodeRequestData(requestData, r); err != nil {
+		apiservice.WriteValidationError("Unable to parse input parameters", w, r)
+		return
+	} else if requestData.State == "" {
+		apiservice.WriteValidationError("State (local,global,completed) required", w, r)
 		return
 	}
 
-	var requestData DoctorQueueRequestData
-	if err := schema.NewDecoder().Decode(&requestData, r.Form); err != nil {
-		apiservice.WriteDeveloperError(w, http.StatusBadRequest, "Unable to parse input parameters: "+err.Error())
-		return
-	}
-
-	doctorId, err := d.dataApi.GetDoctorIdFromAccountId(apiservice.GetContext(r).AccountId)
+	doctorId, err := d.dataAPI.GetDoctorIdFromAccountId(apiservice.GetContext(r).AccountId)
 	if err != nil {
 		apiservice.WriteDeveloperError(w, http.StatusInternalServerError, "Unable to get doctor id from account id:"+err.Error())
 		return
 	}
 
-	var pendingItemsDoctorQueue, completedItemsDoctorQueue []*api.DoctorQueueItem
-
-	if requestData.State == "" || requestData.State == state_pending {
-		pendingItemsDoctorQueue, err = d.dataApi.GetPendingItemsInDoctorQueue(doctorId)
+	// only add auth url for items in global queue so that
+	// the doctor can first be granted acess to the case before opening the case
+	var addAuthUrl bool
+	var queueItems []*api.DoctorQueueItem
+	switch requestData.State {
+	case stateLocal:
+		queueItems, err = d.dataAPI.GetPendingItemsInDoctorQueue(doctorId)
 		if err != nil {
-			apiservice.WriteDeveloperError(w, http.StatusInternalServerError, "Unable to get doctor queue for doctor: "+err.Error())
+			apiservice.WriteError(err, w, r)
 			return
 		}
-	}
-
-	if requestData.State == "" || requestData.State == state_completed {
-		completedItemsDoctorQueue, err = d.dataApi.GetCompletedItemsInDoctorQueue(doctorId)
+	case stateGlobal:
+		addAuthUrl = true
+		queueItems, err = d.dataAPI.GetElligibleItemsInUnclaimedQueue(doctorId)
 		if err != nil {
-			apiservice.WriteDeveloperError(w, http.StatusInternalServerError, "Unable to get doctor queue for doctor: "+err.Error())
+			apiservice.WriteError(err, w, r)
 			return
 		}
-	}
-
-	doctorDisplayFeed, err := d.convertDoctorQueueIntoDisplayQueue(pendingItemsDoctorQueue, completedItemsDoctorQueue)
-	if err != nil {
-		apiservice.WriteDeveloperError(w, http.StatusInternalServerError, "Unable to convert doctor queue into a display feed: "+err.Error())
+	case stateCompleted:
+		queueItems, err = d.dataAPI.GetCompletedItemsInDoctorQueue(doctorId)
+		if err != nil {
+			apiservice.WriteError(err, w, r)
+			return
+		}
+	default:
+		apiservice.WriteValidationError("Unexpected state value. Can only be local, global or completed", w, r)
 		return
 	}
 
-	apiservice.WriteJSONToHTTPResponseWriter(w, http.StatusOK, &doctorDisplayFeed)
-}
-
-func (d *QueueHandler) convertDoctorQueueIntoDisplayQueue(pendingItems, completedItems []*api.DoctorQueueItem) (*DisplayFeedTabs, error) {
-	var doctorDisplayFeedTabs DisplayFeedTabs
-
-	var pendingOrOngoingDisplayFeed, completedDisplayFeed *DisplayFeed
-	doctorDisplayFeedTabs.Tabs = make([]*DisplayFeed, 0)
-
-	if pendingItems != nil {
-		pendingOrOngoingDisplayFeed = &DisplayFeed{
-			Title: "Pending",
-		}
-		doctorDisplayFeedTabs.Tabs = append(doctorDisplayFeedTabs.Tabs, pendingOrOngoingDisplayFeed)
-	}
-
-	if completedItems != nil {
-		completedDisplayFeed = &DisplayFeed{
-			Title: "Completed",
-		}
-		doctorDisplayFeedTabs.Tabs = append(doctorDisplayFeedTabs.Tabs, completedDisplayFeed)
-	}
-
-	if len(pendingItems) > 0 {
-
-		// put the first item in the queue into the first section of the display feed
-		upcomingVisitSection := &DisplayFeedSection{}
-		upcomingVisitSection.Title = "Next Visit"
-
-		pendingItems[0].PositionInQueue = 0
-		item, err := converQueueItemToDisplayFeedItem(d.dataApi, pendingItems[0])
+	feedItems := make([]*DisplayFeedItem, len(queueItems))
+	for i, doctorQueueItem := range queueItems {
+		doctorQueueItem.PositionInQueue = i
+		feedItems[i], err = converQueueItemToDisplayFeedItem(d.dataAPI, doctorQueueItem)
 		if err != nil {
-			return nil, err
+			apiservice.WriteError(err, w, r)
+			return
 		}
-		upcomingVisitSection.Items = []*DisplayFeedItem{item}
-
-		nextVisitsSection := &DisplayFeedSection{
-			Title: fmt.Sprintf("%d Upcoming Visits", len(pendingItems)-1),
-			Items: make([]*DisplayFeedItem, 0),
+		if addAuthUrl {
+			feedItems[i].AuthUrl = app_url.ClaimPatientCaseAction(doctorQueueItem.PatientCaseId)
 		}
-		for i, doctorQueueItem := range pendingItems[1:] {
-			doctorQueueItem.PositionInQueue = i + 1
-			item, err = converQueueItemToDisplayFeedItem(d.dataApi, doctorQueueItem)
-			if err != nil {
-				return nil, err
-			}
-			nextVisitsSection.Items = append(nextVisitsSection.Items, item)
-		}
-
-		pendingOrOngoingDisplayFeed.Sections = []*DisplayFeedSection{upcomingVisitSection, nextVisitsSection}
 	}
-
-	if len(completedItems) > 0 {
-		// cluster feed items based on day
-		displaySections := make([]*DisplayFeedSection, 0)
-		currentDisplaySection := &DisplayFeedSection{}
-		lastSeenDay := ""
-		for i, completedItem := range completedItems {
-			completedItem.PositionInQueue = i
-			day := fmt.Sprintf("%s %d %d", completedItem.EnqueueDate.Month().String(), completedItem.EnqueueDate.Day(), completedItem.EnqueueDate.Year())
-			if lastSeenDay != day {
-				currentDisplaySection = &DisplayFeedSection{
-					Title: day,
-					Items: make([]*DisplayFeedItem, 0),
-				}
-				displaySections = append(displaySections, currentDisplaySection)
-				lastSeenDay = day
-			}
-			displayItem, err := converQueueItemToDisplayFeedItem(d.dataApi, completedItem)
-			if err != nil {
-				return nil, err
-			}
-			currentDisplaySection.Items = append(currentDisplaySection.Items, displayItem)
-		}
-		completedDisplayFeed.Sections = displaySections
-	}
-
-	return &doctorDisplayFeedTabs, nil
+	apiservice.WriteJSONToHTTPResponseWriter(w, http.StatusOK, &DoctorQueueItemsResponseData{Items: feedItems})
 }

@@ -20,7 +20,7 @@ func TestMedicationStrengthSearch(t *testing.T) {
 	testData := SetupIntegrationTest(t)
 	defer TearDownIntegrationTest(t, testData)
 
-	doctorId := GetDoctorIdOfCurrentPrimaryDoctor(testData, t)
+	doctorId := GetDoctorIdOfCurrentDoctor(testData, t)
 	doctor, err := testData.DataApi.GetDoctorFromId(doctorId)
 	if err != nil {
 		t.Fatal("Unable to get doctor from id: " + err.Error())
@@ -53,7 +53,7 @@ func TestNewTreatmentSelection(t *testing.T) {
 	testData := SetupIntegrationTest(t)
 	defer TearDownIntegrationTest(t, testData)
 
-	doctorId := GetDoctorIdOfCurrentPrimaryDoctor(testData, t)
+	doctorId := GetDoctorIdOfCurrentDoctor(testData, t)
 	doctor, err := testData.DataApi.GetDoctorFromId(doctorId)
 	if err != nil {
 		t.Fatal("Unable to get doctor from id: " + err.Error())
@@ -176,14 +176,14 @@ func TestAddTreatments(t *testing.T) {
 	defer TearDownIntegrationTest(t, testData)
 
 	// get the current primary doctor
-	doctorId := GetDoctorIdOfCurrentPrimaryDoctor(testData, t)
+	doctorId := GetDoctorIdOfCurrentDoctor(testData, t)
 
 	doctor, err := testData.DataApi.GetDoctorFromId(doctorId)
 	if err != nil {
 		t.Fatal("Unable to get doctor from doctor id " + err.Error())
 	}
 
-	_, treatmentPlan := SignupAndSubmitPatientVisitForRandomPatient(t, testData, doctor)
+	_, treatmentPlan := CreateRandomPatientVisitAndPickTP(t, testData, doctor)
 
 	// doctor now attempts to add a couple treatments for patient
 	treatment1 := &common.Treatment{
@@ -266,13 +266,13 @@ func TestTreatmentTemplates(t *testing.T) {
 	defer TearDownIntegrationTest(t, testData)
 
 	// get the current primary doctor
-	doctorId := GetDoctorIdOfCurrentPrimaryDoctor(testData, t)
+	doctorId := GetDoctorIdOfCurrentDoctor(testData, t)
 
 	doctor, err := testData.DataApi.GetDoctorFromId(doctorId)
 	if err != nil {
 		t.Fatal("Unable to get doctor from doctor id " + err.Error())
 	}
-	_, treatmentPlan := SignupAndSubmitPatientVisitForRandomPatient(t, testData, doctor)
+	_, treatmentPlan := CreateRandomPatientVisitAndPickTP(t, testData, doctor)
 
 	// doctor now attempts to favorite a treatment
 	treatment1 := &common.Treatment{
@@ -432,7 +432,7 @@ func TestTreatmentTemplatesInContextOfPatientVisit(t *testing.T) {
 	defer TearDownIntegrationTest(t, testData)
 
 	// get the current primary doctor
-	doctorId := GetDoctorIdOfCurrentPrimaryDoctor(testData, t)
+	doctorId := GetDoctorIdOfCurrentDoctor(testData, t)
 
 	doctor, err := testData.DataApi.GetDoctorFromId(doctorId)
 	if err != nil {
@@ -440,7 +440,7 @@ func TestTreatmentTemplatesInContextOfPatientVisit(t *testing.T) {
 	}
 
 	// create random patient
-	_, treatmentPlan := SignupAndSubmitPatientVisitForRandomPatient(t, testData, doctor)
+	_, treatmentPlan := CreateRandomPatientVisitAndPickTP(t, testData, doctor)
 
 	// doctor now attempts to favorite a treatment
 	treatment1 := &common.Treatment{
@@ -649,14 +649,14 @@ func TestTreatmentTemplateWithDrugOutOfMarket(t *testing.T) {
 	defer TearDownIntegrationTest(t, testData)
 
 	// get the current primary doctor
-	doctorId := GetDoctorIdOfCurrentPrimaryDoctor(testData, t)
+	doctorId := GetDoctorIdOfCurrentDoctor(testData, t)
 
 	doctor, err := testData.DataApi.GetDoctorFromId(doctorId)
 	if err != nil {
 		t.Fatal("Unable to get doctor from doctor id " + err.Error())
 	}
 
-	_, treatmentPlan := SignupAndSubmitPatientVisitForRandomPatient(t, testData, doctor)
+	_, treatmentPlan := CreateRandomPatientVisitAndPickTP(t, testData, doctor)
 	// doctor now attempts to favorite a treatment
 	treatment1 := &common.Treatment{
 		DrugInternalName: "DrugName (DrugRoute - DrugForm)",

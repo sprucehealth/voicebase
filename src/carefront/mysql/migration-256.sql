@@ -1,4 +1,3 @@
-
 INSERT INTO patient_case_message (body, person_id, tstamp, patient_case_id)
   SELECT diagnosis_summary.summary, person.id, diagnosis_summary.creation_date, patient_case.id
   FROM diagnosis_summary

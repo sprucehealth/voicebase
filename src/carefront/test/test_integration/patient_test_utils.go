@@ -2,6 +2,7 @@ package test_integration
 
 import (
 	"bytes"
+	"carefront/address"
 	"carefront/apiservice"
 	"carefront/info_intake"
 	patientApiService "carefront/patient"
@@ -17,7 +18,18 @@ import (
 )
 
 func SignupRandomTestPatient(t *testing.T, testData *TestData) *patientApiService.PatientSignedupResponse {
-	authHandler := patientApiService.NewSignupHandler(testData.DataApi, testData.AuthApi)
+	stubAddressValidationService := address.StubAddressValidationService{
+		CityStateToReturn: address.CityState{
+			City:              "San Francisco",
+			State:             "California",
+			StateAbbreviation: "CA",
+		},
+	}
+	return signupRandomTestPatient(stubAddressValidationService, t, testData)
+}
+
+func signupRandomTestPatient(addressAPI address.AddressValidationAPI, t *testing.T, testData *TestData) *patientApiService.PatientSignedupResponse {
+	authHandler := patientApiService.NewSignupHandler(testData.DataApi, testData.AuthApi, addressAPI)
 	ts := httptest.NewServer(authHandler)
 	defer ts.Close()
 
@@ -43,16 +55,21 @@ func SignupRandomTestPatient(t *testing.T, testData *TestData) *patientApiServic
 	return signedupPatientResponse
 }
 
+func SignupRandomTestPatientInState(state string, t *testing.T, testData *TestData) *patientApiService.PatientSignedupResponse {
+	stubAddressValidationService := address.StubAddressValidationService{
+		CityStateToReturn: address.CityState{
+			City:              "TestCity",
+			State:             state,
+			StateAbbreviation: state,
+		},
+	}
+	return signupRandomTestPatient(stubAddressValidationService, t, testData)
+}
+
 func GetPatientVisitForPatient(patientId int64, testData *TestData, t *testing.T) *patient_visit.PatientVisitResponse {
 	patient, err := testData.DataApi.GetPatientFromId(patientId)
 	if err != nil {
 		t.Fatal("Unable to get patient information given the patient id: " + err.Error())
-	}
-
-	doctorId := GetDoctorIdOfCurrentPrimaryDoctor(testData, t)
-	doctor, err := testData.DataApi.GetDoctorFromId(doctorId)
-	if err != nil {
-		t.Fatal(err.Error())
 	}
 
 	patientVisitId, err := testData.DataApi.GetLastCreatedPatientVisitIdForPatient(patientId)
@@ -70,7 +87,7 @@ func GetPatientVisitForPatient(patientId int64, testData *TestData, t *testing.T
 		t.Fatal(err.Error())
 	}
 
-	patientVisitLayout, err := patient_visit.GetPatientVisitLayout(testData.DataApi, patient.PatientId.Int64(), patientVisitId, r, doctor)
+	patientVisitLayout, err := patient_visit.GetPatientVisitLayout(testData.DataApi, patient.PatientId.Int64(), patientVisitId, r)
 	if err != nil {
 		t.Fatal(err.Error())
 	}
@@ -112,7 +129,7 @@ func CreatePatientVisitForPatient(patientId int64, testData *TestData, t *testin
 
 // randomly answering all top level questions in the patient visit, regardless of the condition under which the questions are presented to the user.
 // the goal of this is to get all questions answered so as to render the views for the doctor layout, not to test the sanity of the answers the patient inputs.
-func prepareAnswersForQuestionsInPatientVisit(patientVisitResponse *patient_visit.PatientVisitResponse, t *testing.T) *apiservice.AnswerIntakeRequestBody {
+func PrepareAnswersForQuestionsInPatientVisit(patientVisitResponse *patient_visit.PatientVisitResponse, t *testing.T) *apiservice.AnswerIntakeRequestBody {
 	answerIntakeRequestBody := apiservice.AnswerIntakeRequestBody{}
 	answerIntakeRequestBody.PatientVisitId = patientVisitResponse.PatientVisitId
 	answerIntakeRequestBody.Questions = make([]*apiservice.AnswerToQuestionItem, 0)

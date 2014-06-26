@@ -29,8 +29,8 @@ var (
 		refill_request_status_deny:    api.RX_REFILL_STATUS_DENIED,
 	}
 	actionToQueueStateMapping = map[string]string{
-		refill_request_status_approve: api.QUEUE_ITEM_STATUS_REFILL_APPROVED,
-		refill_request_status_deny:    api.QUEUE_ITEM_STATUS_REFILL_DENIED,
+		refill_request_status_approve: api.DQItemStatusRefillApproved,
+		refill_request_status_deny:    api.DQItemStatusRefillDenied,
 	}
 )
 

@@ -36,7 +36,7 @@ func TestCaseMessages(t *testing.T) {
 	testData := SetupIntegrationTest(t)
 	defer TearDownIntegrationTest(t, testData)
 
-	doctorID := GetDoctorIdOfCurrentPrimaryDoctor(testData, t)
+	doctorID := GetDoctorIdOfCurrentDoctor(testData, t)
 	doctor, err := testData.DataApi.GetDoctorFromId(doctorID)
 	if err != nil {
 		t.Fatal(err)
@@ -46,7 +46,7 @@ func TestCaseMessages(t *testing.T) {
 		t.Fatal(err)
 	}
 
-	visit, treatmentPlan := SignupAndSubmitPatientVisitForRandomPatient(t, testData, doctor)
+	visit, treatmentPlan := CreateRandomPatientVisitAndPickTP(t, testData, doctor)
 	patient, err := testData.DataApi.GetPatientFromPatientVisitId(visit.PatientVisitId)
 	if err != nil {
 		t.Fatal(err)
@@ -90,6 +90,7 @@ func TestCaseMessages(t *testing.T) {
 	a := m.Attachments[0]
 	if a.ItemType != common.AttachmentTypePhoto || a.ItemID != photoID {
 		t.Fatalf("Wrong attachment type or ID")
+
 	}
 	photo, err := testData.DataApi.GetPhoto(photoID)
 	if err != nil {
@@ -113,7 +114,6 @@ func TestCaseMessages(t *testing.T) {
 	}
 
 	// Reply from patient
-
 	PostCaseMessage(t, testData, patient.AccountId.Int64(), &messages.PostMessageRequest{
 		CaseID:  caseID,
 		Message: "bar",

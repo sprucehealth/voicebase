@@ -60,9 +60,11 @@ func (d *DoctorPrescriptionErrorIgnoreHandler) ServeHTTP(w http.ResponseWriter, 
 			return
 		}
 
-		if err := VerifyDoctorPatientRelationship(d.DataApi, treatment.Doctor, treatment.Patient); err != nil {
-			WriteDeveloperError(w, http.StatusForbidden, "Unable to verify patient-doctor relationship: "+err.Error())
-			return
+		if !treatment.Patient.IsUnlinked {
+			if err := ValidateDoctorAccessToPatientFile(treatment.Doctor.DoctorId.Int64(), treatment.Patient.PatientId.Int64(), d.DataApi); err != nil {
+				WriteError(err, w, r)
+				return
+			}
 		}
 
 		if err := d.ErxApi.IgnoreAlert(doctor.DoseSpotClinicianId, treatment.ERx.PrescriptionId.Int64()); err != nil {
@@ -90,10 +92,13 @@ func (d *DoctorPrescriptionErrorIgnoreHandler) ServeHTTP(w http.ResponseWriter, 
 			return
 		}
 
-		if err := VerifyDoctorPatientRelationship(d.DataApi, refillRequest.Doctor, refillRequest.Patient); err != nil {
-			WriteDeveloperError(w, http.StatusForbidden, "Unable to verify patient-doctor relationship: "+err.Error())
-			return
+		if !refillRequest.Patient.IsUnlinked {
+			if err := ValidateDoctorAccessToPatientFile(refillRequest.Doctor.DoctorId.Int64(), refillRequest.Patient.PatientId.Int64(), d.DataApi); err != nil {
+				WriteError(err, w, r)
+				return
+			}
 		}
+
 		if err := d.ErxApi.IgnoreAlert(doctor.DoseSpotClinicianId, refillRequest.PrescriptionId); err != nil {
 			WriteDeveloperError(w, http.StatusInternalServerError, "Unable to ignore transmission error for prescription: "+err.Error())
 			return

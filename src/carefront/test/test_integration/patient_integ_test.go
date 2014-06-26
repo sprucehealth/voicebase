@@ -2,6 +2,7 @@ package test_integration
 
 import (
 	"bytes"
+	"carefront/common"
 	patientApiService "carefront/patient"
 	"carefront/patient_visit"
 	"encoding/json"
@@ -92,33 +93,27 @@ func TestPatientVisitCreation(t *testing.T) {
 		t.Fatal("The questions for patient intake should be returned as part of the patient visit")
 	}
 
-	// checking to ensure that the care team was created
-	careTeam, err := testData.DataApi.GetCareTeamForPatient(signedupPatientResponse.Patient.PatientId.Int64())
-	if err != nil {
-		t.Fatal("Unable to get care team for patient visit: " + err.Error())
-	}
-
-	if !(careTeam == nil || careTeam.PatientId == signedupPatientResponse.Patient.PatientId.Int64()) {
-		t.Fatal("Unable to get patient visit id for care team")
-	}
-
-	// ensuring that we have a primary doctor assigned to the case
-	primaryDoctorFound := false
-	for _, assignment := range careTeam.Assignments {
-		if assignment.ProviderRole == "DOCTOR" {
-			primaryDoctorFound = true
-		}
-	}
-
-	if primaryDoctorFound == false {
-		t.Fatal("Primary doctor not found for patient visit")
-	}
-
 	// getting the patient visit again as we should get back the same patient visit id
 	// since this patient visit has not been completed
 	anotherPatientVisitResponse := GetPatientVisitForPatient(signedupPatientResponse.Patient.PatientId.Int64(), testData, t)
 	if anotherPatientVisitResponse.PatientVisitId != patientVisitResponse.PatientVisitId {
 		t.Fatal("The patient visit id for subsequent calls should be the same so long as we have not closed/submitted the case")
+	}
+
+	// ensure that the patient visit is created in the unclaimed state
+	patientCase, err := testData.DataApi.GetPatientCaseFromPatientVisitId(patientVisitResponse.PatientVisitId)
+	if err != nil {
+		t.Fatal(err)
+	} else if patientCase.Status != common.PCStatusUnclaimed {
+		t.Fatalf("Expected the patient case to be created in the %s state but it was %s state", common.PCStatusUnclaimed, patientCase.Status)
+	}
+
+	// ensure that no doctor are assigned to the patient case yet
+	doctorAssignments, err := testData.DataApi.GetDoctorsAssignedToPatientCase(patientCase.Id.Int64())
+	if err != nil {
+		t.Fatal(err)
+	} else if len(doctorAssignments) != 0 {
+		t.Fatalf("Expected 0 doctors assigned to patient case instead got %d", len(doctorAssignments))
 	}
 }
 

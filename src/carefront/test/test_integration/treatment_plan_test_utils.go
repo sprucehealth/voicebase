@@ -209,8 +209,9 @@ func AddAndGetTreatmentsForPatientVisit(testData *TestData, treatments []*common
 
 	CheckSuccessfulStatusCode(resp, "Unsuccessful call made to add treatments for patient visit: ", t)
 
-	if addTreatmentsResponse.TreatmentList == nil || len(addTreatmentsResponse.TreatmentList.Treatments) == 0 {
-		t.Fatal("Treatment ids expected to be returned for the treatments just added")
+	treatmentList := &common.TreatmentList{Treatments: treatments}
+	if !treatmentList.Equals(addTreatmentsResponse.TreatmentList) {
+		t.Fatal("Expected treatments added to match treatments returned but they dont")
 	}
 
 	return addTreatmentsResponse

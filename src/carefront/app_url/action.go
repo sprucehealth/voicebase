@@ -60,20 +60,31 @@ func (s *SpruceAction) UnmarshalJSON(data []byte) error {
 	return nil
 }
 
-func BeginPatientVisitReviewAction(patientId, patientVisitId int64) *SpruceAction {
+func ClaimPatientCaseAction(patientCaseId int64) *SpruceAction {
+	params := url.Values{}
+	params.Set("case_id", strconv.FormatInt(patientCaseId, 10))
+	return &SpruceAction{
+		name:   "claim_patient_case",
+		params: params,
+	}
+}
+
+func BeginPatientVisitReviewAction(patientId, patientVisitId, patientCaseId int64) *SpruceAction {
 	params := url.Values{}
 	params.Set("patient_visit_id", strconv.FormatInt(patientVisitId, 10))
 	params.Set("patient_id", strconv.FormatInt(patientId, 10))
+	params.Set("case_id", strconv.FormatInt(patientCaseId, 10))
 	return &SpruceAction{
 		name:   "begin_patient_visit",
 		params: params,
 	}
 }
 
-func ViewCompletedPatientVisitAction(patientId, patientVisitId int64) *SpruceAction {
+func ViewCompletedPatientVisitAction(patientId, patientVisitId, patientCaseId int64) *SpruceAction {
 	params := url.Values{}
 	params.Set("patient_visit_id", strconv.FormatInt(patientVisitId, 10))
 	params.Set("patient_id", strconv.FormatInt(patientId, 10))
+	params.Set("case_id", strconv.FormatInt(patientCaseId, 10))
 	return &SpruceAction{
 		name:   "view_completed_patient_visit",
 		params: params,

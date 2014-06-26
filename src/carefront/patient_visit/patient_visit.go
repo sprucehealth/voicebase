@@ -80,7 +80,7 @@ func (s *patientVisitHandler) submitPatientVisit(w http.ResponseWriter, r *http.
 	}
 
 	// do not support the submitting of a case that has already been submitted or is in another state
-	if patientVisit.Status != api.CASE_STATUS_OPEN && patientVisit.Status != api.CASE_STATUS_PHOTOS_REJECTED {
+	if patientVisit.Status != common.PVStatusOpen {
 		apiservice.WriteDeveloperError(w, http.StatusBadRequest, "Cannot submit a case that is not in the open state. Current status of case = "+patientVisit.Status)
 		return
 	}
@@ -91,30 +91,9 @@ func (s *patientVisitHandler) submitPatientVisit(w http.ResponseWriter, r *http.
 		return
 	}
 
-	patientVisit, err = s.dataApi.GetPatientVisitFromId(requestData.PatientVisitId)
-	if err != nil {
-		apiservice.WriteDeveloperError(w, http.StatusInternalServerError, err.Error())
-		return
-	}
-
-	careTeam, err := s.dataApi.GetCareTeamForPatient(patientId)
-	if err != nil {
-		apiservice.WriteDeveloperError(w, http.StatusInternalServerError, err.Error())
-		return
-	}
-
-	var doctorId int64
-	for _, assignment := range careTeam.Assignments {
-		if assignment.ProviderRole == api.DOCTOR_ROLE {
-			doctorId = assignment.ProviderId
-			break
-		}
-	}
-
 	dispatch.Default.Publish(&VisitSubmittedEvent{
 		PatientId: patientId,
-		DoctorId:  doctorId,
-		VisitId:   patientVisit.PatientVisitId.Int64(),
+		VisitId:   requestData.PatientVisitId,
 	})
 
 	apiservice.WriteJSONToHTTPResponseWriter(w, http.StatusOK, PatientVisitSubmittedResponse{PatientVisitId: patientVisit.PatientVisitId.Int64(), Status: patientVisit.Status})
@@ -146,24 +125,7 @@ func (s *patientVisitHandler) returnLastCreatedPatientVisit(w http.ResponseWrite
 		return
 	}
 
-	careTeam, err := s.dataApi.GetCareTeamForPatient(patientId)
-	if err != nil {
-		apiservice.WriteDeveloperError(w, http.StatusInternalServerError, "Unable to get care team for patient")
-		return
-	}
-
-	primaryDoctorId := apiservice.GetPrimaryDoctorIdFromCareTeam(careTeam)
-	if primaryDoctorId == 0 {
-		apiservice.WriteDeveloperError(w, http.StatusInternalServerError, "Unable to identify the primary doctor for the patient")
-		return
-	}
-	doctor, err := s.dataApi.GetDoctorFromId(primaryDoctorId)
-	if err != nil {
-		apiservice.WriteDeveloperError(w, http.StatusInternalServerError, err.Error())
-		return
-	}
-
-	patientVisitLayout, err := GetPatientVisitLayout(s.dataApi, patientId, patientVisitId, r, doctor)
+	patientVisitLayout, err := GetPatientVisitLayout(s.dataApi, patientId, patientVisitId, r)
 	if err != nil {
 		apiservice.WriteDeveloperError(w, http.StatusInternalServerError, err.Error())
 		return
@@ -172,7 +134,7 @@ func (s *patientVisitHandler) returnLastCreatedPatientVisit(w http.ResponseWrite
 	apiservice.WriteJSONToHTTPResponseWriter(w, http.StatusOK, PatientVisitResponse{PatientVisitId: patientVisit.PatientVisitId.Int64(), Status: patientVisit.Status, ClientLayout: patientVisitLayout})
 }
 
-func GetPatientVisitLayout(dataApi api.DataAPI, patientId, patientVisitId int64, r *http.Request, doctor *common.Doctor) (*info_intake.InfoIntakeLayout, error) {
+func GetPatientVisitLayout(dataApi api.DataAPI, patientId, patientVisitId int64, r *http.Request) (*info_intake.InfoIntakeLayout, error) {
 
 	// if there is an active patient visit record, then ensure to lookup the layout to send to the patient
 	// based on what layout was shown to the patient at the time of opening of the patient visit, NOT the current
@@ -193,7 +155,6 @@ func GetPatientVisitLayout(dataApi api.DataAPI, patientId, patientVisitId int64,
 	if err != nil {
 		return nil, err
 	}
-	fillInFormattedFieldsForQuestions(patientVisitLayout, doctor)
 	return patientVisitLayout, nil
 }
 
@@ -229,18 +190,11 @@ func (s *patientVisitHandler) createNewPatientVisitHandler(w http.ResponseWriter
 		return
 	}
 
-	doctor, err := apiservice.GetPrimaryDoctorInfoBasedOnPatient(s.dataApi, patient, "")
-	if err != nil {
-		apiservice.WriteDeveloperError(w, http.StatusInternalServerError, err.Error())
-		return
-	}
-
 	err = populateGlobalSectionsWithPatientAnswers(s.dataApi, healthCondition, patient.PatientId.Int64(), r)
 	if err != nil {
 		apiservice.WriteDeveloperError(w, http.StatusInternalServerError, err.Error())
 		return
 	}
-	fillInFormattedFieldsForQuestions(healthCondition, doctor)
 
 	dispatch.Default.PublishAsync(&VisitStartedEvent{
 		PatientId: patient.PatientId.Int64(),

@@ -59,19 +59,19 @@ func (t *treatmentsHandler) addTreatment(w http.ResponseWriter, r *http.Request)
 		return
 	}
 
-	patientVisitId, err := t.dataAPI.GetPatientVisitIdFromTreatmentPlanId(treatmentsRequestBody.TreatmentPlanId.Int64())
+	patientId, err := t.dataAPI.GetPatientIdFromTreatmentPlanId(treatmentsRequestBody.TreatmentPlanId.Int64())
 	if err != nil {
 		apiservice.WriteError(err, w, r)
 		return
 	}
 
-	patientVisitReviewData, err := apiservice.ValidateDoctorAccessToPatientVisitAndGetRelevantData(patientVisitId, apiservice.GetContext(r).AccountId, t.dataAPI)
+	doctor, err := t.dataAPI.GetDoctorFromAccountId(apiservice.GetContext(r).AccountId)
 	if err != nil {
-		apiservice.WriteError(err, w, r)
+		apiservice.WriteDeveloperError(w, http.StatusInternalServerError, "Unable to get doctor from account id: "+err.Error())
 		return
 	}
 
-	treatmentPlan, err := t.dataAPI.GetAbridgedTreatmentPlan(treatmentsRequestBody.TreatmentPlanId.Int64(), patientVisitReviewData.DoctorId)
+	treatmentPlan, err := t.dataAPI.GetAbridgedTreatmentPlan(treatmentsRequestBody.TreatmentPlanId.Int64(), doctor.DoctorId.Int64())
 	if err != nil {
 		apiservice.WriteError(err, w, r)
 		return
@@ -80,9 +80,8 @@ func (t *treatmentsHandler) addTreatment(w http.ResponseWriter, r *http.Request)
 		return
 	}
 
-	doctor, err := t.dataAPI.GetDoctorFromAccountId(apiservice.GetContext(r).AccountId)
-	if err != nil {
-		apiservice.WriteDeveloperError(w, http.StatusInternalServerError, "Unable to get doctor from account id: "+err.Error())
+	if err := apiservice.ValidateWriteAccessToPatientCase(doctor.DoctorId.Int64(), patientId, treatmentPlan.PatientCaseId.Int64(), t.dataAPI); err != nil {
+		apiservice.WriteError(err, w, r)
 		return
 	}
 
@@ -105,7 +104,7 @@ func (t *treatmentsHandler) addTreatment(w http.ResponseWriter, r *http.Request)
 	}
 
 	// Add treatments to patient
-	if err := t.dataAPI.AddTreatmentsForTreatmentPlan(treatmentsRequestBody.Treatments, patientVisitReviewData.DoctorId, treatmentsRequestBody.TreatmentPlanId.Int64(), patientVisitReviewData.PatientVisit.PatientId.Int64()); err != nil {
+	if err := t.dataAPI.AddTreatmentsForTreatmentPlan(treatmentsRequestBody.Treatments, doctor.DoctorId.Int64(), treatmentsRequestBody.TreatmentPlanId.Int64(), patientId); err != nil {
 		apiservice.WriteDeveloperError(w, http.StatusInternalServerError, "Unable to add treatment to patient visit: "+err.Error())
 		return
 	}
@@ -116,7 +115,7 @@ func (t *treatmentsHandler) addTreatment(w http.ResponseWriter, r *http.Request)
 		return
 	}
 
-	dispatch.Default.PublishAsync(&TreatmentsAddedEvent{
+	dispatch.Default.Publish(&TreatmentsAddedEvent{
 		TreatmentPlanId: treatmentsRequestBody.TreatmentPlanId.Int64(),
 		DoctorId:        doctor.DoctorId.Int64(),
 		Treatments:      treatments,

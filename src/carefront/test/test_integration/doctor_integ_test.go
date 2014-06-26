@@ -2,6 +2,11 @@ package test_integration
 
 import (
 	"bytes"
+	"carefront/api"
+	"carefront/apiservice"
+	"carefront/common"
+	"carefront/doctor_treatment_plan"
+	"carefront/patient_visit"
 	"encoding/json"
 	"fmt"
 	"io/ioutil"
@@ -9,11 +14,6 @@ import (
 	"net/http/httptest"
 	"strconv"
 	"testing"
-
-	"carefront/api"
-	"carefront/apiservice"
-	"carefront/doctor_treatment_plan"
-	"carefront/patient_visit"
 )
 
 func TestDoctorRegistration(t *testing.T) {
@@ -62,7 +62,7 @@ func TestDoctorDrugSearch(t *testing.T) {
 	testData := SetupIntegrationTest(t)
 	defer TearDownIntegrationTest(t, testData)
 
-	doctorId := GetDoctorIdOfCurrentPrimaryDoctor(testData, t)
+	doctorId := GetDoctorIdOfCurrentDoctor(testData, t)
 	doctor, err := testData.DataApi.GetDoctorFromId(doctorId)
 	if err != nil {
 		t.Fatal("Unable to get doctor information from id: " + err.Error())
@@ -108,7 +108,7 @@ func TestDoctorDiagnosisOfPatientVisit_Unsuitable(t *testing.T) {
 	defer TearDownIntegrationTest(t, testData)
 
 	// get the current primary doctor
-	doctorId := GetDoctorIdOfCurrentPrimaryDoctor(testData, t)
+	doctorId := GetDoctorIdOfCurrentDoctor(testData, t)
 
 	doctor, err := testData.DataApi.GetDoctorFromId(doctorId)
 	if err != nil {
@@ -122,54 +122,20 @@ func TestDoctorDiagnosisOfPatientVisit_Unsuitable(t *testing.T) {
 	if err != nil {
 		t.Fatal("Unable to get patient from id: " + err.Error())
 	}
-	answerIntakeRequestBody := prepareAnswersForQuestionsInPatientVisit(patientVisitResponse, t)
+	answerIntakeRequestBody := PrepareAnswersForQuestionsInPatientVisit(patientVisitResponse, t)
 	SubmitAnswersIntakeForPatient(patient.PatientId.Int64(), patient.AccountId.Int64(), answerIntakeRequestBody, testData, t)
 	SubmitPatientVisitForPatient(patientSignedupResponse.Patient.PatientId.Int64(), patientVisitResponse.PatientVisitId, testData, t)
 	StartReviewingPatientVisit(patientVisitResponse.PatientVisitId, doctor, testData, t)
 
-	answerIntakeRequestBody = &apiservice.AnswerIntakeRequestBody{}
-	answerIntakeRequestBody.PatientVisitId = patientVisitResponse.PatientVisitId
-
-	var diagnosisQuestionId int64
-	if qi, err := testData.DataApi.GetQuestionInfo("q_acne_diagnosis", 1); err != nil {
-		t.Fatalf("Unable to get the questionIds for the question tags requested for the doctor to diagnose patient visit: %s", err.Error())
-	} else {
-		diagnosisQuestionId = qi.QuestionId
-	}
-
-	answerItemList, err := testData.DataApi.GetAnswerInfoForTags([]string{"a_doctor_acne_not_suitable_spruce"}, api.EN_LANGUAGE_ID)
-	if err != nil {
-		t.Fatal(err.Error())
-	}
-
-	diagnosePatientHandler := patient_visit.NewDiagnosePatientHandler(testData.DataApi, testData.AuthApi, "")
-	ts := httptest.NewServer(diagnosePatientHandler)
-	defer ts.Close()
-
-	answerToQuestionItem := &apiservice.AnswerToQuestionItem{}
-	answerToQuestionItem.QuestionId = diagnosisQuestionId
-	answerToQuestionItem.AnswerIntakes = []*apiservice.AnswerItem{&apiservice.AnswerItem{PotentialAnswerId: answerItemList[0].AnswerId}}
-
-	answerIntakeRequestBody.Questions = []*apiservice.AnswerToQuestionItem{answerToQuestionItem}
-
-	requestData, err := json.Marshal(answerIntakeRequestBody)
-	if err != nil {
-		t.Fatal("Unable to marshal request body")
-	}
-
-	resp, err := testData.AuthPost(ts.URL, "application/json", bytes.NewBuffer(requestData), doctor.AccountId.Int64())
-	if err != nil {
-		t.Fatal("Unable to successfully submit the diagnosis of a patient visit: " + err.Error())
-	} else if resp.StatusCode != http.StatusOK {
-		t.Fatalf("Expected to get a %d response but got %d", http.StatusOK, resp.StatusCode)
-	}
+	answerIntakeRequestBody = PrepareAnswersForDiagnosingAsUnsuitableForSpruce(testData, t, patientVisitResponse.PatientVisitId)
+	SubmitPatientVisitDiagnosisWithIntake(patientVisitResponse.PatientVisitId, doctor.AccountId.Int64(), answerIntakeRequestBody, testData, t)
 
 	// the patient visit should have its state set to TRIAGED
 	patientVisit, err := testData.DataApi.GetPatientVisitFromId(patientVisitResponse.PatientVisitId)
 	if err != nil {
 		t.Fatal(err.Error())
-	} else if patientVisit.Status != api.CASE_STATUS_TRIAGED {
-		t.Fatalf("Expected status to be %s but it was %s instead", api.CASE_STATUS_TRIAGED, patientVisit.Status)
+	} else if patientVisit.Status != common.PVStatusTriaged {
+		t.Fatalf("Expected status to be %s but it was %s instead", common.PVStatusTriaged, patientVisit.Status)
 	}
 
 	// ensure that there is no longer a pending item in the doctor queue
@@ -187,7 +153,7 @@ func TestDoctorDiagnosisOfPatientVisit(t *testing.T) {
 	defer TearDownIntegrationTest(t, testData)
 
 	// get the current primary doctor
-	doctorId := GetDoctorIdOfCurrentPrimaryDoctor(testData, t)
+	doctorId := GetDoctorIdOfCurrentDoctor(testData, t)
 
 	doctor, err := testData.DataApi.GetDoctorFromId(doctorId)
 	if err != nil {
@@ -201,7 +167,7 @@ func TestDoctorDiagnosisOfPatientVisit(t *testing.T) {
 	if err != nil {
 		t.Fatal("Unable to get patient from id: " + err.Error())
 	}
-	answerIntakeRequestBody := prepareAnswersForQuestionsInPatientVisit(patientVisitResponse, t)
+	answerIntakeRequestBody := PrepareAnswersForQuestionsInPatientVisit(patientVisitResponse, t)
 	SubmitAnswersIntakeForPatient(patient.PatientId.Int64(), patient.AccountId.Int64(), answerIntakeRequestBody, testData, t)
 	SubmitPatientVisitForPatient(patientSignedupResponse.Patient.PatientId.Int64(), patientVisitResponse.PatientVisitId, testData, t)
 	StartReviewingPatientVisit(patientVisitResponse.PatientVisitId, doctor, testData, t)
@@ -256,7 +222,7 @@ func TestDoctorSubmissionOfPatientVisitReview(t *testing.T) {
 
 	patientSignedupResponse := SignupRandomTestPatient(t, testData)
 
-	doctorId := GetDoctorIdOfCurrentPrimaryDoctor(testData, t)
+	doctorId := GetDoctorIdOfCurrentDoctor(testData, t)
 
 	// get patient to start a visit
 	patientVisitResponse := CreatePatientVisitForPatient(patientSignedupResponse.Patient.PatientId.Int64(), testData, t)
@@ -267,7 +233,7 @@ func TestDoctorSubmissionOfPatientVisitReview(t *testing.T) {
 		t.Fatal("Unable to get patient from id: " + err.Error())
 	}
 
-	answerIntakeRequestBody := prepareAnswersForQuestionsInPatientVisit(patientVisitResponse, t)
+	answerIntakeRequestBody := PrepareAnswersForQuestionsInPatientVisit(patientVisitResponse, t)
 	SubmitAnswersIntakeForPatient(patient.PatientId.Int64(), patient.AccountId.Int64(), answerIntakeRequestBody, testData, t)
 
 	// get patient to submit the visit
@@ -330,8 +296,8 @@ func TestDoctorSubmissionOfPatientVisitReview(t *testing.T) {
 		t.Fatal("Unable to get patient visit given id: " + err.Error())
 	}
 
-	if patientVisit.Status != api.CASE_STATUS_TREATED {
-		t.Fatalf("Expected the status to be %s but status is %s", api.CASE_STATUS_TREATED, patientVisit.Status)
+	if patientVisit.Status != common.PVStatusTreated {
+		t.Fatalf("Expected the status to be %s but status is %s", common.PVStatusTreated, patientVisit.Status)
 	}
 
 	// Shouldn't be any messages yet

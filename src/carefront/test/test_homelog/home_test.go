@@ -216,13 +216,13 @@ func TestTreatmentPlanCreatedNotification(t *testing.T) {
 	testData := test_integration.SetupIntegrationTest(t)
 	defer test_integration.TearDownIntegrationTest(t, testData)
 
-	doctorId := test_integration.GetDoctorIdOfCurrentPrimaryDoctor(testData, t)
+	doctorId := test_integration.GetDoctorIdOfCurrentDoctor(testData, t)
 	doctor, err := testData.DataApi.GetDoctorFromId(doctorId)
 	if err != nil {
 		t.Fatalf("Error getting doctor from id: %s", err.Error())
 	}
 
-	visit, treatmentPlan := test_integration.SignupAndSubmitPatientVisitForRandomPatient(t, testData, doctor)
+	visit, treatmentPlan := test_integration.CreateRandomPatientVisitAndPickTP(t, testData, doctor)
 	patient, err := testData.DataApi.GetPatientFromPatientVisitId(visit.PatientVisitId)
 	patientId := patient.PatientId.Int64()
 	test_integration.SubmitPatientVisitBackToPatient(treatmentPlan.Id.Int64(), doctor, testData, t)

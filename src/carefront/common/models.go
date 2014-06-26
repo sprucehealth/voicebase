@@ -34,6 +34,8 @@ type Patient struct {
 	Email             string                 `json:"email,omitempty"`
 	Gender            string                 `json:"gender,omitempty"`
 	ZipCode           string                 `json:"zip_code,omitempty"`
+	CityFromZipCode   string                 `json:"-"`
+	StateFromZipCode  string                 `json:"-"`
 	PhoneNumbers      []*PhoneInformation    `json:"phone_numbers,omitempty"`
 	Status            string                 `json:"-"`
 	AccountId         encoding.ObjectId      `json:"account_id,omitempty"`
@@ -80,9 +82,17 @@ type Doctor struct {
 	PromptStatus        PushPromptStatus     `json:"prompt_status"`
 }
 
+const (
+	PVStatusOpen      = "OPEN"
+	PVStatusSubmitted = "SUBMITTED"
+	PVStatusReviewing = "REVIEWING"
+	PVStatusTriaged   = "TRIAGED"
+	PVStatusTreated   = "TREATED"
+)
+
 type PatientVisit struct {
 	PatientVisitId    encoding.ObjectId `json:"patient_visit_id,omitempty"`
-	PatientCaseId     encoding.ObjectId `json:"patient_case_id"`
+	PatientCaseId     encoding.ObjectId `json:"case_id"`
 	PatientId         encoding.ObjectId `json:"patient_id,omitempty"`
 	CreationDate      time.Time         `json:"creation_date,omitempty"`
 	SubmittedDate     time.Time         `json:"submitted_date,omitempty"`
@@ -90,6 +100,20 @@ type PatientVisit struct {
 	HealthConditionId encoding.ObjectId `json:"health_condition_id,omitempty"`
 	Status            string            `json:"status,omitempty"`
 	LayoutVersionId   encoding.ObjectId `json:"layout_version_id,omitempty"`
+}
+
+const (
+	PCStatusUnclaimed   = "UNCLAIMED"
+	PCStatusTempClaimed = "TEMP_CLAIMED"
+	PCStatusClaimed     = "CLAIMED"
+)
+
+type PatientCase struct {
+	Id                encoding.ObjectId `json:"case_id"`
+	PatientId         encoding.ObjectId `json:"patient_id"`
+	HealthConditionId encoding.ObjectId `json:"health_condition_id"`
+	CreationDate      time.Time         `json:"creation_date"`
+	Status            string            `json:"status"`
 }
 
 type Address struct {
@@ -102,25 +126,22 @@ type Address struct {
 	Country      string `json:"country"`
 }
 
-type PatientCareProviderAssignment struct {
-	Id           int64
+type CareProviderAssignment struct {
 	ProviderRole string
 	ProviderId   int64
+	PatientId    int64
 	Status       string
+	CreationDate time.Time
+	Expires      *time.Time
 }
 
-type PatientCareProviderGroup struct {
-	Id           int64
-	PatientId    int64
-	CreationDate time.Time
-	ModifiedDate time.Time
-	Status       string
-	Assignments  []*PatientCareProviderAssignment
+type PatientCareTeam struct {
+	Assignments []*CareProviderAssignment
 }
 
 type TreatmentPlan struct {
 	Id            encoding.ObjectId `json:"treatment_plan_id,omitempty"`
-	PatientCaseId encoding.ObjectId `json:"patient_case_id"`
+	PatientCaseId encoding.ObjectId `json:"case_id"`
 	PatientId     encoding.ObjectId `json:"patient_id,omitempty"`
 	PatientInfo   *Patient          `json:"patient,omitempty"`
 	Status        string            `json:"status,omitempty"`
@@ -173,7 +194,7 @@ type DoctorTreatmentPlan struct {
 	Status        string                      `json:"status,omitempty"`
 	Parent        *TreatmentPlanParent        `json:"parent,omitempty"`
 	PatientId     int64                       `json:"-"`
-	PatientCaseId encoding.ObjectId           `json:"patient_case_id"`
+	PatientCaseId encoding.ObjectId           `json:"case_id"`
 	ContentSource *TreatmentPlanContentSource `json:"content_source,omitempty"`
 }
 
@@ -525,12 +546,4 @@ type ResourceGuide struct {
 type Account struct {
 	ID   int64
 	Role string
-}
-
-type PatientCase struct {
-	Id                int64
-	PatientId         int64
-	HealthConditionId int64
-	Status            string
-	CreationDate      time.Time
 }
