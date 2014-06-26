@@ -1,10 +1,10 @@
 package notify
 
 import (
+	"errors"
 	"github.com/sprucehealth/backend/api"
 	"github.com/sprucehealth/backend/libs/dispatch"
 	"github.com/sprucehealth/backend/patient"
-	"errors"
 )
 
 func InitListeners(dataAPI api.DataAPI) {

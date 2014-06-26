@@ -1,12 +1,12 @@
 package doctor_treatment_plan
 
 import (
+	"errors"
 	"github.com/sprucehealth/backend/api"
 	"github.com/sprucehealth/backend/apiservice"
 	"github.com/sprucehealth/backend/common"
 	"github.com/sprucehealth/backend/encoding"
 	"github.com/sprucehealth/backend/libs/dispatch"
-	"errors"
 	"net/http"
 )
 

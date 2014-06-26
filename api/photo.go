@@ -1,8 +1,8 @@
 package api
 
 import (
-	"github.com/sprucehealth/backend/common"
 	"database/sql"
+	"github.com/sprucehealth/backend/common"
 )
 
 func (d *DataService) AddPhoto(uploaderId int64, url, mimetype string) (int64, error) {

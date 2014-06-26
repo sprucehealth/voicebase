@@ -1,10 +1,10 @@
 package erx
 
 import (
+	"fmt"
 	"github.com/sprucehealth/backend/common"
 	"github.com/sprucehealth/backend/encoding"
 	pharmacySearch "github.com/sprucehealth/backend/libs/pharmacy"
-	"fmt"
 	"time"
 )
 

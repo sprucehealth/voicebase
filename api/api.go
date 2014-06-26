@@ -1,9 +1,9 @@
 package api
 
 import (
+	"errors"
 	"github.com/sprucehealth/backend/info_intake"
 	"github.com/sprucehealth/backend/libs/pharmacy"
-	"errors"
 	"net/http"
 	"reflect"
 	"time"

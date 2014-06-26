@@ -1,6 +1,7 @@
 package homelog
 
 import (
+	"fmt"
 	"github.com/sprucehealth/backend/api"
 	"github.com/sprucehealth/backend/app_url"
 	"github.com/sprucehealth/backend/common"
@@ -10,7 +11,6 @@ import (
 	"github.com/sprucehealth/backend/notify"
 	patientApiService "github.com/sprucehealth/backend/patient"
 	"github.com/sprucehealth/backend/patient_visit"
-	"fmt"
 )
 
 func InitListeners(dataAPI api.DataAPI, notificationManager *notify.NotificationManager) {

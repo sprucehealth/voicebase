@@ -1,11 +1,11 @@
 package apiservice
 
 import (
+	"errors"
+	"fmt"
 	"github.com/sprucehealth/backend/common"
 	"github.com/sprucehealth/backend/libs/erx"
 	"github.com/sprucehealth/backend/surescripts"
-	"errors"
-	"fmt"
 	"net/http"
 	"strconv"
 	"strings"

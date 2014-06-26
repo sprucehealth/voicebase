@@ -1,9 +1,9 @@
 package api
 
 import (
-	"github.com/sprucehealth/backend/common"
 	"database/sql"
 	"fmt"
+	"github.com/sprucehealth/backend/common"
 )
 
 func (d *DataService) GetPushConfigData(deviceToken string) (*common.PushConfigData, error) {

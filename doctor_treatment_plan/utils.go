@@ -1,10 +1,10 @@
 package doctor_treatment_plan
 
 import (
-	"github.com/sprucehealth/backend/api"
-	"github.com/sprucehealth/backend/common"
 	"errors"
 	"fmt"
+	"github.com/sprucehealth/backend/api"
+	"github.com/sprucehealth/backend/common"
 )
 
 const (

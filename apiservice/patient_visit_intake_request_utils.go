@@ -1,9 +1,9 @@
 package apiservice
 
 import (
+	"encoding/json"
 	"github.com/sprucehealth/backend/api"
 	"github.com/sprucehealth/backend/info_intake"
-	"encoding/json"
 )
 
 func GetPatientLayoutForPatientVisit(patientVisitId, languageId int64, dataApi api.DataAPI) (*info_intake.InfoIntakeLayout, int64, error) {

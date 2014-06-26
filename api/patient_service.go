@@ -1,12 +1,12 @@
 package api
 
 import (
-	"github.com/sprucehealth/backend/common"
-	"github.com/sprucehealth/backend/encoding"
-	"github.com/sprucehealth/backend/libs/pharmacy"
 	"database/sql"
 	"errors"
 	"fmt"
+	"github.com/sprucehealth/backend/common"
+	"github.com/sprucehealth/backend/encoding"
+	"github.com/sprucehealth/backend/libs/pharmacy"
 	"log"
 	"strconv"
 	"strings"

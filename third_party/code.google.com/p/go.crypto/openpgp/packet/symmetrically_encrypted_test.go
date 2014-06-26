@@ -6,9 +6,9 @@ package packet
 
 import (
 	"bytes"
-	"github.com/sprucehealth/backend/third_party/code.google.com/p/go.crypto/openpgp/errors"
 	"crypto/sha1"
 	"encoding/hex"
+	"github.com/sprucehealth/backend/third_party/code.google.com/p/go.crypto/openpgp/errors"
 	"io"
 	"io/ioutil"
 	"testing"

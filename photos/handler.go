@@ -1,14 +1,14 @@
 package photos
 
 import (
+	"crypto/rand"
+	"encoding/hex"
+	"fmt"
 	"github.com/sprucehealth/backend/api"
 	"github.com/sprucehealth/backend/apiservice"
 	"github.com/sprucehealth/backend/common"
 	"github.com/sprucehealth/backend/libs/aws"
 	"github.com/sprucehealth/backend/libs/golog"
-	"crypto/rand"
-	"encoding/hex"
-	"fmt"
 	"io"
 	"io/ioutil"
 	"net/http"

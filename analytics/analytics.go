@@ -1,9 +1,9 @@
 package analytics
 
 import (
+	"encoding/json"
 	"github.com/sprucehealth/backend/apiservice"
 	"github.com/sprucehealth/backend/libs/golog"
-	"encoding/json"
 	"math"
 	"net/http"
 	"strconv"

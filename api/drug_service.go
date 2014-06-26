@@ -2,9 +2,9 @@ package api
 
 import (
 	"bytes"
-	"github.com/sprucehealth/backend/common"
 	"database/sql"
 	"encoding/json"
+	"github.com/sprucehealth/backend/common"
 )
 
 func (d *DataService) DoesDrugDetailsExist(ndc string) (bool, error) {

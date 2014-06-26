@@ -1,11 +1,11 @@
 package main
 
 import (
+	"flag"
+	"fmt"
 	"github.com/sprucehealth/backend/libs/aws"
 	"github.com/sprucehealth/backend/libs/aws/ec2"
 	"github.com/sprucehealth/backend/libs/cmd/cryptsetup"
-	"flag"
-	"fmt"
 	"log"
 	"os"
 	"sort"

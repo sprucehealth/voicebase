@@ -1,12 +1,12 @@
 package api
 
 import (
+	"database/sql"
+	"fmt"
 	"github.com/sprucehealth/backend/common"
 	"github.com/sprucehealth/backend/encoding"
 	"github.com/sprucehealth/backend/libs/erx"
 	"github.com/sprucehealth/backend/libs/pharmacy"
-	"database/sql"
-	"fmt"
 	"strings"
 	"time"
 

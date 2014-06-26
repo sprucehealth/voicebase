@@ -1,10 +1,10 @@
 package stripe
 
 import (
-	"github.com/sprucehealth/backend/common"
-	"github.com/sprucehealth/backend/libs/payment"
 	"encoding/json"
 	"fmt"
+	"github.com/sprucehealth/backend/common"
+	"github.com/sprucehealth/backend/libs/payment"
 	"io"
 	"net/http"
 	"net/url"

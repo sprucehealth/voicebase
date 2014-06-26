@@ -1,8 +1,8 @@
 package test_integration
 
 import (
-	"github.com/sprucehealth/backend/api"
 	"fmt"
+	"github.com/sprucehealth/backend/api"
 	"testing"
 )
 

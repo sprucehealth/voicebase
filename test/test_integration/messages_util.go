@@ -2,8 +2,8 @@ package test_integration
 
 import (
 	"bytes"
-	"github.com/sprucehealth/backend/messages"
 	"encoding/json"
+	"github.com/sprucehealth/backend/messages"
 	"net/http/httptest"
 	"testing"
 )

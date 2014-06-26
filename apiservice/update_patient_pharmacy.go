@@ -1,10 +1,10 @@
 package apiservice
 
 import (
+	"encoding/json"
 	"github.com/sprucehealth/backend/api"
 	"github.com/sprucehealth/backend/libs/golog"
 	"github.com/sprucehealth/backend/libs/pharmacy"
-	"encoding/json"
 	"net/http"
 )
 

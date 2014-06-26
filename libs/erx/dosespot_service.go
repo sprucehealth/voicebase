@@ -1,12 +1,12 @@
 package erx
 
 import (
+	"errors"
+	"fmt"
 	"github.com/sprucehealth/backend/common"
 	"github.com/sprucehealth/backend/encoding"
 	"github.com/sprucehealth/backend/libs/golog"
 	pharmacySearch "github.com/sprucehealth/backend/libs/pharmacy"
-	"errors"
-	"fmt"
 	"os"
 	"sort"
 	"strconv"

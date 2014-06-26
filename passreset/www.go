@@ -1,12 +1,12 @@
 package passreset
 
 import (
+	"crypto/rand"
+	"fmt"
 	"github.com/sprucehealth/backend/api"
 	"github.com/sprucehealth/backend/email"
 	"github.com/sprucehealth/backend/libs/golog"
 	"github.com/sprucehealth/backend/www"
-	"crypto/rand"
-	"fmt"
 	"math/big"
 	"net/http"
 	"net/url"

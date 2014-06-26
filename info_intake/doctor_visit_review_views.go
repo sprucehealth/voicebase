@@ -1,8 +1,8 @@
 package info_intake
 
 import (
-	"github.com/sprucehealth/backend/common"
 	"fmt"
+	"github.com/sprucehealth/backend/common"
 
 	"github.com/sprucehealth/backend/third_party/github.com/SpruceHealth/mapstructure"
 )

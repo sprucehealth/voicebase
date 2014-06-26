@@ -1,9 +1,9 @@
 package treatment_plan
 
 import (
+	"fmt"
 	"github.com/sprucehealth/backend/api"
 	"github.com/sprucehealth/backend/common"
-	"fmt"
 )
 
 func populateTreatmentPlan(dataApi api.DataAPI, patientVisitId int64, treatmentPlan *common.TreatmentPlan) error {

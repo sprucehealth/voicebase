@@ -2,12 +2,12 @@ package test_intake
 
 import (
 	"bytes"
+	"encoding/json"
 	"github.com/sprucehealth/backend/api"
 	"github.com/sprucehealth/backend/common"
 	"github.com/sprucehealth/backend/info_intake"
 	"github.com/sprucehealth/backend/patient_visit"
 	"github.com/sprucehealth/backend/test/test_integration"
-	"encoding/json"
 	"net/http"
 	"net/http/httptest"
 	"testing"

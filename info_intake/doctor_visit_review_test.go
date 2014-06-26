@@ -1,8 +1,8 @@
 package info_intake
 
 import (
-	"github.com/sprucehealth/backend/common"
 	"encoding/json"
+	"github.com/sprucehealth/backend/common"
 	"io/ioutil"
 	"testing"
 

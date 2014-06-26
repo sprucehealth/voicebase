@@ -2,12 +2,12 @@ package test_treatment_plan
 
 import (
 	"bytes"
+	"database/sql"
+	"encoding/json"
 	"github.com/sprucehealth/backend/common"
 	"github.com/sprucehealth/backend/doctor_treatment_plan"
 	"github.com/sprucehealth/backend/patient_visit"
 	"github.com/sprucehealth/backend/test/test_integration"
-	"database/sql"
-	"encoding/json"
 	"net/http"
 	"net/http/httptest"
 	"strconv"

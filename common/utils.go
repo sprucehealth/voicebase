@@ -1,10 +1,10 @@
 package common
 
 import (
-	"github.com/sprucehealth/backend/libs/aws"
-	"github.com/sprucehealth/backend/libs/aws/sqs"
 	"crypto/rand"
 	"encoding/base64"
+	"github.com/sprucehealth/backend/libs/aws"
+	"github.com/sprucehealth/backend/libs/aws/sqs"
 
 	goamz "github.com/sprucehealth/backend/third_party/launchpad.net/goamz/aws"
 )

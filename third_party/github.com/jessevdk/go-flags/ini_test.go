@@ -1,10 +1,10 @@
 package flags_test
 
 import (
-	"github.com/sprucehealth/backend/third_party/github.com/jessevdk/go-flags"
-	"testing"
 	"bytes"
+	"github.com/sprucehealth/backend/third_party/github.com/jessevdk/go-flags"
 	"strings"
+	"testing"
 )
 
 func TestWriteIni(t *testing.T) {
@@ -18,7 +18,7 @@ func TestWriteIni(t *testing.T) {
 	inip := flags.NewIniParser(p)
 
 	var b bytes.Buffer
-	inip.Write(&b, flags.IniDefault | flags.IniIncludeDefaults)
+	inip.Write(&b, flags.IniDefault|flags.IniIncludeDefaults)
 
 	got := b.String()
 	expected := `[Application Options]
@@ -58,7 +58,7 @@ func TestReadIni(t *testing.T) {
 
 	inip := flags.NewIniParser(p)
 
-inic := `[Application Options]
+	inic := `[Application Options]
 ; Show verbose debug information
 verbose = true
 verbose = true

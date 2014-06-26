@@ -10,8 +10,8 @@ package test
 
 import (
 	"bytes"
-	"github.com/sprucehealth/backend/third_party/code.google.com/p/go.crypto/ssh"
 	"errors"
+	"github.com/sprucehealth/backend/third_party/code.google.com/p/go.crypto/ssh"
 	"io"
 	"strings"
 	"testing"

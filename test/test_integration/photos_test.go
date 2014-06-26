@@ -2,9 +2,9 @@ package test_integration
 
 import (
 	"bytes"
-	"github.com/sprucehealth/backend/photos"
 	"encoding/json"
 	"fmt"
+	"github.com/sprucehealth/backend/photos"
 	"io/ioutil"
 	"mime/multipart"
 	"net/http"

@@ -1,6 +1,11 @@
 package main
 
 import (
+	"crypto/tls"
+	"crypto/x509"
+	"database/sql"
+	"flag"
+	"fmt"
 	"github.com/sprucehealth/backend/libs/aws"
 	"github.com/sprucehealth/backend/libs/aws/ec2"
 	"github.com/sprucehealth/backend/libs/cmd/cryptsetup"
@@ -8,11 +13,6 @@ import (
 	"github.com/sprucehealth/backend/libs/cmd/lvm"
 	"github.com/sprucehealth/backend/libs/cmd/mount"
 	"github.com/sprucehealth/backend/libs/cmd/xfs"
-	"crypto/tls"
-	"crypto/x509"
-	"database/sql"
-	"flag"
-	"fmt"
 	"io/ioutil"
 	"log"
 	"os"

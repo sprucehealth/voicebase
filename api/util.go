@@ -1,9 +1,9 @@
 package api
 
 import (
-	"github.com/sprucehealth/backend/info_intake"
 	"database/sql"
 	"fmt"
+	"github.com/sprucehealth/backend/info_intake"
 	"strconv"
 	"strings"
 )

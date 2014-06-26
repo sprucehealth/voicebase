@@ -1,10 +1,10 @@
 package homelog
 
 import (
+	"fmt"
 	"github.com/sprucehealth/backend/api"
 	"github.com/sprucehealth/backend/apiservice"
 	"github.com/sprucehealth/backend/libs/golog"
-	"fmt"
 	"net/http"
 	"strconv"
 )

@@ -1,11 +1,11 @@
 package main
 
 import (
-	"github.com/sprucehealth/backend/libs/aws/s3"
 	"compress/gzip"
 	"errors"
 	"flag"
 	"fmt"
+	"github.com/sprucehealth/backend/libs/aws/s3"
 	"io"
 	"io/ioutil"
 	"log"

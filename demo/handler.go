@@ -2,6 +2,8 @@ package demo
 
 import (
 	"bytes"
+	"encoding/json"
+	"fmt"
 	"github.com/sprucehealth/backend/api"
 	"github.com/sprucehealth/backend/apiservice"
 	"github.com/sprucehealth/backend/common"
@@ -9,8 +11,6 @@ import (
 	"github.com/sprucehealth/backend/libs/golog"
 	patientApiService "github.com/sprucehealth/backend/patient"
 	"github.com/sprucehealth/backend/patient_visit"
-	"encoding/json"
-	"fmt"
 	"io/ioutil"
 	"net/http"
 	"net/url"

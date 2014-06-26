@@ -2,13 +2,13 @@ package test_integration
 
 import (
 	"bytes"
+	"encoding/json"
+	"fmt"
 	"github.com/sprucehealth/backend/address"
 	"github.com/sprucehealth/backend/apiservice"
 	"github.com/sprucehealth/backend/info_intake"
 	patientApiService "github.com/sprucehealth/backend/patient"
 	"github.com/sprucehealth/backend/patient_visit"
-	"encoding/json"
-	"fmt"
 	"io/ioutil"
 	"math/rand"
 	"net/http"

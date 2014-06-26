@@ -1,6 +1,7 @@
 package main
 
 import (
+	"database/sql"
 	"github.com/sprucehealth/backend/address"
 	"github.com/sprucehealth/backend/analytics"
 	"github.com/sprucehealth/backend/api"
@@ -32,7 +33,6 @@ import (
 	"github.com/sprucehealth/backend/support"
 	"github.com/sprucehealth/backend/treatment_plan"
 	"github.com/sprucehealth/backend/www/router"
-	"database/sql"
 	"log"
 	"math/rand"
 	"net/http"

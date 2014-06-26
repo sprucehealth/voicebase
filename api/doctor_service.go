@@ -1,11 +1,11 @@
 package api
 
 import (
+	"database/sql"
+	"fmt"
 	"github.com/sprucehealth/backend/app_url"
 	"github.com/sprucehealth/backend/common"
 	"github.com/sprucehealth/backend/encoding"
-	"database/sql"
-	"fmt"
 	"log"
 	"strconv"
 	"strings"

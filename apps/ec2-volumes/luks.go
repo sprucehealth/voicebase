@@ -1,13 +1,13 @@
 package main
 
 import (
+	"flag"
+	"fmt"
 	"github.com/sprucehealth/backend/libs/cmd"
 	"github.com/sprucehealth/backend/libs/cmd/cryptsetup"
 	"github.com/sprucehealth/backend/libs/cmd/lvm"
 	"github.com/sprucehealth/backend/libs/cmd/mount"
 	"github.com/sprucehealth/backend/libs/cmd/xfs"
-	"flag"
-	"fmt"
 	"io/ioutil"
 	"log"
 	"os"

@@ -1,10 +1,10 @@
 package api
 
 import (
-	"github.com/sprucehealth/backend/common"
 	"database/sql"
 	"encoding/json"
 	"fmt"
+	"github.com/sprucehealth/backend/common"
 	"strings"
 )
 

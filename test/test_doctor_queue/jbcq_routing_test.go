@@ -1,10 +1,10 @@
 package test_doctor_queue
 
 import (
+	"encoding/json"
 	"github.com/sprucehealth/backend/apiservice"
 	"github.com/sprucehealth/backend/doctor_queue"
 	"github.com/sprucehealth/backend/test/test_integration"
-	"encoding/json"
 	"net/http"
 	"net/http/httptest"
 	"testing"

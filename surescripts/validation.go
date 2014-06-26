@@ -1,12 +1,12 @@
 package surescripts
 
 import (
+	"errors"
+	"fmt"
 	"github.com/sprucehealth/backend/address"
 	"github.com/sprucehealth/backend/api"
 	"github.com/sprucehealth/backend/common"
 	"github.com/sprucehealth/backend/encoding"
-	"errors"
-	"fmt"
 	"strconv"
 	"strings"
 	"time"

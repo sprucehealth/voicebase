@@ -1,11 +1,11 @@
 package api
 
 import (
+	"fmt"
 	"github.com/sprucehealth/backend/app_url"
 	"github.com/sprucehealth/backend/common"
 	"github.com/sprucehealth/backend/libs/golog"
 	"github.com/sprucehealth/backend/settings"
-	"fmt"
 	"time"
 )
 

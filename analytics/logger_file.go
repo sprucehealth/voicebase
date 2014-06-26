@@ -1,10 +1,10 @@
 package analytics
 
 import (
-	"github.com/sprucehealth/backend/libs/golog"
-	"github.com/sprucehealth/backend/libs/idgen"
 	"encoding/json"
 	"fmt"
+	"github.com/sprucehealth/backend/libs/golog"
+	"github.com/sprucehealth/backend/libs/idgen"
 	"os"
 	"path/filepath"
 	"strings"

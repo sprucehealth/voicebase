@@ -1,8 +1,8 @@
 package apiservice
 
 import (
-	"github.com/sprucehealth/backend/libs/golog"
 	"fmt"
+	"github.com/sprucehealth/backend/libs/golog"
 	"net/http"
 )
 

@@ -1,9 +1,9 @@
 package api
 
 import (
+	"database/sql"
 	"github.com/sprucehealth/backend/common"
 	"github.com/sprucehealth/backend/encoding"
-	"database/sql"
 )
 
 func (d *DataService) GetFavoriteTreatmentPlansForDoctor(doctorId int64) ([]*common.FavoriteTreatmentPlan, error) {

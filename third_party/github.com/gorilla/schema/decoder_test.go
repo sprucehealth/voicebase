@@ -520,18 +520,18 @@ func TestConversionError(t *testing.T) {
 // ----------------------------------------------------------------------------
 
 type S5 struct {
-    F01 []string
+	F01 []string
 }
 
 func TestEmptyValue(t *testing.T) {
-    data := map[string][]string{
-        "F01": {"", "foo"},
-    }
-    s := &S5{}
-    NewDecoder().Decode(s, data)
-    if len(s.F01) != 1 {
-        t.Errorf("Expected 1 values in F01")
-    }
+	data := map[string][]string{
+		"F01": {"", "foo"},
+	}
+	s := &S5{}
+	NewDecoder().Decode(s, data)
+	if len(s.F01) != 1 {
+		t.Errorf("Expected 1 values in F01")
+	}
 }
 
 // ----------------------------------------------------------------------------

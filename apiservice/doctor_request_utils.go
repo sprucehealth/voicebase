@@ -1,9 +1,9 @@
 package apiservice
 
 import (
-	"github.com/sprucehealth/backend/api"
 	"errors"
 	"fmt"
+	"github.com/sprucehealth/backend/api"
 )
 
 var (

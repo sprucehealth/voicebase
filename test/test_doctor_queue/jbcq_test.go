@@ -2,6 +2,7 @@ package test_doctor_queue
 
 import (
 	"bytes"
+	"encoding/json"
 	"github.com/sprucehealth/backend/api"
 	"github.com/sprucehealth/backend/apiservice"
 	"github.com/sprucehealth/backend/common"
@@ -11,7 +12,6 @@ import (
 	"github.com/sprucehealth/backend/patient_file"
 	"github.com/sprucehealth/backend/patient_visit"
 	"github.com/sprucehealth/backend/test/test_integration"
-	"encoding/json"
 	"net/http"
 	"net/http/httptest"
 	"strconv"

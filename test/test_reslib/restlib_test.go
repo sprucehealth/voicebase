@@ -1,11 +1,11 @@
 package test_reslib
 
 import (
+	"encoding/json"
+	"fmt"
 	"github.com/sprucehealth/backend/common"
 	"github.com/sprucehealth/backend/reslib"
 	"github.com/sprucehealth/backend/test/test_integration"
-	"encoding/json"
-	"fmt"
 	"net/http"
 	"net/http/httptest"
 	"testing"

@@ -1,11 +1,11 @@
 package api
 
 import (
+	"database/sql"
+	"fmt"
 	"github.com/sprucehealth/backend/common"
 	"github.com/sprucehealth/backend/encoding"
 	pharmacyService "github.com/sprucehealth/backend/libs/pharmacy"
-	"database/sql"
-	"fmt"
 	"log"
 	"strings"
 	"time"

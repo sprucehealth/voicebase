@@ -5,10 +5,10 @@
 package packet
 
 import (
-	"github.com/sprucehealth/backend/third_party/code.google.com/p/go.crypto/openpgp/errors"
-	"github.com/sprucehealth/backend/third_party/code.google.com/p/go.crypto/openpgp/s2k"
 	"crypto"
 	"encoding/binary"
+	"github.com/sprucehealth/backend/third_party/code.google.com/p/go.crypto/openpgp/errors"
+	"github.com/sprucehealth/backend/third_party/code.google.com/p/go.crypto/openpgp/s2k"
 	"io"
 	"strconv"
 )

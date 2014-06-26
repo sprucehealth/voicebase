@@ -1,8 +1,8 @@
 package app_url
 
 import (
-	"github.com/sprucehealth/backend/libs/golog"
 	"fmt"
+	"github.com/sprucehealth/backend/libs/golog"
 	"net/url"
 	"strconv"
 	"strings"

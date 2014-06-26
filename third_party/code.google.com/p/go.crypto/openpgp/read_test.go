@@ -6,9 +6,9 @@ package openpgp
 
 import (
 	"bytes"
-	"github.com/sprucehealth/backend/third_party/code.google.com/p/go.crypto/openpgp/errors"
 	_ "crypto/sha512"
 	"encoding/hex"
+	"github.com/sprucehealth/backend/third_party/code.google.com/p/go.crypto/openpgp/errors"
 	"io"
 	"io/ioutil"
 	"testing"

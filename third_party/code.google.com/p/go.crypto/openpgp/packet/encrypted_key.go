@@ -5,10 +5,10 @@
 package packet
 
 import (
-	"github.com/sprucehealth/backend/third_party/code.google.com/p/go.crypto/openpgp/elgamal"
-	"github.com/sprucehealth/backend/third_party/code.google.com/p/go.crypto/openpgp/errors"
 	"crypto/rsa"
 	"encoding/binary"
+	"github.com/sprucehealth/backend/third_party/code.google.com/p/go.crypto/openpgp/elgamal"
+	"github.com/sprucehealth/backend/third_party/code.google.com/p/go.crypto/openpgp/errors"
 	"io"
 	"math/big"
 	"strconv"

@@ -5,10 +5,10 @@
 package packet
 
 import (
-	"github.com/sprucehealth/backend/third_party/code.google.com/p/go.crypto/openpgp/errors"
 	"compress/bzip2"
 	"compress/flate"
 	"compress/zlib"
+	"github.com/sprucehealth/backend/third_party/code.google.com/p/go.crypto/openpgp/errors"
 	"io"
 	"strconv"
 )

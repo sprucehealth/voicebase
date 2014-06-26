@@ -6,9 +6,9 @@ package packet
 
 import (
 	"bytes"
+	"crypto/cipher"
 	"github.com/sprucehealth/backend/third_party/code.google.com/p/go.crypto/openpgp/errors"
 	"github.com/sprucehealth/backend/third_party/code.google.com/p/go.crypto/openpgp/s2k"
-	"crypto/cipher"
 	"io"
 	"strconv"
 )

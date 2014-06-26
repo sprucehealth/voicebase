@@ -2,12 +2,12 @@ package test_integration
 
 import (
 	"bytes"
+	"encoding/json"
+	"fmt"
 	"github.com/sprucehealth/backend/address"
 	"github.com/sprucehealth/backend/apiservice"
 	"github.com/sprucehealth/backend/common"
 	"github.com/sprucehealth/backend/libs/payment"
-	"encoding/json"
-	"fmt"
 	"net/http/httptest"
 	"net/url"
 	"strconv"

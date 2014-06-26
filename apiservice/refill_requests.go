@@ -1,6 +1,7 @@
 package apiservice
 
 import (
+	"encoding/json"
 	"github.com/sprucehealth/backend/api"
 	"github.com/sprucehealth/backend/common"
 	"github.com/sprucehealth/backend/encoding"
@@ -9,7 +10,6 @@ import (
 	"github.com/sprucehealth/backend/libs/golog"
 	"github.com/sprucehealth/backend/libs/pharmacy"
 	"github.com/sprucehealth/backend/surescripts"
-	"encoding/json"
 	"net/http"
 	"sort"
 	"strconv"

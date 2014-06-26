@@ -8,11 +8,11 @@ package packet
 
 import (
 	"bufio"
-	"github.com/sprucehealth/backend/third_party/code.google.com/p/go.crypto/cast5"
-	"github.com/sprucehealth/backend/third_party/code.google.com/p/go.crypto/openpgp/errors"
 	"crypto/aes"
 	"crypto/cipher"
 	"crypto/des"
+	"github.com/sprucehealth/backend/third_party/code.google.com/p/go.crypto/cast5"
+	"github.com/sprucehealth/backend/third_party/code.google.com/p/go.crypto/openpgp/errors"
 	"io"
 	"math/big"
 )

@@ -1,8 +1,8 @@
 package main
 
 import (
-	"github.com/sprucehealth/backend/libs/golog"
 	"crypto/tls"
+	"github.com/sprucehealth/backend/libs/golog"
 	"log"
 	"net"
 	"net/http"

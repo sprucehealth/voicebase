@@ -1,6 +1,7 @@
 package doctor_queue
 
 import (
+	"errors"
 	"github.com/sprucehealth/backend/api"
 	"github.com/sprucehealth/backend/apiservice"
 	"github.com/sprucehealth/backend/app_worker"
@@ -11,7 +12,6 @@ import (
 	"github.com/sprucehealth/backend/messages"
 	"github.com/sprucehealth/backend/notify"
 	"github.com/sprucehealth/backend/patient_visit"
-	"errors"
 
 	"github.com/sprucehealth/backend/third_party/github.com/samuel/go-metrics/metrics"
 )

@@ -1,9 +1,9 @@
 package treatment_plan
 
 import (
+	"errors"
 	"github.com/sprucehealth/backend/app_url"
 	"github.com/sprucehealth/backend/libs/pharmacy"
-	"errors"
 )
 
 const (

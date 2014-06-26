@@ -1,8 +1,8 @@
 package erx
 
 import (
-	"github.com/sprucehealth/backend/encoding"
 	"encoding/xml"
+	"github.com/sprucehealth/backend/encoding"
 	"time"
 )
 

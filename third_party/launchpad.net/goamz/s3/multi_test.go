@@ -2,10 +2,10 @@ package s3_test
 
 import (
 	"encoding/xml"
-	"io"
-	"io/ioutil"
 	"github.com/sprucehealth/backend/third_party/launchpad.net/goamz/s3"
 	. "github.com/sprucehealth/backend/third_party/launchpad.net/gocheck"
+	"io"
+	"io/ioutil"
 	"strings"
 )
 

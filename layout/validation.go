@@ -1,8 +1,8 @@
 package layout
 
 import (
-	"github.com/sprucehealth/backend/info_intake"
 	"fmt"
+	"github.com/sprucehealth/backend/info_intake"
 	"strings"
 )
 

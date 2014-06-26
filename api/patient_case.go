@@ -1,8 +1,8 @@
 package api
 
 import (
-	"github.com/sprucehealth/backend/common"
 	"database/sql"
+	"github.com/sprucehealth/backend/common"
 )
 
 func (d *DataService) GetDoctorsAssignedToPatientCase(patientCaseId int64) ([]*common.CareProviderAssignment, error) {

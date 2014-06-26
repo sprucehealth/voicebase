@@ -1,10 +1,10 @@
 package api
 
 import (
-	"github.com/sprucehealth/backend/common"
-	"github.com/sprucehealth/backend/libs/golog"
 	"database/sql"
 	"errors"
+	"github.com/sprucehealth/backend/common"
+	"github.com/sprucehealth/backend/libs/golog"
 	"strings"
 	"time"
 )

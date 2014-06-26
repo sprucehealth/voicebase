@@ -1,12 +1,12 @@
 package patient_visit
 
 import (
+	"encoding/json"
+	"fmt"
 	"github.com/sprucehealth/backend/api"
 	"github.com/sprucehealth/backend/apiservice"
 	"github.com/sprucehealth/backend/common"
 	"github.com/sprucehealth/backend/info_intake"
-	"encoding/json"
-	"fmt"
 	"net/http"
 )
 

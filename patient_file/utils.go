@@ -1,11 +1,11 @@
 package patient_file
 
 import (
+	"fmt"
 	"github.com/sprucehealth/backend/api"
 	"github.com/sprucehealth/backend/apiservice"
 	"github.com/sprucehealth/backend/common"
 	"github.com/sprucehealth/backend/info_intake"
-	"fmt"
 	"net/http"
 	"strings"
 )

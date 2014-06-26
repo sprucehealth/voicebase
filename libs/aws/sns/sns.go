@@ -1,8 +1,8 @@
 package sns
 
 import (
-	"github.com/sprucehealth/backend/libs/aws"
 	"encoding/json"
+	"github.com/sprucehealth/backend/libs/aws"
 	"net/url"
 )
 

@@ -1,9 +1,9 @@
 package email
 
 import (
-	"github.com/sprucehealth/backend/libs/golog"
 	"crypto/tls"
 	"errors"
+	"github.com/sprucehealth/backend/libs/golog"
 	"net"
 	"net/http"
 	"net/smtp"

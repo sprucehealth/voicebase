@@ -8,11 +8,11 @@ package bcrypt
 
 // The code is a port of Provos and Mazières's C implementation.
 import (
-	"github.com/sprucehealth/backend/third_party/code.google.com/p/go.crypto/blowfish"
 	"crypto/rand"
 	"crypto/subtle"
 	"errors"
 	"fmt"
+	"github.com/sprucehealth/backend/third_party/code.google.com/p/go.crypto/blowfish"
 	"io"
 	"strconv"
 )

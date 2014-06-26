@@ -2,10 +2,10 @@ package test_integration
 
 import (
 	"bytes"
+	"encoding/json"
 	"github.com/sprucehealth/backend/common"
 	patientApiService "github.com/sprucehealth/backend/patient"
 	"github.com/sprucehealth/backend/patient_visit"
-	"encoding/json"
 	"io/ioutil"
 	"net/http"
 	"net/http/httptest"

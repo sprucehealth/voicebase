@@ -1,11 +1,11 @@
 package messages
 
 import (
+	"errors"
 	"github.com/sprucehealth/backend/api"
 	"github.com/sprucehealth/backend/apiservice"
 	"github.com/sprucehealth/backend/common"
 	"github.com/sprucehealth/backend/libs/dispatch"
-	"errors"
 	"net/http"
 )
 

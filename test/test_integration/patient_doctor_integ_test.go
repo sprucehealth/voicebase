@@ -2,6 +2,7 @@ package test_integration
 
 import (
 	"bytes"
+	"encoding/json"
 	"github.com/sprucehealth/backend/api"
 	"github.com/sprucehealth/backend/app_worker"
 	"github.com/sprucehealth/backend/common"
@@ -11,7 +12,6 @@ import (
 	"github.com/sprucehealth/backend/libs/erx"
 	"github.com/sprucehealth/backend/libs/pharmacy"
 	"github.com/sprucehealth/backend/treatment_plan"
-	"encoding/json"
 	"io/ioutil"
 	"net/http"
 	"net/http/httptest"

@@ -1,10 +1,10 @@
 package passreset
 
 import (
+	"fmt"
 	"github.com/sprucehealth/backend/api"
 	"github.com/sprucehealth/backend/apiservice"
 	"github.com/sprucehealth/backend/email"
-	"fmt"
 	"net/http"
 	"strings"
 )

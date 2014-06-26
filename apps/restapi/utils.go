@@ -1,9 +1,9 @@
 package main
 
 import (
+	"fmt"
 	"github.com/sprucehealth/backend/common/config"
 	"github.com/sprucehealth/backend/email"
-	"fmt"
 	"os"
 
 	"github.com/sprucehealth/backend/third_party/github.com/subosito/twilio"

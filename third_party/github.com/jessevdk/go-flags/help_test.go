@@ -4,8 +4,8 @@ import (
 	"bytes"
 	"fmt"
 	"github.com/sprucehealth/backend/third_party/github.com/jessevdk/go-flags"
-	"io/ioutil"
 	"io"
+	"io/ioutil"
 	"os"
 	"os/exec"
 	"testing"
@@ -42,13 +42,13 @@ func helpDiff(a, b string) (string, error) {
 }
 
 type helpOptions struct {
-	Verbose []bool `short:"v" long:"verbose" description:"Show verbose debug information" ini-name:"verbose"`
-	Call func(string) `short:"c" description:"Call phone number" ini-name:"call"`
-	PtrSlice []*string `long:"ptrslice" description:"A slice of pointers to string"`
+	Verbose  []bool       `short:"v" long:"verbose" description:"Show verbose debug information" ini-name:"verbose"`
+	Call     func(string) `short:"c" description:"Call phone number" ini-name:"call"`
+	PtrSlice []*string    `long:"ptrslice" description:"A slice of pointers to string"`
 
-	Other struct{
-		StringSlice []string `short:"s" description:"A slice of strings"`
-		IntMap map[string]int `long:"intmap" description:"A map from string to int" ini-name:"int-map"`
+	Other struct {
+		StringSlice []string       `short:"s" description:"A slice of strings"`
+		IntMap      map[string]int `long:"intmap" description:"A map from string to int" ini-name:"int-map"`
 	} `group:"Other Options"`
 }
 
@@ -101,7 +101,7 @@ Help Options:
 }
 
 func TestMan(t *testing.T) {
-var opts helpOptions
+	var opts helpOptions
 
 	p := flags.NewNamedParser("TestMan", flags.HelpFlag)
 	p.ShortDescription = "Test manpage generation"
@@ -150,4 +150,3 @@ A map from string to int
 		}
 	}
 }
-

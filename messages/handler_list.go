@@ -1,11 +1,11 @@
 package messages
 
 import (
+	"fmt"
 	"github.com/sprucehealth/backend/api"
 	"github.com/sprucehealth/backend/apiservice"
 	"github.com/sprucehealth/backend/app_url"
 	"github.com/sprucehealth/backend/common"
-	"fmt"
 	"net/http"
 	"strconv"
 	"time"

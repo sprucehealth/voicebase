@@ -8,13 +8,13 @@ into sections which are defined by the labels in the second column of the spread
 
 import (
 	"bufio"
+	"encoding/json"
+	"fmt"
 	"github.com/sprucehealth/backend/api"
 	"github.com/sprucehealth/backend/common"
 	"github.com/sprucehealth/backend/common/config"
 	"github.com/sprucehealth/backend/libs/gdata"
 	"github.com/sprucehealth/backend/libs/golog"
-	"encoding/json"
-	"fmt"
 	"log"
 	"os"
 	"os/exec"
