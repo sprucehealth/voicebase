@@ -277,6 +277,7 @@ func SubmitPatientVisitBackToPatient(treatmentPlanId int64, doctor *common.Docto
 
 	requestData := &doctor_treatment_plan.TreatmentPlanRequestData{
 		TreatmentPlanId: encoding.NewObjectId(treatmentPlanId),
+		Message:         "foo",
 	}
 
 	jsonData, err := json.Marshal(requestData)
