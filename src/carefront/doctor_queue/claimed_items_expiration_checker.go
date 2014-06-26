@@ -40,7 +40,7 @@ func StartClaimedItemsExpirationChecker(dataAPI api.DataAPI, statsRegistry metri
 
 			// add a random number of seconds to the time period to further reduce the probability that the
 			// workers run on different systems in the same second, thereby introducing potential collision
-			time.Sleep(timePeriodBetweenChecks + (rand.Intn(30) * time.Second))
+			time.Sleep(timePeriodBetweenChecks + (time.Duration(rand.Intn(30)) * time.Second))
 		}
 	}()
 }
