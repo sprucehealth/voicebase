@@ -1,7 +1,7 @@
 #!/bin/bash -e
 
 TEST_DB=database_${RANDOM}_$(date +%s)
-MYSQL_FOLDER=${CAREFRONT_PROJECT_DIR}/src/carefront/mysql
+MYSQL_FOLDER=${GOPATH}/src/github.com/sprucehealth/backend/mysql
 pushd $MYSQL_FOLDER > /dev/null
 latestSnapshotNumber=`ls -r snapshot-*.sql | cut -d- -f 2  | cut -d. -f1 | sort -nr | head -1`
 latestDataSnapshotNumber=`ls -r data-snapshot-*.sql | cut -d- -f 3  | cut -d. -f1 | sort -nr | head -1`

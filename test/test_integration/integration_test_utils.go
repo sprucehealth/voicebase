@@ -2,18 +2,6 @@ package test_integration
 
 import (
 	"bytes"
-	"github.com/sprucehealth/backend/api"
-	"github.com/sprucehealth/backend/apiservice"
-	"github.com/sprucehealth/backend/common"
-	"github.com/sprucehealth/backend/common/config"
-	"github.com/sprucehealth/backend/doctor_queue"
-	"github.com/sprucehealth/backend/doctor_treatment_plan"
-	"github.com/sprucehealth/backend/encoding"
-	"github.com/sprucehealth/backend/homelog"
-	"github.com/sprucehealth/backend/libs/aws"
-	"github.com/sprucehealth/backend/libs/dispatch"
-	"github.com/sprucehealth/backend/notify"
-	"github.com/sprucehealth/backend/patient_visit"
 	"database/sql"
 	"encoding/json"
 	"errors"
@@ -29,14 +17,26 @@ import (
 	"testing"
 	"time"
 
+	"github.com/sprucehealth/backend/api"
+	"github.com/sprucehealth/backend/apiservice"
+	"github.com/sprucehealth/backend/common"
+	"github.com/sprucehealth/backend/common/config"
+	"github.com/sprucehealth/backend/doctor_queue"
+	"github.com/sprucehealth/backend/doctor_treatment_plan"
+	"github.com/sprucehealth/backend/encoding"
+	"github.com/sprucehealth/backend/homelog"
+	"github.com/sprucehealth/backend/libs/aws"
+	"github.com/sprucehealth/backend/libs/dispatch"
+	"github.com/sprucehealth/backend/notify"
+	"github.com/sprucehealth/backend/patient_visit"
 	"github.com/sprucehealth/backend/third_party/github.com/BurntSushi/toml"
 	_ "github.com/sprucehealth/backend/third_party/github.com/go-sql-driver/mysql"
 	"github.com/sprucehealth/backend/third_party/github.com/samuel/go-metrics/metrics"
 )
 
 var (
-	CannotRunTestLocally   = errors.New("test: The test database is not set. Skipping test")
-	carefrontProjectDirEnv = "CAREFRONT_PROJECT_DIR"
+	CannotRunTestLocally = errors.New("test: The test database is not set. Skipping test")
+	spruceProjectDirEnv  = "GOPATH"
 )
 
 type TestDBConfig struct {
@@ -151,7 +151,7 @@ func (d *TestData) AuthDelete(url, bodyType string, body io.Reader, accountID in
 
 func GetDBConfig(t *testing.T) *TestDBConfig {
 	dbConfig := TestConf{}
-	fileContents, err := ioutil.ReadFile(os.Getenv(carefrontProjectDirEnv) + "/src/github.com/sprucehealth/backend/apps/restapi/dev.conf")
+	fileContents, err := ioutil.ReadFile(os.Getenv(spruceProjectDirEnv) + "/src/github.com/sprucehealth/backend/apps/restapi/dev.conf")
 	if err != nil {
 		t.Fatal("Unable to upload dev.conf to read database data from : " + err.Error())
 	}
@@ -180,7 +180,7 @@ func CheckIfRunningLocally(t *testing.T) {
 	// if the TEST_DB is not set in the environment, we assume
 	// that we are running these tests locally, in which case
 	// we exit the tests with a warning
-	if os.Getenv(carefrontProjectDirEnv) == "" {
+	if os.Getenv(spruceProjectDirEnv) == "" {
 		t.Skip("WARNING: The test database is not set. Skipping test ")
 	}
 }
@@ -260,7 +260,7 @@ func SetupIntegrationTest(t *testing.T) *TestData {
 	}
 
 	ts := time.Now()
-	setupScript := os.Getenv(carefrontProjectDirEnv) + "/src/github.com/sprucehealth/backend/test/test_integration/setup_integration_test.sh"
+	setupScript := os.Getenv(spruceProjectDirEnv) + "/src/github.com/sprucehealth/backend/test/test_integration/setup_integration_test.sh"
 	cmd := exec.Command(setupScript)
 	var out bytes.Buffer
 	cmd.Stdout = &out
@@ -343,7 +343,7 @@ func TearDownIntegrationTest(t *testing.T, testData *TestData) {
 	t.Logf("Time to run test: %.3f seconds", float64(time.Since(testData.StartTime))/float64(time.Second))
 	ts := time.Now()
 	// put anything here that is global to the teardown process for integration tests
-	teardownScript := os.Getenv(carefrontProjectDirEnv) + "/src/github.com/sprucehealth/backend/test/test_integration/teardown_integration_test.sh"
+	teardownScript := os.Getenv(spruceProjectDirEnv) + "/src/github.com/sprucehealth/backend/test/test_integration/teardown_integration_test.sh"
 	cmd := exec.Command(teardownScript, testData.DBConfig.DatabaseName)
 	var out bytes.Buffer
 	cmd.Stdout = &out
