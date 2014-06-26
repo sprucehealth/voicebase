@@ -18,7 +18,6 @@ func ValidateDoctorAccessToPatientFile(doctorId, patientId int64, dataAPI api.Da
 	}
 
 	// ensure that the doctor is part of the patient's care team
-	doctorFound := false
 	for _, assignment := range careTeam.Assignments {
 		if assignment.ProviderRole == api.DOCTOR_ROLE && assignment.ProviderId == doctorId {
 			return nil
