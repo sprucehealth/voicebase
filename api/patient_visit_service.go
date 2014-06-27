@@ -1150,13 +1150,7 @@ func getRegimenPlanFromRows(rows *sql.Rows) (*common.RegimenPlan, error) {
 			Text:     regimenText,
 			ParentId: parentId,
 		}
-
-		regimenSteps := regimenSections[regimenType]
-		if regimenSteps == nil {
-			regimenSteps = make([]*common.DoctorInstructionItem, 0)
-		}
-		regimenSteps = append(regimenSteps, regimenStep)
-		regimenSections[regimenType] = regimenSteps
+		regimenSections[regimenType] = append(regimenSections[regimenType], regimenStep)
 		regimenSectionNames = append(regimenSectionNames, regimenType)
 	}
 	if rows.Err() != nil {
