@@ -43,7 +43,7 @@ func TestFileLogger(t *testing.T) {
 		&ClientEvent{Timestamp: Time(time.Now().AddDate(0, 0, -1))},
 	})
 
-	time.Sleep(time.Millisecond * 10)
+	time.Sleep(time.Millisecond * 50)
 
 	var liveFiles []string
 	var jsFiles []string

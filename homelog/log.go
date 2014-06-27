@@ -1,6 +1,3 @@
-/*
-Package homelog provides the implementation of the home feed notifications and log.
-*/
 package homelog
 
 import (

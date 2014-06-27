@@ -1,19 +1,21 @@
+// Package homelog provides the implementation of the home feed notifications and log.
 package homelog
 
 import (
 	"fmt"
+	"net/http"
+	"strconv"
+
 	"github.com/sprucehealth/backend/api"
 	"github.com/sprucehealth/backend/apiservice"
 	"github.com/sprucehealth/backend/libs/golog"
-	"net/http"
-	"strconv"
 )
 
-type ListHandler struct {
+type listHandler struct {
 	dataAPI api.DataAPI
 }
 
-type DismissHandler struct {
+type dismissHandler struct {
 	dataAPI api.DataAPI
 }
 
@@ -22,19 +24,19 @@ type response struct {
 	LogItems      []view `json:"log_items"`
 }
 
-func NewListHandler(dataAPI api.DataAPI) *ListHandler {
-	return &ListHandler{
+func NewListHandler(dataAPI api.DataAPI) http.Handler {
+	return &listHandler{
 		dataAPI: dataAPI,
 	}
 }
 
-func NewDismissHandler(dataAPI api.DataAPI) *DismissHandler {
-	return &DismissHandler{
+func NewDismissHandler(dataAPI api.DataAPI) http.Handler {
+	return &dismissHandler{
 		dataAPI: dataAPI,
 	}
 }
 
-func (h *ListHandler) ServeHTTP(w http.ResponseWriter, r *http.Request) {
+func (h *listHandler) ServeHTTP(w http.ResponseWriter, r *http.Request) {
 	if r.Method != apiservice.HTTP_GET {
 		w.WriteHeader(http.StatusNotFound)
 		return
@@ -84,7 +86,7 @@ func (h *ListHandler) ServeHTTP(w http.ResponseWriter, r *http.Request) {
 	apiservice.WriteJSONToHTTPResponseWriter(w, http.StatusOK, res)
 }
 
-func (h *DismissHandler) ServeHTTP(w http.ResponseWriter, r *http.Request) {
+func (h *dismissHandler) ServeHTTP(w http.ResponseWriter, r *http.Request) {
 	if r.Method != apiservice.HTTP_POST {
 		w.WriteHeader(http.StatusNotFound)
 		return
