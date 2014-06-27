@@ -1,6 +1,10 @@
-# TOML parser for Go with reflection
+## TOML parser and encoder for Go with reflection
 
-TOML stands for Tom's Obvious, Minimal Language.
+TOML stands for Tom's Obvious, Minimal Language. This Go package provides a
+reflection interface similar to Go's standard library `json` and `xml` 
+packages. This package also supports the `encoding.TextUnmarshaler` and
+`encoding.TextMarshaler` interfaces so that you can define custom data 
+representations. (There is an example of this below.)
 
 Spec: https://github.com/mojombo/toml
 
@@ -18,17 +22,20 @@ go get github.com/BurntSushi/toml
 Try the toml validator:
 
 ```bash
-go get github.com/BurntSushi/toml/tomlv
+go get github.com/BurntSushi/toml/cmd/tomlv
 tomlv some-toml-file.toml
 ```
 
+[![Build status](https://api.travis-ci.org/BurntSushi/toml.png)](https://travis-ci.org/BurntSushi/toml)
 
-## Testing
+
+### Testing
 
 This package passes all tests in
-[toml-test](https://github.com/BurntSushi/toml-test).
+[toml-test](https://github.com/BurntSushi/toml-test) for both the decoder
+and the encoder.
 
-## Examples
+### Examples
 
 This package works similarly to how the Go standard library handles `XML`
 and `JSON`. Namely, data is loaded into Go values via reflection.
@@ -78,7 +85,57 @@ type TOML struct {
 }
 ```
 
-## More complex usage
+### Using the `encoding.TextUnmarshaler` interface
+
+Here's an example that automatically parses duration strings into 
+`time.Duration` values:
+
+```toml
+[[song]]
+name = "Thunder Road"
+duration = "4m49s"
+
+[[song]]
+name = "Stairway to Heaven"
+duration = "8m03s"
+```
+
+Which can be decoded with:
+
+```go
+type song struct {
+  Name     string
+  Duration duration
+}
+type songs struct {
+  Song []song
+}
+var favorites songs
+if _, err := Decode(blob, &favorites); err != nil {
+  log.Fatal(err)
+}
+
+for _, s := range favorites.Song {
+  fmt.Printf("%s (%s)\n", s.Name, s.Duration)
+}
+```
+
+And you'll also need a `duration` type that satisfies the 
+`encoding.TextUnmarshaler` interface:
+
+```go
+type duration struct {
+	time.Duration
+}
+
+func (d *duration) UnmarshalText(text []byte) error {
+	var err error
+	d.Duration, err = time.ParseDuration(string(text))
+	return err
+}
+```
+
+### More complex usage
 
 Here's an example of how to load the example from the official spec page:
 

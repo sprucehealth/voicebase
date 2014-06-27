@@ -1,10 +1,8 @@
-/*
-Package homelog provides the implementation of the home feed notifications and log.
-*/
 package homelog
 
 import (
 	"fmt"
+
 	"github.com/sprucehealth/backend/api"
 	"github.com/sprucehealth/backend/apiservice"
 	"github.com/sprucehealth/backend/app_url"
