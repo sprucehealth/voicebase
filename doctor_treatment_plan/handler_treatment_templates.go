@@ -1,11 +1,12 @@
 package doctor_treatment_plan
 
 import (
+	"net/http"
+
 	"github.com/sprucehealth/backend/api"
 	"github.com/sprucehealth/backend/apiservice"
 	"github.com/sprucehealth/backend/common"
 	"github.com/sprucehealth/backend/encoding"
-	"net/http"
 )
 
 type treatmentTemplatesHandler struct {
@@ -132,7 +133,7 @@ func (t *treatmentTemplatesHandler) addTreatmentTemplates(w http.ResponseWriter,
 		treatmentTemplate.Treatment.DrugName, treatmentTemplate.Treatment.DrugForm, treatmentTemplate.Treatment.DrugRoute = apiservice.BreakDrugInternalNameIntoComponents(treatmentTemplate.Treatment.DrugInternalName)
 	}
 
-	err = t.dataAPI.AddTreatmentTemplates(treatmentTemplateRequest.TreatmentTemplates, doctorId)
+	err = t.dataAPI.AddTreatmentTemplates(treatmentTemplateRequest.TreatmentTemplates, doctorId, treatmentTemplateRequest.TreatmentPlanId.Int64())
 	if err != nil {
 		apiservice.WriteDeveloperError(w, http.StatusInternalServerError, "Unable to favorite treatment: "+err.Error())
 		return

@@ -216,7 +216,7 @@ type DoctorAPI interface {
 	AddOrUpdateDrugInstructionForDoctor(drugName, drugForm, drugRoute string, drugInstructionToAdd *common.DoctorInstructionItem, doctorId int64) error
 	DeleteDrugInstructionForDoctor(drugInstructionToDelete *common.DoctorInstructionItem, doctorId int64) error
 	AddDrugInstructionsToTreatment(drugName, drugForm, drugRoute string, drugInstructions []*common.DoctorInstructionItem, treatmentId int64, doctorId int64) error
-	AddTreatmentTemplates(treatments []*common.DoctorTreatmentTemplate, doctorId int64) error
+	AddTreatmentTemplates(treatments []*common.DoctorTreatmentTemplate, doctorId, treatmentPlanId int64) error
 	GetTreatmentTemplates(doctorId int64) ([]*common.DoctorTreatmentTemplate, error)
 	DeleteTreatmentTemplates(doctorTreatmentTemplates []*common.DoctorTreatmentTemplate, doctorId int64) error
 	InsertItemIntoDoctorQueue(doctorQueueItem DoctorQueueItem) error

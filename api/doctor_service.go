@@ -725,7 +725,7 @@ func (d *DataService) AddDrugInstructionsToTreatment(drugName, drugForm, drugRou
 	return tx.Commit()
 }
 
-func (d *DataService) AddTreatmentTemplates(doctorTreatmentTemplates []*common.DoctorTreatmentTemplate, doctorId int64) error {
+func (d *DataService) AddTreatmentTemplates(doctorTreatmentTemplates []*common.DoctorTreatmentTemplate, doctorId, treatmentPlanId int64) error {
 	tx, err := d.db.Begin()
 	if err != nil {
 		return err
@@ -734,7 +734,7 @@ func (d *DataService) AddTreatmentTemplates(doctorTreatmentTemplates []*common.D
 	for _, doctorTreatmentTemplate := range doctorTreatmentTemplates {
 
 		var treatmentIdInPatientTreatmentPlan int64
-		if doctorTreatmentTemplate.Treatment.TreatmentPlanId.Int64() != 0 {
+		if treatmentPlanId != 0 {
 			treatmentIdInPatientTreatmentPlan = doctorTreatmentTemplate.Treatment.Id.Int64()
 		}
 
