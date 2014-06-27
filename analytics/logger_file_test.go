@@ -20,7 +20,7 @@ func TestFileLogger(t *testing.T) {
 	if err != nil {
 		t.Fatal(err)
 	}
-	if err := l.Start(); err != nil {
+	if err := l.(*fileLogger).startWithBuffer(0); err != nil {
 		t.Fatal(err)
 	}
 	defer l.Stop()
@@ -43,7 +43,7 @@ func TestFileLogger(t *testing.T) {
 		&ClientEvent{Timestamp: Time(time.Now().AddDate(0, 0, -1))},
 	})
 
-	time.Sleep(time.Millisecond * 50)
+	time.Sleep(50 * time.Millisecond)
 
 	var liveFiles []string
 	var jsFiles []string

@@ -3,12 +3,13 @@ package analytics
 import (
 	"encoding/json"
 	"fmt"
-	"github.com/sprucehealth/backend/libs/golog"
-	"github.com/sprucehealth/backend/libs/idgen"
 	"os"
 	"path/filepath"
 	"strings"
 	"time"
+
+	"github.com/sprucehealth/backend/libs/golog"
+	"github.com/sprucehealth/backend/libs/idgen"
 )
 
 const (
@@ -17,7 +18,8 @@ const (
 )
 
 const (
-	liveSuffix = ".live"
+	eventBufferSize = 32
+	liveSuffix      = ".live"
 )
 
 type logFile struct {
@@ -55,7 +57,11 @@ func NewFileLogger(path string, maxEvents int, maxAge time.Duration) (Logger, er
 }
 
 func (l *fileLogger) Start() error {
-	l.eventCh = make(chan []Event, 32)
+	return l.startWithBuffer(eventBufferSize)
+}
+
+func (l *fileLogger) startWithBuffer(n int) error {
+	l.eventCh = make(chan []Event, n)
 	go l.loop()
 	return nil
 }
