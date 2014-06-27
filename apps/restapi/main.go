@@ -2,6 +2,12 @@ package main
 
 import (
 	"database/sql"
+	"log"
+	"math/rand"
+	"net/http"
+	"strconv"
+	"time"
+
 	"github.com/sprucehealth/backend/address"
 	"github.com/sprucehealth/backend/analytics"
 	"github.com/sprucehealth/backend/api"
@@ -26,6 +32,7 @@ import (
 	"github.com/sprucehealth/backend/notify"
 	"github.com/sprucehealth/backend/passreset"
 	"github.com/sprucehealth/backend/patient"
+	"github.com/sprucehealth/backend/patient_case"
 	"github.com/sprucehealth/backend/patient_file"
 	"github.com/sprucehealth/backend/patient_visit"
 	"github.com/sprucehealth/backend/photos"
@@ -33,11 +40,6 @@ import (
 	"github.com/sprucehealth/backend/support"
 	"github.com/sprucehealth/backend/treatment_plan"
 	"github.com/sprucehealth/backend/www/router"
-	"log"
-	"math/rand"
-	"net/http"
-	"strconv"
-	"time"
 
 	"github.com/sprucehealth/backend/third_party/github.com/gorilla/mux"
 	"github.com/sprucehealth/backend/third_party/github.com/samuel/go-metrics/metrics"
@@ -278,6 +280,9 @@ func buildRESTAPI(conf *Config, dataApi api.DataAPI, authAPI api.AuthAPI, metric
 	mux.Handle("/v1/treatment_guide", treatment_plan.NewTreatmentGuideHandler(dataApi))
 	mux.Handle("/v1/autocomplete", autocompleteHandler)
 	mux.Handle("/v1/pharmacy_search", pharmacySearchHandler)
+
+	//Patient/Doctor: Case APIs
+	mux.Handle("/v1/cases/list", patient_case.NewListHandler(dataApi))
 
 	// Patient/Doctor: Resource guide APIs
 	mux.Handle("/v1/resourceguide", reslib.NewHandler(dataApi))

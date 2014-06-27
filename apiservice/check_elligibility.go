@@ -1,12 +1,10 @@
 package apiservice
 
 import (
-	"github.com/sprucehealth/backend/address"
-	"github.com/sprucehealth/backend/api"
-	"github.com/sprucehealth/backend/common"
 	"net/http"
 
-	"github.com/sprucehealth/backend/third_party/github.com/gorilla/schema"
+	"github.com/sprucehealth/backend/address"
+	"github.com/sprucehealth/backend/api"
 )
 
 type CheckCareProvidingElligibilityHandler struct {
@@ -19,32 +17,19 @@ type CheckCareProvidingElligibilityRequestData struct {
 	Zipcode string `schema:"zip_code,required"`
 }
 
-type CheckCareProvidingElligibilityResponse struct {
-	Doctor *common.Doctor `json:"doctor"`
-}
-
 func (c *CheckCareProvidingElligibilityHandler) NonAuthenticated() bool {
 	return true
 }
 
-const (
-	patientMessage = "We're not treating patients in your state yet."
-)
-
 func (c *CheckCareProvidingElligibilityHandler) ServeHTTP(w http.ResponseWriter, r *http.Request) {
 	if r.Method != HTTP_GET {
-		w.WriteHeader(http.StatusNotFound)
-		return
-	}
-
-	if err := r.ParseForm(); err != nil {
-		WriteDeveloperError(w, http.StatusBadRequest, "Unable to parse request data: "+err.Error())
+		http.NotFound(w, r)
 		return
 	}
 
 	var requestData CheckCareProvidingElligibilityRequestData
-	if err := schema.NewDecoder().Decode(&requestData, r.Form); err != nil {
-		WriteDeveloperError(w, http.StatusBadRequest, "Unable to parse input to check elligibility: "+err.Error())
+	if err := DecodeRequestData(&requestData, r); err != nil {
+		WriteValidationError(err.Error(), w, r)
 		return
 	}
 
@@ -52,31 +37,30 @@ func (c *CheckCareProvidingElligibilityHandler) ServeHTTP(w http.ResponseWriter,
 	cityStateInfo, err := c.AddressValidationApi.ZipcodeLookup(requestData.Zipcode)
 	if err != nil {
 		if err == address.InvalidZipcodeError {
-			WriteUserError(w, http.StatusBadRequest, "Please enter a valid zipcode")
+			WriteValidationError("Enter a valid zipcode", w, r)
 			return
 		}
-
-		WriteDeveloperError(w, http.StatusInternalServerError, "Unable to use the maps service to reverse geocode the given zipcode to city and state information: "+err.Error())
+		WriteError(err, w, r)
 		return
 	}
 
-	var doctorId int64
-	if cityStateInfo.StateAbbreviation != "" {
-		doctorId, err = c.DataApi.CheckCareProvidingElligibility(cityStateInfo.StateAbbreviation, HEALTH_CONDITION_ACNE_ID)
-		if err != nil {
-			WriteDeveloperError(w, http.StatusInternalServerError, "Unable to check elligiblity for the patient to be seen by doctor: "+err.Error())
-			return
-		}
+	if cityStateInfo.StateAbbreviation == "" {
+		WriteValidationError("Enter valid zipcode", w, r)
+		return
 	}
 
-	if doctorId != 0 {
-		doctor, err := GetDoctorInfo(c.DataApi, doctorId, c.StaticContentUrl)
-		if err != nil {
-			WriteDeveloperError(w, http.StatusInternalServerError, "Unable to get doctor from id: "+err.Error())
-			return
-		}
-		WriteJSONToHTTPResponseWriter(w, http.StatusOK, &CheckCareProvidingElligibilityResponse{Doctor: doctor})
-	} else {
-		WriteUserError(w, http.StatusForbidden, patientMessage)
+	count, err := c.DataApi.CheckCareProvidingElligibility(cityStateInfo.StateAbbreviation, HEALTH_CONDITION_ACNE_ID)
+	if err != nil {
+		WriteError(err, w, r)
+		return
 	}
+
+	// this means that there is no doctor available to server in the patient's entered
+	// state for the condition
+	if count == 0 {
+		WriteError(NewNotEligibleToServePatientInStateError(), w, r)
+		return
+	}
+
+	WriteJSONSuccess(w)
 }

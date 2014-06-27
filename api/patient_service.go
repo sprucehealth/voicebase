@@ -4,12 +4,13 @@ import (
 	"database/sql"
 	"errors"
 	"fmt"
-	"github.com/sprucehealth/backend/common"
-	"github.com/sprucehealth/backend/encoding"
-	"github.com/sprucehealth/backend/libs/pharmacy"
 	"log"
 	"strconv"
 	"strings"
+
+	"github.com/sprucehealth/backend/common"
+	"github.com/sprucehealth/backend/encoding"
+	"github.com/sprucehealth/backend/libs/pharmacy"
 
 	"github.com/sprucehealth/backend/third_party/github.com/go-sql-driver/mysql"
 )
@@ -228,32 +229,16 @@ func (d *DataService) GetPatientIdFromAccountId(accountId int64) (int64, error) 
 	return patientId, err
 }
 
-func (d *DataService) CheckCareProvidingElligibility(shortState string, healthConditionId int64) (doctorId int64, err error) {
-	rows, err := d.db.Query(`select provider_id from care_provider_state_elligibility 
+func (d *DataService) CheckCareProvidingElligibility(shortState string, healthConditionId int64) (int64, error) {
+	var count int64
+	err := d.db.QueryRow(`select count(*) from care_provider_state_elligibility 
 								inner join care_providing_state on care_providing_state_id = care_providing_state.id 
-									where state = ? and health_condition_id = ? and role_type_id = ?`, shortState, healthConditionId, d.roleTypeMapping[DOCTOR_ROLE])
-	if err != nil {
-		return 0, err
-	}
-	defer rows.Close()
-
-	doctorIds := make([]int64, 0)
-	for rows.Next() {
-		var doctorId int64
-		if err := rows.Scan(&doctorId); err != nil {
-			return 0, err
-		}
-		doctorIds = append(doctorIds, doctorId)
-	}
-	if rows.Err() != nil {
-		return 0, rows.Err()
+									where state = ? and health_condition_id = ? and role_type_id = ?`, shortState, healthConditionId, d.roleTypeMapping[DOCTOR_ROLE]).Scan(&count)
+	if err == sql.ErrNoRows {
+		return 0, NoRowsError
 	}
 
-	if len(doctorIds) == 0 {
-		return 0, nil
-	}
-
-	return doctorIds[0], nil
+	return count, err
 }
 
 func (d *DataService) UpdatePatientWithERxPatientId(patientId, erxPatientId int64) error {

@@ -3,6 +3,12 @@ package test_doctor_queue
 import (
 	"bytes"
 	"encoding/json"
+	"net/http"
+	"net/http/httptest"
+	"strconv"
+	"testing"
+	"time"
+
 	"github.com/sprucehealth/backend/api"
 	"github.com/sprucehealth/backend/apiservice"
 	"github.com/sprucehealth/backend/common"
@@ -12,11 +18,6 @@ import (
 	"github.com/sprucehealth/backend/patient_file"
 	"github.com/sprucehealth/backend/patient_visit"
 	"github.com/sprucehealth/backend/test/test_integration"
-	"net/http"
-	"net/http/httptest"
-	"strconv"
-	"testing"
-	"time"
 
 	"github.com/sprucehealth/backend/third_party/github.com/samuel/go-metrics/metrics"
 )
@@ -121,7 +122,7 @@ func TestJBCQ_ForbiddenClaimAttempt(t *testing.T) {
 	} else if developerErrorCode, ok := errorResponse["developer_code"].(string); !ok {
 		t.Fatal("Expected developer code to be an string but it wasnt")
 	} else if developerErrorCode != strconv.FormatInt(apiservice.DEVELOPER_JBCQ_FORBIDDEN, 10) {
-		t.Fatalf("Expected developer code to be %s but it was %s instead", apiservice.DEVELOPER_JBCQ_FORBIDDEN, developerErrorCode)
+		t.Fatalf("Expected developer code to be %d but it was %s instead", apiservice.DEVELOPER_JBCQ_FORBIDDEN, developerErrorCode)
 	}
 	resp.Body.Close()
 
@@ -147,7 +148,7 @@ func TestJBCQ_ForbiddenClaimAttempt(t *testing.T) {
 	} else if developerErrorCode, ok := errorResponse["developer_code"].(string); !ok {
 		t.Fatal("Expected developer code to be an string but it wasnt")
 	} else if developerErrorCode != strconv.FormatInt(apiservice.DEVELOPER_JBCQ_FORBIDDEN, 10) {
-		t.Fatalf("Expected developer code to be %s but it was %s instead", apiservice.DEVELOPER_JBCQ_FORBIDDEN, developerErrorCode)
+		t.Fatalf("Expected developer code to be %d but it was %s instead", apiservice.DEVELOPER_JBCQ_FORBIDDEN, developerErrorCode)
 	}
 	resp.Body.Close()
 
@@ -174,7 +175,7 @@ func TestJBCQ_ForbiddenClaimAttempt(t *testing.T) {
 	} else if developerErrorCode, ok := errorResponse["developer_code"].(string); !ok {
 		t.Fatal("Expected developer code to be an string but it wasnt")
 	} else if developerErrorCode != strconv.FormatInt(apiservice.DEVELOPER_JBCQ_FORBIDDEN, 10) {
-		t.Fatalf("Expected developer code to be %s but it was %s instead", apiservice.DEVELOPER_JBCQ_FORBIDDEN, developerErrorCode)
+		t.Fatalf("Expected developer code to be %d but it was %s instead", apiservice.DEVELOPER_JBCQ_FORBIDDEN, developerErrorCode)
 	}
 	resp.Body.Close()
 }

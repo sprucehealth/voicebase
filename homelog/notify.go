@@ -4,7 +4,6 @@ import (
 	"fmt"
 
 	"github.com/sprucehealth/backend/api"
-	"github.com/sprucehealth/backend/apiservice"
 	"github.com/sprucehealth/backend/app_url"
 	"github.com/sprucehealth/backend/common"
 
@@ -43,19 +42,8 @@ func (*treatmentPlanCreatedNotification) TypeName() string {
 }
 
 func (n *incompleteVisitNotification) makeView(dataAPI api.DataAPI, patientId, notificationId int64) (view, error) {
-	patient, err := dataAPI.GetPatientFromId(patientId)
-	if err != nil {
-		return nil, err
-	}
-	doctor, err := apiservice.GetPrimaryDoctorInfoBasedOnPatient(dataAPI, patient, "")
-	if err != nil {
-		return nil, err
-	}
-
 	return &incompleteVisitView{
 		Type:           patientNotificationNamespace + ":" + incompleteVisit,
-		Title:          fmt.Sprintf("Complete your visit with Dr. %s.", doctor.LastName),
-		IconURL:        doctor.SmallThumbnailUrl,
 		ButtonText:     "Continue Your Visit",
 		TapURL:         app_url.ContinueVisitAction(n.VisitId),
 		PatientVisitId: n.VisitId,

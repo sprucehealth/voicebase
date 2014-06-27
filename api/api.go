@@ -2,11 +2,12 @@ package api
 
 import (
 	"errors"
-	"github.com/sprucehealth/backend/info_intake"
-	"github.com/sprucehealth/backend/libs/pharmacy"
 	"net/http"
 	"reflect"
 	"time"
+
+	"github.com/sprucehealth/backend/info_intake"
+	"github.com/sprucehealth/backend/libs/pharmacy"
 
 	"github.com/sprucehealth/backend/common"
 )
@@ -60,7 +61,7 @@ type PatientAPI interface {
 	AddDoctorToCareTeamForPatient(patientId, healthConditionId, doctorId int64) error
 	CreateCareTeamForPatientWithPrimaryDoctor(patientId, healthConditionId, doctorId int64) (careTeam *common.PatientCareTeam, err error)
 	GetCareTeamForPatient(patientId int64) (careTeam *common.PatientCareTeam, err error)
-	CheckCareProvidingElligibility(shortState string, healthConditionId int64) (doctorId int64, err error)
+	CheckCareProvidingElligibility(shortState string, healthConditionId int64) (int64, error)
 	UpdatePatientAddress(patientId int64, addressLine1, addressLine2, city, state, zipCode, addressType string) error
 	UpdatePatientPharmacy(patientId int64, pharmacyDetails *pharmacy.PharmacyData) error
 	TrackPatientAgreements(patientId int64, agreements map[string]bool) error
@@ -93,6 +94,7 @@ type PatientCaseAPI interface {
 	GetPatientCaseFromTreatmentPlanId(treatmentPlanId int64) (*common.PatientCase, error)
 	GetPatientCaseFromId(patientCaseId int64) (*common.PatientCase, error)
 	DeleteDraftTreatmentPlanByDoctorForCase(doctorId, patientCaseId int64) error
+	GetCasesForPatient(patientId int64) ([]*common.PatientCase, error)
 }
 
 type JumpBallQueueAPI interface {

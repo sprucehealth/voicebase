@@ -2,8 +2,9 @@ package apiservice
 
 import (
 	"fmt"
-	"github.com/sprucehealth/backend/libs/golog"
 	"net/http"
+
+	"github.com/sprucehealth/backend/libs/golog"
 )
 
 type spruceError struct {
@@ -46,6 +47,12 @@ func NewJBCQForbiddenAccessError() JBCQAccessForbiddenError {
 
 func NewAccessForbiddenError() AccessForbiddenError {
 	return AccessForbiddenError("Access not permitted for this information")
+}
+
+// NewNotEligibleToServePatientInStateError generates an error to indicate that
+// we dont have a doctor eligible to provide care in the state that the patient resides
+func NewNotEligibleToServePatientInStateError() AccessForbiddenError {
+	return AccessForbiddenError("We're not treating patients in your state yet.")
 }
 
 func wrapInternalError(err error, code int, r *http.Request) *spruceError {

@@ -2,6 +2,7 @@ package api
 
 import (
 	"database/sql"
+
 	"github.com/sprucehealth/backend/common"
 )
 
@@ -65,6 +66,31 @@ func (d *DataService) GetPatientCaseFromId(patientCaseId int64) (*common.Patient
 							where id = ?`, patientCaseId)
 
 	return getPatientCaseFromRow(row)
+}
+
+func (d *DataService) GetCasesForPatient(patientId int64) ([]*common.PatientCase, error) {
+	rows, err := d.db.Query(`select id,patient_id,health_condition_id,creation_date,status from patient_case where patient_id=?`, patientId)
+	if err != nil {
+		return nil, err
+	}
+	defer rows.Close()
+
+	var patientCases []*common.PatientCase
+	for rows.Next() {
+		var patientCase common.PatientCase
+		err := rows.Scan(
+			&patientCase.Id,
+			&patientCase.PatientId,
+			&patientCase.HealthConditionId,
+			&patientCase.CreationDate,
+			&patientCase.Status)
+		if err != nil {
+			return nil, err
+		}
+		patientCases = append(patientCases, &patientCase)
+	}
+
+	return patientCases, rows.Err()
 }
 
 func getPatientCaseFromRow(row *sql.Row) (*common.PatientCase, error) {

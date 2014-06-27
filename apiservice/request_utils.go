@@ -4,15 +4,16 @@ import (
 	"encoding/json"
 	"errors"
 	"fmt"
-	"github.com/sprucehealth/backend/api"
-	"github.com/sprucehealth/backend/common"
-	"github.com/sprucehealth/backend/encoding"
-	"github.com/sprucehealth/backend/libs/golog"
 	"net/http"
 	"net/url"
 	"strconv"
 	"strings"
 	"time"
+
+	"github.com/sprucehealth/backend/api"
+	"github.com/sprucehealth/backend/common"
+	"github.com/sprucehealth/backend/encoding"
+	"github.com/sprucehealth/backend/libs/golog"
 
 	"github.com/sprucehealth/backend/third_party/github.com/gorilla/schema"
 )
@@ -78,40 +79,6 @@ func EnsureTreatmentPlanOrPatientVisitIdPresent(dataApi api.DataAPI, treatmentPl
 	return nil
 }
 
-func GetPrimaryDoctorInfoBasedOnPatient(dataApi api.DataAPI, patient *common.Patient, staticBaseContentUrl string) (*common.Doctor, error) {
-	careTeam, err := dataApi.GetCareTeamForPatient(patient.PatientId.Int64())
-	if err != nil {
-		return nil, err
-	}
-
-	primaryDoctorId := GetPrimaryDoctorIdFromCareTeam(careTeam)
-	if primaryDoctorId == 0 {
-		return nil, errors.New("Unable to get primary doctor based on patient")
-	}
-
-	doctor, err := GetDoctorInfo(dataApi, primaryDoctorId, staticBaseContentUrl)
-	return doctor, err
-}
-
-func GetDoctorInfo(dataApi api.DataAPI, doctorId int64, staticBaseContentUrl string) (*common.Doctor, error) {
-
-	doctor, err := dataApi.GetDoctorFromId(doctorId)
-	if err != nil {
-		return nil, err
-	}
-
-	return doctor, err
-}
-
-func GetPrimaryDoctorIdFromCareTeam(careTeam *common.PatientCareTeam) int64 {
-	for _, assignment := range careTeam.Assignments {
-		if assignment.ProviderRole == api.DOCTOR_ROLE && assignment.Status == api.PRIMARY_DOCTOR_STATUS {
-			return assignment.ProviderId
-		}
-	}
-	return 0
-}
-
 func SuccessfulGenericJSONResponse() *GenericJsonResponse {
 	return &GenericJsonResponse{Result: "success"}
 }
@@ -128,6 +95,10 @@ func WriteJSONToHTTPResponseWriter(w http.ResponseWriter, httpStatusCode int, v 
 	if err := json.NewEncoder(w).Encode(v); err != nil {
 		golog.Errorf("apiservice: failed to json encode: %+v", err)
 	}
+}
+
+func WriteJSON(w http.ResponseWriter, v interface{}) {
+	WriteJSONToHTTPResponseWriter(w, http.StatusOK, v)
 }
 
 func WriteJSONSuccess(w http.ResponseWriter) {

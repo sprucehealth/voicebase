@@ -1,10 +1,11 @@
 package patient_file
 
 import (
+	"net/http"
+
 	"github.com/sprucehealth/backend/api"
 	"github.com/sprucehealth/backend/apiservice"
 	"github.com/sprucehealth/backend/common"
-	"net/http"
 
 	"github.com/sprucehealth/backend/third_party/github.com/gorilla/schema"
 )
@@ -64,16 +65,8 @@ func (d *doctorPatientTreatmentsHandler) ServeHTTP(w http.ResponseWriter, r *htt
 	}
 
 	if !patient.IsUnlinked {
-		careTeam, err := d.DataApi.GetCareTeamForPatient(requestData.PatientId)
-		if err != nil {
-			apiservice.WriteDeveloperError(w, http.StatusInternalServerError, "Unable to get care team based on patient id: "+err.Error())
-			return
-		}
-
-		primaryDoctorId := apiservice.GetPrimaryDoctorIdFromCareTeam(careTeam)
-
-		if currentDoctor.DoctorId.Int64() != primaryDoctorId {
-			apiservice.WriteDeveloperError(w, http.StatusForbidden, "Unable to get the patient information by doctor when this doctor is not the primary doctor for patient")
+		if err := apiservice.ValidateDoctorAccessToPatientFile(currentDoctor.DoctorId.Int64(), patient.PatientId.Int64(), d.DataApi); err != nil {
+			apiservice.WriteError(err, w, r)
 			return
 		}
 	}

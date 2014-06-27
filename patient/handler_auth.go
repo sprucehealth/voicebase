@@ -57,14 +57,15 @@
 package patient
 
 import (
+	"net/http"
+	"strings"
+
 	"github.com/sprucehealth/backend/api"
 	"github.com/sprucehealth/backend/apiservice"
 	"github.com/sprucehealth/backend/common"
 	"github.com/sprucehealth/backend/libs/dispatch"
 	"github.com/sprucehealth/backend/libs/golog"
 	"github.com/sprucehealth/backend/libs/pharmacy"
-	"net/http"
-	"strings"
 
 	"github.com/sprucehealth/backend/third_party/github.com/gorilla/schema"
 )
@@ -79,7 +80,6 @@ type AuthenticationHandler struct {
 type AuthenticationResponse struct {
 	Token   string          `json:"token"`
 	Patient *common.Patient `json:"patient,omitempty"`
-	Doctor  *common.Doctor  `json:"doctor,omitempty"`
 }
 
 func NewAuthenticationHandler(dataApi api.DataAPI, authApi api.AuthAPI, pharmacySearchService pharmacy.PharmacySearchAPI, staticContentBaseUrl string) *AuthenticationHandler {
@@ -141,12 +141,7 @@ func (h *AuthenticationHandler) ServeHTTP(w http.ResponseWriter, r *http.Request
 				apiservice.WriteDeveloperError(w, http.StatusInternalServerError, err.Error())
 				return
 			}
-			doctor, err := apiservice.GetPrimaryDoctorInfoBasedOnPatient(h.dataApi, patient, h.staticContentBaseUrl)
-			if err != nil {
-				apiservice.WriteDeveloperError(w, http.StatusInternalServerError, "Unable to get doctor based on patient: "+err.Error())
-				return
-			}
-			apiservice.WriteJSONToHTTPResponseWriter(w, http.StatusOK, &AuthenticationResponse{Token: token, Patient: patient, Doctor: doctor})
+			apiservice.WriteJSONToHTTPResponseWriter(w, http.StatusOK, &AuthenticationResponse{Token: token, Patient: patient})
 		}
 	case "logout":
 		token, err := apiservice.GetAuthTokenFromHeader(r)
