@@ -2,10 +2,11 @@ package app_url
 
 import (
 	"fmt"
-	"github.com/sprucehealth/backend/libs/golog"
 	"net/url"
 	"strconv"
 	"strings"
+
+	"github.com/sprucehealth/backend/libs/golog"
 )
 
 type SpruceAction struct {
@@ -69,24 +70,24 @@ func ClaimPatientCaseAction(patientCaseId int64) *SpruceAction {
 	}
 }
 
-func BeginPatientVisitReviewAction(patientId, patientVisitId, patientCaseId int64) *SpruceAction {
+func ViewPatientVisitInfoAction(patientId, patientVisitId, patientCaseId int64) *SpruceAction {
 	params := url.Values{}
 	params.Set("patient_visit_id", strconv.FormatInt(patientVisitId, 10))
 	params.Set("patient_id", strconv.FormatInt(patientId, 10))
 	params.Set("case_id", strconv.FormatInt(patientCaseId, 10))
 	return &SpruceAction{
-		name:   "begin_patient_visit",
+		name:   "view_patient_visit",
 		params: params,
 	}
 }
 
-func ViewCompletedPatientVisitAction(patientId, patientVisitId, patientCaseId int64) *SpruceAction {
+func ViewCompletedTreatmentPlanAction(patientId, treatmentPlanId, patientCaseId int64) *SpruceAction {
 	params := url.Values{}
-	params.Set("patient_visit_id", strconv.FormatInt(patientVisitId, 10))
+	params.Set("treatment_plan_id", strconv.FormatInt(treatmentPlanId, 10))
 	params.Set("patient_id", strconv.FormatInt(patientId, 10))
 	params.Set("case_id", strconv.FormatInt(patientCaseId, 10))
 	return &SpruceAction{
-		name:   "view_completed_patient_visit",
+		name:   "view_treatment_plan",
 		params: params,
 	}
 }

@@ -211,25 +211,19 @@ func (d *DoctorQueueItem) ActionUrl(dataApi DataAPI) (*app_url.SpruceAction, err
 		}
 
 		switch d.Status {
-		case DQItemStatusTreated, DQItemStatusTriaged:
-			return app_url.ViewCompletedPatientVisitAction(patientVisit.PatientId.Int64(), d.ItemId, patientVisit.PatientCaseId.Int64()), nil
 		case DQItemStatusOngoing, DQItemStatusPending:
-			return app_url.BeginPatientVisitReviewAction(patientVisit.PatientId.Int64(), d.ItemId, patientVisit.PatientCaseId.Int64()), nil
+			return app_url.ViewPatientVisitInfoAction(patientVisit.PatientId.Int64(), d.ItemId, patientVisit.PatientCaseId.Int64()), nil
 		}
 	case DQEventTypeTreatmentPlan:
+		treatmentPlan, err := dataApi.GetAbridgedTreatmentPlan(d.ItemId, d.DoctorId)
+		if err != nil {
+			golog.Errorf("Unable to get treatment plan from id: %s", err)
+			return nil, err
+		}
 
 		switch d.Status {
 		case DQItemStatusTreated, DQItemStatusTriaged:
-			patientVisit, err := dataApi.GetPatientVisitFromTreatmentPlanId(d.ItemId)
-
-			if err == NoRowsError {
-				golog.Errorf("Unable to get patient visit  from treatment plan id %d", d.ItemId)
-				return nil, nil
-			} else if err != nil {
-				return nil, err
-			}
-
-			return app_url.ViewCompletedPatientVisitAction(patientVisit.PatientId.Int64(), patientVisit.PatientVisitId.Int64(), patientVisit.PatientCaseId.Int64()), nil
+			return app_url.ViewCompletedTreatmentPlanAction(treatmentPlan.PatientId, d.ItemId, treatmentPlan.PatientCaseId.Int64()), nil
 		}
 	case DQEventTypeRefillTransmissionError:
 		patient, err := dataApi.GetPatientFromRefillRequestId(d.ItemId)
