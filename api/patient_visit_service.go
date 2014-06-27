@@ -3,12 +3,13 @@ package api
 import (
 	"database/sql"
 	"fmt"
-	"github.com/sprucehealth/backend/common"
-	"github.com/sprucehealth/backend/encoding"
-	pharmacyService "github.com/sprucehealth/backend/libs/pharmacy"
 	"log"
 	"strings"
 	"time"
+
+	"github.com/sprucehealth/backend/common"
+	"github.com/sprucehealth/backend/encoding"
+	pharmacyService "github.com/sprucehealth/backend/libs/pharmacy"
 
 	"github.com/sprucehealth/backend/third_party/github.com/go-sql-driver/mysql"
 )
@@ -1133,6 +1134,9 @@ func (d *DataService) fillInSupplementalInstructionsForTreatment(treatment *comm
 }
 func getRegimenPlanFromRows(rows *sql.Rows) (*common.RegimenPlan, error) {
 	var regimenPlan common.RegimenPlan
+
+	// keep track of the ordering of the regimenSections
+	var regimenSectionNames []string
 	regimenSections := make(map[string][]*common.DoctorInstructionItem)
 	for rows.Next() {
 		var regimenType, regimenText string
@@ -1153,6 +1157,7 @@ func getRegimenPlanFromRows(rows *sql.Rows) (*common.RegimenPlan, error) {
 		}
 		regimenSteps = append(regimenSteps, regimenStep)
 		regimenSections[regimenType] = regimenSteps
+		regimenSectionNames = append(regimenSectionNames, regimenType)
 	}
 	if rows.Err() != nil {
 		return nil, rows.Err()
@@ -1160,10 +1165,10 @@ func getRegimenPlanFromRows(rows *sql.Rows) (*common.RegimenPlan, error) {
 
 	regimenSectionsArray := make([]*common.RegimenSection, 0)
 	// create the regimen sections
-	for regimenSectionName, regimenSteps := range regimenSections {
+	for _, regimenSectionName := range regimenSectionNames {
 		regimenSection := &common.RegimenSection{
 			RegimenName:  regimenSectionName,
-			RegimenSteps: regimenSteps,
+			RegimenSteps: regimenSections[regimenSectionName],
 		}
 		regimenSectionsArray = append(regimenSectionsArray, regimenSection)
 	}
