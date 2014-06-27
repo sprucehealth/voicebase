@@ -49,7 +49,7 @@ func (c *CheckCareProvidingElligibilityHandler) ServeHTTP(w http.ResponseWriter,
 		return
 	}
 
-	count, err := c.DataApi.CheckCareProvidingElligibility(cityStateInfo.StateAbbreviation, HEALTH_CONDITION_ACNE_ID)
+	count, err := c.DataApi.EligibleCareProviderCountForState(cityStateInfo.StateAbbreviation, HEALTH_CONDITION_ACNE_ID)
 	if err != nil {
 		WriteError(err, w, r)
 		return

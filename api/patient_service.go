@@ -229,7 +229,7 @@ func (d *DataService) GetPatientIdFromAccountId(accountId int64) (int64, error) 
 	return patientId, err
 }
 
-func (d *DataService) CheckCareProvidingElligibility(shortState string, healthConditionId int64) (int64, error) {
+func (d *DataService) EligibleCareProviderCountForState(shortState string, healthConditionId int64) (int64, error) {
 	var count int64
 	err := d.db.QueryRow(`select count(*) from care_provider_state_elligibility 
 								inner join care_providing_state on care_providing_state_id = care_providing_state.id 
