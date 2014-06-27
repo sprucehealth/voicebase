@@ -3,13 +3,14 @@ package main
 import (
 	"flag"
 	"fmt"
-	"github.com/sprucehealth/backend/libs/aws"
-	"github.com/sprucehealth/backend/libs/aws/ec2"
-	"github.com/sprucehealth/backend/libs/cmd/cryptsetup"
 	"log"
 	"os"
 	"sort"
 	"strconv"
+
+	"github.com/sprucehealth/backend/libs/aws"
+	"github.com/sprucehealth/backend/libs/aws/ec2"
+	"github.com/sprucehealth/backend/libs/cmd/cryptsetup"
 )
 
 var config = struct {
@@ -44,6 +45,8 @@ func init() {
 }
 
 func main() {
+	log.SetFlags(0)
+
 	flag.Parse()
 	if config.Environment == "" {
 		fmt.Fprintf(os.Stderr, "-env is required\n")

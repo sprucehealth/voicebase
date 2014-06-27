@@ -11,7 +11,7 @@ import (
 	"github.com/sprucehealth/backend/libs/aws"
 )
 
-const apiVersion = "2013-10-15"
+const apiVersion = "2014-02-01"
 
 type EC2 struct {
 	aws.Region
@@ -47,8 +47,7 @@ func (ec2 *EC2) Get(action string, params url.Values, response interface{}) erro
 		return ParseErrorResponse(res)
 	}
 	defer res.Body.Close()
-	dec := xml.NewDecoder(res.Body)
-	return dec.Decode(response)
+	return xml.NewDecoder(res.Body).Decode(response)
 }
 
 func (ec2 *EC2) CreateTags(resourceIds []string, tags map[string]string) error {
@@ -84,14 +83,7 @@ func (ec2 *EC2) DescribeInstances(ids []string, maxResults int, nextToken string
 	if nextToken != "" {
 		params.Set("NextToken", nextToken)
 	}
-	i := 1
-	for name, values := range filters {
-		params.Set(fmt.Sprintf("Filter.%d.Name", i), name)
-		for j, val := range values {
-			params.Set(fmt.Sprintf("Filter.%d.Value.%d", i, j+1), val)
-		}
-		i++
-	}
+	encodeFilters(params, filters)
 	res := &DescribeInstancesResponse{}
 	err := ec2.Get("DescribeInstances", params, res)
 	if err != nil {
