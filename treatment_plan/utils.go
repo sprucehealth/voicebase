@@ -30,7 +30,7 @@ func populateTreatmentPlan(dataApi api.DataAPI, treatmentPlan *common.TreatmentP
 		return fmt.Errorf("Unable to get advice for patient visit: %s", err)
 	}
 
-	if advicePoints != nil && len(advicePoints) > 0 {
+	if len(advicePoints) > 0 {
 		treatmentPlan.Advice = &common.Advice{
 			SelectedAdvicePoints: advicePoints,
 		}
