@@ -1150,8 +1150,14 @@ func getRegimenPlanFromRows(rows *sql.Rows) (*common.RegimenPlan, error) {
 			Text:     regimenText,
 			ParentId: parentId,
 		}
+
+		// keep track of the unique regimen sections as they appear
+		if _, ok := regimenSections[regimenType]; !ok {
+			regimenSectionNames = append(regimenSectionNames, regimenType)
+		}
+
 		regimenSections[regimenType] = append(regimenSections[regimenType], regimenStep)
-		regimenSectionNames = append(regimenSectionNames, regimenType)
+
 	}
 	if rows.Err() != nil {
 		return nil, rows.Err()
