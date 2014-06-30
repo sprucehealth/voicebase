@@ -3,13 +3,14 @@ package api
 import (
 	"database/sql"
 	"fmt"
-	"github.com/sprucehealth/backend/app_url"
-	"github.com/sprucehealth/backend/common"
-	"github.com/sprucehealth/backend/encoding"
 	"log"
 	"strconv"
 	"strings"
 	"time"
+
+	"github.com/sprucehealth/backend/app_url"
+	"github.com/sprucehealth/backend/common"
+	"github.com/sprucehealth/backend/encoding"
 
 	"github.com/sprucehealth/backend/third_party/github.com/go-sql-driver/mysql"
 )
@@ -424,7 +425,7 @@ func (d *DataService) MarkGenerationOfTreatmentPlanInVisitQueue(doctorId, patien
 func (d *DataService) GetPendingItemsInDoctorQueue(doctorId int64) ([]*DoctorQueueItem, error) {
 	params := []interface{}{doctorId}
 	params = appendStringsToInterfaceSlice(params, []string{STATUS_PENDING, STATUS_ONGOING})
-	rows, err := d.db.Query(fmt.Sprintf(`select id, event_type, item_id, enqueue_date, completed_date, status from doctor_queue where doctor_id = ? and status in (%s) order by enqueue_date`, nReplacements(2)), params...)
+	rows, err := d.db.Query(fmt.Sprintf(`select id, event_type, item_id, enqueue_date, completed_date, status, doctor_id from doctor_queue where doctor_id = ? and status in (%s) order by enqueue_date`, nReplacements(2)), params...)
 	if err != nil {
 		return nil, err
 	}
@@ -436,7 +437,7 @@ func (d *DataService) GetCompletedItemsInDoctorQueue(doctorId int64) ([]*DoctorQ
 
 	params := []interface{}{doctorId}
 	params = appendStringsToInterfaceSlice(params, []string{STATUS_PENDING, STATUS_ONGOING})
-	rows, err := d.db.Query(fmt.Sprintf(`select id, event_type, item_id, enqueue_date, completed_date, status from doctor_queue where doctor_id = ? and status not in (%s) order by enqueue_date desc`, nReplacements(2)), params...)
+	rows, err := d.db.Query(fmt.Sprintf(`select id, event_type, item_id, enqueue_date, completed_date, status, doctor_id from doctor_queue where doctor_id = ? and status not in (%s) order by enqueue_date desc`, nReplacements(2)), params...)
 	if err != nil {
 		return nil, err
 	}
@@ -454,25 +455,14 @@ func (d *DataService) GetPendingItemCountForDoctorQueue(doctorId int64) (int64, 
 func populateDoctorQueueFromRows(rows *sql.Rows) ([]*DoctorQueueItem, error) {
 	doctorQueue := make([]*DoctorQueueItem, 0)
 	for rows.Next() {
-		var id, itemId int64
-		var eventType, status string
+		var queueItem DoctorQueueItem
 		var completedDate mysql.NullTime
-		var enqueueDate time.Time
-		err := rows.Scan(&id, &eventType, &itemId, &enqueueDate, &completedDate, &status)
+		err := rows.Scan(&queueItem.Id, &queueItem.EventType, &queueItem.ItemId, &queueItem.EnqueueDate, &completedDate, &queueItem.Status, &queueItem.DoctorId)
 		if err != nil {
 			return nil, err
 		}
-
-		queueItem := &DoctorQueueItem{}
-		queueItem.Id = id
-		queueItem.ItemId = itemId
-		queueItem.EventType = eventType
-		queueItem.Status = status
-		queueItem.EnqueueDate = enqueueDate
-		if completedDate.Valid {
-			queueItem.CompletedDate = completedDate.Time
-		}
-		doctorQueue = append(doctorQueue, queueItem)
+		queueItem.CompletedDate = completedDate.Time
+		doctorQueue = append(doctorQueue, &queueItem)
 	}
 	return doctorQueue, rows.Err()
 }
@@ -735,7 +725,7 @@ func (d *DataService) AddDrugInstructionsToTreatment(drugName, drugForm, drugRou
 	return tx.Commit()
 }
 
-func (d *DataService) AddTreatmentTemplates(doctorTreatmentTemplates []*common.DoctorTreatmentTemplate, doctorId int64) error {
+func (d *DataService) AddTreatmentTemplates(doctorTreatmentTemplates []*common.DoctorTreatmentTemplate, doctorId, treatmentPlanId int64) error {
 	tx, err := d.db.Begin()
 	if err != nil {
 		return err
@@ -744,7 +734,7 @@ func (d *DataService) AddTreatmentTemplates(doctorTreatmentTemplates []*common.D
 	for _, doctorTreatmentTemplate := range doctorTreatmentTemplates {
 
 		var treatmentIdInPatientTreatmentPlan int64
-		if doctorTreatmentTemplate.Treatment.TreatmentPlanId.Int64() != 0 {
+		if treatmentPlanId != 0 {
 			treatmentIdInPatientTreatmentPlan = doctorTreatmentTemplate.Treatment.Id.Int64()
 		}
 
