@@ -3,18 +3,18 @@ package passreset
 import (
 	"crypto/rand"
 	"fmt"
-	"github.com/sprucehealth/backend/api"
-	"github.com/sprucehealth/backend/email"
-	"github.com/sprucehealth/backend/libs/golog"
-	"github.com/sprucehealth/backend/www"
 	"math/big"
 	"net/http"
 	"net/url"
 	"strings"
 
+	"github.com/sprucehealth/backend/api"
+	"github.com/sprucehealth/backend/email"
+	"github.com/sprucehealth/backend/libs/golog"
 	"github.com/sprucehealth/backend/third_party/github.com/gorilla/mux"
 	"github.com/sprucehealth/backend/third_party/github.com/samuel/go-metrics/metrics"
 	"github.com/sprucehealth/backend/third_party/github.com/subosito/twilio"
+	"github.com/sprucehealth/backend/www"
 )
 
 const (

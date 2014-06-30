@@ -3,9 +3,9 @@
 <head>
 	<meta charset="utf-8">
 	<title>{{.Title}}</title>
-	{{.Head}}
+	{{template "head" .SubContext}}
 </head>
 <body>
-	{{.Body}}
+	{{template "body" .SubContext}}
 </body>
 </html>

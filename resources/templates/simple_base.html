@@ -59,12 +59,12 @@
 		padding: 10px 28px 28px 28px;
 	}
 	</style>
-	{{.Head}}
+	{{template "head" .SubContext}}
 </head>
 <body>
 	<div id="content">
-	{{.Body}}
+		{{template "body" .SubContext}}
 	</div>
-	{{.Tail}}
+	{{template "footer" .SubContext}}
 </body>
 </html>

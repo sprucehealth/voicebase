@@ -1,9 +1,7 @@
 package www
 
 import (
-	"bytes"
 	"html/template"
-	"io"
 	"io/ioutil"
 	"os"
 	"path"
@@ -12,9 +10,9 @@ import (
 )
 
 var (
-	BaseTemplate       *baseTemplate
-	IndexTemplate      *indexTemplate
-	SimpleBaseTemplate *simpleBaseTemplate
+	BaseTemplate       *template.Template
+	IndexTemplate      *template.Template
+	SimpleBaseTemplate *template.Template
 )
 
 var ResourceBundle resources.BundleSequence
@@ -38,12 +36,15 @@ func init() {
 	}
 	_ = fi
 
-	BaseTemplate = &baseTemplate{MustLoadTemplate("", "base.html")}
-	IndexTemplate = &indexTemplate{MustLoadTemplate("", "index.html")}
-	SimpleBaseTemplate = &simpleBaseTemplate{MustLoadTemplate("", "simple_base.html")}
+	BaseTemplate = MustLoadTemplate("base.html", nil)
+	IndexTemplate = MustLoadTemplate("index.html", template.Must(BaseTemplate.Clone()))
+	SimpleBaseTemplate = MustLoadTemplate("simple_base.html", nil)
 }
 
-func MustLoadTemplate(name, pth string) *template.Template {
+func MustLoadTemplate(pth string, parent *template.Template) *template.Template {
+	if parent == nil {
+		parent = template.New("")
+	}
 	f, err := ResourceBundle.Open(path.Join("templates", pth))
 	if err != nil {
 		panic(err)
@@ -53,79 +54,15 @@ func MustLoadTemplate(name, pth string) *template.Template {
 		panic(err)
 	}
 	f.Close()
-	return template.Must(template.New(name).Parse(string(src)))
+	return template.Must(parent.Parse(string(src)))
 }
-
-// base
 
 type BaseTemplateContext struct {
-	Title template.HTML
-	Head  template.HTML
-	Body  template.HTML
+	Title      template.HTML
+	SubContext interface{}
 }
-
-type baseTemplate struct {
-	*template.Template
-}
-
-func (t *baseTemplate) Execute(w io.Writer, ctx interface{}) error {
-	return t.Render(w, ctx.(*BaseTemplateContext))
-}
-
-func (t *baseTemplate) Render(w io.Writer, ctx *BaseTemplateContext) error {
-	if ctx.Title == "" {
-		ctx.Title = "Spruce"
-	} else {
-		ctx.Title = "Spruce | " + ctx.Title
-	}
-	return t.Template.Execute(w, ctx)
-}
-
-// index
-
-type IndexTemplateContext struct {
-}
-
-type indexTemplate struct {
-	*template.Template
-}
-
-func (t *indexTemplate) Execute(w io.Writer, ctx interface{}) error {
-	return t.Render(w, ctx.(*IndexTemplateContext))
-}
-
-func (t *indexTemplate) Render(w io.Writer, ctx *IndexTemplateContext) error {
-	b := &bytes.Buffer{}
-	if err := t.Template.Execute(b, ctx); err != nil {
-		return err
-	}
-	return BaseTemplate.Execute(w, &BaseTemplateContext{
-		Body: template.HTML(string(b.String())),
-	})
-}
-
-// simple base
 
 type SimpleBaseTemplateContext struct {
-	Title template.HTML
-	Head  template.HTML
-	Body  template.HTML
-	Tail  template.HTML
-}
-
-type simpleBaseTemplate struct {
-	*template.Template
-}
-
-func (t *simpleBaseTemplate) Execute(w io.Writer, ctx interface{}) error {
-	return t.Render(w, ctx.(*SimpleBaseTemplateContext))
-}
-
-func (t *simpleBaseTemplate) Render(w io.Writer, ctx *SimpleBaseTemplateContext) error {
-	if ctx.Title == "" {
-		ctx.Title = "Spruce"
-	} else {
-		ctx.Title = "Spruce | " + ctx.Title
-	}
-	return t.Template.Execute(w, ctx)
+	Title      template.HTML
+	SubContext interface{}
 }
