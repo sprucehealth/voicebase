@@ -100,7 +100,7 @@ func permanentlyAssignDoctorToCaseAndPatient(patientVisitId, doctorId int64, dat
 	}
 
 	if patientCase.Status == common.PCStatusTempClaimed {
-		if err := dataAPI.PermanentlyAssignDoctorToCaseAndPatient(doctorId, patientCase); err != nil {
+		if err := dataAPI.TransitionToPermanentAssignmentOfDoctorToCaseAndPatient(doctorId, patientCase); err != nil {
 			golog.Errorf("Unable to permanently assign doctor to case and patient: %s", err)
 			permClaimFailure.Inc(1)
 			return err

@@ -97,9 +97,10 @@ type PatientCaseAPI interface {
 	GetCasesForPatient(patientId int64) ([]*common.PatientCase, error)
 }
 
-type JumpBallQueueAPI interface {
+type CaseRouteAPI interface {
 	TemporarilyClaimCaseAndAssignDoctorToCaseAndPatient(doctorId int64, patientCase *common.PatientCase, duration time.Duration) error
-	PermanentlyAssignDoctorToCaseAndPatient(doctorId int64, patientCase *common.PatientCase) error
+	TransitionToPermanentAssignmentOfDoctorToCaseAndPatient(doctorId int64, patientCase *common.PatientCase) error
+	PermanentlyAssignDoctorToCaseAndRouteToQueue(doctorId int64, patientCase *common.PatientCase, queueItem *DoctorQueueItem) error
 	ExtendClaimForDoctor(doctorId, patientId, patientCaseId int64, duration time.Duration) error
 	GetClaimedItemsInQueue() ([]*DoctorQueueItem, error)
 	GetElligibleItemsInUnclaimedQueue(doctorId int64) ([]*DoctorQueueItem, error)
@@ -347,7 +348,7 @@ type DataAPI interface {
 	PhotoAPI
 	FavoriteTreatmentPlanAPI
 	ResourceLibraryAPI
-	JumpBallQueueAPI
+	CaseRouteAPI
 }
 
 type CloudStorageAPI interface {
