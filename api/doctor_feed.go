@@ -2,11 +2,12 @@ package api
 
 import (
 	"fmt"
+	"time"
+
 	"github.com/sprucehealth/backend/app_url"
 	"github.com/sprucehealth/backend/common"
 	"github.com/sprucehealth/backend/libs/golog"
 	"github.com/sprucehealth/backend/settings"
-	"time"
 )
 
 const (
@@ -39,6 +40,10 @@ type DoctorQueueItem struct {
 	PatientCaseId        int64
 	PositionInQueue      int
 	CareProvidingStateId int64
+}
+
+func (d *DoctorQueueItem) GetId() int64 {
+	return d.Id
 }
 
 func (d *DoctorQueueItem) GetTitleAndSubtitle(dataApi DataAPI) (string, string, error) {
