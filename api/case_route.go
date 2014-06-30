@@ -4,8 +4,9 @@ import (
 	"database/sql"
 	"errors"
 	"fmt"
-	"github.com/sprucehealth/backend/common"
 	"time"
+
+	"github.com/sprucehealth/backend/common"
 )
 
 type JBCQItemClaimForbidden string
@@ -14,11 +15,21 @@ func (j JBCQItemClaimForbidden) Error() string {
 	return string(j)
 }
 
+type CaseClaimForbidden string
+
+func (c CaseClaimForbidden) Error() string {
+	return string(c)
+}
+
+// InsertUnclaimedItemIntoQueue inserts an unclaimed case into the queue for eligible doctors to consume
 func (d *DataService) InsertUnclaimedItemIntoQueue(queueItem *DoctorQueueItem) error {
 	_, err := d.db.Exec(`insert into unclaimed_case_queue (care_providing_state_id, item_id, patient_case_id, event_type, status) values (?,?,?,?,?)`, queueItem.CareProvidingStateId, queueItem.ItemId, queueItem.PatientCaseId, queueItem.EventType, queueItem.Status)
 	return err
 }
 
+// TemporarilyClaimCaseAndAssignDoctorToCaseAndPatient does as the name says - it temporarily assigns a case and the patient file to an eligible doctor such
+// that the doctor has exclusive access to the patient case. Note that its possible that the doctor already has access to the patient file, in which case
+// the existing access to the patient file is maintained, while temporary access is added for the patient case.
 func (d *DataService) TemporarilyClaimCaseAndAssignDoctorToCaseAndPatient(doctorId int64, patientCase *common.PatientCase, duration time.Duration) error {
 	tx, err := d.db.Begin()
 	if err != nil {
@@ -67,6 +78,9 @@ func (d *DataService) TemporarilyClaimCaseAndAssignDoctorToCaseAndPatient(doctor
 	return tx.Commit()
 }
 
+// ExtendClaimForDoctor extends an existing claim on a case for a doctor. The method ensures to check that the current owner of the case is indeed the doctor
+// before extending the claim. Note that the claim on the patient file as well as the case is atomically extended given that the access to the global information
+// should go hand in hand with access to the patient case in this situation.
 func (d *DataService) ExtendClaimForDoctor(doctorId, patientId, patientCaseId int64, duration time.Duration) error {
 	tx, err := d.db.Begin()
 	if err != nil {
@@ -112,7 +126,51 @@ func (d *DataService) ExtendClaimForDoctor(doctorId, patientId, patientCaseId in
 	return tx.Commit()
 }
 
-func (d *DataService) PermanentlyAssignDoctorToCaseAndPatient(doctorId int64, patientCase *common.PatientCase) error {
+// PermanentlyAssignDoctorToCaseAndRouteToQueue assigns a case to a doctor that already has access to the patient file information. The call fails
+// if the doctor does not have access to the patient file.
+func (d *DataService) PermanentlyAssignDoctorToCaseAndRouteToQueue(doctorId int64, patientCase *common.PatientCase, queueItem *DoctorQueueItem) error {
+	tx, err := d.db.Begin()
+	if err != nil {
+		tx.Rollback()
+		return err
+	}
+
+	// first check to ensure that doctor is currently assigned to patient file
+	var currentDoctorForPatient int64
+	if err := tx.QueryRow(`select provider_id from patient_care_provider_assignment where role_type_id = ? and provider_id = ? and patient_id = ? and status = ?`, d.roleTypeMapping[DOCTOR_ROLE], doctorId, patientCase.PatientId.Int64(), STATUS_ACTIVE).Scan(&currentDoctorForPatient); err == sql.ErrNoRows {
+		tx.Rollback()
+		return CaseClaimForbidden("Doctor cannot claim case becase doctor is not assigned to patient file")
+	} else if err != nil {
+		tx.Rollback()
+		return err
+	}
+
+	// update patient case to indicate that it is not claimed
+	_, err = tx.Exec(`update patient_case set status = ? where id = ?`, common.PCStatusClaimed, patientCase.Id.Int64())
+	if err != nil {
+		tx.Rollback()
+		return err
+	}
+
+	// assign doctor to patient case
+	_, err = tx.Exec(`insert into patient_case_care_provider_assignment (provider_id, role_type_id, patient_case_id, status) values (?,?,?,?)`, doctorId, d.roleTypeMapping[DOCTOR_ROLE], patientCase.Id.Int64(), STATUS_ACTIVE)
+	if err != nil {
+		tx.Rollback()
+		return err
+	}
+
+	// insert item into doctor queue
+	if err := insertItemIntoDoctorQueue(tx, queueItem); err != nil {
+		tx.Rollback()
+		return err
+	}
+
+	return tx.Commit()
+}
+
+// TransitionToPermanentAssignmentOfDoctorToCaseAndPatient transitions from a temporary claim to a permanent claim on the patient case and the patient file. The item
+// is consequently deleted from the unclaimed case queue.
+func (d *DataService) TransitionToPermanentAssignmentOfDoctorToCaseAndPatient(doctorId int64, patientCase *common.PatientCase) error {
 	tx, err := d.db.Begin()
 	if err != nil {
 		tx.Rollback()
@@ -245,6 +303,7 @@ func (d *DataService) GetElligibleItemsInUnclaimedQueue(doctorId int64) ([]*Doct
 	return queueItems, rows2.Err()
 }
 
+// RevokeDoctorAccessToCase removes the temporary access that the doctor has so that the item can be picked up by another doctor from the jbcq
 func (d *DataService) RevokeDoctorAccessToCase(patientCaseId, patientId, doctorId int64) error {
 	tx, err := d.db.Begin()
 	if err != nil {

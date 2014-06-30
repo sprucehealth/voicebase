@@ -284,7 +284,7 @@ func (d *DataService) CreateCareTeamForPatientWithPrimaryDoctor(patientId, healt
 func (d *DataService) createProviderAssignmentForPatient(patientId, providerId, providerRoleId, healthConditionId int64) (*common.PatientCareTeam, error) {
 
 	// create new assignment for patient
-	_, err := d.db.Exec("insert into patient_care_provider_assignment (patient_id, health_condition_id, role_type_id, provider_id, status) values (?, ?, ?, ?, 'PRIMARY')", patientId, healthConditionId, providerRoleId, providerId)
+	_, err := d.db.Exec("insert into patient_care_provider_assignment (patient_id, health_condition_id, role_type_id, provider_id, status) values (?, ?, ?, ?, ?)", patientId, healthConditionId, providerRoleId, providerId, STATUS_ACTIVE)
 	if err != nil {
 		return nil, err
 	}

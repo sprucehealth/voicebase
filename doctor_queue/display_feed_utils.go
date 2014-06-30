@@ -1,12 +1,14 @@
 package doctor_queue
 
 import (
+	"time"
+
 	"github.com/sprucehealth/backend/api"
 	"github.com/sprucehealth/backend/app_url"
-	"time"
 )
 
 type DisplayFeedItem struct {
+	Id           int64                 `json:"id,string,omitempty"`
 	Title        string                `json:"title"`
 	Subtitle     string                `json:"subtitle,omitempty"`
 	Timestamp    *time.Time            `json:"timestamp,omitempty"`
@@ -23,6 +25,7 @@ func converQueueItemToDisplayFeedItem(dataApi api.DataAPI, itemToDisplay api.Fee
 	}
 
 	item := &DisplayFeedItem{
+		Id:           itemToDisplay.GetId(),
 		Title:        title,
 		Subtitle:     subtitle,
 		ImageUrl:     itemToDisplay.GetImageUrl(),
