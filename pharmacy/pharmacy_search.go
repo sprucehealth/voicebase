@@ -10,6 +10,7 @@ type PharmacyData struct {
 	SourceId      int64    `json:"id,omitempty,string"`
 	PatientId     int64    `json:"-"`
 	Source        string   `json:"source,omitempty"`
+	NCPDPID       string   `json:"-"`
 	Name          string   `json:"name"`
 	AddressLine1  string   `json:"address_line_1,omitempty"`
 	AddressLine2  string   `json:"address_line_2,omitempty"`

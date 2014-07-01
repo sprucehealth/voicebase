@@ -55,8 +55,10 @@ func NewSurescriptsPharmacySearch(config *Config) (*surescriptsPharmacySearch, e
 }
 
 func (s *surescriptsPharmacySearch) GetPharmaciesAroundSearchLocation(searchLocationLat, searchLocationLng, searchRadius float64, numResults int64) (pharmacies []*pharmacy.PharmacyData, err error) {
-	rows, err := s.db.Query(`SELECT id, store_name, address_line_1, address_line_2, city, state, zip, phone_primary, fax, longitude, latitude FROM pharmacy
+	// only include pharmacies that have the lowest order bit set for the service level as that indicates pharmacies that have NewRX capabilities
+	rows, err := s.db.Query(`SELECT id, ncpdpid, store_name, address_line_1, address_line_2, city, state, zip, phone_primary, fax, longitude, latitude FROM pharmacy
 		WHERE st_distance(geom, st_setsrid(st_makepoint($1,$2),4326)) < $3
+			AND mod(service_level, 2) = 1
 			ORDER BY geom <-> st_setsrid(st_makepoint($1,$2),4326)
 			LIMIT $4`, searchLocationLng, searchLocationLat, (searchRadius * metersInMile), numResults)
 	if err != nil {
@@ -69,6 +71,7 @@ func (s *surescriptsPharmacySearch) GetPharmaciesAroundSearchLocation(searchLoca
 		var item pharmacy.PharmacyData
 		if err := rows.Scan(
 			&item.SourceId,
+			&item.NCPDPID,
 			&item.Name,
 			&item.AddressLine1,
 			&item.AddressLine2,
@@ -86,12 +89,12 @@ func (s *surescriptsPharmacySearch) GetPharmaciesAroundSearchLocation(searchLoca
 		results = append(results, &item)
 	}
 
-	return results, rows.Err()
+	return dedupeOnNCPDPID(results), rows.Err()
 }
 
 func (s *surescriptsPharmacySearch) GetPharmacyFromId(pharmacyId int64) (*pharmacy.PharmacyData, error) {
 	var item pharmacy.PharmacyData
-	if err := s.db.QueryRow(`SELECT id,store_name, address_line_1, address_line_2, city, state, zip, phone_primary, fax, longitude, latitude FROM pharmacy
+	if err := s.db.QueryRow(`SELECT id, store_name, address_line_1, address_line_2, city, state, zip, phone_primary, fax, longitude, latitude FROM pharmacy
 		WHERE id = $1`, pharmacyId).Scan(
 		&item.SourceId,
 		&item.Name,
@@ -113,12 +116,17 @@ func (s *surescriptsPharmacySearch) GetPharmacyFromId(pharmacyId int64) (*pharma
 	return &item, nil
 }
 
+// sanitizePharmacyData cleans up the pharmacy data to remove whitespaces
+// and correctly capitalize the address
+// TODO: Rather than cleaning up data on read, we should clean up data when
+// populating the database with data
 func sanitizePharmacyData(pharmacy *pharmacy.PharmacyData) {
 	pharmacy.AddressLine1 = trimAndToTitle(pharmacy.AddressLine1)
 	pharmacy.AddressLine2 = trimAndToTitle(pharmacy.AddressLine2)
 	pharmacy.City = trimAndToTitle(pharmacy.City)
 	pharmacy.Name = trimAndToTitle(pharmacy.Name)
 
+	// break up the postal code into the zip-plus4 format
 	if len(pharmacy.Postal) > 5 {
 		var postalCode bytes.Buffer
 		postalCode.WriteString(pharmacy.Postal[:5])
@@ -126,9 +134,24 @@ func sanitizePharmacyData(pharmacy *pharmacy.PharmacyData) {
 		postalCode.WriteString(pharmacy.Postal[5:])
 		pharmacy.Postal = postalCode.String()
 	}
-
 }
 
 func trimAndToTitle(str string) string {
 	return strings.Title(strings.ToLower(strings.TrimSpace(str)))
+}
+
+// dedupeOnNCPDPID returns results with unique ncpdpid, which uniquely identifies the pharmacy.
+// The reason to filter on the result set instead of including the filter as part of the query
+// is because the query is a lot slower if we were to get rows with distinct ncpdpid values as
+// a sorting on the ncpdpid has to occur which renders the index on the spatial data useless
+func dedupeOnNCPDPID(results []*pharmacy.PharmacyData) []*pharmacy.PharmacyData {
+	dedupedResults := make([]*pharmacy.PharmacyData, 0, len(results))
+	var uniqueNCPDPID map[string]bool
+	for _, result := range results {
+		if !uniqueNCPDPID[result.NCPDPID] {
+			uniqueNCPDPID[result.NCPDPID] = true
+			dedupedResults = append(dedupedResults, result)
+		}
+	}
+	return dedupedResults
 }

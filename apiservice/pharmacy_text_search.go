@@ -10,7 +10,7 @@ import (
 
 const (
 	defaultSearchRadiusInMeters = float64(10000)
-	numResults                  = 30
+	numResults                  = 50
 )
 
 type PharmacyTextSearchHandler struct {
