@@ -21,6 +21,6 @@ func New(dataAPI api.DataAPI, authAPI api.AuthAPI, twilioCli *twilio.Client, fro
 	})
 	router.Handle("/login", www.NewLoginHandler(authAPI))
 	passreset.SetupRoutes(router, dataAPI, authAPI, twilioCli, fromNumber, emailService, fromEmail, webSubdomain, metricsRegistry.Scope("reset-password"))
-	dronboard.SetupRoutes(router, dataAPI, authAPI, metricsRegistry.Scope("doctor-sign-up"))
+	dronboard.SetupRoutes(router, dataAPI, authAPI, metricsRegistry.Scope("doctor-onboard"))
 	return router
 }

@@ -32,7 +32,7 @@ type Patient struct {
 	MiddleName        string                 `json:"middle_name,omitempty"`
 	Suffix            string                 `json:"suffix,omitempty"`
 	Prefix            string                 `json:"prefix,omitempty"`
-	Dob               encoding.Dob           `json:"dob,omitempty"`
+	DOB               encoding.DOB           `json:"dob,omitempty"`
 	Email             string                 `json:"email,omitempty"`
 	Gender            string                 `json:"gender,omitempty"`
 	ZipCode           string                 `json:"zip_code,omitempty"`
@@ -73,7 +73,7 @@ type Doctor struct {
 	Suffix              string               `json:"suffix,omitempty"`
 	ShortTitle          string               `json:"short_title,omitempty"`
 	LongTitle           string               `json:"long_title,omitempty"`
-	Dob                 encoding.Dob         `json:"-"`
+	DOB                 encoding.DOB         `json:"-"`
 	Gender              string               `json:"-"`
 	Status              string               `json:"-"`
 	AccountId           encoding.ObjectId    `json:"-"`
@@ -113,6 +113,24 @@ const (
 	PCStatusClaimed     = "CLAIMED"
 )
 
+<<<<<<< HEAD
+=======
+type PatientCase struct {
+	Id                encoding.ObjectId `json:"case_id"`
+	PatientId         encoding.ObjectId `json:"patient_id"`
+	HealthConditionId encoding.ObjectId `json:"health_condition_id"`
+	CreationDate      time.Time         `json:"creation_date"`
+	Status            string            `json:"status"`
+}
+
+type State struct {
+	ID           int64
+	Name         string
+	Abbreviation string
+	Country      string
+}
+
+>>>>>>> First step of doctor onboarding done except for UI
 type Address struct {
 	Id           int64  `json:"-"`
 	AddressLine1 string `json:"address_line_1"`

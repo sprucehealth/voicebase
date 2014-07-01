@@ -31,7 +31,7 @@ func (d *DataService) updateTopLevelPatientInformation(db db, patient *common.Pa
 	// update top level patient details
 	_, err := db.Exec(`update patient set first_name=?, 
 		middle_name=?, last_name=?, prefix=?, suffix=?, dob_month=?, dob_day=?, dob_year=?, gender=? where id = ?`, patient.FirstName, patient.MiddleName,
-		patient.LastName, patient.Prefix, patient.Suffix, patient.Dob.Month, patient.Dob.Day, patient.Dob.Year, patient.Gender, patient.PatientId.Int64())
+		patient.LastName, patient.Prefix, patient.Suffix, patient.DOB.Month, patient.DOB.Day, patient.DOB.Year, patient.Gender, patient.PatientId.Int64())
 	if err != nil {
 		return err
 	}
@@ -186,7 +186,7 @@ func (d *DataService) CreateUnlinkedPatientFromRefillRequest(patient *common.Pat
 
 func (d *DataService) createPatientWithStatus(patient *common.Patient, status string, tx *sql.Tx) error {
 	res, err := tx.Exec(`insert into patient (account_id, first_name, last_name, gender, dob_year, dob_month, dob_day, status)
-								values (?, ?, ?, ?, ?, ?, ?, ?)`, patient.AccountId.Int64(), patient.FirstName, patient.LastName, patient.Gender, patient.Dob.Year, patient.Dob.Month, patient.Dob.Day, status)
+								values (?, ?, ?, ?, ?, ?, ?, ?)`, patient.AccountId.Int64(), patient.FirstName, patient.LastName, patient.Gender, patient.DOB.Year, patient.DOB.Month, patient.DOB.Day, status)
 	if err != nil {
 		return err
 	}
@@ -971,18 +971,6 @@ func (d *DataService) DeletePendingTask(pendingTaskId int64) error {
 	return err
 }
 
-func (d *DataService) GetFullNameForState(state string) (string, error) {
-	var fullName string
-	err := d.db.QueryRow(`select full_name from state where full_name = ? or abbreviation = ?`, state, state).Scan(&fullName)
-	if err != nil {
-		if err == sql.ErrNoRows {
-			return "", nil
-		}
-		return "", err
-	}
-	return fullName, nil
-}
-
 func (d *DataService) getPatientBasedOnQuery(table, joins, where string, queryParams ...interface{}) ([]*common.Patient, error) {
 	queryStr := fmt.Sprintf(`
 		SELECT patient.id, patient.erx_patient_id, patient.payment_service_customer_id, account_id,
@@ -1030,7 +1018,7 @@ func (d *DataService) getPatientBasedOnQuery(table, joins, where string, queryPa
 			CityFromZipCode:   city.String,
 			StateFromZipCode:  state.String,
 			ERxPatientId:      erxPatientId,
-			Dob:               encoding.Dob{Year: dobYear, Month: dobMonth, Day: dobDay},
+			DOB:               encoding.DOB{Year: dobYear, Month: dobMonth, Day: dobDay},
 			PhoneNumbers: []*common.PhoneNumber{
 				&common.PhoneNumber{
 					Phone: phone.String,

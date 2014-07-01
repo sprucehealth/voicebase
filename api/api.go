@@ -86,7 +86,6 @@ type PatientAPI interface {
 	GetCardFromId(cardId int64) (*common.Card, error)
 	UpdateDefaultAddressForPatient(patientId int64, address *common.Address) error
 	DeleteAddress(addressId int64) error
-	GetFullNameForState(state string) (string, error)
 }
 
 type PatientCaseAPI interface {
@@ -329,7 +328,13 @@ type ResourceLibraryAPI interface {
 	UpdateResourceGuide(*common.ResourceGuide) error
 }
 
+type GeoAPI interface {
+	GetFullNameForState(state string) (string, error)
+	ListStates() ([]*common.State, error)
+}
+
 type DataAPI interface {
+	GeoAPI
 	PatientAPI
 	DoctorAPI
 	DoctorManagementAPI

@@ -2,7 +2,6 @@ package www
 
 import (
 	"net/http"
-	"strings"
 
 	"github.com/sprucehealth/backend/api"
 )
@@ -40,19 +39,7 @@ func (h *loginHandler) ServeHTTP(w http.ResponseWriter, r *http.Request) {
 				return
 			}
 		} else {
-			domain := r.Host
-			if i := strings.IndexByte(domain, ':'); i > 0 {
-				domain = domain[:i]
-			}
-			http.SetCookie(w, &http.Cookie{
-				Name:   "at",
-				Value:  token,
-				Path:   "/",
-				Domain: domain,
-				Secure: true,
-				// Expires:    time.Time
-				// MaxAge :  int
-			})
+			http.SetCookie(w, NewAuthCookie(token, r))
 			http.Redirect(w, r, next, http.StatusSeeOther)
 			return
 		}

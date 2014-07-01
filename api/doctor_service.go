@@ -24,7 +24,7 @@ func (d *DataService) RegisterDoctor(doctor *common.Doctor) (int64, error) {
 		insert into doctor (account_id, first_name, last_name, short_title, long_title, suffix, prefix, middle_name, gender, dob_year, dob_month, dob_day, status, clinician_id)
 		values (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?)`,
 		doctor.AccountId.Int64(), doctor.FirstName, doctor.LastName, doctor.ShortTitle, doctor.LongTitle,
-		doctor.MiddleName, doctor.Suffix, doctor.Prefix, doctor.Gender, doctor.Dob.Year, doctor.Dob.Month, doctor.Dob.Day,
+		doctor.MiddleName, doctor.Suffix, doctor.Prefix, doctor.Gender, doctor.DOB.Year, doctor.DOB.Month, doctor.DOB.Day,
 		DOCTOR_REGISTERED, doctor.DoseSpotClinicianId)
 	if err != nil {
 		tx.Rollback()
@@ -138,7 +138,7 @@ func (d *DataService) queryDoctor(where string, queryParams ...interface{}) (*co
 			State:        state.String,
 			ZipCode:      zipCode.String,
 		},
-		Dob:      encoding.Dob{Year: dobYear, Month: dobMonth, Day: dobDay},
+		DOB:      encoding.DOB{Year: dobYear, Month: dobMonth, Day: dobDay},
 		PersonId: personId,
 	}
 

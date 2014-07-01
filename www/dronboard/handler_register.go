@@ -4,13 +4,17 @@ import (
 	"fmt"
 	"net/http"
 
+	"github.com/sprucehealth/backend/api"
 	"github.com/sprucehealth/backend/common"
 	"github.com/sprucehealth/backend/encoding"
-
-	"github.com/sprucehealth/backend/api"
 	"github.com/sprucehealth/backend/third_party/github.com/dchest/validator"
 	"github.com/sprucehealth/backend/third_party/github.com/gorilla/schema"
 	"github.com/sprucehealth/backend/www"
+)
+
+var (
+	dobOrder      = "MDY"
+	dobSeparators = []rune{'-', '/'}
 )
 
 type signupHandler struct {
@@ -21,10 +25,18 @@ type signupHandler struct {
 type signupRequest struct {
 	FirstName  string
 	LastName   string
+	Gender     string
+	DOB        string
 	Email      string
 	CellNumber string
 	Password1  string
 	Password2  string
+
+	AddressLine1 string
+	AddressLine2 string
+	City         string
+	State        string
+	ZipCode      string
 }
 
 // Validate returns an error message for each field that doesn't match. If
@@ -36,6 +48,14 @@ func (r *signupRequest) Validate() map[string]string {
 	}
 	if r.LastName == "" {
 		errors["LastName"] = "LastName is required"
+	}
+	if r.Gender == "" {
+		errors["Gender"] = "Gender is required"
+	}
+	if r.DOB == "" {
+		errors["DOB"] = "Date of birth is required"
+	} else if _, err := encoding.ParseDOB(r.DOB, dobOrder, dobSeparators); err != nil {
+		errors["DOB"] = "Date of birth must be in the format MM/DD/YYYY"
 	}
 	if r.Email == "" {
 		errors["Email"] = "Email is required"
@@ -49,6 +69,18 @@ func (r *signupRequest) Validate() map[string]string {
 		errors["Password1"] = fmt.Sprintf("Password must be a minimum of %d characters", api.MinimumPasswordLength)
 	} else if r.Password1 != r.Password2 {
 		errors["Password2"] = "Passwords do not match"
+	}
+	if r.AddressLine1 == "" {
+		errors["AddressLine1"] = "Address is required"
+	}
+	if r.City == "" {
+		errors["City"] = "City is required"
+	}
+	if r.State == "" {
+		errors["State"] = "State is required"
+	}
+	if r.ZipCode == "" {
+		errors["ZipCode"] = "ZipCode is required"
 	}
 	if len(errors) == 0 {
 		return nil
@@ -88,26 +120,55 @@ func (h *signupHandler) ServeHTTP(w http.ResponseWriter, r *http.Request) {
 				www.InternalServerError(w, r, err)
 				return
 			} else {
-				// TODO
-				_ = token
-				doctor := &common.Doctor{
-					AccountId: encoding.NewObjectId(accountID),
-					FirstName: req.FirstName,
-					LastName:  req.LastName,
+				dob, err := encoding.ParseDOB(req.DOB, dobOrder, dobSeparators)
+				if err != nil {
+					// This should have been validated already in request.Validate so
+					// best to consider this an internal error.
+					www.InternalServerError(w, r, err)
+					return
 				}
+				address := &common.Address{
+					AddressLine1: req.AddressLine1,
+					AddressLine2: req.AddressLine2,
+					City:         req.City,
+					State:        req.State,
+					ZipCode:      req.ZipCode,
+					Country:      "USA",
+				}
+				doctor := &common.Doctor{
+					AccountId:     encoding.NewObjectId(accountID),
+					FirstName:     req.FirstName,
+					LastName:      req.LastName,
+					DOB:           dob,
+					Gender:        req.Gender,
+					DoctorAddress: address,
+				}
+
+				// TODO ??? DoseSpotClinicianId int64
+
 				if _, err := h.dataAPI.RegisterDoctor(doctor); err != nil {
 					www.InternalServerError(w, r, err)
 					return
 				}
+
+				http.SetCookie(w, www.NewAuthCookie(token, r))
+				http.Redirect(w, r, "TODO", http.StatusSeeOther)
+				return
 			}
 		}
 	}
 
+	states, err := h.dataAPI.ListStates()
+	if err != nil {
+		www.InternalServerError(w, r, err)
+	}
+
 	www.TemplateResponse(w, http.StatusOK, signupTemplate, &www.BaseTemplateContext{
-		Title: "Doctor Sign Up | Spruce",
+		Title: "Doctor Registration | Spruce",
 		SubContext: &signupTemplateContext{
 			Form:       &req,
 			FormErrors: errors,
+			States:     states,
 		},
 	})
 }

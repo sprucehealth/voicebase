@@ -3,6 +3,7 @@ package dronboard
 import (
 	"html/template"
 
+	"github.com/sprucehealth/backend/common"
 	"github.com/sprucehealth/backend/www"
 )
 
@@ -15,4 +16,5 @@ func init() {
 type signupTemplateContext struct {
 	Form       *signupRequest
 	FormErrors map[string]string
+	States     []*common.State
 }

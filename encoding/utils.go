@@ -3,11 +3,8 @@ package encoding
 import (
 	"database/sql"
 	"encoding/xml"
-	"errors"
 	"fmt"
 	"strconv"
-	"strings"
-	"time"
 )
 
 // Defining a type of float that holds the precision in the format entered
@@ -206,126 +203,4 @@ func (id *ObjectId) Scan(src interface{}) error {
 		IsValid:    nullInt64.Valid,
 	}
 	return nil
-}
-
-const (
-	DOB_SEPARATOR = "-"
-	DOB_FORMAT    = "YYYY-MM-DD"
-)
-
-type Dob struct {
-	Month int
-	Day   int
-	Year  int
-}
-
-func (dob *Dob) UnmarshalJSON(data []byte) error {
-	strDob := string(data)
-
-	if len(data) < 2 || strDob == "null" || strDob == `""` {
-		*dob = Dob{}
-		return nil
-	}
-
-	// break up dob into components (of the format MM/DD/YYYY)
-	dobParts := strings.Split(strDob, DOB_SEPARATOR)
-
-	if len(dobParts) != 3 {
-		return fmt.Errorf("Dob incorrectly formatted. Expected format %s", DOB_FORMAT)
-	}
-
-	if len(dobParts[0]) != 5 || len(dobParts[1]) != 2 || len(dobParts[2]) != 3 {
-		return fmt.Errorf("Dob incorrectly formatted. Expected format %s", DOB_FORMAT)
-	}
-
-	dobYear, err := strconv.Atoi(dobParts[0][1:]) // to remove the `"`
-	if err != nil {
-		return err
-	}
-
-	dobMonth, err := strconv.Atoi(dobParts[1])
-	if err != nil {
-		return err
-	}
-
-	dobDay, err := strconv.Atoi(dobParts[2][:len(dobParts[2])-1]) // to remove the `"`
-	if err != nil {
-		return err
-	}
-
-	if dobYear < 1900 {
-		return errors.New("Invalid year in date of birth")
-	}
-
-	if dobMonth < 1 || dobMonth > 12 {
-		return errors.New("Invalid month in date of birth")
-	}
-
-	if dobDay < 1 || dobDay > 31 {
-		return errors.New("Invalid day in date of birth")
-	}
-
-	*dob = Dob{
-		Year:  dobYear,
-		Month: dobMonth,
-		Day:   dobDay,
-	}
-
-	return nil
-}
-
-func (dob Dob) MarshalJSON() ([]byte, error) {
-	if dob.Month == 0 && dob.Year == 0 && dob.Day == 0 {
-		return []byte(`null`), nil
-	}
-
-	return []byte(fmt.Sprintf(`"%d-%02d-%02d"`, dob.Year, dob.Month, dob.Day)), nil
-}
-
-func (dob Dob) ToTime() time.Time {
-	return time.Date(dob.Year, time.Month(dob.Month), dob.Day, 0, 0, 0, 0, time.UTC)
-}
-
-func (dob Dob) String() string {
-	return fmt.Sprintf(`%d-%02d-%02d`, dob.Year, dob.Month, dob.Day)
-}
-
-func NewDobFromTime(dobTime time.Time) Dob {
-	dobYear, dobMonth, dobDay := dobTime.Date()
-	dob := Dob{}
-	dob.Month = int(dobMonth)
-	dob.Year = dobYear
-	dob.Day = dobDay
-	return dob
-}
-
-func NewDobFromString(dobString string) (Dob, error) {
-	var dob Dob
-	dobParts := strings.Split(dobString, "-")
-	if len(dobParts) != 3 {
-		return dob, fmt.Errorf("Required dob format is YYYY-MM-DD")
-	}
-
-	return NewDobFromComponents(dobParts[0], dobParts[1], dobParts[2])
-}
-
-func NewDobFromComponents(dobYear, dobMonth, dobDay string) (Dob, error) {
-	var dob Dob
-	var err error
-	dob.Day, err = strconv.Atoi(dobDay)
-	if err != nil {
-		return dob, err
-	}
-
-	dob.Month, err = strconv.Atoi(dobMonth)
-	if err != nil {
-		return dob, err
-	}
-
-	dob.Year, err = strconv.Atoi(dobYear)
-	if err != nil {
-		return dob, err
-	}
-
-	return dob, nil
 }

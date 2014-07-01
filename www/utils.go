@@ -52,3 +52,19 @@ func validateRedirectURL(urlString string) (string, bool) {
 	// TODO: what else needs to be checked?
 	return path, true
 }
+
+func NewAuthCookie(token string, r *http.Request) *http.Cookie {
+	domain := r.Host
+	if i := strings.IndexByte(domain, ':'); i > 0 {
+		domain = domain[:i]
+	}
+	return &http.Cookie{
+		Name:   "at",
+		Value:  token,
+		Path:   "/",
+		Domain: domain,
+		Secure: true,
+		// Expires: time.Time
+		// MaxAge : int
+	}
+}

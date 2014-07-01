@@ -232,7 +232,7 @@ func populatePatientForDoseSpot(currentPatient *common.Patient) (*patient, error
 		Suffix:      currentPatient.Suffix,
 		Prefix:      currentPatient.Prefix,
 		Email:       currentPatient.Email,
-		DateOfBirth: specialDateTime{DateTime: currentPatient.Dob.ToTime(), DateTimeElementName: "DateOfBirth"},
+		DateOfBirth: specialDateTime{DateTime: currentPatient.DOB.ToTime(), DateTimeElementName: "DateOfBirth"},
 		Gender:      currentPatient.Gender,
 	}
 
@@ -298,10 +298,10 @@ func ensurePatientInformationIsConsistent(currentPatient *common.Patient, patien
 	}
 
 	// lets compare the day, month and year components
-	doseSpotPatientDobYear, doseSpotPatientDobMonth, doseSpotPatientDay := patientFromDoseSpot.DateOfBirth.DateTime.Date()
+	doseSpotPatientDOBYear, doseSpotPatientDOBMonth, doseSpotPatientDay := patientFromDoseSpot.DateOfBirth.DateTime.Date()
 
-	if currentPatient.Dob.Day != doseSpotPatientDay || currentPatient.Dob.Month != int(doseSpotPatientDobMonth) || currentPatient.Dob.Year != doseSpotPatientDobYear {
-		return fmt.Errorf("PATIENT_INFO_MISTMATCH: dob %+v %+v", currentPatient.Dob, patientFromDoseSpot.DateOfBirth.DateTime)
+	if currentPatient.DOB.Day != doseSpotPatientDay || currentPatient.DOB.Month != int(doseSpotPatientDOBMonth) || currentPatient.DOB.Year != doseSpotPatientDOBYear {
+		return fmt.Errorf("PATIENT_INFO_MISTMATCH: dob %+v %+v", currentPatient.DOB, patientFromDoseSpot.DateOfBirth.DateTime)
 	}
 
 	if strings.ToLower(currentPatient.Gender) != strings.ToLower(patientFromDoseSpot.Gender) {
@@ -775,7 +775,7 @@ func (d *DoseSpotService) GetPatientDetails(erxPatientId int64) (*common.Patient
 		},
 		Email:   response.PatientUpdates[0].Patient.Email,
 		ZipCode: response.PatientUpdates[0].Patient.ZipCode,
-		Dob:     encoding.NewDobFromTime(response.PatientUpdates[0].Patient.DateOfBirth.DateTime),
+		DOB:     encoding.NewDOBFromTime(response.PatientUpdates[0].Patient.DateOfBirth.DateTime),
 		PhoneNumbers: []*common.PhoneNumber{&common.PhoneNumber{
 			Phone: response.PatientUpdates[0].Patient.PrimaryPhone,
 			Type:  response.PatientUpdates[0].Patient.PrimaryPhoneType,

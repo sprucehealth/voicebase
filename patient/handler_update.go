@@ -70,7 +70,7 @@ func (u *UpdateHandler) ServeHTTP(w http.ResponseWriter, r *http.Request) {
 	}
 
 	if dobString := r.FormValue("dob"); dobString != "" {
-		patient.Dob, err = encoding.NewDobFromString(dobString)
+		patient.DOB, err = encoding.NewDOBFromString(dobString)
 		if err != nil {
 			apiservice.WriteUserError(w, http.StatusBadRequest, "Unable to parse dob: "+err.Error())
 			return
