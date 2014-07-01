@@ -85,8 +85,7 @@ func (s *surescriptsPharmacySearch) GetPharmaciesAroundSearchLocation(searchLoca
 			return nil, err
 		}
 		item.Source = pharmacy.PHARMACY_SOURCE_SURESCRIPTS
-		sanitizePharmacyData(&item)
-		results = append(results, &item)
+		results = append(results, sanitizePharmacyData(&item))
 	}
 
 	return dedupeOnNCPDPID(results), rows.Err()
@@ -112,15 +111,14 @@ func (s *surescriptsPharmacySearch) GetPharmacyFromId(pharmacyId int64) (*pharma
 		return nil, err
 	}
 	item.Source = pharmacy.PHARMACY_SOURCE_SURESCRIPTS
-	sanitizePharmacyData(&item)
-	return &item, nil
+	return sanitizePharmacyData(&item), nil
 }
 
 // sanitizePharmacyData cleans up the pharmacy data to remove whitespaces
 // and correctly capitalize the address
 // TODO: Rather than cleaning up data on read, we should clean up data when
 // populating the database with data
-func sanitizePharmacyData(pharmacy *pharmacy.PharmacyData) {
+func sanitizePharmacyData(pharmacy *pharmacy.PharmacyData) *pharmacy.PharmacyData {
 	pharmacy.AddressLine1 = trimAndToTitle(pharmacy.AddressLine1)
 	pharmacy.AddressLine2 = trimAndToTitle(pharmacy.AddressLine2)
 	pharmacy.City = trimAndToTitle(pharmacy.City)
@@ -134,6 +132,8 @@ func sanitizePharmacyData(pharmacy *pharmacy.PharmacyData) {
 		postalCode.WriteString(pharmacy.Postal[5:])
 		pharmacy.Postal = postalCode.String()
 	}
+
+	return pharmacy
 }
 
 func trimAndToTitle(str string) string {
