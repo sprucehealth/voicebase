@@ -211,7 +211,7 @@ func (d *DoctorQueueItem) ActionUrl(dataApi DataAPI) (*app_url.SpruceAction, err
 		}
 
 		switch d.Status {
-		case DQItemStatusOngoing, DQItemStatusPending:
+		case DQItemStatusOngoing, DQItemStatusPending, DQItemStatusTriaged:
 			return app_url.ViewPatientVisitInfoAction(patientVisit.PatientId.Int64(), d.ItemId, patientVisit.PatientCaseId.Int64()), nil
 		}
 	case DQEventTypeTreatmentPlan:
