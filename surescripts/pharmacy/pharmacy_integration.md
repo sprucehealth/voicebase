@@ -45,7 +45,7 @@ select postgis_full_version();
 
 ##### Copy data from file into table
 ```postgres
-COPY pharmacy FROM '/Users/kunaljham/Dropbox/personal/workspace/backend/surescripts_pharmacy/pharmacy.csv' WITH DELIMITER  ','  CSV HEADER; 
+\copy pharmacy FROM '/Users/kunaljham/Dropbox/personal/workspace/backend/surescripts_pharmacy/pharmacy.csv' WITH DELIMITER  ','  CSV HEADER;
 ```
 
 ##### Create holding table for pharmacy location data
@@ -62,8 +62,8 @@ create table pharmacy_location (
 ##### Copy geocoded data into table
 <i> Note that data is tab-delimited with just the id,latitude,longitude, zip_precision in the file </i>
 ```postgres
-COPY pharmacy_location FROM '/Users/kunaljham/Dropbox/personal/workspace/backend/surescripts_pharmacy/ListProcessing-Python/surescripts-pharmacy-first-50000-results-short.txt';
-COPY pharmacy_location FROM '/Users/kunaljham/Dropbox/personal/workspace/backend/surescripts_pharmacy/ListProcessing-Python/surescripts-pharmacy-remaining-results-short.txt';
+\copy pharmacy_location FROM '/Users/kunaljham/Dropbox/personal/workspace/backend/surescripts_pharmacy/ListProcessing-Python/surescripts-pharmacy-first-50000-results-short.txt';
+\copy pharmacy_location FROM '/Users/kunaljham/Dropbox/personal/workspace/backend/surescripts_pharmacy/ListProcessing-Python/surescripts-pharmacy-remaining-results-short.txt';
 ```
 
 ##### Add longitude/latitude columns
@@ -108,4 +108,8 @@ SELECT id, store_name, address_line_1, city, state, zip from pharmacy
 	LIMIT 10;
 ```
 
+##### Drop table pharmacy_location
+```postgres
+drop table pharmacy_location;
+```
 
