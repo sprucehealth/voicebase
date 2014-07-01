@@ -267,7 +267,7 @@ func (d *DoctorQueueItem) ActionUrl(dataApi DataAPI) (*app_url.SpruceAction, err
 		}
 		for _, p := range participants {
 			if p.Person.RoleType == PATIENT_ROLE {
-				return app_url.ViewPatientConversationsAction(p.Person.RoleId, d.ItemId), nil
+				return app_url.ViewPatientMessagesAction(p.Person.RoleId, d.ItemId), nil
 			}
 		}
 	}
