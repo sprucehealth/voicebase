@@ -3,10 +3,11 @@ package api
 import (
 	"database/sql"
 	"errors"
-	"github.com/sprucehealth/backend/common"
-	"github.com/sprucehealth/backend/libs/golog"
 	"strings"
 	"time"
+
+	"github.com/sprucehealth/backend/common"
+	"github.com/sprucehealth/backend/libs/golog"
 )
 
 var (
@@ -214,6 +215,29 @@ func (m *Auth) UpdateLastOpenedDate(accountID int64) error {
 	return nil
 }
 
+func (m *Auth) GetPhoneNumbersForAccount(accountID int64) ([]*common.PhoneNumber, error) {
+	rows, err := m.DB.Query(`
+		SELECT phone, phone_type, status
+		FROM account_phone
+		WHERE account_id = ? AND status = ?`, accountID, STATUS_ACTIVE)
+	if err != nil {
+		return nil, err
+	}
+	defer rows.Close()
+	var numbers []*common.PhoneNumber
+	for rows.Next() {
+		num := &common.PhoneNumber{}
+		if err := rows.Scan(&num.Phone, &num.Type, &num.Status); err != nil {
+			return nil, err
+		}
+		numbers = append(numbers, num)
+	}
+	if err := rows.Err(); err != nil {
+		return nil, err
+	}
+	return numbers, nil
+}
+
 func (m *Auth) GetAccountForEmail(email string) (*common.Account, error) {
 	email = normalizeEmail(email)
 	var account common.Account
@@ -264,7 +288,7 @@ func (m *Auth) CreateTempToken(accountID int64, expireSec int, purpose, token st
 	return token, nil
 }
 
-func (m *Auth) ValidateTempToken(purpose, token string) (int64, string, error) {
+func (m *Auth) ValidateTempToken(purpose, token string) (*common.Account, error) {
 	row := m.DB.QueryRow(`
 		SELECT expires, account_id, role_type_tag
 		FROM temp_auth_token
@@ -272,17 +296,16 @@ func (m *Auth) ValidateTempToken(purpose, token string) (int64, string, error) {
 		LEFT JOIN role_type ON role_type.id = account.role_type_id
 		WHERE purpose = ? AND token = ?`, purpose, token)
 	var expires time.Time
-	var accountID int64
-	var roleType string
-	if err := row.Scan(&expires, &accountID, &roleType); err == sql.ErrNoRows {
-		return 0, "", TokenDoesNotExist
+	var account common.Account
+	if err := row.Scan(&expires, &account.ID, &account.Role); err == sql.ErrNoRows {
+		return nil, TokenDoesNotExist
 	} else if err != nil {
-		return 0, "", err
+		return nil, err
 	}
 	if time.Now().After(expires) {
-		return 0, "", TokenExpired
+		return nil, TokenExpired
 	}
-	return accountID, roleType, nil
+	return &account, nil
 }
 
 func (m *Auth) DeleteTempToken(purpose, token string) error {

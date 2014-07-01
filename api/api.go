@@ -369,9 +369,10 @@ type AuthAPI interface {
 	UpdateLastOpenedDate(accountId int64) error
 	GetAccountForEmail(email string) (*common.Account, error)
 	GetAccount(id int64) (*common.Account, error)
+	GetPhoneNumbersForAccount(id int64) ([]*common.PhoneNumber, error)
 	// Temporary auth tokens
 	CreateTempToken(accountId int64, expireSec int, purpose, token string) (string, error)
-	ValidateTempToken(purpose, token string) (int64, string, error)
+	ValidateTempToken(purpose, token string) (*common.Account, error)
 	DeleteTempToken(purpose, token string) error
 	DeleteTempTokensForAccount(accountId int64) error
 }

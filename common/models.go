@@ -18,9 +18,10 @@ const (
 	ClaimerTypePhotoIntakeSection  = "patient_intake_photo_section"
 )
 
-type PhoneInformation struct {
-	Phone     string `json:"phone,omitempty"`
-	PhoneType string `json:"phone_type,omitempty"`
+type PhoneNumber struct {
+	Phone  string `json:"phone,omitempty"`
+	Type   string `json:"phone_type,omitempty"`
+	Status string `json:"-"`
 }
 
 type Patient struct {
@@ -37,7 +38,7 @@ type Patient struct {
 	ZipCode           string                 `json:"zip_code,omitempty"`
 	CityFromZipCode   string                 `json:"-"`
 	StateFromZipCode  string                 `json:"-"`
-	PhoneNumbers      []*PhoneInformation    `json:"phone_numbers,omitempty"`
+	PhoneNumbers      []*PhoneNumber         `json:"phone_numbers,omitempty"`
 	Status            string                 `json:"-"`
 	AccountId         encoding.ObjectId      `json:"account_id,omitempty"`
 	ERxPatientId      encoding.ObjectId      `json:"-"`

@@ -1,11 +1,12 @@
 package patient
 
 import (
+	"net/http"
+
 	"github.com/sprucehealth/backend/api"
 	"github.com/sprucehealth/backend/apiservice"
 	"github.com/sprucehealth/backend/common"
 	"github.com/sprucehealth/backend/encoding"
-	"net/http"
 )
 
 type UpdateHandler struct {
@@ -60,11 +61,11 @@ func (u *UpdateHandler) ServeHTTP(w http.ResponseWriter, r *http.Request) {
 
 	if phoneNumber := r.FormValue("phone"); phoneNumber != "" {
 		if len(patient.PhoneNumbers) == 0 {
-			patient.PhoneNumbers = make([]*common.PhoneInformation, 1)
+			patient.PhoneNumbers = make([]*common.PhoneNumber, 1)
 		}
-		patient.PhoneNumbers[0] = &common.PhoneInformation{
-			Phone:     phoneNumber,
-			PhoneType: api.PHONE_CELL,
+		patient.PhoneNumbers[0] = &common.PhoneNumber{
+			Phone: phoneNumber,
+			Type:  api.PHONE_CELL,
 		}
 	}
 

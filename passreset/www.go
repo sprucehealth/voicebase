@@ -9,6 +9,7 @@ import (
 	"strings"
 
 	"github.com/sprucehealth/backend/api"
+	"github.com/sprucehealth/backend/common"
 	"github.com/sprucehealth/backend/email"
 	"github.com/sprucehealth/backend/libs/golog"
 	"github.com/sprucehealth/backend/third_party/github.com/gorilla/mux"
@@ -134,33 +135,25 @@ func (h *promptHandler) ServeHTTP(w http.ResponseWriter, r *http.Request) {
 }
 
 func (h *verifyHandler) ServeHTTP(w http.ResponseWriter, r *http.Request) {
-	accountID, roleType, token, emailAddress, rsent := validateToken(w, r, h.r, h.authAPI, api.LostPassword, h.statInvalidToken, h.statExpiredToken)
+	account, token, emailAddress, rsent := validateToken(w, r, h.r, h.authAPI, api.LostPassword, h.statInvalidToken, h.statExpiredToken)
 	if rsent {
 		return
 	}
 
+	numbers, err := h.authAPI.GetPhoneNumbersForAccount(account.ID)
+	if err != nil {
+		www.InternalServerError(w, r, err)
+		return
+	}
+
 	var toNumber string
-	switch roleType {
-	case api.DOCTOR_ROLE:
-		doctor, err := h.dataAPI.GetDoctorFromAccountId(accountID)
-		if err != nil {
-			www.InternalServerError(w, r, err)
-			return
-		}
-		toNumber = doctor.CellPhone
-	case api.PATIENT_ROLE:
-		patient, err := h.dataAPI.GetPatientFromAccountId(accountID)
-		if err != nil {
-			www.InternalServerError(w, r, err)
-			return
-		}
-		for _, phoneNumber := range patient.PhoneNumbers {
-			if phoneNumber.PhoneType == api.PHONE_CELL {
-				toNumber = patient.PhoneNumbers[0].Phone
-				break
-			}
+	for _, n := range numbers {
+		if n.Type == api.PHONE_CELL {
+			toNumber = n.Phone
+			break
 		}
 	}
+
 	var lastDigits string
 	if len(toNumber) >= 2 {
 		lastDigits = toNumber[len(toNumber)-2:]
@@ -181,7 +174,7 @@ func (h *verifyHandler) ServeHTTP(w http.ResponseWriter, r *http.Request) {
 				for len(code) < resetCodeDigits {
 					code = "0" + code
 				}
-				if _, err := h.authAPI.CreateTempToken(accountID, lostPasswordCodeExpires, api.LostPasswordCode, fmt.Sprintf("%d:%s", accountID, code)); err != nil {
+				if _, err := h.authAPI.CreateTempToken(account.ID, lostPasswordCodeExpires, api.LostPasswordCode, fmt.Sprintf("%d:%s", account.ID, code)); err != nil {
 					www.InternalServerError(w, r, err)
 					return
 				}
@@ -200,8 +193,8 @@ func (h *verifyHandler) ServeHTTP(w http.ResponseWriter, r *http.Request) {
 			}
 		case "validate":
 			code := r.FormValue("code")
-			codeToken := fmt.Sprintf("%d:%s", accountID, code)
-			_, _, err := h.authAPI.ValidateTempToken(api.LostPasswordCode, codeToken)
+			codeToken := fmt.Sprintf("%d:%s", account.ID, code)
+			_, err := h.authAPI.ValidateTempToken(api.LostPasswordCode, codeToken)
 			if err != nil {
 				switch err {
 				case api.TokenExpired:
@@ -231,7 +224,7 @@ func (h *verifyHandler) ServeHTTP(w http.ResponseWriter, r *http.Request) {
 				golog.Errorf("Failed to delete lost password code token: %s", err.Error())
 			}
 
-			resetToken, err := h.authAPI.CreateTempToken(accountID, resetPasswordExpires, api.PasswordReset, "")
+			resetToken, err := h.authAPI.CreateTempToken(account.ID, resetPasswordExpires, api.PasswordReset, "")
 			if err != nil {
 				www.InternalServerError(w, r, err)
 				return
@@ -263,7 +256,7 @@ func (h *verifyHandler) ServeHTTP(w http.ResponseWriter, r *http.Request) {
 }
 
 func (h *resetHandler) ServeHTTP(w http.ResponseWriter, r *http.Request) {
-	accountID, _, token, emailAddress, rsent := validateToken(w, r, h.r, h.authAPI, api.PasswordReset, h.statInvalidToken, h.statExpiredToken)
+	account, token, emailAddress, rsent := validateToken(w, r, h.r, h.authAPI, api.PasswordReset, h.statInvalidToken, h.statExpiredToken)
 	if rsent {
 		return
 	}
@@ -279,7 +272,7 @@ func (h *resetHandler) ServeHTTP(w http.ResponseWriter, r *http.Request) {
 		} else if pass1 != pass2 {
 			errors = append(errors, "Passwords do not match.")
 		} else {
-			if err := h.authAPI.SetPassword(accountID, pass1); err != nil {
+			if err := h.authAPI.SetPassword(account.ID, pass1); err != nil {
 				www.InternalServerError(w, r, err)
 				return
 			}
@@ -301,16 +294,15 @@ func (h *resetHandler) ServeHTTP(w http.ResponseWriter, r *http.Request) {
 	})
 }
 
-func validateToken(w http.ResponseWriter, r *http.Request, router *mux.Router, authAPI api.AuthAPI, purpose string, statInvalidToken, statExpiredToken metrics.Counter) (int64, string, string, string, bool) {
+func validateToken(w http.ResponseWriter, r *http.Request, router *mux.Router, authAPI api.AuthAPI, purpose string, statInvalidToken, statExpiredToken metrics.Counter) (*common.Account, string, string, bool) {
 	token := r.FormValue("token")
 	emailAddress := r.FormValue("email")
-	var accountID int64
-	var roleType string
+	var account *common.Account
 	if token == "" {
 		statInvalidToken.Inc(1)
 	} else {
 		var err error
-		accountID, roleType, err = authAPI.ValidateTempToken(purpose, token)
+		account, err = authAPI.ValidateTempToken(purpose, token)
 		if err != nil {
 			switch err {
 			case api.TokenExpired:
@@ -319,11 +311,11 @@ func validateToken(w http.ResponseWriter, r *http.Request, router *mux.Router, a
 				statInvalidToken.Inc(1)
 			default:
 				www.InternalServerError(w, r, err)
-				return 0, "", token, emailAddress, true
+				return nil, token, emailAddress, true
 			}
 		}
 	}
-	if accountID == 0 {
+	if account == nil {
 		// If the token is invalid then redirect to the reset-password page where
 		// the person can request a new reset email.
 		params := url.Values{}
@@ -333,11 +325,11 @@ func validateToken(w http.ResponseWriter, r *http.Request, router *mux.Router, a
 		u, err := router.Get("reset-password-prompt").URLPath()
 		if err != nil {
 			www.InternalServerError(w, r, err)
-			return 0, "", token, emailAddress, true
+			return nil, token, emailAddress, true
 		}
 		u.RawQuery = params.Encode()
 		http.Redirect(w, r, u.String(), http.StatusSeeOther)
-		return 0, "", token, emailAddress, true
+		return nil, token, emailAddress, true
 	}
-	return accountID, roleType, token, emailAddress, false
+	return account, token, emailAddress, false
 }

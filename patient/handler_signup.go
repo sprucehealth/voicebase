@@ -1,14 +1,15 @@
 package patient
 
 import (
+	"net/http"
+	"strings"
+
 	"github.com/sprucehealth/backend/address"
 	"github.com/sprucehealth/backend/api"
 	"github.com/sprucehealth/backend/apiservice"
 	"github.com/sprucehealth/backend/common"
 	"github.com/sprucehealth/backend/encoding"
 	"github.com/sprucehealth/backend/libs/golog"
-	"net/http"
-	"strings"
 
 	"github.com/sprucehealth/backend/third_party/github.com/dchest/validator"
 	"github.com/sprucehealth/backend/third_party/github.com/gorilla/schema"
@@ -107,9 +108,9 @@ func (s *SignupHandler) ServeHTTP(w http.ResponseWriter, r *http.Request) {
 		ZipCode:          requestData.Zipcode,
 		CityFromZipCode:  cityState.City,
 		StateFromZipCode: cityState.StateAbbreviation,
-		PhoneNumbers: []*common.PhoneInformation{&common.PhoneInformation{
-			Phone:     requestData.Phone,
-			PhoneType: api.PHONE_CELL,
+		PhoneNumbers: []*common.PhoneNumber{&common.PhoneNumber{
+			Phone: requestData.Phone,
+			Type:  api.PHONE_CELL,
 		},
 		},
 		PromptStatus: common.Unprompted,

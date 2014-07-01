@@ -11,7 +11,6 @@ import (
 	"github.com/sprucehealth/backend/app_url"
 	"github.com/sprucehealth/backend/common"
 	"github.com/sprucehealth/backend/encoding"
-
 	"github.com/sprucehealth/backend/third_party/github.com/go-sql-driver/mysql"
 )
 
@@ -21,9 +20,10 @@ func (d *DataService) RegisterDoctor(doctor *common.Doctor) (int64, error) {
 		return 0, err
 	}
 
-	res, err := tx.Exec(`insert into doctor (account_id, first_name, last_name, short_title, long_title, suffix, prefix, middle_name, gender, dob_year, dob_month, dob_day, status, clinician_id) 
-								values (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?)`, doctor.AccountId.Int64(),
-		doctor.FirstName, doctor.LastName, doctor.ShortTitle, doctor.LongTitle,
+	res, err := tx.Exec(`
+		insert into doctor (account_id, first_name, last_name, short_title, long_title, suffix, prefix, middle_name, gender, dob_year, dob_month, dob_day, status, clinician_id)
+		values (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?)`,
+		doctor.AccountId.Int64(), doctor.FirstName, doctor.LastName, doctor.ShortTitle, doctor.LongTitle,
 		doctor.MiddleName, doctor.Suffix, doctor.Prefix, doctor.Gender, doctor.Dob.Year, doctor.Dob.Month, doctor.Dob.Day,
 		DOCTOR_REGISTERED, doctor.DoseSpotClinicianId)
 	if err != nil {
@@ -50,10 +50,13 @@ func (d *DataService) RegisterDoctor(doctor *common.Doctor) (int64, error) {
 		return 0, err
 	}
 
-	_, err = tx.Exec(`insert into doctor_phone (phone, phone_type, doctor_id) values (?,?,?) `, doctor.CellPhone, doctorPhoneType, doctor.DoctorId.Int64())
-	if err != nil {
-		tx.Rollback()
-		return 0, err
+	if doctor.CellPhone != "" {
+		_, err = tx.Exec(`INSERT INTO account_phone (phone, phone_type, account_id, status) VALUES (?,?,?) `,
+			doctor.CellPhone, PHONE_CELL, doctor.AccountId.Int64(), STATUS_ACTIVE)
+		if err != nil {
+			tx.Rollback()
+			return 0, err
+		}
 	}
 
 	res, err = tx.Exec(`INSERT INTO person (role_type_id, role_id) VALUES (?, ?)`, d.roleTypeMapping[DOCTOR_ROLE], lastId)
@@ -71,15 +74,18 @@ func (d *DataService) RegisterDoctor(doctor *common.Doctor) (int64, error) {
 }
 
 func (d *DataService) GetDoctorFromId(doctorId int64) (*common.Doctor, error) {
-	return d.queryDoctor(`doctor.id = ? AND (doctor_phone.phone IS NULL OR doctor_phone.phone_type = ?)`, doctorId, doctorPhoneType)
+	return d.queryDoctor(`doctor.id = ? AND (account_phone.phone IS NULL OR account_phone.phone_type = ?)`,
+		doctorId, PHONE_CELL)
 }
 
 func (d *DataService) GetDoctorFromAccountId(accountId int64) (*common.Doctor, error) {
-	return d.queryDoctor(`doctor.account_id = ? AND (doctor_phone.phone IS NULL OR doctor_phone.phone_type = ?)`, accountId, doctorPhoneType)
+	return d.queryDoctor(`doctor.account_id = ? AND (account_phone.phone IS NULL OR account_phone.phone_type = ?)`,
+		accountId, PHONE_CELL)
 }
 
 func (d *DataService) GetDoctorFromDoseSpotClinicianId(clinicianId int64) (*common.Doctor, error) {
-	return d.queryDoctor(`doctor.clinician_id = ? AND (doctor_phone.phone IS NULL OR doctor_phone.phone_type = ?)`, clinicianId, doctorPhoneType)
+	return d.queryDoctor(`doctor.clinician_id = ? AND (account_phone.phone IS NULL OR account_phone.phone_type = ?)`,
+		clinicianId, PHONE_CELL)
 }
 
 func (d *DataService) queryDoctor(where string, queryParams ...interface{}) (*common.Doctor, error) {
@@ -90,7 +96,7 @@ func (d *DataService) queryDoctor(where string, queryParams ...interface{}) (*co
 			address.zip_code, person.id
 		FROM doctor
 		INNER JOIN person ON person.role_type_id = %d AND person.role_id = doctor.id
-		LEFT OUTER JOIN doctor_phone ON doctor_phone.doctor_id = doctor.id
+		LEFT OUTER JOIN account_phone ON account_phone.account_id = doctor.account_id
 		LEFT OUTER JOIN doctor_address_selection ON doctor_address_selection.doctor_id = doctor.id
 		LEFT OUTER JOIN address ON doctor_address_selection.address_id = address.id
 		WHERE %s`, d.roleTypeMapping[DOCTOR_ROLE], where),

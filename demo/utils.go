@@ -4,6 +4,8 @@ import (
 	"bytes"
 	"encoding/json"
 	"fmt"
+	"net/http"
+
 	"github.com/sprucehealth/backend/apiservice"
 	"github.com/sprucehealth/backend/common"
 	"github.com/sprucehealth/backend/encoding"
@@ -11,7 +13,6 @@ import (
 	"github.com/sprucehealth/backend/libs/pharmacy"
 	"github.com/sprucehealth/backend/messages"
 	"github.com/sprucehealth/backend/patient_visit"
-	"net/http"
 )
 
 type questionTag int
@@ -639,9 +640,9 @@ func prepareSurescriptsPatients() []*common.Patient {
 			Day:   18,
 		},
 		ZipCode: "94115",
-		PhoneNumbers: []*common.PhoneInformation{&common.PhoneInformation{
-			Phone:     "2068773590",
-			PhoneType: "Home",
+		PhoneNumbers: []*common.PhoneNumber{&common.PhoneNumber{
+			Phone: "2068773590",
+			Type:  "Home",
 		},
 		},
 		Pharmacy: &pharmacy.PharmacyData{
@@ -673,14 +674,14 @@ func prepareSurescriptsPatients() []*common.Patient {
 			Day:   18,
 		},
 		ZipCode: "19102",
-		PhoneNumbers: []*common.PhoneInformation{
-			&common.PhoneInformation{
-				Phone:     "215-988-6723",
-				PhoneType: "Home",
+		PhoneNumbers: []*common.PhoneNumber{
+			&common.PhoneNumber{
+				Phone: "215-988-6723",
+				Type:  "Home",
 			},
-			&common.PhoneInformation{
-				Phone:     "4137762738",
-				PhoneType: "Cell",
+			&common.PhoneNumber{
+				Phone: "4137762738",
+				Type:  "Cell",
 			},
 		},
 		Pharmacy: &pharmacy.PharmacyData{
@@ -710,10 +711,10 @@ func prepareSurescriptsPatients() []*common.Patient {
 			Day:   11,
 		},
 		ZipCode: "44306",
-		PhoneNumbers: []*common.PhoneInformation{
-			&common.PhoneInformation{
-				Phone:     "3305547754",
-				PhoneType: "Home",
+		PhoneNumbers: []*common.PhoneNumber{
+			&common.PhoneNumber{
+				Phone: "3305547754",
+				Type:  "Home",
 			},
 		},
 		Pharmacy: &pharmacy.PharmacyData{
@@ -744,10 +745,10 @@ func prepareSurescriptsPatients() []*common.Patient {
 			Day:   01,
 		},
 		ZipCode: "44103",
-		PhoneNumbers: []*common.PhoneInformation{
-			&common.PhoneInformation{
-				Phone:     "4408450398",
-				PhoneType: "Home",
+		PhoneNumbers: []*common.PhoneNumber{
+			&common.PhoneNumber{
+				Phone: "4408450398",
+				Type:  "Home",
 			},
 		},
 		Pharmacy: &pharmacy.PharmacyData{
@@ -780,14 +781,14 @@ func prepareSurescriptsPatients() []*common.Patient {
 			Day:   01,
 		},
 		ZipCode: "20187",
-		PhoneNumbers: []*common.PhoneInformation{
-			&common.PhoneInformation{
-				Phone:     "3108620035x2345",
-				PhoneType: "Home",
+		PhoneNumbers: []*common.PhoneNumber{
+			&common.PhoneNumber{
+				Phone: "3108620035x2345",
+				Type:  "Home",
 			},
-			&common.PhoneInformation{
-				Phone:     "3019289283",
-				PhoneType: "Cell",
+			&common.PhoneNumber{
+				Phone: "3019289283",
+				Type:  "Cell",
 			},
 		},
 		Pharmacy: &pharmacy.PharmacyData{
@@ -819,14 +820,14 @@ func prepareSurescriptsPatients() []*common.Patient {
 			Day:   1,
 		},
 		ZipCode: "01040",
-		PhoneNumbers: []*common.PhoneInformation{
-			&common.PhoneInformation{
-				Phone:     "4137760938",
-				PhoneType: "Home",
+		PhoneNumbers: []*common.PhoneNumber{
+			&common.PhoneNumber{
+				Phone: "4137760938",
+				Type:  "Home",
 			},
-			&common.PhoneInformation{
-				Phone:     "4137762738",
-				PhoneType: "Cell",
+			&common.PhoneNumber{
+				Phone: "4137762738",
+				Type:  "Cell",
 			},
 		},
 		Pharmacy: &pharmacy.PharmacyData{
@@ -857,14 +858,14 @@ func prepareSurescriptsPatients() []*common.Patient {
 			Day:   22,
 		},
 		ZipCode: "34737",
-		PhoneNumbers: []*common.PhoneInformation{
-			&common.PhoneInformation{
-				Phone:     "3526685547",
-				PhoneType: "Home",
+		PhoneNumbers: []*common.PhoneNumber{
+			&common.PhoneNumber{
+				Phone: "3526685547",
+				Type:  "Home",
 			},
-			&common.PhoneInformation{
-				Phone:     "4137762738",
-				PhoneType: "Cell",
+			&common.PhoneNumber{
+				Phone: "4137762738",
+				Type:  "Cell",
 			},
 		},
 		Pharmacy: &pharmacy.PharmacyData{
@@ -898,26 +899,26 @@ func prepareSurescriptsPatients() []*common.Patient {
 			Day:   1,
 		},
 		ZipCode: "34737",
-		PhoneNumbers: []*common.PhoneInformation{
-			&common.PhoneInformation{
-				Phone:     "5719212122x1234567890444",
-				PhoneType: "Home",
+		PhoneNumbers: []*common.PhoneNumber{
+			&common.PhoneNumber{
+				Phone: "5719212122x1234567890444",
+				Type:  "Home",
 			},
-			&common.PhoneInformation{
-				Phone:     "7034445523x4473",
-				PhoneType: "Cell",
+			&common.PhoneNumber{
+				Phone: "7034445523x4473",
+				Type:  "Cell",
 			},
-			&common.PhoneInformation{
-				Phone:     "7034445524x4474",
-				PhoneType: "Work",
+			&common.PhoneNumber{
+				Phone: "7034445524x4474",
+				Type:  "Work",
 			},
-			&common.PhoneInformation{
-				Phone:     "7034445522x4472",
-				PhoneType: "Work",
+			&common.PhoneNumber{
+				Phone: "7034445522x4472",
+				Type:  "Work",
 			},
-			&common.PhoneInformation{
-				Phone:     "7034445526x4476",
-				PhoneType: "Home",
+			&common.PhoneNumber{
+				Phone: "7034445526x4476",
+				Type:  "Home",
 			},
 		},
 		Pharmacy: &pharmacy.PharmacyData{
@@ -953,9 +954,9 @@ func prepareDemoPatients(n int64) []*common.Patient {
 				Day:   8,
 			},
 			ZipCode: "94115",
-			PhoneNumbers: []*common.PhoneInformation{&common.PhoneInformation{
-				Phone:     "2068773590",
-				PhoneType: "Home",
+			PhoneNumbers: []*common.PhoneNumber{&common.PhoneNumber{
+				Phone: "2068773590",
+				Type:  "Home",
 			},
 			},
 			Pharmacy: &pharmacy.PharmacyData{
