@@ -39,7 +39,7 @@ func NewSurescriptsPharmacySearch(config *Config) (*surescriptsPharmacySearch, e
 		return nil, errors.New("Name required for database setup")
 	}
 
-	db, err := sql.Open("postgres", fmt.Sprintf("postgres://%s:%s@%s/%s?sslmode=require", config.User, config.Password, config.Host, config.Name))
+	db, err := sql.Open("postgres", fmt.Sprintf("postgres://%s:%s@%s:%d/%s?sslmode=verify-full", config.User, config.Password, config.Host, config.Port, config.Name))
 	if err != nil {
 		return nil, err
 	}
