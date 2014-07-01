@@ -13,6 +13,7 @@ var (
 	BaseTemplate       *template.Template
 	IndexTemplate      *template.Template
 	SimpleBaseTemplate *template.Template
+	LoginTemplate      *template.Template
 )
 
 var ResourceBundle resources.BundleSequence
@@ -38,6 +39,8 @@ func init() {
 
 	BaseTemplate = MustLoadTemplate("base.html", nil)
 	IndexTemplate = MustLoadTemplate("index.html", template.Must(BaseTemplate.Clone()))
+	LoginTemplate = MustLoadTemplate("login.html", template.Must(BaseTemplate.Clone()))
+
 	SimpleBaseTemplate = MustLoadTemplate("simple_base.html", nil)
 }
 
@@ -65,4 +68,10 @@ type BaseTemplateContext struct {
 type SimpleBaseTemplateContext struct {
 	Title      template.HTML
 	SubContext interface{}
+}
+
+type LoginTemplateContext struct {
+	Email string
+	Next  string
+	Error string
 }

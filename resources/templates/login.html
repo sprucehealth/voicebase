@@ -1,0 +1,14 @@
+{{define "head"}}
+{{end}}
+
+{{define "body"}}
+	{{if .Error}}
+		<div class="error">{{.Error}}</div>
+	{{end}}
+	<form method="POST" action="">
+	<input type="hidden" name="next" value="{{.Next}}">
+	Email: <input type="text" name="email" value="{{.Email}}"><br>
+	Password: <input type="password" name="password"><br>
+	<button>Login</button>
+	</form>
+{{end}}

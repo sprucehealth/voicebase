@@ -18,6 +18,7 @@ func New(dataAPI api.DataAPI, authAPI api.AuthAPI, twilioCli *twilio.Client, fro
 	router.HandleFunc("/", func(w http.ResponseWriter, r *http.Request) {
 		www.TemplateResponse(w, http.StatusOK, www.IndexTemplate, &www.BaseTemplateContext{Title: "Spruce"})
 	})
+	router.Handle("/login", www.NewLoginHandler(authAPI))
 	passreset.RouteResetPassword(router, dataAPI, authAPI, twilioCli, fromNumber, emailService, fromEmail, webSubdomain, metricsRegistry.Scope("reset_password"))
 	return router
 }
