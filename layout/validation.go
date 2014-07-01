@@ -2,8 +2,9 @@ package layout
 
 import (
 	"fmt"
-	"github.com/sprucehealth/backend/info_intake"
 	"strings"
+
+	"github.com/sprucehealth/backend/info_intake"
 )
 
 type errorList []string

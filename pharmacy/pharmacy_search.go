@@ -1,7 +1,6 @@
 package pharmacy
 
 const (
-	PHARMACY_SOURCE_GOOGLE      = "google"
 	PHARMACY_SOURCE_SURESCRIPTS = "surescripts"
 )
 
@@ -22,7 +21,7 @@ type PharmacyData struct {
 	Longitude     float64  `json:"lng,omitempty"`
 	Phone         string   `json:"phone,omitempty"`
 	Fax           string   `json:"fax,omitempty"`
-	Url           string   `json:"url,omitempty"`
+	Url           string   `json:"url,omitpempty"`
 	PharmacyTypes []string `json:"pharmacy_types,omitempty"`
 }
 
