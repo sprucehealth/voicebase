@@ -2,9 +2,10 @@ package main
 
 import (
 	"fmt"
+	"os"
+
 	"github.com/sprucehealth/backend/common/config"
 	"github.com/sprucehealth/backend/email"
-	"os"
 
 	"github.com/sprucehealth/backend/third_party/github.com/subosito/twilio"
 )
@@ -123,6 +124,14 @@ func (c *Config) Validate() {
 	}
 	if c.PhotoBucket == "" {
 		errors = append(errors, "PhotoBucket not set")
+	}
+	if !c.Debug {
+		if c.TLSCert == "" {
+			errors = append(errors, "TLSCert not set")
+		}
+		if c.TLSKey == "" {
+			errors = append(errors, "TLSKey not set")
+		}
 	}
 	if len(errors) != 0 {
 		fmt.Fprintf(os.Stderr, "Config failed validation:\n")

@@ -38,11 +38,10 @@ import (
 	"github.com/sprucehealth/backend/photos"
 	"github.com/sprucehealth/backend/reslib"
 	"github.com/sprucehealth/backend/support"
-	"github.com/sprucehealth/backend/treatment_plan"
-	"github.com/sprucehealth/backend/www/router"
-
 	"github.com/sprucehealth/backend/third_party/github.com/gorilla/mux"
 	"github.com/sprucehealth/backend/third_party/github.com/samuel/go-metrics/metrics"
+	"github.com/sprucehealth/backend/treatment_plan"
+	"github.com/sprucehealth/backend/www/router"
 )
 
 const (
