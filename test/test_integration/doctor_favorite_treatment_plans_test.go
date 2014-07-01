@@ -3,16 +3,17 @@ package test_integration
 import (
 	"bytes"
 	"encoding/json"
-	"github.com/sprucehealth/backend/api"
-	"github.com/sprucehealth/backend/common"
-	"github.com/sprucehealth/backend/doctor_treatment_plan"
-	"github.com/sprucehealth/backend/encoding"
-	"github.com/sprucehealth/backend/libs/erx"
 	"net/http"
 	"net/http/httptest"
 	"net/url"
 	"strconv"
 	"testing"
+
+	"github.com/sprucehealth/backend/api"
+	"github.com/sprucehealth/backend/common"
+	"github.com/sprucehealth/backend/doctor_treatment_plan"
+	"github.com/sprucehealth/backend/encoding"
+	"github.com/sprucehealth/backend/libs/erx"
 )
 
 func TestFavoriteTreatmentPlan(t *testing.T) {
@@ -637,10 +638,15 @@ func TestFavoriteTreatmentPlan_InContextOfTreatmentPlan(t *testing.T) {
 
 	regimenSection := &common.RegimenSection{}
 	regimenSection.RegimenName = "morning"
-	regimenSection.RegimenSteps = []*common.DoctorInstructionItem{&common.DoctorInstructionItem{
-		Text:  regimenStep1.Text,
-		State: common.STATE_ADDED,
-	},
+	regimenSection.RegimenSteps = []*common.DoctorInstructionItem{
+		&common.DoctorInstructionItem{
+			Text:  regimenStep1.Text,
+			State: common.STATE_ADDED,
+		},
+		&common.DoctorInstructionItem{
+			Text:  regimenStep2.Text,
+			State: common.STATE_ADDED,
+		},
 	}
 
 	regimenSection2 := &common.RegimenSection{}
@@ -677,6 +683,7 @@ func TestFavoriteTreatmentPlan_InContextOfTreatmentPlan(t *testing.T) {
 	// the reason this is important is because favorite treatment plans require items to exist that are linked
 	// from the master list
 	regimenSection.RegimenSteps[0].ParentId = regimenPlanResponse.AllRegimenSteps[0].Id
+	regimenSection.RegimenSteps[1].ParentId = regimenPlanResponse.AllRegimenSteps[1].Id
 	regimenSection2.RegimenSteps[0].ParentId = regimenPlanResponse.AllRegimenSteps[1].Id
 	advicePoint1 = &common.DoctorInstructionItem{
 		Text:     advicePoint1.Text,
