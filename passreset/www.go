@@ -19,9 +19,8 @@ import (
 )
 
 const (
-	resetCodeDigits       = 6
-	resetCodeMax          = 999999
-	minimumPasswordLength = 6
+	resetCodeDigits = 6
+	resetCodeMax    = 999999
 )
 
 type promptHandler struct {
@@ -54,7 +53,7 @@ type resetHandler struct {
 	statExpiredToken metrics.Counter
 }
 
-func RouteResetPassword(r *mux.Router, dataAPI api.DataAPI, authAPI api.AuthAPI, twilioCli *twilio.Client, fromNumber string, emailService email.Service, supportEmail, webSubdomain string, metricsRegistry metrics.Registry) {
+func SetupRoutes(r *mux.Router, dataAPI api.DataAPI, authAPI api.AuthAPI, twilioCli *twilio.Client, fromNumber string, emailService email.Service, supportEmail, webSubdomain string, metricsRegistry metrics.Registry) {
 	ph := &promptHandler{
 		r:            r,
 		dataAPI:      dataAPI,
@@ -266,9 +265,9 @@ func (h *resetHandler) ServeHTTP(w http.ResponseWriter, r *http.Request) {
 	if r.Method == "POST" {
 		pass1 := r.FormValue("password1")
 		pass2 := r.FormValue("password2")
-		if len(pass1) < minimumPasswordLength {
+		if len(pass1) < api.MinimumPasswordLength {
 			// TODO: further validation of length?
-			errors = append(errors, fmt.Sprintf("Password must be longer than %d characters.", minimumPasswordLength-1))
+			errors = append(errors, fmt.Sprintf("Password must be longer than %d characters.", api.MinimumPasswordLength-1))
 		} else if pass1 != pass2 {
 			errors = append(errors, "Passwords do not match.")
 		} else {

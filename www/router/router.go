@@ -10,6 +10,7 @@ import (
 	"github.com/sprucehealth/backend/third_party/github.com/samuel/go-metrics/metrics"
 	"github.com/sprucehealth/backend/third_party/github.com/subosito/twilio"
 	"github.com/sprucehealth/backend/www"
+	"github.com/sprucehealth/backend/www/dronboard"
 )
 
 func New(dataAPI api.DataAPI, authAPI api.AuthAPI, twilioCli *twilio.Client, fromNumber string, emailService email.Service, fromEmail, webSubdomain string, metricsRegistry metrics.Registry) http.Handler {
@@ -19,6 +20,7 @@ func New(dataAPI api.DataAPI, authAPI api.AuthAPI, twilioCli *twilio.Client, fro
 		www.TemplateResponse(w, http.StatusOK, www.IndexTemplate, &www.BaseTemplateContext{Title: "Spruce"})
 	})
 	router.Handle("/login", www.NewLoginHandler(authAPI))
-	passreset.RouteResetPassword(router, dataAPI, authAPI, twilioCli, fromNumber, emailService, fromEmail, webSubdomain, metricsRegistry.Scope("reset_password"))
+	passreset.SetupRoutes(router, dataAPI, authAPI, twilioCli, fromNumber, emailService, fromEmail, webSubdomain, metricsRegistry.Scope("reset-password"))
+	dronboard.SetupRoutes(router, dataAPI, authAPI, metricsRegistry.Scope("doctor-sign-up"))
 	return router
 }

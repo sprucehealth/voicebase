@@ -627,7 +627,6 @@ func (c *Handler) startPhotoSubmissionForPatient(questionId, patientVisitId int6
 }
 
 func prepareSurescriptsPatients() []*common.Patient {
-
 	patients := make([]*common.Patient, 8)
 
 	patients[0] = &common.Patient{

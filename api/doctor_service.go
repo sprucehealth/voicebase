@@ -27,6 +27,7 @@ func (d *DataService) RegisterDoctor(doctor *common.Doctor) (int64, error) {
 		doctor.MiddleName, doctor.Suffix, doctor.Prefix, doctor.Gender, doctor.Dob.Year, doctor.Dob.Month, doctor.Dob.Day,
 		DOCTOR_REGISTERED, doctor.DoseSpotClinicianId)
 	if err != nil {
+		tx.Rollback()
 		return 0, err
 	}
 

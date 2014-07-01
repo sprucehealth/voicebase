@@ -36,6 +36,8 @@ const (
 	PHONE_HOME                     = "Home"
 	PHONE_WORK                     = "Work"
 	PHONE_CELL                     = "Cell"
+
+	MinimumPasswordLength = 6
 )
 
 var (
