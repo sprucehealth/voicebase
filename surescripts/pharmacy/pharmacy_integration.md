@@ -7,7 +7,7 @@
 * Dosespot provided the pharmacy datadump in a csv file that we load into a postgres database
 
 
-#### Postgres schema 
+#### Steps for setting up the Surescripts Pharmacy Database on a postgres instance
 
 ##### Create the postgres schema based on the csv
 ```postgres
