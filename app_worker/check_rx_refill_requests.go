@@ -2,15 +2,15 @@ package app_worker
 
 import (
 	"fmt"
+	"time"
+
 	"github.com/sprucehealth/backend/api"
 	"github.com/sprucehealth/backend/common"
 	"github.com/sprucehealth/backend/encoding"
 	"github.com/sprucehealth/backend/libs/dispatch"
 	"github.com/sprucehealth/backend/libs/erx"
 	"github.com/sprucehealth/backend/libs/golog"
-	"github.com/sprucehealth/backend/libs/pharmacy"
-	"strconv"
-	"time"
+	"github.com/sprucehealth/backend/pharmacy"
 
 	"github.com/sprucehealth/backend/third_party/github.com/samuel/go-metrics/metrics"
 )
@@ -238,7 +238,7 @@ func linkDoctorToPrescription(DataApi api.DataAPI, prescription *common.Treatmen
 
 func linkPharmacyToPrescription(DataApi api.DataAPI, ERxApi erx.ERxAPI, prescription *common.Treatment) error {
 	// lookup pharmacy associated with prescription and link to it
-	pharmacyDetails, err := DataApi.GetPharmacyBasedOnReferenceIdAndSource(strconv.FormatInt(prescription.ERx.ErxPharmacyId, 10), pharmacy.PHARMACY_SOURCE_SURESCRIPTS)
+	pharmacyDetails, err := DataApi.GetPharmacyBasedOnReferenceIdAndSource(prescription.ERx.ErxPharmacyId, pharmacy.PHARMACY_SOURCE_SURESCRIPTS)
 	if err != nil {
 		golog.Errorf("Unable to make a succesful query to lookup pharmacy returned for refill request from our db: %+v", err)
 		return err

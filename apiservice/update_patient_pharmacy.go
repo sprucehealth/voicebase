@@ -2,10 +2,11 @@ package apiservice
 
 import (
 	"encoding/json"
+	"net/http"
+
 	"github.com/sprucehealth/backend/api"
 	"github.com/sprucehealth/backend/libs/golog"
-	"github.com/sprucehealth/backend/libs/pharmacy"
-	"net/http"
+	"github.com/sprucehealth/backend/pharmacy"
 )
 
 type UpdatePatientPharmacyHandler struct {
@@ -35,7 +36,7 @@ func (u *UpdatePatientPharmacyHandler) updatePatientPharmacy(w http.ResponseWrit
 		return
 	}
 
-	pharmacyDetails, err := u.PharmacySearchService.GetPharmacyBasedOnId(pharmacy.SourceId)
+	pharmacyDetails, err := u.PharmacySearchService.GetPharmacyFromId(pharmacy.SourceId)
 	pharmacyDetails.Source = pharmacy.Source
 	if err != nil {
 		golog.Warningf("Unable to get the pharmacy details when it would've been nice to be able to do so: " + err.Error())

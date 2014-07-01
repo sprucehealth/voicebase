@@ -1,11 +1,12 @@
 package patient_file
 
 import (
+	"net/http"
+
 	"github.com/sprucehealth/backend/api"
 	"github.com/sprucehealth/backend/apiservice"
 	"github.com/sprucehealth/backend/encoding"
-	"github.com/sprucehealth/backend/libs/pharmacy"
-	"net/http"
+	"github.com/sprucehealth/backend/pharmacy"
 )
 
 type doctorUpdatePatientPharmacyHandler struct {

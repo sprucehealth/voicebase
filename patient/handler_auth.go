@@ -65,16 +65,14 @@ import (
 	"github.com/sprucehealth/backend/common"
 	"github.com/sprucehealth/backend/libs/dispatch"
 	"github.com/sprucehealth/backend/libs/golog"
-	"github.com/sprucehealth/backend/libs/pharmacy"
 
 	"github.com/sprucehealth/backend/third_party/github.com/SpruceHealth/schema"
 )
 
 type AuthenticationHandler struct {
-	authApi               api.AuthAPI
-	pharmacySearchService pharmacy.PharmacySearchAPI
-	dataApi               api.DataAPI
-	staticContentBaseUrl  string
+	authApi              api.AuthAPI
+	dataApi              api.DataAPI
+	staticContentBaseUrl string
 }
 
 type AuthenticationResponse struct {
@@ -82,12 +80,11 @@ type AuthenticationResponse struct {
 	Patient *common.Patient `json:"patient,omitempty"`
 }
 
-func NewAuthenticationHandler(dataApi api.DataAPI, authApi api.AuthAPI, pharmacySearchService pharmacy.PharmacySearchAPI, staticContentBaseUrl string) *AuthenticationHandler {
+func NewAuthenticationHandler(dataApi api.DataAPI, authApi api.AuthAPI, staticContentBaseUrl string) *AuthenticationHandler {
 	return &AuthenticationHandler{
-		authApi:               authApi,
-		pharmacySearchService: pharmacySearchService,
-		dataApi:               dataApi,
-		staticContentBaseUrl:  staticContentBaseUrl,
+		authApi:              authApi,
+		dataApi:              dataApi,
+		staticContentBaseUrl: staticContentBaseUrl,
 	}
 }
 

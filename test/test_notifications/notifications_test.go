@@ -1,6 +1,13 @@
 package test_notifications
 
 import (
+	"net/http"
+	"net/http/httptest"
+	"net/url"
+	"strconv"
+	"strings"
+	"testing"
+
 	"github.com/sprucehealth/backend/api"
 	"github.com/sprucehealth/backend/apiservice"
 	"github.com/sprucehealth/backend/common"
@@ -9,12 +16,6 @@ import (
 	"github.com/sprucehealth/backend/notify"
 	patientApi "github.com/sprucehealth/backend/patient"
 	"github.com/sprucehealth/backend/test/test_integration"
-	"net/http"
-	"net/http/httptest"
-	"net/url"
-	"strconv"
-	"strings"
-	"testing"
 )
 
 // Test registering device token for first time
@@ -193,7 +194,7 @@ func TestRegisteringToken_DeleteOnLogout(t *testing.T) {
 	SetDeviceTokenForAccountId(accountId, "123456789", &notificationConfigs, mockSNSClient, testData.DataApi, t)
 
 	// log the user out
-	authHandler := patientApi.NewAuthenticationHandler(testData.DataApi, testData.AuthApi, nil, "")
+	authHandler := patientApi.NewAuthenticationHandler(testData.DataApi, testData.AuthApi, "")
 	authServer := httptest.NewServer(authHandler)
 	request, err := http.NewRequest("POST", authServer.URL+"/v1/logout", nil)
 	if err != nil {

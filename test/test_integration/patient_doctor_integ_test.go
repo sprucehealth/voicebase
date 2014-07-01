@@ -3,6 +3,12 @@ package test_integration
 import (
 	"bytes"
 	"encoding/json"
+	"io/ioutil"
+	"net/http"
+	"net/http/httptest"
+	"strconv"
+	"testing"
+
 	"github.com/sprucehealth/backend/api"
 	"github.com/sprucehealth/backend/app_worker"
 	"github.com/sprucehealth/backend/common"
@@ -10,13 +16,8 @@ import (
 	"github.com/sprucehealth/backend/encoding"
 	"github.com/sprucehealth/backend/libs/aws/sqs"
 	"github.com/sprucehealth/backend/libs/erx"
-	"github.com/sprucehealth/backend/libs/pharmacy"
+	"github.com/sprucehealth/backend/pharmacy"
 	"github.com/sprucehealth/backend/treatment_plan"
-	"io/ioutil"
-	"net/http"
-	"net/http/httptest"
-	"strconv"
-	"testing"
 
 	"github.com/sprucehealth/backend/third_party/github.com/samuel/go-metrics/metrics"
 )
@@ -38,7 +39,7 @@ func TestPatientVisitReview(t *testing.T) {
 	}
 
 	pharmacySelection := &pharmacy.PharmacyData{
-		SourceId:     "12345",
+		SourceId:     12345,
 		Source:       pharmacy.PHARMACY_SOURCE_SURESCRIPTS,
 		AddressLine1: "12345 Marin Street",
 		City:         "San Francisco",

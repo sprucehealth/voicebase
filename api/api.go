@@ -7,7 +7,7 @@ import (
 	"time"
 
 	"github.com/sprucehealth/backend/info_intake"
-	"github.com/sprucehealth/backend/libs/pharmacy"
+	"github.com/sprucehealth/backend/pharmacy"
 
 	"github.com/sprucehealth/backend/common"
 )
@@ -71,7 +71,7 @@ type PatientAPI interface {
 	GetPatientFromTreatmentPlanId(treatmentPlanId int64) (patient *common.Patient, err error)
 	GetPatientsForIds(patientIds []int64) ([]*common.Patient, error)
 	GetPharmacySelectionForPatients(patientIds []int64) ([]*pharmacy.PharmacyData, error)
-	GetPharmacyBasedOnReferenceIdAndSource(pharmacyid, pharmacySource string) (*pharmacy.PharmacyData, error)
+	GetPharmacyBasedOnReferenceIdAndSource(pharmacyid int64, pharmacySource string) (*pharmacy.PharmacyData, error)
 	GetPharmacyFromId(pharmacyLocalId int64) (*pharmacy.PharmacyData, error)
 	AddPharmacy(pharmacyDetails *pharmacy.PharmacyData) error
 	UpdatePatientWithPaymentCustomerId(patientId int64, paymentCustomerId string) error

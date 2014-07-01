@@ -2,18 +2,19 @@ package apiservice
 
 import (
 	"encoding/json"
+	"net/http"
+	"sort"
+	"strconv"
+	"strings"
+
 	"github.com/sprucehealth/backend/api"
 	"github.com/sprucehealth/backend/common"
 	"github.com/sprucehealth/backend/encoding"
 	"github.com/sprucehealth/backend/libs/dispatch"
 	"github.com/sprucehealth/backend/libs/erx"
 	"github.com/sprucehealth/backend/libs/golog"
-	"github.com/sprucehealth/backend/libs/pharmacy"
+	"github.com/sprucehealth/backend/pharmacy"
 	"github.com/sprucehealth/backend/surescripts"
-	"net/http"
-	"sort"
-	"strconv"
-	"strings"
 
 	"github.com/sprucehealth/backend/third_party/github.com/SpruceHealth/schema"
 )

@@ -40,6 +40,10 @@ import (
 	"github.com/sprucehealth/backend/photos"
 	"github.com/sprucehealth/backend/reslib"
 	"github.com/sprucehealth/backend/support"
+	"github.com/sprucehealth/backend/surescripts/pharmacy"
+	"github.com/sprucehealth/backend/treatment_plan"
+	"github.com/sprucehealth/backend/www/router"
+
 	"github.com/sprucehealth/backend/third_party/github.com/gorilla/mux"
 	"github.com/sprucehealth/backend/third_party/github.com/samuel/go-metrics/metrics"
 	"github.com/sprucehealth/backend/treatment_plan"
@@ -194,6 +198,11 @@ func buildRESTAPI(conf *Config, dataApi api.DataAPI, authAPI api.AuthAPI, stores
 
 	emailService := email.NewService(conf.Email, metricsRegistry.Scope("email"))
 
+	surescriptsPharmacySearch, err := pharmacy.NewSurescriptsPharmacySearch(conf.PharmacyDB)
+	if err != nil {
+		log.Fatalf("Unable to initialize pharmacy seatrch: %s", err)
+	}
+
 	var erxStatusQueue *common.SQSQueue
 	if conf.ERxQueue != "" {
 		var err error
@@ -233,14 +242,14 @@ func buildRESTAPI(conf *Config, dataApi api.DataAPI, authAPI api.AuthAPI, stores
 	cloudStorageApi := api.NewCloudStorageService(awsAuth)
 	checkElligibilityHandler := &apiservice.CheckCareProvidingElligibilityHandler{DataApi: dataApi, AddressValidationApi: smartyStreetsService, StaticContentUrl: conf.StaticContentBaseUrl}
 	updatePatientBillingAddress := &apiservice.UpdatePatientAddressHandler{DataApi: dataApi, AddressType: apiservice.BILLING_ADDRESS_TYPE}
-	updatePatientPharmacyHandler := &apiservice.UpdatePatientPharmacyHandler{DataApi: dataApi, PharmacySearchService: pharmacy.GooglePlacesPharmacySearchService(0)}
+	updatePatientPharmacyHandler := &apiservice.UpdatePatientPharmacyHandler{DataApi: dataApi, PharmacySearchService: surescriptsPharmacySearch}
 	authenticateDoctorHandler := &apiservice.DoctorAuthenticationHandler{DataApi: dataApi, AuthApi: authAPI}
 	autocompleteHandler := &apiservice.AutocompleteHandler{DataApi: dataApi, ERxApi: doseSpotService, Role: api.PATIENT_ROLE}
 	doctorTreatmentSuggestionHandler := &apiservice.AutocompleteHandler{DataApi: dataApi, ERxApi: doseSpotService, Role: api.DOCTOR_ROLE}
 	medicationStrengthSearchHandler := &apiservice.MedicationStrengthSearchHandler{DataApi: dataApi, ERxApi: doseSpotService}
 	newTreatmentHandler := &apiservice.NewTreatmentHandler{DataApi: dataApi, ERxApi: doseSpotService}
 	medicationDispenseUnitHandler := &apiservice.MedicationDispenseUnitsHandler{DataApi: dataApi}
-	pharmacySearchHandler := &apiservice.PharmacyTextSearchHandler{PharmacySearchService: pharmacy.GooglePlacesPharmacySearchService(0), DataApi: dataApi, MapsService: mapsService}
+	pharmacySearchHandler := &apiservice.PharmacyTextSearchHandler{PharmacySearchService: surescriptsPharmacySearch, DataApi: dataApi, MapsService: mapsService}
 	pingHandler := apiservice.PingHandler(0)
 
 	staticContentHandler := &apiservice.StaticContentHandler{
@@ -295,8 +304,8 @@ func buildRESTAPI(conf *Config, dataApi api.DataAPI, authAPI api.AuthAPI, stores
 	mux.Handle("/v1/reset_password", passreset.NewForgotPasswordHandler(dataApi, authAPI, emailService, conf.Support.CustomerSupportEmail, conf.WebSubdomain))
 	mux.Handle("/v1/credit_card", patientCardsHandler)
 	mux.Handle("/v1/credit_card/default", patientCardsHandler)
-	mux.Handle("/v1/authenticate", patient.NewAuthenticationHandler(dataApi, authAPI, pharmacy.GooglePlacesPharmacySearchService(0), conf.StaticContentBaseUrl))
-	mux.Handle("/v1/logout", patient.NewAuthenticationHandler(dataApi, authAPI, pharmacy.GooglePlacesPharmacySearchService(0), conf.StaticContentBaseUrl))
+	mux.Handle("/v1/authenticate", patient.NewAuthenticationHandler(dataApi, authAPI, conf.StaticContentBaseUrl))
+	mux.Handle("/v1/logout", patient.NewAuthenticationHandler(dataApi, authAPI, conf.StaticContentBaseUrl))
 
 	// Patient: Patient Case Related APIs
 	mux.Handle("/v1/check_eligibility", checkElligibilityHandler)

@@ -1,10 +1,11 @@
 package common
 
 import (
-	"github.com/sprucehealth/backend/encoding"
-	"github.com/sprucehealth/backend/libs/pharmacy"
 	"reflect"
 	"time"
+
+	"github.com/sprucehealth/backend/encoding"
+	"github.com/sprucehealth/backend/pharmacy"
 )
 
 type Treatment struct {

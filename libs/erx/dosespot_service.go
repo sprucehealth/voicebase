@@ -11,8 +11,7 @@ import (
 	"github.com/sprucehealth/backend/common"
 	"github.com/sprucehealth/backend/encoding"
 	"github.com/sprucehealth/backend/libs/golog"
-	pharmacySearch "github.com/sprucehealth/backend/libs/pharmacy"
-
+	pharmacySearch "github.com/sprucehealth/backend/pharmacy"
 	"github.com/sprucehealth/backend/third_party/github.com/samuel/go-metrics/metrics"
 )
 
@@ -351,12 +350,7 @@ func (d *DoseSpotService) UpdatePatientInformation(clinicianId int64, currentPat
 	patientPreferredPharmacy := &patientPharmacySelection{}
 	patientPreferredPharmacy.IsPrimary = true
 
-	pharmacyId, err := strconv.ParseInt(currentPatient.Pharmacy.SourceId, 0, 64)
-	if err != nil {
-		return fmt.Errorf("Unable to parse the pharmacy id: %s", err.Error())
-	}
-
-	patientPreferredPharmacy.PharmacyId = pharmacyId
+	patientPreferredPharmacy.PharmacyId = currentPatient.Pharmacy.SourceId
 
 	startPrescribingRequest := &patientStartPrescribingRequest{
 		AddFavoritePharmacies: []*patientPharmacySelection{patientPreferredPharmacy},
@@ -387,21 +381,16 @@ func (d *DoseSpotService) UpdatePatientInformation(clinicianId int64, currentPat
 	return nil
 }
 
-func (d *DoseSpotService) StartPrescribingPatient(clinicianId int64, currentPatient *common.Patient, treatments []*common.Treatment, pharmacySourceId string) error {
+func (d *DoseSpotService) StartPrescribingPatient(clinicianId int64, currentPatient *common.Patient, treatments []*common.Treatment, pharmacySourceId int64) error {
 
 	newPatient, err := populatePatientForDoseSpot(currentPatient)
 	if err != nil {
 		return err
 	}
 
-	pharmacyId, err := strconv.ParseInt(pharmacySourceId, 0, 64)
-	if err != nil {
-		return fmt.Errorf("Unable to parse the pharmacy id: %s", err.Error())
-	}
-
 	patientPreferredPharmacy := &patientPharmacySelection{}
 	patientPreferredPharmacy.IsPrimary = true
-	patientPreferredPharmacy.PharmacyId = pharmacyId
+	patientPreferredPharmacy.PharmacyId = pharmacySourceId
 
 	prescriptions := make([]*prescription, 0)
 
@@ -421,7 +410,7 @@ func (d *DoseSpotService) StartPrescribingPatient(clinicianId int64, currentPati
 			Instructions:      treatment.PatientInstructions,
 			NoSubstitutions:   !treatment.SubstitutionsAllowed,
 			PharmacyNotes:     treatment.PharmacyNotes,
-			PharmacyId:        pharmacyId,
+			PharmacyId:        pharmacySourceId,
 		}
 
 		if treatment.ERx != nil && treatment.ERx.ErxReferenceNumber != "" {
@@ -565,7 +554,7 @@ func (d *DoseSpotService) SearchForPharmacies(clinicianId int64, city, state, zi
 	pharmacies := make([]*pharmacySearch.PharmacyData, 0)
 	for _, pharmacyResultItem := range searchResponse.Pharmacies {
 		pharmacyData := &pharmacySearch.PharmacyData{
-			SourceId:      strconv.FormatInt(pharmacyResultItem.PharmacyId, 10),
+			SourceId:      pharmacyResultItem.PharmacyId,
 			AddressLine1:  pharmacyResultItem.Address1,
 			AddressLine2:  pharmacyResultItem.Address2,
 			City:          pharmacyResultItem.City,
@@ -800,7 +789,7 @@ func (d *DoseSpotService) GetPatientDetails(erxPatientId int64) (*common.Patient
 	if len(response.PatientUpdates[0].Pharmacies) > 0 {
 		newPatient.Pharmacy = &pharmacySearch.PharmacyData{
 			Source:       pharmacySearch.PHARMACY_SOURCE_SURESCRIPTS,
-			SourceId:     strconv.FormatInt(response.PatientUpdates[0].Pharmacies[0].PharmacyId, 10),
+			SourceId:     response.PatientUpdates[0].Pharmacies[0].PharmacyId,
 			Name:         response.PatientUpdates[0].Pharmacies[0].StoreName,
 			AddressLine1: response.PatientUpdates[0].Pharmacies[0].Address1,
 			AddressLine2: response.PatientUpdates[0].Pharmacies[0].Address2,
@@ -867,7 +856,7 @@ func (d *DoseSpotService) GetPharmacyDetails(pharmacyId int64) (*pharmacySearch.
 	}
 
 	return &pharmacySearch.PharmacyData{
-		SourceId:     strconv.FormatInt(response.PharmacyDetails.PharmacyId, 10),
+		SourceId:     response.PharmacyDetails.PharmacyId,
 		AddressLine1: response.PharmacyDetails.Address1,
 		AddressLine2: response.PharmacyDetails.Address2,
 		City:         response.PharmacyDetails.City,

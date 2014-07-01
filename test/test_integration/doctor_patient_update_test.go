@@ -11,8 +11,8 @@ import (
 	"github.com/sprucehealth/backend/common"
 	"github.com/sprucehealth/backend/encoding"
 	"github.com/sprucehealth/backend/libs/erx"
-	"github.com/sprucehealth/backend/libs/pharmacy"
 	"github.com/sprucehealth/backend/patient_file"
+	"github.com/sprucehealth/backend/pharmacy"
 )
 
 type requestData struct {
@@ -36,7 +36,7 @@ func TestDoctorUpdateToPatientAddress(t *testing.T) {
 
 	patientPharmacy := &pharmacy.PharmacyData{
 		Source:       pharmacy.PHARMACY_SOURCE_SURESCRIPTS,
-		SourceId:     "1234",
+		SourceId:     1234,
 		AddressLine1: "123456 main street",
 		City:         "San Francisco",
 		State:        "CA",
@@ -208,7 +208,7 @@ func TestDoctorUpdateToPhoneNumbers(t *testing.T) {
 
 	patientPharmacy := &pharmacy.PharmacyData{
 		Source:       pharmacy.PHARMACY_SOURCE_SURESCRIPTS,
-		SourceId:     "1234",
+		SourceId:     1234,
 		AddressLine1: "123456 main street",
 		City:         "San Francisco",
 		State:        "CA",
@@ -319,7 +319,7 @@ func TestDoctorUpdateToTopLevelInformation(t *testing.T) {
 
 	patientPharmacy := &pharmacy.PharmacyData{
 		Source:       pharmacy.PHARMACY_SOURCE_SURESCRIPTS,
-		SourceId:     "1234",
+		SourceId:     1234,
 		AddressLine1: "123456 main street",
 		City:         "San Francisco",
 		State:        "CA",
@@ -407,7 +407,7 @@ func TestDoctorUpdatePatientInformationForbidden(t *testing.T) {
 	signedupPatientResponse := SignupRandomTestPatient(t, testData)
 	patientPharmacy := &pharmacy.PharmacyData{
 		Source:       pharmacy.PHARMACY_SOURCE_SURESCRIPTS,
-		SourceId:     "1234",
+		SourceId:     1234,
 		AddressLine1: "123456 main street",
 		City:         "San Francisco",
 		State:        "CA",
@@ -418,6 +418,15 @@ func TestDoctorUpdatePatientInformationForbidden(t *testing.T) {
 	if err != nil {
 		t.Fatal("Unable to add patient's preferred pharmacy")
 	}
+
+	signedupPatientResponse.Patient.PatientAddress = &common.Address{
+		AddressLine1: "1234 Main Street",
+		AddressLine2: "Apt 12345",
+		City:         "San Francisco",
+		State:        "California",
+		ZipCode:      "94115",
+	}
+
 	stubAddressValidationService := address.StubAddressValidationService{
 		CityStateToReturn: address.CityState{
 			City:              "San Francisco",
@@ -478,7 +487,7 @@ func TestDoctorPatientPharmacyUpdateHandler(t *testing.T) {
 
 	patientPharmacy := &pharmacy.PharmacyData{
 		Source:       pharmacy.PHARMACY_SOURCE_SURESCRIPTS,
-		SourceId:     "1234",
+		SourceId:     1234,
 		AddressLine1: "123456 main street",
 		City:         "San Francisco",
 		State:        "CA",
@@ -492,7 +501,7 @@ func TestDoctorPatientPharmacyUpdateHandler(t *testing.T) {
 
 	updatedPatientPharmacy := &pharmacy.PharmacyData{
 		Source:       pharmacy.PHARMACY_SOURCE_SURESCRIPTS,
-		SourceId:     "12345",
+		SourceId:     12345,
 		AddressLine1: "1231515 Updated main street",
 		AddressLine2: "124151515 apt",
 		City:         "San Francisco",
@@ -547,7 +556,7 @@ func TestDoctorPharmacyUpdateForbidden(t *testing.T) {
 	signedupPatientResponse := SignupRandomTestPatient(t, testData)
 	patientPharmacy := &pharmacy.PharmacyData{
 		Source:       pharmacy.PHARMACY_SOURCE_SURESCRIPTS,
-		SourceId:     "1234",
+		SourceId:     1234,
 		AddressLine1: "123456 main street",
 		City:         "San Francisco",
 		State:        "CA",

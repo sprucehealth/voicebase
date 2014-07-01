@@ -6,6 +6,7 @@ import (
 
 	"github.com/sprucehealth/backend/common/config"
 	"github.com/sprucehealth/backend/email"
+	"github.com/sprucehealth/backend/surescripts/pharmacy"
 
 	"github.com/sprucehealth/backend/third_party/github.com/subosito/twilio"
 )
@@ -97,6 +98,7 @@ type Config struct {
 	Analytics             *AnalyticsConfig            `group:"Analytics" toml:"analytics"`
 	Support               *SupportConfig              `group:"support" toml:"support"`
 	Email                 *email.Config               `group:"email" toml:"email"`
+	PharmacyDB            *pharmacy.Config            `group:"pharmacy_database" toml:"pharmacy_database"`
 	Storage               map[string]*StorageConfig   `group:"storage" toml:"storage"`
 	// Secret keys used for generating signatures
 	SecretSignatureKeys []string

@@ -1,14 +1,14 @@
 package patient_file
 
 import (
+	"strconv"
+
 	"github.com/sprucehealth/backend/address"
 	"github.com/sprucehealth/backend/api"
 	"github.com/sprucehealth/backend/apiservice"
 	"github.com/sprucehealth/backend/common"
 	"github.com/sprucehealth/backend/libs/erx"
-	"github.com/sprucehealth/backend/libs/pharmacy"
 	"github.com/sprucehealth/backend/surescripts"
-	"strconv"
 
 	"encoding/json"
 	"net/http"
@@ -99,18 +99,6 @@ func (d *doctorPatientHandler) updatePatientInformation(w http.ResponseWriter, r
 		return
 	}
 
-	// TODO : Remove this once we have patient information intake
-	// as a requirement
-	if requestData.Patient.PatientAddress == nil {
-		requestData.Patient.PatientAddress = &common.Address{
-			AddressLine1: "1234 Main Street",
-			AddressLine2: "Apt 12345",
-			City:         "San Francisco",
-			State:        "California",
-			ZipCode:      "94115",
-		}
-	}
-
 	err := surescripts.ValidatePatientInformation(requestData.Patient, d.AddressValidationApi, d.DataApi)
 	if err != nil {
 		apiservice.WriteDeveloperError(w, http.StatusBadRequest, err.Error())
@@ -138,18 +126,6 @@ func (d *doctorPatientHandler) updatePatientInformation(w http.ResponseWriter, r
 	}
 
 	requestData.Patient.ERxPatientId = existingPatientInfo.ERxPatientId
-
-	// TODO: Get patient pharmacy from the database once we start using surecsripts as our backing solution
-	if existingPatientInfo.Pharmacy == nil || existingPatientInfo.Pharmacy.Source != pharmacy.PHARMACY_SOURCE_SURESCRIPTS {
-		existingPatientInfo.Pharmacy = &pharmacy.PharmacyData{
-			SourceId:     "47731",
-			Source:       pharmacy.PHARMACY_SOURCE_SURESCRIPTS,
-			AddressLine1: "1234 Main Street",
-			City:         "San Francisco",
-			State:        "CA",
-			Postal:       "94103",
-		}
-	}
 	requestData.Patient.Pharmacy = existingPatientInfo.Pharmacy
 
 	if err := d.ErxApi.UpdatePatientInformation(currentDoctor.DoseSpotClinicianId, requestData.Patient); err != nil {

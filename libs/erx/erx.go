@@ -1,9 +1,10 @@
 package erx
 
 import (
-	"github.com/sprucehealth/backend/common"
-	pharmacySearch "github.com/sprucehealth/backend/libs/pharmacy"
 	"time"
+
+	"github.com/sprucehealth/backend/common"
+	pharmacySearch "github.com/sprucehealth/backend/pharmacy"
 )
 
 const (
@@ -20,7 +21,7 @@ type ERxAPI interface {
 	SearchForMedicationStrength(clinicianId int64, medicationName string) ([]string, error)
 	SelectMedication(clinicianId int64, medicationName, medicationStrength string) (medication *common.Treatment, err error)
 	UpdatePatientInformation(clinicianId int64, patient *common.Patient) error
-	StartPrescribingPatient(clinicianId int64, patient *common.Patient, treatments []*common.Treatment, pharmacySourceId string) error
+	StartPrescribingPatient(clinicianId int64, patient *common.Patient, treatments []*common.Treatment, pharmacySourceId int64) error
 	SendMultiplePrescriptions(clinicianId int64, patient *common.Patient, treatments []*common.Treatment) ([]int64, error)
 	SearchForPharmacies(clinicianId int64, city, state, zipcode, name string, pharmacyTypes []string) ([]*pharmacySearch.PharmacyData, error)
 	GetPrescriptionStatus(clinicianId, prescriptionId int64) ([]*PrescriptionLog, error)

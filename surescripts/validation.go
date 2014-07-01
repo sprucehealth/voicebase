@@ -71,6 +71,10 @@ func ValidatePatientInformation(patient *common.Patient, addressValidationApi ad
 		return errors.New("Atleast one phone number is required")
 	}
 
+	if patient.PatientAddress == nil {
+		return errors.New("Patient address is required")
+	}
+
 	if patient.PatientAddress.AddressLine1 == "" {
 		return errors.New("AddressLine1 of address is required")
 	}

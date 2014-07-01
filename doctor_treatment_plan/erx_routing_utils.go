@@ -6,11 +6,11 @@ import (
 	"github.com/sprucehealth/backend/common"
 	"github.com/sprucehealth/backend/libs/erx"
 	"github.com/sprucehealth/backend/libs/golog"
-	"github.com/sprucehealth/backend/libs/pharmacy"
+	"github.com/sprucehealth/backend/pharmacy"
 )
 
 const (
-	successful_erx_routing_pharmacy_id = "47731"
+	successful_erx_routing_pharmacy_id = 47731
 )
 
 func routeRxInTreatmentPlanToPharmacy(treatmentPlanId int64, patient *common.Patient, doctor *common.Doctor,

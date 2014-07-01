@@ -9,7 +9,7 @@ import (
 
 	"github.com/sprucehealth/backend/common"
 	"github.com/sprucehealth/backend/encoding"
-	pharmacyService "github.com/sprucehealth/backend/libs/pharmacy"
+	pharmacyService "github.com/sprucehealth/backend/pharmacy"
 
 	"github.com/sprucehealth/backend/third_party/github.com/go-sql-driver/mysql"
 )

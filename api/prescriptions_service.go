@@ -3,12 +3,13 @@ package api
 import (
 	"database/sql"
 	"fmt"
+	"strings"
+	"time"
+
 	"github.com/sprucehealth/backend/common"
 	"github.com/sprucehealth/backend/encoding"
 	"github.com/sprucehealth/backend/libs/erx"
-	"github.com/sprucehealth/backend/libs/pharmacy"
-	"strings"
-	"time"
+	"github.com/sprucehealth/backend/pharmacy"
 
 	"github.com/sprucehealth/backend/third_party/github.com/go-sql-driver/mysql"
 )

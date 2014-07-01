@@ -10,9 +10,9 @@ import (
 	"github.com/sprucehealth/backend/common"
 	"github.com/sprucehealth/backend/encoding"
 	"github.com/sprucehealth/backend/libs/golog"
-	"github.com/sprucehealth/backend/libs/pharmacy"
 	"github.com/sprucehealth/backend/messages"
 	"github.com/sprucehealth/backend/patient_visit"
+	"github.com/sprucehealth/backend/pharmacy"
 )
 
 type questionTag int
@@ -645,7 +645,7 @@ func prepareSurescriptsPatients() []*common.Patient {
 		},
 		},
 		Pharmacy: &pharmacy.PharmacyData{
-			SourceId:     "47731",
+			SourceId:     47731,
 			AddressLine1: "116 New Montgomery St",
 			Name:         "CA pharmacy store 10.6",
 			City:         "San Francisco",
@@ -684,7 +684,7 @@ func prepareSurescriptsPatients() []*common.Patient {
 			},
 		},
 		Pharmacy: &pharmacy.PharmacyData{
-			SourceId:     "47731",
+			SourceId:     47731,
 			AddressLine1: "116 New Montgomery St",
 			Name:         "CA pharmacy store 10.6",
 			City:         "San Francisco",
@@ -717,7 +717,7 @@ func prepareSurescriptsPatients() []*common.Patient {
 			},
 		},
 		Pharmacy: &pharmacy.PharmacyData{
-			SourceId:     "47731",
+			SourceId:     47731,
 			AddressLine1: "116 New Montgomery St",
 			Name:         "CA pharmacy store 10.6",
 			City:         "San Francisco",
@@ -751,7 +751,7 @@ func prepareSurescriptsPatients() []*common.Patient {
 			},
 		},
 		Pharmacy: &pharmacy.PharmacyData{
-			SourceId:     "47731",
+			SourceId:     47731,
 			AddressLine1: "116 New Montgomery St",
 			Name:         "CA pharmacy store 10.6",
 			City:         "San Francisco",
@@ -791,7 +791,7 @@ func prepareSurescriptsPatients() []*common.Patient {
 			},
 		},
 		Pharmacy: &pharmacy.PharmacyData{
-			SourceId:     "47731",
+			SourceId:     47731,
 			AddressLine1: "116 New Montgomery St",
 			Name:         "CA pharmacy store 10.6",
 			City:         "San Francisco",
@@ -830,7 +830,7 @@ func prepareSurescriptsPatients() []*common.Patient {
 			},
 		},
 		Pharmacy: &pharmacy.PharmacyData{
-			SourceId:     "47731",
+			SourceId:     47731,
 			AddressLine1: "116 New Montgomery St",
 			Name:         "CA pharmacy store 10.6",
 			City:         "San Francisco",
@@ -868,7 +868,7 @@ func prepareSurescriptsPatients() []*common.Patient {
 			},
 		},
 		Pharmacy: &pharmacy.PharmacyData{
-			SourceId:     "47731",
+			SourceId:     47731,
 			AddressLine1: "116 New Montgomery St",
 			Name:         "CA pharmacy store 10.6",
 			City:         "San Francisco",
@@ -921,7 +921,7 @@ func prepareSurescriptsPatients() []*common.Patient {
 			},
 		},
 		Pharmacy: &pharmacy.PharmacyData{
-			SourceId:     "47731",
+			SourceId:     47731,
 			AddressLine1: "116 New Montgomery St",
 			Name:         "CA pharmacy store 10.6",
 			City:         "San Francisco",
@@ -959,7 +959,7 @@ func prepareDemoPatients(n int64) []*common.Patient {
 			},
 			},
 			Pharmacy: &pharmacy.PharmacyData{
-				SourceId:     "47731",
+				SourceId:     47731,
 				AddressLine1: "116 New Montgomery St",
 				Name:         "CA pharmacy store 10.6",
 				City:         "San Francisco",

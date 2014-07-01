@@ -21,7 +21,8 @@ import (
 	"github.com/sprucehealth/backend/encoding"
 	"github.com/sprucehealth/backend/libs/aws/sqs"
 	"github.com/sprucehealth/backend/libs/erx"
-	"github.com/sprucehealth/backend/libs/pharmacy"
+	"github.com/sprucehealth/backend/pharmacy"
+
 	"github.com/sprucehealth/backend/third_party/github.com/samuel/go-metrics/metrics"
 )
 
@@ -49,7 +50,7 @@ func TestNewRefillRequestForExistingPatientAndExistingTreatment(t *testing.T) {
 	// add pharmacy to database so that it can be linked to treatment that is added
 	//  Get StubErx to return pharmacy in the GetPharmacyDetails call
 	pharmacyToReturn := &pharmacy.PharmacyData{
-		SourceId:     "1234",
+		SourceId:     1234,
 		Source:       pharmacy.PHARMACY_SOURCE_SURESCRIPTS,
 		Name:         "Walgreens",
 		AddressLine1: "116 New Montgomery",
@@ -282,7 +283,7 @@ func TestApproveRefillRequestAndSuccessfulSendToPharmacy(t *testing.T) {
 	// add pharmacy to database so that it can be linked to treatment that is added
 	//  Get StubErx to return pharmacy in the GetPharmacyDetails call
 	pharmacyToReturn := &pharmacy.PharmacyData{
-		SourceId:     "1234",
+		SourceId:     1234,
 		Source:       pharmacy.PHARMACY_SOURCE_SURESCRIPTS,
 		Name:         "Walgreens",
 		AddressLine1: "116 New Montgomery",
@@ -522,7 +523,7 @@ func TestApproveRefillRequestAndErrorSendingToPharmacy(t *testing.T) {
 	// add pharmacy to database so that it can be linked to treatment that is added
 	//  Get StubErx to return pharmacy in the GetPharmacyDetails call
 	pharmacyToReturn := &pharmacy.PharmacyData{
-		SourceId:     "1234",
+		SourceId:     1234,
 		Source:       pharmacy.PHARMACY_SOURCE_SURESCRIPTS,
 		Name:         "Walgreens",
 		AddressLine1: "116 New Montgomery",
@@ -824,7 +825,7 @@ func TestDenyRefillRequestAndSuccessfulDelete(t *testing.T) {
 	// add pharmacy to database so that it can be linked to treatment that is added
 	//  Get StubErx to return pharmacy in the GetPharmacyDetails call
 	pharmacyToReturn := &pharmacy.PharmacyData{
-		SourceId:     "1234",
+		SourceId:     1234,
 		Source:       pharmacy.PHARMACY_SOURCE_SURESCRIPTS,
 		Name:         "Walgreens",
 		AddressLine1: "116 New Montgomery",
@@ -1066,7 +1067,7 @@ func TestDenyRefillRequestWithDNTFWithoutTreatment(t *testing.T) {
 	// add pharmacy to database so that it can be linked to treatment that is added
 	//  Get StubErx to return pharmacy in the GetPharmacyDetails call
 	pharmacyToReturn := &pharmacy.PharmacyData{
-		SourceId:     "1234",
+		SourceId:     1234,
 		Source:       pharmacy.PHARMACY_SOURCE_SURESCRIPTS,
 		Name:         "Walgreens",
 		AddressLine1: "116 New Montgomery",
@@ -1248,7 +1249,7 @@ func setUpDeniedRefillRequestWithDNTF(t *testing.T, testData *TestData, endErxSt
 	// add pharmacy to database so that it can be linked to treatment that is added
 	//  Get StubErx to return pharmacy in the GetPharmacyDetails call
 	pharmacyToReturn := &pharmacy.PharmacyData{
-		SourceId:     "1234",
+		SourceId:     1234,
 		Source:       pharmacy.PHARMACY_SOURCE_SURESCRIPTS,
 		Name:         "Walgreens",
 		AddressLine1: "116 New Montgomery",
@@ -1683,7 +1684,7 @@ func setUpDeniedRefillRequestWithDNTFForLinkedTreatment(t *testing.T, testData *
 	// add pharmacy to database so that it can be linked to treatment that is added
 	//  Get StubErx to return pharmacy in the GetPharmacyDetails call
 	pharmacyToReturn := &pharmacy.PharmacyData{
-		SourceId:     "1234",
+		SourceId:     1234,
 		Source:       pharmacy.PHARMACY_SOURCE_SURESCRIPTS,
 		Name:         "Walgreens",
 		AddressLine1: "116 New Montgomery",
@@ -2134,7 +2135,7 @@ func TestCheckingStatusOfMultipleRefillRequestsAtOnce(t *testing.T) {
 	// add pharmacy to database so that it can be linked to treatment that is added
 	//  Get StubErx to return pharmacy in the GetPharmacyDetails call
 	pharmacyToReturn := &pharmacy.PharmacyData{
-		SourceId:     "1234",
+		SourceId:     1234,
 		Source:       pharmacy.PHARMACY_SOURCE_SURESCRIPTS,
 		Name:         "Walgreens",
 		AddressLine1: "116 New Montgomery",
@@ -2434,7 +2435,7 @@ func TestRefillRequestComingFromDifferentPharmacyThanDispensedPrescription(t *te
 	// add pharmacy to database so that it can be linked to treatment that is added
 	//  Get StubErx to return pharmacy in the GetPharmacyDetails call
 	pharmacyToReturn := &pharmacy.PharmacyData{
-		SourceId:     "1234",
+		SourceId:     1234,
 		Source:       pharmacy.PHARMACY_SOURCE_SURESCRIPTS,
 		Name:         "Walgreens",
 		AddressLine1: "116 New Montgomery",
@@ -2444,7 +2445,7 @@ func TestRefillRequestComingFromDifferentPharmacyThanDispensedPrescription(t *te
 	}
 
 	anotherPharmacyToAdd := &pharmacy.PharmacyData{
-		SourceId:     "12345678",
+		SourceId:     12345678,
 		Source:       pharmacy.PHARMACY_SOURCE_SURESCRIPTS,
 		Name:         "Walgreens",
 		AddressLine1: "116 New Montgomery",
@@ -2751,7 +2752,7 @@ func TestNewRefillRequestWithUnlinkedTreatmentAndLinkedPatient(t *testing.T) {
 
 	//  Get StubErx to return pharmacy in the GetPharmacyDetails call
 	pharmacyToReturn := &pharmacy.PharmacyData{
-		SourceId:     "1234",
+		SourceId:     1234,
 		Source:       pharmacy.PHARMACY_SOURCE_SURESCRIPTS,
 		Name:         "Walgreens",
 		AddressLine1: "116 New Montgomery",
@@ -2924,7 +2925,7 @@ func TestNewRefillRequestWithUnlinkedTreatmentAndUnlinkedPatient(t *testing.T) {
 
 	//  Get StubErx to return pharmacy in the GetPharmacyDetails call
 	pharmacyToReturn := &pharmacy.PharmacyData{
-		SourceId:     "1234",
+		SourceId:     1234,
 		Source:       pharmacy.PHARMACY_SOURCE_SURESCRIPTS,
 		Name:         "Walgreens",
 		AddressLine1: "116 New Montgomery",
@@ -2969,7 +2970,7 @@ func TestNewRefillRequestWithUnlinkedTreatmentAndUnlinkedPatient(t *testing.T) {
 		t.Fatalf("Expected patient to have a preferred pharmacy instead it has none")
 	}
 
-	if unlinkedPatient.Pharmacy.SourceId != "1234" {
+	if unlinkedPatient.Pharmacy.SourceId != 1234 {
 		t.Fatalf("Expected patients preferred pharmacy to have id %s instead it had id %s", "1234", unlinkedPatient.Pharmacy.SourceId)
 	}
 

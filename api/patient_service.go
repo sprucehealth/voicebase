@@ -10,7 +10,7 @@ import (
 
 	"github.com/sprucehealth/backend/common"
 	"github.com/sprucehealth/backend/encoding"
-	"github.com/sprucehealth/backend/libs/pharmacy"
+	"github.com/sprucehealth/backend/pharmacy"
 )
 
 func (d *DataService) RegisterPatient(patient *common.Patient) error {
@@ -572,7 +572,7 @@ func (d *DataService) GetPharmacySelectionForPatients(patientIds []int64) ([]*ph
 	return pharmacies, rows.Err()
 }
 
-func (d *DataService) GetPharmacyBasedOnReferenceIdAndSource(pharmacyId, pharmacySource string) (*pharmacy.PharmacyData, error) {
+func (d *DataService) GetPharmacyBasedOnReferenceIdAndSource(pharmacyId int64, pharmacySource string) (*pharmacy.PharmacyData, error) {
 	var addressLine1, addressLine2, city, state, country, phone, zipCode, lat, lng, name sql.NullString
 	var id int64
 	err := d.db.QueryRow(`select id, address_line_1, address_line_2, city, state, country, phone, zip_code, name, lat,lng
@@ -613,8 +613,10 @@ func (d *DataService) GetPharmacyBasedOnReferenceIdAndSource(pharmacyId, pharmac
 }
 
 func (d *DataService) GetPharmacyFromId(pharmacyLocalId int64) (*pharmacy.PharmacyData, error) {
+
 	var addressLine1, addressLine2, city, state, country, phone, zipCode, lat, lng, name sql.NullString
-	var source, pharmacyReferenceId string
+	var source string
+	var pharmacyReferenceId int64
 	err := d.db.QueryRow(`select source, pharmacy_id, address_line_1, address_line_2, city, state, country, phone, zip_code, name, lat,lng
 		from pharmacy_selection where id = ?`, pharmacyLocalId).
 		Scan(&source, &pharmacyReferenceId, &addressLine1, &addressLine2, &city, &state, &country, &phone, &zipCode, &name, &lat, &lng)
@@ -710,7 +712,8 @@ func addPharmacy(pharmacyDetails *pharmacy.PharmacyData, tx *sql.Tx) error {
 
 func getPharmacyFromCurrentRow(rows *sql.Rows) (*pharmacy.PharmacyData, error) {
 	var localId, patientId int64
-	var id, sourceType, name, addressLine1, addressLine2, phone, city, state, zipCode, lat, lng sql.NullString
+	var sourceType, name, addressLine1, addressLine2, phone, city, state, zipCode, lat, lng sql.NullString
+	var id sql.NullInt64
 	err := rows.Scan(&localId, &patientId, &id, &sourceType, &name, &addressLine1, &addressLine2, &city, &state, &zipCode, &phone, &lat, &lng)
 	if err != nil {
 		return nil, err
@@ -719,7 +722,7 @@ func getPharmacyFromCurrentRow(rows *sql.Rows) (*pharmacy.PharmacyData, error) {
 	pharmacySelection := &pharmacy.PharmacyData{
 		LocalId:      localId,
 		PatientId:    patientId,
-		SourceId:     id.String,
+		SourceId:     id.Int64,
 		Source:       sourceType.String,
 		AddressLine1: addressLine1.String,
 		AddressLine2: addressLine2.String,
