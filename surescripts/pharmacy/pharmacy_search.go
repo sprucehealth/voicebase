@@ -146,7 +146,7 @@ func trimAndToTitle(str string) string {
 // a sorting on the ncpdpid has to occur which renders the index on the spatial data useless
 func dedupeOnNCPDPID(results []*pharmacy.PharmacyData) []*pharmacy.PharmacyData {
 	dedupedResults := make([]*pharmacy.PharmacyData, 0, len(results))
-	var uniqueNCPDPID map[string]bool
+	uniqueNCPDPID := make(map[string]bool)
 	for _, result := range results {
 		if !uniqueNCPDPID[result.NCPDPID] {
 			uniqueNCPDPID[result.NCPDPID] = true
