@@ -88,16 +88,17 @@ func (p *treatmentPlanHandler) ServeHTTP(w http.ResponseWriter, r *http.Request)
 			return
 		}
 
-		if err = apiservice.ValidateDoctorAccessToPatientFile(doctor.DoctorId.Int64(), patient.PatientId.Int64(), p.dataApi); err != nil {
-			apiservice.WriteError(err, w, r)
-			return
-		}
-
 		treatmentPlan, err = p.dataApi.GetTreatmentPlanForPatient(patient.PatientId.Int64(), requestData.TreatmentPlanId)
 		if err == api.NoRowsError {
 			apiservice.WriteResourceNotFoundError("Treatment plan not found", w, r)
 			return
 		} else if err != nil {
+			apiservice.WriteError(err, w, r)
+			return
+		}
+
+		if err = apiservice.ValidateReadAccessToPatientCase(doctor.DoctorId.Int64(), patient.PatientId.Int64(),
+			treatmentPlan.PatientCaseId.Int64(), p.dataApi); err != nil {
 			apiservice.WriteError(err, w, r)
 			return
 		}
