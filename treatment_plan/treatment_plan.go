@@ -66,6 +66,9 @@ func (p *treatmentPlanHandler) ServeHTTP(w http.ResponseWriter, r *http.Request)
 		} else if err != nil {
 			apiservice.WriteError(err, w, r)
 			return
+		} else if treatmentPlan.Status != api.STATUS_ACTIVE {
+			apiservice.WriteResourceNotFoundError("No active treatment plan found for patient", w, r)
+			return
 		}
 
 		doctor, err = p.dataApi.GetDoctorFromId(treatmentPlan.DoctorId.Int64())
@@ -215,6 +218,7 @@ func treatmentPlanResponse(dataApi api.DataAPI, w http.ResponseWriter, r *http.R
 			}
 		}
 	}
+
 	if treatmentPlan.Advice != nil && len(treatmentPlan.Advice.SelectedAdvicePoints) > 0 {
 		cView := &tpCardView{
 			Views: []tpView{
@@ -241,6 +245,13 @@ func treatmentPlanResponse(dataApi api.DataAPI, w http.ResponseWriter, r *http.R
 			}
 		}
 	}
+
+	instructionViews = append(instructionViews, &tpButtonFooterView{
+		FooterText: fmt.Sprintf("If you have any questions about your treatment plan, send Dr. %s a message.", doctor.LastName),
+		ButtonText: fmt.Sprintf("Message Dr. %s", doctor.LastName),
+		IconURL:    app_url.IconMessage,
+		TapURL:     app_url.MessageAction(),
+	})
 
 	for _, vContainer := range [][]tpView{headerViews, treatmentViews, instructionViews} {
 		for _, v := range vContainer {

@@ -12,7 +12,7 @@ const (
 	subheaderStyle            = "subheader"
 	treatmentViewNamespace    = "treatment"
 	captionRegularItalicStyle = "caption_regular_italic"
-	bulletedStyle             = "bulleted"
+	bulletedStyle             = "buletted"
 	numberedStyle             = "numbered"
 	timeFormatlayout          = "January 2 at 3:04pm"
 )
