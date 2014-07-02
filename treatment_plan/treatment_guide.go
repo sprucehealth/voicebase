@@ -2,12 +2,13 @@ package treatment_plan
 
 import (
 	"fmt"
+	"net/http"
+
 	"github.com/sprucehealth/backend/api"
 	"github.com/sprucehealth/backend/apiservice"
 	"github.com/sprucehealth/backend/app_url"
 	"github.com/sprucehealth/backend/common"
 	"github.com/sprucehealth/backend/libs/erx"
-	"net/http"
 )
 
 type TreatmentGuideRequestData struct {
@@ -99,11 +100,11 @@ func treatmentGuideResponse(dataAPI api.DataAPI, doctor *common.Doctor, w http.R
 
 	// Format drug details into views
 
-	var views []TPView
+	var views []tpView
 
 	if details.ImageURL != "" {
 		views = append(views,
-			&TPImageView{
+			&tpImageView{
 				ImageURL:    details.ImageURL,
 				ImageWidth:  320,
 				ImageHeight: 210,
@@ -113,18 +114,18 @@ func treatmentGuideResponse(dataAPI api.DataAPI, doctor *common.Doctor, w http.R
 	}
 
 	views = append(views,
-		&TPIconTitleSubtitleView{
+		&tpIconTitleSubtitleView{
 			IconURL:  app_url.IconRX,
 			Title:    details.Name,
 			Subtitle: "", // TODO: Not sure what to put here yet. Possibly details.Alternative.
 		},
-		&TPSmallDividerView{},
-		&TPTextView{
+		&tpSmallDividerView{},
+		&tpTextView{
 			Style: smallGrayStyle,
 			Text:  details.Description,
 		},
-		&TPLargeDividerView{},
-		&TPIconTextView{
+		&tpLargeDividerView{},
+		&tpIconTextView{
 			// TODO: This icon info isn't robust or likely accurate
 			IconURL:    doctor.LargeThumbnailUrl,
 			IconWidth:  32,
@@ -132,16 +133,16 @@ func treatmentGuideResponse(dataAPI api.DataAPI, doctor *common.Doctor, w http.R
 			Text:       fmt.Sprintf("Dr. %s's Instructions", treatment.Doctor.LastName),
 			Style:      sectionHeaderStyle,
 		},
-		&TPSmallDividerView{},
-		&TPTextView{
+		&tpSmallDividerView{},
+		&tpTextView{
 			Text: treatment.PatientInstructions,
 		},
 	)
 
 	if len(details.Warnings) != 0 || len(details.Precautions) != 0 {
 		views = append(views,
-			&TPLargeDividerView{},
-			&TPTextView{
+			&tpLargeDividerView{},
+			&tpTextView{
 				Text:  "What to Know",
 				Style: sectionHeaderStyle,
 			},
@@ -149,14 +150,14 @@ func treatmentGuideResponse(dataAPI api.DataAPI, doctor *common.Doctor, w http.R
 
 		if len(details.Warnings) != 0 {
 			views = append(views,
-				&TPSmallDividerView{},
-				&TPTextView{
+				&tpSmallDividerView{},
+				&tpTextView{
 					Text:  "Warnings",
 					Style: subheaderStyle,
 				},
 			)
 			for _, s := range details.Warnings {
-				views = append(views, &TPTextView{
+				views = append(views, &tpTextView{
 					Text:  s,
 					Style: "warning",
 				})
@@ -165,15 +166,15 @@ func treatmentGuideResponse(dataAPI api.DataAPI, doctor *common.Doctor, w http.R
 
 		if len(details.Precautions) != 0 {
 			views = append(views,
-				&TPSmallDividerView{},
-				&TPTextView{
+				&tpSmallDividerView{},
+				&tpTextView{
 					Text:  "Precautions",
 					Style: subheaderStyle,
 				},
 			)
 
 			for _, p := range details.Precautions {
-				views = append(views, &TPTextView{
+				views = append(views, &tpTextView{
 					Text: p,
 				})
 			}
@@ -182,15 +183,15 @@ func treatmentGuideResponse(dataAPI api.DataAPI, doctor *common.Doctor, w http.R
 
 	if len(details.HowToUse) != 0 {
 		views = append(views,
-			&TPLargeDividerView{},
-			&TPTextView{
+			&tpLargeDividerView{},
+			&tpTextView{
 				Text:  "How to Use " + treatment.DrugName,
 				Style: sectionHeaderStyle,
 			},
-			&TPSmallDividerView{},
+			&tpSmallDividerView{},
 		)
 		for i, s := range details.HowToUse {
-			views = append(views, &TPListElementView{
+			views = append(views, &tpListElementView{
 				ElementStyle: "numbered",
 				Number:       i + 1,
 				Text:         s,
@@ -200,22 +201,22 @@ func treatmentGuideResponse(dataAPI api.DataAPI, doctor *common.Doctor, w http.R
 
 	if len(details.SideEffects) != 0 {
 		views = append(views,
-			&TPLargeDividerView{},
-			&TPTextView{
+			&tpLargeDividerView{},
+			&tpTextView{
 				Text:  "Potential Side Effects",
 				Style: sectionHeaderStyle,
 			},
-			&TPSmallDividerView{},
+			&tpSmallDividerView{},
 		)
 		for _, s := range details.SideEffects {
-			views = append(views, &TPTextView{
+			views = append(views, &tpTextView{
 				Text: s,
 			})
 		}
 	}
 
 	views = append(views,
-		&TPButtonView{
+		&tpButtonView{
 			Text:    "Message Dr. " + treatment.Doctor.LastName,
 			IconURL: app_url.IconMessage,
 			TapURL:  app_url.MessageAction(),
@@ -229,5 +230,5 @@ func treatmentGuideResponse(dataAPI api.DataAPI, doctor *common.Doctor, w http.R
 		}
 	}
 
-	apiservice.WriteJSONToHTTPResponseWriter(w, http.StatusOK, map[string][]TPView{"views": views})
+	apiservice.WriteJSONToHTTPResponseWriter(w, http.StatusOK, map[string][]tpView{"views": views})
 }

@@ -995,6 +995,19 @@ func (d *DataService) GetFullNameForState(state string) (string, error) {
 	return fullName, nil
 }
 
+func (d *DataService) GetTreatmentPlanForPatient(patientId, treatmentPlanId int64) (*common.TreatmentPlan, error) {
+	row := d.db.QueryRow(`select id, doctor_id from treatment_plan where patient_id = ? and id = ?`, patientId, treatmentPlanId)
+
+	var treatmentPlan common.TreatmentPlan
+	if err := row.Scan(&treatmentPlan.Id, &treatmentPlan.DoctorId); err == sql.ErrNoRows {
+		return nil, NoRowsError
+	} else if err != nil {
+		return nil, err
+	}
+
+	return &treatmentPlan, nil
+}
+
 func (d *DataService) getPatientBasedOnQuery(table, joins, where string, queryParams ...interface{}) ([]*common.Patient, error) {
 	queryStr := fmt.Sprintf(`
 		SELECT patient.id, patient.erx_patient_id, patient.payment_service_customer_id, account_id,

@@ -126,6 +126,14 @@ func WriteAccessNotAllowedError(w http.ResponseWriter, r *http.Request) {
 	}, w, r)
 }
 
+func WriteResourceNotFoundError(msg string, w http.ResponseWriter, r *http.Request) {
+	writeSpruceError(&spruceError{
+		UserError:      msg,
+		RequestID:      GetContext(r).RequestID,
+		HTTPStatusCode: http.StatusNotFound,
+	}, w, r)
+}
+
 func writeSpruceError(err *spruceError, w http.ResponseWriter, r *http.Request) {
 	golog.Logf(3, golog.ERR, err.Error())
 

@@ -752,35 +752,6 @@ func (d *DataService) GetTreatmentsForPatient(patientId int64) ([]*common.Treatm
 	return treatments, rows.Err()
 }
 
-func (d *DataService) GetActiveTreatmentPlanForPatient(patientId int64) (*common.TreatmentPlan, error) {
-	var treatmentPlans []*common.TreatmentPlan
-	rows, err := d.db.Query(`select id, doctor_id from treatment_plan where patient_id = ? and status = ?`, patientId, STATUS_ACTIVE)
-	if err != nil {
-		return nil, err
-	}
-	defer rows.Close()
-
-	for rows.Next() {
-		var treatmentPlan common.TreatmentPlan
-		if err := rows.Scan(&treatmentPlan.Id, &treatmentPlan.DoctorId); err != nil {
-			return nil, err
-		}
-		treatmentPlans = append(treatmentPlans, &treatmentPlan)
-	}
-	if rows.Err() != nil {
-		return nil, rows.Err()
-	}
-
-	switch l := len(treatmentPlans); {
-	case l == 0:
-		return nil, NoRowsError
-	case l == 1:
-		return treatmentPlans[0], nil
-	}
-
-	return nil, fmt.Errorf("Expected 1 active treatment plan  instead got %d", len(treatmentPlans))
-}
-
 func (d *DataService) GetTreatmentBasedOnPrescriptionId(erxId int64) (*common.Treatment, error) {
 	rows, err := d.db.Query(`select treatment.id,treatment.erx_id, treatment.treatment_plan_id, treatment.drug_internal_name, treatment.dosage_strength, treatment.type,
 			treatment.dispense_value, treatment.dispense_unit_id, ltext, treatment.refills, treatment.substitutions_allowed, 

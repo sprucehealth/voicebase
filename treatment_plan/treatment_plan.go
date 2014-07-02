@@ -2,6 +2,8 @@ package treatment_plan
 
 import (
 	"fmt"
+	"net/http"
+
 	"github.com/sprucehealth/backend/api"
 	"github.com/sprucehealth/backend/apiservice"
 	"github.com/sprucehealth/backend/app_url"
@@ -9,7 +11,6 @@ import (
 	"github.com/sprucehealth/backend/encoding"
 	"github.com/sprucehealth/backend/libs/erx"
 	"github.com/sprucehealth/backend/libs/golog"
-	"net/http"
 )
 
 type treatmentPlanHandler struct {
@@ -36,95 +37,68 @@ func (p *treatmentPlanHandler) ServeHTTP(w http.ResponseWriter, r *http.Request)
 	if err := apiservice.DecodeRequestData(requestData, r); err != nil {
 		apiservice.WriteDeveloperError(w, http.StatusBadRequest, "Unable to parse input parameters: "+err.Error())
 		return
-	}
-
-	switch apiservice.GetContext(r).Role {
-	case api.PATIENT_ROLE:
-		p.processTreatmentPlanViewForPatient(requestData, w, r)
-	case api.DOCTOR_ROLE:
-		p.processTreatmentPlanViewForDoctor(requestData, w, r)
-	default:
-		apiservice.WriteDeveloperError(w, http.StatusBadRequest, "Unable to identify whether doctor or patient from auth token")
-	}
-
-}
-
-func (p *treatmentPlanHandler) processTreatmentPlanViewForDoctor(requestData *TreatmentPlanRequest, w http.ResponseWriter, r *http.Request) {
-	doctor, err := p.dataApi.GetDoctorFromAccountId(apiservice.GetContext(r).AccountId)
-	if err != nil {
-		apiservice.WriteDeveloperError(w, http.StatusInternalServerError, err.Error())
-		return
-	}
-
-	if requestData.TreatmentPlanId == 0 {
+	} else if requestData.TreatmentPlanId == 0 {
 		apiservice.WriteValidationError("treatment_plan_id must be specified", w, r)
 		return
 	}
 
-	patientVisitId, err := p.dataApi.GetPatientVisitIdFromTreatmentPlanId(requestData.TreatmentPlanId)
-	if err != nil {
-		apiservice.WriteDeveloperError(w, http.StatusInternalServerError, err.Error())
-		return
-	}
-
-	patient, err := p.dataApi.GetPatientFromPatientVisitId(patientVisitId)
-	if err != nil {
-		apiservice.WriteDeveloperError(w, http.StatusInternalServerError, err.Error())
-		return
-	}
-
-	treatmentPlan := &common.TreatmentPlan{
-		Id:       encoding.NewObjectId(requestData.TreatmentPlanId),
-		DoctorId: encoding.NewObjectId(doctor.DoctorId.Int64()),
-	}
-
-	err = populateTreatmentPlan(p.dataApi, patientVisitId, treatmentPlan)
-	if err != nil {
-		apiservice.WriteDeveloperError(w, http.StatusInternalServerError, err.Error())
-		return
-	}
-
-	treatmentPlanResponse(p.dataApi, w, r, treatmentPlan, doctor, patient)
-}
-
-func (p *treatmentPlanHandler) processTreatmentPlanViewForPatient(requestData *TreatmentPlanRequest, w http.ResponseWriter, r *http.Request) {
-	patient, err := p.dataApi.GetPatientFromAccountId(apiservice.GetContext(r).AccountId)
-	if err != nil {
-		apiservice.WriteDeveloperError(w, http.StatusInternalServerError, "Unable to get patientId from accountId retrieved from auth token: "+err.Error())
-		return
-	}
-
-	patientVisit, err := p.dataApi.GetLatestClosedPatientVisitForPatient(patient.PatientId.Int64())
-	if err != nil {
-		if err == api.NoRowsError {
-			// no patient visit review to return
-			apiservice.WriteDeveloperErrorWithCode(w, apiservice.DEVELOPER_NO_TREATMENT_PLAN, http.StatusNotFound, "No treatment plan exists for this patient visit yet")
+	var doctor *common.Doctor
+	var patient *common.Patient
+	var treatmentPlan *common.TreatmentPlan
+	var err error
+	switch apiservice.GetContext(r).Role {
+	case api.PATIENT_ROLE:
+		patient, err = p.dataApi.GetPatientFromAccountId(apiservice.GetContext(r).AccountId)
+		if err != nil {
+			apiservice.WriteError(err, w, r)
 			return
 		}
 
-		apiservice.WriteDeveloperError(w, http.StatusBadRequest, "Unable to get latest closed patient visit from id: "+err.Error())
-		return
+		treatmentPlan, err = p.dataApi.GetTreatmentPlanForPatient(patient.PatientId.Int64(), requestData.TreatmentPlanId)
+		if err == api.NoRowsError {
+			apiservice.WriteResourceNotFoundError("Treatment plan not found", w, r)
+			return
+		} else if err != nil {
+			apiservice.WriteError(err, w, r)
+			return
+		}
+
+		doctor, err = p.dataApi.GetDoctorFromId(treatmentPlan.DoctorId.Int64())
+		if err != nil {
+			apiservice.WriteError(err, w, r)
+			return
+		}
+
+		treatmentPlanResponse(p.dataApi, w, r, treatmentPlan, doctor, patient)
+
+	case api.DOCTOR_ROLE:
+		doctor, err = p.dataApi.GetDoctorFromAccountId(apiservice.GetContext(r).AccountId)
+		if err != nil {
+			apiservice.WriteError(err, w, r)
+			return
+		}
+
+		patient, err = p.dataApi.GetPatientFromTreatmentPlanId(requestData.TreatmentPlanId)
+		if err != nil {
+			apiservice.WriteError(err, w, r)
+			return
+		}
+
+		if err = apiservice.ValidateDoctorAccessToPatientFile(doctor.DoctorId.Int64(), patient.PatientId.Int64(), p.dataApi); err != nil {
+			apiservice.WriteError(err, w, r)
+			return
+		}
+
+		treatmentPlan = &common.TreatmentPlan{
+			Id:       encoding.NewObjectId(requestData.TreatmentPlanId),
+			DoctorId: encoding.NewObjectId(doctor.DoctorId.Int64()),
+		}
+
+	default:
+		apiservice.WriteValidationError("Unable to identify role", w, r)
 	}
 
-	// do not support the submitting of a case that has already been submitted or is in another state
-	if patientVisit.Status != common.PVStatusTreated {
-		apiservice.WriteDeveloperError(w, http.StatusBadRequest, "Cannot get the treatment plan for a visit that is not in the closed state "+patientVisit.Status)
-		return
-	}
-
-	treatmentPlan, err := p.dataApi.GetActiveTreatmentPlanForPatient(patient.PatientId.Int64())
-	if err != nil {
-		apiservice.WriteDeveloperError(w, http.StatusInternalServerError, "Unable to get treatment plan based on patient visit: "+err.Error())
-		return
-	}
-
-	err = populateTreatmentPlan(p.dataApi, patientVisit.PatientVisitId.Int64(), treatmentPlan)
-	if err != nil {
-		apiservice.WriteDeveloperError(w, http.StatusInternalServerError, err.Error())
-		return
-	}
-
-	doctor, err := p.dataApi.GetDoctorFromId(treatmentPlan.DoctorId.Int64())
+	err = populateTreatmentPlan(p.dataApi, treatmentPlan)
 	if err != nil {
 		apiservice.WriteError(err, w, r)
 		return
@@ -296,5 +270,5 @@ func treatmentPlanResponse(dataApi api.DataAPI, w http.ResponseWriter, r *http.R
 		}
 	}
 
-	apiservice.WriteJSONToHTTPResponseWriter(w, http.StatusOK, map[string][]TPView{"views": views})
+	apiservice.WriteJSONToHTTPResponseWriter(w, http.StatusOK, map[string][]tpView{"views": views})
 }
