@@ -8,8 +8,6 @@ import (
 	"github.com/sprucehealth/backend/apiservice"
 	"github.com/sprucehealth/backend/app_url"
 	"github.com/sprucehealth/backend/common"
-	"github.com/sprucehealth/backend/libs/erx"
-	"github.com/sprucehealth/backend/libs/golog"
 )
 
 type treatmentPlanHandler struct {
@@ -145,47 +143,7 @@ func treatmentPlanResponse(dataApi api.DataAPI, w http.ResponseWriter, r *http.R
 				},
 			},
 		})
-
-		for _, treatment := range treatmentPlan.TreatmentList.Treatments {
-
-			iconURL := app_url.IconRXLarge
-			smallHeaderText := "Prescription"
-			if treatment.OTC {
-				iconURL = app_url.IconOTCLarge
-				smallHeaderText = "Over the Counter"
-			}
-
-			pView := &tpPrescriptionView{
-				Title:           fmt.Sprintf("%s %s", treatment.DrugInternalName, treatment.DosageStrength),
-				Description:     treatment.PatientInstructions,
-				SmallHeaderText: smallHeaderText,
-				IconURL:         iconURL,
-			}
-			treatmentViews = append(treatmentViews, &tpCardView{
-				Views: []tpView{pView},
-			})
-
-			// only add button if treatment guide exists
-			if ndc := treatment.DrugDBIds[erx.NDC]; ndc != "" {
-				if exists, err := dataApi.DoesDrugDetailsExist(ndc); exists {
-					pView.Buttons = []tpView{
-						&tpPrescriptionButtonView{
-							Text:    "View RX Guide",
-							IconURL: app_url.IconGuide,
-							TapURL:  app_url.ViewTreatmentGuideAction(treatment.Id.Int64()),
-						},
-					}
-				} else if err != nil && err != api.NoRowsError {
-					golog.Errorf("Error when trying to check if drug details exist: %s", err)
-				}
-			}
-		}
-		treatmentViews = append(treatmentViews, &tpButtonFooterView{
-			FooterText: fmt.Sprintf("If you have any questions about your treatment plan, send Dr. %s a message.", doctor.LastName),
-			ButtonText: fmt.Sprintf("Message Dr. %s", doctor.LastName),
-			IconURL:    app_url.IconMessage,
-			TapURL:     app_url.MessageAction(),
-		})
+		treatmentViews = append(treatmentViews, generateViewsForTreatments(treatmentPlan.TreatmentList, doctor, dataApi, false)...)
 	}
 
 	// INSTRUCTION VIEWS
