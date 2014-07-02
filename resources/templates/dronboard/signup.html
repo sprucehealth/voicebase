@@ -1,78 +1,97 @@
 {{define "head"}}
 {{end}}
 
+{{define "tail"}}
+{{end}}
+
 {{define "fieldError"}}
-	{{if .}}<div class="error">{{.}}</div>{{end}}
+	{{if .}}<div class="text-danger">{{.}}</div>{{end}}
 {{end}}
 
 {{define "body"}}
-	<h1>Register</h1>
+	<form method="POST" action="" role="form" class="form-onboard">
+		<h2>Register</h2>
 
-	<form method="POST" action="">
-	{{template "fieldError" .FormErrors.FirstName}}
-	<label for="FirstName">First Name:</label>
-	<input type="text" id="FirstName" name="FirstName" value="{{.Form.FirstName}}"><br>
+		<div class="form-group {{if .FormErrors.FirstName}}has-error has-feedback{{end}}">
+			<label class="control-label" for="FirstName">First Name</label>
+			<input required type="text" id="FirstName" name="FirstName" value="{{.Form.FirstName}}" class="form-control" placeholder="Enter first name">
+		</div>
 
-	{{template "fieldError" .FormErrors.LastName}}
-	<label for="LastName">Last Name:</label>
-	<input type="text" id="LastName" name="LastName" value="{{.Form.LastName}}"><br>
+		<div class="form-group {{if .FormErrors.LastName}}has-error has-feedback{{end}}">
+			<label class="control-label" for="LastName">Last Name</label>
+			<input required type="text" id="LastName" name="LastName" value="{{.Form.LastName}}" class="form-control" placeholder="Enter last name">
+		</div>
 
-	{{template "fieldError" .FormErrors.Gender}}
-	<label for="Gender">Gender:</label>
-	<select name="Gender" id="Gender">
-	<option value="female"{{if eq .Form.Gender "female"}} selected{{end}}>Female</option>
-	<option value="male"{{if eq .Form.Gender "male"}} selected{{end}}>Male</option>
-	</select><br>
+		<div class="form-group {{if .FormErrors.Gender}}has-error has-feedback{{end}}">
+			<label class="control-label" for="Gender">Gender</label>
+			<select name="Gender" id="Gender" class="form-control">
+			<option value="female"{{if eq .Form.Gender "female"}} selected{{end}}>Female</option>
+			<option value="male"{{if eq .Form.Gender "male"}} selected{{end}}>Male</option>
+			</select>
+		</div>
 
-	{{template "fieldError" .FormErrors.DOB}}
-	<label for="DOB">Date of Birth:</label>
-	<input type="text" id="DOB" name="DOB" value="{{.Form.DOB}}" placeholder="MM/DD/YYYY"><br>
+		<div class="form-group {{if .FormErrors.DOB}}has-error has-feedback{{end}}">
+			<label class="control-label" for="DOB">Date of Birth</label>
+			<input required type="date" id="DOB" name="DOB" value="{{.Form.DOB}}" placeholder="MM/DD/YYYY" class="form-control">
+		</div>
 
-	{{template "fieldError" .FormErrors.Email}}
-	<label for="Email">Email:</label>
-	<input type="text" id="Email" name="Email" value="{{.Form.Email}}"><br>
+		<div class="form-group {{if .FormErrors.Email}}has-error has-feedback{{end}}">
+			<label class="control-label" for="Email">Email</label>
+			<input required type="email" id="Email" name="Email" value="{{.Form.Email}}" class="form-control" placeholder="Enter email address">
+			{{template "fieldError" .FormErrors.Email}}
+		</div>
 
-	{{template "fieldError" .FormErrors.CellNumber}}
-	<label for="CellNumber">Cell Phone Number:</label>
-	<input type="text" id="CellNumber" name="CellNumber" value="{{.Form.CellNumber}}"><br>
+		<div class="form-group {{if .FormErrors.CellNumber}}has-error has-feedback{{end}}">
+			<label class="control-label" for="CellNumber">Cell Phone Number</label>
+			<input required type="tel" id="CellNumber" name="CellNumber" value="{{.Form.CellNumber}}" class="form-control" placeholder="###-###-####">
+		</div>
 
-	<h3>Home Address</h3>
+		<h3>Home Address</h3>
 
-	{{template "fieldError" .FormErrors.AddressLine1}}
-	<label for="AddressLine1">Address Line 1:</label>
-	<input type="text" id="AddressLine1" name="AddressLine1" value="{{.Form.AddressLine1}}"><br>
+		<div class="form-group {{if .FormErrors.AddressLine1}}has-error has-feedback{{end}}">
+			<label class="control-label" for="AddressLine1">Address Line 1:</label>
+			<input required type="text" id="AddressLine1" name="AddressLine1" value="{{.Form.AddressLine1}}" class="form-control">
+		</div>
 
-	{{template "fieldError" .FormErrors.AddressLine2}}
-	<label for="AddressLine2">Address Line 2:</label>
-	<input type="text" id="AddressLine2" name="AddressLine2" value="{{.Form.AddressLine2}}"><br>
+		<div class="form-group {{if .FormErrors.AddressLine2}}has-error has-feedback{{end}}">
+			<label class="control-label" for="AddressLine2">Address Line 2:</label>
+			<input type="text" id="AddressLine2" name="AddressLine2" value="{{.Form.AddressLine2}}" class="form-control">
+		</div>
 
-	{{template "fieldError" .FormErrors.City}}
-	<label for="City">City:</label>
-	<input type="text" id="City" name="City" value="{{.Form.City}}"><br>
+		<div class="form-group {{if .FormErrors.City}}has-error has-feedback{{end}}">
+			<label class="control-label" for="City">City:</label>
+			<input required type="text" id="City" name="City" value="{{.Form.City}}" class="form-control">
+		</div>
 
-	{{template "fieldError" .FormErrors.State}}
-	<label for="State">State:</label>
-	<select name="State" id="State">
-	{{$currentState := .Form.State}}
-	{{range .States}}
-		<option value="{{.Abbreviation}}"{{if eq $currentState .Abbreviation}} selected{{end}}>{{.Name}}</option>
-	{{end}}
-	</select><br>
+		<div class="form-group {{if .FormErrors.State}}has-error has-feedback{{end}}">
+			<label class="control-label" for="State">State:</label>
+			<select name="State" id="State" class="form-control">
+			{{$currentState := .Form.State}}
+			{{range .States}}
+				<option value="{{.Abbreviation}}"{{if eq $currentState .Abbreviation}} selected{{end}}>{{.Name}}</option>
+			{{end}}
+			</select>
+		</div>
 
-	{{template "fieldError" .FormErrors.ZipCode}}
-	<label for="ZipCode">Zip Code:</label>
-	<input type="text" id="ZipCode" name="ZipCode" value="{{.Form.ZipCode}}"><br>
+		<div class="form-group {{if .FormErrors.ZipCode}}has-error has-feedback{{end}}">
+			<label class="control-label" for="ZipCode">Zip Code:</label>
+			<input required type="text" id="ZipCode" name="ZipCode" value="{{.Form.ZipCode}}" class="form-control">
+		</div>
 
-	<h3>Password</h3>
+		<h3>Create a Password</h3>
 
-	{{template "fieldError" .FormErrors.Password1}}
-	<label for="Password1">Password:</label>
-	<input type="password" id="Password1" name="Password1"><br>
+		<div class="form-group {{if .FormErrors.Password1}}has-error has-feedback{{end}}">
+			<label class="control-label" for="Password1">Password:</label>
+			<input required type="password" id="Password1" name="Password1" class="form-control">
+			{{template "fieldError" .FormErrors.Password1}}
+		</div>
 
-	{{template "fieldError" .FormErrors.Password2}}
-	<label for="Password2">Verify Password:</label>
-	<input type="password" id="Password2" name="Password2"><br>
+		<div class="form-group {{if .FormErrors.Password2}}has-error has-feedback{{end}}">
+			<label class="control-label" for="Password2">Verify Password:</label>
+			<input required type="password" id="Password2" name="Password2" class="form-control">
+			{{template "fieldError" .FormErrors.Password2}}
+		</div>
 
-	<button>Sign Up</button>
+		<button type="submit" class="btn btn-primary pull-right">Register</button>
 	</form>
 {{end}}

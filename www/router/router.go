@@ -20,6 +20,8 @@ func New(dataAPI api.DataAPI, authAPI api.AuthAPI, twilioCli *twilio.Client, fro
 		www.TemplateResponse(w, http.StatusOK, www.IndexTemplate, &www.BaseTemplateContext{Title: "Spruce"})
 	})
 	router.Handle("/login", www.NewLoginHandler(authAPI))
+	router.Handle("/logout", www.NewLogoutHandler(authAPI))
+	router.PathPrefix("/static").Handler(http.StripPrefix("/static", http.FileServer(www.ResourceFileSystem)))
 	passreset.SetupRoutes(router, dataAPI, authAPI, twilioCli, fromNumber, emailService, fromEmail, webSubdomain, metricsRegistry.Scope("reset-password"))
 	dronboard.SetupRoutes(router, dataAPI, authAPI, metricsRegistry.Scope("doctor-onboard"))
 	return router

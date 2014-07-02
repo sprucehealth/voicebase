@@ -14,7 +14,6 @@ import (
 )
 
 var (
-	dobOrder      = "MDY"
 	dobSeparators = []rune{'-', '/'}
 )
 
@@ -39,6 +38,8 @@ type signupRequest struct {
 	City         string
 	State        string
 	ZipCode      string
+
+	dob encoding.DOB
 }
 
 // Validate returns an error message for each field that doesn't match. If
@@ -56,8 +57,19 @@ func (r *signupRequest) Validate() map[string]string {
 	}
 	if r.DOB == "" {
 		errors["DOB"] = "Date of birth is required"
-	} else if _, err := encoding.ParseDOB(r.DOB, dobOrder, dobSeparators); err != nil {
-		errors["DOB"] = "Date of birth must be in the format MM/DD/YYYY"
+	} else {
+		// Browsers supporting HTML5 forms will return YYYY-MM-DD, but otherwrise
+		// the field is treated as text and people will enter MM-DD-YYY. Support
+		// both formats since there's no chance they'll collide.
+		dob, err := encoding.ParseDOB(r.DOB, "YMD", dobSeparators)
+		if err != nil {
+			dob, err = encoding.ParseDOB(r.DOB, "MDY", dobSeparators)
+		}
+		if err != nil {
+			errors["DOB"] = "Date of birth is invalid"
+		} else {
+			r.dob = dob
+		}
 	}
 	if r.Email == "" {
 		errors["Email"] = "Email is required"
@@ -88,7 +100,7 @@ func (r *signupRequest) Validate() map[string]string {
 }
 
 func NewSignupHandler(router *mux.Router, dataAPI api.DataAPI, authAPI api.AuthAPI) http.Handler {
-	return www.SupportedMethodsFilter(&signupHandler{
+	return www.SupportedMethodsHandler(&signupHandler{
 		router:  router,
 		dataAPI: dataAPI,
 		authAPI: authAPI,
@@ -120,13 +132,6 @@ func (h *signupHandler) ServeHTTP(w http.ResponseWriter, r *http.Request) {
 				www.InternalServerError(w, r, err)
 				return
 			} else {
-				dob, err := encoding.ParseDOB(req.DOB, dobOrder, dobSeparators)
-				if err != nil {
-					// This should have been validated already in request.Validate so
-					// best to consider this an internal error.
-					www.InternalServerError(w, r, err)
-					return
-				}
 				address := &common.Address{
 					AddressLine1: req.AddressLine1,
 					AddressLine2: req.AddressLine2,
@@ -139,7 +144,7 @@ func (h *signupHandler) ServeHTTP(w http.ResponseWriter, r *http.Request) {
 					AccountId:     encoding.NewObjectId(accountID),
 					FirstName:     req.FirstName,
 					LastName:      req.LastName,
-					DOB:           dob,
+					DOB:           req.dob,
 					Gender:        req.Gender,
 					DoctorAddress: address,
 				}

@@ -11,7 +11,7 @@ type loginHandler struct {
 }
 
 func NewLoginHandler(authAPI api.AuthAPI) http.Handler {
-	return SupportedMethodsFilter(&loginHandler{
+	return SupportedMethodsHandler(&loginHandler{
 		authAPI: authAPI,
 	}, []string{"GET", "POST"})
 }
@@ -53,4 +53,26 @@ func (h *loginHandler) ServeHTTP(w http.ResponseWriter, r *http.Request) {
 			Next:  next,
 		},
 	})
+}
+
+// logout
+
+type logoutHandler struct {
+	authAPI api.AuthAPI
+}
+
+func NewLogoutHandler(authAPI api.AuthAPI) http.Handler {
+	return SupportedMethodsHandler(&logoutHandler{
+		authAPI: authAPI,
+	}, []string{"GET", "POST"})
+}
+
+func (h *logoutHandler) ServeHTTP(w http.ResponseWriter, r *http.Request) {
+	next, valid := validateRedirectURL(r.FormValue("next"))
+	if !valid {
+		next = "/"
+	}
+
+	http.SetCookie(w, TomestoneAuthCookie(r))
+	http.Redirect(w, r, next, http.StatusSeeOther)
 }

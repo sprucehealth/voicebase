@@ -5,14 +5,22 @@ import (
 	"net/url"
 	"sort"
 	"strings"
+
+	"github.com/sprucehealth/backend/third_party/github.com/gorilla/context"
+
+	"github.com/sprucehealth/backend/api"
+	"github.com/sprucehealth/backend/common"
+	"github.com/sprucehealth/backend/libs/golog"
 )
+
+const authCookieName = "at"
 
 type supportedMethods struct {
 	methods []string
 	handler http.Handler
 }
 
-func SupportedMethodsFilter(h http.Handler, methods []string) http.Handler {
+func SupportedMethodsHandler(h http.Handler, methods []string) http.Handler {
 	sort.Strings(methods)
 	return &supportedMethods{
 		methods: methods,
@@ -59,7 +67,7 @@ func NewAuthCookie(token string, r *http.Request) *http.Cookie {
 		domain = domain[:i]
 	}
 	return &http.Cookie{
-		Name:   "at",
+		Name:   authCookieName,
 		Value:  token,
 		Path:   "/",
 		Domain: domain,
@@ -67,4 +75,65 @@ func NewAuthCookie(token string, r *http.Request) *http.Cookie {
 		// Expires: time.Time
 		// MaxAge : int
 	}
+}
+
+func TomestoneAuthCookie(r *http.Request) *http.Cookie {
+	c := NewAuthCookie("", r)
+	c.MaxAge = -1
+	c.Value = ""
+	return c
+}
+
+func ValidateAuth(authAPI api.AuthAPI, r *http.Request) (*common.Account, error) {
+	c, err := r.Cookie(authCookieName)
+	if err != nil {
+		return nil, err
+	} else if c.Value == "" {
+		return nil, http.ErrNoCookie
+	}
+	return authAPI.ValidateToken(c.Value)
+}
+
+type authRequiredFilter struct {
+	authAPI       api.AuthAPI
+	roles         []string
+	okHandler     http.Handler
+	failedHandler http.Handler
+}
+
+func AuthRequiredFilter(authAPI api.AuthAPI, roles []string, failed http.Handler) func(http.Handler) http.Handler {
+	return func(h http.Handler) http.Handler {
+		return AuthRequiredHandler(authAPI, roles, h, failed)
+	}
+}
+
+func AuthRequiredHandler(authAPI api.AuthAPI, roles []string, ok, failed http.Handler) http.Handler {
+	if failed == nil {
+		failed = http.NotFoundHandler()
+	}
+	return &authRequiredFilter{
+		authAPI:       authAPI,
+		roles:         roles,
+		okHandler:     ok,
+		failedHandler: failed,
+	}
+}
+
+func (h *authRequiredFilter) ServeHTTP(w http.ResponseWriter, r *http.Request) {
+	account, err := ValidateAuth(h.authAPI, r)
+	switch err {
+	case nil:
+		for _, role := range h.roles {
+			if role == account.Role {
+				context.Set(r, CKAccount, account)
+				h.okHandler.ServeHTTP(w, r)
+				return
+			}
+		}
+	case http.ErrNoCookie, api.TokenDoesNotExist, api.TokenExpired:
+	default:
+		// Log any other error
+		golog.Errorf("Failed to validate auth: %s", err.Error())
+	}
+	h.failedHandler.ServeHTTP(w, r)
 }

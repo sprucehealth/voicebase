@@ -3,6 +3,7 @@ package www
 import (
 	"html/template"
 	"io/ioutil"
+	"net/http"
 	"os"
 	"path"
 
@@ -18,9 +19,18 @@ var (
 
 var ResourceBundle resources.BundleSequence
 
+type resourceFileSystem struct{}
+
+// ResourceFileSystem implements the http.Filesystem interface to provide
+// static file serving.
+var ResourceFileSystem = resourceFileSystem{}
+
+var ResourcesPath string
+
 func init() {
 	if p := os.Getenv("GOPATH"); p != "" {
-		ResourceBundle = append(ResourceBundle, resources.OpenFS(path.Join(p, "src", "github.com", "sprucehealth", "backend", "resources")))
+		ResourcesPath = path.Join(p, "src", "github.com", "sprucehealth", "backend", "resources")
+		ResourceBundle = append(ResourceBundle, resources.OpenFS(ResourcesPath))
 	}
 	if p := os.Getenv("RESOURCEPATH"); p != "" {
 		ResourceBundle = append(ResourceBundle, resources.OpenFS(p))
@@ -42,6 +52,30 @@ func init() {
 	LoginTemplate = MustLoadTemplate("login.html", template.Must(BaseTemplate.Clone()))
 
 	SimpleBaseTemplate = MustLoadTemplate("simple_base.html", nil)
+}
+
+func (resourceFileSystem) Open(name string) (http.File, error) {
+	f, err := os.Open(ResourcesPath + "/static" + name)
+	if err != nil {
+		return nil, err
+	}
+	// Don't allow opening directories
+	if s, err := f.Stat(); err != nil {
+		f.Close()
+		return nil, err
+	} else if s.IsDir() {
+		f.Close()
+		return nil, os.ErrNotExist
+	}
+	return httpFile{f}, nil
+}
+
+type httpFile struct {
+	*os.File
+}
+
+func (httpFile) Readdir(count int) ([]os.FileInfo, error) {
+	return nil, nil
 }
 
 func MustLoadTemplate(pth string, parent *template.Template) *template.Template {

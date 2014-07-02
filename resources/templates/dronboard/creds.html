@@ -1,11 +1,21 @@
 {{define "head"}}
+{{end}}
+
+{{define "tail"}}
 <script type="text/javascript">
 $(function() {
 	$("#AmericanBoardCertified").change(function(e) {
 		if (e.target.checked) {
-			$("#board-certification").show();
+			$("#board-certification").prop('disabled', false);
 		} else {
-			$("#board-certification").hide();
+			$("#board-certification").prop('disabled', true);
+		}
+	});
+	$("#ContinuedEducation").change(function(e) {
+		if (e.target.checked) {
+			$("#continued-education").prop('disabled', false);
+		} else {
+			$("#continued-education").prop('disabled', true);
 		}
 	});
 });
@@ -13,53 +23,104 @@ $(function() {
 {{end}}
 
 {{define "fieldError"}}
-	{{if .}}<div class="error">{{.}}</div>{{end}}
+	{{if .}}<div class="text-danger">{{.}}</div>{{end}}
 {{end}}
 
 {{define "body"}}
-	<h1>Education, Employment, and Credentials</h1>
-
-	<form method="POST" action="">
-	{{template "fieldError" .FormErrors.AmericanBoardCertified}}
-	<input type="checkbox" id="AmericanBoardCertified" name="AmericanBoardCertified"{{if .Form.AmericanBoardCertified}} checked{{end}}>
-	<label for="LastName">American Board Certified?</label><br>
-
-	<div id="board-certification" style="{{if not .Form.AmericanBoardCertified}}display:none;{{end}}">
-		{{template "fieldError" .FormErrors.SpecialtyBoard}}
-		<label for="SpecialtyBoard">Specialty Board:</label>
-		<input type="text" id="SpecialtyBoard" name="SpecialtyBoard" value="{{.Form.SpecialtyBoard}}"><br>
-
-		{{template "fieldError" .FormErrors.RecentCertDate}}
-		<label for="RecentCertDate">Date most recently certified:</label>
-		<input type="text" id="RecentCertDate" name="RecentCertDate" value="{{.Form.RecentCertDate}}" placeholder="MM/DD/YYYY"><br>
-	</div>
-
-	{{template "fieldError" .FormErrors.StateLicenses}}
-	States in which you hold a license to practice medicine:<br>
 	{{$states := .States}}
 	{{$licenseStatuses := .LicenseStatuses}}
-	{{range $i, $l := .Form.StateLicenses}}
-		<label for="StateLicenses.{{$i}}.State">State:</label>
-		<select name="StateLicenses.{{$i}}.State">
-		{{$currentState := $l.State}}
-		{{range $states}}
-			<option value="{{.Abbreviation}}"{{if eq $currentState .Abbreviation}} selected{{end}}>{{.Name}}</option>
+	{{$errors := .FormErrors}}
+
+	<form method="POST" action="" role="form" class="form-onboard">
+		<h2>Identity, Credentials and Licenses</h2>
+
+		<div class="form-group {{if .FormErrors.SSN}}has-error has-feedback{{end}}">
+			<label class="control-label" for="SSN">Social Security Number</label>
+			<input required type="text" id="SSN" name="SSN" value="{{.Form.SSN}}" class="form-control">
+		</div>
+
+		<div class="form-group {{if .FormErrors.NPI}}has-error has-feedback{{end}}">
+			<label class="control-label" for="NPI">National Provider Identifier (NPI)</label>
+			<input required type="text" id="NPI" name="NPI" value="{{.Form.NPI}}" class="form-control">
+		</div>
+
+		<div class="checkbox">
+			<input type="checkbox" id="RiskManagementCourse" name="RiskManagementCourse"{{if .Form.RiskManagementCourse}} checked{{end}}>
+			Have you completed a risk management education course within the last twelve months?
+		</div>
+
+		<div class="checkbox">
+			<input type="checkbox" id="AmericanBoardCertified" name="AmericanBoardCertified"{{if .Form.AmericanBoardCertified}} checked{{end}}>
+			Are you American Board Certified?
+		</div>
+
+		<fieldset id="board-certification" {{if not .Form.AmericanBoardCertified}}disabled{{end}}>
+			<div class="form-group {{if .FormErrors.SpecialtyBoard}}has-error has-feedback{{end}}">
+				<label class="control-label" for="SpecialtyBoard">Specialty board</label>
+				<input required type="text" id="SpecialtyBoard" name="SpecialtyBoard" value="{{.Form.SpecialtyBoard}}" class="form-control">
+			</div>
+
+			<div class="form-group {{if .FormErrors.RecentCertDate}}has-error has-feedback{{end}}">
+				<label class="control-label" for="RecentCertDate">Date most recently certified</label>
+				<input required type="date" id="RecentCertDate" name="RecentCertDate" value="{{.Form.RecentCertDate}}" placeholder="MM/DD/YYYY" class="form-control">
+			</div>
+		</fieldset>
+
+		<div class="checkbox">
+			<input type="checkbox" id="ContinuedEducation" name="ContinuedEducation"{{if .Form.ContinuedEducation}} checked{{end}}>
+			Have you participated in continuing medical edutationwithin the last three years?
+		</div>
+
+		<fieldset id="continued-education" {{if not .Form.ContinuedEducation}}disabled{{end}}>
+			<div class="form-group {{if .FormErrors.CreditHours}}has-error has-feedback{{end}}">
+				<label class="control-label" for="CreditHours">Number of Category 1 credit hours</label>
+				<input required type="number" id="CreditHours" name="CreditHours" value="{{.Form.CreditHours}}" class="form-control">
+			</div>
+		</fieldset>
+
+		<h4 style="margin-top:20px;">States in which you hold a license to practice medicine:<h4>
+
+ 		{{if .FormErrors.StateLicenses}}
+		<div class="text-danger">
+			{{.FormErrors.StateLicenses}}
+		</div>
 		{{end}}
-		</select>
+		<table class="table">
+			<thead>
+				<tr>
+					<th>State</th>
+					<th>License Number</th>
+					<th>License Status</th>
+				</tr>
+			</thead>
+			<tbody>
+			{{range $i, $l := .Form.StateLicenses}}
+				{{$err := printf "StateLicenses.%d" $i | index $errors}}
+				<tr {{if $err}}class="bg-danger"{{end}}>
+					<td>
+						<select name="StateLicenses.{{$i}}.State">
+						{{$currentState := $l.State}}
+						{{range $states}}
+							<option value="{{.Abbreviation}}"{{if eq $currentState .Abbreviation}} selected{{end}}>{{.Name}}</option>
+						{{end}}
+						</select>
+					</td>
+					<td>
+						<input type="text" name="StateLicenses.{{$i}}.License" value="{{$l.License}}">
+					</td>
+					<td>
+						<select name="StateLicenses.{{$i}}.Status">
+						{{$currentLicenseStatus := $l.Status}}
+						{{range $licenseStatuses}}
+							<option value="{{.}}"{{if eq $currentLicenseStatus .}} selected{{end}}>{{.}}</option>
+						{{end}}
+						</select>
+					</td>
+				</tr>
+			{{end}}
+			</tbody>
+		</table>
 
-		<label for="StateLicenses.{{$i}}.License">License Number:</label>
-		<input type="text" name="StateLicenses.{{$i}}.License" value="{{$l.License}}">
-
-		<label form="StateLicenses.{{$i}}.Status">Status:</label>
-		<select name="StateLicenses.{{$i}}.Status">
-		{{$currentLicenseStatus := $l.Status}}
-		{{range $licenseStatuses}}
-			<option value="{{.}}"{{if eq $currentLicenseStatus .}} selected{{end}}>{{.}}</option>
-		{{end}}
-		</select>
-		<br>
-	{{end}}
-
-	<button>Submit</button>
+		<button type="submit" class="btn btn-primary pull-right">Submit</button>
 	</form>
 {{end}}

@@ -1,9 +1,11 @@
 package dronboard
 
 import (
+	"fmt"
 	"net/http"
 
 	"github.com/sprucehealth/backend/api"
+	"github.com/sprucehealth/backend/common"
 	"github.com/sprucehealth/backend/third_party/github.com/SpruceHealth/schema"
 	"github.com/sprucehealth/backend/third_party/github.com/gorilla/mux"
 	"github.com/sprucehealth/backend/www"
@@ -33,6 +35,11 @@ type credentialsRequest struct {
 	AmericanBoardCertified bool
 	SpecialtyBoard         string
 	RecentCertDate         string
+	ContinuedEducation     bool
+	CreditHours            string
+	RiskManagementCourse   bool
+	NPI                    string
+	SSN                    string
 	StateLicenses          []*stateLicense
 }
 
@@ -46,14 +53,37 @@ func (r *credentialsRequest) Validate() map[string]string {
 			errors["RecentCertDate"] = "Recent certification date is required"
 		}
 	}
-	if len(r.StateLicenses) == 0 {
+	if r.ContinuedEducation {
+		if r.CreditHours == "" {
+			errors["CreditHours"] = "Credit hours are required"
+		}
+	}
+	if r.NPI == "" {
+		errors["NPI"] = "NPI is required"
+	}
+	n := 0
+	for i, l := range r.StateLicenses {
+		if l.State != "" {
+			// if l.License == "" {
+			// 	errors[fmt.Sprintf("StateLicenses.%d.License", i)] = "License is required"
+			// }
+			// if l.Status == "" {
+			// 	errors[fmt.Sprintf("StateLicenses.%d.Status", i)] = "Status is required"
+			// }
+			if l.License == "" || l.Status == "" {
+				errors[fmt.Sprintf("StateLicenses.%d", i)] = "Missing value"
+			}
+			n++
+		}
+	}
+	if n == 0 {
 		errors["StateLicenses"] = "At least one state license is required"
 	}
 	return errors
 }
 
 func NewCredentialsHandler(router *mux.Router, dataAPI api.DataAPI) http.Handler {
-	return www.SupportedMethodsFilter(&credentialsHandler{
+	return www.SupportedMethodsHandler(&credentialsHandler{
 		router:  router,
 		dataAPI: dataAPI,
 	}, []string{"GET", "POST"})
@@ -77,11 +107,18 @@ func (h *credentialsHandler) ServeHTTP(w http.ResponseWriter, r *http.Request) {
 		errors = req.Validate()
 		if len(errors) == 0 {
 			// TODO
+
+			if u, err := h.router.Get("doctor-register-upload-cv").URLPath(); err != nil {
+				www.InternalServerError(w, r, err)
+			} else {
+				http.Redirect(w, r, u.String(), http.StatusSeeOther)
+			}
+			return
 		}
 	}
 
-	// Add an empty entry so that it renders
-	if len(req.StateLicenses) == 0 {
+	// Padd with empty entries so that they render
+	for len(req.StateLicenses) < 6 {
 		req.StateLicenses = append(req.StateLicenses, &stateLicense{})
 	}
 
@@ -89,8 +126,13 @@ func (h *credentialsHandler) ServeHTTP(w http.ResponseWriter, r *http.Request) {
 	if err != nil {
 		www.InternalServerError(w, r, err)
 	}
+	states = append([]*common.State{
+		&common.State{
+			Name:         "Select state",
+			Abbreviation: "",
+		}}, states...)
 	www.TemplateResponse(w, http.StatusOK, credsTemplate, &www.BaseTemplateContext{
-		Title: "Doctor Registration | Credentials | Spruce",
+		Title: "Identity & Credentials | Doctor Registration | Spruce",
 		SubContext: &credsTemplateContext{
 			Form:            req,
 			FormErrors:      errors,
