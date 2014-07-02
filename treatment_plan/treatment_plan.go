@@ -27,9 +27,9 @@ type TreatmentPlanRequest struct {
 }
 
 type treatmentPlanViewsResponse struct {
-	HeaderViews      []tpView `json:"header_views"`
-	TreatmentViews   []tpView `json:"treatment_views"`
-	InstructionViews []tpView `json:"instruction_views"`
+	HeaderViews      []tpView `json:"header_views,omitempty"`
+	TreatmentViews   []tpView `json:"treatment_views,omitempty"`
+	InstructionViews []tpView `json:"instruction_views,omitempty"`
 }
 
 func (p *treatmentPlanHandler) ServeHTTP(w http.ResponseWriter, r *http.Request) {
@@ -177,13 +177,13 @@ func treatmentPlanResponse(dataApi api.DataAPI, w http.ResponseWriter, r *http.R
 				}
 			}
 		}
+		treatmentViews = append(treatmentViews, &tpButtonFooterView{
+			FooterText: fmt.Sprintf("If you have any questions about your treatment plan, send Dr. %s a message.", doctor.LastName),
+			ButtonText: fmt.Sprintf("Message Dr. %s", doctor.LastName),
+			IconURL:    app_url.IconMessage,
+			TapURL:     app_url.MessageAction(),
+		})
 	}
-	treatmentViews = append(treatmentViews, &tpButtonFooterView{
-		FooterText: fmt.Sprintf("If you have any questions about your treatment plan, send Dr. %s a message.", doctor.LastName),
-		ButtonText: fmt.Sprintf("Message Dr. %s", doctor.LastName),
-		IconURL:    app_url.IconMessage,
-		TapURL:     app_url.MessageAction(),
-	})
 
 	// INSTRUCTION VIEWS
 	if treatmentPlan.RegimenPlan != nil && len(treatmentPlan.RegimenPlan.RegimenSections) > 0 {
@@ -197,7 +197,10 @@ func treatmentPlanResponse(dataApi api.DataAPI, w http.ResponseWriter, r *http.R
 		}
 		instructionViews = append(instructionViews, cView)
 
-		for _, regimenSection := range treatmentPlan.RegimenPlan.RegimenSections {
+		for i, regimenSection := range treatmentPlan.RegimenPlan.RegimenSections {
+			if i > 0 {
+				cView.Views = append(cView.Views, &tpSmallDividerView{})
+			}
 			cView.Views = append(cView.Views, &tpTextView{
 				Text:  regimenSection.RegimenName,
 				Style: subheaderStyle,
