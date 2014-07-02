@@ -52,7 +52,7 @@ func (d *DataService) RegisterDoctor(doctor *common.Doctor) (int64, error) {
 	}
 
 	if doctor.CellPhone != "" {
-		_, err = tx.Exec(`INSERT INTO account_phone (phone, phone_type, account_id, status) VALUES (?,?,?) `,
+		_, err = tx.Exec(`INSERT INTO account_phone (phone, phone_type, account_id, status) VALUES (?,?,?,?) `,
 			doctor.CellPhone, PHONE_CELL, doctor.AccountId.Int64(), STATUS_ACTIVE)
 		if err != nil {
 			tx.Rollback()
@@ -1230,4 +1230,9 @@ func getInstructionsFromRows(rows *sql.Rows) ([]*common.DoctorInstructionItem, e
 		drugInstructions = append(drugInstructions, supplementalInstruction)
 	}
 	return drugInstructions, rows.Err()
+}
+
+func (d *DataService) SetDoctorNPI(doctorID int64, npi string) error {
+	_, err := d.db.Exec(`UPDATE doctor SET npi_number = ? WHERE id = ?`, npi, doctorID)
+	return err
 }

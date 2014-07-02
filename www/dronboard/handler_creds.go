@@ -4,6 +4,8 @@ import (
 	"fmt"
 	"net/http"
 
+	"github.com/sprucehealth/backend/third_party/github.com/gorilla/context"
+
 	"github.com/sprucehealth/backend/api"
 	"github.com/sprucehealth/backend/common"
 	"github.com/sprucehealth/backend/third_party/github.com/SpruceHealth/schema"
@@ -106,6 +108,18 @@ func (h *credentialsHandler) ServeHTTP(w http.ResponseWriter, r *http.Request) {
 
 		errors = req.Validate()
 		if len(errors) == 0 {
+			// Allowed to panic since it should never ever happen
+			account := context.Get(r, www.CKAccount).(*common.Account)
+			doctorID, err := h.dataAPI.GetDoctorIdFromAccountId(account.ID)
+			if err != nil {
+				www.InternalServerError(w, r, err)
+				return
+			}
+			if err := h.dataAPI.SetDoctorNPI(doctorID, req.NPI); err != nil {
+				www.InternalServerError(w, r, err)
+				return
+			}
+
 			// TODO
 
 			if u, err := h.router.Get("doctor-register-upload-cv").URLPath(); err != nil {

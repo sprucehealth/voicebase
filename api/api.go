@@ -234,6 +234,8 @@ type DoctorAPI interface {
 	MarkGenerationOfTreatmentPlanInVisitQueue(doctorId, patientVisitId, treatmentPlanId int64, currentState, updatedState string) error
 	GetSavedMessageForDoctor(doctorID int64) (string, error)
 	SetSavedMessageForDoctor(doctorID int64, message string) error
+	// TODO: The following methods are temporary until I can think of a nicer API
+	SetDoctorNPI(doctorID int64, npi string) error
 }
 
 type FavoriteTreatmentPlanAPI interface {

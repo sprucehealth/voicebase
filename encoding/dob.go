@@ -199,7 +199,7 @@ func ParseDOB(dobStr, order string, separators []rune) (DOB, error) {
 		case 'D':
 			dob.Day = v
 		default:
-			return DOB{}, fmt.Errorf("encoding.ParseDOB: %r not valid in order (must be one of YMD)", order[i])
+			return DOB{}, fmt.Errorf("encoding.ParseDOB: %c not valid in order (must be one of YMD)", order[i])
 		}
 	}
 	return dob, dob.Validate()
