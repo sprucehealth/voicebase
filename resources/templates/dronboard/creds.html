@@ -1,0 +1,65 @@
+{{define "head"}}
+<script type="text/javascript">
+$(function() {
+	$("#AmericanBoardCertified").change(function(e) {
+		if (e.target.checked) {
+			$("#board-certification").show();
+		} else {
+			$("#board-certification").hide();
+		}
+	});
+});
+</script>
+{{end}}
+
+{{define "fieldError"}}
+	{{if .}}<div class="error">{{.}}</div>{{end}}
+{{end}}
+
+{{define "body"}}
+	<h1>Education, Employment, and Credentials</h1>
+
+	<form method="POST" action="">
+	{{template "fieldError" .FormErrors.AmericanBoardCertified}}
+	<input type="checkbox" id="AmericanBoardCertified" name="AmericanBoardCertified"{{if .Form.AmericanBoardCertified}} checked{{end}}>
+	<label for="LastName">American Board Certified?</label><br>
+
+	<div id="board-certification" style="{{if not .Form.AmericanBoardCertified}}display:none;{{end}}">
+		{{template "fieldError" .FormErrors.SpecialtyBoard}}
+		<label for="SpecialtyBoard">Specialty Board:</label>
+		<input type="text" id="SpecialtyBoard" name="SpecialtyBoard" value="{{.Form.SpecialtyBoard}}"><br>
+
+		{{template "fieldError" .FormErrors.RecentCertDate}}
+		<label for="RecentCertDate">Date most recently certified:</label>
+		<input type="text" id="RecentCertDate" name="RecentCertDate" value="{{.Form.RecentCertDate}}" placeholder="MM/DD/YYYY"><br>
+	</div>
+
+	{{template "fieldError" .FormErrors.StateLicenses}}
+	States in which you hold a license to practice medicine:<br>
+	{{$states := .States}}
+	{{$licenseStatuses := .LicenseStatuses}}
+	{{range $i, $l := .Form.StateLicenses}}
+		<label for="StateLicenses.{{$i}}.State">State:</label>
+		<select name="StateLicenses.{{$i}}.State">
+		{{$currentState := $l.State}}
+		{{range $states}}
+			<option value="{{.Abbreviation}}"{{if eq $currentState .Abbreviation}} selected{{end}}>{{.Name}}</option>
+		{{end}}
+		</select>
+
+		<label for="StateLicenses.{{$i}}.License">License Number:</label>
+		<input type="text" name="StateLicenses.{{$i}}.License" value="{{$l.License}}">
+
+		<label form="StateLicenses.{{$i}}.Status">Status:</label>
+		<select name="StateLicenses.{{$i}}.Status">
+		{{$currentLicenseStatus := $l.Status}}
+		{{range $licenseStatuses}}
+			<option value="{{.}}"{{if eq $currentLicenseStatus .}} selected{{end}}>{{.}}</option>
+		{{end}}
+		</select>
+		<br>
+	{{end}}
+
+	<button>Submit</button>
+	</form>
+{{end}}

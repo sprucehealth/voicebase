@@ -15,8 +15,7 @@ import (
 	"net/url"
 	"strings"
 
-	"github.com/sprucehealth/backend/third_party/github.com/gorilla/schema"
-
+	"github.com/sprucehealth/backend/third_party/github.com/SpruceHealth/schema"
 	goamz "github.com/sprucehealth/backend/third_party/launchpad.net/goamz/aws"
 	"github.com/sprucehealth/backend/third_party/launchpad.net/goamz/s3"
 )

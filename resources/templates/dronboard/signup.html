@@ -2,48 +2,57 @@
 {{end}}
 
 {{define "fieldError"}}
-{{if .}}
-	<div class="error">{{.}}</div>
-{{end}}
+	{{if .}}<div class="error">{{.}}</div>{{end}}
 {{end}}
 
 {{define "body"}}
+	<h1>Register</h1>
+
 	<form method="POST" action="">
 	{{template "fieldError" .FormErrors.FirstName}}
-	First Name: <input type="text" name="FirstName" value="{{.Form.FirstName}}"><br>
+	<label for="FirstName">First Name:</label>
+	<input type="text" id="FirstName" name="FirstName" value="{{.Form.FirstName}}"><br>
 
 	{{template "fieldError" .FormErrors.LastName}}
-	Last Name: <input type="text" name="LastName" value="{{.Form.LastName}}"><br>
+	<label for="LastName">Last Name:</label>
+	<input type="text" id="LastName" name="LastName" value="{{.Form.LastName}}"><br>
 
 	{{template "fieldError" .FormErrors.Gender}}
-	Gender:
-	<select name="Gender">
+	<label for="Gender">Gender:</label>
+	<select name="Gender" id="Gender">
 	<option value="female"{{if eq .Form.Gender "female"}} selected{{end}}>Female</option>
 	<option value="male"{{if eq .Form.Gender "male"}} selected{{end}}>Male</option>
 	</select><br>
 
 	{{template "fieldError" .FormErrors.DOB}}
-	Date of Birth: <input type="text" name="DOB" value="{{.Form.DOB}}" placeholder="MM/DD/YYYY"><br>
+	<label for="DOB">Date of Birth:</label>
+	<input type="text" id="DOB" name="DOB" value="{{.Form.DOB}}" placeholder="MM/DD/YYYY"><br>
 
 	{{template "fieldError" .FormErrors.Email}}
-	Email: <input type="text" name="Email" value="{{.Form.Email}}"><br>
+	<label for="Email">Email:</label>
+	<input type="text" id="Email" name="Email" value="{{.Form.Email}}"><br>
 
 	{{template "fieldError" .FormErrors.CellNumber}}
-	Cell Phone Number: <input type="text" name="CellNumber" value="{{.Form.CellNumber}}"><br>
+	<label for="CellNumber">Cell Phone Number:</label>
+	<input type="text" id="CellNumber" name="CellNumber" value="{{.Form.CellNumber}}"><br>
 
 	<h3>Home Address</h3>
 
 	{{template "fieldError" .FormErrors.AddressLine1}}
-	Address Line 1: <input type="text" name="AddressLine1" value="{{.Form.AddressLine1}}"><br>
+	<label for="AddressLine1">Address Line 1:</label>
+	<input type="text" id="AddressLine1" name="AddressLine1" value="{{.Form.AddressLine1}}"><br>
 
 	{{template "fieldError" .FormErrors.AddressLine2}}
-	Address Line 2: <input type="text" name="AddressLine2" value="{{.Form.AddressLine2}}"><br>
+	<label for="AddressLine2">Address Line 2:</label>
+	<input type="text" id="AddressLine2" name="AddressLine2" value="{{.Form.AddressLine2}}"><br>
 
 	{{template "fieldError" .FormErrors.City}}
-	City: <input type="text" name="City" value="{{.Form.City}}"><br>
+	<label for="City">City:</label>
+	<input type="text" id="City" name="City" value="{{.Form.City}}"><br>
 
-	State:
-	<select name="State">
+	{{template "fieldError" .FormErrors.State}}
+	<label for="State">State:</label>
+	<select name="State" id="State">
 	{{$currentState := .Form.State}}
 	{{range .States}}
 		<option value="{{.Abbreviation}}"{{if eq $currentState .Abbreviation}} selected{{end}}>{{.Name}}</option>
@@ -51,15 +60,18 @@
 	</select><br>
 
 	{{template "fieldError" .FormErrors.ZipCode}}
-	ZipCode: <input type="text" name="ZipCode" value="{{.Form.ZipCode}}"><br>
+	<label for="ZipCode">Zip Code:</label>
+	<input type="text" id="ZipCode" name="ZipCode" value="{{.Form.ZipCode}}"><br>
 
 	<h3>Password</h3>
 
 	{{template "fieldError" .FormErrors.Password1}}
-	Password: <input type="password" name="Password1"><br>
+	<label for="Password1">Password:</label>
+	<input type="password" id="Password1" name="Password1"><br>
 
 	{{template "fieldError" .FormErrors.Password2}}
-	Verify Password: <input type="password" name="Password2"><br>
+	<label for="Password2">Verify Password:</label>
+	<input type="password" id="Password2" name="Password2"><br>
 
 	<button>Sign Up</button>
 	</form>

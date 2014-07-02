@@ -4,7 +4,7 @@ import (
 	"github.com/sprucehealth/backend/api"
 	"net/http"
 
-	"github.com/sprucehealth/backend/third_party/github.com/gorilla/schema"
+	"github.com/sprucehealth/backend/third_party/github.com/SpruceHealth/schema"
 )
 
 type StaticContentHandler struct {

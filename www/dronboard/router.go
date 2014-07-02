@@ -7,7 +7,6 @@ import (
 )
 
 func SetupRoutes(r *mux.Router, dataAPI api.DataAPI, authAPI api.AuthAPI, metricsRegistry metrics.Registry) {
-	signup := NewSignupHandler(dataAPI, authAPI)
-
-	r.Handle("/doctor-register", signup).Name("doctor-register")
+	r.Handle("/doctor-register", NewSignupHandler(r, dataAPI, authAPI)).Name("doctor-register")
+	r.Handle("/doctor-register/credentials", NewCredentialsHandler(r, dataAPI)).Name("doctor-register-credentials")
 }

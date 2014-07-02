@@ -7,8 +7,9 @@ import (
 	"github.com/sprucehealth/backend/api"
 	"github.com/sprucehealth/backend/common"
 	"github.com/sprucehealth/backend/encoding"
+	"github.com/sprucehealth/backend/third_party/github.com/SpruceHealth/schema"
 	"github.com/sprucehealth/backend/third_party/github.com/dchest/validator"
-	"github.com/sprucehealth/backend/third_party/github.com/gorilla/schema"
+	"github.com/sprucehealth/backend/third_party/github.com/gorilla/mux"
 	"github.com/sprucehealth/backend/www"
 )
 
@@ -18,6 +19,7 @@ var (
 )
 
 type signupHandler struct {
+	router  *mux.Router
 	dataAPI api.DataAPI
 	authAPI api.AuthAPI
 }
@@ -44,10 +46,10 @@ type signupRequest struct {
 func (r *signupRequest) Validate() map[string]string {
 	errors := map[string]string{}
 	if r.FirstName == "" {
-		errors["FirstName"] = "FirstName is required"
+		errors["FirstName"] = "First name is required"
 	}
 	if r.LastName == "" {
-		errors["LastName"] = "LastName is required"
+		errors["LastName"] = "Last name is required"
 	}
 	if r.Gender == "" {
 		errors["Gender"] = "Gender is required"
@@ -82,14 +84,12 @@ func (r *signupRequest) Validate() map[string]string {
 	if r.ZipCode == "" {
 		errors["ZipCode"] = "ZipCode is required"
 	}
-	if len(errors) == 0 {
-		return nil
-	}
 	return errors
 }
 
-func NewSignupHandler(dataAPI api.DataAPI, authAPI api.AuthAPI) http.Handler {
+func NewSignupHandler(router *mux.Router, dataAPI api.DataAPI, authAPI api.AuthAPI) http.Handler {
 	return www.SupportedMethodsFilter(&signupHandler{
+		router:  router,
 		dataAPI: dataAPI,
 		authAPI: authAPI,
 	}, []string{"GET", "POST"})
@@ -152,7 +152,11 @@ func (h *signupHandler) ServeHTTP(w http.ResponseWriter, r *http.Request) {
 				}
 
 				http.SetCookie(w, www.NewAuthCookie(token, r))
-				http.Redirect(w, r, "TODO", http.StatusSeeOther)
+				if u, err := h.router.Get("doctor-register-credentials").URLPath(); err != nil {
+					www.InternalServerError(w, r, err)
+				} else {
+					http.Redirect(w, r, u.String(), http.StatusSeeOther)
+				}
 				return
 			}
 		}
