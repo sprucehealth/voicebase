@@ -1,9 +1,10 @@
 package app_url
 
 import (
-	"github.com/sprucehealth/backend/libs/golog"
 	"net/url"
 	"strings"
+
+	"github.com/sprucehealth/backend/libs/golog"
 )
 
 var (
@@ -14,9 +15,13 @@ var (
 	IconHomeTreatmentPlanNormal = &SpruceAsset{name: "icon_home_treatmentplan_normal"}
 	IconHomeConversationNormal  = &SpruceAsset{name: "icon_home_conversation_normal"}
 	TmpSignature                = &SpruceAsset{name: "tmp_signature"}
-	IconRX                      = &SpruceAsset{name: "icon_plan_rx"}
-	IconOTC                     = &SpruceAsset{name: "icon_plan_otc"}
+	IconRXLarge                 = &SpruceAsset{name: "icon_rx_large"}
+	IconRX                      = &SpruceAsset{name: "icon_rx"}
+	IconOTCLarge                = &SpruceAsset{name: "icon_otc_large"}
 	IconMessage                 = &SpruceAsset{name: "icon_message"}
+	Treatment                   = &SpruceAsset{name: "treatment"}
+	IconGuide                   = &SpruceAsset{name: "icon_guide"}
+	IconRegimen                 = &SpruceAsset{name: "icon_regimen"}
 )
 
 type SpruceAsset struct {

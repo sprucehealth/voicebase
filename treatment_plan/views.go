@@ -7,11 +7,14 @@ import (
 )
 
 const (
-	sectionHeaderStyle     = "section_header"
-	smallGrayStyle         = "small_gray"
-	subheaderStyle         = "subheader"
-	treatmentViewNamespace = "treatment"
-	timeFormatlayout       = "January 2 at 3:04pm"
+	sectionHeaderStyle        = "section_header"
+	smallGrayStyle            = "small_gray"
+	subheaderStyle            = "subheader"
+	treatmentViewNamespace    = "treatment"
+	captionRegularItalicStyle = "caption_regular_italic"
+	bulletedStyle             = "bulleted"
+	numberedStyle             = "numbered"
+	timeFormatlayout          = "January 2 at 3:04pm"
 )
 
 type tpView interface {
@@ -39,10 +42,10 @@ func (v *tpSmallDividerView) Validate() error {
 }
 
 type tpSmallHeaderView struct {
-	Type        string `json:"type"`
-	Title       string `json:"title"`
-	IconURL     string `json:"icon_url"`
-	RoundedIcon bool   `json:"rounded_icon"`
+	Type        string               `json:"type"`
+	Title       string               `json:"title"`
+	IconURL     *app_url.SpruceAsset `json:"icon_url"`
+	RoundedIcon bool                 `json:"rounded_icon"`
 }
 
 func (v *tpSmallHeaderView) Validate() error {
@@ -57,16 +60,22 @@ type tpCardView struct {
 
 func (v *tpCardView) Validate() error {
 	v.Type = treatmentViewNamespace + ":card_view"
+	for _, subView := range v.Views {
+		if err := subView.Validate(); err != nil {
+			return err
+		}
+	}
 	return nil
 }
 
 type tpCardTitleView struct {
-	Type    string               `json:"type"`
-	Title   string               `json:"title"`
-	IconURL *app_url.SpruceAsset `json:"icon_url"`
+	Type        string               `json:"type"`
+	Title       string               `json:"title"`
+	IconURL     *app_url.SpruceAsset `json:"icon_url"`
+	RoundedIcon bool                 `json:"rounded_icon,omitempty"`
 }
 
-func (v *tpCardTitleView) Validated() error {
+func (v *tpCardTitleView) Validate() error {
 	v.Type = treatmentViewNamespace + ":card_title_view"
 	return nil
 }
@@ -193,16 +202,22 @@ func (v *tpButtonView) Validate() error {
 }
 
 type tpPrescriptionView struct {
-	Type        string                `json:"type"`
-	IconURL     *app_url.SpruceAsset  `json:"icon_url"`
-	Title       string                `json:"title"`
-	Description string                `json:"description"`
-	ButtonTitle string                `json:"button_title,omitempty"`
-	TapURL      *app_url.SpruceAction `json:"tap_url,omitempty"`
+	Type            string               `json:"type"`
+	IconURL         *app_url.SpruceAsset `json:"icon_url"`
+	Title           string               `json:"title"`
+	Description     string               `json:"description"`
+	SmallHeaderText string               `json:"small_header_text"`
+	Buttons         []tpView             `json:"buttons,omitempty"`
 }
 
 func (v *tpPrescriptionView) Validate() error {
 	v.Type = treatmentViewNamespace + ":prescription"
+
+	for _, subView := range v.Buttons {
+		if err := subView.Validate(); err != nil {
+			return err
+		}
+	}
 	return nil
 }
 
@@ -211,6 +226,11 @@ type tpPrescriptionButtonView struct {
 	Text    string                `json:"text"`
 	IconURL *app_url.SpruceAsset  `json:"icon_url"`
 	TapURL  *app_url.SpruceAction `json:"tap_url"`
+}
+
+func (v *tpPrescriptionButtonView) Validate() error {
+	v.Type = treatmentViewNamespace + ":prescription_button"
+	return nil
 }
 
 type tpButtonFooterView struct {

@@ -173,6 +173,12 @@ func ViewTreatmentGuideAction(treatmentId int64) *SpruceAction {
 	}
 }
 
+func ViewPreferredPharmacyAction() *SpruceAction {
+	return &SpruceAction{
+		name: "view_preferred_pharmacy",
+	}
+}
+
 func MessageAction() *SpruceAction {
 	return &SpruceAction{
 		name: "message",

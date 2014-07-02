@@ -996,10 +996,10 @@ func (d *DataService) GetFullNameForState(state string) (string, error) {
 }
 
 func (d *DataService) GetTreatmentPlanForPatient(patientId, treatmentPlanId int64) (*common.TreatmentPlan, error) {
-	row := d.db.QueryRow(`select id, doctor_id from treatment_plan where patient_id = ? and id = ?`, patientId, treatmentPlanId)
+	row := d.db.QueryRow(`select id, doctor_id, creation_date from treatment_plan where patient_id = ? and id = ?`, patientId, treatmentPlanId)
 
 	var treatmentPlan common.TreatmentPlan
-	if err := row.Scan(&treatmentPlan.Id, &treatmentPlan.DoctorId); err == sql.ErrNoRows {
+	if err := row.Scan(&treatmentPlan.Id, &treatmentPlan.DoctorId, &treatmentPlan.CreationDate); err == sql.ErrNoRows {
 		return nil, NoRowsError
 	} else if err != nil {
 		return nil, err
