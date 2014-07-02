@@ -754,7 +754,7 @@ func (d *DataService) GetTreatmentsForPatient(patientId int64) ([]*common.Treatm
 
 func (d *DataService) GetActiveTreatmentPlanForPatient(patientId int64) (*common.TreatmentPlan, error) {
 	var treatmentPlans []*common.TreatmentPlan
-	rows, err := d.db.Query(`select id, doctor_id from treatment_plan where patient_id = ? and status = ?`, patientId, STATUS_ACTIVE)
+	rows, err := d.db.Query(`select id, doctor_id, patient_case_id, patient_id, creation_date, status from treatment_plan where patient_id = ? and status = ?`, patientId, STATUS_ACTIVE)
 	if err != nil {
 		return nil, err
 	}
@@ -762,7 +762,7 @@ func (d *DataService) GetActiveTreatmentPlanForPatient(patientId int64) (*common
 
 	for rows.Next() {
 		var treatmentPlan common.TreatmentPlan
-		if err := rows.Scan(&treatmentPlan.Id, &treatmentPlan.DoctorId); err != nil {
+		if err := rows.Scan(&treatmentPlan.Id, &treatmentPlan.DoctorId, &treatmentPlan.PatientCaseId, &treatmentPlan.PatientId, &treatmentPlan.CreationDate, &treatmentPlan.Status); err != nil {
 			return nil, err
 		}
 		treatmentPlans = append(treatmentPlans, &treatmentPlan)
