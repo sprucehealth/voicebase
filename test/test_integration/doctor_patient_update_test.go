@@ -161,9 +161,9 @@ func TestDoctorFailedUpdate(t *testing.T) {
 		t.Fatalf("Expected a %d request due to remove of phone numbers, instead got %d", http.StatusBadRequest, resp.StatusCode)
 	}
 
-	signedupPatientResponse.Patient.PhoneNumbers = []*common.PhoneInformation{&common.PhoneInformation{
-		Phone:     "1241515",
-		PhoneType: "Home",
+	signedupPatientResponse.Patient.PhoneNumbers = []*common.PhoneNumber{&common.PhoneNumber{
+		Phone: "1241515",
+		Type:  "Home",
 	}}
 
 	// now lets try no address
@@ -231,17 +231,18 @@ func TestDoctorUpdateToPhoneNumbers(t *testing.T) {
 
 	// lets go ahead and modify current phone number list
 
-	phoneNumbers := []*common.PhoneInformation{&common.PhoneInformation{
-		Phone:     "7348465522",
-		PhoneType: "Home",
-	},
-		&common.PhoneInformation{
-			Phone:     "7348465522",
-			PhoneType: "Work",
+	phoneNumbers := []*common.PhoneNumber{
+		&common.PhoneNumber{
+			Phone: "7348465522",
+			Type:  "Home",
 		},
-		&common.PhoneInformation{
-			Phone:     "7348465522",
-			PhoneType: "Work",
+		&common.PhoneNumber{
+			Phone: "7348465522",
+			Type:  "Work",
+		},
+		&common.PhoneNumber{
+			Phone: "7348465522",
+			Type:  "Work",
 		},
 	}
 	patient.PhoneNumbers = phoneNumbers
@@ -292,7 +293,7 @@ func TestDoctorUpdateToPhoneNumbers(t *testing.T) {
 	}
 
 	for i, phoneNumber := range phoneNumbers {
-		if phoneNumber.Phone != patient.PhoneNumbers[i].Phone || phoneNumber.PhoneType != patient.PhoneNumbers[i].PhoneType {
+		if phoneNumber.Phone != patient.PhoneNumbers[i].Phone || phoneNumber.Type != patient.PhoneNumbers[i].Type {
 			t.Fatal("Expected the phone numbers modified to be the same ones returned")
 		}
 	}
