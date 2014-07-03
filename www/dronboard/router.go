@@ -10,7 +10,7 @@ import (
 )
 
 func SetupRoutes(r *mux.Router, dataAPI api.DataAPI, authAPI api.AuthAPI, metricsRegistry metrics.Registry) {
-	r.Handle("/doctor-register", NewSignupHandler(r, dataAPI, authAPI)).Name("doctor-register")
+	r.Handle("/doctor-register", NewRegisterHandler(r, dataAPI, authAPI)).Name("doctor-register")
 
 	redir := http.RedirectHandler("/doctor-register", http.StatusSeeOther)
 	authFilter := www.AuthRequiredFilter(authAPI, []string{api.DOCTOR_ROLE}, redir)

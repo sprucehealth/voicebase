@@ -15,7 +15,11 @@ type templateTest struct {
 
 func TestTemplates(t *testing.T) {
 	templates := []templateTest{
-		{"signup", signupTemplate, &www.BaseTemplateContext{SubContext: &signupTemplateContext{Form: &signupRequest{}}}},
+		{"creds", credsTemplate, &www.BaseTemplateContext{SubContext: &credsTemplateContext{Form: &credentialsForm{}}}},
+		{"engagement", engagementTemplate, &www.BaseTemplateContext{SubContext: &engagementTemplateContext{Form: &engagementForm{}}}},
+		{"financials", financialsTemplate, &www.BaseTemplateContext{SubContext: &financialsTemplateContext{Form: &financialsForm{}}}},
+		{"register", registerTemplate, &www.BaseTemplateContext{SubContext: &registerTemplateContext{Form: &registerForm{}}}},
+		{"upload", uploadTemplate, &www.BaseTemplateContext{SubContext: &uploadTemplateContext{}}},
 	}
 	for _, tc := range templates {
 		if err := tc.template.Execute(ioutil.Discard, tc.context); err != nil {

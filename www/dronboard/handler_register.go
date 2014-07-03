@@ -17,7 +17,7 @@ var (
 	dobSeparators = []rune{'-', '/'}
 )
 
-type signupHandler struct {
+type registerHandler struct {
 	router  *mux.Router
 	dataAPI api.DataAPI
 	authAPI api.AuthAPI
@@ -99,15 +99,15 @@ func (r *registerForm) Validate() map[string]string {
 	return errors
 }
 
-func NewSignupHandler(router *mux.Router, dataAPI api.DataAPI, authAPI api.AuthAPI) http.Handler {
-	return www.SupportedMethodsHandler(&signupHandler{
+func NewRegisterHandler(router *mux.Router, dataAPI api.DataAPI, authAPI api.AuthAPI) http.Handler {
+	return www.SupportedMethodsHandler(&registerHandler{
 		router:  router,
 		dataAPI: dataAPI,
 		authAPI: authAPI,
 	}, []string{"GET", "POST"})
 }
 
-func (h *signupHandler) ServeHTTP(w http.ResponseWriter, r *http.Request) {
+func (h *registerHandler) ServeHTTP(w http.ResponseWriter, r *http.Request) {
 	var req registerForm
 	var errors map[string]string
 
@@ -173,16 +173,12 @@ func (h *signupHandler) ServeHTTP(w http.ResponseWriter, r *http.Request) {
 		www.InternalServerError(w, r, err)
 	}
 
-	www.TemplateResponse(w, http.StatusOK, signupTemplate, &www.BaseTemplateContext{
+	www.TemplateResponse(w, http.StatusOK, registerTemplate, &www.BaseTemplateContext{
 		Title: "Doctor Registration | Spruce",
-		SubContext: &signupTemplateContext{
+		SubContext: &registerTemplateContext{
 			Form:       &req,
 			FormErrors: errors,
 			States:     states,
 		},
 	})
 }
-
-// func (h *signupHandler) signUpDoctor(w http.ResponseWriter, r *http.Request, req *registerForm) {
-// 	// h.dataAPI.RegisterDoctor(doctor)
-// }

@@ -8,7 +8,7 @@ import (
 )
 
 var (
-	signupTemplate     *template.Template
+	registerTemplate   *template.Template
 	credsTemplate      *template.Template
 	uploadTemplate     *template.Template
 	engagementTemplate *template.Template
@@ -16,14 +16,14 @@ var (
 )
 
 func init() {
-	signupTemplate = www.MustLoadTemplate("dronboard/signup.html", template.Must(www.BaseTemplate.Clone()))
+	registerTemplate = www.MustLoadTemplate("dronboard/signup.html", template.Must(www.BaseTemplate.Clone()))
 	credsTemplate = www.MustLoadTemplate("dronboard/creds.html", template.Must(www.BaseTemplate.Clone()))
 	uploadTemplate = www.MustLoadTemplate("dronboard/upload.html", template.Must(www.BaseTemplate.Clone()))
 	engagementTemplate = www.MustLoadTemplate("dronboard/engagement.html", template.Must(www.BaseTemplate.Clone()))
 	financialsTemplate = www.MustLoadTemplate("dronboard/financials.html", template.Must(www.BaseTemplate.Clone()))
 }
 
-type signupTemplateContext struct {
+type registerTemplateContext struct {
 	Form       *registerForm
 	FormErrors map[string]string
 	States     []*common.State
