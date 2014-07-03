@@ -9,32 +9,30 @@ import (
 	"github.com/sprucehealth/backend/www"
 )
 
-type engagementHandler struct {
+type financialsHandler struct {
 	router  *mux.Router
 	dataAPI api.DataAPI
 }
 
-type engagementForm struct {
-	HoursPerWeek string
-	TimesActive  string
-	JacketSize   string
-	Excitement   string
+type financialsForm struct {
+	AccountNumber string
+	RoutingNumber string
 }
 
-func (r *engagementForm) Validate() map[string]string {
+func (r *financialsForm) Validate() map[string]string {
 	errors := map[string]string{}
 	return errors
 }
 
-func NewEngagementHandler(router *mux.Router, dataAPI api.DataAPI) http.Handler {
-	return www.SupportedMethodsHandler(&engagementHandler{
+func NewFinancialsHandler(router *mux.Router, dataAPI api.DataAPI) http.Handler {
+	return www.SupportedMethodsHandler(&financialsHandler{
 		router:  router,
 		dataAPI: dataAPI,
 	}, []string{"GET", "POST"})
 }
 
-func (h *engagementHandler) ServeHTTP(w http.ResponseWriter, r *http.Request) {
-	req := &engagementForm{}
+func (h *financialsHandler) ServeHTTP(w http.ResponseWriter, r *http.Request) {
+	req := &financialsForm{}
 	var errors map[string]string
 
 	if r.Method == "POST" {
@@ -52,7 +50,7 @@ func (h *engagementHandler) ServeHTTP(w http.ResponseWriter, r *http.Request) {
 		if len(errors) == 0 {
 			// TODO
 
-			if u, err := h.router.Get("doctor-register-financials").URLPath(); err != nil {
+			if u, err := h.router.Get("TODO").URLPath(); err != nil {
 				www.InternalServerError(w, r, err)
 			} else {
 				http.Redirect(w, r, u.String(), http.StatusSeeOther)
@@ -61,9 +59,9 @@ func (h *engagementHandler) ServeHTTP(w http.ResponseWriter, r *http.Request) {
 		}
 	}
 
-	www.TemplateResponse(w, http.StatusOK, engagementTemplate, &www.BaseTemplateContext{
-		Title: "Identity & Credentials | Doctor Registration | Spruce",
-		SubContext: &engagementTemplateContext{
+	www.TemplateResponse(w, http.StatusOK, financialsTemplate, &www.BaseTemplateContext{
+		Title: "Financials | Doctor Registration | Spruce",
+		SubContext: &financialsTemplateContext{
 			Form:       req,
 			FormErrors: errors,
 		},

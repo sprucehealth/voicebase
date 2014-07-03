@@ -33,7 +33,7 @@ type stateLicense struct {
 	Status  string
 }
 
-type credentialsRequest struct {
+type credentialsForm struct {
 	AmericanBoardCertified bool
 	SpecialtyBoard         string
 	RecentCertDate         string
@@ -45,7 +45,7 @@ type credentialsRequest struct {
 	StateLicenses          []*stateLicense
 }
 
-func (r *credentialsRequest) Validate() map[string]string {
+func (r *credentialsForm) Validate() map[string]string {
 	errors := map[string]string{}
 	if r.AmericanBoardCertified == true {
 		if r.SpecialtyBoard == "" {
@@ -92,7 +92,7 @@ func NewCredentialsHandler(router *mux.Router, dataAPI api.DataAPI) http.Handler
 }
 
 func (h *credentialsHandler) ServeHTTP(w http.ResponseWriter, r *http.Request) {
-	req := &credentialsRequest{}
+	req := &credentialsForm{}
 	var errors map[string]string
 
 	if r.Method == "POST" {

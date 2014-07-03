@@ -12,6 +12,7 @@ var (
 	credsTemplate      *template.Template
 	uploadTemplate     *template.Template
 	engagementTemplate *template.Template
+	financialsTemplate *template.Template
 )
 
 func init() {
@@ -19,16 +20,17 @@ func init() {
 	credsTemplate = www.MustLoadTemplate("dronboard/creds.html", template.Must(www.BaseTemplate.Clone()))
 	uploadTemplate = www.MustLoadTemplate("dronboard/upload.html", template.Must(www.BaseTemplate.Clone()))
 	engagementTemplate = www.MustLoadTemplate("dronboard/engagement.html", template.Must(www.BaseTemplate.Clone()))
+	financialsTemplate = www.MustLoadTemplate("dronboard/financials.html", template.Must(www.BaseTemplate.Clone()))
 }
 
 type signupTemplateContext struct {
-	Form       *signupRequest
+	Form       *registerForm
 	FormErrors map[string]string
 	States     []*common.State
 }
 
 type credsTemplateContext struct {
-	Form            *credentialsRequest
+	Form            *credentialsForm
 	FormErrors      map[string]string
 	LicenseStatuses []string
 	States          []*common.State
@@ -39,6 +41,11 @@ type uploadTemplateContext struct {
 }
 
 type engagementTemplateContext struct {
-	Form       *engagementRequest
+	Form       *engagementForm
+	FormErrors map[string]string
+}
+
+type financialsTemplateContext struct {
+	Form       *financialsForm
 	FormErrors map[string]string
 }

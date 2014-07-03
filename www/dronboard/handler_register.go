@@ -23,7 +23,7 @@ type signupHandler struct {
 	authAPI api.AuthAPI
 }
 
-type signupRequest struct {
+type registerForm struct {
 	FirstName  string
 	LastName   string
 	Gender     string
@@ -44,7 +44,7 @@ type signupRequest struct {
 
 // Validate returns an error message for each field that doesn't match. If
 // the request has no validation errors then the size of the map is 0.
-func (r *signupRequest) Validate() map[string]string {
+func (r *registerForm) Validate() map[string]string {
 	errors := map[string]string{}
 	if r.FirstName == "" {
 		errors["FirstName"] = "First name is required"
@@ -108,7 +108,7 @@ func NewSignupHandler(router *mux.Router, dataAPI api.DataAPI, authAPI api.AuthA
 }
 
 func (h *signupHandler) ServeHTTP(w http.ResponseWriter, r *http.Request) {
-	var req signupRequest
+	var req registerForm
 	var errors map[string]string
 
 	if r.Method == "POST" {
@@ -183,6 +183,6 @@ func (h *signupHandler) ServeHTTP(w http.ResponseWriter, r *http.Request) {
 	})
 }
 
-// func (h *signupHandler) signUpDoctor(w http.ResponseWriter, r *http.Request, req *signupRequest) {
+// func (h *signupHandler) signUpDoctor(w http.ResponseWriter, r *http.Request, req *registerForm) {
 // 	// h.dataAPI.RegisterDoctor(doctor)
 // }

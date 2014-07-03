@@ -19,4 +19,5 @@ func SetupRoutes(r *mux.Router, dataAPI api.DataAPI, authAPI api.AuthAPI, metric
 	r.Handle("/doctor-register/upload-cv", authFilter(NewUploadCVHandler(r, dataAPI))).Name("doctor-register-upload-cv")
 	r.Handle("/doctor-register/upload-license", authFilter(NewUploadLicenseHandler(r, dataAPI))).Name("doctor-register-upload-license")
 	r.Handle("/doctor-register/engagement", authFilter(NewEngagementHandler(r, dataAPI))).Name("doctor-register-engagement")
+	r.Handle("/doctor-register/financials", authFilter(NewFinancialsHandler(r, dataAPI))).Name("doctor-register-financials")
 }

@@ -1,0 +1,30 @@
+{{define "head"}}
+{{end}}
+
+{{define "tail"}}
+{{end}}
+
+{{define "body"}}
+	<form method="POST" action="" role="form" class="form-onboard">
+		<h2>Financials to Receive Payment</h2>
+
+		<h4>Bank Account Information</h4>
+
+		<div class="form-group">
+			<label class="control-label" for="Country">Country</label>
+			<input disabled type="text" name="Country" value="USA" class="form-control">
+		</div>
+
+		<div class="form-group {{if .FormErrors.AccountNumber}}has-error has-feedback{{end}}">
+			<label class="control-label" for="AccountNumber">Account Number</label>
+			<input required type="text" name="AccountNumber" value="{{.Form.AccountNumber}}" class="form-control">
+		</div>
+
+		<div class="form-group {{if .FormErrors.RoutingNumber}}has-error has-feedback{{end}}">
+			<label class="control-label" for="RoutingNumber">Routing Number</label>
+			<input required type="text" name="RoutingNumber" value="{{.Form.RoutingNumber}}" class="form-control">
+		</div>
+
+		<button type="submit" class="btn btn-primary pull-right">Submit</button>
+	</form>
+{{end}}
