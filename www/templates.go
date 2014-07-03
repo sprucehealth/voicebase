@@ -55,6 +55,9 @@ func init() {
 }
 
 func (resourceFileSystem) Open(name string) (http.File, error) {
+	if ResourcesPath == "" {
+		return nil, os.ErrNotExist
+	}
 	f, err := os.Open(ResourcesPath + "/static" + name)
 	if err != nil {
 		return nil, err

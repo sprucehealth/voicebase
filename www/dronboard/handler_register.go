@@ -146,6 +146,7 @@ func (h *signupHandler) ServeHTTP(w http.ResponseWriter, r *http.Request) {
 					LastName:      req.LastName,
 					DOB:           req.dob,
 					Gender:        req.Gender,
+					CellPhone:     req.CellNumber,
 					DoctorAddress: address,
 				}
 
