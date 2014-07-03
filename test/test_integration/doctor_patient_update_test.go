@@ -3,15 +3,16 @@ package test_integration
 import (
 	"bytes"
 	"encoding/json"
+	"net/http"
+	"net/http/httptest"
+	"testing"
+
 	"github.com/sprucehealth/backend/address"
 	"github.com/sprucehealth/backend/common"
 	"github.com/sprucehealth/backend/encoding"
 	"github.com/sprucehealth/backend/libs/erx"
 	"github.com/sprucehealth/backend/libs/pharmacy"
 	"github.com/sprucehealth/backend/patient_file"
-	"net/http"
-	"net/http/httptest"
-	"testing"
 )
 
 type requestData struct {
@@ -176,7 +177,7 @@ func TestDoctorFailedUpdate(t *testing.T) {
 	}
 
 	// now lets try no dob
-	signedupPatientResponse.Patient.Dob = encoding.Dob{Month: 11, Day: 8, Year: 1987}
+	signedupPatientResponse.Patient.DOB = encoding.DOB{Month: 11, Day: 8, Year: 1987}
 	resp, err = testData.AuthPut(ts.URL, "application/json", bytes.NewReader(jsonData), doctor.AccountId.Int64())
 	if err != nil {
 		t.Fatal("Unable to make successful call to update patient information: " + err.Error())
@@ -344,7 +345,7 @@ func TestDoctorUpdateToTopLevelInformation(t *testing.T) {
 	patient.Prefix = "n"
 	patient.MiddleName = "aaaa"
 	patient.Gender = "Unknown"
-	patient.Dob = encoding.Dob{Day: 11, Month: 9, Year: 1987}
+	patient.DOB = encoding.DOB{Day: 11, Month: 9, Year: 1987}
 
 	stubErxApi := &erx.StubErxService{}
 	stubAddressValidationService := address.StubAddressValidationService{
@@ -388,9 +389,9 @@ func TestDoctorUpdateToTopLevelInformation(t *testing.T) {
 		patient.MiddleName != updatedPatient.MiddleName ||
 		patient.Suffix != updatedPatient.Suffix ||
 		patient.Prefix != updatedPatient.Prefix ||
-		patient.Dob.Day != updatedPatient.Dob.Day ||
-		patient.Dob.Year != updatedPatient.Dob.Year ||
-		patient.Dob.Month != updatedPatient.Dob.Month {
+		patient.DOB.Day != updatedPatient.DOB.Day ||
+		patient.DOB.Year != updatedPatient.DOB.Year ||
+		patient.DOB.Month != updatedPatient.DOB.Month {
 		t.Fatal("Patient data incorrectly updated")
 	}
 }

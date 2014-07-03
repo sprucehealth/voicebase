@@ -3,9 +3,6 @@ package test_integration
 import (
 	"bytes"
 	"encoding/json"
-	"github.com/sprucehealth/backend/common"
-	patientApiService "github.com/sprucehealth/backend/patient"
-	"github.com/sprucehealth/backend/patient_visit"
 	"io/ioutil"
 	"net/http"
 	"net/http/httptest"
@@ -13,6 +10,10 @@ import (
 	"strconv"
 	"strings"
 	"testing"
+
+	"github.com/sprucehealth/backend/common"
+	patientApiService "github.com/sprucehealth/backend/patient"
+	"github.com/sprucehealth/backend/patient_visit"
 
 	"github.com/sprucehealth/backend/address"
 	"github.com/sprucehealth/backend/api"
@@ -197,13 +198,13 @@ func TestPatientInformationUpdate(t *testing.T) {
 	expectedLastName := "plower"
 	expectedPhone := "1234567890"
 	expectedGender := "other"
-	expectedDob := "1900-01-01"
+	expectedDOB := "1900-01-01"
 	params := url.Values{}
 	params.Set("first_name", expectedFirstName)
 	params.Set("last_name", expectedLastName)
 	params.Set("phone", expectedPhone)
 	params.Set("gender", expectedGender)
-	params.Set("dob", expectedDob)
+	params.Set("dob", expectedDOB)
 
 	patientUpdateHandler := patientApiService.NewUpdateHandler(testData.DataApi)
 	ts := httptest.NewServer(patientUpdateHandler)
@@ -227,8 +228,8 @@ func TestPatientInformationUpdate(t *testing.T) {
 		t.Fatalf("Expected last name %s but got %s", expectedLastName, patient.LastName)
 	} else if patient.Gender != expectedGender {
 		t.Fatalf("Expected gender %s but got %s", expectedGender, patient.Gender)
-	} else if patient.Dob.String() != expectedDob {
-		t.Fatalf("Expected dob %s but got %s", expectedDob, patient.Dob.String())
+	} else if patient.DOB.String() != expectedDOB {
+		t.Fatalf("Expected dob %s but got %s", expectedDOB, patient.DOB.String())
 	} else if len(patient.PhoneNumbers) != 1 {
 		t.Fatalf("Expected 1 phone number to exist instead got %d", len(patient.PhoneNumbers))
 	} else if patient.PhoneNumbers[0].Phone != expectedPhone {

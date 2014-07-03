@@ -1,8 +1,9 @@
 package surescripts
 
 import (
-	"github.com/sprucehealth/backend/encoding"
 	"testing"
+
+	"github.com/sprucehealth/backend/encoding"
 )
 
 func TestValidPhoneNumber(t *testing.T) {
@@ -100,7 +101,7 @@ func TestInvalidPhoneNumberInvalidAreaCode(t *testing.T) {
 }
 
 func TestAgeCalculation(t *testing.T) {
-	dob := encoding.Dob{
+	dob := encoding.DOB{
 		Year:  2014,
 		Month: 1,
 		Day:   1,

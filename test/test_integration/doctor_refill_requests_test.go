@@ -4,15 +4,6 @@ import (
 	"bytes"
 	"encoding/json"
 	"fmt"
-	"github.com/sprucehealth/backend/api"
-	"github.com/sprucehealth/backend/apiservice"
-	"github.com/sprucehealth/backend/app_worker"
-	"github.com/sprucehealth/backend/common"
-	"github.com/sprucehealth/backend/doctor_treatment_plan"
-	"github.com/sprucehealth/backend/encoding"
-	"github.com/sprucehealth/backend/libs/aws/sqs"
-	"github.com/sprucehealth/backend/libs/erx"
-	"github.com/sprucehealth/backend/libs/pharmacy"
 	"io/ioutil"
 	"net/http"
 	"net/http/httptest"
@@ -22,6 +13,15 @@ import (
 	"testing"
 	"time"
 
+	"github.com/sprucehealth/backend/api"
+	"github.com/sprucehealth/backend/apiservice"
+	"github.com/sprucehealth/backend/app_worker"
+	"github.com/sprucehealth/backend/common"
+	"github.com/sprucehealth/backend/doctor_treatment_plan"
+	"github.com/sprucehealth/backend/encoding"
+	"github.com/sprucehealth/backend/libs/aws/sqs"
+	"github.com/sprucehealth/backend/libs/erx"
+	"github.com/sprucehealth/backend/libs/pharmacy"
 	"github.com/sprucehealth/backend/third_party/github.com/samuel/go-metrics/metrics"
 )
 
@@ -295,7 +295,7 @@ func TestApproveRefillRequestAndSuccessfulSendToPharmacy(t *testing.T) {
 	patientToReturn := &common.Patient{
 		FirstName:    "Test",
 		LastName:     "TestLastName",
-		Dob:          encoding.Dob{Day: 11, Month: 11, Year: 1980},
+		DOB:          encoding.DOB{Day: 11, Month: 11, Year: 1980},
 		Email:        "test@test.com",
 		Gender:       "male",
 		ZipCode:      "90210",
@@ -535,7 +535,7 @@ func TestApproveRefillRequestAndErrorSendingToPharmacy(t *testing.T) {
 	patientToReturn := &common.Patient{
 		FirstName:    "Test",
 		LastName:     "TestLastName",
-		Dob:          encoding.Dob{Year: 1987, Month: 1, Day: 22},
+		DOB:          encoding.DOB{Year: 1987, Month: 1, Day: 22},
 		Email:        "test@test.com",
 		Gender:       "male",
 		ZipCode:      "90210",
@@ -837,7 +837,7 @@ func TestDenyRefillRequestAndSuccessfulDelete(t *testing.T) {
 	patientToReturn := &common.Patient{
 		FirstName:    "Test",
 		LastName:     "TestLastName",
-		Dob:          encoding.Dob{Year: 1921, Month: 8, Day: 12},
+		DOB:          encoding.DOB{Year: 1921, Month: 8, Day: 12},
 		Email:        "test@test.com",
 		Gender:       "male",
 		ZipCode:      "90210",
@@ -1079,7 +1079,7 @@ func TestDenyRefillRequestWithDNTFWithoutTreatment(t *testing.T) {
 	patientToReturn := &common.Patient{
 		FirstName:    "Test",
 		LastName:     "TestLastName",
-		Dob:          encoding.Dob{Month: 1, Day: 1, Year: 2000},
+		DOB:          encoding.DOB{Month: 1, Day: 1, Year: 2000},
 		Email:        "test@test.com",
 		Gender:       "male",
 		ZipCode:      "90210",
@@ -1261,7 +1261,7 @@ func setUpDeniedRefillRequestWithDNTF(t *testing.T, testData *TestData, endErxSt
 	patientToReturn := &common.Patient{
 		FirstName:    "Test",
 		LastName:     "TestLastName",
-		Dob:          encoding.Dob{Year: 1987, Month: 8, Day: 1},
+		DOB:          encoding.DOB{Year: 1987, Month: 8, Day: 1},
 		Email:        "test@test.com",
 		Gender:       "male",
 		ZipCode:      "90210",
@@ -2147,7 +2147,7 @@ func TestCheckingStatusOfMultipleRefillRequestsAtOnce(t *testing.T) {
 	patientToReturn := &common.Patient{
 		FirstName:    "Test",
 		LastName:     "TestLastName",
-		Dob:          encoding.Dob{Month: 1, Year: 1967, Day: 1},
+		DOB:          encoding.DOB{Month: 1, Year: 1967, Day: 1},
 		Email:        "test@test.com",
 		Gender:       "male",
 		ZipCode:      "90210",
@@ -2937,7 +2937,7 @@ func TestNewRefillRequestWithUnlinkedTreatmentAndUnlinkedPatient(t *testing.T) {
 	patientToReturn := &common.Patient{
 		FirstName:    "Test",
 		LastName:     "TestLastName",
-		Dob:          encoding.Dob{Year: 2013, Month: 8, Day: 9},
+		DOB:          encoding.DOB{Year: 2013, Month: 8, Day: 9},
 		Email:        "test@test.com",
 		Gender:       "male",
 		ZipCode:      "90210",

@@ -317,7 +317,9 @@ func (d *DataService) GetPatientFromId(patientId int64) (*common.Patient, error)
 		patient.id = ?
 			AND (phone IS NULL OR (account_phone.status = 'ACTIVE'))
 			AND (patient_location.zip_code IS NULL OR patient_location.status = 'ACTIVE')`, patientId)
-
+	if err != nil {
+		return nil, err
+	}
 	switch l := len(patients); {
 	case l == 1:
 		err = d.getOtherInfoForPatient(patients[0])
@@ -332,7 +334,6 @@ func (d *DataService) GetPatientsForIds(patientIds []int64) ([]*common.Patient, 
 	if len(patientIds) == 0 {
 		return nil, nil
 	}
-
 	return d.getPatientBasedOnQuery("patient", "",
 		fmt.Sprintf(`
 			patient.id IN (%s)
@@ -347,11 +348,13 @@ func (d *DataService) GetPatientFromTreatmentPlanId(treatmentPlanId int64) (*com
 		`treatment_plan.id = ?
 			AND (phone IS NULL OR (account_phone.status = 'ACTIVE'))
 			AND (zip_code IS NULL OR patient_location.status = 'ACTIVE')`, treatmentPlanId)
+	if err != nil {
+		return nil, err
+	}
 	if len(patients) > 0 {
 		err = d.getOtherInfoForPatient(patients[0])
 		return patients[0], err
 	}
-
 	return nil, err
 }
 
@@ -361,11 +364,13 @@ func (d *DataService) GetPatientFromPatientVisitId(patientVisitId int64) (*commo
 		`patient_visit.id = ?
 			AND (phone IS NULL OR (account_phone.status = 'ACTIVE'))
 			AND (zip_code IS NULL OR patient_location.status = 'ACTIVE')`, patientVisitId)
+	if err != nil {
+		return nil, err
+	}
 	if len(patients) > 0 {
 		err = d.getOtherInfoForPatient(patients[0])
 		return patients[0], err
 	}
-
 	return nil, err
 }
 
@@ -374,11 +379,13 @@ func (d *DataService) GetPatientFromErxPatientId(erxPatientId int64) (*common.Pa
 		`patient.erx_patient_id = ?
 			AND (phone IS NULL OR (account_phone.status = 'ACTIVE'))
 			AND (zip_code IS NULL OR patient_location.status = 'ACTIVE')`, erxPatientId)
+	if err != nil {
+		return nil, err
+	}
 	if len(patients) > 0 {
 		err = d.getOtherInfoForPatient(patients[0])
 		return patients[0], err
 	}
-
 	return nil, err
 }
 
@@ -388,6 +395,9 @@ func (d *DataService) GetPatientFromRefillRequestId(refillRequestId int64) (*com
 		`rx_refill_request.id = ?
 			AND (phone IS NULL OR (account_phone.status='ACTIVE'))
 			AND (zip_code IS NULL OR patient_location.status = 'ACTIVE')`, refillRequestId)
+	if err != nil {
+		return nil, err
+	}
 	switch l := len(patients); {
 	case l == 1:
 		err = d.getOtherInfoForPatient(patients[0])
@@ -407,6 +417,9 @@ func (d *DataService) GetPatientFromTreatmentId(treatmentId int64) (*common.Pati
 		`treatment.id = ?
 			AND (phone IS NULL OR (account_phone.status = 'ACTIVE'))
 			AND (zip_code IS NULL OR patient_location.status = 'ACTIVE')`, treatmentId)
+	if err != nil {
+		return nil, err
+	}
 	switch l := len(patients); {
 	case l == 1:
 		err = d.getOtherInfoForPatient(patients[0])
@@ -422,6 +435,9 @@ func (d *DataService) GetPatientFromUnlinkedDNTFTreatment(unlinkedDNTFTreatmentI
 	patients, err := d.getPatientBasedOnQuery("unlinked_dntf_treatment",
 		`INNER JOIN patient ON patient_id = patient.id`,
 		`id = ?`, unlinkedDNTFTreatmentId)
+	if err != nil {
+		return nil, err
+	}
 	switch l := len(patients); {
 	case l == 1:
 		err = d.getOtherInfoForPatient(patients[0])
@@ -973,7 +989,7 @@ func (d *DataService) DeletePendingTask(pendingTaskId int64) error {
 
 func (d *DataService) getPatientBasedOnQuery(table, joins, where string, queryParams ...interface{}) ([]*common.Patient, error) {
 	queryStr := fmt.Sprintf(`
-		SELECT patient.id, patient.erx_patient_id, patient.payment_service_customer_id, account_id,
+		SELECT patient.id, patient.erx_patient_id, patient.payment_service_customer_id, patient.account_id,
 			account.email, first_name, middle_name, last_name, suffix, prefix, zip_code, city, state, phone,
 			phone_type, gender, dob_year, dob_month, dob_day, patient.status, person.id
 		FROM %s
@@ -1044,10 +1060,17 @@ func (d *DataService) getOtherInfoForPatient(patient *common.Patient) error {
 	var defaultPatientAddress common.Address
 
 	// get default address information (if exists) for each patient
-	err := d.db.QueryRow(`select address.id, address_line_1, address_line_2, city, state, zip_code, country from patient_address_selection
-						inner join address on address_id = address.id
-						where patient_id = ? and is_default=1`, patient.PatientId.Int64()).Scan(&defaultPatientAddress.Id, &defaultPatientAddress.AddressLine1, &defaultPatientAddress.AddressLine2, &defaultPatientAddress.City, &defaultPatientAddress.State, &defaultPatientAddress.ZipCode, &defaultPatientAddress.Country)
-
+	err := d.db.QueryRow(`
+		SELECT address.id, address_line_1, address_line_2, city, state, zip_code,
+			country from patient_address_selection
+		INNER JOIN address ON address_id = address.id
+		WHERE patient_id = ? AND is_default = 1`,
+		patient.PatientId.Int64(),
+	).Scan(
+		&defaultPatientAddress.Id, &defaultPatientAddress.AddressLine1,
+		&defaultPatientAddress.AddressLine2, &defaultPatientAddress.City,
+		&defaultPatientAddress.State, &defaultPatientAddress.ZipCode,
+		&defaultPatientAddress.Country)
 	if err != nil && err != sql.ErrNoRows {
 		return err
 	}
