@@ -2,6 +2,7 @@ package api
 
 import (
 	"database/sql"
+	"errors"
 	"fmt"
 	"log"
 	"strconv"
@@ -1234,5 +1235,83 @@ func getInstructionsFromRows(rows *sql.Rows) ([]*common.DoctorInstructionItem, e
 
 func (d *DataService) SetDoctorNPI(doctorID int64, npi string) error {
 	_, err := d.db.Exec(`UPDATE doctor SET npi_number = ? WHERE id = ?`, npi, doctorID)
+	return err
+}
+
+func (d *DataService) DoctorAttributes(doctorID int64, names []string) (map[string]string, error) {
+	var rows *sql.Rows
+	var err error
+	if len(names) == 0 {
+		rows, err = d.db.Query(`SELECT name, value FROM doctor_attribute WHERE doctor_id = ?`, doctorID)
+	} else {
+		rows, err = d.db.Query(`SELECT name, value FROM doctor_attribute WHERE doctor_id = ? AND name IN (`+nReplacements(len(names))+`)`,
+			appendStringsToInterfaceSlice([]interface{}{doctorID}, names)...)
+	}
+	if err != nil {
+		return nil, err
+	}
+	attr := make(map[string]string)
+	for rows.Next() {
+		var name, value string
+		if err := rows.Scan(&name, &value); err != nil {
+			return nil, err
+		}
+		attr[name] = value
+	}
+	return attr, rows.Err()
+}
+
+func (d *DataService) UpdateDoctorAttributes(doctorID int64, attributes map[string]string) error {
+	if len(attributes) == 0 {
+		return nil
+	}
+	var toDelete []interface{}
+	var replacements []string
+	var values []interface{}
+	for name, value := range attributes {
+		if value == "" {
+			toDelete = append(toDelete, name)
+		} else {
+			replacements = append(replacements, "(?,?,?)")
+			values = append(values, doctorID, name, value)
+		}
+	}
+	tx, err := d.db.Begin()
+	if err != nil {
+		return err
+	}
+	if len(toDelete) != 0 {
+		_, err := tx.Exec(`DELETE FROM doctor_attribute WHERE name IN (`+nReplacements(len(toDelete))+`) AND doctor_id = ?`,
+			append(toDelete, doctorID)...)
+		if err != nil {
+			tx.Rollback()
+			return err
+		}
+	}
+	if len(replacements) != 0 {
+		_, err := tx.Exec(`REPLACE INTO doctor_attribute (doctor_id, name, value) VALUES `+strings.Join(replacements, ","), values...)
+		if err != nil {
+			tx.Rollback()
+			return err
+		}
+	}
+	return tx.Commit()
+}
+
+func (d *DataService) AddMedicalLicenses(licenses []*common.MedicalLicense) error {
+	if len(licenses) == 0 {
+		return nil
+	}
+	replacements := make([]string, len(licenses))
+	values := make([]interface{}, 0, 4*len(licenses))
+	for i, l := range licenses {
+		if l.State == "" || l.Number == "" || l.Status == "" {
+			return errors.New("api: license is missing state, number, or status")
+		}
+		replacements[i] = "(?,?,?,?)"
+		values = append(values, l.DoctorID, l.State, l.Number, l.Status.String())
+	}
+	_, err := d.db.Exec(`REPLACE INTO doctor_medical_license (doctor_id, state, license_number, status) VALUES `+strings.Join(replacements, ","),
+		values...)
 	return err
 }

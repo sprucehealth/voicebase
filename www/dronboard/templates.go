@@ -32,7 +32,7 @@ type registerTemplateContext struct {
 type credsTemplateContext struct {
 	Form            *credentialsForm
 	FormErrors      map[string]string
-	LicenseStatuses []string
+	LicenseStatuses []common.MedicalLicenseStatus
 	States          []*common.State
 }
 

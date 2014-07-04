@@ -236,6 +236,9 @@ type DoctorAPI interface {
 	SetSavedMessageForDoctor(doctorID int64, message string) error
 	// TODO: The following methods are temporary until I can think of a nicer API
 	SetDoctorNPI(doctorID int64, npi string) error
+	DoctorAttributes(doctorID int64, names []string) (map[string]string, error)
+	UpdateDoctorAttributes(doctorID int64, attributes map[string]string) error
+	AddMedicalLicenses([]*common.MedicalLicense) error
 }
 
 type FavoriteTreatmentPlanAPI interface {

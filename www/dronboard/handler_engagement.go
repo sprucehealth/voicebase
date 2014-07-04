@@ -4,7 +4,9 @@ import (
 	"net/http"
 
 	"github.com/sprucehealth/backend/api"
+	"github.com/sprucehealth/backend/common"
 	"github.com/sprucehealth/backend/third_party/github.com/SpruceHealth/schema"
+	"github.com/sprucehealth/backend/third_party/github.com/gorilla/context"
 	"github.com/sprucehealth/backend/third_party/github.com/gorilla/mux"
 	"github.com/sprucehealth/backend/www"
 )
@@ -50,7 +52,23 @@ func (h *engagementHandler) ServeHTTP(w http.ResponseWriter, r *http.Request) {
 
 		errors = req.Validate()
 		if len(errors) == 0 {
-			// TODO
+			account := context.Get(r, www.CKAccount).(*common.Account)
+			doctorID, err := h.dataAPI.GetDoctorIdFromAccountId(account.ID)
+			if err != nil {
+				www.InternalServerError(w, r, err)
+				return
+			}
+
+			attributes := map[string]string{
+				api.AttrHoursUsingSprucePerWeek: req.HoursPerWeek,
+				api.AttrTimesActiveOnSpruce:     req.TimesActive,
+				api.AttrJacketSize:              req.JacketSize,
+				api.AttrExcitedAboutSpruce:      req.Excitement,
+			}
+			if err := h.dataAPI.UpdateDoctorAttributes(doctorID, attributes); err != nil {
+				www.InternalServerError(w, r, err)
+				return
+			}
 
 			if u, err := h.router.Get("doctor-register-financials").URLPath(); err != nil {
 				www.InternalServerError(w, r, err)

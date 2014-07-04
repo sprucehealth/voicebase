@@ -21,7 +21,7 @@ func (c ByCreationDate) Less(i, j int) bool { return c[i].CreationDate.Before(c[
 
 type Platform string
 
-var (
+const (
 	Android Platform = "android"
 	IOS     Platform = "iOS"
 )
@@ -59,7 +59,7 @@ func (p *Platform) Scan(src interface{}) error {
 	return err
 }
 
-var (
+const (
 	SMS   CommunicationType = "SMS"
 	Email CommunicationType = "EMAIL"
 	Push  CommunicationType = "PUSH"
@@ -102,7 +102,7 @@ func (p PushPromptStatus) String() string {
 	return string(p)
 }
 
-var (
+const (
 	Unprompted PushPromptStatus = "UNPROMPTED"
 	Accepted   PushPromptStatus = "ACCEPTED"
 	Declined   PushPromptStatus = "DECLINED"
@@ -118,4 +118,25 @@ func GetPushPromptStatus(promptStatus string) (PushPromptStatus, error) {
 		return Declined, nil
 	}
 	return PushPromptStatus(""), errors.New("Unknown prompt status: " + promptStatus)
+}
+
+type MedicalLicenseStatus string
+
+const (
+	Active    MedicalLicenseStatus = "ACTIVE"
+	Inactive  MedicalLicenseStatus = "INACTIVE"
+	Temporary MedicalLicenseStatus = "TEMPORARY"
+	Pending   MedicalLicenseStatus = "PENDING"
+)
+
+func (l MedicalLicenseStatus) String() string {
+	return string(l)
+}
+
+func GetMedicalLicenseStatus(s string) (MedicalLicenseStatus, error) {
+	switch l := MedicalLicenseStatus(s); l {
+	case Active, Inactive, Temporary, Pending:
+		return l, nil
+	}
+	return "", errors.New("common: unknown medical license status: " + s)
 }

@@ -543,3 +543,11 @@ type Account struct {
 	ID   int64
 	Role string
 }
+
+type MedicalLicense struct {
+	ID       int64
+	DoctorID int64
+	State    string
+	Number   string
+	Status   MedicalLicenseStatus
+}

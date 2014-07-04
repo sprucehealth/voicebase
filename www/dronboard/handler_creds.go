@@ -14,11 +14,11 @@ import (
 )
 
 var (
-	licenseStatuses = []string{
-		"Active",
-		"Inactive",
-		"Temporary",
-		"Pending",
+	licenseStatuses = []common.MedicalLicenseStatus{
+		common.Active,
+		common.Inactive,
+		common.Temporary,
+		common.Pending,
 	}
 )
 
@@ -28,9 +28,9 @@ type credentialsHandler struct {
 }
 
 type stateLicense struct {
-	State   string
-	License string
-	Status  string
+	State  string
+	Number string
+	Status string
 }
 
 type credentialsForm struct {
@@ -66,13 +66,7 @@ func (r *credentialsForm) Validate() map[string]string {
 	n := 0
 	for i, l := range r.StateLicenses {
 		if l.State != "" {
-			// if l.License == "" {
-			// 	errors[fmt.Sprintf("StateLicenses.%d.License", i)] = "License is required"
-			// }
-			// if l.Status == "" {
-			// 	errors[fmt.Sprintf("StateLicenses.%d.Status", i)] = "Status is required"
-			// }
-			if l.License == "" || l.Status == "" {
+			if l.Number == "" || l.Status == "" {
 				errors[fmt.Sprintf("StateLicenses.%d", i)] = "Missing value"
 			}
 			n++
@@ -108,7 +102,6 @@ func (h *credentialsHandler) ServeHTTP(w http.ResponseWriter, r *http.Request) {
 
 		errors = req.Validate()
 		if len(errors) == 0 {
-			// Allowed to panic since it should never ever happen
 			account := context.Get(r, www.CKAccount).(*common.Account)
 			doctorID, err := h.dataAPI.GetDoctorIdFromAccountId(account.ID)
 			if err != nil {
@@ -120,7 +113,48 @@ func (h *credentialsHandler) ServeHTTP(w http.ResponseWriter, r *http.Request) {
 				return
 			}
 
-			// TODO
+			// TODO: SSN
+
+			licenses := make([]*common.MedicalLicense, 0, len(req.StateLicenses))
+			for _, l := range req.StateLicenses {
+				status, err := common.GetMedicalLicenseStatus(l.Status)
+				if err != nil {
+					// TODO: this should just show an error on the form but should
+					// only ever happen if someone tries a POST without using the form
+					// so an internal error is fine for now.
+					www.InternalServerError(w, r, err)
+					return
+				}
+				if l.State != "" {
+					licenses = append(licenses, &common.MedicalLicense{
+						DoctorID: doctorID,
+						State:    l.State,
+						Status:   status,
+						Number:   l.Number,
+					})
+				}
+			}
+			if err := h.dataAPI.AddMedicalLicenses(licenses); err != nil {
+				www.InternalServerError(w, r, err)
+				return
+			}
+
+			attributes := map[string]string{
+				api.AttrAmericanBoardCertified: api.BoolToString(req.AmericanBoardCertified),
+				api.AttrContinuedEducation:     api.BoolToString(req.ContinuedEducation),
+				api.AttrRiskManagementCourse:   api.BoolToString(req.RiskManagementCourse),
+			}
+			if req.AmericanBoardCertified {
+				attributes[api.AttrSpecialtyBoard] = req.SpecialtyBoard
+				attributes[api.AttrMostRecentCertificationDate] = req.RecentCertDate
+			}
+			if req.ContinuedEducation {
+				attributes[api.AttrContinuedEducationCreditHours] = req.CreditHours
+			}
+			if err := h.dataAPI.UpdateDoctorAttributes(doctorID, attributes); err != nil {
+				www.InternalServerError(w, r, err)
+				return
+			}
 
 			if u, err := h.router.Get("doctor-register-upload-cv").URLPath(); err != nil {
 				www.InternalServerError(w, r, err)
@@ -131,7 +165,7 @@ func (h *credentialsHandler) ServeHTTP(w http.ResponseWriter, r *http.Request) {
 		}
 	}
 
-	// Padd with empty entries so that they render
+	// Pad with empty entries so that they render
 	for len(req.StateLicenses) < 6 {
 		req.StateLicenses = append(req.StateLicenses, &stateLicense{})
 	}

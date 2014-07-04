@@ -1,4 +1,9 @@
 {{define "head"}}
+<style type="text/css">
+.state-license {
+	text-transform: capitalize;
+}
+</style>
 {{end}}
 
 {{define "tail"}}
@@ -106,10 +111,10 @@ $(function() {
 						</select>
 					</td>
 					<td>
-						<input type="text" name="StateLicenses.{{$i}}.License" value="{{$l.License}}">
+						<input type="text" name="StateLicenses.{{$i}}.Number" value="{{$l.Number}}">
 					</td>
 					<td>
-						<select name="StateLicenses.{{$i}}.Status">
+						<select name="StateLicenses.{{$i}}.Status" class="license-status">
 						{{$currentLicenseStatus := $l.Status}}
 						{{range $licenseStatuses}}
 							<option value="{{.}}"{{if eq $currentLicenseStatus .}} selected{{end}}>{{.}}</option>
