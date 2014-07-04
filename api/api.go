@@ -3,7 +3,6 @@ package api
 import (
 	"errors"
 	"net/http"
-	"reflect"
 	"time"
 
 	"github.com/sprucehealth/backend/info_intake"
@@ -282,18 +281,6 @@ type ObjectStorageDBAPI interface {
 	UpdateCloudObjectRecordToSayCompleted(id int64) error
 }
 
-type HomeAPI interface {
-	// Notifications
-	DeletePatientNotifications(ids []int64) error
-	DeletePatientNotificationByUID(patientId int64, uid string) error
-	GetNotificationsForPatient(patientId int64, typeMap map[string]reflect.Type) (notes []*common.Notification, badNotes []*common.Notification, err error)
-	InsertPatientNotification(patientId int64, note *common.Notification) (int64, error)
-	GetNotificationCountForPatient(patientId int64) (int64, error)
-	// Health Log
-	GetHealthLogForPatient(patientId int64, typeMap map[string]reflect.Type) (items []*common.HealthLogItem, badItems []*common.HealthLogItem, err error)
-	InsertOrUpdatePatientHealthLogItem(patientId int64, item *common.HealthLogItem) (int64, error)
-}
-
 type PeopleAPI interface {
 	GetPeople(ids []int64) (map[int64]*common.Person, error)
 	GetPersonIdByRole(roleType string, roleId int64) (int64, error)
@@ -342,7 +329,6 @@ type DataAPI interface {
 	IntakeAPI
 	PrescriptionsAPI
 	DrugAPI
-	HomeAPI
 	PeopleAPI
 	CaseMessageAPI
 	NotificationAPI

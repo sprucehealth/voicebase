@@ -1,13 +1,14 @@
 package notify
 
 import (
+	"sort"
+
 	"github.com/sprucehealth/backend/api"
 	"github.com/sprucehealth/backend/common"
 	"github.com/sprucehealth/backend/common/config"
 	"github.com/sprucehealth/backend/email"
 	"github.com/sprucehealth/backend/libs/aws/sns"
 	"github.com/sprucehealth/backend/libs/golog"
-	"sort"
 
 	"github.com/sprucehealth/backend/third_party/github.com/samuel/go-metrics/metrics"
 	"github.com/sprucehealth/backend/third_party/github.com/subosito/twilio"
@@ -116,13 +117,7 @@ func (n *NotificationManager) NotifyPatient(patient *common.Patient, event inter
 	}
 	switch communicationPreference {
 	case common.Push:
-		// currently basing the badge count on the number of notifications in the patient's health log.
-		notificationCount, err := n.dataApi.GetNotificationCountForPatient(patient.PatientId.Int64())
-		if err != nil {
-			return err
-		}
-
-		if err := n.pushNotificationToUser(patient.AccountId.Int64(), event, notificationCount); err != nil {
+		if err := n.pushNotificationToUser(patient.AccountId.Int64(), event, 0); err != nil {
 			golog.Errorf("Error sending push to user: %s", err)
 			return err
 		}

@@ -24,7 +24,6 @@ import (
 	"github.com/sprucehealth/backend/doctor_queue"
 	"github.com/sprucehealth/backend/doctor_treatment_plan"
 	"github.com/sprucehealth/backend/encoding"
-	"github.com/sprucehealth/backend/homelog"
 	"github.com/sprucehealth/backend/libs/aws"
 	"github.com/sprucehealth/backend/libs/dispatch"
 	"github.com/sprucehealth/backend/notify"
@@ -324,7 +323,6 @@ func SetupIntegrationTest(t *testing.T) *TestData {
 	dispatch.Default = dispatch.New()
 	notificationManager := notify.NewManager(testData.DataApi, nil, nil, nil, "", "", nil, metrics.NewRegistry())
 
-	homelog.InitListeners(testData.DataApi, notificationManager)
 	doctor_treatment_plan.InitListeners(testData.DataApi)
 	doctor_queue.InitListeners(testData.DataApi, notificationManager, metrics.NewRegistry())
 	notify.InitListeners(testData.DataApi)

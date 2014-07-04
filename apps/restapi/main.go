@@ -19,7 +19,6 @@ import (
 	"github.com/sprucehealth/backend/doctor_queue"
 	"github.com/sprucehealth/backend/doctor_treatment_plan"
 	"github.com/sprucehealth/backend/email"
-	"github.com/sprucehealth/backend/homelog"
 	"github.com/sprucehealth/backend/layout"
 	"github.com/sprucehealth/backend/libs/aws"
 	"github.com/sprucehealth/backend/libs/aws/sns"
@@ -189,7 +188,6 @@ func buildRESTAPI(conf *Config, dataApi api.DataAPI, authAPI api.AuthAPI, metric
 		conf.Twilio.FromNumber, conf.AlertEmail, conf.NotifiyConfigs, metricsRegistry.Scope("notify"))
 
 	// Initialize listeneres
-	homelog.InitListeners(dataApi, notificationManager)
 	doctor_queue.InitListeners(dataApi, notificationManager, metricsRegistry.Scope("doctor_queue"))
 	doctor_treatment_plan.InitListeners(dataApi)
 	notify.InitListeners(dataApi)
@@ -265,10 +263,6 @@ func buildRESTAPI(conf *Config, dataApi api.DataAPI, authAPI api.AuthAPI, metric
 	mux.Handle("/v1/credit_card/default", patientCardsHandler)
 	mux.Handle("/v1/authenticate", patient.NewAuthenticationHandler(dataApi, authAPI, pharmacy.GooglePlacesPharmacySearchService(0), conf.StaticContentBaseUrl))
 	mux.Handle("/v1/logout", patient.NewAuthenticationHandler(dataApi, authAPI, pharmacy.GooglePlacesPharmacySearchService(0), conf.StaticContentBaseUrl))
-
-	// Patient: Home APIs
-	mux.Handle("/v1/patient/home", homelog.NewListHandler(dataApi))
-	mux.Handle("/v1/patient/home/dismiss", homelog.NewDismissHandler(dataApi))
 
 	// Patient: Patient Case Related APIs
 	mux.Handle("/v1/check_eligibility", checkElligibilityHandler)
