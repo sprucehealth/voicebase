@@ -90,6 +90,15 @@ SELECT AddGeometryColumn('public', 'pharmacy_location', 'geom', 4326, 'POINT', 2
 CREATE INDEX pharmacy_location_index ON pharmacy_location USING GIST (geom);
 UPDATE pharmacy_location SET geom = ST_GeomFromText('POINT(' || longitude || ' ' || latitude || ')',4326);
 
+UPDATE pharmacy_location
+	set pharmacy_location.latitude = pharmacy_maplarge_location.latitude,
+	pharmacy_location.longitude = pharmacy_maplarge_location.longitude,
+	pharmacy_location.precision = 'exactmatch,exact',
+	pharmacy_location.source = 'maplarge'
+	FROM pharmacy_maplarge_location where pharmacy_maplarge_location.id = pharmacy_location.id 
+	AND pharmacy_maplarge_location.matchtype='ExactMatch' AND pharmacy_maplarge_location.numtype='Exact';
+
+
 SELECT id, ncpdpid, store_name, address_line_1, address_line_2, city, state, zip, phone_primary, fax, pharmacy_location.longitude, pharmacy_location.latitude FROM pharmacy, pharmacy_location
 		WHERE  pharmacy.id = pharmacy_location.id
 			AND st_distance(geom, st_setsrid(st_makepoint($1,$2),4326)) < $3
