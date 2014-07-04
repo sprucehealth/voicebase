@@ -56,10 +56,11 @@ func NewSurescriptsPharmacySearch(config *Config) (*surescriptsPharmacySearch, e
 
 func (s *surescriptsPharmacySearch) GetPharmaciesAroundSearchLocation(searchLocationLat, searchLocationLng, searchRadius float64, numResults int64) (pharmacies []*pharmacy.PharmacyData, err error) {
 	// only include pharmacies that have the lowest order bit set for the service level as that indicates pharmacies that have NewRX capabilities
-	rows, err := s.db.Query(`SELECT id, ncpdpid, store_name, address_line_1, address_line_2, city, state, zip, phone_primary, fax, longitude, latitude FROM pharmacy
-		WHERE st_distance(geom, st_setsrid(st_makepoint($1,$2),4326)) < $3
+	rows, err := s.db.Query(`SELECT pharmacy.id, ncpdpid, store_name, address_line_1, address_line_2, city, state, zip, phone_primary, fax, pharmacy_location.longitude, pharmacy_location.latitude FROM pharmacy, pharmacy_location
+			WHERE  pharmacy.id = pharmacy_location.id
+			AND st_distance(pharmacy_location.geom, st_setsrid(st_makepoint($1,$2),4326)) < $3
 			AND mod(service_level, 2) = 1
-			ORDER BY geom <-> st_setsrid(st_makepoint($1,$2),4326)
+			ORDER BY pharmacy_location.geom <-> st_setsrid(st_makepoint($1,$2),4326)
 			LIMIT $4`, searchLocationLng, searchLocationLat, (searchRadius * metersInMile), numResults)
 	if err != nil {
 		return nil, err
