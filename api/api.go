@@ -95,6 +95,7 @@ type PatientCaseAPI interface {
 	GetPatientCaseFromId(patientCaseId int64) (*common.PatientCase, error)
 	DeleteDraftTreatmentPlanByDoctorForCase(doctorId, patientCaseId int64) error
 	GetCasesForPatient(patientId int64) ([]*common.PatientCase, error)
+	GetVisitsForCase(patientCaseId int64) ([]*common.PatientVisit, error)
 }
 
 type CaseRouteAPI interface {

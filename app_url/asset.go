@@ -22,6 +22,8 @@ var (
 	Treatment                   = &SpruceAsset{name: "treatment"}
 	IconGuide                   = &SpruceAsset{name: "icon_guide"}
 	IconRegimen                 = &SpruceAsset{name: "icon_regimen"}
+	IconSpruceDoctors           = &SpruceAsset{name: "icon_spruce_doctors"}
+	IconLearnSpruce             = &SpruceAsset{name: "icon_learn_spruce"}
 )
 
 type SpruceAsset struct {

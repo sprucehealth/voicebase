@@ -4,6 +4,7 @@ import (
 	"database/sql"
 
 	"github.com/sprucehealth/backend/common"
+	"github.com/sprucehealth/backend/third_party/github.com/go-sql-driver/mysql"
 )
 
 func (d *DataService) GetDoctorsAssignedToPatientCase(patientCaseId int64) ([]*common.CareProviderAssignment, error) {
@@ -93,6 +94,37 @@ func (d *DataService) GetCasesForPatient(patientId int64) ([]*common.PatientCase
 	return patientCases, rows.Err()
 }
 
+func (d *DataService) GetVisitsForCase(patientCaseId int64) ([]*common.PatientVisit, error) {
+	rows, err := d.db.Query(`select id, patient_id, patient_case_id, health_condition_id, layout_version_id, 
+		creation_date, submitted_date, closed_date, status from patient_visit 
+		where patient_case_id = ? order by creation_date desc`, patientCaseId)
+	if err != nil {
+		return nil, err
+	}
+	defer rows.Close()
+
+	var patientVisits []*common.PatientVisit
+	for rows.Next() {
+		var patientVisit common.PatientVisit
+		var submittedDate, closedDate mysql.NullTime
+		if err := rows.Scan(
+			&patientVisit.PatientVisitId,
+			&patientVisit.PatientId,
+			&patientVisit.PatientCaseId,
+			&patientVisit.HealthConditionId,
+			&patientVisit.LayoutVersionId,
+			&patientVisit.CreationDate,
+			&submittedDate,
+			&closedDate,
+			&patientVisit.Status); err != nil {
+			return nil, err
+		}
+		patientVisit.SubmittedDate = submittedDate.Time
+		patientVisit.ClosedDate = closedDate.Time
+		patientVisits = append(patientVisits, &patientVisit)
+	}
+	return patientVisits, rows.Err()
+}
 func getPatientCaseFromRow(row *sql.Row) (*common.PatientCase, error) {
 	var patientCase common.PatientCase
 

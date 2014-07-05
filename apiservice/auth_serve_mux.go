@@ -1,15 +1,16 @@
 package apiservice
 
 import (
-	"github.com/sprucehealth/backend/api"
-	"github.com/sprucehealth/backend/common"
-	"github.com/sprucehealth/backend/libs/golog"
-	"github.com/sprucehealth/backend/libs/idgen"
 	"net/http"
 	"runtime"
 	"strconv"
 	"strings"
 	"time"
+
+	"github.com/sprucehealth/backend/api"
+	"github.com/sprucehealth/backend/common"
+	"github.com/sprucehealth/backend/libs/golog"
+	"github.com/sprucehealth/backend/libs/idgen"
 
 	"github.com/sprucehealth/backend/third_party/github.com/samuel/go-metrics/metrics"
 )
@@ -195,16 +196,7 @@ func (mux *AuthServeMux) ServeHTTP(w http.ResponseWriter, r *http.Request) {
 			ctx.Role = account.Role
 		} else {
 			mux.statAuthFailure.Inc(1)
-			switch err {
-			case ErrBadAuthHeader, ErrNoAuthHeader, api.TokenExpired, api.TokenDoesNotExist:
-				golog.Log("auth", golog.WARN, &AuthLog{
-					Event: AuthEventInvalidToken,
-					Msg:   err.Error(),
-				})
-				WriteAuthTimeoutError(customResponseWriter)
-			default:
-				customResponseWriter.WriteHeader(http.StatusInternalServerError)
-			}
+			HandleAuthError(err, customResponseWriter)
 			return
 		}
 	}

@@ -40,6 +40,7 @@ const (
 	HTTP_UNPROCESSABLE_ENTITY        = 422
 	signedUrlAuthTimeout             = 10 * time.Minute
 	HEALTH_CONDITION_ACNE_ID         = 1
+	TimeFormatLayout                 = "January 2 at 3:04pm"
 )
 
 type GenericJsonResponse struct {
@@ -57,6 +58,19 @@ func GetAuthTokenFromHeader(r *http.Request) (string, error) {
 		return "", ErrBadAuthHeader
 	}
 	return parts[1], nil
+}
+
+func HandleAuthError(err error, w http.ResponseWriter) {
+	switch err {
+	case ErrBadAuthHeader, ErrNoAuthHeader, api.TokenExpired, api.TokenDoesNotExist:
+		golog.Log("auth", golog.WARN, &AuthLog{
+			Event: AuthEventInvalidToken,
+			Msg:   err.Error(),
+		})
+		WriteAuthTimeoutError(w)
+	default:
+		w.WriteHeader(http.StatusInternalServerError)
+	}
 }
 
 func EnsureTreatmentPlanOrPatientVisitIdPresent(dataApi api.DataAPI, treatmentPlanId int64, patientVisitId *int64) error {

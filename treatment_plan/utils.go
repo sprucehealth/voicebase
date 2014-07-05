@@ -4,6 +4,7 @@ import (
 	"fmt"
 
 	"github.com/sprucehealth/backend/api"
+	"github.com/sprucehealth/backend/apiservice"
 	"github.com/sprucehealth/backend/app_url"
 	"github.com/sprucehealth/backend/common"
 	"github.com/sprucehealth/backend/libs/erx"
@@ -51,7 +52,7 @@ func generateViewsForTreatments(treatmentList *common.TreatmentList, doctor *com
 			}
 
 			if forMedicationsTab {
-				smallHeaderText = fmt.Sprintf("Prescribed on %s", treatment.CreationDate.Format(timeFormatlayout))
+				smallHeaderText = fmt.Sprintf("Prescribed on %s", treatment.CreationDate.Format(apiservice.TimeFormatLayout))
 			}
 
 			pView := &tpPrescriptionView{

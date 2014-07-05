@@ -128,7 +128,7 @@ func treatmentPlanResponse(dataApi api.DataAPI, w http.ResponseWriter, r *http.R
 		},
 		&tpSmallDividerView{},
 		&tpSmallHeaderView{
-			Title:       fmt.Sprintf("Created by Dr. %s on %s", doctor.LastName, treatmentPlan.CreationDate.Format(timeFormatlayout)),
+			Title:       fmt.Sprintf("Created by Dr. %s on %s", doctor.LastName, treatmentPlan.CreationDate.Format(apiservice.TimeFormatLayout)),
 			IconURL:     app_url.GetSmallThumbnail(api.DOCTOR_ROLE, doctor.DoctorId.Int64()),
 			RoundedIcon: true,
 		})

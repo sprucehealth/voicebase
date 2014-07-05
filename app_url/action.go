@@ -158,6 +158,15 @@ func ViewTreatmentPlanAction(treatmentPlanId int64) *SpruceAction {
 	}
 }
 
+func ViewCaseAction(patientCaseId int64) *SpruceAction {
+	params := url.Values{}
+	params.Set("case_id", strconv.FormatInt(patientCaseId, 10))
+	return &SpruceAction{
+		name:   "view_case",
+		params: params,
+	}
+}
+
 func ViewCareTeam() *SpruceAction {
 	return &SpruceAction{
 		name: "view_care_team",
@@ -182,5 +191,29 @@ func ViewPreferredPharmacyAction() *SpruceAction {
 func MessageAction() *SpruceAction {
 	return &SpruceAction{
 		name: "message",
+	}
+}
+
+func ViewSampleDoctorProfilesAction() *SpruceAction {
+	return &SpruceAction{
+		name: "view_sample_doctor_profiles",
+	}
+}
+
+func ViewTutorialAction() *SpruceAction {
+	return &SpruceAction{
+		name: "view_tutorial",
+	}
+}
+
+func ViewSampleTreatmentPlanAction() *SpruceAction {
+	return &SpruceAction{
+		name: "view_sample_treatment_plan",
+	}
+}
+
+func StartVisitAction() *SpruceAction {
+	return &SpruceAction{
+		name: "start_visit",
 	}
 }

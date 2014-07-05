@@ -14,7 +14,6 @@ const (
 	captionRegularItalicStyle = "caption_regular_italic"
 	bulletedStyle             = "buletted"
 	numberedStyle             = "numbered"
-	timeFormatlayout          = "January 2 at 3:04pm"
 )
 
 type tpView interface {
