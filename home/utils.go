@@ -22,13 +22,22 @@ func getHomeCards(hState homeState, ctxt map[string]interface{}) ([]PHView, erro
 
 	switch hState {
 	case noAccountState:
-		views = append(views, getStartVisitCard(), getDefaultCards()...)
+		views = append(views, getStartVisitCard())
+		views = append(views, getDefaultCards()...)
 	case noCaseState:
-		views = append(views, getStartVisitCard(), getDefaultCards()...)
+		views = append(views, getStartVisitCard())
+		views = append(views, getDefaultCards()...)
 	case casesExistState:
 	default:
 		return nil, errors.New("Unidentified home state")
 	}
+
+	for _, v := range views {
+		if err := v.Validate(); err != nil {
+			return nil, err
+		}
+	}
+
 	return views, nil
 }
 
@@ -42,10 +51,8 @@ func getStartVisitCard() PHView {
 
 func getCompleteVisitCard(patientVisitId int64) PHView {
 	return &PHPrimaryActionView{
-		Title:       "Continue acne visit",
-		IconURL:     app_url.IconHomeVisitNormal,
-		ActionURL:   app_url.ContinueVisitAction(patientVisitId),
-		RoundedIcon: true,
+		Title:     "Continue acne visit",
+		ActionURL: app_url.ContinueVisitAction(patientVisitId),
 	}
 }
 
@@ -53,7 +60,7 @@ func getViewCaseCard(patientCase *common.PatientCase, notificationView PHView) P
 	return &PHCaseView{
 		Title:            "View Acne Case",
 		Subtitle:         fmt.Sprintf("Started on %s", patientCase.CreationDate.Format(apiservice.TimeFormatLayout)),
-		ActionURL:        app_url.ViewCaseAction,
+		ActionURL:        app_url.ViewCaseAction(patientCase.Id.Int64()),
 		NotificationView: notificationView,
 	}
 }
@@ -62,7 +69,7 @@ func getSampleTreatmentPlanCard() PHView {
 	return &PHSmallIconText{
 		Title:       "See a sample treatment plan",
 		IconURL:     app_url.IconBlueTreatmentPlan,
-		ActionURL:   app_url.ViewSampleTreatmentPlanAction,
+		ActionURL:   app_url.ViewSampleTreatmentPlanAction(),
 		RoundedIcon: true,
 	}
 }
@@ -71,16 +78,16 @@ func getSeeSpruceDermsCard() PHView {
 	return &PHSmallIconText{
 		Title:       "Meet the Spruce Dermatologists",
 		IconURL:     app_url.IconSpruceDoctors,
-		ActionURL:   app_url.ViewSampleDoctorProfilesAction,
+		ActionURL:   app_url.ViewSampleDoctorProfilesAction(),
 		RoundedIcon: true,
 	}
 }
 
-func getLearnSpruceCard() {
+func getLearnSpruceCard() PHView {
 	return &PHSmallIconText{
 		Title:       "Learn how a Spruce Visit Works",
 		IconURL:     app_url.IconLearnSpruce,
-		ActionURL:   app_url.ViewTutorialAction,
+		ActionURL:   app_url.ViewTutorialAction(),
 		RoundedIcon: true,
 	}
 }

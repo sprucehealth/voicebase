@@ -50,12 +50,24 @@ func (h *homeHandler) ServeHTTP(w http.ResponseWriter, r *http.Request) {
 	}
 
 	if account == nil {
-		apiservice.WriteJSON(w, &homeResponse{Items: getHomeCards(noAccountState, nil)})
+		items, err := getHomeCards(noAccountState, nil)
+		if err != nil {
+			apiservice.WriteError(err, w, r)
+			return
+		}
+
+		apiservice.WriteJSON(w, &homeResponse{Items: items})
 		return
 	}
 
 	if account.Role != api.PATIENT_ROLE {
 		apiservice.WriteAccessNotAllowedError(w, r)
+		return
+	}
+
+	patientId, err := h.dataAPI.GetPatientIdFromAccountId(account.ID)
+	if err != nil {
+		apiservice.WriteError(err, w, r)
 		return
 	}
 
@@ -65,11 +77,16 @@ func (h *homeHandler) ServeHTTP(w http.ResponseWriter, r *http.Request) {
 		return
 	}
 
+	var hState homeState
 	if len(patientCases) == 0 {
 		hState = noCaseState
-		apiservice.WriteJSON(w, &homeResponse{Items: getHomeCards(noCaseState, nil)})
+	}
+
+	items, err := getHomeCards(hState, nil)
+	if err != nil {
+		apiservice.WriteError(err, w, r)
 		return
 	}
 
-	apiservice.WriteJSON(w, &homeResponse{Items: getHomeCards(casesExistState, nil)})
+	apiservice.WriteJSON(w, &homeResponse{Items: items})
 }
