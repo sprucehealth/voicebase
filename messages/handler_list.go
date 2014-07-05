@@ -2,13 +2,14 @@ package messages
 
 import (
 	"fmt"
+	"net/http"
+	"strconv"
+	"time"
+
 	"github.com/sprucehealth/backend/api"
 	"github.com/sprucehealth/backend/apiservice"
 	"github.com/sprucehealth/backend/app_url"
 	"github.com/sprucehealth/backend/common"
-	"net/http"
-	"strconv"
-	"time"
 )
 
 type Participant struct {
@@ -20,6 +21,7 @@ type Participant struct {
 }
 
 type Message struct {
+	ID          int64         `json:"message_id,string"`
 	Type        string        `json:"type"`
 	Time        time.Time     `json:"date_time"`
 	SenderID    int64         `json:"sender_participant_id,string"`
@@ -77,6 +79,7 @@ func (h *listHandler) ServeHTTP(w http.ResponseWriter, r *http.Request) {
 	res := &ListResponse{}
 	for _, msg := range msgs {
 		m := &Message{
+			ID:       msg.ID,
 			Type:     "conversation_item:message",
 			Time:     msg.Time,
 			SenderID: msg.PersonID,
