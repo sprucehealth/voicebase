@@ -1,11 +1,11 @@
 package api
 
 import (
-	"github.com/sprucehealth/backend/common"
-	"github.com/sprucehealth/backend/libs/aws"
 	"net/http"
 	"time"
 
+	"github.com/sprucehealth/backend/common"
+	"github.com/sprucehealth/backend/libs/aws"
 	goamz "github.com/sprucehealth/backend/third_party/launchpad.net/goamz/aws"
 	"github.com/sprucehealth/backend/third_party/launchpad.net/goamz/s3"
 )
