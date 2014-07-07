@@ -6,7 +6,10 @@ import (
 	"math/rand"
 	"net/http"
 	"strconv"
+	"strings"
 	"time"
+
+	"github.com/sprucehealth/backend/libs/storage"
 
 	"github.com/sprucehealth/backend/address"
 	"github.com/sprucehealth/backend/analytics"
@@ -157,6 +160,15 @@ func buildRESTAPI(conf *Config, dataApi api.DataAPI, authAPI api.AuthAPI, metric
 	awsAuth, err := conf.AWSAuth()
 	if err != nil {
 		log.Fatalf("Failed to get AWS auth: %+v", err)
+	}
+
+	for name, c := range conf.Storage {
+		switch strings.ToLower(c.Type) {
+		default:
+			log.Fatalf("Unknown storage type %s for name %s", c.Type, name)
+		case "s3":
+			c.store = storage.NewS3(awsAuth, c.Region, c.Bucket, c.Prefix)
+		}
 	}
 
 	emailService := email.NewService(conf.Email, metricsRegistry.Scope("email"))
@@ -333,7 +345,7 @@ func buildRESTAPI(conf *Config, dataApi api.DataAPI, authAPI api.AuthAPI, metric
 	// Miscellaneous APIs
 	mux.Handle("/v1/content", staticContentHandler)
 	mux.Handle("/v1/ping", pingHandler)
-	mux.Handle("/v1/photo", photos.NewHandler(dataApi, awsAuth, conf.PhotoBucket, conf.AWSRegion))
+	mux.Handle("/v1/photo", photos.NewHandler(dataApi, conf.Storage["photos"].store))
 	mux.Handle("/v1/layouts/upload", layout.NewLayoutUploadHandler(dataApi))
 	mux.Handle("/v1/app_event", app_event.NewHandler())
 

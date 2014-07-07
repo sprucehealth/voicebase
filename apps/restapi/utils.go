@@ -6,6 +6,7 @@ import (
 
 	"github.com/sprucehealth/backend/common/config"
 	"github.com/sprucehealth/backend/email"
+	"github.com/sprucehealth/backend/libs/storage"
 
 	"github.com/sprucehealth/backend/third_party/github.com/subosito/twilio"
 )
@@ -57,6 +58,16 @@ type SupportConfig struct {
 	CustomerSupportEmail  string `long:"customer_support_email" description:"Customer support email address"`
 }
 
+type StorageConfig struct {
+	Type string
+	// S3
+	Region string
+	Bucket string
+	Prefix string
+
+	store storage.Storage
+}
+
 type Config struct {
 	*config.BaseConfig
 	ProxyProtocol         bool                        `long:"proxy_protocol" description:"Enable if behind a proxy that uses the PROXY protocol"`
@@ -71,7 +82,6 @@ type Config struct {
 	MaxInMemoryForPhotoMB int64                       `long:"max_in_memory_photo" description:"Amount of data in MB to be held in memory when parsing multipart form data"`
 	ContentBucket         string                      `long:"content_bucket" description:"S3 Bucket name for all static content"`
 	CaseBucket            string                      `long:"case_bucket" description:"S3 Bucket name for case information"`
-	PhotoBucket           string                      `long:"photo_bucket" description:"S3 Bucket name for uploaded photos"`
 	Debug                 bool                        `long:"debug" description:"Enable debugging"`
 	DoseSpotUserId        string                      `long:"dose_spot_user_id" description:"DoseSpot UserId for eRx integration"`
 	NoServices            bool                        `long:"noservices" description:"Disable connecting to remote services"`
@@ -89,6 +99,7 @@ type Config struct {
 	Analytics             *AnalyticsConfig            `group:"Analytics" toml:"analytics"`
 	Support               *SupportConfig              `group:"support" toml:"support"`
 	Email                 *email.Config               `group:"email" toml:"email"`
+	Storage               map[string]*StorageConfig   `group:"storage" toml:"storage"`
 }
 
 var DefaultConfig = Config{
@@ -122,8 +133,8 @@ func (c *Config) Validate() {
 	if c.ContentBucket == "" {
 		errors = append(errors, "ContentBucket not set")
 	}
-	if c.PhotoBucket == "" {
-		errors = append(errors, "PhotoBucket not set")
+	if len(c.Storage) == 0 {
+		errors = append(errors, "No storage configs set")
 	}
 	if !c.Debug {
 		if c.TLSCert == "" {

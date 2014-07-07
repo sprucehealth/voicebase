@@ -22,8 +22,12 @@ type S3 struct {
 }
 
 func NewS3(auth aws.Auth, region, bucket, prefix string) *S3 {
+	// Make sure the path prefix starts and ends with /
 	if !strings.HasSuffix(prefix, "/") {
 		prefix += "/"
+	}
+	if !strings.HasPrefix(prefix, "/") {
+		prefix = "/" + prefix
 	}
 
 	reg, ok := goamz.Regions[region]

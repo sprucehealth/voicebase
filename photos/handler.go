@@ -3,28 +3,20 @@ package photos
 import (
 	"crypto/rand"
 	"encoding/hex"
-	"fmt"
+	"io"
+	"net/http"
+	"os"
+
 	"github.com/sprucehealth/backend/api"
 	"github.com/sprucehealth/backend/apiservice"
-	"github.com/sprucehealth/backend/common"
-	"github.com/sprucehealth/backend/libs/aws"
 	"github.com/sprucehealth/backend/libs/golog"
-	"io"
-	"io/ioutil"
-	"net/http"
-	"net/url"
-	"strings"
-
+	"github.com/sprucehealth/backend/libs/storage"
 	"github.com/sprucehealth/backend/third_party/github.com/SpruceHealth/schema"
-	goamz "github.com/sprucehealth/backend/third_party/launchpad.net/goamz/aws"
-	"github.com/sprucehealth/backend/third_party/launchpad.net/goamz/s3"
 )
 
 type Handler struct {
 	dataAPI api.DataAPI
-	awsAuth aws.Auth
-	bucket  string
-	region  goamz.Region
+	store   storage.Storage
 }
 
 type getRequest struct {
@@ -37,17 +29,10 @@ type uploadResponse struct {
 	PhotoId int64 `json:"photo_id,string"`
 }
 
-func NewHandler(dataAPI api.DataAPI, awsAuth aws.Auth, bucket, region string) *Handler {
-	awsRegion, ok := goamz.Regions[region]
-	if !ok {
-		awsRegion = goamz.USEast
-	}
-
+func NewHandler(dataAPI api.DataAPI, store storage.Storage) *Handler {
 	return &Handler{
 		dataAPI: dataAPI,
-		awsAuth: awsAuth,
-		bucket:  bucket,
-		region:  awsRegion,
+		store:   store,
 	}
 }
 
@@ -90,27 +75,12 @@ func (h *Handler) get(w http.ResponseWriter, r *http.Request) {
 		return
 	}
 
-	u, err := url.Parse(photo.URL)
-	if err != nil {
-		apiservice.WriteDeveloperError(w, http.StatusInternalServerError, "Failed to parse photo URL: "+err.Error())
-		return
-	}
-	region, ok := goamz.Regions[u.Host]
-	if !ok {
-		apiservice.WriteDeveloperError(w, http.StatusInternalServerError, "Invalid region: "+u.Host)
-		return
-	}
-	pathParts := strings.SplitN(u.Path, "/", 3)
-	bucketName := pathParts[1]
-	path := pathParts[2]
-
-	s3conn := s3.New(common.AWSAuthAdapter(h.awsAuth), region)
-	bucket := s3conn.Bucket(bucketName)
-	rc, header, err := bucket.GetReader(path)
+	rc, header, err := h.store.GetReader(photo.URL)
 	if err != nil {
 		apiservice.WriteDeveloperError(w, http.StatusInternalServerError, "Failed to get photo: "+err.Error())
 		return
 	}
+	defer rc.Close()
 
 	w.Header().Set("Content-Type", header.Get("Content-Type"))
 	w.Header().Set("Content-Length", header.Get("Content-Length"))
@@ -126,17 +96,17 @@ func (h *Handler) upload(w http.ResponseWriter, r *http.Request) {
 	if err == nil {
 		personId, err = h.dataAPI.GetPersonIdByRole(api.DOCTOR_ROLE, doctorId)
 		if err != nil {
-			apiservice.WriteDeveloperError(w, http.StatusInternalServerError, "messages: failed to get person object for doctor: "+err.Error())
+			apiservice.WriteDeveloperError(w, http.StatusInternalServerError, "failed to get person object for doctor: "+err.Error())
 			return
 		}
 	} else if patientId, err := h.dataAPI.GetPatientIdFromAccountId(apiservice.GetContext(r).AccountId); err == nil {
 		personId, err = h.dataAPI.GetPersonIdByRole(api.PATIENT_ROLE, patientId)
 		if err != nil {
-			apiservice.WriteDeveloperError(w, http.StatusInternalServerError, "messages: failed to get person object for patient: "+err.Error())
+			apiservice.WriteDeveloperError(w, http.StatusInternalServerError, "failed to get person object for patient: "+err.Error())
 			return
 		}
 	} else {
-		apiservice.WriteDeveloperError(w, http.StatusInternalServerError, "messages: failed to get patient or doctor: "+err.Error())
+		apiservice.WriteDeveloperError(w, http.StatusInternalServerError, "failed to get patient or doctor: "+err.Error())
 		return
 	}
 
@@ -145,35 +115,38 @@ func (h *Handler) upload(w http.ResponseWriter, r *http.Request) {
 		apiservice.WriteUserError(w, http.StatusBadRequest, "Missing or invalid photo in parameters: "+err.Error())
 		return
 	}
+	defer file.Close()
 
-	data, err := ioutil.ReadAll(file)
+	// Get size of file
+	size, err := file.Seek(0, os.SEEK_END)
 	if err != nil {
-		apiservice.WriteUserError(w, http.StatusBadRequest, "Failed to read photo data: "+err.Error())
+		apiservice.WriteError(err, w, r)
+		return
+	}
+	if _, err := file.Seek(0, os.SEEK_SET); err != nil {
+		apiservice.WriteError(err, w, r)
 		return
 	}
 
-	uidBytes := make([]byte, 16)
-	if _, err := rand.Read(uidBytes); err != nil {
-		apiservice.WriteDeveloperError(w, http.StatusInternalServerError, "Failed to generate key: "+err.Error())
-		return
+	uid := make([]byte, 16)
+	if _, err := rand.Read(uid); err != nil {
+		apiservice.WriteError(err, w, r)
 	}
-	uid := hex.EncodeToString(uidBytes)
-	path := fmt.Sprintf("photo-%s", uid)
-	url := fmt.Sprintf("s3://%s/%s/%s", h.region.Name, h.bucket, path)
-
+	name := "photo-" + hex.EncodeToString(uid)
 	contentType := handler.Header.Get("Content-Type")
+	headers := http.Header{
+		"Content-Type": []string{contentType},
+	}
 
-	s3conn := s3.New(common.AWSAuthAdapter(h.awsAuth), h.region)
-	bucket := s3conn.Bucket(h.bucket)
-	err = bucket.Put(path, data, contentType, s3.BucketOwnerFull, map[string][]string{"x-amz-server-side-encryption": {"AES256"}})
+	url, err := h.store.PutReader(name, file, size, headers)
 	if err != nil {
-		apiservice.WriteDeveloperError(w, http.StatusInternalServerError, "Failed to upload photo: "+err.Error())
+		apiservice.WriteError(err, w, r)
 		return
 	}
 
 	id, err := h.dataAPI.AddPhoto(personId, url, contentType)
 	if err != nil {
-		apiservice.WriteDeveloperError(w, http.StatusInternalServerError, "Failed to add photo: "+err.Error())
+		apiservice.WriteError(err, w, r)
 		return
 	}
 

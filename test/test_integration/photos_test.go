@@ -4,12 +4,14 @@ import (
 	"bytes"
 	"encoding/json"
 	"fmt"
-	"github.com/sprucehealth/backend/photos"
 	"io/ioutil"
 	"mime/multipart"
 	"net/http"
 	"net/http/httptest"
 	"testing"
+
+	"github.com/sprucehealth/backend/libs/storage"
+	"github.com/sprucehealth/backend/photos"
 )
 
 type photoUploadResponse struct {
@@ -17,7 +19,8 @@ type photoUploadResponse struct {
 }
 
 func uploadPhoto(t *testing.T, testData *TestData, accountID int64) int64 {
-	h := photos.NewHandler(testData.DataApi, testData.AWSAuth, "dev-carefront-test", "us-east-1")
+	store := storage.NewS3(testData.AWSAuth, "us-east-1", "test-spruce-storage", "photos")
+	h := photos.NewHandler(testData.DataApi, store)
 	ts := httptest.NewServer(h)
 	defer ts.Close()
 
@@ -58,7 +61,8 @@ func TestPhotoUpload(t *testing.T) {
 
 	photoID := uploadPhoto(t, testData, pr.Patient.AccountId.Int64())
 
-	h := photos.NewHandler(testData.DataApi, testData.AWSAuth, "dev-carefront-test", "us-east-1")
+	store := storage.NewS3(testData.AWSAuth, "us-east-1", "test-spruce-storage", "photos")
+	h := photos.NewHandler(testData.DataApi, store)
 	ts := httptest.NewServer(h)
 	defer ts.Close()
 
