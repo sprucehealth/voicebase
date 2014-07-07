@@ -25,14 +25,20 @@ func (t *treatmentPlanNotificationData) TypeName() string {
 }
 
 func (t *treatmentPlanNotificationData) makeView(dataAPI api.DataAPI, notificationId int64) (notificationView, error) {
+	doctor, err := dataAPI.GetDoctorFromId(t.DoctorId)
+	if err != nil {
+		return nil, err
+	}
+
 	nView := &caseNotificationMessageView{
 		ID:          notificationId,
-		Title:       "Your treatment plan is ready.",
+		Title:       fmt.Sprintf("Dr. %s created your treatment plan.", doctor.LastName),
 		IconURL:     app_url.IconBlueTreatmentPlan,
 		ActionURL:   app_url.ViewCaseMessageAction(t.MessageId),
 		MessageID:   t.MessageId,
 		RoundedIcon: true,
 	}
+
 	return nView, nView.Validate()
 }
 

@@ -14,6 +14,8 @@ type DiagnosisModifiedEvent struct {
 	DoctorId        int64
 	PatientVisitId  int64
 	TreatmentPlanId int64
+	Diagnosis       string
+	PatientCaseId   int64
 }
 
 type PatientVisitMarkedUnsuitableEvent struct {

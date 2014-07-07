@@ -13,6 +13,7 @@ type PatientCase struct {
 	MedicineBranch    string            `json:"medicine_branch"`
 	CreationDate      time.Time         `json:"creation_date"`
 	Status            string            `json:"status"`
+	Diagnosis         string            `json:"diagnosis,omitempty"`
 }
 
 const (

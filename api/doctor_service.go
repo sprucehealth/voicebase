@@ -24,7 +24,7 @@ func (d *DataService) RegisterDoctor(doctor *common.Doctor) (int64, error) {
 	res, err := tx.Exec(`insert into doctor (account_id, first_name, last_name, short_title, long_title, suffix, prefix, middle_name, gender, dob_year, dob_month, dob_day, status, clinician_id) 
 								values (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?)`, doctor.AccountId.Int64(),
 		doctor.FirstName, doctor.LastName, doctor.ShortTitle, doctor.LongTitle,
-		doctor.MiddleName, doctor.Gender, doctor.Dob.Year, doctor.Dob.Month, doctor.Dob.Day,
+		doctor.MiddleName, doctor.Suffix, doctor.Prefix, doctor.Gender, doctor.Dob.Year, doctor.Dob.Month, doctor.Dob.Day,
 		DOCTOR_REGISTERED, doctor.DoseSpotClinicianId)
 	if err != nil {
 		return 0, err

@@ -103,6 +103,7 @@ type PatientCaseAPI interface {
 	InsertCaseNotification(caseNotificationItem *common.CaseNotification) error
 	DeleteCaseNotification(patientCaseId, itemId int64, notificationType string) error
 	DeleteCaseNotificationBasedOnId(notificationId int64) error
+	UpdateDiagnosisForPatientCase(patientCaseId int64, diagnosis string) error
 }
 
 type CaseRouteAPI interface {

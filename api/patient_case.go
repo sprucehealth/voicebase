@@ -78,7 +78,7 @@ func (d *DataService) AssignDoctorToPatientFileAndCase(doctorId int64, patientCa
 }
 
 func (d *DataService) GetPatientCaseFromTreatmentPlanId(treatmentPlanId int64) (*common.PatientCase, error) {
-	row := d.db.QueryRow(`select patient_case.id, patient_case.patient_id, patient_case.health_condition_id, patient_case.creation_date, patient_case.status, health_condition.medicine_branch from patient_case
+	row := d.db.QueryRow(`select patient_case.id, patient_case.patient_id, patient_case.health_condition_id, patient_case.creation_date, patient_case.status, patient_case.diagnosis, health_condition.medicine_branch from patient_case
 							inner join treatment_plan on treatment_plan.patient_case_id = patient_case.id
 							inner join health_condition on health_condition.id = health_condition_id
 							where treatment_plan.id = ?`, treatmentPlanId)
@@ -86,25 +86,25 @@ func (d *DataService) GetPatientCaseFromTreatmentPlanId(treatmentPlanId int64) (
 }
 
 func (d *DataService) GetPatientCaseFromPatientVisitId(patientVisitId int64) (*common.PatientCase, error) {
-	row := d.db.QueryRow(`select patient_case.id, patient_case.patient_id, patient_case.health_condition_id, patient_case.creation_date, patient_case.status, health_condition.medicine_branch from patient_case
+	row := d.db.QueryRow(`select patient_case.id, patient_case.patient_id, patient_case.health_condition_id, patient_case.creation_date, patient_case.status, patient_case.diagnosis, health_condition.medicine_branch from patient_case
 							inner join patient_visit on patient_case_id = patient_case.id
-							inner join health_condition on health_condition.id = health_condition_id
+							inner join health_condition on health_condition.id = patient_case.health_condition_id
 							where patient_visit.id = ?`, patientVisitId)
 
 	return getPatientCaseFromRow(row)
 }
 
 func (d *DataService) GetPatientCaseFromId(patientCaseId int64) (*common.PatientCase, error) {
-	row := d.db.QueryRow(`select id, patient_id, health_condition_id, creation_date, status, health_condition.medicine_branch from patient_case
-							inner join health_condition on health_condition.id = health_condition_id
-							where id = ?`, patientCaseId)
+	row := d.db.QueryRow(`select patient_case.id, patient_id, health_condition_id, creation_date, status, diagnosis, health_condition.medicine_branch from patient_case
+							inner join health_condition on health_condition.id = patient_case.health_condition_id
+							where patient_case.id = ?`, patientCaseId)
 
 	return getPatientCaseFromRow(row)
 }
 
 func (d *DataService) GetCasesForPatient(patientId int64) ([]*common.PatientCase, error) {
-	rows, err := d.db.Query(`select id, patient_id, health_condition_id, creation_date, status, health_condition.medicine_branch from patient_case 
-								inner join health_condition on health_condition.id = health_condition_id
+	rows, err := d.db.Query(`select patient_case.id, patient_id, health_condition_id, creation_date, status, diagnosis health_condition.medicine_branch from patient_case 
+								inner join health_condition on health_condition.id = patient_case.health_condition_id
 								where patient_id=? order by creation_date desc`, patientId)
 	if err != nil {
 		return nil, err
@@ -120,6 +120,7 @@ func (d *DataService) GetCasesForPatient(patientId int64) ([]*common.PatientCase
 			&patientCase.HealthConditionId,
 			&patientCase.CreationDate,
 			&patientCase.Status,
+			&patientCase.Diagnosis,
 			&patientCase.MedicineBranch)
 		if err != nil {
 			return nil, err
@@ -198,6 +199,7 @@ func getPatientCaseFromRow(row *sql.Row) (*common.PatientCase, error) {
 		&patientCase.HealthConditionId,
 		&patientCase.CreationDate,
 		&patientCase.Status,
+		&patientCase.Diagnosis,
 		&patientCase.MedicineBranch)
 	if err == sql.ErrNoRows {
 		return nil, NoRowsError
@@ -267,5 +269,10 @@ func (d *DataService) DeleteCaseNotification(patientCaseId, itemId int64, notifi
 
 func (d *DataService) DeleteCaseNotificationBasedOnId(notificationId int64) error {
 	_, err := d.db.Exec(`delete from case_notification where id = ?`, notificationId)
+	return err
+}
+
+func (d *DataService) UpdateDiagnosisForPatientCase(patientCaseId int64, diagnosis string) error {
+	_, err := d.db.Exec(`update patient_case set diagnosis = ? where id = ?`, diagnosis, patientCaseId)
 	return err
 }
