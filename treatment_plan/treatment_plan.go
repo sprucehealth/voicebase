@@ -23,6 +23,7 @@ func NewTreatmentPlanHandler(dataApi api.DataAPI) *treatmentPlanHandler {
 
 type TreatmentPlanRequest struct {
 	TreatmentPlanId int64 `schema:"treatment_plan_id"`
+	PatientCaseId   int64 `schema:"patient_case_id"`
 }
 
 type treatmentPlanViewsResponse struct {
@@ -41,9 +42,6 @@ func (p *treatmentPlanHandler) ServeHTTP(w http.ResponseWriter, r *http.Request)
 	if err := apiservice.DecodeRequestData(requestData, r); err != nil {
 		apiservice.WriteDeveloperError(w, http.StatusBadRequest, "Unable to parse input parameters: "+err.Error())
 		return
-	} else if requestData.TreatmentPlanId == 0 {
-		apiservice.WriteValidationError("treatment_plan_id must be specified", w, r)
-		return
 	}
 
 	var doctor *common.Doctor
@@ -53,14 +51,18 @@ func (p *treatmentPlanHandler) ServeHTTP(w http.ResponseWriter, r *http.Request)
 	var err error
 	switch apiservice.GetContext(r).Role {
 	case api.PATIENT_ROLE:
-		patient, err = p.dataApi.GetPatientFromAccountId(apiservice.GetContext(r).AccountId)
-		if err != nil {
-			apiservice.WriteError(err, w, r)
+
+		if requestData.TreatmentPlanId == 0 && requestData.PatientCaseId == 0 {
+			apiservice.WriteValidationError("either treatment_plan_id or patient_case_id must be specified", w, r)
 			return
 		}
-		roleId = patient.PatientId.Int64()
 
-		treatmentPlan, err = p.dataApi.GetTreatmentPlanForPatient(patient.PatientId.Int64(), requestData.TreatmentPlanId)
+		if requestData.TreatmentPlanId != 0 {
+			treatmentPlan, err = p.dataApi.GetTreatmentPlanForPatient(patient.PatientId.Int64(), requestData.TreatmentPlanId)
+		} else {
+			treatmentPlan, err = p.dataApi.GetActiveTreatmentPlanForCase(requestData.PatientCaseId)
+		}
+
 		if err == api.NoRowsError {
 			apiservice.WriteResourceNotFoundError("Treatment plan not found", w, r)
 			return
@@ -72,6 +74,13 @@ func (p *treatmentPlanHandler) ServeHTTP(w http.ResponseWriter, r *http.Request)
 			return
 		}
 
+		patient, err = p.dataApi.GetPatientFromAccountId(apiservice.GetContext(r).AccountId)
+		if err != nil {
+			apiservice.WriteError(err, w, r)
+			return
+		}
+		roleId = patient.PatientId.Int64()
+
 		doctor, err = p.dataApi.GetDoctorFromId(treatmentPlan.DoctorId.Int64())
 		if err != nil {
 			apiservice.WriteError(err, w, r)
@@ -79,6 +88,12 @@ func (p *treatmentPlanHandler) ServeHTTP(w http.ResponseWriter, r *http.Request)
 		}
 
 	case api.DOCTOR_ROLE:
+
+		if requestData.TreatmentPlanId == 0 {
+			apiservice.WriteValidationError("treatment_plan_id must be specified", w, r)
+			return
+		}
+
 		doctor, err = p.dataApi.GetDoctorFromAccountId(apiservice.GetContext(r).AccountId)
 		if err != nil {
 			apiservice.WriteError(err, w, r)
