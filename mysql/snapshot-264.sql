@@ -1,6 +1,6 @@
 -- MySQL dump 10.13  Distrib 5.6.17, for osx10.9 (x86_64)
 --
--- Host: 127.0.0.1    Database: database_5024
+-- Host: 127.0.0.1    Database: database_4542
 -- ------------------------------------------------------
 -- Server version	5.6.17
 
@@ -931,6 +931,7 @@ CREATE TABLE `health_condition` (
   `id` int(10) unsigned NOT NULL AUTO_INCREMENT,
   `comment` varchar(600) NOT NULL,
   `health_condition_tag` varchar(100) NOT NULL,
+  `medicine_branch` varchar(300) NOT NULL DEFAULT '',
   PRIMARY KEY (`id`),
   UNIQUE KEY `treatment_tag` (`health_condition_tag`)
 ) ENGINE=InnoDB AUTO_INCREMENT=2 DEFAULT CHARSET=utf8;
@@ -2547,4 +2548,4 @@ CREATE TABLE `unlinked_dntf_treatment_status_events` (
 /*!40101 SET COLLATION_CONNECTION=@OLD_COLLATION_CONNECTION */;
 /*!40111 SET SQL_NOTES=@OLD_SQL_NOTES */;
 
--- Dump completed on 2014-07-07 11:13:02
+-- Dump completed on 2014-07-07 11:24:48

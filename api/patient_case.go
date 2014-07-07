@@ -78,29 +78,34 @@ func (d *DataService) AssignDoctorToPatientFileAndCase(doctorId int64, patientCa
 }
 
 func (d *DataService) GetPatientCaseFromTreatmentPlanId(treatmentPlanId int64) (*common.PatientCase, error) {
-	row := d.db.QueryRow(`select patient_case.id, patient_case.patient_id, patient_case.health_condition_id, patient_case.creation_date, patient_case.status from patient_case
+	row := d.db.QueryRow(`select patient_case.id, patient_case.patient_id, patient_case.health_condition_id, patient_case.creation_date, patient_case.status, health_condition.medicine_branch from patient_case
 							inner join treatment_plan on treatment_plan.patient_case_id = patient_case.id
+							inner join health_condition on health_condition.id = health_condition_id
 							where treatment_plan.id = ?`, treatmentPlanId)
 	return getPatientCaseFromRow(row)
 }
 
 func (d *DataService) GetPatientCaseFromPatientVisitId(patientVisitId int64) (*common.PatientCase, error) {
-	row := d.db.QueryRow(`select patient_case.id, patient_case.patient_id, patient_case.health_condition_id, patient_case.creation_date, patient_case.status from patient_case
+	row := d.db.QueryRow(`select patient_case.id, patient_case.patient_id, patient_case.health_condition_id, patient_case.creation_date, patient_case.status, health_condition.medicine_branch from patient_case
 							inner join patient_visit on patient_case_id = patient_case.id
+							inner join health_condition on health_condition.id = health_condition_id
 							where patient_visit.id = ?`, patientVisitId)
 
 	return getPatientCaseFromRow(row)
 }
 
 func (d *DataService) GetPatientCaseFromId(patientCaseId int64) (*common.PatientCase, error) {
-	row := d.db.QueryRow(`select id, patient_id, health_condition_id, creation_date, status from patient_case
+	row := d.db.QueryRow(`select id, patient_id, health_condition_id, creation_date, status, health_condition.medicine_branch from patient_case
+							inner join health_condition on health_condition.id = health_condition_id
 							where id = ?`, patientCaseId)
 
 	return getPatientCaseFromRow(row)
 }
 
 func (d *DataService) GetCasesForPatient(patientId int64) ([]*common.PatientCase, error) {
-	rows, err := d.db.Query(`select id,patient_id,health_condition_id,creation_date,status from patient_case where patient_id=? order by creation_date desc`, patientId)
+	rows, err := d.db.Query(`select id, patient_id, health_condition_id, creation_date, status, health_condition.medicine_branch from patient_case 
+								inner join health_condition on health_condition.id = health_condition_id
+								where patient_id=? order by creation_date desc`, patientId)
 	if err != nil {
 		return nil, err
 	}
@@ -114,7 +119,8 @@ func (d *DataService) GetCasesForPatient(patientId int64) ([]*common.PatientCase
 			&patientCase.PatientId,
 			&patientCase.HealthConditionId,
 			&patientCase.CreationDate,
-			&patientCase.Status)
+			&patientCase.Status,
+			&patientCase.MedicineBranch)
 		if err != nil {
 			return nil, err
 		}
@@ -191,7 +197,8 @@ func getPatientCaseFromRow(row *sql.Row) (*common.PatientCase, error) {
 		&patientCase.PatientId,
 		&patientCase.HealthConditionId,
 		&patientCase.CreationDate,
-		&patientCase.Status)
+		&patientCase.Status,
+		&patientCase.MedicineBranch)
 	if err == sql.ErrNoRows {
 		return nil, NoRowsError
 	} else if err != nil {
