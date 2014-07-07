@@ -36,7 +36,7 @@ func NewEngagementHandler(router *mux.Router, dataAPI api.DataAPI) http.Handler 
 }
 
 func (h *engagementHandler) ServeHTTP(w http.ResponseWriter, r *http.Request) {
-	req := &engagementForm{}
+	form := &engagementForm{}
 	var errors map[string]string
 
 	if r.Method == "POST" {
@@ -45,12 +45,12 @@ func (h *engagementHandler) ServeHTTP(w http.ResponseWriter, r *http.Request) {
 			return
 		}
 
-		if err := schema.NewDecoder().Decode(req, r.PostForm); err != nil {
+		if err := schema.NewDecoder().Decode(form, r.PostForm); err != nil {
 			www.InternalServerError(w, r, err)
 			return
 		}
 
-		errors = req.Validate()
+		errors = form.Validate()
 		if len(errors) == 0 {
 			account := context.Get(r, www.CKAccount).(*common.Account)
 			doctorID, err := h.dataAPI.GetDoctorIdFromAccountId(account.ID)
@@ -60,10 +60,10 @@ func (h *engagementHandler) ServeHTTP(w http.ResponseWriter, r *http.Request) {
 			}
 
 			attributes := map[string]string{
-				api.AttrHoursUsingSprucePerWeek: req.HoursPerWeek,
-				api.AttrTimesActiveOnSpruce:     req.TimesActive,
-				api.AttrJacketSize:              req.JacketSize,
-				api.AttrExcitedAboutSpruce:      req.Excitement,
+				api.AttrHoursUsingSprucePerWeek: form.HoursPerWeek,
+				api.AttrTimesActiveOnSpruce:     form.TimesActive,
+				api.AttrJacketSize:              form.JacketSize,
+				api.AttrExcitedAboutSpruce:      form.Excitement,
 			}
 			if err := h.dataAPI.UpdateDoctorAttributes(doctorID, attributes); err != nil {
 				www.InternalServerError(w, r, err)
@@ -77,12 +77,35 @@ func (h *engagementHandler) ServeHTTP(w http.ResponseWriter, r *http.Request) {
 			}
 			return
 		}
+	} else {
+		// Pull up old information if available
+		account := context.Get(r, www.CKAccount).(*common.Account)
+		doctorID, err := h.dataAPI.GetDoctorIdFromAccountId(account.ID)
+		if err != nil {
+			www.InternalServerError(w, r, err)
+			return
+		}
+		attr, err := h.dataAPI.DoctorAttributes(doctorID, []string{
+			api.AttrHoursUsingSprucePerWeek,
+			api.AttrTimesActiveOnSpruce,
+			api.AttrJacketSize,
+			api.AttrExcitedAboutSpruce,
+		})
+		if err != nil {
+			www.InternalServerError(w, r, err)
+			return
+		}
+
+		form.HoursPerWeek = attr[api.AttrHoursUsingSprucePerWeek]
+		form.TimesActive = attr[api.AttrTimesActiveOnSpruce]
+		form.JacketSize = attr[api.AttrJacketSize]
+		form.Excitement = attr[api.AttrExcitedAboutSpruce]
 	}
 
 	www.TemplateResponse(w, http.StatusOK, engagementTemplate, &www.BaseTemplateContext{
 		Title: "Identity & Credentials | Doctor Registration | Spruce",
 		SubContext: &engagementTemplateContext{
-			Form:       req,
+			Form:       form,
 			FormErrors: errors,
 		},
 	})

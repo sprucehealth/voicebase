@@ -3,10 +3,11 @@ package common
 import (
 	"crypto/rand"
 	"encoding/base64"
+	"io"
+	"os"
 
 	"github.com/sprucehealth/backend/libs/aws"
 	"github.com/sprucehealth/backend/libs/aws/sqs"
-
 	goamz "github.com/sprucehealth/backend/third_party/launchpad.net/goamz/aws"
 )
 
@@ -86,4 +87,13 @@ func NewQueue(auth aws.Auth, region aws.Region, queueName string) (*SQSQueue, er
 		QueueService: sq,
 		QueueUrl:     queueUrl,
 	}, nil
+}
+
+func SeekerSize(sk io.Seeker) (int64, error) {
+	size, err := sk.Seek(0, os.SEEK_END)
+	if err != nil {
+		return 0, err
+	}
+	_, err = sk.Seek(0, os.SEEK_SET)
+	return size, err
 }

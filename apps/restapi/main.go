@@ -9,8 +9,6 @@ import (
 	"strings"
 	"time"
 
-	"github.com/sprucehealth/backend/libs/storage"
-
 	"github.com/sprucehealth/backend/address"
 	"github.com/sprucehealth/backend/analytics"
 	"github.com/sprucehealth/backend/api"
@@ -31,6 +29,7 @@ import (
 	"github.com/sprucehealth/backend/libs/maps"
 	"github.com/sprucehealth/backend/libs/payment/stripe"
 	"github.com/sprucehealth/backend/libs/pharmacy"
+	"github.com/sprucehealth/backend/libs/storage"
 	"github.com/sprucehealth/backend/messages"
 	"github.com/sprucehealth/backend/notify"
 	"github.com/sprucehealth/backend/passreset"
@@ -97,6 +96,20 @@ func main() {
 
 	conf.Validate()
 
+	awsAuth, err := conf.AWSAuth()
+	if err != nil {
+		log.Fatalf("Failed to get AWS auth: %+v", err)
+	}
+	stores := make(map[string]storage.Store)
+	for name, c := range conf.Storage {
+		switch strings.ToLower(c.Type) {
+		default:
+			log.Fatalf("Unknown storage type %s for name %s", c.Type, name)
+		case "s3":
+			stores[name] = storage.NewS3(awsAuth, c.Region, c.Bucket, c.Prefix)
+		}
+	}
+
 	db := connectDB(&conf)
 	defer db.Close()
 
@@ -122,8 +135,8 @@ func main() {
 		Hasher:         api.NewBcryptHasher(0),
 	}
 
-	restAPIMux := buildRESTAPI(&conf, dataApi, authAPI, metricsRegistry)
-	webMux := buildWWW(&conf, dataApi, authAPI, metricsRegistry)
+	restAPIMux := buildRESTAPI(&conf, dataApi, authAPI, stores, metricsRegistry)
+	webMux := buildWWW(&conf, dataApi, authAPI, stores, metricsRegistry)
 
 	router := mux.NewRouter()
 	router.Host(conf.APISubdomain + ".{domain:.+}").Handler(restAPIMux)
@@ -134,7 +147,7 @@ func main() {
 	serve(&conf, router)
 }
 
-func buildWWW(conf *Config, dataApi api.DataAPI, authAPI api.AuthAPI, metricsRegistry metrics.Registry) http.Handler {
+func buildWWW(conf *Config, dataApi api.DataAPI, authAPI api.AuthAPI, stores map[string]storage.Store, metricsRegistry metrics.Registry) http.Handler {
 	twilioCli, err := conf.Twilio.Client()
 	if err != nil {
 		if conf.Debug {
@@ -144,10 +157,10 @@ func buildWWW(conf *Config, dataApi api.DataAPI, authAPI api.AuthAPI, metricsReg
 		}
 	}
 
-	return router.New(dataApi, authAPI, twilioCli, conf.Twilio.FromNumber, email.NewService(conf.Email, metricsRegistry.Scope("email")), conf.Support.CustomerSupportEmail, conf.WebSubdomain, metricsRegistry.Scope("www"))
+	return router.New(dataApi, authAPI, twilioCli, conf.Twilio.FromNumber, email.NewService(conf.Email, metricsRegistry.Scope("email")), conf.Support.CustomerSupportEmail, conf.WebSubdomain, stores, metricsRegistry.Scope("www"))
 }
 
-func buildRESTAPI(conf *Config, dataApi api.DataAPI, authAPI api.AuthAPI, metricsRegistry metrics.Registry) http.Handler {
+func buildRESTAPI(conf *Config, dataApi api.DataAPI, authAPI api.AuthAPI, stores map[string]storage.Store, metricsRegistry metrics.Registry) http.Handler {
 	twilioCli, err := conf.Twilio.Client()
 	if err != nil {
 		if conf.Debug {
@@ -160,15 +173,6 @@ func buildRESTAPI(conf *Config, dataApi api.DataAPI, authAPI api.AuthAPI, metric
 	awsAuth, err := conf.AWSAuth()
 	if err != nil {
 		log.Fatalf("Failed to get AWS auth: %+v", err)
-	}
-
-	for name, c := range conf.Storage {
-		switch strings.ToLower(c.Type) {
-		default:
-			log.Fatalf("Unknown storage type %s for name %s", c.Type, name)
-		case "s3":
-			c.store = storage.NewS3(awsAuth, c.Region, c.Bucket, c.Prefix)
-		}
 	}
 
 	emailService := email.NewService(conf.Email, metricsRegistry.Scope("email"))
@@ -345,7 +349,7 @@ func buildRESTAPI(conf *Config, dataApi api.DataAPI, authAPI api.AuthAPI, metric
 	// Miscellaneous APIs
 	mux.Handle("/v1/content", staticContentHandler)
 	mux.Handle("/v1/ping", pingHandler)
-	mux.Handle("/v1/photo", photos.NewHandler(dataApi, conf.Storage["photos"].store))
+	mux.Handle("/v1/photo", photos.NewHandler(dataApi, stores["photos"]))
 	mux.Handle("/v1/layouts/upload", layout.NewLayoutUploadHandler(dataApi))
 	mux.Handle("/v1/app_event", app_event.NewHandler())
 

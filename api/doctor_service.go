@@ -95,7 +95,7 @@ func (d *DataService) queryDoctor(where string, queryParams ...interface{}) (*co
 		SELECT doctor.id, doctor.account_id, phone, first_name, last_name, middle_name, suffix,
 			prefix, short_title, long_title, gender, dob_year, dob_month, dob_day, doctor.status, clinician_id,
 			address.address_line_1,	address.address_line_2, address.city, address.state,
-			address.zip_code, person.id
+			address.zip_code, person.id, npi_number
 		FROM doctor
 		INNER JOIN person ON person.role_type_id = %d AND person.role_id = doctor.id
 		LEFT OUTER JOIN account_phone ON account_phone.account_id = doctor.account_id
@@ -110,11 +110,12 @@ func (d *DataService) queryDoctor(where string, queryParams ...interface{}) (*co
 	var dobYear, dobMonth, dobDay int
 	var personId int64
 	var clinicianId sql.NullInt64
+	var NPI sql.NullString
 	err := row.Scan(
 		&doctorId, &accountId, &cellPhoneNumber, &firstName, &lastName,
 		&middleName, &suffix, &prefix, &shortTitle, &longTitle, &gender, &dobYear, &dobMonth,
 		&dobDay, &status, &clinicianId, &addressLine1, &addressLine2,
-		&city, &state, &zipCode, &personId)
+		&city, &state, &zipCode, &personId, &NPI)
 	if err != nil {
 		return nil, err
 	}
@@ -141,6 +142,7 @@ func (d *DataService) queryDoctor(where string, queryParams ...interface{}) (*co
 		},
 		DOB:      encoding.DOB{Year: dobYear, Month: dobMonth, Day: dobDay},
 		PersonId: personId,
+		NPI:      NPI.String,
 	}
 
 	// populate the doctor url
@@ -1314,4 +1316,30 @@ func (d *DataService) AddMedicalLicenses(licenses []*common.MedicalLicense) erro
 	_, err := d.db.Exec(`REPLACE INTO doctor_medical_license (doctor_id, state, license_number, status) VALUES `+strings.Join(replacements, ","),
 		values...)
 	return err
+}
+
+func (d *DataService) MedicalLicenses(doctorID int64) ([]*common.MedicalLicense, error) {
+	rows, err := d.db.Query(`
+		SELECT id, state, license_number, status
+		FROM doctor_medical_license
+		WHERE doctor_id = ?
+		ORDER BY state`, doctorID)
+	if err != nil {
+		return nil, err
+	}
+	defer rows.Close()
+
+	var licenses []*common.MedicalLicense
+	for rows.Next() {
+		l := &common.MedicalLicense{DoctorID: doctorID}
+		if err := rows.Scan(&l.ID, &l.State, &l.Number, &l.Status); err != nil {
+			return nil, err
+		}
+		licenses = append(licenses, l)
+	}
+	if err := rows.Err(); err != nil {
+		return nil, err
+	}
+
+	return licenses, nil
 }

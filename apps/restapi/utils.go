@@ -6,7 +6,6 @@ import (
 
 	"github.com/sprucehealth/backend/common/config"
 	"github.com/sprucehealth/backend/email"
-	"github.com/sprucehealth/backend/libs/storage"
 
 	"github.com/sprucehealth/backend/third_party/github.com/subosito/twilio"
 )
@@ -64,8 +63,6 @@ type StorageConfig struct {
 	Region string
 	Bucket string
 	Prefix string
-
-	store storage.Storage
 }
 
 type Config struct {

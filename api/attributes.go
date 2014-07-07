@@ -4,6 +4,8 @@ const (
 	AttrAmericanBoardCertified        = "AmericanBoardCertified"
 	AttrContinuedEducation            = "ContinuedEducation"
 	AttrContinuedEducationCreditHours = "ContinuedEducationCreditHours"
+	AttrCVFile                        = "CVFile"
+	AttrDriversLicenseFile            = "DriversLicenseFile"
 	AttrExcitedAboutSpruce            = "ExcitedAboutSpruce"
 	AttrHoursUsingSprucePerWeek       = "HoursUsingSprucePerWeek"
 	AttrJacketSize                    = "JacketSize"

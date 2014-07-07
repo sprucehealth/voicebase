@@ -84,6 +84,7 @@ type Doctor struct {
 	DoctorAddress       *Address             `json:"address,omitempty"`
 	PersonId            int64                `json:"person_id"`
 	PromptStatus        PushPromptStatus     `json:"prompt_status"`
+	NPI                 string               `json:"npi,omitempty"`
 }
 
 const (

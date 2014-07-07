@@ -239,6 +239,7 @@ type DoctorAPI interface {
 	DoctorAttributes(doctorID int64, names []string) (map[string]string, error)
 	UpdateDoctorAttributes(doctorID int64, attributes map[string]string) error
 	AddMedicalLicenses([]*common.MedicalLicense) error
+	MedicalLicenses(doctorID int64) ([]*common.MedicalLicense, error)
 }
 
 type FavoriteTreatmentPlanAPI interface {

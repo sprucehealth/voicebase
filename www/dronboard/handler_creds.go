@@ -86,7 +86,7 @@ func NewCredentialsHandler(router *mux.Router, dataAPI api.DataAPI) http.Handler
 }
 
 func (h *credentialsHandler) ServeHTTP(w http.ResponseWriter, r *http.Request) {
-	req := &credentialsForm{}
+	form := &credentialsForm{}
 	var errors map[string]string
 
 	if r.Method == "POST" {
@@ -95,12 +95,12 @@ func (h *credentialsHandler) ServeHTTP(w http.ResponseWriter, r *http.Request) {
 			return
 		}
 
-		if err := schema.NewDecoder().Decode(req, r.PostForm); err != nil {
+		if err := schema.NewDecoder().Decode(form, r.PostForm); err != nil {
 			www.InternalServerError(w, r, err)
 			return
 		}
 
-		errors = req.Validate()
+		errors = form.Validate()
 		if len(errors) == 0 {
 			account := context.Get(r, www.CKAccount).(*common.Account)
 			doctorID, err := h.dataAPI.GetDoctorIdFromAccountId(account.ID)
@@ -108,15 +108,15 @@ func (h *credentialsHandler) ServeHTTP(w http.ResponseWriter, r *http.Request) {
 				www.InternalServerError(w, r, err)
 				return
 			}
-			if err := h.dataAPI.SetDoctorNPI(doctorID, req.NPI); err != nil {
+			if err := h.dataAPI.SetDoctorNPI(doctorID, form.NPI); err != nil {
 				www.InternalServerError(w, r, err)
 				return
 			}
 
 			// TODO: SSN
 
-			licenses := make([]*common.MedicalLicense, 0, len(req.StateLicenses))
-			for _, l := range req.StateLicenses {
+			licenses := make([]*common.MedicalLicense, 0, len(form.StateLicenses))
+			for _, l := range form.StateLicenses {
 				status, err := common.GetMedicalLicenseStatus(l.Status)
 				if err != nil {
 					// TODO: this should just show an error on the form but should
@@ -140,16 +140,16 @@ func (h *credentialsHandler) ServeHTTP(w http.ResponseWriter, r *http.Request) {
 			}
 
 			attributes := map[string]string{
-				api.AttrAmericanBoardCertified: api.BoolToString(req.AmericanBoardCertified),
-				api.AttrContinuedEducation:     api.BoolToString(req.ContinuedEducation),
-				api.AttrRiskManagementCourse:   api.BoolToString(req.RiskManagementCourse),
+				api.AttrAmericanBoardCertified: api.BoolToString(form.AmericanBoardCertified),
+				api.AttrContinuedEducation:     api.BoolToString(form.ContinuedEducation),
+				api.AttrRiskManagementCourse:   api.BoolToString(form.RiskManagementCourse),
 			}
-			if req.AmericanBoardCertified {
-				attributes[api.AttrSpecialtyBoard] = req.SpecialtyBoard
-				attributes[api.AttrMostRecentCertificationDate] = req.RecentCertDate
+			if form.AmericanBoardCertified {
+				attributes[api.AttrSpecialtyBoard] = form.SpecialtyBoard
+				attributes[api.AttrMostRecentCertificationDate] = form.RecentCertDate
 			}
-			if req.ContinuedEducation {
-				attributes[api.AttrContinuedEducationCreditHours] = req.CreditHours
+			if form.ContinuedEducation {
+				attributes[api.AttrContinuedEducationCreditHours] = form.CreditHours
 			}
 			if err := h.dataAPI.UpdateDoctorAttributes(doctorID, attributes); err != nil {
 				www.InternalServerError(w, r, err)
@@ -163,11 +163,51 @@ func (h *credentialsHandler) ServeHTTP(w http.ResponseWriter, r *http.Request) {
 			}
 			return
 		}
+	} else {
+		// Pull up old information if available
+		account := context.Get(r, www.CKAccount).(*common.Account)
+		doctor, err := h.dataAPI.GetDoctorFromAccountId(account.ID)
+		if err != nil {
+			www.InternalServerError(w, r, err)
+			return
+		}
+		form.NPI = doctor.NPI
+		attr, err := h.dataAPI.DoctorAttributes(doctor.DoctorId.Int64(), []string{
+			api.AttrAmericanBoardCertified,
+			api.AttrContinuedEducation,
+			api.AttrRiskManagementCourse,
+			api.AttrSpecialtyBoard,
+			api.AttrMostRecentCertificationDate,
+			api.AttrContinuedEducationCreditHours,
+		})
+		if err != nil {
+			www.InternalServerError(w, r, err)
+			return
+		}
+		form.AmericanBoardCertified = api.StringToBool(attr[api.AttrAmericanBoardCertified])
+		form.SpecialtyBoard = attr[api.AttrSpecialtyBoard]
+		form.RecentCertDate = attr[api.AttrMostRecentCertificationDate]
+		form.ContinuedEducation = api.StringToBool(attr[api.AttrContinuedEducation])
+		form.CreditHours = attr[api.AttrContinuedEducationCreditHours]
+		form.RiskManagementCourse = api.StringToBool(attr[api.AttrRiskManagementCourse])
+
+		licenses, err := h.dataAPI.MedicalLicenses(doctor.DoctorId.Int64())
+		if err != nil {
+			www.InternalServerError(w, r, err)
+			return
+		}
+		for _, l := range licenses {
+			form.StateLicenses = append(form.StateLicenses, &stateLicense{
+				State:  l.State,
+				Number: l.Number,
+				Status: l.Status.String(),
+			})
+		}
 	}
 
 	// Pad with empty entries so that they render
-	for len(req.StateLicenses) < 6 {
-		req.StateLicenses = append(req.StateLicenses, &stateLicense{})
+	for len(form.StateLicenses) < 6 {
+		form.StateLicenses = append(form.StateLicenses, &stateLicense{})
 	}
 
 	states, err := h.dataAPI.ListStates()
@@ -182,7 +222,7 @@ func (h *credentialsHandler) ServeHTTP(w http.ResponseWriter, r *http.Request) {
 	www.TemplateResponse(w, http.StatusOK, credsTemplate, &www.BaseTemplateContext{
 		Title: "Identity & Credentials | Doctor Registration | Spruce",
 		SubContext: &credsTemplateContext{
-			Form:            req,
+			Form:            form,
 			FormErrors:      errors,
 			States:          states,
 			LicenseStatuses: licenseStatuses,

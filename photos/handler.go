@@ -5,10 +5,10 @@ import (
 	"encoding/hex"
 	"io"
 	"net/http"
-	"os"
 
 	"github.com/sprucehealth/backend/api"
 	"github.com/sprucehealth/backend/apiservice"
+	"github.com/sprucehealth/backend/common"
 	"github.com/sprucehealth/backend/libs/golog"
 	"github.com/sprucehealth/backend/libs/storage"
 	"github.com/sprucehealth/backend/third_party/github.com/SpruceHealth/schema"
@@ -16,7 +16,7 @@ import (
 
 type Handler struct {
 	dataAPI api.DataAPI
-	store   storage.Storage
+	store   storage.Store
 }
 
 type getRequest struct {
@@ -29,7 +29,7 @@ type uploadResponse struct {
 	PhotoId int64 `json:"photo_id,string"`
 }
 
-func NewHandler(dataAPI api.DataAPI, store storage.Storage) *Handler {
+func NewHandler(dataAPI api.DataAPI, store storage.Store) *Handler {
 	return &Handler{
 		dataAPI: dataAPI,
 		store:   store,
@@ -117,13 +117,8 @@ func (h *Handler) upload(w http.ResponseWriter, r *http.Request) {
 	}
 	defer file.Close()
 
-	// Get size of file
-	size, err := file.Seek(0, os.SEEK_END)
+	size, err := common.SeekerSize(file)
 	if err != nil {
-		apiservice.WriteError(err, w, r)
-		return
-	}
-	if _, err := file.Seek(0, os.SEEK_SET); err != nil {
 		apiservice.WriteError(err, w, r)
 		return
 	}

@@ -133,6 +133,19 @@ func (l MedicalLicenseStatus) String() string {
 	return string(l)
 }
 
+func (l *MedicalLicenseStatus) Scan(src interface{}) error {
+	var err error
+	switch s := src.(type) {
+	case string:
+		*l, err = GetMedicalLicenseStatus(s)
+	case []byte:
+		*l, err = GetMedicalLicenseStatus(string(s))
+	default:
+		return fmt.Errorf("common: can't scan type %T into MedicalLicenseStatus", src)
+	}
+	return err
+}
+
 func GetMedicalLicenseStatus(s string) (MedicalLicenseStatus, error) {
 	switch l := MedicalLicenseStatus(s); l {
 	case Active, Inactive, Temporary, Pending:
