@@ -51,11 +51,17 @@ func (p *treatmentPlanHandler) ServeHTTP(w http.ResponseWriter, r *http.Request)
 	var err error
 	switch apiservice.GetContext(r).Role {
 	case api.PATIENT_ROLE:
-
 		if requestData.TreatmentPlanId == 0 && requestData.PatientCaseId == 0 {
 			apiservice.WriteValidationError("either treatment_plan_id or patient_case_id must be specified", w, r)
 			return
 		}
+
+		patient, err = p.dataApi.GetPatientFromAccountId(apiservice.GetContext(r).AccountId)
+		if err != nil {
+			apiservice.WriteError(err, w, r)
+			return
+		}
+		roleId = patient.PatientId.Int64()
 
 		if requestData.TreatmentPlanId != 0 {
 			treatmentPlan, err = p.dataApi.GetTreatmentPlanForPatient(patient.PatientId.Int64(), requestData.TreatmentPlanId)
@@ -73,13 +79,6 @@ func (p *treatmentPlanHandler) ServeHTTP(w http.ResponseWriter, r *http.Request)
 			apiservice.WriteResourceNotFoundError("No active treatment plan found for patient", w, r)
 			return
 		}
-
-		patient, err = p.dataApi.GetPatientFromAccountId(apiservice.GetContext(r).AccountId)
-		if err != nil {
-			apiservice.WriteError(err, w, r)
-			return
-		}
-		roleId = patient.PatientId.Int64()
 
 		doctor, err = p.dataApi.GetDoctorFromId(treatmentPlan.DoctorId.Int64())
 		if err != nil {
