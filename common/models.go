@@ -70,6 +70,8 @@ type Doctor struct {
 	MiddleName          string               `json:"middle_name,omitempty"`
 	Prefix              string               `json:"prefix,omitempty"`
 	Suffix              string               `json:"suffix,omitempty"`
+	ShortTitle          string               `json:"short_title,omitempty"`
+	LongTitle           string               `json:"long_title,omitempty"`
 	Dob                 encoding.Dob         `json:"-"`
 	Gender              string               `json:"-"`
 	Status              string               `json:"-"`
@@ -120,13 +122,14 @@ type Address struct {
 }
 
 type CareProviderAssignment struct {
-	ProviderRole      string
-	ProviderId        int64
-	PatientId         int64
-	HealthConditionId int64
-	Status            string
-	CreationDate      time.Time
-	Expires           *time.Time
+	ProviderRole      string     `json:"provider_role"`
+	ProviderId        int64      `json:"-"`
+	PatientId         int64      `json:"-"`
+	HealthConditionId int64      `json:"-"`
+	Status            string     `json:"-"`
+	CreationDate      time.Time  `json:"assignment_date"`
+	Expires           *time.Time `json:"-"`
+	Doctor            *Doctor    `json:"doctor,omitempty"`
 }
 
 type PatientCareTeam struct {

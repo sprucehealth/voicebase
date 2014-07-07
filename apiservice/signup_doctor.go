@@ -1,13 +1,14 @@
 package apiservice
 
 import (
+	"net/http"
+	"strconv"
+	"strings"
+
 	"github.com/sprucehealth/backend/api"
 	"github.com/sprucehealth/backend/common"
 	"github.com/sprucehealth/backend/encoding"
 	"github.com/sprucehealth/backend/libs/golog"
-	"net/http"
-	"strconv"
-	"strings"
 
 	"github.com/sprucehealth/backend/third_party/github.com/dchest/validator"
 )
@@ -41,6 +42,11 @@ type SignupDoctorRequestData struct {
 	Password     string `schema:"password,required"`
 	FirstName    string `schema:"first_name,required"`
 	LastName     string `schema:"last_name,required"`
+	MiddleName   string `schema:"middle_name"`
+	ShortTitle   string `schema:"short_title"`
+	LongTitle    string `schema:"long_title"`
+	Suffix       string `schema:"suffix"`
+	Prefix       string `schema:"prefix"`
 	Dob          string `schema:"dob,required"`
 	Gender       string `schema:"gender,required"`
 	ClinicianId  int64  `schema:"clinician_id,required"`
@@ -111,6 +117,11 @@ func (d *signupDoctorHandler) ServeHTTP(w http.ResponseWriter, r *http.Request) 
 		FirstName:           requestData.FirstName,
 		LastName:            requestData.LastName,
 		Gender:              requestData.Gender,
+		ShortTitle:          requestData.ShortTitle,
+		LongTitle:           requestData.LongTitle,
+		Suffix:              requestData.Suffix,
+		Prefix:              requestData.Prefix,
+		MiddleName:          requestData.MiddleName,
 		Dob:                 encoding.Dob{Year: year, Month: month, Day: day},
 		CellPhone:           requestData.Phone,
 		DoseSpotClinicianId: requestData.ClinicianId,

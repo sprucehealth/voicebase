@@ -29,6 +29,33 @@ func (d *DataService) GetDoctorsAssignedToPatientCase(patientCaseId int64) ([]*c
 	return assignments, rows.Err()
 }
 
+// GetActiveMembersOfCareTeamForCase returns the care providers that are currently part of the patient care team
+// It also populates the actual provider object so as to make it possible for the client to use this information as is seen fit
+func (d *DataService) GetActiveMembersOfCareTeamForCase(patientCaseId int64) ([]*common.CareProviderAssignment, error) {
+	rows, err := d.db.Query(`select provider_id, provider_role, status, creation_date from patient_case_care_provider_assignment where status = ? and patient_case_id = ?`, STATUS_ACTIVE, patientCaseId)
+	if err != nil {
+		return nil, err
+	}
+	defer rows.Close()
+
+	var assignments []*common.CareProviderAssignment
+	for rows.Next() {
+		var assignment common.CareProviderAssignment
+		if err := rows.Scan(&assignment.ProviderId, &assignment.ProviderRole, &assignment.Status, &assignment.CreationDate); err != nil {
+			return nil, err
+		}
+
+		if assignment.Status == DOCTOR_ROLE {
+			assignment.Doctor, err = d.GetDoctorFromId(assignment.ProviderId)
+			if err != nil {
+				return nil, err
+			}
+		}
+		assignments = append(assignments, &assignment)
+	}
+	return assignments, rows.Err()
+}
+
 func (d *DataService) AssignDoctorToPatientFileAndCase(doctorId int64, patientCase *common.PatientCase) error {
 	tx, err := d.db.Begin()
 	if err != nil {

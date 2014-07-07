@@ -1,0 +1,1 @@
+alter table patient_case add diagnosis varchar(300);

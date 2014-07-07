@@ -21,8 +21,11 @@ func (d *DataService) RegisterDoctor(doctor *common.Doctor) (int64, error) {
 		return 0, err
 	}
 
-	res, err := tx.Exec(`insert into doctor (account_id, first_name, last_name, gender, dob_year, dob_month, dob_day, status, clinician_id) 
-								values (?, ?, ?, ?, ?, ?, ? , ?, ?)`, doctor.AccountId.Int64(), doctor.FirstName, doctor.LastName, doctor.Gender, doctor.Dob.Year, doctor.Dob.Month, doctor.Dob.Day, DOCTOR_REGISTERED, doctor.DoseSpotClinicianId)
+	res, err := tx.Exec(`insert into doctor (account_id, first_name, last_name, short_title, long_title, suffix, prefix, middle_name, gender, dob_year, dob_month, dob_day, status, clinician_id) 
+								values (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?)`, doctor.AccountId.Int64(),
+		doctor.FirstName, doctor.LastName, doctor.ShortTitle, doctor.LongTitle,
+		doctor.MiddleName, doctor.Gender, doctor.Dob.Year, doctor.Dob.Month, doctor.Dob.Day,
+		DOCTOR_REGISTERED, doctor.DoseSpotClinicianId)
 	if err != nil {
 		return 0, err
 	}
@@ -82,7 +85,7 @@ func (d *DataService) GetDoctorFromDoseSpotClinicianId(clinicianId int64) (*comm
 func (d *DataService) queryDoctor(where string, queryParams ...interface{}) (*common.Doctor, error) {
 	row := d.db.QueryRow(fmt.Sprintf(`
 		SELECT doctor.id, account_id, phone, first_name, last_name, middle_name, suffix,
-			prefix, gender, dob_year, dob_month, dob_day, status, clinician_id,
+			prefix, short_title, long_title, gender, dob_year, dob_month, dob_day, status, clinician_id,
 			address.address_line_1,	address.address_line_2, address.city, address.state,
 			address.zip_code, person.id
 		FROM doctor
@@ -94,14 +97,14 @@ func (d *DataService) queryDoctor(where string, queryParams ...interface{}) (*co
 		queryParams...)
 
 	var firstName, lastName, status, gender string
-	var cellPhoneNumber, addressLine1, addressLine2, city, state, zipCode, middleName, suffix, prefix sql.NullString
+	var cellPhoneNumber, addressLine1, addressLine2, city, state, zipCode, middleName, suffix, prefix, shortTitle, longTitle sql.NullString
 	var doctorId, accountId encoding.ObjectId
 	var dobYear, dobMonth, dobDay int
 	var personId int64
 	var clinicianId sql.NullInt64
 	err := row.Scan(
 		&doctorId, &accountId, &cellPhoneNumber, &firstName, &lastName,
-		&middleName, &suffix, &prefix, &gender, &dobYear, &dobMonth,
+		&middleName, &suffix, &prefix, &shortTitle, &longTitle, &gender, &dobYear, &dobMonth,
 		&dobDay, &status, &clinicianId, &addressLine1, &addressLine2,
 		&city, &state, &zipCode, &personId)
 	if err != nil {
@@ -115,6 +118,8 @@ func (d *DataService) queryDoctor(where string, queryParams ...interface{}) (*co
 		MiddleName:          middleName.String,
 		Suffix:              suffix.String,
 		Prefix:              prefix.String,
+		ShortTitle:          shortTitle.String,
+		LongTitle:           longTitle.String,
 		Status:              status,
 		Gender:              gender,
 		CellPhone:           cellPhoneNumber.String,
