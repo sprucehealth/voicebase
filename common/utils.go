@@ -3,6 +3,7 @@ package common
 import (
 	"crypto/rand"
 	"encoding/base64"
+
 	"github.com/sprucehealth/backend/libs/aws"
 	"github.com/sprucehealth/backend/libs/aws/sqs"
 

@@ -3,6 +3,7 @@ package api
 import (
 	"errors"
 	"net/http"
+	"reflect"
 	"time"
 
 	"github.com/sprucehealth/backend/info_intake"
@@ -96,6 +97,10 @@ type PatientCaseAPI interface {
 	DeleteDraftTreatmentPlanByDoctorForCase(doctorId, patientCaseId int64) error
 	GetCasesForPatient(patientId int64) ([]*common.PatientCase, error)
 	GetVisitsForCase(patientCaseId int64) ([]*common.PatientVisit, error)
+	GetNotificationsForCase(patientCaseId int64, notificationTypeRegistry map[string]reflect.Type) ([]*common.CaseNotification, error)
+	InsertCaseNotification(caseNotificationItem *common.CaseNotification) error
+	DeleteCaseNotification(patientCaseId, itemId int64, notificationType string) error
+	DeleteCaseNotificationBasedOnId(notificationId int64) error
 }
 
 type CaseRouteAPI interface {

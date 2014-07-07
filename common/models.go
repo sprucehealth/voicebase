@@ -1,10 +1,11 @@
 package common
 
 import (
+	"time"
+
 	"github.com/sprucehealth/backend/app_url"
 	"github.com/sprucehealth/backend/encoding"
 	"github.com/sprucehealth/backend/libs/pharmacy"
-	"time"
 )
 
 const (
@@ -107,14 +108,6 @@ const (
 	PCStatusTempClaimed = "TEMP_CLAIMED"
 	PCStatusClaimed     = "CLAIMED"
 )
-
-type PatientCase struct {
-	Id                encoding.ObjectId `json:"case_id"`
-	PatientId         encoding.ObjectId `json:"patient_id"`
-	HealthConditionId encoding.ObjectId `json:"health_condition_id"`
-	CreationDate      time.Time         `json:"creation_date"`
-	Status            string            `json:"status"`
-}
 
 type Address struct {
 	Id           int64  `json:"-"`
@@ -482,28 +475,6 @@ type Person struct {
 
 	Patient *Patient
 	Doctor  *Doctor
-}
-
-type CaseMessage struct {
-	ID          int64
-	CaseID      int64
-	PersonID    int64
-	Time        time.Time
-	Body        string
-	Attachments []*CaseMessageAttachment
-}
-
-type CaseMessageAttachment struct {
-	ID       int64
-	ItemType string
-	ItemID   int64
-}
-
-type CaseMessageParticipant struct {
-	CaseID   int64
-	Unread   bool
-	LastRead time.Time
-	Person   *Person
 }
 
 type CommunicationPreference struct {

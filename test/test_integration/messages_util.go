@@ -3,9 +3,10 @@ package test_integration
 import (
 	"bytes"
 	"encoding/json"
-	"github.com/sprucehealth/backend/messages"
 	"net/http/httptest"
 	"testing"
+
+	"github.com/sprucehealth/backend/messages"
 )
 
 func PostCaseMessage(t *testing.T, testData *TestData, accountID int64, req *messages.PostMessageRequest) int64 {

@@ -27,6 +27,7 @@ import (
 	"github.com/sprucehealth/backend/libs/aws"
 	"github.com/sprucehealth/backend/libs/dispatch"
 	"github.com/sprucehealth/backend/notify"
+	"github.com/sprucehealth/backend/patient_case"
 	"github.com/sprucehealth/backend/patient_visit"
 	"github.com/sprucehealth/backend/third_party/github.com/BurntSushi/toml"
 	_ "github.com/sprucehealth/backend/third_party/github.com/go-sql-driver/mysql"
@@ -326,6 +327,7 @@ func SetupIntegrationTest(t *testing.T) *TestData {
 	doctor_treatment_plan.InitListeners(testData.DataApi)
 	doctor_queue.InitListeners(testData.DataApi, notificationManager, metrics.NewRegistry())
 	notify.InitListeners(testData.DataApi)
+	patient_case.InitListeners(testData.DataApi)
 
 	return testData
 }

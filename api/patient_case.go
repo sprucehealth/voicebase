@@ -2,6 +2,9 @@ package api
 
 import (
 	"database/sql"
+	"encoding/json"
+	"fmt"
+	"reflect"
 
 	"github.com/sprucehealth/backend/common"
 	"github.com/sprucehealth/backend/third_party/github.com/go-sql-driver/mysql"
@@ -125,6 +128,7 @@ func (d *DataService) GetVisitsForCase(patientCaseId int64) ([]*common.PatientVi
 	}
 	return patientVisits, rows.Err()
 }
+
 func getPatientCaseFromRow(row *sql.Row) (*common.PatientCase, error) {
 	var patientCase common.PatientCase
 
@@ -144,5 +148,63 @@ func getPatientCaseFromRow(row *sql.Row) (*common.PatientCase, error) {
 
 func (d *DataService) DeleteDraftTreatmentPlanByDoctorForCase(doctorId, patientCaseId int64) error {
 	_, err := d.db.Exec(`delete from treatment_plan where doctor_id = ? and status = ? and patient_case_id = ?`, doctorId, STATUS_DRAFT, patientCaseId)
+	return err
+}
+
+func (d *DataService) GetNotificationsForCase(patientCaseId int64, notificationTypeRegistry map[string]reflect.Type) ([]*common.CaseNotification, error) {
+	rows, err := d.db.Query(`select id, patient_case_id, notification_type, item_id, creation_date, data from case_notification where patient_case_id = ?`, patientCaseId)
+	if err != nil {
+		return nil, err
+	}
+	defer rows.Close()
+
+	var notificationItems []*common.CaseNotification
+	for rows.Next() {
+		var notificationItem common.CaseNotification
+		var notificationData []byte
+		if err := rows.Scan(
+			&notificationItem.Id,
+			&notificationItem.PatientCaseId,
+			&notificationItem.NotificationType,
+			&notificationItem.ItemId,
+			&notificationItem.CreationDate,
+			&notificationData); err != nil {
+			return nil, err
+		}
+
+		// based on the notification type, find the appropriate type to render the notification data
+		nDataType, ok := notificationTypeRegistry[notificationItem.NotificationType]
+		if !ok {
+			// currently throwing an error if the notification type is not found as this should not happen right now
+			return nil, fmt.Errorf("Unable to find notification type to render data into for item %s", notificationItem.NotificationType)
+		}
+
+		notificationItem.Data = reflect.New(nDataType).Interface().(common.Typed)
+		if err := json.Unmarshal(notificationData, &notificationItem.Data); err != nil {
+			return nil, err
+		}
+		notificationItems = append(notificationItems, &notificationItem)
+	}
+
+	return notificationItems, rows.Err()
+}
+
+func (d *DataService) InsertCaseNotification(notificationItem *common.CaseNotification) error {
+	notificationData, err := json.Marshal(notificationItem.Data)
+	if err != nil {
+		return err
+	}
+
+	_, err = d.db.Exec(`insert into case_notification (patient_case_id, notification_type, item_id, data) values (?,?,?,?)`, notificationItem.PatientCaseId, notificationItem.NotificationType, notificationItem.ItemId, notificationData)
+	return err
+}
+
+func (d *DataService) DeleteCaseNotification(patientCaseId, itemId int64, notificationType string) error {
+	_, err := d.db.Exec(`delete from case_notification where patient_case_id = ? and item_id = ? and notification_type = ?`, patientCaseId, itemId, notificationType)
+	return err
+}
+
+func (d *DataService) DeleteCaseNotificationBasedOnId(notificationId int64) error {
+	_, err := d.db.Exec(`delete from case_notification where id = ?`, notificationId)
 	return err
 }
