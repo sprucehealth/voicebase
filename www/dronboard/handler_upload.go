@@ -40,6 +40,30 @@ func NewUploadCVHandler(router *mux.Router, dataAPI api.DataAPI, store storage.S
 	}, []string{"GET", "POST"})
 }
 
+func NewUploadLicenseHandler(router *mux.Router, dataAPI api.DataAPI, store storage.Store) http.Handler {
+	return www.SupportedMethodsHandler(&uploadHandler{
+		router:   router,
+		dataAPI:  dataAPI,
+		store:    store,
+		attrName: api.AttrDriversLicenseFile,
+		fileTag:  "dl",
+		title:    "Upload Driver's License",
+		nextURL:  "doctor-register-upload-claims",
+	}, []string{"GET", "POST"})
+}
+
+func NewUploadClaimsHistory(router *mux.Router, dataAPI api.DataAPI, store storage.Store) http.Handler {
+	return www.SupportedMethodsHandler(&uploadHandler{
+		router:   router,
+		dataAPI:  dataAPI,
+		store:    store,
+		attrName: api.AttrClaimsHistory,
+		fileTag:  "claimshistory",
+		title:    "Upload Claims History",
+		nextURL:  "doctor-register-engagement",
+	}, []string{"GET", "POST"})
+}
+
 func (h *uploadHandler) ServeHTTP(w http.ResponseWriter, r *http.Request) {
 	if r.Method == "POST" {
 		account := context.Get(r, www.CKAccount).(*common.Account)

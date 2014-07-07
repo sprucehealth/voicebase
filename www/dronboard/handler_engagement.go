@@ -70,7 +70,7 @@ func (h *engagementHandler) ServeHTTP(w http.ResponseWriter, r *http.Request) {
 				return
 			}
 
-			if u, err := h.router.Get("doctor-register-financials").URLPath(); err != nil {
+			if u, err := h.router.Get("doctor-register-insurance").URLPath(); err != nil {
 				www.InternalServerError(w, r, err)
 			} else {
 				http.Redirect(w, r, u.String(), http.StatusSeeOther)

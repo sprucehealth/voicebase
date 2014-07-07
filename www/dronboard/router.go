@@ -24,6 +24,8 @@ func SetupRoutes(r *mux.Router, dataAPI api.DataAPI, authAPI api.AuthAPI, stores
 	r.Handle("/doctor-register/credentials", authFilter(NewCredentialsHandler(r, dataAPI))).Name("doctor-register-credentials")
 	r.Handle("/doctor-register/upload-cv", authFilter(NewUploadCVHandler(r, dataAPI, stores["onboarding"]))).Name("doctor-register-upload-cv")
 	r.Handle("/doctor-register/upload-license", authFilter(NewUploadLicenseHandler(r, dataAPI, stores["onboarding"]))).Name("doctor-register-upload-license")
+	r.Handle("/doctor-register/upload-claims-history", authFilter(NewUploadClaimsHistory(r, dataAPI, stores["onboarding"]))).Name("doctor-register-upload-claims-history")
 	r.Handle("/doctor-register/engagement", authFilter(NewEngagementHandler(r, dataAPI))).Name("doctor-register-engagement")
+	r.Handle("/doctor-register/insurance", authFilter(NewInsuranceHandler(r, dataAPI))).Name("doctor-register-insurance")
 	r.Handle("/doctor-register/financials", authFilter(NewFinancialsHandler(r, dataAPI))).Name("doctor-register-financials")
 }
