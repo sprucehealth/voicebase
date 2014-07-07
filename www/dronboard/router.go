@@ -16,10 +16,16 @@ func SetupRoutes(r *mux.Router, dataAPI api.DataAPI, authAPI api.AuthAPI, stores
 		log.Fatal("onboarding storage not configured")
 	}
 
-	r.Handle("/doctor-register", NewRegisterHandler(r, dataAPI, authAPI)).Name("doctor-register")
+	doctorRoles := []string{api.DOCTOR_ROLE}
+
+	// If logged in as the doctor then jump to first step rather than registration
+	registerHandler := www.AuthRequiredHandler(authAPI, doctorRoles,
+		http.RedirectHandler("/doctor-register/credentials", http.StatusSeeOther),
+		NewRegisterHandler(r, dataAPI, authAPI))
+	r.Handle("/doctor-register", registerHandler).Name("doctor-register")
 
 	redir := http.RedirectHandler("/doctor-register", http.StatusSeeOther)
-	authFilter := www.AuthRequiredFilter(authAPI, []string{api.DOCTOR_ROLE}, redir)
+	authFilter := www.AuthRequiredFilter(authAPI, doctorRoles, redir)
 
 	r.Handle("/doctor-register/credentials", authFilter(NewCredentialsHandler(r, dataAPI))).Name("doctor-register-credentials")
 	r.Handle("/doctor-register/upload-cv", authFilter(NewUploadCVHandler(r, dataAPI, stores["onboarding"]))).Name("doctor-register-upload-cv")

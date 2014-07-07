@@ -140,6 +140,7 @@ func (h *credentialsHandler) ServeHTTP(w http.ResponseWriter, r *http.Request) {
 			}
 
 			attributes := map[string]string{
+				api.AttrSocialSecurityNumber:   form.SSN,
 				api.AttrAmericanBoardCertified: api.BoolToString(form.AmericanBoardCertified),
 				api.AttrContinuedEducation:     api.BoolToString(form.ContinuedEducation),
 				api.AttrRiskManagementCourse:   api.BoolToString(form.RiskManagementCourse),
@@ -173,6 +174,7 @@ func (h *credentialsHandler) ServeHTTP(w http.ResponseWriter, r *http.Request) {
 		}
 		form.NPI = doctor.NPI
 		attr, err := h.dataAPI.DoctorAttributes(doctor.DoctorId.Int64(), []string{
+			api.AttrSocialSecurityNumber,
 			api.AttrAmericanBoardCertified,
 			api.AttrContinuedEducation,
 			api.AttrRiskManagementCourse,
@@ -184,6 +186,7 @@ func (h *credentialsHandler) ServeHTTP(w http.ResponseWriter, r *http.Request) {
 			www.InternalServerError(w, r, err)
 			return
 		}
+		form.SSN = attr[api.AttrSocialSecurityNumber]
 		form.AmericanBoardCertified = api.StringToBool(attr[api.AttrAmericanBoardCertified])
 		form.SpecialtyBoard = attr[api.AttrSpecialtyBoard]
 		form.RecentCertDate = attr[api.AttrMostRecentCertificationDate]

@@ -88,7 +88,7 @@ func (h *insuranceHandler) ServeHTTP(w http.ResponseWriter, r *http.Request) {
 					p = append(p, in.Str)
 				}
 			}
-			previousInsurers := strings.Join(p, "|")
+			previousInsurers := strings.Join(p, "\n")
 
 			attributes := map[string]string{
 				api.AttrCurrentLiabilityInsurer:   form.CurrentInsurer,
@@ -136,7 +136,7 @@ func (h *insuranceHandler) ServeHTTP(w http.ResponseWriter, r *http.Request) {
 		}
 
 		form.CurrentInsurer = attr[api.AttrCurrentLiabilityInsurer]
-		form.PreviousInsurers = strSlice(strings.Split(attr[api.AttrPreviousLiabilityInsurers], "|"))
+		form.PreviousInsurers = strSlice(strings.Split(attr[api.AttrPreviousLiabilityInsurers], "\n"))
 		form.Violations = attr[api.AttrDoctorViolations]
 		form.InsuranceDeclines = attr[api.AttrInsuranceDeclines]
 		form.SexualMisconduct = attr[api.AttrSexualMisconduct]

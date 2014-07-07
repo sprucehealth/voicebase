@@ -21,6 +21,7 @@ const (
 	AttrRiskManagementCourse          = "RiskManagementCourse"
 	AttrSexualMisconduct              = "SexualMisconduct"
 	AttrSpecialtyBoard                = "SpecialtyBoard"
+	AttrSocialSecurityNumber          = "SocialSecurityNumber"
 	AttrTimesActiveOnSpruce           = "TimesActiveOnSpruce"
 )
 

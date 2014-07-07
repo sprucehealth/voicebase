@@ -48,7 +48,7 @@ func NewUploadLicenseHandler(router *mux.Router, dataAPI api.DataAPI, store stor
 		attrName: api.AttrDriversLicenseFile,
 		fileTag:  "dl",
 		title:    "Upload Driver's License",
-		nextURL:  "doctor-register-upload-claims",
+		nextURL:  "doctor-register-upload-claims-history",
 	}, []string{"GET", "POST"})
 }
 
