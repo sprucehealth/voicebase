@@ -12,6 +12,7 @@ import (
 	"github.com/sprucehealth/backend/analytics"
 	"github.com/sprucehealth/backend/api"
 	"github.com/sprucehealth/backend/apiservice"
+	"github.com/sprucehealth/backend/app_event"
 	"github.com/sprucehealth/backend/app_worker"
 	"github.com/sprucehealth/backend/common"
 	"github.com/sprucehealth/backend/common/config"
@@ -336,6 +337,7 @@ func buildRESTAPI(conf *Config, dataApi api.DataAPI, authAPI api.AuthAPI, metric
 	mux.Handle("/v1/ping", pingHandler)
 	mux.Handle("/v1/photo", photos.NewHandler(dataApi, awsAuth, conf.PhotoBucket, conf.AWSRegion))
 	mux.Handle("/v1/layouts/upload", layout.NewLayoutUploadHandler(dataApi))
+	mux.Handle("/v1/app_event", app_event.NewHandler())
 
 	var alog analytics.Logger
 	if conf.Analytics.LogPath != "" {
