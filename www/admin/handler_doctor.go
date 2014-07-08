@@ -1,9 +1,11 @@
 package admin
 
 import (
+	"fmt"
 	"html/template"
 	"net/http"
 	"strconv"
+	"strings"
 
 	"github.com/sprucehealth/backend/api"
 	"github.com/sprucehealth/backend/third_party/github.com/gorilla/mux"
@@ -39,17 +41,40 @@ func (h *doctorHandler) ServeHTTP(w http.ResponseWriter, r *http.Request) {
 		return
 	}
 
-	attributes, err := h.dataAPI.DoctorAttributes(doctorID, nil)
+	licenses, err := h.dataAPI.MedicalLicenses(doctorID)
 	if err != nil {
 		www.InternalServerError(w, r, err)
 		return
 	}
 
+	attr, err := h.dataAPI.DoctorAttributes(doctorID, nil)
+	if err != nil {
+		www.InternalServerError(w, r, err)
+		return
+	}
+
+	attributes := make(map[string]template.HTML, len(attr))
+	for name, value := range attr {
+		switch name {
+		case api.AttrCVFile, api.AttrDriversLicenseFile, api.AttrClaimsHistoryFile:
+			attributes[name] = template.HTML(fmt.Sprintf(`<a href="/admin/doctor/%d/dl/%s">Download</a>`, doctorID, name))
+		case api.AttrPreviousLiabilityInsurers:
+			parts := strings.Split(value, "\n")
+			for i, x := range parts {
+				parts[i] = template.HTMLEscapeString(x)
+			}
+			attributes[name] = template.HTML(strings.Join(parts, "<br>"))
+		default:
+			attributes[name] = template.HTML(template.HTMLEscapeString(value))
+		}
+	}
+
 	www.TemplateResponse(w, http.StatusOK, doctorTemplate, &www.BaseTemplateContext{
 		Title: template.HTML("Dr. " + template.HTMLEscapeString(doctor.FirstName) + " " + template.HTMLEscapeString(doctor.LastName)),
 		SubContext: &doctorTemplateContext{
-			Doctor:     doctor,
-			Attributes: attributes,
+			Doctor:          doctor,
+			Attributes:      attributes,
+			MedicalLicenses: licenses,
 		},
 	})
 }

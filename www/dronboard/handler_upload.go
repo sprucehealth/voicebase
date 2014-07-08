@@ -55,7 +55,7 @@ func NewUploadClaimsHistory(router *mux.Router, dataAPI api.DataAPI, store stora
 		router:   router,
 		dataAPI:  dataAPI,
 		store:    store,
-		attrName: api.AttrClaimsHistory,
+		attrName: api.AttrClaimsHistoryFile,
 		fileTag:  "claimshistory",
 		title:    "Upload Claims History",
 		nextURL:  "doctor-register-engagement",
@@ -84,8 +84,8 @@ func (h *uploadHandler) ServeHTTP(w http.ResponseWriter, r *http.Request) {
 		defer file.Close()
 
 		headers := http.Header{
-			"Content-Type":  []string{fileHandler.Header.Get("Content-Type")},
-			"Original-Name": []string{fileHandler.Filename},
+			"Content-Type":             []string{fileHandler.Header.Get("Content-Type")},
+			"X-Amz-Meta-Original-Name": []string{fileHandler.Filename},
 		}
 
 		size, err := common.SeekerSize(file)

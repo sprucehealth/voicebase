@@ -20,7 +20,8 @@ func SetupRoutes(r *mux.Router, dataAPI api.DataAPI, authAPI api.AuthAPI, stripe
 	adminRoles := []string{api.ADMIN_ROLE}
 	authFilter := www.AuthRequiredFilter(authAPI, adminRoles, nil)
 
-	r.Handle("/admin", authFilter(http.RedirectHandler("/admin/doctor", http.StatusSeeOther))).Name("admin")
-	r.Handle("/admin/doctor", authFilter(NewDoctorSearchHandler(r, dataAPI))).Name("admin-doctor-search")
-	r.Handle("/admin/doctor/{id:[0-9]+}", authFilter(NewDoctorHandler(r, dataAPI))).Name("admin-doctor")
+	r.Handle(`/admin`, authFilter(http.RedirectHandler("/admin/doctor", http.StatusSeeOther))).Name("admin")
+	r.Handle(`/admin/doctor`, authFilter(NewDoctorSearchHandler(r, dataAPI))).Name("admin-doctor-search")
+	r.Handle(`/admin/doctor/{id:[0-9]+}`, authFilter(NewDoctorHandler(r, dataAPI))).Name("admin-doctor")
+	r.Handle(`/admin/doctor/{id:[0-9]+}/dl/{attr:[A-Za-z0-9_\-]+}`, authFilter(NewDoctorAttrDownloadHandler(r, dataAPI, stores["onboarding"]))).Name("admin-doctor-attr-download")
 }

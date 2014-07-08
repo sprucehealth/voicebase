@@ -25,6 +25,7 @@ type doctorSearchTemplateContext struct {
 }
 
 type doctorTemplateContext struct {
-	Doctor     *common.Doctor
-	Attributes map[string]string
+	Doctor          *common.Doctor
+	Attributes      map[string]template.HTML
+	MedicalLicenses []*common.MedicalLicense
 }
