@@ -567,3 +567,11 @@ type BankAccount struct {
 	VerifyTransfer2ID string
 	VerifyExpires     time.Time
 }
+
+type DoctorSearchResult struct {
+	DoctorID  int64
+	AccountID int64
+	FirstName string
+	LastName  string
+	Email     string
+}

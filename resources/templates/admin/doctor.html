@@ -1,0 +1,18 @@
+{{define "head"}}
+{{end}}
+
+{{define "tail"}}
+{{end}}
+
+{{define "body"}}
+	<h2>Dr. {{.Doctor.FirstName}} {{.Doctor.LastName}}</h2>
+
+	<table class="table">
+		<tbody>
+			<tr><td>NPI</td><td>{{.Doctor.NPI}}</td></tr>
+			{{range $name, $value := .Attributes}}
+				<tr><td>{{$name}}</td><td>{{$value}}</td></tr>
+			{{end}}
+		</tbody>
+	</table>
+{{end}}

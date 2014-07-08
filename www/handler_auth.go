@@ -29,7 +29,7 @@ func (h *loginHandler) ServeHTTP(w http.ResponseWriter, r *http.Request) {
 
 	if r.Method == "POST" {
 		password := r.FormValue("password")
-		_, token, err := h.authAPI.LogIn(email, password)
+		account, token, err := h.authAPI.LogIn(email, password)
 		if err != nil {
 			switch err {
 			case api.LoginDoesNotExist, api.InvalidPassword:
@@ -39,6 +39,15 @@ func (h *loginHandler) ServeHTTP(w http.ResponseWriter, r *http.Request) {
 				return
 			}
 		} else {
+			// The root is rarely the place anyone wants to go so redirect appropriately
+			// based on the role of the account.
+			if next == "/" {
+				switch account.Role {
+				case api.ADMIN_ROLE:
+					next = "/admin"
+				}
+			}
+
 			http.SetCookie(w, NewAuthCookie(token, r))
 			http.Redirect(w, r, next, http.StatusSeeOther)
 			return

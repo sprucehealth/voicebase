@@ -8,6 +8,7 @@ import (
 )
 
 var (
+	baseTemplate             *template.Template
 	registerTemplate         *template.Template
 	credsTemplate            *template.Template
 	uploadTemplate           *template.Template
@@ -19,14 +20,15 @@ var (
 )
 
 func init() {
-	registerTemplate = www.MustLoadTemplate("dronboard/signup.html", template.Must(www.BaseTemplate.Clone()))
-	credsTemplate = www.MustLoadTemplate("dronboard/creds.html", template.Must(www.BaseTemplate.Clone()))
-	uploadTemplate = www.MustLoadTemplate("dronboard/upload.html", template.Must(www.BaseTemplate.Clone()))
-	engagementTemplate = www.MustLoadTemplate("dronboard/engagement.html", template.Must(www.BaseTemplate.Clone()))
-	financialsTemplate = www.MustLoadTemplate("dronboard/financials.html", template.Must(www.BaseTemplate.Clone()))
-	insuranceTemplate = www.MustLoadTemplate("dronboard/insurance.html", template.Must(www.BaseTemplate.Clone()))
-	successTemplate = www.MustLoadTemplate("dronboard/success.html", template.Must(www.BaseTemplate.Clone()))
-	financialsVerifyTemplate = www.MustLoadTemplate("dronboard/financials_verify.html", template.Must(www.BaseTemplate.Clone()))
+	baseTemplate = www.MustLoadTemplate("dronboard/base.html", template.Must(www.BaseTemplate.Clone()))
+	registerTemplate = www.MustLoadTemplate("dronboard/signup.html", template.Must(baseTemplate.Clone()))
+	credsTemplate = www.MustLoadTemplate("dronboard/creds.html", template.Must(baseTemplate.Clone()))
+	uploadTemplate = www.MustLoadTemplate("dronboard/upload.html", template.Must(baseTemplate.Clone()))
+	engagementTemplate = www.MustLoadTemplate("dronboard/engagement.html", template.Must(baseTemplate.Clone()))
+	financialsTemplate = www.MustLoadTemplate("dronboard/financials.html", template.Must(baseTemplate.Clone()))
+	insuranceTemplate = www.MustLoadTemplate("dronboard/insurance.html", template.Must(baseTemplate.Clone()))
+	successTemplate = www.MustLoadTemplate("dronboard/success.html", template.Must(baseTemplate.Clone()))
+	financialsVerifyTemplate = www.MustLoadTemplate("dronboard/financials_verify.html", template.Must(baseTemplate.Clone()))
 }
 
 type registerTemplateContext struct {

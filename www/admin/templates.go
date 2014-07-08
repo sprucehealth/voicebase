@@ -8,14 +8,23 @@ import (
 )
 
 var (
-	drOnboardTemplate *template.Template
+	baseTemplate         *template.Template
+	doctorSearchTemplate *template.Template
+	doctorTemplate       *template.Template
 )
 
 func init() {
-	drOnboardTemplate = www.MustLoadTemplate("admin/dr-onboard.html", template.Must(www.BaseTemplate.Clone()))
+	baseTemplate = www.MustLoadTemplate("admin/base.html", template.Must(www.BaseTemplate.Clone()))
+	doctorSearchTemplate = www.MustLoadTemplate("admin/doctor_search.html", template.Must(baseTemplate.Clone()))
+	doctorTemplate = www.MustLoadTemplate("admin/doctor.html", template.Must(baseTemplate.Clone()))
 }
 
-type drOnboardTemplateContext struct {
+type doctorSearchTemplateContext struct {
+	Query   string
+	Doctors []*common.DoctorSearchResult
+}
+
+type doctorTemplateContext struct {
 	Doctor     *common.Doctor
 	Attributes map[string]string
 }

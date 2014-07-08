@@ -346,6 +346,10 @@ type BankingAPI interface {
 	UpdateBankAccountVerficiation(id int64, amount1, amount2 int, transfer1ID, transfer2ID string, expires time.Time, verified bool) error
 }
 
+type SearchAPI interface {
+	SearchDoctors(query string) ([]*common.DoctorSearchResult, error)
+}
+
 type DataAPI interface {
 	GeoAPI
 	PatientAPI
@@ -366,6 +370,7 @@ type DataAPI interface {
 	ResourceLibraryAPI
 	CaseRouteAPI
 	BankingAPI
+	SearchAPI
 }
 
 type CloudStorageAPI interface {

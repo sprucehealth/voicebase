@@ -1,6 +1,7 @@
 package admin
 
 import (
+	"html/template"
 	"net/http"
 	"strconv"
 
@@ -9,20 +10,22 @@ import (
 	"github.com/sprucehealth/backend/www"
 )
 
-type doctorOnboardHandler struct {
+type doctorHandler struct {
 	router  *mux.Router
 	dataAPI api.DataAPI
 }
 
-func NewDoctorOnboardHandler(router *mux.Router, dataAPI api.DataAPI) http.Handler {
-	return www.SupportedMethodsHandler(&doctorOnboardHandler{
+func NewDoctorHandler(router *mux.Router, dataAPI api.DataAPI) http.Handler {
+	return www.SupportedMethodsHandler(&doctorHandler{
 		router:  router,
 		dataAPI: dataAPI,
 	}, []string{"GET"})
 }
 
-func (h *doctorOnboardHandler) ServeHTTP(w http.ResponseWriter, r *http.Request) {
-	doctorID, err := strconv.ParseInt(r.FormValue("doctor_id"), 10, 64)
+func (h *doctorHandler) ServeHTTP(w http.ResponseWriter, r *http.Request) {
+	vars := mux.Vars(r)
+
+	doctorID, err := strconv.ParseInt(vars["id"], 10, 64)
 	if err != nil {
 		http.NotFound(w, r)
 		return
@@ -42,9 +45,9 @@ func (h *doctorOnboardHandler) ServeHTTP(w http.ResponseWriter, r *http.Request)
 		return
 	}
 
-	www.TemplateResponse(w, http.StatusOK, drOnboardTemplate, &www.BaseTemplateContext{
-		Title: "Doctor Onboarding",
-		SubContext: &drOnboardTemplateContext{
+	www.TemplateResponse(w, http.StatusOK, doctorTemplate, &www.BaseTemplateContext{
+		Title: template.HTML("Dr. " + template.HTMLEscapeString(doctor.FirstName) + " " + template.HTMLEscapeString(doctor.LastName)),
+		SubContext: &doctorTemplateContext{
 			Doctor:     doctor,
 			Attributes: attributes,
 		},
