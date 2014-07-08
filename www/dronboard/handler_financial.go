@@ -116,19 +116,21 @@ func (h *financialsHandler) ServeHTTP(w http.ResponseWriter, r *http.Request) {
 				Description:          "verify amount 1",
 				StatementDescription: "VERIFY",
 			}
-			if _, err := h.stripeCli.CreateTransfer(treq); err != nil {
+			tx1, err := h.stripeCli.CreateTransfer(treq)
+			if err != nil {
 				www.InternalServerError(w, r, err)
 				return
 			}
 			treq.Amount = amount2
 			treq.Description = "verify amount 2"
-			if _, err := h.stripeCli.CreateTransfer(treq); err != nil {
+			tx2, err := h.stripeCli.CreateTransfer(treq)
+			if err != nil {
 				www.InternalServerError(w, r, err)
 				return
 			}
 
 			expires := time.Now().Add(verifyDuration)
-			if err := h.dataAPI.UpdateBankAccountVerficiation(bankID, amount1, amount2, expires, false); err != nil {
+			if err := h.dataAPI.UpdateBankAccountVerficiation(bankID, amount1, amount2, tx1.ID, tx2.ID, expires, false); err != nil {
 				www.InternalServerError(w, r, err)
 				return
 			}
@@ -149,7 +151,7 @@ func (h *financialsHandler) ServeHTTP(w http.ResponseWriter, r *http.Request) {
 }
 
 func (h *financialsHandler) redirectToNextStep(w http.ResponseWriter, r *http.Request) {
-	if u, err := h.router.Get("doctor-register-success").URLPath(); err != nil {
+	if u, err := h.router.Get("doctor-register-financials-verify").URLPath(); err != nil {
 		www.InternalServerError(w, r, err)
 	} else {
 		http.Redirect(w, r, u.String(), http.StatusSeeOther)

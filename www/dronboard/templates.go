@@ -66,6 +66,10 @@ type successTemplateContext struct {
 }
 
 type financialsVerifyTemplateContext struct {
-	Form       *financialsVerifyForm
-	FormErrors map[string]string
+	Form         *financialsVerifyForm
+	FormErrors   map[string]string
+	Initial      bool
+	Pending      bool
+	Failed       bool
+	SupportEmail string
 }

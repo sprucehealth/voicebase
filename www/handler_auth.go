@@ -20,8 +20,8 @@ func (h *loginHandler) ServeHTTP(w http.ResponseWriter, r *http.Request) {
 	// TODO: rate-limit this endpoint
 
 	email := r.FormValue("email")
-	next, nextValid := validateRedirectURL(r.FormValue("next"))
-	if !nextValid {
+	next, valid := validateRedirectURL(r.FormValue("next"))
+	if !valid {
 		next = "/"
 	}
 
@@ -29,7 +29,7 @@ func (h *loginHandler) ServeHTTP(w http.ResponseWriter, r *http.Request) {
 
 	if r.Method == "POST" {
 		password := r.FormValue("password")
-		account, token, err := h.authAPI.LogIn(email, password)
+		_, token, err := h.authAPI.LogIn(email, password)
 		if err != nil {
 			switch err {
 			case api.LoginDoesNotExist, api.InvalidPassword:
@@ -39,11 +39,6 @@ func (h *loginHandler) ServeHTTP(w http.ResponseWriter, r *http.Request) {
 				return
 			}
 		} else {
-			// If no next was provided and the person logging in is a doctor
-			// then take them to the onboarding flow
-			if !nextValid && account.Role == api.DOCTOR_ROLE {
-				next = "/doctor-register"
-			}
 			http.SetCookie(w, NewAuthCookie(token, r))
 			http.Redirect(w, r, next, http.StatusSeeOther)
 			return

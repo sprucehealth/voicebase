@@ -12,7 +12,7 @@ import (
 	"github.com/sprucehealth/backend/www"
 )
 
-func SetupRoutes(r *mux.Router, dataAPI api.DataAPI, authAPI api.AuthAPI, stripeCli *stripe.StripeService, stores map[string]storage.Store, metricsRegistry metrics.Registry) {
+func SetupRoutes(r *mux.Router, dataAPI api.DataAPI, authAPI api.AuthAPI, supportEmail string, stripeCli *stripe.StripeService, stores map[string]storage.Store, metricsRegistry metrics.Registry) {
 	if stores["onboarding"] == nil {
 		log.Fatal("onboarding storage not configured")
 	}
@@ -25,8 +25,7 @@ func SetupRoutes(r *mux.Router, dataAPI api.DataAPI, authAPI api.AuthAPI, stripe
 		NewRegisterHandler(r, dataAPI, authAPI))
 	r.Handle("/doctor-register", registerHandler).Name("doctor-register")
 
-	redir := http.RedirectHandler("/doctor-register", http.StatusSeeOther)
-	authFilter := www.AuthRequiredFilter(authAPI, doctorRoles, redir)
+	authFilter := www.AuthRequiredFilter(authAPI, doctorRoles, nil)
 
 	r.Handle("/doctor-register/credentials", authFilter(NewCredentialsHandler(r, dataAPI))).Name("doctor-register-credentials")
 	r.Handle("/doctor-register/upload-cv", authFilter(NewUploadCVHandler(r, dataAPI, stores["onboarding"]))).Name("doctor-register-upload-cv")
@@ -36,5 +35,5 @@ func SetupRoutes(r *mux.Router, dataAPI api.DataAPI, authAPI api.AuthAPI, stripe
 	r.Handle("/doctor-register/insurance", authFilter(NewInsuranceHandler(r, dataAPI))).Name("doctor-register-insurance")
 	r.Handle("/doctor-register/financials", authFilter(NewFinancialsHandler(r, dataAPI, stripeCli))).Name("doctor-register-financials")
 	r.Handle("/doctor-register/success", authFilter(NewSuccessHandler(r, dataAPI))).Name("doctor-register-success")
-	r.Handle("/doctor-register/financials-verify", authFilter(NewFinancialVerifyHandler(r, dataAPI, stripeCli))).Name("doctor-register-financials-verify")
+	r.Handle("/doctor-register/financials-verify", authFilter(NewFinancialVerifyHandler(r, dataAPI, supportEmail, stripeCli))).Name("doctor-register-financials-verify")
 }

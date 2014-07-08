@@ -558,9 +558,12 @@ type BankAccount struct {
 	ID                int64
 	AccountID         int64
 	StripeRecipientID string
+	Created           time.Time
 	Default           bool
 	Verified          bool
 	VerifyAmount1     int
 	VerifyAmount2     int
+	VerifyTransfer1ID string
+	VerifyTransfer2ID string
 	VerifyExpires     time.Time
 }

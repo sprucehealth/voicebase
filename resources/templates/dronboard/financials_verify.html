@@ -1,27 +1,49 @@
 {{define "head"}}
+<style type="text/css">
+.message {
+	width: 700px;
+	margin: 30px auto 0 auto;
+	font-size: 17px;
+}
+</style>
 {{end}}
 
 {{define "tail"}}
 {{end}}
 
 {{define "body"}}
-	<form method="POST" action="" role="form" class="form-onboard">
-		<h2>Verify Bank Account</h2>
-
-		<p>Please enter the amounts that were deposited into your account.</p>
-
-		{{with .FormErrors.Amounts}}<div class="text-danger">{{.}}</div>{{end}}
-
-		<div class="form-group {{if .FormErrors.Amount1}}has-error has-feedback{{end}}">
-			<label class="control-label" for="Amount1">Amount 1</label>
-			<input required type="text" name="Amount1" value="{{.Form.Amount1}}" class="form-control">
+	{{if .Failed}}
+		<div class="message">
+			<p>The bank transfers failed. Please contact us at <a href="mailto:{{.SupportEmail}}">{{.SupportEmail}}</a>.
+		to resolve this issue.</p>
 		</div>
-
-		<div class="form-group {{if .FormErrors.Amount2}}has-error has-feedback{{end}}">
-			<label class="control-label" for="Amount2">Amount 2</label>
-			<input required type="text" name="Amount2" value="{{.Form.Amount2}}" class="form-control">
+	{{else if .Initial}}
+		<div class="message">
+			<p>In order to verify your bank account information we have made two small deposits into your account. You should see the deposits posted in a day or two. Please come back to this page once they are in your account and enter the values deposited. If you have any question please contact us at <a href="mailto:{{.SupportEmail}}">{{.SupportEmail}}</a>.</p>
 		</div>
+	{{else if .Pending}}
+		<div class="message">
+			<p>The deposit transfers for verifications are still pending. Please refresh this page later.</p>
+		</div>
+	{{else}}
+		<form method="POST" action="" role="form" class="form-onboard">
+			<h2>Verify Bank Account</h2>
 
-		<button type="submit" class="btn btn-primary pull-right">Submit</button>
-	</form>
+			<p>Please enter the amounts that were deposited into your account.</p>
+
+			{{with .FormErrors.Amounts}}<div class="text-danger">{{.}}</div>{{end}}
+
+			<div class="form-group {{if .FormErrors.Amount1}}has-error has-feedback{{end}}">
+				<label class="control-label" for="Amount1">Amount 1</label>
+				<input required type="text" name="Amount1" value="{{.Form.Amount1}}" class="form-control">
+			</div>
+
+			<div class="form-group {{if .FormErrors.Amount2}}has-error has-feedback{{end}}">
+				<label class="control-label" for="Amount2">Amount 2</label>
+				<input required type="text" name="Amount2" value="{{.Form.Amount2}}" class="form-control">
+			</div>
+
+			<button type="submit" class="btn btn-primary pull-right">Submit</button>
+		</form>
+	{{end}}
 {{end}}

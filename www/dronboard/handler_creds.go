@@ -85,6 +85,8 @@ func NewCredentialsHandler(router *mux.Router, dataAPI api.DataAPI) http.Handler
 }
 
 func (h *credentialsHandler) ServeHTTP(w http.ResponseWriter, r *http.Request) {
+	account := context.Get(r, www.CKAccount).(*common.Account)
+
 	form := &credentialsForm{}
 	var errors map[string]string
 
@@ -101,7 +103,6 @@ func (h *credentialsHandler) ServeHTTP(w http.ResponseWriter, r *http.Request) {
 
 		errors = form.Validate()
 		if len(errors) == 0 {
-			account := context.Get(r, www.CKAccount).(*common.Account)
 			doctorID, err := h.dataAPI.GetDoctorIdFromAccountId(account.ID)
 			if err != nil {
 				www.InternalServerError(w, r, err)

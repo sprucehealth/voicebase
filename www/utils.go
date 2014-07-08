@@ -6,11 +6,10 @@ import (
 	"sort"
 	"strings"
 
-	"github.com/sprucehealth/backend/third_party/github.com/gorilla/context"
-
 	"github.com/sprucehealth/backend/api"
 	"github.com/sprucehealth/backend/common"
 	"github.com/sprucehealth/backend/libs/golog"
+	"github.com/sprucehealth/backend/third_party/github.com/gorilla/context"
 )
 
 const authCookieName = "at"
@@ -109,7 +108,7 @@ func AuthRequiredFilter(authAPI api.AuthAPI, roles []string, failed http.Handler
 
 func AuthRequiredHandler(authAPI api.AuthAPI, roles []string, ok, failed http.Handler) http.Handler {
 	if failed == nil {
-		failed = http.NotFoundHandler()
+		failed = loginRedirectHandler
 	}
 	return &authRequiredFilter{
 		authAPI:       authAPI,
@@ -137,3 +136,7 @@ func (h *authRequiredFilter) ServeHTTP(w http.ResponseWriter, r *http.Request) {
 	}
 	h.failedHandler.ServeHTTP(w, r)
 }
+
+var loginRedirectHandler = http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
+	http.Redirect(w, r, "/login?next="+url.QueryEscape(r.URL.Path), http.StatusSeeOther)
+})

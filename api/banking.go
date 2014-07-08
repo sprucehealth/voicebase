@@ -23,8 +23,8 @@ func (d *DataService) DeleteBankaccount(id int64) error {
 
 func (d *DataService) ListBankAccounts(userAccountID int64) ([]*common.BankAccount, error) {
 	rows, err := d.db.Query(`
-		SELECT id, stripe_recipient_id, default_account, verified,
-			verify_amount_1, verify_amount_2, verify_expires
+		SELECT id, stripe_recipient_id, creation_date, default_account, verified,
+			verify_amount_1, verify_amount_2, verify_transfer1_id, verify_transfer2_id, verify_expires
 		FROM bank_account
 		WHERE account_id = ?
 		ORDER BY default_account DESC, id`, userAccountID)
@@ -39,15 +39,18 @@ func (d *DataService) ListBankAccounts(userAccountID int64) ([]*common.BankAccou
 			AccountID: userAccountID,
 		}
 		var amount1, amount2 sql.NullInt64
+		var t1ID, t2ID sql.NullString
 		var expires *time.Time
 		err := rows.Scan(
-			&acc.ID, &acc.StripeRecipientID, &acc.Default,
-			&acc.Verified, &amount1, &amount2, &expires)
+			&acc.ID, &acc.StripeRecipientID, &acc.Created, &acc.Default,
+			&acc.Verified, &amount1, &amount2, &t1ID, &t2ID, &expires)
 		if err != nil {
 			return nil, err
 		}
 		acc.VerifyAmount1 = int(amount1.Int64)
 		acc.VerifyAmount2 = int(amount2.Int64)
+		acc.VerifyTransfer1ID = t1ID.String
+		acc.VerifyTransfer2ID = t2ID.String
 		if expires != nil {
 			acc.VerifyExpires = *expires
 		}
@@ -59,7 +62,7 @@ func (d *DataService) ListBankAccounts(userAccountID int64) ([]*common.BankAccou
 	return accounts, nil
 }
 
-func (d *DataService) UpdateBankAccountVerficiation(id int64, amount1, amount2 int, expires time.Time, verified bool) error {
+func (d *DataService) UpdateBankAccountVerficiation(id int64, amount1, amount2 int, transfer1ID, transfer2ID string, expires time.Time, verified bool) error {
 	if verified {
 		_, err := d.db.Exec(`
 			UPDATE bank_account
@@ -69,7 +72,7 @@ func (d *DataService) UpdateBankAccountVerficiation(id int64, amount1, amount2 i
 	}
 	_, err := d.db.Exec(`
 			UPDATE bank_account
-			SET verified = false, verify_amount_1 = ?, verify_amount_2 = ?, verify_expires = ?
-			WHERE id = ?`, amount1, amount2, expires, id)
+			SET verified = false, verify_amount_1 = ?, verify_amount_2 = ?, verify_transfer1_id = ?, verify_transfer2_id = ?, verify_expires = ?
+			WHERE id = ?`, amount1, amount2, transfer1ID, transfer2ID, expires, id)
 	return err
 }
