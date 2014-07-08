@@ -4,11 +4,9 @@ import (
 	"fmt"
 	"html/template"
 	"net/http"
-	"path"
 
 	"github.com/sprucehealth/backend/api"
 	"github.com/sprucehealth/backend/common"
-	"github.com/sprucehealth/backend/libs/golog"
 	"github.com/sprucehealth/backend/libs/storage"
 	"github.com/sprucehealth/backend/third_party/github.com/gorilla/context"
 	"github.com/sprucehealth/backend/third_party/github.com/gorilla/mux"
@@ -96,19 +94,9 @@ func (h *uploadHandler) ServeHTTP(w http.ResponseWriter, r *http.Request) {
 			return
 		}
 
-		fileID, err := h.store.PutReader(fmt.Sprintf("doctor-%d-%s%s", doctorID, h.fileTag, path.Ext(fileHandler.Filename)), file, size, headers)
+		fileID, err := h.store.PutReader(fmt.Sprintf("doctor-%d-%s", doctorID, h.fileTag), file, size, headers)
 		if err != nil {
 			www.InternalServerError(w, r, err)
-		}
-
-		// Delete the old file if it's already been uploaded
-		attr, err := h.dataAPI.DoctorAttributes(doctorID, []string{h.attrName})
-		if err != nil {
-			golog.Errorf("Failed to get doctor attributes for %s file: %s", h.fileTag, err.Error())
-		} else if u := attr[h.attrName]; u != "" {
-			if err := h.store.Delete(u); err != nil {
-				golog.Errorf("Failed to delete old %s: %s", h.fileTag, err.Error())
-			}
 		}
 
 		if err := h.dataAPI.UpdateDoctorAttributes(doctorID, map[string]string{h.attrName: fileID}); err != nil {
