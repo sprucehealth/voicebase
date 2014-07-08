@@ -433,7 +433,7 @@ func (d *DataService) GetPatientFromUnlinkedDNTFTreatment(unlinkedDNTFTreatmentI
 }
 
 func (d *DataService) GetPatientVisitsForPatient(patientId int64) ([]*common.PatientVisit, error) {
-	rows, err := d.db.Query(`select id,patient_id, health_condition_id, layout_version_id, creation_date, submitted_date, closed_date, status 
+	rows, err := d.db.Query(`select id,patient_id, health_condition_id, layout_version_id, creation_date, submitted_date, closed_date, status, diagnosis 
 		from patient_visit where patient_id = ?`, patientId)
 	if err != nil {
 		return nil, err
@@ -443,15 +443,16 @@ func (d *DataService) GetPatientVisitsForPatient(patientId int64) ([]*common.Pat
 	patientVisits := make([]*common.PatientVisit, 0)
 	for rows.Next() {
 		var patientVisit common.PatientVisit
-		var creationDate, submittedDate, closedDate mysql.NullTime
+		var submittedDate, closedDate mysql.NullTime
+		var diagnosis sql.NullString
 		if err := rows.Scan(&patientVisit.PatientVisitId, &patientVisit.PatientId, &patientVisit.HealthConditionId, &patientVisit.LayoutVersionId,
-			&creationDate, &submittedDate, &closedDate,
-			&patientVisit.Status); err != nil {
+			&patientVisit.CreationDate, &submittedDate, &closedDate,
+			&patientVisit.Status, &diagnosis); err != nil {
 			return nil, err
 		}
-		patientVisit.CreationDate = creationDate.Time
 		patientVisit.SubmittedDate = submittedDate.Time
 		patientVisit.ClosedDate = closedDate.Time
+		patientVisit.Diagnosis = diagnosis.String
 		patientVisits = append(patientVisits, &patientVisit)
 	}
 	return patientVisits, rows.Err()

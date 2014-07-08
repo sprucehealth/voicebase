@@ -169,6 +169,7 @@ func (d *DataService) GetVisitsForCase(patientCaseId int64) ([]*common.PatientVi
 	var patientVisits []*common.PatientVisit
 	for rows.Next() {
 		var patientVisit common.PatientVisit
+		var diagnosis sql.NullString
 		var submittedDate, closedDate mysql.NullTime
 		if err := rows.Scan(
 			&patientVisit.PatientVisitId,
@@ -180,11 +181,12 @@ func (d *DataService) GetVisitsForCase(patientCaseId int64) ([]*common.PatientVi
 			&submittedDate,
 			&closedDate,
 			&patientVisit.Status,
-			&patientVisit.Diagnosis); err != nil {
+			&diagnosis); err != nil {
 			return nil, err
 		}
 		patientVisit.SubmittedDate = submittedDate.Time
 		patientVisit.ClosedDate = closedDate.Time
+		patientVisit.Diagnosis = diagnosis.String
 		patientVisits = append(patientVisits, &patientVisit)
 	}
 	return patientVisits, rows.Err()

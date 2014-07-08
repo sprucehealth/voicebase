@@ -44,43 +44,15 @@ func (d *DataService) GetPatientIdFromPatientVisitId(patientVisitId int64) (int6
 // Adding this only to link the patient and the doctor app so as to show the doctor
 // the patient visit review of the latest submitted patient visit
 func (d *DataService) GetLatestSubmittedPatientVisit() (*common.PatientVisit, error) {
-	var patientId, healthConditionId, layoutVersionId, patientVisitId encoding.ObjectId
-	var creationDateBytes, submittedDateBytes, closedDateBytes mysql.NullTime
-	var status string
-
-	row := d.db.QueryRow(`select id,patient_id, health_condition_id, layout_version_id, 
-		creation_date, submitted_date, closed_date, status from patient_visit where status in ('SUBMITTED', 'REVIEWING') order by submitted_date desc limit 1`)
-	err := row.Scan(&patientVisitId, &patientId, &healthConditionId, &layoutVersionId, &creationDateBytes, &submittedDateBytes, &closedDateBytes, &status)
-	if err != nil {
-		return nil, err
-	}
-
-	patientVisit := &common.PatientVisit{
-		PatientVisitId:    patientVisitId,
-		PatientId:         patientId,
-		HealthConditionId: healthConditionId,
-		Status:            status,
-		LayoutVersionId:   layoutVersionId,
-	}
-
-	if creationDateBytes.Valid {
-		patientVisit.CreationDate = creationDateBytes.Time
-	}
-
-	if submittedDateBytes.Valid {
-		patientVisit.SubmittedDate = submittedDateBytes.Time
-	}
-
-	if closedDateBytes.Valid {
-		patientVisit.ClosedDate = closedDateBytes.Time
-	}
-
-	return patientVisit, err
+	row := d.db.QueryRow(`select id, patient_id, health_condition_id, layout_version_id, 
+		creation_date, submitted_date, closed_date, status, diagnosis from patient_visit where status in ('SUBMITTED', 'REVIEWING') order by submitted_date desc limit 1`)
+	return getPatientVisitFromRow(row)
 }
 
 func (d *DataService) GetLatestClosedPatientVisitForPatient(patientId int64) (*common.PatientVisit, error) {
 	var patientVisit common.PatientVisit
 	var submittedDate, closedDate mysql.NullTime
+	var diagnosis sql.NullString
 
 	row := d.db.QueryRow(`select id, health_condition_id, layout_version_id,
 		creation_date, submitted_date, closed_date, status, diagnosis from patient_visit where status in ('CLOSED','TREATED') and patient_id = ? and closed_date is not null order by closed_date desc limit 1`, patientId)
@@ -91,7 +63,7 @@ func (d *DataService) GetLatestClosedPatientVisitForPatient(patientId int64) (*c
 		&submittedDate,
 		&closedDate,
 		&patientVisit.Status,
-		&patientVisit.Diagnosis)
+		&diagnosis)
 
 	if err == sql.ErrNoRows {
 		return nil, NoRowsError
@@ -101,6 +73,7 @@ func (d *DataService) GetLatestClosedPatientVisitForPatient(patientId int64) (*c
 
 	patientVisit.SubmittedDate = submittedDate.Time
 	patientVisit.ClosedDate = closedDate.Time
+	patientVisit.Diagnosis = diagnosis.String
 
 	return &patientVisit, nil
 }
@@ -122,6 +95,7 @@ func (d *DataService) GetPatientVisitFromTreatmentPlanId(treatmentPlanId int64) 
 func getPatientVisitFromRow(row *sql.Row) (*common.PatientVisit, error) {
 	patientVisit := common.PatientVisit{}
 	var submittedDate, closedDate mysql.NullTime
+	var diagnosis sql.NullString
 	err := row.Scan(
 		&patientVisit.PatientVisitId,
 		&patientVisit.PatientId,
@@ -132,12 +106,13 @@ func getPatientVisitFromRow(row *sql.Row) (*common.PatientVisit, error) {
 		&submittedDate,
 		&closedDate,
 		&patientVisit.Status,
-		&patientVisit.Diagnosis)
+		&diagnosis)
 	if err != nil {
 		return nil, err
 	}
 	patientVisit.SubmittedDate = submittedDate.Time
 	patientVisit.ClosedDate = closedDate.Time
+	patientVisit.Diagnosis = diagnosis.String
 	return &patientVisit, err
 }
 
