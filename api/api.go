@@ -103,7 +103,6 @@ type PatientCaseAPI interface {
 	InsertCaseNotification(caseNotificationItem *common.CaseNotification) error
 	DeleteCaseNotification(patientCaseId, itemId int64, notificationType string) error
 	DeleteCaseNotificationBasedOnId(notificationId int64) error
-	UpdateDiagnosisForPatientCase(patientCaseId int64, diagnosis string) error
 }
 
 type CaseRouteAPI interface {
@@ -128,6 +127,7 @@ type PatientVisitAPI interface {
 	GetPatientVisitFromTreatmentPlanId(treatmentPlanId int64) (*common.PatientVisit, error)
 	GetPatientCaseIdFromPatientVisitId(patientVisitId int64) (int64, error)
 	CreateNewPatientVisit(patientId, healthConditionId, layoutVersionId int64) (int64, error)
+	UpdateDiagnosisForPatientVisit(patientVisitId int64, diagnosis string) error
 	StartNewTreatmentPlan(patientId, patientVisitId, doctorId int64, parent *common.TreatmentPlanParent, contentSource *common.TreatmentPlanContentSource) (int64, error)
 	GetAbridgedTreatmentPlan(treatmentPlanId, doctorId int64) (*common.DoctorTreatmentPlan, error)
 	GetTreatmentPlan(treatmentPlanId, doctorId int64) (*common.DoctorTreatmentPlan, error)

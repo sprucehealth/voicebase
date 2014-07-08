@@ -7,7 +7,6 @@ import (
 	"github.com/sprucehealth/backend/libs/dispatch"
 	"github.com/sprucehealth/backend/libs/golog"
 	"github.com/sprucehealth/backend/messages"
-	"github.com/sprucehealth/backend/patient_visit"
 	"github.com/sprucehealth/backend/treatment_plan"
 )
 
@@ -65,11 +64,4 @@ func InitListeners(dataAPI api.DataAPI) {
 		return nil
 	})
 
-	dispatch.Default.Subscribe(func(ev *patient_visit.DiagnosisModifiedEvent) error {
-		if err := dataAPI.UpdateDiagnosisForPatientCase(ev.PatientCaseId, ev.Diagnosis); err != nil {
-			golog.Errorf("Unable to update diagnosis for patient case: %s", err)
-			return err
-		}
-		return nil
-	})
 }

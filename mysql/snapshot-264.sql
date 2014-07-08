@@ -1,6 +1,6 @@
 -- MySQL dump 10.13  Distrib 5.6.17, for osx10.9 (x86_64)
 --
--- Host: 127.0.0.1    Database: database_4404
+-- Host: 127.0.0.1    Database: database_15839
 -- ------------------------------------------------------
 -- Server version	5.6.17
 
@@ -1239,7 +1239,6 @@ CREATE TABLE `patient_case` (
   `creation_date` timestamp(6) NOT NULL DEFAULT CURRENT_TIMESTAMP(6),
   `status` varchar(100) NOT NULL,
   `health_condition_id` int(10) unsigned NOT NULL,
-  `diagnosis` varchar(300) NOT NULL DEFAULT '',
   PRIMARY KEY (`id`),
   KEY `patient_id` (`patient_id`),
   KEY `health_condition_id` (`health_condition_id`),
@@ -1464,6 +1463,7 @@ CREATE TABLE `patient_visit` (
   `layout_version_id` int(10) unsigned NOT NULL,
   `submitted_date` timestamp NULL DEFAULT NULL,
   `patient_case_id` int(10) unsigned DEFAULT NULL,
+  `diagnosis` varchar(300) NOT NULL DEFAULT '',
   PRIMARY KEY (`id`),
   KEY `patient_id` (`patient_id`),
   KEY `treatment_id` (`health_condition_id`),
@@ -2548,4 +2548,4 @@ CREATE TABLE `unlinked_dntf_treatment_status_events` (
 /*!40101 SET COLLATION_CONNECTION=@OLD_COLLATION_CONNECTION */;
 /*!40111 SET SQL_NOTES=@OLD_SQL_NOTES */;
 
--- Dump completed on 2014-07-07 15:47:49
+-- Dump completed on 2014-07-07 17:33:47

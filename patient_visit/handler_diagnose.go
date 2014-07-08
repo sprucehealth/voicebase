@@ -8,6 +8,7 @@ import (
 	"github.com/sprucehealth/backend/common"
 	"github.com/sprucehealth/backend/info_intake"
 	"github.com/sprucehealth/backend/libs/dispatch"
+	"github.com/sprucehealth/backend/libs/golog"
 )
 
 type diagnosePatientHandler struct {
@@ -152,13 +153,19 @@ func (d *diagnosePatientHandler) diagnosePatient(w http.ResponseWriter, r *http.
 		})
 
 	} else {
+		diagnosis := determineDiagnosisFromAnswers(&answerIntakeRequestBody)
+
+		if err := d.dataApi.UpdateDiagnosisForPatientVisit(patientVisit.PatientVisitId.Int64(), diagnosis); err != nil {
+			golog.Errorf("Unable to update diagnosis for patient visit: %s", err)
+		}
+
 		dispatch.Default.Publish(&DiagnosisModifiedEvent{
 			DoctorId:       doctorId,
 			PatientVisitId: answerIntakeRequestBody.PatientVisitId,
 			PatientCaseId:  patientVisit.PatientCaseId.Int64(),
-			Diagnosis:      determineDiagnosisFromAnswers(&answerIntakeRequestBody),
+			Diagnosis:      diagnosis,
 		})
 	}
 
-	apiservice.WriteJSONToHTTPResponseWriter(w, http.StatusOK, apiservice.SuccessfulGenericJSONResponse())
+	apiservice.WriteJSONSuccess(w)
 }

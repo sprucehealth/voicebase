@@ -74,6 +74,15 @@ func (c *caseInfoHandler) ServeHTTP(w http.ResponseWriter, r *http.Request) {
 		}
 	}
 
+	// only set the diagnosis for the patient case if the latest visit has been treated
+	patientVisits, err := c.dataAPI.GetVisitsForCase(patientCase.Id.Int64())
+	if err != nil {
+		apiservice.WriteError(err, w, r)
+		return
+	} else if patientVisits[0].Status == common.PVStatusTreated {
+		patientCase.Diagnosis = patientVisits[0].Diagnosis
+	}
+
 	// get the care team for case
 	patientCase.CareTeam, err = c.dataAPI.GetActiveMembersOfCareTeamForCase(requestData.CaseId)
 	if err != nil {

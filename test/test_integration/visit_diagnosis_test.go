@@ -7,7 +7,7 @@ import (
 	"github.com/sprucehealth/backend/apiservice"
 )
 
-func TestCaseDiagnosis(t *testing.T) {
+func TestVisitDiagnosis(t *testing.T) {
 
 	testData := SetupIntegrationTest(t)
 	defer TearDownIntegrationTest(t, testData)
@@ -18,7 +18,7 @@ func TestCaseDiagnosis(t *testing.T) {
 		t.Fatal(err)
 	}
 
-	pr, treatmentPlan := CreateRandomPatientVisitAndPickTP(t, testData, doctor)
+	pr, _ := CreateRandomPatientVisitAndPickTP(t, testData, doctor)
 
 	diagnosisQuestionId := getQuestionIdForQuestionTag("q_acne_diagnosis", testData, t)
 	acneTypeQuestionId := getQuestionIdForQuestionTag("q_acne_type", testData, t)
@@ -32,11 +32,11 @@ func TestCaseDiagnosis(t *testing.T) {
 	SubmitPatientVisitDiagnosisWithIntake(pr.PatientVisitId, doctor.AccountId.Int64(), answerIntakeRequestBody, testData, t)
 
 	// at this point the diagnosis on the case should be set
-	patientCase, err := testData.DataApi.GetPatientCaseFromId(treatmentPlan.PatientCaseId.Int64())
+	patientVisit, err := testData.DataApi.GetPatientVisitFromId(pr.PatientVisitId)
 	if err != nil {
 		t.Fatal(err)
-	} else if patientCase.Diagnosis != "Inflammatory Acne" {
-		t.Fatalf("Expected diagnosis to be %s but got %s", "Inflammatory Acne", patientCase.Diagnosis)
+	} else if patientVisit.Diagnosis != "Inflammatory Acne" {
+		t.Fatalf("Expected diagnosis to be %s but got %s", "Inflammatory Acne", patientVisit.Diagnosis)
 	}
 
 	// let's just update the diagnosis type to ensure that the case diagnosis gets updated
@@ -47,11 +47,11 @@ func TestCaseDiagnosis(t *testing.T) {
 
 	SubmitPatientVisitDiagnosisWithIntake(pr.PatientVisitId, doctor.AccountId.Int64(), answerIntakeRequestBody, testData, t)
 
-	patientCase, err = testData.DataApi.GetPatientCaseFromId(treatmentPlan.PatientCaseId.Int64())
+	patientVisit, err = testData.DataApi.GetPatientVisitFromId(pr.PatientVisitId)
 	if err != nil {
 		t.Fatal(err)
-	} else if patientCase.Diagnosis != "Comedonal Acne" {
-		t.Fatalf("Expected diagnosis to be %s but got %s", "Comedonal Acne", patientCase.Diagnosis)
+	} else if patientVisit.Diagnosis != "Comedonal Acne" {
+		t.Fatalf("Expected diagnosis to be %s but got %s", "Comedonal Acne", patientVisit.Diagnosis)
 	}
 
 	// lets try a different diagnosis category
@@ -62,11 +62,11 @@ func TestCaseDiagnosis(t *testing.T) {
 
 	SubmitPatientVisitDiagnosisWithIntake(pr.PatientVisitId, doctor.AccountId.Int64(), answerIntakeRequestBody, testData, t)
 
-	patientCase, err = testData.DataApi.GetPatientCaseFromId(treatmentPlan.PatientCaseId.Int64())
+	patientVisit, err = testData.DataApi.GetPatientVisitFromId(pr.PatientVisitId)
 	if err != nil {
 		t.Fatal(err)
-	} else if patientCase.Diagnosis != "Papulopustular Rosacea" {
-		t.Fatalf("Expected diagnosis to be %s but got %s", "Papulopustular Rosacea", patientCase.Diagnosis)
+	} else if patientVisit.Diagnosis != "Papulopustular Rosacea" {
+		t.Fatalf("Expected diagnosis to be %s but got %s", "Papulopustular Rosacea", patientVisit.Diagnosis)
 	}
 
 	// lets try another category where we don't pick a diagnosis type
@@ -76,11 +76,11 @@ func TestCaseDiagnosis(t *testing.T) {
 
 	SubmitPatientVisitDiagnosisWithIntake(pr.PatientVisitId, doctor.AccountId.Int64(), answerIntakeRequestBody, testData, t)
 
-	patientCase, err = testData.DataApi.GetPatientCaseFromId(treatmentPlan.PatientCaseId.Int64())
+	patientVisit, err = testData.DataApi.GetPatientVisitFromId(pr.PatientVisitId)
 	if err != nil {
 		t.Fatal(err)
-	} else if patientCase.Diagnosis != "Perioral dermatitis" {
-		t.Fatalf("Expected diagnosis to be %s but got %s", "Perioral Dermatitis", patientCase.Diagnosis)
+	} else if patientVisit.Diagnosis != "Perioral dermatitis" {
+		t.Fatalf("Expected diagnosis to be %s but got %s", "Perioral Dermatitis", patientVisit.Diagnosis)
 	}
 
 	// now lets try describing a custom condition
@@ -100,11 +100,11 @@ func TestCaseDiagnosis(t *testing.T) {
 	}
 	SubmitPatientVisitDiagnosisWithIntake(pr.PatientVisitId, doctor.AccountId.Int64(), answerIntakeRequestBody, testData, t)
 
-	patientCase, err = testData.DataApi.GetPatientCaseFromId(treatmentPlan.PatientCaseId.Int64())
+	patientVisit, err = testData.DataApi.GetPatientVisitFromId(pr.PatientVisitId)
 	if err != nil {
 		t.Fatal(err)
-	} else if patientCase.Diagnosis != customCondition {
-		t.Fatalf("Expected diagnosis to be %s but got %s", customCondition, patientCase.Diagnosis)
+	} else if patientVisit.Diagnosis != customCondition {
+		t.Fatalf("Expected diagnosis to be %s but got %s", customCondition, patientVisit.Diagnosis)
 	}
 
 }
