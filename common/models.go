@@ -541,8 +541,9 @@ type ResourceGuide struct {
 }
 
 type Account struct {
-	ID   int64
-	Role string
+	ID    int64
+	Role  string
+	Email string
 }
 
 type MedicalLicense struct {

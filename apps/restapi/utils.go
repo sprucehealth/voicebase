@@ -91,6 +91,7 @@ type Config struct {
 	DoseSpot              *DosespotConfig             `group:"Dosespot" toml:"dosespot"`
 	SmartyStreets         *SmartyStreetsConfig        `group:"smarty_streets" toml:"smarty_streets"`
 	StripeSecretKey       string                      `long:"strip_secret_key" description:"Stripe secret key"`
+	StripePublishableKey  string                      `long:"stripe_publishable_key" description:"Stripe publishable key"`
 	IOSDeeplinkScheme     string                      `long:"ios_deeplink_scheme" description:"Scheme for iOS deep-links (e.g. spruce://)"`
 	NotifiyConfigs        *config.NotificationConfigs `group:"notification" toml:"notification"`
 	Analytics             *AnalyticsConfig            `group:"Analytics" toml:"analytics"`

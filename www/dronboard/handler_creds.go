@@ -4,11 +4,10 @@ import (
 	"fmt"
 	"net/http"
 
-	"github.com/sprucehealth/backend/third_party/github.com/gorilla/context"
-
 	"github.com/sprucehealth/backend/api"
 	"github.com/sprucehealth/backend/common"
 	"github.com/sprucehealth/backend/third_party/github.com/SpruceHealth/schema"
+	"github.com/sprucehealth/backend/third_party/github.com/gorilla/context"
 	"github.com/sprucehealth/backend/third_party/github.com/gorilla/mux"
 	"github.com/sprucehealth/backend/www"
 )
@@ -112,8 +111,6 @@ func (h *credentialsHandler) ServeHTTP(w http.ResponseWriter, r *http.Request) {
 				www.InternalServerError(w, r, err)
 				return
 			}
-
-			// TODO: SSN
 
 			licenses := make([]*common.MedicalLicense, 0, len(form.StateLicenses))
 			for _, l := range form.StateLicenses {

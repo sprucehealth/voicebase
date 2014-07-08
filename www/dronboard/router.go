@@ -5,13 +5,14 @@ import (
 	"net/http"
 
 	"github.com/sprucehealth/backend/api"
+	"github.com/sprucehealth/backend/libs/payment/stripe"
 	"github.com/sprucehealth/backend/libs/storage"
 	"github.com/sprucehealth/backend/third_party/github.com/gorilla/mux"
 	"github.com/sprucehealth/backend/third_party/github.com/samuel/go-metrics/metrics"
 	"github.com/sprucehealth/backend/www"
 )
 
-func SetupRoutes(r *mux.Router, dataAPI api.DataAPI, authAPI api.AuthAPI, stores map[string]storage.Store, metricsRegistry metrics.Registry) {
+func SetupRoutes(r *mux.Router, dataAPI api.DataAPI, authAPI api.AuthAPI, stripeCli *stripe.StripeService, stores map[string]storage.Store, metricsRegistry metrics.Registry) {
 	if stores["onboarding"] == nil {
 		log.Fatal("onboarding storage not configured")
 	}
@@ -33,5 +34,6 @@ func SetupRoutes(r *mux.Router, dataAPI api.DataAPI, authAPI api.AuthAPI, stores
 	r.Handle("/doctor-register/upload-claims-history", authFilter(NewUploadClaimsHistory(r, dataAPI, stores["onboarding"]))).Name("doctor-register-upload-claims-history")
 	r.Handle("/doctor-register/engagement", authFilter(NewEngagementHandler(r, dataAPI))).Name("doctor-register-engagement")
 	r.Handle("/doctor-register/insurance", authFilter(NewInsuranceHandler(r, dataAPI))).Name("doctor-register-insurance")
-	r.Handle("/doctor-register/financials", authFilter(NewFinancialsHandler(r, dataAPI))).Name("doctor-register-financials")
+	r.Handle("/doctor-register/financials", authFilter(NewFinancialsHandler(r, dataAPI, stripeCli))).Name("doctor-register-financials")
+	r.Handle("/doctor-register/success", authFilter(NewSuccessHandler(r, dataAPI))).Name("doctor-register-success")
 }

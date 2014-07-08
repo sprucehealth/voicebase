@@ -14,6 +14,7 @@ var (
 	engagementTemplate *template.Template
 	financialsTemplate *template.Template
 	insuranceTemplate  *template.Template
+	successTemplate    *template.Template
 )
 
 func init() {
@@ -23,6 +24,7 @@ func init() {
 	engagementTemplate = www.MustLoadTemplate("dronboard/engagement.html", template.Must(www.BaseTemplate.Clone()))
 	financialsTemplate = www.MustLoadTemplate("dronboard/financials.html", template.Must(www.BaseTemplate.Clone()))
 	insuranceTemplate = www.MustLoadTemplate("dronboard/insurance.html", template.Must(www.BaseTemplate.Clone()))
+	successTemplate = www.MustLoadTemplate("dronboard/success.html", template.Must(www.BaseTemplate.Clone()))
 }
 
 type registerTemplateContext struct {
@@ -47,12 +49,16 @@ type engagementTemplateContext struct {
 	FormErrors map[string]string
 }
 
-type financialsTemplateContext struct {
-	Form       *financialsForm
-	FormErrors map[string]string
-}
-
 type insuranceTemplateContext struct {
 	Form       *insuranceForm
 	FormErrors map[string]string
+}
+
+type financialsTemplateContext struct {
+	Form       *financialsForm
+	FormErrors map[string]string
+	StripeKey  string
+}
+
+type successTemplateContext struct {
 }
