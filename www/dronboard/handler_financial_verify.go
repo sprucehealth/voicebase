@@ -1,7 +1,6 @@
 package dronboard
 
 import (
-	"fmt"
 	"net/http"
 	"time"
 
@@ -115,7 +114,6 @@ func (h *financialsVerifyHandler) ServeHTTP(w http.ResponseWriter, r *http.Reque
 	} else if r.Method == "GET" {
 		// On initial page load after creating the account show a different message and
 		// don't bother checking the transactions
-		fmt.Printf("%+v\n", toVerify.Created)
 		if time.Now().UTC().Sub(toVerify.Created) < time.Second*15 {
 			initial = true
 		} else {

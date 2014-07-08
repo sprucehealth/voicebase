@@ -1,0 +1,18 @@
+{{define "head"}}
+{{end}}
+
+{{define "tail"}}
+{{end}}
+
+{{define "body"}}
+	<h2>Doctor Onboarding</h2>
+
+	First Name: {{.Doctor.FirstName}}<br>
+	Last Name: {{.Doctor.LastName}}<br>
+
+	<h3>Attributes</h3>
+
+	{{range $name, $value := .Attributes}}
+		{{$name}}: {{$value}}<br>
+	{{end}}
+{{end}}
