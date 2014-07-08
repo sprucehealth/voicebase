@@ -150,8 +150,6 @@ func (h *registerHandler) ServeHTTP(w http.ResponseWriter, r *http.Request) {
 					DoctorAddress: address,
 				}
 
-				// TODO ??? DoseSpotClinicianId int64
-
 				if _, err := h.dataAPI.RegisterDoctor(doctor); err != nil {
 					www.InternalServerError(w, r, err)
 					return

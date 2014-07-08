@@ -16,11 +16,8 @@
 		} else {
 			frm.find('.errors').text("");
 
-			// response contains id and card, which contains additional card details
 			var token = response.id;
-			// Insert the token into the form so it gets submitted to the server
 			frm.append($('<input type="hidden" name="StripeToken">').val(token));
-			// and submit
 			frm.get(0).submit();
 		}
 	}
@@ -75,7 +72,7 @@
 
 		<div class="form-group">
 			<label class="control-label" for="Country">Country</label>
-			<input disabled type="text" id="Country" name="Country" value="US" class="form-control">
+			<input type="text" id="Country" value="US" class="form-control">
 		</div>
 
 		<div id="AccountNumberGroup" class="form-group {{if .FormErrors.AccountNumber}}has-error has-feedback{{end}}">
