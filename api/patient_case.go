@@ -103,7 +103,7 @@ func (d *DataService) GetPatientCaseFromId(patientCaseId int64) (*common.Patient
 }
 
 func (d *DataService) GetCasesForPatient(patientId int64) ([]*common.PatientCase, error) {
-	rows, err := d.db.Query(`select patient_case.id, patient_id, health_condition_id, creation_date, status health_condition.medicine_branch from patient_case 
+	rows, err := d.db.Query(`select patient_case.id, patient_id, health_condition_id, creation_date, status, health_condition.medicine_branch from patient_case 
 								inner join health_condition on health_condition.id = patient_case.health_condition_id
 								where patient_id=? order by creation_date desc`, patientId)
 	if err != nil {

@@ -135,7 +135,7 @@ func getMeetCareTeamSection(careTeamAssignments []*common.CareProviderAssignment
 		Views: make([]common.ClientView, 0, len(careTeamAssignments)),
 	}
 
-	for i, assignment := range careTeamAssignments {
+	for _, assignment := range careTeamAssignments {
 		if assignment.ProviderRole == api.DOCTOR_ROLE {
 
 			doctor, err := dataAPI.GetDoctorFromId(assignment.ProviderId)
@@ -143,12 +143,12 @@ func getMeetCareTeamSection(careTeamAssignments []*common.CareProviderAssignment
 				return nil, err
 			}
 
-			sectionView.Views[i] = &phSmallIconText{
+			sectionView.Views = append(sectionView.Views, &phSmallIconText{
 				Title:       fmt.Sprintf("Dr. %s %s", doctor.FirstName, doctor.LastName),
 				Subtitle:    doctor.ShortTitle,
 				IconURL:     doctor.SmallThumbnailUrl,
 				RoundedIcon: true,
-			}
+			})
 		}
 	}
 

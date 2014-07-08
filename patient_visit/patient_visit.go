@@ -198,7 +198,7 @@ func (s *patientVisitHandler) createNewPatientVisitHandler(w http.ResponseWriter
 		return
 	}
 
-	dispatch.Default.PublishAsync(&VisitStartedEvent{
+	dispatch.Default.Publish(&VisitStartedEvent{
 		PatientId:     patient.PatientId.Int64(),
 		VisitId:       patientVisit.PatientVisitId.Int64(),
 		PatientCaseId: patientVisit.PatientCaseId.Int64(),

@@ -98,6 +98,7 @@ func InitListeners(dataAPI api.DataAPI) {
 			PatientCaseId:    ev.PatientCaseId,
 			NotificationType: CNVisitSubmitted,
 			UID:              CNVisitSubmitted,
+			Data:             &visitSubmittedNotification{},
 		}); err != nil {
 			golog.Errorf("Unable to insert notification item for case: %s", err)
 			return err

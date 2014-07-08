@@ -25,7 +25,7 @@ func TestCaseNotifications_VisitSubmitted(t *testing.T) {
 	_, treatmentPlan := test_integration.CreateRandomPatientVisitAndPickTP(t, testData, doctor)
 
 	// there should exist 1 notification at this point to indicate to the patient that they have
-	// submiited their visit
+	// submitted their visit
 	testNotifyTypes := getNotificationTypes()
 
 	notificationItems, err := testData.DataApi.GetNotificationsForCase(treatmentPlan.PatientCaseId.Int64(), testNotifyTypes)
@@ -36,7 +36,6 @@ func TestCaseNotifications_VisitSubmitted(t *testing.T) {
 	} else if notificationItems[0].NotificationType != patient_case.CNVisitSubmitted {
 		t.Fatalf("Expected %s but got %s", patient_case.CNVisitSubmitted, notificationItems[0].NotificationType)
 	}
-
 }
 
 // This test is to ensure that the right interactions take place
