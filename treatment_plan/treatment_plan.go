@@ -23,7 +23,7 @@ func NewTreatmentPlanHandler(dataApi api.DataAPI) *treatmentPlanHandler {
 
 type TreatmentPlanRequest struct {
 	TreatmentPlanId int64 `schema:"treatment_plan_id"`
-	PatientCaseId   int64 `schema:"patient_case_id"`
+	PatientCaseId   int64 `schema:"case_id"`
 }
 
 type treatmentPlanViewsResponse struct {

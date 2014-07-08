@@ -7,13 +7,14 @@ import (
 )
 
 type PatientCase struct {
-	Id                encoding.ObjectId `json:"case_id"`
-	PatientId         encoding.ObjectId `json:"patient_id"`
-	HealthConditionId encoding.ObjectId `json:"health_condition_id"`
-	MedicineBranch    string            `json:"medicine_branch"`
-	CreationDate      time.Time         `json:"creation_date"`
-	Status            string            `json:"status"`
-	Diagnosis         string            `json:"diagnosis,omitempty"`
+	Id                encoding.ObjectId         `json:"case_id"`
+	PatientId         encoding.ObjectId         `json:"patient_id"`
+	HealthConditionId encoding.ObjectId         `json:"health_condition_id"`
+	MedicineBranch    string                    `json:"medicine_branch"`
+	CreationDate      time.Time                 `json:"creation_date"`
+	Status            string                    `json:"status"`
+	Diagnosis         string                    `json:"diagnosis,omitempty"`
+	CareTeam          []*CareProviderAssignment `json:"care_team"`
 }
 
 const (
