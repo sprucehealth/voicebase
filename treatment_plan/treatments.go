@@ -56,7 +56,7 @@ func (t *treatmentsHandler) ServeHTTP(w http.ResponseWriter, r *http.Request) {
 		return
 	}
 
-	views := generateViewsForTreatments(treatmentPlan.TreatmentList, doctor, t.dataAPI, true)
+	views := generateViewsForTreatments(treatmentPlan, doctor, t.dataAPI, true)
 	for _, v := range views {
 		if err := v.Validate(); err != nil {
 			apiservice.WriteError(err, w, r)

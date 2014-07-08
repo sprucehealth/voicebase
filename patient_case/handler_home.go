@@ -1,6 +1,7 @@
-package home
+package patient_case
 
 import (
+	"fmt"
 	"net/http"
 
 	"github.com/sprucehealth/backend/api"
@@ -14,10 +15,10 @@ type homeHandler struct {
 }
 
 type homeResponse struct {
-	Items []PHView `json:"items"`
+	Items []common.ClientView `json:"items"`
 }
 
-func NewHandler(dataAPI api.DataAPI, authAPI api.AuthAPI) *homeHandler {
+func NewHomeHandler(dataAPI api.DataAPI, authAPI api.AuthAPI) *homeHandler {
 	return &homeHandler{
 		dataAPI: dataAPI,
 		authAPI: authAPI,
@@ -32,31 +33,25 @@ func (h *homeHandler) NonAuthenticated() bool {
 }
 
 func (h *homeHandler) ServeHTTP(w http.ResponseWriter, r *http.Request) {
-	var account *common.Account
-
 	// attempt to authenticate the user if the auth token is present
 	authToken, err := apiservice.GetAuthTokenFromHeader(r)
-	if err != apiservice.ErrNoAuthHeader && err != nil {
-		apiservice.WriteError(err, w, r)
-		return
-	}
-
-	if err != apiservice.ErrNoAuthHeader {
-		account, err = h.authAPI.ValidateToken(authToken)
-		if err != nil {
-			apiservice.HandleAuthError(err, w)
-			return
-		}
-	}
-
-	if account == nil {
-		items, err := getHomeCards(noAccountState, nil)
+	// if there is no auth header, handle the case of no account
+	if err == apiservice.ErrNoAuthHeader {
+		items, err := getHomeCards(nil, h.dataAPI)
 		if err != nil {
 			apiservice.WriteError(err, w, r)
 			return
 		}
-
 		apiservice.WriteJSON(w, &homeResponse{Items: items})
+		return
+	} else if err != nil {
+		apiservice.WriteError(err, w, r)
+		return
+	}
+
+	account, err := h.authAPI.ValidateToken(authToken)
+	if err != nil {
+		apiservice.HandleAuthError(err, w)
 		return
 	}
 
@@ -77,14 +72,22 @@ func (h *homeHandler) ServeHTTP(w http.ResponseWriter, r *http.Request) {
 		return
 	}
 
-	var hState homeState
-	if len(patientCases) == 0 {
-		hState = noCaseState
-	}
-
-	items, err := getHomeCards(hState, nil)
-	if err != nil {
-		apiservice.WriteError(err, w, r)
+	var items []common.ClientView
+	switch l := len(patientCases); {
+	case l == 0:
+		items, err = getHomeCards(nil, h.dataAPI)
+		if err != nil {
+			apiservice.WriteError(err, w, r)
+			return
+		}
+	case l == 1:
+		items, err = getHomeCards(patientCases[0], h.dataAPI)
+		if err != nil {
+			apiservice.WriteError(err, w, r)
+			return
+		}
+	default:
+		apiservice.WriteError(fmt.Errorf("Expected only 1 patient case to exist instead got %d", len(patientCases)), w, r)
 		return
 	}
 

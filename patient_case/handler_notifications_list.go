@@ -5,6 +5,7 @@ import (
 
 	"github.com/sprucehealth/backend/api"
 	"github.com/sprucehealth/backend/apiservice"
+	"github.com/sprucehealth/backend/common"
 )
 
 type notificationsListHandler struct {
@@ -16,7 +17,7 @@ type notificationsListRequestData struct {
 }
 
 type notificationsListResponseData struct {
-	Items []notificationView `json:"items"`
+	Items []common.ClientView `json:"items"`
 }
 
 func NewNotificationsListHandler(dataAPI api.DataAPI) *notificationsListHandler {
@@ -46,9 +47,9 @@ func (n *notificationsListHandler) ServeHTTP(w http.ResponseWriter, r *http.Requ
 		return
 	}
 
-	nViewItems := make([]notificationView, len(notificationItems))
+	nViewItems := make([]common.ClientView, len(notificationItems))
 	for i, notificationItem := range notificationItems {
-		nViewItems[i], err = notificationItem.Data.(notification).makeView(n.dataAPI, notificationItem.Id)
+		nViewItems[i], err = notificationItem.Data.(notification).makeCaseNotificationView(n.dataAPI, notificationItem.Id)
 		if err != nil {
 			apiservice.WriteError(err, w, r)
 			return

@@ -131,11 +131,21 @@ func ViewPatientMessagesAction(patientId, patientCaseId int64) *SpruceAction {
 	}
 }
 
-func ViewCaseMessageAction(messageId int64) *SpruceAction {
+func ViewCaseMessageAction(messageId, patientCaseId int64) *SpruceAction {
 	params := url.Values{}
 	params.Set("message_id", strconv.FormatInt(messageId, 10))
+	params.Set("case_id", strconv.FormatInt(patientCaseId, 10))
 	return &SpruceAction{
 		name:   "view_case_message",
+		params: params,
+	}
+}
+
+func SendCaseMessageAction(patientCaseId int64) *SpruceAction {
+	params := url.Values{}
+	params.Set("case_id", strconv.FormatInt(patientCaseId, 10))
+	return &SpruceAction{
+		name:   "send_message",
 		params: params,
 	}
 }
@@ -176,12 +186,6 @@ func ViewCaseAction(patientCaseId int64) *SpruceAction {
 	}
 }
 
-func ViewCareTeam() *SpruceAction {
-	return &SpruceAction{
-		name: "view_care_team",
-	}
-}
-
 func ViewTreatmentGuideAction(treatmentId int64) *SpruceAction {
 	params := url.Values{}
 	params.Set("treatment_id", strconv.FormatInt(treatmentId, 10))
@@ -194,12 +198,6 @@ func ViewTreatmentGuideAction(treatmentId int64) *SpruceAction {
 func ViewPreferredPharmacyAction() *SpruceAction {
 	return &SpruceAction{
 		name: "view_preferred_pharmacy",
-	}
-}
-
-func MessageAction() *SpruceAction {
-	return &SpruceAction{
-		name: "message",
 	}
 }
 
@@ -224,5 +222,17 @@ func ViewSampleTreatmentPlanAction() *SpruceAction {
 func StartVisitAction() *SpruceAction {
 	return &SpruceAction{
 		name: "start_visit",
+	}
+}
+
+func EmailSupportAction() *SpruceAction {
+	return &SpruceAction{
+		name: "email_support",
+	}
+}
+
+func ViewResourceLibraryAction() *SpruceAction {
+	return &SpruceAction{
+		name: "view_resource_library",
 	}
 }

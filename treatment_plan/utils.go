@@ -39,10 +39,10 @@ func populateTreatmentPlan(dataApi api.DataAPI, treatmentPlan *common.TreatmentP
 	return nil
 }
 
-func generateViewsForTreatments(treatmentList *common.TreatmentList, doctor *common.Doctor, dataAPI api.DataAPI, forMedicationsTab bool) []tpView {
+func generateViewsForTreatments(treatmentPlan *common.TreatmentPlan, doctor *common.Doctor, dataAPI api.DataAPI, forMedicationsTab bool) []tpView {
 	var views []tpView
-	if treatmentList != nil {
-		for _, treatment := range treatmentList.Treatments {
+	if treatmentPlan.TreatmentList != nil {
+		for _, treatment := range treatmentPlan.TreatmentList.Treatments {
 
 			iconURL := app_url.IconRXLarge
 			smallHeaderText := "Prescription"
@@ -84,7 +84,7 @@ func generateViewsForTreatments(treatmentList *common.TreatmentList, doctor *com
 			FooterText: fmt.Sprintf("If you have any questions about your treatment plan, send Dr. %s a message.", doctor.LastName),
 			ButtonText: fmt.Sprintf("Message Dr. %s", doctor.LastName),
 			IconURL:    app_url.IconMessage,
-			TapURL:     app_url.MessageAction(),
+			TapURL:     app_url.SendCaseMessageAction(treatmentPlan.PatientCaseId.Int64()),
 		})
 	}
 	return views

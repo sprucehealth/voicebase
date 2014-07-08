@@ -21,6 +21,10 @@ type TypedData struct {
 	Type string
 }
 
+type ClientView interface {
+	Validate() error
+}
+
 func (t *TypedData) TypeName() string {
 	return t.Type
 }

@@ -33,6 +33,7 @@ func InitListeners(dataAPI api.DataAPI) {
 					MessageId:    ev.Message.ID,
 					DoctorId:     ev.Person.Doctor.DoctorId.Int64(),
 					DismissOnTap: true,
+					CaseId:       ev.Message.CaseID,
 				},
 			}); err != nil {
 				golog.Errorf("Unable to insert notification item for case: %s", err)
@@ -58,6 +59,7 @@ func InitListeners(dataAPI api.DataAPI) {
 				MessageId:       ev.Message.ID,
 				DoctorId:        ev.DoctorId,
 				TreatmentPlanId: ev.TreatmentPlanId,
+				CaseId:          ev.Message.CaseID,
 			},
 		}); err != nil {
 			golog.Errorf("Unable to insert notification item for case: %s", err)
@@ -66,7 +68,31 @@ func InitListeners(dataAPI api.DataAPI) {
 		return nil
 	})
 
+	dispatch.Default.Subscribe(func(ev *patient_visit.VisitStartedEvent) error {
+		if err := dataAPI.InsertCaseNotification(&common.CaseNotification{
+			PatientCaseId:    ev.PatientCaseId,
+			NotificationType: CNIncompleteVisit,
+			UID:              CNIncompleteVisit,
+			Data: &incompleteVisitNotification{
+				PatientVisitId: ev.VisitId,
+			},
+		}); err != nil {
+			golog.Errorf("Unable to insert notification item for case: %s", err)
+			return err
+		}
+
+		return nil
+
+	})
+
 	dispatch.Default.Subscribe(func(ev *patient_visit.VisitSubmittedEvent) error {
+
+		// delete the notification that indicates that the user still has to complete
+		// the visit
+		if err := dataAPI.DeleteCaseNotification(CNIncompleteVisit); err != nil {
+			golog.Errorf("Unable to delete case notifications: %s", err)
+			return err
+		}
 
 		if err := dataAPI.InsertCaseNotification(&common.CaseNotification{
 			PatientCaseId:    ev.PatientCaseId,

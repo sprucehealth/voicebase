@@ -186,7 +186,7 @@ func (s *patientVisitHandler) createNewPatientVisitHandler(w http.ResponseWriter
 		return
 	}
 
-	patientVisitId, err = s.dataApi.CreateNewPatientVisit(patient.PatientId.Int64(), apiservice.HEALTH_CONDITION_ACNE_ID, layoutVersionId)
+	patientVisit, err := s.dataApi.CreateNewPatientVisit(patient.PatientId.Int64(), apiservice.HEALTH_CONDITION_ACNE_ID, layoutVersionId)
 	if err != nil {
 		apiservice.WriteDeveloperError(w, http.StatusInternalServerError, err.Error())
 		return
@@ -199,8 +199,9 @@ func (s *patientVisitHandler) createNewPatientVisitHandler(w http.ResponseWriter
 	}
 
 	dispatch.Default.PublishAsync(&VisitStartedEvent{
-		PatientId: patient.PatientId.Int64(),
-		VisitId:   patientVisitId,
+		PatientId:     patient.PatientId.Int64(),
+		VisitId:       patientVisit.PatientVisitId.Int64(),
+		PatientCaseId: patientVisit.PatientCaseId.Int64(),
 	})
-	apiservice.WriteJSONToHTTPResponseWriter(w, http.StatusOK, PatientVisitResponse{PatientVisitId: patientVisitId, ClientLayout: healthCondition})
+	apiservice.WriteJSONToHTTPResponseWriter(w, http.StatusOK, PatientVisitResponse{PatientVisitId: patientVisit.PatientVisitId.Int64(), ClientLayout: healthCondition})
 }

@@ -67,7 +67,13 @@ func (h *treatmentGuideHandler) processTreatmentGuideForPatient(requestData *Tre
 		return
 	}
 
-	treatmentGuideResponse(h.dataAPI, treatment.Doctor, w, treatment)
+	treatmentPlan, err := h.dataAPI.GetTreatmentPlanForPatient(treatment.PatientId.Int64(), treatment.TreatmentPlanId.Int64())
+	if err != nil {
+		apiservice.WriteError(err, w, r)
+		return
+	}
+
+	treatmentGuideResponse(h.dataAPI, treatment.Doctor, w, treatment, treatmentPlan)
 }
 
 func (h *treatmentGuideHandler) processTreatmentGuideForDoctor(requestData *TreatmentGuideRequestData, w http.ResponseWriter, r *http.Request) {
@@ -80,10 +86,16 @@ func (h *treatmentGuideHandler) processTreatmentGuideForDoctor(requestData *Trea
 		return
 	}
 
-	treatmentGuideResponse(h.dataAPI, treatment.Doctor, w, treatment)
+	treatmentPlan, err := h.dataAPI.GetTreatmentPlanForPatient(treatment.PatientId.Int64(), treatment.TreatmentPlanId.Int64())
+	if err != nil {
+		apiservice.WriteError(err, w, r)
+		return
+	}
+
+	treatmentGuideResponse(h.dataAPI, treatment.Doctor, w, treatment, treatmentPlan)
 }
 
-func treatmentGuideResponse(dataAPI api.DataAPI, doctor *common.Doctor, w http.ResponseWriter, treatment *common.Treatment) {
+func treatmentGuideResponse(dataAPI api.DataAPI, doctor *common.Doctor, w http.ResponseWriter, treatment *common.Treatment, treatmentPlan *common.TreatmentPlan) {
 	ndc := treatment.DrugDBIds[erx.NDC]
 	if ndc == "" {
 		apiservice.WriteUserError(w, http.StatusNotFound, "NDC unknown")
@@ -219,7 +231,7 @@ func treatmentGuideResponse(dataAPI api.DataAPI, doctor *common.Doctor, w http.R
 		&tpButtonView{
 			Text:    "Message Dr. " + treatment.Doctor.LastName,
 			IconURL: app_url.IconMessage,
-			TapURL:  app_url.MessageAction(),
+			TapURL:  app_url.SendCaseMessageAction(treatmentPlan.PatientCaseId.Int64()),
 		},
 	)
 

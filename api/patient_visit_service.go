@@ -126,10 +126,10 @@ func (d *DataService) GetPatientCaseIdFromPatientVisitId(patientVisitId int64) (
 	return patientCaseId, nil
 }
 
-func (d *DataService) CreateNewPatientVisit(patientId, healthConditionId, layoutVersionId int64) (int64, error) {
+func (d *DataService) CreateNewPatientVisit(patientId, healthConditionId, layoutVersionId int64) (*common.PatientVisit, error) {
 	tx, err := d.db.Begin()
 	if err != nil {
-		return 0, err
+		return nil, err
 	}
 
 	// implicitly create a new case when creating a new visit for now
@@ -138,34 +138,34 @@ func (d *DataService) CreateNewPatientVisit(patientId, healthConditionId, layout
 	res, err := tx.Exec(`insert into patient_case (patient_id, health_condition_id, status) values (?,?,?)`, patientId, healthConditionId, common.PCStatusUnclaimed)
 	if err != nil {
 		tx.Rollback()
-		return 0, err
+		return nil, err
 	}
 
 	patientCaseId, err := res.LastInsertId()
 	if err != nil {
 		tx.Rollback()
-		return 0, err
+		return nil, err
 	}
 
 	res, err = tx.Exec(`insert into patient_visit (patient_id, health_condition_id, layout_version_id, patient_case_id, status) 
 								values (?, ?, ?, ?, ?)`, patientId, healthConditionId, layoutVersionId, patientCaseId, common.PVStatusOpen)
 	if err != nil {
 		tx.Rollback()
-		return 0, err
+		return nil, err
 	}
 
 	lastId, err := res.LastInsertId()
 	if err != nil {
 		tx.Rollback()
 		log.Fatal("Unable to return id of inserted item as error was returned when trying to return id", err)
-		return 0, err
+		return nil, err
 	}
 
 	if err := tx.Commit(); err != nil {
-		return 0, err
+		return nil, err
 	}
 
-	return lastId, nil
+	return d.GetPatientVisitFromId(lastId)
 }
 
 func (d *DataService) UpdateDiagnosisForPatientVisit(patientVisitId int64, diagnosis string) error {

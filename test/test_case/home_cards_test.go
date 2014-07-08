@@ -1,4 +1,4 @@
-package test_home
+package test_case
 
 import (
 	"encoding/json"
@@ -6,7 +6,7 @@ import (
 	"net/http/httptest"
 	"testing"
 
-	"github.com/sprucehealth/backend/home"
+	"github.com/sprucehealth/backend/patient_case"
 	"github.com/sprucehealth/backend/test/test_integration"
 )
 
@@ -14,7 +14,7 @@ func TestHomeCardsForUnAuthenticatedUser(t *testing.T) {
 	testData := test_integration.SetupIntegrationTest(t)
 	defer test_integration.TearDownIntegrationTest(t, testData)
 
-	homeHandler := home.NewHandler(testData.DataApi, testData.AuthApi)
+	homeHandler := patient_case.NewHomeHandler(testData.DataApi, testData.AuthApi)
 	patientServer := httptest.NewServer(homeHandler)
 	defer patientServer.Close()
 
@@ -31,8 +31,8 @@ func TestHomeCardsForUnAuthenticatedUser(t *testing.T) {
 		t.Fatalf("Expected %d but got %d", http.StatusOK, res.StatusCode)
 	} else if err := json.NewDecoder(res.Body).Decode(&responseData); err != nil {
 		t.Fatal(err)
-	} else if items := responseData["items"].([]interface{}); len(items) != 4 {
-		t.Fatalf("Expected %d items but got %d", 4, len(items))
+	} else if items := responseData["items"].([]interface{}); len(items) != 2 {
+		t.Fatalf("Expected %d items but got %d", 2, len(items))
 	}
 	res.Body.Close()
 
@@ -47,8 +47,8 @@ func TestHomeCardsForUnAuthenticatedUser(t *testing.T) {
 		t.Fatalf("Expected %d but got %d", http.StatusOK, res.StatusCode)
 	} else if err := json.NewDecoder(res.Body).Decode(&responseData); err != nil {
 		t.Fatal(err)
-	} else if items := responseData["items"].([]interface{}); len(items) != 4 {
-		t.Fatalf("Expected %d items but got %d", 4, len(items))
+	} else if items := responseData["items"].([]interface{}); len(items) != 2 {
+		t.Fatalf("Expected %d items but got %d", 2, len(items))
 	}
 	res.Body.Close()
 }

@@ -168,7 +168,7 @@ func treatmentPlanResponse(dataApi api.DataAPI, w http.ResponseWriter, r *http.R
 				},
 			},
 		})
-		treatmentViews = append(treatmentViews, generateViewsForTreatments(treatmentPlan.TreatmentList, doctor, dataApi, false)...)
+		treatmentViews = append(treatmentViews, generateViewsForTreatments(treatmentPlan, doctor, dataApi, false)...)
 	}
 
 	// INSTRUCTION VIEWS
@@ -233,7 +233,7 @@ func treatmentPlanResponse(dataApi api.DataAPI, w http.ResponseWriter, r *http.R
 		FooterText: fmt.Sprintf("If you have any questions about your treatment plan, send Dr. %s a message.", doctor.LastName),
 		ButtonText: fmt.Sprintf("Message Dr. %s", doctor.LastName),
 		IconURL:    app_url.IconMessage,
-		TapURL:     app_url.MessageAction(),
+		TapURL:     app_url.SendCaseMessageAction(treatmentPlan.PatientCaseId.Int64()),
 	})
 
 	for _, vContainer := range [][]tpView{headerViews, treatmentViews, instructionViews} {

@@ -19,7 +19,6 @@ import (
 	"github.com/sprucehealth/backend/doctor_queue"
 	"github.com/sprucehealth/backend/doctor_treatment_plan"
 	"github.com/sprucehealth/backend/email"
-	"github.com/sprucehealth/backend/home"
 	"github.com/sprucehealth/backend/layout"
 	"github.com/sprucehealth/backend/libs/aws"
 	"github.com/sprucehealth/backend/libs/aws/sns"
@@ -279,7 +278,7 @@ func buildRESTAPI(conf *Config, dataApi api.DataAPI, authAPI api.AuthAPI, metric
 	mux.Handle("/v1/pharmacy_search", pharmacySearchHandler)
 
 	// Patient: Home API
-	mux.Handle("/v1/patient/home", home.NewHandler(dataApi, authAPI))
+	mux.Handle("/v1/patient/home", patient_case.NewHomeHandler(dataApi, authAPI))
 
 	//Patient/Doctor: Case APIs
 	mux.Handle("/v1/cases/list", patient_case.NewListHandler(dataApi))

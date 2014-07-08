@@ -262,7 +262,7 @@ func (d *DataService) InsertCaseNotification(notificationItem *common.CaseNotifi
 		return err
 	}
 
-	_, err = d.db.Exec(`insert into case_notification (patient_case_id, notification_type, uid, data) values (?,?,?,?)`, notificationItem.PatientCaseId, notificationItem.NotificationType, notificationItem.UID, notificationData)
+	_, err = d.db.Exec(`replace into case_notification (patient_case_id, notification_type, uid, data) values (?,?,?,?)`, notificationItem.PatientCaseId, notificationItem.NotificationType, notificationItem.UID, notificationData)
 	return err
 }
 
