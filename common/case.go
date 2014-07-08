@@ -17,16 +17,11 @@ type PatientCase struct {
 	CareTeam          []*CareProviderAssignment `json:"care_team"`
 }
 
-const (
-	CNTreatmentPlan = "treatment_plan"
-	CNMessage       = "message"
-)
-
 type CaseNotification struct {
 	Id               int64
 	PatientCaseId    int64
 	NotificationType string
-	ItemId           int64
+	UID              string
 	CreationDate     time.Time
 	Data             Typed
 }

@@ -27,3 +27,15 @@ func (c *caseNotificationMessageView) Validate() error {
 	c.Type = caseNotificationNameSpace + "message"
 	return nil
 }
+
+type caseNotificationTitleSubtitleView struct {
+	ID       int64  `json:"id,string"`
+	Type     string `json:"type"`
+	Title    string `json:"title"`
+	Subtitle string `json:"subtitle"`
+}
+
+func (c *caseNotificationTitleSubtitleView) Validate() error {
+	c.Type = caseNotificationNameSpace + "title_subtitle"
+	return nil
+}

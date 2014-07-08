@@ -216,7 +216,7 @@ func (d *DataService) DeleteDraftTreatmentPlanByDoctorForCase(doctorId, patientC
 }
 
 func (d *DataService) GetNotificationsForCase(patientCaseId int64, notificationTypeRegistry map[string]reflect.Type) ([]*common.CaseNotification, error) {
-	rows, err := d.db.Query(`select id, patient_case_id, notification_type, item_id, creation_date, data from case_notification where patient_case_id = ?`, patientCaseId)
+	rows, err := d.db.Query(`select id, patient_case_id, notification_type, uid, creation_date, data from case_notification where patient_case_id = ?`, patientCaseId)
 	if err != nil {
 		return nil, err
 	}
@@ -230,7 +230,7 @@ func (d *DataService) GetNotificationsForCase(patientCaseId int64, notificationT
 			&notificationItem.Id,
 			&notificationItem.PatientCaseId,
 			&notificationItem.NotificationType,
-			&notificationItem.ItemId,
+			&notificationItem.UID,
 			&notificationItem.CreationDate,
 			&notificationData); err != nil {
 			return nil, err
@@ -244,9 +244,12 @@ func (d *DataService) GetNotificationsForCase(patientCaseId int64, notificationT
 		}
 
 		notificationItem.Data = reflect.New(nDataType).Interface().(common.Typed)
-		if err := json.Unmarshal(notificationData, &notificationItem.Data); err != nil {
-			return nil, err
+		if notificationData != nil {
+			if err := json.Unmarshal(notificationData, &notificationItem.Data); err != nil {
+				return nil, err
+			}
 		}
+
 		notificationItems = append(notificationItems, &notificationItem)
 	}
 
@@ -259,12 +262,12 @@ func (d *DataService) InsertCaseNotification(notificationItem *common.CaseNotifi
 		return err
 	}
 
-	_, err = d.db.Exec(`insert into case_notification (patient_case_id, notification_type, item_id, data) values (?,?,?,?)`, notificationItem.PatientCaseId, notificationItem.NotificationType, notificationItem.ItemId, notificationData)
+	_, err = d.db.Exec(`insert into case_notification (patient_case_id, notification_type, uid, data) values (?,?,?,?)`, notificationItem.PatientCaseId, notificationItem.NotificationType, notificationItem.UID, notificationData)
 	return err
 }
 
-func (d *DataService) DeleteCaseNotification(patientCaseId, itemId int64, notificationType string) error {
-	_, err := d.db.Exec(`delete from case_notification where patient_case_id = ? and item_id = ? and notification_type = ?`, patientCaseId, itemId, notificationType)
+func (d *DataService) DeleteCaseNotification(uid string) error {
+	_, err := d.db.Exec(`delete from case_notification where uid = ?`, uid)
 	return err
 }
 

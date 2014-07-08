@@ -14,17 +14,23 @@ type notification interface {
 	makeView(dataAPI api.DataAPI, notificationId int64) (notificationView, error)
 }
 
-type treatmentPlanNotificationData struct {
+type treatmentPlanNotification struct {
 	MessageId       int64 `json:"message_id"`
 	DoctorId        int64 `json:"doctor_id"`
 	TreatmentPlanId int64 `json:"treatment_plan_id"`
 }
 
-func (t *treatmentPlanNotificationData) TypeName() string {
-	return common.CNTreatmentPlan
+const (
+	CNTreatmentPlan  = "treatment_plan"
+	CNMessage        = "message"
+	CNVisitSubmitted = "visit_submitted"
+)
+
+func (t *treatmentPlanNotification) TypeName() string {
+	return CNTreatmentPlan
 }
 
-func (t *treatmentPlanNotificationData) makeView(dataAPI api.DataAPI, notificationId int64) (notificationView, error) {
+func (t *treatmentPlanNotification) makeView(dataAPI api.DataAPI, notificationId int64) (notificationView, error) {
 	doctor, err := dataAPI.GetDoctorFromId(t.DoctorId)
 	if err != nil {
 		return nil, err
@@ -42,17 +48,17 @@ func (t *treatmentPlanNotificationData) makeView(dataAPI api.DataAPI, notificati
 	return nView, nView.Validate()
 }
 
-type messageNotificationData struct {
+type messageNotification struct {
 	MessageId    int64 `json:"message_id"`
 	DoctorId     int64 `json:"doctor_id"`
 	DismissOnTap bool  `json:"dismiss_on_tap"`
 }
 
-func (m *messageNotificationData) TypeName() string {
-	return common.CNMessage
+func (m *messageNotification) TypeName() string {
+	return CNMessage
 }
 
-func (m *messageNotificationData) makeView(dataAPI api.DataAPI, notificationId int64) (notificationView, error) {
+func (m *messageNotification) makeView(dataAPI api.DataAPI, notificationId int64) (notificationView, error) {
 	doctor, err := dataAPI.GetDoctorFromId(m.DoctorId)
 	if err != nil {
 		return nil, err
@@ -70,9 +76,26 @@ func (m *messageNotificationData) makeView(dataAPI api.DataAPI, notificationId i
 	return nView, nView.Validate()
 }
 
+type visitSubmittedNotification struct{}
+
+func (v *visitSubmittedNotification) TypeName() string {
+	return CNVisitSubmitted
+}
+
+func (v *visitSubmittedNotification) makeView(dataAPI api.DataAPI, notificationId int64) (notificationView, error) {
+	nView := &caseNotificationTitleSubtitleView{
+		ID:       notificationId,
+		Title:    "Your acne case has been successfully submitted.",
+		Subtitle: "Your dermatologist will review your visit and respond within 24 hours.",
+	}
+
+	return nView, nView.Validate()
+}
+
 func init() {
-	registerNotificationType(&treatmentPlanNotificationData{})
-	registerNotificationType(&messageNotificationData{})
+	registerNotificationType(&treatmentPlanNotification{})
+	registerNotificationType(&messageNotification{})
+	registerNotificationType(&visitSubmittedNotification{})
 }
 
 var notifyTypes = make(map[string]reflect.Type)

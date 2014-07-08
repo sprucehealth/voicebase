@@ -9,7 +9,6 @@ import (
 	"strconv"
 	"testing"
 
-	"github.com/sprucehealth/backend/common"
 	"github.com/sprucehealth/backend/patient_case"
 	"github.com/sprucehealth/backend/test/test_integration"
 )
@@ -41,19 +40,27 @@ type testTreatmentPlanData struct {
 }
 
 func (t *testTreatmentPlanData) TypeName() string {
-	return common.CNTreatmentPlan
+	return patient_case.CNTreatmentPlan
 }
 
 type testMessageData struct {
 }
 
 func (t *testMessageData) TypeName() string {
-	return common.CNMessage
+	return patient_case.CNMessage
+}
+
+type testVisitSubmittedNotification struct {
+}
+
+func (t *testVisitSubmittedNotification) TypeName() string {
+	return patient_case.CNVisitSubmitted
 }
 
 func getNotificationTypes() map[string]reflect.Type {
 	testNotifyTypes := make(map[string]reflect.Type)
-	testNotifyTypes[common.CNMessage] = reflect.TypeOf(reflect.Indirect(reflect.ValueOf(&testMessageData{})).Interface())
-	testNotifyTypes[common.CNTreatmentPlan] = reflect.TypeOf(reflect.Indirect(reflect.ValueOf(&testTreatmentPlanData{})).Interface())
+	testNotifyTypes[patient_case.CNMessage] = reflect.TypeOf(reflect.Indirect(reflect.ValueOf(&testMessageData{})).Interface())
+	testNotifyTypes[patient_case.CNTreatmentPlan] = reflect.TypeOf(reflect.Indirect(reflect.ValueOf(&testTreatmentPlanData{})).Interface())
+	testNotifyTypes[patient_case.CNVisitSubmitted] = reflect.TypeOf(reflect.Indirect(reflect.ValueOf(&testVisitSubmittedNotification{})).Interface())
 	return testNotifyTypes
 }

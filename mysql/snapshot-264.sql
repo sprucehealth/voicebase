@@ -1,6 +1,6 @@
 -- MySQL dump 10.13  Distrib 5.6.17, for osx10.9 (x86_64)
 --
--- Host: 127.0.0.1    Database: database_26748
+-- Host: 127.0.0.1    Database: database_24885
 -- ------------------------------------------------------
 -- Server version	5.6.17
 
@@ -194,7 +194,7 @@ CREATE TABLE `case_notification` (
   `creation_date` timestamp(6) NOT NULL DEFAULT CURRENT_TIMESTAMP(6),
   `notification_type` varchar(100) NOT NULL,
   `item_id` int(10) unsigned NOT NULL,
-  `data` blob NOT NULL,
+  `data` blob,
   PRIMARY KEY (`id`),
   KEY `patient_case_id` (`patient_case_id`),
   CONSTRAINT `case_notification_ibfk_1` FOREIGN KEY (`patient_case_id`) REFERENCES `patient_case` (`id`)
@@ -2548,4 +2548,4 @@ CREATE TABLE `unlinked_dntf_treatment_status_events` (
 /*!40101 SET COLLATION_CONNECTION=@OLD_COLLATION_CONNECTION */;
 /*!40111 SET SQL_NOTES=@OLD_SQL_NOTES */;
 
--- Dump completed on 2014-07-07 18:25:40
+-- Dump completed on 2014-07-07 21:50:29

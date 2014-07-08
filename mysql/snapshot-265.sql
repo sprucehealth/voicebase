@@ -1,6 +1,6 @@
 -- MySQL dump 10.13  Distrib 5.6.17, for osx10.9 (x86_64)
 --
--- Host: 127.0.0.1    Database: database_10831
+-- Host: 127.0.0.1    Database: database_4858
 -- ------------------------------------------------------
 -- Server version	5.6.17
 
@@ -193,9 +193,10 @@ CREATE TABLE `case_notification` (
   `patient_case_id` int(10) unsigned NOT NULL,
   `creation_date` timestamp(6) NOT NULL DEFAULT CURRENT_TIMESTAMP(6),
   `notification_type` varchar(100) NOT NULL,
-  `item_id` int(10) unsigned NOT NULL,
+  `uid` varchar(100) NOT NULL,
   `data` blob,
   PRIMARY KEY (`id`),
+  UNIQUE KEY `uid` (`uid`),
   KEY `patient_case_id` (`patient_case_id`),
   CONSTRAINT `case_notification_ibfk_1` FOREIGN KEY (`patient_case_id`) REFERENCES `patient_case` (`id`)
 ) ENGINE=InnoDB DEFAULT CHARSET=utf8;
@@ -365,6 +366,8 @@ CREATE TABLE `doctor` (
   `middle_name` varchar(100) DEFAULT NULL,
   `prefix` varchar(100) DEFAULT NULL,
   `suffix` varchar(100) DEFAULT NULL,
+  `short_title` varchar(300) DEFAULT NULL,
+  `long_title` varchar(300) DEFAULT NULL,
   PRIMARY KEY (`id`),
   KEY `account_id` (`account_id`),
   CONSTRAINT `doctor_ibfk_1` FOREIGN KEY (`account_id`) REFERENCES `account` (`id`)
@@ -929,6 +932,7 @@ CREATE TABLE `health_condition` (
   `id` int(10) unsigned NOT NULL AUTO_INCREMENT,
   `comment` varchar(600) NOT NULL,
   `health_condition_tag` varchar(100) NOT NULL,
+  `medicine_branch` varchar(300) NOT NULL DEFAULT '',
   PRIMARY KEY (`id`),
   UNIQUE KEY `treatment_tag` (`health_condition_tag`)
 ) ENGINE=InnoDB AUTO_INCREMENT=2 DEFAULT CHARSET=utf8;
@@ -1460,6 +1464,7 @@ CREATE TABLE `patient_visit` (
   `layout_version_id` int(10) unsigned NOT NULL,
   `submitted_date` timestamp NULL DEFAULT NULL,
   `patient_case_id` int(10) unsigned DEFAULT NULL,
+  `diagnosis` text,
   PRIMARY KEY (`id`),
   KEY `patient_id` (`patient_id`),
   KEY `treatment_id` (`health_condition_id`),
@@ -2544,4 +2549,4 @@ CREATE TABLE `unlinked_dntf_treatment_status_events` (
 /*!40101 SET COLLATION_CONNECTION=@OLD_COLLATION_CONNECTION */;
 /*!40111 SET SQL_NOTES=@OLD_SQL_NOTES */;
 
--- Dump completed on 2014-07-07 21:50:24
+-- Dump completed on 2014-07-07 21:55:28

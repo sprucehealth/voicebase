@@ -6,8 +6,9 @@ type VisitStartedEvent struct {
 }
 
 type VisitSubmittedEvent struct {
-	PatientId int64
-	VisitId   int64
+	PatientId     int64
+	VisitId       int64
+	PatientCaseId int64
 }
 
 type DiagnosisModifiedEvent struct {

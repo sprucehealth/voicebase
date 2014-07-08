@@ -1,12 +1,13 @@
 package patient_visit
 
 import (
+	"net/http"
+
 	"github.com/sprucehealth/backend/api"
 	"github.com/sprucehealth/backend/apiservice"
 	"github.com/sprucehealth/backend/common"
 	"github.com/sprucehealth/backend/info_intake"
 	"github.com/sprucehealth/backend/libs/dispatch"
-	"net/http"
 )
 
 type patientVisitHandler struct {
@@ -92,8 +93,9 @@ func (s *patientVisitHandler) submitPatientVisit(w http.ResponseWriter, r *http.
 	}
 
 	dispatch.Default.Publish(&VisitSubmittedEvent{
-		PatientId: patientId,
-		VisitId:   requestData.PatientVisitId,
+		PatientId:     patientId,
+		VisitId:       requestData.PatientVisitId,
+		PatientCaseId: patientVisit.PatientCaseId.Int64(),
 	})
 
 	apiservice.WriteJSONToHTTPResponseWriter(w, http.StatusOK, PatientVisitSubmittedResponse{PatientVisitId: patientVisit.PatientVisitId.Int64(), Status: patientVisit.Status})
