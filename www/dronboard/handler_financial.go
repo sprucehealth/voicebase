@@ -1,9 +1,10 @@
 package dronboard
 
 import (
-	"fmt"
+	"crypto/rand"
 	"net/http"
 	"strconv"
+	"time"
 
 	"github.com/sprucehealth/backend/api"
 	"github.com/sprucehealth/backend/common"
@@ -13,6 +14,8 @@ import (
 	"github.com/sprucehealth/backend/third_party/github.com/gorilla/mux"
 	"github.com/sprucehealth/backend/www"
 )
+
+var verifyDuration = time.Hour * 24 * 7
 
 type financialsHandler struct {
 	router    *mux.Router
@@ -41,6 +44,18 @@ func NewFinancialsHandler(router *mux.Router, dataAPI api.DataAPI, stripeCli *st
 }
 
 func (h *financialsHandler) ServeHTTP(w http.ResponseWriter, r *http.Request) {
+	account := context.Get(r, www.CKAccount).(*common.Account)
+
+	// If the doctor already set a bank account then skip this step
+	bankAccounts, err := h.dataAPI.ListBankAccounts(account.ID)
+	if err != nil {
+		www.InternalServerError(w, r, err)
+		return
+	} else if len(bankAccounts) != 0 {
+		h.redirectToNextStep(w, r)
+		return
+	}
+
 	form := &financialsForm{}
 	var errors map[string]string
 
@@ -57,7 +72,6 @@ func (h *financialsHandler) ServeHTTP(w http.ResponseWriter, r *http.Request) {
 
 		errors = form.Validate()
 		if len(errors) == 0 {
-			account := context.Get(r, www.CKAccount).(*common.Account)
 			doctor, err := h.dataAPI.GetDoctorFromAccountId(account.ID)
 			if err != nil {
 				www.InternalServerError(w, r, err)
@@ -79,13 +93,47 @@ func (h *financialsHandler) ServeHTTP(w http.ResponseWriter, r *http.Request) {
 				www.InternalServerError(w, r, err)
 				return
 			}
-			fmt.Printf("%+v\n", rec)
-
-			if u, err := h.router.Get("doctor-register-success").URLPath(); err != nil {
+			bankID, err := h.dataAPI.AddBankAccount(account.ID, rec.ID, true)
+			if err != nil {
 				www.InternalServerError(w, r, err)
-			} else {
-				http.Redirect(w, r, u.String(), http.StatusSeeOther)
+				return
 			}
+
+			// Generate random amounts
+			var b [2]byte
+			if _, err := rand.Read(b[:]); err != nil {
+				www.InternalServerError(w, r, err)
+				return
+			}
+			// Range amount from $0.15 to $1.42
+			amount1 := (int(b[0]) / 2) + 15
+			amount2 := (int(b[1]) / 2) + 15
+
+			treq := &stripe.CreateTransferRequest{
+				Amount:               amount1,
+				Currency:             stripe.USD,
+				RecipientID:          rec.ID,
+				Description:          "verify amount 1",
+				StatementDescription: "VERIFY",
+			}
+			if _, err := h.stripeCli.CreateTransfer(treq); err != nil {
+				www.InternalServerError(w, r, err)
+				return
+			}
+			treq.Amount = amount2
+			treq.Description = "verify amount 2"
+			if _, err := h.stripeCli.CreateTransfer(treq); err != nil {
+				www.InternalServerError(w, r, err)
+				return
+			}
+
+			expires := time.Now().Add(verifyDuration)
+			if err := h.dataAPI.UpdateBankAccountVerficiation(bankID, amount1, amount2, expires, false); err != nil {
+				www.InternalServerError(w, r, err)
+				return
+			}
+
+			h.redirectToNextStep(w, r)
 			return
 		}
 	}
@@ -98,4 +146,12 @@ func (h *financialsHandler) ServeHTTP(w http.ResponseWriter, r *http.Request) {
 			StripeKey:  h.stripeCli.PublishableKey,
 		},
 	})
+}
+
+func (h *financialsHandler) redirectToNextStep(w http.ResponseWriter, r *http.Request) {
+	if u, err := h.router.Get("doctor-register-success").URLPath(); err != nil {
+		www.InternalServerError(w, r, err)
+	} else {
+		http.Redirect(w, r, u.String(), http.StatusSeeOther)
+	}
 }

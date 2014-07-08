@@ -339,6 +339,13 @@ type GeoAPI interface {
 	ListStates() ([]*common.State, error)
 }
 
+type BankingAPI interface {
+	AddBankAccount(userAccountID int64, stripeRecipientID string, defaultAccount bool) (int64, error)
+	DeleteBankaccount(id int64) error
+	ListBankAccounts(userAccountID int64) ([]*common.BankAccount, error)
+	UpdateBankAccountVerficiation(id int64, amount1, amount2 int, expires time.Time, verified bool) error
+}
+
 type DataAPI interface {
 	GeoAPI
 	PatientAPI
@@ -358,6 +365,7 @@ type DataAPI interface {
 	FavoriteTreatmentPlanAPI
 	ResourceLibraryAPI
 	CaseRouteAPI
+	BankingAPI
 }
 
 type CloudStorageAPI interface {

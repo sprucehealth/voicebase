@@ -36,4 +36,5 @@ func SetupRoutes(r *mux.Router, dataAPI api.DataAPI, authAPI api.AuthAPI, stripe
 	r.Handle("/doctor-register/insurance", authFilter(NewInsuranceHandler(r, dataAPI))).Name("doctor-register-insurance")
 	r.Handle("/doctor-register/financials", authFilter(NewFinancialsHandler(r, dataAPI, stripeCli))).Name("doctor-register-financials")
 	r.Handle("/doctor-register/success", authFilter(NewSuccessHandler(r, dataAPI))).Name("doctor-register-success")
+	r.Handle("/doctor-register/financials-verify", authFilter(NewFinancialVerifyHandler(r, dataAPI, stripeCli))).Name("doctor-register-financials-verify")
 }

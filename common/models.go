@@ -553,3 +553,14 @@ type MedicalLicense struct {
 	Number   string
 	Status   MedicalLicenseStatus
 }
+
+type BankAccount struct {
+	ID                int64
+	AccountID         int64
+	StripeRecipientID string
+	Default           bool
+	Verified          bool
+	VerifyAmount1     int
+	VerifyAmount2     int
+	VerifyExpires     time.Time
+}

@@ -8,13 +8,14 @@ import (
 )
 
 var (
-	registerTemplate   *template.Template
-	credsTemplate      *template.Template
-	uploadTemplate     *template.Template
-	engagementTemplate *template.Template
-	financialsTemplate *template.Template
-	insuranceTemplate  *template.Template
-	successTemplate    *template.Template
+	registerTemplate         *template.Template
+	credsTemplate            *template.Template
+	uploadTemplate           *template.Template
+	engagementTemplate       *template.Template
+	financialsTemplate       *template.Template
+	insuranceTemplate        *template.Template
+	successTemplate          *template.Template
+	financialsVerifyTemplate *template.Template
 )
 
 func init() {
@@ -25,6 +26,7 @@ func init() {
 	financialsTemplate = www.MustLoadTemplate("dronboard/financials.html", template.Must(www.BaseTemplate.Clone()))
 	insuranceTemplate = www.MustLoadTemplate("dronboard/insurance.html", template.Must(www.BaseTemplate.Clone()))
 	successTemplate = www.MustLoadTemplate("dronboard/success.html", template.Must(www.BaseTemplate.Clone()))
+	financialsVerifyTemplate = www.MustLoadTemplate("dronboard/financials_verify.html", template.Must(www.BaseTemplate.Clone()))
 }
 
 type registerTemplateContext struct {
@@ -61,4 +63,9 @@ type financialsTemplateContext struct {
 }
 
 type successTemplateContext struct {
+}
+
+type financialsVerifyTemplateContext struct {
+	Form       *financialsVerifyForm
+	FormErrors map[string]string
 }

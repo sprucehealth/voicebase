@@ -116,11 +116,7 @@ func (h *uploadHandler) ServeHTTP(w http.ResponseWriter, r *http.Request) {
 			return
 		}
 
-		if u, err := h.router.Get(h.nextURL).URLPath(); err != nil {
-			www.InternalServerError(w, r, err)
-		} else {
-			http.Redirect(w, r, u.String(), http.StatusSeeOther)
-		}
+		h.redirectToNextStep(w, r)
 		return
 	}
 
@@ -130,4 +126,12 @@ func (h *uploadHandler) ServeHTTP(w http.ResponseWriter, r *http.Request) {
 			Title: h.title,
 		},
 	})
+}
+
+func (h *uploadHandler) redirectToNextStep(w http.ResponseWriter, r *http.Request) {
+	if u, err := h.router.Get(h.nextURL).URLPath(); err != nil {
+		www.InternalServerError(w, r, err)
+	} else {
+		http.Redirect(w, r, u.String(), http.StatusSeeOther)
+	}
 }

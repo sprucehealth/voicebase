@@ -1,0 +1,27 @@
+{{define "head"}}
+{{end}}
+
+{{define "tail"}}
+{{end}}
+
+{{define "body"}}
+	<form method="POST" action="" role="form" class="form-onboard">
+		<h2>Verify Bank Account</h2>
+
+		<p>Please enter the amounts that were deposited into your account.</p>
+
+		{{with .FormErrors.Amounts}}<div class="text-danger">{{.}}</div>{{end}}
+
+		<div class="form-group {{if .FormErrors.Amount1}}has-error has-feedback{{end}}">
+			<label class="control-label" for="Amount1">Amount 1</label>
+			<input required type="text" name="Amount1" value="{{.Form.Amount1}}" class="form-control">
+		</div>
+
+		<div class="form-group {{if .FormErrors.Amount2}}has-error has-feedback{{end}}">
+			<label class="control-label" for="Amount2">Amount 2</label>
+			<input required type="text" name="Amount2" value="{{.Form.Amount2}}" class="form-control">
+		</div>
+
+		<button type="submit" class="btn btn-primary pull-right">Submit</button>
+	</form>
+{{end}}

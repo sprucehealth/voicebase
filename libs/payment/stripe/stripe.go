@@ -6,6 +6,7 @@ import (
 	"io"
 	"net/http"
 	"net/url"
+	"strconv"
 	"strings"
 
 	"github.com/sprucehealth/backend/common"
@@ -16,6 +17,7 @@ const (
 	apiURL        = "https://api.stripe.com/v1/"
 	customersURL  = apiURL + "customers"
 	recipientsURL = apiURL + "recipients"
+	transfersURL  = apiURL + "transfers"
 	apiVersion    = "2014-01-31"
 )
 
@@ -83,7 +85,7 @@ type StripeError struct {
 type Recipient struct {
 	ID            string            `json:"id"`
 	Object        string            `json:"object"` // "recipient"
-	Created       int64             `json:"created"`
+	Created       Timestamp         `json:"created"`
 	LiveMode      bool              `json:"livemode"`
 	Type          RecipientType     `json:"type"`
 	Description   string            `json:"description"`
@@ -128,7 +130,37 @@ type BankAccount struct {
 	AccountNumber string `json:"account_number"`
 }
 
-func (s StripeError) Error() string {
+type Transfer struct {
+	ID                   string            `json:"id"`
+	Object               string            `json:"object"` // "transfer"
+	LiveMode             bool              `json:"livemode"`
+	Amount               int               `json:"amount"` // cents
+	Created              Timestamp         `json:"created"`
+	Currency             Currency          `json:"currency"`
+	Date                 Timestamp         `json:"date"`
+	Status               string            `json:"status"` // paid, pending, failed
+	Type                 string            `json:"type"`   // card, bank_account
+	BalanceTransaction   string            `json:"balance_transaction"`
+	Description          string            `json:"description"`
+	Metadata             map[string]string `json:"metadata"`
+	RecipientID          string            `json:"recipient"`
+	StatementDescription string            `json:"statement_description"`
+	BankAccount          *Account          `json:"bank_account"`
+	// Card *Card `json:"card"`
+}
+
+type CreateTransferRequest struct {
+	Amount               int               // required : cents
+	Currency             Currency          // required
+	RecipientID          string            // required
+	Description          string            // optional
+	BankAccount          string            // optional
+	Card                 string            // optional
+	StatementDescription string            // optional
+	Metadata             map[string]string // optional
+}
+
+func (s *StripeError) Error() string {
 	return fmt.Sprintf("Error communicating with stripe. ErrorCode: %dErrorDetails:\n- Type: %s\n- Message: %s\n- Code:%s\n", s.Code, s.Details.Type, s.Details.Message, s.Details.Code)
 }
 
@@ -240,6 +272,37 @@ func (s *StripeService) CreateRecipient(req *CreateRecipientRequest) (*Recipient
 	}
 
 	return &recipient, nil
+}
+
+func (s *StripeService) CreateTransfer(req *CreateTransferRequest) (*Transfer, error) {
+	params := url.Values{}
+	params.Set("amount", strconv.Itoa(req.Amount))
+	params.Set("currency", req.Currency.ISO)
+	params.Set("recipient", req.RecipientID)
+	if req.Description != "description" {
+		params.Set("description", req.Description)
+	}
+	if req.BankAccount != "" {
+		params.Set("bank_account", req.BankAccount)
+	}
+	if req.Card != "" {
+		params.Set("card", req.Card)
+	}
+	if req.StatementDescription != "" {
+		params.Set("statement_description", req.StatementDescription)
+	}
+	if req.Metadata != nil {
+		for k, v := range req.Metadata {
+			params.Set(fmt.Sprintf("metadata[%s]", k), v)
+		}
+	}
+
+	var transfer Transfer
+	if err := s.query("POST", transfersURL, params, &transfer); err != nil {
+		return nil, err
+	}
+
+	return &transfer, nil
 }
 
 func (s *StripeService) query(httpVerb, endPointUrl string, parameters url.Values, res interface{}) error {
