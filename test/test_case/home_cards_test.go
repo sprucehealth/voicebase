@@ -20,7 +20,7 @@ func TestHomeCards_UnAuthenticated(t *testing.T) {
 		t.Fatalf("Expected %d items but got %d", 2, len(items))
 	}
 	ensureStartVisitCard(items[0], t)
-	ensureLearnAboutSpruceSection(items[1], t)
+	ensureSectionWithNSubViews(3, items[1], t)
 
 	// now lets try with a signed up patient account;
 	// should be the same state as above
@@ -32,7 +32,7 @@ func TestHomeCards_UnAuthenticated(t *testing.T) {
 	}
 
 	ensureStartVisitCard(items[0], t)
-	ensureLearnAboutSpruceSection(items[1], t)
+	ensureSectionWithNSubViews(3, items[1], t)
 }
 
 func TestHomeCards_IncompleteVisit(t *testing.T) {
@@ -48,8 +48,8 @@ func TestHomeCards_IncompleteVisit(t *testing.T) {
 	}
 
 	ensureContinueVisitCard(items[0], t)
-	ensureGenericHelpSection(items[1], t)
-	ensureLearnAboutSpruceSection(items[2], t)
+	ensureSectionWithNSubViews(1, items[1], t)
+	ensureSectionWithNSubViews(3, items[2], t)
 }
 
 func TestHomeCards_VisitSubmitted(t *testing.T) {
@@ -65,7 +65,7 @@ func TestHomeCards_VisitSubmitted(t *testing.T) {
 	}
 
 	ensureCaseCardWithEmbeddedNotification(items[0], false, t)
-	ensureResourceLibrarySection(items[1], t)
+	ensureSectionWithNSubViews(1, items[1], t)
 }
 
 func TestHomeCards_MessageFromDoctor(t *testing.T) {
@@ -125,7 +125,7 @@ func TestHomeCards_TreatmentPlanFromDoctor(t *testing.T) {
 	}
 
 	ensureCaseCardWithEmbeddedNotification(items[0], false, t)
-	ensureCareTeamSection(items[1], t)
+	ensureSectionWithNSubViews(1, items[1], t)
 }
 
 func TestHomeCards_MultipleNotifications(t *testing.T) {
@@ -239,62 +239,14 @@ func ensureVisitCaseCardOnly(clientView interface{}, t *testing.T) {
 	}
 }
 
-func ensureResourceLibrarySection(clientView interface{}, t *testing.T) {
-	cView := clientView.(map[string]interface{})
-	if cView["type"] != "patient_home:section" {
-		t.Fatalf("Expected type of card to be start_visit but it was %s", cView["type"])
-	}
-
-	subViews := cView["views"].([]interface{})
-	if len(subViews) != 1 {
-		t.Fatalf("Expected 1 item in the learn about spruce section but got %d", len(subViews))
-	}
-}
-
-func ensureCareTeamSection(clientView interface{}, t *testing.T) {
+func ensureSectionWithNSubViews(numSubViews int, clientView interface{}, t *testing.T) {
 	cView := clientView.(map[string]interface{})
 	if cView["type"] != "patient_home:section" {
 		t.Fatalf("Expected section but got %s", cView["type"])
 	}
 
 	subViews := cView["views"].([]interface{})
-	if len(subViews) != 1 {
-		t.Fatalf("Expected 3 items in the learn about spruce section but got %d", len(subViews))
-	}
-}
-
-func ensureGenericHelpSection(clientView interface{}, t *testing.T) {
-	cView := clientView.(map[string]interface{})
-	if cView["type"] != "patient_home:section" {
-		t.Fatalf("Expected type of card to be start_visit but it was %s", cView["type"])
-	}
-
-	subViews := cView["views"].([]interface{})
-	if len(subViews) != 1 {
-		t.Fatalf("Expected 1 item in the learn about spruce section but got %d", len(subViews))
-	}
-}
-
-func ensureSendCareTeamMessage(clientView interface{}, t *testing.T) {
-	cView := clientView.(map[string]interface{})
-	if cView["type"] != "patient_home:section" {
-		t.Fatalf("Expected type of card to be start_visit but it was %s", cView["type"])
-	}
-
-	subViews := cView["views"].([]interface{})
-	if len(subViews) != 1 {
-		t.Fatalf("Expected 1 item in the learn about spruce section but got %d", len(subViews))
-	}
-}
-
-func ensureLearnAboutSpruceSection(clientView interface{}, t *testing.T) {
-	cView := clientView.(map[string]interface{})
-	if cView["type"] != "patient_home:section" {
-		t.Fatalf("Expected section but got %s", cView["type"])
-	}
-
-	subViews := cView["views"].([]interface{})
-	if len(subViews) != 3 {
-		t.Fatalf("Expected 3 items in the learn about spruce section but got %d", len(subViews))
+	if len(subViews) != numSubViews {
+		t.Fatalf("Expected %d items in the learn about spruce section but got %d", numSubViews, len(subViews))
 	}
 }
