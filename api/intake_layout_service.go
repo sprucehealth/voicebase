@@ -4,8 +4,9 @@ import (
 	"database/sql"
 	"encoding/json"
 	"fmt"
-	"github.com/sprucehealth/backend/info_intake"
 	"log"
+
+	"github.com/sprucehealth/backend/info_intake"
 )
 
 func (d *DataService) GetQuestionType(questionId int64) (string, error) {
@@ -496,7 +497,25 @@ func (d *DataService) GetAnswerInfoForTags(answerTags []string, languageId int64
 		return nil, err
 	}
 	defer rows.Close()
-	return createAnswerInfosFromRows(rows)
+
+	answerInfos, err := createAnswerInfosFromRows(rows)
+	if err != nil {
+		return nil, err
+	}
+
+	// create a mapping so that we can send back the items in the same order as the tags
+	answerInfoMapping := make(map[string]*info_intake.PotentialAnswer)
+	for _, answerInfoItem := range answerInfos {
+		answerInfoMapping[answerInfoItem.AnswerTag] = answerInfoItem
+	}
+
+	// order the items based on the ordering of the tags
+	answerInfoInOrder := make([]*info_intake.PotentialAnswer, len(answerInfos))
+	for i, answerTag := range answerTags {
+		answerInfoInOrder[i] = answerInfoMapping[answerTag]
+	}
+
+	return answerInfoInOrder, nil
 }
 
 func (d *DataService) GetTipSectionInfo(tipSectionTag string, languageId int64) (id int64, tipSectionTitle string, tipSectionSubtext string, err error) {

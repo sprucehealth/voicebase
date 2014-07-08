@@ -4,6 +4,7 @@ import (
 	"encoding/json"
 	"errors"
 	"net/http"
+	"strings"
 
 	"github.com/sprucehealth/backend/api"
 	"github.com/sprucehealth/backend/apiservice"
@@ -158,11 +159,20 @@ func wasVisitMarkedUnsuitableForSpruce(answerIntakeRequestBody *apiservice.Answe
 }
 
 func determineDiagnosisFromAnswers(answerIntakeRequestBody *apiservice.AnswerIntakeRequestBody) string {
-	// first identify the type of acne, if one was picked
+	// first identify the types of acne, if picked
 	var diagnosisType string
 	for _, questionItem := range answerIntakeRequestBody.Questions {
 		if questionItem.QuestionId == cachedQuestionIds[acneTypeQuestionTag] {
-			diagnosisType = cachedAnswerIds[questionItem.AnswerIntakes[0].PotentialAnswerId].Answer
+
+			var dTypes []string
+			for _, answerItem := range questionItem.AnswerIntakes {
+				dTypes = append(dTypes, cachedAnswerIds[answerItem.PotentialAnswerId].Answer)
+			}
+			if len(dTypes) == 1 {
+				diagnosisType = dTypes[0]
+			} else {
+				diagnosisType = strings.Join(dTypes[:len(dTypes)-1], ", ") + " and " + dTypes[len(dTypes)-1]
+			}
 		}
 	}
 
