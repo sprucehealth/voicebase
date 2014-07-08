@@ -25,6 +25,10 @@
 		padding-left: 50px;
 		padding-right: 50px;
 	}
+	#base-footer {
+		margin-top: 30px;
+		text-align: center;
+	}
 	</style>
 
 	<!-- HTML5 shim and Respond.js IE8 support of HTML5 elements and media queries -->
@@ -36,10 +40,14 @@
 	{{template "head" .SubContext}}
 </head>
 <body unresolved touch-action="auto">
-	{{template "bodytop" .SubContext}}
+	{{template "header" .SubContext}}
 
 	<div class="container">
 	{{template "body" .SubContext}}
+	</div>
+
+	<div id="base-footer" class="container">
+	{{template "footer" .SubContext}}
 	</div>
 
 	<script src="//ajax.googleapis.com/ajax/libs/jquery/1.11.1/jquery.min.js"></script>
@@ -47,3 +55,5 @@
 	{{template "tail" .SubContext}}
 </body>
 </html>
+{{define "header"}}{{end}}
+{{define "footer"}}{{end}}

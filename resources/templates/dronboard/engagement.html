@@ -10,7 +10,7 @@
 
 		<div class="form-group {{if .FormErrors.HoursPerWeek}}has-error has-feedback{{end}}">
 			<label class="control-label" for="HoursPerWeek">Approximate hours on Spruce per week</label>
-			<input required type="text" name="HoursPerWeek" value="{{.Form.HoursPerWeek}}" class="form-control">
+			<input type="text" name="HoursPerWeek" value="{{.Form.HoursPerWeek}}" class="form-control">
 		</div>
 
 		<div class="form-group {{if .FormErrors.TimesActive}}has-error has-feedback{{end}}">
