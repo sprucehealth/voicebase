@@ -63,6 +63,13 @@ func NewUploadClaimsHistory(router *mux.Router, dataAPI api.DataAPI, store stora
 }
 
 func (h *uploadHandler) ServeHTTP(w http.ResponseWriter, r *http.Request) {
+	u, err := h.router.Get(h.nextURL).URLPath()
+	if err != nil {
+		www.InternalServerError(w, r, err)
+		return
+	}
+	nextURL := u.String()
+
 	if r.Method == "POST" {
 		account := context.Get(r, www.CKAccount).(*common.Account)
 		doctorID, err := h.dataAPI.GetDoctorIdFromAccountId(account.ID)
@@ -104,22 +111,15 @@ func (h *uploadHandler) ServeHTTP(w http.ResponseWriter, r *http.Request) {
 			return
 		}
 
-		h.redirectToNextStep(w, r)
+		http.Redirect(w, r, nextURL, http.StatusSeeOther)
 		return
 	}
 
 	www.TemplateResponse(w, http.StatusOK, uploadTemplate, &www.BaseTemplateContext{
 		Title: template.HTML(template.HTMLEscapeString(h.title) + " | Doctor Registration | Spruce"),
 		SubContext: &uploadTemplateContext{
-			Title: h.title,
+			Title:   h.title,
+			NextURL: nextURL,
 		},
 	})
-}
-
-func (h *uploadHandler) redirectToNextStep(w http.ResponseWriter, r *http.Request) {
-	if u, err := h.router.Get(h.nextURL).URLPath(); err != nil {
-		www.InternalServerError(w, r, err)
-	} else {
-		http.Redirect(w, r, u.String(), http.StatusSeeOther)
-	}
 }

@@ -45,7 +45,8 @@ type credsTemplateContext struct {
 }
 
 type uploadTemplateContext struct {
-	Title string
+	Title   string
+	NextURL string
 }
 
 type engagementTemplateContext struct {
