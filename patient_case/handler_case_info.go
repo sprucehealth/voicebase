@@ -22,7 +22,7 @@ type caseInfoRequestData struct {
 	CaseId int64 `schema:"case_id"`
 }
 
-type CaseInfoResponseData struct {
+type caseInfoResponseData struct {
 	Case *common.PatientCase `json:"case"`
 }
 
@@ -90,5 +90,5 @@ func (c *caseInfoHandler) ServeHTTP(w http.ResponseWriter, r *http.Request) {
 		return
 	}
 
-	apiservice.WriteJSON(w, &CaseInfoResponseData{Case: patientCase})
+	apiservice.WriteJSON(w, &caseInfoResponseData{Case: patientCase})
 }
