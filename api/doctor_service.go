@@ -1252,6 +1252,7 @@ func (d *DataService) DoctorAttributes(doctorID int64, names []string) (map[stri
 	if err != nil {
 		return nil, err
 	}
+	defer rows.Close()
 	attr := make(map[string]string)
 	for rows.Next() {
 		var name, value string
