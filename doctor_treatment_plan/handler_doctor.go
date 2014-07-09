@@ -213,12 +213,12 @@ func (d *doctorTreatmentPlanHandler) submitTreatmentPlan(w http.ResponseWriter, 
 
 	// Publish event that treamtent plan was created
 	dispatch.Default.Publish(&TreatmentPlanActivatedEvent{
-		PatientId:       treatmentPlan.PatientId,
-		DoctorId:        doctor.DoctorId.Int64(),
-		VisitId:         patientVisitId,
-		TreatmentPlanId: requestData.TreatmentPlanId.Int64(),
-		Patient:         patient,
-		Message:         msg,
+		PatientId:     treatmentPlan.PatientId,
+		DoctorId:      doctor.DoctorId.Int64(),
+		VisitId:       patientVisitId,
+		TreatmentPlan: treatmentPlan,
+		Patient:       patient,
+		Message:       msg,
 	})
 
 	apiservice.WriteJSONToHTTPResponseWriter(w, http.StatusOK, apiservice.SuccessfulGenericJSONResponse())

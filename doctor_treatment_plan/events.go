@@ -27,10 +27,10 @@ type AdviceAddedEvent struct {
 }
 
 type TreatmentPlanActivatedEvent struct {
-	PatientId       int64
-	DoctorId        int64
-	VisitId         int64
-	TreatmentPlanId int64
-	Patient         *common.Patient // Setting Patient is an optional optimization. If this is nil then PatientId can be used.
-	Message         *common.CaseMessage
+	PatientId     int64
+	DoctorId      int64
+	VisitId       int64
+	TreatmentPlan *common.DoctorTreatmentPlan
+	Patient       *common.Patient // Setting Patient is an optional optimization. If this is nil then PatientId can be used.
+	Message       *common.CaseMessage
 }

@@ -4,8 +4,9 @@ import (
 	"database/sql"
 	"errors"
 	"fmt"
-	"github.com/sprucehealth/backend/common"
 	"time"
+
+	"github.com/sprucehealth/backend/common"
 )
 
 func (d *DataService) GetPeople(id []int64) (map[int64]*common.Person, error) {
@@ -101,6 +102,16 @@ func (d *DataService) ListCaseMessages(caseID int64) ([]*common.CaseMessage, err
 	}
 
 	return messages, nil
+}
+
+func (d *DataService) GetCaseIDFromMessageID(messageID int64) (int64, error) {
+	var caseID int64
+	err := d.db.QueryRow(`select patient_case_id from patient_case_message where id = ?`, messageID).Scan(&caseID)
+
+	if err == sql.ErrNoRows {
+		return 0, NoRowsError
+	}
+	return caseID, err
 }
 
 func (d *DataService) CreateCaseMessage(msg *common.CaseMessage) (int64, error) {

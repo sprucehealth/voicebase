@@ -261,7 +261,7 @@ func (d *DataService) InsertCaseNotification(notificationItem *common.CaseNotifi
 	return err
 }
 
-func (d *DataService) DeleteCaseNotification(uid string) error {
-	_, err := d.db.Exec(`delete from case_notification where uid = ?`, uid)
+func (d *DataService) DeleteCaseNotification(uid string, patientCaseId int64) error {
+	_, err := d.db.Exec(`delete from case_notification where uid = ? and patient_case_id = ?`, uid, patientCaseId)
 	return err
 }

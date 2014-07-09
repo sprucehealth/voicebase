@@ -17,7 +17,7 @@ func InitListeners(dataAPI api.DataAPI) {
 	dispatch.Default.Subscribe(func(ev *messages.PostEvent) error {
 
 		// delete any pending visit submitted notifications for case
-		if err := dataAPI.DeleteCaseNotification(CNVisitSubmitted); err != nil {
+		if err := dataAPI.DeleteCaseNotification(CNVisitSubmitted, ev.Case.Id.Int64()); err != nil {
 			golog.Errorf("Unable to delete case notifications: %s", err)
 			return err
 		}
@@ -45,7 +45,7 @@ func InitListeners(dataAPI api.DataAPI) {
 
 	dispatch.Default.Subscribe(func(ev *doctor_treatment_plan.TreatmentPlanActivatedEvent) error {
 		// delete any pending visit submitted notifications for case
-		if err := dataAPI.DeleteCaseNotification(CNVisitSubmitted); err != nil {
+		if err := dataAPI.DeleteCaseNotification(CNVisitSubmitted, ev.TreatmentPlan.PatientCaseId.Int64()); err != nil {
 			golog.Errorf("Unable to delete case notifications: %s", err)
 			return err
 		}
@@ -54,11 +54,11 @@ func InitListeners(dataAPI api.DataAPI) {
 		if err := dataAPI.InsertCaseNotification(&common.CaseNotification{
 			PatientCaseId:    ev.Message.CaseID,
 			NotificationType: CNTreatmentPlan,
-			UID:              fmt.Sprintf("%s:%d", CNTreatmentPlan, ev.TreatmentPlanId),
+			UID:              fmt.Sprintf("%s:%d", CNTreatmentPlan, ev.TreatmentPlan.Id.Int64()),
 			Data: &treatmentPlanNotification{
 				MessageId:       ev.Message.ID,
 				DoctorId:        ev.DoctorId,
-				TreatmentPlanId: ev.TreatmentPlanId,
+				TreatmentPlanId: ev.TreatmentPlan.Id.Int64(),
 				CaseId:          ev.Message.CaseID,
 			},
 		}); err != nil {
@@ -89,7 +89,7 @@ func InitListeners(dataAPI api.DataAPI) {
 
 		// delete the notification that indicates that the user still has to complete
 		// the visit
-		if err := dataAPI.DeleteCaseNotification(CNIncompleteVisit); err != nil {
+		if err := dataAPI.DeleteCaseNotification(CNIncompleteVisit, ev.PatientCaseId); err != nil {
 			golog.Errorf("Unable to delete case notifications: %s", err)
 			return err
 		}
@@ -111,7 +111,20 @@ func InitListeners(dataAPI api.DataAPI) {
 
 		// act on this event if it represents a patient having viewed a treatment plan
 		if ev.Resource == "treatment_plan" && ev.Role == api.PATIENT_ROLE && ev.Action == app_event.ViewedAction {
-			if err := dataAPI.DeleteCaseNotification(fmt.Sprintf("%s:%d", CNTreatmentPlan, ev.ResourceId)); err != nil {
+
+			patientId, err := dataAPI.GetPatientIdFromAccountId(ev.AccountId)
+			if err != nil {
+				golog.Errorf("unable to get patient id from account id: %s", err)
+				return err
+			}
+
+			treatmentPlan, err := dataAPI.GetTreatmentPlanForPatient(patientId, ev.ResourceId)
+			if err != nil {
+				golog.Errorf("Unable to get treatment plan for patient: %s", err)
+				return err
+			}
+
+			if err := dataAPI.DeleteCaseNotification(fmt.Sprintf("%s:%d", CNTreatmentPlan, treatmentPlan.Id.Int64()), treatmentPlan.PatientCaseId.Int64()); err != nil {
 				golog.Errorf("Unable to delete case notification: %s", err)
 				return err
 			}
@@ -119,7 +132,13 @@ func InitListeners(dataAPI api.DataAPI) {
 
 		// act on the event if it represents a patient having viewed a message
 		if ev.Resource == "case_message" && ev.Role == api.PATIENT_ROLE && ev.Action == app_event.ViewedAction {
-			if err := dataAPI.DeleteCaseNotification(fmt.Sprintf("%s:%d", CNMessage, ev.ResourceId)); err != nil {
+			caseID, err := dataAPI.GetCaseIDFromMessageID(ev.ResourceId)
+			if err != nil {
+				golog.Errorf("Unable to get case id from message id: %s", err)
+				return err
+			}
+
+			if err := dataAPI.DeleteCaseNotification(fmt.Sprintf("%s:%d", CNMessage, ev.ResourceId), caseID); err != nil {
 				golog.Errorf("Unable to delete case notification: %s", err)
 				return err
 			}

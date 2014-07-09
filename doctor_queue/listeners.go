@@ -2,6 +2,7 @@ package doctor_queue
 
 import (
 	"errors"
+
 	"github.com/sprucehealth/backend/api"
 	"github.com/sprucehealth/backend/apiservice"
 	"github.com/sprucehealth/backend/app_worker"
@@ -39,7 +40,7 @@ func InitListeners(dataAPI api.DataAPI, notificationManager *notify.Notification
 		// mark the status on the visit in the doctor's queue to move it to the completed tab
 		// so that the visit is no longer in the hands of the doctor
 		err := dataAPI.MarkGenerationOfTreatmentPlanInVisitQueue(ev.DoctorId,
-			ev.VisitId, ev.TreatmentPlanId, api.DQItemStatusOngoing, api.DQItemStatusTreated)
+			ev.VisitId, ev.TreatmentPlan.Id.Int64(), api.DQItemStatusOngoing, api.DQItemStatusTreated)
 		if err != nil {
 			golog.Errorf("Unable to update the status of the patient visit in the doctor queue: " + err.Error())
 			return err

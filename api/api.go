@@ -100,7 +100,7 @@ type PatientCaseAPI interface {
 	GetVisitsForCase(patientCaseId int64) ([]*common.PatientVisit, error)
 	GetNotificationsForCase(patientCaseId int64, notificationTypeRegistry map[string]reflect.Type) ([]*common.CaseNotification, error)
 	InsertCaseNotification(caseNotificationItem *common.CaseNotification) error
-	DeleteCaseNotification(uid string) error
+	DeleteCaseNotification(uid string, patientCaseId int64) error
 }
 
 type CaseRouteAPI interface {
@@ -299,6 +299,7 @@ type CaseMessageAPI interface {
 	ListCaseMessages(caseID int64) ([]*common.CaseMessage, error)
 	CaseMessageParticipants(caseID int64, withRoleObjects bool) (map[int64]*common.CaseMessageParticipant, error)
 	MarkCaseMessagesAsRead(caseID, personID int64) error
+	GetCaseIDFromMessageID(messageID int64) (int64, error)
 }
 
 type NotificationAPI interface {
