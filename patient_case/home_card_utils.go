@@ -12,6 +12,7 @@ func getHomeCards(patientCase *common.PatientCase, dataAPI api.DataAPI) ([]commo
 	var views []common.ClientView
 
 	if patientCase == nil {
+		// default cards when no case exists
 		views = []common.ClientView{getStartVisitCard(), getLearnAboutSpruceSection()}
 	} else {
 		caseNotifications, err := dataAPI.GetNotificationsForCase(patientCase.Id.Int64(), notifyTypes)

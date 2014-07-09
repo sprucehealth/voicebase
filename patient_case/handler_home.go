@@ -87,6 +87,8 @@ func (h *homeHandler) ServeHTTP(w http.ResponseWriter, r *http.Request) {
 			return
 		}
 	default:
+		// FIX: Only supporting the case of 1 patient case for now given that we don't know how the home feed should
+		// look when there are multiple cases
 		apiservice.WriteError(fmt.Errorf("Expected only 1 patient case to exist instead got %d", len(patientCases)), w, r)
 		return
 	}
