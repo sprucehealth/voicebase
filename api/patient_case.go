@@ -29,7 +29,7 @@ func (d *DataService) GetDoctorsAssignedToPatientCase(patientCaseId int64) ([]*c
 	return assignments, rows.Err()
 }
 
-// GetActiveMembersOfCareTeamForCase returns the care providers that are currently part of the patient care team
+// GetActiveMembersOfCareTeamForCase returns the care providers that are permanently part of the patient care team
 // It also populates the actual provider object so as to make it possible for the client to use this information as is seen fit
 func (d *DataService) GetActiveMembersOfCareTeamForCase(patientCaseId int64) ([]*common.CareProviderAssignment, error) {
 	rows, err := d.db.Query(`select provider_id, provider_role, status, creation_date from patient_case_care_provider_assignment where status = ? and patient_case_id = ?`, STATUS_ACTIVE, patientCaseId)
@@ -137,14 +137,9 @@ func (d *DataService) GetActiveTreatmentPlanForCase(patientCaseId int64) (*commo
 	}
 	defer rows.Close()
 
-	var treatmentPlans []*common.TreatmentPlan
-	for rows.Next() {
-		var treatmentPlan common.TreatmentPlan
-		if err := rows.Scan(&treatmentPlan.Id, &treatmentPlan.DoctorId, &treatmentPlan.PatientCaseId, &treatmentPlan.PatientId, &treatmentPlan.CreationDate, &treatmentPlan.Status); err != nil {
-			return nil, err
-		}
-
-		treatmentPlans = append(treatmentPlans, &treatmentPlan)
+	treatmentPlans, err := getTreatmentPlansFromRows(rows)
+	if err != nil {
+		return nil, err
 	}
 
 	switch l := len(treatmentPlans); {

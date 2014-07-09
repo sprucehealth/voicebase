@@ -725,23 +725,38 @@ func (d *DataService) GetTreatmentsForPatient(patientId int64) ([]*common.Treatm
 	return treatments, rows.Err()
 }
 
+func (d *DataService) GetTreatmentPlanForPatient(patientId, treatmentPlanId int64) (*common.TreatmentPlan, error) {
+	rows, err := d.db.Query(`select id, doctor_id, patient_case_id, patient_id, creation_date, status from treatment_plan where patient_id = ? and id = ?`, patientId, treatmentPlanId)
+	if err != nil {
+		return nil, err
+	}
+	defer rows.Close()
+
+	treatmentPlans, err := getTreatmentPlansFromRows(rows)
+	if err != nil {
+		return nil, err
+	}
+
+	switch l := len(treatmentPlans); {
+	case l == 0:
+		return nil, NoRowsError
+	case l == 1:
+		return treatmentPlans[0], nil
+	}
+
+	return nil, fmt.Errorf("Expected 1 treatment plan instead got %d", len(treatmentPlans))
+}
+
 func (d *DataService) GetActiveTreatmentPlanForPatient(patientId int64) (*common.TreatmentPlan, error) {
-	var treatmentPlans []*common.TreatmentPlan
 	rows, err := d.db.Query(`select id, doctor_id, patient_case_id, patient_id, creation_date, status from treatment_plan where patient_id = ? and status = ?`, patientId, STATUS_ACTIVE)
 	if err != nil {
 		return nil, err
 	}
 	defer rows.Close()
 
-	for rows.Next() {
-		var treatmentPlan common.TreatmentPlan
-		if err := rows.Scan(&treatmentPlan.Id, &treatmentPlan.DoctorId, &treatmentPlan.PatientCaseId, &treatmentPlan.PatientId, &treatmentPlan.CreationDate, &treatmentPlan.Status); err != nil {
-			return nil, err
-		}
-		treatmentPlans = append(treatmentPlans, &treatmentPlan)
-	}
-	if rows.Err() != nil {
-		return nil, rows.Err()
+	treatmentPlans, err := getTreatmentPlansFromRows(rows)
+	if err != nil {
+		return nil, err
 	}
 
 	switch l := len(treatmentPlans); {
@@ -1165,4 +1180,17 @@ func getAdvicePointsFromRows(rows *sql.Rows) ([]*common.DoctorInstructionItem, e
 		advicePoints = append(advicePoints, advicePoint)
 	}
 	return advicePoints, rows.Err()
+}
+
+func getTreatmentPlansFromRows(rows *sql.Rows) ([]*common.TreatmentPlan, error) {
+	var treatmentPlans []*common.TreatmentPlan
+	for rows.Next() {
+		var treatmentPlan common.TreatmentPlan
+		if err := rows.Scan(&treatmentPlan.Id, &treatmentPlan.DoctorId, &treatmentPlan.PatientCaseId, &treatmentPlan.PatientId, &treatmentPlan.CreationDate, &treatmentPlan.Status); err != nil {
+			return nil, err
+		}
+		treatmentPlans = append(treatmentPlans, &treatmentPlan)
+	}
+
+	return treatmentPlans, rows.Err()
 }

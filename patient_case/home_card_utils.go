@@ -19,7 +19,7 @@ func getHomeCards(patientCase *common.PatientCase, dataAPI api.DataAPI) ([]commo
 			return nil, err
 		}
 
-		assignments, err := dataAPI.GetDoctorsAssignedToPatientCase(patientCase.Id.Int64())
+		assignments, err := dataAPI.GetActiveMembersOfCareTeamForCase(patientCase.Id.Int64())
 		if err != nil {
 			return nil, err
 		}
@@ -27,11 +27,8 @@ func getHomeCards(patientCase *common.PatientCase, dataAPI api.DataAPI) ([]commo
 		// get current doctor assigned to case
 		var currentDoctor *common.Doctor
 		for _, assignment := range assignments {
-			if assignment.Status == api.STATUS_ACTIVE {
-				currentDoctor, err = dataAPI.GetDoctorFromId(assignment.ProviderId)
-				if err != nil {
-					return nil, err
-				}
+			if assignment.Status == api.STATUS_ACTIVE && assignment.ProviderRole == api.DOCTOR_ROLE {
+				currentDoctor = assignment.Doctor
 				break
 			}
 		}
