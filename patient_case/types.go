@@ -158,11 +158,10 @@ const (
 
 func (v *incompleteVisitNotification) makeCaseNotificationView(dataAPI api.DataAPI, notificationId int64) (common.ClientView, error) {
 	nView := &caseNotificationTitleSubtitleView{
-		Title:       continueVisitTitle,
-		Subtitle:    continueVisitMessage,
-		ID:          notificationId,
-		ActionURL:   app_url.ContinueVisitAction(v.PatientVisitId),
-		ButtonTitle: "Continue",
+		Title:     continueVisitTitle,
+		Subtitle:  continueVisitMessage,
+		ID:        notificationId,
+		ActionURL: app_url.ContinueVisitAction(v.PatientVisitId),
 	}
 	return nView, nView.Validate()
 }
@@ -172,6 +171,7 @@ func (v *incompleteVisitNotification) makeHomeCardView(dataAPI api.DataAPI) (com
 		Title:       continueVisitTitle,
 		ActionURL:   app_url.ContinueVisitAction(v.PatientVisitId),
 		Description: continueVisitMessage,
+		ButtonTitle: "Continue",
 	}
 
 	return nView, nView.Validate()
