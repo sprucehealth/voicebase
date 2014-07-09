@@ -20,7 +20,7 @@ type notificationsListResponseData struct {
 	Items []common.ClientView `json:"items"`
 }
 
-func NewNotificationsListHandler(dataAPI api.DataAPI) *notificationsListHandler {
+func NewNotificationsListHandler(dataAPI api.DataAPI) http.Handler {
 	return &notificationsListHandler{
 		dataAPI: dataAPI,
 	}

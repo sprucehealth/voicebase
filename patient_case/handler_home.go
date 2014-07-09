@@ -18,7 +18,7 @@ type homeResponse struct {
 	Items []common.ClientView `json:"items"`
 }
 
-func NewHomeHandler(dataAPI api.DataAPI, authAPI api.AuthAPI) *homeHandler {
+func NewHomeHandler(dataAPI api.DataAPI, authAPI api.AuthAPI) http.Handler {
 	return &homeHandler{
 		dataAPI: dataAPI,
 		authAPI: authAPI,

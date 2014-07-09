@@ -20,7 +20,7 @@ type listCasesResponseData struct {
 	PatientCases []*common.PatientCase `json:"cases"`
 }
 
-func NewListHandler(dataAPI api.DataAPI) *listHandler {
+func NewListHandler(dataAPI api.DataAPI) http.Handler {
 	return &listHandler{
 		dataAPI: dataAPI,
 	}

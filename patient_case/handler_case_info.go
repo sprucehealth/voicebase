@@ -12,7 +12,7 @@ type caseInfoHandler struct {
 	dataAPI api.DataAPI
 }
 
-func NewCaseInfoHandler(dataAPI api.DataAPI) *caseInfoHandler {
+func NewCaseInfoHandler(dataAPI api.DataAPI) http.Handler {
 	return &caseInfoHandler{
 		dataAPI: dataAPI,
 	}
