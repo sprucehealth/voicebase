@@ -16,7 +16,7 @@ func (d *DataService) AddBankAccount(userAccountID int64, stripeRecipientID stri
 	return res.LastInsertId()
 }
 
-func (d *DataService) DeleteBankaccount(id int64) error {
+func (d *DataService) DeleteBankAccount(id int64) error {
 	_, err := d.db.Exec(`DELETE FROM bank_account WHERE id = ?`, id)
 	return err
 }
