@@ -14,7 +14,8 @@ import (
 
 // The local cert and key are only used when the Debug config
 // option is set and TLSCert and TLSKey config options are
-// not defined.
+// not defined. The check to make sure that this holds is in
+// utils.*Config.Validate().
 var (
 	localTLSCert = []byte(`-----BEGIN CERTIFICATE-----
 MIIDGDCCAgKgAwIBAgIRAOvlgNu24IVI52mjWfaHiQIwCwYJKoZIhvcNAQELMBIx
@@ -111,13 +112,15 @@ func serve(conf *Config, hand http.Handler) {
 			if err != nil {
 				log.Fatal(err)
 			}
-		} else {
+		} else if conf.Debug {
 			log.Println("WARNING: using local TLS keys")
 			var err error
 			certs, err = tls.X509KeyPair(localTLSCert, localTLSKey)
 			if err != nil {
 				log.Fatal(err)
 			}
+		} else {
+			log.Fatal("No TLS keys provided and Debug not true")
 		}
 
 		tlsServer.TLSConfig.Certificates = []tls.Certificate{certs}
