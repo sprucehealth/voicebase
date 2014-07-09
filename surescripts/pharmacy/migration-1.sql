@@ -133,6 +133,11 @@ insert into pharmacy_location (id, latitude, longitude, source, precision, ncpdp
 	select id, latitude, longitude, 'smarty_streets', zip_precision, ncpdpid from pharmacy_ss_location 
 	where ncpdpid in (select distinct ncpdpid from pharmacy except (select ncpdpid from pharmacy_location));
 
+-- drop individual location tables
+drop table pharmacy_maplarge_location;
+drop table pharmacy_ersi_location;
+drop table pharmacy_ss_location;
+
 -- Create postgis related data types
 create extension postgis;
 SELECT AddGeometryColumn('public', 'pharmacy_location', 'geom', 4326, 'POINT', 2);
