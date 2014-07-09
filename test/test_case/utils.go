@@ -36,9 +36,9 @@ func (t *testIncompleteVisitNotification) TypeName() string {
 
 func getNotificationTypes() map[string]reflect.Type {
 	testNotifyTypes := make(map[string]reflect.Type)
-	testNotifyTypes[patient_case.CNMessage] = reflect.TypeOf(reflect.Indirect(reflect.ValueOf(&testMessageData{})).Interface())
-	testNotifyTypes[patient_case.CNTreatmentPlan] = reflect.TypeOf(reflect.Indirect(reflect.ValueOf(&testTreatmentPlanData{})).Interface())
-	testNotifyTypes[patient_case.CNVisitSubmitted] = reflect.TypeOf(reflect.Indirect(reflect.ValueOf(&testVisitSubmittedNotification{})).Interface())
-	testNotifyTypes[patient_case.CNIncompleteVisit] = reflect.TypeOf(reflect.Indirect(reflect.ValueOf(&testIncompleteVisitNotification{})).Interface())
+	testNotifyTypes[(new(testMessageData)).TypeName()] = reflect.TypeOf(testMessageData{})
+	testNotifyTypes[(new(testTreatmentPlanData)).TypeName()] = reflect.TypeOf(testTreatmentPlanData{})
+	testNotifyTypes[(new(testVisitSubmittedNotification)).TypeName()] = reflect.TypeOf(testVisitSubmittedNotification{})
+	testNotifyTypes[(new(testIncompleteVisitNotification)).TypeName()] = reflect.TypeOf(testIncompleteVisitNotification{})
 	return testNotifyTypes
 }
