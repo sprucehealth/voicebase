@@ -9,6 +9,31 @@ import (
 	"github.com/sprucehealth/backend/test/test_integration"
 )
 
+func TestCaseNotifications_IncompleteVisit(t *testing.T) {
+	testData := test_integration.SetupIntegrationTest(t)
+	defer test_integration.TearDownIntegrationTest(t, testData)
+
+	pr := test_integration.SignupRandomTestPatient(t, testData)
+	pv := test_integration.CreatePatientVisitForPatient(pr.Patient.PatientId.Int64(), testData, t)
+
+	patientCase, err := testData.DataApi.GetPatientCaseFromPatientVisitId(pv.PatientVisitId)
+	if err != nil {
+		t.Fatal(err)
+	}
+
+	// there should exist 1 notification to indicate an incomplete visit
+	testNotifyTypes := getNotificationTypes()
+
+	notificationItems, err := testData.DataApi.GetNotificationsForCase(patientCase.Id.Int64(), testNotifyTypes)
+	if err != nil {
+		t.Fatal(err)
+	} else if len(notificationItems) != 1 {
+		t.Fatalf("Expected %d notification items instead got %d", 1, len(notificationItems))
+	} else if notificationItems[0].NotificationType != patient_case.CNIncompleteVisit {
+		t.Fatalf("Expected %s but got %s", patient_case.CNIncompleteVisit, notificationItems[0].NotificationType)
+	}
+}
+
 func TestCaseNotifications_VisitSubmitted(t *testing.T) {
 	testData := test_integration.SetupIntegrationTest(t)
 	defer test_integration.TearDownIntegrationTest(t, testData)
