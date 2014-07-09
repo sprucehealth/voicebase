@@ -270,8 +270,3 @@ func (d *DataService) DeleteCaseNotification(uid string) error {
 	_, err := d.db.Exec(`delete from case_notification where uid = ?`, uid)
 	return err
 }
-
-func (d *DataService) DeleteCaseNotificationBasedOnId(notificationId int64) error {
-	_, err := d.db.Exec(`delete from case_notification where id = ?`, notificationId)
-	return err
-}

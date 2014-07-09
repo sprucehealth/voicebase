@@ -102,7 +102,6 @@ type PatientCaseAPI interface {
 	GetNotificationsForCase(patientCaseId int64, notificationTypeRegistry map[string]reflect.Type) ([]*common.CaseNotification, error)
 	InsertCaseNotification(caseNotificationItem *common.CaseNotification) error
 	DeleteCaseNotification(uid string) error
-	DeleteCaseNotificationBasedOnId(notificationId int64) error
 }
 
 type CaseRouteAPI interface {
