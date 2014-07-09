@@ -104,9 +104,10 @@ func (m *messageNotification) makeHomeCardView(dataAPI api.DataAPI) (common.Clie
 	}
 
 	nView := &phCaseNotificationStandardView{
-		Title:     fmt.Sprintf("You have a new message from Dr. %s %s", doctor.FirstName, doctor.LastName),
-		IconURL:   app_url.IconMessagesLarge,
-		ActionURL: app_url.ViewCaseMessageAction(m.MessageId, m.CaseId),
+		Title:       fmt.Sprintf("You have a new message from Dr. %s %s", doctor.FirstName, doctor.LastName),
+		IconURL:     app_url.IconMessagesLarge,
+		ActionURL:   app_url.ViewCaseMessageAction(m.MessageId, m.CaseId),
+		ButtonTitle: "View Message",
 	}
 
 	return nView, nView.Validate()
