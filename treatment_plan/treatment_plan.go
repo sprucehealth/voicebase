@@ -8,7 +8,6 @@ import (
 	"github.com/sprucehealth/backend/apiservice"
 	"github.com/sprucehealth/backend/app_url"
 	"github.com/sprucehealth/backend/common"
-	"github.com/sprucehealth/backend/libs/dispatch"
 )
 
 type treatmentPlanHandler struct {
@@ -46,7 +45,6 @@ func (p *treatmentPlanHandler) ServeHTTP(w http.ResponseWriter, r *http.Request)
 
 	var doctor *common.Doctor
 	var patient *common.Patient
-	var roleId int64
 	var treatmentPlan *common.TreatmentPlan
 	var err error
 	switch apiservice.GetContext(r).Role {
@@ -61,7 +59,6 @@ func (p *treatmentPlanHandler) ServeHTTP(w http.ResponseWriter, r *http.Request)
 			apiservice.WriteError(err, w, r)
 			return
 		}
-		roleId = patient.PatientId.Int64()
 
 		if requestData.TreatmentPlanId != 0 {
 			treatmentPlan, err = p.dataApi.GetTreatmentPlanForPatient(patient.PatientId.Int64(), requestData.TreatmentPlanId)
@@ -98,7 +95,6 @@ func (p *treatmentPlanHandler) ServeHTTP(w http.ResponseWriter, r *http.Request)
 			apiservice.WriteError(err, w, r)
 			return
 		}
-		roleId = doctor.DoctorId.Int64()
 
 		patient, err = p.dataApi.GetPatientFromTreatmentPlanId(requestData.TreatmentPlanId)
 		if err != nil {
@@ -125,12 +121,6 @@ func (p *treatmentPlanHandler) ServeHTTP(w http.ResponseWriter, r *http.Request)
 		apiservice.WriteValidationError("Unable to identify role", w, r)
 		return
 	}
-
-	dispatch.Default.Publish(&TreatmentPlanOpenedEvent{
-		RoleType:      apiservice.GetContext(r).Role,
-		RoleId:        roleId,
-		TreatmentPlan: treatmentPlan,
-	})
 
 	err = populateTreatmentPlan(p.dataApi, treatmentPlan)
 	if err != nil {

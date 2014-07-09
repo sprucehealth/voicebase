@@ -286,7 +286,6 @@ func buildRESTAPI(conf *Config, dataApi api.DataAPI, authAPI api.AuthAPI, metric
 	mux.Handle("/v1/cases", patient_case.NewCaseInfoHandler(dataApi))
 	// Patient: Case APIs
 	mux.Handle("/v1/patient/case/notifications", patient_case.NewNotificationsListHandler(dataApi))
-	mux.Handle("/v1/patient/case/notifications/dismiss", patient_case.NewDismissNotificationHandler(dataApi))
 
 	// Patient/Doctor: Resource guide APIs
 	mux.Handle("/v1/resourceguide", reslib.NewHandler(dataApi))

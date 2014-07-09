@@ -1,15 +1,12 @@
 package test_case
 
 import (
-	"net/http"
-	"net/http/httptest"
-	"strconv"
 	"testing"
 
+	"github.com/sprucehealth/backend/app_event"
 	"github.com/sprucehealth/backend/messages"
 	"github.com/sprucehealth/backend/patient_case"
 	"github.com/sprucehealth/backend/test/test_integration"
-	"github.com/sprucehealth/backend/treatment_plan"
 )
 
 func TestCaseNotifications_VisitSubmitted(t *testing.T) {
@@ -61,7 +58,7 @@ func TestCaseNotifications_Message(t *testing.T) {
 		t.Fatal(err)
 	}
 
-	test_integration.PostCaseMessage(t, testData, doctor.AccountId.Int64(), &messages.PostMessageRequest{
+	messageId1 := test_integration.PostCaseMessage(t, testData, doctor.AccountId.Int64(), &messages.PostMessageRequest{
 		CaseID:  caseID,
 		Message: "foo",
 	})
@@ -91,10 +88,11 @@ func TestCaseNotifications_Message(t *testing.T) {
 	}
 
 	// if the doctor sends the patient another message there should be 2 remaining case notifications
-	test_integration.PostCaseMessage(t, testData, doctor.AccountId.Int64(), &messages.PostMessageRequest{
+	messageId2 := test_integration.PostCaseMessage(t, testData, doctor.AccountId.Int64(), &messages.PostMessageRequest{
 		CaseID:  caseID,
 		Message: "foo",
 	})
+
 	notificationItems, err = testData.DataApi.GetNotificationsForCase(caseID, testNotifyTypes)
 	if err != nil {
 		t.Fatal(err)
@@ -102,9 +100,10 @@ func TestCaseNotifications_Message(t *testing.T) {
 		t.Fatalf("Expected %d notification items instead got %d", 2, len(notificationItems))
 	}
 
-	// now lets go ahead and dismiss 1 case notification
 	notificationId := notificationItems[0].Id
-	DismissCaseNotification(notificationId, patient.AccountId.Int64(), testData, t)
+
+	// now lets go ahead and have the patient read the message
+	test_integration.GenerateAppEvent(app_event.ViewedAction, "case_message", messageId2, patient.AccountId.Int64(), testData, t)
 
 	// there should only remain 1 notification item
 	notificationItems, err = testData.DataApi.GetNotificationsForCase(caseID, testNotifyTypes)
@@ -116,8 +115,8 @@ func TestCaseNotifications_Message(t *testing.T) {
 		t.Fatalf("Expected remaining notification item to have different notification id than the item just dismissed")
 	}
 
-	// dismiss the last remaining notification item
-	DismissCaseNotification(notificationItems[0].Id, patient.AccountId.Int64(), testData, t)
+	// read the remaining message
+	test_integration.GenerateAppEvent(app_event.ViewedAction, "case_message", messageId1, patient.AccountId.Int64(), testData, t)
 	notificationItems, err = testData.DataApi.GetNotificationsForCase(caseID, testNotifyTypes)
 	if err != nil {
 		t.Fatal(err)
@@ -126,7 +125,7 @@ func TestCaseNotifications_Message(t *testing.T) {
 	}
 }
 
-func TestCaseMessage_TreatmentPlan(t *testing.T) {
+func TestCaseNotifications_TreatmentPlan(t *testing.T) {
 	testData := test_integration.SetupIntegrationTest(t)
 	defer test_integration.TearDownIntegrationTest(t, testData)
 
@@ -156,17 +155,8 @@ func TestCaseMessage_TreatmentPlan(t *testing.T) {
 		t.Fatalf("Expected notification to be of type %s instead got %s", patient_case.CNTreatmentPlan, notificationItems[0].NotificationType)
 	}
 
-	// now lets go ahead and open the treatment plan for viewing
-	tpHandler := treatment_plan.NewTreatmentPlanHandler(testData.DataApi)
-	patientServer := httptest.NewServer(tpHandler)
-	defer patientServer.Close()
-
-	res, err := testData.AuthGet(patientServer.URL+"?treatment_plan_id="+strconv.FormatInt(treatmentPlan.Id.Int64(), 10), patient.AccountId.Int64())
-	if err != nil {
-		t.Fatal(err)
-	} else if res.StatusCode != http.StatusOK {
-		t.Fatalf("Expected %d but got %d", http.StatusOK, res.StatusCode)
-	}
+	// now lets go ahead and mark that the patient read the treatment plan
+	test_integration.GenerateAppEvent(app_event.ViewedAction, "treatment_plan", treatmentPlan.Id.Int64(), patient.AccountId.Int64(), testData, t)
 
 	// now there should be no treatment plan notificatin left
 	notificationItems, err = testData.DataApi.GetNotificationsForCase(treatmentPlan.PatientCaseId.Int64(), testNotifyTypes)

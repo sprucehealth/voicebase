@@ -2,7 +2,6 @@ package app_event
 
 import (
 	"net/http"
-	"strconv"
 
 	"github.com/sprucehealth/backend/apiservice"
 	"github.com/sprucehealth/backend/libs/dispatch"
@@ -11,6 +10,17 @@ import (
 type eventHandler struct {
 }
 
+type EventRequestData struct {
+	Action     string `json:"action"`
+	Resource   string `json:"resource"`
+	ResourceId int64  `json:"resource_id,string"`
+}
+
+// NewHandler returns a handler that dispatches events
+// received from the client for anyone interested in ClientEvents. The idea is to create a generic
+// way for the client to send events of what the user id doing
+// ("viewing", "updating", "deleting", etc. a resource of a particular id) for the server to appropriately
+// act on the event
 func NewHandler() *eventHandler {
 	return &eventHandler{}
 }
@@ -21,27 +31,18 @@ func (e *eventHandler) ServeHTTP(w http.ResponseWriter, r *http.Request) {
 		return
 	}
 
-	if err := r.ParseForm(); err != nil {
+	requestData := &EventRequestData{}
+	if err := apiservice.DecodeRequestData(requestData, r); err != nil {
 		apiservice.WriteValidationError(err.Error(), w, r)
 		return
-	}
-
-	var resourceId int64
-	var err error
-	if r.FormValue("resource_id") != "" {
-		resourceId, err = strconv.ParseInt(r.FormValue("resource_id"), 10, 64)
-		if err != nil {
-			apiservice.WriteValidationError(err.Error(), w, r)
-			return
-		}
 	}
 
 	dispatch.Default.Publish(&AppEvent{
 		AccountId:  apiservice.GetContext(r).AccountId,
 		Role:       apiservice.GetContext(r).Role,
-		Resource:   r.FormValue("resource"),
-		ResourceId: resourceId,
-		Action:     r.FormValue("action"),
+		Resource:   requestData.Resource,
+		ResourceId: requestData.ResourceId,
+		Action:     requestData.Action,
 	})
 
 	apiservice.WriteJSONSuccess(w)

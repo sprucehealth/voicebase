@@ -19,6 +19,7 @@ import (
 
 	"github.com/sprucehealth/backend/api"
 	"github.com/sprucehealth/backend/apiservice"
+	"github.com/sprucehealth/backend/app_event"
 	"github.com/sprucehealth/backend/common"
 	"github.com/sprucehealth/backend/common/config"
 	"github.com/sprucehealth/backend/doctor_queue"
@@ -244,6 +245,27 @@ func CreateRandomPatientVisitAndPickTP(t *testing.T, testData *TestData, doctor 
 	doctorPickTreatmentPlanResponse := PickATreatmentPlanForPatientVisit(patientVisitResponse.PatientVisitId, doctor, nil, testData, t)
 
 	return patientVisitResponse, doctorPickTreatmentPlanResponse.TreatmentPlan
+}
+
+func GenerateAppEvent(action, resource string, resourceId int64, accountId int64, testData *TestData, t *testing.T) {
+	appEventHandler := app_event.NewHandler()
+	server := httptest.NewServer(appEventHandler)
+
+	jsonData, err := json.Marshal(&app_event.EventRequestData{
+		Resource:   resource,
+		ResourceId: resourceId,
+		Action:     action,
+	})
+	if err != nil {
+		t.Fatal(err)
+	}
+
+	res, err := testData.AuthPost(server.URL, "application/json", bytes.NewReader(jsonData), accountId)
+	if err != nil {
+		t.Fatal(err)
+	} else if res.StatusCode != http.StatusOK {
+		t.Fatalf("Expected %d but got %d", http.StatusOK, res.StatusCode)
+	}
 }
 
 func SetupIntegrationTest(t *testing.T) *TestData {

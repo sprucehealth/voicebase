@@ -4,13 +4,13 @@ import (
 	"fmt"
 
 	"github.com/sprucehealth/backend/api"
+	"github.com/sprucehealth/backend/app_event"
 	"github.com/sprucehealth/backend/common"
 	"github.com/sprucehealth/backend/doctor_treatment_plan"
 	"github.com/sprucehealth/backend/libs/dispatch"
 	"github.com/sprucehealth/backend/libs/golog"
 	"github.com/sprucehealth/backend/messages"
 	"github.com/sprucehealth/backend/patient_visit"
-	"github.com/sprucehealth/backend/treatment_plan"
 )
 
 func InitListeners(dataAPI api.DataAPI) {
@@ -107,11 +107,19 @@ func InitListeners(dataAPI api.DataAPI) {
 		return nil
 	})
 
-	dispatch.Default.Subscribe(func(ev *treatment_plan.TreatmentPlanOpenedEvent) error {
-		// if treatment plan is opened by patient, delete any case notifications pertaining
-		// to treatment plan
-		if ev.RoleType == api.PATIENT_ROLE {
-			if err := dataAPI.DeleteCaseNotification(fmt.Sprintf("%s:%d", CNTreatmentPlan, ev.TreatmentPlan.Id.Int64())); err != nil {
+	dispatch.Default.Subscribe(func(ev *app_event.AppEvent) error {
+
+		// act on this event if it represents a patient having viewed a treatment plan
+		if ev.Resource == "treatment_plan" && ev.Role == api.PATIENT_ROLE && ev.Action == app_event.ViewedAction {
+			if err := dataAPI.DeleteCaseNotification(fmt.Sprintf("%s:%d", CNTreatmentPlan, ev.ResourceId)); err != nil {
+				golog.Errorf("Unable to delete case notification: %s", err)
+				return err
+			}
+		}
+
+		// act on the event if it represents a patient having viewed a message
+		if ev.Resource == "case_message" && ev.Role == api.PATIENT_ROLE && ev.Action == app_event.ViewedAction {
+			if err := dataAPI.DeleteCaseNotification(fmt.Sprintf("%s:%d", CNMessage, ev.ResourceId)); err != nil {
 				golog.Errorf("Unable to delete case notification: %s", err)
 				return err
 			}
