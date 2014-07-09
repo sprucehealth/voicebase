@@ -18,8 +18,8 @@ type EventRequestData struct {
 
 // NewHandler returns a handler that dispatches events
 // received from the client for anyone interested in ClientEvents. The idea is to create a generic
-// way for the client to send events of what the user id doing
-// ("viewing", "updating", "deleting", etc. a resource of a particular id) for the server to appropriately
+// way for the client to send events of what the user is doing
+// ("viewing", "updating", "deleting", etc. a resource) for the server to appropriately
 // act on the event
 func NewHandler() *eventHandler {
 	return &eventHandler{}

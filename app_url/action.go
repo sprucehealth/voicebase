@@ -145,7 +145,7 @@ func SendCaseMessageAction(patientCaseId int64) *SpruceAction {
 	params := url.Values{}
 	params.Set("case_id", strconv.FormatInt(patientCaseId, 10))
 	return &SpruceAction{
-		name:   "send_message",
+		name:   "send_case_message",
 		params: params,
 	}
 }
