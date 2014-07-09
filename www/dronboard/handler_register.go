@@ -1,8 +1,11 @@
 package dronboard
 
 import (
+	"encoding/base64"
 	"fmt"
 	"net/http"
+	"strconv"
+	"time"
 
 	"github.com/sprucehealth/backend/api"
 	"github.com/sprucehealth/backend/common"
@@ -21,6 +24,7 @@ type registerHandler struct {
 	router   *mux.Router
 	dataAPI  api.DataAPI
 	authAPI  api.AuthAPI
+	signer   *common.Signer
 	nextStep string
 }
 
@@ -100,16 +104,22 @@ func (r *registerForm) Validate() map[string]string {
 	return errors
 }
 
-func NewRegisterHandler(router *mux.Router, dataAPI api.DataAPI, authAPI api.AuthAPI) http.Handler {
+func NewRegisterHandler(router *mux.Router, dataAPI api.DataAPI, authAPI api.AuthAPI, signer *common.Signer) http.Handler {
 	return www.SupportedMethodsHandler(&registerHandler{
 		router:   router,
 		dataAPI:  dataAPI,
 		authAPI:  authAPI,
+		signer:   signer,
 		nextStep: "doctor-register-credentials",
 	}, []string{"GET", "POST"})
 }
 
 func (h *registerHandler) ServeHTTP(w http.ResponseWriter, r *http.Request) {
+	if !h.validateRequestSignature(w, r) {
+		http.Redirect(w, r, "/login", http.StatusSeeOther)
+		return
+	}
+
 	var req registerForm
 	var errors map[string]string
 
@@ -181,4 +191,22 @@ func (h *registerHandler) ServeHTTP(w http.ResponseWriter, r *http.Request) {
 			States:     states,
 		},
 	})
+}
+
+func (h *registerHandler) validateRequestSignature(w http.ResponseWriter, r *http.Request) bool {
+	sig, err := base64.StdEncoding.DecodeString(r.FormValue("s"))
+	if err != nil {
+		return false
+	}
+	expires, err := strconv.ParseInt(r.FormValue("e"), 10, 64)
+	if err != nil {
+		return false
+	}
+	nonce := r.FormValue("n")
+	now := time.Now().UTC().Unix()
+	if nonce == "" || len(sig) == 0 || expires <= now {
+		return false
+	}
+	msg := []byte(fmt.Sprintf("expires=%d&nonce=%s", expires, nonce))
+	return h.signer.Verify(msg, sig)
 }

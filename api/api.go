@@ -234,12 +234,13 @@ type DoctorAPI interface {
 	MarkGenerationOfTreatmentPlanInVisitQueue(doctorId, patientVisitId, treatmentPlanId int64, currentState, updatedState string) error
 	GetSavedMessageForDoctor(doctorID int64) (string, error)
 	SetSavedMessageForDoctor(doctorID int64, message string) error
-	// TODO: The following methods are temporary until I can think of a nicer API
-	SetDoctorNPI(doctorID int64, npi string) error
 	DoctorAttributes(doctorID int64, names []string) (map[string]string, error)
 	UpdateDoctorAttributes(doctorID int64, attributes map[string]string) error
 	AddMedicalLicenses([]*common.MedicalLicense) error
 	MedicalLicenses(doctorID int64) ([]*common.MedicalLicense, error)
+	// TODO: The following method is unfortunate, but it's not collected during registration.
+	// The updating of the objects like Doctor and Patient needs some thought.
+	SetDoctorNPI(doctorID int64, npi string) error
 }
 
 type FavoriteTreatmentPlanAPI interface {

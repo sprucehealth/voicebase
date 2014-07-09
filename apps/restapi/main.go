@@ -135,8 +135,18 @@ func main() {
 		Hasher:         api.NewBcryptHasher(0),
 	}
 
+	sigKeys := make([][]byte, len(conf.SecretSignatureKeys))
+	for i, k := range conf.SecretSignatureKeys {
+		// No reason to decode the keys to binary. They'll be slightly longer
+		// as ascii but include no less entropy.
+		sigKeys[i] = []byte(k)
+	}
+	signer := &common.Signer{
+		Keys: sigKeys,
+	}
+
 	restAPIMux := buildRESTAPI(&conf, dataApi, authAPI, stores, metricsRegistry)
-	webMux := buildWWW(&conf, dataApi, authAPI, stores, metricsRegistry)
+	webMux := buildWWW(&conf, dataApi, authAPI, signer, stores, metricsRegistry)
 
 	router := mux.NewRouter()
 	router.Host(conf.APISubdomain + ".{domain:.+}").Handler(restAPIMux)
@@ -147,7 +157,7 @@ func main() {
 	serve(&conf, router)
 }
 
-func buildWWW(conf *Config, dataApi api.DataAPI, authAPI api.AuthAPI, stores map[string]storage.Store, metricsRegistry metrics.Registry) http.Handler {
+func buildWWW(conf *Config, dataApi api.DataAPI, authAPI api.AuthAPI, signer *common.Signer, stores map[string]storage.Store, metricsRegistry metrics.Registry) http.Handler {
 	twilioCli, err := conf.Twilio.Client()
 	if err != nil {
 		if conf.Debug {
@@ -164,7 +174,7 @@ func buildWWW(conf *Config, dataApi api.DataAPI, authAPI api.AuthAPI, stores map
 
 	return router.New(dataApi, authAPI, twilioCli, conf.Twilio.FromNumber,
 		email.NewService(conf.Email, metricsRegistry.Scope("email")), conf.Support.CustomerSupportEmail,
-		conf.WebSubdomain, stripeCli, stores, metricsRegistry.Scope("www"))
+		conf.WebSubdomain, stripeCli, signer, stores, metricsRegistry.Scope("www"))
 }
 
 func buildRESTAPI(conf *Config, dataApi api.DataAPI, authAPI api.AuthAPI, stores map[string]storage.Store, metricsRegistry metrics.Registry) http.Handler {

@@ -5,6 +5,7 @@ import (
 	"net/http"
 
 	"github.com/sprucehealth/backend/api"
+	"github.com/sprucehealth/backend/common"
 	"github.com/sprucehealth/backend/libs/payment/stripe"
 	"github.com/sprucehealth/backend/libs/storage"
 	"github.com/sprucehealth/backend/third_party/github.com/gorilla/mux"
@@ -12,7 +13,7 @@ import (
 	"github.com/sprucehealth/backend/www"
 )
 
-func SetupRoutes(r *mux.Router, dataAPI api.DataAPI, authAPI api.AuthAPI, supportEmail string, stripeCli *stripe.StripeService, stores map[string]storage.Store, metricsRegistry metrics.Registry) {
+func SetupRoutes(r *mux.Router, dataAPI api.DataAPI, authAPI api.AuthAPI, supportEmail string, stripeCli *stripe.StripeService, signer *common.Signer, stores map[string]storage.Store, metricsRegistry metrics.Registry) {
 	if stores["onboarding"] == nil {
 		log.Fatal("onboarding storage not configured")
 	}
@@ -22,7 +23,7 @@ func SetupRoutes(r *mux.Router, dataAPI api.DataAPI, authAPI api.AuthAPI, suppor
 	// If logged in as the doctor then jump to first step rather than registration
 	registerHandler := www.AuthRequiredHandler(authAPI, doctorRoles,
 		http.RedirectHandler("/doctor-register/credentials", http.StatusSeeOther),
-		NewRegisterHandler(r, dataAPI, authAPI))
+		NewRegisterHandler(r, dataAPI, authAPI, signer))
 	r.Handle("/doctor-register", registerHandler).Name("doctor-register")
 
 	authFilter := www.AuthRequiredFilter(authAPI, doctorRoles, nil)
