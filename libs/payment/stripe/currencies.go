@@ -1,5 +1,8 @@
 package stripe
 
+// This list of currencies represents what Stripe supports:
+// https://support.stripe.com/questions/which-currencies-does-stripe-support
+
 import "fmt"
 
 type Currency struct {
