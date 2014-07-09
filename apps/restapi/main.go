@@ -6,6 +6,7 @@ import (
 	"math/rand"
 	"net/http"
 	"strconv"
+	"strings"
 	"time"
 
 	"github.com/sprucehealth/backend/address"
@@ -28,6 +29,7 @@ import (
 	"github.com/sprucehealth/backend/libs/maps"
 	"github.com/sprucehealth/backend/libs/payment/stripe"
 	"github.com/sprucehealth/backend/libs/pharmacy"
+	"github.com/sprucehealth/backend/libs/storage"
 	"github.com/sprucehealth/backend/messages"
 	"github.com/sprucehealth/backend/notify"
 	"github.com/sprucehealth/backend/passreset"
@@ -38,11 +40,10 @@ import (
 	"github.com/sprucehealth/backend/photos"
 	"github.com/sprucehealth/backend/reslib"
 	"github.com/sprucehealth/backend/support"
-	"github.com/sprucehealth/backend/treatment_plan"
-	"github.com/sprucehealth/backend/www/router"
-
 	"github.com/sprucehealth/backend/third_party/github.com/gorilla/mux"
 	"github.com/sprucehealth/backend/third_party/github.com/samuel/go-metrics/metrics"
+	"github.com/sprucehealth/backend/treatment_plan"
+	"github.com/sprucehealth/backend/www/router"
 )
 
 const (
@@ -95,6 +96,20 @@ func main() {
 
 	conf.Validate()
 
+	awsAuth, err := conf.AWSAuth()
+	if err != nil {
+		log.Fatalf("Failed to get AWS auth: %+v", err)
+	}
+	stores := make(map[string]storage.Store)
+	for name, c := range conf.Storage {
+		switch strings.ToLower(c.Type) {
+		default:
+			log.Fatalf("Unknown storage type %s for name %s", c.Type, name)
+		case "s3":
+			stores[name] = storage.NewS3(awsAuth, c.Region, c.Bucket, c.Prefix)
+		}
+	}
+
 	db := connectDB(&conf)
 	defer db.Close()
 
@@ -120,8 +135,18 @@ func main() {
 		Hasher:         api.NewBcryptHasher(0),
 	}
 
-	restAPIMux := buildRESTAPI(&conf, dataApi, authAPI, metricsRegistry)
-	webMux := buildWWW(&conf, dataApi, authAPI, metricsRegistry)
+	sigKeys := make([][]byte, len(conf.SecretSignatureKeys))
+	for i, k := range conf.SecretSignatureKeys {
+		// No reason to decode the keys to binary. They'll be slightly longer
+		// as ascii but include no less entropy.
+		sigKeys[i] = []byte(k)
+	}
+	signer := &common.Signer{
+		Keys: sigKeys,
+	}
+
+	restAPIMux := buildRESTAPI(&conf, dataApi, authAPI, stores, metricsRegistry)
+	webMux := buildWWW(&conf, dataApi, authAPI, signer, stores, metricsRegistry)
 
 	router := mux.NewRouter()
 	router.Host(conf.APISubdomain + ".{domain:.+}").Handler(restAPIMux)
@@ -132,7 +157,7 @@ func main() {
 	serve(&conf, router)
 }
 
-func buildWWW(conf *Config, dataApi api.DataAPI, authAPI api.AuthAPI, metricsRegistry metrics.Registry) http.Handler {
+func buildWWW(conf *Config, dataApi api.DataAPI, authAPI api.AuthAPI, signer *common.Signer, stores map[string]storage.Store, metricsRegistry metrics.Registry) http.Handler {
 	twilioCli, err := conf.Twilio.Client()
 	if err != nil {
 		if conf.Debug {
@@ -142,10 +167,17 @@ func buildWWW(conf *Config, dataApi api.DataAPI, authAPI api.AuthAPI, metricsReg
 		}
 	}
 
-	return router.New(dataApi, authAPI, twilioCli, conf.Twilio.FromNumber, email.NewService(conf.Email, metricsRegistry.Scope("email")), conf.Support.CustomerSupportEmail, conf.WebSubdomain, metricsRegistry.Scope("www"))
+	stripeCli := &stripe.StripeService{
+		SecretKey:      conf.StripeSecretKey,
+		PublishableKey: conf.StripePublishableKey,
+	}
+
+	return router.New(dataApi, authAPI, twilioCli, conf.Twilio.FromNumber,
+		email.NewService(conf.Email, metricsRegistry.Scope("email")), conf.Support.CustomerSupportEmail,
+		conf.WebSubdomain, stripeCli, signer, stores, metricsRegistry.Scope("www"))
 }
 
-func buildRESTAPI(conf *Config, dataApi api.DataAPI, authAPI api.AuthAPI, metricsRegistry metrics.Registry) http.Handler {
+func buildRESTAPI(conf *Config, dataApi api.DataAPI, authAPI api.AuthAPI, stores map[string]storage.Store, metricsRegistry metrics.Registry) http.Handler {
 	twilioCli, err := conf.Twilio.Client()
 	if err != nil {
 		if conf.Debug {
@@ -334,7 +366,7 @@ func buildRESTAPI(conf *Config, dataApi api.DataAPI, authAPI api.AuthAPI, metric
 	// Miscellaneous APIs
 	mux.Handle("/v1/content", staticContentHandler)
 	mux.Handle("/v1/ping", pingHandler)
-	mux.Handle("/v1/photo", photos.NewHandler(dataApi, awsAuth, conf.PhotoBucket, conf.AWSRegion))
+	mux.Handle("/v1/photo", photos.NewHandler(dataApi, stores["photos"]))
 	mux.Handle("/v1/layouts/upload", layout.NewLayoutUploadHandler(dataApi))
 	mux.Handle("/v1/app_event", app_event.NewHandler())
 

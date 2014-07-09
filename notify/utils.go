@@ -34,7 +34,7 @@ func (b ByCommunicationPreference) Less(i, j int) bool {
 
 func phoneNumberForPatient(patient *common.Patient) string {
 	for _, phoneNumber := range patient.PhoneNumbers {
-		if phoneNumber.PhoneType == api.PHONE_CELL {
+		if phoneNumber.Type == api.PHONE_CELL {
 			return patient.PhoneNumbers[0].Phone
 		}
 	}

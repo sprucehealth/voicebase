@@ -1,0 +1,137 @@
+{{define "head"}}
+<style type="text/css">
+.state-license {
+	text-transform: capitalize;
+}
+th {
+	font-weight: normal;
+}
+.table>thead>tr>td, .table>tbody>tr>td, .table>tfoot>tr>td {
+	border: 0;
+}
+</style>
+{{end}}
+
+{{define "tail"}}
+<script type="text/javascript">
+$(function() {
+	$("#AmericanBoardCertified").change(function(e) {
+		if (e.target.checked) {
+			$("#board-certification").prop('disabled', false);
+		} else {
+			$("#board-certification").prop('disabled', true);
+		}
+	});
+	$("#ContinuedEducation").change(function(e) {
+		if (e.target.checked) {
+			$("#continued-education").prop('disabled', false);
+		} else {
+			$("#continued-education").prop('disabled', true);
+		}
+	});
+});
+</script>
+{{end}}
+
+{{define "fieldError"}}
+	{{if .}}<div class="text-danger">{{.}}</div>{{end}}
+{{end}}
+
+{{define "body"}}
+	{{$states := .States}}
+	{{$licenseStatuses := .LicenseStatuses}}
+	{{$errors := .FormErrors}}
+
+	<form method="POST" action="" role="form" class="form-onboard">
+		<h2>Identity, Credentials and Licenses</h2>
+
+		<div class="form-group {{if .FormErrors.SSN}}has-error has-feedback{{end}}">
+			<label class="control-label" for="SSN">Social Security Number</label>
+			<input required type="text" id="SSN" name="SSN" value="{{.Form.SSN}}" class="form-control">
+		</div>
+
+		<div class="form-group {{if .FormErrors.NPI}}has-error has-feedback{{end}}">
+			<label class="control-label" for="NPI">National Provider Identifier (NPI)</label>
+			<input required type="text" id="NPI" name="NPI" value="{{.Form.NPI}}" class="form-control">
+		</div>
+
+		<label class="control-label">States in which you hold a license to practice medicine</label>
+
+		{{if .FormErrors.StateLicenses}}
+		<div class="text-danger">
+			{{.FormErrors.StateLicenses}}
+		</div>
+		{{end}}
+		<table class="table">
+			<thead>
+				<tr>
+					<th>State</th>
+					<th>License Number</th>
+					<th>License Status</th>
+				</tr>
+			</thead>
+			<tbody>
+			{{range $i, $l := .Form.StateLicenses}}
+				{{$err := printf "StateLicenses.%d" $i | index $errors}}
+				<tr {{if $err}}class="bg-danger"{{end}}>
+					<td>
+						<select name="StateLicenses.{{$i}}.State">
+						{{$currentState := $l.State}}
+						{{range $states}}
+							<option value="{{.Abbreviation}}"{{if eq $currentState .Abbreviation}} selected{{end}}>{{.Name}}</option>
+						{{end}}
+						</select>
+					</td>
+					<td>
+						<input type="text" name="StateLicenses.{{$i}}.Number" value="{{$l.Number}}">
+					</td>
+					<td>
+						<select name="StateLicenses.{{$i}}.Status" class="license-status">
+						{{$currentLicenseStatus := $l.Status}}
+						{{range $licenseStatuses}}
+							<option value="{{.}}"{{if eq $currentLicenseStatus .}} selected{{end}}>{{.}}</option>
+						{{end}}
+						</select>
+					</td>
+				</tr>
+			{{end}}
+			</tbody>
+		</table>
+
+		<div class="checkbox">
+			<input type="checkbox" id="AmericanBoardCertified" name="AmericanBoardCertified"{{if .Form.AmericanBoardCertified}} checked{{end}}>
+			Are you American Board Certified?
+		</div>
+
+		<fieldset id="board-certification" {{if not .Form.AmericanBoardCertified}}disabled{{end}}>
+			<div class="form-group {{if .FormErrors.SpecialtyBoard}}has-error has-feedback{{end}}">
+				<label class="control-label" for="SpecialtyBoard">Specialty board</label>
+				<input required type="text" id="SpecialtyBoard" name="SpecialtyBoard" value="{{.Form.SpecialtyBoard}}" class="form-control">
+			</div>
+
+			<div class="form-group {{if .FormErrors.RecentCertDate}}has-error has-feedback{{end}}">
+				<label class="control-label" for="RecentCertDate">Date most recently certified</label>
+				<input required type="date" id="RecentCertDate" name="RecentCertDate" value="{{.Form.RecentCertDate}}" placeholder="MM/DD/YYYY" class="form-control">
+			</div>
+		</fieldset>
+
+		<div class="checkbox">
+			<input type="checkbox" id="ContinuedEducation" name="ContinuedEducation"{{if .Form.ContinuedEducation}} checked{{end}}>
+			Have you participated in continuing medical education within the last three years?
+		</div>
+
+		<fieldset id="continued-education" {{if not .Form.ContinuedEducation}}disabled{{end}}>
+			<div class="form-group {{if .FormErrors.CreditHours}}has-error has-feedback{{end}}">
+				<label class="control-label" for="CreditHours">Number of Category 1 credit hours</label>
+				<input required type="number" id="CreditHours" name="CreditHours" value="{{.Form.CreditHours}}" class="form-control">
+			</div>
+		</fieldset>
+
+		<div class="checkbox">
+			<input type="checkbox" id="RiskManagementCourse" name="RiskManagementCourse"{{if .Form.RiskManagementCourse}} checked{{end}}>
+			Have you completed a risk management education course within the last twelve months?
+		</div>
+
+		<button type="submit" class="btn btn-primary pull-right">Submit</button>
+	</form>
+{{end}}

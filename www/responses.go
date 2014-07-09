@@ -1,10 +1,11 @@
 package www
 
 import (
-	"github.com/sprucehealth/backend/libs/golog"
 	"html/template"
 	"io"
 	"net/http"
+
+	"github.com/sprucehealth/backend/libs/golog"
 )
 
 type Template interface {
@@ -16,7 +17,10 @@ const HTMLContentType = "text/html; charset=utf-8"
 // TODO: make this internal and more informative
 var internalErrorTemplate = template.Must(template.New("").Parse(`<!DOCTYPE html>
 <html>
-<head><title>Internal Server Error</title></head>
+<head>
+	<meta charset="utf-8">
+	<title>Internal Server Error</title>
+</head>
 <body>
 	Internal Server Error
 	{{.Message}}

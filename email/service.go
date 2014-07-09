@@ -3,11 +3,12 @@ package email
 import (
 	"crypto/tls"
 	"errors"
-	"github.com/sprucehealth/backend/libs/golog"
 	"net"
 	"net/http"
 	"net/smtp"
 	"time"
+
+	"github.com/sprucehealth/backend/libs/golog"
 
 	"github.com/sprucehealth/backend/third_party/github.com/samuel/go-metrics/metrics"
 )
@@ -89,7 +90,6 @@ func (m *service) SendEmail(em *Email) error {
 		golog.Errorf("Unable to issue data command to SMTP server: %s", err)
 		return err
 	}
-	defer wr.Close()
 	header := http.Header{}
 	header.Set("From", em.From)
 	header.Set("To", em.To)
@@ -107,6 +107,11 @@ func (m *service) SendEmail(em *Email) error {
 	if _, err := wr.Write([]byte(em.BodyText)); err != nil {
 		m.statFailed.Inc(1)
 		golog.Errorf("Unable to write email body: %s", err)
+		return err
+	}
+	if err := wr.Close(); err != nil {
+		m.statFailed.Inc(1)
+		golog.Errorf("Unable to finish email: %s", err)
 		return err
 	}
 	m.statSent.Inc(1)

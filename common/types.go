@@ -21,7 +21,7 @@ func (c ByCreationDate) Less(i, j int) bool { return c[i].CreationDate.Before(c[
 
 type Platform string
 
-var (
+const (
 	Android Platform = "android"
 	IOS     Platform = "iOS"
 )
@@ -59,7 +59,7 @@ func (p *Platform) Scan(src interface{}) error {
 	return err
 }
 
-var (
+const (
 	SMS   CommunicationType = "SMS"
 	Email CommunicationType = "EMAIL"
 	Push  CommunicationType = "PUSH"
@@ -102,7 +102,7 @@ func (p PushPromptStatus) String() string {
 	return string(p)
 }
 
-var (
+const (
 	Unprompted PushPromptStatus = "UNPROMPTED"
 	Accepted   PushPromptStatus = "ACCEPTED"
 	Declined   PushPromptStatus = "DECLINED"
@@ -118,4 +118,38 @@ func GetPushPromptStatus(promptStatus string) (PushPromptStatus, error) {
 		return Declined, nil
 	}
 	return PushPromptStatus(""), errors.New("Unknown prompt status: " + promptStatus)
+}
+
+type MedicalLicenseStatus string
+
+const (
+	MLActive    MedicalLicenseStatus = "ACTIVE"
+	MLInactive  MedicalLicenseStatus = "INACTIVE"
+	MLTemporary MedicalLicenseStatus = "TEMPORARY"
+	MLPending   MedicalLicenseStatus = "PENDING"
+)
+
+func (l MedicalLicenseStatus) String() string {
+	return string(l)
+}
+
+func (l *MedicalLicenseStatus) Scan(src interface{}) error {
+	var err error
+	switch s := src.(type) {
+	case string:
+		*l, err = GetMedicalLicenseStatus(s)
+	case []byte:
+		*l, err = GetMedicalLicenseStatus(string(s))
+	default:
+		return fmt.Errorf("common: can't scan type %T into MedicalLicenseStatus", src)
+	}
+	return err
+}
+
+func GetMedicalLicenseStatus(s string) (MedicalLicenseStatus, error) {
+	switch l := MedicalLicenseStatus(s); l {
+	case MLActive, MLInactive, MLTemporary, MLPending:
+		return l, nil
+	}
+	return "", errors.New("common: unknown medical license status: " + s)
 }

@@ -2,11 +2,12 @@ package passreset
 
 import (
 	"fmt"
+	"net/http"
+	"strings"
+
 	"github.com/sprucehealth/backend/api"
 	"github.com/sprucehealth/backend/apiservice"
 	"github.com/sprucehealth/backend/email"
-	"net/http"
-	"strings"
 )
 
 type ForgotPasswordRequest struct {

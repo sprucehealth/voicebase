@@ -15,7 +15,7 @@ import (
 	"strconv"
 	"strings"
 
-	"github.com/sprucehealth/backend/third_party/github.com/gorilla/schema"
+	"github.com/sprucehealth/backend/third_party/github.com/SpruceHealth/schema"
 )
 
 const (

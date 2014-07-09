@@ -1,0 +1,92 @@
+{{define "head"}}
+{{end}}
+
+{{define "tail"}}
+	<script type="text/javascript" src="https://js.stripe.com/v2/"></script>
+	<script type="text/javascript">
+	Stripe.setPublishableKey({{js .StripeKey}});
+
+	function stripeResponseHandler(status, response) {
+		var frm = $('.form-onboard');
+
+		if (response.error) {
+			// Show the errors on the form
+			frm.find('.errors').text(response.error.message);
+			//frm.find('button').prop('disabled', false);
+		} else {
+			frm.find('.errors').text("");
+
+			var token = response.id;
+			frm.append($('<input type="hidden" name="StripeToken">').val(token));
+			frm.get(0).submit();
+		}
+	}
+
+	$(function() {
+		$(".form-onboard").submit(function(e) {
+			var country = $("#Country").val();
+			var accountNumber = $("#AccountNumber").val();
+			var routingNumber = $("#RoutingNumber").val();
+
+			var failed = false;
+
+			if (!Stripe.bankAccount.validateRoutingNumber(routingNumber, country)) {
+				$("#RoutingNumberError").text("Invalid routing number");
+				$("#RoutingNumberGroup").addClass("has-error").addClass("has-error");
+				failed = true;
+			} else {
+				$("#RoutingNumberError").text("");
+				$("#RoutingNumberGroup").removeClass("has-error").removeClass("has-error");
+			}
+			if (!Stripe.bankAccount.validateAccountNumber(accountNumber, country)) {
+				$("#AccountNumberError").text("Invalid account number");
+				$("#AccountNumberGroup").addClass("has-error").addClass("has-error");
+				failed = true;
+			} else {
+				$("#AccountNumberError").text("");
+				$("#AccountNumberGroup").removeClass("has-error").removeClass("has-error");
+			}
+
+			if (!failed) {
+				Stripe.bankAccount.createToken({
+					"country": country,
+					"routingNumber": routingNumber,
+					"accountNumber": accountNumber,
+				}, stripeResponseHandler);
+			}
+
+			e.preventDefault();
+			return false;
+		});
+	});
+	</script>
+{{end}}
+
+{{define "body"}}
+	<form method="POST" action="" role="form" class="form-onboard">
+		<h2>Financials to Receive Payment</h2>
+
+		<h4>Bank Account Information</h4>
+
+		<div class="errors text-danger"></div>
+
+		<div class="form-group">
+			<label class="control-label" for="Country">Country</label>
+			<input type="text" id="Country" value="US" class="form-control">
+		</div>
+
+		<div id="AccountNumberGroup" class="form-group {{if .FormErrors.AccountNumber}}has-error has-feedback{{end}}">
+			<label class="control-label" for="AccountNumber">Account Number</label>
+			<div id="AccountNumberError" class="text-danger"></div>
+			<input required type="text" id="AccountNumber" class="form-control">
+		</div>
+
+		<div id="RoutingNumberGroup" class="form-group {{if .FormErrors.RoutingNumber}}has-error has-feedback{{end}}">
+			<label class="control-label" for="RoutingNumber">Routing Number</label>
+			<div id="RoutingNumberError" class="text-danger"></div>
+			<input required type="text" id="RoutingNumber" class="form-control">
+		</div>
+
+		<button type="submit" class="btn btn-primary pull-right">Submit</button>
+	</form>
+{{end}}

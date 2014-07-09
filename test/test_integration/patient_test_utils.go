@@ -4,17 +4,18 @@ import (
 	"bytes"
 	"encoding/json"
 	"fmt"
-	"github.com/sprucehealth/backend/address"
-	"github.com/sprucehealth/backend/apiservice"
-	"github.com/sprucehealth/backend/info_intake"
-	patientApiService "github.com/sprucehealth/backend/patient"
-	"github.com/sprucehealth/backend/patient_visit"
 	"io/ioutil"
 	"math/rand"
 	"net/http"
 	"net/http/httptest"
 	"strconv"
 	"testing"
+
+	"github.com/sprucehealth/backend/address"
+	"github.com/sprucehealth/backend/apiservice"
+	"github.com/sprucehealth/backend/info_intake"
+	patientApiService "github.com/sprucehealth/backend/patient"
+	"github.com/sprucehealth/backend/patient_visit"
 )
 
 func SignupRandomTestPatient(t *testing.T, testData *TestData) *patientApiService.PatientSignedupResponse {

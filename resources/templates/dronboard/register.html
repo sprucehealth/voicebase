@@ -1,0 +1,102 @@
+{{define "head"}}
+<style type="text/css">
+h3 {
+	font-size: 21px;
+}
+</style>
+{{end}}
+
+{{define "tail"}}
+{{end}}
+
+{{define "fieldError"}}
+	{{if .}}<div class="text-danger">{{.}}</div>{{end}}
+{{end}}
+
+{{define "body"}}
+	<form method="POST" action="" role="form" class="form-onboard">
+		<h2>Create Account</h2>
+
+		<div class="form-group {{if .FormErrors.FirstName}}has-error has-feedback{{end}}">
+			<label class="control-label" for="FirstName">First Name</label>
+			<input required type="text" id="FirstName" name="FirstName" value="{{.Form.FirstName}}" class="form-control" placeholder="Enter first name">
+		</div>
+
+		<div class="form-group {{if .FormErrors.LastName}}has-error has-feedback{{end}}">
+			<label class="control-label" for="LastName">Last Name</label>
+			<input required type="text" id="LastName" name="LastName" value="{{.Form.LastName}}" class="form-control" placeholder="Enter last name">
+		</div>
+
+		<div class="form-group {{if .FormErrors.Gender}}has-error has-feedback{{end}}">
+			<label class="control-label" for="Gender">Gender</label>
+			<select name="Gender" id="Gender" class="form-control">
+			<option value="female"{{if eq .Form.Gender "female"}} selected{{end}}>Female</option>
+			<option value="male"{{if eq .Form.Gender "male"}} selected{{end}}>Male</option>
+			</select>
+		</div>
+
+		<div class="form-group {{if .FormErrors.DOB}}has-error has-feedback{{end}}">
+			<label class="control-label" for="DOB">Date of Birth</label>
+			<input required type="date" id="DOB" name="DOB" value="{{.Form.DOB}}" placeholder="MM/DD/YYYY" class="form-control">
+		</div>
+
+		<div class="form-group {{if .FormErrors.Email}}has-error has-feedback{{end}}">
+			<label class="control-label" for="Email">Email</label>
+			<input required type="email" id="Email" name="Email" value="{{.Form.Email}}" class="form-control" placeholder="Enter email address">
+			{{template "fieldError" .FormErrors.Email}}
+		</div>
+
+		<div class="form-group {{if .FormErrors.CellNumber}}has-error has-feedback{{end}}">
+			<label class="control-label" for="CellNumber">Cell Phone Number</label>
+			<input required type="tel" id="CellNumber" name="CellNumber" value="{{.Form.CellNumber}}" class="form-control" placeholder="###-###-####">
+		</div>
+
+		<h3>Home Address</h3>
+
+		<div class="form-group {{if .FormErrors.AddressLine1}}has-error has-feedback{{end}}">
+			<label class="control-label" for="AddressLine1">Address Line 1</label>
+			<input required type="text" id="AddressLine1" name="AddressLine1" value="{{.Form.AddressLine1}}" class="form-control">
+		</div>
+
+		<div class="form-group {{if .FormErrors.AddressLine2}}has-error has-feedback{{end}}">
+			<label class="control-label" for="AddressLine2">Address Line 2</label>
+			<input type="text" id="AddressLine2" name="AddressLine2" value="{{.Form.AddressLine2}}" class="form-control">
+		</div>
+
+		<div class="form-group {{if .FormErrors.City}}has-error has-feedback{{end}}">
+			<label class="control-label" for="City">City</label>
+			<input required type="text" id="City" name="City" value="{{.Form.City}}" class="form-control">
+		</div>
+
+		<div class="form-group {{if .FormErrors.State}}has-error has-feedback{{end}}">
+			<label class="control-label" for="State">State</label>
+			<select name="State" id="State" class="form-control">
+			{{$currentState := .Form.State}}
+			{{range .States}}
+				<option value="{{.Abbreviation}}"{{if eq $currentState .Abbreviation}} selected{{end}}>{{.Name}}</option>
+			{{end}}
+			</select>
+		</div>
+
+		<div class="form-group {{if .FormErrors.ZipCode}}has-error has-feedback{{end}}">
+			<label class="control-label" for="ZipCode">Zip Code</label>
+			<input required type="text" id="ZipCode" name="ZipCode" value="{{.Form.ZipCode}}" class="form-control">
+		</div>
+
+		<h3>Create a Password</h3>
+
+		<div class="form-group {{if .FormErrors.Password1}}has-error has-feedback{{end}}">
+			<label class="control-label" for="Password1">Password</label>
+			<input required type="password" id="Password1" name="Password1" class="form-control">
+			{{template "fieldError" .FormErrors.Password1}}
+		</div>
+
+		<div class="form-group {{if .FormErrors.Password2}}has-error has-feedback{{end}}">
+			<label class="control-label" for="Password2">Verify Password</label>
+			<input required type="password" id="Password2" name="Password2" class="form-control">
+			{{template "fieldError" .FormErrors.Password2}}
+		</div>
+
+		<button type="submit" class="btn btn-primary pull-right">Create Account</button>
+	</form>
+{{end}}

@@ -2,6 +2,7 @@ package api
 
 import (
 	"database/sql"
+	"errors"
 	"fmt"
 	"log"
 	"strconv"
@@ -11,7 +12,6 @@ import (
 	"github.com/sprucehealth/backend/app_url"
 	"github.com/sprucehealth/backend/common"
 	"github.com/sprucehealth/backend/encoding"
-
 	"github.com/sprucehealth/backend/third_party/github.com/go-sql-driver/mysql"
 )
 
@@ -21,12 +21,14 @@ func (d *DataService) RegisterDoctor(doctor *common.Doctor) (int64, error) {
 		return 0, err
 	}
 
-	res, err := tx.Exec(`insert into doctor (account_id, first_name, last_name, short_title, long_title, suffix, prefix, middle_name, gender, dob_year, dob_month, dob_day, status, clinician_id) 
-								values (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?)`, doctor.AccountId.Int64(),
-		doctor.FirstName, doctor.LastName, doctor.ShortTitle, doctor.LongTitle,
-		doctor.MiddleName, doctor.Suffix, doctor.Prefix, doctor.Gender, doctor.Dob.Year, doctor.Dob.Month, doctor.Dob.Day,
+	res, err := tx.Exec(`
+		insert into doctor (account_id, first_name, last_name, short_title, long_title, suffix, prefix, middle_name, gender, dob_year, dob_month, dob_day, status, clinician_id)
+		values (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?)`,
+		doctor.AccountId.Int64(), doctor.FirstName, doctor.LastName, doctor.ShortTitle, doctor.LongTitle,
+		doctor.MiddleName, doctor.Suffix, doctor.Prefix, doctor.Gender, doctor.DOB.Year, doctor.DOB.Month, doctor.DOB.Day,
 		DOCTOR_REGISTERED, doctor.DoseSpotClinicianId)
 	if err != nil {
+		tx.Rollback()
 		return 0, err
 	}
 
@@ -50,10 +52,13 @@ func (d *DataService) RegisterDoctor(doctor *common.Doctor) (int64, error) {
 		return 0, err
 	}
 
-	_, err = tx.Exec(`insert into doctor_phone (phone, phone_type, doctor_id) values (?,?,?) `, doctor.CellPhone, doctorPhoneType, doctor.DoctorId.Int64())
-	if err != nil {
-		tx.Rollback()
-		return 0, err
+	if doctor.CellPhone != "" {
+		_, err = tx.Exec(`INSERT INTO account_phone (phone, phone_type, account_id, status) VALUES (?,?,?,?) `,
+			doctor.CellPhone, PHONE_CELL, doctor.AccountId.Int64(), STATUS_ACTIVE)
+		if err != nil {
+			tx.Rollback()
+			return 0, err
+		}
 	}
 
 	res, err = tx.Exec(`INSERT INTO person (role_type_id, role_id) VALUES (?, ?)`, d.roleTypeMapping[DOCTOR_ROLE], lastId)
@@ -71,26 +76,29 @@ func (d *DataService) RegisterDoctor(doctor *common.Doctor) (int64, error) {
 }
 
 func (d *DataService) GetDoctorFromId(doctorId int64) (*common.Doctor, error) {
-	return d.queryDoctor(`doctor.id = ? AND (doctor_phone.phone IS NULL OR doctor_phone.phone_type = ?)`, doctorId, doctorPhoneType)
+	return d.queryDoctor(`doctor.id = ? AND (account_phone.phone IS NULL OR account_phone.phone_type = ?)`,
+		doctorId, PHONE_CELL)
 }
 
 func (d *DataService) GetDoctorFromAccountId(accountId int64) (*common.Doctor, error) {
-	return d.queryDoctor(`doctor.account_id = ? AND (doctor_phone.phone IS NULL OR doctor_phone.phone_type = ?)`, accountId, doctorPhoneType)
+	return d.queryDoctor(`doctor.account_id = ? AND (account_phone.phone IS NULL OR account_phone.phone_type = ?)`,
+		accountId, PHONE_CELL)
 }
 
 func (d *DataService) GetDoctorFromDoseSpotClinicianId(clinicianId int64) (*common.Doctor, error) {
-	return d.queryDoctor(`doctor.clinician_id = ? AND (doctor_phone.phone IS NULL OR doctor_phone.phone_type = ?)`, clinicianId, doctorPhoneType)
+	return d.queryDoctor(`doctor.clinician_id = ? AND (account_phone.phone IS NULL OR account_phone.phone_type = ?)`,
+		clinicianId, PHONE_CELL)
 }
 
 func (d *DataService) queryDoctor(where string, queryParams ...interface{}) (*common.Doctor, error) {
 	row := d.db.QueryRow(fmt.Sprintf(`
-		SELECT doctor.id, account_id, phone, first_name, last_name, middle_name, suffix,
-			prefix, short_title, long_title, gender, dob_year, dob_month, dob_day, status, clinician_id,
+		SELECT doctor.id, doctor.account_id, phone, first_name, last_name, middle_name, suffix,
+			prefix, short_title, long_title, gender, dob_year, dob_month, dob_day, doctor.status, clinician_id,
 			address.address_line_1,	address.address_line_2, address.city, address.state,
-			address.zip_code, person.id
+			address.zip_code, person.id, npi_number
 		FROM doctor
 		INNER JOIN person ON person.role_type_id = %d AND person.role_id = doctor.id
-		LEFT OUTER JOIN doctor_phone ON doctor_phone.doctor_id = doctor.id
+		LEFT OUTER JOIN account_phone ON account_phone.account_id = doctor.account_id
 		LEFT OUTER JOIN doctor_address_selection ON doctor_address_selection.doctor_id = doctor.id
 		LEFT OUTER JOIN address ON doctor_address_selection.address_id = address.id
 		WHERE %s`, d.roleTypeMapping[DOCTOR_ROLE], where),
@@ -102,11 +110,12 @@ func (d *DataService) queryDoctor(where string, queryParams ...interface{}) (*co
 	var dobYear, dobMonth, dobDay int
 	var personId int64
 	var clinicianId sql.NullInt64
+	var NPI sql.NullString
 	err := row.Scan(
 		&doctorId, &accountId, &cellPhoneNumber, &firstName, &lastName,
 		&middleName, &suffix, &prefix, &shortTitle, &longTitle, &gender, &dobYear, &dobMonth,
 		&dobDay, &status, &clinicianId, &addressLine1, &addressLine2,
-		&city, &state, &zipCode, &personId)
+		&city, &state, &zipCode, &personId, &NPI)
 	if err != nil {
 		return nil, err
 	}
@@ -131,8 +140,9 @@ func (d *DataService) queryDoctor(where string, queryParams ...interface{}) (*co
 			State:        state.String,
 			ZipCode:      zipCode.String,
 		},
-		Dob:      encoding.Dob{Year: dobYear, Month: dobMonth, Day: dobDay},
+		DOB:      encoding.DOB{Year: dobYear, Month: dobMonth, Day: dobDay},
 		PersonId: personId,
+		NPI:      NPI.String,
 	}
 
 	// populate the doctor url
@@ -1223,4 +1233,114 @@ func getInstructionsFromRows(rows *sql.Rows) ([]*common.DoctorInstructionItem, e
 		drugInstructions = append(drugInstructions, supplementalInstruction)
 	}
 	return drugInstructions, rows.Err()
+}
+
+func (d *DataService) SetDoctorNPI(doctorID int64, npi string) error {
+	_, err := d.db.Exec(`UPDATE doctor SET npi_number = ? WHERE id = ?`, npi, doctorID)
+	return err
+}
+
+func (d *DataService) DoctorAttributes(doctorID int64, names []string) (map[string]string, error) {
+	var rows *sql.Rows
+	var err error
+	if len(names) == 0 {
+		rows, err = d.db.Query(`SELECT name, value FROM doctor_attribute WHERE doctor_id = ?`, doctorID)
+	} else {
+		rows, err = d.db.Query(`SELECT name, value FROM doctor_attribute WHERE doctor_id = ? AND name IN (`+nReplacements(len(names))+`)`,
+			appendStringsToInterfaceSlice([]interface{}{doctorID}, names)...)
+	}
+	if err != nil {
+		return nil, err
+	}
+	defer rows.Close()
+	attr := make(map[string]string)
+	for rows.Next() {
+		var name, value string
+		if err := rows.Scan(&name, &value); err != nil {
+			return nil, err
+		}
+		attr[name] = value
+	}
+	return attr, rows.Err()
+}
+
+func (d *DataService) UpdateDoctorAttributes(doctorID int64, attributes map[string]string) error {
+	if len(attributes) == 0 {
+		return nil
+	}
+	var toDelete []interface{}
+	var replacements []string
+	var values []interface{}
+	for name, value := range attributes {
+		if value == "" {
+			toDelete = append(toDelete, name)
+		} else {
+			replacements = append(replacements, "(?,?,?)")
+			values = append(values, doctorID, name, value)
+		}
+	}
+	tx, err := d.db.Begin()
+	if err != nil {
+		return err
+	}
+	if len(toDelete) != 0 {
+		_, err := tx.Exec(`DELETE FROM doctor_attribute WHERE name IN (`+nReplacements(len(toDelete))+`) AND doctor_id = ?`,
+			append(toDelete, doctorID)...)
+		if err != nil {
+			tx.Rollback()
+			return err
+		}
+	}
+	if len(replacements) != 0 {
+		_, err := tx.Exec(`REPLACE INTO doctor_attribute (doctor_id, name, value) VALUES `+strings.Join(replacements, ","), values...)
+		if err != nil {
+			tx.Rollback()
+			return err
+		}
+	}
+	return tx.Commit()
+}
+
+func (d *DataService) AddMedicalLicenses(licenses []*common.MedicalLicense) error {
+	if len(licenses) == 0 {
+		return nil
+	}
+	replacements := make([]string, len(licenses))
+	values := make([]interface{}, 0, 4*len(licenses))
+	for i, l := range licenses {
+		if l.State == "" || l.Number == "" || l.Status == "" {
+			return errors.New("api: license is missing state, number, or status")
+		}
+		replacements[i] = "(?,?,?,?)"
+		values = append(values, l.DoctorID, l.State, l.Number, l.Status.String())
+	}
+	_, err := d.db.Exec(`REPLACE INTO doctor_medical_license (doctor_id, state, license_number, status) VALUES `+strings.Join(replacements, ","),
+		values...)
+	return err
+}
+
+func (d *DataService) MedicalLicenses(doctorID int64) ([]*common.MedicalLicense, error) {
+	rows, err := d.db.Query(`
+		SELECT id, state, license_number, status
+		FROM doctor_medical_license
+		WHERE doctor_id = ?
+		ORDER BY state`, doctorID)
+	if err != nil {
+		return nil, err
+	}
+	defer rows.Close()
+
+	var licenses []*common.MedicalLicense
+	for rows.Next() {
+		l := &common.MedicalLicense{DoctorID: doctorID}
+		if err := rows.Scan(&l.ID, &l.State, &l.Number, &l.Status); err != nil {
+			return nil, err
+		}
+		licenses = append(licenses, l)
+	}
+	if err := rows.Err(); err != nil {
+		return nil, err
+	}
+
+	return licenses, nil
 }

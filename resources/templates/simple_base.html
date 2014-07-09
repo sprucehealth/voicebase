@@ -7,7 +7,7 @@
 	<style type="text/css">
 	html, body {
 		color: #444;
-		background-color: #f7f7f7;
+		background-color: #eee;
 		font-family: "Helvetica Neue Light", "Helvetica Neue", Helvetica, Arial;
 		font-size: 15px;
 	}
@@ -59,12 +59,12 @@
 		padding: 10px 28px 28px 28px;
 	}
 	</style>
-	{{.Head}}
+	{{template "head" .SubContext}}
 </head>
 <body>
 	<div id="content">
-	{{.Body}}
+		{{template "body" .SubContext}}
 	</div>
-	{{.Tail}}
+	{{template "footer" .SubContext}}
 </body>
 </html>

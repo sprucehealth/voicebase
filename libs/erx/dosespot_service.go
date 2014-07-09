@@ -3,14 +3,15 @@ package erx
 import (
 	"errors"
 	"fmt"
-	"github.com/sprucehealth/backend/common"
-	"github.com/sprucehealth/backend/encoding"
-	"github.com/sprucehealth/backend/libs/golog"
-	pharmacySearch "github.com/sprucehealth/backend/libs/pharmacy"
 	"os"
 	"sort"
 	"strconv"
 	"strings"
+
+	"github.com/sprucehealth/backend/common"
+	"github.com/sprucehealth/backend/encoding"
+	"github.com/sprucehealth/backend/libs/golog"
+	pharmacySearch "github.com/sprucehealth/backend/libs/pharmacy"
 
 	"github.com/sprucehealth/backend/third_party/github.com/samuel/go-metrics/metrics"
 )
@@ -231,22 +232,22 @@ func populatePatientForDoseSpot(currentPatient *common.Patient) (*patient, error
 		Suffix:      currentPatient.Suffix,
 		Prefix:      currentPatient.Prefix,
 		Email:       currentPatient.Email,
-		DateOfBirth: specialDateTime{DateTime: currentPatient.Dob.ToTime(), DateTimeElementName: "DateOfBirth"},
+		DateOfBirth: specialDateTime{DateTime: currentPatient.DOB.ToTime(), DateTimeElementName: "DateOfBirth"},
 		Gender:      currentPatient.Gender,
 	}
 
 	if len(currentPatient.PhoneNumbers) > 0 {
 		newPatient.PrimaryPhone = currentPatient.PhoneNumbers[0].Phone
-		newPatient.PrimaryPhoneType = currentPatient.PhoneNumbers[0].PhoneType
+		newPatient.PrimaryPhoneType = currentPatient.PhoneNumbers[0].Type
 
 		if len(currentPatient.PhoneNumbers) > 1 {
 			newPatient.PhoneAdditional1 = currentPatient.PhoneNumbers[1].Phone
-			newPatient.PhoneAdditionalType1 = currentPatient.PhoneNumbers[1].PhoneType
+			newPatient.PhoneAdditionalType1 = currentPatient.PhoneNumbers[1].Type
 		}
 
 		if len(currentPatient.PhoneNumbers) > 2 {
 			newPatient.PhoneAdditional2 = currentPatient.PhoneNumbers[2].Phone
-			newPatient.PhoneAdditionalType2 = currentPatient.PhoneNumbers[2].PhoneType
+			newPatient.PhoneAdditionalType2 = currentPatient.PhoneNumbers[2].Type
 		}
 	}
 
@@ -297,10 +298,10 @@ func ensurePatientInformationIsConsistent(currentPatient *common.Patient, patien
 	}
 
 	// lets compare the day, month and year components
-	doseSpotPatientDobYear, doseSpotPatientDobMonth, doseSpotPatientDay := patientFromDoseSpot.DateOfBirth.DateTime.Date()
+	doseSpotPatientDOBYear, doseSpotPatientDOBMonth, doseSpotPatientDay := patientFromDoseSpot.DateOfBirth.DateTime.Date()
 
-	if currentPatient.Dob.Day != doseSpotPatientDay || currentPatient.Dob.Month != int(doseSpotPatientDobMonth) || currentPatient.Dob.Year != doseSpotPatientDobYear {
-		return fmt.Errorf("PATIENT_INFO_MISTMATCH: dob %+v %+v", currentPatient.Dob, patientFromDoseSpot.DateOfBirth.DateTime)
+	if currentPatient.DOB.Day != doseSpotPatientDay || currentPatient.DOB.Month != int(doseSpotPatientDOBMonth) || currentPatient.DOB.Year != doseSpotPatientDOBYear {
+		return fmt.Errorf("PATIENT_INFO_MISTMATCH: dob %+v %+v", currentPatient.DOB, patientFromDoseSpot.DateOfBirth.DateTime)
 	}
 
 	if strings.ToLower(currentPatient.Gender) != strings.ToLower(patientFromDoseSpot.Gender) {
@@ -335,7 +336,7 @@ func ensurePatientInformationIsConsistent(currentPatient *common.Patient, patien
 		return errors.New("PATIENT_INFO_MISTMATCH: primaryPhone")
 	}
 
-	if currentPatient.PhoneNumbers[0].PhoneType != patientFromDoseSpot.PrimaryPhoneType {
+	if currentPatient.PhoneNumbers[0].Type != patientFromDoseSpot.PrimaryPhoneType {
 		return errors.New("PATIENT_INFO_MISTMATCH: primaryPhoneType")
 	}
 
@@ -774,25 +775,25 @@ func (d *DoseSpotService) GetPatientDetails(erxPatientId int64) (*common.Patient
 		},
 		Email:   response.PatientUpdates[0].Patient.Email,
 		ZipCode: response.PatientUpdates[0].Patient.ZipCode,
-		Dob:     encoding.NewDobFromTime(response.PatientUpdates[0].Patient.DateOfBirth.DateTime),
-		PhoneNumbers: []*common.PhoneInformation{&common.PhoneInformation{
-			Phone:     response.PatientUpdates[0].Patient.PrimaryPhone,
-			PhoneType: response.PatientUpdates[0].Patient.PrimaryPhoneType,
+		DOB:     encoding.NewDOBFromTime(response.PatientUpdates[0].Patient.DateOfBirth.DateTime),
+		PhoneNumbers: []*common.PhoneNumber{&common.PhoneNumber{
+			Phone: response.PatientUpdates[0].Patient.PrimaryPhone,
+			Type:  response.PatientUpdates[0].Patient.PrimaryPhoneType,
 		},
 		},
 	}
 
 	if response.PatientUpdates[0].Patient.PhoneAdditional1 != "" {
-		newPatient.PhoneNumbers = append(newPatient.PhoneNumbers, &common.PhoneInformation{
-			Phone:     response.PatientUpdates[0].Patient.PhoneAdditional1,
-			PhoneType: response.PatientUpdates[0].Patient.PhoneAdditionalType1,
+		newPatient.PhoneNumbers = append(newPatient.PhoneNumbers, &common.PhoneNumber{
+			Phone: response.PatientUpdates[0].Patient.PhoneAdditional1,
+			Type:  response.PatientUpdates[0].Patient.PhoneAdditionalType1,
 		})
 	}
 
 	if response.PatientUpdates[0].Patient.PhoneAdditional2 != "" {
-		newPatient.PhoneNumbers = append(newPatient.PhoneNumbers, &common.PhoneInformation{
-			Phone:     response.PatientUpdates[0].Patient.PhoneAdditional2,
-			PhoneType: response.PatientUpdates[0].Patient.PhoneAdditionalType2,
+		newPatient.PhoneNumbers = append(newPatient.PhoneNumbers, &common.PhoneNumber{
+			Phone: response.PatientUpdates[0].Patient.PhoneAdditional2,
+			Type:  response.PatientUpdates[0].Patient.PhoneAdditionalType2,
 		})
 	}
 

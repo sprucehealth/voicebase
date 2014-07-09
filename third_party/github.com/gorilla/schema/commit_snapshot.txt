@@ -1,9 +1,0 @@
-t 1f177503719e58b1004b8e6e54f7724a5495f17f
-Merge: 0f496f2 98edf7b
-Author: Kamil Kisiel <kamil@kamilkisiel.net>
-Date:   Thu Oct 17 10:49:30 2013 -0700
-
-    Merge pull request #13 from mssola/master
-    
-    Don't crash when decoding a struct with unexported fields.
-

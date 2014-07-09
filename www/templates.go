@@ -1,10 +1,9 @@
 package www
 
 import (
-	"bytes"
 	"html/template"
-	"io"
 	"io/ioutil"
+	"net/http"
 	"os"
 	"path"
 
@@ -12,16 +11,26 @@ import (
 )
 
 var (
-	BaseTemplate       *baseTemplate
-	IndexTemplate      *indexTemplate
-	SimpleBaseTemplate *simpleBaseTemplate
+	BaseTemplate       *template.Template
+	IndexTemplate      *template.Template
+	SimpleBaseTemplate *template.Template
+	LoginTemplate      *template.Template
 )
 
 var ResourceBundle resources.BundleSequence
 
+type resourceFileSystem struct{}
+
+// ResourceFileSystem implements the http.Filesystem interface to provide
+// static file serving.
+var ResourceFileSystem = resourceFileSystem{}
+
+var ResourcesPath string
+
 func init() {
 	if p := os.Getenv("GOPATH"); p != "" {
-		ResourceBundle = append(ResourceBundle, resources.OpenFS(path.Join(p, "src", "github.com", "sprucehealth", "backend", "resources")))
+		ResourcesPath = path.Join(p, "src", "github.com", "sprucehealth", "backend", "resources")
+		ResourceBundle = append(ResourceBundle, resources.OpenFS(ResourcesPath))
 	}
 	if p := os.Getenv("RESOURCEPATH"); p != "" {
 		ResourceBundle = append(ResourceBundle, resources.OpenFS(p))
@@ -38,12 +47,44 @@ func init() {
 	}
 	_ = fi
 
-	BaseTemplate = &baseTemplate{MustLoadTemplate("", "base.html")}
-	IndexTemplate = &indexTemplate{MustLoadTemplate("", "index.html")}
-	SimpleBaseTemplate = &simpleBaseTemplate{MustLoadTemplate("", "simple_base.html")}
+	BaseTemplate = MustLoadTemplate("base.html", nil)
+	IndexTemplate = MustLoadTemplate("index.html", template.Must(BaseTemplate.Clone()))
+	LoginTemplate = MustLoadTemplate("login.html", template.Must(BaseTemplate.Clone()))
+
+	SimpleBaseTemplate = MustLoadTemplate("simple_base.html", nil)
 }
 
-func MustLoadTemplate(name, pth string) *template.Template {
+func (resourceFileSystem) Open(name string) (http.File, error) {
+	if ResourcesPath == "" {
+		return nil, os.ErrNotExist
+	}
+	f, err := os.Open(ResourcesPath + "/static" + name)
+	if err != nil {
+		return nil, err
+	}
+	// Don't allow opening directories
+	if s, err := f.Stat(); err != nil {
+		f.Close()
+		return nil, err
+	} else if s.IsDir() {
+		f.Close()
+		return nil, os.ErrNotExist
+	}
+	return httpFile{f}, nil
+}
+
+type httpFile struct {
+	*os.File
+}
+
+func (httpFile) Readdir(count int) ([]os.FileInfo, error) {
+	return nil, nil
+}
+
+func MustLoadTemplate(pth string, parent *template.Template) *template.Template {
+	if parent == nil {
+		parent = template.New("")
+	}
 	f, err := ResourceBundle.Open(path.Join("templates", pth))
 	if err != nil {
 		panic(err)
@@ -53,79 +94,21 @@ func MustLoadTemplate(name, pth string) *template.Template {
 		panic(err)
 	}
 	f.Close()
-	return template.Must(template.New(name).Parse(string(src)))
+	return template.Must(parent.Parse(string(src)))
 }
-
-// base
 
 type BaseTemplateContext struct {
-	Title template.HTML
-	Head  template.HTML
-	Body  template.HTML
+	Title      template.HTML
+	SubContext interface{}
 }
-
-type baseTemplate struct {
-	*template.Template
-}
-
-func (t *baseTemplate) Execute(w io.Writer, ctx interface{}) error {
-	return t.Render(w, ctx.(*BaseTemplateContext))
-}
-
-func (t *baseTemplate) Render(w io.Writer, ctx *BaseTemplateContext) error {
-	if ctx.Title == "" {
-		ctx.Title = "Spruce"
-	} else {
-		ctx.Title = "Spruce | " + ctx.Title
-	}
-	return t.Template.Execute(w, ctx)
-}
-
-// index
-
-type IndexTemplateContext struct {
-}
-
-type indexTemplate struct {
-	*template.Template
-}
-
-func (t *indexTemplate) Execute(w io.Writer, ctx interface{}) error {
-	return t.Render(w, ctx.(*IndexTemplateContext))
-}
-
-func (t *indexTemplate) Render(w io.Writer, ctx *IndexTemplateContext) error {
-	b := &bytes.Buffer{}
-	if err := t.Template.Execute(b, ctx); err != nil {
-		return err
-	}
-	return BaseTemplate.Execute(w, &BaseTemplateContext{
-		Body: template.HTML(string(b.String())),
-	})
-}
-
-// simple base
 
 type SimpleBaseTemplateContext struct {
-	Title template.HTML
-	Head  template.HTML
-	Body  template.HTML
-	Tail  template.HTML
+	Title      template.HTML
+	SubContext interface{}
 }
 
-type simpleBaseTemplate struct {
-	*template.Template
-}
-
-func (t *simpleBaseTemplate) Execute(w io.Writer, ctx interface{}) error {
-	return t.Render(w, ctx.(*SimpleBaseTemplateContext))
-}
-
-func (t *simpleBaseTemplate) Render(w io.Writer, ctx *SimpleBaseTemplateContext) error {
-	if ctx.Title == "" {
-		ctx.Title = "Spruce"
-	} else {
-		ctx.Title = "Spruce | " + ctx.Title
-	}
-	return t.Template.Execute(w, ctx)
+type LoginTemplateContext struct {
+	Email string
+	Next  string
+	Error string
 }

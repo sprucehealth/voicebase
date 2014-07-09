@@ -4,6 +4,7 @@ import (
 	"bytes"
 	"database/sql"
 	"encoding/json"
+
 	"github.com/sprucehealth/backend/common"
 )
 

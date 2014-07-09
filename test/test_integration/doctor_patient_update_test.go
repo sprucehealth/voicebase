@@ -3,15 +3,16 @@ package test_integration
 import (
 	"bytes"
 	"encoding/json"
+	"net/http"
+	"net/http/httptest"
+	"testing"
+
 	"github.com/sprucehealth/backend/address"
 	"github.com/sprucehealth/backend/common"
 	"github.com/sprucehealth/backend/encoding"
 	"github.com/sprucehealth/backend/libs/erx"
 	"github.com/sprucehealth/backend/libs/pharmacy"
 	"github.com/sprucehealth/backend/patient_file"
-	"net/http"
-	"net/http/httptest"
-	"testing"
 )
 
 type requestData struct {
@@ -160,9 +161,9 @@ func TestDoctorFailedUpdate(t *testing.T) {
 		t.Fatalf("Expected a %d request due to remove of phone numbers, instead got %d", http.StatusBadRequest, resp.StatusCode)
 	}
 
-	signedupPatientResponse.Patient.PhoneNumbers = []*common.PhoneInformation{&common.PhoneInformation{
-		Phone:     "1241515",
-		PhoneType: "Home",
+	signedupPatientResponse.Patient.PhoneNumbers = []*common.PhoneNumber{&common.PhoneNumber{
+		Phone: "1241515",
+		Type:  "Home",
 	}}
 
 	// now lets try no address
@@ -176,7 +177,7 @@ func TestDoctorFailedUpdate(t *testing.T) {
 	}
 
 	// now lets try no dob
-	signedupPatientResponse.Patient.Dob = encoding.Dob{Month: 11, Day: 8, Year: 1987}
+	signedupPatientResponse.Patient.DOB = encoding.DOB{Month: 11, Day: 8, Year: 1987}
 	resp, err = testData.AuthPut(ts.URL, "application/json", bytes.NewReader(jsonData), doctor.AccountId.Int64())
 	if err != nil {
 		t.Fatal("Unable to make successful call to update patient information: " + err.Error())
@@ -230,17 +231,18 @@ func TestDoctorUpdateToPhoneNumbers(t *testing.T) {
 
 	// lets go ahead and modify current phone number list
 
-	phoneNumbers := []*common.PhoneInformation{&common.PhoneInformation{
-		Phone:     "7348465522",
-		PhoneType: "Home",
-	},
-		&common.PhoneInformation{
-			Phone:     "7348465522",
-			PhoneType: "Work",
+	phoneNumbers := []*common.PhoneNumber{
+		&common.PhoneNumber{
+			Phone: "7348465522",
+			Type:  "Home",
 		},
-		&common.PhoneInformation{
-			Phone:     "7348465522",
-			PhoneType: "Work",
+		&common.PhoneNumber{
+			Phone: "7348465522",
+			Type:  "Work",
+		},
+		&common.PhoneNumber{
+			Phone: "7348465522",
+			Type:  "Work",
 		},
 	}
 	patient.PhoneNumbers = phoneNumbers
@@ -291,7 +293,7 @@ func TestDoctorUpdateToPhoneNumbers(t *testing.T) {
 	}
 
 	for i, phoneNumber := range phoneNumbers {
-		if phoneNumber.Phone != patient.PhoneNumbers[i].Phone || phoneNumber.PhoneType != patient.PhoneNumbers[i].PhoneType {
+		if phoneNumber.Phone != patient.PhoneNumbers[i].Phone || phoneNumber.Type != patient.PhoneNumbers[i].Type {
 			t.Fatal("Expected the phone numbers modified to be the same ones returned")
 		}
 	}
@@ -344,7 +346,7 @@ func TestDoctorUpdateToTopLevelInformation(t *testing.T) {
 	patient.Prefix = "n"
 	patient.MiddleName = "aaaa"
 	patient.Gender = "Unknown"
-	patient.Dob = encoding.Dob{Day: 11, Month: 9, Year: 1987}
+	patient.DOB = encoding.DOB{Day: 11, Month: 9, Year: 1987}
 
 	stubErxApi := &erx.StubErxService{}
 	stubAddressValidationService := address.StubAddressValidationService{
@@ -388,9 +390,9 @@ func TestDoctorUpdateToTopLevelInformation(t *testing.T) {
 		patient.MiddleName != updatedPatient.MiddleName ||
 		patient.Suffix != updatedPatient.Suffix ||
 		patient.Prefix != updatedPatient.Prefix ||
-		patient.Dob.Day != updatedPatient.Dob.Day ||
-		patient.Dob.Year != updatedPatient.Dob.Year ||
-		patient.Dob.Month != updatedPatient.Dob.Month {
+		patient.DOB.Day != updatedPatient.DOB.Day ||
+		patient.DOB.Year != updatedPatient.DOB.Year ||
+		patient.DOB.Month != updatedPatient.DOB.Month {
 		t.Fatal("Patient data incorrectly updated")
 	}
 }

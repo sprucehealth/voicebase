@@ -1,17 +1,18 @@
 package patient
 
 import (
+	"net/http"
+	"strings"
+
 	"github.com/sprucehealth/backend/address"
 	"github.com/sprucehealth/backend/api"
 	"github.com/sprucehealth/backend/apiservice"
 	"github.com/sprucehealth/backend/common"
 	"github.com/sprucehealth/backend/encoding"
 	"github.com/sprucehealth/backend/libs/golog"
-	"net/http"
-	"strings"
 
+	"github.com/sprucehealth/backend/third_party/github.com/SpruceHealth/schema"
 	"github.com/sprucehealth/backend/third_party/github.com/dchest/validator"
-	"github.com/sprucehealth/backend/third_party/github.com/gorilla/schema"
 )
 
 type SignupHandler struct {
@@ -34,7 +35,7 @@ type SignupPatientRequestData struct {
 	Password   string `schema:"password,required"`
 	FirstName  string `schema:"first_name,required"`
 	LastName   string `schema:"last_name,required"`
-	Dob        string `schema:"dob,required"`
+	DOB        string `schema:"dob,required"`
 	Gender     string `schema:"gender,required"`
 	Zipcode    string `schema:"zip_code,required"`
 	Phone      string `schema:"phone,required"`
@@ -75,9 +76,9 @@ func (s *SignupHandler) ServeHTTP(w http.ResponseWriter, r *http.Request) {
 
 	// ensure that the date of birth can be correctly parsed
 	// Note that the date will be returned as MM/DD/YYYY
-	dobParts := strings.Split(requestData.Dob, encoding.DOB_SEPARATOR)
+	dobParts := strings.Split(requestData.DOB, encoding.DOBSeparator)
 	if len(dobParts) < 3 {
-		apiservice.WriteUserError(w, http.StatusBadRequest, "Unable to parse dob. Format should be "+encoding.DOB_FORMAT)
+		apiservice.WriteUserError(w, http.StatusBadRequest, "Unable to parse dob. Format should be "+encoding.DOBFormat)
 		return
 	}
 
@@ -107,17 +108,17 @@ func (s *SignupHandler) ServeHTTP(w http.ResponseWriter, r *http.Request) {
 		ZipCode:          requestData.Zipcode,
 		CityFromZipCode:  cityState.City,
 		StateFromZipCode: cityState.StateAbbreviation,
-		PhoneNumbers: []*common.PhoneInformation{&common.PhoneInformation{
-			Phone:     requestData.Phone,
-			PhoneType: api.PHONE_CELL,
+		PhoneNumbers: []*common.PhoneNumber{&common.PhoneNumber{
+			Phone: requestData.Phone,
+			Type:  api.PHONE_CELL,
 		},
 		},
 		PromptStatus: common.Unprompted,
 	}
 
-	newPatient.Dob, err = encoding.NewDobFromComponents(dobParts[0], dobParts[1], dobParts[2])
+	newPatient.DOB, err = encoding.NewDOBFromComponents(dobParts[0], dobParts[1], dobParts[2])
 	if err != nil {
-		apiservice.WriteUserError(w, http.StatusBadRequest, "Unable to parse date of birth. Required format + "+encoding.DOB_FORMAT)
+		apiservice.WriteUserError(w, http.StatusBadRequest, "Unable to parse date of birth. Required format + "+encoding.DOBFormat)
 		return
 	}
 

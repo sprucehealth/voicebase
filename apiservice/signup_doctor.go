@@ -9,7 +9,6 @@ import (
 	"github.com/sprucehealth/backend/common"
 	"github.com/sprucehealth/backend/encoding"
 	"github.com/sprucehealth/backend/libs/golog"
-
 	"github.com/sprucehealth/backend/third_party/github.com/dchest/validator"
 )
 
@@ -47,7 +46,7 @@ type SignupDoctorRequestData struct {
 	LongTitle    string `schema:"long_title"`
 	Suffix       string `schema:"suffix"`
 	Prefix       string `schema:"prefix"`
-	Dob          string `schema:"dob,required"`
+	DOB          string `schema:"dob,required"`
 	Gender       string `schema:"gender,required"`
 	ClinicianId  int64  `schema:"clinician_id,required"`
 	AddressLine1 string `schema:"address_line_1,required"`
@@ -78,9 +77,9 @@ func (d *signupDoctorHandler) ServeHTTP(w http.ResponseWriter, r *http.Request) 
 
 	// ensure that the date of birth can be correctly parsed
 	// Note that the date will be returned as MM/DD/YYYY
-	dobParts := strings.Split(requestData.Dob, encoding.DOB_SEPARATOR)
+	dobParts := strings.Split(requestData.DOB, encoding.DOBSeparator)
 	if len(dobParts) != 3 {
-		WriteUserError(w, http.StatusBadRequest, "Dob not valid. Required format "+encoding.DOB_FORMAT)
+		WriteUserError(w, http.StatusBadRequest, "DOB not valid. Required format "+encoding.DOBFormat)
 		return
 	}
 
@@ -122,7 +121,7 @@ func (d *signupDoctorHandler) ServeHTTP(w http.ResponseWriter, r *http.Request) 
 		Suffix:              requestData.Suffix,
 		Prefix:              requestData.Prefix,
 		MiddleName:          requestData.MiddleName,
-		Dob:                 encoding.Dob{Year: year, Month: month, Day: day},
+		DOB:                 encoding.DOB{Year: year, Month: month, Day: day},
 		CellPhone:           requestData.Phone,
 		DoseSpotClinicianId: requestData.ClinicianId,
 		DoctorAddress: &common.Address{

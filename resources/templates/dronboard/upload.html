@@ -1,0 +1,18 @@
+{{define "head"}}
+{{end}}
+
+{{define "tail"}}
+{{end}}
+
+{{define "body"}}
+	<form method="POST" action="" role="form" class="form-onboard form-inline" enctype="multipart/form-data">
+		<h2>{{.Title}}</h2>
+
+		<div class="form-group">
+			<input required type="file" name="File">
+		</div>
+
+		<a href="{{.NextURL}}" class="btn btn-default" role="button">Skip</a>
+		<button type="submit" class="btn btn-primary">Upload</button>
+	</form>
+{{end}}

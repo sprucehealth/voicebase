@@ -7,7 +7,7 @@ import (
 	"github.com/sprucehealth/backend/apiservice"
 	"github.com/sprucehealth/backend/common"
 
-	"github.com/sprucehealth/backend/third_party/github.com/gorilla/schema"
+	"github.com/sprucehealth/backend/third_party/github.com/SpruceHealth/schema"
 )
 
 type doctorPatientTreatmentsHandler struct {

@@ -67,7 +67,7 @@ import (
 	"github.com/sprucehealth/backend/libs/golog"
 	"github.com/sprucehealth/backend/libs/pharmacy"
 
-	"github.com/sprucehealth/backend/third_party/github.com/gorilla/schema"
+	"github.com/sprucehealth/backend/third_party/github.com/SpruceHealth/schema"
 )
 
 type AuthenticationHandler struct {

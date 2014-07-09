@@ -2,15 +2,16 @@ package passreset
 
 import (
 	"fmt"
+	"net/url"
+
 	"github.com/sprucehealth/backend/api"
 	"github.com/sprucehealth/backend/email"
-	"net/url"
 )
 
 const (
-	lostPasswordExpires     = 30 * 60 // 30 min
-	lostPasswordCodeExpires = 10 * 60 // 10 min
-	resetPasswordExpires    = 10 * 60 // 5 min
+	lostPasswordExpires     = 30 * 60 // seconds
+	lostPasswordCodeExpires = 10 * 60 // seconds
+	resetPasswordExpires    = 10 * 60 // seconds
 )
 
 func SendPasswordResetEmail(authAPI api.AuthAPI, emailService email.Service, domain string, accountID int64, emailAddress, supportEmail string) error {

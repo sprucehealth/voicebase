@@ -3,13 +3,14 @@ package surescripts
 import (
 	"errors"
 	"fmt"
+	"strconv"
+	"strings"
+	"time"
+
 	"github.com/sprucehealth/backend/address"
 	"github.com/sprucehealth/backend/api"
 	"github.com/sprucehealth/backend/common"
 	"github.com/sprucehealth/backend/encoding"
-	"strconv"
-	"strings"
-	"time"
 )
 
 // these are valid area codes as obtained from dosespot, for what they claim is a list last updated from January 2011
@@ -58,11 +59,11 @@ func ValidatePatientInformation(patient *common.Patient, addressValidationApi ad
 		return errors.New("Last name is required")
 	}
 
-	if patient.Dob.Month == 0 || patient.Dob.Year == 0 || patient.Dob.Day == 0 {
-		return errors.New("Dob is invalid. Please enter in right format.")
+	if patient.DOB.Month == 0 || patient.DOB.Year == 0 || patient.DOB.Day == 0 {
+		return errors.New("DOB is invalid. Please enter in right format.")
 	}
 
-	if !is18YearsOfAge(patient.Dob) {
+	if !is18YearsOfAge(patient.DOB) {
 		return errors.New("Patient is not 18 years of age")
 	}
 
@@ -133,7 +134,7 @@ func ValidatePatientInformation(patient *common.Patient, addressValidationApi ad
 	return nil
 }
 
-func is18YearsOfAge(dob encoding.Dob) bool {
+func is18YearsOfAge(dob encoding.DOB) bool {
 	dobTime := time.Date(dob.Year, time.Month(dob.Month), dob.Day, 0, 0, 0, 0, time.UTC)
 	ageDuration := time.Now().Sub(dobTime)
 	numYears := ageDuration.Hours() / (float64(24.0) * float64(365.0))

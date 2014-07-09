@@ -18,9 +18,10 @@ const (
 	ClaimerTypePhotoIntakeSection  = "patient_intake_photo_section"
 )
 
-type PhoneInformation struct {
-	Phone     string `json:"phone,omitempty"`
-	PhoneType string `json:"phone_type,omitempty"`
+type PhoneNumber struct {
+	Phone  string `json:"phone,omitempty"`
+	Type   string `json:"phone_type,omitempty"`
+	Status string `json:"-"`
 }
 
 type Patient struct {
@@ -31,13 +32,13 @@ type Patient struct {
 	MiddleName        string                 `json:"middle_name,omitempty"`
 	Suffix            string                 `json:"suffix,omitempty"`
 	Prefix            string                 `json:"prefix,omitempty"`
-	Dob               encoding.Dob           `json:"dob,omitempty"`
+	DOB               encoding.DOB           `json:"dob,omitempty"`
 	Email             string                 `json:"email,omitempty"`
 	Gender            string                 `json:"gender,omitempty"`
 	ZipCode           string                 `json:"zip_code,omitempty"`
 	CityFromZipCode   string                 `json:"-"`
 	StateFromZipCode  string                 `json:"-"`
-	PhoneNumbers      []*PhoneInformation    `json:"phone_numbers,omitempty"`
+	PhoneNumbers      []*PhoneNumber         `json:"phone_numbers,omitempty"`
 	Status            string                 `json:"-"`
 	AccountId         encoding.ObjectId      `json:"account_id,omitempty"`
 	ERxPatientId      encoding.ObjectId      `json:"-"`
@@ -72,7 +73,7 @@ type Doctor struct {
 	Suffix              string               `json:"suffix,omitempty"`
 	ShortTitle          string               `json:"short_title,omitempty"`
 	LongTitle           string               `json:"long_title,omitempty"`
-	Dob                 encoding.Dob         `json:"-"`
+	DOB                 encoding.DOB         `json:"-"`
 	Gender              string               `json:"-"`
 	Status              string               `json:"-"`
 	AccountId           encoding.ObjectId    `json:"-"`
@@ -83,6 +84,7 @@ type Doctor struct {
 	DoctorAddress       *Address             `json:"address,omitempty"`
 	PersonId            int64                `json:"person_id"`
 	PromptStatus        PushPromptStatus     `json:"prompt_status"`
+	NPI                 string               `json:"npi,omitempty"`
 }
 
 const (
@@ -111,6 +113,13 @@ const (
 	PCStatusTempClaimed = "TEMP_CLAIMED"
 	PCStatusClaimed     = "CLAIMED"
 )
+
+type State struct {
+	ID           int64
+	Name         string
+	Abbreviation string
+	Country      string
+}
 
 type Address struct {
 	Id           int64  `json:"-"`
@@ -521,6 +530,37 @@ type ResourceGuide struct {
 }
 
 type Account struct {
-	ID   int64
-	Role string
+	ID    int64
+	Role  string
+	Email string
+}
+
+type MedicalLicense struct {
+	ID       int64
+	DoctorID int64
+	State    string
+	Number   string
+	Status   MedicalLicenseStatus
+}
+
+type BankAccount struct {
+	ID                int64
+	AccountID         int64
+	StripeRecipientID string
+	Created           time.Time
+	Default           bool
+	Verified          bool
+	VerifyAmount1     int
+	VerifyAmount2     int
+	VerifyTransfer1ID string
+	VerifyTransfer2ID string
+	VerifyExpires     time.Time
+}
+
+type DoctorSearchResult struct {
+	DoctorID  int64
+	AccountID int64
+	FirstName string
+	LastName  string
+	Email     string
 }

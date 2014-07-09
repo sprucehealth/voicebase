@@ -4,6 +4,11 @@ import (
 	"bytes"
 	"encoding/json"
 	"fmt"
+	"io/ioutil"
+	"net/http"
+	"net/url"
+	"time"
+
 	"github.com/sprucehealth/backend/api"
 	"github.com/sprucehealth/backend/apiservice"
 	"github.com/sprucehealth/backend/common"
@@ -11,12 +16,8 @@ import (
 	"github.com/sprucehealth/backend/libs/golog"
 	patientApiService "github.com/sprucehealth/backend/patient"
 	"github.com/sprucehealth/backend/patient_visit"
-	"io/ioutil"
-	"net/http"
-	"net/url"
-	"time"
 
-	"github.com/sprucehealth/backend/third_party/github.com/gorilla/schema"
+	"github.com/sprucehealth/backend/third_party/github.com/SpruceHealth/schema"
 )
 
 type Handler struct {
@@ -120,7 +121,7 @@ func (c *Handler) createNewDemoPatient(patient *common.Patient, doctorId int64, 
 		urlValues := url.Values{}
 		urlValues.Set("first_name", patient.FirstName)
 		urlValues.Set("last_name", patient.LastName)
-		urlValues.Set("dob", patient.Dob.String())
+		urlValues.Set("dob", patient.DOB.String())
 		urlValues.Set("gender", patient.Gender)
 		urlValues.Set("zip_code", patient.ZipCode)
 		urlValues.Set("phone", patient.PhoneNumbers[0].Phone)

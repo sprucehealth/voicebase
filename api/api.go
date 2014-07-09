@@ -36,6 +36,8 @@ const (
 	PHONE_HOME                     = "Home"
 	PHONE_WORK                     = "Work"
 	PHONE_CELL                     = "Cell"
+
+	MinimumPasswordLength = 6
 )
 
 var (
@@ -84,7 +86,6 @@ type PatientAPI interface {
 	GetCardFromId(cardId int64) (*common.Card, error)
 	UpdateDefaultAddressForPatient(patientId int64, address *common.Address) error
 	DeleteAddress(addressId int64) error
-	GetFullNameForState(state string) (string, error)
 }
 
 type PatientCaseAPI interface {
@@ -233,6 +234,13 @@ type DoctorAPI interface {
 	MarkGenerationOfTreatmentPlanInVisitQueue(doctorId, patientVisitId, treatmentPlanId int64, currentState, updatedState string) error
 	GetSavedMessageForDoctor(doctorID int64) (string, error)
 	SetSavedMessageForDoctor(doctorID int64, message string) error
+	DoctorAttributes(doctorID int64, names []string) (map[string]string, error)
+	UpdateDoctorAttributes(doctorID int64, attributes map[string]string) error
+	AddMedicalLicenses([]*common.MedicalLicense) error
+	MedicalLicenses(doctorID int64) ([]*common.MedicalLicense, error)
+	// TODO: The following method is unfortunate, but it's not collected during registration.
+	// The updating of the objects like Doctor and Patient needs some thought.
+	SetDoctorNPI(doctorID int64, npi string) error
 }
 
 type FavoriteTreatmentPlanAPI interface {
@@ -327,7 +335,24 @@ type ResourceLibraryAPI interface {
 	UpdateResourceGuide(*common.ResourceGuide) error
 }
 
+type GeoAPI interface {
+	GetFullNameForState(state string) (string, error)
+	ListStates() ([]*common.State, error)
+}
+
+type BankingAPI interface {
+	AddBankAccount(userAccountID int64, stripeRecipientID string, defaultAccount bool) (int64, error)
+	DeleteBankAccount(id int64) error
+	ListBankAccounts(userAccountID int64) ([]*common.BankAccount, error)
+	UpdateBankAccountVerficiation(id int64, amount1, amount2 int, transfer1ID, transfer2ID string, expires time.Time, verified bool) error
+}
+
+type SearchAPI interface {
+	SearchDoctors(query string) ([]*common.DoctorSearchResult, error)
+}
+
 type DataAPI interface {
+	GeoAPI
 	PatientAPI
 	DoctorAPI
 	DoctorManagementAPI
@@ -345,6 +370,8 @@ type DataAPI interface {
 	FavoriteTreatmentPlanAPI
 	ResourceLibraryAPI
 	CaseRouteAPI
+	BankingAPI
+	SearchAPI
 }
 
 type CloudStorageAPI interface {
@@ -369,9 +396,10 @@ type AuthAPI interface {
 	UpdateLastOpenedDate(accountId int64) error
 	GetAccountForEmail(email string) (*common.Account, error)
 	GetAccount(id int64) (*common.Account, error)
+	GetPhoneNumbersForAccount(id int64) ([]*common.PhoneNumber, error)
 	// Temporary auth tokens
 	CreateTempToken(accountId int64, expireSec int, purpose, token string) (string, error)
-	ValidateTempToken(purpose, token string) (int64, string, error)
+	ValidateTempToken(purpose, token string) (*common.Account, error)
 	DeleteTempToken(purpose, token string) error
 	DeleteTempTokensForAccount(accountId int64) error
 }

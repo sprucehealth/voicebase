@@ -4,10 +4,11 @@ import (
 	"database/sql"
 	"errors"
 	"fmt"
-	"github.com/sprucehealth/backend/common"
-	"github.com/sprucehealth/backend/encoding"
 	"strconv"
 	"strings"
+
+	"github.com/sprucehealth/backend/common"
+	"github.com/sprucehealth/backend/encoding"
 )
 
 const (
@@ -47,7 +48,6 @@ const (
 	drugNameTable                      = "drug_name"
 	drugFormTable                      = "drug_form"
 	drugRouteTable                     = "drug_route"
-	doctorPhoneType                    = "MAIN"
 	treatmentTable                     = "treatment"
 	pharmacyDispensedTreatmentTable    = "pharmacy_dispensed_treatment"
 	requestedTreatmentTable            = "requested_treatment"
