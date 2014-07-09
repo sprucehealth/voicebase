@@ -30,10 +30,9 @@ func InitListeners(dataAPI api.DataAPI) {
 				NotificationType: CNMessage,
 				UID:              fmt.Sprintf("%s:%d", CNMessage, ev.Message.ID),
 				Data: &messageNotification{
-					MessageId:    ev.Message.ID,
-					DoctorId:     ev.Person.Doctor.DoctorId.Int64(),
-					DismissOnTap: true,
-					CaseId:       ev.Message.CaseID,
+					MessageId: ev.Message.ID,
+					DoctorId:  ev.Person.Doctor.DoctorId.Int64(),
+					CaseId:    ev.Message.CaseID,
 				},
 			}); err != nil {
 				golog.Errorf("Unable to insert notification item for case: %s", err)

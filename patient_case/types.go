@@ -71,10 +71,9 @@ func (t *treatmentPlanNotification) makeHomeCardView(dataAPI api.DataAPI) (commo
 }
 
 type messageNotification struct {
-	MessageId    int64 `json:"message_id"`
-	DoctorId     int64 `json:"doctor_id"`
-	CaseId       int64 `json:"case_id"`
-	DismissOnTap bool  `json:"dismiss_on_tap"`
+	MessageId int64 `json:"message_id"`
+	DoctorId  int64 `json:"doctor_id"`
+	CaseId    int64 `json:"case_id"`
 }
 
 func (m *messageNotification) TypeName() string {
@@ -88,13 +87,12 @@ func (m *messageNotification) makeCaseNotificationView(dataAPI api.DataAPI, noti
 	}
 
 	nView := &caseNotificationMessageView{
-		ID:           notificationId,
-		Title:        fmt.Sprintf("Message from Dr. %s", doctor.LastName),
-		IconURL:      app_url.GetSmallThumbnail(api.DOCTOR_ROLE, m.DoctorId),
-		ActionURL:    app_url.ViewCaseMessageAction(m.MessageId, m.CaseId),
-		MessageID:    m.MessageId,
-		RoundedIcon:  true,
-		DismissOnTap: m.DismissOnTap,
+		ID:          notificationId,
+		Title:       fmt.Sprintf("Message from Dr. %s", doctor.LastName),
+		IconURL:     app_url.GetSmallThumbnail(api.DOCTOR_ROLE, m.DoctorId),
+		ActionURL:   app_url.ViewCaseMessageAction(m.MessageId, m.CaseId),
+		MessageID:   m.MessageId,
+		RoundedIcon: true,
 	}
 	return nView, nView.Validate()
 }

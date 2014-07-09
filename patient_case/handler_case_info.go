@@ -75,6 +75,8 @@ func (c *caseInfoHandler) ServeHTTP(w http.ResponseWriter, r *http.Request) {
 	}
 
 	// only set the diagnosis for the patient case if the latest visit has been treated
+	// FIX: Populating the diagnosis for a case based on the latest visit's diagnosis for now.
+	// Need to figure out how to store the diagnosis at the case level.
 	patientVisits, err := c.dataAPI.GetVisitsForCase(patientCase.Id.Int64())
 	if err != nil {
 		apiservice.WriteError(err, w, r)
