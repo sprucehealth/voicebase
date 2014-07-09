@@ -114,16 +114,6 @@ const (
 	PCStatusClaimed     = "CLAIMED"
 )
 
-<<<<<<< HEAD
-=======
-type PatientCase struct {
-	Id                encoding.ObjectId `json:"case_id"`
-	PatientId         encoding.ObjectId `json:"patient_id"`
-	HealthConditionId encoding.ObjectId `json:"health_condition_id"`
-	CreationDate      time.Time         `json:"creation_date"`
-	Status            string            `json:"status"`
-}
-
 type State struct {
 	ID           int64
 	Name         string
@@ -131,7 +121,6 @@ type State struct {
 	Country      string
 }
 
->>>>>>> First step of doctor onboarding done except for UI
 type Address struct {
 	Id           int64  `json:"-"`
 	AddressLine1 string `json:"address_line_1"`
