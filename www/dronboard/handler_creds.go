@@ -14,10 +14,10 @@ import (
 
 var (
 	licenseStatuses = []common.MedicalLicenseStatus{
-		common.Active,
-		common.Inactive,
-		common.Temporary,
-		common.Pending,
+		common.MLActive,
+		common.MLInactive,
+		common.MLTemporary,
+		common.MLPending,
 	}
 )
 

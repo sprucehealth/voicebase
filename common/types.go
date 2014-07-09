@@ -123,10 +123,10 @@ func GetPushPromptStatus(promptStatus string) (PushPromptStatus, error) {
 type MedicalLicenseStatus string
 
 const (
-	Active    MedicalLicenseStatus = "ACTIVE"
-	Inactive  MedicalLicenseStatus = "INACTIVE"
-	Temporary MedicalLicenseStatus = "TEMPORARY"
-	Pending   MedicalLicenseStatus = "PENDING"
+	MLActive    MedicalLicenseStatus = "ACTIVE"
+	MLInactive  MedicalLicenseStatus = "INACTIVE"
+	MLTemporary MedicalLicenseStatus = "TEMPORARY"
+	MLPending   MedicalLicenseStatus = "PENDING"
 )
 
 func (l MedicalLicenseStatus) String() string {
@@ -148,7 +148,7 @@ func (l *MedicalLicenseStatus) Scan(src interface{}) error {
 
 func GetMedicalLicenseStatus(s string) (MedicalLicenseStatus, error) {
 	switch l := MedicalLicenseStatus(s); l {
-	case Active, Inactive, Temporary, Pending:
+	case MLActive, MLInactive, MLTemporary, MLPending:
 		return l, nil
 	}
 	return "", errors.New("common: unknown medical license status: " + s)
