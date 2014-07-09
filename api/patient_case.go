@@ -31,7 +31,9 @@ func (d *DataService) GetDoctorsAssignedToPatientCase(patientCaseId int64) ([]*c
 // GetActiveMembersOfCareTeamForCase returns the care providers that are permanently part of the patient care team
 // It also populates the actual provider object so as to make it possible for the client to use this information as is seen fit
 func (d *DataService) GetActiveMembersOfCareTeamForCase(patientCaseId int64) ([]*common.CareProviderAssignment, error) {
-	rows, err := d.db.Query(`select provider_id, provider_role, status, creation_date from patient_case_care_provider_assignment where status = ? and patient_case_id = ?`, STATUS_ACTIVE, patientCaseId)
+	rows, err := d.db.Query(`select provider_id, role_type_tag, status, creation_date from patient_case_care_provider_assignment 
+		inner join role_type on role_type_id = role_type.id
+		where status = ? and patient_case_id = ?`, STATUS_ACTIVE, patientCaseId)
 	if err != nil {
 		return nil, err
 	}
@@ -44,7 +46,7 @@ func (d *DataService) GetActiveMembersOfCareTeamForCase(patientCaseId int64) ([]
 			return nil, err
 		}
 
-		if assignment.Status == DOCTOR_ROLE {
+		if assignment.ProviderRole == DOCTOR_ROLE {
 			assignment.Doctor, err = d.GetDoctorFromId(assignment.ProviderId)
 			if err != nil {
 				return nil, err
