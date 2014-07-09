@@ -13,8 +13,9 @@ import (
 )
 
 type insuranceHandler struct {
-	router  *mux.Router
-	dataAPI api.DataAPI
+	router   *mux.Router
+	dataAPI  api.DataAPI
+	nextStep string
 }
 
 type explanation struct {
@@ -53,8 +54,9 @@ func (r *insuranceForm) Validate() map[string]string {
 
 func NewInsuranceHandler(router *mux.Router, dataAPI api.DataAPI) http.Handler {
 	return www.SupportedMethodsHandler(&insuranceHandler{
-		router:  router,
-		dataAPI: dataAPI,
+		router:   router,
+		dataAPI:  dataAPI,
+		nextStep: "doctor-register-engagement",
 	}, []string{"GET", "POST"})
 }
 
@@ -105,7 +107,7 @@ func (h *insuranceHandler) ServeHTTP(w http.ResponseWriter, r *http.Request) {
 				return
 			}
 
-			if u, err := h.router.Get("doctor-register-financials").URLPath(); err != nil {
+			if u, err := h.router.Get(h.nextStep).URLPath(); err != nil {
 				www.InternalServerError(w, r, err)
 			} else {
 				http.Redirect(w, r, u.String(), http.StatusSeeOther)

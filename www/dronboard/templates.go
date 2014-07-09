@@ -21,7 +21,7 @@ var (
 
 func init() {
 	baseTemplate = www.MustLoadTemplate("dronboard/base.html", template.Must(www.BaseTemplate.Clone()))
-	registerTemplate = www.MustLoadTemplate("dronboard/signup.html", template.Must(baseTemplate.Clone()))
+	registerTemplate = www.MustLoadTemplate("dronboard/register.html", template.Must(baseTemplate.Clone()))
 	credsTemplate = www.MustLoadTemplate("dronboard/creds.html", template.Must(baseTemplate.Clone()))
 	uploadTemplate = www.MustLoadTemplate("dronboard/upload.html", template.Must(baseTemplate.Clone()))
 	engagementTemplate = www.MustLoadTemplate("dronboard/engagement.html", template.Must(baseTemplate.Clone()))

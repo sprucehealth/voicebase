@@ -98,6 +98,7 @@ type Config struct {
 	Support               *SupportConfig              `group:"support" toml:"support"`
 	Email                 *email.Config               `group:"email" toml:"email"`
 	Storage               map[string]*StorageConfig   `group:"storage" toml:"storage"`
+	SecretKeys            []string                    `long:"secret_keys" description:"Secret keys. The first is the current and subsequent ones are older. Allows for rotation."`
 }
 
 var DefaultConfig = Config{

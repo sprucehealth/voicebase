@@ -22,8 +22,9 @@ var (
 )
 
 type credentialsHandler struct {
-	router  *mux.Router
-	dataAPI api.DataAPI
+	router   *mux.Router
+	dataAPI  api.DataAPI
+	nextStep string
 }
 
 type stateLicense struct {
@@ -79,8 +80,9 @@ func (r *credentialsForm) Validate() map[string]string {
 
 func NewCredentialsHandler(router *mux.Router, dataAPI api.DataAPI) http.Handler {
 	return www.SupportedMethodsHandler(&credentialsHandler{
-		router:  router,
-		dataAPI: dataAPI,
+		router:   router,
+		dataAPI:  dataAPI,
+		nextStep: "doctor-register-insurance",
 	}, []string{"GET", "POST"})
 }
 
@@ -155,7 +157,7 @@ func (h *credentialsHandler) ServeHTTP(w http.ResponseWriter, r *http.Request) {
 				return
 			}
 
-			if u, err := h.router.Get("doctor-register-upload-cv").URLPath(); err != nil {
+			if u, err := h.router.Get(h.nextStep).URLPath(); err != nil {
 				www.InternalServerError(w, r, err)
 			} else {
 				http.Redirect(w, r, u.String(), http.StatusSeeOther)

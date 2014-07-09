@@ -3,6 +3,12 @@
 .state-license {
 	text-transform: capitalize;
 }
+th {
+	font-weight: normal;
+}
+.table>thead>tr>td, .table>tbody>tr>td, .table>tfoot>tr>td {
+	border: 0;
+}
 </style>
 {{end}}
 
@@ -49,43 +55,9 @@ $(function() {
 			<input required type="text" id="NPI" name="NPI" value="{{.Form.NPI}}" class="form-control">
 		</div>
 
-		<div class="checkbox">
-			<input type="checkbox" id="RiskManagementCourse" name="RiskManagementCourse"{{if .Form.RiskManagementCourse}} checked{{end}}>
-			Have you completed a risk management education course within the last twelve months?
-		</div>
+		<label class="control-label">States in which you hold a license to practice medicine:</label>
 
-		<div class="checkbox">
-			<input type="checkbox" id="AmericanBoardCertified" name="AmericanBoardCertified"{{if .Form.AmericanBoardCertified}} checked{{end}}>
-			Are you American Board Certified?
-		</div>
-
-		<fieldset id="board-certification" {{if not .Form.AmericanBoardCertified}}disabled{{end}}>
-			<div class="form-group {{if .FormErrors.SpecialtyBoard}}has-error has-feedback{{end}}">
-				<label class="control-label" for="SpecialtyBoard">Specialty board</label>
-				<input required type="text" id="SpecialtyBoard" name="SpecialtyBoard" value="{{.Form.SpecialtyBoard}}" class="form-control">
-			</div>
-
-			<div class="form-group {{if .FormErrors.RecentCertDate}}has-error has-feedback{{end}}">
-				<label class="control-label" for="RecentCertDate">Date most recently certified</label>
-				<input required type="date" id="RecentCertDate" name="RecentCertDate" value="{{.Form.RecentCertDate}}" placeholder="MM/DD/YYYY" class="form-control">
-			</div>
-		</fieldset>
-
-		<div class="checkbox">
-			<input type="checkbox" id="ContinuedEducation" name="ContinuedEducation"{{if .Form.ContinuedEducation}} checked{{end}}>
-			Have you participated in continuing medical edutationwithin the last three years?
-		</div>
-
-		<fieldset id="continued-education" {{if not .Form.ContinuedEducation}}disabled{{end}}>
-			<div class="form-group {{if .FormErrors.CreditHours}}has-error has-feedback{{end}}">
-				<label class="control-label" for="CreditHours">Number of Category 1 credit hours</label>
-				<input required type="number" id="CreditHours" name="CreditHours" value="{{.Form.CreditHours}}" class="form-control">
-			</div>
-		</fieldset>
-
-		<h4 style="margin-top:20px;">States in which you hold a license to practice medicine:<h4>
-
- 		{{if .FormErrors.StateLicenses}}
+		{{if .FormErrors.StateLicenses}}
 		<div class="text-danger">
 			{{.FormErrors.StateLicenses}}
 		</div>
@@ -125,6 +97,40 @@ $(function() {
 			{{end}}
 			</tbody>
 		</table>
+
+		<div class="checkbox">
+			<input type="checkbox" id="AmericanBoardCertified" name="AmericanBoardCertified"{{if .Form.AmericanBoardCertified}} checked{{end}}>
+			Are you American Board Certified?
+		</div>
+
+		<fieldset id="board-certification" {{if not .Form.AmericanBoardCertified}}disabled{{end}}>
+			<div class="form-group {{if .FormErrors.SpecialtyBoard}}has-error has-feedback{{end}}">
+				<label class="control-label" for="SpecialtyBoard">Specialty board</label>
+				<input required type="text" id="SpecialtyBoard" name="SpecialtyBoard" value="{{.Form.SpecialtyBoard}}" class="form-control">
+			</div>
+
+			<div class="form-group {{if .FormErrors.RecentCertDate}}has-error has-feedback{{end}}">
+				<label class="control-label" for="RecentCertDate">Date most recently certified</label>
+				<input required type="date" id="RecentCertDate" name="RecentCertDate" value="{{.Form.RecentCertDate}}" placeholder="MM/DD/YYYY" class="form-control">
+			</div>
+		</fieldset>
+
+		<div class="checkbox">
+			<input type="checkbox" id="ContinuedEducation" name="ContinuedEducation"{{if .Form.ContinuedEducation}} checked{{end}}>
+			Have you participated in continuing medical education within the last three years?
+		</div>
+
+		<fieldset id="continued-education" {{if not .Form.ContinuedEducation}}disabled{{end}}>
+			<div class="form-group {{if .FormErrors.CreditHours}}has-error has-feedback{{end}}">
+				<label class="control-label" for="CreditHours">Number of Category 1 credit hours</label>
+				<input required type="number" id="CreditHours" name="CreditHours" value="{{.Form.CreditHours}}" class="form-control">
+			</div>
+		</fieldset>
+
+		<div class="checkbox">
+			<input type="checkbox" id="RiskManagementCourse" name="RiskManagementCourse"{{if .Form.RiskManagementCourse}} checked{{end}}>
+			Have you completed a risk management education course within the last twelve months?
+		</div>
 
 		<button type="submit" class="btn btn-primary pull-right">Submit</button>
 	</form>

@@ -10,7 +10,7 @@
 
 {{define "body"}}
 	<form method="POST" action="" role="form" class="form-onboard">
-		<h2>Register</h2>
+		<h2>Create Account</h2>
 
 		<div class="form-group {{if .FormErrors.FirstName}}has-error has-feedback{{end}}">
 			<label class="control-label" for="FirstName">First Name</label>
@@ -92,6 +92,6 @@
 			{{template "fieldError" .FormErrors.Password2}}
 		</div>
 
-		<button type="submit" class="btn btn-primary pull-right">Register</button>
+		<button type="submit" class="btn btn-primary pull-right">Create Account</button>
 	</form>
 {{end}}

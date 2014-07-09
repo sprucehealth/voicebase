@@ -58,7 +58,7 @@ func NewUploadClaimsHistory(router *mux.Router, dataAPI api.DataAPI, store stora
 		attrName: api.AttrClaimsHistoryFile,
 		fileTag:  "claimshistory",
 		title:    "Upload Claims History",
-		nextURL:  "doctor-register-engagement",
+		nextURL:  "doctor-register-financials",
 	}, []string{"GET", "POST"})
 }
 

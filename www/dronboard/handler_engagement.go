@@ -12,8 +12,9 @@ import (
 )
 
 type engagementHandler struct {
-	router  *mux.Router
-	dataAPI api.DataAPI
+	router   *mux.Router
+	dataAPI  api.DataAPI
+	nextStep string
 }
 
 type engagementForm struct {
@@ -30,8 +31,9 @@ func (r *engagementForm) Validate() map[string]string {
 
 func NewEngagementHandler(router *mux.Router, dataAPI api.DataAPI) http.Handler {
 	return www.SupportedMethodsHandler(&engagementHandler{
-		router:  router,
-		dataAPI: dataAPI,
+		router:   router,
+		dataAPI:  dataAPI,
+		nextStep: "doctor-register-upload-cv",
 	}, []string{"GET", "POST"})
 }
 
@@ -70,7 +72,7 @@ func (h *engagementHandler) ServeHTTP(w http.ResponseWriter, r *http.Request) {
 				return
 			}
 
-			if u, err := h.router.Get("doctor-register-insurance").URLPath(); err != nil {
+			if u, err := h.router.Get(h.nextStep).URLPath(); err != nil {
 				www.InternalServerError(w, r, err)
 			} else {
 				http.Redirect(w, r, u.String(), http.StatusSeeOther)

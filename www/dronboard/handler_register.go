@@ -18,9 +18,10 @@ var (
 )
 
 type registerHandler struct {
-	router  *mux.Router
-	dataAPI api.DataAPI
-	authAPI api.AuthAPI
+	router   *mux.Router
+	dataAPI  api.DataAPI
+	authAPI  api.AuthAPI
+	nextStep string
 }
 
 type registerForm struct {
@@ -101,9 +102,10 @@ func (r *registerForm) Validate() map[string]string {
 
 func NewRegisterHandler(router *mux.Router, dataAPI api.DataAPI, authAPI api.AuthAPI) http.Handler {
 	return www.SupportedMethodsHandler(&registerHandler{
-		router:  router,
-		dataAPI: dataAPI,
-		authAPI: authAPI,
+		router:   router,
+		dataAPI:  dataAPI,
+		authAPI:  authAPI,
+		nextStep: "doctor-register-credentials",
 	}, []string{"GET", "POST"})
 }
 
@@ -156,7 +158,7 @@ func (h *registerHandler) ServeHTTP(w http.ResponseWriter, r *http.Request) {
 				}
 
 				http.SetCookie(w, www.NewAuthCookie(token, r))
-				if u, err := h.router.Get("doctor-register-credentials").URLPath(); err != nil {
+				if u, err := h.router.Get(h.nextStep).URLPath(); err != nil {
 					www.InternalServerError(w, r, err)
 				} else {
 					http.Redirect(w, r, u.String(), http.StatusSeeOther)

@@ -1,4 +1,18 @@
 {{define "head"}}
+<style type="text/css">
+.vertical-input-group > input.form-control:first-child:not(:last-child) {
+	border-top-right-radius: 4px;
+	border-bottom-right-radius: 0;
+	border-bottom-left-radius: 0;
+}
+.vertical-input-group > input.form-control:not(:first-child):not(:last-child) {
+	border-radius: 0;
+}
+.vertical-input-group > input.form-control:last-child:not(:first-child) {
+	border-top-left-radius: 0;
+	border-top-right-radius: 0;
+}
+</style>
 {{end}}
 
 {{define "tail"}}
@@ -14,10 +28,12 @@
 		</div>
 
 		<div class="form-group {{if .FormErrors.PreviousInsurers}}has-error has-feedback{{end}}">
-			<label class="control-label" for="PreviousInsurers">List all previous liability insurers within the past 10 years.</label>
-			{{range $i, $v := .Form.PreviousInsurers}}
-			<input type="text" name="PreviousInsurers.{{$i}}.Str" value="{{$v.Str}}" class="form-control">
-			{{end}}
+			<label class="control-label" for="PreviousInsurers">List all previous liability insurers within the past 5 years.</label>
+			<div class="vertical-input-group">
+				{{range $i, $v := .Form.PreviousInsurers}}
+				<input type="text" name="PreviousInsurers.{{$i}}.Str" value="{{$v.Str}}" class="form-control">
+				{{end}}
+			</div>
 		</div>
 
 		<div class="form-group {{if .FormErrors.Violations}}has-error has-feedback{{end}}">
@@ -25,8 +41,8 @@
 				Have you ever been indicted for, charged with, or convited of any act committed in violation of any law, or ordinance other than traffic offenses? Or had your hospital privileges, DEA license, medical license, or reimbursement privileges redused, denied, revoked, suspended, restricted, subject to reprimand, placed on probation, or voluntarily surrendered?
 			</label>
 
-			If yes, please indicate the date(s) and explain.<br>
-			<textarea name="Violations" class="form-control" rows="5">{{.Form.Violations}}</textarea>
+			<p>If yes, please indicate the date(s) and explain.</p>
+			<textarea name="Violations" class="form-control" rows="2">{{.Form.Violations}}</textarea>
 		</div>
 
 		<div class="form-group {{if .FormErrors.InsuranceDeclines}}has-error has-feedback{{end}}">
@@ -34,8 +50,8 @@
 				Has any professional liability insurance company ever declined, refused, canceled, or non-renewed your coverage or have you ever had an involuntary deductible or surcharge assessed against your policy?
 			</label>
 
-			If yes, please indicate the date(s) and explain.<br>
-			<textarea name="InsuranceDeclines" class="form-control" rows="5">{{.Form.InsuranceDeclines}}</textarea>
+			<p>If yes, please indicate the date(s) and explain.</p>
+			<textarea name="InsuranceDeclines" class="form-control" rows="2">{{.Form.InsuranceDeclines}}</textarea>
 		</div>
 
 		<div class="form-group {{if .FormErrors.SexualMisconduct}}has-error has-feedback{{end}}">
@@ -43,8 +59,8 @@
 				Have you ever been accused of sexual misconduct of any kind?
 			</label>
 
-			If yes, please indicate the date(s) and explain.<br>
-			<textarea name="SexualMisconduct" class="form-control" rows="5">{{.Form.SexualMisconduct}}</textarea>
+			<p>If yes, please indicate the date(s) and explain.</p>
+			<textarea name="SexualMisconduct" class="form-control" rows="2">{{.Form.SexualMisconduct}}</textarea>
 		</div>
 
 		<div class="form-group {{if .FormErrors.Impairments}}has-error has-feedback{{end}}">
@@ -52,8 +68,8 @@
 				Have you ever incurred or become aware of having a condition that impairs your ability to practice your medical specialty?
 			</label>
 
-			If yes, please indicate the date(s) and explain.<br>
-			<textarea name="Impairments" class="form-control" rows="5">{{.Form.Impairments}}</textarea>
+			<p>If yes, please indicate the date(s) and explain.</p>
+			<textarea name="Impairments" class="form-control" rows="2">{{.Form.Impairments}}</textarea>
 		</div>
 
 		<div class="form-group {{if .FormErrors.Claims}}has-error has-feedback{{end}}">
@@ -61,8 +77,8 @@
 				Are you now, or have you ever been involved, in a claim or suit arising out of the rendering or failure to render professional services?
 			</label>
 
-			If yes, please indicate the date(s) and explain.<br>
-			<textarea name="Claims" class="form-control" rows="5">{{.Form.Claims}}</textarea>
+			<p>If yes, please indicate the date(s) and explain.</p>
+			<textarea name="Claims" class="form-control" rows="2">{{.Form.Claims}}</textarea>
 		</div>
 
 		<div class="form-group {{if .FormErrors.Incidents}}has-error has-feedback{{end}}">
@@ -70,8 +86,8 @@
 				Are you aware of any complication, incident or adverse outcome resulting in injury or death that might reasonably result in a claim or suit against you?
 			</label>
 
-			If yes, please indicate the date(s) and explain.<br>
-			<textarea name="Incidents" class="form-control" rows="5">{{.Form.Incidents}}</textarea>
+			<p>If yes, please indicate the date(s) and explain.</p>
+			<textarea name="Incidents" class="form-control" rows="2">{{.Form.Incidents}}</textarea>
 		</div>
 
 		<button type="submit" class="btn btn-primary pull-right">Submit</button>
