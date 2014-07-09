@@ -158,10 +158,11 @@ const (
 
 func (v *incompleteVisitNotification) makeCaseNotificationView(dataAPI api.DataAPI, notificationId int64) (common.ClientView, error) {
 	nView := &caseNotificationTitleSubtitleView{
-		Title:     continueVisitTitle,
-		Subtitle:  continueVisitMessage,
-		ID:        notificationId,
-		ActionURL: app_url.ContinueVisitAction(v.PatientVisitId),
+		Title:       continueVisitTitle,
+		Subtitle:    continueVisitMessage,
+		ID:          notificationId,
+		ActionURL:   app_url.ContinueVisitAction(v.PatientVisitId),
+		ButtonTitle: "Continue",
 	}
 	return nView, nView.Validate()
 }
