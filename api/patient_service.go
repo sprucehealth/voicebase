@@ -11,8 +11,6 @@ import (
 	"github.com/sprucehealth/backend/common"
 	"github.com/sprucehealth/backend/encoding"
 	"github.com/sprucehealth/backend/libs/pharmacy"
-
-	"github.com/sprucehealth/backend/third_party/github.com/go-sql-driver/mysql"
 )
 
 func (d *DataService) RegisterPatient(patient *common.Patient) error {
@@ -433,29 +431,15 @@ func (d *DataService) GetPatientFromUnlinkedDNTFTreatment(unlinkedDNTFTreatmentI
 }
 
 func (d *DataService) GetPatientVisitsForPatient(patientId int64) ([]*common.PatientVisit, error) {
-	rows, err := d.db.Query(`select id,patient_id, health_condition_id, layout_version_id, creation_date, submitted_date, closed_date, status, diagnosis 
+	rows, err := d.db.Query(`select id, patient_id, patient_case_id, health_condition_id, layout_version_id, 
+		creation_date, submitted_date, closed_date, status, diagnosis 
 		from patient_visit where patient_id = ?`, patientId)
 	if err != nil {
 		return nil, err
 	}
 	defer rows.Close()
 
-	patientVisits := make([]*common.PatientVisit, 0)
-	for rows.Next() {
-		var patientVisit common.PatientVisit
-		var submittedDate, closedDate mysql.NullTime
-		var diagnosis sql.NullString
-		if err := rows.Scan(&patientVisit.PatientVisitId, &patientVisit.PatientId, &patientVisit.HealthConditionId, &patientVisit.LayoutVersionId,
-			&patientVisit.CreationDate, &submittedDate, &closedDate,
-			&patientVisit.Status, &diagnosis); err != nil {
-			return nil, err
-		}
-		patientVisit.SubmittedDate = submittedDate.Time
-		patientVisit.ClosedDate = closedDate.Time
-		patientVisit.Diagnosis = diagnosis.String
-		patientVisits = append(patientVisits, &patientVisit)
-	}
-	return patientVisits, rows.Err()
+	return getPatientVisitFromRows(rows)
 }
 
 func (d *DataService) UpdatePatientAddress(patientId int64, addressLine1, addressLine2, city, state, zipCode, addressType string) error {

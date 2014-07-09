@@ -44,76 +44,128 @@ func (d *DataService) GetPatientIdFromPatientVisitId(patientVisitId int64) (int6
 // Adding this only to link the patient and the doctor app so as to show the doctor
 // the patient visit review of the latest submitted patient visit
 func (d *DataService) GetLatestSubmittedPatientVisit() (*common.PatientVisit, error) {
-	row := d.db.QueryRow(`select id, patient_id, health_condition_id, layout_version_id, 
+	rows, err := d.db.Query(`select id, patient_id, patient_case_id, health_condition_id, layout_version_id, 
 		creation_date, submitted_date, closed_date, status, diagnosis from patient_visit where status in ('SUBMITTED', 'REVIEWING') order by submitted_date desc limit 1`)
-	return getPatientVisitFromRow(row)
-}
-
-func (d *DataService) GetLatestClosedPatientVisitForPatient(patientId int64) (*common.PatientVisit, error) {
-	var patientVisit common.PatientVisit
-	var submittedDate, closedDate mysql.NullTime
-	var diagnosis sql.NullString
-
-	row := d.db.QueryRow(`select id, health_condition_id, layout_version_id,
-		creation_date, submitted_date, closed_date, status, diagnosis from patient_visit where status in ('CLOSED','TREATED') and patient_id = ? and closed_date is not null order by closed_date desc limit 1`, patientId)
-	err := row.Scan(&patientVisit.PatientVisitId,
-		&patientVisit.HealthConditionId,
-		&patientVisit.LayoutVersionId,
-		&patientVisit.CreationDate,
-		&submittedDate,
-		&closedDate,
-		&patientVisit.Status,
-		&diagnosis)
-
-	if err == sql.ErrNoRows {
-		return nil, NoRowsError
-	} else if err != nil {
-		return nil, err
-	}
-
-	patientVisit.SubmittedDate = submittedDate.Time
-	patientVisit.ClosedDate = closedDate.Time
-	patientVisit.Diagnosis = diagnosis.String
-
-	return &patientVisit, nil
-}
-
-func (d *DataService) GetPatientVisitFromId(patientVisitId int64) (*common.PatientVisit, error) {
-	row := d.db.QueryRow(`select id, patient_id, patient_case_id, health_condition_id, layout_version_id, 
-		creation_date, submitted_date, closed_date, status, diagnosis from patient_visit where id = ?`, patientVisitId)
-	return getPatientVisitFromRow(row)
-}
-
-func (d *DataService) GetPatientVisitFromTreatmentPlanId(treatmentPlanId int64) (*common.PatientVisit, error) {
-	row := d.db.QueryRow(`select patient_visit.id, patient_visit.patient_id, patient_visit.patient_case_id, patient_visit.health_condition_id, patient_visit.layout_version_id, 
-		patient_visit.creation_date, patient_visit.submitted_date, patient_visit.closed_date, patient_visit.status, patient_visit.diagnosis from patient_visit 
-			inner join treatment_plan_patient_visit_mapping on treatment_plan_patient_visit_mapping.patient_visit_id = patient_visit.id
-			where treatment_plan_id = ?`, treatmentPlanId)
-	return getPatientVisitFromRow(row)
-}
-
-func getPatientVisitFromRow(row *sql.Row) (*common.PatientVisit, error) {
-	patientVisit := common.PatientVisit{}
-	var submittedDate, closedDate mysql.NullTime
-	var diagnosis sql.NullString
-	err := row.Scan(
-		&patientVisit.PatientVisitId,
-		&patientVisit.PatientId,
-		&patientVisit.PatientCaseId,
-		&patientVisit.HealthConditionId,
-		&patientVisit.LayoutVersionId,
-		&patientVisit.CreationDate,
-		&submittedDate,
-		&closedDate,
-		&patientVisit.Status,
-		&diagnosis)
 	if err != nil {
 		return nil, err
 	}
-	patientVisit.SubmittedDate = submittedDate.Time
-	patientVisit.ClosedDate = closedDate.Time
-	patientVisit.Diagnosis = diagnosis.String
-	return &patientVisit, err
+
+	patientVisits, err := getPatientVisitFromRows(rows)
+	if err != nil {
+		return nil, err
+	}
+
+	switch l := len(patientVisits); {
+	case l == 0:
+		return nil, NoRowsError
+	case l == 1:
+		return patientVisits[0], nil
+	}
+
+	return nil, fmt.Errorf("expected 1 patient visit but got %d", len(patientVisits))
+}
+
+func (d *DataService) GetLatestClosedPatientVisitForPatient(patientId int64) (*common.PatientVisit, error) {
+
+	rows, err := d.db.Query(`select id, patient_id, patient_case_id, health_condition_id, layout_version_id,
+		creation_date, submitted_date, closed_date, status, diagnosis from patient_visit where status in ('CLOSED','TREATED') and patient_id = ? and closed_date is not null order by closed_date desc limit 1`, patientId)
+	if err != nil {
+		return nil, err
+	}
+	defer rows.Close()
+
+	patientVisits, err := getPatientVisitFromRows(rows)
+	if err != nil {
+		return nil, err
+	}
+
+	switch l := len(patientVisits); {
+	case l == 0:
+		return nil, NoRowsError
+	case l == 1:
+		return patientVisits[0], nil
+	}
+
+	return nil, fmt.Errorf("expected 1 patient visit but got %d", len(patientVisits))
+}
+
+func (d *DataService) GetPatientVisitFromId(patientVisitId int64) (*common.PatientVisit, error) {
+	rows, err := d.db.Query(`select id, patient_id, patient_case_id, health_condition_id, layout_version_id, 
+		creation_date, submitted_date, closed_date, status, diagnosis from patient_visit where id = ?`, patientVisitId)
+	if err != nil {
+		return nil, err
+	}
+	defer rows.Close()
+
+	patientVisits, err := getPatientVisitFromRows(rows)
+	if err != nil {
+		return nil, err
+	}
+
+	switch l := len(patientVisits); {
+	case l == 0:
+		return nil, NoRowsError
+	case l == 1:
+		return patientVisits[0], nil
+	}
+
+	return nil, fmt.Errorf("expected 1 patient visit but got %d", len(patientVisits))
+}
+
+func (d *DataService) GetPatientVisitFromTreatmentPlanId(treatmentPlanId int64) (*common.PatientVisit, error) {
+	rows, err := d.db.Query(`select patient_visit.id, patient_visit.patient_id, patient_visit.patient_case_id, patient_visit.health_condition_id, patient_visit.layout_version_id, 
+		patient_visit.creation_date, patient_visit.submitted_date, patient_visit.closed_date, patient_visit.status, patient_visit.diagnosis from patient_visit 
+			inner join treatment_plan_patient_visit_mapping on treatment_plan_patient_visit_mapping.patient_visit_id = patient_visit.id
+			where treatment_plan_id = ?`, treatmentPlanId)
+	if err != nil {
+		return nil, err
+	}
+	defer rows.Close()
+
+	patientVisits, err := getPatientVisitFromRows(rows)
+	if err != nil {
+		return nil, err
+	}
+
+	switch l := len(patientVisits); {
+	case l == 0:
+		return nil, NoRowsError
+	case l == 1:
+		return patientVisits[0], nil
+	}
+
+	return nil, fmt.Errorf("expected 1 patient visit but got %d", len(patientVisits))
+}
+
+func getPatientVisitFromRows(rows *sql.Rows) ([]*common.PatientVisit, error) {
+	var patientVisits []*common.PatientVisit
+
+	for rows.Next() {
+		var patientVisit common.PatientVisit
+		var submittedDate, closedDate mysql.NullTime
+		var diagnosis sql.NullString
+		err := rows.Scan(
+			&patientVisit.PatientVisitId,
+			&patientVisit.PatientId,
+			&patientVisit.PatientCaseId,
+			&patientVisit.HealthConditionId,
+			&patientVisit.LayoutVersionId,
+			&patientVisit.CreationDate,
+			&submittedDate,
+			&closedDate,
+			&patientVisit.Status,
+			&diagnosis)
+		if err != nil {
+			return nil, err
+		}
+		patientVisit.SubmittedDate = submittedDate.Time
+		patientVisit.ClosedDate = closedDate.Time
+		patientVisit.Diagnosis = diagnosis.String
+
+		patientVisits = append(patientVisits, &patientVisit)
+	}
+
+	return patientVisits, rows.Err()
 }
 
 func (d *DataService) GetPatientCaseIdFromPatientVisitId(patientVisitId int64) (int64, error) {

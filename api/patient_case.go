@@ -7,7 +7,6 @@ import (
 	"reflect"
 
 	"github.com/sprucehealth/backend/common"
-	"github.com/sprucehealth/backend/third_party/github.com/go-sql-driver/mysql"
 )
 
 func (d *DataService) GetDoctorsAssignedToPatientCase(patientCaseId int64) ([]*common.CareProviderAssignment, error) {
@@ -161,30 +160,7 @@ func (d *DataService) GetVisitsForCase(patientCaseId int64) ([]*common.PatientVi
 	}
 	defer rows.Close()
 
-	var patientVisits []*common.PatientVisit
-	for rows.Next() {
-		var patientVisit common.PatientVisit
-		var diagnosis sql.NullString
-		var submittedDate, closedDate mysql.NullTime
-		if err := rows.Scan(
-			&patientVisit.PatientVisitId,
-			&patientVisit.PatientId,
-			&patientVisit.PatientCaseId,
-			&patientVisit.HealthConditionId,
-			&patientVisit.LayoutVersionId,
-			&patientVisit.CreationDate,
-			&submittedDate,
-			&closedDate,
-			&patientVisit.Status,
-			&diagnosis); err != nil {
-			return nil, err
-		}
-		patientVisit.SubmittedDate = submittedDate.Time
-		patientVisit.ClosedDate = closedDate.Time
-		patientVisit.Diagnosis = diagnosis.String
-		patientVisits = append(patientVisits, &patientVisit)
-	}
-	return patientVisits, rows.Err()
+	return getPatientVisitFromRows(rows)
 }
 
 func getPatientCaseFromRow(row *sql.Row) (*common.PatientCase, error) {
