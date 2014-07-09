@@ -7,8 +7,6 @@ import (
 	"github.com/sprucehealth/backend/libs/erx"
 	"github.com/sprucehealth/backend/pharmacy"
 	"github.com/sprucehealth/backend/third_party/github.com/SpruceHealth/schema"
-
-	"github.com/sprucehealth/backend/third_party/github.com/gorilla/schema"
 )
 
 type DoctorPharmacySearchHandler struct {

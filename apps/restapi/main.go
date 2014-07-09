@@ -28,7 +28,6 @@ import (
 	"github.com/sprucehealth/backend/libs/golog"
 	"github.com/sprucehealth/backend/libs/maps"
 	"github.com/sprucehealth/backend/libs/payment/stripe"
-	"github.com/sprucehealth/backend/libs/pharmacy"
 	"github.com/sprucehealth/backend/libs/storage"
 	"github.com/sprucehealth/backend/messages"
 	"github.com/sprucehealth/backend/notify"
@@ -46,7 +45,6 @@ import (
 
 	"github.com/sprucehealth/backend/third_party/github.com/gorilla/mux"
 	"github.com/sprucehealth/backend/third_party/github.com/samuel/go-metrics/metrics"
-	"github.com/sprucehealth/backend/treatment_plan"
 	"github.com/sprucehealth/backend/www/router"
 )
 

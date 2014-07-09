@@ -5,7 +5,6 @@ import (
 
 	"github.com/sprucehealth/backend/app_url"
 	"github.com/sprucehealth/backend/encoding"
-	"github.com/sprucehealth/backend/libs/pharmacy"
 	"github.com/sprucehealth/backend/pharmacy"
 )
 
