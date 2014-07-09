@@ -45,7 +45,6 @@ import (
 
 	"github.com/sprucehealth/backend/third_party/github.com/gorilla/mux"
 	"github.com/sprucehealth/backend/third_party/github.com/samuel/go-metrics/metrics"
-	"github.com/sprucehealth/backend/www/router"
 )
 
 const (
