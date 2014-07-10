@@ -260,7 +260,7 @@ type FavoriteTreatmentPlanAPI interface {
 
 type IntakeAPI interface {
 	GetPatientAnswersForQuestionsInGlobalSections(questionIds []int64, patientId int64) (map[int64][]common.Answer, error)
-	GetPatientAnswersForQuestionsBasedOnQuestionIds(questionIds []int64, patientId int64, patientVisitId int64) (map[int64][]common.Answer, error)
+	GetPatientAnswersForQuestions(questionIds []int64, patientId int64, patientVisitId int64) (map[int64][]common.Answer, error)
 	GetDoctorAnswersForQuestionsInDiagnosisLayout(questionIds []int64, roleId int64, patientVisitId int64) (map[int64][]common.Answer, error)
 	GetPatientCreatedPhotoSectionsForQuestionId(questionId, patientId, patientVisitId int64) ([]common.Answer, error)
 	GetPatientCreatedPhotoSectionsForQuestionIds(questionIds []int64, patientId, patientVisitId int64) (map[int64][]common.Answer, error)

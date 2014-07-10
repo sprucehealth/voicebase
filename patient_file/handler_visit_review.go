@@ -2,13 +2,13 @@ package patient_file
 
 import (
 	"encoding/json"
-	"fmt"
+	"net/http"
+
 	"github.com/sprucehealth/backend/api"
 	"github.com/sprucehealth/backend/apiservice"
 	"github.com/sprucehealth/backend/common"
 	"github.com/sprucehealth/backend/info_intake"
 	"github.com/sprucehealth/backend/libs/dispatch"
-	"net/http"
 
 	"github.com/sprucehealth/backend/third_party/github.com/SpruceHealth/mapstructure"
 )
@@ -158,28 +158,4 @@ func (d *doctorPatientVisitReviewHandler) getLatestDoctorVisitReviewLayout(patie
 	}
 
 	return data, nil
-}
-
-func populateContextForRenderingLayout(patientAnswersForQuestions map[int64][]common.Answer, questions []*info_intake.Question, dataApi api.DataAPI, r *http.Request) (common.ViewContext, error) {
-	context := common.NewViewContext()
-
-	for _, contextPopulator := range genericPopulators {
-		if err := contextPopulator.populateViewContextWithInfo(patientAnswersForQuestions, questions, context, dataApi); err != nil {
-			return nil, err
-		}
-	}
-
-	// go through each question
-	for _, question := range questions {
-		contextPopulator, ok := patientQAPopulators[question.QuestionType]
-		if !ok {
-			return nil, fmt.Errorf("Context populator not found for question with type %s", question.QuestionType)
-		}
-
-		if err := contextPopulator.populateViewContextWithPatientQA(patientAnswersForQuestions[question.QuestionId], question, context, dataApi, r); err != nil {
-			return nil, err
-		}
-	}
-
-	return *context, nil
 }

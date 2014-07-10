@@ -64,6 +64,10 @@ type Card struct {
 	CreationDate   time.Time         `json:"creation_date"`
 }
 
+const (
+	AlertSourcePatientVisitIntake = "PATIENT_VISIT_INTAKE"
+)
+
 type Alert struct {
 	Id           int64     `json:"-"`
 	PatientId    int64     `json:"-"`

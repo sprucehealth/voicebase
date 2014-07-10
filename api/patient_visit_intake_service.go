@@ -3,8 +3,9 @@ package api
 import (
 	"database/sql"
 	"fmt"
-	"github.com/sprucehealth/backend/common"
 	"strconv"
+
+	"github.com/sprucehealth/backend/common"
 )
 
 func (d *DataService) GetPatientAnswersForQuestionsInGlobalSections(questionIds []int64, patientId int64) (patientAnswers map[int64][]common.Answer, err error) {
@@ -20,7 +21,7 @@ func (d *DataService) GetPatientAnswersForQuestionsInGlobalSections(questionIds 
 	return d.getPatientAnswersForQuestionsBasedOnQuery(queryStr, patientId)
 }
 
-func (d *DataService) GetPatientAnswersForQuestionsBasedOnQuestionIds(questionIds []int64, patientId int64, patientVisitId int64) (answerIntakes map[int64][]common.Answer, err error) {
+func (d *DataService) GetPatientAnswersForQuestions(questionIds []int64, patientId int64, patientVisitId int64) (answerIntakes map[int64][]common.Answer, err error) {
 	enumeratedStrings := enumerateItemsIntoString(questionIds)
 	queryStr := fmt.Sprintf(`select info_intake.id, info_intake.question_id, potential_answer_id, l1.ltext, l2.ltext, answer_text, bucket, storage_key, region_tag,
 								layout_version_id, parent_question_id, parent_info_intake_id from info_intake  
