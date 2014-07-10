@@ -17,6 +17,9 @@ var (
 	insuranceTemplate        *template.Template
 	successTemplate          *template.Template
 	financialsVerifyTemplate *template.Template
+	malpracticeFAQTemplate   *template.Template
+	bgCheckTemplate          *template.Template
+	claimsHistoryTemplate    *template.Template
 )
 
 func init() {
@@ -29,6 +32,9 @@ func init() {
 	insuranceTemplate = www.MustLoadTemplate("dronboard/insurance.html", template.Must(baseTemplate.Clone()))
 	successTemplate = www.MustLoadTemplate("dronboard/success.html", template.Must(baseTemplate.Clone()))
 	financialsVerifyTemplate = www.MustLoadTemplate("dronboard/financials_verify.html", template.Must(baseTemplate.Clone()))
+	malpracticeFAQTemplate = www.MustLoadTemplate("dronboard/malpracticefaq.html", template.Must(baseTemplate.Clone()))
+	bgCheckTemplate = www.MustLoadTemplate("dronboard/backgroundcheck.html", template.Must(baseTemplate.Clone()))
+	claimsHistoryTemplate = www.MustLoadTemplate("dronboard/claimshistory.html", template.Must(baseTemplate.Clone()))
 }
 
 type registerTemplateContext struct {
@@ -45,8 +51,9 @@ type credsTemplateContext struct {
 }
 
 type uploadTemplateContext struct {
-	Title   string
-	NextURL string
+	Title    string
+	Subtitle string
+	NextURL  string
 }
 
 type engagementTemplateContext struct {
@@ -75,4 +82,16 @@ type financialsVerifyTemplateContext struct {
 	Pending      bool
 	Failed       bool
 	SupportEmail string
+}
+
+type bgCheckTemplateContext struct {
+	Form       *bgCheckForm
+	FormErrors map[string]string
+}
+
+type claimsHistoryTemplateContext struct {
+	Form       *claimsHistoryForm
+	FormErrors map[string]string
+	Name       string
+	NextURL    string
 }

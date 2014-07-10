@@ -97,6 +97,11 @@ func serve(conf *Config, hand http.Handler) {
 			tlsServer.TLSConfig.NextProtos = []string{"http/1.1"}
 		}
 
+		tlsServer.Handler = http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
+			r.Header.Set("X-Forwarded-Proto", "https")
+			hand.ServeHTTP(w, r)
+		})
+
 		var certs tls.Certificate
 
 		if conf.TLSCert != "" && conf.TLSKey != "" {

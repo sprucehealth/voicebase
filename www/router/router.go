@@ -29,5 +29,15 @@ func New(dataAPI api.DataAPI, authAPI api.AuthAPI, twilioCli *twilio.Client, fro
 	passreset.SetupRoutes(router, dataAPI, authAPI, twilioCli, fromNumber, emailService, supportEmail, webSubdomain, metricsRegistry.Scope("reset-password"))
 	dronboard.SetupRoutes(router, dataAPI, authAPI, supportEmail, stripeCli, signer, stores, metricsRegistry.Scope("doctor-onboard"))
 	admin.SetupRoutes(router, dataAPI, authAPI, stripeCli, signer, stores, metricsRegistry.Scope("admin"))
-	return router
+
+	return http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
+		if r.Header.Get("X-Forwarded-Proto") != "https" {
+			u := r.URL
+			u.Scheme = "https"
+			u.Host = r.Host
+			http.Redirect(w, r, r.URL.String(), http.StatusMovedPermanently)
+			return
+		}
+		router.ServeHTTP(w, r)
+	})
 }

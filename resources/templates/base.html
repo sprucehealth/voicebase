@@ -6,30 +6,6 @@
 	<title>{{.Title}}</title>
 
 	<link rel="stylesheet" href="//maxcdn.bootstrapcdn.com/bootstrap/3.2.0/css/bootstrap.min.css">
-	<style type="text/css">
-	body {
-		padding-bottom: 20px;
-	}
-	.form-onboard {
-		max-width: 600px;
-		padding: 15px;
-		margin: 0 auto;
-	}
-	.form-onboard h1, .form-onboard h2, .form-onboard h3 {
-		margin-bottom: 20px;
-	}
-	.form-onboard fieldset {
-		/*padding-left: 30px;*/
-	}
-	.form-onboard .btn {
-		padding-left: 50px;
-		padding-right: 50px;
-	}
-	#base-footer {
-		margin-top: 30px;
-		text-align: center;
-	}
-	</style>
 
 	<!-- HTML5 shim and Respond.js IE8 support of HTML5 elements and media queries -->
 	<!--[if lt IE 9]>
@@ -42,7 +18,7 @@
 <body unresolved touch-action="auto">
 	{{template "header" .SubContext}}
 
-	<div class="container">
+	<div id="base-content" class="container">
 	{{template "body" .SubContext}}
 	</div>
 
@@ -53,6 +29,21 @@
 	<script src="//ajax.googleapis.com/ajax/libs/jquery/1.11.1/jquery.min.js"></script>
 	<script type="text/javascript" src="//maxcdn.bootstrapcdn.com/bootstrap/3.2.0/js/bootstrap.min.js"></script>
 	{{template "tail" .SubContext}}
+	<script type="text/javascript">
+		$(function() {
+			var today = new Date();
+			var dd = today.getDate();
+			var mm = today.getMonth()+1;
+			var yyyy = today.getFullYear();
+			if (dd<10) {
+				dd = '0'+dd;
+			}
+			if (mm<10) {
+				mm = '0'+mm;
+			}
+			$(".current-date").html(mm+'/'+dd+'/'+yyyy);
+		});
+	</script>
 </body>
 </html>
 {{define "head"}}{{end}}
