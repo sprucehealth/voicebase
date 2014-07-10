@@ -1,6 +1,7 @@
 package dronboard
 
 import (
+	"fmt"
 	"net/http"
 	"strings"
 
@@ -45,10 +46,22 @@ type insuranceForm struct {
 	Impairments       string
 	Claims            string
 	Incidents         string
+	Signature         string
+	SignatureDate     string
+	ESigAgree         bool
 }
 
-func (r *insuranceForm) Validate() map[string]string {
+func (f *insuranceForm) Validate() map[string]string {
 	errors := map[string]string{}
+	if f.Signature == "" {
+		errors["Signature"] = "Signature is required"
+	}
+	if f.SignatureDate == "" {
+		errors["SignatureDate"] = "Signature date is required"
+	}
+	if !f.ESigAgree {
+		errors["ESigAgree"] = "Must agree to sign electronically"
+	}
 	return errors
 }
 
@@ -101,6 +114,7 @@ func (h *insuranceHandler) ServeHTTP(w http.ResponseWriter, r *http.Request) {
 				api.AttrDoctorImpairments:         form.Impairments,
 				api.AttrDoctorClaims:              form.Claims,
 				api.AttrDoctorIncidents:           form.Incidents,
+				api.AttrInsuranceSignature:        fmt.Sprintf("%s|%s", form.Signature, form.SignatureDate),
 			}
 			if err := h.dataAPI.UpdateDoctorAttributes(doctorID, attributes); err != nil {
 				www.InternalServerError(w, r, err)

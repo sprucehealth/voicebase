@@ -92,14 +92,14 @@ $(function() {
 
 		<div class="col-md-4 form-group {{if .FormErrors.MiddleName}}has-error has-feedback{{end}}">
 			<label class="control-label" for="MiddleName">Middle Name</label>
-			<input required type="text" name="MiddleName" value="{{.Form.MiddleName}}" class="form-control">
+			<input type="text" name="MiddleName" value="{{.Form.MiddleName}}" class="form-control">
 		</div>
 	</div>
 
 	<div class="row">
 		<div class="col-md-8 form-group {{if .FormErrors.Signature}}has-error has-feedback{{end}}">
 			<label class="control-label" for="Signature">Signature (type full name)</label>
-			<input type="text" name="Signature" value="{{.Form.Signature}}" class="form-control">
+			<input required type="text" name="Signature" value="{{.Form.Signature}}" class="form-control">
 		</div>
 
 		<div class="col-md-4 form-group {{if .FormErrors.Date}}has-error has-feedback{{end}}">

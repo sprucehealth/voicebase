@@ -74,6 +74,29 @@
 			<textarea name="Incidents" class="form-control" rows="2">{{.Form.Incidents}}</textarea>
 		</div>
 
+		<div class="well">
+			I hereby declare that the above statements and particulars, or any statements and particulars made in any and all documents, applications, supplemental pages or other attachments (hereinafter "attachments") for the purposes of my application / malpractice coverage are true and that I have not knowingly suppressed or misstated any material facts.  I agree to notify Spruce Physicians, P.C. if there are any future material changes in any answer to this application.    I further understand and agree that I have no right to demand or expect coverage until the Spruce Physicians, P.C. has: (1) received my completed application; (2) reviewed the application and associated materials.   The Spruce Physicians, P.C. will notify me within two weeks if problems are identified with what I have submitted.
+		</div>
+
+		<div class="row">
+			<div class="col-md-8 form-group {{if .FormErrors.Signature}}has-error has-feedback{{end}}">
+				<label class="control-label" for="Signature">Signature (type full name)</label>
+				<input required type="text" name="Signature" value="{{.Form.Signature}}" class="form-control">
+			</div>
+
+			<div class="col-md-4 form-group {{if .FormErrors.SignatureDate}}has-error has-feedback{{end}}">
+				<label class="control-label" for="SignatureDate">Date</label>
+				<input required type="date" name="SignatureDate" value="{{.Form.SignatureDate}}" class="form-control">
+			</div>
+		</div>
+
+		<div class="checkbox">
+			{{template "fieldError" .FormErrors.ESigAgree}}
+			<input type="checkbox" id="ESigAgree" name="ESigAgree"> <em>Electronic Signature Agreement</em><br>
+			By checking this box, I agree that I am signing this letter electronically. I agree my electronic signature is the legal equivalent of a manual signature on this letter.<br>
+			<div class="current-date">&nbsp;</div>
+		</div>
+
 		<button type="submit" class="btn btn-primary center-block">Next</button>
 	</form>
 {{end}}
