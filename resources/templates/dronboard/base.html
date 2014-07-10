@@ -1,3 +1,47 @@
+{{define "head"}}
+<style type="text/css">
+h2 small {
+	font-size: 60%;
+}
+h3 {
+	font-size: 21px;
+}
+p.subtitle {
+	font-size: 18px;
+	font-weight: 400;
+	color: #777;
+	margin-top: -15px;
+	margin-bottom: 25px;
+}
+.state-license {
+	text-transform: capitalize;
+}
+.license-table th {
+	font-weight: normal;
+}
+.license-table>thead>tr>td, .license-table>tbody>tr>td, .license-table>tfoot>tr>td {
+	border: 0;
+}
+.message {
+	width: 700px;
+	margin: 30px auto 0 auto;
+	font-size: 17px;
+}
+.vertical-input-group > input.form-control:first-child:not(:last-child) {
+	border-top-right-radius: 4px;
+	border-bottom-right-radius: 0;
+	border-bottom-left-radius: 0;
+}
+.vertical-input-group > input.form-control:not(:first-child):not(:last-child) {
+	border-radius: 0;
+}
+.vertical-input-group > input.form-control:last-child:not(:first-child) {
+	border-top-left-radius: 0;
+	border-top-right-radius: 0;
+}
+</style>
+{{end}}
+
 {{define "footer"}}
 <span class="glyphicon glyphicon-lock"></span>
 Secured by Spruce

@@ -1,17 +1,3 @@
-{{define "head"}}
-<style type="text/css">
-.state-license {
-	text-transform: capitalize;
-}
-th {
-	font-weight: normal;
-}
-.table>thead>tr>td, .table>tbody>tr>td, .table>tfoot>tr>td {
-	border: 0;
-}
-</style>
-{{end}}
-
 {{define "tail"}}
 <script type="text/javascript">
 $(function() {
@@ -44,6 +30,7 @@ $(function() {
 
 	<form method="POST" action="" role="form" class="form-onboard">
 		<h2>Identity, Credentials and Licenses</h2>
+		<p class="subtitle">This information is used for compliance and identity validation.</p>
 
 		<div class="form-group {{if .FormErrors.SSN}}has-error has-feedback{{end}}">
 			<label class="control-label" for="SSN">Social Security Number</label>
@@ -62,7 +49,7 @@ $(function() {
 			{{.FormErrors.StateLicenses}}
 		</div>
 		{{end}}
-		<table class="table">
+		<table class="table license-table">
 			<thead>
 				<tr>
 					<th>State</th>
@@ -132,6 +119,6 @@ $(function() {
 			Have you completed a risk management education course within the last twelve months?
 		</div>
 
-		<button type="submit" class="btn btn-primary pull-right">Submit</button>
+		<button type="submit" class="btn btn-primary pull-right">Next</button>
 	</form>
 {{end}}

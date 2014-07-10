@@ -1,26 +1,10 @@
-{{define "head"}}
-<style type="text/css">
-.vertical-input-group > input.form-control:first-child:not(:last-child) {
-	border-top-right-radius: 4px;
-	border-bottom-right-radius: 0;
-	border-bottom-left-radius: 0;
-}
-.vertical-input-group > input.form-control:not(:first-child):not(:last-child) {
-	border-radius: 0;
-}
-.vertical-input-group > input.form-control:last-child:not(:first-child) {
-	border-top-left-radius: 0;
-	border-top-right-radius: 0;
-}
-</style>
-{{end}}
-
 {{define "tail"}}
 {{end}}
 
 {{define "body"}}
 	<form method="POST" action="" role="form" class="form-onboard">
 		<h2>Information for Malpractice Coverage</h2>
+		<p class="subtitle">Spruce pays for a malpractice insurance policy to cover your activity on the platform and give you peace of mind. The policy is via Lexington Insurance, one of the largest insurers, and is tailored for telemedicine risk. You can read more about the coverage here[link]. Please enter the information below to be added to our coverage roster.</p>
 
 		<div class="form-group {{if .FormErrors.CurrentInsurer}}has-error has-feedback{{end}}">
 			<label class="control-label" for="CurrentInsurer">Who is your current profressional liability insurer?</label>
@@ -90,6 +74,6 @@
 			<textarea name="Incidents" class="form-control" rows="2">{{.Form.Incidents}}</textarea>
 		</div>
 
-		<button type="submit" class="btn btn-primary pull-right">Submit</button>
+		<button type="submit" class="btn btn-primary pull-right">Next</button>
 	</form>
 {{end}}
