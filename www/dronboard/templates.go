@@ -17,6 +17,7 @@ var (
 	insuranceTemplate        *template.Template
 	successTemplate          *template.Template
 	financialsVerifyTemplate *template.Template
+	malpracticeFAQTemplate   *template.Template
 )
 
 func init() {
@@ -29,6 +30,7 @@ func init() {
 	insuranceTemplate = www.MustLoadTemplate("dronboard/insurance.html", template.Must(baseTemplate.Clone()))
 	successTemplate = www.MustLoadTemplate("dronboard/success.html", template.Must(baseTemplate.Clone()))
 	financialsVerifyTemplate = www.MustLoadTemplate("dronboard/financials_verify.html", template.Must(baseTemplate.Clone()))
+	malpracticeFAQTemplate = www.MustLoadTemplate("dronboard/malpracticefaq.html", template.Must(baseTemplate.Clone()))
 }
 
 type registerTemplateContext struct {
@@ -75,4 +77,7 @@ type financialsVerifyTemplateContext struct {
 	Pending      bool
 	Failed       bool
 	SupportEmail string
+}
+
+type malpracticeFAQTemplateContext struct {
 }
