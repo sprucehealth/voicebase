@@ -1,6 +1,6 @@
 -- MySQL dump 10.13  Distrib 5.6.17, for osx10.9 (x86_64)
 --
--- Host: 127.0.0.1    Database: database_780
+-- Host: 127.0.0.1    Database: database_16653
 -- ------------------------------------------------------
 -- Server version	5.6.17
 
@@ -828,7 +828,7 @@ CREATE TABLE `dr_treatment_template` (
   `erx_sent_date` timestamp NOT NULL DEFAULT CURRENT_TIMESTAMP ON UPDATE CURRENT_TIMESTAMP,
   `erx_id` int(10) unsigned DEFAULT NULL,
   `pharmacy_id` int(10) unsigned DEFAULT NULL,
-  `erx_last_filled_date` timestamp NOT NULL DEFAULT '0000-00-00 00:00:00',
+  `erx_last_filled_date` timestamp(6) NULL DEFAULT NULL,
   `creation_date` timestamp(6) NOT NULL DEFAULT CURRENT_TIMESTAMP(6),
   PRIMARY KEY (`id`),
   KEY `doctor_id` (`doctor_id`),
@@ -837,12 +837,12 @@ CREATE TABLE `dr_treatment_template` (
   KEY `drug_route_id` (`drug_route_id`),
   KEY `drug_form_id` (`drug_form_id`),
   KEY `pharmacy_id` (`pharmacy_id`),
-  CONSTRAINT `dr_treatment_template_ibfk_6` FOREIGN KEY (`pharmacy_id`) REFERENCES `pharmacy_selection` (`id`),
   CONSTRAINT `dr_treatment_template_ibfk_1` FOREIGN KEY (`doctor_id`) REFERENCES `doctor` (`id`),
   CONSTRAINT `dr_treatment_template_ibfk_2` FOREIGN KEY (`dispense_unit_id`) REFERENCES `dispense_unit` (`id`),
   CONSTRAINT `dr_treatment_template_ibfk_3` FOREIGN KEY (`drug_name_id`) REFERENCES `drug_name` (`id`),
   CONSTRAINT `dr_treatment_template_ibfk_4` FOREIGN KEY (`drug_route_id`) REFERENCES `drug_route` (`id`),
-  CONSTRAINT `dr_treatment_template_ibfk_5` FOREIGN KEY (`drug_form_id`) REFERENCES `drug_form` (`id`)
+  CONSTRAINT `dr_treatment_template_ibfk_5` FOREIGN KEY (`drug_form_id`) REFERENCES `drug_form` (`id`),
+  CONSTRAINT `dr_treatment_template_ibfk_6` FOREIGN KEY (`pharmacy_id`) REFERENCES `pharmacy_selection` (`id`)
 ) ENGINE=InnoDB DEFAULT CHARSET=utf8;
 /*!40101 SET character_set_client = @saved_cs_client */;
 
@@ -2595,4 +2595,4 @@ CREATE TABLE `unlinked_dntf_treatment_status_events` (
 /*!40101 SET COLLATION_CONNECTION=@OLD_COLLATION_CONNECTION */;
 /*!40111 SET SQL_NOTES=@OLD_SQL_NOTES */;
 
--- Dump completed on 2014-07-10 15:23:36
+-- Dump completed on 2014-07-10 15:35:12
