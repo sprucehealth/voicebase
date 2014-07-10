@@ -62,5 +62,8 @@ func (c *CheckCareProvidingElligibilityHandler) ServeHTTP(w http.ResponseWriter,
 		return
 	}
 
-	WriteJSONSuccess(w)
+	WriteJSON(w, map[string]interface{}{
+		"state":              cityStateInfo.State,
+		"state_abbreviation": cityStateInfo.StateAbbreviation,
+	})
 }
