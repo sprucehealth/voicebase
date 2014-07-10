@@ -64,6 +64,14 @@ type Card struct {
 	CreationDate   time.Time         `json:"creation_date"`
 }
 
+type Alert struct {
+	Id           int64     `json:"-"`
+	Message      string    `json:"message"`
+	CreationDate time.Time `json:"creation_date"`
+	Source       string    `json:"-"`
+	SourceId     int64     `json:"-"`
+}
+
 type Doctor struct {
 	DoctorId            encoding.ObjectId    `json:"id,omitempty"`
 	FirstName           string               `json:"first_name,omitempty"`
