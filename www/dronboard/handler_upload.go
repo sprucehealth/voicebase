@@ -59,7 +59,7 @@ func NewUploadClaimsHistoryHandler(router *mux.Router, dataAPI api.DataAPI, stor
 		attrName: api.AttrClaimsHistoryFile,
 		fileTag:  "claimshistory",
 		title:    "Upload Claims History",
-		subtitle: "You may also skip this step to permit us to get this information on your behalf from the insurers.",
+		subtitle: "You may also skip this step and instead permit us to obtain this information on your behalf from your previous malpractice insurance carriers.",
 		nextURL:  "doctor-register-claims-history",
 	}, []string{"GET", "POST"})
 }

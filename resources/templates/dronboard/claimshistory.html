@@ -33,36 +33,40 @@ $(function() {
 			</tbody>
 		</table>
 
-		<p><strong>Re: Loss History for {{.Name}}</strong></p>
+		<p><em>This is the letter we will send to your prior insurance provider(s) to obtain loss histories</em></p>
 
-		<p>To Whom It May Concern:</p>
+		<div class="well">
+			<p><strong>Re: Loss History for {{.Name}}</strong></p>
 
-		<p>I hereby authorize you to release a copy of my loss history including coverage dates by email or by fax to the following as soon as possible:</p>
+			<p>To Whom It May Concern:</p>
 
-		<p>
-			<em>
-			Brittany Shade<br>
-			Spruce Health, Inc.<br>
-			116 New Montgomery St. #250<br>
-			San Francisco, CA 94105<br>
-			Email: brittany@sprucehealth.com<br>
-			Fax #: (415) 534-3511
-			</em>
-		</p>
+			<p>I hereby authorize you to release a copy of my loss history including coverage dates by email or by fax to the following as soon as possible:</p>
 
-		<p>Thank you for your assistance in this matter.</p>
+			<p>
+				<em>
+				Brittany Shade<br>
+				Spruce Health, Inc.<br>
+				116 New Montgomery St. #250<br>
+				San Francisco, CA 94105<br>
+				Email: brittany@sprucehealth.com<br>
+				Fax #: (415) 534-3511
+				</em>
+			</p>
 
-		<p>Sincerely:</p>
+			<p>Thank you for your assistance in this matter.</p>
 
-		<div class="row">
-			<div class="col-md-6 form-group {{if .FormErrors.Name}}has-error has-feedback{{end}}">
-				<label class="control-label" for="Name">Name</label>
-				<input required type="text" name="Name" value="{{if .Form.Name}}{{.Form.Name}}{{else}}{{.Name}}{{end}}" class="form-control">
-			</div>
+			<p>Sincerely:</p>
 
-			<div class="col-md-6 form-group {{if .FormErrors.Signature}}has-error has-feedback{{end}}">
-				<label class="control-label" for="Signature">Signature (type full name)</label>
-				<input required type="text" name="Signature" value="{{.Form.Signature}}" class="form-control">
+			<div class="row">
+				<div class="col-md-6 form-group {{if .FormErrors.Name}}has-error has-feedback{{end}}">
+					<label class="control-label" for="Name">Name</label>
+					<input required type="text" name="Name" value="{{if .Form.Name}}{{.Form.Name}}{{else}}{{.Name}}{{end}}" class="form-control">
+				</div>
+
+				<div class="col-md-6 form-group {{if .FormErrors.Signature}}has-error has-feedback{{end}}">
+					<label class="control-label" for="Signature">Signature (type full name)</label>
+					<input required type="text" name="Signature" value="{{.Form.Signature}}" class="form-control">
+				</div>
 			</div>
 		</div>
 
