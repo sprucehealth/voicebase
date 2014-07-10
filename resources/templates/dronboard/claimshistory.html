@@ -1,4 +1,15 @@
 {{define "tail"}}
+<script type="text/javascript">
+$(function() {
+	$("#ESigAgree").change(function(e) {
+		if (e.target.checked) {
+			$("button").prop('disabled', false);
+		} else {
+			$("button").prop('disabled', true);
+		}
+	});
+});
+</script>
 {{end}}
 
 {{define "body"}}
@@ -62,6 +73,6 @@
 			<div class="current-date">&nbsp;</div>
 		</div>
 
-		<button type="submit" class="btn btn-primary pull-right">Upload</button>
+		<button disabled type="submit" class="btn btn-primary pull-right">Upload</button>
 	</form>
 {{end}}

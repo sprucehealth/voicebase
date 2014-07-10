@@ -104,7 +104,7 @@ func (r *registerForm) Validate() map[string]string {
 		errors["ZipCode"] = "ZipCode is required"
 	}
 	if !r.EBusinessAgree {
-		errors["EBusinessAgree"] = "Must agree to do communicate electronically"
+		errors["EBusinessAgree"] = "Must agree to communicate electronically"
 	}
 	return errors
 }
