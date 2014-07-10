@@ -33,9 +33,6 @@ func (r *bgCheckForm) Validate() map[string]string {
 	if r.FirstName == "" {
 		errors["FirstName"] = "First name is required"
 	}
-	if r.MiddleName == "" {
-		errors["MiddleName"] = "Middle name is required"
-	}
 	if r.LastName == "" {
 		errors["LastName"] = "Last name is required"
 	}

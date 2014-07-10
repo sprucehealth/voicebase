@@ -46,7 +46,8 @@ func NewUploadLicenseHandler(router *mux.Router, dataAPI api.DataAPI, store stor
 		store:    store,
 		attrName: api.AttrDriversLicenseFile,
 		fileTag:  "dl",
-		title:    "Upload Driver's License",
+		title:    "Upload Image of Driver's License",
+		subtitle: "Used as part of identity verification",
 		nextURL:  "doctor-register-upload-claims-history",
 	}, []string{"GET", "POST"})
 }

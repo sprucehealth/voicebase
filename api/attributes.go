@@ -17,6 +17,7 @@ const (
 	AttrEBusinessAgreement            = "EBusinessAgreement"
 	AttrExcitedAboutSpruce            = "ExcitedAboutSpruce"
 	AttrHoursUsingSprucePerWeek       = "HoursUsingSprucePerWeek"
+	AttrInsuranceSignature            = "InsuranceSignature"
 	AttrInsuranceDeclines             = "InsuranceDeclines"
 	AttrJacketSize                    = "JacketSize"
 	AttrMostRecentCertificationDate   = "MostRecentCertificationDate"
