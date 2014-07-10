@@ -2,6 +2,7 @@ package api
 
 const (
 	AttrAmericanBoardCertified        = "AmericanBoardCertified"
+	AttrBackgroundCheckAgreement      = "BackgroundCheckAgreement"
 	AttrClaimsHistoryFile             = "ClaimsHistoryFile"
 	AttrContinuedEducation            = "ContinuedEducation"
 	AttrContinuedEducationCreditHours = "ContinuedEducationCreditHours"
@@ -12,6 +13,7 @@ const (
 	AttrDoctorIncidents               = "DoctorIncidents"
 	AttrDoctorViolations              = "DoctorViolations"
 	AttrDriversLicenseFile            = "DriversLicenseFile"
+	AttrEBusinessAgreement            = "EBusinessAgreement"
 	AttrExcitedAboutSpruce            = "ExcitedAboutSpruce"
 	AttrHoursUsingSprucePerWeek       = "HoursUsingSprucePerWeek"
 	AttrInsuranceDeclines             = "InsuranceDeclines"

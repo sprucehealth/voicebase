@@ -19,10 +19,6 @@ $(function() {
 </script>
 {{end}}
 
-{{define "fieldError"}}
-	{{if .}}<div class="text-danger">{{.}}</div>{{end}}
-{{end}}
-
 {{define "body"}}
 	{{$states := .States}}
 	{{$licenseStatuses := .LicenseStatuses}}

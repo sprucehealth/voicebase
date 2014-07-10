@@ -38,4 +38,5 @@ func SetupRoutes(r *mux.Router, dataAPI api.DataAPI, authAPI api.AuthAPI, suppor
 	r.Handle("/doctor-register/success", authFilter(NewSuccessHandler(r, dataAPI))).Name("doctor-register-success")
 	r.Handle("/doctor-register/financials-verify", authFilter(NewFinancialVerifyHandler(r, dataAPI, supportEmail, stripeCli))).Name("doctor-register-financials-verify")
 	r.Handle("/doctor-register/malpractice-faq", authFilter(NewStaticTemplateHandler(malpracticeFAQTemplate, &www.BaseTemplateContext{Title: "Malpractice FAQ | Spruce"}))).Name("doctor-register-malpractice-faq")
+	r.Handle("/doctor-register/background-check", authFilter(NewBackgroundCheckHandler(r, dataAPI))).Name("doctor-register-background-check")
 }

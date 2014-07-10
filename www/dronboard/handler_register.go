@@ -44,6 +44,8 @@ type registerForm struct {
 	State        string
 	ZipCode      string
 
+	EBusinessAgree bool
+
 	dob encoding.DOB
 }
 
@@ -100,6 +102,9 @@ func (r *registerForm) Validate() map[string]string {
 	}
 	if r.ZipCode == "" {
 		errors["ZipCode"] = "ZipCode is required"
+	}
+	if !r.EBusinessAgree {
+		errors["EBusinessAgree"] = "Must agree to do communicate electronically"
 	}
 	return errors
 }
@@ -162,7 +167,13 @@ func (h *registerHandler) ServeHTTP(w http.ResponseWriter, r *http.Request) {
 					DoctorAddress: address,
 				}
 
-				if _, err := h.dataAPI.RegisterDoctor(doctor); err != nil {
+				doctorID, err := h.dataAPI.RegisterDoctor(doctor)
+				if err != nil {
+					www.InternalServerError(w, r, err)
+					return
+				}
+
+				if err := h.dataAPI.UpdateDoctorAttributes(doctorID, map[string]string{api.AttrEBusinessAgreement: "true"}); err != nil {
 					www.InternalServerError(w, r, err)
 					return
 				}

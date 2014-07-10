@@ -18,6 +18,7 @@ var (
 	successTemplate          *template.Template
 	financialsVerifyTemplate *template.Template
 	malpracticeFAQTemplate   *template.Template
+	bgCheckTemplate          *template.Template
 )
 
 func init() {
@@ -31,6 +32,7 @@ func init() {
 	successTemplate = www.MustLoadTemplate("dronboard/success.html", template.Must(baseTemplate.Clone()))
 	financialsVerifyTemplate = www.MustLoadTemplate("dronboard/financials_verify.html", template.Must(baseTemplate.Clone()))
 	malpracticeFAQTemplate = www.MustLoadTemplate("dronboard/malpracticefaq.html", template.Must(baseTemplate.Clone()))
+	bgCheckTemplate = www.MustLoadTemplate("dronboard/backgroundcheck.html", template.Must(baseTemplate.Clone()))
 }
 
 type registerTemplateContext struct {
@@ -79,5 +81,7 @@ type financialsVerifyTemplateContext struct {
 	SupportEmail string
 }
 
-type malpracticeFAQTemplateContext struct {
+type bgCheckTemplateContext struct {
+	Form       *bgCheckForm
+	FormErrors map[string]string
 }
