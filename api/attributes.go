@@ -3,6 +3,7 @@ package api
 const (
 	AttrAmericanBoardCertified        = "AmericanBoardCertified"
 	AttrBackgroundCheckAgreement      = "BackgroundCheckAgreement"
+	AttrClaimsHistoryAgreement        = "ClaimsHistoryAgreement"
 	AttrClaimsHistoryFile             = "ClaimsHistoryFile"
 	AttrContinuedEducation            = "ContinuedEducation"
 	AttrContinuedEducationCreditHours = "ContinuedEducationCreditHours"

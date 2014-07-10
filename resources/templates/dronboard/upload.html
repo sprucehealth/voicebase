@@ -5,6 +5,8 @@
 	<form method="POST" action="" role="form" class="form-onboard form-inline" enctype="multipart/form-data">
 		<h2>{{.Title}}</h2>
 
+		{{with .Subtitle}}<h4>{{.}}</h4>{{end}}
+
 		<div class="form-group">
 			<input required type="file" name="File">
 		</div>

@@ -1,0 +1,67 @@
+{{define "tail"}}
+{{end}}
+
+{{define "body"}}
+	<form method="POST" action="" role="form" class="form-onboard">
+		<h2>Release of Loss Information Authorization</h2>
+
+		<table class="table form-table">
+			<thead>
+				<tr>
+					<th>Insurance Company</th>
+					<th>Policy Number</th>
+				</tr>
+			</thead>
+			<tbody>
+			{{range $i, $p := .Form.Policies}}
+				<tr>
+					<td><input type="text" class="form-control" name="Policies.{{$i}}.Company" value="{{$p.Company}}"></td>
+					<td><input type="text" class="form-control" name="Policies.{{$i}}.Number" value="{{$p.Number}}"></td>
+				</tr>
+			{{end}}
+			</tbody>
+		</table>
+
+		<p><strong>Re: Loss History for {{.Name}}</strong></p>
+
+		<p>To Whom It May Concern:</p>
+
+		<p>I hereby authorize you to release a copy of my loss history including coverage dates by email or by fax to the following as soon as possible:</p>
+
+		<p>
+			<em>
+			Brittany Shade<br>
+			Spruce Health, Inc.<br>
+			116 New Montgomery St. #250<br>
+			San Francisco, CA 94105<br>
+			Email: brittany@sprucehealth.com<br>
+			Fax #: (415) 534-3511
+			</em>
+		</p>
+
+		<p>Thank you for your assistance in this matter.</p>
+
+		<p>Sincerely:</p>
+
+		<div class="row">
+			<div class="col-md-6 form-group {{if .FormErrors.Name}}has-error has-feedback{{end}}">
+				<label class="control-label" for="Name">Name</label>
+				<input required type="text" name="Name" value="{{if .Form.Name}}{{.Form.Name}}{{else}}{{.Name}}{{end}}" class="form-control">
+			</div>
+
+			<div class="col-md-6 form-group {{if .FormErrors.Signature}}has-error has-feedback{{end}}">
+				<label class="control-label" for="Signature">Signature</label>
+				<input required type="text" name="Signature" value="{{.Form.Signature}}" class="form-control">
+			</div>
+		</div>
+
+		<div class="checkbox">
+			{{template "fieldError" .FormErrors.ESigAgree}}
+			<input type="checkbox" id="ESigAgree" name="ESigAgree"> <em>Electronic Signature Agreement</em><br>
+			By checking this box, I agree that I am signing this letter electronically. I agree my electronic signature is the legal equivalent of a manual signature on this letter.<br>
+			<div class="current-date">&nbsp;</div>
+		</div>
+
+		<button type="submit" class="btn btn-primary pull-right">Upload</button>
+	</form>
+{{end}}
