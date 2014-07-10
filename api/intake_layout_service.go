@@ -509,10 +509,14 @@ func (d *DataService) GetAnswerInfoForTags(answerTags []string, languageId int64
 		answerInfoMapping[answerInfoItem.AnswerTag] = answerInfoItem
 	}
 
-	// order the items based on the ordering of the tags
-	answerInfoInOrder := make([]*info_intake.PotentialAnswer, len(answerInfos))
-	for i, answerTag := range answerTags {
-		answerInfoInOrder[i] = answerInfoMapping[answerTag]
+	// order the items based on the ordering of the tags (note that its totally possible
+	// that some tags requested didn't exist as answers in which case there would be more tags than answers)
+	answerInfoInOrder := make([]*info_intake.PotentialAnswer, 0, len(answerInfos))
+	for _, answerTag := range answerTags {
+		answer := answerInfoMapping[answerTag]
+		if answer != nil {
+			answerInfoInOrder = append(answerInfoInOrder, answer)
+		}
 	}
 
 	return answerInfoInOrder, nil
