@@ -1,6 +1,8 @@
 package patient_case
 
 import (
+	"time"
+
 	"github.com/sprucehealth/backend/app_url"
 	"github.com/sprucehealth/backend/common"
 )
@@ -19,6 +21,7 @@ type caseNotificationMessageView struct {
 	ActionURL   *app_url.SpruceAction `json:"action_url"`
 	MessageID   int64                 `json:"message_id,string"`
 	RoundedIcon bool                  `json:"rounded_icon"`
+	DateTime    time.Time             `json:"date_time"`
 }
 
 func (c *caseNotificationMessageView) Validate() error {

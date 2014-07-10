@@ -65,7 +65,7 @@ func getHomeCards(patientCase *common.PatientCase, dataAPI api.DataAPI) ([]commo
 		case l > 1:
 			views = []common.ClientView{getViewCaseCard(patientCase, currentDoctor, &phCaseNotificationMultipleView{
 				NotificationCount: int64(l),
-				Title:             "New updates to your Dermatology case.",
+				Title:             "New updates in your Dermatology case.",
 				ButtonTitle:       "View Case",
 				ActionURL:         app_url.ViewCaseAction(patientCase.Id.Int64()),
 			}), getSendCareTeamMessageSection(patientCase.Id.Int64())}
@@ -206,7 +206,7 @@ func getLearnAboutSpruceSection() common.ClientView {
 				RoundedIcon: true,
 			},
 			&phSmallIconText{
-				Title:       "Learn how a Spruce Visit Works",
+				Title:       "How a Spruce case works",
 				IconURL:     app_url.IconLearnSpruce,
 				ActionURL:   app_url.ViewTutorialAction(),
 				RoundedIcon: true,

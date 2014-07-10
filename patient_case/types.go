@@ -21,7 +21,7 @@ const (
 // as well as a notification home card view on the home tab
 type notification interface {
 	common.Typed
-	makeCaseNotificationView(dataAPI api.DataAPI, notificationId int64) (common.ClientView, error)
+	makeCaseNotificationView(dataAPI api.DataAPI, notification *common.CaseNotification) (common.ClientView, error)
 	makeHomeCardView(dataAPI api.DataAPI) (common.ClientView, error)
 }
 
@@ -36,19 +36,15 @@ func (t *treatmentPlanNotification) TypeName() string {
 	return CNTreatmentPlan
 }
 
-func (t *treatmentPlanNotification) makeCaseNotificationView(dataAPI api.DataAPI, notificationId int64) (common.ClientView, error) {
-	doctor, err := dataAPI.GetDoctorFromId(t.DoctorId)
-	if err != nil {
-		return nil, err
-	}
-
+func (t *treatmentPlanNotification) makeCaseNotificationView(dataAPI api.DataAPI, notification *common.CaseNotification) (common.ClientView, error) {
 	nView := &caseNotificationMessageView{
-		ID:          notificationId,
-		Title:       fmt.Sprintf("Dr. %s created your treatment plan.", doctor.LastName),
+		ID:          notification.Id,
+		Title:       "Your doctor created your treatment plan.",
 		IconURL:     app_url.IconTreatmentPlanSmall,
 		ActionURL:   app_url.ViewCaseMessageAction(t.MessageId, t.CaseId),
 		MessageID:   t.MessageId,
 		RoundedIcon: true,
+		DateTime:    notification.CreationDate,
 	}
 
 	return nView, nView.Validate()
@@ -61,7 +57,7 @@ func (t *treatmentPlanNotification) makeHomeCardView(dataAPI api.DataAPI) (commo
 	}
 
 	nView := &phCaseNotificationStandardView{
-		Title:       fmt.Sprintf("Dr. %s reviewed your visit and created a treatment plan", doctor.LastName),
+		Title:       fmt.Sprintf("Dr. %s reviewed your visit and created your treatment plan.", doctor.LastName),
 		IconURL:     app_url.IconTreatmentPlanLarge,
 		ButtonTitle: "View Treatment Plan",
 		ActionURL:   app_url.ViewCaseMessageAction(t.MessageId, t.CaseId),
@@ -80,19 +76,15 @@ func (m *messageNotification) TypeName() string {
 	return CNMessage
 }
 
-func (m *messageNotification) makeCaseNotificationView(dataAPI api.DataAPI, notificationId int64) (common.ClientView, error) {
-	doctor, err := dataAPI.GetDoctorFromId(m.DoctorId)
-	if err != nil {
-		return nil, err
-	}
-
+func (m *messageNotification) makeCaseNotificationView(dataAPI api.DataAPI, notification *common.CaseNotification) (common.ClientView, error) {
 	nView := &caseNotificationMessageView{
-		ID:          notificationId,
-		Title:       fmt.Sprintf("Message from Dr. %s", doctor.LastName),
+		ID:          notification.Id,
+		Title:       "Message from your doctor.",
 		IconURL:     app_url.GetSmallThumbnail(api.DOCTOR_ROLE, m.DoctorId),
 		ActionURL:   app_url.ViewCaseMessageAction(m.MessageId, m.CaseId),
 		MessageID:   m.MessageId,
 		RoundedIcon: true,
+		DateTime:    notification.CreationDate,
 	}
 	return nView, nView.Validate()
 }
@@ -124,9 +116,9 @@ const (
 	visitSubmittedTitle    = "Your acne case has been successfully submitted."
 )
 
-func (v *visitSubmittedNotification) makeCaseNotificationView(dataAPI api.DataAPI, notificationId int64) (common.ClientView, error) {
+func (v *visitSubmittedNotification) makeCaseNotificationView(dataAPI api.DataAPI, notification *common.CaseNotification) (common.ClientView, error) {
 	nView := &caseNotificationTitleSubtitleView{
-		ID:       notificationId,
+		ID:       notification.Id,
 		Title:    visitSubmittedTitle,
 		Subtitle: visitSubmittedSubtitle,
 	}
@@ -157,11 +149,11 @@ const (
 	continueVisitTitle   = "Continue Your Acne Visit"
 )
 
-func (v *incompleteVisitNotification) makeCaseNotificationView(dataAPI api.DataAPI, notificationId int64) (common.ClientView, error) {
+func (v *incompleteVisitNotification) makeCaseNotificationView(dataAPI api.DataAPI, notification *common.CaseNotification) (common.ClientView, error) {
 	nView := &caseNotificationTitleSubtitleView{
 		Title:     continueVisitTitle,
 		Subtitle:  continueVisitMessage,
-		ID:        notificationId,
+		ID:        notification.Id,
 		ActionURL: app_url.ContinueVisitAction(v.PatientVisitId),
 	}
 	return nView, nView.Validate()
