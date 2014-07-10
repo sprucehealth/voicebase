@@ -6,15 +6,6 @@
 	<title>{{.Title}}</title>
 
 	<link rel="stylesheet" href="//maxcdn.bootstrapcdn.com/bootstrap/3.2.0/css/bootstrap.min.css">
-	<style type="text/css">
-	body {
-		padding-bottom: 20px;
-	}
-	#base-footer {
-		margin-top: 30px;
-		text-align: center;
-	}
-	</style>
 
 	<!-- HTML5 shim and Respond.js IE8 support of HTML5 elements and media queries -->
 	<!--[if lt IE 9]>
@@ -27,7 +18,7 @@
 <body unresolved touch-action="auto">
 	{{template "header" .SubContext}}
 
-	<div class="container">
+	<div id="base-content" class="container">
 	{{template "body" .SubContext}}
 	</div>
 

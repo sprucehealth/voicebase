@@ -111,6 +111,14 @@ func (h *bgCheckHandler) ServeHTTP(w http.ResponseWriter, r *http.Request) {
 			h.redirectToNextStep(w, r)
 			return
 		}
+	} else {
+		doctor, err := h.dataAPI.GetDoctorFromId(doctorID)
+		if err != nil {
+			www.InternalServerError(w, r, err)
+			return
+		}
+		form.FirstName = doctor.FirstName
+		form.LastName = doctor.LastName
 	}
 
 	www.TemplateResponse(w, http.StatusOK, bgCheckTemplate, &www.BaseTemplateContext{

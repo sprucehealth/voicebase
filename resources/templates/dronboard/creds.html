@@ -24,7 +24,7 @@ $(function() {
 	{{$licenseStatuses := .LicenseStatuses}}
 	{{$errors := .FormErrors}}
 
-	<form method="POST" action="" role="form" class="form-onboard">
+	<form method="POST" action="" role="form" class="form-onboard credentials">
 		<h2>Identity, Credentials and Licenses</h2>
 		<p class="subtitle">This information is used for compliance and identity validation.</p>
 
@@ -81,6 +81,8 @@ $(function() {
 			</tbody>
 		</table>
 
+		<hr>
+
 		<div class="checkbox">
 			<input type="checkbox" id="AmericanBoardCertified" name="AmericanBoardCertified"{{if .Form.AmericanBoardCertified}} checked{{end}}>
 			Are you American Board Certified?
@@ -98,6 +100,8 @@ $(function() {
 			</div>
 		</fieldset>
 
+		<hr>
+
 		<div class="checkbox">
 			<input type="checkbox" id="ContinuedEducation" name="ContinuedEducation"{{if .Form.ContinuedEducation}} checked{{end}}>
 			Have you participated in continuing medical education within the last three years?
@@ -110,11 +114,13 @@ $(function() {
 			</div>
 		</fieldset>
 
+		<hr>
+
 		<div class="checkbox">
 			<input type="checkbox" id="RiskManagementCourse" name="RiskManagementCourse"{{if .Form.RiskManagementCourse}} checked{{end}}>
 			Have you completed a risk management education course within the last twelve months?
 		</div>
 
-		<button type="submit" class="btn btn-primary pull-right">Next</button>
+		<button type="submit" class="btn btn-primary center-block">Next</button>
 	</form>
 {{end}}

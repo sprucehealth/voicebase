@@ -56,6 +56,8 @@ $(function() {
 			</div>
 		</div>
 
+		<hr>
+
 		<h3>Home Address</h3>
 
 		<div class="form-group {{if .FormErrors.AddressLine1}}has-error has-feedback{{end}}">
@@ -90,6 +92,8 @@ $(function() {
 			</div>
 		</div>
 
+		<hr>
+
 		<h3>Create a Password</h3>
 
 		<div class="form-group {{if .FormErrors.Password1}}has-error has-feedback{{end}}">
@@ -103,6 +107,8 @@ $(function() {
 			<input required type="password" id="Password2" name="Password2" class="form-control">
 			{{template "fieldError" .FormErrors.Password2}}
 		</div>
+
+		<hr>
 
 		<h3>Consent to Communicate Electronically</h3>
 
@@ -161,6 +167,6 @@ $(function() {
 			<input type="checkbox" id="EBusinessAgree" name="EBusinessAgree"> I Agree
 		</div>
 
-		<button disabled type="submit" class="btn btn-primary pull-right">Create Account</button>
+		<button disabled type="submit" class="btn btn-primary center-block">Create Account</button>
 	</form>
 {{end}}

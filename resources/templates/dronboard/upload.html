@@ -2,16 +2,22 @@
 {{end}}
 
 {{define "body"}}
-	<form method="POST" action="" role="form" class="form-onboard form-inline" enctype="multipart/form-data">
+	<form method="POST" action="" role="form" class="form-onboard" enctype="multipart/form-data">
 		<h2>{{.Title}}</h2>
 
 		{{with .Subtitle}}<h4>{{.}}</h4>{{end}}
+
+		<hr>
 
 		<div class="form-group">
 			<input required type="file" name="File">
 		</div>
 
-		<a href="{{.NextURL}}" class="btn btn-default" role="button">Skip</a>
-		<button type="submit" class="btn btn-primary">Upload</button>
+		<hr>
+
+		<div class="text-center">
+			<a href="{{.NextURL}}" class="btn btn-default" role="button">Skip</a>
+			<button type="submit" class="btn btn-primary">Upload</button>
+		</div>
 	</form>
 {{end}}
