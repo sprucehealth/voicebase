@@ -94,8 +94,9 @@ func (s *surescriptsPharmacySearch) GetPharmaciesAroundSearchLocation(searchLoca
 
 func (s *surescriptsPharmacySearch) GetPharmacyFromId(pharmacyId int64) (*pharmacy.PharmacyData, error) {
 	var item pharmacy.PharmacyData
-	if err := s.db.QueryRow(`SELECT id, store_name, address_line_1, address_line_2, city, state, zip, phone_primary, fax, longitude, latitude FROM pharmacy
-		WHERE id = $1`, pharmacyId).Scan(
+	if err := s.db.QueryRow(`SELECT pharmacy.id, store_name, address_line_1, address_line_2, city, state, zip, phone_primary, fax, pharmacy_location.longitude, pharmacy_location.latitude 
+		FROM pharmacy, pharmacy_location
+		WHERE pharmacy.ncpdpid = pharmacy_location.ncpdpid AND id = $1`, pharmacyId).Scan(
 		&item.SourceId,
 		&item.Name,
 		&item.AddressLine1,

@@ -1,51 +1,48 @@
 package apiservice
 
 import (
-	"encoding/json"
 	"net/http"
 
 	"github.com/sprucehealth/backend/api"
-	"github.com/sprucehealth/backend/libs/golog"
 	"github.com/sprucehealth/backend/pharmacy"
 )
 
-type UpdatePatientPharmacyHandler struct {
-	DataApi               api.DataAPI
-	PharmacySearchService pharmacy.PharmacySearchAPI
+type updatePatientPharmacyHandler struct {
+	dataAPI api.DataAPI
 }
 
-func (u *UpdatePatientPharmacyHandler) ServeHTTP(w http.ResponseWriter, r *http.Request) {
+func NewUpdatePatientPharmacyHandler(dataAPI api.DataAPI) http.Handler {
+	return &updatePatientPharmacyHandler{
+		dataAPI: dataAPI,
+	}
+}
+
+func (u *updatePatientPharmacyHandler) ServeHTTP(w http.ResponseWriter, r *http.Request) {
 	switch r.Method {
 	case HTTP_POST:
 		u.updatePatientPharmacy(w, r)
 	default:
-		w.WriteHeader(http.StatusNotFound)
+		http.NotFound(w, r)
 	}
 }
 
-func (u *UpdatePatientPharmacyHandler) updatePatientPharmacy(w http.ResponseWriter, r *http.Request) {
+func (u *updatePatientPharmacyHandler) updatePatientPharmacy(w http.ResponseWriter, r *http.Request) {
 	var pharmacy pharmacy.PharmacyData
-	if err := json.NewDecoder(r.Body).Decode(&pharmacy); err != nil {
-		WriteDeveloperError(w, http.StatusBadRequest, err.Error())
+	if err := DecodeRequestData(&pharmacy, r); err != nil {
+		WriteError(err, w, r)
 		return
 	}
 
-	patient, err := u.DataApi.GetPatientFromAccountId(GetContext(r).AccountId)
+	patient, err := u.dataAPI.GetPatientFromAccountId(GetContext(r).AccountId)
 	if err != nil {
-		WriteDeveloperError(w, http.StatusInternalServerError, "Unable to get patient from account id: "+err.Error())
+		WriteError(err, w, r)
 		return
 	}
 
-	pharmacyDetails, err := u.PharmacySearchService.GetPharmacyFromId(pharmacy.SourceId)
-	pharmacyDetails.Source = pharmacy.Source
-	if err != nil {
-		golog.Warningf("Unable to get the pharmacy details when it would've been nice to be able to do so: " + err.Error())
-	}
-
-	if err := u.DataApi.UpdatePatientPharmacy(patient.PatientId.Int64(), pharmacyDetails); err != nil {
-		WriteJSONToHTTPResponseWriter(w, http.StatusInternalServerError, "Unable to set the patient pharmacy: "+err.Error())
+	if err := u.dataAPI.UpdatePatientPharmacy(patient.PatientId.Int64(), &pharmacy); err != nil {
+		WriteError(err, w, r)
 		return
 	}
 
-	WriteJSONToHTTPResponseWriter(w, http.StatusOK, SuccessfulGenericJSONResponse())
+	WriteJSONSuccess(w)
 }
