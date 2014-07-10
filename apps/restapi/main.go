@@ -40,11 +40,10 @@ import (
 	"github.com/sprucehealth/backend/reslib"
 	"github.com/sprucehealth/backend/support"
 	"github.com/sprucehealth/backend/surescripts/pharmacy"
-	"github.com/sprucehealth/backend/treatment_plan"
-	"github.com/sprucehealth/backend/www/router"
-
 	"github.com/sprucehealth/backend/third_party/github.com/gorilla/mux"
 	"github.com/sprucehealth/backend/third_party/github.com/samuel/go-metrics/metrics"
+	"github.com/sprucehealth/backend/treatment_plan"
+	"github.com/sprucehealth/backend/www/router"
 )
 
 const (
@@ -197,7 +196,11 @@ func buildRESTAPI(conf *Config, dataApi api.DataAPI, authAPI api.AuthAPI, stores
 
 	surescriptsPharmacySearch, err := pharmacy.NewSurescriptsPharmacySearch(conf.PharmacyDB)
 	if err != nil {
-		log.Fatalf("Unable to initialize pharmacy seatrch: %s", err)
+		if conf.Debug {
+			log.Printf("Unable to initialize pharmacy search: %s", err)
+		} else {
+			log.Fatalf("Unable to initialize pharmacy search: %s", err)
+		}
 	}
 
 	var erxStatusQueue *common.SQSQueue

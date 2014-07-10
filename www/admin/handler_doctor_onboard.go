@@ -16,7 +16,7 @@ import (
 )
 
 const (
-	onboardExpires = 60 * 60 * 24 * 7 // seconds
+	onboardExpires = 60 * 60 * 24 * 14 // seconds
 )
 
 type doctorOnboardHandler struct {

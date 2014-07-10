@@ -23,6 +23,7 @@ type uploadHandler struct {
 	attrName string
 	fileTag  string
 	title    string
+	subtitle string
 	nextURL  string
 }
 
@@ -50,7 +51,7 @@ func NewUploadLicenseHandler(router *mux.Router, dataAPI api.DataAPI, store stor
 	}, []string{"GET", "POST"})
 }
 
-func NewUploadClaimsHistory(router *mux.Router, dataAPI api.DataAPI, store storage.Store) http.Handler {
+func NewUploadClaimsHistoryHandler(router *mux.Router, dataAPI api.DataAPI, store storage.Store) http.Handler {
 	return www.SupportedMethodsHandler(&uploadHandler{
 		router:   router,
 		dataAPI:  dataAPI,
@@ -58,7 +59,8 @@ func NewUploadClaimsHistory(router *mux.Router, dataAPI api.DataAPI, store stora
 		attrName: api.AttrClaimsHistoryFile,
 		fileTag:  "claimshistory",
 		title:    "Upload Claims History",
-		nextURL:  "doctor-register-financials",
+		subtitle: "You may also skip this step and instead permit us to obtain this information on your behalf from your previous malpractice insurance carriers.",
+		nextURL:  "doctor-register-claims-history",
 	}, []string{"GET", "POST"})
 }
 
@@ -70,14 +72,25 @@ func (h *uploadHandler) ServeHTTP(w http.ResponseWriter, r *http.Request) {
 	}
 	nextURL := u.String()
 
-	if r.Method == "POST" {
-		account := context.Get(r, www.CKAccount).(*common.Account)
-		doctorID, err := h.dataAPI.GetDoctorIdFromAccountId(account.ID)
-		if err != nil {
-			www.InternalServerError(w, r, err)
-			return
-		}
+	account := context.Get(r, www.CKAccount).(*common.Account)
+	doctorID, err := h.dataAPI.GetDoctorIdFromAccountId(account.ID)
+	if err != nil {
+		www.InternalServerError(w, r, err)
+		return
+	}
 
+	// See if the doctor already uploaded the file. If so then skip this step
+	attr, err := h.dataAPI.DoctorAttributes(doctorID, []string{h.attrName})
+	if err != nil {
+		www.InternalServerError(w, r, err)
+		return
+	}
+	if attr[h.attrName] != "" {
+		http.Redirect(w, r, nextURL, http.StatusSeeOther)
+		return
+	}
+
+	if r.Method == "POST" {
 		if err := r.ParseMultipartForm(maxMemory); err != nil {
 			www.InternalServerError(w, r, err)
 			return
@@ -118,8 +131,9 @@ func (h *uploadHandler) ServeHTTP(w http.ResponseWriter, r *http.Request) {
 	www.TemplateResponse(w, http.StatusOK, uploadTemplate, &www.BaseTemplateContext{
 		Title: template.HTML(template.HTMLEscapeString(h.title) + " | Doctor Registration | Spruce"),
 		SubContext: &uploadTemplateContext{
-			Title:   h.title,
-			NextURL: nextURL,
+			Title:    h.title,
+			Subtitle: h.subtitle,
+			NextURL:  nextURL,
 		},
 	})
 }
