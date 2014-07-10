@@ -66,6 +66,7 @@ type Card struct {
 
 type Alert struct {
 	Id           int64     `json:"-"`
+	PatientId    int64     `json:"-"`
 	Message      string    `json:"message"`
 	CreationDate time.Time `json:"creation_date"`
 	Source       string    `json:"-"`

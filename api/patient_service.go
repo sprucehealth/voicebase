@@ -1016,6 +1016,41 @@ func (d *DataService) DeletePendingTask(pendingTaskId int64) error {
 	return err
 }
 
+func (d *DataService) AddAlertsForPatient(patientId int64, alerts []*common.Alert) error {
+	if len(alerts) == 0 {
+		return nil
+	}
+
+	values := make([]interface{}, 0, 4*len(alerts))
+	fields := make([]string, 0, len(alerts))
+	for _, alert := range alerts {
+		values = append(values, alert.PatientId, alert.Message, alert.Source, alert.SourceId)
+		fields = append(fields, "(?,?,?,?)")
+	}
+
+	_, err := d.db.Exec(`insert into patient_alerts (patient_id, alert, source, source_id) values `+strings.Join(fields, ","), values...)
+	return err
+}
+
+func (d *DataService) GetAlertsForPatient(patientId int64) ([]*common.Alert, error) {
+	rows, err := d.db.Query(`select id, patient_id, creation_date, alert, source, source_id from patient_alerts where patient_id = ?`, patientId)
+	if err != nil {
+		return nil, nil
+	}
+	defer rows.Close()
+
+	var alerts []*common.Alert
+	for rows.Next() {
+		alert := &common.Alert{}
+		if err := rows.Scan(&alert.Id, &alert.PatientId, &alert.CreationDate, &alert.Message, &alert.Source, &alert.SourceId); err != nil {
+			return nil, err
+		}
+		alerts = append(alerts, alert)
+	}
+
+	return alerts, rows.Err()
+}
+
 func (d *DataService) getPatientBasedOnQuery(table, joins, where string, queryParams ...interface{}) ([]*common.Patient, error) {
 	queryStr := fmt.Sprintf(`
 		SELECT patient.id, patient.erx_patient_id, patient.payment_service_customer_id, patient.account_id,
