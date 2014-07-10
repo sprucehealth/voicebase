@@ -137,24 +137,19 @@ func treatmentPlanResponse(dataApi api.DataAPI, w http.ResponseWriter, r *http.R
 	// HEADER VIEWS
 	headerViews = append(headerViews,
 		&tpHeroHeaderView{
-			Title:   fmt.Sprintf("%s's Acne Treatment Plan", patient.FirstName),
-			IconURL: app_url.Treatment,
-		},
-		&tpSmallDividerView{},
-		&tpSmallHeaderView{
-			Title:       fmt.Sprintf("Created by Dr. %s on %s", doctor.LastName, treatmentPlan.CreationDate.Format(apiservice.TimeFormatLayout)),
-			IconURL:     app_url.GetSmallThumbnail(api.DOCTOR_ROLE, doctor.DoctorId.Int64()),
-			RoundedIcon: true,
+			Title:           fmt.Sprintf("%s's\nAcne Treatment Plan", patient.FirstName),
+			Subtitle:        fmt.Sprintf("Created by Dr. %s", doctor.LastName),
+			CreatedDateText: fmt.Sprintf("on %s", treatmentPlan.CreationDate.Format("January 2, 2006")),
 		})
 
 	// TREATMENT VIEWS
 	if len(treatmentPlan.TreatmentList.Treatments) > 0 {
 		treatmentViews = append(treatmentViews, &tpCardView{
 			Views: []tpView{
-				&tpTextDisclosureButtonView{
-					Style:  captionRegularItalicStyle,
-					Text:   "Your prescriptions have been sent to your preferred pharmacy",
-					TapURL: app_url.ViewPreferredPharmacyAction(),
+				&tpPharmacyView{
+					Text:     "All prescriptions have been sent to your pharmacy.",
+					TapURL:   app_url.ViewPharmacyInMapAction(),
+					Pharmacy: patient.Pharmacy,
 				},
 			},
 		})

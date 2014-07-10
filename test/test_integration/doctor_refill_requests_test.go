@@ -2971,7 +2971,7 @@ func TestNewRefillRequestWithUnlinkedTreatmentAndUnlinkedPatient(t *testing.T) {
 	}
 
 	if unlinkedPatient.Pharmacy.SourceId != 1234 {
-		t.Fatalf("Expected patients preferred pharmacy to have id %s instead it had id %s", "1234", unlinkedPatient.Pharmacy.SourceId)
+		t.Fatalf("Expected patients preferred pharmacy to have id %s instead it had id %d", "1234", unlinkedPatient.Pharmacy.SourceId)
 	}
 
 	// There should be an unlinked pharmacy treatment in the unlinked_requested_treatment db

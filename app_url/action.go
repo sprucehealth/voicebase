@@ -236,3 +236,9 @@ func ViewResourceLibraryAction() *SpruceAction {
 		name: "view_resource_library",
 	}
 }
+
+func ViewPharmacyInMapAction() *SpruceAction {
+	return &SpruceAction{
+		name: "view_pharmacy_in_map",
+	}
+}

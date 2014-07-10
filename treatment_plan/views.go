@@ -4,6 +4,7 @@ import (
 	"errors"
 
 	"github.com/sprucehealth/backend/app_url"
+	"github.com/sprucehealth/backend/pharmacy"
 )
 
 const (
@@ -21,9 +22,10 @@ type tpView interface {
 }
 
 type tpHeroHeaderView struct {
-	Type    string               `json:"type"`
-	Title   string               `json:"title"`
-	IconURL *app_url.SpruceAsset `json:"icon_url"`
+	Type            string `json:"type"`
+	Title           string `json:"title"`
+	Subtitle        string `json:"subtitle"`
+	CreatedDateText string `json:"created_date_text"`
 }
 
 func (v *tpHeroHeaderView) Validate() error {
@@ -37,18 +39,6 @@ type tpSmallDividerView struct {
 
 func (v *tpSmallDividerView) Validate() error {
 	v.Type = treatmentViewNamespace + ":small_divider"
-	return nil
-}
-
-type tpSmallHeaderView struct {
-	Type        string               `json:"type"`
-	Title       string               `json:"title"`
-	IconURL     *app_url.SpruceAsset `json:"icon_url"`
-	RoundedIcon bool                 `json:"rounded_icon"`
-}
-
-func (v *tpSmallHeaderView) Validate() error {
-	v.Type = treatmentViewNamespace + ":small_header"
 	return nil
 }
 
@@ -197,6 +187,18 @@ type tpButtonView struct {
 
 func (v *tpButtonView) Validate() error {
 	v.Type = treatmentViewNamespace + ":button"
+	return nil
+}
+
+type tpPharmacyView struct {
+	Type     string                 `json:"type"`
+	Text     string                 `json:"text"`
+	TapURL   *app_url.SpruceAction  `json:"tap_url"`
+	Pharmacy *pharmacy.PharmacyData `json:"pharmacy"`
+}
+
+func (v *tpPharmacyView) Validate() error {
+	v.Type = treatmentViewNamespace + ":pharmacy"
 	return nil
 }
 
