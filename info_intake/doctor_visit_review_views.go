@@ -2,6 +2,7 @@ package info_intake
 
 import (
 	"fmt"
+
 	"github.com/sprucehealth/backend/common"
 
 	"github.com/sprucehealth/backend/third_party/github.com/SpruceHealth/mapstructure"
@@ -484,7 +485,7 @@ func (d *DVisitReviewCheckXItemsList) Render(context common.ViewContext) (map[st
 
 type DVisitReviewTitleSubItemsLabelContentItemsList struct {
 	Items          []TitleSubItemsDescriptionContentData `json:"items"`
-	EmptyStateView common.View
+	EmptyStateView common.View                           `json:"empty_state_view"`
 	ContentConfig  struct {
 		Key string `json:"key"`
 	} `json:"content_config"`
