@@ -2,8 +2,9 @@ package erx
 
 import (
 	"encoding/xml"
-	"github.com/sprucehealth/backend/encoding"
 	"time"
+
+	"github.com/sprucehealth/backend/encoding"
 )
 
 const (
@@ -449,4 +450,22 @@ type denyRefillResponse struct {
 	Result
 	PatientId      int64 `xml:"PatientID"`
 	PrescriptionId int64 `xml:"PrescriptionId"`
+}
+
+type allergySearchRequest struct {
+	XMLName    xml.Name     `xml:"http://www.dosespot.com/API/11/ AllergySearchRequest"`
+	SSO        singleSignOn `xml:"SingleSignOn"`
+	SearchTerm string       `xml:"SearchTerm"`
+}
+
+type allergySearchResponse struct {
+	XMLName xml.Name     `xml:"http://www.dosespot.com/API/11/ AllergySearchResult"`
+	SSO     singleSignOn `xml:"SingleSignOn"`
+	Result
+	SearchResults []*allergySearchResultItem `xml:"SearchResults>AllergySearchResult"`
+}
+
+type allergySearchResultItem struct {
+	Name     string `xml:"Name"`
+	CodeType string `xml:"CodeType"`
 }

@@ -44,6 +44,7 @@ const (
 	pharmacyDetailsAction
 	approveRefillAction
 	denyRefillAction
+	allergySearchAction
 )
 
 var DoseSpotApiActions = map[DoseSpotApiId]string{
@@ -64,6 +65,7 @@ var DoseSpotApiActions = map[DoseSpotApiId]string{
 	pharmacyDetailsAction:                          "PharmacyValidateMessage",
 	approveRefillAction:                            "ApproveRefill",
 	denyRefillAction:                               "DenyRefill",
+	allergySearchAction:                            "AllergySearch",
 }
 
 const (
@@ -157,6 +159,31 @@ func (d *DoseSpotService) GetDrugNamesForPatient(prefix string) ([]string, error
 	}
 
 	return drugNames, nil
+}
+
+func (d *DoseSpotService) SearchForAllergyRelatedMedications(searchTerm string) ([]string, error) {
+	allergySearch := &allergySearchRequest{
+		SSO:        generateSingleSignOn(d.ClinicKey, d.UserID, d.ClinicId),
+		SearchTerm: searchTerm,
+	}
+
+	searchResults := &allergySearchResponse{}
+	err := getDoseSpotClient().makeSoapRequest(DoseSpotApiActions[allergySearchAction],
+		allergySearch, searchResults,
+		d.apiLatencies[allergySearchAction],
+		d.apiRequests[allergySearchAction],
+		d.apiFailure[allergySearchAction])
+
+	if err != nil {
+		return nil, err
+	}
+
+	names := make([]string, len(searchResults.SearchResults))
+	for i, searchResultItem := range searchResults.SearchResults {
+		names[i] = searchResultItem.Name
+	}
+
+	return names, nil
 }
 
 func (d *DoseSpotService) SearchForMedicationStrength(clinicianId int64, medicationName string) ([]string, error) {

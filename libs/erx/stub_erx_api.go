@@ -30,6 +30,10 @@ func (s *StubErxService) GetDrugNamesForPatient(prefix string) ([]string, error)
 	return nil, nil
 }
 
+func (s *StubErxService) SearchForAllergyRelatedMedications(searchTerm string) ([]string, error) {
+	return nil, nil
+}
+
 func (s *StubErxService) SearchForMedicationStrength(clinicianId int64, medicationName string) ([]string, error) {
 	return nil, nil
 }
