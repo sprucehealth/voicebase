@@ -122,6 +122,7 @@ func getViewCaseCard(patientCase *common.PatientCase, doctor *common.Doctor, not
 			Subtitle:         fmt.Sprintf("With Dr. %s %s", doctor.FirstName, doctor.LastName),
 			ActionURL:        app_url.ViewCaseAction(patientCase.Id.Int64()),
 			IconURL:          doctor.SmallThumbnailUrl,
+			CaseID:           patientCase.Id.Int64(),
 			NotificationView: notificationView,
 		}
 	}
