@@ -139,7 +139,7 @@ func treatmentGuideResponse(dataAPI api.DataAPI, doctor *common.Doctor, w http.R
 		&tpLargeDividerView{},
 		&tpIconTextView{
 			// TODO: This icon info isn't robust or likely accurate
-			IconURL:    doctor.LargeThumbnailUrl,
+			IconURL:    doctor.LargeThumbnailURL,
 			IconWidth:  32,
 			IconHeight: 32,
 			Text:       fmt.Sprintf("Dr. %s's Instructions", treatment.Doctor.LastName),

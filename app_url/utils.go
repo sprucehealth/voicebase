@@ -3,6 +3,8 @@ package app_url
 import (
 	"fmt"
 	"strings"
+
+	"github.com/sprucehealth/backend/environment"
 )
 
 const (
@@ -12,13 +14,31 @@ const (
 )
 
 func GetLargeThumbnail(role string, id int64) *SpruceAsset {
+	if environment.IsDev() {
+		id = 1
+	}
+
 	return &SpruceAsset{
 		name: fmt.Sprintf("%s_%d_large", strings.ToLower(role), id),
 	}
 }
 
 func GetSmallThumbnail(role string, id int64) *SpruceAsset {
+	if environment.IsDev() {
+		id = 1
+	}
+
 	return &SpruceAsset{
 		name: fmt.Sprintf("%s_%d_small", strings.ToLower(role), id),
+	}
+}
+
+func GetProfile(role string, id int64) *SpruceAsset {
+	if environment.IsDev() {
+		id = 1
+	}
+
+	return &SpruceAsset{
+		name: fmt.Sprintf("%s_%d_profile", strings.ToLower(role), id),
 	}
 }

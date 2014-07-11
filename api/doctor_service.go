@@ -149,9 +149,10 @@ func (d *DataService) queryDoctor(where string, queryParams ...interface{}) (*co
 		NPI:      NPI.String,
 	}
 
-	// populate the doctor url
-	doctor.LargeThumbnailUrl = app_url.GetLargeThumbnail(DOCTOR_ROLE, doctor.DoctorId.Int64())
-	doctor.SmallThumbnailUrl = app_url.GetSmallThumbnail(DOCTOR_ROLE, doctor.DoctorId.Int64())
+	// populate the doctor urls
+	doctor.LargeThumbnailURL = app_url.GetLargeThumbnail(DOCTOR_ROLE, doctor.DoctorId.Int64())
+	doctor.SmallThumbnailURL = app_url.GetSmallThumbnail(DOCTOR_ROLE, doctor.DoctorId.Int64())
+	doctor.ProfileURL = app_url.GetProfile(DOCTOR_ROLE, doctor.DoctorId.Int64())
 
 	doctor.PromptStatus, err = d.GetPushPromptStatus(doctor.AccountId.Int64())
 	if err != nil {

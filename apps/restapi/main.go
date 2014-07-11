@@ -21,6 +21,7 @@ import (
 	"github.com/sprucehealth/backend/doctor_queue"
 	"github.com/sprucehealth/backend/doctor_treatment_plan"
 	"github.com/sprucehealth/backend/email"
+	"github.com/sprucehealth/backend/environment"
 	"github.com/sprucehealth/backend/layout"
 	"github.com/sprucehealth/backend/libs/aws"
 	"github.com/sprucehealth/backend/libs/aws/sns"
@@ -409,7 +410,7 @@ func buildRESTAPI(conf *Config, dataApi api.DataAPI, authAPI api.AuthAPI, stores
 	}
 
 	// This helps to ensure that we are only surfacing errors to client in the dev environment
-	apiservice.IsDev = (conf.Environment == "dev")
+	environment.SetCurrent(conf.Environment)
 
 	// seeding random number generator based on time the main function runs
 	rand.Seed(time.Now().UTC().UnixNano())

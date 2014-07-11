@@ -121,7 +121,7 @@ func getViewCaseCard(patientCase *common.PatientCase, doctor *common.Doctor, not
 			Title:            "Dermatology Case",
 			Subtitle:         fmt.Sprintf("With Dr. %s %s", doctor.FirstName, doctor.LastName),
 			ActionURL:        app_url.ViewCaseAction(patientCase.Id.Int64()),
-			IconURL:          doctor.SmallThumbnailUrl,
+			IconURL:          doctor.SmallThumbnailURL,
 			CaseID:           patientCase.Id.Int64(),
 			NotificationView: notificationView,
 		}
@@ -147,7 +147,7 @@ func getMeetCareTeamSection(careTeamAssignments []*common.CareProviderAssignment
 			sectionView.Views = append(sectionView.Views, &phSmallIconText{
 				Title:       fmt.Sprintf("Dr. %s %s", doctor.FirstName, doctor.LastName),
 				Subtitle:    doctor.ShortTitle,
-				IconURL:     doctor.SmallThumbnailUrl,
+				IconURL:     doctor.SmallThumbnailURL,
 				RoundedIcon: true,
 			})
 		}
@@ -160,7 +160,7 @@ func getViewResourceLibrarySection() common.ClientView {
 	return &phSectionView{
 		Views: []common.ClientView{
 			&phSmallIconText{
-				Title:       "Find out what causes acne and more in the resource library",
+				Title:       "Check out Spruce’s skin care guides",
 				IconURL:     app_url.IconResourceLibrary,
 				ActionURL:   app_url.ViewResourceLibraryAction(),
 				RoundedIcon: true,
