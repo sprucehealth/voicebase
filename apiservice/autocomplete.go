@@ -83,7 +83,7 @@ func (s *autocompleteHandler) handleAutocompleteForAllergicMedications(requestDa
 		Suggestions: make([]*Suggestion, len(searchResults)),
 	}
 
-	// format the results as they are returned in lowercase letters
+	// format the results as they are returned in lowercase form
 	for i, searchResultItem := range searchResults {
 		autocompleteResponse.Suggestions[i] = &Suggestion{Title: strings.Title(searchResultItem)}
 	}
