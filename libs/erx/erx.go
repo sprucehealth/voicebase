@@ -30,7 +30,7 @@ type ERxAPI interface {
 	GetTransmissionErrorDetails(clinicianId int64) ([]*common.Treatment, error)
 	GetTransmissionErrorRefillRequestsCount(clinicianId int64) (refillRequests int64, transactionErrors int64, err error)
 	IgnoreAlert(clinicianId int64, prescriptionId int64) error
-	GetRefillRequestQueueForClinic() ([]*common.RefillRequestItem, error)
+	GetRefillRequestQueueForClinic(clinicianId int64) ([]*common.RefillRequestItem, error)
 	GetPatientDetails(erxPatientId int64) (*common.Patient, error)
 	GetPharmacyDetails(pharmacyId int64) (*pharmacySearch.PharmacyData, error)
 	ApproveRefillRequest(clinicianId, erxRefillRequestQueueItemId, approvedRefillAmount int64, comments string) (int64, error)
