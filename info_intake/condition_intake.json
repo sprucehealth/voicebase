@@ -28,14 +28,13 @@
       "transition": {
         "buttons": [
           {
-            "button_text": "On to Medical History",
+            "button_text": "Continue",
             "style": "filled",
             "tap_url": "spruce:///action/view_next_visit_section"
           }
         ],
         "image_url": "spruce:///image/tickmark",
-        "message": "Next up is medical history.",
-        "title": "Photos are complete!"
+        "message": "Next we'll ask a few questions about your skin."
       }
     },
     {
@@ -223,14 +222,13 @@
       "transition": {
         "buttons": [
           {
-            "button_text": "On to Photos",
+            "button_text": "Continue",
             "style": "filled",
             "tap_url": "spruce:///action/view_next_visit_section"
           }
         ],
         "image_url": "spruce:///image/tickmark",
-        "message": "That's it for questions about your skin.",
-        "title": "About your skin is complete!"
+        "message": "Next we’ll ask a few questions about your medical history.",
       }
     },
     {
