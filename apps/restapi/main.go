@@ -14,6 +14,7 @@ import (
 	"github.com/sprucehealth/backend/api"
 	"github.com/sprucehealth/backend/apiservice"
 	"github.com/sprucehealth/backend/app_event"
+	"github.com/sprucehealth/backend/app_url"
 	"github.com/sprucehealth/backend/app_worker"
 	"github.com/sprucehealth/backend/common"
 	"github.com/sprucehealth/backend/common/config"
@@ -410,6 +411,7 @@ func buildRESTAPI(conf *Config, dataApi api.DataAPI, authAPI api.AuthAPI, stores
 
 	// This helps to ensure that we are only surfacing errors to client in the dev environment
 	apiservice.IsDev = (conf.Environment == "dev")
+	app_url.MapImagesToSingleDoctor = apiservice.IsDev
 
 	// seeding random number generator based on time the main function runs
 	rand.Seed(time.Now().UTC().UnixNano())
