@@ -68,10 +68,8 @@ func TestDoctorDrugSearch(t *testing.T) {
 		t.Fatal("Unable to get doctor information from id: " + err.Error())
 	}
 
-	erx := setupErxAPI(t)
-
 	// ensure that the autcoomplete api returns results
-	autocompleteHandler := apiservice.NewAutocompleteHandler(testData.DataApi, erx)
+	autocompleteHandler := apiservice.NewAutocompleteHandler(testData.DataApi, testData.ERxAPI)
 	ts := httptest.NewServer(autocompleteHandler)
 	defer ts.Close()
 

@@ -1,0 +1,1 @@
+update patient_case set status = 'CLAIMED' where status = 'OPEN';
