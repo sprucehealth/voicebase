@@ -46,6 +46,8 @@ func PerformRefillRecquestCheckCycle(DataApi api.DataAPI, ERxApi erx.ERxAPI, sta
 	}
 	golog.Debugf("Sucessfully made db call to get pending statuses for any existing refill requests. Number of refill requests returned: %d", len(refillRequestStatuses))
 
+	// Unfortunately, we have to get the clincianId of a doctor to make the call to get refill
+	// requests at the clinic level beacuse this call does not work with the proxy clincian Id
 	doctor, err := DataApi.GetFirstDoctorWithAClinicianId()
 	if err != nil {
 		golog.Errorf("Unable to get doctor with clinician id set: %s", err)
