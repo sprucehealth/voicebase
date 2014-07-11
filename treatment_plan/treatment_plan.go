@@ -137,7 +137,7 @@ func treatmentPlanResponse(dataApi api.DataAPI, w http.ResponseWriter, r *http.R
 	// HEADER VIEWS
 	headerViews = append(headerViews,
 		&tpHeroHeaderView{
-			Title:           fmt.Sprintf("%s's\nAcne Treatment Plan", patient.FirstName),
+			Title:           fmt.Sprintf("%s's\nTreatment Plan", patient.FirstName),
 			Subtitle:        fmt.Sprintf("Created by Dr. %s", doctor.LastName),
 			CreatedDateText: fmt.Sprintf("on %s", treatmentPlan.CreationDate.Format("January 2, 2006")),
 		})
