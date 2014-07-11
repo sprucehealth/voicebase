@@ -229,6 +229,16 @@ func (d *DataService) GetNotificationsForCase(patientCaseId int64, notificationT
 	return notificationItems, rows.Err()
 }
 
+func (d *DataService) GetNotificationCountForCase(patientCaseId int64) (int64, error) {
+	var notificationCount int64
+	if err := d.db.QueryRow(`select count(*) from case_notification where patient_case_id = ?`, patientCaseId).Scan(&notificationCount); err == sql.ErrNoRows {
+		return 0, NoRowsError
+	} else if err != nil {
+		return 0, err
+	}
+	return notificationCount, nil
+}
+
 func (d *DataService) InsertCaseNotification(notificationItem *common.CaseNotification) error {
 	notificationData, err := json.Marshal(notificationItem.Data)
 	if err != nil {

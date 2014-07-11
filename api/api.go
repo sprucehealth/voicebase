@@ -100,6 +100,7 @@ type PatientCaseAPI interface {
 	GetCasesForPatient(patientId int64) ([]*common.PatientCase, error)
 	GetVisitsForCase(patientCaseId int64) ([]*common.PatientVisit, error)
 	GetNotificationsForCase(patientCaseId int64, notificationTypeRegistry map[string]reflect.Type) ([]*common.CaseNotification, error)
+	GetNotificationCountForCase(patientCaseId int64) (int64, error)
 	InsertCaseNotification(caseNotificationItem *common.CaseNotification) error
 	DeleteCaseNotification(uid string, patientCaseId int64) error
 }
