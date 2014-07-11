@@ -226,7 +226,7 @@ func buildRESTAPI(conf *Config, dataApi api.DataAPI, authAPI api.AuthAPI, stores
 	}
 
 	mapsService := maps.NewGoogleMapsService(metricsRegistry.Scope("google_maps_api"))
-	doseSpotService := erx.NewDoseSpotService(conf.DoseSpot.ClinicId, conf.DoseSpot.UserId, conf.DoseSpot.ClinicKey, metricsRegistry.Scope("dosespot_api"))
+	doseSpotService := erx.NewDoseSpotService(conf.DoseSpot.ClinicId, conf.DoseSpot.UserId, conf.DoseSpot.ClinicKey, conf.DoseSpot.SOAPEndpoint, conf.DoseSpot.APIEndpoint, metricsRegistry.Scope("dosespot_api"))
 	autocompleteHandler := apiservice.NewAutocompleteHandler(dataApi, doseSpotService)
 
 	notificationManager := notify.NewManager(dataApi, snsClient, twilioCli, emailService,

@@ -37,9 +37,11 @@ func (c *TwilioConfig) Client() (*twilio.Client, error) {
 }
 
 type DosespotConfig struct {
-	ClinicId  int64  `long:"clinic_id" description:"Clinic Id for dosespot"`
-	ClinicKey string `long:"clinic_key" description:"Clinic Key for dosespot"`
-	UserId    int64  `long:"user_id" description:"User Id for dosespot"`
+	ClinicId     int64  `long:"clinic_id" description:"Clinic Id for dosespot"`
+	ClinicKey    string `long:"clinic_key" description:"Clinic Key for dosespot"`
+	UserId       int64  `long:"user_id" description:"User Id for dosespot"`
+	SOAPEndpoint string `long:"soap_endpoint" description:"SOAP endpoint"`
+	APIEndpoint  string `long:"api_endpoint" description:"API endpoint where soap actions are defined"`
 }
 
 type SmartyStreetsConfig struct {
