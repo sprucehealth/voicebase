@@ -16,7 +16,6 @@ import (
 	"github.com/sprucehealth/backend/patient_visit"
 
 	"github.com/sprucehealth/backend/address"
-	"github.com/sprucehealth/backend/api"
 	"github.com/sprucehealth/backend/apiservice"
 
 	_ "github.com/sprucehealth/backend/third_party/github.com/go-sql-driver/mysql"
@@ -156,16 +155,12 @@ func TestPatientAutocompleteForDrugs(t *testing.T) {
 
 	signedupPatientResponse := SignupRandomTestPatient(t, testData)
 
-	autocompleteHandler := apiservice.AutocompleteHandler{
-		DataApi: testData.DataApi,
-		ERxApi:  setupErxAPI(t),
-		Role:    api.PATIENT_ROLE,
-	}
+	autocompleteHandler := apiservice.NewAutocompleteHandler(testData.DataApi, setupErxAPI(t))
 
 	params := url.Values{}
 	params.Set("query", "Lipi")
 
-	ts := httptest.NewServer(&autocompleteHandler)
+	ts := httptest.NewServer(autocompleteHandler)
 	defer ts.Close()
 
 	resp, err := testData.AuthGet(ts.URL+"?"+params.Encode(), signedupPatientResponse.Patient.AccountId.Int64())

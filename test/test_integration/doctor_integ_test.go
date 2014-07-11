@@ -4,16 +4,16 @@ import (
 	"bytes"
 	"encoding/json"
 	"fmt"
-	"github.com/sprucehealth/backend/api"
-	"github.com/sprucehealth/backend/apiservice"
-	"github.com/sprucehealth/backend/common"
-	"github.com/sprucehealth/backend/doctor_treatment_plan"
-	"github.com/sprucehealth/backend/patient_visit"
 	"io/ioutil"
 	"net/http"
 	"net/http/httptest"
 	"strconv"
 	"testing"
+
+	"github.com/sprucehealth/backend/apiservice"
+	"github.com/sprucehealth/backend/common"
+	"github.com/sprucehealth/backend/doctor_treatment_plan"
+	"github.com/sprucehealth/backend/patient_visit"
 )
 
 func TestDoctorRegistration(t *testing.T) {
@@ -71,7 +71,7 @@ func TestDoctorDrugSearch(t *testing.T) {
 	erx := setupErxAPI(t)
 
 	// ensure that the autcoomplete api returns results
-	autocompleteHandler := &apiservice.AutocompleteHandler{DataApi: testData.DataApi, ERxApi: erx, Role: api.DOCTOR_ROLE}
+	autocompleteHandler := apiservice.NewAutocompleteHandler(testData.DataApi, erx)
 	ts := httptest.NewServer(autocompleteHandler)
 	defer ts.Close()
 

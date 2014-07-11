@@ -1,30 +1,49 @@
 package apiservice
 
 import (
+	"fmt"
 	"net/http"
 	"strings"
 	"unicode"
 
 	"github.com/sprucehealth/backend/api"
-	"github.com/sprucehealth/backend/common"
 	"github.com/sprucehealth/backend/libs/erx"
-	"github.com/sprucehealth/backend/third_party/github.com/SpruceHealth/schema"
 )
 
-type AutocompleteHandler struct {
-	DataApi api.DataAPI
-	ERxApi  erx.ERxAPI
-	Role    string
+type autocompleteHandler struct {
+	dataAPI api.DataAPI
+	erxAPI  erx.ERxAPI
+}
+
+const allergicMedicationsQuestionTag = "q_allergic_medication_entry"
+
+var allergicMedicationsQuestionId int64
+
+func NewAutocompleteHandler(dataAPI api.DataAPI, erxAPI erx.ERxAPI) http.Handler {
+
+	// cache the allergic medications question id at startup so that we can check the context with which the user is calling this API
+	// and return appropriate results
+	questionInfos, err := dataAPI.GetQuestionInfoForTags([]string{allergicMedicationsQuestionTag}, api.EN_LANGUAGE_ID)
+	if err != nil {
+		panic(err)
+	} else if len(questionInfos) != 1 {
+		panic(fmt.Sprintf("expected 1 question to be returned with tag %s instead got %d", allergicMedicationsQuestionTag, len(questionInfos)))
+	}
+	allergicMedicationsQuestionId = questionInfos[0].QuestionId
+
+	return &autocompleteHandler{
+		dataAPI: dataAPI,
+		erxAPI:  erxAPI,
+	}
 }
 
 type AutocompleteRequestData struct {
 	SearchString string `schema:"query,required"`
-	QuestionId   string `schema:"question_id"`
+	QuestionId   int64  `schema:"question_id"`
 }
 
 type AutocompleteResponse struct {
-	Suggestions []Suggestion `json:"suggestions"`
-	Title       string       `json:"title"`
+	Suggestions []*Suggestion `json:"suggestions"`
 }
 
 type Suggestion struct {
@@ -33,46 +52,69 @@ type Suggestion struct {
 	DrugInternalName string `json:"drug_internal_name,omitempty"`
 }
 
-func (s *AutocompleteHandler) ServeHTTP(w http.ResponseWriter, r *http.Request) {
+func (s *autocompleteHandler) ServeHTTP(w http.ResponseWriter, r *http.Request) {
 	if r.Method != HTTP_GET {
-		w.WriteHeader(http.StatusNotFound)
+		http.NotFound(w, r)
 		return
 	}
 
-	if err := r.ParseForm(); err != nil {
-		WriteDeveloperError(w, http.StatusBadRequest, "Unable to parse request data: "+err.Error())
+	requestData := &AutocompleteRequestData{}
+	if err := DecodeRequestData(requestData, r); err != nil {
+		WriteValidationError(err.Error(), w, r)
 		return
 	}
 
-	var requestData AutocompleteRequestData
-	if err := schema.NewDecoder().Decode(&requestData, r.Form); err != nil {
-		WriteDeveloperError(w, http.StatusBadRequest, "Unable to parse input paramaters: "+err.Error())
+	if requestData.QuestionId == allergicMedicationsQuestionId {
+		s.handleAutocompleteForAllergicMedications(requestData, w, r)
 		return
 	}
 
+	s.handleAutocompleteForDrugs(requestData, w, r)
+}
+
+func (s *autocompleteHandler) handleAutocompleteForAllergicMedications(requestData *AutocompleteRequestData, w http.ResponseWriter, r *http.Request) {
+	searchResults, err := s.erxAPI.SearchForAllergyRelatedMedications(requestData.SearchString)
+	if err != nil {
+		WriteError(err, w, r)
+		return
+	}
+
+	autocompleteResponse := &AutocompleteResponse{
+		Suggestions: make([]*Suggestion, len(searchResults)),
+	}
+
+	// format the results as they are returned in lowercase letters
+	for i, searchResultItem := range searchResults {
+		autocompleteResponse.Suggestions[i] = &Suggestion{Title: strings.Title(searchResultItem)}
+	}
+
+	WriteJSON(w, autocompleteResponse)
+}
+
+func (s *autocompleteHandler) handleAutocompleteForDrugs(requestData *AutocompleteRequestData, w http.ResponseWriter, r *http.Request) {
 	var searchResults []string
 	var err error
-	var doctor *common.Doctor
-	if s.Role == api.DOCTOR_ROLE {
-		doctor, err = s.DataApi.GetDoctorFromAccountId(GetContext(r).AccountId)
+	switch GetContext(r).Role {
+	case api.DOCTOR_ROLE:
+		doctor, err := s.dataAPI.GetDoctorFromAccountId(GetContext(r).AccountId)
 		if err != nil {
-			WriteDeveloperError(w, http.StatusInternalServerError, "Unable to get doctor from accountId: "+err.Error())
+			WriteError(err, w, r)
 			return
 		}
-		searchResults, err = s.ERxApi.GetDrugNamesForDoctor(doctor.DoseSpotClinicianId, requestData.SearchString)
-	} else {
-
-		searchResults, err = s.ERxApi.GetDrugNamesForPatient(requestData.SearchString)
+		searchResults, err = s.erxAPI.GetDrugNamesForDoctor(doctor.DoseSpotClinicianId, requestData.SearchString)
+	case api.PATIENT_ROLE:
+		searchResults, err = s.erxAPI.GetDrugNamesForPatient(requestData.SearchString)
+	default:
+		WriteAccessNotAllowedError(w, r)
 	}
 	if err != nil {
-		WriteDeveloperError(w, http.StatusInternalServerError, "Unable to get search results for drugs: "+err.Error())
+		WriteError(err, w, r)
 		return
 	}
 
 	// populate suggestions
 	autocompleteResponse := &AutocompleteResponse{
-		Title:       "Common Treatments",
-		Suggestions: make([]Suggestion, len(searchResults)),
+		Suggestions: make([]*Suggestion, len(searchResults)),
 	}
 	for i, searchResult := range searchResults {
 		// move anything within brackets to become the subtitle
@@ -82,13 +124,13 @@ func (s *AutocompleteHandler) ServeHTTP(w http.ResponseWriter, r *http.Request) 
 		openBracket := strings.Index(searchResult, "(")
 		if openBracket != -1 {
 			subtitle := searchResult[openBracket+1 : len(searchResult)-1]
-
-			autocompleteResponse.Suggestions[i] = Suggestion{Title: searchResult[:openBracket], Subtitle: SpecialTitle(subtitle), DrugInternalName: searchResult}
+			autocompleteResponse.Suggestions[i] = &Suggestion{Title: searchResult[:openBracket], Subtitle: SpecialTitle(subtitle), DrugInternalName: searchResult}
 		} else {
-			autocompleteResponse.Suggestions[i] = Suggestion{Title: searchResult}
+			autocompleteResponse.Suggestions[i] = &Suggestion{Title: searchResult}
 		}
 	}
-	WriteJSONToHTTPResponseWriter(w, http.StatusOK, autocompleteResponse)
+
+	WriteJSON(w, autocompleteResponse)
 }
 
 // Content in the paranthesis of a drug name is returned as Oral - powder for reconstitution
