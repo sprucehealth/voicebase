@@ -52,6 +52,7 @@ type PatientAPI interface {
 	GetPatientFromErxPatientId(erxPatientId int64) (*common.Patient, error)
 	GetPatientFromRefillRequestId(refillRequestId int64) (*common.Patient, error)
 	GetPatientFromTreatmentId(treatmentId int64) (*common.Patient, error)
+	GetPatientFromCaseId(patientCaseId int64) (*common.Patient, error)
 	GetPatientFromUnlinkedDNTFTreatment(unlinkedDNTFTreatmentId int64) (*common.Patient, error)
 	GetPatientVisitsForPatient(patientId int64) ([]*common.PatientVisit, error)
 	RegisterPatient(patient *common.Patient) error

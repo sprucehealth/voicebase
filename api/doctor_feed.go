@@ -151,24 +151,19 @@ func (d *DoctorQueueItem) GetTitleAndSubtitle(dataApi DataAPI) (string, string, 
 			title = fmt.Sprintf("Error resolved for %s %s", unlinkedTreatment.Patient.FirstName, unlinkedTreatment.Patient.LastName)
 		}
 	case DQEventTypeCaseMessage:
-		participants, err := dataApi.CaseMessageParticipants(d.ItemId, true)
+
+		patient, err := dataApi.GetPatientFromCaseId(d.ItemId)
 		if err != nil {
 			return "", "", err
 		}
-		for _, par := range participants {
-			person := par.Person
-			if person.RoleType == PATIENT_ROLE {
-				patient := person.Patient
-				switch d.Status {
-				case DQItemStatusPending:
-					title = fmt.Sprintf("Message from %s %s", patient.FirstName, patient.LastName)
-				case DQItemStatusRead:
-					title = fmt.Sprintf("Conversation with %s %s", patient.FirstName, patient.LastName)
-				case DQItemStatusReplied:
-					title = fmt.Sprintf("Replied to %s %s", patient.FirstName, patient.LastName)
-				}
-				break
-			}
+
+		switch d.Status {
+		case DQItemStatusPending:
+			title = fmt.Sprintf("Message from %s %s", patient.FirstName, patient.LastName)
+		case DQItemStatusRead:
+			title = fmt.Sprintf("Conversation with %s %s", patient.FirstName, patient.LastName)
+		case DQItemStatusReplied:
+			title = fmt.Sprintf("Replied to %s %s", patient.FirstName, patient.LastName)
 		}
 	}
 	return title, subtitle, nil
