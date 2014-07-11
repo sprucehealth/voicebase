@@ -155,7 +155,7 @@ func TestPatientAutocompleteForDrugs(t *testing.T) {
 
 	signedupPatientResponse := SignupRandomTestPatient(t, testData)
 
-	autocompleteHandler := apiservice.NewAutocompleteHandler(testData.DataApi, setupErxAPI(t))
+	autocompleteHandler := apiservice.NewAutocompleteHandler(testData.DataApi, testData.ERxAPI)
 
 	params := url.Values{}
 	params.Set("query", "Lipi")
