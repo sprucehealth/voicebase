@@ -242,15 +242,6 @@ func populatePatientIntake(questionIds map[questionTag]int64, answerIds map[pote
 			QuestionId: questionIds[qAcneSymptoms],
 			AnswerIntakes: []*apiservice.AnswerItem{
 				&apiservice.AnswerItem{
-					PotentialAnswerId: answerIds[aDiscoloration],
-				},
-				&apiservice.AnswerItem{
-					PotentialAnswerId: answerIds[aCreatedScars],
-				},
-				&apiservice.AnswerItem{
-					PotentialAnswerId: answerIds[aCysts],
-				},
-				&apiservice.AnswerItem{
 					PotentialAnswerId: answerIds[aPainfulToTouch],
 				},
 				&apiservice.AnswerItem{
@@ -259,26 +250,10 @@ func populatePatientIntake(questionIds map[questionTag]int64, answerIds map[pote
 			},
 		},
 		&apiservice.AnswerToQuestionItem{
-			QuestionId: questionIds[qAcneWorsePeriod],
-			AnswerIntakes: []*apiservice.AnswerItem{
-				&apiservice.AnswerItem{
-					PotentialAnswerId: answerIds[aAcneWorsePeriodNo],
-				},
-			},
-		},
-		&apiservice.AnswerToQuestionItem{
 			QuestionId: questionIds[qSkinDescription],
 			AnswerIntakes: []*apiservice.AnswerItem{
 				&apiservice.AnswerItem{
 					PotentialAnswerId: answerIds[aSkinDescriptionOily],
-				},
-			},
-		},
-		&apiservice.AnswerToQuestionItem{
-			QuestionId: questionIds[qAcnePrevTreatmentTypes],
-			AnswerIntakes: []*apiservice.AnswerItem{
-				&apiservice.AnswerItem{
-					PotentialAnswerId: answerIds[aPrevTreatmentsTypeOTC],
 				},
 			},
 		},
@@ -317,51 +292,6 @@ func populatePatientIntake(questionIds map[questionTag]int64, answerIds map[pote
 							AnswerIntakes: []*apiservice.AnswerItem{
 								&apiservice.AnswerItem{
 									PotentialAnswerId: answerIds[aAcnePrevPrescriptionIrritateSkinNo],
-								},
-							},
-						},
-					},
-				},
-				&apiservice.AnswerItem{
-					PotentialAnswerId: answerIds[aBenzaClin],
-					SubQuestionAnswerIntakes: []*apiservice.SubQuestionAnswerIntake{
-						&apiservice.SubQuestionAnswerIntake{
-							QuestionId: questionIds[qAcnePrevPrescriptionsUsing],
-							AnswerIntakes: []*apiservice.AnswerItem{
-								&apiservice.AnswerItem{
-									PotentialAnswerId: answerIds[aAcnePrevPrescriptionUsingYes],
-								},
-							},
-						},
-						&apiservice.SubQuestionAnswerIntake{
-							QuestionId: questionIds[qAcnePrevPrescriptionsEffective],
-							AnswerIntakes: []*apiservice.AnswerItem{
-								&apiservice.AnswerItem{
-									PotentialAnswerId: answerIds[aAcnePrevPrescriptionEffectiveSomewhat],
-								},
-							},
-						},
-						&apiservice.SubQuestionAnswerIntake{
-							QuestionId: questionIds[qAcnePrevPrescriptionsUsedMoreThanThreeMonths],
-							AnswerIntakes: []*apiservice.AnswerItem{
-								&apiservice.AnswerItem{
-									PotentialAnswerId: answerIds[aAcnePrevPrescriptionUseMoreThanThreeMonthsNo],
-								},
-							},
-						},
-						&apiservice.SubQuestionAnswerIntake{
-							QuestionId: questionIds[qAcnePrevPrescriptionsIrritate],
-							AnswerIntakes: []*apiservice.AnswerItem{
-								&apiservice.AnswerItem{
-									PotentialAnswerId: answerIds[aAcnePrevPrescriptionIrritateSkinNo],
-								},
-							},
-						},
-						&apiservice.SubQuestionAnswerIntake{
-							QuestionId: questionIds[qAcnePrevPrescriptionsAnythingElse],
-							AnswerIntakes: []*apiservice.AnswerItem{
-								&apiservice.AnswerItem{
-									AnswerText: "My skin has started to clear up a bit after using benzaclin together with benzoyl peroxide.",
 								},
 							},
 						},
@@ -431,30 +361,10 @@ func populatePatientIntake(questionIds map[questionTag]int64, answerIds map[pote
 			QuestionId: questionIds[qCurrentMedicationsEntry],
 			AnswerIntakes: []*apiservice.AnswerItem{
 				&apiservice.AnswerItem{
-					AnswerText: "Clyndamycin",
-					SubQuestionAnswerIntakes: []*apiservice.SubQuestionAnswerIntake{
-						&apiservice.SubQuestionAnswerIntake{
-							QuestionId: questionIds[qLengthCurrentMedication],
-							AnswerIntakes: []*apiservice.AnswerItem{
-								&apiservice.AnswerItem{
-									PotentialAnswerId: answerIds[aTwoToFiveMonthsLength],
-								},
-							},
-						},
-					},
+					AnswerText: "Amoxicillin",
 				},
 				&apiservice.AnswerItem{
-					AnswerText: "Tretinoin Topical",
-					SubQuestionAnswerIntakes: []*apiservice.SubQuestionAnswerIntake{
-						&apiservice.SubQuestionAnswerIntake{
-							QuestionId: questionIds[qLengthCurrentMedication],
-							AnswerIntakes: []*apiservice.AnswerItem{
-								&apiservice.AnswerItem{
-									PotentialAnswerId: answerIds[aTwoToFiveMonthsLength],
-								},
-							},
-						},
-					},
+					AnswerText: "Ibuprofen",
 				},
 			},
 		},
@@ -470,7 +380,7 @@ func populatePatientIntake(questionIds map[questionTag]int64, answerIds map[pote
 			QuestionId: questionIds[qAllergicMedicationEntry],
 			AnswerIntakes: []*apiservice.AnswerItem{
 				&apiservice.AnswerItem{
-					AnswerText: "Penicillin",
+					AnswerText: "Sulfa Drugs",
 				},
 			},
 		},
