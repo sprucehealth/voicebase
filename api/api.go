@@ -243,6 +243,7 @@ type DoctorAPI interface {
 	// TODO: The following method is unfortunate, but it's not collected during registration.
 	// The updating of the objects like Doctor and Patient needs some thought.
 	SetDoctorNPI(doctorID int64, npi string) error
+	GetFirstDoctorWithAClinicianId() (*common.Doctor, error)
 }
 
 type FavoriteTreatmentPlanAPI interface {

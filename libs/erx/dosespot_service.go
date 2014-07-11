@@ -831,9 +831,9 @@ func (d *DoseSpotService) GetPatientDetails(erxPatientId int64) (*common.Patient
 	return newPatient, nil
 }
 
-func (d *DoseSpotService) GetRefillRequestQueueForClinic() ([]*common.RefillRequestItem, error) {
+func (d *DoseSpotService) GetRefillRequestQueueForClinic(clinicianId int64) ([]*common.RefillRequestItem, error) {
 	request := &getMedicationRefillRequestQueueForClinicRequest{
-		SSO: generateSingleSignOn(d.ClinicKey, d.UserID, d.ClinicId),
+		SSO: generateSingleSignOn(d.ClinicKey, clinicianId, d.ClinicId),
 	}
 
 	response := &getMedicationRefillRequestQueueForClinicResult{}
