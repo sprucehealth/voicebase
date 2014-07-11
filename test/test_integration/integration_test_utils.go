@@ -27,6 +27,7 @@ import (
 	"github.com/sprucehealth/backend/encoding"
 	"github.com/sprucehealth/backend/libs/aws"
 	"github.com/sprucehealth/backend/libs/dispatch"
+	"github.com/sprucehealth/backend/libs/erx"
 	"github.com/sprucehealth/backend/notify"
 	"github.com/sprucehealth/backend/patient_case"
 	"github.com/sprucehealth/backend/patient_visit"
@@ -47,13 +48,23 @@ type TestDBConfig struct {
 	DatabaseName string
 }
 
+type TestDosespotConfig struct {
+	ClinicId     int64  `long:"clinic_id" description:"Clinic Id for dosespot"`
+	ClinicKey    string `long:"clinic_key" description:"Clinic Key for dosespot"`
+	UserId       int64  `long:"user_id" description:"User Id for dosespot"`
+	SOAPEndpoint string `long:"soap_endpoint" description:"SOAP endpoint"`
+	APIEndpoint  string `long:"api_endpoint" description:"API endpoint where soap actions are defined"`
+}
+
 type TestConf struct {
-	DB TestDBConfig `group:"Database" toml:"database"`
+	DB       TestDBConfig       `group:"Database" toml:"database"`
+	DoseSpot TestDosespotConfig `group:"Dosespot" toml:"dosespot"`
 }
 
 type TestData struct {
 	DataApi             api.DataAPI
 	AuthApi             api.AuthAPI
+	ERxAPI              erx.ERxAPI
 	DBConfig            *TestDBConfig
 	CloudStorageService api.CloudStorageAPI
 	DB                  *sql.DB
@@ -149,17 +160,18 @@ func (d *TestData) AuthDelete(url, bodyType string, body io.Reader, accountID in
 	return http.DefaultClient.Do(req)
 }
 
-func GetDBConfig(t *testing.T) *TestDBConfig {
-	dbConfig := TestConf{}
+func GetTestConf(t *testing.T) *TestConf {
+	testConf := TestConf{}
 	fileContents, err := ioutil.ReadFile(os.Getenv(spruceProjectDirEnv) + "/src/github.com/sprucehealth/backend/test/test.conf")
 	if err != nil {
 		t.Fatal("Unable to load test.conf to read database data from: " + err.Error())
 	}
-	_, err = toml.Decode(string(fileContents), &dbConfig)
+	_, err = toml.Decode(string(fileContents), &testConf)
 	if err != nil {
 		t.Fatal("Error decoding toml data :" + err.Error())
 	}
-	return &dbConfig.DB
+	return &testConf
+
 }
 
 func ConnectToDB(t *testing.T, dbConfig *TestDBConfig) *sql.DB {
@@ -271,7 +283,9 @@ func GenerateAppEvent(action, resource string, resourceId int64, accountId int64
 func SetupIntegrationTest(t *testing.T) *TestData {
 	CheckIfRunningLocally(t)
 
-	dbConfig := GetDBConfig(t)
+	testConf := GetTestConf(t)
+	dbConfig := &testConf.DB
+
 	if s := os.Getenv("RDS_INSTANCE"); s != "" {
 		dbConfig.Host = s
 	}
@@ -303,14 +317,19 @@ func SetupIntegrationTest(t *testing.T) *TestData {
 	}
 	cloudStorageService := api.NewCloudStorageService(awsAuth)
 
+	erxAPI := erx.NewDoseSpotService(testConf.DoseSpot.ClinicId, testConf.DoseSpot.UserId,
+		testConf.DoseSpot.ClinicKey, testConf.DoseSpot.SOAPEndpoint, testConf.DoseSpot.APIEndpoint, nil)
+
 	authApi := &api.Auth{
 		ExpireDuration: time.Minute * 10,
 		RenewDuration:  time.Minute * 5,
 		DB:             db,
 		Hasher:         nullHasher{},
 	}
+
 	testData := &TestData{
 		AuthApi:             authApi,
+		ERxAPI:              erxAPI,
 		DBConfig:            dbConfig,
 		CloudStorageService: cloudStorageService,
 		DB:                  db,

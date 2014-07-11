@@ -3,16 +3,17 @@ package test_integration
 import (
 	"bytes"
 	"encoding/json"
-	"github.com/sprucehealth/backend/apiservice"
-	"github.com/sprucehealth/backend/common"
-	"github.com/sprucehealth/backend/doctor_treatment_plan"
-	"github.com/sprucehealth/backend/encoding"
-	"github.com/sprucehealth/backend/libs/erx"
 	"io/ioutil"
 	"net/http"
 	"net/http/httptest"
 	"net/url"
 	"testing"
+
+	"github.com/sprucehealth/backend/apiservice"
+	"github.com/sprucehealth/backend/common"
+	"github.com/sprucehealth/backend/doctor_treatment_plan"
+	"github.com/sprucehealth/backend/encoding"
+	"github.com/sprucehealth/backend/libs/erx"
 )
 
 func TestMedicationStrengthSearch(t *testing.T) {
@@ -26,8 +27,7 @@ func TestMedicationStrengthSearch(t *testing.T) {
 		t.Fatal("Unable to get doctor from id: " + err.Error())
 	}
 
-	erx := setupErxAPI(t)
-	medicationStrengthSearchHandler := &apiservice.MedicationStrengthSearchHandler{DataApi: testData.DataApi, ERxApi: erx}
+	medicationStrengthSearchHandler := &apiservice.MedicationStrengthSearchHandler{DataApi: testData.DataApi, ERxApi: testData.ERxAPI}
 	ts := httptest.NewServer(medicationStrengthSearchHandler)
 	defer ts.Close()
 
@@ -59,8 +59,7 @@ func TestNewTreatmentSelection(t *testing.T) {
 		t.Fatal("Unable to get doctor from id: " + err.Error())
 	}
 
-	erxApi := setupErxAPI(t)
-	newTreatmentHandler := &apiservice.NewTreatmentHandler{DataApi: testData.DataApi, ERxApi: erxApi}
+	newTreatmentHandler := &apiservice.NewTreatmentHandler{DataApi: testData.DataApi, ERxApi: testData.ERxAPI}
 	ts := httptest.NewServer(newTreatmentHandler)
 	defer ts.Close()
 

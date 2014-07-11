@@ -19,7 +19,6 @@ import (
 	"github.com/sprucehealth/backend/common"
 	"github.com/sprucehealth/backend/doctor_treatment_plan"
 	"github.com/sprucehealth/backend/encoding"
-	"github.com/sprucehealth/backend/libs/erx"
 	"github.com/sprucehealth/backend/patient_file"
 	"github.com/sprucehealth/backend/patient_visit"
 )
@@ -90,20 +89,6 @@ func SignupRandomTestDoctorInState(state string, t *testing.T, testData *TestDat
 		t.Fatal(err)
 	}
 	return doctorSignedupResponse
-}
-
-func setupErxAPI(t *testing.T) erx.ERxAPI {
-	clinicKey := os.Getenv("DOSESPOT_CLINIC_KEY")
-	clinicId, _ := strconv.ParseInt(os.Getenv("DOSESPOT_CLINIC_ID"), 10, 64)
-	userId, _ := strconv.ParseInt(os.Getenv("DOSESPOT_USER_ID"), 10, 64)
-
-	if clinicKey == "" {
-		t.Log("WARNING: skipping doctor drug search test since the dosespot ids are not present as environment variables")
-		t.SkipNow()
-	}
-
-	erx := erx.NewDoseSpotService(clinicId, userId, clinicKey, "", "", nil)
-	return erx
 }
 
 func PrepareAnswersForDiagnosis(testData *TestData, t *testing.T, patientVisitId int64) *apiservice.AnswerIntakeRequestBody {
