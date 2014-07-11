@@ -40,7 +40,7 @@ func routeIncomingPatientVisit(ev *patient_visit.VisitSubmittedEvent, dataAPI ap
 		}
 	}
 
-	// no doctor could be identified; place the case in the globao queue
+	// no doctor could be identified; place the case in the global queue
 	// insert item into the unclaimed item queue given that it has not been claimed by a doctor yet
 	patient, err := dataAPI.GetPatientFromId(ev.PatientId)
 	if err != nil {

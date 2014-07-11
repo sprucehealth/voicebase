@@ -10,10 +10,11 @@ import (
 	"github.com/sprucehealth/backend/libs/dispatch"
 	"github.com/sprucehealth/backend/libs/golog"
 	"github.com/sprucehealth/backend/messages"
+	"github.com/sprucehealth/backend/notify"
 	"github.com/sprucehealth/backend/patient_visit"
 )
 
-func InitListeners(dataAPI api.DataAPI) {
+func InitListeners(dataAPI api.DataAPI, notificationManager *notify.NotificationManager) {
 	dispatch.Default.Subscribe(func(ev *messages.PostEvent) error {
 
 		// delete any pending visit submitted notifications for case
@@ -36,6 +37,24 @@ func InitListeners(dataAPI api.DataAPI) {
 				},
 			}); err != nil {
 				golog.Errorf("Unable to insert notification item for case: %s", err)
+				return err
+			}
+
+			patient, err := dataAPI.GetPatientFromId(ev.Case.PatientId.Int64())
+			if err != nil {
+				golog.Errorf("Unable to get patient from id: %s", err)
+				return err
+			}
+
+			notificationCount, err := dataAPI.GetNotificationCountForCase(ev.Case.Id.Int64())
+			if err != nil {
+				golog.Errorf("Unable to get notification count for case: %s", err)
+				return err
+			}
+
+			// notify the patient of the message
+			if err := notificationManager.NotifyPatient(patient, ev, notificationCount); err != nil {
+				golog.Errorf("Unable to notify patient: %s", err)
 				return err
 			}
 		}
@@ -64,6 +83,29 @@ func InitListeners(dataAPI api.DataAPI) {
 			golog.Errorf("Unable to insert notification item for case: %s", err)
 			return err
 		}
+
+		patient := ev.Patient
+		var err error
+		if patient == nil {
+			patient, err = dataAPI.GetPatientFromId(ev.PatientId)
+			if err != nil {
+				golog.Errorf("unable to get patient from id: %s", err)
+				return err
+			}
+		}
+
+		notificationCount, err := dataAPI.GetNotificationCountForCase(ev.Message.CaseID)
+		if err != nil {
+			golog.Errorf("Unable to get notification count for case: %s", err)
+			return err
+		}
+
+		// notify patient of new treatment plan
+		if err := notificationManager.NotifyPatient(patient, ev, notificationCount); err != nil {
+			golog.Errorf("Unable to notify patient: %s", err)
+			return err
+		}
+
 		return nil
 	})
 
