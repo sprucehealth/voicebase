@@ -112,6 +112,7 @@ func getViewCaseCard(patientCase *common.PatientCase, doctor *common.Doctor, not
 			Subtitle:         "Pending Doctor Review",
 			ActionURL:        app_url.ViewCaseAction(patientCase.Id.Int64()),
 			IconURL:          app_url.IconCaseLarge,
+			CaseID:           patientCase.Id.Int64(),
 			NotificationView: notificationView,
 		}
 
