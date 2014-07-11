@@ -1,87 +1,87 @@
-{ 
-    "health_condition": {
-        "health_condition": "health_condition_acne", 
-        "sections": [
-            {
-                "questions": [
-                    {
-                        "display_styles": [
-                            "display_style_one_per_row"
-                        ],  
-                        "question": "q_acne_diagnosis"
-                    },  
-                    {
-                        "condition": {
-                            "op": "answer_contains_any", 
-                            "potential_answers": [
-                                "a_doctor_acne_vulgaris", 
-                                "a_doctor_acne_rosacea",
-                                "a_doctor_acne_perioral_dermatitis"
-                            ], 
-                            "question": "q_acne_diagnosis"
-                        }, 
-                        "display_styles": [
-                            "display_style_all_on_one_row"  
-                        ], 
-                        "question": "q_acne_severity"  
-                    },
-                    {
-                        "condition": {
-                            "op": "answer_contains_any", 
-                            "potential_answers": [
-                                "a_doctor_acne_something_else"
-                            ], 
-                            "question": "q_acne_diagnosis"
-                        }, 
-                        "display_styles": [
-                            "display_style_all_on_one_row"  
-                        ], 
-                        "question": "q_diagnosis_describe_condition"  
-                    }, 
-                    {
-                        "condition": {
-                            "op": "answer_contains_any", 
-                            "potential_answers": [
-                                "a_doctor_acne_not_suitable_spruce"
-                            ], 
-                            "question": "q_acne_diagnosis"
-                        }, 
-                        "display_styles": [
-                            "display_style_all_on_one_row"  
-                        ], 
-                        "question": "q_diagnosis_reason_not_suitable"  
-                    },
-                    {
-                        "condition": {
-                            "op": "answer_contains_any", 
-                            "potential_answers": [
-                                "a_doctor_acne_vulgaris"
-                            ], 
-                            "question": "q_acne_diagnosis"
-                        }, 
-                        "display_styles": [
-                            "display_style_all_on_one_row"
-                        ], 
-                        "question": "q_acne_type"
-                    }, 
-                    {
-                        "condition": {
-                            "op": "answer_contains_any", 
-                            "potential_answers": [
-                                "a_doctor_acne_rosacea"
-                            ], 
-                            "question": "q_acne_diagnosis"
-                        }, 
-                        "display_styles": [
-                            "display_style_all_on_one_row"
-                        ], 
-                        "question": "q_acne_rosacea_type"
-                    }
-                ], 
-                "section": "section_diagnosis", 
-                "section_id": "1", 
-                "section_title": "Diagnosis"
-            }
-        ]
-    }
+{
+  "health_condition": {
+    "health_condition": "health_condition_acne",
+    "sections": [
+      {
+        "questions": [
+          {
+            "display_styles": [
+              "display_style_one_per_row"
+            ],
+            "question": "q_acne_diagnosis"
+          },
+          {
+            "condition": {
+              "op": "answer_contains_any",
+              "potential_answers": [
+                "a_doctor_acne_vulgaris",
+                "a_doctor_acne_rosacea",
+                "a_doctor_acne_perioral_dermatitis"
+              ],
+              "question": "q_acne_diagnosis"
+            },
+            "display_styles": [
+              "display_style_all_on_one_row"
+            ],
+            "question": "q_acne_severity"
+          },
+          {
+            "condition": {
+              "op": "answer_contains_any",
+              "potential_answers": [
+                "a_doctor_acne_something_else"
+              ],
+              "question": "q_acne_diagnosis"
+            },
+            "display_styles": [
+              "display_style_all_on_one_row"
+            ],
+            "question": "q_diagnosis_describe_condition"
+          },
+          {
+            "condition": {
+              "op": "answer_contains_any",
+              "potential_answers": [
+                "a_doctor_acne_not_suitable_spruce"
+              ],
+              "question": "q_acne_diagnosis"
+            },
+            "display_styles": [
+              "display_style_all_on_one_row"
+            ],
+            "question": "q_diagnosis_reason_not_suitable"
+          },
+          {
+            "condition": {
+              "op": "answer_contains_any",
+              "potential_answers": [
+                "a_doctor_acne_vulgaris"
+              ],
+              "question": "q_acne_diagnosis"
+            },
+            "display_styles": [
+              "display_style_all_on_one_row"
+            ],
+            "question": "q_acne_type"
+          },
+          {
+            "condition": {
+              "op": "answer_contains_any",
+              "potential_answers": [
+                "a_doctor_acne_rosacea"
+              ],
+              "question": "q_acne_diagnosis"
+            },
+            "display_styles": [
+              "display_style_all_on_one_row"
+            ],
+            "question": "q_acne_rosacea_type"
+          }
+        ],
+        "section": "section_diagnosis",
+        "section_id": "1",
+        "section_title": "Diagnosis"
+      }
+    ]
+  }
 }
