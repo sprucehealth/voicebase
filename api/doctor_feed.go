@@ -151,24 +151,19 @@ func (d *DoctorQueueItem) GetTitleAndSubtitle(dataApi DataAPI) (string, string, 
 			title = fmt.Sprintf("Error resolved for %s %s", unlinkedTreatment.Patient.FirstName, unlinkedTreatment.Patient.LastName)
 		}
 	case DQEventTypeCaseMessage:
-		participants, err := dataApi.CaseMessageParticipants(d.ItemId, true)
+
+		patient, err := dataApi.GetPatientFromCaseId(d.ItemId)
 		if err != nil {
 			return "", "", err
 		}
-		for _, par := range participants {
-			person := par.Person
-			if person.RoleType == PATIENT_ROLE {
-				patient := person.Patient
-				switch d.Status {
-				case DQItemStatusPending:
-					title = fmt.Sprintf("Message from %s %s", patient.FirstName, patient.LastName)
-				case DQItemStatusRead:
-					title = fmt.Sprintf("Conversation with %s %s", patient.FirstName, patient.LastName)
-				case DQItemStatusReplied:
-					title = fmt.Sprintf("Replied to %s %s", patient.FirstName, patient.LastName)
-				}
-				break
-			}
+
+		switch d.Status {
+		case DQItemStatusPending:
+			title = fmt.Sprintf("Message from %s %s", patient.FirstName, patient.LastName)
+		case DQItemStatusRead:
+			title = fmt.Sprintf("Conversation with %s %s", patient.FirstName, patient.LastName)
+		case DQItemStatusReplied:
+			title = fmt.Sprintf("Replied to %s %s", patient.FirstName, patient.LastName)
 		}
 	}
 	return title, subtitle, nil
@@ -261,15 +256,15 @@ func (d *DoctorQueueItem) ActionUrl(dataApi DataAPI) (*app_url.SpruceAction, err
 		}
 		return app_url.ViewTransmissionErrorAction(patient.PatientId.Int64(), d.ItemId), nil
 	case DQEventTypeCaseMessage:
-		participants, err := dataApi.CaseMessageParticipants(d.ItemId, false)
+
+		// better to get the patient case object instead of the patient object here
+		// because it lesser queries are made to get to the same information
+		patientCase, err := dataApi.GetPatientCaseFromId(d.ItemId)
 		if err != nil {
 			return nil, err
 		}
-		for _, p := range participants {
-			if p.Person.RoleType == PATIENT_ROLE {
-				return app_url.ViewPatientMessagesAction(p.Person.RoleId, d.ItemId), nil
-			}
-		}
+
+		return app_url.ViewPatientMessagesAction(patientCase.PatientId.Int64(), d.ItemId), nil
 	}
 
 	return nil, nil

@@ -2,8 +2,9 @@ package sns
 
 import (
 	"encoding/json"
-	"github.com/sprucehealth/backend/libs/aws"
 	"net/url"
+
+	"github.com/sprucehealth/backend/libs/aws"
 )
 
 type SNSService interface {

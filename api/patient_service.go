@@ -431,6 +431,26 @@ func (d *DataService) GetPatientFromTreatmentId(treatmentId int64) (*common.Pati
 	return nil, errors.New("Got more than 1 patient for treatment when expected just 1")
 }
 
+func (d *DataService) GetPatientFromCaseId(patientCaseId int64) (*common.Patient, error) {
+	patients, err := d.getPatientBasedOnQuery("patient_case",
+		`INNER JOIN patient ON patient_case.patient_id = patient.id`,
+		`patient_case.patient_id = ?
+			AND (phone IS NULL OR (account_phone.status = 'ACTIVE'))
+			AND (zip_code IS NULL OR patient_location.status = 'ACTIVE')`, patientCaseId)
+	if err != nil {
+		return nil, err
+	}
+	switch l := len(patients); {
+	case l == 1:
+		err = d.getOtherInfoForPatient(patients[0])
+		return patients[0], err
+	case l == 0:
+		return nil, NoRowsError
+	}
+
+	return nil, errors.New("Got more than 1 patient from patient_case when expected just 1")
+}
+
 func (d *DataService) GetPatientFromUnlinkedDNTFTreatment(unlinkedDNTFTreatmentId int64) (*common.Patient, error) {
 	patients, err := d.getPatientBasedOnQuery("unlinked_dntf_treatment",
 		`INNER JOIN patient ON patient_id = patient.id`,
