@@ -4,6 +4,7 @@ import (
 	"fmt"
 	"net/http"
 
+	"github.com/sprucehealth/backend/environment"
 	"github.com/sprucehealth/backend/libs/golog"
 )
 
@@ -74,8 +75,6 @@ func (s *spruceError) Error() string {
 	return msg
 }
 
-var IsDev = false
-
 func WriteError(err error, w http.ResponseWriter, r *http.Request) {
 	switch err := err.(type) {
 	case *spruceError:
@@ -139,7 +138,7 @@ func writeSpruceError(err *spruceError, w http.ResponseWriter, r *http.Request) 
 
 	// remove the developer error information if we are not dealing with
 	// before sending information across the wire
-	if !IsDev {
+	if !environment.IsDev() {
 		err.DeveloperError = ""
 	}
 	WriteJSONToHTTPResponseWriter(w, err.HTTPStatusCode, err)

@@ -3,6 +3,8 @@ package app_url
 import (
 	"fmt"
 	"strings"
+
+	"github.com/sprucehealth/backend/environment"
 )
 
 const (
@@ -11,12 +13,8 @@ const (
 	spruceActionUrl = spruceUrlScheme + "action/"
 )
 
-// MapImagesToSingleDoctor enables us to have a single
-// set of images for doctors in non-production environments
-var MapImagesToSingleDoctorId = false
-
 func GetLargeThumbnail(role string, id int64) *SpruceAsset {
-	if MapImagesToSingleDoctorId {
+	if environment.IsDev() {
 		id = 1
 	}
 
@@ -26,7 +24,7 @@ func GetLargeThumbnail(role string, id int64) *SpruceAsset {
 }
 
 func GetSmallThumbnail(role string, id int64) *SpruceAsset {
-	if MapImagesToSingleDoctorId {
+	if environment.IsDev() {
 		id = 1
 	}
 
@@ -36,7 +34,7 @@ func GetSmallThumbnail(role string, id int64) *SpruceAsset {
 }
 
 func GetProfile(role string, id int64) *SpruceAsset {
-	if MapImagesToSingleDoctorId {
+	if environment.IsDev() {
 		id = 1
 	}
 
