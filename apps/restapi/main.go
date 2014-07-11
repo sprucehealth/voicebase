@@ -194,7 +194,7 @@ func buildRESTAPI(conf *Config, dataApi api.DataAPI, authAPI api.AuthAPI, stores
 
 	emailService := email.NewService(conf.Email, metricsRegistry.Scope("email"))
 
-	surescriptsPharmacySearch, err := pharmacy.NewSurescriptsPharmacySearch(conf.PharmacyDB)
+	surescriptsPharmacySearch, err := pharmacy.NewSurescriptsPharmacySearch(conf.PharmacyDB, conf.Environment)
 	if err != nil {
 		if conf.Debug {
 			log.Printf("Unable to initialize pharmacy search: %s", err)
