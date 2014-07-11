@@ -13,10 +13,10 @@ const (
 
 // MapImagesToSingleDoctor enables us to have a single
 // set of images for doctors in non-production environments
-var MapImagesToSingleDoctor = false
+var MapImagesToSingleDoctorId = false
 
 func GetLargeThumbnail(role string, id int64) *SpruceAsset {
-	if MapImagesToSingleDoctor {
+	if MapImagesToSingleDoctorId {
 		id = 1
 	}
 
@@ -26,7 +26,7 @@ func GetLargeThumbnail(role string, id int64) *SpruceAsset {
 }
 
 func GetSmallThumbnail(role string, id int64) *SpruceAsset {
-	if MapImagesToSingleDoctor {
+	if MapImagesToSingleDoctorId {
 		id = 1
 	}
 
@@ -36,7 +36,7 @@ func GetSmallThumbnail(role string, id int64) *SpruceAsset {
 }
 
 func GetProfile(role string, id int64) *SpruceAsset {
-	if MapImagesToSingleDoctor {
+	if MapImagesToSingleDoctorId {
 		id = 1
 	}
 
