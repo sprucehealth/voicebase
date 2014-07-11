@@ -78,8 +78,9 @@ type Doctor struct {
 	Status              string               `json:"-"`
 	AccountId           encoding.ObjectId    `json:"-"`
 	CellPhone           string               `json:"phone"`
-	LargeThumbnailUrl   *app_url.SpruceAsset `json:"large_thumbnail_url,omitempty"`
-	SmallThumbnailUrl   *app_url.SpruceAsset `json:"small_thumbnail_url,omitempty"`
+	LargeThumbnailURL   *app_url.SpruceAsset `json:"large_thumbnail_url,omitempty"`
+	SmallThumbnailURL   *app_url.SpruceAsset `json:"small_thumbnail_url,omitempty"`
+	ProfileURL          *app_url.SpruceAsset `json:"profile_url,omitempty"`
 	DoseSpotClinicianId int64                `json:"-"`
 	DoctorAddress       *Address             `json:"address,omitempty"`
 	PersonId            int64                `json:"person_id"`
