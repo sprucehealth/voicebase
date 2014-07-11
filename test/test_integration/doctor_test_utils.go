@@ -92,7 +92,7 @@ func SignupRandomTestDoctorInState(state string, t *testing.T, testData *TestDat
 	return doctorSignedupResponse
 }
 
-func setupErxAPI(t *testing.T) *erx.DoseSpotService {
+func setupErxAPI(t *testing.T) erx.ERxAPI {
 	clinicKey := os.Getenv("DOSESPOT_CLINIC_KEY")
 	clinicId, _ := strconv.ParseInt(os.Getenv("DOSESPOT_CLINIC_ID"), 10, 64)
 	userId, _ := strconv.ParseInt(os.Getenv("DOSESPOT_USER_ID"), 10, 64)
@@ -102,7 +102,7 @@ func setupErxAPI(t *testing.T) *erx.DoseSpotService {
 		t.SkipNow()
 	}
 
-	erx := erx.NewDoseSpotService(clinicId, userId, clinicKey, nil)
+	erx := erx.NewDoseSpotService(clinicId, userId, clinicKey, "", "", nil)
 	return erx
 }
 
