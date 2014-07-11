@@ -21,8 +21,8 @@ var allergicMedicationsQuestionId int64
 
 func NewAutocompleteHandler(dataAPI api.DataAPI, erxAPI erx.ERxAPI) http.Handler {
 
-	// cache the allergic medications question id at startup so that we can check the context with which the user is calling this API
-	// and return appropriate results
+	// cache the allergic medications question id at startup so that we can return allergy related medications when the patient
+	// is on the question where we ask if the patient is allergic to any medications
 	questionInfos, err := dataAPI.GetQuestionInfoForTags([]string{allergicMedicationsQuestionTag}, api.EN_LANGUAGE_ID)
 	if err != nil {
 		panic(err)
