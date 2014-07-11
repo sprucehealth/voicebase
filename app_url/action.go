@@ -242,3 +242,9 @@ func ViewPharmacyInMapAction() *SpruceAction {
 		name: "view_pharmacy_in_map",
 	}
 }
+
+func ViewSpruceFAQAction() *SpruceAction {
+	return &SpruceAction{
+		name: "view_spruce_faq",
+	}
+}
