@@ -245,6 +245,6 @@ func ViewPharmacyInMapAction() *SpruceAction {
 
 func ViewSpruceFAQAction() *SpruceAction {
 	return &SpruceAction{
-		name: "view_spruce_faq",
+		name: "view_faq",
 	}
 }

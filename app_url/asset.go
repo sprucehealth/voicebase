@@ -30,9 +30,10 @@ var (
 	IconMessagesSmall           = &SpruceAsset{name: "icon_messages_small"}
 	IconTreatmentPlanLarge      = &SpruceAsset{name: "icon_treatment_plan_large"}
 	IconTreatmentPlanSmall      = &SpruceAsset{name: "icon_treatment_plan_small"}
-	IconResourceLibrary         = &SpruceAsset{name: "icon_resource_library"}
+	IconResourceLibrary         = &SpruceAsset{name: "icon_resources"}
 	IconCaseLarge               = &SpruceAsset{name: "icon_case_large"}
 	IconFAQ                     = &SpruceAsset{name: "icon_faq"}
+	IconPhotoDoctorKohenLarge   = &SpruceAsset{name: "photo_doctor_kohen_large"}
 )
 
 type SpruceAsset struct {

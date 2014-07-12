@@ -202,18 +202,18 @@ func getLearnAboutSpruceSection() common.ClientView {
 		Title: "Learn more about Spruce",
 		Views: []common.ClientView{
 			&phSmallIconText{
-				Title:       "Meet the Spruce Dermatologists",
+				Title:       "Meet the Spruce doctors",
 				IconURL:     app_url.IconSpruceDoctors,
 				ActionURL:   app_url.ViewSampleDoctorProfilesAction(),
 				RoundedIcon: true,
 			},
 			&phSmallIconText{
 				Title:     "See a sample treatment plan",
-				IconURL:   app_url.IconBlueTreatmentPlan,
+				IconURL:   app_url.IconTreatmentPlanLarge,
 				ActionURL: app_url.ViewSampleTreatmentPlanAction(),
 			},
 			&phSmallIconText{
-				Title:       "Your Questions, Answered.",
+				Title:       "Frequently asked questions",
 				IconURL:     app_url.IconFAQ,
 				ActionURL:   app_url.ViewSpruceFAQAction(),
 				RoundedIcon: true,
