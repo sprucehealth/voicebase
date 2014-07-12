@@ -41,8 +41,8 @@ do
 			echo "use $STAGING_DB_NAME; insert into migrations (migration_id, migration_user) values ($migrationNumber, '$USER');" > temp-migration.sql
 			LOGMSG="{\"env\":\"$env\",\"user\":\"$USER\",\"migration_id\":\"$migrationNumber\"}"
 			echo "use $STAGING_DB_NAME;" | cat - migration-$migrationNumber.sql > temp.sql
-			scp temp.sql kunal@$STAGING_BASTIAN:~
-			scp temp-migration.sql kunal@$STAGING_BASTIAN:~
+			scp temp.sql $STAGING_BASTIAN:~
+			scp temp-migration.sql $STAGING_BASTIAN:~
 			ssh -t $USER@$STAGING_DB_INSTANCE "sudo ec2-consistent-snapshot -mysql.config /mysql-data/mysql/backup.cnf -tag migrationId=migration-$migrationNumber"
 			ssh $USER@$STAGING_BASTIAN "mysql -h $STAGING_DB_INSTANCE -u $STAGING_DB_USER_NAME -p$STAGING_DB_PASSWORD < temp.sql ; mysql -h $STAGING_DB_INSTANCE -u $STAGING_DB_USER_NAME -p$STAGING_DB_PASSWORD < temp-migration.sql; logger -p user.info -t schema '$LOGMSG'"
 		;;
