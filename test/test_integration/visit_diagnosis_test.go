@@ -22,6 +22,7 @@ func TestVisitDiagnosis(t *testing.T) {
 
 	diagnosisQuestionId := getQuestionIdForQuestionTag("q_acne_diagnosis", testData, t)
 	acneTypeQuestionId := getQuestionIdForQuestionTag("q_acne_type", testData, t)
+	rosaceaTypeQuestionId := getQuestionIdForQuestionTag("q_acne_rosacea_type", testData, t)
 	describeConditionQuestionId := getQuestionIdForQuestionTag("q_diagnosis_describe_condition", testData, t)
 
 	answerIntakeRequestBody := setupAnswerIntakeForDiagnosis(map[int64][]string{
@@ -71,8 +72,8 @@ func TestVisitDiagnosis(t *testing.T) {
 
 	// lets try a different diagnosis category
 	answerIntakeRequestBody = setupAnswerIntakeForDiagnosis(map[int64][]string{
-		diagnosisQuestionId: []string{"a_doctor_acne_rosacea"},
-		acneTypeQuestionId:  []string{"a_acne_papulopstular_rosacea"},
+		diagnosisQuestionId:   []string{"a_doctor_acne_rosacea"},
+		rosaceaTypeQuestionId: []string{"a_acne_papulopstular_rosacea"},
 	}, pr.PatientVisitId, testData, t)
 
 	SubmitPatientVisitDiagnosisWithIntake(pr.PatientVisitId, doctor.AccountId.Int64(), answerIntakeRequestBody, testData, t)
@@ -86,8 +87,8 @@ func TestVisitDiagnosis(t *testing.T) {
 
 	// let's try multiple typed picked for this category
 	answerIntakeRequestBody = setupAnswerIntakeForDiagnosis(map[int64][]string{
-		diagnosisQuestionId: []string{"a_doctor_acne_rosacea"},
-		acneTypeQuestionId:  []string{"a_acne_papulopstular_rosacea", "a_acne_erythematotelangiectatic_rosacea", "a_acne_ocular_rosacea"},
+		diagnosisQuestionId:   []string{"a_doctor_acne_rosacea"},
+		rosaceaTypeQuestionId: []string{"a_acne_papulopstular_rosacea", "a_acne_erythematotelangiectatic_rosacea", "a_acne_ocular_rosacea"},
 	}, pr.PatientVisitId, testData, t)
 
 	SubmitPatientVisitDiagnosisWithIntake(pr.PatientVisitId, doctor.AccountId.Int64(), answerIntakeRequestBody, testData, t)

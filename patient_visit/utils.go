@@ -15,6 +15,7 @@ import (
 const (
 	acneDiagnosisQuestionTag         = "q_acne_diagnosis"
 	acneTypeQuestionTag              = "q_acne_type"
+	rosaceaTypeQuestionTag           = "q_acne_rosacea_type"
 	acneDescribeConditionQuestionTag = "q_diagnosis_describe_condition"
 
 	acneVulgarisAnswerTag           = "a_doctor_acne_vulgaris"
@@ -42,7 +43,7 @@ var cachedAnswerIds = make(map[int64]*info_intake.PotentialAnswer)
 
 func cacheInfoForUnsuitableVisit(dataApi api.DataAPI) {
 	// cache question ids
-	questionInfoList, err := dataApi.GetQuestionInfoForTags([]string{acneDiagnosisQuestionTag, acneTypeQuestionTag, acneDescribeConditionQuestionTag}, api.EN_LANGUAGE_ID)
+	questionInfoList, err := dataApi.GetQuestionInfoForTags([]string{acneDiagnosisQuestionTag, acneTypeQuestionTag, rosaceaTypeQuestionTag, acneDescribeConditionQuestionTag}, api.EN_LANGUAGE_ID)
 	if err != nil {
 		panic(err)
 	} else {
@@ -162,7 +163,7 @@ func determineDiagnosisFromAnswers(answerIntakeRequestBody *apiservice.AnswerInt
 	// first identify the types of acne, if picked
 	var diagnosisType string
 	for _, questionItem := range answerIntakeRequestBody.Questions {
-		if questionItem.QuestionId == cachedQuestionIds[acneTypeQuestionTag] {
+		if questionItem.QuestionId == cachedQuestionIds[acneTypeQuestionTag] || questionItem.QuestionId == cachedQuestionIds[rosaceaTypeQuestionTag] {
 
 			var dTypes []string
 			for _, answerItem := range questionItem.AnswerIntakes {
@@ -203,6 +204,7 @@ func determineDiagnosisFromAnswers(answerIntakeRequestBody *apiservice.AnswerInt
 			}
 		}
 	}
+
 	return ""
 }
 
