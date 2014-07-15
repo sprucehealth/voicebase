@@ -102,7 +102,7 @@ func (treatmentPlanCreatedNotificationView) renderEmail() string {
 }
 
 func (treatmentPlanCreatedNotificationView) renderSMS() string {
-	return "Doctor has reviewed your case."
+	return "Your doctor has reviewed your case."
 }
 
 func (v treatmentPlanCreatedNotificationView) renderPush(notificationConfig *config.NotificationConfig, notificationCount int64) interface{} {
