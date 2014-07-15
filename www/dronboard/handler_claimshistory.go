@@ -9,6 +9,7 @@ import (
 
 	"github.com/sprucehealth/backend/api"
 	"github.com/sprucehealth/backend/common"
+	"github.com/sprucehealth/backend/libs/httputil"
 	"github.com/sprucehealth/backend/libs/storage"
 	"github.com/sprucehealth/backend/third_party/github.com/SpruceHealth/schema"
 	"github.com/sprucehealth/backend/third_party/github.com/gorilla/context"
@@ -53,7 +54,7 @@ func (f *claimsHistoryForm) Validate() map[string]string {
 }
 
 func NewClaimsHistoryHandler(router *mux.Router, dataAPI api.DataAPI, store storage.Store) http.Handler {
-	return www.SupportedMethodsHandler(&claimsHistoryHandler{
+	return httputil.SupportedMethods(&claimsHistoryHandler{
 		router:   router,
 		dataAPI:  dataAPI,
 		store:    store,

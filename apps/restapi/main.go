@@ -9,6 +9,8 @@ import (
 	"strings"
 	"time"
 
+	"github.com/sprucehealth/backend/libs/httputil"
+
 	"github.com/sprucehealth/backend/address"
 	"github.com/sprucehealth/backend/analytics"
 	"github.com/sprucehealth/backend/api"
@@ -415,5 +417,5 @@ func buildRESTAPI(conf *Config, dataApi api.DataAPI, authAPI api.AuthAPI, stores
 	// seeding random number generator based on time the main function runs
 	rand.Seed(time.Now().UTC().UnixNano())
 
-	return mux
+	return httputil.CompressResponse(httputil.DecompressRequest(mux))
 }

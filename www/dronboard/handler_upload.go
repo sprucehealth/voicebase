@@ -7,6 +7,7 @@ import (
 
 	"github.com/sprucehealth/backend/api"
 	"github.com/sprucehealth/backend/common"
+	"github.com/sprucehealth/backend/libs/httputil"
 	"github.com/sprucehealth/backend/libs/storage"
 	"github.com/sprucehealth/backend/third_party/github.com/gorilla/context"
 	"github.com/sprucehealth/backend/third_party/github.com/gorilla/mux"
@@ -28,7 +29,7 @@ type uploadHandler struct {
 }
 
 func NewUploadCVHandler(router *mux.Router, dataAPI api.DataAPI, store storage.Store) http.Handler {
-	return www.SupportedMethodsHandler(&uploadHandler{
+	return httputil.SupportedMethods(&uploadHandler{
 		router:   router,
 		dataAPI:  dataAPI,
 		store:    store,
@@ -40,7 +41,7 @@ func NewUploadCVHandler(router *mux.Router, dataAPI api.DataAPI, store storage.S
 }
 
 func NewUploadLicenseHandler(router *mux.Router, dataAPI api.DataAPI, store storage.Store) http.Handler {
-	return www.SupportedMethodsHandler(&uploadHandler{
+	return httputil.SupportedMethods(&uploadHandler{
 		router:   router,
 		dataAPI:  dataAPI,
 		store:    store,
@@ -53,7 +54,7 @@ func NewUploadLicenseHandler(router *mux.Router, dataAPI api.DataAPI, store stor
 }
 
 func NewUploadClaimsHistoryHandler(router *mux.Router, dataAPI api.DataAPI, store storage.Store) http.Handler {
-	return www.SupportedMethodsHandler(&uploadHandler{
+	return httputil.SupportedMethods(&uploadHandler{
 		router:   router,
 		dataAPI:  dataAPI,
 		store:    store,

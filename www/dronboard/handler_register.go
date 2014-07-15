@@ -10,6 +10,7 @@ import (
 	"github.com/sprucehealth/backend/api"
 	"github.com/sprucehealth/backend/common"
 	"github.com/sprucehealth/backend/encoding"
+	"github.com/sprucehealth/backend/libs/httputil"
 	"github.com/sprucehealth/backend/third_party/github.com/SpruceHealth/schema"
 	"github.com/sprucehealth/backend/third_party/github.com/dchest/validator"
 	"github.com/sprucehealth/backend/third_party/github.com/gorilla/mux"
@@ -110,7 +111,7 @@ func (r *registerForm) Validate() map[string]string {
 }
 
 func NewRegisterHandler(router *mux.Router, dataAPI api.DataAPI, authAPI api.AuthAPI, signer *common.Signer) http.Handler {
-	return www.SupportedMethodsHandler(&registerHandler{
+	return httputil.SupportedMethods(&registerHandler{
 		router:   router,
 		dataAPI:  dataAPI,
 		authAPI:  authAPI,

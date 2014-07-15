@@ -4,6 +4,7 @@ import (
 	"html/template"
 	"net/http"
 
+	"github.com/sprucehealth/backend/libs/httputil"
 	"github.com/sprucehealth/backend/www"
 )
 
@@ -13,7 +14,7 @@ type staticTemplateHandler struct {
 }
 
 func NewStaticTemplateHandler(template *template.Template, context interface{}) http.Handler {
-	return www.SupportedMethodsHandler(&staticTemplateHandler{
+	return httputil.SupportedMethods(&staticTemplateHandler{
 		template: template,
 		context:  context,
 	}, []string{"GET"})

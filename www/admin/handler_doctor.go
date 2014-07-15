@@ -8,6 +8,7 @@ import (
 	"strings"
 
 	"github.com/sprucehealth/backend/api"
+	"github.com/sprucehealth/backend/libs/httputil"
 	"github.com/sprucehealth/backend/third_party/github.com/gorilla/mux"
 	"github.com/sprucehealth/backend/www"
 )
@@ -18,7 +19,7 @@ type doctorHandler struct {
 }
 
 func NewDoctorHandler(router *mux.Router, dataAPI api.DataAPI) http.Handler {
-	return www.SupportedMethodsHandler(&doctorHandler{
+	return httputil.SupportedMethods(&doctorHandler{
 		router:  router,
 		dataAPI: dataAPI,
 	}, []string{"GET"})

@@ -6,6 +6,7 @@ import (
 
 	"github.com/sprucehealth/backend/api"
 	"github.com/sprucehealth/backend/common"
+	"github.com/sprucehealth/backend/libs/httputil"
 	"github.com/sprucehealth/backend/third_party/github.com/SpruceHealth/schema"
 	"github.com/sprucehealth/backend/third_party/github.com/gorilla/context"
 	"github.com/sprucehealth/backend/third_party/github.com/gorilla/mux"
@@ -79,7 +80,7 @@ func (r *credentialsForm) Validate() map[string]string {
 }
 
 func NewCredentialsHandler(router *mux.Router, dataAPI api.DataAPI) http.Handler {
-	return www.SupportedMethodsHandler(&credentialsHandler{
+	return httputil.SupportedMethods(&credentialsHandler{
 		router:   router,
 		dataAPI:  dataAPI,
 		nextStep: "doctor-register-insurance",
