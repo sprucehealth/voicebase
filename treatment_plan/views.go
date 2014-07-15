@@ -44,7 +44,7 @@ func (v *tpSmallDividerView) Validate() error {
 
 type tpCardView struct {
 	Type  string   `json:"type"`
-	Views []tpView `json:"view"`
+	Views []tpView `json:"views"`
 }
 
 func (v *tpCardView) Validate() error {
