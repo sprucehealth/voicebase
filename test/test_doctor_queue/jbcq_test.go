@@ -50,7 +50,7 @@ func TestJBCQ_TempCaseClaim(t *testing.T) {
 		t.Fatal(err)
 	} else if len(doctorAssignments) != 1 {
 		t.Fatal("Expected 1 doctor to be assigned to patient case")
-	} else if doctorAssignments[0].ProviderId != doctorID {
+	} else if doctorAssignments[0].ProviderID != doctorID {
 		t.Fatal("Expected the doctor assigned to be the doctor in the system but it wasnt")
 	} else if doctorAssignments[0].Status != api.STATUS_TEMP {
 		t.Fatal("Expected the doctor to have temp access but it didn't")
@@ -64,7 +64,7 @@ func TestJBCQ_TempCaseClaim(t *testing.T) {
 		t.Fatal("Expected care team to exist but it doesn't")
 	} else if len(careTeam.Assignments) != 1 {
 		t.Fatalf("Expected 1 doctor to exist in care team instead got %d", len(careTeam.Assignments))
-	} else if careTeam.Assignments[0].ProviderId != doctorID {
+	} else if careTeam.Assignments[0].ProviderID != doctorID {
 		t.Fatal("Expected the doctor in the system to be assigned to care team but it was not")
 	} else if careTeam.Assignments[0].Status != api.STATUS_TEMP {
 		t.Fatal("Expected doctor to be temporarily assigned to patient but it wasnt")
