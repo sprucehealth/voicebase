@@ -39,9 +39,6 @@ func (ch *compressResponseHandler) ServeHTTP(w http.ResponseWriter, r *http.Requ
 		return
 	}
 
-	w.Header().Del("Content-Length") // Remove any set content-length since it'll be inaccurate
-	w.Header().Set("Content-Encoding", "gzip")
-	w.Header().Set("Vary", "Accept-Encoding")
 	rw := &gzipResponseWriter{ResponseWriter: w}
 	defer rw.Close() // Only closes the gzip writer. The http server handles closing the real ResponseWriter.
 
@@ -70,17 +67,20 @@ func (gz *gzipReadCloser) Close() error {
 
 type gzipResponseWriter struct {
 	http.ResponseWriter
-	zw io.WriteCloser
+	zw          io.WriteCloser
+	wroteHeader bool
 }
 
 func (gz *gzipResponseWriter) Write(b []byte) (int, error) {
 	if gz.zw == nil {
 		gz.zw = gzip.NewWriter(gz.ResponseWriter)
-	}
-
-	h := gz.ResponseWriter.Header()
-	if h.Get("Content-Type") == "" {
-		h.Set("Content-Type", http.DetectContentType(b))
+		h := gz.ResponseWriter.Header()
+		if !gz.wroteHeader {
+			if h.Get("Content-Type") == "" {
+				h.Set("Content-Type", http.DetectContentType(b))
+			}
+			gz.WriteHeader(http.StatusOK)
+		}
 	}
 
 	return gz.zw.Write(b)
@@ -88,4 +88,12 @@ func (gz *gzipResponseWriter) Write(b []byte) (int, error) {
 
 func (gz *gzipResponseWriter) Close() error {
 	return gz.zw.Close()
+}
+
+func (gz *gzipResponseWriter) WriteHeader(status int) {
+	gz.wroteHeader = true
+	gz.ResponseWriter.Header().Del("Content-Length") // Remove any set content-length since it'll be inaccurate
+	gz.ResponseWriter.Header().Set("Content-Encoding", "gzip")
+	gz.ResponseWriter.Header().Set("Vary", "Accept-Encoding")
+	gz.ResponseWriter.WriteHeader(status)
 }
