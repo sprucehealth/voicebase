@@ -119,12 +119,17 @@ func (h *claimsHistoryHandler) ServeHTTP(w http.ResponseWriter, r *http.Request)
 			return
 		}
 	} else {
-		attr, err := h.dataAPI.DoctorAttributes(doctor.DoctorId.Int64(), []string{api.AttrPreviousLiabilityInsurers})
+		attr, err := h.dataAPI.DoctorAttributes(doctor.DoctorId.Int64(), []string{
+			api.AttrCurrentLiabilityInsurer,
+			api.AttrPreviousLiabilityInsurers,
+		})
 		if err != nil {
 			www.InternalServerError(w, r, err)
 			return
 		}
-		var policies []insurancePolicy
+		policies := []insurancePolicy{
+			insurancePolicy{Company: attr[api.AttrCurrentLiabilityInsurer]},
+		}
 		if in := attr[api.AttrPreviousLiabilityInsurers]; in != "" {
 			for _, company := range strings.Split(in, "\n") {
 				policies = append(policies, insurancePolicy{Company: company})

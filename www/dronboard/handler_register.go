@@ -38,13 +38,18 @@ type registerForm struct {
 	CellNumber string
 	Password1  string
 	Password2  string
-
+	// Address
 	AddressLine1 string
 	AddressLine2 string
 	City         string
 	State        string
 	ZipCode      string
-
+	// Engagement
+	HoursPerWeek string
+	TimesActive  string
+	JacketSize   string
+	Excitement   string
+	// Legal
 	EBusinessAgree bool
 
 	dob encoding.DOB
@@ -121,12 +126,12 @@ func NewRegisterHandler(router *mux.Router, dataAPI api.DataAPI, authAPI api.Aut
 }
 
 func (h *registerHandler) ServeHTTP(w http.ResponseWriter, r *http.Request) {
-	if !h.validateRequestSignature(w, r) {
+	if !validateRequestSignature(h.signer, r) {
 		http.Redirect(w, r, "/login", http.StatusSeeOther)
 		return
 	}
 
-	var req registerForm
+	var form registerForm
 	var errors map[string]string
 
 	if r.Method == "POST" {
@@ -134,14 +139,14 @@ func (h *registerHandler) ServeHTTP(w http.ResponseWriter, r *http.Request) {
 			www.InternalServerError(w, r, err)
 			return
 		}
-		if err := schema.NewDecoder().Decode(&req, r.PostForm); err != nil {
+		if err := schema.NewDecoder().Decode(&form, r.PostForm); err != nil {
 			www.InternalServerError(w, r, err)
 			return
 		}
 
-		errors = req.Validate()
+		errors = form.Validate()
 		if len(errors) == 0 {
-			accountID, token, err := h.authAPI.SignUp(req.Email, req.Password1, api.DOCTOR_ROLE)
+			accountID, token, err := h.authAPI.SignUp(form.Email, form.Password1, api.DOCTOR_ROLE)
 			if err == api.LoginAlreadyExists {
 				errors = map[string]string{
 					"Email": "An account with the provided email already exists.",
@@ -151,20 +156,20 @@ func (h *registerHandler) ServeHTTP(w http.ResponseWriter, r *http.Request) {
 				return
 			} else {
 				address := &common.Address{
-					AddressLine1: req.AddressLine1,
-					AddressLine2: req.AddressLine2,
-					City:         req.City,
-					State:        req.State,
-					ZipCode:      req.ZipCode,
+					AddressLine1: form.AddressLine1,
+					AddressLine2: form.AddressLine2,
+					City:         form.City,
+					State:        form.State,
+					ZipCode:      form.ZipCode,
 					Country:      "USA",
 				}
 				doctor := &common.Doctor{
 					AccountId:     encoding.NewObjectId(accountID),
-					FirstName:     req.FirstName,
-					LastName:      req.LastName,
-					DOB:           req.dob,
-					Gender:        req.Gender,
-					CellPhone:     req.CellNumber,
+					FirstName:     form.FirstName,
+					LastName:      form.LastName,
+					DOB:           form.dob,
+					Gender:        form.Gender,
+					CellPhone:     form.CellNumber,
 					DoctorAddress: address,
 				}
 
@@ -174,7 +179,14 @@ func (h *registerHandler) ServeHTTP(w http.ResponseWriter, r *http.Request) {
 					return
 				}
 
-				if err := h.dataAPI.UpdateDoctorAttributes(doctorID, map[string]string{api.AttrEBusinessAgreement: "true"}); err != nil {
+				attributes := map[string]string{
+					api.AttrHoursUsingSprucePerWeek: form.HoursPerWeek,
+					api.AttrTimesActiveOnSpruce:     form.TimesActive,
+					api.AttrJacketSize:              form.JacketSize,
+					api.AttrExcitedAboutSpruce:      form.Excitement,
+					api.AttrEBusinessAgreement:      "true",
+				}
+				if err := h.dataAPI.UpdateDoctorAttributes(doctorID, attributes); err != nil {
 					www.InternalServerError(w, r, err)
 					return
 				}
@@ -198,14 +210,14 @@ func (h *registerHandler) ServeHTTP(w http.ResponseWriter, r *http.Request) {
 	www.TemplateResponse(w, http.StatusOK, registerTemplate, &www.BaseTemplateContext{
 		Title: "Doctor Registration | Spruce",
 		SubContext: &registerTemplateContext{
-			Form:       &req,
+			Form:       &form,
 			FormErrors: errors,
 			States:     states,
 		},
 	})
 }
 
-func (h *registerHandler) validateRequestSignature(w http.ResponseWriter, r *http.Request) bool {
+func validateRequestSignature(signer *common.Signer, r *http.Request) bool {
 	sig, err := base64.StdEncoding.DecodeString(r.FormValue("s"))
 	if err != nil {
 		return false
@@ -220,5 +232,5 @@ func (h *registerHandler) validateRequestSignature(w http.ResponseWriter, r *htt
 		return false
 	}
 	msg := []byte(fmt.Sprintf("expires=%d&nonce=%s", expires, nonce))
-	return h.signer.Verify(msg, sig)
+	return signer.Verify(msg, sig)
 }

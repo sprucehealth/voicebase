@@ -25,7 +25,10 @@
 				Have you ever been indicted for, charged with, or convicted of any act committed in violation of any law, or ordinance other than traffic offenses? Or had your hospital privileges, DEA license, medical license, or reimbursement privileges refused, denied, revoked, suspended, restricted, subject to reprimand, placed on probation, or voluntarily surrendered?
 			</label>
 
-			<p>If yes, please indicate the date(s) and explain.</p>
+			<p>
+				<input type="checkbox" name="NoViolations" {{if .Form.NoViolations}}checked{{end}}> If no, check box at left.<br>
+				If yes, please indicate the date(s) and explain.
+			</p>
 			<textarea name="Violations" class="form-control" rows="2">{{.Form.Violations}}</textarea>
 		</div>
 
@@ -34,7 +37,10 @@
 				Has any professional liability insurance company ever declined, refused, canceled, or non-renewed your coverage or have you ever had an involuntary deductible or surcharge assessed against your policy?
 			</label>
 
-			<p>If yes, please indicate the date(s) and explain.</p>
+			<p>
+				<input type="checkbox" name="NoInsuranceDeclines" {{if .Form.NoInsuranceDeclines}}checked{{end}}> If no, check box at left.<br>
+				If yes, please indicate the date(s) and explain.
+			</p>
 			<textarea name="InsuranceDeclines" class="form-control" rows="2">{{.Form.InsuranceDeclines}}</textarea>
 		</div>
 
@@ -43,7 +49,10 @@
 				Have you ever been accused of sexual misconduct of any kind?
 			</label>
 
-			<p>If yes, please indicate the date(s) and explain.</p>
+			<p>
+				<input type="checkbox" name="NoSexualMisconduct" {{if .Form.NoSexualMisconduct}}checked{{end}}> If no, check box at left.<br>
+				If yes, please indicate the date(s) and explain.
+			</p>
 			<textarea name="SexualMisconduct" class="form-control" rows="2">{{.Form.SexualMisconduct}}</textarea>
 		</div>
 
@@ -52,7 +61,10 @@
 				Have you ever incurred or become aware of having a condition that impairs your ability to practice your medical specialty?
 			</label>
 
-			<p>If yes, please indicate the date(s) and explain.</p>
+			<p>
+				<input type="checkbox" name="NoImpairments" {{if .Form.NoImpairments}}checked{{end}}> If no, check box at left.<br>
+				If yes, please indicate the date(s) and explain.
+			</p>
 			<textarea name="Impairments" class="form-control" rows="2">{{.Form.Impairments}}</textarea>
 		</div>
 
@@ -61,7 +73,10 @@
 				Are you now, or have you ever been involved, in a claim or suit arising out of the rendering or failure to render professional services?
 			</label>
 
-			<p>If yes, please indicate the date(s) and explain.</p>
+			<p>
+				<input type="checkbox" name="NoClaims" {{if .Form.NoClaims}}checked{{end}}> If no, check box at left.<br>
+				If yes, please indicate the date(s) and explain.
+			</p>
 			<textarea name="Claims" class="form-control" rows="2">{{.Form.Claims}}</textarea>
 		</div>
 
@@ -70,7 +85,10 @@
 				Are you aware of any complication, incident or adverse outcome resulting in injury or death that might reasonably result in a claim or suit against you?
 			</label>
 
-			<p>If yes, please indicate the date(s) and explain.</p>
+			<p>
+				<input type="checkbox" name="NoIncidents" {{if .Form.NoIncidents}}checked{{end}}> If no, check box at left.<br>
+				If yes, please indicate the date(s) and explain.
+			</p>
 			<textarea name="Incidents" class="form-control" rows="2">{{.Form.Incidents}}</textarea>
 		</div>
 
@@ -92,7 +110,7 @@
 
 		<div class="checkbox">
 			{{template "fieldError" .FormErrors.ESigAgree}}
-			<input type="checkbox" id="ESigAgree" name="ESigAgree"> <em>Electronic Signature Agreement</em><br>
+			<input type="checkbox" id="ESigAgree" name="ESigAgree" {{if .Form.ESigAgree}}checked{{end}}> <em>Electronic Signature Agreement</em><br>
 			By checking this box, I agree that I am signing this letter electronically. I agree my electronic signature is the legal equivalent of a manual signature on this letter.<br>
 			<div class="current-date">&nbsp;</div>
 		</div>

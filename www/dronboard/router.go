@@ -23,8 +23,14 @@ func SetupRoutes(r *mux.Router, dataAPI api.DataAPI, authAPI api.AuthAPI, suppor
 	// If logged in as the doctor then jump to first step rather than registration
 	registerHandler := www.AuthRequiredHandler(authAPI, doctorRoles,
 		http.RedirectHandler("/doctor-register/credentials", http.StatusSeeOther),
+		NewIntroHandler(r, signer))
+	r.Handle("/doctor-register", registerHandler).Name("doctor-register-intro")
+
+	// If logged in as the doctor then jump to first step rather than registration
+	registerHandler = www.AuthRequiredHandler(authAPI, doctorRoles,
+		http.RedirectHandler("/doctor-register/credentials", http.StatusSeeOther),
 		NewRegisterHandler(r, dataAPI, authAPI, signer))
-	r.Handle("/doctor-register", registerHandler).Name("doctor-register")
+	r.Handle("/doctor-register/account", registerHandler).Name("doctor-register-account")
 
 	authFilter := www.AuthRequiredFilter(authAPI, doctorRoles, nil)
 
@@ -33,7 +39,6 @@ func SetupRoutes(r *mux.Router, dataAPI api.DataAPI, authAPI api.AuthAPI, suppor
 	r.Handle("/doctor-register/upload-license", authFilter(NewUploadLicenseHandler(r, dataAPI, stores["onboarding"]))).Name("doctor-register-upload-license")
 	r.Handle("/doctor-register/upload-claims-history", authFilter(NewUploadClaimsHistoryHandler(r, dataAPI, stores["onboarding"]))).Name("doctor-register-upload-claims-history")
 	r.Handle("/doctor-register/claims-history", authFilter(NewClaimsHistoryHandler(r, dataAPI, stores["onboarding"]))).Name("doctor-register-claims-history")
-	r.Handle("/doctor-register/engagement", authFilter(NewEngagementHandler(r, dataAPI))).Name("doctor-register-engagement")
 	r.Handle("/doctor-register/insurance", authFilter(NewInsuranceHandler(r, dataAPI))).Name("doctor-register-insurance")
 	r.Handle("/doctor-register/financials", authFilter(NewFinancialsHandler(r, dataAPI, stripeCli))).Name("doctor-register-financials")
 	r.Handle("/doctor-register/success", authFilter(NewSuccessHandler(r, dataAPI))).Name("doctor-register-success")

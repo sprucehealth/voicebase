@@ -9,14 +9,15 @@
 
 		<hr>
 
+		{{with .Error}}<div class="alert alert-danger" role="alert">{{.}}</div>{{end}}
 		<div class="form-group">
-			<input required type="file" name="File">
+			<input type="file" name="File">
 		</div>
 
 		<hr>
 
 		<div class="text-center">
-			<a href="{{.NextURL}}" class="btn btn-default" role="button">Skip</a>
+			{{if not .Required}}<a href="{{.NextURL}}" class="btn btn-default" role="button">Skip</a>{{end}}
 			<button type="submit" class="btn btn-primary">Upload</button>
 		</div>
 	</form>
