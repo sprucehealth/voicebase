@@ -39,6 +39,7 @@ func (ch *compressResponseHandler) ServeHTTP(w http.ResponseWriter, r *http.Requ
 		return
 	}
 
+	w.Header().Del("Content-Length") // Remove any set content-length since it'll be inaccurate
 	w.Header().Set("Content-Encoding", "gzip")
 	w.Header().Set("Vary", "Accept-Encoding")
 	rw := &gzipResponseWriter{ResponseWriter: w}
