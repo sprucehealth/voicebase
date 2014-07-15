@@ -8,6 +8,7 @@ import (
 
 	"github.com/sprucehealth/backend/api"
 	"github.com/sprucehealth/backend/common"
+	"github.com/sprucehealth/backend/libs/httputil"
 	"github.com/sprucehealth/backend/libs/payment/stripe"
 	"github.com/sprucehealth/backend/third_party/github.com/SpruceHealth/schema"
 	"github.com/sprucehealth/backend/third_party/github.com/gorilla/context"
@@ -36,7 +37,7 @@ func (r *financialsForm) Validate() map[string]string {
 }
 
 func NewFinancialsHandler(router *mux.Router, dataAPI api.DataAPI, stripeCli *stripe.StripeService) http.Handler {
-	return www.SupportedMethodsHandler(&financialsHandler{
+	return httputil.SupportedMethods(&financialsHandler{
 		router:    router,
 		dataAPI:   dataAPI,
 		stripeCli: stripeCli,

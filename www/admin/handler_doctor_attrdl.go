@@ -7,6 +7,7 @@ import (
 	"strconv"
 
 	"github.com/sprucehealth/backend/api"
+	"github.com/sprucehealth/backend/libs/httputil"
 	"github.com/sprucehealth/backend/libs/storage"
 	"github.com/sprucehealth/backend/third_party/github.com/gorilla/mux"
 	"github.com/sprucehealth/backend/www"
@@ -19,7 +20,7 @@ type doctorAttrDownloadHandler struct {
 }
 
 func NewDoctorAttrDownloadHandler(router *mux.Router, dataAPI api.DataAPI, store storage.Store) http.Handler {
-	return www.SupportedMethodsHandler(&doctorAttrDownloadHandler{
+	return httputil.SupportedMethods(&doctorAttrDownloadHandler{
 		router:  router,
 		dataAPI: dataAPI,
 		store:   store,
@@ -31,7 +32,6 @@ func (h *doctorAttrDownloadHandler) ServeHTTP(w http.ResponseWriter, r *http.Req
 
 	doctorID, err := strconv.ParseInt(vars["id"], 10, 64)
 	if err != nil {
-		println(1)
 		http.NotFound(w, r)
 		return
 	}
@@ -43,14 +43,12 @@ func (h *doctorAttrDownloadHandler) ServeHTTP(w http.ResponseWriter, r *http.Req
 		return
 	}
 	if len(attr) == 0 {
-		println(2)
 		http.NotFound(w, r)
 		return
 	}
 
 	rc, headers, err := h.store.GetReader(attr[attrName])
 	if err != nil {
-		println(3)
 		http.NotFound(w, r)
 		return
 	}

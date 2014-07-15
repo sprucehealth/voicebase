@@ -3,7 +3,6 @@ package www
 import (
 	"net/http"
 	"net/url"
-	"sort"
 	"strings"
 
 	"github.com/sprucehealth/backend/api"
@@ -13,35 +12,6 @@ import (
 )
 
 const authCookieName = "at"
-
-type supportedMethods struct {
-	methods []string
-	handler http.Handler
-}
-
-func SupportedMethodsHandler(h http.Handler, methods []string) http.Handler {
-	sort.Strings(methods)
-	return &supportedMethods{
-		methods: methods,
-		handler: h,
-	}
-}
-
-func (sm *supportedMethods) ServeHTTP(w http.ResponseWriter, r *http.Request) {
-	for _, m := range sm.methods {
-		if r.Method == m {
-			sm.handler.ServeHTTP(w, r)
-			return
-		}
-	}
-
-	w.Header().Set("Allow", strings.Join(sm.methods, ", "))
-	if r.Method == "OPTIONS" {
-		w.WriteHeader(http.StatusOK)
-	} else {
-		http.Error(w, "Method not allowed", http.StatusMethodNotAllowed)
-	}
-}
 
 // validateRedirectURL makes sure that a user provided URL that will be
 // used for a redirect (such as 'next' during login) is valid and safe.

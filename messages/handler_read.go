@@ -1,10 +1,12 @@
 package messages
 
 import (
+	"net/http"
+
 	"github.com/sprucehealth/backend/api"
 	"github.com/sprucehealth/backend/apiservice"
 	"github.com/sprucehealth/backend/libs/dispatch"
-	"net/http"
+	"github.com/sprucehealth/backend/libs/httputil"
 )
 
 type ReadRequest struct {
@@ -16,15 +18,10 @@ type readHandler struct {
 }
 
 func NewReadHandler(dataAPI api.DataAPI) http.Handler {
-	return &readHandler{dataAPI: dataAPI}
+	return httputil.SupportedMethods(&readHandler{dataAPI: dataAPI}, []string{apiservice.HTTP_POST})
 }
 
 func (h *readHandler) ServeHTTP(w http.ResponseWriter, r *http.Request) {
-	if r.Method != apiservice.HTTP_POST {
-		http.NotFound(w, r)
-		return
-	}
-
 	var req ReadRequest
 	if err := apiservice.DecodeRequestData(&req, r); err != nil {
 		apiservice.WriteValidationError(err.Error(), w, r)

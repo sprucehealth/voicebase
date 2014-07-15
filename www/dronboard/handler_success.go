@@ -4,6 +4,7 @@ import (
 	"net/http"
 
 	"github.com/sprucehealth/backend/api"
+	"github.com/sprucehealth/backend/libs/httputil"
 	"github.com/sprucehealth/backend/third_party/github.com/gorilla/mux"
 	"github.com/sprucehealth/backend/www"
 )
@@ -14,7 +15,7 @@ type successHandler struct {
 }
 
 func NewSuccessHandler(router *mux.Router, dataAPI api.DataAPI) http.Handler {
-	return www.SupportedMethodsHandler(&successHandler{
+	return httputil.SupportedMethods(&successHandler{
 		router:  router,
 		dataAPI: dataAPI,
 	}, []string{"GET"})

@@ -6,6 +6,7 @@ import (
 
 	"github.com/sprucehealth/backend/api"
 	"github.com/sprucehealth/backend/common"
+	"github.com/sprucehealth/backend/libs/httputil"
 	"github.com/sprucehealth/backend/third_party/github.com/SpruceHealth/schema"
 	"github.com/sprucehealth/backend/third_party/github.com/gorilla/context"
 	"github.com/sprucehealth/backend/third_party/github.com/gorilla/mux"
@@ -49,7 +50,7 @@ func (r *bgCheckForm) Validate() map[string]string {
 }
 
 func NewBackgroundCheckHandler(router *mux.Router, dataAPI api.DataAPI) http.Handler {
-	return www.SupportedMethodsHandler(&bgCheckHandler{
+	return httputil.SupportedMethods(&bgCheckHandler{
 		router:   router,
 		dataAPI:  dataAPI,
 		nextStep: "doctor-register-financials",

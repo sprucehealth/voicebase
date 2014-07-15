@@ -10,6 +10,7 @@ import (
 	"github.com/sprucehealth/backend/apiservice"
 	"github.com/sprucehealth/backend/app_url"
 	"github.com/sprucehealth/backend/common"
+	"github.com/sprucehealth/backend/libs/httputil"
 )
 
 type Participant struct {
@@ -39,15 +40,10 @@ type listHandler struct {
 }
 
 func NewListHandler(dataAPI api.DataAPI) http.Handler {
-	return &listHandler{dataAPI: dataAPI}
+	return httputil.SupportedMethods(&listHandler{dataAPI: dataAPI}, []string{apiservice.HTTP_GET})
 }
 
 func (h *listHandler) ServeHTTP(w http.ResponseWriter, r *http.Request) {
-	if r.Method != apiservice.HTTP_GET {
-		http.NotFound(w, r)
-		return
-	}
-
 	caseID, err := strconv.ParseInt(r.FormValue("case_id"), 10, 64)
 	if err != nil {
 		http.NotFound(w, r)

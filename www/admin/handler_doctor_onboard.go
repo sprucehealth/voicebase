@@ -11,6 +11,7 @@ import (
 
 	"github.com/sprucehealth/backend/api"
 	"github.com/sprucehealth/backend/common"
+	"github.com/sprucehealth/backend/libs/httputil"
 	"github.com/sprucehealth/backend/third_party/github.com/gorilla/mux"
 	"github.com/sprucehealth/backend/www"
 )
@@ -26,7 +27,7 @@ type doctorOnboardHandler struct {
 }
 
 func NewDoctorOnboardHandler(router *mux.Router, dataAPI api.DataAPI, signer *common.Signer) http.Handler {
-	return www.SupportedMethodsHandler(&doctorOnboardHandler{
+	return httputil.SupportedMethods(&doctorOnboardHandler{
 		router:  router,
 		dataAPI: dataAPI,
 		signer:  signer,

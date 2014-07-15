@@ -4,6 +4,7 @@ import (
 	"net/http"
 
 	"github.com/sprucehealth/backend/api"
+	"github.com/sprucehealth/backend/libs/httputil"
 )
 
 type loginHandler struct {
@@ -11,7 +12,7 @@ type loginHandler struct {
 }
 
 func NewLoginHandler(authAPI api.AuthAPI) http.Handler {
-	return SupportedMethodsHandler(&loginHandler{
+	return httputil.SupportedMethods(&loginHandler{
 		authAPI: authAPI,
 	}, []string{"GET", "POST"})
 }
@@ -71,7 +72,7 @@ type logoutHandler struct {
 }
 
 func NewLogoutHandler(authAPI api.AuthAPI) http.Handler {
-	return SupportedMethodsHandler(&logoutHandler{
+	return httputil.SupportedMethods(&logoutHandler{
 		authAPI: authAPI,
 	}, []string{"GET", "POST"})
 }

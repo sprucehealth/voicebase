@@ -2,11 +2,13 @@ package messages
 
 import (
 	"errors"
+	"net/http"
+
 	"github.com/sprucehealth/backend/api"
 	"github.com/sprucehealth/backend/apiservice"
 	"github.com/sprucehealth/backend/common"
 	"github.com/sprucehealth/backend/libs/dispatch"
-	"net/http"
+	"github.com/sprucehealth/backend/libs/httputil"
 )
 
 type handler struct {
@@ -40,15 +42,10 @@ type Attachment struct {
 }
 
 func NewHandler(dataAPI api.DataAPI) http.Handler {
-	return &handler{dataAPI: dataAPI}
+	return httputil.SupportedMethods(&handler{dataAPI: dataAPI}, []string{apiservice.HTTP_POST})
 }
 
 func (h *handler) ServeHTTP(w http.ResponseWriter, r *http.Request) {
-	if r.Method != apiservice.HTTP_POST {
-		http.NotFound(w, r)
-		return
-	}
-
 	var req PostMessageRequest
 	if err := apiservice.DecodeRequestData(&req, r); err != nil {
 		apiservice.WriteValidationError(err.Error(), w, r)
