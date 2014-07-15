@@ -1,0 +1,2 @@
+update localized_text set ltext = "Did it cause irritation or an adverse reaction?" where app_text_id = (select  qtext_app_text_id from question where question_tag='q_irritate_skin_prev_acne_otc');
+update localized_text set ltext = "Did it cause irritation or an adverse reaction?" where app_text_id = (select  qtext_app_text_id from question where question_tag='q_irritate_skin_prev_acne_prescription');
