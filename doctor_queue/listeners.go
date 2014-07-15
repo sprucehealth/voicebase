@@ -199,7 +199,7 @@ func InitListeners(dataAPI api.DataAPI, notificationManager *notify.Notification
 			if assignment.ProviderRole == api.DOCTOR_ROLE {
 				switch assignment.Status {
 				case api.STATUS_ACTIVE, api.STATUS_TEMP:
-					doctorID = assignment.ProviderId
+					doctorID = assignment.ProviderID
 					break
 				}
 			}

@@ -19,7 +19,7 @@ func (d *DataService) GetDoctorsAssignedToPatientCase(patientCaseId int64) ([]*c
 	var assignments []*common.CareProviderAssignment
 	for rows.Next() {
 		var assignment common.CareProviderAssignment
-		if err := rows.Scan(&assignment.ProviderId, &assignment.Status, &assignment.CreationDate, &assignment.Expires); err != nil {
+		if err := rows.Scan(&assignment.ProviderID, &assignment.Status, &assignment.CreationDate, &assignment.Expires); err != nil {
 			return nil, err
 		}
 		assignment.ProviderRole = DOCTOR_ROLE
@@ -42,15 +42,22 @@ func (d *DataService) GetActiveMembersOfCareTeamForCase(patientCaseId int64) ([]
 	var assignments []*common.CareProviderAssignment
 	for rows.Next() {
 		var assignment common.CareProviderAssignment
-		if err := rows.Scan(&assignment.ProviderId, &assignment.ProviderRole, &assignment.Status, &assignment.CreationDate); err != nil {
+		if err := rows.Scan(&assignment.ProviderID, &assignment.ProviderRole, &assignment.Status, &assignment.CreationDate); err != nil {
 			return nil, err
 		}
 
 		if assignment.ProviderRole == DOCTOR_ROLE {
-			assignment.Doctor, err = d.GetDoctorFromId(assignment.ProviderId)
+			doctor, err := d.GetDoctorFromId(assignment.ProviderID)
 			if err != nil {
 				return nil, err
 			}
+			assignment.FirstName = doctor.FirstName
+			assignment.LastName = doctor.LastName
+			assignment.ShortTitle = doctor.ShortTitle
+			assignment.LongTitle = doctor.LongTitle
+			assignment.SmallThumbnailURL = doctor.SmallThumbnailURL
+			assignment.LargeThumbnailURL = doctor.LargeThumbnailURL
+			assignment.ProfileURL = doctor.ProfileURL
 		}
 		assignments = append(assignments, &assignment)
 	}

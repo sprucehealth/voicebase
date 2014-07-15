@@ -27,8 +27,8 @@ func routeIncomingPatientVisit(ev *patient_visit.VisitSubmittedEvent, dataAPI ap
 		for _, assignment := range careTeam.Assignments {
 			if assignment.ProviderRole == api.DOCTOR_ROLE && assignment.HealthConditionId == patientCase.HealthConditionId.Int64() {
 				// we identified a doctor the case can be routed to
-				if err := dataAPI.PermanentlyAssignDoctorToCaseAndRouteToQueue(assignment.ProviderId, patientCase, &api.DoctorQueueItem{
-					DoctorId:  assignment.ProviderId,
+				if err := dataAPI.PermanentlyAssignDoctorToCaseAndRouteToQueue(assignment.ProviderID, patientCase, &api.DoctorQueueItem{
+					DoctorId:  assignment.ProviderID,
 					ItemId:    ev.VisitId,
 					Status:    api.STATUS_PENDING,
 					EventType: api.DQEventTypePatientVisit,

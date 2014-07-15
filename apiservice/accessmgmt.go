@@ -1,9 +1,10 @@
 package apiservice
 
 import (
+	"time"
+
 	"github.com/sprucehealth/backend/api"
 	"github.com/sprucehealth/backend/common"
-	"time"
 )
 
 func ValidateDoctorAccessToPatientFile(doctorId, patientId int64, dataAPI api.DataAPI) error {
@@ -19,7 +20,7 @@ func ValidateDoctorAccessToPatientFile(doctorId, patientId int64, dataAPI api.Da
 
 	// ensure that the doctor is part of the patient's care team
 	for _, assignment := range careTeam.Assignments {
-		if assignment.ProviderRole == api.DOCTOR_ROLE && assignment.ProviderId == doctorId {
+		if assignment.ProviderRole == api.DOCTOR_ROLE && assignment.ProviderID == doctorId {
 			return nil
 		}
 	}
@@ -46,7 +47,7 @@ func ValidateReadAccessToPatientCase(doctorId, patientId, patientCaseId int64, d
 
 		for _, assignment := range doctorAssignments {
 			if assignment.ProviderRole == api.DOCTOR_ROLE &&
-				assignment.ProviderId == doctorId &&
+				assignment.ProviderID == doctorId &&
 				assignment.Status == api.STATUS_TEMP &&
 				assignment.Expires != nil && !assignment.Expires.Before(time.Now()) {
 				return nil
@@ -80,13 +81,13 @@ func ValidateWriteAccessToPatientCase(doctorId, patientId, patientCaseId int64, 
 		switch assignment.Status {
 		case api.STATUS_ACTIVE:
 			if assignment.ProviderRole == api.DOCTOR_ROLE &&
-				assignment.ProviderId == doctorId {
+				assignment.ProviderID == doctorId {
 				// doctor has access so long as they have access to both patient file and patient information
 				return ValidateDoctorAccessToPatientFile(doctorId, patientId, dataAPI)
 			}
 		case api.STATUS_TEMP:
 			if assignment.ProviderRole == api.DOCTOR_ROLE &&
-				assignment.ProviderId == doctorId &&
+				assignment.ProviderID == doctorId &&
 				assignment.Expires != nil && !assignment.Expires.Before(time.Now()) {
 				// doctor has access so long as they have access to both patient file and patient information
 				return ValidateDoctorAccessToPatientFile(doctorId, patientId, dataAPI)

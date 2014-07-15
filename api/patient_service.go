@@ -265,7 +265,7 @@ func (d *DataService) GetCareTeamForPatient(patientId int64) (*common.PatientCar
 		err := rows.Scan(&assignment.ProviderRole,
 			&assignment.CreationDate,
 			&assignment.Expires,
-			&assignment.ProviderId,
+			&assignment.ProviderID,
 			&assignment.Status,
 			&assignment.PatientId,
 			&assignment.HealthConditionId)

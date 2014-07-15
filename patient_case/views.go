@@ -115,6 +115,16 @@ func (p *phCaseView) Validate() error {
 	return nil
 }
 
+type phCareProviderView struct {
+	Type         string                         `json:"type"`
+	CareProvider *common.CareProviderAssignment `json:"care_provider"`
+}
+
+func (p *phCareProviderView) Validate() error {
+	p.Type = patientHomeNameSpace + "care_provider_view"
+	return nil
+}
+
 type phSectionView struct {
 	Type  string              `json:"type"`
 	Title string              `json:"title,omitempty"`

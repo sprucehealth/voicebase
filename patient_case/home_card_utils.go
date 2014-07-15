@@ -26,10 +26,10 @@ func getHomeCards(patientCase *common.PatientCase, dataAPI api.DataAPI) ([]commo
 		}
 
 		// get current doctor assigned to case
-		var currentDoctor *common.Doctor
+		var careProvider *common.CareProviderAssignment
 		for _, assignment := range assignments {
 			if assignment.Status == api.STATUS_ACTIVE && assignment.ProviderRole == api.DOCTOR_ROLE {
-				currentDoctor = assignment.Doctor
+				careProvider = assignment
 				break
 			}
 		}
@@ -49,21 +49,21 @@ func getHomeCards(patientCase *common.PatientCase, dataAPI api.DataAPI) ([]commo
 				views = []common.ClientView{hView, getSendUsMessageSection(), getLearnAboutSpruceSection()}
 
 			case CNVisitSubmitted:
-				views = []common.ClientView{getViewCaseCard(patientCase, currentDoctor, hView), getViewResourceLibrarySection()}
+				views = []common.ClientView{getViewCaseCard(patientCase, careProvider, hView), getViewResourceLibrarySection()}
 
 			case CNTreatmentPlan:
 				careTeamSection, err := getMeetCareTeamSection(assignments, dataAPI)
 				if err != nil {
 					return nil, err
 				}
-				views = []common.ClientView{getViewCaseCard(patientCase, currentDoctor, hView), careTeamSection}
+				views = []common.ClientView{getViewCaseCard(patientCase, careProvider, hView), careTeamSection}
 
 			case CNMessage:
-				views = []common.ClientView{getViewCaseCard(patientCase, currentDoctor, hView)}
+				views = []common.ClientView{getViewCaseCard(patientCase, careProvider, hView)}
 			}
 
 		case l > 1:
-			views = []common.ClientView{getViewCaseCard(patientCase, currentDoctor, &phCaseNotificationMultipleView{
+			views = []common.ClientView{getViewCaseCard(patientCase, careProvider, &phCaseNotificationMultipleView{
 				NotificationCount: int64(l),
 				Title:             "New updates in your Dermatology case.",
 				ButtonTitle:       "View Case",
@@ -71,7 +71,7 @@ func getHomeCards(patientCase *common.PatientCase, dataAPI api.DataAPI) ([]commo
 			}), getSendCareTeamMessageSection(patientCase.Id.Int64())}
 
 		case l == 0:
-			views = []common.ClientView{getViewCaseCard(patientCase, currentDoctor, nil), getSendCareTeamMessageSection(patientCase.Id.Int64())}
+			views = []common.ClientView{getViewCaseCard(patientCase, careProvider, nil), getSendCareTeamMessageSection(patientCase.Id.Int64())}
 		}
 	}
 
@@ -103,7 +103,7 @@ func getCompleteVisitCard(patientVisitId int64) common.ClientView {
 	}
 }
 
-func getViewCaseCard(patientCase *common.PatientCase, doctor *common.Doctor, notificationView common.ClientView) common.ClientView {
+func getViewCaseCard(patientCase *common.PatientCase, careProvider *common.CareProviderAssignment, notificationView common.ClientView) common.ClientView {
 	switch patientCase.Status {
 
 	case common.PCStatusUnclaimed, common.PCStatusTempClaimed:
@@ -119,9 +119,9 @@ func getViewCaseCard(patientCase *common.PatientCase, doctor *common.Doctor, not
 	case common.PCStatusClaimed:
 		return &phCaseView{
 			Title:            "Dermatology Case",
-			Subtitle:         fmt.Sprintf("With Dr. %s %s", doctor.FirstName, doctor.LastName),
+			Subtitle:         fmt.Sprintf("With Dr. %s %s", careProvider.FirstName, careProvider.LastName),
 			ActionURL:        app_url.ViewCaseAction(patientCase.Id.Int64()),
-			IconURL:          doctor.SmallThumbnailURL,
+			IconURL:          careProvider.SmallThumbnailURL,
 			CaseID:           patientCase.Id.Int64(),
 			NotificationView: notificationView,
 		}
@@ -139,16 +139,8 @@ func getMeetCareTeamSection(careTeamAssignments []*common.CareProviderAssignment
 	for _, assignment := range careTeamAssignments {
 		if assignment.ProviderRole == api.DOCTOR_ROLE {
 
-			doctor, err := dataAPI.GetDoctorFromId(assignment.ProviderId)
-			if err != nil {
-				return nil, err
-			}
-
-			sectionView.Views = append(sectionView.Views, &phSmallIconText{
-				Title:       fmt.Sprintf("Dr. %s %s", doctor.FirstName, doctor.LastName),
-				Subtitle:    doctor.ShortTitle,
-				IconURL:     doctor.SmallThumbnailURL,
-				RoundedIcon: true,
+			sectionView.Views = append(sectionView.Views, &phCareProviderView{
+				CareProvider: assignment,
 			})
 		}
 	}

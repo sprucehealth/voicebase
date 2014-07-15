@@ -133,14 +133,20 @@ type Address struct {
 }
 
 type CareProviderAssignment struct {
-	ProviderRole      string     `json:"provider_role"`
-	ProviderId        int64      `json:"-"`
-	PatientId         int64      `json:"-"`
-	HealthConditionId int64      `json:"-"`
-	Status            string     `json:"-"`
-	CreationDate      time.Time  `json:"assignment_date"`
-	Expires           *time.Time `json:"-"`
-	Doctor            *Doctor    `json:"doctor,omitempty"`
+	ProviderRole      string               `json:"provider_role"`
+	ProviderID        int64                `json:"provider_id"`
+	FirstName         string               `json:"first_name,omitempty"`
+	LastName          string               `json:"last_name,omitempty"`
+	ShortTitle        string               `json:"short_title,omitempty"`
+	LongTitle         string               `json:"long_title,omitempty"`
+	SmallThumbnailURL *app_url.SpruceAsset `json:"small_thumbnail_url,omitempty"`
+	LargeThumbnailURL *app_url.SpruceAsset `json:"large_thumbnail_url,omitempty"`
+	ProfileURL        *app_url.SpruceAsset `json:"profile_url,omitempty"`
+	PatientId         int64                `json:"-"`
+	HealthConditionId int64                `json:"-"`
+	Status            string               `json:"-"`
+	CreationDate      time.Time            `json:"assignment_date"`
+	Expires           *time.Time           `json:"-"`
 }
 
 type PatientCareTeam struct {
