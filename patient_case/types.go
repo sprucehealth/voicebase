@@ -80,7 +80,7 @@ func (m *messageNotification) makeCaseNotificationView(dataAPI api.DataAPI, noti
 	nView := &caseNotificationMessageView{
 		ID:          notification.Id,
 		Title:       "Message from your doctor.",
-		IconURL:     app_url.GetSmallThumbnail(api.DOCTOR_ROLE, m.DoctorId),
+		IconURL:     app_url.IconMessage,
 		ActionURL:   app_url.ViewCaseMessageAction(m.MessageId, m.CaseId),
 		MessageID:   m.MessageId,
 		RoundedIcon: true,
