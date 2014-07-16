@@ -6,6 +6,7 @@ import (
 	"github.com/sprucehealth/backend/api"
 	"github.com/sprucehealth/backend/apiservice"
 	"github.com/sprucehealth/backend/app_url"
+	"github.com/sprucehealth/backend/libs/golog"
 )
 
 const (
@@ -87,7 +88,7 @@ func (d *queueHandler) ServeHTTP(w http.ResponseWriter, r *http.Request) {
 		doctorQueueItem.PositionInQueue = i
 		feedItem, err := converQueueItemToDisplayFeedItem(d.dataAPI, doctorQueueItem)
 		if err != nil {
-			golog.Errof("Unable to convert item (ItemId: %d, EventType: %s, Status: %s, ItemId: %d) into display item", doctorQueueItem.Id,
+			golog.Errorf("Unable to convert item (ItemId: %d, EventType: %s, Status: %s, ItemId: %d) into display item", doctorQueueItem.Id,
 				doctorQueueItem.EventType, doctorQueueItem.Status, doctorQueueItem.ItemId)
 			continue
 		}
