@@ -62,7 +62,10 @@ func (gz *gzipReadCloser) Read(b []byte) (int, error) {
 }
 
 func (gz *gzipReadCloser) Close() error {
-	return gz.zr.Close()
+	if gz.zr != nil {
+		return gz.zr.Close()
+	}
+	return nil
 }
 
 type gzipResponseWriter struct {
@@ -87,7 +90,10 @@ func (gz *gzipResponseWriter) Write(b []byte) (int, error) {
 }
 
 func (gz *gzipResponseWriter) Close() error {
-	return gz.zw.Close()
+	if gz.zw != nil {
+		return gz.zw.Close()
+	}
+	return nil
 }
 
 func (gz *gzipResponseWriter) WriteHeader(status int) {
