@@ -24,6 +24,7 @@ func (h PingHandler) ServeHTTP(w http.ResponseWriter, r *http.Request) {
 		w.WriteHeader(http.StatusNotFound)
 		return
 	}
+	w.Header().Set("Content-Type", "text/plain")
 	if _, err := w.Write([]byte(Pong)); err != nil {
 		w.WriteHeader(http.StatusInternalServerError)
 	}
