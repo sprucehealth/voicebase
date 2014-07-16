@@ -23,7 +23,6 @@ import (
 )
 
 func TestPatientVisitReview(t *testing.T) {
-	t.Skip("Skipping for now")
 	testData := SetupIntegrationTest(t)
 	defer TearDownIntegrationTest(t, testData)
 
