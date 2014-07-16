@@ -412,8 +412,7 @@ func (d *DataService) GetPatientFromRefillRequestId(refillRequestId int64) (*com
 func (d *DataService) GetPatientFromTreatmentId(treatmentId int64) (*common.Patient, error) {
 	patients, err := d.getPatientBasedOnQuery("treatment",
 		`INNER JOIN treatment_plan ON treatment.treatment_plan_id = treatment_plan.id
-		INNER JOIN patient_visit ON treatment_plan.patient_visit_id = patient_visit.id
-		INNER JOIN patient ON patient_visit.patient_id = patient.id`,
+		INNER JOIN patient ON treatment_plan.patient_id = patient.id`,
 		`treatment.id = ?
 			AND (phone IS NULL OR (account_phone.status = 'ACTIVE'))
 			AND (zip_code IS NULL OR patient_location.status = 'ACTIVE')`, treatmentId)
