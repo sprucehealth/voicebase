@@ -1,10 +1,11 @@
 package doctor_queue
 
 import (
+	"net/http"
+
 	"github.com/sprucehealth/backend/api"
 	"github.com/sprucehealth/backend/apiservice"
 	"github.com/sprucehealth/backend/app_url"
-	"net/http"
 )
 
 const (
@@ -81,17 +82,20 @@ func (d *queueHandler) ServeHTTP(w http.ResponseWriter, r *http.Request) {
 		return
 	}
 
-	feedItems := make([]*DisplayFeedItem, len(queueItems))
+	feedItems := make([]*DisplayFeedItem, 0, len(queueItems))
 	for i, doctorQueueItem := range queueItems {
 		doctorQueueItem.PositionInQueue = i
-		feedItems[i], err = converQueueItemToDisplayFeedItem(d.dataAPI, doctorQueueItem)
+		feedItem, err := converQueueItemToDisplayFeedItem(d.dataAPI, doctorQueueItem)
 		if err != nil {
-			apiservice.WriteError(err, w, r)
-			return
+			golog.Errof("Unable to convert item (ItemId: %d, EventType: %s, Status: %s, ItemId: %d) into display item", doctorQueueItem.Id,
+				doctorQueueItem.EventType, doctorQueueItem.Status, doctorQueueItem.ItemId)
+			continue
 		}
 		if addAuthUrl {
-			feedItems[i].AuthUrl = app_url.ClaimPatientCaseAction(doctorQueueItem.PatientCaseId)
+			feedItem.AuthUrl = app_url.ClaimPatientCaseAction(doctorQueueItem.PatientCaseId)
 		}
+
+		feedItems = append(feedItems, feedItem)
 	}
 	apiservice.WriteJSONToHTTPResponseWriter(w, http.StatusOK, &DoctorQueueItemsResponseData{Items: feedItems})
 }

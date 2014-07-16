@@ -91,6 +91,7 @@ func (d *DoctorQueueItem) GetTitleAndSubtitle(dataApi DataAPI) (string, string, 
 			golog.Errorf("Unable to get patient from refill request id %d", d.ItemId)
 			return "", "", nil
 		} else if err != nil {
+			golog.Errorf("Unable to get patient from refill request id: %s", err)
 			return "", "", err
 		}
 
@@ -109,6 +110,7 @@ func (d *DoctorQueueItem) GetTitleAndSubtitle(dataApi DataAPI) (string, string, 
 			golog.Errorf("Unable to get patient from refill request id %d", d.ItemId)
 			return "", "", nil
 		} else if err != nil {
+			golog.Errorf("Unable to get patient from refill request: %s", err)
 			return "", "", err
 		}
 
@@ -125,6 +127,7 @@ func (d *DoctorQueueItem) GetTitleAndSubtitle(dataApi DataAPI) (string, string, 
 			golog.Errorf("Unable to get patient from treatment id %d", d.ItemId)
 			return "", "", nil
 		} else if err != nil {
+			golog.Errorf("Unable to get patient from treatment id %s", err)
 			return "", "", err
 		}
 
@@ -141,6 +144,7 @@ func (d *DoctorQueueItem) GetTitleAndSubtitle(dataApi DataAPI) (string, string, 
 			golog.Errorf("Unable to get unlinked dntf treatment from id %d", d.ItemId)
 			return "", "", nil
 		} else if err != nil {
+			golog.Errorf("Unable to get unlinked dntf treatment from id: %s", err)
 			return "", "", err
 		}
 
@@ -154,6 +158,7 @@ func (d *DoctorQueueItem) GetTitleAndSubtitle(dataApi DataAPI) (string, string, 
 
 		patient, err := dataApi.GetPatientFromCaseId(d.ItemId)
 		if err != nil {
+			golog.Errorf("Unable to get patient from case id: %s", err)
 			return "", "", err
 		}
 
@@ -261,6 +266,7 @@ func (d *DoctorQueueItem) ActionUrl(dataApi DataAPI) (*app_url.SpruceAction, err
 		// because it lesser queries are made to get to the same information
 		patientCase, err := dataApi.GetPatientCaseFromId(d.ItemId)
 		if err != nil {
+			golog.Errorf("Unable to get patient from case id: %s", err)
 			return nil, err
 		}
 
