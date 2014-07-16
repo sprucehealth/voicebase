@@ -36,6 +36,14 @@ func (d *DataService) updateTopLevelPatientInformation(db db, patient *common.Pa
 		return err
 	}
 
+	if patient.AccountId.Int64() == 0 {
+		if err := d.db.QueryRow(`select account_id from patient where id = ?`, patient.PatientId.Int64()).Scan(&patient.AccountId); err == sql.ErrNoRows {
+			return NoRowsError
+		} else if err != nil {
+			return err
+		}
+	}
+
 	// delete the existing numbers to add the new ones coming through
 	_, err = db.Exec(`DELETE FROM account_phone WHERE account_id = ?`, patient.AccountId.Int64())
 	if err != nil {
