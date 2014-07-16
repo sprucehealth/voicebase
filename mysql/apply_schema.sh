@@ -3,9 +3,10 @@
 # This script makes it easy to apply changes to the development and production database once 
 # the schema has been validated. 
 
-RDS_INSTANCE="127.0.0.1"
+LOCAL_DB_USERNAME="carefront"
+LOCAL_DB_NAME="carefront_db"
 RDS_USERNAME="carefront"
-DATABASE_NAME="carefront_db"
+RDS_DB_NAME="carefront_db"
 
 argsArray=($@) 
 len=${#argsArray[@]}
@@ -33,8 +34,8 @@ do
 		"local" )
 			echo "use $DATABASE_NAME; insert into migrations (migration_id, migration_user) values ($migrationNumber, '$USER');" > temp-migration.sql
 			echo "use $DATABASE_NAME;" | cat - migration-$migrationNumber.sql > temp.sql
-			mysql -h $RDS_INSTANCE -u $RDS_USERNAME -p$DEV_RDS_PASSWORD < temp.sql
-			mysql -h $RDS_INSTANCE -u $RDS_USERNAME -p$DEV_RDS_PASSWORD < temp-migration.sql
+			mysql -u $LOCAL_DB_USERNAME -p$LOCAL_DB_PASSWORD < temp.sql
+			mysql -u $LOCAL_DB_USERNAME -p$LOCAL_DB_PASSWORD < temp-migration.sql
 		;;	
 
 		"staging" )
