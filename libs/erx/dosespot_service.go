@@ -402,9 +402,9 @@ func (d *DoseSpotService) UpdatePatientInformation(clinicianId int64, currentPat
 		return errors.New("Something went wrong when attempting to start prescriptions for patient: " + response.ResultDescription)
 	}
 
-	if err := ensurePatientInformationIsConsistent(currentPatient, response.PatientUpdates); err != nil {
-		return err
-	}
+	// if err := ensurePatientInformationIsConsistent(currentPatient, response.PatientUpdates); err != nil {
+	// 	return err
+	// }
 
 	// populate the prescription id into the patient object
 	currentPatient.ERxPatientId = encoding.NewObjectId(response.PatientUpdates[0].Patient.PatientId)
@@ -472,9 +472,9 @@ func (d *DoseSpotService) StartPrescribingPatient(clinicianId int64, currentPati
 		return errors.New("Something went wrong when attempting to start prescriptions for patient: " + response.ResultDescription)
 	}
 
-	if err := ensurePatientInformationIsConsistent(currentPatient, response.PatientUpdates); err != nil {
-		return err
-	}
+	// if err := ensurePatientInformationIsConsistent(currentPatient, response.PatientUpdates); err != nil {
+	// 	return err
+	// }
 
 	// populate the prescription id into the patient object
 	currentPatient.ERxPatientId = encoding.NewObjectId(response.PatientUpdates[0].Patient.PatientId)
