@@ -50,7 +50,7 @@ script:
 - echo $PKGS | xargs go vet
 - echo $PKGS | xargs go test -i -race
 - echo $PKGS | xargs -n 1 go test -v -race
-- go run ./test/run.go
+
 before_deploy:
 - pushd ./apps/restapi ; ./build.sh ; popd
 - mkdir build
