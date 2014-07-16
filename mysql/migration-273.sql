@@ -6,8 +6,7 @@ insert into app_text (app_text_tag) values ('txt_doxycycline');
 update potential_answer set ordering = 11 where potential_answer_tag = 'a_benzaclin';
 update potential_answer set ordering = 12 where potential_answer_tag = 'a_benzoyl_peroxide';
 update potential_answer set ordering = 13 where potential_answer_tag = 'a_clindamycin';
-
-
+update potential_answer set ordering = 14 where potential_answer_tag = 'a_differin';
 
 insert into localized_text (language_id, app_text_id, ltext) values (@language_id, (select id from app_text where app_text_tag='txt_doxycycline'), "Doxycycline");
 insert into potential_answer (question_id, answer_localized_text_id, atype_id, potential_answer_tag, ordering, status) values (
@@ -15,10 +14,9 @@ insert into potential_answer (question_id, answer_localized_text_id, atype_id, p
 	(select id from app_text where app_text_tag='txt_doxycycline'),
 	(select id from answer_type where atype='a_type_multiple_choice'),
 	'a_doxycycline',
-	14,
+	15,
 	'ACTIVE'
 	);
-update potential_answer set ordering = 15 where potential_answer_tag = 'a_differin';
 update potential_answer set ordering = 16 where potential_answer_tag = 'a_duac';
 update potential_answer set ordering = 17 where potential_answer_tag = 'a_epiduo';
 update potential_answer set ordering = 18 where potential_answer_tag = 'a_metrogel';
