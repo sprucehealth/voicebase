@@ -6,6 +6,13 @@ import (
 	"database/sql"
 	"flag"
 	"fmt"
+	"io/ioutil"
+	"log"
+	"os"
+	"strconv"
+	"strings"
+	"time"
+
 	"github.com/sprucehealth/backend/libs/aws"
 	"github.com/sprucehealth/backend/libs/aws/ec2"
 	"github.com/sprucehealth/backend/libs/cmd/cryptsetup"
@@ -13,12 +20,6 @@ import (
 	"github.com/sprucehealth/backend/libs/cmd/lvm"
 	"github.com/sprucehealth/backend/libs/cmd/mount"
 	"github.com/sprucehealth/backend/libs/cmd/xfs"
-	"io/ioutil"
-	"log"
-	"os"
-	"strconv"
-	"strings"
-	"time"
 
 	"github.com/sprucehealth/backend/third_party/github.com/go-sql-driver/mysql"
 )
@@ -254,9 +255,10 @@ func main() {
 		for {
 			dev, err := dmsetup.Default.DMInfo(device)
 			if err != nil {
-				log.Fatalf("dmsetup info failed: %+v", err)
-			}
-			if strings.HasPrefix(dev.UUID, "CRYPT-LUKS") {
+				// not LUKS/LVM
+				config.Devices = []string{device}
+				break
+			} else if strings.HasPrefix(dev.UUID, "CRYPT-LUKS") {
 				cs, err := cryptsetup.Default.Status(device)
 				if err != nil {
 					log.Fatalf("cryptsetup status filed: %+v", err)
@@ -383,8 +385,9 @@ func main() {
 		}
 		clientCert = append(clientCert, certs)
 		mysql.RegisterTLSConfig("custom", &tls.Config{
-			RootCAs:      rootCertPool,
-			Certificates: clientCert,
+			RootCAs:            rootCertPool,
+			Certificates:       clientCert,
+			InsecureSkipVerify: true,
 		})
 	}
 
