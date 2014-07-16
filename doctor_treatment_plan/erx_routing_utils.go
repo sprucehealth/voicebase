@@ -16,16 +16,13 @@ const (
 func routeRxInTreatmentPlanToPharmacy(treatmentPlanId int64, patient *common.Patient, doctor *common.Doctor,
 	routeErx bool, dataAPI api.DataAPI, erxAPI erx.ERxAPI, erxStatusQueue *common.SQSQueue) error {
 
-	// FIX: Remove once we start accepting surescripts pharmacies from patient
-	if patient.Pharmacy == nil || patient.Pharmacy.Source != pharmacy.PHARMACY_SOURCE_SURESCRIPTS {
-		patient.Pharmacy = &pharmacy.PharmacyData{
-			SourceId:     successful_erx_routing_pharmacy_id,
-			Source:       pharmacy.PHARMACY_SOURCE_SURESCRIPTS,
-			AddressLine1: "123 TEST TEST",
-			City:         "San Francisco",
-			State:        "CA",
-			Postal:       "94115",
-		}
+	patient.Pharmacy = &pharmacy.PharmacyData{
+		SourceId:     successful_erx_routing_pharmacy_id,
+		Source:       pharmacy.PHARMACY_SOURCE_SURESCRIPTS,
+		AddressLine1: "123 TEST TEST",
+		City:         "San Francisco",
+		State:        "CA",
+		Postal:       "94115",
 	}
 
 	treatments, err := dataAPI.GetTreatmentsBasedOnTreatmentPlanId(treatmentPlanId)
