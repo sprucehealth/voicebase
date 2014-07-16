@@ -83,7 +83,7 @@ func NewCredentialsHandler(router *mux.Router, dataAPI api.DataAPI) http.Handler
 	return httputil.SupportedMethods(&credentialsHandler{
 		router:   router,
 		dataAPI:  dataAPI,
-		nextStep: "doctor-register-insurance",
+		nextStep: "doctor-register-upload-cv",
 	}, []string{"GET", "POST"})
 }
 

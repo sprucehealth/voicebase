@@ -26,6 +26,7 @@ type uploadHandler struct {
 	title    string
 	subtitle string
 	nextURL  string
+	required bool
 }
 
 func NewUploadCVHandler(router *mux.Router, dataAPI api.DataAPI, store storage.Store) http.Handler {
@@ -37,6 +38,7 @@ func NewUploadCVHandler(router *mux.Router, dataAPI api.DataAPI, store storage.S
 		fileTag:  "cv",
 		title:    "Upload CV / Résumé",
 		nextURL:  "doctor-register-upload-license",
+		required: true,
 	}, []string{"GET", "POST"})
 }
 
@@ -49,7 +51,8 @@ func NewUploadLicenseHandler(router *mux.Router, dataAPI api.DataAPI, store stor
 		fileTag:  "dl",
 		title:    "Upload Image of Driver's License",
 		subtitle: "Used as part of identity verification",
-		nextURL:  "doctor-register-upload-claims-history",
+		nextURL:  "doctor-register-insurance",
+		required: true,
 	}, []string{"GET", "POST"})
 }
 
@@ -63,6 +66,7 @@ func NewUploadClaimsHistoryHandler(router *mux.Router, dataAPI api.DataAPI, stor
 		title:    "Upload Claims History",
 		subtitle: "You may also skip this step and instead permit us to obtain this information on your behalf from your previous malpractice insurance carriers.",
 		nextURL:  "doctor-register-claims-history",
+		required: false,
 	}, []string{"GET", "POST"})
 }
 
@@ -92,6 +96,7 @@ func (h *uploadHandler) ServeHTTP(w http.ResponseWriter, r *http.Request) {
 		return
 	}
 
+	var errorMsg string
 	if r.Method == "POST" {
 		if err := r.ParseMultipartForm(maxMemory); err != nil {
 			www.InternalServerError(w, r, err)
@@ -99,35 +104,44 @@ func (h *uploadHandler) ServeHTTP(w http.ResponseWriter, r *http.Request) {
 		}
 
 		file, fileHandler, err := r.FormFile("File")
-		if err != nil {
+		switch err {
+		default:
 			www.InternalServerError(w, r, err)
 			return
-		}
-		defer file.Close()
+		case http.ErrMissingFile:
+			if h.required {
+				errorMsg = "File is required"
+			}
+		case nil:
+			defer file.Close()
 
-		headers := http.Header{
-			"Content-Type":             []string{fileHandler.Header.Get("Content-Type")},
-			"X-Amz-Meta-Original-Name": []string{fileHandler.Filename},
+			headers := http.Header{
+				"Content-Type":             []string{fileHandler.Header.Get("Content-Type")},
+				"X-Amz-Meta-Original-Name": []string{fileHandler.Filename},
+			}
+
+			size, err := common.SeekerSize(file)
+			if err != nil {
+				www.InternalServerError(w, r, err)
+				return
+			}
+
+			fileID, err := h.store.PutReader(fmt.Sprintf("doctor-%d-%s", doctorID, h.fileTag), file, size, headers)
+			if err != nil {
+				www.InternalServerError(w, r, err)
+				return
+			}
+
+			if err := h.dataAPI.UpdateDoctorAttributes(doctorID, map[string]string{h.attrName: fileID}); err != nil {
+				www.InternalServerError(w, r, err)
+				return
+			}
 		}
 
-		size, err := common.SeekerSize(file)
-		if err != nil {
-			www.InternalServerError(w, r, err)
+		if errorMsg == "" {
+			http.Redirect(w, r, nextURL, http.StatusSeeOther)
 			return
 		}
-
-		fileID, err := h.store.PutReader(fmt.Sprintf("doctor-%d-%s", doctorID, h.fileTag), file, size, headers)
-		if err != nil {
-			www.InternalServerError(w, r, err)
-		}
-
-		if err := h.dataAPI.UpdateDoctorAttributes(doctorID, map[string]string{h.attrName: fileID}); err != nil {
-			www.InternalServerError(w, r, err)
-			return
-		}
-
-		http.Redirect(w, r, nextURL, http.StatusSeeOther)
-		return
 	}
 
 	www.TemplateResponse(w, http.StatusOK, uploadTemplate, &www.BaseTemplateContext{
@@ -135,6 +149,8 @@ func (h *uploadHandler) ServeHTTP(w http.ResponseWriter, r *http.Request) {
 		SubContext: &uploadTemplateContext{
 			Title:    h.title,
 			Subtitle: h.subtitle,
+			Required: h.required,
+			Error:    errorMsg,
 			NextURL:  nextURL,
 		},
 	})

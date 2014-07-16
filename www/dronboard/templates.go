@@ -12,7 +12,6 @@ var (
 	registerTemplate         *template.Template
 	credsTemplate            *template.Template
 	uploadTemplate           *template.Template
-	engagementTemplate       *template.Template
 	financialsTemplate       *template.Template
 	insuranceTemplate        *template.Template
 	successTemplate          *template.Template
@@ -20,6 +19,7 @@ var (
 	malpracticeFAQTemplate   *template.Template
 	bgCheckTemplate          *template.Template
 	claimsHistoryTemplate    *template.Template
+	introTemplate            *template.Template
 )
 
 func init() {
@@ -27,7 +27,6 @@ func init() {
 	registerTemplate = www.MustLoadTemplate("dronboard/register.html", template.Must(baseTemplate.Clone()))
 	credsTemplate = www.MustLoadTemplate("dronboard/creds.html", template.Must(baseTemplate.Clone()))
 	uploadTemplate = www.MustLoadTemplate("dronboard/upload.html", template.Must(baseTemplate.Clone()))
-	engagementTemplate = www.MustLoadTemplate("dronboard/engagement.html", template.Must(baseTemplate.Clone()))
 	financialsTemplate = www.MustLoadTemplate("dronboard/financials.html", template.Must(baseTemplate.Clone()))
 	insuranceTemplate = www.MustLoadTemplate("dronboard/insurance.html", template.Must(baseTemplate.Clone()))
 	successTemplate = www.MustLoadTemplate("dronboard/success.html", template.Must(baseTemplate.Clone()))
@@ -35,6 +34,7 @@ func init() {
 	malpracticeFAQTemplate = www.MustLoadTemplate("dronboard/malpracticefaq.html", template.Must(baseTemplate.Clone()))
 	bgCheckTemplate = www.MustLoadTemplate("dronboard/backgroundcheck.html", template.Must(baseTemplate.Clone()))
 	claimsHistoryTemplate = www.MustLoadTemplate("dronboard/claimshistory.html", template.Must(baseTemplate.Clone()))
+	introTemplate = www.MustLoadTemplate("dronboard/intro.html", template.Must(baseTemplate.Clone()))
 }
 
 type registerTemplateContext struct {
@@ -53,12 +53,9 @@ type credsTemplateContext struct {
 type uploadTemplateContext struct {
 	Title    string
 	Subtitle string
+	Required bool
+	Error    string
 	NextURL  string
-}
-
-type engagementTemplateContext struct {
-	Form       *engagementForm
-	FormErrors map[string]string
 }
 
 type insuranceTemplateContext struct {
@@ -94,4 +91,8 @@ type claimsHistoryTemplateContext struct {
 	FormErrors map[string]string
 	Name       string
 	NextURL    string
+}
+
+type introTemplateContext struct {
+	NextURL string
 }

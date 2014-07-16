@@ -84,7 +84,7 @@ $(function() {
 		<hr>
 
 		<div class="checkbox">
-			<input type="checkbox" id="AmericanBoardCertified" name="AmericanBoardCertified"{{if .Form.AmericanBoardCertified}} checked{{end}}>
+			<input type="checkbox" id="AmericanBoardCertified" name="AmericanBoardCertified" {{if .Form.AmericanBoardCertified}}checked{{end}}>
 			Are you American Board Certified?
 		</div>
 
@@ -110,7 +110,7 @@ $(function() {
 		<fieldset id="continued-education" {{if not .Form.ContinuedEducation}}disabled{{end}}>
 			<div class="form-group {{if .FormErrors.CreditHours}}has-error has-feedback{{end}}">
 				<label class="control-label" for="CreditHours">Number of Category 1 credit hours</label>
-				<input required type="number" id="CreditHours" name="CreditHours" value="{{.Form.CreditHours}}" class="form-control">
+				<input required type="number" id="CreditHours" name="CreditHours" value="{{.Form.CreditHours}}" min="0" class="form-control">
 			</div>
 		</fieldset>
 

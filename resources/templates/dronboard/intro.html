@@ -1,0 +1,24 @@
+{{define "tail"}}
+{{end}}
+
+{{define "body"}}
+	<div class="form-onboard">
+		<h2>Onboarding Overview</h2>
+
+		<p>Welcome to Spruce! We’re excited to get you up and running. Before you can start delivering care, we need to collect collect some information that will allow us to:</p>
+
+		<ul>
+			<li>Set up your account and patient-facing profile</li>
+			<li>Verify your identity, credentials, and license(s)</li>
+			<li>Add you to our malpractice policy</li>
+			<li>Run a background check</li>
+			<li>Pay you for the care you provide</li>
+		</ul>
+
+		<p>The whole process should take between 10 and 15 minutes. Thank you!</p>
+
+		<div class="text-center">
+			<a href="{{.NextURL}}" class="btn btn-primary" role="button">Begin</a>
+		</div>
+	</div>
+{{end}}
