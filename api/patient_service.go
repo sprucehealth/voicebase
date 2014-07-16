@@ -433,7 +433,7 @@ func (d *DataService) GetPatientFromTreatmentId(treatmentId int64) (*common.Pati
 func (d *DataService) GetPatientFromCaseId(patientCaseId int64) (*common.Patient, error) {
 	patients, err := d.getPatientBasedOnQuery("patient_case",
 		`INNER JOIN patient ON patient_case.patient_id = patient.id`,
-		`patient_case.patient_id = ?
+		`patient_case.id = ?
 			AND (phone IS NULL OR (account_phone.status = 'ACTIVE'))
 			AND (zip_code IS NULL OR patient_location.status = 'ACTIVE')`, patientCaseId)
 	if err != nil {
