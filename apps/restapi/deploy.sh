@@ -49,6 +49,10 @@ case "$DEPLOY_ENV" in
 			echo "Missing build number. Cannot deploy to staging from local code."
 			exit 2
 		fi
+		if [ "$DEPLOY_BRANCH" != "master" ]; then
+			echo "Can only deploy the master branch to production."
+			exit 2
+		fi
 	;;
 
 	* )
