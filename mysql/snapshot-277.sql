@@ -1,6 +1,6 @@
 -- MySQL dump 10.13  Distrib 5.6.17, for osx10.9 (x86_64)
 --
--- Host: 127.0.0.1    Database: database_23978
+-- Host: 127.0.0.1    Database: database_6348
 -- ------------------------------------------------------
 -- Server version	5.6.17
 
@@ -413,7 +413,7 @@ CREATE TABLE `doctor` (
   `short_title` varchar(300) DEFAULT NULL,
   `long_title` varchar(300) DEFAULT NULL,
   `short_display_name` varchar(300) NOT NULL,
-  `long_display_name` varchar(300) NOT NULL,
+  `long_display_name` varchar(600) NOT NULL,
   PRIMARY KEY (`id`),
   KEY `account_id` (`account_id`),
   CONSTRAINT `doctor_ibfk_1` FOREIGN KEY (`account_id`) REFERENCES `account` (`id`)
@@ -2597,4 +2597,4 @@ CREATE TABLE `unlinked_dntf_treatment_status_events` (
 /*!40101 SET COLLATION_CONNECTION=@OLD_COLLATION_CONNECTION */;
 /*!40111 SET SQL_NOTES=@OLD_SQL_NOTES */;
 
--- Dump completed on 2014-07-16 14:28:54
+-- Dump completed on 2014-07-16 14:34:08
