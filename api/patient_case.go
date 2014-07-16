@@ -55,6 +55,8 @@ func (d *DataService) GetActiveMembersOfCareTeamForCase(patientCaseId int64) ([]
 			assignment.LastName = doctor.LastName
 			assignment.ShortTitle = doctor.ShortTitle
 			assignment.LongTitle = doctor.LongTitle
+			assignment.ShortDisplayName = doctor.ShortDisplayName
+			assignment.LongDisplayName = doctor.LongDisplayName
 			assignment.SmallThumbnailURL = doctor.SmallThumbnailURL
 			assignment.LargeThumbnailURL = doctor.LargeThumbnailURL
 			assignment.ProfileURL = doctor.ProfileURL

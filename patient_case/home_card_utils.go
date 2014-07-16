@@ -121,7 +121,7 @@ func getViewCaseCard(patientCase *common.PatientCase, careProvider *common.CareP
 			Title:            "Dermatology Case",
 			Subtitle:         fmt.Sprintf("With Dr. %s %s", careProvider.FirstName, careProvider.LastName),
 			ActionURL:        app_url.ViewCaseAction(patientCase.Id.Int64()),
-			IconURL:          careProvider.SmallThumbnailURL,
+			IconURL:          careProvider.LargeThumbnailURL,
 			CaseID:           patientCase.Id.Int64(),
 			NotificationView: notificationView,
 		}

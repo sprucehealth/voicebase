@@ -37,24 +37,26 @@ func (d *signupDoctorHandler) NonAuthenticated() bool {
 }
 
 type SignupDoctorRequestData struct {
-	Email        string `schema:"email,required"`
-	Password     string `schema:"password,required"`
-	FirstName    string `schema:"first_name,required"`
-	LastName     string `schema:"last_name,required"`
-	MiddleName   string `schema:"middle_name"`
-	ShortTitle   string `schema:"short_title"`
-	LongTitle    string `schema:"long_title"`
-	Suffix       string `schema:"suffix"`
-	Prefix       string `schema:"prefix"`
-	DOB          string `schema:"dob,required"`
-	Gender       string `schema:"gender,required"`
-	ClinicianId  int64  `schema:"clinician_id,required"`
-	AddressLine1 string `schema:"address_line_1,required"`
-	AddressLine2 string `schema:"address_line_2"`
-	City         string `schema:"city"`
-	State        string `schema:"state"`
-	ZipCode      string `schema:"zip_code"`
-	Phone        string `schema:"phone,required"`
+	Email            string `schema:"email,required"`
+	Password         string `schema:"password,required"`
+	FirstName        string `schema:"first_name,required"`
+	LastName         string `schema:"last_name,required"`
+	MiddleName       string `schema:"middle_name"`
+	ShortTitle       string `schema:"short_title"`
+	LongTitle        string `schema:"long_title"`
+	ShortDisplayName string `schema:"short_display_name"`
+	LongDisplayName  string `schema:"long_display_name"`
+	Suffix           string `schema:"suffix"`
+	Prefix           string `schema:"prefix"`
+	DOB              string `schema:"dob,required"`
+	Gender           string `schema:"gender,required"`
+	ClinicianId      int64  `schema:"clinician_id,required"`
+	AddressLine1     string `schema:"address_line_1,required"`
+	AddressLine2     string `schema:"address_line_2"`
+	City             string `schema:"city"`
+	State            string `schema:"state"`
+	ZipCode          string `schema:"zip_code"`
+	Phone            string `schema:"phone,required"`
 }
 
 func (d *signupDoctorHandler) ServeHTTP(w http.ResponseWriter, r *http.Request) {
@@ -118,6 +120,8 @@ func (d *signupDoctorHandler) ServeHTTP(w http.ResponseWriter, r *http.Request) 
 		Gender:              requestData.Gender,
 		ShortTitle:          requestData.ShortTitle,
 		LongTitle:           requestData.LongTitle,
+		ShortDisplayName:    requestData.ShortDisplayName,
+		LongDisplayName:     requestData.LongDisplayName,
 		Suffix:              requestData.Suffix,
 		Prefix:              requestData.Prefix,
 		MiddleName:          requestData.MiddleName,

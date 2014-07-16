@@ -73,6 +73,8 @@ type Doctor struct {
 	Suffix              string               `json:"suffix,omitempty"`
 	ShortTitle          string               `json:"short_title,omitempty"`
 	LongTitle           string               `json:"long_title,omitempty"`
+	ShortDisplayName    string               `json:"short_display_name,omitempty"`
+	LongDisplayName     string               `json:"long_display_name,omitempty"`
 	DOB                 encoding.DOB         `json:"-"`
 	Gender              string               `json:"-"`
 	Status              string               `json:"-"`
@@ -139,6 +141,8 @@ type CareProviderAssignment struct {
 	LastName          string               `json:"last_name,omitempty"`
 	ShortTitle        string               `json:"short_title,omitempty"`
 	LongTitle         string               `json:"long_title,omitempty"`
+	ShortDisplayName  string               `json:"short_display_name,omitempty"`
+	LongDisplayName   string               `json:"long_display_name,omitempty"`
 	SmallThumbnailURL *app_url.SpruceAsset `json:"small_thumbnail_url,omitempty"`
 	LargeThumbnailURL *app_url.SpruceAsset `json:"large_thumbnail_url,omitempty"`
 	ProfileURL        *app_url.SpruceAsset `json:"profile_url,omitempty"`
