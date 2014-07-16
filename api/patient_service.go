@@ -453,7 +453,7 @@ func (d *DataService) GetPatientFromCaseId(patientCaseId int64) (*common.Patient
 func (d *DataService) GetPatientFromUnlinkedDNTFTreatment(unlinkedDNTFTreatmentId int64) (*common.Patient, error) {
 	patients, err := d.getPatientBasedOnQuery("unlinked_dntf_treatment",
 		`INNER JOIN patient ON patient_id = patient.id`,
-		`id = ?`, unlinkedDNTFTreatmentId)
+		`unlinked_dntf_treatment.id = ?`, unlinkedDNTFTreatmentId)
 	if err != nil {
 		return nil, err
 	}
