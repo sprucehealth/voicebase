@@ -129,6 +129,7 @@ func (h *uploadHandler) ServeHTTP(w http.ResponseWriter, r *http.Request) {
 			fileID, err := h.store.PutReader(fmt.Sprintf("doctor-%d-%s", doctorID, h.fileTag), file, size, headers)
 			if err != nil {
 				www.InternalServerError(w, r, err)
+				return
 			}
 
 			if err := h.dataAPI.UpdateDoctorAttributes(doctorID, map[string]string{h.attrName: fileID}); err != nil {

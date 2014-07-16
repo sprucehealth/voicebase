@@ -32,6 +32,7 @@ func (h *introHandler) ServeHTTP(w http.ResponseWriter, r *http.Request) {
 	nextURL, err := h.router.Get(h.nextStep).URLPath()
 	if err != nil {
 		www.InternalServerError(w, r, err)
+		return
 	}
 	nextURL.RawQuery = r.Form.Encode()
 
