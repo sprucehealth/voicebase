@@ -19,6 +19,7 @@ const (
 
 type tpView interface {
 	Validate() error
+	TypeName() string
 }
 
 type tpHeroHeaderView struct {
@@ -33,6 +34,10 @@ func (v *tpHeroHeaderView) Validate() error {
 	return nil
 }
 
+func (v *tpHeroHeaderView) TypeName() string {
+	return v.Type
+}
+
 type tpSmallDividerView struct {
 	Type string `json:"type"`
 }
@@ -40,6 +45,10 @@ type tpSmallDividerView struct {
 func (v *tpSmallDividerView) Validate() error {
 	v.Type = treatmentViewNamespace + ":small_divider"
 	return nil
+}
+
+func (v *tpSmallDividerView) TypeName() string {
+	return v.Type
 }
 
 type tpCardView struct {
@@ -57,6 +66,10 @@ func (v *tpCardView) Validate() error {
 	return nil
 }
 
+func (v *tpCardView) TypeName() string {
+	return v.Type
+}
+
 type tpCardTitleView struct {
 	Type        string               `json:"type"`
 	Title       string               `json:"title"`
@@ -67,6 +80,10 @@ type tpCardTitleView struct {
 func (v *tpCardTitleView) Validate() error {
 	v.Type = treatmentViewNamespace + ":card_title_view"
 	return nil
+}
+
+func (v *tpCardTitleView) TypeName() string {
+	return v.Type
 }
 
 type tpTextDisclosureButtonView struct {
@@ -81,6 +98,10 @@ func (v *tpTextDisclosureButtonView) Validate() error {
 	return nil
 }
 
+func (v *tpTextDisclosureButtonView) TypeName() string {
+	return v.Type
+}
+
 type tpLargeDividerView struct {
 	Type string `json:"type"`
 }
@@ -88,6 +109,10 @@ type tpLargeDividerView struct {
 func (v *tpLargeDividerView) Validate() error {
 	v.Type = treatmentViewNamespace + ":large_divider"
 	return nil
+}
+
+func (v *tpLargeDividerView) TypeName() string {
+	return v.Type
 }
 
 type tpImageView struct {
@@ -103,6 +128,10 @@ func (v *tpImageView) Validate() error {
 	return nil
 }
 
+func (v *tpImageView) TypeName() string {
+	return v.Type
+}
+
 type tpIconTitleSubtitleView struct {
 	Type     string               `json:"type"`
 	IconURL  *app_url.SpruceAsset `json:"icon_url"`
@@ -115,6 +144,10 @@ func (v *tpIconTitleSubtitleView) Validate() error {
 	return nil
 }
 
+func (v *tpIconTitleSubtitleView) TypeName() string {
+	return v.Type
+}
+
 type tpTextView struct {
 	Type  string `json:"type"`
 	Style string `json:"style,omitempty"`
@@ -124,6 +157,10 @@ type tpTextView struct {
 func (v *tpTextView) Validate() error {
 	v.Type = treatmentViewNamespace + ":text"
 	return nil
+}
+
+func (v *tpTextView) TypeName() string {
+	return v.Type
 }
 
 type tpIconTextView struct {
@@ -141,6 +178,10 @@ func (v *tpIconTextView) Validate() error {
 	return nil
 }
 
+func (v *tpIconTextView) TypeName() string {
+	return v.Type
+}
+
 type tpSnippetDetailsView struct {
 	Type    string `json:"type"`
 	Snippet string `json:"snippet"`
@@ -150,6 +191,10 @@ type tpSnippetDetailsView struct {
 func (v *tpSnippetDetailsView) Validate() error {
 	v.Type = treatmentViewNamespace + ":snippet_details"
 	return nil
+}
+
+func (v *tpSnippetDetailsView) TypeName() string {
+	return v.Type
 }
 
 type tpListElementView struct {
@@ -167,6 +212,10 @@ func (v *tpListElementView) Validate() error {
 	return nil
 }
 
+func (v *tpListElementView) TypeName() string {
+	return v.Type
+}
+
 type tpPlainButtonView struct {
 	Type   string                `json:"type"`
 	Text   string                `json:"text"`
@@ -176,6 +225,10 @@ type tpPlainButtonView struct {
 func (v *tpPlainButtonView) Validate() error {
 	v.Type = treatmentViewNamespace + ":plain_button"
 	return nil
+}
+
+func (v *tpPlainButtonView) TypeName() string {
+	return v.Type
 }
 
 type tpButtonView struct {
@@ -190,6 +243,10 @@ func (v *tpButtonView) Validate() error {
 	return nil
 }
 
+func (v *tpButtonView) TypeName() string {
+	return v.Type
+}
+
 type tpPharmacyView struct {
 	Type     string                 `json:"type"`
 	Text     string                 `json:"text"`
@@ -200,6 +257,10 @@ type tpPharmacyView struct {
 func (v *tpPharmacyView) Validate() error {
 	v.Type = treatmentViewNamespace + ":pharmacy"
 	return nil
+}
+
+func (v *tpPharmacyView) TypeName() string {
+	return v.Type
 }
 
 type tpPrescriptionView struct {
@@ -222,6 +283,10 @@ func (v *tpPrescriptionView) Validate() error {
 	return nil
 }
 
+func (v *tpPrescriptionView) TypeName() string {
+	return v.Type
+}
+
 type tpPrescriptionButtonView struct {
 	Type    string                `json:"type"`
 	Text    string                `json:"text"`
@@ -232,6 +297,10 @@ type tpPrescriptionButtonView struct {
 func (v *tpPrescriptionButtonView) Validate() error {
 	v.Type = treatmentViewNamespace + ":prescription_button"
 	return nil
+}
+
+func (v *tpPrescriptionButtonView) TypeName() string {
+	return v.Type
 }
 
 type tpButtonFooterView struct {
@@ -245,4 +314,8 @@ type tpButtonFooterView struct {
 func (v *tpButtonFooterView) Validate() error {
 	v.Type = treatmentViewNamespace + ":button_footer"
 	return nil
+}
+
+func (v *tpButtonFooterView) TypeName() string {
+	return v.Type
 }

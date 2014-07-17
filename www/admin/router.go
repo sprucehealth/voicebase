@@ -28,4 +28,6 @@ func SetupRoutes(r *mux.Router, dataAPI api.DataAPI, authAPI api.AuthAPI, stripe
 	r.Handle(`/admin/doctor/onboard`, authFilter(NewDoctorOnboardHandler(r, dataAPI, signer))).Name("admin-doctor-onboard")
 	r.Handle(`/admin/resourceguide`, authFilter(NewResourceGuideListHandler(r, dataAPI))).Name("admin-resourceguide-list")
 	r.Handle(`/admin/resourceguide/{id:[0-9]+}`, authFilter(NewResourceGuideHandler(r, dataAPI))).Name("admin-resourceguide")
+	r.Handle(`/admin/rxguide`, authFilter(NewRXGuideListHandler(r, dataAPI))).Name("admin-rxguide-list")
+	r.Handle(`/admin/rxguide/{ndc:[a-zA-Z0-9]+}`, authFilter(NewRXGuideHandler(r, dataAPI))).Name("admin-rxguide")
 }

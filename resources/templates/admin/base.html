@@ -4,7 +4,10 @@ body {
 	padding-top: 50px;
 }
 </style>
+{{template "admin-head" .}}
 {{end}}
+
+{{define "admin-head"}}{{end}}
 
 {{define "header"}}
 	<div class="navbar navbar-inverse navbar-fixed-top" role="navigation">
@@ -22,7 +25,7 @@ body {
 				<ul class="nav navbar-nav">
 					<li {{template "menu-doctors"}}><a href="/admin/doctor">Doctors</a></li>
 					<li {{template "menu-resourceguides"}}><a href="/admin/resourceguide">Resource Guides</a></li>
-					<!-- <li><a href="#contact">Contact</a></li> -->
+					<li {{template "menu-rxguides"}}><a href="/admin/rxguide">RX Guides</a></li>
 				</ul>
 				<ul class="nav navbar-nav navbar-right">
 					<li><a href="/logout">Logout</a></li>
@@ -34,3 +37,4 @@ body {
 
 {{define "menu-doctors"}}{{end}}
 {{define "menu-resourceguides"}}{{end}}
+{{define "menu-rxguides"}}{{end}}

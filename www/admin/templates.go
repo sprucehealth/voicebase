@@ -13,6 +13,8 @@ var (
 	doctorTemplate            *template.Template
 	resourceGuideListTemplate *template.Template
 	resourceGuideTemplate     *template.Template
+	rxGuideListTemplate       *template.Template
+	rxGuideTemplate           *template.Template
 )
 
 func init() {
@@ -21,6 +23,8 @@ func init() {
 	doctorTemplate = www.MustLoadTemplate("admin/doctor.html", template.Must(baseTemplate.Clone()))
 	resourceGuideListTemplate = www.MustLoadTemplate("admin/resourceguide_list.html", template.Must(baseTemplate.Clone()))
 	resourceGuideTemplate = www.MustLoadTemplate("admin/resourceguide.html", template.Must(baseTemplate.Clone()))
+	rxGuideListTemplate = www.MustLoadTemplate("admin/rxguide_list.html", template.Must(baseTemplate.Clone()))
+	rxGuideTemplate = www.MustLoadTemplate("admin/rxguide.html", template.Must(baseTemplate.Clone()))
 }
 
 type doctorSearchTemplateContext struct {
@@ -42,4 +46,13 @@ type resourceGuideListTemplateContext struct {
 type resourceGuideTemplateContext struct {
 	Form  *resourceGuideForm
 	Error string
+}
+
+type rxGuideListTemplateContext struct {
+	Drugs []*common.DrugDetails
+}
+
+type rxGuideTemplateContext struct {
+	Details     *common.DrugDetails
+	DetailsHTML template.HTML
 }

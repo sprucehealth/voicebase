@@ -198,7 +198,7 @@ func main() {
 	}
 
 	drugs := make([]*common.DrugDetails, 0)
-	for i := 1; i <= feed.ColCount; i++ {
+	for i := 2; i <= feed.ColCount; i++ {
 		if cells[2][i] != nil {
 			info := &common.DrugDetails{
 				Name:           cleanupText(cells[1][i].Cell.Content),
