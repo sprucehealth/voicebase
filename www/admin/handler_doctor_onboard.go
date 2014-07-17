@@ -52,7 +52,7 @@ func (h *doctorOnboardHandler) ServeHTTP(w http.ResponseWriter, r *http.Request)
 	}
 	sigStr := base64.StdEncoding.EncodeToString(sig)
 
-	u, err := h.router.Get("doctor-register").URLPath()
+	u, err := h.router.Get("doctor-register-intro").URLPath()
 	if err != nil {
 		www.InternalServerError(w, r, err)
 		return
