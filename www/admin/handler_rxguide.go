@@ -37,7 +37,7 @@ func (h *rxGuideHandler) ServeHTTP(w http.ResponseWriter, r *http.Request) {
 	}
 
 	b := &bytes.Buffer{}
-	if err := treatment_plan.RenderRXGuide(b, nil, details, nil, nil); err != nil {
+	if err := treatment_plan.RenderRXGuide(b, details, nil, nil); err != nil {
 		www.InternalServerError(w, r, err)
 		return
 	}

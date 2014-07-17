@@ -97,8 +97,8 @@ type rxGuideTemplateContext struct {
 	Views []tpView
 }
 
-func RenderRXGuide(w io.Writer, doctor *common.Doctor, details *common.DrugDetails, treatment *common.Treatment, treatmentPlan *common.TreatmentPlan) error {
-	views, err := treatmentGuideViews(doctor, details, treatment, treatmentPlan)
+func RenderRXGuide(w io.Writer, details *common.DrugDetails, treatment *common.Treatment, treatmentPlan *common.TreatmentPlan) error {
+	views, err := treatmentGuideViews(details, treatment, treatmentPlan)
 	if err != nil {
 		return err
 	}

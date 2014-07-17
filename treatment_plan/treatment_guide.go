@@ -73,7 +73,7 @@ func (h *treatmentGuideHandler) processTreatmentGuideForPatient(requestData *Tre
 		return
 	}
 
-	treatmentGuideResponse(h.dataAPI, treatment.Doctor, treatment, treatmentPlan, w, r)
+	treatmentGuideResponse(h.dataAPI, treatment, treatmentPlan, w, r)
 }
 
 func (h *treatmentGuideHandler) processTreatmentGuideForDoctor(requestData *TreatmentGuideRequestData, w http.ResponseWriter, r *http.Request) {
@@ -92,10 +92,10 @@ func (h *treatmentGuideHandler) processTreatmentGuideForDoctor(requestData *Trea
 		return
 	}
 
-	treatmentGuideResponse(h.dataAPI, treatment.Doctor, treatment, treatmentPlan, w, r)
+	treatmentGuideResponse(h.dataAPI, treatment, treatmentPlan, w, r)
 }
 
-func treatmentGuideResponse(dataAPI api.DataAPI, doctor *common.Doctor, treatment *common.Treatment, treatmentPlan *common.TreatmentPlan, w http.ResponseWriter, r *http.Request) {
+func treatmentGuideResponse(dataAPI api.DataAPI, treatment *common.Treatment, treatmentPlan *common.TreatmentPlan, w http.ResponseWriter, r *http.Request) {
 	ndc := treatment.DrugDBIds[erx.NDC]
 	if ndc == "" {
 		apiservice.WriteUserError(w, http.StatusNotFound, "NDC unknown")
@@ -110,7 +110,7 @@ func treatmentGuideResponse(dataAPI api.DataAPI, doctor *common.Doctor, treatmen
 		return
 	}
 
-	views, err := treatmentGuideViews(doctor, details, treatment, treatmentPlan)
+	views, err := treatmentGuideViews(details, treatment, treatmentPlan)
 	if err != nil {
 		apiservice.WriteError(err, w, r)
 		return
@@ -118,7 +118,7 @@ func treatmentGuideResponse(dataAPI api.DataAPI, doctor *common.Doctor, treatmen
 	apiservice.WriteJSONToHTTPResponseWriter(w, http.StatusOK, map[string][]tpView{"views": views})
 }
 
-func treatmentGuideViews(doctor *common.Doctor, details *common.DrugDetails, treatment *common.Treatment, treatmentPlan *common.TreatmentPlan) ([]tpView, error) {
+func treatmentGuideViews(details *common.DrugDetails, treatment *common.Treatment, treatmentPlan *common.TreatmentPlan) ([]tpView, error) {
 	var views []tpView
 
 	if details.ImageURL != "" {
@@ -145,15 +145,15 @@ func treatmentGuideViews(doctor *common.Doctor, details *common.DrugDetails, tre
 		},
 	)
 
-	if doctor != nil && treatment != nil {
+	if treatment != nil {
 		views = append(views,
 			&tpLargeDividerView{},
 			&tpIconTextView{
 				// TODO: This icon info isn't robust or likely accurate
-				IconURL:    doctor.LargeThumbnailURL,
+				IconURL:    treatment.Doctor.LargeThumbnailURL,
 				IconWidth:  32,
 				IconHeight: 32,
-				Text:       fmt.Sprintf("%s's Instructions", doctor.ShortTitle),
+				Text:       fmt.Sprintf("%s's Instructions", treatment.Doctor.ShortTitle),
 				Style:      sectionHeaderStyle,
 			},
 			&tpSmallDividerView{},
@@ -239,10 +239,10 @@ func treatmentGuideViews(doctor *common.Doctor, details *common.DrugDetails, tre
 		}
 	}
 
-	if doctor != nil && treatmentPlan != nil {
+	if treatment != nil && treatmentPlan != nil {
 		views = append(views,
 			&tpButtonView{
-				Text:    "Message " + doctor.ShortTitle,
+				Text:    "Message " + treatment.Doctor.ShortTitle,
 				IconURL: app_url.IconMessage,
 				TapURL:  app_url.SendCaseMessageAction(treatmentPlan.PatientCaseId.Int64()),
 			},
