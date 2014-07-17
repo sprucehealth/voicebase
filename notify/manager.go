@@ -84,6 +84,7 @@ func (n *NotificationManager) NotifyDoctor(doctor *common.Doctor, event interfac
 
 	communicationPreference, err := n.determineCommunicationPreferenceBasedOnDefaultConfig(doctor.AccountId.Int64())
 	if err != nil {
+		golog.Errorf("Unable to get communication preference of doctor: %s", err)
 		return err
 	}
 	switch communicationPreference {
@@ -92,6 +93,7 @@ func (n *NotificationManager) NotifyDoctor(doctor *common.Doctor, event interfac
 		// in the doctor queue
 		notificationCount, err := n.dataApi.GetPendingItemCountForDoctorQueue(doctor.DoctorId.Int64())
 		if err != nil {
+			golog.Errorf("Unable to get pending item count for doctor: %s", err)
 			return err
 		}
 
