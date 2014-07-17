@@ -1,12 +1,10 @@
 package apiservice
 
 import (
+	"net/http"
+
 	"github.com/sprucehealth/backend/api"
 	"github.com/sprucehealth/backend/common"
-	"net/http"
-	"strconv"
-
-	"github.com/sprucehealth/backend/third_party/github.com/SpruceHealth/schema"
 )
 
 type DoctorPrescriptionErrorHandler struct {
@@ -14,8 +12,8 @@ type DoctorPrescriptionErrorHandler struct {
 }
 
 type DoctorPrescriptionErrorRequestData struct {
-	TreatmentId             string `schema:"treatment_id"`
-	UnlinkedDNTFTreatmentId string `schema:"unlinked_dntf_treatment_id"`
+	TreatmentId             int64 `schema:"treatment_id"`
+	UnlinkedDNTFTreatmentId int64 `schema:"unlinked_dntf_treatment_id"`
 }
 
 type DoctorPrescriptionErrorResponse struct {
@@ -29,40 +27,24 @@ func (d *DoctorPrescriptionErrorHandler) ServeHTTP(w http.ResponseWriter, r *htt
 		return
 	}
 
-	if err := r.ParseForm(); err != nil {
-		WriteDeveloperError(w, http.StatusBadRequest, "Unable to parse input parameters: "+err.Error())
-		return
-	}
-
 	requestData := &DoctorPrescriptionErrorRequestData{}
-	if err := schema.NewDecoder().Decode(requestData, r.Form); err != nil {
-		WriteDeveloperError(w, http.StatusBadRequest, "Unable to parse input parameters: "+err.Error())
+	if err := DecodeRequestData(requestData, r); err != nil {
+		WriteError(err, w, r)
 		return
 	}
 
 	var treatment *common.Treatment
-	if requestData.TreatmentId != "" {
-		treatmentId, err := strconv.ParseInt(requestData.TreatmentId, 10, 64)
+	var err error
+	if requestData.TreatmentId != 0 {
+		treatment, err = d.DataApi.GetTreatmentFromId(requestData.TreatmentId)
 		if err != nil {
-			WriteDeveloperError(w, http.StatusBadRequest, "Unable to parse treatmentId: "+err.Error())
+			WriteError(err, w, r)
 			return
 		}
-
-		treatment, err = d.DataApi.GetTreatmentFromId(treatmentId)
+	} else if requestData.UnlinkedDNTFTreatmentId != 0 {
+		treatment, err = d.DataApi.GetUnlinkedDNTFTreatment(requestData.UnlinkedDNTFTreatmentId)
 		if err != nil {
-			WriteDeveloperError(w, http.StatusInternalServerError, "Unable to get patient based on treatment id: "+err.Error())
-			return
-		}
-	} else if requestData.UnlinkedDNTFTreatmentId != "" {
-		treatmentId, err := strconv.ParseInt(requestData.UnlinkedDNTFTreatmentId, 10, 64)
-		if err != nil {
-			WriteDeveloperError(w, http.StatusBadRequest, "Unable to parse treatmentId: "+err.Error())
-			return
-		}
-
-		treatment, err = d.DataApi.GetUnlinkedDNTFTreatment(treatmentId)
-		if err != nil {
-			WriteDeveloperError(w, http.StatusInternalServerError, "Unable to get patient based on treatment id: "+err.Error())
+			WriteError(err, w, r)
 			return
 		}
 	}

@@ -259,7 +259,7 @@ func (d *DoctorQueueItem) ActionUrl(dataApi DataAPI) (*app_url.SpruceAction, err
 			golog.Errorf("Unable to get patient from unlinked dntf treatment: %s", err)
 			return nil, nil
 		}
-		return app_url.ViewTransmissionErrorAction(patient.PatientId.Int64(), d.ItemId), nil
+		return app_url.ViewDNTFTransmissionErrorAction(patient.PatientId.Int64(), d.ItemId), nil
 	case DQEventTypeCaseMessage:
 
 		// better to get the patient case object instead of the patient object here
