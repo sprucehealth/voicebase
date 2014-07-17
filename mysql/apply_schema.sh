@@ -32,8 +32,8 @@ do
 	case "$env" in
 		
 		"local" )
-			echo "use $DATABASE_NAME; insert into migrations (migration_id, migration_user) values ($migrationNumber, '$USER');" > temp-migration.sql
-			echo "use $DATABASE_NAME;" | cat - migration-$migrationNumber.sql > temp.sql
+			echo "use $LOCAL_DB_NAME; insert into migrations (migration_id, migration_user) values ($migrationNumber, '$USER');" > temp-migration.sql
+			echo "use $LOCAL_DB_NAME;" | cat - migration-$migrationNumber.sql > temp.sql
 			mysql -u $LOCAL_DB_USERNAME -p$LOCAL_DB_PASSWORD < temp.sql
 			mysql -u $LOCAL_DB_USERNAME -p$LOCAL_DB_PASSWORD < temp-migration.sql
 		;;	
@@ -49,8 +49,8 @@ do
 		;;
 
 		"dev" )
-			echo "use $DATABASE_NAME; insert into migrations (migration_id, migration_user) values ($migrationNumber, '$USER');" > temp-migration.sql
-			echo "use $DATABASE_NAME;" | cat - migration-$migrationNumber.sql > temp.sql
+			echo "use $RDS_DB_NAME; insert into migrations (migration_id, migration_user) values ($migrationNumber, '$USER');" > temp-migration.sql
+			echo "use $RDS_DB_NAME;" | cat - migration-$migrationNumber.sql > temp.sql
 			mysql -h $DEV_RDS_INSTANCE -u $RDS_USERNAME -p$DEV_RDS_PASSWORD < temp.sql
 			mysql -h $DEV_RDS_INSTANCE -u $RDS_USERNAME -p$DEV_RDS_PASSWORD < temp-migration.sql
 		;;
