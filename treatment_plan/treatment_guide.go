@@ -149,7 +149,6 @@ func treatmentGuideViews(details *common.DrugDetails, treatment *common.Treatmen
 		views = append(views,
 			&tpLargeDividerView{},
 			&tpIconTextView{
-				// TODO: This icon info isn't robust or likely accurate
 				IconURL:    treatment.Doctor.LargeThumbnailURL,
 				IconWidth:  32,
 				IconHeight: 32,
