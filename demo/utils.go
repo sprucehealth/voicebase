@@ -198,7 +198,6 @@ const (
 	messagesUrl              = "http://127.0.0.1:8080/v1/case/messages"
 	regimenUrl               = "http://127.0.0.1:8080/v1/doctor/visit/regimen"
 	dVisitReviewUrl          = "http://127.0.0.1:8080/v1/doctor/visit/review"
-	dVisitSubmitUrl          = "http://127.0.0.1:8080/v1/doctor/visit/submit"
 	dFavoriteTPUrl           = "http://127.0.0.1:8080/v1/doctor/favorite_treatment_plans"
 	dTPUrl                   = "http://127.0.0.1:8080/v1/doctor/treatment_plans"
 	demoPhotosBucketFormat   = "%s-carefront-demo"
