@@ -4,14 +4,14 @@ import (
 	"bytes"
 	"encoding/json"
 	"fmt"
+	"net/http"
+	"strconv"
+
 	"github.com/sprucehealth/backend/api"
 	"github.com/sprucehealth/backend/apiservice"
 	"github.com/sprucehealth/backend/common"
 	"github.com/sprucehealth/backend/doctor_treatment_plan"
-	"net/http"
-	"net/url"
-	"strconv"
-	"strings"
+	"github.com/sprucehealth/backend/encoding"
 )
 
 type favoriteTreatmentPlanHandler struct {
@@ -95,14 +95,18 @@ func (f *favoriteTreatmentPlanHandler) ServeHTTP(w http.ResponseWriter, r *http.
 
 	// ********** STEP 2: pick a treatment plan for the visit **********
 
-	jsonData, err := json.Marshal(&doctor_treatment_plan.DoctorTreatmentPlanRequestData{
-		PatientVisitId: patientVisitId,
+	jsonData, err := json.Marshal(&doctor_treatment_plan.PickTreatmentPlanRequestData{
+		TPParent: &common.TreatmentPlanParent{
+			ParentId:   encoding.NewObjectId(patientVisitId),
+			ParentType: common.TPParentTypePatientVisit,
+		},
 	})
+
 	if err != nil {
 		apiservice.WriteError(err, w, r)
 		return
 	}
-	pickATPRequest, err := http.NewRequest("PUT", dTPUrl, bytes.NewReader(jsonData))
+	pickATPRequest, err := http.NewRequest("POST", dTPUrl, bytes.NewReader(jsonData))
 	if err != nil {
 		apiservice.WriteError(err, w, r)
 		return
@@ -186,16 +190,18 @@ func (f *favoriteTreatmentPlanHandler) ServeHTTP(w http.ResponseWriter, r *http.
 	}
 
 	// ********** STEP 5: go ahead and submit this treatment plan to clear this visit out of the doctor's queue **********
-	params := url.Values{}
-	params.Set("patient_visit_id", strconv.FormatInt(patientVisitId, 10))
-	params.Set("status", common.PVStatusTreated)
-	submitTPREquest, err := http.NewRequest("POST", dVisitSubmitUrl, strings.NewReader(params.Encode()))
+	jsonData, err = json.Marshal(&doctor_treatment_plan.TreatmentPlanRequestData{
+		TreatmentPlanId: tpResponse.TreatmentPlan.Id,
+		Message:         "foo",
+	})
+
+	submitTPREquest, err := http.NewRequest("PUT", dTPUrl, bytes.NewReader(jsonData))
 	if err != nil {
 		apiservice.WriteError(err, w, r)
 		return
 	}
 	submitTPREquest.Header.Set("Authorization", r.Header.Get("Authorization"))
-	submitTPREquest.Header.Set("Content-Type", "application/x-www-form-urlencoded")
+	submitTPREquest.Header.Set("Content-Type", "application/json")
 	submitTPREquest.Host = r.Host
 	res, err = http.DefaultClient.Do(submitTPREquest)
 	if err != nil {

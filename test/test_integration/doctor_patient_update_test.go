@@ -72,6 +72,9 @@ func TestDoctorUpdateToPatientAddress(t *testing.T) {
 		},
 	}
 
+	// removing the accountId before sending it to the update handler because it should work without it even
+	patient.AccountId = encoding.ObjectId{}
+
 	// lets go ahead and add this address to the patient and we should get back an address when we get the patient information
 	doctorPatientHandler := patient_file.NewDoctorPatientHandler(testData.DataApi, stubErxApi, stubAddressValidationService)
 

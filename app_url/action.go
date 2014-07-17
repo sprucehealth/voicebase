@@ -112,6 +112,16 @@ func ViewTransmissionErrorAction(patientId, treatmentId int64) *SpruceAction {
 	}
 }
 
+func ViewDNTFTransmissionErrorAction(patientId, treatmentId int64) *SpruceAction {
+	params := url.Values{}
+	params.Set("unlinked_dntf_treatment_id", strconv.FormatInt(treatmentId, 10))
+	params.Set("patient_id", strconv.FormatInt(patientId, 10))
+	return &SpruceAction{
+		name:   "view_transmission_error",
+		params: params,
+	}
+}
+
 func ViewPatientTreatmentsAction(patientId int64) *SpruceAction {
 	params := url.Values{}
 	params.Set("patient_id", strconv.FormatInt(patientId, 10))

@@ -3,6 +3,7 @@ package api
 import (
 	"database/sql"
 	"fmt"
+
 	"github.com/sprucehealth/backend/common"
 )
 

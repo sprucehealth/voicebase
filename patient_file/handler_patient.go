@@ -10,7 +10,6 @@ import (
 	"github.com/sprucehealth/backend/libs/erx"
 	"github.com/sprucehealth/backend/surescripts"
 
-	"encoding/json"
 	"net/http"
 
 	"github.com/sprucehealth/backend/third_party/github.com/SpruceHealth/schema"
@@ -88,14 +87,9 @@ func (d *doctorPatientHandler) getPatientInformation(w http.ResponseWriter, r *h
 
 func (d *doctorPatientHandler) updatePatientInformation(w http.ResponseWriter, r *http.Request) {
 
-	if err := r.ParseForm(); err != nil {
-		apiservice.WriteDeveloperError(w, http.StatusBadRequest, "Unable to parse input parameters: "+err.Error())
-		return
-	}
-
 	requestData := &requestResponstData{}
-	if err := json.NewDecoder(r.Body).Decode(requestData); err != nil {
-		apiservice.WriteDeveloperError(w, http.StatusBadRequest, "Unable to parse input body that is meant to be the patient object: "+err.Error())
+	if err := apiservice.DecodeRequestData(requestData, r); err != nil {
+		apiservice.WriteValidationError(err.Error(), w, r)
 		return
 	}
 
