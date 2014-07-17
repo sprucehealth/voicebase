@@ -16,12 +16,12 @@ body {
 					<span class="icon-bar"></span>
 					<span class="icon-bar"></span>
 				</button>
-				<a class="navbar-brand" href="#">Spruce Admin</a>
+				<a class="navbar-brand" href="/admin">Spruce Admin</a>
 			</div>
 			<div class="collapse navbar-collapse">
 				<ul class="nav navbar-nav">
-					<li class="active"><a href="/admin/doctor">Doctors</a></li>
-					<!-- <li><a href="#about">About</a></li> -->
+					<li {{template "menu-doctors"}}><a href="/admin/doctor">Doctors</a></li>
+					<li {{template "menu-resourceguides"}}><a href="/admin/resourceguide">Resource Guides</a></li>
 					<!-- <li><a href="#contact">Contact</a></li> -->
 				</ul>
 				<ul class="nav navbar-nav navbar-right">
@@ -31,3 +31,6 @@ body {
 		</div>
 	</div>
 {{end}}
+
+{{define "menu-doctors"}}{{end}}
+{{define "menu-resourceguides"}}{{end}}

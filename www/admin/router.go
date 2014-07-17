@@ -26,4 +26,6 @@ func SetupRoutes(r *mux.Router, dataAPI api.DataAPI, authAPI api.AuthAPI, stripe
 	r.Handle(`/admin/doctor/{id:[0-9]+}`, authFilter(NewDoctorHandler(r, dataAPI))).Name("admin-doctor")
 	r.Handle(`/admin/doctor/{id:[0-9]+}/dl/{attr:[A-Za-z0-9_\-]+}`, authFilter(NewDoctorAttrDownloadHandler(r, dataAPI, stores["onboarding"]))).Name("admin-doctor-attr-download")
 	r.Handle(`/admin/doctor/onboard`, authFilter(NewDoctorOnboardHandler(r, dataAPI, signer))).Name("admin-doctor-onboard")
+	r.Handle(`/admin/resourceguide`, authFilter(NewResourceGuideListHandler(r, dataAPI))).Name("admin-resourceguide-list")
+	r.Handle(`/admin/resourceguide/{id:[0-9]+}`, authFilter(NewResourceGuideHandler(r, dataAPI))).Name("admin-resourceguide")
 }

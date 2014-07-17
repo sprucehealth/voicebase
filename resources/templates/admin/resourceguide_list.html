@@ -1,0 +1,20 @@
+{{define "menu-resourceguides"}}class="active"{{end}}
+
+{{define "head"}}
+{{end}}
+
+{{define "tail"}}
+{{end}}
+
+{{define "body"}}
+	<h2>Resource Guides</h2>
+
+	{{$guides := .Guides}}
+	{{range .Sections}}
+		<h4>{{.Title}}</h4>
+
+		{{range index $guides .ID}}
+			<img src="{{.PhotoURL}}" width="32" height="32"> <a href="/admin/resourceguide/{{.ID}}">{{.Title}}</a><br>
+		{{end}}
+	{{end}}
+{{end}}

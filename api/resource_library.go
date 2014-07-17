@@ -4,8 +4,9 @@ import (
 	"database/sql"
 	"encoding/json"
 	"fmt"
-	"github.com/sprucehealth/backend/common"
 	"strings"
+
+	"github.com/sprucehealth/backend/common"
 )
 
 func (d *DataService) GetResourceGuide(id int64) (*common.ResourceGuide, error) {
@@ -13,8 +14,8 @@ func (d *DataService) GetResourceGuide(id int64) (*common.ResourceGuide, error) 
 	var layout []byte
 	row := d.db.QueryRow(`SELECT id, section_id, ordinal, title, photo_url, layout FROM resource_guide WHERE id = ?`, id)
 	err := row.Scan(
-		&guide.Id,
-		&guide.SectionId,
+		&guide.ID,
+		&guide.SectionID,
 		&guide.Ordinal,
 		&guide.Title,
 		&guide.PhotoURL,
@@ -41,7 +42,7 @@ func (d *DataService) ListResourceGuideSections() ([]*common.ResourceGuideSectio
 	for rows.Next() {
 		var sec common.ResourceGuideSection
 		err := rows.Scan(
-			&sec.Id,
+			&sec.ID,
 			&sec.Ordinal,
 			&sec.Title,
 		)
@@ -68,8 +69,8 @@ func (d *DataService) ListResourceGuides() ([]*common.ResourceGuideSection, map[
 	for rows.Next() {
 		var guide common.ResourceGuide
 		err := rows.Scan(
-			&guide.Id,
-			&guide.SectionId,
+			&guide.ID,
+			&guide.SectionID,
 			&guide.Ordinal,
 			&guide.Title,
 			&guide.PhotoURL,
@@ -77,7 +78,7 @@ func (d *DataService) ListResourceGuides() ([]*common.ResourceGuideSection, map[
 		if err != nil {
 			return nil, nil, err
 		}
-		guides[guide.SectionId] = append(guides[guide.SectionId], &guide)
+		guides[guide.SectionID] = append(guides[guide.SectionID], &guide)
 	}
 	return sections, guides, rows.Err()
 }
@@ -90,12 +91,12 @@ func (d *DataService) CreateResourceGuideSection(sec *common.ResourceGuideSectio
 	if err != nil {
 		return 0, err
 	}
-	sec.Id, err = res.LastInsertId()
-	return sec.Id, err
+	sec.ID, err = res.LastInsertId()
+	return sec.ID, err
 }
 
 func (d *DataService) UpdateResourceGuideSection(sec *common.ResourceGuideSection) error {
-	if sec.Id <= 0 {
+	if sec.ID <= 0 {
 		return fmt.Errorf("api.UpdateResourceGuideSection: ID may not be 0")
 	}
 	var columns []string
@@ -111,7 +112,7 @@ func (d *DataService) UpdateResourceGuideSection(sec *common.ResourceGuideSectio
 	if len(columns) == 0 {
 		return fmt.Errorf("api.UpdateResourceGuideSection: nothing to update")
 	}
-	values = append(values, sec.Id)
+	values = append(values, sec.ID)
 	_, err := d.db.Exec("UPDATE resource_guide_section SET "+strings.Join(columns, ",")+" WHERE id = ?", values...)
 	return err
 }
@@ -125,16 +126,16 @@ func (d *DataService) CreateResourceGuide(guide *common.ResourceGuide) (int64, e
 		return 0, err
 	}
 	res, err := d.db.Exec("INSERT INTO resource_guide (title, section_id, ordinal, photo_url, layout) VALUES (?, ?, ?, ?, ?)",
-		guide.Title, guide.SectionId, guide.Ordinal, guide.PhotoURL, layout)
+		guide.Title, guide.SectionID, guide.Ordinal, guide.PhotoURL, layout)
 	if err != nil {
 		return 0, err
 	}
-	guide.Id, err = res.LastInsertId()
-	return guide.Id, err
+	guide.ID, err = res.LastInsertId()
+	return guide.ID, err
 }
 
 func (d *DataService) UpdateResourceGuide(guide *common.ResourceGuide) error {
-	if guide.Id <= 0 {
+	if guide.ID <= 0 {
 		return fmt.Errorf("api.UpdateResourceGuide: ID may not be 0")
 	}
 	var columns []string
@@ -143,9 +144,9 @@ func (d *DataService) UpdateResourceGuide(guide *common.ResourceGuide) error {
 		columns = append(columns, "title = ?")
 		values = append(values, guide.Title)
 	}
-	if guide.SectionId != 0 {
+	if guide.SectionID != 0 {
 		columns = append(columns, "section_id = ?")
-		values = append(values, guide.SectionId)
+		values = append(values, guide.SectionID)
 	}
 	if guide.Ordinal > 0 {
 		columns = append(columns, "ordinal = ?")
@@ -166,7 +167,7 @@ func (d *DataService) UpdateResourceGuide(guide *common.ResourceGuide) error {
 	if len(columns) == 0 {
 		return fmt.Errorf("api.UpdateResourceGuide: nothing to update")
 	}
-	values = append(values, guide.Id)
+	values = append(values, guide.ID)
 	_, err := d.db.Exec("UPDATE resource_guide SET "+strings.Join(columns, ",")+" WHERE id = ?", values...)
 	return err
 }
