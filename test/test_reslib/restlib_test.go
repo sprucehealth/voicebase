@@ -3,12 +3,13 @@ package test_reslib
 import (
 	"encoding/json"
 	"fmt"
-	"github.com/sprucehealth/backend/common"
-	"github.com/sprucehealth/backend/reslib"
-	"github.com/sprucehealth/backend/test/test_integration"
 	"net/http"
 	"net/http/httptest"
 	"testing"
+
+	"github.com/sprucehealth/backend/common"
+	"github.com/sprucehealth/backend/reslib"
+	"github.com/sprucehealth/backend/test/test_integration"
 )
 
 func TestResourceGuide(t *testing.T) {
@@ -24,7 +25,7 @@ func TestResourceGuide(t *testing.T) {
 	}
 
 	guide1 := common.ResourceGuide{
-		SectionId: sec1.Id,
+		SectionID: sec1.ID,
 		Ordinal:   1,
 		Title:     "Guide 1",
 		PhotoURL:  "http://example.com/1.jpeg",
@@ -34,7 +35,7 @@ func TestResourceGuide(t *testing.T) {
 		t.Fatal(err)
 	}
 	guide2 := common.ResourceGuide{
-		SectionId: sec1.Id,
+		SectionID: sec1.ID,
 		Ordinal:   2,
 		Title:     "Guide 1",
 		PhotoURL:  "http://example.com/1.jpeg",
@@ -48,7 +49,7 @@ func TestResourceGuide(t *testing.T) {
 	hList := reslib.NewListHandler(testData.DataApi)
 
 	res := httptest.NewRecorder()
-	req, err := http.NewRequest("GET", fmt.Sprintf("/?resource_id=%d", guide1.Id), nil)
+	req, err := http.NewRequest("GET", fmt.Sprintf("/?resource_id=%d", guide1.ID), nil)
 	if err != nil {
 		t.Fatal(err)
 	}
