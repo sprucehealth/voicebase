@@ -9,6 +9,8 @@ import (
 	"sync"
 	"sync/atomic"
 	"time"
+
+	"github.com/sprucehealth/backend/libs/golog/term"
 )
 
 // Level represents a log level (CRIT, ERR, ...)
@@ -91,6 +93,17 @@ func (w writer) Write(b []byte) (int, error) {
 }
 
 func init() {
+	fmtLow := LogfmtFormatter()
+	fmtHigh := LogfmtFormatter()
+
+	if term.IsTTY(os.Stdout.Fd()) {
+		fmtLow = TerminalFormatter()
+	}
+	if term.IsTTY(os.Stderr.Fd()) {
+		fmtHigh = TerminalFormatter()
+	}
+
+	DefaultHandler = SplitHandler(WARN, WriterHandler(os.Stdout, fmtLow), WriterHandler(os.Stderr, fmtHigh))
 	defaultL = &logger{
 		ctx: nil,
 		hnd: DefaultHandler,
@@ -98,7 +111,7 @@ func init() {
 	}
 }
 
-var DefaultHandler = IOHandler(os.Stdout, os.Stderr, LogfmtFormatter())
+var DefaultHandler Handler
 
 func Default() Logger {
 	return defaultL

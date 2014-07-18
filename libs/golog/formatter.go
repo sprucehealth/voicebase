@@ -81,6 +81,50 @@ func LogfmtFormatter() Formatter {
 	})
 }
 
+func TerminalFormatter() Formatter {
+	return FormatterFunc(func(e *Entry) []byte {
+		var color Color
+		if e.Lvl > INFO {
+			color = ColorCyan
+		} else if e.Lvl > WARN {
+			color = ColorGreen
+		} else if e.Lvl > ERR {
+			color = ColorYellow
+		} else if e.Lvl > CRIT {
+			color = ColorRed
+		} else {
+			color = ColorMagenta
+		}
+		buf := &bytes.Buffer{}
+		buf.WriteString(string(color))
+		buf.WriteByte('[')
+		buf.WriteString(e.Time.Format(timeFormat))
+		buf.WriteString("] [")
+		buf.WriteString(e.Lvl.String())
+		buf.WriteString("] ")
+		if e.Src != "" {
+			buf.WriteByte(' ')
+			buf.WriteString(quoteASCII(e.Src))
+		}
+		for i := 0; i < len(e.Ctx); i += 2 {
+			k, ok := e.Ctx[i].(string)
+			if !ok {
+				buf.WriteString(" _error=")
+			} else {
+				buf.WriteByte(' ')
+				buf.WriteString(k)
+				buf.WriteByte('=')
+			}
+			buf.WriteString(format(e.Ctx[i+1]))
+		}
+		buf.WriteByte(' ')
+		buf.WriteString(e.Msg)
+		buf.WriteString(string(ColorReset))
+		buf.WriteByte('\n')
+		return buf.Bytes()
+	})
+}
+
 func FormatContext(ctx []interface{}, delim rune) []byte {
 	buf := &bytes.Buffer{}
 	for i := 0; i < len(ctx); i += 2 {

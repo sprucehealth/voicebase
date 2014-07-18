@@ -7,8 +7,8 @@ import (
 
 type HandlerFunc func(e *Entry) error
 
-func IOHandler(out, err io.Writer, fmtr Formatter) Handler {
-	return &ioHandler{out: out, err: err, fmtr: fmtr}
+func WriterHandler(w io.Writer, fmtr Formatter) Handler {
+	return &writerHandler{w: w, fmtr: fmtr}
 }
 
 func SyslogHandler(tag string, fmtr Formatter) (Handler, error) {
@@ -19,22 +19,23 @@ func SyslogHandler(tag string, fmtr Formatter) (Handler, error) {
 	return &syslogHandler{w: w, f: fmtr}, nil
 }
 
+// SplitHandler sends all entries with level above lvl to
+// the high handler, and all other entries to the low handler.
+func SplitHandler(lvl Level, low, high Handler) Handler {
+	return &splitHandler{lvl: lvl, low: low, high: high}
+}
+
 func (h HandlerFunc) Log(e *Entry) error {
 	return h(e)
 }
 
-type ioHandler struct {
-	out, err io.Writer
-	fmtr     Formatter
+type writerHandler struct {
+	w    io.Writer
+	fmtr Formatter
 }
 
-func (o *ioHandler) Log(e *Entry) error {
-	m := o.fmtr.Format(e)
-	if e.Lvl <= WARN {
-		_, err := o.err.Write(m)
-		return err
-	}
-	_, err := o.out.Write(m)
+func (h *writerHandler) Log(e *Entry) error {
+	_, err := h.w.Write(h.fmtr.Format(e))
 	return err
 }
 
@@ -43,19 +44,31 @@ type syslogHandler struct {
 	f Formatter
 }
 
-func (o *syslogHandler) Log(e *Entry) error {
-	msg := string(o.f.Format(e))
+func (h *syslogHandler) Log(e *Entry) error {
+	msg := string(h.f.Format(e))
 	switch e.Lvl {
 	case CRIT:
-		return o.w.Crit(msg)
+		return h.w.Crit(msg)
 	case ERR:
-		return o.w.Err(msg)
+		return h.w.Err(msg)
 	case WARN:
-		return o.w.Warning(msg)
+		return h.w.Warning(msg)
 	case INFO:
-		return o.w.Info(msg)
+		return h.w.Info(msg)
 	case DEBUG:
-		return o.w.Debug(msg)
+		return h.w.Debug(msg)
 	}
-	return o.w.Debug(msg)
+	return h.w.Debug(msg)
+}
+
+type splitHandler struct {
+	low, high Handler
+	lvl       Level
+}
+
+func (h *splitHandler) Log(e *Entry) error {
+	if e.Lvl <= h.lvl {
+		return h.low.Log(e)
+	}
+	return h.high.Log(e)
 }
