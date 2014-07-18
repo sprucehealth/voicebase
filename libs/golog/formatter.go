@@ -98,10 +98,10 @@ func TerminalFormatter() Formatter {
 		buf := &bytes.Buffer{}
 		buf.WriteString(string(color))
 		buf.WriteByte('[')
-		buf.WriteString(e.Time.Format(timeFormat))
+		buf.WriteString(e.Time.Format("15:04:05"))
 		buf.WriteString("] [")
 		buf.WriteString(e.Lvl.String())
-		buf.WriteString("] ")
+		buf.WriteByte(']')
 		if e.Src != "" {
 			buf.WriteByte(' ')
 			buf.WriteString(quoteASCII(e.Src))
