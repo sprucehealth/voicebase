@@ -233,11 +233,11 @@ func (d *DataService) addTreatment(tType treatmentType, treatment *common.Treatm
 		columnsAndData["doctor_id"] = treatment.Doctor.DoctorId.Int64()
 		columnsAndData["erx_id"] = treatment.ERx.PrescriptionId.Int64()
 
-		if !treatment.ERx.ErxLastDateFilled.IsZero() {
+		if treatment.ERx.ErxLastDateFilled != nil && !treatment.ERx.ErxLastDateFilled.IsZero() {
 			columnsAndData["erx_last_filled_date"] = treatment.ERx.ErxLastDateFilled
 		}
 
-		if !treatment.ERx.ErxSentDate.IsZero() {
+		if treatment.ERx.ErxSentDate != nil && !treatment.ERx.ErxSentDate.IsZero() {
 			columnsAndData["erx_sent_date"] = treatment.ERx.ErxSentDate
 		}
 
@@ -253,11 +253,11 @@ func (d *DataService) addTreatment(tType treatmentType, treatment *common.Treatm
 		columnsAndData["doctor_id"] = treatment.Doctor.DoctorId.Int64()
 		columnsAndData["erx_id"] = treatment.ERx.PrescriptionId.Int64()
 
-		if !treatment.ERx.ErxLastDateFilled.IsZero() {
+		if treatment.ERx.ErxLastDateFilled != nil && !treatment.ERx.ErxLastDateFilled.IsZero() {
 			columnsAndData["erx_last_filled_date"] = treatment.ERx.ErxLastDateFilled
 		}
 
-		if !treatment.ERx.ErxSentDate.IsZero() {
+		if treatment.ERx.ErxSentDate != nil && !treatment.ERx.ErxSentDate.IsZero() {
 			columnsAndData["erx_sent_date"] = treatment.ERx.ErxSentDate
 		}
 
