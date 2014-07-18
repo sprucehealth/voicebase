@@ -10,15 +10,16 @@ import (
 	"bufio"
 	"encoding/json"
 	"fmt"
+	"log"
+	"os"
+	"os/exec"
+	"strings"
+
 	"github.com/sprucehealth/backend/api"
 	"github.com/sprucehealth/backend/common"
 	"github.com/sprucehealth/backend/common/config"
 	"github.com/sprucehealth/backend/libs/gdata"
 	"github.com/sprucehealth/backend/libs/golog"
-	"log"
-	"os"
-	"os/exec"
-	"strings"
 )
 
 type Config struct {
@@ -59,7 +60,7 @@ func main() {
 	}
 
 	if conf.Debug {
-		golog.SetLevel(golog.DEBUG)
+		golog.Default().SetLevel(golog.DEBUG)
 	}
 
 	db, err := conf.DB.Connect(conf.BaseConfig)
