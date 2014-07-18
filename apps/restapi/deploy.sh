@@ -4,6 +4,7 @@ DATE=$(date +%Y%m%d%H%M)
 DEV_HOSTS="54.209.3.156"
 PROD_HOSTS="10.0.43.89 10.0.89.31"
 STAGING_HOSTS="10.1.5.105 10.1.22.127"
+DEMO_HOSTS="54.210.97.69"
 DEPLOY_ENV="$1"
 DEPLOY_BUILD="$2"
 DEPLOY_BRANCH="$3"
@@ -54,6 +55,20 @@ case "$DEPLOY_ENV" in
 			exit 2
 		fi
 	;;
+
+	"demo" )
+		HOSTS=$DEMO_HOSTS
+
+		if [ "$DEPLOY_BUILD" = "" ]; then
+			echo "Missing build number. Cannot deploy to staging from local code."
+			exit 2
+		fi
+		if [ "$DEPLOY_BRANCH" != "master" ]; then
+			echo "Can only deploy the master branch to production."
+			exit 2
+		fi
+	;;
+
 
 	* )
 		echo "ERROR: Usage : ./deploy.sh [staging|dev|prod] [build number] [branch]" >&2

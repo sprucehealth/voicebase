@@ -8,6 +8,7 @@ const (
 	Prod    = "prod"
 	Test    = "test"
 	Staging = "staging"
+	Demo    = "demo"
 )
 
 var current = Test
@@ -16,7 +17,7 @@ var current = Test
 // so as to make it possible for any package to pull in the current state to act on it
 func SetCurrent(env string) {
 	switch env {
-	case Dev, Test, Staging, Prod:
+	case Dev, Test, Staging, Prod, Demo:
 		current = env
 	default:
 		panic("unexpected environment: " + env)
@@ -33,4 +34,8 @@ func IsDev() bool {
 
 func IsProd() bool {
 	return current == Prod
+}
+
+func IsDemo() bool {
+	return current == Demo
 }
