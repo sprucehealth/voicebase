@@ -118,7 +118,7 @@ func serve(conf *Config, hand http.Handler) {
 				log.Fatal(err)
 			}
 		} else if conf.Debug {
-			log.Print("WARNING: using local TLS keys")
+			golog.Warningf("Using local TLS keys")
 			var err error
 			certs, err = tls.X509KeyPair(localTLSCert, localTLSKey)
 			if err != nil {
