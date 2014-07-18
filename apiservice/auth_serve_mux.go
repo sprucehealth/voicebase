@@ -36,11 +36,6 @@ type AuthServeMux struct {
 
 type AuthEvent string
 
-type AuthLog struct {
-	Event AuthEvent
-	Msg   string
-}
-
 type CustomResponseWriter struct {
 	WrappedResponseWriter http.ResponseWriter
 	StatusCode            int
@@ -69,17 +64,6 @@ const (
 	AuthEventInvalidPassword AuthEvent = "InvalidPassword"
 	AuthEventInvalidToken    AuthEvent = "InvalidToken"
 )
-
-type RequestLog struct {
-	RemoteAddr   string
-	RequestID    int64
-	Method       string
-	URL          string
-	StatusCode   int
-	ContentType  string
-	UserAgent    string
-	ResponseTime float64
-}
 
 func NewAuthServeMux(authApi api.AuthAPI, statsRegistry metrics.Registry) *AuthServeMux {
 	mux := &AuthServeMux{
@@ -161,16 +145,16 @@ func (mux *AuthServeMux) ServeHTTP(w http.ResponseWriter, r *http.Request) {
 				remoteAddr = remoteAddr[:idx]
 			}
 
-			golog.Log("webrequest", golog.INFO, &RequestLog{
-				RemoteAddr:   remoteAddr,
-				RequestID:    GetContext(r).RequestID,
-				Method:       r.Method,
-				URL:          r.URL.String(),
-				StatusCode:   customResponseWriter.StatusCode,
-				ContentType:  w.Header().Get("Content-Type"),
-				UserAgent:    r.UserAgent(),
-				ResponseTime: float64(responseTime) / 1000.0,
-			})
+			golog.Default().Context(
+				"RemoteAddr", remoteAddr,
+				"RequestID", GetContext(r).RequestID,
+				"Method", r.Method,
+				"URL", r.URL.String(),
+				"StatusCode", customResponseWriter.StatusCode,
+				"ContentType", w.Header().Get("Content-Type"),
+				"UserAgent", r.UserAgent(),
+				"ResponseTime", float64(responseTime)/1000.0,
+			).Logf(-1, golog.INFO, "apirequest")
 		}
 		DeleteContext(r)
 	}()
