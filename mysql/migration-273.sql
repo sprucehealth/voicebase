@@ -8,7 +8,7 @@ update potential_answer set ordering = 12 where potential_answer_tag = 'a_benzoy
 update potential_answer set ordering = 13 where potential_answer_tag = 'a_clindamycin';
 update potential_answer set ordering = 14 where potential_answer_tag = 'a_differin';
 
-insert into localized_text (language_id, app_text_id, ltext) values (@language_id, (select id from app_text where app_text_tag='txt_doxycycline'), "Doxycycline");
+insert into localized_text (language_id, app_text_id, ltext) values (@language_id, (select id from app_text where app_text_tag='txt_doxycycline'), 'Doxycycline');
 insert into potential_answer (question_id, answer_localized_text_id, atype_id, potential_answer_tag, ordering, status) values (
 	(select id from question where question_tag='q_acne_prev_prescriptions_select'),
 	(select id from app_text where app_text_tag='txt_doxycycline'),
