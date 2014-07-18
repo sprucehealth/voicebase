@@ -1,3 +1,0 @@
-alter table layout_version modify column modified_date timestamp(6) not null default current_timestamp(6) on update current_timestamp(6);
-alter table patient_layout_version modify column modified_date timestamp(6) not null default current_timestamp(6) on update current_timestamp(6);
-alter table dr_layout_version modify column modified_date timestamp(6) not null default current_timestamp(6) on update current_timestamp(6);
