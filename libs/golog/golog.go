@@ -217,25 +217,26 @@ func Logf(calldepth int, lvl Level, format string, args ...interface{}) {
 }
 
 func Fatalf(format string, args ...interface{}) {
-	defaultL.Fatalf(format, args...)
+	defaultL.Logf(2, CRIT, format, args...)
+	os.Exit(255)
 }
 
 func Criticalf(format string, args ...interface{}) {
-	defaultL.Criticalf(format, args...)
+	defaultL.Logf(2, CRIT, format, args...)
 }
 
 func Errorf(format string, args ...interface{}) {
-	defaultL.Errorf(format, args...)
+	defaultL.Logf(2, ERR, format, args...)
 }
 
 func Warningf(format string, args ...interface{}) {
-	defaultL.Warningf(format, args...)
+	defaultL.Logf(2, WARN, format, args...)
 }
 
 func Infof(format string, args ...interface{}) {
-	defaultL.Infof(format, args...)
+	defaultL.Logf(-1, INFO, format, args...)
 }
 
 func Debugf(format string, args ...interface{}) {
-	defaultL.Debugf(format, args...)
+	defaultL.Logf(-1, DEBUG, format, args...)
 }
