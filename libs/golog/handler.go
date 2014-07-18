@@ -3,6 +3,7 @@ package golog
 import (
 	"io"
 	"log/syslog"
+	"sync"
 )
 
 type HandlerFunc func(e *Entry) error
@@ -16,7 +17,7 @@ func SyslogHandler(tag string, fmtr Formatter) (Handler, error) {
 	if err != nil {
 		return nil, err
 	}
-	return &syslogHandler{w: w, f: fmtr}, nil
+	return &syslogHandler{w: w, fmtr: fmtr}, nil
 }
 
 // SplitHandler sends all entries with level above lvl to
@@ -32,20 +33,26 @@ func (h HandlerFunc) Log(e *Entry) error {
 type writerHandler struct {
 	w    io.Writer
 	fmtr Formatter
+	mu   sync.Mutex
 }
 
 func (h *writerHandler) Log(e *Entry) error {
+	h.mu.Lock()
 	_, err := h.w.Write(h.fmtr.Format(e))
+	h.mu.Unlock()
 	return err
 }
 
 type syslogHandler struct {
-	w *syslog.Writer
-	f Formatter
+	w    *syslog.Writer
+	fmtr Formatter
+	mu   sync.Mutex
 }
 
 func (h *syslogHandler) Log(e *Entry) error {
-	msg := string(h.f.Format(e))
+	h.mu.Lock()
+	defer h.mu.Unlock()
+	msg := string(h.fmtr.Format(e))
 	switch e.Lvl {
 	case CRIT:
 		return h.w.Crit(msg)
