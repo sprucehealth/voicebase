@@ -116,11 +116,11 @@ func (h *AuthenticationHandler) ServeHTTP(w http.ResponseWriter, r *http.Request
 		if account, token, err := h.authApi.LogIn(requestData.Login, requestData.Password); err != nil {
 			switch err {
 			case api.LoginDoesNotExist:
-				golog.Default().Context("AuthEvent", apiservice.AuthEventNoSuchLogin).Warningf(err.Error())
+				golog.Context("AuthEvent", apiservice.AuthEventNoSuchLogin).Warningf(err.Error())
 				apiservice.WriteUserError(w, http.StatusForbidden, "Invalid email/password combination")
 				return
 			case api.InvalidPassword:
-				golog.Default().Context("AuthEvent", apiservice.AuthEventInvalidPassword).Warningf(err.Error())
+				golog.Context("AuthEvent", apiservice.AuthEventInvalidPassword).Warningf(err.Error())
 				apiservice.WriteUserError(w, http.StatusForbidden, "Invalid email/password combination")
 				return
 			default:

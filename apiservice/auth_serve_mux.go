@@ -145,7 +145,7 @@ func (mux *AuthServeMux) ServeHTTP(w http.ResponseWriter, r *http.Request) {
 				remoteAddr = remoteAddr[:idx]
 			}
 
-			golog.Default().Context(
+			golog.Context(
 				"RemoteAddr", remoteAddr,
 				"RequestID", GetContext(r).RequestID,
 				"Method", r.Method,

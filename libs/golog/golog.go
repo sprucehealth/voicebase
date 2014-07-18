@@ -195,6 +195,10 @@ func (l *logger) Debugf(format string, args ...interface{}) {
 	l.Logf(-1, DEBUG, format, args...)
 }
 
+func Context(ctx ...interface{}) Logger {
+	return defaultL.Context(ctx...)
+}
+
 func Logf(calldepth int, lvl Level, format string, args ...interface{}) {
 	defaultL.Logf(calldepth, lvl, format, args...)
 }
