@@ -130,7 +130,13 @@ func (mux *AuthServeMux) ServeHTTP(w http.ResponseWriter, r *http.Request) {
 			const size = 64 << 10
 			buf := make([]byte, size)
 			buf = buf[:runtime.Stack(buf, false)]
-			golog.Criticalf("http: panic: %v\n%s", err, buf)
+			golog.Context(
+				"RequestID", GetContext(r).RequestID,
+				"Method", r.Method,
+				"URL", r.URL.String(),
+				"StatusCode", 500,
+				"UserAgent", r.UserAgent(),
+			).Criticalf("http: panic: %v\n%s", err, buf)
 
 			// The header may have already been written in which case
 			// this will fail, but it's likely it hasn't so it's
