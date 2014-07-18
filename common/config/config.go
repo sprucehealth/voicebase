@@ -120,6 +120,7 @@ var validEnvironments = map[string]bool{
 	"staging": true,
 	"dev":     true,
 	"test":    true,
+	"demo":    true,
 }
 
 func (c *BaseConfig) AWSAuth() (auth aws.Auth, err error) {
