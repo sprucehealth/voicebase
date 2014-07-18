@@ -1,1 +1,1 @@
-create unique index unique_ncpdpid on pharmacy_test_data_mapping (ncpdpid);  
+create unique index unique_ncpdpid_key on pharmacy_test_data_mapping (ncpdpid);  

@@ -232,8 +232,15 @@ func (d *DataService) addTreatment(tType treatmentType, treatment *common.Treatm
 	case pharmacyDispensedTreatmentType:
 		columnsAndData["doctor_id"] = treatment.Doctor.DoctorId.Int64()
 		columnsAndData["erx_id"] = treatment.ERx.PrescriptionId.Int64()
-		columnsAndData["erx_sent_date"] = treatment.ERx.ErxSentDate
-		columnsAndData["erx_last_filled_date"] = treatment.ERx.ErxLastDateFilled
+
+		if !treatment.ERx.ErxLastDateFilled.IsZero() {
+			columnsAndData["erx_last_filled_date"] = treatment.ERx.ErxLastDateFilled
+		}
+
+		if !treatment.ERx.ErxSentDate.IsZero() {
+			columnsAndData["erx_sent_date"] = treatment.ERx.ErxSentDate
+		}
+
 		columnsAndData["pharmacy_id"] = treatment.ERx.PharmacyLocalId.Int64()
 		columnsAndData["dispense_unit"] = treatment.DispenseUnitDescription
 		requestedTreatment, ok := params["requested_treatment"].(*common.Treatment)
@@ -245,8 +252,15 @@ func (d *DataService) addTreatment(tType treatmentType, treatment *common.Treatm
 	case refillRequestTreatmentType:
 		columnsAndData["doctor_id"] = treatment.Doctor.DoctorId.Int64()
 		columnsAndData["erx_id"] = treatment.ERx.PrescriptionId.Int64()
-		columnsAndData["erx_sent_date"] = treatment.ERx.ErxSentDate
-		columnsAndData["erx_last_filled_date"] = treatment.ERx.ErxLastDateFilled
+
+		if !treatment.ERx.ErxLastDateFilled.IsZero() {
+			columnsAndData["erx_last_filled_date"] = treatment.ERx.ErxLastDateFilled
+		}
+
+		if !treatment.ERx.ErxSentDate.IsZero() {
+			columnsAndData["erx_sent_date"] = treatment.ERx.ErxSentDate
+		}
+
 		columnsAndData["pharmacy_id"] = treatment.ERx.PharmacyLocalId.Int64()
 		columnsAndData["dispense_unit"] = treatment.DispenseUnitDescription
 		if treatment.OriginatingTreatmentId != 0 {
