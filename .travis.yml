@@ -51,24 +51,29 @@ script:
 - echo $PKGS | xargs go vet
 - echo $PKGS | xargs go test -i -race
 - echo $PKGS | xargs -n 1 go test -v -race
-
-before_deploy:
 - pushd ./apps/restapi ; ./build.sh ; popd
 - mkdir build
 - cp ./apps/restapi/restapi build/restapi-$TRAVIS_BRANCH-$TRAVIS_BUILD_NUMBER
 - bzip2 build/restapi-$TRAVIS_BRANCH-$TRAVIS_BUILD_NUMBER
 - echo $TRAVIS_COMMIT > build/restapi-$TRAVIS_BRANCH-$TRAVIS_BUILD_NUMBER.revision
-deploy:
-  provider: s3
-  access_key_id: AKIAI4Z55FSWUQ5IJQ3A
-  secret_access_key:
-    secure: V5Jiztdt7wOBIncSfQnhtflZx4CKk4luj5JC3CxGjsC9LYubpNbkgqFkUjKHYqBOWoycgiWy9WaN2MGlk6jlDoQDIbVTvQ9F2p3QN+tIvIRYElQTltisSxUpfsbuPk4GmHvQAmc4RrJx1Vfbs/GQBrt0K48m2A1fJ9JJrNink5Y=
-  bucket: spruce-deploy
-  local-dir: "build"
-  upload-dir: restapi
-  skip_cleanup: true
-  on:
-    all_branches: true
+
+# before_deploy:
+# - pushd ./apps/restapi ; ./build.sh ; popd
+# - mkdir build
+# - cp ./apps/restapi/restapi build/restapi-$TRAVIS_BRANCH-$TRAVIS_BUILD_NUMBER
+# - bzip2 build/restapi-$TRAVIS_BRANCH-$TRAVIS_BUILD_NUMBER
+# - echo $TRAVIS_COMMIT > build/restapi-$TRAVIS_BRANCH-$TRAVIS_BUILD_NUMBER.revision
+# deploy:
+#   provider: s3
+#   access_key_id: AKIAI4Z55FSWUQ5IJQ3A
+#   secret_access_key:
+#     secure: V5Jiztdt7wOBIncSfQnhtflZx4CKk4luj5JC3CxGjsC9LYubpNbkgqFkUjKHYqBOWoycgiWy9WaN2MGlk6jlDoQDIbVTvQ9F2p3QN+tIvIRYElQTltisSxUpfsbuPk4GmHvQAmc4RrJx1Vfbs/GQBrt0K48m2A1fJ9JJrNink5Y=
+#   bucket: spruce-deploy
+#   local-dir: "build"
+#   upload-dir: restapi
+#   skip_cleanup: true
+#   on:
+#     all_branches: true
 notifications:
   email:
   - backend@carefront.net
