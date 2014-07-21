@@ -92,9 +92,9 @@ func main() {
 	}
 
 	if conf.Debug {
-		golog.SetLevel(golog.DEBUG)
+		golog.Default().SetLevel(golog.DEBUG)
 	} else if conf.Environment == "dev" {
-		golog.SetLevel(golog.INFO)
+		golog.Default().SetLevel(golog.INFO)
 	}
 
 	conf.Validate()

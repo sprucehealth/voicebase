@@ -11,7 +11,6 @@ import (
 	"github.com/sprucehealth/backend/common"
 	"github.com/sprucehealth/backend/libs/golog"
 	"github.com/sprucehealth/backend/libs/idgen"
-
 	"github.com/sprucehealth/backend/third_party/github.com/samuel/go-metrics/metrics"
 )
 
@@ -35,11 +34,6 @@ type AuthServeMux struct {
 }
 
 type AuthEvent string
-
-type AuthLog struct {
-	Event AuthEvent
-	Msg   string
-}
 
 type CustomResponseWriter struct {
 	WrappedResponseWriter http.ResponseWriter
@@ -69,17 +63,6 @@ const (
 	AuthEventInvalidPassword AuthEvent = "InvalidPassword"
 	AuthEventInvalidToken    AuthEvent = "InvalidToken"
 )
-
-type RequestLog struct {
-	RemoteAddr   string
-	RequestID    int64
-	Method       string
-	URL          string
-	StatusCode   int
-	ContentType  string
-	UserAgent    string
-	ResponseTime float64
-}
 
 func NewAuthServeMux(authApi api.AuthAPI, statsRegistry metrics.Registry) *AuthServeMux {
 	mux := &AuthServeMux{
@@ -146,7 +129,13 @@ func (mux *AuthServeMux) ServeHTTP(w http.ResponseWriter, r *http.Request) {
 			const size = 64 << 10
 			buf := make([]byte, size)
 			buf = buf[:runtime.Stack(buf, false)]
-			golog.Criticalf("http: panic: %v\n%s", err, buf)
+			golog.Context(
+				"RequestID", GetContext(r).RequestID,
+				"Method", r.Method,
+				"URL", r.URL.String(),
+				"StatusCode", 500,
+				"UserAgent", r.UserAgent(),
+			).Criticalf("http: panic: %v\n%s", err, buf)
 
 			// The header may have already been written in which case
 			// this will fail, but it's likely it hasn't so it's
@@ -161,16 +150,16 @@ func (mux *AuthServeMux) ServeHTTP(w http.ResponseWriter, r *http.Request) {
 				remoteAddr = remoteAddr[:idx]
 			}
 
-			golog.Log("webrequest", golog.INFO, &RequestLog{
-				RemoteAddr:   remoteAddr,
-				RequestID:    GetContext(r).RequestID,
-				Method:       r.Method,
-				URL:          r.URL.String(),
-				StatusCode:   customResponseWriter.StatusCode,
-				ContentType:  w.Header().Get("Content-Type"),
-				UserAgent:    r.UserAgent(),
-				ResponseTime: float64(responseTime) / 1000.0,
-			})
+			golog.Context(
+				"RemoteAddr", remoteAddr,
+				"RequestID", GetContext(r).RequestID,
+				"Method", r.Method,
+				"URL", r.URL.String(),
+				"StatusCode", customResponseWriter.StatusCode,
+				"ContentType", w.Header().Get("Content-Type"),
+				"UserAgent", r.UserAgent(),
+				"ResponseTime", float64(responseTime)/1000.0,
+			).Logf(-1, golog.INFO, "apirequest")
 		}
 		DeleteContext(r)
 	}()

@@ -1,7 +1,6 @@
 package golog
 
 import (
-	"encoding/json"
 	"fmt"
 	"io"
 	"os"
@@ -9,17 +8,45 @@ import (
 	"strconv"
 	"sync"
 	"sync/atomic"
-)
+	"time"
 
-// Output is the interface that is used to represent the output device of a logger (e.g. syslog, stdout/err, ...)
-type Output interface {
-	Log(logType string, l Level, msg []byte) error
-}
+	"github.com/sprucehealth/backend/libs/golog/term"
+)
 
 // Level represents a log level (CRIT, ERR, ...)
 type Level int32
 
-const defaultLogType = "log"
+type Logger interface {
+	Context(ctx ...interface{}) Logger
+
+	SetLevel(l Level) Level
+	Level() Level
+	// L returns true if the current level is greater than or equal to 'l'
+	L(l Level) bool
+
+	SetHandler(h Handler)
+	Handler() Handler
+
+	Logf(calldepth int, l Level, format string, args ...interface{})
+	Fatalf(format string, args ...interface{})
+	Criticalf(format string, args ...interface{})
+	Errorf(format string, args ...interface{})
+	Warningf(format string, args ...interface{})
+	Infof(format string, args ...interface{})
+	Debugf(format string, args ...interface{})
+}
+
+type Handler interface {
+	Log(e *Entry) error
+}
+
+type Entry struct {
+	Time time.Time
+	Lvl  Level
+	Msg  string
+	Ctx  []interface{}
+	Src  string
+}
 
 // Log levels
 const (
@@ -43,25 +70,17 @@ func (l Level) String() string {
 	if s := Levels[l]; s != "" {
 		return s
 	}
-	return strconv.FormatInt(int64(l), 10)
+	return strconv.Itoa(int(l))
 }
 
-type loggingT struct {
-	mu      sync.RWMutex
-	level   Level
-	output  Output
-	enabled map[string]bool // Enabled log types outside (only applies when current level is lower than the event's level)
+type logger struct {
+	mu  sync.Mutex
+	ctx []interface{}
+	hnd Handler
+	lvl Level
 }
 
-var logging = loggingT{
-	output: DefaultOutput,
-	level:  INFO,
-}
-
-type Message struct {
-	Message    string `json:"@message"`
-	SourceFile string `json:"source_file,omitempty"`
-}
+var defaultL *logger
 
 type writer struct{}
 
@@ -69,129 +88,155 @@ var Writer io.Writer = writer{}
 
 func (w writer) Write(b []byte) (int, error) {
 	m := string(b)
-	Infof(m)
+	defaultL.Infof(m)
 	return len(m), nil
 }
 
-func SetLevel(l Level) Level {
-	return Level(atomic.SwapInt32((*int32)(&logging.level), int32(l)))
-}
+func init() {
+	fmtLow := LogfmtFormatter()
+	fmtHigh := LogfmtFormatter()
 
-func GetLevel() Level {
-	return Level(atomic.LoadInt32((*int32)(&logging.level)))
-}
-
-func SetEnabled(logType string, enabled bool) {
-	if logType == defaultLogType {
-		return
+	if term.IsTTY(os.Stdout.Fd()) {
+		fmtLow = TerminalFormatter()
 	}
-	logging.mu.Lock()
-	logging.enabled[logType] = enabled
-	logging.mu.Unlock()
-}
-
-func GetEnabled(logType string) bool {
-	if logType == defaultLogType {
-		return false
+	if term.IsTTY(os.Stderr.Fd()) {
+		fmtHigh = TerminalFormatter()
 	}
-	logging.mu.RLock()
-	enabled := logging.enabled[logType]
-	logging.mu.RUnlock()
-	return enabled
-}
 
-func SetOutput(o Output) {
-	logging.mu.Lock()
-	logging.output = o
-	logging.mu.Unlock()
-}
-
-// L returns true if the current level is greater than or equal to 'l' or the logType is explicitly enable
-func L(logType string, l Level) bool {
-	return GetLevel() >= l || GetEnabled(logType)
-}
-
-func log(logType string, l Level, v interface{}) error {
-	if s, ok := v.(string); ok {
-		v = &Message{Message: s}
+	DefaultHandler = SplitHandler(WARN, WriterHandler(os.Stdout, fmtLow), WriterHandler(os.Stderr, fmtHigh))
+	defaultL = &logger{
+		ctx: nil,
+		hnd: DefaultHandler,
+		lvl: INFO,
 	}
-	msg, err := json.Marshal(v)
-	if err != nil {
-		msg, err = json.Marshal(&Message{Message: fmt.Sprintf("%+v", v)})
-		if err != nil {
-			return err
+}
+
+var DefaultHandler Handler
+
+func Default() Logger {
+	return defaultL
+}
+
+func (l *logger) SetLevel(lvl Level) Level {
+	return Level(atomic.SwapInt32((*int32)(&l.lvl), int32(lvl)))
+}
+
+func (l *logger) Level() Level {
+	return Level(atomic.LoadInt32((*int32)(&l.lvl)))
+}
+
+func (l *logger) SetHandler(h Handler) {
+	l.mu.Lock()
+	l.hnd = h
+	l.mu.Unlock()
+}
+
+func (l *logger) Handler() Handler {
+	l.mu.Lock()
+	h := l.hnd
+	l.mu.Unlock()
+	return h
+}
+
+func (l *logger) L(lvl Level) bool {
+	return l.Level() >= lvl
+}
+
+func (l *logger) Context(ctx ...interface{}) Logger {
+	if len(l.ctx) != 0 {
+		ctx = append(l.ctx, ctx...)
+	}
+	return &logger{
+		ctx: ctx,
+		hnd: l.Handler(),
+		lvl: l.Level(),
+	}
+}
+
+func (l *logger) Logf(calldepth int, lvl Level, format string, args ...interface{}) {
+	if l.L(lvl) {
+		entry := &Entry{
+			Time: time.Now(),
+			Lvl:  lvl,
+			Msg:  fmt.Sprintf(format, args...),
+			Ctx:  l.ctx,
 		}
-	}
-	logging.mu.Lock()
-	err = logging.output.Log(logType, l, msg)
-	logging.mu.Unlock()
-	return err
-}
-
-func Log(logType string, l Level, v interface{}) error {
-	if L(logType, l) {
-		return log(logType, l, v)
-	}
-	return nil
-}
-
-func Logf(calldepth int, l Level, format string, args ...interface{}) {
-	logType := defaultLogType
-	if L(logType, l) {
-		var file string
-		var line int
 		if calldepth > 0 {
-			var ok bool
-			_, file, line, ok = runtime.Caller(calldepth)
-			if !ok {
-				file = ""
-				line = 0
-			}
-		}
-
-		var fileLine string
-		m := fmt.Sprintf(format, args...)
-		if file != "" {
-			short := file
-			depth := 0
-			for i := len(file) - 1; i > 0; i-- {
-				if file[i] == '/' {
-					short = file[i+1:]
-					depth++
-					if depth == 2 {
-						break
+			_, file, line, ok := runtime.Caller(calldepth)
+			if ok {
+				short := file
+				depth := 0
+				for i := len(file) - 1; i > 0; i-- {
+					if file[i] == '/' {
+						short = file[i+1:]
+						depth++
+						if depth == 2 {
+							break
+						}
 					}
 				}
+				file = short
+				entry.Src = fmt.Sprintf("%s:%d", file, line)
 			}
-			file = short
-
-			fileLine = fmt.Sprintf("%s:%d", file, line)
 		}
-		log(logType, l, &Message{Message: m, SourceFile: fileLine})
+		l.Handler().Log(entry)
 	}
+}
+
+func (l *logger) Fatalf(format string, args ...interface{}) {
+	l.Logf(2, CRIT, format, args...)
+	os.Exit(255)
+}
+
+func (l *logger) Criticalf(format string, args ...interface{}) {
+	l.Logf(2, CRIT, format, args...)
+}
+
+func (l *logger) Errorf(format string, args ...interface{}) {
+	l.Logf(2, ERR, format, args...)
+}
+
+func (l *logger) Warningf(format string, args ...interface{}) {
+	l.Logf(2, WARN, format, args...)
+}
+
+func (l *logger) Infof(format string, args ...interface{}) {
+	l.Logf(-1, INFO, format, args...)
+}
+
+func (l *logger) Debugf(format string, args ...interface{}) {
+	l.Logf(-1, DEBUG, format, args...)
+}
+
+func Context(ctx ...interface{}) Logger {
+	return defaultL.Context(ctx...)
+}
+
+func Logf(calldepth int, lvl Level, format string, args ...interface{}) {
+	defaultL.Logf(calldepth, lvl, format, args...)
 }
 
 func Fatalf(format string, args ...interface{}) {
-	Logf(2, CRIT, format, args...)
+	defaultL.Logf(2, CRIT, format, args...)
 	os.Exit(255)
 }
 
 func Criticalf(format string, args ...interface{}) {
-	Logf(2, CRIT, fmt.Sprintf(format, args...))
+	defaultL.Logf(2, CRIT, format, args...)
 }
 
 func Errorf(format string, args ...interface{}) {
-	Logf(2, ERR, fmt.Sprintf(format, args...))
+	defaultL.Logf(2, ERR, format, args...)
 }
 
 func Warningf(format string, args ...interface{}) {
-	Logf(2, WARN, fmt.Sprintf(format, args...))
+	defaultL.Logf(2, WARN, format, args...)
 }
 
 func Infof(format string, args ...interface{}) {
-	Logf(-1, INFO, fmt.Sprintf(format, args...))
+	defaultL.Logf(-1, INFO, format, args...)
 }
 
 func Debugf(format string, args ...interface{}) {
-	Logf(-1, DEBUG, fmt.Sprintf(format, args...))
+	defaultL.Logf(-1, DEBUG, format, args...)
 }

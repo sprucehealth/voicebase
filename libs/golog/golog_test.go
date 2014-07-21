@@ -2,42 +2,51 @@ package golog
 
 import (
 	"testing"
+	"time"
 )
 
-type Entry struct {
-	LogType string
-	Level   Level
-	Msg     []byte
-}
-
-type TestOutput struct {
+type TestHandler struct {
 	Entries []*Entry
 }
 
-func (o *TestOutput) Log(logType string, l Level, msg []byte) error {
-	o.Entries = append(o.Entries, &Entry{
-		LogType: logType,
-		Level:   l,
-		Msg:     msg,
-	})
+func (o *TestHandler) Log(e *Entry) error {
+	o.Entries = append(o.Entries, e)
 	return nil
 }
 
-func TestFileLine(t *testing.T) {
-	out := &TestOutput{}
-	SetOutput(out)
+func TestBasic(t *testing.T) {
+	out := &TestHandler{}
 
-	Errorf("FOO")
+	l := Default()
+	l.SetHandler(out)
+	l.Context("id", 123).Errorf("FOO")
 
 	if len(out.Entries) != 1 {
 		t.Fatalf("Expected 1 entry instead of %d", len(out.Entries))
 	}
 	ent := out.Entries[0]
-	if ent.Level != ERR {
-		t.Fatalf("Expected level ERR instead of %s", ent.Level)
+	if ent.Lvl != ERR {
+		t.Fatalf("Expected level ERR instead of %s", ent.Lvl)
 	}
-	// TODO: make this more robust as it will fail if the line number changes
-	if string(ent.Msg) != `{"@message":"FOO","source_file":"golog/golog_test.go:30"}` {
-		t.Fatalf("Invalid message: %s", ent.Msg)
+	if want := "FOO"; ent.Msg != want {
+		t.Fatalf("Got '%s'. Expected '%s'", ent.Msg, want)
+	}
+	if len(ent.Ctx) != 2 {
+		t.Fatalf("Got context of %d. Expeceted %d", len(ent.Ctx), 2)
+	}
+}
+
+func TestLogfmtFormatter(t *testing.T) {
+	e := &Entry{
+		Time: time.Time{},
+		Msg:  "msg",
+		Lvl:  INFO,
+		Ctx:  []interface{}{"num", 123, "str", `needs quotes`, "str2", "noquotes"},
+		Src:  "golog_test.go:123",
+	}
+	fmtr := LogfmtFormatter()
+	b := fmtr.Format(e)
+	if s, want := string(b), `t=0001-01-01T00:00:00+0000 lvl=INFO msg=msg src=golog_test.go:123 num=123 str="needs quotes" str2=noquotes`+"\n"; want != s {
+		t.Fatalf("Got '%s'. Expected '%s'", s, want)
 	}
 }

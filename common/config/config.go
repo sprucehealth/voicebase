@@ -4,7 +4,6 @@
 package config
 
 import (
-	"encoding/json"
 	"expvar"
 	"fmt"
 	"io"
@@ -319,52 +318,28 @@ func ParseArgs(config interface{}, args []string) ([]string, error) {
 func (c *BaseConfig) SetupLogging() {
 	log.SetFlags(log.Lshortfile)
 	if c.Syslog {
-		if out, err := golog.NewSyslogOutput(c.AppName); err != nil {
+		if h, err := golog.SyslogHandler(c.AppName, golog.LogfmtFormatter()); err != nil {
 			log.Fatal(err)
 		} else {
 			if c.AlertEmail != "" {
-				golog.SetOutput(panicFilter(c, out))
+				golog.Default().SetHandler(panicLogHandler(c, h))
 			} else {
-				golog.SetOutput(out)
+				golog.Default().SetHandler(h)
 			}
 		}
 	} else {
 		if c.AlertEmail != "" {
-			golog.SetOutput(panicFilter(c, golog.DefaultOutput))
+			golog.Default().SetHandler(panicLogHandler(c, golog.DefaultHandler))
 		}
 	}
 	log.SetOutput(golog.Writer)
 }
 
-func panicFilter(conf *BaseConfig, out golog.Output) golog.Output {
-	return golog.OutputFunc(func(logType string, l golog.Level, msg []byte) error {
-		if l == golog.CRIT {
+func panicLogHandler(conf *BaseConfig, next golog.Handler) golog.Handler {
+	return golog.HandlerFunc(func(e *golog.Entry) error {
+		if e.Lvl == golog.CRIT {
 			go func() {
-				var body string
-				// Reindent JSON
-				var m map[string]interface{}
-				err := json.Unmarshal(msg, &m)
-				if err == nil {
-					var parts []string
-					for k, v := range m {
-						s, ok := v.(string)
-						if !ok {
-							b, err := json.MarshalIndent(v, "", "    ")
-							if err == nil {
-								parts = append(parts, fmt.Sprintf("%s: %s", k, string(b)))
-							}
-						} else {
-							if k == "@message" {
-								parts = append(parts, s)
-							} else {
-								parts = append(parts, fmt.Sprintf("%s: %s", k, s))
-							}
-						}
-					}
-					body = strings.Join(parts, "\n\n")
-				} else {
-					body = string(msg)
-				}
+				body := fmt.Sprintf("%s\n%s\n", e.Msg, golog.FormatContext(e.Ctx, '\n'))
 				dispatch.Default.Publish(&PanicEvent{
 					AppName:     conf.AppName,
 					Environment: conf.Environment,
@@ -372,6 +347,6 @@ func panicFilter(conf *BaseConfig, out golog.Output) golog.Output {
 				})
 			}()
 		}
-		return out.Log(logType, l, msg)
+		return next.Log(e)
 	})
 }

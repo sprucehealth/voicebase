@@ -63,10 +63,7 @@ func GetAuthTokenFromHeader(r *http.Request) (string, error) {
 func HandleAuthError(err error, w http.ResponseWriter) {
 	switch err {
 	case ErrBadAuthHeader, ErrNoAuthHeader, api.TokenExpired, api.TokenDoesNotExist:
-		golog.Log("auth", golog.WARN, &AuthLog{
-			Event: AuthEventInvalidToken,
-			Msg:   err.Error(),
-		})
+		golog.Context("AuthEvent", AuthEventInvalidToken).Infof(err.Error())
 		WriteAuthTimeoutError(w)
 	default:
 		w.WriteHeader(http.StatusInternalServerError)
