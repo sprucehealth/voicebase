@@ -989,7 +989,7 @@ var favoriteTreatmentPlans = map[string]*common.FavoriteTreatmentPlan{
 					},
 				},
 				&common.RegimenSection{
-					RegimenName: "Night",
+					RegimenName: "Nighttime",
 					RegimenSteps: []*common.DoctorInstructionItem{
 						&common.DoctorInstructionItem{
 							Text: "Take doxycycline 100mg with dinner.",
