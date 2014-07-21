@@ -32,13 +32,15 @@ install:
 env:
   matrix:
   - TEST_DB=database_${TRAVIS_BUILD_ID}_${RANDOM}
+  - DEPLOY_ACCESS_KEY=AKIAI4Z55FSWUQ5IJQ3A
   global:
   - secure: dupkSyhVUakdRg1vEMjOZ3R5sieB1jTuFN08Q5ImXVpv6+GABxxsiN3OrMhflc70Glb8xZ29BTW3dxOCK9I7AE96p6kNp55++6V+Yz6YIXvJBnAAtNYsaBDOTCM47UYbRHFtzVsvBbnOYcAtopfZ4MoOTdZyKeVXiTSQGrLhM/k=
   - secure: sij+lLl0BS254nnDXy9QjWK7dvmRP1xHD+iZ7Oy+vMqDP/0NAS4uANX7MwT2BjVlVmZ+esMlbWwaBa7QLSMZRSJdcSxmV4wFseZjODzQ2CUOmGfQxAO5ninUHlfG5qyyw5mONrWR+UuiWhB302DrMk3UuNxzOr0ULybaLFCpAhs=
   - secure: Sown1iottx8PNGM8qEXH/txfPXYZr+wp+fcXueCoZns/5zmoUTGILOj04IBcuz0MDGPWpb8CddpIIbh7SjCTWLhY9kL3RJCxdi7vat9t2aat2mmpodIT8CjEAoWEW555aXUtWcUoIPsi0MNbRCL7mJnSwpFtx9oCIe4qv5fQksM=
   - secure: gzt5DC2qHXU3gsMDOnGeiQfIV6Ao+gQKQ5v2fhDYYfdKNgEFYXRL7jGqpa5+Qg/cadz9Q5R39KB5ywXrpVJTri95IZJxIsU2Q6/D84IhOIl8Jm8FQFG042yLjT1eP/xlVZyixsI7RbG95xss4I1TLy/dlUOxA1uYcI1y3YGsAwM=
   - secure: Xu2RGDZcWL3YGUto8OI2FLaFq9iVT9yMAwuge3wDrhXeNVRj0+ZNDO1dqrfjIPp7z4072INzwZKXKvTLS2CrIDmkRo1i6S62fYCoUm33tcKEoBHNFrmy5yDuJgX8yNOlBEnVoDKbE4tmPdCGkOAsW/Dj0KTZik1me7dLcTMtEUA=
-
+  # DEPLOY_SECRET_KEY
+  - secure: "dK/Av/K0zKn4PEpQ9+kV6JkQmgh3h+dYZvm6F9d7/tvjKoZZYkFuPDjgFbN7GETby+XI1flY9+ZMnd54JjxRXDal/yp8lB1qdmuQv0qYyhmkC0++hptBdzeCSxzLyEFjWT9EhRfexrhyIrzmuW6Idt3nJiCg3Xs/KzDhHem9hYA="
 script:
 - export CAREFRONT_PROJECT_DIR=$GOPATH
 # Find all directories that contain Go files (all packages). This lets us
@@ -50,24 +52,33 @@ script:
 - echo $PKGS | xargs go vet
 - echo $PKGS | xargs go test -i -race
 - echo $PKGS | xargs -n 1 go test -v -race
-
-before_deploy:
+# Deploy
+- sudo pip install --upgrade https://github.com/s3tools/s3cmd/archive/v1.5.0-rc1.tar.gz
 - pushd ./apps/restapi ; ./build.sh ; popd
 - mkdir build
 - cp ./apps/restapi/restapi build/restapi-$TRAVIS_BRANCH-$TRAVIS_BUILD_NUMBER
 - bzip2 build/restapi-$TRAVIS_BRANCH-$TRAVIS_BUILD_NUMBER
 - echo $TRAVIS_COMMIT > build/restapi-$TRAVIS_BRANCH-$TRAVIS_BUILD_NUMBER.revision
-deploy:
-  provider: s3
-  access_key_id: AKIAI4Z55FSWUQ5IJQ3A
-  secret_access_key:
-    secure: V5Jiztdt7wOBIncSfQnhtflZx4CKk4luj5JC3CxGjsC9LYubpNbkgqFkUjKHYqBOWoycgiWy9WaN2MGlk6jlDoQDIbVTvQ9F2p3QN+tIvIRYElQTltisSxUpfsbuPk4GmHvQAmc4RrJx1Vfbs/GQBrt0K48m2A1fJ9JJrNink5Y=
-  bucket: spruce-deploy
-  local-dir: "build"
-  upload-dir: restapi
-  skip_cleanup: true
-  on:
-    all_branches: true
+- s3cmd --access_key $DEPLOY_ACCESS_KEY --secret_key $DEPLOY_SECRET_KEY -M --server-side-encryption put build/* s3://spruce-deploy/restapi/
+
+# before_deploy:
+# - pushd ./apps/restapi ; ./build.sh ; popd
+# - mkdir build
+# - cp ./apps/restapi/restapi build/restapi-$TRAVIS_BRANCH-$TRAVIS_BUILD_NUMBER
+# - bzip2 build/restapi-$TRAVIS_BRANCH-$TRAVIS_BUILD_NUMBER
+# - echo $TRAVIS_COMMIT > build/restapi-$TRAVIS_BRANCH-$TRAVIS_BUILD_NUMBER.revision
+# deploy:
+#   provider: s3
+#   access_key_id: AKIAI4Z55FSWUQ5IJQ3A
+#   secret_access_key:
+#     secure: V5Jiztdt7wOBIncSfQnhtflZx4CKk4luj5JC3CxGjsC9LYubpNbkgqFkUjKHYqBOWoycgiWy9WaN2MGlk6jlDoQDIbVTvQ9F2p3QN+tIvIRYElQTltisSxUpfsbuPk4GmHvQAmc4RrJx1Vfbs/GQBrt0K48m2A1fJ9JJrNink5Y=
+#   bucket: spruce-deploy
+#   local-dir: "build"
+#   upload-dir: restapi
+#   skip_cleanup: true
+#   on:
+#     all_branches: true
+
 notifications:
   email:
   - backend@carefront.net
