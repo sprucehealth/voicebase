@@ -53,6 +53,7 @@ script:
 - echo $PKGS | xargs go test -i -race
 - echo $PKGS | xargs -n 1 go test -v -race
 # Deploy
+- sudo apt-get install python-dateutil
 - sudo pip install --upgrade https://github.com/s3tools/s3cmd/archive/v1.5.0-rc1.tar.gz
 - pushd ./apps/restapi ; ./build.sh ; popd
 - mkdir build
