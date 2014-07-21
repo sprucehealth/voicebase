@@ -81,7 +81,7 @@ var (
 )
 
 func CredentialsForRole(role string) (*Credentials, error) {
-	if role == "" {
+	if role == "" || role == "*" {
 		defaultRoleOnce.Do(func() {
 			rl, err := GetMetadata("iam/security-credentials/")
 			if err != nil {

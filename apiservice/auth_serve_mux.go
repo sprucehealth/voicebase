@@ -150,6 +150,10 @@ func (mux *AuthServeMux) ServeHTTP(w http.ResponseWriter, r *http.Request) {
 				remoteAddr = remoteAddr[:idx]
 			}
 
+			statusCode := customResponseWriter.StatusCode
+			if statusCode == 0 {
+				statusCode = 200
+			}
 			golog.Context(
 				"RemoteAddr", remoteAddr,
 				"RequestID", GetContext(r).RequestID,
