@@ -4,6 +4,12 @@ package main
 TODO:
   - Can set the check status (warn, fail) based on status of AWS api and ElasticSearch so
     that if either fail then this process fails the check and drops leadership.
+  - Metrics
+    - messages indexed
+    - track calls against AWS api
+    - success rate for consul
+    - success rate for elasticsearch
+    - success rate for aws api
 */
 
 import (
@@ -149,7 +155,7 @@ func indexStream(groupName string, stream *cloudwatchlogs.LogStream, es *Elastic
 
 	kv, _, err := consul.KV().Get(key, nil)
 	if err != nil {
-		log.Errorf("Get failed: %s", key, err.Error())
+		log.Errorf("Get failed: %s", err.Error())
 		return false
 	}
 
