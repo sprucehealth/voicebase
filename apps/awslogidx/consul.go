@@ -241,7 +241,6 @@ func (cl *ConsulLock) start() {
 				}
 
 				var lastIndex uint64
-			leaderCheck:
 				for {
 					kv, meta, err := cl.cl.cli.KV().Get(cl.key, &consulapi.QueryOptions{
 						WaitIndex: lastIndex,
@@ -261,12 +260,11 @@ func (cl *ConsulLock) start() {
 					}
 
 					lastIndex = meta.LastIndex
-					switch kv.Session {
-					case "":
+					if kv == nil || kv.Session == "" {
 						cl.log.Infof("No leader. Attempting to take power after %s", time.Duration(consulLockDelay).String())
 						cl.setLocked(false)
-						break leaderCheck
-					case cl.cl.sessionID:
+						break
+					} else if kv.Session == cl.cl.sessionID {
 						if !cl.Locked() {
 							// This should only happen if there was previously an error
 							// talking to consul.
