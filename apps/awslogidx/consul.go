@@ -231,6 +231,9 @@ func (cl *ConsulLock) start() {
 				Value:   cl.value,
 				Session: cl.cl.sessionID,
 			}, nil); err != nil {
+				if strings.Contains(err.Error(), "Invalid session") {
+					cl.log.Fatalf("Invalid session: %s", err.Error())
+				}
 				cl.log.Errorf("Error acquiring lock: %s", err.Error())
 			} else {
 				cl.setLocked(leader)
