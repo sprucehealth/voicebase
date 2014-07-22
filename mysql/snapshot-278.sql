@@ -1,6 +1,6 @@
 -- MySQL dump 10.13  Distrib 5.6.17, for osx10.9 (x86_64)
 --
--- Host: 127.0.0.1    Database: database_6686
+-- Host: 127.0.0.1    Database: database_26569
 -- ------------------------------------------------------
 -- Server version	5.6.17
 
@@ -1278,7 +1278,7 @@ DROP TABLE IF EXISTS `patient_alerts`;
 CREATE TABLE `patient_alerts` (
   `id` int(10) unsigned NOT NULL AUTO_INCREMENT,
   `patient_id` int(10) unsigned NOT NULL,
-  `alert` text NOT NULL,
+  `alert` varchar(1024) NOT NULL,
   `source` varchar(100) NOT NULL,
   `source_id` int(10) unsigned NOT NULL,
   `creation_date` timestamp(6) NOT NULL DEFAULT CURRENT_TIMESTAMP(6),
@@ -2617,4 +2617,4 @@ CREATE TABLE `unlinked_dntf_treatment_status_events` (
 /*!40101 SET COLLATION_CONNECTION=@OLD_COLLATION_CONNECTION */;
 /*!40111 SET SQL_NOTES=@OLD_SQL_NOTES */;
 
--- Dump completed on 2014-07-22  7:50:58
+-- Dump completed on 2014-07-22  9:52:47

@@ -45,11 +45,11 @@ func InitListeners(dataAPI api.DataAPI) {
 
 				// check if the alert flag is set on the question
 				question := questionIdToQuestion[questionId]
-
 				if question.ToAlert {
 
-					switch question.QuestionType {
+					var alertMsg string
 
+					switch question.QuestionType {
 					case info_intake.QUESTION_TYPE_AUTOCOMPLETE:
 
 						// populate the answers to call out in the alert
@@ -65,16 +65,9 @@ func InitListeners(dataAPI api.DataAPI) {
 							}
 						}
 
-						alerts = append(alerts, &common.Alert{
-							PatientId: ev.PatientId,
-							Source:    common.AlertSourcePatientVisitIntake,
-							SourceId:  questionId,
-							Message: strings.Replace(question.AlertFormattedText,
-								textReplacementIdentifier, strings.Join(enteredAnswers, ", "), -1),
-						})
+						alertMsg = strings.Replace(question.AlertFormattedText, textReplacementIdentifier, strings.Join(enteredAnswers, ", "), -1)
 
 					case info_intake.QUESTION_TYPE_MULTIPLE_CHOICE, info_intake.QUESTION_TYPE_SINGLE_SELECT:
-
 						selectedAnswers := make([]string, 0, len(question.PotentialAnswers))
 
 						// go through all the potential answers of the question to identify the
@@ -95,14 +88,20 @@ func InitListeners(dataAPI api.DataAPI) {
 
 						// its possible that the patient selected an answer that need not be alerted on
 						if len(selectedAnswers) > 0 {
-							alerts = append(alerts, &common.Alert{
-								PatientId: ev.PatientId,
-								Source:    common.AlertSourcePatientVisitIntake,
-								SourceId:  questionId,
-								Message: strings.Replace(question.AlertFormattedText,
-									textReplacementIdentifier, strings.Join(selectedAnswers, ", "), -1),
-							})
+							alertMsg = strings.Replace(question.AlertFormattedText, textReplacementIdentifier, strings.Join(selectedAnswers, ", "), -1)
 						}
+					}
+
+					// TODO: Currently treating the questionId as the source for the intake,
+					// but this may not scale depending on whether we get the patient to answer the same question again
+					// as part of another visit.
+					if alertMsg != "" {
+						alerts = append(alerts, &common.Alert{
+							PatientId: ev.PatientId,
+							Source:    common.AlertSourcePatientVisitIntake,
+							SourceId:  questionId,
+							Message:   alertMsg,
+						})
 					}
 				}
 			}
