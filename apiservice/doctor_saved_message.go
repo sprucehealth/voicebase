@@ -2,6 +2,8 @@ package apiservice
 
 import (
 	"github.com/sprucehealth/backend/api"
+	"github.com/sprucehealth/backend/libs/golog"
+	"github.com/sprucehealth/backend/third_party/github.com/SpruceHealth/schema"
 	"net/http"
 	"strconv"
 )
@@ -10,13 +12,18 @@ type doctorSavedMessageHandler struct {
 	dataAPI api.DataAPI
 }
 
-type doctorSavedMessagePutRequest struct {
+type DoctorSavedMessagePutRequest struct {
 	DoctorID int64  `json:"doctor_id"` // for admin use
+	TreatmentPlanID int64 `json:"treatment_plan_id"`
 	Message  string `json:"message"`
 }
 
 type doctorSavedMessageGetResponse struct {
 	Message string `json:"message"`
+}
+
+type doctorSavedMessageRequestData struct {
+	TreatmentPlanID string `schema:"treatment_plan_id, required"`
 }
 
 func NewDoctorSavedMessageHandler(dataAPI api.DataAPI) http.Handler {
@@ -32,6 +39,7 @@ func (h *doctorSavedMessageHandler) ServeHTTP(w http.ResponseWriter, r *http.Req
 	case api.DOCTOR_ROLE:
 		var err error
 		doctorID, err = h.dataAPI.GetDoctorIdFromAccountId(ctx.AccountId)
+		golog.Infof("The doctor id is %d", doctorID)
 		if err != nil {
 			WriteError(err, w, r)
 			return
@@ -63,7 +71,25 @@ func (h *doctorSavedMessageHandler) get(w http.ResponseWriter, r *http.Request, 
 			return
 		}
 	}
-	msg, err := h.dataAPI.GetSavedMessageForDoctor(doctorID)
+	
+	if err := r.ParseForm(); err != nil {
+		WriteDeveloperError(w, http.StatusBadRequest, "Unable to parse input parameters: "+err.Error())
+		return
+	}
+
+	requestData := doctorSavedMessageRequestData{}
+	if err := schema.NewDecoder().Decode(&requestData, r.Form); err != nil {
+		WriteDeveloperError(w, http.StatusBadRequest, "Unable to parse input parameters: "+err.Error())
+		return
+	}
+
+	TreatmentPlanID, err := strconv.ParseInt(requestData.TreatmentPlanID, 10, 64)
+	if err != nil {
+		WriteDeveloperError(w, http.StatusBadRequest, "The TreatmentPlanID was not correctly specified as request parameter: "+err.Error())
+		return
+	}
+
+	msg, err := h.dataAPI.GetSavedMessageForDoctor(doctorID, TreatmentPlanID)
 	if err == api.NoRowsError {
 		msg = ""
 	} else if err != nil {
@@ -74,7 +100,7 @@ func (h *doctorSavedMessageHandler) get(w http.ResponseWriter, r *http.Request, 
 }
 
 func (h *doctorSavedMessageHandler) put(w http.ResponseWriter, r *http.Request, doctorID int64, ctx *Context) {
-	var req doctorSavedMessagePutRequest
+	var req DoctorSavedMessagePutRequest
 	if err := DecodeRequestData(&req, r); err != nil {
 		WriteValidationError(err.Error(), w, r)
 		return
@@ -87,9 +113,21 @@ func (h *doctorSavedMessageHandler) put(w http.ResponseWriter, r *http.Request, 
 			return
 		}
 	}
-	if err := h.dataAPI.SetSavedMessageForDoctor(doctorID, req.Message); err != nil {
-		WriteError(err, w, r)
-		return
+	golog.Infof("the message is %s", req.Message)
+	golog.Infof("the tpi is %d", req.TreatmentPlanID)
+	if req.TreatmentPlanID == 0 {
+		golog.Infof("We do not have a tp")
+		if err := h.dataAPI.SetSavedMessageForDoctor(doctorID, req.Message); err != nil {
+			WriteError(err, w, r)
+			return
+		}
+	} else {
+		golog.Infof("We do have a TreatmentPlanID! So we will update it # %d", req.TreatmentPlanID)
+		if err := h.dataAPI.SetTreatmentPlanMessage(doctorID, req.TreatmentPlanID, req.Message); err != nil {
+			WriteError(err, w, r)
+			return
+		}
 	}
+	
 	WriteJSONSuccess(w)
 }

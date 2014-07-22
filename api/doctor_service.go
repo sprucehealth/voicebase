@@ -12,6 +12,7 @@ import (
 	"github.com/sprucehealth/backend/app_url"
 	"github.com/sprucehealth/backend/common"
 	"github.com/sprucehealth/backend/encoding"
+	"github.com/sprucehealth/backend/libs/golog"
 	"github.com/sprucehealth/backend/third_party/github.com/go-sql-driver/mysql"
 )
 
@@ -964,19 +965,29 @@ func (d *DataService) GetTreatmentTemplates(doctorId int64) ([]*common.DoctorTre
 	return treatmentTemplates, rows.Err()
 }
 
-func (d *DataService) GetSavedMessageForDoctor(doctorID int64) (string, error) {
+func (d *DataService) GetSavedMessageForDoctor(doctorID, treatmentPlanID int64) (string, error) {
 	var message string
-	row := d.db.QueryRow(`SELECT message FROM doctor_saved_case_message WHERE doctor_id = ?`, doctorID)
-	if err := row.Scan(&message); err == sql.ErrNoRows {
-		return "", NoRowsError
-	} else if err != nil {
-		return "", err
+	golog.Infof("the treatment plan id is %d", treatmentPlanID)
+	row := d.db.QueryRow(`SELECT message FROM doctor_treatment_message WHERE doctor_id = ? AND treatment_plan_id = ?`, doctorID, treatmentPlanID)
+	if err := row.Scan(&message); err==sql.ErrNoRows || err != nil { //TODO check this logic because it looks funky. It is fine if there is no matching rows, but what should the service do if there is some other generic type error?
+		row := d.db.QueryRow(`SELECT message FROM doctor_saved_case_message WHERE doctor_id = ?`, doctorID)
+		if err := row.Scan(&message); err == sql.ErrNoRows {
+			return "", NoRowsError
+		} else if err != nil {
+			return "", err
+		}
 	}
+	golog.Infof(message)
 	return message, nil
 }
 
 func (d *DataService) SetSavedMessageForDoctor(doctorID int64, message string) error {
 	_, err := d.db.Exec(`REPLACE INTO doctor_saved_case_message (doctor_id, message) VALUES (?, ?)`, doctorID, message)
+	return err
+}
+
+func (d *DataService) SetTreatmentPlanMessage(doctorID int64, treatmentPlanID int64, message string) error {
+	_, err := d.db.Exec(`REPLACE INTO doctor_treatment_message (doctor_id, treatment_plan_id, message) VALUES (?, ?, ?)`, doctorID, treatmentPlanID, message)
 	return err
 }
 
