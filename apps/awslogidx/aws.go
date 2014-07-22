@@ -6,6 +6,7 @@ import (
 	"os"
 
 	"github.com/sprucehealth/backend/libs/aws"
+	"github.com/sprucehealth/backend/libs/aws/cloudwatchlogs"
 	"github.com/sprucehealth/backend/libs/aws/s3"
 )
 
@@ -18,6 +19,7 @@ var (
 	region    aws.Region
 	awsClient *aws.Client
 	s3Client  *s3.S3
+	cwlClient *cloudwatchlogs.Client
 )
 
 func setupAWS() error {
@@ -66,6 +68,11 @@ func setupAWS() error {
 
 	s3Client = &s3.S3{
 		Region: region,
+		Client: awsClient,
+	}
+
+	cwlClient = &cloudwatchlogs.Client{
+		Region: aws.USEast,
 		Client: awsClient,
 	}
 

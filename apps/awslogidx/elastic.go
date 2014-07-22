@@ -4,6 +4,7 @@ import (
 	"bytes"
 	"encoding/json"
 	"fmt"
+	"io/ioutil"
 	"net/http"
 	"net/url"
 	"time"
@@ -28,23 +29,31 @@ func (es *ElasticSearch) IndexJSON(index, doctype string, js []byte, ts time.Tim
 	}
 	defer res.Body.Close()
 	if res.StatusCode >= 300 {
-		return fmt.Errorf("Bad status code %d from ElasticSearch", res.StatusCode)
+		b, err := ioutil.ReadAll(res.Body)
+		if err != nil {
+			b = nil
+		}
+		return fmt.Errorf("Bad status code %d from ElasticSearch: %s", res.StatusCode, string(b))
 	}
 	return nil
 }
 
-func (es *ElasticSearch) Index(index, doctype string, doc interface{}, ts time.Time) error {
+func (es *ElasticSearch) Index(index, doctype, id string, doc interface{}, ts time.Time) error {
 	buf := &bytes.Buffer{}
 	if err := json.NewEncoder(buf).Encode(doc); err != nil {
 		return err
 	}
-	res, err := http.Post(fmt.Sprintf("%s/%s/%s/?timestamp=%s", es.Endpoint, index, doctype, url.QueryEscape(ts.Format(esTimeFormat))), "text/json", buf)
+	res, err := http.Post(fmt.Sprintf("%s/%s/%s/%s?timestamp=%s", es.Endpoint, index, doctype, id, url.QueryEscape(ts.Format(esTimeFormat))), "text/json", buf)
 	if err != nil {
 		return err
 	}
 	defer res.Body.Close()
 	if res.StatusCode >= 300 {
-		return fmt.Errorf("Bad status code %d from ElasticSearch", res.StatusCode)
+		b, err := ioutil.ReadAll(res.Body)
+		if err != nil {
+			b = nil
+		}
+		return fmt.Errorf("Bad status code %d from ElasticSearch: %s", res.StatusCode, string(b))
 	}
 	return nil
 }

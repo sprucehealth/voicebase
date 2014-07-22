@@ -7,27 +7,26 @@ TODO:
 */
 
 import (
+	"crypto/md5"
+	"encoding/hex"
+	"encoding/json"
 	"flag"
+	"fmt"
 	"net/http"
 	"os"
 	"os/signal"
 	"sort"
 	"strconv"
 	"strings"
-	"sync/atomic"
 	"time"
 
+	"github.com/sprucehealth/backend/libs/aws/cloudwatchlogs"
 	"github.com/sprucehealth/backend/libs/golog"
 	"github.com/sprucehealth/backend/third_party/github.com/armon/consul-api"
 )
 
 const (
-	consulLeaderKey     = "service/awslogidx/leader"
-	consulCheckIDPrefix = "awslogidx-"
-	consulCheckName     = "Liveness check for awslogidx process"
-	consulCheckTTL      = "60s"
-	// consulLockDelay is the time after a lock is release before it can be acquired
-	consulLockDelay = time.Second * 30
+	eventCount = 0
 )
 
 var (
@@ -36,21 +35,8 @@ var (
 	flagConsul        = flag.String("consul", "127.0.0.1:8500", "Consul HTTP API host:port")
 	flagElasticSearch = flag.String("elasticsearch", "127.0.0.1:9200", "ElasticSearch host:port")
 	flagRetainDays    = flag.Int("retaindays", 60, "Number of days of indexes to retain")
+	flagVerbose       = flag.Bool("v", false, "Verbose output")
 )
-
-var leader int32
-
-func isLeader() bool {
-	return atomic.LoadInt32(&leader) != 0
-}
-
-func setLeader(b bool) {
-	if b {
-		atomic.StoreInt32(&leader, 1)
-	} else {
-		atomic.StoreInt32(&leader, 0)
-	}
-}
 
 func cleanupIndexes(es *ElasticSearch, days int) {
 	aliases, err := es.Aliases()
@@ -74,11 +60,13 @@ func cleanupIndexes(es *ElasticSearch, days int) {
 	}
 }
 
-func startPeriodicCleanup(es *ElasticSearch, days int) {
+func startPeriodicCleanup(es *ElasticSearch, days int, locker *ConsulLocker) {
+	lock := locker.NewLock("service/awslogidx/cleanup", nil)
 	go func() {
+		defer lock.Release()
 		for {
-			for !isLeader() {
-				time.Sleep(time.Minute * 10)
+			if !lock.Wait() {
+				return
 			}
 			cleanupIndexes(es, days)
 			time.Sleep(time.Hour * 24)
@@ -86,86 +74,192 @@ func startPeriodicCleanup(es *ElasticSearch, days int) {
 	}()
 }
 
-// powerStruggle loops trying to become leader. It never stops except
-// when the process quits.
-func startPowerStruggle(consul *consulapi.Client, sessionID string, stopCh chan bool) {
+type streamInfo struct {
+	GroupName     string
+	StreamName    string
+	LastEventTime time.Time
+	LastIndexTime time.Time
+	NextToken     string
+}
+
+func startCloudWatchLogIndexer(es *ElasticSearch, consul *consulapi.Client, locker *ConsulLocker) error {
+	// For now this is using a single lock. If the volume of logs to ingest is
+	// too high for a single process then his can be modified to use a lock per
+	// group or per stream.
+	lock := locker.NewLock("service/awslogidx/cwl", nil)
+
+	lastRunTime := time.Time{}
+	runDelay := time.Second * 60
+
 	go func() {
+		defer lock.Release()
 		for {
-			select {
-			case <-stopCh:
-			default:
+			if !lock.Wait() {
+				return
 			}
-			if leader, _, err := consul.KV().Acquire(&consulapi.KVPair{
-				Key:     consulLeaderKey,
-				Value:   []byte(sessionID),
-				Session: sessionID,
-			}, nil); err != nil {
-				golog.Errorf("Error acquiring lock: %s", err.Error())
-			} else {
-				setLeader(leader)
-				if leader {
-					golog.Infof("Became leader")
-				} else {
-					golog.Infof("Not leader")
+
+			if dt := time.Since(lastRunTime); dt < runDelay {
+				time.Sleep(runDelay - dt)
+				continue
+			}
+			lastRunTime = time.Now()
+
+			groups, err := cwlClient.DescribeLogGroups("", "", 0)
+			if err != nil {
+				golog.Errorf("Failed to get log groups: %s", err.Error())
+				continue
+			}
+		groupLoop:
+			for _, g := range groups.LogGroups {
+				if !lock.Locked() {
+					break
 				}
 
-				var lastIndex uint64
-			leaderCheck:
-				for {
-					kv, meta, err := consul.KV().Get(consulLeaderKey, &consulapi.QueryOptions{
-						WaitIndex: lastIndex,
-					})
-					if err != nil {
-						// Assume we're not the leader for now since it's safer.
-						setLeader(false)
-						golog.Errorf("Failed to get leader key (dropping leadership): %s", err.Error())
-						time.Sleep(time.Second * 10)
-						lastIndex = 0
+				stream, err := cwlClient.DescribeLogStreams(g.LogGroupName, "", "", 0)
+				if err != nil {
+					golog.Errorf("Failed to get log stream for group %s: %s", g.LogGroupName, err.Error())
+					continue
+				}
+				for _, s := range stream.LogStreams {
+					if !lock.Locked() {
+						break
+					}
+					if s.LastEventTimestamp.IsZero() {
 						continue
 					}
-					lastIndex = meta.LastIndex
-					switch kv.Session {
-					case "":
-						golog.Infof("No leader. Attempting to take power after %s", time.Duration(consulLockDelay).String())
-						setLeader(false)
-						break leaderCheck
-					case sessionID:
-						if !isLeader() {
-							// This should only happen if there was previously an error
-							// talking to consul.
-							setLeader(true)
-							golog.Warningf("Remembering own leadership")
-						}
-						continue
-					}
-					if isLeader() {
-						setLeader(false)
-						golog.Warningf("Lost leadership to %s", kv.Session)
-					} else {
-						golog.Infof("Current leader is %s", kv.Session)
+					if indexStream(g.LogGroupName, s, es, consul) {
+						break groupLoop
 					}
 				}
 			}
-			// After the lock is released there's a period of time before which
-			// it can be acquired. This allows for a process that involuntarily
-			// lost the lock to notice they lost the lock and complete processing
-			// before another process becomes leader.
-			time.Sleep(consulLockDelay)
 		}
 	}()
+
+	return nil
+}
+
+func indexStream(groupName string, stream *cloudwatchlogs.LogStream, es *ElasticSearch, consul *consulapi.Client) bool {
+	hash := md5.Sum([]byte(fmt.Sprintf("%s|%s", groupName, stream.LogStreamName)))
+	key := "service/awslogidx/cwl/" + hex.EncodeToString(hash[:])
+
+	log := golog.Context(
+		"group", groupName,
+		"stream", stream.LogStreamName,
+		"key", key)
+
+	kv, _, err := consul.KV().Get(key, nil)
+	if err != nil {
+		log.Errorf("Get failed: %s", key, err.Error())
+		return false
+	}
+
+	var info streamInfo
+	var events *cloudwatchlogs.Events
+	var modifyIndex uint64
+	if kv != nil {
+		if err := json.Unmarshal(kv.Value, &info); err != nil {
+			log.Errorf("Unmarshal failed: %s", err.Error())
+			return false
+		}
+		if !stream.LastEventTimestamp.Time.After(info.LastEventTime) {
+			log.Debugf("No new events since %s", info.LastEventTime.String())
+			return false
+		}
+		modifyIndex = kv.ModifyIndex
+		// The next token is only valid for 24 hours so use the timestamp after that
+		if time.Since(info.LastIndexTime) > time.Hour*22 {
+			log.Debugf("Fetching by start time of %+v", info.LastEventTime)
+			events, err = cwlClient.GetLogEvents(groupName, stream.LogStreamName, false, info.LastEventTime, time.Time{}, "", eventCount)
+		} else {
+			log.Debugf("Fetching by token")
+			events, err = cwlClient.GetLogEvents(groupName, stream.LogStreamName, false, time.Time{}, time.Time{}, info.NextToken, eventCount)
+		}
+	} else {
+		info = streamInfo{
+			GroupName:  groupName,
+			StreamName: stream.LogStreamName,
+		}
+		log.Debugf("Fetching from beginning")
+		events, err = cwlClient.GetLogEvents(groupName, stream.LogStreamName, true, time.Time{}, time.Time{}, "", eventCount)
+	}
+
+	var buf []byte
+	for _, e := range events.Events {
+		if e.Timestamp.After(info.LastEventTime) {
+			info.LastEventTime = e.Timestamp.Time
+		}
+		h := md5.New()
+		t := e.Timestamp.UTC()
+		ts := t.Format(time.RFC3339)
+		h.Write([]byte(ts))
+		h.Write([]byte(e.Message))
+		buf = h.Sum(buf[:0])
+		id := hex.EncodeToString(buf)
+		idx := fmt.Sprintf("log-%s", t.Format("2006.01.02"))
+		doc := map[string]interface{}{
+			"msg":    e.Message,
+			"group":  groupName,
+			"stream": stream.LogStreamName,
+			// Used by Kibana
+			"@timestamp": ts,
+			"@version":   "1",
+		}
+		if err := es.Index(idx, "log", id, doc, t); err != nil {
+			log.Errorf("Failed to index: %s", err.Error())
+			return true
+		}
+	}
+
+	info.NextToken = events.NextForwardToken
+	info.LastIndexTime = time.Now()
+
+	log.Debugf("New info %+v", info)
+	b, err := json.Marshal(info)
+	if err != nil {
+		log.Errorf("Marshal failed: %s", err.Error())
+		return false
+	}
+	kv = &consulapi.KVPair{
+		Key:         key,
+		Value:       b,
+		ModifyIndex: modifyIndex,
+	}
+	ok, _, err := consul.KV().CAS(kv, nil)
+	if err != nil {
+		log.Errorf("CAS failed: %s", err.Error())
+	} else if !ok {
+		log.Warningf("CAS did not match")
+		// TODO: get the current value and keep which ever has newer event timestamp
+		if _, err := consul.KV().Put(kv, nil); err != nil {
+			log.Errorf("Put failed: %s", err.Error())
+		}
+	}
+	return false
 }
 
 func main() {
 	flag.Parse()
 
-	if *flagCloudTrail {
-		if err := setupAWS(); err != nil {
-			golog.Fatalf(err.Error())
-		}
+	if *flagVerbose {
+		golog.Default().SetLevel(golog.DEBUG)
 	}
 
+	if err := setupAWS(); err != nil {
+		golog.Fatalf(err.Error())
+	}
+
+	if err := run(); err != nil {
+		golog.Fatalf(err.Error())
+	}
+}
+
+func run() error {
 	es := &ElasticSearch{
 		Endpoint: "http://" + *flagElasticSearch,
+	}
+	if *flagCleanup {
+		cleanupIndexes(es, *flagRetainDays)
+		return nil
 	}
 
 	consul, err := consulapi.NewClient(&consulapi.Config{
@@ -173,50 +267,26 @@ func main() {
 		HttpClient: http.DefaultClient,
 	})
 	if err != nil {
-		golog.Fatalf(err.Error())
+		return err
 	}
 
-	check, err := startConsulCheck(consul, consulCheckIDPrefix+strconv.Itoa(os.Getpid()))
+	locker, err := StartConsulLocker(consul, consulCheckIDPrefix+strconv.Itoa(os.Getpid()))
 	if err != nil {
-		golog.Fatalf(err.Error())
+		return err
 	}
-	defer func() {
-		if err := check.stop(); err != nil {
-			golog.Fatalf(err.Error())
-		}
-	}()
-
-	sessionID, _, err := consul.Session().Create(&consulapi.SessionEntry{
-		LockDelay: consulLockDelay,
-		Checks: []string{
-			"serfHealth", // Default health check for consul process liveliness
-			check.id,
-		},
-	}, nil)
-	if err != nil {
-		golog.Fatalf("Failed to create consul session: %s", err.Error())
-	}
-	defer func() {
-		if _, err := consul.Session().Destroy(sessionID, nil); err != nil {
-			golog.Errorf("Failed to destroy consul session: %s", err.Error())
-		}
-	}()
-
-	stopCh := make(chan bool, 1)
-	startPowerStruggle(consul, sessionID, stopCh)
-
-	if *flagCleanup {
-		cleanupIndexes(es, *flagRetainDays)
-		return
-	}
-	if *flagRetainDays > 0 {
-		startPeriodicCleanup(es, *flagRetainDays)
-	}
+	defer locker.Stop()
 
 	if *flagCloudTrail {
 		if err := startCloudTrailIndexer(es); err != nil {
-			golog.Fatalf(err.Error())
+			return err
 		}
+	}
+	if *flagRetainDays > 0 {
+		startPeriodicCleanup(es, *flagRetainDays, locker)
+	}
+
+	if err := startCloudWatchLogIndexer(es, consul, locker); err != nil {
+		return err
 	}
 
 	sigCh := make(chan os.Signal, 1)
@@ -226,5 +296,6 @@ func main() {
 		golog.Infof("Quitting due to signal %s", sig.String())
 		break
 	}
-	stopCh <- true
+
+	return nil
 }

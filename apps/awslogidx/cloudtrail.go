@@ -93,8 +93,7 @@ func startCloudTrailIndexer(es *ElasticSearch) error {
 							failed++
 							continue
 						}
-						recBytes = append(recBytes[:len(recBytes)-1], fmt.Sprintf(`,"@timestamp":"%s","@version":"1","@app":"syslogidx"}`, rec.EventTime.UTC().Format(time.RFC3339))...)
-						// log.Printf("%s %s\n", idx, string(recBytes))
+						recBytes = append(recBytes[:len(recBytes)-1], fmt.Sprintf(`,"@timestamp":"%s","@version":"1"}`, rec.EventTime.UTC().Format(time.RFC3339))...)
 						if err := es.IndexJSON(idx, "cloudtrail", recBytes, rec.EventTime); err != nil {
 							failed++
 							log.Printf("Failed to index event: %+v", err)

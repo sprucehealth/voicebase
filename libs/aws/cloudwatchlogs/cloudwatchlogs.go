@@ -15,7 +15,6 @@ const apiVersion = "Logs_20140328."
 type Client struct {
 	aws.Region
 	Client *aws.Client
-	host   string
 }
 
 func (c *Client) do(action string, request, response interface{}) error {
