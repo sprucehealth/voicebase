@@ -131,12 +131,26 @@ func CreatePatientVisitForPatient(patientId int64, testData *TestData, t *testin
 // randomly answering all top level questions in the patient visit, regardless of the condition under which the questions are presented to the user.
 // the goal of this is to get all questions answered so as to render the views for the doctor layout, not to test the sanity of the answers the patient inputs.
 func PrepareAnswersForQuestionsInPatientVisit(patientVisitResponse *patient_visit.PatientVisitResponse, t *testing.T) *apiservice.AnswerIntakeRequestBody {
+	return prepareAnswersForVisitIntake(patientVisitResponse, true, t)
+}
+
+func PrepareAnswersForQuestionsInPatientVisitWithoutAlerts(patientVisitResponse *patient_visit.PatientVisitResponse, t *testing.T) *apiservice.AnswerIntakeRequestBody {
+	return prepareAnswersForVisitIntake(patientVisitResponse, false, t)
+}
+
+func prepareAnswersForVisitIntake(patientVisitResponse *patient_visit.PatientVisitResponse, includeAlerts bool, t *testing.T) *apiservice.AnswerIntakeRequestBody {
 	answerIntakeRequestBody := apiservice.AnswerIntakeRequestBody{}
 	answerIntakeRequestBody.PatientVisitId = patientVisitResponse.PatientVisitId
 	answerIntakeRequestBody.Questions = make([]*apiservice.AnswerToQuestionItem, 0)
 	for _, section := range patientVisitResponse.ClientLayout.Sections {
 		for _, screen := range section.Screens {
 			for _, question := range screen.Questions {
+
+				// skip questions to alert on
+				if !includeAlerts && question.ToAlert {
+					continue
+				}
+
 				switch question.QuestionType {
 				case info_intake.QUESTION_TYPE_SINGLE_SELECT:
 					answerIntakeRequestBody.Questions = append(answerIntakeRequestBody.Questions, &apiservice.AnswerToQuestionItem{

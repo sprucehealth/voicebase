@@ -369,6 +369,7 @@ func SetupIntegrationTest(t *testing.T) *TestData {
 	doctor_queue.InitListeners(testData.DataApi, notificationManager, metrics.NewRegistry())
 	notify.InitListeners(testData.DataApi)
 	patient_case.InitListeners(testData.DataApi, notificationManager)
+	patient_visit.InitListeners(testData.DataApi)
 
 	return testData
 }
