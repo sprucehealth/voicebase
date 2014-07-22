@@ -167,7 +167,7 @@ func getSendCareTeamMessageSection(patientCaseId int64) common.ClientView {
 		Views: []common.ClientView{
 			&phSmallIconText{
 				Title:       "Send your care team a message",
-				IconURL:     app_url.IconMessagesSmall,
+				IconURL:     app_url.IconMessagesLarge,
 				ActionURL:   app_url.SendCaseMessageAction(patientCaseId),
 				RoundedIcon: true,
 			},
