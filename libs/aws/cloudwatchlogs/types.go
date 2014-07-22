@@ -28,7 +28,7 @@ func (t *Time) UnmarshalJSON(b []byte) error {
 	return nil
 }
 
-func (t *Time) UnixMilli() int64 {
+func (t Time) UnixMilli() int64 {
 	return t.UnixNano() / 1e6
 }
 
@@ -148,8 +148,8 @@ type describeMetricFiltersRequest struct {
 }
 
 type getLogEventsRequest struct {
-	StartTime     Time   `json:"startTime"`
-	EndTime       Time   `json:"endTime"`
+	StartTime     int64  `json:"startTime,omitempty"`
+	EndTime       int64  `json:"endTime,omitempty"`
 	StartFromHead bool   `json:"startFromHead"`
 	LogGroupName  string `json:"logGroupName"`
 	LogStreamName string `json:"logStreamName"`

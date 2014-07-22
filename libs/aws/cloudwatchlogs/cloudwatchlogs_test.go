@@ -2,6 +2,7 @@ package cloudwatchlogs
 
 import (
 	"testing"
+	"time"
 
 	"github.com/sprucehealth/backend/libs/aws"
 )
@@ -40,7 +41,7 @@ func TestDescribeLogGroups(t *testing.T) {
 		t.Fatal(err)
 	}
 	for _, g := range groups.LogGroups {
-		t.Logf("%+v\n", g)
+		t.Logf("%+v", g)
 	}
 
 	streams, err := cli.DescribeLogStreams(groups.LogGroups[0].LogGroupName, "", "", 0)
@@ -48,6 +49,16 @@ func TestDescribeLogGroups(t *testing.T) {
 		t.Fatal(err)
 	}
 	for _, s := range streams.LogStreams {
-		t.Logf("%+v\n", s)
+		t.Logf("%+v", s)
+	}
+	events, err := cli.GetLogEvents(
+		groups.LogGroups[0].LogGroupName,
+		streams.LogStreams[0].LogStreamName,
+		false, time.Time{}, time.Time{}, "", 5)
+	if err != nil {
+		t.Fatal(err)
+	}
+	for _, e := range events.Events {
+		t.Logf("%+v", e)
 	}
 }

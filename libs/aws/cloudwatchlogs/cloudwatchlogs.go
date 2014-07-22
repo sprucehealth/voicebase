@@ -151,13 +151,17 @@ func (c *Client) DescribeMetricFilters(groupName, prefix, nextToken string, limi
 // response by specifying the limit parameter in the request.
 func (c *Client) GetLogEvents(groupName, streamName string, startFromHead bool, startTime, endTime time.Time, nextToken string, limit int) (*Events, error) {
 	req := &getLogEventsRequest{
-		StartTime:     Time{startTime},
-		EndTime:       Time{endTime},
 		StartFromHead: startFromHead,
 		LogGroupName:  groupName,
 		LogStreamName: streamName,
 		NextToken:     nextToken,
 		Limit:         intPtrIfNonZero(limit),
+	}
+	if !startTime.IsZero() {
+		req.StartTime = (Time{startTime}).UnixMilli()
+	}
+	if !endTime.IsZero() {
+		req.EndTime = (Time{endTime}).UnixMilli()
 	}
 	var res Events
 	if err := c.do("GetLogEvents", req, &res); err != nil {
