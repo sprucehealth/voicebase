@@ -303,6 +303,7 @@ func buildRESTAPI(conf *Config, dataApi api.DataAPI, authAPI api.AuthAPI, stores
 	mux.Handle("/v1/patient/info", patient.NewUpdateHandler(dataApi))
 	mux.Handle("/v1/patient/address/billing", updatePatientBillingAddress)
 	mux.Handle("/v1/patient/pharmacy", apiservice.NewUpdatePatientPharmacyHandler(dataApi))
+	mux.Handle("/v1/patient/alerts", patient_file.NewAlertsHandler(dataApi))
 	mux.Handle("/v1/patient/isauthenticated", apiservice.NewIsAuthenticatedHandler(authAPI))
 	mux.Handle("/v1/reset_password", passreset.NewForgotPasswordHandler(dataApi, authAPI, emailService, conf.Support.CustomerSupportEmail, conf.WebSubdomain))
 	mux.Handle("/v1/credit_card", patientCardsHandler)
