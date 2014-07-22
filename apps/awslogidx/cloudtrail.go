@@ -4,12 +4,12 @@ import (
 	"encoding/json"
 	"flag"
 	"fmt"
-	"log"
 	"time"
 
 	"github.com/sprucehealth/backend/libs/aws/cloudtrail"
 	"github.com/sprucehealth/backend/libs/aws/sns"
 	"github.com/sprucehealth/backend/libs/aws/sqs"
+	"github.com/sprucehealth/backend/libs/golog"
 )
 
 var (
@@ -47,7 +47,7 @@ func startCloudTrailIndexer(es *ElasticSearch) error {
 		for {
 			msgs, err := sq.ReceiveMessage(queueUrl, nil, 1, visibilityTimeout, waitTimeSeconds)
 			if err != nil {
-				log.Printf("SQS ReceiveMessage failed: %+v", err)
+				golog.Errorf("SQS ReceiveMessage failed: %+v", err)
 				time.Sleep(time.Minute)
 				continue
 			}
@@ -59,12 +59,12 @@ func startCloudTrailIndexer(es *ElasticSearch) error {
 			for _, m := range msgs {
 				var note sns.SQSMessage
 				if err := json.Unmarshal([]byte(m.Body), &note); err != nil {
-					log.Printf("Failed to unmarshal SNS notification from SQS Body: %+v", err)
+					golog.Errorf("Failed to unmarshal SNS notification from SQS Body: %+v", err)
 					continue
 				}
 				var ctNote cloudtrail.SNSNotification
 				if err := json.Unmarshal([]byte(note.Message), &ctNote); err != nil {
-					log.Printf("Failed to unmarshal CloudTrail notification from SNS message: %+v", err)
+					golog.Errorf("Failed to unmarshal CloudTrail notification from SNS message: %+v", err)
 					continue
 				}
 
@@ -72,7 +72,7 @@ func startCloudTrailIndexer(es *ElasticSearch) error {
 				for _, path := range ctNote.S3ObjectKey {
 					rd, err := s3Client.GetReader(ctNote.S3Bucket, path)
 					if err != nil {
-						log.Printf("Failed to fetch log from S3 (%s:%s): %+v", ctNote.S3Bucket, path, err)
+						golog.Errorf("Failed to fetch log from S3 (%s:%s): %+v", ctNote.S3Bucket, path, err)
 						failed++
 						continue
 					}
@@ -81,7 +81,7 @@ func startCloudTrailIndexer(es *ElasticSearch) error {
 					err = dec.Decode(&ct)
 					rd.Close()
 					if err != nil {
-						log.Printf("Failed to decode CloudTrail json (%s:%s): %+v", ctNote.S3Bucket, path, err)
+						golog.Errorf("Failed to decode CloudTrail json (%s:%s): %+v", ctNote.S3Bucket, path, err)
 						failed++
 						continue
 					}
@@ -89,14 +89,14 @@ func startCloudTrailIndexer(es *ElasticSearch) error {
 						idx := fmt.Sprintf("log-%s", rec.EventTime.UTC().Format("2006.01.02"))
 						recBytes, err := json.Marshal(rec)
 						if err != nil {
-							log.Printf("Failed to marshal event: %+v", err)
+							golog.Errorf("Failed to marshal event: %+v", err)
 							failed++
 							continue
 						}
 						recBytes = append(recBytes[:len(recBytes)-1], fmt.Sprintf(`,"@timestamp":"%s","@version":"1"}`, rec.EventTime.UTC().Format(time.RFC3339))...)
 						if err := es.IndexJSON(idx, "cloudtrail", recBytes, rec.EventTime); err != nil {
 							failed++
-							log.Printf("Failed to index event: %+v", err)
+							golog.Errorf("Failed to index event: %+v", err)
 							break
 						}
 					}
@@ -106,7 +106,7 @@ func startCloudTrailIndexer(es *ElasticSearch) error {
 				}
 				if failed == 0 {
 					if err := sq.DeleteMessage(queueUrl, m.ReceiptHandle); err != nil {
-						log.Printf("Failed to delete message: %+v", err)
+						golog.Errorf("Failed to delete message: %+v", err)
 					}
 				}
 			}

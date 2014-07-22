@@ -10,6 +10,7 @@ TODO:
     - success rate for consul
     - success rate for elasticsearch
     - success rate for aws api
+    - bytes stored per group
 */
 
 import (
