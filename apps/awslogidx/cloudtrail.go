@@ -77,8 +77,7 @@ func startCloudTrailIndexer(es *ElasticSearch) error {
 						continue
 					}
 					var ct cloudtrail.Log
-					dec := json.NewDecoder(rd)
-					err = dec.Decode(&ct)
+					err = json.NewDecoder(rd).Decode(&ct)
 					rd.Close()
 					if err != nil {
 						golog.Errorf("Failed to decode CloudTrail json (%s:%s): %+v", ctNote.S3Bucket, path, err)
@@ -86,15 +85,34 @@ func startCloudTrailIndexer(es *ElasticSearch) error {
 						continue
 					}
 					for _, rec := range ct.Records {
-						idx := fmt.Sprintf("log-%s", rec.EventTime.UTC().Format("2006.01.02"))
-						recBytes, err := json.Marshal(rec)
+						ts := rec.EventTime.UTC()
+						idx := fmt.Sprintf("log-%s", ts.Format("2006.01.02"))
+
+						doc := map[string]interface{}{
+							"@timestamp":        ts.Format(time.RFC3339),
+							"@version":          "1",
+							"awsRegion":         rec.AWSRegion,
+							"errorCode":         rec.ErrorCode,
+							"errorMessage":      rec.ErrorMessage,
+							"eventName":         rec.EventName,
+							"eventSource":       rec.EventSource,
+							"eventTime":         rec.EventTime,
+							"eventVersion":      rec.EventVersion,
+							"requestParameters": rec.RequestParameters,
+							"responseElements":  rec.ResponseElements,
+							"sourceIPAddress":   rec.SourceIPAddress,
+							"userAgent":         rec.UserAgent,
+							"userIdentity":      rec.UserIdentity,
+						}
+
+						docBytes, err := json.Marshal(doc)
 						if err != nil {
 							golog.Errorf("Failed to marshal event: %+v", err)
 							failed++
 							continue
 						}
-						recBytes = append(recBytes[:len(recBytes)-1], fmt.Sprintf(`,"@timestamp":"%s","@version":"1"}`, rec.EventTime.UTC().Format(time.RFC3339))...)
-						if err := es.IndexJSON(idx, "cloudtrail", recBytes, rec.EventTime); err != nil {
+
+						if err := es.IndexJSON(idx, "cloudtrail", docBytes, ts); err != nil {
 							failed++
 							golog.Errorf("Failed to index event: %+v", err)
 							break

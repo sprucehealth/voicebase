@@ -157,7 +157,7 @@ func indexStream(groupName string, stream *cloudwatchlogs.LogStream, es *Elastic
 
 	kv, _, err := consul.KV().Get(key, nil)
 	if err != nil {
-		log.Errorf("Get failed: %s", err.Error())
+		log.Errorf("Consul get failed: %s", err.Error())
 		return false
 	}
 

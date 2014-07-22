@@ -43,7 +43,7 @@ type Log struct {
 }
 
 type Record struct {
-	AwsRegion         string                 `json:"awsRegion"`
+	AWSRegion         string                 `json:"awsRegion"`
 	ErrorCode         string                 `json:"errorCode"`
 	ErrorMessage      string                 `json:"errorMessage"`
 	EventName         string                 `json:"eventName"`
@@ -58,10 +58,10 @@ type Record struct {
 }
 
 type UserIdentity struct {
-	AccessKeyId    string          `json:"accessKeyId"`
-	AccountId      int64           `json:"accountId,string"`
+	AccessKeyID    string          `json:"accessKeyId"`
+	AccountID      int64           `json:"accountId,string"`
 	ARN            string          `json:"arn"`
-	PrincipalId    string          `json:"principalId"`
+	PrincipalID    string          `json:"principalId"`
 	SessionContext *SessionContext `json:"sessionContext,omitempty"`
 	Type           string          `json:"type"`
 	UserName       string          `json:"userName"`
