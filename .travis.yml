@@ -49,7 +49,11 @@ script:
 - PKGS=$(find . -name '*.go' | grep -v third_party | xargs -n 1 dirname | sort | uniq)
 - echo $PKGS
 - echo $PKGS | xargs go build
-- echo $PKGS | xargs go fmt
+- FMT=$(echo $PKGS | xargs go fmt)
+- echo $FMT
+# Fail if fmt returned any output
+- |
+  [[ ! -z "$FMT" ]]
 - echo $PKGS | xargs go vet
 - echo $PKGS | xargs go test -i -race
 - echo $PKGS | xargs -n 1 go test -v -race
