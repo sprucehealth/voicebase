@@ -240,6 +240,7 @@ func buildRESTAPI(conf *Config, dataApi api.DataAPI, authAPI api.AuthAPI, stores
 	notify.InitListeners(dataApi)
 	support.InitListeners(conf.Support.TechnicalSupportEmail, conf.Support.CustomerSupportEmail, notificationManager)
 	patient_case.InitListeners(dataApi, notificationManager)
+	patient_visit.InitListeners(dataApi)
 
 	// Start worker to check for expired items in the global case queue
 	doctor_queue.StartClaimedItemsExpirationChecker(dataApi, metricsRegistry.Scope("doctor_queue"))
