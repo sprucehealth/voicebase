@@ -25,6 +25,7 @@ import (
 	"sort"
 	"strconv"
 	"strings"
+	"syscall"
 	"time"
 
 	"github.com/sprucehealth/backend/libs/aws/cloudwatchlogs"
@@ -299,7 +300,7 @@ func run() error {
 	}
 
 	sigCh := make(chan os.Signal, 1)
-	signal.Notify(sigCh, os.Interrupt, os.Kill)
+	signal.Notify(sigCh, os.Interrupt, os.Kill, syscall.SIGTERM)
 	select {
 	case sig := <-sigCh:
 		golog.Infof("Quitting due to signal %s", sig.String())
