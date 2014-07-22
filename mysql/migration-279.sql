@@ -1,1 +1,0 @@
-alter table doctor_treatment_message add foreign key (treatment_plan_id) references treatment_plan(id);
