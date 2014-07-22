@@ -4,6 +4,7 @@ import (
 	"bytes"
 	"encoding/json"
 	"github.com/sprucehealth/backend/apiservice"
+	"strconv"
 	"io/ioutil"
 	"net/http/httptest"
 	"strings"
@@ -24,7 +25,9 @@ func TestDoctorSavedMessage(t *testing.T) {
 	defer ts.Close()
 
 	initialJS := `{"message":""}`
-	res, err := testData.AuthGet(ts.URL + "?treatment_plan_id=500", doctor.AccountId.Int64()) //TODO find a more robust way to choose a random treatment_plan_id
+	_, treatmentPlan := CreateRandomPatientVisitAndPickTP(t, testData, doctor)
+
+	res, err := testData.AuthGet(ts.URL + "?treatment_plan_id=" + strconv.FormatInt(treatmentPlan.Id.Int64(), 10), doctor.AccountId.Int64()) //TODO find a more robust way to choose a random treatment_plan_id
 	if err != nil {
 		t.Fatal(err)
 	}
@@ -45,7 +48,7 @@ func TestDoctorSavedMessage(t *testing.T) {
 		t.Fatalf("Expected 200. Got %d", res.StatusCode)
 	}
 
-	res, err = testData.AuthGet(ts.URL + "?treatment_plan_id=500", doctor.AccountId.Int64())
+	res, err = testData.AuthGet(ts.URL + "?treatment_plan_id=" + strconv.FormatInt(treatmentPlan.Id.Int64(), 10), doctor.AccountId.Int64())
 	if err != nil {
 		t.Fatal(err)
 	}
@@ -59,7 +62,7 @@ func TestDoctorSavedMessage(t *testing.T) {
 	newJS = `{"message":"Dear foo, this is my message"}`
 	requestData := apiservice.DoctorSavedMessagePutRequest{
 		DoctorID: doctor.AccountId.Int64(),
-		TreatmentPlanID: 500,
+		TreatmentPlanID: treatmentPlan.Id.Int64(),
 		Message: "Dear foo, this is my message",
 	}
 	jsonData, err := json.Marshal(requestData)
@@ -77,7 +80,7 @@ func TestDoctorSavedMessage(t *testing.T) {
 		t.Fatalf("Expected 200. Got %d", res.StatusCode)
 	}
 
-	res, err = testData.AuthGet(ts.URL + "?treatment_plan_id=500", doctor.AccountId.Int64())
+	res, err = testData.AuthGet(ts.URL + "?treatment_plan_id=" + strconv.FormatInt(treatmentPlan.Id.Int64(), 10), doctor.AccountId.Int64())
 	if err != nil {
 		t.Fatal(err)
 	}
@@ -91,7 +94,7 @@ func TestDoctorSavedMessage(t *testing.T) {
 	newJS = `{"message":"Dear foo, I have changed my mind"}`
 	requestData = apiservice.DoctorSavedMessagePutRequest{
 		DoctorID: doctor.AccountId.Int64(),
-		TreatmentPlanID: 500,
+		TreatmentPlanID: treatmentPlan.Id.Int64(),
 		Message: "Dear foo, I have changed my mind",
 	}
 	jsonData, err = json.Marshal(requestData)
@@ -109,7 +112,7 @@ func TestDoctorSavedMessage(t *testing.T) {
 		t.Fatalf("Expected 200. Got %d", res.StatusCode)
 	}
 
-	res, err = testData.AuthGet(ts.URL + "?treatment_plan_id=500", doctor.AccountId.Int64())
+	res, err = testData.AuthGet(ts.URL + "?treatment_plan_id=" + strconv.FormatInt(treatmentPlan.Id.Int64(), 10), doctor.AccountId.Int64())
 	if err != nil {
 		t.Fatal(err)
 	}

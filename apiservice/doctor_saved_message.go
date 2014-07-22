@@ -2,7 +2,9 @@ package apiservice
 
 import (
 	"github.com/sprucehealth/backend/api"
+
 	"github.com/sprucehealth/backend/third_party/github.com/SpruceHealth/schema"
+
 	"net/http"
 	"strconv"
 )
@@ -69,6 +71,12 @@ func (h *doctorSavedMessageHandler) get(w http.ResponseWriter, r *http.Request, 
 			return
 		}
 	}
+
+	if err := r.ParseForm(); err != nil {
+        WriteDeveloperError(w, http.StatusBadRequest, "Unable to parse input parameters: "+err.Error())
+        return
+    }
+ 
 
 	requestData := doctorSavedMessageRequestData{}
 	if err := schema.NewDecoder().Decode(&requestData, r.Form); err != nil {

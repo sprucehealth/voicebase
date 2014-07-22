@@ -12,7 +12,6 @@ import (
 	"github.com/sprucehealth/backend/app_url"
 	"github.com/sprucehealth/backend/common"
 	"github.com/sprucehealth/backend/encoding"
-	"github.com/sprucehealth/backend/libs/golog"
 	"github.com/sprucehealth/backend/third_party/github.com/go-sql-driver/mysql"
 )
 
@@ -976,7 +975,6 @@ func (d *DataService) GetSavedMessageForDoctor(doctorID, treatmentPlanID int64) 
 			return "", err
 		}
 	}
-	golog.Infof(message)
 	return message, nil
 }
 
