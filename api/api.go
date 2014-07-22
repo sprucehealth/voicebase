@@ -87,6 +87,8 @@ type PatientAPI interface {
 	GetCardFromId(cardId int64) (*common.Card, error)
 	UpdateDefaultAddressForPatient(patientId int64, address *common.Address) error
 	DeleteAddress(addressId int64) error
+	AddAlertsForPatient(patientId int64, alerts []*common.Alert) error
+	GetAlertsForPatient(patientId int64) ([]*common.Alert, error)
 }
 
 type PatientCaseAPI interface {
@@ -258,7 +260,7 @@ type FavoriteTreatmentPlanAPI interface {
 
 type IntakeAPI interface {
 	GetPatientAnswersForQuestionsInGlobalSections(questionIds []int64, patientId int64) (map[int64][]common.Answer, error)
-	GetPatientAnswersForQuestionsBasedOnQuestionIds(questionIds []int64, patientId int64, patientVisitId int64) (map[int64][]common.Answer, error)
+	GetPatientAnswersForQuestions(questionIds []int64, patientId int64, patientVisitId int64) (map[int64][]common.Answer, error)
 	GetDoctorAnswersForQuestionsInDiagnosisLayout(questionIds []int64, roleId int64, patientVisitId int64) (map[int64][]common.Answer, error)
 	GetPatientCreatedPhotoSectionsForQuestionId(questionId, patientId, patientVisitId int64) ([]common.Answer, error)
 	GetPatientCreatedPhotoSectionsForQuestionIds(questionIds []int64, patientId, patientVisitId int64) (map[int64][]common.Answer, error)
