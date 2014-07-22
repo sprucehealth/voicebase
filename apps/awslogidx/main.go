@@ -198,6 +198,8 @@ func indexStream(groupName string, stream *cloudwatchlogs.LogStream, es *Elastic
 		h := md5.New()
 		t := e.Timestamp.UTC()
 		ts := t.Format(time.RFC3339)
+		h.Write([]byte(groupName))
+		h.Write([]byte(stream.LogStreamName))
 		h.Write([]byte(ts))
 		h.Write([]byte(e.Message))
 		buf = h.Sum(buf[:0])
