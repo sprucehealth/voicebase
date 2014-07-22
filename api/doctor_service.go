@@ -967,9 +967,8 @@ func (d *DataService) GetTreatmentTemplates(doctorId int64) ([]*common.DoctorTre
 
 func (d *DataService) GetSavedMessageForDoctor(doctorID, treatmentPlanID int64) (string, error) {
 	var message string
-	golog.Infof("the treatment plan id is %d", treatmentPlanID)
 	row := d.db.QueryRow(`SELECT message FROM doctor_treatment_message WHERE doctor_id = ? AND treatment_plan_id = ?`, doctorID, treatmentPlanID)
-	if err := row.Scan(&message); err==sql.ErrNoRows || err != nil { //TODO check this logic because it looks funky. It is fine if there is no matching rows, but what should the service do if there is some other generic type error?
+	if err := row.Scan(&message); err == sql.ErrNoRows || err != nil { // TODO check this logic because it looks odd. It is fine if there is no matching rows, but what should the service do if there is some other generic type error?
 		row := d.db.QueryRow(`SELECT message FROM doctor_saved_case_message WHERE doctor_id = ?`, doctorID)
 		if err := row.Scan(&message); err == sql.ErrNoRows {
 			return "", NoRowsError

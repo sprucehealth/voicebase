@@ -13,7 +13,7 @@ type doctorSavedMessageHandler struct {
 }
 
 type DoctorSavedMessagePutRequest struct {
-	DoctorID int64  `json:"doctor_id"` // for admin use
+	DoctorID int64  `json:"doctor_id"`
 	TreatmentPlanID int64 `json:"treatment_plan_id"`
 	Message  string `json:"message"`
 }
@@ -39,7 +39,6 @@ func (h *doctorSavedMessageHandler) ServeHTTP(w http.ResponseWriter, r *http.Req
 	case api.DOCTOR_ROLE:
 		var err error
 		doctorID, err = h.dataAPI.GetDoctorIdFromAccountId(ctx.AccountId)
-		golog.Infof("The doctor id is %d", doctorID)
 		if err != nil {
 			WriteError(err, w, r)
 			return
@@ -70,11 +69,6 @@ func (h *doctorSavedMessageHandler) get(w http.ResponseWriter, r *http.Request, 
 			WriteUserError(w, http.StatusBadRequest, "doctor_id is required")
 			return
 		}
-	}
-	
-	if err := r.ParseForm(); err != nil {
-		WriteDeveloperError(w, http.StatusBadRequest, "Unable to parse input parameters: "+err.Error())
-		return
 	}
 
 	requestData := doctorSavedMessageRequestData{}
@@ -113,16 +107,15 @@ func (h *doctorSavedMessageHandler) put(w http.ResponseWriter, r *http.Request, 
 			return
 		}
 	}
-	golog.Infof("the message is %s", req.Message)
-	golog.Infof("the tpi is %d", req.TreatmentPlanID)
+
 	if req.TreatmentPlanID == 0 {
-		golog.Infof("We do not have a tp")
+		// Set doctor's standard response
 		if err := h.dataAPI.SetSavedMessageForDoctor(doctorID, req.Message); err != nil {
 			WriteError(err, w, r)
 			return
 		}
 	} else {
-		golog.Infof("We do have a TreatmentPlanID! So we will update it # %d", req.TreatmentPlanID)
+		// Update message for a treatment plan
 		if err := h.dataAPI.SetTreatmentPlanMessage(doctorID, req.TreatmentPlanID, req.Message); err != nil {
 			WriteError(err, w, r)
 			return
