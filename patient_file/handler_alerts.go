@@ -42,9 +42,13 @@ func (a *alertsHandler) ServeHTTP(w http.ResponseWriter, r *http.Request) {
 			return
 		}
 
-		if patientIdFromAuthToken != patientId {
-			apiservice.WriteValidationError("patient_id provided does not match the patient making the api call", w, r)
-			return
+		if patientId > 0 {
+			if patientIdFromAuthToken != patientId {
+				apiservice.WriteValidationError("patient_id provided does not match the patient making the api call", w, r)
+				return
+			}
+		} else {
+			patientId = requestData.PatientId
 		}
 
 	case api.DOCTOR_ROLE:
