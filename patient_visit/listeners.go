@@ -17,7 +17,7 @@ const (
 
 func InitListeners(dataAPI api.DataAPI) {
 
-	// Pull out any alerts for the patient based on the patient visit intake
+	// Populate alerts for patient based on visit intake
 	dispatch.Default.Subscribe(func(ev *VisitSubmittedEvent) error {
 		go func() {
 
@@ -49,9 +49,11 @@ func InitListeners(dataAPI api.DataAPI) {
 				if question.ToAlert {
 
 					switch question.QuestionType {
+
 					case info_intake.QUESTION_TYPE_AUTOCOMPLETE:
-						enteredAnswers := make([]string, len(answers))
+
 						// populate the answers to call out in the alert
+						enteredAnswers := make([]string, len(answers))
 						for i, answer := range answers {
 							a := answer.(*common.AnswerIntake)
 							if a.AnswerText != "" {
@@ -63,35 +65,35 @@ func InitListeners(dataAPI api.DataAPI) {
 							}
 						}
 
-						if len(answers) > 0 {
-							alerts = append(alerts, &common.Alert{
-								PatientId: ev.PatientId,
-								Source:    common.AlertSourcePatientVisitIntake,
-								SourceId:  questionId,
-								Message: strings.Replace(question.AlertFormattedText,
-									textReplacementIdentifier, strings.Join(enteredAnswers, ", "), -1),
-							})
-						}
+						alerts = append(alerts, &common.Alert{
+							PatientId: ev.PatientId,
+							Source:    common.AlertSourcePatientVisitIntake,
+							SourceId:  questionId,
+							Message: strings.Replace(question.AlertFormattedText,
+								textReplacementIdentifier, strings.Join(enteredAnswers, ", "), -1),
+						})
 
 					case info_intake.QUESTION_TYPE_MULTIPLE_CHOICE, info_intake.QUESTION_TYPE_SINGLE_SELECT:
+
 						selectedAnswers := make([]string, 0, len(question.PotentialAnswers))
+
+						// go through all the potential answers of the question to identify the
+						// ones that need to be alerted on
 						for _, potentialAnswer := range question.PotentialAnswers {
 							for _, patientAnswer := range answers {
 								pAnswer := patientAnswer.(*common.AnswerIntake)
-								// populate all the selected answers to show in the alert
-								if pAnswer.PotentialAnswerId.Int64() == potentialAnswer.AnswerId {
-									if potentialAnswer.ToAlert {
-										if potentialAnswer.AnswerSummary != "" {
-											selectedAnswers = append(selectedAnswers, potentialAnswer.AnswerSummary)
-										} else {
-											selectedAnswers = append(selectedAnswers, potentialAnswer.Answer)
-										}
-										break
+								if pAnswer.PotentialAnswerId.Int64() == potentialAnswer.AnswerId && potentialAnswer.ToAlert {
+									if potentialAnswer.AnswerSummary != "" {
+										selectedAnswers = append(selectedAnswers, potentialAnswer.AnswerSummary)
+									} else {
+										selectedAnswers = append(selectedAnswers, potentialAnswer.Answer)
 									}
+									break
 								}
 							}
 						}
 
+						// its possible that the patient selected an answer that need not be alerted on
 						if len(selectedAnswers) > 0 {
 							alerts = append(alerts, &common.Alert{
 								PatientId: ev.PatientId,
@@ -107,6 +109,7 @@ func InitListeners(dataAPI api.DataAPI) {
 
 			if err := dataAPI.AddAlertsForPatient(ev.PatientId, alerts); err != nil {
 				golog.Errorf("Unable to add alerts for patient: %s", err)
+				return
 			}
 		}()
 		return nil

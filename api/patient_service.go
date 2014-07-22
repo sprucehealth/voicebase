@@ -1021,8 +1021,8 @@ func (d *DataService) AddAlertsForPatient(patientId int64, alerts []*common.Aler
 		return nil
 	}
 
-	values := make([]interface{}, 0, 4*len(alerts))
 	fields := make([]string, 0, len(alerts))
+	values := make([]interface{}, 0, 4*len(alerts))
 	for _, alert := range alerts {
 		values = append(values, alert.PatientId, alert.Message, alert.Source, alert.SourceId)
 		fields = append(fields, "(?,?,?,?)")
