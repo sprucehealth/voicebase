@@ -1,5 +1,11 @@
 package main
 
+/*
+TODO:
+  - Can set the check status (warn, fail) based on status of AWS api and ElasticSearch so
+    that if either fail then this process fails the check and drops leadership.
+*/
+
 import (
 	"flag"
 	"net/http"
@@ -120,15 +126,24 @@ func startPowerStruggle(consul *consulapi.Client, sessionID string, stopCh chan 
 					lastIndex = meta.LastIndex
 					switch kv.Session {
 					case "":
-						golog.Infof("No leader. Attempting to take power.")
+						golog.Infof("No leader. Attempting to take power after %s", time.Duration(consulLockDelay).String())
 						setLeader(false)
 						break leaderCheck
 					case sessionID:
-						// Set to true incase there was a previous error that set leadership to false
-						setLeader(true)
+						if !isLeader() {
+							// This should only happen if there was previously an error
+							// talking to consul.
+							setLeader(true)
+							golog.Warningf("Remembering own leadership")
+						}
 						continue
 					}
-					golog.Infof("Current leader is %s", kv.Session)
+					if isLeader() {
+						setLeader(false)
+						golog.Warningf("Lost leadership to %s", kv.Session)
+					} else {
+						golog.Infof("Current leader is %s", kv.Session)
+					}
 				}
 			}
 			// After the lock is released there's a period of time before which
