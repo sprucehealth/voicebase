@@ -191,6 +191,11 @@ func indexStream(groupName string, stream *cloudwatchlogs.LogStream, es *Elastic
 		events, err = cwlClient.GetLogEvents(groupName, stream.LogStreamName, true, time.Time{}, time.Time{}, "", eventCount)
 	}
 
+	if err != nil {
+		log.Errorf("GetLogEvents failed: %s", err.Error())
+		return false
+	}
+
 	var buf []byte
 	for _, e := range events.Events {
 		if e.Timestamp.After(info.LastEventTime) {
