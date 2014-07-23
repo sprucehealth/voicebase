@@ -20,6 +20,8 @@ func InitListeners(dataAPI api.DataAPI) {
 		return
 	}
 
+	// On Visit submission, automatically submit a treamtent plan for patients
+	// created under certain demo domains
 	dispatch.Default.Subscribe(func(ev *patient_visit.VisitSubmittedEvent) error {
 		go func() {
 
