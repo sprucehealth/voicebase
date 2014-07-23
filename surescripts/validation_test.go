@@ -26,7 +26,7 @@ func TestValidPhoneNumberWithExtension(t *testing.T) {
 		t.Fatalf("Expected phone number to be valid: %+v", err)
 	}
 
-	if err := ValidatePhoneNumber("206-877-3590x12345135315151"); err != nil {
+	if err := ValidatePhoneNumber("206-877-3590x12345135351"); err != nil {
 		t.Fatal("Expected phone number to be invalid")
 	}
 
