@@ -1,6 +1,7 @@
 package demo
 
 import (
+	"fmt"
 	"strings"
 	"time"
 
@@ -101,7 +102,8 @@ func InitListeners(dataAPI api.DataAPI) {
 			}
 
 			// Step 6: Submit treatment plan back to patient
-			if err := submitTreatmentPlan(tpResponse.TreatmentPlan.Id.Int64(), "message", authHeader, host); err != nil {
+			message := fmt.Sprintf(messageForTreatmentPlan, patient.FirstName, doctor.LastName)
+			if err := submitTreatmentPlan(tpResponse.TreatmentPlan.Id.Int64(), message, authHeader, host); err != nil {
 				golog.Errorf("Unable to submit treatment plan: %s", err)
 				return
 			}
