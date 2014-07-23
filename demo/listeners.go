@@ -2,6 +2,7 @@ package demo
 
 import (
 	"strings"
+	"time"
 
 	"github.com/sprucehealth/backend/api"
 	"github.com/sprucehealth/backend/common"
@@ -32,6 +33,9 @@ func InitListeners(dataAPI api.DataAPI) {
 			if demoDomain == "" {
 				return
 			}
+
+			// sleep to wait for a bit before sending treatment plan to patient
+			time.Sleep(5 * time.Second)
 
 			favoriteTreatmentPlan, ok := favoriteTreatmentPlans["doxy_and_tretinoin"]
 			if !ok {
