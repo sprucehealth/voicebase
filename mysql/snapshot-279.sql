@@ -1,6 +1,6 @@
 -- MySQL dump 10.13  Distrib 5.6.19, for osx10.7 (x86_64)
 --
--- Host: 127.0.0.1    Database: database_18364
+-- Host: 127.0.0.1    Database: database_18075
 -- ------------------------------------------------------
 -- Server version	5.6.19
 
@@ -532,7 +532,7 @@ CREATE TABLE `doctor_treatment_message` (
   PRIMARY KEY (`treatment_plan_id`,`doctor_id`),
   KEY `doctor_id` (`doctor_id`),
   CONSTRAINT `doctor_treatment_message_ibfk_1` FOREIGN KEY (`doctor_id`) REFERENCES `doctor` (`id`),
-  CONSTRAINT `doctor_treatment_message_ibfk_2` FOREIGN KEY (`treatment_plan_id`) REFERENCES `treatment_plan` (`id`)
+  CONSTRAINT `doctor_treatment_message_ibfk_2` FOREIGN KEY (`treatment_plan_id`) REFERENCES `treatment_plan` (`id`) ON DELETE CASCADE
 ) ENGINE=InnoDB DEFAULT CHARSET=utf8;
 /*!40101 SET character_set_client = @saved_cs_client */;
 
@@ -2637,4 +2637,4 @@ CREATE TABLE `unlinked_dntf_treatment_status_events` (
 /*!40101 SET COLLATION_CONNECTION=@OLD_COLLATION_CONNECTION */;
 /*!40111 SET SQL_NOTES=@OLD_SQL_NOTES */;
 
--- Dump completed on 2014-07-22 15:56:09
+-- Dump completed on 2014-07-23 10:26:31

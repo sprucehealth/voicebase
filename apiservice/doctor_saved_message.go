@@ -2,9 +2,6 @@ package apiservice
 
 import (
 	"github.com/sprucehealth/backend/api"
-
-	"github.com/sprucehealth/backend/third_party/github.com/SpruceHealth/schema"
-
 	"net/http"
 	"strconv"
 )
@@ -24,7 +21,7 @@ type doctorSavedMessageGetResponse struct {
 }
 
 type doctorSavedMessageRequestData struct {
-	TreatmentPlanID string `schema:"treatment_plan_id, required"`
+	TreatmentPlanID int64 `schema:"treatment_plan_id"`
 }
 
 func NewDoctorSavedMessageHandler(dataAPI api.DataAPI) http.Handler {
@@ -71,26 +68,15 @@ func (h *doctorSavedMessageHandler) get(w http.ResponseWriter, r *http.Request, 
 			return
 		}
 	}
-
-	if err := r.ParseForm(); err != nil {
-        WriteDeveloperError(w, http.StatusBadRequest, "Unable to parse input parameters: "+err.Error())
-        return
-    }
  
 
-	requestData := doctorSavedMessageRequestData{}
-	if err := schema.NewDecoder().Decode(&requestData, r.Form); err != nil {
+	requestData := &doctorSavedMessageRequestData{}
+	if err := DecodeRequestData(requestData, r); err != nil {
 		WriteDeveloperError(w, http.StatusBadRequest, "Unable to parse input parameters: "+err.Error())
 		return
 	}
 
-	TreatmentPlanID, err := strconv.ParseInt(requestData.TreatmentPlanID, 10, 64)
-	if err != nil {
-		WriteDeveloperError(w, http.StatusBadRequest, "The TreatmentPlanID was not correctly specified as request parameter: "+err.Error())
-		return
-	}
-
-	msg, err := h.dataAPI.GetSavedMessageForDoctor(doctorID, TreatmentPlanID)
+	msg, err := h.dataAPI.GetSavedMessageForDoctor(doctorID, requestData.TreatmentPlanID)
 	if err == api.NoRowsError {
 		msg = ""
 	} else if err != nil {
