@@ -65,6 +65,7 @@ after_success:
 - cp ./apps/restapi/restapi build/restapi-$TRAVIS_BRANCH-$TRAVIS_BUILD_NUMBER
 - bzip2 build/restapi-$TRAVIS_BRANCH-$TRAVIS_BUILD_NUMBER
 - echo $TRAVIS_COMMIT > build/restapi-$TRAVIS_BRANCH-$TRAVIS_BUILD_NUMBER.revision
+- s3cmd --access_key $DEPLOY_ACCESS_KEY --secret_key $DEPLOY_SECRET_KEY -M --server-side-encryption put build/* s3://spruce-deploy/restapi/
 
 notifications:
   email:
