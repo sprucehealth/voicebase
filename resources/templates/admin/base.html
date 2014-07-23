@@ -1,13 +1,9 @@
-{{define "head"}}
-<style>
-body {
-	padding-top: 50px;
-}
-</style>
-{{template "admin-head" .}}
+{{define "baseHead"}}
+<link rel="stylesheet" type="text/css" href="{{staticURL "/css/admin.css"}}">
+{{template "head" .}}
 {{end}}
 
-{{define "admin-head"}}{{end}}
+{{define "head"}}{{end}}
 
 {{define "header"}}
 	<div class="navbar navbar-inverse navbar-fixed-top" role="navigation">
@@ -38,3 +34,15 @@ body {
 {{define "menu-doctors"}}{{end}}
 {{define "menu-resourceguides"}}{{end}}
 {{define "menu-rxguides"}}{{end}}
+
+{{define "baseBody"}}
+	{{template "header" .}}
+
+	<div id="base-content" class="container">
+	{{template "body" .}}
+	</div>
+
+	<div id="base-footer" class="container">
+	{{template "footer" .}}
+	</div>
+{{end}}

@@ -6,6 +6,7 @@ import (
 	"github.com/sprucehealth/backend/api"
 	"github.com/sprucehealth/backend/common"
 	"github.com/sprucehealth/backend/email"
+	"github.com/sprucehealth/backend/libs/httputil"
 	"github.com/sprucehealth/backend/libs/payment/stripe"
 	"github.com/sprucehealth/backend/libs/storage"
 	"github.com/sprucehealth/backend/passreset"
@@ -15,22 +16,39 @@ import (
 	"github.com/sprucehealth/backend/www"
 	"github.com/sprucehealth/backend/www/admin"
 	"github.com/sprucehealth/backend/www/dronboard"
+	"github.com/sprucehealth/backend/www/home"
 )
 
-func New(dataAPI api.DataAPI, authAPI api.AuthAPI, twilioCli *twilio.Client, fromNumber string, emailService email.Service, supportEmail, webSubdomain string, stripeCli *stripe.StripeService, signer *common.Signer, stores map[string]storage.Store, metricsRegistry metrics.Registry) http.Handler {
-	router := mux.NewRouter()
-	// Better a blank page for root than a 404
-	router.HandleFunc("/", func(w http.ResponseWriter, r *http.Request) {
-		www.TemplateResponse(w, http.StatusOK, www.IndexTemplate, &www.BaseTemplateContext{Title: "Spruce"})
-	})
-	router.Handle("/login", www.NewLoginHandler(authAPI))
-	router.Handle("/logout", www.NewLogoutHandler(authAPI))
-	router.PathPrefix("/static").Handler(http.StripPrefix("/static", http.FileServer(www.ResourceFileSystem)))
-	passreset.SetupRoutes(router, dataAPI, authAPI, twilioCli, fromNumber, emailService, supportEmail, webSubdomain, metricsRegistry.Scope("reset-password"))
-	dronboard.SetupRoutes(router, dataAPI, authAPI, supportEmail, stripeCli, signer, stores, metricsRegistry.Scope("doctor-onboard"))
-	admin.SetupRoutes(router, dataAPI, authAPI, stripeCli, signer, stores, metricsRegistry.Scope("admin"))
+type Config struct {
+	DataAPI           api.DataAPI
+	AuthAPI           api.AuthAPI
+	TwilioCli         *twilio.Client
+	FromNumber        string
+	EmailService      email.Service
+	SupportEmail      string
+	WebSubdomain      string
+	StaticResourceURL string
+	StripeCli         *stripe.StripeService
+	Signer            *common.Signer
+	Stores            map[string]storage.Store
+	MetricsRegistry   metrics.Registry
+	WebPassword       string
+}
 
-	return http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
+func New(c *Config) http.Handler {
+	www.StaticURL = c.StaticResourceURL
+
+	router := mux.NewRouter()
+	router.Handle("/login", www.NewLoginHandler(c.AuthAPI))
+	router.Handle("/logout", www.NewLogoutHandler(c.AuthAPI))
+	router.PathPrefix("/static").Handler(http.StripPrefix("/static", http.FileServer(www.ResourceFileSystem)))
+
+	home.SetupRoutes(router, c.WebPassword, c.MetricsRegistry.Scope("home"))
+	passreset.SetupRoutes(router, c.DataAPI, c.AuthAPI, c.TwilioCli, c.FromNumber, c.EmailService, c.SupportEmail, c.WebSubdomain, c.MetricsRegistry.Scope("reset-password"))
+	dronboard.SetupRoutes(router, c.DataAPI, c.AuthAPI, c.SupportEmail, c.StripeCli, c.Signer, c.Stores, c.MetricsRegistry.Scope("doctor-onboard"))
+	admin.SetupRoutes(router, c.DataAPI, c.AuthAPI, c.StripeCli, c.Signer, c.Stores, c.MetricsRegistry.Scope("admin"))
+
+	return httputil.CompressResponse(httputil.DecompressRequest(http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
 		if r.Header.Get("X-Forwarded-Proto") != "https" {
 			u := r.URL
 			u.Scheme = "https"
@@ -39,5 +57,5 @@ func New(dataAPI api.DataAPI, authAPI api.AuthAPI, twilioCli *twilio.Client, fro
 			return
 		}
 		router.ServeHTTP(w, r)
-	})
+	})))
 }

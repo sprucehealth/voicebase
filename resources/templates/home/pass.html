@@ -1,0 +1,35 @@
+{{define "baseHead"}}
+<style type="text/css">
+html, body {
+	background-color: #096AA1;
+	color: #fff;
+}
+#box {
+	margin-top: 70px;
+	width: 320px;
+}
+#box form {
+	margin-top: 40px;
+}
+#box .btn {
+	width: 100%;
+}
+#box .error {
+	margin-bottom: 10px;
+	color: #f00;
+}
+</style>
+{{end}}
+
+{{define "baseBody"}}
+	<div id="box" class="container center-block text-center">
+		<h1>Spruce</h1>
+		<form method="POST" action="" role="form">
+			{{with .Error}}<div class="error">{{.}}</div>{{end}}
+			<div class="form-group">
+				<input required type="password" id="Password" name="Password" class="form-control" placeholder="Password">
+			</div>
+			<button class="btn btn-primary">Enter</button>
+		</form>
+	</div>
+{{end}}

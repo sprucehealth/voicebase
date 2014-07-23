@@ -175,9 +175,21 @@ func buildWWW(conf *Config, dataApi api.DataAPI, authAPI api.AuthAPI, signer *co
 		PublishableKey: conf.Stripe.PublishableKey,
 	}
 
-	return router.New(dataApi, authAPI, twilioCli, conf.Twilio.FromNumber,
-		email.NewService(conf.Email, metricsRegistry.Scope("email")), conf.Support.CustomerSupportEmail,
-		conf.WebSubdomain, stripeCli, signer, stores, metricsRegistry.Scope("www"))
+	return router.New(&router.Config{
+		DataAPI:           dataApi,
+		AuthAPI:           authAPI,
+		TwilioCli:         twilioCli,
+		FromNumber:        conf.Twilio.FromNumber,
+		EmailService:      email.NewService(conf.Email, metricsRegistry.Scope("email")),
+		SupportEmail:      conf.Support.CustomerSupportEmail,
+		WebSubdomain:      conf.WebSubdomain,
+		StaticResourceURL: conf.StaticResourceURL,
+		StripeCli:         stripeCli,
+		Signer:            signer,
+		Stores:            stores,
+		WebPassword:       conf.WebPassword,
+		MetricsRegistry:   metricsRegistry.Scope("www"),
+	})
 }
 
 func buildRESTAPI(conf *Config, dataApi api.DataAPI, authAPI api.AuthAPI, stores map[string]storage.Store, metricsRegistry metrics.Registry) http.Handler {

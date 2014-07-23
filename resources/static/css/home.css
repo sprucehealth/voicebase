@@ -1,0 +1,428 @@
+video {
+	border: 0;
+}
+hr {
+	border: 0;
+	height: 0;
+	width: 42%;
+	border-top: 0;
+	border-bottom: 1px solid #E8F0F3;
+}
+.iPhone {
+	background-image: url('../img/home/iPhone@2x.png');
+	background-size: 300px 628px;
+	width: 300px;
+	height: 628px;
+}
+.iPhone img {
+	width: 250px;
+	height: 444px;
+	position: relative;
+	top: 94px;
+	left: 26px;
+}
+#header img {
+	margin: 20px 0;
+}
+#hometopbar {
+	background-color: #096AA1;
+	padding: 130px 0 130px 0;
+	color: #fff;
+}
+#hometopbar h1 {
+	font-family: 'MuseoSans-500';
+	/* font-weight: 500; */
+	font-size: 60px;
+	line-height: 72px;
+	margin: 0;
+	padding: 0;
+}
+#hometopbar h2 {
+	font-family: 'MuseoSans-300';
+	/* font-weight: 300; */
+	font-size: 44px;
+	line-height: 52px;
+	margin: 10px 0 0 0;
+	padding: 0;
+}
+#hometopbar .btn {
+	font-family: 'MuseoSans-500';
+	/* font-weight: 500; */
+	font-size: 28px;
+	border-radius: 30px;
+	padding: 11px 55px 11px 55px;
+	margin-top: 40px;
+}
+.infoblock .container {
+	padding-top: 45px;
+	padding-bottom: 45px;
+}
+.infoblock .heading {
+	padding-left: 50px;
+	padding-right: 50px;
+}
+.infoblock h2 {
+	font-family: 'MuseoSans-500';
+	/* font-weight: 500; */
+	font-size: 44px;
+	line-height: 52px;
+	margin: 70px 0 30px 0;
+	padding: 0;
+}
+.infoblock p {
+	font-family: 'MuseoSans-300';
+	/* font-weight: 300; */
+	font-size: 28px;
+	color: #1E333A;
+	line-height: 33px;
+}
+.infoblock hr {
+	margin-top: 50px;
+	margin-bottom: 50px;
+}
+.infoblock .subrow p {
+	font-family: 'MuseoSans-300';
+	/* font-weight: 300; */
+	font-size: 18px;
+	color: #8B9FA7;
+	line-height: 22px;
+	padding-top: 20px;
+	padding-left: 8px;
+	padding-right: 8px;
+}
+#doodad {
+	margin-top: 20px;
+	background-color: #08C4B9;
+	background-image: url('../img/home/doodad_bg.png');
+	background-repeat: no-repeat;
+	background-position: center;
+	color: #fff;
+	text-align: center;
+	padding: 60px 0 60px 0;
+}
+#doodad h2 {
+	font-family: 'MuseoSans-700';
+	/* font-weight: 700; */
+	font-size: 44px;
+	line-height: 52px;
+}
+#doodad h3 {
+	font-family: 'MuseoSans-300';
+	/* font-weight: 300; */
+	font-size: 40px;
+	line-height: 48px;
+}
+#doodad .btn {
+	font-family: 'MuseoSans-500';
+	/* font-weight: 500; */
+	font-size: 24px;
+	border-radius: 30px;
+	padding: 14px 55px 14px 55px;
+	line-height: 29px;
+	margin-top: 40px;
+	color: #08C4B9;
+}
+#doodad .btn-primary {
+	background-color: #fff;
+}
+#doodad .btn-primary:hover {
+	background-color: #f8f8f8;
+}
+#meetdoctors {
+	padding-top: 20px;
+	padding-bottom: 20px;
+}
+#meetdoctors .doctor {
+	padding-top: 30px;
+}
+#meetdoctors h2 {
+	font-family: 'MuseoSans-500';
+	/* font-weight: 500; */
+	font-size: 44px;
+	color: #1E333A;
+	line-height: 52px;
+}
+#meetdoctors h3 {
+	font-family: 'MuseoSans-300';
+	/* font-weight: 300; */
+	font-size: 28px;
+	color: #1E333A;
+	line-height: 33px;
+}
+#meetdoctors h4 {
+	font-family: 'MuseoSans-500';
+	/* font-weight: 500; */
+	font-size: 20px;
+	color: #1E333A;
+	line-height: 24px;
+}
+#meetdoctors h5 {
+	font-family: 'MuseoSans-300';
+	/* font-weight: 300; */
+	font-size: 14px;
+	color: #8B9FA7;
+	line-height: 17px;
+}
+#meetdoctors .bio {
+	margin-top: -50px;
+	padding-top: 55px;
+	padding-bottom: 20px;
+	background-color: #F8FAFB;
+}
+#meetdoctors .bio p {
+	font-family: 'MuseoSans-300-Italic';
+	/*font-weight: 300;*/
+	/*font-style: italic;*/
+	font-size: 16px;
+	color: #506066;
+	line-height: 20px;
+	padding: 0 35px;
+}
+#footer {
+	font-family: 'MuseoSans-500';
+	/* font-weight: 500; */
+	background-color: #1E333A;
+	color: #fff;
+	text-align: center;
+	font-size: 16px;
+	line-height: 19px;
+	padding: 50px 0 80px 0;
+	margin-top: 30px;
+}
+#footer .hlinklist .item {
+	padding: 0 20px 0 20px;
+}
+#footer a, #footer a:visited {
+	color: #fff;
+}
+#footer .copyright {
+	font-family: 'MuseoSans-500';
+	/* font-weight: 500; */
+	font-size: 14px;
+	color: #8B9FA7;
+	line-height: 17px;
+	margin-top: 50px;
+}
+.mobile {
+	display: none;
+}
+#footer div:nth-child(1) {
+	display: none;
+}
+
+#abouttopbar {
+	background-color: #096AA1;
+	color: #fff;
+	padding-top: 40px;
+	padding-bottom: 40px;
+}
+#abouttopbar p {
+	font-family: 'MuseoSans-500';
+	/* font-weight: 500; */
+	font-size: 44px;
+	line-height: 52px;
+}
+#about {
+	font-family: 'MuseoSans-300';
+	/* font-weight: 300; */
+	color: #1E333A;
+	font-size: 28px;
+	line-height: 37px;
+}
+#about .videobg {
+	background-color: #096AA1;
+	z-index: -10;
+	width: 100%;
+	height: 25%;
+	position: absolute;
+}
+#about h2 {
+	font-family: 'MuseoSans-500';
+	/* font-weight: 500; */
+	font-size: 32px;
+	line-height: 38px;
+	text-align: center;
+	margin-top: 60px;
+}
+#about .team {
+	font-size: 18px;
+	line-height: 22px;
+	margin-bottom: 100px;
+}
+#about .team .row {
+	margin-top: 20px;
+}
+#about .team img {
+	margin: 20px 0;
+}
+#about .team .person {
+	padding-bottom: 25px;
+}
+#about video {
+	width: 100%;
+}
+
+@media screen and (min-width: 750px) and (max-width: 989px) {
+	#hometopbar {
+		padding: 70px 0 70px 0;
+	}
+	.desktop {
+		display: none;
+	}
+	.mobile {
+		display: block;
+	}
+	.infoblock h2 {
+		margin-top: 10px;
+	}
+	.infoblock .subrow {
+		margin-top: 50px;
+	}
+	.iPhone {
+		display: none;
+	}
+
+	#abouttopbar p {
+		font-size: 38px;
+		line-height: 46px;
+	}
+}
+
+@media screen and (max-width : 750px) {
+	hr {
+		width: 70%;
+	}
+	#hometopbar {
+		padding: 50px 0 50px 0;
+	}
+	#hometopbar h1 {
+		font-family: 'MuseoSans-700';
+	/* font-weight: 700; */
+		font-size: 36px;
+		line-height: 43px;
+		text-shadow: 0px 1px 8px rgba(0,0,0,0.23);
+	}
+	#hometopbar h2 {
+		font-family: 'MuseoSans-500';
+	/* font-weight: 500; */
+		font-size: 28px;
+		line-height: 33px;
+		text-shadow: 0px 1px 8px rgba(0,0,0,0.23);
+	}
+	#hometopbar .btn {
+		font-family: 'MuseoSans-700';
+	/* font-weight: 700; */
+		font-size: 24px;
+		line-height: 29px;
+		margin-top: 30px;
+	}
+	.infoblock .container {
+		padding: 15px 20px 10px 20px;
+	}
+	.infoblock h2 {
+		font-family: 'MuseoSans-500';
+	/* font-weight: 500; */
+		font-size: 28px;
+		line-height: 33px;
+		margin-top: 10px;
+	}
+	.infoblock p {
+		font-family: 'MuseoSans-300';
+	/* font-weight: 300; */
+		font-size: 22px;
+		line-height: 27px;
+	}
+	.infoblock .heading {
+		padding-left: inherit;
+		padding-right: inherit;
+	}
+	.infoblock .subrow p {
+		padding: 5px 50px 5px 50px;
+	}
+	.infoblock .subrow .col-md-5 {
+		margin-top: 30px;
+	}
+	.infoblock .col-md-1 {
+		display: none;
+	}
+	#doodad {
+		padding: 30px 0 30px 0;
+	}
+	#doodad h2 {
+		font-family: 'MuseoSans-700';
+	/* font-weight: 700; */
+		font-size: 32px;
+		line-height: 38px;
+	}
+	#doodad h3 {
+		font-family: 'MuseoSans-300';
+	/* font-weight: 300; */
+		font-size: 28px;
+		line-height: 33px;
+	}
+	#doodad .btn {
+		font-family: 'MuseoSans-700';
+	/* font-weight: 700; */
+		font-size: 24px;
+		line-height: 29px;
+		margin-top: 20px;
+	}
+	#meetdoctors h2 {
+		font-family: 'MuseoSans-500';
+	/* font-weight: 500; */
+		font-size: 28px;
+		line-height: 33px;
+	}
+	#meetdoctors h3 {
+		font-family: 'MuseoSans-300';
+	/* font-weight: 300; */
+		font-size: 22px;
+		line-height: 27px;
+	}
+	#meetdoctors .bio {
+		margin-left: 10px;
+		margin-right: 10px;
+	}
+	#footer {
+		padding: 30px 0 50px 0;
+		line-height: 40px;
+	}
+	#footer div:nth-child(1) {
+		display: block;
+	}
+	#footer .hlinklist {
+		margin-top: 20px;
+	}
+	#footer .hlinklist .item {
+		padding: 0;
+		display: block;
+	}
+	#footer .hlinklist span.item {
+		display: none;
+	}
+	#footer .copyright {
+		margin-top: 30px;
+	}
+	.desktop {
+		display: none;
+	}
+	.mobile {
+		display: block;
+	}
+	.iPhone {
+		display: none;
+	}
+
+	#about {
+		font-size: 22px;
+		line-height: 30px;
+	}
+	#about h2 {
+		font-size: 28px;
+		line-height: 34px;
+	}
+	#abouttopbar p {
+		font-size: 28px;
+		line-height: 36px;
+	}
+}

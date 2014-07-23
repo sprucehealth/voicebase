@@ -1,0 +1,31 @@
+{{define "baseHead"}}
+	<style type="text/css">
+		html, body {
+			background-color: #E8F0F3;
+		}
+		#reset-content {
+			max-width: 500px;
+			background-color: #fff;
+			border: 1px solid #ebebeb;
+			padding: 28px;
+			border-radius: 6px;
+		}
+		#reset-footer {
+			padding-top: 10px;
+		}
+	</style>
+	{{template "head" .}}
+{{end}}
+{{define "head"}}{{end}}
+
+{{define "baseBody"}}
+	<h1 class="text-center">Spruce</h1>
+
+	<div id="reset-content" class="content center-block">
+		{{template "body" .}}
+	</div>
+
+	<div id="reset-footer" class="text-center">
+		Need additional help? Contact <a href="mailto:{{.SupportEmail}}">Spruce&nbsp;Support</a>.
+	</div>
+{{end}}

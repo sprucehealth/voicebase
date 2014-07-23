@@ -110,6 +110,8 @@ type Config struct {
 	PharmacyDB               *pharmacy.Config              `group:"pharmacy_database" toml:"pharmacy_database"`
 	Storage                  map[string]*StorageConfig     `group:"storage" toml:"storage"`
 	ZipCodeToCityStateMapper map[string]*address.CityState `group:"zipcode_hack" toml:"zipcode_hack"`
+	StaticResourceURL        string                        `long:"static_url" description:"URL prefix for static resources"`
+	WebPassword              string                        `long:"web_password" description:"Password to access website"`
 	// Secret keys used for generating signatures
 	SecretSignatureKeys []string
 }
@@ -148,9 +150,11 @@ func (c *Config) Validate() {
 	if len(c.Storage) == 0 {
 		errors = append(errors, "No storage configs set")
 	}
-
 	if c.Stripe == nil || c.Stripe.SecretKey == "" || c.Stripe.PublishableKey == "" {
 		errors = append(errors, "No stripe key set")
+	}
+	if c.WebPassword == "" {
+		errors = append(errors, "No password for website")
 	}
 
 	if !c.Debug {
@@ -160,6 +164,16 @@ func (c *Config) Validate() {
 		if c.TLSKey == "" {
 			errors = append(errors, "TLSKey not set")
 		}
+	}
+	if c.StaticResourceURL == "" {
+		if os.Getenv("GOPATH") == "" {
+			errors = append(errors, "StaticResourceURL not set")
+		} else {
+			// In dev we can use a local file server in the app
+			c.StaticResourceURL = "/static"
+		}
+	} else if n := len(c.StaticResourceURL); c.StaticResourceURL[n-1] == '/' {
+		c.StaticResourceURL = c.StaticResourceURL[:n-1]
 	}
 	if len(errors) != 0 {
 		fmt.Fprintf(os.Stderr, "Config failed validation:\n")

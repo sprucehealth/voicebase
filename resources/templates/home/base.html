@@ -1,0 +1,39 @@
+{{define "baseHead"}}
+<link rel="stylesheet" type="text/css" href="{{staticURL "/css/home.css"}}">
+<style type="text/css">
+@media (min-width:1200px) {
+	.container {
+		width: 960px;
+	}
+}
+</style>
+{{template "head" .}}
+{{end}}
+{{define "head"}}{{end}}
+
+{{define "baseTail"}}
+{{template "tail" .}}
+{{end}}
+{{define "tail"}}{{end}}
+
+{{define "footer"}}
+{{end}}
+
+{{define "baseBody"}}
+	{{template "content" .}}
+
+ 	<div id="footer">
+		<div class="center-block">
+			<img src="{{staticURL "/img/home/spruce_logo_footer@2x.png"}}" width="35" height="47" alt="Spruce logo">
+		</div>
+		<div class="hlinklist">
+			<a href="/" class="item">HOME</a>
+			<span class="item"><img src="{{staticURL "/img/home/spruce_logo_footer@2x.png"}}" width="35" height="47" alt="Spruce logo"></span>
+			<a href="/about" class="item">ABOUT</a>
+		</div>
+
+		<div class="copyright">
+			© SPRUCE HEALTH 2014
+		</div>
+	</div>
+{{end}}
