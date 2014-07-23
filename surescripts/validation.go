@@ -67,10 +67,6 @@ func ValidatePatientInformation(patient *common.Patient, addressValidationApi ad
 		return errors.New("Patient is not 18 years of age")
 	}
 
-	if len(patient.PhoneNumbers) == 0 {
-		return errors.New("Atleast one phone number is required")
-	}
-
 	if patient.PatientAddress == nil {
 		return errors.New("Patient address is required")
 	}
@@ -119,14 +115,12 @@ func ValidatePatientInformation(patient *common.Patient, addressValidationApi ad
 		return fmt.Errorf("City cannot be longer than %d characters", maxLongFieldLength)
 	}
 
-	for _, phoneNumber := range patient.PhoneNumbers {
-		if len(phoneNumber.Phone) > MaxPhoneNumberLength {
-			return fmt.Errorf("Phone numbers cannot be longer than %d digits", MaxPhoneNumberLength)
-		}
-	}
-
 	if err := address.ValidateAddress(dataApi, patient.PatientAddress, addressValidationApi); err != nil {
 		return err
+	}
+
+	if len(patient.PhoneNumbers) == 0 {
+		return errors.New("Atleast one phone number is required")
 	}
 
 	for _, phoneNumber := range patient.PhoneNumbers {
@@ -158,9 +152,13 @@ func TrimSpacesFromPatientFields(patient *common.Patient) {
 }
 
 func ValidatePhoneNumber(phoneNumber string) error {
-	// phone number has to be 10 digits long
+	// phone number has to be atleast 10 digits long
 	if len(phoneNumber) < 10 {
 		return fmt.Errorf("Invalid phone number")
+	}
+
+	if len(phoneNumber) > MaxPhoneNumberLength {
+		return fmt.Errorf("Phone numbers cannot be longer than %d digits", MaxPhoneNumberLength)
 	}
 
 	// attempt to break the string based on "-" to identify if phone number is formatted

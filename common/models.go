@@ -89,6 +89,7 @@ type Doctor struct {
 	ShortDisplayName    string               `json:"short_display_name,omitempty"`
 	LongDisplayName     string               `json:"long_display_name,omitempty"`
 	DOB                 encoding.DOB         `json:"-"`
+	Email               string               `json:"email"`
 	Gender              string               `json:"-"`
 	Status              string               `json:"-"`
 	AccountId           encoding.ObjectId    `json:"-"`

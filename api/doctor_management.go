@@ -1,6 +1,10 @@
 package api
 
-import "database/sql"
+import (
+	"database/sql"
+
+	"github.com/sprucehealth/backend/common"
+)
 
 func (d *DataService) GetCareProvidingStateId(stateAbbreviation string, healthConditionId int64) (int64, error) {
 	var careProvidingStateId int64
@@ -24,4 +28,20 @@ func (d *DataService) AddCareProvidingState(stateAbbreviation, fullStateName str
 func (d *DataService) MakeDoctorElligibleinCareProvidingState(careProvidingStateId, doctorId int64) error {
 	_, err := d.db.Exec(`insert into care_provider_state_elligibility (role_type_id, provider_id, care_providing_state_id) values (?,?,?)`, d.roleTypeMapping[DOCTOR_ROLE], doctorId, careProvidingStateId)
 	return err
+}
+
+func (d *DataService) GetDoctorWithEmail(email string) (*common.Doctor, error) {
+	var doctorId int64
+	if err := d.db.QueryRow(`select id from doctor where account_id = (select id from account where email = ?)`, email).Scan(&doctorId); err == sql.ErrNoRows {
+		return nil, NoRowsError
+	} else if err != nil {
+		return nil, err
+	}
+
+	doctor, err := d.GetDoctorFromId(doctorId)
+	if err != nil {
+		return nil, err
+	}
+
+	return doctor, err
 }

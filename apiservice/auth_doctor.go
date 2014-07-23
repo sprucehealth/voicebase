@@ -8,9 +8,9 @@ import (
 	"github.com/sprucehealth/backend/third_party/github.com/SpruceHealth/schema"
 )
 
-type DoctorAuthenticationHandler struct {
-	AuthApi api.AuthAPI
-	DataApi api.DataAPI
+type doctorAuthenticationHandler struct {
+	authAPI api.AuthAPI
+	dataAPI api.DataAPI
 }
 
 type DoctorAuthenticationResponse struct {
@@ -18,7 +18,14 @@ type DoctorAuthenticationResponse struct {
 	Doctor *common.Doctor `json:"doctor,omitempty"`
 }
 
-func (d *DoctorAuthenticationHandler) NonAuthenticated() bool {
+func NewDoctorAuthenticationHandler(dataAPI api.DataAPI, authAPI api.AuthAPI) http.Handler {
+	return &doctorAuthenticationHandler{
+		dataAPI: dataAPI,
+		authAPI: authAPI,
+	}
+}
+
+func (d *doctorAuthenticationHandler) NonAuthenticated() bool {
 	return true
 }
 
@@ -27,7 +34,7 @@ type DoctorAuthenticationRequestData struct {
 	Password string `schema:"password,required"`
 }
 
-func (d *DoctorAuthenticationHandler) ServeHTTP(w http.ResponseWriter, r *http.Request) {
+func (d *doctorAuthenticationHandler) ServeHTTP(w http.ResponseWriter, r *http.Request) {
 	if r.Method != HTTP_POST {
 		w.WriteHeader(http.StatusNotFound)
 		return
@@ -44,7 +51,7 @@ func (d *DoctorAuthenticationHandler) ServeHTTP(w http.ResponseWriter, r *http.R
 		return
 	}
 
-	if account, token, err := d.AuthApi.LogIn(requestData.Email, requestData.Password); err != nil {
+	if account, token, err := d.authAPI.LogIn(requestData.Email, requestData.Password); err != nil {
 		switch err {
 		case api.LoginDoesNotExist, api.InvalidPassword:
 			WriteUserError(w, http.StatusForbidden, "Invalid email/password combination")
@@ -54,7 +61,7 @@ func (d *DoctorAuthenticationHandler) ServeHTTP(w http.ResponseWriter, r *http.R
 			return
 		}
 	} else {
-		doctor, err := d.DataApi.GetDoctorFromAccountId(account.ID)
+		doctor, err := d.dataAPI.GetDoctorFromAccountId(account.ID)
 		if err != nil {
 			WriteDeveloperError(w, http.StatusInternalServerError, "Unable to get doctor id from account id "+err.Error())
 			return
