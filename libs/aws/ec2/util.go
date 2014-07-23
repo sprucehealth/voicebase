@@ -4,6 +4,7 @@ import (
 	"encoding/xml"
 	"fmt"
 	"net/http"
+	"net/url"
 	"strings"
 )
 
@@ -37,4 +38,15 @@ func ParseErrorResponse(res *http.Response) error {
 		return err
 	}
 	return &er
+}
+
+func encodeFilters(params url.Values, filters map[string][]string) {
+	i := 1
+	for name, values := range filters {
+		params.Set(fmt.Sprintf("Filter.%d.Name", i), name)
+		for j, val := range values {
+			params.Set(fmt.Sprintf("Filter.%d.Value.%d", i, j+1), val)
+		}
+		i++
+	}
 }

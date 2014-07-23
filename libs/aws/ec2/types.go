@@ -53,6 +53,13 @@ type Group struct {
 	Name string `xml:"groupName"`
 }
 
+// http://docs.aws.amazon.com/AWSEC2/latest/APIReference/ApiReference-ItemType-UserIdGroupPairType.html
+type UserGroup struct {
+	UserID string `xml:"userId"`
+	ID     string `xml:"groupId"`
+	Name   string `xml:"groupName"`
+}
+
 type VolumeAttachment struct {
 	VolumeID            string `xml:"volumeId"`
 	InstanceID          string `xml:"instanceId"`
@@ -211,14 +218,162 @@ type DescribeInstancesResponse struct {
 	NextToken    string         `xml:"nextToken"`
 }
 
+type NetworkACLEntry struct {
+	RoleNumber int    `xml:"roleNumber"`
+	Protocol   string `xml:"protocol"`   // all, ...
+	RuleAction string `xml:"ruleAction"` // allow, deny
+	Egress     bool   `xml:"egress"`
+	CIDRBlock  string `xml:"cidrBlock"`
+}
+
+type NetworkACLAssociation struct {
+	NetworkACLAssociationID string `xml:"networkAclAssociationId"`
+	NetworkACLID            string `xml:"networkAclId"`
+	SubnetID                string `xml:"subnetId"`
+}
+
+type NetworkACL struct {
+	NetworkACLID string                   `xml:"networkAclId"`
+	VPCID        string                   `xml:"vpcId"`
+	Default      bool                     `xml:"default"`
+	Entries      []*NetworkACLEntry       `xml:"entrySet>item"`
+	Associations []*NetworkACLAssociation `xml:"associationSet>item"`
+	Tags         Tags                     `xml:"tagSet"`
+}
+
+type DescribeNetworkACLsResponse struct {
+	RequestID   string        `xml:"requestId"`
+	NetworkACLs []*NetworkACL `xml:"networkAclSet>item"`
+}
+
+type Route struct {
+	DestinationCIDRBlock string `xml:"destinationCidrBlock"`
+	GatewayID            string `xml:"gatewayId"`
+	State                string `xml:"state"`
+	Origin               string `xml:"origin"`
+}
+
+type RouteAssociation struct {
+	RouteTableAssociationID string `xml:"routeTableAssociationId"`
+	RouteTableID            string `xml:"routeTableId"`
+	Main                    bool   `xml:"main"`
+	SubnetID                string `xml:"subnetId"`
+}
+
+// http://docs.aws.amazon.com/AWSEC2/latest/APIReference/ApiReference-ItemType-RouteTableType.html
+type RouteTable struct {
+	RouteTableId    string              `xml:"routeTableId"`
+	VPCID           string              `xml:"vpcId"`
+	Routes          []*Route            `xml:"routeSet>item"`
+	Associations    []*RouteAssociation `xml:"associationSet>item"`
+	PropagatingVGWs []string            `xml:"propagatingVgwSet>item>gatewayID"`
+	Tags            Tags                `xml:"tagSet"`
+}
+
+type DescribeRouteTablesResponse struct {
+	RequestID   string        `xml:"requestId"`
+	RouteTables []*RouteTable `xml:"routeTableSet>item"`
+}
+
+// http://docs.aws.amazon.com/AWSEC2/latest/APIReference/ApiReference-ItemType-IpPermissionType.html
+type IPPermission struct {
+	IPProtocol string       `xml:"ipProtocol"`
+	FromPort   int          `xml:"fromPort"`
+	ToPort     int          `xml:"toPort"`
+	Groups     []*UserGroup `xml:"groups>item"`
+	IPRanges   []string     `xml:"ipRanges>item>cidrIp"` // http://docs.aws.amazon.com/AWSEC2/latest/APIReference/ApiReference-ItemType-IpRangeItemType.html
+}
+
+// http://docs.aws.amazon.com/AWSEC2/latest/APIReference/ApiReference-ItemType-SecurityGroupItemType.html
+type SecurityGroup struct {
+	OwnerID             string          `xml:"ownerId"`
+	GroupID             string          `xml:"groupId"`
+	GroupName           string          `xml:"groupName"`
+	GroupDescription    string          `xml:"groupDescription"`
+	VPCID               string          `xml:"vpcId"`
+	IPPermissions       []*IPPermission `xml:"ipPermissions>item"`
+	IPPermissionsEgress []*IPPermission `xml:"ipPermissionsEgress>item"`
+}
+
+// http://docs.aws.amazon.com/AWSEC2/latest/APIReference/ApiReference-query-DescribeSecurityGroups.html
+type DescribeSecurityGroupsResponse struct {
+	RequestID      string           `xml:"requestId"`
+	SecurityGroups []*SecurityGroup `xml:"securityGroupInfo>item"`
+}
+
 type DescribeSnapshotsResponse struct {
 	RequestID string      `xml:"requestId"`
 	Snapshots []*Snapshot `xml:"snapshotSet>item"`
 }
 
+// http://docs.aws.amazon.com/AWSEC2/latest/APIReference/ApiReference-ItemType-SubnetType.html
+type Subnet struct {
+	SubnetID                string `xml:"subnetId"`
+	State                   string `xml:"state"` // pending, available
+	VPDID                   string `xml:"vpcId"`
+	CIDRBlock               string `xml:"cidrBlock"`
+	AvailableIPAddressCount int    `xml:"availableIpAddressCount"`
+	AvailabilityZone        string `xml:"availabilityZone"`
+	DefaultForAZ            bool   `xml:"defaultForAz"`
+	MapPublicIPOnLaunch     bool   `xml:"mapPublicIpOnLaunch"`
+	Tags                    Tags   `xml:"tagSet"`
+}
+
+// http://docs.aws.amazon.com/AWSEC2/latest/APIReference/ApiReference-query-DescribeSubnets.html
+type DescribeSubnetsResponse struct {
+	RequestID string    `xml:"requestId"`
+	Subnets   []*Subnet `xml:"subnetSet>item"`
+}
+
 type DescribeVolumesResponse struct {
 	RequestID string    `xml:"requestId"`
 	Volumes   []*Volume `xml:"volumeSet>item"`
+}
+
+// http://docs.aws.amazon.com/AWSEC2/latest/APIReference/ApiReference-ItemType-VpcType.html
+type VPC struct {
+	VPCID           string `xml:"vpcId"`
+	State           string `xml:"state"` // pending | available
+	CIDRBlock       string `xml:"cidrBlock"`
+	DHCPOptionsId   string `xml:"dhcpOptionsId"`
+	Tags            Tags   `xml:"tagSet"`
+	InstanceTenancy string `xml:"instanceTenancy"` // default | dedicated
+	IsDefault       bool   `xml:"isDefault"`
+}
+
+// http://docs.aws.amazon.com/AWSEC2/latest/APIReference/ApiReference-query-DescribeVpcs.html
+type DescribeVPCsResponse struct {
+	RequestID string `xml:"requestId"`
+	VPCs      []*VPC `xml:"vpcSet>item"`
+}
+
+// http://docs.aws.amazon.com/AWSEC2/latest/APIReference/ApiReference-ItemType-VpcPeeringConnectionVpcInfoType.html
+type VPCPeeringConnectionVPCInfo struct {
+	VPCID     string `xml:"vpcId"`
+	OwnerID   string `xml:"ownerId"`
+	CIDRBlock string `xml:"cidrBlock"`
+}
+
+// http://docs.aws.amazon.com/AWSEC2/latest/APIReference/ApiReference-ItemType-VpcPeeringConnectionStateReasonType.html
+type VPCPeeringConnectionStateReason struct {
+	Code    string `xml:"code"` // initiating-request | pending-acceptance | failed | expired | provisioning | active | deleted | rejected
+	Message string `xml:"message"`
+}
+
+// http://docs.aws.amazon.com/AWSEC2/latest/APIReference/ApiReference-ItemType-VpcPeeringConnectionType.html
+type VPCPeeringConnection struct {
+	VPCPeeringConnectionID string                           `xml:"vpcPeeringConnectionId"`
+	RequesterVPCInfo       *VPCPeeringConnectionVPCInfo     `xml:"requesterVpcInfo"`
+	AccepterVPCInfo        *VPCPeeringConnectionVPCInfo     `xml:"accepterVpcInfo"`
+	Status                 *VPCPeeringConnectionStateReason `xml:"status"`
+	ExpirationTime         Time                             `xml:"expirationTime"`
+	Tags                   Tags                             `xml:"tagSet"`
+}
+
+// http://docs.aws.amazon.com/AWSEC2/latest/APIReference/ApiReference-query-DescribeVpcPeeringConnections.html
+type DescribeVPCPeeringConnectionsResponse struct {
+	RequestID   string                  `xml:"requestId"`
+	Connections []*VPCPeeringConnection `xml:"vpcPeeringConnectionSet>item"`
 }
 
 type SimpleResponse struct {
