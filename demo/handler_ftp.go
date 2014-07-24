@@ -118,7 +118,9 @@ func (f *favoriteTreatmentPlanHandler) ServeHTTP(w http.ResponseWriter, r *http.
 	if err != nil {
 		apiservice.WriteError(err, w, r)
 		return
-	} else if res.StatusCode != http.StatusOK {
+	}
+	defer res.Body.Close()
+	if res.StatusCode != http.StatusOK {
 		apiservice.WriteError(fmt.Errorf("Expected 200 instead got %d", res.StatusCode), w, r)
 		return
 	}

@@ -34,8 +34,15 @@ func startPatientIntakeSubmission(answersToQuestions []*apiservice.AnswerToQuest
 		answerQuestionsRequest.Host = r.Host
 
 		resp, err := http.DefaultClient.Do(answerQuestionsRequest)
-		if err != nil || resp.StatusCode != http.StatusOK {
+		if err != nil {
 			golog.Errorf("Error while submitting patient intake: %+v", err)
+			signal <- failure
+			return
+		}
+		defer resp.Body.Close()
+
+		if resp.StatusCode != http.StatusOK {
+			golog.Errorf("Expected 200 got %d", resp.StatusCode)
 			signal <- failure
 			return
 		}
@@ -56,12 +63,18 @@ func (c *Handler) startSendingMessageToDoctor(token, message string, caseID int6
 		newConversationRequest.Host = r.Host
 
 		resp, err := http.DefaultClient.Do(newConversationRequest)
-		if err != nil || resp.StatusCode != http.StatusOK {
+		if err != nil {
 			golog.Errorf("Error while starting new conversation for patient: %+v", err)
 			signal <- failure
 			return
 		}
-		resp.Body.Close()
+		defer resp.Body.Close()
+
+		if resp.StatusCode != http.StatusOK {
+			golog.Errorf("Expected 200 but got %d", resp.StatusCode)
+			signal <- failure
+			return
+		}
 		signal <- success
 	}()
 }
@@ -147,13 +160,15 @@ func loginAsDoctor(email string, password, host string) (string, *common.Doctor,
 	res, err := http.DefaultClient.Do(loginRequest)
 	if err != nil {
 		return "", nil, err
-	} else if res.StatusCode != http.StatusOK {
+	}
+	defer res.Body.Close()
+
+	if res.StatusCode != http.StatusOK {
 		return "", nil, fmt.Errorf("Expected 200 response intsead got %d", res.StatusCode)
 	}
 
 	responseData := &apiservice.DoctorAuthenticationResponse{}
 	err = json.NewDecoder(res.Body).Decode(responseData)
-	res.Body.Close()
 	if err != nil {
 		return "", nil, err
 	}
@@ -171,7 +186,10 @@ func reviewPatientVisit(patientVisitId int64, authHeader, host string) error {
 	res, err := http.DefaultClient.Do(visitReviewRequest)
 	if err != nil {
 		return err
-	} else if res.StatusCode != http.StatusOK {
+	}
+	defer res.Body.Close()
+
+	if res.StatusCode != http.StatusOK {
 		return fmt.Errorf("Expected 200 response instead got %d", res.StatusCode)
 	}
 
@@ -199,13 +217,15 @@ func pickTreatmentPlan(patientVisitId int64, authHeader, host string) (*doctor_t
 	res, err := http.DefaultClient.Do(pickATPRequest)
 	if err != nil {
 		return nil, err
-	} else if res.StatusCode != http.StatusOK {
+	}
+	defer res.Body.Close()
+
+	if res.StatusCode != http.StatusOK {
 		return nil, fmt.Errorf("Expected 200 but got %d instead", res.StatusCode)
 	}
 
 	tpResponse := &doctor_treatment_plan.DoctorTreatmentPlanResponse{}
 	err = json.NewDecoder(res.Body).Decode(tpResponse)
-	res.Body.Close()
 	if err != nil {
 		return nil, err
 	}
@@ -228,13 +248,15 @@ func addRegimenToTreatmentPlan(regimenPlan *common.RegimenPlan, authHeader, host
 	res, err := http.DefaultClient.Do(addRegimenPlanRequest)
 	if err != nil {
 		return nil, err
-	} else if res.StatusCode != http.StatusOK {
+	}
+	defer res.Body.Close()
+
+	if res.StatusCode != http.StatusOK {
 		return nil, fmt.Errorf("Expected 200 instead got %d", res.StatusCode)
 	}
 
 	updatedRegimenPlan := &common.RegimenPlan{}
 	err = json.NewDecoder(res.Body).Decode(&updatedRegimenPlan)
-	res.Body.Close()
 
 	if err != nil {
 		return nil, err
@@ -262,7 +284,9 @@ func addTreatmentsToTreatmentPlan(treatments []*common.Treatment, treatmentPlanI
 	res, err := http.DefaultClient.Do(addTreatmentsRequest)
 	if err != nil {
 		return err
-	} else if res.StatusCode != http.StatusOK {
+	}
+	defer res.Body.Close()
+	if res.StatusCode != http.StatusOK {
 		return fmt.Errorf("Expected 200 instead got %d", res.StatusCode)
 	}
 	return nil
@@ -284,7 +308,9 @@ func submitTreatmentPlan(treatmentPlanId int64, message, authHeader, host string
 	res, err := http.DefaultClient.Do(submitTPREquest)
 	if err != nil {
 		return err
-	} else if res.StatusCode != http.StatusOK {
+	}
+	defer res.Body.Close()
+	if res.StatusCode != http.StatusOK {
 		return fmt.Errorf("Expected 200 but got %d", res.StatusCode)
 	}
 	return nil
