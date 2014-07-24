@@ -38,7 +38,7 @@ func InitListeners(dataAPI api.DataAPI, domain string) {
 			}
 
 			// sleep to wait for a bit before sending treatment plan to patient
-			time.Sleep(5 * time.Second)
+			time.Sleep(15 * time.Second)
 
 			favoriteTreatmentPlan, ok := favoriteTreatmentPlans["doxy_and_tretinoin"]
 			if !ok {
