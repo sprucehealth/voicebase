@@ -114,7 +114,8 @@ $(function() {
 
 		<div class="form-group {{if .FormErrors.JacketSize}}has-error has-feedback{{end}}">
 			<label class="control-label" for="JacketSize">
-				Jacket size
+				Jacket size<br>
+				<span class="subtext">(S / M / L)</span>
 			</label>
 			<input type="text" name="JacketSize" value="{{.Form.JacketSize}}" class="form-control">
 		</div>
