@@ -4,6 +4,7 @@ import (
 	"github.com/sprucehealth/backend/api"
 	"github.com/sprucehealth/backend/common"
 	"github.com/sprucehealth/backend/libs/dispatch"
+	"github.com/sprucehealth/backend/libs/golog"
 )
 
 const (
@@ -34,7 +35,11 @@ func InitListeners(dataAPI api.DataAPI) {
 	// If the doctor successfully submits a treatment plan for an unclaimed case, then the message is saved in the message between the
 	// patient and the care team. It is no longer a draft, and can be deleted.
 	dispatch.Default.Subscribe(func(ev *TreatmentPlanActivatedEvent) error {
-		go dataAPI.DeleteTreatmentPlanMessage(ev.DoctorId, ev.TreatmentPlan.Id.Int64())
+		go func() {
+        	if err := dataAPI.DeleteTreatmentPlanMessage(ev.DoctorId, ev.TreatmentPlan.Id.Int64()); err != nil { 
+            	golog.Errorf("Error deleting treatment plan message for doctor: %s", err)
+        	}
+   		}()
 		return nil
 	})
 }

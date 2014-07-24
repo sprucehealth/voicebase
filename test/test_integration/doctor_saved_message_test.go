@@ -13,6 +13,7 @@ import (
 	"net/http/httptest"
 	"strings"
 	"testing"
+	"time"
 )
 
 func TestDoctorSavedMessage(t *testing.T) {
@@ -290,6 +291,7 @@ func TestDoctorSubmitTreatmentPlan(t *testing.T) {
 		b, _ := ioutil.ReadAll(resp.Body)
 		t.Fatalf("Expected %d but got %d: %s", http.StatusOK, resp.StatusCode, string(b))
 	}
+	time.Sleep(time.Second)
 	res, err = testData.AuthGet(ts.URL + "?treatment_plan_id=" + strconv.FormatInt(treatmentPlan.Id.Int64(), 10), doctor.AccountId.Int64())
 	if err != nil {
 		t.Fatal(err)

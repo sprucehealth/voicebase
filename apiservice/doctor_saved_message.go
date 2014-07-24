@@ -76,16 +76,12 @@ func (h *doctorSavedMessageHandler) get(w http.ResponseWriter, r *http.Request, 
 		return
 	}
 
-	var msg string
-	var err error
-	if requestData.TreatmentPlanID == 0 {
-		// Treatment plan was unspecified, so get the default message
+	// Retrieve treatment plan message if it exists. Otherwise, retrieve the default message
+	msg, err := h.dataAPI.GetTreatmentPlanMessageForDoctor(doctorID, requestData.TreatmentPlanID);
+	if  err == api.NoRowsError || requestData.TreatmentPlanID == 0 {
 		msg, err = h.dataAPI.GetSavedMessageForDoctor(doctorID)
-	} else {
-		msg, err = h.dataAPI.GetTreatmentPlanMessageForDoctor(doctorID, requestData.TreatmentPlanID)
-	}
+	} 
 
-	
 	if err == api.NoRowsError {
 		msg = ""
 	} else if err != nil {
