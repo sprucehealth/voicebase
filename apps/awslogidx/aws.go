@@ -53,6 +53,7 @@ func setupAWS() error {
 		if err != nil {
 			return err
 		}
+		// Remove the last letter of the az to get the region (e.g. us-east-1a -> us-east-1)
 		*awsRegion = az[:len(az)-1]
 	}
 
