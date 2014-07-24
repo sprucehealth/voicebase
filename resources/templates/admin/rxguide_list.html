@@ -1,0 +1,15 @@
+{{define "menu-rxguides"}}class="active"{{end}}
+
+{{define "head"}}
+{{end}}
+
+{{define "tail"}}
+{{end}}
+
+{{define "body"}}
+	<h2>RX Guides</h2>
+
+	{{range .Drugs}}
+		<img src="{{.ImageURL}}" width="32" height="32"> <a href="/admin/rxguide/{{.NDC}}">{{.Name}} ({{.NDC}})</a><br>
+	{{end}}
+{{end}}

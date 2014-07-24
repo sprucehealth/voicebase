@@ -1,10 +1,11 @@
 package reslib
 
 import (
-	"github.com/sprucehealth/backend/api"
-	"github.com/sprucehealth/backend/apiservice"
 	"net/http"
 	"strconv"
+
+	"github.com/sprucehealth/backend/api"
+	"github.com/sprucehealth/backend/apiservice"
 )
 
 type handler struct {
@@ -16,13 +17,13 @@ type listHandler struct {
 }
 
 type Guide struct {
-	Id       int64  `json:"id,string"`
+	ID       int64  `json:"id,string"`
 	Title    string `json:"title"`
 	PhotoURL string `json:"photo_url"`
 }
 
 type Section struct {
-	Id     int64    `json:"id,string"`
+	ID     int64    `json:"id,string"`
 	Title  string   `json:"title"`
 	Guides []*Guide `json:"guides"`
 }
@@ -70,15 +71,15 @@ func (h *listHandler) ServeHTTP(w http.ResponseWriter, r *http.Request) {
 		Sections: make([]*Section, len(sections)),
 	}
 	for i, s := range sections {
-		if gs := guides[s.Id]; len(gs) != 0 {
+		if gs := guides[s.ID]; len(gs) != 0 {
 			sec := &Section{
-				Id:     s.Id,
+				ID:     s.ID,
 				Title:  s.Title,
 				Guides: make([]*Guide, len(gs)),
 			}
 			for j, g := range gs {
 				sec.Guides[j] = &Guide{
-					Id:       g.Id,
+					ID:       g.ID,
 					Title:    g.Title,
 					PhotoURL: g.PhotoURL,
 				}

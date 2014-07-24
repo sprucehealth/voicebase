@@ -35,6 +35,27 @@ func (d *DataService) DrugDetails(ndc string) (*common.DrugDetails, error) {
 	return details, nil
 }
 
+func (d *DataService) ListDrugDetails() ([]*common.DrugDetails, error) {
+	rows, err := d.db.Query(`select json from drug_details order by ndc`)
+	if err != nil {
+		return nil, err
+	}
+	defer rows.Close()
+	var drugs []*common.DrugDetails
+	for rows.Next() {
+		var js []byte
+		if err := rows.Scan(&js); err != nil {
+			return nil, err
+		}
+		var details *common.DrugDetails
+		if err := json.Unmarshal(js, &details); err != nil {
+			return nil, err
+		}
+		drugs = append(drugs, details)
+	}
+	return drugs, nil
+}
+
 func (d *DataService) SetDrugDetails(details map[string]*common.DrugDetails) error {
 	tx, err := d.db.Begin()
 	if err != nil {

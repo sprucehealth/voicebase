@@ -73,7 +73,7 @@ func (h *treatmentGuideHandler) processTreatmentGuideForPatient(requestData *Tre
 		return
 	}
 
-	treatmentGuideResponse(h.dataAPI, treatment.Doctor, w, treatment, treatmentPlan)
+	treatmentGuideResponse(h.dataAPI, treatment, treatmentPlan, w, r)
 }
 
 func (h *treatmentGuideHandler) processTreatmentGuideForDoctor(requestData *TreatmentGuideRequestData, w http.ResponseWriter, r *http.Request) {
@@ -92,10 +92,10 @@ func (h *treatmentGuideHandler) processTreatmentGuideForDoctor(requestData *Trea
 		return
 	}
 
-	treatmentGuideResponse(h.dataAPI, treatment.Doctor, w, treatment, treatmentPlan)
+	treatmentGuideResponse(h.dataAPI, treatment, treatmentPlan, w, r)
 }
 
-func treatmentGuideResponse(dataAPI api.DataAPI, doctor *common.Doctor, w http.ResponseWriter, treatment *common.Treatment, treatmentPlan *common.TreatmentPlan) {
+func treatmentGuideResponse(dataAPI api.DataAPI, treatment *common.Treatment, treatmentPlan *common.TreatmentPlan, w http.ResponseWriter, r *http.Request) {
 	ndc := treatment.DrugDBIds[erx.NDC]
 	if ndc == "" {
 		apiservice.WriteUserError(w, http.StatusNotFound, "NDC unknown")
@@ -110,8 +110,15 @@ func treatmentGuideResponse(dataAPI api.DataAPI, doctor *common.Doctor, w http.R
 		return
 	}
 
-	// Format drug details into views
+	views, err := treatmentGuideViews(details, treatment, treatmentPlan)
+	if err != nil {
+		apiservice.WriteError(err, w, r)
+		return
+	}
+	apiservice.WriteJSONToHTTPResponseWriter(w, http.StatusOK, map[string][]tpView{"views": views})
+}
 
+func treatmentGuideViews(details *common.DrugDetails, treatment *common.Treatment, treatmentPlan *common.TreatmentPlan) ([]tpView, error) {
 	var views []tpView
 
 	if details.ImageURL != "" {
@@ -136,20 +143,24 @@ func treatmentGuideResponse(dataAPI api.DataAPI, doctor *common.Doctor, w http.R
 			Style: smallGrayStyle,
 			Text:  details.Description,
 		},
-		&tpLargeDividerView{},
-		&tpIconTextView{
-			// TODO: This icon info isn't robust or likely accurate
-			IconURL:    doctor.LargeThumbnailURL,
-			IconWidth:  32,
-			IconHeight: 32,
-			Text:       fmt.Sprintf("Dr. %s's Instructions", treatment.Doctor.LastName),
-			Style:      sectionHeaderStyle,
-		},
-		&tpSmallDividerView{},
-		&tpTextView{
-			Text: treatment.PatientInstructions,
-		},
 	)
+
+	if treatment != nil {
+		views = append(views,
+			&tpLargeDividerView{},
+			&tpIconTextView{
+				IconURL:    treatment.Doctor.LargeThumbnailURL,
+				IconWidth:  32,
+				IconHeight: 32,
+				Text:       fmt.Sprintf("%s's Instructions", treatment.Doctor.ShortTitle),
+				Style:      sectionHeaderStyle,
+			},
+			&tpSmallDividerView{},
+			&tpTextView{
+				Text: treatment.PatientInstructions,
+			},
+		)
+	}
 
 	if len(details.Warnings) != 0 || len(details.Precautions) != 0 {
 		views = append(views,
@@ -197,7 +208,7 @@ func treatmentGuideResponse(dataAPI api.DataAPI, doctor *common.Doctor, w http.R
 		views = append(views,
 			&tpLargeDividerView{},
 			&tpTextView{
-				Text:  "How to Use " + treatment.DrugName,
+				Text:  "How to Use " + details.Name,
 				Style: sectionHeaderStyle,
 			},
 			&tpSmallDividerView{},
@@ -227,20 +238,21 @@ func treatmentGuideResponse(dataAPI api.DataAPI, doctor *common.Doctor, w http.R
 		}
 	}
 
-	views = append(views,
-		&tpButtonView{
-			Text:    "Message Dr. " + treatment.Doctor.LastName,
-			IconURL: app_url.IconMessage,
-			TapURL:  app_url.SendCaseMessageAction(treatmentPlan.PatientCaseId.Int64()),
-		},
-	)
+	if treatment != nil && treatmentPlan != nil {
+		views = append(views,
+			&tpButtonView{
+				Text:    "Message " + treatment.Doctor.ShortTitle,
+				IconURL: app_url.IconMessage,
+				TapURL:  app_url.SendCaseMessageAction(treatmentPlan.PatientCaseId.Int64()),
+			},
+		)
+	}
 
 	for _, v := range views {
 		if err := v.Validate(); err != nil {
-			apiservice.WriteDeveloperError(w, http.StatusInternalServerError, "Failed to render views: "+err.Error())
-			return
+			return nil, err
 		}
 	}
 
-	apiservice.WriteJSONToHTTPResponseWriter(w, http.StatusOK, map[string][]tpView{"views": views})
+	return views, nil
 }

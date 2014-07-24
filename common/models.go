@@ -540,14 +540,14 @@ type PushConfigData struct {
 }
 
 type ResourceGuideSection struct {
-	Id      int64
+	ID      int64
 	Ordinal int
 	Title   string
 }
 
 type ResourceGuide struct {
-	Id        int64
-	SectionId int64
+	ID        int64
+	SectionID int64
 	Ordinal   int
 	Title     string
 	PhotoURL  string
