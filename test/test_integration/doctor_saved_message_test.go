@@ -82,7 +82,6 @@ func TestDoctorUpdateTreatmentPlanMessage(t *testing.T) {
 	_, treatmentPlan := CreateRandomPatientVisitAndPickTP(t, testData, doctor)
 	tpMessage := `{"message":"Dear foo, this is my message"}`
 	requestData := apiservice.DoctorSavedMessagePutRequest{
-		DoctorID: doctor.AccountId.Int64(),
 		TreatmentPlanID: treatmentPlan.Id.Int64(),
 		Message: "Dear foo, this is my message",
 	}
@@ -116,7 +115,6 @@ func TestDoctorUpdateTreatmentPlanMessage(t *testing.T) {
 	// Update treatment plan message
 	newTpMessage := `{"message":"Dear foo, I have changed my mind"}`
 	requestData = apiservice.DoctorSavedMessagePutRequest{
-		DoctorID: doctor.AccountId.Int64(),
 		TreatmentPlanID: treatmentPlan.Id.Int64(),
 		Message: "Dear foo, I have changed my mind",
 	}
@@ -287,7 +285,7 @@ func TestDoctorSubmitTreatmentPlan(t *testing.T) {
 	resp, err := testData.AuthPut(ts3.URL, "application/json", bytes.NewReader(jsonData), doctor.AccountId.Int64())
 	defer resp.Body.Close()
 	if err != nil {
-		t.Fatal("Unable to make call to close patient visit " + err.Error())
+		t.Fatal(err)
 	} else if resp.StatusCode != http.StatusOK {
 		b, _ := ioutil.ReadAll(resp.Body)
 		t.Fatalf("Expected %d but got %d: %s", http.StatusOK, resp.StatusCode, string(b))
