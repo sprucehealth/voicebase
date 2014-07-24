@@ -3,17 +3,18 @@ package aws
 // Region represents an AWS region and its associated endpoints.
 // http://docs.aws.amazon.com/general/latest/gr/rande.html#rds_region
 type Region struct {
-	Name                 string
-	EC2Endpoint          string
-	S3Endpoint           string
-	S3LocationConstraint bool
-	S3LowercaseBucket    bool
-	SDBEndpoint          string
-	SNSEndpoint          string
-	SQSEndpoint          string
-	IAMEndpoint          string
-	RDSEndpoint          string
-	KinesisEndpoint      string
+	Name                   string
+	EC2Endpoint            string
+	S3Endpoint             string
+	S3LocationConstraint   bool
+	S3LowercaseBucket      bool
+	SDBEndpoint            string
+	SNSEndpoint            string
+	SQSEndpoint            string
+	IAMEndpoint            string
+	RDSEndpoint            string
+	KinesisEndpoint        string
+	CloudWatchLogsEndpoint string
 }
 
 var USEast = Region{
@@ -28,6 +29,7 @@ var USEast = Region{
 	"https://iam.amazonaws.com",
 	"https://rds.us-east-1.amazonaws.com",
 	"https://kinesis.us-east-1.amazonaws.com",
+	"https://logs.us-east-1.amazonaws.com",
 }
 
 var Regions = map[string]Region{
