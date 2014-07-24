@@ -241,7 +241,7 @@ func TestDoctorSubmitTreatmentPlan(t *testing.T) {
 	if res.StatusCode != 200 {
 		t.Fatalf("Expected 200. Got %d", res.StatusCode)
 	}
-	// Create patient, save message to their treatment plan, and retrieve it
+	// Create patient, save message to their treatment plan
 	_, treatmentPlan := CreateRandomPatientVisitAndPickTP(t, testData, doctor)
 	requestData := apiservice.DoctorSavedMessagePutRequest{
 		DoctorID: doctor.AccountId.Int64(),
@@ -283,6 +283,7 @@ func TestDoctorSubmitTreatmentPlan(t *testing.T) {
 		t.Fatal(err)
 	}
 
+	//Submit treatment plan, then check that the treament plan message draft is deleted. The message returned should be the doctor's default message.
 	resp, err := testData.AuthPut(ts3.URL, "application/json", bytes.NewReader(jsonData), doctor.AccountId.Int64())
 	if err != nil {
 		t.Fatal("Unable to make call to close patient visit " + err.Error())
