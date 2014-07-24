@@ -985,8 +985,13 @@ func (d *DataService) SetSavedMessageForDoctor(doctorID int64, message string) e
 	return err
 }
 
-func (d *DataService) SetTreatmentPlanMessage(doctorID int64, treatmentPlanID int64, message string) error {
+func (d *DataService) SetTreatmentPlanMessage(doctorID, treatmentPlanID int64, message string) error {
 	_, err := d.db.Exec(`REPLACE INTO doctor_treatment_message (doctor_id, treatment_plan_id, message) VALUES (?, ?, ?)`, doctorID, treatmentPlanID, message)
+	return err
+}
+
+func (d *DataService) DeleteTreatmentPlanMessage(doctorID, treatmentPlanID int64) error {
+	_, err := d.db.Exec(`DELETE FROM doctor_treatment_message WHERE doctor_id = ? AND treatment_plan_id = ?`, doctorID, treatmentPlanID)
 	return err
 }
 
