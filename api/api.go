@@ -238,7 +238,8 @@ type DoctorAPI interface {
 	ReplaceItemInDoctorQueue(doctorQueueItem DoctorQueueItem, currentState string) error
 	DeleteItemFromDoctorQueue(doctorQueueItem DoctorQueueItem) error
 	MarkGenerationOfTreatmentPlanInVisitQueue(doctorId, patientVisitId, treatmentPlanId int64, currentState, updatedState string) error
-	GetSavedMessageForDoctor(doctorID, treatmentPlanID int64) (string, error)
+	GetSavedMessageForDoctor(doctorID int64) (string, error)
+	GetTreatmentPlanMessageForDoctor(doctorID, treatmentPlanID int64) (string, error)
 	SetSavedMessageForDoctor(doctorID int64, message string) error
 	SetTreatmentPlanMessage(doctorID, treatmentPlanID int64, message string) error
 	DeleteTreatmentPlanMessage(doctorID, treatmentPlanID int64) error
