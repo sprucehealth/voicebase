@@ -242,7 +242,6 @@ func TestDoctorSubmitTreatmentPlan(t *testing.T) {
 		t.Fatalf("Expected 200. Got %d", res.StatusCode)
 	}
 	// Create patient, save message to their treatment plan, and retrieve it
-	tpMessage := `{"message":"Dear patient, this is not a default message"}`
 	_, treatmentPlan := CreateRandomPatientVisitAndPickTP(t, testData, doctor)
 	requestData := apiservice.DoctorSavedMessagePutRequest{
 		DoctorID: doctor.AccountId.Int64(),
