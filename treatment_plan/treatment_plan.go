@@ -72,9 +72,6 @@ func (p *treatmentPlanHandler) ServeHTTP(w http.ResponseWriter, r *http.Request)
 		} else if err != nil {
 			apiservice.WriteError(err, w, r)
 			return
-		} else if treatmentPlan.Status != api.STATUS_ACTIVE {
-			apiservice.WriteResourceNotFoundError("No active treatment plan found for patient", w, r)
-			return
 		}
 
 		doctor, err = p.dataApi.GetDoctorFromId(treatmentPlan.DoctorId.Int64())
