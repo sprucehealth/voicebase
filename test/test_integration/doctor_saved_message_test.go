@@ -285,6 +285,7 @@ func TestDoctorSubmitTreatmentPlan(t *testing.T) {
 
 	//Submit treatment plan, then check that the treament plan message draft is deleted. The message returned should be the doctor's default message.
 	resp, err := testData.AuthPut(ts3.URL, "application/json", bytes.NewReader(jsonData), doctor.AccountId.Int64())
+	defer resp.Body.Close()
 	if err != nil {
 		t.Fatal("Unable to make call to close patient visit " + err.Error())
 	} else if resp.StatusCode != http.StatusOK {
