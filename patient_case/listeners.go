@@ -46,14 +46,8 @@ func InitListeners(dataAPI api.DataAPI, notificationManager *notify.Notification
 				return err
 			}
 
-			notificationCount, err := dataAPI.GetNotificationCountForCase(ev.Case.Id.Int64())
-			if err != nil {
-				golog.Errorf("Unable to get notification count for case: %s", err)
-				return err
-			}
-
 			// notify the patient of the message
-			if err := notificationManager.NotifyPatient(patient, ev, notificationCount); err != nil {
+			if err := notificationManager.NotifyPatient(patient, ev); err != nil {
 				golog.Errorf("Unable to notify patient: %s", err)
 				return err
 			}
@@ -94,14 +88,8 @@ func InitListeners(dataAPI api.DataAPI, notificationManager *notify.Notification
 			}
 		}
 
-		notificationCount, err := dataAPI.GetNotificationCountForCase(ev.Message.CaseID)
-		if err != nil {
-			golog.Errorf("Unable to get notification count for case: %s", err)
-			return err
-		}
-
 		// notify patient of new treatment plan
-		if err := notificationManager.NotifyPatient(patient, ev, notificationCount); err != nil {
+		if err := notificationManager.NotifyPatient(patient, ev); err != nil {
 			golog.Errorf("Unable to notify patient: %s", err)
 			return err
 		}

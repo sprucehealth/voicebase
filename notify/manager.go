@@ -112,14 +112,14 @@ func (n *NotificationManager) NotifyDoctor(doctor *common.Doctor, event interfac
 	return nil
 }
 
-func (n *NotificationManager) NotifyPatient(patient *common.Patient, event interface{}, notificationCount int64) error {
+func (n *NotificationManager) NotifyPatient(patient *common.Patient, event interface{}) error {
 	communicationPreference, err := n.determineCommunicationPreferenceBasedOnDefaultConfig(patient.AccountId.Int64())
 	if err != nil {
 		return err
 	}
 	switch communicationPreference {
 	case common.Push:
-		if err := n.pushNotificationToUser(patient.AccountId.Int64(), event, notificationCount); err != nil {
+		if err := n.pushNotificationToUser(patient.AccountId.Int64(), event, 0); err != nil {
 			golog.Errorf("Error sending push to user: %s", err)
 			return err
 		}
