@@ -50,19 +50,19 @@ func cleanupIndexes(es *ElasticSearch, days int) {
 	aliases, err := es.Aliases()
 	if err != nil {
 		golog.Errorf("Failed to get index aliases: %s", err.Error())
-	} else {
-		var indexList []string
-		for index := range aliases {
-			if len(index) == 14 && strings.HasPrefix(index, "log-") {
-				indexList = append(indexList, index)
-			}
+		return
+	}
+	var indexList []string
+	for index := range aliases {
+		if len(index) == 14 && strings.HasPrefix(index, "log-") {
+			indexList = append(indexList, index)
 		}
-		sort.Strings(indexList)
-		if len(indexList) > days {
-			for _, index := range indexList[:len(indexList)-days] {
-				if err := es.DeleteIndex(index); err != nil {
-					golog.Errorf("Failed to delete index %s: %s", index, err.Error())
-				}
+	}
+	sort.Strings(indexList)
+	if len(indexList) > days {
+		for _, index := range indexList[:len(indexList)-days] {
+			if err := es.DeleteIndex(index); err != nil {
+				golog.Errorf("Failed to delete index %s: %s", index, err.Error())
 			}
 		}
 	}
