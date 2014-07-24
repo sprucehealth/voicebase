@@ -242,7 +242,7 @@ type DoctorAPI interface {
 	GetTreatmentPlanMessageForDoctor(doctorID, treatmentPlanID int64) (string, error)
 	SetSavedMessageForDoctor(doctorID int64, message string) error
 	SetTreatmentPlanMessage(doctorID, treatmentPlanID int64, message string) error
-	DeleteTreatmentPlanMessage(doctorID, treatmentPlanID int64) error
+	DeleteTreatmentPlanMessage(doctorID, treatmentPlanID int64)
 	DoctorAttributes(doctorID int64, names []string) (map[string]string, error)
 	UpdateDoctorAttributes(doctorID int64, attributes map[string]string) error
 	AddMedicalLicenses([]*common.MedicalLicense) error

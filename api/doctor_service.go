@@ -12,6 +12,7 @@ import (
 	"github.com/sprucehealth/backend/app_url"
 	"github.com/sprucehealth/backend/common"
 	"github.com/sprucehealth/backend/encoding"
+	"github.com/sprucehealth/backend/libs/golog"
 	"github.com/sprucehealth/backend/third_party/github.com/go-sql-driver/mysql"
 )
 
@@ -968,7 +969,7 @@ func (d *DataService) GetSavedMessageForDoctor(doctorID int64) (string, error) {
 	var message string
 	row := d.db.QueryRow(`SELECT message FROM doctor_saved_case_message WHERE doctor_id = ?`, doctorID)
 	if err := row.Scan(&message); err == sql.ErrNoRows {
-			return "", NoRowsError
+		return "", NoRowsError
 	} else if err != nil {
 		return "", err
 	}
@@ -996,9 +997,11 @@ func (d *DataService) SetTreatmentPlanMessage(doctorID, treatmentPlanID int64, m
 	return err
 }
 
-func (d *DataService) DeleteTreatmentPlanMessage(doctorID, treatmentPlanID int64) error {
+func (d *DataService) DeleteTreatmentPlanMessage(doctorID, treatmentPlanID int64) {
 	_, err := d.db.Exec(`DELETE FROM doctor_treatment_message WHERE doctor_id = ? AND treatment_plan_id = ?`, doctorID, treatmentPlanID)
-	return err
+	if err != nil{
+		golog.Errorf("Failed to delete treatment plan message for doctor: %s", err.Error)
+	}
 }
 
 func (d *DataService) getIdForNameFromTable(tableName, drugComponentName string) (nullId sql.NullInt64, err error) {
