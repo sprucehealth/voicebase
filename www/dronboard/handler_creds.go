@@ -210,7 +210,7 @@ func (h *credentialsHandler) ServeHTTP(w http.ResponseWriter, r *http.Request) {
 	}
 
 	// Pad with empty entries so that they render
-	for len(form.StateLicenses) < 6 {
+	for len(form.StateLicenses) < 8 {
 		form.StateLicenses = append(form.StateLicenses, &stateLicense{})
 	}
 
