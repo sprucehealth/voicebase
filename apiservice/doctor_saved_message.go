@@ -11,9 +11,9 @@ type doctorSavedMessageHandler struct {
 }
 
 type DoctorSavedMessagePutRequest struct {
-	DoctorID int64  `json:"doctor_id"`
-	TreatmentPlanID int64 `json:"treatment_plan_id"`
-	Message  string `json:"message"`
+	DoctorID        int64  `json:"doctor_id"`
+	TreatmentPlanID int64  `json:"treatment_plan_id"`
+	Message         string `json:"message"`
 }
 
 type doctorSavedMessageGetResponse struct {
@@ -68,7 +68,6 @@ func (h *doctorSavedMessageHandler) get(w http.ResponseWriter, r *http.Request, 
 			return
 		}
 	}
- 
 
 	requestData := &doctorSavedMessageRequestData{}
 	if err := DecodeRequestData(requestData, r); err != nil {
@@ -77,10 +76,14 @@ func (h *doctorSavedMessageHandler) get(w http.ResponseWriter, r *http.Request, 
 	}
 
 	// Retrieve treatment plan message if it exists. Otherwise, retrieve the default message
-	msg, err := h.dataAPI.GetTreatmentPlanMessageForDoctor(doctorID, requestData.TreatmentPlanID);
-	if  err == api.NoRowsError || requestData.TreatmentPlanID == 0 {
+	var msg string
+	var err error
+	if requestData.TreatmentPlanID != 0 {
+		msg, err = h.dataAPI.GetTreatmentPlanMessageForDoctor(doctorID, requestData.TreatmentPlanID)
+	}
+	if err == api.NoRowsError || requestData.TreatmentPlanID == 0 {
 		msg, err = h.dataAPI.GetSavedMessageForDoctor(doctorID)
-	} 
+	}
 
 	if err == api.NoRowsError {
 		msg = ""
@@ -119,6 +122,6 @@ func (h *doctorSavedMessageHandler) put(w http.ResponseWriter, r *http.Request, 
 			return
 		}
 	}
-	
+
 	WriteJSONSuccess(w)
 }
