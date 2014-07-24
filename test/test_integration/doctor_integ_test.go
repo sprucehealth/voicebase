@@ -29,7 +29,7 @@ func TestDoctorAuthentication(t *testing.T) {
 
 	_, email, password := SignupRandomTestDoctor(t, testData)
 
-	doctorAuthHandler := &apiservice.DoctorAuthenticationHandler{AuthApi: testData.AuthApi, DataApi: testData.DataApi}
+	doctorAuthHandler := apiservice.NewDoctorAuthenticationHandler(testData.DataApi, testData.AuthApi)
 	ts := httptest.NewServer(doctorAuthHandler)
 	defer ts.Close()
 	requestBody := bytes.NewBufferString("email=")
