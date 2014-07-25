@@ -114,6 +114,7 @@ type CaseRouteAPI interface {
 	PermanentlyAssignDoctorToCaseAndRouteToQueue(doctorId int64, patientCase *common.PatientCase, queueItem *DoctorQueueItem) error
 	ExtendClaimForDoctor(doctorId, patientId, patientCaseId int64, duration time.Duration) error
 	GetClaimedItemsInQueue() ([]*DoctorQueueItem, error)
+	GetTempClaimedCaseInQueue(patientCaseId, doctorId int64) (*DoctorQueueItem, error)
 	GetElligibleItemsInUnclaimedQueue(doctorId int64) ([]*DoctorQueueItem, error)
 	InsertUnclaimedItemIntoQueue(doctorQueueItem *DoctorQueueItem) error
 	RevokeDoctorAccessToCase(patientCaseId, patientId, doctorId int64) error

@@ -252,6 +252,25 @@ func (d *DataService) GetClaimedItemsInQueue() ([]*DoctorQueueItem, error) {
 	return claimedItemsQueue, rows.Err()
 }
 
+func (d *DataService) GetTempClaimedCaseInQueue(patientCaseId, doctorId int64) (*DoctorQueueItem, error) {
+	var queueItem DoctorQueueItem
+	err := d.db.QueryRow(`select id, event_type, item_id, patient_case_id, enqueue_date, status, doctor_id, expires from unclaimed_case_queue where locked = ? and patient_case_id = ? and doctor_id = ?`, true, patientCaseId, doctorId).Scan(
+		&queueItem.Id,
+		&queueItem.EventType,
+		&queueItem.ItemId,
+		&queueItem.PatientCaseId,
+		&queueItem.EnqueueDate,
+		&queueItem.Status,
+		&queueItem.DoctorId,
+		&queueItem.Expires)
+	if err == sql.ErrNoRows {
+		return nil, NoRowsError
+	} else if err != nil {
+		return nil, err
+	}
+	return &queueItem, nil
+}
+
 func (d *DataService) GetElligibleItemsInUnclaimedQueue(doctorId int64) ([]*DoctorQueueItem, error) {
 	// first get the list of care providing state ids where the doctor is registered to serve
 	rows, err := d.db.Query(`select care_providing_state_id from care_provider_state_elligibility where provider_id = ? and role_type_id = ?`, doctorId, d.roleTypeMapping[DOCTOR_ROLE])

@@ -8,6 +8,7 @@ import (
 	"github.com/sprucehealth/backend/doctor_treatment_plan"
 	"github.com/sprucehealth/backend/libs/dispatch"
 	"github.com/sprucehealth/backend/libs/golog"
+	"github.com/sprucehealth/backend/messages"
 	"github.com/sprucehealth/backend/patient_file"
 	"github.com/sprucehealth/backend/patient_visit"
 
@@ -112,6 +113,41 @@ func initJumpBallCaseQueueListeners(dataAPI api.DataAPI, statsRegistry metrics.R
 	// with the doctor permanently being assigned to the case and patient
 	dispatch.Default.Subscribe(func(ev *patient_visit.PatientVisitMarkedUnsuitableEvent) error {
 		return permanentlyAssignDoctorToCaseAndPatient(ev.PatientVisitId, ev.DoctorId, dataAPI, permanentClaimSuccess, permanentClaimFailure)
+	})
+
+	// If the doctor sends a message to the patient for an unclaimed case, then the case
+	// should get permanently assigned to the doctor and the patient visit put into the doctor's inbox
+	// for the doctor to come back to.
+	dispatch.Default.Subscribe(func(ev *messages.PostEvent) error {
+		if ev.Person.RoleType == api.DOCTOR_ROLE {
+
+			tempClaimedItem, err := dataAPI.GetTempClaimedCaseInQueue(ev.Case.Id.Int64(), ev.Person.Doctor.DoctorId.Int64())
+			if err != nil {
+				golog.Errorf("Unable to get temporarily claimed item in queue: %s", err)
+				return err
+			}
+
+			if ev.Case.Status == common.PCStatusTempClaimed {
+				if err := dataAPI.InsertItemIntoDoctorQueue(api.DoctorQueueItem{
+					DoctorId:  ev.Person.Doctor.DoctorId.Int64(),
+					ItemId:    tempClaimedItem.ItemId,
+					Status:    api.STATUS_ONGOING,
+					EventType: api.DQEventTypePatientVisit,
+				}); err != nil {
+					golog.Errorf("Unable to insert item into the doctor queue: %s", err)
+					return err
+				}
+
+				if err := dataAPI.TransitionToPermanentAssignmentOfDoctorToCaseAndPatient(ev.Person.Doctor.DoctorId.Int64(), ev.Case); err != nil {
+					golog.Errorf("Unable to permanently assign doctor to case and patient: %s", err)
+					permanentClaimFailure.Inc(1)
+					return err
+				}
+				permanentClaimSuccess.Inc(1)
+			}
+		}
+
+		return nil
 	})
 }
 
