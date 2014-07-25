@@ -164,13 +164,15 @@ func (h *registerHandler) ServeHTTP(w http.ResponseWriter, r *http.Request) {
 					Country:      "USA",
 				}
 				doctor := &common.Doctor{
-					AccountId:     encoding.NewObjectId(accountID),
-					FirstName:     form.FirstName,
-					LastName:      form.LastName,
-					DOB:           form.dob,
-					Gender:        form.Gender,
-					CellPhone:     form.CellNumber,
-					DoctorAddress: address,
+					AccountId:        encoding.NewObjectId(accountID),
+					FirstName:        form.FirstName,
+					LastName:         form.LastName,
+					ShortDisplayName: fmt.Sprintf("Dr. %s", form.LastName),
+					LongDisplayName:  fmt.Sprintf("Dr. %s %s", form.FirstName, form.LastName),
+					DOB:              form.dob,
+					Gender:           form.Gender,
+					CellPhone:        form.CellNumber,
+					DoctorAddress:    address,
 				}
 
 				doctorID, err := h.dataAPI.RegisterDoctor(doctor)
