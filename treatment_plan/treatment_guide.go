@@ -162,45 +162,37 @@ func treatmentGuideViews(details *common.DrugDetails, treatment *common.Treatmen
 		)
 	}
 
-	if len(details.Warnings) != 0 || len(details.Precautions) != 0 {
+	if len(details.Warnings) != 0 {
 		views = append(views,
 			&tpLargeDividerView{},
 			&tpTextView{
-				Text:  "What to Know",
+				Text:  "Warnings",
 				Style: sectionHeaderStyle,
 			},
+			&tpSmallDividerView{},
+		)
+		for _, s := range details.Warnings {
+			views = append(views, &tpTextView{
+				Text:  s,
+				Style: "warning",
+			})
+		}
+	}
+
+	if len(details.Precautions) != 0 {
+		views = append(views,
+			&tpLargeDividerView{},
+			&tpTextView{
+				Text:  "Precautions",
+				Style: sectionHeaderStyle,
+			},
+			&tpSmallDividerView{},
 		)
 
-		if len(details.Warnings) != 0 {
-			views = append(views,
-				&tpSmallDividerView{},
-				&tpTextView{
-					Text:  "Warnings",
-					Style: subheaderStyle,
-				},
-			)
-			for _, s := range details.Warnings {
-				views = append(views, &tpTextView{
-					Text:  s,
-					Style: "warning",
-				})
-			}
-		}
-
-		if len(details.Precautions) != 0 {
-			views = append(views,
-				&tpSmallDividerView{},
-				&tpTextView{
-					Text:  "Precautions",
-					Style: subheaderStyle,
-				},
-			)
-
-			for _, p := range details.Precautions {
-				views = append(views, &tpTextView{
-					Text: p,
-				})
-			}
+		for _, p := range details.Precautions {
+			views = append(views, &tpTextView{
+				Text: p,
+			})
 		}
 	}
 
@@ -208,16 +200,14 @@ func treatmentGuideViews(details *common.DrugDetails, treatment *common.Treatmen
 		views = append(views,
 			&tpLargeDividerView{},
 			&tpTextView{
-				Text:  "How to Use " + details.Name,
+				Text:  "How to Use",
 				Style: sectionHeaderStyle,
 			},
 			&tpSmallDividerView{},
 		)
-		for i, s := range details.HowToUse {
-			views = append(views, &tpListElementView{
-				ElementStyle: "numbered",
-				Number:       i + 1,
-				Text:         s,
+		for _, s := range details.HowToUse {
+			views = append(views, &tpTextView{
+				Text: s,
 			})
 		}
 	}
