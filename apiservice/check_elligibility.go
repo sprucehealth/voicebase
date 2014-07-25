@@ -55,14 +55,8 @@ func (c *CheckCareProvidingElligibilityHandler) ServeHTTP(w http.ResponseWriter,
 		return
 	}
 
-	// this means that there is no doctor available to server in the patient's entered
-	// state for the condition
-	if count == 0 {
-		WriteError(NewNotEligibleToServePatientInStateError(), w, r)
-		return
-	}
-
 	WriteJSON(w, map[string]interface{}{
+		"available":          count > 0,
 		"state":              cityStateInfo.State,
 		"state_abbreviation": cityStateInfo.StateAbbreviation,
 	})
