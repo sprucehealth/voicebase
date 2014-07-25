@@ -36,10 +36,10 @@ func InitListeners(dataAPI api.DataAPI) {
 	// patient and the care team. It is no longer a draft, and can be deleted.
 	dispatch.Default.Subscribe(func(ev *TreatmentPlanActivatedEvent) error {
 		go func() {
-        	if err := dataAPI.DeleteTreatmentPlanMessage(ev.DoctorId, ev.TreatmentPlan.Id.Int64()); err != nil { 
-            	golog.Errorf("Error deleting treatment plan message for doctor: %s", err)
-        	}
-   		}()
+			if err := dataAPI.DeleteTreatmentPlanMessage(ev.DoctorId, ev.TreatmentPlan.Id.Int64()); err != nil {
+				golog.Errorf("Error deleting treatment plan message for doctor: %s", err)
+			}
+		}()
 		return nil
 	})
 }
