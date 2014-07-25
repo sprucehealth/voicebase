@@ -217,8 +217,8 @@ func treatmentPlanResponse(dataApi api.DataAPI, w http.ResponseWriter, r *http.R
 	}
 
 	instructionViews = append(instructionViews, &tpButtonFooterView{
-		FooterText: fmt.Sprintf("If you have any questions about your treatment plan, send Dr. %s a message.", doctor.LastName),
-		ButtonText: fmt.Sprintf("Message Dr. %s", doctor.LastName),
+		FooterText: "If you have any questions about your treatment plan, send your care team a message.",
+		ButtonText: "Message care team",
 		IconURL:    app_url.IconMessage,
 		TapURL:     app_url.SendCaseMessageAction(treatmentPlan.PatientCaseId.Int64()),
 	})
