@@ -30,7 +30,7 @@ var (
 	timePeriodBetweenChecks = 5 * time.Minute
 )
 
-func initJumpBallCaseQueueListeners(dataAPI api.DataAPI, statsRegistry metrics.Registry, jbcqMinutesThreshold int64) {
+func initJumpBallCaseQueueListeners(dataAPI api.DataAPI, statsRegistry metrics.Registry, jbcqMinutesThreshold int) {
 
 	if jbcqMinutesThreshold > 0 {
 		ExpireDuration = time.Duration(jbcqMinutesThreshold) * time.Minute

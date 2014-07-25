@@ -17,7 +17,7 @@ import (
 	"github.com/sprucehealth/backend/third_party/github.com/samuel/go-metrics/metrics"
 )
 
-func InitListeners(dataAPI api.DataAPI, notificationManager *notify.NotificationManager, statsRegistry metrics.Registry, jbcqMinutesThreshold int64) {
+func InitListeners(dataAPI api.DataAPI, notificationManager *notify.NotificationManager, statsRegistry metrics.Registry, jbcqMinutesThreshold int) {
 	initJumpBallCaseQueueListeners(dataAPI, statsRegistry, jbcqMinutesThreshold)
 
 	routeSuccess := metrics.NewCounter()
