@@ -10,20 +10,6 @@ import (
 	"github.com/sprucehealth/backend/third_party/github.com/samuel/go-metrics/metrics"
 )
 
-var (
-	// ExpireDuration is the maximum time between actions on the patient case that the doctor
-	// has to maintain their claim on the case.
-	ExpireDuration = 15 * time.Minute
-
-	// GracePeriod is to ensure that any pending/ongoing requests
-	// have ample time to complete before yanking access from
-	// doctors who's claim on the case has expired
-	GracePeriod = 5 * time.Minute
-
-	// timePeriodBetweenChecks is the frequency with which the checker runs
-	timePeriodBetweenChecks = 5 * time.Minute
-)
-
 // StartClaimedItemsForExpirationChecker runs periodically to revoke access
 // to any temporarily claimed cases where the doctor has remained inactive for
 // an extended period of time. In such a sitution, the exclusive access to the case

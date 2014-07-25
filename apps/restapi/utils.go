@@ -87,6 +87,7 @@ type Config struct {
 	NoServices            bool                        `long:"noservices" description:"Disable connecting to remote services"`
 	ERxRouting            bool                        `long:"erx_routing" description:"Disable sending of prescriptions electronically"`
 	ERxQueue              string                      `long:"erx_queue" description:"Erx queue name"`
+	JBCQMinutesThreshold  int64                       `long:"jbcq_minutes_threshold" description:"Threshold of inactivity between activities"`
 	AuthTokenExpiration   int                         `long:"auth_token_expire" description:"Expiration time in seconds for the auth token"`
 	AuthTokenRenew        int                         `long:"auth_token_renew" description:"Time left below which to renew the auth token"`
 	StaticContentBaseUrl  string                      `long:"static_content_base_url" description:"URL from which to serve static content"`

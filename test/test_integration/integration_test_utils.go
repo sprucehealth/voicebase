@@ -366,7 +366,7 @@ func SetupIntegrationTest(t *testing.T) *TestData {
 	notificationManager := notify.NewManager(testData.DataApi, nil, nil, nil, "", "", nil, metrics.NewRegistry())
 
 	doctor_treatment_plan.InitListeners(testData.DataApi)
-	doctor_queue.InitListeners(testData.DataApi, notificationManager, metrics.NewRegistry())
+	doctor_queue.InitListeners(testData.DataApi, notificationManager, metrics.NewRegistry(), 0)
 	notify.InitListeners(testData.DataApi)
 	patient_case.InitListeners(testData.DataApi, notificationManager)
 	patient_visit.InitListeners(testData.DataApi)

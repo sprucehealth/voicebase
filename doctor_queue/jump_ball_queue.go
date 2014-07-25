@@ -1,6 +1,8 @@
 package doctor_queue
 
 import (
+	"time"
+
 	"github.com/sprucehealth/backend/api"
 	"github.com/sprucehealth/backend/common"
 	"github.com/sprucehealth/backend/doctor_treatment_plan"
@@ -12,7 +14,27 @@ import (
 	"github.com/sprucehealth/backend/third_party/github.com/samuel/go-metrics/metrics"
 )
 
-func initJumpBallCaseQueueListeners(dataAPI api.DataAPI, statsRegistry metrics.Registry) {
+var (
+	defaultMinutesThreshold = 15
+
+	// ExpireDuration is the maximum time between actions on the patient case that the doctor
+	// has to maintain their claim on the case.
+	ExpireDuration = defaultMinutesThreshold * time.Minute
+
+	// GracePeriod is to ensure that any pending/ongoing requests
+	// have ample time to complete before yanking access from
+	// doctors who's claim on the case has expired
+	GracePeriod = 5 * time.Minute
+
+	// timePeriodBetweenChecks is the frequency with which the checker runs
+	timePeriodBetweenChecks = 5 * time.Minute
+)
+
+func initJumpBallCaseQueueListeners(dataAPI api.DataAPI, statsRegistry metrics.Registry, jbcqMinutesThreshold int64) {
+
+	if jbcqMinutesThreshold > 0 {
+		ExpireDuration = defaultMinutesThreshold * time.Minute
+	}
 
 	tempClaimSucess := metrics.NewCounter()
 	tempClaimFailure := metrics.NewCounter()

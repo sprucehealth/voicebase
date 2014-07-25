@@ -235,7 +235,7 @@ func buildRESTAPI(conf *Config, dataApi api.DataAPI, authAPI api.AuthAPI, stores
 		conf.Twilio.FromNumber, conf.AlertEmail, conf.NotifiyConfigs, metricsRegistry.Scope("notify"))
 
 	// Initialize listeneres
-	doctor_queue.InitListeners(dataApi, notificationManager, metricsRegistry.Scope("doctor_queue"))
+	doctor_queue.InitListeners(dataApi, notificationManager, metricsRegistry.Scope("doctor_queue"), conf.JBCQMinutesThreshold)
 	doctor_treatment_plan.InitListeners(dataApi)
 	notify.InitListeners(dataApi)
 	support.InitListeners(conf.Support.TechnicalSupportEmail, conf.Support.CustomerSupportEmail, notificationManager)
