@@ -1,6 +1,6 @@
 -- MySQL dump 10.13  Distrib 5.6.17, for osx10.9 (x86_64)
 --
--- Host: 127.0.0.1    Database: database_6916
+-- Host: 127.0.0.1    Database: database_7492
 -- ------------------------------------------------------
 -- Server version	5.6.17
 
@@ -87,7 +87,7 @@ CREATE TABLE `advice` (
   `status` varchar(100) NOT NULL,
   `creation_date` timestamp(6) NULL DEFAULT CURRENT_TIMESTAMP(6),
   `treatment_plan_id` int(10) unsigned NOT NULL,
-  `text` varchar(1024) NOT NULL,
+  `text` varchar(2048) NOT NULL,
   PRIMARY KEY (`id`),
   KEY `dr_advice_point_id` (`dr_advice_point_id`),
   KEY `treatment_plan_id` (`treatment_plan_id`),
@@ -105,7 +105,7 @@ DROP TABLE IF EXISTS `advice_point`;
 /*!40101 SET character_set_client = utf8 */;
 CREATE TABLE `advice_point` (
   `id` int(10) unsigned NOT NULL AUTO_INCREMENT,
-  `text` varchar(150) NOT NULL,
+  `text` varchar(2048) NOT NULL,
   `status` varchar(100) NOT NULL,
   `creation_date` timestamp(6) NULL DEFAULT CURRENT_TIMESTAMP(6),
   PRIMARY KEY (`id`)
@@ -545,7 +545,7 @@ DROP TABLE IF EXISTS `dr_advice_point`;
 /*!40101 SET character_set_client = utf8 */;
 CREATE TABLE `dr_advice_point` (
   `id` int(10) unsigned NOT NULL AUTO_INCREMENT,
-  `text` varchar(150) NOT NULL,
+  `text` varchar(2048) NOT NULL,
   `doctor_id` int(10) unsigned NOT NULL,
   `status` varchar(100) NOT NULL,
   `creation_date` timestamp(6) NULL DEFAULT CURRENT_TIMESTAMP(6),
@@ -630,14 +630,14 @@ CREATE TABLE `dr_favorite_advice` (
   `id` int(10) unsigned NOT NULL AUTO_INCREMENT,
   `status` varchar(100) NOT NULL,
   `creation_date` timestamp(6) NOT NULL DEFAULT CURRENT_TIMESTAMP(6),
-  `text` varchar(150) NOT NULL,
+  `text` varchar(2048) NOT NULL,
   `dr_advice_point_id` int(10) unsigned NOT NULL,
   `dr_favorite_treatment_plan_id` int(10) unsigned NOT NULL,
   PRIMARY KEY (`id`),
   KEY `dr_advice_point_id` (`dr_advice_point_id`),
   KEY `dr_favorite_treatment_plan_id` (`dr_favorite_treatment_plan_id`),
-  CONSTRAINT `dr_favorite_advice_ibfk_2` FOREIGN KEY (`dr_favorite_treatment_plan_id`) REFERENCES `dr_favorite_treatment_plan` (`id`) ON DELETE CASCADE,
-  CONSTRAINT `dr_favorite_advice_ibfk_1` FOREIGN KEY (`dr_advice_point_id`) REFERENCES `dr_advice_point` (`id`)
+  CONSTRAINT `dr_favorite_advice_ibfk_1` FOREIGN KEY (`dr_advice_point_id`) REFERENCES `dr_advice_point` (`id`),
+  CONSTRAINT `dr_favorite_advice_ibfk_2` FOREIGN KEY (`dr_favorite_treatment_plan_id`) REFERENCES `dr_favorite_treatment_plan` (`id`) ON DELETE CASCADE
 ) ENGINE=InnoDB DEFAULT CHARSET=utf8;
 /*!40101 SET character_set_client = @saved_cs_client */;
 
@@ -674,14 +674,14 @@ CREATE TABLE `dr_favorite_regimen` (
   `regimen_type` varchar(150) NOT NULL,
   `status` varchar(100) NOT NULL,
   `creation_date` timestamp(6) NOT NULL DEFAULT CURRENT_TIMESTAMP(6),
-  `text` varchar(150) NOT NULL,
+  `text` varchar(2048) NOT NULL,
   `dr_regimen_step_id` int(10) unsigned NOT NULL,
   `dr_favorite_treatment_plan_id` int(10) unsigned NOT NULL,
   PRIMARY KEY (`id`),
   KEY `dr_favorite_treatment_plan_id` (`dr_favorite_treatment_plan_id`),
   KEY `dr_regimen_step_id` (`dr_regimen_step_id`),
-  CONSTRAINT `dr_favorite_regimen_ibfk_3` FOREIGN KEY (`dr_favorite_treatment_plan_id`) REFERENCES `dr_favorite_treatment_plan` (`id`) ON DELETE CASCADE,
-  CONSTRAINT `dr_favorite_regimen_ibfk_2` FOREIGN KEY (`dr_regimen_step_id`) REFERENCES `dr_regimen_step` (`id`)
+  CONSTRAINT `dr_favorite_regimen_ibfk_2` FOREIGN KEY (`dr_regimen_step_id`) REFERENCES `dr_regimen_step` (`id`),
+  CONSTRAINT `dr_favorite_regimen_ibfk_3` FOREIGN KEY (`dr_favorite_treatment_plan_id`) REFERENCES `dr_favorite_treatment_plan` (`id`) ON DELETE CASCADE
 ) ENGINE=InnoDB DEFAULT CHARSET=utf8;
 /*!40101 SET character_set_client = @saved_cs_client */;
 
@@ -798,7 +798,7 @@ DROP TABLE IF EXISTS `dr_regimen_step`;
 /*!40101 SET character_set_client = utf8 */;
 CREATE TABLE `dr_regimen_step` (
   `id` int(10) unsigned NOT NULL AUTO_INCREMENT,
-  `text` varchar(150) NOT NULL,
+  `text` varchar(2048) NOT NULL,
   `drug_name_id` int(10) unsigned DEFAULT NULL,
   `drug_form_id` int(10) unsigned DEFAULT NULL,
   `drug_route_id` int(10) unsigned DEFAULT NULL,
@@ -1057,7 +1057,7 @@ CREATE TABLE `info_intake` (
   `context_id` int(10) unsigned NOT NULL,
   `question_id` int(10) unsigned NOT NULL,
   `potential_answer_id` int(10) unsigned DEFAULT NULL,
-  `answer_text` varchar(1024) DEFAULT NULL,
+  `answer_text` varchar(2048) DEFAULT NULL,
   `layout_version_id` int(10) unsigned NOT NULL,
   `answered_date` timestamp(6) NULL DEFAULT CURRENT_TIMESTAMP(6),
   `status` varchar(100) NOT NULL,
@@ -2001,7 +2001,7 @@ CREATE TABLE `regimen` (
   `status` varchar(100) NOT NULL,
   `creation_date` timestamp(6) NULL DEFAULT CURRENT_TIMESTAMP(6),
   `treatment_plan_id` int(10) unsigned NOT NULL,
-  `text` varchar(1024) NOT NULL,
+  `text` varchar(2048) NOT NULL,
   PRIMARY KEY (`id`),
   KEY `dr_regimen_step_id` (`dr_regimen_step_id`),
   KEY `treatment_plan_id` (`treatment_plan_id`),
@@ -2019,7 +2019,7 @@ DROP TABLE IF EXISTS `regimen_step`;
 /*!40101 SET character_set_client = utf8 */;
 CREATE TABLE `regimen_step` (
   `id` int(10) unsigned NOT NULL AUTO_INCREMENT,
-  `text` varchar(150) NOT NULL,
+  `text` varchar(2048) NOT NULL,
   `drug_name_id` int(10) unsigned DEFAULT NULL,
   `drug_form_id` int(10) unsigned DEFAULT NULL,
   `drug_route_id` int(10) unsigned DEFAULT NULL,
@@ -2637,4 +2637,4 @@ CREATE TABLE `unlinked_dntf_treatment_status_events` (
 /*!40101 SET COLLATION_CONNECTION=@OLD_COLLATION_CONNECTION */;
 /*!40111 SET SQL_NOTES=@OLD_SQL_NOTES */;
 
--- Dump completed on 2014-07-24 21:07:07
+-- Dump completed on 2014-07-25  8:37:02
