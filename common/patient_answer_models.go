@@ -1,8 +1,9 @@
 package common
 
 import (
-	"github.com/sprucehealth/backend/encoding"
 	"time"
+
+	"github.com/sprucehealth/backend/encoding"
 )
 
 type Answer interface {
@@ -11,7 +12,7 @@ type Answer interface {
 
 type AnswerIntake struct {
 	AnswerIntakeId    encoding.ObjectId `json:"answer_id,omitempty"`
-	QuestionId        encoding.ObjectId `json:"-"`
+	QuestionId        encoding.ObjectId `json:"question_id,omitempty"`
 	RoleId            encoding.ObjectId `json:"-"`
 	Role              string            `json:"-"`
 	ContextId         encoding.ObjectId `json:"-"`
