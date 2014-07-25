@@ -15,6 +15,7 @@ import (
 	"github.com/sprucehealth/backend/doctor_queue"
 	"github.com/sprucehealth/backend/doctor_treatment_plan"
 	"github.com/sprucehealth/backend/encoding"
+	"github.com/sprucehealth/backend/messages"
 	"github.com/sprucehealth/backend/patient_file"
 	"github.com/sprucehealth/backend/patient_visit"
 	"github.com/sprucehealth/backend/test/test_integration"
@@ -335,6 +336,58 @@ func TestJBCQ_AssignOnMarkingUnsuitableForSpruce(t *testing.T) {
 		t.Fatal(err)
 	} else if patientCase.Status != common.PCStatusClaimed {
 		t.Fatalf("Expected patient case to be %s but it was %s", common.PCStatusClaimed, patientCase.Status)
+	}
+}
+
+// This test is to ensure that the case gets permanently assigned to the doctor
+// if a doctor sends a message to the patient while the case is unclaimed.
+func TestJBCQ_PermanentlyAssigningCaseOnMessagePost(t *testing.T) {
+	testData := test_integration.SetupIntegrationTest(t)
+	defer test_integration.TearDownIntegrationTest(t, testData)
+	doctor, err := testData.DataApi.GetDoctorFromId(test_integration.GetDoctorIdOfCurrentDoctor(testData, t))
+	if err != nil {
+		t.Fatal(err)
+	}
+
+	pv := test_integration.CreateRandomPatientVisitInState("CA", t, testData)
+	test_integration.StartReviewingPatientVisit(pv.PatientVisitId, doctor, testData, t)
+
+	patientCaseId, err := testData.DataApi.GetPatientCaseIdFromPatientVisitId(pv.PatientVisitId)
+	if err != nil {
+		t.Fatal(err)
+	}
+
+	// Grant the doctor access to the case
+	test_integration.GrantDoctorAccessToPatientCase(t, testData, doctor, patientCaseId)
+
+	// Send a message from the doctor to the patient
+	test_integration.PostCaseMessage(t, testData, doctor.AccountId.Int64(), &messages.PostMessageRequest{
+		CaseID:  patientCaseId,
+		Message: "Foo",
+	})
+
+	// the case should now be permanently assigned to the doctor
+	patientCase, err := testData.DataApi.GetPatientCaseFromId(patientCaseId)
+	if err != nil {
+		t.Fatal(err)
+	} else if patientCase.Status != common.PCStatusClaimed {
+		t.Fatalf("Expected case to have status %s instead it had status %s", common.PCStatusClaimed, patientCase.Status)
+	}
+
+	// there should be a pending item in the doctor's queue to represnt the visit
+	pendingItems, err := testData.DataApi.GetPendingItemsInDoctorQueue(doctor.DoctorId.Int64())
+	if err != nil {
+		t.Fatal(err)
+	} else if len(pendingItems) != 1 {
+		t.Fatalf("Expected %d items in the doctor queue instead got %d", 1, len(pendingItems))
+	}
+
+	// there should be no unclaimed items in the case queue
+	unclaimedItems, err := testData.DataApi.GetElligibleItemsInUnclaimedQueue(doctor.DoctorId.Int64())
+	if err != nil {
+		t.Fatal(err)
+	} else if len(unclaimedItems) != 0 {
+		t.Fatalf("Expected %d items but got %d items instad", 0, len(unclaimedItems))
 	}
 }
 
