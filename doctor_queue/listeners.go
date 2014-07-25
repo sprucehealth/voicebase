@@ -5,6 +5,7 @@ import (
 
 	"github.com/sprucehealth/backend/api"
 	"github.com/sprucehealth/backend/apiservice"
+	"github.com/sprucehealth/backend/app_event"
 	"github.com/sprucehealth/backend/app_worker"
 	"github.com/sprucehealth/backend/common"
 	"github.com/sprucehealth/backend/doctor_treatment_plan"
@@ -235,13 +236,26 @@ func InitListeners(dataAPI api.DataAPI, notificationManager *notify.Notification
 		return nil
 	})
 
-	dispatch.Default.Subscribe(func(ev *messages.ReadEvent) error {
+	dispatch.Default.Subscribe(func(ev *app_event.AppEvent) error {
+
 		// delete the item from the queue when the doctor marks the conversation
 		// as being read
-		if ev.Person.RoleType == api.DOCTOR_ROLE {
+		if ev.Resource == "case_message" && ev.Role == api.DOCTOR_ROLE && ev.Action == app_event.ViewedAction {
+			caseID, err := dataAPI.GetCaseIDFromMessageID(ev.ResourceId)
+			if err != nil {
+				golog.Errorf("Unable to get case id from message id: %s", err)
+				return err
+			}
+
+			doctorId, err := dataAPI.GetDoctorIdFromAccountId(ev.AccountId)
+			if err != nil {
+				golog.Errorf("Unable to get doctor id from account id: %s", err)
+				return err
+			}
+
 			if err := dataAPI.ReplaceItemInDoctorQueue(api.DoctorQueueItem{
-				DoctorId:  ev.Person.Doctor.DoctorId.Int64(),
-				ItemId:    ev.CaseID,
+				DoctorId:  doctorId,
+				ItemId:    caseID,
 				EventType: api.DQEventTypeCaseMessage,
 				Status:    api.DQItemStatusRead,
 			}, api.DQItemStatusPending); err != nil {
@@ -249,6 +263,7 @@ func InitListeners(dataAPI api.DataAPI, notificationManager *notify.Notification
 				return err
 			}
 		}
+
 		return nil
 	})
 }
