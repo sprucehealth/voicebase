@@ -212,7 +212,14 @@ func Context(ctx ...interface{}) Logger {
 	return defaultL.Context(ctx...)
 }
 
+// Logf logs a message and includes the function and line number in the
+// call stack at the position of calldepth. A calldepth of 0 is the caller
+// of Logf, a depth of 1 is its caller, and so forth. A calldepth less than
+// 0 disables logging of the source file and line.
 func Logf(calldepth int, lvl Level, format string, args ...interface{}) {
+	if calldepth >= 0 {
+		calldepth += 2
+	}
 	defaultL.Logf(calldepth, lvl, format, args...)
 }
 
