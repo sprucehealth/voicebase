@@ -15,7 +15,7 @@ import (
 )
 
 var (
-	defaultMinutesThreshold = 15
+	defaultMinutesThreshold = time.Duration(15)
 
 	// ExpireDuration is the maximum time between actions on the patient case that the doctor
 	// has to maintain their claim on the case.
@@ -33,7 +33,7 @@ var (
 func initJumpBallCaseQueueListeners(dataAPI api.DataAPI, statsRegistry metrics.Registry, jbcqMinutesThreshold int64) {
 
 	if jbcqMinutesThreshold > 0 {
-		ExpireDuration = defaultMinutesThreshold * time.Minute
+		ExpireDuration = time.Duration(defaultMinutesThreshold) * time.Minute
 	}
 
 	tempClaimSucess := metrics.NewCounter()
