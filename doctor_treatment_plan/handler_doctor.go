@@ -116,7 +116,7 @@ func (d *doctorTreatmentPlanHandler) submitTreatmentPlan(w http.ResponseWriter, 
 		apiservice.WriteValidationError("treatment_plan_id must be specified", w, r)
 		return
 	} else if requestData.Message == "" {
-		apiservice.WriteValidationError("message must not be empty", w, r)
+		apiservice.WriteValidationError("Please enter a personal note to the patient.", w, r)
 		return
 	}
 
