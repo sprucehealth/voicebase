@@ -43,7 +43,7 @@ func NewValidationError(msg string, r *http.Request) *spruceError {
 }
 
 func NewJBCQForbiddenAccessError() JBCQAccessForbiddenError {
-	return JBCQAccessForbiddenError("Doctor cannot access case because someone else is accessing it.")
+	return JBCQAccessForbiddenError("Oops! This case has been assigned to another doctor.")
 }
 
 func NewAccessForbiddenError() AccessForbiddenError {
