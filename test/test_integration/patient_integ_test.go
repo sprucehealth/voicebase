@@ -3,7 +3,6 @@ package test_integration
 import (
 	"bytes"
 	"encoding/json"
-	"io/ioutil"
 	"net/http"
 	"net/http/httptest"
 	"net/url"
@@ -42,18 +41,22 @@ func TestPatientCareProvidingEllgibility(t *testing.T) {
 	checkElligibilityHandler := &apiservice.CheckCareProvidingElligibilityHandler{DataApi: testData.DataApi, AddressValidationApi: stubAddressValidationService}
 	ts := httptest.NewServer(checkElligibilityHandler)
 	defer ts.Close()
-	resp, err := http.Get(ts.URL + "?zip_code=94115")
 
+	resp, err := http.Get(ts.URL + "?zip_code=94115")
 	if err != nil {
 		t.Fatal("Unable to successfuly check care providing elligiblity for patient " + err.Error())
 	}
+	defer resp.Body.Close()
 
-	body, err := ioutil.ReadAll(resp.Body)
-	if err != nil {
-		t.Fatal("Unable to successfuly read the body of the response")
+	// should be marked as unavailable
+	var j map[string]interface{}
+	if err := json.NewDecoder(resp.Body).Decode(&j); err != nil {
+		t.Fatal(err)
 	}
 
-	CheckSuccessfulStatusCode(resp, "Unable to make a successful call to check for care providing elligibility: "+string(body), t)
+	if !j["available"].(bool) {
+		t.Fatal("Expected this state to be eligible but it wasnt")
+	}
 
 	stubAddressValidationService.CityStateToReturn = address.CityState{
 		City:              "Aventura",
@@ -67,14 +70,19 @@ func TestPatientCareProvidingEllgibility(t *testing.T) {
 	if err != nil {
 		t.Fatal("Unable to successfuly check care providing elligibility for patient" + err.Error())
 	}
+	defer resp.Body.Close()
 
-	body, err = ioutil.ReadAll(resp.Body)
-	if err != nil {
-		t.Fatal("Unable to read the response from the body for patient care providing elligibility check: " + err.Error())
+	if resp.StatusCode != http.StatusOK {
+		t.Fatalf("Expected the status code to be 403, but got a %d instead", resp.StatusCode)
 	}
 
-	if resp.StatusCode != http.StatusForbidden {
-		t.Fatalf("Expected the status code to be 403, but got a %d instead", resp.StatusCode)
+	// should be marked as unavailable
+	if err := json.NewDecoder(resp.Body).Decode(&j); err != nil {
+		t.Fatal(err)
+	}
+
+	if j["available"].(bool) {
+		t.Fatal("Expected this state to be ineligible but it wasnt")
 	}
 }
 
