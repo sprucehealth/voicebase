@@ -33,7 +33,7 @@ var (
 func initJumpBallCaseQueueListeners(dataAPI api.DataAPI, statsRegistry metrics.Registry, jbcqMinutesThreshold int64) {
 
 	if jbcqMinutesThreshold > 0 {
-		ExpireDuration = time.Duration(defaultMinutesThreshold) * time.Minute
+		ExpireDuration = time.Duration(jbcqMinutesThreshold) * time.Minute
 	}
 
 	tempClaimSucess := metrics.NewCounter()
