@@ -978,7 +978,9 @@ func (d *DataService) GetSavedMessageForDoctor(doctorID int64) (string, error) {
 func (d *DataService) GetTreatmentPlanMessageForDoctor(doctorID, treatmentPlanID int64) (string, error) {
 	var message string
 	row := d.db.QueryRow(`SELECT message FROM doctor_treatment_message WHERE doctor_id = ? AND treatment_plan_id = ?`, doctorID, treatmentPlanID)
-	if err := row.Scan(&message); err != nil {
+	if err := row.Scan(&message); err == sql.ErrNoRows {
+		return "", NoRowsError
+	} else if err != nil {
 		return "", err
 	}
 	return message, nil
