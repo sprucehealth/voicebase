@@ -56,7 +56,7 @@ func generateViewsForTreatments(treatmentPlan *common.TreatmentPlan, doctor *com
 			}
 
 			pView := &tpPrescriptionView{
-				Title:           fmt.Sprintf("%s %s", treatment.DrugInternalName, treatment.DosageStrength),
+				Title:           fmt.Sprintf("%s %s %s", treatment.DrugName, treatment.DosageStrength, treatment.DrugForm),
 				Description:     treatment.PatientInstructions,
 				SmallHeaderText: smallHeaderText,
 				IconURL:         iconURL,
