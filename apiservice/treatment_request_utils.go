@@ -3,12 +3,13 @@ package apiservice
 import (
 	"errors"
 	"fmt"
-	"github.com/sprucehealth/backend/common"
-	"github.com/sprucehealth/backend/libs/erx"
-	"github.com/sprucehealth/backend/surescripts"
 	"net/http"
 	"strconv"
 	"strings"
+
+	"github.com/sprucehealth/backend/common"
+	"github.com/sprucehealth/backend/libs/erx"
+	"github.com/sprucehealth/backend/surescripts"
 )
 
 func ValidateTreatment(treatment *common.Treatment) error {
@@ -35,11 +36,11 @@ func ValidateTreatment(treatment *common.Treatment) error {
 	}
 
 	if treatment.PatientInstructions == "" {
-		return errors.New("Patient Instructions for treatment cannot be empty")
+		return errors.New("SIG for treatment cannot be empty")
 	}
 
 	if len(treatment.PatientInstructions) > surescripts.MaxPatientInstructionsLength {
-		return errors.New("Patient instructions should not be greater than 140 characters")
+		return errors.New("SIG should not be greater than 140 characters")
 	}
 
 	if treatment.DrugDBIds == nil || len(treatment.DrugDBIds) == 0 {
