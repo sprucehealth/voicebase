@@ -867,7 +867,13 @@ func (d *DoseSpotService) GetRefillRequestQueueForClinic(clinicianId int64) ([]*
 			RequestedPrescription:     convertMedicationIntoTreatment(refillRequest.RequestedPrescription),
 			DispensedPrescription:     convertMedicationIntoTreatment(refillRequest.DispensedPrescription),
 		}
+
+		// FIX: the refill quantity for dispensed and requested prescription are expected to be the same. So enforcing that until Dosespot
+		// has a fix to ensure that all three (RequestedRefillAmount, RequestedPrescription.Refills, DispensedPrescription.Refills) are the same
+		refillRequestQueue[i].DispensedPrescription.NumberRefills = refillRequestQueue[i].RequestedPrescription.NumberRefills
+
 	}
+
 	return refillRequestQueue, err
 }
 
