@@ -64,7 +64,7 @@ type stripeCard struct {
 	Type        string `json:"type"`
 	ExpMonth    int64  `json:"exp_month"`
 	ExpYear     int64  `json:"exp_year"`
-	Last4       int64  `json:"last4,string"`
+	Last4       string `json:"last4"`
 }
 
 type stripeCardData struct {

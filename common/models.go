@@ -57,7 +57,7 @@ type Card struct {
 	Type           string            `json:"type"`
 	ExpMonth       int64             `json:"exp_month"`
 	ExpYear        int64             `json:"exp_year"`
-	Last4          int64             `json:"last4,string"`
+	Last4          string            `json:"last4"`
 	Label          string            `json:"label,omitempty"`
 	BillingAddress *Address          `json:"address,omitempty"`
 	IsDefault      bool              `json:"is_default,omitempty"`
