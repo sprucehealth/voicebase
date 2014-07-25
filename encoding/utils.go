@@ -83,6 +83,21 @@ func (n *NullInt64) UnmarshalJSON(data []byte) error {
 	return err
 }
 
+func NullInt64FromString(intString string) (NullInt64, error) {
+	if intString == "" {
+		return NullInt64{}, nil
+	}
+	int64Value, err := strconv.ParseInt(intString, 10, 64)
+	if err != nil {
+		return NullInt64{}, err
+	}
+
+	return NullInt64{
+		IsValid:    true,
+		Int64Value: int64Value,
+	}, nil
+}
+
 // need to unmarshal any integer elements that can possibly be returned as nil values
 // from dosespot, as indicated by the attribute xsi:nil being set to true.
 // I could be doing something incorrectly, but golang seems to not handle
