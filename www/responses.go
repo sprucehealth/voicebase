@@ -33,7 +33,7 @@ type internalErrorContext struct {
 }
 
 func InternalServerError(w http.ResponseWriter, r *http.Request, err error) {
-	golog.Logf(2, golog.ERR, err.Error())
+	golog.Logf(1, golog.ERR, err.Error())
 	TemplateResponse(w, http.StatusInternalServerError, internalErrorTemplate, &internalErrorContext{})
 }
 
@@ -41,6 +41,6 @@ func TemplateResponse(w http.ResponseWriter, code int, tmpl Template, ctx interf
 	w.Header().Set("Content-Type", HTMLContentType)
 	w.WriteHeader(code)
 	if err := tmpl.Execute(w, ctx); err != nil {
-		golog.Logf(2, golog.ERR, "Failed to render template %+v: %s", tmpl, err.Error())
+		golog.Logf(1, golog.ERR, "Failed to render template %+v: %s", tmpl, err.Error())
 	}
 }

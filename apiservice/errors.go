@@ -137,7 +137,7 @@ func writeSpruceError(err *spruceError, w http.ResponseWriter, r *http.Request) 
 	golog.Context(
 		"RequestID", err.RequestID,
 		"ErrorCode", err.DeveloperErrorCode,
-	).Logf(3, golog.ERR, err.DeveloperError)
+	).Logf(2, golog.ERR, err.DeveloperError)
 
 	// remove the developer error information if we are not dealing with
 	// before sending information across the wire
