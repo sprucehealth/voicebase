@@ -429,7 +429,7 @@ func (d *DoseSpotService) StartPrescribingPatient(clinicianId int64, currentPati
 		lexiGenProductIdInt, _ := strconv.ParseInt(treatment.DrugDBIds[LexiGenProductId], 0, 64)
 		lexiSynonymTypeIdInt, _ := strconv.ParseInt(treatment.DrugDBIds[LexiSynonymTypeId], 0, 64)
 
-		prescriptionMedication := &prescription{
+		patientPrescription := &prescription{
 			LexiDrugSynId:     lexiDrugSynIdInt,
 			LexiGenProductId:  lexiGenProductIdInt,
 			LexiSynonymTypeId: lexiSynonymTypeIdInt,
@@ -444,10 +444,9 @@ func (d *DoseSpotService) StartPrescribingPatient(clinicianId int64, currentPati
 		}
 
 		if treatment.ERx != nil && treatment.ERx.ErxReferenceNumber != "" {
-			prescriptionMedication.RxReferenceNumber = treatment.ERx.ErxReferenceNumber
+			patientPrescription.RxReferenceNumber = treatment.ERx.ErxReferenceNumber
 		}
 
-		patientPrescription := &prescription{Medication: prescriptionMedication}
 		prescriptions = append(prescriptions, patientPrescription)
 	}
 
