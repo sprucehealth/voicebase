@@ -2,6 +2,7 @@ package app_worker
 
 import (
 	"encoding/json"
+
 	"github.com/sprucehealth/backend/api"
 	"github.com/sprucehealth/backend/common"
 	"github.com/sprucehealth/backend/libs/dispatch"
@@ -216,7 +217,7 @@ func ConsumeMessageFromQueue(DataApi api.DataAPI, ERxApi erx.ERxAPI, ErxQueue *c
 					}
 
 					// get the error details for this medication
-					if err := DataApi.AddErxStatusEvent([]int64{treatment.Id.Int64()}, common.StatusEvent{Status: api.ERX_STATUS_ERROR,
+					if err := DataApi.AddErxStatusEvent([]*common.Treatment{treatment}, common.StatusEvent{Status: api.ERX_STATUS_ERROR,
 						StatusDetails:     prescriptionLogs[0].AdditionalInfo,
 						ReportedTimestamp: prescriptionLogs[0].LogTimestamp,
 					}); err != nil {
@@ -265,7 +266,7 @@ func ConsumeMessageFromQueue(DataApi api.DataAPI, ERxApi erx.ERxAPI, ErxQueue *c
 					}
 
 					// add an event
-					err = DataApi.AddErxStatusEvent([]int64{treatment.Id.Int64()}, common.StatusEvent{Status: api.ERX_STATUS_SENT, ReportedTimestamp: prescriptionLogs[0].LogTimestamp})
+					err = DataApi.AddErxStatusEvent([]*common.Treatment{treatment}, common.StatusEvent{Status: api.ERX_STATUS_SENT, ReportedTimestamp: prescriptionLogs[0].LogTimestamp})
 					if err != nil {
 						statFailure.Inc(1)
 						golog.Errorf("Unable to add status event for this treatment: %s", err.Error())

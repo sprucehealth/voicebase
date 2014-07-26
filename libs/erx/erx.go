@@ -23,7 +23,7 @@ type ERxAPI interface {
 	SelectMedication(clinicianId int64, medicationName, medicationStrength string) (medication *common.Treatment, err error)
 	UpdatePatientInformation(clinicianId int64, patient *common.Patient) error
 	StartPrescribingPatient(clinicianId int64, patient *common.Patient, treatments []*common.Treatment, pharmacySourceId int64) error
-	SendMultiplePrescriptions(clinicianId int64, patient *common.Patient, treatments []*common.Treatment) ([]int64, error)
+	SendMultiplePrescriptions(clinicianId int64, patient *common.Patient, treatments []*common.Treatment) ([]*common.Treatment, error)
 	SearchForPharmacies(clinicianId int64, city, state, zipcode, name string, pharmacyTypes []string) ([]*pharmacySearch.PharmacyData, error)
 	GetPrescriptionStatus(clinicianId, prescriptionId int64) ([]*PrescriptionLog, error)
 	GetTransmissionErrorDetails(clinicianId int64) ([]*common.Treatment, error)

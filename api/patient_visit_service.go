@@ -925,22 +925,22 @@ func (d *DataService) UpdateTreatmentWithPharmacyAndErxId(treatments []*common.T
 	return tx.Commit()
 }
 
-func (d *DataService) AddErxStatusEvent(treatmentIds []int64, prescriptionStatus common.StatusEvent) error {
+func (d *DataService) AddErxStatusEvent(treatments []*common.Treatment, prescriptionStatus common.StatusEvent) error {
 	tx, err := d.db.Begin()
 	if err != nil {
 		return err
 	}
 
-	for _, treatmentId := range treatmentIds {
+	for _, treatment := range treatments {
 
-		_, err = tx.Exec(`update erx_status_events set status = ? where treatment_id = ? and status = ?`, STATUS_INACTIVE, treatmentId, STATUS_ACTIVE)
+		_, err = tx.Exec(`update erx_status_events set status = ? where treatment_id = ? and status = ?`, STATUS_INACTIVE, treatment.Id, STATUS_ACTIVE)
 		if err != nil {
 			tx.Rollback()
 			return err
 		}
 
 		columnsAndData := make(map[string]interface{}, 0)
-		columnsAndData["treatment_id"] = treatmentId
+		columnsAndData["treatment_id"] = treatment.Id
 		columnsAndData["erx_status"] = prescriptionStatus.Status
 		columnsAndData["status"] = STATUS_ACTIVE
 		if !prescriptionStatus.ReportedTimestamp.IsZero() {

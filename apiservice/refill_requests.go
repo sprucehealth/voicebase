@@ -265,7 +265,7 @@ func (d *DoctorRefillRequestHandler) resolveRefillRequest(w http.ResponseWriter,
 
 			ts = time.Now()
 			//  send prescription to pharmacy
-			unSuccesfulTreatmentIds, err := d.ErxApi.SendMultiplePrescriptions(doctor.DoseSpotClinicianId, refillRequest.Patient, []*common.Treatment{requestData.Treatment})
+			unSuccesfulTreatments, err := d.ErxApi.SendMultiplePrescriptions(doctor.DoseSpotClinicianId, refillRequest.Patient, []*common.Treatment{requestData.Treatment})
 			if err != nil {
 				WriteDeveloperError(w, http.StatusInternalServerError, "Unable to send prescription to pharmacy: "+err.Error())
 				return
@@ -273,8 +273,8 @@ func (d *DoctorRefillRequestHandler) resolveRefillRequest(w http.ResponseWriter,
 			golog.Infof("SendMultiplePrescriptions: %.3f seconds", float64(time.Since(ts))/float64(time.Second))
 
 			// ensure its successful
-			for _, unSuccessfulTreatmentId := range unSuccesfulTreatmentIds {
-				if unSuccessfulTreatmentId == requestData.Treatment.Id.Int64() {
+			for _, unSuccessfulTreatment := range unSuccesfulTreatments {
+				if unSuccessfulTreatment.Id.Int64() == requestData.Treatment.Id.Int64() {
 					if err := d.addStatusEvent(originatingTreatmentFound, requestData.Treatment, common.StatusEvent{Status: api.ERX_STATUS_SEND_ERROR}); err != nil {
 						WriteDeveloperError(w, http.StatusInternalServerError, "Unable to add an erx status event: "+err.Error())
 						return
@@ -348,7 +348,7 @@ func (d *DoctorRefillRequestHandler) updateTreatmentWithPharmacyAndErxId(origina
 
 func (d *DoctorRefillRequestHandler) addStatusEvent(originatingTreatmentFound bool, treatment *common.Treatment, statusEvent common.StatusEvent) error {
 	if originatingTreatmentFound {
-		return d.DataApi.AddErxStatusEvent([]int64{treatment.Id.Int64()}, statusEvent)
+		return d.DataApi.AddErxStatusEvent([]*common.Treatment{treatment}, statusEvent)
 	}
 	return d.DataApi.AddErxStatusEventForDNTFTreatment(statusEvent)
 }

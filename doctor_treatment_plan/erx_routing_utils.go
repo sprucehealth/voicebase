@@ -53,31 +53,31 @@ func routeRxInTreatmentPlanToPharmacy(treatmentPlanId int64, patient *common.Pat
 	}
 
 	// Now, request the medications to be sent to the patient's preferred pharmacy
-	unSuccessfulTreatmentIds, err := erxAPI.SendMultiplePrescriptions(doctor.DoseSpotClinicianId, patient, treatments)
+	unSuccessfulTreatments, err := erxAPI.SendMultiplePrescriptions(doctor.DoseSpotClinicianId, patient, treatments)
 	if err != nil {
 		return err
 	}
 
 	// gather treatmentIds for treatments that were successfully routed to pharmacy
-	successfulTreatmentIds := make([]int64, 0, len(treatments))
+	successfulTreatments := make([]*common.Treatment, 0, len(treatments))
 	for _, treatment := range treatments {
 		treatmentFound := false
-		for _, unSuccessfulTreatmentId := range unSuccessfulTreatmentIds {
-			if unSuccessfulTreatmentId == treatment.Id.Int64() {
+		for _, unSuccessfulTreatment := range unSuccessfulTreatments {
+			if unSuccessfulTreatment.Id.Int64() == treatment.Id.Int64() {
 				treatmentFound = true
 				break
 			}
 		}
 		if !treatmentFound {
-			successfulTreatmentIds = append(successfulTreatmentIds, treatment.Id.Int64())
+			successfulTreatments = append(successfulTreatments, treatment)
 		}
 	}
 
-	if err := dataAPI.AddErxStatusEvent(successfulTreatmentIds, common.StatusEvent{Status: api.ERX_STATUS_SENDING}); err != nil {
+	if err := dataAPI.AddErxStatusEvent(successfulTreatments, common.StatusEvent{Status: api.ERX_STATUS_SENDING}); err != nil {
 		return err
 	}
 
-	if err := dataAPI.AddErxStatusEvent(unSuccessfulTreatmentIds, common.StatusEvent{Status: api.ERX_STATUS_SEND_ERROR}); err != nil {
+	if err := dataAPI.AddErxStatusEvent(unSuccessfulTreatments, common.StatusEvent{Status: api.ERX_STATUS_SEND_ERROR}); err != nil {
 		return err
 	}
 

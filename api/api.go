@@ -157,7 +157,7 @@ type PatientVisitAPI interface {
 	GetActiveTreatmentPlanForPatient(patientId int64) (*common.TreatmentPlan, error)
 	GetTreatmentPlanForPatient(patientId, treatmentPlanId int64) (*common.TreatmentPlan, error)
 	UpdateTreatmentWithPharmacyAndErxId(treatments []*common.Treatment, pharmacySentTo *pharmacy.PharmacyData, doctorId int64) error
-	AddErxStatusEvent(treatmentIds []int64, prescriptionStatus common.StatusEvent) error
+	AddErxStatusEvent(treatments []*common.Treatment, prescriptionStatus common.StatusEvent) error
 	GetPrescriptionStatusEventsForPatient(patientId int64) ([]common.StatusEvent, error)
 	GetPrescriptionStatusEventsForTreatment(treatmentId int64) ([]common.StatusEvent, error)
 	MarkTPDeviatedFromContentSource(treatmentPlanId int64) error

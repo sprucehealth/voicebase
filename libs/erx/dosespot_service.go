@@ -209,20 +209,20 @@ func (d *DoseSpotService) SearchForMedicationStrength(clinicianId int64, medicat
 	return searchResult.DisplayStrengths, nil
 }
 
-func (d *DoseSpotService) SendMultiplePrescriptions(clinicianId int64, patient *common.Patient, treatments []*common.Treatment) ([]int64, error) {
+func (d *DoseSpotService) SendMultiplePrescriptions(clinicianId int64, patient *common.Patient, treatments []*common.Treatment) ([]*common.Treatment, error) {
 	sendPrescriptionsRequest := &sendMultiplePrescriptionsRequest{
 		SSO:       generateSingleSignOn(d.ClinicKey, clinicianId, d.ClinicId),
 		PatientId: patient.ERxPatientId.Int64(),
 	}
 
 	prescriptionIds := make([]int64, 0)
-	prescriptionIdToTreatmentIdMapping := make(map[int64]int64)
+	prescriptionIdToTreatmentMapping := make(map[int64]*common.Treatment)
 	for _, treatment := range treatments {
 		if treatment.ERx.PrescriptionId.Int64() == 0 {
 			continue
 		}
 		prescriptionIds = append(prescriptionIds, treatment.ERx.PrescriptionId.Int64())
-		prescriptionIdToTreatmentIdMapping[treatment.ERx.PrescriptionId.Int64()] = treatment.Id.Int64()
+		prescriptionIdToTreatmentMapping[treatment.ERx.PrescriptionId.Int64()] = treatment
 	}
 
 	sendPrescriptionsRequest.PrescriptionIds = prescriptionIds
@@ -238,10 +238,10 @@ func (d *DoseSpotService) SendMultiplePrescriptions(clinicianId int64, patient *
 		return nil, err
 	}
 
-	unSuccessfulTreatmentIds := make([]int64, 0)
+	unSuccessfulTreatments := make([]*common.Treatment, 0)
 	for _, prescriptionResult := range response.SendPrescriptionResults {
 		if prescriptionResult.ResultCode != resultOk {
-			unSuccessfulTreatmentIds = append(unSuccessfulTreatmentIds, prescriptionIdToTreatmentIdMapping[int64(prescriptionResult.PrescriptionId)])
+			unSuccessfulTreatments = append(unSuccessfulTreatments, prescriptionIdToTreatmentMapping[int64(prescriptionResult.PrescriptionId)])
 			golog.Errorf("Error sending prescription with id %d : %s", prescriptionResult.PrescriptionId, prescriptionResult.ResultDescription)
 		}
 	}
@@ -249,7 +249,7 @@ func (d *DoseSpotService) SendMultiplePrescriptions(clinicianId int64, patient *
 	if response.ResultCode != resultOk {
 		return nil, errors.New("Unable to send multiple prescriptions: " + response.ResultDescription)
 	}
-	return unSuccessfulTreatmentIds, nil
+	return unSuccessfulTreatments, nil
 }
 
 func populatePatientForDoseSpot(currentPatient *common.Patient) (*patient, error) {
