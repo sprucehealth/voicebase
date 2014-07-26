@@ -165,7 +165,7 @@ func handlErxErrorForRefillRequest(dataApi api.DataAPI, refillRequest *common.Re
 	// if the latest item does not represent an error, insert
 	// an error into the rx history of the refill request and add a
 	// refil request transmission error to the doctor's queue
-	if statusEvents[0].Status != api.ERX_STATUS_ERROR {
+	if statusEvents[0].Status != api.RX_REFILL_STATUS_ERROR {
 		if err := dataApi.AddRefillRequestStatusEvent(common.StatusEvent{
 			Status:            api.RX_REFILL_STATUS_ERROR,
 			StatusDetails:     treatmentWithError.StatusDetails,
