@@ -58,7 +58,6 @@ var DoseSpotApiActions = map[DoseSpotApiId]string{
 	sendMultiplPrescriptionsAction:                 "SendMultiplePrescriptions",
 	searchPharmaciesAction:                         "PharmacySearchMessageDetailed",
 	getPrescriptionLogDetailsAction:                "GetPrescriptionLogDetails",
-	getMedicationListAction:                        "GetMedicationList",
 	getTransmissionErrorDetailsAction:              "GetTransmissionErrorsDetails",
 	getRefillRequestsTransmissionsErrorsAction:     "GetRefillRequestsTransmissionErrors",
 	ignoreAlertAction:                              "IgnoreAlert",
@@ -634,30 +633,6 @@ func (d *DoseSpotService) GetPrescriptionStatus(clincianId int64, prescriptionId
 	sort.Reverse(ByLogTimeStamp(prescriptionLogs))
 
 	return prescriptionLogs, nil
-}
-
-func (d *DoseSpotService) GetMedicationList(clinicianId int64, PatientId int64) ([]*common.Treatment, error) {
-	request := &getMedicationListRequest{
-		PatientId: PatientId,
-		SSO:       generateSingleSignOn(d.ClinicKey, clinicianId, d.ClinicId),
-		Sources:   []string{"Prescription"},
-		Status:    []string{"Active"},
-	}
-	response := &getMedicationListResult{}
-	err := d.getDoseSpotClient().makeSoapRequest(DoseSpotApiActions[getMedicationListAction],
-		request, response,
-		d.apiLatencies[getMedicationListAction],
-		d.apiRequests[getMedicationListAction],
-		d.apiFailure[getMedicationListAction])
-	if err != nil {
-		return nil, err
-	}
-
-	medications := make([]*common.Treatment, len(response.Medications))
-	for i, medicationItem := range response.Medications {
-		medications[i] = convertMedicationIntoTreatment(medicationItem)
-	}
-	return medications, nil
 }
 
 func (d *DoseSpotService) GetTransmissionErrorDetails(clinicianId int64) ([]*common.Treatment, error) {

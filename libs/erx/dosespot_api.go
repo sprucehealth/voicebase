@@ -323,20 +323,6 @@ type Result struct {
 	ResultDescription string `xml:"Result>ResultDescription"`
 }
 
-type getMedicationListRequest struct {
-	XMLName   xml.Name     `xml:"http://www.dosespot.com/API/11/ GetMedicationListRequest"`
-	SSO       singleSignOn `xml:"SingleSignOn"`
-	PatientId int64        `xml:"PatientId"`
-	Sources   []string     `xml:"Sources>MedicationSourceType"`
-	Status    []string     `xml:"Status>MedicationStatusType"`
-}
-
-type getMedicationListResult struct {
-	XMLName xml.Name `xml:"http://www.dosespot.com/API/11/ GetMedicationListResult"`
-	Result
-	Medications []*medication `xml:"Medications>MedicationListItem"`
-}
-
 type ignoreAlertRequest struct {
 	XMLName        xml.Name     `xml:"http://www.dosespot.com/API/11/ IgnoreAlertRequest"`
 	SSO            singleSignOn `xml:"SingleSignOn"`

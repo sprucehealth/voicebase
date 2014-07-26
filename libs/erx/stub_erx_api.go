@@ -82,10 +82,6 @@ func (s *StubErxService) GetPrescriptionStatus(clinicianId int64, prescriptionId
 	return prescriptionLogs, nil
 }
 
-func (s *StubErxService) GetMedicationList(clinicianId int64, PatientId int64) ([]*common.Treatment, error) {
-	return nil, nil
-}
-
 func (s *StubErxService) GetTransmissionErrorDetails(clinicianId int64) ([]*common.Treatment, error) {
 	return nil, nil
 }

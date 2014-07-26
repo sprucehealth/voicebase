@@ -26,7 +26,6 @@ type ERxAPI interface {
 	SendMultiplePrescriptions(clinicianId int64, patient *common.Patient, treatments []*common.Treatment) ([]int64, error)
 	SearchForPharmacies(clinicianId int64, city, state, zipcode, name string, pharmacyTypes []string) ([]*pharmacySearch.PharmacyData, error)
 	GetPrescriptionStatus(clinicianId, prescriptionId int64) ([]*PrescriptionLog, error)
-	GetMedicationList(clinicianId, patientId int64) ([]*common.Treatment, error)
 	GetTransmissionErrorDetails(clinicianId int64) ([]*common.Treatment, error)
 	GetTransmissionErrorRefillRequestsCount(clinicianId int64) (refillRequests int64, transactionErrors int64, err error)
 	IgnoreAlert(clinicianId int64, prescriptionId int64) error
