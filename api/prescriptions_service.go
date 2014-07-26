@@ -250,7 +250,7 @@ func (d *DataService) GetRefillRequestFromId(refillRequestId int64) (*common.Ref
 func (d *DataService) GetRefillRequestFromPrescriptionId(prescriptionId int64) (*common.RefillRequestItem, error) {
 
 	// get the refill request
-	rows, err := d.DB.Query(`select rx_refill_request.id, rx_refill_request.erx_request_queue_item_id,rx_refill_request.reference_number, rx_refill_request.erx_id,
+	rows, err := d.db.Query(`select rx_refill_request.id, rx_refill_request.erx_request_queue_item_id,rx_refill_request.reference_number, rx_refill_request.erx_id,
 		approved_refill_amount, patient_id, request_date, doctor_id, requested_treatment_id, 
 		dispensed_treatment_id, comments, deny_refill_reason.reason from rx_refill_request
 				left outer join deny_refill_reason on deny_refill_reason.id = denial_reason_id
@@ -569,7 +569,7 @@ func (d *DataService) GetUnlinkedDNTFTreatment(treatmentId int64) (*common.Treat
 }
 
 func (d *DataService) GetUnlinkedDNTFTreatmentFromPrescriptionId(prescriptionId int64) (*common.Treatment, error) {
-	rows, err := d.DB.Query(`select unlinked_dntf_treatment.id, unlinked_dntf_treatment.erx_id, unlinked_dntf_treatment.drug_internal_name, unlinked_dntf_treatment.dosage_strength, unlinked_dntf_treatment.type,
+	rows, err := d.db.Query(`select unlinked_dntf_treatment.id, unlinked_dntf_treatment.erx_id, unlinked_dntf_treatment.drug_internal_name, unlinked_dntf_treatment.dosage_strength, unlinked_dntf_treatment.type,
 			unlinked_dntf_treatment.dispense_value, unlinked_dntf_treatment.dispense_unit_id, ltext, unlinked_dntf_treatment.refills, unlinked_dntf_treatment.substitutions_allowed, 
 			unlinked_dntf_treatment.days_supply, unlinked_dntf_treatment.pharmacy_id, unlinked_dntf_treatment.pharmacy_notes, unlinked_dntf_treatment.patient_instructions, unlinked_dntf_treatment.creation_date, unlinked_dntf_treatment.erx_sent_date,
 			unlinked_dntf_treatment.erx_last_filled_date, unlinked_dntf_treatment.status, drug_name.name, drug_route.name, drug_form.name,

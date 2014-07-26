@@ -1,13 +1,13 @@
 package app_worker
 
 import (
-	"carefront/api"
-	"carefront/common"
-	"carefront/libs/erx"
-	"carefront/libs/golog"
 	"time"
 
-	"github.com/samuel/go-metrics/metrics"
+	"github.com/sprucehealth/backend/api"
+	"github.com/sprucehealth/backend/common"
+	"github.com/sprucehealth/backend/libs/erx"
+	"github.com/sprucehealth/backend/libs/golog"
+	"github.com/sprucehealth/backend/third_party/github.com/samuel/go-metrics/metrics"
 )
 
 const (
@@ -144,8 +144,8 @@ func handlErxErrorForUnlinkedDNTFTreatment(dataApi api.DataAPI, unlinkedDNTFTrea
 		if err := dataApi.InsertItemIntoDoctorQueue(api.DoctorQueueItem{
 			DoctorId:  unlinkedDNTFTreatment.Doctor.DoctorId.Int64(),
 			ItemId:    unlinkedDNTFTreatment.Id.Int64(),
-			Status:    api.STATUS_PENDING,
-			EventType: api.EVENT_TYPE_UNLINKED_DNTF_TRANSMISSION_ERROR,
+			Status:    api.DQItemStatusPending,
+			EventType: api.DQEventTypeUnlinkedDNTFTransmissionError,
 		}); err != nil {
 			golog.Errorf("Unable to insert unlinked dntf treatment transmission error into doctor queue: %s", err)
 			return err
@@ -179,8 +179,8 @@ func handlErxErrorForRefillRequest(dataApi api.DataAPI, refillRequest *common.Re
 		if err := dataApi.InsertItemIntoDoctorQueue(api.DoctorQueueItem{
 			DoctorId:  refillRequest.Doctor.DoctorId.Int64(),
 			ItemId:    refillRequest.Id,
-			Status:    api.STATUS_PENDING,
-			EventType: api.EVENT_TYPE_REFILL_TRANSMISSION_ERROR,
+			Status:    api.DQItemStatusPending,
+			EventType: api.DQEventTypeRefillTransmissionError,
 		}); err != nil {
 			golog.Errorf("Unable to insert refill transmission error into doctor queue: %+v", err)
 			return err
@@ -214,8 +214,8 @@ func handleErxErrorForTreatmentInTreatmentPlan(dataApi api.DataAPI, treatment, t
 		if err := dataApi.InsertItemIntoDoctorQueue(api.DoctorQueueItem{
 			DoctorId:  treatment.Doctor.DoctorId.Int64(),
 			ItemId:    treatment.Id.Int64(),
-			Status:    api.STATUS_PENDING,
-			EventType: api.EVENT_TYPE_TRANSMISSION_ERROR,
+			Status:    api.DQItemStatusPending,
+			EventType: api.DQEventTypeTransmissionError,
 		}); err != nil {
 			golog.Errorf("Unable to insert refill transmission error into doctor queue: %+v", err)
 			return err
