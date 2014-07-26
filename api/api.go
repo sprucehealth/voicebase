@@ -176,6 +176,7 @@ type PrescriptionsAPI interface {
 	CreateRefillRequest(*common.RefillRequestItem) error
 	AddRefillRequestStatusEvent(refillRequestStatus common.StatusEvent) error
 	GetRefillRequestFromId(refillRequestId int64) (*common.RefillRequestItem, error)
+	GetRefillRequestFromPrescriptionId(prescriptionId int64) (*common.RefillRequestItem, error)
 	GetRefillRequestsForPatient(patientId int64) ([]*common.RefillRequestItem, error)
 	GetRefillRequestDenialReasons() ([]*RefillRequestDenialReason, error)
 	MarkRefillRequestAsApproved(prescriptionId, approvedRefillCount, rxRefillRequestId int64, comments string) error
@@ -184,6 +185,7 @@ type PrescriptionsAPI interface {
 	AddUnlinkedTreatmentInEventOfDNTF(treatment *common.Treatment, refillRequestId int64) error
 	GetUnlinkedDNTFTreatment(treatmentId int64) (*common.Treatment, error)
 	GetUnlinkedDNTFTreatmentsForPatient(patientId int64) ([]*common.Treatment, error)
+	GetUnlinkedDNTFTreatmentFromPrescriptionId(prescriptionId int64) (*common.Treatment, error)
 	AddTreatmentToTreatmentPlanInEventOfDNTF(treatment *common.Treatment, refillRequestId int64) error
 	UpdateUnlinkedDNTFTreatmentWithPharmacyAndErxId(treatment *common.Treatment, pharmacySentTo *pharmacy.PharmacyData, doctorId int64) error
 	AddErxStatusEventForDNTFTreatment(statusEvent common.StatusEvent) error
@@ -252,6 +254,10 @@ type DoctorAPI interface {
 	CareProviderProfile(accountID int64) (*common.CareProviderProfile, error)
 	UpdateCareProviderProfile(accountID int64, profile *common.CareProviderProfile) error
 	GetFirstDoctorWithAClinicianId() (*common.Doctor, error)
+}
+
+type ClinicAPI interface {
+	GetAllDoctorsInClinic() ([]*common.Doctor, error)
 }
 
 type FavoriteTreatmentPlanAPI interface {
@@ -366,6 +372,7 @@ type DataAPI interface {
 	GeoAPI
 	PatientAPI
 	DoctorAPI
+	ClinicAPI
 	DoctorManagementAPI
 	PatientVisitAPI
 	PatientCaseAPI
