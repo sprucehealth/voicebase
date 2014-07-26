@@ -452,9 +452,12 @@ func (d *DoseSpotService) StartPrescribingPatient(clinicianId int64, currentPati
 
 	startPrescribingRequest := &patientStartPrescribingRequest{
 		AddFavoritePharmacies: []*patientPharmacySelection{patientPreferredPharmacy},
-		AddPrescriptions:      prescriptions,
 		Patient:               newPatient,
 		SSO:                   generateSingleSignOn(d.ClinicKey, clinicianId, d.ClinicId),
+	}
+
+	if len(prescriptions) > 0 {
+		startPrescribingRequest.AddPrescriptions = prescriptions
 	}
 
 	response := &patientStartPrescribingResponse{}
