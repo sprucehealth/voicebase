@@ -16,6 +16,7 @@ type StubErxService struct {
 	PatientDetailsToReturn               *common.Patient
 	PharmacyDetailsToReturn              *pharmacySearch.PharmacyData
 	RefillRxRequestQueueToReturn         []*common.RefillRequestItem
+	TransmissionErrorsForPrescriptionIds []int64
 	PrescriptionIdsToReturn              []int64
 	PrescriptionIdToPrescriptionStatuses map[int64][]common.StatusEvent
 	SelectedMedicationToReturn           *common.Treatment
