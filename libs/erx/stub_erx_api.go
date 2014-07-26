@@ -59,7 +59,7 @@ func (s *StubErxService) StartPrescribingPatient(clinicianId int64, Patient *com
 	return nil
 }
 
-func (s *StubErxService) SendMultiplePrescriptions(clinicianId int64, Patient *common.Patient, Treatments []*common.Treatment) ([]int64, error) {
+func (s *StubErxService) SendMultiplePrescriptions(clinicianId int64, Patient *common.Patient, Treatments []*common.Treatment) ([]*common.Treatment, error) {
 	// nothing to do here given that the act of sending a prescription successfully does not change the state of the system
 	return nil, nil
 }
@@ -85,6 +85,17 @@ func (s *StubErxService) GetPrescriptionStatus(clinicianId int64, prescriptionId
 
 func (s *StubErxService) GetTransmissionErrorDetails(clinicianId int64) ([]*common.Treatment, error) {
 	return nil, nil
+	timestamp := time.Now()
+	transmissionErrors := make([]*common.Treatment, len(s.TransmissionErrorsForPrescriptionIds))
+	for i, prescriptionId := range s.TransmissionErrorsForPrescriptionIds {
+		transmissionErrors[i] = &common.Treatment{
+			ERx: &common.ERxData{
+				PrescriptionId:        encoding.NewObjectId(prescriptionId),
+				TransmissionErrorDate: &timestamp,
+			},
+		}
+	}
+	return transmissionErrors, nil
 }
 
 func (s *StubErxService) GetTransmissionErrorRefillRequestsCount(clinicianId int64) (refillRequests int64, transactionErrors int64, err error) {
