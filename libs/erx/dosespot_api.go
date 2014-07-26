@@ -115,7 +115,19 @@ type patientUpdate struct {
 }
 
 type prescription struct {
-	Medication *medication `xml:"Medication"`
+	DoseSpotPrescriptionId int64  `xml:"Medication>DoseSpotPrescriptionId"`
+	LexiGenProductId       int64  `xml:"Medication>LexiGenProductId"`
+	LexiDrugSynId          int64  `xml:"Medication>LexiDrugSynId"`
+	LexiSynonymTypeId      int64  `xml:"Medication>LexiSynonymTypeId"`
+	Refills                int64  `xml:"Medication>Refills"`
+	DaysSupply             int64  `xml:"Medication>DaysSupply"`
+	Dispense               string `xml:"Medication>Dispense"`
+	DispenseUnitId         int64  `xml:"Medication>DispenseUnitId"`
+	Instructions           string `xml:"Medication>Instructions"`
+	PharmacyId             int64  `xml:"Medication>PharmacyId"`
+	PharmacyNotes          string `xml:"Medication>PharmacyNotes"`
+	NoSubstitutions        bool   `xml:"Medication>NoSubstitutions"`
+	RxReferenceNumber      string `xml:"Medication>RxReferenceNumber"`
 }
 
 type medication struct {

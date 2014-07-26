@@ -429,13 +429,13 @@ func (d *DoseSpotService) StartPrescribingPatient(clinicianId int64, currentPati
 		lexiGenProductIdInt, _ := strconv.ParseInt(treatment.DrugDBIds[LexiGenProductId], 0, 64)
 		lexiSynonymTypeIdInt, _ := strconv.ParseInt(treatment.DrugDBIds[LexiSynonymTypeId], 0, 64)
 
-		prescriptionMedication := &medication{
+		prescriptionMedication := &prescription{
 			LexiDrugSynId:     lexiDrugSynIdInt,
 			LexiGenProductId:  lexiGenProductIdInt,
 			LexiSynonymTypeId: lexiSynonymTypeIdInt,
 			Refills:           treatment.NumberRefills.Int64(),
 			Dispense:          treatment.DispenseValue.String(),
-			DaysSupply:        treatment.DaysSupply,
+			DaysSupply:        treatment.DaysSupply.Int64(),
 			DispenseUnitId:    treatment.DispenseUnitId.Int64(),
 			Instructions:      treatment.PatientInstructions,
 			NoSubstitutions:   !treatment.SubstitutionsAllowed,
