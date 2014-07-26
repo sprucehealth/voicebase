@@ -433,7 +433,7 @@ func (d *DoseSpotService) StartPrescribingPatient(clinicianId int64, currentPati
 			LexiDrugSynId:     lexiDrugSynIdInt,
 			LexiGenProductId:  lexiGenProductIdInt,
 			LexiSynonymTypeId: lexiSynonymTypeIdInt,
-			Refills:           treatment.NumberRefills,
+			Refills:           treatment.NumberRefills.Int64(),
 			Dispense:          treatment.DispenseValue.String(),
 			DaysSupply:        treatment.DaysSupply,
 			DispenseUnitId:    treatment.DispenseUnitId.Int64(),
