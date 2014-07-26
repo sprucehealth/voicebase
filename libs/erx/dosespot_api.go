@@ -129,7 +129,7 @@ type medication struct {
 	LexiSynonymTypeId       int64              `xml:"LexiSynonymTypeId"`
 	NDC                     string             `xml:"NDC"`
 	RepresentativeNDC       string             `xml:"RepresentativeNDC"`
-	Refills                 encoding.NullInt64 `xml:"Refills"`
+	Refills                 string             `xml:"Refills"`
 	DaysSupply              encoding.NullInt64 `xml:"DaysSupply,omitempty"`
 	Dispense                string             `xml:"Dispense"`
 	DispenseUnitId          int64              `xml:"DispenseUnitId"`

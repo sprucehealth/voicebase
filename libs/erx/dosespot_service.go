@@ -71,6 +71,7 @@ var DoseSpotApiActions = map[DoseSpotApiId]string{
 
 const (
 	resultOk = "OK"
+	prn      = "PRN"
 )
 
 type ByLogTimeStamp []*PrescriptionLog
@@ -679,6 +680,11 @@ func (d *DoseSpotService) GetTransmissionErrorDetails(clinicianId int64) ([]*com
 			SubstitutionsAllowed: !transmissionError.Medication.NoSubstitutions,
 		}
 
+		// we expect the refills to be a number so if it errors out this is expected
+		medicationsWithErrors[i].NumberRefills, err = encoding.NullInt64FromString(transmissionError.Medication.Refills)
+		if err != nil {
+			return nil, err
+		}
 	}
 
 	return medicationsWithErrors, nil
