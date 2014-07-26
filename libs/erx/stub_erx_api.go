@@ -84,7 +84,6 @@ func (s *StubErxService) GetPrescriptionStatus(clinicianId int64, prescriptionId
 }
 
 func (s *StubErxService) GetTransmissionErrorDetails(clinicianId int64) ([]*common.Treatment, error) {
-	return nil, nil
 	timestamp := time.Now()
 	transmissionErrors := make([]*common.Treatment, len(s.TransmissionErrorsForPrescriptionIds))
 	for i, prescriptionId := range s.TransmissionErrorsForPrescriptionIds {
