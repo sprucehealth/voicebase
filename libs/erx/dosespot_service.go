@@ -672,7 +672,6 @@ func (d *DoseSpotService) GetTransmissionErrorDetails(clinicianId int64) ([]*com
 			StatusDetails:        transmissionError.ErrorDetails,
 			DrugName:             transmissionError.Medication.DrugName,
 			DosageStrength:       transmissionError.Medication.Strength,
-			NumberRefills:        transmissionError.Medication.Refills,
 			DaysSupply:           transmissionError.Medication.DaysSupply,
 			DispenseValue:        encoding.HighPrecisionFloat64(dispenseValueFloat),
 			PatientInstructions:  transmissionError.Medication.Instructions,
@@ -841,12 +840,27 @@ func (d *DoseSpotService) GetRefillRequestQueueForClinic(clinicianId int64) ([]*
 			RxRequestQueueItemId:      refillRequest.RxRequestQueueItemId,
 			ReferenceNumber:           refillRequest.ReferenceNumber,
 			PharmacyRxReferenceNumber: refillRequest.PharmacyRxReferenceNumber,
+			RequestedRefillAmount:     refillRequest.RequestedRefillAmount,
 			ErxPatientId:              refillRequest.PatientId,
 			PatientAddedForRequest:    refillRequest.PatientAddedForRequest,
 			RequestDateStamp:          refillRequest.RequestDateStamp.DateTime,
 			ClinicianId:               refillRequest.Clinician.ClinicianId,
 			RequestedPrescription:     convertMedicationIntoTreatment(refillRequest.RequestedPrescription),
 			DispensedPrescription:     convertMedicationIntoTreatment(refillRequest.DispensedPrescription),
+		}
+
+		// FIX: We will read the number refill values from RefillRequest.RequestedRefillAmount for now
+		// due to the discrepancy on Dosespot's end with this value and the RefillRequested.RequestedPrescription.Refills value.
+		// In theory, these two values should be the same. Also, its possible for RequestedRefillAmount to indicate "PRN"
+		// or a number. In the event it indicates "PRN" we will handle it via a -1 on our end to indicate this. If its any value other than a number
+		// or "PRN", we error out given that the number is not parseable.
+		if refillRequest.RequestedRefillAmount == prn {
+			refillRequestQueue[i].RequestedPrescription.NumberRefills = encoding.NullInt64{IsValid: true, Int64Value: -1}
+		} else {
+			refillRequestQueue[i].RequestedPrescription.NumberRefills, err = encoding.NullInt64FromString(refillRequest.RequestedRefillAmount)
+			if err != nil {
+				return nil, err
+			}
 		}
 
 		// FIX: the refill quantity for dispensed and requested prescription are expected to be the same. So enforcing that until Dosespot
@@ -945,7 +959,6 @@ func convertMedicationIntoTreatment(medicationItem *medication) *common.Treatmen
 		},
 		DrugName:                medicationItem.DrugName,
 		IsControlledSubstance:   err == nil && scheduleInt > 0,
-		NumberRefills:           medicationItem.Refills,
 		DaysSupply:              medicationItem.DaysSupply,
 		DispenseValue:           encoding.HighPrecisionFloat64(dispenseValue),
 		DispenseUnitId:          encoding.NewObjectId(medicationItem.DispenseUnitId),
@@ -963,6 +976,8 @@ func convertMedicationIntoTreatment(medicationItem *medication) *common.Treatmen
 			DoseSpotClinicianId: medicationItem.ClinicianId,
 		},
 	}
+
+	treatment.NumberRefills, _ = encoding.NullInt64FromString(medicationItem.Refills)
 
 	if medicationItem.DatePrescribed != nil {
 		treatment.ERx.ErxSentDate = &medicationItem.DatePrescribed.DateTime
