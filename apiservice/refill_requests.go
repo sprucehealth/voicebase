@@ -6,6 +6,7 @@ import (
 	"sort"
 	"strconv"
 	"strings"
+	"time"
 
 	"github.com/sprucehealth/backend/api"
 	"github.com/sprucehealth/backend/common"
@@ -131,6 +132,20 @@ func (d *DoctorRefillRequestHandler) resolveRefillRequest(w http.ResponseWriter,
 
 		trimSpacesFromRefillRequest(refillRequest)
 
+		// get the refill request to check if it is a controlled substance
+		refillRequest, err := d.DataApi.GetRefillRequestFromId(requestData.RefillRequestId.Int64())
+		if err != nil {
+			WriteDeveloperError(w, http.StatusInternalServerError, "Unable to get refill request from id: "+err.Error())
+			return
+		}
+
+		// we cannot let the doctor approve this refill request given that we are dealing with
+		// a controlled substance
+		if refillRequest.RequestedPrescription.IsControlledSubstance {
+			WriteUserError(w, HTTP_UNPROCESSABLE_ENTITY, "Unfortunately, we do not support electronic routing of controlled substances using the platform. The only option available is to deny the refill request. If you have any questions, feel free to contact support. Apologies for any inconvenience!")
+			return
+		}
+
 		// Send the approve refill request to dosespot
 		prescriptionId, err := d.ErxApi.ApproveRefillRequest(doctor.DoseSpotClinicianId, refillRequest.RxRequestQueueItemId, requestData.ApprovedRefillAmount, requestData.Comments)
 		if err != nil {
@@ -202,7 +217,8 @@ func (d *DoctorRefillRequestHandler) resolveRefillRequest(w http.ResponseWriter,
 			if requestData.Treatment.ERx == nil {
 				requestData.Treatment.ERx = &common.ERxData{}
 			}
-			requestData.Treatment.ERx.ErxReferenceNumber = refillRequest.ReferenceNumber
+			// NOTE: we are required to send in the RxRequestQueueItemId according to DoseSpot
+			requestData.Treatment.ERx.ErxReferenceNumber = strconv.FormatInt(refillRequest.RxRequestQueueItemId, 10)
 			originatingTreatmentFound := refillRequest.RequestedPrescription.OriginatingTreatmentId != 0
 
 			if originatingTreatmentFound {
@@ -214,16 +230,32 @@ func (d *DoctorRefillRequestHandler) resolveRefillRequest(w http.ResponseWriter,
 				requestData.Treatment.TreatmentPlanId = originatingTreatment.TreatmentPlanId
 			}
 
+			ts := time.Now()
+			//  Deny the refill request
+			prescriptionId, err := d.ErxApi.DenyRefillRequest(doctor.DoseSpotClinicianId, refillRequest.RxRequestQueueItemId, denialReasonCode, requestData.Comments)
+			if err != nil {
+				WriteDeveloperError(w, http.StatusInternalServerError, "Unable to deny refill request on the dosespot platform for the following reason: "+err.Error())
+				return
+			} else if err := d.DataApi.MarkRefillRequestAsDenied(prescriptionId, requestData.DenialReasonId.Int64(), refillRequest.Id, requestData.Comments); err != nil {
+				//  Update the refill request with the reason for denial and the erxid returned
+				WriteDeveloperError(w, http.StatusInternalServerError, "Unable to update the status of the refill request to denied: "+err.Error())
+				return
+			}
+
+			golog.Infof("Denied RefillRx time: %.3f seconds", float64(time.Since(ts))/float64(time.Second))
+
 			if err := d.addTreatmentInEventOfDNTF(originatingTreatmentFound, requestData.Treatment, refillRequest.Doctor.DoctorId.Int64(), refillRequest.Patient.PatientId.Int64(), refillRequest.Id); err != nil {
 				WriteDeveloperError(w, http.StatusInternalServerError, "Unable to add dntf treatment: "+err.Error())
 				return
 			}
 
+			ts = time.Now()
 			//  start prescribing
 			if err := d.ErxApi.StartPrescribingPatient(doctor.DoseSpotClinicianId, refillRequest.Patient, []*common.Treatment{requestData.Treatment}, refillRequest.RequestedPrescription.ERx.Pharmacy.SourceId); err != nil {
 				WriteDeveloperError(w, http.StatusInternalServerError, "Unable to start prescribing to get back prescription id for treatment: "+err.Error())
 				return
 			}
+			golog.Infof("StartPrescribingPatient: %.3f seconds", float64(time.Since(ts))/float64(time.Second))
 
 			// update pharmacy and erx id for treatment
 			if err := d.updateTreatmentWithPharmacyAndErxId(originatingTreatmentFound, requestData.Treatment, refillRequest.RequestedPrescription.ERx.Pharmacy, doctor.DoctorId.Int64()); err != nil {
@@ -231,12 +263,14 @@ func (d *DoctorRefillRequestHandler) resolveRefillRequest(w http.ResponseWriter,
 				return
 			}
 
+			ts = time.Now()
 			//  send prescription to pharmacy
 			unSuccesfulTreatmentIds, err := d.ErxApi.SendMultiplePrescriptions(doctor.DoseSpotClinicianId, refillRequest.Patient, []*common.Treatment{requestData.Treatment})
 			if err != nil {
 				WriteDeveloperError(w, http.StatusInternalServerError, "Unable to send prescription to pharmacy: "+err.Error())
 				return
 			}
+			golog.Infof("SendMultiplePrescriptions: %.3f seconds", float64(time.Since(ts))/float64(time.Second))
 
 			// ensure its successful
 			for _, unSuccessfulTreatmentId := range unSuccesfulTreatmentIds {
@@ -268,19 +302,17 @@ func (d *DoctorRefillRequestHandler) resolveRefillRequest(w http.ResponseWriter,
 			}); err != nil {
 				golog.Errorf("Unable to enqueue job to check status of erx for new rx after DNTF. Not going to error out on this for the user becuase there is nothing the user can do about this: %+v", err)
 			}
-		}
-
-		//  Deny the refill request
-		prescriptionId, err := d.ErxApi.DenyRefillRequest(doctor.DoseSpotClinicianId, refillRequest.RxRequestQueueItemId, denialReasonCode, requestData.Comments)
-		if err != nil {
-			WriteDeveloperError(w, http.StatusInternalServerError, "Unable to deny refill request on the dosespot platform for the following reason: "+err.Error())
-			return
-		}
-
-		//  Update the refill request with the reason for denial and the erxid returned
-		if err := d.DataApi.MarkRefillRequestAsDenied(prescriptionId, requestData.DenialReasonId.Int64(), refillRequest.Id, requestData.Comments); err != nil {
-			WriteDeveloperError(w, http.StatusInternalServerError, "Unable to update the status of the refill request to denied: "+err.Error())
-			return
+		} else {
+			//  Deny the refill request
+			prescriptionId, err := d.ErxApi.DenyRefillRequest(doctor.DoseSpotClinicianId, refillRequest.RxRequestQueueItemId, denialReasonCode, requestData.Comments)
+			if err != nil {
+				WriteDeveloperError(w, http.StatusInternalServerError, "Unable to deny refill request on the dosespot platform for the following reason: "+err.Error())
+				return
+			} else if err := d.DataApi.MarkRefillRequestAsDenied(prescriptionId, requestData.DenialReasonId.Int64(), refillRequest.Id, requestData.Comments); err != nil {
+				//  Update the refill request with the reason for denial and the erxid returned
+				WriteDeveloperError(w, http.StatusInternalServerError, "Unable to update the status of the refill request to denied: "+err.Error())
+				return
+			}
 		}
 
 	default:
