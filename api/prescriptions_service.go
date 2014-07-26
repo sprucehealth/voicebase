@@ -568,6 +568,38 @@ func (d *DataService) GetUnlinkedDNTFTreatment(treatmentId int64) (*common.Treat
 	return nil, fmt.Errorf("Expected just one unlinked dntf treatment but got back %d", len(treatments))
 }
 
+func (d *DataService) GetUnlinkedDNTFTreatmentFromPrescriptionId(prescriptionId int64) (*common.Treatment, error) {
+	rows, err := d.DB.Query(`select unlinked_dntf_treatment.id, unlinked_dntf_treatment.erx_id, unlinked_dntf_treatment.drug_internal_name, unlinked_dntf_treatment.dosage_strength, unlinked_dntf_treatment.type,
+			unlinked_dntf_treatment.dispense_value, unlinked_dntf_treatment.dispense_unit_id, ltext, unlinked_dntf_treatment.refills, unlinked_dntf_treatment.substitutions_allowed, 
+			unlinked_dntf_treatment.days_supply, unlinked_dntf_treatment.pharmacy_id, unlinked_dntf_treatment.pharmacy_notes, unlinked_dntf_treatment.patient_instructions, unlinked_dntf_treatment.creation_date, unlinked_dntf_treatment.erx_sent_date,
+			unlinked_dntf_treatment.erx_last_filled_date, unlinked_dntf_treatment.status, drug_name.name, drug_route.name, drug_form.name,
+			patient_id, unlinked_dntf_treatment.doctor_id from unlinked_dntf_treatment 
+				inner join dispense_unit on unlinked_dntf_treatment.dispense_unit_id = dispense_unit.id
+				inner join localized_text on localized_text.app_text_id = dispense_unit.dispense_unit_text_id
+				left outer join drug_name on drug_name_id = drug_name.id
+				left outer join drug_route on drug_route_id = drug_route.id
+				left outer join drug_form on drug_form_id = drug_form.id
+				where unlinked_dntf_treatment.erx_id = ? and localized_text.language_id = ?`, prescriptionId, EN_LANGUAGE_ID)
+	if err != nil {
+		return nil, err
+	}
+	defer rows.Close()
+
+	treatments, err := d.getUnlinkedDNTFTreatmentsFromRow(rows)
+	if err != nil {
+		return nil, err
+	}
+
+	switch l := len(treatments); {
+	case l == 0:
+		return nil, NoRowsError
+	case l > 1:
+		return nil, fmt.Errorf("Expected just one unlinked dntf treatment but got back %d", len(treatments))
+	}
+
+	return treatments[0], err
+}
+
 func (d *DataService) GetUnlinkedDNTFTreatmentsForPatient(patientId int64) ([]*common.Treatment, error) {
 	rows, err := d.db.Query(`select unlinked_dntf_treatment.id, unlinked_dntf_treatment.erx_id, unlinked_dntf_treatment.drug_internal_name, unlinked_dntf_treatment.dosage_strength, unlinked_dntf_treatment.type,
 			unlinked_dntf_treatment.dispense_value, unlinked_dntf_treatment.dispense_unit_id, ltext, unlinked_dntf_treatment.refills, unlinked_dntf_treatment.substitutions_allowed, 
