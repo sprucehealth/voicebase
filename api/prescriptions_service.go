@@ -237,12 +237,39 @@ func (d *DataService) GetRefillRequestFromId(refillRequestId int64) (*common.Ref
 		return nil, err
 	}
 
-	if len(refillRequests) > 1 {
+	switch l := len(refillRequests); {
+	case l == 0:
+		return nil, NoRowsError
+	case l > 1:
 		return nil, fmt.Errorf("Expected just one refill request instead got %d", len(refillRequests))
 	}
 
-	if len(refillRequests) == 0 {
-		return nil, nil
+	return refillRequests[0], nil
+}
+
+func (d *DataService) GetRefillRequestFromPrescriptionId(prescriptionId int64) (*common.RefillRequestItem, error) {
+
+	// get the refill request
+	rows, err := d.DB.Query(`select rx_refill_request.id, rx_refill_request.erx_request_queue_item_id,rx_refill_request.reference_number, rx_refill_request.erx_id,
+		approved_refill_amount, patient_id, request_date, doctor_id, requested_treatment_id, 
+		dispensed_treatment_id, comments, deny_refill_reason.reason from rx_refill_request
+				left outer join deny_refill_reason on deny_refill_reason.id = denial_reason_id
+				where rx_refill_request.erx_id = ?`, prescriptionId)
+	if err != nil {
+		return nil, err
+	}
+	defer rows.Close()
+
+	refillRequests, err := d.getRefillRequestsFromRow(rows)
+	if err != nil {
+		return nil, err
+	}
+
+	switch l := len(refillRequests); {
+	case l == 0:
+		return nil, NoRowsError
+	case l > 1:
+		return nil, fmt.Errorf("Expected just one refill request instead got %d", len(refillRequests))
 	}
 
 	return refillRequests[0], nil
