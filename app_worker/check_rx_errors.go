@@ -30,9 +30,9 @@ func StartWorkerToCheckRxErrors(dataApi api.DataAPI, erxApi erx.ERxAPI, statsReg
 
 	go func() {
 		for {
-			time.Sleep(waitTimeInMinsForRxErrorChecker)
 			PerformRxErrorCheck(dataApi, erxApi, statFailure, statCycles)
 			statCycles.Inc(1)
+			time.Sleep(waitTimeInMinsForRxErrorChecker)
 		}
 	}()
 }
