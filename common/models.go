@@ -227,7 +227,7 @@ type DoctorTreatmentPlan struct {
 	Advice        *Advice                     `json:"advice,omitempty"`
 	Status        string                      `json:"status,omitempty"`
 	Parent        *TreatmentPlanParent        `json:"parent,omitempty"`
-	PatientId     int64                       `json:"-"`
+	PatientId     int64                       `json:"patient_id,omitempty"`
 	PatientCaseId encoding.ObjectId           `json:"case_id"`
 	ContentSource *TreatmentPlanContentSource `json:"content_source,omitempty"`
 }

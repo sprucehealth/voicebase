@@ -933,14 +933,14 @@ func (d *DataService) AddErxStatusEvent(treatments []*common.Treatment, prescrip
 
 	for _, treatment := range treatments {
 
-		_, err = tx.Exec(`update erx_status_events set status = ? where treatment_id = ? and status = ?`, STATUS_INACTIVE, treatment.Id, STATUS_ACTIVE)
+		_, err = tx.Exec(`update erx_status_events set status = ? where treatment_id = ? and status = ?`, STATUS_INACTIVE, treatment.Id.Int64(), STATUS_ACTIVE)
 		if err != nil {
 			tx.Rollback()
 			return err
 		}
 
 		columnsAndData := make(map[string]interface{}, 0)
-		columnsAndData["treatment_id"] = treatment.Id
+		columnsAndData["treatment_id"] = treatment.Id.Int64()
 		columnsAndData["erx_status"] = prescriptionStatus.Status
 		columnsAndData["status"] = STATUS_ACTIVE
 		if !prescriptionStatus.ReportedTimestamp.IsZero() {

@@ -152,6 +152,7 @@ func TestTreatmentInErrorAfterSentState(t *testing.T) {
 
 	// sign up a patient and get them to submit a patient visit
 	_, treatmentPlan := CreateRandomPatientVisitAndPickTP(t, testData, doctor)
+
 	err = testData.DataApi.UpdatePatientPharmacy(treatmentPlan.PatientId, pharmacySelection)
 	if err != nil {
 		t.Fatal("Unable to update patient pharmacy: " + err.Error())
