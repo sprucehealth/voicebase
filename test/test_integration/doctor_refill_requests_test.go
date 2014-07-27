@@ -3054,7 +3054,7 @@ func createDoctorWithClinicianId(testData *TestData, t *testing.T) *common.Docto
 	return doctor
 }
 
-func approveRefillRequest(refillRequest *common.RefillRequestItem, doctorAccountId int64, comment string, dataApi api.DataAPI, stubErxAPI erx.ERxAPI, erxStatusQueue *common.SQSQueue, t *testing.T) {
+func approveRefillRequest(refillRequest *common.RefillRequestItem, doctorAccountId int64, comment string, dataApi api.DataAPI, stubErxAPI erx.ERxAPI, erxStatusQueue *common.SQSQueue, testData *TestData, t *testing.T) {
 	requestData := apiservice.DoctorRefillRequestRequestData{
 		RefillRequestId:      encoding.NewObjectId(refillRequest.Id),
 		Action:               "approve",
@@ -3076,7 +3076,7 @@ func approveRefillRequest(refillRequest *common.RefillRequestItem, doctorAccount
 		t.Fatal("Unable to marshal json object: " + err.Error())
 	}
 
-	resp, err := authPut(ts.URL, "application/json", bytes.NewReader(jsonData), doctorAccountId)
+	resp, err := testData.AuthPut(ts.URL, "application/json", bytes.NewReader(jsonData), doctorAccountId)
 	if err != nil {
 		t.Fatal("Unable to make successful request to approve refill request: " + err.Error())
 	}
