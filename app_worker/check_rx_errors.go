@@ -75,8 +75,6 @@ func PerformRxErrorCheck(dataApi api.DataAPI, erxApi erx.ERxAPI, statFailure, st
 				if err := handleErxErrorForTreatmentInTreatmentPlan(dataApi, treatment, treatmentWithError); err != nil {
 					statFailure.Inc(1)
 				}
-				// move onto next transmission error as this one was
-				// successfully handled
 				continue
 			case api.NoRowsError:
 				// prescription not found as a treatment within a treatment plan. Check other places
@@ -91,7 +89,6 @@ func PerformRxErrorCheck(dataApi api.DataAPI, erxApi erx.ERxAPI, statFailure, st
 				if err := handlErxErrorForRefillRequest(dataApi, refillRequest, treatmentWithError); err != nil {
 					statFailure.Inc(1)
 				}
-				// move onto next transmission error as this one was successfully handled
 				continue
 			case api.NoRowsError:
 				// prescription not found as a refill request. Check unlinked dntf treatment
@@ -106,8 +103,6 @@ func PerformRxErrorCheck(dataApi api.DataAPI, erxApi erx.ERxAPI, statFailure, st
 				if err := handlErxErrorForUnlinkedDNTFTreatment(dataApi, unlinkedDNTFTreatment, treatmentWithError); err != nil {
 					statFailure.Inc(1)
 				}
-				// move onto next transmission error as this one was successfully handled
-				// as an unlinked dntf treatment
 				continue
 			case api.NoRowsError:
 				// prescription not found as a treatment within a treatment plan,
