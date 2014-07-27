@@ -479,6 +479,174 @@ func TestApproveRefillRequestAndSuccessfulSendToPharmacy(t *testing.T) {
 		t.Fatalf("Expected the top level item for the refill request to indicate that it was successfully sent to the pharmacy %+v", refillStatusEvents)
 	}
 }
+
+func TestApproveRefillRequest_ErrorForControlledSubstances(t *testing.T) {
+	testData := SetupIntegrationTest(t)
+	defer TearDownIntegrationTest(t, testData)
+
+	// create doctor with clinicianId specicified
+	doctor := createDoctorWithClinicianId(testData, t)
+
+	approvedRefillRequestPrescriptionId := int64(101010)
+
+	// add pharmacy to database so that it can be linked to treatment that is added
+	//  Get StubErx to return pharmacy in the GetPharmacyDetails call
+	pharmacyToReturn := &pharmacy.PharmacyData{
+		SourceId:     1234,
+		Source:       pharmacy.PHARMACY_SOURCE_SURESCRIPTS,
+		Name:         "Walgreens",
+		AddressLine1: "116 New Montgomery",
+		City:         "San Francisco",
+		State:        "CA",
+		Postal:       "94115",
+	}
+
+	// Get StubErx to return patient details in the GetPatientDetails call
+	patientToReturn := &common.Patient{
+		FirstName:    "Test",
+		LastName:     "TestLastName",
+		DOB:          encoding.DOB{Day: 11, Month: 11, Year: 1980},
+		Email:        "test@test.com",
+		Gender:       "male",
+		ZipCode:      "90210",
+		ERxPatientId: encoding.NewObjectId(12345),
+	}
+
+	err := testData.DataApi.AddPharmacy(pharmacyToReturn)
+	if err != nil {
+		t.Fatal("Unable to store pharmacy in db: " + err.Error())
+	}
+
+	testTime := time.Now()
+
+	prescriptionIdForRequestedPrescription := int64(123456)
+	fiveMinutesBeforeTestTime := testTime.Add(-5 * time.Minute)
+	refillRequestQueueItemId := int64(12345)
+	// Get StubErx to return refill requests in the refillRequest call
+	refillRequestItem := &common.RefillRequestItem{
+		RxRequestQueueItemId:      refillRequestQueueItemId,
+		ReferenceNumber:           "TestReferenceNumber",
+		PharmacyRxReferenceNumber: "TestRxReferenceNumber",
+		ErxPatientId:              12345,
+		PatientAddedForRequest:    true,
+		RequestDateStamp:          testTime,
+		ClinicianId:               clinicianId,
+		RequestedPrescription: &common.Treatment{
+			DrugDBIds: map[string]string{
+				erx.LexiDrugSynId:     "1234",
+				erx.LexiGenProductId:  "12345",
+				erx.LexiSynonymTypeId: "123556",
+				erx.NDC:               "2415",
+			},
+			DosageStrength:        "10 mg",
+			DispenseValue:         5,
+			OTC:                   false,
+			SubstitutionsAllowed:  true,
+			IsControlledSubstance: true,
+			ERx: &common.ERxData{
+				ErxSentDate:         &fiveMinutesBeforeTestTime,
+				DoseSpotClinicianId: clinicianId,
+				PrescriptionId:      encoding.NewObjectId(prescriptionIdForRequestedPrescription),
+				ErxPharmacyId:       1234,
+			},
+		},
+		DispensedPrescription: &common.Treatment{
+			DrugDBIds: map[string]string{
+				"drug_db_id_1": "1234",
+				"drug_db_id_2": "12345",
+			},
+			DrugName:                "Teting (This - Drug)",
+			DosageStrength:          "10 mg",
+			DispenseValue:           5,
+			DispenseUnitDescription: "Tablet",
+			NumberRefills: encoding.NullInt64{
+				IsValid:    true,
+				Int64Value: 5,
+			},
+			SubstitutionsAllowed: false,
+			DaysSupply: encoding.NullInt64{
+				IsValid:    true,
+				Int64Value: 5,
+			}, PatientInstructions: "Take once daily",
+			OTC: false,
+			ERx: &common.ERxData{
+				ErxLastDateFilled:   &testTime,
+				DoseSpotClinicianId: clinicianId,
+				PrescriptionId:      encoding.NewObjectId(5504),
+				PrescriptionStatus:  "Requested",
+				ErxPharmacyId:       1234,
+			},
+		},
+	}
+
+	stubErxAPI := &erx.StubErxService{
+		PharmacyDetailsToReturn:      pharmacyToReturn,
+		PatientDetailsToReturn:       patientToReturn,
+		RefillRxRequestQueueToReturn: []*common.RefillRequestItem{refillRequestItem},
+		RefillRequestPrescriptionIds: map[int64]int64{
+			refillRequestQueueItemId: approvedRefillRequestPrescriptionId,
+		},
+		PrescriptionIdToPrescriptionStatuses: map[int64][]common.StatusEvent{
+			approvedRefillRequestPrescriptionId: []common.StatusEvent{common.StatusEvent{
+				Status: api.ERX_STATUS_SENT,
+			},
+			},
+		},
+	}
+
+	// Call the Consume method
+	app_worker.PerformRefillRecquestCheckCycle(testData.DataApi, stubErxAPI, metrics.NewCounter(), metrics.NewCounter(), "test")
+
+	refillRequestStatuses, err := testData.DataApi.GetPendingRefillRequestStatusEventsForClinic()
+	if err != nil {
+		t.Fatal("Unable to successfully get the pending refill requests stauses from the db: " + err.Error())
+	}
+
+	refillRequest, err := testData.DataApi.GetRefillRequestFromId(refillRequestStatuses[0].ItemId)
+	if err != nil {
+		t.Fatal("Unable to get refill request that was just added: ", err.Error())
+	}
+
+	// lets go ahead and attempt to approve this refill request
+	comment := "this is a test"
+	requestData := apiservice.DoctorRefillRequestRequestData{
+		RefillRequestId:      encoding.NewObjectId(refillRequest.Id),
+		Action:               "approve",
+		ApprovedRefillAmount: 10,
+		Comments:             comment,
+	}
+
+	erxStatusQueue := &common.SQSQueue{}
+	erxStatusQueue.QueueService = &sqs.StubSQS{}
+	erxStatusQueue.QueueUrl = "local-erx"
+
+	doctorRefillRequestsHandler := &apiservice.DoctorRefillRequestHandler{
+		DataApi:        testData.DataApi,
+		ErxApi:         stubErxAPI,
+		ErxStatusQueue: erxStatusQueue,
+	}
+
+	ts := httptest.NewServer(doctorRefillRequestsHandler)
+	defer ts.Close()
+
+	// sleep for a brief moment before approving so that
+	// the items are ordered correctly for the rx history (in the real world they would not be approved in the same exact millisecond they are sent in)
+	time.Sleep(1 * time.Second)
+
+	jsonData, err := json.Marshal(&requestData)
+	if err != nil {
+		t.Fatal("Unable to marshal json object: " + err.Error())
+	}
+
+	resp, err := testData.AuthPut(ts.URL, "application/json", bytes.NewReader(jsonData), doctor.AccountId.Int64())
+	if err != nil {
+		t.Fatalf("Unable to make successful request to approve refill request: " + err.Error())
+	} else if resp.StatusCode != apiservice.HTTP_UNPROCESSABLE_ENTITY {
+		t.Fatalf("Expected response code %d instead got %d", apiservice.HTTP_UNPROCESSABLE_ENTITY, resp.StatusCode)
+	}
+
+}
+
 func TestApproveRefillRequestAndErrorSendingToPharmacy(t *testing.T) {
 
 	testData := SetupIntegrationTest(t)
@@ -752,7 +920,7 @@ func TestApproveRefillRequestAndErrorSendingToPharmacy(t *testing.T) {
 	}
 }
 
-func TestDenyRefillRequestAndSuccessfulDelete(t *testing.T) {
+func testDenyRefillRequestAndSuccessfulDelete(isControlledSubstance bool, t *testing.T) {
 
 	testData := SetupIntegrationTest(t)
 	defer TearDownIntegrationTest(t, testData)
@@ -811,11 +979,12 @@ func TestDenyRefillRequestAndSuccessfulDelete(t *testing.T) {
 				erx.LexiSynonymTypeId: "123556",
 				erx.NDC:               "2415",
 			},
-			DosageStrength:       "10 mg",
-			DispenseValue:        5,
-			DaysSupply:           encoding.NullInt64{},
-			OTC:                  false,
-			SubstitutionsAllowed: true,
+			DosageStrength:        "10 mg",
+			DispenseValue:         5,
+			IsControlledSubstance: isControlledSubstance,
+			DaysSupply:            encoding.NullInt64{},
+			OTC:                   false,
+			SubstitutionsAllowed:  true,
 			ERx: &common.ERxData{
 				ErxSentDate:         &fiveMinutesBeforeTestTime,
 				DoseSpotClinicianId: clinicianId,
