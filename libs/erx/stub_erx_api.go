@@ -21,6 +21,7 @@ type StubErxService struct {
 	PrescriptionIdToPrescriptionStatuses map[int64][]common.StatusEvent
 	SelectedMedicationToReturn           *common.Treatment
 	PharmacyToSendPrescriptionTo         int64
+	ExpectedRxReferenceNumber            string
 }
 
 func (s *StubErxService) GetDrugNamesForDoctor(clinicianId int64, prefix string) ([]string, error) {
@@ -60,7 +61,9 @@ func (s *StubErxService) StartPrescribingPatient(clinicianId int64, Patient *com
 }
 
 func (s *StubErxService) SendMultiplePrescriptions(clinicianId int64, Patient *common.Patient, Treatments []*common.Treatment) ([]*common.Treatment, error) {
-	// nothing to do here given that the act of sending a prescription successfully does not change the state of the system
+	if s.ExpectedRxReferenceNumber != "" && Treatments[0].ERx.ErxReferenceNumber != s.ExpectedRxReferenceNumber {
+		return fmt.Errorf("Expected the rx reference number to be %s instead it was %s", s.ExpectedRxReferenceNumber, Treatments[0].ERx.ErxReferenceNumber)
+	}
 	return nil, nil
 }
 
