@@ -968,6 +968,14 @@ func TestDenyRefillRequestAndSuccessfulDelete(t *testing.T) {
 	}
 }
 
+func TestDenyRefillRequestAndSuccessfulDelete(t *testing.T) {
+	testDenyRefillRequestAndSuccessfulDelete(false, t)
+}
+
+func TestDenyRefillRequestForControlledSubstance(t *testing.T) {
+	testDenyRefillRequestAndSuccessfulDelete(true, t)
+}
+
 func TestDenyRefillRequestWithDNTFWithoutTreatment(t *testing.T) {
 
 	testData := SetupIntegrationTest(t)
