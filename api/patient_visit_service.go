@@ -682,7 +682,7 @@ func (d *DataService) GetTreatmentsBasedOnTreatmentPlanId(treatmentPlanId int64)
 			treatment.dispense_value, treatment.dispense_unit_id, ltext, treatment.refills, treatment.substitutions_allowed, 
 			treatment.days_supply, treatment.pharmacy_id, treatment.pharmacy_notes, treatment.patient_instructions, treatment.creation_date, treatment.erx_sent_date, 
 			treatment.status, drug_name.name, drug_route.name, drug_form.name,
-			treatment_plan.patient_id, treatment_plan.doctor_id from treatment 
+			treatment_plan.patient_id, treatment_plan.doctor_id, is_controlled_substance from treatment 
 				inner join treatment_plan on treatment.treatment_plan_id = treatment_plan.id
 				inner join dispense_unit on treatment.dispense_unit_id = dispense_unit.id
 				inner join localized_text on localized_text.app_text_id = dispense_unit.dispense_unit_text_id
@@ -749,7 +749,7 @@ func (d *DataService) GetTreatmentsForPatient(patientId int64) ([]*common.Treatm
 			treatment.dispense_value, treatment.dispense_unit_id, ltext, treatment.refills, treatment.substitutions_allowed, 
 			treatment.days_supply, treatment.pharmacy_id, treatment.pharmacy_notes, treatment.patient_instructions, treatment.creation_date, treatment.erx_sent_date,
 			treatment.status, drug_name.name, drug_route.name, drug_form.name,
-			treatment_plan.patient_id, treatment_plan.doctor_id from treatment 
+			treatment_plan.patient_id, treatment_plan.doctor_id, is_controlled_substance from treatment 
 				inner join treatment_plan on treatment.treatment_plan_id = treatment_plan.id
 				inner join dispense_unit on treatment.dispense_unit_id = dispense_unit.id
 				inner join localized_text on localized_text.app_text_id = dispense_unit.dispense_unit_text_id
@@ -826,7 +826,7 @@ func (d *DataService) GetTreatmentBasedOnPrescriptionId(erxId int64) (*common.Tr
 			treatment.dispense_value, treatment.dispense_unit_id, ltext, treatment.refills, treatment.substitutions_allowed, 
 			treatment.days_supply, treatment.pharmacy_id, treatment.pharmacy_notes, treatment.patient_instructions, treatment.creation_date, treatment.erx_sent_date,
 			treatment.status, drug_name.name, drug_route.name, drug_form.name,
-			treatment_plan.patient_id, treatment_plan.doctor_id from treatment
+			treatment_plan.patient_id, treatment_plan.doctor_id, is_controlled_substance from treatment
 				inner join treatment_plan on treatment.treatment_plan_id = treatment_plan.id
 				inner join dispense_unit on treatment.dispense_unit_id = dispense_unit.id
 				inner join localized_text on localized_text.app_text_id = dispense_unit.dispense_unit_text_id
@@ -869,7 +869,7 @@ func (d *DataService) GetTreatmentFromId(treatmentId int64) (*common.Treatment, 
 			treatment.dispense_value, treatment.dispense_unit_id, ltext, treatment.refills, treatment.substitutions_allowed, 
 			treatment.days_supply, treatment.pharmacy_id, treatment.pharmacy_notes, treatment.patient_instructions, treatment.creation_date, treatment.erx_sent_date,
 			treatment.status, drug_name.name, drug_route.name, drug_form.name,
-			treatment_plan.patient_id, treatment_plan.doctor_id from treatment
+			treatment_plan.patient_id, treatment_plan.doctor_id, is_controlled_substance from treatment
 				inner join treatment_plan on treatment.treatment_plan_id = treatment_plan.id
 				inner join dispense_unit on treatment.dispense_unit_id = dispense_unit.id
 				inner join localized_text on localized_text.app_text_id = dispense_unit.dispense_unit_text_id
@@ -1044,10 +1044,11 @@ func (d *DataService) getTreatmentAndMetadataFromCurrentRow(rows *sql.Rows) (*co
 	var refills, daysSupply encoding.NullInt64
 	var creationDate time.Time
 	var erxSentDate mysql.NullTime
+	var isControlledSubstance sql.NullBool
 	var pharmacyNotes, drugName, drugForm, drugRoute sql.NullString
 	err := rows.Scan(&treatmentId, &prescriptionId, &treatmentPlanId, &drugInternalName, &dosageStrength, &treatmentType, &dispenseValue, &dispenseUnitId,
 		&dispenseUnitDescription, &refills, &substitutionsAllowed, &daysSupply, &pharmacyId,
-		&pharmacyNotes, &patientInstructions, &creationDate, &erxSentDate, &status, &drugName, &drugRoute, &drugForm, &patientId, &prescriberId)
+		&pharmacyNotes, &patientInstructions, &creationDate, &erxSentDate, &status, &drugName, &drugRoute, &drugForm, &patientId, &prescriberId, &isControlledSubstance)
 	if err != nil {
 		return nil, err
 	}
@@ -1072,6 +1073,7 @@ func (d *DataService) getTreatmentAndMetadataFromCurrentRow(rows *sql.Rows) (*co
 		PharmacyNotes:           pharmacyNotes.String,
 		DoctorId:                prescriberId,
 		TreatmentPlanId:         treatmentPlanId,
+		IsControlledSubstance:   isControlledSubstance.Bool,
 	}
 	if treatmentType == treatmentOTC {
 		treatment.OTC = true
