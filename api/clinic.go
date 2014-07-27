@@ -3,7 +3,7 @@ package api
 import "github.com/sprucehealth/backend/common"
 
 func (d *DataService) GetAllDoctorsInClinic() ([]*common.Doctor, error) {
-	rows, err := d.db.Query(`select id from doctor where clinician_id is not null`)
+	rows, err := d.db.Query(`select id from doctor`)
 	if err != nil {
 		return nil, err
 	}

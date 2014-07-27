@@ -48,6 +48,12 @@ func PerformRxErrorCheck(dataApi api.DataAPI, erxApi erx.ERxAPI, statFailure, st
 	}
 
 	for _, doctor := range doctors {
+
+		// nothing to do if doctor does not have a dosespot clinician id
+		if doctor.DoseSpotClinicianId == 0 {
+			continue
+		}
+
 		// get transmission error details for each doctor
 		treatmentsWithErrors, err := erxApi.GetTransmissionErrorDetails(doctor.DoseSpotClinicianId)
 		if err != nil {
