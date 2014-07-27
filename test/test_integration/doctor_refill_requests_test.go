@@ -3085,3 +3085,45 @@ func approveRefillRequest(refillRequest *common.RefillRequestItem, doctorAccount
 		t.Fatal("Unable to make successful request to approve refill request: ")
 	}
 }
+
+func denyRefillRequest(refillRequest *common.RefillRequestItem, doctorAccountId int64, comment string, dataApi api.DataAPI, stubErxAPI erx.ERxAPI, erxStatusQueue *common.SQSQueue, testData *TestData, t *testing.T) {
+
+	denialReasons, err := dataApi.GetRefillRequestDenialReasons()
+	if err != nil || len(denialReasons) == 0 {
+		t.Fatal("Unable to get the denial reasons for the refill request")
+	}
+
+	// now, lets go ahead and attempt to deny this refill request
+	requestData := apiservice.DoctorRefillRequestRequestData{
+		RefillRequestId: encoding.NewObjectId(refillRequest.Id),
+		Action:          "deny",
+		DenialReasonId:  encoding.NewObjectId(denialReasons[0].Id),
+		Comments:        comment,
+	}
+
+	doctorRefillRequestsHandler := &apiservice.DoctorRefillRequestHandler{
+		DataApi:        dataApi,
+		ErxApi:         stubErxAPI,
+		ErxStatusQueue: erxStatusQueue,
+	}
+
+	ts := httptest.NewServer(doctorRefillRequestsHandler)
+	defer ts.Close()
+
+	jsonData, err := json.Marshal(requestData)
+	if err != nil {
+		t.Fatal("Unable to marshal json into object: " + err.Error())
+	}
+
+	resp, err := testData.AuthPut(ts.URL, "application/json", bytes.NewReader(jsonData), doctorAccountId)
+	if err != nil {
+		t.Fatal("Unable to make successful request to approve refill request: " + err.Error())
+	}
+
+	respBody, err := ioutil.ReadAll(resp.Body)
+	if err != nil {
+		t.Fatal("Unable to read body of response: " + err.Error())
+	}
+
+	CheckSuccessfulStatusCode(resp, "Unable to make successful request to deny refill request: "+string(respBody), t)
+}
