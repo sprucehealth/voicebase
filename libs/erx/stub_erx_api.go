@@ -48,6 +48,11 @@ func (s *StubErxService) StartPrescribingPatient(clinicianId int64, Patient *com
 	if s.PharmacyToSendPrescriptionTo != 0 && s.PharmacyToSendPrescriptionTo != pharmacySourceId {
 		return fmt.Errorf("Expected to send treatment to pharmacy with sourceId %d instead it was attempted to be sent to pharmacy with id %d", s.PharmacyToSendPrescriptionTo, pharmacySourceId)
 	}
+
+	if s.ExpectedRxReferenceNumber != "" && Treatments[0].ERx.ErxReferenceNumber != s.ExpectedRxReferenceNumber {
+		return fmt.Errorf("Expected the rx reference number to be %s instead it was %s", s.ExpectedRxReferenceNumber, Treatments[0].ERx.ErxReferenceNumber)
+	}
+
 	// walk through the treatments and assign them each a prescription id
 	// assumption here is that there are as many prescription ids to return as there are treatments
 	Patient.ERxPatientId = encoding.NewObjectId(s.PatientErxId)
@@ -57,13 +62,11 @@ func (s *StubErxService) StartPrescribingPatient(clinicianId int64, Patient *com
 		}
 		treatment.ERx.PrescriptionId = encoding.NewObjectId(s.PrescriptionIdsToReturn[i])
 	}
+
 	return nil
 }
 
 func (s *StubErxService) SendMultiplePrescriptions(clinicianId int64, Patient *common.Patient, Treatments []*common.Treatment) ([]*common.Treatment, error) {
-	if s.ExpectedRxReferenceNumber != "" && Treatments[0].ERx.ErxReferenceNumber != s.ExpectedRxReferenceNumber {
-		return fmt.Errorf("Expected the rx reference number to be %s instead it was %s", s.ExpectedRxReferenceNumber, Treatments[0].ERx.ErxReferenceNumber)
-	}
 	return nil, nil
 }
 

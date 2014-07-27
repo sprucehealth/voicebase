@@ -1795,6 +1795,7 @@ func setUpDeniedRefillRequestWithDNTFForLinkedTreatment(t *testing.T, testData *
 		},
 		SelectedMedicationToReturn:   &common.Treatment{},
 		PharmacyToSendPrescriptionTo: pharmacyToReturn.SourceId,
+		ExpectedRxReferenceNumber:    strconv.FormatInt(refillRequestItem.RxRequestQueueItemId, 10),
 	}
 
 	// Call the Consume method
