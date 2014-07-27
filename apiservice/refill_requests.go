@@ -6,7 +6,6 @@ import (
 	"sort"
 	"strconv"
 	"strings"
-	"time"
 
 	"github.com/sprucehealth/backend/api"
 	"github.com/sprucehealth/backend/common"
@@ -230,7 +229,6 @@ func (d *DoctorRefillRequestHandler) resolveRefillRequest(w http.ResponseWriter,
 				requestData.Treatment.TreatmentPlanId = originatingTreatment.TreatmentPlanId
 			}
 
-			ts := time.Now()
 			//  Deny the refill request
 			prescriptionId, err := d.ErxApi.DenyRefillRequest(doctor.DoseSpotClinicianId, refillRequest.RxRequestQueueItemId, denialReasonCode, requestData.Comments)
 			if err != nil {
@@ -242,20 +240,16 @@ func (d *DoctorRefillRequestHandler) resolveRefillRequest(w http.ResponseWriter,
 				return
 			}
 
-			golog.Infof("Denied RefillRx time: %.3f seconds", float64(time.Since(ts))/float64(time.Second))
-
 			if err := d.addTreatmentInEventOfDNTF(originatingTreatmentFound, requestData.Treatment, refillRequest.Doctor.DoctorId.Int64(), refillRequest.Patient.PatientId.Int64(), refillRequest.Id); err != nil {
 				WriteDeveloperError(w, http.StatusInternalServerError, "Unable to add dntf treatment: "+err.Error())
 				return
 			}
 
-			ts = time.Now()
 			//  start prescribing
 			if err := d.ErxApi.StartPrescribingPatient(doctor.DoseSpotClinicianId, refillRequest.Patient, []*common.Treatment{requestData.Treatment}, refillRequest.RequestedPrescription.ERx.Pharmacy.SourceId); err != nil {
 				WriteDeveloperError(w, http.StatusInternalServerError, "Unable to start prescribing to get back prescription id for treatment: "+err.Error())
 				return
 			}
-			golog.Infof("StartPrescribingPatient: %.3f seconds", float64(time.Since(ts))/float64(time.Second))
 
 			// update pharmacy and erx id for treatment
 			if err := d.updateTreatmentWithPharmacyAndErxId(originatingTreatmentFound, requestData.Treatment, refillRequest.RequestedPrescription.ERx.Pharmacy, doctor.DoctorId.Int64()); err != nil {
@@ -263,14 +257,12 @@ func (d *DoctorRefillRequestHandler) resolveRefillRequest(w http.ResponseWriter,
 				return
 			}
 
-			ts = time.Now()
 			//  send prescription to pharmacy
 			unSuccesfulTreatments, err := d.ErxApi.SendMultiplePrescriptions(doctor.DoseSpotClinicianId, refillRequest.Patient, []*common.Treatment{requestData.Treatment})
 			if err != nil {
 				WriteDeveloperError(w, http.StatusInternalServerError, "Unable to send prescription to pharmacy: "+err.Error())
 				return
 			}
-			golog.Infof("SendMultiplePrescriptions: %.3f seconds", float64(time.Since(ts))/float64(time.Second))
 
 			// ensure its successful
 			for _, unSuccessfulTreatment := range unSuccesfulTreatments {
