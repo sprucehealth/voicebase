@@ -26,21 +26,22 @@ var (
 var Testing = false
 
 const (
-	genericUserErrorMessage          = "Something went wrong on our end. Apologies for the inconvenience and please try again later!"
-	authTokenExpiredMessage          = "Authentication expired. Log in to continue."
-	DEVELOPER_ERROR_NO_VISIT_EXISTS  = 10001
-	DEVELOPER_AUTH_TOKEN_EXPIRED     = 10002
-	DEVELOPER_TREATMENT_MISSING_DNTF = 10003
-	DEVELOPER_NO_TREATMENT_PLAN      = 10004
-	DEVELOPER_JBCQ_FORBIDDEN         = 10005
-	HTTP_GET                         = "GET"
-	HTTP_POST                        = "POST"
-	HTTP_PUT                         = "PUT"
-	HTTP_DELETE                      = "DELETE"
-	HTTP_UNPROCESSABLE_ENTITY        = 422
-	signedUrlAuthTimeout             = 10 * time.Minute
-	HEALTH_CONDITION_ACNE_ID         = 1
-	TimeFormatLayout                 = "January 2 at 3:04pm"
+	genericUserErrorMessage                       = "Something went wrong on our end. Apologies for the inconvenience and please try again later!"
+	authTokenExpiredMessage                       = "Authentication expired. Log in to continue."
+	DEVELOPER_ERROR_NO_VISIT_EXISTS               = 10001
+	DEVELOPER_AUTH_TOKEN_EXPIRED                  = 10002
+	DEVELOPER_TREATMENT_MISSING_DNTF              = 10003
+	DEVELOPER_NO_TREATMENT_PLAN                   = 10004
+	DEVELOPER_JBCQ_FORBIDDEN                      = 10005
+	DEVELOPER_CONTROLLED_SUBSTANCE_REFILL_REQUEST = 10006
+	HTTP_GET                                      = "GET"
+	HTTP_POST                                     = "POST"
+	HTTP_PUT                                      = "PUT"
+	HTTP_DELETE                                   = "DELETE"
+	HTTP_UNPROCESSABLE_ENTITY                     = 422
+	signedUrlAuthTimeout                          = 10 * time.Minute
+	HEALTH_CONDITION_ACNE_ID                      = 1
+	TimeFormatLayout                              = "January 2 at 3:04pm"
 )
 
 type GenericJsonResponse struct {
