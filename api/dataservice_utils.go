@@ -183,15 +183,16 @@ func (d *DataService) addTreatment(tType treatmentType, treatment *common.Treatm
 
 	// collecting data for fields that are common to all types of treatment
 	columnsAndData := map[string]interface{}{
-		"drug_internal_name":    treatment.DrugInternalName,
-		"dosage_strength":       treatment.DosageStrength,
-		"type":                  medicationType,
-		"dispense_value":        treatment.DispenseValue.Float64(),
-		"refills":               treatment.NumberRefills.Int64Value,
-		"substitutions_allowed": treatment.SubstitutionsAllowed,
-		"patient_instructions":  treatment.PatientInstructions,
-		"pharmacy_notes":        treatment.PharmacyNotes,
-		"status":                treatment.Status,
+		"drug_internal_name":      treatment.DrugInternalName,
+		"dosage_strength":         treatment.DosageStrength,
+		"type":                    medicationType,
+		"dispense_value":          treatment.DispenseValue.Float64(),
+		"refills":                 treatment.NumberRefills.Int64Value,
+		"substitutions_allowed":   treatment.SubstitutionsAllowed,
+		"patient_instructions":    treatment.PatientInstructions,
+		"pharmacy_notes":          treatment.PharmacyNotes,
+		"status":                  treatment.Status,
+		"is_controlled_substance": treatment.IsControlledSubstance,
 	}
 
 	if treatment.DaysSupply.IsValid {

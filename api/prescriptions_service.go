@@ -379,13 +379,14 @@ func (d *DataService) getTreatmentForRefillRequest(tableName string, treatmentId
 	var doctorId sql.NullInt64
 	var treatmentType string
 	var drugName, drugForm, drugRoute sql.NullString
+	var isControlledSubstance sql.NullBool
 
 	err := d.db.QueryRow(fmt.Sprintf(`select erx_id, drug_internal_name, 
 							dosage_strength, type, dispense_value, 
 							dispense_unit, refills, substitutions_allowed, 
 							pharmacy_id, days_supply, pharmacy_notes, 
 							patient_instructions, erx_sent_date,
-							erx_last_filled_date,  status, drug_name.name, drug_route.name, drug_form.name, doctor_id from %s
+							erx_last_filled_date,  status, drug_name.name, drug_route.name, drug_form.name, doctor_id, is_controlled_substance from %s
 								left outer join drug_name on drug_name_id = drug_name.id
 								left outer join drug_route on drug_route_id = drug_route.id
 								left outer join drug_form on drug_form_id = drug_form.id
@@ -396,7 +397,7 @@ func (d *DataService) getTreatmentForRefillRequest(tableName string, treatmentId
 		&daysSupply, &treatment.PharmacyNotes,
 		&treatment.PatientInstructions, &treatment.ERx.ErxSentDate,
 		&treatment.ERx.ErxLastDateFilled, &treatment.Status,
-		&drugName, &drugForm, &drugRoute, &doctorId)
+		&drugName, &drugForm, &drugRoute, &doctorId, &isControlledSubstance)
 
 	if err != nil && err != sql.ErrNoRows {
 		return nil, err
@@ -411,6 +412,7 @@ func (d *DataService) getTreatmentForRefillRequest(tableName string, treatmentId
 	treatment.NumberRefills = refills
 	treatment.ERx.PharmacyLocalId = pharmacyLocalId
 	treatment.ERx.Pharmacy, err = d.GetPharmacyFromId(pharmacyLocalId.Int64())
+	treatment.IsControlledSubstance = isControlledSubstance.Bool
 
 	if err != nil {
 		return nil, err
@@ -541,7 +543,7 @@ func (d *DataService) GetUnlinkedDNTFTreatment(treatmentId int64) (*common.Treat
 			unlinked_dntf_treatment.dispense_value, unlinked_dntf_treatment.dispense_unit_id, ltext, unlinked_dntf_treatment.refills, unlinked_dntf_treatment.substitutions_allowed, 
 			unlinked_dntf_treatment.days_supply, unlinked_dntf_treatment.pharmacy_id, unlinked_dntf_treatment.pharmacy_notes, unlinked_dntf_treatment.patient_instructions, unlinked_dntf_treatment.creation_date, unlinked_dntf_treatment.erx_sent_date,
 			unlinked_dntf_treatment.erx_last_filled_date, unlinked_dntf_treatment.status, drug_name.name, drug_route.name, drug_form.name,
-			patient_id, unlinked_dntf_treatment.doctor_id from unlinked_dntf_treatment 
+			patient_id, unlinked_dntf_treatment.doctor_id, is_controlled_substance from unlinked_dntf_treatment 
 				inner join dispense_unit on unlinked_dntf_treatment.dispense_unit_id = dispense_unit.id
 				inner join localized_text on localized_text.app_text_id = dispense_unit.dispense_unit_text_id
 				left outer join drug_name on drug_name_id = drug_name.id
@@ -573,7 +575,7 @@ func (d *DataService) GetUnlinkedDNTFTreatmentFromPrescriptionId(prescriptionId 
 			unlinked_dntf_treatment.dispense_value, unlinked_dntf_treatment.dispense_unit_id, ltext, unlinked_dntf_treatment.refills, unlinked_dntf_treatment.substitutions_allowed, 
 			unlinked_dntf_treatment.days_supply, unlinked_dntf_treatment.pharmacy_id, unlinked_dntf_treatment.pharmacy_notes, unlinked_dntf_treatment.patient_instructions, unlinked_dntf_treatment.creation_date, unlinked_dntf_treatment.erx_sent_date,
 			unlinked_dntf_treatment.erx_last_filled_date, unlinked_dntf_treatment.status, drug_name.name, drug_route.name, drug_form.name,
-			patient_id, unlinked_dntf_treatment.doctor_id from unlinked_dntf_treatment 
+			patient_id, unlinked_dntf_treatment.doctor_id, is_controlled_substance from unlinked_dntf_treatment 
 				inner join dispense_unit on unlinked_dntf_treatment.dispense_unit_id = dispense_unit.id
 				inner join localized_text on localized_text.app_text_id = dispense_unit.dispense_unit_text_id
 				left outer join drug_name on drug_name_id = drug_name.id
@@ -605,7 +607,7 @@ func (d *DataService) GetUnlinkedDNTFTreatmentsForPatient(patientId int64) ([]*c
 			unlinked_dntf_treatment.dispense_value, unlinked_dntf_treatment.dispense_unit_id, ltext, unlinked_dntf_treatment.refills, unlinked_dntf_treatment.substitutions_allowed, 
 			unlinked_dntf_treatment.days_supply, unlinked_dntf_treatment.pharmacy_id, unlinked_dntf_treatment.pharmacy_notes, unlinked_dntf_treatment.patient_instructions, unlinked_dntf_treatment.creation_date, unlinked_dntf_treatment.erx_sent_date,
 			unlinked_dntf_treatment.erx_last_filled_date, unlinked_dntf_treatment.status, drug_name.name, drug_route.name, drug_form.name,
-			patient_id, unlinked_dntf_treatment.doctor_id from unlinked_dntf_treatment 
+			patient_id, unlinked_dntf_treatment.doctor_id, is_controlled_substance from unlinked_dntf_treatment 
 				inner join dispense_unit on unlinked_dntf_treatment.dispense_unit_id = dispense_unit.id
 				inner join localized_text on localized_text.app_text_id = dispense_unit.dispense_unit_text_id
 				left outer join drug_name on drug_name_id = drug_name.id
@@ -638,7 +640,7 @@ func (d *DataService) getUnlinkedDNTFTreatmentsFromRow(rows *sql.Rows) ([]*commo
 		var substitutionsAllowed bool
 		var isControlledSubstance sql.NullBool
 		err := rows.Scan(&unlinkedDntfTreatmentId, &erxId, &drugInternalName, &dosageStrength, &treatmentType, &dispenseValue, &dispenseUnitId, &dispenseUnitDescription,
-			&refills, &substitutionsAllowed, &daysSupply, &pharmacyId, &pharmacyNotes, &patientInstructions, &creationDate, &erxSentDate, &erxLastFilledDate, &status, &drugName, &drugRoute, &drugForm, &patientId, &doctorId)
+			&refills, &substitutionsAllowed, &daysSupply, &pharmacyId, &pharmacyNotes, &patientInstructions, &creationDate, &erxSentDate, &erxLastFilledDate, &status, &drugName, &drugRoute, &drugForm, &patientId, &doctorId, &isControlledSubstance)
 		if err != nil {
 			return nil, err
 		}
@@ -663,7 +665,7 @@ func (d *DataService) getUnlinkedDNTFTreatmentsFromRow(rows *sql.Rows) ([]*commo
 			Status:                  status,
 			PharmacyNotes:           pharmacyNotes,
 			OTC:                     treatmentType == treatmentOTC,
-			IsControlledSubstance: isControlledSubstance,
+			IsControlledSubstance: isControlledSubstance.Bool,
 			ERx: &common.ERxData{
 				ErxLastDateFilled: &erxLastFilledDate.Time,
 				ErxSentDate:       &erxSentDate.Time,
