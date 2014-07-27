@@ -854,7 +854,7 @@ func (d *DataService) GetTreatmentBasedOnPrescriptionId(erxId int64) (*common.Tr
 	}
 
 	if len(treatments) == 0 {
-		return nil, nil
+		return nil, NoRowsError
 	}
 
 	if len(treatments) > 1 {

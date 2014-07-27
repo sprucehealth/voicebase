@@ -6,6 +6,7 @@ import (
 	"net/http"
 	"net/http/httptest"
 	"testing"
+	"time"
 
 	"github.com/sprucehealth/backend/api"
 	"github.com/sprucehealth/backend/app_worker"
@@ -23,6 +24,7 @@ func getTestRefillRequest(refillRequestQueueItemId, erxPatientId, prescriptionId
 		RxRequestQueueItemId:      refillRequestQueueItemId,
 		ReferenceNumber:           "TestReferenceNumber",
 		PharmacyRxReferenceNumber: "TestRxReferenceNumber",
+		RequestDateStamp:          time.Now(),
 		ErxPatientId:              erxPatientId,
 		PatientAddedForRequest:    false,
 		ClinicianId:               clinicianId,
@@ -421,7 +423,6 @@ func TestRefillRequestInErrorAfterSentState(t *testing.T) {
 	defer TearDownIntegrationTest(t, testData)
 
 	doctor := createDoctorWithClinicianId(testData, t)
-	// patientResponse := SignupRandomTestPatient(t, testData.DataApi, testData.AuthApi)
 	erxPatientId := int64(123556)
 	pharmacyId := int64(12345)
 	prescriptionIdForRequestedPrescription := int64(12314)
