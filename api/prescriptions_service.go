@@ -636,6 +636,7 @@ func (d *DataService) getUnlinkedDNTFTreatmentsFromRow(rows *sql.Rows) ([]*commo
 		var erxSentDate, erxLastFilledDate mysql.NullTime
 		var drugName, drugRoute, drugForm sql.NullString
 		var substitutionsAllowed bool
+		var isControlledSubstance sql.NullBool
 		err := rows.Scan(&unlinkedDntfTreatmentId, &erxId, &drugInternalName, &dosageStrength, &treatmentType, &dispenseValue, &dispenseUnitId, &dispenseUnitDescription,
 			&refills, &substitutionsAllowed, &daysSupply, &pharmacyId, &pharmacyNotes, &patientInstructions, &creationDate, &erxSentDate, &erxLastFilledDate, &status, &drugName, &drugRoute, &drugForm, &patientId, &doctorId)
 		if err != nil {
@@ -662,6 +663,7 @@ func (d *DataService) getUnlinkedDNTFTreatmentsFromRow(rows *sql.Rows) ([]*commo
 			Status:                  status,
 			PharmacyNotes:           pharmacyNotes,
 			OTC:                     treatmentType == treatmentOTC,
+			IsControlledSubstance: isControlledSubstance,
 			ERx: &common.ERxData{
 				ErxLastDateFilled: &erxLastFilledDate.Time,
 				ErxSentDate:       &erxSentDate.Time,
