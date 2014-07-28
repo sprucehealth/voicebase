@@ -171,8 +171,8 @@ func buildWWW(conf *Config, dataApi api.DataAPI, authAPI api.AuthAPI, signer *co
 	}
 
 	stripeCli := &stripe.StripeService{
-		SecretKey:      conf.StripeSecretKey,
-		PublishableKey: conf.StripePublishableKey,
+		SecretKey:      conf.Stripe.SecretKey,
+		PublishableKey: conf.Stripe.PublishableKey,
 	}
 
 	return router.New(dataApi, authAPI, twilioCli, conf.Twilio.FromNumber,
@@ -280,9 +280,19 @@ func buildRESTAPI(conf *Config, dataApi api.DataAPI, authAPI api.AuthAPI, stores
 		DataApi: dataApi,
 	}
 
+	stripeService := &stripe.StripeService{}
+	if conf.TestStripe != nil {
+		if conf.Environment == "prod" {
+			golog.Warningf("Using test stripe key in production for patient")
+		}
+		stripeService.SecretKey = conf.TestStripe.SecretKey
+	} else {
+		stripeService.SecretKey = conf.Stripe.SecretKey
+	}
+
 	patientCardsHandler := &apiservice.PatientCardsHandler{
 		DataApi:              dataApi,
-		PaymentApi:           &stripe.StripeService{SecretKey: conf.StripeSecretKey},
+		PaymentApi:           stripeService,
 		AddressValidationApi: smartyStreetsService,
 	}
 
