@@ -44,6 +44,11 @@ type DosespotConfig struct {
 	APIEndpoint  string `long:"api_endpoint" description:"API endpoint where soap actions are defined"`
 }
 
+type StripeConfig struct {
+	SecretKey      string `long:"secret_key" description:"Secrey Key for stripe"`
+	PublishableKey string `long:"publishable_key" description:"Publishable Key for stripe"`
+}
+
 type SmartyStreetsConfig struct {
 	AuthId    string `long:"auth_id" description:"Auth id for smarty streets"`
 	AuthToken string `long:"auth_token" description:"Auth token for smarty streets"`
@@ -94,8 +99,8 @@ type Config struct {
 	Twilio                *TwilioConfig               `group:"Twilio" toml:"twilio"`
 	DoseSpot              *DosespotConfig             `group:"Dosespot" toml:"dosespot"`
 	SmartyStreets         *SmartyStreetsConfig        `group:"smarty_streets" toml:"smarty_streets"`
-	StripeSecretKey       string                      `long:"strip_secret_key" description:"Stripe secret key"`
-	StripePublishableKey  string                      `long:"stripe_publishable_key" description:"Stripe publishable key"`
+	TestStripe            *StripeConfig               `group:"test_stripe" toml:"test_stripe"`
+	Stripe                *StripeConfig               `group:"stripe" toml:"stripe"`
 	IOSDeeplinkScheme     string                      `long:"ios_deeplink_scheme" description:"Scheme for iOS deep-links (e.g. spruce://)"`
 	NotifiyConfigs        *config.NotificationConfigs `group:"notification" toml:"notification"`
 	Analytics             *AnalyticsConfig            `group:"Analytics" toml:"analytics"`
@@ -141,6 +146,11 @@ func (c *Config) Validate() {
 	if len(c.Storage) == 0 {
 		errors = append(errors, "No storage configs set")
 	}
+
+	if c.Stripe == nil {
+		errors = append(errors, "No stripe key set")
+	}
+
 	if !c.Debug {
 		if c.TLSCert == "" {
 			errors = append(errors, "TLSCert not set")
