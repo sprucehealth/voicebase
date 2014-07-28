@@ -7,6 +7,11 @@ import (
 	"github.com/sprucehealth/backend/common"
 )
 
+var (
+	JBCQError            = newJBCQForbiddenAccessError()
+	AccessForbiddenError = newAccessForbiddenError()
+)
+
 func ValidateDoctorAccessToPatientFile(doctorId, patientId int64, dataAPI api.DataAPI) error {
 
 	careTeam, err := dataAPI.GetCareTeamForPatient(patientId)
@@ -15,7 +20,7 @@ func ValidateDoctorAccessToPatientFile(doctorId, patientId int64, dataAPI api.Da
 	}
 
 	if careTeam == nil {
-		return NewAccessForbiddenError()
+		return AccessForbiddenError
 	}
 
 	// ensure that the doctor is part of the patient's care team
@@ -25,7 +30,7 @@ func ValidateDoctorAccessToPatientFile(doctorId, patientId int64, dataAPI api.Da
 		}
 	}
 
-	return NewAccessForbiddenError()
+	return AccessForbiddenError
 }
 
 // ValidateReadAccessToPatientCase checks to ensure that the doctor has read access to the patient case. A doctor
@@ -54,7 +59,7 @@ func ValidateReadAccessToPatientCase(doctorId, patientId, patientCaseId int64, d
 			}
 		}
 
-		return NewJBCQForbiddenAccessError()
+		return JBCQError
 	}
 
 	// if there is no exclusive access on the patient case, then the doctor can access case for
@@ -73,7 +78,7 @@ func ValidateWriteAccessToPatientCase(doctorId, patientId, patientCaseId int64, 
 
 	// no assignments to the case, in which case the doctor does not have write access to the patient case
 	if len(doctorAssignments) == 0 {
-		return NewAccessForbiddenError()
+		return AccessForbiddenError
 	}
 
 	// check to ensure that the doctor has temporary or complete access to the case
@@ -104,8 +109,8 @@ func ValidateWriteAccessToPatientCase(doctorId, patientId, patientCaseId int64, 
 
 	switch patientCase.Status {
 	case common.PCStatusUnclaimed, common.PCStatusTempClaimed:
-		return NewJBCQForbiddenAccessError()
+		return JBCQError
 	}
 
-	return NewAccessForbiddenError()
+	return AccessForbiddenError
 }

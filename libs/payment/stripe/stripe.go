@@ -73,7 +73,7 @@ type stripeCardData struct {
 }
 
 type StripeError struct {
-	Code    int
+	Code    int `json:"code"`
 	Details struct {
 		Type    string `json:"type"`
 		Message string `json:"message"`

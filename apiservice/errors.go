@@ -17,24 +17,6 @@ type spruceError struct {
 	RequestID          int64  `json:"request_id,string,omitempty"`
 }
 
-type NotAuthorizedError string
-
-func (e NotAuthorizedError) Error() string {
-	return fmt.Sprintf("not authorized: %s", string(e))
-}
-
-type JBCQAccessForbiddenError string
-
-func (j JBCQAccessForbiddenError) Error() string {
-	return string(j)
-}
-
-type AccessForbiddenError string
-
-func (a AccessForbiddenError) Error() string {
-	return string(a)
-}
-
 func NewValidationError(msg string, r *http.Request) *spruceError {
 	return &spruceError{
 		UserError:      msg,
@@ -43,12 +25,23 @@ func NewValidationError(msg string, r *http.Request) *spruceError {
 	}
 }
 
-func NewJBCQForbiddenAccessError() JBCQAccessForbiddenError {
-	return JBCQAccessForbiddenError("Oops! This case has been assigned to another doctor.")
+func newJBCQForbiddenAccessError() *spruceError {
+	msg := "Oops! This case has been assigned to another doctor."
+	return &spruceError{
+		DeveloperErrorCode: DEVELOPER_JBCQ_FORBIDDEN,
+		HTTPStatusCode:     http.StatusForbidden,
+		UserError:          msg,
+		DeveloperError:     msg,
+	}
 }
 
-func NewAccessForbiddenError() AccessForbiddenError {
-	return AccessForbiddenError("Access not permitted for this information")
+func newAccessForbiddenError() *spruceError {
+	msg := "Access not permitted for this information"
+	return &spruceError{
+		HTTPStatusCode: http.StatusForbidden,
+		UserError:      msg,
+		DeveloperError: msg,
+	}
 }
 
 func wrapInternalError(err error, code int, r *http.Request) *spruceError {
@@ -73,34 +66,20 @@ func (s *spruceError) Error() string {
 func WriteError(err error, w http.ResponseWriter, r *http.Request) {
 	switch err := err.(type) {
 	case *spruceError:
-		writeSpruceError(err, w, r)
+		err.RequestID = GetContext(r).RequestID
+		writeSpruceError(&spruceError{
+			UserError:          err.UserError,
+			DeveloperError:     err.DeveloperError,
+			DeveloperErrorCode: err.DeveloperErrorCode,
+			HTTPStatusCode:     err.HTTPStatusCode,
+			RequestID:          GetContext(r).RequestID,
+		}, w, r)
 	case errors.UserError:
 		writeSpruceError(&spruceError{
 			UserError:      err.UserError(),
 			DeveloperError: err.Error(),
 			HTTPStatusCode: http.StatusInternalServerError,
 			RequestID:      GetContext(r).RequestID,
-		}, w, r)
-	case NotAuthorizedError:
-		writeSpruceError(&spruceError{
-			UserError:      string(err),
-			HTTPStatusCode: http.StatusForbidden,
-			RequestID:      GetContext(r).RequestID,
-		}, w, r)
-	case JBCQAccessForbiddenError:
-		writeSpruceError(&spruceError{
-			RequestID:          GetContext(r).RequestID,
-			DeveloperErrorCode: DEVELOPER_JBCQ_FORBIDDEN,
-			HTTPStatusCode:     http.StatusForbidden,
-			UserError:          err.Error(),
-			DeveloperError:     err.Error(),
-		}, w, r)
-	case AccessForbiddenError:
-		writeSpruceError(&spruceError{
-			RequestID:      GetContext(r).RequestID,
-			HTTPStatusCode: http.StatusForbidden,
-			UserError:      err.Error(),
-			DeveloperError: err.Error(),
 		}, w, r)
 	default:
 		writeSpruceError(wrapInternalError(err, http.StatusInternalServerError, r), w, r)

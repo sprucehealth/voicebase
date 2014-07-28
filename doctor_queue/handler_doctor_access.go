@@ -1,11 +1,12 @@
 package doctor_queue
 
 import (
+	"net/http"
+
 	"github.com/sprucehealth/backend/api"
 	"github.com/sprucehealth/backend/apiservice"
 	"github.com/sprucehealth/backend/common"
 	"github.com/sprucehealth/backend/encoding"
-	"net/http"
 
 	"github.com/sprucehealth/backend/third_party/github.com/samuel/go-metrics/metrics"
 )
@@ -76,7 +77,7 @@ func (c *claimPatientCaseAccessHandler) ServeHTTP(w http.ResponseWriter, r *http
 		return
 	}
 
-	switch err.(type) {
+	switch err {
 	case apiservice.AccessForbiddenError:
 		// this means that the doctor does not have permissions yet,
 		// in which case this doctor can be granted access to the case
