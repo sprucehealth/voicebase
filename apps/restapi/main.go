@@ -246,7 +246,9 @@ func buildRESTAPI(conf *Config, dataApi api.DataAPI, authAPI api.AuthAPI, stores
 	doctor_queue.StartClaimedItemsExpirationChecker(dataApi, metricsRegistry.Scope("doctor_queue"))
 
 	cloudStorageApi := api.NewCloudStorageService(awsAuth)
-	checkElligibilityHandler := &apiservice.CheckCareProvidingElligibilityHandler{DataApi: dataApi, AddressValidationApi: smartyStreetsService, StaticContentUrl: conf.StaticContentBaseUrl}
+	checkElligibilityHandler := &apiservice.CheckCareProvidingElligibilityHandler{DataApi: dataApi,
+		AddressValidationApi: address.NewHackAddressValidationWrapper(smartyStreetsService, conf.ZipCodeToCityStateMapper),
+		StaticContentUrl:     conf.StaticContentBaseUrl}
 	updatePatientBillingAddress := &apiservice.UpdatePatientAddressHandler{DataApi: dataApi, AddressType: apiservice.BILLING_ADDRESS_TYPE}
 	medicationStrengthSearchHandler := &apiservice.MedicationStrengthSearchHandler{DataApi: dataApi, ERxApi: doseSpotService}
 	newTreatmentHandler := &apiservice.NewTreatmentHandler{DataApi: dataApi, ERxApi: doseSpotService}
@@ -281,7 +283,7 @@ func buildRESTAPI(conf *Config, dataApi api.DataAPI, authAPI api.AuthAPI, stores
 	}
 
 	stripeService := &stripe.StripeService{}
-	if conf.TestStripe != nil {
+	if conf.TestStripe.SecretKey != "" {
 		if conf.Environment == "prod" {
 			golog.Warningf("Using test stripe key in production for patient")
 		}
@@ -308,7 +310,7 @@ func buildRESTAPI(conf *Config, dataApi api.DataAPI, authAPI api.AuthAPI, stores
 	mux.Handle("/v1/notification/prompt_status", notify.NewPromptStatusHandler(dataApi))
 
 	// Patient: Account related APIs
-	mux.Handle("/v1/patient", patient.NewSignupHandler(dataApi, authAPI, smartyStreetsService))
+	mux.Handle("/v1/patient", patient.NewSignupHandler(dataApi, authAPI, address.NewHackAddressValidationWrapper(smartyStreetsService, conf.ZipCodeToCityStateMapper)))
 	mux.Handle("/v1/patient/info", patient.NewUpdateHandler(dataApi))
 	mux.Handle("/v1/patient/address/billing", updatePatientBillingAddress)
 	mux.Handle("/v1/patient/pharmacy", apiservice.NewUpdatePatientPharmacyHandler(dataApi))
