@@ -21,6 +21,11 @@ type NonAuthenticated interface {
 	NonAuthenticated() bool
 }
 
+// Authorized interface
+type Authorized interface {
+	IsAuthorized(r *http.Request) (bool, error)
+}
+
 type AuthServeMux struct {
 	http.ServeMux
 	AuthApi api.AuthAPI
@@ -192,5 +197,15 @@ func (mux *AuthServeMux) ServeHTTP(w http.ResponseWriter, r *http.Request) {
 			return
 		}
 	}
+
+	// ensure that every handler is authorized to carry out its call
+	if isAuthorized, err := h.(Authorized).IsAuthorized(r); err != nil {
+		WriteError(err, w, r)
+		return
+	} else if !isAuthorized {
+		WriteAccessNotAllowedError(w, r)
+		return
+	}
+
 	h.ServeHTTP(customResponseWriter, r)
 }

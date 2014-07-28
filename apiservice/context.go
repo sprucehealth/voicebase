@@ -11,11 +11,23 @@ var (
 	requestContext = map[*http.Request]*Context{}
 )
 
+type CacheKey int
+
+const (
+	Patient CacheKey = iota
+	PatientId
+	PatientCase
+	PatientCaseId
+	TreatmentPlan
+	TreatmentPlanId
+)
+
 type Context struct {
 	AccountId        int64
 	Role             string
 	RequestStartTime time.Time
 	RequestID        int64
+	RequestCache     map[CacheKey]interface{}
 }
 
 // TODO: During testing this is the context that's returned for any request. This is necessary because at
