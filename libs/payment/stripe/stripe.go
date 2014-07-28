@@ -81,6 +81,18 @@ type StripeError struct {
 	} `json:"error"`
 }
 
+func (s *StripeError) IsUserError() bool {
+	return s.Details.Type == "card_error"
+}
+
+func (s *StripeError) UserError() string {
+	return s.Details.Message
+}
+
+func (s *StripeError) Error() string {
+	return fmt.Sprintf("Error communicating with stripe. ErrorCode: %dErrorDetails:\n- Type: %s\n- Message: %s\n- Code:%s\n", s.Code, s.Details.Type, s.Details.Message, s.Details.Code)
+}
+
 type Recipient struct {
 	ID            string            `json:"id"`
 	Object        string            `json:"object"` // "recipient"
@@ -127,10 +139,6 @@ type BankAccount struct {
 	Country       string `json:"country"`
 	RoutingNumber string `json:"routing_number"`
 	AccountNumber string `json:"account_number"`
-}
-
-func (s *StripeError) Error() string {
-	return fmt.Sprintf("Error communicating with stripe. ErrorCode: %dErrorDetails:\n- Type: %s\n- Message: %s\n- Code:%s\n", s.Code, s.Details.Type, s.Details.Message, s.Details.Code)
 }
 
 func (s *StripeService) CreateCustomerWithDefaultCard(token string) (*payment.Customer, error) {

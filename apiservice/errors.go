@@ -5,6 +5,7 @@ import (
 	"net/http"
 
 	"github.com/sprucehealth/backend/environment"
+	"github.com/sprucehealth/backend/errors"
 	"github.com/sprucehealth/backend/libs/golog"
 )
 
@@ -73,6 +74,13 @@ func WriteError(err error, w http.ResponseWriter, r *http.Request) {
 	switch err := err.(type) {
 	case *spruceError:
 		writeSpruceError(err, w, r)
+	case errors.UserError:
+		writeSpruceError(&spruceError{
+			UserError:      err.UserError(),
+			DeveloperError: err.Error(),
+			HTTPStatusCode: http.StatusInternalServerError,
+			RequestID:      GetContext(r).RequestID,
+		}, w, r)
 	case NotAuthorizedError:
 		writeSpruceError(&spruceError{
 			UserError:      string(err),

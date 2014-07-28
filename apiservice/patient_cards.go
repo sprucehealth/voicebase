@@ -1,17 +1,15 @@
 package apiservice
 
 import (
-	"encoding/json"
+	"net/http"
+	"sort"
+	"strconv"
+
 	"github.com/sprucehealth/backend/address"
 	"github.com/sprucehealth/backend/api"
 	"github.com/sprucehealth/backend/common"
 	"github.com/sprucehealth/backend/libs/golog"
 	"github.com/sprucehealth/backend/libs/payment"
-	"net/http"
-	"sort"
-	"strconv"
-
-	"github.com/sprucehealth/backend/third_party/github.com/SpruceHealth/schema"
 )
 
 type PatientCardsHandler struct {
@@ -46,139 +44,129 @@ func (p *PatientCardsHandler) ServeHTTP(w http.ResponseWriter, r *http.Request) 
 func (p *PatientCardsHandler) getCardsForPatient(w http.ResponseWriter, r *http.Request) {
 	patient, err := p.DataApi.GetPatientFromAccountId(GetContext(r).AccountId)
 	if err != nil {
-		WriteDeveloperError(w, http.StatusInternalServerError, "Unable to get patient from account id : "+err.Error())
+		WriteError(err, w, r)
 		return
 	}
 
 	cards, err := p.getCardsAndReconcileWithPaymentService(patient)
 	if err != nil {
-		WriteDeveloperError(w, http.StatusInternalServerError, "Unable to get cards from db and reconcile with payments service: "+err.Error())
+		WriteError(err, w, r)
 		return
 	}
 
-	WriteJSONToHTTPResponseWriter(w, http.StatusOK, &PatientCardsResponse{Cards: cards})
+	WriteJSON(w, &PatientCardsResponse{Cards: cards})
 }
 
 func (p *PatientCardsHandler) makeCardDefaultForPatient(w http.ResponseWriter, r *http.Request) {
-	if err := r.ParseForm(); err != nil {
-		WriteDeveloperError(w, http.StatusBadRequest, "Unable to parse input parameters: "+err.Error())
-		return
-	}
-
 	requestData := &PatientCardsRequestData{}
-	if err := schema.NewDecoder().Decode(requestData, r.Form); err != nil {
-		WriteDeveloperError(w, http.StatusBadRequest, "Unable to parse input parameters : "+err.Error())
+	if err := DecodeRequestData(requestData, r); err != nil {
+		WriteValidationError(err.Error(), w, r)
 		return
 	}
 
 	cardId, err := strconv.ParseInt(requestData.CardId, 10, 64)
 	if err != nil {
-		WriteDeveloperError(w, http.StatusBadRequest, "Unable to parse cardId: "+err.Error())
+		WriteValidationError(err.Error(), w, r)
 		return
 	}
 
 	card, err := p.DataApi.GetCardFromId(cardId)
 	if err != nil {
-		WriteDeveloperError(w, http.StatusInternalServerError, "Unable to get card from id: "+err.Error())
+		WriteError(err, w, r)
 		return
 	}
 
 	patient, err := p.DataApi.GetPatientFromAccountId(GetContext(r).AccountId)
 	if err != nil {
-		WriteDeveloperError(w, http.StatusInternalServerError, "Unable to get patient from account id : "+err.Error())
+		WriteError(err, w, r)
 		return
 	}
 
 	pendingTaskId, err := p.DataApi.CreatePendingTask(api.PENDING_TASK_PATIENT_CARD, api.STATUS_UPDATING, patient.PatientId.Int64())
 	if err != nil {
-		WriteDeveloperError(w, http.StatusInternalServerError, "Unable to create pending task for adding credit card for patient: "+err.Error())
+		WriteError(err, w, r)
 		return
 	}
 
 	if patient.PaymentCustomerId == "" {
-		WriteDeveloperError(w, http.StatusBadRequest, "Unable to complete tasks because this patient is not yet registered for accepting payments: "+err.Error())
+		WriteError(err, w, r)
 		return
 	}
 
 	if err := p.DataApi.MakeCardDefaultForPatient(patient.PatientId.Int64(), card); err != nil {
-		WriteDeveloperError(w, http.StatusInternalServerError, "Unable to make card the default card on our db: "+err.Error())
+		WriteError(err, w, r)
 		return
 	}
 
 	if err := p.PaymentApi.MakeCardDefaultForCustomer(card.ThirdPartyId, patient.PaymentCustomerId); err != nil {
-		WriteDeveloperError(w, http.StatusInternalServerError, "Unable to make card the default card: "+err.Error())
+		WriteError(err, w, r)
 		return
 	}
 
 	if err := p.DataApi.UpdateDefaultAddressForPatient(patient.PatientId.Int64(), card.BillingAddress); err != nil {
-		WriteDeveloperError(w, http.StatusInternalServerError, "Unable to update default address for patient: "+err.Error())
+		WriteError(err, w, r)
 		return
 	}
 
 	if err := p.DataApi.DeletePendingTask(pendingTaskId); err != nil {
-		WriteDeveloperError(w, http.StatusInternalServerError, "Unable to delete pending task: "+err.Error())
+		WriteError(err, w, r)
 		return
 	}
 
 	cards, err := p.getCardsAndReconcileWithPaymentService(patient)
 	if err != nil {
-		WriteDeveloperError(w, http.StatusInternalServerError, "Unable to get cards and reconcile with payments service: "+err.Error())
+		WriteError(err, w, r)
 		return
 	}
 
-	WriteJSONToHTTPResponseWriter(w, http.StatusOK, &PatientCardsResponse{Cards: cards})
+	WriteJSON(w, &PatientCardsResponse{Cards: cards})
 }
 
 func (p *PatientCardsHandler) deleteCardForPatient(w http.ResponseWriter, r *http.Request) {
-	if err := r.ParseForm(); err != nil {
-		WriteDeveloperError(w, http.StatusBadRequest, "Unable to parse input parameters: "+err.Error())
-		return
-	}
-
 	requestData := &PatientCardsRequestData{}
-	if err := schema.NewDecoder().Decode(requestData, r.Form); err != nil {
-		WriteDeveloperError(w, http.StatusBadRequest, "Unable to parse input parameters : "+err.Error())
+	if err := DecodeRequestData(requestData, r); err != nil {
+		WriteValidationError(err.Error(), w, r)
 		return
 	}
 
 	cardId, err := strconv.ParseInt(requestData.CardId, 10, 64)
 	if err != nil {
-		WriteDeveloperError(w, http.StatusBadRequest, "Unable to parse cardId: "+err.Error())
+		WriteError(err, w, r)
 		return
 	}
 
 	card, err := p.DataApi.GetCardFromId(cardId)
 	if err != nil {
-		WriteDeveloperError(w, http.StatusInternalServerError, "Unable to get card from id: "+err.Error())
+		WriteError(err, w, r)
 		return
 	}
 
 	if card == nil {
-		WriteDeveloperError(w, http.StatusBadRequest, "No card found with this id")
+		WriteResourceNotFoundError("Card not found", w, r)
 		return
 	}
 
 	patient, err := p.DataApi.GetPatientFromAccountId(GetContext(r).AccountId)
 	if err != nil {
-		WriteDeveloperError(w, http.StatusInternalServerError, "Unable to get patient from account id : "+err.Error())
+		WriteError(err, w, r)
 		return
 	}
 
 	pendingTaskId, err := p.DataApi.CreatePendingTask(api.PENDING_TASK_PATIENT_CARD, api.STATUS_DELETING, patient.PatientId.Int64())
 	if err != nil {
-		WriteDeveloperError(w, http.StatusInternalServerError, "Unable to create pending task for adding credit card for patient: "+err.Error())
+		WriteError(err, w, r)
 		return
 	}
 
 	if patient.PaymentCustomerId == "" {
-		WriteDeveloperError(w, http.StatusBadRequest, "Unable to complete tasks because this patient is not yet registered for accepting payments: "+err.Error())
+		WriteError(err, w, r)
 		return
 	}
 
 	// mark the card as inactive instead of deleting it initially so that we have room to identify
 	// situations where the call fails and things are left in an inconsistent state
 	if err := p.DataApi.MarkCardInactiveForPatient(patient.PatientId.Int64(), card); err != nil {
-		WriteDeveloperError(w, http.StatusInternalServerError, "Unable to mark card as inactive for patient: "+err.Error())
+		WriteError(err, w, r)
 		return
 	}
 
@@ -188,13 +176,13 @@ func (p *PatientCardsHandler) deleteCardForPatient(w http.ResponseWriter, r *htt
 	if card.IsDefault {
 		latestCard, err := p.DataApi.MakeLatestCardDefaultForPatient(patient.PatientId.Int64())
 		if err != nil {
-			WriteDeveloperError(w, http.StatusInternalServerError, "Unable to make latest card the default card for patient: "+err.Error())
+			WriteError(err, w, r)
 			return
 		}
 
 		if latestCard != nil {
 			if err := p.DataApi.UpdateDefaultAddressForPatient(patient.PatientId.Int64(), latestCard.BillingAddress); err != nil {
-				WriteDeveloperError(w, http.StatusInternalServerError, "Unable to update default address for patient: "+err.Error())
+				WriteError(err, w, r)
 				return
 			}
 		}
@@ -202,64 +190,64 @@ func (p *PatientCardsHandler) deleteCardForPatient(w http.ResponseWriter, r *htt
 
 	// the payment service changes the default card to the last added active card internally
 	if err := p.PaymentApi.DeleteCardForCustomer(patient.PaymentCustomerId, card.ThirdPartyId); err != nil {
-		WriteDeveloperError(w, http.StatusInternalServerError, "Unable to delete card on the payment service: "+err.Error())
+		WriteError(err, w, r)
 		return
 	}
 
 	if err := p.DataApi.DeleteCardForPatient(patient.PatientId.Int64(), card); err != nil {
-		WriteDeveloperError(w, http.StatusInternalServerError, "Unable to delete card for patient: "+err.Error())
+		WriteError(err, w, r)
 		return
 	}
 
 	// delete the address only if this is not the patient's preferred address
 	if currentPatientAddressId != card.BillingAddress.Id {
 		if err := p.DataApi.DeleteAddress(card.BillingAddress.Id); err != nil {
-			WriteDeveloperError(w, http.StatusInternalServerError, "Unable to delete address: "+err.Error())
+			WriteError(err, w, r)
 			return
 		}
 	}
 
 	if err := p.DataApi.DeletePendingTask(pendingTaskId); err != nil {
-		WriteDeveloperError(w, http.StatusInternalServerError, "Unable to delete pending task: "+err.Error())
+		WriteError(err, w, r)
 		return
 	}
 
 	cards, err := p.getCardsAndReconcileWithPaymentService(patient)
 	if err != nil {
-		WriteDeveloperError(w, http.StatusInternalServerError, "Unable to get cards and reconcile with payments service: "+err.Error())
+		WriteError(err, w, r)
 		return
 	}
 
-	WriteJSONToHTTPResponseWriter(w, http.StatusOK, &PatientCardsResponse{Cards: cards})
+	WriteJSON(w, &PatientCardsResponse{Cards: cards})
 }
 
 func (p *PatientCardsHandler) addCardForPatient(w http.ResponseWriter, r *http.Request) {
 	cardToAdd := &common.Card{}
-	if err := json.NewDecoder(r.Body).Decode(&cardToAdd); err != nil {
-		WriteDeveloperError(w, http.StatusBadRequest, "Unable to parse input parameters: "+err.Error())
+	if err := DecodeRequestData(cardToAdd, r); err != nil {
+		WriteValidationError(err.Error(), w, r)
 		return
 	}
 
 	//  look up the payment service customer id for the patient
 	patient, err := p.DataApi.GetPatientFromAccountId(GetContext(r).AccountId)
 	if err != nil {
-		WriteDeveloperError(w, http.StatusInternalServerError, "Unable to get patient based on account id: "+err.Error())
+		WriteError(err, w, r)
 		return
 	}
 
 	if patient == nil {
-		WriteDeveloperError(w, http.StatusInternalServerError, "No patient returned for this account id")
+		WriteResourceNotFoundError("No patient found", w, r)
 		return
 	}
 
 	if cardToAdd.BillingAddress == nil || cardToAdd.BillingAddress.AddressLine1 == "" || cardToAdd.BillingAddress.City == "" ||
 		cardToAdd.BillingAddress.State == "" || cardToAdd.BillingAddress.ZipCode == "" {
-		WriteDeveloperError(w, http.StatusBadRequest, "Billing address for credit card not correctly specified")
+		WriteError(err, w, r)
 		return
 	}
 
 	if cardToAdd.Token == "" {
-		WriteDeveloperError(w, http.StatusBadRequest, "Unable to add credit card that does not have a unique token to help identify the card with the third party service")
+		WriteError(err, w, r)
 		return
 	}
 
@@ -274,7 +262,7 @@ func (p *PatientCardsHandler) addCardForPatient(w http.ResponseWriter, r *http.R
 	// that cleans things up
 	pendingTaskId, err := p.DataApi.CreatePendingTask(api.PENDING_TASK_PATIENT_CARD, api.STATUS_CREATING, patient.PatientId.Int64())
 	if err != nil {
-		WriteDeveloperError(w, http.StatusInternalServerError, "Unable to create pending task for adding credit card for patient: "+err.Error())
+		WriteError(err, w, r)
 		return
 	}
 
@@ -284,13 +272,13 @@ func (p *PatientCardsHandler) addCardForPatient(w http.ResponseWriter, r *http.R
 	if !isPatientRegisteredWithPatientService {
 		customer, err := p.PaymentApi.CreateCustomerWithDefaultCard(cardToAdd.Token)
 		if err != nil {
-			WriteDeveloperError(w, http.StatusInternalServerError, "Unable to create customer with default card: "+err.Error())
+			WriteError(err, w, r)
 			return
 		}
 
 		// save customer id to database
 		if err := p.DataApi.UpdatePatientWithPaymentCustomerId(patient.PatientId.Int64(), customer.Id); err != nil {
-			WriteDeveloperError(w, http.StatusInternalServerError, "Unable to update patient with payment service id: "+err.Error())
+			WriteError(err, w, r)
 			return
 		}
 		card = &customer.Cards[0]
@@ -299,7 +287,7 @@ func (p *PatientCardsHandler) addCardForPatient(w http.ResponseWriter, r *http.R
 		// add another card to the customer on the payment service
 		card, err = p.PaymentApi.AddCardForCustomer(cardToAdd.Token, patient.PaymentCustomerId)
 		if err != nil {
-			WriteDeveloperError(w, http.StatusInternalServerError, "Unable to add card for customer: "+err.Error())
+			WriteError(err, w, r)
 			return
 		}
 	}
@@ -307,7 +295,7 @@ func (p *PatientCardsHandler) addCardForPatient(w http.ResponseWriter, r *http.R
 	cardToAdd.ThirdPartyId = card.ThirdPartyId
 	cardToAdd.Fingerprint = card.Fingerprint
 	if err := p.DataApi.AddCardAndMakeDefaultForPatient(patient.PatientId.Int64(), cardToAdd); err != nil {
-		WriteDeveloperError(w, http.StatusInternalServerError, "Unable to add new card for patient: "+err.Error())
+		WriteError(err, w, r)
 		return
 	}
 
@@ -315,28 +303,28 @@ func (p *PatientCardsHandler) addCardForPatient(w http.ResponseWriter, r *http.R
 	// to make it the default card
 	if isPatientRegisteredWithPatientService {
 		if err := p.PaymentApi.MakeCardDefaultForCustomer(cardToAdd.ThirdPartyId, patient.PaymentCustomerId); err != nil {
-			WriteDeveloperError(w, http.StatusInternalServerError, "Unable to make card just added the default card: "+err.Error())
+			WriteError(err, w, r)
 			return
 		}
 	}
 
 	if err := p.DataApi.UpdateDefaultAddressForPatient(patient.PatientId.Int64(), cardToAdd.BillingAddress); err != nil {
-		WriteDeveloperError(w, http.StatusInternalServerError, "Unable to update default address for patient: "+err.Error())
+		WriteError(err, w, r)
 		return
 	}
 
 	if err := p.DataApi.DeletePendingTask(pendingTaskId); err != nil {
-		WriteDeveloperError(w, http.StatusInternalServerError, "Unable to delete pending task: "+err.Error())
+		WriteError(err, w, r)
 		return
 	}
 
 	cards, err := p.getCardsAndReconcileWithPaymentService(patient)
 	if err != nil {
-		WriteDeveloperError(w, http.StatusInternalServerError, "Unable to get cards and reconcile with payments service: "+err.Error())
+		WriteError(err, w, r)
 		return
 	}
 
-	WriteJSONToHTTPResponseWriter(w, http.StatusOK, &PatientCardsResponse{Cards: cards})
+	WriteJSON(w, &PatientCardsResponse{Cards: cards})
 }
 
 func (p *PatientCardsHandler) getCardsAndReconcileWithPaymentService(patient *common.Patient) ([]*common.Card, error) {
