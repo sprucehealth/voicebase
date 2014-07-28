@@ -216,7 +216,7 @@ func InitListeners(dataAPI api.DataAPI, notificationManager *notify.Notification
 			ItemId:    ev.Message.CaseID,
 			EventType: api.DQEventTypeCaseMessage,
 			Status:    api.DQItemStatusPending,
-		}, api.DQItemStatusReplied); err != nil {
+		}, api.DQItemStatusPending); err != nil {
 			routeFailure.Inc(1)
 			golog.Errorf("Unable to insert conversation item into doctor queue: %s", err)
 			return err
