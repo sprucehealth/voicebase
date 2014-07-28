@@ -249,7 +249,7 @@ func InitListeners(dataAPI api.DataAPI, notificationManager *notify.Notification
 
 			if err := dataAPI.ReplaceItemInDoctorQueue(api.DoctorQueueItem{
 				DoctorId:  doctorId,
-				ItemId:    ev.Resource,
+				ItemId:    ev.ResourceId,
 				EventType: api.DQEventTypeCaseMessage,
 				Status:    api.DQItemStatusRead,
 			}, api.DQItemStatusPending); err != nil {
