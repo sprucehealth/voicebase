@@ -240,13 +240,7 @@ func InitListeners(dataAPI api.DataAPI, notificationManager *notify.Notification
 
 		// delete the item from the queue when the doctor marks the conversation
 		// as being read
-		if ev.Resource == "case_message" && ev.Role == api.DOCTOR_ROLE && ev.Action == app_event.ViewedAction {
-			caseID, err := dataAPI.GetCaseIDFromMessageID(ev.ResourceId)
-			if err != nil {
-				golog.Errorf("Unable to get case id from message id: %s", err)
-				return err
-			}
-
+		if ev.Resource == "case_messages" && ev.Role == api.DOCTOR_ROLE && ev.Action == app_event.ViewedAction {
 			doctorId, err := dataAPI.GetDoctorIdFromAccountId(ev.AccountId)
 			if err != nil {
 				golog.Errorf("Unable to get doctor id from account id: %s", err)
@@ -255,7 +249,7 @@ func InitListeners(dataAPI api.DataAPI, notificationManager *notify.Notification
 
 			if err := dataAPI.ReplaceItemInDoctorQueue(api.DoctorQueueItem{
 				DoctorId:  doctorId,
-				ItemId:    caseID,
+				ItemId:    ev.Resource,
 				EventType: api.DQEventTypeCaseMessage,
 				Status:    api.DQItemStatusRead,
 			}, api.DQItemStatusPending); err != nil {
