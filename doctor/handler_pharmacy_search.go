@@ -16,10 +16,10 @@ type pharmacySearchHandler struct {
 }
 
 func NewPharmacySearchHandler(dataAPI api.DataAPI, erxAPI erx.ERxAPI) http.Handler {
-	return httputil.SupportedMethods(apiservice.AuthorizeHandler(&pharmacySearchHandler{
+	return httputil.SupportedMethods(&pharmacySearchHandler{
 		dataAPI: dataAPI,
 		erxAPI:  erxAPI,
-	}), []string{apiservice.HTTP_GET})
+	}, []string{apiservice.HTTP_GET})
 }
 
 type PharmacySearchRequestData struct {
@@ -29,6 +29,10 @@ type PharmacySearchRequestData struct {
 
 type PharmacySearchResponse struct {
 	PharmacyResults []*pharmacy.PharmacyData `json:"pharmacy_results"`
+}
+
+func (d *pharmacySearchHandler) IsAuthorized(r *http.Request) (bool, error) {
+	return true, nil
 }
 
 func (d *pharmacySearchHandler) ServeHTTP(w http.ResponseWriter, r *http.Request) {

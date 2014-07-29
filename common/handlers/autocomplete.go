@@ -1,4 +1,4 @@
-package apiservice
+package handlers
 
 import (
 	"fmt"
@@ -7,6 +7,7 @@ import (
 	"unicode"
 
 	"github.com/sprucehealth/backend/api"
+	"github.com/sprucehealth/backend/apiservice"
 	"github.com/sprucehealth/backend/libs/erx"
 )
 
@@ -31,10 +32,10 @@ func NewAutocompleteHandler(dataAPI api.DataAPI, erxAPI erx.ERxAPI) http.Handler
 	}
 	allergicMedicationsQuestionId = questionInfos[0].QuestionId
 
-	return AuthorizeHandler(&autocompleteHandler{
+	return &autocompleteHandler{
 		dataAPI: dataAPI,
 		erxAPI:  erxAPI,
-	})
+	}
 }
 
 type AutocompleteRequestData struct {
@@ -52,15 +53,19 @@ type Suggestion struct {
 	DrugInternalName string `json:"drug_internal_name,omitempty"`
 }
 
+func (s *autocompleteHandler) IsAuthorized(r *http.Request) (bool, error) {
+	return true, nil
+}
+
 func (s *autocompleteHandler) ServeHTTP(w http.ResponseWriter, r *http.Request) {
-	if r.Method != HTTP_GET {
+	if r.Method != apiservice.HTTP_GET {
 		http.NotFound(w, r)
 		return
 	}
 
 	requestData := &AutocompleteRequestData{}
-	if err := DecodeRequestData(requestData, r); err != nil {
-		WriteValidationError(err.Error(), w, r)
+	if err := apiservice.DecodeRequestData(requestData, r); err != nil {
+		apiservice.WriteValidationError(err.Error(), w, r)
 		return
 	}
 
@@ -75,7 +80,7 @@ func (s *autocompleteHandler) ServeHTTP(w http.ResponseWriter, r *http.Request) 
 func (s *autocompleteHandler) handleAutocompleteForAllergicMedications(requestData *AutocompleteRequestData, w http.ResponseWriter, r *http.Request) {
 	searchResults, err := s.erxAPI.SearchForAllergyRelatedMedications(requestData.SearchString)
 	if err != nil {
-		WriteError(err, w, r)
+		apiservice.WriteError(err, w, r)
 		return
 	}
 
@@ -88,27 +93,27 @@ func (s *autocompleteHandler) handleAutocompleteForAllergicMedications(requestDa
 		autocompleteResponse.Suggestions[i] = &Suggestion{Title: strings.Title(searchResultItem)}
 	}
 
-	WriteJSON(w, autocompleteResponse)
+	apiservice.WriteJSON(w, autocompleteResponse)
 }
 
 func (s *autocompleteHandler) handleAutocompleteForDrugs(requestData *AutocompleteRequestData, w http.ResponseWriter, r *http.Request) {
 	var searchResults []string
 	var err error
-	switch GetContext(r).Role {
+	switch apiservice.GetContext(r).Role {
 	case api.DOCTOR_ROLE:
-		doctor, err := s.dataAPI.GetDoctorFromAccountId(GetContext(r).AccountId)
+		doctor, err := s.dataAPI.GetDoctorFromAccountId(apiservice.GetContext(r).AccountId)
 		if err != nil {
-			WriteError(err, w, r)
+			apiservice.WriteError(err, w, r)
 			return
 		}
 		searchResults, err = s.erxAPI.GetDrugNamesForDoctor(doctor.DoseSpotClinicianId, requestData.SearchString)
 	case api.PATIENT_ROLE:
 		searchResults, err = s.erxAPI.GetDrugNamesForPatient(requestData.SearchString)
 	default:
-		WriteAccessNotAllowedError(w, r)
+		apiservice.WriteAccessNotAllowedError(w, r)
 	}
 	if err != nil {
-		WriteError(err, w, r)
+		apiservice.WriteError(err, w, r)
 		return
 	}
 
@@ -130,7 +135,7 @@ func (s *autocompleteHandler) handleAutocompleteForDrugs(requestData *Autocomple
 		}
 	}
 
-	WriteJSON(w, autocompleteResponse)
+	apiservice.WriteJSON(w, autocompleteResponse)
 }
 
 // Content in the paranthesis of a drug name is returned as Oral - powder for reconstitution

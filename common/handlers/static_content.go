@@ -1,53 +1,51 @@
-package apiservice
+package handlers
 
 import (
 	"net/http"
 
 	"github.com/sprucehealth/backend/api"
-	"github.com/sprucehealth/backend/third_party/github.com/SpruceHealth/schema"
+	"github.com/sprucehealth/backend/apiservice"
+	"github.com/sprucehealth/backend/libs/httputil"
 )
 
-type StaticContentHandler struct {
-	DataApi               api.DataAPI
-	ContentStorageService api.CloudStorageAPI
-	BucketLocation        string
-	Region                string
+type staticContentHandler struct {
+	dataAPI               api.DataAPI
+	contentStorageService api.CloudStorageAPI
+	bucketLocation        string
+	region                string
+}
+
+func NewStaticContentHandler(dataAPI api.DataAPI, contentStorageService api.CloudStorageAPI, bucketLocation, region string) http.Handler {
+	return httputil.SupportedMethods(&staticContentHandler{
+		dataAPI:               dataAPI,
+		contentStorageService: contentStorageService,
+		bucketLocation:        bucketLocation,
+		region:                region,
+	}, []string{apiservice.HTTP_GET})
 }
 
 type StaticContentRequestData struct {
 	ContentTag string `schema:"content_tag"`
 }
 
-func (s *StaticContentHandler) NonAuthenticated() bool {
+func (s *staticContentHandler) NonAuthenticated() bool {
 	return true
 }
 
-func (s *StaticContentHandler) ServeHTTP(w http.ResponseWriter, r *http.Request) {
-	switch r.Method {
-	case HTTP_GET:
-		s.getContent(w, r)
-	default:
-		w.WriteHeader(http.StatusNotFound)
-	}
+func (s *staticContentHandler) IsAuthorized(r *http.Request) (bool, error) {
+	return true, nil
 }
 
-func (s *StaticContentHandler) getContent(w http.ResponseWriter, r *http.Request) {
-	if err := r.ParseForm(); err != nil {
-		WriteDeveloperError(w, http.StatusBadRequest, "Unable to parse request data: "+err.Error())
-		return
-	}
-
+func (s *staticContentHandler) ServeHTTP(w http.ResponseWriter, r *http.Request) {
 	requestData := new(StaticContentRequestData)
-	decoder := schema.NewDecoder()
-	err := decoder.Decode(requestData, r.Form)
-	if err != nil {
-		WriteDeveloperError(w, http.StatusBadRequest, "Unable to parse input to check elligibility: "+err.Error())
+	if err := apiservice.DecodeRequestData(requestData, r); err != nil {
+		apiservice.WriteValidationError(err.Error(), w, r)
 		return
 	}
 
-	rawData, responseHeader, err := s.ContentStorageService.GetObjectAtLocation(s.BucketLocation, requestData.ContentTag, s.Region)
+	rawData, responseHeader, err := s.contentStorageService.GetObjectAtLocation(s.bucketLocation, requestData.ContentTag, s.region)
 	if err != nil {
-		WriteDeveloperError(w, http.StatusInternalServerError, "Unable to get static content: "+err.Error())
+		apiservice.WriteError(err, w, r)
 		return
 	}
 

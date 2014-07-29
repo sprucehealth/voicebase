@@ -1,30 +1,36 @@
-package apiservice
+package handlers
 
 import (
-	"github.com/sprucehealth/backend/api"
-	"github.com/sprucehealth/backend/libs/golog"
 	"net/http"
+
+	"github.com/sprucehealth/backend/api"
+	"github.com/sprucehealth/backend/apiservice"
+	"github.com/sprucehealth/backend/libs/golog"
 )
 
 type isAuthenticatedHandler struct {
-	AuthApi api.AuthAPI
+	authAPI api.AuthAPI
 }
 
-func NewIsAuthenticatedHandler(authApi api.AuthAPI) *isAuthenticatedHandler {
+func NewIsAuthenticatedHandler(authAPI api.AuthAPI) http.Handler {
 	return &isAuthenticatedHandler{
-		AuthApi: authApi,
+		authAPI: authAPI,
 	}
+}
+
+func (i *isAuthenticatedHandler) IsAuthorized(r *http.Request) (bool, error) {
+	return true, nil
 }
 
 func (i *isAuthenticatedHandler) ServeHTTP(w http.ResponseWriter, r *http.Request) {
 
 	// asyncrhonously update the last opened date for this account
-	accountId := GetContext(r).AccountId
+	accountId := apiservice.GetContext(r).AccountId
 	go func() {
-		if err := i.AuthApi.UpdateLastOpenedDate(accountId); err != nil {
+		if err := i.authAPI.UpdateLastOpenedDate(accountId); err != nil {
 			golog.Errorf("Unable to update last opened date for account: %s", err)
 		}
 	}()
 
-	WriteJSONToHTTPResponseWriter(w, http.StatusOK, SuccessfulGenericJSONResponse())
+	apiservice.WriteJSONSuccess(w)
 }

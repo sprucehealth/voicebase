@@ -20,6 +20,7 @@ import (
 	"github.com/sprucehealth/backend/app_worker"
 	"github.com/sprucehealth/backend/common"
 	"github.com/sprucehealth/backend/common/config"
+	"github.com/sprucehealth/backend/common/handlers"
 	"github.com/sprucehealth/backend/demo"
 	"github.com/sprucehealth/backend/doctor"
 	"github.com/sprucehealth/backend/doctor_queue"
@@ -31,7 +32,6 @@ import (
 	"github.com/sprucehealth/backend/libs/aws/sns"
 	"github.com/sprucehealth/backend/libs/erx"
 	"github.com/sprucehealth/backend/libs/golog"
-	"github.com/sprucehealth/backend/libs/maps"
 	"github.com/sprucehealth/backend/libs/payment/stripe"
 	"github.com/sprucehealth/backend/libs/storage"
 	"github.com/sprucehealth/backend/messages"
@@ -222,7 +222,6 @@ func buildRESTAPI(conf *Config, dataApi api.DataAPI, authAPI api.AuthAPI, stores
 	}
 
 	emailService := email.NewService(conf.Email, metricsRegistry.Scope("email"))
-
 	surescriptsPharmacySearch, err := pharmacy.NewSurescriptsPharmacySearch(conf.PharmacyDB, conf.Environment)
 	if err != nil {
 		if conf.Debug {
@@ -231,7 +230,6 @@ func buildRESTAPI(conf *Config, dataApi api.DataAPI, authAPI api.AuthAPI, stores
 			log.Fatalf("Unable to initialize pharmacy search: %s", err)
 		}
 	}
-
 	var erxStatusQueue *common.SQSQueue
 	if conf.ERxQueue != "" {
 		var err error
@@ -254,50 +252,10 @@ func buildRESTAPI(conf *Config, dataApi api.DataAPI, authAPI api.AuthAPI, stores
 	}
 
 	addressValidationWithCacheAndHack := address.NewHackAddressValidationWrapper(address.NewAddressValidationWithCacheWrapper(smartyStreetsService, 2000), conf.ZipCodeToCityStateMapper)
-
-	mapsService := maps.NewGoogleMapsService(metricsRegistry.Scope("google_maps_api"))
 	doseSpotService := erx.NewDoseSpotService(conf.DoseSpot.ClinicId, conf.DoseSpot.UserId, conf.DoseSpot.ClinicKey, conf.DoseSpot.SOAPEndpoint, conf.DoseSpot.APIEndpoint, metricsRegistry.Scope("dosespot_api"))
-	autocompleteHandler := apiservice.NewAutocompleteHandler(dataApi, doseSpotService)
-
 	notificationManager := notify.NewManager(dataApi, snsClient, twilioCli, emailService,
 		conf.Twilio.FromNumber, conf.AlertEmail, conf.NotifiyConfigs, metricsRegistry.Scope("notify"))
-
-	// Initialize listeneres
-	doctor_queue.InitListeners(dataApi, notificationManager, metricsRegistry.Scope("doctor_queue"), conf.JBCQMinutesThreshold)
-	doctor_treatment_plan.InitListeners(dataApi)
-	notify.InitListeners(dataApi)
-	support.InitListeners(conf.Support.TechnicalSupportEmail, conf.Support.CustomerSupportEmail, notificationManager)
-	patient_case.InitListeners(dataApi, notificationManager)
-	patient_visit.InitListeners(dataApi)
-	demo.InitListeners(dataApi, conf.APISubdomain)
-	// Start worker to check for expired items in the global case queue
-	doctor_queue.StartClaimedItemsExpirationChecker(dataApi, metricsRegistry.Scope("doctor_queue"))
-
 	cloudStorageApi := api.NewCloudStorageService(awsAuth)
-	updatePatientBillingAddress := &apiservice.UpdatePatientAddressHandler{DataApi: dataApi, AddressType: apiservice.BILLING_ADDRESS_TYPE}
-	medicationStrengthSearchHandler := &apiservice.MedicationStrengthSearchHandler{DataApi: dataApi, ERxApi: doseSpotService}
-	newTreatmentHandler := &apiservice.NewTreatmentHandler{DataApi: dataApi, ERxApi: doseSpotService}
-	medicationDispenseUnitHandler := &apiservice.MedicationDispenseUnitsHandler{DataApi: dataApi}
-	pharmacySearchHandler := &apiservice.PharmacyTextSearchHandler{PharmacySearchService: surescriptsPharmacySearch, DataApi: dataApi, MapsService: mapsService}
-	pingHandler := apiservice.PingHandler(0)
-
-	staticContentHandler := &apiservice.StaticContentHandler{
-		DataApi:               dataApi,
-		ContentStorageService: cloudStorageApi,
-		BucketLocation:        conf.ContentBucket,
-		Region:                conf.AWSRegion,
-	}
-
-	doctorRefillRequestHandler := &apiservice.DoctorRefillRequestHandler{
-		DataApi:        dataApi,
-		ErxApi:         doseSpotService,
-		ErxStatusQueue: erxStatusQueue,
-	}
-
-	refillRequestDenialReasonsHandler := &apiservice.RefillRequestDenialReasonsHandler{
-		DataApi: dataApi,
-	}
-
 	stripeService := &stripe.StripeService{}
 	if conf.TestStripe.SecretKey != "" {
 		if conf.Environment == "prod" {
@@ -308,10 +266,21 @@ func buildRESTAPI(conf *Config, dataApi api.DataAPI, authAPI api.AuthAPI, stores
 		stripeService.SecretKey = conf.Stripe.SecretKey
 	}
 
-	patientCardsHandler := &apiservice.PatientCardsHandler{
-		DataApi:              dataApi,
-		PaymentApi:           stripeService,
-		AddressValidationApi: smartyStreetsService,
+	// Initialize listeneres
+	doctor_queue.InitListeners(dataApi, notificationManager, metricsRegistry.Scope("doctor_queue"), conf.JBCQMinutesThreshold)
+	doctor_treatment_plan.InitListeners(dataApi)
+	notify.InitListeners(dataApi)
+	support.InitListeners(conf.Support.TechnicalSupportEmail, conf.Support.CustomerSupportEmail, notificationManager)
+	patient_case.InitListeners(dataApi, notificationManager)
+	patient_visit.InitListeners(dataApi)
+	demo.InitListeners(dataApi, conf.APISubdomain)
+
+	// Start worker to check for expired items in the global case queue
+	doctor_queue.StartClaimedItemsExpirationChecker(dataApi, metricsRegistry.Scope("doctor_queue"))
+	if conf.ERxRouting {
+		app_worker.StartWorkerToUpdatePrescriptionStatusForPatient(dataApi, doseSpotService, erxStatusQueue, metricsRegistry.Scope("check_erx_status"))
+		app_worker.StartWorkerToCheckForRefillRequests(dataApi, doseSpotService, metricsRegistry.Scope("check_rx_refill_requests"), conf.Environment)
+		app_worker.StartWorkerToCheckRxErrors(dataApi, doseSpotService, metricsRegistry.Scope("check_rx_errors"))
 	}
 
 	mux := apiservice.NewAuthServeMux(authAPI, metricsRegistry.Scope("restapi"))
@@ -323,13 +292,13 @@ func buildRESTAPI(conf *Config, dataApi api.DataAPI, authAPI api.AuthAPI, stores
 	// Patient: Account related APIs
 	mux.Handle("/v1/patient", patient.NewSignupHandler(dataApi, authAPI, addressValidationWithCacheAndHack))
 	mux.Handle("/v1/patient/info", patient.NewUpdateHandler(dataApi))
-	mux.Handle("/v1/patient/address/billing", updatePatientBillingAddress)
-	mux.Handle("/v1/patient/pharmacy", apiservice.NewUpdatePatientPharmacyHandler(dataApi))
+	mux.Handle("/v1/patient/address/billing", patient.NewAddressHandler(dataApi, patient.BILLING_ADDRESS_TYPE))
+	mux.Handle("/v1/patient/pharmacy", patient.NewPharmacyHandler(dataApi))
 	mux.Handle("/v1/patient/alerts", patient_file.NewAlertsHandler(dataApi))
-	mux.Handle("/v1/patient/isauthenticated", apiservice.NewIsAuthenticatedHandler(authAPI))
+	mux.Handle("/v1/patient/isauthenticated", handlers.NewIsAuthenticatedHandler(authAPI))
 	mux.Handle("/v1/reset_password", passreset.NewForgotPasswordHandler(dataApi, authAPI, emailService, conf.Support.CustomerSupportEmail, conf.WebSubdomain))
-	mux.Handle("/v1/credit_card", patientCardsHandler)
-	mux.Handle("/v1/credit_card/default", patientCardsHandler)
+	mux.Handle("/v1/credit_card", patient.NewCardsHandler(dataApi, stripeService, smartyStreetsService))
+	mux.Handle("/v1/credit_card/default", patient.NewCardsHandler(dataApi, stripeService, smartyStreetsService))
 	mux.Handle("/v1/authenticate", patient.NewAuthenticationHandler(dataApi, authAPI, conf.StaticContentBaseUrl))
 	mux.Handle("/v1/logout", patient.NewAuthenticationHandler(dataApi, authAPI, conf.StaticContentBaseUrl))
 
@@ -342,8 +311,8 @@ func buildRESTAPI(conf *Config, dataApi api.DataAPI, authAPI api.AuthAPI, stores
 
 	mux.Handle("/v1/treatment_plan", treatment_plan.NewTreatmentPlanHandler(dataApi))
 	mux.Handle("/v1/treatment_guide", treatment_plan.NewTreatmentGuideHandler(dataApi))
-	mux.Handle("/v1/autocomplete", autocompleteHandler)
-	mux.Handle("/v1/pharmacy_search", pharmacySearchHandler)
+	mux.Handle("/v1/autocomplete", handlers.NewAutocompleteHandler(dataApi, doseSpotService))
+	mux.Handle("/v1/pharmacy_search", patient.NewPharmacySearchHandler(dataApi, surescriptsPharmacySearch))
 
 	// Patient: Home API
 	mux.Handle("/v1/patient/home", patient_case.NewHomeHandler(dataApi, authAPI, addressValidationWithCacheAndHack))
@@ -364,16 +333,16 @@ func buildRESTAPI(conf *Config, dataApi api.DataAPI, authAPI api.AuthAPI, stores
 	mux.Handle("/v1/case/messages/read", messages.NewReadHandler(dataApi))
 
 	// Doctor: Account APIs
-	mux.Handle("/v1/doctor/signup", apiservice.NewSignupDoctorHandler(dataApi, authAPI, conf.Environment))
+	mux.Handle("/v1/doctor/signup", doctor.NewSignupDoctorHandler(dataApi, authAPI, conf.Environment))
 	mux.Handle("/v1/doctor/authenticate", doctor.NewDoctorAuthenticationHandler(dataApi, authAPI))
-	mux.Handle("/v1/doctor/isauthenticated", apiservice.NewIsAuthenticatedHandler(authAPI))
+	mux.Handle("/v1/doctor/isauthenticated", handlers.NewIsAuthenticatedHandler(authAPI))
 	mux.Handle("/v1/doctor/queue", doctor_queue.NewQueueHandler(dataApi))
 
 	// Doctor: Prescription related APIs
-	mux.Handle("/v1/doctor/rx/error", apiservice.NewDoctorPrescriptionErrorHandler(dataApi))
-	mux.Handle("/v1/doctor/rx/error/resolve", apiservice.NewDoctorPrescriptionErrorIgnoreHandler(dataApi, doseSpotService))
-	mux.Handle("/v1/doctor/rx/refill/request", doctorRefillRequestHandler)
-	mux.Handle("/v1/doctor/rx/refill/denial_reasons", refillRequestDenialReasonsHandler)
+	mux.Handle("/v1/doctor/rx/error", doctor.NewPrescriptionErrorHandler(dataApi))
+	mux.Handle("/v1/doctor/rx/error/resolve", doctor.NewPrescriptionErrorIgnoreHandler(dataApi, doseSpotService))
+	mux.Handle("/v1/doctor/rx/refill/request", doctor.NewRefillRxHandler(dataApi, doseSpotService, erxStatusQueue))
+	mux.Handle("/v1/doctor/rx/refill/denial_reasons", doctor.NewRefillRxDenialReasonsHandler(dataApi))
 
 	mux.Handle("/v1/doctor/favorite_treatment_plans", doctor_treatment_plan.NewDoctorFavoriteTreatmentPlansHandler(dataApi))
 	mux.Handle("/v1/doctor/treatment/templates", doctor_treatment_plan.NewTreatmentTemplatesHandler(dataApi))
@@ -388,19 +357,19 @@ func buildRESTAPI(conf *Config, dataApi api.DataAPI, authAPI api.AuthAPI, stores
 	mux.Handle("/v1/doctor/pharmacy", doctor.NewPharmacySearchHandler(dataApi, doseSpotService))
 	mux.Handle("/v1/doctor/visit/review", patient_file.NewDoctorPatientVisitReviewHandler(dataApi))
 	mux.Handle("/v1/doctor/visit/diagnosis", patient_visit.NewDiagnosePatientHandler(dataApi, authAPI, conf.Environment))
-	mux.Handle("/v1/doctor/visit/treatment/new", newTreatmentHandler)
+	mux.Handle("/v1/doctor/visit/treatment/new", doctor_treatment_plan.NewMedicationSelectHandler(dataApi, doseSpotService))
 	mux.Handle("/v1/doctor/visit/treatment/treatments", doctor_treatment_plan.NewTreatmentsHandler(dataApi, doseSpotService))
-	mux.Handle("/v1/doctor/visit/treatment/medication_suggestions", autocompleteHandler)
-	mux.Handle("/v1/doctor/visit/treatment/medication_strengths", medicationStrengthSearchHandler)
-	mux.Handle("/v1/doctor/visit/treatment/medication_dispense_units", medicationDispenseUnitHandler)
+	mux.Handle("/v1/doctor/visit/treatment/medication_suggestions", handlers.NewAutocompleteHandler(dataApi, doseSpotService))
+	mux.Handle("/v1/doctor/visit/treatment/medication_strengths", doctor_treatment_plan.NewMedicationStrengthSearchHandler(dataApi, doseSpotService))
+	mux.Handle("/v1/doctor/visit/treatment/medication_dispense_units", doctor_treatment_plan.NewMedicationDispenseUnitsHandler(dataApi))
 	mux.Handle("/v1/doctor/visit/regimen", doctor_treatment_plan.NewRegimenHandler(dataApi))
 	mux.Handle("/v1/doctor/visit/advice", doctor_treatment_plan.NewAdviceHandler(dataApi))
-	mux.Handle("/v1/doctor/saved_messages", apiservice.NewDoctorSavedMessageHandler(dataApi))
+	mux.Handle("/v1/doctor/saved_messages", doctor_treatment_plan.NewSavedMessageHandler(dataApi))
 	mux.Handle("/v1/doctor/patient/case/claim", doctor_queue.NewClaimPatientCaseAccessHandler(dataApi, metricsRegistry.Scope("doctor_queue")))
 
 	// Miscellaneous APIs
-	mux.Handle("/v1/content", staticContentHandler)
-	mux.Handle("/v1/ping", pingHandler)
+	mux.Handle("/v1/content", handlers.NewStaticContentHandler(dataApi, cloudStorageApi, conf.ContentBucket, conf.AWSRegion))
+	mux.Handle("/v1/ping", handlers.NewPingHandler())
 	mux.Handle("/v1/photo", photos.NewHandler(dataApi, stores["photos"]))
 	mux.Handle("/v1/layouts/upload", layout.NewLayoutUploadHandler(dataApi))
 	mux.Handle("/v1/app_event", app_event.NewHandler())
@@ -429,12 +398,6 @@ func buildRESTAPI(conf *Config, dataApi api.DataAPI, authAPI api.AuthAPI, stores
 	if conf.Environment != "prod" {
 		mux.Handle("/v1/doctor/demo/patient_visit", demo.NewHandler(dataApi, cloudStorageApi, conf.AWSRegion, conf.Environment))
 		mux.Handle("/v1/doctor/demo/favorite_treatment_plan", demo.NewFavoriteTreatmentPlanHandler(dataApi))
-	}
-
-	if conf.ERxRouting {
-		app_worker.StartWorkerToUpdatePrescriptionStatusForPatient(dataApi, doseSpotService, erxStatusQueue, metricsRegistry.Scope("check_erx_status"))
-		app_worker.StartWorkerToCheckForRefillRequests(dataApi, doseSpotService, metricsRegistry.Scope("check_rx_refill_requests"), conf.Environment)
-		app_worker.StartWorkerToCheckRxErrors(dataApi, doseSpotService, metricsRegistry.Scope("check_rx_errors"))
 	}
 
 	// This helps to ensure that we are only surfacing errors to client in the dev environment

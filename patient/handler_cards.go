@@ -55,7 +55,7 @@ func (p *cardsHandler) ServeHTTP(w http.ResponseWriter, r *http.Request) {
 }
 
 func (p *cardsHandler) getCardsForPatient(w http.ResponseWriter, r *http.Request) {
-	patient, err := p.dataAPI.GetPatientFromAccountId(GetContext(r).AccountId)
+	patient, err := p.dataAPI.GetPatientFromAccountId(apiservice.GetContext(r).AccountId)
 	if err != nil {
 		apiservice.WriteError(err, w, r)
 		return
@@ -83,7 +83,7 @@ func (p *cardsHandler) makeCardDefaultForPatient(w http.ResponseWriter, r *http.
 		return
 	}
 
-	patient, err := p.dataAPI.GetPatientFromAccountId(GetContext(r).AccountId)
+	patient, err := p.dataAPI.GetPatientFromAccountId(apiservice.GetContext(r).AccountId)
 	if err != nil {
 		apiservice.WriteError(err, w, r)
 		return
@@ -147,7 +147,7 @@ func (p *cardsHandler) deleteCardForPatient(w http.ResponseWriter, r *http.Reque
 		return
 	}
 
-	patient, err := p.dataAPI.GetPatientFromAccountId(GetContext(r).AccountId)
+	patient, err := p.dataAPI.GetPatientFromAccountId(apiservice.GetContext(r).AccountId)
 	if err != nil {
 		apiservice.WriteError(err, w, r)
 		return
@@ -166,7 +166,7 @@ func (p *cardsHandler) deleteCardForPatient(w http.ResponseWriter, r *http.Reque
 
 	// mark the card as inactive instead of deleting it initially so that we have room to identify
 	// situations where the call fails and things are left in an inconsistent state
-	if err := p.DataApi.MarkCardInactiveForPatient(patient.PatientId.Int64(), card); err != nil {
+	if err := p.dataAPI.MarkCardInactiveForPatient(patient.PatientId.Int64(), card); err != nil {
 		apiservice.WriteError(err, w, r)
 		return
 	}
@@ -230,7 +230,7 @@ func (p *cardsHandler) addCardForPatient(w http.ResponseWriter, r *http.Request)
 	}
 
 	//  look up the payment service customer id for the patient
-	patient, err := p.dataAPI.GetPatientFromAccountId(GetContext(r).AccountId)
+	patient, err := p.dataAPI.GetPatientFromAccountId(apiservice.GetContext(r).AccountId)
 	if err != nil {
 		apiservice.WriteError(err, w, r)
 		return
@@ -329,7 +329,7 @@ func (p *cardsHandler) addCardForPatient(w http.ResponseWriter, r *http.Request)
 }
 
 func (p *cardsHandler) getCardsAndReconcileWithPaymentService(patient *common.Patient) ([]*common.Card, error) {
-	localCards, err := p.DataApi.GetCardsForPatient(patient.PatientId.Int64())
+	localCards, err := p.dataAPI.GetCardsForPatient(patient.PatientId.Int64())
 	if err != nil {
 		return nil, err
 	}

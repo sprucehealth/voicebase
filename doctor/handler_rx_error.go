@@ -4,15 +4,16 @@ import (
 	"net/http"
 
 	"github.com/sprucehealth/backend/api"
+	"github.com/sprucehealth/backend/apiservice"
 	"github.com/sprucehealth/backend/common"
 )
 
-type doctorPrescriptionErrorHandler struct {
+type prescriptionErrorHandler struct {
 	dataAPI api.DataAPI
 }
 
-func NewDoctorPrescriptionErrorHandler(dataAPI api.DataAPI) http.Handler {
-	return &doctorPrescriptionErrorHandler{
+func NewPrescriptionErrorHandler(dataAPI api.DataAPI) http.Handler {
+	return &prescriptionErrorHandler{
 		dataAPI: dataAPI,
 	}
 }
@@ -27,12 +28,12 @@ type DoctorPrescriptionErrorResponse struct {
 	UnlinkedDNTFTreatment *common.Treatment `json:"unlinked_dntf_treatment,omitempty"`
 }
 
-func (d *doctorPrescriptionErrorHandler) IsAuthorized(r *http.Request) (bool, error) {
-	ctxt := GetContext(r)
+func (d *prescriptionErrorHandler) IsAuthorized(r *http.Request) (bool, error) {
+	ctxt := apiservice.GetContext(r)
 
 	requestData := &DoctorPrescriptionErrorRequestData{}
-	if err := DecodeRequestData(requestData, r); err != nil {
-		return false, NewValidationError(err.Error(), r)
+	if err := apiservice.DecodeRequestData(requestData, r); err != nil {
+		return false, apiservice.NewValidationError(err.Error(), r)
 	}
 
 	var treatment *common.Treatment
@@ -50,31 +51,30 @@ func (d *doctorPrescriptionErrorHandler) IsAuthorized(r *http.Request) (bool, er
 	}
 
 	if treatment != nil && !treatment.Patient.IsUnlinked {
-		if err := ValidateDoctorAccessToPatientFile(treatment.Doctor.DoctorId.Int64(), treatment.PatientId.Int64(), d.dataAPI); err != nil {
+		if err := apiservice.ValidateDoctorAccessToPatientFile(treatment.Doctor.DoctorId.Int64(), treatment.PatientId.Int64(), d.dataAPI); err != nil {
 			return false, err
 		}
 	}
 
-	ctxt.RequestCache[RequestData] = requestData
-	ctxt.RequestCache[Treatment] = treatment
+	ctxt.RequestCache[apiservice.RequestData] = requestData
+	ctxt.RequestCache[apiservice.Treatment] = treatment
 
 	return true, nil
 }
 
-func (d *doctorPrescriptionErrorHandler) ServeHTTP(w http.ResponseWriter, r *http.Request) {
-	if r.Method != HTTP_GET {
+func (d *prescriptionErrorHandler) ServeHTTP(w http.ResponseWriter, r *http.Request) {
+	if r.Method != apiservice.HTTP_GET {
 		w.WriteHeader(http.StatusNotFound)
 		return
 	}
 
-	treatment := GetContext(r).RequestCache[Treatment]
+	treatment := apiservice.GetContext(r).RequestCache[apiservice.Treatment]
 	if treatment == nil {
-		WriteResourceNotFoundError("no treatment found", w, r)
+		apiservice.WriteResourceNotFoundError("no treatment found", w, r)
 		return
 	}
 
-	WriteJSONToHTTPResponseWriter(w, http.StatusOK, &DoctorPrescriptionErrorResponse{
+	apiservice.WriteJSON(w, &DoctorPrescriptionErrorResponse{
 		Treatment: treatment.(*common.Treatment),
 	})
-
 }

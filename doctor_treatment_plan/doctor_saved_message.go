@@ -5,9 +5,10 @@ import (
 	"strconv"
 
 	"github.com/sprucehealth/backend/api"
+	"github.com/sprucehealth/backend/apiservice"
 )
 
-type doctorSavedMessageHandler struct {
+type savedMessageHandler struct {
 	dataAPI api.DataAPI
 }
 
@@ -25,21 +26,21 @@ type doctorSavedMessageRequestData struct {
 	TreatmentPlanID int64 `schema:"treatment_plan_id"`
 }
 
-func NewDoctorSavedMessageHandler(dataAPI api.DataAPI) http.Handler {
-	return &doctorSavedMessageHandler{
+func NewSavedMessageHandler(dataAPI api.DataAPI) http.Handler {
+	return &savedMessageHandler{
 		dataAPI: dataAPI,
 	}
 }
 
-func (h *doctorSavedMessageHandler) ServeHTTP(w http.ResponseWriter, r *http.Request) {
-	ctx := GetContext(r)
+func (h *savedMessageHandler) ServeHTTP(w http.ResponseWriter, r *http.Request) {
+	ctx := apiservice.GetContext(r)
 	var doctorID int64
 	switch ctx.Role {
 	case api.DOCTOR_ROLE:
 		var err error
 		doctorID, err = h.dataAPI.GetDoctorIdFromAccountId(ctx.AccountId)
 		if err != nil {
-			WriteError(err, w, r)
+			apiservice.WriteError(err, w, r)
 			return
 		}
 	case api.ADMIN_ROLE:
@@ -50,29 +51,29 @@ func (h *doctorSavedMessageHandler) ServeHTTP(w http.ResponseWriter, r *http.Req
 	}
 
 	switch r.Method {
-	case HTTP_GET:
+	case apiservice.HTTP_GET:
 		h.get(w, r, doctorID, ctx)
-	case HTTP_PUT:
+	case apiservice.HTTP_PUT:
 		h.put(w, r, doctorID, ctx)
 	default:
 		http.NotFound(w, r)
 	}
 }
 
-func (h *doctorSavedMessageHandler) get(w http.ResponseWriter, r *http.Request, doctorID int64, ctx *Context) {
+func (h *savedMessageHandler) get(w http.ResponseWriter, r *http.Request, doctorID int64, ctx *apiservice.Context) {
 	if doctorID == 0 {
 		// Admin access
 		var err error
 		doctorID, err = strconv.ParseInt(r.FormValue("doctor_id"), 10, 64)
 		if err != nil {
-			WriteUserError(w, http.StatusBadRequest, "doctor_id is required")
+			apiservice.WriteValidationError("doctor_id is required", w, r)
 			return
 		}
 	}
 
 	requestData := &doctorSavedMessageRequestData{}
-	if err := DecodeRequestData(requestData, r); err != nil {
-		WriteDeveloperError(w, http.StatusBadRequest, "Unable to parse input parameters: "+err.Error())
+	if err := apiservice.DecodeRequestData(requestData, r); err != nil {
+		apiservice.WriteValidationError(err.Error(), w, r)
 		return
 	}
 
@@ -89,23 +90,24 @@ func (h *doctorSavedMessageHandler) get(w http.ResponseWriter, r *http.Request, 
 	if err == api.NoRowsError {
 		msg = ""
 	} else if err != nil {
-		WriteError(err, w, r)
+		apiservice.WriteError(err, w, r)
 		return
 	}
-	WriteJSONToHTTPResponseWriter(w, http.StatusOK, &doctorSavedMessageGetResponse{Message: msg})
+
+	apiservice.WriteJSON(w, &doctorSavedMessageGetResponse{Message: msg})
 }
 
-func (h *doctorSavedMessageHandler) put(w http.ResponseWriter, r *http.Request, doctorID int64, ctx *Context) {
+func (h *savedMessageHandler) put(w http.ResponseWriter, r *http.Request, doctorID int64, ctx *apiservice.Context) {
 	var req DoctorSavedMessagePutRequest
-	if err := DecodeRequestData(&req, r); err != nil {
-		WriteValidationError(err.Error(), w, r)
+	if err := apiservice.DecodeRequestData(&req, r); err != nil {
+		apiservice.WriteValidationError(err.Error(), w, r)
 		return
 	}
 	if doctorID == 0 {
 		// Admin access
 		doctorID = req.DoctorID
 		if doctorID == 0 {
-			WriteValidationError("doctor_id is required", w, r)
+			apiservice.WriteValidationError("doctor_id is required", w, r)
 			return
 		}
 	}
@@ -113,16 +115,16 @@ func (h *doctorSavedMessageHandler) put(w http.ResponseWriter, r *http.Request, 
 	if req.TreatmentPlanID == 0 {
 		// Set doctor's standard response
 		if err := h.dataAPI.SetSavedMessageForDoctor(doctorID, req.Message); err != nil {
-			WriteError(err, w, r)
+			apiservice.WriteError(err, w, r)
 			return
 		}
 	} else {
 		// Update message for a treatment plan
 		if err := h.dataAPI.SetTreatmentPlanMessage(doctorID, req.TreatmentPlanID, req.Message); err != nil {
-			WriteError(err, w, r)
+			apiservice.WriteError(err, w, r)
 			return
 		}
 	}
 
-	WriteJSONSuccess(w)
+	apiservice.WriteJSONSuccess(w)
 }

@@ -7,29 +7,39 @@
 //		Content-Type: text/plain
 //		Content: pong
 //		Status: HTTP/1.1 200 OK
-package apiservice
+package handlers
 
 import (
 	"net/http"
+
+	"github.com/sprucehealth/backend/apiservice"
 )
 
 const (
-	Pong = "pong"
+	pong = "pong"
 )
 
-type PingHandler int
+type pingHandler int
 
-func (h PingHandler) ServeHTTP(w http.ResponseWriter, r *http.Request) {
-	if r.Method != HTTP_GET {
+func NewPingHandler() http.Handler {
+	return pingHandler(0)
+}
+
+func (h pingHandler) IsAuthorized(r *http.Request) (bool, error) {
+	return true, nil
+}
+
+func (h pingHandler) ServeHTTP(w http.ResponseWriter, r *http.Request) {
+	if r.Method != apiservice.HTTP_GET {
 		w.WriteHeader(http.StatusNotFound)
 		return
 	}
 	w.Header().Set("Content-Type", "text/plain")
-	if _, err := w.Write([]byte(Pong)); err != nil {
+	if _, err := w.Write([]byte(pong)); err != nil {
 		w.WriteHeader(http.StatusInternalServerError)
 	}
 }
 
-func (h PingHandler) NonAuthenticated() bool {
+func (h pingHandler) NonAuthenticated() bool {
 	return true
 }

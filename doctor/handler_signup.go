@@ -6,9 +6,11 @@ import (
 	"strings"
 
 	"github.com/sprucehealth/backend/api"
+	"github.com/sprucehealth/backend/apiservice"
 	"github.com/sprucehealth/backend/common"
 	"github.com/sprucehealth/backend/encoding"
-	"github.com/sprucehealth/backend/libs/golog"
+	"github.com/sprucehealth/backend/environment"
+	"github.com/sprucehealth/backend/libs/httputil"
 	"github.com/sprucehealth/backend/third_party/github.com/dchest/validator"
 )
 
@@ -18,12 +20,12 @@ type signupDoctorHandler struct {
 	environment string
 }
 
-func NewSignupDoctorHandler(dataAPI api.DataAPI, authAPI api.AuthAPI, environment string) *signupDoctorHandler {
-	return &signupDoctorHandler{
+func NewSignupDoctorHandler(dataAPI api.DataAPI, authAPI api.AuthAPI, environment string) http.Handler {
+	return httputil.SupportedMethods(&signupDoctorHandler{
 		dataAPI:     dataAPI,
 		authAPI:     authAPI,
 		environment: environment,
-	}
+	}, []string{apiservice.HTTP_POST})
 }
 
 type DoctorSignedupResponse struct {
@@ -34,6 +36,10 @@ type DoctorSignedupResponse struct {
 
 func (d *signupDoctorHandler) NonAuthenticated() bool {
 	return true
+}
+
+func (d *signupDoctorHandler) IsAuthorized(r *http.Request) (bool, error) {
+	return true, nil
 }
 
 type SignupDoctorRequestData struct {
@@ -60,20 +66,14 @@ type SignupDoctorRequestData struct {
 }
 
 func (d *signupDoctorHandler) ServeHTTP(w http.ResponseWriter, r *http.Request) {
-	if r.Method != HTTP_POST {
-		w.WriteHeader(http.StatusNotFound)
-		return
-	}
-
 	var requestData SignupDoctorRequestData
-	if err := DecodeRequestData(&requestData, r); err != nil {
-		WriteDeveloperError(w, http.StatusBadRequest, "Unable to parse input to signup doctor: "+err.Error())
+	if err := apiservice.DecodeRequestData(&requestData, r); err != nil {
+		apiservice.WriteValidationError(err.Error(), w, r)
 		return
 
 	}
 	if !validator.IsValidEmail(requestData.Email) {
-		WriteUserError(w, http.StatusBadRequest, "Please enter a valid email address")
-		golog.Infof("Invalid email during doctor signup: %s", requestData.Email)
+		apiservice.WriteValidationError("Please enter a valid email address", w, r)
 		return
 	}
 
@@ -81,7 +81,7 @@ func (d *signupDoctorHandler) ServeHTTP(w http.ResponseWriter, r *http.Request) 
 	// Note that the date will be returned as MM/DD/YYYY
 	dobParts := strings.Split(requestData.DOB, encoding.DOBSeparator)
 	if len(dobParts) != 3 {
-		WriteUserError(w, http.StatusBadRequest, "DOB not valid. Required format "+encoding.DOBFormat)
+		apiservice.WriteValidationError("DOB not valid. Required format "+encoding.DOBFormat, w, r)
 		return
 	}
 
@@ -106,10 +106,10 @@ func (d *signupDoctorHandler) ServeHTTP(w http.ResponseWriter, r *http.Request) 
 	// first, create an account for the user
 	accountID, token, err := d.authAPI.SignUp(requestData.Email, requestData.Password, api.DOCTOR_ROLE)
 	if err == api.LoginAlreadyExists {
-		WriteUserError(w, http.StatusBadRequest, "An account with the specified email address already exists.")
+		apiservice.WriteValidationError("An account with the specified email address already exists.", w, r)
 		return
 	} else if err != nil {
-		WriteDeveloperError(w, http.StatusInternalServerError, "Internal Servier Error. Unable to register doctor: "+err.Error())
+		apiservice.WriteError(err, w, r)
 		return
 	}
 
@@ -141,26 +141,26 @@ func (d *signupDoctorHandler) ServeHTTP(w http.ResponseWriter, r *http.Request) 
 	// then, register the signed up user as a doctor
 	doctorId, err := d.dataAPI.RegisterDoctor(doctorToRegister)
 	if err != nil {
-		WriteDeveloperError(w, http.StatusInternalServerError, "Something went wrong when trying to sign up doctor: "+err.Error())
+		apiservice.WriteError(err, w, r)
 		return
 	}
 
 	// only add the doctor as being eligible in CA for non-prod environments
-	if d.environment != "prod" {
+	if !environment.IsProd() {
 
-		careProvidingStateId, err := d.dataAPI.GetCareProvidingStateId("CA", HEALTH_CONDITION_ACNE_ID)
+		careProvidingStateId, err := d.dataAPI.GetCareProvidingStateId("CA", apiservice.HEALTH_CONDITION_ACNE_ID)
 		if err != nil {
-			WriteError(err, w, r)
+			apiservice.WriteError(err, w, r)
 			return
 		}
 
 		if err := d.dataAPI.MakeDoctorElligibleinCareProvidingState(careProvidingStateId, doctorId); err != nil {
-			WriteError(err, w, r)
+			apiservice.WriteError(err, w, r)
 			return
 		}
 	}
 
-	WriteJSONToHTTPResponseWriter(w, http.StatusOK, &DoctorSignedupResponse{
+	apiservice.WriteJSON(w, &DoctorSignedupResponse{
 		Token:    token,
 		DoctorId: doctorId,
 		PersonId: doctorToRegister.PersonId,

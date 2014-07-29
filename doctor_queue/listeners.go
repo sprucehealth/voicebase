@@ -4,10 +4,10 @@ import (
 	"errors"
 
 	"github.com/sprucehealth/backend/api"
-	"github.com/sprucehealth/backend/apiservice"
 	"github.com/sprucehealth/backend/app_event"
 	"github.com/sprucehealth/backend/app_worker"
 	"github.com/sprucehealth/backend/common"
+	"github.com/sprucehealth/backend/doctor"
 	"github.com/sprucehealth/backend/doctor_treatment_plan"
 	"github.com/sprucehealth/backend/libs/dispatch"
 	"github.com/sprucehealth/backend/libs/golog"
@@ -102,7 +102,7 @@ func InitListeners(dataAPI api.DataAPI, notificationManager *notify.Notification
 		return nil
 	})
 
-	dispatch.Default.Subscribe(func(ev *apiservice.RxTransmissionErrorResolvedEvent) error {
+	dispatch.Default.Subscribe(func(ev *doctor.RxTransmissionErrorResolvedEvent) error {
 		// Insert item into appropriate doctor queue to indicate resolution of transmission error
 		var eventType string
 		switch ev.EventType {
@@ -153,7 +153,7 @@ func InitListeners(dataAPI api.DataAPI, notificationManager *notify.Notification
 		return nil
 	})
 
-	dispatch.Default.Subscribe(func(ev *apiservice.RefillRequestResolvedEvent) error {
+	dispatch.Default.Subscribe(func(ev *doctor.RefillRequestResolvedEvent) error {
 		// Move the queue item for the doctor from the ongoing to the completed state
 		if err := dataAPI.ReplaceItemInDoctorQueue(api.DoctorQueueItem{
 			DoctorId:  ev.DoctorId,

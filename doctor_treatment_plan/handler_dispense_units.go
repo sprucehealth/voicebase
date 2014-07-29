@@ -4,10 +4,17 @@ import (
 	"net/http"
 
 	"github.com/sprucehealth/backend/api"
+	"github.com/sprucehealth/backend/apiservice"
 )
 
-type MedicationDispenseUnitsHandler struct {
-	DataApi api.DataAPI
+type medicationDispenseUnitsHandler struct {
+	dataAPI api.DataAPI
+}
+
+func NewMedicationDispenseUnitsHandler(dataAPI api.DataAPI) http.Handler {
+	return &medicationDispenseUnitsHandler{
+		dataAPI: dataAPI,
+	}
 }
 
 type MedicationDispenseUnitsResponse struct {
@@ -19,10 +26,10 @@ type MedicationDispenseUnitItem struct {
 	Text string `json:"text"`
 }
 
-func (m *MedicationDispenseUnitsHandler) ServeHTTP(w http.ResponseWriter, r *http.Request) {
-	dispenseUnitIds, dispenseUnits, err := m.DataApi.GetMedicationDispenseUnits(api.EN_LANGUAGE_ID)
+func (m *medicationDispenseUnitsHandler) ServeHTTP(w http.ResponseWriter, r *http.Request) {
+	dispenseUnitIds, dispenseUnits, err := m.dataAPI.GetMedicationDispenseUnits(api.EN_LANGUAGE_ID)
 	if err != nil {
-		WriteDeveloperError(w, http.StatusInternalServerError, "Unable to retrieve dispense units from database: "+err.Error())
+		apiservice.WriteError(err, w, r)
 		return
 	}
 	medicationDispenseUnitResponse := &MedicationDispenseUnitsResponse{}
@@ -34,6 +41,6 @@ func (m *MedicationDispenseUnitsHandler) ServeHTTP(w http.ResponseWriter, r *htt
 		medicationDispenseUnitResponse.DispenseUnits[i] = dispenseUnitItem
 	}
 
-	WriteJSONToHTTPResponseWriter(w, http.StatusOK, medicationDispenseUnitResponse)
+	apiservice.WriteJSON(w, medicationDispenseUnitResponse)
 
 }

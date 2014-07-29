@@ -20,10 +20,14 @@ type DoctorAuthenticationResponse struct {
 }
 
 func NewDoctorAuthenticationHandler(dataAPI api.DataAPI, authAPI api.AuthAPI) http.Handler {
-	return httputil.SupportedMethods(apiservice.AuthorizeHandler(&doctorAuthenticationHandler{
+	return httputil.SupportedMethods(&doctorAuthenticationHandler{
 		dataAPI: dataAPI,
 		authAPI: authAPI,
-	}), []string{apiservice.HTTP_GET})
+	}, []string{apiservice.HTTP_GET})
+}
+
+func (d *doctorAuthenticationHandler) IsAuthorized(r *http.Request) (bool, error) {
+	return true, nil
 }
 
 func (d *doctorAuthenticationHandler) NonAuthenticated() bool {

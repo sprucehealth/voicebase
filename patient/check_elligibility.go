@@ -15,14 +15,18 @@ type checkCareProvidingElligibilityHandler struct {
 }
 
 func NewCheckCareProvidingEligibilityHandler(dataAPI api.DataAPI, addressValidationAPI address.AddressValidationAPI) http.Handler {
-	return httputil.SupportedMethods(apiservice.AuthorizeHandler(&checkCareProvidingElligibilityHandler{
+	return httputil.SupportedMethods(&checkCareProvidingElligibilityHandler{
 		dataAPI:              dataAPI,
 		addressValidationAPI: addressValidationAPI,
-	}), []string{apiservice.HTTP_GET})
+	}, []string{apiservice.HTTP_GET})
 }
 
 type CheckCareProvidingElligibilityRequestData struct {
 	Zipcode string `schema:"zip_code,required"`
+}
+
+func (c *checkCareProvidingElligibilityHandler) IsAuthorized(r *http.Request) (bool, error) {
+	return true, nil
 }
 
 func (c *checkCareProvidingElligibilityHandler) NonAuthenticated() bool {
