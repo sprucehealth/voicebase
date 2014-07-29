@@ -36,7 +36,7 @@ func InitListeners(dataAPI api.DataAPI) {
 			}
 			patientAnswersForQuestions, err := dataAPI.GetPatientAnswersForQuestions(questionIds, ev.PatientId, ev.VisitId)
 			if err != nil {
-				golog.Errorf("Unable to get patient answers for questions: %s", patientAnswersForQuestions)
+				golog.Errorf("Unable to get patient answers for questions: %+v", patientAnswersForQuestions)
 				return
 			}
 

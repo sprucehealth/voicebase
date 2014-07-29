@@ -99,7 +99,7 @@ func (d *DataService) queryDoctor(where string, queryParams ...interface{}) (*co
 		SELECT doctor.id, doctor.account_id, phone, first_name, last_name, middle_name, suffix,
 			prefix, short_title, long_title, short_display_name, long_display_name, account.email, gender, dob_year, dob_month, dob_day, doctor.status, clinician_id,
 			address.address_line_1,	address.address_line_2, address.city, address.state,
-			address.zip_code, person.id, npi_number
+			address.zip_code, person.id, npi_number, dea_number
 		FROM doctor
 		INNER JOIN person ON person.role_type_id = %d AND person.role_id = doctor.id
 		INNER JOIN account ON account.id = doctor.account_id
@@ -115,13 +115,13 @@ func (d *DataService) queryDoctor(where string, queryParams ...interface{}) (*co
 	var dobYear, dobMonth, dobDay int
 	var personId int64
 	var clinicianId sql.NullInt64
-	var NPI, shortDisplayName, longDisplayName sql.NullString
+	var NPI, DEA, shortDisplayName, longDisplayName sql.NullString
 
 	err := row.Scan(
 		&doctorId, &accountId, &cellPhoneNumber, &firstName, &lastName,
 		&middleName, &suffix, &prefix, &shortTitle, &longTitle, &shortDisplayName, &longDisplayName, &email, &gender, &dobYear, &dobMonth,
 		&dobDay, &status, &clinicianId, &addressLine1, &addressLine2,
-		&city, &state, &zipCode, &personId, &NPI)
+		&city, &state, &zipCode, &personId, &NPI, &DEA)
 	if err != nil {
 		return nil, err
 	}
@@ -152,6 +152,7 @@ func (d *DataService) queryDoctor(where string, queryParams ...interface{}) (*co
 		DOB:      encoding.DOB{Year: dobYear, Month: dobMonth, Day: dobDay},
 		PersonId: personId,
 		NPI:      NPI.String,
+		DEA:      DEA.String,
 	}
 
 	// populate the doctor urls
@@ -1265,8 +1266,8 @@ func getInstructionsFromRows(rows *sql.Rows) ([]*common.DoctorInstructionItem, e
 	return drugInstructions, rows.Err()
 }
 
-func (d *DataService) SetDoctorNPI(doctorID int64, npi string) error {
-	_, err := d.db.Exec(`UPDATE doctor SET npi_number = ? WHERE id = ?`, npi, doctorID)
+func (d *DataService) SetDoctorNPIAndDEA(doctorID int64, npi string, dea string) error {
+	_, err := d.db.Exec(`UPDATE doctor SET npi_number = ?, dea_number = ? WHERE id = ?`, npi, dea, doctorID)
 	return err
 }
 
