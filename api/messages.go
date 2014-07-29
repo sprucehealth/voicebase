@@ -163,6 +163,10 @@ func (d *DataService) CreateCaseMessage(msg *common.CaseMessage) (int64, error) 
 			if err := d.claimPhoto(tx, a.ItemID, common.ClaimerTypeConversationMessage, msg.ID); err != nil {
 				return 0, err
 			}
+		case common.AttachmentTypeAudio:
+			if err := d.claimAudio(tx, a.ItemID, common.ClaimerTypeConversationMessage, msg.ID); err != nil {
+				return 0, err
+			}
 		}
 	}
 

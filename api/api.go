@@ -368,6 +368,12 @@ type PhotoAPI interface {
 	ClaimPhoto(photoId int64, claimerType string, claimerId int64) error
 }
 
+type AudioAPI interface {
+	AddAudio(uploaderId int64, url, mimetype string) (int64, error)
+	GetAudio(audioID int64) (*common.Audio, error)
+	ClaimAudio(audioID int64, claimerType string, claimerId int64) error
+}
+
 type ResourceLibraryAPI interface {
 	ListResourceGuideSections() ([]*common.ResourceGuideSection, error)
 	GetResourceGuide(id int64) (*common.ResourceGuide, error)
@@ -411,6 +417,7 @@ type DataAPI interface {
 	CaseMessageAPI
 	NotificationAPI
 	PhotoAPI
+	AudioAPI
 	FavoriteTreatmentPlanAPI
 	ResourceLibraryAPI
 	CaseRouteAPI
