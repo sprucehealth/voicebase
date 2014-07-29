@@ -1,9 +1,10 @@
 package apiservice
 
 import (
-	"github.com/sprucehealth/backend/api"
 	"net/http"
 	"strconv"
+
+	"github.com/sprucehealth/backend/api"
 )
 
 type doctorSavedMessageHandler struct {
@@ -11,8 +12,8 @@ type doctorSavedMessageHandler struct {
 }
 
 type DoctorSavedMessagePutRequest struct {
-	DoctorID        int64  `json:"doctor_id"`
-	TreatmentPlanID int64  `json:"treatment_plan_id"`
+	DoctorID        int64  `json:"doctor_id,string"`
+	TreatmentPlanID int64  `json:"treatment_plan_id,string"`
 	Message         string `json:"message"`
 }
 
