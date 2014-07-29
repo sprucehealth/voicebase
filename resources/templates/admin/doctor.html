@@ -14,6 +14,7 @@
 	<table class="table">
 		<tbody>
 			<tr><td>NPI</td><td>{{.Doctor.NPI}}</td></tr>
+			<tr><td>DEA</td><td>{{.Doctor.DEA}}</td></tr>
 			{{range $name, $value := .Attributes}}
 				<tr><td>{{$name}}</td><td>{{$value}}</td></tr>
 			{{end}}

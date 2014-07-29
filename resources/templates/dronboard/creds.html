@@ -38,6 +38,11 @@ $(function() {
 			<input required type="text" id="NPI" name="NPI" value="{{.Form.NPI}}" class="form-control">
 		</div>
 
+		<div class="form-group {{if .FormErrors.DEA}}has-error has-feedback{{end}}">
+			<label class="control-label" for="DEA">DEA Number</label>
+			<input required type="text" id="DEA" name="DEA" value="{{.Form.DEA}}" class="form-control">
+		</div>
+
 		<label class="control-label">States in which you hold a license to practice medicine</label>
 
 		{{if .FormErrors.StateLicenses}}

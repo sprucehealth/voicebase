@@ -102,6 +102,7 @@ type Doctor struct {
 	PersonId            int64                `json:"person_id"`
 	PromptStatus        PushPromptStatus     `json:"prompt_status"`
 	NPI                 string               `json:"npi,omitempty"`
+	DEA                 string               `json:"dea,omitempty"`
 }
 
 const (
