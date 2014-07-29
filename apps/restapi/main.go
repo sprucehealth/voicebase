@@ -21,6 +21,7 @@ import (
 	"github.com/sprucehealth/backend/common"
 	"github.com/sprucehealth/backend/common/config"
 	"github.com/sprucehealth/backend/demo"
+	"github.com/sprucehealth/backend/doctor"
 	"github.com/sprucehealth/backend/doctor_queue"
 	"github.com/sprucehealth/backend/doctor_treatment_plan"
 	"github.com/sprucehealth/backend/email"
@@ -273,9 +274,6 @@ func buildRESTAPI(conf *Config, dataApi api.DataAPI, authAPI api.AuthAPI, stores
 	doctor_queue.StartClaimedItemsExpirationChecker(dataApi, metricsRegistry.Scope("doctor_queue"))
 
 	cloudStorageApi := api.NewCloudStorageService(awsAuth)
-	checkElligibilityHandler := &apiservice.CheckCareProvidingElligibilityHandler{DataApi: dataApi,
-		AddressValidationApi: addressValidationWithCacheAndHack,
-		StaticContentUrl:     conf.StaticContentBaseUrl}
 	updatePatientBillingAddress := &apiservice.UpdatePatientAddressHandler{DataApi: dataApi, AddressType: apiservice.BILLING_ADDRESS_TYPE}
 	medicationStrengthSearchHandler := &apiservice.MedicationStrengthSearchHandler{DataApi: dataApi, ERxApi: doseSpotService}
 	newTreatmentHandler := &apiservice.NewTreatmentHandler{DataApi: dataApi, ERxApi: doseSpotService}
@@ -288,15 +286,6 @@ func buildRESTAPI(conf *Config, dataApi api.DataAPI, authAPI api.AuthAPI, stores
 		ContentStorageService: cloudStorageApi,
 		BucketLocation:        conf.ContentBucket,
 		Region:                conf.AWSRegion,
-	}
-
-	doctorPrescriptionErrorHandler := &apiservice.DoctorPrescriptionErrorHandler{
-		DataApi: dataApi,
-	}
-
-	doctorPrescriptionErrorIgnoreHandler := &apiservice.DoctorPrescriptionErrorIgnoreHandler{
-		DataApi: dataApi,
-		ErxApi:  doseSpotService,
 	}
 
 	doctorRefillRequestHandler := &apiservice.DoctorRefillRequestHandler{
@@ -325,11 +314,6 @@ func buildRESTAPI(conf *Config, dataApi api.DataAPI, authAPI api.AuthAPI, stores
 		AddressValidationApi: smartyStreetsService,
 	}
 
-	doctorPharmacySearchHandler := &apiservice.DoctorPharmacySearchHandler{
-		DataApi: dataApi,
-		ErxApi:  doseSpotService,
-	}
-
 	mux := apiservice.NewAuthServeMux(authAPI, metricsRegistry.Scope("restapi"))
 
 	// Patient/Doctor: Push notification APIs
@@ -350,7 +334,7 @@ func buildRESTAPI(conf *Config, dataApi api.DataAPI, authAPI api.AuthAPI, stores
 	mux.Handle("/v1/logout", patient.NewAuthenticationHandler(dataApi, authAPI, conf.StaticContentBaseUrl))
 
 	// Patient: Patient Case Related APIs
-	mux.Handle("/v1/check_eligibility", checkElligibilityHandler)
+	mux.Handle("/v1/check_eligibility", patient.NewCheckCareProvidingEligibilityHandler(dataApi, addressValidationWithCacheAndHack))
 	mux.Handle("/v1/patient/visit", patient_visit.NewPatientVisitHandler(dataApi, authAPI))
 	mux.Handle("/v1/patient/visit/answer", patient_visit.NewAnswerIntakeHandler(dataApi))
 	mux.Handle("/v1/patient/visit/photo_answer", patient_visit.NewPhotoAnswerIntakeHandler(dataApi))
@@ -381,13 +365,13 @@ func buildRESTAPI(conf *Config, dataApi api.DataAPI, authAPI api.AuthAPI, stores
 
 	// Doctor: Account APIs
 	mux.Handle("/v1/doctor/signup", apiservice.NewSignupDoctorHandler(dataApi, authAPI, conf.Environment))
-	mux.Handle("/v1/doctor/authenticate", apiservice.NewDoctorAuthenticationHandler(dataApi, authAPI))
+	mux.Handle("/v1/doctor/authenticate", doctor.NewDoctorAuthenticationHandler(dataApi, authAPI))
 	mux.Handle("/v1/doctor/isauthenticated", apiservice.NewIsAuthenticatedHandler(authAPI))
 	mux.Handle("/v1/doctor/queue", doctor_queue.NewQueueHandler(dataApi))
 
 	// Doctor: Prescription related APIs
-	mux.Handle("/v1/doctor/rx/error", doctorPrescriptionErrorHandler)
-	mux.Handle("/v1/doctor/rx/error/resolve", doctorPrescriptionErrorIgnoreHandler)
+	mux.Handle("/v1/doctor/rx/error", apiservice.NewDoctorPrescriptionErrorHandler(dataApi))
+	mux.Handle("/v1/doctor/rx/error/resolve", apiservice.NewDoctorPrescriptionErrorIgnoreHandler(dataApi, doseSpotService))
 	mux.Handle("/v1/doctor/rx/refill/request", doctorRefillRequestHandler)
 	mux.Handle("/v1/doctor/rx/refill/denial_reasons", refillRequestDenialReasonsHandler)
 
@@ -401,7 +385,7 @@ func buildRESTAPI(conf *Config, dataApi api.DataAPI, authAPI api.AuthAPI, stores
 	mux.Handle("/v1/doctor/patient/pharmacy", patient_file.NewDoctorUpdatePatientPharmacyHandler(dataApi))
 	mux.Handle("/v1/doctor/treatment_plans", doctor_treatment_plan.NewDoctorTreatmentPlanHandler(dataApi, doseSpotService, erxStatusQueue, conf.ERxRouting))
 	mux.Handle("/v1/doctor/treatment_plans/list", doctor_treatment_plan.NewListHandler(dataApi))
-	mux.Handle("/v1/doctor/pharmacy", doctorPharmacySearchHandler)
+	mux.Handle("/v1/doctor/pharmacy", doctor.NewPharmacySearchHandler(dataApi, doseSpotService))
 	mux.Handle("/v1/doctor/visit/review", patient_file.NewDoctorPatientVisitReviewHandler(dataApi))
 	mux.Handle("/v1/doctor/visit/diagnosis", patient_visit.NewDiagnosePatientHandler(dataApi, authAPI, conf.Environment))
 	mux.Handle("/v1/doctor/visit/treatment/new", newTreatmentHandler)

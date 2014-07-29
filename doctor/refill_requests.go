@@ -1,4 +1,4 @@
-package apiservice
+package doctor
 
 import (
 	"encoding/json"

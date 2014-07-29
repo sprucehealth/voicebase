@@ -1,4 +1,4 @@
-package apiservice
+package doctor_treatment_plan
 
 import (
 	"net/http"

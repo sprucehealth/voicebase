@@ -1,8 +1,9 @@
-package apiservice
+package doctor
 
 import (
-	"github.com/sprucehealth/backend/api"
 	"net/http"
+
+	"github.com/sprucehealth/backend/api"
 )
 
 type RefillRequestDenialReasonsHandler struct {

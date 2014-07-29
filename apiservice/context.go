@@ -20,6 +20,12 @@ const (
 	PatientCaseId
 	TreatmentPlan
 	TreatmentPlanId
+	Treatment
+	TreatmentId
+	RefillRequestId
+	RefillRequest
+	RequestData
+	ERxSource
 )
 
 type Context struct {

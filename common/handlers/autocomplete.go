@@ -31,10 +31,10 @@ func NewAutocompleteHandler(dataAPI api.DataAPI, erxAPI erx.ERxAPI) http.Handler
 	}
 	allergicMedicationsQuestionId = questionInfos[0].QuestionId
 
-	return &autocompleteHandler{
+	return AuthorizeHandler(&autocompleteHandler{
 		dataAPI: dataAPI,
 		erxAPI:  erxAPI,
-	}
+	})
 }
 
 type AutocompleteRequestData struct {

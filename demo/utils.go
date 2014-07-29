@@ -11,6 +11,7 @@ import (
 
 	"github.com/sprucehealth/backend/apiservice"
 	"github.com/sprucehealth/backend/common"
+	"github.com/sprucehealth/backend/doctor"
 	"github.com/sprucehealth/backend/doctor_treatment_plan"
 	"github.com/sprucehealth/backend/encoding"
 	"github.com/sprucehealth/backend/libs/golog"
@@ -167,7 +168,7 @@ func loginAsDoctor(email string, password, host string) (string, *common.Doctor,
 		return "", nil, fmt.Errorf("Expected 200 response intsead got %d", res.StatusCode)
 	}
 
-	responseData := &apiservice.DoctorAuthenticationResponse{}
+	responseData := &doctor.DoctorAuthenticationResponse{}
 	err = json.NewDecoder(res.Body).Decode(responseData)
 	if err != nil {
 		return "", nil, err

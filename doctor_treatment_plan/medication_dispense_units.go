@@ -1,8 +1,9 @@
-package apiservice
+package doctor_treatment_plan
 
 import (
-	"github.com/sprucehealth/backend/api"
 	"net/http"
+
+	"github.com/sprucehealth/backend/api"
 )
 
 type MedicationDispenseUnitsHandler struct {

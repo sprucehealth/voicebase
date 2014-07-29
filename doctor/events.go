@@ -1,11 +1,11 @@
-package apiservice
+package doctor
 
 import "github.com/sprucehealth/backend/common"
 
 type RxTransmissionErrorResolvedEvent struct {
 	DoctorId  int64
 	ItemId    int64
-	EventType common.StatusEventCheckType
+	EventType common.ERxSourceType
 }
 
 type RefillRequestResolvedEvent struct {

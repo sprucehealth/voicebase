@@ -1,9 +1,10 @@
-package apiservice
+package doctor_treatment_plan
 
 import (
+	"net/http"
+
 	"github.com/sprucehealth/backend/api"
 	"github.com/sprucehealth/backend/libs/erx"
-	"net/http"
 
 	"github.com/sprucehealth/backend/third_party/github.com/SpruceHealth/schema"
 )

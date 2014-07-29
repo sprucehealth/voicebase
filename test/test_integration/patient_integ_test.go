@@ -38,7 +38,7 @@ func TestPatientCareProvidingEllgibility(t *testing.T) {
 		},
 	}
 
-	checkElligibilityHandler := &apiservice.CheckCareProvidingElligibilityHandler{DataApi: testData.DataApi, AddressValidationApi: stubAddressValidationService}
+	checkElligibilityHandler := apiservice.NewCheckCareProvidingEligibilityHandler(testData.DataApi, stubAddressValidationService)
 	ts := httptest.NewServer(checkElligibilityHandler)
 	defer ts.Close()
 
@@ -68,7 +68,7 @@ func TestPatientCareProvidingEllgibility(t *testing.T) {
 		StateAbbreviation: "FL",
 	}
 
-	checkElligibilityHandler.AddressValidationApi = stubAddressValidationService
+	checkElligibilityHandler = apiservice.NewCheckCareProvidingEligibilityHandler(testData.DataApi, stubAddressValidationService)
 
 	resp, err = testData.AuthGet(ts.URL+"?zip_code=33180", 0)
 	if err != nil {
