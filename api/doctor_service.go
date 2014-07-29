@@ -1266,7 +1266,7 @@ func getInstructionsFromRows(rows *sql.Rows) ([]*common.DoctorInstructionItem, e
 	return drugInstructions, rows.Err()
 }
 
-func (d *DataService) SetDoctorNPIAndDEA(doctorID int64, npi string, dea string) error {
+func (d *DataService) SetDoctorNPIAndDEA(doctorID int64, npi, dea string) error {
 	_, err := d.db.Exec(`UPDATE doctor SET npi_number = ?, dea_number = ? WHERE id = ?`, npi, dea, doctorID)
 	return err
 }

@@ -249,7 +249,7 @@ type DoctorAPI interface {
 	MedicalLicenses(doctorID int64) ([]*common.MedicalLicense, error)
 	// TODO: The following method is unfortunate, but it's not collected during registration.
 	// The updating of the objects like Doctor and Patient needs some thought.
-	SetDoctorNPIAndDEA(doctorID int64, npi string, dea string) error
+	SetDoctorNPIAndDEA(doctorID int64, npi, dea string) error
 	GetFirstDoctorWithAClinicianId() (*common.Doctor, error)
 }
 
