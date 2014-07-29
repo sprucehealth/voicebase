@@ -42,6 +42,7 @@ type credentialsForm struct {
 	CreditHours            string
 	RiskManagementCourse   bool
 	NPI                    string
+	DEA                    string
 	SSN                    string
 	StateLicenses          []*stateLicense
 }
@@ -64,6 +65,10 @@ func (r *credentialsForm) Validate() map[string]string {
 	if r.NPI == "" {
 		errors["NPI"] = "NPI is required"
 	}
+	if r.DEA == "" {
+		errors["DEA"] = "DEA is required"
+	}
+
 	n := 0
 	for i, l := range r.StateLicenses {
 		if l.State != "" {
@@ -111,7 +116,8 @@ func (h *credentialsHandler) ServeHTTP(w http.ResponseWriter, r *http.Request) {
 				www.InternalServerError(w, r, err)
 				return
 			}
-			if err := h.dataAPI.SetDoctorNPI(doctorID, form.NPI); err != nil {
+
+			if err := h.dataAPI.SetDoctorNPIAndDEA(doctorID, form.NPI, form.DEA); err != nil {
 				www.InternalServerError(w, r, err)
 				return
 			}
@@ -174,6 +180,7 @@ func (h *credentialsHandler) ServeHTTP(w http.ResponseWriter, r *http.Request) {
 			return
 		}
 		form.NPI = doctor.NPI
+		form.DEA = doctor.DEA
 		attr, err := h.dataAPI.DoctorAttributes(doctor.DoctorId.Int64(), []string{
 			api.AttrSocialSecurityNumber,
 			api.AttrAmericanBoardCertified,
