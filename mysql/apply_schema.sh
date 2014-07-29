@@ -13,7 +13,7 @@ len=${#argsArray[@]}
 
 if [ $len -lt 2 ];
 then
-	echo "ERROR: Usage ./apply_schema.sh [local|dev|prod|staging] migration1 migration2 .... migrationN"
+	echo "ERROR: Usage ./apply_schema.sh [local|dev|prod|demo|staging] migration1 migration2 .... migrationN"
 	exit 1;
 fi
 
@@ -54,7 +54,15 @@ do
 			mysql -h $DEV_RDS_INSTANCE -u $RDS_USERNAME -p$DEV_RDS_PASSWORD < temp.sql
 			mysql -h $DEV_RDS_INSTANCE -u $RDS_USERNAME -p$DEV_RDS_PASSWORD < temp-migration.sql
 		;;
-		
+
+		"demo" ) 
+			echo "use $DEMO_DB_NAME; insert into migrations (migration_id, migration_user) values ($migrationNumber, '$USER');" > temp-migration.sql
+			LOGMSG="{\"env\":\"$env\",\"user\":\"$USER\",\"migration_id\":\"$migrationNumber\"}"
+			echo "use $DEMO_DB_NAME;" | cat - migration-$migrationNumber.sql > temp.sql
+			scp temp.sql 54.210.97.69:~
+			scp temp-migration.sql 54.210.97.69:~
+			ssh 54.210.97.69 "mysql -u $DEMO_DB_USER_NAME -p$DEMO_DB_PASSWORD < temp.sql ; mysql -u $DEMO_DB_USER_NAME -p$DEMO_DB_PASSWORD < temp-migration.sql; logger -p user.info -t schema '$LOGMSG'"
+		;;
 		
 		"prod" ) 
 			echo "use $PROD_DB_NAME; insert into migrations (migration_id, migration_user) values ($migrationNumber, '$USER');" > temp-migration.sql
