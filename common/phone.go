@@ -48,7 +48,12 @@ func ParsePhone(phoneNumber string) (Phone, error) {
 }
 
 func (p *Phone) UnmarshalJSON(data []byte) error {
-	*p = Phone(data)
+	strP := string(data)
+	if strP[0] == '"' && len(strP) > 2 {
+		*p = Phone(strP[1 : len(strP)-1])
+	} else {
+		*p = Phone(strP)
+	}
 	if err := p.Validate(); err != nil {
 		return err
 	}
@@ -56,8 +61,8 @@ func (p *Phone) UnmarshalJSON(data []byte) error {
 	return nil
 }
 
-func (p *Phone) MarshalJSON() ([]byte, error) {
-	return []byte(*p), nil
+func (p Phone) MarshalJSON() ([]byte, error) {
+	return []byte(fmt.Sprintf(`"%s"`, p)), nil
 }
 
 func (p *Phone) Scan(src interface{}) error {

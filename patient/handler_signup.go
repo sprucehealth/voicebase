@@ -92,6 +92,18 @@ func (s *SignupHandler) ServeHTTP(w http.ResponseWriter, r *http.Request) {
 		return
 	}
 
+	patientPhone, err := common.ParsePhone(requestData.Phone)
+	if err != nil {
+		apiservice.WriteValidationError(err.Error(), w, r)
+		return
+	}
+
+	patientDOB, err := encoding.NewDOBFromComponents(dobParts[0], dobParts[1], dobParts[2])
+	if err != nil {
+		apiservice.WriteUserError(w, http.StatusBadRequest, "Unable to parse date of birth. Required format + "+encoding.DOBFormat)
+		return
+	}
+
 	// first, create an account for the user
 	accountID, err := s.authApi.CreateAccount(requestData.Email, requestData.Password, api.PATIENT_ROLE)
 	if err == api.LoginAlreadyExists {
@@ -113,24 +125,12 @@ func (s *SignupHandler) ServeHTTP(w http.ResponseWriter, r *http.Request) {
 		CityFromZipCode:  cityState.City,
 		StateFromZipCode: cityState.StateAbbreviation,
 		PromptStatus:     common.Unprompted,
-	}
-
-	patientPhone, err := common.ParsePhone(requestData.Phone)
-	if err != nil {
-		apiservice.WriteValidationError(err.Error(), w, r)
-		return
-	}
-
-	newPatient.PhoneNumbers = []*common.PhoneNumber{&common.PhoneNumber{
-		Phone: patientPhone,
-		Type:  api.PHONE_CELL,
-	},
-	}
-
-	newPatient.DOB, err = encoding.NewDOBFromComponents(dobParts[0], dobParts[1], dobParts[2])
-	if err != nil {
-		apiservice.WriteUserError(w, http.StatusBadRequest, "Unable to parse date of birth. Required format + "+encoding.DOBFormat)
-		return
+		DOB:              patientDOB,
+		PhoneNumbers: []*common.PhoneNumber{&common.PhoneNumber{
+			Phone: patientPhone,
+			Type:  api.PHONE_CELL,
+		},
+		},
 	}
 
 	// then, register the signed up user as a patient
