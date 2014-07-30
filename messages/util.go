@@ -90,6 +90,17 @@ func createMessageAndAttachments(msg *common.CaseMessage, attachments []*Attachm
 				if photo.UploaderId != personID || photo.ClaimerType != "" {
 					return apiservice.NewValidationError("Invalid attachment", r)
 				}
+			case common.AttachmentTypeAudio:
+				// Make sure the photo is uploaded by the same person and is unclaimed
+				audio, err := h.dataAPI.GetAudio(att.ID)
+				if err != nil {
+					apiservice.WriteError(err, w, r)
+					return
+				}
+				if audio.UploaderID != personID || audio.ClaimerType != "" {
+					apiservice.WriteValidationError("Invalid attachment", w, r)
+					return
+				}
 			}
 			msg.Attachments = append(msg.Attachments, &common.CaseMessageAttachment{
 				ItemType: att.Type,

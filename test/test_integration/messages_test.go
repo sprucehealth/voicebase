@@ -5,6 +5,7 @@ import (
 
 	"github.com/sprucehealth/backend/api"
 	"github.com/sprucehealth/backend/common"
+	//"github.com/sprucehealth/backend/libs/golog"
 	"github.com/sprucehealth/backend/messages"
 	"github.com/sprucehealth/backend/test"
 )
@@ -57,10 +58,22 @@ func TestCaseMessages(t *testing.T) {
 	test.OK(t, err)
 
 	photoID := uploadPhoto(t, testData, doctor.AccountId.Int64())
+	// attachments := []*messages.Attachment{
+	// 	&messages.Attachment{
+	// 		Type: common.AttachmentTypePhoto,
+	// 		ID:   photoID,
+	// 	},
+	// }
+
+	audioID := uploadAudio(t, testData, doctor.AccountId.Int64())
 	attachments := []*messages.Attachment{
 		&messages.Attachment{
 			Type: common.AttachmentTypePhoto,
 			ID:   photoID,
+		},
+		&messages.Attachment{
+			Type: common.AttachmentTypeAudio,
+			ID:   audioID,
 		},
 	}
 
@@ -78,8 +91,8 @@ func TestCaseMessages(t *testing.T) {
 	}
 
 	m := msgs[len(msgs)-1]
-	if len(m.Attachments) != 1 {
-		t.Fatalf("Expected 1 attachment. Got %d", len(m.Attachments))
+	if len(m.Attachments) != 2 {
+		t.Fatalf("Expected 2 attachment. Got %d", len(m.Attachments))
 	}
 	a := m.Attachments[0]
 	if a.ItemType != common.AttachmentTypePhoto || a.ItemID != photoID {
@@ -93,6 +106,21 @@ func TestCaseMessages(t *testing.T) {
 	}
 	if photo.ClaimerId != m.ID {
 		t.Fatalf("Expected claimer id to be %d. Got %d", m.ID, photo.ClaimerId)
+	}
+
+	b := m.Attachments[1]
+	if b.ItemType != common.AttachmentTypeAudio || b.ItemID != audioID {
+		t.Fatalf("Wrong attachment type or ID")
+	}
+	audio, err := testData.DataApi.GetAudio(audioID)
+	if err != nil {
+		t.Fatal(err)
+	}
+	if audio.ClaimerType != common.ClaimerTypeConversationMessage {
+		t.Fatalf("Expected claimer type of '%s'. Got '%s'", common.ClaimerTypeConversationMessage, audio.ClaimerType)
+	}
+	if audio.ClaimerID != m.ID {
+		t.Fatalf("Expected claimer id to be %d. Got %d", m.ID, audio.ClaimerID)
 	}
 
 	if participants, err := testData.DataApi.CaseMessageParticipants(caseID, false); err != nil {
