@@ -7,7 +7,6 @@ import (
 	"github.com/sprucehealth/backend/api"
 	"github.com/sprucehealth/backend/apiservice"
 	"github.com/sprucehealth/backend/common"
-	"github.com/sprucehealth/backend/encoding"
 	"github.com/sprucehealth/backend/libs/dispatch"
 	"github.com/sprucehealth/backend/libs/erx"
 )
@@ -28,25 +27,122 @@ func NewDoctorTreatmentPlanHandler(dataApi api.DataAPI, erxAPI erx.ERxAPI, erxSt
 	}
 }
 
-type DoctorTreatmentPlanRequestData struct {
-	DoctorFavoriteTreatmentPlanId int64 `schema:"dr_favorite_treatment_plan_id" json:"dr_favorite_treatment_plan_id,string"`
-	TreatmentPlanId               int64 `schema:"treatment_plan_id" json:"treatment_plan_id,string"`
-	PatientVisitId                int64 `schema:"patient_visit_id" json:"patient_visit_id,string"`
-	Abridged                      bool  `schema:"abridged" json:"abridged"`
-}
-
-type PickTreatmentPlanRequestData struct {
-	TPContentSource *common.TreatmentPlanContentSource `json:"content_source"`
-	TPParent        *common.TreatmentPlanParent        `json:"parent"`
-}
-
 type TreatmentPlanRequestData struct {
-	TreatmentPlanId encoding.ObjectId `json:"treatment_plan_id"`
-	Message         string            `json:"message"`
+	DoctorFavoriteTreatmentPlanId int64                              `json:"dr_favorite_treatment_plan_id,string" schema:"dr_favorite_treatment_plan_id"`
+	TreatmentPlanId               int64                              `json:"treatment_plan_id,string" schema:"treatment_plan_id" `
+	PatientVisitId                int64                              `json:"patient_visit_id,string" schema:"patient_visit_id" `
+	Abridged                      bool                               `json:"abridged" schema:"abridged"`
+	TPContentSource               *common.TreatmentPlanContentSource `json:"content_source"`
+	TPParent                      *common.TreatmentPlanParent        `json:"parent"`
+	Message                       string                             `json:"message"`
 }
 
 type DoctorTreatmentPlanResponse struct {
 	TreatmentPlan *common.DoctorTreatmentPlan `json:"treatment_plan"`
+}
+
+func (d *doctorTreatmentPlanHandler) IsAuthorized(r *http.Request) (bool, error) {
+	ctxt := apiservice.GetContext(r)
+
+	if ctxt.Role != api.DOCTOR_ROLE {
+		return false, apiservice.NewAccessForbiddenError()
+	}
+
+	requestData := &TreatmentPlanRequestData{}
+	if err := apiservice.DecodeRequestData(requestData, r); err != nil {
+		return false, apiservice.NewValidationError(err.Error(), r)
+	}
+	ctxt.RequestCache[apiservice.RequestData] = requestData
+
+	doctorId, err := d.dataApi.GetDoctorIdFromAccountId(ctxt.AccountId)
+	if err != nil {
+		return false, err
+	}
+	ctxt.RequestCache[apiservice.DoctorId] = doctorId
+
+	switch r.Method {
+	case apiservice.HTTP_GET:
+		if requestData.TreatmentPlanId == 0 {
+			return false, apiservice.NewValidationError("treatment_plan_id must be specified", r)
+		}
+
+		treatmentPlan, err := d.dataApi.GetAbridgedTreatmentPlan(requestData.TreatmentPlanId, doctorId)
+		if err != nil {
+			return false, err
+		}
+		ctxt.RequestCache[apiservice.TreatmentPlan] = treatmentPlan
+
+		if err := apiservice.ValidateReadAccessToPatientCase(doctorId, treatmentPlan.PatientId, treatmentPlan.PatientCaseId.Int64(), d.dataApi); err != nil {
+			return false, err
+		}
+
+		// if we are dealing with a draft, and the owner of the treatment plan does not match the doctor requesting it,
+		// return an error because this should never be the case
+		if treatmentPlan.Status == api.STATUS_DRAFT && treatmentPlan.DoctorId.Int64() != doctorId {
+			return false, apiservice.NewAccessForbiddenError()
+		}
+
+	case apiservice.HTTP_PUT, apiservice.HTTP_DELETE:
+		if requestData.TreatmentPlanId == 0 {
+			return false, apiservice.NewValidationError("treatment_plan_id must be specified", r)
+		}
+
+		treatmentPlan, err := d.dataApi.GetAbridgedTreatmentPlan(requestData.TreatmentPlanId, doctorId)
+		if err != nil {
+			return false, err
+		}
+		ctxt.RequestCache[apiservice.TreatmentPlan] = treatmentPlan
+
+		if err := apiservice.ValidateWriteAccessToPatientCase(doctorId, treatmentPlan.PatientId, treatmentPlan.PatientCaseId.Int64(), d.dataApi); err != nil {
+			return false, err
+		}
+
+		// ensure that doctor is owner of the treatment plan
+		if doctorId != treatmentPlan.DoctorId.Int64() {
+			return false, apiservice.NewAccessForbiddenError()
+		}
+
+	case apiservice.HTTP_POST:
+		if requestData.TPParent == nil || requestData.TPParent.ParentId.Int64() == 0 {
+			return false, apiservice.NewValidationError("parent_id must be specified", r)
+		}
+
+		patientVisitId := requestData.TPParent.ParentId.Int64()
+		switch requestData.TPParent.ParentType {
+		case common.TPParentTypeTreatmentPlan:
+			// ensure that parent treatment plan is ACTIVE
+			parentTreatmentPlan, err := d.dataApi.GetAbridgedTreatmentPlan(requestData.TPParent.ParentId.Int64(), doctorId)
+			if err != nil {
+				return false, err
+			} else if parentTreatmentPlan.Status != api.STATUS_ACTIVE {
+				return false, apiservice.NewValidationError("parent treatment plan has to be ACTIVE", r)
+			}
+
+			patientVisitId, err = d.dataApi.GetPatientVisitIdFromTreatmentPlanId(requestData.TPParent.ParentId.Int64())
+			if err != nil {
+				return false, err
+			}
+		case common.TPParentTypePatientVisit:
+		default:
+			return false, apiservice.NewValidationError("Expected the parent type to either by PATIENT_VISIT or TREATMENT_PLAN", r)
+		}
+		ctxt.RequestCache[apiservice.PatientVisitId] = patientVisitId
+
+		patientCase, err := d.dataApi.GetPatientCaseFromPatientVisitId(patientVisitId)
+		if err != nil {
+			return false, err
+		}
+		ctxt.RequestCache[apiservice.PatientCase] = patientCase
+
+		if err := apiservice.ValidateWriteAccessToPatientCase(doctorId, patientCase.PatientId.Int64(), patientCase.Id.Int64(), d.dataApi); err != nil {
+			return false, err
+		}
+
+	default:
+		return false, nil
+	}
+
+	return true, nil
 }
 
 func (d *doctorTreatmentPlanHandler) ServeHTTP(w http.ResponseWriter, r *http.Request) {
@@ -65,32 +161,8 @@ func (d *doctorTreatmentPlanHandler) ServeHTTP(w http.ResponseWriter, r *http.Re
 }
 
 func (d *doctorTreatmentPlanHandler) deleteTreatmentPlan(w http.ResponseWriter, r *http.Request) {
-	requestData := &TreatmentPlanRequestData{}
-	if err := apiservice.DecodeRequestData(requestData, r); err != nil {
-		apiservice.WriteError(err, w, r)
-		return
-	} else if requestData.TreatmentPlanId.Int64() == 0 {
-		apiservice.WriteValidationError("treatment_plan_id must be specified", w, r)
-		return
-	}
-
-	doctorId, err := d.dataApi.GetDoctorIdFromAccountId(apiservice.GetContext(r).AccountId)
-	if err != nil {
-		apiservice.WriteError(err, w, r)
-		return
-	}
-
-	treatmentPlan, err := d.dataApi.GetAbridgedTreatmentPlan(requestData.TreatmentPlanId.Int64(), doctorId)
-	if err != nil {
-		apiservice.WriteError(err, w, r)
-		return
-	}
-
-	// Ensure treatment plan is owned by this doctor
-	if doctorId != treatmentPlan.DoctorId.Int64() {
-		apiservice.WriteValidationError("Cannot delete treatment plan not owned by doctor", w, r)
-		return
-	}
+	ctxt := apiservice.GetContext(r)
+	treatmentPlan := ctxt.RequestCache[apiservice.TreatmentPlan].(*common.DoctorTreatmentPlan)
 
 	// Ensure treatment plan is a draft
 	if treatmentPlan.Status != api.STATUS_DRAFT {
@@ -108,25 +180,16 @@ func (d *doctorTreatmentPlanHandler) deleteTreatmentPlan(w http.ResponseWriter, 
 }
 
 func (d *doctorTreatmentPlanHandler) submitTreatmentPlan(w http.ResponseWriter, r *http.Request) {
-	var requestData TreatmentPlanRequestData
-	if err := apiservice.DecodeRequestData(&requestData, r); err != nil {
-		apiservice.WriteError(err, w, r)
-		return
-	} else if requestData.TreatmentPlanId.Int64() == 0 {
-		apiservice.WriteValidationError("treatment_plan_id must be specified", w, r)
-		return
-	} else if requestData.Message == "" {
-		apiservice.WriteValidationError("Please enter a personal note to the patient.", w, r)
+	ctxt := apiservice.GetContext(r)
+	requestData := ctxt.RequestCache[apiservice.RequestData].(*TreatmentPlanRequestData)
+	treatmentPlan := ctxt.RequestCache[apiservice.TreatmentPlan].(*common.DoctorTreatmentPlan)
+
+	if requestData.Message == "" {
+		apiservice.WriteValidationError("message must not be empty", w, r)
 		return
 	}
 
 	doctor, err := d.dataApi.GetDoctorFromAccountId(apiservice.GetContext(r).AccountId)
-	if err != nil {
-		apiservice.WriteError(err, w, r)
-		return
-	}
-
-	treatmentPlan, err := d.dataApi.GetAbridgedTreatmentPlan(requestData.TreatmentPlanId.Int64(), doctor.DoctorId.Int64())
 	if err != nil {
 		apiservice.WriteError(err, w, r)
 		return
@@ -143,7 +206,7 @@ func (d *doctorTreatmentPlanHandler) submitTreatmentPlan(w http.ResponseWriter, 
 			return
 		}
 	case common.TPParentTypeTreatmentPlan:
-		patientVisitId, err = d.dataApi.GetPatientVisitIdFromTreatmentPlanId(requestData.TreatmentPlanId.Int64())
+		patientVisitId, err = d.dataApi.GetPatientVisitIdFromTreatmentPlanId(requestData.TreatmentPlanId)
 		if err != nil {
 			apiservice.WriteError(err, w, r)
 			return
@@ -165,12 +228,6 @@ func (d *doctorTreatmentPlanHandler) submitTreatmentPlan(w http.ResponseWriter, 
 		return
 	}
 
-	// Ensure that doctor is authorized to work on the case
-	if err := apiservice.ValidateWriteAccessToPatientCase(doctor.DoctorId.Int64(), treatmentPlan.PatientId, treatmentPlan.PatientCaseId.Int64(), d.dataApi); err != nil {
-		apiservice.WriteError(err, w, r)
-		return
-	}
-
 	// get patient from treatment plan id
 	patient, err := d.dataApi.GetPatientFromId(treatmentPlan.PatientId)
 	if err != nil {
@@ -179,12 +236,12 @@ func (d *doctorTreatmentPlanHandler) submitTreatmentPlan(w http.ResponseWriter, 
 	}
 
 	// route treatments to patient pharmacy if any exist
-	if err := routeRxInTreatmentPlanToPharmacy(requestData.TreatmentPlanId.Int64(), patient, doctor, d.routeErx, d.dataApi, d.erxAPI, d.erxStatusQueue); err != nil {
+	if err := routeRxInTreatmentPlanToPharmacy(requestData.TreatmentPlanId, patient, doctor, d.routeErx, d.dataApi, d.erxAPI, d.erxStatusQueue); err != nil {
 		apiservice.WriteError(err, w, r)
 		return
 	}
 
-	if err := d.dataApi.ActivateTreatmentPlan(requestData.TreatmentPlanId.Int64(), doctor.DoctorId.Int64()); err != nil {
+	if err := d.dataApi.ActivateTreatmentPlan(requestData.TreatmentPlanId, doctor.DoctorId.Int64()); err != nil {
 		apiservice.WriteError(err, w, r)
 		return
 	}
@@ -225,119 +282,40 @@ func (d *doctorTreatmentPlanHandler) submitTreatmentPlan(w http.ResponseWriter, 
 }
 
 func (d *doctorTreatmentPlanHandler) getTreatmentPlan(w http.ResponseWriter, r *http.Request) {
-	requestData := &DoctorTreatmentPlanRequestData{}
-	if err := apiservice.DecodeRequestData(requestData, r); err != nil {
-		apiservice.WriteDeveloperError(w, http.StatusBadRequest, err.Error())
-		return
-	} else if requestData.TreatmentPlanId == 0 {
-		apiservice.WriteDeveloperError(w, http.StatusBadRequest, "treatment_plan_id not specified")
-		return
-	}
-
-	doctorId, err := d.dataApi.GetDoctorIdFromAccountId(apiservice.GetContext(r).AccountId)
-	if err != nil {
-		apiservice.WriteDeveloperError(w, http.StatusInternalServerError, err.Error())
-		return
-	}
-
-	drTreatmentPlan, err := d.dataApi.GetAbridgedTreatmentPlan(requestData.TreatmentPlanId, doctorId)
-	if err == api.NoRowsError {
-		apiservice.WriteDeveloperError(w, http.StatusNotFound, "No treatment plan exists for patient visit")
-		return
-	} else if err != nil {
-		apiservice.WriteDeveloperError(w, http.StatusInternalServerError, "Unable to get treatment plan for patient visit: "+err.Error())
-		return
-	}
-
-	if err := apiservice.ValidateReadAccessToPatientCase(doctorId, drTreatmentPlan.PatientId, drTreatmentPlan.PatientCaseId.Int64(), d.dataApi); err != nil {
-		apiservice.WriteError(err, w, r)
-		return
-	}
-
-	// if we are dealing with a draft, and the owner of the treatment plan does not match the doctor requesting it,
-	// return an error because this should never be the case
-	if drTreatmentPlan.Status == api.STATUS_DRAFT && drTreatmentPlan.DoctorId.Int64() != doctorId {
-		apiservice.WriteValidationError("Cannot retrieve draft treatment plan owned by different doctor", w, r)
-		return
-	}
+	ctxt := apiservice.GetContext(r)
+	requestData := ctxt.RequestCache[apiservice.RequestData].(*TreatmentPlanRequestData)
+	doctorId := ctxt.RequestCache[apiservice.DoctorId].(int64)
+	treatmentPlan := ctxt.RequestCache[apiservice.TreatmentPlan].(*common.DoctorTreatmentPlan)
 
 	// only return the small amount of information retreived about the treatment plan
 	if requestData.Abridged {
-		apiservice.WriteJSONToHTTPResponseWriter(w, http.StatusOK, &DoctorTreatmentPlanResponse{TreatmentPlan: drTreatmentPlan})
+		apiservice.WriteJSONToHTTPResponseWriter(w, http.StatusOK, &DoctorTreatmentPlanResponse{TreatmentPlan: treatmentPlan})
 		return
 	}
 
-	if err := fillInTreatmentPlan(drTreatmentPlan, doctorId, d.dataApi); err != nil {
+	if err := fillInTreatmentPlan(treatmentPlan, doctorId, d.dataApi); err != nil {
 		apiservice.WriteDeveloperError(w, http.StatusInternalServerError, err.Error())
 		return
 	}
 
-	apiservice.WriteJSONToHTTPResponseWriter(w, http.StatusOK, &DoctorTreatmentPlanResponse{TreatmentPlan: drTreatmentPlan})
+	apiservice.WriteJSONToHTTPResponseWriter(w, http.StatusOK, &DoctorTreatmentPlanResponse{TreatmentPlan: treatmentPlan})
 }
 
 func (d *doctorTreatmentPlanHandler) pickATreatmentPlan(w http.ResponseWriter, r *http.Request) {
-	requestData := &PickTreatmentPlanRequestData{}
+	ctxt := apiservice.GetContext(r)
+	requestData := ctxt.RequestCache[apiservice.RequestData].(*TreatmentPlanRequestData)
+	doctorId := ctxt.RequestCache[apiservice.DoctorId].(int64)
+	patientVisitId := ctxt.RequestCache[apiservice.PatientVisitId].(int64)
+	patientCase := ctxt.RequestCache[apiservice.PatientCase].(*common.PatientCase)
 
-	if err := apiservice.DecodeRequestData(requestData, r); err != nil {
-		apiservice.WriteDeveloperError(w, http.StatusBadRequest, err.Error())
-		return
-	} else if requestData.TPParent == nil || requestData.TPParent.ParentId.Int64() == 0 {
-		apiservice.WriteValidationError("Expected the parent id to be specified for the treatment plan", w, r)
-		return
-	} else if requestData.TPParent.ParentType != common.TPParentTypePatientVisit && requestData.TPParent.ParentType != common.TPParentTypeTreatmentPlan {
-		apiservice.WriteValidationError("Expected the parent type to either by PATIENT_VISIT or TREATMENT_PLAN", w, r)
-		return
-	} else if requestData.TPContentSource != nil {
+	if requestData.TPContentSource != nil {
 		if requestData.TPContentSource.ContentSourceType != common.TPContentSourceTypeFTP && requestData.TPContentSource.ContentSourceType != common.TPContentSourceTypeTreatmentPlan {
 			apiservice.WriteValidationError(fmt.Sprintf("Expected content source type be either FAVORITE_TREATMENT_PLAN or TREATMENT_PLAN but instead it was %s", requestData.TPContentSource.ContentSourceType), w, r)
 			return
 		}
 	}
 
-	doctorId, err := d.dataApi.GetDoctorIdFromAccountId(apiservice.GetContext(r).AccountId)
-	if err != nil {
-		apiservice.WriteError(err, w, r)
-		return
-	}
-
-	patientVisitId := requestData.TPParent.ParentId.Int64()
-	switch requestData.TPParent.ParentType {
-	case common.TPParentTypeTreatmentPlan:
-		// ensure that parent treatment plan is ACTIVE
-		parentTreatmentPlan, err := d.dataApi.GetAbridgedTreatmentPlan(requestData.TPParent.ParentId.Int64(), doctorId)
-		if err != nil {
-			apiservice.WriteError(err, w, r)
-			return
-		} else if parentTreatmentPlan.Status != api.STATUS_ACTIVE {
-			apiservice.WriteValidationError("parent treatment plan has to be ACTIVE", w, r)
-			return
-		}
-
-		patientVisitId, err = d.dataApi.GetPatientVisitIdFromTreatmentPlanId(requestData.TPParent.ParentId.Int64())
-		if err != nil {
-			apiservice.WriteError(err, w, r)
-			return
-		}
-	}
-
-	patientCase, err := d.dataApi.GetPatientCaseFromPatientVisitId(patientVisitId)
-	if err != nil {
-		apiservice.WriteError(err, w, r)
-		return
-	}
-
-	patientId, err := d.dataApi.GetPatientIdFromPatientVisitId(patientVisitId)
-	if err != nil {
-		apiservice.WriteError(err, w, r)
-		return
-	}
-
-	if err := apiservice.ValidateWriteAccessToPatientCase(doctorId, patientId, patientCase.Id.Int64(), d.dataApi); err != nil {
-		apiservice.WriteError(err, w, r)
-		return
-	}
-
-	treatmentPlanId, err := d.dataApi.StartNewTreatmentPlan(patientId,
+	treatmentPlanId, err := d.dataApi.StartNewTreatmentPlan(patientCase.PatientId.Int64(),
 		patientVisitId, doctorId, requestData.TPParent, requestData.TPContentSource)
 	if err != nil {
 		apiservice.WriteDeveloperError(w, http.StatusInternalServerError, "Unable to start new treatment plan for patient visit: "+err.Error())

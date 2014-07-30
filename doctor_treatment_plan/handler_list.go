@@ -1,10 +1,11 @@
 package doctor_treatment_plan
 
 import (
+	"net/http"
+
 	"github.com/sprucehealth/backend/api"
 	"github.com/sprucehealth/backend/apiservice"
 	"github.com/sprucehealth/backend/common"
-	"net/http"
 )
 
 type listHandler struct {
@@ -25,6 +26,14 @@ func NewListHandler(dataApi api.DataAPI) *listHandler {
 	return &listHandler{
 		dataApi: dataApi,
 	}
+}
+
+func (l *listHandler) IsAuthorized(r *http.Request) (bool, error) {
+	if apiservice.GetContext(r).Role != api.DOCTOR_ROLE {
+		return false, apiservice.NewAccessForbiddenError()
+	}
+
+	return true, nil
 }
 
 func (l *listHandler) ServeHTTP(w http.ResponseWriter, r *http.Request) {

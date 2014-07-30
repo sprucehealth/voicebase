@@ -43,6 +43,10 @@ type CreateDemoPatientVisitRequestData struct {
 	RouteToGlobalQueue          bool  `schema:"route_global"`
 }
 
+func (c *Handler) IsAuthorized(r *http.Request) (bool, error) {
+	return true, nil
+}
+
 func (c *Handler) ServeHTTP(w http.ResponseWriter, r *http.Request) {
 	if r.Method != apiservice.HTTP_POST {
 		w.WriteHeader(http.StatusNotFound)

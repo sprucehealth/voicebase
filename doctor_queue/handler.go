@@ -33,6 +33,14 @@ type DoctorQueueRequestData struct {
 	State string `schema:"state"`
 }
 
+func (d *queueHandler) IsAuthorized(r *http.Request) (bool, error) {
+	if apiservice.GetContext(r).Role != api.DOCTOR_ROLE {
+		return false, apiservice.NewAccessForbiddenError()
+	}
+
+	return true, nil
+}
+
 func (d *queueHandler) ServeHTTP(w http.ResponseWriter, r *http.Request) {
 	if r.Method != apiservice.HTTP_GET {
 		http.NotFound(w, r)

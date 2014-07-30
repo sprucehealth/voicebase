@@ -16,8 +16,11 @@ type CacheKey int
 const (
 	Patient CacheKey = iota
 	PatientId
+	Doctor
+	DoctorId
 	PatientCase
 	PatientCaseId
+	PatientVisitId
 	TreatmentPlan
 	TreatmentPlanId
 	Treatment

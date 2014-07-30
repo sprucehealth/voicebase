@@ -75,6 +75,10 @@ func (d *refillRxHandler) ServeHTTP(w http.ResponseWriter, r *http.Request) {
 	}
 }
 
+func (e *refillRxHandler) IsAuthorized(r *http.Request) (bool, error) {
+	return true, nil
+}
+
 func (d *refillRxHandler) resolveRefillRequest(w http.ResponseWriter, r *http.Request) {
 	requestData := &DoctorRefillRequestRequestData{}
 	if err := apiservice.DecodeRequestData(requestData, r); err != nil {

@@ -37,6 +37,14 @@ func NewClaimPatientCaseAccessHandler(dataAPI api.DataAPI, statsRegistry metrics
 	}
 }
 
+func (c *claimPatientCaseAccessHandler) IsAuthorized(r *http.Request) (bool, error) {
+	if apiservice.GetContext(r).Role != api.DOCTOR_ROLE {
+		return false, apiservice.NewAccessForbiddenError()
+	}
+
+	return true, nil
+}
+
 func (c *claimPatientCaseAccessHandler) ServeHTTP(w http.ResponseWriter, r *http.Request) {
 	if r.Method != apiservice.HTTP_POST {
 		http.NotFound(w, r)

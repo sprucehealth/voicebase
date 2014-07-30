@@ -2,69 +2,73 @@ package doctor_treatment_plan
 
 import (
 	"errors"
+	"net/http"
+
 	"github.com/sprucehealth/backend/api"
 	"github.com/sprucehealth/backend/apiservice"
 	"github.com/sprucehealth/backend/common"
 	"github.com/sprucehealth/backend/encoding"
 	"github.com/sprucehealth/backend/libs/dispatch"
-	"net/http"
+	"github.com/sprucehealth/backend/libs/httputil"
 )
 
 type adviceHandler struct {
 	dataAPI api.DataAPI
 }
 
-func NewAdviceHandler(dataAPI api.DataAPI) *adviceHandler {
-	return &adviceHandler{
+func NewAdviceHandler(dataAPI api.DataAPI) http.Handler {
+	return httputil.SupportedMethods(&adviceHandler{
 		dataAPI: dataAPI,
-	}
+	}, []string{apiservice.HTTP_POST})
 }
 
-func (d *adviceHandler) ServeHTTP(w http.ResponseWriter, r *http.Request) {
-	switch r.Method {
-	case apiservice.HTTP_POST:
-		d.updateAdvicePoints(w, r)
-	default:
-		w.WriteHeader(http.StatusNotFound)
-	}
-}
+func (d *adviceHandler) IsAuthorized(r *http.Request) (bool, error) {
+	ctxt := apiservice.GetContext(r)
 
-func (d *adviceHandler) updateAdvicePoints(w http.ResponseWriter, r *http.Request) {
+	if ctxt.Role != api.DOCTOR_ROLE {
+		return false, apiservice.NewAccessForbiddenError()
+	}
+
 	var requestData common.Advice
 	if err := apiservice.DecodeRequestData(&requestData, r); err != nil {
-		apiservice.WriteDeveloperError(w, http.StatusBadRequest, "Unable to parse json request body for updating advice points: "+err.Error())
-		return
+		return false, apiservice.NewValidationError(err.Error(), r)
 	} else if requestData.TreatmentPlanId.Int64() == 0 {
-		apiservice.WriteValidationError("treatment plan id needs to be specified to know which treatment plan to add advice to", w, r)
-		return
+		return false, apiservice.NewValidationError("treatment_plan_id must be specified", r)
 	}
+	ctxt.RequestCache[apiservice.RequestData] = requestData
 
 	patientId, err := d.dataAPI.GetPatientIdFromTreatmentPlanId(requestData.TreatmentPlanId.Int64())
 	if err != nil {
-		apiservice.WriteError(err, w, r)
-		return
+		return false, err
 	}
+	ctxt.RequestCache[apiservice.PatientId] = patientId
 
 	doctorId, err := d.dataAPI.GetDoctorIdFromAccountId(apiservice.GetContext(r).AccountId)
 	if err != nil {
-		apiservice.WriteError(err, w, r)
-		return
+		return false, err
 	}
+	ctxt.RequestCache[apiservice.DoctorId] = doctorId
 
 	// can only add regimen for a treatment that is a draft
 	treatmentPlan, err := d.dataAPI.GetAbridgedTreatmentPlan(requestData.TreatmentPlanId.Int64(), doctorId)
 	if err != nil {
-		apiservice.WriteError(err, w, r)
-		return
+		return false, err
 	} else if treatmentPlan.Status != api.STATUS_DRAFT {
-		apiservice.WriteValidationError("treatment plan must be in draft mode", w, r)
-		return
+		return false, apiservice.NewValidationError("treatment plan must be in draft mode", r)
 	}
+	ctxt.RequestCache[apiservice.TreatmentPlan] = treatmentPlan
 
 	if err := apiservice.ValidateWriteAccessToPatientCase(doctorId, patientId, treatmentPlan.PatientCaseId.Int64(), d.dataAPI); err != nil {
-		apiservice.WriteError(err, w, r)
-		return
+		return false, err
 	}
+
+	return true, nil
+}
+
+func (d *adviceHandler) ServeHTTP(w http.ResponseWriter, r *http.Request) {
+	ctxt := apiservice.GetContext(r)
+	doctorId := ctxt.RequestCache[apiservice.DoctorId].(int64)
+	requestData := ctxt.RequestCache[apiservice.RequestData].(common.Advice)
 
 	// ensure that all selected advice points are actually in the global list on the client side
 	for _, selectedAdvicePoint := range requestData.SelectedAdvicePoints {

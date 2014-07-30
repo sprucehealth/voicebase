@@ -12,9 +12,9 @@ type savedMessageHandler struct {
 	dataAPI api.DataAPI
 }
 
-type DoctorSavedMessagePutRequest struct {
-	DoctorID        int64  `json:"doctor_id,string"`
-	TreatmentPlanID int64  `json:"treatment_plan_id,string"`
+type DoctorSavedMessageRequestData struct {
+	DoctorID        int64  `json:"doctor_id"`
+	TreatmentPlanID int64  `json:"treatment_plan_id,string" schema:"treatment_plan_id"`
 	Message         string `json:"message"`
 }
 
@@ -22,14 +22,20 @@ type doctorSavedMessageGetResponse struct {
 	Message string `json:"message"`
 }
 
-type doctorSavedMessageRequestData struct {
-	TreatmentPlanID int64 `schema:"treatment_plan_id"`
-}
-
 func NewSavedMessageHandler(dataAPI api.DataAPI) http.Handler {
 	return &savedMessageHandler{
 		dataAPI: dataAPI,
 	}
+}
+
+func (h *savedMessageHandler) IsAuthorized(r *http.Request) (bool, error) {
+	switch apiservice.GetContext(r).Role {
+	case api.DOCTOR_ROLE, api.ADMIN_ROLE:
+	default:
+		return false, apiservice.NewAccessForbiddenError()
+	}
+
+	return true, nil
 }
 
 func (h *savedMessageHandler) ServeHTTP(w http.ResponseWriter, r *http.Request) {
@@ -71,7 +77,7 @@ func (h *savedMessageHandler) get(w http.ResponseWriter, r *http.Request, doctor
 		}
 	}
 
-	requestData := &doctorSavedMessageRequestData{}
+	requestData := &DoctorSavedMessageRequestData{}
 	if err := apiservice.DecodeRequestData(requestData, r); err != nil {
 		apiservice.WriteValidationError(err.Error(), w, r)
 		return
@@ -98,7 +104,7 @@ func (h *savedMessageHandler) get(w http.ResponseWriter, r *http.Request, doctor
 }
 
 func (h *savedMessageHandler) put(w http.ResponseWriter, r *http.Request, doctorID int64, ctx *apiservice.Context) {
-	var req DoctorSavedMessagePutRequest
+	var req DoctorSavedMessageRequestData
 	if err := apiservice.DecodeRequestData(&req, r); err != nil {
 		apiservice.WriteValidationError(err.Error(), w, r)
 		return

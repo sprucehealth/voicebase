@@ -25,6 +25,10 @@ func NewHandler() *eventHandler {
 	return &eventHandler{}
 }
 
+func (e *eventHandler) IsAuthorized(r *http.Request) (bool, error) {
+	return true, nil
+}
+
 func (e *eventHandler) ServeHTTP(w http.ResponseWriter, r *http.Request) {
 	if r.Method != apiservice.HTTP_POST {
 		http.NotFound(w, r)

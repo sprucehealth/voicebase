@@ -198,7 +198,7 @@ func reviewPatientVisit(patientVisitId int64, authHeader, host string) error {
 }
 
 func pickTreatmentPlan(patientVisitId int64, authHeader, host string) (*doctor_treatment_plan.DoctorTreatmentPlanResponse, error) {
-	jsonData, err := json.Marshal(&doctor_treatment_plan.PickTreatmentPlanRequestData{
+	jsonData, err := json.Marshal(&doctor_treatment_plan.TreatmentPlanRequestData{
 		TPParent: &common.TreatmentPlanParent{
 			ParentId:   encoding.NewObjectId(patientVisitId),
 			ParentType: common.TPParentTypePatientVisit,
@@ -295,7 +295,7 @@ func addTreatmentsToTreatmentPlan(treatments []*common.Treatment, treatmentPlanI
 
 func submitTreatmentPlan(treatmentPlanId int64, message, authHeader, host string) error {
 	jsonData, err := json.Marshal(&doctor_treatment_plan.TreatmentPlanRequestData{
-		TreatmentPlanId: encoding.NewObjectId(treatmentPlanId),
+		TreatmentPlanId: treatmentPlanId,
 		Message:         message,
 	})
 
