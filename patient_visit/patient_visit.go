@@ -57,9 +57,15 @@ func (s *patientVisitHandler) submitPatientVisit(w http.ResponseWriter, r *http.
 		return
 	}
 
-	patientId, err := s.dataApi.GetPatientIdFromAccountId(apiservice.GetContext(r).AccountId)
+	patient, err := s.dataApi.GetPatientFromAccountId(apiservice.GetContext(r).AccountId)
 	if err != nil {
 		apiservice.WriteDeveloperError(w, http.StatusInternalServerError, err.Error())
+		return
+	} else if patient.Pharmacy == nil {
+		apiservice.WriteValidationError("Unable to submit the visit until a pharmacy is selected to which we can send any prescriptions", w, r)
+		return
+	} else if patient.PatientAddress == nil {
+		apiservice.WriteValidationError("Unable to submit the visit until you've entered a valid credit card and billing address", w, r)
 		return
 	}
 
@@ -69,7 +75,7 @@ func (s *patientVisitHandler) submitPatientVisit(w http.ResponseWriter, r *http.
 		return
 	}
 
-	if patientId != patientIdFromPatientVisitId {
+	if patient.PatientId.Int64() != patientIdFromPatientVisitId {
 		apiservice.WriteDeveloperError(w, http.StatusBadRequest, "PatientId from auth token and patient id from patient visit don't match")
 		return
 	}
@@ -93,7 +99,7 @@ func (s *patientVisitHandler) submitPatientVisit(w http.ResponseWriter, r *http.
 	}
 
 	dispatch.Default.Publish(&VisitSubmittedEvent{
-		PatientId:     patientId,
+		PatientId:     patient.PatientId.Int64(),
 		VisitId:       requestData.PatientVisitId,
 		PatientCaseId: patientVisit.PatientCaseId.Int64(),
 	})

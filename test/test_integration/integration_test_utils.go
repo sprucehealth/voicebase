@@ -31,6 +31,7 @@ import (
 	"github.com/sprucehealth/backend/notify"
 	"github.com/sprucehealth/backend/patient_case"
 	"github.com/sprucehealth/backend/patient_visit"
+	"github.com/sprucehealth/backend/pharmacy"
 	"github.com/sprucehealth/backend/third_party/github.com/BurntSushi/toml"
 	_ "github.com/sprucehealth/backend/third_party/github.com/go-sql-driver/mysql"
 	"github.com/sprucehealth/backend/third_party/github.com/samuel/go-metrics/metrics"
@@ -216,6 +217,8 @@ func CreateRandomPatientVisitInState(state string, t *testing.T, testData *TestD
 	answerIntakeRequestBody := PrepareAnswersForQuestionsInPatientVisit(pv, t)
 	SubmitAnswersIntakeForPatient(pr.Patient.PatientId.Int64(), pr.Patient.AccountId.Int64(),
 		answerIntakeRequestBody, testData, t)
+	AddTestPharmacyForPatient(pr.Patient.PatientId.Int64(), testData, t)
+	AddTestAddressForPatient(pr.Patient.PatientId.Int64(), testData, t)
 	SubmitPatientVisitForPatient(pr.Patient.PatientId.Int64(), pv.PatientVisitId, testData, t)
 	return pv
 }
@@ -237,6 +240,33 @@ func GrantDoctorAccessToPatientCase(t *testing.T, testData *TestData, doctor *co
 	}
 }
 
+func AddTestAddressForPatient(patientId int64, testData *TestData, t *testing.T) {
+	if err := testData.DataApi.UpdateDefaultAddressForPatient(patientId, &common.Address{
+		AddressLine1: "123 Street",
+		AddressLine2: "Apt 123",
+		City:         "San Francisco",
+		State:        "CA",
+		ZipCode:      "94115",
+	}); err != nil {
+		t.Fatal(err)
+	}
+}
+
+func AddTestPharmacyForPatient(patientId int64, testData *TestData, t *testing.T) {
+	if err := testData.DataApi.UpdatePatientPharmacy(patientId, &pharmacy.PharmacyData{
+		SourceId:     123,
+		PatientId:    patientId,
+		Name:         "Test Pharmacy",
+		AddressLine1: "123 street",
+		AddressLine2: "Suite 250",
+		City:         "San Francisco",
+		State:        "CA",
+		Postal:       "94115",
+	}); err != nil {
+		t.Fatal(err)
+	}
+}
+
 func CreateRandomPatientVisitAndPickTP(t *testing.T, testData *TestData, doctor *common.Doctor) (*patient_visit.PatientVisitResponse, *common.DoctorTreatmentPlan) {
 	patientSignedupResponse := SignupRandomTestPatient(t, testData)
 	patientVisitResponse := CreatePatientVisitForPatient(patientSignedupResponse.Patient.PatientId.Int64(), testData, t)
@@ -247,6 +277,13 @@ func CreateRandomPatientVisitAndPickTP(t *testing.T, testData *TestData, doctor 
 	}
 	answerIntakeRequestBody := PrepareAnswersForQuestionsInPatientVisit(patientVisitResponse, t)
 	SubmitAnswersIntakeForPatient(patient.PatientId.Int64(), patient.AccountId.Int64(), answerIntakeRequestBody, testData, t)
+
+	// add pharmacy for patient
+	AddTestPharmacyForPatient(patient.PatientId.Int64(), testData, t)
+
+	// add address 	for patient
+	AddTestAddressForPatient(patient.PatientId.Int64(), testData, t)
+
 	SubmitPatientVisitForPatient(patientSignedupResponse.Patient.PatientId.Int64(), patientVisitResponse.PatientVisitId, testData, t)
 	patientCase, err := testData.DataApi.GetPatientCaseFromPatientVisitId(patientVisitResponse.PatientVisitId)
 	if err != nil {

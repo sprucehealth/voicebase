@@ -123,6 +123,8 @@ func TestPatientVisitSubmission(t *testing.T) {
 
 	signedupPatientResponse := SignupRandomTestPatient(t, testData)
 	patientVisitResponse := CreatePatientVisitForPatient(signedupPatientResponse.Patient.PatientId.Int64(), testData, t)
+	AddTestPharmacyForPatient(signedupPatientResponse.Patient.PatientId.Int64(), testData, t)
+	AddTestAddressForPatient(signedupPatientResponse.Patient.PatientId.Int64(), testData, t)
 
 	SubmitPatientVisitForPatient(signedupPatientResponse.Patient.PatientId.Int64(), patientVisitResponse.PatientVisitId, testData, t)
 
