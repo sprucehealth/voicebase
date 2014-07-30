@@ -52,6 +52,48 @@ func TestHomeCards_IncompleteVisit(t *testing.T) {
 	ensureSectionWithNSubViews(3, items[2], t)
 }
 
+func TestHomeCards_IncompleteVisit_MultiplePatients(t *testing.T) {
+	testData := test_integration.SetupIntegrationTest(t)
+	defer test_integration.TearDownIntegrationTest(t, testData)
+	pr := test_integration.SignupRandomTestPatient(t, testData)
+	test_integration.CreatePatientVisitForPatient(pr.Patient.PatientId.Int64(), testData, t)
+
+	items := getHomeCardsForPatient(pr.Token, testData, t)
+
+	if len(items) != 3 {
+		t.Fatalf("Expected 3 items but got %d instead", len(items))
+	}
+
+	ensureContinueVisitCard(items[0], t)
+	ensureSectionWithNSubViews(1, items[1], t)
+	ensureSectionWithNSubViews(3, items[2], t)
+
+	// create another patient and ensure that this patient also has the continue card visit
+	pr2 := test_integration.SignupRandomTestPatient(t, testData)
+	test_integration.CreatePatientVisitForPatient(pr2.Patient.PatientId.Int64(), testData, t)
+	items = getHomeCardsForPatient(pr2.Token, testData, t)
+
+	if len(items) != 3 {
+		t.Fatalf("Expected 3 items but got %d instead", len(items))
+	}
+
+	ensureContinueVisitCard(items[0], t)
+	ensureSectionWithNSubViews(1, items[1], t)
+	ensureSectionWithNSubViews(3, items[2], t)
+
+	// now ensure that the first patient's home state is still maintained as expected
+
+	items = getHomeCardsForPatient(pr.Token, testData, t)
+
+	if len(items) != 3 {
+		t.Fatalf("Expected 3 items but got %d instead", len(items))
+	}
+
+	ensureContinueVisitCard(items[0], t)
+	ensureSectionWithNSubViews(1, items[1], t)
+	ensureSectionWithNSubViews(3, items[2], t)
+}
+
 func TestHomeCards_VisitSubmitted(t *testing.T) {
 	testData := test_integration.SetupIntegrationTest(t)
 	defer test_integration.TearDownIntegrationTest(t, testData)
