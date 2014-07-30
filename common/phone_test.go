@@ -21,7 +21,7 @@ func TestPhoneNumber_MarshalUnmarshalJson(t *testing.T) {
 
 	// unmarshal
 	expectedPhone := "2068773590"
-	dataToUnmarshal := []byte(fmt.Sprintf(`{"phone" : "%s"}`, expectedPhone))
+	dataToUnmarshal := []byte(fmt.Sprintf(`{"phone" : %s}`, expectedPhone))
 	var p struct {
 		P Phone `json:"phone"`
 	}
@@ -33,7 +33,7 @@ func TestPhoneNumber_MarshalUnmarshalJson(t *testing.T) {
 
 	// test invalid unmarshalling
 	expectedPhone = "1231231234"
-	dataToUnmarshal = []byte(fmt.Sprintf(`{"phone" : "%s"}`, expectedPhone))
+	dataToUnmarshal = []byte(fmt.Sprintf(`{"phone" : %s}`, expectedPhone))
 	var a struct {
 		P Phone `json:"phone"`
 	}
