@@ -49,7 +49,6 @@ func TestPatientAlerts(t *testing.T) {
 	}
 
 	test_integration.SubmitAnswersIntakeForPatient(patient.PatientId.Int64(), patient.AccountId.Int64(), answerIntakeRequestBody, testData, t)
-
 	test_integration.SubmitPatientVisitForPatient(patientSignedupResponse.Patient.PatientId.Int64(), patientVisitResponse.PatientVisitId, testData, t)
 
 	// wait for a second so that the goroutine runs to capture the patient alerts
