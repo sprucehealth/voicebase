@@ -2,6 +2,7 @@ package common
 
 import (
 	"database/sql"
+	"errors"
 	"fmt"
 	"strconv"
 	"strings"
@@ -48,7 +49,13 @@ func ParsePhone(phoneNumber string) (Phone, error) {
 }
 
 func (p *Phone) UnmarshalJSON(data []byte) error {
-	*p = Phone(data)
+	strP := Phone(data)
+	if len(strP) < 2 {
+		return errors.New("Invalid phone number")
+	}
+
+	// assumption is that the number is quoted
+	*p = Phone(strP[1 : len(strP)-1])
 	if err := p.Validate(); err != nil {
 		return err
 	}

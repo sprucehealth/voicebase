@@ -1,6 +1,46 @@
 package common
 
-import "testing"
+import (
+	"encoding/json"
+	"fmt"
+	"testing"
+)
+
+func TestPhoneNumber_MarshalUnmarshalJson(t *testing.T) {
+
+	// marshal
+	expectedResult := `{"phone":"7348465522"}`
+	jsonData, err := json.Marshal(map[string]interface{}{
+		"phone": Phone("7348465522"),
+	})
+	if err != nil {
+		t.Fatal(err)
+	} else if string(jsonData) != expectedResult {
+		t.Fatalf("Expected %s but got %s", expectedResult, string(jsonData))
+	}
+
+	// unmarshal
+	expectedPhone := "2068773590"
+	dataToUnmarshal := []byte(fmt.Sprintf(`{"phone" : "%s"}`, expectedPhone))
+	var p struct {
+		P Phone `json:"phone"`
+	}
+	if err := json.Unmarshal(dataToUnmarshal, &p); err != nil {
+		t.Fatal(err)
+	} else if p.P.String() != expectedPhone {
+		t.Fatalf("Expected %s but got %s", expectedPhone, p.P.String())
+	}
+
+	// test invalid unmarshalling
+	expectedPhone = "1231231234"
+	dataToUnmarshal = []byte(fmt.Sprintf(`{"phone" : "%s"}`, expectedPhone))
+	var a struct {
+		P Phone `json:"phone"`
+	}
+	if err := json.Unmarshal(dataToUnmarshal, &a); err == nil {
+		t.Fatal("Expected number to be invalid but it wasn't")
+	}
+}
 
 func TestValidPhoneNumber(t *testing.T) {
 	if _, err := ParsePhone("2068773590"); err != nil {
