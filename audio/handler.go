@@ -20,8 +20,9 @@ type Handler struct {
 }
 
 type getRequest struct {
-	AudioID   int64 `schema:"audio_id"`
-	ClaimerID int64 `schema:"claimer_id"`
+	AudioID     int64  `schema:"audio_id, required"`
+	ClaimerType string `schema:"claimer_type, required"`
+	ClaimerID   int64  `schema:"claimer_id, required"`
 }
 
 type uploadResponse struct {
@@ -66,10 +67,10 @@ func (h *Handler) get(w http.ResponseWriter, r *http.Request) {
 	}
 
 	// TODO: need a more robust check for verifying access rights
-	// if audio.ClaimerID != requestData.ClaimerID {
-	// 	http.NotFound(w, r)
-	// 	return
-	// }
+	if audio.ClaimerID != requestData.ClaimerID {
+		http.NotFound(w, r)
+		return
+	}
 
 	rc, header, err := h.store.GetReader(audio.URL)
 	if err != nil {
