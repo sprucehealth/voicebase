@@ -53,6 +53,10 @@ func signupRandomTestPatient(addressAPI address.AddressValidationAPI, t *testing
 	if err != nil {
 		t.Fatal("Unable to parse response from patient signed up")
 	}
+
+	AddTestPharmacyForPatient(signedupPatientResponse.Patient.PatientId.Int64(), testData, t)
+	AddTestAddressForPatient(signedupPatientResponse.Patient.PatientId.Int64(), testData, t)
+
 	return signedupPatientResponse
 }
 

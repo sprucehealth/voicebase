@@ -82,8 +82,6 @@ func TestHomeCards_VisitSubmitted(t *testing.T) {
 	defer test_integration.TearDownIntegrationTest(t, testData)
 	pr := test_integration.SignupRandomTestPatient(t, testData)
 	pv := test_integration.CreatePatientVisitForPatient(pr.Patient.PatientId.Int64(), testData, t)
-	test_integration.AddTestPharmacyForPatient(pr.Patient.PatientId.Int64(), testData, t)
-	test_integration.AddTestAddressForPatient(pr.Patient.PatientId.Int64(), testData, t)
 	test_integration.SubmitPatientVisitForPatient(pr.Patient.PatientId.Int64(), pv.PatientVisitId, testData, t)
 
 	items := getHomeCardsForPatient(pr.Token, testData, t)
@@ -96,8 +94,6 @@ func TestHomeCards_VisitSubmitted(t *testing.T) {
 
 	pr2 := test_integration.SignupRandomTestPatient(t, testData)
 	pv2 := test_integration.CreatePatientVisitForPatient(pr2.Patient.PatientId.Int64(), testData, t)
-	test_integration.AddTestPharmacyForPatient(pr2.Patient.PatientId.Int64(), testData, t)
-	test_integration.AddTestAddressForPatient(pr2.Patient.PatientId.Int64(), testData, t)
 	test_integration.SubmitPatientVisitForPatient(pr2.Patient.PatientId.Int64(), pv2.PatientVisitId, testData, t)
 
 	// ensure the state of the second patient
@@ -131,8 +127,6 @@ func TestHomeCards_MessageFromDoctor(t *testing.T) {
 
 	pr := test_integration.SignupRandomTestPatient(t, testData)
 	pv := test_integration.CreatePatientVisitForPatient(pr.Patient.PatientId.Int64(), testData, t)
-	test_integration.AddTestPharmacyForPatient(pr.Patient.PatientId.Int64(), testData, t)
-	test_integration.AddTestAddressForPatient(pr.Patient.PatientId.Int64(), testData, t)
 	test_integration.SubmitPatientVisitForPatient(pr.Patient.PatientId.Int64(), pv.PatientVisitId, testData, t)
 	caseID, err := testData.DataApi.GetPatientCaseIdFromPatientVisitId(pv.PatientVisitId)
 	if err != nil {

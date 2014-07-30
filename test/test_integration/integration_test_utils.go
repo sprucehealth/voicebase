@@ -217,8 +217,6 @@ func CreateRandomPatientVisitInState(state string, t *testing.T, testData *TestD
 	answerIntakeRequestBody := PrepareAnswersForQuestionsInPatientVisit(pv, t)
 	SubmitAnswersIntakeForPatient(pr.Patient.PatientId.Int64(), pr.Patient.AccountId.Int64(),
 		answerIntakeRequestBody, testData, t)
-	AddTestPharmacyForPatient(pr.Patient.PatientId.Int64(), testData, t)
-	AddTestAddressForPatient(pr.Patient.PatientId.Int64(), testData, t)
 	SubmitPatientVisitForPatient(pr.Patient.PatientId.Int64(), pv.PatientVisitId, testData, t)
 	return pv
 }
