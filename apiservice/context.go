@@ -29,6 +29,7 @@ const (
 	RefillRequest
 	RequestData
 	ERxSource
+	FavoriteTreatmentPlan
 )
 
 type Context struct {
