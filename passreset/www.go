@@ -163,7 +163,7 @@ func (h *verifyHandler) ServeHTTP(w http.ResponseWriter, r *http.Request) {
 	var toNumber string
 	for _, n := range numbers {
 		if n.Type == api.PHONE_CELL {
-			toNumber = n.Phone
+			toNumber = n.Phone.String()
 			break
 		}
 	}

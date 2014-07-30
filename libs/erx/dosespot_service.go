@@ -266,16 +266,16 @@ func populatePatientForDoseSpot(currentPatient *common.Patient) (*patient, error
 	}
 
 	if len(currentPatient.PhoneNumbers) > 0 {
-		newPatient.PrimaryPhone = currentPatient.PhoneNumbers[0].Phone
+		newPatient.PrimaryPhone = currentPatient.PhoneNumbers[0].Phone.String()
 		newPatient.PrimaryPhoneType = currentPatient.PhoneNumbers[0].Type
 
 		if len(currentPatient.PhoneNumbers) > 1 {
-			newPatient.PhoneAdditional1 = currentPatient.PhoneNumbers[1].Phone
+			newPatient.PhoneAdditional1 = currentPatient.PhoneNumbers[1].Phone.String()
 			newPatient.PhoneAdditionalType1 = currentPatient.PhoneNumbers[1].Type
 		}
 
 		if len(currentPatient.PhoneNumbers) > 2 {
-			newPatient.PhoneAdditional2 = currentPatient.PhoneNumbers[2].Phone
+			newPatient.PhoneAdditional2 = currentPatient.PhoneNumbers[2].Phone.String()
 			newPatient.PhoneAdditionalType2 = currentPatient.PhoneNumbers[2].Type
 		}
 	}
@@ -361,7 +361,7 @@ func ensurePatientInformationIsConsistent(currentPatient *common.Patient, patien
 		return errors.New("PATIENT_INFO_MISTMATCH: zipCode")
 	}
 
-	if currentPatient.PhoneNumbers[0].Phone != patientFromDoseSpot.PrimaryPhone {
+	if currentPatient.PhoneNumbers[0].Phone.String() != patientFromDoseSpot.PrimaryPhone {
 		return errors.New("PATIENT_INFO_MISTMATCH: primaryPhone")
 	}
 
@@ -778,7 +778,7 @@ func (d *DoseSpotService) GetPatientDetails(erxPatientId int64) (*common.Patient
 		ZipCode: response.PatientUpdates[0].Patient.ZipCode,
 		DOB:     encoding.NewDOBFromTime(response.PatientUpdates[0].Patient.DateOfBirth.DateTime),
 		PhoneNumbers: []*common.PhoneNumber{&common.PhoneNumber{
-			Phone: response.PatientUpdates[0].Patient.PrimaryPhone,
+			Phone: parsePhone(response.PatientUpdates[0].Patient.PrimaryPhone),
 			Type:  response.PatientUpdates[0].Patient.PrimaryPhoneType,
 		},
 		},
@@ -786,14 +786,14 @@ func (d *DoseSpotService) GetPatientDetails(erxPatientId int64) (*common.Patient
 
 	if response.PatientUpdates[0].Patient.PhoneAdditional1 != "" {
 		newPatient.PhoneNumbers = append(newPatient.PhoneNumbers, &common.PhoneNumber{
-			Phone: response.PatientUpdates[0].Patient.PhoneAdditional1,
+			Phone: parsePhone(response.PatientUpdates[0].Patient.PhoneAdditional1),
 			Type:  response.PatientUpdates[0].Patient.PhoneAdditionalType1,
 		})
 	}
 
 	if response.PatientUpdates[0].Patient.PhoneAdditional2 != "" {
 		newPatient.PhoneNumbers = append(newPatient.PhoneNumbers, &common.PhoneNumber{
-			Phone: response.PatientUpdates[0].Patient.PhoneAdditional2,
+			Phone: parsePhone(response.PatientUpdates[0].Patient.PhoneAdditional2),
 			Type:  response.PatientUpdates[0].Patient.PhoneAdditionalType2,
 		})
 	}
@@ -814,6 +814,14 @@ func (d *DoseSpotService) GetPatientDetails(erxPatientId int64) (*common.Patient
 	}
 
 	return newPatient, nil
+}
+
+func parsePhone(phoneNumber string) common.Phone {
+	p, err := common.ParsePhone(phoneNumber)
+	if err != nil {
+		golog.Errorf("Unable to parse phone number for dosespot patient from string: %s", err)
+	}
+	return p
 }
 
 func (d *DoseSpotService) GetRefillRequestQueueForClinic(clinicianId int64) ([]*common.RefillRequestItem, error) {

@@ -54,7 +54,7 @@ func signupDoctor(t *testing.T, testData *TestData) (*doctor.DoctorSignedupRespo
 	params.Set("dob", "1987-11-08")
 	params.Set("gender", "male")
 	params.Set("clinician_id", os.Getenv("DOSESPOT_USER_ID"))
-	params.Set("phone", "123451616")
+	params.Set("phone", "7348465522")
 	params.Set("address_line_1", "12345 Main street")
 	params.Set("address_line_2", "apt 11415")
 	params.Set("city", "san francisco")

@@ -189,7 +189,7 @@ func TestPatientInformationUpdate(t *testing.T) {
 	// attempt to update all expected fields
 	expectedFirstName := "howard"
 	expectedLastName := "plower"
-	expectedPhone := "1234567890"
+	expectedPhone := "2068773590"
 	expectedGender := "other"
 	expectedDOB := "1900-01-01"
 	params := url.Values{}
@@ -225,7 +225,7 @@ func TestPatientInformationUpdate(t *testing.T) {
 		t.Fatalf("Expected dob %s but got %s", expectedDOB, patient.DOB.String())
 	} else if len(patient.PhoneNumbers) != 1 {
 		t.Fatalf("Expected 1 phone number to exist instead got %d", len(patient.PhoneNumbers))
-	} else if patient.PhoneNumbers[0].Phone != expectedPhone {
+	} else if patient.PhoneNumbers[0].Phone.String() != expectedPhone {
 		t.Fatalf("Expected phone %s but got %s", expectedPhone, patient.PhoneNumbers[0].Phone)
 	}
 

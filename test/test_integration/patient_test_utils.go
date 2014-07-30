@@ -44,6 +44,8 @@ func signupRandomTestPatient(t *testing.T, testData *TestData) *patientApiServic
 	body, err := ioutil.ReadAll(res.Body)
 	if err != nil {
 		t.Fatal("Unable to read body of response: " + err.Error())
+	} else if res.StatusCode != http.StatusOK {
+		t.Fatalf("Expected %d but got %d", http.StatusOK, res.StatusCode)
 	}
 
 	signedupPatientResponse := &patientApiService.PatientSignedupResponse{}

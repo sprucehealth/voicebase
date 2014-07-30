@@ -70,8 +70,15 @@ func (u *UpdateHandler) ServeHTTP(w http.ResponseWriter, r *http.Request) {
 		if len(patient.PhoneNumbers) == 0 {
 			patient.PhoneNumbers = make([]*common.PhoneNumber, 1)
 		}
+
+		phone, err := common.ParsePhone(phoneNumber)
+		if err != nil {
+			apiservice.WriteValidationError(err.Error(), w, r)
+			return
+		}
+
 		patient.PhoneNumbers[0] = &common.PhoneNumber{
-			Phone: phoneNumber,
+			Phone: phone,
 			Type:  api.PHONE_CELL,
 		}
 	}

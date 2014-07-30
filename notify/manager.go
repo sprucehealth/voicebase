@@ -102,7 +102,7 @@ func (n *NotificationManager) NotifyDoctor(doctor *common.Doctor, event interfac
 			return err
 		}
 	case common.SMS:
-		if err := n.sendSMSToUser(doctor.CellPhone, getNotificationViewForEvent(event).renderSMS()); err != nil {
+		if err := n.sendSMSToUser(doctor.CellPhone.String(), getNotificationViewForEvent(event).renderSMS()); err != nil {
 			golog.Errorf("Error sending sms to user: %s", err)
 			return err
 		}

@@ -126,7 +126,6 @@ func (d *signupDoctorHandler) ServeHTTP(w http.ResponseWriter, r *http.Request) 
 		Prefix:              requestData.Prefix,
 		MiddleName:          requestData.MiddleName,
 		DOB:                 encoding.DOB{Year: year, Month: month, Day: day},
-		CellPhone:           requestData.Phone,
 		DoseSpotClinicianId: requestData.ClinicianId,
 		DoctorAddress: &common.Address{
 			AddressLine1: requestData.AddressLine1,
@@ -136,6 +135,12 @@ func (d *signupDoctorHandler) ServeHTTP(w http.ResponseWriter, r *http.Request) 
 			ZipCode:      requestData.ZipCode,
 		},
 		PromptStatus: common.Unprompted,
+	}
+
+	doctorToRegister.CellPhone, err = common.ParsePhone(requestData.Phone)
+	if err != nil {
+		WriteValidationError(err.Error(), w, r)
+		return
 	}
 
 	// then, register the signed up user as a doctor

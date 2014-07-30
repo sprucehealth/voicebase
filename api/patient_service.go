@@ -57,7 +57,7 @@ func (d *DataService) updateTopLevelPatientInformation(db db, patient *common.Pa
 			status = STATUS_ACTIVE
 		}
 		_, err = db.Exec(`INSERT INTO account_phone (phone, phone_type, account_id, status) values (?,?,?,?)`,
-			phoneNumber.Phone, phoneNumber.Type, patient.AccountId.Int64(), status)
+			phoneNumber.Phone.String(), phoneNumber.Type, patient.AccountId.Int64(), status)
 		if err != nil {
 			return err
 		}
@@ -225,7 +225,7 @@ func (d *DataService) createPatientWithStatus(patient *common.Patient, status st
 
 	if len(patient.PhoneNumbers) > 0 {
 		_, err = tx.Exec(`INSERT INTO account_phone (account_id, phone, phone_type, status) VALUES (?,?,?,?)`,
-			patient.AccountId.Int64(), patient.PhoneNumbers[0].Phone, patient.PhoneNumbers[0].Type, STATUS_ACTIVE)
+			patient.AccountId.Int64(), patient.PhoneNumbers[0].Phone.String(), patient.PhoneNumbers[0].Type, STATUS_ACTIVE)
 		if err != nil {
 			return err
 		}
@@ -1191,7 +1191,8 @@ func (d *DataService) getPatientBasedOnQuery(table, joins, where string, queryPa
 	patients := make([]*common.Patient, 0)
 	for rows.Next() {
 		var firstName, lastName, status, gender string
-		var phone, phoneType, zipCode, city, state, email, paymentServiceCustomerId, suffix, prefix, middleName sql.NullString
+		var phoneType, zipCode, city, state, email, paymentServiceCustomerId, suffix, prefix, middleName sql.NullString
+		var phone common.Phone
 		var patientId, accountId, erxPatientId encoding.ObjectId
 		var dobMonth, dobYear, dobDay int
 		var personId int64
@@ -1220,7 +1221,7 @@ func (d *DataService) getPatientBasedOnQuery(table, joins, where string, queryPa
 			DOB:               encoding.DOB{Year: dobYear, Month: dobMonth, Day: dobDay},
 			PhoneNumbers: []*common.PhoneNumber{
 				&common.PhoneNumber{
-					Phone: phone.String,
+					Phone: phone,
 					Type:  phoneType.String,
 				},
 			},

@@ -54,7 +54,8 @@ type registerForm struct {
 	// Legal
 	EBusinessAgree bool
 
-	dob encoding.DOB
+	dob        encoding.DOB
+	cellNumber common.Phone
 }
 
 // Validate returns an error message for each field that doesn't match. If
@@ -93,6 +94,12 @@ func (r *registerForm) Validate() map[string]string {
 	}
 	if r.CellNumber == "" {
 		errors["CellNumber"] = "Cell phone number is required"
+	} else {
+		cellNumber, err := common.ParsePhone(r.CellNumber)
+		if err != nil {
+			errors["CellNumber"] = err.Error()
+		}
+		r.cellNumber = cellNumber
 	}
 	if len(r.Password1) < api.MinimumPasswordLength {
 		errors["Password1"] = fmt.Sprintf("Password must be a minimum of %d characters", api.MinimumPasswordLength)
@@ -174,7 +181,13 @@ func (h *registerHandler) ServeHTTP(w http.ResponseWriter, r *http.Request) {
 					LongDisplayName:  fmt.Sprintf("Dr. %s %s", form.FirstName, form.LastName),
 					DOB:              form.dob,
 					Gender:           form.Gender,
-					CellPhone:        form.CellNumber,
+					CellPhone:        form.cellNumber,
+					DoctorAddress:    address,
+					AccountId:        encoding.NewObjectId(accountID),
+					FirstName:        form.FirstName,
+					LastName:         form.LastName,
+					DOB:              form.dob,
+					Gender:           form.Gender,
 					DoctorAddress:    address,
 				}
 

@@ -112,12 +112,19 @@ func (s *SignupHandler) ServeHTTP(w http.ResponseWriter, r *http.Request) {
 		ZipCode:          requestData.Zipcode,
 		CityFromZipCode:  cityState.City,
 		StateFromZipCode: cityState.StateAbbreviation,
-		PhoneNumbers: []*common.PhoneNumber{&common.PhoneNumber{
-			Phone: requestData.Phone,
-			Type:  api.PHONE_CELL,
-		},
-		},
-		PromptStatus: common.Unprompted,
+		PromptStatus:     common.Unprompted,
+	}
+
+	patientPhone, err := common.ParsePhone(requestData.Phone)
+	if err != nil {
+		apiservice.WriteValidationError(err.Error(), w, r)
+		return
+	}
+
+	newPatient.PhoneNumbers = []*common.PhoneNumber{&common.PhoneNumber{
+		Phone: patientPhone,
+		Type:  api.PHONE_CELL,
+	},
 	}
 
 	newPatient.DOB, err = encoding.NewDOBFromComponents(dobParts[0], dobParts[1], dobParts[2])

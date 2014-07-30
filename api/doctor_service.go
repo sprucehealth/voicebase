@@ -55,7 +55,7 @@ func (d *DataService) RegisterDoctor(doctor *common.Doctor) (int64, error) {
 
 	if doctor.CellPhone != "" {
 		_, err = tx.Exec(`INSERT INTO account_phone (phone, phone_type, account_id, status) VALUES (?,?,?,?) `,
-			doctor.CellPhone, PHONE_CELL, doctor.AccountId.Int64(), STATUS_ACTIVE)
+			doctor.CellPhone.String(), PHONE_CELL, doctor.AccountId.Int64(), STATUS_ACTIVE)
 		if err != nil {
 			tx.Rollback()
 			return 0, err
@@ -115,7 +115,8 @@ func (d *DataService) queryDoctor(where string, queryParams ...interface{}) (*co
 		queryParams...)
 
 	var firstName, lastName, status, gender, email string
-	var cellPhoneNumber, addressLine1, addressLine2, city, state, zipCode, middleName, suffix, prefix, shortTitle, longTitle sql.NullString
+	var addressLine1, addressLine2, city, state, zipCode, middleName, suffix, prefix, shortTitle, longTitle sql.NullString
+	var cellPhoneNumber common.Phone
 	var doctorId, accountId encoding.ObjectId
 	var dobYear, dobMonth, dobDay int
 	var personId, roleTypeId int64
@@ -148,7 +149,7 @@ func (d *DataService) queryDoctor(where string, queryParams ...interface{}) (*co
 		Status:              status,
 		Gender:              gender,
 		Email:               email,
-		CellPhone:           cellPhoneNumber.String,
+		CellPhone:           cellPhoneNumber,
 		DoseSpotClinicianId: clinicianId.Int64,
 		DoctorAddress: &common.Address{
 			AddressLine1: addressLine1.String,

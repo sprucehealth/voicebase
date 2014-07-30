@@ -19,7 +19,7 @@ const (
 )
 
 type PhoneNumber struct {
-	Phone  string `json:"phone,omitempty"`
+	Phone  Phone  `json:"phone,omitempty"`
 	Type   string `json:"phone_type,omitempty"`
 	Status string `json:"-"`
 }
@@ -110,7 +110,7 @@ type Doctor struct {
 	Gender              string               `json:"-"`
 	Status              string               `json:"-"`
 	AccountId           encoding.ObjectId    `json:"-"`
-	CellPhone           string               `json:"phone"`
+	CellPhone           Phone                `json:"phone"`
 	LargeThumbnailURL   *app_url.SpruceAsset `json:"large_thumbnail_url,omitempty"`
 	SmallThumbnailURL   *app_url.SpruceAsset `json:"small_thumbnail_url,omitempty"`
 	ProfileURL          *app_url.SpruceAsset `json:"profile_url,omitempty"`

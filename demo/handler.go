@@ -127,7 +127,7 @@ func (c *Handler) createNewDemoPatient(patient *common.Patient, doctorId int64, 
 		urlValues.Set("dob", patient.DOB.String())
 		urlValues.Set("gender", patient.Gender)
 		urlValues.Set("zip_code", patient.ZipCode)
-		urlValues.Set("phone", patient.PhoneNumbers[0].Phone)
+		urlValues.Set("phone", patient.PhoneNumbers[0].Phone.String())
 		urlValues.Set("password", "12345")
 		urlValues.Set("email", fmt.Sprintf("%d%d@example.com", time.Now().UnixNano(), doctorId))
 
