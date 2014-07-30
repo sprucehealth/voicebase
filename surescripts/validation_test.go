@@ -100,6 +100,20 @@ func TestInvalidPhoneNumberInvalidAreaCode(t *testing.T) {
 	}
 }
 
+func TestInvalidPhoneNumber_RepeatingDigits(t *testing.T) {
+	if err := ValidatePhoneNumber("1111111111"); err == nil {
+		t.Fatal("Expected phone number to be invalid")
+	}
+
+	if err := ValidatePhoneNumber("000-000-0000"); err == nil {
+		t.Fatal("Expected phone number to be invalid")
+	}
+
+	if err := ValidatePhoneNumber("888-888-8888"); err == nil {
+		t.Fatal("Expected phone number to be invalid")
+	}
+}
+
 func TestAgeCalculation(t *testing.T) {
 	dob := encoding.DOB{
 		Year:  2014,

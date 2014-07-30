@@ -6,6 +6,7 @@ import (
 	"strconv"
 	"strings"
 	"time"
+	"unicode/utf8"
 
 	"github.com/sprucehealth/backend/address"
 	"github.com/sprucehealth/backend/api"
@@ -161,19 +162,23 @@ func ValidatePhoneNumber(phoneNumber string) error {
 		return fmt.Errorf("Phone numbers cannot be longer than %d digits", MaxPhoneNumberLength)
 	}
 
+	// ensure that there are no repeating digits in the number
+	if isRepeatingDigits(phoneNumber) {
+		return fmt.Errorf("Phone number cannot have repeating digits: %s", phoneNumber)
+	}
+
 	// attempt to break the string based on "-" to identify if phone number is formatted
 	components := strings.Split(phoneNumber, "-")
 
 	if len(components) == 1 {
 		// if there is no "-" in the number, then the only possible format that we accept is all digits for phone number
-
 		// if first 10 characteres are not digits, phone number is not valid
-		_, err := strconv.ParseInt(phoneNumber[0:10], 10, 64)
+		_, err := strconv.Atoi(phoneNumber[:10])
 		if err != nil {
 			return fmt.Errorf("Invalid phone number")
 		}
 
-		if !isValidAreaCode(phoneNumber[0:3]) {
+		if !isValidAreaCode(phoneNumber[:3]) {
 			return fmt.Errorf("Invalid area code")
 		}
 
@@ -187,7 +192,7 @@ func ValidatePhoneNumber(phoneNumber string) error {
 				return fmt.Errorf("Invalid extension for phone number. 'x' must follow the extension")
 			}
 
-			_, err := strconv.ParseInt(phoneNumber[11:], 10, 64)
+			_, err := strconv.Atoi(phoneNumber[11:])
 			if err != nil {
 				return fmt.Errorf("Invalid extension for phone number. Extension can only be digits")
 			}
@@ -199,7 +204,7 @@ func ValidatePhoneNumber(phoneNumber string) error {
 		}
 
 		// area code should have 3 digits in it
-		if len(components[0]) != 3 || !isValidAreaCode(components[0]) {
+		if !isValidAreaCode(components[0]) {
 			return fmt.Errorf("Invalid area code")
 		}
 
@@ -207,18 +212,18 @@ func ValidatePhoneNumber(phoneNumber string) error {
 		if len(components[1]) != 3 {
 			return fmt.Errorf("Invalid area code")
 		}
-		_, err := strconv.ParseInt(components[1], 10, 64)
+		_, err := strconv.Atoi(components[1])
 		if err != nil {
 			return fmt.Errorf("Invalid phone number")
 		}
 
-		// third component shoudl definitely have 4 digits but can have more if there is an extension involved
+		// third component should definitely have 4 digits but can have more if there is an extension involved
 		if len(components[2]) < 4 {
 			return fmt.Errorf("Invalid phone number")
 		}
 
 		// first 4 can only be digits in the last component
-		_, err = strconv.ParseInt(components[2][0:4], 10, 64)
+		_, err = strconv.Atoi(components[2][:4])
 		if err != nil {
 			return fmt.Errorf("Invalid phone number")
 		}
@@ -232,7 +237,7 @@ func ValidatePhoneNumber(phoneNumber string) error {
 				return fmt.Errorf("Invalid extension for phone number. 'x' must follow the extension")
 			}
 
-			_, err := strconv.ParseInt(components[2][5:], 10, 64)
+			_, err := strconv.Atoi(components[2][5:])
 			if err != nil {
 				return fmt.Errorf("Invalid extension for phone number. Extension can only be digits")
 			}
@@ -240,6 +245,20 @@ func ValidatePhoneNumber(phoneNumber string) error {
 	}
 
 	return nil
+}
+
+func isRepeatingDigits(phoneNumber string) bool {
+	firstRune, _ := utf8.DecodeRuneInString(phoneNumber)
+	repeat := func(r rune) rune {
+		switch {
+		case r == firstRune:
+			return -1
+		case r == '-':
+			return -1
+		}
+		return r
+	}
+	return len(strings.Map(repeat, phoneNumber)) == 0
 }
 
 func isValidAreaCode(areaCode string) bool {
