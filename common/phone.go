@@ -104,6 +104,12 @@ func (p *Phone) Validate() error {
 	components := strings.Split(phoneNumber, "-")
 
 	if len(components) == 1 {
+
+		// remove the leading 1 if present
+		if len(phoneNumber) == 11 && phoneNumber[0] == '1' {
+			phoneNumber = phoneNumber[1:]
+		}
+
 		// if there is no "-" in the number, then the only possible format that we accept is all digits for phone number
 		// if first 10 characteres are not digits, phone number is not valid
 		_, err := strconv.Atoi(phoneNumber[:10])
@@ -131,9 +137,13 @@ func (p *Phone) Validate() error {
 			}
 		}
 	} else {
-		// there should be three components "DDD"-"DDD"-"DDDD[xDDDDD..]"
 		if len(components) != 3 {
 			return fmt.Errorf("Invalid phone number")
+		}
+
+		// check if the first component has a leading 1, and remove if so
+		if len(components[0]) == 4 && components[0][0] == '1' {
+			components[0] = components[0][1:]
 		}
 
 		// area code should have 3 digits in it
@@ -182,16 +192,12 @@ func (p *Phone) Validate() error {
 
 func isRepeatingDigits(phoneNumber string) bool {
 	firstRune, _ := utf8.DecodeRuneInString(phoneNumber)
-	repeat := func(r rune) rune {
-		switch {
-		case r == firstRune:
-			return -1
-		case r == '-':
-			return -1
+	for _, r := range phoneNumber {
+		if firstRune != r && r != '-' {
+			return false
 		}
-		return r
 	}
-	return len(strings.Map(repeat, phoneNumber)) == 0
+	return true
 }
 
 func isValidAreaCode(areaCode string) bool {

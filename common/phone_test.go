@@ -51,6 +51,14 @@ func TestValidPhoneNumber(t *testing.T) {
 		t.Fatal("Expected phone number to be invalid")
 	}
 
+	if _, err := ParsePhone("1206-877-3590"); err != nil {
+		t.Fatal("Expected phone number to be invalid")
+	}
+
+	if _, err := ParsePhone("12068773590"); err != nil {
+		t.Fatal("Expected phone number to be invalid")
+	}
+
 }
 
 func TestValidPhoneNumberWithExtension(t *testing.T) {
