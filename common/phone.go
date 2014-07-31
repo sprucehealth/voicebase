@@ -49,6 +49,11 @@ func ParsePhone(phoneNumber string) (Phone, error) {
 
 func (p *Phone) UnmarshalJSON(data []byte) error {
 	strP := string(data)
+
+	if len(strP) == 0 {
+		return nil
+	}
+
 	if strP[0] == '"' && len(strP) > 2 {
 		*p = Phone(strP[1 : len(strP)-1])
 	} else {
