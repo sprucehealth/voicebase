@@ -17,19 +17,22 @@ import (
 	"testing"
 	"time"
 
+	"github.com/sprucehealth/backend/address"
 	"github.com/sprucehealth/backend/api"
 	"github.com/sprucehealth/backend/apiservice"
+	"github.com/sprucehealth/backend/apiservice/router"
 	"github.com/sprucehealth/backend/app_event"
 	"github.com/sprucehealth/backend/common"
 	"github.com/sprucehealth/backend/common/config"
 	"github.com/sprucehealth/backend/doctor_queue"
-	"github.com/sprucehealth/backend/doctor_treatment_plan"
 	"github.com/sprucehealth/backend/encoding"
+	"github.com/sprucehealth/backend/environment"
 	"github.com/sprucehealth/backend/libs/aws"
+	"github.com/sprucehealth/backend/libs/aws/sqs"
 	"github.com/sprucehealth/backend/libs/dispatch"
 	"github.com/sprucehealth/backend/libs/erx"
+	"github.com/sprucehealth/backend/libs/payment"
 	"github.com/sprucehealth/backend/notify"
-	"github.com/sprucehealth/backend/patient_case"
 	"github.com/sprucehealth/backend/patient_visit"
 	"github.com/sprucehealth/backend/pharmacy"
 	"github.com/sprucehealth/backend/third_party/github.com/BurntSushi/toml"
@@ -67,9 +70,11 @@ type TestData struct {
 	AuthApi             api.AuthAPI
 	ERxAPI              erx.ERxAPI
 	DBConfig            *TestDBConfig
+	RouterConfig        *router.RouterConfig
 	CloudStorageService api.CloudStorageAPI
 	DB                  *sql.DB
 	AWSAuth             aws.Auth
+	APIServer           *httptest.Server
 }
 
 type nullHasher struct{}
@@ -343,11 +348,10 @@ func SetupIntegrationTest(t *testing.T) *TestData {
 	if err != nil {
 		t.Fatal("Error trying to get auth setup: " + err.Error())
 	}
-	cloudStorageService := api.NewCloudStorageService(awsAuth)
 
+	cloudStorageService := api.NewCloudStorageService(awsAuth)
 	erxAPI := erx.NewDoseSpotService(testConf.DoseSpot.ClinicId, testConf.DoseSpot.UserId,
 		testConf.DoseSpot.ClinicKey, testConf.DoseSpot.SOAPEndpoint, testConf.DoseSpot.APIEndpoint, nil)
-
 	authApi := &api.Auth{
 		ExpireDuration: time.Minute * 10,
 		RenewDuration:  time.Minute * 5,
@@ -355,7 +359,13 @@ func SetupIntegrationTest(t *testing.T) *TestData {
 		Hasher:         nullHasher{},
 	}
 
+	dataAPI, err := api.NewDataService(db)
+	if err != nil {
+		t.Fatalf("Unable to initialize data service layer: %s", err)
+	}
+
 	testData := &TestData{
+		DataApi:             dataAPI,
 		AuthApi:             authApi,
 		ERxAPI:              erxAPI,
 		DBConfig:            dbConfig,
@@ -368,11 +378,6 @@ func SetupIntegrationTest(t *testing.T) *TestData {
 	_, err = testData.DB.Exec(`insert into role_type (role_type_tag) values ('DOCTOR'),('PATIENT')`)
 	if err != nil {
 		t.Fatal("Unable to create the provider role of DOCTOR " + err.Error())
-	}
-
-	testData.DataApi, err = api.NewDataService(db)
-	if err != nil {
-		t.Fatalf("Unable to initialize data service layer: %s", err)
 	}
 
 	// When setting up the database for each integration test, ensure to setup a doctor that is
@@ -391,19 +396,34 @@ func SetupIntegrationTest(t *testing.T) *TestData {
 	}
 
 	dispatch.Default = dispatch.New()
-	notificationManager := notify.NewManager(testData.DataApi, nil, nil, nil, "", "", nil, metrics.NewRegistry())
+	environment.SetCurrent("test")
 
-	doctor_treatment_plan.InitListeners(testData.DataApi)
-	doctor_queue.InitListeners(testData.DataApi, notificationManager, metrics.NewRegistry(), 0)
-	notify.InitListeners(testData.DataApi)
-	patient_case.InitListeners(testData.DataApi, notificationManager)
-	patient_visit.InitListeners(testData.DataApi)
+	testData.RouterConfig = &router.RouterConfig{
+		DataAPI:              testData.DataApi,
+		AuthAPI:              testData.AuthApi,
+		AddressValidationAPI: &address.StubAddressValidationService{},
+		PaymentAPI:           &payment.StubPaymentService{},
+		NotifyConfigs:        (*config.NotificationConfigs)(&map[string]*config.NotificationConfig{}),
+		NotificationManager:  notify.NewManager(testData.DataApi, nil, nil, nil, "", "", nil, metrics.NewRegistry()),
+		ERxStatusQueue:       &common.SQSQueue{QueueService: &sqs.StubSQS{}},
+		ERxAPI:               testData.ERxAPI,
+		MetricsRegistry:      metrics.NewRegistry(),
+		CloudStorageAPI:      testData.CloudStorageService,
+		ERxRouting:           true,
+		APISubdomain:         "api.spruce.local",
+		WebSubdomain:         "www.spruce.local",
+	}
+
+	// setup the restapi server
+	mux := router.New(testData.RouterConfig)
+	testData.APIServer = httptest.NewServer(mux)
 
 	return testData
 }
 
 func TearDownIntegrationTest(t *testing.T, testData *TestData) {
 	testData.DB.Close()
+	testData.APIServer.Close()
 
 	// put anything here that is global to the teardown process for integration tests
 	teardownScript := os.Getenv(spruceProjectDirEnv) + "/src/github.com/sprucehealth/backend/test/test_integration/teardown_integration_test.sh"

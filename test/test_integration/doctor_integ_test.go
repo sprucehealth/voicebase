@@ -173,7 +173,7 @@ func TestDoctorDiagnosisOfPatientVisit(t *testing.T) {
 	StartReviewingPatientVisit(patientVisitResponse.PatientVisitId, doctor, testData, t)
 
 	// doctor now attempts to diagnose patient visit
-	diagnosePatientHandler := patient_visit.NewDiagnosePatientHandler(testData.DataApi, testData.AuthApi, "")
+	diagnosePatientHandler := patient_visit.NewDiagnosePatientHandler(testData.DataApi, testData.AuthApi)
 	ts := httptest.NewServer(diagnosePatientHandler)
 	defer ts.Close()
 

@@ -29,7 +29,7 @@ func SignupRandomTestDoctor(t *testing.T, testData *TestData) (signedupDoctorRes
 }
 
 func signupDoctor(t *testing.T, testData *TestData) (*doctor.DoctorSignedupResponse, string, string) {
-	authHandler := doctor.NewSignupDoctorHandler(testData.DataApi, testData.AuthApi, "test")
+	authHandler := doctor.NewSignupDoctorHandler(testData.DataApi, testData.AuthApi)
 	ts := httptest.NewServer(authHandler)
 	defer ts.Close()
 
@@ -157,7 +157,7 @@ func PrepareAnswersForDiagnosingAsUnsuitableForSpruce(testData *TestData, t *tes
 		t.Fatal(err.Error())
 	}
 
-	diagnosePatientHandler := patient_visit.NewDiagnosePatientHandler(testData.DataApi, testData.AuthApi, "")
+	diagnosePatientHandler := patient_visit.NewDiagnosePatientHandler(testData.DataApi, testData.AuthApi)
 	ts := httptest.NewServer(diagnosePatientHandler)
 	defer ts.Close()
 
@@ -204,7 +204,7 @@ func SubmitPatientVisitDiagnosis(patientVisitId int64, doctor *common.Doctor, te
 }
 
 func SubmitPatientVisitDiagnosisWithIntake(patientVisitId, doctorAccountId int64, answerIntakeRequestBody *apiservice.AnswerIntakeRequestBody, testData *TestData, t *testing.T) {
-	diagnosePatientHandler := patient_visit.NewDiagnosePatientHandler(testData.DataApi, testData.AuthApi, "")
+	diagnosePatientHandler := patient_visit.NewDiagnosePatientHandler(testData.DataApi, testData.AuthApi)
 	ts := httptest.NewServer(diagnosePatientHandler)
 	defer ts.Close()
 
