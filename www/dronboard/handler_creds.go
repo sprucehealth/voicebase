@@ -36,6 +36,7 @@ type stateLicense struct {
 	Status     string
 	Expiration string
 
+	status     common.MedicalLicenseStatus
 	expiration *time.Time
 }
 
@@ -79,6 +80,15 @@ func (r *credentialsForm) Validate() map[string]string {
 		if l.State != "" {
 			if l.Number == "" || l.Status == "" {
 				errors[fmt.Sprintf("StateLicenses.%d", i)] = "Missing value"
+				continue
+			} else if l.Status != "" {
+				status, err := common.GetMedicalLicenseStatus(l.Status)
+				if err == nil {
+					l.status = status
+				} else {
+					errors[fmt.Sprintf("StateLicenses.%d", i)] = "Bad status value"
+					continue
+				}
 			}
 			if l.Expiration != "" {
 				cutoffYear := time.Now().UTC().Year() + 50
@@ -92,6 +102,8 @@ func (r *credentialsForm) Validate() map[string]string {
 					fmt.Printf("%+v\n", err)
 					errors[fmt.Sprintf("StateLicenses.%d", i)] = "Bad expiration date format (mm/dd/yyyy)"
 				}
+			} else if l.status == common.MLActive {
+				errors[fmt.Sprintf("StateLicenses.%d", i)] = "Expiration date is required"
 			}
 			n++
 		}
@@ -142,19 +154,11 @@ func (h *credentialsHandler) ServeHTTP(w http.ResponseWriter, r *http.Request) {
 
 			licenses := make([]*common.MedicalLicense, 0, len(form.StateLicenses))
 			for _, l := range form.StateLicenses {
-				status, err := common.GetMedicalLicenseStatus(l.Status)
-				if err != nil {
-					// TODO: this should just show an error on the form but should
-					// only ever happen if someone tries a POST without using the form
-					// so an internal error is fine for now.
-					www.InternalServerError(w, r, err)
-					return
-				}
 				if l.State != "" {
 					licenses = append(licenses, &common.MedicalLicense{
 						DoctorID:   doctorID,
 						State:      l.State,
-						Status:     status,
+						Status:     l.status,
 						Number:     l.Number,
 						Expiration: l.expiration,
 					})
