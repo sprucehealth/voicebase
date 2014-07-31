@@ -146,61 +146,93 @@ func NewDOBFromComponents(dobYear, dobMonth, dobDay string) (DOB, error) {
 // flexibility of order. The separator is auto-detected and
 // can be any rune in the set given.
 func ParseDOB(dobStr, order string, separators []rune) (DOB, error) {
+	year, month, day, err := ParseDate(dobStr, order, separators, 0)
+	if err != nil {
+		return DOB{}, err
+	}
+	dob := DOB{
+		Year:  year,
+		Month: month,
+		Day:   day,
+	}
+	return dob, dob.Validate()
+}
+
+// ParseDate parses a string into year, month, and day providing the
+// flexibility of order. The separator is auto-detected and
+// can be any rune in the set given. If cutoffYear is given then it
+// is used when a two digit year is found. Otherwise, a cutoff of
+// the current year is used. Set cutoffYear to less than 0 to prevent
+// parsing two digit years and instead return an error.
+func ParseDate(dateStr, order string, separators []rune, cutoffYear int) (year, month, day int, err error) {
 	if len(order) != 3 {
-		return DOB{}, errors.New("encoding.ParseDOB: order must be some combination of YMD")
+		return 0, 0, 0, errors.New("encoding.ParseDate: order must be some combination of YMD")
+	}
+
+	if cutoffYear == 0 {
+		cutoffYear = time.Now().UTC().Year()
 	}
 
 	var sep rune
 	for _, r := range separators {
-		if idx := strings.IndexRune(dobStr, r); idx > 0 {
+		if idx := strings.IndexRune(dateStr, r); idx > 0 {
 			sep = r
 			break
 		}
 	}
 	if sep == 0 {
-		return DOB{}, errors.New("encoding.ParseDOB: no separator found")
+		return 0, 0, 0, errors.New("encoding.ParseDate: no separator found")
 	}
 	sepLen := utf8.RuneLen(sep)
 
-	var dob DOB
 	for i := 0; i < 3; i++ {
-		vs := dobStr
+		vs := dateStr
 		if i < 2 {
-			idx := strings.IndexRune(dobStr, sep)
+			idx := strings.IndexRune(dateStr, sep)
 			if idx <= 0 {
-				return dob, fmt.Errorf("encoding.ParseDOB: missing part %d", i)
+				return 0, 0, 0, fmt.Errorf("encoding.ParseDate: missing part %d", i)
 			}
-			vs = dobStr[:idx]
-			dobStr = dobStr[idx+sepLen:]
+			vs = dateStr[:idx]
+			dateStr = dateStr[idx+sepLen:]
 		}
 		v, err := strconv.Atoi(vs)
 		if err != nil {
-			return dob, fmt.Errorf("encoding.ParseDOB: bad number '%s': %s", vs, err.Error())
+			return 0, 0, 0, fmt.Errorf("encoding.ParseDate: bad number '%s': %s", vs, err.Error())
 		}
 		switch order[i] {
 		case 'Y':
 			if len(vs) == 2 {
-				// If given 2 digits then if the lower two digits of
-				// the current year are greater than or equal than
-				// assume it's in this century. Otherwise, the year
-				// must be in the last century. This should be fine
-				// for birthdays as it covers anyone from 100 years old
-				// to 0.
-				curYear := time.Now().Year()
-				if x := curYear % 100; v <= x {
-					v += curYear - x
+				if cutoffYear < 0 {
+					return 0, 0, 0, fmt.Errorf("encoding.ParseDate: two digit year not allowed")
+				}
+				if x := cutoffYear % 100; v <= x {
+					v += cutoffYear - x
 				} else {
-					v += curYear - x - 100
+					v += cutoffYear - x - 100
 				}
 			}
-			dob.Year = v
+			year = v
 		case 'M':
-			dob.Month = v
+			month = v
 		case 'D':
-			dob.Day = v
+			day = v
 		default:
-			return DOB{}, fmt.Errorf("encoding.ParseDOB: %c not valid in order (must be one of YMD)", order[i])
+			return 0, 0, 0, fmt.Errorf("encoding.ParseDate: %c not valid in order (must be one of YMD)", order[i])
 		}
 	}
-	return dob, dob.Validate()
+	if month < 1 || month > 12 {
+		return 0, 0, 0, fmt.Errorf("encoding.ParseDate: invalid month %d", month)
+	}
+	if day < 1 || day > 31 {
+		return 0, 0, 0, fmt.Errorf("encoding.ParseDate: invalid day %d", day)
+	}
+	return year, month, day, nil
+}
+
+func ParseDateToTime(dateStr, order string, separators []rune, cutoffYear int) (time.Time, error) {
+	year, month, day, err := ParseDate(dateStr, order, separators, cutoffYear)
+	if err != nil {
+		return time.Time{}, err
+	}
+	return time.Date(year, time.Month(month), day, 0, 0, 0, 0, time.UTC), nil
 }

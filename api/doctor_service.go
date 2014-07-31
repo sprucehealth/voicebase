@@ -1342,17 +1342,17 @@ func (d *DataService) AddMedicalLicenses(licenses []*common.MedicalLicense) erro
 		if l.State == "" || l.Number == "" || l.Status == "" {
 			return errors.New("api: license is missing state, number, or status")
 		}
-		replacements[i] = "(?,?,?,?)"
-		values = append(values, l.DoctorID, l.State, l.Number, l.Status.String())
+		replacements[i] = "(?,?,?,?,?)"
+		values = append(values, l.DoctorID, l.State, l.Number, l.Status.String(), l.Expiration)
 	}
-	_, err := d.db.Exec(`REPLACE INTO doctor_medical_license (doctor_id, state, license_number, status) VALUES `+strings.Join(replacements, ","),
+	_, err := d.db.Exec(`REPLACE INTO doctor_medical_license (doctor_id, state, license_number, status, expiration_date) VALUES `+strings.Join(replacements, ","),
 		values...)
 	return err
 }
 
 func (d *DataService) MedicalLicenses(doctorID int64) ([]*common.MedicalLicense, error) {
 	rows, err := d.db.Query(`
-		SELECT id, state, license_number, status
+		SELECT id, state, license_number, status, expiration_date
 		FROM doctor_medical_license
 		WHERE doctor_id = ?
 		ORDER BY state`, doctorID)
@@ -1364,7 +1364,7 @@ func (d *DataService) MedicalLicenses(doctorID int64) ([]*common.MedicalLicense,
 	var licenses []*common.MedicalLicense
 	for rows.Next() {
 		l := &common.MedicalLicense{DoctorID: doctorID}
-		if err := rows.Scan(&l.ID, &l.State, &l.Number, &l.Status); err != nil {
+		if err := rows.Scan(&l.ID, &l.State, &l.Number, &l.Status, &l.Expiration); err != nil {
 			return nil, err
 		}
 		licenses = append(licenses, l)

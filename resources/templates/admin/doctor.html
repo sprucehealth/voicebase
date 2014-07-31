@@ -25,11 +25,11 @@
 
 	<table class="table">
 		<thead>
-			<tr><th>State</th><th>Number</th><th>Status</th></tr>
+			<tr><th>State</th><th>Number</th><th>Status</th><th>Expiration</th></tr>
 		</thead>
 		<tbody>
 			{{range .MedicalLicenses}}
-				<tr><td>{{.State}}</td><td>{{.Number}}</td><td>{{.Status}}</td></tr>
+				<tr><td>{{.State}}</td><td>{{.Number}}</td><td>{{.Status}}</td><td>{{with .Expiration}}{{.}}{{end}}</td></tr>
 			{{end}}
 		</tbody>
 	</table>
