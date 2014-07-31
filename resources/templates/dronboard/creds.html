@@ -56,6 +56,7 @@ $(function() {
 					<th>State</th>
 					<th>License Number</th>
 					<th>License Status</th>
+					<th>Expiration Date</th>
 				</tr>
 			</thead>
 			<tbody>
@@ -80,6 +81,9 @@ $(function() {
 							<option value="{{.}}"{{if eq $currentLicenseStatus .}} selected{{end}}>{{.}}</option>
 						{{end}}
 						</select>
+					</td>
+					<td>
+						<input type="date" name="StateLicenses.{{$i}}.Expiration" value="{{$l.Expiration}}">
 					</td>
 				</tr>
 			{{end}}

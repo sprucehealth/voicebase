@@ -562,11 +562,12 @@ type Account struct {
 }
 
 type MedicalLicense struct {
-	ID       int64
-	DoctorID int64
-	State    string
-	Number   string
-	Status   MedicalLicenseStatus
+	ID         int64
+	DoctorID   int64
+	State      string
+	Number     string
+	Expiration *time.Time
+	Status     MedicalLicenseStatus
 }
 
 type BankAccount struct {

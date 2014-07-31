@@ -3,9 +3,11 @@ package dronboard
 import (
 	"fmt"
 	"net/http"
+	"time"
 
 	"github.com/sprucehealth/backend/api"
 	"github.com/sprucehealth/backend/common"
+	"github.com/sprucehealth/backend/encoding"
 	"github.com/sprucehealth/backend/libs/httputil"
 	"github.com/sprucehealth/backend/third_party/github.com/SpruceHealth/schema"
 	"github.com/sprucehealth/backend/third_party/github.com/gorilla/context"
@@ -29,9 +31,13 @@ type credentialsHandler struct {
 }
 
 type stateLicense struct {
-	State  string
-	Number string
-	Status string
+	State      string
+	Number     string
+	Status     string
+	Expiration string
+
+	status     common.MedicalLicenseStatus
+	expiration *time.Time
 }
 
 type credentialsForm struct {
@@ -74,6 +80,30 @@ func (r *credentialsForm) Validate() map[string]string {
 		if l.State != "" {
 			if l.Number == "" || l.Status == "" {
 				errors[fmt.Sprintf("StateLicenses.%d", i)] = "Missing value"
+				continue
+			} else if l.Status != "" {
+				status, err := common.GetMedicalLicenseStatus(l.Status)
+				if err == nil {
+					l.status = status
+				} else {
+					errors[fmt.Sprintf("StateLicenses.%d", i)] = "Bad status value"
+					continue
+				}
+			}
+			if l.Expiration != "" {
+				cutoffYear := time.Now().UTC().Year() + 50
+				tm, err := encoding.ParseDateToTime(l.Expiration, "YMD", []rune{'/', '-'}, cutoffYear)
+				if err != nil {
+					tm, err = encoding.ParseDateToTime(l.Expiration, "MDY", []rune{'/', '-'}, cutoffYear)
+				}
+				if err == nil {
+					l.expiration = &tm
+				} else {
+					fmt.Printf("%+v\n", err)
+					errors[fmt.Sprintf("StateLicenses.%d", i)] = "Bad expiration date format (mm/dd/yyyy)"
+				}
+			} else if l.status == common.MLActive {
+				errors[fmt.Sprintf("StateLicenses.%d", i)] = "Expiration date is required"
 			}
 			n++
 		}
@@ -124,20 +154,13 @@ func (h *credentialsHandler) ServeHTTP(w http.ResponseWriter, r *http.Request) {
 
 			licenses := make([]*common.MedicalLicense, 0, len(form.StateLicenses))
 			for _, l := range form.StateLicenses {
-				status, err := common.GetMedicalLicenseStatus(l.Status)
-				if err != nil {
-					// TODO: this should just show an error on the form but should
-					// only ever happen if someone tries a POST without using the form
-					// so an internal error is fine for now.
-					www.InternalServerError(w, r, err)
-					return
-				}
 				if l.State != "" {
 					licenses = append(licenses, &common.MedicalLicense{
-						DoctorID: doctorID,
-						State:    l.State,
-						Status:   status,
-						Number:   l.Number,
+						DoctorID:   doctorID,
+						State:      l.State,
+						Status:     l.status,
+						Number:     l.Number,
+						Expiration: l.expiration,
 					})
 				}
 			}
@@ -208,10 +231,20 @@ func (h *credentialsHandler) ServeHTTP(w http.ResponseWriter, r *http.Request) {
 			return
 		}
 		for _, l := range licenses {
+			var exp string
+			if l.Expiration != nil {
+				// Using YYYY-MM-DD since that's what Chrome expects for a date field (otherwise
+				// it doesn't show the value). It would be better to format it properly based on
+				// browser and support for HTML5 input fields, but that requires some mangling
+				// of the value in javascript. Hopefully people will understand if they revisit
+				// the page what the parts mean.
+				exp = l.Expiration.Format("2006-01-02")
+			}
 			form.StateLicenses = append(form.StateLicenses, &stateLicense{
-				State:  l.State,
-				Number: l.Number,
-				Status: l.Status.String(),
+				State:      l.State,
+				Number:     l.Number,
+				Status:     l.Status.String(),
+				Expiration: exp,
 			})
 		}
 	}
