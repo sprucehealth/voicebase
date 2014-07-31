@@ -9,7 +9,6 @@ import (
 	"github.com/sprucehealth/backend/encoding"
 	"github.com/sprucehealth/backend/libs/dispatch"
 	"github.com/sprucehealth/backend/libs/erx"
-	"github.com/sprucehealth/backend/libs/httputil"
 )
 
 type treatmentsHandler struct {
@@ -18,7 +17,7 @@ type treatmentsHandler struct {
 }
 
 func NewTreatmentsHandler(dataAPI api.DataAPI, erxAPI erx.ERxAPI) http.Handler {
-	return httputil.SupportedMethods(&treatmentsHandler{
+	return apiservice.SupportedMethods(&treatmentsHandler{
 		dataAPI: dataAPI,
 		erxAPI:  erxAPI,
 	}, []string{apiservice.HTTP_POST})
@@ -74,7 +73,7 @@ func (t *treatmentsHandler) ServeHTTP(w http.ResponseWriter, r *http.Request) {
 	ctxt := apiservice.GetContext(r)
 	requestData := ctxt.RequestCache[apiservice.RequestData].(*AddTreatmentsRequestBody)
 	doctor := ctxt.RequestCache[apiservice.Doctor].(*common.Doctor)
-	treatmentPlan := ctxt.RequestCache[apiservice.TreatmentPlan].(*common.TreatmentPlan)
+	treatmentPlan := ctxt.RequestCache[apiservice.TreatmentPlan].(*common.DoctorTreatmentPlan)
 
 	if requestData.Treatments == nil {
 		apiservice.WriteDeveloperError(w, http.StatusBadRequest, "Nothing to do becuase no treatments were passed to add ")
@@ -105,7 +104,7 @@ func (t *treatmentsHandler) ServeHTTP(w http.ResponseWriter, r *http.Request) {
 	}
 
 	// Add treatments to patient
-	if err := t.dataAPI.AddTreatmentsForTreatmentPlan(requestData.Treatments, doctor.DoctorId.Int64(), requestData.TreatmentPlanId.Int64(), treatmentPlan.PatientId.Int64()); err != nil {
+	if err := t.dataAPI.AddTreatmentsForTreatmentPlan(requestData.Treatments, doctor.DoctorId.Int64(), requestData.TreatmentPlanId.Int64(), treatmentPlan.PatientId); err != nil {
 		apiservice.WriteDeveloperError(w, http.StatusInternalServerError, "Unable to add treatment to patient visit: "+err.Error())
 		return
 	}

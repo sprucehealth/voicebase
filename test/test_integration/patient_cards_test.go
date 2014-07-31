@@ -4,6 +4,7 @@ import (
 	"bytes"
 	"encoding/json"
 	"fmt"
+	"net/http"
 	"net/http/httptest"
 	"net/url"
 	"strconv"
@@ -12,9 +13,9 @@ import (
 	"time"
 
 	"github.com/sprucehealth/backend/address"
-	"github.com/sprucehealth/backend/apiservice"
 	"github.com/sprucehealth/backend/common"
 	"github.com/sprucehealth/backend/libs/payment"
+	patientpkg "github.com/sprucehealth/backend/patient"
 )
 
 func TestAddCardsForPatient(t *testing.T) {
@@ -45,11 +46,11 @@ func TestAddCardsForPatient(t *testing.T) {
 		},
 	}
 
-	patientCardsHandler := &apiservice.PatientCardsHandler{
-		DataApi:              testData.DataApi,
-		PaymentApi:           stubPaymentsService,
-		AddressValidationApi: stubAddressValidationService,
-	}
+	patientCardsHandler := patientpkg.NewCardsHandler(
+		testData.DataApi,
+		stubPaymentsService,
+		stubAddressValidationService,
+	)
 
 	ts := httptest.NewServer(patientCardsHandler)
 	defer ts.Close()
@@ -126,7 +127,7 @@ func TestAddCardsForPatient(t *testing.T) {
 		t.Fatal("Unable to make previous card default: " + err.Error())
 	}
 
-	patientCardsResponse := &apiservice.PatientCardsResponse{}
+	patientCardsResponse := &patientpkg.PatientCardsResponse{}
 	if err := json.NewDecoder(resp.Body).Decode(patientCardsResponse); err != nil {
 		t.Fatalf("Unable to unmarshal response body into patient cards response: %+v", err)
 	}
@@ -285,7 +286,7 @@ func TestAddCardsForPatient(t *testing.T) {
 	}
 }
 
-func deleteCard(t *testing.T, testData *TestData, patient *common.Patient, cardToDelete *common.Card, stubPaymentsService *payment.StubPaymentService, patientCardsHandler *apiservice.PatientCardsHandler, currentCards []*common.Card) []*common.Card {
+func deleteCard(t *testing.T, testData *TestData, patient *common.Patient, cardToDelete *common.Card, stubPaymentsService *payment.StubPaymentService, patientCardsHandler http.Handler, currentCards []*common.Card) []*common.Card {
 	params := url.Values{}
 	params.Set("card_id", strconv.FormatInt(cardToDelete.Id.Int64(), 10))
 
@@ -305,7 +306,7 @@ func deleteCard(t *testing.T, testData *TestData, patient *common.Patient, cardT
 		t.Fatal("Unable to delete card: " + err.Error())
 	}
 
-	patientCardsResponse := &apiservice.PatientCardsResponse{}
+	patientCardsResponse := &patientpkg.PatientCardsResponse{}
 	if err := json.NewDecoder(resp.Body).Decode(patientCardsResponse); err != nil {
 		t.Fatalf("Unable to unmarshal cards ")
 	}
@@ -315,7 +316,7 @@ func deleteCard(t *testing.T, testData *TestData, patient *common.Patient, cardT
 	return patientCardsResponse.Cards
 }
 
-func addCard(t *testing.T, testData *TestData, patientAccountId int64, patientCardsHandler *apiservice.PatientCardsHandler, stubPaymentsService *payment.StubPaymentService, currentCards []*common.Card) (*common.Card, []*common.Card) {
+func addCard(t *testing.T, testData *TestData, patientAccountId int64, patientCardsHandler http.Handler, stubPaymentsService *payment.StubPaymentService, currentCards []*common.Card) (*common.Card, []*common.Card) {
 
 	ts := httptest.NewServer(patientCardsHandler)
 	defer ts.Close()
@@ -364,7 +365,7 @@ func addCard(t *testing.T, testData *TestData, patientAccountId int64, patientCa
 		t.Fatal("Unable to successfully add card to customer " + err.Error())
 	}
 
-	patientCardsResponse := &apiservice.PatientCardsResponse{}
+	patientCardsResponse := &patientpkg.PatientCardsResponse{}
 	if err := json.NewDecoder(resp.Body).Decode(patientCardsResponse); err != nil {
 		t.Fatalf("Unable to unmarshal response body into cardsResponse object: %+v", err)
 	}

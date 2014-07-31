@@ -12,17 +12,15 @@ import (
 )
 
 type diagnosePatientHandler struct {
-	dataApi     api.DataAPI
-	authApi     api.AuthAPI
-	environment string
+	dataApi api.DataAPI
+	authApi api.AuthAPI
 }
 
-func NewDiagnosePatientHandler(dataApi api.DataAPI, authApi api.AuthAPI, environment string) *diagnosePatientHandler {
+func NewDiagnosePatientHandler(dataApi api.DataAPI, authApi api.AuthAPI) *diagnosePatientHandler {
 	cacheInfoForUnsuitableVisit(dataApi)
 	return &diagnosePatientHandler{
-		dataApi:     dataApi,
-		authApi:     authApi,
-		environment: environment,
+		dataApi: dataApi,
+		authApi: authApi,
 	}
 }
 

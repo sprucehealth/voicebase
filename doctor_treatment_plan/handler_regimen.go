@@ -9,7 +9,6 @@ import (
 	"github.com/sprucehealth/backend/common"
 	"github.com/sprucehealth/backend/encoding"
 	"github.com/sprucehealth/backend/libs/dispatch"
-	"github.com/sprucehealth/backend/libs/httputil"
 )
 
 type regimenHandler struct {
@@ -22,7 +21,7 @@ type DoctorRegimenRequestResponse struct {
 }
 
 func NewRegimenHandler(dataAPI api.DataAPI) http.Handler {
-	return httputil.SupportedMethods(&regimenHandler{
+	return apiservice.SupportedMethods(&regimenHandler{
 		dataAPI: dataAPI,
 	}, []string{apiservice.HTTP_POST})
 }

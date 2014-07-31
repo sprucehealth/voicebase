@@ -36,9 +36,6 @@ func (h *homeHandler) NonAuthenticated() bool {
 }
 
 func (h *homeHandler) IsAuthorized(r *http.Request) (bool, error) {
-	if apiservice.GetContext(r).Role != api.PATIENT_ROLE {
-		return false, apiservice.NewAccessForbiddenError()
-	}
 	return true, nil
 }
 

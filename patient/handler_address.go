@@ -5,7 +5,6 @@ import (
 
 	"github.com/sprucehealth/backend/api"
 	"github.com/sprucehealth/backend/apiservice"
-	"github.com/sprucehealth/backend/libs/httputil"
 )
 
 const (
@@ -18,7 +17,7 @@ type addressHandler struct {
 }
 
 func NewAddressHandler(dataAPI api.DataAPI, addressType string) http.Handler {
-	return httputil.SupportedMethods(&addressHandler{
+	return apiservice.SupportedMethods(&addressHandler{
 		dataAPI:     dataAPI,
 		addressType: addressType,
 	}, []string{apiservice.HTTP_POST})

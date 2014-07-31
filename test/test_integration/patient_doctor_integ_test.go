@@ -82,7 +82,7 @@ func TestPatientVisitReview(t *testing.T) {
 	defer ts3.Close()
 
 	jsonData, err := json.Marshal(&doctor_treatment_plan.TreatmentPlanRequestData{
-		TreatmentPlanId: treatmentPlan.Id,
+		TreatmentPlanId: treatmentPlan.Id.Int64(),
 		Message:         "hello",
 	})
 
@@ -243,7 +243,7 @@ func TestPatientVisitReview(t *testing.T) {
 	// get doctor to submit the patient visit review
 
 	jsonData, err = json.Marshal(&doctor_treatment_plan.TreatmentPlanRequestData{
-		TreatmentPlanId: treatmentPlan.Id,
+		TreatmentPlanId: treatmentPlan.Id.Int64(),
 		Message:         "hello again",
 	})
 	if err != nil {

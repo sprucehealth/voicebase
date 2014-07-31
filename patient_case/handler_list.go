@@ -6,7 +6,6 @@ import (
 	"github.com/sprucehealth/backend/api"
 	"github.com/sprucehealth/backend/apiservice"
 	"github.com/sprucehealth/backend/common"
-	"github.com/sprucehealth/backend/libs/httputil"
 )
 
 type listHandler struct {
@@ -22,7 +21,7 @@ type listCasesResponseData struct {
 }
 
 func NewListHandler(dataAPI api.DataAPI) http.Handler {
-	return httputil.SupportedMethods(&listHandler{
+	return apiservice.SupportedMethods(&listHandler{
 		dataAPI: dataAPI,
 	}, []string{apiservice.HTTP_GET})
 }

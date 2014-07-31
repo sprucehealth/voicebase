@@ -6,7 +6,6 @@ import (
 	"github.com/sprucehealth/backend/api"
 	"github.com/sprucehealth/backend/apiservice"
 	"github.com/sprucehealth/backend/common"
-	"github.com/sprucehealth/backend/libs/httputil"
 )
 
 type doctorAuthenticationHandler struct {
@@ -20,10 +19,10 @@ type DoctorAuthenticationResponse struct {
 }
 
 func NewDoctorAuthenticationHandler(dataAPI api.DataAPI, authAPI api.AuthAPI) http.Handler {
-	return httputil.SupportedMethods(&doctorAuthenticationHandler{
+	return apiservice.SupportedMethods(&doctorAuthenticationHandler{
 		dataAPI: dataAPI,
 		authAPI: authAPI,
-	}, []string{apiservice.HTTP_GET})
+	}, []string{apiservice.HTTP_POST})
 }
 
 func (d *doctorAuthenticationHandler) IsAuthorized(r *http.Request) (bool, error) {

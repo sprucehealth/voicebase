@@ -10,21 +10,18 @@ import (
 	"github.com/sprucehealth/backend/common"
 	"github.com/sprucehealth/backend/encoding"
 	"github.com/sprucehealth/backend/environment"
-	"github.com/sprucehealth/backend/libs/httputil"
 	"github.com/sprucehealth/backend/third_party/github.com/dchest/validator"
 )
 
 type signupDoctorHandler struct {
-	dataAPI     api.DataAPI
-	authAPI     api.AuthAPI
-	environment string
+	dataAPI api.DataAPI
+	authAPI api.AuthAPI
 }
 
-func NewSignupDoctorHandler(dataAPI api.DataAPI, authAPI api.AuthAPI, environment string) http.Handler {
-	return httputil.SupportedMethods(&signupDoctorHandler{
-		dataAPI:     dataAPI,
-		authAPI:     authAPI,
-		environment: environment,
+func NewSignupDoctorHandler(dataAPI api.DataAPI, authAPI api.AuthAPI) http.Handler {
+	return apiservice.SupportedMethods(&signupDoctorHandler{
+		dataAPI: dataAPI,
+		authAPI: authAPI,
 	}, []string{apiservice.HTTP_POST})
 }
 

@@ -12,6 +12,7 @@ import (
 	"github.com/sprucehealth/backend/api"
 	"github.com/sprucehealth/backend/apiservice"
 	"github.com/sprucehealth/backend/common"
+	"github.com/sprucehealth/backend/environment"
 	"github.com/sprucehealth/backend/info_intake"
 	"github.com/sprucehealth/backend/libs/golog"
 	patientApiService "github.com/sprucehealth/backend/patient"
@@ -21,15 +22,13 @@ import (
 )
 
 type Handler struct {
-	environment     string
 	dataApi         api.DataAPI
 	cloudStorageApi api.CloudStorageAPI
 	awsRegion       string
 }
 
-func NewHandler(dataApi api.DataAPI, cloudStorageApi api.CloudStorageAPI, awsRegion, environment string) *Handler {
+func NewHandler(dataApi api.DataAPI, cloudStorageApi api.CloudStorageAPI, awsRegion string) *Handler {
 	return &Handler{
-		environment:     environment,
 		dataApi:         dataApi,
 		cloudStorageApi: cloudStorageApi,
 		awsRegion:       awsRegion,
@@ -60,7 +59,7 @@ func (c *Handler) ServeHTTP(w http.ResponseWriter, r *http.Request) {
 	}
 
 	// ensure that are not working with a non-prod environment
-	if c.environment == "prod" {
+	if environment.IsProd() {
 		apiservice.WriteDeveloperError(w, http.StatusBadRequest, "Cannot work in the production environment")
 		return
 	}

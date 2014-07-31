@@ -57,6 +57,7 @@ func GetContext(req *http.Request) *Context {
 		return ctx
 	}
 	ctx := &Context{}
+	ctx.RequestCache = make(map[CacheKey]interface{})
 	requestContext[req] = ctx
 	return ctx
 }

@@ -17,18 +17,19 @@ import (
 	"github.com/sprucehealth/backend/api"
 	"github.com/sprucehealth/backend/apiservice"
 	"github.com/sprucehealth/backend/common"
+	"github.com/sprucehealth/backend/doctor"
 	"github.com/sprucehealth/backend/doctor_treatment_plan"
 	"github.com/sprucehealth/backend/encoding"
 	"github.com/sprucehealth/backend/patient_file"
 	"github.com/sprucehealth/backend/patient_visit"
 )
 
-func SignupRandomTestDoctor(t *testing.T, testData *TestData) (signedupDoctorResponse *apiservice.DoctorSignedupResponse, email, password string) {
+func SignupRandomTestDoctor(t *testing.T, testData *TestData) (signedupDoctorResponse *doctor.DoctorSignedupResponse, email, password string) {
 	return signupDoctor(t, testData)
 }
 
-func signupDoctor(t *testing.T, testData *TestData) (*apiservice.DoctorSignedupResponse, string, string) {
-	authHandler := apiservice.NewSignupDoctorHandler(testData.DataApi, testData.AuthApi, "test")
+func signupDoctor(t *testing.T, testData *TestData) (*doctor.DoctorSignedupResponse, string, string) {
+	authHandler := doctor.NewSignupDoctorHandler(testData.DataApi, testData.AuthApi, "test")
 	ts := httptest.NewServer(authHandler)
 	defer ts.Close()
 
@@ -60,7 +61,7 @@ func signupDoctor(t *testing.T, testData *TestData) (*apiservice.DoctorSignedupR
 	}
 	CheckSuccessfulStatusCode(res, fmt.Sprintf("Unable to make success request to signup patient. Here's the code returned %d and here's the body of the request %s", res.StatusCode, body), t)
 
-	signedupDoctorResponse := &apiservice.DoctorSignedupResponse{}
+	signedupDoctorResponse := &doctor.DoctorSignedupResponse{}
 	err = json.Unmarshal(body, signedupDoctorResponse)
 	if err != nil {
 		t.Fatal("Unable to parse response from patient signed up")
@@ -68,7 +69,7 @@ func signupDoctor(t *testing.T, testData *TestData) (*apiservice.DoctorSignedupR
 	return signedupDoctorResponse, email, password
 }
 
-func SignupRandomTestDoctorInState(state string, t *testing.T, testData *TestData) *apiservice.DoctorSignedupResponse {
+func SignupRandomTestDoctorInState(state string, t *testing.T, testData *TestData) *doctor.DoctorSignedupResponse {
 	doctorSignedupResponse, _, _ := signupDoctor(t, testData)
 
 	// check to see if the state already exists in the system
@@ -240,7 +241,7 @@ func PickATreatmentPlan(parent *common.TreatmentPlanParent, contentSource *commo
 	ts := httptest.NewServer(doctorPickTreatmentPlanHandler)
 	defer ts.Close()
 
-	requestData := doctor_treatment_plan.PickTreatmentPlanRequestData{
+	requestData := doctor_treatment_plan.TreatmentPlanRequestData{
 		TPParent: parent,
 	}
 
@@ -276,7 +277,7 @@ func PickATreatmentPlanForPatientVisit(patientVisitId int64, doctor *common.Doct
 	ts := httptest.NewServer(doctorPickTreatmentPlanHandler)
 	defer ts.Close()
 
-	requestData := doctor_treatment_plan.PickTreatmentPlanRequestData{
+	requestData := doctor_treatment_plan.TreatmentPlanRequestData{
 		TPParent: &common.TreatmentPlanParent{
 			ParentId:   encoding.NewObjectId(patientVisitId),
 			ParentType: common.TPParentTypePatientVisit,
@@ -318,7 +319,7 @@ func SubmitPatientVisitBackToPatient(treatmentPlanId int64, doctor *common.Docto
 	defer ts.Close()
 
 	requestData := &doctor_treatment_plan.TreatmentPlanRequestData{
-		TreatmentPlanId: encoding.NewObjectId(treatmentPlanId),
+		TreatmentPlanId: treatmentPlanId,
 		Message:         "foo",
 	}
 

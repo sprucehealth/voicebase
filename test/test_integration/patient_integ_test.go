@@ -11,11 +11,11 @@ import (
 	"testing"
 
 	"github.com/sprucehealth/backend/common"
+	"github.com/sprucehealth/backend/common/handlers"
 	patientApiService "github.com/sprucehealth/backend/patient"
 	"github.com/sprucehealth/backend/patient_visit"
 
 	"github.com/sprucehealth/backend/address"
-	"github.com/sprucehealth/backend/apiservice"
 
 	_ "github.com/sprucehealth/backend/third_party/github.com/go-sql-driver/mysql"
 )
@@ -38,7 +38,7 @@ func TestPatientCareProvidingEllgibility(t *testing.T) {
 		},
 	}
 
-	checkElligibilityHandler := apiservice.NewCheckCareProvidingEligibilityHandler(testData.DataApi, stubAddressValidationService)
+	checkElligibilityHandler := patientApiService.NewCheckCareProvidingEligibilityHandler(testData.DataApi, stubAddressValidationService)
 	ts := httptest.NewServer(checkElligibilityHandler)
 	defer ts.Close()
 
@@ -68,7 +68,7 @@ func TestPatientCareProvidingEllgibility(t *testing.T) {
 		StateAbbreviation: "FL",
 	}
 
-	checkElligibilityHandler = apiservice.NewCheckCareProvidingEligibilityHandler(testData.DataApi, stubAddressValidationService)
+	checkElligibilityHandler = patientApiService.NewCheckCareProvidingEligibilityHandler(testData.DataApi, stubAddressValidationService)
 
 	resp, err = testData.AuthGet(ts.URL+"?zip_code=33180", 0)
 	if err != nil {
@@ -167,7 +167,7 @@ func TestPatientAutocompleteForDrugs(t *testing.T) {
 
 	signedupPatientResponse := SignupRandomTestPatient(t, testData)
 
-	autocompleteHandler := apiservice.NewAutocompleteHandler(testData.DataApi, testData.ERxAPI)
+	autocompleteHandler := handlers.NewAutocompleteHandler(testData.DataApi, testData.ERxAPI)
 
 	params := url.Values{}
 	params.Set("query", "Lipi")
@@ -184,7 +184,7 @@ func TestPatientAutocompleteForDrugs(t *testing.T) {
 		t.Fatalf("Unable to successfully do a drug search from patient side: %s", err)
 	}
 
-	autoCompleteResponse := apiservice.AutocompleteResponse{}
+	autoCompleteResponse := handlers.AutocompleteResponse{}
 	if err := json.NewDecoder(resp.Body).Decode(&autoCompleteResponse); err != nil {
 		t.Fatalf("Unable to decode response body into json: %s", err)
 	}

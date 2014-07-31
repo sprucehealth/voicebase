@@ -9,7 +9,6 @@ import (
 	"github.com/sprucehealth/backend/apiservice"
 	"github.com/sprucehealth/backend/common"
 	"github.com/sprucehealth/backend/info_intake"
-	"github.com/sprucehealth/backend/libs/httputil"
 )
 
 type photoAnswerIntakeHandler struct {
@@ -31,7 +30,7 @@ type PhotoAnswerIntakeRequestData struct {
 }
 
 func NewPhotoAnswerIntakeHandler(dataApi api.DataAPI) http.Handler {
-	return httputil.SupportedMethods(&photoAnswerIntakeHandler{
+	return apiservice.SupportedMethods(&photoAnswerIntakeHandler{
 		dataApi: dataApi,
 	}, []string{apiservice.HTTP_POST})
 }

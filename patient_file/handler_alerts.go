@@ -5,7 +5,6 @@ import (
 
 	"github.com/sprucehealth/backend/api"
 	"github.com/sprucehealth/backend/apiservice"
-	"github.com/sprucehealth/backend/libs/httputil"
 )
 
 type alertsHandler struct {
@@ -13,7 +12,7 @@ type alertsHandler struct {
 }
 
 func NewAlertsHandler(dataAPI api.DataAPI) http.Handler {
-	return httputil.SupportedMethods(
+	return apiservice.SupportedMethods(
 		&alertsHandler{
 			dataAPI: dataAPI,
 		},

@@ -7,7 +7,6 @@ import (
 	"github.com/sprucehealth/backend/apiservice"
 	"github.com/sprucehealth/backend/common"
 	"github.com/sprucehealth/backend/libs/erx"
-	"github.com/sprucehealth/backend/libs/httputil"
 	"github.com/sprucehealth/backend/surescripts"
 )
 
@@ -17,7 +16,7 @@ type selectHandler struct {
 }
 
 func NewMedicationSelectHandler(dataAPI api.DataAPI, erxAPI erx.ERxAPI) http.Handler {
-	return httputil.SupportedMethods(&selectHandler{
+	return apiservice.SupportedMethods(&selectHandler{
 		dataAPI: dataAPI,
 		erxAPI:  erxAPI,
 	}, []string{apiservice.HTTP_GET})

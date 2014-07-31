@@ -9,7 +9,6 @@ import (
 	"github.com/sprucehealth/backend/common"
 	"github.com/sprucehealth/backend/info_intake"
 	"github.com/sprucehealth/backend/libs/dispatch"
-	"github.com/sprucehealth/backend/libs/httputil"
 
 	"github.com/sprucehealth/backend/third_party/github.com/SpruceHealth/mapstructure"
 )
@@ -19,7 +18,7 @@ type doctorPatientVisitReviewHandler struct {
 }
 
 func NewDoctorPatientVisitReviewHandler(dataApi api.DataAPI) http.Handler {
-	return httputil.SupportedMethods(&doctorPatientVisitReviewHandler{
+	return apiservice.SupportedMethods(&doctorPatientVisitReviewHandler{
 		DataApi: dataApi,
 	}, []string{apiservice.HTTP_GET})
 }
@@ -46,8 +45,8 @@ func (p *doctorPatientVisitReviewHandler) IsAuthorized(r *http.Request) (bool, e
 	}
 	ctxt.RequestCache[apiservice.DoctorId] = doctorId
 
-	var requestData visitReviewRequestData
-	if err := apiservice.DecodeRequestData(&requestData, r); err != nil {
+	requestData := &visitReviewRequestData{}
+	if err := apiservice.DecodeRequestData(requestData, r); err != nil {
 		return false, apiservice.NewValidationError(err.Error(), r)
 	} else if requestData.PatientVisitId == 0 {
 		return false, apiservice.NewValidationError("patient_visit_id must be specified", r)

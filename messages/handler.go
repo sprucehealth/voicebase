@@ -8,7 +8,6 @@ import (
 	"github.com/sprucehealth/backend/apiservice"
 	"github.com/sprucehealth/backend/common"
 	"github.com/sprucehealth/backend/libs/dispatch"
-	"github.com/sprucehealth/backend/libs/httputil"
 )
 
 type handler struct {
@@ -42,7 +41,7 @@ type Attachment struct {
 }
 
 func NewHandler(dataAPI api.DataAPI) http.Handler {
-	return httputil.SupportedMethods(&handler{dataAPI: dataAPI}, []string{apiservice.HTTP_POST})
+	return apiservice.SupportedMethods(&handler{dataAPI: dataAPI}, []string{apiservice.HTTP_POST})
 }
 
 func (h *handler) IsAuthorized(r *http.Request) (bool, error) {

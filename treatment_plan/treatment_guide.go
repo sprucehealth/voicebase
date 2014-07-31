@@ -9,7 +9,6 @@ import (
 	"github.com/sprucehealth/backend/app_url"
 	"github.com/sprucehealth/backend/common"
 	"github.com/sprucehealth/backend/libs/erx"
-	"github.com/sprucehealth/backend/libs/httputil"
 )
 
 type TreatmentGuideRequestData struct {
@@ -21,7 +20,7 @@ type treatmentGuideHandler struct {
 }
 
 func NewTreatmentGuideHandler(dataAPI api.DataAPI) http.Handler {
-	return httputil.SupportedMethods(&treatmentGuideHandler{dataAPI: dataAPI}, []string{apiservice.HTTP_GET})
+	return apiservice.SupportedMethods(&treatmentGuideHandler{dataAPI: dataAPI}, []string{apiservice.HTTP_GET})
 }
 
 func (h *treatmentGuideHandler) IsAuthorized(r *http.Request) (bool, error) {

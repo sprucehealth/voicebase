@@ -3,15 +3,15 @@ package test_integration
 import (
 	"bytes"
 	"encoding/json"
-	"fmt"
 	"io/ioutil"
 	"net/http"
 	"net/http/httptest"
 	"strconv"
 	"testing"
 
-	"github.com/sprucehealth/backend/apiservice"
 	"github.com/sprucehealth/backend/common"
+	"github.com/sprucehealth/backend/common/handlers"
+	"github.com/sprucehealth/backend/doctor"
 	"github.com/sprucehealth/backend/doctor_treatment_plan"
 	"github.com/sprucehealth/backend/patient_visit"
 )
@@ -29,7 +29,7 @@ func TestDoctorAuthentication(t *testing.T) {
 
 	_, email, password := SignupRandomTestDoctor(t, testData)
 
-	doctorAuthHandler := apiservice.NewDoctorAuthenticationHandler(testData.DataApi, testData.AuthApi)
+	doctorAuthHandler := doctor.NewDoctorAuthenticationHandler(testData.DataApi, testData.AuthApi)
 	ts := httptest.NewServer(doctorAuthHandler)
 	defer ts.Close()
 	requestBody := bytes.NewBufferString("email=")
@@ -40,14 +40,16 @@ func TestDoctorAuthentication(t *testing.T) {
 	if err != nil {
 		t.Fatal("Unable to authenticate doctor " + err.Error())
 	}
+	defer res.Body.Close()
 
 	body, err := ioutil.ReadAll(res.Body)
 	if err != nil {
 		t.Fatal("Unable to read body of response: " + err.Error())
+	} else if res.StatusCode != http.StatusOK {
+		t.Fatalf("Expected %d got %d", http.StatusOK, res.StatusCode)
 	}
-	CheckSuccessfulStatusCode(res, fmt.Sprintf("Unable to make success request to authenticate doctor. Here's the code returned %d and here's the body of the request %s", res.StatusCode, body), t)
 
-	authenticatedDoctorResponse := &apiservice.DoctorAuthenticationResponse{}
+	authenticatedDoctorResponse := &doctor.DoctorAuthenticationResponse{}
 	err = json.Unmarshal(body, authenticatedDoctorResponse)
 	if err != nil {
 		t.Fatal("Unable to parse response from patient authenticated")
@@ -69,7 +71,7 @@ func TestDoctorDrugSearch(t *testing.T) {
 	}
 
 	// ensure that the autcoomplete api returns results
-	autocompleteHandler := apiservice.NewAutocompleteHandler(testData.DataApi, testData.ERxAPI)
+	autocompleteHandler := handlers.NewAutocompleteHandler(testData.DataApi, testData.ERxAPI)
 	ts := httptest.NewServer(autocompleteHandler)
 	defer ts.Close()
 
@@ -84,7 +86,7 @@ func TestDoctorDrugSearch(t *testing.T) {
 	}
 
 	CheckSuccessfulStatusCode(resp, "Unable to make a successful query to the autocomplete api for the doctor: "+string(body), t)
-	autocompleteResponse := &apiservice.AutocompleteResponse{}
+	autocompleteResponse := &handlers.AutocompleteResponse{}
 	err = json.Unmarshal(body, autocompleteResponse)
 	if err != nil {
 		t.Fatal("Unable to unmarshal the response from the autocomplete call into a json object as expected: " + err.Error())
@@ -276,7 +278,7 @@ func TestDoctorSubmissionOfPatientVisitReview(t *testing.T) {
 	}
 
 	jsonData, err = json.Marshal(doctor_treatment_plan.TreatmentPlanRequestData{
-		TreatmentPlanId: responseData.TreatmentPlan.Id,
+		TreatmentPlanId: responseData.TreatmentPlan.Id.Int64(),
 		Message:         "Foo",
 	})
 

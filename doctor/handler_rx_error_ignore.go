@@ -8,7 +8,6 @@ import (
 	"github.com/sprucehealth/backend/common"
 	"github.com/sprucehealth/backend/libs/dispatch"
 	"github.com/sprucehealth/backend/libs/erx"
-	"github.com/sprucehealth/backend/libs/httputil"
 )
 
 type prescriptionErrorIgnoreHandler struct {
@@ -17,7 +16,7 @@ type prescriptionErrorIgnoreHandler struct {
 }
 
 func NewPrescriptionErrorIgnoreHandler(dataAPI api.DataAPI, erxAPI erx.ERxAPI) http.Handler {
-	return httputil.SupportedMethods(&prescriptionErrorIgnoreHandler{
+	return apiservice.SupportedMethods(&prescriptionErrorIgnoreHandler{
 		dataAPI: dataAPI,
 		erxAPI:  erxAPI,
 	}, []string{apiservice.HTTP_POST})

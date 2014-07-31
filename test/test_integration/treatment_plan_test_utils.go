@@ -3,15 +3,16 @@ package test_integration
 import (
 	"bytes"
 	"encoding/json"
-	"github.com/sprucehealth/backend/common"
-	"github.com/sprucehealth/backend/doctor_treatment_plan"
-	"github.com/sprucehealth/backend/encoding"
-	"github.com/sprucehealth/backend/libs/erx"
 	"io/ioutil"
 	"net/http"
 	"net/http/httptest"
 	"strconv"
 	"testing"
+
+	"github.com/sprucehealth/backend/common"
+	"github.com/sprucehealth/backend/doctor_treatment_plan"
+	"github.com/sprucehealth/backend/encoding"
+	"github.com/sprucehealth/backend/libs/erx"
 )
 
 func GetRegimenPlanForTreatmentPlan(testData *TestData, doctor *common.Doctor, treatmentPlanId int64, t *testing.T) *common.RegimenPlan {
@@ -152,7 +153,7 @@ func DeleteTreatmentPlanForDoctor(treatmentPlanId, doctorAccountId int64, testDa
 	defer doctorServer.Close()
 
 	jsonData, err := json.Marshal(&doctor_treatment_plan.TreatmentPlanRequestData{
-		TreatmentPlanId: encoding.NewObjectId(treatmentPlanId),
+		TreatmentPlanId: treatmentPlanId,
 	})
 
 	res, err := testData.AuthDelete(doctorServer.URL, "application/json", bytes.NewReader(jsonData), doctorAccountId)

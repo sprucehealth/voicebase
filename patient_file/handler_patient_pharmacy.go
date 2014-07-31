@@ -7,7 +7,6 @@ import (
 	"github.com/sprucehealth/backend/apiservice"
 	"github.com/sprucehealth/backend/common"
 	"github.com/sprucehealth/backend/encoding"
-	"github.com/sprucehealth/backend/libs/httputil"
 	"github.com/sprucehealth/backend/pharmacy"
 )
 
@@ -16,7 +15,7 @@ type doctorUpdatePatientPharmacyHandler struct {
 }
 
 func NewDoctorUpdatePatientPharmacyHandler(dataAPI api.DataAPI) http.Handler {
-	return httputil.SupportedMethods(&doctorUpdatePatientPharmacyHandler{
+	return apiservice.SupportedMethods(&doctorUpdatePatientPharmacyHandler{
 		dataAPI: dataAPI,
 	}, []string{apiservice.HTTP_PUT})
 }

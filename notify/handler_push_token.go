@@ -8,7 +8,6 @@ import (
 	"github.com/sprucehealth/backend/common"
 	"github.com/sprucehealth/backend/common/config"
 	"github.com/sprucehealth/backend/libs/aws/sns"
-	"github.com/sprucehealth/backend/libs/httputil"
 )
 
 type notificationHandler struct {
@@ -22,7 +21,7 @@ type requestData struct {
 }
 
 func NewNotificationHandler(dataApi api.DataAPI, configs *config.NotificationConfigs, snsClient sns.SNSService) http.Handler {
-	return httputil.SupportedMethods(&notificationHandler{
+	return apiservice.SupportedMethods(&notificationHandler{
 		dataApi:             dataApi,
 		notificationConfigs: configs,
 		snsClient:           snsClient,

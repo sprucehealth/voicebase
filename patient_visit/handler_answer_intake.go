@@ -10,7 +10,6 @@ import (
 	"github.com/sprucehealth/backend/apiservice"
 	"github.com/sprucehealth/backend/common"
 	"github.com/sprucehealth/backend/libs/golog"
-	"github.com/sprucehealth/backend/libs/httputil"
 )
 
 type AnswerIntakeHandler struct {
@@ -18,7 +17,7 @@ type AnswerIntakeHandler struct {
 }
 
 func NewAnswerIntakeHandler(dataApi api.DataAPI) http.Handler {
-	return httputil.SupportedMethods(&AnswerIntakeHandler{dataApi}, []string{apiservice.HTTP_POST})
+	return apiservice.SupportedMethods(&AnswerIntakeHandler{dataApi}, []string{apiservice.HTTP_POST})
 }
 
 const (

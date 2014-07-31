@@ -5,7 +5,6 @@ import (
 
 	"github.com/sprucehealth/backend/api"
 	"github.com/sprucehealth/backend/apiservice"
-	"github.com/sprucehealth/backend/libs/httputil"
 	"github.com/sprucehealth/backend/pharmacy"
 )
 
@@ -14,7 +13,7 @@ type pharmacyHandler struct {
 }
 
 func NewPharmacyHandler(dataAPI api.DataAPI) http.Handler {
-	return httputil.SupportedMethods(&pharmacyHandler{
+	return apiservice.SupportedMethods(&pharmacyHandler{
 		dataAPI: dataAPI,
 	}, []string{apiservice.HTTP_POST})
 }

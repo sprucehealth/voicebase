@@ -3,10 +3,6 @@ package test_integration
 import (
 	"bytes"
 	"encoding/json"
-	"github.com/sprucehealth/backend/apiservice"
-	"github.com/sprucehealth/backend/common"
-	"github.com/sprucehealth/backend/doctor_treatment_plan"
-	"github.com/sprucehealth/backend/libs/aws/sqs"
 	"io/ioutil"
 	"net/http"
 	"net/http/httptest"
@@ -14,6 +10,10 @@ import (
 	"strings"
 	"testing"
 	"time"
+
+	"github.com/sprucehealth/backend/common"
+	"github.com/sprucehealth/backend/doctor_treatment_plan"
+	"github.com/sprucehealth/backend/libs/aws/sqs"
 )
 
 func TestDoctorSavedMessage(t *testing.T) {
@@ -26,7 +26,7 @@ func TestDoctorSavedMessage(t *testing.T) {
 		t.Fatal(err)
 	}
 
-	ts := httptest.NewServer(apiservice.NewDoctorSavedMessageHandler(testData.DataApi))
+	ts := httptest.NewServer(doctor_treatment_plan.NewSavedMessageHandler(testData.DataApi))
 	defer ts.Close()
 
 	// Check that the doctor can retrieve a saved message
@@ -75,13 +75,13 @@ func TestDoctorUpdateTreatmentPlanMessage(t *testing.T) {
 		t.Fatal(err)
 	}
 
-	ts := httptest.NewServer(apiservice.NewDoctorSavedMessageHandler(testData.DataApi))
+	ts := httptest.NewServer(doctor_treatment_plan.NewSavedMessageHandler(testData.DataApi))
 	defer ts.Close()
 
 	// Create a patient treatment plan, and save a draft message
 	_, treatmentPlan := CreateRandomPatientVisitAndPickTP(t, testData, doctor)
 	tpMessage := `{"message":"Dear foo, this is my message"}`
-	requestData := apiservice.DoctorSavedMessagePutRequest{
+	requestData := doctor_treatment_plan.DoctorSavedMessageRequestData{
 		TreatmentPlanID: treatmentPlan.Id.Int64(),
 		Message:         "Dear foo, this is my message",
 	}
@@ -115,7 +115,7 @@ func TestDoctorUpdateTreatmentPlanMessage(t *testing.T) {
 
 	// Update treatment plan message
 	newTpMessage := `{"message":"Dear foo, I have changed my mind"}`
-	requestData = apiservice.DoctorSavedMessagePutRequest{
+	requestData = doctor_treatment_plan.DoctorSavedMessageRequestData{
 		TreatmentPlanID: treatmentPlan.Id.Int64(),
 		Message:         "Dear foo, I have changed my mind",
 	}
@@ -156,7 +156,7 @@ func TestDoctorMultipleTreatmentPlans(t *testing.T) {
 		t.Fatal(err)
 	}
 
-	ts := httptest.NewServer(apiservice.NewDoctorSavedMessageHandler(testData.DataApi))
+	ts := httptest.NewServer(doctor_treatment_plan.NewSavedMessageHandler(testData.DataApi))
 	defer ts.Close()
 
 	// Create default message
@@ -174,7 +174,7 @@ func TestDoctorMultipleTreatmentPlans(t *testing.T) {
 	// Create patient, save message to their treatment plan, and retrieve it
 	tpMessage := `{"message":"Dear patient, this is not a default message"}`
 	pv, treatmentPlan := CreateRandomPatientVisitAndPickTP(t, testData, doctor)
-	requestData := apiservice.DoctorSavedMessagePutRequest{
+	requestData := doctor_treatment_plan.DoctorSavedMessageRequestData{
 		DoctorID:        doctor.AccountId.Int64(),
 		TreatmentPlanID: treatmentPlan.Id.Int64(),
 		Message:         "Dear patient, this is not a default message",
@@ -228,7 +228,7 @@ func TestDoctorSubmitTreatmentPlan(t *testing.T) {
 		t.Fatal(err)
 	}
 
-	ts := httptest.NewServer(apiservice.NewDoctorSavedMessageHandler(testData.DataApi))
+	ts := httptest.NewServer(doctor_treatment_plan.NewSavedMessageHandler(testData.DataApi))
 	defer ts.Close()
 
 	// Create default message
@@ -243,7 +243,7 @@ func TestDoctorSubmitTreatmentPlan(t *testing.T) {
 	}
 	// Create patient, save message to their treatment plan
 	_, treatmentPlan := CreateRandomPatientVisitAndPickTP(t, testData, doctor)
-	requestData := apiservice.DoctorSavedMessagePutRequest{
+	requestData := doctor_treatment_plan.DoctorSavedMessageRequestData{
 		DoctorID:        doctor.AccountId.Int64(),
 		TreatmentPlanID: treatmentPlan.Id.Int64(),
 		Message:         "Dear patient, this is not a default message",
@@ -275,7 +275,7 @@ func TestDoctorSubmitTreatmentPlan(t *testing.T) {
 	defer ts3.Close()
 
 	jsonData, err = json.Marshal(&doctor_treatment_plan.TreatmentPlanRequestData{
-		TreatmentPlanId: treatmentPlan.Id,
+		TreatmentPlanId: treatmentPlan.Id.Int64(),
 		Message:         "Dear patient, this is not a default message",
 	})
 

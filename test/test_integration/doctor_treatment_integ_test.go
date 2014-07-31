@@ -27,7 +27,7 @@ func TestMedicationStrengthSearch(t *testing.T) {
 		t.Fatal("Unable to get doctor from id: " + err.Error())
 	}
 
-	medicationStrengthSearchHandler := &apiservice.MedicationStrengthSearchHandler{DataApi: testData.DataApi, ERxApi: testData.ERxAPI}
+	medicationStrengthSearchHandler := doctor_treatment_plan.NewMedicationStrengthSearchHandler(testData.DataApi, testData.ERxAPI)
 	ts := httptest.NewServer(medicationStrengthSearchHandler)
 	defer ts.Close()
 
@@ -36,7 +36,7 @@ func TestMedicationStrengthSearch(t *testing.T) {
 		t.Fatal("Unable to make a successful query to the medication strength api: " + err.Error())
 	}
 
-	medicationStrengthResponse := &apiservice.MedicationStrengthSearchResponse{}
+	medicationStrengthResponse := &doctor_treatment_plan.MedicationStrengthSearchResponse{}
 	err = json.NewDecoder(resp.Body).Decode(medicationStrengthResponse)
 	if err != nil {
 		t.Fatal("Unable to unmarshal the response from the medication strength search api into a json object as expected: " + err.Error())
@@ -59,7 +59,7 @@ func TestNewTreatmentSelection(t *testing.T) {
 		t.Fatal("Unable to get doctor from id: " + err.Error())
 	}
 
-	newTreatmentHandler := &apiservice.NewTreatmentHandler{DataApi: testData.DataApi, ERxApi: testData.ERxAPI}
+	newTreatmentHandler := doctor_treatment_plan.NewMedicationSelectHandler(testData.DataApi, testData.ERxAPI)
 	ts := httptest.NewServer(newTreatmentHandler)
 	defer ts.Close()
 
@@ -68,7 +68,7 @@ func TestNewTreatmentSelection(t *testing.T) {
 		t.Fatal("Unable to make a successful query to the medication strength api: " + err.Error())
 	}
 
-	newTreatmentResponse := &apiservice.NewTreatmentResponse{}
+	newTreatmentResponse := &doctor_treatment_plan.NewTreatmentResponse{}
 	err = json.NewDecoder(resp.Body).Decode(newTreatmentResponse)
 	if err != nil {
 		t.Fatal("Unable to unmarshal the response from the medication strength search api into a json object as expected: " + err.Error())
@@ -93,7 +93,7 @@ func TestNewTreatmentSelection(t *testing.T) {
 		t.Fatal("Unable to make a successful query to the medication strength api: " + err.Error())
 	}
 
-	newTreatmentResponse = &apiservice.NewTreatmentResponse{}
+	newTreatmentResponse = &doctor_treatment_plan.NewTreatmentResponse{}
 	err = json.NewDecoder(resp.Body).Decode(newTreatmentResponse)
 	if err != nil {
 		t.Fatal("Unable to unmarshal the response from the medication strength search api into a json object as expected: " + err.Error())
@@ -136,7 +136,7 @@ func TestDispenseUnitIds(t *testing.T) {
 	testData := SetupIntegrationTest(t)
 	defer TearDownIntegrationTest(t, testData)
 
-	medicationDispenseUnitsHandler := &apiservice.MedicationDispenseUnitsHandler{DataApi: testData.DataApi}
+	medicationDispenseUnitsHandler := doctor_treatment_plan.NewMedicationDispenseUnitsHandler(testData.DataApi)
 	ts := httptest.NewServer(medicationDispenseUnitsHandler)
 	defer ts.Close()
 
@@ -151,7 +151,7 @@ func TestDispenseUnitIds(t *testing.T) {
 	}
 
 	CheckSuccessfulStatusCode(resp, "Unable to make a successful query to the medication dispense units api for the doctor: "+string(body), t)
-	medicationDispenseUnitsResponse := &apiservice.MedicationDispenseUnitsResponse{}
+	medicationDispenseUnitsResponse := doctor_treatment_plan.MedicationDispenseUnitsResponse{}
 	err = json.Unmarshal(body, medicationDispenseUnitsResponse)
 	if err != nil {
 		t.Fatal("Unable to unmarshal the response from the medication strength search api into a json object as expected: " + err.Error())

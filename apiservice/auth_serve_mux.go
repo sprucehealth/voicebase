@@ -191,6 +191,7 @@ func (mux *AuthServeMux) ServeHTTP(w http.ResponseWriter, r *http.Request) {
 	if nonAuth, ok := h.(NonAuthenticated); !ok || !nonAuth.NonAuthenticated() {
 		account, err := mux.checkAuth(r)
 		if err == nil {
+
 			mux.statAuthSuccess.Inc(1)
 			ctx.AccountId = account.ID
 			ctx.Role = account.Role
@@ -203,10 +204,10 @@ func (mux *AuthServeMux) ServeHTTP(w http.ResponseWriter, r *http.Request) {
 
 	// ensure that every handler is authorized to carry out its call
 	if isAuthorized, err := h.(Authorized).IsAuthorized(r); err != nil {
-		WriteError(err, w, r)
+		WriteError(err, customResponseWriter, r)
 		return
 	} else if !isAuthorized {
-		WriteAccessNotAllowedError(w, r)
+		WriteAccessNotAllowedError(customResponseWriter, r)
 		return
 	}
 

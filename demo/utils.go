@@ -14,6 +14,7 @@ import (
 	"github.com/sprucehealth/backend/doctor"
 	"github.com/sprucehealth/backend/doctor_treatment_plan"
 	"github.com/sprucehealth/backend/encoding"
+	"github.com/sprucehealth/backend/environment"
 	"github.com/sprucehealth/backend/libs/golog"
 	"github.com/sprucehealth/backend/messages"
 	"github.com/sprucehealth/backend/patient_visit"
@@ -98,7 +99,7 @@ func (c *Handler) startPhotoSubmissionForPatient(questionId, patientVisitId int6
 				photoKey := photo.PhotoUrl
 
 				// get the url of the image so as to add the photo to the photos table
-				url := fmt.Sprintf("s3://%s/%s/%s", c.awsRegion, fmt.Sprintf(demoPhotosBucketFormat, c.environment), photoKey)
+				url := fmt.Sprintf("s3://%s/%s/%s", c.awsRegion, fmt.Sprintf(demoPhotosBucketFormat, environment.GetCurrent()), photoKey)
 
 				// instead of uploading the image via the handler, short-circuiting the photo upload
 				// since we are using a small pool of images. This not only saves space but also makes the

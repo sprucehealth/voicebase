@@ -5,7 +5,6 @@ import (
 
 	"github.com/sprucehealth/backend/api"
 	"github.com/sprucehealth/backend/apiservice"
-	"github.com/sprucehealth/backend/libs/httputil"
 )
 
 type staticContentHandler struct {
@@ -16,7 +15,7 @@ type staticContentHandler struct {
 }
 
 func NewStaticContentHandler(dataAPI api.DataAPI, contentStorageService api.CloudStorageAPI, bucketLocation, region string) http.Handler {
-	return httputil.SupportedMethods(&staticContentHandler{
+	return apiservice.SupportedMethods(&staticContentHandler{
 		dataAPI:               dataAPI,
 		contentStorageService: contentStorageService,
 		bucketLocation:        bucketLocation,

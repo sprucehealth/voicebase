@@ -6,7 +6,6 @@ import (
 	"github.com/sprucehealth/backend/address"
 	"github.com/sprucehealth/backend/api"
 	"github.com/sprucehealth/backend/apiservice"
-	"github.com/sprucehealth/backend/libs/httputil"
 )
 
 type checkCareProvidingElligibilityHandler struct {
@@ -15,7 +14,7 @@ type checkCareProvidingElligibilityHandler struct {
 }
 
 func NewCheckCareProvidingEligibilityHandler(dataAPI api.DataAPI, addressValidationAPI address.AddressValidationAPI) http.Handler {
-	return httputil.SupportedMethods(&checkCareProvidingElligibilityHandler{
+	return apiservice.SupportedMethods(&checkCareProvidingElligibilityHandler{
 		dataAPI:              dataAPI,
 		addressValidationAPI: addressValidationAPI,
 	}, []string{apiservice.HTTP_GET})
@@ -26,9 +25,6 @@ type CheckCareProvidingElligibilityRequestData struct {
 }
 
 func (c *checkCareProvidingElligibilityHandler) IsAuthorized(r *http.Request) (bool, error) {
-	if apiservice.GetContext(r).Role != api.PATIENT_ROLE {
-		return false, apiservice.NewAccessForbiddenError()
-	}
 	return true, nil
 }
 

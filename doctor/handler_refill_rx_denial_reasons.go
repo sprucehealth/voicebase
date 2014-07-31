@@ -5,7 +5,6 @@ import (
 
 	"github.com/sprucehealth/backend/api"
 	"github.com/sprucehealth/backend/apiservice"
-	"github.com/sprucehealth/backend/libs/httputil"
 )
 
 type refillRxDenialReasonsHandler struct {
@@ -13,7 +12,7 @@ type refillRxDenialReasonsHandler struct {
 }
 
 func NewRefillRxDenialReasonsHandler(dataAPI api.DataAPI) http.Handler {
-	return httputil.SupportedMethods(&refillRxDenialReasonsHandler{
+	return apiservice.SupportedMethods(&refillRxDenialReasonsHandler{
 		dataAPI: dataAPI,
 	}, []string{apiservice.HTTP_GET})
 }

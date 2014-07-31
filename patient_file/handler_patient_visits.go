@@ -6,7 +6,6 @@ import (
 	"github.com/sprucehealth/backend/api"
 	"github.com/sprucehealth/backend/apiservice"
 	"github.com/sprucehealth/backend/common"
-	"github.com/sprucehealth/backend/libs/httputil"
 )
 
 type patientVisitsHandler struct {
@@ -22,7 +21,7 @@ type response struct {
 }
 
 func NewPatientVisitsHandler(dataApi api.DataAPI) http.Handler {
-	return httputil.SupportedMethods(&patientVisitsHandler{
+	return apiservice.SupportedMethods(&patientVisitsHandler{
 		DataApi: dataApi,
 	}, []string{apiservice.HTTP_GET})
 }
@@ -33,7 +32,7 @@ func (p *patientVisitsHandler) IsAuthorized(r *http.Request) (bool, error) {
 		return false, apiservice.NewAccessForbiddenError()
 	}
 
-	requestData := request{}
+	requestData := &request{}
 	if err := apiservice.DecodeRequestData(requestData, r); err != nil {
 		return false, apiservice.NewValidationError(err.Error(), r)
 	}

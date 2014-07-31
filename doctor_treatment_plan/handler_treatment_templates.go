@@ -45,6 +45,7 @@ func (t *treatmentTemplatesHandler) IsAuthorized(r *http.Request) (bool, error) 
 	} else if requestData.TreatmentPlanId.Int64() == 0 {
 		return false, apiservice.NewValidationError("treatment_plan_id must be specified", r)
 	}
+	ctxt.RequestCache[apiservice.RequestData] = requestData
 
 	doctorId, err := t.dataAPI.GetDoctorIdFromAccountId(apiservice.GetContext(r).AccountId)
 	if err != nil {

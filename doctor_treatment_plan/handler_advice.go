@@ -9,7 +9,6 @@ import (
 	"github.com/sprucehealth/backend/common"
 	"github.com/sprucehealth/backend/encoding"
 	"github.com/sprucehealth/backend/libs/dispatch"
-	"github.com/sprucehealth/backend/libs/httputil"
 )
 
 type adviceHandler struct {
@@ -17,7 +16,7 @@ type adviceHandler struct {
 }
 
 func NewAdviceHandler(dataAPI api.DataAPI) http.Handler {
-	return httputil.SupportedMethods(&adviceHandler{
+	return apiservice.SupportedMethods(&adviceHandler{
 		dataAPI: dataAPI,
 	}, []string{apiservice.HTTP_POST})
 }

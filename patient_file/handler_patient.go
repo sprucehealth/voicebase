@@ -59,7 +59,12 @@ func (d *doctorPatientHandler) IsAuthorized(r *http.Request) (bool, error) {
 	}
 	ctxt.RequestCache[apiservice.Doctor] = doctor
 
-	patient, err := d.DataApi.GetPatientFromId(requestData.PatientId)
+	patientId := requestData.PatientId
+	if patientId == 0 {
+		patientId = requestData.Patient.PatientId.Int64()
+	}
+
+	patient, err := d.DataApi.GetPatientFromId(patientId)
 	if err != nil {
 		return false, err
 	}

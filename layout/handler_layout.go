@@ -9,7 +9,6 @@ import (
 	"github.com/sprucehealth/backend/api"
 	"github.com/sprucehealth/backend/apiservice"
 	"github.com/sprucehealth/backend/info_intake"
-	"github.com/sprucehealth/backend/libs/httputil"
 
 	"github.com/sprucehealth/backend/third_party/github.com/SpruceHealth/mapstructure"
 )
@@ -23,7 +22,7 @@ type layoutUploadHandler struct {
 }
 
 func NewLayoutUploadHandler(dataAPI api.DataAPI) http.Handler {
-	return httputil.SupportedMethods(&layoutUploadHandler{
+	return apiservice.SupportedMethods(&layoutUploadHandler{
 		dataAPI: dataAPI,
 	}, []string{apiservice.HTTP_POST})
 }

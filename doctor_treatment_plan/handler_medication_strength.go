@@ -6,7 +6,6 @@ import (
 	"github.com/sprucehealth/backend/api"
 	"github.com/sprucehealth/backend/apiservice"
 	"github.com/sprucehealth/backend/libs/erx"
-	"github.com/sprucehealth/backend/libs/httputil"
 )
 
 type medicationStrengthSearchHandler struct {
@@ -15,7 +14,7 @@ type medicationStrengthSearchHandler struct {
 }
 
 func NewMedicationStrengthSearchHandler(dataAPI api.DataAPI, erxAPI erx.ERxAPI) http.Handler {
-	return httputil.SupportedMethods(&medicationStrengthSearchHandler{
+	return apiservice.SupportedMethods(&medicationStrengthSearchHandler{
 		dataAPI: dataAPI,
 		erxAPI:  erxAPI,
 	}, []string{apiservice.HTTP_GET})

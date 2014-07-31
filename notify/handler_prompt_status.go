@@ -6,7 +6,6 @@ import (
 	"github.com/sprucehealth/backend/api"
 	"github.com/sprucehealth/backend/apiservice"
 	"github.com/sprucehealth/backend/common"
-	"github.com/sprucehealth/backend/libs/httputil"
 )
 
 type promptStatusHandler struct {
@@ -14,7 +13,7 @@ type promptStatusHandler struct {
 }
 
 func NewPromptStatusHandler(dataApi api.DataAPI) http.Handler {
-	return httputil.SupportedMethods(&promptStatusHandler{
+	return apiservice.SupportedMethods(&promptStatusHandler{
 		dataApi: dataApi,
 	}, []string{apiservice.HTTP_PUT})
 }

@@ -32,20 +32,16 @@ type ListResponse struct {
 	Sections []*Section `json:"sections"`
 }
 
-func NewHandler(dataAPI api.DataAPI) *handler {
+func NewHandler(dataAPI api.DataAPI) http.Handler {
 	return &handler{
 		dataAPI: dataAPI,
 	}
 }
 
-func NewListHandler(dataAPI api.DataAPI) *listHandler {
+func NewListHandler(dataAPI api.DataAPI) http.Handler {
 	return &listHandler{
 		dataAPI: dataAPI,
 	}
-}
-
-func (h *handler) IsAuthorized(r *http.Request) (bool, error) {
-	return true, nil
 }
 
 func (h *handler) ServeHTTP(w http.ResponseWriter, r *http.Request) {
@@ -94,8 +90,16 @@ func (h *listHandler) ServeHTTP(w http.ResponseWriter, r *http.Request) {
 	apiservice.WriteJSONToHTTPResponseWriter(w, http.StatusOK, &res)
 }
 
+func (h *handler) IsAuthorized(r *http.Request) (bool, error) {
+	return true, nil
+}
+
 func (*handler) NonAuthenticated() bool {
 	return true
+}
+
+func (h *listHandler) IsAuthorized(r *http.Request) (bool, error) {
+	return true, nil
 }
 
 func (*listHandler) NonAuthenticated() bool {

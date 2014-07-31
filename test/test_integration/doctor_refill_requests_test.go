@@ -17,6 +17,7 @@ import (
 	"github.com/sprucehealth/backend/apiservice"
 	"github.com/sprucehealth/backend/app_worker"
 	"github.com/sprucehealth/backend/common"
+	doctorpkg "github.com/sprucehealth/backend/doctor"
 	"github.com/sprucehealth/backend/doctor_treatment_plan"
 	"github.com/sprucehealth/backend/encoding"
 	"github.com/sprucehealth/backend/libs/aws/sqs"
@@ -399,9 +400,26 @@ func TestApproveRefillRequestAndSuccessfulSendToPharmacy(t *testing.T) {
 
 	// lets go ahead and attempt to approve this refill request
 	comment := "this is a test"
+
+	requestData := doctorpkg.DoctorRefillRequestRequestData{
+		RefillRequestId:      encoding.NewObjectId(refillRequest.Id),
+		Action:               "approve",
+		ApprovedRefillAmount: 10,
+		Comments:             comment,
+	}
+
 	erxStatusQueue := &common.SQSQueue{}
 	erxStatusQueue.QueueService = &sqs.StubSQS{}
 	erxStatusQueue.QueueUrl = "local-erx"
+
+	doctorRefillRequestsHandler := doctorpkg.NewRefillRxHandler(
+		testData.DataApi,
+		stubErxAPI,
+		erxStatusQueue,
+	)
+	ts := httptest.NewServer(doctorRefillRequestsHandler)
+	defer ts.Close()
+
 	// sleep for a brief moment before approving so that
 	// the items are ordered correctly for the rx history (in the real world they would not be approved in the same exact millisecond they are sent in)
 	time.Sleep(1 * time.Second)
@@ -609,7 +627,7 @@ func TestApproveRefillRequest_ErrorForControlledSubstances(t *testing.T) {
 
 	// lets go ahead and attempt to approve this refill request
 	comment := "this is a test"
-	requestData := apiservice.DoctorRefillRequestRequestData{
+	requestData := doctorpkg.DoctorRefillRequestRequestData{
 		RefillRequestId:      encoding.NewObjectId(refillRequest.Id),
 		Action:               "approve",
 		ApprovedRefillAmount: 10,
@@ -620,15 +638,11 @@ func TestApproveRefillRequest_ErrorForControlledSubstances(t *testing.T) {
 	erxStatusQueue.QueueService = &sqs.StubSQS{}
 	erxStatusQueue.QueueUrl = "local-erx"
 
-	doctorRefillRequestsHandler := &apiservice.DoctorRefillRequestHandler{
-		DataApi:        testData.DataApi,
-		ErxApi:         stubErxAPI,
-		ErxStatusQueue: erxStatusQueue,
-	}
-
-	ts := httptest.NewServer(doctorRefillRequestsHandler)
-	defer ts.Close()
-
+	doctorRefillRequestsHandler := doctorpkg.NewRefillRxHandler(
+		testData.DataApi,
+		stubErxAPI,
+		erxStatusQueue,
+	)
 	// sleep for a brief moment before approving so that
 	// the items are ordered correctly for the rx history (in the real world they would not be approved in the same exact millisecond they are sent in)
 	time.Sleep(1 * time.Second)
@@ -876,10 +890,11 @@ func TestApproveRefillRequestAndErrorSendingToPharmacy(t *testing.T) {
 	}
 
 	// lets go ahead and resolve this error
-	doctorPrescriptionErrorIgnoreHandler := &apiservice.DoctorPrescriptionErrorIgnoreHandler{
-		DataApi: testData.DataApi,
-		ErxApi:  stubErxAPI,
-	}
+
+	doctorPrescriptionErrorIgnoreHandler := doctorpkg.NewPrescriptionErrorIgnoreHandler(
+		testData.DataApi,
+		stubErxAPI,
+	)
 
 	// sleep for a brief moment before approving so that
 	// the items are ordered correctly for the rx history (in the real world they would not be approved in the same exact millisecond they are sent in)
@@ -1059,6 +1074,22 @@ func testDenyRefillRequestAndSuccessfulDelete(isControlledSubstance bool, t *tes
 
 	// now, lets go ahead and attempt to deny this refill request
 	comment := "this is a test"
+<<<<<<< HEAD
+=======
+	requestData := doctorpkg.DoctorRefillRequestRequestData{
+		RefillRequestId: encoding.NewObjectId(refillRequest.Id),
+		Action:          "deny",
+		DenialReasonId:  encoding.NewObjectId(denialReasons[0].Id),
+		Comments:        comment,
+	}
+
+	doctorRefillRequestsHandler := doctorpkg.NewRefillRxHandler(
+		testData.DataApi,
+		stubErxAPI,
+		erxStatusQueue,
+	)
+
+>>>>>>> getting the server to work with the new flow of always calling the
 	// sleep for a brief moment before denyingh so that
 	// the items are ordered correctly for the rx history (in the real world they would not be approved in the same exact millisecond they are sent in)
 	time.Sleep(1 * time.Second)
@@ -1285,18 +1316,18 @@ func TestDenyRefillRequestWithDNTFWithoutTreatment(t *testing.T) {
 
 	// now, lets go ahead and attempt to deny this refill request
 	comment := "this is a test"
-	requestData := apiservice.DoctorRefillRequestRequestData{
+	requestData := doctorpkg.DoctorRefillRequestRequestData{
 		RefillRequestId: encoding.NewObjectId(refillRequest.Id),
 		Action:          "deny",
 		DenialReasonId:  encoding.NewObjectId(dntfReason.Id),
 		Comments:        comment,
 	}
 
-	doctorRefillRequestsHandler := &apiservice.DoctorRefillRequestHandler{
-		DataApi:        testData.DataApi,
-		ErxApi:         stubErxAPI,
-		ErxStatusQueue: erxStatusQueue,
-	}
+	doctorRefillRequestsHandler := doctorpkg.NewRefillRxHandler(
+		testData.DataApi,
+		stubErxAPI,
+		erxStatusQueue,
+	)
 
 	// sleep for a brief moment before denyingh so that
 	// the items are ordered correctly for the rx history (in the real world they would not be approved in the same exact millisecond they are sent in)
@@ -1538,7 +1569,7 @@ func setUpDeniedRefillRequestWithDNTF(t *testing.T, testData *TestData, endErxSt
 
 	// now, lets go ahead and attempt to deny this refill request
 
-	requestData := apiservice.DoctorRefillRequestRequestData{
+	requestData := doctorpkg.DoctorRefillRequestRequestData{
 		RefillRequestId: encoding.NewObjectId(refillRequest.Id),
 		Action:          "deny",
 		DenialReasonId:  encoding.NewObjectId(dntfReason.Id),
@@ -1546,11 +1577,11 @@ func setUpDeniedRefillRequestWithDNTF(t *testing.T, testData *TestData, endErxSt
 		Treatment:       &treatmentToAdd,
 	}
 
-	doctorRefillRequestsHandler := &apiservice.DoctorRefillRequestHandler{
-		DataApi:        testData.DataApi,
-		ErxApi:         stubErxAPI,
-		ErxStatusQueue: erxStatusQueue,
-	}
+	doctorRefillRequestsHandler := doctorpkg.NewRefillRxHandler(
+		testData.DataApi,
+		stubErxAPI,
+		erxStatusQueue,
+	)
 
 	// sleep for a brief moment before denyingh so that
 	// the items are ordered correctly for the rx history (in the real world they would not be approved in the same exact millisecond they are sent in)
@@ -1720,10 +1751,10 @@ func TestDenyRefillRequestWithDNTFUnlinkedTreatmentErrorSending(t *testing.T) {
 
 	stubErxApi := &erx.StubErxService{}
 	// lets go ahead and resolve the error, which should also clear the pending items from the doctor queue
-	doctorPrescriptionErrorIgnoreHandler := &apiservice.DoctorPrescriptionErrorIgnoreHandler{
-		DataApi: testData.DataApi,
-		ErxApi:  stubErxApi,
-	}
+	doctorPrescriptionErrorIgnoreHandler := doctorpkg.NewPrescriptionErrorIgnoreHandler(
+		testData.DataApi,
+		stubErxApi,
+	)
 
 	params := &url.Values{}
 	params.Set("unlinked_dntf_treatment_id", strconv.FormatInt(unlinkedTreatment.Id.Int64(), 10))
@@ -2011,7 +2042,7 @@ func setUpDeniedRefillRequestWithDNTFForLinkedTreatment(t *testing.T, testData *
 
 	// now, lets go ahead and attempt to deny this refill request
 
-	requestData := apiservice.DoctorRefillRequestRequestData{
+	requestData := doctorpkg.DoctorRefillRequestRequestData{
 		RefillRequestId: encoding.NewObjectId(refillRequest.Id),
 		Action:          "deny",
 		DenialReasonId:  encoding.NewObjectId(dntfReason.Id),
@@ -2019,11 +2050,11 @@ func setUpDeniedRefillRequestWithDNTFForLinkedTreatment(t *testing.T, testData *
 		Treatment:       &treatmentToAdd,
 	}
 
-	doctorRefillRequestsHandler := &apiservice.DoctorRefillRequestHandler{
-		DataApi:        testData.DataApi,
-		ErxApi:         stubErxAPI,
-		ErxStatusQueue: erxStatusQueue,
-	}
+	doctorRefillRequestsHandler := doctorpkg.NewRefillRxHandler(
+		testData.DataApi,
+		stubErxAPI,
+		erxStatusQueue,
+	)
 
 	// sleep for a brief moment before denyingh so that
 	// the items are ordered correctly for the rx history (in the real world they would not be approved in the same exact millisecond they are sent in)
@@ -2346,7 +2377,7 @@ func TestCheckingStatusOfMultipleRefillRequestsAtOnce(t *testing.T) {
 
 	// lets go ahead and approve this refill request
 	comment := "this is a test"
-	requestData := apiservice.DoctorRefillRequestRequestData{
+	requestData := doctorpkg.DoctorRefillRequestRequestData{
 		RefillRequestId:      encoding.NewObjectId(refillRequest.Id),
 		Action:               "approve",
 		ApprovedRefillAmount: approvedRefillAmount,
@@ -2359,11 +2390,11 @@ func TestCheckingStatusOfMultipleRefillRequestsAtOnce(t *testing.T) {
 	erxStatusQueue.QueueService = stubSqs
 	erxStatusQueue.QueueUrl = "local-erx"
 
-	doctorRefillRequestsHandler := &apiservice.DoctorRefillRequestHandler{
-		DataApi:        testData.DataApi,
-		ErxApi:         stubErxAPI,
-		ErxStatusQueue: erxStatusQueue,
-	}
+	doctorRefillRequestsHandler := doctorpkg.NewRefillRxHandler(
+		testData.DataApi,
+		stubErxAPI,
+		erxStatusQueue,
+	)
 
 	// sleep for a brief moment before approving so that
 	// the items are ordered correctly for the rx history (in the real world they would not be approved in the same exact millisecond they are sent in)

@@ -6,7 +6,6 @@ import (
 	"github.com/sprucehealth/backend/api"
 	"github.com/sprucehealth/backend/apiservice"
 	"github.com/sprucehealth/backend/common"
-	"github.com/sprucehealth/backend/libs/httputil"
 )
 
 type treatmentsHandler struct {
@@ -18,7 +17,7 @@ type treatmentsViewsResponse struct {
 }
 
 func NewTreatmentsHandler(dataAPI api.DataAPI) http.Handler {
-	return httputil.SupportedMethods(&treatmentsHandler{
+	return apiservice.SupportedMethods(&treatmentsHandler{
 		dataAPI: dataAPI,
 	}, []string{apiservice.HTTP_GET})
 }

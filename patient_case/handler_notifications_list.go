@@ -6,7 +6,6 @@ import (
 	"github.com/sprucehealth/backend/api"
 	"github.com/sprucehealth/backend/apiservice"
 	"github.com/sprucehealth/backend/common"
-	"github.com/sprucehealth/backend/libs/httputil"
 )
 
 type notificationsListHandler struct {
@@ -22,7 +21,7 @@ type notificationsListResponseData struct {
 }
 
 func NewNotificationsListHandler(dataAPI api.DataAPI) http.Handler {
-	return httputil.SupportedMethods(&notificationsListHandler{
+	return apiservice.SupportedMethods(&notificationsListHandler{
 		dataAPI: dataAPI,
 	}, []string{apiservice.HTTP_GET})
 }
