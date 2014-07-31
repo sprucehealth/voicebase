@@ -3,12 +3,11 @@ package test_case
 import (
 	"encoding/json"
 	"net/http"
-	"net/http/httptest"
 	"testing"
 
 	"github.com/sprucehealth/backend/address"
+	"github.com/sprucehealth/backend/apiservice/router"
 	"github.com/sprucehealth/backend/messages"
-	"github.com/sprucehealth/backend/patient_case"
 	"github.com/sprucehealth/backend/test/test_integration"
 )
 
@@ -16,7 +15,7 @@ func TestHomeCards_UnAuthenticated(t *testing.T) {
 	testData := test_integration.SetupIntegrationTest(t)
 	defer test_integration.TearDownIntegrationTest(t, testData)
 
-	items := getHomeCardsForPatient("", testData, t)
+	items := getHomeCardsForPatient(0, testData, t)
 	if len(items) != 2 {
 		t.Fatalf("Expected %d items but got %d", 2, len(items))
 	}
@@ -27,7 +26,7 @@ func TestHomeCards_UnAuthenticated(t *testing.T) {
 	// should be the same state as above
 	pr := test_integration.SignupRandomTestPatient(t, testData)
 
-	items = getHomeCardsForPatient(pr.Token, testData, t)
+	items = getHomeCardsForPatient(pr.Patient.AccountId.Int64(), testData, t)
 	if len(items) != 2 {
 		t.Fatalf("Expected %d items but got %d", 2, len(items))
 	}
@@ -40,39 +39,16 @@ func TestHomeCards_UnavailableState(t *testing.T) {
 	testData := test_integration.SetupIntegrationTest(t)
 	defer test_integration.TearDownIntegrationTest(t, testData)
 
-	stubAddressValidationService := address.StubAddressValidationService{
-		CityStateToReturn: &address.CityState{
-			City:              "New York City",
-			State:             "New York",
-			StateAbbreviation: "NY",
-		},
+	stubAddressValidationAPI := testData.RouterConfig.AddressValidationAPI.(*address.StubAddressValidationService)
+	stubAddressValidationAPI.CityStateToReturn = address.CityState{
+		City:              "New York City",
+		State:             "New York",
+		StateAbbreviation: "NY",
 	}
 
-	homeHandler := patient_case.NewHomeHandler(testData.DataApi, testData.AuthApi, stubAddressValidationService)
-	patientServer := httptest.NewServer(homeHandler)
-	defer patientServer.Close()
-
-	responseData := make(map[string]interface{})
-
-	getRequest, err := http.NewRequest("GET", patientServer.URL+"?zip_code=94105", nil)
-	if err != nil {
-		t.Fatal(err)
-	}
-
-	res, err := http.DefaultClient.Do(getRequest)
-	defer res.Body.Close()
-
-	if err != nil {
-		t.Fatal(err)
-	} else if res.StatusCode != http.StatusOK {
-		t.Fatalf("Expected %d but got %d", http.StatusOK, res.StatusCode)
-	} else if err := json.NewDecoder(res.Body).Decode(&responseData); err != nil {
-		t.Fatal(err)
-	}
-
-	items := responseData["items"].([]interface{})
-	if len(items) != 1 {
-		t.Fatalf("Expected %d items but got %d", 1, len(items))
+	items = getHomeCardsForPatient(pr.Patient.AccountId.Int64(), testData, t)
+	if len(items) != 2 {
+		t.Fatalf("Expected %d items but got %d", 2, len(items))
 	}
 	ensureSectionWithNSubViews(3, items[0], t)
 }
@@ -83,7 +59,7 @@ func TestHomeCards_IncompleteVisit(t *testing.T) {
 	pr := test_integration.SignupRandomTestPatient(t, testData)
 	test_integration.CreatePatientVisitForPatient(pr.Patient.PatientId.Int64(), testData, t)
 
-	items := getHomeCardsForPatient(pr.Token, testData, t)
+	items := getHomeCardsForPatient(pr.Patient.AccountId.Int64(), testData, t)
 
 	if len(items) != 3 {
 		t.Fatalf("Expected 3 items but got %d instead", len(items))
@@ -126,7 +102,7 @@ func TestHomeCards_VisitSubmitted(t *testing.T) {
 	pv := test_integration.CreatePatientVisitForPatient(pr.Patient.PatientId.Int64(), testData, t)
 	test_integration.SubmitPatientVisitForPatient(pr.Patient.PatientId.Int64(), pv.PatientVisitId, testData, t)
 
-	items := getHomeCardsForPatient(pr.Token, testData, t)
+	items := getHomeCardsForPatient(pr.Patient.AccountId.Int64(), testData, t)
 	if len(items) != 2 {
 		t.Fatalf("Expected 2 items but got %d instead", len(items))
 	}
@@ -180,7 +156,7 @@ func TestHomeCards_MessageFromDoctor(t *testing.T) {
 		Message: "foo",
 	})
 
-	items := getHomeCardsForPatient(pr.Token, testData, t)
+	items := getHomeCardsForPatient(pr.Patient.AccountId.Int64(), testData, t)
 	if len(items) != 1 {
 		t.Fatalf("Expected 2 items but got %d instead", len(items))
 	}
@@ -204,12 +180,7 @@ func TestHomeCards_TreatmentPlanFromDoctor(t *testing.T) {
 		t.Fatal(err)
 	}
 
-	_, token, err := testData.AuthApi.LogIn(patient.Email, "12345")
-	if err != nil {
-		t.Fatal(err)
-	}
-
-	items := getHomeCardsForPatient(token, testData, t)
+	items := getHomeCardsForPatient(patient.AccountId.Int64(), testData, t)
 	if len(items) != 2 {
 		t.Fatalf("Expected 1 item but got %d", len(items))
 	}
@@ -244,12 +215,7 @@ func TestHomeCards_MultipleNotifications(t *testing.T) {
 		Message: "foo",
 	})
 
-	_, token, err := testData.AuthApi.LogIn(patient.Email, "12345")
-	if err != nil {
-		t.Fatal(err)
-	}
-
-	items := getHomeCardsForPatient(token, testData, t)
+	items := getHomeCardsForPatient(patient.AccountId.Int64(), testData, t)
 	if len(items) != 2 {
 		t.Fatalf("Expected 2 item but got %d", len(items))
 	}
@@ -257,36 +223,16 @@ func TestHomeCards_MultipleNotifications(t *testing.T) {
 	ensureCaseCardWithEmbeddedNotification(items[0], true, t)
 }
 
-func getHomeCardsForPatient(token string, testData *test_integration.TestData, t *testing.T) []interface{} {
-
-	stubAddressValidationService := address.StubAddressValidationService{
-		CityStateToReturn: &address.CityState{
-			City:              "San Francisco",
-			State:             "California",
-			StateAbbreviation: "CA",
-		},
-	}
-
-	homeHandler := patient_case.NewHomeHandler(testData.DataApi, testData.AuthApi, stubAddressValidationService)
-	patientServer := httptest.NewServer(homeHandler)
-	defer patientServer.Close()
-
+func getHomeCardsForPatient(accountID int64, testData *test_integration.TestData, t *testing.T) []interface{} {
 	responseData := make(map[string]interface{})
 
-	getRequest, err := http.NewRequest("GET", patientServer.URL+"?zip_code=94115", nil)
+	res, err := testData.AuthGet(testData.APIServer.URL+router.PatientHomeURLPath+"?zip_code=94115", accountID)
 	if err != nil {
 		t.Fatal(err)
 	}
-	if token != "" {
-		getRequest.Header.Set("Authorization", "token "+token)
-	}
-
-	res, err := http.DefaultClient.Do(getRequest)
 	defer res.Body.Close()
 
-	if err != nil {
-		t.Fatal(err)
-	} else if res.StatusCode != http.StatusOK {
+	if res.StatusCode != http.StatusOK {
 		t.Fatalf("Expected %d but got %d", http.StatusOK, res.StatusCode)
 	} else if err := json.NewDecoder(res.Body).Decode(&responseData); err != nil {
 		t.Fatal(err)
