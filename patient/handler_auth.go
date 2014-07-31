@@ -147,13 +147,18 @@ func (h *AuthenticationHandler) ServeHTTP(w http.ResponseWriter, r *http.Request
 			return
 		}
 
+		account, err := h.authApi.ValidateToken(token)
+		if err != nil {
+			golog.Warningf("Unable to get account for token: %s", err)
+		}
+
 		if err := h.authApi.LogOut(token); err != nil {
 			apiservice.WriteDeveloperError(w, http.StatusInternalServerError, "Internal Server Error")
 			return
 		}
 
 		dispatch.Default.Publish(&AccountLoggedOutEvent{
-			AccountId: apiservice.GetContext(r).AccountId,
+			AccountId: account.ID,
 		})
 
 		w.WriteHeader(http.StatusOK)

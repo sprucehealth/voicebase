@@ -4,14 +4,14 @@ import (
 	"bytes"
 	"database/sql"
 	"encoding/json"
-	"github.com/sprucehealth/backend/common"
-	"github.com/sprucehealth/backend/doctor_treatment_plan"
-	"github.com/sprucehealth/backend/patient_visit"
-	"github.com/sprucehealth/backend/test/test_integration"
 	"net/http"
-	"net/http/httptest"
 	"strconv"
 	"testing"
+
+	"github.com/sprucehealth/backend/apiservice/router"
+	"github.com/sprucehealth/backend/common"
+	"github.com/sprucehealth/backend/patient_visit"
+	"github.com/sprucehealth/backend/test/test_integration"
 )
 
 func TestRegimenForPatientVisit(t *testing.T) {
@@ -116,19 +116,17 @@ func TestRegimenForPatientVisit(t *testing.T) {
 	regimenPlanRequest = regimenPlanResponse
 	regimenPlanRequest.AllRegimenSteps = []*common.DoctorInstructionItem{}
 	regimenPlanRequest.RegimenSections = []*common.RegimenSection{regimenSection}
-	doctorRegimenHandler := doctor_treatment_plan.NewRegimenHandler(testData.DataApi)
-	ts := httptest.NewServer(doctorRegimenHandler)
-	defer ts.Close()
 
 	requestBody, err := json.Marshal(regimenPlanRequest)
 	if err != nil {
 		t.Fatal("Unable to marshal request body for adding regimen steps: " + err.Error())
 	}
 
-	resp, err := testData.AuthPost(ts.URL, "application/json", bytes.NewBuffer(requestBody), doctor.AccountId.Int64())
+	resp, err := testData.AuthPost(testData.APIServer.URL+router.DoctorRegimenURLPath, "application/json", bytes.NewBuffer(requestBody), doctor.AccountId.Int64())
 	if err != nil {
 		t.Fatal("Unable to make successful request to create regimen for patient visit")
 	}
+	defer resp.Body.Close()
 
 	if resp.StatusCode != http.StatusOK {
 		t.Fatal("Expected to get a bad request for when the regimen step does not exist in the regimen sections")
@@ -281,19 +279,16 @@ func TestRegimenForPatientVisit_ErrorTextDifferentForLinkedItem(t *testing.T) {
 		regimenPlanRequest.RegimenSections[i].RegimenSteps[0].State = common.STATE_MODIFIED
 	}
 
-	doctorRegimenHandler := doctor_treatment_plan.NewRegimenHandler(testData.DataApi)
-	ts := httptest.NewServer(doctorRegimenHandler)
-	defer ts.Close()
-
 	requestBody, err := json.Marshal(regimenPlanRequest)
 	if err != nil {
 		t.Fatal("Unable to marshal request body for adding regimen steps: " + err.Error())
 	}
 
-	resp, err := testData.AuthPost(ts.URL, "application/json", bytes.NewBuffer(requestBody), doctor.AccountId.Int64())
+	resp, err := testData.AuthPost(testData.APIServer.URL+router.DoctorRegimenURLPath, "application/json", bytes.NewBuffer(requestBody), doctor.AccountId.Int64())
 	if err != nil {
 		t.Fatal("Unable to make successful request to create regimen for patient visit")
 	}
+	defer resp.Body.Close()
 
 	if resp.StatusCode != http.StatusBadRequest {
 		t.Fatalf("Expected to get a bad request for when the regimen step's text is different than what its linked to instead got %d", resp.StatusCode)

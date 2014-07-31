@@ -3,13 +3,14 @@ package test_treatment_plan
 import (
 	"bytes"
 	"encoding/json"
+	"net/http"
+	"testing"
+
 	"github.com/sprucehealth/backend/api"
 	"github.com/sprucehealth/backend/apiservice"
+	"github.com/sprucehealth/backend/apiservice/router"
 	"github.com/sprucehealth/backend/doctor_treatment_plan"
 	"github.com/sprucehealth/backend/test/test_integration"
-	"net/http"
-	"net/http/httptest"
-	"testing"
 )
 
 func TestTreatmentPlanStatus(t *testing.T) {
@@ -233,18 +234,17 @@ func TestTreatmentPlanDelete_ActiveTP(t *testing.T) {
 	test_integration.SubmitPatientVisitBackToPatient(treatmentPlan.Id.Int64(), doctor, testData, t)
 
 	// attempting to delete the treatment plan should fail given that the treatment plan is active
-	doctorTreatmentPlanHandler := doctor_treatment_plan.NewDoctorTreatmentPlanHandler(testData.DataApi, nil, nil, false)
-	doctorServer := httptest.NewServer(doctorTreatmentPlanHandler)
-	defer doctorServer.Close()
-
 	jsonData, err := json.Marshal(&doctor_treatment_plan.TreatmentPlanRequestData{
-		TreatmentPlanId: treatmentPlan.Id,
+		TreatmentPlanId: treatmentPlan.Id.Int64(),
 	})
 
-	res, err := testData.AuthDelete(doctorServer.URL, "application/json", bytes.NewReader(jsonData), doctor.AccountId.Int64())
+	res, err := testData.AuthDelete(testData.APIServer.URL+router.DoctorTreatmentPlansURLPath, "application/json", bytes.NewReader(jsonData), doctor.AccountId.Int64())
 	if err != nil {
 		t.Fatal(err)
-	} else if res.StatusCode != http.StatusBadRequest {
+	}
+	defer res.Body.Close()
+
+	if res.StatusCode != http.StatusBadRequest {
 		t.Fatalf("Expected %d instead got %d", http.StatusBadRequest, res.StatusCode)
 	}
 
@@ -279,18 +279,17 @@ func TestTreatmentPlanDelete_DifferentDoctor(t *testing.T) {
 	}
 
 	// attempting to delete the treatment plan should fail given that the treatment plan is active
-	doctorTreatmentPlanHandler := doctor_treatment_plan.NewDoctorTreatmentPlanHandler(testData.DataApi, nil, nil, false)
-	doctorServer := httptest.NewServer(doctorTreatmentPlanHandler)
-	defer doctorServer.Close()
-
 	jsonData, err := json.Marshal(&doctor_treatment_plan.TreatmentPlanRequestData{
-		TreatmentPlanId: treatmentPlan.Id,
+		TreatmentPlanId: treatmentPlan.Id.Int64(),
 	})
 
-	res, err := testData.AuthDelete(doctorServer.URL, "application/json", bytes.NewReader(jsonData), doctor2.AccountId.Int64())
+	res, err := testData.AuthDelete(testData.APIServer.URL+router.DoctorTreatmentPlansURLPath, "application/json", bytes.NewReader(jsonData), doctor2.AccountId.Int64())
 	if err != nil {
 		t.Fatal(err)
-	} else if res.StatusCode != http.StatusBadRequest {
+	}
+	defer res.Body.Close()
+
+	if res.StatusCode != http.StatusBadRequest {
 		t.Fatalf("Expected %d instead got %d", http.StatusBadRequest, res.StatusCode)
 	}
 

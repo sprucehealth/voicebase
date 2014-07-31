@@ -3,14 +3,15 @@ package test_intake
 import (
 	"bytes"
 	"encoding/json"
+	"net/http"
+	"testing"
+
 	"github.com/sprucehealth/backend/api"
+	"github.com/sprucehealth/backend/apiservice/router"
 	"github.com/sprucehealth/backend/common"
 	"github.com/sprucehealth/backend/info_intake"
 	"github.com/sprucehealth/backend/patient_visit"
 	"github.com/sprucehealth/backend/test/test_integration"
-	"net/http"
-	"net/http/httptest"
-	"testing"
 )
 
 var (
@@ -562,16 +563,12 @@ func TestPhotoIntake_MistmatchedSlotId(t *testing.T) {
 		},
 	}
 
-	photoIntakeHandler := patient_visit.NewPhotoAnswerIntakeHandler(testData.DataApi)
-	photoIntakeServer := httptest.NewServer(photoIntakeHandler)
-	defer photoIntakeServer.Close()
-
 	jsonData, err := json.Marshal(requestData)
 	if err != nil {
 		t.Fatal(err.Error())
 	}
 
-	resp, err := testData.AuthPost(photoIntakeServer.URL, "application/json", bytes.NewReader(jsonData), patient.AccountId.Int64())
+	resp, err := testData.AuthPost(testData.APIServer.URL+router.PatientVisitPhotoAnswerURLPath, "application/json", bytes.NewReader(jsonData), patient.AccountId.Int64())
 	if err != nil {
 		t.Fatal(err.Error())
 	} else if resp.StatusCode != http.StatusBadRequest {

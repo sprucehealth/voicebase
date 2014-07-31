@@ -4,20 +4,18 @@ import (
 	"bytes"
 	"encoding/json"
 	"net/http"
-	"net/http/httptest"
 	"strconv"
 	"testing"
 	"time"
 
 	"github.com/sprucehealth/backend/api"
 	"github.com/sprucehealth/backend/apiservice"
+	"github.com/sprucehealth/backend/apiservice/router"
 	"github.com/sprucehealth/backend/common"
 	"github.com/sprucehealth/backend/doctor_queue"
 	"github.com/sprucehealth/backend/doctor_treatment_plan"
 	"github.com/sprucehealth/backend/encoding"
 	"github.com/sprucehealth/backend/messages"
-	"github.com/sprucehealth/backend/patient_file"
-	"github.com/sprucehealth/backend/patient_visit"
 	"github.com/sprucehealth/backend/test/test_integration"
 
 	"github.com/sprucehealth/backend/third_party/github.com/samuel/go-metrics/metrics"
@@ -106,12 +104,9 @@ func TestJBCQ_ForbiddenClaimAttempt(t *testing.T) {
 	}
 
 	// attempt for doctor2 to review the visit information
-	visitReviewServer := httptest.NewServer(patient_file.NewDoctorPatientVisitReviewHandler(testData.DataApi))
-	defer visitReviewServer.Close()
-
 	// ensure that doctor2 is forbidden access to the visit
 	var errorResponse map[string]interface{}
-	resp, err := testData.AuthGet(visitReviewServer.URL+"?patient_visit_id="+strconv.FormatInt(vp.PatientVisitId, 10), doctor2.AccountId.Int64())
+	resp, err := testData.AuthGet(testData.APIServer.URL+router.DoctorVisitReviewURLPath+"?patient_visit_id="+strconv.FormatInt(vp.PatientVisitId, 10), doctor2.AccountId.Int64())
 	if err != nil {
 		t.Fatal("Unable to make call to get patient visit review for patient: " + err.Error())
 	} else if resp.StatusCode != http.StatusForbidden {
@@ -128,8 +123,6 @@ func TestJBCQ_ForbiddenClaimAttempt(t *testing.T) {
 	resp.Body.Close()
 
 	// attempt for doctor2 to diagnose the visit
-	diagnoseServer := httptest.NewServer(patient_visit.NewDiagnosePatientHandler(testData.DataApi, testData.AuthApi, ""))
-	defer diagnoseServer.Close()
 	answerIntakeRequest := test_integration.PrepareAnswersForDiagnosis(testData, t, vp.PatientVisitId)
 	jsonData, err := json.Marshal(&answerIntakeRequest)
 	if err != nil {
@@ -137,10 +130,12 @@ func TestJBCQ_ForbiddenClaimAttempt(t *testing.T) {
 	}
 
 	// ensure that doctor2 is forbidden from diagnosing the visit for the same reason
-	resp, err = testData.AuthPost(diagnoseServer.URL, "application/json", bytes.NewReader(jsonData), doctor2.AccountId.Int64())
+	resp, err = testData.AuthPost(testData.APIServer.URL+router.DoctorVisitDiagnosisURLPath, "application/json", bytes.NewReader(jsonData), doctor2.AccountId.Int64())
 	if err != nil {
 		t.Fatal(err)
-	} else if resp.StatusCode != http.StatusForbidden {
+	}
+	defer resp.Body.Close()
+	if resp.StatusCode != http.StatusForbidden {
 		t.Fatalf("Expected response code %d but got %d", http.StatusForbidden, resp.StatusCode)
 	} else if err := json.NewDecoder(resp.Body).Decode(&errorResponse); err != nil {
 		t.Fatal(err)
@@ -151,12 +146,9 @@ func TestJBCQ_ForbiddenClaimAttempt(t *testing.T) {
 	} else if developerErrorCode != strconv.FormatInt(apiservice.DEVELOPER_JBCQ_FORBIDDEN, 10) {
 		t.Fatalf("Expected developer code to be %d but it was %s instead", apiservice.DEVELOPER_JBCQ_FORBIDDEN, developerErrorCode)
 	}
-	resp.Body.Close()
 
 	// attempt for doctor2 to pick a treatment plan
-	pickTPServer := httptest.NewServer(doctor_treatment_plan.NewDoctorTreatmentPlanHandler(testData.DataApi, nil, nil, false))
-	defer pickTPServer.Close()
-	jsonData, err = json.Marshal(&doctor_treatment_plan.PickTreatmentPlanRequestData{
+	jsonData, err = json.Marshal(&doctor_treatment_plan.TreatmentPlanRequestData{
 		TPParent: &common.TreatmentPlanParent{
 			ParentId:   encoding.NewObjectId(vp.PatientVisitId),
 			ParentType: common.TPParentTypePatientVisit,
@@ -164,10 +156,13 @@ func TestJBCQ_ForbiddenClaimAttempt(t *testing.T) {
 	})
 
 	// ensure that doctor2 is forbiddden from picking a treatment plan for the same reason
-	resp, err = testData.AuthPost(pickTPServer.URL, "application/json", bytes.NewReader(jsonData), doctor2.AccountId.Int64())
+	resp, err = testData.AuthPost(testData.APIServer.URL+router.DoctorTreatmentPlansURLPath, "application/json", bytes.NewReader(jsonData), doctor2.AccountId.Int64())
 	if err != nil {
 		t.Fatal(err)
-	} else if resp.StatusCode != http.StatusForbidden {
+	}
+	defer resp.Body.Close()
+
+	if resp.StatusCode != http.StatusForbidden {
 		t.Fatalf("Expected response code %d but got %d", http.StatusForbidden, resp.StatusCode)
 	} else if err := json.NewDecoder(resp.Body).Decode(&errorResponse); err != nil {
 		t.Fatal(err)
@@ -178,7 +173,6 @@ func TestJBCQ_ForbiddenClaimAttempt(t *testing.T) {
 	} else if developerErrorCode != strconv.FormatInt(apiservice.DEVELOPER_JBCQ_FORBIDDEN, 10) {
 		t.Fatalf("Expected developer code to be %d but it was %s instead", apiservice.DEVELOPER_JBCQ_FORBIDDEN, developerErrorCode)
 	}
-	resp.Body.Close()
 }
 
 // This test is to ensure that the claim works as expected where it doesn't exist at the time of visit/case creation

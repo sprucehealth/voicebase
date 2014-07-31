@@ -410,6 +410,7 @@ type AuthAPI interface {
 	LogIn(email, password string) (*common.Account, string, error)
 	LogOut(token string) error
 	ValidateToken(token string) (*common.Account, error)
+	GetToken(accountId int64) (string, error)
 	SetPassword(accountId int64, password string) error
 	UpdateLastOpenedDate(accountId int64) error
 	GetAccountForEmail(email string) (*common.Account, error)

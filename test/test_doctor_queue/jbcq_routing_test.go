@@ -2,12 +2,13 @@ package test_doctor_queue
 
 import (
 	"encoding/json"
+	"net/http"
+	"testing"
+
 	"github.com/sprucehealth/backend/apiservice"
+	"github.com/sprucehealth/backend/apiservice/router"
 	"github.com/sprucehealth/backend/doctor_queue"
 	"github.com/sprucehealth/backend/test/test_integration"
-	"net/http"
-	"net/http/httptest"
-	"testing"
 )
 
 // This test is to ensure that the auth url is included in the
@@ -23,13 +24,10 @@ func TestJBCQRouting_AuthUrlInDoctorQueue(t *testing.T) {
 		t.Fatal(err)
 	}
 
-	doctorServer := httptest.NewServer(doctor_queue.NewQueueHandler(testData.DataApi))
-	defer doctorServer.Close()
-
 	test_integration.CreateRandomPatientVisitAndPickTP(t, testData, doctor)
 
 	responseData := &doctor_queue.DoctorQueueItemsResponseData{}
-	res, err := testData.AuthGet(doctorServer.URL+"?state=global", doctor.AccountId.Int64())
+	res, err := testData.AuthGet(testData.APIServer.URL+router.DoctorQueueURLPath+"?state=global", doctor.AccountId.Int64())
 	if err != nil {
 		t.Fatal(err)
 	} else if res.StatusCode != http.StatusOK {

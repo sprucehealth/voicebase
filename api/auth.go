@@ -182,6 +182,18 @@ func (m *Auth) ValidateToken(token string) (*common.Account, error) {
 	return &account, nil
 }
 
+func (m *Auth) GetToken(accountId int64) (string, error) {
+	var token string
+	err := m.DB.QueryRow(`select token from auth_token where account_id = ?`, accountId).Scan(&token)
+	if err == sql.ErrNoRows {
+		return "", NoRowsError
+	} else if err != nil {
+		return "", err
+	}
+
+	return token, err
+}
+
 func (m *Auth) SetPassword(accountID int64, password string) error {
 	if password == "" {
 		return InvalidPassword

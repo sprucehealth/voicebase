@@ -111,7 +111,7 @@ type RouterConfig struct {
 	AuthAPI               api.AuthAPI
 	AddressValidationAPI  address.AddressValidationAPI
 	PharmacySearchAPI     pharmacy.PharmacySearchAPI
-	SNSClient             *sns.SNS
+	SNSClient             sns.SNSService
 	PaymentAPI            payment.PaymentAPI
 	NotifyConfigs         *config.NotificationConfigs
 	NotificationManager   *notify.NotificationManager

@@ -3,14 +3,15 @@ package test_treatment_plan
 import (
 	"bytes"
 	"encoding/json"
+	"net/http"
+	"testing"
+
 	"github.com/sprucehealth/backend/api"
+	"github.com/sprucehealth/backend/apiservice/router"
 	"github.com/sprucehealth/backend/common"
 	"github.com/sprucehealth/backend/doctor_treatment_plan"
 	"github.com/sprucehealth/backend/encoding"
 	"github.com/sprucehealth/backend/test/test_integration"
-	"net/http"
-	"net/http/httptest"
-	"testing"
 )
 
 // This test is to ensure that treatment plans can be versioned
@@ -376,21 +377,21 @@ func TestVersionTreatmentPlan_PickingFromInactiveTP(t *testing.T) {
 
 	// attempt to start yet another treatment plan but this time trying to pick from
 	// an inactive treatment plan. this should fail
-	doctorTretmentPlanHandler := doctor_treatment_plan.NewDoctorTreatmentPlanHandler(testData.DataApi, nil, nil, false)
-	doctorServer := httptest.NewServer(doctorTretmentPlanHandler)
-	defer doctorServer.Close()
 
-	jsonData, err := json.Marshal(&doctor_treatment_plan.PickTreatmentPlanRequestData{
+	jsonData, err := json.Marshal(&doctor_treatment_plan.TreatmentPlanRequestData{
 		TPParent: &common.TreatmentPlanParent{
 			ParentId:   treatmentPlan.Id,
 			ParentType: common.TPParentTypeTreatmentPlan,
 		},
 	})
 
-	res, err := testData.AuthPut(doctorServer.URL, "application/json", bytes.NewReader(jsonData), doctor.AccountId.Int64())
+	res, err := testData.AuthPut(testData.APIServer.URL+router.DoctorTreatmentPlansURLPath, "application/json", bytes.NewReader(jsonData), doctor.AccountId.Int64())
 	if err != nil {
 		t.Fatal(err)
-	} else if res.StatusCode != http.StatusBadRequest {
+	}
+	defer res.Body.Close()
+
+	if res.StatusCode != http.StatusBadRequest {
 		t.Fatalf("Expected %d but got %d", http.StatusBadRequest, res.StatusCode)
 	}
 

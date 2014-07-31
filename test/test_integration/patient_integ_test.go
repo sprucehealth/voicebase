@@ -13,9 +13,9 @@ import (
 	"github.com/sprucehealth/backend/common"
 	"github.com/sprucehealth/backend/common/handlers"
 	patientApiService "github.com/sprucehealth/backend/patient"
-	"github.com/sprucehealth/backend/patient_visit"
 
 	"github.com/sprucehealth/backend/address"
+	"github.com/sprucehealth/backend/apiservice/router"
 
 	_ "github.com/sprucehealth/backend/third_party/github.com/go-sql-driver/mysql"
 )
@@ -139,23 +139,19 @@ func TestPatientVisitSubmission(t *testing.T) {
 	SubmitPatientVisitForPatient(signedupPatientResponse.Patient.PatientId.Int64(), patientVisitResponse.PatientVisitId, testData, t)
 
 	// try submitting the exact same patient visit again, and it should come back with a 403 given that the case has already been submitted
-
-	patientVisitHandler := patient_visit.NewPatientVisitHandler(testData.DataApi, testData.AuthApi)
 	patient, err := testData.DataApi.GetPatientFromId(signedupPatientResponse.Patient.PatientId.Int64())
 	if err != nil {
 		t.Fatal("Unable to get patient information given the patient id: " + err.Error())
 	}
 
-	ts := httptest.NewServer(patientVisitHandler)
-	defer ts.Close()
 	buffer := bytes.NewBufferString("patient_visit_id=")
 	buffer.WriteString(strconv.FormatInt(patientVisitResponse.PatientVisitId, 10))
 
-	resp, err := testData.AuthPut(ts.URL, "application/x-www-form-urlencoded", buffer, patient.AccountId.Int64())
+	resp, err := testData.AuthPut(testData.APIServer.URL+router.PatientVisitURLPath, "application/x-www-form-urlencoded", buffer, patient.AccountId.Int64())
 	if err != nil {
 		t.Fatal("Unable to get the patient visit id")
 	}
-
+	defer resp.Body.Close()
 	if resp.StatusCode != http.StatusBadRequest {
 		t.Fatalf("Expected a bad request 403 to be returned when attempting to submit an already submitted patient visit, but instead got %d", resp.StatusCode)
 	}

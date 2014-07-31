@@ -2,19 +2,14 @@ package test_notifications
 
 import (
 	"net/http"
-	"net/http/httptest"
 	"net/url"
 	"strconv"
 	"strings"
 	"testing"
 
-	"github.com/sprucehealth/backend/api"
-	"github.com/sprucehealth/backend/apiservice"
+	"github.com/sprucehealth/backend/apiservice/router"
 	"github.com/sprucehealth/backend/common"
-	"github.com/sprucehealth/backend/common/config"
-	"github.com/sprucehealth/backend/libs/aws/sns"
-	"github.com/sprucehealth/backend/notify"
-	patientApi "github.com/sprucehealth/backend/patient"
+
 	"github.com/sprucehealth/backend/test/test_integration"
 )
 
@@ -28,18 +23,8 @@ func TestRegisteringToken_Patient(t *testing.T) {
 	accountId := patient.AccountId.Int64()
 
 	deviceToken := "12345"
-	notificationConfigs := config.NotificationConfigs(map[string]*config.NotificationConfig{
-		"iOS-Patient-Feature": &config.NotificationConfig{
-			SNSApplicationEndpoint: "endpoint",
-		},
-	})
 
-	mockSNSClient := &sns.MockSNS{
-		PushEndpointToReturn: "push_endpoint",
-	}
-
-	SetDeviceTokenForAccountId(accountId, deviceToken, &notificationConfigs, mockSNSClient, testData.DataApi, t)
-	// get user communication item and ensure that its all setup
+	SetDeviceTokenForAccountId(accountId, deviceToken, testData, t)
 }
 
 func TestRegisteringToken_Doctor(t *testing.T) {
@@ -54,17 +39,8 @@ func TestRegisteringToken_Doctor(t *testing.T) {
 	accountId := doctor.AccountId.Int64()
 
 	deviceToken := "12345"
-	notificationConfigs := config.NotificationConfigs(map[string]*config.NotificationConfig{
-		"iOS-Patient-Feature": &config.NotificationConfig{
-			SNSApplicationEndpoint: "endpoint",
-		},
-	})
-	mockSNSClient := &sns.MockSNS{
-		PushEndpointToReturn: "push_endpoint",
-	}
 
-	SetDeviceTokenForAccountId(accountId, deviceToken, &notificationConfigs, mockSNSClient, testData.DataApi, t)
-	// get user communication item and ensure that its all setup
+	SetDeviceTokenForAccountId(accountId, deviceToken, testData, t)
 }
 
 func TestRegisteringToken_SameToken(t *testing.T) {
@@ -79,17 +55,9 @@ func TestRegisteringToken_SameToken(t *testing.T) {
 	accountId := doctor.AccountId.Int64()
 
 	deviceToken := "12345"
-	notificationConfigs := config.NotificationConfigs(map[string]*config.NotificationConfig{
-		"iOS-Patient-Feature": &config.NotificationConfig{
-			SNSApplicationEndpoint: "endpoint",
-		},
-	})
-	mockSNSClient := &sns.MockSNS{
-		PushEndpointToReturn: "push_endpoint",
-	}
 
-	SetDeviceTokenForAccountId(accountId, deviceToken, &notificationConfigs, mockSNSClient, testData.DataApi, t)
-	SetDeviceTokenForAccountId(accountId, deviceToken, &notificationConfigs, mockSNSClient, testData.DataApi, t)
+	SetDeviceTokenForAccountId(accountId, deviceToken, testData, t)
+	SetDeviceTokenForAccountId(accountId, deviceToken, testData, t)
 	if pushConfigDataList, err := testData.DataApi.GetPushConfigDataForAccount(accountId); err != nil {
 		t.Fatalf(err.Error())
 	} else if len(pushConfigDataList) != 1 {
@@ -106,23 +74,14 @@ func TestRegisteringToken_SameTokenDifferentUser(t *testing.T) {
 	accountId := patient.AccountId.Int64()
 
 	deviceToken := "12345"
-	notificationConfigs := config.NotificationConfigs(map[string]*config.NotificationConfig{
-		"iOS-Patient-Feature": &config.NotificationConfig{
-			SNSApplicationEndpoint: "endpoint",
-		},
-	})
-	mockSNSClient := &sns.MockSNS{
-		PushEndpointToReturn: "push_endpoint",
-	}
-
-	SetDeviceTokenForAccountId(accountId, deviceToken, &notificationConfigs, mockSNSClient, testData.DataApi, t)
+	SetDeviceTokenForAccountId(accountId, deviceToken, testData, t)
 
 	// new patient
 	pr = test_integration.SignupRandomTestPatient(t, testData)
 	patient = pr.Patient
 	accountId2 := patient.AccountId.Int64()
 
-	SetDeviceTokenForAccountId(accountId2, deviceToken, &notificationConfigs, mockSNSClient, testData.DataApi, t)
+	SetDeviceTokenForAccountId(accountId2, deviceToken, testData, t)
 	if pushConfigDataList, err := testData.DataApi.GetPushConfigDataForAccount(accountId2); err != nil {
 		t.Fatalf(err.Error())
 	} else if len(pushConfigDataList) != 1 {
@@ -154,17 +113,8 @@ func TestRegisteringToken_DifferentToken(t *testing.T) {
 	}
 	accountId := doctor.AccountId.Int64()
 
-	notificationConfigs := config.NotificationConfigs(map[string]*config.NotificationConfig{
-		"iOS-Patient-Feature": &config.NotificationConfig{
-			SNSApplicationEndpoint: "endpoint",
-		},
-	})
-	mockSNSClient := &sns.MockSNS{
-		PushEndpointToReturn: "push_endpoint",
-	}
-
-	SetDeviceTokenForAccountId(accountId, "12345", &notificationConfigs, mockSNSClient, testData.DataApi, t)
-	SetDeviceTokenForAccountId(accountId, "123456789", &notificationConfigs, mockSNSClient, testData.DataApi, t)
+	SetDeviceTokenForAccountId(accountId, "12345", testData, t)
+	SetDeviceTokenForAccountId(accountId, "123456789", testData, t)
 	if pushConfigDataList, err := testData.DataApi.GetPushConfigDataForAccount(accountId); err != nil {
 		t.Fatalf(err.Error())
 	} else if len(pushConfigDataList) != 2 {
@@ -181,22 +131,12 @@ func TestRegisteringToken_DeleteOnLogout(t *testing.T) {
 	accountId := patient.AccountId.Int64()
 
 	deviceToken := "12345"
-	notificationConfigs := config.NotificationConfigs(map[string]*config.NotificationConfig{
-		"iOS-Patient-Feature": &config.NotificationConfig{
-			SNSApplicationEndpoint: "endpoint",
-		},
-	})
-	mockSNSClient := &sns.MockSNS{
-		PushEndpointToReturn: "push_endpoint",
-	}
 
-	SetDeviceTokenForAccountId(accountId, deviceToken, &notificationConfigs, mockSNSClient, testData.DataApi, t)
-	SetDeviceTokenForAccountId(accountId, "123456789", &notificationConfigs, mockSNSClient, testData.DataApi, t)
+	SetDeviceTokenForAccountId(accountId, deviceToken, testData, t)
+	SetDeviceTokenForAccountId(accountId, "123456789", testData, t)
 
 	// log the user out
-	authHandler := patientApi.NewAuthenticationHandler(testData.DataApi, testData.AuthApi, "")
-	authServer := httptest.NewServer(authHandler)
-	request, err := http.NewRequest("POST", authServer.URL+"/v1/logout", nil)
+	request, err := http.NewRequest("POST", testData.APIServer.URL+router.LogoutURLPath, nil)
 	if err != nil {
 		t.Fatalf(err.Error())
 	}
@@ -206,7 +146,10 @@ func TestRegisteringToken_DeleteOnLogout(t *testing.T) {
 	res, err := http.DefaultClient.Do(request)
 	if err != nil {
 		t.Fatalf(err.Error())
-	} else if res.StatusCode != http.StatusOK {
+	}
+	defer res.Body.Close()
+
+	if res.StatusCode != http.StatusOK {
 		t.Fatalf("Expected status code %d but got %d instead", http.StatusOK, res.StatusCode)
 	}
 
@@ -236,30 +179,26 @@ func TestRegisteringToken_NoConfig(t *testing.T) {
 	accountId := doctor.AccountId.Int64()
 
 	deviceToken := "12345"
-	notificationConfigs := config.NotificationConfigs(map[string]*config.NotificationConfig{})
-	mockSNSClient := &sns.MockSNS{
-		PushEndpointToReturn: "push_endpoint",
-	}
-
 	params := url.Values{}
 	params.Set("device_token", deviceToken)
 
-	pNotificationHander := notify.NewNotificationHandler(testData.DataApi, &notificationConfigs, mockSNSClient)
-	notificationServer := httptest.NewServer(pNotificationHander)
-	request, err := http.NewRequest("POST", notificationServer.URL, strings.NewReader(params.Encode()))
+	request, err := http.NewRequest("POST", testData.APIServer.URL+router.NotificationTokenURLPath, strings.NewReader(params.Encode()))
 	if err != nil {
 		t.Fatalf(err.Error())
 	}
 
 	request.Header.Set("AccountId", strconv.FormatInt(accountId, 10))
 	request.Header.Set("Content-Type", "application/x-www-form-urlencoded")
-	apiservice.TestingContext.AccountId = accountId
 	setupRequestHeaders(request)
+	request.Header.Set("S-Version", `Patient;Demo;0.9.0;000105`)
 
 	res, err := http.DefaultClient.Do(request)
 	if err != nil {
 		t.Fatalf(err.Error())
-	} else if res.StatusCode != http.StatusInternalServerError {
+	}
+	defer res.Body.Close()
+
+	if res.StatusCode != http.StatusInternalServerError {
 		t.Fatalf("Expected %d but got %d", http.StatusOK, res.StatusCode)
 	}
 }
@@ -271,31 +210,31 @@ func setupRequestHeaders(r *http.Request) {
 	r.Header.Set("S-Device-ID", "68753A44-4D6F-1226-9C60-0050E4C00067")
 }
 
-func SetDeviceTokenForAccountId(accountId int64, deviceToken string, notificationConfigs *config.NotificationConfigs, mockSNSClient *sns.MockSNS, dataApi api.DataAPI, t *testing.T) {
+func SetDeviceTokenForAccountId(accountId int64, deviceToken string, testData *test_integration.TestData, t *testing.T) {
 	params := url.Values{}
 	params.Set("device_token", deviceToken)
 
-	pNotificationHander := notify.NewNotificationHandler(dataApi, notificationConfigs, mockSNSClient)
-	notificationServer := httptest.NewServer(pNotificationHander)
-	request, err := http.NewRequest("POST", notificationServer.URL, strings.NewReader(params.Encode()))
+	request, err := http.NewRequest("POST", testData.APIServer.URL+router.NotificationTokenURLPath, strings.NewReader(params.Encode()))
 	if err != nil {
 		t.Fatalf(err.Error())
 	}
 
 	request.Header.Set("AccountId", strconv.FormatInt(accountId, 10))
 	request.Header.Set("Content-Type", "application/x-www-form-urlencoded")
-	apiservice.TestingContext.AccountId = accountId
 	setupRequestHeaders(request)
 
 	res, err := http.DefaultClient.Do(request)
 	if err != nil {
 		t.Fatalf(err.Error())
-	} else if res.StatusCode != http.StatusOK {
+	}
+	defer res.Body.Close()
+
+	if res.StatusCode != http.StatusOK {
 		t.Fatalf("Expected %d but got %d", http.StatusOK, res.StatusCode)
 	}
 
 	// get push config data and ensure that all values are set
-	if pConfigData, err := dataApi.GetPushConfigData(deviceToken); err != nil {
+	if pConfigData, err := testData.DataApi.GetPushConfigData(deviceToken); err != nil {
 		t.Fatalf(err.Error())
 	} else if pConfigData.Id == 0 {
 		t.Fatal("Expected push config data to have an id")
@@ -325,7 +264,7 @@ func SetDeviceTokenForAccountId(accountId int64, deviceToken string, notificatio
 		t.Fatalf("Expected creation date to be set")
 	}
 
-	if communicationPreferences, err := dataApi.GetCommunicationPreferencesForAccount(accountId); err != nil {
+	if communicationPreferences, err := testData.DataApi.GetCommunicationPreferencesForAccount(accountId); err != nil {
 		t.Fatalf(err.Error())
 	} else if len(communicationPreferences) != 1 {
 		t.Fatalf("Expected 1 communication preference instead got %d", len(communicationPreferences))

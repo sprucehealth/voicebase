@@ -18,6 +18,7 @@ func routeIncomingPatientVisit(ev *patient_visit.VisitSubmittedEvent, dataAPI ap
 	// get the patient case that the visit belongs to
 	patientCase, err := dataAPI.GetPatientCaseFromPatientVisitId(ev.VisitId)
 	if err != nil {
+		golog.Errorf("Unable to get patient case from patient visit id: %s", err)
 		return err
 	}
 
@@ -33,6 +34,7 @@ func routeIncomingPatientVisit(ev *patient_visit.VisitSubmittedEvent, dataAPI ap
 					Status:    api.STATUS_PENDING,
 					EventType: api.DQEventTypePatientVisit,
 				}); err != nil {
+					golog.Errorf("Unable to permanently assign doctor to case: %s", err)
 					return err
 				}
 				return nil
@@ -44,11 +46,13 @@ func routeIncomingPatientVisit(ev *patient_visit.VisitSubmittedEvent, dataAPI ap
 	// insert item into the unclaimed item queue given that it has not been claimed by a doctor yet
 	patient, err := dataAPI.GetPatientFromId(ev.PatientId)
 	if err != nil {
+		golog.Errorf("Unable to get patient from id: %s", err)
 		return err
 	}
 
 	careProvidingStateId, err := dataAPI.GetCareProvidingStateId(patient.StateFromZipCode, patientCase.HealthConditionId.Int64())
 	if err != nil {
+		golog.Errorf("Unable to get care providing state: %s", err)
 		return err
 	}
 
@@ -59,6 +63,7 @@ func routeIncomingPatientVisit(ev *patient_visit.VisitSubmittedEvent, dataAPI ap
 		Status:               api.STATUS_PENDING,
 		PatientCaseId:        patientCase.Id.Int64(),
 	}); err != nil {
+		golog.Errorf("Unable to insert case into unclaimed case queue: %s", err)
 		return err
 	}
 

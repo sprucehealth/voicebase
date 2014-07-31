@@ -53,6 +53,10 @@ func (s *StubErxService) StartPrescribingPatient(clinicianId int64, Patient *com
 		return fmt.Errorf("Expected the rx reference number to be %s instead it was %s", s.ExpectedRxReferenceNumber, Treatments[0].ERx.ErxReferenceNumber)
 	}
 
+	if len(s.PrescriptionIdsToReturn) == 0 {
+		return nil
+	}
+
 	// walk through the treatments and assign them each a prescription id
 	// assumption here is that there are as many prescription ids to return as there are treatments
 	Patient.ERxPatientId = encoding.NewObjectId(s.PatientErxId)

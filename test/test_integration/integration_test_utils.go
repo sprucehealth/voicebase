@@ -25,9 +25,11 @@ import (
 	"github.com/sprucehealth/backend/common"
 	"github.com/sprucehealth/backend/common/config"
 	"github.com/sprucehealth/backend/doctor_queue"
+	"github.com/sprucehealth/backend/email"
 	"github.com/sprucehealth/backend/encoding"
 	"github.com/sprucehealth/backend/environment"
 	"github.com/sprucehealth/backend/libs/aws"
+	"github.com/sprucehealth/backend/libs/aws/sns"
 	"github.com/sprucehealth/backend/libs/aws/sqs"
 	"github.com/sprucehealth/backend/libs/dispatch"
 	"github.com/sprucehealth/backend/libs/erx"
@@ -96,19 +98,21 @@ func init() {
 }
 
 func (d *TestData) AuthGet(url string, accountID int64) (*http.Response, error) {
+
 	req, err := http.NewRequest("GET", url, nil)
 	if err != nil {
 		return nil, err
 	}
 	req.Header.Set("AccountID", strconv.FormatInt(accountID, 10))
-	apiservice.TestingContext.AccountId = accountID
-	if accountID != 0 {
-		account, err := d.AuthApi.GetAccount(accountID)
+
+	if accountID > 0 {
+		token, err := d.AuthApi.GetToken(accountID)
 		if err != nil {
 			return nil, err
 		}
-		apiservice.TestingContext.Role = account.Role
+		req.Header.Set("Authorization", "token "+token)
 	}
+
 	return http.DefaultClient.Do(req)
 }
 
@@ -118,14 +122,12 @@ func (d *TestData) AuthPost(url, bodyType string, body io.Reader, accountID int6
 		return nil, err
 	}
 	req.Header.Set("Content-Type", bodyType)
-	req.Header.Set("AccountID", strconv.FormatInt(accountID, 10))
-	apiservice.TestingContext.AccountId = accountID
-	if accountID != 0 {
-		account, err := d.AuthApi.GetAccount(accountID)
+	if accountID > 0 {
+		token, err := d.AuthApi.GetToken(accountID)
 		if err != nil {
 			return nil, err
 		}
-		apiservice.TestingContext.Role = account.Role
+		req.Header.Set("Authorization", "token "+token)
 	}
 	return http.DefaultClient.Do(req)
 }
@@ -136,15 +138,14 @@ func (d *TestData) AuthPut(url, bodyType string, body io.Reader, accountID int64
 		return nil, err
 	}
 	req.Header.Set("Content-Type", bodyType)
-	req.Header.Set("AccountID", strconv.FormatInt(accountID, 10))
-	apiservice.TestingContext.AccountId = accountID
-	if accountID != 0 {
-		account, err := d.AuthApi.GetAccount(accountID)
+	if accountID > 0 {
+		token, err := d.AuthApi.GetToken(accountID)
 		if err != nil {
 			return nil, err
 		}
-		apiservice.TestingContext.Role = account.Role
+		req.Header.Set("Authorization", "token "+token)
 	}
+
 	return http.DefaultClient.Do(req)
 }
 
@@ -154,15 +155,14 @@ func (d *TestData) AuthDelete(url, bodyType string, body io.Reader, accountID in
 		return nil, err
 	}
 	req.Header.Set("Content-Type", bodyType)
-	req.Header.Set("AccountID", strconv.FormatInt(accountID, 10))
-	apiservice.TestingContext.AccountId = accountID
-	if accountID != 0 {
-		account, err := d.AuthApi.GetAccount(accountID)
+	if accountID > 0 {
+		token, err := d.AuthApi.GetToken(accountID)
 		if err != nil {
 			return nil, err
 		}
-		apiservice.TestingContext.Role = account.Role
+		req.Header.Set("Authorization", "token "+token)
 	}
+
 	return http.DefaultClient.Do(req)
 }
 
@@ -227,18 +227,17 @@ func CreateRandomPatientVisitInState(state string, t *testing.T, testData *TestD
 }
 
 func GrantDoctorAccessToPatientCase(t *testing.T, testData *TestData, doctor *common.Doctor, patientCaseId int64) {
-	grantAccessHandler := doctor_queue.NewClaimPatientCaseAccessHandler(testData.DataApi, metrics.NewRegistry())
-	doctorServer := httptest.NewServer(grantAccessHandler)
-
 	jsonData, err := json.Marshal(&doctor_queue.ClaimPatientCaseRequestData{
 		PatientCaseId: encoding.NewObjectId(patientCaseId),
 	})
 
-	resp, err := testData.AuthPost(doctorServer.URL, "application/json", bytes.NewReader(jsonData), doctor.AccountId.Int64())
-	defer resp.Body.Close()
+	resp, err := testData.AuthPost(testData.APIServer.URL+router.DoctorCaseClaimURLPath, "application/json", bytes.NewReader(jsonData), doctor.AccountId.Int64())
 	if err != nil {
 		t.Fatal(err)
-	} else if resp.StatusCode != http.StatusOK {
+	}
+	defer resp.Body.Close()
+
+	if resp.StatusCode != http.StatusOK {
 		t.Fatalf("Expected response %d instead got %d", http.StatusOK, resp.StatusCode)
 	}
 }
@@ -293,9 +292,6 @@ func CreateRandomPatientVisitAndPickTP(t *testing.T, testData *TestData, doctor 
 }
 
 func GenerateAppEvent(action, resource string, resourceId int64, accountId int64, testData *TestData, t *testing.T) {
-	appEventHandler := app_event.NewHandler()
-	server := httptest.NewServer(appEventHandler)
-
 	jsonData, err := json.Marshal(&app_event.EventRequestData{
 		Resource:   resource,
 		ResourceId: resourceId,
@@ -305,10 +301,12 @@ func GenerateAppEvent(action, resource string, resourceId int64, accountId int64
 		t.Fatal(err)
 	}
 
-	res, err := testData.AuthPost(server.URL, "application/json", bytes.NewReader(jsonData), accountId)
+	res, err := testData.AuthPost(testData.APIServer.URL+router.AppEventURLPath, "application/json", bytes.NewReader(jsonData), accountId)
 	if err != nil {
 		t.Fatal(err)
-	} else if res.StatusCode != http.StatusOK {
+	}
+	defer res.Body.Close()
+	if res.StatusCode != http.StatusOK {
 		t.Fatalf("Expected %d but got %d", http.StatusOK, res.StatusCode)
 	}
 }
@@ -380,6 +378,35 @@ func SetupIntegrationTest(t *testing.T) *TestData {
 		t.Fatal("Unable to create the provider role of DOCTOR " + err.Error())
 	}
 
+	dispatch.Default = dispatch.New()
+	environment.SetCurrent("test")
+
+	testData.RouterConfig = &router.RouterConfig{
+		DataAPI:              testData.DataApi,
+		AuthAPI:              testData.AuthApi,
+		AddressValidationAPI: &address.StubAddressValidationService{},
+		PaymentAPI:           &payment.StubPaymentService{},
+		NotifyConfigs: (*config.NotificationConfigs)(&map[string]*config.NotificationConfig{
+			"iOS-Patient-Feature": &config.NotificationConfig{
+				SNSApplicationEndpoint: "endpoint",
+			},
+		}),
+		NotificationManager: notify.NewManager(testData.DataApi, nil, nil, &email.TestService{}, "", "", nil, metrics.NewRegistry()),
+		ERxStatusQueue:      &common.SQSQueue{QueueService: &sqs.StubSQS{}},
+		ERxAPI:              &erx.StubErxService{},
+		SNSClient:           &sns.MockSNS{PushEndpointToReturn: "push_endpoint"},
+		MetricsRegistry:     metrics.NewRegistry(),
+		CloudStorageAPI:     testData.CloudStorageService,
+		ERxRouting:          true,
+		APISubdomain:        "api.spruce.local",
+		WebSubdomain:        "www.spruce.local",
+		EmailService:        &email.TestService{},
+	}
+
+	// setup the restapi server
+	mux := router.New(testData.RouterConfig)
+	testData.APIServer = httptest.NewServer(mux)
+
 	// When setting up the database for each integration test, ensure to setup a doctor that is
 	// considered elligible to serve in the state of CA.
 	signedupDoctorResponse, _, _ := SignupRandomTestDoctor(t, testData)
@@ -394,29 +421,6 @@ func SetupIntegrationTest(t *testing.T) *TestData {
 	if err != nil {
 		t.Fatal(err)
 	}
-
-	dispatch.Default = dispatch.New()
-	environment.SetCurrent("test")
-
-	testData.RouterConfig = &router.RouterConfig{
-		DataAPI:              testData.DataApi,
-		AuthAPI:              testData.AuthApi,
-		AddressValidationAPI: &address.StubAddressValidationService{},
-		PaymentAPI:           &payment.StubPaymentService{},
-		NotifyConfigs:        (*config.NotificationConfigs)(&map[string]*config.NotificationConfig{}),
-		NotificationManager:  notify.NewManager(testData.DataApi, nil, nil, nil, "", "", nil, metrics.NewRegistry()),
-		ERxStatusQueue:       &common.SQSQueue{QueueService: &sqs.StubSQS{}},
-		ERxAPI:               testData.ERxAPI,
-		MetricsRegistry:      metrics.NewRegistry(),
-		CloudStorageAPI:      testData.CloudStorageService,
-		ERxRouting:           true,
-		APISubdomain:         "api.spruce.local",
-		WebSubdomain:         "www.spruce.local",
-	}
-
-	// setup the restapi server
-	mux := router.New(testData.RouterConfig)
-	testData.APIServer = httptest.NewServer(mux)
 
 	return testData
 }
