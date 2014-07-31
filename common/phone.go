@@ -191,6 +191,10 @@ func (p *Phone) Validate() error {
 }
 
 func isRepeatingDigits(phoneNumber string) bool {
+	if len(phoneNumber) == 0 {
+		return false
+	}
+
 	firstRune, _ := utf8.DecodeRuneInString(phoneNumber)
 	for _, r := range phoneNumber {
 		if firstRune != r && r != '-' {
